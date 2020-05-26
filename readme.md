@@ -1,0 +1,1 @@
+Most of founding members of Speedle open source project were removed from Speedle github repo. We are not Speedle project maintainers anymore. Then we have to start a new project to maintain Speedle code.
