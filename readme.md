@@ -23,48 +23,12 @@
 <a href="README.zh-cn.md">中文版</a>
 </p>
 
-# Speedle
+# Speedle+
 
-Speedle is a general purpose authorization engine. It allows users to construct their policy model with user-friendly policy definition language and get authorization decision in milliseconds based on the policies. Speedle is very user-friendly, efficient, and extremely scalable. 
+Speedle+ is a general purpose authorization engine. It allows users to construct their policy model with user-friendly policy definition language and get authorization decision in milliseconds based on the policies. Speedle is very user-friendly, efficient, and extremely scalable. 
 
-Speedle open source project consits of a policy definition language, policy management module, authorization runtime module, commandline tool, and integration samples with popular systems.
+Speedle+ open source project consits of a policy definition language, policy management module, authorization runtime module, commandline tool, and integration samples with popular systems.
 
-## Documentation
+Speedle+ is based on Speedle open source project which was hosted at https://github.com/oracle/speedle under UPL.
 
-Latest documentations are available at <https://speedle.io/docs>.
 
-## Get Started
-
-See Getting Started at <https://speedle.io/quick-start/>.
-
-## Build
-
-### Prerequisites
-
--   GO 1.10.1 or greater <https://golang.org/doc/install>
--   Set `GOROOT` and `GOPATH` properly
-
-### Step
-
-```
-$ go get github.com/oracle/speedle/cmd/...
-$ ls $GOPATH/bin
-spctl  speedle-ads  speedle-pms
-```
-
-## Test
-
-```
-$ cd $GOPATH/src/github.com/oracle/speedle
-$ make test
-```
-
-## Get Help
-
--   Join us on Slack: [#speedle-users](https://join.slack.com/t/speedleproject/shared_invite/enQtNTUzODM3NDY0ODE2LTg0ODc0NzQ1MjVmM2NiODVmMThkMmVjNmMyODA0ZWJjZjQ3NDc2MjdlMzliN2U4MDRkZjhlYzYzMDEyZTgxMGQ)
--   Mailing List: speedle-users@googlegroups.com
-
-## Get Involved
-
--   Learn how to [contribute](CONTRIBUTING.md)
--   See [issues](https://github.com/oracle/speedle/issues) for issues you can help with
