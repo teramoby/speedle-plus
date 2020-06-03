@@ -1,10 +1,10 @@
-# Contributing to Speedle Project
+# Contributing to Speedle+ Project
 
 We welcome your contributions! There are multiple ways to contribute.
 
 ## Promotion
 
-If you like Speedle project, please let your colleagues/friends know the project. You may consider to _star_ [the project at Github](https://github.com/oracle/speedle). So that more people can find the project.
+If you like Speedle+ project, please let your colleagues/friends know the project. You may consider to _star_ [the project at Github](https://github.com/teramoby/SpeedlePlus). So that more people can find the project.
 
 And sharing us your success story with Speedle would be greatly appreciated if you don't mind.
 
@@ -17,11 +17,11 @@ Join us at [#speedleproject](https://join.slack.com/t/speedleproject/shared_invi
 
 ## Issues
 
-If you hit a bug or have an enhancement request then file a [GitHub issue](https://github.com/oracle/speedle/issues).
+If you hit a bug or have an enhancement request then file a [GitHub issue](https://github.com/teramoby/SpeedlePlus/issues).
 
 If you report a bug, please include:
 
-1. Version of Speedle
+1. Version of SpeedlePlus
 2. Issue Description
 3. Reproducible Environment and Steps
 4. Expected behavior
