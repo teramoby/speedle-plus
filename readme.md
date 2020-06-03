@@ -5,17 +5,14 @@
     <a href="https://join.slack.com/t/speedleproject/shared_invite/enQtNTUzODM3NDY0ODE2LTg0ODc0NzQ1MjVmM2NiODVmMThkMmVjNmMyODA0ZWJjZjQ3NDc2MjdlMzliN2U4MDRkZjhlYzYzMDEyZTgxMGQ">
         <img src="https://img.shields.io/badge/slack-speedle-red.svg">
     </a>
-    <a href="https://github.com/oracle/speedle/tags">
-        <img src="https://img.shields.io/github/tag/oracle/speedle.svg">
+    <a href="https://github.com/teramoby/SpeedlePlus/tags">
+        <img src="https://img.shields.io/github/tag/teramoby/SpeedlePlus.svg">
     </a>
-    <a href="https://github.com/oracle/speedle/issues">
-        <img src="https://img.shields.io/github/issues/oracle/speedle.svg">
+    <a href="https://github.com/teramoby/SpeedlePlus/issues">
+        <img src="https://img.shields.io/github/issues/teramoby/SpeedlePlus.svg">
     </a>
-    <a href="https://goreportcard.com/report/github.com/oracle/speedle">
-        <img src="https://goreportcard.com/badge/github.com/oracle/speedle">
-    </a>
-    <a href="https://app.wercker.com/project/byKey/07abf3ef318b376c1171c95346333083">
-        <img alt="Wercker status" src="https://app.wercker.com/status/07abf3ef318b376c1171c95346333083/s/master">
+    <a href="https://goreportcard.com/report/github.com/teramoby/SpeedlePlus">
+        <img src="https://goreportcard.com/badge/github.com/teramoby/SpeedlePlus">
     </a>
 </p>
 
@@ -35,4 +32,42 @@ Speedle+ is based on Speedle open source project which is hosted at https://gith
 
 We are the founding members of Speedle project. For some reasons, we all left Oracle and consequently not contributors of Speedle project on GitHub anymore. But we still stay with Speedle project. We create a new repo under https://github.com/teramoby/SpeedlePlus and maintain the new project here now.
 
-# Contribution
+## Documentation
+
+Latest documentations are available at <https://speedle.io/docs>.
+
+## Get Started
+
+See Getting Started at <https://speedle.io/quick-start/>.
+
+## Build
+
+### Prerequisites
+
+-   GO 1.10.1 or greater <https://golang.org/doc/install>
+-   Set `GOROOT` and `GOPATH` properly
+
+### Step
+
+```
+$ go get github.com/teramoby/SpeedlePlus/cmd/...
+$ ls $GOPATH/bin
+spctl  speedle-ads  speedle-pms
+```
+
+## Test
+
+```
+$ cd $GOPATH/src/github.com/teramoby/SpeedlePlus
+$ make test
+```
+
+## Get Help
+
+-   Join us on Slack: [#speedle-users](https://join.slack.com/t/speedleproject/shared_invite/enQtNTUzODM3NDY0ODE2LTg0ODc0NzQ1MjVmM2NiODVmMThkMmVjNmMyODA0ZWJjZjQ3NDc2MjdlMzliN2U4MDRkZjhlYzYzMDEyZTgxMGQ)
+-   Mailing List: speedle-users@googlegroups.com
+
+## Get Involved
+
+-   Learn how to [contribute](CONTRIBUTING.md)
+-   See [issues](https://github.com/oracle/speedle/issues) for issues you can help with
