@@ -29,13 +29,10 @@ If you report a bug, please include:
 
 ## Code
 
-We welcome code contributions, but we need the contributor to sign the
-[Oracle Contributor Agreement (OCA)](https://www.oracle.com/technetwork/community/oca-486395.html)
-first.
+We welcome code contributions.
 
 The process:
 
-0. Sign the [OCA](https://www.oracle.com/technetwork/community/oca-486395.html)
 1. Fork the repo
 2. Fix an issue or create an issue and fix it
 3. Create a Pull Request that fixes the issue
