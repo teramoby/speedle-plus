@@ -28,7 +28,7 @@ Speedle+ open source project consits of a policy definition language, policy man
 
 Speedle+ is based on Speedle open source project which is hosted at https://github.com/oracle/speedle under UPL.
 
-# Who are we
+## Who are we
 
 We are the founding members of Speedle project. For some reasons, we all left Oracle and consequently not contributors of Speedle project on GitHub anymore. But we still stay with Speedle project. We create a new repo under https://github.com/teramoby/SpeedlePlus and maintain the new project here now.
 
