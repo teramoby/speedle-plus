@@ -33,7 +33,7 @@ Speedle+项目基于Speedle项目<https://github.com/oracle/speedle>，两个项
 
 ## 我们是谁
 
-我们是Speedle项目的创始团队。因为大家都知道的某些原因，我们都离开了Oracle，现在也不是Speedle项目的贡献者了。但是我们还在继续维护这个项目，所以建立了一个新项目Speedle+。
+我们是Speedle项目的创始团队。因为大家知道的某些原因，我们都离开了Oracle，现在也不是Speedle项目的贡献者了。但是我们还在继续维护这个项目，所以建立了一个新项目Speedle+。
 
 ## 文档
 
