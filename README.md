@@ -30,7 +30,7 @@ Speedle+ is based on Speedle open source project which is hosted at https://gith
 
 ## Who are we
 
-We are the founding members of Speedle project. For some reasons, we all left Oracle and consequently not contributors of Speedle project on GitHub anymore. But we still stay with Speedle project. We create a new repo under https://github.com/teramoby/SpeedlePlus and maintain the new project here now.
+We are the founding members of Speedle project. For some reasons, we all left Oracle and are consequently not contributors of Speedle project on GitHub anymore. But we still stay with Speedle project. We create a new repo under https://github.com/teramoby/SpeedlePlus and maintain the new project here now.
 
 ## Documentation
 
