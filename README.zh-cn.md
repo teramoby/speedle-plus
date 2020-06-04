@@ -55,7 +55,7 @@ Speedle+项目基于Speedle项目<https://github.com/oracle/speedle>，两个项
 ### 步骤
 
 ```
-$ go get github.com/teramoby/SpeedlePlus/cmd/...
+$ go get github.com/teramoby/speedle-plus/cmd/...
 $ ls $GOPATH/bin
 spctl  speedle-ads  speedle-pms
 ```
@@ -63,7 +63,7 @@ spctl  speedle-ads  speedle-pms
 ## 运行测试
 
 ```
-$ cd $GOPATH/src/github.com/teramoby/SpeedlePlus
+$ cd $GOPATH/src/github.com/teramoby/speedle-plus
 $ make test
 ```
 
@@ -77,10 +77,10 @@ $ make test
 如果您喜欢Speedle项目并愿意为它做些事情，我们将非常欢迎。您可以：
 
 0. 下载并使用Speedle+，这是对Speedle+项目的最大支持
-1. 在<https://github.com/teramoby/SpeedlePlus>右上角，为Speedle+项目加颗星星
+1. 在<https://github.com/teramoby/speedle-plus>右上角，为Speedle+项目加颗星星
 2. 帮助推广Speedle项目，向您的同事，同学，朋友介绍Speedle+
 3. 如果不介意的话，您可以告诉我们您如何在项目里使用Speedle+
-4. 通过<https://github.com/teramoby/SpeedlePlus/issues>告诉我们您使用过程中发现的问题
-5. 通过<https://github.com/teramoby/SpeedlePlus/issues>告诉我们您希望在Speedle中出现的新功能
+4. 通过<https://github.com/teramoby/speedle-plus/issues>告诉我们您使用过程中发现的问题
+5. 通过<https://github.com/teramoby/speedle-plus/issues>告诉我们您希望在Speedle中出现的新功能
 6. 参与Speedle+的开发，通过Slack联系我们，我们将告诉您接下来的步骤
 
