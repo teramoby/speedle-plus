@@ -5,7 +5,7 @@ package eval
 import (
 	"testing"
 
-	adsapi "github.com/oracle/speedle/api/ads"
+	adsapi "github.com/teramoby/speedle-plus/api/ads"
 )
 
 // test issue :https://gitlab-odx.oracledx.com/wcai/kauthz/issues/232

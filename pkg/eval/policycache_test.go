@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/oracle/speedle/api/pms"
+	"github.com/teramoby/speedle-plus/api/pms"
 )
 
 func TestPolicyCacheBasic(t *testing.T) {

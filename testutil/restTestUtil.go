@@ -17,9 +17,9 @@ import (
 	"reflect"
 	"strings"
 
-	pmsapi "github.com/oracle/speedle/api/pms"
-	"github.com/oracle/speedle/pkg/cmd/flags"
-	"github.com/oracle/speedle/pkg/svcs"
+	pmsapi "github.com/teramoby/speedle-plus/api/pms"
+	"github.com/teramoby/speedle-plus/pkg/cmd/flags"
+	"github.com/teramoby/speedle-plus/pkg/svcs"
 )
 
 const (

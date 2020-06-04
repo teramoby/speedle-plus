@@ -12,9 +12,9 @@ import (
 	"strings"
 	"unicode"
 
-	adsapi "github.com/oracle/speedle/api/ads"
-	"github.com/oracle/speedle/api/pms"
-	"github.com/oracle/speedle/pkg/subjectutils"
+	adsapi "github.com/teramoby/speedle-plus/api/ads"
+	"github.com/teramoby/speedle-plus/api/pms"
+	"github.com/teramoby/speedle-plus/pkg/subjectutils"
 )
 
 const (

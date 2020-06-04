@@ -6,10 +6,10 @@ package adsgrpc
 import (
 	"testing"
 
-	adsapi "github.com/oracle/speedle/api/ads"
-	adsPB "github.com/oracle/speedle/pkg/svcs/adsgrpc/pb"
-	pmsPB "github.com/oracle/speedle/pkg/svcs/pmsgrpc/pb"
-	"github.com/oracle/speedle/testutil"
+	adsapi "github.com/teramoby/speedle-plus/api/ads"
+	adsPB "github.com/teramoby/speedle-plus/pkg/svcs/adsgrpc/pb"
+	pmsPB "github.com/teramoby/speedle-plus/pkg/svcs/pmsgrpc/pb"
+	"github.com/teramoby/speedle-plus/testutil"
 )
 
 var POLICY_RELOAD_TIME = 500 //ms

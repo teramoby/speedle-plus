@@ -9,7 +9,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/oracle/speedle/pkg/errors"
+	"github.com/teramoby/speedle-plus/pkg/errors"
 	log "github.com/sirupsen/logrus"
 )
 

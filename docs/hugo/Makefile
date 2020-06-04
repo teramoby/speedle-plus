@@ -12,13 +12,13 @@ docker-login:
 	docker login -u "$$DOCKER_LOGIN_USER" -p "$$DOCKER_LOGIN_PASSWORD" $$DOCKER_LOGIN_SERVER
 
 build/bin/spctl:
-	docker run --rm -v "${PWD}/build":/go golang:1.10 go get github.com/oracle/speedle/cmd/spctl
+	docker run --rm -v "${PWD}/build":/go golang:1.10 go get github.com/teramoby/speedle-plus/cmd/spctl
 
 build/bin/speedle-pms:
-	docker run --rm -v "${PWD}/build":/go golang:1.10 go get github.com/oracle/speedle/cmd/speedle-pms
+	docker run --rm -v "${PWD}/build":/go golang:1.10 go get github.com/teramoby/speedle-plus/cmd/speedle-pms
 
 build/bin/speedle-ads:
-	docker run --rm -v "${PWD}/build":/go golang:1.10 go get github.com/oracle/speedle/cmd/speedle-ads
+	docker run --rm -v "${PWD}/build":/go golang:1.10 go get github.com/teramoby/speedle-plus/cmd/speedle-ads
 
 pms: build/bin/speedle-pms
 	cp build/bin/speedle-pms ci/docker/pms

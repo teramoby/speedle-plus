@@ -6,10 +6,10 @@ package command
 import (
 	"testing"
 
-	"github.com/oracle/speedle/api/pms"
-	"github.com/oracle/speedle/testutil"
-	"github.com/oracle/speedle/testutil/msg"
-	"github.com/oracle/speedle/testutil/param"
+	"github.com/teramoby/speedle-plus/api/pms"
+	"github.com/teramoby/speedle-plus/testutil"
+	"github.com/teramoby/speedle-plus/testutil/msg"
+	"github.com/teramoby/speedle-plus/testutil/param"
 )
 
 //Create/Get/Delete service

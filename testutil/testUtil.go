@@ -8,8 +8,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/oracle/speedle/api/pms"
-	"github.com/oracle/speedle/pkg/svcs/pmsgrpc/pb"
+	"github.com/teramoby/speedle-plus/api/pms"
+	"github.com/teramoby/speedle-plus/pkg/svcs/pmsgrpc/pb"
 )
 
 //Test Methods for Speedle

@@ -9,8 +9,8 @@ import (
 	"net/http"
 	"os"
 
-	_ "github.com/oracle/speedle/pkg/store/file"
-	"github.com/oracle/speedle/samples/embedded/expenses"
+	_ "github.com/teramoby/speedle-plus/pkg/store/file"
+	"github.com/teramoby/speedle-plus/samples/embedded/expenses"
 )
 
 func main() {

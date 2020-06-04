@@ -6,8 +6,8 @@ package pmsimpl
 import (
 	"encoding/json"
 
-	"github.com/oracle/speedle/api/pms"
-	"github.com/oracle/speedle/pkg/errors"
+	"github.com/teramoby/speedle-plus/api/pms"
+	"github.com/teramoby/speedle-plus/pkg/errors"
 )
 
 var (

@@ -7,9 +7,9 @@ import (
 	"encoding/json"
 	"io/ioutil"
 
-	"github.com/oracle/speedle/pkg/assertion"
-	"github.com/oracle/speedle/pkg/errors"
-	"github.com/oracle/speedle/pkg/logging"
+	"github.com/teramoby/speedle-plus/pkg/assertion"
+	"github.com/teramoby/speedle-plus/pkg/errors"
+	"github.com/teramoby/speedle-plus/pkg/logging"
 )
 
 const (

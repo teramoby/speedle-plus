@@ -9,9 +9,9 @@ import (
 	"os"
 	"strings"
 
-	"github.com/oracle/speedle/cmd/spctl/client"
+	"github.com/teramoby/speedle-plus/cmd/spctl/client"
 
-	"github.com/oracle/speedle/api/pms"
+	"github.com/teramoby/speedle-plus/api/pms"
 
 	"github.com/spf13/cobra"
 )

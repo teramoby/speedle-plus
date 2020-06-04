@@ -6,8 +6,8 @@ package pmsrest
 import (
 	"testing"
 
-	"github.com/oracle/speedle/api/pms"
-	"github.com/oracle/speedle/testutil"
+	"github.com/teramoby/speedle-plus/api/pms"
+	"github.com/teramoby/speedle-plus/testutil"
 )
 
 //Test REST API for Service Manangement

@@ -9,12 +9,12 @@ import (
 	"strings"
 
 	"github.com/gorilla/mux"
-	"github.com/oracle/speedle/api/ads"
-	"github.com/oracle/speedle/api/pms"
-	"github.com/oracle/speedle/pkg/errors"
-	"github.com/oracle/speedle/pkg/httputils"
-	"github.com/oracle/speedle/pkg/logging"
-	"github.com/oracle/speedle/pkg/store"
+	"github.com/teramoby/speedle-plus/api/ads"
+	"github.com/teramoby/speedle-plus/api/pms"
+	"github.com/teramoby/speedle-plus/pkg/errors"
+	"github.com/teramoby/speedle-plus/pkg/httputils"
+	"github.com/teramoby/speedle-plus/pkg/logging"
+	"github.com/teramoby/speedle-plus/pkg/store"
 	log "github.com/sirupsen/logrus"
 )
 

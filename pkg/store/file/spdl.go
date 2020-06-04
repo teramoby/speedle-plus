@@ -10,10 +10,10 @@ import (
 	"os"
 	"strings"
 
-	"github.com/oracle/speedle/api/pms"
-	"github.com/oracle/speedle/cmd/spctl/pdl"
-	"github.com/oracle/speedle/pkg/errors"
-	"github.com/oracle/speedle/pkg/suid"
+	"github.com/teramoby/speedle-plus/api/pms"
+	"github.com/teramoby/speedle-plus/cmd/spctl/pdl"
+	"github.com/teramoby/speedle-plus/pkg/errors"
+	"github.com/teramoby/speedle-plus/pkg/suid"
 	log "github.com/sirupsen/logrus"
 )
 

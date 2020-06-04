@@ -9,10 +9,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/oracle/speedle/pkg/errors"
-	"github.com/oracle/speedle/pkg/suid"
+	"github.com/teramoby/speedle-plus/pkg/errors"
+	"github.com/teramoby/speedle-plus/pkg/suid"
 
-	"github.com/oracle/speedle/api/pms"
+	"github.com/teramoby/speedle-plus/api/pms"
 
 	"github.com/coreos/etcd/clientv3"
 	"github.com/coreos/etcd/clientv3/concurrency"

@@ -9,19 +9,19 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"github.com/oracle/speedle/pkg/errors"
-	"github.com/oracle/speedle/pkg/store"
-	"github.com/oracle/speedle/pkg/svcs/pmsgrpc/pb"
-	"github.com/oracle/speedle/pkg/svcs/pmsimpl"
+	"github.com/teramoby/speedle-plus/pkg/errors"
+	"github.com/teramoby/speedle-plus/pkg/store"
+	"github.com/teramoby/speedle-plus/pkg/svcs/pmsgrpc/pb"
+	"github.com/teramoby/speedle-plus/pkg/svcs/pmsimpl"
 
 	"context"
 
-	"github.com/oracle/speedle/api/ads"
-	"github.com/oracle/speedle/api/pms"
+	"github.com/teramoby/speedle-plus/api/ads"
+	"github.com/teramoby/speedle-plus/api/pms"
 
 	"strings"
 
-	"github.com/oracle/speedle/pkg/logging"
+	"github.com/teramoby/speedle-plus/pkg/logging"
 )
 
 type serviceImpl struct {

@@ -16,13 +16,13 @@ all: build
 build: buildPms buildAds buildSpctl
 
 buildPms:
-	go build ${goLDFlags} -o ${gopath}/bin/speedle-pms github.com/oracle/speedle/cmd/speedle-pms
+	go build ${goLDFlags} -o ${gopath}/bin/speedle-pms github.com/teramoby/speedle-plus/cmd/speedle-pms
 
 buildAds:
-	go build ${goLDFlags} -o ${gopath}/bin/speedle-ads github.com/oracle/speedle/cmd/speedle-ads
+	go build ${goLDFlags} -o ${gopath}/bin/speedle-ads github.com/teramoby/speedle-plus/cmd/speedle-ads
 
 buildSpctl:
-	go build ${goLDFlags} -o ${gopath}/bin/spctl  github.com/oracle/speedle/cmd/spctl
+	go build ${goLDFlags} -o ${gopath}/bin/spctl  github.com/teramoby/speedle-plus/cmd/spctl
 
 image: imagePms imageAds
 
@@ -41,15 +41,15 @@ test: testAll
 testAll: speedleUnitTests testSpeedleRest testSpeedleGRpc testSpctl testSpeedleRestADSCheck testSpeedleGRpcADSCheck testSpeedleTls
 
 speedleUnitTests:
-	go test ${TEST_OPTS} github.com/oracle/speedle/pkg/cfg 
-	go test ${TEST_OPTS} github.com/oracle/speedle/pkg/eval 
-	go test ${TEST_OPTS} github.com/oracle/speedle/pkg/store/file
-	go test ${TEST_OPTS} github.com/oracle/speedle/pkg/store/etcd
-	go test ${TEST_OPTS} github.com/oracle/speedle/cmd/spctl/pdl
-	go test ${TEST_OPTS} github.com/oracle/speedle/pkg/suid
-	go test ${TEST_OPTS} github.com/oracle/speedle/pkg/assertion
+	go test ${TEST_OPTS} github.com/teramoby/speedle-plus/pkg/cfg 
+	go test ${TEST_OPTS} github.com/teramoby/speedle-plus/pkg/eval 
+	go test ${TEST_OPTS} github.com/teramoby/speedle-plus/pkg/store/file
+	go test ${TEST_OPTS} github.com/teramoby/speedle-plus/pkg/store/etcd
+	go test ${TEST_OPTS} github.com/teramoby/speedle-plus/cmd/spctl/pdl
+	go test ${TEST_OPTS} github.com/teramoby/speedle-plus/pkg/suid
+	go test ${TEST_OPTS} github.com/teramoby/speedle-plus/pkg/assertion
 	go clean -testcache
-	STORE_TYPE=etcd go test ${TEST_OPTS} github.com/oracle/speedle/pkg/eval
+	STORE_TYPE=etcd go test ${TEST_OPTS} github.com/teramoby/speedle-plus/pkg/eval
 
 testSpeedleRest:
 	pkg/svcs/pmsrest/run_file_test.sh
@@ -75,7 +75,7 @@ testSpeedleTls:
 	pkg/svcs/pmsrest/tls_test.sh
 	pkg/svcs/pmsrest/tls_test-force-client-cert.sh
 clean:
-	rm -rf ${gopath}/pkg/linux_amd64/github.com/oracle/speedle
+	rm -rf ${gopath}/pkg/linux_amd64/github.com/teramoby/speedle-plus
 	rm -f ${gopath}/bin/speedle-pms
 	rm -f ${gopath}/bin/speedle-ads
 	rm -f ${gopath}/bin/spctl

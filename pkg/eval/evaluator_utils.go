@@ -7,9 +7,9 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/oracle/speedle/3rdparty/github.com/Knetic/govaluate"
-	adsapi "github.com/oracle/speedle/api/ads"
-	"github.com/oracle/speedle/api/pms"
+	"github.com/teramoby/speedle-plus/3rdparty/github.com/Knetic/govaluate"
+	adsapi "github.com/teramoby/speedle-plus/api/ads"
+	"github.com/teramoby/speedle-plus/api/pms"
 	log "github.com/sirupsen/logrus"
 )
 

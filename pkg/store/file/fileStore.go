@@ -11,11 +11,11 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/oracle/speedle/pkg/errors"
-	"github.com/oracle/speedle/pkg/suid"
+	"github.com/teramoby/speedle-plus/pkg/errors"
+	"github.com/teramoby/speedle-plus/pkg/suid"
 
 	"github.com/fsnotify/fsnotify"
-	"github.com/oracle/speedle/api/pms"
+	"github.com/teramoby/speedle-plus/api/pms"
 	log "github.com/sirupsen/logrus"
 )
 

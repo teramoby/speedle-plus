@@ -7,10 +7,10 @@ package adsrest
 import (
 	"testing"
 
-	adsapi "github.com/oracle/speedle/api/ads"
-	"github.com/oracle/speedle/testutil"
+	adsapi "github.com/teramoby/speedle-plus/api/ads"
+	"github.com/teramoby/speedle-plus/testutil"
 
-	"github.com/oracle/speedle/api/pms"
+	"github.com/teramoby/speedle-plus/api/pms"
 )
 
 var POLICY_RELOAD_TIME = 500 //ms

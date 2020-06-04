@@ -9,12 +9,12 @@ import (
 	"os"
 	"testing"
 
-	"github.com/oracle/speedle/pkg/cfg"
-	"github.com/oracle/speedle/pkg/store"
-	_ "github.com/oracle/speedle/pkg/store/etcd"
-	_ "github.com/oracle/speedle/pkg/store/file"
+	"github.com/teramoby/speedle-plus/pkg/cfg"
+	"github.com/teramoby/speedle-plus/pkg/store"
+	_ "github.com/teramoby/speedle-plus/pkg/store/etcd"
+	_ "github.com/teramoby/speedle-plus/pkg/store/file"
 
-	"github.com/oracle/speedle/api/pms"
+	"github.com/teramoby/speedle-plus/api/pms"
 	log "github.com/sirupsen/logrus"
 )
 

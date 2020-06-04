@@ -8,8 +8,8 @@ package adsrest
 import (
 	"testing"
 
-	adsapi "github.com/oracle/speedle/api/ads"
-	"github.com/oracle/speedle/testutil"
+	adsapi "github.com/teramoby/speedle-plus/api/ads"
+	"github.com/teramoby/speedle-plus/testutil"
 )
 
 var URI_GRANTED_ROLES = "/authz-check/v1/all-granted-roles"

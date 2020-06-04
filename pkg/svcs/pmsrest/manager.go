@@ -8,18 +8,18 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/oracle/speedle/pkg/errors"
-	"github.com/oracle/speedle/pkg/httputils"
-	"github.com/oracle/speedle/pkg/logging"
-	"github.com/oracle/speedle/pkg/svcs/pmsimpl"
+	"github.com/teramoby/speedle-plus/pkg/errors"
+	"github.com/teramoby/speedle-plus/pkg/httputils"
+	"github.com/teramoby/speedle-plus/pkg/logging"
+	"github.com/teramoby/speedle-plus/pkg/svcs/pmsimpl"
 
 	"github.com/gorilla/mux"
 
-	"github.com/oracle/speedle/api/pms"
+	"github.com/teramoby/speedle-plus/api/pms"
 
 	"time"
 
-	"github.com/oracle/speedle/pkg/svcs"
+	"github.com/teramoby/speedle-plus/pkg/svcs"
 	log "github.com/sirupsen/logrus"
 )
 

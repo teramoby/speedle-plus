@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"testing"
 
-	adsapi "github.com/oracle/speedle/api/ads"
-	"github.com/oracle/speedle/api/pms"
+	adsapi "github.com/teramoby/speedle-plus/api/ads"
+	"github.com/teramoby/speedle-plus/api/pms"
 )
 
 func TestGetPermissions(t *testing.T) {

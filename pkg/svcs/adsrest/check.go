@@ -9,14 +9,14 @@ import (
 	"reflect"
 	"time"
 
-	adsapi "github.com/oracle/speedle/api/ads"
-	"github.com/oracle/speedle/pkg/cfg"
-	"github.com/oracle/speedle/pkg/errors"
-	"github.com/oracle/speedle/pkg/eval"
-	"github.com/oracle/speedle/pkg/httputils"
-	"github.com/oracle/speedle/pkg/logging"
+	adsapi "github.com/teramoby/speedle-plus/api/ads"
+	"github.com/teramoby/speedle-plus/pkg/cfg"
+	"github.com/teramoby/speedle-plus/pkg/errors"
+	"github.com/teramoby/speedle-plus/pkg/eval"
+	"github.com/teramoby/speedle-plus/pkg/httputils"
+	"github.com/teramoby/speedle-plus/pkg/logging"
 
-	"github.com/oracle/speedle/pkg/svcs"
+	"github.com/teramoby/speedle-plus/pkg/svcs"
 	log "github.com/sirupsen/logrus"
 )
 

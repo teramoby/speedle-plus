@@ -10,9 +10,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/oracle/speedle/api/pms"
-	"github.com/oracle/speedle/pkg/cfg"
-	"github.com/oracle/speedle/pkg/store"
+	"github.com/teramoby/speedle-plus/api/pms"
+	"github.com/teramoby/speedle-plus/pkg/cfg"
+	"github.com/teramoby/speedle-plus/pkg/store"
 )
 
 var storeConfig *cfg.StoreConfig

@@ -17,11 +17,11 @@ import (
 
 	"log"
 
-	pmsapi "github.com/oracle/speedle/api/pms"
-	"github.com/oracle/speedle/pkg/cfg"
-	"github.com/oracle/speedle/pkg/store"
-	_ "github.com/oracle/speedle/pkg/store/file"
-	"github.com/oracle/speedle/pkg/svcs"
+	pmsapi "github.com/teramoby/speedle-plus/api/pms"
+	"github.com/teramoby/speedle-plus/pkg/cfg"
+	"github.com/teramoby/speedle-plus/pkg/store"
+	_ "github.com/teramoby/speedle-plus/pkg/store/file"
+	"github.com/teramoby/speedle-plus/pkg/svcs"
 )
 
 var storeFile = "./fakestore.json"

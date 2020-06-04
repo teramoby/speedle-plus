@@ -12,8 +12,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/oracle/speedle/cmd/spctl/client"
-	"github.com/oracle/speedle/pkg/svcs/pmsrest"
+	"github.com/teramoby/speedle-plus/cmd/spctl/client"
+	"github.com/teramoby/speedle-plus/pkg/svcs/pmsrest"
 	"github.com/spf13/cobra"
 )
 

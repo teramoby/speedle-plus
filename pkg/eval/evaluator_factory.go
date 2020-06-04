@@ -4,11 +4,11 @@
 package eval
 
 import (
-	"github.com/oracle/speedle/pkg/cfg"
-	"github.com/oracle/speedle/pkg/store"
+	"github.com/teramoby/speedle-plus/pkg/cfg"
+	"github.com/teramoby/speedle-plus/pkg/store"
 
-	adsapi "github.com/oracle/speedle/api/ads"
-	"github.com/oracle/speedle/api/pms"
+	adsapi "github.com/teramoby/speedle-plus/api/ads"
+	"github.com/teramoby/speedle-plus/api/pms"
 
 	log "github.com/sirupsen/logrus"
 )

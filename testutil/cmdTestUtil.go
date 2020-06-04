@@ -12,9 +12,9 @@ import (
 	"reflect"
 	"strings"
 
-	pmsapi "github.com/oracle/speedle/api/pms"
-	"github.com/oracle/speedle/testutil/msg"
-	"github.com/oracle/speedle/testutil/param"
+	pmsapi "github.com/teramoby/speedle-plus/api/pms"
+	"github.com/teramoby/speedle-plus/testutil/msg"
+	"github.com/teramoby/speedle-plus/testutil/param"
 )
 
 const (

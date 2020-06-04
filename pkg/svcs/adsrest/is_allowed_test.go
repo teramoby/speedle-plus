@@ -9,9 +9,9 @@ import (
 	"testing"
 	"time"
 
-	adsapi "github.com/oracle/speedle/api/ads"
-	"github.com/oracle/speedle/pkg/svcs"
-	"github.com/oracle/speedle/testutil"
+	adsapi "github.com/teramoby/speedle-plus/api/ads"
+	"github.com/teramoby/speedle-plus/pkg/svcs"
+	"github.com/teramoby/speedle-plus/testutil"
 )
 
 const (

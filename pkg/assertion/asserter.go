@@ -13,7 +13,7 @@ import (
 	"strings"
 	"time"
 
-	adsapi "github.com/oracle/speedle/api/ads"
+	adsapi "github.com/teramoby/speedle-plus/api/ads"
 	log "github.com/sirupsen/logrus"
 )
 

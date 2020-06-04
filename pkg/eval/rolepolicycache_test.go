@@ -6,7 +6,7 @@ package eval
 import (
 	"testing"
 
-	"github.com/oracle/speedle/api/pms"
+	"github.com/teramoby/speedle-plus/api/pms"
 )
 
 func TestRolePolicyCache(t *testing.T) {

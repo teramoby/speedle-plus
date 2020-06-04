@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/coreos/etcd/embed"
-	"github.com/oracle/speedle/pkg/errors"
+	"github.com/teramoby/speedle-plus/pkg/errors"
 	log "github.com/sirupsen/logrus"
 )
 
