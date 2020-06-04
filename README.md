@@ -50,7 +50,7 @@ See Getting Started at <https://speedle.io/quick-start/>.
 ### Step
 
 ```
-$ go get github.com/teramoby/SpeedlePlus/cmd/...
+$ go get github.com/teramoby/speedle-plus/cmd/...
 $ ls $GOPATH/bin
 spctl  speedle-ads  speedle-pms
 ```
@@ -58,7 +58,7 @@ spctl  speedle-ads  speedle-pms
 ## Test
 
 ```
-$ cd $GOPATH/src/github.com/teramoby/SpeedlePlus
+$ cd $GOPATH/src/github.com/teramoby/speedle-plus
 $ make test
 ```
 
