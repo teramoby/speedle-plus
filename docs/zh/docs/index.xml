@@ -55,9 +55,9 @@
       <guid>/zh/docs/deployment-embeded/</guid>
       <description>什么是 Speedle 嵌入模式 区别于 Speedle 服务模式，Speedle 嵌入模式把 Speedle 的策略决策引擎嵌入到调用者进程内部，作为进程的一部分运行。调用者可以直接调用 Speedle 的 API 获得策略决策的结果。
 嵌入模式的局限  只支持 Golang，推荐使用 Golang 1.10。 只接受文件存储策略。  如何使用嵌入模式 把 Speedle 代码添加到你的工程中 在嵌入模式中，需要先将 Speedle 源代码从代码仓库中下载下来。主要有一下几种方式：
- 使用 go get  go get github.com/oracle/speedle  使用 dep 工具  在你的 Gopkg.toml 文件中添加以下几行
-[[constraint]] name = &amp;#34;github.com/oracle/speedle&amp;#34; branch = &amp;#34;master&amp;#34; 使用 dep 工具将 Speedle 源代码添加到vendor目录下：
-dep ensure -update github.com/oracle/speedle 在代码中初始化一个 Evalautor 实例 方法func eval.NewFromFile(loc string, isWatch bool) (ads.PolicyEvaluator, error)使用一个策略定义文件初始化一个 Evaluator 实例。该方法接受两个参数：</description>
+ 使用 go get  go get github.com/teramoby/speedle-plus  使用 dep 工具  在你的 Gopkg.toml 文件中添加以下几行
+[[constraint]] name = &amp;#34;github.com/teramoby/speedle-plus&amp;#34; branch = &amp;#34;master&amp;#34; 使用 dep 工具将 Speedle 源代码添加到vendor目录下：
+dep ensure -update github.com/teramoby/speedle-plus 在代码中初始化一个 Evalautor 实例 方法func eval.NewFromFile(loc string, isWatch bool) (ads.PolicyEvaluator, error)使用一个策略定义文件初始化一个 Evaluator 实例。该方法接受两个参数：</description>
     </item>
     
     <item>
@@ -69,7 +69,7 @@ dep ensure -update github.com/oracle/speedle 在代码中初始化一个 Evalaut
       <description>Speedle 支持两种部署方式
  开发模式  在开发模式下，Speedle 使用一个文件作为策略仓库，用户使用 RESTful API 和 CLI 工具访问 Speedle 的各项服务。
  生产模式  在生产模式下，Speedle 使用etcd作为策略仓库，用户使用 RESTful API 和 CLI 工具访问 Speedle 的各项服务。
-准备工作  Golang 1.10.0 开发环境已经安装好。 Docker 1.12 或更高的版本已经安装好。 一个 Docker registry。该 Docker registry 被用作推送和拉取 Speedle 的 Docker 映像。 在目录\$GOPATH/src/github.com/oracle/speedle/下同步最新的 Speedle 代码。 一个 Kubernetes 集群。 为你的 Docker registry 设置一个 Kubernetes Secret  # 为Docker registry设置Kubernetes Secret $ kubectl create secret docker-registry reg-speedle --docker-server=$DOCKER_LOGIN_SERVER --docker-username=$DOCKER_LOGIN_USER --docker-password=$DOCKER_LOGIN_PASSWORD 开发环境下部署 Speedle 服务 开发环境下可以使用helm部署 Speedle 服务。</description>
+准备工作  Golang 1.10.0 开发环境已经安装好。 Docker 1.12 或更高的版本已经安装好。 一个 Docker registry。该 Docker registry 被用作推送和拉取 Speedle 的 Docker 映像。 在目录\$GOPATH/src/github.com/teramoby/speedle-plus/下同步最新的 Speedle 代码。 一个 Kubernetes 集群。 为你的 Docker registry 设置一个 Kubernetes Secret  # 为Docker registry设置Kubernetes Secret $ kubectl create secret docker-registry reg-speedle --docker-server=$DOCKER_LOGIN_SERVER --docker-username=$DOCKER_LOGIN_USER --docker-password=$DOCKER_LOGIN_PASSWORD 开发环境下部署 Speedle 服务 开发环境下可以使用helm部署 Speedle 服务。</description>
     </item>
     
     <item>

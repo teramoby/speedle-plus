@@ -77,7 +77,7 @@ type EvaluationDebugResponse struct { Allowed bool `json:&amp;#34;allowed&amp;#3
       <description>Speedle 支持两种部署方式
  开发模式  在开发模式下，Speedle 使用一个文件作为策略仓库，用户使用 RESTful API 和 CLI 工具访问 Speedle 的各项服务。
  生产模式  在生产模式下，Speedle 使用etcd作为策略仓库，用户使用 RESTful API 和 CLI 工具访问 Speedle 的各项服务。
-准备工作  Golang 1.10.0 开发环境已经安装好。 Docker 1.12 或更高的版本已经安装好。 一个 Docker registry。该 Docker registry 被用作推送和拉取 Speedle 的 Docker 映像。 在目录\$GOPATH/src/github.com/oracle/speedle/下同步最新的 Speedle 代码。 一个 Kubernetes 集群。 为你的 Docker registry 设置一个 Kubernetes Secret  # 为Docker registry设置Kubernetes Secret $ kubectl create secret docker-registry reg-speedle --docker-server=$DOCKER_LOGIN_SERVER --docker-username=$DOCKER_LOGIN_USER --docker-password=$DOCKER_LOGIN_PASSWORD 开发环境下部署 Speedle 服务 开发环境下可以使用helm部署 Speedle 服务。</description>
+准备工作  Golang 1.10.0 开发环境已经安装好。 Docker 1.12 或更高的版本已经安装好。 一个 Docker registry。该 Docker registry 被用作推送和拉取 Speedle 的 Docker 映像。 在目录\$GOPATH/src/github.com/teramoby/speedle-plus/下同步最新的 Speedle 代码。 一个 Kubernetes 集群。 为你的 Docker registry 设置一个 Kubernetes Secret  # 为Docker registry设置Kubernetes Secret $ kubectl create secret docker-registry reg-speedle --docker-server=$DOCKER_LOGIN_SERVER --docker-username=$DOCKER_LOGIN_USER --docker-password=$DOCKER_LOGIN_PASSWORD 开发环境下部署 Speedle 服务 开发环境下可以使用helm部署 Speedle 服务。</description>
     </item>
     
     <item>

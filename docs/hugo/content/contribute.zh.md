@@ -20,7 +20,7 @@ icon = "11. Contribute.svg"
 
 您可以通过如下方式帮忙推广Speedle开源项目：   
 
-1. 在[the project at Github](https://github.com/oracle/speedle)上加一颗星星
+1. 在[the project at Github](https://github.com/teramoby/speedle-plus)上加一颗星星
 2. 将Speedle推荐给您的朋友，同学，同事
 3. 如果不介意的话，您可以告诉我们您是怎么使用Speedle的，我们将把您的公司或组织加入到我们用户列表里
 4. 您可以撰写一些文章来分享使用心得，如果需要技术上的支持，请和我们联系
@@ -35,7 +35,7 @@ icon = "11. Contribute.svg"
 
 ## Issues
 
-如果您发现Speedle的bug，或者希望Speedle实现一些新功能，请在[GitHub issue](https://github.com/oracle/speedle/issues) 创建一个Issue。
+如果您发现Speedle的bug，或者希望Speedle实现一些新功能，请在[GitHub issue](https://github.com/teramoby/speedle-plus/issues) 创建一个Issue。
 
 Issue的内容请包括：
 

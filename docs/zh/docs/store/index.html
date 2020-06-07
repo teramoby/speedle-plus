@@ -70,7 +70,7 @@
       <li><a href="/zh/docs/usecases">文档</a>
       </li>
       
-      <li><a href="https://github.com/oracle/speedle">Github</a>
+      <li><a href="https://github.com/teramoby/speedle-plus">Github</a>
       </li>
       
       <li><a href="/zh/about">关于</a>
@@ -310,8 +310,8 @@ init 函数需要声明这个存储所需的所有 flags。</p>
 <div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-golang" data-lang="golang"><span style="color:#a90d91">package</span> <span style="color:#000">main</span>
 
 <span style="color:#a90d91">import</span> (
-    <span style="color:#000">_</span> <span style="color:#c41a16">&#34;github.com/oracle/speedle/store/etcd&#34;</span>
-    <span style="color:#000">_</span> <span style="color:#c41a16">&#34;github.com/oracle/speedle/store/file&#34;</span>
+    <span style="color:#000">_</span> <span style="color:#c41a16">&#34;github.com/teramoby/speedle-plus/store/etcd&#34;</span>
+    <span style="color:#000">_</span> <span style="color:#c41a16">&#34;github.com/teramoby/speedle-plus/store/file&#34;</span>
 )</code></pre></div>
 <p>在这个文件中，我们用一个 side-effect 导入(使用一个空白导入名称)来链接每个存储的实现。您也可以在这里添加自己的存储。
 如果你想在“in-process”模式下使用 Speedle，你可以复制这个 store.go 文件。转到您自己的 package 中，将 package 名字修改为您自己的 package 名字。</p>
@@ -386,7 +386,7 @@ init 函数需要声明这个存储所需的所有 flags。</p>
     <a title="speedle-users" href="https://groups.google.com/forum/#!forum/speedle-users">
       <img src="/img/speedle/28. Mail.svg" />
     </a>
-    <a title="speedle" href="https://github.com/oracle/speedle">
+    <a title="speedle" href="https://github.com/teramoby/speedle-plus">
       <img src="/img/speedle/18. Github.svg" />
     </a>
     <a title="slack" href="https://join.slack.com/t/speedleproject/shared_invite/enQtNTUzODM3NDY0ODE2LTg0ODc0NzQ1MjVmM2NiODVmMThkMmVjNmMyODA0ZWJjZjQ3NDc2MjdlMzliN2U4MDRkZjhlYzYzMDEyZTgxMGQ">

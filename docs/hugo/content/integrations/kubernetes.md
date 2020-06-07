@@ -16,7 +16,7 @@ bref = "This sample demonstrates how to connect Kubernetes with Speedle via Kube
 ### Build
 
 ```bash
-git clone git@github.com:oracle/speedle.git
+git clone git@github.com:teramoby/speedle-plus.git
 
 # make sure the speedle golang adsclient code is in your $GOPATH/src package.
 

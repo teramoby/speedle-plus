@@ -24,7 +24,7 @@
 #   go-tests = true
 #   unused-packages = true
 
-ignored = ["github.com/oracle/speedle/samples*"]
+ignored = ["github.com/teramoby/speedle-plus/samples*"]
 
 [[constraint]]
   name = "github.com/armon/go-radix"

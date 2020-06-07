@@ -51,10 +51,10 @@ bref = "Open API Specification Docs. Use the API to model your simple and comple
     <ul class="toc-list ">
     <li class="toc-list-item">
     [Policy Management Service
-API](https://github.com/oracle/speedle/tree/master/api/pms)
+API](https://github.com/teramoby/speedle-plus/tree/master/api/pms)
     </li>
     <li class="toc-list-item">
-    [Authorization Decision Service API](https://github.com/oracle/speedle/tree/master/api/ads)
+    [Authorization Decision Service API](https://github.com/teramoby/speedle-plus/tree/master/api/ads)
     </li>
     </ul>
     </ol>

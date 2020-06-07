@@ -131,7 +131,7 @@ import (
   log.Error("This is a error log entry")
 ```
 
-具体请参考[speedle/logging/demo/demo.go](https://github.com/oracle/speedle/blob/master/pkg/logging/demo/demo.go).
+具体请参考[speedle/logging/demo/demo.go](https://github.com/teramoby/speedle-plus/blob/master/pkg/logging/demo/demo.go).
 
 ## 与第三方日志系统集成
 

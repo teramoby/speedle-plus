@@ -29,7 +29,7 @@ Speedle+是一个通用授权引擎。用户可以使用它非常易用的策略
 
 作为一个开源项目，Speedle包括策略定义语言（SPDL)，策略管理模块，授权决策模块，命令行工具，以及数个和流行系统集成的示例。
 
-Speedle+项目基于Speedle项目<https://github.com/oracle/speedle>，两个项目都遵守UPL协议。
+Speedle+项目基于Speedle项目<https://github.com/teramoby/speedle-plus>，两个项目都遵守UPL协议。
 
 ## 我们是谁
 
@@ -43,7 +43,7 @@ Speedle+项目基于Speedle项目<https://github.com/oracle/speedle>，两个项
 
 请参阅 <https://speedle.io/quick-start/>。   
 
-更详细的内容可以查阅[这里](https://github.com/oracle/speedle/tree/master/docs/%E4%B8%AD%E6%96%87%E8%B5%84%E6%96%99)。
+更详细的内容可以查阅[这里](https://github.com/teramoby/speedle-plus/tree/master/docs/%E4%B8%AD%E6%96%87%E8%B5%84%E6%96%99)。
 
 ## 构建
 

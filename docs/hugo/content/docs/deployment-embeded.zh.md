@@ -27,7 +27,7 @@ bref = ""
 1. 使用 go get
 
 ```bash
-go get github.com/oracle/speedle
+go get github.com/teramoby/speedle-plus
 ```
 
 2. 使用 dep 工具
@@ -36,14 +36,14 @@ go get github.com/oracle/speedle
 
 ```toml
 [[constraint]]
-  name = "github.com/oracle/speedle"
+  name = "github.com/teramoby/speedle-plus"
   branch = "master"
 ```
 
 使用 dep 工具将 Speedle 源代码添加到`vendor`目录下：
 
 ```bash
-dep ensure -update github.com/oracle/speedle
+dep ensure -update github.com/teramoby/speedle-plus
 ```
 
 ### 在代码中初始化一个 Evalautor 实例
@@ -59,7 +59,7 @@ dep ensure -update github.com/oracle/speedle
 
 ```go
 import (
-  "github.com/oracle/speedle/pkg/eval"
+  "github.com/teramoby/speedle-plus/pkg/eval"
 )
 
 func foo() {
@@ -92,5 +92,5 @@ typedef RequestContext {
 ## 嵌入模式的例子
 
 例子可以在
-https://github.com/oracle/speedle/tree/master/samples/embedded/expenses
+https://github.com/teramoby/speedle-plus/tree/master/samples/embedded/expenses
 中找到。

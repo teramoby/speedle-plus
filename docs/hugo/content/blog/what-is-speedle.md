@@ -27,7 +27,7 @@ There are three questions for you.
     a. Ladon [https://github.com/ory/ladon](https://github.com/ory/ladon)
     b. Casbin [https://github.com/casbin/casbin](https://github.com/casbin/casbin) 
     c. OPA [https://github.com/open-policy-agent/opa](https://github.com/open-policy-agent/opa)
-    d. Speedle [https://github.com/oracle/speedle](https://github.com/oracle/speedle)
+    d. Speedle [https://github.com/teramoby/speedle-plus](https://github.com/teramoby/speedle-plus)
 
 Please [let us know](../index.html#user-community) if you find other good stuff. We are happy to add it to the list.
 

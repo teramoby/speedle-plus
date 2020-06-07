@@ -64,7 +64,7 @@ defaultContentLanguageInSubdir = false
 [[menu.extra]]
     name = "Github"
     weight = -400
-    url = "https://github.com/oracle/speedle"
+    url = "https://github.com/teramoby/speedle-plus"
 [[menu.extra]]
     name = "About"
     weight = -300
@@ -101,7 +101,7 @@ defaultContentLanguageInSubdir = false
 [[languages.zh.menu.extra]]
     name = "Github"
     weight = -400
-    url = "https://github.com/oracle/speedle"
+    url = "https://github.com/teramoby/speedle-plus"
 [[languages.zh.menu.extra]]
     name = "关于"
     weight = -300

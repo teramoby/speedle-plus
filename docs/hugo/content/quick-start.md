@@ -37,7 +37,7 @@ $ export GOPATH=/scratch/xuwwang/go
 ## Download Source Code and Build Speedle
 
 ```bash
-$ go get github.com/oracle/speedle/cmd/...
+$ go get github.com/teramoby/speedle-plus/cmd/...
 $ ls $GOPATH/bin
 spctl  speedle-ads  speedle-pms
 ```

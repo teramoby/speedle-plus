@@ -176,8 +176,8 @@ In cmd/speedle-ads folder and cmd/speedle-pms folder, you can find a stores.go f
 package main
 
 import (
-    _ "github.com/oracle/speedle/store/etcd"
-    _ "github.com/oracle/speedle/store/file"
+    _ "github.com/teramoby/speedle-plus/store/etcd"
+    _ "github.com/teramoby/speedle-plus/store/file"
 )
 ```
 

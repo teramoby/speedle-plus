@@ -2,7 +2,7 @@
 
 shell_dir=$(dirname $0)
 # set -x
-source ${GOPATH}/src/github.com/oracle/speedle/setTestEnv.sh
+source ${GOPATH}/src/github.com/teramoby/speedle-plus/setTestEnv.sh
 ${GOPATH}/bin/spctl config pms-endpoint https://localhost:6733/policy-mgmt/v1/
 
 log::showTitle "Start pms service" && \

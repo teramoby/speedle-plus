@@ -69,7 +69,7 @@
       <li><a href="/zh/docs/usecases">文档</a>
       </li>
       
-      <li><a href="https://github.com/oracle/speedle">Github</a>
+      <li><a href="https://github.com/teramoby/speedle-plus">Github</a>
       </li>
       
       <li><a href="/zh/about">关于</a>
@@ -181,17 +181,17 @@ headingSelector: 'h2'
 <ol>
 <li>使用 go get</li>
 </ol>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">go get github.com/oracle/speedle</code></pre></div>
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">go get github.com/teramoby/speedle-plus</code></pre></div>
 <ol>
 <li>使用 dep 工具</li>
 </ol>
 
 <p>在你的 Gopkg.toml 文件中添加以下几行</p>
 <div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-toml" data-lang="toml">[[<span style="color:#000">constraint</span>]]
-  <span style="color:#000">name</span> = <span style="color:#c41a16">&#34;github.com/oracle/speedle&#34;</span>
+  <span style="color:#000">name</span> = <span style="color:#c41a16">&#34;github.com/teramoby/speedle-plus&#34;</span>
   <span style="color:#000">branch</span> = <span style="color:#c41a16">&#34;master&#34;</span></code></pre></div>
 <p>使用 dep 工具将 Speedle 源代码添加到<code>vendor</code>目录下：</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">dep ensure -update github.com/oracle/speedle</code></pre></div>
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">dep ensure -update github.com/teramoby/speedle-plus</code></pre></div>
 <h3 id="在代码中初始化一个-evalautor-实例">在代码中初始化一个 Evalautor 实例</h3>
 
 <p>方法<code>func eval.NewFromFile(loc string, isWatch bool) (ads.PolicyEvaluator, error)</code>使用一个策略定义文件初始化一个 Evaluator 实例。该方法接受两个参数：</p>
@@ -205,7 +205,7 @@ headingSelector: 'h2'
 
 <p>以下代码片段展示如何初始化一个 Evaluator 实例。</p>
 <div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#a90d91">import</span> (
-  <span style="color:#c41a16">&#34;github.com/oracle/speedle/pkg/eval&#34;</span>
+  <span style="color:#c41a16">&#34;github.com/teramoby/speedle-plus/pkg/eval&#34;</span>
 )
 
 <span style="color:#a90d91">func</span> <span style="color:#000">foo</span>() {
@@ -234,7 +234,7 @@ headingSelector: 'h2'
 <h2 id="嵌入模式的例子">嵌入模式的例子</h2>
 
 <p>例子可以在
-<a href="https://github.com/oracle/speedle/tree/master/samples/embedded/expenses">https://github.com/oracle/speedle/tree/master/samples/embedded/expenses</a>
+<a href="https://github.com/teramoby/speedle-plus/tree/master/samples/embedded/expenses">https://github.com/teramoby/speedle-plus/tree/master/samples/embedded/expenses</a>
 中找到。</p>
 
   </div>
@@ -307,7 +307,7 @@ headingSelector: 'h2'
     <a title="speedle-users" href="https://groups.google.com/forum/#!forum/speedle-users">
       <img src="/img/speedle/28. Mail.svg" />
     </a>
-    <a title="speedle" href="https://github.com/oracle/speedle">
+    <a title="speedle" href="https://github.com/teramoby/speedle-plus">
       <img src="/img/speedle/18. Github.svg" />
     </a>
     <a title="slack" href="https://join.slack.com/t/speedleproject/shared_invite/enQtNTUzODM3NDY0ODE2LTg0ODc0NzQ1MjVmM2NiODVmMThkMmVjNmMyODA0ZWJjZjQ3NDc2MjdlMzliN2U4MDRkZjhlYzYzMDEyZTgxMGQ">

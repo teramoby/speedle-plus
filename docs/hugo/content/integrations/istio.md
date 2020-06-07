@@ -25,7 +25,7 @@ categories = ["integration", "cloudnative"]
 ### Build
 
 ```bash
-git clone git@github.com:oracle/speedle.git
+git clone git@github.com:teramoby/speedle-plus.git
 cd samples/integration/istio-integration
 ```
 

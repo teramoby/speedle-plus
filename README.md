@@ -26,7 +26,7 @@ Speedle+ is a general purpose authorization engine. It allows users to construct
 
 Speedle+ open source project consits of a policy definition language, policy management module, authorization runtime module, commandline tool, and integration samples with popular systems.
 
-Speedle+ is based on Speedle open source project which is hosted at https://github.com/oracle/speedle under UPL.
+Speedle+ is based on Speedle open source project which is hosted at https://github.com/teramoby/speedle-plus under UPL.
 
 ## Who are we
 

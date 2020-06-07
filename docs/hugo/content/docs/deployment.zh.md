@@ -24,7 +24,7 @@ Speedle 支持两种部署方式
 1. Golang 1.10.0 开发环境已经安装好。
 2. Docker 1.12 或更高的版本已经安装好。
 3. 一个 Docker registry。该 Docker registry 被用作推送和拉取 Speedle 的 Docker 映像。
-4. 在目录`\$GOPATH/src/github.com/oracle/speedle/`下同步最新的 Speedle 代码。
+4. 在目录`\$GOPATH/src/github.com/teramoby/speedle-plus/`下同步最新的 Speedle 代码。
 5. 一个 Kubernetes 集群。
 6. 为你的 Docker registry 设置一个 Kubernetes Secret
 

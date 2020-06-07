@@ -16,7 +16,7 @@ icon = "9. Getting Started.svg"
 3. 运行如下命令
 
 ```bash
-$ go get github.com/oracle/speedle/cmd/…
+$ go get github.com/teramoby/speedle-plus/cmd/…
 ```
 
 该命令会从 github 下载代码并自动编译。命令执行完毕后，我们可以检查\$GOPATH/bin 目录，应该有三个文件在该目录下：

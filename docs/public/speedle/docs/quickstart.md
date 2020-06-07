@@ -39,7 +39,7 @@ More info about dep, please refer to Installation part in https://github.com/gol
 
 ```bash
    cd $GOPATH/src
-   git clone git@github.com:oracle/speedle.git
+   git clone git@github.com:teramoby/speedle-plus.git
    mkdir -p github.com/oracle
    mv speedle github.com/oracle/
 ```
@@ -53,7 +53,7 @@ the last two steps are used to make Oracle SSO works.
 Run below commands to build source code
 
 ```bash
-cd $GOPATH/src/github.com/oracle/speedle
+cd $GOPATH/src/github.com/teramoby/speedle-plus
 make clean build
 ```
 

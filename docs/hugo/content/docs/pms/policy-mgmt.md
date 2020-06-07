@@ -118,7 +118,7 @@ Speedle allows administrators to perform create, read, and delete operations on 
 
 -   Using the Speedle command line interface `spctl` (as described here. This is the recommended method.)
 
--   Using the PMS Golang Management API in Embedded Mode (as described in the [Speedle API doc](https://github.com/oracle/speedle/tree/master/api/pms).
+-   Using the PMS Golang Management API in Embedded Mode (as described in the [Speedle API doc](https://github.com/teramoby/speedle-plus/tree/master/api/pms).
 
 -   Using the PMS REST Service (as described in the [Speedle Policy Management API](../docs/api/management_api)).
 

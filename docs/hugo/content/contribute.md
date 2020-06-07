@@ -13,7 +13,7 @@ Welcome to Speedle community! We are very excited about your participation and t
 
 ## Promotion
 
-Star [the project at Github](https://github.com/oracle/speedle), recommend to your colleagues or friends if you like. You also can share your success stories with us.
+Star [the project at Github](https://github.com/teramoby/speedle-plus), recommend to your colleagues or friends if you like. You also can share your success stories with us.
 
 All the above will be highly appreciated.
 
@@ -26,7 +26,7 @@ Join us at [speedle-users](https://groups.google.com/forum/#!forum/speedle-users
 
 ## Issues
 
-File a [GitHub issue](https://github.com/oracle/speedle/issues) for any bug or enhancement.
+File a [GitHub issue](https://github.com/teramoby/speedle-plus/issues) for any bug or enhancement.
 
 Please include:
 
