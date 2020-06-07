@@ -1,5 +1,5 @@
 <p align="center">
-    <img src="/docs/images/Speedle_logo_b.svg" height="50%" width="50%" class="center"/>
+    <img src="/docs/images/sp_logo.png" height="50%" width="50%" class="center"/>
 </p>
 <p align="center">
     <a href="https://join.slack.com/t/speedleproject/shared_invite/enQtNTUzODM3NDY0ODE2LTg0ODc0NzQ1MjVmM2NiODVmMThkMmVjNmMyODA0ZWJjZjQ3NDc2MjdlMzliN2U4MDRkZjhlYzYzMDEyZTgxMGQ">
