@@ -5,14 +5,14 @@
     <a href="https://join.slack.com/t/speedleproject/shared_invite/enQtNTUzODM3NDY0ODE2LTg0ODc0NzQ1MjVmM2NiODVmMThkMmVjNmMyODA0ZWJjZjQ3NDc2MjdlMzliN2U4MDRkZjhlYzYzMDEyZTgxMGQ">
         <img src="https://img.shields.io/badge/slack-speedle-red.svg">
     </a>
-    <a href="https://github.com/teramoby/SpeedlePlus/tags">
-        <img src="https://img.shields.io/github/tag/teramoby/SpeedlePlus.svg">
+    <a href="https://github.com/teramoby/speedle-plus/tags">
+        <img src="https://img.shields.io/github/tag/teramoby/speedle-plus.svg">
     </a>
-    <a href="https://github.com/teramoby/SpeedlePlus/issues">
-        <img src="https://img.shields.io/github/issues/teramoby/SpeedlePlus.svg">
+    <a href="https://github.com/teramoby/speedle-plus/issues">
+        <img src="https://img.shields.io/github/issues/teramoby/speedle-plus.svg">
     </a>
-    <a href="https://goreportcard.com/report/github.com/teramoby/SpeedlePlus">
-        <img src="https://goreportcard.com/badge/github.com/teramoby/SpeedlePlus">
+    <a href="https://goreportcard.com/report/github.com/teramoby/speedle-plus">
+        <img src="https://goreportcard.com/badge/github.com/teramoby/speedle-plus">
     </a>
     <a href="https://996.icu/#/zh_CN">
         <img src="https://img.shields.io/badge/link-996.icu-red.svg">
@@ -29,7 +29,7 @@ Speedle+是一个通用授权引擎。用户可以使用它非常易用的策略
 
 作为一个开源项目，Speedle包括策略定义语言（SPDL)，策略管理模块，授权决策模块，命令行工具，以及数个和流行系统集成的示例。
 
-Speedle+项目基于Speedle项目<https://github.com/teramoby/speedle-plus>，两个项目都遵守UPL协议。
+Speedle+项目基于Speedle项目<https://github.com/oracle/speedle>，两个项目都遵守UPL协议。
 
 ## 我们是谁
 
