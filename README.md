@@ -5,14 +5,14 @@
     <a href="https://join.slack.com/t/speedleproject/shared_invite/enQtNTUzODM3NDY0ODE2LTg0ODc0NzQ1MjVmM2NiODVmMThkMmVjNmMyODA0ZWJjZjQ3NDc2MjdlMzliN2U4MDRkZjhlYzYzMDEyZTgxMGQ">
         <img src="https://img.shields.io/badge/slack-speedle-red.svg">
     </a>
-    <a href="https://github.com/teramoby/SpeedlePlus/tags">
-        <img src="https://img.shields.io/github/tag/teramoby/SpeedlePlus.svg">
+    <a href="https://github.com/teramoby/speedle-plus/tags">
+        <img src="https://img.shields.io/github/tag/teramoby/speedle-plus.svg">
     </a>
-    <a href="https://github.com/teramoby/SpeedlePlus/issues">
-        <img src="https://img.shields.io/github/issues/teramoby/SpeedlePlus.svg">
+    <a href="https://github.com/teramoby/speedle-plus/issues">
+        <img src="https://img.shields.io/github/issues/teramoby/speedle-plus.svg">
     </a>
-    <a href="https://goreportcard.com/report/github.com/teramoby/SpeedlePlus">
-        <img src="https://goreportcard.com/badge/github.com/teramoby/SpeedlePlus">
+    <a href="https://goreportcard.com/report/github.com/teramoby/speedle-plus">
+        <img src="https://goreportcard.com/badge/github.com/teramoby/speedle-plus">
     </a>
 </p>
 
