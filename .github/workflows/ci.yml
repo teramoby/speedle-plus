@@ -1,0 +1,15 @@
+name: Speedle Plus CI
+
+on: [push, pull_request]
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    name: build-test
+    steps:
+    - uses: actions/setup-go@v2
+    - uses: actions/checkout@v2
+    - run: |
+      make build
+      make speedleUnitTests
+
