@@ -14,6 +14,7 @@ jobs:
     - uses: actions/setup-go@v2
       name: Setup Golang env
     - name: Build and test
+      working-directory: src/github.com/teramoby/speedle-plus
       run: |
         export GOPATH=${GITHUB_WORKSPACE}
         make build
