@@ -14,9 +14,8 @@ jobs:
       with:
         path: src/github.com/teramoby/speedle-plus
     - name: Build and test
-      env:
-        GOPATH: ${GITHUB_WORKSPACE}
       run: |
+        export GOPATH=${GITHUB_WORKSPACE}
         make build
         make speedleUnitTests
 
