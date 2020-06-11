@@ -9,10 +9,10 @@ jobs:
     steps:
     - uses: actions/checkout@v2
       name: Checkout code
-    - uses: actions/setup-go@v2
-      name: Setup Golang env
       with:
         path: src/github.com/teramoby/speedle-plus
+    - uses: actions/setup-go@v2
+      name: Setup Golang env
     - name: Build and test
       run: |
         export GOPATH=${GITHUB_WORKSPACE}
