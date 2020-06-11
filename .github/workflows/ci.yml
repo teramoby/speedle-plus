@@ -7,9 +7,16 @@ jobs:
     runs-on: ubuntu-latest
     name: build-test
     steps:
-    - uses: actions/setup-go@v2
     - uses: actions/checkout@v2
-    - run: |
-      make build
-      make speedleUnitTests
+      name: Checkout code
+    - uses: actions/setup-go@v2
+      name: Setup Golang env
+      with:
+        path: src/github.com/teramoby/speedle-plus
+    - name: Build and test
+      env:
+        GOPATH: ${GITHUB_WORKSPACE}
+      run: |
+        make build
+        make speedleUnitTests
 
