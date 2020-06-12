@@ -11,6 +11,9 @@
     <a href="https://github.com/teramoby/speedle-plus/issues">
         <img src="https://img.shields.io/github/issues/teramoby/speedle-plus.svg">
     </a>
+    <a href="https://github.com/teramoby/speedle-plus/workflows/Speedle%20Plus%20CI/badge.svg">
+        <img src="https://github.com/teramoby/speedle-plus/workflows/Speedle%20Plus%20CI/badge.svg">
+    </a>
     <a href="https://goreportcard.com/report/github.com/teramoby/speedle-plus">
         <img src="https://goreportcard.com/badge/github.com/teramoby/speedle-plus">
     </a>
