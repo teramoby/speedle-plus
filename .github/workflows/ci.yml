@@ -1,0 +1,22 @@
+name: Speedle Plus CI
+
+on: [push, pull_request]
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    name: build-test
+    steps:
+    - uses: actions/checkout@v2
+      name: Checkout code
+      with:
+        path: src/github.com/teramoby/speedle-plus
+    - uses: actions/setup-go@v2
+      name: Setup Golang env
+    - name: Build and test
+      working-directory: src/github.com/teramoby/speedle-plus
+      run: |
+        export GOPATH=${GITHUB_WORKSPACE}
+        make build
+        make speedleUnitTests
+
