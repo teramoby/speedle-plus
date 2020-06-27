@@ -90,3 +90,7 @@ ignored = ["github.com/teramoby/speedle-plus/samples*"]
 [[override]]
   name = "github.com/coreos/bbolt"
   revision = "48ea1b39c25fc1bab3506fbc712ecbaa842c4d2d"
+
+[[constraint]]
+  name = "go.mongodb.org/mongo-driver"
+  version = "1.3.4"

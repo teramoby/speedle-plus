@@ -1,0 +1,10 @@
+{
+    "storeConfig": {
+        "storeType": "mongodb",
+        "storeProps": {
+            "MongoURI": "mongodb://localhost:27017",
+            "MongoDatabase": "speedletest"
+        }
+    },
+    "enableWatch": true
+}

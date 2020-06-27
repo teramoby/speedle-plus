@@ -111,7 +111,7 @@ function ensureTestDir() {
         rm -f ${temp_policy_file}
         echo "{}" > ${temp_policy_file}
         add_exit_trap "rm -f ${temp_policy_file}"
-    else
+    elif [ "$1" == "etcd" ];then
         rm -rf ./speedle.etcd
         add_exit_trap "rm -rf ./speedle.etcd"
     fi

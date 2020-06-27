@@ -9,4 +9,5 @@ package main
 import (
 	_ "github.com/teramoby/speedle-plus/pkg/store/etcd"
 	_ "github.com/teramoby/speedle-plus/pkg/store/file"
+	_ "github.com/teramoby/speedle-plus/pkg/store/mongodb"
 )

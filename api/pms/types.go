@@ -10,24 +10,24 @@ type Permission struct {
 }
 
 type Function struct {
-	Name           string            `json:"name"`
-	Description    string            `json:"description,omitempty"`
-	FuncURL        string            `json:"funcURL"`                  //used by speedle/sphinx ADS
-	LocalFuncURL   string            `json:"localFuncURL,omitempty"`   //used by sphinx runtime proxy to get better performance
-	CA             string            `json:"ca,omitempty"`             //security related configurations
-	ResultCachable bool              `json:"resultCachable,omitempty"` //false by default
-	ResultTTL      int64             `json:"resultTTL,omitempty"`      // TTL of function result in second
-	Metadata       map[string]string `json:"metadata,omitempty"`
+	Name           string            `json:"name" bson:"_id"`
+	Description    string            `json:"description,omitempty" bson:"description,omitempty"`
+	FuncURL        string            `json:"funcURL" bson:"funcurl"`                                   //used by speedle/sphinx ADS
+	LocalFuncURL   string            `json:"localFuncURL,omitempty"  bson:"localfuncurl"`              //used by sphinx runtime proxy to get better performance
+	CA             string            `json:"ca,omitempty" bson:"ca,omitempty"`                         //security related configurations
+	ResultCachable bool              `json:"resultCachable,omitempty" bson:"resultcachable,omitempty"` //false by default
+	ResultTTL      int64             `json:"resultTTL,omitempty" bson:"resultttl,omitempty"`           // TTL of function result in second
+	Metadata       map[string]string `json:"metadata,omitempty" bson:"metadata,omitempty"`
 }
 
 type Policy struct {
-	ID          string            `json:"id"`
-	Name        string            `json:"name"`
-	Effect      string            `json:"effect,omitempty"`
-	Permissions []*Permission     `json:"permissions,omitempty"`
-	Principals  [][]string        `json:"principals,omitempty"`
-	Condition   string            `json:"condition,omitempty"`
-	Metadata    map[string]string `json:"metadata,omitempty"`
+	ID          string            `json:"id" bson:"_id"`
+	Name        string            `json:"name" bson:"name,omitempty"`
+	Effect      string            `json:"effect,omitempty" bson:"effect,omitempty"`
+	Permissions []*Permission     `json:"permissions,omitempty" bson:"permissions,omitempty"`
+	Principals  [][]string        `json:"principals,omitempty" bson:"principals,omitempty"`
+	Condition   string            `json:"condition,omitempty" bson:"condition,omitempty"`
+	Metadata    map[string]string `json:"metadata,omitempty" bson:"metadata,omitempty"`
 }
 
 const (
@@ -41,23 +41,23 @@ const (
 )
 
 type RolePolicy struct {
-	ID                  string            `json:"id"`
-	Name                string            `json:"name"`
-	Effect              string            `json:"effect,omitempty"`
-	Roles               []string          `json:"roles,omitempty"`
-	Principals          []string          `json:"principals,omitempty"`
-	Resources           []string          `json:"resources,omitempty"`
-	ResourceExpressions []string          `json:"resourceExpressions,omitempty"`
-	Condition           string            `json:"condition,omitempty"`
-	Metadata            map[string]string `json:"metadata,omitempty"`
+	ID                  string            `json:"id" bson:"_id"`
+	Name                string            `json:"name" bson:"name,omitempty"`
+	Effect              string            `json:"effect,omitempty" bson:"effect,omitempty"`
+	Roles               []string          `json:"roles,omitempty" bson:"roles,omitempty"`
+	Principals          []string          `json:"principals,omitempty" bson:"principals,omitempty"`
+	Resources           []string          `json:"resources,omitempty" bson:"resources,omitempty"`
+	ResourceExpressions []string          `json:"resourceExpressions,omitempty" bson:"resourceexpressions,omitempty"`
+	Condition           string            `json:"condition,omitempty" bson:"condition,omitempty"`
+	Metadata            map[string]string `json:"metadata,omitempty" bson:"metadata,omitempty"`
 }
 
 type Service struct {
-	Name         string            `json:"name" binding:"required"`
-	Type         string            `json:"type,omitempty"`
-	Policies     []*Policy         `json:"policies,omitempty"`
-	RolePolicies []*RolePolicy     `json:"rolePolicies,omitempty"`
-	Metadata     map[string]string `json:"metadata,omitempty"`
+	Name         string            `json:"name" binding:"required"  bson:"_id"`
+	Type         string            `json:"type,omitempty" bson:"type,omitempty"`
+	Policies     []*Policy         `json:"policies,omitempty" bson:"policies,omitempty"`
+	RolePolicies []*RolePolicy     `json:"rolePolicies,omitempty" bson:"rolepolicies,omitempty"`
+	Metadata     map[string]string `json:"metadata,omitempty" bson:"metadata,omitempty"`
 }
 
 const GlobalService = "global"

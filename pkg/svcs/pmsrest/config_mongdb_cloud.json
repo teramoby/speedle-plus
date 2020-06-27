@@ -1,0 +1,10 @@
+{
+    "storeConfig": {
+        "storeType": "mongodb",
+        "storeProps": {
+            "MongoURI": "mongodb+srv://speedleplus:Passw0rd@cluster0-wfhda.mongodb.net/speedletest?retryWrites=true&w=majority",
+            "MongoDatabase": "speedletest"
+        }
+    },
+    "enableWatch": true
+}
