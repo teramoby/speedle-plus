@@ -37,7 +37,7 @@ Speedle+项目基于Speedle项目<https://github.com/oracle/speedle>，两个项
 
 ## 文档
 
-请参阅 <https://speedle.io/docs>. 请注意目前我们还在紧张地准备中文版文档。您可以先参阅英文版，如果有问题可以在Slack或者QQ群里讨论。
+请参阅 <https://speedle.io/zh/docs/usecases/>。
 
 ## Get Started
 
