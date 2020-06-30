@@ -44,6 +44,8 @@ func (msb MongoStoreBuilder) NewStore(config map[string]interface{}) (pms.Policy
 
 	// Set client options
 	clientOptions := options.Client().ApplyURI(mongoURI)
+	clientOptions.SetRetryReads(true)
+	clientOptions.SetRetryWrites(true)
 
 	// Connect to MongoDB
 	client, err := mongo.Connect(context.TODO(), clientOptions)

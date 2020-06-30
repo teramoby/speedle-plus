@@ -2,7 +2,7 @@
     "storeConfig": {
         "storeType": "mongodb",
         "storeProps": {
-            "MongoURI": "mongodb://localhost:27017",
+            "MongoURI": "mongodb+srv://speedleplus:Passw0rd@cluster0.wfhda.mongodb.net/speedletest",
             "MongoDatabase": "speedletest"
         }
     },

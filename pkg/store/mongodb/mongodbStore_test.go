@@ -67,10 +67,10 @@ func TestWriteReadDeleteService(t *testing.T) {
 		t.Fatal("fail to new mongodb  store:", err)
 	}
 	//clean the service firstly
-	err = store.DeleteService("service1")
+	err = store.DeleteServices()
 
 	app := pms.Service{Name: "service1", Type: pms.TypeApplication}
-	num := 100
+	num := 1000
 	i := 0
 	for i < num {
 		var rolePolicy pms.RolePolicy
