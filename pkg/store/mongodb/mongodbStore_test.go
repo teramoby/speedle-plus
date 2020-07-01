@@ -126,7 +126,7 @@ func TestWriteReadDeleteService(t *testing.T) {
 	sameNameApp := pms.Service{Name: "service1", Type: pms.TypeApplication}
 	err = store.CreateService(&sameNameApp)
 	if err != nil {
-		fmt.Println("SAME NAME APP CREATION ERR", err)
+		t.Log("SAME NAME APP CREATION ERR", err)
 	}
 
 	err = store.DeleteService("service1")
@@ -685,8 +685,8 @@ func TestCheckItemsCount(t *testing.T) {
 		t.Fatal("incorrect policy number")
 	}
 	if (counts["service1"].RolePolicyCount != int64(len(rolePolicies))) ||
-		(counts["service1"].RolePolicyCount != int64(len(rolePolicies))) {
+		(counts["service2"].RolePolicyCount != int64(len(rolePolicies))) {
 		t.Fatal("incorrect role policy number")
 	}
-	fmt.Println(counts)
+	t.Log(counts)
 }

@@ -6,7 +6,7 @@ package mongodb
 import (
 	"context"
 
-	"github.com/prometheus/common/log"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
 	"github.com/teramoby/speedle-plus/api/pms"
 	"github.com/teramoby/speedle-plus/pkg/store"
@@ -51,7 +51,7 @@ func (msb MongoStoreBuilder) NewStore(config map[string]interface{}) (pms.Policy
 	client, err := mongo.Connect(context.TODO(), clientOptions)
 
 	if err != nil {
-		log.Fatal(err)
+		log.Error(err)
 		return nil, err
 	}
 
@@ -59,7 +59,7 @@ func (msb MongoStoreBuilder) NewStore(config map[string]interface{}) (pms.Policy
 	err = client.Ping(context.TODO(), nil)
 
 	if err != nil {
-		log.Fatal(err)
+		log.Error(err)
 		return nil, err
 	}
 

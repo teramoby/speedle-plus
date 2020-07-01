@@ -102,7 +102,7 @@ func (s *Store) GetServiceNames() ([]string, error) {
 	}
 	var services []pms.Service
 	if err = cur.All(ctx, &services); err != nil {
-		panic(err)
+		return nil, err
 	}
 	names := []string{}
 	if services == nil || len(services) == 0 {
@@ -251,7 +251,8 @@ func (s *Store) Watch() (pms.StorageChangeChannel, error) {
 	streamOptions := options.ChangeStream().SetFullDocument(options.UpdateLookup)
 	changeStream, err := s.client.Database(s.Database).Watch(context.TODO(), mongo.Pipeline{}, streamOptions)
 	if err != nil {
-		log.Fatal(err)
+		log.Error(err)
+		return nil, err
 	}
 
 	var storeChangeChan pms.StorageChangeChannel
@@ -484,7 +485,7 @@ func (s *Store) GetPolicyCount(serviceName string) (int64, error) {
 	}
 	var results []bson.M
 	if err = cur.All(ctx, &results); err != nil {
-		panic(err)
+		return -1, err
 	}
 	if results == nil || len(results) == 0 {
 		if len(serviceName) != 0 {
@@ -525,7 +526,7 @@ func (s *Store) GetPolicy(serviceName string, id string) (*pms.Policy, error) {
 	}
 	var services []pms.Service
 	if err = cur.All(ctx, &services); err != nil {
-		panic(err)
+		return nil, err
 	}
 	if services == nil || len(services) == 0 {
 		return nil, errors.Errorf(errors.EntityNotFound, "service %q is not found", serviceName)
@@ -648,7 +649,7 @@ func (s *Store) GetRolePolicyCount(serviceName string) (int64, error) {
 	}
 	var results []bson.M
 	if err = cur.All(ctx, &results); err != nil {
-		panic(err)
+		return -1, err
 	}
 	if results == nil || len(results) == 0 {
 		if len(serviceName) != 0 {
@@ -689,7 +690,7 @@ func (s *Store) GetRolePolicy(serviceName string, id string) (*pms.RolePolicy, e
 	}
 	var services []pms.Service
 	if err = cur.All(ctx, &services); err != nil {
-		panic(err)
+		return nil, err
 	}
 	if services == nil || len(services) == 0 {
 		return nil, errors.Errorf(errors.EntityNotFound, "service %q is not found", serviceName)
