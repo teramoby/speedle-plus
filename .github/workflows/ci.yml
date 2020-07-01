@@ -22,5 +22,14 @@ jobs:
       run: |
         export GOPATH=${GITHUB_WORKSPACE}
         make build
+        echo ${GITHUB_ACTOR}_${GITHUB_RUN_ID}
+        sed -i "s/speedletest/${GITHUB_ACTOR}_${GITHUB_RUN_ID}/g" ./pkg/store/mongodb/mongoStoreConfig.json
+        cat ./pkg/store/mongodb/mongoStoreConfig.json
         make speedleUnitTests
+    - name: drop the database for this test
+      run: |
+        mongo "mongodb+srv://cluster0.wfhda.mongodb.net/${GITHUB_ACTOR}_${GITHUB_RUN_ID}" --username speedleplus --password Passw0rd <<EOF
+        db.dropDatabase()
+        EOF
+        
 
