@@ -338,10 +338,18 @@ func (b *blockEnc) encodeLits(raw bool) error {
 	if len(b.literals) >= 1024 {
 		// Use 4 Streams.
 		out, reUsed, err = huff0.Compress4X(b.literals, b.litEnc)
+		if len(out) > len(b.literals)-len(b.literals)>>4 {
+			// Bail out of compression is too little.
+			err = huff0.ErrIncompressible
+		}
 	} else if len(b.literals) > 32 {
 		// Use 1 stream
 		single = true
 		out, reUsed, err = huff0.Compress1X(b.literals, b.litEnc)
+		if len(out) > len(b.literals)-len(b.literals)>>4 {
+			// Bail out of compression is too little.
+			err = huff0.ErrIncompressible
+		}
 	} else {
 		err = huff0.ErrIncompressible
 	}
@@ -806,7 +814,7 @@ func (b *blockEnc) genCodes() {
 		mlH[v]++
 		if v > mlMax {
 			mlMax = v
-			if debugAsserts && mlMax > maxMatchLengthSymbol {
+			if debug && mlMax > maxMatchLengthSymbol {
 				panic(fmt.Errorf("mlMax > maxMatchLengthSymbol (%d), matchlen: %d", mlMax, seq.matchLen))
 			}
 		}
@@ -821,13 +829,13 @@ func (b *blockEnc) genCodes() {
 		}
 		return int(max)
 	}
-	if debugAsserts && mlMax > maxMatchLengthSymbol {
+	if mlMax > maxMatchLengthSymbol {
 		panic(fmt.Errorf("mlMax > maxMatchLengthSymbol (%d)", mlMax))
 	}
-	if debugAsserts && ofMax > maxOffsetBits {
+	if ofMax > maxOffsetBits {
 		panic(fmt.Errorf("ofMax > maxOffsetBits (%d)", ofMax))
 	}
-	if debugAsserts && llMax > maxLiteralLengthSymbol {
+	if llMax > maxLiteralLengthSymbol {
 		panic(fmt.Errorf("llMax > maxLiteralLengthSymbol (%d)", llMax))
 	}
 
