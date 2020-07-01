@@ -45,31 +45,39 @@ speedleUnitTests:
 	go test ${TEST_OPTS} github.com/teramoby/speedle-plus/pkg/eval 
 	go test ${TEST_OPTS} github.com/teramoby/speedle-plus/pkg/store/file
 	go test ${TEST_OPTS} github.com/teramoby/speedle-plus/pkg/store/etcd
+	go test ${TEST_OPTS} github.com/teramoby/speedle-plus/pkg/store/mongodb
 	go test ${TEST_OPTS} github.com/teramoby/speedle-plus/cmd/spctl/pdl
 	go test ${TEST_OPTS} github.com/teramoby/speedle-plus/pkg/suid
 	go test ${TEST_OPTS} github.com/teramoby/speedle-plus/pkg/assertion
 	go clean -testcache
 	STORE_TYPE=etcd go test ${TEST_OPTS} github.com/teramoby/speedle-plus/pkg/eval
+	go clean -testcache
+	STORE_TYPE=mongodb go test ${TEST_OPTS} github.com/teramoby/speedle-plus/pkg/eval
 
 testSpeedleRest:
 	pkg/svcs/pmsrest/run_file_test.sh
 	pkg/svcs/pmsrest/run_etcd_test.sh
+	pkg/svcs/pmsrest/run_mongodb_test.sh
 
 testSpeedleGRpc:
 	pkg/svcs/pmsgrpc/run_file_test.sh
 	pkg/svcs/pmsgrpc/run_etcd_test.sh
+	pkg/svcs/pmsgrpc/run_mongodb_test.sh
 
 testSpeedleRestADSCheck:
 	pkg/svcs/adsrest/run_file_test.sh
 	pkg/svcs/adsrest/run_etcd_test.sh
+	pkg/svcs/adsrest/run_mongodb_test.sh
 
 testSpeedleGRpcADSCheck:
 	pkg/svcs/adsgrpc/run_file_test.sh
 	pkg/svcs/adsgrpc/run_etcd_test.sh
+	pkg/svcs/adsgrpc/run_mongodb_test.sh
 
 testSpctl:
 	cmd/spctl/command/run_file_test.sh
 	cmd/spctl/command/run_etcd_test.sh
+	cmd/spctl/command/run_mongodb_test.sh
 
 testSpeedleTls:
 	pkg/svcs/pmsrest/tls_test.sh
