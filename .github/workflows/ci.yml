@@ -7,6 +7,10 @@ jobs:
     runs-on: ubuntu-latest
     name: build-test
     steps:
+    # resolve https://github.com/actions/virtual-environments/issues/798
+    - name: bypass ubuntu DNS issue
+      run: |
+       sudo ln -sf /run/systemd/resolve/resolv.conf /etc/resolv.conf
     - uses: actions/checkout@v2
       name: Checkout code
       with:
