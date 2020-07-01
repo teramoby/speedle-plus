@@ -22,5 +22,8 @@ jobs:
       run: |
         export GOPATH=${GITHUB_WORKSPACE}
         make build
+        echo ${GITHUB_ACTOR}
+        sed -i 's/speedletest/${GITHUB_ACTOR}/g' ./pkg/store/mongodb/mongoStoreConfig.json
+        cat ./pkg/store/mongodb/mongoStoreConfig.json
         make speedleUnitTests
 
