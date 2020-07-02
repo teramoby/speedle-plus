@@ -47,7 +47,7 @@ See Getting Started at <https://speedle.io/quick-start/>.
 
 ### Prerequisites
 
--   GO 1.10.1 or greater <https://golang.org/doc/install>
+-   GO 1.13 or greater <https://golang.org/doc/install>
 -   Set `GOROOT` and `GOPATH` properly
 
 ### Step

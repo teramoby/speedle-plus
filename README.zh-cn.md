@@ -49,7 +49,7 @@ Speedle+项目基于Speedle项目<https://github.com/oracle/speedle>，两个项
 
 ### 前期准备
 
--   GO 1.10.1 or greater <https://golang.org/doc/install>
+-   GO 1.13 or greater <https://golang.org/doc/install>
 -   设置环境变量 `GOROOT` 和 `GOPATH` 
 
 ### 步骤
