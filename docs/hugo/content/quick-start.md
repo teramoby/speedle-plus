@@ -13,7 +13,7 @@ icon = "9. Getting Started.svg"
 
 ### 1. Install the Go programming language
 
-The minimum version required is 1.10.1.
+The minimum version required is 1.13.
 
 See https://golang.org/doc/install
 

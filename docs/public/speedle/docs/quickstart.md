@@ -2,7 +2,7 @@ Speedle, as an open source project in authorization area, allows you to create p
 
 # Prerequisites
 
-## 1. Install Golang with version 1.10.1
+## 1. Install Golang with version 1.13
 
 Please refer to https://golang.org/doc/install
 

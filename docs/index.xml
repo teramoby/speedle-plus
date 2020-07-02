@@ -111,7 +111,7 @@ Issues File a GitHub issue for any bug or enhancement.</description>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>/quick-start/</guid>
-      <description>Prerequisites 1. Install the Go programming language The minimum version required is 1.10.1.
+      <description>Prerequisites 1. Install the Go programming language The minimum version required is 1.13.
 See https://golang.org/doc/install
 If you use Oracle Linux, simply run one of below commmands.
 $ sudo yum install -y oracle-golang-release-el7 $ sudo yum install -y golang 2. Set the Go environment variables GOROOT is the folder where you installed Go.
