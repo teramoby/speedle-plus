@@ -21,6 +21,8 @@ import (
 
 	"github.com/natefinch/lumberjack"
 	"github.com/spf13/pflag"
+
+	"github.com/gorilla/handlers"
 )
 
 // Parameters is the parameters for Speedle
@@ -103,14 +105,18 @@ type StrParamDetail struct {
 
 func (k *Parameters) NewHTTPServer(handler http.Handler) (*http.Server, error) {
 	insecure, _ := strconv.ParseBool(k.Insecure.Value)
+	headersOk := handlers.AllowedHeaders([]string{"X-Requested-With", "Content-Type"})
+	originsOk := handlers.AllowedOrigins([]string{"*"})
+	methodsOk := handlers.AllowedMethods([]string{"GET", "HEAD", "POST", "DELETE", "OPTIONS"})
+	cosHandler := handlers.CORS(originsOk, headersOk, methodsOk)(handler)
 	if insecure {
 		server := http.Server{
 			Addr:    k.Endpoint.Value,
-			Handler: handler,
+			Handler: cosHandler,
 		}
 		return &server, nil
 	}
-	return k.newTLSServer(handler)
+	return k.newTLSServer(cosHandler)
 }
 
 func (k *Parameters) newTLSServer(handler http.Handler) (*http.Server, error) {

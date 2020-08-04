@@ -121,6 +121,9 @@ github.com/google/btree
 # github.com/gorilla/context v0.0.0-20160226214623-1ea25387ff6f
 ## explicit
 github.com/gorilla/context
+# github.com/gorilla/handlers v1.4.2
+## explicit
+github.com/gorilla/handlers
 # github.com/gorilla/mux v1.6.1
 ## explicit
 github.com/gorilla/mux
