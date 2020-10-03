@@ -10,6 +10,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// NewVersionCommand constructs a corba.Command struct for "spctl version"
 func NewVersionCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "version",

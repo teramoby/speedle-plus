@@ -12,9 +12,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/spf13/cobra"
 	"github.com/teramoby/speedle-plus/cmd/spctl/client"
 	"github.com/teramoby/speedle-plus/pkg/svcs/pmsrest"
-	"github.com/spf13/cobra"
 )
 
 var (
@@ -77,8 +77,7 @@ func discoverCommandFunc(cmd *cobra.Command, args []string) {
 	var res []byte
 	var output []byte
 	if len(args) != 1 {
-		cmd.Help()
-		return
+		printHelpAndExit(cmd)
 	}
 	switch strings.ToLower(args[0]) {
 	case "request":
@@ -189,12 +188,11 @@ func discoverCommandFunc(cmd *cobra.Command, args []string) {
 			}
 		}
 	default:
-		cmd.Help()
-		return
+		printHelpAndExit(cmd)
 	}
 
 	if err != nil {
-		fmt.Println(err)
+		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
 }

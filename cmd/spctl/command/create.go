@@ -18,7 +18,9 @@ import (
 
 	"github.com/teramoby/speedle-plus/api/pms"
 	"github.com/teramoby/speedle-plus/cmd/spctl/client"
-	"github.com/teramoby/speedle-plus/cmd/spctl/pdl"
+	"github.com/teramoby/speedle-plus/pkg/pdl"
+	"github.com/teramoby/speedle-plus/pkg/store"
+	"github.com/teramoby/speedle-plus/pkg/store/file"
 )
 
 var (
@@ -111,8 +113,7 @@ func parsePdlFile(pdlFileName string, serviceName, serviceType string) (*pms.Ser
 	isRolePolicy := false
 	isPolicy := false
 	for i, line := range lines {
-		line = strings.Trim(line, " ")
-		line = strings.Trim(line, "\t")
+		line = strings.Trim(line, " \t")
 		if "policies:" == line {
 			isPolicy = true
 			isRolePolicy = false
@@ -144,14 +145,13 @@ func parsePdlFile(pdlFileName string, serviceName, serviceType string) (*pms.Ser
 
 func createCommandFunc(cmd *cobra.Command, args []string) {
 	if len(args) < 1 {
-		cmd.Help()
-		return
+		printHelpAndExit(cmd)
 	}
 
 	hc, err := httpClient()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "%v\n", err)
-		return
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
 	}
 
 	cli := &client.Client{
@@ -164,26 +164,51 @@ func createCommandFunc(cmd *cobra.Command, args []string) {
 	case "service":
 		var buf []byte
 		if len(args) == 1 {
-			if jsonFileName == "" {
-				cmd.Help()
-				return
+			// --pdl-file or --json-file should be found
+			if jsonFileName == "" && pdlFileName == "" {
+				printHelpAndExit(cmd)
 			}
-			buf, err = ioutil.ReadFile(jsonFileName)
+			if jsonFileName != "" {
+				buf, err = ioutil.ReadFile(jsonFileName)
+			} else if pdlFileName != "" {
+				fileStore, err := store.NewStore(file.StoreType, map[string]interface{}{
+					file.FileLocationKey: pdlFileName,
+				})
+				if err != nil {
+					fmt.Fprintln(os.Stderr, err)
+					os.Exit(1)
+				}
 
+				services, err := fileStore.ListAllServices()
+				if err != nil {
+					fmt.Fprintln(os.Stderr, err)
+					os.Exit(1)
+				}
+				buf, err = json.Marshal(services)
+			}
 		} else if len(args) == 2 {
 			serviceName = args[1]
 			if serviceName == "" || serviceType == "" {
-				cmd.Help()
-				return
+				printHelpAndExit(cmd)
 			}
 
 			if pdlFileName == "" {
 				service := pms.Service{Name: serviceName, Type: serviceType}
 				buf, err = json.Marshal(service)
 			} else {
-				var service *pms.Service
-				service, err = parsePdlFile(pdlFileName, serviceName, serviceType)
+				fileStore, err := store.NewStore(file.StoreType, map[string]interface{}{
+					file.FileLocationKey: pdlFileName,
+				})
+				if err != nil {
+					fmt.Fprintln(os.Stderr, err)
+					os.Exit(1)
+				}
 				if err == nil {
+					service, err := fileStore.GetService(serviceName)
+					if err != nil {
+						fmt.Fprintln(os.Stderr, err)
+						os.Exit(1)
+					}
 					buf, err = json.Marshal(service)
 				}
 			}
@@ -195,8 +220,7 @@ func createCommandFunc(cmd *cobra.Command, args []string) {
 
 	case "policy", "rolepolicy":
 		if serviceName == "" {
-			cmd.Help()
-			return
+			printHelpAndExit(cmd)
 		}
 		var kind string
 		if "policy" == strings.ToLower(args[0]) {
@@ -221,8 +245,7 @@ func createCommandFunc(cmd *cobra.Command, args []string) {
 			}
 		} else {
 			if len(args) != 1 || jsonFileName == "" {
-				cmd.Help()
-				return
+				printHelpAndExit(cmd)
 			}
 			var buf []byte
 			buf, err = ioutil.ReadFile(jsonFileName)
@@ -234,8 +257,7 @@ func createCommandFunc(cmd *cobra.Command, args []string) {
 		var buf []byte
 		if len(args) == 1 {
 			if jsonFileName == "" {
-				cmd.Help()
-				return
+				printHelpAndExit(cmd)
 			}
 			buf, err = ioutil.ReadFile(jsonFileName)
 
@@ -255,15 +277,13 @@ func createCommandFunc(cmd *cobra.Command, args []string) {
 		}
 
 	default:
-		cmd.Help()
-		return
+		printHelpAndExit(cmd)
 	}
 
 	if err != nil {
-		fmt.Println(err)
+		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
-	} else {
-		fmt.Printf("%s created\n%s\n", args[0], res)
 	}
 
+	fmt.Printf("%s created\n%s\n", args[0], res)
 }

@@ -9,14 +9,13 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+	"github.com/teramoby/speedle-plus/pkg/cmd/flags"
 )
 
 const (
-	cliName                   = "spctl"
-	cliDescription            = "A command line interface for speedle"
-	defaultTimeout            = 5 * time.Second
-	DefaultPolicyMgmtEndPoint = "http://127.0.0.1:6733/policy-mgmt/v1/"
-	DefaultAuthzCheckEndPoint = "http://127.0.0.1:6734/authz-check/v1/"
+	cliName        = "spctl"
+	cliDescription = "A command line interface for speedle"
+	defaultTimeout = 5 * time.Second
 )
 
 var (
@@ -31,8 +30,13 @@ var (
 	}
 )
 
+func printHelpAndExit(cmd *cobra.Command) {
+	cmd.Help()
+	os.Exit(1)
+}
+
 func init() {
-	rootCmd.PersistentFlags().StringVar(&globalFlags.PMSEndpoint, "pms-endpoint", DefaultPolicyMgmtEndPoint, "speedle policy managemnet service endpoint")
+	rootCmd.PersistentFlags().StringVar(&globalFlags.PMSEndpoint, "pms-endpoint", flags.DefaultPolicyMgmtEndPoint, "speedle policy managemnet service endpoint")
 	rootCmd.PersistentFlags().DurationVar(&globalFlags.Timeout, "timeout", 5000000000, "timeout for running command")
 	rootCmd.PersistentFlags().StringVar(&globalFlags.CertFile, "cert", "", "identify secure client using this TLS certificate file")
 	rootCmd.PersistentFlags().StringVar(&globalFlags.KeyFile, "key", "", "identify secure client using this TLS key file")
@@ -56,7 +60,7 @@ func init() {
 
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
-		fmt.Println(err)
-		os.Exit(-1)
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
 	}
 }
