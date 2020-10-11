@@ -22,7 +22,7 @@ var (
 		spctl config timeout 500ms insecure true`
 )
 
-func NewConfigCommand() *cobra.Command {
+func newConfigCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "config [--list] [args]",
 		Short:   "List or set global flags",

@@ -34,7 +34,7 @@ var (
 		spctl delete function --all`
 )
 
-func NewDeleteCommand() *cobra.Command {
+func newDeleteCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "delete (service | policy | rolepolicy | function) (--all | NAME | ID) [--service-name=NAME]",
 		Short:   "Delete one or many services | policies | role-policies",

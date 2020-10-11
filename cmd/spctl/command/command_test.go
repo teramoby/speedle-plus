@@ -265,7 +265,7 @@ func TestMats_CreateServiceWithPolicyByJsonFile(t *testing.T) {
 }
 
 //Create service with PDL file
-func testMats_ServiceWithPDLFile(t *testing.T) {
+func testMatsServiceWithPDLFile(t *testing.T) {
 
 	sName := "TestMats_PolicyWithPDLFile"
 	sType := pms.TypeApplication

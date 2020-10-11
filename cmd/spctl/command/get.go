@@ -42,7 +42,7 @@ var (
 		spctl get function foo`
 )
 
-func NewGetCommand() *cobra.Command {
+func newGetCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "get (service | policy | rolepolicy | function) (--all | NAME | ID) [--service-name=NAME]",
 		Short:   "Get one or many services | policies | role-policies",

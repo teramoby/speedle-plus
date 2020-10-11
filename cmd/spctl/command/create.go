@@ -75,7 +75,7 @@ var (
 		spctl create function --json-file=function.json`
 )
 
-func NewCreateCommand() *cobra.Command {
+func newCreateCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "create (service | policy | rolepolicy | function) (NAME | --json-file JSON_FILENAME) [--pdl-command COMMMAND] [--service-type=TYPE] [--pdl-file=PDL FILE NAME] [--service-name=NAME]",
 		Short:   "Create a service | policy | role-policy",

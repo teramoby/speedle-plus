@@ -18,17 +18,11 @@ const (
 	defaultTimeout = 5 * time.Second
 )
 
-var (
-	globalFlags = GlobalFlags{}
-)
-
-var (
-	rootCmd = &cobra.Command{
-		Use:        cliName,
-		Short:      cliDescription,
-		SuggestFor: []string{"spctl"},
-	}
-)
+var rootCmd = &cobra.Command{
+	Use:        cliName,
+	Short:      cliDescription,
+	SuggestFor: []string{"spctl"},
+}
 
 func printHelpAndExit(cmd *cobra.Command) {
 	cmd.Help()
@@ -49,15 +43,16 @@ func init() {
 	}
 
 	rootCmd.AddCommand(
-		NewGetCommand(),
-		NewDeleteCommand(),
-		NewCreateCommand(),
-		NewConfigCommand(),
-		NewDiscoverCommand(),
-		NewVersionCommand(),
+		newGetCommand(),
+		newDeleteCommand(),
+		newCreateCommand(),
+		newConfigCommand(),
+		newDiscoverCommand(),
+		newVersionCommand(),
 	)
 }
 
+// Execute is the main function to execute commands
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Fprintln(os.Stderr, err)
