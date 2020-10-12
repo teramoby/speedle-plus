@@ -34,7 +34,7 @@ var (
 		spctl delete function --all`
 )
 
-func NewDeleteCommand() *cobra.Command {
+func newDeleteCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "delete (service | policy | rolepolicy | function) (--all | NAME | ID) [--service-name=NAME]",
 		Short:   "Delete one or many services | policies | role-policies",
@@ -49,13 +49,12 @@ func NewDeleteCommand() *cobra.Command {
 
 func deleteCommandFunc(cmd *cobra.Command, args []string) {
 	if len(args) < 1 {
-		cmd.Help()
-		return
+		printHelpAndExit(cmd)
 	}
 
 	hc, err := httpClient()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "%v\n", err)
+		fmt.Fprintln(os.Stderr, err)
 		return
 	}
 
@@ -70,8 +69,7 @@ func deleteCommandFunc(cmd *cobra.Command, args []string) {
 			err = cli.Delete([]string{"service"}, "")
 		} else {
 			if len(args[1:]) == 0 {
-				cmd.Help()
-				return
+				printHelpAndExit(cmd)
 			}
 			for _, name := range args[1:] {
 				err = cli.Delete([]string{"service", name}, "")
@@ -82,8 +80,7 @@ func deleteCommandFunc(cmd *cobra.Command, args []string) {
 		}
 	case "policy", "rolepolicy":
 		if serviceName == "" {
-			cmd.Help()
-			return
+			printHelpAndExit(cmd)
 		}
 		var kind string
 		if "policy" == strings.ToLower(args[0]) {
@@ -95,8 +92,7 @@ func deleteCommandFunc(cmd *cobra.Command, args []string) {
 			err = cli.Delete([]string{"service", serviceName, kind}, "")
 		} else {
 			if len(args[1:]) == 0 {
-				cmd.Help()
-				return
+				printHelpAndExit(cmd)
 			}
 			for _, name := range args[1:] {
 				err = cli.Delete([]string{"service", serviceName, kind, name}, "")
@@ -110,8 +106,7 @@ func deleteCommandFunc(cmd *cobra.Command, args []string) {
 			err = cli.Delete([]string{"function"}, "")
 		} else {
 			if len(args[1:]) == 0 {
-				cmd.Help()
-				return
+				printHelpAndExit(cmd)
 			}
 			for _, name := range args[1:] {
 				err = cli.Delete([]string{"function", name}, "")
@@ -121,14 +116,13 @@ func deleteCommandFunc(cmd *cobra.Command, args []string) {
 			}
 		}
 	default:
-		cmd.Help()
-		return
+		printHelpAndExit(cmd)
 	}
 
 	if err != nil {
-		fmt.Println(err)
+		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
-	} else {
-		fmt.Printf("%s deleted.\n", strings.Join(args, " "))
 	}
+
+	fmt.Printf("%s deleted.\n", strings.Join(args, " "))
 }

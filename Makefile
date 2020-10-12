@@ -46,7 +46,7 @@ speedleUnitTests:
 	go test ${TEST_OPTS} github.com/teramoby/speedle-plus/pkg/store/file
 	go test ${TEST_OPTS} github.com/teramoby/speedle-plus/pkg/store/etcd
 	go test ${TEST_OPTS} github.com/teramoby/speedle-plus/pkg/store/mongodb
-	go test ${TEST_OPTS} github.com/teramoby/speedle-plus/cmd/spctl/pdl
+	go test ${TEST_OPTS} github.com/teramoby/speedle-plus/pkg/pdl
 	go test ${TEST_OPTS} github.com/teramoby/speedle-plus/pkg/suid
 	go test ${TEST_OPTS} github.com/teramoby/speedle-plus/pkg/assertion
 	go clean -testcache

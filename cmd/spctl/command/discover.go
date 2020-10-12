@@ -12,9 +12,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/spf13/cobra"
 	"github.com/teramoby/speedle-plus/cmd/spctl/client"
 	"github.com/teramoby/speedle-plus/pkg/svcs/pmsrest"
-	"github.com/spf13/cobra"
 )
 
 var (
@@ -50,7 +50,7 @@ var (
         spctl discover policy --principal-name="Jon" --service-name="foo"`
 )
 
-func NewDiscoverCommand() *cobra.Command {
+func newDiscoverCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "discover (request/policy/reset  | --service-name=NAME | --last | --force | --principal-name=USERNAME)",
 		Short:   "discover request or policy for services ",
@@ -77,8 +77,7 @@ func discoverCommandFunc(cmd *cobra.Command, args []string) {
 	var res []byte
 	var output []byte
 	if len(args) != 1 {
-		cmd.Help()
-		return
+		printHelpAndExit(cmd)
 	}
 	switch strings.ToLower(args[0]) {
 	case "request":
@@ -145,34 +144,33 @@ func discoverCommandFunc(cmd *cobra.Command, args []string) {
 		if serviceName == "" {
 			fmt.Println("pls specify service name by --service-name=NAME")
 			return
-		} else {
-			v := url.Values{}
-			if len(principalType) > 0 {
-				v.Add("principalType", principalType)
-			}
-			if len(principalName) > 0 {
-				v.Add("principalName", principalName)
-			}
-			if len(principalIDD) > 0 {
-				v.Add("principalIDD", principalIDD)
-			}
-			res, err = cli.Get([]string{"discover-policy", serviceName}, v, "")
+		}
+		v := url.Values{}
+		if len(principalType) > 0 {
+			v.Add("principalType", principalType)
+		}
+		if len(principalName) > 0 {
+			v.Add("principalName", principalName)
+		}
+		if len(principalIDD) > 0 {
+			v.Add("principalIDD", principalIDD)
+		}
+		res, err = cli.Get([]string{"discover-policy", serviceName}, v, "")
+		if err == nil {
+			var response pmsrest.GetDiscoverPoliciesResponse
+			err = json.Unmarshal(res, &response)
 			if err == nil {
-				var response pmsrest.GetDiscoverPoliciesResponse
-				err = json.Unmarshal(res, &response)
-				if err == nil {
-					if len(response.Services) > 0 {
-						output, _ = json.MarshalIndent(response.Services[0], "", strings.Repeat(" ", 4))
-						fmt.Println(string(output))
-					} else {
-						fmt.Println("no policy discovered for the service")
-					}
+				if len(response.Services) > 0 {
+					output, _ = json.MarshalIndent(response.Services[0], "", strings.Repeat(" ", 4))
+					fmt.Println(string(output))
 				} else {
-					fmt.Println("fail to unmarshal response,", err)
+					fmt.Println("no policy discovered for the service")
 				}
 			} else {
-				fmt.Println("fail to discover policy,", err)
+				fmt.Println("fail to unmarshal response,", err)
 			}
+		} else {
+			fmt.Println("fail to discover policy,", err)
 		}
 
 	case "reset":
@@ -189,12 +187,11 @@ func discoverCommandFunc(cmd *cobra.Command, args []string) {
 			}
 		}
 	default:
-		cmd.Help()
-		return
+		printHelpAndExit(cmd)
 	}
 
 	if err != nil {
-		fmt.Println(err)
+		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
 }

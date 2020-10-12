@@ -42,7 +42,7 @@ var (
 		spctl get function foo`
 )
 
-func NewGetCommand() *cobra.Command {
+func newGetCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "get (service | policy | rolepolicy | function) (--all | NAME | ID) [--service-name=NAME]",
 		Short:   "Get one or many services | policies | role-policies",
@@ -57,14 +57,13 @@ func NewGetCommand() *cobra.Command {
 
 func getCommandFunc(cmd *cobra.Command, args []string) {
 	if len(args) < 1 {
-		cmd.Help()
-		return
+		printHelpAndExit(cmd)
 	}
 
 	hc, err := httpClient()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "%v\n", err)
-		return
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
 	}
 	cli := &client.Client{
 		PMSEndpoint: globalFlags.PMSEndpoint,
@@ -85,8 +84,7 @@ func getCommandFunc(cmd *cobra.Command, args []string) {
 			}
 		} else {
 			if len(args[1:]) == 0 {
-				cmd.Help()
-				return
+				printHelpAndExit(cmd)
 			}
 			for _, name := range args[1:] {
 				service := pms.Service{}
@@ -103,8 +101,7 @@ func getCommandFunc(cmd *cobra.Command, args []string) {
 		}
 	case "policy", "rolepolicy":
 		if serviceName == "" {
-			cmd.Help()
-			return
+			printHelpAndExit(cmd)
 		}
 		var kind string
 		if "policy" == strings.ToLower(args[0]) {
@@ -129,8 +126,7 @@ func getCommandFunc(cmd *cobra.Command, args []string) {
 			}
 		} else {
 			if len(args[1:]) == 0 {
-				cmd.Help()
-				return
+				printHelpAndExit(cmd)
 			}
 			for _, name := range args[1:] {
 				var policy interface{}
@@ -162,8 +158,7 @@ func getCommandFunc(cmd *cobra.Command, args []string) {
 			}
 		} else {
 			if len(args[1:]) == 0 {
-				cmd.Help()
-				return
+				printHelpAndExit(cmd)
 			}
 			for _, name := range args[1:] {
 				function := pms.Function{}
@@ -179,15 +174,12 @@ func getCommandFunc(cmd *cobra.Command, args []string) {
 			}
 		}
 	default:
-		cmd.Help()
-		return
+		printHelpAndExit(cmd)
 	}
 
-	// TODO When error occurs, the exit code should not be 0
 	if err != nil {
-		fmt.Println(err)
+		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
-	} else {
-		fmt.Println(string(output))
 	}
+	fmt.Println(string(output))
 }

@@ -18,7 +18,7 @@ import (
 	"time"
 )
 
-type GlobalFlags struct {
+var globalFlags struct {
 	PMSEndpoint        string
 	Timeout            time.Duration
 	CertFile           string
@@ -65,7 +65,7 @@ func httpClient() (*http.Client, error) {
 
 	if globalFlags.CertFile != "" {
 		if globalFlags.KeyFile == "" {
-			err := fmt.Errorf("TLS KeyFile not specified.")
+			err := fmt.Errorf("TLS KeyFile is not specified")
 			log.Fatal(err)
 			return nil, err
 		}

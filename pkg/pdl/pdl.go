@@ -12,7 +12,7 @@ import (
 	"strings"
 	"unicode"
 
-	adsapi "github.com/teramoby/speedle-plus/api/ads"
+	"github.com/teramoby/speedle-plus/api/ads"
 	"github.com/teramoby/speedle-plus/api/pms"
 	"github.com/teramoby/speedle-plus/pkg/subjectutils"
 )
@@ -21,9 +21,10 @@ const (
 	grant = "grant"
 	deny  = "deny"
 
-	res_expr_prefix = "expr:"
+	resExprPrefix = "expr:"
 )
 
+// ParsePolicy parses a line to a policy object
 func ParsePolicy(cmd, name string) (*pms.Policy, io.Reader, error) {
 	effect, i, err := getEffect(cmd)
 	if err != nil {
@@ -56,6 +57,7 @@ func ParsePolicy(cmd, name string) (*pms.Policy, io.Reader, error) {
 	return &policy, toJSON(policy), nil
 }
 
+// ParseRolePolicy parses a line to a role policy object
 func ParseRolePolicy(cmd, name string) (*pms.RolePolicy, io.Reader, error) {
 	effect, i, err := getEffect(cmd)
 	if err != nil {
@@ -239,19 +241,19 @@ func getAndPrincipals(cmd string, i int) ([]string, int, error) {
 func getPrincipal(cmd string, i int) (string, int, error) {
 	i = skipSpaces(cmd, i)
 
-	var principal adsapi.Principal
+	var principal ads.Principal
 	if (i+5 <= len(cmd)) && strings.EqualFold("user ", cmd[i:i+5]) {
 		i += 5
-		principal.Type = adsapi.PRINCIPAL_TYPE_USER
+		principal.Type = ads.PRINCIPAL_TYPE_USER
 	} else if i+6 <= len(cmd) && strings.EqualFold("group ", cmd[i:i+6]) {
 		i += 6
-		principal.Type = adsapi.PRINCIPAL_TYPE_GROUP
+		principal.Type = ads.PRINCIPAL_TYPE_GROUP
 	} else if i+5 <= len(cmd) && strings.EqualFold("role ", cmd[i:i+5]) {
 		i += 5
-		principal.Type = adsapi.PRINCIPAL_TYPE_ROLE
+		principal.Type = ads.PRINCIPAL_TYPE_ROLE
 	} else if i+7 <= len(cmd) && strings.EqualFold("entity ", cmd[i:i+7]) {
 		i += 7
-		principal.Type = adsapi.PRINCIPAL_TYPE_ENTITY
+		principal.Type = ads.PRINCIPAL_TYPE_ENTITY
 	} else {
 		return "", -1, getError("Not found principal type (user|group|role)", cmd, i)
 	}
@@ -284,7 +286,7 @@ func getRoles(cmd string, i int) ([]string, int, error) {
 	}
 	if t == "" {
 		return tokens, i, nil
-	} 
+	}
 
 	tokens = append(tokens, t)
 	i = skipSpaces(cmd, i)
@@ -339,21 +341,19 @@ func getPermission(cmd string, i int) (*pms.Permission, int, error) {
 	if res == "" {
 		return nil, i, getError("Not found permission", cmd, i)
 	}
-	isResExpr, resExpr := isResExpr(res)
-	if isResExpr {
+
+	if isResExpr, resExpr := isResExpr(res); isResExpr {
 		return &pms.Permission{ResourceExpression: resExpr, Actions: acts}, i, nil
-	} else {
-		return &pms.Permission{Resource: res, Actions: acts}, i, nil
 	}
 
+	return &pms.Permission{Resource: res, Actions: acts}, i, nil
 }
 
 func isResExpr(res string) (bool, string) {
-	if strings.HasPrefix(res, res_expr_prefix) {
-		return true, strings.TrimPrefix(res, res_expr_prefix)
-	} else {
-		return false, res
+	if strings.HasPrefix(res, resExprPrefix) {
+		return true, strings.TrimPrefix(res, resExprPrefix)
 	}
+	return false, res
 }
 
 func getResources(cmd string, i int) ([]string, []string, int, error) {

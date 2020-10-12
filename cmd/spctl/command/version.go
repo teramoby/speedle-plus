@@ -10,7 +10,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func NewVersionCommand() *cobra.Command {
+func newVersionCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "version",
 		Short:   "Print version information",
