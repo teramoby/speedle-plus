@@ -49,10 +49,10 @@ speedleUnitTests:
 	go test ${TEST_OPTS} github.com/teramoby/speedle-plus/pkg/pdl
 	go test ${TEST_OPTS} github.com/teramoby/speedle-plus/pkg/suid
 	go test ${TEST_OPTS} github.com/teramoby/speedle-plus/pkg/assertion
-	#go clean -testcache
-	#STORE_TYPE=etcd go test ${TEST_OPTS} github.com/teramoby/speedle-plus/pkg/eval
-	#go clean -testcache
-	#STORE_TYPE=mongodb go test ${TEST_OPTS} github.com/teramoby/speedle-plus/pkg/eval
+	go clean -testcache
+	STORE_TYPE=etcd go test ${TEST_OPTS} github.com/teramoby/speedle-plus/pkg/eval
+	go clean -testcache
+	STORE_TYPE=mongodb go test ${TEST_OPTS} github.com/teramoby/speedle-plus/pkg/eval
 
 testSpeedleRest:
 	pkg/svcs/pmsrest/run_file_test.sh
