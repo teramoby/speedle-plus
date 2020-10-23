@@ -74,10 +74,15 @@ type AsserterParameters struct {
 }
 
 const (
-	DefaultPolicyMgmtEndPoint = "0.0.0.0:6733"
-	DefaultAuthzCheckEndPoint = "0.0.0.0:6734"
-	DefaultInsecure           = true
-	DefaultEnableAuthz        = false
+	// DefaultPolicyManagementListenPoint is a constant that is the default value for PMS.
+	// If arguments --endpoint is not passed, use this default value.
+	DefaultPolicyManagementListenPoint = "0.0.0.0:6733"
+	// DefaultPolicyManagmentConnectEndpoint is a constant that is the default value for command line tool spctl.
+	// If command line argument --pms-endpint and no pms-endpint defined in configure file, use this default value.
+	DefaultPolicyManagmentConnectEndpoint = "http://127.0.0.1:6733/policy-mgmt/v1/"
+	DefaultAuthzCheckEndPoint             = "0.0.0.0:6734"
+	DefaultInsecure                       = true
+	DefaultEnableAuthz                    = false
 
 	DefaultStoreType = cfg.StorageTypeFile //file
 
