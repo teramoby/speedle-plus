@@ -30,7 +30,7 @@ func printHelpAndExit(cmd *cobra.Command) {
 }
 
 func init() {
-	rootCmd.PersistentFlags().StringVar(&globalFlags.PMSEndpoint, "pms-endpoint", flags.DefaultPolicyMgmtEndPoint, "speedle policy managemnet service endpoint")
+	rootCmd.PersistentFlags().StringVar(&globalFlags.PMSEndpoint, "pms-endpoint", flags.DefaultPolicyManagmentConnectEndpoint, "speedle policy managemnet service endpoint")
 	rootCmd.PersistentFlags().DurationVar(&globalFlags.Timeout, "timeout", 5000000000, "timeout for running command")
 	rootCmd.PersistentFlags().StringVar(&globalFlags.CertFile, "cert", "", "identify secure client using this TLS certificate file")
 	rootCmd.PersistentFlags().StringVar(&globalFlags.KeyFile, "key", "", "identify secure client using this TLS key file")

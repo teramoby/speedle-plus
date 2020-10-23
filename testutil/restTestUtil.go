@@ -361,7 +361,7 @@ func NewRestClient(endpoint string, curToken string, basicAuthName string, basic
 //Get RestClient for policy management
 func NewRestClient_PMS() *RestClient {
 
-	pmsEndpoint := GetOSEnv(PMS_ENDPOINT, "http://"+flags.DefaultPolicyMgmtEndPoint)
+	pmsEndpoint := GetOSEnv(PMS_ENDPOINT, "http://"+flags.DefaultPolicyManagmentConnectEndpoint)
 	pmsAdminToken := GetOSEnv(PMS_ADMIN_TOKEN, "")
 
 	TestLog.Logf("PMSEndpoint=%s, token=%s \n", pmsEndpoint, pmsAdminToken)

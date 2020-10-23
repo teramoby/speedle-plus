@@ -42,7 +42,7 @@ func main() {
 	storeParamsMap := store.GetAllStoreParams()
 
 	var params flags.Parameters
-	params.ParseFlags(flags.DefaultPolicyMgmtEndPoint, printVersionInfo, storeParamsMap)
+	params.ParseFlags(flags.DefaultPolicyManagementListenPoint, printVersionInfo, storeParamsMap)
 	params.ValidateFlags()
 
 	conf, _ := params.Param2Config(storeParamsMap)
