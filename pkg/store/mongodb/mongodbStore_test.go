@@ -12,6 +12,7 @@ import (
 )
 
 var storeConfig *cfg.StoreConfig
+var mongoAvailable bool
 
 func TestMain(m *testing.M) {
 	os.Exit(testMain(m))
@@ -24,10 +25,27 @@ func testMain(m *testing.M) int {
 		log.Fatal("fail to read config file", err)
 	}
 	fmt.Println(storeConfig)
+
+	// Check if MongoDB is available
+	testStore, err := store.NewStore(storeConfig.StoreType, storeConfig.StoreProps)
+	if err != nil {
+		log.Printf("MongoDB not available: %v - tests will be skipped", err)
+		mongoAvailable = false
+	} else {
+		mongoAvailable = true
+		// Clean up test connection
+		if testStore != nil {
+			// Store doesn't expose close method, so just let it be GC'd
+		}
+	}
+
 	return m.Run()
 }
 
 func TestWriteReadPolicyStore(t *testing.T) {
+	if !mongoAvailable {
+		t.Skip("MongoDB not available")
+	}
 	store, err := store.NewStore(storeConfig.StoreType, storeConfig.StoreProps)
 	if err != nil {
 		t.Fatal("fail to new mongodb  store:", err)
@@ -62,6 +80,9 @@ func TestWriteReadPolicyStore(t *testing.T) {
 }
 
 func TestWriteReadDeleteService(t *testing.T) {
+	if !mongoAvailable {
+		t.Skip("MongoDB not available")
+	}
 	store, err := store.NewStore(storeConfig.StoreType, storeConfig.StoreProps)
 	if err != nil {
 		t.Fatal("fail to new mongodb  store:", err)
@@ -149,6 +170,9 @@ func TestWriteReadDeleteService(t *testing.T) {
 }
 
 func TestMongoStore_GetPolicyByName(t *testing.T) {
+	if !mongoAvailable {
+		t.Skip("MongoDB not available")
+	}
 	store, err := store.NewStore(storeConfig.StoreType, storeConfig.StoreProps)
 	if err != nil {
 		t.Fatal("fail to new mongodb  store:", err)
@@ -290,6 +314,9 @@ func TestMongoStore_GetPolicyByName(t *testing.T) {
 }
 
 func TestMongoStore_GetRolePolicyByName(t *testing.T) {
+	if !mongoAvailable {
+		t.Skip("MongoDB not available")
+	}
 	store, err := store.NewStore(storeConfig.StoreType, storeConfig.StoreProps)
 	if err != nil {
 		t.Fatal("fail to new mongodb  store:", err)
@@ -416,6 +443,9 @@ func TestMongoStore_GetRolePolicyByName(t *testing.T) {
 }
 
 func TestManagePolicies(t *testing.T) {
+	if !mongoAvailable {
+		t.Skip("MongoDB not available")
+	}
 	store, err := store.NewStore(storeConfig.StoreType, storeConfig.StoreProps)
 	if err != nil {
 		t.Fatal("fail to new mongodb  store:", err)
@@ -484,6 +514,9 @@ func TestManagePolicies(t *testing.T) {
 }
 
 func TestManageRolePolicies(t *testing.T) {
+	if !mongoAvailable {
+		t.Skip("MongoDB not available")
+	}
 	store, err := store.NewStore(storeConfig.StoreType, storeConfig.StoreProps)
 	if err != nil {
 		t.Fatal("fail to new mongodb  store:", err)
@@ -550,6 +583,9 @@ func TestManageRolePolicies(t *testing.T) {
 }
 
 func TestCheckItemsCount(t *testing.T) {
+	if !mongoAvailable {
+		t.Skip("MongoDB not available")
+	}
 	store, err := store.NewStore(storeConfig.StoreType, storeConfig.StoreProps)
 	if err != nil {
 		t.Fatal("fail to new mongodb  store:", err)
