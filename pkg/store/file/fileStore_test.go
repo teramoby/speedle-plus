@@ -59,7 +59,7 @@ func TestWriteReadPolicyStore(t *testing.T) {
 		t.Error("should have 10 services in the store")
 	}
 	for _, service := range psr.Services {
-		log.Printf(service.Name)
+		log.Printf("%s", service.Name)
 	}
 
 }
