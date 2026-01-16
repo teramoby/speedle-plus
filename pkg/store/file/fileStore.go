@@ -145,13 +145,13 @@ func (s *Store) GetPolicyAndRolePolicyCounts() (map[string]*pms.PolicyAndRolePol
 
 		policyCount, err := s.getPolicyCountWithoutLock(srvName)
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get policy count for service: %s", srvName)
+			return nil, errors.Wrapf(err, errors.StoreError, "failed to get policy count for service: %s", srvName)
 		}
 		counts.PolicyCount = policyCount
 
 		rolePolicyCount, err := s.getRolePolicyCountWithoutLock(srvName)
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get rolePolicy count for service: %s", srvName)
+			return nil, errors.Wrapf(err, errors.StoreError, "failed to get rolePolicy count for service: %s", srvName)
 		}
 		counts.RolePolicyCount = rolePolicyCount
 
