@@ -8,8 +8,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/coreos/etcd/clientv3"
-	"github.com/coreos/etcd/pkg/transport"
+	clientv3 "go.etcd.io/etcd/client/v3"
+	"go.etcd.io/etcd/client/pkg/v3/transport"
 	"github.com/teramoby/speedle-plus/pkg/errors"
 	log "github.com/sirupsen/logrus"
 

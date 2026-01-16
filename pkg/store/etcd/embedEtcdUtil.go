@@ -10,7 +10,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/coreos/etcd/embed"
+	"go.etcd.io/etcd/server/v3/embed"
 	"github.com/teramoby/speedle-plus/pkg/errors"
 	log "github.com/sirupsen/logrus"
 )
@@ -42,7 +42,6 @@ func StartEmbeddedEtcd(dataDir string) (etcd *embed.Etcd, etcdDir string, err er
 	}
 
 	cfg := embed.NewConfig()
-	cfg.Debug = true
 	cfg.Dir = etcdDir
 	etcd, err = embed.StartEtcd(cfg)
 	if err != nil {
