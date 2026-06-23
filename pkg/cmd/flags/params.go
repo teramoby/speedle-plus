@@ -211,7 +211,7 @@ func (k *Parameters) listenAndServeTLS(s *http.Server) error {
 }
 
 // ParseFlags parses command line arguments
-func (k *Parameters) ParseFlags(defaultEndpoint string, printVersionInfoFun func(), storeParamsMap map[string]string) {
+func (k *Parameters) ParseFlags(defaultEndpoint string, printVersionInfoFun func(), storeParamsMap map[string]string) error {
 	var params []*StrParamDetail
 	k.ConfigFile = StrParamDetail{Name: "config-file", ShortName: "k", Usage: "Configuration file."}
 	params = append(params, &k.ConfigFile)
@@ -296,7 +296,7 @@ func (k *Parameters) ParseFlags(defaultEndpoint string, printVersionInfoFun func
 	if k.Version {
 		printVersionInfoFun()
 		k.ShowVersionAndExit = true
-		return
+		return nil
 	}
 
 	if len(k.ConfigFile.Value) == 0 {
@@ -313,7 +313,8 @@ func (k *Parameters) ParseFlags(defaultEndpoint string, printVersionInfoFun func
 		conf, err = cfg.ReadConfig(k.ConfigFile.Value)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Fail to parse config file %s, error is %v. \n", k.ConfigFile.Value, err)
-			k.usage()
+			pflag.Usage()
+			return fmt.Errorf("fail to parse config file %s: %w", k.ConfigFile.Value, err)
 		}
 	} else {
 		conf = nil
@@ -487,6 +488,7 @@ func (k *Parameters) ParseFlags(defaultEndpoint string, printVersionInfoFun func
 	})
 
 	logging.AuditLog().Debugf("parameters:%v", k)
+	return nil
 }
 
 // FlagToEnv converts flag string to upper-case environment variable key string.
@@ -494,39 +496,45 @@ func FlagToEnv(name string) string {
 	return EnvVarPrefix + "_" + strings.ToUpper(strings.Replace(name, "-", "_", -1))
 }
 
-func (k *Parameters) ValidateFlags() {
+func (k *Parameters) ValidateFlags() error {
 	insecure, err := strconv.ParseBool(k.Insecure.Value)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Invalid value for 'insecure' parameter: %s", k.Insecure.Value)
-		k.usage()
+		pflag.Usage()
+		return fmt.Errorf("invalid value for 'insecure' parameter: %s", k.Insecure.Value)
 	}
 
 	if len(k.EnableAuthz.Value) != 0 {
 		_, err = strconv.ParseBool(k.EnableAuthz.Value)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Invalid value for 'enableAuthz' parameter: %s", k.EnableAuthz.Value)
-			k.usage()
+			pflag.Usage()
+			return fmt.Errorf("invalid value for 'enableAuthz' parameter: %s", k.EnableAuthz.Value)
 		}
 	}
 
 	if !insecure {
 		if k.CertPath.Value == "" || k.KeyPath.Value == "" {
 			fmt.Fprintln(os.Stderr, "In secure mode, "+k.KeyPath.Name+", "+k.CertPath.Name+" should be passed.")
-			k.usage()
+			pflag.Usage()
+			return fmt.Errorf("in secure mode, %s, %s should be passed", k.KeyPath.Name, k.CertPath.Name)
 		}
 
 		if k.ForceClientCert.Value != "" {
 			forceClientCert, err := strconv.ParseBool(k.ForceClientCert.Value)
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "Invalid value for 'ForceClientCert' parameter: %s", k.ForceClientCert.Value)
-				k.usage()
+				pflag.Usage()
+				return fmt.Errorf("invalid value for 'ForceClientCert' parameter: %s", k.ForceClientCert.Value)
 			}
 			if forceClientCert && k.ClientCertPath.Value == "" {
 				fmt.Fprintln(os.Stderr, "In secure mode and force client certification is enabled, "+k.ClientCertPath.Name+" should be passed.")
-				k.usage()
+				pflag.Usage()
+				return fmt.Errorf("in secure mode and force client certification is enabled, %s should be passed", k.ClientCertPath.Name)
 			}
 		}
 	}
+	return nil
 }
 
 func (k *Parameters) Param2Config(storeParamsMap map[string]string) (*cfg.Config, error) {
@@ -681,5 +689,4 @@ func (k *Parameters) Param2Config(storeParamsMap map[string]string) (*cfg.Config
 
 func (k *Parameters) usage() {
 	pflag.Usage()
-	os.Exit(1)
 }
