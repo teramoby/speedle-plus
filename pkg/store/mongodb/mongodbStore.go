@@ -16,8 +16,9 @@ import (
 )
 
 type Store struct {
-	client   *mongo.Client
-	Database string
+	client    *mongo.Client
+	Database  string
+	stopWatch chan struct{}
 }
 
 // ReadPolicyStore reads policy store from a file
@@ -248,8 +249,9 @@ func (s *Store) DeleteServices() error {
 
 func (s *Store) Watch() (pms.StorageChangeChannel, error) {
 	log.Info("Enter Watch...")
+	s.stopWatch = make(chan struct{})
 	streamOptions := options.ChangeStream().SetFullDocument(options.UpdateLookup)
-	changeStream, err := s.client.Database(s.Database).Watch(context.TODO(), mongo.Pipeline{}, streamOptions)
+	changeStream, err := s.client.Database(s.Database).Watch(context.Background(), mongo.Pipeline{}, streamOptions)
 	if err != nil {
 		log.Error(err)
 		return nil, err
@@ -260,11 +262,25 @@ func (s *Store) Watch() (pms.StorageChangeChannel, error) {
 
 	go func() {
 		defer func() {
-			changeStream.Close(context.TODO())
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			defer cancel()
+			changeStream.Close(ctx)
 			close(storeChangeChan)
 		}()
 
-		for changeStream.Next(context.TODO()) {
+		for {
+			select {
+			case <-s.stopWatch:
+				return
+			default:
+			}
+
+			if !changeStream.Next(context.Background()) {
+				if err := changeStream.Err(); err != nil {
+					log.Error(err)
+				}
+				return
+			}
 			// A new event variable should be declared for each event.
 			var event bson.M
 			if err := changeStream.Decode(&event); err != nil {
@@ -377,7 +393,20 @@ func (s *Store) Watch() (pms.StorageChangeChannel, error) {
 }
 
 func (s *Store) StopWatch() {
+	if s.stopWatch != nil {
+		close(s.stopWatch)
+	}
+}
 
+// Close disconnects the MongoDB client and stops the watch goroutine.
+func (s *Store) Close() error {
+	s.StopWatch()
+	if s.client != nil {
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		return s.client.Disconnect(ctx)
+	}
+	return nil
 }
 
 func (s *Store) Type() string {
