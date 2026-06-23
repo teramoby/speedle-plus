@@ -332,7 +332,7 @@ func getRoles(cmd string, i int) ([]string, int, error) {
 	if err != nil {
 		return nil, -1, err
 	}
-	if hasPrefixFoldASCII(t, "role") {
+	if len(t) == 4 && hasPrefixFoldASCII(t, "role") {
 		t, i, err = getToken(cmd, i)
 		if err != nil {
 			return nil, -1, err
@@ -349,7 +349,7 @@ func getRoles(cmd string, i int) ([]string, int, error) {
 		if err != nil {
 			return nil, -1, err
 		}
-		if hasPrefixFoldASCII(t, "role") {
+		if len(t) == 4 && hasPrefixFoldASCII(t, "role") {
 			t, i, err = getToken(cmd, i)
 			if err != nil {
 				return nil, -1, err
