@@ -1,6 +1,6 @@
 module github.com/teramoby/speedle-plus
 
-go 1.24
+go 1.24.0
 
 toolchain go1.26.3
 
