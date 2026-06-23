@@ -8,7 +8,6 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -53,7 +52,7 @@ func httpClient() (*http.Client, error) {
 	tlsConfig := &tls.Config{}
 	tlsConfig.InsecureSkipVerify = globalFlags.InsecureSkipVerify
 	if globalFlags.CAFile != "" {
-		caCert, err := ioutil.ReadFile(globalFlags.CAFile)
+		caCert, err := os.ReadFile(globalFlags.CAFile)
 		if err != nil {
 			log.Fatal(err)
 			return nil, err

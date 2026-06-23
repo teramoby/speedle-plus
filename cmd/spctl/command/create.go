@@ -9,7 +9,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"strconv"
 	"strings"
@@ -169,7 +168,7 @@ func createCommandFunc(cmd *cobra.Command, args []string) {
 				printHelpAndExit(cmd)
 			}
 			if jsonFileName != "" {
-				buf, err = ioutil.ReadFile(jsonFileName)
+				buf, err = os.ReadFile(jsonFileName)
 			} else if pdlFileName != "" {
 				fileStore, err := store.NewStore(file.StoreType, map[string]interface{}{
 					file.FileLocationKey: pdlFileName,
@@ -248,7 +247,7 @@ func createCommandFunc(cmd *cobra.Command, args []string) {
 				printHelpAndExit(cmd)
 			}
 			var buf []byte
-			buf, err = ioutil.ReadFile(jsonFileName)
+			buf, err = os.ReadFile(jsonFileName)
 			if err == nil {
 				res, err = cli.Post([]string{"service", serviceName, kind}, bytes.NewBuffer(buf), "")
 			}
@@ -259,7 +258,7 @@ func createCommandFunc(cmd *cobra.Command, args []string) {
 			if jsonFileName == "" {
 				printHelpAndExit(cmd)
 			}
-			buf, err = ioutil.ReadFile(jsonFileName)
+			buf, err = os.ReadFile(jsonFileName)
 
 		} else if len(args) == 2 {
 			funcName := args[1]

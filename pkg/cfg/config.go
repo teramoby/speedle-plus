@@ -5,7 +5,7 @@ package cfg
 
 import (
 	"encoding/json"
-	"io/ioutil"
+	"os"
 
 	"github.com/teramoby/speedle-plus/pkg/assertion"
 	"github.com/teramoby/speedle-plus/pkg/errors"
@@ -43,7 +43,7 @@ type Config struct {
 
 func ReadConfig(configFileLocation string) (*Config, error) {
 	var config Config
-	raw, err := ioutil.ReadFile(configFileLocation)
+	raw, err := os.ReadFile(configFileLocation)
 	if err != nil {
 		return &config, errors.Wrapf(err, errors.ConfigError, "failed to read configure file %s", configFileLocation)
 	}
@@ -57,7 +57,7 @@ func ReadConfig(configFileLocation string) (*Config, error) {
 
 func ReadStoreConfig(configFileLocation string) (*StoreConfig, error) {
 	var storeConfig StoreConfig
-	raw, err := ioutil.ReadFile(configFileLocation)
+	raw, err := os.ReadFile(configFileLocation)
 	if err != nil {
 		return nil, errors.Wrapf(err, errors.ConfigError, "failed to read store configure file %s", configFileLocation)
 	}

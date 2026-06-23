@@ -8,7 +8,8 @@ import (
 	"crypto/x509"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
+	"os"
 	"net/http"
 	"strings"
 	"time"
@@ -88,7 +89,7 @@ func NewAsserter(conf *AsserterConfig, tenant *string) (TokenAsserter, error) {
 	if strings.HasPrefix(a.ServerEndpoint, "https") {
 		tlsConf := &tls.Config{}
 		if len(a.caCert) > 0 {
-			caCert, err := ioutil.ReadFile(a.caCert)
+			caCert, err := os.ReadFile(a.caCert)
 			if err != nil {
 				return nil, err
 			}
@@ -165,7 +166,7 @@ func (a *WebHookAsserter) AssertToken(token string, idpType string, allowedIDD s
 		return nil, fmt.Errorf("asserter error, status code: %d", resp.StatusCode)
 	}
 
-	raw, errRaw := ioutil.ReadAll(resp.Body)
+	raw, errRaw := io.ReadAll(resp.Body)
 	if errRaw != nil {
 		log.Errorf("ReadAll error: %v", errRaw)
 		return nil, errRaw

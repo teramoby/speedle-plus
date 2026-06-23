@@ -7,7 +7,6 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"strings"
@@ -149,7 +148,7 @@ func (k *Parameters) newTLSServer(handler http.Handler) (*http.Server, error) {
 	}
 
 	if k.ClientCertPath.Value != "" {
-		caCert, err := ioutil.ReadFile(k.ClientCertPath.Value)
+		caCert, err := os.ReadFile(k.ClientCertPath.Value)
 		if err != nil {
 			return nil, errors.Wrapf(err, errors.ConfigError, "unable to read client CA certification from file %s", k.ClientCertPath.Value)
 		}

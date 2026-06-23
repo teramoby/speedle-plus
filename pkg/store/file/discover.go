@@ -5,7 +5,6 @@ package file
 
 import (
 	"encoding/json"
-	"io/ioutil"
 	"math"
 	"os"
 	"path/filepath"
@@ -47,7 +46,7 @@ func (s *discoverRequestStore) ReadDiscoverRequestStore() (*StoreContent, error)
 
 func (s *discoverRequestStore) readDiscoverRequestStoreWithoutLock() (*StoreContent, error) {
 	var drs StoreContent
-	raw, err := ioutil.ReadFile(s.FileLocation)
+	raw, err := os.ReadFile(s.FileLocation)
 	if err != nil {
 		return &drs, errors.Wrapf(err, errors.StoreError, "unable to read file %q", s.FileLocation)
 	}
@@ -95,7 +94,7 @@ func getDiscoverRequestStore(s *Store) (*discoverRequestStore, error) {
 		log.Infof("discover store file location:%s\n", discoverFileLocation)
 		if _, err := os.Stat(discoverFileLocation); os.IsNotExist(err) {
 			log.Infof("discover store file does not exist, create one...")
-			if err1 := ioutil.WriteFile(discoverFileLocation, []byte("{}"), 0644); err1 != nil {
+			if err1 := os.WriteFile(discoverFileLocation, []byte("{}"), 0644); err1 != nil {
 				log.Errorf("error creating discover store file: %v\n", err1)
 				return nil, err1
 			}
