@@ -218,6 +218,7 @@ func (e *RESTService) ResetAllDiscoverRequests(w http.ResponseWriter, r *http.Re
 		httputils.HandleError(w, err)
 		// Audit log
 		logging.WriteSimpleFailedAuditLog("ResetAllDiscoverRequests", nil, err.Error())
+		return
 	}
 	w.WriteHeader(http.StatusNoContent)
 
