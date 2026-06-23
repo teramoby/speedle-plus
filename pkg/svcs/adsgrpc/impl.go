@@ -77,8 +77,6 @@ func convertGRPCSubject(subject *pb.Subject) *adsapi.Subject {
 func (impl *GRPCService) IsAllowed(ctx context.Context, in *pb.ContextRequest) (*pb.IsAllowedResponse, error) {
 	reqCtx := convertGRPCContextRequest(in)
 
-	// assert token
-	impl.evaluator.AssertToken(reqCtx)
 
 	allowed, reason, err := impl.evaluator.IsAllowed(*reqCtx)
 	if err != nil {
@@ -101,8 +99,6 @@ func (impl *GRPCService) IsAllowed(ctx context.Context, in *pb.ContextRequest) (
 func (impl *GRPCService) GetAllGrantedRoles(ctx context.Context, in *pb.ContextRequest) (*pb.AllRoleResponse, error) {
 	reqCtx := convertGRPCContextRequest(in)
 
-	// assert token
-	impl.evaluator.AssertToken(reqCtx)
 
 	roles, err := impl.evaluator.GetAllGrantedRoles(*reqCtx)
 	if err != nil {
@@ -122,8 +118,6 @@ func (impl *GRPCService) GetAllGrantedRoles(ctx context.Context, in *pb.ContextR
 func (impl *GRPCService) GetAllPermissions(ctx context.Context, in *pb.ContextRequest) (*pb.AllPermissionResponse, error) {
 	reqCtx := convertGRPCContextRequest(in)
 
-	// assert token
-	impl.evaluator.AssertToken(reqCtx)
 
 	perms, err := impl.evaluator.GetAllGrantedPermissions(*reqCtx)
 	if err != nil {
@@ -151,8 +145,6 @@ func (impl *GRPCService) GetAllPermissions(ctx context.Context, in *pb.ContextRe
 func (impl *GRPCService) Discover(ctx context.Context, in *pb.ContextRequest) (*pb.IsAllowedResponse, error) {
 	reqCtx := convertGRPCContextRequest(in)
 
-	// assert token
-	impl.evaluator.AssertToken(reqCtx)
 
 	allowed, reason, err := impl.evaluator.Discover(*reqCtx)
 	if err != nil {
@@ -326,8 +318,6 @@ func convertAPIRolePolicy2EvaluatedRolePolicyResponse(apiRolePolicy *adsapi.Eval
 func (impl *GRPCService) Diagnose(ctx context.Context, in *pb.ContextRequest) (*pb.EvaluationDebugResponse, error) {
 	reqCtx := convertGRPCContextRequest(in)
 
-	// assert token
-	impl.evaluator.AssertToken(reqCtx)
 
 	evaResult, err := impl.evaluator.Diagnose(*reqCtx)
 	if err != nil {

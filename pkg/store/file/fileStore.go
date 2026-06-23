@@ -78,7 +78,7 @@ func (s *Store) writePolicyStoreWithoutLock(ps *pms.PolicyStore) error {
 
 	// Write to temp file then atomically rename to avoid data corruption on crash.
 	tmpFile := s.FileLocation + ".tmp"
-	if err := os.WriteFile(tmpFile, psB, 0644); err != nil {
+	if err := os.WriteFile(tmpFile, psB, 0600); err != nil {
 		return errors.Wrapf(err, errors.StoreError, "unable to write to temp file %q", tmpFile)
 	}
 	if err := os.Rename(tmpFile, s.FileLocation); err != nil {

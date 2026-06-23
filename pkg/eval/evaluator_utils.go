@@ -211,19 +211,19 @@ func matchRolePolicyPrincipals(subjectPrincipalList []string, rolePolicyPrincipa
 	if rolePolicyPrincipalList == nil || len(rolePolicyPrincipalList) == 0 {
 		return true
 	}
-	matched := false
+
+	// Build a set for O(1) lookups
+	subjectSet := make(map[string]bool, len(subjectPrincipalList))
+	for _, sp := range subjectPrincipalList {
+		subjectSet[sp] = true
+	}
+
 	for _, policyPrincipal := range rolePolicyPrincipalList {
-		for _, subjectPrincipal := range subjectPrincipalList {
-			if policyPrincipal == subjectPrincipal {
-				matched = true
-				break
-			}
-		}
-		if matched {
-			break
+		if subjectSet[policyPrincipal] {
+			return true
 		}
 	}
-	return matched
+	return false
 
 }
 
@@ -239,21 +239,17 @@ func matchPrincipals(subjectPrincipalList []string, policyPrincipalList [][]stri
 		return true
 	}
 
+	// Build a set for O(1) lookups
+	subjectSet := make(map[string]bool, len(subjectPrincipalList))
+	for _, sp := range subjectPrincipalList {
+		subjectSet[sp] = true
+	}
+
 	for _, andPrincipals := range policyPrincipalList {
 		// one of item in policy principals matched, returns true
 		matched := true
 		for _, policyPrincipal := range andPrincipals {
-			matchedOnePrincipal := false
-			// Check if the policy principal in subject principal list
-			for _, subjectPrincipal := range subjectPrincipalList {
-				if policyPrincipal == subjectPrincipal {
-					// matched
-					matchedOnePrincipal = true
-					break
-				}
-			}
-			// The policy principal is not found in subjectPrincipalList, not match
-			if !matchedOnePrincipal {
+			if !subjectSet[policyPrincipal] {
 				matched = false
 				break
 			}

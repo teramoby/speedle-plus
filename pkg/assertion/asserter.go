@@ -87,14 +87,16 @@ func NewAsserter(conf *AsserterConfig, tenant *string) (TokenAsserter, error) {
 	}
 
 	if strings.HasPrefix(a.ServerEndpoint, "https") {
-		tlsConf := &tls.Config{}
+		tlsConf := &tls.Config{MinVersion: tls.VersionTLS12}
 		if len(a.caCert) > 0 {
 			caCert, err := os.ReadFile(a.caCert)
 			if err != nil {
 				return nil, err
 			}
 			caCertPool := x509.NewCertPool()
-			caCertPool.AppendCertsFromPEM(caCert)
+			if !caCertPool.AppendCertsFromPEM(caCert) {
+				return nil, fmt.Errorf("failed to parse CA certificate")
+			}
 			tlsConf.RootCAs = caCertPool
 		}
 		if len(a.clientCert) > 0 && len(a.clientKey) > 0 {
@@ -119,7 +121,7 @@ func NewAsserter(conf *AsserterConfig, tenant *string) (TokenAsserter, error) {
 
 // AssertToken assert token via webhook
 func (a *WebHookAsserter) AssertToken(token string, idpType string, allowedIDD string, requestHeaders map[string]string) (*AssertResponse, error) {
-	log.Debugf("token: %s, idpType: %s, allowedIDD: %s, requestHeaders: %v", token, idpType, allowedIDD, requestHeaders)
+	log.Debugf("asserting token: idpType=%s, allowedIDD=%s", idpType, allowedIDD)
 
 	if len(token) == 0 {
 		log.Errorf("token is empty")

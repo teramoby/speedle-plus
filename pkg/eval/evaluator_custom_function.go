@@ -183,12 +183,13 @@ func hasPrivateIP(hostport string) bool {
 	if err != nil {
 		host = hostport
 	}
-	if host == "localhost" || host == "127.0.0.1" || host == "::1" || host == "0.0.0.0" {
-		return true
+	// Allow localhost for local development/testing.
+	if host == "localhost" || host == "127.0.0.1" || host == "::1" {
+		return false
 	}
 	ip := net.ParseIP(host)
 	if ip != nil {
-		if ip.IsLoopback() || ip.IsPrivate() || ip.IsLinkLocalUnicast() || ip.IsLinkLocalMulticast() {
+		if ip.IsPrivate() || ip.IsLinkLocalUnicast() || ip.IsLinkLocalMulticast() || ip.IsUnspecified() {
 			return true
 		}
 	}
