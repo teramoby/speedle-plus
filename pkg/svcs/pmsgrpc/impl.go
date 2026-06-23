@@ -810,7 +810,7 @@ func (impl *serviceImpl) GetDiscoverPolicies(ctx context.Context, in *pb.Discove
 
 	if len(in.ServiceName) > 0 {
 		if err := pmsrest.ValidateServiceName(in.ServiceName); err != nil {
-			return nil, toGRPCStatus(err)
+		return nil, toGRPCStatus(err)
 		}
 	}
 	serviceMap, revision, err := discoverRequestMgr.GeneratePolicies(in.ServiceName, in.PrincipalType, in.PrincipalName, in.PrincipalIdd)
