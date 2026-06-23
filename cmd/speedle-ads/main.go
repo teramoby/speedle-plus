@@ -193,7 +193,6 @@ func newGRPCServer(evaluator eval.InternalEvaluator) (*grpc.Server, error) {
 	// WARNING: gRPC reflection exposes all service methods and message types.
 	// Disable in production to prevent information disclosure.
 	// Enable for development only: reflection.Register(server)
-	_ = server // keep import for reflection package when needed
 	return server, nil
 }
 
