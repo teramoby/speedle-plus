@@ -723,7 +723,10 @@ func watch(evalChan chan pms.StoreChangeEvent, s *Store, errChan chan error, sto
 			// receive the stop signal
 		case <-s.stop:
 			log.Warning("Receiving stop signal")
-			stopChan <- struct{}{}
+			select {
+			case stopChan <- struct{}{}:
+			default:
+			}
 			return
 
 		case <-session.Done(): // closed by etcd
