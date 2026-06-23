@@ -103,39 +103,39 @@ func ReverseString(s string) string {
 func AddPolicyToResourceExpressionCache(resourceToPolicyMap *ResourceToPolicyMap, resourceExpression string, policyID string) {
 	if Prefix_Pattern.MatchString(resourceExpression) {
 
-		resourceExpression := trimResourceExpressionSuffix(resourceExpression)
+		processedExpr := trimResourceExpressionSuffix(resourceExpression)
 
 		if resourceToPolicyMap.PrefixResourceExpressionTree == nil {
 			resourceToPolicyMap.PrefixResourceExpressionTree = radix.New()
 			policyIDSet := make(map[string]bool, 1)
 			policyIDSet[policyID] = true
-			resourceToPolicyMap.PrefixResourceExpressionTree.Insert(resourceExpression, policyIDSet)
+			resourceToPolicyMap.PrefixResourceExpressionTree.Insert(processedExpr, policyIDSet)
 		} else {
-			if value, exist := resourceToPolicyMap.PrefixResourceExpressionTree.Get(resourceExpression); exist {
+			if value, exist := resourceToPolicyMap.PrefixResourceExpressionTree.Get(processedExpr); exist {
 				policyIDSet := value.(map[string]bool)
 				policyIDSet[policyID] = true
 			} else {
 				policyIDSet := make(map[string]bool, 1)
 				policyIDSet[policyID] = true
-				resourceToPolicyMap.PrefixResourceExpressionTree.Insert(resourceExpression, policyIDSet)
+				resourceToPolicyMap.PrefixResourceExpressionTree.Insert(processedExpr, policyIDSet)
 			}
 		}
 	} else if Suffix_Pattern.MatchString(resourceExpression) {
-		resourceExpression := ReverseString(trimResourceExpressionPrefix(resourceExpression))
+		processedExpr := ReverseString(trimResourceExpressionPrefix(resourceExpression))
 
 		if resourceToPolicyMap.SuffixResourceExpressionTree == nil {
 			resourceToPolicyMap.SuffixResourceExpressionTree = radix.New()
 			policyIDSet := make(map[string]bool, 1)
 			policyIDSet[policyID] = true
-			resourceToPolicyMap.SuffixResourceExpressionTree.Insert(resourceExpression, policyIDSet)
+			resourceToPolicyMap.SuffixResourceExpressionTree.Insert(processedExpr, policyIDSet)
 		} else {
-			if value, exist := resourceToPolicyMap.SuffixResourceExpressionTree.Get(resourceExpression); exist {
+			if value, exist := resourceToPolicyMap.SuffixResourceExpressionTree.Get(processedExpr); exist {
 				policyIDSet := value.(map[string]bool)
 				policyIDSet[policyID] = true
 			} else {
 				policyIDSet := make(map[string]bool, 1)
 				policyIDSet[policyID] = true
-				resourceToPolicyMap.SuffixResourceExpressionTree.Insert(resourceExpression, policyIDSet)
+				resourceToPolicyMap.SuffixResourceExpressionTree.Insert(processedExpr, policyIDSet)
 			}
 		}
 	} else if All_Pattern.MatchString(resourceExpression) {
@@ -190,12 +190,12 @@ func DeletePolicyFromResourceExpressionCache(resourceToPolicyMap *ResourceToPoli
 			return
 		}
 
-		resourceExpression := trimResourceExpressionSuffix(resourceExpression)
-		if value, exist := resourceToPolicyMap.PrefixResourceExpressionTree.Get(resourceExpression); exist {
+		processedExpr := trimResourceExpressionSuffix(resourceExpression)
+		if value, exist := resourceToPolicyMap.PrefixResourceExpressionTree.Get(processedExpr); exist {
 			policyIDSet := value.(map[string]bool)
 			delete(policyIDSet, policyID)
 			if len(policyIDSet) == 0 {
-				resourceToPolicyMap.PrefixResourceExpressionTree.Delete(resourceExpression)
+				resourceToPolicyMap.PrefixResourceExpressionTree.Delete(processedExpr)
 			}
 		}
 	} else if Suffix_Pattern.MatchString(resourceExpression) {
@@ -203,12 +203,12 @@ func DeletePolicyFromResourceExpressionCache(resourceToPolicyMap *ResourceToPoli
 			return
 		}
 
-		resourceExpression := ReverseString(trimResourceExpressionPrefix(resourceExpression))
-		if value, exist := resourceToPolicyMap.SuffixResourceExpressionTree.Get(resourceExpression); exist {
+		processedExpr := ReverseString(trimResourceExpressionPrefix(resourceExpression))
+		if value, exist := resourceToPolicyMap.SuffixResourceExpressionTree.Get(processedExpr); exist {
 			policyIDSet := value.(map[string]bool)
 			delete(policyIDSet, policyID)
 			if len(policyIDSet) == 0 {
-				resourceToPolicyMap.SuffixResourceExpressionTree.Delete(resourceExpression)
+				resourceToPolicyMap.SuffixResourceExpressionTree.Delete(processedExpr)
 			}
 		}
 	} else if All_Pattern.MatchString(resourceExpression) {

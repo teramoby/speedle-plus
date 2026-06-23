@@ -216,8 +216,8 @@ func getAndPrincipals(cmd string, i int) ([]string, int, error) {
 	}
 	if cmd[i] != '(' {
 		// No ( found, only one principal found
-		onePrincipal, i, err := getPrincipal(cmd, i)
-		return []string{onePrincipal}, i, err
+		onePrincipal, j, err := getPrincipal(cmd, i)
+		return []string{onePrincipal}, j, err
 	}
 
 	i++
@@ -423,12 +423,12 @@ func getResources(cmd string, i int) ([]string, []string, int, error) {
 	i = skipSpaces(cmd, i)
 	if hasPrefixFoldASCII(cmd[i:], "on ") {
 		i += 3
-		tokens, i, err := getTokens(cmd, i, "resource")
+		tokens, j, err := getTokens(cmd, i, "resource")
 		if err != nil {
-			return nil, nil, i, err
+			return nil, nil, j, err
 		}
 		if len(tokens) == 0 {
-			return nil, nil, -1, getError("Not found resource", cmd, i)
+			return nil, nil, -1, getError("Not found resource", cmd, j)
 		}
 		var resources, resExps []string
 		for _, token := range tokens {
@@ -439,7 +439,7 @@ func getResources(cmd string, i int) ([]string, []string, int, error) {
 				resExps = append(resExps, resExp)
 			}
 		}
-		return resources, resExps, i, nil
+		return resources, resExps, j, nil
 	}
 	return nil, []string{}, i, nil
 }
@@ -448,14 +448,14 @@ func getService(cmd string, i int) (string, int, error) {
 	i = skipSpaces(cmd, i)
 	if hasPrefixFoldASCII(cmd[i:], "in ") {
 		i += 3
-		serv, i, err := getToken(cmd, i)
+		serv, j, err := getToken(cmd, i)
 		if err != nil {
 			return "", -1, err
 		}
 		if serv == "" {
-			return "", -1, getError("Not found service", cmd, i)
+			return "", -1, getError("Not found service", cmd, j)
 		}
-		return serv, i, nil
+		return serv, j, nil
 	}
 	return "", i, nil
 }

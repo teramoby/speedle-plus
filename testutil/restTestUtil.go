@@ -10,10 +10,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 	"net/url"
+	"os"
 	"reflect"
 	"strings"
 
@@ -110,7 +111,7 @@ func (client *RestClient) Get(data interface{}) error {
 
 	defer resp.Body.Close()
 	if restTD.OutputBody != nil {
-		body, _ := ioutil.ReadAll(resp.Body)
+		body, _ := io.ReadAll(resp.Body)
 		TestLog.Logf("GET Output body=%s", body)
 		if err := json.Unmarshal(body, restTD.OutputBody); err != nil {
 			TestLog.Logf("Fail to unmarshal JSON format, err=%s", err.Error())
@@ -150,7 +151,7 @@ func (client *RestClient) Delete(data interface{}) error {
 
 	if restTD.OutputBody != nil {
 
-		body, _ := ioutil.ReadAll(resp.Body)
+		body, _ := io.ReadAll(resp.Body)
 		TestLog.Logf("DELETE Output body=%s", body)
 		if err := json.Unmarshal(body, restTD.OutputBody); err != nil {
 			TestLog.Logf("Fail to unmarshal JSON format, err=%s", err.Error())
@@ -238,7 +239,7 @@ func (client *RestClient) Post(data interface{}) error {
 
 	if restTD.OutputBody != nil {
 
-		body, _ := ioutil.ReadAll(resp.Body)
+		body, _ := io.ReadAll(resp.Body)
 		TestLog.Logf("POST Output body=%s", body)
 		if err := json.Unmarshal(body, restTD.OutputBody); err != nil {
 			TestLog.Logf("Fail to unmarshal JSON format, err=%s", err.Error())
@@ -269,9 +270,9 @@ func (client *RestClient) Put(data interface{}) error {
 		TestLog.Logf("Put Input == %s \r\n", payload)
 	} else {
 
-		payload, err := json.Marshal(restTD.InputBody)
-		if err != nil {
-			return err
+		payload, marshalErr := json.Marshal(restTD.InputBody)
+		if marshalErr != nil {
+			return marshalErr
 		}
 		TestLog.Logf("PUT Input == %s \r\n", payload)
 		req, err = http.NewRequest(http.MethodPut, url, bytes.NewBuffer(payload))
@@ -298,7 +299,7 @@ func (client *RestClient) Put(data interface{}) error {
 
 	if restTD.OutputBody != nil {
 
-		body, _ := ioutil.ReadAll(resp.Body)
+		body, _ := io.ReadAll(resp.Body)
 		TestLog.Logf("PUT Output body=%s", body)
 		if err := json.Unmarshal(body, restTD.OutputBody); err != nil {
 			TestLog.Logf("Fail to unmarshal output body, err=%s", err.Error())
@@ -326,7 +327,7 @@ func NewRestClient(endpoint string, curToken string, basicAuthName string, basic
 		}, nil
 	}
 	fmt.Printf("caLoc: %s, certLoc: %s, keyLoc: %s\n", caLoc, certLoc, keyLoc)
-	caCert, err := ioutil.ReadFile(caLoc)
+	caCert, err := os.ReadFile(caLoc)
 	if err != nil {
 		log.Fatal(err)
 		return nil, err

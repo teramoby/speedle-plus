@@ -94,11 +94,11 @@ func discoverCommandFunc(cmd *cobra.Command, args []string) {
 					if json.Unmarshal(res, &response) == nil {
 						revision = response.Revision
 						for _, request := range response.Requests {
-							output, merr := json.MarshalIndent(&request, "", strings.Repeat(" ", 4))
+							resOutput, merr := json.MarshalIndent(&request, "", strings.Repeat(" ", 4))
 							if merr != nil {
 								fmt.Fprintln(os.Stderr, merr)
 							}
-							fmt.Println(string(output))
+							fmt.Println(string(resOutput))
 						}
 					}
 					sigCh := make(chan os.Signal, 1)
@@ -117,11 +117,11 @@ func discoverCommandFunc(cmd *cobra.Command, args []string) {
 							if json.Unmarshal(res, &response) == nil {
 								revision = response.Revision
 								for _, request := range response.Requests {
-									output, merr := json.MarshalIndent(&request, "", strings.Repeat(" ", 4))
+									resOutput, merr := json.MarshalIndent(&request, "", strings.Repeat(" ", 4))
 									if merr != nil {
 										fmt.Fprintln(os.Stderr, merr)
 									}
-									fmt.Println(string(output))
+									fmt.Println(string(resOutput))
 								}
 							}
 						} else {
@@ -138,11 +138,11 @@ func discoverCommandFunc(cmd *cobra.Command, args []string) {
 					var response pmsrest.GetDiscoverRequestsResponse
 					if json.Unmarshal(res, &response) == nil {
 						for _, request := range response.Requests {
-							output, merr := json.MarshalIndent(&request, "", strings.Repeat(" ", 4))
+							resOutput, merr := json.MarshalIndent(&request, "", strings.Repeat(" ", 4))
 							if merr != nil {
 								fmt.Fprintln(os.Stderr, merr)
 							}
-							fmt.Println(string(output))
+							fmt.Println(string(resOutput))
 						}
 					}
 				}

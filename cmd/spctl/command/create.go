@@ -178,17 +178,17 @@ func createCommandFunc(cmd *cobra.Command, args []string) {
 			if jsonFileName != "" {
 				buf, err = os.ReadFile(jsonFileName)
 			} else if pdlFileName != "" {
-				fileStore, err := store.NewStore(file.StoreType, map[string]interface{}{
+				fileStore, storeErr := store.NewStore(file.StoreType, map[string]interface{}{
 					file.FileLocationKey: pdlFileName,
 				})
-				if err != nil {
-					fmt.Fprintln(os.Stderr, err)
+				if storeErr != nil {
+					fmt.Fprintln(os.Stderr, storeErr)
 					os.Exit(1)
 				}
 
-				services, err := fileStore.ListAllServices()
-				if err != nil {
-					fmt.Fprintln(os.Stderr, err)
+				services, listErr := fileStore.ListAllServices()
+				if listErr != nil {
+					fmt.Fprintln(os.Stderr, listErr)
 					os.Exit(1)
 				}
 				buf, err = json.Marshal(services)
@@ -203,17 +203,17 @@ func createCommandFunc(cmd *cobra.Command, args []string) {
 				service := pms.Service{Name: serviceName, Type: serviceType}
 				buf, err = json.Marshal(service)
 			} else {
-				fileStore, err := store.NewStore(file.StoreType, map[string]interface{}{
+				fileStore, storeErr := store.NewStore(file.StoreType, map[string]interface{}{
 					file.FileLocationKey: pdlFileName,
 				})
-				if err != nil {
-					fmt.Fprintln(os.Stderr, err)
+				if storeErr != nil {
+					fmt.Fprintln(os.Stderr, storeErr)
 					os.Exit(1)
 				}
 				if err == nil {
-					service, err := fileStore.GetService(serviceName)
-					if err != nil {
-						fmt.Fprintln(os.Stderr, err)
+					service, getErr := fileStore.GetService(serviceName)
+					if getErr != nil {
+						fmt.Fprintln(os.Stderr, getErr)
 						os.Exit(1)
 					}
 					buf, err = json.Marshal(service)

@@ -249,17 +249,18 @@ func toGRPCStatus(err error) error {
 }
 
 func (impl *serviceImpl) CreateFunction(ctx context.Context, in *pb.Function) (*pb.Function, error) {
-	function := convertRPCFunction(in)
-	if function, err := impl.policyStore.CreateFunction(function); err != nil {
+	fn := convertRPCFunction(in)
+	created, err := impl.policyStore.CreateFunction(fn)
+	if err != nil {
 		// Audit log
-		logging.WriteSimpleFailedAuditLog("[gRPC]CreateFunction", function, err.Error())
+		logging.WriteSimpleFailedAuditLog("[gRPC]CreateFunction", created, err.Error())
 		return nil, toGRPCStatus(err)
 	}
 
 	// Audit log
-	logging.WriteSimpleSucceededAuditLog("[gRPC]CreateFunction", function, nil)
+	logging.WriteSimpleSucceededAuditLog("[gRPC]CreateFunction", created, nil)
 
-	return convertMetaFunction(function), nil
+	return convertMetaFunction(created), nil
 }
 
 func (impl *serviceImpl) QueryFunctions(ctx context.Context, in *pb.FunctionQueryRequest) (*pb.FunctionQueryResponse, error) {
@@ -708,7 +709,7 @@ func (impl *serviceImpl) GetDiscoverRequests(ctx context.Context, in *pb.Discove
 
 	requests := []*pb.ContextRequest{}
 	if last {
-		req, revision, err := discoverRequestMgr.GetLastDiscoverRequest(serviceName)
+		req, rev, err := discoverRequestMgr.GetLastDiscoverRequest(serviceName)
 		if err != nil {
 			// Audit log
 			logging.WriteFailedAuditLog("GetDiscoverRequests", ctxFields, err.Error())
@@ -719,9 +720,9 @@ func (impl *serviceImpl) GetDiscoverRequests(ctx context.Context, in *pb.Discove
 		// Audit log
 		logging.WriteSucceededAuditLog("GetDiscoverRequests", ctxFields, map[string]interface{}{"lastRequest": req})
 
-		return &pb.DiscoverRequestsResponse{Requests: requests, Revision: revision}, nil
+		return &pb.DiscoverRequestsResponse{Requests: requests, Revision: rev}, nil
 	} else if revision > 0 {
-		reqs, revision, err := discoverRequestMgr.GetDiscoverRequestsSinceRevision(serviceName, revision)
+		reqs, rev, err := discoverRequestMgr.GetDiscoverRequestsSinceRevision(serviceName, revision)
 		if err != nil {
 			// Audit log
 			logging.WriteFailedAuditLog("GetDiscoverRequests", ctxFields, err.Error())
@@ -734,7 +735,7 @@ func (impl *serviceImpl) GetDiscoverRequests(ctx context.Context, in *pb.Discove
 		// Audit log
 		logging.WriteSucceededAuditLog("GetDiscoverRequests", ctxFields, map[string]interface{}{"requestCount": len(requests)})
 
-		return &pb.DiscoverRequestsResponse{Requests: requests, Revision: revision}, nil
+		return &pb.DiscoverRequestsResponse{Requests: requests, Revision: rev}, nil
 	} else {
 		reqs, revision, err := discoverRequestMgr.GetDiscoverRequests(serviceName)
 		if err != nil {

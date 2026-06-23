@@ -256,7 +256,7 @@ func (p *PolicyEvalImpl) InternalIsAllowed(ctx *adsapi.RequestContext, evaluatio
 		evaluationResult.Attributes = newCtx.Attributes
 	}
 
-	if err := p.resolveSubject(newCtx, evaluationResult); err != nil {
+	if err = p.resolveSubject(newCtx, evaluationResult); err != nil {
 		return false, adsapi.ERROR_IN_EVALUATION, err
 	}
 
@@ -317,7 +317,7 @@ func (p *PolicyEvalImpl) GetAllGrantedPermissions(ctx adsapi.RequestContext) ([]
 		return []pms.Permission{}, nil
 	}
 
-	if err := p.resolveSubject(newCtx, nil); err != nil {
+	if err = p.resolveSubject(newCtx, nil); err != nil {
 		return nil, err
 	}
 
@@ -510,7 +510,8 @@ func (p *PolicyEvalImpl) getGrantedRolesFromService(ctx *internalRequestContext,
 		for _, role := range newlyGrantedRoles {
 			newSubjectPrincipals = append(newSubjectPrincipals, convertRoleToPrincipal(role))
 		}
-		indirectGrantedRolePolicies, _, err := p.getDirectRolePolices(newSubjectPrincipals, ctx, policyIDMap, evaluationResult)
+		var indirectGrantedRolePolicies []*pms.RolePolicy
+		indirectGrantedRolePolicies, _, err = p.getDirectRolePolices(newSubjectPrincipals, ctx, policyIDMap, evaluationResult)
 		if err != nil {
 			return nil, err
 		}
@@ -1187,9 +1188,6 @@ func (p *PolicyEvalImpl) updateRuntimeCacheWithStoreChange(updateChan pms.Storag
 }
 
 func (p *PolicyEvalImpl) cleanExpiredFunctionResultPeriodically() {
-	if p.done == nil {
-		p.done = make(chan struct{})
-	}
 	ticker := time.NewTicker(30 * time.Minute)
 	go func() {
 		defer ticker.Stop()

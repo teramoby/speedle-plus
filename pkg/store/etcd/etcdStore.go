@@ -32,6 +32,11 @@ const (
 	FunctionsKey    = "functions"
 	ServiceTypeKey  = "type"
 	pageSize        = 1000
+
+	// watchBackoffBase is the initial backoff duration for Watch retries.
+	watchBackoffBase = 1 * time.Second
+	// watchBackoffMax is the maximum backoff duration for Watch retries.
+	watchBackoffMax = 30 * time.Second
 )
 
 type Store struct {
@@ -610,13 +615,23 @@ func (s *Store) Watch() (pms.StorageChangeChannel, error) {
 			close(stopChan)
 			log.Info("Exiting Watch...")
 		}()
+		var consecutiveFails int
 	loop:
 		for {
 			//TODO: reload policy store in case missing any changes during watch failure
 			go watch(evalChan, s, errChan, stopChan)
 			select {
 			case err := <-errChan:
-				log.Warningf("Error %v happens, restart watching...\n", err)
+				consecutiveFails++
+				backoff := computeWatchBackoff(consecutiveFails)
+				log.Warningf("Error %v happens, restart watching after %v (failures: %d)...\n",
+					err, backoff, consecutiveFails)
+				select {
+				case <-time.After(backoff):
+				case <-s.stop:
+					log.Warning("Receiving stop signal during backoff, stop Watching...")
+					break loop
+				}
 				continue
 			case <-stopChan:
 				log.Warning("Receiving stop signal, stop Watching...")

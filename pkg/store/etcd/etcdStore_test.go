@@ -43,8 +43,8 @@ func TestWriteReadPolicyStore(t *testing.T) {
 	}
 	defer store.(*Store).destroy()
 
-	if psOrigin, err := store.ReadPolicyStore(); err != nil {
-		t.Fatal("fail to read etcd3 store:", err)
+	if psOrigin, readErr := store.ReadPolicyStore(); readErr != nil {
+		t.Fatal("fail to read etcd3 store:", readErr)
 	} else {
 		t.Log("existing number of apps:", len(psOrigin.Services))
 	}
@@ -564,9 +564,9 @@ func TestCheckItemsCount(t *testing.T) {
 		{Name: "p03", Effect: "grant", Principals: [][]string{{"user:user3"}}},
 	}
 	for _, policy := range policies {
-		_, err := store.CreatePolicy("service1", &policy)
-		if err != nil {
-			t.Fatal("fail to create policy:", err)
+		_, cErr := store.CreatePolicy("service1", &policy)
+		if cErr != nil {
+			t.Fatal("fail to create policy:", cErr)
 		}
 	}
 	// Check policy count
@@ -584,9 +584,9 @@ func TestCheckItemsCount(t *testing.T) {
 		{Name: "p02", Effect: "grant", Principals: []string{"user:user2"}, Roles: []string{"role2"}},
 	}
 	for _, rolePolicy := range rolePolicies {
-		_, err := store.CreateRolePolicy("service1", &rolePolicy)
-		if err != nil {
-			t.Fatal("Failed to get role policy count:", err)
+		_, cErr := store.CreateRolePolicy("service1", &rolePolicy)
+		if cErr != nil {
+			t.Fatal("Failed to get role policy count:", cErr)
 		}
 	}
 	// Check role Policy count
@@ -615,9 +615,9 @@ func TestCheckItemsCount(t *testing.T) {
 
 	// Create policies in service2
 	for _, policy := range policies {
-		_, err := store.CreatePolicy("service2", &policy)
-		if err != nil {
-			t.Fatal("fail to create policy:", err)
+		_, cErr := store.CreatePolicy("service2", &policy)
+		if cErr != nil {
+			t.Fatal("fail to create policy:", cErr)
 		}
 	}
 	// Check policy count in service2
@@ -639,9 +639,9 @@ func TestCheckItemsCount(t *testing.T) {
 
 	// Create rolePolicy in service2
 	for _, rolePolicy := range rolePolicies {
-		_, err := store.CreateRolePolicy("service2", &rolePolicy)
-		if err != nil {
-			t.Fatal("Failed to get role policy count:", err)
+		_, cErr := store.CreateRolePolicy("service2", &rolePolicy)
+		if cErr != nil {
+			t.Fatal("Failed to get role policy count:", cErr)
 		}
 	}
 	// Check role Policy count in service2

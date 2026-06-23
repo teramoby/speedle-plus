@@ -27,9 +27,9 @@ func (e *RESTService) Discover(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// assert token
-	if err := e.Evaluator.AssertToken(context); err != nil {
-		httputils.HandleError(w, err)
-		logging.WriteSimpleFailedAuditLog("Discover", context, err.Error())
+	if assertErr := e.Evaluator.AssertToken(context); assertErr != nil {
+		httputils.HandleError(w, assertErr)
+		logging.WriteSimpleFailedAuditLog("Discover", context, assertErr.Error())
 		return
 	}
 

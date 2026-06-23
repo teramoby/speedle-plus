@@ -44,8 +44,17 @@ func main() {
 	storeParamsMap := store.GetAllStoreParams()
 
 	var params flags.Parameters
-	params.ParseFlags(flags.DefaultPolicyManagementListenPoint, printVersionInfo, storeParamsMap)
-	params.ValidateFlags()
+	if err := params.ParseFlags(flags.DefaultPolicyManagementListenPoint, printVersionInfo, storeParamsMap); err != nil {
+		fmt.Fprintf(os.Stderr, "Error parsing flags: %v\n", err)
+		os.Exit(1)
+	}
+	if params.ShowVersionAndExit {
+		os.Exit(0)
+	}
+	if err := params.ValidateFlags(); err != nil {
+		fmt.Fprintf(os.Stderr, "Error validating flags: %v\n", err)
+		os.Exit(1)
+	}
 
 	conf, _ := params.Param2Config(storeParamsMap)
 
@@ -114,8 +123,8 @@ func main() {
 		log.Info("Stopping HTTP Server...")
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
-		if err := httpServer.Shutdown(ctx); err != nil {
-			log.Errorf("HTTP server shutdown error: %v", err)
+		if serveErr := httpServer.Shutdown(ctx); serveErr != nil {
+			log.Errorf("HTTP server shutdown error: %v", serveErr)
 		}
 	}
 	if grpcServer != nil {

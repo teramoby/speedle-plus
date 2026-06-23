@@ -404,14 +404,24 @@ func (s *Store) StopWatch() {
 	}
 }
 
-// Health reports whether the file store is operational.
+// Health checks whether the policy store file exists and is readable.
 func (s *Store) Health(ctx context.Context) error {
+	if s.FileLocation == "" {
+		return errors.New(errors.StoreError, "file store location is not configured")
+	}
+	f, err := os.Open(s.FileLocation)
+	if err != nil {
+		return errors.Wrapf(err, errors.StoreError, "file store %q is not accessible", s.FileLocation)
+	}
+	f.Close()
 	return nil
 }
 
-// Close releases any resources held by the file store.
+// Close stops the watcher goroutine if it is running and clears the
+// discover request store cache, releasing any resources held by the store.
 func (s *Store) Close() error {
 	s.StopWatch()
+	s.discoverStore = nil
 	return nil
 }
 
