@@ -698,7 +698,10 @@ func (impl *serviceImpl) ListPolicyCounts(ctx context.Context, in *pb.Empty) (*p
 }
 
 func (impl *serviceImpl) GetDiscoverRequests(ctx context.Context, in *pb.DiscoverRequestsRequest) (*pb.DiscoverRequestsResponse, error) {
-	discoverRequestMgr, _ := impl.policyStore.(store.DiscoverRequestManager)
+	discoverRequestMgr, ok := impl.policyStore.(store.DiscoverRequestManager)
+	if !ok {
+		return nil, status.Error(codes.Unimplemented, "discover not supported by this store")
+	}
 	last := in.Last
 	revision := in.Revision
 	serviceName := in.ServiceName
@@ -757,7 +760,10 @@ func (impl *serviceImpl) GetDiscoverRequests(ctx context.Context, in *pb.Discove
 
 }
 func (impl *serviceImpl) ResetDiscoverRequests(ctx context.Context, in *pb.ResetRequestsRequest) (*pb.ResetRequestsResponse, error) {
-	discoverRequestMgr, _ := impl.policyStore.(store.DiscoverRequestManager)
+	discoverRequestMgr, ok := impl.policyStore.(store.DiscoverRequestManager)
+	if !ok {
+		return nil, status.Error(codes.Unimplemented, "discover not supported by this store")
+	}
 	err := discoverRequestMgr.ResetDiscoverRequests(in.ServiceName)
 
 	// Audit log
@@ -771,7 +777,10 @@ func (impl *serviceImpl) ResetDiscoverRequests(ctx context.Context, in *pb.Reset
 }
 
 func (impl *serviceImpl) GetDiscoverPolicies(ctx context.Context, in *pb.DiscoverPoliciesRequest) (*pb.DiscoverPoliciesResponse, error) {
-	discoverRequestMgr, _ := impl.policyStore.(store.DiscoverRequestManager)
+	discoverRequestMgr, ok := impl.policyStore.(store.DiscoverRequestManager)
+	if !ok {
+		return nil, status.Error(codes.Unimplemented, "discover not supported by this store")
+	}
 	serviceMap, revision, err := discoverRequestMgr.GeneratePolicies(in.ServiceName, in.PrincipalType, in.PrincipalName, in.PrincipalIdd)
 
 	// Audit contextual fields for request

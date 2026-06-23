@@ -342,7 +342,7 @@ func (s *Store) Watch() (pms.StorageChangeChannel, error) {
 				} else if event["operationType"] == "delete" {
 					log.Info("===delete service")
 					id := time.Now().Unix()
-					serviceName := event["documentKey"].(bson.M)["_id"].(string)
+					serviceName := getDocID(event)
 					serviceDeleteEvent := pms.StoreChangeEvent{Type: pms.SERVICE_DELETE, ID: id, Content: []string{serviceName}}
 					log.Info("###serviceDeleteEvent:", serviceDeleteEvent)
 					storeChangeChan <- serviceDeleteEvent
@@ -371,7 +371,7 @@ func (s *Store) Watch() (pms.StorageChangeChannel, error) {
 				} else if event["operationType"] == "delete" {
 					log.Info("===delete function")
 					id := time.Now().Unix()
-					funcName := event["documentKey"].(bson.M)["_id"].(string)
+					funcName := getDocID(event)
 					funcDeleteEvent := pms.StoreChangeEvent{Type: pms.FUNCTION_DELETE, ID: id, Content: []string{funcName}}
 					log.Info("###funcDeleteEvent:", funcDeleteEvent)
 					storeChangeChan <- funcDeleteEvent
@@ -390,6 +390,19 @@ func (s *Store) Watch() (pms.StorageChangeChannel, error) {
 
 	return storeChangeChan, nil
 
+}
+
+// getDocID safely extracts the document ID from a MongoDB change event.
+func getDocID(event bson.M) string {
+	dk, ok := event["documentKey"].(bson.M)
+	if !ok {
+		return ""
+	}
+	id, ok := dk["_id"].(string)
+	if !ok {
+		return ""
+	}
+	return id
 }
 
 func (s *Store) StopWatch() {

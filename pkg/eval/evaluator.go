@@ -555,7 +555,6 @@ func (p *PolicyEvalImpl) getGrantedRolesFromService(ctx *internalRequestContext,
 		if len(safelyDeniedRoles) > 0 {
 			for _, deniedRole := range safelyDeniedRoles {
 				denyRoleAndDescendants(deniedRole, relatedRolesMap, grantedRoleMap, deniedRoleMap)
-				//printRelatedRoleMap(relatedRolesMap)
 			}
 			//get deniedRoles based on the left role nodes.
 			deniedRoleMap = getDeniedRoles(relatedRolesMap, grantedRoleMap)
@@ -1123,7 +1122,11 @@ func (p *PolicyEvalImpl) updateRuntimeCacheWithStoreChange(updateChan pms.Storag
 				continue
 			}
 			for _, s := range data {
-				policy := s.Data.(*pms.Policy)
+				policy, ok := s.Data.(*pms.Policy)
+				if !ok {
+					log.Warnf("unexpected Data type for POLICY_ADD event")
+					continue
+				}
 				p.AddPolicyInRuntimeCache(s.ServiceName, policy)
 			}
 		case pms.POLICY_DELETE: // Event content:[]StoreUpdateData{ParentID:serviceName, Data:*pms.Policy}
@@ -1133,7 +1136,11 @@ func (p *PolicyEvalImpl) updateRuntimeCacheWithStoreChange(updateChan pms.Storag
 				continue
 			}
 			for _, s := range data {
-				policy := s.Data.(*pms.Policy)
+				policy, ok := s.Data.(*pms.Policy)
+				if !ok {
+					log.Warnf("unexpected Data type for POLICY_DELETE event")
+					continue
+				}
 				p.DeletePolicyInRuntimeCache(s.ServiceName, policy.ID)
 			}
 		case pms.ROLEPOLICY_ADD: //Event content :[]StoreUpdateData{ParentID:serviceName, Data:*rolepolicy}
@@ -1153,11 +1160,19 @@ func (p *PolicyEvalImpl) updateRuntimeCacheWithStoreChange(updateChan pms.Storag
 				continue
 			}
 			for _, s := range data {
-				rolePolicy := s.Data.(*pms.RolePolicy)
+				rolePolicy, ok := s.Data.(*pms.RolePolicy)
+				if !ok {
+					log.Warnf("unexpected Data type for ROLEPOLICY_ADD event")
+					continue
+				}
 				p.DeleteRolePolicyInRuntimeCache(s.ServiceName, rolePolicy.ID)
 			}
 		case pms.SYNC_RELOAD:
-			data := e.Content.([]interface{})
+			data, ok := e.Content.([]interface{})
+			if !ok {
+				log.Warnf("unexpected Content type for SYNC_RELOAD event")
+				continue
+			}
 			err := p.syncRuntimeCache(data)
 			if err != nil {
 				log.Error("failed to reload cache data. ", err)

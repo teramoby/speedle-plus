@@ -295,7 +295,7 @@ func (s *Store) prefixGet(prefix string, opts ...clientv3.OpOption) ([]*clientv3
 			return nil, err
 		}
 		ret = append(ret, getResp)
-		if getResp.More {
+		if getResp.More && len(getResp.Kvs) >= pageSize {
 			lastKey := string(getResp.Kvs[pageSize-1].Key)
 			prefix = clientv3.GetPrefixRangeEnd(lastKey)
 			getOpts = []clientv3.OpOption{clientv3.WithRange(end), clientv3.WithLimit(pageSize), clientv3.WithSort(clientv3.SortByKey, clientv3.SortAscend)}

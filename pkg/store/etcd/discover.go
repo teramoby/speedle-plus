@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	log "github.com/sirupsen/logrus"
 	"github.com/teramoby/speedle-plus/api/ads"
 	"github.com/teramoby/speedle-plus/api/pms"
 	"github.com/teramoby/speedle-plus/pkg/errors"
@@ -58,7 +59,7 @@ func (s *Store) PutRequest(request *ads.RequestContext) (int64, error) {
 			}
 			return count, nil
 		}
-		fmt.Println("key already exist, try with a new key...")
+		log.Debug("key already exist, try with a new key...")
 	}
 	return -1, nil //should not go here
 }
@@ -137,7 +138,7 @@ func (s *Store) GetRequests(keyPrefix string, pageSize int64) ([]*ads.RequestCon
 			}
 			requests = append(requests, &req)
 		}
-		fmt.Println("len=", len(getResp.Kvs), "more:", getResp.More, "revision:", getResp.Header.Revision)
+		log.Debugf("len=%d more=%v revision=%d", len(getResp.Kvs), getResp.More, getResp.Header.Revision)
 		if getResp.More {
 			revision = getResp.Kvs[pageSize-1].CreateRevision
 			getOpts = []clientv3.OpOption{clientv3.WithPrefix(), clientv3.WithMinCreateRev(revision + 1), clientv3.WithLimit(pageSize), clientv3.WithSort(clientv3.SortByCreateRevision, clientv3.SortAscend)}
