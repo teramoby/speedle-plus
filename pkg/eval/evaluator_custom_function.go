@@ -231,10 +231,10 @@ func getFunctionResp(client *http.Client, request *http.Request, cf *pms.Functio
 		log.Errorf("error happens when calling customer function %s, err is: %v\n", cf.Name, err)
 		return nil, errors.Wrapf(err, errors.CustomerFuncError, "failed to do customer function request for customer function %q", cf.Name)
 	}
+	defer resp.Body.Close()
 
 	switch resp.StatusCode {
 	case http.StatusOK:
-		defer resp.Body.Close()
 		//TODO: We might need to limit the larget size we want to receive
 		body, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
