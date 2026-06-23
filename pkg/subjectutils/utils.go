@@ -17,9 +17,9 @@ func EncodePrincipal(principal *adsapi.Principal) string {
 	if principal == nil {
 		return ""
 	}
-	// Reject colons and equals signs in principal names/IDDs to prevent encoding ambiguity.
-	if strings.ContainsAny(principal.Name, ":=") || strings.ContainsAny(principal.IDD, ":=") ||
-		strings.ContainsAny(principal.Type, ":=") {
+	// Reject colons in Type (which is the first field in the encoded format),
+	// and equals signs in IDD (which is the key=value prefix).
+	if strings.ContainsAny(principal.Type, ":") || strings.Contains(principal.IDD, "=") {
 		return ""
 	}
 	if len(principal.IDD) != 0 {
