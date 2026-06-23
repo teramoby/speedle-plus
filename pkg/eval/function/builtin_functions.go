@@ -4,7 +4,6 @@
 package function
 
 import (
-	"log"
 	"math"
 	"reflect"
 
@@ -94,113 +93,50 @@ func IsSubSet(args ...interface{}) (interface{}, error) {
 	if n < 2 {
 		return nil, err
 	}
-	s1, s2 := args[0], args[n-1]
-	if n > 2 {
+
+	var s1, s2 interface{}
+	if n == 2 {
+		// The expression evaluator (govaluate) converts typed slices to
+		// []interface{} via MapParameters.Get. When s1 has a single
+		// element, the separatorStage places it as a bare value instead of
+		// wrapping it in a slice. Detect and repair that case.
+		s1, s2 = args[0], args[1]
+		if reflect.TypeOf(s1).Kind() != reflect.Slice &&
+			reflect.TypeOf(s2).Kind() == reflect.Slice {
+			s1 = []interface{}{args[0]}
+		}
+	} else {
+		// More than 2 args: the evaluator expanded both parameters into
+		// individual elements. Reconstruct: first n-1 args form s1, last
+		// arg is s2 (which itself is an []interface{} from the evaluator).
 		buf := make([]interface{}, n-1)
-		copy(buf, args)
+		copy(buf, args[:n-1])
 		s1 = buf
+		s2 = args[n-1]
 	}
 
-	// Fast path: type-switch on common slice types to avoid reflection.
-	switch t1 := s1.(type) {
-	case []string:
-		t2, ok := s2.([]string)
-		if !ok {
-			return nil, err
-		}
-		if len(t1) == 0 || len(t2) == 0 || len(t1) > len(t2) {
-			return false, nil
-		}
-	outerStr:
-		for i := 0; i < len(t1); i++ {
-			for j := 0; j < len(t2); j++ {
-				if t1[i] == t2[j] {
-					continue outerStr
-				}
-			}
-			return false, nil
-		}
-		return true, nil
-
-	case []float64:
-		t2, ok := s2.([]float64)
-		if !ok {
-			return nil, err
-		}
-		if len(t1) == 0 || len(t2) == 0 || len(t1) > len(t2) {
-			return false, nil
-		}
-	outerFloat:
-		for i := 0; i < len(t1); i++ {
-			for j := 0; j < len(t2); j++ {
-				if t1[i] == t2[j] {
-					continue outerFloat
-				}
-			}
-			return false, nil
-		}
-		return true, nil
-
-	case []int:
-		t2, ok := s2.([]int)
-		if !ok {
-			return nil, err
-		}
-		if len(t1) == 0 || len(t2) == 0 || len(t1) > len(t2) {
-			return false, nil
-		}
-	outerInt:
-		for i := 0; i < len(t1); i++ {
-			for j := 0; j < len(t2); j++ {
-				if t1[i] == t2[j] {
-					continue outerInt
-				}
-			}
-			return false, nil
-		}
-		return true, nil
-
-	case []interface{}:
-		t2, ok := s2.([]interface{})
-		if !ok {
-			return nil, err
-		}
-		if len(t1) == 0 || len(t2) == 0 || len(t1) > len(t2) {
-			return false, nil
-		}
-	outerIface:
-		for i := 0; i < len(t1); i++ {
-			for j := 0; j < len(t2); j++ {
-				if t1[i] == t2[j] {
-					continue outerIface
-				}
-			}
-			return false, nil
-		}
-		return true, nil
-
-	default:
-		// Fallback to reflection for unknown slice types.
-		log.Printf("DEBUG IsSubSet: s1 type=%T, s2 type=%T", s1, s2)
-		if reflect.TypeOf(s1).Kind() != reflect.Slice || reflect.TypeOf(s2).Kind() != reflect.Slice {
-			return nil, err
-		}
-		v1 := reflect.ValueOf(s1)
-		v2 := reflect.ValueOf(s2)
-		n1 := v1.Len()
-		n2 := v2.Len()
-		if n1 == 0 || n2 == 0 || n1 > n2 {
-			return false, nil
-		}
-	outerRefl:
-		for i := 0; i < n1; i++ {
-			for j := 0; j < n2; j++ {
-				if v1.Index(i).Interface() == v2.Index(j).Interface() {
-					continue outerRefl
-				}
-			}
-			return false, nil
-		}
-		return true, nil
+	// Both s1 and s2 must be slices.
+	if reflect.TypeOf(s1).Kind() != reflect.Slice ||
+		reflect.TypeOf(s2).Kind() != reflect.Slice {
+		return nil, err
 	}
+
+	v1 := reflect.ValueOf(s1)
+	v2 := reflect.ValueOf(s2)
+	n1 := v1.Len()
+	n2 := v2.Len()
+	if n1 == 0 || n2 == 0 || n1 > n2 {
+		return false, nil
+	}
+
+outer:
+	for i := 0; i < n1; i++ {
+		for j := 0; j < n2; j++ {
+			if v1.Index(i).Interface() == v2.Index(j).Interface() {
+				continue outer
+			}
+		}
+		return false, nil
+	}
+	return true, nil
 }
