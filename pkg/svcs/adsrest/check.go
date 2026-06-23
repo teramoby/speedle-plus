@@ -5,6 +5,7 @@ package adsrest
 
 import (
 	"encoding/json"
+	"io"
 	"net/http"
 	"reflect"
 	"time"
@@ -127,7 +128,7 @@ func NewRESTServiceWithEvaluator(evaluator eval.InternalEvaluator) (*RESTService
 }
 
 func DecodeJSONContext(r *http.Request) (*JsonContext, error) {
-	decoder := json.NewDecoder(r.Body)
+	decoder := json.NewDecoder(io.LimitReader(r.Body, 1<<20)) // 1MB limit
 	var request JsonContext
 	if err := decoder.Decode(&request); err != nil {
 		return nil, errors.Wrap(err, errors.InvalidRequest, "unable to decode request")
@@ -147,7 +148,18 @@ func DuplicateAttributeMap(attrs map[string]interface{}) map[string]interface{} 
 }
 
 func VerifyAttributeName(attrName string) error {
-	// Currently don't verify attribute name
+	if len(attrName) == 0 {
+		return errors.New(errors.InvalidRequest, "attribute name must not be empty")
+	}
+	if len(attrName) > 256 {
+		return errors.New(errors.InvalidRequest, "attribute name must be at most 256 characters")
+	}
+	for _, c := range attrName {
+		if !((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') ||
+			c == '_' || c == '-' || c == '.') {
+			return errors.New(errors.InvalidRequest, "attribute name contains invalid character: "+string(c))
+		}
+	}
 	return nil
 }
 
@@ -311,6 +323,9 @@ func constructEvaluationResultForAudit(allowed bool, reason adsapi.Reason) *Audi
 }
 
 func (e *RESTService) IsAllowed(w http.ResponseWriter, r *http.Request) {
+	if !httputils.VerifyContentType(w, r, []string{"application/json"}) {
+		return
+	}
 	jsonRequest, err := DecodeJSONContext(r)
 	if err != nil {
 		httputils.HandleError(w, err)
@@ -352,6 +367,9 @@ func (e *RESTService) IsAllowed(w http.ResponseWriter, r *http.Request) {
 }
 
 func (e *RESTService) GetAllGrantedRoles(w http.ResponseWriter, r *http.Request) {
+	if !httputils.VerifyContentType(w, r, []string{"application/json"}) {
+		return
+	}
 	jsonRequest, err := DecodeJSONContext(r)
 	if err != nil {
 		httputils.HandleError(w, err)
@@ -383,6 +401,9 @@ func (e *RESTService) GetAllGrantedRoles(w http.ResponseWriter, r *http.Request)
 }
 
 func (e *RESTService) GetAllGrantedPermissions(w http.ResponseWriter, r *http.Request) {
+	if !httputils.VerifyContentType(w, r, []string{"application/json"}) {
+		return
+	}
 	jsonRequest, err := DecodeJSONContext(r)
 	if err != nil {
 		httputils.HandleError(w, err)
@@ -477,6 +498,9 @@ func ConvertAPIRolePolicy2RolePolicyResponse(apiRolePolicy *adsapi.EvaluatedRole
 }
 
 func (e *RESTService) Diagnose(w http.ResponseWriter, r *http.Request) {
+	if !httputils.VerifyContentType(w, r, []string{"application/json"}) {
+		return
+	}
 	jsonRequest, err := DecodeJSONContext(r)
 	if err != nil {
 		httputils.HandleError(w, err)
