@@ -315,8 +315,6 @@ func (s *Store) DeleteService(serviceName string) error {
 		return errors.Errorf(errors.EntityNotFound, "service %q is not found", serviceName)
 	}
 	return s.writePolicyStoreWithoutLock(ps)
-	return nil
-
 }
 
 // DeleteServices deletes all services from a file
