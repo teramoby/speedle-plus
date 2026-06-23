@@ -70,17 +70,19 @@ func (s *Store) WritePolicyStore(ps *pms.PolicyStore) error {
 }
 
 func (s *Store) writePolicyStoreWithoutLock(ps *pms.PolicyStore) error {
-	jsonFile, err := os.Create(s.FileLocation)
-	defer jsonFile.Close()
-	if err != nil {
-		return errors.Wrapf(err, errors.StoreError, "unable to create file %q", s.FileLocation)
-	}
 	psB, err := json.MarshalIndent(ps, "", "    ")
 	if err != nil {
 		return errors.Wrap(err, errors.StoreError, "marshal indent failed")
 	}
-	if _, err := jsonFile.Write(psB); err != nil {
-		return errors.Wrapf(err, errors.StoreError, "unable to write to file %q", s.FileLocation)
+
+	// Write to temp file then atomically rename to avoid data corruption on crash.
+	tmpFile := s.FileLocation + ".tmp"
+	if err := os.WriteFile(tmpFile, psB, 0644); err != nil {
+		return errors.Wrapf(err, errors.StoreError, "unable to write to temp file %q", tmpFile)
+	}
+	if err := os.Rename(tmpFile, s.FileLocation); err != nil {
+		os.Remove(tmpFile) // best-effort cleanup
+		return errors.Wrapf(err, errors.StoreError, "unable to rename temp file %q to %q", tmpFile, s.FileLocation)
 	}
 	return nil
 }
@@ -225,13 +227,27 @@ func (s *Store) CreateService(service *pms.Service) error {
 }
 
 func generateID(service *pms.Service) (*pms.Service, error) {
-	var result pms.Service
-	result = *service
-	for _, policy := range result.Policies {
-		policy.ID = suid.New().String()
+	result := *service
+	// Deep-copy policies to avoid mutating the original service's policies.
+	result.Policies = make([]*pms.Policy, len(service.Policies))
+	for i, p := range service.Policies {
+		cp := *p
+		cp.ID = suid.New().String()
+		result.Policies[i] = &cp
 	}
-	for _, rolePolicy := range result.RolePolicies {
-		rolePolicy.ID = suid.New().String()
+	// Deep-copy role policies for the same reason.
+	result.RolePolicies = make([]*pms.RolePolicy, len(service.RolePolicies))
+	for i, rp := range service.RolePolicies {
+		crp := *rp
+		crp.ID = suid.New().String()
+		result.RolePolicies[i] = &crp
+	}
+	// Ensure non-nil empty slices for clean JSON serialization.
+	if result.Policies == nil {
+		result.Policies = []*pms.Policy{}
+	}
+	if result.RolePolicies == nil {
+		result.RolePolicies = []*pms.RolePolicy{}
 	}
 	return &result, nil
 }
@@ -285,7 +301,7 @@ func (s *Store) DeleteService(serviceName string) error {
 	if !found {
 		return errors.Errorf(errors.EntityNotFound, "service %q is not found", serviceName)
 	}
-	s.writePolicyStoreWithoutLock(ps)
+	return s.writePolicyStoreWithoutLock(ps)
 	return nil
 
 }
@@ -339,7 +355,7 @@ func (s *Store) Watch() (pms.StorageChangeChannel, error) {
 					storeChangeChan <- reloadEvent
 				case event.Op&fsnotify.Rename == fsnotify.Rename:
 					if _, err := os.Lstat(s.FileLocation); os.IsNotExist(err) {
-						log.Fatalf("The policy file %q has already been renamed, please double check", s.FileLocation)
+						log.Errorf("The policy file %q has already been renamed, please double check", s.FileLocation)
 					} else {
 						// This is just a workaround for the issue https://github.com/fsnotify/fsnotify/issues/282
 						log.Info("Reloading the file store....")
@@ -348,11 +364,11 @@ func (s *Store) Watch() (pms.StorageChangeChannel, error) {
 
 						err = watcher.Add(s.FileLocation)
 						if err != nil {
-							log.Fatalf("Failed to add the file %q into the watch list again, error: %v", s.FileLocation, err)
+							log.Errorf("Failed to add the file %q into the watch list again, error: %v", s.FileLocation, err)
 						}
 					}
 				case event.Op&fsnotify.Remove == fsnotify.Remove:
-					log.Fatalf("The policy file %q has already been removed, please double check", s.FileLocation)
+					log.Errorf("The policy file %q has already been removed, please double check", s.FileLocation)
 				default:
 					log.Infof("Operation %q was detected on the policy file %q", event.Op, s.FileLocation)
 				}
