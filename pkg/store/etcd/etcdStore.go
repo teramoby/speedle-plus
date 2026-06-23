@@ -667,7 +667,9 @@ func watch(evalChan chan pms.StoreChangeEvent, s *Store, errChan chan error, sto
 	}
 	defer session.Close()
 
-	etcdChan := cli.Watch(context.Background(), s.KeyPrefix, clientv3.WithPrefix())
+	watchCtx, watchCancel := context.WithCancel(context.Background())
+	defer watchCancel()
+	etcdChan := cli.Watch(watchCtx, s.KeyPrefix, clientv3.WithPrefix())
 
 	for {
 		select {
@@ -1148,7 +1150,6 @@ func (s *Store) CreateRolePolicy(serviceName string, rolePolicy *pms.RolePolicy)
 }
 
 type filter struct {
-
 	field    string
 	operator string
 	target   string
