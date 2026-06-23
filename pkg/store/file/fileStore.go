@@ -24,6 +24,7 @@ import (
 type Store struct {
 	FileLocation  string
 	stop          chan struct{}
+	stopOnce      sync.Once
 	rwLock        sync.RWMutex
 	discoverStore *discoverRequestStore
 	cache         *pms.PolicyStore // in-memory cache; nil if not loaded
@@ -406,9 +407,11 @@ func (s *Store) Watch() (pms.StorageChangeChannel, error) {
 }
 
 func (s *Store) StopWatch() {
-	if s.stop != nil {
-		s.stop <- struct{}{}
-	}
+	s.stopOnce.Do(func() {
+		if s.stop != nil {
+			s.stop <- struct{}{}
+		}
+	})
 }
 
 // Health checks whether the policy store file exists and is readable.

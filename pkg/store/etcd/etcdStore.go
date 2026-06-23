@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/teramoby/speedle-plus/pkg/errors"
@@ -44,6 +45,7 @@ type Store struct {
 	Config       *clientv3.Config
 	KeyPrefix    string
 	stop         chan struct{}
+	stopOnce     sync.Once
 	embeddedInst *embed.Etcd
 	embeddedDir  string
 }
@@ -729,9 +731,11 @@ func watch(evalChan chan pms.StoreChangeEvent, s *Store, errChan chan error, sto
 }
 
 func (s *Store) StopWatch() {
-	if s.stop != nil {
-		s.stop <- struct{}{}
-	}
+	s.stopOnce.Do(func() {
+		if s.stop != nil {
+			s.stop <- struct{}{}
+		}
+	})
 }
 
 // computeWatchBackoff returns the backoff duration for a given number of
