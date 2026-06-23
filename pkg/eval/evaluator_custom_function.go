@@ -188,6 +188,9 @@ func hasPrivateIP(hostport string) bool {
 	if err != nil {
 		host = hostport
 	}
+	// Strip brackets from IPv6 addresses (e.g., "[::1]" -> "::1") to prevent
+	// SSRF bypass where a bracketed address evades the localhost check.
+	host = strings.Trim(host, "[]")
 	// Allow localhost for local development/testing.
 	if host == "localhost" || host == "127.0.0.1" || host == "::1" {
 		return false
