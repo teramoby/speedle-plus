@@ -137,6 +137,13 @@ func main() {
 		grpcServer.Stop()
 	}
 
+	log.Info("Closing policy store...")
+	if ps != nil {
+		if closeErr := ps.Close(); closeErr != nil {
+			log.Errorf("Failed to close policy store: %v", closeErr)
+		}
+	}
+
 	if err != nil {
 		os.Exit(1)
 	}

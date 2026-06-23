@@ -140,6 +140,11 @@ func main() {
 		grpcServer.Stop()
 	}
 
+	log.Info("Closing evaluator and store...")
+	if evaluator != nil {
+		evaluator.Close()
+	}
+
 	if err != nil {
 		os.Exit(1)
 	}

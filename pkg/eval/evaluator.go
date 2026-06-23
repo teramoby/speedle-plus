@@ -40,6 +40,9 @@ type TokenAsserter interface {
 type InternalEvaluator interface {
 	adsapi.PolicyEvaluator
 	TokenAsserter
+	// Close shuts down the evaluator and releases all resources
+	// including the underlying policy store.
+	Close()
 }
 
 type internalRequestContext struct {
@@ -1227,12 +1230,18 @@ func (p *PolicyEvalImpl) cleanExpiredFunctionResultPeriodically() {
 	}()
 }
 
-// Close shuts down the evaluator, stopping all background goroutines.
+// Close shuts down the evaluator, stopping all background goroutines
+// and closing the underlying policy store.
 // After Close returns, the evaluator should not be used.
 func (p *PolicyEvalImpl) Close() {
 	p.closeOnce.Do(func() {
 		if p.done != nil {
 			close(p.done)
+		}
+		if p.Store != nil {
+			if err := p.Store.Close(); err != nil {
+				log.Errorf("Failed to close policy store: %v", err)
+			}
 		}
 	})
 }
