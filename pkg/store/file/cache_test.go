@@ -41,8 +41,8 @@ func TestFileStoreCache(t *testing.T) {
 			{Name: "svc3"},
 		},
 	}
-	if err := s.WritePolicyStore(ps); err != nil {
-		t.Fatal("fail to write policy store:", err)
+	if writeErr := s.WritePolicyStore(ps); writeErr != nil {
+		t.Fatal("fail to write policy store:", writeErr)
 	}
 
 	// ---- Step 2: Read back via public API ----
@@ -74,8 +74,8 @@ func TestFileStoreCache(t *testing.T) {
 			{Name: "svc6"},
 		},
 	}
-	if err := s.WritePolicyStore(ps2); err != nil {
-		t.Fatal("fail to write updated policy store:", err)
+	if writeErr := s.WritePolicyStore(ps2); writeErr != nil {
+		t.Fatal("fail to write updated policy store:", writeErr)
 	}
 
 	// ---- Step 5: Read again (must get updated data) ----
@@ -98,8 +98,8 @@ func TestFileStoreCache(t *testing.T) {
 	ps3 := &pms.PolicyStore{
 		Services: []*pms.Service{},
 	}
-	if err := s.WritePolicyStore(ps3); err != nil {
-		t.Fatal("fail to write empty policy store:", err)
+	if writeErr := s.WritePolicyStore(ps3); writeErr != nil {
+		t.Fatal("fail to write empty policy store:", writeErr)
 	}
 
 	// ---- Step 7: Read after clearing (must return empty) ----
