@@ -50,16 +50,6 @@ type Store struct {
 	embeddedDir  string
 }
 
-func (s *Store) destroy() error {
-	err := s.client.Close()
-	if s.embeddedInst != nil {
-		CleanEmbeddedEtcd(s.embeddedInst, s.embeddedDir)
-	}
-	if err != nil {
-		return errors.New(errors.StoreError, "unable to close connection to etcd server")
-	}
-	return nil
-}
 
 // read policy store from etcd3
 func (s *Store) ReadPolicyStore() (*pms.PolicyStore, error) {

@@ -41,7 +41,7 @@ func TestWriteReadPolicyStore(t *testing.T) {
 	if err != nil {
 		t.Fatal("fail to new etcd3 store:", err)
 	}
-	defer store.(*Store).destroy()
+	defer store.Close()
 
 	if psOrigin, readErr := store.ReadPolicyStore(); readErr != nil {
 		t.Fatal("fail to read etcd3 store:", readErr)
@@ -76,7 +76,7 @@ func TestWriteReadDeleteService(t *testing.T) {
 	if err != nil {
 		t.Fatal("fail to new etcd3 store:", err)
 	}
-	defer store.(*Store).destroy()
+	defer store.Close()
 	//clean the service firstly
 	err = store.DeleteService("service1")
 	t.Log("deleteing service1, err:", err)
@@ -158,7 +158,7 @@ func TestEtcdStore_GetPolicyByName(t *testing.T) {
 	if err != nil {
 		t.Fatal("fail to new etcd3 store:", err)
 	}
-	defer store.(*Store).destroy()
+	defer store.Close()
 	//clean the service firstly
 	serviceName := "service1"
 	err = store.DeleteService(serviceName)
@@ -297,7 +297,7 @@ func TestEtcdStore_GetRolePolicyByName(t *testing.T) {
 	if err != nil {
 		t.Fatal("fail to new etcd3 store:", err)
 	}
-	defer store.(*Store).destroy()
+	defer store.Close()
 	//clean the service firstly
 	serviceName := "service1"
 	err = store.DeleteService(serviceName)
@@ -422,7 +422,7 @@ func TestManagePolicies(t *testing.T) {
 	if err != nil {
 		t.Fatal("fail to new etcd3 store:", err)
 	}
-	defer store.(*Store).destroy()
+	defer store.Close()
 	//clean the service firstly
 	store.DeleteService("service1")
 	app := pms.Service{Name: "service1", Type: pms.TypeApplication}
@@ -481,7 +481,7 @@ func TestManageRolePolicies(t *testing.T) {
 	if err != nil {
 		t.Fatal("fail to new etcd3 store:", err)
 	}
-	defer store.(*Store).destroy()
+	defer store.Close()
 
 	//clean the service firstly
 	store.DeleteService("service1")
@@ -537,7 +537,7 @@ func TestCheckItemsCount(t *testing.T) {
 	if err != nil {
 		t.Fatal("fail to new etcd3 store:", err)
 	}
-	defer store.(*Store).destroy()
+	defer store.Close()
 
 	// clean the services
 	store.DeleteServices()
@@ -665,7 +665,7 @@ func TestCheckItemsCount(t *testing.T) {
 func TestWatch(t *testing.T) {
 	store, err := store.NewStore(storeConfig.StoreType, storeConfig.StoreProps)
 	defer store.StopWatch()
-	defer store.(*Store).destroy()
+	defer store.Close()
 	if err != nil {
 		t.Fatal("fail to new etcd3 store:", err)
 	}
