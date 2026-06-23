@@ -64,6 +64,7 @@ type PolicyEvalImpl struct {
 	RuntimePolicyStore *RuntimePolicyStore //This is runtime policy store
 	Store              pms.PolicyStoreManagerADS
 	AsserterFunc       func(ctx *adsapi.RequestContext) error
+	done               chan struct{}
 }
 
 func (p *PolicyEvalImpl) deleteService(serviceName string) {
@@ -1147,15 +1148,29 @@ func (p *PolicyEvalImpl) updateRuntimeCacheWithStoreChange(updateChan pms.Storag
 }
 
 func (p *PolicyEvalImpl) cleanExpiredFunctionResultPeriodically() {
+	if p.done == nil {
+		p.done = make(chan struct{})
+	}
 	ticker := time.NewTicker(30 * time.Minute)
 	go func() {
+		defer ticker.Stop()
 		for {
 			select {
 			case <-ticker.C:
 				p.CleanExpiredFunctionResult()
+			case <-p.done:
+				return
 			}
 		}
 	}()
+}
+
+// Close shuts down the evaluator, stopping all background goroutines.
+// After Close returns, the evaluator should not be used.
+func (p *PolicyEvalImpl) Close() {
+	if p.done != nil {
+		close(p.done)
+	}
 }
 
 // StopWatch stops watching policy store.
