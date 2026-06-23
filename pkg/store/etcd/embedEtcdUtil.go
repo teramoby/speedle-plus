@@ -63,6 +63,7 @@ func StartEmbeddedEtcd(dataDir string) (etcd *embed.Etcd, etcdDir string, err er
 		log.Info("Etcd Server is ready!")
 		log.Warning("!!! WARNING: Embedded etcd is for DEVELOPMENT ONLY. Do NOT use in production. !!!")
 	case <-time.After(60 * time.Second):
+		atomic.StoreInt32(&embededStarted, 0)
 		etcd.Server.Stop() // trigger a shutdown
 		err = errors.New(errors.StoreError, "etcd Server took too long to start")
 	}
