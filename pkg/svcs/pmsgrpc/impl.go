@@ -501,7 +501,7 @@ func (impl *serviceImpl) QueryPolicies(ctx context.Context, in *pb.PolicyQueryRe
 		if err != nil {
 			// Audit log
 			logging.WriteFailedAuditLog("[gRPC]QueryPolicies", ctxFields, err.Error())
-			return nil, err
+			return nil, toGRPCStatus(err)
 		}
 		policies = append(policies, policy)
 	}
