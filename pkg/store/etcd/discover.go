@@ -49,6 +49,9 @@ func (s *Store) PutRequest(request *ads.RequestContext) (int64, error) {
 		}
 		if txnResp.Succeeded { //if not succeed, the key already exist, try again
 			succeed = true
+			if len(txnResp.Responses) < 3 {
+				return -1, errors.New(errors.StoreError, "unexpected number of responses in txn")
+			}
 			count := txnResp.Responses[1].GetResponseRange().Count
 			if count >= store.MaxDiscoverRequestNum { //reach Max number of requests, remove the oldest ones.
 				keys := []string{}
