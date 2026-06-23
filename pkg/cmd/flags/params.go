@@ -24,6 +24,7 @@ import (
 	"github.com/spf13/pflag"
 
 	"github.com/gorilla/handlers"
+	"golang.org/x/time/rate"
 )
 
 // Parameters is the parameters for Speedle
@@ -99,6 +100,10 @@ const (
 	DefaultAuditLogMaxBackups = "5"  // maximum number of old log files to retain
 
 	DefaultAsserterClientTimeout = "5"
+
+	// DefaultAllowedOrigins is the default CORS allowed origins.
+	// It can be overridden via configuration.
+	DefaultAllowedOrigins = "*"
 )
 
 type StrParamDetail struct {
@@ -112,9 +117,18 @@ type StrParamDetail struct {
 func (k *Parameters) NewHTTPServer(handler http.Handler) (*http.Server, error) {
 	insecure, _ := strconv.ParseBool(k.Insecure.Value)
 	headersOk := handlers.AllowedHeaders([]string{"X-Requested-With", "Content-Type"})
-	originsOk := handlers.AllowedOrigins([]string{"*"})
+	originsOk := handlers.AllowedOrigins([]string{DefaultAllowedOrigins}) // Can be overridden via configuration
 	methodsOk := handlers.AllowedMethods([]string{"GET", "HEAD", "POST", "DELETE", "OPTIONS"})
-	cosHandler := handlers.CORS(originsOk, headersOk, methodsOk)(handler)
+	// Rate limiter: 1000 requests/second with burst of 200.
+	limiter := rate.NewLimiter(rate.Limit(1000), 200)
+	rateLimitedHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !limiter.Allow() {
+			http.Error(w, `{"error":"rate limit exceeded"}`, http.StatusTooManyRequests)
+			return
+		}
+		handler.ServeHTTP(w, r)
+	})
+	cosHandler := handlers.CORS(originsOk, headersOk, methodsOk)(rateLimitedHandler)
 	// Wrap with panic recovery to prevent a single handler panic from crashing the server.
 	recoveryHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		defer func() {
