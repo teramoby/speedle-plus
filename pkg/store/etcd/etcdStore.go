@@ -1140,6 +1140,7 @@ func (s *Store) CreateRolePolicy(serviceName string, rolePolicy *pms.RolePolicy)
 }
 
 type filter struct {
+
 	field    string
 	operator string
 	target   string
