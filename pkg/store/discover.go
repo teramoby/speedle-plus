@@ -4,8 +4,6 @@
 package store
 
 import (
-	"reflect"
-
 	"github.com/teramoby/speedle-plus/api/ads"
 	"github.com/teramoby/speedle-plus/api/pms"
 	"github.com/teramoby/speedle-plus/pkg/subjectutils"
@@ -73,7 +71,7 @@ func GeneratePoliciesFromDiscoverRequests(requests []*ads.RequestContext, princi
 						},
 					},
 				}
-				serviceMap[req.ServiceName].Policies = appendPolicyIfUnique(serviceMap[req.ServiceName].Policies, &policy)
+				serviceMap[req.ServiceName].Policies = append(serviceMap[req.ServiceName].Policies, &policy)
 				policyMap[policyKey] = &policy
 			}
 		} else {
@@ -119,7 +117,7 @@ func GeneratePoliciesFromDiscoverRequests(requests []*ads.RequestContext, princi
 							},
 						},
 					}
-					serviceMap[req.ServiceName].Policies = appendPolicyIfUnique(serviceMap[req.ServiceName].Policies, &policy)
+					serviceMap[req.ServiceName].Policies = append(serviceMap[req.ServiceName].Policies, &policy)
 					policyMap[policyKey] = &policy
 				}
 			}
@@ -129,11 +127,3 @@ func GeneratePoliciesFromDiscoverRequests(requests []*ads.RequestContext, princi
 	return serviceMap, nil
 }
 
-func appendPolicyIfUnique(policies []*pms.Policy, newPolicy *pms.Policy) []*pms.Policy {
-	for _, policy := range policies {
-		if reflect.DeepEqual(*policy, *newPolicy) {
-			return policies
-		}
-	}
-	return append(policies, newPolicy)
-}
