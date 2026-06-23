@@ -114,6 +114,12 @@ func (s *Store) SaveDiscoverRequest(discoverRequest *ads.RequestContext) error {
 	}
 }
 func (s *discoverRequestStore) saveDiscoverRequest(discoverRequest *ads.RequestContext) error {
+	// Redact token before persisting to prevent credential leakage in discover storage.
+	if discoverRequest.Subject != nil && discoverRequest.Subject.Token != "" {
+		origToken := discoverRequest.Subject.Token
+		discoverRequest.Subject.Token = ""
+		defer func() { discoverRequest.Subject.Token = origToken }()
+	}
 	s.rwLock.Lock()
 	defer s.rwLock.Unlock()
 	sContent, err := s.readDiscoverRequestStoreWithoutLock()

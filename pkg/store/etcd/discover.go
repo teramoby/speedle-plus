@@ -30,6 +30,12 @@ func (s *Store) SaveDiscoverRequest(request *ads.RequestContext) error {
 }
 
 func (s *Store) PutRequest(request *ads.RequestContext) (int64, error) {
+	// Redact token before persisting to prevent credential leakage in discover storage.
+	if request.Subject != nil && request.Subject.Token != "" {
+		origToken := request.Subject.Token
+		request.Subject.Token = ""
+		defer func() { request.Subject.Token = origToken }()
+	}
 	value, err := json.Marshal(request)
 	if err != nil {
 		return -1, errors.Wrap(err, errors.SerializationError, "failed to marshal request")
