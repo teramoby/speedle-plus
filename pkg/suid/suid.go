@@ -22,8 +22,6 @@ type SUID []byte
 var sequenceID uint32
 var hostname = getHostname()
 
-var hashAlg = sha1.New()
-
 // New returns a new SUID instance
 func New() SUID {
 	// Get current timestamp
@@ -34,6 +32,7 @@ func New() SUID {
 	seqb := make([]byte, 4)
 	binary.BigEndian.PutUint32(seqb[:], atomic.AddUint32(&sequenceID, 1))
 
+	hashAlg := sha1.New()
 	hashAlg.Write(tb[:])
 	hashAlg.Write(hostname)
 	hashAlg.Write(pidb[:])
