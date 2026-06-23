@@ -4,19 +4,17 @@
 package pmsgrpc
 
 import (
-	"fmt"
-
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
 	"github.com/teramoby/speedle-plus/pkg/errors"
 	"github.com/teramoby/speedle-plus/pkg/store"
+	"github.com/teramoby/speedle-plus/pkg/svcs"
 	"github.com/teramoby/speedle-plus/pkg/svcs/pmsgrpc/pb"
 	"github.com/teramoby/speedle-plus/pkg/svcs/pmsimpl"
 
 	"context"
 
-	"github.com/teramoby/speedle-plus/api/ads"
 	"github.com/teramoby/speedle-plus/api/pms"
 
 	"strings"
@@ -129,14 +127,7 @@ func convertRPCPolicy(rpcPolicy *pb.Policy) *pms.Policy {
 		Condition: rpcPolicy.Condition,
 	}
 	ret.Principals = convertRPCPrincipals(rpcPolicy.Principals)
-	switch rpcPolicy.Effect {
-	case pb.Effect_GRANT:
-		ret.Effect = pms.Grant
-		break
-	case pb.Effect_DENY:
-		ret.Effect = pms.Deny
-		break
-	}
+	ret.Effect = toPMSEffect(rpcPolicy.Effect)
 	if rpcPolicy.Permissions == nil {
 		return &ret
 	}
@@ -202,14 +193,7 @@ func convertMetaRolePolicy(policy *pms.RolePolicy) *pb.RolePolicy {
 		ResourceExpressions: policy.ResourceExpressions,
 		Condition:           policy.Condition,
 	}
-	switch policy.Effect {
-	case pms.Grant:
-		ret.Effect = pb.Effect_GRANT
-		break
-	case pms.Deny:
-		ret.Effect = pb.Effect_DENY
-		break
-	}
+	ret.Effect = toPBEffect(policy.Effect)
 	return &ret
 }
 
@@ -220,14 +204,7 @@ func convertMetaPolicy(policy *pms.Policy) *pb.Policy {
 		Condition: policy.Condition,
 	}
 	ret.Principals = convertMetaPrincipals(policy.Principals)
-	switch policy.Effect {
-	case pms.Grant:
-		ret.Effect = pb.Effect_GRANT
-		break
-	case pms.Deny:
-		ret.Effect = pb.Effect_DENY
-		break
-	}
+	ret.Effect = toPBEffect(policy.Effect)
 
 	if len(policy.Permissions) == 0 {
 		return &ret
@@ -737,7 +714,7 @@ func (impl *serviceImpl) GetDiscoverRequests(ctx context.Context, in *pb.Discove
 			logging.WriteFailedAuditLog("GetDiscoverRequests", ctxFields, err.Error())
 			return nil, toGRPCStatus(err)
 		}
-		requests = append(requests, convertAPIRequestContext(req))
+		requests = append(requests, svcs.ConvertAPIRequestContext(req))
 
 		// Audit log
 		logging.WriteSucceededAuditLog("GetDiscoverRequests", ctxFields, map[string]interface{}{"lastRequest": req})
@@ -751,7 +728,7 @@ func (impl *serviceImpl) GetDiscoverRequests(ctx context.Context, in *pb.Discove
 			return nil, toGRPCStatus(err)
 		}
 		for _, req := range reqs {
-			requests = append(requests, convertAPIRequestContext(req))
+			requests = append(requests, svcs.ConvertAPIRequestContext(req))
 		}
 
 		// Audit log
@@ -766,7 +743,7 @@ func (impl *serviceImpl) GetDiscoverRequests(ctx context.Context, in *pb.Discove
 			return nil, toGRPCStatus(err)
 		}
 		for _, req := range reqs {
-			requests = append(requests, convertAPIRequestContext(req))
+			requests = append(requests, svcs.ConvertAPIRequestContext(req))
 		}
 
 		// Audit log
@@ -824,50 +801,4 @@ func (impl *serviceImpl) GetDiscoverPolicies(ctx context.Context, in *pb.Discove
 	})
 
 	return &pb.DiscoverPoliciesResponse{Services: services, Revision: revision}, nil
-}
-
-func convertAPIPrincipals(principals []*ads.Principal) []*pb.Principal {
-	if principals == nil {
-		return nil
-	}
-
-	ret := make([]*pb.Principal, 0, len(principals))
-	for _, princ := range principals {
-		ret = append(ret, &pb.Principal{
-			Type: princ.Type,
-			Name: princ.Name,
-			Idd:  princ.IDD,
-		})
-	}
-	return ret
-}
-
-func convertAttributes(in map[string]interface{}) map[string]string {
-	out := make(map[string]string, len(in))
-	for k, v := range in {
-		out[k] = fmt.Sprint(v)
-	}
-	return out
-
-}
-
-func convertAPISubject(subject *ads.Subject) *pb.Subject {
-	if subject == nil {
-		return nil
-	}
-	return &pb.Subject{
-		Principals: convertAPIPrincipals(subject.Principals),
-		Token:      subject.Token,
-		TokenType:  subject.TokenType,
-	}
-}
-
-func convertAPIRequestContext(req *ads.RequestContext) *pb.ContextRequest {
-	return &pb.ContextRequest{
-		Subject:     convertAPISubject(req.Subject),
-		ServiceName: req.ServiceName,
-		Resource:    req.Resource,
-		Action:      req.Action,
-		Attributes:  convertAttributes(req.Attributes),
-	}
 }
