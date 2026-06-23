@@ -17,6 +17,7 @@ import (
 	"github.com/teramoby/speedle-plus/pkg/errors"
 	"github.com/teramoby/speedle-plus/pkg/logging"
 	"github.com/teramoby/speedle-plus/pkg/store"
+	"github.com/teramoby/speedle-plus/pkg/svcs"
 	"github.com/teramoby/speedle-plus/pkg/svcs/pmsgrpc"
 	"github.com/teramoby/speedle-plus/pkg/svcs/pmsgrpc/pb"
 	"github.com/teramoby/speedle-plus/pkg/svcs/pmsrest"
@@ -128,7 +129,7 @@ func main() {
 }
 
 func newGRPCServer(ps pms.PolicyStoreManager) (*grpc.Server, error) {
-	server := grpc.NewServer()
+	server := grpc.NewServer(grpc.UnaryInterceptor(svcs.PanicRecoveryInterceptor()))
 	pb.RegisterPolicyManagerServer(server, pmsgrpc.NewServiceImpl(ps))
 	reflection.Register(server)
 	return server, nil

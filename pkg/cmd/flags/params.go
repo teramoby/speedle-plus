@@ -51,6 +51,11 @@ type Parameters struct {
 
 	// AsserterParameters asserter webhook configuration
 	AsserterConf AsserterParameters
+
+	// ShowVersionAndExit is set to true by ParseFlags when the --version flag
+	// is passed. Callers should check this after ParseFlags and exit cleanly
+	// if true.
+	ShowVersionAndExit bool
 }
 
 // LogParameters is the parameters for log configuration
@@ -290,7 +295,8 @@ func (k *Parameters) ParseFlags(defaultEndpoint string, printVersionInfoFun func
 
 	if k.Version {
 		printVersionInfoFun()
-		os.Exit(0)
+		k.ShowVersionAndExit = true
+		return
 	}
 
 	if len(k.ConfigFile.Value) == 0 {

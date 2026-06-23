@@ -20,6 +20,7 @@ import (
 	"github.com/teramoby/speedle-plus/pkg/eval"
 	"github.com/teramoby/speedle-plus/pkg/logging"
 	"github.com/teramoby/speedle-plus/pkg/store"
+	"github.com/teramoby/speedle-plus/pkg/svcs"
 	"github.com/teramoby/speedle-plus/pkg/svcs/adsgrpc"
 	"github.com/teramoby/speedle-plus/pkg/svcs/adsgrpc/pb"
 	"github.com/teramoby/speedle-plus/pkg/svcs/adsrest"
@@ -173,7 +174,7 @@ func newGRPCServer(evaluator eval.InternalEvaluator) (*grpc.Server, error) {
 		return nil, err
 	}
 
-	server := grpc.NewServer()
+	server := grpc.NewServer(grpc.UnaryInterceptor(svcs.PanicRecoveryInterceptor()))
 	pb.RegisterEvaluatorServer(server, serviceImpl)
 	// Register reflection service on gRPC server.
 	reflection.Register(server)
