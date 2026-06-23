@@ -123,4 +123,9 @@ const (
 )
 
 // String returns the English name of the Reason
-func (m Reason) String() string { return reason[m] }
+func (m Reason) String() string {
+	if int(m) >= len(reason) {
+		return "REASON_NOT_AVAILABLE"
+	}
+	return reason[m]
+}
