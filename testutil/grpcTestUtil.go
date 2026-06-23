@@ -8,7 +8,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
 	"reflect"
 	"sort"
 	"strings"
@@ -37,8 +36,7 @@ func (gc *GRpcClient) SetupConnection() error {
 	if gc.pmsConn == nil {
 		tmpConn, err := grpc.Dial("localhost:50001", grpc.WithInsecure())
 		if err != nil {
-			log.Fatalf("did not pmsConnect: %v", err)
-			return err
+			return fmt.Errorf("did not pmsConnect: %v", err)
 		}
 		gc.pmsClient = pmsPB.NewPolicyManagerClient(tmpConn)
 		gc.pmsConn = tmpConn
@@ -47,8 +45,7 @@ func (gc *GRpcClient) SetupConnection() error {
 	if gc.adsConn == nil {
 		tmpConn, err := grpc.Dial("localhost:50002", grpc.WithInsecure())
 		if err != nil {
-			log.Fatalf("did not adsConnect: %v", err)
-			return err
+			return fmt.Errorf("did not adsConnect: %v", err)
 		}
 		gc.adsClient = adsPB.NewEvaluatorClient(tmpConn)
 		gc.adsConn = tmpConn
@@ -60,6 +57,10 @@ func (gc *GRpcClient) CloseConnection() {
 	if gc.pmsConn != nil {
 		gc.pmsConn.Close()
 		gc.pmsConn = nil
+	}
+	if gc.adsConn != nil {
+		gc.adsConn.Close()
+		gc.adsConn = nil
 	}
 }
 

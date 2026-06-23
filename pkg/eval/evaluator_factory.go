@@ -70,6 +70,7 @@ func NewWithStore(conf *cfg.Config, s pms.PolicyStoreManagerADS) (InternalEvalua
 	p := &PolicyEvalImpl{
 		RuntimePolicyStore: runtimePolicyStore,
 		Store:              s,
+		done:               make(chan struct{}),
 	}
 
 	// start a goroutine watching to the channel for update events and

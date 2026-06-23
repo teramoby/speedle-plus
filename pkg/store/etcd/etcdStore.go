@@ -733,6 +733,23 @@ func (s *Store) StopWatch() {
 	}
 }
 
+// computeWatchBackoff returns the backoff duration for a given number of
+// consecutive watch failures. It doubles with each failure, starting at
+// watchBackoffBase and capped at watchBackoffMax.
+func computeWatchBackoff(consecutiveFails int) time.Duration {
+	backoff := watchBackoffBase
+	for i := 1; i < consecutiveFails; i++ {
+		backoff *= 2
+		if backoff > watchBackoffMax {
+			return watchBackoffMax
+		}
+	}
+	if backoff > watchBackoffMax {
+		return watchBackoffMax
+	}
+	return backoff
+}
+
 // For policy manager
 func (s *Store) ListAllPolicies(serviceName string, filter string) ([]*pms.Policy, error) {
 	f := parseFilter(filter)
