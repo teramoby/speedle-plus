@@ -12,6 +12,9 @@ import (
 // EncodePrincipal encodes prinicpal object to string
 // Form: [idd=<IDD>:]<Type>:<Name>
 func EncodePrincipal(principal *adsapi.Principal) string {
+	if principal == nil {
+		return ""
+	}
 	if len(principal.IDD) != 0 {
 		return fmt.Sprintf("idd=%s:%s:%s", principal.IDD, principal.Type, principal.Name)
 	}
