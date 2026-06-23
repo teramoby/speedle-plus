@@ -52,6 +52,9 @@ func initRouters(evaluator eval.InternalEvaluator) (*routes, error) {
 		// WARNING: The Diagnose endpoint exposes full policy structure including
 		// all policy definitions, conditions, and evaluation results. In production,
 		// restrict access to this endpoint to admin users only.
+		// TODO: Add authentication middleware to protect the Diagnose endpoint.
+		// Without auth, any client that can reach the ADS can dump the full
+		// policy store, including all rules, conditions, and role assignments.
 		route{
 			"Diagnose",
 			"POST",
