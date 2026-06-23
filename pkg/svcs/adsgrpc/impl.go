@@ -211,6 +211,9 @@ func convertAPIRolePolicy2EvaluatedRolePolicyResponse(apiRolePolicy *adsapi.Eval
 	}
 }
 
+// WARNING: The Diagnose RPC exposes full policy structure including all policy
+// definitions, conditions, and evaluation results. In production, restrict
+// access to this RPC to admin users only.
 func (impl *GRPCService) Diagnose(ctx context.Context, in *pb.ContextRequest) (*pb.EvaluationDebugResponse, error) {
 	reqCtx := convertGRPCContextRequest(in)
 

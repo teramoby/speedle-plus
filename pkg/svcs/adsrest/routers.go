@@ -49,6 +49,9 @@ func initRouters(evaluator eval.InternalEvaluator) (*routes, error) {
 			restService.IsAllowed,
 		},
 
+		// WARNING: The Diagnose endpoint exposes full policy structure including
+		// all policy definitions, conditions, and evaluation results. In production,
+		// restrict access to this endpoint to admin users only.
 		route{
 			"Diagnose",
 			"POST",
