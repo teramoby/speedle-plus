@@ -11,6 +11,8 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"time"
+	"runtime/debug"
 
 	"github.com/teramoby/speedle-plus/pkg/assertion"
 	"github.com/teramoby/speedle-plus/pkg/cfg"
@@ -114,10 +116,25 @@ func (k *Parameters) NewHTTPServer(handler http.Handler) (*http.Server, error) {
 	originsOk := handlers.AllowedOrigins([]string{"*"})
 	methodsOk := handlers.AllowedMethods([]string{"GET", "HEAD", "POST", "DELETE", "OPTIONS"})
 	cosHandler := handlers.CORS(originsOk, headersOk, methodsOk)(handler)
+	// Wrap with panic recovery to prevent a single handler panic from crashing the server.
+	recoveryHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		defer func() {
+			if err := recover(); err != nil {
+				logging.AuditLog().Errorf("Panic recovered: %v\n%s", err, debug.Stack())
+				http.Error(w, `{"error":"internal server error"}`, http.StatusInternalServerError)
+			}
+		}()
+		cosHandler.ServeHTTP(w, r)
+	})
 	if insecure {
 		server := http.Server{
-			Addr:    k.Endpoint.Value,
-			Handler: cosHandler,
+			Addr:              k.Endpoint.Value,
+			Handler:           recoveryHandler,
+			ReadTimeout:       30 * time.Second,
+			ReadHeaderTimeout: 10 * time.Second,
+			WriteTimeout:      30 * time.Second,
+			IdleTimeout:       60 * time.Second,
+			MaxHeaderBytes:    1 << 16, // 64KB
 		}
 		return &server, nil
 	}
@@ -126,7 +143,10 @@ func (k *Parameters) NewHTTPServer(handler http.Handler) (*http.Server, error) {
 
 func (k *Parameters) newTLSServer(handler http.Handler) (*http.Server, error) {
 	// Set HTTPS client
-	tlsConfig := &tls.Config{}
+	tlsConfig := &tls.Config{
+		MinVersion:       tls.VersionTLS12,
+		CurvePreferences: []tls.CurveID{tls.X25519, tls.CurveP256},
+	}
 
 	if k.ClientCertPath.Value != "" {
 		caCert, err := ioutil.ReadFile(k.ClientCertPath.Value)
