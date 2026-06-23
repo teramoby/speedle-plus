@@ -790,10 +790,23 @@ func denyRoleAndDescendants(role string, relatedRoleMap map[string]*Role, grante
 }
 
 func getDeniableDescendantRoles(role string, relatedRoleMap map[string]*Role) []string {
+	visited := make(map[string]bool)
+	return getDeniableDescendantRolesHelper(role, relatedRoleMap, visited)
+}
+
+func getDeniableDescendantRolesHelper(role string, relatedRoleMap map[string]*Role, visited map[string]bool) []string {
+	if visited[role] {
+		return nil
+	}
+	visited[role] = true
+
 	descendants := []string{}
 	if roleNode, ok := relatedRoleMap[role]; ok {
 		//get descendant nodes
 		for childrole := range roleNode.ChildRoles {
+			if visited[childrole] {
+				continue
+			}
 			if childRoleNode, ok := relatedRoleMap[childrole]; ok {
 				allParentRolesDenied := true
 				for parentRole := range childRoleNode.ParentRoles {
@@ -804,7 +817,7 @@ func getDeniableDescendantRoles(role string, relatedRoleMap map[string]*Role) []
 				}
 				if allParentRolesDenied && len(childRoleNode.ParentPrincipals) == 0 {
 					descendants = append(descendants, childrole)
-					descendants = append(descendants, getDeniableDescendantRoles(childrole, relatedRoleMap)...)
+					descendants = append(descendants, getDeniableDescendantRolesHelper(childrole, relatedRoleMap, visited)...)
 				}
 			}
 		}
