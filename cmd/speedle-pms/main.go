@@ -57,7 +57,11 @@ func main() {
 		os.Exit(1)
 	}
 
-	conf, _ := params.Param2Config(storeParamsMap)
+	conf, err := params.Param2Config(storeParamsMap)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error creating config: %v\n", err)
+		os.Exit(1)
+	}
 
 	// Initialize the logging
 	if conf.LogConfig != nil {
