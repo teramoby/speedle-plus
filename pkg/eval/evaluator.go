@@ -187,10 +187,7 @@ func (p *PolicyEvalImpl) populateContext(ctx *adsapi.RequestContext) (*internalR
 			encodedPrincipal := subjectutils.EncodePrincipal(principal)
 			principalWithoutIDD := ""
 			if len(principal.IDD) != 0 {
-				principalWithoutIDD = subjectutils.EncodePrincipal(&adsapi.Principal{
-					Type: principal.Type,
-					Name: principal.Name,
-				})
+				principalWithoutIDD = principal.Type + ":" + principal.Name
 			}
 			switch principal.Type {
 			case adsapi.PRINCIPAL_TYPE_USER:

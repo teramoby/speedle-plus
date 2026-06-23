@@ -431,6 +431,9 @@ func (impl *serviceImpl) CreatePolicy(ctx context.Context, in *pb.PolicyRequest)
 	if len(in.ServiceName) == 0 {
 		return nil, status.Error(codes.InvalidArgument, "service name is not passed")
 	}
+	if err := pmsrest.ValidateServiceName(in.ServiceName); err != nil {
+		return nil, toGRPCStatus(err)
+	}
 	if in.Policy == nil {
 		return nil, status.Error(codes.InvalidArgument, "policy is not passed")
 	}
@@ -465,6 +468,9 @@ func (impl *serviceImpl) CreatePolicy(ctx context.Context, in *pb.PolicyRequest)
 func (impl *serviceImpl) QueryPolicies(ctx context.Context, in *pb.PolicyQueryRequest) (*pb.PolicyQueryResponse, error) {
 	if len(in.ServiceName) == 0 {
 		return nil, status.Error(codes.InvalidArgument, "service name is not passed")
+	}
+	if err := pmsrest.ValidateServiceName(in.ServiceName); err != nil {
+		return nil, toGRPCStatus(err)
 	}
 
 	// Audit contextual fields for request
@@ -523,6 +529,9 @@ func (impl *serviceImpl) DeletePolicies(ctx context.Context, in *pb.PolicyQueryR
 	if len(in.ServiceName) == 0 {
 		return nil, status.Error(codes.InvalidArgument, "service name is not passed")
 	}
+	if err := pmsrest.ValidateServiceName(in.ServiceName); err != nil {
+		return nil, toGRPCStatus(err)
+	}
 
 	// Audit contextual fields for request
 	ctxFields := map[string]interface{}{
@@ -553,6 +562,9 @@ func (impl *serviceImpl) DeletePolicies(ctx context.Context, in *pb.PolicyQueryR
 func (impl *serviceImpl) CreateRolePolicy(ctx context.Context, in *pb.RolePolicyRequest) (*pb.RolePolicy, error) {
 	if len(in.ServiceName) == 0 {
 		return nil, status.Error(codes.InvalidArgument, "service name is not passed")
+	}
+	if err := pmsrest.ValidateServiceName(in.ServiceName); err != nil {
+		return nil, toGRPCStatus(err)
 	}
 	if in.RolePolicy == nil {
 		return nil, status.Error(codes.InvalidArgument, "Policy is not passed")
@@ -588,6 +600,9 @@ func (impl *serviceImpl) CreateRolePolicy(ctx context.Context, in *pb.RolePolicy
 func (impl *serviceImpl) QueryRolePolicies(ctx context.Context, in *pb.RolePolicyQueryRequest) (*pb.RolePolicyQueryResponse, error) {
 	if len(in.ServiceName) == 0 {
 		return nil, status.Error(codes.InvalidArgument, "service name is not passed.")
+	}
+	if err := pmsrest.ValidateServiceName(in.ServiceName); err != nil {
+		return nil, toGRPCStatus(err)
 	}
 
 	// Audit contextual fields for request
@@ -644,6 +659,9 @@ func (impl *serviceImpl) DeleteRolePolicies(ctx context.Context, in *pb.RolePoli
 	if len(in.ServiceName) == 0 {
 		return nil, status.Error(codes.InvalidArgument, "service name is not passed.")
 	}
+	if err := pmsrest.ValidateServiceName(in.ServiceName); err != nil {
+		return nil, toGRPCStatus(err)
+	}
 
 	// Audit contextual fields for request
 	ctxFields := map[string]interface{}{
@@ -697,6 +715,12 @@ func (impl *serviceImpl) GetDiscoverRequests(ctx context.Context, in *pb.Discove
 	discoverRequestMgr, ok := impl.policyStore.(store.DiscoverRequestManager)
 	if !ok {
 		return nil, status.Error(codes.Unimplemented, "discover not supported by this store")
+	}
+
+	if len(in.ServiceName) > 0 {
+		if err := pmsrest.ValidateServiceName(in.ServiceName); err != nil {
+		return nil, toGRPCStatus(err)
+		}
 	}
 	last := in.Last
 	revision := in.Revision
@@ -760,6 +784,12 @@ func (impl *serviceImpl) ResetDiscoverRequests(ctx context.Context, in *pb.Reset
 	if !ok {
 		return nil, status.Error(codes.Unimplemented, "discover not supported by this store")
 	}
+
+	if len(in.ServiceName) > 0 {
+		if err := pmsrest.ValidateServiceName(in.ServiceName); err != nil {
+		return nil, toGRPCStatus(err)
+		}
+	}
 	err := discoverRequestMgr.ResetDiscoverRequests(in.ServiceName)
 
 	// Audit log
@@ -776,6 +806,12 @@ func (impl *serviceImpl) GetDiscoverPolicies(ctx context.Context, in *pb.Discove
 	discoverRequestMgr, ok := impl.policyStore.(store.DiscoverRequestManager)
 	if !ok {
 		return nil, status.Error(codes.Unimplemented, "discover not supported by this store")
+	}
+
+	if len(in.ServiceName) > 0 {
+		if err := pmsrest.ValidateServiceName(in.ServiceName); err != nil {
+			return nil, toGRPCStatus(err)
+		}
 	}
 	serviceMap, revision, err := discoverRequestMgr.GeneratePolicies(in.ServiceName, in.PrincipalType, in.PrincipalName, in.PrincipalIdd)
 
