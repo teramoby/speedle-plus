@@ -8,7 +8,7 @@ import (
 	"crypto/x509"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strings"
 	"sync"
@@ -25,6 +25,40 @@ import (
 const (
 	defaultCustomerFunctionCallTimeout = 5 * time.Second
 )
+
+var (
+	// Shared HTTP client with connection pooling for plain HTTP calls.
+	defaultHTTPClient = &http.Client{
+		Timeout: defaultCustomerFunctionCallTimeout,
+	}
+
+	// Cached HTTPS clients keyed by CA certificate content.
+	httpsClients sync.Map
+)
+
+// getHTTPSClient returns a cached or newly created HTTPS client for the given CA.
+func getHTTPSClient(ca string) *http.Client {
+	if client, ok := httpsClients.Load(ca); ok {
+		return client.(*http.Client)
+	}
+	caCertPool := x509.NewCertPool()
+	if len(ca) > 0 {
+		caCertPool.AppendCertsFromPEM([]byte(ca))
+	}
+	tlsConfig := &tls.Config{
+		RootCAs: caCertPool,
+	}
+	transport := &http.Transport{
+		TLSClientConfig: tlsConfig,
+		Proxy:           http.ProxyFromEnvironment,
+	}
+	client := &http.Client{
+		Transport: transport,
+		Timeout:   defaultCustomerFunctionCallTimeout,
+	}
+	actual, _ := httpsClients.LoadOrStore(ca, client)
+	return actual.(*http.Client)
+}
 
 type Request2Delegator struct {
 	Function *pms.Function                `json:"function"`
@@ -144,9 +178,7 @@ func (frc *FuncResultCache) generateCustomerExpressionFunction(cfdUrl *string, c
 }
 
 func getKey(funcName string, arguments []interface{}) string {
-	key := fmt.Sprintf("%s(%v)", funcName, arguments)
-	fmt.Println("key=", key)
-	return key
+	return fmt.Sprintf("%s(%v)", funcName, arguments)
 }
 
 func isFunc(key, funcName string) bool {
@@ -158,11 +190,6 @@ func CallCustomerFunctionViaDelegator(delegatorUrl string, cf *pms.Function, req
 		Function: cf,
 		Request:  request,
 	}
-	var client *http.Client
-	//assume that http is used when communicate with delegator.
-	client = &http.Client{
-		Timeout: defaultCustomerFunctionCallTimeout,
-	}
 	buf, err := json.Marshal(req2Delegator)
 	if err != nil {
 		return nil, err
@@ -172,42 +199,15 @@ func CallCustomerFunctionViaDelegator(delegatorUrl string, cf *pms.Function, req
 		return nil, err
 	}
 	req.Header.Set("Content-Type", "application/json")
-	return getFunctionResp(client, req, cf)
+	return getFunctionResp(defaultHTTPClient, req, cf)
 }
 
 func CallCustomerFunction(cf *pms.Function, request *ext.CustomerFunctionRequest) (interface{}, error) {
 	var client *http.Client
 	if strings.HasPrefix(strings.ToLower(cf.FuncURL), "https:") {
-		//TODO: load sphinx cert in case func server verifies client
-		/*var cert tls.Certificate
-		cert, err := tls.LoadX509KeyPair("./client.crt",	"./client.key")
-		if err != nil {
-			log.Fatal(err)
-		}*/
-
-		caCertPool := x509.NewCertPool()
-		if len(cf.CA) > 0 { //this is only required if func server use certificate which is signed by unknown CA
-			caCertPool.AppendCertsFromPEM([]byte(cf.CA))
-		}
-
-		// Setup HTTPS client
-		tlsConfig := &tls.Config{
-			//Certificates: []tls.Certificate{cert},
-			RootCAs: caCertPool,
-		}
-		transport := &http.Transport{
-			TLSClientConfig: tlsConfig,
-			Proxy:           http.ProxyFromEnvironment,
-		}
-		client = &http.Client{
-			Transport: transport,
-			Timeout:   defaultCustomerFunctionCallTimeout,
-		}
-
+		client = getHTTPSClient(cf.CA)
 	} else if strings.HasPrefix(strings.ToLower(cf.FuncURL), "http:") {
-		client = &http.Client{
-			Timeout: defaultCustomerFunctionCallTimeout,
-		}
+		client = defaultHTTPClient
 	} else {
 		return nil, errors.Errorf(errors.CustomerFuncError, "URL of customer function %q is not supported", cf.FuncURL)
 	}
@@ -236,7 +236,7 @@ func getFunctionResp(client *http.Client, request *http.Request, cf *pms.Functio
 	switch resp.StatusCode {
 	case http.StatusOK:
 		//TODO: We might need to limit the larget size we want to receive
-		body, err := ioutil.ReadAll(resp.Body)
+		body, err := io.ReadAll(resp.Body)
 		if err != nil {
 			log.Errorf("error reading response from customer function %s, err is: %v\n", cf.Name, err)
 			return nil, errors.Wrapf(err, errors.CustomerFuncError, "fail to read response for customer function %q", cf.Name)
