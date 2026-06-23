@@ -5,14 +5,21 @@ package subjectutils
 
 import (
 	"fmt"
+	"strings"
 
 	adsapi "github.com/teramoby/speedle-plus/api/ads"
 )
 
 // EncodePrincipal encodes prinicpal object to string
 // Form: [idd=<IDD>:]<Type>:<Name>
+// Returns empty string if principal names contain reserved separator characters (colon, equals).
 func EncodePrincipal(principal *adsapi.Principal) string {
 	if principal == nil {
+		return ""
+	}
+	// Reject colons and equals signs in principal names/IDDs to prevent encoding ambiguity.
+	if strings.ContainsAny(principal.Name, ":=") || strings.ContainsAny(principal.IDD, ":=") ||
+		strings.ContainsAny(principal.Type, ":=") {
 		return ""
 	}
 	if len(principal.IDD) != 0 {
