@@ -51,8 +51,8 @@ func (s SUID) String() string {
 func getHostname() []byte {
 	hostName, err := os.Hostname()
 	if err != nil {
-		// This error should not happen
-		panic(err)
+		log.Errorf("Failed to get hostname: %v, using fallback", err)
+		return []byte("localhost")
 	}
 	return []byte(hostName)
 }
