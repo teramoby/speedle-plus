@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/teramoby/speedle-plus/pkg/errors"
+	"github.com/teramoby/speedle-plus/pkg/store/utils"
 	"github.com/teramoby/speedle-plus/pkg/suid"
 
 	"github.com/teramoby/speedle-plus/api/pms"
@@ -425,7 +426,7 @@ func validateFunc(function *pms.Function) error {
 }
 
 func (s *Store) CreateFunction(function *pms.Function) (*pms.Function, error) {
-	if err := validateFunc(function); err != nil {
+	if err := utils.ValidateFunc(function); err != nil {
 		return nil, err
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), requestTimeout)

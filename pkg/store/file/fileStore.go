@@ -12,6 +12,7 @@ import (
 	"sync"
 
 	"github.com/teramoby/speedle-plus/pkg/errors"
+	"github.com/teramoby/speedle-plus/pkg/store/utils"
 	"github.com/teramoby/speedle-plus/pkg/suid"
 
 	"github.com/fsnotify/fsnotify"
@@ -675,7 +676,7 @@ func (s *Store) CreateRolePolicy(serviceName string, rolePolicy *pms.RolePolicy)
 	return &dupRolePolicy, nil
 }
 
-func validateFunc(function *pms.Function) error {
+func validateFunc(function *pms.Function) error { // DEPRECATED: use utils.ValidateFunc
 	if function.Name == "" || function.FuncURL == "" {
 		return errors.New(errors.InvalidRequest, "\"name\" and \"funcURL\" in function definition can not be empty")
 	}
@@ -683,7 +684,7 @@ func validateFunc(function *pms.Function) error {
 }
 
 func (s *Store) CreateFunction(function *pms.Function) (*pms.Function, error) {
-	if err := validateFunc(function); err != nil {
+	if err := utils.ValidateFunc(function); err != nil {
 		return nil, err
 	}
 	s.rwLock.Lock()
