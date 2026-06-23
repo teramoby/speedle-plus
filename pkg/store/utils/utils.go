@@ -14,10 +14,10 @@ import (
 
 func ReadFilePolicyStore(policyStoreFile string) (*pms.PolicyStore, error) {
 	file, err := os.Open(policyStoreFile)
-	defer file.Close()
 	if err != nil {
 		return nil, errors.Wrapf(err, errors.StoreError, "unable to open file %q", policyStoreFile)
 	}
+	defer file.Close()
 	ret, err := readPolicyStore(file)
 	return ret, err
 }
