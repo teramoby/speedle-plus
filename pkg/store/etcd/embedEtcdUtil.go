@@ -71,6 +71,8 @@ func StartEmbeddedEtcd(dataDir string) (etcd *embed.Etcd, etcdDir string, err er
 
 //CleanEmbedEtcd free the resource of embed etcd, and remove the tmp directory which is used to store data
 func CleanEmbeddedEtcd(etcd *embed.Etcd, etcdDir string) {
+	embedMu.Lock()
+	defer embedMu.Unlock()
 	if atomic.LoadInt32(&embededStarted) == 1 {
 		etcd.Close()
 		os.RemoveAll(etcdDir)
