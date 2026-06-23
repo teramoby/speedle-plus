@@ -147,9 +147,9 @@ func (s *Store) GetPolicyAndRolePolicyCounts() (map[string]*pms.PolicyAndRolePol
 	}
 	for _, res := range results {
 		var counts pms.PolicyAndRolePolicyCount
-		counts.PolicyCount = int64(res["policyCount"].(int32))
-		counts.RolePolicyCount = int64(res["rolepolicyCount"].(int32))
-		countMap[res["_id"].(string)] = &counts
+		counts.PolicyCount = toInt64(res["policyCount"])
+		counts.RolePolicyCount = toInt64(res["rolepolicyCount"])
+		countMap[toString(res["_id"])] = &counts
 	}
 
 	return countMap, nil
@@ -273,8 +273,11 @@ func (s *Store) Watch() (pms.StorageChangeChannel, error) {
 			}
 			log.Info("-----watched event:", event)
 			log.Info("---------- fulldocument:", event["fullDocument"])
-			var ns bson.M
-			ns = event["ns"].(bson.M)
+			ns, ok := event["ns"].(bson.M)
+			if !ok {
+				log.Error("unexpected format for ns field in change event")
+				continue
+			}
 
 			//ns.coll =="services"
 			if ns["coll"] == "services" {
@@ -497,7 +500,7 @@ func (s *Store) GetPolicyCount(serviceName string) (int64, error) {
 	policyCount := int64(0)
 
 	for _, res := range results {
-		policyCount += int64(res["policycount"].(int32))
+		policyCount += toInt64(res["policycount"])
 	}
 
 	return policyCount, nil
@@ -661,7 +664,7 @@ func (s *Store) GetRolePolicyCount(serviceName string) (int64, error) {
 	policyCount := int64(0)
 
 	for _, res := range results {
-		policyCount += int64(res["policycount"].(int32))
+		policyCount += toInt64(res["policycount"])
 	}
 
 	return policyCount, nil
@@ -850,4 +853,26 @@ func (s *Store) GetFunctionCount() (int64, error) {
 
 	return num, nil
 
+}
+
+// toInt64 safely converts a MongoDB aggregation result value to int64,
+// handling both int32 and int64 which MongoDB may return depending on platform.
+func toInt64(v interface{}) int64 {
+	switch val := v.(type) {
+	case int32:
+		return int64(val)
+	case int64:
+		return val
+	default:
+		return 0
+	}
+}
+
+// toString safely extracts a string from a MongoDB aggregation result.
+func toString(v interface{}) string {
+	s, ok := v.(string)
+	if !ok {
+		return ""
+	}
+	return s
 }
