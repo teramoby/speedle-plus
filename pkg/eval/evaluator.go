@@ -1154,7 +1154,11 @@ func (p *PolicyEvalImpl) updateRuntimeCacheWithStoreChange(updateChan pms.Storag
 				continue
 			}
 			for _, s := range data {
-				rolepolicy := s.Data.(*pms.RolePolicy)
+				rolepolicy, ok := s.Data.(*pms.RolePolicy)
+				if !ok {
+					log.Warnf("unexpected Data type for ROLEPOLICY_ADD event")
+					continue
+				}
 				p.AddRolePolicyInRuntimeCache(s.ServiceName, rolepolicy)
 			}
 		case pms.ROLEPOLICY_DELETE: //Event content:[]StoreUpdateData{ParentID:serviceName, Data:*pms.RolePolicy}
