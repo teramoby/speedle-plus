@@ -5,7 +5,6 @@ package adsgrpc
 
 import (
 	"context"
-	"fmt"
 
 	adsapi "github.com/teramoby/speedle-plus/api/ads"
 	"github.com/teramoby/speedle-plus/pkg/eval"
@@ -76,7 +75,6 @@ func convertGRPCSubject(subject *pb.Subject) *adsapi.Subject {
 func (impl *GRPCService) IsAllowed(ctx context.Context, in *pb.ContextRequest) (*pb.IsAllowedResponse, error) {
 	reqCtx := convertGRPCContextRequest(in)
 
-
 	allowed, reason, err := impl.evaluator.IsAllowed(*reqCtx)
 	if err != nil {
 		// Audit log
@@ -98,7 +96,6 @@ func (impl *GRPCService) IsAllowed(ctx context.Context, in *pb.ContextRequest) (
 func (impl *GRPCService) GetAllGrantedRoles(ctx context.Context, in *pb.ContextRequest) (*pb.AllRoleResponse, error) {
 	reqCtx := convertGRPCContextRequest(in)
 
-
 	roles, err := impl.evaluator.GetAllGrantedRoles(*reqCtx)
 	if err != nil {
 		// Audit log
@@ -116,7 +113,6 @@ func (impl *GRPCService) GetAllGrantedRoles(ctx context.Context, in *pb.ContextR
 
 func (impl *GRPCService) GetAllPermissions(ctx context.Context, in *pb.ContextRequest) (*pb.AllPermissionResponse, error) {
 	reqCtx := convertGRPCContextRequest(in)
-
 
 	perms, err := impl.evaluator.GetAllGrantedPermissions(*reqCtx)
 	if err != nil {
@@ -144,7 +140,6 @@ func (impl *GRPCService) GetAllPermissions(ctx context.Context, in *pb.ContextRe
 func (impl *GRPCService) Discover(ctx context.Context, in *pb.ContextRequest) (*pb.IsAllowedResponse, error) {
 	reqCtx := convertGRPCContextRequest(in)
 
-
 	allowed, reason, err := impl.evaluator.Discover(*reqCtx)
 	if err != nil {
 		// Audit log
@@ -159,52 +154,6 @@ func (impl *GRPCService) Discover(ctx context.Context, in *pb.ContextRequest) (*
 		Reason:  int32(reason),
 	}, nil
 
-}
-
-func convertAttributes(in map[string]interface{}) map[string]string {
-	out := make(map[string]string, len(in))
-	for k, v := range in {
-		out[k] = fmt.Sprint(v)
-	}
-	return out
-
-}
-
-func convertAPIPrincipals(principals []*adsapi.Principal) []*pb.Principal {
-	if principals == nil {
-		return nil
-	}
-
-	ret := make([]*pb.Principal, 0, len(principals))
-	for _, princ := range principals {
-		ret = append(ret, &pb.Principal{
-			Type: princ.Type,
-			Name: princ.Name,
-			Idd:  princ.IDD,
-		})
-	}
-	return ret
-}
-
-func convertAPISubject(subject *adsapi.Subject) *pb.Subject {
-	if subject == nil {
-		return nil
-	}
-	return &pb.Subject{
-		Principals: convertAPIPrincipals(subject.Principals),
-		Token:      subject.Token,
-		TokenType:  subject.TokenType,
-	}
-}
-
-func convertAPIRequestContext(req *adsapi.RequestContext) *pb.ContextRequest {
-	return &pb.ContextRequest{
-		Subject:     convertAPISubject(req.Subject),
-		ServiceName: req.ServiceName,
-		Resource:    req.Resource,
-		Action:      req.Action,
-		Attributes:  convertAttributes(req.Attributes),
-	}
 }
 
 func convertAPIPolicy2EvaluatedPolicyResponse(apiPolicy *adsapi.EvaluatedPolicy, policyResp *pb.EvaluatedPolicy) {
@@ -264,7 +213,6 @@ func convertAPIRolePolicy2EvaluatedRolePolicyResponse(apiRolePolicy *adsapi.Eval
 
 func (impl *GRPCService) Diagnose(ctx context.Context, in *pb.ContextRequest) (*pb.EvaluationDebugResponse, error) {
 	reqCtx := convertGRPCContextRequest(in)
-
 
 	evaResult, err := impl.evaluator.Diagnose(*reqCtx)
 	if err != nil {

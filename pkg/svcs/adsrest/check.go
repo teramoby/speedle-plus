@@ -17,8 +17,8 @@ import (
 	"github.com/teramoby/speedle-plus/pkg/httputils"
 	"github.com/teramoby/speedle-plus/pkg/logging"
 
-	"github.com/teramoby/speedle-plus/pkg/svcs"
 	log "github.com/sirupsen/logrus"
+	"github.com/teramoby/speedle-plus/pkg/svcs"
 )
 
 type JsonAttribute struct {
@@ -134,17 +134,6 @@ func DecodeJSONContext(r *http.Request) (*JsonContext, error) {
 		return nil, errors.Wrap(err, errors.InvalidRequest, "unable to decode request")
 	}
 	return &request, nil
-}
-
-func DuplicateAttributeMap(attrs map[string]interface{}) map[string]interface{} {
-	if attrs == nil {
-		return nil
-	}
-	ret := make(map[string]interface{})
-	for key, value := range attrs {
-		ret[key] = value
-	}
-	return ret
 }
 
 func VerifyAttributeName(attrName string) error {

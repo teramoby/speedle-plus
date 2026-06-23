@@ -1,12 +1,22 @@
-//Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
-//Licensed under the Universal Permissive License (UPL) Version 1.0 as shown at http://oss.oracle.com/licenses/upl.
+// Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+// Licensed under the Universal Permissive License (UPL) Version 1.0 as shown at http://oss.oracle.com/licenses/upl.
 package ads
 
 import (
-	"strconv"
-
 	"github.com/teramoby/speedle-plus/api/pms"
 )
+
+const (
+	strTrue  = "true"
+	strFalse = "false"
+)
+
+func boolToStr(b bool) string {
+	if b {
+		return strTrue
+	}
+	return strFalse
+}
 
 func (p *EvaluationResult) AddRolePolicy(rolePolicy *pms.RolePolicy, result bool) {
 	var apiEvaluatedRolePolicy EvaluatedRolePolicy
@@ -16,7 +26,7 @@ func (p *EvaluationResult) AddRolePolicy(rolePolicy *pms.RolePolicy, result bool
 
 func (p *EvaluationResult) AddPolicy(policy *pms.Policy, policyStatus string, result bool) {
 	var apiEvaluatedPolicy EvaluatedPolicy
-	convertMetaPolicy2ApiEvaluatedPolicy(policy, &apiEvaluatedPolicy, policyStatus, strconv.FormatBool(result))
+	convertMetaPolicy2ApiEvaluatedPolicy(policy, &apiEvaluatedPolicy, policyStatus, boolToStr(result))
 	p.Policies = append(p.Policies, &apiEvaluatedPolicy)
 }
 
@@ -28,7 +38,7 @@ func (p *EvaluationResult) AddPolicies(grantedPolicies []*pms.Policy, deniedPoli
 			convertMetaPolicy2ApiEvaluatedPolicy(metaPolicy, &apiEvaluatedPolicy, Evaluation_Ignored, "")
 		} else {
 			needIgnore = true
-			convertMetaPolicy2ApiEvaluatedPolicy(metaPolicy, &apiEvaluatedPolicy, Evaluation_TakeEffect, strconv.FormatBool(true))
+			convertMetaPolicy2ApiEvaluatedPolicy(metaPolicy, &apiEvaluatedPolicy, Evaluation_TakeEffect, strTrue)
 		}
 		p.Policies = append(p.Policies, &apiEvaluatedPolicy)
 	}
@@ -38,13 +48,13 @@ func (p *EvaluationResult) AddPolicies(grantedPolicies []*pms.Policy, deniedPoli
 			convertMetaPolicy2ApiEvaluatedPolicy(metaPolicy, &apiEvaluatedPolicy, Evaluation_Ignored, "")
 		} else {
 			needIgnore = true
-			convertMetaPolicy2ApiEvaluatedPolicy(metaPolicy, &apiEvaluatedPolicy, Evaluation_TakeEffect, strconv.FormatBool(true))
+			convertMetaPolicy2ApiEvaluatedPolicy(metaPolicy, &apiEvaluatedPolicy, Evaluation_TakeEffect, strTrue)
 		}
 		p.Policies = append(p.Policies, &apiEvaluatedPolicy)
 	}
 }
 
-// 	This function needs to be updated once the "Strategy" is removed from Policy
+// This function needs to be updated once the "Strategy" is removed from Policy
 func convertMetaPolicy2ApiEvaluatedPolicy(metaPolicy *pms.Policy, apiPolicy *EvaluatedPolicy, policyStatus string, evaluationResult string) {
 	if metaPolicy == nil || apiPolicy == nil {
 		// It shouldn't happen
@@ -75,7 +85,7 @@ func convertMetaPolicy2ApiEvaluatedPolicy(metaPolicy *pms.Policy, apiPolicy *Eva
 	}
 }
 
-// 	This function needs to be updated once the "Strategy" is removed from RolePolicy
+// This function needs to be updated once the "Strategy" is removed from RolePolicy
 func convertMetaRolePolicy2ApiEvaluatedRolePolicy(metaRolePolicy *pms.RolePolicy, apiRolePolicy *EvaluatedRolePolicy, evaluationResult bool) {
 	if metaRolePolicy == nil || apiRolePolicy == nil {
 		// It shouldn't happen
@@ -98,7 +108,7 @@ func convertMetaRolePolicy2ApiEvaluatedRolePolicy(metaRolePolicy *pms.RolePolicy
 	if len(metaRolePolicy.Condition) > 0 {
 		apiRolePolicy.Condition = &EvaluatedCondition{
 			ConditionExpression: metaRolePolicy.Condition,
-			EvaluationResult:    strconv.FormatBool(evaluationResult),
+			EvaluationResult:    boolToStr(evaluationResult),
 		}
 	}
 }

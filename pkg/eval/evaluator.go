@@ -302,7 +302,7 @@ func (p *PolicyEvalImpl) GetAllGrantedRoles(ctx adsapi.RequestContext) ([]string
 	return ret, err
 }
 
-//Limitations: This function only calculate granted permissions with resource, will not calculate granted permissions with resource expression.
+// Limitations: This function only calculate granted permissions with resource, will not calculate granted permissions with resource expression.
 func (p *PolicyEvalImpl) GetAllGrantedPermissions(ctx adsapi.RequestContext) ([]pms.Permission, error) {
 	p.RuntimePolicyStore.RLock()
 	defer p.RuntimePolicyStore.RUnlock()
@@ -463,9 +463,9 @@ type Role struct {
 	DeniedByPrincipals map[string]bool //TODO this could be removed?
 }
 
-//assume role policy does not support AND Principal
-//assume ctx.Subject.Principals does not contain user defined roles,
-//assume built-in role like anonymous role and authenticated role can't be used in role policy
+// assume role policy does not support AND Principal
+// assume ctx.Subject.Principals does not contain user defined roles,
+// assume built-in role like anonymous role and authenticated role can't be used in role policy
 func (p *PolicyEvalImpl) getGrantedRolesFromService(ctx *internalRequestContext, evaluationResult *adsapi.EvaluationResult) ([]string, error) {
 	if ctx.GlobalService != nil {
 		ctx.GlobalService.RLock()
@@ -825,7 +825,7 @@ func getDeniableDescendantRolesHelper(role string, relatedRoleMap map[string]*Ro
 	return descendants
 }
 
-//If any of the deniedByRole and all its ancestors are not denied, we take it as could be safely denied.
+// If any of the deniedByRole and all its ancestors are not denied, we take it as could be safely denied.
 func couldRoleSafelyBeDenied(role string, relatedRoleMap map[string]*Role, deniedRoleMap map[string]bool) bool {
 	allDeniedByRoleBeDenied := true
 	if roleNode, ok := relatedRoleMap[role]; ok {
@@ -912,13 +912,14 @@ func (p *PolicyEvalImpl) getPolicyList(ctx *internalRequestContext, matchResourc
 	return grantedPolicyList, deniedPolicyList, nil
 }
 
-//dataSet should be this:
-// {
-//   [] string, //service name slice
-//   map[int]string, //map of policy ID to it's serviceName
-//   map[int]string, //map of rolePolicy ID to it's serviceName
-//   [] string, //custom function slice
-// }
+// dataSet should be this:
+//
+//	{
+//	  [] string, //service name slice
+//	  map[int]string, //map of policy ID to it's serviceName
+//	  map[int]string, //map of rolePolicy ID to it's serviceName
+//	  [] string, //custom function slice
+//	}
 func (p *PolicyEvalImpl) syncRuntimeCache(dataSet []interface{}) error {
 	log.Info("start to sync runtime cache data.")
 	if len(dataSet) != 4 {

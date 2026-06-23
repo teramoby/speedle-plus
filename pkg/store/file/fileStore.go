@@ -16,8 +16,8 @@ import (
 	"github.com/teramoby/speedle-plus/pkg/suid"
 
 	"github.com/fsnotify/fsnotify"
-	"github.com/teramoby/speedle-plus/api/pms"
 	log "github.com/sirupsen/logrus"
+	"github.com/teramoby/speedle-plus/api/pms"
 )
 
 type Store struct {
@@ -177,9 +177,8 @@ func (s *Store) GetServiceCount() (int64, error) {
 
 	if nil == ps.Services {
 		return 0, nil
-	} else {
-		return int64(len(ps.Services)), nil
 	}
+	return int64(len(ps.Services)), nil
 }
 
 // GetService gets the detailed info of a service
@@ -432,19 +431,18 @@ func (s *Store) getPolicyCountWithoutLock(serviceName string) (int64, error) {
 	if len(serviceName) > 0 {
 		// Get the policy count in the specified service
 		return s.getPolicyCountImpl(serviceName)
-	} else {
-		// Get the policy count in all services
-		services, err := s.getServicesWithoutLock()
+	}
+	// Get the policy count in all services
+	services, err := s.getServicesWithoutLock()
+	if err != nil {
+		return 0, err
+	}
+	for _, curService := range services {
+		curCount, err := s.getPolicyCountImpl(curService.Name)
 		if err != nil {
 			return 0, err
 		}
-		for _, curService := range services {
-			curCount, err := s.getPolicyCountImpl(curService.Name)
-			if err != nil {
-				return 0, err
-			}
-			policyCount += curCount
-		}
+		policyCount += curCount
 	}
 
 	return policyCount, nil
@@ -458,9 +456,8 @@ func (s *Store) getPolicyCountImpl(serviceName string) (int64, error) {
 
 	if nil == service.Policies {
 		return 0, nil
-	} else {
-		return int64(len(service.Policies)), nil
 	}
+	return int64(len(service.Policies)), nil
 }
 
 func (s *Store) GetPolicy(serviceName string, id string) (*pms.Policy, error) {
@@ -574,19 +571,18 @@ func (s *Store) getRolePolicyCountWithoutLock(serviceName string) (int64, error)
 	if len(serviceName) > 0 {
 		// Get the policy count in the specified service
 		return s.getRolePolicyCountImpl(serviceName)
-	} else {
-		// Get the policy count in all services
-		services, err := s.getServicesWithoutLock()
+	}
+	// Get the policy count in all services
+	services, err := s.getServicesWithoutLock()
+	if err != nil {
+		return 0, err
+	}
+	for _, curService := range services {
+		curCount, err := s.getRolePolicyCountImpl(curService.Name)
 		if err != nil {
 			return 0, err
 		}
-		for _, curService := range services {
-			curCount, err := s.getRolePolicyCountImpl(curService.Name)
-			if err != nil {
-				return 0, err
-			}
-			rolePolicyCount += curCount
-		}
+		rolePolicyCount += curCount
 	}
 
 	return rolePolicyCount, nil
@@ -600,9 +596,8 @@ func (s *Store) getRolePolicyCountImpl(serviceName string) (int64, error) {
 
 	if nil == service.RolePolicies {
 		return 0, nil
-	} else {
-		return int64(len(service.RolePolicies)), nil
 	}
+	return int64(len(service.RolePolicies)), nil
 }
 
 func (s *Store) GetRolePolicy(serviceName string, id string) (*pms.RolePolicy, error) {
@@ -787,9 +782,8 @@ func (s *Store) GetFunctionCount() (int64, error) {
 	}
 	if nil == ps.Functions {
 		return 0, nil
-	} else {
-		return int64(len(ps.Functions)), nil
 	}
+	return int64(len(ps.Functions)), nil
 }
 
 type filter struct {
