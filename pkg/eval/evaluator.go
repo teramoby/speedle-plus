@@ -1191,7 +1191,7 @@ func difFuncSets(oldSet, newSet []string) (missed, removed []string) {
 		newMap[v] = true
 	}
 	oldMap := make(map[string]bool)
-	for _, v := range newSet {
+	for _, v := range oldSet {
 		oldMap[v] = true
 	}
 	for _, v := range newSet {
