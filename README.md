@@ -189,6 +189,19 @@ $ cd speedle-plus
 $ make test
 ```
 
+## Security
+
+**Important:** The PMS (Policy Management Service) management endpoints have no built-in authentication.
+In production, bind the PMS server to localhost only and use a reverse proxy with authentication:
+
+```
+$ speedle-pms --endpoint=127.0.0.1:6733
+```
+
+Alternatively, run the PMS behind a firewall that restricts access to authorized administrators only.
+Exposing PMS management endpoints on a public network interface without authentication allows anyone
+to create, modify, or delete all policies, services, and functions.
+
 ## Get Help
 
 - Join us on Slack: [#speedle-users](https://join.slack.com/t/speedleproject/shared_invite/zt-72fgiyuo-QKJAhHAqVbn17KRFbd7aZw)
