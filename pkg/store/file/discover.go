@@ -67,10 +67,10 @@ func (s *discoverRequestStore) WriteDiscoverRequestStore(drs *StoreContent) erro
 
 func (s *discoverRequestStore) writeDiscoverRequestStoreWithoutLock(drs *StoreContent) error {
 	jsonFile, err := os.Create(s.FileLocation)
-	defer jsonFile.Close()
 	if err != nil {
 		return errors.Wrapf(err, errors.StoreError, "unable to create file %q", s.FileLocation)
 	}
+	defer jsonFile.Close()
 	drsB, err := json.MarshalIndent(*drs, "", "    ")
 	if err != nil {
 		log.Errorf("marshal indent filed becuase of %v", err)
