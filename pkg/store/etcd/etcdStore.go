@@ -83,6 +83,7 @@ func (s *Store) ReadPolicyStore() (*pms.PolicyStore, error) {
 
 // write policy store to etcd3
 func (s *Store) WritePolicyStore(ps *pms.PolicyStore) error {
+	log.Warn("WritePolicyStore: deleting all services; data will be lost if the process crashes mid-operation")
 	err := s.DeleteServices()
 	if err != nil {
 		return err
@@ -1099,7 +1100,7 @@ func (s *Store) DeleteRolePolicies(serviceName string) error {
 		clientv3.OpPut(s.KeyPrefix+ServicesKey+KeySeparator+serviceName+KeySeparator, ""),
 	).Commit()
 	if err != nil {
-		return errors.Wrap(err, errors.StoreError, "failed to delete all policies from etcd server")
+		return errors.Wrap(err, errors.StoreError, "failed to delete all role policies from etcd server")
 	}
 	return nil
 }

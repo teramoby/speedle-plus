@@ -94,7 +94,14 @@ func (rtps *RuntimePolicyStore) recompilePolicyConditionAtRuntime(serviceName st
 	condition, err := compileCondition(policy.Condition, rtps.Functions)
 	if err == nil {
 
-		go updatePolicyCondition(rtps, serviceName, policy, condition)
+		go func() {
+			defer func() {
+				if r := recover(); r != nil {
+					log.Errorf("Panic in updatePolicyCondition goroutine: %v", r)
+				}
+			}()
+			updatePolicyCondition(rtps, serviceName, policy, condition)
+		}()
 	}
 	return condition, err
 }
@@ -118,7 +125,14 @@ func (rtps *RuntimePolicyStore) recompileRolePolicyConditionAtRuntime(serviceNam
 	condition, err := compileCondition(policy.Condition, rtps.Functions)
 	if err == nil {
 
-		go updateRolePolicyCondition(rtps, serviceName, policy, condition)
+		go func() {
+			defer func() {
+				if r := recover(); r != nil {
+					log.Errorf("Panic in updateRolePolicyCondition goroutine: %v", r)
+				}
+			}()
+			updateRolePolicyCondition(rtps, serviceName, policy, condition)
+		}()
 	}
 	return condition, err
 }
@@ -141,7 +155,10 @@ func (rtps *RuntimePolicyStore) addPolicy(serviceName string, policy *pms.Policy
 	rtps.RLock()
 	defer rtps.RUnlock()
 
-	condition, _ := compileCondition(policy.Condition, rtps.Functions)
+	condition, err := compileCondition(policy.Condition, rtps.Functions)
+	if err != nil {
+		log.Warnf("Failed to compile policy condition for policy %s in service %s: %v", policy.Name, serviceName, err)
+	}
 	rtService, ok := rtps.RuntimeServices[serviceName]
 	if !ok {
 		// Service is not found
@@ -176,7 +193,10 @@ func (rtps *RuntimePolicyStore) addRolePolicy(serviceName string, rolePolicy *pm
 	rtps.RLock()
 	defer rtps.RUnlock()
 
-	condition, _ := compileCondition(rolePolicy.Condition, rtps.Functions)
+	condition, err := compileCondition(rolePolicy.Condition, rtps.Functions)
+	if err != nil {
+		log.Warnf("Failed to compile role policy condition for role policy %s in service %s: %v", rolePolicy.Name, serviceName, err)
+	}
 	rtService, ok := rtps.RuntimeServices[serviceName]
 	if !ok {
 		// Service is not found
@@ -279,11 +299,17 @@ func convertService(service *pms.Service,
 		Functions:         functions,
 	}
 	for _, policy := range service.Policies {
-		condition, _ := compileCondition(policy.Condition, functions)
+		condition, err := compileCondition(policy.Condition, functions)
+		if err != nil {
+			log.Warnf("Failed to compile policy condition for policy %s in service %s: %v", policy.Name, service.Name, err)
+		}
 		rtService.PoliciesCache.AddPolicyToCache(policy, condition)
 	}
 	for _, rolePolicy := range service.RolePolicies {
-		condition, _ := compileCondition(rolePolicy.Condition, functions)
+		condition, err := compileCondition(rolePolicy.Condition, functions)
+		if err != nil {
+			log.Warnf("Failed to compile role policy condition for role policy %s in service %s: %v", rolePolicy.Name, service.Name, err)
+		}
 		rtService.RolePoliciesCache.AddRolePolicyToCache(rolePolicy, condition)
 	}
 

@@ -7,6 +7,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/teramoby/speedle-plus/3rdparty/github.com/Knetic/govaluate"
@@ -64,6 +65,7 @@ type PolicyEvalImpl struct {
 	Store              pms.PolicyStoreManagerADS
 	AsserterFunc       func(ctx *adsapi.RequestContext) error
 	done               chan struct{}
+	closeOnce          sync.Once
 }
 
 func (p *PolicyEvalImpl) deleteService(serviceName string) {
@@ -1197,7 +1199,12 @@ func (p *PolicyEvalImpl) updateRuntimeCacheWithStoreChange(updateChan pms.Storag
 func (p *PolicyEvalImpl) cleanExpiredFunctionResultPeriodically() {
 	ticker := time.NewTicker(30 * time.Minute)
 	go func() {
-		defer ticker.Stop()
+		defer func() {
+			if r := recover(); r != nil {
+				log.Errorf("Panic in cleanExpiredFunctionResultPeriodically goroutine: %v", r)
+			}
+			ticker.Stop()
+		}()
 		for {
 			select {
 			case <-ticker.C:

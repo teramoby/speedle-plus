@@ -120,7 +120,15 @@ func SendEmptyListResponse(w http.ResponseWriter) {
 func SendResponse(w http.ResponseWriter, statusCode int, object interface{}) {
 	var payload []byte
 	if object != nil {
-		payload, _ = json.Marshal(object)
+		var err error
+		payload, err = json.Marshal(object)
+		if err != nil {
+			log.Errorf("Failed to marshal response: %v", err)
+			w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+			w.WriteHeader(http.StatusInternalServerError)
+			w.Write([]byte(`{"error":"internal server error"}`))
+			return
+		}
 	}
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	w.WriteHeader(statusCode)

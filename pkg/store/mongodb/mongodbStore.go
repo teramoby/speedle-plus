@@ -214,7 +214,10 @@ func (s *Store) CreateService(service *pms.Service) error {
 	serviceCollection := s.client.Database(s.Database).Collection("services")
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	serviceWithID, _ := generateID(service)
+	serviceWithID, err := generateID(service)
+	if err != nil {
+		return err
+	}
 	insertResult, err := serviceCollection.InsertOne(ctx, serviceWithID)
 	if err != nil {
 		return err

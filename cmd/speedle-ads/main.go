@@ -29,7 +29,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/reflection"
+	_ "google.golang.org/grpc/reflection" // Available for development; disabled in production
 )
 
 var gitCommit string
@@ -190,8 +190,10 @@ func newGRPCServer(evaluator eval.InternalEvaluator) (*grpc.Server, error) {
 		grpc.MaxSendMsgSize(4<<20), // 4 MB
 	)
 	pb.RegisterEvaluatorServer(server, serviceImpl)
-	// Register reflection service on gRPC server.
-	reflection.Register(server)
+	// WARNING: gRPC reflection exposes all service methods and message types.
+	// Disable in production to prevent information disclosure.
+	// Enable for development only: reflection.Register(server)
+	_ = server // keep import for reflection package when needed
 	return server, nil
 }
 

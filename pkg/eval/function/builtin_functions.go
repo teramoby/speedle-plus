@@ -17,10 +17,10 @@ func Sqrt(args ...interface{}) (interface{}, error) {
 	if len(args) != 1 {
 		return nil, err
 	}
-	if reflect.TypeOf(args[0]).Kind() != reflect.Float64 {
+	x, ok := args[0].(float64)
+	if !ok {
 		return nil, err
 	}
-	x := args[0].(float64)
 	return math.Sqrt(x), nil
 }
 
@@ -29,12 +29,16 @@ func Max(args ...interface{}) (interface{}, error) {
 	if len(args) < 1 {
 		return nil, err
 	}
-	var max = args[0].(float64)
+	max, ok := args[0].(float64)
+	if !ok {
+		return nil, err
+	}
 	for i := 1; i < len(args); i++ {
-		if reflect.TypeOf(args[i]).Kind() != reflect.Float64 {
+		v, ok := args[i].(float64)
+		if !ok {
 			return nil, err
 		}
-		max = math.Max(max, args[i].(float64))
+		max = math.Max(max, v)
 	}
 	return max, nil
 }
@@ -44,12 +48,16 @@ func Min(args ...interface{}) (interface{}, error) {
 	if len(args) < 1 {
 		return nil, err
 	}
-	var min = args[0].(float64)
+	min, ok := args[0].(float64)
+	if !ok {
+		return nil, err
+	}
 	for i := 1; i < len(args); i++ {
-		if reflect.TypeOf(args[i]).Kind() != reflect.Float64 {
+		v, ok := args[i].(float64)
+		if !ok {
 			return nil, err
 		}
-		min = math.Min(min, args[i].(float64))
+		min = math.Min(min, v)
 	}
 	return min, nil
 }
@@ -58,10 +66,11 @@ func Sum(args ...interface{}) (interface{}, error) {
 	err := errors.New(errors.BuiltInFuncError, "Usage: Sum(x1, x2, ...), xi must be numeric")
 	var sum float64 = 0
 	for i := range args {
-		if reflect.TypeOf(args[i]).Kind() != reflect.Float64 {
+		v, ok := args[i].(float64)
+		if !ok {
 			return nil, err
 		}
-		sum += args[i].(float64)
+		sum += v
 	}
 	return sum, nil
 }

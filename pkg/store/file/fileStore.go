@@ -353,6 +353,9 @@ func (s *Store) Watch() (pms.StorageChangeChannel, error) {
 
 	go func() {
 		defer func() {
+			if r := recover(); r != nil {
+				log.Errorf("Panic in file Watch goroutine: %v", r)
+			}
 			watcher.Close()
 			close(storeChangeChan)
 			close(s.stop)
