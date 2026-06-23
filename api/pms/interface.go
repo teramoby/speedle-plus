@@ -3,6 +3,8 @@
 
 package pms
 
+import "context"
+
 // StoreManager handles loading and saving the entire policy store.
 // It abstracts over storage backends, allowing the system to read
 // and write the full set of services, policies, and functions as a unit.
@@ -80,6 +82,8 @@ type PolicyStoreManager interface {
 	RolePolicyManager
 	FunctionManager
 	PolicyStoreWatcher
+	Health(ctx context.Context) error
+	Close() error
 }
 
 // PolicyStoreManagerADS is the read-only store interface used by the ADS.
@@ -93,4 +97,6 @@ type PolicyStoreManagerADS interface {
 	GetRolePolicy(serviceName string, id string) (*RolePolicy, error)
 	GetFunction(funcName string) (*Function, error)
 	PolicyStoreWatcher
+	Health(ctx context.Context) error
+	Close() error
 }
