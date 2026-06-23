@@ -651,6 +651,9 @@ func watch(evalChan chan pms.StoreChangeEvent, s *Store, errChan chan error, sto
 	log.Infof("Entering watch %v...", watchID)
 	cli := s.client // Reuse existing client instead of creating a new one
 	defer func() {
+		if r := recover(); r != nil {
+			log.Errorf("panic in watch %v: %v", watchID, r)
+		}
 		log.Infof("Exiting watch %v...", watchID)
 	}()
 
