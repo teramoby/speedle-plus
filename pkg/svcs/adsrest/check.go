@@ -344,11 +344,11 @@ func (e *RESTService) IsAllowed(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		response.ErrorMessage = err.Error()
 		logging.WriteFailedAuditLog("IsAllowed", log.Fields{"requestContext": context, "evaluationResult": responseForAudit}, response.ErrorMessage)
+		httputils.HandleError(w, err)
 	} else {
 		logging.WriteSucceededAuditLog("IsAllowed", log.Fields{"requestContext": context}, log.Fields{"evaluationResult": responseForAudit})
+		httputils.SendOKResponse(w, &response)
 	}
-
-	httputils.SendOKResponse(w, &response)
 }
 
 func (e *RESTService) GetAllGrantedRoles(w http.ResponseWriter, r *http.Request) {
