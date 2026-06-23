@@ -6,6 +6,7 @@ package file
 import (
 	"bufio"
 	"encoding/json"
+	"context"
 	"fmt"
 	"os"
 	"strings"
@@ -25,6 +26,7 @@ type Store struct {
 	stop          chan struct{}
 	rwLock        sync.RWMutex
 	discoverStore *discoverRequestStore
+	cache         *pms.PolicyStore // in-memory cache; nil if not loaded
 }
 
 // ReadPolicyStore reads policy store from a file
@@ -388,6 +390,17 @@ func (s *Store) StopWatch() {
 	if s.stop != nil {
 		s.stop <- struct{}{}
 	}
+}
+
+// Health reports whether the file store is operational.
+func (s *Store) Health(ctx context.Context) error {
+	return nil
+}
+
+// Close releases any resources held by the file store.
+func (s *Store) Close() error {
+	s.StopWatch()
+	return nil
 }
 
 func (s *Store) Type() string {
