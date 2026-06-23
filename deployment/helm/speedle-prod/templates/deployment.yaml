@@ -1,6 +1,6 @@
 {{- define "deploymentTemplate" }}
 {{- with .chart }}
-apiVersion: apps/v1beta2
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ template "speedle.fullname" . }}-{{ $.serviceName }}
@@ -21,6 +21,11 @@ spec:
         app: {{ $.serviceName }}
         release: {{ .Release.Name }}
     spec:
+      serviceAccountName: {{ template "speedle.fullname" . }}
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
       imagePullSecrets:
         - name: "{{ .Values.image.pullSecret }}"
       containers:
@@ -87,6 +92,24 @@ spec:
             - name: http
               containerPort: {{ $.port }}
               protocol: TCP
+          securityContext:
+            runAsNonRoot: true
+            readOnlyRootFilesystem: false
+            allowPrivilegeEscalation: false
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: {{ $.port }}
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: {{ $.port }}
+            initialDelaySeconds: 5
+            periodSeconds: 5
       volumes:
       {{- if .Values.store.etcd.etcdClientCertSecret }}
       - name: etcd-client-tls

@@ -35,6 +35,11 @@ spec:
         app: speedle
         name: ads
     spec:
+      serviceAccountName: speedle
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
       containers:
       - name: ads
         image: speedle-ads:v0.1
@@ -43,6 +48,29 @@ spec:
         volumeMounts:
         - mountPath: /var/lib/speedle
           name: policy-store
+        securityContext:
+          runAsNonRoot: true
+          readOnlyRootFilesystem: false
+          allowPrivilegeEscalation: false
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "50m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 6734
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 6734
+          initialDelaySeconds: 5
+          periodSeconds: 5
       - name: pms
         image: speedle-pms:v0.1
         ports:
@@ -50,8 +78,36 @@ spec:
         volumeMounts:
         - mountPath: /var/lib/speedle
           name: policy-store
+        securityContext:
+          runAsNonRoot: true
+          readOnlyRootFilesystem: false
+          allowPrivilegeEscalation: false
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "50m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 6733
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 6733
+          initialDelaySeconds: 5
+          periodSeconds: 5
       volumes:
       - name: policy-store
         hostPath:
           path: /home/opc/policystore
 
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: speedle
