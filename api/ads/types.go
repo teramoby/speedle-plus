@@ -3,7 +3,11 @@
 
 package ads
 
-import "github.com/teramoby/speedle-plus/api/pms"
+import (
+	"encoding/json"
+
+	"github.com/teramoby/speedle-plus/api/pms"
+)
 
 type Principal struct {
 	Type string `json:"type,omitempty"`
@@ -12,7 +16,11 @@ type Principal struct {
 }
 
 func (p *Principal) String() string {
-	return "{" + "\"type\": \"" + p.Type + "\", \"name\": \"" + p.Name + "\", \"idd\":\"" + p.IDD + "\"}"
+	b, err := json.Marshal(p)
+	if err != nil {
+		return ""
+	}
+	return string(b)
 }
 
 type Subject struct {
