@@ -4,9 +4,7 @@
 package eval
 
 import (
-	"regexp"
 
-	log "github.com/sirupsen/logrus"
 
 	"github.com/teramoby/speedle-plus/3rdparty/github.com/Knetic/govaluate"
 	"github.com/teramoby/speedle-plus/api/pms"
@@ -260,12 +258,7 @@ func (p *PolicyCacheData) getPoliciesFromResourceExpressionMap(resourceToPolicyM
 
 		if resourceToPolicyMap.ResourceExpressionToPolicies != nil {
 			for resExp, policyIDSet := range resourceToPolicyMap.ResourceExpressionToPolicies {
-				matched, err := regexp.MatchString(resExp, resource)
-				if err != nil {
-					log.Errorf("Meet error when match the resource expression in poliy. err: %s", err)
-					continue
-				}
-				if matched {
+								if matchRegexCompiled(resExp, resource) {
 					//Add all related policies to result policy map
 					for id := range policyIDSet {
 						resultPolicyMap[id] = p.PolicyMap[id]

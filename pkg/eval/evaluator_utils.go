@@ -6,12 +6,32 @@ package eval
 import (
 	"regexp"
 	"strings"
+	"sync"
 
 	"github.com/teramoby/speedle-plus/3rdparty/github.com/Knetic/govaluate"
 	adsapi "github.com/teramoby/speedle-plus/api/ads"
 	"github.com/teramoby/speedle-plus/api/pms"
 	log "github.com/sirupsen/logrus"
 )
+
+var (
+	compiledRegexCache sync.Map
+)
+
+// matchRegexCompiled compiles the pattern once and caches the result.
+// It returns true if pattern matches s.
+func matchRegexCompiled(pattern, s string) bool {
+	re, ok := compiledRegexCache.Load(pattern)
+	if !ok {
+		var err error
+		re, err = regexp.Compile(pattern)
+		if err != nil {
+			return false
+		}
+		re, _ = compiledRegexCache.LoadOrStore(pattern, re)
+	}
+	return re.(*regexp.Regexp).MatchString(s)
+}
 
 func matchResource(requestRes string, resources, resExpressions []string) bool {
 	//in role policy, resources/resExpressions could be empty, which means any resource
@@ -24,8 +44,7 @@ func matchResource(requestRes string, resources, resExpressions []string) bool {
 		}
 	}
 	for _, resExp := range resExpressions {
-		matched, err := regexp.MatchString(resExp, requestRes)
-		if err == nil && matched {
+		if matchRegexCompiled(resExp, requestRes) {
 			return true
 		}
 	}
@@ -41,7 +60,7 @@ func matchResourceAction(policy *pms.Policy, ctx *internalRequestContext) bool {
 	for _, perm := range policy.Permissions {
 		resExpMatch := false
 		if len(perm.ResourceExpression) != 0 {
-			resExpMatch, _ = regexp.MatchString(perm.ResourceExpression, ctx.Resource)
+			resExpMatch = matchRegexCompiled(perm.ResourceExpression, ctx.Resource)
 			//TODO log error
 		}
 		resNameMatch := perm.Resource == ctx.Resource
@@ -130,8 +149,8 @@ func calculatePermissions(grantedPermissions, deniedPermissions []pms.Permission
 		for _, deniedPermission := range deniedPermissions {
 			expMatched := false
 			if len(deniedPermission.ResourceExpression) > 0 {
-				matched, err := regexp.MatchString(deniedPermission.ResourceExpression, grantPermission.Resource)
-				if err != nil || matched {
+				matched := matchRegexCompiled(deniedPermission.ResourceExpression, grantPermission.Resource)
+				if matched {
 					//TODO: log err
 					expMatched = true
 				}
