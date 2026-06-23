@@ -5,6 +5,7 @@ package logging
 
 import (
 	"fmt"
+	"sync"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -26,14 +27,19 @@ const (
 var (
 	auditLogger = log.New()
 
-	tenantID = ""
+	tenantID   = ""
+	tenantLock sync.RWMutex
 )
 
 func SetTenantID(tid string) {
+	tenantLock.Lock()
+	defer tenantLock.Unlock()
 	tenantID = tid
 }
 
 func generateTargetIndex() string {
+	tenantLock.RLock()
+	defer tenantLock.RUnlock()
 	t := time.Now()
 	return fmt.Sprintf("audit-%s-%d%02d", tenantID, t.Year(), t.Month())
 }
@@ -128,9 +134,8 @@ func writeAuditLog(apiName string, reqFields map[string]interface{}, respFields 
 		ctxLogger.Warn(msg)
 	case log.DebugLevel:
 		ctxLogger.Debug(msg)
-	case log.FatalLevel:
-		ctxLogger.Fatal(msg)
-	case log.PanicLevel:
-		ctxLogger.Panic(msg)
+	case log.FatalLevel, log.PanicLevel:
+		// Downgraded to Error to avoid terminating the process.
+		ctxLogger.Error(msg)
 	}
 }
