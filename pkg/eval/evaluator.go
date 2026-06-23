@@ -1219,9 +1219,11 @@ func (p *PolicyEvalImpl) cleanExpiredFunctionResultPeriodically() {
 // Close shuts down the evaluator, stopping all background goroutines.
 // After Close returns, the evaluator should not be used.
 func (p *PolicyEvalImpl) Close() {
-	if p.done != nil {
-		close(p.done)
-	}
+	p.closeOnce.Do(func() {
+		if p.done != nil {
+			close(p.done)
+		}
+	})
 }
 
 // StopWatch stops watching policy store.
