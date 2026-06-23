@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"time"
 
 	adsapi "github.com/teramoby/speedle-plus/api/ads"
 	"github.com/teramoby/speedle-plus/pkg/assertion"
@@ -113,7 +114,11 @@ func main() {
 	// Stop all services
 	if httpServer != nil {
 		log.Info("Stopping HTTP Server.")
-		httpServer.Shutdown(context.Background())
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		if err := httpServer.Shutdown(ctx); err != nil {
+			log.Errorf("HTTP server shutdown error: %v", err)
+		}
 	}
 	if grpcServer != nil {
 		log.Info("Stopping GRPC Server.")
