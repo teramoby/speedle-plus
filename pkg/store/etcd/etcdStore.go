@@ -355,7 +355,7 @@ func (s *Store) CreateService(service *pms.Service) error {
 		} else {
 			endIndex = len(ops)
 		}
-		txnResp, err := s.client.KV.Txn(context.TODO()).If(
+		txnResp, err := s.client.KV.Txn(context.Background()).If(
 			clientv3.Compare(clientv3.Version(s.KeyPrefix+ServicesKey+KeySeparator+service.Name+KeySeparator), "=", 0), //service key does not exist
 		).Then(
 			ops[startIndex:endIndex]...,
@@ -370,7 +370,7 @@ func (s *Store) CreateService(service *pms.Service) error {
 		startIndex = endIndex
 	}
 	if fail { //clean all data inserted
-		_, err := s.client.KV.Txn(context.TODO()).Then(
+		_, err := s.client.KV.Txn(context.Background()).Then(
 			clientv3.OpDelete(s.KeyPrefix+ServicesKey+KeySeparator+service.Name+KeySeparator, clientv3.WithPrefix()),
 		).Commit()
 		if err != nil {
@@ -578,15 +578,8 @@ func (s *Store) Watch() (pms.StorageChangeChannel, error) {
 func watch(evalChan chan pms.StoreChangeEvent, s *Store, errChan chan error, stopChan chan struct{}) {
 	watchID := time.Now().Unix()
 	log.Infof("Entering watch %v...", watchID)
-	cli, err := clientv3.New(*s.Config)
-	if err != nil {
-		log.Warningf("Error happens when new etcd client, %v, exiting watch...\n", err)
-		err := errors.Wrapf(err, errors.StoreError, "failed to connect to etcd server")
-		errChan <- err
-		return
-	}
+	cli := s.client // Reuse existing client instead of creating a new one
 	defer func() {
-		cli.Close()
 		log.Infof("Exiting watch %v...", watchID)
 	}()
 
@@ -598,6 +591,7 @@ func watch(evalChan chan pms.StoreChangeEvent, s *Store, errChan chan error, sto
 		errChan <- err
 		return
 	}
+	defer session.Close()
 
 	etcdChan := cli.Watch(context.Background(), s.KeyPrefix, clientv3.WithPrefix())
 

@@ -4,10 +4,11 @@
 package etcd
 
 import (
-	"io/ioutil"
 	"net"
 	"os"
 	"strconv"
+	"sync"
+	"sync/atomic"
 	"time"
 
 	"go.etcd.io/etcd/server/v3/embed"
@@ -15,15 +16,22 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-var embededStarted = false
-var isStartedByOtherProcess = false
+var (
+	embededStarted int32 // 0 = false, 1 = true; atomic access
+	embedMu        sync.Mutex
+)
 
 const embeddedEtcdPort = 2379
 
 //StartEmbeddedEtcd start a embed etcd which use a clean tmp directory to store data
 func StartEmbeddedEtcd(dataDir string) (etcd *embed.Etcd, etcdDir string, err error) {
-	if embededStarted {
+	if atomic.LoadInt32(&embededStarted) == 1 {
 		// Already started
+		return nil, "", nil
+	}
+	embedMu.Lock()
+	defer embedMu.Unlock()
+	if atomic.LoadInt32(&embededStarted) == 1 {
 		return nil, "", nil
 	}
 	if isEtcdPortOccupied() {
@@ -33,12 +41,12 @@ func StartEmbeddedEtcd(dataDir string) (etcd *embed.Etcd, etcdDir string, err er
 	}
 	etcdDir = dataDir
 	if etcdDir == "" {
-		etcdDir, err = ioutil.TempDir(os.TempDir(), "etcd.tmp")
-		log.Infof("The embedded etcd store dir is %q", etcdDir)
+		etcdDir, err = os.MkdirTemp(os.TempDir(), "etcd.tmp")
 		if err != nil {
 			log.Error(err)
 			return etcd, etcdDir, errors.Wrapf(err, errors.StoreError, "failed to create etcd dir")
 		}
+		log.Infof("The embedded etcd store dir is %q", etcdDir)
 	}
 
 	cfg := embed.NewConfig()
@@ -49,7 +57,7 @@ func StartEmbeddedEtcd(dataDir string) (etcd *embed.Etcd, etcdDir string, err er
 		return etcd, etcdDir, errors.Wrapf(err, errors.StoreError, "failed to start embedded etcd server")
 	}
 
-	embededStarted = true
+	atomic.StoreInt32(&embededStarted, 1)
 	select {
 	case <-etcd.Server.ReadyNotify():
 		log.Info("Etcd Server is ready!")
@@ -62,10 +70,10 @@ func StartEmbeddedEtcd(dataDir string) (etcd *embed.Etcd, etcdDir string, err er
 
 //CleanEmbedEtcd free the resource of embed etcd, and remove the tmp directory which is used to store data
 func CleanEmbeddedEtcd(etcd *embed.Etcd, etcdDir string) {
-	if embededStarted {
+	if atomic.LoadInt32(&embededStarted) == 1 {
 		etcd.Close()
 		os.RemoveAll(etcdDir)
-		embededStarted = false
+		atomic.StoreInt32(&embededStarted, 0)
 	}
 }
 
