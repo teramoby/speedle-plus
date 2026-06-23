@@ -139,7 +139,7 @@ func (s *Store) GetRequests(keyPrefix string, pageSize int64) ([]*ads.RequestCon
 		}
 		fmt.Println("len=", len(getResp.Kvs), "more:", getResp.More, "revision:", getResp.Header.Revision)
 		if getResp.More {
-			revision := getResp.Kvs[pageSize-1].CreateRevision
+			revision = getResp.Kvs[pageSize-1].CreateRevision
 			getOpts = []clientv3.OpOption{clientv3.WithPrefix(), clientv3.WithMinCreateRev(revision + 1), clientv3.WithLimit(pageSize), clientv3.WithSort(clientv3.SortByCreateRevision, clientv3.SortAscend)}
 		} else {
 			revision = getResp.Header.Revision
