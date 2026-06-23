@@ -150,7 +150,10 @@ func (p *PolicyEvalImpl) populateContext(ctx *adsapi.RequestContext) (*internalR
 
 	var globalService *RuntimeService
 	if ctx.ServiceName != pms.GlobalService {
-		globalService, _ = p.getService(pms.GlobalService)
+		globalService, err = p.getService(pms.GlobalService)
+		if err != nil {
+			log.Warnf("Failed to get global service: %v", err)
+		}
 	}
 
 	newCtx := internalRequestContext{
@@ -889,7 +892,11 @@ func (p *PolicyEvalImpl) getPolicyList(ctx *internalRequestContext, matchResourc
 					}
 				}
 				if condition != nil {
-					result, _ = evaluateCondition(condition, ctx.Attributes)
+					var evalErr error
+					result, evalErr = evaluateCondition(condition, ctx.Attributes)
+					if evalErr != nil {
+						log.Warnf("Error evaluating condition for policy %s: %v", policy.Name, evalErr)
+					}
 				}
 
 				if result {
@@ -1234,9 +1241,12 @@ func difPolicySets(oldSet, newSet []int) (missed, removed []int) {
 		if oldSet[i] == newSet[j] {
 			i++
 			j++
-		} else {
+		} else if oldSet[i] < newSet[j] {
 			removedData = append(removedData, oldSet[i])
 			i++
+		} else {
+			missedData = append(missedData, newSet[j])
+			j++
 		}
 	}
 	return missedData, removedData
