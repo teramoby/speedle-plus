@@ -875,8 +875,8 @@ func selfOrAncestorsBeDenied(deniedByRole string, relatedRoleMap map[string]*Rol
 // The first returned value is granted policies
 // The second returned value is denied policies
 func (p *PolicyEvalImpl) getPolicyList(ctx *internalRequestContext, matchResource bool, matchCondition bool, evaluationResult *adsapi.EvaluationResult) ([]*pms.Policy, []*pms.Policy, error) {
-	var grantedPolicyList []*pms.Policy
-	var deniedPolicyList []*pms.Policy
+	grantedPolicyList := make([]*pms.Policy, 0, len(ctx.Service.PoliciesCache.PolicyMap))
+	deniedPolicyList := make([]*pms.Policy, 0, len(ctx.Service.PoliciesCache.PolicyMap))
 
 	principals := ctx.Subject.Principals
 	subjectSet := make(map[string]bool, len(principals))

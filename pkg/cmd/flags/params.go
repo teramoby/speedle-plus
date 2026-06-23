@@ -120,6 +120,29 @@ type StrParamDetail struct {
 	Value        string
 }
 
+// loggingResponseWriter wraps http.ResponseWriter to capture the status code.
+type loggingResponseWriter struct {
+	http.ResponseWriter
+	statusCode int
+}
+
+// WriteHeader captures the status code before writing it.
+func (lrw *loggingResponseWriter) WriteHeader(code int) {
+	lrw.statusCode = code
+	lrw.ResponseWriter.WriteHeader(code)
+}
+
+// loggingMiddleware logs method, path, status, and duration for each request.
+func loggingMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		start := time.Now()
+		lrw := &loggingResponseWriter{ResponseWriter: w, statusCode: http.StatusOK}
+		next.ServeHTTP(lrw, r)
+		logging.AuditLog().Infof("method=%s path=%s status=%d duration=%s",
+			r.Method, r.URL.Path, lrw.statusCode, time.Since(start))
+	})
+}
+
 func (k *Parameters) NewHTTPServer(handler http.Handler) (*http.Server, error) {
 	insecure, _ := strconv.ParseBool(k.Insecure.Value)
 	headersOk := handlers.AllowedHeaders([]string{"X-Requested-With", "Content-Type"})
@@ -145,10 +168,12 @@ func (k *Parameters) NewHTTPServer(handler http.Handler) (*http.Server, error) {
 		}()
 		cosHandler.ServeHTTP(w, r)
 	})
+	// Wrap with request logging middleware (method, path, status, duration).
+	loggedHandler := loggingMiddleware(recoveryHandler)
 	if insecure {
 		server := http.Server{
 			Addr:              k.Endpoint.Value,
-			Handler:           recoveryHandler,
+			Handler:           loggedHandler,
 			ReadTimeout:       30 * time.Second,
 			ReadHeaderTimeout: 10 * time.Second,
 			WriteTimeout:      30 * time.Second,
@@ -157,7 +182,7 @@ func (k *Parameters) NewHTTPServer(handler http.Handler) (*http.Server, error) {
 		}
 		return &server, nil
 	}
-	return k.newTLSServer(cosHandler)
+	return k.newTLSServer(loggedHandler)
 }
 
 func (k *Parameters) newTLSServer(handler http.Handler) (*http.Server, error) {
