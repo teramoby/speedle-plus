@@ -4,7 +4,6 @@
 package file
 
 import (
-	"bufio"
 	"encoding/json"
 	"context"
 	"fmt"
@@ -64,7 +63,7 @@ func (s *Store) readPolicyStoreWithoutLock() (*pms.PolicyStore, error) {
 		}
 	}()
 
-	decoder := json.NewDecoder(bufio.NewReader(f))
+	decoder := json.NewDecoder(f)
 	if err := decoder.Decode(&ps); err != nil {
 		log.Warnf("Unable to parse %s in JSON format because of error %v", s.FileLocation, err)
 		return &pms.PolicyStore{}, err
