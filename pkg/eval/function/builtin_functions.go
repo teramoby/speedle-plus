@@ -4,6 +4,7 @@
 package function
 
 import (
+	"log"
 	"math"
 	"reflect"
 
@@ -180,6 +181,7 @@ func IsSubSet(args ...interface{}) (interface{}, error) {
 
 	default:
 		// Fallback to reflection for unknown slice types.
+		log.Printf("DEBUG IsSubSet: s1 type=%T, s2 type=%T", s1, s2)
 		if reflect.TypeOf(s1).Kind() != reflect.Slice || reflect.TypeOf(s2).Kind() != reflect.Slice {
 			return nil, err
 		}

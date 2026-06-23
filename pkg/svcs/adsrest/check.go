@@ -154,12 +154,6 @@ func VerifyAttributeName(attrName string) error {
 
 // Key is data type in json
 // Value is the data type in go
-var dataTypeMap = map[string]string{
-	"string":   "string",
-	"numeric":  "float64",
-	"bool":     "bool",
-	"datetime": "string",
-}
 
 var supportDateTimeLayout = []string{
 	time.RFC3339Nano,
@@ -184,12 +178,20 @@ func ConvSingleValue(dataType string, value interface{}) (interface{}, error) {
 		return value, nil
 	}
 
-	valueType, ok := dataTypeMap[dataType]
-	if !ok {
-		// Data type is not match
-		return nil, errors.Errorf(errors.InvalidRequest, "inputted data type %s is not supported", dataType)
-	}
 
+		var valueType string
+		switch dataType {
+		case "string":
+			valueType = "string"
+		case "numeric":
+			valueType = "float64"
+		case "bool":
+			valueType = "bool"
+		case "datetime":
+			valueType = "string"
+		default:
+			return nil, errors.Errorf(errors.InvalidRequest, "inputted data type %s is not supported", dataType)
+		}
 	if valueType != reflect.TypeOf(value).String() {
 		return nil, errors.Errorf(errors.InvalidRequest, "value data type %T is not equals to inputted data type %s", value, dataType)
 	}
