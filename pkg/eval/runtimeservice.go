@@ -94,14 +94,7 @@ func (rtps *RuntimePolicyStore) recompilePolicyConditionAtRuntime(serviceName st
 	condition, err := compileCondition(policy.Condition, rtps.Functions)
 	if err == nil {
 
-		go func() {
-			defer func() {
-				if r := recover(); r != nil {
-					log.Errorf("Panic in updatePolicyCondition goroutine: %v", r)
-				}
-			}()
 			updatePolicyCondition(rtps, serviceName, policy, condition)
-		}()
 	}
 	return condition, err
 }
@@ -125,14 +118,7 @@ func (rtps *RuntimePolicyStore) recompileRolePolicyConditionAtRuntime(serviceNam
 	condition, err := compileCondition(policy.Condition, rtps.Functions)
 	if err == nil {
 
-		go func() {
-			defer func() {
-				if r := recover(); r != nil {
-					log.Errorf("Panic in updateRolePolicyCondition goroutine: %v", r)
-				}
-			}()
 			updateRolePolicyCondition(rtps, serviceName, policy, condition)
-		}()
 	}
 	return condition, err
 }
