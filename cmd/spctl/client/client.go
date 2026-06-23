@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"path"
@@ -39,6 +38,7 @@ func (c *Client) delete(u *url.URL, token string) error {
 		fmt.Printf("Error happens: %v\n", err)
 		return err
 	}
+	defer resp.Body.Close()
 	switch resp.StatusCode {
 	case http.StatusNoContent:
 		return nil
@@ -46,8 +46,7 @@ func (c *Client) delete(u *url.URL, token string) error {
 		fmt.Println("Authentication or authorization failed. Please specify correct token using '--token' flag.")
 		return errors.New(resp.Status)
 	case http.StatusBadRequest:
-		defer resp.Body.Close()
-		body, err := ioutil.ReadAll(resp.Body)
+		body, err := io.ReadAll(resp.Body)
 		if err == nil {
 			var errorDetail httputils.ErrorResponse
 			err = json.Unmarshal(body, &errorDetail)
@@ -90,12 +89,12 @@ func (c *Client) get(u *url.URL, paths []string, params url.Values, token string
 		fmt.Printf("resp is : %v\n err is : %v\n", resp, err)
 		return nil, err
 	}
+	defer resp.Body.Close()
 	switch resp.StatusCode {
 	case http.StatusNotFound:
 		return nil, fmt.Errorf("%s not found", strings.Join(paths, " "))
 	case http.StatusOK:
-		defer resp.Body.Close()
-		body, err := ioutil.ReadAll(resp.Body)
+		body, err := io.ReadAll(resp.Body)
 		if err != nil {
 			return nil, err
 		}
@@ -104,8 +103,7 @@ func (c *Client) get(u *url.URL, paths []string, params url.Values, token string
 		fmt.Println("Authentication or authorization failed. Please specify correct token using '--token' flag.")
 		return nil, errors.New(resp.Status)
 	case http.StatusBadRequest:
-		defer resp.Body.Close()
-		body, err := ioutil.ReadAll(resp.Body)
+		body, err := io.ReadAll(resp.Body)
 		if err == nil {
 			var errorDetail httputils.ErrorResponse
 			err = json.Unmarshal(body, &errorDetail)
@@ -138,10 +136,10 @@ func (c *Client) post(u *url.URL, paths []string, payload io.Reader, token strin
 		fmt.Printf("Error happens: %v\n", err)
 		return "", err
 	}
+	defer resp.Body.Close()
 	switch resp.StatusCode {
 	case http.StatusCreated, http.StatusOK:
-		defer resp.Body.Close()
-		body, err := ioutil.ReadAll(resp.Body)
+		body, err := io.ReadAll(resp.Body)
 		if err != nil {
 			return "", err
 		}
@@ -150,8 +148,7 @@ func (c *Client) post(u *url.URL, paths []string, payload io.Reader, token strin
 		fmt.Println("Authentication or authorization failed. Please specify correct token using '--token' flag.")
 		return "", errors.New(resp.Status)
 	case http.StatusBadRequest:
-		defer resp.Body.Close()
-		body, err := ioutil.ReadAll(resp.Body)
+		body, err := io.ReadAll(resp.Body)
 		if err == nil {
 			var errorDetail httputils.ErrorResponse
 			err = json.Unmarshal(body, &errorDetail)
