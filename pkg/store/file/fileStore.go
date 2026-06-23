@@ -39,8 +39,16 @@ func (s *Store) ReadPolicyStore() (*pms.PolicyStore, error) {
 }
 
 func (s *Store) readPolicyStoreWithoutLock() (*pms.PolicyStore, error) {
+	if s.cache != nil {
+		return s.cache, nil
+	}
+
 	if strings.HasSuffix(s.FileLocation, ".spdl") {
-		return s.readSPDLWithoutLock()
+		ps, err := s.readSPDLWithoutLock()
+		if err == nil {
+			s.cache = ps
+		}
+		return ps, err
 	}
 
 	var ps pms.PolicyStore
@@ -61,6 +69,7 @@ func (s *Store) readPolicyStoreWithoutLock() (*pms.PolicyStore, error) {
 		return &pms.PolicyStore{}, err
 	}
 
+	s.cache = &ps
 	return &ps, nil
 }
 
@@ -87,6 +96,7 @@ func (s *Store) writePolicyStoreWithoutLock(ps *pms.PolicyStore) error {
 		os.Remove(tmpFile) // best-effort cleanup
 		return errors.Wrapf(err, errors.StoreError, "unable to rename temp file %q to %q", tmpFile, s.FileLocation)
 	}
+	s.cache = ps
 	return nil
 }
 
