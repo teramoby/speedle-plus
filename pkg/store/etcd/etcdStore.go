@@ -62,9 +62,9 @@ func (s *Store) ReadPolicyStore() (*pms.PolicyStore, error) {
 	}
 	var ps pms.PolicyStore
 	for _, serviceName := range serviceNames {
-		service, err := s.GetService(serviceName)
-		if err != nil {
-			return nil, err
+		service, getErr := s.GetService(serviceName)
+		if getErr != nil {
+			return nil, getErr
 		}
 		ps.Services = append(ps.Services, service)
 	}
@@ -214,6 +214,9 @@ func (s *Store) GetServices(startName string, amount int, retrivePolcies bool) (
 
 }
 func (s *Store) GetServiceItself(serviceName string) (*pms.Service, error) {
+	if err := validateServiceName(serviceName); err != nil {
+		return nil, err
+	}
 	ctx, cancel := context.WithTimeout(context.Background(), requestTimeout)
 	defer cancel()
 	serviceKey := s.KeyPrefix + ServicesKey + KeySeparator + serviceName
@@ -340,6 +343,9 @@ func (s *Store) getPutOps(service *pms.Service) ([]clientv3.Op, error) {
 }
 
 func (s *Store) CreateService(service *pms.Service) error {
+	if err := validateServiceName(service.Name); err != nil {
+		return err
+	}
 	ops, err := s.getPutOps(service)
 	if err != nil {
 		return err
@@ -385,6 +391,9 @@ func (s *Store) CreateService(service *pms.Service) error {
 
 // delete application from etcd3
 func (s *Store) DeleteService(serviceName string) error {
+	if err := validateServiceName(serviceName); err != nil {
+		return err
+	}
 	ctx, cancel := context.WithTimeout(context.Background(), requestTimeout)
 	defer cancel()
 	txnResp, err := s.client.KV.Txn(ctx).If(
@@ -418,9 +427,52 @@ func (s *Store) Type() string {
 	return StoreType
 }
 
+// Health checks connectivity to the etcd server by retrieving the cluster
+// member list. A nil return indicates the server is reachable and healthy.
+func (s *Store) Health(ctx context.Context) error {
+	if s.client == nil {
+		return errors.New(errors.StoreError, "etcd client is not initialized")
+	}
+	_, err := s.client.MemberList(ctx)
+	if err != nil {
+		return errors.Wrap(err, errors.StoreError, "etcd server is not healthy")
+	}
+	return nil
+}
+
+// Close gracefully shuts down the etcd store by stopping any active
+// watcher, closing the client connection, and cleaning up an embedded
+// etcd instance if one was started.
+func (s *Store) Close() error {
+	s.StopWatch()
+	if s.client != nil {
+		err := s.client.Close()
+		if s.embeddedInst != nil {
+			CleanEmbeddedEtcd(s.embeddedInst, s.embeddedDir)
+		}
+		s.client = nil
+		if err != nil {
+			return errors.New(errors.StoreError, "unable to close connection to etcd server")
+		}
+	}
+	return nil
+}
+
 func validateFunc(function *pms.Function) error {
 	if function.Name == "" || function.FuncURL == "" {
 		return errors.New(errors.InvalidRequest, "\"name\" and \"funcURL\" in function definition can not be empty")
+	}
+	return nil
+}
+
+// validateServiceName validates that a service name is not empty and does not
+// contain the etcd key separator "/", which would break key hierarchy.
+func validateServiceName(serviceName string) error {
+	if serviceName == "" {
+		return errors.New(errors.InvalidRequest, "service name cannot be empty")
+	}
+	if strings.Contains(serviceName, KeySeparator) {
+		return errors.Errorf(errors.InvalidRequest, "service name %q cannot contain %q", serviceName, KeySeparator)
 	}
 	return nil
 }
@@ -791,6 +843,9 @@ func (s *Store) GetRolePolicies(serviceName string, startID string, amount int) 
 }
 
 func (s *Store) DeletePolicy(serviceName string, id string) error {
+	if err := validateServiceName(serviceName); err != nil {
+		return err
+	}
 	ctx, cancel := context.WithTimeout(context.Background(), requestTimeout)
 	defer cancel()
 	policyKey := s.KeyPrefix + ServicesKey + KeySeparator + serviceName + KeySeparator + PoliciesKey + KeySeparator + id
@@ -826,6 +881,9 @@ func (s *Store) DeletePolicies(serviceName string) error {
 
 func (s *Store) CreatePolicy(serviceName string, policy *pms.Policy) (*pms.Policy, error) {
 	//TODO:validate policy
+	if err := validateServiceName(serviceName); err != nil {
+		return nil, err
+	}
 	dupPolicy := *policy
 	if policy.ID == "" {
 		dupPolicy.ID = suid.New().String()
@@ -978,6 +1036,9 @@ func (s *Store) GetRolePolicy(serviceName string, id string) (*pms.RolePolicy, e
 }
 
 func (s *Store) DeleteRolePolicy(serviceName string, id string) error {
+	if err := validateServiceName(serviceName); err != nil {
+		return err
+	}
 	ctx, cancel := context.WithTimeout(context.Background(), requestTimeout)
 	defer cancel()
 	rolePolicyKey := s.KeyPrefix + ServicesKey + KeySeparator + serviceName + KeySeparator + RolePoliciesKey + KeySeparator + id
@@ -1013,6 +1074,9 @@ func (s *Store) DeleteRolePolicies(serviceName string) error {
 
 func (s *Store) CreateRolePolicy(serviceName string, rolePolicy *pms.RolePolicy) (*pms.RolePolicy, error) {
 	//TODO: validate rolePolicy
+	if err := validateServiceName(serviceName); err != nil {
+		return nil, err
+	}
 	dupRolePolicy := *rolePolicy
 	if rolePolicy.ID == "" {
 		dupRolePolicy.ID = suid.New().String()

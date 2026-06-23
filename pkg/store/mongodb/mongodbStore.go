@@ -78,9 +78,9 @@ func (s *Store) ListAllServices() ([]*pms.Service, error) {
 	services := []*pms.Service{}
 	for cur.Next(ctx) {
 		var service pms.Service
-		err := cur.Decode(&service)
-		if err != nil {
-			return nil, err
+		decodeErr := cur.Decode(&service)
+		if decodeErr != nil {
+			return nil, decodeErr
 		}
 		services = append(services, &service)
 	}
@@ -409,6 +409,20 @@ func (s *Store) StopWatch() {
 	if s.stopWatch != nil {
 		close(s.stopWatch)
 	}
+}
+
+// Health checks the health of the MongoDB server by pinging it.
+func (s *Store) Health(ctx context.Context) error {
+	if s.client == nil {
+		return errors.New(errors.StoreError, "mongodb client is not initialized")
+	}
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+	err := s.client.Ping(ctx, nil)
+	if err != nil {
+		return errors.Wrap(err, errors.StoreError, "mongodb health check failed")
+	}
+	return nil
 }
 
 // Close disconnects the MongoDB client and stops the watch goroutine.
