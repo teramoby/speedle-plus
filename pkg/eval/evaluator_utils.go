@@ -192,11 +192,13 @@ func calculatePermissions(grantedPermissions, deniedPermissions []pms.Permission
 
 func evaluateCondition(condition *govaluate.EvaluableExpression, attributes map[string]interface{}) (bool, error) {
 	res, err := condition.Evaluate(attributes)
-	if err != nil || res != true {
-		if err != nil {
-			log.Errorf("Error happens in evaluating condition (%s): %v", condition.String(), err)
-		}
+	if err != nil {
+		log.Errorf("Error happens in evaluating condition (%s): %v", condition.String(), err)
 		return false, err
+	}
+	b, ok := res.(bool)
+	if !ok || !b {
+		return false, nil
 	}
 	return true, nil
 }
