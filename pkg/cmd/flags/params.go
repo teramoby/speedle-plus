@@ -217,9 +217,14 @@ func (k *Parameters) newTLSServer(handler http.Handler) (*http.Server, error) {
 	tlsConfig.BuildNameToCertificate()
 
 	server := http.Server{
-		Addr:      k.Endpoint.Value,
-		Handler:   handler,
-		TLSConfig: tlsConfig,
+		Addr:              k.Endpoint.Value,
+		Handler:           handler,
+		TLSConfig:         tlsConfig,
+		ReadTimeout:       15 * time.Second,
+		ReadHeaderTimeout: 10 * time.Second,
+		WriteTimeout:      15 * time.Second,
+		IdleTimeout:       60 * time.Second,
+		MaxHeaderBytes:    1 << 20, // 1 MB
 	}
 	return &server, nil
 }
