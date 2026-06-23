@@ -46,7 +46,7 @@ func GeneratePoliciesFromDiscoverRequests(requests []*ads.RequestContext, princi
 				RolePolicies: []*pms.RolePolicy{},
 				Policies:     []*pms.Policy{}}
 		}
-		if len(req.Subject.Principals) == 0 { //anonymous_role
+		if req.Subject == nil || len(req.Subject.Principals) == 0 { //anonymous_role
 			roleName := ads.BuiltIn_Role_Anonymous
 			policyKey := "svc=" + req.ServiceName + ";res=" + req.Resource + ";role=" + roleName
 			if p, ok := policyMap[policyKey]; ok {
