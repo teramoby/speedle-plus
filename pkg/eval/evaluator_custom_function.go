@@ -10,6 +10,8 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net"
+	"net/url"
 	"strings"
 	"sync"
 	"time"
@@ -46,11 +48,13 @@ func getHTTPSClient(ca string) *http.Client {
 		caCertPool.AppendCertsFromPEM([]byte(ca))
 	}
 	tlsConfig := &tls.Config{
-		RootCAs: caCertPool,
+		RootCAs:    caCertPool,
+		MinVersion: tls.VersionTLS12,
 	}
 	transport := &http.Transport{
-		TLSClientConfig: tlsConfig,
-		Proxy:           http.ProxyFromEnvironment,
+		TLSClientConfig:       tlsConfig,
+		Proxy:                 http.ProxyFromEnvironment,
+		ResponseHeaderTimeout: 10 * time.Second,
 	}
 	client := &http.Client{
 		Transport: transport,
@@ -172,11 +176,47 @@ func getKey(funcName string, arguments []interface{}) string {
 	return fmt.Sprintf("%s(%v)", funcName, arguments)
 }
 
+
+// hasPrivateIP checks if a hostname resolves to a private/internal IP address.
+func hasPrivateIP(hostport string) bool {
+	host, _, err := net.SplitHostPort(hostport)
+	if err != nil {
+		host = hostport
+	}
+	if host == "localhost" || host == "127.0.0.1" || host == "::1" || host == "0.0.0.0" {
+		return true
+	}
+	ip := net.ParseIP(host)
+	if ip != nil {
+		if ip.IsLoopback() || ip.IsPrivate() || ip.IsLinkLocalUnicast() || ip.IsLinkLocalMulticast() {
+			return true
+		}
+	}
+	return false
+}
+
+// validateCustomerFunctionURL checks that a function URL is safe to call.
+func validateCustomerFunctionURL(urlStr string) error {
+	parsed, err := url.Parse(urlStr)
+	if err != nil {
+		return errors.Wrapf(err, errors.CustomerFuncError, "invalid function URL %q", urlStr)
+	}
+	if parsed.Scheme != "http" && parsed.Scheme != "https" {
+		return errors.Errorf(errors.CustomerFuncError, "unsupported URL scheme %q in function URL %q", parsed.Scheme, urlStr)
+	}
+	if hasPrivateIP(parsed.Host) {
+		return errors.Errorf(errors.CustomerFuncError, "function URL %q resolves to a private/internal address, which is not allowed", urlStr)
+	}
+	return nil
+}
 func isFunc(key, funcName string) bool {
 	return strings.HasPrefix(key, funcName+"(")
 }
 
 func CallCustomerFunctionViaDelegator(delegatorUrl string, cf *pms.Function, request *ext.CustomerFunctionRequest) (interface{}, error) {
+	if err := validateCustomerFunctionURL(delegatorUrl); err != nil {
+		return nil, err
+	}
 	req2Delegator := Request2Delegator{
 		Function: cf,
 		Request:  request,
@@ -194,6 +234,9 @@ func CallCustomerFunctionViaDelegator(delegatorUrl string, cf *pms.Function, req
 }
 
 func CallCustomerFunction(cf *pms.Function, request *ext.CustomerFunctionRequest) (interface{}, error) {
+	if err := validateCustomerFunctionURL(cf.FuncURL); err != nil {
+		return nil, err
+	}
 	var client *http.Client
 	if strings.HasPrefix(strings.ToLower(cf.FuncURL), "https:") {
 		client = getHTTPSClient(cf.CA)
@@ -226,8 +269,7 @@ func getFunctionResp(client *http.Client, request *http.Request, cf *pms.Functio
 
 	switch resp.StatusCode {
 	case http.StatusOK:
-		//TODO: We might need to limit the larget size we want to receive
-		body, err := io.ReadAll(resp.Body)
+		body, err := io.ReadAll(io.LimitReader(resp.Body, 1<<20)) // 1MB limit
 		if err != nil {
 			log.Errorf("error reading response from customer function %s, err is: %v\n", cf.Name, err)
 			return nil, errors.Wrapf(err, errors.CustomerFuncError, "fail to read response for customer function %q", cf.Name)

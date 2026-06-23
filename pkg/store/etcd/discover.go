@@ -35,7 +35,7 @@ func (s *Store) PutRequest(request *ads.RequestContext) (int64, error) {
 	}
 	succeed := false
 	for !succeed {
-		key := DiscoverPrefix + request.ServiceName + "/" + time.Now().String()
+		key := DiscoverPrefix + request.ServiceName + "/" + fmt.Sprintf("%d", time.Now().UnixNano())
 		txnResp, err := s.client.KV.Txn(context.Background()).If(
 			clientv3.Compare(clientv3.CreateRevision(key), "=", 0), //key does not exist
 		).Then(

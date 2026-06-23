@@ -1,0 +1,324 @@
+{
+    "requests": [
+        {
+            "index": 0,
+            "request": {
+                "subject": {
+                    "principals": [
+                        {
+                            "type": "user",
+                            "name": "user1"
+                        }
+                    ]
+                },
+                "serviceName": "erp",
+                "resource": "/res0",
+                "action": "read"
+            }
+        },
+        {
+            "index": 1,
+            "request": {
+                "subject": {
+                    "principals": [
+                        {
+                            "type": "user",
+                            "name": "user1"
+                        }
+                    ]
+                },
+                "serviceName": "erp",
+                "resource": "/res1",
+                "action": "read"
+            }
+        },
+        {
+            "index": 2,
+            "request": {
+                "subject": {
+                    "principals": [
+                        {
+                            "type": "user",
+                            "name": "user1"
+                        }
+                    ]
+                },
+                "serviceName": "erp",
+                "resource": "/res2",
+                "action": "read"
+            }
+        },
+        {
+            "index": 3,
+            "request": {
+                "subject": {
+                    "principals": [
+                        {
+                            "type": "user",
+                            "name": "user1"
+                        }
+                    ]
+                },
+                "serviceName": "erp",
+                "resource": "/res3",
+                "action": "read"
+            }
+        },
+        {
+            "index": 4,
+            "request": {
+                "subject": {
+                    "principals": [
+                        {
+                            "type": "user",
+                            "name": "user1"
+                        }
+                    ]
+                },
+                "serviceName": "erp",
+                "resource": "/res4",
+                "action": "read"
+            }
+        },
+        {
+            "index": 5,
+            "request": {
+                "subject": {
+                    "principals": [
+                        {
+                            "type": "user",
+                            "name": "user2"
+                        }
+                    ]
+                },
+                "serviceName": "erp",
+                "resource": "/res5",
+                "action": "write"
+            }
+        },
+        {
+            "index": 6,
+            "request": {
+                "subject": {
+                    "principals": [
+                        {
+                            "type": "user",
+                            "name": "user2"
+                        }
+                    ]
+                },
+                "serviceName": "erp",
+                "resource": "/res6",
+                "action": "write"
+            }
+        },
+        {
+            "index": 7,
+            "request": {
+                "subject": {
+                    "principals": [
+                        {
+                            "type": "user",
+                            "name": "user2"
+                        }
+                    ]
+                },
+                "serviceName": "erp",
+                "resource": "/res7",
+                "action": "write"
+            }
+        },
+        {
+            "index": 8,
+            "request": {
+                "subject": {
+                    "principals": [
+                        {
+                            "type": "user",
+                            "name": "user2"
+                        }
+                    ]
+                },
+                "serviceName": "erp",
+                "resource": "/res8",
+                "action": "write"
+            }
+        },
+        {
+            "index": 9,
+            "request": {
+                "subject": {
+                    "principals": [
+                        {
+                            "type": "user",
+                            "name": "user2"
+                        }
+                    ]
+                },
+                "serviceName": "erp",
+                "resource": "/res9",
+                "action": "write"
+            }
+        },
+        {
+            "index": 10,
+            "request": {
+                "subject": {
+                    "principals": [
+                        {
+                            "type": "user",
+                            "name": "user1"
+                        }
+                    ]
+                },
+                "serviceName": "erp1",
+                "resource": "/res0",
+                "action": "write"
+            }
+        },
+        {
+            "index": 11,
+            "request": {
+                "subject": {
+                    "principals": [
+                        {
+                            "type": "user",
+                            "name": "user1"
+                        }
+                    ]
+                },
+                "serviceName": "erp1",
+                "resource": "/res1",
+                "action": "write"
+            }
+        },
+        {
+            "index": 12,
+            "request": {
+                "subject": {
+                    "principals": [
+                        {
+                            "type": "user",
+                            "name": "user1"
+                        }
+                    ]
+                },
+                "serviceName": "erp1",
+                "resource": "/res2",
+                "action": "write"
+            }
+        },
+        {
+            "index": 13,
+            "request": {
+                "subject": {
+                    "principals": [
+                        {
+                            "type": "user",
+                            "name": "user1"
+                        }
+                    ]
+                },
+                "serviceName": "erp1",
+                "resource": "/res3",
+                "action": "write"
+            }
+        },
+        {
+            "index": 14,
+            "request": {
+                "subject": {
+                    "principals": [
+                        {
+                            "type": "user",
+                            "name": "user1"
+                        }
+                    ]
+                },
+                "serviceName": "erp1",
+                "resource": "/res4",
+                "action": "write"
+            }
+        },
+        {
+            "index": 15,
+            "request": {
+                "subject": {
+                    "principals": [
+                        {
+                            "type": "user",
+                            "name": "user2"
+                        }
+                    ]
+                },
+                "serviceName": "erp1",
+                "resource": "/res5",
+                "action": "read"
+            }
+        },
+        {
+            "index": 16,
+            "request": {
+                "subject": {
+                    "principals": [
+                        {
+                            "type": "user",
+                            "name": "user2"
+                        }
+                    ]
+                },
+                "serviceName": "erp1",
+                "resource": "/res6",
+                "action": "read"
+            }
+        },
+        {
+            "index": 17,
+            "request": {
+                "subject": {
+                    "principals": [
+                        {
+                            "type": "user",
+                            "name": "user2"
+                        }
+                    ]
+                },
+                "serviceName": "erp1",
+                "resource": "/res7",
+                "action": "read"
+            }
+        },
+        {
+            "index": 18,
+            "request": {
+                "subject": {
+                    "principals": [
+                        {
+                            "type": "user",
+                            "name": "user2"
+                        }
+                    ]
+                },
+                "serviceName": "erp1",
+                "resource": "/res8",
+                "action": "read"
+            }
+        },
+        {
+            "index": 19,
+            "request": {
+                "subject": {
+                    "principals": [
+                        {
+                            "type": "user",
+                            "name": "user2"
+                        }
+                    ]
+                },
+                "serviceName": "erp1",
+                "resource": "/res9",
+                "action": "read"
+            }
+        }
+    ]
+}

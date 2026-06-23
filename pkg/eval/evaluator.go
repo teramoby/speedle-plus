@@ -426,7 +426,12 @@ func (p *PolicyEvalImpl) getDirectRolePolicesInService(principals []string,
 				}
 			}
 			if condition != nil {
-				result, _ = evaluateCondition(condition, attributes)
+				if r, e := evaluateCondition(condition, attributes); e != nil {
+					log.Debugf("condition evaluation error for denied policy: %v", e)
+					result = r
+				} else {
+					result = r
+				}
 			}
 
 			if evaluationResult != nil {
@@ -846,7 +851,7 @@ func couldRoleSafelyBeDenied(role string, relatedRoleMap map[string]*Role, denie
 			}
 		}
 	} else {
-		fmt.Println("error in couldRoleSafelyBeDenied")
+		log.Debugf("error in couldRoleSafelyBeDenied")
 	}
 	return !allDeniedByRoleBeDenied
 }
@@ -868,7 +873,7 @@ func selfOrAncestorsBeDenied(deniedByRole string, relatedRoleMap map[string]*Rol
 		}
 
 	} else {
-		fmt.Println("error in selfOrAncestorsBeDenied")
+		log.Debugf("error in selfOrAncestorsBeDenied")
 	}
 	return true
 }
@@ -1096,33 +1101,57 @@ func (p *PolicyEvalImpl) updateRuntimeCacheWithStoreChange(updateChan pms.Storag
 	for e := range updateChan {
 		switch e.Type {
 		case pms.SERVICE_ADD: ///Event content: StoreUpdateData{ParentID:serviceName, Data:*service}
-			serviceGot := e.Content.(*pms.Service)
+			serviceGot, ok := e.Content.(*pms.Service)
+			if !ok {
+				log.Warnf("unexpected Content type for SERVICE_ADD event")
+				continue
+			}
 			p.AddServiceInRuntimeCache(serviceGot)
 		case pms.SERVICE_DELETE: //Event content:[]StoreUpdateData{ParentID:serviceName, Data:servieName}
-			services := e.Content.([]string)
+			services, ok := e.Content.([]string)
+			if !ok {
+				log.Warnf("unexpected Content type for SERVICE_DELETE event")
+				continue
+			}
 			for _, s := range services {
 				p.deleteService(s)
 			}
 		case pms.POLICY_ADD: //Event content :[]StoreUpdateData{ParentID:serviceName, Data:*policy}
-			data := e.Content.([]pms.StoreUpdateData)
+			data, ok := e.Content.([]pms.StoreUpdateData)
+			if !ok {
+				log.Warnf("unexpected Content type for store update event")
+				continue
+			}
 			for _, s := range data {
 				policy := s.Data.(*pms.Policy)
 				p.AddPolicyInRuntimeCache(s.ServiceName, policy)
 			}
 		case pms.POLICY_DELETE: // Event content:[]StoreUpdateData{ParentID:serviceName, Data:*pms.Policy}
-			data := e.Content.([]pms.StoreUpdateData)
+			data, ok := e.Content.([]pms.StoreUpdateData)
+			if !ok {
+				log.Warnf("unexpected Content type for store update event")
+				continue
+			}
 			for _, s := range data {
 				policy := s.Data.(*pms.Policy)
 				p.DeletePolicyInRuntimeCache(s.ServiceName, policy.ID)
 			}
 		case pms.ROLEPOLICY_ADD: //Event content :[]StoreUpdateData{ParentID:serviceName, Data:*rolepolicy}
-			data := e.Content.([]pms.StoreUpdateData)
+			data, ok := e.Content.([]pms.StoreUpdateData)
+			if !ok {
+				log.Warnf("unexpected Content type for store update event")
+				continue
+			}
 			for _, s := range data {
 				rolepolicy := s.Data.(*pms.RolePolicy)
 				p.AddRolePolicyInRuntimeCache(s.ServiceName, rolepolicy)
 			}
 		case pms.ROLEPOLICY_DELETE: //Event content:[]StoreUpdateData{ParentID:serviceName, Data:*pms.RolePolicy}
-			data := e.Content.([]pms.StoreUpdateData)
+			data, ok := e.Content.([]pms.StoreUpdateData)
+			if !ok {
+				log.Warnf("unexpected Content type for store update event")
+				continue
+			}
 			for _, s := range data {
 				rolePolicy := s.Data.(*pms.RolePolicy)
 				p.DeleteRolePolicyInRuntimeCache(s.ServiceName, rolePolicy.ID)
@@ -1134,10 +1163,18 @@ func (p *PolicyEvalImpl) updateRuntimeCacheWithStoreChange(updateChan pms.Storag
 				log.Error("failed to reload cache data. ", err)
 			}
 		case pms.FUNCTION_ADD:
-			f := e.Content.(*pms.Function)
+			f, ok := e.Content.(*pms.Function)
+			if !ok {
+				log.Warnf("unexpected Content type for FUNCTION_ADD event")
+				continue
+			}
 			p.AddFunctionInRuntimeCache(f)
 		case pms.FUNCTION_DELETE:
-			fs := e.Content.([]string)
+			fs, ok := e.Content.([]string)
+			if !ok {
+				log.Warnf("unexpected Content type for FUNCTION_DELETE event")
+				continue
+			}
 			for _, f := range fs {
 				p.DeleteFunctionInRuntimeCache(f)
 			}
