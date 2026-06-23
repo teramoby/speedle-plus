@@ -88,7 +88,8 @@ const (
 	// If command line argument --pms-endpint and no pms-endpint defined in configure file, use this default value.
 	DefaultPolicyManagmentConnectEndpoint = "http://127.0.0.1:6733/policy-mgmt/v1/"
 	DefaultAuthzCheckEndPoint             = "0.0.0.0:6734"
-	DefaultInsecure                       = true
+	// TLS enabled by default for security. Set --insecure=true for development only.
+	DefaultInsecure = false
 	DefaultEnableAuthz                    = false
 
 	DefaultStoreType = cfg.StorageTypeFile //file
