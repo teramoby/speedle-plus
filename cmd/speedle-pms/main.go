@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/teramoby/speedle-plus/api/pms"
@@ -94,7 +95,7 @@ func main() {
 	}
 
 	intChan := make(chan os.Signal, 1)
-	signal.Notify(intChan, os.Interrupt)
+	signal.Notify(intChan, os.Interrupt, syscall.SIGTERM)
 
 	errChan := make(chan error, 2)
 	go func() {
@@ -138,7 +139,11 @@ func main() {
 }
 
 func newGRPCServer(ps pms.PolicyStoreManager) (*grpc.Server, error) {
-	server := grpc.NewServer(grpc.UnaryInterceptor(svcs.PanicRecoveryInterceptor()))
+	server := grpc.NewServer(
+		grpc.UnaryInterceptor(svcs.PanicRecoveryInterceptor()),
+		grpc.MaxRecvMsgSize(4<<20), // 4 MB
+		grpc.MaxSendMsgSize(4<<20), // 4 MB
+	)
 	pb.RegisterPolicyManagerServer(server, pmsgrpc.NewServiceImpl(ps))
 	reflection.Register(server)
 	return server, nil
