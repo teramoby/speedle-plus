@@ -32,6 +32,10 @@ var (
 	// Shared HTTP client with connection pooling for plain HTTP calls.
 	defaultHTTPClient = &http.Client{
 		Timeout: defaultCustomerFunctionCallTimeout,
+		Transport: &http.Transport{
+			MaxIdleConnsPerHost: 20,
+			Proxy:               http.ProxyFromEnvironment,
+		},
 	}
 
 	// Cached HTTPS clients keyed by CA certificate content.
@@ -55,6 +59,7 @@ func getHTTPSClient(ca string) *http.Client {
 		TLSClientConfig:       tlsConfig,
 		Proxy:                 http.ProxyFromEnvironment,
 		ResponseHeaderTimeout: 10 * time.Second,
+			MaxIdleConnsPerHost:   20,
 	}
 	client := &http.Client{
 		Transport: transport,

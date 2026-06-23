@@ -140,6 +140,25 @@ func IsSubSet(args ...interface{}) (interface{}, error) {
 		}
 		return true, nil
 
+	case []int:
+		t2, ok := s2.([]int)
+		if !ok {
+			return nil, err
+		}
+		if len(t1) == 0 || len(t2) == 0 || len(t1) > len(t2) {
+			return false, nil
+		}
+	outerInt:
+		for i := 0; i < len(t1); i++ {
+			for j := 0; j < len(t2); j++ {
+				if t1[i] == t2[j] {
+					continue outerInt
+				}
+			}
+			return false, nil
+		}
+		return true, nil
+
 	case []interface{}:
 		t2, ok := s2.([]interface{})
 		if !ok {

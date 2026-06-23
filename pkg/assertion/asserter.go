@@ -83,6 +83,7 @@ func NewAsserter(conf *AsserterConfig, tenant *string) (TokenAsserter, error) {
 	tr := http.Transport{
 		MaxIdleConns:    1000,
 		IdleConnTimeout: 60 * time.Second,
+		MaxIdleConnsPerHost: 20,
 		Proxy:           http.ProxyFromEnvironment,
 	}
 
