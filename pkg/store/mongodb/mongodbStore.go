@@ -629,7 +629,7 @@ func (s *Store) DeletePolicies(serviceName string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	filter := bson.D{{"_id", serviceName}}
-	update := bson.D{{"$pull", bson.D{{"policies", bson.D{{"$exists", true}}}}}}
+	update := bson.D{{"$set", bson.D{{"policies", bson.A{}}}}}
 	result := serviceCollection.FindOneAndUpdate(ctx, filter, update)
 	if result.Err() == mongo.ErrNoDocuments {
 		return errors.Errorf(errors.EntityNotFound, "service %q is not found", serviceName)
@@ -793,7 +793,7 @@ func (s *Store) DeleteRolePolicies(serviceName string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	filter := bson.D{{"_id", serviceName}}
-	update := bson.D{{"$pull", bson.D{{"rolepolicies", bson.D{{"$exists", true}}}}}}
+	update := bson.D{{"$set", bson.D{{"rolepolicies", bson.A{}}}}}
 	result := serviceCollection.FindOneAndUpdate(ctx, filter, update)
 	if result.Err() == mongo.ErrNoDocuments {
 		return errors.Errorf(errors.EntityNotFound, "service %q is not found", serviceName)
