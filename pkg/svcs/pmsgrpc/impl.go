@@ -35,6 +35,30 @@ func NewServiceImpl(ps pms.PolicyStoreManager) *serviceImpl {
 	}
 }
 
+// toPMSEffect converts a protobuf Effect enum to a PMS effect string.
+func toPMSEffect(pbEffect pb.Effect) string {
+	switch pbEffect {
+	case pb.Effect_GRANT:
+		return pms.Grant
+	case pb.Effect_DENY:
+		return pms.Deny
+	default:
+		return ""
+	}
+}
+
+// toPBEffect converts a PMS effect string to a protobuf Effect enum.
+func toPBEffect(pmsEffect string) pb.Effect {
+	switch pmsEffect {
+	case pms.Grant:
+		return pb.Effect_GRANT
+	case pms.Deny:
+		return pb.Effect_DENY
+	default:
+		return pb.Effect_GRANT
+	}
+}
+
 func convertRPCFunction(rpcFunction *pb.Function) *pms.Function {
 	return &pms.Function{
 		Name:           rpcFunction.Name,
@@ -77,7 +101,7 @@ func convertRPCServiceRequest(rpcService *pb.ServiceRequest) *pms.Service {
 }
 
 func convertRPCPrincipals(principals []*pb.AndPrincipals) [][]string {
-	ret := [][]string{}
+	ret := make([][]string, 0, len(principals))
 	for _, andPrincipals := range principals {
 		ret = append(ret, andPrincipals.Principals)
 	}
@@ -94,14 +118,7 @@ func convertRPCRolePolicy(rpcPolicy *pb.RolePolicy) *pms.RolePolicy {
 		ResourceExpressions: rpcPolicy.ResourceExpressions,
 		Condition:           rpcPolicy.Condition,
 	}
-	switch rpcPolicy.Effect {
-	case pb.Effect_GRANT:
-		ret.Effect = pms.Grant
-		break
-	case pb.Effect_DENY:
-		ret.Effect = pms.Deny
-		break
-	}
+	ret.Effect = toPMSEffect(rpcPolicy.Effect)
 	return &ret
 }
 
@@ -166,7 +183,7 @@ func convertMetaService(service *pms.Service) *pb.Service {
 }
 
 func convertMetaPrincipals(principals [][]string) []*pb.AndPrincipals {
-	ret := []*pb.AndPrincipals{}
+	ret := make([]*pb.AndPrincipals, 0, len(principals))
 	for _, andPrincipals := range principals {
 		ret = append(ret, &pb.AndPrincipals{
 			Principals: andPrincipals,
@@ -304,7 +321,7 @@ func (impl *serviceImpl) QueryFunctions(ctx context.Context, in *pb.FunctionQuer
 	}
 
 	retFunctions := pb.FunctionQueryResponse{
-		Functions: make([]*pb.Function, 0),
+		Functions: make([]*pb.Function, 0, len(functions)),
 	}
 	for _, f := range functions {
 		retFunctions.Functions = append(retFunctions.Functions, convertMetaFunction(f))
@@ -394,7 +411,7 @@ func (impl *serviceImpl) QueryServices(ctx context.Context, in *pb.ServiceQueryR
 		ss = append(ss, svc)
 	}
 	ret := pb.ServiceQueryResponse{
-		Services: make([]*pb.Service, 0),
+		Services: make([]*pb.Service, 0, len(ss)),
 	}
 
 	for _, svc := range ss {
@@ -507,7 +524,7 @@ func (impl *serviceImpl) QueryPolicies(ctx context.Context, in *pb.PolicyQueryRe
 	}
 
 	retPolicies := pb.PolicyQueryResponse{
-		Policies: make([]*pb.Policy, 0),
+		Policies: make([]*pb.Policy, 0, len(policies)),
 	}
 	for _, policy := range policies {
 		retPolicies.Policies = append(retPolicies.Policies, convertMetaPolicy(policy))
@@ -635,7 +652,7 @@ func (impl *serviceImpl) QueryRolePolicies(ctx context.Context, in *pb.RolePolic
 	}
 
 	retPolicies := pb.RolePolicyQueryResponse{
-		RolePolicies: make([]*pb.RolePolicy, 0),
+		RolePolicies: make([]*pb.RolePolicy, 0, len(policies)),
 	}
 	for _, policy := range policies {
 		retPolicies.RolePolicies = append(retPolicies.RolePolicies, convertMetaRolePolicy(policy))
@@ -814,7 +831,7 @@ func convertAPIPrincipals(principals []*ads.Principal) []*pb.Principal {
 		return nil
 	}
 
-	ret := []*pb.Principal{}
+	ret := make([]*pb.Principal, 0, len(principals))
 	for _, princ := range principals {
 		ret = append(ret, &pb.Principal{
 			Type: princ.Type,
