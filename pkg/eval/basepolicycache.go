@@ -107,7 +107,7 @@ func AddPolicyToResourceExpressionCache(resourceToPolicyMap *ResourceToPolicyMap
 
 		if resourceToPolicyMap.PrefixResourceExpressionTree == nil {
 			resourceToPolicyMap.PrefixResourceExpressionTree = radix.New()
-			policyIDSet := make(map[string]bool)
+			policyIDSet := make(map[string]bool, 1)
 			policyIDSet[policyID] = true
 			resourceToPolicyMap.PrefixResourceExpressionTree.Insert(resourceExpression, policyIDSet)
 		} else {
@@ -115,7 +115,7 @@ func AddPolicyToResourceExpressionCache(resourceToPolicyMap *ResourceToPolicyMap
 				policyIDSet := value.(map[string]bool)
 				policyIDSet[policyID] = true
 			} else {
-				policyIDSet := make(map[string]bool)
+				policyIDSet := make(map[string]bool, 1)
 				policyIDSet[policyID] = true
 				resourceToPolicyMap.PrefixResourceExpressionTree.Insert(resourceExpression, policyIDSet)
 			}
@@ -125,7 +125,7 @@ func AddPolicyToResourceExpressionCache(resourceToPolicyMap *ResourceToPolicyMap
 
 		if resourceToPolicyMap.SuffixResourceExpressionTree == nil {
 			resourceToPolicyMap.SuffixResourceExpressionTree = radix.New()
-			policyIDSet := make(map[string]bool)
+			policyIDSet := make(map[string]bool, 1)
 			policyIDSet[policyID] = true
 			resourceToPolicyMap.SuffixResourceExpressionTree.Insert(resourceExpression, policyIDSet)
 		} else {
@@ -133,28 +133,28 @@ func AddPolicyToResourceExpressionCache(resourceToPolicyMap *ResourceToPolicyMap
 				policyIDSet := value.(map[string]bool)
 				policyIDSet[policyID] = true
 			} else {
-				policyIDSet := make(map[string]bool)
+				policyIDSet := make(map[string]bool, 1)
 				policyIDSet[policyID] = true
 				resourceToPolicyMap.SuffixResourceExpressionTree.Insert(resourceExpression, policyIDSet)
 			}
 		}
 	} else if All_Pattern.MatchString(resourceExpression) {
 		if resourceToPolicyMap.NilResourceToPolicies == nil {
-			resourceToPolicyMap.NilResourceToPolicies = make(map[string]bool)
+			resourceToPolicyMap.NilResourceToPolicies = make(map[string]bool, 1)
 		}
 		resourceToPolicyMap.NilResourceToPolicies[policyID] = true
 	} else {
 		//No perfix and no suffix and no all pattern matched
 		if resourceToPolicyMap.ResourceExpressionToPolicies == nil {
 			resourceToPolicyMap.ResourceExpressionToPolicies = make(map[string]map[string]bool)
-			policyIDSet := make(map[string]bool)
+			policyIDSet := make(map[string]bool, 1)
 			policyIDSet[policyID] = true
 			resourceToPolicyMap.ResourceExpressionToPolicies[resourceExpression] = policyIDSet
 		} else {
 			if policyIDSet, exist := resourceToPolicyMap.ResourceExpressionToPolicies[resourceExpression]; exist {
 				policyIDSet[policyID] = true
 			} else {
-				policyIDSet := make(map[string]bool)
+				policyIDSet := make(map[string]bool, 1)
 				policyIDSet[policyID] = true
 				resourceToPolicyMap.ResourceExpressionToPolicies[resourceExpression] = policyIDSet
 			}
