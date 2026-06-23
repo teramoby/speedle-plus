@@ -11,6 +11,9 @@ import (
 )
 
 func (e *RESTService) Discover(w http.ResponseWriter, r *http.Request) {
+	if !httputils.VerifyContentType(w, r, []string{"application/json"}) {
+		return
+	}
 	jsonRequest, err := DecodeJSONContext(r)
 	if err != nil {
 		httputils.HandleError(w, err)
