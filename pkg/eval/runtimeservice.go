@@ -6,9 +6,9 @@ package eval
 import (
 	"sync"
 
+	log "github.com/sirupsen/logrus"
 	"github.com/teramoby/speedle-plus/3rdparty/github.com/Knetic/govaluate"
 	"github.com/teramoby/speedle-plus/api/pms"
-	log "github.com/sirupsen/logrus"
 )
 
 type RuntimePolicyStore struct {
@@ -93,7 +93,7 @@ func (rtps *RuntimePolicyStore) recompilePolicyConditionAtRuntime(serviceName st
 
 	condition, err := compileCondition(policy.Condition, rtps.Functions)
 	if err == nil {
-	
+
 		go updatePolicyCondition(rtps, serviceName, policy, condition)
 	}
 	return condition, err
@@ -117,7 +117,7 @@ func (rtps *RuntimePolicyStore) recompileRolePolicyConditionAtRuntime(serviceNam
 
 	condition, err := compileCondition(policy.Condition, rtps.Functions)
 	if err == nil {
-	
+
 		go updateRolePolicyCondition(rtps, serviceName, policy, condition)
 	}
 	return condition, err
@@ -149,7 +149,7 @@ func (rtps *RuntimePolicyStore) addPolicy(serviceName string, policy *pms.Policy
 		return
 	}
 	rtService.Lock()
-	// Golang garantees rtService.Unlock() is executed before rtps.RUnlock()
+	// Golang guarantees rtService.Unlock() is executed before rtps.RUnlock()
 	defer rtService.Unlock()
 
 	rtService.PoliciesCache.AddPolicyToCache(policy, condition)
@@ -166,7 +166,7 @@ func (rtps *RuntimePolicyStore) deletePolicy(serviceName string, policyID string
 		return
 	}
 	rtService.Lock()
-	// Golang garantees rtService.Unlock() is executed before rtps.RUnlock()
+	// Golang guarantees rtService.Unlock() is executed before rtps.RUnlock()
 	defer rtService.Unlock()
 
 	rtService.PoliciesCache.DeletePolicyFromCache(policyID)
@@ -184,7 +184,7 @@ func (rtps *RuntimePolicyStore) addRolePolicy(serviceName string, rolePolicy *pm
 		return
 	}
 	rtService.Lock()
-	// Golang garantees rtService.Unlock() is executed before rtps.RUnlock()
+	// Golang guarantees rtService.Unlock() is executed before rtps.RUnlock()
 	defer rtService.Unlock()
 
 	rtService.RolePoliciesCache.AddRolePolicyToCache(rolePolicy, condition)
@@ -201,7 +201,7 @@ func (rtps *RuntimePolicyStore) deleteRolePolicy(serviceName string, rolePolicyI
 		return
 	}
 	rtService.Lock()
-	// Golang garantees rtService.Unlock() is executed before rtps.RUnlock()
+	// Golang guarantees rtService.Unlock() is executed before rtps.RUnlock()
 	defer rtService.Unlock()
 
 	rtService.RolePoliciesCache.DeleteRolePolicyFromCache(rolePolicyID)

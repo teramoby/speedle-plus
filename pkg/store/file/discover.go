@@ -10,11 +10,11 @@ import (
 	"path/filepath"
 	"sync"
 
+	log "github.com/sirupsen/logrus"
 	"github.com/teramoby/speedle-plus/api/ads"
 	"github.com/teramoby/speedle-plus/api/pms"
 	"github.com/teramoby/speedle-plus/pkg/errors"
 	"github.com/teramoby/speedle-plus/pkg/store"
-	log "github.com/sirupsen/logrus"
 )
 
 type discoverRequestStore struct {
@@ -35,7 +35,7 @@ const (
 	discoverStoreFileName = "speedle_discover_requests.json"
 )
 
-//read policy store from file
+// read policy store from file
 func (s *discoverRequestStore) ReadDiscoverRequestStore() (*StoreContent, error) {
 
 	s.rwLock.RLock()
@@ -72,11 +72,11 @@ func (s *discoverRequestStore) writeDiscoverRequestStoreWithoutLock(drs *StoreCo
 	defer jsonFile.Close()
 	drsB, err := json.MarshalIndent(*drs, "", "    ")
 	if err != nil {
-		log.Errorf("marshal indent filed becuase of %v", err)
+		log.Errorf("marshal indent failed because of %v", err)
 		return errors.Wrap(err, errors.SerializationError, "marshal indent failed")
 	}
 	if _, err := jsonFile.Write(drsB); err != nil {
-		log.Errorf("write to file failed becuase of %v", err)
+		log.Errorf("write to file failed because of %v", err)
 		return errors.Wrapf(err, errors.StoreError, "unable to write to file %q", s.FileLocation)
 	}
 	return nil
@@ -255,7 +255,7 @@ func (s *discoverRequestStore) resetDiscoverRequests(serviceName string) error {
 	return nil
 }
 
-//Generate policies for principal based on existing request logs. Generate policies for all principals when principalXXX are empty.
+// Generate policies for principal based on existing request logs. Generate policies for all principals when principalXXX are empty.
 func (s *Store) GeneratePolicies(serviceName, principalType, principalName, principalIDD string) (map[string]*pms.Service, int64, error) {
 	if discoverStore, err := getDiscoverRequestStore(s); err == nil {
 		return discoverStore.generatePolicies(serviceName, principalType, principalName, principalIDD)

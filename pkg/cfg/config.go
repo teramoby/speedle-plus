@@ -49,7 +49,7 @@ func ReadConfig(configFileLocation string) (*Config, error) {
 	}
 	err = json.Unmarshal(raw, &config)
 	if err != nil {
-		err = errors.Wrapf(err, errors.ConfigError, "fauiled to unmarshal configure file %s", configFileLocation)
+		err = errors.Wrapf(err, errors.ConfigError, "failed to unmarshal configure file %s", configFileLocation)
 	}
 
 	return &config, err
