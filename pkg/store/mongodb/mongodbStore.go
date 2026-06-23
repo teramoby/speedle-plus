@@ -3,6 +3,7 @@ package mongodb
 import (
 	"context"
 	"strings"
+	"sync"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -19,6 +20,7 @@ type Store struct {
 	client    *mongo.Client
 	Database  string
 	stopWatch chan struct{}
+	stopOnce  sync.Once
 }
 
 // ReadPolicyStore reads policy store from a file
@@ -409,9 +411,11 @@ func getDocID(event bson.M) string {
 }
 
 func (s *Store) StopWatch() {
-	if s.stopWatch != nil {
-		close(s.stopWatch)
-	}
+	s.stopOnce.Do(func() {
+		if s.stopWatch != nil {
+			close(s.stopWatch)
+		}
+	})
 }
 
 // Health checks the health of the MongoDB server by pinging it.
