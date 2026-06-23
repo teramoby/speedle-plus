@@ -678,7 +678,7 @@ func (k *Parameters) Param2Config(storeParamsMap map[string]string) (*cfg.Config
 			}
 			if len(k.AuditLogConf.LogLocalTime.Value) != 0 {
 				value, _ := strconv.ParseBool(k.AuditLogConf.LogLocalTime.Value)
-				rotateConfig.Compress = value
+				rotateConfig.LocalTime = value
 			}
 			auditLogConf.RotationConfig = &rotateConfig
 		}
