@@ -407,6 +407,11 @@ func (p *PolicyEvalImpl) getDirectRolePolices(principals []string,
 
 func (p *PolicyEvalImpl) getDirectRolePolicesInService(principals []string,
 	service *RuntimeService, resource string, attributes map[string]interface{}, policyIDMap map[string]bool, evaluationResult *adsapi.EvaluationResult, grantedRolePolicies []*pms.RolePolicy, deniedRolePolicies []*pms.RolePolicy) ([]*pms.RolePolicy, []*pms.RolePolicy, error) {
+		subjectSet := make(map[string]bool, len(principals))
+		for _, sp := range principals {
+			subjectSet[sp] = true
+		}
+
 	for _, policy := range service.GetRelatedRolePolicyMap(principals, resource) {
 
 		if policyIDMap[policy.ID] {
@@ -414,7 +419,7 @@ func (p *PolicyEvalImpl) getDirectRolePolicesInService(principals []string,
 		}
 
 		// No principal defined. that means the roles are granted to any user
-		if (policy.Principals == nil || len(policy.Principals) == 0 || matchRolePolicyPrincipals(principals, policy.Principals)) && matchResource(resource, policy.Resources, policy.ResourceExpressions) {
+		if (policy.Principals == nil || len(policy.Principals) == 0 || matchRolePolicyPrincipals(subjectSet, policy.Principals)) && matchResource(resource, policy.Resources, policy.ResourceExpressions) {
 			// Evaluate conditions
 			condition, ok := service.RolePoliciesCache.Conditions[policy.ID]
 			// If no conditions defined, the condition evaluation result is true
@@ -874,9 +879,14 @@ func (p *PolicyEvalImpl) getPolicyList(ctx *internalRequestContext, matchResourc
 	var deniedPolicyList []*pms.Policy
 
 	principals := ctx.Subject.Principals
+	subjectSet := make(map[string]bool, len(principals))
+	for _, sp := range principals {
+		subjectSet[sp] = true
+	}
+
 	for _, policy := range ctx.Service.GetRelatedPolicyMap(principals, ctx.Resource, matchResource) {
 		// No principal defined. that means the resource actions are granted to any user
-		if policy.Principals == nil || len(policy.Principals) == 0 || matchPrincipals(principals, policy.Principals) {
+		if policy.Principals == nil || len(policy.Principals) == 0 || matchPrincipals(subjectSet, policy.Principals) {
 			// Check the resource and action
 			if !matchResource || (matchResource && matchResourceAction(policy, ctx)) {
 				// Evaluate conditions

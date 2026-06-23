@@ -203,19 +203,13 @@ func evaluateCondition(condition *govaluate.EvaluableExpression, attributes map[
 	return true, nil
 }
 
-func matchRolePolicyPrincipals(subjectPrincipalList []string, rolePolicyPrincipalList []string) bool {
-	if subjectPrincipalList == nil || len(subjectPrincipalList) == 0 {
+func matchRolePolicyPrincipals(subjectSet map[string]bool, rolePolicyPrincipalList []string) bool {
+	if subjectSet == nil || len(subjectSet) == 0 {
 		return false
 	}
 
 	if rolePolicyPrincipalList == nil || len(rolePolicyPrincipalList) == 0 {
 		return true
-	}
-
-	// Build a set for O(1) lookups
-	subjectSet := make(map[string]bool, len(subjectPrincipalList))
-	for _, sp := range subjectPrincipalList {
-		subjectSet[sp] = true
 	}
 
 	for _, policyPrincipal := range rolePolicyPrincipalList {
@@ -230,19 +224,13 @@ func matchRolePolicyPrincipals(subjectPrincipalList []string, rolePolicyPrincipa
 /**
 It's regarded as matched only if all items in princs2 are included in princs1
 */
-func matchPrincipals(subjectPrincipalList []string, policyPrincipalList [][]string) bool {
-	if subjectPrincipalList == nil || len(subjectPrincipalList) == 0 {
+func matchPrincipals(subjectSet map[string]bool, policyPrincipalList [][]string) bool {
+	if subjectSet == nil || len(subjectSet) == 0 {
 		return false
 	}
 
 	if policyPrincipalList == nil || len(policyPrincipalList) == 0 {
 		return true
-	}
-
-	// Build a set for O(1) lookups
-	subjectSet := make(map[string]bool, len(subjectPrincipalList))
-	for _, sp := range subjectPrincipalList {
-		subjectSet[sp] = true
 	}
 
 	for _, andPrincipals := range policyPrincipalList {
