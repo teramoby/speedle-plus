@@ -113,7 +113,9 @@ func (frc *FuncResultCache) ReadFromCache(key string, cf *pms.Function) interfac
 			if ret.TTL == 0 || time.Now().Unix() <= ret.TTL {
 				return ret.Result
 			}
-			frc.deleteIfExpired(key)
+			// Entry is expired. Return nil and let the periodic cleaner
+			// (CleanExpiredResult) handle deletion to avoid write-lock
+			// contention on the read path.
 		}
 	}
 	return nil
@@ -124,17 +126,6 @@ func (frc *FuncResultCache) DeleteFromCache(funcName string) {
 	defer frc.Unlock()
 	for key := range frc.Results {
 		if isFunc(key, funcName) {
-			delete(frc.Results, key)
-		}
-	}
-}
-
-func (frc *FuncResultCache) deleteIfExpired(key string) {
-	frc.Lock()
-	defer frc.Unlock()
-	ret, ok := frc.Results[key]
-	if ok {
-		if ret.TTL != 0 && time.Now().Unix() > ret.TTL {
 			delete(frc.Results, key)
 		}
 	}
