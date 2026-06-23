@@ -363,7 +363,9 @@ func (s *Store) Watch() (pms.StorageChangeChannel, error) {
 				switch {
 				case event.Op&fsnotify.Write == fsnotify.Write:
 					log.Info("Reloading the file store...")
+					s.rwLock.Lock()
 					s.cache = nil // force reload on next read
+					s.rwLock.Unlock()
 					reloadEvent := pms.StoreChangeEvent{Type: pms.FULL_RELOAD}
 					storeChangeChan <- reloadEvent
 				case event.Op&fsnotify.Rename == fsnotify.Rename:
@@ -372,7 +374,9 @@ func (s *Store) Watch() (pms.StorageChangeChannel, error) {
 					} else {
 						// This is just a workaround for the issue https://github.com/fsnotify/fsnotify/issues/282
 						log.Info("Reloading the file store....")
+						s.rwLock.Lock()
 						s.cache = nil // force reload on next read
+						s.rwLock.Unlock()
 						reloadEvent := pms.StoreChangeEvent{Type: pms.FULL_RELOAD}
 						storeChangeChan <- reloadEvent
 
