@@ -30,7 +30,7 @@ func Max(args ...interface{}) (interface{}, error) {
 		return nil, err
 	}
 	var max = args[0].(float64)
-	for i := range args[1:] {
+	for i := 1; i < len(args); i++ {
 		if reflect.TypeOf(args[i]).Kind() != reflect.Float64 {
 			return nil, err
 		}
@@ -45,7 +45,7 @@ func Min(args ...interface{}) (interface{}, error) {
 		return nil, err
 	}
 	var min = args[0].(float64)
-	for i := range args[1:] {
+	for i := 1; i < len(args); i++ {
 		if reflect.TypeOf(args[i]).Kind() != reflect.Float64 {
 			return nil, err
 		}
@@ -85,7 +85,7 @@ func IsSubSet(args ...interface{}) (interface{}, error) {
 		return nil, err
 	}
 	s1, s2 := args[0], args[n-1]
-	if n >= 2 {
+	if n > 2 {
 		buf := make([]interface{}, n-1)
 		copy(buf, args)
 		s1 = buf
