@@ -99,24 +99,87 @@ func IsSubSet(args ...interface{}) (interface{}, error) {
 		copy(buf, args)
 		s1 = buf
 	}
-	if reflect.TypeOf(s1).Kind() != reflect.Slice || reflect.TypeOf(s2).Kind() != reflect.Slice {
-		return nil, err
-	}
-	v1 := reflect.ValueOf(s1)
-	v2 := reflect.ValueOf(s2)
-	n1 := v1.Len()
-	n2 := v2.Len()
-	if n1 == 0 || n2 == 0 || n1 > n2 {
-		return false, nil
-	}
-outer:
-	for i := 0; i < n1; i++ {
-		for j := 0; j < n2; j++ {
-			if v1.Index(i).Interface() == v2.Index(j).Interface() {
-				continue outer
-			}
+
+	// Fast path: type-switch on common slice types to avoid reflection.
+	switch t1 := s1.(type) {
+	case []string:
+		t2, ok := s2.([]string)
+		if !ok {
+			return nil, err
 		}
-		return false, nil
+		if len(t1) == 0 || len(t2) == 0 || len(t1) > len(t2) {
+			return false, nil
+		}
+	outerStr:
+		for i := 0; i < len(t1); i++ {
+			for j := 0; j < len(t2); j++ {
+				if t1[i] == t2[j] {
+					continue outerStr
+				}
+			}
+			return false, nil
+		}
+		return true, nil
+
+	case []float64:
+		t2, ok := s2.([]float64)
+		if !ok {
+			return nil, err
+		}
+		if len(t1) == 0 || len(t2) == 0 || len(t1) > len(t2) {
+			return false, nil
+		}
+	outerFloat:
+		for i := 0; i < len(t1); i++ {
+			for j := 0; j < len(t2); j++ {
+				if t1[i] == t2[j] {
+					continue outerFloat
+				}
+			}
+			return false, nil
+		}
+		return true, nil
+
+	case []interface{}:
+		t2, ok := s2.([]interface{})
+		if !ok {
+			return nil, err
+		}
+		if len(t1) == 0 || len(t2) == 0 || len(t1) > len(t2) {
+			return false, nil
+		}
+	outerIface:
+		for i := 0; i < len(t1); i++ {
+			for j := 0; j < len(t2); j++ {
+				if t1[i] == t2[j] {
+					continue outerIface
+				}
+			}
+			return false, nil
+		}
+		return true, nil
+
+	default:
+		// Fallback to reflection for unknown slice types.
+		if reflect.TypeOf(s1).Kind() != reflect.Slice || reflect.TypeOf(s2).Kind() != reflect.Slice {
+			return nil, err
+		}
+		v1 := reflect.ValueOf(s1)
+		v2 := reflect.ValueOf(s2)
+		n1 := v1.Len()
+		n2 := v2.Len()
+		if n1 == 0 || n2 == 0 || n1 > n2 {
+			return false, nil
+		}
+	outerRefl:
+		for i := 0; i < n1; i++ {
+			for j := 0; j < n2; j++ {
+				if v1.Index(i).Interface() == v2.Index(j).Interface() {
+					continue outerRefl
+				}
+			}
+			return false, nil
+		}
+		return true, nil
 	}
-	return true, nil
 }

@@ -20,6 +20,7 @@ import (
 	"strings"
 
 	"github.com/teramoby/speedle-plus/pkg/logging"
+	"github.com/teramoby/speedle-plus/pkg/svcs/pmsrest"
 )
 
 type serviceImpl struct {
