@@ -3,12 +3,19 @@
 
 package pms
 
+// Permission defines a single permission within a policy.
+// It specifies a resource (by literal name or expression) and the set
+// of actions that are permitted or denied on that resource.
 type Permission struct {
 	Resource           string   `json:"resource,omitempty"`
 	ResourceExpression string   `json:"resourceExpression,omitempty"`
 	Actions            []string `json:"actions,omitempty"`
 }
 
+// Function represents a custom function registered for policy evaluation.
+// It describes the function's name, its remote and local invocation URLs,
+// caching behavior, and security configuration for calling external
+// function services during condition evaluation.
 type Function struct {
 	Name           string            `json:"name" bson:"_id"`
 	Description    string            `json:"description,omitempty" bson:"description,omitempty"`
@@ -20,6 +27,9 @@ type Function struct {
 	Metadata       map[string]string `json:"metadata,omitempty" bson:"metadata,omitempty"`
 }
 
+// Policy defines a single authorization policy with grant or deny effect.
+// It combines principal matchers, resource permissions, and an optional
+// condition expression that must all be satisfied for the policy to take effect.
 type Policy struct {
 	ID          string            `json:"id" bson:"_id"`
 	Name        string            `json:"name" bson:"name,omitempty"`
@@ -40,6 +50,10 @@ const (
 	TypeApplication = "application"
 )
 
+// RolePolicy defines a role-based authorization rule with grant or deny effect.
+// It maps roles and/or principals to resources, with an optional condition
+// expression, allowing roles to be assigned permissions without directly
+// listing every principal.
 type RolePolicy struct {
 	ID                  string            `json:"id" bson:"_id"`
 	Name                string            `json:"name" bson:"name,omitempty"`
@@ -52,6 +66,9 @@ type RolePolicy struct {
 	Metadata            map[string]string `json:"metadata,omitempty" bson:"metadata,omitempty"`
 }
 
+// Service represents a logical application or service whose access is governed.
+// It groups policies and role policies by service name and type, serving
+// as the top-level namespace for authorization configuration.
 type Service struct {
 	Name         string            `json:"name" binding:"required"  bson:"_id"`
 	Type         string            `json:"type,omitempty" bson:"type,omitempty"`
