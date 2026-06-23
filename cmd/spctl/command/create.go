@@ -111,6 +111,7 @@ func parsePdlFile(pdlFileName string, serviceName, serviceType string) (*pms.Ser
 	service := pms.Service{Name: serviceName, Type: serviceType}
 	isRolePolicy := false
 	isPolicy := false
+	var parseErrors []string
 	for i, line := range lines {
 		line = strings.Trim(line, " \t")
 		if "policies:" == line {
@@ -123,23 +124,30 @@ func parsePdlFile(pdlFileName string, serviceName, serviceType string) (*pms.Ser
 			if isPolicy {
 				var policy *pms.Policy
 				name := pdlFileName + "_policy_" + strconv.Itoa(i+1)
-				policy, _, err := pdl.ParsePolicy(line, name)
-				if err == nil {
+				policy, err = pdl.ParsePolicy(line, name)
+				if err != nil {
+					parseErrors = append(parseErrors, fmt.Sprintf("line %d: %v", i+1, err))
+				} else {
 					service.Policies = append(service.Policies, policy)
 				}
 			}
 			if isRolePolicy {
 				var rolePolicy *pms.RolePolicy
 				name := pdlFileName + "_role_policy_" + strconv.Itoa(i+1)
-				rolePolicy, _, err := pdl.ParseRolePolicy(line, name)
-				if err == nil {
+				rolePolicy, err = pdl.ParseRolePolicy(line, name)
+				if err != nil {
+					parseErrors = append(parseErrors, fmt.Sprintf("line %d: %v", i+1, err))
+				} else {
 					service.RolePolicies = append(service.RolePolicies, rolePolicy)
 				}
 			}
 		}
 	}
 
-	return &service, err
+	if len(parseErrors) > 0 {
+		return &service, fmt.Errorf("PDL parse errors:\n%s", strings.Join(parseErrors, "\n"))
+	}
+	return &service, nil
 }
 
 func createCommandFunc(cmd *cobra.Command, args []string) {
@@ -234,10 +242,18 @@ func createCommandFunc(cmd *cobra.Command, args []string) {
 				name = args[1]
 			}
 			if kind == "policy" {
-				_, buf, err = pdl.ParsePolicy(command, name)
+				policy, perr := pdl.ParsePolicy(command, name)
+				err = perr
+				if err == nil {
+					buf = pdl.PolicyToJSON(policy)
+				}
 
 			} else {
-				_, buf, err = pdl.ParseRolePolicy(command, name)
+				rolePolicy, perr := pdl.ParseRolePolicy(command, name)
+				err = perr
+				if err == nil {
+					buf = pdl.RolePolicyToJSON(rolePolicy)
+				}
 			}
 			if err == nil {
 				res, err = cli.Post([]string{"service", serviceName, kind}, buf, "")

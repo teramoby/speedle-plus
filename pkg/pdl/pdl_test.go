@@ -14,7 +14,7 @@ import (
 
 func TestParsingPolicy(t *testing.T) {
 	cmd := `grant user yufyu,group Developers role1, role2 on r1,r2, r3 in k8s if 'i > 30 && j < 4','t >= "2012-05-06"'`
-	v, _, _ := ParseRolePolicy(cmd, "p1")
+	v, _ := ParseRolePolicy(cmd, "p1")
 	fmt.Println(v)
 }
 
@@ -520,7 +520,7 @@ func TestConditions(t *testing.T) {
 
 func TestFullCmd(t *testing.T) {
 	cmd := "grant user  user_bool_equal1   get,del res_equal1 if x == false"
-	_, _, err := ParsePolicy(cmd, "test")
+	_, err := ParsePolicy(cmd, "test")
 	if err != nil {
 		t.Fatalf("%v\n", err)
 	}
