@@ -79,7 +79,7 @@ func Avg(args ...interface{}) (interface{}, error) {
 	if len(args) == 0 {
 		return float64(0), nil
 	}
-	sum, err := Sum(args)
+	sum, err := Sum(args...)
 	if err != nil {
 		return nil, err
 	}
