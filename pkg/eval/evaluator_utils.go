@@ -5,7 +5,6 @@ package eval
 
 import (
 	"regexp"
-	"strings"
 	"sync"
 
 	"github.com/teramoby/speedle-plus/3rdparty/github.com/Knetic/govaluate"
@@ -156,7 +155,7 @@ func calculatePermissions(grantedPermissions, deniedPermissions []pms.Permission
 				}
 			}
 
-			if (len(deniedPermission.Resource) == 0 && len(deniedPermission.ResourceExpression) == 0) || expMatched || strings.Compare(deniedPermission.Resource, grantPermission.Resource) == 0 {
+			if (len(deniedPermission.Resource) == 0 && len(deniedPermission.ResourceExpression) == 0) || expMatched || deniedPermission.Resource == grantPermission.Resource {
 				//if resource match, then remove denied actions
 				var actions []string
 				for _, grantedAction := range grantPermission.Actions {
