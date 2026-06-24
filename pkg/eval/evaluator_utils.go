@@ -42,6 +42,10 @@ func matchResource(requestRes string, resources, resExpressions []string) bool {
 			return true
 		}
 	}
+	// NOTE: Resource expressions are user-supplied and compiled as regex patterns.
+	// If untrusted users can define resource expressions, they may be able to craft
+	// patterns that cause ReDoS (catastrophic backtracking). Consider adding a timeout
+	// or complexity limit on user-supplied patterns if this becomes a concern.
 	for _, resExp := range resExpressions {
 		if matchRegexCompiled(resExp, requestRes) {
 			return true
