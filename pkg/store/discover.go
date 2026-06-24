@@ -4,6 +4,8 @@
 package store
 
 import (
+	"fmt"
+
 	"github.com/teramoby/speedle-plus/api/ads"
 	"github.com/teramoby/speedle-plus/api/pms"
 	"github.com/teramoby/speedle-plus/pkg/subjectutils"
@@ -81,7 +83,10 @@ func GeneratePoliciesFromDiscoverRequests(requests []*ads.RequestContext, princi
 					principalIDD != "" && principalIDD != princ.IDD {
 					continue
 				}
-				encodedPrincipal := subjectutils.EncodePrincipal(princ)
+				encodedPrincipal, err := subjectutils.EncodePrincipal(princ)
+				if err != nil {
+					return nil, fmt.Errorf("failed to encode principal: %w", err)
+				}
 				roleName := "role_" + encodedPrincipal
 				policyKey := "svc=" + req.ServiceName + ";res=" + req.Resource + ";role=" + roleName
 

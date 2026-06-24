@@ -323,7 +323,11 @@ func getPrincipal(cmd string, i int) (string, int, error) {
 		}
 	}
 
-	return subjectutils.EncodePrincipal(&principal), i, nil
+	encoded, err := subjectutils.EncodePrincipal(&principal)
+	if err != nil {
+		return "", -1, fmt.Errorf("failed to encode principal: %w", err)
+	}
+	return encoded, i, nil
 }
 
 func getRoles(cmd string, i int) ([]string, int, error) {

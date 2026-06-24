@@ -12,18 +12,18 @@ import (
 
 // EncodePrincipal encodes prinicpal object to string
 // Form: [idd=<IDD>:]<Type>:<Name>
-// Returns empty string if principal names contain reserved separator characters (colon, equals).
-func EncodePrincipal(principal *adsapi.Principal) string {
+// Returns error if principal names contain reserved separator characters (colon, equals).
+func EncodePrincipal(principal *adsapi.Principal) (string, error) {
 	if principal == nil {
-		return ""
+		return "", fmt.Errorf("principal is nil")
 	}
 	// Reject colons in Type (which is the first field in the encoded format),
 	// and equals signs in IDD (which is the key=value prefix).
 	if strings.ContainsAny(principal.Type, ":") || strings.Contains(principal.IDD, "=") {
-		return ""
+		return "", fmt.Errorf("principal type %q or IDD %q contains reserved characters (colon or equals)", principal.Type, principal.IDD)
 	}
 	if len(principal.IDD) != 0 {
-		return fmt.Sprintf("idd=%s:%s:%s", principal.IDD, principal.Type, principal.Name)
+		return fmt.Sprintf("idd=%s:%s:%s", principal.IDD, principal.Type, principal.Name), nil
 	}
-	return fmt.Sprintf("%s:%s", principal.Type, principal.Name)
+	return fmt.Sprintf("%s:%s", principal.Type, principal.Name), nil
 }

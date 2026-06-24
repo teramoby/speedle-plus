@@ -187,7 +187,11 @@ func (p *PolicyEvalImpl) populateContext(ctx *adsapi.RequestContext) (*internalR
 		groups := make([]interface{}, 0, len(ctx.Subject.Principals))
 		var user, entity interface{}
 		for _, principal := range ctx.Subject.Principals {
-			encodedPrincipal := subjectutils.EncodePrincipal(principal)
+			encodedPrincipal, err := subjectutils.EncodePrincipal(principal)
+		if err != nil {
+			log.Warnf("failed to encode principal: %v", err)
+			continue
+		}
 			principalWithoutIDD := ""
 			if len(principal.IDD) != 0 {
 				principalWithoutIDD = principal.Type + ":" + principal.Name
