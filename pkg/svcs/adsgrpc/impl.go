@@ -177,7 +177,9 @@ func convertAPIPolicy2EvaluatedPolicyResponse(apiPolicy *adsapi.EvaluatedPolicy,
 	policyResp.Effect = apiPolicy.Effect
 	policyResp.Permissions = retPermission
 	if apiPolicy.Principals != nil && len(apiPolicy.Principals) > 0 {
-		policyResp.Principals = apiPolicy.Principals[0]
+		for _, pGroup := range apiPolicy.Principals {
+			policyResp.Principals = append(policyResp.Principals, pGroup...)
+		}
 	}
 	if apiPolicy.Condition != nil {
 		policyResp.Condition = &pb.EvaluatedCondition{
