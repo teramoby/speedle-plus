@@ -492,6 +492,18 @@ func validateServiceName(serviceName string) error {
 	return nil
 }
 
+// validateID validates a policy or role-policy ID to prevent etcd key
+// injection (e.g. "../../functions/victim" traversing the key hierarchy).
+func validateID(id string) error {
+	if id == "" {
+		return errors.New(errors.InvalidRequest, "id cannot be empty")
+	}
+	if strings.Contains(id, KeySeparator) {
+		return errors.Errorf(errors.InvalidRequest, "id %q cannot contain %q", id, KeySeparator)
+	}
+	return nil
+}
+
 func (s *Store) CreateFunction(function *pms.Function) (*pms.Function, error) {
 	if err := utils.ValidateFunc(function); err != nil {
 		return nil, err
@@ -799,6 +811,11 @@ func computeWatchBackoff(consecutiveFails int) time.Duration {
 
 // For policy manager
 func (s *Store) ListAllPolicies(serviceName string, filter string) ([]*pms.Policy, error) {
+	if serviceName != "" {
+		if err := validateServiceName(serviceName); err != nil {
+			return nil, err
+		}
+	}
 	f := parseFilter(filter)
 
 	policyKeyPrefix := s.KeyPrefix + ServicesKey + KeySeparator + serviceName + KeySeparator + PoliciesKey
@@ -828,6 +845,11 @@ func (s *Store) ListAllPolicies(serviceName string, filter string) ([]*pms.Polic
 }
 
 func (s *Store) GetPolicyCount(serviceName string) (int64, error) {
+	if serviceName != "" {
+		if err := validateServiceName(serviceName); err != nil {
+			return 0, err
+		}
+	}
 	var policyCount int64 = 0
 	if len(serviceName) > 0 {
 		// Get the policy count in the specified service
@@ -867,6 +889,12 @@ func (s *Store) getPolicyCountImpl(serviceName string) (int64, error) {
 }
 
 func (s *Store) GetPolicy(serviceName string, id string) (*pms.Policy, error) {
+	if err := validateServiceName(serviceName); err != nil {
+		return nil, err
+	}
+	if err := validateID(id); err != nil {
+		return nil, err
+	}
 	ctx, cancel := context.WithTimeout(context.Background(), requestTimeout)
 	defer cancel()
 	policyKey := s.KeyPrefix + ServicesKey + KeySeparator + serviceName + KeySeparator + PoliciesKey + KeySeparator + id
@@ -887,6 +915,9 @@ func (s *Store) GetPolicy(serviceName string, id string) (*pms.Policy, error) {
 
 // TODO: to be implemented
 func (s *Store) GetRolePolicies(serviceName string, startID string, amount int) (policies []*pms.RolePolicy, nextID string, err error) {
+	if err := validateServiceName(serviceName); err != nil {
+		return nil, "", err
+	}
 	if amount <= 0 {
 		return nil, "", errors.Errorf(errors.InvalidRequest, "invalid amount %d", amount)
 	}
@@ -922,6 +953,9 @@ func (s *Store) GetRolePolicies(serviceName string, startID string, amount int) 
 }
 
 func (s *Store) DeletePolicy(serviceName string, id string) error {
+	if err := validateID(id); err != nil {
+		return err
+	}
 	if err := validateServiceName(serviceName); err != nil {
 		return err
 	}
@@ -945,6 +979,9 @@ func (s *Store) DeletePolicy(serviceName string, id string) error {
 }
 
 func (s *Store) DeletePolicies(serviceName string) error {
+	if err := validateServiceName(serviceName); err != nil {
+		return err
+	}
 	ctx, cancel := context.WithTimeout(context.Background(), requestTimeout)
 	defer cancel()
 	_, err := s.client.KV.Txn(ctx).Then(
@@ -1038,6 +1075,11 @@ func (s *Store) CreatePolicy(serviceName string, policy *pms.Policy) (*pms.Polic
 
 // For role policy manager
 func (s *Store) ListAllRolePolicies(serviceName string, filter string) ([]*pms.RolePolicy, error) {
+	if serviceName != "" {
+		if err := validateServiceName(serviceName); err != nil {
+			return nil, err
+		}
+	}
 	f := parseFilter(filter)
 	rolePolicyKeyPrefix := s.KeyPrefix + ServicesKey + KeySeparator + serviceName + KeySeparator + RolePoliciesKey
 	responses, err := s.prefixGet(rolePolicyKeyPrefix)
@@ -1065,6 +1107,11 @@ func (s *Store) ListAllRolePolicies(serviceName string, filter string) ([]*pms.R
 }
 
 func (s *Store) GetRolePolicyCount(serviceName string) (int64, error) {
+	if serviceName != "" {
+		if err := validateServiceName(serviceName); err != nil {
+			return 0, err
+		}
+	}
 	var rolePolicyCount int64 = 0
 	if len(serviceName) > 0 {
 		// Get the rolePolicy count in the specified service
@@ -1105,6 +1152,9 @@ func (s *Store) getRolePolicyCountImpl(serviceName string) (int64, error) {
 
 // TODO: to be implemented
 func (s *Store) GetPolicies(serviceName string, startID string, amount int) (policies []*pms.Policy, nextID string, err error) {
+	if err := validateServiceName(serviceName); err != nil {
+		return nil, "", err
+	}
 	if amount <= 0 {
 		return nil, "", errors.Errorf(errors.InvalidRequest, "invalid input amount %d", amount)
 	}
@@ -1139,6 +1189,12 @@ func (s *Store) GetPolicies(serviceName string, startID string, amount int) (pol
 }
 
 func (s *Store) GetRolePolicy(serviceName string, id string) (*pms.RolePolicy, error) {
+	if err := validateServiceName(serviceName); err != nil {
+		return nil, err
+	}
+	if err := validateID(id); err != nil {
+		return nil, err
+	}
 	ctx, cancel := context.WithTimeout(context.Background(), requestTimeout)
 	defer cancel()
 	rolePolicyKey := s.KeyPrefix + ServicesKey + KeySeparator + serviceName + KeySeparator + RolePoliciesKey + KeySeparator + id
@@ -1158,6 +1214,9 @@ func (s *Store) GetRolePolicy(serviceName string, id string) (*pms.RolePolicy, e
 }
 
 func (s *Store) DeleteRolePolicy(serviceName string, id string) error {
+	if err := validateID(id); err != nil {
+		return err
+	}
 	if err := validateServiceName(serviceName); err != nil {
 		return err
 	}
@@ -1181,6 +1240,9 @@ func (s *Store) DeleteRolePolicy(serviceName string, id string) error {
 }
 
 func (s *Store) DeleteRolePolicies(serviceName string) error {
+	if err := validateServiceName(serviceName); err != nil {
+		return err
+	}
 	ctx, cancel := context.WithTimeout(context.Background(), requestTimeout)
 	defer cancel()
 	_, err := s.client.KV.Txn(ctx).Then(

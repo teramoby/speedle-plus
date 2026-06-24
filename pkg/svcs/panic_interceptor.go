@@ -5,6 +5,7 @@ package svcs
 
 import (
 	"context"
+	"net/http"
 	"runtime/debug"
 
 	log "github.com/sirupsen/logrus"
@@ -26,4 +27,19 @@ func PanicRecoveryInterceptor() grpc.UnaryServerInterceptor {
 		}()
 		return handler(ctx, req)
 	}
+}
+
+// HTTPPanicRecoveryMiddleware returns an HTTP middleware that recovers from
+// panics in HTTP handlers. It logs the panic and stack trace, then returns
+// HTTP 500 instead of crashing the server process.
+func HTTPPanicRecoveryMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		defer func() {
+			if err := recover(); err != nil {
+				log.Errorf("Panic recovered in HTTP handler %s %s: %v\n%s", r.Method, r.URL.Path, err, debug.Stack())
+				http.Error(w, `{"error":"internal server error"}`, http.StatusInternalServerError)
+			}
+		}()
+		next.ServeHTTP(w, r)
+	})
 }

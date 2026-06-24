@@ -31,6 +31,9 @@ func (s *Store) SaveDiscoverRequest(request *ads.RequestContext) error {
 }
 
 func (s *Store) PutRequest(request *ads.RequestContext) (int64, error) {
+	if err := validateServiceName(request.ServiceName); err != nil {
+		return 0, err
+	}
 	// Redact token before persisting to prevent credential leakage in discover storage.
 	if request.Subject != nil && request.Subject.Token != "" {
 		origToken := request.Subject.Token
@@ -118,6 +121,11 @@ func (s *Store) GetLastDiscoverRequest(serviceName string) (*ads.RequestContext,
 }
 
 func (s *Store) GetDiscoverRequestsSinceRevision(serviceName string, revision int64) ([]*ads.RequestContext, int64, error) {
+	if serviceName != "" {
+		if err := validateServiceName(serviceName); err != nil {
+			return nil, 0, err
+		}
+	}
 	getOpts := []clientv3.OpOption{clientv3.WithMinCreateRev(revision + 1), clientv3.WithPrefix(), clientv3.WithSort(clientv3.SortByCreateRevision, clientv3.SortAscend)}
 	keyPrefix4Search := DiscoverPrefix
 	if len(serviceName) > 0 {
@@ -171,6 +179,11 @@ func (s *Store) GetRequests(keyPrefix string, pageSize int64) ([]*ads.RequestCon
 }
 
 func (s *Store) GetDiscoverRequests(serviceName string) ([]*ads.RequestContext, int64, error) {
+	if serviceName != "" {
+		if err := validateServiceName(serviceName); err != nil {
+			return nil, 0, err
+		}
+	}
 	if len(serviceName) == 0 {
 		return s.GetRequests(DiscoverPrefix, DefaultPageSize)
 	} else {
@@ -180,6 +193,11 @@ func (s *Store) GetDiscoverRequests(serviceName string) ([]*ads.RequestContext, 
 }
 
 func (s *Store) ResetDiscoverRequests(serviceName string) error {
+	if serviceName != "" {
+		if err := validateServiceName(serviceName); err != nil {
+			return err
+		}
+	}
 	var err error
 	if len(serviceName) == 0 {
 		_, err = s.client.Delete(context.Background(), DiscoverPrefix, clientv3.WithPrefix())

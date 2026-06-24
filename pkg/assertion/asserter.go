@@ -169,7 +169,7 @@ func (a *WebHookAsserter) AssertToken(token string, idpType string, allowedIDD s
 		return nil, fmt.Errorf("asserter error, status code: %d", resp.StatusCode)
 	}
 
-	raw, errRaw := io.ReadAll(resp.Body)
+	raw, errRaw := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
 	if errRaw != nil {
 		log.Errorf("ReadAll error: %v", errRaw)
 		return nil, errRaw

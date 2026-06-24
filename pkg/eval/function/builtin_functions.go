@@ -105,8 +105,14 @@ func IsSubSet(args ...interface{}) (interface{}, error) {
 		// element, the separatorStage places it as a bare value instead of
 		// wrapping it in a slice. Detect and repair that case.
 		s1, s2 = args[0], args[1]
-		if reflect.TypeOf(s1).Kind() != reflect.Slice &&
-			reflect.TypeOf(s2).Kind() == reflect.Slice {
+		// Guard against nil arguments (e.g. a referenced attribute that
+		// resolved to JSON null). reflect.TypeOf(nil) returns nil, and
+		// calling .Kind() on a nil Type panics.
+		t1, t2 := reflect.TypeOf(s1), reflect.TypeOf(s2)
+		if t1 == nil || t2 == nil {
+			return false, nil
+		}
+		if t1.Kind() != reflect.Slice && t2.Kind() == reflect.Slice {
 			s1 = []interface{}{args[0]}
 		}
 	} else {
@@ -120,8 +126,9 @@ func IsSubSet(args ...interface{}) (interface{}, error) {
 	}
 
 	// Both s1 and s2 must be slices.
-	if reflect.TypeOf(s1).Kind() != reflect.Slice ||
-		reflect.TypeOf(s2).Kind() != reflect.Slice {
+	t1, t2 := reflect.TypeOf(s1), reflect.TypeOf(s2)
+	if t1 == nil || t2 == nil ||
+		t1.Kind() != reflect.Slice || t2.Kind() != reflect.Slice {
 		return nil, err
 	}
 

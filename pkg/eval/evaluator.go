@@ -185,9 +185,12 @@ func (p *PolicyEvalImpl) populateContext(ctx *adsapi.RequestContext) (*internalR
 		Groups:   []string{},
 		Entities: []string{},
 	}
+	// Declare identity-derived values at function scope so they can be
+	// re-asserted after the user-attribute merge below.
+	var user, entity interface{}
+	groups := []interface{}{}
 	if ctx.Subject != nil {
-		groups := make([]interface{}, 0, len(ctx.Subject.Principals))
-		var user, entity interface{}
+		groups = make([]interface{}, 0, len(ctx.Subject.Principals))
 		for _, principal := range ctx.Subject.Principals {
 			encodedPrincipal, err := subjectutils.EncodePrincipal(principal)
 		if err != nil {
@@ -240,8 +243,18 @@ func (p *PolicyEvalImpl) populateContext(ctx *adsapi.RequestContext) (*internalR
 		newCtx.Attributes[key] = value
 	}
 
-	// Re-assert built-in attributes after user attributes are merged
-	// to prevent user-supplied attributes from overriding built-in values.
+	// Re-assert ALL built-in attributes after user attributes are merged
+	// to prevent user-supplied attributes from overriding identity-derived
+	// or system-derived values (e.g. a caller injecting request_user="admin"
+	// to bypass a policy condition). This covers request_user, request_groups,
+	// request_entity (identity-derived) as well as resource/action/time.
+	if user != nil {
+		newCtx.Attributes[adsapi.BuiltIn_Attr_RequestUser] = user
+	}
+	newCtx.Attributes[adsapi.BuiltIn_Attr_RequestGroups] = groups
+	if entity != nil {
+		newCtx.Attributes[adsapi.BuiltIn_Attr_RequestEntity] = entity
+	}
 	newCtx.Attributes[adsapi.BuiltIn_Attr_RequestResource] = ctx.Resource
 	newCtx.Attributes[adsapi.BuiltIn_Attr_RequestAction] = ctx.Action
 	newCtx.Attributes[adsapi.BuiltIn_Attr_RequestTime] = now.Unix()

@@ -300,10 +300,17 @@ func (s *Store) Watch() (pms.StorageChangeChannel, error) {
 			hasNext := changeStream.Next(nextCtx)
 			nextCancel()
 			if !hasNext {
+				// Distinguish a deadline expiry (normal idle — retry) from a
+				// genuine stream error or stop signal (exit). changeStream.Err()
+				// is nil on a clean context deadline; it is non-nil on a real
+				// error. Returning on idle would kill the watch after 30s of
+				// no policy changes, breaking incremental cache updates.
 				if err := changeStream.Err(); err != nil {
-					log.Error(err)
+					log.Errorf("MongoDB change stream error: %v", err)
+					return
 				}
-				return
+				// Deadline expired with no events — loop and wait again.
+				continue
 			}
 			// A new event variable should be declared for each event.
 			var event bson.M
