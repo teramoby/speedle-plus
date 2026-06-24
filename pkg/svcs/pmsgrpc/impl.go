@@ -381,6 +381,11 @@ func (impl *serviceImpl) QueryServices(ctx context.Context, in *pb.ServiceQueryR
 			return nil, toGRPCStatus(err)
 		}
 	} else {
+		if err := pmsrest.ValidateServiceName(in.Name); err != nil {
+			// Audit log
+			logging.WriteSimpleFailedAuditLog("[gRPC]QueryServices", in.Name, err.Error())
+			return nil, toGRPCStatus(err)
+		}
 		svc, err := impl.policyStore.GetService(in.Name)
 		if err != nil {
 			// Audit log
@@ -416,6 +421,11 @@ func (impl *serviceImpl) DeleteServices(ctx context.Context, in *pb.ServiceQuery
 		return &pb.Empty{}, nil
 	}
 
+	if err := pmsrest.ValidateServiceName(in.Name); err != nil {
+		// Audit log
+		logging.WriteSimpleFailedAuditLog("[gRPC]DeleteServices", in.Name, err.Error())
+		return nil, toGRPCStatus(err)
+	}
 	if err := impl.policyStore.DeleteService(in.Name); err != nil {
 		// Audit log
 		logging.WriteSimpleFailedAuditLog("[gRPC]DeleteServices", in.Name, err.Error())

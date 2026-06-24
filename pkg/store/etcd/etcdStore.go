@@ -241,6 +241,9 @@ func (s *Store) GetServiceItself(serviceName string) (*pms.Service, error) {
 }
 
 func (s *Store) GetService(serviceName string) (*pms.Service, error) {
+	if err := validateServiceName(serviceName); err != nil {
+		return nil, err
+	}
 	var service pms.Service
 	serviceKey := s.KeyPrefix + ServicesKey + KeySeparator + serviceName + KeySeparator
 	responses, err := s.prefixGet(serviceKey)
