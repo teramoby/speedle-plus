@@ -257,8 +257,9 @@ func (rtps *RuntimePolicyStore) expireFunctionResultCache() {
 
 func (rtps *RuntimePolicyStore) convertService(service *pms.Service) *RuntimeService {
 	rtps.RLock()
-	defer rtps.RUnlock()
-	rtService := convertService(service, rtps.Functions)
+	functions := rtps.Functions
+	rtps.RUnlock()
+	rtService := convertService(service, functions)
 	return rtService
 }
 
