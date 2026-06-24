@@ -370,11 +370,13 @@ func (s *Store) CreateService(service *pms.Service) error {
 		} else {
 			endIndex = len(ops)
 		}
-		txnResp, err := s.client.KV.Txn(context.Background()).If(
+		txnCtx, txnCancel := context.WithTimeout(context.Background(), requestTimeout)
+		txnResp, err := s.client.KV.Txn(txnCtx).If(
 			clientv3.Compare(clientv3.Version(s.KeyPrefix+ServicesKey+KeySeparator+service.Name+KeySeparator), "=", 0), //service key does not exist
 		).Then(
 			ops[startIndex:endIndex]...,
 		).Commit()
+		txnCancel()
 		if err != nil {
 			fail = true
 			break
@@ -385,7 +387,9 @@ func (s *Store) CreateService(service *pms.Service) error {
 		startIndex = endIndex
 	}
 	if fail { //clean all data inserted
-		_, err := s.client.KV.Txn(context.Background()).Then(
+		cleanCtx, cleanCancel := context.WithTimeout(context.Background(), requestTimeout)
+		defer cleanCancel()
+		_, err := s.client.KV.Txn(cleanCtx).Then(
 			clientv3.OpDelete(s.KeyPrefix+ServicesKey+KeySeparator+service.Name+KeySeparator, clientv3.WithPrefix()),
 		).Commit()
 		if err != nil {
