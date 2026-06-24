@@ -582,8 +582,10 @@ func (p *PolicyEvalImpl) getGrantedRolesFromService(ctx *internalRequestContext,
 			updateRelatedRoleMapWithDenyRolePolicy(rolePolicy, relatedRolesMap, subjectPrincipalMap, directDeniedRoleMap, grantedRoleMap, deniedRoleMap)
 		}
 	}
-	//only keep role node that is in possible granted roles
-	cleanRelatedRoleMap(relatedRolesMap, grantedRoleMap)
+	// Prune non-granted roles from ParentRoles/ChildRoles/DeniedRoles
+	// but preserve DeniedByRoles so the deny resolution loop can
+	// traverse the complete deny graph.
+	cleanRelatedRoleMapPartial(relatedRolesMap, grantedRoleMap)
 
 	for {
 		//find safely denied role
@@ -611,6 +613,10 @@ func (p *PolicyEvalImpl) getGrantedRolesFromService(ctx *internalRequestContext,
 		}
 
 	}
+
+	//only keep role node that is in possible granted roles
+	cleanRelatedRoleMap(relatedRolesMap, grantedRoleMap)
+
 	finalGrantedRoles := make([]string, 0, len(grantedRoleMap))
 	for role := range grantedRoleMap {
 		finalGrantedRoles = append(finalGrantedRoles, role)
@@ -757,6 +763,41 @@ func updateRelatedRoleMapWithDenyRolePolicy(rolePolicy *pms.RolePolicy, relatedR
 	}
 }
 
+// cleanRelatedRoleMapPartial prunes non-granted roles from ParentRoles,
+// ChildRoles, and DeniedRoles of each node, and removes non-granted role
+// nodes that have no remaining DeniedByRoles relationships. Unlike
+// cleanRelatedRoleMap, it preserves DeniedByRoles edges so the deny
+// resolution loop can traverse the complete deny graph.
+func cleanRelatedRoleMapPartial(relatedRoleMap map[string]*Role, grantedRoleMap map[string]bool) {
+	for role, roleNode := range relatedRoleMap {
+		if _, ok := grantedRoleMap[role]; !ok {
+			// Remove non-granted roles only if they have no
+			// DeniedByRoles or DeniedRoles edges.
+			if len(roleNode.DeniedByRoles) == 0 && len(roleNode.DeniedRoles) == 0 {
+				delete(relatedRoleMap, role)
+			}
+			continue
+		}
+		for pRole := range roleNode.ParentRoles {
+			if _, ok := grantedRoleMap[pRole]; !ok {
+				delete(roleNode.ParentRoles, pRole)
+			}
+		}
+		for cRole := range roleNode.ChildRoles {
+			if _, ok := grantedRoleMap[cRole]; !ok {
+				delete(roleNode.ChildRoles, cRole)
+			}
+		}
+		// Prune DeniedRoles (roles denied BY this role) from non-granted roles.
+		// DeniedByRoles (roles that deny this role) are intentionally preserved.
+		for dRole := range roleNode.DeniedRoles {
+			if _, ok := grantedRoleMap[dRole]; !ok {
+				delete(roleNode.DeniedRoles, dRole)
+			}
+		}
+	}
+}
+
 func cleanRelatedRoleMap(relatedRoleMap map[string]*Role, grantedRoleMap map[string]bool) {
 	for role, roleNode := range relatedRoleMap {
 		if _, ok := grantedRoleMap[role]; !ok {
@@ -791,7 +832,18 @@ func getDeniedRoles(relatedRoleMap map[string]*Role, grantedRoleMap map[string]b
 	for role, roleNode := range relatedRoleMap {
 		if len(roleNode.DeniedByRoles) > 0 {
 			if _, ok := grantedRoleMap[role]; ok {
-				deniedRoleMap[role] = true
+				// Only count the role as denied if at least one DeniedByRole
+				// is itself in the granted role map (i.e., the denier is active).
+				hasActiveDenier := false
+				for deniedByRole := range roleNode.DeniedByRoles {
+					if _, ok := grantedRoleMap[deniedByRole]; ok {
+						hasActiveDenier = true
+						break
+					}
+				}
+				if hasActiveDenier {
+					deniedRoleMap[role] = true
+				}
 			}
 		}
 	}
