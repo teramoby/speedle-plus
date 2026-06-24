@@ -245,14 +245,14 @@ func createCommandFunc(cmd *cobra.Command, args []string) {
 				policy, perr := pdl.ParsePolicy(command, name)
 				err = perr
 				if err == nil {
-					buf = pdl.PolicyToJSON(policy)
+					buf, err = pdl.PolicyToJSON(policy)
 				}
 
 			} else {
 				rolePolicy, perr := pdl.ParseRolePolicy(command, name)
 				err = perr
 				if err == nil {
-					buf = pdl.RolePolicyToJSON(rolePolicy)
+					buf, err = pdl.RolePolicyToJSON(rolePolicy)
 				}
 			}
 			if err == nil {

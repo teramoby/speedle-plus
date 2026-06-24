@@ -126,21 +126,23 @@ func ParseRolePolicy(cmd, name string) (*pms.RolePolicy, error) {
 }
 
 // PolicyToJSON serializes a Policy to JSON and returns it as an io.Reader.
-func PolicyToJSON(p *pms.Policy) io.Reader {
+func PolicyToJSON(p *pms.Policy) (io.Reader, error) {
 	return toJSON(p)
 }
 
 // RolePolicyToJSON serializes a RolePolicy to JSON and returns it as an io.Reader.
-func RolePolicyToJSON(r *pms.RolePolicy) io.Reader {
+func RolePolicyToJSON(r *pms.RolePolicy) (io.Reader, error) {
 	return toJSON(r)
 }
 
-func toJSON(i interface{}) io.Reader {
+func toJSON(i interface{}) (io.Reader, error) {
 	buf := &bytes.Buffer{}
 	encoder := json.NewEncoder(buf)
 	encoder.SetEscapeHTML(false)
-	encoder.Encode(i)
-	return buf
+	if err := encoder.Encode(i); err != nil {
+		return nil, fmt.Errorf("failed to encode to JSON: %w", err)
+	}
+	return buf, nil
 }
 
 func getEffect(cmd string) (string, int, error) {
