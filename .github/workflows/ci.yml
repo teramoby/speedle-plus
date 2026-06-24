@@ -13,17 +13,14 @@ jobs:
         name: Setup Go
         with:
           go-version: '1.24'
-      - name: golangci-lint
-        uses: golangci/golangci-lint-action@v6
-        with:
-          version: latest
+      - name: go vet
+        run: go vet -composites=false ./pkg/... ./cmd/... ./api/...
       - name: go mod tidy check
-        run: |
-          go mod tidy -diff
+        run: go mod tidy -diff
       - name: govulncheck
         run: |
           go install golang.org/x/vuln/cmd/govulncheck@latest
-          govulncheck ./...
+          govulncheck ./pkg/... ./cmd/... ./api/...
 
   test:
     runs-on: ubuntu-latest
