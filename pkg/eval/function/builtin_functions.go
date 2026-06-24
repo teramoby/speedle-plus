@@ -83,7 +83,11 @@ func Avg(args ...interface{}) (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-	return sum.(float64) / float64(len(args)), nil
+	s, ok := sum.(float64)
+	if !ok {
+		return nil, errors.New(errors.BuiltInFuncError, "Sum did not return a float64")
+	}
+	return s / float64(len(args)), nil
 }
 
 // IsSubSet(S1, S2) means "is S1 a subset of S2"

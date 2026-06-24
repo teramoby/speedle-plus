@@ -73,7 +73,10 @@ func (esb Etcd3StoreBuilder) NewStore(config map[string]interface{}) (pms.Policy
 	var etcd3ClientConf clientv3.Config
 	if isEmbeddedEtcd {
 		etcdEndpoint := "localhost:2379"
-		embeddedEtcdDataDir, _ := config[EmbeddedEtcdDataDirKey].(string)
+		embeddedEtcdDataDir, ok := config[EmbeddedEtcdDataDirKey].(string)
+		if !ok {
+			embeddedEtcdDataDir = ""
+		}
 	log.Infof("Etcd store created")
 		embeddedInst, embeddedDir, err := StartEmbeddedEtcd(embeddedEtcdDataDir)
 		if err != nil {
@@ -147,10 +150,10 @@ func (esb Etcd3StoreBuilder) NewStore(config map[string]interface{}) (pms.Policy
 func convertValueToBool(val interface{}, keyName string) (bool, error) {
 	switch x := val.(type) {
 	case bool:
-		boolValule := val.(bool)
+		boolValule := x
 		return boolValule, nil
 	case string:
-		boolValule, err := strconv.ParseBool(val.(string))
+		boolValule, err := strconv.ParseBool(x)
 		if err != nil {
 			return false, errors.Wrapf(err, errors.ConfigError, "failed to convert configure %q", keyName)
 		}

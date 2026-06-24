@@ -45,7 +45,11 @@ var (
 // getHTTPSClient returns a cached or newly created HTTPS client for the given CA.
 func getHTTPSClient(ca string) *http.Client {
 	if client, ok := httpsClients.Load(ca); ok {
-		return client.(*http.Client)
+		if c2, ok2 := client.(*http.Client); ok2 {
+			return c2
+		}
+		// Corrupted cache entry; fall through to create a new client.
+		log.Warnf("invalid type in httpsClients cache for CA %q, expected *http.Client, got %T", ca, client)
 	}
 	caCertPool := x509.NewCertPool()
 	if len(ca) > 0 {
@@ -66,7 +70,12 @@ func getHTTPSClient(ca string) *http.Client {
 		Timeout:   defaultCustomerFunctionCallTimeout,
 	}
 	actual, _ := httpsClients.LoadOrStore(ca, client)
-	return actual.(*http.Client)
+	if c2, ok2 := actual.(*http.Client); ok2 {
+		return c2
+	}
+	// Corrupted cache entry; fall back to the new client we created.
+	log.Warnf("invalid type in httpsClients cache for CA %q, expected *http.Client, got %T", ca, actual)
+	return client
 }
 
 type Request2Delegator struct {
