@@ -17,10 +17,10 @@ func Sqrt(args ...interface{}) (interface{}, error) {
 	if len(args) != 1 {
 		return nil, err
 	}
-	if reflect.TypeOf(args[0]).Kind() != reflect.Float64 {
+	x, ok := args[0].(float64)
+	if !ok {
 		return nil, err
 	}
-	x := args[0].(float64)
 	return math.Sqrt(x), nil
 }
 
@@ -29,12 +29,16 @@ func Max(args ...interface{}) (interface{}, error) {
 	if len(args) < 1 {
 		return nil, err
 	}
-	var max = args[0].(float64)
-	for i := range args[1:] {
-		if reflect.TypeOf(args[i]).Kind() != reflect.Float64 {
+	max, ok := args[0].(float64)
+	if !ok {
+		return nil, err
+	}
+	for i := 1; i < len(args); i++ {
+		v, ok := args[i].(float64)
+		if !ok {
 			return nil, err
 		}
-		max = math.Max(max, args[i].(float64))
+		max = math.Max(max, v)
 	}
 	return max, nil
 }
@@ -44,12 +48,16 @@ func Min(args ...interface{}) (interface{}, error) {
 	if len(args) < 1 {
 		return nil, err
 	}
-	var min = args[0].(float64)
-	for i := range args[1:] {
-		if reflect.TypeOf(args[i]).Kind() != reflect.Float64 {
+	min, ok := args[0].(float64)
+	if !ok {
+		return nil, err
+	}
+	for i := 1; i < len(args); i++ {
+		v, ok := args[i].(float64)
+		if !ok {
 			return nil, err
 		}
-		min = math.Min(min, args[i].(float64))
+		min = math.Min(min, v)
 	}
 	return min, nil
 }
@@ -58,10 +66,11 @@ func Sum(args ...interface{}) (interface{}, error) {
 	err := errors.New(errors.BuiltInFuncError, "Usage: Sum(x1, x2, ...), xi must be numeric")
 	var sum float64 = 0
 	for i := range args {
-		if reflect.TypeOf(args[i]).Kind() != reflect.Float64 {
+		v, ok := args[i].(float64)
+		if !ok {
 			return nil, err
 		}
-		sum += args[i].(float64)
+		sum += v
 	}
 	return sum, nil
 }
@@ -70,7 +79,7 @@ func Avg(args ...interface{}) (interface{}, error) {
 	if len(args) == 0 {
 		return float64(0), nil
 	}
-	sum, err := Sum(args)
+	sum, err := Sum(args...)
 	if err != nil {
 		return nil, err
 	}
@@ -84,15 +93,34 @@ func IsSubSet(args ...interface{}) (interface{}, error) {
 	if n < 2 {
 		return nil, err
 	}
-	s1, s2 := args[0], args[n-1]
-	if n >= 2 {
+
+	var s1, s2 interface{}
+	if n == 2 {
+		// The expression evaluator (govaluate) converts typed slices to
+		// []interface{} via MapParameters.Get. When s1 has a single
+		// element, the separatorStage places it as a bare value instead of
+		// wrapping it in a slice. Detect and repair that case.
+		s1, s2 = args[0], args[1]
+		if reflect.TypeOf(s1).Kind() != reflect.Slice &&
+			reflect.TypeOf(s2).Kind() == reflect.Slice {
+			s1 = []interface{}{args[0]}
+		}
+	} else {
+		// More than 2 args: the evaluator expanded both parameters into
+		// individual elements. Reconstruct: first n-1 args form s1, last
+		// arg is s2 (which itself is an []interface{} from the evaluator).
 		buf := make([]interface{}, n-1)
-		copy(buf, args)
+		copy(buf, args[:n-1])
 		s1 = buf
+		s2 = args[n-1]
 	}
-	if reflect.TypeOf(s1).Kind() != reflect.Slice || reflect.TypeOf(s2).Kind() != reflect.Slice {
+
+	// Both s1 and s2 must be slices.
+	if reflect.TypeOf(s1).Kind() != reflect.Slice ||
+		reflect.TypeOf(s2).Kind() != reflect.Slice {
 		return nil, err
 	}
+
 	v1 := reflect.ValueOf(s1)
 	v2 := reflect.ValueOf(s2)
 	n1 := v1.Len()
@@ -100,6 +128,7 @@ func IsSubSet(args ...interface{}) (interface{}, error) {
 	if n1 == 0 || n2 == 0 || n1 > n2 {
 		return false, nil
 	}
+
 outer:
 	for i := 0; i < n1; i++ {
 		for j := 0; j < n2; j++ {

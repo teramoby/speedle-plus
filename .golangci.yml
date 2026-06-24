@@ -1,0 +1,12 @@
+linters-settings:
+  govet:
+    disable:
+      - composites
+
+linters:
+  enable:
+    - govet
+    - errcheck
+    - staticcheck
+    - unused
+    - gosimple

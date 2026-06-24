@@ -45,7 +45,12 @@ func NewFromConfig(conf *cfg.Config) (InternalEvaluator, error) {
 		return nil, err
 	}
 
-	return NewWithStore(conf, s)
+	eval, err := NewWithStore(conf, s)
+	if err != nil {
+		s.Close()
+		return nil, err
+	}
+	return eval, nil
 }
 
 // NewWithStore creates a policy evaluator with policy store
@@ -70,12 +75,20 @@ func NewWithStore(conf *cfg.Config, s pms.PolicyStoreManagerADS) (InternalEvalua
 	p := &PolicyEvalImpl{
 		RuntimePolicyStore: runtimePolicyStore,
 		Store:              s,
+		done:               make(chan struct{}),
 	}
 
 	// start a goroutine watching to the channel for update events and
 	// refresh runtime cache accordingly once receiving any events
 	if updateChan != nil {
-		go p.updateRuntimeCacheWithStoreChange(updateChan)
+		go func() {
+			defer func() {
+				if r := recover(); r != nil {
+					log.Errorf("panic in updateRuntimeCacheWithStoreChange goroutine: %v", r)
+				}
+			}()
+			p.updateRuntimeCacheWithStoreChange(updateChan)
+		}()
 	}
 
 	p.cleanExpiredFunctionResultPeriodically()

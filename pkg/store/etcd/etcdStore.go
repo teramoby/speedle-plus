@@ -7,9 +7,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/teramoby/speedle-plus/pkg/errors"
+	"github.com/teramoby/speedle-plus/pkg/store/utils"
 	"github.com/teramoby/speedle-plus/pkg/suid"
 
 	"github.com/teramoby/speedle-plus/api/pms"
@@ -31,6 +33,11 @@ const (
 	FunctionsKey    = "functions"
 	ServiceTypeKey  = "type"
 	pageSize        = 1000
+
+	// watchBackoffBase is the initial backoff duration for Watch retries.
+	watchBackoffBase = 1 * time.Second
+	// watchBackoffMax is the maximum backoff duration for Watch retries.
+	watchBackoffMax = 30 * time.Second
 )
 
 type Store struct {
@@ -38,22 +45,20 @@ type Store struct {
 	Config       *clientv3.Config
 	KeyPrefix    string
 	stop         chan struct{}
+	stopOnce     sync.Once
+	wg           sync.WaitGroup
 	embeddedInst *embed.Etcd
 	embeddedDir  string
 }
 
-func (s *Store) destroy() error {
-	err := s.client.Close()
-	if s.embeddedInst != nil {
-		CleanEmbeddedEtcd(s.embeddedInst, s.embeddedDir)
-	}
-	if err != nil {
-		return errors.New(errors.StoreError, "unable to close connection to etcd server")
-	}
-	return nil
-}
 
-//read policy store from etcd3
+// read policy store from etcd3
+//
+// NOTE: This method has a known N+1 query pattern: it fetches service
+// names in one call, then issues a separate GetService call for each
+// service. For deployments with many services this can cause significant
+// latency. A future optimization would be to retrieve all service data
+// in a single range scan.
 func (s *Store) ReadPolicyStore() (*pms.PolicyStore, error) {
 	serviceNames, err := s.GetServiceNames()
 	if err != nil {
@@ -61,9 +66,9 @@ func (s *Store) ReadPolicyStore() (*pms.PolicyStore, error) {
 	}
 	var ps pms.PolicyStore
 	for _, serviceName := range serviceNames {
-		service, err := s.GetService(serviceName)
-		if err != nil {
-			return nil, err
+		service, getErr := s.GetService(serviceName)
+		if getErr != nil {
+			return nil, getErr
 		}
 		ps.Services = append(ps.Services, service)
 	}
@@ -75,8 +80,9 @@ func (s *Store) ReadPolicyStore() (*pms.PolicyStore, error) {
 	return &ps, nil
 }
 
-//write policy store to etcd3
+// write policy store to etcd3
 func (s *Store) WritePolicyStore(ps *pms.PolicyStore) error {
+	log.Warn("WritePolicyStore: deleting all services; data will be lost if the process crashes mid-operation")
 	err := s.DeleteServices()
 	if err != nil {
 		return err
@@ -174,7 +180,7 @@ func (s *Store) ListAllServices() (services []*pms.Service, err error) {
 	return services, nil
 }
 
-//TODO: to be implemented
+// TODO: to be implemented
 func (s *Store) GetServices(startName string, amount int, retrivePolcies bool) ([]*pms.Service, string, error) {
 	var services []*pms.Service
 	serviceNames, err := s.GetServiceNames()
@@ -213,6 +219,9 @@ func (s *Store) GetServices(startName string, amount int, retrivePolcies bool) (
 
 }
 func (s *Store) GetServiceItself(serviceName string) (*pms.Service, error) {
+	if err := validateServiceName(serviceName); err != nil {
+		return nil, err
+	}
 	ctx, cancel := context.WithTimeout(context.Background(), requestTimeout)
 	defer cancel()
 	serviceKey := s.KeyPrefix + ServicesKey + KeySeparator + serviceName
@@ -238,6 +247,9 @@ func (s *Store) GetServiceItself(serviceName string) (*pms.Service, error) {
 }
 
 func (s *Store) GetService(serviceName string) (*pms.Service, error) {
+	if err := validateServiceName(serviceName); err != nil {
+		return nil, err
+	}
 	var service pms.Service
 	serviceKey := s.KeyPrefix + ServicesKey + KeySeparator + serviceName + KeySeparator
 	responses, err := s.prefixGet(serviceKey)
@@ -294,7 +306,7 @@ func (s *Store) prefixGet(prefix string, opts ...clientv3.OpOption) ([]*clientv3
 			return nil, err
 		}
 		ret = append(ret, getResp)
-		if getResp.More {
+		if getResp.More && len(getResp.Kvs) >= pageSize {
 			lastKey := string(getResp.Kvs[pageSize-1].Key)
 			prefix = clientv3.GetPrefixRangeEnd(lastKey)
 			getOpts = []clientv3.OpOption{clientv3.WithRange(end), clientv3.WithLimit(pageSize), clientv3.WithSort(clientv3.SortByKey, clientv3.SortAscend)}
@@ -339,6 +351,9 @@ func (s *Store) getPutOps(service *pms.Service) ([]clientv3.Op, error) {
 }
 
 func (s *Store) CreateService(service *pms.Service) error {
+	if err := validateServiceName(service.Name); err != nil {
+		return err
+	}
 	ops, err := s.getPutOps(service)
 	if err != nil {
 		return err
@@ -355,11 +370,13 @@ func (s *Store) CreateService(service *pms.Service) error {
 		} else {
 			endIndex = len(ops)
 		}
-		txnResp, err := s.client.KV.Txn(context.TODO()).If(
+		txnCtx, txnCancel := context.WithTimeout(context.Background(), requestTimeout)
+		txnResp, err := s.client.KV.Txn(txnCtx).If(
 			clientv3.Compare(clientv3.Version(s.KeyPrefix+ServicesKey+KeySeparator+service.Name+KeySeparator), "=", 0), //service key does not exist
 		).Then(
 			ops[startIndex:endIndex]...,
 		).Commit()
+		txnCancel()
 		if err != nil {
 			fail = true
 			break
@@ -370,7 +387,9 @@ func (s *Store) CreateService(service *pms.Service) error {
 		startIndex = endIndex
 	}
 	if fail { //clean all data inserted
-		_, err := s.client.KV.Txn(context.TODO()).Then(
+		cleanCtx, cleanCancel := context.WithTimeout(context.Background(), requestTimeout)
+		defer cleanCancel()
+		_, err := s.client.KV.Txn(cleanCtx).Then(
 			clientv3.OpDelete(s.KeyPrefix+ServicesKey+KeySeparator+service.Name+KeySeparator, clientv3.WithPrefix()),
 		).Commit()
 		if err != nil {
@@ -382,8 +401,11 @@ func (s *Store) CreateService(service *pms.Service) error {
 
 }
 
-//delete application from etcd3
+// delete application from etcd3
 func (s *Store) DeleteService(serviceName string) error {
+	if err := validateServiceName(serviceName); err != nil {
+		return err
+	}
 	ctx, cancel := context.WithTimeout(context.Background(), requestTimeout)
 	defer cancel()
 	txnResp, err := s.client.KV.Txn(ctx).If(
@@ -412,9 +434,42 @@ func (s *Store) DeleteServices() error {
 	return nil
 }
 
-//get the storage type of the store
+// get the storage type of the store
 func (s *Store) Type() string {
 	return StoreType
+}
+
+// Health checks connectivity to the etcd server by retrieving the cluster
+// member list. A nil return indicates the server is reachable and healthy.
+func (s *Store) Health(ctx context.Context) error {
+	if s.client == nil {
+		return errors.New(errors.StoreError, "etcd client is not initialized")
+	}
+	_, err := s.client.MemberList(ctx)
+	if err != nil {
+		return errors.Wrap(err, errors.StoreError, "etcd server is not healthy")
+	}
+	return nil
+}
+
+// Close gracefully shuts down the etcd store by stopping any active
+// watcher, waiting for the watch goroutine to finish, closing the
+// client connection, and cleaning up an embedded etcd instance if one
+// was started.
+func (s *Store) Close() error {
+	s.StopWatch()
+	s.wg.Wait()
+	if s.client != nil {
+		err := s.client.Close()
+		if s.embeddedInst != nil {
+			CleanEmbeddedEtcd(s.embeddedInst, s.embeddedDir)
+		}
+		s.client = nil
+		if err != nil {
+			return errors.New(errors.StoreError, "unable to close connection to etcd server")
+		}
+	}
+	return nil
 }
 
 func validateFunc(function *pms.Function) error {
@@ -424,8 +479,20 @@ func validateFunc(function *pms.Function) error {
 	return nil
 }
 
+// validateServiceName validates that a service name is not empty and does not
+// contain the etcd key separator "/", which would break key hierarchy.
+func validateServiceName(serviceName string) error {
+	if serviceName == "" {
+		return errors.New(errors.InvalidRequest, "service name cannot be empty")
+	}
+	if strings.Contains(serviceName, KeySeparator) {
+		return errors.Errorf(errors.InvalidRequest, "service name %q cannot contain %q", serviceName, KeySeparator)
+	}
+	return nil
+}
+
 func (s *Store) CreateFunction(function *pms.Function) (*pms.Function, error) {
-	if err := validateFunc(function); err != nil {
+	if err := utils.ValidateFunc(function); err != nil {
 		return nil, err
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), requestTimeout)
@@ -549,21 +616,33 @@ func (s *Store) Watch() (pms.StorageChangeChannel, error) {
 	s.stop = make(chan struct{})
 	errChan := make(chan error)
 	stopChan := make(chan struct{})
+	s.wg.Add(1)
 	go func() {
 		defer func() {
 			close(evalChan)
 			close(s.stop)
 			close(errChan)
 			close(stopChan)
+			s.wg.Done()
 			log.Info("Exiting Watch...")
 		}()
+		var consecutiveFails int
 	loop:
 		for {
 			//TODO: reload policy store in case missing any changes during watch failure
 			go watch(evalChan, s, errChan, stopChan)
 			select {
 			case err := <-errChan:
-				log.Warningf("Error %v happens, restart watching...\n", err)
+				consecutiveFails++
+				backoff := computeWatchBackoff(consecutiveFails)
+				log.Warningf("Error %v happens, restart watching after %v (failures: %d)...\n",
+					err, backoff, consecutiveFails)
+				select {
+				case <-time.After(backoff):
+				case <-s.stop:
+					log.Warning("Receiving stop signal during backoff, stop Watching...")
+					break loop
+				}
 				continue
 			case <-stopChan:
 				log.Warning("Receiving stop signal, stop Watching...")
@@ -578,15 +657,11 @@ func (s *Store) Watch() (pms.StorageChangeChannel, error) {
 func watch(evalChan chan pms.StoreChangeEvent, s *Store, errChan chan error, stopChan chan struct{}) {
 	watchID := time.Now().Unix()
 	log.Infof("Entering watch %v...", watchID)
-	cli, err := clientv3.New(*s.Config)
-	if err != nil {
-		log.Warningf("Error happens when new etcd client, %v, exiting watch...\n", err)
-		err := errors.Wrapf(err, errors.StoreError, "failed to connect to etcd server")
-		errChan <- err
-		return
-	}
+	cli := s.client // Reuse existing client instead of creating a new one
 	defer func() {
-		cli.Close()
+		if r := recover(); r != nil {
+			log.Errorf("panic in watch %v: %v", watchID, r)
+		}
 		log.Infof("Exiting watch %v...", watchID)
 	}()
 
@@ -598,8 +673,11 @@ func watch(evalChan chan pms.StoreChangeEvent, s *Store, errChan chan error, sto
 		errChan <- err
 		return
 	}
+	defer session.Close()
 
-	etcdChan := cli.Watch(context.Background(), s.KeyPrefix, clientv3.WithPrefix())
+	watchCtx, watchCancel := context.WithCancel(context.Background())
+	defer watchCancel()
+	etcdChan := cli.Watch(watchCtx, s.KeyPrefix, clientv3.WithPrefix())
 
 	for {
 		select {
@@ -644,6 +722,7 @@ func watch(evalChan chan pms.StoreChangeEvent, s *Store, errChan chan error, sto
 						function, err := s.GetFunction(functionName)
 						if err != nil {
 							log.Warningf("Unable to get function due to error %v.\n", err)
+							continue
 						}
 						evalChan <- pms.StoreChangeEvent{Type: pms.FUNCTION_ADD, ID: id, Content: function}
 
@@ -653,7 +732,10 @@ func watch(evalChan chan pms.StoreChangeEvent, s *Store, errChan chan error, sto
 			// receive the stop signal
 		case <-s.stop:
 			log.Warning("Receiving stop signal")
-			stopChan <- struct{}{}
+			select {
+			case stopChan <- struct{}{}:
+			default:
+			}
 			return
 
 		case <-session.Done(): // closed by etcd
@@ -666,9 +748,28 @@ func watch(evalChan chan pms.StoreChangeEvent, s *Store, errChan chan error, sto
 }
 
 func (s *Store) StopWatch() {
-	if s.stop != nil {
-		s.stop <- struct{}{}
+	s.stopOnce.Do(func() {
+		if s.stop != nil {
+			s.stop <- struct{}{}
+		}
+	})
+}
+
+// computeWatchBackoff returns the backoff duration for a given number of
+// consecutive watch failures. It doubles with each failure, starting at
+// watchBackoffBase and capped at watchBackoffMax.
+func computeWatchBackoff(consecutiveFails int) time.Duration {
+	backoff := watchBackoffBase
+	for i := 1; i < consecutiveFails; i++ {
+		backoff *= 2
+		if backoff > watchBackoffMax {
+			return watchBackoffMax
+		}
 	}
+	if backoff > watchBackoffMax {
+		return watchBackoffMax
+	}
+	return backoff
 }
 
 // For policy manager
@@ -759,7 +860,7 @@ func (s *Store) GetPolicy(serviceName string, id string) (*pms.Policy, error) {
 	return &policy, nil
 }
 
-//TODO: to be implemented
+// TODO: to be implemented
 func (s *Store) GetRolePolicies(serviceName string, startID string, amount int) (policies []*pms.RolePolicy, nextID string, err error) {
 	if amount <= 0 {
 		return nil, "", errors.Errorf(errors.InvalidRequest, "invalid amount %d", amount)
@@ -796,6 +897,9 @@ func (s *Store) GetRolePolicies(serviceName string, startID string, amount int) 
 }
 
 func (s *Store) DeletePolicy(serviceName string, id string) error {
+	if err := validateServiceName(serviceName); err != nil {
+		return err
+	}
 	ctx, cancel := context.WithTimeout(context.Background(), requestTimeout)
 	defer cancel()
 	policyKey := s.KeyPrefix + ServicesKey + KeySeparator + serviceName + KeySeparator + PoliciesKey + KeySeparator + id
@@ -831,6 +935,9 @@ func (s *Store) DeletePolicies(serviceName string) error {
 
 func (s *Store) CreatePolicy(serviceName string, policy *pms.Policy) (*pms.Policy, error) {
 	//TODO:validate policy
+	if err := validateServiceName(serviceName); err != nil {
+		return nil, err
+	}
 	dupPolicy := *policy
 	if policy.ID == "" {
 		dupPolicy.ID = suid.New().String()
@@ -842,7 +949,7 @@ func (s *Store) CreatePolicy(serviceName string, policy *pms.Policy) (*pms.Polic
 	policyKey := s.KeyPrefix + ServicesKey + KeySeparator + serviceName + KeySeparator + PoliciesKey + KeySeparator + dupPolicy.ID
 	value, err := json.Marshal(dupPolicy)
 	if err != nil {
-		return nil, errors.Wrap(err, errors.SerializationError, "falied to marshal policy")
+		return nil, errors.Wrap(err, errors.SerializationError, "failed to marshal policy")
 	}
 	txnResp, err := s.client.KV.Txn(ctx).If(
 		clientv3.Compare(clientv3.Version(serviceKey), ">", 0), //service key exist
@@ -853,7 +960,7 @@ func (s *Store) CreatePolicy(serviceName string, policy *pms.Policy) (*pms.Polic
 		clientv3.OpPut(serviceKey, ""),
 	).Commit()
 	if err != nil {
-		return nil, errors.Wrapf(err, errors.StoreError, "falied to create a policy in service %q", serviceName)
+		return nil, errors.Wrapf(err, errors.StoreError, "failed to create a policy in service %q", serviceName)
 	}
 	if !txnResp.Succeeded {
 		return nil, errors.Errorf(errors.EntityAlreadyExists, "policy %q already exists in service %q", policy.ID, serviceName)
@@ -928,7 +1035,7 @@ func (s *Store) getRolePolicyCountImpl(serviceName string) (int64, error) {
 	return getResp.Count, nil
 }
 
-//TODO: to be implemented
+// TODO: to be implemented
 func (s *Store) GetPolicies(serviceName string, startID string, amount int) (policies []*pms.Policy, nextID string, err error) {
 	if amount <= 0 {
 		return nil, "", errors.Errorf(errors.InvalidRequest, "invalid input amount %d", amount)
@@ -983,6 +1090,9 @@ func (s *Store) GetRolePolicy(serviceName string, id string) (*pms.RolePolicy, e
 }
 
 func (s *Store) DeleteRolePolicy(serviceName string, id string) error {
+	if err := validateServiceName(serviceName); err != nil {
+		return err
+	}
 	ctx, cancel := context.WithTimeout(context.Background(), requestTimeout)
 	defer cancel()
 	rolePolicyKey := s.KeyPrefix + ServicesKey + KeySeparator + serviceName + KeySeparator + RolePoliciesKey + KeySeparator + id
@@ -1011,13 +1121,16 @@ func (s *Store) DeleteRolePolicies(serviceName string) error {
 		clientv3.OpPut(s.KeyPrefix+ServicesKey+KeySeparator+serviceName+KeySeparator, ""),
 	).Commit()
 	if err != nil {
-		return errors.Wrap(err, errors.StoreError, "failed to delete all policies from etcd server")
+		return errors.Wrap(err, errors.StoreError, "failed to delete all role policies from etcd server")
 	}
 	return nil
 }
 
 func (s *Store) CreateRolePolicy(serviceName string, rolePolicy *pms.RolePolicy) (*pms.RolePolicy, error) {
 	//TODO: validate rolePolicy
+	if err := validateServiceName(serviceName); err != nil {
+		return nil, err
+	}
 	dupRolePolicy := *rolePolicy
 	if rolePolicy.ID == "" {
 		dupRolePolicy.ID = suid.New().String()

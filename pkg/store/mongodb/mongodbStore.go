@@ -3,6 +3,7 @@ package mongodb
 import (
 	"context"
 	"strings"
+	"sync"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -16,8 +17,10 @@ import (
 )
 
 type Store struct {
-	client   *mongo.Client
-	Database string
+	client    *mongo.Client
+	Database  string
+	stopWatch chan struct{}
+	stopOnce  sync.Once
 }
 
 // ReadPolicyStore reads policy store from a file
@@ -77,14 +80,17 @@ func (s *Store) ListAllServices() ([]*pms.Service, error) {
 	services := []*pms.Service{}
 	for cur.Next(ctx) {
 		var service pms.Service
-		err := cur.Decode(&service)
-		if err != nil {
-			return nil, err
+		decodeErr := cur.Decode(&service)
+		if decodeErr != nil {
+			return nil, decodeErr
 		}
 		services = append(services, &service)
 	}
+	if err := cur.Err(); err != nil {
+		return nil, err
+	}
 
-	return services, err
+	return services, nil
 
 }
 
@@ -147,9 +153,9 @@ func (s *Store) GetPolicyAndRolePolicyCounts() (map[string]*pms.PolicyAndRolePol
 	}
 	for _, res := range results {
 		var counts pms.PolicyAndRolePolicyCount
-		counts.PolicyCount = int64(res["policyCount"].(int32))
-		counts.RolePolicyCount = int64(res["rolepolicyCount"].(int32))
-		countMap[res["_id"].(string)] = &counts
+		counts.PolicyCount = toInt64(res["policyCount"])
+		counts.RolePolicyCount = toInt64(res["rolepolicyCount"])
+		countMap[toString(res["_id"])] = &counts
 	}
 
 	return countMap, nil
@@ -191,19 +197,25 @@ func (s *Store) GetService(serviceName string) (*pms.Service, error) {
 }
 
 func generateID(service *pms.Service) (*pms.Service, error) {
-	var result pms.Service
-	result = *service
+	result := *service
+	// Deep-copy policies to avoid mutating the original service.
+	result.Policies = make([]*pms.Policy, len(service.Policies))
+	for i, p := range service.Policies {
+		cp := *p
+		cp.ID = suid.New().String()
+		result.Policies[i] = &cp
+	}
+	result.RolePolicies = make([]*pms.RolePolicy, len(service.RolePolicies))
+	for i, rp := range service.RolePolicies {
+		crp := *rp
+		crp.ID = suid.New().String()
+		result.RolePolicies[i] = &crp
+	}
 	if result.Policies == nil {
 		result.Policies = []*pms.Policy{}
 	}
 	if result.RolePolicies == nil {
 		result.RolePolicies = []*pms.RolePolicy{}
-	}
-	for _, policy := range result.Policies {
-		policy.ID = suid.New().String()
-	}
-	for _, rolePolicy := range result.RolePolicies {
-		rolePolicy.ID = suid.New().String()
 	}
 	return &result, nil
 }
@@ -213,7 +225,10 @@ func (s *Store) CreateService(service *pms.Service) error {
 	serviceCollection := s.client.Database(s.Database).Collection("services")
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	serviceWithID, _ := generateID(service)
+	serviceWithID, err := generateID(service)
+	if err != nil {
+		return err
+	}
 	insertResult, err := serviceCollection.InsertOne(ctx, serviceWithID)
 	if err != nil {
 		return err
@@ -248,9 +263,13 @@ func (s *Store) DeleteServices() error {
 
 func (s *Store) Watch() (pms.StorageChangeChannel, error) {
 	log.Info("Enter Watch...")
+	s.stopWatch = make(chan struct{})
 	streamOptions := options.ChangeStream().SetFullDocument(options.UpdateLookup)
-	changeStream, err := s.client.Database(s.Database).Watch(context.TODO(), mongo.Pipeline{}, streamOptions)
+	// Use a cancellable context for the change stream watch to prevent goroutine leaks.
+	watchCtx, watchCancel := context.WithCancel(context.Background())
+	changeStream, err := s.client.Database(s.Database).Watch(watchCtx, mongo.Pipeline{}, streamOptions)
 	if err != nil {
+		watchCancel()
 		log.Error(err)
 		return nil, err
 	}
@@ -260,11 +279,32 @@ func (s *Store) Watch() (pms.StorageChangeChannel, error) {
 
 	go func() {
 		defer func() {
-			changeStream.Close(context.TODO())
+			watchCancel() // Cancel the watch context to stop any in-progress Next call.
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			defer cancel()
+			changeStream.Close(ctx)
 			close(storeChangeChan)
 		}()
 
-		for changeStream.Next(context.TODO()) {
+		for {
+			select {
+			case <-s.stopWatch:
+				return
+			default:
+			}
+
+			// Use a context with timeout so Next does not block indefinitely if the
+			// server stops responding. The 30s timeout gives MongoDB enough time
+			// while preventing goroutine leaks.
+			nextCtx, nextCancel := context.WithTimeout(watchCtx, 30*time.Second)
+			hasNext := changeStream.Next(nextCtx)
+			nextCancel()
+			if !hasNext {
+				if err := changeStream.Err(); err != nil {
+					log.Error(err)
+				}
+				return
+			}
 			// A new event variable should be declared for each event.
 			var event bson.M
 			if err := changeStream.Decode(&event); err != nil {
@@ -273,8 +313,11 @@ func (s *Store) Watch() (pms.StorageChangeChannel, error) {
 			}
 			log.Info("-----watched event:", event)
 			log.Info("---------- fulldocument:", event["fullDocument"])
-			var ns bson.M
-			ns = event["ns"].(bson.M)
+			ns, ok := event["ns"].(bson.M)
+			if !ok {
+				log.Error("unexpected format for ns field in change event")
+				continue
+			}
 
 			//ns.coll =="services"
 			if ns["coll"] == "services" {
@@ -323,7 +366,7 @@ func (s *Store) Watch() (pms.StorageChangeChannel, error) {
 				} else if event["operationType"] == "delete" {
 					log.Info("===delete service")
 					id := time.Now().Unix()
-					serviceName := event["documentKey"].(bson.M)["_id"].(string)
+					serviceName := getDocID(event)
 					serviceDeleteEvent := pms.StoreChangeEvent{Type: pms.SERVICE_DELETE, ID: id, Content: []string{serviceName}}
 					log.Info("###serviceDeleteEvent:", serviceDeleteEvent)
 					storeChangeChan <- serviceDeleteEvent
@@ -352,7 +395,7 @@ func (s *Store) Watch() (pms.StorageChangeChannel, error) {
 				} else if event["operationType"] == "delete" {
 					log.Info("===delete function")
 					id := time.Now().Unix()
-					funcName := event["documentKey"].(bson.M)["_id"].(string)
+					funcName := getDocID(event)
 					funcDeleteEvent := pms.StoreChangeEvent{Type: pms.FUNCTION_DELETE, ID: id, Content: []string{funcName}}
 					log.Info("###funcDeleteEvent:", funcDeleteEvent)
 					storeChangeChan <- funcDeleteEvent
@@ -361,20 +404,56 @@ func (s *Store) Watch() (pms.StorageChangeChannel, error) {
 			}
 
 		}
-		log.Info("###exit for loop")
-
-		if err := changeStream.Err(); err != nil {
-			log.Error(err)
-		}
-
 	}()
 
 	return storeChangeChan, nil
 
 }
 
-func (s *Store) StopWatch() {
+// getDocID safely extracts the document ID from a MongoDB change event.
+func getDocID(event bson.M) string {
+	dk, ok := event["documentKey"].(bson.M)
+	if !ok {
+		return ""
+	}
+	id, ok := dk["_id"].(string)
+	if !ok {
+		return ""
+	}
+	return id
+}
 
+func (s *Store) StopWatch() {
+	s.stopOnce.Do(func() {
+		if s.stopWatch != nil {
+			close(s.stopWatch)
+		}
+	})
+}
+
+// Health checks the health of the MongoDB server by pinging it.
+func (s *Store) Health(_ context.Context) error {
+	if s.client == nil {
+		return errors.New(errors.StoreError, "mongodb client is not initialized")
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	err := s.client.Ping(ctx, nil)
+	if err != nil {
+		return errors.Wrap(err, errors.StoreError, "mongodb health check failed")
+	}
+	return nil
+}
+
+// Close disconnects the MongoDB client and stops the watch goroutine.
+func (s *Store) Close() error {
+	s.StopWatch()
+	if s.client != nil {
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		return s.client.Disconnect(ctx)
+	}
+	return nil
 }
 
 func (s *Store) Type() string {
@@ -497,7 +576,7 @@ func (s *Store) GetPolicyCount(serviceName string) (int64, error) {
 	policyCount := int64(0)
 
 	for _, res := range results {
-		policyCount += int64(res["policycount"].(int32))
+		policyCount += toInt64(res["policycount"])
 	}
 
 	return policyCount, nil
@@ -563,7 +642,7 @@ func (s *Store) DeletePolicies(serviceName string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	filter := bson.D{{"_id", serviceName}}
-	update := bson.D{{"$pull", bson.D{{"policies", bson.D{{"$exists", true}}}}}}
+	update := bson.D{{"$set", bson.D{{"policies", bson.A{}}}}}
 	result := serviceCollection.FindOneAndUpdate(ctx, filter, update)
 	if result.Err() == mongo.ErrNoDocuments {
 		return errors.Errorf(errors.EntityNotFound, "service %q is not found", serviceName)
@@ -661,7 +740,7 @@ func (s *Store) GetRolePolicyCount(serviceName string) (int64, error) {
 	policyCount := int64(0)
 
 	for _, res := range results {
-		policyCount += int64(res["policycount"].(int32))
+		policyCount += toInt64(res["policycount"])
 	}
 
 	return policyCount, nil
@@ -727,7 +806,7 @@ func (s *Store) DeleteRolePolicies(serviceName string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	filter := bson.D{{"_id", serviceName}}
-	update := bson.D{{"$pull", bson.D{{"rolepolicies", bson.D{{"$exists", true}}}}}}
+	update := bson.D{{"$set", bson.D{{"rolepolicies", bson.A{}}}}}
 	result := serviceCollection.FindOneAndUpdate(ctx, filter, update)
 	if result.Err() == mongo.ErrNoDocuments {
 		return errors.Errorf(errors.EntityNotFound, "service %q is not found", serviceName)
@@ -835,6 +914,9 @@ func (s *Store) ListAllFunctions(filter string) ([]*pms.Function, error) {
 		}
 		functions = append(functions, &f)
 	}
+	if err := cur.Err(); err != nil {
+		return nil, err
+	}
 	return functions, nil
 
 }
@@ -850,4 +932,26 @@ func (s *Store) GetFunctionCount() (int64, error) {
 
 	return num, nil
 
+}
+
+// toInt64 safely converts a MongoDB aggregation result value to int64,
+// handling both int32 and int64 which MongoDB may return depending on platform.
+func toInt64(v interface{}) int64 {
+	switch val := v.(type) {
+	case int32:
+		return int64(val)
+	case int64:
+		return val
+	default:
+		return 0
+	}
+}
+
+// toString safely extracts a string from a MongoDB aggregation result.
+func toString(v interface{}) string {
+	s, ok := v.(string)
+	if !ok {
+		return ""
+	}
+	return s
 }

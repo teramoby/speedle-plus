@@ -1,10 +1,15 @@
-.PHONY: all test
+.PHONY: all build test lint coverage release clean
 
 gopath := $(shell go env GOPATH)
 gitCommit := $(shell git rev-parse --short HEAD)
+buildDate := $(shell date -u +%Y-%m-%dT%H:%M:%SZ)
+
+# Extract version from git tag, fallback to VERSION file, then to "0.1"
+version := $(shell git describe --tags --always --dirty 2>/dev/null || (cat VERSION 2>/dev/null || echo "0.1"))
+
 # go version output is "go version go1.11.2 linux/amd64"
 goVersion := $(word 3,$(shell go version))
-goLDFlags := -ldflags "-X main.gitCommit=${gitCommit} -X main.productVersion=0.1 -X main.goVersion=${goVersion}"
+goLDFlags := -trimpath -ldflags "-s -w -X main.gitCommit=${gitCommit} -X main.productVersion=${version} -X main.goVersion=${goVersion} -X main.buildDate=${buildDate}"
 
 pmsImageRepo := speedle-pms
 pmsImageTag := v0.1
@@ -41,8 +46,8 @@ test: testAll
 testAll: speedleUnitTests testSpeedleRest testSpeedleGRpc testSpctl testSpeedleRestADSCheck testSpeedleGRpcADSCheck testSpeedleTls
 
 speedleUnitTests:
-	go test ${TEST_OPTS} github.com/teramoby/speedle-plus/pkg/cfg 
-	go test ${TEST_OPTS} github.com/teramoby/speedle-plus/pkg/eval 
+	go test ${TEST_OPTS} github.com/teramoby/speedle-plus/pkg/cfg
+	go test ${TEST_OPTS} github.com/teramoby/speedle-plus/pkg/eval
 	go test ${TEST_OPTS} github.com/teramoby/speedle-plus/pkg/store/file
 	go test ${TEST_OPTS} github.com/teramoby/speedle-plus/pkg/store/etcd
 	go test ${TEST_OPTS} github.com/teramoby/speedle-plus/pkg/store/mongodb
@@ -82,6 +87,29 @@ testSpctl:
 testSpeedleTls:
 	pkg/svcs/pmsrest/tls_test.sh
 	pkg/svcs/pmsrest/tls_test-force-client-cert.sh
+
+# New targets
+
+lint:
+	golangci-lint run ./...
+
+coverage:
+	go test -coverprofile=coverage.out ./...
+	go tool cover -html=coverage.out -o coverage.html
+	@echo "Coverage report: coverage.html"
+
+# Multi-platform release build
+release:
+	GOOS=linux GOARCH=amd64 go build ${goLDFlags} -o ${gopath}/bin/speedle-pms-linux-amd64 github.com/teramoby/speedle-plus/cmd/speedle-pms
+	GOOS=linux GOARCH=amd64 go build ${goLDFlags} -o ${gopath}/bin/speedle-ads-linux-amd64 github.com/teramoby/speedle-plus/cmd/speedle-ads
+	GOOS=linux GOARCH=amd64 go build ${goLDFlags} -o ${gopath}/bin/spctl-linux-amd64 github.com/teramoby/speedle-plus/cmd/spctl
+	GOOS=darwin GOARCH=amd64 go build ${goLDFlags} -o ${gopath}/bin/speedle-pms-darwin-amd64 github.com/teramoby/speedle-plus/cmd/speedle-pms
+	GOOS=darwin GOARCH=amd64 go build ${goLDFlags} -o ${gopath}/bin/speedle-ads-darwin-amd64 github.com/teramoby/speedle-plus/cmd/speedle-ads
+	GOOS=darwin GOARCH=amd64 go build ${goLDFlags} -o ${gopath}/bin/spctl-darwin-amd64 github.com/teramoby/speedle-plus/cmd/spctl
+	GOOS=darwin GOARCH=arm64 go build ${goLDFlags} -o ${gopath}/bin/speedle-pms-darwin-arm64 github.com/teramoby/speedle-plus/cmd/speedle-pms
+	GOOS=darwin GOARCH=arm64 go build ${goLDFlags} -o ${gopath}/bin/speedle-ads-darwin-arm64 github.com/teramoby/speedle-plus/cmd/speedle-ads
+	GOOS=darwin GOARCH=arm64 go build ${goLDFlags} -o ${gopath}/bin/spctl-darwin-arm64 github.com/teramoby/speedle-plus/cmd/spctl
+
 clean:
 	rm -rf ${gopath}/pkg/linux_amd64/github.com/teramoby/speedle-plus
 	rm -f ${gopath}/bin/speedle-pms

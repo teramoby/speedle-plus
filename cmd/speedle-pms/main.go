@@ -10,12 +10,15 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"syscall"
+	"time"
 
 	"github.com/teramoby/speedle-plus/api/pms"
 	"github.com/teramoby/speedle-plus/pkg/cmd/flags"
 	"github.com/teramoby/speedle-plus/pkg/errors"
 	"github.com/teramoby/speedle-plus/pkg/logging"
 	"github.com/teramoby/speedle-plus/pkg/store"
+	"github.com/teramoby/speedle-plus/pkg/svcs"
 	"github.com/teramoby/speedle-plus/pkg/svcs/pmsgrpc"
 	"github.com/teramoby/speedle-plus/pkg/svcs/pmsgrpc/pb"
 	"github.com/teramoby/speedle-plus/pkg/svcs/pmsrest"
@@ -23,7 +26,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/reflection"
+	_ "google.golang.org/grpc/reflection" // Available for development; disabled in production
 )
 
 var gitCommit string
@@ -42,10 +45,23 @@ func main() {
 	storeParamsMap := store.GetAllStoreParams()
 
 	var params flags.Parameters
-	params.ParseFlags(flags.DefaultPolicyManagementListenPoint, printVersionInfo, storeParamsMap)
-	params.ValidateFlags()
+	if err := params.ParseFlags(flags.DefaultPolicyManagementListenPoint, printVersionInfo, storeParamsMap); err != nil {
+		fmt.Fprintf(os.Stderr, "Error parsing flags: %v\n", err)
+		os.Exit(1)
+	}
+	if params.ShowVersionAndExit {
+		os.Exit(0)
+	}
+	if err := params.ValidateFlags(); err != nil {
+		fmt.Fprintf(os.Stderr, "Error validating flags: %v\n", err)
+		os.Exit(1)
+	}
 
-	conf, _ := params.Param2Config(storeParamsMap)
+	conf, err := params.Param2Config(storeParamsMap)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error creating config: %v\n", err)
+		os.Exit(1)
+	}
 
 	// Initialize the logging
 	if conf.LogConfig != nil {
@@ -83,7 +99,7 @@ func main() {
 	}
 
 	intChan := make(chan os.Signal, 1)
-	signal.Notify(intChan, os.Interrupt)
+	signal.Notify(intChan, os.Interrupt, syscall.SIGTERM)
 
 	errChan := make(chan error, 2)
 	go func() {
@@ -100,7 +116,7 @@ func main() {
 	select {
 	case err = <-errChan:
 		log.Errorf("Error occured %s.", err)
-		close(errChan)
+		// Do not close errChan: the second goroutine may still send to it.
 	case <-intChan:
 		log.Info("Interrupt signal")
 		close(intChan)
@@ -110,11 +126,22 @@ func main() {
 	// Stop all services
 	if httpServer != nil {
 		log.Info("Stopping HTTP Server...")
-		httpServer.Shutdown(context.Background())
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		if serveErr := httpServer.Shutdown(ctx); serveErr != nil {
+			log.Errorf("HTTP server shutdown error: %v", serveErr)
+		}
 	}
 	if grpcServer != nil {
 		log.Info("Stopping GRPC Server...")
 		grpcServer.Stop()
+	}
+
+	log.Info("Closing policy store...")
+	if ps != nil {
+		if closeErr := ps.Close(); closeErr != nil {
+			log.Errorf("Failed to close policy store: %v", closeErr)
+		}
 	}
 
 	if err != nil {
@@ -123,9 +150,15 @@ func main() {
 }
 
 func newGRPCServer(ps pms.PolicyStoreManager) (*grpc.Server, error) {
-	server := grpc.NewServer()
+	server := grpc.NewServer(
+		grpc.UnaryInterceptor(svcs.PanicRecoveryInterceptor()),
+		grpc.MaxRecvMsgSize(4<<20), // 4 MB
+		grpc.MaxSendMsgSize(4<<20), // 4 MB
+	)
 	pb.RegisterPolicyManagerServer(server, pmsgrpc.NewServiceImpl(ps))
-	reflection.Register(server)
+	// WARNING: gRPC reflection exposes all service methods and message types.
+	// Disable in production to prevent information disclosure.
+	// Enable for development only: reflection.Register(server)
 	return server, nil
 }
 

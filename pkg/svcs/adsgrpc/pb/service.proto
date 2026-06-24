@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package pb;
+package ads_pb;
 
 service Evaluator {
     rpc IsAllowed(ContextRequest) returns(IsAllowedResponse) {}

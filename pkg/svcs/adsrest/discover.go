@@ -11,6 +11,9 @@ import (
 )
 
 func (e *RESTService) Discover(w http.ResponseWriter, r *http.Request) {
+	if !httputils.VerifyContentType(w, r, []string{"application/json"}) {
+		return
+	}
 	jsonRequest, err := DecodeJSONContext(r)
 	if err != nil {
 		httputils.HandleError(w, err)
@@ -24,7 +27,11 @@ func (e *RESTService) Discover(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// assert token
-	e.Evaluator.AssertToken(context)
+	if assertErr := e.Evaluator.AssertToken(context); assertErr != nil {
+		httputils.HandleError(w, assertErr)
+		logging.WriteSimpleFailedAuditLog("Discover", context, assertErr.Error())
+		return
+	}
 
 	result, reason, err := e.Evaluator.Discover(*context)
 	response := IsAllowedResponse{

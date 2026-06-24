@@ -7,8 +7,8 @@ import (
 	"strings"
 
 	"github.com/natefinch/lumberjack"
-	"github.com/teramoby/speedle-plus/pkg/errors"
 	log "github.com/sirupsen/logrus"
+	"github.com/teramoby/speedle-plus/pkg/errors"
 )
 
 const (
@@ -52,7 +52,7 @@ func InitLog(cfg *LogConfig) error {
 		}
 	}
 
-	// Configure the file roration PluginConfig, defaults to os.Stderr
+	// Configure the file rotation PluginConfig, defaults to os.Stderr
 	if cfg != nil && cfg.RotationConfig != nil {
 		log.SetOutput(cfg.RotationConfig)
 	}
@@ -93,7 +93,7 @@ func InitLogInstance(logger *log.Logger, cfg *LogConfig) error {
 		}
 	}
 
-	// Configure the file roration PluginConfig, defaults to os.Stderr
+	// Configure the file rotation PluginConfig, defaults to os.Stderr
 	if cfg != nil && cfg.RotationConfig != nil {
 		logger.Out = cfg.RotationConfig
 	}

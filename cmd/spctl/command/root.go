@@ -30,14 +30,17 @@ func printHelpAndExit(cmd *cobra.Command) {
 }
 
 func init() {
-	rootCmd.PersistentFlags().StringVar(&globalFlags.PMSEndpoint, "pms-endpoint", flags.DefaultPolicyManagmentConnectEndpoint, "speedle policy managemnet service endpoint")
-	rootCmd.PersistentFlags().DurationVar(&globalFlags.Timeout, "timeout", 5000000000, "timeout for running command")
+	rootCmd.PersistentFlags().StringVar(&globalFlags.PMSEndpoint, "pms-endpoint", flags.DefaultPolicyManagmentConnectEndpoint, "speedle policy management service endpoint")
+	rootCmd.PersistentFlags().DurationVar(&globalFlags.Timeout, "timeout", defaultTimeout, "timeout for running command")
 	rootCmd.PersistentFlags().StringVar(&globalFlags.CertFile, "cert", "", "identify secure client using this TLS certificate file")
 	rootCmd.PersistentFlags().StringVar(&globalFlags.KeyFile, "key", "", "identify secure client using this TLS key file")
 	rootCmd.PersistentFlags().StringVar(&globalFlags.CAFile, "cacert", "", "verify certificates of TLS-enabled secure servers using this CA bundle")
 	rootCmd.PersistentFlags().BoolVar(&globalFlags.InsecureSkipVerify, "skipverify", false, "control whether a client verifies the server's certificate chain and host name or not")
 
-	args, _ := readConfigFile()
+	args, err := readConfigFile()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Warning: failed to read config file: %v\n", err)
+	}
 	for name, val := range args {
 		rootCmd.PersistentFlags().Set(name, val)
 	}

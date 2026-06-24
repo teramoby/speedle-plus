@@ -1,0 +1,60 @@
+# Git files
+.git
+.gitignore
+.gitattributes
+
+# IDE files
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Build artifacts
+*.exe
+*.dll
+*.so
+*.dylib
+bin/
+dist/
+
+# Test binary
+*.test
+
+# Coverage
+*.out
+coverage.out
+
+# Go module cache
+vendor/
+
+# Docker
+Dockerfile*
+.dockerignore
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# CI
+.github/
+wercker.yml
+
+# Backup files
+*.backup
+*.bak
+
+# Temporary files
+/tmp
+*.tmp
+
+# Samples (not part of the main build)
+samples/
+
+# Kubernetes / Helm chart archives
+*.tgz
+charts/
+
+# Deployment docker build context (only need source, binaries copied in CI)
+deployment/docker/*/speedle-pms
+deployment/docker/*/speedle-ads

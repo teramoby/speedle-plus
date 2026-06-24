@@ -5,10 +5,8 @@ package adsgrpc
 
 import (
 	"context"
-	"fmt"
 
 	adsapi "github.com/teramoby/speedle-plus/api/ads"
-	"github.com/teramoby/speedle-plus/api/pms"
 	"github.com/teramoby/speedle-plus/pkg/eval"
 	"github.com/teramoby/speedle-plus/pkg/svcs/adsgrpc/pb"
 
@@ -51,7 +49,7 @@ func convertGRPCPrincipals(principals []*pb.Principal) []*adsapi.Principal {
 		return nil
 	}
 
-	ret := []*adsapi.Principal{}
+	ret := make([]*adsapi.Principal, 0, len(principals))
 	for _, princ := range principals {
 		ret = append(ret, &adsapi.Principal{
 			Type: princ.Type,
@@ -77,9 +75,6 @@ func convertGRPCSubject(subject *pb.Subject) *adsapi.Subject {
 func (impl *GRPCService) IsAllowed(ctx context.Context, in *pb.ContextRequest) (*pb.IsAllowedResponse, error) {
 	reqCtx := convertGRPCContextRequest(in)
 
-	// assert token
-	impl.evaluator.AssertToken(reqCtx)
-
 	allowed, reason, err := impl.evaluator.IsAllowed(*reqCtx)
 	if err != nil {
 		// Audit log
@@ -101,9 +96,6 @@ func (impl *GRPCService) IsAllowed(ctx context.Context, in *pb.ContextRequest) (
 func (impl *GRPCService) GetAllGrantedRoles(ctx context.Context, in *pb.ContextRequest) (*pb.AllRoleResponse, error) {
 	reqCtx := convertGRPCContextRequest(in)
 
-	// assert token
-	impl.evaluator.AssertToken(reqCtx)
-
 	roles, err := impl.evaluator.GetAllGrantedRoles(*reqCtx)
 	if err != nil {
 		// Audit log
@@ -122,9 +114,6 @@ func (impl *GRPCService) GetAllGrantedRoles(ctx context.Context, in *pb.ContextR
 func (impl *GRPCService) GetAllPermissions(ctx context.Context, in *pb.ContextRequest) (*pb.AllPermissionResponse, error) {
 	reqCtx := convertGRPCContextRequest(in)
 
-	// assert token
-	impl.evaluator.AssertToken(reqCtx)
-
 	perms, err := impl.evaluator.GetAllGrantedPermissions(*reqCtx)
 	if err != nil {
 		// Audit log
@@ -133,7 +122,7 @@ func (impl *GRPCService) GetAllPermissions(ctx context.Context, in *pb.ContextRe
 	}
 
 	ret := pb.AllPermissionResponse{
-		Permissions: make([]*pb.AllPermissionResponse_Permission, 0),
+		Permissions: make([]*pb.AllPermissionResponse_Permission, 0, len(perms)),
 	}
 	for _, perm := range perms {
 		ret.Permissions = append(ret.Permissions, &pb.AllPermissionResponse_Permission{
@@ -151,9 +140,6 @@ func (impl *GRPCService) GetAllPermissions(ctx context.Context, in *pb.ContextRe
 func (impl *GRPCService) Discover(ctx context.Context, in *pb.ContextRequest) (*pb.IsAllowedResponse, error) {
 	reqCtx := convertGRPCContextRequest(in)
 
-	// assert token
-	impl.evaluator.AssertToken(reqCtx)
-
 	allowed, reason, err := impl.evaluator.Discover(*reqCtx)
 	if err != nil {
 		// Audit log
@@ -170,95 +156,13 @@ func (impl *GRPCService) Discover(ctx context.Context, in *pb.ContextRequest) (*
 
 }
 
-func convertAttributes(in map[string]interface{}) map[string]string {
-	var out map[string]string
-	for k, v := range in {
-		out[k] = fmt.Sprintf("%v", v)
-	}
-	return out
-
-}
-
-func convertToGRPCPrincipals(principals [][]string) []*pb.AndPrincipals {
-	ret := []*pb.AndPrincipals{}
-	for _, andPrincipals := range principals {
-		andPrinc := &pb.AndPrincipals{
-			Principals: andPrincipals,
-		}
-
-		ret = append(ret, andPrinc)
-	}
-	return ret
-}
-
-func convertAPIPrincipals(principals []*adsapi.Principal) []*pb.Principal {
-	if principals == nil {
-		return nil
-	}
-
-	ret := []*pb.Principal{}
-	for _, princ := range principals {
-		ret = append(ret, &pb.Principal{
-			Type: princ.Type,
-			Name: princ.Name,
-			Idd:  princ.IDD,
-		})
-	}
-	return ret
-}
-
-func convertAPISubject(subject *adsapi.Subject) *pb.Subject {
-	if subject == nil {
-		return nil
-	}
-	return &pb.Subject{
-		Principals: convertAPIPrincipals(subject.Principals),
-		Token:      subject.Token,
-		TokenType:  subject.TokenType,
-	}
-}
-
-func convertAPIRequestContext(req *adsapi.RequestContext) *pb.ContextRequest {
-	return &pb.ContextRequest{
-		Subject:     convertAPISubject(req.Subject),
-		ServiceName: req.ServiceName,
-		Resource:    req.Resource,
-		Action:      req.Action,
-		Attributes:  convertAttributes(req.Attributes),
-	}
-}
-
-func convertAPIPolicy2PolicyResponse(apiPolicy *pms.Policy, policyResp *pb.Policy) {
-	if apiPolicy == nil || policyResp == nil {
-		// It shouldn't happen
-		return
-	}
-
-	retPermission := make([]*pb.Policy_Permission, 0)
-
-	for _, permission := range apiPolicy.Permissions {
-		retPermission = append(retPermission, &pb.Policy_Permission{
-			Resource:           permission.Resource,
-			Actions:            permission.Actions,
-			ResourceExpression: permission.ResourceExpression,
-		})
-	}
-
-	policyResp.ID = apiPolicy.ID
-	policyResp.Name = apiPolicy.Name
-	policyResp.Effect = apiPolicy.Effect
-	policyResp.Permissions = retPermission
-	policyResp.Principals = convertToGRPCPrincipals(apiPolicy.Principals)
-	policyResp.Condition = apiPolicy.Condition
-}
-
 func convertAPIPolicy2EvaluatedPolicyResponse(apiPolicy *adsapi.EvaluatedPolicy, policyResp *pb.EvaluatedPolicy) {
 	if apiPolicy == nil || policyResp == nil {
 		// It shouldn't happen
 		return
 	}
 
-	retPermission := make([]*pb.EvaluatedPolicy_Permission, 0)
+	retPermission := make([]*pb.EvaluatedPolicy_Permission, 0, len(apiPolicy.Permissions))
 	for _, permission := range apiPolicy.Permissions {
 		retPermission = append(retPermission, &pb.EvaluatedPolicy_Permission{
 			Resource:           permission.Resource,
@@ -273,7 +177,9 @@ func convertAPIPolicy2EvaluatedPolicyResponse(apiPolicy *adsapi.EvaluatedPolicy,
 	policyResp.Effect = apiPolicy.Effect
 	policyResp.Permissions = retPermission
 	if apiPolicy.Principals != nil && len(apiPolicy.Principals) > 0 {
-		policyResp.Principals = apiPolicy.Principals[0]
+		for _, pGroup := range apiPolicy.Principals {
+			policyResp.Principals = append(policyResp.Principals, pGroup...)
+		}
 	}
 	if apiPolicy.Condition != nil {
 		policyResp.Condition = &pb.EvaluatedCondition{
@@ -281,22 +187,6 @@ func convertAPIPolicy2EvaluatedPolicyResponse(apiPolicy *adsapi.EvaluatedPolicy,
 			EvaluationResult:    apiPolicy.Condition.EvaluationResult,
 		}
 	}
-}
-
-func convertAPIRolePolicy2RolePolicyResponse(apiRolePolicy *pms.RolePolicy, rolePolicyResp *pb.RolePolicy) {
-	if apiRolePolicy == nil || rolePolicyResp == nil {
-		// It shouldn't happen
-		return
-	}
-
-	rolePolicyResp.ID = apiRolePolicy.ID
-	rolePolicyResp.Name = apiRolePolicy.Name
-	rolePolicyResp.Effect = apiRolePolicy.Effect
-	rolePolicyResp.Roles = apiRolePolicy.Roles
-	rolePolicyResp.Principals = apiRolePolicy.Principals
-	rolePolicyResp.Resources = apiRolePolicy.Resources
-	rolePolicyResp.ResourceExpressions = apiRolePolicy.ResourceExpressions
-	rolePolicyResp.Condition = apiRolePolicy.Condition
 }
 
 func convertAPIRolePolicy2EvaluatedRolePolicyResponse(apiRolePolicy *adsapi.EvaluatedRolePolicy, rolePolicyResp *pb.EvaluatedRolePolicy) {
@@ -323,11 +213,11 @@ func convertAPIRolePolicy2EvaluatedRolePolicyResponse(apiRolePolicy *adsapi.Eval
 	}
 }
 
+// WARNING: The Diagnose RPC exposes full policy structure including all policy
+// definitions, conditions, and evaluation results. In production, restrict
+// access to this RPC to admin users only.
 func (impl *GRPCService) Diagnose(ctx context.Context, in *pb.ContextRequest) (*pb.EvaluationDebugResponse, error) {
 	reqCtx := convertGRPCContextRequest(in)
-
-	// assert token
-	impl.evaluator.AssertToken(reqCtx)
 
 	evaResult, err := impl.evaluator.Diagnose(*reqCtx)
 	if err != nil {
@@ -337,7 +227,7 @@ func (impl *GRPCService) Diagnose(ctx context.Context, in *pb.ContextRequest) (*
 	}
 
 	// convert all the role policies
-	retRolePolicies := make([]*pb.EvaluatedRolePolicy, 0)
+	retRolePolicies := make([]*pb.EvaluatedRolePolicy, 0, len(evaResult.RolePolicies))
 	for _, rolePolicy := range evaResult.RolePolicies {
 		var rolePolicyResp pb.EvaluatedRolePolicy
 		convertAPIRolePolicy2EvaluatedRolePolicyResponse(rolePolicy, &rolePolicyResp)
@@ -345,7 +235,7 @@ func (impl *GRPCService) Diagnose(ctx context.Context, in *pb.ContextRequest) (*
 	}
 
 	// convert all the policies
-	retPolicies := make([]*pb.EvaluatedPolicy, 0)
+	retPolicies := make([]*pb.EvaluatedPolicy, 0, len(evaResult.Policies))
 	for _, policy := range evaResult.Policies {
 		var policyResp pb.EvaluatedPolicy
 		convertAPIPolicy2EvaluatedPolicyResponse(policy, &policyResp)

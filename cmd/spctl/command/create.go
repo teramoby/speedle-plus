@@ -9,7 +9,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"strconv"
 	"strings"
@@ -112,6 +111,7 @@ func parsePdlFile(pdlFileName string, serviceName, serviceType string) (*pms.Ser
 	service := pms.Service{Name: serviceName, Type: serviceType}
 	isRolePolicy := false
 	isPolicy := false
+	var parseErrors []string
 	for i, line := range lines {
 		line = strings.Trim(line, " \t")
 		if "policies:" == line {
@@ -124,23 +124,30 @@ func parsePdlFile(pdlFileName string, serviceName, serviceType string) (*pms.Ser
 			if isPolicy {
 				var policy *pms.Policy
 				name := pdlFileName + "_policy_" + strconv.Itoa(i+1)
-				policy, _, err := pdl.ParsePolicy(line, name)
-				if err == nil {
+				policy, err = pdl.ParsePolicy(line, name)
+				if err != nil {
+					parseErrors = append(parseErrors, fmt.Sprintf("line %d: %v", i+1, err))
+				} else {
 					service.Policies = append(service.Policies, policy)
 				}
 			}
 			if isRolePolicy {
 				var rolePolicy *pms.RolePolicy
 				name := pdlFileName + "_role_policy_" + strconv.Itoa(i+1)
-				rolePolicy, _, err := pdl.ParseRolePolicy(line, name)
-				if err == nil {
+				rolePolicy, err = pdl.ParseRolePolicy(line, name)
+				if err != nil {
+					parseErrors = append(parseErrors, fmt.Sprintf("line %d: %v", i+1, err))
+				} else {
 					service.RolePolicies = append(service.RolePolicies, rolePolicy)
 				}
 			}
 		}
 	}
 
-	return &service, err
+	if len(parseErrors) > 0 {
+		return &service, fmt.Errorf("PDL parse errors:\n%s", strings.Join(parseErrors, "\n"))
+	}
+	return &service, nil
 }
 
 func createCommandFunc(cmd *cobra.Command, args []string) {
@@ -169,19 +176,19 @@ func createCommandFunc(cmd *cobra.Command, args []string) {
 				printHelpAndExit(cmd)
 			}
 			if jsonFileName != "" {
-				buf, err = ioutil.ReadFile(jsonFileName)
+				buf, err = os.ReadFile(jsonFileName)
 			} else if pdlFileName != "" {
-				fileStore, err := store.NewStore(file.StoreType, map[string]interface{}{
+				fileStore, storeErr := store.NewStore(file.StoreType, map[string]interface{}{
 					file.FileLocationKey: pdlFileName,
 				})
-				if err != nil {
-					fmt.Fprintln(os.Stderr, err)
+				if storeErr != nil {
+					fmt.Fprintln(os.Stderr, storeErr)
 					os.Exit(1)
 				}
 
-				services, err := fileStore.ListAllServices()
-				if err != nil {
-					fmt.Fprintln(os.Stderr, err)
+				services, listErr := fileStore.ListAllServices()
+				if listErr != nil {
+					fmt.Fprintln(os.Stderr, listErr)
 					os.Exit(1)
 				}
 				buf, err = json.Marshal(services)
@@ -196,17 +203,17 @@ func createCommandFunc(cmd *cobra.Command, args []string) {
 				service := pms.Service{Name: serviceName, Type: serviceType}
 				buf, err = json.Marshal(service)
 			} else {
-				fileStore, err := store.NewStore(file.StoreType, map[string]interface{}{
+				fileStore, storeErr := store.NewStore(file.StoreType, map[string]interface{}{
 					file.FileLocationKey: pdlFileName,
 				})
-				if err != nil {
-					fmt.Fprintln(os.Stderr, err)
+				if storeErr != nil {
+					fmt.Fprintln(os.Stderr, storeErr)
 					os.Exit(1)
 				}
 				if err == nil {
-					service, err := fileStore.GetService(serviceName)
-					if err != nil {
-						fmt.Fprintln(os.Stderr, err)
+					service, getErr := fileStore.GetService(serviceName)
+					if getErr != nil {
+						fmt.Fprintln(os.Stderr, getErr)
 						os.Exit(1)
 					}
 					buf, err = json.Marshal(service)
@@ -235,10 +242,18 @@ func createCommandFunc(cmd *cobra.Command, args []string) {
 				name = args[1]
 			}
 			if kind == "policy" {
-				_, buf, err = pdl.ParsePolicy(command, name)
+				policy, perr := pdl.ParsePolicy(command, name)
+				err = perr
+				if err == nil {
+					buf, err = pdl.PolicyToJSON(policy)
+				}
 
 			} else {
-				_, buf, err = pdl.ParseRolePolicy(command, name)
+				rolePolicy, perr := pdl.ParseRolePolicy(command, name)
+				err = perr
+				if err == nil {
+					buf, err = pdl.RolePolicyToJSON(rolePolicy)
+				}
 			}
 			if err == nil {
 				res, err = cli.Post([]string{"service", serviceName, kind}, buf, "")
@@ -248,7 +263,7 @@ func createCommandFunc(cmd *cobra.Command, args []string) {
 				printHelpAndExit(cmd)
 			}
 			var buf []byte
-			buf, err = ioutil.ReadFile(jsonFileName)
+			buf, err = os.ReadFile(jsonFileName)
 			if err == nil {
 				res, err = cli.Post([]string{"service", serviceName, kind}, bytes.NewBuffer(buf), "")
 			}
@@ -259,7 +274,7 @@ func createCommandFunc(cmd *cobra.Command, args []string) {
 			if jsonFileName == "" {
 				printHelpAndExit(cmd)
 			}
-			buf, err = ioutil.ReadFile(jsonFileName)
+			buf, err = os.ReadFile(jsonFileName)
 
 		} else if len(args) == 2 {
 			funcName := args[1]

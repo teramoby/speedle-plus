@@ -5,6 +5,7 @@ package pmsrest
 
 import (
 	"encoding/json"
+	"io"
 	"net/http"
 	"strings"
 
@@ -43,12 +44,32 @@ func ParseRequestURI(r *http.Request) (string, string) {
 	segs := strings.Split(r.URL.Path, "/")
 	segLength := len(segs)
 	if segLength > 4 {
-		if segLength > 6 {
-			return segs[4], segs[6]
+		serviceName := segs[4]
+		if err := ValidateServiceName(serviceName); err != nil {
+			return "", ""
 		}
-		return segs[4], ""
+		if segLength > 6 {
+			return serviceName, segs[6]
+		}
+		return serviceName, ""
 	}
 	return "", ""
+}
+
+// ValidateServiceName validates that a service name is safe.
+// Max 128 chars, only alphanumeric, hyphens, underscores, dots.
+// Rejects path traversal characters (/, \, ..).
+func ValidateServiceName(name string) error {
+	if len(name) == 0 || len(name) > 128 {
+		return errors.New(errors.InvalidRequest, "service name must be between 1 and 128 characters")
+	}
+	for _, c := range name {
+		if !((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') ||
+			c == '-' || c == '_' || c == '.') {
+			return errors.New(errors.InvalidRequest, "service name contains invalid character: "+string(c))
+		}
+	}
+	return nil
 }
 
 // ParseForFilters parse query filter from request
@@ -63,7 +84,7 @@ func ParseForFilters(r *http.Request) string {
 }
 
 func decodeServiceRequest(r *http.Request) (*serviceRequestBody, error) {
-	decoder := json.NewDecoder(r.Body)
+	decoder := json.NewDecoder(io.LimitReader(r.Body, 1<<20)) // 1MB limit
 	var request serviceRequestBody
 	err := decoder.Decode(&request)
 	if err != nil {
@@ -75,7 +96,7 @@ func decodeServiceRequest(r *http.Request) (*serviceRequestBody, error) {
 }
 
 func decodeRequestBody(r *http.Request, obj interface{}) error {
-	decoder := json.NewDecoder(r.Body)
+	decoder := json.NewDecoder(io.LimitReader(r.Body, 1<<20)) // 1MB limit
 	//decoder.DisallowUnknownFields()  //temporarily remove this go 1.10 feature since 1.10 cannot debug evaluator test due to golang issue #23733
 	err := decoder.Decode(obj)
 	if err != nil {
@@ -98,6 +119,9 @@ func getCreateMetaData(r *http.Request) map[string]string {
 
 // Service management
 func (mgr *RESTService) CreateService(w http.ResponseWriter, r *http.Request) {
+	if !httputils.VerifyContentType(w, r, []string{"application/json"}) {
+		return
+	}
 	var service pms.Service
 	err := decodeRequestBody(r, &service)
 	if err != nil {
@@ -222,6 +246,9 @@ func (mgr *RESTService) ListPolicyAndRolePolicyCounts(w http.ResponseWriter, r *
 
 // Policy management
 func (mgr *RESTService) CreatePolicy(w http.ResponseWriter, r *http.Request) {
+	if !httputils.VerifyContentType(w, r, []string{"application/json"}) {
+		return
+	}
 	serviceName, _ := ParseRequestURI(r)
 	if len(serviceName) == 0 {
 		httputils.SendBadRequestResponse(w, &httputils.ErrorResponse{
@@ -357,6 +384,9 @@ func (mgr *RESTService) ListPolicies(w http.ResponseWriter, r *http.Request) {
 
 // Role policy management
 func (mgr *RESTService) CreateRolePolicy(w http.ResponseWriter, r *http.Request) {
+	if !httputils.VerifyContentType(w, r, []string{"application/json"}) {
+		return
+	}
 	serviceName, _ := ParseRequestURI(r)
 	if len(serviceName) == 0 {
 		httputils.SendBadRequestResponse(w, &httputils.ErrorResponse{
@@ -492,6 +522,9 @@ func (mgr *RESTService) ListRolePolicies(w http.ResponseWriter, r *http.Request)
 }
 
 func (mgr *RESTService) CreateFunction(w http.ResponseWriter, r *http.Request) {
+	if !httputils.VerifyContentType(w, r, []string{"application/json"}) {
+		return
+	}
 	var cf pms.Function
 	err := decodeRequestBody(r, &cf)
 	if err != nil {

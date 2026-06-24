@@ -5,13 +5,32 @@ package eval
 
 import (
 	"regexp"
-	"strings"
+	"sync"
 
 	"github.com/teramoby/speedle-plus/3rdparty/github.com/Knetic/govaluate"
 	adsapi "github.com/teramoby/speedle-plus/api/ads"
 	"github.com/teramoby/speedle-plus/api/pms"
 	log "github.com/sirupsen/logrus"
 )
+
+var (
+	compiledRegexCache sync.Map
+)
+
+// matchRegexCompiled compiles the pattern once and caches the result.
+// It returns true if pattern matches s.
+func matchRegexCompiled(pattern, s string) bool {
+	re, ok := compiledRegexCache.Load(pattern)
+	if !ok {
+		var err error
+		re, err = regexp.Compile(pattern)
+		if err != nil {
+			return false
+		}
+		re, _ = compiledRegexCache.LoadOrStore(pattern, re)
+	}
+	return re.(*regexp.Regexp).MatchString(s)
+}
 
 func matchResource(requestRes string, resources, resExpressions []string) bool {
 	//in role policy, resources/resExpressions could be empty, which means any resource
@@ -23,9 +42,12 @@ func matchResource(requestRes string, resources, resExpressions []string) bool {
 			return true
 		}
 	}
+	// NOTE: Resource expressions are user-supplied and compiled as regex patterns.
+	// If untrusted users can define resource expressions, they may be able to craft
+	// patterns that cause ReDoS (catastrophic backtracking). Consider adding a timeout
+	// or complexity limit on user-supplied patterns if this becomes a concern.
 	for _, resExp := range resExpressions {
-		matched, err := regexp.MatchString(resExp, requestRes)
-		if err == nil && matched {
+		if matchRegexCompiled(resExp, requestRes) {
 			return true
 		}
 	}
@@ -41,7 +63,7 @@ func matchResourceAction(policy *pms.Policy, ctx *internalRequestContext) bool {
 	for _, perm := range policy.Permissions {
 		resExpMatch := false
 		if len(perm.ResourceExpression) != 0 {
-			resExpMatch, _ = regexp.MatchString(perm.ResourceExpression, ctx.Resource)
+			resExpMatch = matchRegexCompiled(perm.ResourceExpression, ctx.Resource)
 			//TODO log error
 		}
 		resNameMatch := perm.Resource == ctx.Resource
@@ -120,51 +142,79 @@ func calculatePermissions(grantedPermissions, deniedPermissions []pms.Permission
 	if len(deniedPermissions) == 0 {
 		return grantedPermissions
 	}
+
+	// Pre-build maps for O(1) lookups instead of O(G*D) nested scans.
+	// deniedByResource maps an exact resource name to a set of denied actions.
+	deniedByResource := make(map[string]map[string]bool, len(deniedPermissions))
+	// deniedByExpr stores denied permissions that use resource expressions.
+	type deniedExprEntry struct {
+		expr    string
+		actions map[string]bool
+	}
+	var deniedByExpr []deniedExprEntry
+	// denyAllActions is true when a denied permission has no resource and no expression (matches everything).
+	var denyAllActions map[string]bool
+
+	for _, dp := range deniedPermissions {
+		actions := make(map[string]bool, len(dp.Actions))
+		for _, a := range dp.Actions {
+			actions[a] = true
+		}
+		if len(dp.Resource) == 0 && len(dp.ResourceExpression) == 0 {
+			denyAllActions = actions
+		} else if len(dp.ResourceExpression) > 0 {
+			deniedByExpr = append(deniedByExpr, deniedExprEntry{expr: dp.ResourceExpression, actions: actions})
+		} else {
+			deniedByResource[dp.Resource] = actions
+		}
+	}
+
 	var finalPermissions []pms.Permission
 	for _, permission := range grantedPermissions {
-		grantPermission := pms.Permission{
-			Resource: permission.Resource,
-			Actions:  permission.Actions,
-		}
+		grantActions := make([]string, 0, len(permission.Actions))
 		isDenied := false
-		for _, deniedPermission := range deniedPermissions {
-			expMatched := false
-			if len(deniedPermission.ResourceExpression) > 0 {
-				matched, err := regexp.MatchString(deniedPermission.ResourceExpression, grantPermission.Resource)
-				if err != nil || matched {
-					//TODO: log err
-					expMatched = true
+
+		for _, grantedAction := range permission.Actions {
+			actionDenied := false
+
+			// Check deny-all (matches any resource).
+			if denyAllActions != nil && denyAllActions[grantedAction] {
+				actionDenied = true
+			}
+
+			// Check exact resource match.
+			if !actionDenied {
+				if deniedActions, ok := deniedByResource[permission.Resource]; ok {
+					actionDenied = deniedActions[grantedAction]
 				}
 			}
 
-			if (len(deniedPermission.Resource) == 0 && len(deniedPermission.ResourceExpression) == 0) || expMatched || strings.Compare(deniedPermission.Resource, grantPermission.Resource) == 0 {
-				//if resource match, then remove denied actions
-				var actions []string
-				for _, grantedAction := range grantPermission.Actions {
-					actionDenied := false
-					for _, deniedAction := range deniedPermission.Actions {
-						if grantedAction == deniedAction {
+			// Check resource expression match.
+			if !actionDenied {
+				for _, de := range deniedByExpr {
+					if matchRegexCompiled(de.expr, permission.Resource) {
+						if de.actions[grantedAction] {
 							actionDenied = true
 							break
 						}
 					}
-					if !actionDenied {
-						actions = append(actions, grantedAction)
-					}
-				}
-				if len(actions) == 0 {
-					isDenied = true
-					break
-				} else {
-					grantPermission = pms.Permission{
-						Resource: grantPermission.Resource,
-						Actions:  actions,
-					}
 				}
 			}
+
+			if !actionDenied {
+				grantActions = append(grantActions, grantedAction)
+			}
 		}
+
+		if len(grantActions) == 0 {
+			isDenied = true
+		}
+
 		if !isDenied {
-			finalPermissions = append(finalPermissions, grantPermission)
+			finalPermissions = append(finalPermissions, pms.Permission{
+				Resource: permission.Resource,
+				Actions:  grantActions,
+			})
 		}
 	}
 	return finalPermissions
@@ -173,44 +223,40 @@ func calculatePermissions(grantedPermissions, deniedPermissions []pms.Permission
 
 func evaluateCondition(condition *govaluate.EvaluableExpression, attributes map[string]interface{}) (bool, error) {
 	res, err := condition.Evaluate(attributes)
-	if err != nil || res != true {
-		if err != nil {
-			log.Errorf("Error happens in evaluating condition (%s): %v", condition.String(), err)
-		}
+	if err != nil {
+		log.Errorf("Error happens in evaluating condition (%s): %v", condition.String(), err)
 		return false, err
+	}
+	b, ok := res.(bool)
+	if !ok || !b {
+		return false, nil
 	}
 	return true, nil
 }
 
-func matchRolePolicyPrincipals(subjectPrincipalList []string, rolePolicyPrincipalList []string) bool {
-	if subjectPrincipalList == nil || len(subjectPrincipalList) == 0 {
+func matchRolePolicyPrincipals(subjectSet map[string]bool, rolePolicyPrincipalList []string) bool {
+	if subjectSet == nil || len(subjectSet) == 0 {
 		return false
 	}
 
 	if rolePolicyPrincipalList == nil || len(rolePolicyPrincipalList) == 0 {
 		return true
 	}
-	matched := false
+
 	for _, policyPrincipal := range rolePolicyPrincipalList {
-		for _, subjectPrincipal := range subjectPrincipalList {
-			if policyPrincipal == subjectPrincipal {
-				matched = true
-				break
-			}
-		}
-		if matched {
-			break
+		if subjectSet[policyPrincipal] {
+			return true
 		}
 	}
-	return matched
+	return false
 
 }
 
 /**
 It's regarded as matched only if all items in princs2 are included in princs1
 */
-func matchPrincipals(subjectPrincipalList []string, policyPrincipalList [][]string) bool {
-	if subjectPrincipalList == nil || len(subjectPrincipalList) == 0 {
+func matchPrincipals(subjectSet map[string]bool, policyPrincipalList [][]string) bool {
+	if subjectSet == nil || len(subjectSet) == 0 {
 		return false
 	}
 
@@ -222,17 +268,7 @@ func matchPrincipals(subjectPrincipalList []string, policyPrincipalList [][]stri
 		// one of item in policy principals matched, returns true
 		matched := true
 		for _, policyPrincipal := range andPrincipals {
-			matchedOnePrincipal := false
-			// Check if the policy principal in subject principal list
-			for _, subjectPrincipal := range subjectPrincipalList {
-				if policyPrincipal == subjectPrincipal {
-					// matched
-					matchedOnePrincipal = true
-					break
-				}
-			}
-			// The policy principal is not found in subjectPrincipalList, not match
-			if !matchedOnePrincipal {
+			if !subjectSet[policyPrincipal] {
 				matched = false
 				break
 			}

@@ -5,8 +5,8 @@ package adsrest
 
 import (
 	"encoding/json"
+	"io"
 	"net/http"
-	"reflect"
 	"time"
 
 	adsapi "github.com/teramoby/speedle-plus/api/ads"
@@ -16,8 +16,8 @@ import (
 	"github.com/teramoby/speedle-plus/pkg/httputils"
 	"github.com/teramoby/speedle-plus/pkg/logging"
 
-	"github.com/teramoby/speedle-plus/pkg/svcs"
 	log "github.com/sirupsen/logrus"
+	"github.com/teramoby/speedle-plus/pkg/svcs"
 )
 
 type JsonAttribute struct {
@@ -127,7 +127,7 @@ func NewRESTServiceWithEvaluator(evaluator eval.InternalEvaluator) (*RESTService
 }
 
 func DecodeJSONContext(r *http.Request) (*JsonContext, error) {
-	decoder := json.NewDecoder(r.Body)
+	decoder := json.NewDecoder(io.LimitReader(r.Body, 1<<20)) // 1MB limit
 	var request JsonContext
 	if err := decoder.Decode(&request); err != nil {
 		return nil, errors.Wrap(err, errors.InvalidRequest, "unable to decode request")
@@ -135,30 +135,24 @@ func DecodeJSONContext(r *http.Request) (*JsonContext, error) {
 	return &request, nil
 }
 
-func DuplicateAttributeMap(attrs map[string]interface{}) map[string]interface{} {
-	if attrs == nil {
-		return nil
-	}
-	ret := make(map[string]interface{})
-	for key, value := range attrs {
-		ret[key] = value
-	}
-	return ret
-}
-
 func VerifyAttributeName(attrName string) error {
-	// Currently don't verify attribute name
+	if len(attrName) == 0 {
+		return errors.New(errors.InvalidRequest, "attribute name must not be empty")
+	}
+	if len(attrName) > 256 {
+		return errors.New(errors.InvalidRequest, "attribute name must be at most 256 characters")
+	}
+	for _, c := range attrName {
+		if !((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') ||
+			c == '_' || c == '-' || c == '.') {
+			return errors.New(errors.InvalidRequest, "attribute name contains invalid character: "+string(c))
+		}
+	}
 	return nil
 }
 
 // Key is data type in json
 // Value is the data type in go
-var dataTypeMap = map[string]string{
-	"string":   "string",
-	"numeric":  "float64",
-	"bool":     "bool",
-	"datetime": "string",
-}
 
 var supportDateTimeLayout = []string{
 	time.RFC3339Nano,
@@ -183,13 +177,28 @@ func ConvSingleValue(dataType string, value interface{}) (interface{}, error) {
 		return value, nil
 	}
 
-	valueType, ok := dataTypeMap[dataType]
-	if !ok {
-		// Data type is not match
+	// Use type switch instead of reflect for type validation.
+	var typeMismatch bool
+	switch dataType {
+	case "string":
+		_, typeMismatch = value.(string)
+	case "numeric":
+		switch value.(type) {
+		case float64, float32, int, int64, int32, int16, int8, uint, uint64, uint32, uint16, uint8:
+		default:
+			typeMismatch = true
+		}
+	case "bool":
+		_, typeMismatch = value.(bool)
+	case "datetime":
+		_, ok := value.(string)
+		if !ok {
+			typeMismatch = true
+		}
+	default:
 		return nil, errors.Errorf(errors.InvalidRequest, "inputted data type %s is not supported", dataType)
 	}
-
-	if valueType != reflect.TypeOf(value).String() {
+	if typeMismatch {
 		return nil, errors.Errorf(errors.InvalidRequest, "value data type %T is not equals to inputted data type %s", value, dataType)
 	}
 
@@ -206,18 +215,30 @@ func ConvSingleValue(dataType string, value interface{}) (interface{}, error) {
 }
 
 func ConvMultipleValues(dataType string, values interface{}) (interface{}, error) {
-	v := reflect.ValueOf(values)
-	ret := []interface{}{}
+	// Use type assertion instead of reflect to iterate the slice.
+	slice, ok := values.([]interface{})
+	if !ok {
+		return nil, errors.New(errors.InvalidRequest, "expected array of values")
+	}
+	ret := make([]interface{}, 0, len(slice))
 	var prevType string
-	for i := 0; i < v.Len(); i = i + 1 {
-		vi := v.Index(i)
-		item, err := ConvSingleValue(dataType, vi.Interface())
+	for i, vi := range slice {
+		item, err := ConvSingleValue(dataType, vi)
 		if err != nil {
 			return nil, err
 		}
 		if i == 0 {
-			prevType = reflect.TypeOf(item).String()
-		} else if prevType != reflect.TypeOf(item).String() {
+			switch item.(type) {
+			case string:
+				prevType = "string"
+			case float64, float32, int, int64, int32, int16, int8, uint, uint64, uint32, uint16, uint8:
+				prevType = "float64"
+			case bool:
+				prevType = "bool"
+			default:
+				prevType = ""
+			}
+		} else if prevType != typeName(item) {
 			return nil, errors.New(errors.InvalidRequest, "types of all items in a array should be same")
 		}
 		ret = append(ret, item)
@@ -225,14 +246,31 @@ func ConvMultipleValues(dataType string, values interface{}) (interface{}, error
 	return ret, nil
 }
 
+// typeName returns a string representation of the value's type for comparison.
+func typeName(v interface{}) string {
+	switch v.(type) {
+	case string:
+		return "string"
+	case float64, float32, int, int64, int32, int16, int8, uint, uint64, uint32, uint16, uint8:
+		return "float64"
+	case bool:
+		return "bool"
+	default:
+		return ""
+	}
+}
+
 func ConvValue(dataType string, value interface{}) (interface{}, error) {
 	if value == nil {
 		return nil, errors.New(errors.InvalidRequest, "null value is not allowed")
 	}
-	if reflect.TypeOf(value).Kind() == reflect.Slice {
+	// Use type switch instead of reflect to check if value is a slice.
+	switch value.(type) {
+	case []interface{}:
 		return ConvMultipleValues(dataType, value)
+	default:
+		return ConvSingleValue(dataType, value)
 	}
-	return ConvSingleValue(dataType, value)
 }
 
 func DumpRequestAttributes(attrs []*JsonAttribute) (map[string]interface{}, error) {
@@ -311,6 +349,9 @@ func constructEvaluationResultForAudit(allowed bool, reason adsapi.Reason) *Audi
 }
 
 func (e *RESTService) IsAllowed(w http.ResponseWriter, r *http.Request) {
+	if !httputils.VerifyContentType(w, r, []string{"application/json"}) {
+		return
+	}
 	jsonRequest, err := DecodeJSONContext(r)
 	if err != nil {
 		httputils.HandleError(w, err)
@@ -344,14 +385,17 @@ func (e *RESTService) IsAllowed(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		response.ErrorMessage = err.Error()
 		logging.WriteFailedAuditLog("IsAllowed", log.Fields{"requestContext": context, "evaluationResult": responseForAudit}, response.ErrorMessage)
+		httputils.HandleError(w, err)
 	} else {
 		logging.WriteSucceededAuditLog("IsAllowed", log.Fields{"requestContext": context}, log.Fields{"evaluationResult": responseForAudit})
+		httputils.SendOKResponse(w, &response)
 	}
-
-	httputils.SendOKResponse(w, &response)
 }
 
 func (e *RESTService) GetAllGrantedRoles(w http.ResponseWriter, r *http.Request) {
+	if !httputils.VerifyContentType(w, r, []string{"application/json"}) {
+		return
+	}
 	jsonRequest, err := DecodeJSONContext(r)
 	if err != nil {
 		httputils.HandleError(w, err)
@@ -383,6 +427,9 @@ func (e *RESTService) GetAllGrantedRoles(w http.ResponseWriter, r *http.Request)
 }
 
 func (e *RESTService) GetAllGrantedPermissions(w http.ResponseWriter, r *http.Request) {
+	if !httputils.VerifyContentType(w, r, []string{"application/json"}) {
+		return
+	}
 	jsonRequest, err := DecodeJSONContext(r)
 	if err != nil {
 		httputils.HandleError(w, err)
@@ -477,6 +524,9 @@ func ConvertAPIRolePolicy2RolePolicyResponse(apiRolePolicy *adsapi.EvaluatedRole
 }
 
 func (e *RESTService) Diagnose(w http.ResponseWriter, r *http.Request) {
+	if !httputils.VerifyContentType(w, r, []string{"application/json"}) {
+		return
+	}
 	jsonRequest, err := DecodeJSONContext(r)
 	if err != nil {
 		httputils.HandleError(w, err)

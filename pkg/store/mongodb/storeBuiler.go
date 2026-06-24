@@ -5,6 +5,7 @@ package mongodb
 
 import (
 	"context"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
@@ -48,7 +49,9 @@ func (msb MongoStoreBuilder) NewStore(config map[string]interface{}) (pms.Policy
 	clientOptions.SetRetryWrites(true)
 
 	// Connect to MongoDB
-	client, err := mongo.Connect(context.TODO(), clientOptions)
+	connectCtx, connectCancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer connectCancel()
+	client, err := mongo.Connect(connectCtx, clientOptions)
 
 	if err != nil {
 		log.Error(err)
@@ -56,7 +59,9 @@ func (msb MongoStoreBuilder) NewStore(config map[string]interface{}) (pms.Policy
 	}
 
 	// Check the connection
-	err = client.Ping(context.TODO(), nil)
+	pingCtx, pingCancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer pingCancel()
+	err = client.Ping(pingCtx, nil)
 
 	if err != nil {
 		log.Error(err)

@@ -4,12 +4,11 @@
 package eval
 
 import (
-	"fmt"
 	"sync"
 
+	log "github.com/sirupsen/logrus"
 	"github.com/teramoby/speedle-plus/3rdparty/github.com/Knetic/govaluate"
 	"github.com/teramoby/speedle-plus/api/pms"
-	log "github.com/sirupsen/logrus"
 )
 
 type RuntimePolicyStore struct {
@@ -91,58 +90,53 @@ func (rtps *RuntimePolicyStore) deleteService(serviceName string) {
 }
 
 func (rtps *RuntimePolicyStore) recompilePolicyConditionAtRuntime(serviceName string, policy *pms.Policy) (*govaluate.EvaluableExpression, error) {
-	fmt.Println("recompile condition for policy:", policy)
+
 	condition, err := compileCondition(policy.Condition, rtps.Functions)
 	if err == nil {
-		fmt.Println("updating condition for policy in another goroutine:", policy)
-		go updatePolicyCondition(rtps, serviceName, policy, condition)
+		// Look up the service under RLock, then release before acquiring
+		// the service lock to avoid lock-ordering deadlock risks.
+		rtps.RLock()
+		rtService, ok := rtps.RuntimeServices[serviceName]
+		rtps.RUnlock()
+		if ok {
+			rtService.Lock()
+			rtService.PoliciesCache.Conditions[policy.ID] = condition
+			rtService.Unlock()
+		} else {
+			log.Errorf("Unable find service %s in runtime cache.", serviceName)
+		}
 	}
 	return condition, err
-}
-
-func updatePolicyCondition(rtps *RuntimePolicyStore, serviceName string, policy *pms.Policy, condition *govaluate.EvaluableExpression) {
-	rtps.RLock()
-	defer rtps.RUnlock()
-	rtService, ok := rtps.RuntimeServices[serviceName]
-	if !ok {
-		// Service is not found
-		log.Errorf("Unable find service %s in runtime cache.", serviceName)
-		return
-	}
-	rtService.Lock()
-	defer rtService.Unlock()
-	rtService.PoliciesCache.Conditions[policy.ID] = condition
 }
 
 func (rtps *RuntimePolicyStore) recompileRolePolicyConditionAtRuntime(serviceName string, policy *pms.RolePolicy) (*govaluate.EvaluableExpression, error) {
-	fmt.Println("recompile condition for role policy:", policy)
+
 	condition, err := compileCondition(policy.Condition, rtps.Functions)
 	if err == nil {
-		fmt.Println("updating condition for role policy in another goroutine:", policy)
-		go updateRolePolicyCondition(rtps, serviceName, policy, condition)
+		// Look up the service under RLock, then release before acquiring
+		// the service lock to avoid lock-ordering deadlock risks.
+		rtps.RLock()
+		rtService, ok := rtps.RuntimeServices[serviceName]
+		rtps.RUnlock()
+		if ok {
+			rtService.Lock()
+			rtService.RolePoliciesCache.Conditions[policy.ID] = condition
+			rtService.Unlock()
+		} else {
+			log.Errorf("Unable find service %s in runtime cache.", serviceName)
+		}
 	}
 	return condition, err
-}
-
-func updateRolePolicyCondition(rtps *RuntimePolicyStore, serviceName string, policy *pms.RolePolicy, condition *govaluate.EvaluableExpression) {
-	rtps.RLock()
-	defer rtps.RUnlock()
-	rtService, ok := rtps.RuntimeServices[serviceName]
-	if !ok {
-		// Service is not found
-		log.Errorf("Unable find service %s in runtime cache.", serviceName)
-		return
-	}
-	rtService.Lock()
-	defer rtService.Unlock()
-	rtService.RolePoliciesCache.Conditions[policy.ID] = condition
 }
 
 func (rtps *RuntimePolicyStore) addPolicy(serviceName string, policy *pms.Policy) {
 	rtps.RLock()
 	defer rtps.RUnlock()
 
-	condition, _ := compileCondition(policy.Condition, rtps.Functions)
+	condition, err := compileCondition(policy.Condition, rtps.Functions)
+	if err != nil {
+		log.Warnf("Failed to compile policy condition for policy %s in service %s: %v", policy.Name, serviceName, err)
+	}
 	rtService, ok := rtps.RuntimeServices[serviceName]
 	if !ok {
 		// Service is not found
@@ -150,7 +144,7 @@ func (rtps *RuntimePolicyStore) addPolicy(serviceName string, policy *pms.Policy
 		return
 	}
 	rtService.Lock()
-	// Golang garantees rtService.Unlock() is executed before rtps.RUnlock()
+	// Golang guarantees rtService.Unlock() is executed before rtps.RUnlock()
 	defer rtService.Unlock()
 
 	rtService.PoliciesCache.AddPolicyToCache(policy, condition)
@@ -167,7 +161,7 @@ func (rtps *RuntimePolicyStore) deletePolicy(serviceName string, policyID string
 		return
 	}
 	rtService.Lock()
-	// Golang garantees rtService.Unlock() is executed before rtps.RUnlock()
+	// Golang guarantees rtService.Unlock() is executed before rtps.RUnlock()
 	defer rtService.Unlock()
 
 	rtService.PoliciesCache.DeletePolicyFromCache(policyID)
@@ -177,7 +171,10 @@ func (rtps *RuntimePolicyStore) addRolePolicy(serviceName string, rolePolicy *pm
 	rtps.RLock()
 	defer rtps.RUnlock()
 
-	condition, _ := compileCondition(rolePolicy.Condition, rtps.Functions)
+	condition, err := compileCondition(rolePolicy.Condition, rtps.Functions)
+	if err != nil {
+		log.Warnf("Failed to compile role policy condition for role policy %s in service %s: %v", rolePolicy.Name, serviceName, err)
+	}
 	rtService, ok := rtps.RuntimeServices[serviceName]
 	if !ok {
 		// Service is not found
@@ -185,7 +182,7 @@ func (rtps *RuntimePolicyStore) addRolePolicy(serviceName string, rolePolicy *pm
 		return
 	}
 	rtService.Lock()
-	// Golang garantees rtService.Unlock() is executed before rtps.RUnlock()
+	// Golang guarantees rtService.Unlock() is executed before rtps.RUnlock()
 	defer rtService.Unlock()
 
 	rtService.RolePoliciesCache.AddRolePolicyToCache(rolePolicy, condition)
@@ -202,7 +199,7 @@ func (rtps *RuntimePolicyStore) deleteRolePolicy(serviceName string, rolePolicyI
 		return
 	}
 	rtService.Lock()
-	// Golang garantees rtService.Unlock() is executed before rtps.RUnlock()
+	// Golang guarantees rtService.Unlock() is executed before rtps.RUnlock()
 	defer rtService.Unlock()
 
 	rtService.RolePoliciesCache.DeleteRolePolicyFromCache(rolePolicyID)
@@ -252,8 +249,9 @@ func (rtps *RuntimePolicyStore) expireFunctionResultCache() {
 
 func (rtps *RuntimePolicyStore) convertService(service *pms.Service) *RuntimeService {
 	rtps.RLock()
-	defer rtps.RUnlock()
-	rtService := convertService(service, rtps.Functions)
+	functions := rtps.Functions
+	rtps.RUnlock()
+	rtService := convertService(service, functions)
 	return rtService
 }
 
@@ -280,11 +278,17 @@ func convertService(service *pms.Service,
 		Functions:         functions,
 	}
 	for _, policy := range service.Policies {
-		condition, _ := compileCondition(policy.Condition, functions)
+		condition, err := compileCondition(policy.Condition, functions)
+		if err != nil {
+			log.Warnf("Failed to compile policy condition for policy %s in service %s: %v", policy.Name, service.Name, err)
+		}
 		rtService.PoliciesCache.AddPolicyToCache(policy, condition)
 	}
 	for _, rolePolicy := range service.RolePolicies {
-		condition, _ := compileCondition(rolePolicy.Condition, functions)
+		condition, err := compileCondition(rolePolicy.Condition, functions)
+		if err != nil {
+			log.Warnf("Failed to compile role policy condition for role policy %s in service %s: %v", rolePolicy.Name, service.Name, err)
+		}
 		rtService.RolePoliciesCache.AddRolePolicyToCache(rolePolicy, condition)
 	}
 

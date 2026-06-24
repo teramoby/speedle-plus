@@ -7,10 +7,11 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"strings"
+	"time"
+	"runtime/debug"
 
 	"github.com/teramoby/speedle-plus/pkg/assertion"
 	"github.com/teramoby/speedle-plus/pkg/cfg"
@@ -23,6 +24,7 @@ import (
 	"github.com/spf13/pflag"
 
 	"github.com/gorilla/handlers"
+	"golang.org/x/time/rate"
 )
 
 // Parameters is the parameters for Speedle
@@ -49,6 +51,11 @@ type Parameters struct {
 
 	// AsserterParameters asserter webhook configuration
 	AsserterConf AsserterParameters
+
+	// ShowVersionAndExit is set to true by ParseFlags when the --version flag
+	// is passed. Callers should check this after ParseFlags and exit cleanly
+	// if true.
+	ShowVersionAndExit bool
 }
 
 // LogParameters is the parameters for log configuration
@@ -81,7 +88,8 @@ const (
 	// If command line argument --pms-endpint and no pms-endpint defined in configure file, use this default value.
 	DefaultPolicyManagmentConnectEndpoint = "http://127.0.0.1:6733/policy-mgmt/v1/"
 	DefaultAuthzCheckEndPoint             = "0.0.0.0:6734"
-	DefaultInsecure                       = true
+	// TLS enabled by default for security. Set --insecure=true for development only.
+	DefaultInsecure = false
 	DefaultEnableAuthz                    = false
 
 	DefaultStoreType = cfg.StorageTypeFile //file
@@ -98,6 +106,10 @@ const (
 	DefaultAuditLogMaxBackups = "5"  // maximum number of old log files to retain
 
 	DefaultAsserterClientTimeout = "5"
+
+	// DefaultAllowedOrigins is the default CORS allowed origins.
+	// It can be overridden via configuration.
+	DefaultAllowedOrigins = "*"
 )
 
 type StrParamDetail struct {
@@ -108,28 +120,80 @@ type StrParamDetail struct {
 	Value        string
 }
 
+// loggingResponseWriter wraps http.ResponseWriter to capture the status code.
+type loggingResponseWriter struct {
+	http.ResponseWriter
+	statusCode int
+}
+
+// WriteHeader captures the status code before writing it.
+func (lrw *loggingResponseWriter) WriteHeader(code int) {
+	lrw.statusCode = code
+	lrw.ResponseWriter.WriteHeader(code)
+}
+
+// loggingMiddleware logs method, path, status, and duration for each request.
+func loggingMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		start := time.Now()
+		lrw := &loggingResponseWriter{ResponseWriter: w, statusCode: http.StatusOK}
+		next.ServeHTTP(lrw, r)
+		logging.AuditLog().Infof("method=%s path=%s status=%d duration=%s",
+			r.Method, r.URL.Path, lrw.statusCode, time.Since(start))
+	})
+}
+
 func (k *Parameters) NewHTTPServer(handler http.Handler) (*http.Server, error) {
 	insecure, _ := strconv.ParseBool(k.Insecure.Value)
 	headersOk := handlers.AllowedHeaders([]string{"X-Requested-With", "Content-Type"})
-	originsOk := handlers.AllowedOrigins([]string{"*"})
+	originsOk := handlers.AllowedOrigins([]string{DefaultAllowedOrigins}) // Can be overridden via configuration
 	methodsOk := handlers.AllowedMethods([]string{"GET", "HEAD", "POST", "DELETE", "OPTIONS"})
-	cosHandler := handlers.CORS(originsOk, headersOk, methodsOk)(handler)
+	// Rate limiter: 1000 requests/second with burst of 200.
+	limiter := rate.NewLimiter(rate.Limit(1000), 200)
+	rateLimitedHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !limiter.Allow() {
+			http.Error(w, `{"error":"rate limit exceeded"}`, http.StatusTooManyRequests)
+			return
+		}
+		handler.ServeHTTP(w, r)
+	})
+	cosHandler := handlers.CORS(originsOk, headersOk, methodsOk)(rateLimitedHandler)
+	// Wrap with panic recovery to prevent a single handler panic from crashing the server.
+	recoveryHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		defer func() {
+			if err := recover(); err != nil {
+				logging.AuditLog().Errorf("Panic recovered: %v\n%s", err, debug.Stack())
+				http.Error(w, `{"error":"internal server error"}`, http.StatusInternalServerError)
+			}
+		}()
+		cosHandler.ServeHTTP(w, r)
+	})
+	// Wrap with request logging middleware (method, path, status, duration).
+	loggedHandler := loggingMiddleware(recoveryHandler)
 	if insecure {
 		server := http.Server{
-			Addr:    k.Endpoint.Value,
-			Handler: cosHandler,
+			Addr:              k.Endpoint.Value,
+			Handler:           loggedHandler,
+			ReadTimeout:       30 * time.Second,
+			ReadHeaderTimeout: 10 * time.Second,
+			WriteTimeout:      30 * time.Second,
+			IdleTimeout:       60 * time.Second,
+			MaxHeaderBytes:    1 << 16, // 64KB
 		}
 		return &server, nil
 	}
-	return k.newTLSServer(cosHandler)
+	return k.newTLSServer(loggedHandler)
 }
 
 func (k *Parameters) newTLSServer(handler http.Handler) (*http.Server, error) {
 	// Set HTTPS client
-	tlsConfig := &tls.Config{}
+	tlsConfig := &tls.Config{
+		MinVersion:       tls.VersionTLS12,
+		CurvePreferences: []tls.CurveID{tls.X25519, tls.CurveP256},
+	}
 
 	if k.ClientCertPath.Value != "" {
-		caCert, err := ioutil.ReadFile(k.ClientCertPath.Value)
+		caCert, err := os.ReadFile(k.ClientCertPath.Value)
 		if err != nil {
 			return nil, errors.Wrapf(err, errors.ConfigError, "unable to read client CA certification from file %s", k.ClientCertPath.Value)
 		}
@@ -150,12 +214,16 @@ func (k *Parameters) newTLSServer(handler http.Handler) (*http.Server, error) {
 		tlsConfig.ClientAuth = tls.NoClientCert
 	}
 
-	tlsConfig.BuildNameToCertificate()
 
 	server := http.Server{
-		Addr:      k.Endpoint.Value,
-		Handler:   handler,
-		TLSConfig: tlsConfig,
+		Addr:              k.Endpoint.Value,
+		Handler:           handler,
+		TLSConfig:         tlsConfig,
+		ReadTimeout:       15 * time.Second,
+		ReadHeaderTimeout: 10 * time.Second,
+		WriteTimeout:      15 * time.Second,
+		IdleTimeout:       60 * time.Second,
+		MaxHeaderBytes:    1 << 20, // 1 MB
 	}
 	return &server, nil
 }
@@ -173,7 +241,7 @@ func (k *Parameters) listenAndServeTLS(s *http.Server) error {
 }
 
 // ParseFlags parses command line arguments
-func (k *Parameters) ParseFlags(defaultEndpoint string, printVersionInfoFun func(), storeParamsMap map[string]string) {
+func (k *Parameters) ParseFlags(defaultEndpoint string, printVersionInfoFun func(), storeParamsMap map[string]string) error {
 	var params []*StrParamDetail
 	k.ConfigFile = StrParamDetail{Name: "config-file", ShortName: "k", Usage: "Configuration file."}
 	params = append(params, &k.ConfigFile)
@@ -257,7 +325,8 @@ func (k *Parameters) ParseFlags(defaultEndpoint string, printVersionInfoFun func
 
 	if k.Version {
 		printVersionInfoFun()
-		os.Exit(0)
+		k.ShowVersionAndExit = true
+		return nil
 	}
 
 	if len(k.ConfigFile.Value) == 0 {
@@ -274,7 +343,8 @@ func (k *Parameters) ParseFlags(defaultEndpoint string, printVersionInfoFun func
 		conf, err = cfg.ReadConfig(k.ConfigFile.Value)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Fail to parse config file %s, error is %v. \n", k.ConfigFile.Value, err)
-			k.usage()
+			pflag.Usage()
+			return fmt.Errorf("fail to parse config file %s: %w", k.ConfigFile.Value, err)
 		}
 	} else {
 		conf = nil
@@ -419,7 +489,7 @@ func (k *Parameters) ParseFlags(defaultEndpoint string, printVersionInfoFun func
 					}
 				case k.AsserterConf.AsserterClientTimeout.Name:
 					if conf != nil && conf.AsserterWebhookConfig != nil {
-						f.Value.Set(string(conf.AsserterWebhookConfig.HTTPTimeout))
+						f.Value.Set(strconv.Itoa(conf.AsserterWebhookConfig.HTTPTimeout))
 					}
 				default:
 					//
@@ -447,7 +517,8 @@ func (k *Parameters) ParseFlags(defaultEndpoint string, printVersionInfoFun func
 		}
 	})
 
-	fmt.Printf("parameters:%v\n", k)
+	logging.AuditLog().Debugf("parameters:%v", k)
+	return nil
 }
 
 // FlagToEnv converts flag string to upper-case environment variable key string.
@@ -455,39 +526,45 @@ func FlagToEnv(name string) string {
 	return EnvVarPrefix + "_" + strings.ToUpper(strings.Replace(name, "-", "_", -1))
 }
 
-func (k *Parameters) ValidateFlags() {
+func (k *Parameters) ValidateFlags() error {
 	insecure, err := strconv.ParseBool(k.Insecure.Value)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Invalid value for 'insecure' parameter: %s", k.Insecure.Value)
-		k.usage()
+		pflag.Usage()
+		return fmt.Errorf("invalid value for 'insecure' parameter: %s", k.Insecure.Value)
 	}
 
 	if len(k.EnableAuthz.Value) != 0 {
 		_, err = strconv.ParseBool(k.EnableAuthz.Value)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Invalid value for 'enableAuthz' parameter: %s", k.EnableAuthz.Value)
-			k.usage()
+			pflag.Usage()
+			return fmt.Errorf("invalid value for 'enableAuthz' parameter: %s", k.EnableAuthz.Value)
 		}
 	}
 
 	if !insecure {
 		if k.CertPath.Value == "" || k.KeyPath.Value == "" {
 			fmt.Fprintln(os.Stderr, "In secure mode, "+k.KeyPath.Name+", "+k.CertPath.Name+" should be passed.")
-			k.usage()
+			pflag.Usage()
+			return fmt.Errorf("in secure mode, %s, %s should be passed", k.KeyPath.Name, k.CertPath.Name)
 		}
 
 		if k.ForceClientCert.Value != "" {
 			forceClientCert, err := strconv.ParseBool(k.ForceClientCert.Value)
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "Invalid value for 'ForceClientCert' parameter: %s", k.ForceClientCert.Value)
-				k.usage()
+				pflag.Usage()
+				return fmt.Errorf("invalid value for 'ForceClientCert' parameter: %s", k.ForceClientCert.Value)
 			}
 			if forceClientCert && k.ClientCertPath.Value == "" {
 				fmt.Fprintln(os.Stderr, "In secure mode and force client certification is enabled, "+k.ClientCertPath.Name+" should be passed.")
-				k.usage()
+				pflag.Usage()
+				return fmt.Errorf("in secure mode and force client certification is enabled, %s should be passed", k.ClientCertPath.Name)
 			}
 		}
 	}
+	return nil
 }
 
 func (k *Parameters) Param2Config(storeParamsMap map[string]string) (*cfg.Config, error) {
@@ -554,7 +631,7 @@ func (k *Parameters) Param2Config(storeParamsMap map[string]string) (*cfg.Config
 			}
 			if len(k.LogConf.LogLocalTime.Value) != 0 {
 				value, _ := strconv.ParseBool(k.LogConf.LogLocalTime.Value)
-				rotateConfig.Compress = value
+				rotateConfig.LocalTime = value
 			}
 			logConf.RotationConfig = &rotateConfig
 		}
@@ -605,7 +682,7 @@ func (k *Parameters) Param2Config(storeParamsMap map[string]string) (*cfg.Config
 			}
 			if len(k.AuditLogConf.LogLocalTime.Value) != 0 {
 				value, _ := strconv.ParseBool(k.AuditLogConf.LogLocalTime.Value)
-				rotateConfig.Compress = value
+				rotateConfig.LocalTime = value
 			}
 			auditLogConf.RotationConfig = &rotateConfig
 		}
@@ -635,12 +712,11 @@ func (k *Parameters) Param2Config(storeParamsMap map[string]string) (*cfg.Config
 		conf.AsserterWebhookConfig = &asserterConf
 	}
 
-	fmt.Printf("%v\n", conf.AsserterWebhookConfig)
+	logging.AuditLog().Debugf("asserter config: %v", conf.AsserterWebhookConfig)
 
 	return &conf, nil
 }
 
 func (k *Parameters) usage() {
 	pflag.Usage()
-	os.Exit(1)
 }

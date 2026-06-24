@@ -4,26 +4,29 @@
 package file
 
 import (
-	"bufio"
 	"encoding/json"
+	"context"
 	"fmt"
 	"os"
 	"strings"
 	"sync"
 
 	"github.com/teramoby/speedle-plus/pkg/errors"
+	"github.com/teramoby/speedle-plus/pkg/store/utils"
 	"github.com/teramoby/speedle-plus/pkg/suid"
 
 	"github.com/fsnotify/fsnotify"
-	"github.com/teramoby/speedle-plus/api/pms"
 	log "github.com/sirupsen/logrus"
+	"github.com/teramoby/speedle-plus/api/pms"
 )
 
 type Store struct {
 	FileLocation  string
 	stop          chan struct{}
+	stopOnce      sync.Once
 	rwLock        sync.RWMutex
 	discoverStore *discoverRequestStore
+	cache         *pms.PolicyStore // in-memory cache; nil if not loaded
 }
 
 // ReadPolicyStore reads policy store from a file
@@ -36,8 +39,16 @@ func (s *Store) ReadPolicyStore() (*pms.PolicyStore, error) {
 }
 
 func (s *Store) readPolicyStoreWithoutLock() (*pms.PolicyStore, error) {
+	if s.cache != nil {
+		return s.cache, nil
+	}
+
 	if strings.HasSuffix(s.FileLocation, ".spdl") {
-		return s.readSPDLWithoutLock()
+		ps, err := s.readSPDLWithoutLock()
+		if err == nil {
+			s.cache = ps
+		}
+		return ps, err
 	}
 
 	var ps pms.PolicyStore
@@ -52,12 +63,13 @@ func (s *Store) readPolicyStoreWithoutLock() (*pms.PolicyStore, error) {
 		}
 	}()
 
-	decoder := json.NewDecoder(bufio.NewReader(f))
+	decoder := json.NewDecoder(f)
 	if err := decoder.Decode(&ps); err != nil {
 		log.Warnf("Unable to parse %s in JSON format because of error %v", s.FileLocation, err)
 		return &pms.PolicyStore{}, err
 	}
 
+	s.cache = &ps
 	return &ps, nil
 }
 
@@ -70,18 +82,21 @@ func (s *Store) WritePolicyStore(ps *pms.PolicyStore) error {
 }
 
 func (s *Store) writePolicyStoreWithoutLock(ps *pms.PolicyStore) error {
-	jsonFile, err := os.Create(s.FileLocation)
-	defer jsonFile.Close()
-	if err != nil {
-		return errors.Wrapf(err, errors.StoreError, "unable to create file %q", s.FileLocation)
-	}
 	psB, err := json.MarshalIndent(ps, "", "    ")
 	if err != nil {
 		return errors.Wrap(err, errors.StoreError, "marshal indent failed")
 	}
-	if _, err := jsonFile.Write(psB); err != nil {
-		return errors.Wrapf(err, errors.StoreError, "unable to write to file %q", s.FileLocation)
+
+	// Write to temp file then atomically rename to avoid data corruption on crash.
+	tmpFile := s.FileLocation + ".tmp"
+	if err := os.WriteFile(tmpFile, psB, 0600); err != nil {
+		return errors.Wrapf(err, errors.StoreError, "unable to write to temp file %q", tmpFile)
 	}
+	if err := os.Rename(tmpFile, s.FileLocation); err != nil {
+		os.Remove(tmpFile) // best-effort cleanup
+		return errors.Wrapf(err, errors.StoreError, "unable to rename temp file %q to %q", tmpFile, s.FileLocation)
+	}
+	s.cache = ps
 	return nil
 }
 
@@ -174,9 +189,8 @@ func (s *Store) GetServiceCount() (int64, error) {
 
 	if nil == ps.Services {
 		return 0, nil
-	} else {
-		return int64(len(ps.Services)), nil
 	}
+	return int64(len(ps.Services)), nil
 }
 
 // GetService gets the detailed info of a service
@@ -225,13 +239,27 @@ func (s *Store) CreateService(service *pms.Service) error {
 }
 
 func generateID(service *pms.Service) (*pms.Service, error) {
-	var result pms.Service
-	result = *service
-	for _, policy := range result.Policies {
-		policy.ID = suid.New().String()
+	result := *service
+	// Deep-copy policies to avoid mutating the original service's policies.
+	result.Policies = make([]*pms.Policy, len(service.Policies))
+	for i, p := range service.Policies {
+		cp := *p
+		cp.ID = suid.New().String()
+		result.Policies[i] = &cp
 	}
-	for _, rolePolicy := range result.RolePolicies {
-		rolePolicy.ID = suid.New().String()
+	// Deep-copy role policies for the same reason.
+	result.RolePolicies = make([]*pms.RolePolicy, len(service.RolePolicies))
+	for i, rp := range service.RolePolicies {
+		crp := *rp
+		crp.ID = suid.New().String()
+		result.RolePolicies[i] = &crp
+	}
+	// Ensure non-nil empty slices for clean JSON serialization.
+	if result.Policies == nil {
+		result.Policies = []*pms.Policy{}
+	}
+	if result.RolePolicies == nil {
+		result.RolePolicies = []*pms.RolePolicy{}
 	}
 	return &result, nil
 }
@@ -285,9 +313,7 @@ func (s *Store) DeleteService(serviceName string) error {
 	if !found {
 		return errors.Errorf(errors.EntityNotFound, "service %q is not found", serviceName)
 	}
-	s.writePolicyStoreWithoutLock(ps)
-	return nil
-
+	return s.writePolicyStoreWithoutLock(ps)
 }
 
 // DeleteServices deletes all services from a file
@@ -325,6 +351,9 @@ func (s *Store) Watch() (pms.StorageChangeChannel, error) {
 
 	go func() {
 		defer func() {
+			if r := recover(); r != nil {
+				log.Errorf("Panic in file Watch goroutine: %v", r)
+			}
 			watcher.Close()
 			close(storeChangeChan)
 			close(s.stop)
@@ -335,24 +364,30 @@ func (s *Store) Watch() (pms.StorageChangeChannel, error) {
 				switch {
 				case event.Op&fsnotify.Write == fsnotify.Write:
 					log.Info("Reloading the file store...")
+					s.rwLock.Lock()
+					s.cache = nil // force reload on next read
+					s.rwLock.Unlock()
 					reloadEvent := pms.StoreChangeEvent{Type: pms.FULL_RELOAD}
 					storeChangeChan <- reloadEvent
 				case event.Op&fsnotify.Rename == fsnotify.Rename:
 					if _, err := os.Lstat(s.FileLocation); os.IsNotExist(err) {
-						log.Fatalf("The policy file %q has already been renamed, please double check", s.FileLocation)
+						log.Errorf("The policy file %q has already been renamed, please double check", s.FileLocation)
 					} else {
 						// This is just a workaround for the issue https://github.com/fsnotify/fsnotify/issues/282
 						log.Info("Reloading the file store....")
+						s.rwLock.Lock()
+						s.cache = nil // force reload on next read
+						s.rwLock.Unlock()
 						reloadEvent := pms.StoreChangeEvent{Type: pms.FULL_RELOAD}
 						storeChangeChan <- reloadEvent
 
 						err = watcher.Add(s.FileLocation)
 						if err != nil {
-							log.Fatalf("Failed to add the file %q into the watch list again, error: %v", s.FileLocation, err)
+							log.Errorf("Failed to add the file %q into the watch list again, error: %v", s.FileLocation, err)
 						}
 					}
 				case event.Op&fsnotify.Remove == fsnotify.Remove:
-					log.Fatalf("The policy file %q has already been removed, please double check", s.FileLocation)
+					log.Errorf("The policy file %q has already been removed, please double check", s.FileLocation)
 				default:
 					log.Infof("Operation %q was detected on the policy file %q", event.Op, s.FileLocation)
 				}
@@ -369,9 +404,34 @@ func (s *Store) Watch() (pms.StorageChangeChannel, error) {
 }
 
 func (s *Store) StopWatch() {
-	if s.stop != nil {
-		s.stop <- struct{}{}
+	s.stopOnce.Do(func() {
+		if s.stop != nil {
+			s.stop <- struct{}{}
+		}
+	})
+}
+
+// Health checks whether the policy store file exists and is readable.
+func (s *Store) Health(ctx context.Context) error {
+	if s.FileLocation == "" {
+		return errors.New(errors.StoreError, "file store location is not configured")
 	}
+	f, err := os.Open(s.FileLocation)
+	if err != nil {
+		return errors.Wrapf(err, errors.StoreError, "file store %q is not accessible", s.FileLocation)
+	}
+	f.Close()
+	return nil
+}
+
+// Close stops the watcher goroutine if it is running and clears the
+// discover request store cache, releasing any resources held by the store.
+func (s *Store) Close() error {
+	s.StopWatch()
+	s.rwLock.Lock()
+	s.discoverStore = nil
+	s.rwLock.Unlock()
+	return nil
 }
 
 func (s *Store) Type() string {
@@ -415,19 +475,18 @@ func (s *Store) getPolicyCountWithoutLock(serviceName string) (int64, error) {
 	if len(serviceName) > 0 {
 		// Get the policy count in the specified service
 		return s.getPolicyCountImpl(serviceName)
-	} else {
-		// Get the policy count in all services
-		services, err := s.getServicesWithoutLock()
+	}
+	// Get the policy count in all services
+	services, err := s.getServicesWithoutLock()
+	if err != nil {
+		return 0, err
+	}
+	for _, curService := range services {
+		curCount, err := s.getPolicyCountImpl(curService.Name)
 		if err != nil {
 			return 0, err
 		}
-		for _, curService := range services {
-			curCount, err := s.getPolicyCountImpl(curService.Name)
-			if err != nil {
-				return 0, err
-			}
-			policyCount += curCount
-		}
+		policyCount += curCount
 	}
 
 	return policyCount, nil
@@ -441,9 +500,8 @@ func (s *Store) getPolicyCountImpl(serviceName string) (int64, error) {
 
 	if nil == service.Policies {
 		return 0, nil
-	} else {
-		return int64(len(service.Policies)), nil
 	}
+	return int64(len(service.Policies)), nil
 }
 
 func (s *Store) GetPolicy(serviceName string, id string) (*pms.Policy, error) {
@@ -557,19 +615,18 @@ func (s *Store) getRolePolicyCountWithoutLock(serviceName string) (int64, error)
 	if len(serviceName) > 0 {
 		// Get the policy count in the specified service
 		return s.getRolePolicyCountImpl(serviceName)
-	} else {
-		// Get the policy count in all services
-		services, err := s.getServicesWithoutLock()
+	}
+	// Get the policy count in all services
+	services, err := s.getServicesWithoutLock()
+	if err != nil {
+		return 0, err
+	}
+	for _, curService := range services {
+		curCount, err := s.getRolePolicyCountImpl(curService.Name)
 		if err != nil {
 			return 0, err
 		}
-		for _, curService := range services {
-			curCount, err := s.getRolePolicyCountImpl(curService.Name)
-			if err != nil {
-				return 0, err
-			}
-			rolePolicyCount += curCount
-		}
+		rolePolicyCount += curCount
 	}
 
 	return rolePolicyCount, nil
@@ -583,9 +640,8 @@ func (s *Store) getRolePolicyCountImpl(serviceName string) (int64, error) {
 
 	if nil == service.RolePolicies {
 		return 0, nil
-	} else {
-		return int64(len(service.RolePolicies)), nil
 	}
+	return int64(len(service.RolePolicies)), nil
 }
 
 func (s *Store) GetRolePolicy(serviceName string, id string) (*pms.RolePolicy, error) {
@@ -659,15 +715,9 @@ func (s *Store) CreateRolePolicy(serviceName string, rolePolicy *pms.RolePolicy)
 	return &dupRolePolicy, nil
 }
 
-func validateFunc(function *pms.Function) error {
-	if function.Name == "" || function.FuncURL == "" {
-		return errors.New(errors.InvalidRequest, "\"name\" and \"funcURL\" in function definition can not be empty")
-	}
-	return nil
-}
 
 func (s *Store) CreateFunction(function *pms.Function) (*pms.Function, error) {
-	if err := validateFunc(function); err != nil {
+	if err := utils.ValidateFunc(function); err != nil {
 		return nil, err
 	}
 	s.rwLock.Lock()
@@ -770,9 +820,8 @@ func (s *Store) GetFunctionCount() (int64, error) {
 	}
 	if nil == ps.Functions {
 		return 0, nil
-	} else {
-		return int64(len(ps.Functions)), nil
 	}
+	return int64(len(ps.Functions)), nil
 }
 
 type filter struct {

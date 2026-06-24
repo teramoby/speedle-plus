@@ -4,7 +4,6 @@
 package etcd
 
 import (
-	"fmt"
 	"strconv"
 	"strings"
 
@@ -75,7 +74,7 @@ func (esb Etcd3StoreBuilder) NewStore(config map[string]interface{}) (pms.Policy
 	if isEmbeddedEtcd {
 		etcdEndpoint := "localhost:2379"
 		embeddedEtcdDataDir, _ := config[EmbeddedEtcdDataDirKey].(string)
-		fmt.Printf("new embedded Etcd store: embeddedEtcdDataDir = %q, etcdEndpoint = %q, keyPrefix = %q\n", embeddedEtcdDataDir, etcdEndpoint, keyPrefix)
+	log.Infof("Etcd store created")
 		embeddedInst, embeddedDir, err := StartEmbeddedEtcd(embeddedEtcdDataDir)
 		if err != nil {
 			return nil, err
@@ -130,7 +129,7 @@ func (esb Etcd3StoreBuilder) NewStore(config map[string]interface{}) (pms.Policy
 				return nil, err
 			}
 
-			fmt.Printf("tlsInfo: %v\n", tlsInfo)
+	log.Debugf("tlsInfo: %v", tlsInfo)
 			etcd3ClientConf.TLS = tlsConfig
 		}
 	}
@@ -141,7 +140,7 @@ func (esb Etcd3StoreBuilder) NewStore(config map[string]interface{}) (pms.Policy
 	store.client = cli
 	store.Config = &etcd3ClientConf
 	store.KeyPrefix = keyPrefix
-	fmt.Println("Etcd store...")
+	log.Infof("Etcd store created")
 	return &store, nil
 }
 

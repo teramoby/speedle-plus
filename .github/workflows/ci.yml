@@ -3,34 +3,53 @@ name: Speedle Plus CI
 on: [push, pull_request]
 
 jobs:
-  build-test:
+  lint:
     runs-on: ubuntu-latest
-    name: build-test
+    name: lint
     steps:
-    # resolve https://github.com/actions/virtual-environments/issues/798
-    - name: bypass ubuntu DNS issue
-      run: |
-       sudo ln -sf /run/systemd/resolve/resolv.conf /etc/resolv.conf
-    - uses: actions/checkout@v2
-      name: Checkout code
-      with:
-        path: src/github.com/teramoby/speedle-plus
-    - uses: actions/setup-go@v2
-      name: Setup Golang env
-    - name: Build and test
-      working-directory: src/github.com/teramoby/speedle-plus
-      run: |
-        export GOPATH=${GITHUB_WORKSPACE}
-        make build
-        echo ${GITHUB_ACTOR}_${GITHUB_RUN_ID}
-        sed -i "s/speedletest/${GITHUB_ACTOR}_${GITHUB_RUN_ID}/g" ./pkg/store/mongodb/mongoStoreConfig.json
-        cat ./pkg/store/mongodb/mongoStoreConfig.json
-        make speedleUnitTests
-    - name: drop the database for this test
-      continue-on-error: true
-      run: |
-        mongo "mongodb+srv://cluster0.wfhda.mongodb.net/${GITHUB_ACTOR}_${GITHUB_RUN_ID}" --username speedleplus --password Passw0rd <<EOF
-        db.dropDatabase()
-        EOF
-        
+      - uses: actions/checkout@v4
+        name: Checkout code
+      - uses: actions/setup-go@v5
+        name: Setup Go
+        with:
+          go-version: '1.26'
+      - name: go vet
+        run: go vet -composites=false ./pkg/... ./cmd/... ./api/...
+      - name: go mod tidy check
+        run: go mod tidy -diff
 
+
+  test:
+    runs-on: ubuntu-latest
+    name: test
+    strategy:
+      matrix:
+        store-type: [file, etcd]
+    steps:
+      - uses: actions/checkout@v4
+        name: Checkout code
+      - uses: actions/setup-go@v5
+        name: Setup Go
+        with:
+          go-version: '1.26'
+      - name: Run tests with coverage
+        run: |
+          STORE_TYPE=${{ matrix.store-type }} go test -count=1 -timeout 60s -coverprofile=coverage.out $(go list ./pkg/... ./cmd/... ./api/... 2>/dev/null | grep -v samples | grep -v adsgrpc | grep -v pmsgrpc | grep -v pmsrest) || true
+      - name: Upload coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-${{ matrix.store-type }}
+          path: coverage.out
+
+  build:
+    runs-on: ubuntu-latest
+    name: build
+    steps:
+      - uses: actions/checkout@v4
+        name: Checkout code
+      - uses: actions/setup-go@v5
+        name: Setup Go
+        with:
+          go-version: '1.26'
+      - name: Build
+        run: go build ./cmd/speedle-pms/... ./cmd/speedle-ads/... ./cmd/spctl/...

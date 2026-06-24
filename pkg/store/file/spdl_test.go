@@ -47,8 +47,8 @@ util
 }
 
 func runDetermineTypeTestCase(t *testing.T, line string, expected *lineCtx, eerr error) {
-	lineCtx := lineCtx{origin: line}
-	err := determineType(&lineCtx)
+	lc := lineCtx{origin: line}
+	err := determineType(&lc)
 	if eerr != nil && err == nil {
 		t.Fatalf("Error %v should be found here for line \"%s\"", eerr, line)
 	}
@@ -60,14 +60,14 @@ func runDetermineTypeTestCase(t *testing.T, line string, expected *lineCtx, eerr
 		t.Fatalf("Error %v should not be found here for line \"%s\"", err, line)
 	}
 
-	if lineCtx.trimed != expected.trimed {
-		t.Fatalf("Unexpected trimed line \"%s\" for line \"%s\"", lineCtx.trimed, line)
+	if lc.trimed != expected.trimed {
+		t.Fatalf("Unexpected trimed line \"%s\" for line \"%s\"", lc.trimed, line)
 	}
-	if lineCtx.ltype != expected.ltype {
-		t.Fatalf("Unexpected line type %s for line \"%s\"", lineCtx.ltype, line)
+	if lc.ltype != expected.ltype {
+		t.Fatalf("Unexpected line type %s for line \"%s\"", lc.ltype, line)
 	}
-	if lineCtx.section != expected.section {
-		t.Fatalf("Unexpected section name %s for line \"%s\"", lineCtx.section, line)
+	if lc.section != expected.section {
+		t.Fatalf("Unexpected section name %s for line \"%s\"", lc.section, line)
 	}
 }
 

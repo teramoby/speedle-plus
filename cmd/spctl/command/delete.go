@@ -55,7 +55,7 @@ func deleteCommandFunc(cmd *cobra.Command, args []string) {
 	hc, err := httpClient()
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
-		return
+		os.Exit(1)
 	}
 
 	cli := &client.Client{

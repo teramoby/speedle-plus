@@ -63,8 +63,8 @@ func TestGetLastRequestContinously(t *testing.T) {
 		serviceName := "erp"
 		resName := "/res" + strconv.Itoa(i)
 		request := ads.RequestContext{Subject: &subj, ServiceName: serviceName, Resource: resName, Action: "read", Attributes: map[string]interface{}{}}
-		err := discover.SaveDiscoverRequest(&request)
-		if err != nil {
+		saveErr := discover.SaveDiscoverRequest(&request)
+		if saveErr != nil {
 			t.Fatal("fail to put request in store")
 		}
 		i++
@@ -82,8 +82,8 @@ func TestGetLastRequestContinously(t *testing.T) {
 		serviceName := "erp"
 		resName := "/res" + strconv.Itoa(i)
 		request := ads.RequestContext{Subject: &subj, ServiceName: serviceName, Resource: resName, Action: "read", Attributes: map[string]interface{}{}}
-		err := discover.SaveDiscoverRequest(&request)
-		if err != nil {
+		saveErr := discover.SaveDiscoverRequest(&request)
+		if saveErr != nil {
 			t.Fatal("fail to put request in store")
 		}
 		i++
@@ -117,8 +117,8 @@ func TestResetDiscoverRequests(t *testing.T) {
 		serviceName := "erp" + strconv.Itoa(i%10)
 		resName := "/res" + strconv.Itoa(i)
 		request := ads.RequestContext{Subject: &subj, ServiceName: serviceName, Resource: resName, Action: "read", Attributes: map[string]interface{}{}}
-		err := discover.SaveDiscoverRequest(&request)
-		if err != nil {
+		saveErr := discover.SaveDiscoverRequest(&request)
+		if saveErr != nil {
 			t.Error("fail to put request.")
 		}
 		i++
@@ -173,8 +173,8 @@ func TestGetRequests(t *testing.T) {
 		serviceName := "erp" + strconv.Itoa(i%10)
 		resName := "/res" + strconv.Itoa(i)
 		request := ads.RequestContext{Subject: &subj, ServiceName: serviceName, Resource: resName, Action: "read", Attributes: map[string]interface{}{}}
-		err := discover.SaveDiscoverRequest(&request)
-		if err != nil {
+		saveErr := discover.SaveDiscoverRequest(&request)
+		if saveErr != nil {
 			t.Error("fail to put request.")
 		}
 		i++
@@ -212,8 +212,8 @@ func TestGeneratePolicies(t *testing.T) {
 		subj := ads.Subject{Principals: []*ads.Principal{&user}}
 		resName := "/res" + strconv.Itoa(i)
 		request := ads.RequestContext{Subject: &subj, ServiceName: serviceName, Resource: resName, Action: "read", Attributes: map[string]interface{}{}}
-		err := discover.SaveDiscoverRequest(&request)
-		if err != nil {
+		saveErr := discover.SaveDiscoverRequest(&request)
+		if saveErr != nil {
 			t.Error("fail to put request.")
 		}
 		i++
@@ -223,8 +223,8 @@ func TestGeneratePolicies(t *testing.T) {
 		subj := ads.Subject{Principals: []*ads.Principal{&user}}
 		resName := "/res" + strconv.Itoa(i)
 		request := ads.RequestContext{Subject: &subj, ServiceName: serviceName, Resource: resName, Action: "write", Attributes: map[string]interface{}{}}
-		err := discover.SaveDiscoverRequest(&request)
-		if err != nil {
+		saveErr := discover.SaveDiscoverRequest(&request)
+		if saveErr != nil {
 			t.Error("fail to put request.")
 		}
 		i++
@@ -236,8 +236,8 @@ func TestGeneratePolicies(t *testing.T) {
 		subj := ads.Subject{Principals: []*ads.Principal{&user}}
 		resName := "/res" + strconv.Itoa(i)
 		request := ads.RequestContext{Subject: &subj, ServiceName: serviceName, Resource: resName, Action: "write", Attributes: map[string]interface{}{}}
-		err := discover.SaveDiscoverRequest(&request)
-		if err != nil {
+		saveErr := discover.SaveDiscoverRequest(&request)
+		if saveErr != nil {
 			t.Error("fail to put request.")
 		}
 		i++
@@ -247,8 +247,8 @@ func TestGeneratePolicies(t *testing.T) {
 		subj := ads.Subject{Principals: []*ads.Principal{&user}}
 		resName := "/res" + strconv.Itoa(i)
 		request := ads.RequestContext{Subject: &subj, ServiceName: serviceName, Resource: resName, Action: "read", Attributes: map[string]interface{}{}}
-		err := discover.SaveDiscoverRequest(&request)
-		if err != nil {
+		saveErr := discover.SaveDiscoverRequest(&request)
+		if saveErr != nil {
 			t.Error("fail to put request.")
 		}
 		i++

@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package pb;
+package pms_pb;
 
 service PolicyManager {
     rpc CreateFunction(Function) returns(Function) {}

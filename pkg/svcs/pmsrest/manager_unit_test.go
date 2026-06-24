@@ -110,6 +110,7 @@ func TestCreateServicePrincipalHeader(t *testing.T) {
 		t.Fatal("failed to marsh service data")
 	}
 	req, err := http.NewRequest("POST", testserver.URL+svcs.PolicyMgmtPath+"service", bytes.NewBuffer(serviceData))
+		req.Header.Set("Content-Type", "application/json")
 	if err != nil {
 		t.Fatal("failed to make test request")
 	}
@@ -155,6 +156,7 @@ func TestCreatePolicyPrincipalHeader(t *testing.T) {
 		t.Fatal("failed to marsh policy data")
 	}
 	req, err := http.NewRequest("POST", testserver.URL+svcs.PolicyMgmtPath+"service/fakeservice/policy", bytes.NewBuffer(policyData))
+		req.Header.Set("Content-Type", "application/json")
 	if err != nil {
 		t.Fatal("failed to make test request")
 	}
@@ -194,6 +196,7 @@ func TestCreateRolePolicyPrincipalHeader(t *testing.T) {
 		t.Fatal("failed to marsh rolepolicy data")
 	}
 	req, err := http.NewRequest("POST", testserver.URL+svcs.PolicyMgmtPath+"service/fakeservice/role-policy", bytes.NewBuffer(policyData))
+		req.Header.Set("Content-Type", "application/json")
 	if err != nil {
 		t.Fatal("failed to make test request")
 	}
@@ -229,6 +232,7 @@ func TestCreateFunctionPrincipalHeader(t *testing.T) {
 		t.Fatal("failed to marsh function data")
 	}
 	req, err := http.NewRequest("POST", testserver.URL+svcs.PolicyMgmtPath+"function", bytes.NewBuffer(funcData))
+		req.Header.Set("Content-Type", "application/json")
 	if err != nil {
 		t.Fatal("failed to make test request")
 	}

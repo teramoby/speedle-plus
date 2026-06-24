@@ -25,6 +25,16 @@ Check the following items:
 	3. The size of each Policy and RolePolicy;
 */
 func CheckService(service *pms.Service, policyStore pms.PolicyStoreManager) error {
+	// Reject policies/role policies in the global service, matching CheckPolicy's guard
+	if service.Name == pms.GlobalService && (len(service.Policies) > 0 || len(service.RolePolicies) > 0) {
+		return errors.New(errors.InvalidRequest, "global policy doesn't support authorization policies")
+	}
+
+	// Validate Service.Type does not exceed a reasonable length to prevent abuse.
+	if len(service.Type) > 256 {
+		return errors.Errorf(errors.InvalidRequest, "service type must be at most 256 characters, got %d", len(service.Type))
+	}
+
 	// Check the number of the service
 	srvCount, err := policyStore.GetServiceCount()
 	if nil != err {

@@ -4,24 +4,23 @@
 package pmsgrpc
 
 import (
-	"fmt"
-
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
 	"github.com/teramoby/speedle-plus/pkg/errors"
 	"github.com/teramoby/speedle-plus/pkg/store"
+	"github.com/teramoby/speedle-plus/pkg/svcs"
 	"github.com/teramoby/speedle-plus/pkg/svcs/pmsgrpc/pb"
 	"github.com/teramoby/speedle-plus/pkg/svcs/pmsimpl"
 
 	"context"
 
-	"github.com/teramoby/speedle-plus/api/ads"
 	"github.com/teramoby/speedle-plus/api/pms"
 
 	"strings"
 
 	"github.com/teramoby/speedle-plus/pkg/logging"
+	"github.com/teramoby/speedle-plus/pkg/svcs/pmsrest"
 )
 
 type serviceImpl struct {
@@ -32,6 +31,30 @@ type serviceImpl struct {
 func NewServiceImpl(ps pms.PolicyStoreManager) *serviceImpl {
 	return &serviceImpl{
 		policyStore: ps,
+	}
+}
+
+// toPMSEffect converts a protobuf Effect enum to a PMS effect string.
+func toPMSEffect(pbEffect pb.Effect) string {
+	switch pbEffect {
+	case pb.Effect_GRANT:
+		return pms.Grant
+	case pb.Effect_DENY:
+		return pms.Deny
+	default:
+		return ""
+	}
+}
+
+// toPBEffect converts a PMS effect string to a protobuf Effect enum.
+func toPBEffect(pmsEffect string) pb.Effect {
+	switch pmsEffect {
+	case pms.Grant:
+		return pb.Effect_GRANT
+	case pms.Deny:
+		return pb.Effect_DENY
+	default:
+		return pb.Effect_GRANT
 	}
 }
 
@@ -77,7 +100,7 @@ func convertRPCServiceRequest(rpcService *pb.ServiceRequest) *pms.Service {
 }
 
 func convertRPCPrincipals(principals []*pb.AndPrincipals) [][]string {
-	ret := [][]string{}
+	ret := make([][]string, 0, len(principals))
 	for _, andPrincipals := range principals {
 		ret = append(ret, andPrincipals.Principals)
 	}
@@ -94,14 +117,7 @@ func convertRPCRolePolicy(rpcPolicy *pb.RolePolicy) *pms.RolePolicy {
 		ResourceExpressions: rpcPolicy.ResourceExpressions,
 		Condition:           rpcPolicy.Condition,
 	}
-	switch rpcPolicy.Effect {
-	case pb.Effect_GRANT:
-		ret.Effect = pms.Grant
-		break
-	case pb.Effect_DENY:
-		ret.Effect = pms.Deny
-		break
-	}
+	ret.Effect = toPMSEffect(rpcPolicy.Effect)
 	return &ret
 }
 
@@ -112,14 +128,7 @@ func convertRPCPolicy(rpcPolicy *pb.Policy) *pms.Policy {
 		Condition: rpcPolicy.Condition,
 	}
 	ret.Principals = convertRPCPrincipals(rpcPolicy.Principals)
-	switch rpcPolicy.Effect {
-	case pb.Effect_GRANT:
-		ret.Effect = pms.Grant
-		break
-	case pb.Effect_DENY:
-		ret.Effect = pms.Deny
-		break
-	}
+	ret.Effect = toPMSEffect(rpcPolicy.Effect)
 	if rpcPolicy.Permissions == nil {
 		return &ret
 	}
@@ -166,7 +175,7 @@ func convertMetaService(service *pms.Service) *pb.Service {
 }
 
 func convertMetaPrincipals(principals [][]string) []*pb.AndPrincipals {
-	ret := []*pb.AndPrincipals{}
+	ret := make([]*pb.AndPrincipals, 0, len(principals))
 	for _, andPrincipals := range principals {
 		ret = append(ret, &pb.AndPrincipals{
 			Principals: andPrincipals,
@@ -185,14 +194,7 @@ func convertMetaRolePolicy(policy *pms.RolePolicy) *pb.RolePolicy {
 		ResourceExpressions: policy.ResourceExpressions,
 		Condition:           policy.Condition,
 	}
-	switch policy.Effect {
-	case pms.Grant:
-		ret.Effect = pb.Effect_GRANT
-		break
-	case pms.Deny:
-		ret.Effect = pb.Effect_DENY
-		break
-	}
+	ret.Effect = toPBEffect(policy.Effect)
 	return &ret
 }
 
@@ -203,14 +205,7 @@ func convertMetaPolicy(policy *pms.Policy) *pb.Policy {
 		Condition: policy.Condition,
 	}
 	ret.Principals = convertMetaPrincipals(policy.Principals)
-	switch policy.Effect {
-	case pms.Grant:
-		ret.Effect = pb.Effect_GRANT
-		break
-	case pms.Deny:
-		ret.Effect = pb.Effect_DENY
-		break
-	}
+	ret.Effect = toPBEffect(policy.Effect)
 
 	if len(policy.Permissions) == 0 {
 		return &ret
@@ -255,17 +250,18 @@ func toGRPCStatus(err error) error {
 }
 
 func (impl *serviceImpl) CreateFunction(ctx context.Context, in *pb.Function) (*pb.Function, error) {
-	function := convertRPCFunction(in)
-	if function, err := impl.policyStore.CreateFunction(function); err != nil {
+	fn := convertRPCFunction(in)
+	created, err := impl.policyStore.CreateFunction(fn)
+	if err != nil {
 		// Audit log
-		logging.WriteSimpleFailedAuditLog("[gRPC]CreateFunction", function, err.Error())
+		logging.WriteSimpleFailedAuditLog("[gRPC]CreateFunction", created, err.Error())
 		return nil, toGRPCStatus(err)
 	}
 
 	// Audit log
-	logging.WriteSimpleSucceededAuditLog("[gRPC]CreateFunction", function, nil)
+	logging.WriteSimpleSucceededAuditLog("[gRPC]CreateFunction", created, nil)
 
-	return convertMetaFunction(function), nil
+	return convertMetaFunction(created), nil
 }
 
 func (impl *serviceImpl) QueryFunctions(ctx context.Context, in *pb.FunctionQueryRequest) (*pb.FunctionQueryResponse, error) {
@@ -304,7 +300,7 @@ func (impl *serviceImpl) QueryFunctions(ctx context.Context, in *pb.FunctionQuer
 	}
 
 	retFunctions := pb.FunctionQueryResponse{
-		Functions: make([]*pb.Function, 0),
+		Functions: make([]*pb.Function, 0, len(functions)),
 	}
 	for _, f := range functions {
 		retFunctions.Functions = append(retFunctions.Functions, convertMetaFunction(f))
@@ -385,6 +381,11 @@ func (impl *serviceImpl) QueryServices(ctx context.Context, in *pb.ServiceQueryR
 			return nil, toGRPCStatus(err)
 		}
 	} else {
+		if err := pmsrest.ValidateServiceName(in.Name); err != nil {
+			// Audit log
+			logging.WriteSimpleFailedAuditLog("[gRPC]QueryServices", in.Name, err.Error())
+			return nil, toGRPCStatus(err)
+		}
 		svc, err := impl.policyStore.GetService(in.Name)
 		if err != nil {
 			// Audit log
@@ -394,7 +395,7 @@ func (impl *serviceImpl) QueryServices(ctx context.Context, in *pb.ServiceQueryR
 		ss = append(ss, svc)
 	}
 	ret := pb.ServiceQueryResponse{
-		Services: make([]*pb.Service, 0),
+		Services: make([]*pb.Service, 0, len(ss)),
 	}
 
 	for _, svc := range ss {
@@ -420,6 +421,11 @@ func (impl *serviceImpl) DeleteServices(ctx context.Context, in *pb.ServiceQuery
 		return &pb.Empty{}, nil
 	}
 
+	if err := pmsrest.ValidateServiceName(in.Name); err != nil {
+		// Audit log
+		logging.WriteSimpleFailedAuditLog("[gRPC]DeleteServices", in.Name, err.Error())
+		return nil, toGRPCStatus(err)
+	}
 	if err := impl.policyStore.DeleteService(in.Name); err != nil {
 		// Audit log
 		logging.WriteSimpleFailedAuditLog("[gRPC]DeleteServices", in.Name, err.Error())
@@ -434,6 +440,9 @@ func (impl *serviceImpl) DeleteServices(ctx context.Context, in *pb.ServiceQuery
 func (impl *serviceImpl) CreatePolicy(ctx context.Context, in *pb.PolicyRequest) (*pb.Policy, error) {
 	if len(in.ServiceName) == 0 {
 		return nil, status.Error(codes.InvalidArgument, "service name is not passed")
+	}
+	if err := pmsrest.ValidateServiceName(in.ServiceName); err != nil {
+		return nil, toGRPCStatus(err)
 	}
 	if in.Policy == nil {
 		return nil, status.Error(codes.InvalidArgument, "policy is not passed")
@@ -470,6 +479,9 @@ func (impl *serviceImpl) QueryPolicies(ctx context.Context, in *pb.PolicyQueryRe
 	if len(in.ServiceName) == 0 {
 		return nil, status.Error(codes.InvalidArgument, "service name is not passed")
 	}
+	if err := pmsrest.ValidateServiceName(in.ServiceName); err != nil {
+		return nil, toGRPCStatus(err)
+	}
 
 	// Audit contextual fields for request
 	ctxFields := map[string]interface{}{
@@ -501,13 +513,13 @@ func (impl *serviceImpl) QueryPolicies(ctx context.Context, in *pb.PolicyQueryRe
 		if err != nil {
 			// Audit log
 			logging.WriteFailedAuditLog("[gRPC]QueryPolicies", ctxFields, err.Error())
-			return nil, err
+			return nil, toGRPCStatus(err)
 		}
 		policies = append(policies, policy)
 	}
 
 	retPolicies := pb.PolicyQueryResponse{
-		Policies: make([]*pb.Policy, 0),
+		Policies: make([]*pb.Policy, 0, len(policies)),
 	}
 	for _, policy := range policies {
 		retPolicies.Policies = append(retPolicies.Policies, convertMetaPolicy(policy))
@@ -526,6 +538,9 @@ func (impl *serviceImpl) QueryPolicies(ctx context.Context, in *pb.PolicyQueryRe
 func (impl *serviceImpl) DeletePolicies(ctx context.Context, in *pb.PolicyQueryRequest) (*pb.Empty, error) {
 	if len(in.ServiceName) == 0 {
 		return nil, status.Error(codes.InvalidArgument, "service name is not passed")
+	}
+	if err := pmsrest.ValidateServiceName(in.ServiceName); err != nil {
+		return nil, toGRPCStatus(err)
 	}
 
 	// Audit contextual fields for request
@@ -557,6 +572,9 @@ func (impl *serviceImpl) DeletePolicies(ctx context.Context, in *pb.PolicyQueryR
 func (impl *serviceImpl) CreateRolePolicy(ctx context.Context, in *pb.RolePolicyRequest) (*pb.RolePolicy, error) {
 	if len(in.ServiceName) == 0 {
 		return nil, status.Error(codes.InvalidArgument, "service name is not passed")
+	}
+	if err := pmsrest.ValidateServiceName(in.ServiceName); err != nil {
+		return nil, toGRPCStatus(err)
 	}
 	if in.RolePolicy == nil {
 		return nil, status.Error(codes.InvalidArgument, "Policy is not passed")
@@ -592,6 +610,9 @@ func (impl *serviceImpl) CreateRolePolicy(ctx context.Context, in *pb.RolePolicy
 func (impl *serviceImpl) QueryRolePolicies(ctx context.Context, in *pb.RolePolicyQueryRequest) (*pb.RolePolicyQueryResponse, error) {
 	if len(in.ServiceName) == 0 {
 		return nil, status.Error(codes.InvalidArgument, "service name is not passed.")
+	}
+	if err := pmsrest.ValidateServiceName(in.ServiceName); err != nil {
+		return nil, toGRPCStatus(err)
 	}
 
 	// Audit contextual fields for request
@@ -635,7 +656,7 @@ func (impl *serviceImpl) QueryRolePolicies(ctx context.Context, in *pb.RolePolic
 	}
 
 	retPolicies := pb.RolePolicyQueryResponse{
-		RolePolicies: make([]*pb.RolePolicy, 0),
+		RolePolicies: make([]*pb.RolePolicy, 0, len(policies)),
 	}
 	for _, policy := range policies {
 		retPolicies.RolePolicies = append(retPolicies.RolePolicies, convertMetaRolePolicy(policy))
@@ -647,6 +668,9 @@ func (impl *serviceImpl) QueryRolePolicies(ctx context.Context, in *pb.RolePolic
 func (impl *serviceImpl) DeleteRolePolicies(ctx context.Context, in *pb.RolePolicyQueryRequest) (*pb.Empty, error) {
 	if len(in.ServiceName) == 0 {
 		return nil, status.Error(codes.InvalidArgument, "service name is not passed.")
+	}
+	if err := pmsrest.ValidateServiceName(in.ServiceName); err != nil {
+		return nil, toGRPCStatus(err)
 	}
 
 	// Audit contextual fields for request
@@ -698,7 +722,16 @@ func (impl *serviceImpl) ListPolicyCounts(ctx context.Context, in *pb.Empty) (*p
 }
 
 func (impl *serviceImpl) GetDiscoverRequests(ctx context.Context, in *pb.DiscoverRequestsRequest) (*pb.DiscoverRequestsResponse, error) {
-	discoverRequestMgr, _ := impl.policyStore.(store.DiscoverRequestManager)
+	discoverRequestMgr, ok := impl.policyStore.(store.DiscoverRequestManager)
+	if !ok {
+		return nil, status.Error(codes.Unimplemented, "discover not supported by this store")
+	}
+
+	if len(in.ServiceName) > 0 {
+		if err := pmsrest.ValidateServiceName(in.ServiceName); err != nil {
+		return nil, toGRPCStatus(err)
+		}
+	}
 	last := in.Last
 	revision := in.Revision
 	serviceName := in.ServiceName
@@ -711,33 +744,33 @@ func (impl *serviceImpl) GetDiscoverRequests(ctx context.Context, in *pb.Discove
 
 	requests := []*pb.ContextRequest{}
 	if last {
-		req, revision, err := discoverRequestMgr.GetLastDiscoverRequest(serviceName)
+		req, rev, err := discoverRequestMgr.GetLastDiscoverRequest(serviceName)
 		if err != nil {
 			// Audit log
 			logging.WriteFailedAuditLog("GetDiscoverRequests", ctxFields, err.Error())
 			return nil, toGRPCStatus(err)
 		}
-		requests = append(requests, convertAPIRequestContext(req))
+		requests = append(requests, svcs.ConvertAPIRequestContext(req))
 
 		// Audit log
 		logging.WriteSucceededAuditLog("GetDiscoverRequests", ctxFields, map[string]interface{}{"lastRequest": req})
 
-		return &pb.DiscoverRequestsResponse{Requests: requests, Revision: revision}, nil
+		return &pb.DiscoverRequestsResponse{Requests: requests, Revision: rev}, nil
 	} else if revision > 0 {
-		reqs, revision, err := discoverRequestMgr.GetDiscoverRequestsSinceRevision(serviceName, revision)
+		reqs, rev, err := discoverRequestMgr.GetDiscoverRequestsSinceRevision(serviceName, revision)
 		if err != nil {
 			// Audit log
 			logging.WriteFailedAuditLog("GetDiscoverRequests", ctxFields, err.Error())
 			return nil, toGRPCStatus(err)
 		}
 		for _, req := range reqs {
-			requests = append(requests, convertAPIRequestContext(req))
+			requests = append(requests, svcs.ConvertAPIRequestContext(req))
 		}
 
 		// Audit log
 		logging.WriteSucceededAuditLog("GetDiscoverRequests", ctxFields, map[string]interface{}{"requestCount": len(requests)})
 
-		return &pb.DiscoverRequestsResponse{Requests: requests, Revision: revision}, nil
+		return &pb.DiscoverRequestsResponse{Requests: requests, Revision: rev}, nil
 	} else {
 		reqs, revision, err := discoverRequestMgr.GetDiscoverRequests(serviceName)
 		if err != nil {
@@ -746,7 +779,7 @@ func (impl *serviceImpl) GetDiscoverRequests(ctx context.Context, in *pb.Discove
 			return nil, toGRPCStatus(err)
 		}
 		for _, req := range reqs {
-			requests = append(requests, convertAPIRequestContext(req))
+			requests = append(requests, svcs.ConvertAPIRequestContext(req))
 		}
 
 		// Audit log
@@ -757,7 +790,16 @@ func (impl *serviceImpl) GetDiscoverRequests(ctx context.Context, in *pb.Discove
 
 }
 func (impl *serviceImpl) ResetDiscoverRequests(ctx context.Context, in *pb.ResetRequestsRequest) (*pb.ResetRequestsResponse, error) {
-	discoverRequestMgr, _ := impl.policyStore.(store.DiscoverRequestManager)
+	discoverRequestMgr, ok := impl.policyStore.(store.DiscoverRequestManager)
+	if !ok {
+		return nil, status.Error(codes.Unimplemented, "discover not supported by this store")
+	}
+
+	if len(in.ServiceName) > 0 {
+		if err := pmsrest.ValidateServiceName(in.ServiceName); err != nil {
+		return nil, toGRPCStatus(err)
+		}
+	}
 	err := discoverRequestMgr.ResetDiscoverRequests(in.ServiceName)
 
 	// Audit log
@@ -771,7 +813,16 @@ func (impl *serviceImpl) ResetDiscoverRequests(ctx context.Context, in *pb.Reset
 }
 
 func (impl *serviceImpl) GetDiscoverPolicies(ctx context.Context, in *pb.DiscoverPoliciesRequest) (*pb.DiscoverPoliciesResponse, error) {
-	discoverRequestMgr, _ := impl.policyStore.(store.DiscoverRequestManager)
+	discoverRequestMgr, ok := impl.policyStore.(store.DiscoverRequestManager)
+	if !ok {
+		return nil, status.Error(codes.Unimplemented, "discover not supported by this store")
+	}
+
+	if len(in.ServiceName) > 0 {
+		if err := pmsrest.ValidateServiceName(in.ServiceName); err != nil {
+		return nil, toGRPCStatus(err)
+		}
+	}
 	serviceMap, revision, err := discoverRequestMgr.GeneratePolicies(in.ServiceName, in.PrincipalType, in.PrincipalName, in.PrincipalIdd)
 
 	// Audit contextual fields for request
@@ -798,50 +849,4 @@ func (impl *serviceImpl) GetDiscoverPolicies(ctx context.Context, in *pb.Discove
 	})
 
 	return &pb.DiscoverPoliciesResponse{Services: services, Revision: revision}, nil
-}
-
-func convertAPIPrincipals(principals []*ads.Principal) []*pb.Principal {
-	if principals == nil {
-		return nil
-	}
-
-	ret := []*pb.Principal{}
-	for _, princ := range principals {
-		ret = append(ret, &pb.Principal{
-			Type: princ.Type,
-			Name: princ.Name,
-			Idd:  princ.IDD,
-		})
-	}
-	return ret
-}
-
-func convertAttributes(in map[string]interface{}) map[string]string {
-	var out map[string]string
-	for k, v := range in {
-		out[k] = fmt.Sprintf("%v", v)
-	}
-	return out
-
-}
-
-func convertAPISubject(subject *ads.Subject) *pb.Subject {
-	if subject == nil {
-		return nil
-	}
-	return &pb.Subject{
-		Principals: convertAPIPrincipals(subject.Principals),
-		Token:      subject.Token,
-		TokenType:  subject.TokenType,
-	}
-}
-
-func convertAPIRequestContext(req *ads.RequestContext) *pb.ContextRequest {
-	return &pb.ContextRequest{
-		Subject:     convertAPISubject(req.Subject),
-		ServiceName: req.ServiceName,
-		Resource:    req.Resource,
-		Action:      req.Action,
-		Attributes:  convertAttributes(req.Attributes),
-	}
 }

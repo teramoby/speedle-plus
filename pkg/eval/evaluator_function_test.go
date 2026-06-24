@@ -5,10 +5,11 @@ package eval
 
 import (
 	"crypto/tls"
-	"crypto/x509"
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/http/httptest"
+	"strings"
 	"testing"
 
 	adsapi "github.com/teramoby/speedle-plus/api/ads"
@@ -20,31 +21,28 @@ var (
 	funcServerKey  = `-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQC6UMvjJVbts3nJ\ntg8FpgZnyYbfQZCbVpr1nNkJX0qZDcrW6swLjES+fdL6aeJpO4wAVLakcXl0Ez8A\nmivo5y4wbuVi2qQHRy4SJJ05cAgclMdl/L/a9p5eEayL8imz/qKwgBQ668SE/ziu\nWkeOsgqa3PAdmbxbiTip6i8XQvi7TBngroqmDII38U13Y9quKhVbHnm1XhmmIo5s\nSU/zm57jLWQnZ6sM9EdBVhCZPz738jWTT0cik6zbpqlo+zokmScdR/QKEMX7HhUl\nAM8LnI/+beMmlb8TUe+NT3Loa5JOYgZ78f6dKfWiwD0m7M/F+gsVI7SM1GVWW39/\nl99LmC6/AgMBAAECggEAWEm0K/mENVRweDi46pzPeTwCmOW5UBrciFngcPQCZf+m\nqGwP78Lyym/WW4p0Wxh4EaoS+F67RlleZ/smppFyDkpmkY743mgI+Vj3VgH0HhMU\nYAxCn9BwoDPw10oUH/KghlHTBE63y6wjYF9wfDp7EwJyGBzDKH8gZkgOM5AtTJcF\nHbYW/nbTTrSjDSwyVKJjpR8IQhODsBXukIfGeCGr8UaN8AEJiFLa7rZZmcs/2SV9\nHmI+3eC99He85ZBu2PBXAEPTuY9Flxs3bNj9OjNswD5P+tP8vtGEq7BUU/jlal6k\nmJ1RL6fITKJ71Hwu/zveBJGjDiaB1QNsQTh2ZmQexQKBgQD4AzEHK9ZtnFe2BhJe\nOgCLC52KTqYjMZkM+1d9+BKmB3w4bn33+dWHwf3uHZbuKuuJ9htLjx5YcMWlI2oU\nFLA/s4CEg6VhndcWkd2O1Y8YzCixC87WBi9eN/DSIosFTleNzzgVVbqTDPw1HtKh\nOcZ1ixDX7jL7kTAXK5/tBTtdrQKBgQDAUO2HufMyOcspG4lSeNSNuSPhsAc4TUs8\nBT9EH9ALl23lOZ61uNDMFqoRA6gjITQ0RtsE1hrEG8MixP1Cp7Vu6WQWX+kyLyp1\nwHflh3Ic1xDaXrO9bNqoRdwfvO1cn0OV3cMiDhc+cWPLkTeaMpsq3gwF4AH2iW6t\nz0Um9pEzmwKBgEq9e3rzxQ0HPo+GSObIh/1fJLzXcs3MVplI7Vby+Xu7ab3/3kpq\nqeTdm0608BUaLh1HY3ZjzPtOEOHxSDiA+5RW3fYRTjeav4T3tFMlHJiWffTM4Coz\ndvbn2NUav9Z7g3si5X3Ydf92vFKt1T/tD1fA7vSDvi191YZGCU3+c6OJAoGBAKWM\nRJyEjnva0i7lvFUZHGePSvr5C44Ew1G8dpSPCgkgZoJfEmb93AcDL4yL6E2tRIIH\nyHumTs4n09d3WUfqlD0QfY7hKx1/Cn7omo0kBjAbVi+UPAdA0AzwbieH+4+yrXwx\ntMr49DtVYoGW1RVQoM/K6vCXvzjZX0QRW0bKE34nAoGBAK/ZaxZQF1RSelwCruRP\nPr/qWraMSM4vgrA2GbUvNzaZ4lRl3CdTR+wAF+VvW0IcuepOjHaj+4AYpbVeII8Z\n2zCEfTv68sGmtSzdNgXfMWoHb7bJNGlAQ89zK9o72M3VZrl9119R+yZwc0wiPJME\npK7Mhd4ms/h2aKrILlHgQFXK\n-----END PRIVATE KEY-----`
 )
 
-func startFunctionService() {
-	http.HandleFunc("/funcs/testsum", CustomFunctionTestSum)
+func startFunctionService(t *testing.T) (string, string) {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/funcs/testsum", CustomFunctionTestSum)
 
-	go http.ListenAndServe("0.0.0.0:12345", nil)
+	httpServer := httptest.NewServer(mux)
+	t.Cleanup(httpServer.Close)
 
-	//We have an assumption that on speedle/sphinx side, certificate is issued by well known CA.
-	/*caCert, err := ioutil.ReadFile("client.crt")
+	certPEM := strings.ReplaceAll(funcServerCert, "\\n", "\n")
+	keyPEM := strings.ReplaceAll(funcServerKey, "\\n", "\n")
+	cert, err := tls.X509KeyPair([]byte(certPEM), []byte(keyPEM))
 	if err != nil {
-		log.Fatal(err)
-	}*/
-	caCertPool := x509.NewCertPool()
-	//caCertPool.AppendCertsFromPEM(caCert)
-
-	// Setup HTTPS client
+		t.Fatal(err)
+	}
 	tlsConfig := &tls.Config{
-		ClientCAs: caCertPool,
-		//ClientAuth: tls.RequireAndVerifyClientCert,
+		Certificates: []tls.Certificate{cert},
 	}
+	httpsServer := httptest.NewUnstartedServer(mux)
+	httpsServer.TLS = tlsConfig
+	httpsServer.StartTLS()
+	t.Cleanup(httpsServer.Close)
 
-	server := &http.Server{
-		Addr:      "0.0.0.0:23456",
-		TLSConfig: tlsConfig,
-	}
-	server.ListenAndServeTLS("./funcServer.crt", "./funcServer.key")
-
+	return httpServer.URL, httpsServer.URL
 }
 
 func CustomFunctionTestSum(w http.ResponseWriter, r *http.Request) {
@@ -83,7 +81,7 @@ func CustomFunctionTestSum(w http.ResponseWriter, r *http.Request) {
 }
 
 func TestFunctions(t *testing.T) {
-	go startFunctionService()
+	httpURL, httpsURL := startFunctionService(t)
 
 	testCases := []struct {
 		condition string
@@ -93,13 +91,13 @@ func TestFunctions(t *testing.T) {
 	}{
 		{
 			condition: "testsum(1,2) <4",
-			stream:    `{"functions":[{"name":"testsum","funcURL":"http://localhost:12345/funcs/testsum"}],"services": [{"name": "crm","policies": [{"id": "p1", "effect": "grant", "permissions": [{"resource": "/node1","actions": ["get"]}],"condition": "testsum(1,2) <4"}]}]}`,
+			stream:    fmt.Sprintf(`{"functions":[{"name":"testsum","funcURL":"%s/funcs/testsum"}],"services": [{"name": "crm","policies": [{"id": "p1", "effect": "grant", "permissions": [{"resource": "/node1","actions": ["get"]}],"condition": "testsum(1,2) <4"}]}]}`, httpURL),
 			ctx:       adsapi.RequestContext{Subject: nil, ServiceName: "crm", Resource: "/node1", Action: "get", Attributes: map[string]interface{}{"x": 7.99}},
 			want:      true,
 		},
 		{
 			condition: "testsum1(1,2) <4",
-			stream:    `{"functions":[{"name":"testsum1","funcURL":"https://localhost:23456/funcs/testsum", "CA" : "` + funcServerCert + `"}],"services": [{"name": "crm","policies": [{"id": "p1", "effect": "grant", "permissions": [{"resource": "/node1","actions": ["get"]}],"condition": "testsum1(1,2) <4"}]}]}`,
+			stream:    fmt.Sprintf(`{"functions":[{"name":"testsum1","funcURL":"%s/funcs/testsum", "CA" : "%s"}],"services": [{"name": "crm","policies": [{"id": "p1", "effect": "grant", "permissions": [{"resource": "/node1","actions": ["get"]}],"condition": "testsum1(1,2) <4"}]}]}`, httpsURL, funcServerCert),
 			ctx:       adsapi.RequestContext{Subject: nil, ServiceName: "crm", Resource: "/node1", Action: "get", Attributes: map[string]interface{}{"x": 7.99}},
 			want:      true,
 		},

@@ -5,17 +5,16 @@ package file
 
 import (
 	"encoding/json"
-	"io/ioutil"
 	"math"
 	"os"
 	"path/filepath"
 	"sync"
 
+	log "github.com/sirupsen/logrus"
 	"github.com/teramoby/speedle-plus/api/ads"
 	"github.com/teramoby/speedle-plus/api/pms"
 	"github.com/teramoby/speedle-plus/pkg/errors"
 	"github.com/teramoby/speedle-plus/pkg/store"
-	log "github.com/sirupsen/logrus"
 )
 
 type discoverRequestStore struct {
@@ -36,7 +35,7 @@ const (
 	discoverStoreFileName = "speedle_discover_requests.json"
 )
 
-//read policy store from file
+// read policy store from file
 func (s *discoverRequestStore) ReadDiscoverRequestStore() (*StoreContent, error) {
 
 	s.rwLock.RLock()
@@ -47,7 +46,7 @@ func (s *discoverRequestStore) ReadDiscoverRequestStore() (*StoreContent, error)
 
 func (s *discoverRequestStore) readDiscoverRequestStoreWithoutLock() (*StoreContent, error) {
 	var drs StoreContent
-	raw, err := ioutil.ReadFile(s.FileLocation)
+	raw, err := os.ReadFile(s.FileLocation)
 	if err != nil {
 		return &drs, errors.Wrapf(err, errors.StoreError, "unable to read file %q", s.FileLocation)
 	}
@@ -67,17 +66,17 @@ func (s *discoverRequestStore) WriteDiscoverRequestStore(drs *StoreContent) erro
 
 func (s *discoverRequestStore) writeDiscoverRequestStoreWithoutLock(drs *StoreContent) error {
 	jsonFile, err := os.Create(s.FileLocation)
-	defer jsonFile.Close()
 	if err != nil {
 		return errors.Wrapf(err, errors.StoreError, "unable to create file %q", s.FileLocation)
 	}
+	defer jsonFile.Close()
 	drsB, err := json.MarshalIndent(*drs, "", "    ")
 	if err != nil {
-		log.Errorf("marshal indent filed becuase of %v", err)
+		log.Errorf("marshal indent failed because of %v", err)
 		return errors.Wrap(err, errors.SerializationError, "marshal indent failed")
 	}
 	if _, err := jsonFile.Write(drsB); err != nil {
-		log.Errorf("write to file failed becuase of %v", err)
+		log.Errorf("write to file failed because of %v", err)
 		return errors.Wrapf(err, errors.StoreError, "unable to write to file %q", s.FileLocation)
 	}
 	return nil
@@ -95,7 +94,7 @@ func getDiscoverRequestStore(s *Store) (*discoverRequestStore, error) {
 		log.Infof("discover store file location:%s\n", discoverFileLocation)
 		if _, err := os.Stat(discoverFileLocation); os.IsNotExist(err) {
 			log.Infof("discover store file does not exist, create one...")
-			if err1 := ioutil.WriteFile(discoverFileLocation, []byte("{}"), 0644); err1 != nil {
+			if err1 := os.WriteFile(discoverFileLocation, []byte("{}"), 0600); err1 != nil {
 				log.Errorf("error creating discover store file: %v\n", err1)
 				return nil, err1
 			}
@@ -115,6 +114,12 @@ func (s *Store) SaveDiscoverRequest(discoverRequest *ads.RequestContext) error {
 	}
 }
 func (s *discoverRequestStore) saveDiscoverRequest(discoverRequest *ads.RequestContext) error {
+	// Redact token before persisting to prevent credential leakage in discover storage.
+	if discoverRequest.Subject != nil && discoverRequest.Subject.Token != "" {
+		origToken := discoverRequest.Subject.Token
+		discoverRequest.Subject.Token = ""
+		defer func() { discoverRequest.Subject.Token = origToken }()
+	}
 	s.rwLock.Lock()
 	defer s.rwLock.Unlock()
 	sContent, err := s.readDiscoverRequestStoreWithoutLock()
@@ -256,7 +261,7 @@ func (s *discoverRequestStore) resetDiscoverRequests(serviceName string) error {
 	return nil
 }
 
-//Generate policies for principal based on existing request logs. Generate policies for all principals when principalXXX are empty.
+// Generate policies for principal based on existing request logs. Generate policies for all principals when principalXXX are empty.
 func (s *Store) GeneratePolicies(serviceName, principalType, principalName, principalIDD string) (map[string]*pms.Service, int64, error) {
 	if discoverStore, err := getDiscoverRequestStore(s); err == nil {
 		return discoverStore.generatePolicies(serviceName, principalType, principalName, principalIDD)

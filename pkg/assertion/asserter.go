@@ -8,7 +8,8 @@ import (
 	"crypto/x509"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
+	"os"
 	"net/http"
 	"strings"
 	"time"
@@ -82,18 +83,21 @@ func NewAsserter(conf *AsserterConfig, tenant *string) (TokenAsserter, error) {
 	tr := http.Transport{
 		MaxIdleConns:    1000,
 		IdleConnTimeout: 60 * time.Second,
+		MaxIdleConnsPerHost: 20,
 		Proxy:           http.ProxyFromEnvironment,
 	}
 
 	if strings.HasPrefix(a.ServerEndpoint, "https") {
-		tlsConf := &tls.Config{}
+		tlsConf := &tls.Config{MinVersion: tls.VersionTLS12}
 		if len(a.caCert) > 0 {
-			caCert, err := ioutil.ReadFile(a.caCert)
+			caCert, err := os.ReadFile(a.caCert)
 			if err != nil {
 				return nil, err
 			}
 			caCertPool := x509.NewCertPool()
-			caCertPool.AppendCertsFromPEM(caCert)
+			if !caCertPool.AppendCertsFromPEM(caCert) {
+				return nil, fmt.Errorf("failed to parse CA certificate")
+			}
 			tlsConf.RootCAs = caCertPool
 		}
 		if len(a.clientCert) > 0 && len(a.clientKey) > 0 {
@@ -118,7 +122,7 @@ func NewAsserter(conf *AsserterConfig, tenant *string) (TokenAsserter, error) {
 
 // AssertToken assert token via webhook
 func (a *WebHookAsserter) AssertToken(token string, idpType string, allowedIDD string, requestHeaders map[string]string) (*AssertResponse, error) {
-	log.Debugf("token: %s, idpType: %s, allowedIDD: %s, requestHeaders: %v", token, idpType, allowedIDD, requestHeaders)
+	log.Debugf("asserting token: idpType=%s, allowedIDD=%s", idpType, allowedIDD)
 
 	if len(token) == 0 {
 		log.Errorf("token is empty")
@@ -165,7 +169,7 @@ func (a *WebHookAsserter) AssertToken(token string, idpType string, allowedIDD s
 		return nil, fmt.Errorf("asserter error, status code: %d", resp.StatusCode)
 	}
 
-	raw, errRaw := ioutil.ReadAll(resp.Body)
+	raw, errRaw := io.ReadAll(resp.Body)
 	if errRaw != nil {
 		log.Errorf("ReadAll error: %v", errRaw)
 		return nil, errRaw
