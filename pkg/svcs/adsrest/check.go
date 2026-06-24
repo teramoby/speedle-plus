@@ -334,6 +334,22 @@ func ConvertJSONRequestToContext(ctxContext *JsonContext) (*adsapi.RequestContex
 	return &context, nil
 }
 
+// redactTokenForAudit returns a shallow copy of the request context suitable
+// for audit logging, with the bearer token removed. The original context is
+// left untouched because it is still required for evaluation.
+func redactTokenForAudit(context *adsapi.RequestContext) *adsapi.RequestContext {
+	if context == nil {
+		return nil
+	}
+	redacted := *context
+	if context.Subject != nil {
+		subjectCopy := *context.Subject
+		subjectCopy.Token = ""
+		redacted.Subject = &subjectCopy
+	}
+	return &redacted
+}
+
 func constructEvaluationResultForAudit(allowed bool, reason adsapi.Reason) *AuditEvaluationResult {
 	evaResult := "denied"
 	if allowed {
@@ -384,10 +400,10 @@ func (e *RESTService) IsAllowed(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		response.ErrorMessage = err.Error()
-		logging.WriteFailedAuditLog("IsAllowed", log.Fields{"requestContext": context, "evaluationResult": responseForAudit}, response.ErrorMessage)
+		logging.WriteFailedAuditLog("IsAllowed", log.Fields{"requestContext": redactTokenForAudit(context), "evaluationResult": responseForAudit}, response.ErrorMessage)
 		httputils.HandleError(w, err)
 	} else {
-		logging.WriteSucceededAuditLog("IsAllowed", log.Fields{"requestContext": context}, log.Fields{"evaluationResult": responseForAudit})
+		logging.WriteSucceededAuditLog("IsAllowed", log.Fields{"requestContext": redactTokenForAudit(context)}, log.Fields{"evaluationResult": responseForAudit})
 		httputils.SendOKResponse(w, &response)
 	}
 }
@@ -412,12 +428,12 @@ func (e *RESTService) GetAllGrantedRoles(w http.ResponseWriter, r *http.Request)
 	if err != nil {
 		httputils.HandleError(w, err)
 		// Audit log
-		logging.WriteFailedAuditLog("GetAllGrantedRoles", log.Fields{"requestContext": context}, err.Error())
+		logging.WriteFailedAuditLog("GetAllGrantedRoles", log.Fields{"requestContext": redactTokenForAudit(context)}, err.Error())
 		return
 	}
 
 	// Audit log
-	logging.WriteSucceededAuditLog("GetAllGrantedRoles", log.Fields{"requestContext": context}, log.Fields{"roles": roles})
+	logging.WriteSucceededAuditLog("GetAllGrantedRoles", log.Fields{"requestContext": redactTokenForAudit(context)}, log.Fields{"roles": roles})
 
 	if len(roles) == 0 {
 		httputils.SendEmptyListResponse(w)
@@ -446,7 +462,7 @@ func (e *RESTService) GetAllGrantedPermissions(w http.ResponseWriter, r *http.Re
 	if err != nil {
 		httputils.HandleError(w, err)
 		// Audit log
-		logging.WriteFailedAuditLog("GetAllGrantedPermissions", log.Fields{"requestContext": context}, err.Error())
+		logging.WriteFailedAuditLog("GetAllGrantedPermissions", log.Fields{"requestContext": redactTokenForAudit(context)}, err.Error())
 		return
 	}
 
@@ -459,7 +475,7 @@ func (e *RESTService) GetAllGrantedPermissions(w http.ResponseWriter, r *http.Re
 	}
 
 	// Audit log
-	logging.WriteSucceededAuditLog("GetAllGrantedPermissions", log.Fields{"requestContext": context}, log.Fields{"permissions": retPermissions})
+	logging.WriteSucceededAuditLog("GetAllGrantedPermissions", log.Fields{"requestContext": redactTokenForAudit(context)}, log.Fields{"permissions": retPermissions})
 
 	if len(retPermissions) == 0 {
 		httputils.SendEmptyListResponse(w)
