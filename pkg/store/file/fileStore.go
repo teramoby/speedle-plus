@@ -356,7 +356,9 @@ func (s *Store) Watch() (pms.StorageChangeChannel, error) {
 			}
 			watcher.Close()
 			close(storeChangeChan)
-			close(s.stop)
+			// Note: s.stop is closed by StopWatch (guarded by stopOnce), not
+			// here, so a panic in this goroutine cannot leave a later
+			// StopWatch sending on an already-closed channel.
 		}()
 		for {
 			select {
@@ -406,7 +408,9 @@ func (s *Store) Watch() (pms.StorageChangeChannel, error) {
 func (s *Store) StopWatch() {
 	s.stopOnce.Do(func() {
 		if s.stop != nil {
-			s.stop <- struct{}{}
+			// Close (not send) so the watch goroutine's `case <-s.stop`
+			// fires immediately. stopOnce makes this idempotent and safe.
+			close(s.stop)
 		}
 	})
 }
