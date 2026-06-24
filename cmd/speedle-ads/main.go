@@ -119,7 +119,7 @@ func main() {
 	select {
 	case err = <-errChan:
 		log.Errorf("Error occured %s.", err)
-		close(errChan)
+		// Do not close errChan: the second goroutine may still send to it.
 	case <-intChan:
 		log.Info("Interrupt signal")
 		close(intChan)
