@@ -29,6 +29,12 @@ func (e *speedleError) Cause() error {
 	return e.cause
 }
 
+// Unwrap implements the standard library errors.Unwrap interface so that
+// errors.Is and errors.As can traverse the wrapped error chain.
+func (e *speedleError) Unwrap() error {
+	return e.cause
+}
+
 func (e *speedleError) Code() ErrorCode {
 	return e.code
 }

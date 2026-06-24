@@ -34,18 +34,18 @@ func (e *RESTService) Discover(w http.ResponseWriter, r *http.Request) {
 	}
 
 	result, reason, err := e.Evaluator.Discover(*context)
+	if err != nil {
+		httputils.HandleError(w, err)
+		logging.WriteSimpleFailedAuditLog("Discovery", context, err.Error())
+		return
+	}
 	response := IsAllowedResponse{
 		Allowed: result,
 		Reason:  int32(reason),
 	}
 
 	// Audit log
-	if err != nil {
-		response.ErrorMessage = err.Error()
-		logging.WriteSimpleFailedAuditLog("Discovery", context, err.Error())
-	} else {
-		logging.WriteSimpleSucceededAuditLog("Discovery", context, nil)
-	}
+	logging.WriteSimpleSucceededAuditLog("Discovery", context, nil)
 
 	httputils.SendOKResponse(w, &response)
 }
