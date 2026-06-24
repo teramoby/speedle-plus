@@ -6,6 +6,8 @@ package utils
 import (
 	"encoding/json"
 	"io"
+	"net"
+	"net/url"
 	"os"
 	"strings"
 
@@ -37,6 +39,35 @@ func readPolicyStore(reader io.Reader) (*pms.PolicyStore, error) {
 func ValidateFunc(function *pms.Function) error {
 	if function.Name == "" || function.FuncURL == "" {
 		return errors.New(errors.InvalidRequest, "\"name\" and \"funcURL\" in function definition can not be empty")
+	}
+	// Validate the function URL at registration time so that a malicious
+	// FuncURL pointing at an internal/private address (SSRF) is rejected
+	// before it is ever stored and evaluated.
+	return ValidateFunctionURL(function.FuncURL)
+}
+
+// ValidateFunctionURL checks that a custom function URL is safe to call: it must
+// use http/https and must not resolve to a private, loopback, link-local, or
+// unspecified address (SSRF protection). localhost is permitted for local
+// development.
+func ValidateFunctionURL(urlStr string) error {
+	parsed, err := url.Parse(urlStr)
+	if err != nil {
+		return errors.Wrapf(err, errors.InvalidRequest, "invalid function URL %q", urlStr)
+	}
+	if parsed.Scheme != "http" && parsed.Scheme != "https" {
+		return errors.Errorf(errors.InvalidRequest, "unsupported URL scheme %q in function URL %q", parsed.Scheme, urlStr)
+	}
+	host := parsed.Hostname() // strips brackets from IPv6 and the port
+	// Allow localhost for local development/testing.
+	if host == "localhost" || host == "127.0.0.1" || host == "::1" {
+		return nil
+	}
+	if ip := net.ParseIP(host); ip != nil {
+		if ip.IsPrivate() || ip.IsLoopback() || ip.IsLinkLocalUnicast() ||
+			ip.IsLinkLocalMulticast() || ip.IsUnspecified() {
+			return errors.Errorf(errors.InvalidRequest, "function URL %q resolves to a private/internal address, which is not allowed", urlStr)
+		}
 	}
 	return nil
 }
