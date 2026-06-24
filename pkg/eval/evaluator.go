@@ -499,6 +499,7 @@ func (p *PolicyEvalImpl) getGrantedRolesFromService(ctx *internalRequestContext,
 	relatedRolesMap := make(map[string]*Role) //contain all role info related to the role calculation
 	policyIDMap := make(map[string]bool)      // this is to avoid repeat processing of same policy.
 	grantedRoleMap := make(map[string]bool)   //this is to keep all possiblely granted roles
+	processedRoles := make(map[string]bool)   // track roles already expanded, to detect cycles in role DAG
 
 	subjectPrincipalMap := make(map[string]bool) //this contains non-role principals of ctx.Subject
 	for _, principal := range ctx.Subject.Principals {
@@ -525,7 +526,12 @@ func (p *PolicyEvalImpl) getGrantedRolesFromService(ctx *internalRequestContext,
 	for _, rolePolicy := range directGrantedRolePolicies {
 		if _, ok := policyIDMap[rolePolicy.ID]; !ok {
 			policyIDMap[rolePolicy.ID] = true
-			newlyGrantedRoles = append(newlyGrantedRoles, updateRelatedRoleMapWithGrantRolePolicy(rolePolicy, relatedRolesMap, subjectPrincipalMap, directDeniedRoleMap, grantedRoleMap)...)
+			roles := updateRelatedRoleMapWithGrantRolePolicy(rolePolicy, relatedRolesMap, subjectPrincipalMap, directDeniedRoleMap, grantedRoleMap)
+			for _, role := range roles {
+				if !processedRoles[role] {
+					newlyGrantedRoles = append(newlyGrantedRoles, role)
+				}
+			}
 		}
 	}
 
@@ -540,11 +546,22 @@ func (p *PolicyEvalImpl) getGrantedRolesFromService(ctx *internalRequestContext,
 			return nil, err
 		}
 
+		// Mark the current batch of roles as processed so they are not expanded again,
+		// preventing infinite loops when role policies form a cycle.
+		for _, role := range newlyGrantedRoles {
+			processedRoles[role] = true
+		}
+
 		newlyGrantedRoles = []string{}
 		for _, rolePolicy := range indirectGrantedRolePolicies {
 			if _, ok := policyIDMap[rolePolicy.ID]; !ok {
 				policyIDMap[rolePolicy.ID] = true
-				newlyGrantedRoles = append(newlyGrantedRoles, updateRelatedRoleMapWithGrantRolePolicy(rolePolicy, relatedRolesMap, subjectPrincipalMap, directDeniedRoleMap, grantedRoleMap)...)
+				roles := updateRelatedRoleMapWithGrantRolePolicy(rolePolicy, relatedRolesMap, subjectPrincipalMap, directDeniedRoleMap, grantedRoleMap)
+				for _, role := range roles {
+					if !processedRoles[role] {
+						newlyGrantedRoles = append(newlyGrantedRoles, role)
+					}
+				}
 			}
 		}
 	}
