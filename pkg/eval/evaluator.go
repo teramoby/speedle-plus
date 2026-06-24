@@ -453,7 +453,17 @@ func (p *PolicyEvalImpl) getDirectRolePoliciesInService(principals []string,
 			if condition != nil {
 				r, e := evaluateCondition(condition, attributes)
 				if e != nil {
-					log.Debugf("condition evaluation error for role policy: %v", e)
+					log.Warnf("Error evaluating condition for role policy %s: %v", policy.Name, e)
+					// Fail closed: when a deny role policy's condition cannot be
+					// evaluated, apply the denial rather than silently dropping
+					// it (which would fail open).
+					if policy.Effect == pms.Deny {
+						if evaluationResult != nil {
+							evaluationResult.AddRolePolicy(policy, true)
+						}
+						deniedRolePolicies = append(deniedRolePolicies, policy)
+						continue
+					}
 				}
 				result = r
 			}
@@ -992,6 +1002,13 @@ func (p *PolicyEvalImpl) getPolicyList(ctx *internalRequestContext, matchResourc
 					result, evalErr = evaluateCondition(condition, ctx.Attributes)
 					if evalErr != nil {
 						log.Warnf("Error evaluating condition for policy %s: %v", policy.Name, evalErr)
+						// Fail closed: when a deny policy's condition cannot be
+						// evaluated, apply the denial rather than silently
+						// dropping it (which would fail open and grant access).
+						if policy.Effect == pms.Deny {
+							deniedPolicyList = append(deniedPolicyList, policy)
+							continue
+						}
 					}
 				}
 

@@ -854,6 +854,63 @@ func TestIsAllowed_empty(t *testing.T) {
 	}
 }
 
+// TestDenyConditionFailClosed verifies that when a deny policy's condition
+// cannot be evaluated (e.g., a referenced attribute is missing), the denial is
+// still applied (fail-closed) rather than silently dropped (fail-open).
+func TestDenyConditionFailClosed(t *testing.T) {
+	alice := adsapi.Subject{
+		Principals: []*adsapi.Principal{
+			{Type: adsapi.PRINCIPAL_TYPE_USER, Name: "alice"},
+		},
+	}
+	// Grant alice read on /secret, but deny it when blocked == true.
+	// The deny condition references "blocked", which the request omits, so the
+	// condition evaluation fails. The deny must still take effect.
+	stream := `
+	{
+		"services": [
+		{
+			"name": "erp",
+			"policies": [
+			{
+				"id": "grant-read",
+				"effect": "grant",
+				"principals": [["user:alice"]],
+				"permissions": [{"resource": "/secret", "actions": ["read"]}]
+			},
+			{
+				"id": "deny-when-blocked",
+				"effect": "deny",
+				"principals": [["user:alice"]],
+				"permissions": [{"resource": "/secret", "actions": ["read"]}],
+				"condition": "blocked == true"
+			}
+			]
+		}
+		]
+	}`
+	preparePolicyDataInStore([]byte(stream), t)
+	eval, err := NewWithStore(conf, testPS)
+	if err != nil {
+		t.Fatalf("error creating evaluator: %v", err)
+	}
+	// Request omits the "blocked" attribute, so the deny condition errors.
+	req := adsapi.RequestContext{
+		Subject:     &alice,
+		ServiceName: "erp",
+		Resource:    "/secret",
+		Action:      "read",
+		Attributes:  map[string]interface{}{},
+	}
+	isAllowed, _, err := eval.IsAllowed(req)
+	if err != nil {
+		t.Fatalf("error in IsAllowed: %v", err)
+	}
+	if isAllowed {
+		t.Errorf("expected DENY (fail-closed) when deny condition cannot be evaluated, but got ALLOW")
+	}
+}
+
 func TestEntityPrincipal(t *testing.T) {
 	mysql := adsapi.Subject{
 		Principals: []*adsapi.Principal{
