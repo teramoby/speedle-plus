@@ -69,6 +69,7 @@ type PolicyEvalImpl struct {
 	AsserterFunc       func(ctx *adsapi.RequestContext) error
 	done               chan struct{}
 	closeOnce          sync.Once
+	wg                 sync.WaitGroup
 }
 
 func (p *PolicyEvalImpl) deleteService(serviceName string) {
@@ -1118,6 +1119,7 @@ func (p *PolicyEvalImpl) getCustFunctionSetInCache() ([]string, error) {
 }
 
 func (p *PolicyEvalImpl) updateRuntimeCacheWithStoreChange(updateChan pms.StorageChangeChannel) {
+	defer p.wg.Done()
 	for e := range updateChan {
 		switch e.Type {
 		case pms.SERVICE_ADD: ///Event content: StoreUpdateData{ParentID:serviceName, Data:*service}
@@ -1222,11 +1224,20 @@ func (p *PolicyEvalImpl) updateRuntimeCacheWithStoreChange(updateChan pms.Storag
 			p.fullReloadRuntimeCache()
 		}
 	}
+	select {
+	case <-p.done:
+		log.Warn("Watch channel closed during shutdown; skipping full reload.")
+	default:
+		log.Warn("Watch channel closed, runtime cache may be stale. Triggering full reload.")
+		p.fullReloadRuntimeCache()
+	}
 }
 
 func (p *PolicyEvalImpl) cleanExpiredFunctionResultPeriodically() {
 	ticker := time.NewTicker(30 * time.Minute)
+	p.wg.Add(1)
 	go func() {
+		defer p.wg.Done()
 		defer func() {
 			if r := recover(); r != nil {
 				log.Errorf("Panic in cleanExpiredFunctionResultPeriodically goroutine: %v", r)
@@ -1252,11 +1263,15 @@ func (p *PolicyEvalImpl) Close() {
 		if p.done != nil {
 			close(p.done)
 		}
+		// Close the store first to stop the watch channel, which
+		// unblocks updateRuntimeCacheWithStoreChange so it can exit.
 		if p.Store != nil {
 			if err := p.Store.Close(); err != nil {
 				log.Errorf("Failed to close policy store: %v", err)
 			}
 		}
+		// Wait for all background goroutines to finish.
+		p.wg.Wait()
 	})
 }
 
