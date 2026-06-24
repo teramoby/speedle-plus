@@ -214,7 +214,6 @@ func (k *Parameters) newTLSServer(handler http.Handler) (*http.Server, error) {
 		tlsConfig.ClientAuth = tls.NoClientCert
 	}
 
-	tlsConfig.BuildNameToCertificate()
 
 	server := http.Server{
 		Addr:              k.Endpoint.Value,

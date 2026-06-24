@@ -436,7 +436,7 @@ func (p *PolicyEvalImpl) getDirectRolePolicesInService(principals []string,
 			}
 			if condition != nil {
 				if r, e := evaluateCondition(condition, attributes); e != nil {
-					log.Debugf("condition evaluation error for denied policy: %v", e)
+					log.Debugf("condition evaluation error for role policy: %v", e)
 					result = r
 				} else {
 					result = r

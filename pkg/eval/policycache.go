@@ -258,7 +258,7 @@ func (p *PolicyCacheData) getPoliciesFromResourceExpressionMap(resourceToPolicyM
 
 		if resourceToPolicyMap.ResourceExpressionToPolicies != nil {
 			for resExp, policyIDSet := range resourceToPolicyMap.ResourceExpressionToPolicies {
-								if matchRegexCompiled(resExp, resource) {
+							if matchRegexCompiled(resExp, resource) {
 					//Add all related policies to result policy map
 					for id := range policyIDSet {
 						resultPolicyMap[id] = p.PolicyMap[id]

@@ -712,6 +712,7 @@ func watch(evalChan chan pms.StoreChangeEvent, s *Store, errChan chan error, sto
 						function, err := s.GetFunction(functionName)
 						if err != nil {
 							log.Warningf("Unable to get function due to error %v.\n", err)
+							continue
 						}
 						evalChan <- pms.StoreChangeEvent{Type: pms.FUNCTION_ADD, ID: id, Content: function}
 
