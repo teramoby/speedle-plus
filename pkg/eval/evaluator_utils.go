@@ -161,6 +161,14 @@ func calculatePermissions(grantedPermissions, deniedPermissions []pms.Permission
 	var denyAllActions map[string]bool
 
 	for _, dp := range deniedPermissions {
+		// A denied permission with no resource and no expression matches every
+		// resource. If it additionally has no actions, it denies ALL actions on
+		// ALL resources -> no permission survives. Return empty immediately,
+		// matching IsAllowed's "empty resource + empty actions = deny all"
+		// semantics in matchResourceAction.
+		if len(dp.Resource) == 0 && len(dp.ResourceExpression) == 0 && len(dp.Actions) == 0 {
+			return nil
+		}
 		actions := make(map[string]bool, len(dp.Actions))
 		for _, a := range dp.Actions {
 			actions[a] = true

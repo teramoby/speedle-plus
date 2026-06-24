@@ -308,6 +308,40 @@ func TestGetPermissions(t *testing.T) {
 			request: adsapi.RequestContext{Subject: &alice, ServiceName: "erp", Attributes: map[string]interface{}{}},
 			results: []pms.Permission{},
 		},
+		{
+			// Deny policy with an explicit permission that has empty resource
+			// AND empty actions = deny everything. All granted permissions
+			// must be removed.
+			stream: `
+			{
+		"services": [
+		{
+			"name": "erp",
+			"policies": [
+			{
+				"id": "policy1",
+				"effect": "grant",
+				"permissions": [
+				{ "resource": "/node1", "actions": ["get","create"] }
+				],
+				"principals": [["user:alice"]]
+			},
+			{
+				"id": "policy2",
+				"effect": "deny",
+				"permissions": [
+				{ "resource": "", "actions": [] }
+				],
+				"principals": [["user:alice"]]
+			}
+			]
+		}
+		]
+	}
+			`,
+			request: adsapi.RequestContext{Subject: &alice, ServiceName: "erp", Attributes: map[string]interface{}{}},
+			results: []pms.Permission{},
+		},
 	}
 
 	for i, tc := range testCases {
