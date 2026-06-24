@@ -70,44 +70,41 @@ Speedle+ consists of three main components that work together to provide policy-
 
 ## PDL Syntax Examples
 
-Speedle uses a human-readable Policy Definition Language (PDL). Here are basic examples:
+Speedle uses a human-readable Policy Definition Language (PDL). A policy is written
+as a single line and created with `spctl`.
 
-**Define a service:**
-```pdl
-service bookstore {
-    // Grant policy: allow users in group "employee" to read any book
-    grant policy readBooks {
-        principals: ["group:employee"]
-        permissions: [
-            {resource: "book", actions: ["read"]}
-        ]
-    }
+**Policy** — `grant|deny <principals> <actions> <resource> [if <condition>]`:
 
-    // Deny policy: deny user "bob" from deleting books
-    deny policy bobCannotDelete {
-        principals: ["user:bob"]
-        permissions: [
-            {resource: "book", actions: ["delete"]}
-        ]
-    }
+```sh
+# Allow users in group "employee" to read the resource "book"
+spctl create policy readBooks --service-name=bookstore \
+    --pdl-command "grant group employee read book"
 
-    // Role policy: grant "reader" role to group "intern"
-    grant role policy readerRole {
-        principals: ["group:intern"]
-        roles: ["reader"]
-        resources: ["book"]
-    }
+# Deny user "bob" from deleting books
+spctl create policy bobCannotDelete --service-name=bookstore \
+    --pdl-command "deny user bob delete book"
 
-    // Policy with condition expression
-    grant policy weekdayAccess {
-        principals: ["user:*"]
-        permissions: [
-            {resource: "book", actions: ["read"]}
-        ]
-        condition: request_weekday != "Saturday" && request_weekday != "Sunday"
-    }
-}
+# Match resources by regular expression with the expr: prefix
+spctl create policy podAccess --service-name=k8s \
+    --pdl-command "grant group Administrators list,watch,get expr:c1/default/core/pods/*"
+
+# Policy with a condition expression
+spctl create policy weekdayAccess --service-name=bookstore \
+    --pdl-command "grant user alice read book if request_weekday != \"Saturday\" && request_weekday != \"Sunday\""
 ```
+
+**Role policy** — `grant|deny <principals> <roles> [on <resources>] [in <service>] [if <condition>]`:
+
+```sh
+# Grant the "reader" role to group "intern" on resource "book"
+spctl create rolepolicy readerRole --service-name=bookstore \
+    --pdl-command "grant group intern reader on book"
+```
+
+Principals are written as `<type> <name>` pairs (`user alice`, `group employee`,
+`role admin`), and multiple principals are separated by commas. Actions are a
+comma-separated list. A resource is either a literal string or a regular
+expression prefixed with `expr:`.
 
 ## Configuration
 
@@ -162,7 +159,7 @@ See Getting Started at <https://speedle.io/quick-start/>.
 
 ### Prerequisites
 
-- Go 1.22 or greater <https://go.dev/doc/install>
+- Go 1.26 or greater <https://go.dev/doc/install>
 
 ### Step
 
