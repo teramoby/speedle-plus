@@ -265,8 +265,11 @@ func (s *Store) Watch() (pms.StorageChangeChannel, error) {
 	log.Info("Enter Watch...")
 	s.stopWatch = make(chan struct{})
 	streamOptions := options.ChangeStream().SetFullDocument(options.UpdateLookup)
-	changeStream, err := s.client.Database(s.Database).Watch(context.Background(), mongo.Pipeline{}, streamOptions)
+	// Use a cancellable context for the change stream watch to prevent goroutine leaks.
+	watchCtx, watchCancel := context.WithCancel(context.Background())
+	changeStream, err := s.client.Database(s.Database).Watch(watchCtx, mongo.Pipeline{}, streamOptions)
 	if err != nil {
+		watchCancel()
 		log.Error(err)
 		return nil, err
 	}
@@ -276,6 +279,7 @@ func (s *Store) Watch() (pms.StorageChangeChannel, error) {
 
 	go func() {
 		defer func() {
+			watchCancel() // Cancel the watch context to stop any in-progress Next call.
 			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 			defer cancel()
 			changeStream.Close(ctx)
@@ -289,7 +293,13 @@ func (s *Store) Watch() (pms.StorageChangeChannel, error) {
 			default:
 			}
 
-			if !changeStream.Next(context.Background()) {
+			// Use a context with timeout so Next does not block indefinitely if the
+			// server stops responding. The 30s timeout gives MongoDB enough time
+			// while preventing goroutine leaks.
+			nextCtx, nextCancel := context.WithTimeout(watchCtx, 30*time.Second)
+			hasNext := changeStream.Next(nextCtx)
+			nextCancel()
+			if !hasNext {
 				if err := changeStream.Err(); err != nil {
 					log.Error(err)
 				}
@@ -428,11 +438,11 @@ func (s *Store) StopWatch() {
 }
 
 // Health checks the health of the MongoDB server by pinging it.
-func (s *Store) Health(ctx context.Context) error {
+func (s *Store) Health(_ context.Context) error {
 	if s.client == nil {
 		return errors.New(errors.StoreError, "mongodb client is not initialized")
 	}
-	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	err := s.client.Ping(ctx, nil)
 	if err != nil {
