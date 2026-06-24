@@ -167,7 +167,7 @@ func newEvaluator(conf *cfg.Config) (eval.InternalEvaluator, error) {
 				len(ctx.Subject.Token) != 0 {
 				tokenType := ctx.Subject.TokenType
 				token := ctx.Subject.Token
-				log.Debugf("Asserting token %s with token type %s.", token, tokenType)
+				log.Debugf("Asserting token (len=%d) with token type %s.", len(token), tokenType)
 				s, err := as.AssertToken(token, tokenType, "", nil)
 				if err == nil {
 					for _, p := range s.Principals {
