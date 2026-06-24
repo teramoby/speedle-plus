@@ -122,7 +122,7 @@ func main() {
 		// Do not close errChan: the second goroutine may still send to it.
 	case <-intChan:
 		log.Info("Interrupt signal")
-		close(intChan)
+		signal.Stop(intChan)
 	}
 
 	log.Info("Stopping servers...")

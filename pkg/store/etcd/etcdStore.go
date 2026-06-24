@@ -623,7 +623,9 @@ func (s *Store) Watch() (pms.StorageChangeChannel, error) {
 				log.Errorf("panic in Watch outer goroutine: %v", r)
 			}
 			close(evalChan)
-			close(s.stop)
+			// Note: s.stop is closed by StopWatch (guarded by stopOnce), not
+			// here, so a panic in this goroutine cannot leave a later
+			// StopWatch sending on an already-closed channel.
 			close(errChan)
 			close(stopChan)
 			s.wg.Done()
@@ -762,7 +764,10 @@ func watch(evalChan chan pms.StoreChangeEvent, s *Store, errChan chan error, sto
 func (s *Store) StopWatch() {
 	s.stopOnce.Do(func() {
 		if s.stop != nil {
-			s.stop <- struct{}{}
+			// Close (not send) so every inner watch goroutine's
+			// `case <-s.stop` fires; a single send would only wake one of
+			// them. stopOnce makes this idempotent and panic-safe.
+			close(s.stop)
 		}
 	})
 }
