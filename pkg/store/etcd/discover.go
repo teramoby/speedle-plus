@@ -65,6 +65,11 @@ func (s *Store) PutRequest(request *ads.RequestContext) (int64, error) {
 					keys = append(keys, string(kv.Key))
 				}
 				go func() {
+				defer func() {
+					if r := recover(); r != nil {
+						log.Errorf("panic in DeleteRequests cleanup goroutine: %v", r)
+					}
+				}()
 				if err := s.DeleteRequests(keys); err != nil {
 					log.Errorf("failed to delete old discover requests: %v", err)
 				}
