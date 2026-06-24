@@ -86,8 +86,11 @@ func (s *Store) ListAllServices() ([]*pms.Service, error) {
 		}
 		services = append(services, &service)
 	}
+	if err := cur.Err(); err != nil {
+		return nil, err
+	}
 
-	return services, err
+	return services, nil
 
 }
 
@@ -906,6 +909,9 @@ func (s *Store) ListAllFunctions(filter string) ([]*pms.Function, error) {
 			return nil, err
 		}
 		functions = append(functions, &f)
+	}
+	if err := cur.Err(); err != nil {
+		return nil, err
 	}
 	return functions, nil
 
