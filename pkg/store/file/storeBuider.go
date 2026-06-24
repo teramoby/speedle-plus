@@ -33,7 +33,7 @@ func (fs FileStoreBuilder) NewStore(config map[string]interface{}) (pms.PolicySt
 	}
 	if _, err := os.Stat(fileLocation); os.IsNotExist(err) {
 		log.Info("policy store file does not exist, create one...")
-		if err1 := os.WriteFile(fileLocation, []byte("{}"), 0644); err1 != nil {
+		if err1 := os.WriteFile(fileLocation, []byte("{}"), 0600); err1 != nil {
 			log.Errorf("error creating policy store file: %v\n", err1)
 			return nil, err1
 		}
