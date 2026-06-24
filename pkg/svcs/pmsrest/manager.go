@@ -136,14 +136,12 @@ func (mgr *RESTService) CreateService(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if _, err := mgr.PolicyStore.GetService(service.Name); err == nil {
-		// servcie already exists.
-		httputils.SendBadRequestResponse(w, &httputils.ErrorResponse{
-			Error: "Service already exists.",
-		})
-		logging.WriteSimpleFailedAuditLog("CreateService", &service, "Service already exists")
-		return
-	}
+	// NOTE: We intentionally skip the pre-check for service existence here.
+	// Each store handles the "already exists" case atomically in its own layer:
+	// - etcd uses transactions with a Version==0 conditional.
+	// - File store checks under its write lock.
+	// - MongoDB relies on the unique _id index and returns a duplicate-key error.
+	// A pre-check with GetService would introduce a TOCTOU race between check and create.
 
 	//set createby and createtime
 	var metaData = getCreateMetaData(r)
