@@ -46,6 +46,7 @@ type Store struct {
 	KeyPrefix    string
 	stop         chan struct{}
 	stopOnce     sync.Once
+	wg           sync.WaitGroup
 	embeddedInst *embed.Etcd
 	embeddedDir  string
 }
@@ -439,10 +440,12 @@ func (s *Store) Health(ctx context.Context) error {
 }
 
 // Close gracefully shuts down the etcd store by stopping any active
-// watcher, closing the client connection, and cleaning up an embedded
-// etcd instance if one was started.
+// watcher, waiting for the watch goroutine to finish, closing the
+// client connection, and cleaning up an embedded etcd instance if one
+// was started.
 func (s *Store) Close() error {
 	s.StopWatch()
+	s.wg.Wait()
 	if s.client != nil {
 		err := s.client.Close()
 		if s.embeddedInst != nil {
@@ -600,12 +603,14 @@ func (s *Store) Watch() (pms.StorageChangeChannel, error) {
 	s.stop = make(chan struct{})
 	errChan := make(chan error)
 	stopChan := make(chan struct{})
+	s.wg.Add(1)
 	go func() {
 		defer func() {
 			close(evalChan)
 			close(s.stop)
 			close(errChan)
 			close(stopChan)
+			s.wg.Done()
 			log.Info("Exiting Watch...")
 		}()
 		var consecutiveFails int
