@@ -45,7 +45,12 @@ func NewFromConfig(conf *cfg.Config) (InternalEvaluator, error) {
 		return nil, err
 	}
 
-	return NewWithStore(conf, s)
+	eval, err := NewWithStore(conf, s)
+	if err != nil {
+		s.Close()
+		return nil, err
+	}
+	return eval, nil
 }
 
 // NewWithStore creates a policy evaluator with policy store
