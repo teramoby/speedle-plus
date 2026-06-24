@@ -1607,3 +1607,81 @@ func TestGetRoles120_15(t *testing.T) {
 		}
 	}
 }
+
+
+// TestRoleCycleDetection verifies that cyclic role grants do not cause
+// infinite loops. Role A grants role B (rp2), and role B grants role A (rp3).
+// Both are reachable from user:bill via rp1, forming a cycle A->B->A.
+func TestRoleCycleDetection(t *testing.T) {
+	const appStream = `
+	{
+		"services": [
+		{
+			"name": "erp",
+			"type": "Applications",
+			"rolePolicies": [
+			{
+				"id": "rp1",
+				"effect": "grant",
+				"roles": ["A"],
+				"principals": [
+					"user:bill"
+				]
+			},
+			{
+				"id": "rp2",
+				"effect": "grant",
+				"roles": ["B"],
+				"principals": [
+					"role:A"
+				]
+			},
+			{
+				"id": "rp3",
+				"effect": "grant",
+				"roles": ["A"],
+				"principals": [
+					"role:B"
+				]
+			}
+			]
+		}
+		]
+	}
+	`
+
+	preparePolicyDataInStore([]byte(appStream), t)
+
+	evaluator, err := NewWithStore(conf, testPS)
+	if err != nil {
+		t.Fatalf("Unable to initialize evaluator due to error [%v].", err)
+	}
+	subject := adsapi.Subject{
+		Principals: []*adsapi.Principal{
+			{
+				Type: adsapi.PRINCIPAL_TYPE_USER,
+				Name: "bill",
+			},
+		},
+	}
+
+	ctx := adsapi.RequestContext{Subject: &subject, ServiceName: "erp"}
+	roles, err := evaluator.GetAllGrantedRoles(ctx)
+	if err != nil {
+		t.Fatalf("Unexpected error happened [%v].", err)
+	}
+
+	expectedRoles := []string{"A", "B"}
+	returnedRolesMap := make(map[string]bool)
+	for _, role := range roles {
+		returnedRolesMap[role] = true
+	}
+	if len(expectedRoles) != len(roles) {
+		t.Fatalf("Expected %d roles, but returned %d roles: %v", len(expectedRoles), len(roles), roles)
+	}
+	for _, expectedRole := range expectedRoles {
+		if _, ok := returnedRolesMap[expectedRole]; !ok {
+			t.Fatalf("Expected role %s, but not returned", expectedRole)
+		}
+	}
+}
