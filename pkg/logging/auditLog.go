@@ -119,7 +119,10 @@ func writeAuditLog(apiName string, reqFields map[string]interface{}, respFields 
 	}
 
 	// Set tenantID and target_index
+	// Read tenantID under RLock to prevent data race with SetTenantID.
+	tenantLock.RLock()
 	allFields[TenantID_key] = tenantID
+	tenantLock.RUnlock()
 	allFields[Target_Index_Key] = generateTargetIndex()
 
 	ctxLogger := AuditLog().WithFields(allFields)
