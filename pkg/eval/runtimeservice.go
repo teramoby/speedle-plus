@@ -93,48 +93,40 @@ func (rtps *RuntimePolicyStore) recompilePolicyConditionAtRuntime(serviceName st
 
 	condition, err := compileCondition(policy.Condition, rtps.Functions)
 	if err == nil {
-
-			updatePolicyCondition(rtps, serviceName, policy, condition)
+		// Look up the service under RLock, then release before acquiring
+		// the service lock to avoid lock-ordering deadlock risks.
+		rtps.RLock()
+		rtService, ok := rtps.RuntimeServices[serviceName]
+		rtps.RUnlock()
+		if ok {
+			rtService.Lock()
+			rtService.PoliciesCache.Conditions[policy.ID] = condition
+			rtService.Unlock()
+		} else {
+			log.Errorf("Unable find service %s in runtime cache.", serviceName)
+		}
 	}
 	return condition, err
-}
-
-func updatePolicyCondition(rtps *RuntimePolicyStore, serviceName string, policy *pms.Policy, condition *govaluate.EvaluableExpression) {
-	rtps.RLock()
-	defer rtps.RUnlock()
-	rtService, ok := rtps.RuntimeServices[serviceName]
-	if !ok {
-		// Service is not found
-		log.Errorf("Unable find service %s in runtime cache.", serviceName)
-		return
-	}
-	rtService.Lock()
-	defer rtService.Unlock()
-	rtService.PoliciesCache.Conditions[policy.ID] = condition
 }
 
 func (rtps *RuntimePolicyStore) recompileRolePolicyConditionAtRuntime(serviceName string, policy *pms.RolePolicy) (*govaluate.EvaluableExpression, error) {
 
 	condition, err := compileCondition(policy.Condition, rtps.Functions)
 	if err == nil {
-
-			updateRolePolicyCondition(rtps, serviceName, policy, condition)
+		// Look up the service under RLock, then release before acquiring
+		// the service lock to avoid lock-ordering deadlock risks.
+		rtps.RLock()
+		rtService, ok := rtps.RuntimeServices[serviceName]
+		rtps.RUnlock()
+		if ok {
+			rtService.Lock()
+			rtService.RolePoliciesCache.Conditions[policy.ID] = condition
+			rtService.Unlock()
+		} else {
+			log.Errorf("Unable find service %s in runtime cache.", serviceName)
+		}
 	}
 	return condition, err
-}
-
-func updateRolePolicyCondition(rtps *RuntimePolicyStore, serviceName string, policy *pms.RolePolicy, condition *govaluate.EvaluableExpression) {
-	rtps.RLock()
-	defer rtps.RUnlock()
-	rtService, ok := rtps.RuntimeServices[serviceName]
-	if !ok {
-		// Service is not found
-		log.Errorf("Unable find service %s in runtime cache.", serviceName)
-		return
-	}
-	rtService.Lock()
-	defer rtService.Unlock()
-	rtService.RolePoliciesCache.Conditions[policy.ID] = condition
 }
 
 func (rtps *RuntimePolicyStore) addPolicy(serviceName string, policy *pms.Policy) {
