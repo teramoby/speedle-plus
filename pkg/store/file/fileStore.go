@@ -8,6 +8,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"runtime/debug"
 	"strings"
 	"sync"
 
@@ -352,7 +353,7 @@ func (s *Store) Watch() (pms.StorageChangeChannel, error) {
 	go func() {
 		defer func() {
 			if r := recover(); r != nil {
-				log.Errorf("Panic in file Watch goroutine: %v", r)
+				log.Errorf("Panic in file Watch goroutine: %v\n%s", r, debug.Stack())
 			}
 			watcher.Close()
 			close(storeChangeChan)

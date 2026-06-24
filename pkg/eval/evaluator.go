@@ -4,6 +4,7 @@
 package eval
 
 import (
+	"runtime/debug"
 	"sort"
 	"strconv"
 	"strings"
@@ -1326,7 +1327,7 @@ func (p *PolicyEvalImpl) cleanExpiredFunctionResultPeriodically() {
 		defer p.wg.Done()
 		defer func() {
 			if r := recover(); r != nil {
-				log.Errorf("Panic in cleanExpiredFunctionResultPeriodically goroutine: %v", r)
+				log.Errorf("Panic in cleanExpiredFunctionResultPeriodically goroutine: %v\n%s", r, debug.Stack())
 			}
 			ticker.Stop()
 		}()

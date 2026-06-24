@@ -6,6 +6,7 @@ package etcd
 import (
 	"encoding/json"
 	"fmt"
+	"runtime/debug"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/teramoby/speedle-plus/api/ads"
@@ -67,7 +68,7 @@ func (s *Store) PutRequest(request *ads.RequestContext) (int64, error) {
 				go func() {
 				defer func() {
 					if r := recover(); r != nil {
-						log.Errorf("panic in DeleteRequests cleanup goroutine: %v", r)
+						log.Errorf("panic in DeleteRequests cleanup goroutine: %v\n%s", r, debug.Stack())
 					}
 				}()
 				if err := s.DeleteRequests(keys); err != nil {

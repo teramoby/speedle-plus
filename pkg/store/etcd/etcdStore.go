@@ -6,6 +6,7 @@ package etcd
 import (
 	"encoding/json"
 	"fmt"
+	"runtime/debug"
 	"strings"
 	"sync"
 	"time"
@@ -620,7 +621,7 @@ func (s *Store) Watch() (pms.StorageChangeChannel, error) {
 	go func() {
 		defer func() {
 			if r := recover(); r != nil {
-				log.Errorf("panic in Watch outer goroutine: %v", r)
+				log.Errorf("panic in Watch outer goroutine: %v\n%s", r, debug.Stack())
 			}
 			close(evalChan)
 			// Note: s.stop is closed by StopWatch (guarded by stopOnce), not
@@ -635,9 +636,16 @@ func (s *Store) Watch() (pms.StorageChangeChannel, error) {
 	loop:
 		for {
 			//TODO: reload policy store in case missing any changes during watch failure
+			watchStarted := time.Now()
 			go watch(evalChan, s, errChan, stopChan)
 			select {
 			case err := <-errChan:
+				// If the watch ran for longer than the backoff ceiling, the
+				// connection was healthy for a while; reset the failure counter
+				// so the next retry starts with a short backoff.
+				if time.Since(watchStarted) > watchBackoffMax {
+					consecutiveFails = 0
+				}
 				consecutiveFails++
 				backoff := computeWatchBackoff(consecutiveFails)
 				log.Warningf("Error %v happens, restart watching after %v (failures: %d)...\n",
@@ -665,7 +673,7 @@ func watch(evalChan chan pms.StoreChangeEvent, s *Store, errChan chan error, sto
 	cli := s.client // Reuse existing client instead of creating a new one
 	defer func() {
 		if r := recover(); r != nil {
-			log.Errorf("panic in watch %v: %v", watchID, r)
+			log.Errorf("panic in watch %v: %v\n%s", watchID, r, debug.Stack())
 		}
 		log.Infof("Exiting watch %v...", watchID)
 	}()

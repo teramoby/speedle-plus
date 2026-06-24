@@ -93,6 +93,13 @@ func CheckPolicy(serviceName string, policy *pms.Policy, policyStore pms.PolicyS
 		return errors.New(errors.InvalidRequest, "no effect provided in policy.")
 	}
 
+	// Reject ResourceExpression longer than 1024 chars to prevent regex abuse.
+	for _, perm := range policy.Permissions {
+		if len(perm.ResourceExpression) > 1024 {
+			return errors.Errorf(errors.InvalidRequest, "resource expression exceeds maximum length of 1024: len=%d", len(perm.ResourceExpression))
+		}
+	}
+
 	// Check the number of Policy + RolePolicy
 	existingCount, err := getPolicyAndRolePolicyCount("", policyStore)
 	if nil != err {

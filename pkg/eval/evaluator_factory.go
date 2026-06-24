@@ -4,6 +4,8 @@
 package eval
 
 import (
+	"runtime/debug"
+
 	"github.com/teramoby/speedle-plus/pkg/cfg"
 	"github.com/teramoby/speedle-plus/pkg/store"
 
@@ -85,7 +87,7 @@ func NewWithStore(conf *cfg.Config, s pms.PolicyStoreManagerADS) (InternalEvalua
 		go func() {
 			defer func() {
 				if r := recover(); r != nil {
-					log.Errorf("panic in updateRuntimeCacheWithStoreChange goroutine: %v", r)
+					log.Errorf("panic in updateRuntimeCacheWithStoreChange goroutine: %v\n%s", r, debug.Stack())
 				}
 			}()
 			p.updateRuntimeCacheWithStoreChange(updateChan)

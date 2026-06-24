@@ -9,6 +9,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/teramoby/speedle-plus/3rdparty/github.com/Knetic/govaluate"
 	"github.com/teramoby/speedle-plus/api/pms"
+	"github.com/teramoby/speedle-plus/pkg/errors"
 )
 
 type RuntimePolicyStore struct {
@@ -232,9 +233,16 @@ func (rtps *RuntimePolicyStore) convertService(service *pms.Service) *RuntimeSer
 	return rtService
 }
 
+// maxConditionLength is the maximum allowed length for a condition expression.
+// Conditions longer than this are rejected to prevent resource exhaustion attacks.
+const maxConditionLength = 4096
+
 func compileCondition(condition string, functions map[string]govaluate.ExpressionFunction) (*govaluate.EvaluableExpression, error) {
 	if len(condition) == 0 {
 		return nil, nil
+	}
+	if len(condition) > maxConditionLength {
+		return nil, errors.Errorf(errors.InvalidRequest, "condition expression exceeds maximum length of %d: len=%d", maxConditionLength, len(condition))
 	}
 
 	exp, err := govaluate.NewEvaluableExpressionWithFunctions(condition, functions)

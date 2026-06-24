@@ -6,6 +6,7 @@ package eval
 import (
 	"regexp"
 	"sync"
+	"sync/atomic"
 
 	"github.com/teramoby/speedle-plus/3rdparty/github.com/Knetic/govaluate"
 	adsapi "github.com/teramoby/speedle-plus/api/ads"
@@ -13,13 +14,28 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-var (
-	compiledRegexCache sync.Map
+const (
+	// maxRegexCacheSize is the maximum number of entries in the compiled regex cache.
+	// When this limit is reached, new patterns are still compiled but not cached.
+	maxRegexCacheSize = 10000
 )
+
+var (
+	compiledRegexCache     sync.Map
+	compiledRegexCacheSize int64 // atomic counter
+)
+
+// maxRegexPatternLen is the maximum allowed length for a regex pattern.
+// Patterns longer than this are rejected to prevent resource exhaustion.
+const maxRegexPatternLen = 1024
 
 // matchRegexCompiled compiles the pattern once and caches the result.
 // It returns true if pattern matches s.
 func matchRegexCompiled(pattern, s string) bool {
+	if len(pattern) > maxRegexPatternLen {
+		log.Warnf("regex pattern exceeds maximum length of %d: len=%d", maxRegexPatternLen, len(pattern))
+		return false
+	}
 	re, ok := compiledRegexCache.Load(pattern)
 	if !ok {
 		var err error
@@ -27,7 +43,14 @@ func matchRegexCompiled(pattern, s string) bool {
 		if err != nil {
 			return false
 		}
-		re, _ = compiledRegexCache.LoadOrStore(pattern, re)
+		// Only cache if we haven't exceeded the maximum cache size.
+		if atomic.LoadInt64(&compiledRegexCacheSize) < maxRegexCacheSize {
+			var loaded bool
+			re, loaded = compiledRegexCache.LoadOrStore(pattern, re)
+			if !loaded {
+				atomic.AddInt64(&compiledRegexCacheSize, 1)
+			}
+		}
 	}
 	compiled, ok := re.(*regexp.Regexp)
 	if !ok {
@@ -47,10 +70,6 @@ func matchResource(requestRes string, resources, resExpressions []string) bool {
 			return true
 		}
 	}
-	// NOTE: Resource expressions are user-supplied and compiled as regex patterns.
-	// If untrusted users can define resource expressions, they may be able to craft
-	// patterns that cause ReDoS (catastrophic backtracking). Consider adding a timeout
-	// or complexity limit on user-supplied patterns if this becomes a concern.
 	for _, resExp := range resExpressions {
 		if matchRegexCompiled(resExp, requestRes) {
 			return true
