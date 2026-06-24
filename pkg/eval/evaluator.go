@@ -238,6 +238,17 @@ func (p *PolicyEvalImpl) populateContext(ctx *adsapi.RequestContext) (*internalR
 		newCtx.Attributes[key] = value
 	}
 
+	// Re-assert built-in attributes after user attributes are merged
+	// to prevent user-supplied attributes from overriding built-in values.
+	newCtx.Attributes[adsapi.BuiltIn_Attr_RequestResource] = ctx.Resource
+	newCtx.Attributes[adsapi.BuiltIn_Attr_RequestAction] = ctx.Action
+	newCtx.Attributes[adsapi.BuiltIn_Attr_RequestTime] = now.Unix()
+	newCtx.Attributes[adsapi.BuiltIn_Attr_RequestYear] = year
+	newCtx.Attributes[adsapi.BuiltIn_Attr_RequestMonth] = int(month)
+	newCtx.Attributes[adsapi.BuiltIn_Attr_RequestDay] = day
+	newCtx.Attributes[adsapi.BuiltIn_Attr_RequestWeekday] = now.Weekday().String()
+	newCtx.Attributes[adsapi.BuiltIn_Attr_RequestHour] = now.Hour()
+
 	updateSubjectWithBuiltInRoles(newCtx.Subject)
 
 	return &newCtx, nil
