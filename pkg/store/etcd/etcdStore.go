@@ -53,6 +53,12 @@ type Store struct {
 
 
 // read policy store from etcd3
+//
+// NOTE: This method has a known N+1 query pattern: it fetches service
+// names in one call, then issues a separate GetService call for each
+// service. For deployments with many services this can cause significant
+// latency. A future optimization would be to retrieve all service data
+// in a single range scan.
 func (s *Store) ReadPolicyStore() (*pms.PolicyStore, error) {
 	serviceNames, err := s.GetServiceNames()
 	if err != nil {
