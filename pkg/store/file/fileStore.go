@@ -715,12 +715,6 @@ func (s *Store) CreateRolePolicy(serviceName string, rolePolicy *pms.RolePolicy)
 	return &dupRolePolicy, nil
 }
 
-func validateFunc(function *pms.Function) error { // DEPRECATED: use utils.ValidateFunc
-	if function.Name == "" || function.FuncURL == "" {
-		return errors.New(errors.InvalidRequest, "\"name\" and \"funcURL\" in function definition can not be empty")
-	}
-	return nil
-}
 
 func (s *Store) CreateFunction(function *pms.Function) (*pms.Function, error) {
 	if err := utils.ValidateFunc(function); err != nil {
