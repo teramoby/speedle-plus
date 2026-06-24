@@ -142,51 +142,79 @@ func calculatePermissions(grantedPermissions, deniedPermissions []pms.Permission
 	if len(deniedPermissions) == 0 {
 		return grantedPermissions
 	}
+
+	// Pre-build maps for O(1) lookups instead of O(G*D) nested scans.
+	// deniedByResource maps an exact resource name to a set of denied actions.
+	deniedByResource := make(map[string]map[string]bool, len(deniedPermissions))
+	// deniedByExpr stores denied permissions that use resource expressions.
+	type deniedExprEntry struct {
+		expr    string
+		actions map[string]bool
+	}
+	var deniedByExpr []deniedExprEntry
+	// denyAllActions is true when a denied permission has no resource and no expression (matches everything).
+	var denyAllActions map[string]bool
+
+	for _, dp := range deniedPermissions {
+		actions := make(map[string]bool, len(dp.Actions))
+		for _, a := range dp.Actions {
+			actions[a] = true
+		}
+		if len(dp.Resource) == 0 && len(dp.ResourceExpression) == 0 {
+			denyAllActions = actions
+		} else if len(dp.ResourceExpression) > 0 {
+			deniedByExpr = append(deniedByExpr, deniedExprEntry{expr: dp.ResourceExpression, actions: actions})
+		} else {
+			deniedByResource[dp.Resource] = actions
+		}
+	}
+
 	var finalPermissions []pms.Permission
 	for _, permission := range grantedPermissions {
-		grantPermission := pms.Permission{
-			Resource: permission.Resource,
-			Actions:  permission.Actions,
-		}
+		grantActions := make([]string, 0, len(permission.Actions))
 		isDenied := false
-		for _, deniedPermission := range deniedPermissions {
-			expMatched := false
-			if len(deniedPermission.ResourceExpression) > 0 {
-				matched := matchRegexCompiled(deniedPermission.ResourceExpression, grantPermission.Resource)
-				if matched {
-					//TODO: log err
-					expMatched = true
+
+		for _, grantedAction := range permission.Actions {
+			actionDenied := false
+
+			// Check deny-all (matches any resource).
+			if denyAllActions != nil && denyAllActions[grantedAction] {
+				actionDenied = true
+			}
+
+			// Check exact resource match.
+			if !actionDenied {
+				if deniedActions, ok := deniedByResource[permission.Resource]; ok {
+					actionDenied = deniedActions[grantedAction]
 				}
 			}
 
-			if (len(deniedPermission.Resource) == 0 && len(deniedPermission.ResourceExpression) == 0) || expMatched || deniedPermission.Resource == grantPermission.Resource {
-				//if resource match, then remove denied actions
-				var actions []string
-				for _, grantedAction := range grantPermission.Actions {
-					actionDenied := false
-					for _, deniedAction := range deniedPermission.Actions {
-						if grantedAction == deniedAction {
+			// Check resource expression match.
+			if !actionDenied {
+				for _, de := range deniedByExpr {
+					if matchRegexCompiled(de.expr, permission.Resource) {
+						if de.actions[grantedAction] {
 							actionDenied = true
 							break
 						}
 					}
-					if !actionDenied {
-						actions = append(actions, grantedAction)
-					}
-				}
-				if len(actions) == 0 {
-					isDenied = true
-					break
-				} else {
-					grantPermission = pms.Permission{
-						Resource: grantPermission.Resource,
-						Actions:  actions,
-					}
 				}
 			}
+
+			if !actionDenied {
+				grantActions = append(grantActions, grantedAction)
+			}
 		}
+
+		if len(grantActions) == 0 {
+			isDenied = true
+		}
+
 		if !isDenied {
-			finalPermissions = append(finalPermissions, grantPermission)
+			finalPermissions = append(finalPermissions, pms.Permission{
+				Resource: permission.Resource,
+				Actions:  grantActions,
+			})
 		}
 	}
 	return finalPermissions
