@@ -30,6 +30,11 @@ func CheckService(service *pms.Service, policyStore pms.PolicyStoreManager) erro
 		return errors.New(errors.InvalidRequest, "global policy doesn't support authorization policies")
 	}
 
+	// Validate Service.Type does not exceed a reasonable length to prevent abuse.
+	if len(service.Type) > 256 {
+		return errors.Errorf(errors.InvalidRequest, "service type must be at most 256 characters, got %d", len(service.Type))
+	}
+
 	// Check the number of the service
 	srvCount, err := policyStore.GetServiceCount()
 	if nil != err {
