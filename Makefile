@@ -9,7 +9,7 @@ version := $(shell git describe --tags --always --dirty 2>/dev/null || (cat VERS
 
 # go version output is "go version go1.11.2 linux/amd64"
 goVersion := $(word 3,$(shell go version))
-goLDFlags := -ldflags "-s -w -trimpath -X main.gitCommit=${gitCommit} -X main.productVersion=${version} -X main.goVersion=${goVersion} -X main.buildDate=${buildDate}"
+goLDFlags := -trimpath -ldflags "-s -w -X main.gitCommit=${gitCommit} -X main.productVersion=${version} -X main.goVersion=${goVersion} -X main.buildDate=${buildDate}"
 
 pmsImageRepo := speedle-pms
 pmsImageTag := v0.1

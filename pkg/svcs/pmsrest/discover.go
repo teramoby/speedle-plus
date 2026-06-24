@@ -64,7 +64,7 @@ func (e *RESTService) GetAllDiscoverRequests(w http.ResponseWriter, r *http.Requ
 	} else if len(revisionStr) != 0 { //get discover requests since revision
 		revision, err := strconv.ParseInt(revisionStr, 10, 64)
 		if err != nil {
-			err = errors.Errorf(errors.InvalidRequest, "invalid revision number %q", revision)
+			err = errors.Errorf(errors.InvalidRequest, "invalid revision number %d", revision)
 			log.Error(err)
 			httputils.HandleError(w, err)
 
@@ -143,7 +143,7 @@ func (e *RESTService) GetDiscoverRequests(w http.ResponseWriter, r *http.Request
 	} else if len(revisionStr) != 0 { //get discover requests since revision
 		revision, err := strconv.ParseInt(revisionStr, 10, 64)
 		if err != nil {
-			err = errors.Errorf(errors.InvalidRequest, "invalid revision number %q", revision)
+			err = errors.Errorf(errors.InvalidRequest, "invalid revision number %d", revision)
 			log.Error(err)
 			httputils.HandleError(w, err)
 

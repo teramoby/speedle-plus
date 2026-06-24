@@ -404,12 +404,6 @@ func (s *Store) Watch() (pms.StorageChangeChannel, error) {
 			}
 
 		}
-		log.Info("###exit for loop")
-
-		if err := changeStream.Err(); err != nil {
-			log.Error(err)
-		}
-
 	}()
 
 	return storeChangeChan, nil
