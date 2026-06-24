@@ -197,7 +197,7 @@ func hasPrivateIP(hostport string) bool {
 	}
 	ip := net.ParseIP(host)
 	if ip != nil {
-		if ip.IsPrivate() || ip.IsLinkLocalUnicast() || ip.IsLinkLocalMulticast() || ip.IsUnspecified() {
+		if ip.IsPrivate() || ip.IsLinkLocalUnicast() || ip.IsLinkLocalMulticast() || ip.IsUnspecified() || ip.IsLoopback() {
 			return true
 		}
 	}
