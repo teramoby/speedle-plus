@@ -29,7 +29,12 @@ func matchRegexCompiled(pattern, s string) bool {
 		}
 		re, _ = compiledRegexCache.LoadOrStore(pattern, re)
 	}
-	return re.(*regexp.Regexp).MatchString(s)
+	compiled, ok := re.(*regexp.Regexp)
+	if !ok {
+		log.Warnf("invalid type in compiledRegexCache, expected *regexp.Regexp, got %T", re)
+		return false
+	}
+	return compiled.MatchString(s)
 }
 
 func matchResource(requestRes string, resources, resExpressions []string) bool {
