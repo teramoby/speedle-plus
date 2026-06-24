@@ -241,7 +241,10 @@ func (p *PolicyCacheData) getPoliciesFromResourceExpressionMap(resourceToPolicyM
 	if matchResource {
 
 		fn := func(s string, v interface{}) bool {
-			policyIDSet := v.(map[string]bool)
+			policyIDSet, ok := v.(map[string]bool)
+			if !ok {
+				return false
+			}
 			for id := range policyIDSet {
 				resultPolicyMap[id] = p.PolicyMap[id]
 			}
@@ -269,7 +272,10 @@ func (p *PolicyCacheData) getPoliciesFromResourceExpressionMap(resourceToPolicyM
 	} else {
 
 		fn := func(s string, v interface{}) bool {
-			policyIDSet := v.(map[string]bool)
+			policyIDSet, ok := v.(map[string]bool)
+			if !ok {
+				return false
+			}
 			for id := range policyIDSet {
 				resultPolicyMap[id] = p.PolicyMap[id]
 			}

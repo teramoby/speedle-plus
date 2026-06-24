@@ -112,8 +112,9 @@ func AddPolicyToResourceExpressionCache(resourceToPolicyMap *ResourceToPolicyMap
 			resourceToPolicyMap.PrefixResourceExpressionTree.Insert(processedExpr, policyIDSet)
 		} else {
 			if value, exist := resourceToPolicyMap.PrefixResourceExpressionTree.Get(processedExpr); exist {
-				policyIDSet := value.(map[string]bool)
-				policyIDSet[policyID] = true
+				if policyIDSet, ok := value.(map[string]bool); ok {
+					policyIDSet[policyID] = true
+				}
 			} else {
 				policyIDSet := make(map[string]bool, 1)
 				policyIDSet[policyID] = true
@@ -130,8 +131,9 @@ func AddPolicyToResourceExpressionCache(resourceToPolicyMap *ResourceToPolicyMap
 			resourceToPolicyMap.SuffixResourceExpressionTree.Insert(processedExpr, policyIDSet)
 		} else {
 			if value, exist := resourceToPolicyMap.SuffixResourceExpressionTree.Get(processedExpr); exist {
-				policyIDSet := value.(map[string]bool)
-				policyIDSet[policyID] = true
+				if policyIDSet, ok := value.(map[string]bool); ok {
+					policyIDSet[policyID] = true
+				}
 			} else {
 				policyIDSet := make(map[string]bool, 1)
 				policyIDSet[policyID] = true
@@ -192,10 +194,11 @@ func DeletePolicyFromResourceExpressionCache(resourceToPolicyMap *ResourceToPoli
 
 		processedExpr := trimResourceExpressionSuffix(resourceExpression)
 		if value, exist := resourceToPolicyMap.PrefixResourceExpressionTree.Get(processedExpr); exist {
-			policyIDSet := value.(map[string]bool)
-			delete(policyIDSet, policyID)
-			if len(policyIDSet) == 0 {
-				resourceToPolicyMap.PrefixResourceExpressionTree.Delete(processedExpr)
+			if policyIDSet, ok := value.(map[string]bool); ok {
+				delete(policyIDSet, policyID)
+				if len(policyIDSet) == 0 {
+					resourceToPolicyMap.PrefixResourceExpressionTree.Delete(processedExpr)
+				}
 			}
 		}
 	} else if Suffix_Pattern.MatchString(resourceExpression) {
@@ -205,10 +208,11 @@ func DeletePolicyFromResourceExpressionCache(resourceToPolicyMap *ResourceToPoli
 
 		processedExpr := ReverseString(trimResourceExpressionPrefix(resourceExpression))
 		if value, exist := resourceToPolicyMap.SuffixResourceExpressionTree.Get(processedExpr); exist {
-			policyIDSet := value.(map[string]bool)
-			delete(policyIDSet, policyID)
-			if len(policyIDSet) == 0 {
-				resourceToPolicyMap.SuffixResourceExpressionTree.Delete(processedExpr)
+			if policyIDSet, ok := value.(map[string]bool); ok {
+				delete(policyIDSet, policyID)
+				if len(policyIDSet) == 0 {
+					resourceToPolicyMap.SuffixResourceExpressionTree.Delete(processedExpr)
+				}
 			}
 		}
 	} else if All_Pattern.MatchString(resourceExpression) {

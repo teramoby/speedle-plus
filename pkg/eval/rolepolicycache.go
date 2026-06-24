@@ -215,7 +215,10 @@ func (p *RolePolicyCacheData) getRolePolicyFromResourceToRolePolicyMap(resourceT
 func (p *RolePolicyCacheData) getRolePoliciesFromResourceExpressionMap(resourceToRolePolicyMap *ResourceToPolicyMap, resultPolicyMap map[string]*pms.RolePolicy, resource string) {
 
 	fn := func(s string, v interface{}) bool {
-		policyIDSet := v.(map[string]bool)
+		policyIDSet, ok := v.(map[string]bool)
+		if !ok {
+			return false
+		}
 		for id := range policyIDSet {
 			resultPolicyMap[id] = p.PolicyMap[id]
 		}
