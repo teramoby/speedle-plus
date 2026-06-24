@@ -81,6 +81,7 @@ func NewWithStore(conf *cfg.Config, s pms.PolicyStoreManagerADS) (InternalEvalua
 	// start a goroutine watching to the channel for update events and
 	// refresh runtime cache accordingly once receiving any events
 	if updateChan != nil {
+		p.wg.Add(1)
 		go func() {
 			defer func() {
 				if r := recover(); r != nil {
