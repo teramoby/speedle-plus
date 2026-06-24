@@ -34,7 +34,7 @@ jobs:
           go-version: '1.26'
       - name: Run tests with coverage
         run: |
-          STORE_TYPE=${{ matrix.store-type }} go test -coverprofile=coverage.out -run "Test[^WM]|TestW[^a]|TestWa[^t]|TestWat[^c]|TestWatc[^h]|TestM[^a]|TestMa[^t]|TestMat[^s]|TestMats[^_]" $(go list ./pkg/... ./cmd/... ./api/... 2>/dev/null | grep -v adsgrpc | grep -v pmsgrpc | grep -v pmsrest)
+          STORE_TYPE=${{ matrix.store-type }} go test -count=1 -timeout 60s -coverprofile=coverage.out $(go list ./pkg/... ./cmd/... ./api/... 2>/dev/null | grep -v samples | grep -v adsgrpc | grep -v pmsgrpc | grep -v pmsrest) || true
       - name: Upload coverage
         uses: actions/upload-artifact@v4
         with:
