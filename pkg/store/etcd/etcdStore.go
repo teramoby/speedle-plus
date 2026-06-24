@@ -619,6 +619,9 @@ func (s *Store) Watch() (pms.StorageChangeChannel, error) {
 	s.wg.Add(1)
 	go func() {
 		defer func() {
+			if r := recover(); r != nil {
+				log.Errorf("panic in Watch outer goroutine: %v", r)
+			}
 			close(evalChan)
 			close(s.stop)
 			close(errChan)
@@ -670,7 +673,10 @@ func watch(evalChan chan pms.StoreChangeEvent, s *Store, errChan chan error, sto
 	if err != nil {
 		log.Warningf("Error happens when new session, %v\n", err)
 		err = errors.Wrap(err, errors.StoreError, "failed to create session with etcd server")
-		errChan <- err
+		select {
+		case errChan <- err:
+		default:
+		}
 		return
 	}
 	defer session.Close()
@@ -686,7 +692,10 @@ func watch(evalChan chan pms.StoreChangeEvent, s *Store, errChan chan error, sto
 			if err := resp.Err(); err != nil {
 				log.Warningf("Error happens in watch response, %v\n", err)
 				err = errors.Wrap(err, errors.StoreError, "error found in watch response")
-				errChan <- err
+				select {
+				case errChan <- err:
+				default:
+				}
 				return
 			}
 			for _, e := range resp.Events {
@@ -740,7 +749,10 @@ func watch(evalChan chan pms.StoreChangeEvent, s *Store, errChan chan error, sto
 
 		case <-session.Done(): // closed by etcd
 			log.Warning("Session is closed by etcd")
-			errChan <- errors.New(errors.StoreError, "watch session is closed by remote etcd server")
+			select {
+			case errChan <- errors.New(errors.StoreError, "watch session is closed by remote etcd server"):
+			default:
+			}
 			return
 		}
 	}
@@ -933,12 +945,55 @@ func (s *Store) DeletePolicies(serviceName string) error {
 	return nil
 }
 
+// deepCopyPrincipals returns a deep copy of a [][]string.
+// The outer slice and each inner slice are independently allocated so the
+// caller cannot mutate the stored data through shared backing arrays.
+func deepCopyPrincipals(src [][]string) [][]string {
+	if src == nil {
+		return nil
+	}
+	dst := make([][]string, len(src))
+	for i, inner := range src {
+		if inner != nil {
+			dst[i] = make([]string, len(inner))
+			copy(dst[i], inner)
+		}
+	}
+	return dst
+}
+
+// deepCopyPermissions returns a deep copy of []*Permission.
+// Each *Permission is copied, including its Actions slice, so the caller
+// cannot mutate the stored data through shared pointers or backing arrays.
+func deepCopyPermissions(src []*pms.Permission) []*pms.Permission {
+	if src == nil {
+		return nil
+	}
+	dst := make([]*pms.Permission, len(src))
+	for i, p := range src {
+		if p != nil {
+			cp := *p
+			if p.Actions != nil {
+				cp.Actions = make([]string, len(p.Actions))
+				copy(cp.Actions, p.Actions)
+			}
+			dst[i] = &cp
+		}
+	}
+	return dst
+}
+
 func (s *Store) CreatePolicy(serviceName string, policy *pms.Policy) (*pms.Policy, error) {
 	//TODO:validate policy
 	if err := validateServiceName(serviceName); err != nil {
 		return nil, err
 	}
 	dupPolicy := *policy
+	// Deep copy fields whose backing data would be shared by the shallow copy:
+	// Principals is [][]string - the inner slices must be independently copied.
+	// Permissions is []*Permission - each pointer and its Actions slice must be copied.
+	dupPolicy.Principals = deepCopyPrincipals(policy.Principals)
+	dupPolicy.Permissions = deepCopyPermissions(policy.Permissions)
 	if policy.ID == "" {
 		dupPolicy.ID = suid.New().String()
 	}
@@ -1132,6 +1187,24 @@ func (s *Store) CreateRolePolicy(serviceName string, rolePolicy *pms.RolePolicy)
 		return nil, err
 	}
 	dupRolePolicy := *rolePolicy
+	// Deep copy slice fields whose backing arrays would be shared by the
+	// shallow copy, preventing the caller from mutating stored data.
+	if rolePolicy.Roles != nil {
+		dupRolePolicy.Roles = make([]string, len(rolePolicy.Roles))
+		copy(dupRolePolicy.Roles, rolePolicy.Roles)
+	}
+	if rolePolicy.Principals != nil {
+		dupRolePolicy.Principals = make([]string, len(rolePolicy.Principals))
+		copy(dupRolePolicy.Principals, rolePolicy.Principals)
+	}
+	if rolePolicy.Resources != nil {
+		dupRolePolicy.Resources = make([]string, len(rolePolicy.Resources))
+		copy(dupRolePolicy.Resources, rolePolicy.Resources)
+	}
+	if rolePolicy.ResourceExpressions != nil {
+		dupRolePolicy.ResourceExpressions = make([]string, len(rolePolicy.ResourceExpressions))
+		copy(dupRolePolicy.ResourceExpressions, rolePolicy.ResourceExpressions)
+	}
 	if rolePolicy.ID == "" {
 		dupRolePolicy.ID = suid.New().String()
 	}
