@@ -428,7 +428,9 @@ func (s *Store) Health(ctx context.Context) error {
 // discover request store cache, releasing any resources held by the store.
 func (s *Store) Close() error {
 	s.StopWatch()
+	s.rwLock.Lock()
 	s.discoverStore = nil
+	s.rwLock.Unlock()
 	return nil
 }
 
