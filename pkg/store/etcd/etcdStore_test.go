@@ -710,3 +710,35 @@ func TestWatch(t *testing.T) {
 	}
 
 }
+
+func TestWatchStopDuringBackoffNoPanic(t *testing.T) {
+	store, err := store.NewStore(storeConfig.StoreType, storeConfig.StoreProps)
+	if err != nil {
+		t.Fatal("fail to new etcd3 store:", err)
+	}
+	defer store.Close()
+
+	ch, err := store.Watch()
+	if err != nil {
+		t.Fatal("fail to watch:", err)
+	}
+
+	// Give the watch goroutine time to start and enter its main loop.
+	time.Sleep(100 * time.Millisecond)
+
+	// Stop the watch while the inner goroutine may still be running.
+	// This exercises the shutdown path where the outer goroutine closes
+	// channels while the inner watch goroutine could attempt to send on
+	// errChan or stopChan. With the non-blocking send fixes, no panic
+	// should occur.
+	store.StopWatch()
+
+	// Drain any events that may have been sent before StopWatch took effect.
+	go func() {
+		for range ch {
+		}
+	}()
+
+	// Give goroutines time to shut down cleanly.
+	time.Sleep(200 * time.Millisecond)
+}
