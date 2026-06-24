@@ -460,6 +460,23 @@ func (s *Store) Type() string {
 	return StoreType
 }
 
+// isValidFilterFieldName checks that a field name contains only alphanumeric
+// characters and underscores to prevent MongoDB operator injection.
+func isValidFilterFieldName(name string) bool {
+	for _, c := range name {
+		if !((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '_') {
+			return false
+		}
+	}
+	return len(name) > 0
+}
+
+// containsMongoOperatorChars returns true if s contains characters used in
+// MongoDB operator syntax ($, {, }, [, ]) which could enable filter injection.
+func containsMongoOperatorChars(s string) bool {
+	return strings.ContainsAny(s, "${}[]")
+}
+
 func parseFilter(filterStr string) (bson.D, error) {
 	if len(filterStr) == 0 {
 		return bson.D{{"$eq", bson.A{1, 1}}}, nil
@@ -468,6 +485,9 @@ func parseFilter(filterStr string) (bson.D, error) {
 	if len(values) == 2 {
 		field := values[0]
 		operator := values[1]
+		if !isValidFilterFieldName(field) {
+			return nil, errors.Errorf(errors.InvalidRequest, "invalid field name %q in filter: must be alphanumeric/underscore only", field)
+		}
 		switch operator {
 		case "pr":
 			return bson.D{{"$gt", bson.A{"$$p." + field, nil}}}, nil
@@ -480,6 +500,12 @@ func parseFilter(filterStr string) (bson.D, error) {
 		field := values[0]
 		operator := values[1]
 		target := values[2]
+		if !isValidFilterFieldName(field) {
+			return nil, errors.Errorf(errors.InvalidRequest, "invalid field name %q in filter: must be alphanumeric/underscore only", field)
+		}
+		if containsMongoOperatorChars(target) {
+			return nil, errors.Errorf(errors.InvalidRequest, "invalid target value %q in filter: must not contain MongoDB operator characters ($, {, }, [, ])", target)
+		}
 		switch operator {
 		case "eq":
 			return bson.D{{"$eq", bson.A{"$$p." + field, target}}}, nil

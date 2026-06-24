@@ -31,7 +31,8 @@ const (
 var (
 	// Shared HTTP client with connection pooling for plain HTTP calls.
 	defaultHTTPClient = &http.Client{
-		Timeout: defaultCustomerFunctionCallTimeout,
+		Timeout:       defaultCustomerFunctionCallTimeout,
+		CheckRedirect: ssrfSafeRedirectCheck,
 		Transport: &http.Transport{
 			MaxIdleConnsPerHost: 20,
 			Proxy:               http.ProxyFromEnvironment,
@@ -66,8 +67,9 @@ func getHTTPSClient(ca string) *http.Client {
 			MaxIdleConnsPerHost:   20,
 	}
 	client := &http.Client{
-		Transport: transport,
-		Timeout:   defaultCustomerFunctionCallTimeout,
+		Transport:     transport,
+		Timeout:       defaultCustomerFunctionCallTimeout,
+		CheckRedirect: ssrfSafeRedirectCheck,
 	}
 	actual, _ := httpsClients.LoadOrStore(ca, client)
 	if c2, ok2 := actual.(*http.Client); ok2 {
@@ -110,8 +112,19 @@ func (frc *FuncResultCache) add(key string, value FuncResult) {
 	frc.Results[key] = value
 }
 
+// maxFuncResultCacheSize is the maximum number of entries in the function result cache.
+// When this limit is reached, new results are not cached (callers still get the result).
+const maxFuncResultCacheSize = 50000
+
 func (frc *FuncResultCache) AddToCache(key string, cf *pms.Function, result interface{}) {
 	if cf.ResultCachable {
+		// Skip caching if the cache has grown too large to prevent unbounded memory use.
+		frc.RLock()
+		size := len(frc.Results)
+		frc.RUnlock()
+		if size > maxFuncResultCacheSize {
+			return
+		}
 		ttl := int64(0)
 		if cf.ResultTTL > 0 {
 			ttl = time.Now().Unix() + cf.ResultTTL
@@ -211,6 +224,13 @@ func hasPrivateIP(hostport string) bool {
 		}
 	}
 	return false
+}
+
+// ssrfSafeRedirectCheck validates each redirect target against SSRF rules.
+// It is used as the CheckRedirect function on HTTP clients to prevent
+// open-redirect-based SSRF bypasses.
+func ssrfSafeRedirectCheck(req *http.Request, via []*http.Request) error {
+	return validateCustomerFunctionURL(req.URL.String())
 }
 
 // validateCustomerFunctionURL checks that a function URL is safe to call.
