@@ -56,7 +56,6 @@ func deleteCommandFunc(cmd *cobra.Command, args []string) {
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
-		return
 	}
 
 	cli := &client.Client{

@@ -115,7 +115,7 @@ func writeConfigFile(flags map[string]string) error {
 	}
 	if u != nil {
 		cfg := path.Join(u.HomeDir, configFile)
-		f, err := os.OpenFile(cfg, os.O_WRONLY|os.O_CREATE, 0600)
+		f, err := os.OpenFile(cfg, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
 		if err != nil {
 			return err
 		}

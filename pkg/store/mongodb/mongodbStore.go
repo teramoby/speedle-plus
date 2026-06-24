@@ -194,19 +194,25 @@ func (s *Store) GetService(serviceName string) (*pms.Service, error) {
 }
 
 func generateID(service *pms.Service) (*pms.Service, error) {
-	var result pms.Service
-	result = *service
+	result := *service
+	// Deep-copy policies to avoid mutating the original service.
+	result.Policies = make([]*pms.Policy, len(service.Policies))
+	for i, p := range service.Policies {
+		cp := *p
+		cp.ID = suid.New().String()
+		result.Policies[i] = &cp
+	}
+	result.RolePolicies = make([]*pms.RolePolicy, len(service.RolePolicies))
+	for i, rp := range service.RolePolicies {
+		crp := *rp
+		crp.ID = suid.New().String()
+		result.RolePolicies[i] = &crp
+	}
 	if result.Policies == nil {
 		result.Policies = []*pms.Policy{}
 	}
 	if result.RolePolicies == nil {
 		result.RolePolicies = []*pms.RolePolicy{}
-	}
-	for _, policy := range result.Policies {
-		policy.ID = suid.New().String()
-	}
-	for _, rolePolicy := range result.RolePolicies {
-		rolePolicy.ID = suid.New().String()
 	}
 	return &result, nil
 }
