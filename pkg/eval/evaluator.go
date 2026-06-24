@@ -405,17 +405,17 @@ func (p *PolicyEvalImpl) resolveSubject(ctx *internalRequestContext, evaluationR
 
 // The firstly returned is granted rolePolicies.
 // The second returned value is denied rolePolicies.
-func (p *PolicyEvalImpl) getDirectRolePolices(principals []string,
+func (p *PolicyEvalImpl) getDirectRolePolicies(principals []string,
 	ctx *internalRequestContext, policyIDMap map[string]bool, evaluationResult *adsapi.EvaluationResult) ([]*pms.RolePolicy, []*pms.RolePolicy, error) {
 
 	grantedRolePolicies := make([]*pms.RolePolicy, 0)
 	deniedRolePolicies := make([]*pms.RolePolicy, 0)
-	grantedRolePolicies, deniedRolePolicies, err := p.getDirectRolePolicesInService(principals, ctx.Service, ctx.Resource, ctx.Attributes, policyIDMap, evaluationResult, grantedRolePolicies, deniedRolePolicies)
+	grantedRolePolicies, deniedRolePolicies, err := p.getDirectRolePoliciesInService(principals, ctx.Service, ctx.Resource, ctx.Attributes, policyIDMap, evaluationResult, grantedRolePolicies, deniedRolePolicies)
 	if err != nil {
 		return nil, nil, err
 	}
 	if ctx.GlobalService != nil {
-		grantedRolePolicies, deniedRolePolicies, err = p.getDirectRolePolicesInService(principals, ctx.GlobalService, ctx.Resource, ctx.Attributes, policyIDMap, evaluationResult, grantedRolePolicies, deniedRolePolicies)
+		grantedRolePolicies, deniedRolePolicies, err = p.getDirectRolePoliciesInService(principals, ctx.GlobalService, ctx.Resource, ctx.Attributes, policyIDMap, evaluationResult, grantedRolePolicies, deniedRolePolicies)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -423,7 +423,7 @@ func (p *PolicyEvalImpl) getDirectRolePolices(principals []string,
 	return grantedRolePolicies, deniedRolePolicies, nil
 }
 
-func (p *PolicyEvalImpl) getDirectRolePolicesInService(principals []string,
+func (p *PolicyEvalImpl) getDirectRolePoliciesInService(principals []string,
 	service *RuntimeService, resource string, attributes map[string]interface{}, policyIDMap map[string]bool, evaluationResult *adsapi.EvaluationResult, grantedRolePolicies []*pms.RolePolicy, deniedRolePolicies []*pms.RolePolicy) ([]*pms.RolePolicy, []*pms.RolePolicy, error) {
 		subjectSet := make(map[string]bool, len(principals))
 		for _, sp := range principals {
@@ -506,7 +506,7 @@ func (p *PolicyEvalImpl) getGrantedRolesFromService(ctx *internalRequestContext,
 			subjectPrincipalMap[principal] = true
 		}
 	}
-	directGrantedRolePolicies, directDeniedRolePolicies, err := p.getDirectRolePolices(ctx.Subject.Principals, ctx, policyIDMap, evaluationResult)
+	directGrantedRolePolicies, directDeniedRolePolicies, err := p.getDirectRolePolicies(ctx.Subject.Principals, ctx, policyIDMap, evaluationResult)
 	if err != nil {
 		return nil, err
 	}
@@ -535,7 +535,7 @@ func (p *PolicyEvalImpl) getGrantedRolesFromService(ctx *internalRequestContext,
 			newSubjectPrincipals = append(newSubjectPrincipals, convertRoleToPrincipal(role))
 		}
 		var indirectGrantedRolePolicies []*pms.RolePolicy
-		indirectGrantedRolePolicies, _, err = p.getDirectRolePolices(newSubjectPrincipals, ctx, policyIDMap, evaluationResult)
+		indirectGrantedRolePolicies, _, err = p.getDirectRolePolicies(newSubjectPrincipals, ctx, policyIDMap, evaluationResult)
 		if err != nil {
 			return nil, err
 		}
@@ -553,7 +553,7 @@ func (p *PolicyEvalImpl) getGrantedRolesFromService(ctx *internalRequestContext,
 	for role := range grantedRoleMap {
 		newSubjectPrincipals = append(newSubjectPrincipals, convertRoleToPrincipal(role))
 	}
-	_, DeniedRolePolicies, err := p.getDirectRolePolices(newSubjectPrincipals, ctx, policyIDMap, evaluationResult)
+	_, DeniedRolePolicies, err := p.getDirectRolePolicies(newSubjectPrincipals, ctx, policyIDMap, evaluationResult)
 	if err != nil {
 		return nil, err
 	}
