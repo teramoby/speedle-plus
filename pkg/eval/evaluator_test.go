@@ -6,7 +6,9 @@ package eval
 import (
 	"fmt"
 	"testing"
+	"time"
 
+	"github.com/teramoby/speedle-plus/3rdparty/github.com/Knetic/govaluate"
 	adsapi "github.com/teramoby/speedle-plus/api/ads"
 	"github.com/teramoby/speedle-plus/api/pms"
 )
@@ -908,6 +910,78 @@ func TestDenyConditionFailClosed(t *testing.T) {
 	}
 	if isAllowed {
 		t.Errorf("expected DENY (fail-closed) when deny condition cannot be evaluated, but got ALLOW")
+	}
+}
+
+// TestRecompileConditionNoDeadlock verifies that evaluating a policy whose
+// compiled condition is missing from the cache (which happens after a custom
+// function is deleted and the conditions cache is cleared) does not deadlock.
+// The recompile-at-runtime path must not acquire a write lock while the caller
+// holds read locks on the same mutexes.
+func TestRecompileConditionNoDeadlock(t *testing.T) {
+	alice := adsapi.Subject{
+		Principals: []*adsapi.Principal{
+			{Type: adsapi.PRINCIPAL_TYPE_USER, Name: "alice"},
+		},
+	}
+	stream := `
+	{
+		"services": [
+		{
+			"name": "erp",
+			"policies": [
+			{
+				"id": "grant-with-condition",
+				"effect": "grant",
+				"principals": [["user:alice"]],
+				"permissions": [{"resource": "/node1", "actions": ["read"]}],
+				"condition": "request_year > 2000"
+			}
+			]
+		}
+		]
+	}`
+	preparePolicyDataInStore([]byte(stream), t)
+	evalImpl, err := NewWithStore(conf, testPS)
+	if err != nil {
+		t.Fatalf("error creating evaluator: %v", err)
+	}
+	pe, ok := evalImpl.(*PolicyEvalImpl)
+	if !ok {
+		t.Fatalf("evaluator is not *PolicyEvalImpl")
+	}
+	// Clear the compiled conditions cache to force the recompile-at-runtime
+	// path on the next evaluation (simulates the post function-delete state).
+	pe.RuntimePolicyStore.Lock()
+	if rtSvc, found := pe.RuntimePolicyStore.RuntimeServices["erp"]; found {
+		rtSvc.Lock()
+		rtSvc.PoliciesCache.Conditions = make(map[string]*govaluate.EvaluableExpression)
+		rtSvc.Unlock()
+	}
+	pe.RuntimePolicyStore.Unlock()
+
+	req := adsapi.RequestContext{
+		Subject: &alice, ServiceName: "erp", Resource: "/node1", Action: "read",
+		Attributes: map[string]interface{}{},
+	}
+
+	// Run in a goroutine with a timeout; before the fix this self-deadlocks.
+	done := make(chan bool, 1)
+	go func() {
+		isAllowed, _, err := evalImpl.IsAllowed(req)
+		if err != nil {
+			t.Errorf("error in IsAllowed: %v", err)
+		}
+		if !isAllowed {
+			t.Errorf("expected ALLOW, got DENY")
+		}
+		done <- true
+	}()
+	select {
+	case <-done:
+		// completed without deadlock
+	case <-time.After(5 * time.Second):
+		t.Fatal("IsAllowed deadlocked on the recompile-at-runtime path")
 	}
 }
 

@@ -89,44 +89,21 @@ func (rtps *RuntimePolicyStore) deleteService(serviceName string) {
 	delete(rtps.RuntimeServices, serviceName)
 }
 
+// recompilePolicyConditionAtRuntime compiles a policy's condition on the fly
+// during evaluation. It intentionally does NOT write the compiled expression
+// back into the cache: the callers (getPolicyList, etc.) already hold read
+// locks on both the RuntimePolicyStore and the RuntimeService, so acquiring a
+// write lock here would self-deadlock. The compiled expression is returned for
+// one-shot use; the cache is (re)populated by the add/reload code paths.
 func (rtps *RuntimePolicyStore) recompilePolicyConditionAtRuntime(serviceName string, policy *pms.Policy) (*govaluate.EvaluableExpression, error) {
-
-	condition, err := compileCondition(policy.Condition, rtps.Functions)
-	if err == nil {
-		// Look up the service under RLock, then release before acquiring
-		// the service lock to avoid lock-ordering deadlock risks.
-		rtps.RLock()
-		rtService, ok := rtps.RuntimeServices[serviceName]
-		rtps.RUnlock()
-		if ok {
-			rtService.Lock()
-			rtService.PoliciesCache.Conditions[policy.ID] = condition
-			rtService.Unlock()
-		} else {
-			log.Errorf("Unable find service %s in runtime cache.", serviceName)
-		}
-	}
-	return condition, err
+	return compileCondition(policy.Condition, rtps.Functions)
 }
 
+// recompileRolePolicyConditionAtRuntime is the role-policy analogue of
+// recompilePolicyConditionAtRuntime and is likewise side-effect free for the
+// same lock-safety reasons.
 func (rtps *RuntimePolicyStore) recompileRolePolicyConditionAtRuntime(serviceName string, policy *pms.RolePolicy) (*govaluate.EvaluableExpression, error) {
-
-	condition, err := compileCondition(policy.Condition, rtps.Functions)
-	if err == nil {
-		// Look up the service under RLock, then release before acquiring
-		// the service lock to avoid lock-ordering deadlock risks.
-		rtps.RLock()
-		rtService, ok := rtps.RuntimeServices[serviceName]
-		rtps.RUnlock()
-		if ok {
-			rtService.Lock()
-			rtService.RolePoliciesCache.Conditions[policy.ID] = condition
-			rtService.Unlock()
-		} else {
-			log.Errorf("Unable find service %s in runtime cache.", serviceName)
-		}
-	}
-	return condition, err
+	return compileCondition(policy.Condition, rtps.Functions)
 }
 
 func (rtps *RuntimePolicyStore) addPolicy(serviceName string, policy *pms.Policy) {
