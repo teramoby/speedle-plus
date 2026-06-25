@@ -151,9 +151,112 @@ Speedle uses a JSON configuration file. Example:
 - Latest documentations: <https://speedle.io/docs>
 - Go package reference: <https://pkg.go.dev/github.com/teramoby/speedle-plus>
 
-## Get Started
+## Quick Start
 
-See Getting Started at <https://speedle.io/quick-start/>.
+This guide walks you through running Speedle+ locally with a file-based policy store.
+
+### Prerequisites
+
+- Go 1.22 or greater: <https://go.dev/doc/install>
+
+### 1. Build the binaries
+
+```bash
+git clone https://github.com/teramoby/speedle-plus.git
+cd speedle-plus
+make build
+ls $(go env GOPATH)/bin
+# Expected output: spctl  speedle-ads  speedle-pms
+```
+
+Or install directly with `go install`:
+
+```bash
+go install github.com/teramoby/speedle-plus/cmd/spctl@latest
+go install github.com/teramoby/speedle-plus/cmd/speedle-ads@latest
+go install github.com/teramoby/speedle-plus/cmd/speedle-pms@latest
+```
+
+Then add `$(go env GOPATH)/bin` to your `PATH` or use the full path to the binaries.
+
+### 2. Start the Policy Management Service (PMS)
+
+In one terminal:
+
+```bash
+speedle-pms --store-type file --insecure true
+```
+
+A default policy store file is created at `/tmp/speedle-test-file-store.json`.
+
+### 3. Create policies via spctl
+
+In another terminal:
+
+```bash
+# Create a service
+spctl create service mysvc
+
+# Grant user1 access to res1
+spctl create policy -c "grant user user1 get,del res1" --service-name=mysvc
+
+# Grant role2 access to res2
+spctl create policy -c "grant role role2 get,del res2" --service-name=mysvc
+
+# Assign user2 to role2 on res2
+spctl create rolepolicy -c "grant user user2 role2 on res2" --service-name=mysvc
+```
+
+### 4. Start the Authorization Decision Service (ADS)
+
+In another terminal:
+
+```bash
+speedle-ads --store-type file --insecure true
+```
+
+### 5. Verify authorization decisions
+
+In yet another terminal, test with `curl`:
+
+```bash
+# user1 should be allowed to get res1
+curl -s -X POST \
+  -H "Content-Type: application/json" \
+  --data '{"subject":{"principals":[{"type":"user","name":"user1"}]},"serviceName":"mysvc","resource":"res1","action":"get"}' \
+  http://127.0.0.1:6734/authz-check/v1/is-allowed
+# Expected: {"allowed":true,"reason":0}
+
+# user2 should be allowed to get res2 (via role)
+curl -s -X POST \
+  -H "Content-Type: application/json" \
+  --data '{"subject":{"principals":[{"type":"user","name":"user2"}]},"serviceName":"mysvc","resource":"res2","action":"get"}' \
+  http://127.0.0.1:6734/authz-check/v1/is-allowed
+# Expected: {"allowed":true,"reason":0}
+
+# user1 should be denied access to res2
+curl -s -X POST \
+  -H "Content-Type: application/json" \
+  --data '{"subject":{"principals":[{"type":"user","name":"user1"}]},"serviceName":"mysvc","resource":"res2","action":"get"}' \
+  http://127.0.0.1:6734/authz-check/v1/is-allowed
+# Expected: {"allowed":false,"reason":3}
+```
+
+### Service Ports
+
+| Service | Binary | Default Port |
+|---------|--------|---------------|
+| Policy Management | `speedle-pms` | 6733 |
+| Authorization Decision | `speedle-ads` | 6734 |
+| CLI tool | `spctl` | N/A (connects to PMS) |
+
+### Secure Mode (TLS)
+
+The examples above use `--insecure true` for local testing. For production, configure TLS certificates
+and omit the `--insecure` flag. See the [Configuration](#configuration) section for details.
+
+> **Note:** The `--insecure true` flag disables transport security. Use it only for local development.
+> The `Content-Type: application/json` header is required when calling the ADS REST API.
 
 ## Build
 

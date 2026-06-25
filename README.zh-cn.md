@@ -157,9 +157,111 @@ Speedle 使用 JSON 配置文件：
 - 请参阅 <https://speedle.io/zh/docs/usecases/>
 - Go 包参考文档: <https://pkg.go.dev/github.com/teramoby/speedle-plus>
 
-## Get Started
+## 快速开始
 
-请参阅 <https://speedle.io/quick-start/>。   
+以下步骤演示如何在本地使用基于文件的策略存储运行 Speedle+。
+
+### 前期准备
+
+- Go 1.22 或更高版本: <https://go.dev/doc/install>
+
+### 1. 构建二进制文件
+
+```bash
+git clone https://github.com/teramoby/speedle-plus.git
+cd speedle-plus
+make build
+ls $(go env GOPATH)/bin
+# 预期输出: spctl  speedle-ads  speedle-pms
+```
+
+或使用 `go install` 直接安装：
+
+```bash
+go install github.com/teramoby/speedle-plus/cmd/spctl@latest
+go install github.com/teramoby/speedle-plus/cmd/speedle-ads@latest
+go install github.com/teramoby/speedle-plus/cmd/speedle-pms@latest
+```
+
+然后将 `$(go env GOPATH)/bin` 添加到 `PATH` 环境变量中，或使用二进制文件的完整路径。
+
+### 2. 启动策略管理服务 (PMS)
+
+在一个终端中运行：
+
+```bash
+speedle-pms --store-type file --insecure true
+```
+
+默认策略存储文件将创建在 `/tmp/speedle-test-file-store.json`。
+
+### 3. 使用 spctl 创建策略
+
+在另一个终端中运行：
+
+```bash
+# 创建服务
+spctl create service mysvc
+
+# 授予 user1 对 res1 的访问权限
+spctl create policy -c "grant user user1 get,del res1" --service-name=mysvc
+
+# 授予 role2 对 res2 的访问权限
+spctl create policy -c "grant role role2 get,del res2" --service-name=mysvc
+
+# 将 user2 分配到 role2，作用于 res2
+spctl create rolepolicy -c "grant user user2 role2 on res2" --service-name=mysvc
+```
+
+### 4. 启动授权决策服务 (ADS)
+
+在另一个终端中运行：
+
+```bash
+speedle-ads --store-type file --insecure true
+```
+
+### 5. 验证授权决策
+
+在又一个终端中，使用 `curl` 测试：
+
+```bash
+# user1 应该被允许访问 res1
+curl -s -X POST \
+  -H "Content-Type: application/json" \
+  --data '{"subject":{"principals":[{"type":"user","name":"user1"}]},"serviceName":"mysvc","resource":"res1","action":"get"}' \
+  http://127.0.0.1:6734/authz-check/v1/is-allowed
+# 预期: {"allowed":true,"reason":0}
+
+# user2 应该被允许访问 res2（通过角色）
+curl -s -X POST \
+  -H "Content-Type: application/json" \
+  --data '{"subject":{"principals":[{"type":"user","name":"user2"}]},"serviceName":"mysvc","resource":"res2","action":"get"}' \
+  http://127.0.0.1:6734/authz-check/v1/is-allowed
+# 预期: {"allowed":true,"reason":0}
+
+# user1 不应该被允许访问 res2
+curl -s -X POST \
+  -H "Content-Type: application/json" \
+  --data '{"subject":{"principals":[{"type":"user","name":"user1"}]},"serviceName":"mysvc","resource":"res2","action":"get"}' \
+  http://127.0.0.1:6734/authz-check/v1/is-allowed
+# 预期: {"allowed":false,"reason":3}
+```
+
+### 服务端口
+
+| 服务 | 二进制文件 | 默认端口 |
+|------|-----------|---------|
+| 策略管理 | `speedle-pms` | 6733 |
+| 授权决策 | `speedle-ads` | 6734 |
+| 命令行工具 | `spctl` | N/A（连接 PMS） |
+
+### 安全模式 (TLS)
+
+以上示例使用 `--insecure true` 进行本地测试。生产环境请配置 TLS 证书并省略 `--insecure` 标志。详见[配置文件示例](#配置文件示例)章节。
+
+> **注意：** `--insecure true` 标志会禁用传输安全，仅适用于本地开发。
+> 调用 ADS REST API 时必须添加 `Content-Type: application/json` 请求头。
 
 更详细的内容可以查阅[这里](https://github.com/teramoby/speedle-plus/tree/master/docs/%E4%B8%AD%E6%96%87%E8%B5%84%E6%96%99)。
 
