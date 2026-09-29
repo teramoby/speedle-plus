@@ -51,6 +51,7 @@ jobs:
         env:
           ARK_API_KEY: ${{ secrets.ARK_API_KEY }}
           ARK_MODEL: ${{ vars.ARK_REVIEW_MODEL || 'kimi-k3' }}
+          ARK_FALLBACK_MODEL: ${{ vars.ARK_REVIEW_FALLBACK_MODEL || 'glm-5.3' }}
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
@@ -81,33 +82,52 @@ jobs:
             mv "${limited_input}" "${review_input}"
           fi
 
-          jq -n \
-            --arg model "${ARK_MODEL}" \
-            --rawfile input "${review_input}" \
-            '{model: $model, input: $input, max_output_tokens: 8192, reasoning: {effort: "medium"}}' \
-            > "${request_body}"
-
-          http_code=$(curl \
-            --silent \
-            --show-error \
-            --connect-timeout 20 \
-            --max-time 600 \
-            --output "${response_body}" \
-            --write-out '%{http_code}' \
-            'https://ark.cn-beijing.volces.com/api/plan/v3/responses' \
-            -H "Authorization: Bearer ${ARK_API_KEY}" \
-            -H 'Content-Type: application/json' \
-            --data-binary "@${request_body}")
-
-          if [[ ! "${http_code}" =~ ^2 ]]; then
-            echo "Ark Responses API returned HTTP ${http_code}." >&2
-            jq '{error}' "${response_body}" >&2 || true
-            exit 1
+          review_message=""
+          selected_model=""
+          models=("${ARK_MODEL}")
+          if [[ -n "${ARK_FALLBACK_MODEL}" && "${ARK_FALLBACK_MODEL}" != "${ARK_MODEL}" ]]; then
+            models+=("${ARK_FALLBACK_MODEL}")
           fi
 
-          review_message=$(jq -er \
-            '[.output[]?.content[]? | select(.type == "output_text") | .text] | join("\n") | select(length > 0)' \
-            "${response_body}")
+          for model in "${models[@]}"; do
+            jq -n \
+              --arg model "${model}" \
+              --rawfile input "${review_input}" \
+              '{model: $model, input: $input, max_output_tokens: 8192, reasoning: {effort: "medium"}}' \
+              > "${request_body}"
+
+            http_code=$(curl \
+              --silent \
+              --show-error \
+              --connect-timeout 20 \
+              --max-time 600 \
+              --output "${response_body}" \
+              --write-out '%{http_code}' \
+              'https://ark.cn-beijing.volces.com/api/plan/v3/responses' \
+              -H "Authorization: Bearer ${ARK_API_KEY}" \
+              -H 'Content-Type: application/json' \
+              --data-binary "@${request_body}") || http_code="curl-error"
+
+            if [[ "${http_code}" =~ ^2 ]]; then
+              review_message=$(jq -er \
+                '[.output[]?.content[]? | select(.type == "output_text") | .text] | join("\n") | select(length > 0)' \
+                "${response_body}" 2>/dev/null) || review_message=""
+              if [[ -n "${review_message}" ]]; then
+                selected_model="${model}"
+                break
+              fi
+              echo "Ark model ${model} returned no usable output; trying fallback if configured." >&2
+            else
+              echo "Ark model ${model} returned HTTP ${http_code}; trying fallback if configured." >&2
+              jq '{error}' "${response_body}" >&2 || true
+            fi
+          done
+
+          if [[ -z "${review_message}" ]]; then
+            echo "All configured Ark review models failed." >&2
+            exit 1
+          fi
+          echo "Review completed with Ark model ${selected_model}."
           if grep -Fxq '<!-- reviewbot-verdict:no-actionable-findings -->' <<< "${review_message}"; then
             echo "safe_to_merge=true" >> "${GITHUB_OUTPUT}"
           else
