@@ -322,13 +322,16 @@ body.page-kube.preview-home #main > .features:first-child::before {
 }
 
 body.page-kube.preview-home #main > .features:first-child > h1 {
-  max-width: 720px;
+  max-width: 760px;
+  margin-bottom: 34px;
   color: #fff;
-  font-size: clamp(3rem, 6vw, 5rem);
+  font-size: clamp(2.75rem, 4.2vw, 3.65rem);
+  line-height: 1.12;
+  letter-spacing: -.035em;
 }
 
 body.page-kube.preview-home #main > .features:first-child > .row:first-of-type {
-  min-height: 310px;
+  min-height: 245px;
   align-items: center;
 }
 
