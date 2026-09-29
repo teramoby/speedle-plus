@@ -39,7 +39,7 @@ body.page-kube > header {
 }
 
 #top {
-  width: min(1160px, calc(100% - 40px));
+  width: min(1600px, calc(100% - 40px));
   height: 76px;
   margin: 0 auto;
   padding: 0;
@@ -51,7 +51,7 @@ body.page-kube > header {
 
 #top-brand { margin: 0 auto 0 0; }
 #top-brand a { display: flex; align-items: center; }
-#top-brand img { width: 152px !important; height: auto !important; margin: 0 !important; }
+#top-brand img { width: 210px !important; height: auto !important; margin: 0 !important; }
 
 #top nav { margin: 0; }
 #top nav ul { margin: 0; padding: 0; display: flex; align-items: center; gap: 20px; list-style: none; }
@@ -188,9 +188,23 @@ body.page-kube > .container { padding: 58px 0 100px; }
 }
 #main .button.primary:hover { transform: translateY(-2px); background: #18efd5; }
 
-.content-container { display: grid; grid-template-columns: minmax(0, 1fr) 260px; gap: 64px; align-items: start; }
+.content-container { display: grid; grid-template-columns: 260px minmax(0, 1fr); gap: 44px; align-items: start; }
 .content-container > main { min-width: 0; }
 .content-container #main h1 { font-size: clamp(2.45rem, 4.5vw, 3.65rem); }
+
+/* Documentation pages use the full viewport: compact navigation on the far
+   left and a wide reading column on the right. */
+body.page-kube > .container {
+  width: min(1800px, calc(100% - 32px));
+}
+
+.content-container > main {
+  width: 100%;
+  max-width: none;
+  padding: 1rem 32px 3rem 0;
+}
+
+#kube-component.content { max-width: 1120px; }
 
 #contents {
   margin: 30px 0;
@@ -249,7 +263,8 @@ body.page-kube > footer nav img { width: 23px; height: 23px; margin: 0; }
   #top { gap: 15px; }
   #top nav ul { gap: 12px; }
   #top nav a, #top-nav-lang .pointerCursor { font-size: 13px; }
-  .content-container { gap: 32px; grid-template-columns: minmax(0, 1fr) 230px; }
+  .content-container { gap: 28px; grid-template-columns: 220px minmax(0, 1fr); }
+  .content-container > main { padding-right: 16px; }
 }
 
 @media (max-width: 767px) {
