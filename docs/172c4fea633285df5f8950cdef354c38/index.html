@@ -1,0 +1,282 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Speedle+ is a fast, simple authorization engine for polyglot systems.">
+  <title>Speedle+ — Simple authorization for every stack</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23814ce4'/%3E%3Cpath d='M32 9 48 18v28L32 55 16 46V18zM32 17l-9 5v20l9 5 9-5V22z' fill='none' stroke='white' stroke-width='3'/%3E%3Ccircle cx='32' cy='32' r='5' fill='%2301e7cb'/%3E%3C/svg%3E">
+  <style>
+    :root {
+      --purple: #814ce4;
+      --purple-dark: #5c2fc0;
+      --cyan: #01e7cb;
+      --ink: #172033;
+      --muted: #5d667a;
+      --line: #e5e8f1;
+      --soft: #f6f7fb;
+      --white: #fff;
+      --shadow: 0 20px 60px rgba(40, 27, 83, .12);
+      --radius: 22px;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body { margin: 0; color: var(--ink); background: var(--white); font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; font-size: 16px; line-height: 1.65; }
+    a { color: inherit; text-decoration: none; }
+    img { max-width: 100%; display: block; }
+    .wrap { width: min(1160px, calc(100% - 40px)); margin: 0 auto; }
+    .site-header { position: sticky; top: 0; z-index: 20; background: rgba(31, 17, 66, .92); backdrop-filter: blur(18px); border-bottom: 1px solid rgba(255,255,255,.1); }
+    .nav { height: 76px; display: flex; align-items: center; justify-content: space-between; }
+    .brand img { width: 152px; height: auto; }
+    .nav-links { display: flex; align-items: center; gap: 30px; color: rgba(255,255,255,.82); font-size: .94rem; font-weight: 600; }
+    .nav-links a:hover, .nav-links a:focus-visible { color: var(--cyan); }
+    .nav-github { padding: 10px 18px; border: 1px solid rgba(255,255,255,.28); border-radius: 999px; color: #fff !important; }
+    .menu { display: none; color: #fff; background: transparent; border: 0; font-size: 1.55rem; cursor: pointer; }
+    .hero { position: relative; overflow: hidden; color: #fff; background: linear-gradient(135deg, #25134e 0%, #6636c8 62%, #814ce4 100%); }
+    .hero::before { content: ""; position: absolute; width: 560px; height: 560px; right: -190px; top: -290px; border-radius: 50%; border: 110px solid rgba(1,231,203,.12); }
+    .hero::after { content: ""; position: absolute; width: 310px; height: 310px; left: -190px; bottom: -180px; border-radius: 50%; background: rgba(1,231,203,.09); }
+    .hero-grid { position: relative; z-index: 1; min-height: 600px; padding: 96px 0 100px; display: grid; grid-template-columns: 1.15fr .85fr; gap: 72px; align-items: center; }
+    .eyebrow { display: inline-flex; align-items: center; gap: 9px; color: var(--cyan); text-transform: uppercase; letter-spacing: .14em; font-size: .78rem; font-weight: 800; }
+    .eyebrow::before { content: ""; width: 28px; height: 2px; background: currentColor; }
+    h1 { margin: 20px 0 24px; font-size: clamp(3.1rem, 6vw, 5.6rem); line-height: .98; letter-spacing: -.055em; max-width: 760px; }
+    .hero-copy p { max-width: 660px; margin: 0; color: rgba(255,255,255,.78); font-size: 1.18rem; }
+    .actions { margin-top: 34px; display: flex; flex-wrap: wrap; gap: 14px; }
+    .button { display: inline-flex; min-height: 50px; align-items: center; justify-content: center; padding: 0 23px; border-radius: 9px; font-weight: 750; transition: transform .2s, background .2s, border-color .2s; }
+    .button:hover { transform: translateY(-2px); }
+    .button-primary { color: #1b1c2c; background: var(--cyan); }
+    .button-secondary { color: #fff; border: 1px solid rgba(255,255,255,.3); }
+    .hero-art { position: relative; min-height: 390px; display: grid; place-items: center; }
+    .hero-art::before, .hero-art::after { content: ""; position: absolute; inset: 12% 5%; border: 1px solid rgba(255,255,255,.16); transform: rotate(12deg); border-radius: 38px; }
+    .hero-art::after { inset: 19% 12%; transform: rotate(-9deg); border-color: rgba(1,231,203,.35); }
+    .hero-mark { position: relative; z-index: 2; width: min(330px, 78%); filter: drop-shadow(0 30px 30px rgba(20,10,50,.28)); }
+    .status { border-bottom: 1px solid var(--line); background: #fff; }
+    .status-inner { min-height: 78px; display: flex; align-items: center; justify-content: space-between; gap: 24px; }
+    .status-copy { display: flex; align-items: center; gap: 13px; color: var(--muted); }
+    .status-dot { width: 10px; height: 10px; flex: 0 0 auto; border-radius: 50%; background: var(--cyan); box-shadow: 0 0 0 6px rgba(1,231,203,.14); }
+    .text-link { color: var(--purple-dark); font-weight: 750; }
+    section { padding: 104px 0; }
+    .section-head { display: flex; align-items: end; justify-content: space-between; gap: 40px; margin-bottom: 44px; }
+    .section-head h2 { margin: 8px 0 0; font-size: clamp(2.15rem, 4vw, 3.3rem); line-height: 1.08; letter-spacing: -.04em; }
+    .section-head p { max-width: 520px; margin: 0; color: var(--muted); }
+    .about-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 26px; }
+    .about-copy, .stack-card { padding: 42px; border-radius: var(--radius); }
+    .about-copy { color: #fff; background: var(--ink); }
+    .about-copy p { color: rgba(255,255,255,.72); }
+    .about-copy strong { color: var(--cyan); }
+    .stack-card { position: relative; overflow: hidden; background: var(--soft); border: 1px solid var(--line); }
+    .stack-card h3 { margin: 0 0 22px; font-size: 1.3rem; }
+    .check-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 14px; }
+    .check-list li { display: flex; gap: 12px; align-items: center; font-weight: 650; }
+    .check-list img { width: 22px; height: 22px; }
+    .license { margin-top: 24px; color: var(--muted); font-size: .92rem; }
+    .features { background: var(--soft); }
+    .feature-grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 18px; }
+    .feature-card { grid-column: span 4; min-height: 300px; padding: 30px; border: 1px solid var(--line); border-radius: 18px; background: #fff; transition: transform .25s, box-shadow .25s, border-color .25s; }
+    .feature-card:hover { transform: translateY(-5px); border-color: rgba(129,76,228,.35); box-shadow: var(--shadow); }
+    .feature-card:nth-child(n+4) { grid-column: span 3; min-height: 286px; }
+    .feature-icon { width: 78px; height: 78px; object-fit: contain; margin-bottom: 28px; }
+    .feature-card h3 { margin: 0 0 10px; font-size: 1.16rem; line-height: 1.35; }
+    .feature-card p { margin: 0 0 18px; color: var(--muted); font-size: .94rem; }
+    .feature-card a { color: var(--purple-dark); font-weight: 700; font-size: .9rem; }
+    .policy { color: #fff; background: #1c1232; }
+    .policy-grid { display: grid; grid-template-columns: .8fr 1.2fr; gap: 68px; align-items: center; }
+    .policy h2 { margin: 12px 0 20px; font-size: clamp(2.2rem, 4vw, 3.4rem); line-height: 1.08; }
+    .policy p { color: rgba(255,255,255,.68); }
+    .code { border: 1px solid rgba(255,255,255,.13); border-radius: 16px; overflow: hidden; background: #100b1e; box-shadow: 0 30px 80px rgba(0,0,0,.25); }
+    .code-bar { padding: 13px 18px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,.1); color: rgba(255,255,255,.55); font: 600 .78rem/1 ui-monospace, monospace; }
+    .dots { display: flex; gap: 7px; }
+    .dots i { width: 9px; height: 9px; border-radius: 50%; background: #684e8e; }
+    pre { margin: 0; padding: 26px; overflow: auto; color: #ece8f8; font: 500 .9rem/1.8 ui-monospace, SFMono-Regular, Menlo, monospace; }
+    .kw { color: #01e7cb; } .str { color: #d3afff; } .cm { color: #74698c; }
+    .integrations-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+    .integration { min-height: 220px; display: grid; place-items: center; padding: 40px; border-radius: 18px; border: 1px solid var(--line); background: #fff; }
+    .integration:hover { box-shadow: var(--shadow); }
+    .integration img { width: 150px; height: 105px; object-fit: contain; }
+    .contribute { padding-top: 20px; }
+    .contribute-card { position: relative; overflow: hidden; display: grid; grid-template-columns: .8fr 1.2fr; align-items: center; gap: 50px; padding: 62px; color: #fff; border-radius: 28px; background: linear-gradient(125deg, var(--purple-dark), var(--purple)); }
+    .contribute-card::after { content: ""; position: absolute; width: 300px; height: 300px; border: 70px solid rgba(1,231,203,.14); border-radius: 50%; right: -120px; top: -170px; }
+    .contribute-card img { width: 230px; margin: auto; }
+    .contribute-card h2 { margin: 0 0 14px; font-size: clamp(2rem, 4vw, 3rem); line-height: 1.1; }
+    .contribute-card p { color: rgba(255,255,255,.75); }
+    footer { margin-top: 104px; color: rgba(255,255,255,.7); background: #171022; }
+    .footer-inner { min-height: 190px; display: grid; grid-template-columns: 1fr auto; gap: 30px; align-items: center; }
+    .footer-brand img { width: 132px; margin-bottom: 16px; }
+    .footer-brand p { margin: 0; font-size: .88rem; }
+    .social { display: flex; gap: 12px; }
+    .social a { width: 44px; height: 44px; display: grid; place-items: center; border: 1px solid rgba(255,255,255,.18); border-radius: 10px; }
+    .social img { width: 24px; height: 24px; }
+    @media (max-width: 900px) {
+      .hero-grid, .policy-grid, .contribute-card { grid-template-columns: 1fr; }
+      .hero-grid { padding: 76px 0; gap: 30px; }
+      .hero-art { min-height: 260px; }
+      .about-grid { grid-template-columns: 1fr; }
+      .feature-card, .feature-card:nth-child(n+4) { grid-column: span 6; }
+      .section-head { align-items: start; flex-direction: column; gap: 16px; }
+      .contribute-card { padding: 44px; }
+    }
+    @media (max-width: 700px) {
+      .wrap { width: min(100% - 28px, 1160px); }
+      .menu { display: block; }
+      .nav-links { display: none; position: absolute; inset: 76px 0 auto; padding: 24px; flex-direction: column; align-items: flex-start; gap: 18px; background: #25134e; }
+      .nav-links.open { display: flex; }
+      h1 { font-size: 3.25rem; }
+      section { padding: 76px 0; }
+      .status-inner { padding: 18px 0; align-items: flex-start; flex-direction: column; gap: 9px; }
+      .feature-card, .feature-card:nth-child(n+4) { grid-column: 1 / -1; min-height: auto; }
+      .integrations-grid { grid-template-columns: 1fr; }
+      .about-copy, .stack-card { padding: 30px; }
+      .contribute-card { padding: 34px 26px; }
+      .footer-inner { padding: 48px 0; grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap nav">
+      <a class="brand" href="#top" aria-label="Speedle home"><img src="/img/speedle/Speedle_logo_w.svg" alt="Speedle"></a>
+      <button class="menu" type="button" aria-expanded="false" aria-controls="nav-links" aria-label="Open navigation">☰</button>
+      <nav class="nav-links" id="nav-links" aria-label="Main navigation">
+        <a href="#about">About</a><a href="#features">Features</a><a href="#integrations">Integrations</a>
+        <a href="/quick-start/">Getting started</a><a href="/docs/">Docs</a>
+        <a class="nav-github" href="https://github.com/teramoby/speedle-plus">GitHub</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="wrap hero-grid">
+        <div class="hero-copy">
+          <span class="eyebrow">Open-source authorization engine</span>
+          <h1>Fast. Simple. Access control.</h1>
+          <p>Externalize fine-grained authorization with a human-readable policy language, centralized management and millisecond decisions across polyglot systems.</p>
+          <div class="actions">
+            <a class="button button-primary" href="/quick-start/">Getting started</a>
+            <a class="button button-secondary" href="https://github.com/teramoby/speedle-plus">View on GitHub</a>
+          </div>
+        </div>
+        <div class="hero-art" aria-hidden="true">
+          <img class="hero-mark" src="/img/speedle/Speedle_logo_about.svg" alt="">
+        </div>
+      </div>
+    </section>
+
+    <div class="status">
+      <div class="wrap status-inner">
+        <div class="status-copy"><span class="status-dot"></span><span>The original Speedle project continues as <strong>Speedle+</strong>, maintained by its founding members.</span></div>
+        <a class="text-link" href="https://github.com/teramoby/speedle-plus">Explore Speedle+</a>
+      </div>
+    </div>
+
+    <section id="about">
+      <div class="wrap">
+        <div class="section-head">
+          <div><span class="eyebrow">About Speedle</span><h2>Authorization that stays out of your application code.</h2></div>
+          <p>Speedle is a general-purpose authorization engine for cloud-native and legacy applications. It evaluates RBAC and ABAC policies for users, services and delegated processes.</p>
+        </div>
+        <div class="about-grid">
+          <article class="about-copy">
+            <h3>One engine, many stacks</h3>
+            <p>Define policy once, manage it centrally and ask Speedle for a consistent authorization decision from any service or language.</p>
+            <p><strong>Open source and built for extension.</strong> Speedle+ carries the project forward under the Universal Permissive License.</p>
+            <a class="button button-secondary" href="/about/">Read the project story</a>
+          </article>
+          <article class="stack-card">
+            <h3>Speedle consists of</h3>
+            <ul class="check-list">
+              <li><img src="/img/speedle/Tick.svg" alt="">SPDL policy definition language</li>
+              <li><img src="/img/speedle/Tick.svg" alt="">Policy Management Service</li>
+              <li><img src="/img/speedle/Tick.svg" alt="">Authorization Decision Service</li>
+              <li><img src="/img/speedle/Tick.svg" alt="">Command-line tool (spctl)</li>
+            </ul>
+            <p class="license">Use the complete stack or integrate only the components your system needs.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="features" id="features">
+      <div class="wrap">
+        <div class="section-head">
+          <div><span class="eyebrow">Features</span><h2>Fine-grained control without the friction.</h2></div>
+          <p>Preserve the policies your team can reason about while keeping enforcement fast, centralized and adaptable.</p>
+        </div>
+        <div class="feature-grid">
+          <article class="feature-card"><img class="feature-icon" src="/img/speedle/1.%20Simple%20Policy%20Definition%20Language.svg" alt=""><h3>Simple Policy Language</h3><p>Express authorization intent in the human-readable Secure Policy Definition Language.</p><a href="/docs/spdl/">Learn more</a></article>
+          <article class="feature-card"><img class="feature-icon" src="/img/speedle/2.%20Cloud%20Native.svg" alt=""><h3>Cloud Native</h3><p>Run across clouds and connect to modern infrastructure through pluggable interfaces.</p><a href="/categories/cloudnative/">Learn more</a></article>
+          <article class="feature-card"><img class="feature-icon" src="/img/speedle/3.%20Policy%20Discovery.svg" alt=""><h3>Real-time Policy Discovery</h3><p>Observe runtime interactions and turn real access patterns into enforceable policies.</p><a href="/docs/pms/">Learn more</a></article>
+          <article class="feature-card"><img class="feature-icon" src="/img/speedle/4.%20RBAC-ABAC.svg" alt=""><h3>RBAC / ABAC</h3><p>Combine roles and attributes for precise access decisions.</p><a href="/tags/policy/">Learn more</a></article>
+          <article class="feature-card"><img class="feature-icon" src="/img/speedle/5.%20Centralized%20Policy%20Management.svg" alt=""><h3>Centralized Management</h3><p>Manage policy for disparate services from one place.</p><a href="/docs/pms/">Learn more</a></article>
+          <article class="feature-card"><img class="feature-icon" src="/img/speedle/6.%20Pluggable%20Identity.svg" alt=""><h3>Pluggable Identity</h3><p>Connect GitHub, Okta or your own identity provider.</p><a href="/docs/assertor/">Learn more</a></article>
+          <article class="feature-card"><img class="feature-icon" src="/img/speedle/7.%20Persistence.svg" alt=""><h3>Bring Your Own Store</h3><p>Use etcd or implement the persistence interface for your storage layer.</p><a href="/docs/store/">Learn more</a></article>
+        </div>
+      </div>
+    </section>
+
+    <section class="policy">
+      <div class="wrap policy-grid">
+        <div>
+          <span class="eyebrow">SPDL</span>
+          <h2>Policies humans can read.</h2>
+          <p>Describe who can perform an action on a resource, add conditions when needed, and keep authorization rules separate from business logic.</p>
+          <a class="button button-secondary" href="/docs/spdl/">Explore SPDL</a>
+        </div>
+        <div class="code" aria-label="SPDL policy example">
+          <div class="code-bar"><span class="dots"><i></i><i></i><i></i></span><span>library.spdl</span></div>
+          <pre><span class="cm">// Employees can read books</span>
+<span class="kw">grant</span> <span class="str">read</span> on <span class="str">book</span>
+  <span class="kw">if</span> principal <span class="kw">in</span> group:<span class="str">employee</span>;
+
+<span class="cm">// Explicit deny always wins</span>
+<span class="kw">deny</span> <span class="str">delete</span> on <span class="str">book</span>
+  <span class="kw">if</span> principal == user:<span class="str">bob</span>;</pre>
+        </div>
+      </div>
+    </section>
+
+    <section id="integrations">
+      <div class="wrap">
+        <div class="section-head">
+          <div><span class="eyebrow">Integrations</span><h2>Built for the infrastructure you already run.</h2></div>
+          <a class="text-link" href="/integrations/">View all integrations</a>
+        </div>
+        <div class="integrations-grid">
+          <a class="integration" href="/integrations/kubernetes/" aria-label="Kubernetes integration"><img src="/img/speedle/22.%20Kubernetes.svg" alt="Kubernetes"></a>
+          <a class="integration" href="/integrations/istio/" aria-label="Istio integration"><img src="/img/speedle/23.%20Istio.svg" alt="Istio"></a>
+          <a class="integration" href="/integrations/docker/" aria-label="Docker integration"><img src="/img/speedle/24.%20Docker.svg" alt="Docker"></a>
+        </div>
+      </div>
+    </section>
+
+    <section class="contribute">
+      <div class="wrap contribute-card">
+        <img src="/img/speedle/11.%20Contribute.svg" alt="Open source contributors">
+        <div><h2>Help move Speedle+ forward.</h2><p>Speedle+ is maintained in the open. Review the code, report an issue or contribute an improvement.</p><a class="button button-primary" href="/contribute/">Contribute to Speedle+</a></div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap footer-inner">
+      <div class="footer-brand"><img src="/img/speedle/Speedle_logo_w.svg" alt="Speedle"><p>Licensed under the Universal Permissive License v1.0.</p></div>
+      <nav class="social" aria-label="Community links">
+        <a href="https://groups.google.com/forum/#!forum/speedle-users" aria-label="Mailing list"><img src="/img/speedle/28.%20Mail.svg" alt=""></a>
+        <a href="https://github.com/teramoby/speedle-plus" aria-label="GitHub"><img src="/img/speedle/18.%20Github.svg" alt=""></a>
+        <a href="https://join.slack.com/t/speedleproject/shared_invite/enQtNTUzODM3NDY0ODE2LTg0ODc0NzQ1MjVmM2NiODVmMThkMmVjNmMyODA0ZWJjZjQ3NDc2MjdlMzliN2U4MDRkZjhlYzYzMDEyZTgxMGQ" aria-label="Slack"><img src="/img/speedle/29.%20Slack.svg" alt=""></a>
+      </nav>
+    </div>
+  </footer>
+  <script>
+    const button = document.querySelector('.menu');
+    const nav = document.querySelector('.nav-links');
+    button.addEventListener('click', () => {
+      const open = nav.classList.toggle('open');
+      button.setAttribute('aria-expanded', String(open));
+      button.textContent = open ? '×' : '☰';
+    });
+    nav.addEventListener('click', (event) => {
+      if (event.target.matches('a') && nav.classList.contains('open')) button.click();
+    });
+  </script>
+</body>
+</html>
