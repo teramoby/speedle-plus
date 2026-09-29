@@ -6,8 +6,9 @@ Speedle+ uses `.github/workflows/reviewbot.yml` to perform a static Ark Agent Pl
 
 - Secret `ARK_API_KEY`: an Ark Agent Plan API key.
 - Variable `ARK_REVIEW_MODEL`: optional model selection; defaults to `kimi-k3`.
+- Variable `ARK_REVIEW_FALLBACK_MODEL`: optional fallback; defaults to `glm-5.3`.
 
-The workflow uses the Agent Plan Responses endpoint. If the secret is absent, it exits successfully without sending code or publishing a comment.
+The workflow uses the Agent Plan Responses endpoint. It tries the primary model first, then retries once with the distinct fallback model if the request fails, returns a non-2xx status, or contains no usable review text. If both models fail, the workflow fails closed and cannot auto-merge. If the secret is absent, it exits successfully without sending code or publishing a comment.
 
 ## Trust boundary
 
