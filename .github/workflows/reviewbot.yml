@@ -1,0 +1,255 @@
+name: ReviewBot
+
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: reviewbot-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  review:
+    name: Analyze pull request
+    if: github.event.pull_request.draft == false && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    outputs:
+      final_message: ${{ steps.review.outputs.final_message }}
+      safe_to_merge: ${{ steps.review.outputs.safe_to_merge }}
+    steps:
+      - name: Check ReviewBot configuration
+        id: configuration
+        env:
+          REVIEWBOT_API_KEY: ${{ secrets.ARK_API_KEY }}
+        run: |
+          if [[ -n "${REVIEWBOT_API_KEY}" ]]; then
+            echo "enabled=true" >> "${GITHUB_OUTPUT}"
+          else
+            echo "enabled=false" >> "${GITHUB_OUTPUT}"
+          fi
+
+      - name: Report disabled ReviewBot
+        if: steps.configuration.outputs.enabled != 'true'
+        run: echo "::notice::ReviewBot is disabled until the ARK_API_KEY repository secret is configured."
+
+      - name: Check out pull request merge ref
+        if: steps.configuration.outputs.enabled == 'true'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: refs/pull/${{ github.event.pull_request.number }}/merge
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Run ReviewBot with Ark
+        id: review
+        if: steps.configuration.outputs.enabled == 'true'
+        shell: bash
+        env:
+          ARK_API_KEY: ${{ secrets.ARK_API_KEY }}
+          ARK_MODEL: ${{ vars.ARK_REVIEW_MODEL || 'kimi-k3' }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+
+          review_input="${RUNNER_TEMP}/reviewbot-input.txt"
+          request_body="${RUNNER_TEMP}/reviewbot-request.json"
+          response_body="${RUNNER_TEMP}/reviewbot-response.json"
+
+          {
+            git show "${BASE_SHA}:.github/codex/prompts/reviewbot.md"
+            printf '\n\n## Trusted policy from the base revision\n\n'
+            git show "${BASE_SHA}:AGENTS.md" || printf 'No AGENTS.md exists at the base revision.\n'
+            printf '\n\n## Pull request metadata\n\n'
+            printf 'Base commit: `%s`\nHead commit: `%s`\n\n' "${BASE_SHA}" "${HEAD_SHA}"
+            git diff --stat "${BASE_SHA}" "${HEAD_SHA}"
+            printf '\n\n## Unified diff\n\n```diff\n'
+            git diff --no-ext-diff --find-renames --find-copies --unified=80 "${BASE_SHA}" "${HEAD_SHA}"
+            printf '\n```\n'
+          } > "${review_input}"
+
+          input_limit=750000
+          input_size=$(wc -c < "${review_input}")
+          if (( input_size > input_limit )); then
+            limited_input="${RUNNER_TEMP}/reviewbot-input-limited.txt"
+            head -c "${input_limit}" "${review_input}" > "${limited_input}"
+            printf '\n\n[Review input truncated at %s bytes. Report this as a validation gap.]\n' "${input_limit}" >> "${limited_input}"
+            mv "${limited_input}" "${review_input}"
+          fi
+
+          jq -n \
+            --arg model "${ARK_MODEL}" \
+            --rawfile input "${review_input}" \
+            '{model: $model, input: $input, max_output_tokens: 8192, reasoning: {effort: "medium"}}' \
+            > "${request_body}"
+
+          http_code=$(curl \
+            --silent \
+            --show-error \
+            --connect-timeout 20 \
+            --max-time 600 \
+            --output "${response_body}" \
+            --write-out '%{http_code}' \
+            'https://ark.cn-beijing.volces.com/api/plan/v3/responses' \
+            -H "Authorization: Bearer ${ARK_API_KEY}" \
+            -H 'Content-Type: application/json' \
+            --data-binary "@${request_body}")
+
+          if [[ ! "${http_code}" =~ ^2 ]]; then
+            echo "Ark Responses API returned HTTP ${http_code}." >&2
+            jq '{error}' "${response_body}" >&2 || true
+            exit 1
+          fi
+
+          review_message=$(jq -er \
+            '[.output[]?.content[]? | select(.type == "output_text") | .text] | join("\n") | select(length > 0)' \
+            "${response_body}")
+          if grep -Fxq '<!-- reviewbot-verdict:no-actionable-findings -->' <<< "${review_message}"; then
+            echo "safe_to_merge=true" >> "${GITHUB_OUTPUT}"
+          else
+            echo "safe_to_merge=false" >> "${GITHUB_OUTPUT}"
+          fi
+          delimiter="REVIEWBOT_$(python3 -c 'import uuid; print(uuid.uuid4().hex)')"
+          {
+            printf 'final_message<<%s\n' "${delimiter}"
+            printf '%s\n' "${review_message}"
+            printf '%s\n' "${delimiter}"
+          } >> "${GITHUB_OUTPUT}"
+
+  publish:
+    name: Publish review comment
+    needs: review
+    if: needs.review.outputs.final_message != ''
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      issues: write
+      pull-requests: write
+    steps:
+      - name: Create or update ReviewBot comment
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
+        env:
+          REVIEWBOT_MESSAGE: ${{ needs.review.outputs.final_message }}
+          REVIEWED_COMMIT: ${{ github.event.pull_request.head.sha }}
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            const marker = "<!-- speedle-plus-reviewbot -->";
+            const message = process.env.REVIEWBOT_MESSAGE.trim();
+            const commit = process.env.REVIEWED_COMMIT;
+            const suffix = `\n\n_Reviewed commit: \`${commit}\`_`;
+            const maximumLength = 65_000;
+            let body = `${marker}\n${message}${suffix}`;
+
+            if (body.length > maximumLength) {
+              body = `${body.slice(0, maximumLength - 160)}\n\n_ReviewBot output was truncated to fit GitHub's comment limit._${suffix}`;
+            }
+
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              per_page: 100,
+            });
+            const existing = comments.find(
+              (comment) =>
+                comment.user?.login === "github-actions[bot]" &&
+                comment.body?.includes(marker),
+            );
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body,
+              });
+            }
+
+  automerge-dependabot:
+    name: Auto-merge safe dependency update
+    needs: [review, publish]
+    if: >-
+      github.event.pull_request.user.login == 'dependabot[bot]' &&
+      needs.review.outputs.safe_to_merge == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Wait for required CI checks and merge
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const pull_number = context.issue.number;
+            const expectedHead = context.payload.pull_request.head.sha;
+            const requiredChecks = new Set(["lint", "test (file)", "test (etcd)", "build"]);
+            const deadline = Date.now() + 15 * 60 * 1000;
+
+            while (Date.now() < deadline) {
+              const { data: pull } = await github.rest.pulls.get({ owner, repo, pull_number });
+              if (pull.state !== "open" || pull.draft || pull.head.sha !== expectedHead) {
+                core.setFailed("Pull request changed state or head commit while waiting for CI.");
+                return;
+              }
+
+              const mergeSha = pull.merge_commit_sha;
+              if (!mergeSha) {
+                await new Promise((resolve) => setTimeout(resolve, 15000));
+                continue;
+              }
+
+              const checks = await github.paginate(github.rest.checks.listForRef, {
+                owner,
+                repo,
+                ref: mergeSha,
+                per_page: 100,
+              });
+              const latestByName = new Map();
+              for (const check of checks) {
+                const previous = latestByName.get(check.name);
+                if (!previous || new Date(check.started_at || 0) > new Date(previous.started_at || 0)) {
+                  latestByName.set(check.name, check);
+                }
+              }
+
+              const required = [...requiredChecks].map((name) => latestByName.get(name));
+              if (required.some((check) => !check || check.status !== "completed")) {
+                await new Promise((resolve) => setTimeout(resolve, 15000));
+                continue;
+              }
+              const failed = required.filter((check) => check.conclusion !== "success");
+              if (failed.length > 0) {
+                core.setFailed(`Required CI did not pass: ${failed.map((check) => `${check.name}=${check.conclusion}`).join(", ")}`);
+                return;
+              }
+
+              const result = await github.rest.pulls.merge({
+                owner,
+                repo,
+                pull_number,
+                merge_method: "squash",
+                sha: expectedHead,
+              });
+              if (!result.data.merged) {
+                core.setFailed(result.data.message || "GitHub did not merge the pull request.");
+              }
+              return;
+            }
+
+            core.setFailed("Timed out waiting for the required Speedle Plus CI checks.");
