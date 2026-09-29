@@ -50,8 +50,14 @@ body.page-kube > header {
 }
 
 #top-brand { margin: 0 auto 0 0; }
-#top-brand a { display: flex; align-items: center; }
-#top-brand img { width: 210px !important; height: auto !important; margin: 0 !important; }
+#top #top-brand a {
+  width: 190px;
+  padding-right: 0;
+  display: flex;
+  align-items: center;
+  text-indent: 0;
+}
+#top-brand img { width: 190px !important; height: auto !important; margin: 0 !important; }
 
 #top nav { margin: 0; }
 #top nav ul { margin: 0; padding: 0; display: flex; align-items: center; gap: 20px; list-style: none; }
@@ -322,20 +328,40 @@ body.page-kube.preview-home #main > .features:first-child::before {
 }
 
 body.page-kube.preview-home #main > .features:first-child > h1 {
-  max-width: 760px;
+  max-width: 850px;
   margin-bottom: 34px;
   color: #fff;
+  border-bottom: 0 !important;
   font-size: clamp(2.75rem, 4.2vw, 3.65rem);
+  font-weight: 780;
   line-height: 1.12;
   letter-spacing: -.035em;
 }
 
 body.page-kube.preview-home #main > .features:first-child > .row:first-of-type {
+  position: relative;
   min-height: 245px;
   align-items: center;
 }
 
+body.page-kube.preview-home #main > .features:first-child > .row:first-of-type > .col:first-child {
+  width: auto;
+}
+
+body.page-kube.preview-home #main > .features:first-child > .row:first-of-type > .col:last-child {
+  position: absolute;
+  right: max(-320px, calc((1160px - 100vw) / 2 + 40px));
+  bottom: 34px;
+  width: 260px;
+}
+
+body.page-kube.preview-home #main > .features:first-child > .row:first-of-type figure {
+  margin: 0;
+}
+
 body.page-kube.preview-home #main > .features:first-child > .row:first-of-type .hero {
+  width: 240px;
+  height: auto !important;
   filter: drop-shadow(0 28px 28px rgba(20,10,50,.25));
 }
 
@@ -352,5 +378,13 @@ body.page-kube.preview-home #main > .features:first-child > .row:first-of-type .
   body.page-kube.preview-home #main > .features:first-child > h1 {
     color: #fff;
     font-size: 2.55rem;
+  }
+  body.page-kube.preview-home #main > .features:first-child > .row:first-of-type > .col:last-child {
+    position: static;
+    width: 100%;
+    margin-top: 32px;
+  }
+  body.page-kube.preview-home #main > .features:first-child > .row:first-of-type .hero {
+    width: 180px;
   }
 }
