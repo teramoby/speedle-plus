@@ -6,7 +6,7 @@ This directory contains the isolated technical SEO/GEO candidate for review. It 
 
 - `/beta/` — homepage metadata plus `SoftwareSourceCode` and `WebSite` JSON-LD; visible page content and styling are unchanged.
 - `/beta/robots.txt` — production robots policy candidate.
-- `/beta/sitemap.xml` — production sitemap candidate with absolute canonical URLs; it includes only currently indexable pages.
+- `/beta/sitemap.xml` — production sitemap candidate with absolute canonical URLs; it includes only currently indexable pages and deliberately omits hand-maintained freshness dates.
 - `/beta/llms.txt` — machine-readable project guide for answer engines.
 
 ## Promotion notes
