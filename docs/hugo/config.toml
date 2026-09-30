@@ -1,9 +1,9 @@
-baseURL = "/"
+baseURL = "https://speedle.io/"
 languageCode = "en-us"
 title = "Speedle"
 theme = "kube"
 canonifyURLs = "true"
-description = "Access Control across stacks should be simple and efficient and we get it!"
+description = "Speedle+ is an open-source authorization engine for centralized RBAC and ABAC policy decisions across cloud-native and legacy applications."
 Paginate = 4
 pygmentsCodefences = true
 pygmentsCodefencesGuessSyntax = true
