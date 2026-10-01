@@ -19,7 +19,7 @@ All the above will be highly appreciated.
 
 ## Discussion & Community
 
-Join us at [#speedleproject](https://join.slack.com/t/speedleproject/shared_invite/enQtNTUzODM3NDY0ODE2LTg0ODc0NzQ1MjVmM2NiODVmMThkMmVjNmMyODA0ZWJjZjQ3NDc2MjdlMzliN2U4MDRkZjhlYzYzMDEyZTgxMGQ) slack workspace.
+Join us at #speedleproject slack workspace.
 
 Join us at [speedle-users](https://groups.google.com/forum/#!forum/speedle-users) and/or [speedle-developers](https://groups.google.com/forum/#!forum/speedle-developers) groups.
 

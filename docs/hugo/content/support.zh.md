@@ -56,15 +56,12 @@ Plase refer to [token assertor](./docs/assertor)
         <p>Can’t see the answer you’re looking for?</p>
         <p>Try our Slack workspace #speedleproject</p>
         <p>
-          <a class="button primary started" style="font-size:18px" href="./quick-start">
+          <span class="button primary started" style="font-size:18px">
             <span>Visit Slack channel →</span>
-          </a>
+          </span>
         </p>
     </div>
     </div>
     <div class="col col-2 right">
-      <a title="slack" href="https://join.slack.com/t/speedleproject/shared_invite/enQtNTUzODM3NDY0ODE2LTg0ODc0NzQ1MjVmM2NiODVmMThkMmVjNmMyODA0ZWJjZjQ3NDc2MjdlMzliN2U4MDRkZjhlYzYzMDEyZTgxMGQ">
-        <img class="svg" src="/img/speedle/Slack_RGB.svg" />
-      </a>
     </div>
 </div>
