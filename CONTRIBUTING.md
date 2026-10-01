@@ -13,7 +13,7 @@ And sharing us your success story with Speedle would be greatly appreciated if y
 
 Join us at [speedle-users](https://groups.google.com/forum/#!forum/speedle-users) and/or [speedle-developers](https://groups.google.com/forum/#!forum/speedle-developers) groups.
 
-Join us at [#speedleproject](https://join.slack.com/t/speedleproject/shared_invite/enQtNTI4NjUzMzM0MTMxLTQ4MTBiOGMxMDUxMDRkZWRkOGNkMmY4MzVmZDQxYTBiZjk4NzlmZjRlYTJiY2E0NjYyYTM4OTAzM2NhMDMwNzc)
+Join us at [#speedleproject](https://join.slack.com/t/speedleproject/shared_invite/zt-72fgiyuo-QKJAhHAqVbn17KRFbd7aZw)
 
 ## Issues
 

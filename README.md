@@ -2,7 +2,7 @@
     <img src="/docs/images/sp_logo.png" height="50%" width="50%" class="center"/>
 </p>
 <p align="center">
-    <a href="https://join.slack.com/t/speedleproject/shared_invite/enQtNTUzODM3NDY0ODE2LTg0ODc0NzQ1MjVmM2NiODVmMThkMmVjNmMyODA0ZWJjZjQ3NDc2MjdlMzliN2U4MDRkZjhlYzYzMDEyZTgxMGQ">
+    <a href="https://join.slack.com/t/speedleproject/shared_invite/zt-72fgiyuo-QKJAhHAqVbn17KRFbd7aZw">
         <img src="https://img.shields.io/badge/slack-speedle-red.svg">
     </a>
     <a href="https://github.com/teramoby/speedle-plus/tags">

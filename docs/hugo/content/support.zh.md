@@ -63,7 +63,7 @@ Plase refer to [token assertor](./docs/assertor)
     </div>
     </div>
     <div class="col col-2 right">
-      <a title="slack" href="https://join.slack.com/t/speedleproject/shared_invite/enQtNTUzODM3NDY0ODE2LTg0ODc0NzQ1MjVmM2NiODVmMThkMmVjNmMyODA0ZWJjZjQ3NDc2MjdlMzliN2U4MDRkZjhlYzYzMDEyZTgxMGQ">
+      <a title="slack" href="https://join.slack.com/t/speedleproject/shared_invite/zt-72fgiyuo-QKJAhHAqVbn17KRFbd7aZw">
         <img class="svg" src="/img/speedle/Slack_RGB.svg" />
       </a>
     </div>
