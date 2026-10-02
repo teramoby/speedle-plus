@@ -1,27 +1,78 @@
-    html
-    {
-      box-sizing: border-box;
-      overflow: -moz-scrollbars-vertical;
-      overflow-y: scroll;
-    }
-    *,
-    *:before,
-    *:after
-    {
-      box-sizing: inherit;
-    }
-
-    body {
-      margin:0;
-      background: #fafafa;
-    }
-
-    pre {
-    background: none;
-    padding: 0;
-    top: 0;
-    display: block;
-    color: rgba(49,52,57,.85);
-    #overflow: none;
-    white-space: pre-wrap;
-    }
+/* Keep the site theme out of Swagger's embedded controls and examples. */
+#swagger-ui { min-width: 0; }
+#main #swagger-ui .wrapper { padding: 0; }
+#main #swagger-ui .info { margin: 20px 0; }
+#main #swagger-ui h2,
+#main #swagger-ui h3,
+#main #swagger-ui h4 {
+  padding: 0;
+  border: 0;
+  letter-spacing: normal;
+  line-height: 1.4;
+}
+#main #swagger-ui h2::after,
+#main #swagger-ui h3::after,
+#main #swagger-ui h4::after { content: none; }
+#main #swagger-ui .info .title {
+  display: block;
+  margin: 0 0 12px;
+  font-size: 24px;
+}
+#main #swagger-ui .info .title small { vertical-align: middle; top: 0; }
+#main #swagger-ui .info .title small pre {
+  padding: 0;
+  font-size: 10px;
+  line-height: 1.4;
+  color: #fff;
+  background: transparent !important;
+}
+#main #swagger-ui pre {
+  margin: 0;
+  padding: 10px;
+  border: 0;
+  border-radius: 4px;
+  font: 13px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+#main #swagger-ui .base-url {
+  padding: 0;
+  color: #3b4151;
+  background: transparent !important;
+}
+#main #swagger-ui code {
+  padding: 0;
+  color: inherit;
+  background: transparent;
+  border: 0;
+  font-size: inherit;
+}
+#main #swagger-ui .opblock-tag { margin: 0 0 5px; padding: 10px; font-size: 20px; }
+#main #swagger-ui .opblock-section-header h4 { margin: 0; font-size: 14px; }
+#main #swagger-ui section.models { padding: 0; }
+#main #swagger-ui section.models > h4 { margin: 0; padding: 10px 20px; font-size: 16px; }
+#main #swagger-ui a { text-decoration: none; border-bottom: 0; }
+#main #swagger-ui table {
+  margin: 0;
+  border: 0;
+  border-collapse: collapse;
+  border-radius: 0;
+  overflow: visible;
+}
+#main #swagger-ui th,
+#main #swagger-ui td {
+  padding: 10px 0;
+  background: transparent;
+  border: 0;
+  vertical-align: top;
+}
+#main #swagger-ui .response-col_status { width: 60px; padding-right: 15px; }
+#main #swagger-ui .tab { margin: 0 0 5px; padding: 0; list-style: none; }
+#main #swagger-ui .tab li { margin: 0; }
+#main #swagger-ui .btn { height: auto; min-height: 32px; line-height: 1.4; }
+#main #swagger-ui .opblock-summary-path { min-width: 0; overflow-wrap: anywhere; }
+@media (max-width: 600px) {
+  #main #swagger-ui .opblock-summary { flex-wrap: wrap; gap: 6px; }
+  #main #swagger-ui .opblock-summary-description { flex-basis: 100%; padding: 4px 10px; }
+  #main #swagger-ui .opblock-body { overflow-x: auto; }
+}

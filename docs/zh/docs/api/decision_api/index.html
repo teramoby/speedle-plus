@@ -21,7 +21,6 @@
 <script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script>
 <script src="/js/functions.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jquery.easing@1.4.1/jquery.easing.min.js"></script>
-<script src="/js/jquery.backtothetop/jquery.backtothetop.min.js"></script>
 <script type="text/javascript" src="/js/tocbot.min.js"></script>
 <link href="/css/font.css" rel="stylesheet" type="text/css">
     <link href="/css/kube.min.css" rel="stylesheet" type="text/css">
@@ -32,7 +31,7 @@
     <link href="/css/swagger-ui.css" rel="stylesheet" type="text/css">
     
     
-    <link href="/css/swagger-custom.css" rel="stylesheet" type="text/css">
+    <link href="/css/swagger-custom.css?v=2" rel="stylesheet" type="text/css">
     
     
     
@@ -179,9 +178,8 @@
   </defs>
  </svg>
 <script src="/js/swagger-js/swagger-ui-bundle.js"> </script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/3.2.2/swagger-ui-standalone-preset.js"> </script>
 <script>
-window.onload = function() {
+(function() {
   var url = "\/swagger\/policy-check.yaml";
   
   const ui = SwaggerUIBundle({
@@ -189,17 +187,17 @@ window.onload = function() {
     dom_id: '#swagger-ui',
     deepLinking: true,
     presets: [
-      SwaggerUIBundle.presets.apis,
-      SwaggerUIStandalonePreset
+      SwaggerUIBundle.presets.apis
     ],
     plugins: [
       SwaggerUIBundle.plugins.DownloadUrl
     ],
-    layout: "StandaloneLayout"
+    validatorUrl: null,
+    layout: "BaseLayout"
   })
 
   window.ui = ui
-}
+})();
 </script>
 
   </div>
