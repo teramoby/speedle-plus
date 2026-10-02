@@ -33,6 +33,13 @@
     
     <link href="/css/custom.css" rel="stylesheet" type="text/css">
     <link href="https://fonts.googleapis.com/css?family=IBM+Plex+Sans" rel="stylesheet">
+    <style>
+        #top #top-brand { flex: 0 0 152px; }
+        #top #top-brand a { width: 152px; padding: 0; text-indent: 0; }
+        #top #top-brand img,
+        #nav-toggle-brand img { width: 152px !important; height: 52px !important; margin: 0 !important; flex: none; }
+        #nav-toggle-brand a { display: flex; align-items: center; }
+    </style>
 </head>
 
 <body class="page-kube" style="background: none">
@@ -40,7 +47,7 @@
   <div id="nav-toggle-box">
     <div id="nav-toggle-brand">
       <a href="/" title=Speedle>
-        <img style="margin: -10px 0 -15px -5px; height:62px;" src="/img/speedle/Speedle_logo_w.svg"></img>
+        <img src="/img/speedle/Speedle_logo_home_bold.svg?v=4" width="152" height="52" alt="Speedle">
       </a>
     </div>
     <a data-component="toggleme" data-target="#top" href="#" id="nav-toggle"><i class="kube-menu"></i></a>
@@ -49,7 +56,7 @@
 <div class="hide-sm" id="top">
   <div id="top-brand">
     <a href="/" title=Speedle>
-      <img style="margin-top:5px; max-width: none; height:75px; width:170px;" src="/img/speedle/Speedle_logo_w.svg"></img>
+      <img src="/img/speedle/Speedle_logo_home_bold.svg?v=4" width="152" height="52" alt="Speedle">
     </a>
   </div>
   <nav id="top-nav-main">
