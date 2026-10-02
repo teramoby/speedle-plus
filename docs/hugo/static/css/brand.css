@@ -1,0 +1,38 @@
+/* Use the homepage logo size in every desktop and mobile navigation. */
+#top #top-brand { flex: 0 0 152px; }
+#top #top-brand a {
+  display: flex;
+  align-items: center;
+  width: 152px;
+  padding: 0;
+  text-indent: 0;
+}
+#top #top-brand img,
+#nav-toggle-brand img {
+  width: 152px !important;
+  height: 52px !important;
+  margin: 0 !important;
+  flex: none;
+}
+#nav-toggle-brand a { display: flex; align-items: center; }
+
+/* Switch to the existing mobile menu before the full-size logo crowds links. */
+@media (max-width: 860px) {
+  body.page-kube > header { min-height: 68px; }
+  body.page-kube > header > .show-sm { display: block !important; }
+  #top { display: none !important; }
+  #top:target, #top.open {
+    width: 100%;
+    height: auto;
+    padding: 24px;
+    display: flex !important;
+    align-items: flex-start;
+    flex-direction: column;
+    background: var(--speedle-navy, #25134e);
+  }
+  #top:target nav ul, #top.open nav ul { align-items: flex-start; flex-direction: column; }
+  #top:target #top-brand, #top.open #top-brand,
+  #top .hide-sm { display: none !important; }
+  #top .show-sm { display: block !important; }
+  #top #top-nav-extra { margin: 0; }
+}

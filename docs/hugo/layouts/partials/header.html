@@ -2,11 +2,7 @@
   <div id="nav-toggle-box">
     <div id="nav-toggle-brand">
       <a href="/" title={{ .Site.Title }}>
-        {{ if eq .RelPermalink "/docs/" }}
-          <img src="/img/speedle/Speedle_logo_home_bold.svg?v=4" width="152" height="52" alt="Speedle">
-        {{ else }}
-          <img style="margin: -10px 0 -15px -5px; height:62px;" src="/img/speedle/Speedle_logo_w.svg"></img>
-        {{ end }}
+        <img src="{{ "/img/speedle/Speedle_logo_home_bold.svg?v=4" | relURL }}" width="152" height="52" alt="Speedle">
       </a>
     </div>
     <a data-component="toggleme" data-target="#top" href="#" id="nav-toggle"><i class="kube-menu"></i></a>
@@ -15,11 +11,7 @@
 <div class="hide-sm" id="top">
   <div id="top-brand">
     <a href="/" title={{ .Site.Title }}>
-      {{ if eq .RelPermalink "/docs/" }}
-        <img src="/img/speedle/Speedle_logo_home_bold.svg?v=4" width="152" height="52" alt="Speedle">
-      {{ else }}
-        <img style="margin-top:5px; max-width: none; height:75px; width:170px;" src="/img/speedle/Speedle_logo_w.svg"></img>
-      {{ end }}
+      <img src="{{ "/img/speedle/Speedle_logo_home_bold.svg?v=4" | relURL }}" width="152" height="52" alt="Speedle">
     </a>
   </div>
   <nav id="top-nav-main">
