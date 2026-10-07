@@ -23,6 +23,8 @@ This directory contains the isolated technical SEO/GEO candidate for review. It 
 - `/developer/docs/api/asserter_api` to `/docs/api/asserter_api/`
 - `/integrations/quick-start` to `/quick-start/`
 
+The matching historical Chinese URL `/zh/integrations/quick-start` also redirects to `/zh/quick-start/`. That path was not listed in the current Search Console 404 samples, but the Chinese Docker guide had the same relative-link error. The additional alias was included after automatic review.
+
 The developer guide's Policy Discovery link now targets the existing `/docs/pms/discover/` page. Visible copy and CSS are identical; only link destinations change. Redirect aliases are also supplied in Hugo's static source tree. On GitHub Pages these aliases use an immediate meta refresh, because this hosting setup does not support custom server-side redirect rules.
 
 The patch is retained as a review record and should not be applied again. After deployment, start validation for the 404 category in Search Console. Existing host redirects and noindex rules are unchanged. Google may list the restored historical URLs as redirect pages, which is expected because their canonical destinations hold the content.
