@@ -1,0 +1,168 @@
+diff --git a/docs/developer/index.html b/docs/developer/index.html
+--- a/docs/developer/index.html
++++ b/docs/developer/index.html
+@@ -187,10 +187,10 @@
+     <ol class="js-toc">
+     <ul class="toc-list ">
+     <li class="toc-list-item">
+-    <a data-scroll="" href="./docs/spdl" class="toc-link node-name--H3  is-active-link">Understand the basics of SPDL to model policies</a></li>
++    <a data-scroll="" href="/docs/spdl/" class="toc-link node-name--H3  is-active-link">Understand the basics of SPDL to model policies</a></li>
+      <li class="toc-list-item"><a data-scroll="" href="/#" class="toc-link node-name--H3">Deploy your Application</a></li>
+-    <li class="toc-list-item"><a data-scroll="" href="./docs/api/discovery" class="toc-link node-name--H3">Leverage Policy Discovery Mode</a></li>
++    <li class="toc-list-item"><a data-scroll="" href="/docs/pms/discover/" class="toc-link node-name--H3">Leverage Policy Discovery Mode</a></li>
+-    <li class="toc-list-item"><a data-scroll="" href="./docs/api/management_api" class="toc-link node-name--H3">Use the Policy Management Service API</a></li>
++    <li class="toc-list-item"><a data-scroll="" href="/docs/api/management_api/" class="toc-link node-name--H3">Use the Policy Management Service API</a></li>
+     </ul>
+     </ol>
+ </nav>
+@@ -201,10 +201,10 @@
+     <ol class="js-toc">
+     <ul class="toc-list ">
+     <li class="toc-list-item">
+-    <a data-scroll="" href="./docs/spdl" class="toc-link node-name--H3  is-active-link">Understand the basics of SPDL</a></li>
++    <a data-scroll="" href="/docs/spdl/" class="toc-link node-name--H3  is-active-link">Understand the basics of SPDL</a></li>
+-    <a data-scroll="" href="./docs/api/management_api" class="toc-link node-name--H3  is-active-link">Policy Management Service API</a></li>
++    <a data-scroll="" href="/docs/api/management_api/" class="toc-link node-name--H3  is-active-link">Policy Management Service API</a></li>
+-    <li class="toc-list-item"><a data-scroll="" href="./docs/api/decision_api" class="toc-link node-name--H3">Authorization Decision Service API</a></li>
++    <li class="toc-list-item"><a data-scroll="" href="/docs/api/decision_api/" class="toc-link node-name--H3">Authorization Decision Service API</a></li>
+-    <li class="toc-list-item"><a data-scroll="" href="./docs/api/asserter_api" class="toc-link node-name--H3">Token Assertion API</a></li>
++    <li class="toc-list-item"><a data-scroll="" href="/docs/api/asserter_api/" class="toc-link node-name--H3">Token Assertion API</a></li>
+     </ul>
+     </ol>
+ </nav>
+diff --git a/docs/hugo/content/developer.md b/docs/hugo/content/developer.md
+--- a/docs/hugo/content/developer.md
++++ b/docs/hugo/content/developer.md
+@@ -13,10 +13,10 @@
+     <ol class="js-toc">
+     <ul class="toc-list ">
+     <li class="toc-list-item">
+-    <a data-scroll="" href="./docs/spdl" class="toc-link node-name--H3  is-active-link">Understand the basics of SPDL to model policies</a></li>
++    <a data-scroll="" href="/docs/spdl/" class="toc-link node-name--H3  is-active-link">Understand the basics of SPDL to model policies</a></li>
+      <li class="toc-list-item"><a data-scroll="" href="/#" class="toc-link node-name--H3">Deploy your Application</a></li>
+-    <li class="toc-list-item"><a data-scroll="" href="./docs/api/discovery" class="toc-link node-name--H3">Leverage Policy Discovery Mode</a></li>
++    <li class="toc-list-item"><a data-scroll="" href="/docs/pms/discover/" class="toc-link node-name--H3">Leverage Policy Discovery Mode</a></li>
+-    <li class="toc-list-item"><a data-scroll="" href="./docs/api/management_api" class="toc-link node-name--H3">Use the Policy Management Service API</a></li>
++    <li class="toc-list-item"><a data-scroll="" href="/docs/api/management_api/" class="toc-link node-name--H3">Use the Policy Management Service API</a></li>
+     </ul>
+     </ol>
+ </nav>
+@@ -27,10 +27,10 @@
+     <ol class="js-toc">
+     <ul class="toc-list ">
+     <li class="toc-list-item">
+-    <a data-scroll="" href="./docs/spdl" class="toc-link node-name--H3  is-active-link">Understand the basics of SPDL</a></li>
++    <a data-scroll="" href="/docs/spdl/" class="toc-link node-name--H3  is-active-link">Understand the basics of SPDL</a></li>
+-    <a data-scroll="" href="./docs/api/management_api" class="toc-link node-name--H3  is-active-link">Policy Management Service API</a></li>
++    <a data-scroll="" href="/docs/api/management_api/" class="toc-link node-name--H3  is-active-link">Policy Management Service API</a></li>
+-    <li class="toc-list-item"><a data-scroll="" href="./docs/api/decision_api" class="toc-link node-name--H3">Authorization Decision Service API</a></li>
++    <li class="toc-list-item"><a data-scroll="" href="/docs/api/decision_api/" class="toc-link node-name--H3">Authorization Decision Service API</a></li>
+-    <li class="toc-list-item"><a data-scroll="" href="./docs/api/asserter_api" class="toc-link node-name--H3">Token Assertion API</a></li>
++    <li class="toc-list-item"><a data-scroll="" href="/docs/api/asserter_api/" class="toc-link node-name--H3">Token Assertion API</a></li>
+     </ul>
+     </ol>
+ </nav>
+diff --git a/docs/integrations/docker/index.html b/docs/integrations/docker/index.html
+--- a/docs/integrations/docker/index.html
++++ b/docs/integrations/docker/index.html
+@@ -222,7 +222,7 @@
+ 
+ <h3 id="run-speedle">Run speedle</h3>
+ 
+-<p>refer to speedle <a href="../quick-start">quickstart</a></p>
++<p>refer to speedle <a href="/quick-start/">quickstart</a></p>
+ 
+ <h3 id="run-docker-and-the-plugin">Run docker and the plugin</h3>
+ 
+diff --git a/docs/zh/integrations/docker/index.html b/docs/zh/integrations/docker/index.html
+--- a/docs/zh/integrations/docker/index.html
++++ b/docs/zh/integrations/docker/index.html
+@@ -222,7 +222,7 @@
+ 
+ <h3 id="run-speedle">Run speedle</h3>
+ 
+-<p>refer to speedle <a href="../quick-start">quickstart</a></p>
++<p>refer to speedle <a href="/zh/quick-start/">quickstart</a></p>
+ 
+ <h3 id="run-docker-and-the-plugin">Run docker and the plugin</h3>
+ 
+diff --git a/docs/hugo/content/integrations/docker.md b/docs/hugo/content/integrations/docker.md
+--- a/docs/hugo/content/integrations/docker.md
++++ b/docs/hugo/content/integrations/docker.md
+@@ -37,7 +37,7 @@
+ 
+ ### Run speedle
+ 
+-refer to speedle [quickstart](../quick-start)
++refer to speedle [quickstart](/quick-start/)
+ 
+ ### Run docker and the plugin
+ 
+diff --git a/docs/hugo/content/integrations/docker.zh.md b/docs/hugo/content/integrations/docker.zh.md
+--- a/docs/hugo/content/integrations/docker.zh.md
++++ b/docs/hugo/content/integrations/docker.zh.md
+@@ -37,7 +37,7 @@
+ 
+ ### Run speedle
+ 
+-refer to speedle [quickstart](../quick-start)
++refer to speedle [quickstart](/zh/quick-start/)
+ 
+ ### Run docker and the plugin
+ 
+diff --git a/docs/developer/docs/api/asserter_api/index.html b/docs/developer/docs/api/asserter_api/index.html
+new file mode 100644
+--- /dev/null
++++ b/docs/developer/docs/api/asserter_api/index.html
+@@ -0,0 +1,9 @@
++<!doctype html>
++<html lang="en">
++<head>
++  <meta charset="utf-8">
++  <title>Token Assertion API - Speedle</title>
++  <link rel="canonical" href="https://speedle.io/docs/api/asserter_api/">
++  <meta http-equiv="refresh" content="0; url=/docs/api/asserter_api/">
++</head>
++</html>
+diff --git a/docs/hugo/static/developer/docs/api/asserter_api/index.html b/docs/hugo/static/developer/docs/api/asserter_api/index.html
+new file mode 100644
+--- /dev/null
++++ b/docs/hugo/static/developer/docs/api/asserter_api/index.html
+@@ -0,0 +1,9 @@
++<!doctype html>
++<html lang="en">
++<head>
++  <meta charset="utf-8">
++  <title>Token Assertion API - Speedle</title>
++  <link rel="canonical" href="https://speedle.io/docs/api/asserter_api/">
++  <meta http-equiv="refresh" content="0; url=/docs/api/asserter_api/">
++</head>
++</html>
+diff --git a/docs/integrations/quick-start/index.html b/docs/integrations/quick-start/index.html
+new file mode 100644
+--- /dev/null
++++ b/docs/integrations/quick-start/index.html
+@@ -0,0 +1,9 @@
++<!doctype html>
++<html lang="en">
++<head>
++  <meta charset="utf-8">
++  <title>Quick Start - Speedle</title>
++  <link rel="canonical" href="https://speedle.io/quick-start/">
++  <meta http-equiv="refresh" content="0; url=/quick-start/">
++</head>
++</html>
+diff --git a/docs/hugo/static/integrations/quick-start/index.html b/docs/hugo/static/integrations/quick-start/index.html
+new file mode 100644
+--- /dev/null
++++ b/docs/hugo/static/integrations/quick-start/index.html
+@@ -0,0 +1,9 @@
++<!doctype html>
++<html lang="en">
++<head>
++  <meta charset="utf-8">
++  <title>Quick Start - Speedle</title>
++  <link rel="canonical" href="https://speedle.io/quick-start/">
++  <meta http-equiv="refresh" content="0; url=/quick-start/">
++</head>
++</html>

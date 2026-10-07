@@ -37,7 +37,7 @@ Executable `speedle-docker-plugin` could be found in \$HOME/go/bin
 
 ### Run speedle
 
-refer to speedle [quickstart](../quick-start)
+refer to speedle [quickstart](/quick-start/)
 
 ### Run docker and the plugin
 
