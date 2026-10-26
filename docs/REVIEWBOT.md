@@ -3,7 +3,7 @@
 ReviewBot performs static pull-request reviews for Speedle+. It uses the same
 workflow and response-validation design as
 [Pavu at a7b458e](https://github.com/pavulabs/pavu/tree/a7b458ee3194865b653826a1b0c1119c28634c9d),
-with Speedle's Go/authorization review rules and the same runner-routing policy.
+with Speedle's Go/authorization review rules and the same PR runner-routing policy.
 
 ## Automatic review
 

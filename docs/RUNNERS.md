@@ -22,8 +22,8 @@ directly select this runner or change the trusted worker's routing policy.
 
 | Workload | Runner |
 | --- | --- |
-| Go CI push, manual dispatch and same-repository PRs, including Dependabot | `charming-speedle` |
-| Go CI fork PRs or events outside the configured routing cases | GitHub-hosted |
+| Go CI master pushes, human branch pushes/manual dispatch and human same-repository PRs | `charming-speedle` |
+| Go CI fork/bot PRs, bot branch pushes or other events | GitHub-hosted |
 | ReviewBot human-authored same-repository PR analysis/publication | `charming-speedle`, matching Pavu's policy |
 | ReviewBot fork/bot PR analysis/publication and dependency merge job | GitHub-hosted |
 | ReviewBot regression dispatch and authorized command analysis/publication | `charming-speedle` |
@@ -38,8 +38,9 @@ hosted so arbitrary public comments cannot queue work on the single runner.
 Only commands passing the existing API permission check reach its self-hosted
 analysis and publication jobs; supported commands and permissions are unchanged.
 
-Go CI deliberately trusts code in same-repository PRs, including dependency
-updates from Dependabot. `go test` and `go build` execute that code on the
+Go CI deliberately trusts code in human-authored same-repository PRs and changes
+merged into the default branch. Bot PRs and bot branch pushes stay hosted before
+merge. `go test` and `go build` execute admitted code on the
 persistent runner account, which can access its caches and other host resources.
 Changes left by such a job can affect subsequent jobs, including ReviewBot.
 The runner group restriction prevents forks from changing the trusted routing
@@ -67,6 +68,11 @@ One runner instance executes one job at a time. Other runner processes on the sa
 physical machine may still run concurrently; separate work directories do not
 isolate ports, CPU, memory or credentials. Do not stop or reconfigure Pavu services
 to make a Speedle check pass.
+
+The runner performs its normal job process cleanup (visible as `Cleaning up
+orphan processes` in the job log). This and checkout cleanup are housekeeping,
+not containment for hostile code. Do not kill processes merely because they
+listen on a test port: they may belong to another runner or host service.
 
 Go tests can use etcd ports 2379/2380, MongoDB 27017, PMS 6733 and ADS 6734.
 Self-hosted test jobs verify wildcard and loopback IPv4/IPv6 bindings and refuse

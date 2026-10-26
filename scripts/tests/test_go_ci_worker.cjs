@@ -52,7 +52,9 @@ function route(github, inputs) {
   return JSON.parse(JSON.stringify(vm.runInNewContext(translated, {lookup, inputs, fromJSON: JSON.parse}, {timeout: 100})));
 }
 function context(eventName, head = repository, repo = repository) {
-  return {repository: repo, event_name: eventName, event: {pull_request: {head: {repo: {full_name: head}}, user: {type: 'User'}}}};
+  return {repository: repo, event_name: eventName,
+    ref: eventName === 'pull_request' ? 'refs/pull/7/merge' : 'refs/heads/feature',
+    event: {sender: {type: 'User'}, pull_request: {head: {repo: {full_name: head}}, user: {type: 'User'}}}};
 }
 test('worker owns runner selection and exposes only mode/store inputs, never a caller checkout ref', () => {
   const inputBlock = source.split('\npermissions:', 1)[0];
@@ -67,20 +69,31 @@ test('worker owns runner selection and exposes only mode/store inputs, never a c
   assert.match(step('Setup Go'), /go-version: '1\.26'/);
   assert.doesNotMatch(source, /secrets:|secrets\.inherit|\$\{\{\s*inputs\.(?:ref|sha|runner)/);
 });
-test('canonical pushes, dispatch and same-repository human/Dependabot PRs use the protected runner', () => {
-  const bot = context('pull_request'); bot.event.pull_request.user = {login: 'dependabot[bot]', type: 'Bot'};
-  const push = context('push'), dispatch = context('workflow_dispatch'); push.event = {}; dispatch.event = {};
-  for (const github of [push, dispatch, context('pull_request'), bot]) {
+test('human pushes, dispatch and own PRs use the runner; trusted master merges permit bot senders', () => {
+  const push = context('push'), dispatch = context('workflow_dispatch');
+  push.event = {sender: {type: 'User'}}; dispatch.event = {sender: {type: 'User'}};
+  const merged = context('push'); merged.ref = 'refs/heads/master'; merged.event = {sender: {type: 'Bot'}};
+  for (const github of [push, dispatch, context('pull_request'), merged]) {
     assert.deepEqual(route(github, {mode: 'test', store_type: 'file'}), expected);
   }
 });
-test('fork, missing-head, copied-repository and unsupported events cannot select self-hosting through inputs', () => {
+test('bot PRs/branch pushes, forks, missing metadata and copied repositories stay hosted regardless of inputs', () => {
   const missing = context('pull_request'); missing.event.pull_request.head.repo = null;
+  const botPR = context('pull_request'); botPR.event.pull_request.user = {login: 'dependabot[bot]', type: 'Bot'};
+  const botSenderPR = context('pull_request'); botSenderPR.event.sender.type = 'Bot'; botSenderPR.event.pull_request.user.type = 'Bot';
+  const unknownAuthor = context('pull_request'); delete unknownAuthor.event.pull_request.user;
+  const botBranch = context('push'); botBranch.ref = 'refs/heads/dependabot/go'; botBranch.event = {sender: {type: 'Bot'}};
+  const botTag = context('push'); botTag.ref = 'refs/tags/master'; botTag.event = {sender: {type: 'Bot'}};
+  const falseMaster = context('push'); falseMaster.ref = 'refs/heads/master-copy'; falseMaster.event = {sender: {type: 'Bot'}};
+  const missingSender = context('push'); missingSender.event = {};
+  const foreignMaster = context('push', 'outsider/speedle-plus', 'outsider/speedle-plus');
+  foreignMaster.ref = 'refs/heads/master'; foreignMaster.event = {sender: {type: 'Bot'}};
   const cases = [context('pull_request', 'outsider/speedle-plus'), missing,
     {repository, event_name: 'pull_request', event: {}}, {repository, event_name: 'pull_request', event: {pull_request: {}}},
     context('pull_request_target'), context('issue_comment'), context('unknown'),
     context('push', 'outsider/speedle-plus', 'outsider/speedle-plus'),
-    context('workflow_dispatch', 'outsider/speedle-plus', 'outsider/speedle-plus'), context('push', undefined, '')];
+    context('workflow_dispatch', 'outsider/speedle-plus', 'outsider/speedle-plus'), context('push', undefined, ''),
+    botPR, botSenderPR, unknownAuthor, botBranch, botTag, falseMaster, missingSender, foreignMaster];
   for (const github of cases) {
     for (const inputs of [{mode: 'build', store_type: 'etcd'}, {mode: 'self-hosted', store_type: 'charming-speedle', ref: 'master'}]) {
       assert.equal(route(github, inputs), 'ubuntu-latest');
