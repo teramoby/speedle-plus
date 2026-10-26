@@ -24,6 +24,9 @@ The original engine source is never patched for the browser build.
 - Real Chrome full-site and module-worker smoke checks passed, including all
   five samples, malformed policy errors, typed attributes, reset, principals,
   and 320–1440 px responsive layouts with no horizontal overflow.
+- Extended real-browser failure/retry suite: 13 grouped checks passed, including
+  actual 5-second evaluation and 45-second initialization timeouts, worker crashes,
+  download failures, stale-result suppression and no policy uploads.
 - Runner scheduling and service-isolation regressions: 17 passed. Local socket
   checks required execution outside the macOS filesystem sandbox.
 - Workflow schema and expressions: actionlint 1.7.12 passed; Bash syntax and
