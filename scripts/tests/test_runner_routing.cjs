@@ -7,7 +7,7 @@ const vm = require('node:vm');
 
 const root = path.resolve(__dirname, '../..');
 const canonical = 'teramoby/speedle-plus';
-const labels = ['self-hosted', 'Linux', 'X64', 'charming-speedle'];
+const labels = ['self-hosted', 'Linux', 'X64', 'speedle-linux'];
 const read = name => fs.readFileSync(path.join(root, '.github/workflows', name), 'utf8');
 const sources = {
   ci: read('ci.yml'), review: read('reviewbot.yml'),
@@ -103,6 +103,7 @@ test('review and command jobs retain their explicit runner policies and isolated
   assert.equal(route(job.inline.route), 'ubuntu-24.04');
   const lint = fs.readFileSync(path.join(root, '.github/actionlint.yaml'), 'utf8');
   assert.match(lint, /^\s+- charming-speedle$/m);
+  assert.match(lint, /^\s+- speedle-linux$/m);
 });
 test('ReviewBot matches Pavu: same-repository human authors use Speedle, bots and forks use hosted', () => {
   const human = github('pull_request_target');
@@ -157,7 +158,7 @@ test('fixture job installs pinned Node 22 before running Node regression suites'
   assert.match(setup, /node-version: '22'/);
   assert.ok(block.indexOf('Set up Node for regression tests') < block.indexOf('node --test'));
   const preflight = script(block, 'Verify runner identity and tools');
-  assert.match(preflight, /test "\$\{RUNNER_NAME\}" = "\$\{EXPECTED_RUNNER\}"/);
+  assert.match(preflight, /case "\$\{RUNNER_NAME\}" in charming-speedle\|charming-speedle-2\)/);
   assert.match(preflight, /test "\$\{RUNNER_OS\}" = Linux/);
   for (const tool of ['git', 'curl', 'jq', 'python3']) assert.ok(preflight.includes(tool));
   assert.ok(preflight.includes('https://ark.cn-beijing.volces.com/api/plan/v3/responses'));

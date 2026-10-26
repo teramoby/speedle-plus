@@ -9,6 +9,7 @@ const test = require('node:test');
 const vm = require('node:vm');
 const source = fs.readFileSync(path.resolve(__dirname, '../../.github/workflows/go-ci-worker.yml'), 'utf8');
 const expected = ['self-hosted', 'Linux', 'X64', 'charming-speedle'];
+const pool = ['self-hosted', 'Linux', 'X64', 'speedle-linux'];
 const repository = 'teramoby/speedle-plus';
 function step(name) {
   const parts = source.split(`      - name: ${name}\n`);
@@ -29,24 +30,24 @@ function script(name) {
 function route(github, inputs) {
   const expression = source.match(/runs-on: >-\n\s+\$\{\{ ([^\n]+) \}\}/)?.[1];
   assert.ok(expression, 'Missing protected routing predicate');
-  assert.doesNotMatch(expression, /inputs/);
+  assert.doesNotMatch(expression.split(' && fromJSON(')[0], /inputs/);
   const lookup = name => {
-    let value = github;
-    for (const key of name.split('.').slice(1)) {
+    let value = {github, inputs};
+    for (const key of name.split('.')) {
       if (value == null || typeof value !== 'object' || !Object.hasOwn(value, key)) return '';
       value = value[key];
     }
     return value ?? '';
   };
   // Restrict evaluation to the actual predicate's string/boolean/fromJSON subset.
-  const tokens = /\s+|'(?:[^']|'')*'|github(?:\.[A-Za-z_][\w-]*)+|fromJSON|true|false|null|==|!=|&&|\|\||[(),!]/gy;
+  const tokens = /\s+|'(?:[^']|'')*'|github(?:\.[A-Za-z_][\w-]*)+|inputs\.mode|fromJSON|true|false|null|==|!=|&&|\|\||[(),!]/gy;
   let translated = '', offset = 0;
   while (offset < expression.length) {
     tokens.lastIndex = offset; const match = tokens.exec(expression);
     assert.ok(match, `Unsupported predicate near ${expression.slice(offset)}`);
     const token = match[0]; offset = tokens.lastIndex;
     if (token.startsWith("'")) translated += JSON.stringify(token.slice(1, -1).replaceAll("''", "'"));
-    else if (token.startsWith('github.')) translated += `lookup(${JSON.stringify(token)})`;
+    else if (token.startsWith('github.') || token === 'inputs.mode') translated += `lookup(${JSON.stringify(token)})`;
     else translated += token;
   }
   return JSON.parse(JSON.stringify(vm.runInNewContext(translated, {lookup, inputs, fromJSON: JSON.parse}, {timeout: 100})));
@@ -69,12 +70,14 @@ test('worker owns runner selection and exposes only mode/store inputs, never a c
   assert.match(step('Setup Go'), /go-version: '1\.26'/);
   assert.doesNotMatch(source, /secrets:|secrets\.inherit|\$\{\{\s*inputs\.(?:ref|sha|runner)/);
 });
-test('human pushes, dispatch and own PRs use the runner; trusted master merges permit bot senders', () => {
+test('trusted events pool lint/build while fixed-port tests stay on the original runner', () => {
   const push = context('push'), dispatch = context('workflow_dispatch');
   push.event = {sender: {type: 'User'}}; dispatch.event = {sender: {type: 'User'}};
   const merged = context('push'); merged.ref = 'refs/heads/master'; merged.event = {sender: {type: 'Bot'}};
   for (const github of [push, dispatch, context('pull_request'), merged]) {
-    assert.deepEqual(route(github, {mode: 'test', store_type: 'file'}), expected);
+    for (const mode of ['lint', 'build', 'test']) for (const store_type of ['file', 'etcd']) {
+      assert.deepEqual(route(github, {mode, store_type}), mode === 'test' ? expected : pool);
+    }
   }
 });
 test('bot PRs/branch pushes, forks, missing metadata and copied repositories stay hosted regardless of inputs', () => {
@@ -95,8 +98,19 @@ test('bot PRs/branch pushes, forks, missing metadata and copied repositories sta
     context('workflow_dispatch', 'outsider/speedle-plus', 'outsider/speedle-plus'), context('push', undefined, ''),
     botPR, botSenderPR, unknownAuthor, botBranch, botTag, falseMaster, missingSender, foreignMaster];
   for (const github of cases) {
-    for (const inputs of [{mode: 'build', store_type: 'etcd'}, {mode: 'self-hosted', store_type: 'charming-speedle', ref: 'master'}]) {
+    for (const inputs of [{mode: 'test', store_type: 'file'}, {mode: 'lint'}, {mode: 'build', store_type: 'etcd'}, {mode: 'self-hosted', store_type: 'charming-speedle', ref: 'master'}]) {
       assert.equal(route(github, inputs), 'ubuntu-latest');
+    }
+  }
+});
+test('identity check accepts both pool runners but refuses fixed-port tests on runner 2', () => {
+  for (const RUNNER_NAME of ['charming-speedle', 'charming-speedle-2', 'unexpected-host']) {
+    for (const CI_TASK of ['lint', 'build', 'test']) {
+      const result = spawnSync('bash', ['-c', script('Verify self-hosted runner identity')], {
+        encoding: 'utf8', env: {...process.env, RUNNER_NAME, RUNNER_OS: 'Linux', RUNNER_ARCH: 'X64', CI_TASK},
+      });
+      const allowed = RUNNER_NAME === 'charming-speedle' || (RUNNER_NAME === 'charming-speedle-2' && CI_TASK !== 'test');
+      assert.equal(result.status === 0, allowed, `${RUNNER_NAME}/${CI_TASK}: ${result.stderr}`);
     }
   }
 });
