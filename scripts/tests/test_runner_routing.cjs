@@ -97,7 +97,8 @@ test('review and command jobs retain their explicit runner policies and isolated
   assert.deepEqual(Object.keys(job.commands), ['prepare', 'analyze', 'publish']);
   assert.deepEqual(Object.keys(job.inline), ['route']);
   for (const name of ['diff-regression']) assert.deepEqual(route(job.review[name]), labels);
-  for (const block of Object.values(job.commands)) assert.deepEqual(route(block), labels);
+  assert.equal(route(job.commands.prepare), 'ubuntu-24.04');
+  for (const id of ['analyze', 'publish']) assert.deepEqual(route(job.commands[id]), labels);
   assert.equal(route(job.review['automerge-dependabot']), 'ubuntu-24.04');
   assert.equal(route(job.inline.route), 'ubuntu-24.04');
   const lint = fs.readFileSync(path.join(root, '.github/actionlint.yaml'), 'utf8');

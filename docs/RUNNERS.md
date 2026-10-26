@@ -26,12 +26,17 @@ directly select this runner or change the trusted worker's routing policy.
 | Go CI fork PRs or events outside the configured routing cases | GitHub-hosted |
 | ReviewBot human-authored same-repository PR analysis/publication | `charming-speedle`, matching Pavu's policy |
 | ReviewBot fork/bot PR analysis/publication and dependency merge job | GitHub-hosted |
-| ReviewBot regression dispatch and trusted default-branch command jobs | `charming-speedle` |
-| Unprivileged inline-comment pointer workflow | GitHub-hosted |
+| ReviewBot regression dispatch and authorized command analysis/publication | `charming-speedle` |
+| Public comment authorization and unprivileged inline-comment pointer | GitHub-hosted |
 
 Fork code must not be routed to this persistent host. The inline pointer is also
 hosted because its event can use a PR merge revision; privileged command handling
 remains in the trusted default-branch receiver.
+
+Unlike Pavu's current command workflow, the initial authorization job stays
+hosted so arbitrary public comments cannot queue work on the single runner.
+Only commands passing the existing API permission check reach its self-hosted
+analysis and publication jobs; supported commands and permissions are unchanged.
 
 Go CI deliberately trusts code in same-repository PRs, including dependency
 updates from Dependabot. `go test` and `go build` execute that code on the
