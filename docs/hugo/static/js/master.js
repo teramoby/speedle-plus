@@ -39,6 +39,7 @@ function setMarginBottom() {
 // Older published documentation shares this script. Hugo emits the same link
 // in newly generated navigation; avoid adding a duplicate there.
 $(function() {
+    if (/^\/[0-9a-f]{32}\//.test(window.location.pathname)) return;
     var menu = document.querySelector('#top-nav-main ul');
     if (menu && !menu.querySelector('a[href$="/playground/"]')) {
         var item = document.createElement('li');

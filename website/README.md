@@ -31,9 +31,12 @@ HTML. It fails on missing counterparts or broken local anchor destinations and
 does not rewrite external links or translate source code.
 
 Copy the generated output into `docs/` without deleting existing legacy aliases,
-then run the postprocessor on `docs/` as well. The old preview tree stays readable
-and its navigation leads to the corresponding current-language pages. Commit
-source and generated output together. Pages continues to publish `master:/docs`.
+then run the postprocessor on `docs/` as well. Navigation and language switches in
+archived snapshots retain their version prefix, including pagination redirects.
+When an archived translation is absent, a localized navigation shell explicitly
+labels the original-language content; it never substitutes current-version text.
+Commit source and generated output together. Pages continues to publish
+`master:/docs`.
 
 ```sh
 python3 website/localize-links.py docs

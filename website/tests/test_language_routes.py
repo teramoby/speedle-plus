@@ -50,15 +50,60 @@ class LanguageRoutes(unittest.TestCase):
         text = (self.root / "categories/docs/page/2/index.html").read_text()
         self.assertIn('href="/zh/categories/docs/page/2/"', text)
 
-    def test_legacy_dropdown_and_preview_keep_the_same_logical_page(self):
-        route = "/" + "a" * 32 + "/zh/docs/spdl/"
+    def archive(self):
+        prefix = "/" + "a" * 32
+        for path in ["/docs/", "/docs/spdl/", "/docs/store/", "/blog/"]:
+            for lang in ["en", "zh"]:
+                route = prefix + ("/zh" if lang == "zh" else "") + path
+                self.write(route, f'<html lang="{lang}"><head><link rel="canonical" href="https://speedle.io{route}"></head>'
+                           '<header><div class="langsel"><a href="/en/">English</a><a href="/zh/">中文</a></div></header>'
+                           '<main>Original archived content.</main></html>')
+        return prefix
+
+    def test_legacy_dropdown_and_archive_keep_the_version_and_logical_page(self):
+        prefix = self.archive()
+        route = prefix + "/zh/docs/spdl/"
         self.write(route, '<html><div class="langsel"><span><img src="/x.svg"/></span>'
                    '<a href=" /en">English</a><a href=" /zh">中文</a></div>'
                    '<a href="/devops/docs/store/">Store</a></html>')
         self.process()
         text = (self.root / route.lstrip("/") / "index.html").read_text()
-        self.assertIn('href="/docs/spdl/" lang="en" hreflang="en"', text)
-        self.assertIn('href="/zh/docs/store/"', text)
+        self.assertIn(f'href="{prefix}/docs/spdl/" lang="en" hreflang="en"', text)
+        self.assertIn(f'href="{prefix}/zh/docs/store/"', text)
+
+    def test_archived_pagination_redirect_retains_the_snapshot(self):
+        prefix = self.archive()
+        self.write(prefix + "/blog/page/1/", '<html><head><meta http-equiv="refresh" content="0; url=/blog/">'
+                   f'<link rel="canonical" href="{prefix}/blog/"></head></html>')
+        self.process()
+        text = (self.root / prefix.lstrip("/") / "blog/page/1/index.html").read_text()
+        self.assertIn(f'content="0; url={prefix}/blog/"', text)
+        self.assertIn(f'href="{prefix}/blog/"', text)
+        self.process(check=True)
+
+    def test_missing_archive_translation_keeps_original_content_with_a_notice(self):
+        prefix = self.archive()
+        route = prefix + "/blog/legacy/"
+        body = '<main><h1>Historical policy</h1><pre>old_version()</pre></main>'
+        self.write(route, f'<html lang="en"><head><link rel="canonical" href="https://speedle.io{route}"></head>'
+                   '<header><div class="langsel"><a href="/zh/">中文</a></div></header>' + body + '</html>')
+        self.process()
+        translated = (self.root / prefix.lstrip("/") / "zh/blog/legacy/index.html").read_text()
+        self.assertIn('lang="zh-CN"', translated)
+        self.assertIn('data-language-fallback="en" lang="en"', translated)
+        self.assertIn('此历史版本的页面尚无中文译文', translated)
+        self.assertIn('<h1>Historical policy</h1><pre>old_version()</pre>', translated)
+        self.assertIn(f'href="{prefix}/blog/legacy/"', translated)
+        self.assertEqual(1, translated.count('data-language-fallback='))
+        self.process(check=True)
+
+    def test_check_mode_reports_missing_archive_translation_without_creating_it(self):
+        prefix = self.archive()
+        target = self.root / prefix.lstrip("/") / "zh/blog/index.html"
+        target.unlink()
+        with self.assertRaisesRegex(SystemExit, "missing|no matching"):
+            self.process(check=True)
+        self.assertFalse(target.exists())
 
     def test_missing_translation_and_broken_links_fail_the_gate(self):
         (self.root / "zh/docs/store/index.html").unlink()

@@ -3,7 +3,6 @@
 import argparse
 import html
 from html.parser import HTMLParser
-import json
 from pathlib import Path
 import posixpath
 import re
@@ -30,10 +29,20 @@ def language(path):
     return "zh" if logical(path).startswith("/zh/") else "en"
 
 
+def snapshot(path):
+    match = PREVIEW.match(unquote(path))
+    return match[0] if match else ""
+
+
+def canonical_path(path):
+    return snapshot(path) + logical(path)
+
+
 def counterpart(path, lang):
+    prefix = snapshot(path)
     path = logical(path)
     neutral = path[3:] if path.startswith("/zh/") else path
-    return "/zh" + neutral if lang == "zh" else neutral
+    return prefix + ("/zh" + neutral if lang == "zh" else neutral)
 
 
 class Metadata(HTMLParser):
@@ -63,16 +72,19 @@ class Site:
                 route = route[:-10]
             text = file.read_text()
             self.pages[route] = (file, text, Metadata(text).redirect)
-        self.canonical = {logical(route) for route, (_, _, redirect) in self.pages.items()
-                          if not redirect and not PREVIEW.match(route)}
+        self.canonical = {canonical_path(route) for route, (_, _, redirect) in self.pages.items()
+                          if not redirect}
 
-    def resolve(self, path):
+    def resolve(self, path, context=""):
+        prefix = snapshot(path) or context
         path = logical(path)
         # These old relative destinations predate the /docs/ URL structure.
         path = re.sub(r"^/(zh/)?(?:devops|developer|support)/docs/", lambda m: "/" + (m[1] or "") + "docs/", path)
         path = re.sub(r"^/(zh/)?support/(quick-start|contribute)/", lambda m: "/" + (m[1] or "") + m[2] + "/", path)
+        path = re.sub(r"^/(zh/)?integrations/quick-start/", lambda m: "/" + (m[1] or "") + "quick-start/", path)
         path = re.sub(r"^/(zh/)?docs/pms/docs/", lambda m: "/" + (m[1] or "") + "docs/", path)
         path = path.replace("/docs/api/discovery/", "/docs/pms/discover/")
+        path = prefix + path
         for _ in range(8):
             page = self.pages.get(path)
             if path in self.canonical:
@@ -82,14 +94,46 @@ class Site:
             target = urlsplit(urljoin(ORIGIN + path, page[2]))
             if target.netloc != "speedle.io":
                 return None
-            path = logical(target.path)
+            path = (snapshot(target.path) or prefix) + logical(target.path)
         return None
+
+
+def complete_archives(root):
+    """Add honest untranslated shells; never substitute current-version content."""
+    site = Site(root)
+    for route, (_, original, redirect) in list(site.pages.items()):
+        prefix = snapshot(route)
+        if not prefix or redirect or 'data-language-fallback=' in original:
+            continue
+        source_lang = language(route)
+        target_lang = "en" if source_lang == "zh" else "zh"
+        target = counterpart(route, target_lang)
+        if target in site.canonical:
+            continue
+        frame = prefix + ("/zh/docs/" if target_lang == "zh" else "/docs/")
+        header = re.search(r"<header\b[^>]*>[\s\S]*?</header>", site.pages[frame][1], re.I)
+        if not header:
+            raise SystemExit(f"Missing archived navigation frame: {frame}")
+        result = re.sub(r"<header\b[^>]*>[\s\S]*?</header>", lambda _: header[0], original, count=1, flags=re.I)
+        result = re.sub(r'(<html\b[^>]*\blang=)["\'][^"\']+["\']',
+                        lambda m: m[1] + '"' + ("zh-CN" if target_lang == "zh" else "en") + '"', result, count=1, flags=re.I)
+        notice = ("此历史版本的页面尚无中文译文。以下保留该版本的英文原文。" if target_lang == "zh" else
+                  "This archived page has no English translation. The original Chinese text from this version is shown below.")
+        source_code = "zh-CN" if source_lang == "zh" else "en"
+        target_code = "zh-CN" if target_lang == "zh" else "en"
+        result = re.sub(r"<main\b[^>]*>", lambda m: m[0][:-1] + f' data-language-fallback="{source_lang}" lang="{source_code}"><p role="note" lang="{target_code}">{notice}</p>', result, count=1, flags=re.I)
+        result = re.sub(r'(<link\b[^>]*rel=["\']canonical["\'][^>]*href=)["\'][^"\']+["\']',
+                        lambda m: m[1] + '"' + ORIGIN + target + '"', result, count=1, flags=re.I)
+        file = site.root / target.lstrip("/") / "index.html"
+        file.parent.mkdir(parents=True, exist_ok=True)
+        file.write_text(result)
 
 
 class Links(HTMLParser):
     def __init__(self, site, route, text):
         super().__init__(convert_charrefs=False)
-        self.site, self.route, self.text = site, logical(route), text
+        self.site, self.route, self.text = site, canonical_path(route), text
+        self.prefix = snapshot(route)
         self.base_route = route
         self.lang = language(route)
         self.offsets = [0]
@@ -101,7 +145,7 @@ class Links(HTMLParser):
         if PREVIEW.match(route) and 'class="nav-links"' in text and '/css/navigation.css' not in text:
             end = text.lower().find('</head>')
             if end >= 0:
-                self.edits.append((end, end, '<link rel="stylesheet" href="/css/navigation.css">\n'))
+                self.edits.append((end, end, f'<link rel="stylesheet" href="{self.prefix}/css/navigation.css">\n'))
 
     def handle_starttag(self, tag, attributes):
         attrs = dict(attributes)
@@ -126,7 +170,7 @@ class Links(HTMLParser):
                             changes["aria-label"] = "切换到中文" if switch == "zh" else "Switch to English"
                         self.switches.add(switch)
                 elif not href.startswith("#"):
-                    destination = self.site.resolve(url.path)
+                    destination = self.site.resolve(url.path, self.prefix)
                     if destination:
                         target = counterpart(destination, self.lang)
                         if target not in self.site.canonical:
@@ -146,7 +190,7 @@ class Links(HTMLParser):
             if script.netloc == "speedle.io" and script.path.endswith("/js/master.js"):
                 changes["src"] = script.path + "?v=" + NAVIGATION_VERSION
         if tag == "meta" and attrs.get("http-equiv", "").lower() == "refresh":
-            destination = self.site.resolve(urlsplit(urljoin(ORIGIN + self.route, Metadata(raw).redirect or "")).path)
+            destination = self.site.resolve(urlsplit(urljoin(ORIGIN + self.base_route, Metadata(raw).redirect or "")).path, self.prefix)
             if destination:
                 changes["content"] = "0; url=" + counterpart(destination, self.lang)
         updated = raw
@@ -189,6 +233,8 @@ class Links(HTMLParser):
 
 
 def process(root, check=False):
+    if not check:
+        complete_archives(root)
     site = Site(root)
     errors, changed = [], 0
     for route, (file, text, redirect) in site.pages.items():
