@@ -25,10 +25,10 @@ OUT="$ROOT/docs/hugo/static/playground"
 mkdir -p "$OUT/licenses"
 cd "$BUILD_ROOT/website/playground-engine"
 "$GO_BIN" test -count=1 -mod=readonly ./playground
-GOOS=js GOARCH=wasm "$GO_BIN" test -count=1 -mod=readonly -exec="$("$GO_BIN" env GOROOT)/lib/wasm/go_js_wasm_exec" ./playground
+GOROOT=$("$GO_BIN" env GOROOT)
+PLAYGROUND_GOROOT="$GOROOT" GOOS=js GOARCH=wasm "$GO_BIN" test -count=1 -mod=readonly -exec="\"$ROOT/website/playground-engine/wasm-test-exec.sh\"" ./playground
 GOOS=js GOARCH=wasm "$GO_BIN" build -mod=readonly -buildvcs=false -trimpath -ldflags='-s -w' -o "$OUT/speedle.wasm" ./cmd/wasm
 chmod 0644 "$OUT/speedle.wasm"
-GOROOT=$("$GO_BIN" env GOROOT)
 install -m 0644 "$GOROOT/lib/wasm/wasm_exec.js" "$OUT/wasm_exec.js"
 install -m 0644 "$GOROOT/LICENSE" "$OUT/licenses/Go-BSD-3-Clause.txt"
 install -m 0644 "$BUILD_ROOT/LICENSE" "$OUT/licenses/Speedle-UPL-1.0.txt"
