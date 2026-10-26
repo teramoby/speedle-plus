@@ -12,6 +12,9 @@ Opening, updating, reopening or marking a PR ready for review starts analysis.
 Draft PRs are skipped. Each new head commit receives a formal `COMMENT` Review
 with the commit SHA and actual model ID. An existing bot review with the exact
 commit and marker suppresses duplicate model calls. Older reviews remain visible.
+Reports use Pavu's rendered Markdown headings and `ReviewBot` signature. The
+shared response parser removes a model-added fence around a complete report,
+while retaining code examples, verdict markers, commit metadata and model IDs.
 
 The workflow reads its instructions from the trusted base revision, checks out
 GitHub's persistent PR head ref (including fork PRs), and verifies that checkout
