@@ -61,8 +61,8 @@ GOOS=js GOARCH=wasm go test -mod=readonly \
 ```
 
 The protected Go CI build worker runs `website/playground-engine/verify.sh` on
-pushes and pull requests; `.github/workflows/playground.yml` is a manual release
-check on the same self-hosted pool. Verification includes the original Hugo 0.48
+pushes and pull requests. Dispatch the existing Speedle Plus CI workflow for a
+manual release check on the same self-hosted pool. Verification includes the original Hugo 0.48
 generator in temporary output, the complete adapter/form suites, source versus
 published assets, and deterministic rebuild checks. The Linux Hugo archive is
 SHA-256 pinned; no host tools or published pages are overwritten by that check.

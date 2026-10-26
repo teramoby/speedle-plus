@@ -40,5 +40,5 @@ Run `website/playground-engine/verify.sh` on the Linux runner for the complete
 release gate. It builds from the pinned source, runs native/WASM/form suites,
 renders the existing Hugo site into a temporary directory with a checksum-pinned
 Hugo 0.48, and rejects changed or untracked generated assets. Pull requests and
-pushes use the protected default-branch Go CI worker; the standalone Playground
-workflow is manual and uses the same self-hosted pool.
+pushes use the protected default-branch Go CI worker; manual checks use the existing Speedle Plus CI workflow on the same pool. No new
+workflow or organization runner allowlist entry is needed.
