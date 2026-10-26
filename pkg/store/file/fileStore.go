@@ -337,6 +337,11 @@ func (s *Store) Watch() (pms.StorageChangeChannel, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, errors.StoreError, "resolve policy file path")
 	}
+	parent, err := filepath.EvalSymlinks(filepath.Dir(policyPath))
+	if err != nil {
+		return nil, errors.Wrap(err, errors.StoreError, "resolve policy directory")
+	}
+	policyPath = filepath.Join(parent, filepath.Base(policyPath))
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
 		return nil, errors.Wrap(err, errors.StoreError, "fsnotify new watcher failed")

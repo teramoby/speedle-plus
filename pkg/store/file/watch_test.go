@@ -173,3 +173,20 @@ func TestWatchSymlink(t *testing.T) {
 	}
 	awaitServices(t, s, changes, "after")
 }
+
+func TestWatchSymlinkedDirectory(t *testing.T) {
+	directory := t.TempDir()
+	alias := filepath.Join(t.TempDir(), "alias")
+	if err := os.Symlink(directory, alias); err != nil {
+		t.Fatal(err)
+	}
+	s, changes := watchTestStore(t, filepath.Join(alias, "policies.json"))
+	if err := s.CreateService(&pms.Service{Name: "first"}); err != nil {
+		t.Fatal(err)
+	}
+	awaitServices(t, s, changes, "first")
+	if err := s.DeleteService("first"); err != nil {
+		t.Fatal(err)
+	}
+	awaitServices(t, s, changes)
+}

@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/teramoby/speedle-plus/api/pms"
+	"github.com/teramoby/speedle-plus/pkg/pdl"
 	"github.com/teramoby/speedle-plus/testutil"
 	"github.com/teramoby/speedle-plus/testutil/msg"
 	"github.com/teramoby/speedle-plus/testutil/param"
@@ -17,10 +18,33 @@ import (
 // PDL quotes and shell quotes are separate layers. Keep special characters as
 // identifier data instead of grammar, interpolation, or command substitution.
 func quotedPDLName(name string) string {
+	if strings.Contains(name, "\"") && strings.Contains(name, "'") {
+		panic("quoted PDL fixture cannot contain both quote styles")
+	}
 	if strings.Contains(name, "\"") {
 		return "'" + name + "'"
 	}
 	return "\"" + name + "\""
+}
+
+func TestQuotedPDLName(t *testing.T) {
+	for _, name := range []string{"simple", "name with spaces", "$name", "(name)", "it's", `a "name"`} {
+		policy, err := pdl.ParsePolicy("grant user "+quotedPDLName(name)+" read books", "fixture")
+		if err != nil {
+			t.Fatalf("%q: %v", name, err)
+		}
+		if got := policy.Principals[0][0]; got != "user:"+name {
+			t.Fatalf("%q became %q", name, got)
+		}
+	}
+	t.Run("unrepresentable mixed quotes", func(t *testing.T) {
+		defer func() {
+			if recover() == nil {
+				t.Error("mixed quote fixture was not rejected")
+			}
+		}()
+		quotedPDLName(`it's a "name"`)
+	})
 }
 
 func getCmdTestDataForCreateService(sName string, sType string) testutil.TestCase {
