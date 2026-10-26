@@ -7,10 +7,14 @@ const root = path.resolve(__dirname, '../../..');
 const read = name => fs.readFileSync(path.join(root,name),'utf8');
 const home = read('docs/index.html');
 const page = read('docs/playground/index.html');
+const chineseLink = '<a href="/zh/" lang="zh-CN" hreflang="zh-CN" aria-label="中文首页">中文</a>';
 const original = execFileSync('git',['show','5cccf4c4e50a2b0ab901a9fa65acc39074ed1068:docs/index.html'],{cwd:root,encoding:'utf8'});
 assert.equal(read('docs/css/site.css'),original.match(/<style>([\s\S]*?)<\/style>/)[1], 'The shared stylesheet is the actual original homepage CSS, byte for byte');
-const restored = home.replace('  <link rel="stylesheet" href="/css/site.css">\n  <link rel="stylesheet" href="/css/navigation.css">', `  <style>${read('docs/css/site.css')}</style>`).replace('<a href="/playground/">Playground</a>','');
-assert.equal(restored,original,'Homepage content is unchanged except CSS extraction, responsive navigation fix and Playground entry');
+const restored = home.replace('  <link rel="stylesheet" href="/css/site.css">\n  <link rel="stylesheet" href="/css/navigation.css">', `  <style>${read('docs/css/site.css')}</style>`).replace('<a href="/playground/">Playground</a>','').replace(`        ${chineseLink}\n`,'');
+assert.equal(restored,original,'Homepage content is unchanged except shared CSS and navigation entries');
+assert.ok(home.includes(chineseLink), 'English homepage exposes the Chinese homepage');
+assert.ok(page.includes(chineseLink), 'Playground exposes the Chinese homepage');
+assert.ok(read('docs/zh/index.html').includes('<a href="/" lang="en" hreflang="en">English</a>'), 'Chinese homepage links back to English');
 assert.ok(home.includes('<a href="/playground/">Playground</a>'));
 assert.ok(read('docs/zh/index.html').includes('<a href="/playground/">Playground</a>'));
 function compareSource(relative) {
@@ -33,7 +37,7 @@ assert.equal(page.match(/  <footer>[\s\S]*?<\/footer>/)[0],home.match(/  <footer
 assert.ok(page.includes('href="https://speedle.io/playground/"'));
 assert.equal(read('docs/CNAME').trim(),'speedle.io');
 assert.ok(read('docs/sitemap.xml').includes('https://speedle.io/playground/'));
-assert.ok(!/[\u4e00-\u9fff]/.test(page),'English page has no untranslated labels');
+assert.ok(!/[\u4e00-\u9fff]/.test(page.replace(chineseLink,'')),'English page has no untranslated labels except the Chinese language switch');
 for(const source of [page,home]) {
  for(const [,url] of source.matchAll(/(?:src|href)="([^"]+)"/g)) {
   if(/^(?:https?:|data:|#)/.test(url))continue;
