@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#25134e">
+  <meta name="description" content="Try real Speedle+ authorization in your browser. Write SPDL policies, fill out a request and evaluate RBAC and ABAC decisions locally with WebAssembly.">
+  <link rel="canonical" href="https://speedle.io/zh/playground/">
+  <link rel="alternate" hreflang="en" href="https://speedle.io/playground/">
+  <link rel="alternate" hreflang="zh-CN" href="https://speedle.io/zh/playground/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Speedle+">
+  <meta property="og:title" content="Speedle+ Playground">
+  <meta property="og:description" content="Write policies. Test requests. Evaluate real Speedle+ authorization locally in your browser.">
+  <meta property="og:url" content="https://speedle.io/zh/playground/">
+  <title>策略实验室 | Speedle+ 权限控制引擎</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23814ce4'/%3E%3Cpath d='M32 9 48 18v28L32 55 16 46V18zM32 17l-9 5v20l9 5 9-5V22z' fill='none' stroke='white' stroke-width='3'/%3E%3Ccircle cx='32' cy='32' r='5' fill='%2301e7cb'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="/css/site.css">
+  <link rel="stylesheet" href="/css/navigation.css">
+  <link rel="stylesheet" href="/playground/playground.css">
+</head>
+<body>
+  <svg class="svg-defs" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><defs>
+    <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+    <symbol id="i-external" viewBox="0 0 24 24"><path d="M14 4h6v6M20 4l-9 9M10 4H5a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-5"/></symbol>
+    <symbol id="i-reset" viewBox="0 0 24 24"><path d="M3 10a9 9 0 1 1 2 8M3 4v6h6"/></symbol>
+    <symbol id="i-copy" viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="13" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3M12 14v3"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></symbol>
+    <symbol id="i-close" viewBox="0 0 24 24"><path d="m6 6 12 12M6 18 18 6"/></symbol>
+    <symbol id="i-terminal" viewBox="0 0 24 24"><path d="m5 7 5 5-5 5M13 17h6"/></symbol>
+    <symbol id="i-alert" viewBox="0 0 24 24"><path d="m12 3 10 18H2L12 3ZM12 9v5M12 17h.01"/></symbol>
+    <symbol id="i-book" viewBox="0 0 24 24"><path d="M12 6v15M12 6C9 3 5 3 2 4v15c4-1 7-1 10 2 3-3 6-3 10-2V4c-3-1-7-1-10 2Z"/></symbol>
+  </defs></svg>
+  <header class="site-header">
+    <div class="wrap nav">
+      <a class="brand" href="/zh/#top" aria-label="Speedle 中文首页"><img src="/img/speedle/Speedle_logo_home_bold.svg?v=4" alt="Speedle"></a>
+      <button class="menu" type="button" aria-expanded="false" aria-controls="nav-links" aria-label="展开导航">☰</button>
+      <nav class="nav-links" id="nav-links" aria-label="主导航">
+        <a href="/zh/#about">关于</a><a href="/zh/#features">功能</a><a href="/zh/#integrations">集成</a>
+        <a href="/zh/quick-start/">快速入门</a><a href="/zh/docs/">文档</a><a href="/zh/playground/" aria-current="page">策略实验室</a>
+        <a href="/playground/" lang="en" hreflang="en" aria-label="Switch to English">English</a>
+        <a class="nav-github" href="https://github.com/teramoby/speedle-plus">GitHub</a>
+      </nav>
+    </div>
+  </header>
+  <main id="top">
+    <div class="wrap playground-main">
+    <section class="workspace" aria-label="策略和请求编辑器">
+      <div class="workspace-topline">
+        <h1 class="workspace-title"><span class="active-indicator"></span>策略实验室</h1>
+        <div class="workspace-actions">
+          <div class="engine-panel">
+            <div class="engine-status" id="engine-status" role="status"><span class="status-dot loading"></span><span id="engine-text">正在加载 WebAssembly…</span></div>
+            <button id="retry-engine" class="text-button" type="button" hidden>重试</button>
+          </div>
+          <button class="text-button" id="reset-button"><svg class="icon"><use href="#i-reset"/></svg>重置</button>
+        </div>
+      </div>
+      <div class="examples"><span class="examples-label">从示例开始</span><div class="sample-list" role="group" aria-label="加载示例"><button class="sample active" data-sample="allow" aria-pressed="true"><span class="sample-dot allow"></span>基本授权</button><button class="sample" data-sample="deny" aria-pressed="false"><span class="sample-dot deny"></span>拒绝优先</button><button class="sample" data-sample="nomatch" aria-pressed="false">无匹配策略</button><button class="sample" data-sample="role" aria-pressed="false">基于角色的授权</button><button class="sample" data-sample="condition" aria-pressed="false">条件表达式</button></div></div>
+      <div class="editor-grid">
+        <section class="editor-panel" aria-labelledby="policy-heading">
+          <div class="editor-heading"><div class="editor-heading-left"><span class="step">01</span><div><h2 id="policy-heading">策略</h2><p>编写一条或多条 SPDL 语句</p></div></div><span class="language-tag">SPDL</span></div>
+          <div class="filebar"><span class="file-label"><span class="file-dot"></span>policies.spdl</span><button class="icon-button" id="copy-policies" aria-label="复制策略" title="Copy policies"><svg class="icon"><use href="#i-copy"/></svg></button></div>
+          <div class="code-editor" id="policy-editor"><div class="line-gutter" id="policy-lines" aria-hidden="true"></div><div class="code-area"><pre class="code-highlight" id="policy-highlight" aria-hidden="true"></pre><textarea id="policies" aria-labelledby="policy-heading" aria-describedby="policy-help" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off" wrap="off" maxlength="100000"></textarea></div></div>
+          <div class="editor-foot"><span id="policy-help"><span class="muted-hash">#</span> 每行一条语句 · # 注释单独成行</span><span id="policy-count">—</span></div>
+        </section>
+        <section class="editor-panel request-panel" aria-labelledby="request-heading">
+          <div class="editor-heading"><div class="editor-heading-left"><span class="step">02</span><div><h2 id="request-heading">授权请求</h2><p>填写请求，无需编写 JSON</p></div></div><span class="language-tag">表单</span></div>
+          <form id="request-form" class="request-form" novalidate>
+            <div class="request-basics">
+              <div class="form-field" data-field-wrapper="resource"><label for="resource">资源 <span>必填</span></label><input id="resource" data-field="resource" name="resource" placeholder="e.g. book or /api/orders" autocomplete="off" maxlength="10000" required><small class="field-error" hidden></small></div>
+              <div class="form-field" data-field-wrapper="action"><label for="action">操作 <span>必填</span></label><input id="action" data-field="action" name="action" placeholder="e.g. read or write" autocomplete="off" maxlength="1000" required><small class="field-error" hidden></small></div>
+              <div class="form-field service-field" data-field-wrapper="serviceName"><label for="service-name">服务 <span>策略命名空间</span></label><input id="service-name" data-field="serviceName" name="serviceName" placeholder="playground" autocomplete="off" maxlength="1000"><small class="field-error" hidden></small></div>
+            </div>
+            <fieldset class="form-section"><legend><strong>主体</strong><span>身份</span></legend><button type="button" class="add-button section-add" id="add-principal">+ 添加身份</button><div id="principal-list"></div><p class="form-hint">支持用户、组和实体。角色由 SPDL 角色策略推导。</p></fieldset>
+            <fieldset class="form-section attributes-section"><legend><strong>属性</strong><span>可选</span></legend><button type="button" class="add-button section-add" id="add-attribute">+ 添加属性</button><div id="attribute-list"></div><p class="form-hint">为条件提供指定类型的属性值；启用多个值可创建数组。</p></fieldset>
+          </form>
+        </section>
+      </div>
+      <div class="runbar"><span class="privacy-note"><svg class="icon"><use href="#i-lock"/></svg>输入仅保留在当前浏览器内存中，不会上传或保存。</span><div class="run-actions"><span class="shortcut"><kbd id="shortcut-key">Ctrl</kbd> + <kbd>Enter</kbd></span><button class="button button-primary evaluate-button" id="evaluate" disabled><svg class="icon"><use href="#i-arrow"/></svg><span id="evaluate-label">正在加载引擎</span></button></div></div>
+    </section>
+    <section class="result-section" aria-labelledby="result-heading">
+      <div class="result-heading"><h2 id="result-heading"><span class="step">03</span>授权结果</h2><span class="result-meta" id="result-meta">尚未运行</span></div>
+      <div class="result-card idle" id="result-card" role="status" aria-live="polite" aria-atomic="true"><div class="result-symbol" id="result-symbol"><svg class="icon"><use href="#i-terminal"/></svg></div><div class="result-body"><div class="result-label" id="result-label">可以开始测试策略了。</div><p id="result-description">点击“执行评估”，检查当前请求是否被允许。</p></div><div class="result-type" id="result-type">布尔值输出</div></div>
+      <details class="result-details" id="result-details" hidden><summary>查看引擎响应 <span class="details-hint">JSON</span></summary><pre id="result-json"></pre></details>
+    </section>
+    <details class="quick-reference"><summary><span><svg class="icon"><use href="#i-book"/></svg>刚开始使用 SPDL？<span class="reference-teaser">一分钟快速参考</span></span><span class="expand-indicator">+</span></summary><div class="reference-grid"><div><h3>编写策略</h3><code>grant user alice read book</code><p>依次填写授权效果、身份类型、身份、操作和资源。每行是一条语句； <code>deny</code> 明确拒绝访问。</p></div><div><h3>添加条件</h3><code>grant user alice read book if clearance &gt;= 3</code><p>添加属性并选择类型；可使用多个值组成数组。加载“条件表达式”示例即可尝试。</p></div><div><h3>查看结果</h3><p><strong class="allow-text">true</strong> — 请求被允许。<br><strong class="deny-text">false</strong> — 明确拒绝访问，或没有匹配的授权策略。<br>输入与执行错误会单独显示，不会作为 false 授权结果。</p><a href="/zh/docs/spdl/" target="_blank" rel="noopener noreferrer">完整 SPDL 文档 ↗</a></div></div></details>
+    <p class="sandbox-note"><strong>浏览器沙箱</strong> 单个服务 · 最多 500 条语句 · 输入总量 256 KiB · 评估时限 5 秒。<span>不支持外部自定义函数和令牌断言。请在“主体”下填写测试身份。</span></p>
+
+    <p class="engine-credit">由 Speedle+ 驱动 · Go + WebAssembly · <a href="/playground/ENGINE-NOTICE.txt">引擎和许可证声明</a> · <a href="https://github.com/teramoby/speedle-plus/tree/master/website/playground-engine">源码和构建说明</a></p>
+    </div>
+  </main>
+  <footer>
+    <div class="wrap footer-inner">
+      <div class="footer-brand"><img src="/img/speedle/Speedle_logo_w.svg" alt="Speedle"><p>Licensed under the Universal Permissive License v1.0.</p></div>
+      <nav class="social" aria-label="Community links">
+        <a href="https://groups.google.com/forum/#!forum/speedle-users" aria-label="Mailing list"><img src="/img/speedle/28.%20Mail.svg" alt=""></a>
+        <a href="https://github.com/teramoby/speedle-plus" aria-label="GitHub"><img src="/img/speedle/18.%20Github.svg" alt=""></a>
+        <a href="https://join.slack.com/t/speedleproject/shared_invite/enQtNTUzODM3NDY0ODE2LTg0ODc0NzQ1MjVmM2NiODVmMThkMmVjNmMyODA0ZWJjZjQ3NDc2MjdlMzliN2U4MDRkZjhlYzYzMDEyZTgxMGQ" aria-label="Slack"><img src="/img/speedle/29.%20Slack.svg" alt=""></a>
+      </nav>
+    </div>
+  </footer>
+  <div id="toast" class="toast" role="status" hidden></div>
+  <noscript><div class="noscript">策略实验室需要浏览器支持 JavaScript 和 WebAssembly。</div></noscript>
+  <script>
+    const button = document.querySelector('.menu');
+    const nav = document.querySelector('.nav-links');
+    button.addEventListener('click', () => {
+      const open = nav.classList.toggle('open');
+      button.setAttribute('aria-expanded', String(open));
+      button.textContent = open ? '×' : '☰';
+    });
+    nav.addEventListener('click', (event) => {
+      if (event.target.matches('a') && nav.classList.contains('open')) button.click();
+    });
+  </script>
+  <script type="module" src="/playground/app.js?v=language-20261026"></script>
+</body>
+</html>
