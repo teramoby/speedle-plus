@@ -1,3 +1,4 @@
+# Adapted from Pavu a7b458e; modified for Speedle+. Apache-2.0; see .github/codex/PAVU-LICENSE.txt.
 name: ReviewBot
 
 on:
@@ -47,7 +48,7 @@ jobs:
     outputs:
       final_message: ${{ steps.review.outputs.final_message }}
       model_id_b64: ${{ steps.review.outputs.model_id_b64 }}
-      safe_to_merge: ${{ steps.review.outputs.safe_to_merge }}
+      safe_to_merge: ${{ steps.review.outputs.safe_to_merge || steps.existing_review.outputs.safe_to_merge || 'false' }}
     steps:
       - name: Check ReviewBot configuration
         id: configuration
@@ -70,6 +71,7 @@ jobs:
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         env:
           REVIEWED_COMMIT: ${{ github.event.pull_request.head.sha }}
+          REVIEWED_BASE: ${{ github.event.pull_request.base.sha }}
         with:
           github-token: ${{ github.token }}
           script: |
@@ -88,18 +90,35 @@ jobs:
                 review.body?.startsWith(`${marker}\n`),
             );
 
+            const eligibility = `<!-- speedle-plus-reviewbot-merge:${commit}:${process.env.REVIEWED_BASE}:eligible -->`;
+            const cachedSafe = reviews.some((review) =>
+              review.user?.login === "github-actions[bot]" && review.commit_id === commit &&
+              review.body?.startsWith(`${marker}\n${eligibility}\n`));
+            core.setOutput("safe_to_merge", cachedSafe ? "true" : "false");
             core.setOutput("should_review", exists ? "false" : "true");
             if (exists) {
               core.notice(`ReviewBot already reviewed ${commit}; skipping Ark analysis.`);
             }
 
-      - name: Check out pull request head for static diff
+      - name: Check out pull request head ref for static diff
         if: steps.configuration.outputs.enabled == 'true' && steps.existing_review.outputs.should_review == 'true'
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ github.event.pull_request.head.sha }}
+          ref: refs/pull/${{ github.event.pull_request.number }}/head
           fetch-depth: 0
           persist-credentials: false
+
+      - name: Verify captured pull request head
+        if: steps.configuration.outputs.enabled == 'true' && steps.existing_review.outputs.should_review == 'true'
+        shell: bash
+        env:
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          if [[ "$(git rev-parse HEAD)" != "${HEAD_SHA}" ]]; then
+            echo 'Pull request head advanced before checkout; refusing stale analysis.' >&2
+            exit 1
+          fi
 
       # A pull request can commit `* -diff` (or a path-specific rule) and make
       # `git diff` report "Binary files differ" instead of its changes. Drop
@@ -254,6 +273,8 @@ jobs:
           REVIEWBOT_MESSAGE: ${{ needs.review.outputs.final_message }}
           MODEL_ID_B64: ${{ needs.review.outputs.model_id_b64 }}
           REVIEWED_COMMIT: ${{ github.event.pull_request.head.sha }}
+          REVIEWED_BASE: ${{ github.event.pull_request.base.sha }}
+          SAFE_TO_MERGE: ${{ needs.review.outputs.safe_to_merge }}
         with:
           github-token: ${{ github.token }}
           script: |
@@ -266,7 +287,11 @@ jobs:
               : "";
             const suffix = `\n\n_Reviewed commit: \`${commit}\`_${modelFooter}`;
             const maximumLength = 65_000;
-            const prefix = `${marker}\n`;
+            // Always write a trusted eligibility line before model output. A
+            // model-quoted marker must never be interpreted as merge authority.
+            const status = process.env.SAFE_TO_MERGE === "true" ? "eligible" : "ineligible";
+            const eligibility = `<!-- speedle-plus-reviewbot-merge:${commit}:${process.env.REVIEWED_BASE}:${status} -->`;
+            const prefix = `${marker}\n${eligibility}\n`;
             let body = `${prefix}${message}${suffix}`;
 
             if (body.length > maximumLength) {
@@ -306,6 +331,8 @@ jobs:
     name: Auto-merge safe dependency update
     needs: [review, publish]
     if: >-
+      always() && !cancelled() && needs.review.result == 'success' &&
+      (needs.publish.result == 'success' || needs.publish.result == 'skipped') &&
       github.event.pull_request.user.login == 'dependabot[bot]' &&
       github.event.pull_request.head.repo.full_name == github.repository &&
       needs.review.outputs.safe_to_merge == 'true'

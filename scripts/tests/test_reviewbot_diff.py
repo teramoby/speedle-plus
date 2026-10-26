@@ -1,3 +1,4 @@
+# Adapted from Pavu a7b458e; modified for Speedle+. Apache-2.0; see .github/codex/PAVU-LICENSE.txt.
 """Exercise the workflows' actual prompt construction without calling Ark."""
 
 import base64

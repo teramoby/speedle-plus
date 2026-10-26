@@ -25,31 +25,46 @@ const scripts = {
 };
 const base = 'a'.repeat(40), head = 'b'.repeat(40);
 const marker = '<!-- speedle-plus-reviewbot-command:review:issue_comment:123 -->';
-const bot = {login: 'github-actions[bot]', type: 'Bot'};
-const human = {login: 'maintainer', type: 'User'};
+const bot = {id: 2, login: 'github-actions[bot]', type: 'Bot'};
+const human = {id: 1, login: 'maintainer', type: 'User'};
+const pullUrl = 'https://api.github.com/repos/teramoby/speedle-plus/pulls/7';
 const encode = value => Buffer.from(value).toString('base64');
 const decode = value => Buffer.from(value, 'base64').toString('utf8');
 function harness(options = {}) {
   const eventName = options.eventName || 'issue_comment';
-  const calls = {permissions: [], pulls: [], requests: [], reviews: [], comments: [], notices: [], warnings: []};
+  const calls = {permissions: [], pulls: [], requests: [], reviews: [], comments: [], notices: [], warnings: [], reviewCommentReads: [], associations: []};
   const outputs = {};
   const comment = {
     id: 123, body: options.body ?? '@reviewbot review', user: options.user ?? human,
     html_url: 'https://github.com/teramoby/speedle-plus/pull/7#issuecomment-123',
+    created_at: '2026-01-01T00:00:00Z', pull_request_url: pullUrl,
     ...(options.comment || {}),
+  };
+  const run = {
+    id: 456, name: 'ReviewBot Inline Command', path: '.github/workflows/reviewbot-inline.yml',
+    event: 'pull_request_review_comment', conclusion: 'success', display_title: 'ReviewBot inline comment 123',
+    actor: human, head_repository: {full_name: 'teramoby/speedle-plus'}, head_sha: head,
+    created_at: '2026-01-01T00:00:01Z', pull_requests: [{number: 7, url: pullUrl}],
+    ...(options.run || {}),
   };
   const context = {
     eventName, repo: {owner: 'teramoby', repo: 'speedle-plus'},
-    serverUrl: 'https://github.com', runId: 999,
-    payload: {comment, issue: {number: 7, pull_request: {}}, pull_request: {number: 7}},
+    serverUrl: 'https://github.com', apiUrl: 'https://api.github.com', runId: 999,
+    payload: {comment: options.payloadComment || comment, workflow_run: run, issue: {number: 7, pull_request: {}}, pull_request: {number: 7}},
   };
   const endpoint = name => Object.assign(() => {}, {kind: name});
   const github = {
     rest: {
-      repos: {getCollaboratorPermissionLevel: async args => {
-        calls.permissions.push(args); return {data: {permission: options.permission || 'write'}};
-      }},
+      repos: {
+        getCollaboratorPermissionLevel: async args => {
+          calls.permissions.push(args); return {data: {permission: options.permission || 'write'}};
+        },
+        listPullRequestsAssociatedWithCommit: endpoint('associatedPulls'),
+      },
       pulls: {
+        getReviewComment: async args => {
+          calls.reviewCommentReads.push(args); return {data: {...comment, ...(options.apiComment || {})}};
+        },
         get: async args => {
           calls.pulls.push(args);
           return {data: {state: options.state || 'open', base: {sha: base}, head: {
@@ -64,7 +79,13 @@ function harness(options = {}) {
         createComment: async args => {calls.comments.push(args); return {data: {id: 11}};},
       },
     },
-    paginate: async endpoint => options.history?.[endpoint.kind] || [],
+    paginate: async (endpoint, args) => {
+      if (endpoint.kind === 'associatedPulls') {
+        calls.associations.push(args);
+        return options.associatedPulls ?? [{number: 7, url: pullUrl}];
+      }
+      return options.history?.[endpoint.kind] || [];
+    },
     request: async (route, args) => {
       calls.requests.push({route, ...args});
       if (options.reactionFailure && route.endsWith('/reactions')) throw new Error('Temporary reaction failure');
@@ -84,11 +105,117 @@ function harness(options = {}) {
   };
   return {
     calls, outputs,
-    run: name => vm.runInNewContext(scripts[name], {github, context, core, Buffer, process: {env}}),
+    run: name => vm.runInNewContext(scripts[name], {github, context, core, Buffer, URL, process: {env}}),
   };
 }
 function published(h) {return [...h.calls.reviews, ...h.calls.comments, ...h.calls.requests.filter(x => x.body)];}
 function reactions(h) {return h.calls.requests.filter(x => x.route.endsWith('/reactions')).map(x => x.content);}
+
+test('secret-bearing command workflow accepts default-branch events and inline router has no privileges', () => {
+  const triggers = workflow.split('\npermissions:', 1)[0];
+  assert.match(triggers, /^  issue_comment:/m); assert.match(triggers, /^  workflow_run:/m);
+  assert.doesNotMatch(triggers, /^  pull_request_review_comment:/m);
+  const router = fs.readFileSync(path.join(__dirname, '../../.github/workflows/reviewbot-inline.yml'), 'utf8');
+  assert.match(router, /^name: ReviewBot Inline Command$/m);
+  assert.match(router, /^run-name: ReviewBot inline comment \$\{\{ github.event.comment.id \}\}$/m);
+  assert.match(router, /^permissions: \{\}$/m); assert.match(router, /^  pull_request_review_comment:/m);
+  assert.match(router, /^        run: ':'$/m);
+  assert.doesNotMatch(router, /\buses:|\bsecrets\.|\bcheckout@|\b(?:upload|download)-artifact|^\s+env:/m);
+  assert.match(workflow, /ref: \$\{\{ github.workflow_sha \}\}/);
+  assert.match(workflow, /git show "\$\{TRUSTED_SHA\}:\.github\/codex\/reviewbot_response\.py"/);
+});
+test('direct review-comment events cannot enter the secret-bearing command handler', async () => {
+  const h = harness({eventName: 'pull_request_review_comment'}); await h.run('prepare');
+  assert.equal(h.outputs.should_run, 'false'); assert.equal(h.calls.permissions.length, 0);
+  assert.equal(h.calls.reviewCommentReads.length, 0); assert.deepEqual(reactions(h), []);
+});
+test('inline bridge reads authoritative comment body, identity and PR from GitHub instead of source payload', async () => {
+  const h = harness({eventName: 'workflow_run', body: '@reviewbot explain actual question', payloadComment: {
+    id: 999, body: '@reviewbot review FORGED_PAYLOAD', user: {id: 90, login: 'forged', type: 'User'},
+  }}); await h.run('prepare');
+  assert.equal(h.outputs.should_run, 'true'); assert.equal(h.outputs.command, 'explain');
+  assert.equal(decode(h.outputs.request_b64), 'actual question'); assert.equal(h.outputs.actor, human.login);
+  assert.equal(h.outputs.comment_id, '123'); assert.equal(h.outputs.pull_number, '7');
+  assert.equal(h.outputs.source_kind, 'review_comment'); assert.equal(h.calls.reviewCommentReads.length, 1);
+  assert.equal(h.calls.reviewCommentReads[0].comment_id, 123); assert.deepEqual(reactions(h), ['eyes']);
+});
+test('inline bridge rejects wrong workflow identity, event, outcome, repository and title before comment lookup', async () => {
+  for (const run of [
+    {event: 'push'}, {conclusion: 'failure'}, {name: 'Other workflow'},
+    {path: '.github/workflows/other.yml'}, {head_repository: {full_name: 'outsider/speedle-plus'}},
+    {actor: bot}, {display_title: 'ReviewBot inline comment 123 extra'},
+    {display_title: 'ReviewBot inline comment 0'}, {display_title: 'ReviewBot inline comment 01'},
+    {display_title: 'ReviewBot inline comment 9007199254740993'}, {display_title: undefined},
+  ]) {
+    const h = harness({eventName: 'workflow_run', run}); await h.run('prepare');
+    assert.equal(h.outputs.should_run, 'false', JSON.stringify(run)); assert.equal(h.calls.reviewCommentReads.length, 0);
+    assert.equal(h.calls.permissions.length, 0); assert.deepEqual(reactions(h), []);
+  }
+});
+test('inline bridge binds pointer to exact API comment and original run actor ID and login', async () => {
+  for (const options of [
+    {apiComment: {id: 124}}, {run: {actor: {...human, id: 90}}},
+    {run: {actor: {...human, login: 'different-user'}}}, {apiComment: {user: {login: human.login, type: 'User'}}},
+  ]) {
+    const h = harness({eventName: 'workflow_run', ...options}); await h.run('prepare');
+    assert.equal(h.outputs.should_run, 'false'); assert.equal(h.calls.permissions.length, 0); assert.deepEqual(reactions(h), []);
+  }
+});
+test('inline bridge rejects stale, future and invalid comment or router timestamps', async () => {
+  for (const options of [
+    {run: {created_at: '2026-01-01T00:02:01Z'}}, {apiComment: {created_at: '2026-01-01T00:00:02Z'}},
+    {run: {created_at: 'not-a-time'}}, {apiComment: {created_at: undefined}},
+  ]) {
+    const h = harness({eventName: 'workflow_run', ...options}); await h.run('prepare');
+    assert.equal(h.outputs.should_run, 'false'); assert.equal(h.calls.permissions.length, 0); assert.deepEqual(reactions(h), []);
+  }
+  const boundary = harness({eventName: 'workflow_run', run: {created_at: '2026-01-01T00:02:00Z'}});
+  await boundary.run('prepare'); assert.equal(boundary.outputs.should_run, 'true');
+});
+test('inline bridge only accepts the GitHub API pull-request URL of this repository', async () => {
+  for (const url of [
+    'https://api.github.com.evil.test/repos/teramoby/speedle-plus/pulls/7',
+    'https://api.github.com/repos/outsider/speedle-plus/pulls/7',
+    'https://api.github.com/repos/teramoby/speedle-plus/issues/7', `${pullUrl}?x=1`, `${pullUrl}#fragment`,
+    'not a URL', 'https://api.github.com/repos/teramoby/speedle-plus/pulls/9007199254740993',
+  ]) {
+    const h = harness({eventName: 'workflow_run', apiComment: {pull_request_url: url}}); await h.run('prepare');
+    assert.equal(h.outputs.should_run, 'false'); assert.equal(h.calls.permissions.length, 0); assert.deepEqual(reactions(h), []);
+  }
+});
+test('populated source-run association must identify exactly the API comment PR', async () => {
+  for (const pull_requests of [[{number: 8, url: pullUrl}], [{number: 7, url: 'https://api.github.com/repos/outsider/repo/pulls/7'}]]) {
+    const h = harness({eventName: 'workflow_run', run: {pull_requests}}); await h.run('prepare');
+    assert.equal(h.outputs.should_run, 'false'); assert.equal(h.calls.associations.length, 0);
+    assert.equal(h.calls.permissions.length, 0); assert.deepEqual(reactions(h), []);
+  }
+});
+test('empty source-run PR metadata requires GitHub commit association rather than trusting the title', async () => {
+  for (const pull_requests of [[], undefined]) {
+    const h = harness({eventName: 'workflow_run', run: {pull_requests}}); await h.run('prepare');
+    assert.equal(h.outputs.should_run, 'true'); assert.equal(h.calls.associations.length, 1);
+    assert.equal(h.calls.associations[0].commit_sha, head); assert.equal(h.calls.associations[0].repo, 'speedle-plus');
+  }
+  for (const associatedPulls of [[], [{number: 8, url: pullUrl}], [{number: 7, url: 'https://api.github.com/repos/outsider/repo/pulls/7'}]]) {
+    const h = harness({eventName: 'workflow_run', run: {pull_requests: []}, associatedPulls}); await h.run('prepare');
+    assert.equal(h.outputs.should_run, 'false'); assert.equal(h.calls.permissions.length, 0); assert.deepEqual(reactions(h), []);
+  }
+  const badCommit = harness({eventName: 'workflow_run', run: {pull_requests: [], head_sha: 'not-a-commit'}});
+  await badCommit.run('prepare'); assert.equal(badCommit.outputs.should_run, 'false'); assert.equal(badCommit.calls.associations.length, 0);
+});
+test('inline bridge retains human write-permission, open-PR and current same-repository guards', async () => {
+  for (const options of [{permission: 'read'}, {permission: 'triage'}, {state: 'closed'}, {fork: true}]) {
+    const h = harness({eventName: 'workflow_run', ...options}); await h.run('prepare');
+    assert.equal(h.outputs.should_run, 'false'); assert.deepEqual(reactions(h), []);
+  }
+});
+test('inline comment commands retain comment-specific idempotence after the bridge', async () => {
+  const inlineMarker = '<!-- speedle-plus-reviewbot-command:review:review_comment:123 -->';
+  const done = harness({eventName: 'workflow_run', history: {reviews: [{user: bot, body: `${inlineMarker}\nPrior review`}]}});
+  await done.run('prepare'); assert.equal(done.outputs.should_run, 'false');
+  const quoted = harness({eventName: 'workflow_run', history: {reviews: [{user: bot, body: `Quoted marker: ${inlineMarker}`} ]}});
+  await quoted.run('prepare'); assert.equal(quoted.outputs.should_run, 'true');
+});
 
 test('unrelated comments and lookalike mentions do not query permissions', async () => {
   for (const body of ['hello', 'email@reviewbot', '@reviewbots review', '@reviewbot-extra']) {
@@ -145,7 +272,7 @@ test('quoted marker in an unrelated genuine bot response does not suppress comma
   assert.equal(h.outputs.should_run, 'true'); assert.deepEqual(reactions(h), ['eyes']);
 });
 test('line discussion preserves file context and root reply target', async () => {
-  const h = harness({eventName: 'pull_request_review_comment', comment: {
+  const h = harness({eventName: 'workflow_run', comment: {
     id: 123, in_reply_to_id: 100, path: 'pkg/eval/evaluator.go', line: 12, start_line: 10,
     side: 'RIGHT', diff_hunk: '@@ -8,3 +8,5 @@',
   }}); await h.run('prepare');

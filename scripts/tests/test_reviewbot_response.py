@@ -1,3 +1,4 @@
+# Adapted from Pavu a7b458e; modified for Speedle+. Apache-2.0; see .github/codex/PAVU-LICENSE.txt.
 """Run both real workflow shell blocks with synthetic Git and stubbed HTTP only."""
 
 import base64

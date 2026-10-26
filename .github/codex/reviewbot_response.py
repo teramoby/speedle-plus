@@ -1,3 +1,4 @@
+# Adapted from Pavu a7b458e; modified for Speedle+. Apache-2.0; see .github/codex/PAVU-LICENSE.txt.
 """Extract an Ark review without logging response text. Exit 10 permits one retry."""
 
 import json

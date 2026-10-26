@@ -1,16 +1,19 @@
+# Adapted from pavulabs/pavu at a7b458ee3194865b653826a1b0c1119c28634c9d for Speedle+.
+# Apache-2.0; see .github/codex/PAVU-LICENSE.txt.
 name: ReviewBot Commands
 
 on:
   issue_comment: # zizmor: ignore[dangerous-triggers] reviewed: write-permission commenters only, no PR code runs; see docs/REVIEWBOT.md
     types: [created]
-  pull_request_review_comment:
-    types: [created]
+  workflow_run: # default-branch bridge; never executes the source workflow or its artifacts
+    workflows: [ReviewBot Inline Command]
+    types: [completed]
 
 permissions:
   contents: read
 
 concurrency:
-  group: reviewbot-command-${{ github.event_name }}-${{ github.event.comment.id }}
+  group: reviewbot-command-${{ github.event_name }}-${{ github.event.comment.id || github.event.workflow_run.id }}
   cancel-in-progress: false
 
 jobs:
@@ -18,7 +21,7 @@ jobs:
     name: Authorize ReviewBot command
     if: >-
       (github.event_name == 'issue_comment' && github.event.issue.pull_request != null) ||
-      github.event_name == 'pull_request_review_comment'
+      github.event_name == 'workflow_run'
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:
@@ -47,7 +50,91 @@ jobs:
           script: |
             core.setOutput("should_run", "false");
 
-            const comment = context.payload.comment;
+            let comment;
+            let pullNumber;
+            let sourceKind;
+            if (context.eventName === "issue_comment") {
+              comment = context.payload.comment;
+              pullNumber = context.payload.issue.number;
+              sourceKind = "issue_comment";
+            } else if (context.eventName === "workflow_run") {
+              // The source runs at a PR merge revision and is an untrusted ID
+              // pointer only. Resolve identities and comment context via GitHub.
+              const run = context.payload.workflow_run;
+              const repository = `${context.repo.owner}/${context.repo.repo}`;
+              if (run?.event !== "pull_request_review_comment" ||
+                  run.conclusion !== "success" ||
+                  run.name !== "ReviewBot Inline Command" ||
+                  run.path !== ".github/workflows/reviewbot-inline.yml" ||
+                  run.actor?.type !== "User" ||
+                  run.head_repository?.full_name !== repository) {
+                core.warning("Ignoring an invalid inline comment router run.");
+                return;
+              }
+              const pointer = typeof run.display_title === "string"
+                ? run.display_title.match(/^ReviewBot inline comment ([1-9][0-9]*)$/)
+                : null;
+              const commentId = pointer ? Number(pointer[1]) : NaN;
+              if (!Number.isSafeInteger(commentId)) {
+                core.warning("Ignoring an invalid inline comment pointer.");
+                return;
+              }
+              ({ data: comment } = await github.rest.pulls.getReviewComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: commentId,
+              }));
+              const commentTime = Date.parse(comment.created_at);
+              const runTime = Date.parse(run.created_at);
+              if (comment.id !== commentId ||
+                  !Number.isSafeInteger(comment.user?.id) ||
+                  comment.user.id !== run.actor?.id ||
+                  comment.user.login !== run.actor?.login ||
+                  !Number.isFinite(commentTime) || !Number.isFinite(runTime) ||
+                  commentTime > runTime || runTime - commentTime > 120_000) {
+                core.warning("Inline comment identity or creation time does not match the router run.");
+                return;
+              }
+              let pullUrl;
+              try {
+                pullUrl = new URL(comment.pull_request_url);
+              } catch {
+                core.warning("Inline comment does not identify a pull request.");
+                return;
+              }
+              const prefix = `/repos/${repository}/pulls/`;
+              const number = pullUrl.pathname.startsWith(prefix)
+                ? pullUrl.pathname.slice(prefix.length) : "";
+              if (pullUrl.origin !== new URL(context.apiUrl).origin ||
+                  pullUrl.search || pullUrl.hash || !/^[1-9][0-9]*$/.test(number) ||
+                  !Number.isSafeInteger(Number(number))) {
+                core.warning("Inline comment points outside this repository's pull requests.");
+                return;
+              }
+              pullNumber = Number(number);
+              const associated = Array.isArray(run.pull_requests) ? run.pull_requests : [];
+              let pulls = associated;
+              if (pulls.length === 0) {
+                if (!/^[a-f0-9]{40}$/.test(run.head_sha ?? "")) {
+                  core.warning("Inline router run has no verifiable commit association.");
+                  return;
+                }
+                pulls = await github.paginate(github.rest.repos.listPullRequestsAssociatedWithCommit, {
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  commit_sha: run.head_sha,
+                  per_page: 100,
+                });
+              }
+              if (!pulls.some(pull => pull.number === pullNumber && pull.url === pullUrl.href)) {
+                core.warning("Inline router run is not associated with this comment's pull request.");
+                return;
+              }
+              sourceKind = "review_comment";
+            } else {
+              core.warning("ReviewBot commands require a default-branch event.");
+              return;
+            }
             const body = comment?.body ?? "";
             const mention = body.match(/(?:^|[^\w@-])@reviewbot(?![\w-])/i);
             if (!mention) {
@@ -83,9 +170,6 @@ jobs:
               return;
             }
 
-            const pullNumber = context.eventName === "issue_comment"
-              ? context.payload.issue.number
-              : context.payload.pull_request.number;
             const { data: pull } = await github.rest.pulls.get({
               owner: context.repo.owner,
               repo: context.repo.repo,
@@ -102,9 +186,6 @@ jobs:
               return;
             }
 
-            const sourceKind = context.eventName === "pull_request_review_comment"
-              ? "review_comment"
-              : "issue_comment";
             const commentId = String(comment.id);
             const reactionRoute = sourceKind === "review_comment"
               ? "POST /repos/{owner}/{repo}/pulls/comments/{comment_id}/reactions"

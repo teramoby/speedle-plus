@@ -12,8 +12,9 @@ Draft PRs are skipped. Each new head commit receives a formal `COMMENT` Review
 with the commit SHA and actual model ID. An existing bot review with the exact
 commit and marker suppresses duplicate model calls. Older reviews remain visible.
 
-The workflow reads its instructions from the trusted base revision and checks out
-the immutable PR head only to construct a merge-base-to-head diff. It does not
+The workflow reads its instructions from the trusted base revision, checks out
+GitHub's persistent PR head ref (including fork PRs), and verifies that checkout
+equals the event's captured immutable head before constructing a merge-base diff. It does not
 execute, build or test PR code. Fork PR analysis also runs on GitHub-hosted
 `ubuntu-24.04`; no self-hosted runner is required.
 
@@ -74,8 +75,15 @@ in source, fixtures or comments. Without a key, automatic analysis emits a
 notice, sends no code and publishes no Review. Remove the secret or disable the
 two workflows to stop model calls.
 
-Only the response parser from the immutable workflow revision executes in the
-analysis job. PR `.gitattributes` files cannot hide text changes from the static
+Only the response parser from the immutable trusted workflow revision executes in
+the analysis job. Inline comments are routed through a no-checkout workflow with
+no secret bindings; a default-branch `workflow_run` handler verifies the run,
+comment, PR association, actor and time before applying the usual permission
+checks. It retrieves comment data through GitHub's API and does not execute code
+or unpack artifacts from the routing run. This avoids treating a PR review-comment
+event's merge revision as trusted executable code. See
+[GitHub's event reference](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows).
+PR `.gitattributes` files cannot hide text changes from the static
 diff. Checkout does not retain credentials, response diagnostics omit raw model
 or error text, temporary review files are removed, and writable GitHub tokens
 are confined to the jobs that publish output or perform the existing merge task.
@@ -85,7 +93,11 @@ are confined to the jobs that publish output or perform the existing merge task.
 Speedle's separate dependency-only merge job is retained. Commands never trigger
 it. It requires a same-repository Dependabot PR, a complete first-attempt review
 with the no-actionable-findings marker, and successful publication. Truncated
-input or a reduced-context retry cannot authorize a merge.
+input or a reduced-context retry cannot authorize a merge. The publisher writes
+its own eligible/ineligible marker before model text, bound to both head and base.
+Reruns can reuse only that exact trusted eligibility record; a quoted model marker
+or an old-base review cannot authorize merging. A duplicate review does not need
+to publish again before retrying the merge gate.
 
 Before merging, it pins the PR head and base and checks the canonical `ci.yml`
 `pull_request` run for that exact PR/head/base. Required latest-attempt jobs are
@@ -101,7 +113,7 @@ test job independently proves all repository tests passed.
 ## Maintenance and verification
 
 Files are `.github/workflows/reviewbot.yml`,
-`.github/workflows/reviewbot-command.yml`, `.github/codex/reviewbot_response.py`
+`.github/workflows/reviewbot-command.yml`, `.github/workflows/reviewbot-inline.yml`, `.github/codex/reviewbot_response.py`
 and the two prompts under `.github/codex/prompts/`. Actions are pinned to complete
 commit SHAs. Review these files as privileged CI configuration.
 
@@ -112,7 +124,7 @@ python3 scripts/tests/test_reviewbot_diff.py -v
 python3 scripts/tests/test_reviewbot_response.py -v
 node --test scripts/tests/test_reviewbot_commands.cjs
 node --test scripts/tests/test_reviewbot_automerge.cjs
-actionlint .github/workflows/reviewbot.yml .github/workflows/reviewbot-command.yml
+actionlint .github/workflows/reviewbot*.yml
 git diff --check
 ```
 
@@ -132,3 +144,13 @@ gh workflow run reviewbot.yml --ref <reviewed-branch>
 New workflows become active after they reach the default branch. A real PR event
 and authorized comment are separate integration checks after installation; local
 fixtures or a successful dispatch are not claimed as proof of a live model Review.
+
+## Reused source
+
+The automatic and command workflows, command prompt, response helper, Python
+diff/response suites and their JSON fixtures were adapted from the pinned Pavu
+revision above, under Apache 2.0. Modifications include Speedle configuration,
+the trusted inline bridge, review eligibility caching and additional guards/tests.
+The upstream [license](../.github/codex/PAVU-LICENSE.txt) and
+[NOTICE](../.github/codex/PAVU-NOTICE.txt) are retained. This attribution applies
+to the reused ReviewBot source; the rest of Speedle retains its existing license.
