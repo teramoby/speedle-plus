@@ -1,0 +1,7 @@
+{
+  "status": "completed",
+  "output": [{"type": "reasoning", "summary": [{"type": "summary_text", "text": "PRIVATE_REASONING"}]}],
+  "usage": {"input_tokens": 100, "output_tokens": 8192, "total_tokens": 8292,
+    "output_tokens_details": {"reasoning_tokens": 8192}},
+  "input": "PRIVATE_PROMPT"
+}

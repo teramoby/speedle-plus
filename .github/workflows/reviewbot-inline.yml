@@ -1,0 +1,19 @@
+name: ReviewBot Inline Command
+run-name: ReviewBot inline comment ${{ github.event.comment.id }}
+
+on:
+  pull_request_review_comment:
+    types: [created]
+
+# This event uses the PR merge revision. It may only emit an untrusted pointer:
+# no checkout, repository writes, secrets, artifacts, or PR code execution.
+permissions: {}
+
+jobs:
+  route:
+    name: Record inline comment pointer
+    runs-on: ubuntu-24.04
+    timeout-minutes: 1
+    steps:
+      - name: Complete pointer-only router
+        run: ':'
