@@ -19,15 +19,9 @@
     <li>{{ if eq .URL "/blog/" }}<a id="blogLink" href="https://medium.com/speedle" target="_blank">{{ .Name }}</a>{{ else }}<a href="{{ .URL | relLangURL }}">{{ .Name }}</a>{{ end }}</li>
     {{- end }}
   </ul></nav>
-  <nav id="top-nav-lang" class="hide-sm"><ul><li class="langName"><span class="pointerCursor">{{ if eq .Lang "zh" }}中文{{ else }}English{{ end }}<img class="langNameArrow" src="/img/speedle/arrow.svg" alt=""></span></li></ul></nav>
-  <div class="langsel hide-sm" id="langselFloatDiv" style="visibility: hidden;"><ul id="langselUl">
+  <nav id="top-nav-lang" aria-label="{{ if eq .Lang "zh" }}语言{{ else }}Language{{ end }}"><ul>
     {{- range .Translations }}
-    <li class="lang"><span><a class="langNameOption" href="{{ .RelPermalink }}" lang="{{ if eq .Lang "zh" }}zh-CN{{ else }}en{{ end }}" hreflang="{{ if eq .Lang "zh" }}zh-CN{{ else }}en{{ end }}">{{ if eq .Lang "zh" }}中文{{ else }}English{{ end }}</a></span></li>
+    <li><a href="{{ .RelPermalink }}" lang="{{ if eq .Lang "zh" }}zh-CN{{ else }}en{{ end }}" hreflang="{{ if eq .Lang "zh" }}zh-CN{{ else }}en{{ end }}">{{ if eq .Lang "zh" }}中文{{ else }}English{{ end }}</a></li>
     {{- end }}
-  </ul></div>
-  <nav class="langsel show-sm"><ul><li class="lang">
-    {{- range .AllTranslations }}
-    <span><a {{ if eq .Lang $currentPage.Lang }}style="pointer-events:none;" aria-current="page"{{ end }} href="{{ .RelPermalink }}" lang="{{ if eq .Lang "zh" }}zh-CN{{ else }}en{{ end }}" hreflang="{{ if eq .Lang "zh" }}zh-CN{{ else }}en{{ end }}"><span class="langSelected">{{ if eq .Lang $currentPage.Lang }}☑︎{{ else }}☐{{ end }}</span><span class="langName">{{ if eq .Lang "zh" }}中文{{ else }}English{{ end }}</span></a></span>
-    {{- end }}
-  </li></ul></nav>
+  </ul></nav>
 </div>
