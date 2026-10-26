@@ -1,0 +1,111 @@
+name: Go CI worker
+
+on:
+  workflow_call:
+    inputs:
+      mode:
+        required: true
+        type: string
+      store_type:
+        default: file
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  execute:
+    name: execute
+    # The runner group accepts only this callee at refs/heads/master. Never
+    # derive runner eligibility or checkout revision from caller inputs.
+    runs-on: >-
+      ${{ github.repository == 'teramoby/speedle-plus' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)) && fromJSON('["self-hosted","Linux","X64","charming-speedle"]') || 'ubuntu-latest' }}
+    timeout-minutes: 20
+    steps:
+      - name: Validate CI task
+        env:
+          CI_TASK: ${{ inputs.mode }}
+          TEST_STORE: ${{ inputs.store_type }}
+        run: |
+          set -euo pipefail
+          case "${CI_TASK}" in lint|test|build) ;; *) echo 'Invalid CI task.' >&2; exit 1 ;; esac
+          case "${TEST_STORE}" in file|etcd) ;; *) echo 'Invalid test store.' >&2; exit 1 ;; esac
+
+      - name: Verify self-hosted runner identity
+        if: runner.environment == 'self-hosted'
+        run: |
+          set -euo pipefail
+          test "${RUNNER_NAME}" = charming-speedle
+          test "${RUNNER_OS}" = Linux
+          command -v git >/dev/null
+          command -v python3 >/dev/null
+          echo "Using runner ${RUNNER_NAME} (${RUNNER_OS}/${RUNNER_ARCH})."
+
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Setup Go
+        uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
+        with:
+          go-version: '1.26'
+
+      - name: go vet
+        if: inputs.mode == 'lint'
+        run: go vet -composites=false ./pkg/... ./cmd/... ./api/...
+
+      - name: go mod tidy check
+        if: inputs.mode == 'lint'
+        run: go mod tidy -diff
+
+      - name: Ensure test services are not already running
+        if: inputs.mode == 'test' && runner.environment == 'self-hosted'
+        run: |
+          python3 - <<'PYTHON'
+          import errno
+          import socket
+          for port in (2379, 2380, 27017, 6733, 6734):
+              for family, address in ((socket.AF_INET, '0.0.0.0'), (socket.AF_INET6, '::')):
+                  try:
+                      with socket.socket(family, socket.SOCK_STREAM) as probe:
+                          probe.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+                          if family == socket.AF_INET6:
+                              probe.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 1)
+                          probe.bind((address, port))
+                  except OSError as error:
+                      if family == socket.AF_INET6 and error.errno in (errno.EAFNOSUPPORT, errno.EADDRNOTAVAIL):
+                          continue
+                      raise SystemExit(f'Test service port {port} is in use; refusing to touch an existing service.') from error
+          print('Local etcd, MongoDB, PMS and ADS test ports are unused.')
+          PYTHON
+
+      - name: Run tests with coverage
+        if: inputs.mode == 'test'
+        env:
+          STORE_TYPE: ${{ inputs.store_type }}
+          SP_APP_NAME: ''
+          PMS_ADMIN_TOKEN: ''
+          ADS_ADMIN_TOKEN: ''
+          CA_LOCATION: ''
+          CERT_LOCATION: ''
+          KEY_LOCATION: ''
+          PMS_ENDPOINT: http://127.0.0.1:6733
+          ADS_ENDPOINT: http://127.0.0.1:6734
+        run: |
+          set -euo pipefail
+          export GOPATH="$(go env GOPATH)"
+          go test -p 1 -count=1 -timeout 60s -coverprofile=coverage.out $(go list ./pkg/... ./cmd/... ./api/... | grep -v samples | grep -v adsgrpc | grep -v pmsgrpc | grep -v pmsrest)
+
+      - name: Upload coverage
+        if: always() && inputs.mode == 'test'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: coverage-${{ inputs.store_type }}
+          path: coverage.out
+          if-no-files-found: ignore
+
+      - name: Build
+        if: inputs.mode == 'build'
+        run: go build ./cmd/speedle-pms/... ./cmd/speedle-ads/... ./cmd/spctl/...
