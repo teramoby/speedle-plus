@@ -20,7 +20,7 @@ jobs:
     # derive runner eligibility or checkout revision from caller inputs.
     # Tests stay on one instance to avoid shared-host port collisions.
     runs-on: >-
-      ${{ github.repository == 'teramoby/speedle-plus' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.event.sender.type == 'User')) || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.user.type == 'User')) && fromJSON(inputs.mode == 'test' && '["self-hosted","Linux","X64","charming-speedle"]' || '["self-hosted","Linux","X64","speedle-linux"]') || 'ubuntu-latest' }}
+      ${{ github.repository == 'teramoby/speedle-plus' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.event.sender.type == 'User' || github.event.sender.type == 'Bot')) || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && (github.event.pull_request.user.type == 'User' || github.event.pull_request.user.type == 'Bot'))) && fromJSON(inputs.mode == 'test' && '["self-hosted","Linux","X64","charming-speedle"]' || '["self-hosted","Linux","X64","speedle-linux"]') || 'ubuntu-latest' }}
     timeout-minutes: 20
     steps:
       - name: Validate CI task

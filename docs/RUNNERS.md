@@ -15,6 +15,10 @@ A runner name alone is not a scheduling label. Keep the test label exclusive so
 two registrations on the same physical host cannot run these tests concurrently.
 Each registration must use its own runner installation and work directory.
 
+The `speedle-control` label belongs only to `charming-speedle-2`. ReviewBot's
+dependency merge waiter uses it so waiting for CI never occupies the only
+fixed-port test runner. Keep this label off the first runner.
+
 The group also restricts access to these exact default-branch workflows:
 
 - `teramoby/speedle-plus/.github/workflows/go-ci-worker.yml@refs/heads/master`
@@ -29,11 +33,12 @@ directly select this runner or change the trusted worker's routing policy.
 
 | Workload | Runner |
 | --- | --- |
-| Go lint/build for master pushes, human branch pushes/manual dispatch and human same-repository PRs | Either runner via `speedle-linux` |
+| Go lint/build for repository human/bot pushes, manual dispatch and human/bot same-repository PRs | Either runner via `speedle-linux` |
 | Go tests for those trusted events, both file/etcd modes | `charming-speedle` only, serializing fixed ports |
-| Go CI fork/bot PRs, bot branch pushes or other events | GitHub-hosted |
-| ReviewBot human-authored same-repository PR analysis/publication | Either runner via `speedle-linux`, matching Pavu's policy |
-| ReviewBot fork/bot PR analysis/publication and dependency merge job | GitHub-hosted |
+| Go CI fork PRs, unknown actors or other events | GitHub-hosted |
+| ReviewBot human/bot same-repository PR analysis/publication | Either runner via `speedle-linux` |
+| ReviewBot fork PRs or unknown authors | GitHub-hosted |
+| Dependency auto-merge waiter | `charming-speedle-2` via `speedle-control` |
 | ReviewBot regression dispatch and authorized command analysis/publication | Either runner via `speedle-linux` |
 | Public comment authorization and unprivileged inline-comment pointer | GitHub-hosted |
 
@@ -46,9 +51,10 @@ hosted so arbitrary public comments cannot queue work on the self-hosted pool.
 Only commands passing the existing API permission check reach its self-hosted
 analysis and publication jobs; supported commands and permissions are unchanged.
 
-Go CI deliberately trusts code in human-authored same-repository PRs and changes
-merged into the default branch. Bot PRs and bot branch pushes stay hosted before
-merge. `go test` and `go build` execute admitted code on the
+By maintainer policy, Go CI deliberately trusts code in human- and bot-authored
+same-repository PRs, including Dependabot updates before merge, repository-owned
+pushes and changes merged into the default branch. `go test` and `go build`
+execute admitted code on the
 persistent runner account, which can access its caches and other host resources.
 On a shared runner account, admitted code can inspect files and concurrent
 processes, including those of ReviewBot; changes it leaves can also affect later

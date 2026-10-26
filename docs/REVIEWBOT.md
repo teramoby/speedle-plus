@@ -3,7 +3,8 @@
 ReviewBot performs static pull-request reviews for Speedle+. It uses the same
 workflow and response-validation design as
 [Pavu at a7b458e](https://github.com/pavulabs/pavu/tree/a7b458ee3194865b653826a1b0c1119c28634c9d),
-with Speedle's Go/authorization review rules and the same PR runner-routing policy.
+with Speedle's Go/authorization review rules and repository-owned runners for
+human and bot PRs.
 
 ## Automatic review
 
@@ -15,13 +16,18 @@ commit and marker suppresses duplicate model calls. Older reviews remain visible
 The workflow reads its instructions from the trusted base revision, checks out
 GitHub's persistent PR head ref (including fork PRs), and verifies that checkout
 equals the event's captured immutable head before constructing a merge-base diff. It does not
-execute, build or test PR code. Like Pavu, human-authored same-repository PRs run
+execute, build or test PR code. Human- and bot-authored same-repository PRs run
 on the self-hosted Linux pool `speedle-linux` (`charming-speedle` and
-`charming-speedle-2`); fork and bot PRs use GitHub-hosted
+`charming-speedle-2`); fork PRs and unknown author types use GitHub-hosted
 `ubuntu-24.04`. The regression dispatch and authorized comment-command analysis
 and publication use the self-hosted pool. Public comment authorization and the
 unprivileged inline pointer workflow remain hosted.
 See [runner configuration](RUNNERS.md).
+
+The dependency auto-merge waiter uses `speedle-control`, exclusive to
+`charming-speedle-2`. It cannot occupy the only runner eligible for fixed-port
+tests while waiting for those tests to finish. All review and CI merge gates
+remain required.
 
 ## Comment commands
 
