@@ -5,7 +5,7 @@ library to WebAssembly. It is not a JavaScript reimplementation or production
 policy enforcement point.
 
 Upstream: https://github.com/teramoby/speedle-plus
-Revision: 5cccf4c4e50a2b0ab901a9fa65acc39074ed1068
+Revision: 7f61995d3344e94ed614494e013dacdcfa491b26
 Toolchain: Go 1.26.3 (GOOS=js, GOARCH=wasm)
 Documentation: https://speedle.io/docs/spdl/
 Combining algorithm: upstream deny-overrides.

@@ -45,6 +45,10 @@ defaultContentLanguageInSubdir = false
     weight = -400
     url = "/integrations/"
 [[menu.main]]
+    name = "Playground"
+    weight = -300
+    url = "/playground/"
+[[menu.main]]
     name = "Contribute"
     weight = -200
     url = "/contribute/"
@@ -82,6 +86,10 @@ defaultContentLanguageInSubdir = false
     name = "集成"
     weight = -400
     url = "/integrations/"
+[[languages.zh.menu.main]]
+    name = "Playground"
+    weight = -300
+    url = "/playground/"
 [[languages.zh.menu.main]]
     name = "贡献"
     weight = -200

@@ -1,6 +1,7 @@
 # Speedle.io Playground engine
 
-The public page is `docs/playground/index.html`, served at
+The client source is `docs/hugo/static/playground/`; its published copy is
+`docs/playground/index.html`, served at
 <https://speedle.io/playground/>. The site is static: policies, request principals,
 identity domains and attributes remain in browser memory. There is no evaluation
 backend, credential, API token or persistent request storage.
@@ -25,14 +26,15 @@ GO_BIN=/path/to/go website/playground-engine/build.sh
 
 `go.mod` replaces the Speedle+ dependency with this repository's root. The
 underlying engine source (`api/`, `pkg/`, `3rdparty/`, `go.mod`, `go.sum`) is pinned
-to commit `5cccf4c4e50a2b0ab901a9fa65acc39074ed1068`. The script checks that these
-paths match the pinned revision before building; unrelated website edits are
-allowed. Full Git history is required (`git fetch --unshallow` for a shallow
+to commit `7f61995d3344e94ed614494e013dacdcfa491b26`. The script extracts those
+paths from the pinned Git commit into a temporary build tree, then copies the
+current adapter there. Later server or dependency changes cannot silently change
+the published engine or prevent rebuilding it. Full Git history is required (`git fetch --unshallow` for a shallow
 clone). To deliberately upgrade the engine, review the source change, update the
 pin and adapter `Revision`, update `ENGINE-NOTICE.txt` and tests, rebuild, and
 review the new artifact together.
 
-The build runs native adapter tests, uses locked modules (`-mod=readonly`),
+The build runs native and actual Go-WASM adapter tests, uses locked modules (`-mod=readonly`),
 `-trimpath`, `-buildvcs=false` and `-ldflags='-s -w'`, and copies the matching Go
 runtime and upstream/dependency licenses. Disabling VCS stamping makes the
 artifact independent of unrelated website commits or checkout directory.
@@ -58,9 +60,13 @@ GOOS=js GOARCH=wasm go test -mod=readonly \
   -exec="$(go env GOROOT)/lib/wasm/go_js_wasm_exec" ./playground
 ```
 
-`.github/workflows/playground.yml` runs these checks independently of the existing
-repository CI. It rebuilds the artifacts and fails if the result differs from the
-checked-in WASM, matching runtime or license files. No test failures are ignored.
+The protected Go CI build worker runs `website/playground-engine/verify.sh` on
+pushes and pull requests; `.github/workflows/playground.yml` is a manual release
+check on the same self-hosted pool. Verification includes the original Hugo 0.48
+generator in temporary output, the complete adapter/form suites, source versus
+published assets, and deterministic rebuild checks. The Linux Hugo archive is
+SHA-256 pinned; no host tools or published pages are overwritten by that check.
+No test failures are ignored.
 The DOM shim does **not** prove browser layout, assistive-technology support,
 native form control behavior or module-worker integration.
 
@@ -143,6 +149,15 @@ The existing `docs/CNAME` is `speedle.io`; committed static assets under `docs/`
 are ready for the site's existing GitHub Pages publishing flow. This change does
 not change Pages settings, DNS or deployment permissions. Read-only checks on
 2026-10-26 confirmed legacy GitHub Pages publishing from `master:/docs`, the
-`speedle.io` custom domain and enforced HTTPS. This feature has not been pushed or
-published; its production route still returns HTTP 404. Verify the deployed route
-after publication.
+`speedle.io` custom domain and enforced HTTPS. Publication is tracked in GitHub issue #77. The deployment check must verify the
+actual HTTPS route and real browser-worker decisions after Pages publishes; a
+local build alone does not establish production availability.
+
+
+Edit client assets under `docs/hugo/static/playground/`, then run `build.sh` to
+synchronize the published copy. Commit both source and output. Shared site CSS
+is synchronized the same way. `docs/hugo/content/playground.md` and the standalone
+layout make normal Hugo builds include the editor, static assets and sitemap;
+they never iframe the public page. Existing published documentation gets its
+navigation entry through the shared `master.js`; future Hugo output includes
+the link directly from both language menus.

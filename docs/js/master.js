@@ -35,3 +35,17 @@ function setMarginBottom() {
 	var margin = smargin ? parseInt($('.features').css('margin-top')) : 0;
 	$('body').css('margin-bottom', height + margin + 'px');
 }
+
+// Older published documentation shares this script. Hugo emits the same link
+// in newly generated navigation; avoid adding a duplicate there.
+$(function() {
+    var menu = document.querySelector('#top-nav-main ul');
+    if (menu && !menu.querySelector('a[href="/playground/"]')) {
+        var item = document.createElement('li');
+        var link = document.createElement('a');
+        link.href = '/playground/';
+        link.textContent = 'Playground';
+        item.appendChild(link);
+        menu.appendChild(item);
+    }
+});

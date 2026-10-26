@@ -1,32 +1,8 @@
 name: Playground verification
 
+# Pull requests and pushes are verified by the protected Go CI build worker.
+# This manual entry point also permits a reviewed pre-publication release check.
 on:
-  push:
-    paths:
-      - 'docs/playground/**'
-      - 'docs/css/site.css'
-      - 'docs/css/navigation.css'
-      - 'docs/index.html'
-      - 'website/playground-engine/**'
-      - '.github/workflows/playground.yml'
-      - 'api/**'
-      - 'pkg/**'
-      - '3rdparty/**'
-      - 'go.mod'
-      - 'go.sum'
-  pull_request:
-    paths:
-      - 'docs/playground/**'
-      - 'docs/css/site.css'
-      - 'docs/css/navigation.css'
-      - 'docs/index.html'
-      - 'website/playground-engine/**'
-      - '.github/workflows/playground.yml'
-      - 'api/**'
-      - 'pkg/**'
-      - '3rdparty/**'
-      - 'go.mod'
-      - 'go.sum'
   workflow_dispatch:
 
 permissions:
@@ -34,30 +10,20 @@ permissions:
 
 jobs:
   verify:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, Linux, X64, speedle-linux]
+    timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
-      - uses: actions/setup-go@v5
+          persist-credentials: false
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
         with:
           go-version: '1.26.3'
-          cache-dependency-path: website/playground-engine/go.sum
-      - uses: actions/setup-node@v4
+          cache: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
           node-version: '22'
-      - name: Rebuild the pinned engine and run native tests
-        run: website/playground-engine/build.sh
-      - name: Verify checked-in production engine artifacts
-        run: |
-          git diff --exit-code -- docs/playground/speedle.wasm docs/playground/wasm_exec.js docs/playground/licenses
-          test -z "$(git ls-files --others --exclude-standard -- docs/playground/licenses)"
-      - name: Run actual WebAssembly engine tests
-        working-directory: website/playground-engine
-        run: GOOS=js GOARCH=wasm go test -count=1 -mod=readonly -exec="$(go env GOROOT)/lib/wasm/go_js_wasm_exec" ./playground
-      - name: Verify typed request form with the production WASM
-        run: node website/playground-engine/tests/form-model.test.cjs
-      - name: Verify request form interaction and race handling
-        run: node website/playground-engine/tests/form-dom.test.cjs
-      - name: Verify website integration and unchanged homepage styles
-        run: node website/playground-engine/tests/site.test.cjs
+          package-manager-cache: false
+      - name: Verify Playground release
+        run: website/playground-engine/verify.sh

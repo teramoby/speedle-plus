@@ -1,3 +1,6 @@
+> Historical review of the original 5cccf4c-based implementation. For the current
+> release and production verification, see [RELEASE-VALIDATION.md](RELEASE-VALIDATION.md).
+
 # Playground validation — 2026-10-26
 
 All Playground release checks below passed, including the compact header and

@@ -12,6 +12,21 @@ assert.equal(read('docs/css/site.css'),original.match(/<style>([\s\S]*?)<\/style
 const restored = home.replace('  <link rel="stylesheet" href="/css/site.css">\n  <link rel="stylesheet" href="/css/navigation.css">', `  <style>${read('docs/css/site.css')}</style>`).replace('<a href="/playground/">Playground</a>','');
 assert.equal(restored,original,'Homepage content is unchanged except CSS extraction, responsive navigation fix and Playground entry');
 assert.ok(home.includes('<a href="/playground/">Playground</a>'));
+assert.ok(read('docs/zh/index.html').includes('<a href="/playground/">Playground</a>'));
+function compareSource(relative) {
+ const source = path.join(root, 'docs/hugo/static', relative);
+ const published = path.join(root, 'docs', relative);
+ assert.deepEqual(fs.readdirSync(source).sort(), fs.readdirSync(published).sort(), `Source/published file set: ${relative}`);
+ for (const entry of fs.readdirSync(source, {withFileTypes:true})) {
+  const name = path.join(relative, entry.name);
+  if (entry.isDirectory()) compareSource(name);
+  else assert.deepEqual(fs.readFileSync(path.join(source,entry.name)), fs.readFileSync(path.join(published,entry.name)), `Source/published bytes: ${name}`);
+ }
+}
+compareSource('playground');
+for (const name of ['css/site.css','css/navigation.css','js/master.js']) {
+ assert.equal(read('docs/hugo/static/'+name), read('docs/'+name), `Source/published ${name}`);
+}
 assert.ok(page.includes('<a href="/playground/" aria-current="page">Playground</a>'));
 assert.ok(page.includes('<link rel="stylesheet" href="/css/site.css">'));
 assert.equal(page.match(/  <footer>[\s\S]*?<\/footer>/)[0],home.match(/  <footer>[\s\S]*?<\/footer>/)[0], 'Official footer is reused unchanged');

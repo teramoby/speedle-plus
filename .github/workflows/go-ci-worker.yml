@@ -50,6 +50,7 @@ jobs:
         with:
           ref: ${{ github.sha }}
           persist-credentials: false
+          fetch-depth: ${{ inputs.mode == 'build' && '0' || '1' }}
 
       - name: Setup Go
         uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
@@ -121,3 +122,22 @@ jobs:
       - name: Build
         if: inputs.mode == 'build'
         run: go build ./cmd/speedle-pms/... ./cmd/speedle-ads/... ./cmd/spctl/...
+
+      # The default-branch worker keeps scheduling policy outside PR control.
+      - name: Setup pinned Playground Go
+        if: inputs.mode == 'build' && hashFiles('website/playground-engine/go.mod') != ''
+        uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
+        with:
+          go-version: '1.26.3'
+          cache: false
+
+      - name: Setup Playground Node
+        if: inputs.mode == 'build' && hashFiles('website/playground-engine/go.mod') != ''
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '22'
+          package-manager-cache: false
+
+      - name: Verify Playground release
+        if: inputs.mode == 'build' && hashFiles('website/playground-engine/go.mod') != ''
+        run: website/playground-engine/verify.sh
