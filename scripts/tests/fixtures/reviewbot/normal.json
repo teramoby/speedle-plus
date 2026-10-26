@@ -1,0 +1,9 @@
+{
+  "status": "completed",
+  "model": "fixture-model",
+  "output": [
+    {"type": "reasoning", "summary": [{"type": "summary_text", "text": "PRIVATE_REASONING"}]},
+    {"type": "message", "content": [{"type": "output_text", "text": "Fixture review: no actionable findings."}]}
+  ],
+  "usage": {"input_tokens": 100, "output_tokens": 25, "total_tokens": 125}
+}

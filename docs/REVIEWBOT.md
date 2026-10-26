@@ -1,31 +1,134 @@
-# Ark ReviewBot
+# ReviewBot
 
-Speedle+ uses `.github/workflows/reviewbot.yml` to perform a static Ark Agent Plan review of each non-draft pull request from this repository. Fork pull requests are skipped so repository secrets are never exposed to untrusted workflow code.
+ReviewBot performs static pull-request reviews for Speedle+. It uses the same
+workflow and response-validation design as
+[Pavu at a7b458e](https://github.com/pavulabs/pavu/tree/a7b458ee3194865b653826a1b0c1119c28634c9d),
+with Speedle's Go/authorization review rules and GitHub-hosted runners.
 
-## Repository configuration
+## Automatic review
 
-- Secret `ARK_API_KEY`: an Ark Agent Plan API key.
-- Variable `ARK_REVIEW_MODEL`: optional model selection; defaults to `kimi-k3`.
-- Variable `ARK_REVIEW_FALLBACK_MODEL`: optional fallback; defaults to `glm-5.3`.
+Opening, updating, reopening or marking a PR ready for review starts analysis.
+Draft PRs are skipped. Each new head commit receives a formal `COMMENT` Review
+with the commit SHA and actual model ID. An existing bot review with the exact
+commit and marker suppresses duplicate model calls. Older reviews remain visible.
 
-The workflow uses the Agent Plan Responses endpoint. It tries the primary model first, then retries once with the distinct fallback model if the request fails, returns a non-2xx status, or contains no usable review text. If both models fail, the workflow fails closed and cannot auto-merge. If the secret is absent, it exits successfully without sending code or publishing a comment.
+The workflow reads its instructions from the trusted base revision and checks out
+the immutable PR head only to construct a merge-base-to-head diff. It does not
+execute, build or test PR code. Fork PR analysis also runs on GitHub-hosted
+`ubuntu-24.04`; no self-hosted runner is required.
 
-## Trust boundary
+## Comment commands
 
-The workflow runs under `pull_request_target`, and loads its executable workflow, review prompt, and optional root `AGENTS.md` from the protected base revision. It checks out the pull-request merge ref only to generate a static diff. It never builds, tests, or executes pull-request code.
+Collaborators with GitHub `write`, `maintain` or `admin` permission can write:
 
-Each new commit updates one ReviewBot comment. Review input is capped at 750,000 bytes; truncation is reported as a validation gap.
+```text
+@reviewbot review
+@reviewbot review focus on authorization and tenant boundaries
+@reviewbot recheck
+@reviewbot check
+@reviewbot explain why could this race?
+Is this policy update safe? @reviewbot
+```
 
-## Dependabot auto-merge
+A bare mention means `review`; `check` means `recheck`; other text becomes an
+`explain` question. Mentions are case-insensitive. Commands work in ordinary PR
+comments and code-line discussions, including on Draft PRs. The commenter must
+be a human GitHub user, the PR must still be open, and its head must belong to
+this repository. Commands on fork PRs are skipped.
 
-A pull request is merged automatically with squash only when all of these conditions hold:
+`review` and `recheck` publish formal `COMMENT` Reviews at the captured head;
+`explain` replies at the original comment location or code-discussion thread.
+Recheck includes up to five recent bot outputs, capped at 80,000 characters,
+including legacy Speedle ReviewBot issue comments. Each triggering comment is
+handled once. An eyes reaction acknowledges an authorized command; a thumbs-up
+marks successful publication. Queueing can delay the first reaction. A missing
+API key or failed analysis produces a generic status reply without internal
+response text. Reaction failures do not discard completed output.
 
-1. GitHub identifies the author as `dependabot[bot]`;
-2. Ark ReviewBot returns the exact machine-readable `no-actionable-findings` verdict for the current head commit;
-3. the review comment is published successfully;
-4. the current merge commit passes all four Speedle Plus CI checks: `lint`, `test (file)`, `test (etcd)`, and `build`;
-5. the pull request remains open, non-draft, and on the same head commit while the checks run.
+Comments and diff contents are review data, not instructions to execute code,
+reveal credentials, change repository settings, approve or merge PRs.
 
-Any finding, missing/failed check, changed commit, API failure, or timeout prevents the merge. Other pull requests are never auto-merged.
+## Configuration and data
 
-Remove the `ARK_API_KEY` secret or disable the workflow to stop future reviews and automatic dependency merges.
+- Secret: `ARK_API_KEY`, an Ark Agent Plan key.
+- Optional variable: `ARK_REVIEW_MODEL`, default `kimi-k3`.
+- Endpoint: `https://ark.cn-beijing.volces.com/api/plan/v3/responses`.
+- Authentication for GitHub reads/reviews: the job-scoped `GITHUB_TOKEN`; no PAT
+  or GitHub App installation is needed.
+
+This matches Pavu's single configured model. The old automatic secondary-model
+fallback is replaced by an explicit, bounded retry policy: an incomplete response
+caused by the output-token limit retries once with unified diff context reduced
+from 80 to 3. Both requests share a 600-second HTTP budget. Other incomplete,
+failed, malformed or empty responses fail without publishing partial review text.
+Input is limited to 750,000 bytes plus the truncation notice; output is limited
+to 8192 tokens and the GitHub message-length limit. Reduced or truncated context
+is recorded as a validation gap.
+
+With a key configured, the trusted prompts, repository policy if present, commit
+metadata and static diff are sent to Ark. Commands also include their text,
+comment URL/code context, and bounded bot history for recheck. There is no
+connection to Speedle runtime requests or production policy stores. Provider-side
+retention follows the account's data controls and terms. Do not put credentials
+in source, fixtures or comments. Without a key, automatic analysis emits a
+notice, sends no code and publishes no Review. Remove the secret or disable the
+two workflows to stop model calls.
+
+Only the response parser from the immutable workflow revision executes in the
+analysis job. PR `.gitattributes` files cannot hide text changes from the static
+diff. Checkout does not retain credentials, response diagnostics omit raw model
+or error text, temporary review files are removed, and writable GitHub tokens
+are confined to the jobs that publish output or perform the existing merge task.
+
+## Existing Dependabot integration
+
+Speedle's separate dependency-only merge job is retained. Commands never trigger
+it. It requires a same-repository Dependabot PR, a complete first-attempt review
+with the no-actionable-findings marker, and successful publication. Truncated
+input or a reduced-context retry cannot authorize a merge.
+
+Before merging, it pins the PR head and base and checks the canonical `ci.yml`
+`pull_request` run for that exact PR/head/base. Required latest-attempt jobs are
+`lint`, `test (file)`, `test (etcd)` and `build`, all successful. It reads CI jobs
+on the head commit, correcting the older merge-ref lookup that timed out despite
+green CI. Missing, pending, failed or stale checks do not authorize a merge.
+GitHub receives the exact reviewed head SHA for the squash operation.
+
+These gates use CI's reported results. The existing `ci.yml` test command uses
+`|| true`; this ReviewBot change does not alter that command or claim that a green
+test job independently proves all repository tests passed.
+
+## Maintenance and verification
+
+Files are `.github/workflows/reviewbot.yml`,
+`.github/workflows/reviewbot-command.yml`, `.github/codex/reviewbot_response.py`
+and the two prompts under `.github/codex/prompts/`. Actions are pinned to complete
+commit SHAs. Review these files as privileged CI configuration.
+
+Run from the repository root with Python 3, Git, Bash, jq and Node 22 or newer:
+
+```sh
+python3 scripts/tests/test_reviewbot_diff.py -v
+python3 scripts/tests/test_reviewbot_response.py -v
+node --test scripts/tests/test_reviewbot_commands.cjs
+node --test scripts/tests/test_reviewbot_automerge.cjs
+actionlint .github/workflows/reviewbot.yml .github/workflows/reviewbot-command.yml
+git diff --check
+```
+
+The Python suites run the actual workflow shell against synthetic Git history and
+stubbed HTTP responses, including a malicious PR-head parser that must never
+execute. JavaScript suites execute the actual workflow handlers with GitHub API
+mocks, testing permissions, replies, history, deduplication and merge gates. No
+credentials, real model requests, GitHub comments or merges are used by fixtures.
+
+The `ReviewBot` workflow also has `workflow_dispatch` to run all four suites on a
+reviewed branch without receiving the Ark key or publishing a Review:
+
+```sh
+gh workflow run reviewbot.yml --ref <reviewed-branch>
+```
+
+New workflows become active after they reach the default branch. A real PR event
+and authorized comment are separate integration checks after installation; local
+fixtures or a successful dispatch are not claimed as proof of a live model Review.

@@ -39,6 +39,11 @@ The process:
 4. Watch your PR for pipeline results. If there are failures then fix them.
 5. We will review your PR and merge as appropriate.
 
+Pull requests also receive an automated static ReviewBot review. Collaborators
+with write permission can request `@reviewbot review`, `@reviewbot recheck` or
+`@reviewbot explain` in PR comments. See [ReviewBot](docs/REVIEWBOT.md) for its
+commands, configuration and data boundaries.
+
 ## Code of Conduct
 
 Follow the [Golden Rule](https://en.wikipedia.org/wiki/Golden_Rule). If
