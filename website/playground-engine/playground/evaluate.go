@@ -338,6 +338,12 @@ func parseRequest(data []byte) (*ads.RequestContext, error) {
 	return &ads.RequestContext{Subject: request.Subject, ServiceName: request.ServiceName, Resource: request.Resource, Action: request.Action, Attributes: attributes}, nil
 }
 func convertValue(kind string, value interface{}) (interface{}, error) {
+	// Validate the declared type even when an array contains no elements.
+	switch kind {
+	case "string", "numeric", "bool", "datetime":
+	default:
+		return nil, fmt.Errorf("type must be string, numeric, bool or datetime")
+	}
 	if value == nil {
 		return nil, fmt.Errorf("value must not be null")
 	}
@@ -377,8 +383,6 @@ func convertValue(kind string, value interface{}) (interface{}, error) {
 			}
 			return nil, fmt.Errorf("datetime must be RFC3339, RubyDate or UnixDate")
 		}
-	default:
-		return nil, fmt.Errorf("type must be string, numeric, bool or datetime")
 	}
 	return nil, fmt.Errorf("value does not match declared type %q", kind)
 }

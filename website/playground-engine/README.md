@@ -73,11 +73,13 @@ CHROMIUM_PATH=/path/to/chromium node website/playground-engine/browser-smoke.cjs
 CHROMIUM_PATH=/path/to/chromium node website/playground-engine/site-smoke.cjs
 ```
 
-The implementation environment could not launch Chromium because browser socket
-creation was blocked. The browser smoke scripts are provided but no local browser
-pass or screenshot review is claimed. Run them before release in a browser-capable
-environment. Set `SCREENSHOT_DIR=/tmp/playground-shots` to capture full-site layout
-images during `site-smoke.cjs`.
+Both browser smoke scripts passed in real Chrome during the 2026-10-26 review,
+including the compact page header. Additional browser checks exercised download
+and worker failures, both deadlines, retry recovery and stale results. See
+[VALIDATION.md](VALIDATION.md) for the tested artifact, results and the separate
+pre-existing file-store regression failure. Re-run checks for later changes.
+Set `SCREENSHOT_DIR=/tmp/playground-shots` to capture layout images during
+`site-smoke.cjs`.
 
 To inspect the complete site, serve the docs root, not only the playground
 folder, so the shared site CSS and official header/footer images resolve:
@@ -139,6 +141,8 @@ No private Sites hosting configuration is used.
 
 The existing `docs/CNAME` is `speedle.io`; committed static assets under `docs/`
 are ready for the site's existing GitHub Pages publishing flow. This change does
-not change Pages settings, DNS or deployment permissions. The exact Pages source
-branch/folder must be checked by the publisher in repository settings; it was not
-accessible through the available read-only Pages API during implementation.
+not change Pages settings, DNS or deployment permissions. Read-only checks on
+2026-10-26 confirmed legacy GitHub Pages publishing from `master:/docs`, the
+`speedle.io` custom domain and enforced HTTPS. This feature has not been pushed or
+published; its production route still returns HTTP 404. Verify the deployed route
+after publication.

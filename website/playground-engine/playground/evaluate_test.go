@@ -87,3 +87,37 @@ func TestUnknownRequestAndTokenRejected(t *testing.T) {
 		}
 	}
 }
+
+func TestAttributeTypeValidation(t *testing.T) {
+	cases := []struct {
+		name      string
+		attribute string
+		wantOK    bool
+	}{
+		{"unknown type empty array", `{"name":"value","type":"unknown","value":[]}`, false},
+		{"missing type empty array", `{"name":"value","value":[]}`, false},
+		{"null type empty array", `{"name":"value","type":null,"value":[]}`, false},
+		{"string empty array", `{"name":"value","type":"string","value":[]}`, true},
+		{"numeric empty array", `{"name":"value","type":"numeric","value":[]}`, true},
+		{"bool empty array", `{"name":"value","type":"bool","value":[]}`, true},
+		{"datetime empty array", `{"name":"value","type":"datetime","value":[]}`, true},
+		{"unknown scalar type", `{"name":"value","type":"unknown","value":1}`, false},
+		{"string scalar", `{"name":"value","type":"string","value":"hello"}`, true},
+		{"numeric scalar", `{"name":"value","type":"numeric","value":0}`, true},
+		{"bool scalar", `{"name":"value","type":"bool","value":false}`, true},
+		{"datetime scalar", `{"name":"value","type":"datetime","value":"2030-01-01T00:00:00Z"}`, true},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			input := `{"policies":"grant user alice read book","request":{"subject":{"principals":[{"type":"user","name":"alice"}]},"resource":"book","action":"read","attributes":[` + c.attribute + `]}}`
+			result := EvaluateJSON([]byte(input))
+			if c.wantOK {
+				if !result.OK || result.Allowed == nil || !*result.Allowed {
+					t.Fatalf("valid type rejected: %+v; error: %+v", result, result.Error)
+				}
+			} else if result.OK || result.Allowed != nil || result.Error == nil || result.Error.Stage != "request" {
+				t.Fatalf("invalid type was not a request error: %+v; error: %+v", result, result.Error)
+			}
+		})
+	}
+}

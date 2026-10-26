@@ -1,17 +1,12 @@
-/* Playground-only layout and controls. Brand, type, colors, header, hero,
+/* Playground-only layout and controls. Brand, type, colors, header,
    buttons, width and footer are inherited from the real /css/site.css. */
-.playground-hero .hero-grid { min-height: 330px; padding: 60px 0; grid-template-columns: 1.4fr .6fr; gap: 48px; }
-.playground-hero h1 { font-size: clamp(2.5rem, 4.8vw, 4.2rem); margin: 18px 0 20px; }
-.playground-hero .hero-copy p { font-size: 1.05rem; }
-.engine-panel { display: flex; align-items: center; gap: 16px; padding: 22px; border: 1px solid rgba(255,255,255,.2); border-radius: 18px; background: rgba(255,255,255,.06); }
-.engine-panel img { width: 52px; height: 66px; object-fit: contain; }
-.engine-panel strong { font-size: .95rem; }
-.engine-status { display: flex; align-items: center; gap: 8px; margin-top: 6px; font-size: .8rem; color: rgba(255,255,255,.76); }
+.engine-panel { display: flex; align-items: center; gap: 8px; }
+.engine-status { display: flex; align-items: center; gap: 8px; font-size: .8rem; color: var(--muted); }
 .engine-status .status-dot { width: 7px; height: 7px; box-shadow: none; }
 .engine-status .loading { background: #ffcf80; animation: pulse 1.4s infinite; }
 .engine-status .error { background: #ffaaaa; }
-.engine-panel .text-button { color: var(--cyan); }
-.playground-main { padding-top: 40px; --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+.engine-panel .text-button { color: var(--purple-dark); }
+.playground-main { padding-top: 24px; --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
 .playground-main section { padding: 0; }
 .playground-main h2 { margin: 0; font-size: 1rem; letter-spacing: -.02em; }
 .playground-main button, .playground-main input, .playground-main select, .playground-main textarea { font: inherit; }
@@ -22,11 +17,11 @@
 .icon { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.65; stroke-linecap: round; stroke-linejoin: round; flex: none; }
 .svg-defs { position: absolute; width: 0; height: 0; overflow: hidden; }
 .workspace { border: 1px solid var(--line); border-radius: var(--radius); background: var(--white); overflow: hidden; box-shadow: var(--shadow); }
-.workspace-topline { min-height: 66px; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 15px 24px; border-bottom: 1px solid var(--line); }
-.workspace-title { display: flex; align-items: center; gap: 10px; font-weight: 750; }
+.workspace-topline { min-height: 66px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 16px; padding: 15px 24px; border-bottom: 1px solid var(--line); }
+.workspace-title { display: flex; align-items: center; gap: 10px; margin: 0; font-size: 1rem; font-weight: 750; line-height: 1.5; letter-spacing: 0; }
+.workspace-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; }
 .active-indicator { width: 8px; height: 8px; border-radius: 2px; background: var(--purple); }
-.workspace-tag, .language-tag { font: .68rem var(--mono); letter-spacing: .08em; color: var(--muted); }
-.workspace-tag { margin-left: 6px; }
+.language-tag { font: .68rem var(--mono); letter-spacing: .08em; color: var(--muted); }
 .text-button { display: inline-flex; align-items: center; gap: 6px; background: none; border: 0; padding: 6px; color: var(--muted); font: inherit; font-size: .85rem; }
 .text-button:hover { color: var(--purple-dark); }
 .text-button .icon { width: 15px; height: 15px; }
@@ -161,9 +156,6 @@ kbd { font: .65rem var(--mono); padding: 3px 5px; border: 1px solid #d9dce5; bor
 [hidden] { display: none !important; }
 @keyframes pulse { 50% { opacity: .4; } }
 @media (max-width: 1000px) {
-  .playground-hero .hero-grid { gap: 26px; }
-  .engine-panel { padding: 18px; }
-  .engine-panel img { display: none; }
   .principal-row { grid-template-columns: 90px 1fr 24px; }
   .principal-row>.form-field:nth-child(3) { grid-column: 1/3; }
   .principal-row>.remove-button { grid-column: 3; grid-row: 1; }
@@ -171,11 +163,7 @@ kbd { font: .65rem var(--mono); padding: 3px 5px; border: 1px solid #d9dce5; bor
   .shortcut { display: none; }
 }
 @media (max-width: 760px) {
-  .playground-hero .hero-grid { grid-template-columns: 1fr; padding: 42px 0; }
-  .engine-panel { width: fit-content; }
-  .playground-main { padding-top: 24px; }
   .workspace-topline, .examples, .runbar { padding: 17px; }
-  .workspace-tag { display: none; }
   .examples { display: block; }
   .examples-label { display: block; margin-bottom: 10px; }
   .editor-grid { grid-template-columns: 1fr; }

@@ -42,23 +42,18 @@
     </div>
   </header>
   <main id="top">
-    <section class="hero playground-hero" aria-labelledby="page-title">
-      <div class="wrap hero-grid">
-        <div class="hero-copy">
-          <span class="eyebrow">Speedle policy playground</span>
-          <h1 id="page-title">Write policies.<br>Test assumptions.</h1>
-          <p>Try real authorization decisions. Write SPDL policies, fill out a request and evaluate it — entirely in your browser.</p>
-        </div>
-        <div class="engine-panel">
-          <img src="/img/speedle/Speedle_logo_about.svg" alt="" aria-hidden="true">
-          <div><strong>Speedle+ Engine</strong><div class="engine-status" id="engine-status" role="status"><span class="status-dot loading"></span><span id="engine-text">Loading WebAssembly…</span></div></div>
-          <button id="retry-engine" class="text-button" type="button" hidden>Retry</button>
-        </div>
-      </div>
-    </section>
     <div class="wrap playground-main">
     <section class="workspace" aria-label="Policy and request editor">
-      <div class="workspace-topline"><div class="workspace-title"><span class="active-indicator"></span>Edit &amp; evaluate<span class="workspace-tag">PLAYGROUND</span></div><button class="text-button" id="reset-button"><svg class="icon"><use href="#i-reset"/></svg>Reset</button></div>
+      <div class="workspace-topline">
+        <h1 class="workspace-title"><span class="active-indicator"></span>Playground</h1>
+        <div class="workspace-actions">
+          <div class="engine-panel">
+            <div class="engine-status" id="engine-status" role="status"><span class="status-dot loading"></span><span id="engine-text">Loading WebAssembly…</span></div>
+            <button id="retry-engine" class="text-button" type="button" hidden>Retry</button>
+          </div>
+          <button class="text-button" id="reset-button"><svg class="icon"><use href="#i-reset"/></svg>Reset</button>
+        </div>
+      </div>
       <div class="examples"><span class="examples-label">Start with an example</span><div class="sample-list" role="group" aria-label="Load an example"><button class="sample active" data-sample="allow" aria-pressed="true"><span class="sample-dot allow"></span>Basic grant</button><button class="sample" data-sample="deny" aria-pressed="false"><span class="sample-dot deny"></span>Deny overrides</button><button class="sample" data-sample="nomatch" aria-pressed="false">No matching policy</button><button class="sample" data-sample="role" aria-pressed="false">Role-based access</button><button class="sample" data-sample="condition" aria-pressed="false">Conditions</button></div></div>
       <div class="editor-grid">
         <section class="editor-panel" aria-labelledby="policy-heading">
