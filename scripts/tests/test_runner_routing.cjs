@@ -142,6 +142,7 @@ test('Go CI caller delegates only known task inputs to the protected default-bra
     assert.equal(inputs.mode, id);
     assert.deepEqual(Object.keys(inputs), id === 'test' ? ['mode', 'store_type'] : ['mode']);
     if (id === 'test') {
+      assert.match(block, /fail-fast: false/);
       assert.equal(inputs.store_type, '${{ matrix.store-type }}');
       assert.match(block, /store-type: \[file, etcd\]/);
       assert.match(block, /name: test \(\$\{\{ matrix.store-type \}\}\)/);

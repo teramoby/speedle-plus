@@ -15,6 +15,7 @@ jobs:
   test:
     name: test (${{ matrix.store-type }})
     strategy:
+      fail-fast: false
       matrix:
         store-type: [file, etcd]
     uses: teramoby/speedle-plus/.github/workflows/go-ci-worker.yml@master
