@@ -22,7 +22,7 @@ jobs:
     if: >-
       (github.event_name == 'issue_comment' && github.event.issue.pull_request != null) ||
       github.event_name == 'workflow_run'
-    runs-on: ubuntu-24.04
+    runs-on: ["self-hosted","Linux","X64","charming-speedle"]
     timeout-minutes: 5
     permissions:
       contents: read
@@ -261,7 +261,7 @@ jobs:
     name: Analyze ReviewBot command
     needs: prepare
     if: always() && needs.prepare.outputs.should_run == 'true'
-    runs-on: ubuntu-24.04
+    runs-on: ["self-hosted","Linux","X64","charming-speedle"]
     timeout-minutes: 20
     permissions:
       contents: read
@@ -493,7 +493,7 @@ jobs:
       (needs.analyze.result != 'success' ||
        needs.analyze.outputs.enabled != 'true' ||
        needs.analyze.outputs.final_message != '')
-    runs-on: ubuntu-24.04
+    runs-on: ["self-hosted","Linux","X64","charming-speedle"]
     timeout-minutes: 5
     permissions:
       issues: write

@@ -17,13 +17,35 @@ jobs:
   diff-regression:
     name: Verify ReviewBot merge-base diff
     if: github.event_name == 'workflow_dispatch'
-    runs-on: ubuntu-24.04
+    runs-on: ["self-hosted","Linux","X64","charming-speedle"]
     timeout-minutes: 5
     steps:
+      - name: Verify runner identity and tools
+        env:
+          EXPECTED_RUNNER: charming-speedle
+        run: |
+          set -euo pipefail
+          test "${RUNNER_NAME}" = "${EXPECTED_RUNNER}"
+          test "${RUNNER_OS}" = Linux
+          for command in git curl jq python3; do command -v "${command}" >/dev/null; done
+          git --version
+          curl --version | head -n 1
+          jq --version
+          python3 --version
+          code=$(curl --silent --show-error --connect-timeout 15 --max-time 30 --output /dev/null --write-out '%{http_code}' https://ark.cn-beijing.volces.com/api/plan/v3/responses)
+          [[ "${code}" =~ ^[234][0-9][0-9]$ ]]
+          echo "Ark HTTPS reachable without credentials (HTTP ${code})."
+
       - name: Check out fixture validation revision
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+
+      - name: Set up Node for regression tests
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '22'
+          package-manager-cache: false
 
       - name: Verify actual prompt construction with synthetic history
         run: python3 scripts/tests/test_reviewbot_diff.py -v
@@ -37,10 +59,14 @@ jobs:
       - name: Verify dependency merge gates and automatic review publication
         run: node --test scripts/tests/test_reviewbot_automerge.cjs
 
+      - name: Verify runner routing and shared-host port guards
+        run: node --test scripts/tests/test_runner_routing.cjs
+
   review:
     name: Analyze pull request
     if: github.event_name == 'pull_request_target' && github.event.pull_request.draft == false
-    runs-on: ubuntu-24.04
+    runs-on: >-
+      ${{ github.repository == 'teramoby/speedle-plus' && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.user.type == 'User' && fromJSON('["self-hosted","Linux","X64","charming-speedle"]') || 'ubuntu-24.04' }}
     timeout-minutes: 20
     permissions:
       contents: read
@@ -262,7 +288,8 @@ jobs:
     name: Publish pull request review
     needs: review
     if: needs.review.outputs.final_message != ''
-    runs-on: ubuntu-24.04
+    runs-on: >-
+      ${{ github.repository == 'teramoby/speedle-plus' && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.user.type == 'User' && fromJSON('["self-hosted","Linux","X64","charming-speedle"]') || 'ubuntu-24.04' }}
     timeout-minutes: 5
     permissions:
       pull-requests: write

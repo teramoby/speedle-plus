@@ -3,7 +3,7 @@
 ReviewBot performs static pull-request reviews for Speedle+. It uses the same
 workflow and response-validation design as
 [Pavu at a7b458e](https://github.com/pavulabs/pavu/tree/a7b458ee3194865b653826a1b0c1119c28634c9d),
-with Speedle's Go/authorization review rules and GitHub-hosted runners.
+with Speedle's Go/authorization review rules and the same runner-routing policy.
 
 ## Automatic review
 
@@ -15,8 +15,11 @@ commit and marker suppresses duplicate model calls. Older reviews remain visible
 The workflow reads its instructions from the trusted base revision, checks out
 GitHub's persistent PR head ref (including fork PRs), and verifies that checkout
 equals the event's captured immutable head before constructing a merge-base diff. It does not
-execute, build or test PR code. Fork PR analysis also runs on GitHub-hosted
-`ubuntu-24.04`; no self-hosted runner is required.
+execute, build or test PR code. Like Pavu, human-authored same-repository PRs run
+on self-hosted Linux runner `charming-speedle`; fork and bot PRs use GitHub-hosted
+`ubuntu-24.04`. The regression dispatch and trusted comment-command jobs use the
+self-hosted runner. The unprivileged inline pointer workflow remains hosted.
+See [runner configuration](RUNNERS.md).
 
 ## Comment commands
 
@@ -106,9 +109,9 @@ on the head commit, correcting the older merge-ref lookup that timed out despite
 green CI. Missing, pending, failed or stale checks do not authorize a merge.
 GitHub receives the exact reviewed head SHA for the squash operation.
 
-These gates use CI's reported results. The existing `ci.yml` test command uses
-`|| true`; this ReviewBot change does not alter that command or claim that a green
-test job independently proves all repository tests passed.
+These gates use CI's reported results. Go CI propagates test failures instead of
+ignoring their exit status. Store tests run one package at a time, with a guard
+against using another service's embedded-etcd ports on the shared machine.
 
 ## Maintenance and verification
 
@@ -124,6 +127,7 @@ python3 scripts/tests/test_reviewbot_diff.py -v
 python3 scripts/tests/test_reviewbot_response.py -v
 node --test scripts/tests/test_reviewbot_commands.cjs
 node --test scripts/tests/test_reviewbot_automerge.cjs
+node --test scripts/tests/test_runner_routing.cjs
 actionlint .github/workflows/reviewbot*.yml
 git diff --check
 ```
@@ -134,7 +138,7 @@ execute. JavaScript suites execute the actual workflow handlers with GitHub API
 mocks, testing permissions, replies, history, deduplication and merge gates. No
 credentials, real model requests, GitHub comments or merges are used by fixtures.
 
-The `ReviewBot` workflow also has `workflow_dispatch` to run all four suites on a
+The `ReviewBot` workflow also has `workflow_dispatch` to run the regression suites on a
 reviewed branch without receiving the Ark key or publishing a Review:
 
 ```sh
