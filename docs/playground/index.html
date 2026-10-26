@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#25134e">
+  <meta name="description" content="Try real Speedle+ authorization in your browser. Write SPDL policies, fill out a request and evaluate RBAC and ABAC decisions locally with WebAssembly.">
+  <link rel="canonical" href="https://speedle.io/playground/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Speedle+">
+  <meta property="og:title" content="Speedle+ Playground">
+  <meta property="og:description" content="Write policies. Test requests. Evaluate real Speedle+ authorization locally in your browser.">
+  <meta property="og:url" content="https://speedle.io/playground/">
+  <title>Playground | Speedle+ Authorization Engine</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23814ce4'/%3E%3Cpath d='M32 9 48 18v28L32 55 16 46V18zM32 17l-9 5v20l9 5 9-5V22z' fill='none' stroke='white' stroke-width='3'/%3E%3Ccircle cx='32' cy='32' r='5' fill='%2301e7cb'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="/css/site.css">
+  <link rel="stylesheet" href="/css/navigation.css">
+  <link rel="stylesheet" href="./playground.css">
+</head>
+<body>
+  <svg class="svg-defs" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><defs>
+    <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+    <symbol id="i-external" viewBox="0 0 24 24"><path d="M14 4h6v6M20 4l-9 9M10 4H5a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-5"/></symbol>
+    <symbol id="i-reset" viewBox="0 0 24 24"><path d="M3 10a9 9 0 1 1 2 8M3 4v6h6"/></symbol>
+    <symbol id="i-copy" viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="13" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3M12 14v3"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></symbol>
+    <symbol id="i-close" viewBox="0 0 24 24"><path d="m6 6 12 12M6 18 18 6"/></symbol>
+    <symbol id="i-terminal" viewBox="0 0 24 24"><path d="m5 7 5 5-5 5M13 17h6"/></symbol>
+    <symbol id="i-alert" viewBox="0 0 24 24"><path d="m12 3 10 18H2L12 3ZM12 9v5M12 17h.01"/></symbol>
+    <symbol id="i-book" viewBox="0 0 24 24"><path d="M12 6v15M12 6C9 3 5 3 2 4v15c4-1 7-1 10 2 3-3 6-3 10-2V4c-3-1-7-1-10 2Z"/></symbol>
+  </defs></svg>
+  <header class="site-header">
+    <div class="wrap nav">
+      <a class="brand" href="/#top" aria-label="Speedle home"><img src="/img/speedle/Speedle_logo_home_bold.svg?v=4" alt="Speedle"></a>
+      <button class="menu" type="button" aria-expanded="false" aria-controls="nav-links" aria-label="Open navigation">☰</button>
+      <nav class="nav-links" id="nav-links" aria-label="Main navigation">
+        <a href="/#about">About</a><a href="/#features">Features</a><a href="/#integrations">Integrations</a>
+        <a href="/quick-start/">Getting started</a><a href="/docs/">Docs</a><a href="/playground/" aria-current="page">Playground</a>
+        <a class="nav-github" href="https://github.com/teramoby/speedle-plus">GitHub</a>
+      </nav>
+    </div>
+  </header>
+  <main id="top">
+    <div class="wrap playground-main">
+    <section class="workspace" aria-label="Policy and request editor">
+      <div class="workspace-topline">
+        <h1 class="workspace-title"><span class="active-indicator"></span>Playground</h1>
+        <div class="workspace-actions">
+          <div class="engine-panel">
+            <div class="engine-status" id="engine-status" role="status"><span class="status-dot loading"></span><span id="engine-text">Loading WebAssembly…</span></div>
+            <button id="retry-engine" class="text-button" type="button" hidden>Retry</button>
+          </div>
+          <button class="text-button" id="reset-button"><svg class="icon"><use href="#i-reset"/></svg>Reset</button>
+        </div>
+      </div>
+      <div class="examples"><span class="examples-label">Start with an example</span><div class="sample-list" role="group" aria-label="Load an example"><button class="sample active" data-sample="allow" aria-pressed="true"><span class="sample-dot allow"></span>Basic grant</button><button class="sample" data-sample="deny" aria-pressed="false"><span class="sample-dot deny"></span>Deny overrides</button><button class="sample" data-sample="nomatch" aria-pressed="false">No matching policy</button><button class="sample" data-sample="role" aria-pressed="false">Role-based access</button><button class="sample" data-sample="condition" aria-pressed="false">Conditions</button></div></div>
+      <div class="editor-grid">
+        <section class="editor-panel" aria-labelledby="policy-heading">
+          <div class="editor-heading"><div class="editor-heading-left"><span class="step">01</span><div><h2 id="policy-heading">Policies</h2><p>Write one or more SPDL statements</p></div></div><span class="language-tag">SPDL</span></div>
+          <div class="filebar"><span class="file-label"><span class="file-dot"></span>policies.spdl</span><button class="icon-button" id="copy-policies" aria-label="Copy policies" title="Copy policies"><svg class="icon"><use href="#i-copy"/></svg></button></div>
+          <div class="code-editor" id="policy-editor"><div class="line-gutter" id="policy-lines" aria-hidden="true"></div><div class="code-area"><pre class="code-highlight" id="policy-highlight" aria-hidden="true"></pre><textarea id="policies" aria-labelledby="policy-heading" aria-describedby="policy-help" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off" wrap="off" maxlength="100000"></textarea></div></div>
+          <div class="editor-foot"><span id="policy-help"><span class="muted-hash">#</span> One statement per line · # comments on separate lines</span><span id="policy-count">—</span></div>
+        </section>
+        <section class="editor-panel request-panel" aria-labelledby="request-heading">
+          <div class="editor-heading"><div class="editor-heading-left"><span class="step">02</span><div><h2 id="request-heading">Authorization request</h2><p>Fill in the request — no JSON required</p></div></div><span class="language-tag">FORM</span></div>
+          <form id="request-form" class="request-form" novalidate>
+            <div class="request-basics">
+              <div class="form-field" data-field-wrapper="resource"><label for="resource">Resource <span>required</span></label><input id="resource" data-field="resource" name="resource" placeholder="e.g. book or /api/orders" autocomplete="off" maxlength="10000" required><small class="field-error" hidden></small></div>
+              <div class="form-field" data-field-wrapper="action"><label for="action">Action <span>required</span></label><input id="action" data-field="action" name="action" placeholder="e.g. read or write" autocomplete="off" maxlength="1000" required><small class="field-error" hidden></small></div>
+              <div class="form-field service-field" data-field-wrapper="serviceName"><label for="service-name">Service <span>policy namespace</span></label><input id="service-name" data-field="serviceName" name="serviceName" placeholder="playground" autocomplete="off" maxlength="1000"><small class="field-error" hidden></small></div>
+            </div>
+            <fieldset class="form-section"><legend><strong>Subject</strong><span>principals</span></legend><button type="button" class="add-button section-add" id="add-principal">+ Add principal</button><div id="principal-list"></div><p class="form-hint">Use users, groups or entities. Roles are derived from SPDL role policies.</p></fieldset>
+            <fieldset class="form-section attributes-section"><legend><strong>Attributes</strong><span>optional</span></legend><button type="button" class="add-button section-add" id="add-attribute">+ Add attribute</button><div id="attribute-list"></div><p class="form-hint">Provide typed values for conditions. Choose multiple values to create an array.</p></fieldset>
+          </form>
+        </section>
+      </div>
+      <div class="runbar"><span class="privacy-note"><svg class="icon"><use href="#i-lock"/></svg>Your input stays in this browser. It is never uploaded or saved.</span><div class="run-actions"><span class="shortcut"><kbd id="shortcut-key">Ctrl</kbd> + <kbd>Enter</kbd></span><button class="button button-primary evaluate-button" id="evaluate" disabled><svg class="icon"><use href="#i-arrow"/></svg><span id="evaluate-label">Loading engine</span></button></div></div>
+    </section>
+    <section class="result-section" aria-labelledby="result-heading">
+      <div class="result-heading"><h2 id="result-heading"><span class="step">03</span>Authorization result</h2><span class="result-meta" id="result-meta">Not run yet</span></div>
+      <div class="result-card idle" id="result-card" role="status" aria-live="polite" aria-atomic="true"><div class="result-symbol" id="result-symbol"><svg class="icon"><use href="#i-terminal"/></svg></div><div class="result-body"><div class="result-label" id="result-label">Ready to test your policies.</div><p id="result-description">Select Evaluate to check whether this request is allowed.</p></div><div class="result-type" id="result-type">BOOLEAN OUTPUT</div></div>
+      <details class="result-details" id="result-details" hidden><summary>Inspect engine response <span class="details-hint">JSON</span></summary><pre id="result-json"></pre></details>
+    </section>
+    <details class="quick-reference"><summary><span><svg class="icon"><use href="#i-book"/></svg>New to SPDL?<span class="reference-teaser">A one-minute reference</span></span><span class="expand-indicator">+</span></summary><div class="reference-grid"><div><h3>Write a policy</h3><code>grant user alice read book</code><p>Use effect, principal type, principal, action and resource. Each line is a statement; <code>deny</code> explicitly denies access.</p></div><div><h3>Add a condition</h3><code>grant user alice read book if clearance &gt;= 3</code><p>Add an attribute and select its type. Use multiple values for an array. Load the Conditions example to try it.</p></div><div><h3>Read the result</h3><p><strong class="allow-text">true</strong> — the request is allowed.<br><strong class="deny-text">false</strong> — access is denied or no grant applies.<br>Input and execution errors are shown separately, never as false.</p><a href="https://speedle.io/docs/spdl/" target="_blank" rel="noopener noreferrer">Full SPDL documentation ↗</a></div></div></details>
+    <p class="sandbox-note"><strong>Browser sandbox</strong> One service · up to 500 statements · 256 KiB total input · 5-second evaluation deadline.<span>External custom functions and token assertion are not supported. Enter test identities under Subject.</span></p>
+
+    <p class="engine-credit">Powered by Speedle+ · Go + WebAssembly · <a href="./ENGINE-NOTICE.txt">Engine &amp; license notices</a> · <a href="https://github.com/teramoby/speedle-plus/tree/master/website/playground-engine">Source &amp; build instructions</a></p>
+    </div>
+  </main>
+  <footer>
+    <div class="wrap footer-inner">
+      <div class="footer-brand"><img src="/img/speedle/Speedle_logo_w.svg" alt="Speedle"><p>Licensed under the Universal Permissive License v1.0.</p></div>
+      <nav class="social" aria-label="Community links">
+        <a href="https://groups.google.com/forum/#!forum/speedle-users" aria-label="Mailing list"><img src="/img/speedle/28.%20Mail.svg" alt=""></a>
+        <a href="https://github.com/teramoby/speedle-plus" aria-label="GitHub"><img src="/img/speedle/18.%20Github.svg" alt=""></a>
+        <a href="https://join.slack.com/t/speedleproject/shared_invite/enQtNTUzODM3NDY0ODE2LTg0ODc0NzQ1MjVmM2NiODVmMThkMmVjNmMyODA0ZWJjZjQ3NDc2MjdlMzliN2U4MDRkZjhlYzYzMDEyZTgxMGQ" aria-label="Slack"><img src="/img/speedle/29.%20Slack.svg" alt=""></a>
+      </nav>
+    </div>
+  </footer>
+  <div id="toast" class="toast" role="status" hidden></div>
+  <noscript><div class="noscript">This playground requires JavaScript and WebAssembly.</div></noscript>
+  <script>
+    const button = document.querySelector('.menu');
+    const nav = document.querySelector('.nav-links');
+    button.addEventListener('click', () => {
+      const open = nav.classList.toggle('open');
+      button.setAttribute('aria-expanded', String(open));
+      button.textContent = open ? '×' : '☰';
+    });
+    nav.addEventListener('click', (event) => {
+      if (event.target.matches('a') && nav.classList.contains('open')) button.click();
+    });
+  </script>
+  <script type="module" src="./app.js"></script>
+</body>
+</html>

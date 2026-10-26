@@ -1,0 +1,40 @@
+SPEEDLE PLAYGROUND ENGINE
+
+This playground compiles the actual, unmodified Speedle+ Go parser and evaluation
+library to WebAssembly. It is not a JavaScript reimplementation or production
+policy enforcement point.
+
+Upstream: https://github.com/teramoby/speedle-plus
+Revision: 7f61995d3344e94ed614494e013dacdcfa491b26
+Toolchain: Go 1.26.3 (GOOS=js, GOARCH=wasm)
+Documentation: https://speedle.io/docs/spdl/
+Combining algorithm: upstream deny-overrides.
+
+Copyright (c) 2018, 2019 Oracle and/or its affiliates; subsequent contributions
+belong to their respective owners. Speedle is licensed under UPL 1.0. See
+licenses/Speedle-UPL-1.0.txt and the included third-party license notices.
+Go's runtime is included under its BSD-style license.
+
+BOUNDARIES
+- A single ephemeral application service is created using request.serviceName
+  (default: playground). Each Evaluate discards the previous policy store.
+- One SPDL statement per line; blank lines and full-line # or // comments ignored.
+- Policies, role policies, deny overrides, principal AND/OR, identity domains,
+  built-in roles, resource regular expressions, conditions and the six standard
+  built-in functions run through Speedle+ itself.
+- The wrapper accepts REST-style typed attributes [{name,type,value}].
+- No remote custom functions, token assertion, persistent stores, discovery,
+  multiple services/global role-store configuration or external ADS connection.
+- The browser does not authenticate identities: request principals are test data.
+- Conditions use runtime/browser clock time, not user-supplied request_* values.
+- Arbitrary JavaScript is never evaluated. Policies and requests are evaluated
+  in a local Web Worker; they are not sent to a Speedle backend.
+
+EDITOR VALIDATION (stricter than the service's fail-closed result)
+- Trailing/unconsumed SPDL text is rejected instead of silently ignored.
+- Invalid syntax/regex, missing attributes, condition runtime errors and
+  nonboolean conditions are shown as errors, never as a normal false result.
+- Unknown request fields, spoofed runtime attributes and token fields rejected.
+- Limits: 256 KiB total input, 500 statements, 200 request principals, upstream
+  4096-byte conditions and 1024-byte resource regex, 5-second evaluation timeout.
+- Only complete JSON + successful upstream evaluations display true or false.

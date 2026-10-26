@@ -1,0 +1,8 @@
+/* Keep the full top-level navigation usable with the Playground entry.
+   The original site's small-screen menu styles live in site.css. */
+@media (min-width: 701px) and (max-width: 1050px) {
+  .menu { display: block; }
+  .nav-links { display: none; position: absolute; inset: 76px 0 auto; padding: 24px; flex-direction: column; align-items: flex-start; gap: 18px; background: #25134e; }
+  .nav-links.open { display: flex; }
+}
+.nav-links a[aria-current="page"] { color: var(--cyan); }
