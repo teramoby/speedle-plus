@@ -33,6 +33,15 @@ Fork code must not be routed to this persistent host. The inline pointer is also
 hosted because its event can use a PR merge revision; privileged command handling
 remains in the trusted default-branch receiver.
 
+Go CI deliberately trusts code in same-repository PRs, including dependency
+updates from Dependabot. `go test` and `go build` execute that code on the
+persistent runner account, which can access its caches and other host resources.
+Changes left by such a job can affect subsequent jobs, including ReviewBot.
+The runner group restriction prevents forks from changing the trusted routing
+workflow; it does not sandbox code admitted by that workflow. Repository write
+access and dependency changes therefore remain part of the host's trust boundary.
+ReviewBot analysis only reads the diff and does not execute PR code.
+
 ## Requirements
 
 - Current GitHub runner software supporting Node 24-based actions (2.327.1 or newer).
@@ -53,9 +62,13 @@ to make a Speedle check pass.
 
 Go tests can use etcd ports 2379/2380, MongoDB 27017, PMS 6733 and ADS 6734.
 Self-hosted test jobs verify wildcard and loopback IPv4/IPv6 bindings and refuse
-to proceed if another service is listening. Packages execute serially
+to proceed if another service is detected at the time of the check. This is a
+preflight check, not a reservation: another process can bind a port afterwards.
+Fixed-port test jobs on other runner registrations must not overlap these tests;
+separate network namespaces or dedicated hosts are needed for that isolation.
+Packages execute serially
 (`go test -p 1`), inherited CLI/admin/TLS settings are cleared, and test endpoints
-are fixed to loopback. No existing service is reused or stopped. Package-list
+are fixed to loopback. The workflow never stops an existing service. Package-list
 and test failures propagate to the job instead of being discarded with `|| true`.
 
 ## Verify scheduling
