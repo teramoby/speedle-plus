@@ -19,7 +19,7 @@ jobs:
     # The runner group accepts only this callee at refs/heads/master. Never
     # derive runner eligibility or checkout revision from caller inputs.
     runs-on: >-
-      ${{ github.repository == 'teramoby/speedle-plus' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)) && fromJSON('["self-hosted","Linux","X64","charming-speedle"]') || 'ubuntu-latest' }}
+      ${{ github.repository == 'teramoby/speedle-plus' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.event.sender.type == 'User')) || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.user.type == 'User')) && fromJSON('["self-hosted","Linux","X64","charming-speedle"]') || 'ubuntu-latest' }}
     timeout-minutes: 20
     steps:
       - name: Validate CI task
@@ -51,6 +51,9 @@ jobs:
         uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
         with:
           go-version: '1.26'
+          # This persistent host already retains the Go caches. Restoring an
+          # archive over read-only module files causes noisy extraction failures.
+          cache: ${{ runner.environment != 'self-hosted' }}
 
       - name: go vet
         if: inputs.mode == 'lint'
@@ -67,7 +70,7 @@ jobs:
           import errno
           import socket
           for port in (2379, 2380, 27017, 6733, 6734):
-              for family, address in ((socket.AF_INET, '0.0.0.0'), (socket.AF_INET6, '::')):
+              for family, address in ((socket.AF_INET, '0.0.0.0'), (socket.AF_INET, '127.0.0.1'), (socket.AF_INET6, '::'), (socket.AF_INET6, '::1')):
                   try:
                       with socket.socket(family, socket.SOCK_STREAM) as probe:
                           probe.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -96,7 +99,12 @@ jobs:
         run: |
           set -euo pipefail
           export GOPATH="$(go env GOPATH)"
-          go test -p 1 -count=1 -timeout 60s -coverprofile=coverage.out $(go list ./pkg/... ./cmd/... ./api/... | grep -v samples | grep -v adsgrpc | grep -v pmsgrpc | grep -v pmsrest)
+          discovered_packages=$(go list ./pkg/... ./cmd/... ./api/... | grep -v samples | grep -v adsgrpc | grep -v pmsgrpc | grep -v pmsrest)
+          test_packages=()
+          while IFS= read -r test_package; do
+            test_packages+=("${test_package}")
+          done <<< "${discovered_packages}"
+          go test -p 1 -count=1 -timeout 60s -coverprofile=coverage.out "${test_packages[@]}"
 
       - name: Upload coverage
         if: always() && inputs.mode == 'test'
