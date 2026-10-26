@@ -10,7 +10,7 @@ from urllib.parse import unquote, urljoin, urlsplit, urlunsplit
 
 
 ORIGIN = "https://speedle.io"
-NAVIGATION_VERSION = "language-20261026"
+NAVIGATION_VERSION = "language-direct-20261026"
 PREVIEW = re.compile(r"^/[0-9a-f]{32}(?=/)")
 
 
@@ -43,6 +43,29 @@ def counterpart(path, lang):
     path = logical(path)
     neutral = path[3:] if path.startswith("/zh/") else path
     return prefix + ("/zh" + neutral if lang == "zh" else neutral)
+
+
+def direct_language_navigation(text, route):
+    """Upgrade old published headers that are outside the current Hugo build."""
+    if 'id="langselFloatDiv"' not in text:
+        return text
+    lang = language(route)
+    opposite = "en" if lang == "zh" else "zh"
+    code = "en" if opposite == "en" else "zh-CN"
+    label = "English" if opposite == "en" else "中文"
+    name = "语言" if lang == "zh" else "Language"
+    target = counterpart(route, opposite)
+    navigation = (f'<nav id="top-nav-lang" aria-label="{name}"><ul><li>'
+                  f'<a href="{target}" lang="{code}" hreflang="{code}">{label}</a>'
+                  '</li></ul></nav>')
+
+    def upgrade(match):
+        header = re.sub(r'<nav\b[^>]*id="top-nav-lang"[^>]*>[\s\S]*?</nav>',
+                        lambda _: navigation, match[0], count=1)
+        header = re.sub(r'[ \t]*<div\b[^>]*id="langselFloatDiv"[^>]*>[\s\S]*?</div>[ \t]*\n?', '', header, count=1)
+        return re.sub(r'[ \t]*<nav\b[^>]*class="langsel show-sm"[^>]*>[\s\S]*?</nav>[ \t]*\n?', '', header, count=1)
+
+    return re.sub(r'<header\b[^>]*>[\s\S]*?</header>', upgrade, text, count=1)
 
 
 class Metadata(HTMLParser):
@@ -238,7 +261,7 @@ def process(root, check=False):
     site = Site(root)
     errors, changed = [], 0
     for route, (file, text, redirect) in site.pages.items():
-        links = Links(site, route, text)
+        links = Links(site, route, direct_language_navigation(text, route))
         errors.extend(links.errors)
         if not redirect:
             opposite = "en" if language(route) == "zh" else "zh"
@@ -246,10 +269,11 @@ def process(root, check=False):
                 errors.append(f"{route}: no matching {opposite} page")
             if opposite not in links.switches:
                 errors.append(f"{route}: no same-page {opposite} language switch")
-        if links.edits:
+        output = links.output()
+        if output != text:
             changed += 1
             if not check:
-                file.write_text(links.output())
+                file.write_text(output)
     if errors:
         raise SystemExit("\n".join(sorted(set(errors))))
     if check and changed:

@@ -29,4 +29,15 @@ for (const name of ['quick-start/index.html', 'zh/quick-start/index.html']) {
   const target = name.startsWith('zh/') ? '/zh/playground/' : '/playground/';
   assert.ok(fs.readFileSync(path.join(output, name), 'utf8').includes(`href="${target}"`), `Generated ${name} navigation`);
 }
+for (const name of ['docs/index.html', 'zh/docs/index.html', 'docs/spdl/index.html', 'zh/docs/spdl/index.html']) {
+  const html = fs.readFileSync(path.join(output, name), 'utf8');
+  const zh = name.startsWith('zh/');
+  const target = '/' + (zh ? name.slice(3) : 'zh/' + name).replace(/index\.html$/, '');
+  const navigation = html.match(/<nav id="top-nav-lang"[^>]*>[\s\S]*?<\/nav>/)?.[0];
+  assert.ok(navigation, `Language navigation in ${name}`);
+  assert.equal((navigation.match(/<a\b/g) || []).length, 1, `One language choice in ${name}`);
+  assert.ok(navigation.includes(`href="${target}"`) && navigation.includes(`>${zh ? 'English' : '中文'}</a>`), `Direct counterpart in ${name}`);
+  assert.ok(!navigation.includes('hide-sm'), `Same control available in mobile navigation in ${name}`);
+  assert.ok(!html.includes('langselFloatDiv') && !html.includes('langNameArrow'), `No dropdown in ${name}`);
+}
 console.log('PASS Hugo 0.48 output: editor, navigation, sitemap and matching release assets');

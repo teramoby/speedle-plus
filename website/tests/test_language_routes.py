@@ -50,6 +50,29 @@ class LanguageRoutes(unittest.TestCase):
         text = (self.root / "categories/docs/page/2/index.html").read_text()
         self.assertIn('href="/zh/categories/docs/page/2/"', text)
 
+    def test_published_headers_have_one_direct_opposite_language_link(self):
+        prefix = self.archive()
+        routes = ['/docs/spdl/', '/zh/docs/spdl/', prefix + '/docs/spdl/', prefix + '/zh/docs/spdl/']
+        old_header = ('<header><nav id="top-nav-lang" class="hide-sm"><ul><li><span>Current language</span></li></ul></nav>'
+                      '<div class="langsel hide-sm" id="langselFloatDiv"><ul><li><a href="/zh/">中文</a></li></ul></div>'
+                      '<nav class="langsel show-sm"><a href="/">English</a><a href="/zh/">中文</a></nav></header>')
+        for route in routes:
+            self.write(route, '<html>' + old_header + '<main>Unchanged content.</main></html>')
+        self.process()
+        for route in routes:
+            with self.subTest(route=route):
+                text = (self.root / route.lstrip('/') / 'index.html').read_text()
+                opposite = 'en' if ROUTER['language'](route) == 'zh' else 'zh'
+                target = ROUTER['counterpart'](route, opposite)
+                label = 'English' if opposite == 'en' else '中文'
+                code = 'en' if opposite == 'en' else 'zh-CN'
+                self.assertIn(f'<a href="{target}" lang="{code}" hreflang="{code}">{label}</a>', text)
+                self.assertEqual(text.count('<a '), 1)
+                self.assertNotIn('langsel', text)
+                self.assertNotIn('hide-sm', text)
+                self.assertIn('<main>Unchanged content.</main>', text)
+        self.process(check=True)
+
     def archive(self):
         prefix = "/" + "a" * 32
         for path in ["/docs/", "/docs/spdl/", "/docs/store/", "/blog/"]:

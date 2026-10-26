@@ -5,6 +5,8 @@ path. Page and taxonomy counterparts must exist in both languages. Language
 switches link to the current page's counterpart, including pagination; ordinary
 internal links stay in the current language. URLs carry the language, so no
 cookie, browser storage or language-detection redirect is needed.
+The header shows a single direct link to the other language (`English` on Chinese
+pages, `中文` on English pages), including inside the mobile navigation menu.
 
 ## Sources
 
