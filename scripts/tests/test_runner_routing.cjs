@@ -8,6 +8,7 @@ const vm = require('node:vm');
 const root = path.resolve(__dirname, '../..');
 const canonical = 'teramoby/speedle-plus';
 const labels = ['self-hosted', 'Linux', 'X64', 'speedle-linux'];
+const controlLabels = ['self-hosted', 'Linux', 'X64', 'speedle-control'];
 const read = name => fs.readFileSync(path.join(root, '.github/workflows', name), 'utf8');
 const sources = {
   ci: read('ci.yml'), review: read('reviewbot.yml'),
@@ -99,20 +100,22 @@ test('review and command jobs retain their explicit runner policies and isolated
   for (const name of ['diff-regression']) assert.deepEqual(route(job.review[name]), labels);
   assert.equal(route(job.commands.prepare), 'ubuntu-24.04');
   for (const id of ['analyze', 'publish']) assert.deepEqual(route(job.commands[id]), labels);
-  assert.equal(route(job.review['automerge-dependabot']), 'ubuntu-24.04');
+  assert.deepEqual(route(job.review['automerge-dependabot']), controlLabels);
   assert.equal(route(job.inline.route), 'ubuntu-24.04');
   const lint = fs.readFileSync(path.join(root, '.github/actionlint.yaml'), 'utf8');
   assert.match(lint, /^\s+- charming-speedle$/m);
   assert.match(lint, /^\s+- speedle-linux$/m);
+  assert.match(lint, /^\s+- speedle-control$/m);
 });
-test('ReviewBot matches Pavu: same-repository human authors use Speedle, bots and forks use hosted', () => {
+test('same-repository human and bot authors use Speedle; forks and unknown authors stay hosted', () => {
   const human = github('pull_request_target');
   const bot = github('pull_request_target'); bot.event.pull_request.user = {login: 'dependabot[bot]', type: 'Bot'};
   const otherBot = github('pull_request_target'); otherBot.event.pull_request.user = {login: 'automation[bot]', type: 'Bot'};
   const unknownAuthor = github('pull_request_target'); delete unknownAuthor.event.pull_request.user;
   for (const id of ['review', 'publish']) {
-    assert.deepEqual(route(job.review[id], human), labels);
-    for (const context of [bot, otherBot, unknownAuthor, github('pull_request_target', 'outsider/speedle-plus'),
+    for (const author of [human, bot, otherBot]) assert.deepEqual(route(job.review[id], author), labels);
+    const forkBot = github('pull_request_target', 'outsider/speedle-plus'); forkBot.event.pull_request.user.type = 'Bot';
+    for (const context of [forkBot, unknownAuthor, github('pull_request_target', 'outsider/speedle-plus'),
       github('pull_request_target', undefined, {event: {pull_request: {user: {type: 'User'}}}}),
       github('pull_request_target', 'outsider/speedle-plus', {repository: 'outsider/speedle-plus'})]) {
       assert.equal(route(job.review[id], context), 'ubuntu-24.04', `${id}: ${JSON.stringify(context)}`);

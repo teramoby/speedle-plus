@@ -68,7 +68,7 @@ jobs:
     name: Analyze pull request
     if: github.event_name == 'pull_request_target' && github.event.pull_request.draft == false
     runs-on: >-
-      ${{ github.repository == 'teramoby/speedle-plus' && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.user.type == 'User' && fromJSON('["self-hosted","Linux","X64","speedle-linux"]') || 'ubuntu-24.04' }}
+      ${{ github.repository == 'teramoby/speedle-plus' && github.event.pull_request.head.repo.full_name == github.repository && (github.event.pull_request.user.type == 'User' || github.event.pull_request.user.type == 'Bot') && fromJSON('["self-hosted","Linux","X64","speedle-linux"]') || 'ubuntu-24.04' }}
     timeout-minutes: 20
     permissions:
       contents: read
@@ -291,7 +291,7 @@ jobs:
     needs: review
     if: needs.review.outputs.final_message != ''
     runs-on: >-
-      ${{ github.repository == 'teramoby/speedle-plus' && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.user.type == 'User' && fromJSON('["self-hosted","Linux","X64","speedle-linux"]') || 'ubuntu-24.04' }}
+      ${{ github.repository == 'teramoby/speedle-plus' && github.event.pull_request.head.repo.full_name == github.repository && (github.event.pull_request.user.type == 'User' || github.event.pull_request.user.type == 'Bot') && fromJSON('["self-hosted","Linux","X64","speedle-linux"]') || 'ubuntu-24.04' }}
     timeout-minutes: 5
     permissions:
       pull-requests: write
@@ -358,6 +358,7 @@ jobs:
 
   automerge-dependabot:
     name: Auto-merge safe dependency update
+    # Never occupy the only fixed-port test runner while waiting for its CI.
     needs: [review, publish]
     if: >-
       always() && !cancelled() && needs.review.result == 'success' &&
@@ -365,7 +366,7 @@ jobs:
       github.event.pull_request.user.login == 'dependabot[bot]' &&
       github.event.pull_request.head.repo.full_name == github.repository &&
       needs.review.outputs.safe_to_merge == 'true'
-    runs-on: ubuntu-24.04
+    runs-on: ["self-hosted","Linux","X64","speedle-control"]
     timeout-minutes: 20
     permissions:
       actions: read

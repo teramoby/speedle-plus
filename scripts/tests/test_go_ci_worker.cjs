@@ -74,20 +74,19 @@ test('trusted events pool lint/build while fixed-port tests stay on the original
   const push = context('push'), dispatch = context('workflow_dispatch');
   push.event = {sender: {type: 'User'}}; dispatch.event = {sender: {type: 'User'}};
   const merged = context('push'); merged.ref = 'refs/heads/master'; merged.event = {sender: {type: 'Bot'}};
-  for (const github of [push, dispatch, context('pull_request'), merged]) {
+  const botPR = context('pull_request'); botPR.event.pull_request.user.type = 'Bot';
+  const botPush = context('push'); botPush.event.sender.type = 'Bot';
+  const botTag = context('push'); botTag.event.sender.type = 'Bot'; botTag.ref = 'refs/tags/release';
+  for (const github of [push, dispatch, context('pull_request'), merged, botPR, botPush, botTag]) {
     for (const mode of ['lint', 'build', 'test']) for (const store_type of ['file', 'etcd']) {
       assert.deepEqual(route(github, {mode, store_type}), mode === 'test' ? expected : pool);
     }
   }
 });
-test('bot PRs/branch pushes, forks, missing metadata and copied repositories stay hosted regardless of inputs', () => {
+test('forks, missing metadata and copied repositories stay hosted regardless of inputs', () => {
   const missing = context('pull_request'); missing.event.pull_request.head.repo = null;
-  const botPR = context('pull_request'); botPR.event.pull_request.user = {login: 'dependabot[bot]', type: 'Bot'};
-  const botSenderPR = context('pull_request'); botSenderPR.event.sender.type = 'Bot'; botSenderPR.event.pull_request.user.type = 'Bot';
+  const forkBot = context('pull_request', 'outsider/speedle-plus'); forkBot.event.pull_request.user.type = 'Bot';
   const unknownAuthor = context('pull_request'); delete unknownAuthor.event.pull_request.user;
-  const botBranch = context('push'); botBranch.ref = 'refs/heads/dependabot/go'; botBranch.event = {sender: {type: 'Bot'}};
-  const botTag = context('push'); botTag.ref = 'refs/tags/master'; botTag.event = {sender: {type: 'Bot'}};
-  const falseMaster = context('push'); falseMaster.ref = 'refs/heads/master-copy'; falseMaster.event = {sender: {type: 'Bot'}};
   const missingSender = context('push'); missingSender.event = {};
   const foreignMaster = context('push', 'outsider/speedle-plus', 'outsider/speedle-plus');
   foreignMaster.ref = 'refs/heads/master'; foreignMaster.event = {sender: {type: 'Bot'}};
@@ -96,7 +95,7 @@ test('bot PRs/branch pushes, forks, missing metadata and copied repositories sta
     context('pull_request_target'), context('issue_comment'), context('unknown'),
     context('push', 'outsider/speedle-plus', 'outsider/speedle-plus'),
     context('workflow_dispatch', 'outsider/speedle-plus', 'outsider/speedle-plus'), context('push', undefined, ''),
-    botPR, botSenderPR, unknownAuthor, botBranch, botTag, falseMaster, missingSender, foreignMaster];
+    forkBot, unknownAuthor, missingSender, foreignMaster];
   for (const github of cases) {
     for (const inputs of [{mode: 'test', store_type: 'file'}, {mode: 'lint'}, {mode: 'build', store_type: 'etcd'}, {mode: 'self-hosted', store_type: 'charming-speedle', ref: 'master'}]) {
       assert.equal(route(github, inputs), 'ubuntu-latest');
