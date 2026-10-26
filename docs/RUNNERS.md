@@ -56,6 +56,9 @@ ReviewBot analysis only reads the diff and does not execute PR code.
 - Writable Actions tool cache and Go build/module caches, plus outbound HTTPS to
   GitHub, action/tool downloads, Go modules and the existing Ark endpoint.
 
+Self-hosted Go jobs use the host's existing module/build caches without restoring
+a GitHub cache archive over them. Hosted fallback jobs retain Actions caching.
+
 The ReviewBot manual regression job checks the actual runner identity and tools,
 checks Ark HTTPS reachability without credentials, performs checkout and runs the
 real workflow fixtures. It does not call a model or publish a Review.
