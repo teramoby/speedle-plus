@@ -14,7 +14,7 @@ categories = ["tour"]
     <ul class="toc-list ">
     <li class="toc-list-item">
     <a data-scroll="" href="/docs/spdl/" class="toc-link node-name--H3  is-active-link">Understand the basics of SPDL to model policies</a></li>
-     <li class="toc-list-item"><a data-scroll="" href="/#" class="toc-link node-name--H3">Deploy your Application</a></li>
+     <li class="toc-list-item"><a data-scroll="" href="/docs/deployment/" class="toc-link node-name--H3">Deploy your Application</a></li>
     <li class="toc-list-item"><a data-scroll="" href="/docs/pms/discover/" class="toc-link node-name--H3">Leverage Policy Discovery Mode</a></li>
     <li class="toc-list-item"><a data-scroll="" href="/docs/api/management_api/" class="toc-link node-name--H3">Use the Policy Management Service API</a></li>
     </ul>

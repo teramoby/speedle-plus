@@ -1,83 +1,33 @@
+{{- $currentPage := . -}}
 <div class="show-sm">
   <div id="nav-toggle-box">
     <div id="nav-toggle-brand">
-      <a href="/" title={{ .Site.Title }}>
-        <img src="{{ "/img/speedle/Speedle_logo_home_bold.svg?v=4" | relURL }}" width="152" height="52" alt="Speedle">
-      </a>
+      <a href="{{ "/" | relLangURL }}" title="{{ .Site.Title }}"><img src="{{ "/img/speedle/Speedle_logo_home_bold.svg?v=4" | relURL }}" width="152" height="52" alt="Speedle"></a>
     </div>
     <a data-component="toggleme" data-target="#top" href="#" id="nav-toggle"><i class="kube-menu"></i></a>
   </div>
 </div>
 <div class="hide-sm" id="top">
-  <div id="top-brand">
-    <a href="/" title={{ .Site.Title }}>
-      <img src="{{ "/img/speedle/Speedle_logo_home_bold.svg?v=4" | relURL }}" width="152" height="52" alt="Speedle">
-    </a>
-  </div>
-  <nav id="top-nav-main">
-    <ul>
-      {{- $currentPage := . -}}
-      {{ range .Site.Menus.main -}}
-      <li class="{{ if $currentPage.IsMenuCurrent "main" . }}active{{ end }}">
-        {{- if eq .URL "/playground/" -}}
-        <a href="/playground/">{{ .Name }}</a>
-        {{- else -}}
-        <a href="{{ .URL | relLangURL }}">{{ .Name }}</a>
-        {{- end }}
-      </li>
-      {{- end }}
-    </ul>
-  </nav>
-  <nav id="top-nav-extra">
-    <ul>
-      {{ range .Site.Menus.extra }}
-      <li>
-        {{- if eq .URL "/blog/" -}}
-        <a id="blogLink" href="https://medium.com/speedle" target="_blank">{{ .Name }}</a>
-        {{- else -}}
-        <a href="{{ .URL | relLangURL }}">{{ .Name }}</a>
-        {{- end }}
-      </li>
-      {{ end }}
-    </ul>
-  </nav>
-  <nav id="top-nav-lang" class="hide-sm">
-    <ul>
-      {{ range .Site.Menus.lang }}
-      <li class="langName">
-        <span class="pointerCursor">{{ .Name }}
-        <img class="langNameArrow" src="/img/speedle/arrow.svg" /></span>
-      </li>
-      {{ end }}
-    </ul>
-  </nav>
-  {{- $currentMenu := index .Site.Menus.lang 0 -}}
-  <div class="langsel hide-sm" id="langselFloatDiv" style="visibility: hidden;">
-    <ul id="langselUl">
-      {{ range .Site.Params.languages }}
-      {{ if ne $currentMenu.Name .name}}
-      <li class="lang">
-        <span>
-          <a class="langNameOption" href=" {{ .url }}">{{ .name }}</a>
-        </span>
-      </li>
-      {{ end }}
-      {{ end }}
-    </ul>
-  </div>
-  <nav class="langsel show-sm">
-    <ul>
-      <li class="lang">
-        {{ range .Site.Params.languages }}
-        <span>
-          <a {{ if eq $currentMenu.Name .name}}style="pointer-events:none;"{{else}}{{end}} href=" {{ .url }}">
-            <span class="langSelected">{{ if eq $currentMenu.Name .name}}☑︎{{else}}☐{{end}}
-            </span>
-            <span class="langName">{{ .name }}</span>
-          </a>
-        </span>
-        {{ end }}
-      </li>
-    </ul>
-  </nav>
+  <div id="top-brand"><a href="{{ "/" | relLangURL }}" title="{{ .Site.Title }}"><img src="{{ "/img/speedle/Speedle_logo_home_bold.svg?v=4" | relURL }}" width="152" height="52" alt="Speedle"></a></div>
+  <nav id="top-nav-main"><ul>
+    {{- range .Site.Menus.main }}
+    <li class="{{ if $currentPage.IsMenuCurrent "main" . }}active{{ end }}"><a href="{{ .URL | relLangURL }}">{{ .Name }}</a></li>
+    {{- end }}
+  </ul></nav>
+  <nav id="top-nav-extra"><ul>
+    {{- range .Site.Menus.extra }}
+    <li>{{ if eq .URL "/blog/" }}<a id="blogLink" href="https://medium.com/speedle" target="_blank">{{ .Name }}</a>{{ else }}<a href="{{ .URL | relLangURL }}">{{ .Name }}</a>{{ end }}</li>
+    {{- end }}
+  </ul></nav>
+  <nav id="top-nav-lang" class="hide-sm"><ul><li class="langName"><span class="pointerCursor">{{ if eq .Lang "zh" }}中文{{ else }}English{{ end }}<img class="langNameArrow" src="/img/speedle/arrow.svg" alt=""></span></li></ul></nav>
+  <div class="langsel hide-sm" id="langselFloatDiv" style="visibility: hidden;"><ul id="langselUl">
+    {{- range .Translations }}
+    <li class="lang"><span><a class="langNameOption" href="{{ .RelPermalink }}" lang="{{ if eq .Lang "zh" }}zh-CN{{ else }}en{{ end }}" hreflang="{{ if eq .Lang "zh" }}zh-CN{{ else }}en{{ end }}">{{ if eq .Lang "zh" }}中文{{ else }}English{{ end }}</a></span></li>
+    {{- end }}
+  </ul></div>
+  <nav class="langsel show-sm"><ul><li class="lang">
+    {{- range .AllTranslations }}
+    <span><a {{ if eq .Lang $currentPage.Lang }}style="pointer-events:none;" aria-current="page"{{ end }} href="{{ .RelPermalink }}" lang="{{ if eq .Lang "zh" }}zh-CN{{ else }}en{{ end }}" hreflang="{{ if eq .Lang "zh" }}zh-CN{{ else }}en{{ end }}"><span class="langSelected">{{ if eq .Lang $currentPage.Lang }}☑︎{{ else }}☐{{ end }}</span><span class="langName">{{ if eq .Lang "zh" }}中文{{ else }}English{{ end }}</span></a></span>
+    {{- end }}
+  </li></ul></nav>
 </div>
