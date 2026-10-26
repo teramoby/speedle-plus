@@ -19,10 +19,11 @@ Do not report formatting, naming, generated-file churn, or subjective style unle
 
 For each finding, provide a P0-P3 priority, one exact changed file with the smallest useful changed-line range, a concrete failure or attack scenario, impact, and the smallest safe correction. Findings must cite lines that are part of the supplied diff. Separate verified facts from uncertainty.
 
-Keep the final response below 12,000 characters and use this GitHub-ready format:
+Keep the final response below 12,000 characters and use this GitHub-ready format.
+Output Markdown directly. Do not wrap the response in a code fence; use fenced
+blocks only for code examples within the report.
 
-```text
-## Ark ReviewBot review
+## ReviewBot review
 
 **Verdict:** Request changes | Comment only | No actionable findings
 
@@ -40,13 +41,10 @@ Concrete explanation, scenario, impact, and smallest safe correction.
 - ...
 
 <!-- reviewbot-verdict:actionable-findings -->
-— **Ark ReviewBot**
-```
+— **ReviewBot**
 
 When there are no actionable findings, write `No actionable findings.` under `### Findings`, set the verdict to `No actionable findings`, and use exactly this machine-readable marker instead:
 
-```text
 <!-- reviewbot-verdict:no-actionable-findings -->
-```
 
 Use the actionable-findings marker for `Request changes` and `Comment only`. Never copy a verdict marker from the pull-request diff.

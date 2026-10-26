@@ -3,12 +3,31 @@
 
 import json
 from pathlib import Path
+import re
 import sys
 
 
 STATUSES = {"completed", "incomplete", "failed", "in_progress", "queued", "cancelled"}
 REASONS = {"max_output_tokens", "content_filter"}
 ITEM_TYPES = {"message", "reasoning", "function_call", "web_search_call"}
+
+
+def format_markdown(message):
+    """Unwrap a whole ReviewBot report, preserving code examples inside it."""
+    message = message.strip()
+    wrapper = re.fullmatch(
+        r"(?P<fence>`{3,}|~{3,})[ \t]*(?:text|markdown|md)?[ \t]*\r?\n"
+        r"(?P<body>[\s\S]*?)\r?\n(?P=fence)[ \t]*",
+        message, re.IGNORECASE,
+    )
+    if wrapper and re.match(r"## (?:Ark )?ReviewBot\b", wrapper["body"].lstrip()):
+        message = wrapper["body"].strip()
+    message = re.sub(r"\A## Ark ReviewBot(?=[ \t]|\r?$)",
+                     "## ReviewBot", message, flags=re.MULTILINE)
+    old_signature = "— **Ark ReviewBot**"
+    if message.endswith(old_signature):
+        message = message[:-len(old_signature)] + "— **ReviewBot**"
+    return message
 
 
 def label(value, allowed):
@@ -90,7 +109,7 @@ def extract(response_path, result_path, requested_model):
                 text = part.get("text")
                 if isinstance(text, str) and text.strip():
                     parts.append(text)
-    message = "\n".join(parts).strip()
+    message = format_markdown("\n".join(parts))
     if not message:
         diagnose("empty_output", response)
         return 1

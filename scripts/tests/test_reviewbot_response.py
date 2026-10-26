@@ -5,6 +5,8 @@ import base64
 import json
 import os
 from pathlib import Path
+import re
+import runpy
 import subprocess
 import sys
 import tempfile
@@ -19,9 +21,44 @@ FIXTURES = ROOT / "scripts/tests/fixtures/reviewbot"
 HELPER = ".github/codex/reviewbot_response.py"
 NORMAL = json.loads((FIXTURES / "normal.json").read_text())
 LENGTH = json.loads((FIXTURES / "incomplete-length.json").read_text())
+format_markdown = runpy.run_path(str(ROOT / HELPER))["format_markdown"]
 
 
 class ReviewBotResponseTests(unittest.TestCase):
+    def test_report_markdown_preserves_inner_code_and_machine_markers(self):
+        report = ("## ReviewBot review\n\n**Verdict:** Comment only\n\n"
+                  "### Findings\n\n#### [P2] Example finding\n`pkg/eval.go:12`\n\n"
+                  "```go\nreturn false\n```\n\n"
+                  "<!-- reviewbot-verdict:actionable-findings -->\n— **ReviewBot**")
+        legacy = report.replace("## ReviewBot review", "## Ark ReviewBot review").replace(
+            "— **ReviewBot**", "— **Ark ReviewBot**")
+        for label in ("", "text", "markdown", "md"):
+            with self.subTest(label=label):
+                self.assertEqual(format_markdown(f"````{label}\n{legacy}\n````"), report)
+        self.assertEqual(format_markdown(report), report)
+        self.assertEqual(format_markdown(legacy), report)
+        for code in ("```python\nprint('example')\n```", "```text\nExample only\n```",
+                     "```text\n## ReviewBot review\nUnclosed report"):
+            self.assertEqual(format_markdown(code), code)
+
+    def test_both_workflows_emit_renderable_markdown_for_all_response_modes(self):
+        for workflow, step, _ in WORKFLOWS:
+            modes = ("review", "recheck", "explain") if "command" in workflow else ("review",)
+            for mode in modes:
+                title = {"review": "review", "recheck": "recheck", "explain": "explanation"}[mode]
+                expected = f"## ReviewBot {title}\n\nUse `pkg/eval.go:12`.\n\n— **ReviewBot**"
+                legacy = expected.replace("## ReviewBot", "## Ark ReviewBot").replace(
+                    "— **ReviewBot**", "— **Ark ReviewBot**")
+                response = {**NORMAL, "output": [{"type": "message", "content": [
+                    {"type": "output_text", "text": f"```text\n{legacy}\n```"}]}]}
+                with self.subTest(workflow=workflow, mode=mode):
+                    result, requests, output = self.run_workflow(workflow, step, [response], mode=mode)
+                    self.assertEqual(result.returncode, 0, result.stderr)
+                    self.assertEqual(len(requests), 1)
+                    match = re.search(r"final_message<<([^\n]+)\n([\s\S]*?)\n\1\n", output)
+                    self.assertIsNotNone(match)
+                    self.assertEqual(match[2], expected)
+
     def run_workflow(self, workflow, step, responses, *, http_code="200", mode="review",
                      long_input=False):
         temp = tempfile.TemporaryDirectory()
