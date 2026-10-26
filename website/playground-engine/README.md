@@ -36,7 +36,10 @@ review the new artifact together.
 
 The build runs native and actual Go-WASM adapter tests, uses locked modules (`-mod=readonly`),
 `-trimpath`, `-buildvcs=false` and `-ldflags='-s -w'`, and copies the matching Go
-runtime and upstream/dependency licenses. Disabling VCS stamping makes the
+runtime and upstream/dependency licenses. The WASM test launcher retains only
+TMPDIR and TZ in the child runtime; Actions metadata can otherwise exceed Go
+WASM's argument/environment buffer. Build and download settings stay in the
+parent Go process. Disabling VCS stamping makes the
 artifact independent of unrelated website commits or checkout directory.
 Artifacts are checked in so the existing static-site deployment does not need a
 Go or Node build. Do not copy local caches, private hosting configuration, or
