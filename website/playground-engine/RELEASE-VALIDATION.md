@@ -27,12 +27,16 @@ The original engine source is never patched for the browser build.
 - Extended real-browser failure/retry suite: 13 grouped checks passed, including
   actual 5-second evaluation and 45-second initialization timeouts, worker crashes,
   download failures, stale-result suppression and no policy uploads.
+- Hugo 0.48 generation passed: complete editor, both language navigation menus,
+  multilingual sitemap, and exact engine/runtime/CSS/license assets. Locally the
+  original source was compiled for arm64, omitting its unavailable development-only
+  Mage requirement; Linux CI uses the checksum-pinned official release binary.
 - Runner scheduling and service-isolation regressions: 17 passed. Local socket
   checks required execution outside the macOS filesystem sandbox.
 - Workflow schema and expressions: actionlint 1.7.12 passed; Bash syntax and
   `git diff --check` passed. Optional shellcheck/pyflakes were not installed.
 
-The full Linux CI matrix, Hugo 0.48 generation, and post-publication HTTPS checks
+The full Linux CI matrix and post-publication HTTPS checks
 are required release gates. Their actual results will be recorded on issue #77;
 they are not represented as completed by this local report.
 
