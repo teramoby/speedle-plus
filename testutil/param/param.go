@@ -5,7 +5,12 @@ package param
 
 import (
 	"fmt"
+	"strings"
 )
+
+func shellQuote(value string) string {
+	return "'" + strings.ReplaceAll(value, "'", "'\"'\"'") + "'"
+}
 
 func CREATE_SERVICE(serverName string, serverType string) string {
 	return fmt.Sprintf("create service %s --service-type=%s", serverName, serverType)
@@ -44,11 +49,11 @@ func DELETE_ROLEPOLICY(serverName string, rolePolicyID string) string {
 }
 
 func CREATE_POLICY(serverName string, policyName string, policyPDL string) string {
-	return fmt.Sprintf("create policy %s -c \"%s\" --service-name=%s", policyName, policyPDL, serverName)
+	return fmt.Sprintf("create policy %s -c %s --service-name=%s", policyName, shellQuote(policyPDL), serverName)
 }
 
 func CREATE_ROLEPOLICY(serverName string, rolePolicyName string, rolePolicyPDL string) string {
-	return fmt.Sprintf("create rolepolicy %s -c \"%s\" --service-name=%s", rolePolicyName, rolePolicyPDL, serverName)
+	return fmt.Sprintf("create rolepolicy %s -c %s --service-name=%s", rolePolicyName, shellQuote(rolePolicyPDL), serverName)
 }
 
 func GET_POLICY(serverName string, policyID string) string {

@@ -4,10 +4,11 @@
 package file
 
 import (
-	"encoding/json"
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
 	"runtime/debug"
 	"strings"
 	"sync"
@@ -332,24 +333,56 @@ func (s *Store) DeleteServices() error {
 }
 
 func (s *Store) Watch() (pms.StorageChangeChannel, error) {
-	log.Info("Enter Watch...")
+	policyPath, err := filepath.Abs(s.FileLocation)
+	if err != nil {
+		return nil, errors.Wrap(err, errors.StoreError, "resolve policy file path")
+	}
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
-		log.Errorf("Failed to create a new watcher, error: %v", err)
 		return nil, errors.Wrap(err, errors.StoreError, "fsnotify new watcher failed")
 	}
-
-	err = watcher.Add(s.FileLocation)
-	if err != nil {
-		log.Errorf("Failed to add the file %q into the watch list, error: %v", s.FileLocation, err)
-		return nil, errors.Wrapf(err, errors.StoreError, "Failed to add the file %q into the watch list", s.FileLocation)
+	// Atomic writes replace the inode. Watching its parent keeps subsequent
+	// replacements visible, including our own writePolicyStoreWithoutLock.
+	if err := watcher.Add(filepath.Dir(policyPath)); err != nil {
+		watcher.Close()
+		return nil, errors.Wrapf(err, errors.StoreError, "watch parent of %q", policyPath)
 	}
-
-	var storeChangeChan pms.StorageChangeChannel
-	storeChangeChan = make(chan pms.StoreChangeEvent)
-
+	// Preserve direct writes through a symlink whose target is in another
+	// directory, while the parent watch detects replacement of the link itself.
+	symlinkTarget := ""
+	refreshSymlinkWatch := func() error {
+		if symlinkTarget != "" {
+			_ = watcher.Remove(symlinkTarget)
+			symlinkTarget = ""
+		}
+		info, err := os.Lstat(policyPath)
+		if os.IsNotExist(err) {
+			return nil
+		}
+		if err != nil {
+			return err
+		}
+		if info.Mode()&os.ModeSymlink != 0 {
+			target, err := filepath.EvalSymlinks(policyPath)
+			if os.IsNotExist(err) {
+				return nil
+			}
+			if err != nil {
+				return err
+			}
+			if err := watcher.Add(target); err != nil {
+				return err
+			}
+			symlinkTarget = target
+		}
+		return nil
+	}
+	if err := refreshSymlinkWatch(); err != nil {
+		watcher.Close()
+		return nil, errors.Wrap(err, errors.StoreError, "watch symlink target")
+	}
+	storeChangeChan := make(pms.StorageChangeChannel)
 	s.stop = make(chan struct{})
-
 	go func() {
 		defer func() {
 			if r := recover(); r != nil {
@@ -357,52 +390,40 @@ func (s *Store) Watch() (pms.StorageChangeChannel, error) {
 			}
 			watcher.Close()
 			close(storeChangeChan)
-			// Note: s.stop is closed by StopWatch (guarded by stopOnce), not
-			// here, so a panic in this goroutine cannot leave a later
-			// StopWatch sending on an already-closed channel.
 		}()
 		for {
 			select {
-			case event := <-watcher.Events:
-				switch {
-				case event.Op&fsnotify.Write == fsnotify.Write:
-					log.Info("Reloading the file store...")
-					s.rwLock.Lock()
-					s.cache = nil // force reload on next read
-					s.rwLock.Unlock()
-					reloadEvent := pms.StoreChangeEvent{Type: pms.FULL_RELOAD}
-					storeChangeChan <- reloadEvent
-				case event.Op&fsnotify.Rename == fsnotify.Rename:
-					if _, err := os.Lstat(s.FileLocation); os.IsNotExist(err) {
-						log.Errorf("The policy file %q has already been renamed, please double check", s.FileLocation)
-					} else {
-						// This is just a workaround for the issue https://github.com/fsnotify/fsnotify/issues/282
-						log.Info("Reloading the file store....")
-						s.rwLock.Lock()
-						s.cache = nil // force reload on next read
-						s.rwLock.Unlock()
-						reloadEvent := pms.StoreChangeEvent{Type: pms.FULL_RELOAD}
-						storeChangeChan <- reloadEvent
-
-						err = watcher.Add(s.FileLocation)
-						if err != nil {
-							log.Errorf("Failed to add the file %q into the watch list again, error: %v", s.FileLocation, err)
-						}
-					}
-				case event.Op&fsnotify.Remove == fsnotify.Remove:
-					log.Errorf("The policy file %q has already been removed, please double check", s.FileLocation)
-				default:
-					log.Infof("Operation %q was detected on the policy file %q", event.Op, s.FileLocation)
+			case event, ok := <-watcher.Events:
+				if !ok {
+					return
 				}
-			case err := <-watcher.Errors:
-				log.Warningf("Error happened when watching the policy file, error: %v", err)
+				if (filepath.Clean(event.Name) != policyPath && filepath.Clean(event.Name) != symlinkTarget) ||
+					event.Op&(fsnotify.Write|fsnotify.Create|fsnotify.Rename|fsnotify.Remove) == 0 {
+					continue
+				}
+				if event.Op&(fsnotify.Create|fsnotify.Rename|fsnotify.Remove) != 0 {
+					if err := refreshSymlinkWatch(); err != nil {
+						log.Warningf("Error refreshing policy symlink watch: %v", err)
+					}
+				}
+				s.rwLock.Lock()
+				s.cache = nil
+				s.rwLock.Unlock()
+				select {
+				case storeChangeChan <- pms.StoreChangeEvent{Type: pms.FULL_RELOAD}:
+				case <-s.stop:
+					return
+				}
+			case err, ok := <-watcher.Errors:
+				if !ok {
+					return
+				}
+				log.Warningf("Error watching policy file: %v", err)
 			case <-s.stop:
-				log.Warning("Received stop signal")
 				return
 			}
 		}
 	}()
-
 	return storeChangeChan, nil
 }
 
@@ -719,7 +740,6 @@ func (s *Store) CreateRolePolicy(serviceName string, rolePolicy *pms.RolePolicy)
 	}
 	return &dupRolePolicy, nil
 }
-
 
 func (s *Store) CreateFunction(function *pms.Function) (*pms.Function, error) {
 	if err := utils.ValidateFunc(function); err != nil {
