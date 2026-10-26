@@ -9,6 +9,17 @@ Jobs select the labels `[self-hosted, Linux, X64, charming-speedle]`. The custom
 label is required: a runner name alone is not a scheduling label. Organization
 administrators should keep this label exclusive to the intended instance.
 
+The group also restricts access to these exact default-branch workflows:
+
+- `teramoby/speedle-plus/.github/workflows/go-ci-worker.yml@refs/heads/master`
+- `teramoby/speedle-plus/.github/workflows/reviewbot.yml@refs/heads/master`
+- `teramoby/speedle-plus/.github/workflows/reviewbot-command.yml@refs/heads/master`
+
+`ci.yml` calls the reusable Go worker at `@master`. Jobs are defined in that
+trusted callee, which derives runner eligibility and checkout SHA from the
+original GitHub event, not caller inputs. A fork editing its own workflow cannot
+directly select this runner or change the trusted worker's routing policy.
+
 | Workload | Runner |
 | --- | --- |
 | Go CI push, manual dispatch and same-repository PRs, including Dependabot | `charming-speedle` |
@@ -40,23 +51,32 @@ physical machine may still run concurrently; separate work directories do not
 isolate ports, CPU, memory or credentials. Do not stop or reconfigure Pavu services
 to make a Speedle check pass.
 
-Go store tests use fixed ports 2379/2380. Self-hosted test jobs first verify both
-IPv4 and IPv6 ports are unused and refuse to proceed if another service is
-listening. Packages execute serially (`go test -p 1`) so their embedded servers
-do not overlap. No existing etcd service is reused or stopped. Test failures
-propagate to the job rather than being discarded with `|| true`.
+Go tests can use etcd ports 2379/2380, MongoDB 27017, PMS 6733 and ADS 6734.
+Self-hosted test jobs verify wildcard and loopback IPv4/IPv6 bindings and refuse
+to proceed if another service is listening. Packages execute serially
+(`go test -p 1`), inherited CLI/admin/TLS settings are cleared, and test endpoints
+are fixed to loopback. No existing service is reused or stopped. Package-list
+and test failures propagate to the job instead of being discarded with `|| true`.
 
 ## Verify scheduling
 
 ```sh
-gh workflow run reviewbot.yml --ref <reviewed-branch>
-gh workflow run ci.yml --ref <reviewed-branch>
+gh workflow run reviewbot.yml --ref master
+gh workflow run ci.yml --ref master
 ```
 
 Inspect each run's jobs and confirm `runner_name` is `charming-speedle` for the
 self-hosted paths. An online/idle runner listing alone does not prove checkout,
 tool setup, tests or model connectivity work. The dedicated routing regression
-suite is `node --test scripts/tests/test_runner_routing.cjs`.
+and protected-worker suites are:
+
+```sh
+node --test scripts/tests/test_runner_routing.cjs scripts/tests/test_go_ci_worker.cjs
+```
+
+Testing a changed ReviewBot workflow on a branch requires an administrator to
+temporarily allow that exact reviewed branch in the runner group and remove it
+after validation. Do not allow PR merge refs or wildcard workflow revisions.
 
 The workflows limit GitHub tokens to required permissions and do not persist Git
 credentials during CI checkout. `.github/actionlint.yaml` declares the custom

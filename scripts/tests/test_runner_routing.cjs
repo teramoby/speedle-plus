@@ -1,10 +1,7 @@
-/* Offline workflow routing and shell regressions. Does not contact GitHub or Ark. */
+/* Offline protected-callee and ReviewBot routing regressions. No GitHub or Ark calls. */
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
-const net = require('node:net');
-const os = require('node:os');
 const path = require('node:path');
-const {spawnSync} = require('node:child_process');
 const test = require('node:test');
 const vm = require('node:vm');
 
@@ -94,7 +91,7 @@ function script(block, name) {
   return lines.join('\n').trimEnd();
 }
 
-test('every workflow job has an explicit runner policy and the isolated Speedle label', () => {
+test('review and command jobs retain their explicit runner policies and isolated Speedle label', () => {
   assert.deepEqual(Object.keys(job.ci), ['lint', 'test', 'build']);
   assert.deepEqual(Object.keys(job.review), ['diff-regression', 'review', 'publish', 'automerge-dependabot']);
   assert.deepEqual(Object.keys(job.commands), ['prepare', 'analyze', 'publish']);
@@ -105,32 +102,6 @@ test('every workflow job has an explicit runner policy and the isolated Speedle 
   assert.equal(route(job.inline.route), 'ubuntu-24.04');
   const lint = fs.readFileSync(path.join(root, '.github/actionlint.yaml'), 'utf8');
   assert.match(lint, /^\s+- charming-speedle$/m);
-});
-test('Go CI routes canonical pushes, dispatch and same-repository human or Dependabot PRs to Speedle', () => {
-  const dependabot = github('pull_request');
-  dependabot.event.pull_request.user = {login: 'dependabot[bot]', type: 'Bot'};
-  for (const [name, context] of [
-    ['push', github('push', undefined, {event: {}})],
-    ['dispatch', github('workflow_dispatch', undefined, {event: {}})],
-    ['human PR', github('pull_request')], ['Dependabot PR', dependabot],
-  ]) {
-    for (const [id, block] of Object.entries(job.ci)) assert.deepEqual(route(block, context), labels, `${id}: ${name}`);
-  }
-});
-test('Go CI falls back for forks, deleted heads, unknown events and copied repositories', () => {
-  const cases = [
-    github('pull_request', 'outsider/speedle-plus'),
-    github('pull_request', undefined, {event: {pull_request: {head: {repo: null}}}}),
-    github('pull_request', undefined, {event: {pull_request: {}}}),
-    github('issue_comment'), github('pull_request_target'), github('unknown'),
-    github('push', undefined, {repository: 'outsider/speedle-plus', event: {}}),
-    github('workflow_dispatch', undefined, {repository: 'outsider/speedle-plus', event: {}}),
-    github('pull_request', 'outsider/speedle-plus', {repository: 'outsider/speedle-plus'}),
-    github('push', undefined, {repository: '', event: {}}),
-  ];
-  for (const context of cases) {
-    for (const [id, block] of Object.entries(job.ci)) assert.equal(route(block, context), 'ubuntu-latest', `${id}: ${JSON.stringify(context)}`);
-  }
 });
 test('ReviewBot matches Pavu: same-repository human authors use Speedle, bots and forks use hosted', () => {
   const human = github('pull_request_target');
@@ -159,13 +130,22 @@ test('inline pointer stays hosted and secret-bearing command receiver keeps defa
   assert.match(job.commands.analyze, /needs\.prepare\.outputs\.should_run == 'true'/);
   assert.match(job.commands.publish, /needs\.prepare\.outputs\.should_run == 'true'/);
 });
-test('Go CI uses read-only checkout credentials and sets up the required Go version', () => {
+test('Go CI caller delegates only known task inputs to the protected default-branch worker', () => {
   assert.match(sources.ci, /^permissions:\n  contents: read$/m);
   assert.match(sources.ci, /^on: \[push, pull_request, workflow_dispatch\]$/m);
-  for (const block of Object.values(job.ci)) {
-    const checkout = block.split(/      - uses: actions\/checkout@[^\n]+\n/)[1]?.split(/^      - /m, 1)[0];
-    assert.ok(checkout, 'Missing checkout step'); assert.match(checkout, /persist-credentials: false/);
-    assert.match(block, /uses: actions\/setup-go@/); assert.match(block, /go-version: '1\.26'/);
+  for (const [id, block] of Object.entries(job.ci)) {
+    assert.equal(value(block, 'uses'), 'teramoby/speedle-plus/.github/workflows/go-ci-worker.yml@master');
+    assert.doesNotMatch(block, /^    (?:runs-on|steps|container|env|secrets|timeout-minutes):/m);
+    const mapping = block.split('    with:\n')[1];
+    assert.ok(mapping, `Missing worker task inputs for ${id}`);
+    const inputs = Object.fromEntries([...mapping.matchAll(/^      ([a-z_]+): (.+)$/gm)].map(match => [match[1], match[2]]));
+    assert.equal(inputs.mode, id);
+    assert.deepEqual(Object.keys(inputs), id === 'test' ? ['mode', 'store_type'] : ['mode']);
+    if (id === 'test') {
+      assert.equal(inputs.store_type, '${{ matrix.store-type }}');
+      assert.match(block, /store-type: \[file, etcd\]/);
+      assert.match(block, /name: test \(\$\{\{ matrix.store-type \}\}\)/);
+    }
   }
 });
 test('fixture job installs pinned Node 22 before running Node regression suites', () => {
@@ -180,69 +160,4 @@ test('fixture job installs pinned Node 22 before running Node regression suites'
   for (const tool of ['git', 'curl', 'jq', 'python3']) assert.ok(preflight.includes(tool));
   assert.ok(preflight.includes('https://ark.cn-beijing.volces.com/api/plan/v3/responses'));
   assert.doesNotMatch(preflight, /Authorization|ARK_API_KEY|--data|--request\s+POST/);
-});
-
-test('actual Go test shell propagates failures and serializes packages for both stores', () => {
-  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'speedle-routing-shell-'));
-  try {
-    const executable = path.join(directory, 'go'), calls = path.join(directory, 'calls');
-    fs.writeFileSync(executable, '#!/bin/sh\nif [ "$1" = list ]; then printf "example.invalid/fixture\\n"; exit 0; fi\nprintf "%s\\n" "$STORE_TYPE $*" >> "$FIXTURE_CALLS"\nexit "$FIXTURE_GO_EXIT"\n');
-    fs.chmodSync(executable, 0o755);
-    const source = script(job.ci.test, 'Run tests with coverage');
-    assert.match(source, /go test -p 1\b/);
-    for (const store of ['file', 'etcd']) {
-      const command = source.replaceAll('${{ matrix.store-type }}', store);
-      assert.doesNotMatch(command, /\$\{\{/);
-      for (const code of [0, 23]) {
-        const result = spawnSync('bash', ['-e', '-c', command], {encoding: 'utf8', env: {
-          ...process.env, PATH: `${directory}${path.delimiter}${process.env.PATH}`,
-          FIXTURE_CALLS: calls, FIXTURE_GO_EXIT: String(code),
-        }});
-        assert.equal(result.status, code, result.stderr);
-      }
-    }
-    const log = fs.readFileSync(calls, 'utf8');
-    assert.match(log, /file test -p 1/); assert.match(log, /etcd test -p 1/);
-  } finally {fs.rmSync(directory, {recursive: true, force: true});}
-});
-
-function listen() {
-  const server = net.createServer();
-  return new Promise((resolve, reject) => {
-    server.once('error', reject);
-    server.listen({host: '127.0.0.1', port: 0}, () => resolve(server));
-  });
-}
-const close = server => new Promise((resolve, reject) => server.close(error => error ? reject(error) : resolve()));
-async function freePort() {const server = await listen(); const port = server.address().port; await close(server); return port;}
-function portGuard(ports) {
-  const block = step(job.ci.test, 'Ensure embedded test ports are unused');
-  assert.match(block, /if: runner\.environment == 'self-hosted'/);
-  const source = script(job.ci.test, 'Ensure embedded test ports are unused');
-  const match = source.match(/^python3 - <<'PYTHON'\n([\s\S]+)\nPYTHON$/);
-  assert.ok(match, 'Missing actual Python socket guard');
-  assert.equal((match[1].match(/for port in \(2379, 2380\):/g) || []).length, 1);
-  // Only test-owned ephemeral ports are substituted. Never bind host etcd ports.
-  const code = match[1].replace('for port in (2379, 2380):', `for port in (${ports.join(', ')}):`);
-  return spawnSync('python3', ['-c', code], {encoding: 'utf8'});
-}
-test('actual socket guard accepts two free test-owned ephemeral ports', async () => {
-  const first = await freePort(); let second = await freePort();
-  while (second === first) second = await freePort();
-  const result = portGuard([first, second]);
-  assert.equal(result.status, 0, result.stderr);
-});
-test('actual socket guard refuses either occupied port while leaving the existing listener untouched', async () => {
-  for (const index of [0, 1]) {
-    const listener = await listen(); let connections = 0;
-    listener.on('connection', socket => {connections++; socket.end();});
-    try {
-      const occupied = listener.address().port; let free = await freePort();
-      while (free === occupied) free = await freePort();
-      const ports = index === 0 ? [occupied, free] : [free, occupied];
-      const result = portGuard(ports);
-      assert.notEqual(result.status, 0); assert.match(result.stderr, new RegExp(`Test port ${occupied} is already in use`));
-      assert.equal(listener.listening, true); assert.equal(listener.address().port, occupied); assert.equal(connections, 0);
-    } finally {await close(listener);}
-  }
 });

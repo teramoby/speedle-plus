@@ -104,7 +104,8 @@ to publish again before retrying the merge gate.
 
 Before merging, it pins the PR head and base and checks the canonical `ci.yml`
 `pull_request` run for that exact PR/head/base. Required latest-attempt jobs are
-`lint`, `test (file)`, `test (etcd)` and `build`, all successful. It reads CI jobs
+`lint / execute`, `test (file) / execute`, `test (etcd) / execute` and
+`build / execute`, all successful. It reads CI jobs
 on the head commit, correcting the older merge-ref lookup that timed out despite
 green CI. Missing, pending, failed or stale checks do not authorize a merge.
 GitHub receives the exact reviewed head SHA for the squash operation.

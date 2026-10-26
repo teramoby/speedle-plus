@@ -7,84 +7,23 @@ permissions:
 
 jobs:
   lint:
-    runs-on: >-
-      ${{ github.repository == 'teramoby/speedle-plus' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)) && fromJSON('["self-hosted","Linux","X64","charming-speedle"]') || 'ubuntu-latest' }}
-    timeout-minutes: 20
     name: lint
-    steps:
-      - uses: actions/checkout@v4
-        name: Checkout code
-        with:
-          persist-credentials: false
-      - uses: actions/setup-go@v5
-        name: Setup Go
-        with:
-          go-version: '1.26'
-      - name: go vet
-        run: go vet -composites=false ./pkg/... ./cmd/... ./api/...
-      - name: go mod tidy check
-        run: go mod tidy -diff
-
+    uses: teramoby/speedle-plus/.github/workflows/go-ci-worker.yml@master
+    with:
+      mode: lint
 
   test:
-    runs-on: >-
-      ${{ github.repository == 'teramoby/speedle-plus' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)) && fromJSON('["self-hosted","Linux","X64","charming-speedle"]') || 'ubuntu-latest' }}
-    timeout-minutes: 20
-    name: test
+    name: test (${{ matrix.store-type }})
     strategy:
       matrix:
         store-type: [file, etcd]
-    steps:
-      - uses: actions/checkout@v4
-        name: Checkout code
-        with:
-          persist-credentials: false
-      - uses: actions/setup-go@v5
-        name: Setup Go
-        with:
-          go-version: '1.26'
-      - name: Ensure embedded test ports are unused
-        if: runner.environment == 'self-hosted'
-        run: |
-          python3 - <<'PYTHON'
-          import errno
-          import socket
-          for port in (2379, 2380, 27017):
-              for family, address in ((socket.AF_INET, '0.0.0.0'), (socket.AF_INET6, '::')):
-                  try:
-                      with socket.socket(family, socket.SOCK_STREAM) as probe:
-                          if family == socket.AF_INET6:
-                              probe.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 1)
-                          probe.bind((address, port))
-                  except OSError as error:
-                      if family == socket.AF_INET6 and error.errno in (errno.EAFNOSUPPORT, errno.EADDRNOTAVAIL):
-                          continue
-                      raise SystemExit(f'Test port {port} is already in use; refusing to touch a shared test service.') from error
-          print('Test service ports 2379/2380/27017 are unused.')
-          PYTHON
-
-      - name: Run tests with coverage
-        run: |
-          STORE_TYPE=${{ matrix.store-type }} go test -p 1 -count=1 -timeout 60s -coverprofile=coverage.out $(go list ./pkg/... ./cmd/... ./api/... 2>/dev/null | grep -v samples | grep -v adsgrpc | grep -v pmsgrpc | grep -v pmsrest)
-      - name: Upload coverage
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage-${{ matrix.store-type }}
-          path: coverage.out
+    uses: teramoby/speedle-plus/.github/workflows/go-ci-worker.yml@master
+    with:
+      mode: test
+      store_type: ${{ matrix.store-type }}
 
   build:
-    runs-on: >-
-      ${{ github.repository == 'teramoby/speedle-plus' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)) && fromJSON('["self-hosted","Linux","X64","charming-speedle"]') || 'ubuntu-latest' }}
-    timeout-minutes: 20
     name: build
-    steps:
-      - uses: actions/checkout@v4
-        name: Checkout code
-        with:
-          persist-credentials: false
-      - uses: actions/setup-go@v5
-        name: Setup Go
-        with:
-          go-version: '1.26'
-      - name: Build
-        run: go build ./cmd/speedle-pms/... ./cmd/speedle-ads/... ./cmd/spctl/...
+    uses: teramoby/speedle-plus/.github/workflows/go-ci-worker.yml@master
+    with:
+      mode: build

@@ -67,7 +67,7 @@ jobs:
           import errno
           import socket
           for port in (2379, 2380, 27017, 6733, 6734):
-              for family, address in ((socket.AF_INET, '0.0.0.0'), (socket.AF_INET6, '::')):
+              for family, address in ((socket.AF_INET, '0.0.0.0'), (socket.AF_INET, '127.0.0.1'), (socket.AF_INET6, '::'), (socket.AF_INET6, '::1')):
                   try:
                       with socket.socket(family, socket.SOCK_STREAM) as probe:
                           probe.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -96,7 +96,12 @@ jobs:
         run: |
           set -euo pipefail
           export GOPATH="$(go env GOPATH)"
-          go test -p 1 -count=1 -timeout 60s -coverprofile=coverage.out $(go list ./pkg/... ./cmd/... ./api/... | grep -v samples | grep -v adsgrpc | grep -v pmsgrpc | grep -v pmsrest)
+          discovered_packages=$(go list ./pkg/... ./cmd/... ./api/... | grep -v samples | grep -v adsgrpc | grep -v pmsgrpc | grep -v pmsrest)
+          test_packages=()
+          while IFS= read -r test_package; do
+            test_packages+=("${test_package}")
+          done <<< "${discovered_packages}"
+          go test -p 1 -count=1 -timeout 60s -coverprofile=coverage.out "${test_packages[@]}"
 
       - name: Upload coverage
         if: always() && inputs.mode == 'test'

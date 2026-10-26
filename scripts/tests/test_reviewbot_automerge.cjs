@@ -40,7 +40,7 @@ function shellFor(stepName) {
 const capturedHeadScript=shellFor('Verify captured pull request head');
 const HEAD = '1'.repeat(40), BASE = '2'.repeat(40), OTHER = '3'.repeat(40);
 const owner = 'teramoby', repo = 'speedle-plus', number = 70;
-const names = ['lint', 'test (file)', 'test (etcd)', 'build'];
+const names = ['lint / execute', 'test (file) / execute', 'test (etcd) / execute', 'build / execute'];
 const clone = (value) => JSON.parse(JSON.stringify(value));
 function runCapturedHeadFixture(matches) {
   const directory=fs.mkdtempSync(path.join(os.tmpdir(),'reviewbot-head-'));
