@@ -5,13 +5,47 @@ package command
 
 import (
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/teramoby/speedle-plus/api/pms"
+	"github.com/teramoby/speedle-plus/pkg/pdl"
 	"github.com/teramoby/speedle-plus/testutil"
 	"github.com/teramoby/speedle-plus/testutil/msg"
 	"github.com/teramoby/speedle-plus/testutil/param"
 )
+
+// PDL quotes and shell quotes are separate layers. Keep special characters as
+// identifier data instead of grammar, interpolation, or command substitution.
+func quotedPDLName(name string) string {
+	if strings.Contains(name, "\"") && strings.Contains(name, "'") {
+		panic("quoted PDL fixture cannot contain both quote styles")
+	}
+	if strings.Contains(name, "\"") {
+		return "'" + name + "'"
+	}
+	return "\"" + name + "\""
+}
+
+func TestQuotedPDLName(t *testing.T) {
+	for _, name := range []string{"simple", "name with spaces", "$name", "(name)", "it's", `a "name"`} {
+		policy, err := pdl.ParsePolicy("grant user "+quotedPDLName(name)+" read books", "fixture")
+		if err != nil {
+			t.Fatalf("%q: %v", name, err)
+		}
+		if got := policy.Principals[0][0]; got != "user:"+name {
+			t.Fatalf("%q became %q", name, got)
+		}
+	}
+	t.Run("unrepresentable mixed quotes", func(t *testing.T) {
+		defer func() {
+			if recover() == nil {
+				t.Error("mixed quote fixture was not rejected")
+			}
+		}()
+		quotedPDLName(`it's a "name"`)
+	})
+}
 
 func getCmdTestDataForCreateService(sName string, sType string) testutil.TestCase {
 
@@ -50,7 +84,7 @@ func getCmdTestDataForDeleteService(sName string) testutil.TestCase {
 
 func getCmdTestDataForCreatePolicyWthGroupName(sName string, policyName string, groupName string) testutil.TestCase {
 
-	pdl := fmt.Sprintf("grant group %s add,del res1", groupName)
+	pdl := fmt.Sprintf("grant group %s add,del res1", quotedPDLName(groupName))
 	tmpData := testutil.TestCase{
 		Name:     "TestCreatePolicy-" + policyName,
 		Enabled:  true,
@@ -79,7 +113,7 @@ func getCmdTestDataForCreatePolicyWthGroupName(sName string, policyName string, 
 
 func getCmdTestDataForCreatePolicyWthUserName(sName string, policyName string, userName string) testutil.TestCase {
 
-	pdl := fmt.Sprintf("grant user %s add,del res1", userName)
+	pdl := fmt.Sprintf("grant user %s add,del res1", quotedPDLName(userName))
 	tmpData := testutil.TestCase{
 		Name:     "TestCreatePolicy-" + policyName,
 		Enabled:  true,
@@ -108,7 +142,7 @@ func getCmdTestDataForCreatePolicyWthUserName(sName string, policyName string, u
 
 func getCmdTestDataForCreatePolicyWthRoleName(sName string, policyName string, roleName string) testutil.TestCase {
 
-	pdl := fmt.Sprintf("grant role %s add,del res1", roleName)
+	pdl := fmt.Sprintf("grant role %s add,del res1", quotedPDLName(roleName))
 	tmpData := testutil.TestCase{
 		Name:     "TestCreatePolicy-" + policyName,
 		Enabled:  true,
@@ -137,7 +171,7 @@ func getCmdTestDataForCreatePolicyWthRoleName(sName string, policyName string, r
 
 func getCmdTestDataForCreatePolicyWthResName(sName string, policyName string, resName string) testutil.TestCase {
 
-	pdl := fmt.Sprintf("grant user user1 add,del %s", resName)
+	pdl := fmt.Sprintf("grant user user1 add,del %s", quotedPDLName(resName))
 	tmpData := testutil.TestCase{
 		Name:     "TestCreatePolicy-" + policyName,
 		Enabled:  true,
@@ -166,7 +200,7 @@ func getCmdTestDataForCreatePolicyWthResName(sName string, policyName string, re
 
 func getCmdTestDataForCreateRolePolicyWthResName(sName string, rpolicyName string, resName string) testutil.TestCase {
 
-	pdl := fmt.Sprintf("grant user user1 role1 on %s", resName)
+	pdl := fmt.Sprintf("grant user user1 role1 on %s", quotedPDLName(resName))
 	tmpData := testutil.TestCase{
 		Name:     "TestCreateRolePolicy-" + rpolicyName,
 		Enabled:  true,
@@ -191,7 +225,7 @@ func getCmdTestDataForCreateRolePolicyWthResName(sName string, rpolicyName strin
 
 func getCmdTestDataForCreateRolePolicyWthRoleName(sName string, rolePolicyName string, roleName string) testutil.TestCase {
 
-	pdl := fmt.Sprintf("grant user user1 %s on res1", roleName)
+	pdl := fmt.Sprintf("grant user user1 %s on res1", quotedPDLName(roleName))
 	tmpData := testutil.TestCase{
 		Name:     "TestCreateRolePolicy-" + rolePolicyName,
 		Enabled:  true,
@@ -216,7 +250,7 @@ func getCmdTestDataForCreateRolePolicyWthRoleName(sName string, rolePolicyName s
 
 func getCmdTestDataForCreatePolicyWthActionName(sName string, policyName string, actionName string) testutil.TestCase {
 
-	pdl := fmt.Sprintf("grant user user1 %s,del res1", actionName)
+	pdl := fmt.Sprintf("grant user user1 %s,del res1", quotedPDLName(actionName))
 	tmpData := testutil.TestCase{
 		Name:     "TestCreatePolicy-" + policyName,
 		Enabled:  true,
@@ -277,7 +311,7 @@ func getCmdTestDataForGetPolicyWithGroupName(sName string, policyName string, gr
 	return tmpData
 }
 
-//Create policy with group name containing all kinds of special chars
+// Create policy with group name containing all kinds of special chars
 func TestLrg_PDLWithSpecifiedGroupName(t *testing.T) {
 	sName := "TestLrg_PDLWithSpecifiedGroupName"
 	sType := "application"
@@ -299,7 +333,7 @@ func TestLrg_PDLWithSpecifiedGroupName(t *testing.T) {
 	testutil.RunTestCases(t, &data, context)
 }
 
-//Create policy with user name containing all kinds of special chars
+// Create policy with user name containing all kinds of special chars
 func TestLrg_PDLWithSpecifiedUserName(t *testing.T) {
 	sName := "TestLrg_PDLWithSpecifiedUserName"
 	sType := "application"
@@ -320,7 +354,7 @@ func TestLrg_PDLWithSpecifiedUserName(t *testing.T) {
 	testutil.RunTestCases(t, &data, context)
 }
 
-//Create policy with role name containing all kinds of special chars
+// Create policy with role name containing all kinds of special chars
 func TestLrg_PDLWithSpecifiedRoleName(t *testing.T) {
 	sName := "TestLrg_PDLWithSpecifiedRoleName"
 	sType := "application"
@@ -341,7 +375,7 @@ func TestLrg_PDLWithSpecifiedRoleName(t *testing.T) {
 	testutil.RunTestCases(t, &data, context)
 }
 
-//Create policy with action name containing all kinds of special chars
+// Create policy with action name containing all kinds of special chars
 func TestLrg_PDLWithSpecifiedActionName(t *testing.T) {
 	sName := "TestLrg_PDLWithSpecifiedActionName"
 	sType := "application"
@@ -362,7 +396,7 @@ func TestLrg_PDLWithSpecifiedActionName(t *testing.T) {
 	testutil.RunTestCases(t, &data, context)
 }
 
-//Create policy with resource name containing all kinds of special chars
+// Create policy with resource name containing all kinds of special chars
 func TestLrg_PDLWithSpecifiedResourceName(t *testing.T) {
 	sName := "TestLrg_PDLWithSpecifiedResourceName"
 	sType := "application"
@@ -384,7 +418,7 @@ func TestLrg_PDLWithSpecifiedResourceName(t *testing.T) {
 	testutil.RunTestCases(t, &data, context)
 }
 
-//Create role-policy with resource name containing all kinds of special chars
+// Create role-policy with resource name containing all kinds of special chars
 func TestLrg_PDLWithSpecifiedResourceNameInRolePolicy(t *testing.T) {
 	sName := "TestLrg_PDLWithSpecifiedResourceName"
 	sType := "application"
@@ -406,7 +440,7 @@ func TestLrg_PDLWithSpecifiedResourceNameInRolePolicy(t *testing.T) {
 	testutil.RunTestCases(t, &data, context)
 }
 
-//Create role-policy with role name containing all kinds of special chars
+// Create role-policy with role name containing all kinds of special chars
 func TestLrg_PDLWithSpecifiedRoleNameInRolePolicy(t *testing.T) {
 	sName := "TestLrg_PDLWithSpecifiedResourceName"
 	sType := "application"

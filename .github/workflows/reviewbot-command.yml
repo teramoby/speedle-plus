@@ -1,0 +1,637 @@
+# Adapted from pavulabs/pavu at a7b458ee3194865b653826a1b0c1119c28634c9d for Speedle+.
+# Apache-2.0; see .github/codex/PAVU-LICENSE.txt.
+name: ReviewBot Commands
+
+on:
+  issue_comment: # zizmor: ignore[dangerous-triggers] reviewed: write-permission commenters only, no PR code runs; see docs/REVIEWBOT.md
+    types: [created]
+  workflow_run: # default-branch bridge; never executes the source workflow or its artifacts
+    workflows: [ReviewBot Inline Command]
+    types: [completed]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: reviewbot-command-${{ github.event_name }}-${{ github.event.comment.id || github.event.workflow_run.id }}
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    name: Authorize ReviewBot command
+    if: >-
+      (github.event_name == 'issue_comment' && github.event.issue.pull_request != null) ||
+      github.event_name == 'workflow_run'
+    # Public comments reach this job before the API permission check. Keep
+    # unauthorized traffic off the single self-hosted runner.
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
+    outputs:
+      should_run: ${{ steps.command.outputs.should_run }}
+      command: ${{ steps.command.outputs.command }}
+      pull_number: ${{ steps.command.outputs.pull_number }}
+      base_sha: ${{ steps.command.outputs.base_sha }}
+      head_sha: ${{ steps.command.outputs.head_sha }}
+      actor: ${{ steps.command.outputs.actor }}
+      comment_id: ${{ steps.command.outputs.comment_id }}
+      reply_to_comment_id: ${{ steps.command.outputs.reply_to_comment_id }}
+      source_kind: ${{ steps.command.outputs.source_kind }}
+      source_url: ${{ steps.command.outputs.source_url }}
+      request_b64: ${{ steps.command.outputs.request_b64 }}
+      context_b64: ${{ steps.command.outputs.context_b64 }}
+    steps:
+      - name: Parse and authorize command
+        id: command
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            core.setOutput("should_run", "false");
+
+            let comment;
+            let pullNumber;
+            let sourceKind;
+            if (context.eventName === "issue_comment") {
+              comment = context.payload.comment;
+              pullNumber = context.payload.issue.number;
+              sourceKind = "issue_comment";
+            } else if (context.eventName === "workflow_run") {
+              // The source runs at a PR merge revision and is an untrusted ID
+              // pointer only. Resolve identities and comment context via GitHub.
+              const run = context.payload.workflow_run;
+              const repository = `${context.repo.owner}/${context.repo.repo}`;
+              if (run?.event !== "pull_request_review_comment" ||
+                  run.conclusion !== "success" ||
+                  run.name !== "ReviewBot Inline Command" ||
+                  run.path !== ".github/workflows/reviewbot-inline.yml" ||
+                  run.actor?.type !== "User" ||
+                  run.head_repository?.full_name !== repository) {
+                core.warning("Ignoring an invalid inline comment router run.");
+                return;
+              }
+              const pointer = typeof run.display_title === "string"
+                ? run.display_title.match(/^ReviewBot inline comment ([1-9][0-9]*)$/)
+                : null;
+              const commentId = pointer ? Number(pointer[1]) : NaN;
+              if (!Number.isSafeInteger(commentId)) {
+                core.warning("Ignoring an invalid inline comment pointer.");
+                return;
+              }
+              ({ data: comment } = await github.rest.pulls.getReviewComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: commentId,
+              }));
+              const commentTime = Date.parse(comment.created_at);
+              const runTime = Date.parse(run.created_at);
+              if (comment.id !== commentId ||
+                  !Number.isSafeInteger(comment.user?.id) ||
+                  comment.user.id !== run.actor?.id ||
+                  comment.user.login !== run.actor?.login ||
+                  !Number.isFinite(commentTime) || !Number.isFinite(runTime) ||
+                  commentTime > runTime || runTime - commentTime > 120_000) {
+                core.warning("Inline comment identity or creation time does not match the router run.");
+                return;
+              }
+              let pullUrl;
+              try {
+                pullUrl = new URL(comment.pull_request_url);
+              } catch {
+                core.warning("Inline comment does not identify a pull request.");
+                return;
+              }
+              const prefix = `/repos/${repository}/pulls/`;
+              const number = pullUrl.pathname.startsWith(prefix)
+                ? pullUrl.pathname.slice(prefix.length) : "";
+              if (pullUrl.origin !== new URL(context.apiUrl).origin ||
+                  pullUrl.search || pullUrl.hash || !/^[1-9][0-9]*$/.test(number) ||
+                  !Number.isSafeInteger(Number(number))) {
+                core.warning("Inline comment points outside this repository's pull requests.");
+                return;
+              }
+              pullNumber = Number(number);
+              const associated = Array.isArray(run.pull_requests) ? run.pull_requests : [];
+              let pulls = associated;
+              if (pulls.length === 0) {
+                if (!/^[a-f0-9]{40}$/.test(run.head_sha ?? "")) {
+                  core.warning("Inline router run has no verifiable commit association.");
+                  return;
+                }
+                pulls = await github.paginate(github.rest.repos.listPullRequestsAssociatedWithCommit, {
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  commit_sha: run.head_sha,
+                  per_page: 100,
+                });
+              }
+              if (!pulls.some(pull => pull.number === pullNumber && pull.url === pullUrl.href)) {
+                core.warning("Inline router run is not associated with this comment's pull request.");
+                return;
+              }
+              sourceKind = "review_comment";
+            } else {
+              core.warning("ReviewBot commands require a default-branch event.");
+              return;
+            }
+            const body = comment?.body ?? "";
+            const mention = body.match(/(?:^|[^\w@-])@reviewbot(?![\w-])/i);
+            if (!mention) {
+              core.notice("Comment does not mention ReviewBot.");
+              return;
+            }
+
+            const mentionStart = mention.index + mention[0].lastIndexOf("@");
+            const instruction = `${body.slice(0, mentionStart)}${body.slice(mentionStart + "@reviewbot".length)}`.trim();
+            const explicit = instruction.match(/^(review|recheck|check|explain)(?:\s+([\s\S]*))?$/i);
+            const command = explicit
+              ? (explicit[1].toLowerCase() === "check" ? "recheck" : explicit[1].toLowerCase())
+              : (instruction.length === 0 ? "review" : "explain");
+            let request = explicit ? (explicit[2] ?? "").trim() : instruction;
+            if (command === "explain" && request.length === 0) {
+              request = "Explain the relevant code and any security or correctness implications in this comment context.";
+            }
+
+            const actor = comment.user?.login;
+            if (!actor || comment.user?.type !== "User") {
+              core.warning("ReviewBot commands require a human GitHub actor.");
+              return;
+            }
+
+            const permissionResponse = await github.rest.repos.getCollaboratorPermissionLevel({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              username: actor,
+            });
+            const permission = permissionResponse.data.permission;
+            if (!["admin", "maintain", "write"].includes(permission)) {
+              core.warning(`Ignoring ReviewBot command from ${actor}: ${permission} permission is insufficient.`);
+              return;
+            }
+
+            const { data: pull } = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: pullNumber,
+            });
+
+            if (pull.state !== "open") {
+              core.warning("ReviewBot comment commands are disabled for closed pull requests.");
+              return;
+            }
+
+            if (pull.head.repo?.full_name !== `${context.repo.owner}/${context.repo.repo}`) {
+              core.warning("ReviewBot comment commands are disabled for fork pull requests.");
+              return;
+            }
+
+            const commentId = String(comment.id);
+            const reactionRoute = sourceKind === "review_comment"
+              ? "POST /repos/{owner}/{repo}/pulls/comments/{comment_id}/reactions"
+              : "POST /repos/{owner}/{repo}/issues/comments/{comment_id}/reactions";
+            try {
+              await github.request(reactionRoute, {
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: Number(commentId),
+                content: "eyes",
+              });
+            } catch (error) {
+              core.warning(`Could not add the eyes reaction: ${error.message}`);
+            }
+
+            const marker = `<!-- speedle-plus-reviewbot-command:${command}:${sourceKind}:${commentId} -->`;
+            const [reviews, issueComments, reviewComments] = await Promise.all([
+              github.paginate(github.rest.pulls.listReviews, {
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: pullNumber,
+                per_page: 100,
+              }),
+              github.paginate(github.rest.issues.listComments, {
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: pullNumber,
+                per_page: 100,
+              }),
+              github.paginate(github.rest.pulls.listReviewComments, {
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: pullNumber,
+                per_page: 100,
+              }),
+            ]);
+            const alreadyHandled = [...reviews, ...issueComments, ...reviewComments].some(
+              (item) =>
+                item.user?.login === "github-actions[bot]" &&
+                item.body?.startsWith(`${marker}\n`),
+            );
+            if (alreadyHandled) {
+              core.notice(`ReviewBot command ${commentId} was already handled.`);
+              return;
+            }
+
+            const sourceContext = sourceKind === "review_comment"
+              ? {
+                  url: comment.html_url,
+                  path: comment.path,
+                  line: comment.line,
+                  startLine: comment.start_line,
+                  side: comment.side,
+                  diffHunk: comment.diff_hunk,
+                }
+              : { url: comment.html_url };
+            const encode = (value) => Buffer.from(value, "utf8").toString("base64");
+
+            core.setOutput("command", command);
+            core.setOutput("pull_number", String(pullNumber));
+            core.setOutput("base_sha", pull.base.sha);
+            core.setOutput("head_sha", pull.head.sha);
+            core.setOutput("actor", actor);
+            core.setOutput("comment_id", commentId);
+            core.setOutput("reply_to_comment_id", String(comment.in_reply_to_id ?? comment.id));
+            core.setOutput("source_kind", sourceKind);
+            core.setOutput("source_url", comment.html_url);
+            core.setOutput("request_b64", encode(request));
+            core.setOutput("context_b64", encode(JSON.stringify(sourceContext, null, 2)));
+            core.setOutput("should_run", "true");
+
+  analyze:
+    name: Analyze ReviewBot command
+    needs: prepare
+    if: always() && needs.prepare.outputs.should_run == 'true'
+    runs-on: ["self-hosted","Linux","X64","speedle-linux"]
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      issues: read
+      pull-requests: read
+    outputs:
+      enabled: ${{ steps.configuration.outputs.enabled }}
+      final_message: ${{ steps.review.outputs.final_message }}
+      model_id_b64: ${{ steps.review.outputs.model_id_b64 }}
+    steps:
+      - name: Check ReviewBot configuration
+        id: configuration
+        env:
+          REVIEWBOT_API_KEY: ${{ secrets.ARK_API_KEY }}
+        run: |
+          if [[ -n "${REVIEWBOT_API_KEY}" ]]; then
+            echo "enabled=true" >> "${GITHUB_OUTPUT}"
+          else
+            echo "enabled=false" >> "${GITHUB_OUTPUT}"
+          fi
+
+      - name: Report disabled ReviewBot
+        if: steps.configuration.outputs.enabled != 'true'
+        run: echo "::notice::ReviewBot is disabled until the ARK_API_KEY repository secret is configured."
+
+      - name: Check out trusted workflow revision for static diff
+        if: steps.configuration.outputs.enabled == 'true'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.workflow_sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Collect prior ReviewBot findings for recheck
+        id: history
+        if: steps.configuration.outputs.enabled == 'true' && needs.prepare.outputs.command == 'recheck'
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        env:
+          PULL_NUMBER: ${{ needs.prepare.outputs.pull_number }}
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            const pullNumber = Number(process.env.PULL_NUMBER);
+            const [reviews, comments] = await Promise.all([
+              github.paginate(github.rest.pulls.listReviews, {
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: pullNumber,
+                per_page: 100,
+              }),
+              github.paginate(github.rest.issues.listComments, {
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: pullNumber,
+                per_page: 100,
+              }),
+            ]);
+            const history = [...reviews, ...comments]
+              .filter(
+                (item) =>
+                  item.user?.login === "github-actions[bot]" &&
+                  (
+                    item.body?.includes("<!-- speedle-plus-reviewbot:") ||
+                    item.body?.includes("<!-- speedle-plus-reviewbot -->") ||
+                    item.body?.includes("<!-- speedle-plus-reviewbot-command:review:") ||
+                    item.body?.includes("<!-- speedle-plus-reviewbot-command:recheck:")
+                  ),
+              )
+              .sort((left, right) => {
+                const leftTime = left.submitted_at ?? left.updated_at ?? left.created_at ?? "";
+                const rightTime = right.submitted_at ?? right.updated_at ?? right.created_at ?? "";
+                return leftTime.localeCompare(rightTime);
+              })
+              .slice(-5)
+              .map((item) => item.body)
+              .join("\n\n---\n\n")
+              .slice(-80_000);
+            core.setOutput("history_b64", Buffer.from(history, "utf8").toString("base64"));
+
+      - name: Run comment command with Ark
+        id: review
+        if: steps.configuration.outputs.enabled == 'true'
+        shell: bash
+        env:
+          ARK_API_KEY: ${{ secrets.ARK_API_KEY }}
+          ARK_MODEL: ${{ vars.ARK_REVIEW_MODEL || 'kimi-k3' }}
+          BASE_SHA: ${{ needs.prepare.outputs.base_sha }}
+          HEAD_SHA: ${{ needs.prepare.outputs.head_sha }}
+          TRUSTED_SHA: ${{ github.workflow_sha }}
+          COMMAND: ${{ needs.prepare.outputs.command }}
+          REQUEST_B64: ${{ needs.prepare.outputs.request_b64 }}
+          CONTEXT_B64: ${{ needs.prepare.outputs.context_b64 }}
+          HISTORY_B64: ${{ steps.history.outputs.history_b64 }}
+        run: |
+          set -euo pipefail
+
+          review_input="${RUNNER_TEMP}/reviewbot-command-input.txt"
+          request_text="${RUNNER_TEMP}/reviewbot-command-request.txt"
+          context_text="${RUNNER_TEMP}/reviewbot-command-context.txt"
+          history_text="${RUNNER_TEMP}/reviewbot-command-history.txt"
+          request_body="${RUNNER_TEMP}/reviewbot-command-request.json"
+          response_body="${RUNNER_TEMP}/reviewbot-command-response.json"
+          merge_base=$(git merge-base "${BASE_SHA}" "${HEAD_SHA}")
+
+          printf '%s' "${REQUEST_B64}" | base64 --decode > "${request_text}"
+          printf '%s' "${CONTEXT_B64}" | base64 --decode > "${context_text}"
+          if [[ -n "${HISTORY_B64}" ]]; then
+            printf '%s' "${HISTORY_B64}" | base64 --decode > "${history_text}"
+          else
+            : > "${history_text}"
+          fi
+
+          build_review_input() {
+            {
+              git show "${BASE_SHA}:.github/codex/prompts/reviewbot.md" || \
+                git show "${TRUSTED_SHA}:.github/codex/prompts/reviewbot.md"
+              printf '\n\n'
+              git show "${TRUSTED_SHA}:.github/codex/prompts/reviewbot-command.md"
+              printf '\n\n## Trusted policy from the base revision\n\n'
+              git show "${BASE_SHA}:AGENTS.md" || printf 'No AGENTS.md exists at the base revision.\n'
+              printf '\n\n## Command metadata\n\n'
+              printf 'Mode: `%s`\nBase commit: `%s`\nHead commit: `%s`\nMerge base: `%s`\n' "${COMMAND}" "${BASE_SHA}" "${HEAD_SHA}" "${merge_base}"
+              printf '\n\n## Untrusted collaborator request\n\n'
+              sed 's/^/> /' "${request_text}"
+              printf '\n\n## Untrusted triggering-comment context\n\n```json\n'
+              cat "${context_text}"
+              printf '\n```\n'
+              if [[ -s "${history_text}" ]]; then
+                printf '\n\n## Untrusted prior ReviewBot output\n\n'
+                cat "${history_text}"
+              fi
+              printf '\n\n## Pull request diff stat\n\n'
+              git diff --stat "${merge_base}" "${HEAD_SHA}"
+              printf '\n\n## Untrusted unified diff\n\n```diff\n'
+              git diff --no-ext-diff --find-renames --find-copies --unified="${1}" "${merge_base}" "${HEAD_SHA}"
+              printf '\n```\n'
+            } > "${review_input}"
+          }
+          build_review_input 80
+
+          input_limit=750000
+          # Execute only the helper from the immutable trusted workflow revision,
+          # never its potentially modified copy in the PR head worktree.
+          response_parser="${RUNNER_TEMP}/reviewbot-command-response.py"
+          review_result="${RUNNER_TEMP}/reviewbot-command-result.json"
+          git show "${TRUSTED_SHA}:.github/codex/reviewbot_response.py" > "${response_parser}"
+          request_deadline=$((SECONDS + 600))
+          for attempt in 1 2; do
+            input_size=$(wc -c < "${review_input}")
+            if (( input_size > input_limit )); then
+              limited_input="${RUNNER_TEMP}/reviewbot-command-input-limited.txt"
+              head -c "${input_limit}" "${review_input}" > "${limited_input}"
+              printf '\n\n[Review input truncated at %s bytes. Report this as a validation gap.]\n' "${input_limit}" >> "${limited_input}"
+              mv "${limited_input}" "${review_input}"
+            fi
+
+            jq -n \
+              --arg model "${ARK_MODEL}" \
+              --rawfile input "${review_input}" \
+              '{model: $model, input: $input, max_output_tokens: 8192, reasoning: {effort: "medium"}}' \
+              > "${request_body}"
+
+            # Both attempts share the original 600-second HTTP time budget.
+            request_timeout=$((request_deadline - SECONDS))
+            if (( request_timeout <= 0 )); then
+              echo 'ReviewBot reason_code=request_timeout' >&2
+              exit 1
+            fi
+            http_code=$(curl \
+              --silent \
+              --show-error \
+              --connect-timeout 20 \
+              --max-time "${request_timeout}" \
+              --output "${response_body}" \
+              --write-out '%{http_code}' \
+              'https://ark.cn-beijing.volces.com/api/plan/v3/responses' \
+              -H "Authorization: Bearer ${ARK_API_KEY}" \
+              -H 'Content-Type: application/json' \
+              --data-binary "@${request_body}")
+
+            if [[ ! "${http_code}" =~ ^2[0-9][0-9]$ ]]; then
+              if [[ "${http_code}" =~ ^[0-9][0-9][0-9]$ ]]; then
+                echo "ReviewBot reason_code=http_error HTTP ${http_code} (response body omitted)" >&2
+              else
+                echo 'ReviewBot reason_code=http_error invalid_status (response body omitted)' >&2
+              fi
+              exit 1
+            fi
+
+            if python3 "${response_parser}" "${response_body}" "${review_result}" "${ARK_MODEL}"; then
+              break
+            else
+              response_status=$?
+            fi
+            if (( response_status != 10 )); then
+              exit 1
+            fi
+            if (( attempt == 2 )); then
+              echo 'ReviewBot reason_code=retry_exhausted' >&2
+              exit 1
+            fi
+            echo '::notice::ReviewBot output token limit; retrying once with unified=3 diff context.'
+            build_review_input 3
+          done
+
+          review_message=$(jq -r '.message' "${review_result}")
+          if (( attempt == 2 )); then
+            review_message="${review_message}"$'\n\n_Validation gap: ReviewBot retried after an output-token limit with unified=3 diff context (initial unified=80)._'
+          fi
+          model_id_b64=$(jq -r '.model | @base64' "${review_result}")
+          delimiter="REVIEWBOT_$(od -An -N16 -tx1 /dev/urandom | tr -d ' \n')"
+          {
+            printf 'final_message<<%s\n' "${delimiter}"
+            printf '%s\n' "${review_message}"
+            printf '%s\n' "${delimiter}"
+            printf 'model_id_b64=%s\n' "${model_id_b64}"
+          } >> "${GITHUB_OUTPUT}"
+
+      - name: Remove command input
+        if: always()
+        run: rm -f "${RUNNER_TEMP}"/reviewbot-command-*
+
+  publish:
+    name: Publish ReviewBot command response
+    needs: [prepare, analyze]
+    if: >-
+      always() &&
+      needs.prepare.outputs.should_run == 'true' &&
+      (needs.analyze.result != 'success' ||
+       needs.analyze.outputs.enabled != 'true' ||
+       needs.analyze.outputs.final_message != '')
+    runs-on: ["self-hosted","Linux","X64","speedle-linux"]
+    timeout-minutes: 5
+    permissions:
+      issues: write
+      pull-requests: write
+    steps:
+      - name: Publish idempotent response
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        env:
+          REVIEWBOT_MESSAGE: ${{ needs.analyze.outputs.final_message }}
+          MODEL_ID_B64: ${{ needs.analyze.outputs.model_id_b64 }}
+          ANALYZE_RESULT: ${{ needs.analyze.result }}
+          REVIEWBOT_ENABLED: ${{ needs.analyze.outputs.enabled }}
+          COMMAND: ${{ needs.prepare.outputs.command }}
+          PULL_NUMBER: ${{ needs.prepare.outputs.pull_number }}
+          HEAD_SHA: ${{ needs.prepare.outputs.head_sha }}
+          ACTOR: ${{ needs.prepare.outputs.actor }}
+          COMMENT_ID: ${{ needs.prepare.outputs.comment_id }}
+          REPLY_TO_COMMENT_ID: ${{ needs.prepare.outputs.reply_to_comment_id }}
+          SOURCE_KIND: ${{ needs.prepare.outputs.source_kind }}
+          SOURCE_URL: ${{ needs.prepare.outputs.source_url }}
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            const modelMessage = process.env.REVIEWBOT_MESSAGE.trim();
+            const modelId = Buffer.from(process.env.MODEL_ID_B64, "base64").toString("utf8");
+            const analyzeResult = process.env.ANALYZE_RESULT;
+            const reviewBotEnabled = process.env.REVIEWBOT_ENABLED;
+            const command = process.env.COMMAND;
+            const pullNumber = Number(process.env.PULL_NUMBER);
+            const headSha = process.env.HEAD_SHA;
+            const actor = process.env.ACTOR;
+            const commentId = process.env.COMMENT_ID;
+            const replyToCommentId = process.env.REPLY_TO_COMMENT_ID;
+            const sourceKind = process.env.SOURCE_KIND;
+            const sourceUrl = process.env.SOURCE_URL;
+            const marker = `<!-- speedle-plus-reviewbot-command:${command}:${sourceKind}:${commentId} -->`;
+            const reactionRoute = sourceKind === "review_comment"
+              ? "POST /repos/{owner}/{repo}/pulls/comments/{comment_id}/reactions"
+              : "POST /repos/{owner}/{repo}/issues/comments/{comment_id}/reactions";
+            const addReaction = async (content) => {
+              try {
+                await github.request(reactionRoute, {
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  comment_id: Number(commentId),
+                  content,
+                });
+              } catch (error) {
+                core.warning(`Could not add the ${content} reaction: ${error.message}`);
+              }
+            };
+            const successful = analyzeResult === "success" &&
+              reviewBotEnabled === "true" &&
+              modelMessage.length > 0;
+            let message;
+            if (successful) {
+              message = modelMessage;
+            } else if (reviewBotEnabled !== "true") {
+              message = "## ReviewBot unavailable\n\nReviewBot is not configured for this repository. A repository administrator must configure the Ark credential before commands can run.";
+            } else {
+              message = `## ReviewBot command failed\n\nReviewBot could not complete this command. See the [workflow run](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}) for status, then post a new command to retry.`;
+            }
+            const modelFooter = successful && modelId
+              ? `\n\n_Model ID: \`${modelId.replaceAll("`", "\\`").replace(/[\r\n]/g, " ")}\`_`
+              : "";
+            const suffix = `\n\n_Triggered by [@${actor}'s comment](${sourceUrl}) · Commit: \`${headSha}\`_${modelFooter}`;
+            const maximumLength = 65_000;
+            let body = `${marker}\n${message}${suffix}`;
+
+            if (body.length > maximumLength) {
+              const note = "\n\n_ReviewBot output was truncated to fit GitHub's comment limit._";
+              body = `${body.slice(0, maximumLength - note.length - suffix.length)}${note}${suffix}`;
+            }
+
+            const [reviews, issueComments, reviewComments] = await Promise.all([
+              github.paginate(github.rest.pulls.listReviews, {
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: pullNumber,
+                per_page: 100,
+              }),
+              github.paginate(github.rest.issues.listComments, {
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: pullNumber,
+                per_page: 100,
+              }),
+              github.paginate(github.rest.pulls.listReviewComments, {
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: pullNumber,
+                per_page: 100,
+              }),
+            ]);
+            const alreadyHandled = [...reviews, ...issueComments, ...reviewComments].some(
+              (item) =>
+                item.user?.login === "github-actions[bot]" &&
+                item.body?.startsWith(`${marker}\n`),
+            );
+            if (alreadyHandled) {
+              core.notice(`ReviewBot command ${commentId} was already published.`);
+              if (successful) {
+                await addReaction("+1");
+              }
+              return;
+            }
+
+            if (successful && (command === "review" || command === "recheck")) {
+              await github.rest.pulls.createReview({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: pullNumber,
+                commit_id: headSha,
+                body,
+                event: "COMMENT",
+              });
+            } else if (sourceKind === "review_comment") {
+              await github.request(
+                "POST /repos/{owner}/{repo}/pulls/{pull_number}/comments/{comment_id}/replies",
+                {
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  pull_number: pullNumber,
+                  comment_id: Number(replyToCommentId),
+                  body,
+                },
+              );
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: pullNumber,
+                body,
+              });
+            }
+
+            if (successful) {
+              await addReaction("+1");
+            }

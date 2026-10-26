@@ -1,0 +1,10 @@
+Pavu
+Copyright 2026 PavuLabs
+
+This product includes software developed by PavuLabs.
+
+ReviewBot code adapted from pavulabs/pavu at
+a7b458ee3194865b653826a1b0c1119c28634c9d under Apache License 2.0.
+Modified for Speedle+ workflow configuration, trusted inline routing,
+review eligibility caching and regression coverage.
+Only ReviewBot source is reused; Pavu application data/assets are not included.
