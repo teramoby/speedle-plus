@@ -17,16 +17,15 @@ jobs:
   diff-regression:
     name: Verify ReviewBot merge-base diff
     if: github.event_name == 'workflow_dispatch'
-    runs-on: ["self-hosted","Linux","X64","charming-speedle"]
+    runs-on: ["self-hosted","Linux","X64","speedle-linux"]
     timeout-minutes: 5
     steps:
       - name: Verify runner identity and tools
-        env:
-          EXPECTED_RUNNER: charming-speedle
         run: |
           set -euo pipefail
-          test "${RUNNER_NAME}" = "${EXPECTED_RUNNER}"
+          case "${RUNNER_NAME}" in charming-speedle|charming-speedle-2) ;; *) echo 'Unexpected runner.' >&2; exit 1 ;; esac
           test "${RUNNER_OS}" = Linux
+          printf 'Runner: %s; workspace: %s; temp: %s\n' "${RUNNER_NAME}" "${GITHUB_WORKSPACE}" "${RUNNER_TEMP}"
           for command in git curl jq python3; do command -v "${command}" >/dev/null; done
           git --version
           curl --version | head -n 1
@@ -69,7 +68,7 @@ jobs:
     name: Analyze pull request
     if: github.event_name == 'pull_request_target' && github.event.pull_request.draft == false
     runs-on: >-
-      ${{ github.repository == 'teramoby/speedle-plus' && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.user.type == 'User' && fromJSON('["self-hosted","Linux","X64","charming-speedle"]') || 'ubuntu-24.04' }}
+      ${{ github.repository == 'teramoby/speedle-plus' && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.user.type == 'User' && fromJSON('["self-hosted","Linux","X64","speedle-linux"]') || 'ubuntu-24.04' }}
     timeout-minutes: 20
     permissions:
       contents: read
@@ -292,7 +291,7 @@ jobs:
     needs: review
     if: needs.review.outputs.final_message != ''
     runs-on: >-
-      ${{ github.repository == 'teramoby/speedle-plus' && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.user.type == 'User' && fromJSON('["self-hosted","Linux","X64","charming-speedle"]') || 'ubuntu-24.04' }}
+      ${{ github.repository == 'teramoby/speedle-plus' && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.user.type == 'User' && fromJSON('["self-hosted","Linux","X64","speedle-linux"]') || 'ubuntu-24.04' }}
     timeout-minutes: 5
     permissions:
       pull-requests: write

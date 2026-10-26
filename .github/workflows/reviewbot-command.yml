@@ -263,7 +263,7 @@ jobs:
     name: Analyze ReviewBot command
     needs: prepare
     if: always() && needs.prepare.outputs.should_run == 'true'
-    runs-on: ["self-hosted","Linux","X64","charming-speedle"]
+    runs-on: ["self-hosted","Linux","X64","speedle-linux"]
     timeout-minutes: 20
     permissions:
       contents: read
@@ -495,7 +495,7 @@ jobs:
       (needs.analyze.result != 'success' ||
        needs.analyze.outputs.enabled != 'true' ||
        needs.analyze.outputs.final_message != '')
-    runs-on: ["self-hosted","Linux","X64","charming-speedle"]
+    runs-on: ["self-hosted","Linux","X64","speedle-linux"]
     timeout-minutes: 5
     permissions:
       issues: write

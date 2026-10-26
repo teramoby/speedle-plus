@@ -1,13 +1,19 @@
-# Speedle self-hosted runner
+# Speedle self-hosted runners
 
-`charming-speedle` is a Linux x64 runner registered to the `teramoby` organization.
-Its dedicated `Speedle` runner group allows only `teramoby/speedle-plus`, including
+`charming-speedle` and `charming-speedle-2` are Linux x64 runners registered to the
+`teramoby` organization. Their dedicated `Speedle` runner group allows only
+`teramoby/speedle-plus`, including
 this public repository. It does not reuse or change `pavulabs` registrations or
 the `teramoby` default group's access policy.
 
-Jobs select the labels `[self-hosted, Linux, X64, charming-speedle]`. The custom
-label is required: a runner name alone is not a scheduling label. Organization
-administrators should keep this label exclusive to the intended instance.
+ReviewBot and Go lint/build select `[self-hosted, Linux, X64, speedle-linux]`,
+which both instances carry. Fixed-port Go tests select
+`[self-hosted, Linux, X64, charming-speedle]`, exclusive to the original instance.
+A runner administrator must keep `speedle-linux` exclusive to these two named
+instances; adding another host would also admit it to credential-bearing jobs.
+A runner name alone is not a scheduling label. Keep the test label exclusive so
+two registrations on the same physical host cannot run these tests concurrently.
+Each registration must use its own runner installation and work directory.
 
 The group also restricts access to these exact default-branch workflows:
 
@@ -17,16 +23,18 @@ The group also restricts access to these exact default-branch workflows:
 
 `ci.yml` calls the reusable Go worker at `@master`. Jobs are defined in that
 trusted callee, which derives runner eligibility and checkout SHA from the
-original GitHub event, not caller inputs. A fork editing its own workflow cannot
+original GitHub event, not caller inputs. The validated task selects only between
+the two fixed label lists after that eligibility check. A fork editing its own workflow cannot
 directly select this runner or change the trusted worker's routing policy.
 
 | Workload | Runner |
 | --- | --- |
-| Go CI master pushes, human branch pushes/manual dispatch and human same-repository PRs | `charming-speedle` |
+| Go lint/build for master pushes, human branch pushes/manual dispatch and human same-repository PRs | Either runner via `speedle-linux` |
+| Go tests for those trusted events, both file/etcd modes | `charming-speedle` only, serializing fixed ports |
 | Go CI fork/bot PRs, bot branch pushes or other events | GitHub-hosted |
-| ReviewBot human-authored same-repository PR analysis/publication | `charming-speedle`, matching Pavu's policy |
+| ReviewBot human-authored same-repository PR analysis/publication | Either runner via `speedle-linux`, matching Pavu's policy |
 | ReviewBot fork/bot PR analysis/publication and dependency merge job | GitHub-hosted |
-| ReviewBot regression dispatch and authorized command analysis/publication | `charming-speedle` |
+| ReviewBot regression dispatch and authorized command analysis/publication | Either runner via `speedle-linux` |
 | Public comment authorization and unprivileged inline-comment pointer | GitHub-hosted |
 
 Fork code must not be routed to this persistent host. The inline pointer is also
@@ -34,7 +42,7 @@ hosted because its event can use a PR merge revision; privileged command handlin
 remains in the trusted default-branch receiver.
 
 Unlike Pavu's current command workflow, the initial authorization job stays
-hosted so arbitrary public comments cannot queue work on the single runner.
+hosted so arbitrary public comments cannot queue work on the self-hosted pool.
 Only commands passing the existing API permission check reach its self-hosted
 analysis and publication jobs; supported commands and permissions are unchanged.
 
@@ -42,7 +50,11 @@ Go CI deliberately trusts code in human-authored same-repository PRs and changes
 merged into the default branch. Bot PRs and bot branch pushes stay hosted before
 merge. `go test` and `go build` execute admitted code on the
 persistent runner account, which can access its caches and other host resources.
-Changes left by such a job can affect subsequent jobs, including ReviewBot.
+On a shared runner account, admitted code can inspect files and concurrent
+processes, including those of ReviewBot; changes it leaves can also affect later
+jobs. Separate work directories and pooling do not provide a security boundary.
+Use separate OS accounts with restrictive permissions or isolated hosts if the
+code admitted by this policy cannot be trusted with the runner account's access.
 The runner group restriction prevents forks from changing the trusted routing
 workflow; it does not sandbox code admitted by that workflow. Repository write
 access and dependency changes therefore remain part of the host's trust boundary.
@@ -92,8 +104,10 @@ gh workflow run reviewbot.yml --ref master
 gh workflow run ci.yml --ref master
 ```
 
-Inspect each run's jobs and confirm `runner_name` is `charming-speedle` for the
-self-hosted paths. An online/idle runner listing alone does not prove checkout,
+Inspect each run's jobs and confirm `runner_name` is `charming-speedle` or
+`charming-speedle-2` for pooled jobs, and only `charming-speedle` for Go tests.
+The regression job prints its workspace and temp paths; verify both registrations
+have distinct paths. An online/idle runner listing alone does not prove checkout,
 tool setup, tests or model connectivity work. The dedicated routing regression
 and protected-worker suites are:
 

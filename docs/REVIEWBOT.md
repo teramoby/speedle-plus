@@ -16,9 +16,10 @@ The workflow reads its instructions from the trusted base revision, checks out
 GitHub's persistent PR head ref (including fork PRs), and verifies that checkout
 equals the event's captured immutable head before constructing a merge-base diff. It does not
 execute, build or test PR code. Like Pavu, human-authored same-repository PRs run
-on self-hosted Linux runner `charming-speedle`; fork and bot PRs use GitHub-hosted
+on the self-hosted Linux pool `speedle-linux` (`charming-speedle` and
+`charming-speedle-2`); fork and bot PRs use GitHub-hosted
 `ubuntu-24.04`. The regression dispatch and authorized comment-command analysis
-and publication use the self-hosted runner. Public comment authorization and the
+and publication use the self-hosted pool. Public comment authorization and the
 unprivileged inline pointer workflow remain hosted.
 See [runner configuration](RUNNERS.md).
 

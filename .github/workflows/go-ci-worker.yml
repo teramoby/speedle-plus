@@ -18,8 +18,9 @@ jobs:
     name: execute
     # The runner group accepts only this callee at refs/heads/master. Never
     # derive runner eligibility or checkout revision from caller inputs.
+    # Tests stay on one instance to avoid shared-host port collisions.
     runs-on: >-
-      ${{ github.repository == 'teramoby/speedle-plus' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.event.sender.type == 'User')) || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.user.type == 'User')) && fromJSON('["self-hosted","Linux","X64","charming-speedle"]') || 'ubuntu-latest' }}
+      ${{ github.repository == 'teramoby/speedle-plus' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.event.sender.type == 'User')) || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.user.type == 'User')) && fromJSON(inputs.mode == 'test' && '["self-hosted","Linux","X64","charming-speedle"]' || '["self-hosted","Linux","X64","speedle-linux"]') || 'ubuntu-latest' }}
     timeout-minutes: 20
     steps:
       - name: Validate CI task
@@ -33,9 +34,12 @@ jobs:
 
       - name: Verify self-hosted runner identity
         if: runner.environment == 'self-hosted'
+        env:
+          CI_TASK: ${{ inputs.mode }}
         run: |
           set -euo pipefail
-          test "${RUNNER_NAME}" = charming-speedle
+          case "${RUNNER_NAME}" in charming-speedle|charming-speedle-2) ;; *) echo 'Unexpected runner.' >&2; exit 1 ;; esac
+          if [[ "${CI_TASK}" == test ]]; then test "${RUNNER_NAME}" = charming-speedle; fi
           test "${RUNNER_OS}" = Linux
           command -v git >/dev/null
           command -v python3 >/dev/null

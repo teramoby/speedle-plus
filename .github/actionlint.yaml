@@ -1,3 +1,4 @@
 self-hosted-runner:
   labels:
     - charming-speedle
+    - speedle-linux
