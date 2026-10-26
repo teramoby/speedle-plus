@@ -43,6 +43,10 @@ GOOS=js GOARCH=wasm "$GO_BIN" list -mod=readonly -deps -f '{{with .Module}}{{.Pa
 done
 # Hugo source is authoritative; GitHub Pages serves the checked-in docs copy.
 cp -R "$OUT/." "$ROOT/docs/playground/"
+mkdir -p "$ROOT/docs/zh/playground"
+cp "$ROOT/docs/hugo/static/zh/playground/index.html" "$ROOT/docs/zh/playground/index.html"
+cp "$ROOT/docs/hugo/static/index.html" "$ROOT/docs/index.html"
+cp "$ROOT/docs/hugo/static/zh/index.html" "$ROOT/docs/zh/index.html"
 for stylesheet in site.css navigation.css; do
   cp "$ROOT/docs/hugo/static/css/$stylesheet" "$ROOT/docs/css/$stylesheet"
 done

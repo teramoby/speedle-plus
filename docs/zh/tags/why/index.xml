@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Why on Speedle</title>
+    <link>https://speedle.io/zh/tags/why/</link>
+    <description>Recent content in Why on Speedle</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh-cn</language>
+    <lastBuildDate>Thu, 02 Mar 2017 21:56:55 +0100</lastBuildDate>
+    
+	<atom:link href="https://speedle.io/zh/tags/why/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>为什么选择 Speedle？</title>
+      <link>https://speedle.io/zh/blog/what-is-speedle/</link>
+      <pubDate>Thu, 02 Mar 2017 21:56:55 +0100</pubDate>
+      
+      <guid>https://speedle.io/zh/blog/what-is-speedle/</guid>
+      <description> 是什么，为什么？ 一些思考： 授权并不是新概念，软件一直在使用它。不同系统陆续形成了各自的授权方案，例如 Kubernetes、Istio 和各种 IAM 系统；本地应用可能还在使用其他方案。当应用逐渐采用混合部署、跨环境工作负载或不同云厂商时，如何跟踪和管理分散在这些系统中的策略与身份？Speedle 通过多种集成方式提供集中管理，还可以根据服务间的交互实时发现相关策略，并快速执行决策。
+早期内容 有三个问题想请你考虑。
+ 你的系统需要授权吗？如果不需要，就不需要 Speedle。 如果需要，你是否希望自己设计策略模型并实现全部授权功能？如果更愿意自己实现一套授权方案，就不需要 Speedle。 如果你希望采用现有产品，可以比较下面几个选择。我们不会只告诉你 Speedle 具备灵活的策略模型、易用的策略语言、高效可扩展的决策引擎和活跃社区，而是希望你亲自评估并选择适合自己的方案。
+ Ladon：项目地址 Casbin：项目地址 OPA：项目地址 Speedle：项目地址   如果你发现其他优秀方案，请告诉我们，我们很乐意把它加入列表。
+FooBar 链接示例 巧克力提拉米苏糕点。链接示例
+示例占位文字 苹果派、巧克力蛋糕、果冻糖霜和糖果。姜饼、糕点、水果蛋糕、松饼、巧克力棒和芝士蛋糕。糖渍李子、棒棒糖、糖果、柠檬糖和软糖。
+   RGB WMYN     红色 青色   绿色 品红色   黄色 黑色    </description>
+    </item>
+    
+  </channel>
+</rss>

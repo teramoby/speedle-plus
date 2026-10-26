@@ -6,6 +6,8 @@
   <meta name="theme-color" content="#25134e">
   <meta name="description" content="Try real Speedle+ authorization in your browser. Write SPDL policies, fill out a request and evaluate RBAC and ABAC decisions locally with WebAssembly.">
   <link rel="canonical" href="https://speedle.io/playground/">
+  <link rel="alternate" hreflang="en" href="https://speedle.io/playground/">
+  <link rel="alternate" hreflang="zh-CN" href="https://speedle.io/zh/playground/">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Speedle+">
   <meta property="og:title" content="Speedle+ Playground">
@@ -37,6 +39,7 @@
       <nav class="nav-links" id="nav-links" aria-label="Main navigation">
         <a href="/#about">About</a><a href="/#features">Features</a><a href="/#integrations">Integrations</a>
         <a href="/quick-start/">Getting started</a><a href="/docs/">Docs</a><a href="/playground/" aria-current="page">Playground</a>
+        <a href="/zh/playground/" lang="zh-CN" hreflang="zh-CN" aria-label="切换到中文">中文</a>
         <a class="nav-github" href="https://github.com/teramoby/speedle-plus">GitHub</a>
       </nav>
     </div>
@@ -82,7 +85,7 @@
       <div class="result-card idle" id="result-card" role="status" aria-live="polite" aria-atomic="true"><div class="result-symbol" id="result-symbol"><svg class="icon"><use href="#i-terminal"/></svg></div><div class="result-body"><div class="result-label" id="result-label">Ready to test your policies.</div><p id="result-description">Select Evaluate to check whether this request is allowed.</p></div><div class="result-type" id="result-type">BOOLEAN OUTPUT</div></div>
       <details class="result-details" id="result-details" hidden><summary>Inspect engine response <span class="details-hint">JSON</span></summary><pre id="result-json"></pre></details>
     </section>
-    <details class="quick-reference"><summary><span><svg class="icon"><use href="#i-book"/></svg>New to SPDL?<span class="reference-teaser">A one-minute reference</span></span><span class="expand-indicator">+</span></summary><div class="reference-grid"><div><h3>Write a policy</h3><code>grant user alice read book</code><p>Use effect, principal type, principal, action and resource. Each line is a statement; <code>deny</code> explicitly denies access.</p></div><div><h3>Add a condition</h3><code>grant user alice read book if clearance &gt;= 3</code><p>Add an attribute and select its type. Use multiple values for an array. Load the Conditions example to try it.</p></div><div><h3>Read the result</h3><p><strong class="allow-text">true</strong> — the request is allowed.<br><strong class="deny-text">false</strong> — access is denied or no grant applies.<br>Input and execution errors are shown separately, never as false.</p><a href="https://speedle.io/docs/spdl/" target="_blank" rel="noopener noreferrer">Full SPDL documentation ↗</a></div></div></details>
+    <details class="quick-reference"><summary><span><svg class="icon"><use href="#i-book"/></svg>New to SPDL?<span class="reference-teaser">A one-minute reference</span></span><span class="expand-indicator">+</span></summary><div class="reference-grid"><div><h3>Write a policy</h3><code>grant user alice read book</code><p>Use effect, principal type, principal, action and resource. Each line is a statement; <code>deny</code> explicitly denies access.</p></div><div><h3>Add a condition</h3><code>grant user alice read book if clearance &gt;= 3</code><p>Add an attribute and select its type. Use multiple values for an array. Load the Conditions example to try it.</p></div><div><h3>Read the result</h3><p><strong class="allow-text">true</strong> — the request is allowed.<br><strong class="deny-text">false</strong> — access is denied or no grant applies.<br>Input and execution errors are shown separately, never as false.</p><a href="/docs/spdl/" target="_blank" rel="noopener noreferrer">Full SPDL documentation ↗</a></div></div></details>
     <p class="sandbox-note"><strong>Browser sandbox</strong> One service · up to 500 statements · 256 KiB total input · 5-second evaluation deadline.<span>External custom functions and token assertion are not supported. Enter test identities under Subject.</span></p>
 
     <p class="engine-credit">Powered by Speedle+ · Go + WebAssembly · <a href="./ENGINE-NOTICE.txt">Engine &amp; license notices</a> · <a href="https://github.com/teramoby/speedle-plus/tree/master/website/playground-engine">Source &amp; build instructions</a></p>
@@ -112,6 +115,6 @@
       if (event.target.matches('a') && nav.classList.contains('open')) button.click();
     });
   </script>
-  <script type="module" src="./app.js"></script>
+  <script type="module" src="./app.js?v=language-20261026"></script>
 </body>
 </html>
