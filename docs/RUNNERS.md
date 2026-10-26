@@ -9,6 +9,8 @@ the `teramoby` default group's access policy.
 ReviewBot and Go lint/build select `[self-hosted, Linux, X64, speedle-linux]`,
 which both instances carry. Fixed-port Go tests select
 `[self-hosted, Linux, X64, charming-speedle]`, exclusive to the original instance.
+A runner administrator must keep `speedle-linux` exclusive to these two named
+instances; adding another host would also admit it to credential-bearing jobs.
 A runner name alone is not a scheduling label. Keep the test label exclusive so
 two registrations on the same physical host cannot run these tests concurrently.
 Each registration must use its own runner installation and work directory.
@@ -48,7 +50,11 @@ Go CI deliberately trusts code in human-authored same-repository PRs and changes
 merged into the default branch. Bot PRs and bot branch pushes stay hosted before
 merge. `go test` and `go build` execute admitted code on the
 persistent runner account, which can access its caches and other host resources.
-Changes left by such a job can affect subsequent jobs, including ReviewBot.
+On a shared runner account, admitted code can inspect files and concurrent
+processes, including those of ReviewBot; changes it leaves can also affect later
+jobs. Separate work directories and pooling do not provide a security boundary.
+Use separate OS accounts with restrictive permissions or isolated hosts if the
+code admitted by this policy cannot be trusted with the runner account's access.
 The runner group restriction prevents forks from changing the trusted routing
 workflow; it does not sandbox code admitted by that workflow. Repository write
 access and dependency changes therefore remain part of the host's trust boundary.
