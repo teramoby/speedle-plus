@@ -190,3 +190,39 @@ func TestWatchSymlinkedDirectory(t *testing.T) {
 	}
 	awaitServices(t, s, changes)
 }
+
+func TestWatchRetainsPolicyWhileFileMissing(t *testing.T) {
+	for _, operation := range []string{"remove", "rename"} {
+		t.Run(operation, func(t *testing.T) {
+			filename := filepath.Join(t.TempDir(), "policies.json")
+			if err := os.WriteFile(filename, []byte(`{"services":[{"name":"current"}]}`), 0600); err != nil {
+				t.Fatal(err)
+			}
+			s, changes := watchTestStore(t, filename)
+			if _, err := s.ReadPolicyStore(); err != nil {
+				t.Fatal(err)
+			}
+			var err error
+			if operation == "remove" {
+				err = os.Remove(filename)
+			} else {
+				err = os.Rename(filename, filename+".old")
+			}
+			if err != nil {
+				t.Fatal(err)
+			}
+			select {
+			case event := <-changes:
+				t.Fatalf("missing file should retain policies, received %v", event)
+			case <-time.After(200 * time.Millisecond):
+			}
+			if names, err := s.GetServiceNames(); err != nil || !slices.Equal(names, []string{"current"}) {
+				t.Fatalf("cached policies lost: %v, %v", names, err)
+			}
+			if err := os.WriteFile(filename, []byte(`{"services":[{"name":"restored"}]}`), 0600); err != nil {
+				t.Fatal(err)
+			}
+			awaitServices(t, s, changes, "restored")
+		})
+	}
+}

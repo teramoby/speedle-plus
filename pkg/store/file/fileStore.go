@@ -411,6 +411,14 @@ func (s *Store) Watch() (pms.StorageChangeChannel, error) {
 						log.Warningf("Error refreshing policy symlink watch: %v", err)
 					}
 				}
+				if event.Op&(fsnotify.Remove|fsnotify.Rename) != 0 {
+					if _, err := os.Stat(s.FileLocation); os.IsNotExist(err) {
+						// Preserve the existing last-known policy during a missing-file
+						// interval. The parent watch reloads when it is recreated.
+						log.Warningf("Policy file %q is missing; retaining cached policies", s.FileLocation)
+						continue
+					}
+				}
 				s.rwLock.Lock()
 				s.cache = nil
 				s.rwLock.Unlock()
