@@ -20,7 +20,7 @@
   <title>Speedle+ Open-Source Authorization Engine | RBAC &amp; ABAC</title>
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23814ce4'/%3E%3Cpath d='M32 9 48 18v28L32 55 16 46V18zM32 17l-9 5v20l9 5 9-5V22z' fill='none' stroke='white' stroke-width='3'/%3E%3Ccircle cx='32' cy='32' r='5' fill='%2301e7cb'/%3E%3C/svg%3E">
   <link rel="stylesheet" href="/css/site.css">
-  <link rel="stylesheet" href="/css/navigation.css">
+  <link rel="stylesheet" href="/css/navigation.css?v=header-20261027">
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
@@ -168,17 +168,6 @@
       </nav>
     </div>
   </footer>
-  <script>
-    const button = document.querySelector('.menu');
-    const nav = document.querySelector('.nav-links');
-    button.addEventListener('click', () => {
-      const open = nav.classList.toggle('open');
-      button.setAttribute('aria-expanded', String(open));
-      button.textContent = open ? '×' : '☰';
-    });
-    nav.addEventListener('click', (event) => {
-      if (event.target.matches('a') && nav.classList.contains('open')) button.click();
-    });
-  </script>
+  <script src="/js/navigation.js?v=header-20261027" defer></script>
 </body>
 </html>

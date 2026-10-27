@@ -142,6 +142,7 @@
       .footer-inner { padding: 48px 0; grid-template-columns: 1fr; }
     }
   </style>
+  <link rel="stylesheet" href="/css/navigation.css?v=header-20261027">
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
@@ -289,17 +290,6 @@
       </nav>
     </div>
   </footer>
-  <script>
-    const button = document.querySelector('.menu');
-    const nav = document.querySelector('.nav-links');
-    button.addEventListener('click', () => {
-      const open = nav.classList.toggle('open');
-      button.setAttribute('aria-expanded', String(open));
-      button.textContent = open ? '×' : '☰';
-    });
-    nav.addEventListener('click', (event) => {
-      if (event.target.matches('a') && nav.classList.contains('open')) button.click();
-    });
-  </script>
+  <script src="/js/navigation.js?v=header-20261027" defer></script>
 </body>
 </html>

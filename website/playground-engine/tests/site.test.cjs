@@ -14,8 +14,10 @@ assert.equal(read('docs/css/site.css'),original.match(/<style>([\s\S]*?)<\/style
 const oldCommunityLink = original.match(/<a href="[^"]+" aria-label="Slack">[\s\S]*?<\/a>/)[0];
 const discordLink = '<a href="https://discord.gg/uaY2xVsbbT" aria-label="Discord"><img src="/img/speedle/Discord.svg" alt=""></a>';
 const copyright = '<p>Copyright &copy; 2019–2026. All rights reserved.</p>';
-const restored = home.replace(copyright,'').replace(discordLink,oldCommunityLink).replace('  <link rel="stylesheet" href="/css/site.css">\n  <link rel="stylesheet" href="/css/navigation.css">', `  <style>${read('docs/css/site.css')}</style>`).replace('<a href="/playground/">Playground</a>','').replace(`        ${chineseLink}\n`,'');
-assert.equal(restored,original,'Homepage content is unchanged except shared CSS, navigation entries, the Discord invitation and copyright notice');
+const originalNavigationScript = original.match(/  <script>[\s\S]*?<\/script>/)[0];
+const sharedNavigationScript = '  <script src="/js/navigation.js?v=header-20261027" defer></script>';
+const restored = home.replace(sharedNavigationScript,originalNavigationScript).replace(copyright,'').replace(discordLink,oldCommunityLink).replace('  <link rel="stylesheet" href="/css/site.css">\n  <link rel="stylesheet" href="/css/navigation.css?v=header-20261027">', `  <style>${read('docs/css/site.css')}</style>`).replace('<a href="/playground/">Playground</a>','').replace(`        ${chineseLink}\n`,'');
+assert.equal(restored,original,'Homepage content is unchanged except shared navigation assets/entries, the Discord invitation and copyright notice');
 assert.ok(home.includes(chineseLink), 'English homepage exposes the Chinese homepage');
 assert.ok(page.includes(playgroundChineseLink), 'Playground switches to its Chinese counterpart');
 assert.ok(read('docs/zh/index.html').includes('href="/" lang="en" hreflang="en"'), 'Chinese homepage links back to English');
@@ -36,7 +38,7 @@ compareSource('zh/playground');
 for (const name of ['index.html','zh/index.html']) {
  assert.equal(read('docs/hugo/static/'+name), read('docs/'+name), `Authoritative homepage ${name}`);
 }
-for (const name of ['css/site.css','css/navigation.css','css/custom.css','js/master.js','img/speedle/Discord.svg','img/speedle/Discord-color.svg']) {
+for (const name of ['css/site.css','css/navigation.css','css/custom.css','js/master.js','js/navigation.js','img/speedle/Discord.svg','img/speedle/Discord-color.svg']) {
  assert.equal(read('docs/hugo/static/'+name), read('docs/'+name), `Source/published ${name}`);
 }
 assert.ok(page.includes('<a href="/playground/" aria-current="page">Playground</a>'));

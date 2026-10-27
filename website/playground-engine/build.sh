@@ -51,4 +51,5 @@ cp "$ROOT/docs/hugo/static/zh/index.html" "$ROOT/docs/zh/index.html"
 for stylesheet in site.css navigation.css; do
   cp "$ROOT/docs/hugo/static/css/$stylesheet" "$ROOT/docs/css/$stylesheet"
 done
+cp "$ROOT/docs/hugo/static/js/navigation.js" "$ROOT/docs/js/navigation.js"
 sha256sum "$OUT/speedle.wasm"
