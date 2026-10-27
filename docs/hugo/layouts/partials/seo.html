@@ -16,4 +16,7 @@
 {{- $kind := "WebPage" -}}
 {{- if and .IsPage (eq .Section "docs") }}{{ $kind = "TechArticle" }}{{ end -}}
 {{- $schema := dict "@context" "https://schema.org" "@type" $kind "@id" (printf "%s#page" .Permalink) "url" .Permalink "name" .Title "description" $description "inLanguage" (cond (eq .Lang "zh") "zh-CN" "en") "isPartOf" (dict "@id" "https://speedle.io/#website") "about" (dict "@id" "https://speedle.io/#software") "keywords" (.Params.keywords | default (slice "Speedle+")) -}}
-<script type="application/ld+json">{{ $schema | jsonify | safeJS }}</script>
+{{/* Hugo 0.48's official Go toolchain treats JSON-LD as HTML, unlike newer Go.
+     Render the complete element as HTML so JSON is not entity-escaped. jsonify
+     still escapes HTML-sensitive characters inside JSON string values. */}}
+{{ printf "<script type=\"application/ld+json\">%s</script>" ($schema | jsonify) | safeHTML }}
