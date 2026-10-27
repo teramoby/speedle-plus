@@ -64,6 +64,8 @@
   <script type="text/javascript" src="{{ "/js/tocbot.min.js" | relURL }}"></script>
 
   <link href="{{ "/css/brand.css?v=1" | relURL }}" rel="stylesheet" type="text/css">
+  <link href="{{ "/css/navigation.css?v=header-20261027" | relURL }}" rel="stylesheet">
+  <script src="{{ "/js/navigation.js?v=header-20261027" | relURL }}" defer></script>
 </head>
 
 {{ if and (isset .Params "landingpage") .Params.landingpage }}
@@ -74,7 +76,7 @@
   <body class="page-kube">
     {{ end }}
 
-    <header>{{ block "header" . }}{{ end }}</header>
+    <header class="site-header">{{ block "header" . }}{{ end }}</header>
     <main>{{ block "main" . }}{{ end }}</main>
     <footer class="row">{{ block "footer" . }}{{ end }}</footer>
 

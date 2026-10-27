@@ -1,27 +1,8 @@
-{{- $currentPage := . -}}
-<div class="show-sm">
-  <div id="nav-toggle-box">
-    <div id="nav-toggle-brand">
-      <a href="{{ "/" | relLangURL }}" title="{{ .Site.Title }}"><img src="{{ "/img/speedle/Speedle_logo_home_bold.svg?v=4" | relURL }}" width="152" height="52" alt="Speedle"></a>
-    </div>
-    <a data-component="toggleme" data-target="#top" href="#" id="nav-toggle"><i class="kube-menu"></i></a>
-  </div>
-</div>
-<div class="hide-sm" id="top">
-  <div id="top-brand"><a href="{{ "/" | relLangURL }}" title="{{ .Site.Title }}"><img src="{{ "/img/speedle/Speedle_logo_home_bold.svg?v=4" | relURL }}" width="152" height="52" alt="Speedle"></a></div>
-  <nav id="top-nav-main"><ul>
-    {{- range .Site.Menus.main }}
-    <li class="{{ if $currentPage.IsMenuCurrent "main" . }}active{{ end }}"><a href="{{ .URL | relLangURL }}">{{ .Name }}</a></li>
-    {{- end }}
-  </ul></nav>
-  <nav id="top-nav-extra"><ul>
-    {{- range .Site.Menus.extra }}
-    <li>{{ if eq .URL "/blog/" }}<a id="blogLink" href="https://medium.com/speedle" target="_blank">{{ .Name }}</a>{{ else }}<a href="{{ .URL | relLangURL }}">{{ .Name }}</a>{{ end }}</li>
-    {{- end }}
-  </ul></nav>
-  <nav id="top-nav-lang" aria-label="{{ if eq .Lang "zh" }}语言{{ else }}Language{{ end }}"><ul>
-    {{- range .Translations }}
-    <li><a href="{{ .RelPermalink }}" lang="{{ if eq .Lang "zh" }}zh-CN{{ else }}en{{ end }}" hreflang="{{ if eq .Lang "zh" }}zh-CN{{ else }}en{{ end }}">{{ if eq .Lang "zh" }}中文{{ else }}English{{ end }}</a></li>
-    {{- end }}
-  </ul></nav>
-</div>
+{{/* The approved homepage supplies navigation labels, order and markup.
+     The language router resolves its language link to this page after render. */}}
+{{- $source := "static/index.html" -}}
+{{- if eq .Lang "zh" }}{{ $source = "static/zh/index.html" }}{{ end -}}
+{{- $header := index (findRE `<header class="site-header">[\s\S]*?</header>` (readFile $source) 1) 0 -}}
+{{- $home := "/" | relLangURL -}}
+{{- $header = replace $header `href="#` (printf `href="%s#` $home) -}}
+{{- replaceRE `^<header[^>]*>|</header>$` "" $header | safeHTML -}}
