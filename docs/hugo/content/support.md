@@ -54,17 +54,17 @@ Plase refer to [token assertor](/docs/assertor)
     <div class="col col-8 center" style="font-size: 25px">
     <div>
         <p>Can’t see the answer you’re looking for?</p>
-        <p>Try our Slack workspace #speedleproject</p>
+        <p>Join the Speedle Discord community</p>
         <span>
-          <a class="button primary started" style="font-size:18px" href="/quick-start">
-            <span>Visit Slack channel →</span>
+          <a class="button primary started" style="font-size:18px" href="https://discord.gg/uaY2xVsbbT">
+            <span>Join Discord →</span>
           </a>
         </span>
     </div>
     </div>
     <div class="col col-2 right">
-      <a title="slack" href="https://join.slack.com/t/speedleproject/shared_invite/enQtNTUzODM3NDY0ODE2LTg0ODc0NzQ1MjVmM2NiODVmMThkMmVjNmMyODA0ZWJjZjQ3NDc2MjdlMzliN2U4MDRkZjhlYzYzMDEyZTgxMGQ">
-        <img class="svg" src="/img/speedle/Slack_RGB.svg" />
+      <a title="Discord" href="https://discord.gg/uaY2xVsbbT">
+        <img class="svg" src="/img/speedle/Discord-color.svg" />
       </a>
     </div>
 </div>
