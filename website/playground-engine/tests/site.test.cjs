@@ -13,8 +13,9 @@ const original = execFileSync('git',['show','5cccf4c4e50a2b0ab901a9fa65acc39074e
 assert.equal(read('docs/css/site.css'),original.match(/<style>([\s\S]*?)<\/style>/)[1], 'The shared stylesheet is the actual original homepage CSS, byte for byte');
 const oldCommunityLink = original.match(/<a href="[^"]+" aria-label="Slack">[\s\S]*?<\/a>/)[0];
 const discordLink = '<a href="https://discord.gg/uaY2xVsbbT" aria-label="Discord"><img src="/img/speedle/Discord.svg" alt=""></a>';
-const restored = home.replace(discordLink,oldCommunityLink).replace('  <link rel="stylesheet" href="/css/site.css">\n  <link rel="stylesheet" href="/css/navigation.css">', `  <style>${read('docs/css/site.css')}</style>`).replace('<a href="/playground/">Playground</a>','').replace(`        ${chineseLink}\n`,'');
-assert.equal(restored,original,'Homepage content is unchanged except shared CSS, navigation entries and the Discord invitation');
+const copyright = '<p>Copyright &copy; 2019–2026. All rights reserved.</p>';
+const restored = home.replace(copyright,'').replace(discordLink,oldCommunityLink).replace('  <link rel="stylesheet" href="/css/site.css">\n  <link rel="stylesheet" href="/css/navigation.css">', `  <style>${read('docs/css/site.css')}</style>`).replace('<a href="/playground/">Playground</a>','').replace(`        ${chineseLink}\n`,'');
+assert.equal(restored,original,'Homepage content is unchanged except shared CSS, navigation entries, the Discord invitation and copyright notice');
 assert.ok(home.includes(chineseLink), 'English homepage exposes the Chinese homepage');
 assert.ok(page.includes(playgroundChineseLink), 'Playground switches to its Chinese counterpart');
 assert.ok(read('docs/zh/index.html').includes('href="/" lang="en" hreflang="en"'), 'Chinese homepage links back to English');
