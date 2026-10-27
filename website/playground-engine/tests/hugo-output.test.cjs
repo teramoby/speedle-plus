@@ -41,3 +41,12 @@ for (const name of ['docs/index.html', 'zh/docs/index.html', 'docs/spdl/index.ht
   assert.ok(!html.includes('langselFloatDiv') && !html.includes('langNameArrow'), `No dropdown in ${name}`);
 }
 console.log('PASS Hugo 0.48 output: editor, navigation, sitemap and matching release assets');
+
+for (const locale of ['', 'zh/']) {
+  for (const topic of ['', 'rbac/', 'abac/', 'pbac/', 'identity-iam/', 'oes/', 'xacml/']) {
+    const name = `${locale}docs/access-control/${topic}index.html`;
+    assert.deepEqual(fs.readFileSync(path.join(output, name)), fs.readFileSync(path.join(root, 'docs', name)), `Generated bilingual topic ${name}`);
+  }
+}
+assert.equal(fs.readFileSync(path.join(output, 'llms.txt'), 'utf8'), fs.readFileSync(path.join(root, 'docs/llms.txt'), 'utf8'));
+console.log('PASS generated bilingual topic HTML and llms.txt match published copies');

@@ -27,6 +27,28 @@ Speedle+ evaluates RBAC and ABAC policies for users, services, and processes act
 - Official website: https://speedle.io/
 - Code repository: https://github.com/teramoby/speedle-plus
 
+## Authorization and access control topics
+
+- [Authorization and access control](https://speedle.io/docs/access-control/): How Speedle+ externalizes authorization decisions; RBAC, ABAC and PBAC can coexist.
+- [Role-based access control (RBAC)](https://speedle.io/docs/access-control/rbac/): Role assignment, resource scope and role inheritance with executable SPDL policies.
+- [Attribute-based access control (ABAC)](https://speedle.io/docs/access-control/abac/): Trusted attributes and typed policy conditions, with allow and deny examples.
+- [Policy-based access control (PBAC)](https://speedle.io/docs/access-control/pbac/): Policy management, decision evaluation and application enforcement responsibilities.
+- [Identity and access management (IAM)](https://speedle.io/docs/access-control/identity-iam/): Speedle's authorization role within IAM, identity domains and configured token assertion; not a complete identity provider.
+- [Oracle Entitlements Server (OES)](https://speedle.io/docs/access-control/oes/): Architecture comparison and migration assessment; no drop-in compatibility claim.
+- [XACML and SPDL](https://speedle.io/docs/access-control/xacml/): PAP/PDP/PEP correspondence and policy-language boundaries; no XACML conformance claim.
+- [Playground](https://speedle.io/playground/): Evaluate SPDL policies locally using the real Go engine compiled to WebAssembly. No identity-provider or external-function calls.
+
+## 中文授权与访问控制文档
+
+- [授权与访问控制](https://speedle.io/zh/docs/access-control/)
+- [RBAC：基于角色的访问控制](https://speedle.io/zh/docs/access-control/rbac/)
+- [ABAC：基于属性的访问控制](https://speedle.io/zh/docs/access-control/abac/)
+- [PBAC：基于策略的访问控制](https://speedle.io/zh/docs/access-control/pbac/)
+- [身份与访问管理（IAM）](https://speedle.io/zh/docs/access-control/identity-iam/)
+- [Oracle Entitlements Server（OES）与 Speedle](https://speedle.io/zh/docs/access-control/oes/)
+- [XACML：可扩展访问控制标记语言与 SPDL](https://speedle.io/zh/docs/access-control/xacml/)
+- [中文 Playground](https://speedle.io/zh/playground/)
+
 ## Languages
 
 - [English](https://speedle.io/)
