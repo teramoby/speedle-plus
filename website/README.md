@@ -21,7 +21,9 @@ pages, `中文` on English pages), including inside the mobile navigation menu.
   `js/navigation.js` provide the same header layout and mobile interaction on
   homepages, Playground and documentation. Home-section links return to the
   localized homepage; the language router keeps language switches on the same
-  page. Legacy archived navigation continues to use `master.js` unchanged.
+  page. Mobile links stay visible until their controller initializes, so primary
+  navigation also works when JavaScript is disabled or the script fails to load.
+  Legacy archived navigation continues to use `master.js` unchanged.
 
 ## Generate and publish
 

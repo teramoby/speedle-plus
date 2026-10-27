@@ -103,21 +103,32 @@ body.page-kube > header.site-header:lang(zh) {
   cursor: pointer;
 }
 @media (max-width: 1050px) {
-  .site-header .menu { display: block; }
+  .site-header .wrap.nav {
+    height: auto;
+    flex-wrap: wrap;
+  }
   .site-header .nav-links {
-    display: none;
-    position: absolute;
-    inset: 76px 0 auto;
+    flex-basis: 100%;
     padding: 24px;
     flex-direction: column;
     align-items: flex-start;
     gap: 18px;
     background: #25134e;
+  }
+  .site-header.navigation-ready .wrap.nav {
+    height: 76px;
+    flex-wrap: nowrap;
+  }
+  .site-header.navigation-ready .menu { display: block; }
+  .site-header.navigation-ready .nav-links {
+    display: none;
+    position: absolute;
+    inset: 76px 0 auto;
     max-height: calc(100vh - 76px);
     max-height: calc(100dvh - 76px);
     overflow-y: auto;
   }
-  .site-header .nav-links.open { display: flex; }
+  .site-header.navigation-ready .nav-links.open { display: flex; }
 }
 @media (max-width: 700px) {
   .site-header .wrap.nav { width: min(100% - 28px, 1160px); }

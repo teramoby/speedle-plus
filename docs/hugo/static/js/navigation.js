@@ -21,4 +21,6 @@ document.querySelectorAll('header.site-header').forEach(function(header) {
     }
   });
   window.matchMedia('(max-width: 1050px)').addEventListener('change', function() { setOpen(false); });
+  // Collapse links only after their controller has initialized successfully.
+  header.classList.add('navigation-ready');
 });
