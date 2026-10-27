@@ -27,6 +27,30 @@ Speedle+ evaluates RBAC and ABAC policies for users, services, and processes act
 - Official website: https://speedle.io/
 - Code repository: https://github.com/teramoby/speedle-plus
 
+## Authorization terminology / 授权术语
+
+- Authorization engine / 授权引擎: Speedle evaluates whether a subject may perform an action on a resource. Speedle 判断主体能否对资源执行操作。
+- Fine grained access control / fine-grained access control / FGA / 细粒度访问控制: policies combine principals, resources, actions, roles and trusted attributes. 策略组合主体、资源、操作、角色与可信属性。
+- Policy engine / authorization policy engine / 策略引擎 / 授权策略引擎: the ADS or embedded evaluator applies SPDL policies to authorization requests. ADS 或嵌入式引擎根据 SPDL 策略评估请求。
+- Externalized authorization / 外置授权 / 授权外部化: applications call Speedle to evaluate policies outside their business logic. 应用调用 Speedle，将授权策略判断从业务逻辑中独立出来。
+- Centralized authorization / 集中式授权: the PMS manages policies shared by authorization decision services. PMS 集中管理授权决策服务使用的策略。
+- Authorization policy management / 授权策略管理: policy administration and policy lifecycle operations through the PMS. 通过 PMS 管理授权策略及其生命周期。
+- Authorization decision service / 授权决策服务: the ADS evaluates requests and returns decisions for callers to enforce. ADS 评估请求并返回决策，调用方负责执行。
+- API authorization / API 授权 / API 权限控制: an application or gateway checks permission before allowing an API operation. 应用或网关在允许 API 操作前执行权限检查。
+- Microservices authorization / 微服务授权 / 微服务权限控制: services share authorization policies and enforce decisions at their protected operations. 微服务共享授权策略，并在受保护的操作处执行决策。
+- Cloud-native authorization / 云原生授权: Speedle provides application authorization decisions for cloud-native deployments. Speedle 为云原生部署提供应用授权决策。
+
+The following [XACML-style responsibilities](https://speedle.io/docs/access-control/xacml/) describe a conceptual role mapping; Speedle's native policy language is SPDL.
+
+- PAP / policy administration point / 策略管理点: the Policy Management Service manages policies. 策略管理服务负责管理策略。
+- PDP / policy decision point / 策略决策点: the Authorization Decision Service or embedded engine evaluates requests. 授权决策服务或嵌入式引擎评估请求。
+- PEP / policy enforcement point / 策略执行点: the integrating application or gateway enforces the decision. 集成的应用或网关负责执行决策。
+- PIP / policy information point / 策略信息点: trusted application data and configured identity/attribute integrations supply decision inputs. 可信应用数据及配置的身份、属性集成提供决策输入。
+
+Zero trust / 零信任: Speedle contributes application authorization decisions to a zero trust design. The integrating system supplies identity assurance, trusted device/session context and enforcement. Speedle 提供零信任架构中的应用授权决策；身份验证、可信设备及会话上下文与执行由集成系统负责。The NIST policy administrator (PA) is distinct from the XACML policy administration point (PAP). NIST 的策略管理员 PA 与 XACML 的策略管理点 PAP 是不同概念。
+
+Role and architecture references: [OASIS XACML 3.0](https://docs.oasis-open.org/xacml/3.0/xacml-3.0-core-spec-os-en.html), [NIST SP 800-207](https://csrc.nist.gov/pubs/sp/800/207/final).
+
 ## Authorization and access control topics
 
 - [Authorization and access control](https://speedle.io/docs/access-control/): How Speedle+ externalizes authorization decisions; RBAC, ABAC and PBAC can coexist.

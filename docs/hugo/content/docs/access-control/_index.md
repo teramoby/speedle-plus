@@ -1,5 +1,6 @@
 +++
 title = "Authorization and access control"
+keywords = ["Speedle+", "authorization", "access control", "RBAC", "ABAC", "PBAC", "identity", "IAM", "OES", "XACML", "SPDL", "authorization engine", "fine grained access control", "fine-grained access control", "FGA", "policy engine", "authorization policy engine", "externalized authorization", "PAP", "policy administration point", "PDP", "policy decision point", "PEP", "policy enforcement point", "PIP", "policy information point", "centralized authorization", "authorization policy management", "authorization decision service", "API authorization", "microservices authorization", "cloud-native authorization", "zero trust"]
 description = "How Speedle+ implements authorization and fine-grained access control using RBAC, ABAC and PBAC, integrates with identity and IAM, and relates to OES and XACML."
 weight = 12
 bref = "Authorization concepts, working policies and integration boundaries"

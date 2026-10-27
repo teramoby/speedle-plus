@@ -2,7 +2,7 @@
 title = "RBAC：基于角色的访问控制"
 description = "使用 Speedle+ 实现基于角色的访问控制（RBAC，role-based access control）：角色分配、资源范围、角色继承及可运行的 SPDL 示例。"
 weight = 10
-keywords = ["RBAC", "role-based access control", "基于角色的访问控制", "授权", "Speedle+"]
+keywords = ["RBAC", "role-based access control", "基于角色的访问控制", "授权", "Speedle+", "authorization engine", "fine grained access control", "fine-grained access control", "FGA", "policy engine", "authorization policy engine", "externalized authorization", "授权引擎", "细粒度访问控制", "策略引擎", "授权策略引擎", "外置授权", "授权外部化"]
 bref = "通过角色授予权限，减少逐个用户重复配置"
 +++
 

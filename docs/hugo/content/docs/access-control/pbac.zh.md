@@ -2,7 +2,7 @@
 title = "PBAC：基于策略的访问控制"
 description = "通过 Speedle+ 实现基于策略的访问控制（PBAC，policy-based access control）：使用 SPDL 独立授权规则，由 PMS 管理策略、ADS 决策并组合 RBAC 与 ABAC。"
 weight = 30
-keywords = ["PBAC", "policy-based access control", "基于策略的访问控制", "授权", "Speedle+"]
+keywords = ["PBAC", "policy-based access control", "基于策略的访问控制", "授权", "Speedle+", "authorization engine", "fine grained access control", "fine-grained access control", "FGA", "policy engine", "authorization policy engine", "externalized authorization", "授权引擎", "细粒度访问控制", "策略引擎", "授权策略引擎", "外置授权", "授权外部化", "centralized authorization", "集中式授权", "authorization policy management", "授权策略管理", "authorization decision service", "授权决策服务"]
 bref = "分离策略管理、授权决策与访问执行"
 +++
 

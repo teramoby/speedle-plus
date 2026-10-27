@@ -2,7 +2,7 @@
 title = "PBAC: policy-based access control"
 description = "Policy-based access control (PBAC) with Speedle+: externalize authorization in SPDL, manage policy through PMS and enforce ADS decisions with RBAC and ABAC."
 weight = 30
-keywords = ["PBAC", "policy-based access control", "authorization", "access control", "Speedle+"]
+keywords = ["PBAC", "policy-based access control", "authorization", "access control", "Speedle+", "authorization engine", "fine grained access control", "fine-grained access control", "FGA", "policy engine", "authorization policy engine", "externalized authorization", "centralized authorization", "authorization policy management", "authorization decision service"]
 bref = "Separate policy management, authorization decisions and enforcement"
 +++
 

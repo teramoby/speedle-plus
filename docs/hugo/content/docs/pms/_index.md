@@ -1,5 +1,6 @@
 +++
 title = "Speedle Policy"
+keywords = ["Speedle+", "authorization engine", "fine grained access control", "fine-grained access control", "FGA", "policy engine", "authorization policy engine", "externalized authorization", "PAP", "policy administration point", "centralized authorization", "authorization policy management"]
 weight = 20
 draft = false
 tags = ["v0.1.0", "api", "guide", "core"]

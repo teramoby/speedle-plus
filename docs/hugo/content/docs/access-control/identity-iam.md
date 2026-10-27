@@ -2,7 +2,7 @@
 title = "Identity and IAM integration"
 description = "Place Speedle+ authorization in an identity and access management (IAM) architecture: trusted identities, identity domains, token asserters and access control."
 weight = 40
-keywords = ["identity", "IAM", "identity and access management", "authorization", "access control", "Speedle+"]
+keywords = ["identity", "IAM", "identity and access management", "authorization", "access control", "Speedle+", "authorization engine", "fine grained access control", "fine-grained access control", "FGA", "policy engine", "authorization policy engine", "externalized authorization", "zero trust"]
 bref = "Connect identity to authorization while keeping responsibilities explicit"
 +++
 

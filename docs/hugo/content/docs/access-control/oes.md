@@ -2,7 +2,7 @@
 title = "Oracle Entitlements Server (OES) and Speedle"
 description = "Compare Oracle Entitlements Server (OES) and Speedle+ authorization architecture, policy management and enforcement, with a practical migration assessment checklist."
 weight = 50
-keywords = ["OES", "Oracle Entitlements Server", "authorization", "access control", "Speedle+"]
+keywords = ["OES", "Oracle Entitlements Server", "authorization", "access control", "Speedle+", "authorization engine", "fine grained access control", "fine-grained access control", "FGA", "policy engine", "authorization policy engine", "externalized authorization", "centralized authorization", "authorization policy management"]
 bref = "Compare authorization responsibilities before evaluating a migration"
 +++
 

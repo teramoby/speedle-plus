@@ -1,5 +1,6 @@
 +++
 title = "授权与访问控制"
+keywords = ["Speedle+", "authorization", "access control", "RBAC", "ABAC", "PBAC", "identity", "IAM", "OES", "XACML", "SPDL", "授权", "访问控制", "身份与访问管理", "authorization engine", "fine grained access control", "fine-grained access control", "FGA", "policy engine", "authorization policy engine", "externalized authorization", "授权引擎", "细粒度访问控制", "策略引擎", "授权策略引擎", "外置授权", "授权外部化", "PAP", "policy administration point", "策略管理点", "PDP", "policy decision point", "策略决策点", "PEP", "policy enforcement point", "策略执行点", "PIP", "policy information point", "策略信息点", "centralized authorization", "集中式授权", "authorization policy management", "授权策略管理", "authorization decision service", "授权决策服务", "API authorization", "API 授权", "API 权限控制", "microservices authorization", "微服务授权", "微服务权限控制", "cloud-native authorization", "云原生授权", "zero trust", "零信任"]
 description = "了解 Speedle+ 如何通过 RBAC、ABAC 和 PBAC 实现授权与细粒度访问控制，接入身份与 IAM 系统，以及与 OES、XACML 的关系。"
 weight = 12
 bref = "授权概念、可运行策略与集成边界"

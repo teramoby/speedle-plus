@@ -2,7 +2,7 @@
 title = "RBAC: role-based access control"
 description = "Implement role-based access control (RBAC) with Speedle+: role assignments, resource-scoped roles, role inheritance and executable SPDL examples."
 weight = 10
-keywords = ["RBAC", "role-based access control", "authorization", "access control", "Speedle+"]
+keywords = ["RBAC", "role-based access control", "authorization", "access control", "Speedle+", "authorization engine", "fine grained access control", "fine-grained access control", "FGA", "policy engine", "authorization policy engine", "externalized authorization"]
 bref = "Grant permissions through roles instead of repeating grants for every user"
 +++
 

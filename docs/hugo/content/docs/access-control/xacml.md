@@ -2,7 +2,7 @@
 title = "XACML, SPDL and authorization architecture"
 description = "Relate XACML access control concepts to Speedle+: PAP, PDP, PEP and attribute sources, SPDL policy syntax, deny precedence and policy migration boundaries."
 weight = 60
-keywords = ["XACML", "eXtensible Access Control Markup Language", "authorization", "policy-based access control", "Speedle+"]
+keywords = ["XACML", "eXtensible Access Control Markup Language", "authorization", "policy-based access control", "Speedle+", "authorization engine", "fine grained access control", "fine-grained access control", "FGA", "policy engine", "authorization policy engine", "externalized authorization", "PAP", "policy administration point", "PDP", "policy decision point", "PEP", "policy enforcement point", "PIP", "policy information point"]
 bref = "Map architecture concepts without assuming policy-format compatibility"
 +++
 

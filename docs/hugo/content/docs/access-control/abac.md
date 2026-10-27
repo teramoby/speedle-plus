@@ -2,7 +2,7 @@
 title = "ABAC: attribute-based access control"
 description = "Implement attribute-based access control (ABAC) in Speedle+ with SPDL conditions, typed attributes, trusted request context and an executable clearance example."
 weight = 20
-keywords = ["ABAC", "attribute-based access control", "authorization", "access control", "Speedle+"]
+keywords = ["ABAC", "attribute-based access control", "authorization", "access control", "Speedle+", "authorization engine", "fine grained access control", "fine-grained access control", "FGA", "policy engine", "authorization policy engine", "externalized authorization"]
 bref = "Use trusted attributes to express conditional authorization"
 +++
 

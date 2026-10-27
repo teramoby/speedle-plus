@@ -2,7 +2,7 @@
 title = "Oracle Entitlements Server（OES）与 Speedle"
 description = "比较 Oracle Entitlements Server（OES，Oracle 权限管理服务器）与 Speedle+ 的授权架构、策略管理及执行方式，并通过检查清单评估迁移。"
 weight = 50
-keywords = ["OES", "Oracle Entitlements Server", "Oracle 权限管理服务器", "授权", "访问控制", "Speedle+"]
+keywords = ["OES", "Oracle Entitlements Server", "Oracle 权限管理服务器", "授权", "访问控制", "Speedle+", "authorization engine", "fine grained access control", "fine-grained access control", "FGA", "policy engine", "authorization policy engine", "externalized authorization", "授权引擎", "细粒度访问控制", "策略引擎", "授权策略引擎", "外置授权", "授权外部化", "centralized authorization", "集中式授权", "authorization policy management", "授权策略管理"]
 bref = "评估迁移前，先比较授权体系中各组件的职责"
 +++
 
