@@ -2,7 +2,7 @@
 title = "身份与 IAM 集成"
 description = "Speedle+ 在身份与访问管理（IAM，Identity and Access Management）中的职责：可信身份、身份域、令牌断言与授权访问控制。"
 weight = 40
-keywords = ["identity", "IAM", "identity and access management", "身份", "身份与访问管理", "授权", "Speedle+"]
+keywords = ["identity", "IAM", "identity and access management", "身份", "身份与访问管理", "授权", "Speedle+", "authorization engine", "fine grained access control", "fine-grained access control", "FGA", "policy engine", "authorization policy engine", "externalized authorization", "授权引擎", "细粒度访问控制", "策略引擎", "授权策略引擎", "外置授权", "授权外部化", "zero trust", "零信任"]
 bref = "衔接身份与授权，并明确各组件的职责"
 +++
 

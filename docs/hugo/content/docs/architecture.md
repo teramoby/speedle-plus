@@ -1,5 +1,6 @@
 +++
 title = "Architecture"
+keywords = ["Speedle+", "authorization engine", "fine grained access control", "fine-grained access control", "FGA", "policy engine", "authorization policy engine", "externalized authorization", "PAP", "policy administration point", "PDP", "policy decision point", "PEP", "policy enforcement point", "PIP", "policy information point", "centralized authorization", "authorization policy management", "authorization decision service", "API authorization", "microservices authorization", "cloud-native authorization"]
 description = "Speedle building blocks"
 weight = 10
 draft = false

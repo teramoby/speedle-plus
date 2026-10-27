@@ -18,6 +18,53 @@ TOPICS = {
     "xacml/": ["XACML", "eXtensible Access Control Markup Language", "可扩展访问控制标记语言"],
 }
 
+# Public semantic terms are scoped to relevant pages; visible copy stays intact.
+KEYWORD_GROUPS = {
+    "core": (["authorization engine", "fine grained access control", "fine-grained access control", "FGA", "policy engine", "authorization policy engine", "externalized authorization"], ["授权引擎", "细粒度访问控制", "策略引擎", "授权策略引擎", "外置授权", "授权外部化"]),
+    "pap": (["PAP", "policy administration point"], ["策略管理点"]),
+    "pdp": (["PDP", "policy decision point"], ["策略决策点"]),
+    "pep": (["PEP", "policy enforcement point"], ["策略执行点"]),
+    "pip": (["PIP", "policy information point"], ["策略信息点"]),
+    "central": (["centralized authorization"], ["集中式授权"]),
+    "management": (["authorization policy management"], ["授权策略管理"]),
+    "decision": (["authorization decision service"], ["授权决策服务"]),
+    "api": (["API authorization"], ["API 授权", "API 权限控制"]),
+    "microservices": (["microservices authorization"], ["微服务授权", "微服务权限控制"]),
+    "cloud": (["cloud-native authorization"], ["云原生授权"]),
+    "zero-trust": (["zero trust"], ["零信任"]),
+}
+ROLE_GROUPS = ["pap", "pdp", "pep", "pip"]
+SEMANTIC_PAGES = {
+    "/docs/": list(KEYWORD_GROUPS),
+    "/docs/access-control/": list(KEYWORD_GROUPS),
+    "/docs/access-control/rbac/": ["core"],
+    "/docs/access-control/abac/": ["core"],
+    "/docs/access-control/pbac/": ["core", "central", "management", "decision"],
+    "/docs/access-control/identity-iam/": ["core", "zero-trust"],
+    "/docs/access-control/oes/": ["core", "central", "management"],
+    "/docs/access-control/xacml/": ["core"] + ROLE_GROUPS,
+    "/docs/architecture/": ["core"] + ROLE_GROUPS + ["central", "management", "decision", "api", "microservices", "cloud"],
+    "/docs/usecases/": ["core", "central", "management", "api", "microservices", "cloud"],
+    "/docs/decisions/": ["core", "pdp", "decision", "api"],
+    "/docs/pms/": ["core", "pap", "central", "management"],
+    "/docs/pms/policy-mgmt/": ["core", "pap", "central", "management"],
+    "/docs/api/decision_api/": ["core", "pdp", "decision", "api"],
+    "/docs/api/management_api/": ["core", "pap", "management", "api"],
+}
+
+
+def semantic_terms(groups, zh):
+    return [term for group in groups for term in KEYWORD_GROUPS[group][0] + (KEYWORD_GROUPS[group][1] if zh else [])]
+
+
+def check_keywords(schema, groups, zh, route):
+    keywords = schema.get("keywords", [])
+    assert isinstance(keywords, list) and all(isinstance(term, str) for term in keywords), route
+    actual = {term.casefold() for term in keywords}
+    assert len(actual) == len(keywords), (route, "duplicate semantic keywords")
+    missing = [term for term in semantic_terms(groups, zh) if term.casefold() not in actual]
+    assert not missing, (route, "missing semantic keywords", missing)
+
 
 class Page(HTMLParser):
     def __init__(self, text):
@@ -90,6 +137,13 @@ def check(root):
         if "/playground/" not in route:
             assert page.alternates.get("x-default") == expected["x-default"], route
             assert page.schemas, route
+        if neutral == "/":
+            software = [entity for schema in page.schemas for entity in schema.get("@graph", [schema])
+                        if entity.get("@type") == "SoftwareSourceCode"]
+            assert len(software) == 1, route
+            check_keywords(software[0], list(KEYWORD_GROUPS), zh, route)
+        elif neutral in SEMANTIC_PAGES:
+            check_keywords(page.schemas[0], SEMANTIC_PAGES[neutral], zh, route)
         if "/docs/access-control/" in route:
             topic = route.split("/docs/access-control/")[1]
             visible = " ".join(page.text).lower()
@@ -109,7 +163,11 @@ def check(root):
     for topic in TOPICS:
         for prefix in ("", "/zh"):
             assert ORIGIN + prefix + "/docs/access-control/" + topic in llms
-    print(f"PASS SEO: {pages} current pages, 14 bilingual topic routes, visible keyword coverage, metadata, JSON-LD and sitemaps")
+    for term in semantic_terms(list(KEYWORD_GROUPS), True):
+        assert term.casefold() in llms.casefold(), ("llms.txt", term)
+    assert "The integrating system supplies identity assurance, trusted device/session context and enforcement." in llms
+    assert "The NIST policy administrator (PA) is distinct from the XACML policy administration point (PAP)." in llms
+    print(f"PASS SEO: {pages} current pages, 14 bilingual topic routes, scoped English/Chinese semantic keywords, metadata, JSON-LD and sitemaps")
 
 
 if __name__ == "__main__":

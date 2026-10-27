@@ -2,7 +2,7 @@
 title = "XACML、SPDL 与授权架构"
 description = "对照 XACML（可扩展访问控制标记语言）与 Speedle+：PAP、PDP、PEP 和属性来源、SPDL 语法、拒绝优先及策略迁移边界。"
 weight = 60
-keywords = ["XACML", "eXtensible Access Control Markup Language", "可扩展访问控制标记语言", "授权", "策略访问控制", "Speedle+"]
+keywords = ["XACML", "eXtensible Access Control Markup Language", "可扩展访问控制标记语言", "授权", "策略访问控制", "Speedle+", "authorization engine", "fine grained access control", "fine-grained access control", "FGA", "policy engine", "authorization policy engine", "externalized authorization", "授权引擎", "细粒度访问控制", "策略引擎", "授权策略引擎", "外置授权", "授权外部化", "PAP", "policy administration point", "策略管理点", "PDP", "policy decision point", "策略决策点", "PEP", "policy enforcement point", "策略执行点", "PIP", "policy information point", "策略信息点"]
 bref = "对应架构概念，区分策略格式与协议兼容性"
 +++
 
