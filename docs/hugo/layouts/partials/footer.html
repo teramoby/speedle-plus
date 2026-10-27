@@ -7,8 +7,11 @@
 </div>
 <div class="col col-3">
   <nav>
-    <a title="speedle-users" href="https://groups.google.com/forum/#!forum/speedle-users">
-      <img src="/img/speedle/28. Mail.svg" />
+    <a title="contact@speedle.io" aria-label="{{ if eq .Lang "zh" }}发送邮件至 contact@speedle.io{{ else }}Email contact@speedle.io{{ end }}" href="mailto:contact@speedle.io">
+      <img src="/img/speedle/28. Mail.svg" alt="" />
+    </a>
+    <a title="Google Groups — speedle-users" aria-label="{{ if eq .Lang "zh" }}Google Groups 讨论组{{ else }}Google Groups{{ end }}" href="https://groups.google.com/forum/#!forum/speedle-users">
+      <img src="/img/speedle/Google-Groups.svg" alt="" />
     </a>
     <a title="speedle" href="https://github.com/oracle/{{.Site.Params.github}}">
       <img src="/img/speedle/18. Github.svg" />
