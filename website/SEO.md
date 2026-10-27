@@ -35,6 +35,11 @@ Existing noindex taxonomy rules and pagination canonicals remain in place.
 Static homepage and Playground metadata are maintained in their existing sources.
 Archives retain their original content and metadata.
 
+The English/Chinese integration overviews explicitly set `noindex = false`.
+Front matter overrides the default kind-based indexing policy, including false;
+other section and taxonomy defaults remain in place. Release checks verify the
+two indexable overviews and representative unchanged section/taxonomy exclusions.
+
 The expanded terminology is expressed in the homepage software entity's JSON-LD
 and the keyword arrays of relevant bilingual documentation pages. The visible
 HTML bodies, navigation, styles and existing descriptions are preserved. The
