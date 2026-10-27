@@ -19,12 +19,16 @@ defaultContentLanguageInSubdir = false
 [languages.zh]
   languageCode = "zh-cn"
 
+[languages.zh.params]
+  description = "Speedle+ 开源授权与访问控制引擎：策略管理、RBAC、ABAC 及身份集成文档。"
+
 [taxonomies]
   category = "categories"
   version = "versions"
   tag = "tags"
 
 [Params]
+  description = "Speedle+ open-source authorization and access control engine: policy management, RBAC, ABAC and identity integration documentation."
   RSSLink = "/index.xml"
   author = "Speedle" # add your company name
   github = "speedle" # add your github profile name

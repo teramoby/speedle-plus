@@ -114,6 +114,22 @@ Issue的内容请包括：
     </item>
     
     <item>
+      <title>RBAC：基于角色的访问控制</title>
+      <link>https://speedle.io/zh/docs/access-control/rbac/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://speedle.io/zh/docs/access-control/rbac/</guid>
+      <description>Speedle 如何实现 RBAC 基于角色的访问控制（Role-Based Access Control，RBAC）将角色分配与操作权限分开。Speedle 的角色策略把角色分配给用户、组或其他角色；授权策略则允许角色对资源执行某项操作。评估请求时，引擎会解析当前主体适用的角色。
+当多人承担相同职责时，这种方式可以减少重复配置：修改“读者”的权限，只需调整相关授权策略，无需逐个修改用户。
+验证具有资源范围的角色 把下面两行粘贴到 Playground：
+grant user alice reader on book grant role reader read book 用户填 alice，资源填 book，操作填 read，结果为允许：Alice 获得该资源上的 reader 角色，而此角色具有读取权限。把用户换成 bob，同样请求会被拒绝；Alice 执行 delete 也会被拒绝，因为角色没有删除权限。
+on book 限定了角色分配的资源范围，删除这一限定会改变角色的适用范围。名为 reader 的身份本身不等于获得角色，角色关系应通过明确的角色策略建立。
+角色继承与显式拒绝 角色策略还可以把角色分配给另一个角色。例如，将上面的策略替换为：
+grant user alice editor on book grant role editor reader on book grant role reader read book 相同的 alice / book / read 请求会通过角色链获得允许。角色层级应保持清晰，并验证最终权限。匹配的显式拒绝策略可以覆盖允许策略，因此拥有某个角色并不保证一定允许访问。
+如果决策还依赖部门、密级或资源分类，可以组合使用 ABAC 属性条件。PBAC 策略访问控制说明管理与执行职责，授权决策文档提供角色查询 API。</description>
+    </item>
+    
+    <item>
       <title>Speedle 五分钟入门</title>
       <link>https://speedle.io/zh/quick-start/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
@@ -179,6 +195,36 @@ FooBar 链接示例 巧克力提拉米苏糕点。链接示例
     </item>
     
     <item>
+      <title>ABAC：基于属性的访问控制</title>
+      <link>https://speedle.io/zh/docs/access-control/abac/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://speedle.io/zh/docs/access-control/abac/</guid>
+      <description>Speedle 如何实现 ABAC 基于属性的访问控制（Attribute-Based Access Control，ABAC）使用主体、资源或请求环境的属性判断访问权限。在 Speedle 中，SPDL 条件会结合身份、操作和资源评估运行时属性。应用或可信集成组件需要收集这些属性，并约定一致的名称与类型。
+例如，角色确定 Alice 是读者，密级属性进一步决定她能否阅读某类信息。角色分配部分见 RBAC。
+验证密级条件 将下面的策略粘贴到 Playground：
+grant user alice read book if clearance &amp;gt;= 3 用户填 alice，资源填 book，操作填 read。添加名为 clearance 的属性，选择数值类型，值填 4，结果为允许；将值改为 2，结果为拒绝。字符串 4 与数值 4 并不相同，应使用条件所要求的类型。
+对应的 Playground 请求为：
+{ &amp;#34;subject&amp;#34;: {&amp;#34;principals&amp;#34;: [{&amp;#34;type&amp;#34;: &amp;#34;user&amp;#34;, &amp;#34;name&amp;#34;: &amp;#34;alice&amp;#34;}]}, &amp;#34;resource&amp;#34;: &amp;#34;book&amp;#34;, &amp;#34;action&amp;#34;: &amp;#34;read&amp;#34;, &amp;#34;attributes&amp;#34;: [{&amp;#34;name&amp;#34;: &amp;#34;clearance&amp;#34;, &amp;#34;type&amp;#34;: &amp;#34;numeric&amp;#34;, &amp;#34;value&amp;#34;: 4}] } Playground 使用带类型的属性数组。对已部署 ADS 构造请求时，应以决策 API 参考为准，浏览器适配层不能替代服务 API 契约。
+确保属性可信 密级、租户归属等属性应来自可信服务，而不是任由客户端填写。资源分类也需要显式映射到请求中，Speedle 不会自动读取应用数据库字段。不同身份域中的同名用户应通过身份域区分。</description>
+    </item>
+    
+    <item>
+      <title>PBAC：基于策略的访问控制</title>
+      <link>https://speedle.io/zh/docs/access-control/pbac/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://speedle.io/zh/docs/access-control/pbac/</guid>
+      <description>这里的 PBAC 是什么 基于策略的访问控制（Policy-Based Access Control，PBAC）将授权规则表达为可管理的策略，减少分散在业务代码中的权限判断。Speedle+ 提供安全策略定义语言（SPDL）、策略管理服务（PMS），以及授权决策服务（ADS）或嵌入式评估引擎。
+PBAC 描述规则如何表达和管理；RBAC描述角色关系；ABAC描述属性条件。同一个 Speedle 策略体系可以同时使用角色与属性。
+从策略到执行  约定服务、主体名称、资源标识与操作名称。 通过 PMS创建授权策略和角色策略。 确认决策服务已接收到预期的策略版本。 将当前主体、资源、操作及可信属性发送给 ADS。 由应用、网关或其他执行点落实决策，并明确处理超时和评估错误。  集中管理并不免除应用执行决策的职责，也不意味着每个引擎都能瞬间收到更新。应验证所选策略存储的更新行为。
+验证拒绝优先 在 Playground 中输入：
+grant user alice read book deny user alice read book 用户为 alice、资源为 book、操作为 read 时，两条策略都匹配，显式拒绝优先，结果为 Deny。删除第二行后，结果为 Allow；把用户改为 bob，没有适用的允许策略，默认拒绝。
+像审查代码一样审查策略 将预期规则和代表性请求纳入版本控制，检查允许、显式拒绝、未匹配请求、角色范围和属性边界。记录验证的策略版本，以及它如何到达线上决策服务。浏览器本地演示不能证明生产环境的延迟或更新一致性。
+架构、SPDL 参考和 XACML 比较进一步说明管理与决策的边界。</description>
+    </item>
+    
+    <item>
       <title>授权查询</title>
       <link>https://speedle.io/zh/docs/decisions/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
@@ -210,6 +256,32 @@ POLICY = EFFECT SUBJECT from &amp;lt;identity domain&amp;lt; ACTION RESOURCE if 
     </item>
     
     <item>
+      <title>身份与 IAM 集成</title>
+      <link>https://speedle.io/zh/docs/access-control/identity-iam/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://speedle.io/zh/docs/access-control/identity-iam/</guid>
+      <description>Speedle 在 IAM 中的位置 身份与访问管理（Identity and Access Management，IAM）涉及身份建立、用户认证、账号生命周期和访问控制。Speedle+ 提供其中的授权引擎：判断已识别的用户、组或服务可以执行哪些操作。它不提供完整的身份目录、登录服务或账号开通系统。
+   职责 通常由谁负责     账号、凭据与登录 身份提供方与目录服务   可信主体名称、组及属性 应用集成组件或令牌断言服务   授权策略与角色策略 Speedle 策略管理服务   访问决策 Speedle 授权决策服务或嵌入式引擎   对实际资源执行决策 应用或网关    提供可信身份 可信应用可以在决策请求中直接提供主体身份。另一种方式是配置令牌断言服务，验证并解析令牌，返回策略评估使用的身份。断言服务应针对实际身份提供方实现和配置；存在 webhook 接口不等于自动兼容所有令牌格式或协议。
+不能让不可信调用者仅凭填写他人用户名就能冒充身份。应认证调用方，从可信来源获取身份和属性，并按安全文档保护决策服务与管理服务。
+区分身份域 不同身份域中可能存在同名用户。在 Playground 中尝试：
+grant user alice from workforce read book 用户填 alice，身份域填 workforce，资源填 book，操作填 read，结果为允许；只把身份域改为 partner，结果为拒绝。身份域字符串是请求中的显式命名空间，本身不能证明已经完成身份认证。
+对应的 Playground 请求为：
+{ &amp;#34;subject&amp;#34;: {&amp;#34;principals&amp;#34;: [{&amp;#34;type&amp;#34;: &amp;#34;user&amp;#34;, &amp;#34;name&amp;#34;: &amp;#34;alice&amp;#34;, &amp;#34;idd&amp;#34;: &amp;#34;workforce&amp;#34;}]}, &amp;#34;resource&amp;#34;: &amp;#34;book&amp;#34;, &amp;#34;action&amp;#34;: &amp;#34;read&amp;#34; } 从策略中删去 from workforce 后，该用户名将可以跨身份域匹配。多租户集成时应仔细审查这一选择。浏览器演示允许直接填写身份进行实验，不会认证用户或调用令牌断言服务。</description>
+    </item>
+    
+    <item>
+      <title>Oracle Entitlements Server（OES）与 Speedle</title>
+      <link>https://speedle.io/zh/docs/access-control/oes/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://speedle.io/zh/docs/access-control/oes/</guid>
+      <description>为什么比较 OES 与 Speedle？ Oracle Entitlements Server（OES，Oracle 权限管理服务器）与 Speedle+ 都面向外部化的细粒度授权。Oracle 的 OES 架构文档介绍集中式策略管理，以及评估和执行授权策略的安全模块。Speedle 则通过自己的服务与 API 提供策略管理和授权决策。
+在审查既有 OES 集成或评估开源授权引擎时，可以比较二者的职责。职责相近并不意味着能够直接替换。应核对实际使用的 OES 版本文档；本文不宣称兼容 OES 策略导出格式、API 或安全模块。
+比较组件职责    关注点 OES 概念 Speedle+ 方式     策略管理 集中式策略管理 策略管理服务（PMS）   授权评估 安全模块及其决策集成 授权决策服务（ADS）或嵌入式 Go 引擎   应用执行 与 OES 安全模块集成 应用或网关执行 Speedle 决策   策略表达 OES 策略模型及版本相关格式 SPDL 与 Speedle 管理 API 数据模型   身份上下文 配置的身份与属性集成 显式主体、身份域、属性和已配置的令牌断言服务    实际组件边界见 Speedle 架构。表格对照的是职责，不代表二进制或通信协议兼容。</description>
+    </item>
+    
+    <item>
       <title>令牌用户身份断言</title>
       <link>https://speedle.io/zh/docs/assertor/</link>
       <pubDate>Mon, 21 Jan 2019 09:28:30 +0800</pubDate>
@@ -223,6 +295,18 @@ Speedle 评估引擎检查传入请求是否包含身份令牌。 如果是，�
 示例断言服务 备注: 此示例断言器服务仅用于测试目的。
 示例断言器服务源代码：
 package main import ( &amp;#34;encoding/json&amp;#34; &amp;#34;log&amp;#34; &amp;#34;net/http&amp;#34; ) const ( // user type of Principal  PRINCIPAL_TYPE_USER = &amp;#34;user&amp;#34; // group type of Principal  PRINCIPAL_TYPE_GROUP = &amp;#34;group&amp;#34; // entity type of Principal  PRINCIPAL_TYPE_ENTITY = &amp;#34;entity&amp;#34; ) // Principal of Speedle type Principal struct { Type string `json:&amp;#34;type,omitempty&amp;#34;` Name string `json:&amp;#34;name,omitempty&amp;#34;` IDD string `json:&amp;#34;idd,omitempty&amp;#34;` } // AssertResponse assertion response type AssertResponse struct { Principals []*Principal `json:&amp;#34;principals,omitempty&amp;#34;` Attributes map[string]interface{} `json:&amp;#34;attributes,omitempty&amp;#34;` // non zero indicates errors happen  ErrCode int `json:&amp;#34;errCode&amp;#34;` ErrMessage string `json:&amp;#34;errMessage,omitempty&amp;#34;` } // SampleAsserter for testing only type SampleAsserter struct { } func (a SampleAsserter) ServeHTTP(w http.</description>
+    </item>
+    
+    <item>
+      <title>XACML、SPDL 与授权架构</title>
+      <link>https://speedle.io/zh/docs/access-control/xacml/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://speedle.io/zh/docs/access-control/xacml/</guid>
+      <description>Speedle 与 XACML 有什么关系？ 可扩展访问控制标记语言（eXtensible Access Control Markup Language，XACML）是 OASIS 访问控制标准，定义策略及请求、响应等概念。Speedle+ 使用自己的安全策略定义语言（SPDL）与 API。XACML 的行为以 OASIS XACML 3.0 标准为准；本文说明架构职责的对应关系，不代表 XACML 标准符合性声明。
+对应组件职责    XACML 概念 职责 Speedle+ 中的对应方式     PAP：策略管理点 管理授权策略 策略管理服务（PMS）   PDP：策略决策点 评估授权请求 授权决策服务（ADS）或嵌入式引擎   PEP：策略执行点 对实际操作执行决策 调用 Speedle 的应用、网关或集成组件   PIP：策略信息点 提供决策使用的属性 可信应用数据及配置的身份、属性集成；不代表内置 XACML PIP 接口    现有架构文档已经介绍 PAP/PDP 的对应关系。决策拒绝或评估失败时，执行点仍需阻止实际操作。
+策略语法与决策语义 SPDL 授权语句指定效果、主体、操作和资源，并可附加条件：
+grant user alice read book if clearance &amp;gt;= 3 在 Playground 中，用户为 alice、操作为 read、资源为 book、数值属性 clearance = 4 时，该语句允许访问；值为 2 时不满足条件。</description>
     </item>
     
     <item>

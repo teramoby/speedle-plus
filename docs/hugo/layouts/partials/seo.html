@@ -1,0 +1,22 @@
+{{- $description := .Description | default (.Summary | plainify) | default .Site.Params.description | default .Site.Title -}}
+{{- $description = $description | htmlUnescape | truncate 180 -}}
+<meta name="description" content="{{ $description }}">
+{{ range sort .AllTranslations "Lang" -}}
+<link rel="alternate" hreflang="{{ if eq .Lang "zh" }}zh-CN{{ else }}en{{ end }}" href="{{ .Permalink }}">
+{{ if eq .Lang "en" }}<link rel="alternate" hreflang="x-default" href="{{ .Permalink }}">{{ end }}
+{{- end }}
+<meta property="og:type" content="{{ if .IsPage }}article{{ else }}website{{ end }}">
+<meta property="og:site_name" content="Speedle+">
+<meta property="og:title" content="{{ .Title }}">
+<meta property="og:description" content="{{ $description }}">
+<meta property="og:url" content="{{ .Permalink }}">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="{{ .Title }}">
+<meta name="twitter:description" content="{{ $description }}">
+{{- $kind := "WebPage" -}}
+{{- if and .IsPage (eq .Section "docs") }}{{ $kind = "TechArticle" }}{{ end -}}
+{{- $schema := dict "@context" "https://schema.org" "@type" $kind "@id" (printf "%s#page" .Permalink) "url" .Permalink "name" .Title "description" $description "inLanguage" (cond (eq .Lang "zh") "zh-CN" "en") "isPartOf" (dict "@id" "https://speedle.io/#website") "about" (dict "@id" "https://speedle.io/#software") "keywords" (.Params.keywords | default (slice "Speedle+")) -}}
+{{/* Hugo 0.48's official Go toolchain treats JSON-LD as HTML, unlike newer Go.
+     Render the complete element as HTML so JSON is not entity-escaped. jsonify
+     still escapes HTML-sensitive characters inside JSON string values. */}}
+{{ printf "<script type=\"application/ld+json\">%s</script>" ($schema | jsonify) | safeHTML }}

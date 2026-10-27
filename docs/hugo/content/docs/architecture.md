@@ -29,3 +29,5 @@ This diagram shows the interaction between these components.
 (4) Users systems invoke the Authorization Decision Service API for authorization checks.
 
 If you are familiar with the XACML model, the Policy Management Service (PMS) serves as the Policy Administration Point (PAP), and the Authorization Decision Service (ADS) serves as the Policy Decision Point (PDP).
+
+See [authorization and access control](/docs/access-control/) for RBAC, ABAC and PBAC examples, [identity and IAM integration](/docs/access-control/identity-iam/) for identity boundaries, and the [OES](/docs/access-control/oes/) and [XACML](/docs/access-control/xacml/) comparisons for architecture and migration considerations.

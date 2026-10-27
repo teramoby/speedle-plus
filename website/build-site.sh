@@ -6,3 +6,4 @@ HUGO_BIN=${HUGO_BIN:-hugo}
 "$HUGO_BIN" version | grep -E 'v0\.48([ /-]|$)'
 "$HUGO_BIN" --source "$ROOT/docs/hugo" --destination "$OUT"
 python3 "$ROOT/website/localize-links.py" "$OUT"
+python3 "$ROOT/website/tests/check_seo.py" "$OUT"
