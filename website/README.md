@@ -27,6 +27,21 @@ pages, `中文` on English pages), including inside the mobile navigation menu.
   the snapshot where it has the page (and anchor), and otherwise lead to the
   current site.
 
+The release gate also executes every Bash block from both quick-start guides
+against native PMS/ADS with Go 1.26.10 and 1.27.3 (`tests/check_quick_start.py`).
+It performs a public shallow clone, checks out the captured CI revision, builds
+the three executables, creates and lists policies, and checks direct/role grants
+and denials. On Linux the documented service and client commands run in
+unprivileged user/network/PID namespaces with a private loopback interface, so
+existing host services are untouched; this needs util-linux and iproute2. The
+checks run on the self-hosted build runner through `playground-engine/verify.sh`.
+
+Both quick-start guides enable `copycommands` with the page-specific
+`command-copy.css` and `command-copy.js` assets. Executable Bash blocks gain a
+keyboard-accessible copy control and localized feedback; example output is left
+alone. Code blocks use the dark `dracula` highlight style to match their dark
+background; archived snapshots were recoloured to the same palette.
+
 ## Generate and publish
 
 Use the existing Hugo 0.48 toolchain, and always render into a separate directory:

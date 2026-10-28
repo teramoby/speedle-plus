@@ -91,7 +91,7 @@ headingSelector: 'h2'
 <h2 id="overview">Overview</h2>
 
 <p>The following two open source projects are used to process log messages,</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">1. https://github.com/sirupsen/logrus
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4">1. https://github.com/sirupsen/logrus
 2. https://github.com/natefinch/lumberjack</pre></div>
 <p>Logrus is a structured logger for Go (golang), and completely API compatible with the golang standard library logger. Note that logrus doesn&rsquo;t support log rotation, and it is exactly the reason why we introduce the second project lumberjack, which provides a rolling logger. Logrus communicates with lumberjack using the io.Writer interface, please refer to the following diagram,</p>
 
@@ -104,7 +104,7 @@ headingSelector: 'h2'
 <h3 id="configure-logging-via-command-line-arguments">Configure logging via command line arguments</h3>
 
 <p>All the available command line arguments are listed below. The first two items are for logrus, and others are for lumberjack.</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">--log-level string
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4">--log-level string
 --log-formatter string
 --log-reportcaller bool
 --log-filename string
@@ -182,25 +182,25 @@ headingSelector: 'h2'
 </table>
 
 <p>The following two examples are in text and json format respectively,</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"># text
-time=&#34;2015-03-26T01:27:38-04:00&#34; level=debug msg=&#34;Started observing beach&#34; animal=walrus number=8</pre></div><div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"># json
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"># text
+time=&#34;2015-03-26T01:27:38-04:00&#34; level=debug msg=&#34;Started observing beach&#34; animal=walrus number=8</pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"># json
 {&#34;animal&#34;:&#34;walrus&#34;,&#34;level&#34;:&#34;info&#34;,&#34;msg&#34;:&#34;A group of walrus emerges from the
 ocean&#34;,&#34;size&#34;:10,&#34;time&#34;:&#34;2014-03-10 19:57:38.562264131 -0400 EDT&#34;}</pre></div>
 <h3 id="configure-logging-via-configuration-file">Configure logging via configuration file</h3>
 
 <p>An example is as below. Again, any configuration item is optional as well.</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">{
-    <span style="color:#c41a16">&#34;logConfig&#34;</span>: {
-        <span style="color:#c41a16">&#34;level&#34;</span>: <span style="color:#c41a16">&#34;info&#34;</span>,
-        <span style="color:#c41a16">&#34;formatter&#34;</span>: <span style="color:#c41a16">&#34;text&#34;</span>,
-        <span style="color:#c41a16">&#34;setReportCaller&#34;</span>: <span style="color:#c41a16">&#34;false&#34;</span>,
-        <span style="color:#c41a16">&#34;rotationConfig&#34;</span>: {
-            <span style="color:#c41a16">&#34;filename&#34;</span>: <span style="color:#c41a16">&#34;/mnt/logs/speedle.log&#34;</span>,
-            <span style="color:#c41a16">&#34;maxSize&#34;</span>: <span style="color:#1c01ce">20</span>,
-            <span style="color:#c41a16">&#34;maxBackups&#34;</span>: <span style="color:#1c01ce">5</span>,
-            <span style="color:#c41a16">&#34;maxAge&#34;</span>: <span style="color:#1c01ce">0</span>,
-            <span style="color:#c41a16">&#34;LocalTime&#34;</span>: <span style="color:#a90d91">false</span>,
-            <span style="color:#c41a16">&#34;compress&#34;</span>: <span style="color:#a90d91">false</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">{
+    <span style="color:#f1fa8c">&#34;logConfig&#34;</span>: {
+        <span style="color:#f1fa8c">&#34;level&#34;</span>: <span style="color:#f1fa8c">&#34;info&#34;</span>,
+        <span style="color:#f1fa8c">&#34;formatter&#34;</span>: <span style="color:#f1fa8c">&#34;text&#34;</span>,
+        <span style="color:#f1fa8c">&#34;setReportCaller&#34;</span>: <span style="color:#f1fa8c">&#34;false&#34;</span>,
+        <span style="color:#f1fa8c">&#34;rotationConfig&#34;</span>: {
+            <span style="color:#f1fa8c">&#34;filename&#34;</span>: <span style="color:#f1fa8c">&#34;/mnt/logs/speedle.log&#34;</span>,
+            <span style="color:#f1fa8c">&#34;maxSize&#34;</span>: <span style="color:#bd93f9">20</span>,
+            <span style="color:#f1fa8c">&#34;maxBackups&#34;</span>: <span style="color:#bd93f9">5</span>,
+            <span style="color:#f1fa8c">&#34;maxAge&#34;</span>: <span style="color:#bd93f9">0</span>,
+            <span style="color:#f1fa8c">&#34;LocalTime&#34;</span>: <span style="color:#ff79c6">false</span>,
+            <span style="color:#f1fa8c">&#34;compress&#34;</span>: <span style="color:#ff79c6">false</span>
         }
     }
 }</code></pre></div>
@@ -209,7 +209,7 @@ ocean&#34;,&#34;size&#34;:10,&#34;time&#34;:&#34;2014-03-10 19:57:38.562264131 -
 <p>If Speedle runs as docker containers, then it&rsquo;s more natural to to use the docker&rsquo;s json-file logging driver instead of the open source project natefinch/lumberjack to rotate log files, accordingly json-file logging driver is recommended for this case. Only sirupsen/logrus is needed, in other words, users don&rsquo;t need to configure anything for natefinch/lumberjack at all in this case.</p>
 
 <p>All docker related configuration items, including logging, are configured in /etc/docker/daemon.json. Please refer to <a href="https://docs.docker.com/config/containers/logging/json-file/">docker json-file</a> to get more detailed info on how to configure json-file logging driver. The following snippet is an example,</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">{
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4">{
   &#34;log-driver&#34;: &#34;json-file&#34;,
   &#34;log-opts&#34;: {
     &#34;max-size&#34;: &#34;20m&#34;,
@@ -221,21 +221,21 @@ ocean&#34;,&#34;size&#34;:10,&#34;time&#34;:&#34;2014-03-10 19:57:38.562264131 -
 <h2 id="how-to-add-new-log-messages">How to add new log messages</h2>
 
 <p>Firstly import the log package as below,</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#a90d91">import</span> (
-  <span style="color:#000">log</span> <span style="color:#c41a16">&#34;github.com/sirupsen/logrus&#34;</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#ff79c6">import</span> (
+  <span style="color:#f8f8f2">log</span> <span style="color:#f1fa8c">&#34;github.com/sirupsen/logrus&#34;</span>
 )</code></pre></div>
 <p>Secondly output any log messages anywhere you want. For example,</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">  <span style="color:#000">log</span>.<span style="color:#000">Debug</span>(<span style="color:#c41a16">&#34;This is a debug log entry&#34;</span>)
-  <span style="color:#000">log</span>.<span style="color:#000">Info</span>(<span style="color:#c41a16">&#34;This is a info log entry&#34;</span>)
-  <span style="color:#000">log</span>.<span style="color:#000">Warn</span>(<span style="color:#c41a16">&#34;This is a warning log entry&#34;</span>)
-  <span style="color:#000">log</span>.<span style="color:#000">Warning</span>(<span style="color:#c41a16">&#34;This is a warning log entry again&#34;</span>)
-  <span style="color:#000">log</span>.<span style="color:#000">Error</span>(<span style="color:#c41a16">&#34;This is a error log entry&#34;</span>)</code></pre></div>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">  <span style="color:#f8f8f2">log</span>.<span style="color:#f8f8f2">Debug</span>(<span style="color:#f1fa8c">&#34;This is a debug log entry&#34;</span>)
+  <span style="color:#f8f8f2">log</span>.<span style="color:#f8f8f2">Info</span>(<span style="color:#f1fa8c">&#34;This is a info log entry&#34;</span>)
+  <span style="color:#f8f8f2">log</span>.<span style="color:#f8f8f2">Warn</span>(<span style="color:#f1fa8c">&#34;This is a warning log entry&#34;</span>)
+  <span style="color:#f8f8f2">log</span>.<span style="color:#f8f8f2">Warning</span>(<span style="color:#f1fa8c">&#34;This is a warning log entry again&#34;</span>)
+  <span style="color:#f8f8f2">log</span>.<span style="color:#f8f8f2">Error</span>(<span style="color:#f1fa8c">&#34;This is a error log entry&#34;</span>)</code></pre></div>
 <p>Please refer to <a href="https://github.com/teramoby/speedle-plus/blob/master/logging/demo/demo.go">speedle/logging/demo/demo.go</a> to get more detailed info.</p>
 
 <h2 id="integration-with-3rd-party-log-collectors">Integration with 3rd-party log collectors</h2>
 
 <p>Speedle logs can be easily integrated with 3rd-party log collectors, such as fluentd or filebeat. What the users need to do is to configure fluentd or filebeat to monitor the log files generated by Speedle. The following configuration snippet is an example of using fluentd&rsquo;s in_tail input plugin to collect docker containers&rsquo; log, including Speedle&rsquo;s log of course if Speedle runs as containers.</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">    &lt;source&gt;
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4">    &lt;source&gt;
       @type tail
       path /var/lib/docker/containers/*/*.log
       pos_file /data/fluentd/fluentd.log.pos

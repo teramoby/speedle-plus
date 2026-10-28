@@ -130,17 +130,17 @@ headingSelector: 'h3'
 <p>Docker users can implement a docker authorization plugin for authorization check, the docker official document &ldquo;Access authorization plugin&rdquo; shows the details.</p>
 
 <h3 id="build">Build</h3>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">git clone git@github.com:teramoby/speedle-plus.git
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">git clone git@github.com:teramoby/speedle-plus.git
 
-<span style="color:#177500"># make sure the speedle golang adsclient code is in your $GOPATH/src package.</span>
+<span style="color:#6272a4"># make sure the speedle golang adsclient code is in your $GOPATH/src package.</span>
 
-cp -r samples/adsclient/go/src/speedle/ <span style="color:#000">$GOPATH</span>/src
+cp -r samples/adsclient/go/src/speedle/ <span style="color:#f8f8f2">$GOPATH</span>/src
 
-<span style="color:#177500"># Get docker authorization plugin</span>
+<span style="color:#6272a4"># Get docker authorization plugin</span>
 
 go get github.com/docker/go-plugins-helpers/authorization
 
-<span style="color:#a90d91">cd</span> samples/integration/docker-integration
+<span style="color:#ff79c6">cd</span> samples/integration/docker-integration
 make</code></pre></div>
 <p>Executable <code>speedle-docker-plugin</code> could be found in \$HOME/go/bin</p>
 
@@ -153,50 +153,50 @@ make</code></pre></div>
 <ul>
 <li>First stop docker</li>
 </ul>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">sudo systemctl stop docker</code></pre></div>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">sudo systemctl stop docker</code></pre></div>
 <ul>
 <li>Plugin must be run before docker. If the plugin is run behind a HTTPS proxy, set proxy first.</li>
 </ul>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#177500"># sudo $HOME/go/bin/speedle-docker-plugin  &lt;speedle host&gt; &lt;speedle name&gt;</span>
-<span style="color:#177500"># e.g. if speedle is running on localhost with service name=docker.</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#6272a4"># sudo $HOME/go/bin/speedle-docker-plugin  &lt;speedle host&gt; &lt;speedle name&gt;</span>
+<span style="color:#6272a4"># e.g. if speedle is running on localhost with service name=docker.</span>
 
-sudo <span style="color:#000">$HOME</span>/go/bin/speedle-docker-plugin localhost docker</code></pre></div>
+sudo <span style="color:#f8f8f2">$HOME</span>/go/bin/speedle-docker-plugin localhost docker</code></pre></div>
 <ul>
 <li>Run docker engine with plugin</li>
 </ul>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">sudo /usr/bin/dockerd --selinux-enabled --authorization-plugin<span style="color:#000">=</span>speedle-docker-plugin</code></pre></div>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">sudo /usr/bin/dockerd --selinux-enabled --authorization-plugin<span style="color:#f8f8f2">=</span>speedle-docker-plugin</code></pre></div>
 <h3 id="testing">Testing</h3>
 
 <ul>
 <li>Test if containers could be listed. Expected: denied, because service &ldquo;docker&rdquo; is not created.</li>
 </ul>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker ps
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker ps
 Error response from daemon: authorization denied by plugin speedle-docker-plugin:</code></pre></div>
 <ul>
 <li>Create a service and grant root to all resources.</li>
 </ul>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">spctl create service docker
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">spctl create service docker
 service created
-<span style="color:#000">{</span><span style="color:#c41a16">&#34;name&#34;</span>:<span style="color:#c41a16">&#34;docker&#34;</span>,<span style="color:#c41a16">&#34;type&#34;</span>:<span style="color:#c41a16">&#34;application&#34;</span><span style="color:#000">}</span>
+<span style="color:#f8f8f2">{</span><span style="color:#f1fa8c">&#34;name&#34;</span>:<span style="color:#f1fa8c">&#34;docker&#34;</span>,<span style="color:#f1fa8c">&#34;type&#34;</span>:<span style="color:#f1fa8c">&#34;application&#34;</span><span style="color:#f8f8f2">}</span>
 
-spctl create policy root-policy -c <span style="color:#c41a16">&#34;grant user root GET,POST,PUT,DELETE expr:.*&#34;</span> --service-name<span style="color:#000">=</span>docker
+spctl create policy root-policy -c <span style="color:#f1fa8c">&#34;grant user root GET,POST,PUT,DELETE expr:.*&#34;</span> --service-name<span style="color:#f8f8f2">=</span>docker
 policy created
-<span style="color:#000">{</span><span style="color:#c41a16">&#34;id&#34;</span>:<span style="color:#c41a16">&#34;e6e0ec73-1b7e-4816-8c7e-b4bc56561cf2&#34;</span>,<span style="color:#c41a16">&#34;name&#34;</span>:<span style="color:#c41a16">&#34;root-policy&#34;</span>,<span style="color:#c41a16">&#34;effect&#34;</span>:<span style="color:#c41a16">&#34;grant&#34;</span>,<span style="color:#c41a16">&#34;permissions&#34;</span>:<span style="color:#000">[{</span><span style="color:#c41a16">&#34;resourceExpression&#34;</span>:<span style="color:#c41a16">&#34;.*&#34;</span>,<span style="color:#c41a16">&#34;actions&#34;</span>:<span style="color:#000">[</span><span style="color:#c41a16">&#34;GET&#34;</span>,<span style="color:#c41a16">&#34;POST&#34;</span>,<span style="color:#c41a16">&#34;PUT&#34;</span>,<span style="color:#c41a16">&#34;DELETE&#34;</span><span style="color:#000">]}]</span>,<span style="color:#c41a16">&#34;principals&#34;</span>:<span style="color:#000">[</span><span style="color:#c41a16">&#34;user:root&#34;</span><span style="color:#000">]}</span></code></pre></div>
+<span style="color:#f8f8f2">{</span><span style="color:#f1fa8c">&#34;id&#34;</span>:<span style="color:#f1fa8c">&#34;e6e0ec73-1b7e-4816-8c7e-b4bc56561cf2&#34;</span>,<span style="color:#f1fa8c">&#34;name&#34;</span>:<span style="color:#f1fa8c">&#34;root-policy&#34;</span>,<span style="color:#f1fa8c">&#34;effect&#34;</span>:<span style="color:#f1fa8c">&#34;grant&#34;</span>,<span style="color:#f1fa8c">&#34;permissions&#34;</span>:<span style="color:#f8f8f2">[{</span><span style="color:#f1fa8c">&#34;resourceExpression&#34;</span>:<span style="color:#f1fa8c">&#34;.*&#34;</span>,<span style="color:#f1fa8c">&#34;actions&#34;</span>:<span style="color:#f8f8f2">[</span><span style="color:#f1fa8c">&#34;GET&#34;</span>,<span style="color:#f1fa8c">&#34;POST&#34;</span>,<span style="color:#f1fa8c">&#34;PUT&#34;</span>,<span style="color:#f1fa8c">&#34;DELETE&#34;</span><span style="color:#f8f8f2">]}]</span>,<span style="color:#f1fa8c">&#34;principals&#34;</span>:<span style="color:#f8f8f2">[</span><span style="color:#f1fa8c">&#34;user:root&#34;</span><span style="color:#f8f8f2">]}</span></code></pre></div>
 <ul>
 <li>Test if containers could be listed.</li>
 </ul>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker ps
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker ps
 CONTAINER ID        IMAGE               COMMAND             CREATED             STATUS              PORTS               NAMES</code></pre></div>
 <ul>
 <li>Deny user root to list containers.</li>
 </ul>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">spctl create policy root-deny-policy -c <span style="color:#c41a16">&#34;deny user root GET expr:.*&#34;</span> --service-name docker
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">spctl create policy root-deny-policy -c <span style="color:#f1fa8c">&#34;deny user root GET expr:.*&#34;</span> --service-name docker
 policy created
-<span style="color:#000">{</span><span style="color:#c41a16">&#34;id&#34;</span>:<span style="color:#c41a16">&#34;26edcfb5-22ee-493a-8fde-f757c615dd9c&#34;</span>,<span style="color:#c41a16">&#34;name&#34;</span>:<span style="color:#c41a16">&#34;root-deny-policy&#34;</span>,<span style="color:#c41a16">&#34;effect&#34;</span>:<span style="color:#c41a16">&#34;deny&#34;</span>,<span style="color:#c41a16">&#34;permissions&#34;</span>:<span style="color:#000">[{</span><span style="color:#c41a16">&#34;resource&#34;</span>:<span style="color:#c41a16">&#34;containers&#34;</span>,<span style="color:#c41a16">&#34;actions&#34;</span>:<span style="color:#000">[</span><span style="color:#c41a16">&#34;GET&#34;</span><span style="color:#000">]}]</span>,<span style="color:#c41a16">&#34;principals&#34;</span>:<span style="color:#000">[</span><span style="color:#c41a16">&#34;user:root&#34;</span><span style="color:#000">]</span></code></pre></div>
+<span style="color:#f8f8f2">{</span><span style="color:#f1fa8c">&#34;id&#34;</span>:<span style="color:#f1fa8c">&#34;26edcfb5-22ee-493a-8fde-f757c615dd9c&#34;</span>,<span style="color:#f1fa8c">&#34;name&#34;</span>:<span style="color:#f1fa8c">&#34;root-deny-policy&#34;</span>,<span style="color:#f1fa8c">&#34;effect&#34;</span>:<span style="color:#f1fa8c">&#34;deny&#34;</span>,<span style="color:#f1fa8c">&#34;permissions&#34;</span>:<span style="color:#f8f8f2">[{</span><span style="color:#f1fa8c">&#34;resource&#34;</span>:<span style="color:#f1fa8c">&#34;containers&#34;</span>,<span style="color:#f1fa8c">&#34;actions&#34;</span>:<span style="color:#f8f8f2">[</span><span style="color:#f1fa8c">&#34;GET&#34;</span><span style="color:#f8f8f2">]}]</span>,<span style="color:#f1fa8c">&#34;principals&#34;</span>:<span style="color:#f8f8f2">[</span><span style="color:#f1fa8c">&#34;user:root&#34;</span><span style="color:#f8f8f2">]</span></code></pre></div>
 <ul>
 <li>Test if container could be listed</li>
 </ul>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker ps
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker ps
 Error response from daemon: authorization denied by plugin speedle-docker-plugin:</code></pre></div>
     </div>
   </div>

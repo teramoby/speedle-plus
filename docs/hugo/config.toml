@@ -8,7 +8,7 @@ description = "Speedle+ is an open-source authorization engine for centralized R
 Paginate = 4
 pygmentsCodefences = true
 pygmentsCodefencesGuessSyntax = true
-pygmentsStyle = "xcode"
+pygmentsStyle = "dracula"
 
 defaultContentLanguage = "en"
 defaultContentLanguageInSubdir = false

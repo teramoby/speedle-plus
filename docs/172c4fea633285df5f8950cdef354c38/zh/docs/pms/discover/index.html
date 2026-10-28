@@ -112,13 +112,13 @@ headingSelector: 'h2'
 <h3 id="step-1-将系统中所有-is-allowed-调用改成-discover-调用">Step 1. 将系统中所有 is-allowed 调用改成 discover 调用</h3>
 
 <p>如果你的系统是通过 RESTFul API 来调 is-allowed, 这种情况下，只需将 is-allowed endpoint 改成 discover endpoint, 如下所示：</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">http://localhost:6734/authz-check/v1/is-allowed ---&gt; http://localhost:6734/authz-check/v1/discover</pre></div>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4">http://localhost:6734/authz-check/v1/is-allowed ---&gt; http://localhost:6734/authz-check/v1/discover</pre></div>
 <p>如果你的系统是通过 Grpc 或者 golang API 来调 is-allowed, 那么需要将所有的 is-allowed 调用改成 discover 调用。重新编译，并重启系统确保修改生效。</p>
 
 <h3 id="step-2-optional-使用命令行工具不间断发现-authorization-请求">Step 2. [optional] 使用命令行工具不间断发现 authorization 请求</h3>
 
 <p>使用 spctl discover request 命令来发现某一个服务下的所有 authorization 请求。 使用 &ndash;force 来不间断发现 authorization 请求。</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">spctl discover request --last --force --service-name=YOUR_SERVICE_NAME</pre></div>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4">spctl discover request --last --force --service-name=YOUR_SERVICE_NAME</pre></div>
 <p>保持窗口打开，这样你可以看到下一步中的 authotization 请求。</p>
 
 <h3 id="step-3-访问系统中的被保护资源">Step 3. 访问系统中的被保护资源</h3>
@@ -128,17 +128,17 @@ headingSelector: 'h2'
 <h3 id="step-4-基于访问生成对应的-policy">Step 4. 基于访问生成对应的 Policy</h3>
 
 <p>使用 spctl discover policy 命令来为某个 service 生成 json 格式的 policy 定义。在这个例子中, 生成的 policy 存入 service.json 文件.</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">spctl discover policy --service-name=YOUR_SERVICE_NAME &gt; service.json</pre></div>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4">spctl discover policy --service-name=YOUR_SERVICE_NAME &gt; service.json</pre></div>
 <h3 id="step-5-optional-将生成的-policy-导入到-speedle-中">Step 5. [optional] 将生成的 policy 导入到 Speedle 中</h3>
 
 <p>使用 spctl create service 将上一步生成的 policy 导入 Speedle.</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">spctl create service --json-file service.json</pre></div>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4">spctl create service --json-file service.json</pre></div>
 <h3 id="step-6-optional-将系统中所有-discover-调用改成-is-allowed-调用">Step 6. [optional]将系统中所有 discover 调用改成 is-allowed 调用</h3>
 
 <p>最后别忘了将 discovery mode 切回正常模式。也就是 step 1 的逆操作。</p>
 
 <h2 id="discover-命令参考">Discover 命令参考</h2>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">$ ./spctl discover --help
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4">$ ./spctl discover --help
 discover request or policy for services
 
 Usage:

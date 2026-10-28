@@ -116,17 +116,17 @@
 <p>See <a href="https://golang.org/doc/install">https://golang.org/doc/install</a></p>
 
 <p>If you use Oracle Linux, simply run one of below commmands.</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ sudo yum install -y oracle-golang-release-el7
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ sudo yum install -y oracle-golang-release-el7
 $ sudo yum install -y golang</code></pre></div>
 <h3 id="2-set-the-go-environment-variables">2. Set the Go environment variables</h3>
 
 <p><code>GOROOT</code> is the folder where you installed Go.<br />
 <code>GOPATH</code> is the folder where your Go projects are stored.</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ <span style="color:#a90d91">export</span> <span style="color:#000">GOROOT</span><span style="color:#000">=</span>/scratch/tools/go
-$ <span style="color:#a90d91">export</span> <span style="color:#000">GOPATH</span><span style="color:#000">=</span>/scratch/xuwwang/go</code></pre></div>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ <span style="color:#ff79c6">export</span> <span style="color:#f8f8f2">GOROOT</span><span style="color:#f8f8f2">=</span>/scratch/tools/go
+$ <span style="color:#ff79c6">export</span> <span style="color:#f8f8f2">GOPATH</span><span style="color:#f8f8f2">=</span>/scratch/xuwwang/go</code></pre></div>
 <h2 id="download-source-code-and-build-speedle">Download Source Code and Build Speedle</h2>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ go get github.com/teramoby/speedle-plus/cmd/...
-$ ls <span style="color:#000">$GOPATH</span>/bin
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ go get github.com/teramoby/speedle-plus/cmd/...
+$ ls <span style="color:#f8f8f2">$GOPATH</span>/bin
 spctl  speedle-ads  speedle-pms</code></pre></div>
 <p>Three binary files are generated in the <code>$GOPATH/bin</code> directory:</p>
 
@@ -139,32 +139,32 @@ spctl  speedle-ads  speedle-pms</code></pre></div>
 <h2 id="run-speedle">Run Speedle</h2>
 
 <h3 id="1-start-the-policy-management-service">1. Start the Policy Management Service</h3>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ <span style="color:#a90d91">cd</span> <span style="color:#000">$GOPATH</span>/bin
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ <span style="color:#ff79c6">cd</span> <span style="color:#f8f8f2">$GOPATH</span>/bin
 $ ./speedle-pms --store-type file</code></pre></div>
 <p>Note: A default policy store file is created at <code>/tmp/speedle-test-file-store.json</code>.</p>
 
 <h3 id="2-create-policies-using-spctl">2. Create policies using spctl</h3>
 
 <p>2.1.  Create a service container for the authorization and role policies.</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ ./spctl create service mysvc</code></pre></div>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ ./spctl create service mysvc</code></pre></div>
 <p>2.2. Create authorization policies in the mysvc service.</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ ./spctl create policy -c <span style="color:#c41a16">&#34;grant user user1 get,del res1&#34;</span> --service-name<span style="color:#000">=</span>mysvc
-$ ./spctl create policy -c <span style="color:#c41a16">&#34;grant role role2 get,del res2&#34;</span> --service-name<span style="color:#000">=</span>mysvc</code></pre></div>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ ./spctl create policy -c <span style="color:#f1fa8c">&#34;grant user user1 get,del res1&#34;</span> --service-name<span style="color:#f8f8f2">=</span>mysvc
+$ ./spctl create policy -c <span style="color:#f1fa8c">&#34;grant role role2 get,del res2&#34;</span> --service-name<span style="color:#f8f8f2">=</span>mysvc</code></pre></div>
 <p>2.3. Create a role policy in the mysvc service.</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ ./spctl create rolepolicy -c <span style="color:#c41a16">&#34;grant user user2 role2 on res2&#34;</span> --service-name<span style="color:#000">=</span>mysvc</code></pre></div>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ ./spctl create rolepolicy -c <span style="color:#f1fa8c">&#34;grant user user2 role2 on res2&#34;</span> --service-name<span style="color:#f8f8f2">=</span>mysvc</code></pre></div>
 <p>2.4. List all services</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ <span style="color:#a90d91">cd</span> <span style="color:#000">$GOPATH</span>/bin
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ <span style="color:#ff79c6">cd</span> <span style="color:#f8f8f2">$GOPATH</span>/bin
 $ ./spctl get service --all</code></pre></div>
 <p>The content of service mysvc displays.</p>
 
 <h3 id="3-start-the-authorization-decision-service">3. Start the Authorization Decision Service</h3>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ ./speedle-ads --store-type file</code></pre></div>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ ./speedle-ads --store-type file</code></pre></div>
 <h3 id="4-verify-the-authorization-result">4. Verify the authorization result</h3>
 
 <p>To see the policies you defined take effect, run these commands in a separate command window:</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ curl -X POST --data <span style="color:#c41a16">&#39;{&#34;subject&#34;:{&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;,&#34;name&#34;:&#34;user1&#34;}]},&#34;serviceName&#34;:&#34;mysvc&#34;,&#34;resource&#34;:&#34;res1&#34;,&#34;action&#34;:&#34;get&#34;}&#39;</span> http://127.0.0.1:6734/authz-check/v1/is-allowed
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ curl -X POST --data <span style="color:#f1fa8c">&#39;{&#34;subject&#34;:{&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;,&#34;name&#34;:&#34;user1&#34;}]},&#34;serviceName&#34;:&#34;mysvc&#34;,&#34;resource&#34;:&#34;res1&#34;,&#34;action&#34;:&#34;get&#34;}&#39;</span> http://127.0.0.1:6734/authz-check/v1/is-allowed
 
-$ curl -X POST --data <span style="color:#c41a16">&#39;{&#34;subject&#34;:{&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;,&#34;name&#34;:&#34;user2&#34;}]},&#34;serviceName&#34;:&#34;mysvc&#34;,&#34;resource&#34;:&#34;res2&#34;,&#34;action&#34;:&#34;get&#34;}&#39;</span> http://127.0.0.1:6734/authz-check/v1/is-allowed</code></pre></div>
+$ curl -X POST --data <span style="color:#f1fa8c">&#39;{&#34;subject&#34;:{&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;,&#34;name&#34;:&#34;user2&#34;}]},&#34;serviceName&#34;:&#34;mysvc&#34;,&#34;resource&#34;:&#34;res2&#34;,&#34;action&#34;:&#34;get&#34;}&#39;</span> http://127.0.0.1:6734/authz-check/v1/is-allowed</code></pre></div>
 <p>The result for both commands is allowed:true.</p>
 
 <h3 id="tls-https">TLS/HTTPS</h3>

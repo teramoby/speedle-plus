@@ -146,7 +146,7 @@ headingSelector: 'h2'
 <p><strong>REST API example:</strong></p>
 
 <p><em>Request:</em></p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">curl -X POST  http://localhost:6734/authz-check/v1/is-allowed \
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4">curl -X POST  http://localhost:6734/authz-check/v1/is-allowed \
 -d @- &lt;&lt; EOF
 {
  &#34;subject&#34;: {&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;, &#34;name&#34;:&#34;Alan&#34;}]},
@@ -156,7 +156,7 @@ headingSelector: 'h2'
 }
 EOF</pre></div>
 <p><em>Response:</em></p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">{&#34;allowed&#34;:true,&#34;reason&#34;:0}</pre></div>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4">{&#34;allowed&#34;:true,&#34;reason&#34;:0}</pre></div>
 <p>Here, reason &lsquo;0&rsquo; means that the ADS found the grant policy. The list of reasons and definitions are as follows:</p>
 
 <p><table class="bordered striped">
@@ -221,7 +221,7 @@ EOF</pre></div>
 
 <p><strong>REST API example:</strong><br />
 <em>Request:</em></p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">curl -X POST  http://localhost:6734/authz-check/v1/all-granted-roles \
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4">curl -X POST  http://localhost:6734/authz-check/v1/all-granted-roles \
 -d @- &lt;&lt; EOF
 {
  &#34;subject&#34;: {&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;, &#34;name&#34;:&#34;Alan&#34;}]},
@@ -229,7 +229,7 @@ EOF</pre></div>
 }
 EOF</pre></div>
 <p><em>Response:</em></p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">[&#34;role1&#34;, &#34;role2&#34;]</pre></div>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4">[&#34;role1&#34;, &#34;role2&#34;]</pre></div>
 <h3 id="get-permissions">Get Permissions</h3>
 
 <p>Get all permissions granted to the subject in a request.</p>
@@ -257,7 +257,7 @@ EOF</pre></div>
 
 <p><strong>REST API example:</strong><br />
 <em>Request:</em></p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">curl -X POST  http://localhost:6734/authz-check/v1/all-granted-permissions \
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4">curl -X POST  http://localhost:6734/authz-check/v1/all-granted-permissions \
 -d @- &lt;&lt; EOF
 {
  &#34;subject&#34;: {&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;, &#34;name&#34;:&#34;Alan&#34;}]},
@@ -265,7 +265,7 @@ EOF</pre></div>
 }
 EOF</pre></div>
 <p><em>Response:</em></p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">[{
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4">[{
     &#34;resource&#34;:&#34;/books/HarryPotter&#34;,
     &#34;actions&#34;:[&#34;download&#34;,&#34;read&#34;]
  },

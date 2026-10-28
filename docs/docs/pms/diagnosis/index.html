@@ -132,108 +132,108 @@ headingSelector: 'h2'
 <h2 id="example">Example</h2>
 
 <p>Let&rsquo;s take REST API as example. Assuming you submitted the following authorization decision request,</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl -X POST http://localhost:6734/authz-check/v1/is-allowed -d @- <span style="color:#c41a16">&lt;&lt; EOF
-</span><span style="color:#c41a16">{
-</span><span style="color:#c41a16">    &#34;subject&#34;:{&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;, &#34;name&#34;:&#34;user1&#34;}]},
-</span><span style="color:#c41a16">    &#34;serviceName&#34;: &#34;srv1&#34;,
-</span><span style="color:#c41a16">    &#34;action&#34;: &#34;get&#34;,
-</span><span style="color:#c41a16">    &#34;resource&#34;: &#34;/api/v1/example/res1&#34;
-</span><span style="color:#c41a16">}
-</span><span style="color:#c41a16">EOF</span></code></pre></div>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl -X POST http://localhost:6734/authz-check/v1/is-allowed -d @- <span style="color:#f1fa8c">&lt;&lt; EOF
+</span><span style="color:#f1fa8c">{
+</span><span style="color:#f1fa8c">    &#34;subject&#34;:{&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;, &#34;name&#34;:&#34;user1&#34;}]},
+</span><span style="color:#f1fa8c">    &#34;serviceName&#34;: &#34;srv1&#34;,
+</span><span style="color:#f1fa8c">    &#34;action&#34;: &#34;get&#34;,
+</span><span style="color:#f1fa8c">    &#34;resource&#34;: &#34;/api/v1/example/res1&#34;
+</span><span style="color:#f1fa8c">}
+</span><span style="color:#f1fa8c">EOF</span></code></pre></div>
 <p>And you got the following response,</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#000">{</span><span style="color:#c41a16">&#34;allowed&#34;</span>:false,<span style="color:#c41a16">&#34;reason&#34;</span>:1<span style="color:#000">}</span></code></pre></div>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#ff79c6">{</span><span style="color:#f1fa8c">&#34;allowed&#34;</span>:false,<span style="color:#f1fa8c">&#34;reason&#34;</span>:1<span style="color:#ff79c6">}</span></code></pre></div>
 <p>Afterwards, you want to figure out why the request was denied using the policy diagnosis feature. You just need to replace &ldquo;is-allowed&rdquo; with &ldquo;diagnose&rdquo; in the REST request path, and keep using exactly the same request payload,</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl -X POST http://localhost:6734/authz-check/v1/diagnose -d @- <span style="color:#c41a16">&lt;&lt; EOF
-</span><span style="color:#c41a16">{
-</span><span style="color:#c41a16">    &#34;subject&#34;:{&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;, &#34;name&#34;:&#34;user1&#34;}]},
-</span><span style="color:#c41a16">    &#34;serviceName&#34;: &#34;srv1&#34;,
-</span><span style="color:#c41a16">    &#34;action&#34;: &#34;get&#34;,
-</span><span style="color:#c41a16">    &#34;resource&#34;: &#34;/api/v1/example/res1&#34;
-</span><span style="color:#c41a16">}
-</span><span style="color:#c41a16">EOF</span></code></pre></div>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl -X POST http://localhost:6734/authz-check/v1/diagnose -d @- <span style="color:#f1fa8c">&lt;&lt; EOF
+</span><span style="color:#f1fa8c">{
+</span><span style="color:#f1fa8c">    &#34;subject&#34;:{&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;, &#34;name&#34;:&#34;user1&#34;}]},
+</span><span style="color:#f1fa8c">    &#34;serviceName&#34;: &#34;srv1&#34;,
+</span><span style="color:#f1fa8c">    &#34;action&#34;: &#34;get&#34;,
+</span><span style="color:#f1fa8c">    &#34;resource&#34;: &#34;/api/v1/example/res1&#34;
+</span><span style="color:#f1fa8c">}
+</span><span style="color:#f1fa8c">EOF</span></code></pre></div>
 <p>Then you will get a response something as below.</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#000">{</span>
-  <span style="color:#c41a16">&#34;allowed&#34;</span>: false,
-  <span style="color:#c41a16">&#34;reason&#34;</span>: <span style="color:#c41a16">&#34;DENY_POLICY_FOUND&#34;</span>,
-  <span style="color:#c41a16">&#34;requestContext&#34;</span>: <span style="color:#000">{</span>
-    <span style="color:#c41a16">&#34;subject&#34;</span>: <span style="color:#000">{</span>
-      <span style="color:#c41a16">&#34;principals&#34;</span>: <span style="color:#000">[</span>
-        <span style="color:#000">{</span>
-          <span style="color:#c41a16">&#34;type&#34;</span>: <span style="color:#c41a16">&#34;user&#34;</span>,
-          <span style="color:#c41a16">&#34;name&#34;</span>: <span style="color:#c41a16">&#34;user1&#34;</span>
-        <span style="color:#000">}</span>
-      <span style="color:#000">]</span>,
-      <span style="color:#c41a16">&#34;tokenType&#34;</span>: <span style="color:#c41a16">&#34;&#34;</span>,
-      <span style="color:#c41a16">&#34;token&#34;</span>: <span style="color:#c41a16">&#34;&#34;</span>
-    <span style="color:#000">}</span>,
-    <span style="color:#c41a16">&#34;serviceName&#34;</span>: <span style="color:#c41a16">&#34;srv1&#34;</span>,
-    <span style="color:#c41a16">&#34;resource&#34;</span>: <span style="color:#c41a16">&#34;/api/v1/example/res1&#34;</span>,
-    <span style="color:#c41a16">&#34;action&#34;</span>: <span style="color:#c41a16">&#34;get&#34;</span>,
-    <span style="color:#c41a16">&#34;attributes&#34;</span>: null
-  <span style="color:#000">}</span>,
-  <span style="color:#c41a16">&#34;attributes&#34;</span>: <span style="color:#000">{</span>
-    <span style="color:#c41a16">&#34;request_action&#34;</span>: <span style="color:#c41a16">&#34;get&#34;</span>,
-    <span style="color:#c41a16">&#34;request_day&#34;</span>: <span style="color:#1c01ce">28</span>,
-    <span style="color:#c41a16">&#34;request_groups&#34;</span>: <span style="color:#000">[</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#ff79c6">{</span>
+  <span style="color:#f1fa8c">&#34;allowed&#34;</span>: false,
+  <span style="color:#f1fa8c">&#34;reason&#34;</span>: <span style="color:#f1fa8c">&#34;DENY_POLICY_FOUND&#34;</span>,
+  <span style="color:#f1fa8c">&#34;requestContext&#34;</span>: <span style="color:#ff79c6">{</span>
+    <span style="color:#f1fa8c">&#34;subject&#34;</span>: <span style="color:#ff79c6">{</span>
+      <span style="color:#f1fa8c">&#34;principals&#34;</span>: <span style="color:#ff79c6">[</span>
+        <span style="color:#ff79c6">{</span>
+          <span style="color:#f1fa8c">&#34;type&#34;</span>: <span style="color:#f1fa8c">&#34;user&#34;</span>,
+          <span style="color:#f1fa8c">&#34;name&#34;</span>: <span style="color:#f1fa8c">&#34;user1&#34;</span>
+        <span style="color:#ff79c6">}</span>
+      <span style="color:#ff79c6">]</span>,
+      <span style="color:#f1fa8c">&#34;tokenType&#34;</span>: <span style="color:#f1fa8c">&#34;&#34;</span>,
+      <span style="color:#f1fa8c">&#34;token&#34;</span>: <span style="color:#f1fa8c">&#34;&#34;</span>
+    <span style="color:#ff79c6">}</span>,
+    <span style="color:#f1fa8c">&#34;serviceName&#34;</span>: <span style="color:#f1fa8c">&#34;srv1&#34;</span>,
+    <span style="color:#f1fa8c">&#34;resource&#34;</span>: <span style="color:#f1fa8c">&#34;/api/v1/example/res1&#34;</span>,
+    <span style="color:#f1fa8c">&#34;action&#34;</span>: <span style="color:#f1fa8c">&#34;get&#34;</span>,
+    <span style="color:#f1fa8c">&#34;attributes&#34;</span>: null
+  <span style="color:#ff79c6">}</span>,
+  <span style="color:#f1fa8c">&#34;attributes&#34;</span>: <span style="color:#ff79c6">{</span>
+    <span style="color:#f1fa8c">&#34;request_action&#34;</span>: <span style="color:#f1fa8c">&#34;get&#34;</span>,
+    <span style="color:#f1fa8c">&#34;request_day&#34;</span>: <span style="color:#bd93f9">28</span>,
+    <span style="color:#f1fa8c">&#34;request_groups&#34;</span>: <span style="color:#ff79c6">[</span>
 
-    <span style="color:#000">]</span>,
-    <span style="color:#c41a16">&#34;request_hour&#34;</span>: <span style="color:#1c01ce">17</span>,
-    <span style="color:#c41a16">&#34;request_month&#34;</span>: <span style="color:#1c01ce">1</span>,
-    <span style="color:#c41a16">&#34;request_resource&#34;</span>: <span style="color:#c41a16">&#34;/api/v1/example/res1&#34;</span>,
-    <span style="color:#c41a16">&#34;request_time&#34;</span>: <span style="color:#1c01ce">1548666167</span>,
-    <span style="color:#c41a16">&#34;request_user&#34;</span>: <span style="color:#c41a16">&#34;user1&#34;</span>,
-    <span style="color:#c41a16">&#34;request_weekday&#34;</span>: <span style="color:#c41a16">&#34;Monday&#34;</span>,
-    <span style="color:#c41a16">&#34;request_year&#34;</span>: <span style="color:#1c01ce">2019</span>
-  <span style="color:#000">}</span>,
-  <span style="color:#c41a16">&#34;policies&#34;</span>: <span style="color:#000">[</span>
-    <span style="color:#000">{</span>
-      <span style="color:#c41a16">&#34;status&#34;</span>: <span style="color:#c41a16">&#34;takeEffect&#34;</span>,
-      <span style="color:#c41a16">&#34;id&#34;</span>: <span style="color:#c41a16">&#34;lre2z6nbklw7yxv2uxbb&#34;</span>,
-      <span style="color:#c41a16">&#34;name&#34;</span>: <span style="color:#c41a16">&#34;policy2&#34;</span>,
-      <span style="color:#c41a16">&#34;effect&#34;</span>: <span style="color:#c41a16">&#34;deny&#34;</span>,
-      <span style="color:#c41a16">&#34;permissions&#34;</span>: <span style="color:#000">[</span>
-        <span style="color:#000">{</span>
-          <span style="color:#c41a16">&#34;resource&#34;</span>: <span style="color:#c41a16">&#34;/api/v1/example/res1&#34;</span>,
-          <span style="color:#c41a16">&#34;actions&#34;</span>: <span style="color:#000">[</span>
-            <span style="color:#c41a16">&#34;get&#34;</span>
-          <span style="color:#000">]</span>
-        <span style="color:#000">}</span>
-      <span style="color:#000">]</span>,
-      <span style="color:#c41a16">&#34;principals&#34;</span>: <span style="color:#000">[</span>
-        <span style="color:#000">[</span>
-          <span style="color:#c41a16">&#34;user:user1&#34;</span>
-        <span style="color:#000">]</span>
-      <span style="color:#000">]</span>,
-      <span style="color:#c41a16">&#34;condition&#34;</span>: <span style="color:#000">{</span>
+    <span style="color:#ff79c6">]</span>,
+    <span style="color:#f1fa8c">&#34;request_hour&#34;</span>: <span style="color:#bd93f9">17</span>,
+    <span style="color:#f1fa8c">&#34;request_month&#34;</span>: <span style="color:#bd93f9">1</span>,
+    <span style="color:#f1fa8c">&#34;request_resource&#34;</span>: <span style="color:#f1fa8c">&#34;/api/v1/example/res1&#34;</span>,
+    <span style="color:#f1fa8c">&#34;request_time&#34;</span>: <span style="color:#bd93f9">1548666167</span>,
+    <span style="color:#f1fa8c">&#34;request_user&#34;</span>: <span style="color:#f1fa8c">&#34;user1&#34;</span>,
+    <span style="color:#f1fa8c">&#34;request_weekday&#34;</span>: <span style="color:#f1fa8c">&#34;Monday&#34;</span>,
+    <span style="color:#f1fa8c">&#34;request_year&#34;</span>: <span style="color:#bd93f9">2019</span>
+  <span style="color:#ff79c6">}</span>,
+  <span style="color:#f1fa8c">&#34;policies&#34;</span>: <span style="color:#ff79c6">[</span>
+    <span style="color:#ff79c6">{</span>
+      <span style="color:#f1fa8c">&#34;status&#34;</span>: <span style="color:#f1fa8c">&#34;takeEffect&#34;</span>,
+      <span style="color:#f1fa8c">&#34;id&#34;</span>: <span style="color:#f1fa8c">&#34;lre2z6nbklw7yxv2uxbb&#34;</span>,
+      <span style="color:#f1fa8c">&#34;name&#34;</span>: <span style="color:#f1fa8c">&#34;policy2&#34;</span>,
+      <span style="color:#f1fa8c">&#34;effect&#34;</span>: <span style="color:#f1fa8c">&#34;deny&#34;</span>,
+      <span style="color:#f1fa8c">&#34;permissions&#34;</span>: <span style="color:#ff79c6">[</span>
+        <span style="color:#ff79c6">{</span>
+          <span style="color:#f1fa8c">&#34;resource&#34;</span>: <span style="color:#f1fa8c">&#34;/api/v1/example/res1&#34;</span>,
+          <span style="color:#f1fa8c">&#34;actions&#34;</span>: <span style="color:#ff79c6">[</span>
+            <span style="color:#f1fa8c">&#34;get&#34;</span>
+          <span style="color:#ff79c6">]</span>
+        <span style="color:#ff79c6">}</span>
+      <span style="color:#ff79c6">]</span>,
+      <span style="color:#f1fa8c">&#34;principals&#34;</span>: <span style="color:#ff79c6">[</span>
+        <span style="color:#ff79c6">[</span>
+          <span style="color:#f1fa8c">&#34;user:user1&#34;</span>
+        <span style="color:#ff79c6">]</span>
+      <span style="color:#ff79c6">]</span>,
+      <span style="color:#f1fa8c">&#34;condition&#34;</span>: <span style="color:#ff79c6">{</span>
 
-      <span style="color:#000">}</span>
-    <span style="color:#000">}</span>,
-    <span style="color:#000">{</span>
-      <span style="color:#c41a16">&#34;status&#34;</span>: <span style="color:#c41a16">&#34;ignored&#34;</span>,
-      <span style="color:#c41a16">&#34;id&#34;</span>: <span style="color:#c41a16">&#34;6ww73cvfypkml46oibk2&#34;</span>,
-      <span style="color:#c41a16">&#34;name&#34;</span>: <span style="color:#c41a16">&#34;policy1&#34;</span>,
-      <span style="color:#c41a16">&#34;effect&#34;</span>: <span style="color:#c41a16">&#34;grant&#34;</span>,
-      <span style="color:#c41a16">&#34;permissions&#34;</span>: <span style="color:#000">[</span>
-        <span style="color:#000">{</span>
-          <span style="color:#c41a16">&#34;resourceExpression&#34;</span>: <span style="color:#c41a16">&#34;/api/v1/example/.*&#34;</span>,
-          <span style="color:#c41a16">&#34;actions&#34;</span>: <span style="color:#000">[</span>
-            <span style="color:#c41a16">&#34;get&#34;</span>
-          <span style="color:#000">]</span>
-        <span style="color:#000">}</span>
-      <span style="color:#000">]</span>,
-      <span style="color:#c41a16">&#34;principals&#34;</span>: <span style="color:#000">[</span>
-        <span style="color:#000">[</span>
-          <span style="color:#c41a16">&#34;user:user1&#34;</span>
-        <span style="color:#000">]</span>
-      <span style="color:#000">]</span>,
-      <span style="color:#c41a16">&#34;condition&#34;</span>: <span style="color:#000">{</span>
+      <span style="color:#ff79c6">}</span>
+    <span style="color:#ff79c6">}</span>,
+    <span style="color:#ff79c6">{</span>
+      <span style="color:#f1fa8c">&#34;status&#34;</span>: <span style="color:#f1fa8c">&#34;ignored&#34;</span>,
+      <span style="color:#f1fa8c">&#34;id&#34;</span>: <span style="color:#f1fa8c">&#34;6ww73cvfypkml46oibk2&#34;</span>,
+      <span style="color:#f1fa8c">&#34;name&#34;</span>: <span style="color:#f1fa8c">&#34;policy1&#34;</span>,
+      <span style="color:#f1fa8c">&#34;effect&#34;</span>: <span style="color:#f1fa8c">&#34;grant&#34;</span>,
+      <span style="color:#f1fa8c">&#34;permissions&#34;</span>: <span style="color:#ff79c6">[</span>
+        <span style="color:#ff79c6">{</span>
+          <span style="color:#f1fa8c">&#34;resourceExpression&#34;</span>: <span style="color:#f1fa8c">&#34;/api/v1/example/.*&#34;</span>,
+          <span style="color:#f1fa8c">&#34;actions&#34;</span>: <span style="color:#ff79c6">[</span>
+            <span style="color:#f1fa8c">&#34;get&#34;</span>
+          <span style="color:#ff79c6">]</span>
+        <span style="color:#ff79c6">}</span>
+      <span style="color:#ff79c6">]</span>,
+      <span style="color:#f1fa8c">&#34;principals&#34;</span>: <span style="color:#ff79c6">[</span>
+        <span style="color:#ff79c6">[</span>
+          <span style="color:#f1fa8c">&#34;user:user1&#34;</span>
+        <span style="color:#ff79c6">]</span>
+      <span style="color:#ff79c6">]</span>,
+      <span style="color:#f1fa8c">&#34;condition&#34;</span>: <span style="color:#ff79c6">{</span>
 
-      <span style="color:#000">}</span>
-    <span style="color:#000">}</span>
-  <span style="color:#000">]</span>
-<span style="color:#000">}</span></code></pre></div>
+      <span style="color:#ff79c6">}</span>
+    <span style="color:#ff79c6">}</span>
+  <span style="color:#ff79c6">]</span>
+<span style="color:#ff79c6">}</span></code></pre></div>
 <p>From the above policy diagnosis response, we can easily tell that there were two policies which matched the request, one denies the user(&ldquo;user1&rdquo;) to operate(&ldquo;get&rdquo;) on the resource(&ldquo;/api/v1/example/res1&rdquo;), while the other one allows the user(&ldquo;user1&rdquo;) to operate(&ldquo;get&rdquo;) on all resources which match the pattern(&ldquo;/api/v1/example/.*&rdquo;). If we translate the two policies into SPDL, then they are as below,</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">deny user user1 get /api/v1/example/res1</pre></div><div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">grant user user1 get expr:/api/v1/example/.*</pre></div>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4">deny user user1 get /api/v1/example/res1</pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4">grant user user1 get expr:/api/v1/example/.*</pre></div>
 <p>It&rsquo;s obvious that user &ldquo;user1&rdquo; is allowed to get all resources that match the pattern &ldquo;/api/v1/example/.*&rdquo;, but except the resource &ldquo;/api/v1/example/res1&rdquo;. So the previous authorization decision was denied.</p>
 
   </div>

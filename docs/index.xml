@@ -110,12 +110,9 @@ Join us at speedle-users and/or speedle-developers groups.</description>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://speedle.io/quick-start/</guid>
-      <description>Prerequisites 1. Install the Go programming language The minimum version required is 1.13.
-See https://golang.org/doc/install
-If you use Oracle Linux, simply run one of below commmands.
-$ sudo yum install -y oracle-golang-release-el7 $ sudo yum install -y golang 2. Set the Go environment variables GOROOT is the folder where you installed Go.
-GOPATH is the folder where your Go projects are stored.
-$ export GOROOT=/scratch/tools/go $ export GOPATH=/scratch/xuwwang/go Download Source Code and Build Speedle $ go get github.</description>
+      <description>Try Speedle in the Playground first You can try Speedle&amp;rsquo;s basic features before installing anything. Open the Playground to edit SPDL policies, set a user, resource and action, and see real Allow/Deny decisions entirely in your browser. No Go installation or running server is required.
+Continue below when you are ready to build and run Speedle locally.
+Prerequisites Use Linux or macOS with Bash, Git, curl and Go 1.26.3 or newer.</description>
     </item>
     
     <item>

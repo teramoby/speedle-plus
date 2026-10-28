@@ -115,13 +115,13 @@ However, when you use discover mode and replace <em>is-allowed</em> with <em>dis
 <h3 id="step-1-change-all-is-allowed-calls-in-your-system-to-discover-calls">Step 1. Change all <strong>is-allowed</strong> calls in your system to <strong>discover</strong> calls</h3>
 
 <p>If your system calls the authorization decision API through REST, the REST endpoint of the authorization decision API is usually configured somewhere in your system. In this case, just change the REST endpoint of the authorization decision API from an <em>is-allowed</em> endpoint to a <em>discover</em> endpoint. Be sure to apply the configuration changes.</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">http://localhost:6734/authz-check/v1/is-allowed ---&gt; http://localhost:6734/authz-check/v1/discover</pre></div>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4">http://localhost:6734/authz-check/v1/is-allowed ---&gt; http://localhost:6734/authz-check/v1/discover</pre></div>
 <p>If your system calls the authorization decision API through Grpc or a golang API, then change all the authorization calls from <em>is-allowed</em> to <em>discover</em>, rebuild the changed code, and restart your system to make the change take effect.</p>
 
 <h3 id="step-2-optional-discover-the-authorization-requests">Step 2. [optional] Discover the authorization requests</h3>
 
 <p>Use the <code>spctl discover request</code> command to list all request details for the specified service. Using the <code>--force</code> option continuously discovers the last request.</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">spctl discover request --last --force --service-name=YOUR_SERVICE_NAME</pre></div>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4">spctl discover request --last --force --service-name=YOUR_SERVICE_NAME</pre></div>
 <p>Keep the window open so that you can review the requests in the next step.</p>
 
 <h3 id="step-3-access-the-resources-that-are-protected-in-your-system">Step 3. Access the resources that are protected in your system</h3>
@@ -131,17 +131,17 @@ However, when you use discover mode and replace <em>is-allowed</em> with <em>dis
 <h3 id="step-4-generate-policies-for-your-service-based-on-the-authorization-requests">Step 4. Generate policies for your service based on the authorization requests</h3>
 
 <p>Use the <code>spctl discover policy</code> command to generate a JSON-based policy definition for the specified service. In this example, the policy definition is named <code>service.json</code>.</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">spctl discover policy --service-name=YOUR_SERVICE_NAME &gt; service.json</pre></div>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4">spctl discover policy --service-name=YOUR_SERVICE_NAME &gt; service.json</pre></div>
 <h3 id="step-5-optional-import-the-policies-into-speedle">Step 5. [optional] Import the policies into Speedle</h3>
 
 <p>Use the <code>spctl create</code> command to create a service with policies using the json service definition created in step 4.</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">spctl create service --json-file service.json</pre></div>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4">spctl create service --json-file service.json</pre></div>
 <h3 id="step-6-optional-change-all-the-discover-calls-in-your-system-back-to-is-allowed-calls">Step 6. [optional] Change all the <strong>discover</strong> calls in your system back to <strong>is-allowed</strong> calls</h3>
 
 <p>After you create your policies and import them into your system, you should update the endpoints to remove <code>discover</code> and use <code>is-allowed</code> instead. Be sure to apply the configuration changes.</p>
 
 <h2 id="discover-mode-command-line-reference">Discover mode command line reference</h2>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">$ ./spctl discover --help
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4">$ ./spctl discover --help
 discover request or policy for services
 
 Usage:

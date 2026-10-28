@@ -112,15 +112,15 @@ authorization decisions.</p>
 <ol>
 <li>Use <code>go get</code>:</li>
 </ol>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">go get github.com/teramoby/speedle-plus</code></pre></div>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">go get github.com/teramoby/speedle-plus</code></pre></div>
 <ol>
 <li>Use <code>dep</code>. Add this constraint to <code>Gopkg.toml</code>:</li>
 </ol>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-toml" data-lang="toml">[[<span style="color:#000">constraint</span>]]
-  <span style="color:#000">name</span> = <span style="color:#c41a16">&#34;github.com/teramoby/speedle-plus&#34;</span>
-  <span style="color:#000">branch</span> = <span style="color:#c41a16">&#34;master&#34;</span></code></pre></div>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-toml" data-lang="toml">[[constraint]]
+  name = <span style="color:#f1fa8c">&#34;github.com/teramoby/speedle-plus&#34;</span>
+  branch = <span style="color:#f1fa8c">&#34;master&#34;</span></code></pre></div>
 <p>Then add the source to your <code>vendor</code> directory:</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">dep ensure -update github.com/teramoby/speedle-plus</code></pre></div>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">dep ensure -update github.com/teramoby/speedle-plus</code></pre></div>
 <h3 id="initialize-an-evaluator">Initialize an evaluator</h3>
 
 <p><code>func eval.NewFromFile(loc string, isWatch bool) (ads.PolicyEvaluator, error)</code>
@@ -133,25 +133,25 @@ when <code>false</code>, it does not watch for changes.</li>
 </ul>
 
 <p>The method returns an evaluator instance. For example:</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#a90d91">import</span> (
-  <span style="color:#c41a16">&#34;github.com/teramoby/speedle-plus/pkg/eval&#34;</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#ff79c6">import</span> (
+  <span style="color:#f1fa8c">&#34;github.com/teramoby/speedle-plus/pkg/eval&#34;</span>
 )
 
-<span style="color:#a90d91">func</span> <span style="color:#000">foo</span>() {
-    <span style="color:#000">evaluator</span>, <span style="color:#000">err</span> <span style="color:#000">:=</span> <span style="color:#000">eval</span>.<span style="color:#000">NewFromFile</span>(<span style="color:#000">spdlLoc</span>, <span style="color:#a90d91">true</span>)
-    <span style="color:#177500">// Handle err before using evaluator.
-</span><span style="color:#177500"></span>    <span style="color:#000">_</span>, <span style="color:#000">_</span> = <span style="color:#000">evaluator</span>, <span style="color:#000">err</span>
+<span style="color:#8be9fd;font-style:italic">func</span> foo() {
+    evaluator, err <span style="color:#ff79c6">:=</span> eval.NewFromFile(spdlLoc, <span style="color:#ff79c6">true</span>)
+    <span style="color:#6272a4">// Handle err before using evaluator.
+</span><span style="color:#6272a4"></span>    _, _ = evaluator, err
 }</code></pre></div>
 <h3 id="request-an-authorization-decision">Request an authorization decision</h3>
 
 <p><code>IsAllowed</code> evaluates a request against the policies. The <code>ads.RequestContext</code>
 argument contains the subject, service name, resource, action and attributes:</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#a90d91">type</span> <span style="color:#000">RequestContext</span> <span style="color:#a90d91">struct</span> {
-  <span style="color:#000">Subject</span>     <span style="color:#000">*</span><span style="color:#000">ads</span>.<span style="color:#000">Subject</span>
-  <span style="color:#000">ServiceName</span> <span style="color:#a90d91">string</span>
-  <span style="color:#000">Resource</span>    <span style="color:#a90d91">string</span>
-  <span style="color:#000">Action</span>      <span style="color:#a90d91">string</span>
-  <span style="color:#000">Attributes</span>  <span style="color:#a90d91">map</span>[<span style="color:#a90d91">string</span>]<span style="color:#a90d91">interface</span>{}
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#8be9fd;font-style:italic">type</span> RequestContext <span style="color:#8be9fd;font-style:italic">struct</span> {
+  Subject     <span style="color:#ff79c6">*</span>ads.Subject
+  ServiceName <span style="color:#8be9fd">string</span>
+  Resource    <span style="color:#8be9fd">string</span>
+  Action      <span style="color:#8be9fd">string</span>
+  Attributes  <span style="color:#8be9fd;font-style:italic">map</span>[<span style="color:#8be9fd">string</span>]<span style="color:#8be9fd;font-style:italic">interface</span>{}
 }</code></pre></div>
 <p>The result has three values:</p>
 

@@ -138,35 +138,35 @@ headingSelector: 'h3'
 </ul>
 
 <h3 id="build">Build</h3>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">git clone git@github.com:teramoby/speedle-plus.git
-<span style="color:#a90d91">cd</span> samples/integration/istio-integration</code></pre></div>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">git clone git@github.com:teramoby/speedle-plus.git
+<span style="color:#8be9fd;font-style:italic">cd</span> samples/integration/istio-integration</code></pre></div>
 <p>copy set-env.sh.template to set-env.sh and edit it according to your environment.</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">. set-env.sh
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">. set-env.sh
 make init init_istio
 make build-grpc-adapter</code></pre></div>
 <h3 id="install-speedle-adapter">Install Speedle adapter</h3>
 
 <p>The adapter/speedlegrpcadapter/operator_cfg.yaml.template file is configured to protect <a href="https://github.com/istio/istio/tree/master/samples/bookinfo">Istio bookinfo</a> services. It can be edited to &ldquo;match&rdquo; attribute according to services to be protected.</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">match: destination.labels[<span style="color:#c41a16">&#34;app&#34;</span>] == <span style="color:#c41a16">&#34;details&#34;</span> |<span style="color:#c41a16">| destination.labels[&#34;app&#34;] == &#34;productpage&#34; || destination.labels[&#34;app&#34;] == &#34;reviews&#34; || destination.labels[&#34;app&#34;] == &#34;ratings&#34;</span></code></pre></div>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">match: destination.labels[<span style="color:#f1fa8c">&#34;app&#34;</span>] == <span style="color:#f1fa8c">&#34;details&#34;</span> |<span style="color:#f1fa8c">| destination.labels[&#34;app&#34;] == &#34;productpage&#34; || destination.labels[&#34;app&#34;] == &#34;reviews&#34; || destination.labels[&#34;app&#34;] == &#34;ratings&#34;</span></code></pre></div>
 <p>To install Speedle Istio adapter:</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">make install-speedle-grpc-adapter</code></pre></div>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">make install-speedle-grpc-adapter</code></pre></div>
 <h3 id="install-speedle-adapter-in-discover-mode">Install Speedle adapter in discover mode</h3>
 
 <p>By default, Speedle Istio adapter runs in normal authorization check mode. The Speedle Istio adapter can run in &ldquo;discover&rdquo; mode, in which all authorization requests will be allowed. The authorization requests will be collected at Speedle ADS. These requests can be retrieved. The application developers can use the collected requests to define policies.</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#a90d91">export</span> <span style="color:#000">SPEEDLE_ADS_ENDPOINT</span><span style="color:#000">=</span><span style="color:#c41a16">&#34;http://&lt;speedle host&gt;:6734/authz-check/v1/discover&#34;</span>
-<span style="color:#177500"># Or you can edit set-env.sh to use &#39;discover&#39; instead of &#39;is-allowed&#39; in SPEEDLE_ADS_ENDPOINT
-</span><span style="color:#177500"></span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#8be9fd;font-style:italic">export</span> <span style="color:#8be9fd;font-style:italic">SPEEDLE_ADS_ENDPOINT</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;http://&lt;speedle host&gt;:6734/authz-check/v1/discover&#34;</span>
+<span style="color:#6272a4"># Or you can edit set-env.sh to use &#39;discover&#39; instead of &#39;is-allowed&#39; in SPEEDLE_ADS_ENDPOINT
+</span><span style="color:#6272a4"></span>
 make install-speedle-grpc-adapter</code></pre></div>
 <p>After Speedle Istio adapter is installed, you can run some tests against your application. Then you can use spctl command line tool to get collected requests and policies (for reference only):</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#177500"># get discovered requests
-</span><span style="color:#177500"></span>spctl discover request --service-name<span style="color:#000">=</span>istio
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#6272a4"># get discovered requests
+</span><span style="color:#6272a4"></span>spctl discover request --service-name<span style="color:#ff79c6">=</span>istio
 
-<span style="color:#177500"># get discovered policies (for refernece only)
-</span><span style="color:#177500"></span>spctl discover policy --service-name<span style="color:#000">=</span>istio</code></pre></div>
+<span style="color:#6272a4"># get discovered policies (for refernece only)
+</span><span style="color:#6272a4"></span>spctl discover policy --service-name<span style="color:#ff79c6">=</span>istio</code></pre></div>
 <h3 id="uninstall-speedle-adapter">Uninstall Speedle Adapter</h3>
 
 <p>To uninstall Speedle Istio adapter:</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">make uninstall-speedle-grpc-adapter</code></pre></div>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">make uninstall-speedle-grpc-adapter</code></pre></div>
 <h3 id="references">References</h3>
 
 <ul>

@@ -1,0 +1,65 @@
+/* The copy control stays visible while long commands scroll within their pre. */
+#main .highlight.command-copy {
+  display: flex;
+  align-items: flex-start;
+  overflow: visible;
+  background: #171022;
+}
+#main .highlight.command-copy pre {
+  flex: 1;
+  min-width: 0;
+  border-radius: 12px 0 0 12px;
+}
+#main .command-copy-button {
+  position: relative;
+  flex: 0 0 44px;
+  width: 44px;
+  height: 44px;
+  margin: 12px 12px 12px 0;
+  padding: 10px;
+  display: grid;
+  place-items: center;
+  color: #eeeaf8;
+  background: transparent;
+  border: 1px solid rgba(238,234,248,.22);
+  border-radius: 8px;
+  cursor: pointer;
+}
+#main .command-copy-button:hover { background: rgba(238,234,248,.1); }
+#main .command-copy-button:focus-visible { outline: 2px solid #01e7cb; outline-offset: 3px; }
+#main .command-copy-button svg { width: 21px; height: 21px; }
+#main .command-copy-button .copied-icon { display: none; }
+#main .command-copy-button[data-state="copied"] { color: #01e7cb; }
+#main .command-copy-button[data-state="copied"] .copy-icon { display: none; }
+#main .command-copy-button[data-state="copied"] .copied-icon { display: block; }
+#main .copy-tooltip {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 6px);
+  z-index: 2;
+  padding: 5px 8px;
+  color: #fff;
+  background: #171022;
+  border: 1px solid rgba(238,234,248,.22);
+  border-radius: 5px;
+  font: 600 .75rem/1.4 system-ui, sans-serif;
+  white-space: nowrap;
+  pointer-events: none;
+  visibility: hidden;
+}
+#main .command-copy-button:hover .copy-tooltip,
+#main .command-copy-button:focus-visible .copy-tooltip,
+#main .command-copy-button[data-state] .copy-tooltip { visibility: visible; }
+#main .command-copy-button[data-state="error"] .copy-tooltip {
+  width: min(230px, calc(100vw - 64px));
+  white-space: normal;
+}
+.command-copy-status {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.command-copy-input { position: fixed; left: -9999px; top: 0; }
