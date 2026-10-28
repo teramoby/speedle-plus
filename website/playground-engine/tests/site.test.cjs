@@ -19,8 +19,13 @@ const copyright = '<p>Copyright &copy; 2019–2026. All rights reserved.</p>';
 const originalNavigationScript = original.match(/  <script>[\s\S]*?<\/script>/)[0];
 const sharedNavigationScript = '  <script src="/js/navigation.js?v=header-20261027" defer></script>';
 const originalSemanticKeywords = original.match(/"keywords":\[[^\]]*\]/)[0];
-const restored = home.replace(/"keywords":\[[^\]]*\]/, originalSemanticKeywords).replace('Bring Your Own Storage','Bring Your Own Store').replace(contactLinks,originalMailingLink).replace(sharedNavigationScript,originalNavigationScript).replace(copyright,'').replace(discordLink,oldCommunityLink).replace('  <link rel="stylesheet" href="/css/site.css">\n  <link rel="stylesheet" href="/css/navigation.css?v=header-20261027">', `  <style>${read('docs/css/site.css')}</style>`).replace('<a href="/playground/">Playground</a>','').replace(`        ${chineseLink}\n`,'');
-assert.equal(restored,original,'Homepage content is unchanged except shared navigation assets/entries, community/contact links, storage heading, semantic keywords and copyright notice');
+const identityTags = [/<title>[^<]*<\/title>/, /<link rel="icon"[^>]*>/,
+ /<meta property="og:site_name"[^>]*>/, /<meta property="og:title"[^>]*>/,
+ /<meta name="twitter:title"[^>]*>/, /\{"@type":"WebSite"[^\n]+/];
+// Search metadata is checked by check_seo.py; keep the original body/CSS guard.
+const restoredIdentity = identityTags.reduce((html, pattern) => html.replace(pattern, original.match(pattern)[0]), home);
+const restored = restoredIdentity.replace(/"keywords":\[[^\]]*\]/, originalSemanticKeywords).replace('Bring Your Own Storage','Bring Your Own Store').replace(contactLinks,originalMailingLink).replace(sharedNavigationScript,originalNavigationScript).replace(copyright,'').replace(discordLink,oldCommunityLink).replace('  <link rel="stylesheet" href="/css/site.css">\n  <link rel="stylesheet" href="/css/navigation.css?v=header-20261027">', `  <style>${read('docs/css/site.css')}</style>`).replace('<a href="/playground/">Playground</a>','').replace(`        ${chineseLink}\n`,'');
+assert.equal(restored,original,'Homepage content is unchanged except shared navigation assets/entries, community/contact links, storage heading, search metadata and copyright notice');
 assert.ok(home.includes(chineseLink), 'English homepage exposes the Chinese homepage');
 assert.ok(page.includes(playgroundChineseLink), 'Playground switches to its Chinese counterpart');
 assert.ok(read('docs/zh/index.html').includes('href="/" lang="en" hreflang="en"'), 'Chinese homepage links back to English');
