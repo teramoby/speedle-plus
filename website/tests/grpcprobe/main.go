@@ -10,6 +10,7 @@ import (
 	"fmt"
 	ads "github.com/teramoby/speedle-plus/pkg/svcs/adsgrpc/pb"
 	pms "github.com/teramoby/speedle-plus/pkg/svcs/pmsgrpc/pb"
+	"go.etcd.io/etcd/api/v3/etcdserverpb"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
@@ -19,7 +20,8 @@ import (
 
 func main() {
 	endpoint := flag.String("endpoint", "", "gRPC address")
-	kind := flag.String("service", "pms", "pms or ads")
+	kind := flag.String("service", "pms", "pms, ads or etcd")
+	keyName := flag.String("key-name", "", "Owned etcd probe key")
 	ca := flag.String("cacert", "", "CA file")
 	cert := flag.String("cert", "", "Client certificate")
 	key := flag.String("key", "", "Client key")
@@ -49,6 +51,23 @@ func main() {
 	defer conn.Close()
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
+	if *kind == "etcd" {
+		if *keyName == "" {
+			check(fmt.Errorf("etcd probe requires an owned key-name"))
+		}
+		client := etcdserverpb.NewKVClient(conn)
+		_, err = client.Put(ctx, &etcdserverpb.PutRequest{Key: []byte(*keyName), Value: []byte("owned probe")})
+		check(err)
+		value, err := client.Range(ctx, &etcdserverpb.RangeRequest{Key: []byte(*keyName)})
+		check(err)
+		if len(value.Kvs) != 1 || string(value.Kvs[0].Value) != "owned probe" {
+			check(fmt.Errorf("etcd probe value mismatch"))
+		}
+		_, err = client.DeleteRange(ctx, &etcdserverpb.DeleteRangeRequest{Key: []byte(*keyName)})
+		check(err)
+		fmt.Println("etcd authenticated write/read/delete succeeded")
+		return
+	}
 	if *kind == "pms" {
 		result, err := pms.NewPolicyManagerClient(conn).QueryServices(ctx, &pms.ServiceQueryRequest{})
 		check(err)

@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """Run the paired deployment guides in owned Docker and kind resources."""
 import contextlib
-import base64
 import fcntl
 import grp
 import json
@@ -180,21 +179,17 @@ class Acceptance:
     def check_etcd_auth(self):
         target=self.forward('speedle-etcd',2379)
         directory=self.phase_dir/'etcd-tls'
-        key=base64.b64encode(('/'+self.id+'/auth-probe').encode()).decode()
-        body=json.dumps({'key':key,'value':base64.b64encode(b'owned test').decode()}).encode()
-        def request(credentials,path='/v3/kv/put',data=body):
-            context=ssl.create_default_context(cafile=directory/'ca.crt')
-            if credentials:context.load_cert_chain(credentials/'client.crt',credentials/'client.key')
-            client=urllib.request.build_opener(urllib.request.ProxyHandler({}),urllib.request.HTTPSHandler(context=context))
-            req=urllib.request.Request(f'https://127.0.0.1:{target}'+path,data=data,headers={'Content-Type':'application/json'})
-            return client.open(req,timeout=5)
-        assert request(directory).status==200, 'Trusted etcd client cannot write'
+        base=[str(self.work/'grpcprobe'),'--service','etcd','--endpoint',f'127.0.0.1:{target}',
+              '--cacert',str(directory/'ca.crt'),'--key-name','/'+self.id+'/auth-probe']
+        def probe(credentials):
+            trust=['--cert',str(credentials/'client.crt'),'--key',str(credentials/'client.key')] if credentials else []
+            return run(base+trust,self.env,ok=False)
+        positive=probe(directory)
+        assert positive.returncode==0, 'Trusted etcd client cannot write/read/delete: '+positive.stderr
         for credentials in [None,self.phase_dir/'tls']:
-            try:request(credentials)
-            except (urllib.error.URLError,ssl.SSLError,ConnectionError):pass
-            else:raise AssertionError('etcd accepted missing/untrusted client certificate')
-        assert request(directory,'/v3/kv/deleterange',json.dumps({'key':key}).encode()).status==200
-        print('PASS etcd authentication: trusted write/delete succeeds; missing and foreign client certificates rejected',flush=True)
+            assert probe(credentials).returncode!=0, 'etcd accepted missing/untrusted client certificate'
+        assert probe(directory).returncode==0, 'etcd became unavailable during rejection checks'
+        print('PASS etcd gRPC authentication: trusted write/read/delete succeeds; missing and foreign client certificates rejected',flush=True)
 
     def check_liveness_failure(self):
         pod=json.loads(self.ns('get','pods','-l','app=pms,release=speedle-prod','-o','json').stdout)['items'][0]

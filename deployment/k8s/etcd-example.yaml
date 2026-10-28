@@ -47,6 +47,7 @@ spec:
             - --key-file=/etc/etcdtls/server.key
             - --trusted-ca-file=/etc/etcdtls/ca.crt
             - --client-cert-auth=true
+            - --enable-grpc-gateway=false
             - --listen-peer-urls=http://127.0.0.1:2380
             - --initial-advertise-peer-urls=http://127.0.0.1:2380
             - --initial-cluster=example=http://127.0.0.1:2380
