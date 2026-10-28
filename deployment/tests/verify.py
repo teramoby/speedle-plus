@@ -55,7 +55,7 @@ def wait(check,description,timeout=90):
 class Acceptance:
     def __init__(self,work):
         self.work=work;self.id='speedle-check-'+uuid.uuid4().hex[:10]
-        self.cluster=self.id;self.kind_created=False
+        self.cluster=self.id;self.kind_created=False;self.nodes=[]
         self.env=dict(os.environ, KUBECONFIG=str(work/'kubeconfig'))
         self.env['NO_PROXY']=self.env['no_proxy']='localhost,127.0.0.1,::1'
         self.commands={locale:commands(locale) for locale in ['en','zh']}
@@ -180,7 +180,15 @@ class Acceptance:
     def check_liveness_failure(self):
         pod=json.loads(self.ns('get','pods','-l','app=pms,release=speedle-prod','-o','json').stdout)['items'][0]
         name=pod['metadata']['name'];restarts=pod['status']['containerStatuses'][0]['restartCount']
-        self.ns('exec',name,'-c','pms','--','kill','-STOP','1')
+        # PID 1 ignores SIGSTOP sent from its own PID namespace. Send it from
+        # the owned kind node, after binding the CRI ID/PID to this exact Pod.
+        node=pod['spec']['nodeName'];assert node in self.nodes
+        container_id=pod['status']['containerStatuses'][0]['containerID'].split('://',1)[1]
+        assert re.fullmatch('[0-9a-f]+',container_id)
+        info=json.loads(self.docker('exec',node,'crictl','inspect',container_id).stdout)
+        assert info['status']['labels']['io.kubernetes.pod.uid']==pod['metadata']['uid']
+        pid=int(info['info']['pid']);assert pid>1
+        self.docker('exec',node,'kill','-STOP',str(pid))
         def recovered():
             state=json.loads(self.ns('get','pod',name,'-o','json').stdout)['status']['containerStatuses'][0]
             return state['restartCount']>restarts and state.get('ready')
@@ -243,10 +251,11 @@ class Acceptance:
         self.kind_created=True
         run(['kind','create','cluster','--name',self.cluster,'--image',NODE,'--config',str(config),'--kubeconfig',self.env['KUBECONFIG'],'--wait','180s'],self.env,timeout=480)
         nodes=run(['kind','get','nodes','--name',self.cluster],self.env).stdout.splitlines()
+        self.nodes=nodes
         for node in nodes:
             owner=self.docker('inspect','--format','{{index .Config.Labels "io.x-k8s.kind.cluster"}}',node).stdout.strip()
             assert owner==self.cluster
-            self.docker('update','--cpus=2','--memory=5g',node)
+            self.docker('update','--cpus=2','--memory=5g','--memory-swap=5g',node)
         self.docker('network','connect','kind',registry)
         config_path=f'/etc/containerd/certs.d/127.0.0.1:{registry_port}'
         hosts=f'[host."http://{registry}:5000"]\n  capabilities = ["pull", "resolve"]\n'
@@ -283,9 +292,18 @@ class Acceptance:
         for name in reversed(self.volumes):self.docker('volume','rm',name,ok=False)
         for name in reversed(self.networks):self.docker('network','rm',name,ok=False)
         for name in self.images:self.docker('image','rm',name,ok=False)
+        # A successful cleanup claim requires checking the daemon, rather than
+        # interpreting every failed inspect as an absent resource.
+        self.docker('info','--format','{{.OSType}}')
+        for args in [('ps','-a','--format','{{.Names}}'),('volume','ls','--format','{{.Name}}'),('network','ls','--format','{{.Name}}')]:
+            leftovers=[name for name in self.docker(*args).stdout.splitlines() if name.startswith(self.id)]
+            assert not leftovers,('Owned validation resources remain',leftovers)
+        print('PASS cleanup: no owned containers, volumes or networks remain',flush=True)
 
 
 def main():
+    def interrupted(_signal,_frame):raise KeyboardInterrupt('Deployment acceptance interrupted')
+    signal.signal(signal.SIGTERM,interrupted)
     # A long-running runner may predate its owner's Docker-group membership.
     # sg only activates an existing, administratively granted membership.
     if not os.environ.get('SPEEDLE_DOCKER_GROUP_ACTIVE') and shutil.which('docker'):
