@@ -11,89 +11,122 @@ categories = ["docs"]
 bref = ""
 +++
 
-## Protect both API transports
+## Overview
 
-Speedle's standalone PMS and ADS expose **REST and gRPC**. Both now use the same `--insecure`, `--cert`, `--key`, `--client-cert` and `--force-client-cert` transport settings. Invalid certificates or trust configuration cause startup to fail; secure mode does not fall back to plaintext.
+### API Endpoint Security / Authentication and Authorization
 
-TLS encrypts the connection and authenticates the server. To require authenticated clients, provide a client CA with `--client-cert` **and** set `--force-client-cert=true`. Without that flag, a configured CA validates a client certificate only when the client supplies one. TLS alone does not authorize an administrator or provide bearer-token validation. Use an authenticated gateway or equivalent access controls for management, diagnosis and discovery endpoints. The `--enable-authz` flag does not provide a built-in endpoint authorization policy.
+Authentication and authorization for client requests (other than TLS mutual auth) are not supported by Speedle.
 
-## Listen addresses and compatibility
+If you want to protect Speedle API endpoints, you can use any existing/stock solutions to secure these APIs (e.g. an API Gateway like Ambassador with tokens etc).
 
-| Service | Default REST address | Default gRPC address |
-| --- | --- | --- |
-| PMS | `0.0.0.0:6733` | REST host with port `50001` |
-| ADS | `0.0.0.0:6734` | REST host with port `50002` |
+### Message security / TLS
 
-`--endpoint 127.0.0.1:6733` therefore also limits PMS's default gRPC listener to `127.0.0.1:50001`. Use `--grpc-endpoint` for another interface or port; `127.0.0.1:0` requests an ephemeral port for isolated tests. `--endpoint '[::]:6733'` or an explicit `--grpc-endpoint '[::]:50001'` selects IPv6 intentionally. Unlike older builds, gRPC does not silently remain on all interfaces or plaintext when REST is restricted or secured.
+TLS is a cryptographic protocol that provides communications security, it offers many different ways of exchanging keys for authentication, encrypting data, and guaranteeing message integrity.
 
-Configuration precedence is command line, then `SPDL_*` environment variables, then JSON, then defaults. The gRPC overrides are `--grpc-endpoint`, `SPDL_GRPC_ENDPOINT`, and `serverConfig.grpcEndpoint`. See the [current proto contracts](/docs/api/) for RPC namespaces and client generation.
+Speedle supports using TLS to secure the message transport inside untrusted environments.
+TLS mutual authentication is also supported for the authentication of the client.
 
-## Generate certificates for a local test
+In the bellow sections, we'll describe how to enable TLS in Speedle server as a standalone application and how to use Speedle CLI/curl to access the TLS-enabled Speedle server.
 
-Build the binaries using the [quick start](/quick-start/). From the repository root, use Go 1.26 or later to generate a local CA plus separate server/client certificates. The server certificate has SANs for `localhost`, `127.0.0.1` and `::1`; private keys use mode 0600. These **24-hour demonstration certificates** are not production credentials. The generator refuses to overwrite existing files: choose a new output directory when regenerating.
+Looking for securing your kubernetes deployment with TLS? - click [here](../deployment)
 
-<!-- docs-check: certificates -->
+## Prerequisites
+
+In order to implement TLS, Speedle must have an associated `Certificate` configured for its external interface (IP address or DNS name) that accepts secure connections.
+
+This certificate is cryptographically signed by a trusted third party. These are called `Certificate Authorities` (`CA`s). To obtain a signed certificate, you need to choose a CA and follow the instructions your chosen CA provides to obtain your certificate.
+
+In your test enviroment, you can create a `self-signed` certificate. Self-signed certificates are simply user generated certificates which have not been signed by a well-known CA and are, therefore, not really guaranteed to be authentic at all. They are not suitable for production use.
+
+For convenience, the cfssl tool provides an easy interface to certificate generation.
+The steps to use [cfssl](https://github.com/cloudflare/cfssl) to generate self-signed certificates are as following:
+
+### Install cfssl
+
 ```bash
-go run ./samples/docs/certificates --out ./tls
+curl -s -L -o /usr/bin/cfssl https://pkg.cfssl.org/R1.2/cfssl_linux-amd64
+curl -s -L -o /usr/bin/cfssljson https://pkg.cfssl.org/R1.2/cfssljson_linux-amd64
 ```
 
+Or install by Go:
 
-## Start mutually authenticated services
-
-Initialize a fresh policy file once, with both services stopped:
-
-<!-- docs-check: setup -->
 ```bash
-printf '{}\n' > docs-policies.json
+go get -u github.com/cloudflare/cfssl/cmd/cfssl
+go get -u github.com/cloudflare/cfssl/cmd/cfssljson
 ```
 
+### Generate CA and Certificates
 
-Start PMS in one terminal:
-
-<!-- docs-check: secure-pms -->
 ```bash
-./bin/speedle-pms --store-type file --filestore-loc ./docs-policies.json \
-  --endpoint 127.0.0.1:6733 --grpc-endpoint 127.0.0.1:50001 \
-  --cert ./tls/server.crt --key ./tls/server.key \
-  --client-cert ./tls/ca.crt --force-client-cert=true
+echo '{"CN":"CA","key":{"algo":"rsa","size":2048}}' | cfssl gencert -initca - | cfssljson -bare ca -
+echo '{"signing":{"default":{"expiry":"43800h","usages":["signing","key encipherment","server auth","client auth"]}}}' > ca-config.json
+# replace this with your ip address or dns
+export ADDRESS=localhost,127.0.0.1
+export NAME=server
+echo '{"CN":"'$NAME'","hosts":[""],"key":{"algo":"rsa","size":2048}}' | cfssl gencert -config=ca-config.json -ca=ca.pem -ca-key=ca-key.pem -hostname="$ADDRESS" - | cfssljson -bare $NAME
+export ADDRESS=
+export NAME=client
+echo '{"CN":"'$NAME'","hosts":[""],"key":{"algo":"rsa","size":2048}}' | cfssl gencert -config=ca-config.json -ca=ca.pem -ca-key=ca-key.pem -hostname="$ADDRESS" - | cfssljson -bare $NAME
+
+mv server.pem server.crt
+mv server-key.pem server.key
+cp ca.pem server-ca.crt
+
+mv client.pem client.crt
+mv client-key.pem client.key
+cp ca.pem client-ca.crt
 ```
 
+## TLS-enabled Speedle Server
 
-Start ADS in a second terminal:
+### Command Line Flags
 
-<!-- docs-check: secure-ads -->
+Use the following flags to configure TLS for `PMS` (Policy Management Service) and `ADS` (Authorization Decision Service).
+
+| Name              | Value                | Default | Comments                                                                                             |
+| ----------------- | -------------------- | ------- | ---------------------------------------------------------------------------------------------------- |
+| insecure          | true, false          | false   | specifies when TLS is enabled or not, true: disabled, false: enabled.                                |
+| cert              | TLS certificate path |         | specifies the path of the file containing the TLS certificate.                                       |
+| key               | TLS private key path |         | specifies the path of the file containing the TLS private key.                                       |
+| client-cert       | client CA path       |         | specifies the path of the file containing the trusted CA File for client certificate authentication. |
+| force-client-cert | true, false          | false   | specifies if the client certificate authentication is forced or not.                                 |
+
+### Example
+
 ```bash
-./bin/speedle-ads --store-type file --filestore-loc ./docs-policies.json \
-  --endpoint 127.0.0.1:6734 --grpc-endpoint 127.0.0.1:50002 \
-  --cert ./tls/server.crt --key ./tls/server.key \
-  --client-cert ./tls/ca.crt --force-client-cert=true
+$ speedle-pms --store-type file --endpoint="127.0.0.1:6733" --insecure=false --key=$tls_config_path/server.key --cert=$tls_config_path/server.crt --client-cert=$tls_config_path/client-ca.crt
+
+$ speedle-ads --store-type file --endpoint="127.0.0.1:6735" --insecure=false --force-client-cert=true --key=$tls_config_path/server.key --cert=$tls_config_path/server.crt --client-cert=$tls_config_path/client-ca.crt
 ```
 
+**Note: Please use absolute pathes for the cert files.**
 
-Run both terminals from the same repository root. Keep them open; stop each with Ctrl-C when finished. Production certificates must cover the actual DNS names/IPs and come from your organization's trusted CA.
+## Use `spctl` CLI to Access TLS-enabled Speedle
 
-## Connect with spctl and curl
+### Command Line Flags
 
-<!-- docs-check: secure-cli -->
+Use the following flags to configure TLS for Spctl CLI.
+
+| Name              | Value                | Default | Comments                                                                                             |
+| ----------------- | -------------------- | ------- | ---------------------------------------------------------------------------------------------------- |
+| skipverify        | true, false          | false   | specifies if skip verifing PMS server's TLS certificate.                                             |
+| cert              | TLS certificate path |         | specifies the path of the file containing the client TLS certificate.                                |
+| key               | TLS private key path |         | specifies the path of the file containing the client TLS private key.                                |
+| client-cert       | client CA path       |         | specifies the path of the file containing the trusted CA File for server certificate authentication. |
+| force-client-cert | true, false          | false   | specifies if the client certificate authentication is forced or not.                                 |
+
+### Example
+
 ```bash
-./bin/spctl --pms-endpoint https://127.0.0.1:6733/policy-mgmt/v1/ \
-  --skipverify=false --cacert ./tls/ca.crt --cert ./tls/client.crt --key ./tls/client.key \
-  get service --all
+$ spctl config skipverify false cacert $tls_config_path/server-ca.crt cert $tls_config_path/client.crt key $tls_config_path/client.key pms-endpoint "https://localhost:6733/policy-mgmt/v1/"
+$ spctl create service test
+$ spctl get service --all
 ```
 
+## Use `curl` to Access TLS-enabled Speedle
 
-<!-- docs-check: secure-curl -->
+### Example
+
 ```bash
-curl --fail --silent --show-error --cacert ./tls/ca.crt \
-  --cert ./tls/client.crt --key ./tls/client.key \
-  https://127.0.0.1:6733/policy-mgmt/v1/service
+$ curl --cacert $tls_config_path/server-ca.crt --cert $tls_config_path/client.crt --key $tls_config_path/client.key https://localhost:6733/policy-mgmt/v1/service
 ```
-
-
-An empty store returns `[]`. Omitting the client certificate fails the TLS handshake. `spctl` uses `--cacert` for server trust and `--cert`/`--key` for its own identity; `--client-cert` and `--force-client-cert` are server flags. Keep `--skipverify=false` (the default).
-
-For gRPC, configure the generated client's channel with the same CA, a matching server name, and the client certificate/key. PMS uses `pms_pb.PolicyManager`; ADS uses `ads_pb.Evaluator`. An insecure channel must fail against these TLS endpoints.
-
-## Local plaintext development
-
-Only an explicit `--insecure=true` enables plaintext for both transports. Bind REST and gRPC to loopback for that mode. Do not publish these unauthenticated endpoints or trust principal names/attributes supplied by untrusted callers. The [token asserter](/docs/assertor/) validates a configured identity token; it does not authenticate every PMS/ADS caller or replace endpoint access controls.

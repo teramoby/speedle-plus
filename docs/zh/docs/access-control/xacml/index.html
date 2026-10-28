@@ -86,7 +86,7 @@
 
 <h2 id="speedle-与-xacml-有什么关系">Speedle 与 XACML 有什么关系？</h2>
 
-<p>可扩展访问控制标记语言（eXtensible Access Control Markup Language，XACML）是 OASIS 访问控制标准，定义策略及请求、响应等概念。Speedle+ 使用自己的Speedle 策略定义语言（SPDL）与 API。XACML 的行为以 <a href="https://docs.oasis-open.org/xacml/3.0/xacml-3.0-core-spec-os-en.html">OASIS XACML 3.0 标准</a>为准；本文说明架构职责的对应关系，不代表 XACML 标准符合性声明。</p>
+<p>可扩展访问控制标记语言（eXtensible Access Control Markup Language，XACML）是 OASIS 访问控制标准，定义策略及请求、响应等概念。Speedle+ 使用自己的安全策略定义语言（SPDL）与 API。XACML 的行为以 <a href="https://docs.oasis-open.org/xacml/3.0/xacml-3.0-core-spec-os-en.html">OASIS XACML 3.0 标准</a>为准；本文说明架构职责的对应关系，不代表 XACML 标准符合性声明。</p>
 
 <h2 id="对应组件职责">对应组件职责</h2>
 
@@ -192,16 +192,16 @@
 
 <li class=""><span>API</span>
 <ul class="">
-<li class=""><a href="/zh/docs/api/asserter_api/">令牌断言插件 API</a></li>
-<li class=""><a href="/zh/docs/api/decision_api/">授权决策 API</a></li>
-<li class=""><a href="/zh/docs/api/management_api/">策略管理 API</a></li>
+<li class=""><a href="/zh/docs/api/decision_api/">Authorization Runtime/Decision API</a></li>
+<li class=""><a href="/zh/docs/api/management_api/">Policy Management API</a></li>
+<li class=""><a href="/zh/docs/api/asserter_api/">Token Assertion Plugin API</a></li>
 </ul>
   
 </li>
 <li class=""><a href="/zh/docs/security/">安全</a></li>
 <li class=""><a href="/zh/docs/logging/">日志</a></li>
 <li class=""><a href="/zh/docs/versions/">版本</a></li>
-<li class=""><a href="/zh/docs/custom-function/">自定义函数</a></li>
+<li class=""><a href="/zh/docs/custom-function/">Custom Function</a></li>
 </ul>
   
 </li>

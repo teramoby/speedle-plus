@@ -103,21 +103,20 @@ headingSelector: 'h2'
   <div id="kube-component" class="content">
     
 
-<h2 id="current-development-documentation">Current development documentation</h2>
+<h2 id="version-0-2-0-planning">Version 0.2.0 (planning)</h2>
 
-<p>These pages describe the current <code>master</code> source, not a frozen historical release. The current module requires Go 1.26 or later. The quick-start workflow verifies Go 1.26.10 and 1.27.3; those tested patch versions are not a promise that an old release has the same requirements.</p>
+<p>&hellip;</p>
 
-<p>When upgrading, review the chosen commit and dependencies and repeat the integration checks for your store, transport and identity provider. Current standalone gRPC uses the same TLS/mTLS settings as REST and inherits its listening host unless <code>--grpc-endpoint</code> is supplied. Its service namespaces are <code>pms_pb.PolicyManager</code> and <code>ads_pb.Evaluator</code>; use the <a href="/docs/api/">current downloadable protos</a> and generated clients together.</p>
+<h2 id="version-0-1-0">Version 0.1.0</h2>
 
-<h2 id="historical-releases">Historical releases</h2>
+<p><strong>release notes</strong>: This is the first open source version. All basic functions are available in this version, including</p>
 
-<p>The repository publishes <a href="https://github.com/teramoby/speedle-plus/releases/tag/v2.0">v2.0 (July 2020)</a> and the <a href="https://github.com/teramoby/speedle-plus/releases/tag/baseline">baseline tag</a>. Their assets and source snapshots are historical. See the <a href="https://github.com/teramoby/speedle-plus/releases">release list</a> for published artifacts; a tag name alone does not imply current dependency or security compatibility.</p>
-
-<p>The old 0.1.0 notes described policy management, authorization runtime, CLI and integration samples. The former “0.2.0 planning” placeholder was not a current release roadmap.</p>
-
-<h2 id="reproducible-use">Reproducible use</h2>
-
-<p>Choose a release tag or immutable commit for application dependencies. Record that revision alongside policy fixtures and expected decisions. Follow the <a href="/quick-start/">quick start</a> for a native build, <a href="/docs/deployment-embeded/">embedded mode</a> for a library integration, and <a href="/docs/security/">security</a> for current connection behavior.</p>
+<ul>
+<li>Policy Management Service</li>
+<li>Authorization Runtime Service</li>
+<li>Command line tool</li>
+<li>Integration samples</li>
+</ul>
 
   </div>
 </div>

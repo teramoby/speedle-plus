@@ -1,19 +1,27 @@
-{{- range $service := list (dict "name" "pms" "port" $.Values.service.pmsPort "grpc" 50001) (dict "name" "ads" "port" $.Values.service.adsPort "grpc" 50002) }}
----
+{{- define "serviceTemplate" }}
+{{- with .chart }}
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "speedle.fullname" $ }}-{{ $service.name }}
+  name: {{ template "speedle.fullname" . }}-{{ $.serviceName }}
+  labels:
+    app: {{ $.serviceName }}
+    chart: {{ template "speedle.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
 spec:
-  type: {{ $.Values.service.type }}
-  selector:
-    app: {{ $service.name }}
-    release: {{ $.Release.Name }}
+  type: {{ .Values.service.type }}
   ports:
-    - name: http
-      port: {{ $service.port }}
+    - port: {{ $.port }}
       targetPort: http
-    - name: grpc
-      port: {{ $service.grpc }}
-      targetPort: grpc
+      protocol: TCP
+      name: http
+  selector:
+    app: {{ $.serviceName }}
+    release: {{ .Release.Name }}
 {{- end }}
+{{- end }}
+
+{{- template "serviceTemplate" dict "chart" $ "serviceName" "pms" "port" .Values.service.pmsPort }}
+---
+{{- template "serviceTemplate" dict "chart" $ "serviceName" "ads" "port" .Values.service.adsPort }}

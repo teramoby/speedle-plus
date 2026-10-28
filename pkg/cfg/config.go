@@ -23,8 +23,6 @@ type StoreConfig struct {
 
 type ServerConfig struct {
 	Endpoint        string `json:"endpoint,omitempty"`
-	GRPCEndpoint    string `json:"grpcEndpoint,omitempty"`
-	HealthEndpoint  string `json:"healthEndpoint,omitempty"`
 	Insecure        string `json:"insecure,omitempty"`
 	EnableAuthz     string `json:"enableAuthz,omitempty"`
 	KeyPath         string `json:"keyPath,omitempty"`

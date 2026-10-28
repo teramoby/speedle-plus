@@ -113,9 +113,9 @@ headingSelector: 'h2'
 
 <h3 id="generate-policies-using-the-discovered-requests">* Generate policies using the discovered requests</h3>
 
-<p>You can generate policies based on the authorization requests that you record. In one scenario, a developer runs a test suite that mimics all the interactions in your system, and Speedle records all the necessary authorization calls. For example, Service A (a UI) calls Service B (a database). Speedle can effectively record - &ldquo;Service A called Service B with these attributes&hellip;&rdquo; and generates a policy that will allow such a request (is-allowed=true). Review the generated grants, identity domains and observation scope before importing, then verify positive and negative test cases.</p>
+<p>You can generate policies based on the authorization requests that you record. In one scenario, a developer runs a test suite that mimics all the interactions in your system, and Speedle records all the necessary authorization calls. For example, Service A (a UI) calls Service B (a database). Speedle can effectively record - &ldquo;Service A called Service B with these attributes&hellip;&rdquo; and generates a policy that will allow such a request (is-allowed=true). You can then import the policy directly into Speedle.</p>
 
-<p>Generated policies grant the observed operations. Discovery records observed requests without checking whether the formal policies would allow them; the generated grants are not evidence that the original access was authorized.</p>
+<p>All of the policies generated are <em>is-allowed</em> policies because they are recorded directly from allowed authorization requests on protected resources.</p>
 
 <h3 id="disable-authorization-without-changing-the-code">* Disable authorization without changing the code</h3>
 
@@ -123,8 +123,6 @@ headingSelector: 'h2'
 However, when you use discover mode and replace <em>is-allowed</em> with <em>discover</em> in the url, all authorization checks return an &ldquo;is-allowed=true&rdquo; result. Because discover mode does not perform authorization checks, it provides a convenient way for developers to disable authorization checks when diagnosing failures.</p>
 
 <h2 id="how-do-i-use-discover-mode">How do I use discover mode?</h2>
-
-<p>Use this mode only in an isolated, controlled test environment. Restore every <code>is-allowed</code> call before returning to normal enforcement. Successful discovery returns <code>allowed=true</code>; invalid requests, token assertion failures and storage errors still return errors.</p>
 
 <h3 id="step-1-change-all-is-allowed-calls-in-your-system-to-discover-calls">Step 1. Change all <strong>is-allowed</strong> calls in your system to <strong>discover</strong> calls</h3>
 
@@ -150,7 +148,7 @@ However, when you use discover mode and replace <em>is-allowed</em> with <em>dis
 
 <p>Use the <code>spctl create</code> command to create a service with policies using the json service definition created in step 4.</p>
 <div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">spctl create service --json-file service.json</pre></div>
-<h3 id="step-6-restore-is-allowed-before-normal-enforcement-required">Step 6. Restore is-allowed before normal enforcement (required)</h3>
+<h3 id="step-6-optional-change-all-the-discover-calls-in-your-system-back-to-is-allowed-calls">Step 6. [optional] Change all the <strong>discover</strong> calls in your system back to <strong>is-allowed</strong> calls</h3>
 
 <p>After you create your policies and import them into your system, you should update the endpoints to remove <code>discover</code> and use <code>is-allowed</code> instead. Be sure to apply the configuration changes.</p>
 

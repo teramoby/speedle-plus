@@ -93,11 +93,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	grpcServer, err := newGRPCServer(&params, ps)
-	if err != nil {
-		log.Fatal(err)
-	}
-	healthServer, err := params.NewHealthServer(ps.Health)
+	grpcServer, err := newGRPCServer(ps)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -105,13 +101,10 @@ func main() {
 	intChan := make(chan os.Signal, 1)
 	signal.Notify(intChan, os.Interrupt, syscall.SIGTERM)
 
-	errChan := make(chan error, 3)
-	if healthServer != nil {
-		go func() { errChan <- healthServer.ListenAndServe() }()
-	}
+	errChan := make(chan error, 2)
 	go func() {
 		log.Info("Starting the gRPC server for policy management service...")
-		errChan <- listenGRPCServer(grpcServer, &params)
+		errChan <- listenGRPCServer(grpcServer)
 	}()
 
 	go func() {
@@ -130,9 +123,6 @@ func main() {
 	}
 
 	log.Info("Stopping servers...")
-	if healthServer != nil {
-		_ = healthServer.Close()
-	}
 	// Stop all services
 	if httpServer != nil {
 		log.Info("Stopping HTTP Server...")
@@ -159,15 +149,12 @@ func main() {
 	}
 }
 
-func newGRPCServer(params *flags.Parameters, ps pms.PolicyStoreManager) (*grpc.Server, error) {
-	server, err := params.NewGRPCServer(
+func newGRPCServer(ps pms.PolicyStoreManager) (*grpc.Server, error) {
+	server := grpc.NewServer(
 		grpc.UnaryInterceptor(svcs.PanicRecoveryInterceptor()),
 		grpc.MaxRecvMsgSize(4<<20), // 4 MB
 		grpc.MaxSendMsgSize(4<<20), // 4 MB
 	)
-	if err != nil {
-		return nil, err
-	}
 	pb.RegisterPolicyManagerServer(server, pmsgrpc.NewServiceImpl(ps))
 	// WARNING: gRPC reflection exposes all service methods and message types.
 	// Disable in production to prevent information disclosure.
@@ -175,18 +162,14 @@ func newGRPCServer(params *flags.Parameters, ps pms.PolicyStoreManager) (*grpc.S
 	return server, nil
 }
 
-func listenGRPCServer(server *grpc.Server, params *flags.Parameters) error {
+func listenGRPCServer(server *grpc.Server) error {
 	// Register reflection service on gRPC server.
-	address, err := params.GRPCListenAddress("50001")
+	lis, err := net.Listen("tcp", ":50001")
 	if err != nil {
-		return err
-	}
-	lis, err := net.Listen("tcp", address)
-	if err != nil {
-		return errors.Wrapf(err, errors.ServerError, "failed to listen on gRPC endpoint %s", address)
+		return errors.Wrap(err, errors.ServerError, "failed to listen on endpoint :50001")
 	}
 	if err := server.Serve(lis); err != nil {
-		return errors.Wrapf(err, errors.ServerError, "failed to serve gRPC endpoint %s", address)
+		return errors.Wrap(err, errors.ServerError, "failed to serve for endpoint :50001")
 	}
 	return nil
 }

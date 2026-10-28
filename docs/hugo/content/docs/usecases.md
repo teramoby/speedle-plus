@@ -20,7 +20,7 @@ Alex Chan is a developer who is implementing a simple application with golang. H
 Jin Chen is a security manager of multinational company. His team monitor dozens of internal systems. Different systems use different authorization mechanisms, different policy languages. They are eager to find a solution to manage all these systems efficiently.
 
 - Centralized policy management
-- Flexible policy model, subject to verification of each system’s required semantics
+- Flexible policy model which fits for all the systems
 - Easy to integrate with different systems, from OS to middleware to applications
 - Scalable to support all the systems
 - Efficient
@@ -33,9 +33,5 @@ TTH Inc. is a startup cloud company. They offer a cloud native environment to th
 - Unified authorization policy model for Linux, Docker, Kubernetes, Istio
 - Scalable for cloud operation
 - Efficient
-- Integration requires identity/attribute mapping, enforcement and validation for the actual platform version
+- Easy to integrate with Linux, Docker, Kubernetes, Istio
 - Open Source
-
-## Performance scope
-
-Measure latency, throughput and policy capacity with the actual revision, hardware, interface, policy data and cache conditions. The current REST wrapper defaults to 1000 requests/second with a burst of 200; this is not an embedded Go engine benchmark. Additional instances still require capacity and policy-propagation validation.

@@ -11,19 +11,19 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>系统架构 - Speedle</title>
-<meta name="description" content="Speedle 的组件、职责与可信边界">
+<meta name="description" content="Speedle building blocks">
 <link rel="alternate" hreflang="en" href="https://speedle.io/docs/architecture/">
 <link rel="alternate" hreflang="x-default" href="https://speedle.io/docs/architecture/"><link rel="alternate" hreflang="zh-CN" href="https://speedle.io/zh/docs/architecture/">
 
 <meta property="og:type" content="article">
 <meta property="og:site_name" content="Speedle Authorization Engine">
 <meta property="og:title" content="系统架构">
-<meta property="og:description" content="Speedle 的组件、职责与可信边界">
+<meta property="og:description" content="Speedle building blocks">
 <meta property="og:url" content="https://speedle.io/zh/docs/architecture/">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="系统架构">
-<meta name="twitter:description" content="Speedle 的组件、职责与可信边界">
-<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://speedle.io/zh/docs/architecture/#page","@type":"TechArticle","about":{"@id":"https://speedle.io/#software"},"description":"Speedle 的组件、职责与可信边界","inLanguage":"zh-CN","isPartOf":{"@id":"https://speedle.io/#website"},"keywords":["Speedle+","authorization engine","fine grained access control","fine-grained access control","FGA","policy engine","authorization policy engine","externalized authorization","授权引擎","细粒度访问控制","策略引擎","授权策略引擎","外置授权","授权外部化","PAP","policy administration point","策略管理点","PDP","policy decision point","策略决策点","PEP","policy enforcement point","策略执行点","PIP","policy information point","策略信息点","centralized authorization","集中式授权","authorization policy management","授权策略管理","authorization decision service","授权决策服务","API authorization","API 授权","API 权限控制","microservices authorization","微服务授权","微服务权限控制","cloud-native authorization","云原生授权"],"name":"系统架构","url":"https://speedle.io/zh/docs/architecture/"}</script>
+<meta name="twitter:description" content="Speedle building blocks">
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://speedle.io/zh/docs/architecture/#page","@type":"TechArticle","about":{"@id":"https://speedle.io/#software"},"description":"Speedle building blocks","inLanguage":"zh-CN","isPartOf":{"@id":"https://speedle.io/#website"},"keywords":["Speedle+","authorization engine","fine grained access control","fine-grained access control","FGA","policy engine","authorization policy engine","externalized authorization","授权引擎","细粒度访问控制","策略引擎","授权策略引擎","外置授权","授权外部化","PAP","policy administration point","策略管理点","PDP","policy decision point","策略决策点","PEP","policy enforcement point","策略执行点","PIP","policy information point","策略信息点","centralized authorization","集中式授权","authorization policy management","授权策略管理","authorization decision service","授权决策服务","API authorization","API 授权","API 权限控制","microservices authorization","微服务授权","微服务权限控制","cloud-native authorization","云原生授权"],"name":"系统架构","url":"https://speedle.io/zh/docs/architecture/"}</script>
 
 <meta name="generator" content="Hugo 0.48" />
 <link href="https://speedle.io/index.xml" rel="alternate" type="application/rss+xml">
@@ -73,7 +73,7 @@
 <div id="main">
   
   <h1>系统架构</h1>
-  <p>Speedle 系统架构</p>
+  <p>Speedle architecture</p>
 
   
 
@@ -84,32 +84,30 @@
   <div id="kube-component" class="content">
     
 
-<h2 id="组成模块">组成模块</h2>
+<h2 id="modules">Modules</h2>
 
-<p>Speedle 是授权引擎，包含三个主要组件：</p>
+<p>Speedle is an authorization engine comprised of these components:</p>
 
 <ul>
-<li><strong>策略管理服务（PMS）</strong>：管理服务、授权策略、角色策略和自定义函数。</li>
-<li><strong>策略仓库</strong>：通过已注册的 file、etcd、MongoDB 等存储持久化这些对象。</li>
-<li><strong>授权决策服务（ADS）</strong>：根据适用策略评估主体、资源、操作和可信属性。</li>
+<li><p>Policy Management Service (PMS) API - Manages the authorization and role policies, and the objects from which they are created.</p></li>
+
+<li><p>Policy repository - Stores all the policy artifacts. The policy repository can be a json file, or a persistent store such as a database or etcd.</p></li>
+
+<li><p>Authorization Decision Service (ADS) API - Evaluates the authorization requests against the applicable policies and returns GRANT/DENY decisions.</p></li>
 </ul>
+
+<p>This diagram shows the interaction between these components.</p>
 
 <p><img src="/img/speedle/spdlarch.jpg" /></p>
 
-<p>历史示意图把决策组件标为 <strong>ARS</strong>，它就是当前文档和 API 中的 <strong>ADS</strong>。</p>
+<p>(1) Users create/manage policies through the Policy Management Service API.<br />
+(2) The Policy Management Service persists the policies in the policy repository.<br />
+(3) The policies are provisioned from the policy repository to the Authorization Decision Service API.<br />
+(4) Users systems invoke the Authorization Decision Service API for authorization checks.</p>
 
-<p>(1) 管理员通过 PMS 管理策略。<br>
-(2) PMS 把策略对象持久化到仓库。<br>
-(3) ADS 加载策略，并异步观察存储支持的变更。<br>
-(4) 应用提供可信请求上下文，调用 ADS，执行决策，并在出错时拒绝操作。</p>
+<p>If you are familiar with the XACML model, the Policy Management Service (PMS) serves as the Policy Administration Point (PAP), and the Authorization Decision Service (ADS) serves as the Policy Decision Point (PDP).</p>
 
-<h2 id="职责与可信边界">职责与可信边界</h2>
-
-<p>按 XACML 术语，PMS 对应策略管理点（PAP），ADS 或嵌入式评估器对应策略决策点（PDP），应用/网关对应策略执行点（PEP）。属性来源承担信息提供（PIP）职责。这是职责对照，不代表支持 XACML 协议。</p>
-
-<p>管理策略、评估权限与认证 API 调用方是不同的职责。独立服务的 REST 与 gRPC 都需要适当的<a href="/zh/docs/security/">安全配置</a>。<a href="/zh/docs/assertor/">令牌断言服务</a>可以验证已配置的身份令牌，但一次策略决策并不能自动认证所有调用方，也不能代替应用阻止操作。</p>
-
-<p><a href="/zh/docs/access-control/">授权与访问控制</a>介绍 RBAC、ABAC、PBAC；<a href="/zh/docs/access-control/identity-iam/">身份与 IAM</a>说明身份边界；<a href="/zh/docs/access-control/oes/">OES</a> 与 <a href="/zh/docs/access-control/xacml/">XACML</a>提供架构比较；<a href="/zh/docs/deployment-embeded/">嵌入模式</a>演示 Go 进程内集成。</p>
+<p><a href="/zh/docs/access-control/">授权与访问控制</a>提供 RBAC、ABAC 和 PBAC 示例；<a href="/zh/docs/access-control/identity-iam/">身份与 IAM 集成</a>说明身份边界；<a href="/zh/docs/access-control/oes/">OES</a> 与 <a href="/zh/docs/access-control/xacml/">XACML</a> 专题介绍架构比较和迁移注意事项。</p>
 
   </div>
 </div>
@@ -161,16 +159,16 @@
 
 <li class=""><span>API</span>
 <ul class="">
-<li class=""><a href="/zh/docs/api/asserter_api/">令牌断言插件 API</a></li>
-<li class=""><a href="/zh/docs/api/decision_api/">授权决策 API</a></li>
-<li class=""><a href="/zh/docs/api/management_api/">策略管理 API</a></li>
+<li class=""><a href="/zh/docs/api/decision_api/">Authorization Runtime/Decision API</a></li>
+<li class=""><a href="/zh/docs/api/management_api/">Policy Management API</a></li>
+<li class=""><a href="/zh/docs/api/asserter_api/">Token Assertion Plugin API</a></li>
 </ul>
   
 </li>
 <li class=""><a href="/zh/docs/security/">安全</a></li>
 <li class=""><a href="/zh/docs/logging/">日志</a></li>
 <li class=""><a href="/zh/docs/versions/">版本</a></li>
-<li class=""><a href="/zh/docs/custom-function/">自定义函数</a></li>
+<li class=""><a href="/zh/docs/custom-function/">Custom Function</a></li>
 </ul>
   
 </li>

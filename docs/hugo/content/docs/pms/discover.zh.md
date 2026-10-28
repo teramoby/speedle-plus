@@ -1,6 +1,6 @@
 +++
 title = "策略发现"
-description = "在受控测试中记录请求并生成待审查策略"
+description = "Discover policies on the fly!"
 weight = 4
 draft = false
 toc = true
@@ -13,7 +13,7 @@ bref = ""
 
 ## 什么是 discovery mode?
 
-当一个系统使用 Speedle 作为权限控制引擎时，在所有保护资源被访问之前， 都会向 Speedle 的 ADS（Authorization Decision Service）发 authorization 请求。所有的 authorization 请求都被被发送到 Speedle ADS 的 is-allowed RESTful endpoint。ARS 根据系统中的所有 policy 计算出当前请求的资源访问是否允许。
+当一个系统使用 Speedle 作为权限控制引擎时，在所有保护资源被访问之前， 都会向 Speedle 的 ARS(Authorization Runtime Service)发 authorization 请求。所有的 authorization 请求都被被发送到 Speedle ARS 的 is-allowed RESTful endpoint。ARS 根据系统中的所有 policy 计算出当前请求的资源访问是否允许。
 
 当系统中需要保护的资源越来越多，为这些资源创建 policy 就是一件比较痛苦的事情。因为 policy 的制定者需要知道如何在 policy 中正确表述资源。discover mode 就是为了解决这一痛点而设计的。简单来说， 我们提供了一个和 is-allowed 有着相同输入和输出的接口 discover, 这个接口永远返回 allowed, 同时记录下 authorization 请求。并提供命令行工具查询被 discover 接口记录下的 authorization 请求,甚至为这些请求生成 Policy.
 
@@ -29,10 +29,6 @@ bref = ""
   因为 discover API 总是返回 is-allowed=true, 所以 discovery mode 相当于关闭了权限检查。
 
 ## 如何使用 discovery mode?
-
-只能在隔离、受控的测试环境中收集请求。生成策略反映所有已观察访问，并不证明访问原本应被授权；导入前必须人工审查 grants、身份域和测试流量范围，并验证允许与拒绝用例。恢复正常授权前必须切回 `is-allowed`。无效请求、断言或存储失败仍会返回错误，不能把“成功时 allowed=true”理解为永不出错。
-
-
 
 ### Step 1. 将系统中所有 is-allowed 调用改成 discover 调用
 
@@ -74,7 +70,7 @@ spctl discover policy --service-name=YOUR_SERVICE_NAME > service.json
 spctl create service --json-file service.json
 ```
 
-### Step 6. 恢复权限检查：将所有 discover 调用改回 is-allowed（必须）
+### Step 6. [optional]将系统中所有 discover 调用改成 is-allowed 调用
 
 最后别忘了将 discovery mode 切回正常模式。也就是 step 1 的逆操作。
 

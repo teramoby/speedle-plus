@@ -11,19 +11,19 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>日志 - Speedle</title>
-<meta name="description" content="日志级别、格式与滚动配置">
+<meta name="description" content="Speedle logging">
 <link rel="alternate" hreflang="en" href="https://speedle.io/docs/logging/">
 <link rel="alternate" hreflang="x-default" href="https://speedle.io/docs/logging/"><link rel="alternate" hreflang="zh-CN" href="https://speedle.io/zh/docs/logging/">
 
 <meta property="og:type" content="article">
 <meta property="og:site_name" content="Speedle Authorization Engine">
 <meta property="og:title" content="日志">
-<meta property="og:description" content="日志级别、格式与滚动配置">
+<meta property="og:description" content="Speedle logging">
 <meta property="og:url" content="https://speedle.io/zh/docs/logging/">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="日志">
-<meta name="twitter:description" content="日志级别、格式与滚动配置">
-<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://speedle.io/zh/docs/logging/#page","@type":"TechArticle","about":{"@id":"https://speedle.io/#software"},"description":"日志级别、格式与滚动配置","inLanguage":"zh-CN","isPartOf":{"@id":"https://speedle.io/#website"},"keywords":["Speedle+"],"name":"日志","url":"https://speedle.io/zh/docs/logging/"}</script>
+<meta name="twitter:description" content="Speedle logging">
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://speedle.io/zh/docs/logging/#page","@type":"TechArticle","about":{"@id":"https://speedle.io/#software"},"description":"Speedle logging","inLanguage":"zh-CN","isPartOf":{"@id":"https://speedle.io/#website"},"keywords":["Speedle+"],"name":"日志","url":"https://speedle.io/zh/docs/logging/"}</script>
 
 <meta name="generator" content="Hugo 0.48" />
 <link href="https://speedle.io/index.xml" rel="alternate" type="application/rss+xml">
@@ -110,7 +110,7 @@ headingSelector: 'h2'
 2. https://github.com/natefinch/lumberjack</pre></div>
 <p>Logrus 是一个针对 go 语言的结构化的日志处理器，它与 go 语言标准的 logger 库完全 API 兼容。因为 logrus 不支持对日志循环滚动处理（rotation），所以我们引入了另外一个开源项目 lumberjack。Logrus 与 lumberjack 之间通过 io.Writer 接口交互，如下图所示,</p>
 
-<p><img src="/img/speedle/logger.jpg" alt="Speedle Logging" /></p>
+<p><img src="../public/speedle/docs/img/logger.jpg" alt="Speedle Logging" /></p>
 
 <h2 id="日志配置">日志配置</h2>
 
@@ -118,7 +118,7 @@ headingSelector: 'h2'
 
 <h3 id="通过命令行参数配置日志">通过命令行参数配置日志</h3>
 
-<p>所有的命令行参数如下所示。level、formatter、reportcaller 配置 logrus，文件与滚动相关设置配置 lumberjack。</p>
+<p>所有的命令行参数如下所示。前两个参数供 logrus 使用，其它的参数则是为 lumberjack 准备的。</p>
 <div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">--log-level string
 --log-formatter string
 --log-reportcaller bool
@@ -204,18 +204,18 @@ ocean&#34;,&#34;size&#34;:10,&#34;time&#34;:&#34;2014-03-10 19:57:38.562264131 -
 <h3 id="通过配置文件配置日志">通过配置文件配置日志</h3>
 
 <p>下面就是一个配置文件的例子，每一项的含义与对应的命令行参数完全一样。同样，所有配置项都是可选的。</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">{
-    <span style="color:#000">&#34;logConfig&#34;</span>: {
-        <span style="color:#000">&#34;level&#34;</span>: <span style="color:#c41a16">&#34;info&#34;</span>,
-        <span style="color:#000">&#34;formatter&#34;</span>: <span style="color:#c41a16">&#34;text&#34;</span>,
-        <span style="color:#000">&#34;setReportCaller&#34;</span>: <span style="color:#a90d91">false</span>,
-        <span style="color:#000">&#34;rotationConfig&#34;</span>: {
-            <span style="color:#000">&#34;filename&#34;</span>: <span style="color:#c41a16">&#34;/mnt/logs/speedle.log&#34;</span>,
-            <span style="color:#000">&#34;maxSize&#34;</span>: <span style="color:#1c01ce">20</span>,
-            <span style="color:#000">&#34;maxBackups&#34;</span>: <span style="color:#1c01ce">5</span>,
-            <span style="color:#000">&#34;maxAge&#34;</span>: <span style="color:#1c01ce">0</span>,
-            <span style="color:#000">&#34;LocalTime&#34;</span>: <span style="color:#a90d91">false</span>,
-            <span style="color:#000">&#34;compress&#34;</span>: <span style="color:#a90d91">false</span>
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">{
+    <span style="color:#c41a16">&#34;logConfig&#34;</span>: {
+        <span style="color:#c41a16">&#34;level&#34;</span>: <span style="color:#c41a16">&#34;info&#34;</span>,
+        <span style="color:#c41a16">&#34;formatter&#34;</span>: <span style="color:#c41a16">&#34;text&#34;</span>,
+        <span style="color:#c41a16">&#34;setReportCaller&#34;</span>: <span style="color:#c41a16">&#34;false&#34;</span>,
+        <span style="color:#c41a16">&#34;rotationConfig&#34;</span>: {
+            <span style="color:#c41a16">&#34;filename&#34;</span>: <span style="color:#c41a16">&#34;/mnt/logs/speedle.log&#34;</span>,
+            <span style="color:#c41a16">&#34;maxSize&#34;</span>: <span style="color:#1c01ce">20</span>,
+            <span style="color:#c41a16">&#34;maxBackups&#34;</span>: <span style="color:#1c01ce">5</span>,
+            <span style="color:#c41a16">&#34;maxAge&#34;</span>: <span style="color:#1c01ce">0</span>,
+            <span style="color:#c41a16">&#34;LocalTime&#34;</span>: <span style="color:#a90d91">false</span>,
+            <span style="color:#c41a16">&#34;compress&#34;</span>: <span style="color:#a90d91">false</span>
         }
     }
 }</code></pre></div>
@@ -314,16 +314,16 @@ ocean&#34;,&#34;size&#34;:10,&#34;time&#34;:&#34;2014-03-10 19:57:38.562264131 -
 
 <li class=""><span>API</span>
 <ul class="">
-<li class=""><a href="/zh/docs/api/asserter_api/">令牌断言插件 API</a></li>
-<li class=""><a href="/zh/docs/api/decision_api/">授权决策 API</a></li>
-<li class=""><a href="/zh/docs/api/management_api/">策略管理 API</a></li>
+<li class=""><a href="/zh/docs/api/decision_api/">Authorization Runtime/Decision API</a></li>
+<li class=""><a href="/zh/docs/api/management_api/">Policy Management API</a></li>
+<li class=""><a href="/zh/docs/api/asserter_api/">Token Assertion Plugin API</a></li>
 </ul>
   
 </li>
 <li class=""><a href="/zh/docs/security/">安全</a></li>
 <li class="active"><a href="/zh/docs/logging/">日志</a></li>
 <li class=""><a href="/zh/docs/versions/">版本</a></li>
-<li class=""><a href="/zh/docs/custom-function/">自定义函数</a></li>
+<li class=""><a href="/zh/docs/custom-function/">Custom Function</a></li>
 </ul>
   
 </li>

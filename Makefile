@@ -1,4 +1,4 @@
-.PHONY: all build test lint coverage release clean image imagePms imageAds push
+.PHONY: all build test lint coverage release clean
 
 gopath := $(shell go env GOPATH)
 gitCommit := $(shell git rev-parse --short HEAD)
@@ -11,11 +11,10 @@ version := $(shell git describe --tags --always --dirty 2>/dev/null || (cat VERS
 goVersion := $(word 3,$(shell go version))
 goLDFlags := -trimpath -ldflags "-s -w -X main.gitCommit=${gitCommit} -X main.productVersion=${version} -X main.goVersion=${goVersion} -X main.buildDate=${buildDate}"
 
-pmsImageRepo ?= speedle-pms
-pmsImageTag ?= dev
-adsImageRepo ?= speedle-ads
-adsImageTag ?= dev
-containerGoVersion ?= 1.26.10
+pmsImageRepo := speedle-pms
+pmsImageTag := v0.1
+adsImageRepo := speedle-ads
+adsImageTag := v0.1
 
 all: build
 
@@ -33,14 +32,14 @@ buildSpctl:
 image: imagePms imageAds
 
 imagePms:
-	docker build -f deployment/docker/speedle-pms/Dockerfile --build-arg GO_VERSION=${containerGoVersion} --build-arg GIT_COMMIT=${gitCommit} --build-arg VERSION=${pmsImageTag} -t ${pmsImageRepo}:${pmsImageTag} .
+	cp ${gopath}/bin/speedle-pms deployment/docker/speedle-pms/.
+	docker build -t ${pmsImageRepo}:${pmsImageTag} --rm --no-cache deployment/docker/speedle-pms
+	rm deployment/docker/speedle-pms/speedle-pms
 
 imageAds:
-	docker build -f deployment/docker/speedle-ads/Dockerfile --build-arg GO_VERSION=${containerGoVersion} --build-arg GIT_COMMIT=${gitCommit} --build-arg VERSION=${adsImageTag} -t ${adsImageRepo}:${adsImageTag} .
-
-push:
-	docker push ${pmsImageRepo}:${pmsImageTag}
-	docker push ${adsImageRepo}:${adsImageTag}
+	cp ${gopath}/bin/speedle-ads deployment/docker/speedle-ads/.
+	docker build -t ${adsImageRepo}:${adsImageTag} --rm --no-cache deployment/docker/speedle-ads
+	rm deployment/docker/speedle-ads/speedle-ads
 
 test: testAll
 

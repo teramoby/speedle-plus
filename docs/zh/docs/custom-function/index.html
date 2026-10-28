@@ -10,20 +10,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1"><meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>自定义函数 - Speedle</title>
-<meta name="description" content="在 SPDL 条件中使用自定义函数">
+<title>Custom Function - Speedle</title>
+<meta name="description" content="Write policy condition with your own functions">
 <link rel="alternate" hreflang="en" href="https://speedle.io/docs/custom-function/">
 <link rel="alternate" hreflang="x-default" href="https://speedle.io/docs/custom-function/"><link rel="alternate" hreflang="zh-CN" href="https://speedle.io/zh/docs/custom-function/">
 
 <meta property="og:type" content="article">
 <meta property="og:site_name" content="Speedle Authorization Engine">
-<meta property="og:title" content="自定义函数">
-<meta property="og:description" content="在 SPDL 条件中使用自定义函数">
+<meta property="og:title" content="Custom Function">
+<meta property="og:description" content="Write policy condition with your own functions">
 <meta property="og:url" content="https://speedle.io/zh/docs/custom-function/">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="自定义函数">
-<meta name="twitter:description" content="在 SPDL 条件中使用自定义函数">
-<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://speedle.io/zh/docs/custom-function/#page","@type":"TechArticle","about":{"@id":"https://speedle.io/#software"},"description":"在 SPDL 条件中使用自定义函数","inLanguage":"zh-CN","isPartOf":{"@id":"https://speedle.io/#website"},"keywords":["Speedle+"],"name":"自定义函数","url":"https://speedle.io/zh/docs/custom-function/"}</script>
+<meta name="twitter:title" content="Custom Function">
+<meta name="twitter:description" content="Write policy condition with your own functions">
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://speedle.io/zh/docs/custom-function/#page","@type":"TechArticle","about":{"@id":"https://speedle.io/#software"},"description":"Write policy condition with your own functions","inLanguage":"zh-CN","isPartOf":{"@id":"https://speedle.io/#website"},"keywords":["Speedle+"],"name":"Custom Function","url":"https://speedle.io/zh/docs/custom-function/"}</script>
 
 <meta name="generator" content="Hugo 0.48" />
 <link href="https://speedle.io/index.xml" rel="alternate" type="application/rss+xml">
@@ -72,7 +72,7 @@
             <main>
 <div id="main">
   
-  <h1>自定义函数</h1>
+  <h1>Custom Function</h1>
   <p></p>
 
   
@@ -103,133 +103,194 @@ headingSelector: 'h2'
   <div id="kube-component" class="content">
     
 
-<h2 id="为什么使用自定义函数">为什么使用自定义函数？</h2>
+<h2 id="为什么需要-custom-function">为什么需要 Custom Function?</h2>
 
-<p>当内置运算或函数不能表达规则时，SPDL 条件可以调用已配置的函数。Speedle 向其 REST 端点发送 <code>POST {&quot;params&quot;:[...]}</code>，预期返回 <code>{&quot;result&quot;:...}</code> 或 <code>{&quot;error&quot;:&quot;...&quot;}</code>。参数顺序、类型和返回类型必须与条件一致。函数失败是评估错误，应用应拒绝访问。</p>
+<p>在 Speedle 中, Policy 和 RolePolicy 都支持 Condition。参见 SPDL(Speedle Policy Definition Language)中的 if 语句。Condition 是由 attribute, function, constant, operator, comparator 等构成。Speedle 提供少量的内置 function。实际应用中存在一些复杂的 Condition，用现有的机制难以表达，比如需要访问其他数据源。这种情况下，custom function 就能发挥作用了。custom function 是对 Condition 中内置 function 的扩展，使得 condition 的定义更为灵活。</p>
 
-<h2 id="启动本地示例">启动本地示例</h2>
+<h2 id="如何使用-custom-function">如何使用 Custom Function?</h2>
 
-<p>示例接受 100 至 50000 之间的数值。参数类型错误或列表为空时返回 HTTP 错误。只有回环 IP 可以使用明文，其他监听地址必须提供 TLS。</p>
+<p>下面介绍使用 Custom Function 的步骤：</p>
 
-<p>在单独终端运行：</p>
+<h3 id="1-实现-custom-function-并按照-speedle-预定义的-custom-function-restful-接口暴露服务">1. 实现 Custom Function， 并按照 Speedle 预定义的 Custom Function RESTFul 接口暴露服务</h3>
 
-<!-- docs-check: function-server -->
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">go run ./samples/docs/custom-function</code></pre></div>
-<!-- docs-source: samples/docs/custom-function/main.go -->
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#a90d91">package</span> <span style="color:#000">main</span>
+<p>Speedle 按预定义的接口调用 custom function，Custom fundtion 的 RESTful endpoint 必须遵循如下接口约定：</p>
+
+<p>HTTP Verb: POST</p>
+
+<p>HTTP Request Body:</p>
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">type CustomerFunctionRequest struct {
+	Params []interface{} `json:&#34;params&#34;`
+}</pre></div>
+<p>HTTP Response Body:</p>
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">type CustomerFunctionResponse struct {
+	Result interface{} `json:&#34;result,omitempty&#34;`
+	Error  string      `json:&#34;error,omitempty&#34;`
+}</pre></div>
+<p>下面是一个简单的 Custom Function 的例子</p>
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><span style="color:#a90d91">package</span> <span style="color:#000">main</span>
 
 <span style="color:#a90d91">import</span> (
 	<span style="color:#c41a16">&#34;encoding/json&#34;</span>
-	<span style="color:#c41a16">&#34;flag&#34;</span>
-	<span style="color:#c41a16">&#34;log&#34;</span>
-	<span style="color:#c41a16">&#34;net&#34;</span>
+	<span style="color:#c41a16">&#34;fmt&#34;</span>
+	<span style="color:#c41a16">&#34;io/ioutil&#34;</span>
 	<span style="color:#c41a16">&#34;net/http&#34;</span>
-	<span style="color:#c41a16">&#34;time&#34;</span>
+	<span style="color:#c41a16">&#34;os&#34;</span>
 )
 
-<span style="color:#a90d91">type</span> <span style="color:#000">request</span> <span style="color:#a90d91">struct</span> {
+<span style="color:#a90d91">var</span> (
+	<span style="color:#000">funcServerCert</span> = <span style="color:#c41a16">`-----BEGIN CERTIFICATE-----
+</span><span style="color:#c41a16">MIID7TCCAtWgAwIBAgIJALM3l/OZ9uJKMA0GCSqGSIb3DQEBCwUAMIGMMQswCQYD
+</span><span style="color:#c41a16">VQQGEwJjbjEQMA4GA1UECAwHYmVpamluZzEQMA4GA1UEBwwHYmVpamluZzEPMA0G
+</span><span style="color:#c41a16">A1UECgwGb3JhY2xlMQwwCgYDVQQLDANpZG0xEjAQBgNVBAMMCWxvY2FsaG9zdDEm
+</span><span style="color:#c41a16">MCQGCSqGSIb3DQEJARYXY3ludGhpYS5kaW5nQG9yYWNsZS5jb20wHhcNMTgwNDI1
+</span><span style="color:#c41a16">MDc1MDMwWhcNMTkwNDI1MDc1MDMwWjCBjDELMAkGA1UEBhMCY24xEDAOBgNVBAgM
+</span><span style="color:#c41a16">B2JlaWppbmcxEDAOBgNVBAcMB2JlaWppbmcxDzANBgNVBAoMBm9yYWNsZTEMMAoG
+</span><span style="color:#c41a16">A1UECwwDaWRtMRIwEAYDVQQDDAlsb2NhbGhvc3QxJjAkBgkqhkiG9w0BCQEWF2N5
+</span><span style="color:#c41a16">bnRoaWEuZGluZ0BvcmFjbGUuY29tMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIB
+</span><span style="color:#c41a16">CgKCAQEAn/AFElluGOZYfvlzBGfHfkd/Q9SuQFsSnQt7Qp63Yuf5Ie/q4NACzWPC
+</span><span style="color:#c41a16">B/L6nQrut4OMxJHvhVAswJozRZrQxXvX/vUxkg+TmALj3U9ejF/5arGtjy5v+yGi
+</span><span style="color:#c41a16">wci7zM4r7VNFJGRkfluNRC1kJi4AY6jk6Gl4d/bX4tBXE8mEFY1rUswYtat3OMja
+</span><span style="color:#c41a16">jVAoocClk6WcaQuK9R1uB+BPyxHLJ04RyKRuepPYRBQjgwHK5kMF3s5p07Os+2JH
+</span><span style="color:#c41a16">5jyJYW2NPs6pQe0k8GWpaar/yZ2eut9gsgHnu5JCWnyedo4nEx6I/G4GSaX+0SeU
+</span><span style="color:#c41a16">/Wb2aqq1QGfVOESml7CVcEa/buTeUwIDAQABo1AwTjAdBgNVHQ4EFgQU5i7CO32N
+</span><span style="color:#c41a16">spQ5AaG/aRU0LX2koYwwHwYDVR0jBBgwFoAU5i7CO32NspQ5AaG/aRU0LX2koYww
+</span><span style="color:#c41a16">DAYDVR0TBAUwAwEB/zANBgkqhkiG9w0BAQsFAAOCAQEAbQuCMPK8f8QuEmTpZBFv
+</span><span style="color:#c41a16">aka9qruT/0/TrxrbxEh68N4moXSTVv4tSrDTmdkwUiiwayuGS7fvKjSV6hwGkQbV
+</span><span style="color:#c41a16">zGbFDdwOw1tPE2OwnA7/+RPl4KmE4iTHnnIanyg9CKmBW/tMp/vUyv5nIt7Xw5n4
+</span><span style="color:#c41a16">tx3C9/hme+Rlx+SVPIAwAjl4nVFNLfzyG+JDBnQWygySm88SzzK0WRgh5V+gyXCK
+</span><span style="color:#c41a16">ucDW5rA6X9/CM3QrSY50mSM6dbyYDMtmTI4dX7E9STTBCNsNNcmgYkX0N9lm5RoF
+</span><span style="color:#c41a16">uBsAcPmp1SVIbXelDHJiIXxMKzwZy8riZQ8+Dw6LMs6wZX7COVvMWN4Dfcuo89av
+</span><span style="color:#c41a16">IQ==
+</span><span style="color:#c41a16">-----END CERTIFICATE-----`</span>
+	<span style="color:#000">funcServerKey</span> = <span style="color:#c41a16">`-----BEGIN PRIVATE KEY-----
+</span><span style="color:#c41a16">MIIEwAIBADANBgkqhkiG9w0BAQEFAASCBKowggSmAgEAAoIBAQCf8AUSWW4Y5lh+
+</span><span style="color:#c41a16">+XMEZ8d+R39D1K5AWxKdC3tCnrdi5/kh7+rg0ALNY8IH8vqdCu63g4zEke+FUCzA
+</span><span style="color:#c41a16">mjNFmtDFe9f+9TGSD5OYAuPdT16MX/lqsa2PLm/7IaLByLvMzivtU0UkZGR+W41E
+</span><span style="color:#c41a16">LWQmLgBjqOToaXh39tfi0FcTyYQVjWtSzBi1q3c4yNqNUCihwKWTpZxpC4r1HW4H
+</span><span style="color:#c41a16">4E/LEcsnThHIpG56k9hEFCODAcrmQwXezmnTs6z7YkfmPIlhbY0+zqlB7STwZalp
+</span><span style="color:#c41a16">qv/JnZ6632CyAee7kkJafJ52jicTHoj8bgZJpf7RJ5T9ZvZqqrVAZ9U4RKaXsJVw
+</span><span style="color:#c41a16">Rr9u5N5TAgMBAAECggEBAJCavJsojGiq61xyQVG8WxyLnD9B7gJ11VB0bw9+3SPp
+</span><span style="color:#c41a16">xNCwUNbOe5okFeyF/Z07ozX9FKstnzgTk0LYqH7ISPYk0NfN7PG4b6PDCS6xcjTN
+</span><span style="color:#c41a16">GX8kAl4wiEKw2K0IxvOXfRPoc91Bf7LXJ9R6jdAPS37P15ditO8SGYMTB4f2bRvm
+</span><span style="color:#c41a16">AMcaVGFZVNrvxbzC7bw+HWX1k1dezjkGf4jl9M6u252K/gMWZz8KaeDlqj48Kwg/
+</span><span style="color:#c41a16">k6hAnk5h28qCFe0wENOOZySgkrGaIV0hO/PeGydALUAbEL1Fn+20+eblT0IhD1v0
+</span><span style="color:#c41a16">6icQMhaxSTtTgnk9GbHF4L+T2quRAwQ4PAR+9t9Vk6ECgYEA1KZWRzBv4q4u075W
+</span><span style="color:#c41a16">Xu7NORmYJ9HuqL5QdQSb5qsFU7MfXQpK5BP9VDc38qTL5zyD5D40Tpjio7WX6BCp
+</span><span style="color:#c41a16">yWwH+brBmijneZFJ3r/pI8Oyut0m7uX/bbkOmTFrrIwE8lpeOzcUObtUw7uwByWV
+</span><span style="color:#c41a16">lmHP/fYiGMVNitxuTauxVejN6QsCgYEAwIrD3TRC6B9VHRLNiU/F1iuZTPWrCN+j
+</span><span style="color:#c41a16">XXA4ihzlcZFXqBNqlCrN0BDn7cOloob0zLB5T+8hoL5hsIiVg8tn7qDVqnvgql0e
+</span><span style="color:#c41a16">XKcasw0nGv4zI8cpHx7X7V8FxZUyyIAVd3rf33MO8qMTzBrshTh+JSsg5A1eVkjd
+</span><span style="color:#c41a16">9cONGAgLfNkCgYEAidvYPUiqkGNp2j4gEmVwSF9OZCpWNbFDyckWJQGkb3HFmHTO
+</span><span style="color:#c41a16">vnQzHIC71aN+yUdTHgoxsO6up4FXnMwItptBxGWNk5qHDinhoPX7eAMsALbUwbX7
+</span><span style="color:#c41a16">1S9OxoPikTcpEdECHBOGGjNXLZmk8c0s4BRDWhpSWoq2zZpALDxtuAs4SqcCgYEA
+</span><span style="color:#c41a16">m9y5CQwRTU5v3AUolQsan3DTvFTyi1BeMnlxi3ww0GpThx+Qmzi7Or80wGgsYRDW
+</span><span style="color:#c41a16">ggwpZ+ewVStIcVtfjTzPeYCA9m0pRT/0IBS1rFPtYBB+3WuPgj25ldHiHjvUzDHD
+</span><span style="color:#c41a16">LuEs8Pl3FDum/waciItesj/jdDjOMRLzess+IEIC6qECgYEAiA9S52BhIs8R3bYl
+</span><span style="color:#c41a16">5urE2VBVchLLNejgCEyhCv6rE4MibqX4oWwsmLM960rFhw+8UGwPKb0fwwq456f1
+</span><span style="color:#c41a16">vFKFOLz3XCMP6kg1g4dDcB7oRhO+9B4dk+QrUt349VlSaBA/sZ96mEL9ajudec5v
+</span><span style="color:#c41a16">5Amt4mqzY19IT2D8tE+saR2/U4I=
+</span><span style="color:#c41a16">-----END PRIVATE KEY-----`</span>
+)
+
+<span style="color:#a90d91">type</span> <span style="color:#000">CustomerFunctionRequest</span> <span style="color:#a90d91">struct</span> {
 	<span style="color:#000">Params</span> []<span style="color:#a90d91">interface</span>{} <span style="color:#c41a16">`json:&#34;params&#34;`</span>
 }
-<span style="color:#a90d91">type</span> <span style="color:#000">response</span> <span style="color:#a90d91">struct</span> {
+
+<span style="color:#a90d91">type</span> <span style="color:#000">CustomerFunctionResponse</span> <span style="color:#a90d91">struct</span> {
 	<span style="color:#000">Result</span> <span style="color:#a90d91">interface</span>{} <span style="color:#c41a16">`json:&#34;result,omitempty&#34;`</span>
 	<span style="color:#000">Error</span>  <span style="color:#a90d91">string</span>      <span style="color:#c41a16">`json:&#34;error,omitempty&#34;`</span>
 }
 
-<span style="color:#a90d91">func</span> <span style="color:#000">isValid</span>(<span style="color:#000">w</span> <span style="color:#000">http</span>.<span style="color:#000">ResponseWriter</span>, <span style="color:#000">r</span> <span style="color:#000">*</span><span style="color:#000">http</span>.<span style="color:#000">Request</span>) {
-	<span style="color:#000">send</span> <span style="color:#000">:=</span> <span style="color:#a90d91">func</span>(<span style="color:#000">status</span> <span style="color:#a90d91">int</span>, <span style="color:#000">value</span> <span style="color:#000">response</span>) {
-		<span style="color:#000">w</span>.<span style="color:#000">Header</span>().<span style="color:#000">Set</span>(<span style="color:#c41a16">&#34;Content-Type&#34;</span>, <span style="color:#c41a16">&#34;application/json&#34;</span>)
-		<span style="color:#000">w</span>.<span style="color:#000">WriteHeader</span>(<span style="color:#000">status</span>)
-		<span style="color:#000">_</span> = <span style="color:#000">json</span>.<span style="color:#000">NewEncoder</span>(<span style="color:#000">w</span>).<span style="color:#000">Encode</span>(<span style="color:#000">value</span>)
-	}
-	<span style="color:#a90d91">if</span> <span style="color:#000">r</span>.<span style="color:#000">Method</span> <span style="color:#000">!=</span> <span style="color:#000">http</span>.<span style="color:#000">MethodPost</span> {
-		<span style="color:#000">w</span>.<span style="color:#000">Header</span>().<span style="color:#000">Set</span>(<span style="color:#c41a16">&#34;Allow&#34;</span>, <span style="color:#c41a16">&#34;POST&#34;</span>)
-		<span style="color:#000">send</span>(<span style="color:#1c01ce">405</span>, <span style="color:#000">response</span>{<span style="color:#000">Error</span>: <span style="color:#c41a16">&#34;POST required&#34;</span>})
-		<span style="color:#a90d91">return</span>
-	}
-	<span style="color:#000">decoder</span> <span style="color:#000">:=</span> <span style="color:#000">json</span>.<span style="color:#000">NewDecoder</span>(<span style="color:#000">http</span>.<span style="color:#000">MaxBytesReader</span>(<span style="color:#000">w</span>, <span style="color:#000">r</span>.<span style="color:#000">Body</span>, <span style="color:#1c01ce">1</span><span style="color:#000">&lt;&lt;</span><span style="color:#1c01ce">20</span>))
-	<span style="color:#000">decoder</span>.<span style="color:#000">DisallowUnknownFields</span>()
-	<span style="color:#a90d91">var</span> <span style="color:#000">input</span> <span style="color:#000">request</span>
-	<span style="color:#a90d91">if</span> <span style="color:#000">err</span> <span style="color:#000">:=</span> <span style="color:#000">decoder</span>.<span style="color:#000">Decode</span>(<span style="color:#000">&amp;</span><span style="color:#000">input</span>); <span style="color:#000">err</span> <span style="color:#000">!=</span> <span style="color:#a90d91">nil</span> <span style="color:#000">||</span> <span style="color:#a90d91">len</span>(<span style="color:#000">input</span>.<span style="color:#000">Params</span>) <span style="color:#000">==</span> <span style="color:#1c01ce">0</span> {
-		<span style="color:#000">send</span>(<span style="color:#1c01ce">400</span>, <span style="color:#000">response</span>{<span style="color:#000">Error</span>: <span style="color:#c41a16">&#34;params must contain at least one number&#34;</span>})
-		<span style="color:#a90d91">return</span>
-	}
-	<span style="color:#000">valid</span> <span style="color:#000">:=</span> <span style="color:#a90d91">true</span>
-	<span style="color:#a90d91">for</span> <span style="color:#000">_</span>, <span style="color:#000">param</span> <span style="color:#000">:=</span> <span style="color:#a90d91">range</span> <span style="color:#000">input</span>.<span style="color:#000">Params</span> {
-		<span style="color:#000">value</span>, <span style="color:#000">ok</span> <span style="color:#000">:=</span> <span style="color:#000">param</span>.(<span style="color:#a90d91">float64</span>)
-		<span style="color:#a90d91">if</span> !<span style="color:#000">ok</span> {
-			<span style="color:#000">send</span>(<span style="color:#1c01ce">400</span>, <span style="color:#000">response</span>{<span style="color:#000">Error</span>: <span style="color:#c41a16">&#34;all params must be numbers&#34;</span>})
-			<span style="color:#a90d91">return</span>
+<span style="color:#a90d91">func</span> <span style="color:#000">CustomFunctionIsValid</span>(<span style="color:#000">w</span> <span style="color:#000">http</span>.<span style="color:#000">ResponseWriter</span>, <span style="color:#000">r</span> <span style="color:#000">*</span><span style="color:#000">http</span>.<span style="color:#000">Request</span>) {
+	<span style="color:#000">decoder</span> <span style="color:#000">:=</span> <span style="color:#000">json</span>.<span style="color:#000">NewDecoder</span>(<span style="color:#000">r</span>.<span style="color:#000">Body</span>)
+	<span style="color:#a90d91">var</span> <span style="color:#000">request</span> <span style="color:#000">CustomerFunctionRequest</span>
+	<span style="color:#a90d91">var</span> <span style="color:#000">response</span> <span style="color:#000">CustomerFunctionResponse</span>
+	<span style="color:#000">httpSatus</span> <span style="color:#000">:=</span> <span style="color:#000">http</span>.<span style="color:#000">StatusOK</span>
+
+	<span style="color:#a90d91">if</span> <span style="color:#000">err</span> <span style="color:#000">:=</span> <span style="color:#000">decoder</span>.<span style="color:#000">Decode</span>(<span style="color:#000">&amp;</span><span style="color:#000">request</span>); <span style="color:#000">err</span> <span style="color:#000">!=</span> <span style="color:#a90d91">nil</span> {
+		<span style="color:#000">fmt</span>.<span style="color:#000">Println</span>(<span style="color:#000">err</span>)
+		<span style="color:#000">response</span> = <span style="color:#000">CustomerFunctionResponse</span>{
+			<span style="color:#000">Error</span>: <span style="color:#c41a16">&#34;error decoding request&#34;</span>,
 		}
-		<span style="color:#a90d91">if</span> <span style="color:#000">value</span> &lt; <span style="color:#1c01ce">100</span> <span style="color:#000">||</span> <span style="color:#000">value</span> &gt; <span style="color:#1c01ce">50000</span> {
-			<span style="color:#000">valid</span> = <span style="color:#a90d91">false</span>
+		<span style="color:#000">httpSatus</span> = <span style="color:#000">http</span>.<span style="color:#000">StatusBadRequest</span>
+	} <span style="color:#a90d91">else</span> {
+		<span style="color:#000">fmt</span>.<span style="color:#000">Printf</span>(<span style="color:#c41a16">&#34;request = %v\n&#34;</span>, <span style="color:#000">request</span>)
+		<span style="color:#000">maxValue</span> <span style="color:#000">:=</span> <span style="color:#a90d91">float64</span>(<span style="color:#1c01ce">50000</span>)
+		<span style="color:#000">minValue</span> <span style="color:#000">:=</span> <span style="color:#a90d91">float64</span>(<span style="color:#1c01ce">100</span>)
+		<span style="color:#000">isValid</span> <span style="color:#000">:=</span> <span style="color:#a90d91">true</span>
+		<span style="color:#a90d91">for</span> <span style="color:#000">index</span>, <span style="color:#000">param</span> <span style="color:#000">:=</span> <span style="color:#a90d91">range</span> <span style="color:#000">request</span>.<span style="color:#000">Params</span> {
+			<span style="color:#000">fmt</span>.<span style="color:#000">Printf</span>(<span style="color:#c41a16">&#34;param %d: value=%v\n&#34;</span>, <span style="color:#000">index</span>, <span style="color:#000">param</span>)
+			<span style="color:#000">paramValue</span> <span style="color:#000">:=</span> <span style="color:#000">param</span>.(<span style="color:#a90d91">float64</span>)
+			<span style="color:#a90d91">if</span> <span style="color:#000">paramValue</span> &lt; <span style="color:#000">minValue</span> <span style="color:#000">||</span> <span style="color:#000">paramValue</span> &gt; <span style="color:#000">maxValue</span> {
+				<span style="color:#000">fmt</span>.<span style="color:#000">Println</span>(<span style="color:#c41a16">&#34;invalid&#34;</span>)
+				<span style="color:#000">isValid</span> = <span style="color:#a90d91">false</span>
+				<span style="color:#a90d91">break</span>
+			}
+		}
+		<span style="color:#000">response</span> = <span style="color:#000">CustomerFunctionResponse</span>{
+			<span style="color:#000">Result</span>: <span style="color:#000">isValid</span>,
 		}
 	}
-	<span style="color:#000">send</span>(<span style="color:#1c01ce">200</span>, <span style="color:#000">response</span>{<span style="color:#000">Result</span>: <span style="color:#000">valid</span>})
+	<span style="color:#000">payload</span>, <span style="color:#000">err</span> <span style="color:#000">:=</span> <span style="color:#000">json</span>.<span style="color:#000">Marshal</span>(<span style="color:#000">response</span>)
+	<span style="color:#a90d91">if</span> <span style="color:#000">err</span> <span style="color:#000">!=</span> <span style="color:#a90d91">nil</span> {
+		<span style="color:#000">fmt</span>.<span style="color:#000">Println</span>(<span style="color:#000">err</span>)
+	} <span style="color:#a90d91">else</span> {
+		<span style="color:#000">fmt</span>.<span style="color:#000">Println</span>(<span style="color:#c41a16">&#34;repsonse=&#34;</span>, <span style="color:#a90d91">string</span>(<span style="color:#000">payload</span>))
+	}
+	<span style="color:#000">w</span>.<span style="color:#000">Header</span>().<span style="color:#000">Set</span>(<span style="color:#c41a16">&#34;Content-Type&#34;</span>, <span style="color:#c41a16">&#34;application/json; charset=UTF-8&#34;</span>)
+	<span style="color:#000">w</span>.<span style="color:#000">WriteHeader</span>(<span style="color:#000">httpSatus</span>)
+	<span style="color:#000">w</span>.<span style="color:#000">Write</span>(<span style="color:#000">payload</span>)
 }
+
 <span style="color:#a90d91">func</span> <span style="color:#000">main</span>() {
-	<span style="color:#000">listen</span> <span style="color:#000">:=</span> <span style="color:#000">flag</span>.<span style="color:#000">String</span>(<span style="color:#c41a16">&#34;listen&#34;</span>, <span style="color:#c41a16">&#34;127.0.0.1:23456&#34;</span>, <span style="color:#c41a16">&#34;Function listen address&#34;</span>)
-	<span style="color:#000">cert</span> <span style="color:#000">:=</span> <span style="color:#000">flag</span>.<span style="color:#000">String</span>(<span style="color:#c41a16">&#34;cert&#34;</span>, <span style="color:#c41a16">&#34;&#34;</span>, <span style="color:#c41a16">&#34;TLS server certificate&#34;</span>)
-	<span style="color:#000">key</span> <span style="color:#000">:=</span> <span style="color:#000">flag</span>.<span style="color:#000">String</span>(<span style="color:#c41a16">&#34;key&#34;</span>, <span style="color:#c41a16">&#34;&#34;</span>, <span style="color:#c41a16">&#34;TLS server key&#34;</span>)
-	<span style="color:#000">flag</span>.<span style="color:#000">Parse</span>()
-	<span style="color:#a90d91">if</span> (<span style="color:#000">*</span><span style="color:#000">cert</span> <span style="color:#000">==</span> <span style="color:#c41a16">&#34;&#34;</span>) <span style="color:#000">!=</span> (<span style="color:#000">*</span><span style="color:#000">key</span> <span style="color:#000">==</span> <span style="color:#c41a16">&#34;&#34;</span>) {
-		<span style="color:#000">log</span>.<span style="color:#000">Fatal</span>(<span style="color:#c41a16">&#34;provide both --cert and --key&#34;</span>)
+	<span style="color:#000">http</span>.<span style="color:#000">HandleFunc</span>(<span style="color:#c41a16">&#34;/func/isValid&#34;</span>, <span style="color:#000">CustomFunctionIsValid</span>)
+	<span style="color:#177500">// cp the content of funcServerCert to ./funcServer.crt, cp the content of funcServerKey to ./funcServer.key
+</span><span style="color:#177500"></span>	<span style="color:#a90d91">if</span> <span style="color:#000">_</span>, <span style="color:#000">err</span> <span style="color:#000">:=</span> <span style="color:#000">os</span>.<span style="color:#000">Stat</span>(<span style="color:#c41a16">&#34;./funcServer.crt&#34;</span>); <span style="color:#000">os</span>.<span style="color:#000">IsNotExist</span>(<span style="color:#000">err</span>) {
+		<span style="color:#a90d91">if</span> <span style="color:#000">err1</span> <span style="color:#000">:=</span> <span style="color:#000">ioutil</span>.<span style="color:#000">WriteFile</span>(<span style="color:#c41a16">&#34;./funcServer.crt&#34;</span>, []<span style="color:#a90d91">byte</span>(<span style="color:#000">funcServerCert</span>), <span style="color:#1c01ce">0644</span>); <span style="color:#000">err1</span> <span style="color:#000">!=</span> <span style="color:#a90d91">nil</span> {
+			<span style="color:#000">fmt</span>.<span style="color:#000">Println</span>(<span style="color:#c41a16">&#34;error creating crt file&#34;</span>)
+		}
 	}
-	<span style="color:#000">mux</span> <span style="color:#000">:=</span> <span style="color:#000">http</span>.<span style="color:#000">NewServeMux</span>()
-	<span style="color:#000">mux</span>.<span style="color:#000">HandleFunc</span>(<span style="color:#c41a16">&#34;/func/isValid&#34;</span>, <span style="color:#000">isValid</span>)
-	<span style="color:#000">server</span> <span style="color:#000">:=</span> <span style="color:#000">&amp;</span><span style="color:#000">http</span>.<span style="color:#000">Server</span>{<span style="color:#000">Addr</span>: <span style="color:#000">*</span><span style="color:#000">listen</span>, <span style="color:#000">Handler</span>: <span style="color:#000">mux</span>, <span style="color:#000">ReadHeaderTimeout</span>: <span style="color:#1c01ce">5</span> <span style="color:#000">*</span> <span style="color:#000">time</span>.<span style="color:#000">Second</span>, <span style="color:#000">ReadTimeout</span>: <span style="color:#1c01ce">10</span> <span style="color:#000">*</span> <span style="color:#000">time</span>.<span style="color:#000">Second</span>, <span style="color:#000">WriteTimeout</span>: <span style="color:#1c01ce">10</span> <span style="color:#000">*</span> <span style="color:#000">time</span>.<span style="color:#000">Second</span>}
-	<span style="color:#a90d91">if</span> <span style="color:#000">*</span><span style="color:#000">cert</span> <span style="color:#000">!=</span> <span style="color:#c41a16">&#34;&#34;</span> {
-		<span style="color:#000">log</span>.<span style="color:#000">Fatal</span>(<span style="color:#000">server</span>.<span style="color:#000">ListenAndServeTLS</span>(<span style="color:#000">*</span><span style="color:#000">cert</span>, <span style="color:#000">*</span><span style="color:#000">key</span>))
+	<span style="color:#a90d91">if</span> <span style="color:#000">_</span>, <span style="color:#000">err</span> <span style="color:#000">:=</span> <span style="color:#000">os</span>.<span style="color:#000">Stat</span>(<span style="color:#c41a16">&#34;./funcServer.key&#34;</span>); <span style="color:#000">os</span>.<span style="color:#000">IsNotExist</span>(<span style="color:#000">err</span>) {
+		<span style="color:#a90d91">if</span> <span style="color:#000">err1</span> <span style="color:#000">:=</span> <span style="color:#000">ioutil</span>.<span style="color:#000">WriteFile</span>(<span style="color:#c41a16">&#34;./funcServer.key&#34;</span>, []<span style="color:#a90d91">byte</span>(<span style="color:#000">funcServerKey</span>), <span style="color:#1c01ce">0644</span>); <span style="color:#000">err1</span> <span style="color:#000">!=</span> <span style="color:#a90d91">nil</span> {
+			<span style="color:#000">fmt</span>.<span style="color:#000">Println</span>(<span style="color:#c41a16">&#34;error creating key file&#34;</span>)
+		}
 	}
-	<span style="color:#000">host</span>, <span style="color:#000">_</span>, <span style="color:#000">err</span> <span style="color:#000">:=</span> <span style="color:#000">net</span>.<span style="color:#000">SplitHostPort</span>(<span style="color:#000">*</span><span style="color:#000">listen</span>)
-	<span style="color:#a90d91">if</span> <span style="color:#000">err</span> <span style="color:#000">!=</span> <span style="color:#a90d91">nil</span> <span style="color:#000">||</span> !<span style="color:#000">net</span>.<span style="color:#000">ParseIP</span>(<span style="color:#000">host</span>).<span style="color:#000">IsLoopback</span>() {
-		<span style="color:#000">log</span>.<span style="color:#000">Fatal</span>(<span style="color:#c41a16">&#34;plaintext examples require a loopback IP; provide TLS certificates for other addresses&#34;</span>)
+	<span style="color:#000">err</span> <span style="color:#000">:=</span> <span style="color:#000">http</span>.<span style="color:#000">ListenAndServeTLS</span>(<span style="color:#c41a16">&#34;:23456&#34;</span>, <span style="color:#c41a16">&#34;./funcServer.crt&#34;</span>, <span style="color:#c41a16">&#34;./funcServer.key&#34;</span>, <span style="color:#a90d91">nil</span>)
+	<span style="color:#a90d91">if</span> <span style="color:#000">err</span> <span style="color:#000">!=</span> <span style="color:#a90d91">nil</span> {
+		<span style="color:#000">fmt</span>.<span style="color:#000">Println</span>(<span style="color:#000">err</span>.<span style="color:#000">Error</span>())
 	}
-	<span style="color:#000">log</span>.<span style="color:#000">Fatal</span>(<span style="color:#000">server</span>.<span style="color:#000">ListenAndServe</span>())
-}</code></pre></div>
-<h2 id="运行示例前">运行示例前</h2>
+}</pre></div>
+<h2 id="2-在-speedle-中创建-custom-function-的定义-将-function-名字和-restful-endpoint-绑定">2. 在 Speedle 中创建 Custom Function 的定义， 将 function 名字和 RESTFul Endpoint 绑定</h2>
 
-<p>先按<a href="/zh/quick-start/">快速入门</a>编译仓库根目录下的 <code>./bin/spctl</code>、<code>./bin/speedle-pms</code> 和 <code>./bin/speedle-ads</code>，需要 Go 1.26 或更高版本、Bash、curl 和 Python 3。下面各终端都从仓库根目录运行。为本页使用一个新的策略文件；仅在两个服务都停止后重建该文件。</p>
+<p>Custom Function 的定义如下：</p>
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">type Function struct {
+	Name           string            `json:&#34;name&#34;`
+	Description    string            `json:&#34;description,omitempty&#34;`
+	FuncURL        string            `json:&#34;funcURL&#34;`                  //endpoint of the function
+	CA             string            `json:&#34;ca,omitempty&#34;`             //tls related configurations
+	ResultCachable bool              `json:&#34;resultCachable,omitempty&#34;` //false by default
+	ResultTTL      int64             `json:&#34;resultTTL,omitempty&#34;`      //TTL of function result in second
+}</pre></div>
+<p>创建 custom function 的定义可通过 Speedle Policy Management Service (PMS) REST API, 或者用 Speedle CLI 工具 (spctl).<br />
+下面的例子展示了如何用命令行工具(spctl)创建上面例子中的 custom function &lsquo;isValid&rsquo;。
+下面的 JSON file (function.json) 包含 custom function &lsquo;isValid&rsquo; 的定义：</p>
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">function.json file:
+{
+    &#34;name&#34; : &#34;isValid&#34;,
+    &#34;funcURL&#34; : &#34;https://localhost:23456/func/isValid&#34;,
+    &#34;resultCachable&#34;: true,
+    &#34;resultTTL&#34;: 300,
+    &#34;ca&#34;:&#34;-----BEGIN CERTIFICATE-----\nMIID7TCCAtWgAwIBAgIJALM3l/OZ9uJKMA0GCSqGSIb3DQEBCwUAMIGMMQswCQYD\nVQQGEwJjbjEQMA4GA1UECAwHYmVpamluZzEQMA4GA1UEBwwHYmVpamluZzEPMA0G\nA1UECgwGb3JhY2xlMQwwCgYDVQQLDANpZG0xEjAQBgNVBAMMCWxvY2FsaG9zdDEm\nMCQGCSqGSIb3DQEJARYXY3ludGhpYS5kaW5nQG9yYWNsZS5jb20wHhcNMTgwNDI1\nMDc1MDMwWhcNMTkwNDI1MDc1MDMwWjCBjDELMAkGA1UEBhMCY24xEDAOBgNVBAgM\nB2JlaWppbmcxEDAOBgNVBAcMB2JlaWppbmcxDzANBgNVBAoMBm9yYWNsZTEMMAoG\nA1UECwwDaWRtMRIwEAYDVQQDDAlsb2NhbGhvc3QxJjAkBgkqhkiG9w0BCQEWF2N5\nbnRoaWEuZGluZ0BvcmFjbGUuY29tMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIB\nCgKCAQEAn/AFElluGOZYfvlzBGfHfkd/Q9SuQFsSnQt7Qp63Yuf5Ie/q4NACzWPC\nB/L6nQrut4OMxJHvhVAswJozRZrQxXvX/vUxkg+TmALj3U9ejF/5arGtjy5v+yGi\nwci7zM4r7VNFJGRkfluNRC1kJi4AY6jk6Gl4d/bX4tBXE8mEFY1rUswYtat3OMja\njVAoocClk6WcaQuK9R1uB+BPyxHLJ04RyKRuepPYRBQjgwHK5kMF3s5p07Os+2JH\n5jyJYW2NPs6pQe0k8GWpaar/yZ2eut9gsgHnu5JCWnyedo4nEx6I/G4GSaX+0SeU\n/Wb2aqq1QGfVOESml7CVcEa/buTeUwIDAQABo1AwTjAdBgNVHQ4EFgQU5i7CO32N\nspQ5AaG/aRU0LX2koYwwHwYDVR0jBBgwFoAU5i7CO32NspQ5AaG/aRU0LX2koYww\nDAYDVR0TBAUwAwEB/zANBgkqhkiG9w0BAQsFAAOCAQEAbQuCMPK8f8QuEmTpZBFv\naka9qruT/0/TrxrbxEh68N4moXSTVv4tSrDTmdkwUiiwayuGS7fvKjSV6hwGkQbV\nzGbFDdwOw1tPE2OwnA7/+RPl4KmE4iTHnnIanyg9CKmBW/tMp/vUyv5nIt7Xw5n4\ntx3C9/hme+Rlx+SVPIAwAjl4nVFNLfzyG+JDBnQWygySm88SzzK0WRgh5V+gyXCK\nucDW5rA6X9/CM3QrSY50mSM6dbyYDMtmTI4dX7E9STTBCNsNNcmgYkX0N9lm5RoF\nuBsAcPmp1SVIbXelDHJiIXxMKzwZy8riZQ8+Dw6LMs6wZX7COVvMWN4Dfcuo89av\nIQ==\n-----END CERTIFICATE-----&#34;
+}</pre></div>
+<p>用 spctl create function 命令创建 custom function 定义：</p>
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">./spctl create function --json-file=function.json</pre></div>
+<h3 id="3-在-policy-或-role-policy-的-condition-中使用-custom-function">3. 在 policy 或 role-policy 的 condition 中使用 custom function</h3>
 
-<p>初始化空策略文件：</p>
+<p>下面的例子展示了如何在 policy 的 condition 中使用 &lsquo;isValid&rsquo; custom function.</p>
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">./spctl create policy -c &#34;grant user Ally access library if isValid(attr1)&#34; --service-name=service1</pre></div>
+<h3 id="声明">声明:</h3>
 
-<!-- docs-check: setup -->
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#a90d91">printf</span> <span style="color:#c41a16">&#39;{}\n&#39;</span> &gt; docs-policies.json</code></pre></div>
-<p>终端一启动 PMS，并保持运行：</p>
-
-<!-- docs-check: pms -->
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./bin/speedle-pms --store-type file --filestore-loc ./docs-policies.json --endpoint <span style="color:#1c01ce">127</span>.0.0.1:6733 --grpc-endpoint <span style="color:#1c01ce">127</span>.0.0.1:0 --insecure<span style="color:#000">=</span>true</code></pre></div>
-<p>终端二启动 ADS，并保持运行：</p>
-
-<!-- docs-check: ads -->
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./bin/speedle-ads --store-type file --filestore-loc ./docs-policies.json --endpoint <span style="color:#1c01ce">127</span>.0.0.1:6734 --grpc-endpoint <span style="color:#1c01ce">127</span>.0.0.1:0 --insecure<span style="color:#000">=</span>true</code></pre></div>
-<p>在第三个终端运行后续命令。PMS/ADS 共享同一个文件，策略更新通过 watch 异步到达 ADS；先查询确认已更新，再依赖新策略做决策。<code>--insecure=true</code> 仅用于回环地址上的本地示例，生产连接见<a href="/zh/docs/security/">安全配置</a>。示例显式指定 PMS 地址，不修改 <code>~/.spctlconfig</code>。完成后在两个服务终端按 Ctrl-C。</p>
-
-<h2 id="注册并调用函数">注册并调用函数</h2>
-
-<p>以下定义关闭结果缓存，使每次决策反映本次请求。先创建服务，再创建策略。</p>
-
-<!-- docs-check: function-fixture -->
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">cat &gt; <span style="color:#a90d91">function</span>.json <span style="color:#c41a16">&lt;&lt;&#39;JSON&#39;
-</span><span style="color:#c41a16">{&#34;name&#34;:&#34;isValid&#34;,&#34;funcURL&#34;:&#34;http://127.0.0.1:23456/func/isValid&#34;,&#34;resultCachable&#34;:false}
-</span><span style="color:#c41a16">JSON</span>
-./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ create <span style="color:#a90d91">function</span> --json-file <span style="color:#a90d91">function</span>.json
-./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ create service service1
-./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ create policy -c <span style="color:#c41a16">&#34;grant user Ally access library if isValid(attr1)&#34;</span> --service-name service1</code></pre></div>
-<p>以下两条请求分别返回 Allow（<code>200</code> 在范围内）、Deny（<code>50</code> 不在范围内）：</p>
-
-<!-- docs-check: function-allow -->
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl --fail --silent --show-error -H <span style="color:#c41a16">&#39;Content-Type: application/json&#39;</span> <span style="color:#c41a16">\
-</span><span style="color:#c41a16"></span>  -d <span style="color:#c41a16">&#39;{&#34;subject&#34;:{&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;,&#34;name&#34;:&#34;Ally&#34;}]},&#34;serviceName&#34;:&#34;service1&#34;,&#34;resource&#34;:&#34;library&#34;,&#34;action&#34;:&#34;access&#34;,&#34;attributes&#34;:[{&#34;name&#34;:&#34;attr1&#34;,&#34;type&#34;:&#34;numeric&#34;,&#34;value&#34;:200}]}&#39;</span> <span style="color:#c41a16">\
-</span><span style="color:#c41a16"></span>  http://127.0.0.1:6734/authz-check/v1/is-allowed</code></pre></div>
-<!-- docs-check: function-deny -->
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl --fail --silent --show-error -H <span style="color:#c41a16">&#39;Content-Type: application/json&#39;</span> <span style="color:#c41a16">\
-</span><span style="color:#c41a16"></span>  -d <span style="color:#c41a16">&#39;{&#34;subject&#34;:{&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;,&#34;name&#34;:&#34;Ally&#34;}]},&#34;serviceName&#34;:&#34;service1&#34;,&#34;resource&#34;:&#34;library&#34;,&#34;action&#34;:&#34;access&#34;,&#34;attributes&#34;:[{&#34;name&#34;:&#34;attr1&#34;,&#34;type&#34;:&#34;numeric&#34;,&#34;value&#34;:50}]}&#39;</span> <span style="color:#c41a16">\
-</span><span style="color:#c41a16"></span>  http://127.0.0.1:6734/authz-check/v1/is-allowed</code></pre></div>
-<h2 id="tls-与缓存">TLS 与缓存</h2>
-
-<p>TLS 端点先生成新的<a href="/zh/docs/security/">本地测试证书</a>，然后运行 <code>go run ./samples/docs/custom-function --cert ./tls/server.crt --key ./tls/server.key</code>。注册时 <code>funcURL</code> 为 <code>https://localhost:23456/func/isValid</code>，<code>ca</code> 填写 <code>tls/ca.crt</code> 中的 <strong>PEM 证书内容</strong>，不是文件路径。生产证书必须覆盖实际主机。无需使用过期的硬编码证书或私钥。</p>
-
-<p><code>resultCachable</code> 默认为 false；启用缓存后，<code>resultTTL</code> 表示结果缓存秒数。只有当结果在相应时间和参数组合下仍然正确时才应缓存，例如账号状态等外部数据可能在 TTL 到期前变化。定义管理见 <a href="/zh/docs/api/management_api/">PMS 函数 API</a>。浏览器 Playground 不支持调用外部自定义函数。</p>
+<p>使用者必须自己确保 condition 中的函数参数 RESTful service 接受的函数参数匹配.</p>
 
   </div>
 </div>
@@ -281,16 +342,16 @@ headingSelector: 'h2'
 
 <li class=""><span>API</span>
 <ul class="">
-<li class=""><a href="/zh/docs/api/asserter_api/">令牌断言插件 API</a></li>
-<li class=""><a href="/zh/docs/api/decision_api/">授权决策 API</a></li>
-<li class=""><a href="/zh/docs/api/management_api/">策略管理 API</a></li>
+<li class=""><a href="/zh/docs/api/decision_api/">Authorization Runtime/Decision API</a></li>
+<li class=""><a href="/zh/docs/api/management_api/">Policy Management API</a></li>
+<li class=""><a href="/zh/docs/api/asserter_api/">Token Assertion Plugin API</a></li>
 </ul>
   
 </li>
 <li class=""><a href="/zh/docs/security/">安全</a></li>
 <li class=""><a href="/zh/docs/logging/">日志</a></li>
 <li class=""><a href="/zh/docs/versions/">版本</a></li>
-<li class="active"><a href="/zh/docs/custom-function/">自定义函数</a></li>
+<li class="active"><a href="/zh/docs/custom-function/">Custom Function</a></li>
 </ul>
   
 </li>

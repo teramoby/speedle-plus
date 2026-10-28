@@ -1,6 +1,0 @@
-{
-  "name": "onlineBookStore",
-  "type": "application",
-  "rolePolicies": [{"id": "reader-roles", "effect": "grant", "principals": ["user:Alan"], "roles": ["role1", "role2"]}],
-  "policies": [{"id": "download-book", "effect": "grant", "principals": [["role:role1"]], "permissions": [{"resource": "/books/HarryPotter", "actions": ["download"]}]}]
-}

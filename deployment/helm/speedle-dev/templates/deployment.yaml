@@ -1,12 +1,14 @@
-{{- if ne (int .Values.replicaCount) 1 }}
-{{- fail "The file-store development chart requires replicaCount=1; use the etcd chart for multiple replicas." }}
-{{- end }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "speedle.fullname" . }}
+  name: {{ template "speedle.fullname" . }}
+  labels:
+    app: speedle
+    chart: {{ template "speedle.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
 spec:
-  replicas: 1
+  replicas: {{ .Values.replicaCount }}
   selector:
     matchLabels:
       app: speedle
@@ -17,85 +19,71 @@ spec:
         app: speedle
         release: {{ .Release.Name }}
     spec:
-      serviceAccountName: {{ include "speedle.serviceAccountName" . }}
-      automountServiceAccountToken: false
+      serviceAccountName: {{ template "speedle.fullname" . }}
       securityContext:
         runAsNonRoot: true
         runAsUser: 1000
-        runAsGroup: 1000
         fsGroup: 1000
-      {{- if .Values.image.pullSecret }}
       imagePullSecrets:
-        - name: {{ .Values.image.pullSecret | quote }}
-      {{- end }}
+        - name: "{{ .Values.image.pullSecret }}"
       containers:
         - name: pms
-          image: {{ .Values.image.pms | quote }}
+          image: "{{ .Values.image.pms }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
-          args: ["--insecure=true", "--endpoint=0.0.0.0:6733", "--grpc-endpoint=0.0.0.0:50001", "--health-endpoint=127.0.0.1:8081"]
+          volumeMounts:
+            - mountPath: /var/lib/speedle
+              name: policy-store
           ports:
             - name: pms
               containerPort: 6733
-            - name: pms-grpc
-              containerPort: 50001
-          volumeMounts:
-            - name: policy-store
-              mountPath: /var/lib/speedle
+              protocol: TCP
           securityContext:
+            runAsNonRoot: true
+            readOnlyRootFilesystem: false
             allowPrivilegeEscalation: false
-            readOnlyRootFilesystem: true
-            capabilities:
-              drop: ["ALL"]
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
-          startupProbe:
-            {{- include "speedle.execProbe" (dict "port" 8081 "path" "livez") | nindent 12 }}
-            periodSeconds: 2
-            failureThreshold: 30
           livenessProbe:
-            {{- include "speedle.execProbe" (dict "port" 8081 "path" "livez") | nindent 12 }}
+            httpGet:
+              path: /health
+              port: 6733
+            initialDelaySeconds: 30
             periodSeconds: 10
-            failureThreshold: 3
           readinessProbe:
-            {{- include "speedle.execProbe" (dict "port" 8081 "path" "readyz") | nindent 12 }}
+            httpGet:
+              path: /health
+              port: 6733
+            initialDelaySeconds: 5
             periodSeconds: 5
-            failureThreshold: 3
         - name: ads
-          image: {{ .Values.image.ads | quote }}
+          image: "{{ .Values.image.ads }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
-          args: ["--insecure=true", "--endpoint=0.0.0.0:6734", "--grpc-endpoint=0.0.0.0:50002", "--health-endpoint=127.0.0.1:8082"]
+          volumeMounts:
+            - mountPath: /var/lib/speedle
+              name: policy-store
           ports:
             - name: ads
               containerPort: 6734
-            - name: ads-grpc
-              containerPort: 50002
-          volumeMounts:
-            - name: policy-store
-              mountPath: /var/lib/speedle
+              protocol: TCP
           securityContext:
+            runAsNonRoot: true
+            readOnlyRootFilesystem: false
             allowPrivilegeEscalation: false
-            readOnlyRootFilesystem: true
-            capabilities:
-              drop: ["ALL"]
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
-          startupProbe:
-            {{- include "speedle.execProbe" (dict "port" 8082 "path" "livez") | nindent 12 }}
-            periodSeconds: 2
-            failureThreshold: 30
           livenessProbe:
-            {{- include "speedle.execProbe" (dict "port" 8082 "path" "livez") | nindent 12 }}
+            httpGet:
+              path: /health
+              port: 6734
+            initialDelaySeconds: 30
             periodSeconds: 10
-            failureThreshold: 3
           readinessProbe:
-            {{- include "speedle.execProbe" (dict "port" 8082 "path" "readyz") | nindent 12 }}
+            httpGet:
+              path: /health
+              port: 6734
+            initialDelaySeconds: 5
             periodSeconds: 5
-            failureThreshold: 3
       volumes:
-        - name: policy-store
-          {{- if .Values.storage.existingClaim }}
-          persistentVolumeClaim:
-            claimName: {{ .Values.storage.existingClaim | quote }}
-          {{- else }}
-          emptyDir: {}
-          {{- end }}
+      - name: policy-store
+        hostPath:
+          path: /home/opc/policystore

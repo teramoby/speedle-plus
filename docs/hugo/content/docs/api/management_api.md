@@ -8,8 +8,4 @@ customcss = true
 customcssfile = "swagger-custom.css"
 +++
 
-Reference for your configured PMS. Requests and responses are JSON; policy IDs are strings and responses are flat objects.
-
-[Security and endpoint configuration](/docs/security/). This is a contract reference, not a backend hosted by speedle.io.
-
-{{< swagger-spec url="/swagger/policy-manage.yaml" >}}
+{{< swagger-spec url="/swagger/policy-manage.yaml"  >}}
