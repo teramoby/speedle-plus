@@ -121,7 +121,7 @@ Issue的内容请包括：
       <guid>https://speedle.io/zh/quick-start/</guid>
       <description>先在 Playground 中试用 无需安装，即可先体验 Speedle 的基本功能。 打开 Playground 策略实验室，编辑 SPDL 策略、设置用户、资源和动作，即可在浏览器中查看真实的 Allow/Deny（允许／拒绝）授权结果，无需安装 Go 或启动服务。
 准备在本机编译和运行 Speedle 时，再继续下面的步骤。
-准备环境 准备 Linux 或 macOS、Bash、Git、curl，以及 Go 1.26.3 或更新版本。项目模块要求 Go 1.26；本教程已在 Go 1.26.10 和 Go 1.27.3 上验证，推荐使用稳定版 Go 1.27.3 完成本教程。
+准备环境 准备 Linux 或 macOS、Bash、Git、curl，以及 Go 1.25 或更新版本。Speedle+ 支持最近的三个 Go 大版本；本教程已在 Go 1.25.14、Go 1.26.10 和 Go 1.27.3 上验证，推荐使用稳定版 Go 1.27.3 完成本教程。
 按照 Go 官方安装说明安装，然后检查版本：
 go version Go 会自动配置 GOROOT 和默认的 GOPATH，无需手动指定。下面将程序编译到源码目录下的 bin 目录。
 第一步：下载源码并编译 git clone --depth 1 https://github.com/teramoby/speedle-plus.git cd speedle-plus mkdir -p bin go build -o ./bin/ ./cmd/spctl ./cmd/speedle-pms ./cmd/speedle-ads ls bin 输出目录中应有三个程序：</description>

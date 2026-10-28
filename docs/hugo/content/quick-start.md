@@ -20,7 +20,7 @@ Continue below when you are ready to build and run Speedle locally.
 
 ## Prerequisites
 
-Use Linux or macOS with Bash, Git, curl and **Go 1.26.3 or newer**. The module requires Go 1.26; this guide is verified with **Go 1.26.10 and Go 1.27.3**. Go 1.27.3 is the recommended stable release for this walkthrough.
+Use Linux or macOS with Bash, Git, curl and **Go 1.25 or newer**. Speedle+ supports the three most recent Go releases; this guide is verified with **Go 1.25.14, Go 1.26.10 and Go 1.27.3**. Go 1.27.3 is the recommended stable release for this walkthrough.
 
 Install Go using the [official installation instructions](https://go.dev/doc/install), then check the installed version:
 

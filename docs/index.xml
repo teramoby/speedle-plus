@@ -112,7 +112,7 @@ Join us at speedle-users and/or speedle-developers groups.</description>
       <guid>https://speedle.io/quick-start/</guid>
       <description>Try Speedle in the Playground first You can try Speedle&amp;rsquo;s basic features before installing anything. Open the Playground to edit SPDL policies, set a user, resource and action, and see real Allow/Deny decisions entirely in your browser. No Go installation or running server is required.
 Continue below when you are ready to build and run Speedle locally.
-Prerequisites Use Linux or macOS with Bash, Git, curl and Go 1.26.3 or newer.</description>
+Prerequisites Use Linux or macOS with Bash, Git, curl and Go 1.25 or newer.</description>
     </item>
     
     <item>
