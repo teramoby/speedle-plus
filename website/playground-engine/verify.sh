@@ -6,6 +6,7 @@ node website/playground-engine/tests/form-model.test.cjs
 node website/playground-engine/tests/form-dom.test.cjs
 PLAYGROUND_LOCALE=zh node website/playground-engine/tests/form-dom.test.cjs
 node website/playground-engine/tests/site.test.cjs
+node --check docs/hugo/static/js/command-copy.js
 python3 website/tests/test_language_routes.py
 python3 website/localize-links.py docs --check
 python3 website/tests/check_seo.py docs

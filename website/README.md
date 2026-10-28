@@ -72,6 +72,12 @@ a shared lock protect the fixed gRPC ports. Only owned fixture processes stop.
 The same checks run on the existing self-hosted build runner pool through
 `playground-engine/verify.sh`.
 
+Both quick-start guides enable `copycommands` with the page-specific
+`command-copy.css` and `command-copy.js` assets. Executable Bash blocks gain a
+keyboard-accessible copy control and localized feedback; example output is left
+alone. Clipboard text comes from the original code node, preserving line breaks.
+The commands remain readable and selectable when JavaScript is disabled.
+
 See [SEO.md](SEO.md) for the bilingual topic map, metadata contracts and
 post-deployment measurement. Public guides are source content, not hidden
 search-only pages. The shared sidebar uses local template variables so concurrent
