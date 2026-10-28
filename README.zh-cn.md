@@ -47,7 +47,7 @@ Speedle+ 项目基于 Speedle 项目 <https://github.com/oracle/speedle>，两�
 
 - [系统架构](#系统架构)
 - [快速开始](#快速开始)
-- [SPDL — 安全策略定义语言](#spdl--安全策略定义语言)
+- [SPDL — Speedle 策略定义语言](#spdl--speedle-策略定义语言)
 - [策略管理](#策略管理)
 - [授权决策](#授权决策)
 - [高级功能](#高级功能)
@@ -208,7 +208,7 @@ curl -s -X POST \
 
 ---
 
-## SPDL — 安全策略定义语言
+## SPDL — Speedle 策略定义语言
 
 SPDL 是 Speedle 易读易写的策略定义语言。
 

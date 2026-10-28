@@ -44,7 +44,7 @@ We are the founding members of Speedle project. Now we are not Oracle employees 
 
 - [Architecture](#architecture)
 - [Quick Start](#quick-start)
-- [SPDL — Security Policy Definition Language](#spdl--security-policy-definition-language)
+- [SPDL — Speedle Policy Definition Language](#spdl--speedle-policy-definition-language)
 - [Policy Management](#policy-management)
 - [Authorization Decisions](#authorization-decisions)
 - [Advanced Features](#advanced-features)
@@ -205,7 +205,7 @@ curl -s -X POST \
 
 ---
 
-## SPDL — Security Policy Definition Language
+## SPDL — Speedle Policy Definition Language
 
 SPDL is Speedle's human-readable policy definition language.
 

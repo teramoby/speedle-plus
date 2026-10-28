@@ -278,7 +278,7 @@ Version 0.1.0 release notes: This is the first open source version. All basic fu
       
       <guid>https://speedle.io/about/</guid>
       <description>Speedle is an open source, fine-grained access control engine built to address authorization requirements in cloud-native applications. Speedle offers policy-driven access control that provides the ability to externalize authorization decisions to a policy engine that that can evaluate RBAC/ABAC policies for a given logged-in user, or on a process acting on behalf of a user. Speedle includes SPDL, the Speedle Policy Definition Language.
-Speedle was first developed at Oracle, whose commercial product for fine-grained authorization is Oracle Entitlements Server (OES).</description>
+Speedle was built by the team behind Oracle Entitlements Server (OES).</description>
     </item>
     
     <item>
