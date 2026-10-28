@@ -23,7 +23,9 @@ pages, `中文` on English pages), including inside the mobile navigation menu.
   localized homepage; the language router keeps language switches on the same
   page. Mobile links stay visible until their controller initializes, so primary
   navigation also works when JavaScript is disabled or the script fails to load.
-  Legacy archived navigation continues to use `master.js` unchanged.
+  `localize-links.py` gives archived snapshots the same header: its links stay in
+  the snapshot where it has the page (and anchor), and otherwise lead to the
+  current site.
 
 ## Generate and publish
 

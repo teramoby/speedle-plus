@@ -12,6 +12,9 @@ from urllib.parse import unquote, urljoin, urlsplit, urlunsplit
 ORIGIN = "https://speedle.io"
 NAVIGATION_VERSION = "language-direct-20261026"
 PREVIEW = re.compile(r"^/[0-9a-f]{32}(?=/)")
+HEADER_VERSION = "header-20261027"
+HEADER_ASSETS = (f'<link href="/css/navigation.css?v={HEADER_VERSION}" rel="stylesheet">\n'
+                 f'<script src="/js/navigation.js?v={HEADER_VERSION}" defer></script>\n')
 
 
 def logical(path):
@@ -66,6 +69,48 @@ def direct_language_navigation(text, route):
         return re.sub(r'[ \t]*<nav\b[^>]*class="langsel show-sm"[^>]*>[\s\S]*?</nav>[ \t]*\n?', '', header, count=1)
 
     return re.sub(r'<header\b[^>]*>[\s\S]*?</header>', upgrade, text, count=1)
+
+
+def archive_header(site, text, route):
+    """Give archived snapshots the current homepage header.
+
+    Header links keep the snapshot's version where it has the page (and anchor),
+    and otherwise lead to the current site.
+    """
+    prefix = snapshot(route)
+    lang = language(route)
+    home = "/zh/" if lang == "zh" else "/"
+    source = site.root / home.lstrip("/") / "index.html"
+    if not prefix or not source.is_file():
+        return text
+    header = re.search(r'<header class="site-header">[\s\S]*?</header>', source.read_text())
+    if not header or not re.search(r"<header\b", text):
+        return text
+
+    def destination(match):
+        href = match[2]
+        if href.startswith("#"):
+            href = home + href
+        url = urlsplit(href)
+        if url.netloc or not url.path.startswith("/"):
+            return match[0]
+        versioned = prefix + logical(url.path)
+        page = site.pages.get(versioned)
+        if versioned in site.canonical and page and (
+                not url.fragment or f'id="{url.fragment}"' in re.sub(r"<header\b[\s\S]*?</header>", "", page[1])):
+            href = urlunsplit(("", "", versioned, url.query, url.fragment))
+        return match[1] + href + '"'
+
+    unified = re.sub(r'(<a\b(?![^>]*hreflang)[^>]*\shref=")([^"]*)"', destination, header[0])
+    text = re.sub(r"<header\b[^>]*>[\s\S]*?</header>", lambda _: unified, text, count=1)
+    # Earlier snapshots carry their own copies of the navigation stylesheet and menu script.
+    text = re.sub(r'[ \t]*<link rel="stylesheet" href="' + re.escape(prefix) + r'/css/navigation\.css">\n?', "", text)
+    text = re.sub(r"[ \t]*<script>\s*const button = document\.querySelector\('\.menu'\);[\s\S]*?</script>\n?", "", text)
+    if "/js/navigation.js" not in text:
+        end = text.lower().find("</head>")
+        if end >= 0:
+            text = text[:end] + HEADER_ASSETS + text[end:]
+    return text
 
 
 class Metadata(HTMLParser):
@@ -192,6 +237,9 @@ class Links(HTMLParser):
                         if "aria-label" in attrs:
                             changes["aria-label"] = "切换到中文" if switch == "zh" else "Switch to English"
                         self.switches.add(switch)
+                elif self.prefix and any("site-header" in scope for _, scope in self.stack):
+                    if canonical_path(url.path) not in self.site.canonical:
+                        self.errors.append(f"{self.route}: broken header link {href}")
                 elif not href.startswith("#"):
                     destination = self.site.resolve(url.path, self.prefix)
                     if destination:
@@ -261,7 +309,7 @@ def process(root, check=False):
     site = Site(root)
     errors, changed = [], 0
     for route, (file, text, redirect) in site.pages.items():
-        links = Links(site, route, direct_language_navigation(text, route))
+        links = Links(site, route, archive_header(site, direct_language_navigation(text, route), route))
         errors.extend(links.errors)
         if not redirect:
             opposite = "en" if language(route) == "zh" else "zh"

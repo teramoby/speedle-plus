@@ -102,6 +102,29 @@ class LanguageRoutes(unittest.TestCase):
         self.assertIn(f'href="{prefix}/docs/spdl/" lang="en" hreflang="en"', text)
         self.assertIn(f'href="{prefix}/zh/docs/store/"', text)
 
+    def test_archives_use_the_current_homepage_header(self):
+        prefix = self.archive()
+        for home, label in [("/", "Docs"), ("/zh/", "文档")]:
+            self.write(home, '<html><head></head><body><header class="site-header"><a class="brand" href="#top">Speedle</a>'
+                       f'<nav class="nav-links"><a href="#about">About</a><a href="{home}docs/store/">{label}</a>'
+                       f'<a href="{home}docs/spdl/">SPDL</a><a href="{home}">Home</a></nav></header>'
+                       '<main id="top"><section id="about"></section></main></body></html>')
+        self.write(prefix + "/", '<html><head></head><body><header>Old</header><main id="top">Archived home.</main></body></html>')
+        self.write(prefix + "/zh/", '<html><head></head><body><header id="about">Old</header><main id="top"></main></body></html>')
+        self.process()
+        text = (self.root / prefix.lstrip("/") / "zh/docs/spdl/index.html").read_text()
+        self.assertIn(f'<a class="brand" href="{prefix}/zh/#top">', text)
+        self.assertIn('<a href="/zh/#about">About</a>', text)
+        self.assertIn(f'<a href="{prefix}/zh/docs/store/">文档</a>', text)
+        self.assertIn(f'<a href="{prefix}/docs/spdl/" lang="en" hreflang="en">English</a>', text)
+        self.assertIn('/js/navigation.js?v=header-20261027', text)
+        self.assertIn('Original archived content.', text)
+        self.assertNotIn('langsel', text)
+        english = (self.root / prefix.lstrip("/") / "index.html").read_text()
+        self.assertIn('<a href="/#about">About</a>', english)
+        self.assertIn('Archived home.', english)
+        self.process(check=True)
+
     def test_archived_pagination_redirect_retains_the_snapshot(self):
         prefix = self.archive()
         self.write(prefix + "/blog/page/1/", '<html><head><meta http-equiv="refresh" content="0; url=/blog/">'
