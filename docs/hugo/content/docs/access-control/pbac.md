@@ -8,7 +8,7 @@ bref = "Separate policy management, authorization decisions and enforcement"
 
 ## What PBAC means here
 
-Policy-based access control (PBAC) expresses authorization rules as managed policies instead of scattering permission checks across application code. Speedle+ uses the Security Policy Definition Language (SPDL), a Policy Management Service (PMS), and an Authorization Decision Service (ADS) or embedded evaluator.
+Policy-based access control (PBAC) expresses authorization rules as managed policies instead of scattering permission checks across application code. Speedle+ uses the Speedle Policy Definition Language (SPDL), a Policy Management Service (PMS), and an Authorization Decision Service (ADS) or embedded evaluator.
 
 PBAC describes how rules are expressed and managed. [RBAC](/docs/access-control/rbac/) describes role relationships; [ABAC](/docs/access-control/abac/) describes attribute conditions. A Speedle policy-based system can use both.
 

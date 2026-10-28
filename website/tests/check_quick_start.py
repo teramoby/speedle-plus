@@ -14,6 +14,7 @@ import json
 import os
 import re
 import signal
+import shutil
 import socket
 import subprocess
 import tempfile
@@ -191,6 +192,16 @@ def main():
     parser.add_argument("--toolchain", help="Exact Go toolchain, for example go1.27.3")
     parser.add_argument("--report", type=Path)
     args = parser.parse_args()
+    if os.environ.get("RUNNER_NAME"):
+        for command in (["unshare", "--user", "--map-root-user", "--net", "true"],
+                        ["docker", "version", "--format", "{{.Server.Version}}"],
+                        ["ss", "-ltnp", "sport = :50001 or sport = :50002"]):
+            if shutil.which(command[0]):
+                try:
+                    check = subprocess.run(command, capture_output=True, text=True, timeout=10)
+                    print(f"Isolation probe {command[0]}: rc={check.returncode}; {check.stdout[-1500:]} {check.stderr[-500:]}", flush=True)
+                except subprocess.TimeoutExpired:
+                    print(f"Isolation probe {command[0]} timed out", flush=True)
     env = {key: value for key, value in os.environ.items() if not key.startswith("SPDL_")}
     if args.toolchain:
         env["GOTOOLCHAIN"] = args.toolchain

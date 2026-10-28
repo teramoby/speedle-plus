@@ -1,5 +1,5 @@
 {{ define "main" }}
-<div id="main">
+<div id="main"{{ if .Params.singlelinetitle }} class="single-line-title"{{ end }}>
   {{if .Params.icon }}
   <image class="top-right-icon" src="/img/speedle/{{.Params.icon}}"></image>
   {{ end }}

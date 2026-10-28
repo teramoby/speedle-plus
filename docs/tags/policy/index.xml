@@ -38,12 +38,12 @@
       
       <guid>https://speedle.io/docs/pms/policy-mgmt/</guid>
       <description>What is a Speedle policy? A Speedle policy is a set of criteria that specify whether a user is granted access to a particular protected resource or assignment to a particular role. You manage Speedle policies using the Speedle Policy Management Service(PMS).
-Understanding the Speedle Policy Module Note: The Speedle syntax used in this document is defined in SPDL - Security Policy Definition Language.
+Understanding the Speedle Policy Module Note: The Speedle syntax used in this document is defined in SPDL - Speedle Policy Definition Language.
 Policy store The policy store maintains all policy artifacts and can be persisted to an etcd store or a JSON file.</description>
     </item>
     
     <item>
-      <title>SPDL - Security Policy Definition Language</title>
+      <title>SPDL - Speedle Policy Definition Language</title>
       <link>https://speedle.io/docs/spdl/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
