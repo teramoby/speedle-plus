@@ -269,6 +269,10 @@ func TestPublishedContractsAgainstNativeServices(t *testing.T) {
 			call(t, pms, pm, "DELETE", "/function/docsFunction", "/function/{functionName}", nil, 204)
 			call(t, pms, pm, "DELETE", "/function", "/function", nil, 204)
 			call(t, pms, pm, "POST", "/service", "/service", map[string]interface{}{"name": "crud", "type": "application"}, 201)
+			custom := call(t, pms, pm, "POST", "/service", "/service", map[string]interface{}{"name": "custom", "type": "custom-service"}, 201)
+			if custom["type"] != "custom-service" {
+				t.Fatalf("custom service type was not preserved: %v", custom)
+			}
 			call(t, pms, pm, "GET", "/service", "/service", nil, 200)
 			call(t, pms, pm, "GET", "/service/crud", "/service/{serviceName}", nil, 200)
 			for _, kind := range []string{"policy", "role-policy"} {

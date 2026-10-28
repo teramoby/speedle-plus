@@ -258,9 +258,7 @@ definitions:
       - name
     type: object
   ServiceTypeEnum:
-    enum:
-      - application
-      - k8s-cluster
+    description: 服务类型是自由字符串，最多 256 个 UTF-8 字节。常见值为 application 和 k8s-cluster。
     type: string
   Subject:
     description: 授权请求的主体

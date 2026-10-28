@@ -258,9 +258,7 @@ definitions:
       - name
     type: object
   ServiceTypeEnum:
-    enum:
-      - application
-      - k8s-cluster
+    description: Service type is a free-form string, limited to 256 UTF-8 bytes. Common values are application and k8s-cluster.
     type: string
   Subject:
     description: Subject of policy evaluation request
