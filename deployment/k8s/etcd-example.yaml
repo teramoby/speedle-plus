@@ -1,0 +1,87 @@
+# Single-member demonstration with a PVC. Production should supply an etcd
+# cluster with the availability, backup, access control and TLS it requires.
+apiVersion: v1
+kind: Service
+metadata:
+  name: speedle-etcd
+spec:
+  clusterIP: None
+  selector:
+    app: speedle-example-etcd
+  ports:
+    - name: client
+      port: 2379
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: speedle-etcd
+spec:
+  serviceName: speedle-etcd
+  replicas: 1
+  selector:
+    matchLabels:
+      app: speedle-example-etcd
+  template:
+    metadata:
+      labels:
+        app: speedle-example-etcd
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+      containers:
+        - name: etcd
+          image: quay.io/coreos/etcd:v3.5.35
+          command: ["/usr/local/bin/etcd"]
+          args:
+            - --name=example
+            - --data-dir=/var/lib/etcd
+            - --listen-client-urls=http://0.0.0.0:2379
+            - --advertise-client-urls=http://speedle-etcd:2379
+            - --listen-peer-urls=http://127.0.0.1:2380
+            - --initial-advertise-peer-urls=http://127.0.0.1:2380
+            - --initial-cluster=example=http://127.0.0.1:2380
+          ports:
+            - name: client
+              containerPort: 2379
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/etcd
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: "1"
+              memory: 512Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          startupProbe:
+            tcpSocket:
+              port: client
+            periodSeconds: 2
+            failureThreshold: 30
+          livenessProbe:
+            tcpSocket:
+              port: client
+            periodSeconds: 10
+          readinessProbe:
+            exec:
+              command: ["/usr/local/bin/etcdctl", "--endpoints=http://127.0.0.1:2379", "endpoint", "health"]
+            timeoutSeconds: 3
+            periodSeconds: 5
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 1Gi

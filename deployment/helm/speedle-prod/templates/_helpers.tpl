@@ -30,3 +30,17 @@ Create chart name and version as used by the chart label.
 {{- define "speedle.chart" -}}
 {{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
+
+{{- define "speedle.serviceAccountName" -}}
+{{- if .Values.serviceAccount.create -}}
+{{- default (include "speedle.fullname" .) .Values.serviceAccount.name -}}
+{{- else -}}
+{{- default "default" .Values.serviceAccount.name -}}
+{{- end -}}
+{{- end -}}
+
+{{- define "speedle.execProbe" -}}
+exec:
+  command: ["wget", "-q", "-T", "2", "-O", "/dev/null", "http://127.0.0.1:{{ .port }}/{{ .path }}"]
+timeoutSeconds: 3
+{{- end -}}
