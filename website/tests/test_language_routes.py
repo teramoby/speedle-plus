@@ -50,6 +50,14 @@ class LanguageRoutes(unittest.TestCase):
         text = (self.root / "categories/docs/page/2/index.html").read_text()
         self.assertIn('href="/zh/categories/docs/page/2/"', text)
 
+    def test_homepage_section_links_keep_the_language_and_fragment(self):
+        self.write('/zh/docs/spdl/', '<html><nav class="nav-links"><a href="/#features">Features</a>'
+                   '<a href="/" hreflang="en">English</a></nav><main>Unchanged</main></html>')
+        self.process()
+        text = (self.root / 'zh/docs/spdl/index.html').read_text()
+        self.assertIn('href="/zh/#features"', text)
+        self.assertIn('href="/docs/spdl/" hreflang="en"', text)
+
     def test_published_headers_have_one_direct_opposite_language_link(self):
         prefix = self.archive()
         routes = ['/docs/spdl/', '/zh/docs/spdl/', prefix + '/docs/spdl/', prefix + '/zh/docs/spdl/']
