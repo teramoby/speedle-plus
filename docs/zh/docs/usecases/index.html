@@ -11,19 +11,19 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>使用场景 - Speedle</title>
-<meta name="description" content="授权集成场景与性能适用范围">
+<meta name="description" content="Who, What &amp; Where?">
 <link rel="alternate" hreflang="en" href="https://speedle.io/docs/usecases/">
 <link rel="alternate" hreflang="x-default" href="https://speedle.io/docs/usecases/"><link rel="alternate" hreflang="zh-CN" href="https://speedle.io/zh/docs/usecases/">
 
 <meta property="og:type" content="article">
 <meta property="og:site_name" content="Speedle Authorization Engine">
 <meta property="og:title" content="使用场景">
-<meta property="og:description" content="授权集成场景与性能适用范围">
+<meta property="og:description" content="Who, What &amp; Where?">
 <meta property="og:url" content="https://speedle.io/zh/docs/usecases/">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="使用场景">
-<meta name="twitter:description" content="授权集成场景与性能适用范围">
-<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://speedle.io/zh/docs/usecases/#page","@type":"TechArticle","about":{"@id":"https://speedle.io/#software"},"description":"授权集成场景与性能适用范围","inLanguage":"zh-CN","isPartOf":{"@id":"https://speedle.io/#website"},"keywords":["Speedle+","authorization engine","fine grained access control","fine-grained access control","FGA","policy engine","authorization policy engine","externalized authorization","授权引擎","细粒度访问控制","策略引擎","授权策略引擎","外置授权","授权外部化","centralized authorization","集中式授权","authorization policy management","授权策略管理","API authorization","API 授权","API 权限控制","microservices authorization","微服务授权","微服务权限控制","cloud-native authorization","云原生授权"],"name":"使用场景","url":"https://speedle.io/zh/docs/usecases/"}</script>
+<meta name="twitter:description" content="Who, What &amp; Where?">
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://speedle.io/zh/docs/usecases/#page","@type":"TechArticle","about":{"@id":"https://speedle.io/#software"},"description":"Who, What \u0026amp; Where?","inLanguage":"zh-CN","isPartOf":{"@id":"https://speedle.io/#website"},"keywords":["Speedle+","authorization engine","fine grained access control","fine-grained access control","FGA","policy engine","authorization policy engine","externalized authorization","授权引擎","细粒度访问控制","策略引擎","授权策略引擎","外置授权","授权外部化","centralized authorization","集中式授权","authorization policy management","授权策略管理","API authorization","API 授权","API 权限控制","microservices authorization","微服务授权","微服务权限控制","cloud-native authorization","云原生授权"],"name":"使用场景","url":"https://speedle.io/zh/docs/usecases/"}</script>
 
 <meta name="generator" content="Hugo 0.48" />
 <link href="https://speedle.io/index.xml" rel="alternate" type="application/rss+xml">
@@ -73,7 +73,7 @@
 <div id="main">
   
   <h1>使用场景</h1>
-  <p>理解不同应用如何集成策略管理与授权决策</p>
+  <p>本文描述几个通用的用户场景，抛砖引玉，希望可以给读者带来一点启发。</p>
 
   
 <script type="text/javascript">
@@ -124,11 +124,11 @@ headingSelector: 'h2'
 <p>如何解决这个问题？Speedle 能帮上忙。</p>
 
 <ol>
-<li>Speedle 可以表达 RBAC、ABAC 和部分 ACL 场景，具体规则应根据所需语义验证。</li>
-<li>Speedle 提供 REST、gRPC 和 Go API；集成工作包括可信身份/属性映射、错误处理、结果执行与接口安全。</li>
-<li>可承载的策略数量取决于策略结构、角色关系、存储与实例资源，应使用实际数据集验证。</li>
-<li>延迟与吞吐应以所用版本、接口、硬件、数据集和缓存条件下的测试结果为准，不能据此承诺不会影响业务。</li>
-<li>当前 REST 服务默认限流为每秒 1000 请求、突发 200；这不是 Go 嵌入式引擎的性能基准。扩容还需验证存储容量、策略传播与负载分配。</li>
+<li>Speedle 的授权策略语言足够灵活，可以完美支持 ABAC，RBAC，ACL 等各种流行的模型。</li>
+<li>Speedle 提供 REST，gRPC 和 GO API，很容易和各种系统集成。</li>
+<li>Speedle 可以支持百万量级的授权策略，足够支持一个企业的所有业务需求。</li>
+<li>Speedle 运行速度很快，可以在数毫秒内处理一个授权请求。不会拖慢现有系统。</li>
+<li>一个 Speedle 实例每秒钟可以处理 30,000 - 40,000 次并发授权请求。如果这还不够，再启动一个实例，Speedle 有几乎无限的可扩展性。</li>
 </ol>
 
 <p>基于以上特性，陈先生可以启动一组 Speedle 服务，把各个系统的权限控制模块指向 Speedle 服务。这样就可以用统一个授权模型和语言来管理这些系统了。</p>
@@ -183,16 +183,16 @@ headingSelector: 'h2'
 
 <li class=""><span>API</span>
 <ul class="">
-<li class=""><a href="/zh/docs/api/asserter_api/">令牌断言插件 API</a></li>
-<li class=""><a href="/zh/docs/api/decision_api/">授权决策 API</a></li>
-<li class=""><a href="/zh/docs/api/management_api/">策略管理 API</a></li>
+<li class=""><a href="/zh/docs/api/decision_api/">Authorization Runtime/Decision API</a></li>
+<li class=""><a href="/zh/docs/api/management_api/">Policy Management API</a></li>
+<li class=""><a href="/zh/docs/api/asserter_api/">Token Assertion Plugin API</a></li>
 </ul>
   
 </li>
 <li class=""><a href="/zh/docs/security/">安全</a></li>
 <li class=""><a href="/zh/docs/logging/">日志</a></li>
 <li class=""><a href="/zh/docs/versions/">版本</a></li>
-<li class=""><a href="/zh/docs/custom-function/">自定义函数</a></li>
+<li class=""><a href="/zh/docs/custom-function/">Custom Function</a></li>
 </ul>
   
 </li>

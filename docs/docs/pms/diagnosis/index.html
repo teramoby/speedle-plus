@@ -103,87 +103,150 @@ headingSelector: 'h2'
   <div id="kube-component" class="content">
     
 
-<h2 id="what-does-diagnosis-show">What does diagnosis show?</h2>
+<h2 id="what-s-policy-diagnosis">What&rsquo;s policy diagnosis</h2>
 
-<p><code>Diagnose</code> explains an authorization evaluation: decision, reason, effective roles, attributes, and the policies examined. It accepts the same request context as <code>IsAllowed</code>; REST uses <code>/authz-check/v1/diagnose</code>, and both Go/gRPC use <code>Diagnose</code>.</p>
+<p>Policy diagnosis is one of the Speedle&rsquo;s advanced features, which is used to diagnose the evaluation process of authorization. When the evaluation result isn&rsquo;t expected or a user isn&rsquo;t allowed to operate on a resource, then this feature is useful to find out the reason, i.e., what&rsquo;s the policy which denies the operation on the resource.</p>
 
-<p>Diagnosis exposes policy definitions and request context. Restrict it to trusted operators using the <a href="/docs/security/">API security controls</a>; it is not a public debugging endpoint.</p>
+<h2 id="how-to-use-policy-diagnosis">How to use policy diagnosis</h2>
 
-<h2 id="before-running-the-examples">Before running the examples</h2>
-
-<p>Build <code>./bin/spctl</code>, <code>./bin/speedle-pms</code> and <code>./bin/speedle-ads</code> using the <a href="/quick-start/">quick start</a>. Use Go 1.26 or later, Bash, curl and Python 3. Run each terminal from the repository root. Use a fresh policy file for this page; reset it only after stopping both services.</p>
-
-<p>Initialize an empty policy file:</p>
-
-<!-- docs-check: setup -->
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#a90d91">printf</span> <span style="color:#c41a16">&#39;{}\n&#39;</span> &gt; docs-policies.json</code></pre></div>
-<p>In terminal one, start PMS and leave it running:</p>
-
-<!-- docs-check: pms -->
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./bin/speedle-pms --store-type file --filestore-loc ./docs-policies.json --endpoint <span style="color:#1c01ce">127</span>.0.0.1:6733 --grpc-endpoint <span style="color:#1c01ce">127</span>.0.0.1:0 --insecure<span style="color:#000">=</span>true</code></pre></div>
-<p>In terminal two, start ADS and leave it running:</p>
-
-<!-- docs-check: ads -->
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./bin/speedle-ads --store-type file --filestore-loc ./docs-policies.json --endpoint <span style="color:#1c01ce">127</span>.0.0.1:6734 --grpc-endpoint <span style="color:#1c01ce">127</span>.0.0.1:0 --insecure<span style="color:#000">=</span>true</code></pre></div>
-<p>Run the remaining commands in a third terminal. PMS and ADS share the file; watch propagates changes asynchronously. Confirm the intended update has reached ADS before relying on it. <code>--insecure=true</code> is only for this loopback example; see <a href="/docs/security/">security</a> for production connections. Explicit PMS addresses avoid changing <code>~/.spctlconfig</code>. Stop both server terminals with Ctrl-C when finished.</p>
-
-<h2 id="create-the-example-policies">Create the example policies</h2>
-
-<p>The <a href="https://github.com/teramoby/speedle-plus/blob/master/samples/docs/diagnosis.json">fixture</a> grants <code>get</code> under <code>^/api/v1/example/.*$</code> but explicitly denies <code>/api/v1/example/res1</code> for <code>user1</code>.</p>
-
-<!-- docs-check: diagnosis-fixture -->
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ create service --json-file samples/docs/diagnosis.json</code></pre></div>
-<h2 id="compare-decision-and-diagnosis">Compare decision and diagnosis</h2>
-
-<!-- docs-check: diagnosis-deny -->
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl --fail --silent --show-error -H <span style="color:#c41a16">&#39;Content-Type: application/json&#39;</span> <span style="color:#c41a16">\
-</span><span style="color:#c41a16"></span>  -d <span style="color:#c41a16">&#39;{&#34;subject&#34;:{&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;,&#34;name&#34;:&#34;user1&#34;}]},&#34;serviceName&#34;:&#34;srv1&#34;,&#34;resource&#34;:&#34;/api/v1/example/res1&#34;,&#34;action&#34;:&#34;get&#34;}&#39;</span> <span style="color:#c41a16">\
-</span><span style="color:#c41a16"></span>  http://127.0.0.1:6734/authz-check/v1/is-allowed</code></pre></div>
-<p>Expected: <code>allowed=false</code>, <code>reason=1</code> (explicit deny).</p>
-
-<!-- docs-check: diagnose -->
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl --fail --silent --show-error -H <span style="color:#c41a16">&#39;Content-Type: application/json&#39;</span> <span style="color:#c41a16">\
-</span><span style="color:#c41a16"></span>  -d <span style="color:#c41a16">&#39;{&#34;subject&#34;:{&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;,&#34;name&#34;:&#34;user1&#34;}]},&#34;serviceName&#34;:&#34;srv1&#34;,&#34;resource&#34;:&#34;/api/v1/example/res1&#34;,&#34;action&#34;:&#34;get&#34;}&#39;</span> <span style="color:#c41a16">\
-</span><span style="color:#c41a16"></span>  http://127.0.0.1:6734/authz-check/v1/diagnose</code></pre></div>
-<p>The diagnostic response uses <code>allowed</code> as a Boolean, <code>reason</code> as a string such as <code>DENY_POLICY_FOUND</code>, and <code>attributes</code> as an object. <code>request_month</code> is a numeric month. <code>requestContext.subject.principals</code> is an array; authorization policies contain a two-dimensional <code>principals</code> array representing OR-of-AND principal groups.</p>
+<p>The usage of policy diagnosis request is almost identical to the usage of authorization decision request. They have exactly the same parameters in function calls or request payload formats. The only difference is that they have different API names, please check the following table for detailed info,</p>
 
 <table>
 <thead>
 <tr>
-<th>Field</th>
-<th>Meaning</th>
+<th>API Type</th>
+<th>Authorization Decision</th>
+<th>Policy Diagnosis</th>
 </tr>
 </thead>
 
 <tbody>
 <tr>
-<td><code>requestContext</code></td>
-<td>The request used in evaluation; REST attributes remain a typed array here</td>
+<td>Golang API name in embedded mode</td>
+<td>IsAllowed</td>
+<td>Diagnose</td>
 </tr>
 
 <tr>
-<td><code>attributes</code></td>
-<td>Available request and built-in attributes, keyed by name</td>
+<td>gRPC API name</td>
+<td>IsAllowed</td>
+<td>Diagnose</td>
 </tr>
 
 <tr>
-<td><code>grantedRoles</code></td>
-<td>Effective roles, when present</td>
-</tr>
-
-<tr>
-<td><code>rolePolicies</code>, <code>policies</code></td>
-<td>Evaluated role and authorization policy details, when present</td>
-</tr>
-
-<tr>
-<td><code>condition</code></td>
-<td>Expression and result; may be empty for unconditional policies</td>
+<td>REST API name</td>
+<td>/authz-check/v1/is-allowed</td>
+<td>/authz-check/v1/diagnose</td>
 </tr>
 </tbody>
 </table>
 
-<p>Policy status values are <code>takeEffect</code>, <code>conditionFailed</code> and <code>ignored</code>. <code>ignored</code> means the final result was already determined, so that policy did not need evaluation. Ordering can vary; inspect IDs and status rather than matching a historical response verbatim. See the <a href="/docs/api/decision_api/">decision schema</a> for the complete response contract.</p>
+<h2 id="example">Example</h2>
+
+<p>Let&rsquo;s take REST API as example. Assuming you submitted the following authorization decision request,</p>
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl -X POST http://localhost:6734/authz-check/v1/is-allowed -d @- <span style="color:#c41a16">&lt;&lt; EOF
+</span><span style="color:#c41a16">{
+</span><span style="color:#c41a16">    &#34;subject&#34;:{&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;, &#34;name&#34;:&#34;user1&#34;}]},
+</span><span style="color:#c41a16">    &#34;serviceName&#34;: &#34;srv1&#34;,
+</span><span style="color:#c41a16">    &#34;action&#34;: &#34;get&#34;,
+</span><span style="color:#c41a16">    &#34;resource&#34;: &#34;/api/v1/example/res1&#34;
+</span><span style="color:#c41a16">}
+</span><span style="color:#c41a16">EOF</span></code></pre></div>
+<p>And you got the following response,</p>
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#000">{</span><span style="color:#c41a16">&#34;allowed&#34;</span>:false,<span style="color:#c41a16">&#34;reason&#34;</span>:1<span style="color:#000">}</span></code></pre></div>
+<p>Afterwards, you want to figure out why the request was denied using the policy diagnosis feature. You just need to replace &ldquo;is-allowed&rdquo; with &ldquo;diagnose&rdquo; in the REST request path, and keep using exactly the same request payload,</p>
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl -X POST http://localhost:6734/authz-check/v1/diagnose -d @- <span style="color:#c41a16">&lt;&lt; EOF
+</span><span style="color:#c41a16">{
+</span><span style="color:#c41a16">    &#34;subject&#34;:{&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;, &#34;name&#34;:&#34;user1&#34;}]},
+</span><span style="color:#c41a16">    &#34;serviceName&#34;: &#34;srv1&#34;,
+</span><span style="color:#c41a16">    &#34;action&#34;: &#34;get&#34;,
+</span><span style="color:#c41a16">    &#34;resource&#34;: &#34;/api/v1/example/res1&#34;
+</span><span style="color:#c41a16">}
+</span><span style="color:#c41a16">EOF</span></code></pre></div>
+<p>Then you will get a response something as below.</p>
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#000">{</span>
+  <span style="color:#c41a16">&#34;allowed&#34;</span>: false,
+  <span style="color:#c41a16">&#34;reason&#34;</span>: <span style="color:#c41a16">&#34;DENY_POLICY_FOUND&#34;</span>,
+  <span style="color:#c41a16">&#34;requestContext&#34;</span>: <span style="color:#000">{</span>
+    <span style="color:#c41a16">&#34;subject&#34;</span>: <span style="color:#000">{</span>
+      <span style="color:#c41a16">&#34;principals&#34;</span>: <span style="color:#000">[</span>
+        <span style="color:#000">{</span>
+          <span style="color:#c41a16">&#34;type&#34;</span>: <span style="color:#c41a16">&#34;user&#34;</span>,
+          <span style="color:#c41a16">&#34;name&#34;</span>: <span style="color:#c41a16">&#34;user1&#34;</span>
+        <span style="color:#000">}</span>
+      <span style="color:#000">]</span>,
+      <span style="color:#c41a16">&#34;tokenType&#34;</span>: <span style="color:#c41a16">&#34;&#34;</span>,
+      <span style="color:#c41a16">&#34;token&#34;</span>: <span style="color:#c41a16">&#34;&#34;</span>
+    <span style="color:#000">}</span>,
+    <span style="color:#c41a16">&#34;serviceName&#34;</span>: <span style="color:#c41a16">&#34;srv1&#34;</span>,
+    <span style="color:#c41a16">&#34;resource&#34;</span>: <span style="color:#c41a16">&#34;/api/v1/example/res1&#34;</span>,
+    <span style="color:#c41a16">&#34;action&#34;</span>: <span style="color:#c41a16">&#34;get&#34;</span>,
+    <span style="color:#c41a16">&#34;attributes&#34;</span>: null
+  <span style="color:#000">}</span>,
+  <span style="color:#c41a16">&#34;attributes&#34;</span>: <span style="color:#000">{</span>
+    <span style="color:#c41a16">&#34;request_action&#34;</span>: <span style="color:#c41a16">&#34;get&#34;</span>,
+    <span style="color:#c41a16">&#34;request_day&#34;</span>: <span style="color:#1c01ce">28</span>,
+    <span style="color:#c41a16">&#34;request_groups&#34;</span>: <span style="color:#000">[</span>
+
+    <span style="color:#000">]</span>,
+    <span style="color:#c41a16">&#34;request_hour&#34;</span>: <span style="color:#1c01ce">17</span>,
+    <span style="color:#c41a16">&#34;request_month&#34;</span>: <span style="color:#1c01ce">1</span>,
+    <span style="color:#c41a16">&#34;request_resource&#34;</span>: <span style="color:#c41a16">&#34;/api/v1/example/res1&#34;</span>,
+    <span style="color:#c41a16">&#34;request_time&#34;</span>: <span style="color:#1c01ce">1548666167</span>,
+    <span style="color:#c41a16">&#34;request_user&#34;</span>: <span style="color:#c41a16">&#34;user1&#34;</span>,
+    <span style="color:#c41a16">&#34;request_weekday&#34;</span>: <span style="color:#c41a16">&#34;Monday&#34;</span>,
+    <span style="color:#c41a16">&#34;request_year&#34;</span>: <span style="color:#1c01ce">2019</span>
+  <span style="color:#000">}</span>,
+  <span style="color:#c41a16">&#34;policies&#34;</span>: <span style="color:#000">[</span>
+    <span style="color:#000">{</span>
+      <span style="color:#c41a16">&#34;status&#34;</span>: <span style="color:#c41a16">&#34;takeEffect&#34;</span>,
+      <span style="color:#c41a16">&#34;id&#34;</span>: <span style="color:#c41a16">&#34;lre2z6nbklw7yxv2uxbb&#34;</span>,
+      <span style="color:#c41a16">&#34;name&#34;</span>: <span style="color:#c41a16">&#34;policy2&#34;</span>,
+      <span style="color:#c41a16">&#34;effect&#34;</span>: <span style="color:#c41a16">&#34;deny&#34;</span>,
+      <span style="color:#c41a16">&#34;permissions&#34;</span>: <span style="color:#000">[</span>
+        <span style="color:#000">{</span>
+          <span style="color:#c41a16">&#34;resource&#34;</span>: <span style="color:#c41a16">&#34;/api/v1/example/res1&#34;</span>,
+          <span style="color:#c41a16">&#34;actions&#34;</span>: <span style="color:#000">[</span>
+            <span style="color:#c41a16">&#34;get&#34;</span>
+          <span style="color:#000">]</span>
+        <span style="color:#000">}</span>
+      <span style="color:#000">]</span>,
+      <span style="color:#c41a16">&#34;principals&#34;</span>: <span style="color:#000">[</span>
+        <span style="color:#000">[</span>
+          <span style="color:#c41a16">&#34;user:user1&#34;</span>
+        <span style="color:#000">]</span>
+      <span style="color:#000">]</span>,
+      <span style="color:#c41a16">&#34;condition&#34;</span>: <span style="color:#000">{</span>
+
+      <span style="color:#000">}</span>
+    <span style="color:#000">}</span>,
+    <span style="color:#000">{</span>
+      <span style="color:#c41a16">&#34;status&#34;</span>: <span style="color:#c41a16">&#34;ignored&#34;</span>,
+      <span style="color:#c41a16">&#34;id&#34;</span>: <span style="color:#c41a16">&#34;6ww73cvfypkml46oibk2&#34;</span>,
+      <span style="color:#c41a16">&#34;name&#34;</span>: <span style="color:#c41a16">&#34;policy1&#34;</span>,
+      <span style="color:#c41a16">&#34;effect&#34;</span>: <span style="color:#c41a16">&#34;grant&#34;</span>,
+      <span style="color:#c41a16">&#34;permissions&#34;</span>: <span style="color:#000">[</span>
+        <span style="color:#000">{</span>
+          <span style="color:#c41a16">&#34;resourceExpression&#34;</span>: <span style="color:#c41a16">&#34;/api/v1/example/.*&#34;</span>,
+          <span style="color:#c41a16">&#34;actions&#34;</span>: <span style="color:#000">[</span>
+            <span style="color:#c41a16">&#34;get&#34;</span>
+          <span style="color:#000">]</span>
+        <span style="color:#000">}</span>
+      <span style="color:#000">]</span>,
+      <span style="color:#c41a16">&#34;principals&#34;</span>: <span style="color:#000">[</span>
+        <span style="color:#000">[</span>
+          <span style="color:#c41a16">&#34;user:user1&#34;</span>
+        <span style="color:#000">]</span>
+      <span style="color:#000">]</span>,
+      <span style="color:#c41a16">&#34;condition&#34;</span>: <span style="color:#000">{</span>
+
+      <span style="color:#000">}</span>
+    <span style="color:#000">}</span>
+  <span style="color:#000">]</span>
+<span style="color:#000">}</span></code></pre></div>
+<p>From the above policy diagnosis response, we can easily tell that there were two policies which matched the request, one denies the user(&ldquo;user1&rdquo;) to operate(&ldquo;get&rdquo;) on the resource(&ldquo;/api/v1/example/res1&rdquo;), while the other one allows the user(&ldquo;user1&rdquo;) to operate(&ldquo;get&rdquo;) on all resources which match the pattern(&ldquo;/api/v1/example/.*&rdquo;). If we translate the two policies into SPDL, then they are as below,</p>
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">deny user user1 get /api/v1/example/res1</pre></div><div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">grant user user1 get expr:/api/v1/example/.*</pre></div>
+<p>It&rsquo;s obvious that user &ldquo;user1&rdquo; is allowed to get all resources that match the pattern &ldquo;/api/v1/example/.*&rdquo;, but except the resource &ldquo;/api/v1/example/res1&rdquo;. So the previous authorization decision was denied.</p>
 
   </div>
 </div>

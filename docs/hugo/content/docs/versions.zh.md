@@ -1,6 +1,6 @@
 +++
 title = "版本"
-description = "当前开发版本与历史发布的范围和兼容性"
+description = "What's New? Speedle versions and changelog! "
 weight = 400
 draft = false
 toc = true
@@ -11,18 +11,15 @@ categories = ["docs"]
 bref = ""
 +++
 
-## 当前开发版本文档
+## Version 0.2.0 (planning)
 
-这些页面说明当前 `master` 源码，不是冻结的历史发布版本。当前 module 要求 Go 1.26 或更高版本；快速入门流程验证 Go 1.26.10 和 1.27.3。这两个经过测试的补丁版本不意味着旧发布包有相同要求。
+...
 
-升级前应审查所选提交及依赖，并重新验证所用存储、传输与身份提供方。当前独立服务的 gRPC 与 REST 使用相同的 TLS/mTLS 配置；未指定 `--grpc-endpoint` 时沿用 REST 监听的主机地址。服务名称为 `pms_pb.PolicyManager`、`ads_pb.Evaluator`，[公开 proto](/docs/api/)应与生成客户端配套使用。
+## Version 0.1.0
 
-## 历史发布
+**release notes**: This is the first open source version. All basic functions are available in this version, including
 
-仓库提供 [v2.0（2020 年 7 月）](https://github.com/teramoby/speedle-plus/releases/tag/v2.0)和 [baseline 标签](https://github.com/teramoby/speedle-plus/releases/tag/baseline)。这些发布资产与源码快照属于历史版本。已发布文件以[发布列表](https://github.com/teramoby/speedle-plus/releases)为准，标签名称本身不保证与当前依赖或安全行为兼容。
-
-早期 0.1.0 说明列出策略管理、授权运行时、CLI 和集成示例。旧页面中的“0.2.0 planning”占位不再作为当前发布路线图。
-
-## 可重复使用
-
-应用依赖应选择发布标签或不可变提交，并把修订号、策略 fixture、预期决策一并记录。[快速入门](/quick-start/)提供原生构建步骤，[嵌入模式](/docs/deployment-embeded/)说明库集成，[安全配置](/docs/security/)说明当前连接行为。
+- Policy Management Service
+- Authorization Runtime Service
+- Command line tool
+- Integration samples

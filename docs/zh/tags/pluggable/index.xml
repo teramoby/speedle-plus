@@ -11,14 +11,12 @@
     
     
     <item>
-      <title>令牌断言插件 API</title>
+      <title>Token Assertion Plugin API</title>
       <link>https://speedle.io/zh/docs/api/asserter_api/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://speedle.io/zh/docs/api/asserter_api/</guid>
-      <description>令牌断言 webhook 参考。errCode 为整数，attributes 为对象。实际端点由 ADS 断言配置指定。
-请配置安全连接与端点访问控制。这是接口契约，speedle.io 不托管授权后端。
-              (function() { var url = &#34;\/swagger\/asserter.zh.yaml&#34;; const ui = SwaggerUIBundle({ url: url, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.presets.apis ], plugins: [ SwaggerUIBundle.plugins.DownloadUrl ], validatorUrl: null, layout: &#34;BaseLayout&#34; }) window.ui = ui })();  </description>
+      <description>              (function() { var url = &#34;\/swagger\/asserter.yaml&#34;; const ui = SwaggerUIBundle({ url: url, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.presets.apis ], plugins: [ SwaggerUIBundle.plugins.DownloadUrl ], validatorUrl: null, layout: &#34;BaseLayout&#34; }) window.ui = ui })();  </description>
     </item>
     
     <item>
@@ -27,11 +25,14 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://speedle.io/zh/docs/store/</guid>
-      <description>内置存储与扩展接口 独立服务在 pkg/store 下注册 file、etcd、MongoDB 实现。可用不代表具有相同的运维保证，部署前应分别审查后端认证、持久化、事务与 watch 行为。下方配置说明属性名称，本地示例不涉及启动 etcd/MongoDB 集群。
-完整后端实现 pms.PolicyStoreManager：服务、授权策略、角色策略、函数管理，以及快照读取、健康检查、watch/stop、close。ADS 接受较窄的只读/watch 接口 PolicyStoreManagerADS。实现新后端时应以实际接口为准，不能照搬历史文档中不完整的方法列表。
-实现并注册 builder store.StoreBuilder提供 NewStore(map[string]interface{}) (pms.PolicyStoreManager, error) 与 GetStoreParams() map[string]string。后者把 flag 名称映射到配置属性名。在 init() 或调用 store.NewStore 之前注册唯一的存储类型，重复注册会报错。
-以下完整示例复用文件后端，演示工厂接口与注册流程，并不声称实现了一个新数据库：
-go run ./samples/docs/store package main import ( &amp;#34;fmt&amp;#34; &amp;#34;github.com/teramoby/speedle-plus/pkg/store&amp;#34; &amp;#34;github.com/teramoby/speedle-plus/pkg/store/file&amp;#34; &amp;#34;log&amp;#34; &amp;#34;os&amp;#34; &amp;#34;path/filepath&amp;#34; ) // This example delegates to the file backend to demonstrate registration. // A new backend must implement the complete PolicyStoreManager contract. type Builder struct{ file.</description>
+      <description>概述 Speedle 现在支持两种数据存储，OOTB:文件存储和 etcd 存储。 但是，您可以实现自己的数据存储(例如使用 mongodb 等)
+ 请注意数据存储需要支持“watch”功能  本文档将说明如何逐步实现一个数据存储。
+实现 PolicyStoreManager 接口 在 store 目录下创建一个“mystore”目录并导航到它目录下面。 创建一个类似 mystore 之类的存储代码文件，并在此文件中实现“PolicyStoreManager”接口。
+Example in store/etcd/etcdStore.go:
+type Store struct { ... } func (s *Store) ReadPolicyStore() (*pms.PolicyStore, error) { ... } func (s *Store) CreateService(service *pms.Service) error { ... } ... 请注意这个 watch 的功能。该功能将监视数据存储的更改。这个函数需要返回一个“StorageChangeChannel”对象，每个 store change event(请查看“api/pms/types/StoreChangeEvent”以获取详细信息)都会被发送到这个 Channel。ADS 将接收这些更改事件并立即更新其缓存。
+编写 storeBuilder 代码 理解 Speedle 存储配置 Speedle 从三个不同的源读取存储配置信息:flags、环境变量和配置文件。
+flags 具有最高优先级，然后是环境变量，然后是配置文件。这意味着高优先级源中的配置项将覆盖低优先级源中的相同配置项。
+存储所有者需要在 init 函数中提供 flags 定义，我们使用pflag来定义 flags。</description>
     </item>
     
   </channel>

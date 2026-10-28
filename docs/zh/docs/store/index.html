@@ -11,19 +11,19 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>存储扩展 - Speedle</title>
-<meta name="description" content="内置策略存储、配置与自定义后端接口">
+<meta name="description" content="Bring your own persistence store!">
 <link rel="alternate" hreflang="en" href="https://speedle.io/docs/store/">
 <link rel="alternate" hreflang="x-default" href="https://speedle.io/docs/store/"><link rel="alternate" hreflang="zh-CN" href="https://speedle.io/zh/docs/store/">
 
 <meta property="og:type" content="article">
 <meta property="og:site_name" content="Speedle Authorization Engine">
 <meta property="og:title" content="存储扩展">
-<meta property="og:description" content="内置策略存储、配置与自定义后端接口">
+<meta property="og:description" content="Bring your own persistence store!">
 <meta property="og:url" content="https://speedle.io/zh/docs/store/">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="存储扩展">
-<meta name="twitter:description" content="内置策略存储、配置与自定义后端接口">
-<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://speedle.io/zh/docs/store/#page","@type":"TechArticle","about":{"@id":"https://speedle.io/#software"},"description":"内置策略存储、配置与自定义后端接口","inLanguage":"zh-CN","isPartOf":{"@id":"https://speedle.io/#website"},"keywords":["Speedle+"],"name":"存储扩展","url":"https://speedle.io/zh/docs/store/"}</script>
+<meta name="twitter:description" content="Bring your own persistence store!">
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://speedle.io/zh/docs/store/#page","@type":"TechArticle","about":{"@id":"https://speedle.io/#software"},"description":"Bring your own persistence store!","inLanguage":"zh-CN","isPartOf":{"@id":"https://speedle.io/#website"},"keywords":["Speedle+"],"name":"存储扩展","url":"https://speedle.io/zh/docs/store/"}</script>
 
 <meta name="generator" content="Hugo 0.48" />
 <link href="https://speedle.io/index.xml" rel="alternate" type="application/rss+xml">
@@ -103,80 +103,159 @@ headingSelector: 'h2'
   <div id="kube-component" class="content">
     
 
-<h2 id="内置存储与扩展接口">内置存储与扩展接口</h2>
+<h2 id="概述">概述</h2>
 
-<p>独立服务在 <code>pkg/store</code> 下注册 file、etcd、MongoDB 实现。可用不代表具有相同的运维保证，部署前应分别审查后端认证、持久化、事务与 watch 行为。下方配置说明属性名称，本地示例不涉及启动 etcd/MongoDB 集群。</p>
+<p>Speedle 现在支持两种数据存储，OOTB:文件存储和 etcd 存储。
+但是，您可以实现自己的数据存储(例如使用 mongodb 等)</p>
 
-<p>完整后端实现 <a href="https://github.com/teramoby/speedle-plus/blob/master/api/pms/interface.go">pms.PolicyStoreManager</a>：服务、授权策略、角色策略、函数管理，以及快照读取、健康检查、watch/stop、close。ADS 接受较窄的只读/watch 接口 <code>PolicyStoreManagerADS</code>。实现新后端时应以实际接口为准，不能照搬历史文档中不完整的方法列表。</p>
+<ul>
+<li>请注意数据存储需要支持“watch”功能</li>
+</ul>
 
-<h2 id="实现并注册-builder">实现并注册 builder</h2>
+<p>本文档将说明如何逐步实现一个数据存储。</p>
 
-<p><a href="https://github.com/teramoby/speedle-plus/blob/master/pkg/store/store.go">store.StoreBuilder</a>提供 <code>NewStore(map[string]interface{}) (pms.PolicyStoreManager, error)</code> 与 <code>GetStoreParams() map[string]string</code>。后者把 flag 名称映射到配置属性名。在 <code>init()</code> 或调用 <code>store.NewStore</code> 之前注册唯一的存储类型，重复注册会报错。</p>
+<h2 id="实现-policystoremanager-接口">实现 PolicyStoreManager 接口</h2>
 
-<p>以下完整示例复用文件后端，演示工厂接口与注册流程，并不声称实现了一个新数据库：</p>
+<p>在 store 目录下创建一个“mystore”目录并导航到它目录下面。
+创建一个类似 mystore 之类的存储代码文件，并在此文件中实现“PolicyStoreManager”接口。</p>
 
-<!-- docs-check: store -->
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">go run ./samples/docs/store</code></pre></div>
-<!-- docs-source: samples/docs/store/main.go -->
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#a90d91">package</span> <span style="color:#000">main</span>
+<p>Example in <code>store/etcd/etcdStore.go</code>:</p>
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-golang" data-lang="golang"><span style="color:#a90d91">type</span> <span style="color:#000">Store</span> <span style="color:#a90d91">struct</span> {
+    <span style="color:#000">...</span>
+}
+<span style="color:#a90d91">func</span> (<span style="color:#000">s</span> <span style="color:#000">*</span><span style="color:#000">Store</span>) <span style="color:#000">ReadPolicyStore</span>() (<span style="color:#000">*</span><span style="color:#000">pms</span>.<span style="color:#000">PolicyStore</span>, <span style="color:#a90d91">error</span>) {
+  <span style="color:#000">...</span>
+}
+<span style="color:#a90d91">func</span> (<span style="color:#000">s</span> <span style="color:#000">*</span><span style="color:#000">Store</span>) <span style="color:#000">CreateService</span>(<span style="color:#000">service</span> <span style="color:#000">*</span><span style="color:#000">pms</span>.<span style="color:#000">Service</span>) <span style="color:#a90d91">error</span> {
+  <span style="color:#000">...</span>
+}
+<span style="color:#000">...</span></code></pre></div>
+<p>请注意这个 watch 的功能。该功能将监视数据存储的更改。这个函数需要返回一个“StorageChangeChannel”对象，每个 store change event(请查看“api/pms/types/StoreChangeEvent”以获取详细信息)都会被发送到这个 Channel。ADS 将接收这些更改事件并立即更新其缓存。</p>
 
-<span style="color:#a90d91">import</span> (
-	<span style="color:#c41a16">&#34;fmt&#34;</span>
-	<span style="color:#c41a16">&#34;github.com/teramoby/speedle-plus/pkg/store&#34;</span>
-	<span style="color:#c41a16">&#34;github.com/teramoby/speedle-plus/pkg/store/file&#34;</span>
-	<span style="color:#c41a16">&#34;log&#34;</span>
-	<span style="color:#c41a16">&#34;os&#34;</span>
-	<span style="color:#c41a16">&#34;path/filepath&#34;</span>
+<h2 id="编写-storebuilder-代码">编写 storeBuilder 代码</h2>
+
+<h3 id="理解-speedle-存储配置">理解 Speedle 存储配置</h3>
+
+<p>Speedle 从三个不同的源读取存储配置信息:flags、环境变量和配置文件。</p>
+
+<p>flags 具有最高优先级，然后是环境变量，然后是配置文件。这意味着高优先级源中的配置项将覆盖低优先级源中的相同配置项。</p>
+
+<p>存储所有者需要在 init 函数中提供 flags 定义，我们使用<a href="https://github.com/spf13/pflag">pflag</a>来定义 flags。</p>
+
+<p><code>store/etcd/storeBuilder.go</code> 中的 flags 定义:</p>
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-golang" data-lang="golang"><span style="color:#a90d91">const</span> (
+    <span style="color:#000">IsEmbeddedEtcdFlagName</span>             = <span style="color:#c41a16">&#34;etcdstore-isembedded&#34;</span>
+    <span style="color:#000">EmbeddedEtcdDataDirFlagName</span>        = <span style="color:#c41a16">&#34;etcdstore-embeddedDataDir&#34;</span>
+    <span style="color:#000">EtcdEndpointFlagName</span>               = <span style="color:#c41a16">&#34;etcdstore-endpoint&#34;</span>
+    <span style="color:#000">EtcdKeyPrefixFlagName</span>              = <span style="color:#c41a16">&#34;etcdstore-keyprefix&#34;</span>
+    <span style="color:#000">EtcdTLSClientCertFileFlagName</span>      = <span style="color:#c41a16">&#34;etcdstore-tls-cert&#34;</span>
+    <span style="color:#000">EtcdTLSClientKeyFileFlagName</span>       = <span style="color:#c41a16">&#34;etcdstore-tls-key&#34;</span>
+    <span style="color:#000">EtcdTLSClientTrustedCAFileFlagName</span> = <span style="color:#c41a16">&#34;etcdstore-tls-ca&#34;</span>
+    <span style="color:#000">EtcdTLSAllowedCNFlagName</span>           = <span style="color:#c41a16">&#34;etcdstore-tls-allowedCN&#34;</span>
+    <span style="color:#000">EtcdTLSServerNameFlagName</span>          = <span style="color:#c41a16">&#34;etcdstore-tls-serverName&#34;</span>
+    <span style="color:#000">EtcdTLSCRLFileFlagName</span>             = <span style="color:#c41a16">&#34;etcdstore-tls-crlFile&#34;</span>
+    <span style="color:#000">EtcdTLSInsecureSkipVerifyFlagName</span>  = <span style="color:#c41a16">&#34;etcdstore-tls-insecureSkipVerify&#34;</span>
+
+    <span style="color:#177500">//default property values
+</span><span style="color:#177500"></span>    <span style="color:#000">DefaultKeyPrefix</span>           = <span style="color:#c41a16">&#34;/speedle_ps/&#34;</span>
+    <span style="color:#000">DefaultEtcdStoreEndpoint</span>   = <span style="color:#c41a16">&#34;localhost:2379&#34;</span>
+    <span style="color:#000">DefaultEtcdStoreKeyPrefix</span>  = <span style="color:#c41a16">&#34;/speedle_ps/&#34;</span>
+    <span style="color:#000">DefaultEtcdStoreIsEmbedded</span> = <span style="color:#a90d91">false</span>
 )
 
-<span style="color:#177500">// This example delegates to the file backend to demonstrate registration.
-</span><span style="color:#177500">// A new backend must implement the complete PolicyStoreManager contract.
-</span><span style="color:#177500"></span><span style="color:#a90d91">type</span> <span style="color:#000">Builder</span> <span style="color:#a90d91">struct</span>{ <span style="color:#000">file</span>.<span style="color:#000">FileStoreBuilder</span> }
-
-<span style="color:#a90d91">func</span> <span style="color:#000">main</span>() {
-	<span style="color:#000">dir</span>, <span style="color:#000">err</span> <span style="color:#000">:=</span> <span style="color:#000">os</span>.<span style="color:#000">MkdirTemp</span>(<span style="color:#c41a16">&#34;&#34;</span>, <span style="color:#c41a16">&#34;speedle-store-example-&#34;</span>)
-	<span style="color:#a90d91">if</span> <span style="color:#000">err</span> <span style="color:#000">!=</span> <span style="color:#a90d91">nil</span> {
-		<span style="color:#000">log</span>.<span style="color:#000">Fatal</span>(<span style="color:#000">err</span>)
-	}
-	<span style="color:#a90d91">defer</span> <span style="color:#000">os</span>.<span style="color:#000">RemoveAll</span>(<span style="color:#000">dir</span>)
-	<span style="color:#000">store</span>.<span style="color:#000">Register</span>(<span style="color:#c41a16">&#34;myfile&#34;</span>, <span style="color:#000">Builder</span>{})
-	<span style="color:#000">policies</span>, <span style="color:#000">err</span> <span style="color:#000">:=</span> <span style="color:#000">store</span>.<span style="color:#000">NewStore</span>(<span style="color:#c41a16">&#34;myfile&#34;</span>, <span style="color:#a90d91">map</span>[<span style="color:#a90d91">string</span>]<span style="color:#a90d91">interface</span>{}{<span style="color:#c41a16">&#34;FileLocation&#34;</span>: <span style="color:#000">filepath</span>.<span style="color:#000">Join</span>(<span style="color:#000">dir</span>, <span style="color:#c41a16">&#34;policies.json&#34;</span>)})
-	<span style="color:#a90d91">if</span> <span style="color:#000">err</span> <span style="color:#000">!=</span> <span style="color:#a90d91">nil</span> {
-		<span style="color:#000">log</span>.<span style="color:#000">Fatal</span>(<span style="color:#000">err</span>)
-	}
-	<span style="color:#a90d91">defer</span> <span style="color:#000">policies</span>.<span style="color:#000">Close</span>()
-	<span style="color:#000">snapshot</span>, <span style="color:#000">err</span> <span style="color:#000">:=</span> <span style="color:#000">policies</span>.<span style="color:#000">ReadPolicyStore</span>()
-	<span style="color:#a90d91">if</span> <span style="color:#000">err</span> <span style="color:#000">!=</span> <span style="color:#a90d91">nil</span> {
-		<span style="color:#000">log</span>.<span style="color:#000">Fatal</span>(<span style="color:#000">err</span>)
-	}
-	<span style="color:#000">fmt</span>.<span style="color:#000">Printf</span>(<span style="color:#c41a16">&#34;Registered myfile store; services=%d\n&#34;</span>, <span style="color:#a90d91">len</span>(<span style="color:#000">snapshot</span>.<span style="color:#000">Services</span>))
+<span style="color:#a90d91">func</span> <span style="color:#000">init</span>() {
+    <span style="color:#000">pflag</span>.<span style="color:#000">String</span>(<span style="color:#000">EtcdEndpointFlagName</span>, <span style="color:#000">DefaultEtcdStoreEndpoint</span>, <span style="color:#c41a16">&#34;Store config: endpoint of etcd store.&#34;</span>)
+    <span style="color:#000">pflag</span>.<span style="color:#000">String</span>(<span style="color:#000">EtcdKeyPrefixFlagName</span>, <span style="color:#000">DefaultEtcdStoreKeyPrefix</span>, <span style="color:#c41a16">&#34;Store config: key prefix to store speedle policy data in etcd store.&#34;</span>)
+    <span style="color:#000">pflag</span>.<span style="color:#000">Bool</span>(<span style="color:#000">IsEmbeddedEtcdFlagName</span>, <span style="color:#000">DefaultEtcdStoreIsEmbedded</span>, <span style="color:#c41a16">&#34;Store config: is embedded etcd store or not.&#34;</span>)
+    <span style="color:#000">pflag</span>.<span style="color:#000">String</span>(<span style="color:#000">EmbeddedEtcdDataDirFlagName</span>, <span style="color:#c41a16">&#34;&#34;</span>, <span style="color:#c41a16">&#34;Store config: data dir for embedded etcd store.&#34;</span>)
+    <span style="color:#000">pflag</span>.<span style="color:#000">String</span>(<span style="color:#000">EtcdTLSClientCertFileFlagName</span>, <span style="color:#c41a16">&#34;&#34;</span>, <span style="color:#c41a16">&#34;Store config: etcd x509 client cert.&#34;</span>)
+    <span style="color:#000">pflag</span>.<span style="color:#000">String</span>(<span style="color:#000">EtcdTLSClientKeyFileFlagName</span>, <span style="color:#c41a16">&#34;&#34;</span>, <span style="color:#c41a16">&#34;Store config: etcd x509 client key.&#34;</span>)
+    <span style="color:#000">pflag</span>.<span style="color:#000">String</span>(<span style="color:#000">EtcdTLSClientTrustedCAFileFlagName</span>, <span style="color:#c41a16">&#34;&#34;</span>, <span style="color:#c41a16">&#34;Store config: etcd x509 client CA cert.&#34;</span>)
+    <span style="color:#000">pflag</span>.<span style="color:#000">String</span>(<span style="color:#000">EtcdTLSAllowedCNFlagName</span>, <span style="color:#c41a16">&#34;&#34;</span>, <span style="color:#c41a16">&#34;Store config: etcd x509 allowed CN.&#34;</span>)
+    <span style="color:#000">pflag</span>.<span style="color:#000">String</span>(<span style="color:#000">EtcdTLSServerNameFlagName</span>, <span style="color:#c41a16">&#34;&#34;</span>, <span style="color:#c41a16">&#34;Store config: etcd x509 server name.&#34;</span>)
+    <span style="color:#000">pflag</span>.<span style="color:#000">String</span>(<span style="color:#000">EtcdTLSCRLFileFlagName</span>, <span style="color:#c41a16">&#34;&#34;</span>, <span style="color:#c41a16">&#34;Store config: etcd x509 CRL file.&#34;</span>)
+    <span style="color:#000">pflag</span>.<span style="color:#000">Bool</span>(<span style="color:#000">EtcdTLSInsecureSkipVerifyFlagName</span>, <span style="color:#a90d91">false</span>, <span style="color:#c41a16">&#34;Store config: etcd x509 insecure skip verify.&#34;</span>)
 }</code></pre></div>
-<h2 id="正确合并配置">正确合并配置</h2>
+<p>环境变量名称是 flag 名称的转换，规则是:添加一个“SPDL*”前缀，将每个“-”替换为“*”，并将所有字母转换为大写。例如:
+<code>etcdstore-endpoint</code> -&gt; <code>SPDL_ETCDSTORE_ENDPOINT</code></p>
 
-<p>独立命令的优先级为显式 flag、非空环境变量、配置文件属性、默认值。环境变量名称的规则是添加 <code>SPDL_</code>、将 <code>-</code> 替换为 <code>_</code>，再转为大写；例如 <code>etcdstore-endpoint</code> 对应 <code>SPDL_ETCDSTORE_ENDPOINT</code>。flag/env 可能提供字符串，JSON 可能提供带类型的值，builder 必须明确验证并转换。</p>
+<p>存储所有者还需要定义配置文件中使用的存储属性名，通过提供{&rsquo; flagName:storePropName &lsquo;} map。这个映射将显示 flag 和 store 属性之间的对应关系。</p>
+
+<p>Config file example:</p>
 <div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">{
-  <span style="color:#000">&#34;storeConfig&#34;</span>: {
-    <span style="color:#000">&#34;storeType&#34;</span>: <span style="color:#c41a16">&#34;etcd&#34;</span>,
-    <span style="color:#000">&#34;storeProps&#34;</span>: {
-      <span style="color:#000">&#34;EtcdEndpoint&#34;</span>: <span style="color:#c41a16">&#34;localhost:2379&#34;</span>,
-      <span style="color:#000">&#34;EtcdKeyPrefix&#34;</span>: <span style="color:#c41a16">&#34;/speedle_ps/&#34;</span>,
-      <span style="color:#000">&#34;IsEmbeddedEtcd&#34;</span>: <span style="color:#a90d91">true</span>,
-      <span style="color:#000">&#34;EmbeddedEtcdDataDir&#34;</span>: <span style="color:#c41a16">&#34;./speedle.etcd&#34;</span>
-    }
-  },
-  <span style="color:#000">&#34;enableWatch&#34;</span>: <span style="color:#a90d91">true</span>
+	<span style="color:#000">&#34;storeConfig&#34;</span>: {
+		<span style="color:#000">&#34;storeType&#34;</span>: <span style="color:#c41a16">&#34;etcd&#34;</span>,
+		<span style="color:#000">&#34;storeProps&#34;</span>: {
+			<span style="color:#000">&#34;EtcdEndpoint&#34;</span>: <span style="color:#c41a16">&#34;localhost:2379&#34;</span>,
+			<span style="color:#000">&#34;EtcdKeyPrefix&#34;</span>: <span style="color:#c41a16">&#34;/opss_ps/&#34;</span>,
+			<span style="color:#000">&#34;IsEmbeddedEtcd&#34;</span>: <span style="color:#a90d91">true</span>,
+			<span style="color:#000">&#34;EmbeddedEtcdDataDir&#34;</span>: <span style="color:#c41a16">&#34;./speedle.etcd&#34;</span>
+		}
+	}
 }</code></pre></div>
-<p>自定义 flag 需在解析前通过 <code>pflag</code> 定义，并由 <code>GetStoreParams</code> 返回 flag 到属性的映射。嵌入式调用直接把配置 map 交给 <code>store.NewStore</code> 或 <code>eval.NewFromConfig</code>；工厂本身不会自动读取命令行或环境变量。</p>
+<h3 id="实现-storebuilder-接口">实现 StoreBuilder 接口</h3>
 
-<h2 id="链接后端并处理更新">链接后端并处理更新</h2>
+<p>StoreBuild 将提供关于创建存储的函数，以及获取该存储相关参数的函数。</p>
 
-<p>若在 <code>init()</code> 中注册，独立 PMS、ADS 或嵌入式应用都要通过 side-effect import 链接实现：</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#a90d91">import</span> (
-    <span style="color:#000">_</span> <span style="color:#c41a16">&#34;github.com/teramoby/speedle-plus/pkg/store/etcd&#34;</span>
-    <span style="color:#000">_</span> <span style="color:#c41a16">&#34;github.com/teramoby/speedle-plus/pkg/store/file&#34;</span>
-    <span style="color:#000">_</span> <span style="color:#c41a16">&#34;github.com/teramoby/speedle-plus/pkg/store/mongodb&#34;</span>
+<p>Example in <code>store/etcd/storeBuilder.go</code>:</p>
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-golang" data-lang="golang"><span style="color:#a90d91">type</span> <span style="color:#000">Etcd3StoreBuilder</span> <span style="color:#a90d91">struct</span>{}
+
+<span style="color:#a90d91">func</span> (<span style="color:#000">esb</span> <span style="color:#000">Etcd3StoreBuilder</span>) <span style="color:#000">NewStore</span>(<span style="color:#000">config</span> <span style="color:#a90d91">map</span>[<span style="color:#a90d91">string</span>]<span style="color:#a90d91">interface</span>{}) (<span style="color:#000">pms</span>.<span style="color:#000">PolicyStoreManager</span>, <span style="color:#a90d91">error</span>) {
+   <span style="color:#000">...</span>
+}
+<span style="color:#a90d91">func</span> (<span style="color:#000">fs</span> <span style="color:#000">FileStoreBuilder</span>) <span style="color:#000">GetStoreParams</span>() <span style="color:#a90d91">map</span>[<span style="color:#a90d91">string</span>]<span style="color:#a90d91">string</span> {
+   <span style="color:#000">...</span>
+}</code></pre></div>
+<p>“NewStore”方法需要返回实现“PolicyStoreManager”接口的存储实例。
+输入参数是一个配置 map，对应于配置文件中的“storeProps”，它将于与来自 flags 和环境变量的配置信息合并在一起。
+您可以从这个配置 map 中读取配置项的值来构建存储。如果您想读取&rsquo; EtcdEndpoint &lsquo;值，可以这样做:</p>
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">etcdEndpoint, ok := config[EtcdEndpointKey].(string)</pre></div>
+<p>请注意，配置值可能来自不同的源(flag、环境变量、配置文件)，配置值类型可能是您的期望类型(如 int 或 bool)或字符串类型。因此，您需要检查值类型，并可能需要将值从 string 类型转换为您期望的类型。</p>
+
+<p>接口“GetStoreParams()”需要返回一个{“flagName:storePropName”}map。这个 map 将显示 flag 和 store 属性之间的对应关系。</p>
+
+<p>etcd storeBuilder <code>GetStoreParams</code>() function example:</p>
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-golang" data-lang="golang"><span style="color:#a90d91">func</span> (<span style="color:#000">esb</span> <span style="color:#000">Etcd3StoreBuilder</span>) <span style="color:#000">GetStoreParams</span>() <span style="color:#a90d91">map</span>[<span style="color:#a90d91">string</span>]<span style="color:#a90d91">string</span> {
+    <span style="color:#a90d91">return</span> <span style="color:#a90d91">map</span>[<span style="color:#a90d91">string</span>]<span style="color:#a90d91">string</span>{
+
+        <span style="color:#000">IsEmbeddedEtcdFlagName</span>:             <span style="color:#000">IsEmbeddedEtcdKey</span>,
+        <span style="color:#000">EmbeddedEtcdDataDirFlagName</span>:        <span style="color:#000">EmbeddedEtcdDataDirKey</span>,
+        <span style="color:#000">EtcdEndpointFlagName</span>:               <span style="color:#000">EtcdEndpointKey</span>,
+        <span style="color:#000">EtcdKeyPrefixFlagName</span>:              <span style="color:#000">EtcdKeyPrefixKey</span>,
+        <span style="color:#000">EtcdTLSClientCertFileFlagName</span>:      <span style="color:#000">EtcdTLSClientCertFileKey</span>,
+        <span style="color:#000">EtcdTLSClientKeyFileFlagName</span>:       <span style="color:#000">EtcdTLSClientKeyFileKey</span>,
+        <span style="color:#000">EtcdTLSClientTrustedCAFileFlagName</span>: <span style="color:#000">EtcdTLSClientTrustedCAFileKey</span>,
+        <span style="color:#000">EtcdTLSAllowedCNFlagName</span>:           <span style="color:#000">EtcdTLSAllowedCNKey</span>,
+        <span style="color:#000">EtcdTLSServerNameFlagName</span>:          <span style="color:#000">EtcdTLSServerNameKey</span>,
+        <span style="color:#000">EtcdTLSCRLFileFlagName</span>:             <span style="color:#000">EtcdTLSCRLFileKey</span>,
+        <span style="color:#000">EtcdTLSInsecureSkipVerifyFlagName</span>:  <span style="color:#000">EtcdTLSInsecureSkipVerifyKey</span>,
+    }
+
+}</code></pre></div>
+<h3 id="注册-storebuilder">注册 storeBuilder</h3>
+
+<p>注册 storeBuilder 将根据提供的名称使这种类型的存储可用。
+init 函数需要声明这个存储所需的所有 flags。</p>
+
+<p>Example in <code>store/etcd/storeBuilder.go</code>:</p>
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-golang" data-lang="golang"><span style="color:#a90d91">func</span> <span style="color:#000">init</span>() {
+    <span style="color:#000">pflag</span>.<span style="color:#000">String</span>(<span style="color:#000">EtcdEndpointFlagName</span>, <span style="color:#000">DefaultEtcdStoreEndpoint</span>, <span style="color:#c41a16">&#34;Store config: endpoint of etcd store.&#34;</span>)
+    <span style="color:#000">pflag</span>.<span style="color:#000">Bool</span>(<span style="color:#000">IsEmbeddedEtcdFlagName</span>, <span style="color:#000">DefaultEtcdStoreIsEmbedded</span>, <span style="color:#c41a16">&#34;Store config: is embedded etcd store or not.&#34;</span>)
+    <span style="color:#000">...</span>
+
+    <span style="color:#000">store</span>.<span style="color:#000">Register</span>(<span style="color:#000">StoreType</span>, <span style="color:#000">Etcd3StoreBuilder</span>{})
+}</code></pre></div>
+<h2 id="链接新存储到-speedle">链接新存储到 Speedle</h2>
+
+<p>在目录 cmd/speedle-ads 和目录 cmd/speedle-pms 中，你可以找到一个 store.go 文件，其具有下面的内容：</p>
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-golang" data-lang="golang"><span style="color:#a90d91">package</span> <span style="color:#000">main</span>
+
+<span style="color:#a90d91">import</span> (
+    <span style="color:#000">_</span> <span style="color:#c41a16">&#34;github.com/teramoby/speedle-plus/store/etcd&#34;</span>
+    <span style="color:#000">_</span> <span style="color:#c41a16">&#34;github.com/teramoby/speedle-plus/store/file&#34;</span>
 )</code></pre></div>
-<p><code>Watch()</code> 通过 <code>pms.StorageChangeChannel</code> 返回正确的快照/变更事件，<code>StopWatch()</code> 与 <code>Close()</code> 应能释放相关资源。ADS 异步更新运行时缓存。需测试 watch 断连、漏事件、恢复、写入失败与并发读取；不能仅因后端支持 watch，就承诺策略会瞬间传播。</p>
+<p>在这个文件中，我们用一个 side-effect 导入(使用一个空白导入名称)来链接每个存储的实现。您也可以在这里添加自己的存储。
+如果你想在“in-process”模式下使用 Speedle，你可以复制这个 store.go 文件。转到您自己的 package 中，将 package 名字修改为您自己的 package 名字。</p>
 
   </div>
 </div>
@@ -228,16 +307,16 @@ headingSelector: 'h2'
 
 <li class=""><span>API</span>
 <ul class="">
-<li class=""><a href="/zh/docs/api/asserter_api/">令牌断言插件 API</a></li>
-<li class=""><a href="/zh/docs/api/decision_api/">授权决策 API</a></li>
-<li class=""><a href="/zh/docs/api/management_api/">策略管理 API</a></li>
+<li class=""><a href="/zh/docs/api/decision_api/">Authorization Runtime/Decision API</a></li>
+<li class=""><a href="/zh/docs/api/management_api/">Policy Management API</a></li>
+<li class=""><a href="/zh/docs/api/asserter_api/">Token Assertion Plugin API</a></li>
 </ul>
   
 </li>
 <li class=""><a href="/zh/docs/security/">安全</a></li>
 <li class=""><a href="/zh/docs/logging/">日志</a></li>
 <li class=""><a href="/zh/docs/versions/">版本</a></li>
-<li class=""><a href="/zh/docs/custom-function/">自定义函数</a></li>
+<li class=""><a href="/zh/docs/custom-function/">Custom Function</a></li>
 </ul>
   
 </li>

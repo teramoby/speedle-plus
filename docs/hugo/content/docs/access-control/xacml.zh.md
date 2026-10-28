@@ -8,7 +8,7 @@ bref = "对应架构概念，区分策略格式与协议兼容性"
 
 ## Speedle 与 XACML 有什么关系？
 
-可扩展访问控制标记语言（eXtensible Access Control Markup Language，XACML）是 OASIS 访问控制标准，定义策略及请求、响应等概念。Speedle+ 使用自己的Speedle 策略定义语言（SPDL）与 API。XACML 的行为以 [OASIS XACML 3.0 标准](https://docs.oasis-open.org/xacml/3.0/xacml-3.0-core-spec-os-en.html)为准；本文说明架构职责的对应关系，不代表 XACML 标准符合性声明。
+可扩展访问控制标记语言（eXtensible Access Control Markup Language，XACML）是 OASIS 访问控制标准，定义策略及请求、响应等概念。Speedle+ 使用自己的安全策略定义语言（SPDL）与 API。XACML 的行为以 [OASIS XACML 3.0 标准](https://docs.oasis-open.org/xacml/3.0/xacml-3.0-core-spec-os-en.html)为准；本文说明架构职责的对应关系，不代表 XACML 标准符合性声明。
 
 ## 对应组件职责
 

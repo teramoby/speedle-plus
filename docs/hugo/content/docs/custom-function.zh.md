@@ -1,6 +1,6 @@
 +++
-title = "自定义函数"
-description = "在 SPDL 条件中使用自定义函数"
+title = "Custom Function"
+description = "Write policy condition with your own functions"
 date = 2019-01-21T10:43:02+08:00
 weight = 600
 draft = false
@@ -11,158 +11,221 @@ tocsidebar = false
 categories = ["docs"]
 +++
 
-## 为什么使用自定义函数？
+## 为什么需要 Custom Function?
 
-当内置运算或函数不能表达规则时，SPDL 条件可以调用已配置的函数。Speedle 向其 REST 端点发送 `POST {"params":[...]}`，预期返回 `{"result":...}` 或 `{"error":"..."}`。参数顺序、类型和返回类型必须与条件一致。函数失败是评估错误，应用应拒绝访问。
+在 Speedle 中, Policy 和 RolePolicy 都支持 Condition。参见 SPDL(Speedle Policy Definition Language)中的 if 语句。Condition 是由 attribute, function, constant, operator, comparator 等构成。Speedle 提供少量的内置 function。实际应用中存在一些复杂的 Condition，用现有的机制难以表达，比如需要访问其他数据源。这种情况下，custom function 就能发挥作用了。custom function 是对 Condition 中内置 function 的扩展，使得 condition 的定义更为灵活。
 
-## 启动本地示例
+## 如何使用 Custom Function?
 
-示例接受 100 至 50000 之间的数值。参数类型错误或列表为空时返回 HTTP 错误。只有回环 IP 可以使用明文，其他监听地址必须提供 TLS。
+下面介绍使用 Custom Function 的步骤：
 
-在单独终端运行：
+### 1. 实现 Custom Function， 并按照 Speedle 预定义的 Custom Function RESTFul 接口暴露服务
 
-<!-- docs-check: function-server -->
-```bash
-go run ./samples/docs/custom-function
+Speedle 按预定义的接口调用 custom function，Custom fundtion 的 RESTful endpoint 必须遵循如下接口约定：
+
+HTTP Verb: POST
+
+HTTP Request Body:
+
+```
+type CustomerFunctionRequest struct {
+	Params []interface{} `json:"params"`
+}
 ```
 
+HTTP Response Body:
 
-<!-- docs-source: samples/docs/custom-function/main.go -->
-```go
+```
+type CustomerFunctionResponse struct {
+	Result interface{} `json:"result,omitempty"`
+	Error  string      `json:"error,omitempty"`
+}
+```
+
+下面是一个简单的 Custom Function 的例子
+
+```
 package main
 
 import (
 	"encoding/json"
-	"flag"
-	"log"
-	"net"
+	"fmt"
+	"io/ioutil"
 	"net/http"
-	"time"
+	"os"
 )
 
-type request struct {
+var (
+	funcServerCert = `-----BEGIN CERTIFICATE-----
+MIID7TCCAtWgAwIBAgIJALM3l/OZ9uJKMA0GCSqGSIb3DQEBCwUAMIGMMQswCQYD
+VQQGEwJjbjEQMA4GA1UECAwHYmVpamluZzEQMA4GA1UEBwwHYmVpamluZzEPMA0G
+A1UECgwGb3JhY2xlMQwwCgYDVQQLDANpZG0xEjAQBgNVBAMMCWxvY2FsaG9zdDEm
+MCQGCSqGSIb3DQEJARYXY3ludGhpYS5kaW5nQG9yYWNsZS5jb20wHhcNMTgwNDI1
+MDc1MDMwWhcNMTkwNDI1MDc1MDMwWjCBjDELMAkGA1UEBhMCY24xEDAOBgNVBAgM
+B2JlaWppbmcxEDAOBgNVBAcMB2JlaWppbmcxDzANBgNVBAoMBm9yYWNsZTEMMAoG
+A1UECwwDaWRtMRIwEAYDVQQDDAlsb2NhbGhvc3QxJjAkBgkqhkiG9w0BCQEWF2N5
+bnRoaWEuZGluZ0BvcmFjbGUuY29tMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIB
+CgKCAQEAn/AFElluGOZYfvlzBGfHfkd/Q9SuQFsSnQt7Qp63Yuf5Ie/q4NACzWPC
+B/L6nQrut4OMxJHvhVAswJozRZrQxXvX/vUxkg+TmALj3U9ejF/5arGtjy5v+yGi
+wci7zM4r7VNFJGRkfluNRC1kJi4AY6jk6Gl4d/bX4tBXE8mEFY1rUswYtat3OMja
+jVAoocClk6WcaQuK9R1uB+BPyxHLJ04RyKRuepPYRBQjgwHK5kMF3s5p07Os+2JH
+5jyJYW2NPs6pQe0k8GWpaar/yZ2eut9gsgHnu5JCWnyedo4nEx6I/G4GSaX+0SeU
+/Wb2aqq1QGfVOESml7CVcEa/buTeUwIDAQABo1AwTjAdBgNVHQ4EFgQU5i7CO32N
+spQ5AaG/aRU0LX2koYwwHwYDVR0jBBgwFoAU5i7CO32NspQ5AaG/aRU0LX2koYww
+DAYDVR0TBAUwAwEB/zANBgkqhkiG9w0BAQsFAAOCAQEAbQuCMPK8f8QuEmTpZBFv
+aka9qruT/0/TrxrbxEh68N4moXSTVv4tSrDTmdkwUiiwayuGS7fvKjSV6hwGkQbV
+zGbFDdwOw1tPE2OwnA7/+RPl4KmE4iTHnnIanyg9CKmBW/tMp/vUyv5nIt7Xw5n4
+tx3C9/hme+Rlx+SVPIAwAjl4nVFNLfzyG+JDBnQWygySm88SzzK0WRgh5V+gyXCK
+ucDW5rA6X9/CM3QrSY50mSM6dbyYDMtmTI4dX7E9STTBCNsNNcmgYkX0N9lm5RoF
+uBsAcPmp1SVIbXelDHJiIXxMKzwZy8riZQ8+Dw6LMs6wZX7COVvMWN4Dfcuo89av
+IQ==
+-----END CERTIFICATE-----`
+	funcServerKey = `-----BEGIN PRIVATE KEY-----
+MIIEwAIBADANBgkqhkiG9w0BAQEFAASCBKowggSmAgEAAoIBAQCf8AUSWW4Y5lh+
++XMEZ8d+R39D1K5AWxKdC3tCnrdi5/kh7+rg0ALNY8IH8vqdCu63g4zEke+FUCzA
+mjNFmtDFe9f+9TGSD5OYAuPdT16MX/lqsa2PLm/7IaLByLvMzivtU0UkZGR+W41E
+LWQmLgBjqOToaXh39tfi0FcTyYQVjWtSzBi1q3c4yNqNUCihwKWTpZxpC4r1HW4H
+4E/LEcsnThHIpG56k9hEFCODAcrmQwXezmnTs6z7YkfmPIlhbY0+zqlB7STwZalp
+qv/JnZ6632CyAee7kkJafJ52jicTHoj8bgZJpf7RJ5T9ZvZqqrVAZ9U4RKaXsJVw
+Rr9u5N5TAgMBAAECggEBAJCavJsojGiq61xyQVG8WxyLnD9B7gJ11VB0bw9+3SPp
+xNCwUNbOe5okFeyF/Z07ozX9FKstnzgTk0LYqH7ISPYk0NfN7PG4b6PDCS6xcjTN
+GX8kAl4wiEKw2K0IxvOXfRPoc91Bf7LXJ9R6jdAPS37P15ditO8SGYMTB4f2bRvm
+AMcaVGFZVNrvxbzC7bw+HWX1k1dezjkGf4jl9M6u252K/gMWZz8KaeDlqj48Kwg/
+k6hAnk5h28qCFe0wENOOZySgkrGaIV0hO/PeGydALUAbEL1Fn+20+eblT0IhD1v0
+6icQMhaxSTtTgnk9GbHF4L+T2quRAwQ4PAR+9t9Vk6ECgYEA1KZWRzBv4q4u075W
+Xu7NORmYJ9HuqL5QdQSb5qsFU7MfXQpK5BP9VDc38qTL5zyD5D40Tpjio7WX6BCp
+yWwH+brBmijneZFJ3r/pI8Oyut0m7uX/bbkOmTFrrIwE8lpeOzcUObtUw7uwByWV
+lmHP/fYiGMVNitxuTauxVejN6QsCgYEAwIrD3TRC6B9VHRLNiU/F1iuZTPWrCN+j
+XXA4ihzlcZFXqBNqlCrN0BDn7cOloob0zLB5T+8hoL5hsIiVg8tn7qDVqnvgql0e
+XKcasw0nGv4zI8cpHx7X7V8FxZUyyIAVd3rf33MO8qMTzBrshTh+JSsg5A1eVkjd
+9cONGAgLfNkCgYEAidvYPUiqkGNp2j4gEmVwSF9OZCpWNbFDyckWJQGkb3HFmHTO
+vnQzHIC71aN+yUdTHgoxsO6up4FXnMwItptBxGWNk5qHDinhoPX7eAMsALbUwbX7
+1S9OxoPikTcpEdECHBOGGjNXLZmk8c0s4BRDWhpSWoq2zZpALDxtuAs4SqcCgYEA
+m9y5CQwRTU5v3AUolQsan3DTvFTyi1BeMnlxi3ww0GpThx+Qmzi7Or80wGgsYRDW
+ggwpZ+ewVStIcVtfjTzPeYCA9m0pRT/0IBS1rFPtYBB+3WuPgj25ldHiHjvUzDHD
+LuEs8Pl3FDum/waciItesj/jdDjOMRLzess+IEIC6qECgYEAiA9S52BhIs8R3bYl
+5urE2VBVchLLNejgCEyhCv6rE4MibqX4oWwsmLM960rFhw+8UGwPKb0fwwq456f1
+vFKFOLz3XCMP6kg1g4dDcB7oRhO+9B4dk+QrUt349VlSaBA/sZ96mEL9ajudec5v
+5Amt4mqzY19IT2D8tE+saR2/U4I=
+-----END PRIVATE KEY-----`
+)
+
+type CustomerFunctionRequest struct {
 	Params []interface{} `json:"params"`
 }
-type response struct {
+
+type CustomerFunctionResponse struct {
 	Result interface{} `json:"result,omitempty"`
 	Error  string      `json:"error,omitempty"`
 }
 
-func isValid(w http.ResponseWriter, r *http.Request) {
-	send := func(status int, value response) {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(status)
-		_ = json.NewEncoder(w).Encode(value)
-	}
-	if r.Method != http.MethodPost {
-		w.Header().Set("Allow", "POST")
-		send(405, response{Error: "POST required"})
-		return
-	}
-	decoder := json.NewDecoder(http.MaxBytesReader(w, r.Body, 1<<20))
-	decoder.DisallowUnknownFields()
-	var input request
-	if err := decoder.Decode(&input); err != nil || len(input.Params) == 0 {
-		send(400, response{Error: "params must contain at least one number"})
-		return
-	}
-	valid := true
-	for _, param := range input.Params {
-		value, ok := param.(float64)
-		if !ok {
-			send(400, response{Error: "all params must be numbers"})
-			return
+func CustomFunctionIsValid(w http.ResponseWriter, r *http.Request) {
+	decoder := json.NewDecoder(r.Body)
+	var request CustomerFunctionRequest
+	var response CustomerFunctionResponse
+	httpSatus := http.StatusOK
+
+	if err := decoder.Decode(&request); err != nil {
+		fmt.Println(err)
+		response = CustomerFunctionResponse{
+			Error: "error decoding request",
 		}
-		if value < 100 || value > 50000 {
-			valid = false
+		httpSatus = http.StatusBadRequest
+	} else {
+		fmt.Printf("request = %v\n", request)
+		maxValue := float64(50000)
+		minValue := float64(100)
+		isValid := true
+		for index, param := range request.Params {
+			fmt.Printf("param %d: value=%v\n", index, param)
+			paramValue := param.(float64)
+			if paramValue < minValue || paramValue > maxValue {
+				fmt.Println("invalid")
+				isValid = false
+				break
+			}
+		}
+		response = CustomerFunctionResponse{
+			Result: isValid,
 		}
 	}
-	send(200, response{Result: valid})
+	payload, err := json.Marshal(response)
+	if err != nil {
+		fmt.Println(err)
+	} else {
+		fmt.Println("repsonse=", string(payload))
+	}
+	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	w.WriteHeader(httpSatus)
+	w.Write(payload)
 }
+
 func main() {
-	listen := flag.String("listen", "127.0.0.1:23456", "Function listen address")
-	cert := flag.String("cert", "", "TLS server certificate")
-	key := flag.String("key", "", "TLS server key")
-	flag.Parse()
-	if (*cert == "") != (*key == "") {
-		log.Fatal("provide both --cert and --key")
+	http.HandleFunc("/func/isValid", CustomFunctionIsValid)
+	// cp the content of funcServerCert to ./funcServer.crt, cp the content of funcServerKey to ./funcServer.key
+	if _, err := os.Stat("./funcServer.crt"); os.IsNotExist(err) {
+		if err1 := ioutil.WriteFile("./funcServer.crt", []byte(funcServerCert), 0644); err1 != nil {
+			fmt.Println("error creating crt file")
+		}
 	}
-	mux := http.NewServeMux()
-	mux.HandleFunc("/func/isValid", isValid)
-	server := &http.Server{Addr: *listen, Handler: mux, ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 10 * time.Second, WriteTimeout: 10 * time.Second}
-	if *cert != "" {
-		log.Fatal(server.ListenAndServeTLS(*cert, *key))
+	if _, err := os.Stat("./funcServer.key"); os.IsNotExist(err) {
+		if err1 := ioutil.WriteFile("./funcServer.key", []byte(funcServerKey), 0644); err1 != nil {
+			fmt.Println("error creating key file")
+		}
 	}
-	host, _, err := net.SplitHostPort(*listen)
-	if err != nil || !net.ParseIP(host).IsLoopback() {
-		log.Fatal("plaintext examples require a loopback IP; provide TLS certificates for other addresses")
+	err := http.ListenAndServeTLS(":23456", "./funcServer.crt", "./funcServer.key", nil)
+	if err != nil {
+		fmt.Println(err.Error())
 	}
-	log.Fatal(server.ListenAndServe())
+}
+
+```
+
+## 2. 在 Speedle 中创建 Custom Function 的定义， 将 function 名字和 RESTFul Endpoint 绑定
+
+Custom Function 的定义如下：
+
+```
+type Function struct {
+	Name           string            `json:"name"`
+	Description    string            `json:"description,omitempty"`
+	FuncURL        string            `json:"funcURL"`                  //endpoint of the function
+	CA             string            `json:"ca,omitempty"`             //tls related configurations
+	ResultCachable bool              `json:"resultCachable,omitempty"` //false by default
+	ResultTTL      int64             `json:"resultTTL,omitempty"`      //TTL of function result in second
+}
+
+```
+
+创建 custom function 的定义可通过 Speedle Policy Management Service (PMS) REST API, 或者用 Speedle CLI 工具 (spctl).  
+下面的例子展示了如何用命令行工具(spctl)创建上面例子中的 custom function 'isValid'。
+下面的 JSON file (function.json) 包含 custom function 'isValid' 的定义：
+
+```
+function.json file:
+{
+    "name" : "isValid",
+    "funcURL" : "https://localhost:23456/func/isValid",
+    "resultCachable": true,
+    "resultTTL": 300,
+    "ca":"-----BEGIN CERTIFICATE-----\nMIID7TCCAtWgAwIBAgIJALM3l/OZ9uJKMA0GCSqGSIb3DQEBCwUAMIGMMQswCQYD\nVQQGEwJjbjEQMA4GA1UECAwHYmVpamluZzEQMA4GA1UEBwwHYmVpamluZzEPMA0G\nA1UECgwGb3JhY2xlMQwwCgYDVQQLDANpZG0xEjAQBgNVBAMMCWxvY2FsaG9zdDEm\nMCQGCSqGSIb3DQEJARYXY3ludGhpYS5kaW5nQG9yYWNsZS5jb20wHhcNMTgwNDI1\nMDc1MDMwWhcNMTkwNDI1MDc1MDMwWjCBjDELMAkGA1UEBhMCY24xEDAOBgNVBAgM\nB2JlaWppbmcxEDAOBgNVBAcMB2JlaWppbmcxDzANBgNVBAoMBm9yYWNsZTEMMAoG\nA1UECwwDaWRtMRIwEAYDVQQDDAlsb2NhbGhvc3QxJjAkBgkqhkiG9w0BCQEWF2N5\nbnRoaWEuZGluZ0BvcmFjbGUuY29tMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIB\nCgKCAQEAn/AFElluGOZYfvlzBGfHfkd/Q9SuQFsSnQt7Qp63Yuf5Ie/q4NACzWPC\nB/L6nQrut4OMxJHvhVAswJozRZrQxXvX/vUxkg+TmALj3U9ejF/5arGtjy5v+yGi\nwci7zM4r7VNFJGRkfluNRC1kJi4AY6jk6Gl4d/bX4tBXE8mEFY1rUswYtat3OMja\njVAoocClk6WcaQuK9R1uB+BPyxHLJ04RyKRuepPYRBQjgwHK5kMF3s5p07Os+2JH\n5jyJYW2NPs6pQe0k8GWpaar/yZ2eut9gsgHnu5JCWnyedo4nEx6I/G4GSaX+0SeU\n/Wb2aqq1QGfVOESml7CVcEa/buTeUwIDAQABo1AwTjAdBgNVHQ4EFgQU5i7CO32N\nspQ5AaG/aRU0LX2koYwwHwYDVR0jBBgwFoAU5i7CO32NspQ5AaG/aRU0LX2koYww\nDAYDVR0TBAUwAwEB/zANBgkqhkiG9w0BAQsFAAOCAQEAbQuCMPK8f8QuEmTpZBFv\naka9qruT/0/TrxrbxEh68N4moXSTVv4tSrDTmdkwUiiwayuGS7fvKjSV6hwGkQbV\nzGbFDdwOw1tPE2OwnA7/+RPl4KmE4iTHnnIanyg9CKmBW/tMp/vUyv5nIt7Xw5n4\ntx3C9/hme+Rlx+SVPIAwAjl4nVFNLfzyG+JDBnQWygySm88SzzK0WRgh5V+gyXCK\nucDW5rA6X9/CM3QrSY50mSM6dbyYDMtmTI4dX7E9STTBCNsNNcmgYkX0N9lm5RoF\nuBsAcPmp1SVIbXelDHJiIXxMKzwZy8riZQ8+Dw6LMs6wZX7COVvMWN4Dfcuo89av\nIQ==\n-----END CERTIFICATE-----"
 }
 ```
 
+用 spctl create function 命令创建 custom function 定义：
 
-## 运行示例前
-
-先按[快速入门](/quick-start/)编译仓库根目录下的 `./bin/spctl`、`./bin/speedle-pms` 和 `./bin/speedle-ads`，需要 Go 1.26 或更高版本、Bash、curl 和 Python 3。下面各终端都从仓库根目录运行。为本页使用一个新的策略文件；仅在两个服务都停止后重建该文件。
-
-初始化空策略文件：
-
-<!-- docs-check: setup -->
-```bash
-printf '{}\n' > docs-policies.json
+```
+./spctl create function --json-file=function.json
 ```
 
-终端一启动 PMS，并保持运行：
+### 3. 在 policy 或 role-policy 的 condition 中使用 custom function
 
-<!-- docs-check: pms -->
-```bash
-./bin/speedle-pms --store-type file --filestore-loc ./docs-policies.json --endpoint 127.0.0.1:6733 --grpc-endpoint 127.0.0.1:0 --insecure=true
+下面的例子展示了如何在 policy 的 condition 中使用 'isValid' custom function.
+
+```
+./spctl create policy -c "grant user Ally access library if isValid(attr1)" --service-name=service1
 ```
 
-终端二启动 ADS，并保持运行：
+### 声明:
 
-<!-- docs-check: ads -->
-```bash
-./bin/speedle-ads --store-type file --filestore-loc ./docs-policies.json --endpoint 127.0.0.1:6734 --grpc-endpoint 127.0.0.1:0 --insecure=true
-```
-
-在第三个终端运行后续命令。PMS/ADS 共享同一个文件，策略更新通过 watch 异步到达 ADS；先查询确认已更新，再依赖新策略做决策。`--insecure=true` 仅用于回环地址上的本地示例，生产连接见[安全配置](/docs/security/)。示例显式指定 PMS 地址，不修改 `~/.spctlconfig`。完成后在两个服务终端按 Ctrl-C。
-
-
-## 注册并调用函数
-
-以下定义关闭结果缓存，使每次决策反映本次请求。先创建服务，再创建策略。
-
-<!-- docs-check: function-fixture -->
-```bash
-cat > function.json <<'JSON'
-{"name":"isValid","funcURL":"http://127.0.0.1:23456/func/isValid","resultCachable":false}
-JSON
-./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ create function --json-file function.json
-./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ create service service1
-./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ create policy -c "grant user Ally access library if isValid(attr1)" --service-name service1
-```
-
-
-以下两条请求分别返回 Allow（`200` 在范围内）、Deny（`50` 不在范围内）：
-
-<!-- docs-check: function-allow -->
-```bash
-curl --fail --silent --show-error -H 'Content-Type: application/json' \
-  -d '{"subject":{"principals":[{"type":"user","name":"Ally"}]},"serviceName":"service1","resource":"library","action":"access","attributes":[{"name":"attr1","type":"numeric","value":200}]}' \
-  http://127.0.0.1:6734/authz-check/v1/is-allowed
-```
-<!-- docs-check: function-deny -->
-```bash
-curl --fail --silent --show-error -H 'Content-Type: application/json' \
-  -d '{"subject":{"principals":[{"type":"user","name":"Ally"}]},"serviceName":"service1","resource":"library","action":"access","attributes":[{"name":"attr1","type":"numeric","value":50}]}' \
-  http://127.0.0.1:6734/authz-check/v1/is-allowed
-```
-
-
-## TLS 与缓存
-
-TLS 端点先生成新的[本地测试证书](/docs/security/)，然后运行 `go run ./samples/docs/custom-function --cert ./tls/server.crt --key ./tls/server.key`。注册时 `funcURL` 为 `https://localhost:23456/func/isValid`，`ca` 填写 `tls/ca.crt` 中的 **PEM 证书内容**，不是文件路径。生产证书必须覆盖实际主机。无需使用过期的硬编码证书或私钥。
-
-`resultCachable` 默认为 false；启用缓存后，`resultTTL` 表示结果缓存秒数。只有当结果在相应时间和参数组合下仍然正确时才应缓存，例如账号状态等外部数据可能在 TTL 到期前变化。定义管理见 [PMS 函数 API](/docs/api/management_api/)。浏览器 Playground 不支持调用外部自定义函数。
+使用者必须自己确保 condition 中的函数参数 RESTful service 接受的函数参数匹配.

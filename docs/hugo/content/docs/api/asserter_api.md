@@ -7,8 +7,4 @@ customcss = true
 customcssfile = "swagger-custom.css"
 +++
 
-Webhook reference. errCode is an integer and attributes is an object. Configure the actual endpoint in the ADS asserter configuration.
-
-[Security and endpoint configuration](/docs/security/). This is a contract reference, not a backend hosted by speedle.io.
-
-{{< swagger-spec url="/swagger/asserter.yaml" >}}
+{{< swagger-spec url="/swagger/asserter.yaml"  >}}

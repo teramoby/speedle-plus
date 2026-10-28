@@ -11,19 +11,19 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>全局角色策略 - Speedle</title>
-<meta name="description" content="跨服务共享角色分配">
+<meta name="description" content="Policies take effect globally">
 <link rel="alternate" hreflang="en" href="https://speedle.io/docs/pms/global-policy/">
 <link rel="alternate" hreflang="x-default" href="https://speedle.io/docs/pms/global-policy/"><link rel="alternate" hreflang="zh-CN" href="https://speedle.io/zh/docs/pms/global-policy/">
 
 <meta property="og:type" content="article">
 <meta property="og:site_name" content="Speedle Authorization Engine">
 <meta property="og:title" content="全局角色策略">
-<meta property="og:description" content="跨服务共享角色分配">
+<meta property="og:description" content="Policies take effect globally">
 <meta property="og:url" content="https://speedle.io/zh/docs/pms/global-policy/">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="全局角色策略">
-<meta name="twitter:description" content="跨服务共享角色分配">
-<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://speedle.io/zh/docs/pms/global-policy/#page","@type":"TechArticle","about":{"@id":"https://speedle.io/#software"},"description":"跨服务共享角色分配","inLanguage":"zh-CN","isPartOf":{"@id":"https://speedle.io/#website"},"keywords":["Speedle+"],"name":"全局角色策略","url":"https://speedle.io/zh/docs/pms/global-policy/"}</script>
+<meta name="twitter:description" content="Policies take effect globally">
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://speedle.io/zh/docs/pms/global-policy/#page","@type":"TechArticle","about":{"@id":"https://speedle.io/#software"},"description":"Policies take effect globally","inLanguage":"zh-CN","isPartOf":{"@id":"https://speedle.io/#website"},"keywords":["Speedle+"],"name":"全局角色策略","url":"https://speedle.io/zh/docs/pms/global-policy/"}</script>
 
 <meta name="generator" content="Hugo 0.48" />
 <link href="https://speedle.io/index.xml" rel="alternate" type="application/rss+xml">
@@ -103,52 +103,50 @@ headingSelector: 'h2'
   <div id="kube-component" class="content">
     
 
-<h2 id="什么时候使用全局角色">什么时候使用全局角色？</h2>
+<h2 id="什么时候需要全局角色">什么时候需要全局角色</h2>
 
-<p>普通角色限定在某个服务中。当多个服务需要共享角色分配时，可以在特殊的 <code>global</code> 服务中定义角色策略，再在各服务自己的授权策略中引用该角色。</p>
+<p>对于简单的应用，使用 RBAC（Role-based access control），我们通常把角色和授权都放在 SPEEDLE 的一个 service 里。</p>
 
-<p>当前仅支持全局<strong>角色策略</strong>。全局角色分配本身并不授予任意操作，各普通服务仍需定义自己的权限；全局授权策略尚不支持。</p>
+<p>然而在某些情况下，也许是一个由许多相对独立的子系统组成的复杂系统，也许你有很多个独立的应用但共享同一套身份系统，每个子系统或者应用都有自己的 SPEEDLE service。这样你就会有很多个 service，每个 service 里的角色都是独立的。同一个用户在一个 service 里的角色不会在另一个 service 里生效。如果有一些角色策略对所有 service 都是一样的，而你不想重复的去在每个 service 里定义它们，这时候你就可以把它们定义为全局角色。</p>
 
-<h2 id="运行示例前">运行示例前</h2>
+<h2 id="定义全局角色策略">定义全局角色策略</h2>
 
-<p>先按<a href="/zh/quick-start/">快速入门</a>编译仓库根目录下的 <code>./bin/spctl</code>、<code>./bin/speedle-pms</code> 和 <code>./bin/speedle-ads</code>，需要 Go 1.26 或更高版本、Bash、curl 和 Python 3。下面各终端都从仓库根目录运行。为本页使用一个新的策略文件；仅在两个服务都停止后重建该文件。</p>
+<ol>
+<li>首先需要创建一个名字为&rsquo;global&rsquo;的 service：</li>
+</ol>
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">spctl create service global</pre></div>
+<ol>
+<li>然后就可以在&rsquo;global&rsquo; service 里创建角色了：</li>
+</ol>
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">spctl create rolepolicy -c &#34;grant user Emma AdminRole&#34; --service-name=global</pre></div>
+<h2 id="使用全局角色策略">使用全局角色策略</h2>
 
-<p>初始化空策略文件：</p>
+<ol>
+<li>在其它的 service 里定义角色或者授权时，可以引用全局角色：</li>
+</ol>
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">spctl create policy -c &#34;grant role AdminRole borrow books&#34; --service-name=library</pre></div>
+<ol>
+<li>运行时全局角色会生效：</li>
+</ol>
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">curl -X POST  http://localhost:6734/authz-check/v1/is-allowed \
+-d @- &lt;&lt; EOF
+{
+ &#34;subject&#34;: {&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;, &#34;name&#34;:&#34;Emma&#34;}]},
+ &#34;serviceName&#34;: &#34;library&#34;,
+ &#34;resource&#34;:&#34;books&#34;,
+ &#34;action&#34;: &#34;borrow&#34;
+}
+EOF</pre></div>
+<p>将会返回 allowed = true。因为 Emma 有全局角色 AdminRole，而在 service ‘library’里，我们给予了 AdminRole 这个权限。</p>
 
-<!-- docs-check: setup -->
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#a90d91">printf</span> <span style="color:#c41a16">&#39;{}\n&#39;</span> &gt; docs-policies.json</code></pre></div>
-<p>终端一启动 PMS，并保持运行：</p>
+<h2 id="对-global-service-的更多说明">对 Global Service 的更多说明</h2>
 
-<!-- docs-check: pms -->
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./bin/speedle-pms --store-type file --filestore-loc ./docs-policies.json --endpoint <span style="color:#1c01ce">127</span>.0.0.1:6733 --grpc-endpoint <span style="color:#1c01ce">127</span>.0.0.1:0 --insecure<span style="color:#000">=</span>true</code></pre></div>
-<p>终端二启动 ADS，并保持运行：</p>
-
-<!-- docs-check: ads -->
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./bin/speedle-ads --store-type file --filestore-loc ./docs-policies.json --endpoint <span style="color:#1c01ce">127</span>.0.0.1:6734 --grpc-endpoint <span style="color:#1c01ce">127</span>.0.0.1:0 --insecure<span style="color:#000">=</span>true</code></pre></div>
-<p>在第三个终端运行后续命令。PMS/ADS 共享同一个文件，策略更新通过 watch 异步到达 ADS；先查询确认已更新，再依赖新策略做决策。<code>--insecure=true</code> 仅用于回环地址上的本地示例，生产连接见<a href="/zh/docs/security/">安全配置</a>。示例显式指定 PMS 地址，不修改 <code>~/.spctlconfig</code>。完成后在两个服务终端按 Ctrl-C。</p>
-
-<h2 id="创建全局角色与本地权限">创建全局角色与本地权限</h2>
-
-<!-- docs-check: global-fixture -->
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ create service global
-./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ create rolepolicy -c <span style="color:#c41a16">&#34;grant user Emma AdminRole&#34;</span> --service-name global
-./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ create service library
-./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ create policy -c <span style="color:#c41a16">&#34;grant role AdminRole borrow books&#34;</span> --service-name library</code></pre></div>
-<p>全局服务必须准确命名为 <code>global</code>，<code>library</code> 在创建其策略之前先创建。两个服务均通过普通管理 API 维护。</p>
-
-<h2 id="验证结果">验证结果</h2>
-
-<p>Emma 通过 <code>AdminRole</code> 获得允许，Bob 被拒绝。</p>
-
-<!-- docs-check: global-allow -->
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl --fail --silent --show-error -H <span style="color:#c41a16">&#39;Content-Type: application/json&#39;</span> <span style="color:#c41a16">\
-</span><span style="color:#c41a16"></span>  -d <span style="color:#c41a16">&#39;{&#34;subject&#34;:{&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;,&#34;name&#34;:&#34;Emma&#34;}]},&#34;serviceName&#34;:&#34;library&#34;,&#34;resource&#34;:&#34;books&#34;,&#34;action&#34;:&#34;borrow&#34;}&#39;</span> <span style="color:#c41a16">\
-</span><span style="color:#c41a16"></span>  http://127.0.0.1:6734/authz-check/v1/is-allowed</code></pre></div>
-<!-- docs-check: global-deny -->
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl --fail --silent --show-error -H <span style="color:#c41a16">&#39;Content-Type: application/json&#39;</span> <span style="color:#c41a16">\
-</span><span style="color:#c41a16"></span>  -d <span style="color:#c41a16">&#39;{&#34;subject&#34;:{&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;,&#34;name&#34;:&#34;Bob&#34;}]},&#34;serviceName&#34;:&#34;library&#34;,&#34;resource&#34;:&#34;books&#34;,&#34;action&#34;:&#34;borrow&#34;}&#39;</span> <span style="color:#c41a16">\
-</span><span style="color:#c41a16"></span>  http://127.0.0.1:6734/authz-check/v1/is-allowed</code></pre></div>
-<p>有资源范围的全局角色策略只在其范围内生效。跨服务角色分配应经过审查，尤其需要区分<a href="/zh/docs/idd/">不同身份域</a>中的同名主体。</p>
+<ol>
+<li>它的名字必须是&rsquo;global&rsquo;。</li>
+<li>用户能够根据需要创建或者删除它，像其它的 service。</li>
+<li>在它里面只能创建角色，不能创建授权。</li>
+<li>虽然似乎没有什么用处，用户也能对它调用 ADS API。</li>
+</ol>
 
   </div>
 </div>
@@ -200,16 +198,16 @@ headingSelector: 'h2'
 
 <li class=""><span>API</span>
 <ul class="">
-<li class=""><a href="/zh/docs/api/asserter_api/">令牌断言插件 API</a></li>
-<li class=""><a href="/zh/docs/api/decision_api/">授权决策 API</a></li>
-<li class=""><a href="/zh/docs/api/management_api/">策略管理 API</a></li>
+<li class=""><a href="/zh/docs/api/decision_api/">Authorization Runtime/Decision API</a></li>
+<li class=""><a href="/zh/docs/api/management_api/">Policy Management API</a></li>
+<li class=""><a href="/zh/docs/api/asserter_api/">Token Assertion Plugin API</a></li>
 </ul>
   
 </li>
 <li class=""><a href="/zh/docs/security/">安全</a></li>
 <li class=""><a href="/zh/docs/logging/">日志</a></li>
 <li class=""><a href="/zh/docs/versions/">版本</a></li>
-<li class=""><a href="/zh/docs/custom-function/">自定义函数</a></li>
+<li class=""><a href="/zh/docs/custom-function/">Custom Function</a></li>
 </ul>
   
 </li>

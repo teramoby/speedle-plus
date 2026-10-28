@@ -4,15 +4,18 @@
 package flags
 
 import (
+	"crypto/tls"
+	"crypto/x509"
 	"fmt"
 	"net/http"
 	"os"
-	"runtime/debug"
 	"strings"
 	"time"
+	"runtime/debug"
 
 	"github.com/teramoby/speedle-plus/pkg/assertion"
 	"github.com/teramoby/speedle-plus/pkg/cfg"
+	"github.com/teramoby/speedle-plus/pkg/errors"
 	"github.com/teramoby/speedle-plus/pkg/logging"
 
 	"strconv"
@@ -32,8 +35,6 @@ type Parameters struct {
 	//////////Server config//////////////
 	ConfigFile      StrParamDetail
 	Endpoint        StrParamDetail
-	GRPCEndpoint    StrParamDetail
-	HealthEndpoint  StrParamDetail
 	Insecure        StrParamDetail
 	EnableAuthz     StrParamDetail
 	KeyPath         StrParamDetail
@@ -88,8 +89,8 @@ const (
 	DefaultPolicyManagmentConnectEndpoint = "http://127.0.0.1:6733/policy-mgmt/v1/"
 	DefaultAuthzCheckEndPoint             = "0.0.0.0:6734"
 	// TLS enabled by default for security. Set --insecure=true for development only.
-	DefaultInsecure    = false
-	DefaultEnableAuthz = false
+	DefaultInsecure = false
+	DefaultEnableAuthz                    = false
 
 	DefaultStoreType = cfg.StorageTypeFile //file
 
@@ -185,10 +186,34 @@ func (k *Parameters) NewHTTPServer(handler http.Handler) (*http.Server, error) {
 }
 
 func (k *Parameters) newTLSServer(handler http.Handler) (*http.Server, error) {
-	tlsConfig, err := k.serverTLSConfig()
-	if err != nil {
-		return nil, err
+	// Set HTTPS client
+	tlsConfig := &tls.Config{
+		MinVersion:       tls.VersionTLS12,
+		CurvePreferences: []tls.CurveID{tls.X25519, tls.CurveP256},
 	}
+
+	if k.ClientCertPath.Value != "" {
+		caCert, err := os.ReadFile(k.ClientCertPath.Value)
+		if err != nil {
+			return nil, errors.Wrapf(err, errors.ConfigError, "unable to read client CA certification from file %s", k.ClientCertPath.Value)
+		}
+
+		caCertPool := x509.NewCertPool()
+		if !caCertPool.AppendCertsFromPEM(caCert) {
+			return nil, errors.Wrap(err, errors.ConfigError, "failed to append certificates to pool")
+		}
+
+		tlsConfig.ClientCAs = caCertPool
+		forceClientCert, _ := strconv.ParseBool(k.ForceClientCert.Value)
+		if forceClientCert {
+			tlsConfig.ClientAuth = tls.RequireAndVerifyClientCert
+		} else {
+			tlsConfig.ClientAuth = tls.VerifyClientCertIfGiven
+		}
+	} else {
+		tlsConfig.ClientAuth = tls.NoClientCert
+	}
+
 
 	server := http.Server{
 		Addr:              k.Endpoint.Value,
@@ -212,7 +237,7 @@ func (k *Parameters) ListenAndServe(s *http.Server) error {
 }
 
 func (k *Parameters) listenAndServeTLS(s *http.Server) error {
-	return s.ListenAndServeTLS("", "")
+	return s.ListenAndServeTLS(k.CertPath.Value, k.KeyPath.Value)
 }
 
 // ParseFlags parses command line arguments
@@ -222,10 +247,6 @@ func (k *Parameters) ParseFlags(defaultEndpoint string, printVersionInfoFun func
 	params = append(params, &k.ConfigFile)
 	k.Endpoint = StrParamDetail{Name: "endpoint", DefaultValue: defaultEndpoint, Usage: "Server config: Endpoint the server listen and serve."}
 	params = append(params, &k.Endpoint)
-	k.GRPCEndpoint = StrParamDetail{Name: "grpc-endpoint", Usage: "Server config: gRPC listen address; default is the REST host with port 50001 (PMS) or 50002 (ADS)."}
-	params = append(params, &k.GRPCEndpoint)
-	k.HealthEndpoint = StrParamDetail{Name: "health-endpoint", Usage: "Optional loopback-only HTTP health listener; exposes /livez and /readyz, disabled by default."}
-	params = append(params, &k.HealthEndpoint)
 	k.Insecure = StrParamDetail{Name: "insecure", DefaultValue: strconv.FormatBool(DefaultInsecure), Usage: "Server config: Disable transport security."}
 	params = append(params, &k.Insecure)
 	k.EnableAuthz = StrParamDetail{Name: "enable-authz", DefaultValue: strconv.FormatBool(DefaultEnableAuthz), Usage: "Server config: Enable authorization check."}
@@ -342,14 +363,6 @@ func (k *Parameters) ParseFlags(defaultEndpoint string, printVersionInfoFun func
 				case k.Endpoint.Name:
 					if conf != nil && conf.ServerConfig != nil && len(conf.ServerConfig.Endpoint) != 0 {
 						f.Value.Set(conf.ServerConfig.Endpoint)
-					}
-				case k.GRPCEndpoint.Name:
-					if conf != nil && conf.ServerConfig != nil && conf.ServerConfig.GRPCEndpoint != "" {
-						f.Value.Set(conf.ServerConfig.GRPCEndpoint)
-					}
-				case k.HealthEndpoint.Name:
-					if conf != nil && conf.ServerConfig != nil && conf.ServerConfig.HealthEndpoint != "" {
-						f.Value.Set(conf.ServerConfig.HealthEndpoint)
 					}
 				case k.Insecure.Name:
 					if conf != nil && conf.ServerConfig != nil && len(conf.ServerConfig.Insecure) != 0 {

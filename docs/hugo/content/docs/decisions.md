@@ -14,114 +14,179 @@ bref = "Get authorization decisions"
 
 ## What is an authorization decision?
 
-Speedle evaluates a subject, action and resource within a service. The application must enforce the result. Treat an evaluation error or timeout separately from a normal Deny and fail closed. REST, gRPC and embedded Go APIs have different wire representations; use their respective [contracts](/docs/api/).
+- An authorization decision determines whether a subject performing an action on a resource is allowed.
 
-## Before running the examples
+- An authorization decision is the result of real-time evaluation based on policies and attributes.
 
-Build `./bin/spctl`, `./bin/speedle-pms` and `./bin/speedle-ads` using the [quick start](/quick-start/). Use Go 1.26 or later, Bash, curl and Python 3. Run each terminal from the repository root. Use a fresh policy file for this page; reset it only after stopping both services.
+## Ways to get authorization decisions
 
-Initialize an empty policy file:
+Authorization decisions can be performed by the Authorization Decision Service or an by an embedded evaluator:
 
-<!-- docs-check: setup -->
-```bash
-printf '{}\n' > docs-policies.json
+- Authorization Decision Service (ADS)
+  - REST API
+  - Grpc API
+- Embedded Evaluator
+  - Golang API
+
+## APIs and Samples
+
+The ADS decision APIs make authorization decisions based on policies that describe the actions, permissions, and roles granted to a subject.
+
+### Get decision
+
+Get a decision on whether a subject performing an action on a resource is allowed.
+
+- API overview
+  - IN
+    - Given the request: subject, action, resource
+    - Given the runtime attributes \*\*optional\*\*
+    - Given the service scope
+  - OUT
+    - Returns _true_ if allowed, _false_ if _NOT_ allowed
+    - Returns reason for the decision
+    - Returns errors if an error occurs
+- Sample
+  - Get a decision on whether user Alan is allowed to download a book from an online bookstore
+  - Decision is based on policies defined in a service named "onlineBookStore"
+
+**REST API example:**
+
+_Request:_
+
 ```
-
-In terminal one, start PMS and leave it running:
-
-<!-- docs-check: pms -->
-```bash
-./bin/speedle-pms --store-type file --filestore-loc ./docs-policies.json --endpoint 127.0.0.1:6733 --grpc-endpoint 127.0.0.1:0 --insecure=true
-```
-
-In terminal two, start ADS and leave it running:
-
-<!-- docs-check: ads -->
-```bash
-./bin/speedle-ads --store-type file --filestore-loc ./docs-policies.json --endpoint 127.0.0.1:6734 --grpc-endpoint 127.0.0.1:0 --insecure=true
-```
-
-Run the remaining commands in a third terminal. PMS and ADS share the file; watch propagates changes asynchronously. Confirm the intended update has reached ADS before relying on it. `--insecure=true` is only for this loopback example; see [security](/docs/security/) for production connections. Explicit PMS addresses avoid changing `~/.spctlconfig`. Stop both server terminals with Ctrl-C when finished.
-
-
-## Create a reproducible policy set
-
-The [fixture](https://github.com/teramoby/speedle-plus/blob/master/samples/docs/bookstore.json) assigns Alan `role1` and `role2`; `role1` may download `/books/HarryPotter`.
-
-<!-- docs-check: bookstore-fixture -->
-```bash
-./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ create service --json-file samples/docs/bookstore.json
-```
-
-
-## Get a decision
-
-Alan is allowed; Bob is denied because no grant applies.
-
-<!-- docs-check: decision-allow -->
-```bash
-curl --fail --silent --show-error -H 'Content-Type: application/json' \
-  -d '{"subject":{"principals":[{"type":"user","name":"Alan"}]},"serviceName":"onlineBookStore","resource":"/books/HarryPotter","action":"download"}' \
-  http://127.0.0.1:6734/authz-check/v1/is-allowed
-```
-
-
-<!-- docs-check: decision-deny -->
-```bash
-curl --fail --silent --show-error -H 'Content-Type: application/json' \
-  -d '{"subject":{"principals":[{"type":"user","name":"Bob"}]},"serviceName":"onlineBookStore","resource":"/books/HarryPotter","action":"download"}' \
-  http://127.0.0.1:6734/authz-check/v1/is-allowed
-```
-
-
-Successful decisions return `{"allowed":true,"reason":0}` or a corresponding Deny object. HTTP errors return an error response, not a successful grant. Reason codes are:
-
-| Code | Meaning |
-| --- | --- |
-| 0 | GRANT_POLICY_FOUND |
-| 1 | DENY_POLICY_FOUND |
-| 2 | SERVICE_NOT_FOUND |
-| 3 | NO_APPLICABLE_POLICIES |
-| 4 | ERROR_IN_EVALUATION |
-| 5 | DISCOVER_MODE |
-| 6 | REASON_NOT_AVAILABLE |
-
-`DISCOVER_MODE` is not a production authorization grant. `REASON_NOT_AVAILABLE` is the fallback reason value. Do not assume these numbers are HTTP status codes.
-
-## Get granted roles
-
-<!-- docs-check: decision-roles -->
-```bash
-curl --fail --silent --show-error -H 'Content-Type: application/json' \
-  -d '{"subject":{"principals":[{"type":"user","name":"Alan"}]},"serviceName":"onlineBookStore","resource":"/books/HarryPotter","action":"download"}' \
-  http://127.0.0.1:6734/authz-check/v1/all-granted-roles
-```
-
-
-Expected roles are `role1` and `role2` (ordering is not significant). Include `resource` when querying resource-scoped role assignments.
-
-## Get granted permissions
-
-<!-- docs-check: decision-permissions -->
-```bash
-curl --fail --silent --show-error -H 'Content-Type: application/json' \
-  -d '{"subject":{"principals":[{"type":"user","name":"Alan"}]},"serviceName":"onlineBookStore","resource":"/books/HarryPotter","action":"download"}' \
-  http://127.0.0.1:6734/authz-check/v1/all-granted-permissions
-```
-
-
-Expected permission: resource `/books/HarryPotter`, action `download`. This API describes effective granted permissions; enforce a particular operation with `is-allowed` rather than treating a permission-list response as a replacement for request evaluation.
-
-## Attributes, diagnosis and token identity
-
-REST request attributes are typed objects in an array. For example, an attribute item is:
-
-```json
+curl -X POST  http://localhost:6734/authz-check/v1/is-allowed \
+-d @- << EOF
 {
-  "name": "clearance",
-  "type": "numeric",
-  "value": 4
+ "subject": {"principals":[{"type":"user", "name":"Alan"}]},
+ "action": "download",
+ "resource":"/books/HarryPotter",
+ "serviceName": "onlineBookStore"
 }
+EOF
 ```
 
-Embedded Go attributes are `map[string]interface{}`; diagnostic response attributes are also an object, not that request array. See [SPDL](/docs/spdl/) for types and conditions, [diagnosis](/docs/pms/diagnosis/) for evaluation detail, and [token assertion](/docs/assertor/) for configured token validation.
+_Response:_
+
+```
+{"allowed":true,"reason":0}
+```
+
+Here, reason '0' means that the ADS found the grant policy. The list of reasons and definitions are as follows:
+
+ <table class="bordered striped">
+    <thead>
+      <tr>
+        <th>Reason</th>
+        <th>Definition</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td> 0 </td>
+        <td> GRANT_POLICY_FOUND </td>
+      </tr>
+      <tr>
+        <td> 1 </td>
+        <td> DENY_POLICY_FOUND </td>
+      </tr>
+      <tr>
+        <td> 2 </td>
+        <td> SERVICE_NOT_FOUND </td>
+      </tr>
+      <tr>
+        <td> 3 </td>
+        <td> NO_APPLICABLE_POLICIES </td>
+      </tr>
+      <tr>
+        <td> 4 </td>
+        <td> ERROR_IN_EVALUATION </td>
+      </tr>
+      <tr>
+        <td> 5 </td>
+        <td> DISCOVER_MODE </td>
+      </tr>
+   </tbody>
+ </table>
+
+### Get Roles
+
+Get all the roles granted to the subject in a request.
+
+- API overview
+
+  - IN
+    - Given the subject
+    - Given the runtime attributes \*\*optional\*\*
+    - Given the service scope
+  - OUT
+    - Returns a slice of roles granted to current subject
+    - Returns errors if an error occurs
+
+- Sample
+  - Get the roles granted to the user Alan
+  - Decision is based on policies defined in service named "onlineBookStore"
+
+**REST API example:**  
+_Request:_
+
+```
+curl -X POST  http://localhost:6734/authz-check/v1/all-granted-roles \
+-d @- << EOF
+{
+ "subject": {"principals":[{"type":"user", "name":"Alan"}]},
+ "serviceName": "onlineBookStore"
+}
+EOF
+```
+
+_Response:_
+
+```
+["role1", "role2"]
+```
+
+### Get Permissions
+
+Get all permissions granted to the subject in a request.
+
+- API overview
+
+  - IN
+    - Given the subject
+    - Given the runtime attributes \*\*optional\*\*
+    - Given the service scope
+  - OUT
+    - Returns a slice of (actions, resource) pairs, current subject is allowed to perform.
+    - Returns errors if an error occurs
+
+- Sample
+  - Get all permissions granted to user Alan
+  - Decision is based on policies defined in service named "onlineBookStore"
+
+**REST API example:**  
+_Request:_
+
+```
+curl -X POST  http://localhost:6734/authz-check/v1/all-granted-permissions \
+-d @- << EOF
+{
+ "subject": {"principals":[{"type":"user", "name":"Alan"}]},
+ "serviceName": "onlineBookStore"
+}
+EOF
+```
+
+_Response:_
+
+```
+[{
+    "resource":"/books/HarryPotter",
+    "actions":["download","read"]
+ },
+ {
+    "resource":"/books/ThreeBodyProblem",
+    "actions":["borrow"]
+ }]
+```
+
+For details, see [Authorization Runtime/Decision API](../api/decision_api).
