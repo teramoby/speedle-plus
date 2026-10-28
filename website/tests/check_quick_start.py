@@ -2,10 +2,10 @@
 """Execute the actual English/Chinese quick-start shell blocks against native services.
 
 A public shallow clone verifies the download step; CI then checks out the captured
-candidate revision before compiling. Only REST port numbers are changed, so these
-checks can coexist with the legacy fixed-port unit suites. Native binaries still
-open fixed gRPC ports: a shared host lock serializes this checker, and occupied
-ports are rejected without stopping an existing process.
+candidate revision before compiling. Linux runs the native services and clients
+in unprivileged user/network/PID namespaces, using the exact documented ports
+without conflicting with existing services. On macOS, alternate REST ports and a
+shared lock isolate fixture services; occupied gRPC ports are rejected.
 """
 import argparse
 import contextlib
@@ -15,6 +15,7 @@ import os
 import re
 import signal
 import shutil
+import sys
 import socket
 import subprocess
 import tempfile
@@ -134,78 +135,99 @@ def verify(locale, toolchain, env):
         for binary in ("spctl", "speedle-pms", "speedle-ads"):
             assert binary in output and os.access(checkout / "bin" / binary, os.X_OK), binary
         print(f"{locale}: PASS public clone and native build at {revision}", flush=True)
-        pms_port, ads_port = ports()
-        def local(command):
-            return command.replace("127.0.0.1:6733", f"127.0.0.1:{pms_port}").replace("127.0.0.1:6734", f"127.0.0.1:{ads_port}")
-        expected_service = "library" if locale == "zh" else "mysvc"
-        processes, logs, decisions = [], [], {}
-        with server_lock(), contextlib.ExitStack() as resources:
-            try:
-                for name, command in steps:
-                    if name in {"version", "build"}:
-                        continue
-                    command = local(command)
-                    if name in {"pms", "ads"}:
-                        log = work / f"{name}.log"
-                        logs.append(log)
-                        stream = resources.enter_context(log.open("w"))
-                        process = subprocess.Popen(["bash", "-euc", "exec " + command], cwd=checkout, env=env,
-                                                   stdout=stream, stderr=subprocess.STDOUT, start_new_session=True)
-                        processes.append(process)
-                        url = f"http://127.0.0.1:{pms_port}/policy-mgmt/v1/service" if name == "pms" else f"http://127.0.0.1:{ads_port}/authz-check/v1/is-allowed"
-                        wait_ready(process, url)
-                    else:
-                        output = run(command, checkout, env)
-                        if name == "list":
-                            services = json.loads(output)
-                            service = next(item for item in services if item["name"] == expected_service)
-                            assert len(service.get("policies", [])) == (1 if locale == "zh" else 2), service
-                            assert len(service.get("rolePolicies", [])) == (0 if locale == "zh" else 1), service
-                        elif name.startswith("allow-") or name == "deny":
-                            result = json.loads(output)
-                            assert result.get("allowed") is (name != "deny"), (name, result)
-                            decisions[name] = result["allowed"]
-                    assert all(process.poll() is None for process in processes), "service stopped during tutorial"
-                    print(f"{locale}: PASS {name}", flush=True)
-                saved = json.loads((checkout / "quick-start-policies.json").read_text())
-                assert any(service["name"] == expected_service for service in saved["services"]), saved
-            except BaseException:
-                for log in logs:
-                    print(f"--- {log.name} ---\n{log.read_text()[-5000:]}", flush=True)
-                raise
-            finally:
-                failures = []
-                for process in reversed(processes):
-                    try:
-                        stop(process)
-                    except Exception as error:
-                        failures.append(str(error))
-                if failures:
-                    raise RuntimeError("Service shutdown failed: " + "; ".join(failures))
-        print(f"{locale}: PASS persisted policy file and Ctrl+C shutdown", flush=True)
+        if sys.platform.startswith("linux"):
+            if not shutil.which("unshare") or not shutil.which("ip"):
+                raise RuntimeError("Linux quick-start verification requires unshare and iproute2")
+            report = work / "native-results.json"
+            command = ["unshare", "--user", "--map-root-user", "--net", "--pid", "--fork",
+                       "--mount-proc", "--kill-child=SIGKILL", "--", sys.executable,
+                       str(Path(__file__).resolve()), "--exercise", str(checkout),
+                       "--locale", locale, "--report", str(report)]
+            print(run(command, checkout, env, timeout=180), end="", flush=True)
+            result = json.loads(report.read_text())
+        else:
+            result = exercise(locale, steps, checkout, env)
         return {"locale": locale, "version": version, "runner": os.environ.get("RUNNER_NAME", "local"),
-                "revision": revision, "steps": [name for name, _ in steps], "decisions": decisions}
+                "revision": revision, **result}
+
+
+def exercise(locale, steps, checkout, env, isolated=False):
+    work = checkout.parent
+    pms_port, ads_port = (6733, 6734) if isolated else ports()
+    def local(command):
+        return command.replace("127.0.0.1:6733", f"127.0.0.1:{pms_port}").replace("127.0.0.1:6734", f"127.0.0.1:{ads_port}")
+    expected_service = "library" if locale == "zh" else "mysvc"
+    processes, logs, decisions = [], [], {}
+    with (contextlib.nullcontext() if isolated else server_lock()), contextlib.ExitStack() as resources:
+        try:
+            for name, command in steps:
+                if name in {"version", "build"}:
+                    continue
+                command = local(command)
+                if name in {"pms", "ads"}:
+                    log = work / f"{name}.log"
+                    logs.append(log)
+                    stream = resources.enter_context(log.open("w"))
+                    process = subprocess.Popen(["bash", "-euc", "exec " + command], cwd=checkout, env=env,
+                                               stdout=stream, stderr=subprocess.STDOUT, start_new_session=True)
+                    processes.append(process)
+                    url = f"http://127.0.0.1:{pms_port}/policy-mgmt/v1/service" if name == "pms" else f"http://127.0.0.1:{ads_port}/authz-check/v1/is-allowed"
+                    wait_ready(process, url)
+                else:
+                    output = run(command, checkout, env)
+                    if name == "list":
+                        services = json.loads(output)
+                        service = next(item for item in services if item["name"] == expected_service)
+                        assert len(service.get("policies", [])) == (1 if locale == "zh" else 2), service
+                        assert len(service.get("rolePolicies", [])) == (0 if locale == "zh" else 1), service
+                    elif name.startswith("allow-") or name == "deny":
+                        result = json.loads(output)
+                        assert result.get("allowed") is (name != "deny"), (name, result)
+                        decisions[name] = result["allowed"]
+                assert all(process.poll() is None for process in processes), "service stopped during tutorial"
+                print(f"{locale}: PASS {name}", flush=True)
+            saved = json.loads((checkout / "quick-start-policies.json").read_text())
+            assert any(service["name"] == expected_service for service in saved["services"]), saved
+        except BaseException:
+            for log in logs:
+                print(f"--- {log.name} ---\n{log.read_text()[-5000:]}", flush=True)
+            raise
+        finally:
+            failures = []
+            for process in reversed(processes):
+                try:
+                    stop(process)
+                except Exception as error:
+                    failures.append(str(error))
+            if failures:
+                raise RuntimeError("Service shutdown failed: " + "; ".join(failures))
+    print(f"{locale}: PASS persisted policy file and Ctrl+C shutdown", flush=True)
+    return {"steps": [name for name, _ in steps], "decisions": decisions}
+
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--toolchain", help="Exact Go toolchain, for example go1.27.3")
     parser.add_argument("--report", type=Path)
+    parser.add_argument("--exercise", type=Path, help=argparse.SUPPRESS)
+    parser.add_argument("--locale", choices=("en", "zh"), help=argparse.SUPPRESS)
     args = parser.parse_args()
-    if os.environ.get("RUNNER_NAME"):
-        for command in (["unshare", "--user", "--map-root-user", "--net", "true"],
-                        ["docker", "version", "--format", "{{.Server.Version}}"],
-                        ["ss", "-ltnp", "sport = :50001 or sport = :50002"]):
-            if shutil.which(command[0]):
-                try:
-                    check = subprocess.run(command, capture_output=True, text=True, timeout=10)
-                    print(f"Isolation probe {command[0]}: rc={check.returncode}; {check.stdout[-1500:]} {check.stderr[-500:]}", flush=True)
-                except subprocess.TimeoutExpired:
-                    print(f"Isolation probe {command[0]} timed out", flush=True)
     env = {key: value for key, value in os.environ.items() if not key.startswith("SPDL_")}
     if args.toolchain:
         env["GOTOOLCHAIN"] = args.toolchain
     env["NO_PROXY"] = env["no_proxy"] = "127.0.0.1,localhost" + ("," + env["NO_PROXY"] if env.get("NO_PROXY") else "")
+    if args.exercise:
+        assert sys.platform.startswith("linux") and args.locale and args.report
+        # This runs only inside the unprivileged child user/network/PID namespaces.
+        # Bringing up its loopback does not modify the host network. PID-namespace
+        # teardown also reaps the entire fixture if the CI job is interrupted.
+        run(["ip", "link", "set", "lo", "up"], args.exercise, env)
+        source = ROOT / "docs/hugo/content" / ("quick-start.zh.md" if args.locale == "zh" else "quick-start.md")
+        result = exercise(args.locale, blocks(source), args.exercise, env, isolated=True)
+        args.report.write_text(json.dumps(result) + "\n")
+        print(f"{args.locale}: PASS exact documented REST/gRPC ports in isolated Linux namespaces", flush=True)
+        return
     results = [verify(locale, args.toolchain, env) for locale in ("en", "zh")]
     if args.report:
         args.report.write_text(json.dumps(results, indent=2) + "\n")

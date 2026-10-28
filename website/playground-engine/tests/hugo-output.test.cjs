@@ -23,7 +23,7 @@ for (const name of ['index.html','zh/index.html','playground/index.html','zh/pla
   const html = fs.readFileSync(path.join(output, name), 'utf8');
   assert.ok(html.includes('/css/navigation.css?v=header-20261027') && html.includes('/js/navigation.js?v=header-20261027'), `Shared navigation assets in ${name}`);
 }
-for (const name of ['site.css', 'navigation.css', 'custom.css']) {
+for (const name of ['site.css', 'navigation.css', 'custom.css', 'spdl-title.css']) {
   assert.deepEqual(fs.readFileSync(path.join(output, 'css', name)), fs.readFileSync(path.join(root, 'docs/css', name)));
 }
 const sitemap = fs.readFileSync(path.join(output, 'sitemap.xml'), 'utf8');
