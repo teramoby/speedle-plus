@@ -35,7 +35,7 @@
         {{- partial "header.html" . -}}
     </header>
     <div class="container">
-        <div class="content-container{{ if .Params.singlelinetitle }} single-line-title{{ end }}">
+        <div class="content-container">
             <main>{{ block "main" . }}{{ end }}</main>
             {{- partial "sidebar.html" . -}}
         </div>

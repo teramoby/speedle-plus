@@ -36,7 +36,7 @@ For example, a role may establish that Alice is a reader, while a clearance attr
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://speedle.io/docs/access-control/pbac/</guid>
-      <description>What PBAC means here Policy-based access control (PBAC) expresses authorization rules as managed policies instead of scattering permission checks across application code. Speedle+ uses the Speedle Policy Definition Language (SPDL), a Policy Management Service (PMS), and an Authorization Decision Service (ADS) or embedded evaluator.
+      <description>What PBAC means here Policy-based access control (PBAC) expresses authorization rules as managed policies instead of scattering permission checks across application code. Speedle+ uses the Security Policy Definition Language (SPDL), a Policy Management Service (PMS), and an Authorization Decision Service (ADS) or embedded evaluator.
 PBAC describes how rules are expressed and managed. RBAC describes role relationships; ABAC describes attribute conditions. A Speedle policy-based system can use both.
 From policy to enforcement  Define the service, principal names, resource identifiers and supported actions.</description>
     </item>
@@ -67,7 +67,7 @@ The comparison is useful when reviewing an existing OES integration or evaluatin
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://speedle.io/docs/access-control/xacml/</guid>
-      <description>What is the relationship to XACML? The eXtensible Access Control Markup Language (XACML) is an OASIS access control standard defining policy and request/response concepts. Speedle+ uses its own Speedle Policy Definition Language (SPDL) and APIs. The OASIS XACML 3.0 specification is the reference for XACML behavior; this page explains architectural correspondences, not XACML conformance.
+      <description>What is the relationship to XACML? The eXtensible Access Control Markup Language (XACML) is an OASIS access control standard defining policy and request/response concepts. Speedle+ uses its own Security Policy Definition Language (SPDL) and APIs. The OASIS XACML 3.0 specification is the reference for XACML behavior; this page explains architectural correspondences, not XACML conformance.
 Map the responsibilities    XACML concept Responsibility Speedle+ correspondence     PAP: Policy Administration Point Manage authorization policy Policy Management Service (PMS)   PDP: Policy Decision Point Evaluate authorization requests Authorization Decision Service (ADS) or embedded evaluator   PEP: Policy Enforcement Point Enforce a decision on an operation Application, gateway or integration calling Speedle   PIP: Policy Information Point Supply attributes used by a decision Trusted application data and configured identity/attribute integrations; no claim of a built-in XACML PIP interface    Speedle&amp;rsquo;s architecture page already describes the PAP/PDP correspondence.</description>
     </item>
     

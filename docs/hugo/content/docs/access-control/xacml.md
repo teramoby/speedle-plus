@@ -8,7 +8,7 @@ bref = "Map architecture concepts without assuming policy-format compatibility"
 
 ## What is the relationship to XACML?
 
-The eXtensible Access Control Markup Language (XACML) is an OASIS access control standard defining policy and request/response concepts. Speedle+ uses its own Speedle Policy Definition Language (SPDL) and APIs. The [OASIS XACML 3.0 specification](https://docs.oasis-open.org/xacml/3.0/xacml-3.0-core-spec-os-en.html) is the reference for XACML behavior; this page explains architectural correspondences, not XACML conformance.
+The eXtensible Access Control Markup Language (XACML) is an OASIS access control standard defining policy and request/response concepts. Speedle+ uses its own Security Policy Definition Language (SPDL) and APIs. The [OASIS XACML 3.0 specification](https://docs.oasis-open.org/xacml/3.0/xacml-3.0-core-spec-os-en.html) is the reference for XACML behavior; this page explains architectural correspondences, not XACML conformance.
 
 ## Map the responsibilities
 

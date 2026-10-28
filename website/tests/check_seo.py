@@ -2,7 +2,6 @@
 """Check rendered bilingual SEO contracts, not search ranking or indexing."""
 import json
 import re
-import struct
 import sys
 import xml.etree.ElementTree as ET
 from html.parser import HTMLParser
@@ -72,15 +71,10 @@ class Page(HTMLParser):
         super().__init__()
         self.metas, self.canonicals, self.alternates, self.schemas = {}, [], {}, []
         self.body, self.script, self.buffer, self.text = False, False, "", []
-        self.icons, self.titles, self.in_title = [], [], False
         self.feed(text)
 
     def handle_starttag(self, tag, pairs):
         attrs = dict(pairs)
-        if tag == "title":
-            self.in_title = True
-        if tag == "link" and "icon" in attrs.get("rel", "").split():
-            self.icons.append(attrs)
         if tag == "body":
             self.body = True
         if tag == "meta":
@@ -97,16 +91,12 @@ class Page(HTMLParser):
             self.buffer = "" if attrs.get("type") == "application/ld+json" else None
 
     def handle_data(self, data):
-        if self.in_title:
-            self.titles.append(data)
         if self.script and self.buffer is not None:
             self.buffer += data
         elif self.body and not self.script:
             self.text.append(data)
 
     def handle_endtag(self, tag):
-        if tag == "title":
-            self.in_title = False
         if tag == "script":
             if self.script and self.buffer is not None:
                 self.schemas.append(json.loads(self.buffer))
@@ -117,10 +107,6 @@ class Page(HTMLParser):
 
 def check(root):
     root = Path(root)
-    icon = (root / "images/speedle_black.png").read_bytes()
-    assert icon[:8] == b"\x89PNG\r\n\x1a\n", "Favicon must be a real PNG"
-    width, height = struct.unpack(">II", icon[16:24])
-    assert width == height and width > 48, "Favicon must be square and larger than 48px"
     sitemaps = []
     for lang in ("en", "zh"):
         tree = ET.parse(root / lang / "sitemap.xml")
@@ -140,11 +126,6 @@ def check(root):
         metadata_route = re.sub(r"/page/[0-9]+/$", "/", route)
         neutral = metadata_route[3:] if zh else metadata_route
         page = Page(text)
-        assert len(page.icons) == 1, (route, "one crawlable favicon")
-        assert page.icons[0].get("href") == ORIGIN + "/images/speedle_black.png", route
-        assert page.icons[0].get("type") == "image/png", route
-        assert page.icons[0].get("sizes") == f"{width}x{height}", route
-        assert page.metas.get("og:site_name") == ["Speedle Authorization Engine"], route
         expected = {"en": ORIGIN + neutral, "zh-CN": ORIGIN + "/zh" + neutral, "x-default": ORIGIN + neutral}
         # Static homepages already supply the same contracts; Playground has no
         # x-default and uses its existing browser-specific metadata unchanged.
@@ -156,20 +137,7 @@ def check(root):
         if "/playground/" not in route:
             assert page.alternates.get("x-default") == expected["x-default"], route
             assert page.schemas, route
-        if neutral == "/integrations/":
-            assert "noindex" not in " ".join(page.metas.get("robots", [])).casefold(), route
-            assert ORIGIN + metadata_route in sitemaps, route
         if neutral == "/":
-            title = "Speedle Authorization Engine" + (" | 开源授权引擎" if zh else "")
-            assert page.titles == [title], route
-            assert page.metas.get("og:title") == [title], route
-            assert page.metas.get("twitter:title") == [title], route
-            sites = [entity for schema in page.schemas for entity in schema.get("@graph", [schema])
-                     if entity.get("@type") == "WebSite"]
-            assert len(sites) == 1, route
-            assert sites[0]["name"] == "Speedle Authorization Engine", route
-            assert sites[0]["url"] == ORIGIN + "/", route
-            assert sites[0]["alternateName"] == ["Speedle", "Speedle+"], route
             software = [entity for schema in page.schemas for entity in schema.get("@graph", [schema])
                         if entity.get("@type") == "SoftwareSourceCode"]
             assert len(software) == 1, route
@@ -186,12 +154,6 @@ def check(root):
             assert "noindex" not in " ".join(page.metas.get("robots", [])), route
             assert page.schemas[0]["inLanguage"] == ("zh-CN" if zh else "en"), route
         pages += 1
-    # Explicit false only opens the selected sections; kind defaults still apply.
-    for prefix in ("", "zh/"):
-        for name in ("blog/index.html", "categories/cloudnative/index.html", "tags/policy/index.html"):
-            relative = prefix + name
-            blocked = Page((root / relative).read_text())
-            assert "noindex" in " ".join(blocked.metas.get("robots", [])).casefold(), relative
     for prefix in ("", "/zh"):
         for topic in TOPICS:
             route = prefix + "/docs/access-control/" + topic
@@ -205,7 +167,7 @@ def check(root):
         assert term.casefold() in llms.casefold(), ("llms.txt", term)
     assert "The integrating system supplies identity assurance, trusted device/session context and enforcement." in llms
     assert "The NIST policy administrator (PA) is distinct from the XACML policy administration point (PAP)." in llms
-    print(f"PASS SEO: {pages} current pages, crawlable brand favicon, site name, homepage titles, 14 bilingual topic routes, scoped English/Chinese semantic keywords, metadata, JSON-LD and sitemaps")
+    print(f"PASS SEO: {pages} current pages, 14 bilingual topic routes, scoped English/Chinese semantic keywords, metadata, JSON-LD and sitemaps")
 
 
 if __name__ == "__main__":

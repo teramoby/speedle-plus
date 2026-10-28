@@ -17,7 +17,7 @@
     {{ partial "toc" .}}
     <br />
     <div id="kube-component" class="content">
-      {{.Content | safeHTML}}{{ if .Params.copycommands }}<script src="{{ "/js/command-copy.js" | relURL }}" defer></script>{{ end }}
+      {{.Content | safeHTML}}
     </div>
   </div>
 </div>
