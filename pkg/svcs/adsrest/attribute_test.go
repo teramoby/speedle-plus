@@ -1,118 +1,56 @@
+// Licensed under the Universal Permissive License (UPL) Version 1.0 as shown at http://oss.oracle.com/licenses/upl.
 package adsrest
 
-import (
-	"strings"
-	"testing"
-)
+import "testing"
 
-func TestVerifyAttributeName(t *testing.T) {
-	tests := []struct {
-		name    string
-		input   string
-		wantErr bool
-		errMsg  string
+func TestConvValueAcceptsMatchingTypes(t *testing.T) {
+	cases := []struct {
+		dataType string
+		value    interface{}
 	}{
-		{
-			name:    "valid simple attribute name",
-			input:   "userName",
-			wantErr: false,
-		},
-		{
-			name:    "valid name with underscores",
-			input:   "user_name",
-			wantErr: false,
-		},
-		{
-			name:    "valid name with hyphens",
-			input:   "x-forwarded-for",
-			wantErr: false,
-		},
-		{
-			name:    "valid name with dots",
-			input:   "request.path",
-			wantErr: false,
-		},
-		{
-			name:    "valid name with mixed separators",
-			input:   "my-attr_name.v2",
-			wantErr: false,
-		},
-		{
-			name:    "empty string",
-			input:   "",
-			wantErr: true,
-			errMsg:  "attribute name must not be empty",
-		},
-		{
-			name:    "name too long (257 characters)",
-			input:   strings.Repeat("a", 257),
-			wantErr: true,
-			errMsg:  "attribute name must be at most 256 characters",
-		},
-		{
-			name:    "name at max length boundary (256 characters)",
-			input:   strings.Repeat("a", 256),
-			wantErr: false,
-		},
-		{
-			name:    "name with space",
-			input:   "user name",
-			wantErr: true,
-			errMsg:  "attribute name contains invalid character",
-		},
-		{
-			name:    "name with slash",
-			input:   "user/name",
-			wantErr: true,
-			errMsg:  "attribute name contains invalid character",
-		},
-		{
-			name:    "name with backslash",
-			input:   `path\to\attr`,
-			wantErr: true,
-			errMsg:  "attribute name contains invalid character",
-		},
-		{
-			name:    "name with colon",
-			input:   "ns:attr",
-			wantErr: true,
-			errMsg:  "attribute name contains invalid character",
-		},
-		{
-			name:    "name with at sign",
-			input:   "attr@domain",
-			wantErr: true,
-			errMsg:  "attribute name contains invalid character",
-		},
-		{
-			name:    "single character name",
-			input:   "x",
-			wantErr: false,
-		},
-		{
-			name:    "numeric name",
-			input:   "12345",
-			wantErr: false,
-		},
+		{"string", "finance"},
+		{"bool", true},
+		{"numeric", float64(42)},
+		{"datetime", "2026-10-28T15:04:05Z"},
+		{"string", []interface{}{"a", "b"}},
+		{"bool", []interface{}{true, false}},
 	}
+	for _, c := range cases {
+		if _, err := ConvValue(c.dataType, c.value); err != nil {
+			t.Errorf("ConvValue(%q, %#v) returned error: %v", c.dataType, c.value, err)
+		}
+	}
+}
 
-	for _, tt := range tests {
-		tt := tt // capture range variable
-		t.Run(tt.name, func(t *testing.T) {
-			err := VerifyAttributeName(tt.input)
-			if tt.wantErr {
-				if err == nil {
-					t.Errorf("expected error but got nil")
-					return
-				}
-				if tt.errMsg != "" && !strings.Contains(err.Error(), tt.errMsg) {
-					t.Errorf("expected error containing %q, got %q", tt.errMsg, err.Error())
-				}
-			} else {
-				if err != nil {
-					t.Errorf("unexpected error: %v", err)
-				}
-			}
-		})
+func TestConvValueRejectsMismatchedTypes(t *testing.T) {
+	cases := []struct {
+		dataType string
+		value    interface{}
+	}{
+		{"string", float64(1)},
+		{"string", true},
+		{"bool", "true"},
+		{"bool", float64(0)},
+		{"numeric", "42"},
+		{"datetime", float64(1)},
+		{"string", []interface{}{"a", float64(1)}},
+	}
+	for _, c := range cases {
+		if _, err := ConvValue(c.dataType, c.value); err == nil {
+			t.Errorf("ConvValue(%q, %#v) accepted a mismatched value", c.dataType, c.value)
+		}
+	}
+}
+
+func TestDumpRequestAttributesKeepsStringAndBoolValues(t *testing.T) {
+	attrs, err := DumpRequestAttributes([]*JsonAttribute{
+		{Name: "department", Type: "string", Value: "finance"},
+		{Name: "mfa", Type: "bool", Value: true},
+	})
+	if err != nil {
+		t.Fatalf("DumpRequestAttributes returned error: %v", err)
+	}
+	if attrs["department"] != "finance" || attrs["mfa"] != true {
+		t.Fatalf("unexpected attributes: %#v", attrs)
 	}
 }

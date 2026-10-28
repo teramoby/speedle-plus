@@ -181,7 +181,8 @@ func ConvSingleValue(dataType string, value interface{}) (interface{}, error) {
 	var typeMismatch bool
 	switch dataType {
 	case "string":
-		_, typeMismatch = value.(string)
+		_, ok := value.(string)
+		typeMismatch = !ok
 	case "numeric":
 		switch value.(type) {
 		case float64, float32, int, int64, int32, int16, int8, uint, uint64, uint32, uint16, uint8:
@@ -189,7 +190,8 @@ func ConvSingleValue(dataType string, value interface{}) (interface{}, error) {
 			typeMismatch = true
 		}
 	case "bool":
-		_, typeMismatch = value.(bool)
+		_, ok := value.(bool)
+		typeMismatch = !ok
 	case "datetime":
 		_, ok := value.(string)
 		if !ok {
