@@ -23,7 +23,6 @@ import uuid
 
 ROOT=Path(__file__).resolve().parents[2]
 NODE='kindest/node:v1.36.4@sha256:099e049362a1526b2db71494e1947aae99bd16290d7c895f2b7ea312e3cbfaed'
-ETCD='quay.io/coreos/etcd:v3.5.35'
 PATTERN=r'<!-- deployment-check: ([a-z0-9-]+) -->\s*```bash\n(.*?)\n```'
 
 def commands(locale):
@@ -262,8 +261,9 @@ class Acceptance:
         for node in nodes:
             self.docker('exec',node,'mkdir','-p',config_path)
             self.docker('exec','-i',node,'cp','/dev/stdin',config_path+'/hosts.toml',input=hosts)
-        self.docker('pull',ETCD)
-        run(['kind','load','docker-image','--name',self.cluster,ETCD],self.env,timeout=180)
+        # The etcd fixture uses the node's normal registry pull path. Importing
+        # a multi-platform Docker image archive can retain absent-platform
+        # digests with Docker's containerd image store.
         self.kube('get','nodes')
         # All documented raw resources are regenerated from the same charts.
         rendered=self.work/'rendered'
