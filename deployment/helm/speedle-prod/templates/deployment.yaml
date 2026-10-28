@@ -1,6 +1,15 @@
 {{- if ne .Values.store.type "etcd" }}
 {{- fail "The multi-Pod chart requires store.type=etcd; use the development chart for a shared file store." }}
 {{- end }}
+{{- $endpoint := required "store.etcd.endpoint must explicitly name a protected etcd backend" .Values.store.etcd.endpoint }}
+{{- if not (kindIs "bool" .Values.store.etcd.allowInsecure) }}
+{{- fail "store.etcd.allowInsecure must be a YAML boolean, not a string." }}
+{{- end }}
+{{- if not .Values.store.etcd.allowInsecure }}
+{{- if or (not (hasPrefix "https://" $endpoint)) (empty .Values.store.etcd.etcdClientCertSecret) (empty .Values.store.etcd.certFile) (empty .Values.store.etcd.keyFile) (empty .Values.store.etcd.trustedCAFile) }}
+{{- fail "Production etcd requires an https:// endpoint, etcdClientCertSecret, certFile, keyFile and trustedCAFile. Only explicitly protected legacy backends may opt out with store.etcd.allowInsecure=true." }}
+{{- end }}
+{{- end }}
 {{- if and .Values.store.etcd.etcdClientCertSecret (ne (empty .Values.store.etcd.certFile) (empty .Values.store.etcd.keyFile)) }}
 {{- fail "The etcd client certificate and key must both be configured or both be empty." }}
 {{- end }}

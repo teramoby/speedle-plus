@@ -124,16 +124,9 @@ DEV_FORWARD_PID=$!
 
 ## Separate PMS/ADS Pods with etcd and mTLS
 
-Use another fresh namespace (set `NAMESPACE` and run the namespace-creation command above). A production deployment should use an etcd cluster with the required durability, availability, backup and access controls. The following single-member PVC-backed example is for reproducible testing; its client connection is HTTP within the test namespace.
+Use another fresh namespace (set `NAMESPACE` and run the namespace-creation command above). A production deployment should use an etcd cluster with the required durability, availability, backup and access controls. The following single-member PVC-backed example is for reproducible testing; both Speedle APIs and etcd client connections use mTLS, and etcd rejects connections without a trusted client certificate.
 
-<!-- deployment-check: etcd -->
-```bash
-kubectl --namespace "$NAMESPACE" apply --dry-run=server -f deployment/k8s/etcd-example.yaml
-kubectl --namespace "$NAMESPACE" apply -f deployment/k8s/etcd-example.yaml
-kubectl --namespace "$NAMESPACE" rollout status statefulset/speedle-etcd --timeout=180s
-```
-
-Generate 24-hour demonstration certificates with SANs for localhost/loopback, then create the server secret. Client private keys stay on your workstation. For production, supply certificates issued for the actual service DNS names by your trusted CA. Regeneration requires a new output directory.
+First generate two independent sets of 24-hour demonstration certificates and Secrets. API certificates cover localhost/loopback; the backend certificate also covers the speedle-etcd DNS name. The API client private key stays on your workstation; dedicated etcd client credentials are used by PMS/ADS and the etcd health probe. For production, supply certificates issued for the actual service DNS names by your trusted CA. Regeneration requires a new output directory.
 
 <!-- deployment-check: certificates -->
 ```bash
@@ -142,20 +135,38 @@ kubectl --namespace "$NAMESPACE" create secret generic speedle-server-tls \
   --from-file=server.crt="$TLS_DIR/server.crt" \
   --from-file=server.key="$TLS_DIR/server.key" \
   --from-file=ca.crt="$TLS_DIR/ca.crt"
+go run ./samples/docs/certificates --out "$DOCS_WORKDIR/etcd-tls" --dns-names speedle-etcd
+kubectl --namespace "$NAMESPACE" create secret generic etcd-server-tls \
+  --from-file=server.crt="$DOCS_WORKDIR/etcd-tls/server.crt" \
+  --from-file=server.key="$DOCS_WORKDIR/etcd-tls/server.key" \
+  --from-file=ca.crt="$DOCS_WORKDIR/etcd-tls/ca.crt" \
+  --from-file=client.crt="$DOCS_WORKDIR/etcd-tls/client.crt" \
+  --from-file=client.key="$DOCS_WORKDIR/etcd-tls/client.key"
+kubectl --namespace "$NAMESPACE" create secret generic etcd-client-tls \
+  --from-file=client.crt="$DOCS_WORKDIR/etcd-tls/client.crt" \
+  --from-file=client.key="$DOCS_WORKDIR/etcd-tls/client.key" \
+  --from-file=ca.crt="$DOCS_WORKDIR/etcd-tls/ca.crt"
 ```
 
-Install the etcd-backed chart. REST and gRPC both require TLS and a trusted client certificate by default.
+<!-- deployment-check: etcd -->
+```bash
+kubectl --namespace "$NAMESPACE" apply --dry-run=server -f deployment/k8s/etcd-example.yaml
+kubectl --namespace "$NAMESPACE" apply -f deployment/k8s/etcd-example.yaml
+kubectl --namespace "$NAMESPACE" rollout status statefulset/speedle-etcd --timeout=180s
+```
+
+After creating the certificates, start the etcd test instance above, then install the etcd-backed chart. The chart requires an explicitly configured protected backend; these example values select mTLS. REST and gRPC also require TLS and a trusted client certificate by default.
 
 <!-- deployment-check: helm-prod -->
 ```bash
 helm upgrade --install speedle-prod deployment/helm/speedle-prod \
   --namespace "$NAMESPACE" --set-string image.pms="$PMS_IMAGE" \
   --set-string image.ads="$ADS_IMAGE" \
-  --set-string store.etcd.endpoint=http://speedle-etcd:2379 \
+  -f deployment/helm/speedle-prod/values-example.yaml \
   --wait --timeout 180s
 ```
 
-The independent YAML alternative uses the same default Secret and etcd endpoint:
+The independent YAML is generated from the same chart and secure example values, using the same Secrets and HTTPS etcd endpoint:
 
 <!-- deployment-check: raw-prod -->
 ```bash
@@ -179,6 +190,8 @@ store:
     keyFile: client.key
     trustedCAFile: ca.crt
 ```
+
+Only legacy backends protected through other controls should explicitly set `store.etcd.allowInsecure=true`. This opt-in permits CA-only or plaintext connections; the chart rejects those configurations by default and cannot enable authentication on an existing etcd server for you.
 
 Forward both services to localhost:
 

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Run the paired deployment guides in owned Docker and kind resources."""
 import contextlib
+import base64
 import fcntl
 import grp
 import json
@@ -176,6 +177,25 @@ class Acceptance:
         result=json.loads(self.block('allow','https'));assert result['allowed'] is True, 'PVC-backed policy did not survive etcd replacement'
         print('PASS backend outage: readiness fails, liveness stays healthy, no restart, PVC data recovers',flush=True)
 
+    def check_etcd_auth(self):
+        target=self.forward('speedle-etcd',2379)
+        directory=self.phase_dir/'etcd-tls'
+        key=base64.b64encode(('/'+self.id+'/auth-probe').encode()).decode()
+        body=json.dumps({'key':key,'value':base64.b64encode(b'owned test').decode()}).encode()
+        def request(credentials,path='/v3/kv/put',data=body):
+            context=ssl.create_default_context(cafile=directory/'ca.crt')
+            if credentials:context.load_cert_chain(credentials/'client.crt',credentials/'client.key')
+            client=urllib.request.build_opener(urllib.request.ProxyHandler({}),urllib.request.HTTPSHandler(context=context))
+            req=urllib.request.Request(f'https://127.0.0.1:{target}'+path,data=data,headers={'Content-Type':'application/json'})
+            return client.open(req,timeout=5)
+        assert request(directory).status==200, 'Trusted etcd client cannot write'
+        for credentials in [None,self.phase_dir/'tls']:
+            try:request(credentials)
+            except (urllib.error.URLError,ssl.SSLError,ConnectionError):pass
+            else:raise AssertionError('etcd accepted missing/untrusted client certificate')
+        assert request(directory,'/v3/kv/deleterange',json.dumps({'key':key}).encode()).status==200
+        print('PASS etcd authentication: trusted write/delete succeeds; missing and foreign client certificates rejected',flush=True)
+
     def check_liveness_failure(self):
         pod=json.loads(self.ns('get','pods','-l','app=pms,release=speedle-prod','-o','json').stdout)['items'][0]
         name=pod['metadata']['name'];restarts=pod['status']['containerStatuses'][0]['restartCount']
@@ -216,7 +236,8 @@ class Acceptance:
     def kubernetes_phase(self,locale,mode,raw=False):
         label=('raw-' if raw else 'helm-')+mode;self.phase_start(locale,label)
         self.block('namespace')
-        if mode=='prod':self.block('etcd');self.block('certificates')
+        if mode=='prod':
+            self.block('certificates');self.block('etcd');self.check_etcd_auth()
         self.block(('raw-' if raw else 'helm-')+mode)
         self.block('forward-'+mode,background=True);self.ready(mode=='prod')
         self.policy_checks(mode=='prod')
@@ -248,7 +269,10 @@ class Acceptance:
         for locale in ['en','zh']:self.docker_phase(locale)
         config=self.work/'kind.yaml';config.write_text('kind: Cluster\napiVersion: kind.x-k8s.io/v1alpha4\nnodes:\n- role: control-plane\n')
         self.kind_created=True
-        run(['kind','create','cluster','--name',self.cluster,'--image',NODE,'--config',str(config),'--kubeconfig',self.env['KUBECONFIG'],'--wait','180s'],self.env,timeout=480)
+        # A host-loopback proxy cannot be reached from a container. Keep this
+        # owned cluster on its direct network path, without editing host config.
+        cluster_env={key:value for key,value in self.env.items() if key.lower() not in ('http_proxy','https_proxy','all_proxy')}
+        run(['kind','create','cluster','--name',self.cluster,'--image',NODE,'--config',str(config),'--kubeconfig',self.env['KUBECONFIG'],'--wait','180s'],cluster_env,timeout=480)
         nodes=run(['kind','get','nodes','--name',self.cluster],self.env).stdout.splitlines()
         self.nodes=nodes
         for node in nodes:
@@ -270,7 +294,7 @@ class Acceptance:
         run(['bash','deployment/render-manifests.sh',str(rendered)],self.env)
         for mode in ['dev','prod']:
             assert (rendered/f'speedle-{mode}.yaml').read_bytes()==(ROOT/f'deployment/k8s/speedle-{mode}.yaml').read_bytes(),'Generated manifest drift'
-        run(['helm','lint','deployment/helm/speedle-dev','deployment/helm/speedle-prod'],self.env)
+        run([sys.executable,'deployment/tests/check-charts.py'],self.env)
         for locale in ['en','zh']:
             for raw in [False,True]:
                 for mode in ['dev','prod']:self.kubernetes_phase(locale,mode,raw)

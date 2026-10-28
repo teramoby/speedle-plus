@@ -82,7 +82,10 @@ spec:
             - --grpc-endpoint=0.0.0.0:50001
             - --health-endpoint=127.0.0.1:8081
             - --store-type=etcd
-            - --etcdstore-endpoint=http://speedle-etcd:2379
+            - --etcdstore-endpoint=https://speedle-etcd:2379
+            - --etcdstore-tls-cert=/etc/etcdtls/client.crt
+            - --etcdstore-tls-key=/etc/etcdtls/client.key
+            - --etcdstore-tls-ca=/etc/etcdtls/ca.crt
             - --insecure=false
             - --cert=/etc/tls/server.crt
             - --key=/etc/tls/server.key
@@ -96,6 +99,9 @@ spec:
           volumeMounts:
             - name: server-tls
               mountPath: /etc/tls
+              readOnly: true
+            - name: etcd-client-tls
+              mountPath: /etc/etcdtls
               readOnly: true
           securityContext:
             allowPrivilegeEscalation: false
@@ -131,6 +137,10 @@ spec:
         - name: server-tls
           secret:
             secretName: speedle-server-tls
+            defaultMode: 0440
+        - name: etcd-client-tls
+          secret:
+            secretName: etcd-client-tls
             defaultMode: 0440
 
 ---
@@ -170,7 +180,10 @@ spec:
             - --grpc-endpoint=0.0.0.0:50002
             - --health-endpoint=127.0.0.1:8082
             - --store-type=etcd
-            - --etcdstore-endpoint=http://speedle-etcd:2379
+            - --etcdstore-endpoint=https://speedle-etcd:2379
+            - --etcdstore-tls-cert=/etc/etcdtls/client.crt
+            - --etcdstore-tls-key=/etc/etcdtls/client.key
+            - --etcdstore-tls-ca=/etc/etcdtls/ca.crt
             - --insecure=false
             - --cert=/etc/tls/server.crt
             - --key=/etc/tls/server.key
@@ -184,6 +197,9 @@ spec:
           volumeMounts:
             - name: server-tls
               mountPath: /etc/tls
+              readOnly: true
+            - name: etcd-client-tls
+              mountPath: /etc/etcdtls
               readOnly: true
           securityContext:
             allowPrivilegeEscalation: false
@@ -219,4 +235,8 @@ spec:
         - name: server-tls
           secret:
             secretName: speedle-server-tls
+            defaultMode: 0440
+        - name: etcd-client-tls
+          secret:
+            secretName: etcd-client-tls
             defaultMode: 0440

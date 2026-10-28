@@ -28,7 +28,10 @@ tls:
 store:
   type: etcd
   etcd:
-    endpoint: http://speedle-etcd:2379
+    # Supply a protected backend explicitly; see values-example.yaml.
+    endpoint: ""
+    # Legacy/externally protected backends require an intentional opt-in.
+    allowInsecure: false
     etcdClientCertSecret: ""
     certFile: client.crt
     keyFile: client.key

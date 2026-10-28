@@ -123,16 +123,9 @@ DEV_FORWARD_PID=$!
 
 ## 使用 etcd 与 mTLS 的独立 PMS/ADS Pod
 
-使用另一个新 namespace（设置 `NAMESPACE` 后执行前面的创建命令）。生产部署应接入满足持久化、可用性、备份和访问控制要求的 etcd 集群。下面提供单成员、使用 PVC 的可复现测试示例；它在测试 namespace 内使用 HTTP 客户端连接。
+使用另一个新 namespace（设置 `NAMESPACE` 后执行前面的创建命令）。生产部署应接入满足持久化、可用性、备份和访问控制要求的 etcd 集群。下面提供单成员、使用 PVC 的可复现测试示例；Speedle API 与 etcd 客户端连接均使用双向 TLS；etcd 拒绝没有可信客户端证书的连接。
 
-<!-- deployment-check: etcd -->
-```bash
-kubectl --namespace "$NAMESPACE" apply --dry-run=server -f deployment/k8s/etcd-example.yaml
-kubectl --namespace "$NAMESPACE" apply -f deployment/k8s/etcd-example.yaml
-kubectl --namespace "$NAMESPACE" rollout status statefulset/speedle-etcd --timeout=180s
-```
-
-生成有效期 24 小时、包含 localhost/回环地址 SAN 的示例证书，再创建服务端 Secret。客户端私钥保留在本机。生产环境应使用可信 CA 为实际服务 DNS 名称签发的证书。重新生成时需选择新的输出目录。
+先生成有效期 24 小时的两套独立示例证书与 Secret：API 证书包含 localhost/回环地址 SAN，后端证书还包含 speedle-etcd DNS 名称。API 客户端私钥保留在本机；etcd 的专用客户端凭据供 PMS/ADS 和 etcd 健康探测使用。生产环境应使用可信 CA 为实际服务 DNS 名称签发的证书。重新生成时需选择新的输出目录。
 
 <!-- deployment-check: certificates -->
 ```bash
@@ -141,20 +134,38 @@ kubectl --namespace "$NAMESPACE" create secret generic speedle-server-tls \
   --from-file=server.crt="$TLS_DIR/server.crt" \
   --from-file=server.key="$TLS_DIR/server.key" \
   --from-file=ca.crt="$TLS_DIR/ca.crt"
+go run ./samples/docs/certificates --out "$DOCS_WORKDIR/etcd-tls" --dns-names speedle-etcd
+kubectl --namespace "$NAMESPACE" create secret generic etcd-server-tls \
+  --from-file=server.crt="$DOCS_WORKDIR/etcd-tls/server.crt" \
+  --from-file=server.key="$DOCS_WORKDIR/etcd-tls/server.key" \
+  --from-file=ca.crt="$DOCS_WORKDIR/etcd-tls/ca.crt" \
+  --from-file=client.crt="$DOCS_WORKDIR/etcd-tls/client.crt" \
+  --from-file=client.key="$DOCS_WORKDIR/etcd-tls/client.key"
+kubectl --namespace "$NAMESPACE" create secret generic etcd-client-tls \
+  --from-file=client.crt="$DOCS_WORKDIR/etcd-tls/client.crt" \
+  --from-file=client.key="$DOCS_WORKDIR/etcd-tls/client.key" \
+  --from-file=ca.crt="$DOCS_WORKDIR/etcd-tls/ca.crt"
 ```
 
-安装使用 etcd 的 chart。默认情况下，REST 和 gRPC 均要求 TLS 与可信客户端证书。
+<!-- deployment-check: etcd -->
+```bash
+kubectl --namespace "$NAMESPACE" apply --dry-run=server -f deployment/k8s/etcd-example.yaml
+kubectl --namespace "$NAMESPACE" apply -f deployment/k8s/etcd-example.yaml
+kubectl --namespace "$NAMESPACE" rollout status statefulset/speedle-etcd --timeout=180s
+```
+
+创建证书后启动上面的 etcd 测试实例，再安装使用 etcd 的 chart。chart 要求显式指定受保护的后端；这里的示例 values 配置双向 TLS。REST 和 gRPC 默认也要求 TLS 与可信客户端证书。
 
 <!-- deployment-check: helm-prod -->
 ```bash
 helm upgrade --install speedle-prod deployment/helm/speedle-prod \
   --namespace "$NAMESPACE" --set-string image.pms="$PMS_IMAGE" \
   --set-string image.ads="$ADS_IMAGE" \
-  --set-string store.etcd.endpoint=http://speedle-etcd:2379 \
+  -f deployment/helm/speedle-prod/values-example.yaml \
   --wait --timeout 180s
 ```
 
-独立 YAML 方式使用相同的默认 Secret 和 etcd 端点：
+独立 YAML 由同一 chart 和安全示例 values 生成，使用相同的 Secret 与 HTTPS etcd 端点：
 
 <!-- deployment-check: raw-prod -->
 ```bash
@@ -178,6 +189,8 @@ store:
     keyFile: client.key
     trustedCAFile: ca.crt
 ```
+
+只有已通过其他机制保护的旧后端才应显式设置 `store.etcd.allowInsecure=true`。该选项允许仅 CA 或明文连接；chart 默认拒绝这些配置，且不会替你为 etcd 启用认证。
 
 将两个服务转发到本机：
 

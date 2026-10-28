@@ -192,29 +192,40 @@ kubectl --namespace <span style="color:#c41a16">&#34;</span><span style="color:#
 <span style="color:#000">DEV_FORWARD_PID</span><span style="color:#000">=</span><span style="color:#000">$!</span></code></pre></div>
 <h2 id="separate-pms-ads-pods-with-etcd-and-mtls">Separate PMS/ADS Pods with etcd and mTLS</h2>
 
-<p>Use another fresh namespace (set <code>NAMESPACE</code> and run the namespace-creation command above). A production deployment should use an etcd cluster with the required durability, availability, backup and access controls. The following single-member PVC-backed example is for reproducible testing; its client connection is HTTP within the test namespace.</p>
+<p>Use another fresh namespace (set <code>NAMESPACE</code> and run the namespace-creation command above). A production deployment should use an etcd cluster with the required durability, availability, backup and access controls. The following single-member PVC-backed example is for reproducible testing; both Speedle APIs and etcd client connections use mTLS, and etcd rejects connections without a trusted client certificate.</p>
 
-<!-- deployment-check: etcd -->
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">kubectl --namespace <span style="color:#c41a16">&#34;</span><span style="color:#000">$NAMESPACE</span><span style="color:#c41a16">&#34;</span> apply --dry-run<span style="color:#000">=</span>server -f deployment/k8s/etcd-example.yaml
-kubectl --namespace <span style="color:#c41a16">&#34;</span><span style="color:#000">$NAMESPACE</span><span style="color:#c41a16">&#34;</span> apply -f deployment/k8s/etcd-example.yaml
-kubectl --namespace <span style="color:#c41a16">&#34;</span><span style="color:#000">$NAMESPACE</span><span style="color:#c41a16">&#34;</span> rollout status statefulset/speedle-etcd --timeout<span style="color:#000">=</span>180s</code></pre></div>
-<p>Generate 24-hour demonstration certificates with SANs for localhost/loopback, then create the server secret. Client private keys stay on your workstation. For production, supply certificates issued for the actual service DNS names by your trusted CA. Regeneration requires a new output directory.</p>
+<p>First generate two independent sets of 24-hour demonstration certificates and Secrets. API certificates cover localhost/loopback; the backend certificate also covers the speedle-etcd DNS name. The API client private key stays on your workstation; dedicated etcd client credentials are used by PMS/ADS and the etcd health probe. For production, supply certificates issued for the actual service DNS names by your trusted CA. Regeneration requires a new output directory.</p>
 
 <!-- deployment-check: certificates -->
 <div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">go run ./samples/docs/certificates --out <span style="color:#c41a16">&#34;</span><span style="color:#000">$TLS_DIR</span><span style="color:#c41a16">&#34;</span>
 kubectl --namespace <span style="color:#c41a16">&#34;</span><span style="color:#000">$NAMESPACE</span><span style="color:#c41a16">&#34;</span> create secret generic speedle-server-tls <span style="color:#c41a16">\
 </span><span style="color:#c41a16"></span>  --from-file<span style="color:#000">=</span>server.crt<span style="color:#000">=</span><span style="color:#c41a16">&#34;</span><span style="color:#000">$TLS_DIR</span><span style="color:#c41a16">/server.crt&#34;</span> <span style="color:#c41a16">\
 </span><span style="color:#c41a16"></span>  --from-file<span style="color:#000">=</span>server.key<span style="color:#000">=</span><span style="color:#c41a16">&#34;</span><span style="color:#000">$TLS_DIR</span><span style="color:#c41a16">/server.key&#34;</span> <span style="color:#c41a16">\
-</span><span style="color:#c41a16"></span>  --from-file<span style="color:#000">=</span>ca.crt<span style="color:#000">=</span><span style="color:#c41a16">&#34;</span><span style="color:#000">$TLS_DIR</span><span style="color:#c41a16">/ca.crt&#34;</span></code></pre></div>
-<p>Install the etcd-backed chart. REST and gRPC both require TLS and a trusted client certificate by default.</p>
+</span><span style="color:#c41a16"></span>  --from-file<span style="color:#000">=</span>ca.crt<span style="color:#000">=</span><span style="color:#c41a16">&#34;</span><span style="color:#000">$TLS_DIR</span><span style="color:#c41a16">/ca.crt&#34;</span>
+go run ./samples/docs/certificates --out <span style="color:#c41a16">&#34;</span><span style="color:#000">$DOCS_WORKDIR</span><span style="color:#c41a16">/etcd-tls&#34;</span> --dns-names speedle-etcd
+kubectl --namespace <span style="color:#c41a16">&#34;</span><span style="color:#000">$NAMESPACE</span><span style="color:#c41a16">&#34;</span> create secret generic etcd-server-tls <span style="color:#c41a16">\
+</span><span style="color:#c41a16"></span>  --from-file<span style="color:#000">=</span>server.crt<span style="color:#000">=</span><span style="color:#c41a16">&#34;</span><span style="color:#000">$DOCS_WORKDIR</span><span style="color:#c41a16">/etcd-tls/server.crt&#34;</span> <span style="color:#c41a16">\
+</span><span style="color:#c41a16"></span>  --from-file<span style="color:#000">=</span>server.key<span style="color:#000">=</span><span style="color:#c41a16">&#34;</span><span style="color:#000">$DOCS_WORKDIR</span><span style="color:#c41a16">/etcd-tls/server.key&#34;</span> <span style="color:#c41a16">\
+</span><span style="color:#c41a16"></span>  --from-file<span style="color:#000">=</span>ca.crt<span style="color:#000">=</span><span style="color:#c41a16">&#34;</span><span style="color:#000">$DOCS_WORKDIR</span><span style="color:#c41a16">/etcd-tls/ca.crt&#34;</span> <span style="color:#c41a16">\
+</span><span style="color:#c41a16"></span>  --from-file<span style="color:#000">=</span>client.crt<span style="color:#000">=</span><span style="color:#c41a16">&#34;</span><span style="color:#000">$DOCS_WORKDIR</span><span style="color:#c41a16">/etcd-tls/client.crt&#34;</span> <span style="color:#c41a16">\
+</span><span style="color:#c41a16"></span>  --from-file<span style="color:#000">=</span>client.key<span style="color:#000">=</span><span style="color:#c41a16">&#34;</span><span style="color:#000">$DOCS_WORKDIR</span><span style="color:#c41a16">/etcd-tls/client.key&#34;</span>
+kubectl --namespace <span style="color:#c41a16">&#34;</span><span style="color:#000">$NAMESPACE</span><span style="color:#c41a16">&#34;</span> create secret generic etcd-client-tls <span style="color:#c41a16">\
+</span><span style="color:#c41a16"></span>  --from-file<span style="color:#000">=</span>client.crt<span style="color:#000">=</span><span style="color:#c41a16">&#34;</span><span style="color:#000">$DOCS_WORKDIR</span><span style="color:#c41a16">/etcd-tls/client.crt&#34;</span> <span style="color:#c41a16">\
+</span><span style="color:#c41a16"></span>  --from-file<span style="color:#000">=</span>client.key<span style="color:#000">=</span><span style="color:#c41a16">&#34;</span><span style="color:#000">$DOCS_WORKDIR</span><span style="color:#c41a16">/etcd-tls/client.key&#34;</span> <span style="color:#c41a16">\
+</span><span style="color:#c41a16"></span>  --from-file<span style="color:#000">=</span>ca.crt<span style="color:#000">=</span><span style="color:#c41a16">&#34;</span><span style="color:#000">$DOCS_WORKDIR</span><span style="color:#c41a16">/etcd-tls/ca.crt&#34;</span></code></pre></div>
+<!-- deployment-check: etcd -->
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">kubectl --namespace <span style="color:#c41a16">&#34;</span><span style="color:#000">$NAMESPACE</span><span style="color:#c41a16">&#34;</span> apply --dry-run<span style="color:#000">=</span>server -f deployment/k8s/etcd-example.yaml
+kubectl --namespace <span style="color:#c41a16">&#34;</span><span style="color:#000">$NAMESPACE</span><span style="color:#c41a16">&#34;</span> apply -f deployment/k8s/etcd-example.yaml
+kubectl --namespace <span style="color:#c41a16">&#34;</span><span style="color:#000">$NAMESPACE</span><span style="color:#c41a16">&#34;</span> rollout status statefulset/speedle-etcd --timeout<span style="color:#000">=</span>180s</code></pre></div>
+<p>After creating the certificates, start the etcd test instance above, then install the etcd-backed chart. The chart requires an explicitly configured protected backend; these example values select mTLS. REST and gRPC also require TLS and a trusted client certificate by default.</p>
 
 <!-- deployment-check: helm-prod -->
 <div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">helm upgrade --install speedle-prod deployment/helm/speedle-prod <span style="color:#c41a16">\
 </span><span style="color:#c41a16"></span>  --namespace <span style="color:#c41a16">&#34;</span><span style="color:#000">$NAMESPACE</span><span style="color:#c41a16">&#34;</span> --set-string image.pms<span style="color:#000">=</span><span style="color:#c41a16">&#34;</span><span style="color:#000">$PMS_IMAGE</span><span style="color:#c41a16">&#34;</span> <span style="color:#c41a16">\
 </span><span style="color:#c41a16"></span>  --set-string image.ads<span style="color:#000">=</span><span style="color:#c41a16">&#34;</span><span style="color:#000">$ADS_IMAGE</span><span style="color:#c41a16">&#34;</span> <span style="color:#c41a16">\
-</span><span style="color:#c41a16"></span>  --set-string store.etcd.endpoint<span style="color:#000">=</span>http://speedle-etcd:2379 <span style="color:#c41a16">\
+</span><span style="color:#c41a16"></span>  -f deployment/helm/speedle-prod/values-example.yaml <span style="color:#c41a16">\
 </span><span style="color:#c41a16"></span>  --wait --timeout 180s</code></pre></div>
-<p>The independent YAML alternative uses the same default Secret and etcd endpoint:</p>
+<p>The independent YAML is generated from the same chart and secure example values, using the same Secrets and HTTPS etcd endpoint:</p>
 
 <!-- deployment-check: raw-prod -->
 <div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">kubectl --namespace <span style="color:#c41a16">&#34;</span><span style="color:#000">$NAMESPACE</span><span style="color:#c41a16">&#34;</span> apply --dry-run<span style="color:#000">=</span>server -f deployment/k8s/speedle-prod.yaml
@@ -232,6 +243,8 @@ kubectl --namespace <span style="color:#c41a16">&#34;</span><span style="color:#
     certFile: client.crt
     keyFile: client.key
     trustedCAFile: ca.crt</code></pre></div>
+<p>Only legacy backends protected through other controls should explicitly set <code>store.etcd.allowInsecure=true</code>. This opt-in permits CA-only or plaintext connections; the chart rejects those configurations by default and cannot enable authentication on an existing etcd server for you.</p>
+
 <p>Forward both services to localhost:</p>
 
 <!-- deployment-check: forward-prod -->

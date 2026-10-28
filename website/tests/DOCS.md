@@ -44,6 +44,11 @@ kubectl 1.36.4 into its disposable directory, without replacing host tools.
 It covers repository-root image builds, tags, registry push/pull, the Docker
 file-store example, Helm and independently applied YAML, both locales,
 server-side dry runs, rollout, policy CRUD, Allow/Deny and real TLS/mTLS clients.
+The production chart rejects an unspecified backend and requires HTTPS plus
+client credentials by default. The etcd fixture requires mTLS, uses a separate
+CA from the APIs, and rejects missing or foreign client certificates on a real
+write request. `deployment/tests/check-charts.py` checks these defaults and the
+deliberate legacy opt-in for externally protected CA-only/plaintext backends.
 Fault checks distinguish backend readiness from process liveness and verify
 policy persistence across etcd replacement. A process freeze tests liveness
 restart behavior. The cluster uses a pinned node image, its own kubeconfig and

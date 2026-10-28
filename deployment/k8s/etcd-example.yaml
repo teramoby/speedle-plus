@@ -1,5 +1,6 @@
 # Single-member demonstration with a PVC. Production should supply an etcd
-# cluster with the availability, backup, access control and TLS it requires.
+# cluster with the availability, backup and access controls it requires.
+# Create etcd-server-tls before applying; all remote clients require mTLS.
 apiVersion: v1
 kind: Service
 metadata:
@@ -40,8 +41,12 @@ spec:
           args:
             - --name=example
             - --data-dir=/var/lib/etcd
-            - --listen-client-urls=http://0.0.0.0:2379
-            - --advertise-client-urls=http://speedle-etcd:2379
+            - --listen-client-urls=https://0.0.0.0:2379
+            - --advertise-client-urls=https://speedle-etcd:2379
+            - --cert-file=/etc/etcdtls/server.crt
+            - --key-file=/etc/etcdtls/server.key
+            - --trusted-ca-file=/etc/etcdtls/ca.crt
+            - --client-cert-auth=true
             - --listen-peer-urls=http://127.0.0.1:2380
             - --initial-advertise-peer-urls=http://127.0.0.1:2380
             - --initial-cluster=example=http://127.0.0.1:2380
@@ -51,6 +56,9 @@ spec:
           volumeMounts:
             - name: data
               mountPath: /var/lib/etcd
+            - name: server-tls
+              mountPath: /etc/etcdtls
+              readOnly: true
           resources:
             requests:
               cpu: 100m
@@ -74,9 +82,14 @@ spec:
             periodSeconds: 10
           readinessProbe:
             exec:
-              command: ["/usr/local/bin/etcdctl", "--endpoints=http://127.0.0.1:2379", "endpoint", "health"]
+              command: ["/usr/local/bin/etcdctl", "--endpoints=https://127.0.0.1:2379", "--cacert=/etc/etcdtls/ca.crt", "--cert=/etc/etcdtls/client.crt", "--key=/etc/etcdtls/client.key", "endpoint", "health"]
             timeoutSeconds: 3
             periodSeconds: 5
+      volumes:
+        - name: server-tls
+          secret:
+            secretName: etcd-server-tls
+            defaultMode: 0440
   volumeClaimTemplates:
     - metadata:
         name: data
