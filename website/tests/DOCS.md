@@ -55,6 +55,11 @@ restart behavior. The cluster uses a pinned node image, its own kubeconfig and
 namespaces; API/registry forwards bind only to loopback and avoid fixed host
 ports. A host lock serializes container acceptance across the two runners.
 Cleanup touches only resources created by this invocation.
+The full container gate runs for pull requests, master pushes, manual CI and
+local verification. Feature-branch pushes keep the build/native/website checks;
+their PR run owns container acceptance, avoiding a duplicate kind cluster on
+the shared host. Run `python3 deployment/tests/verify.py` directly for an
+unconditional container check.
 
 `deployment/render-manifests.sh` regenerates standalone manifests from the same
 charts. Runtime acceptance verifies that those committed copies match. The
