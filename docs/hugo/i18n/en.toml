@@ -8,7 +8,7 @@ other = "Learn More"
 other = "Simple Policy Language"
 
 [FEATURE_SimplePolicyLanguage]
-other = "Define policies in a high-level declarative language (Secure Policy Definition Language - SPDL) in the most intuitive and natural way."
+other = "Define policies in a high-level declarative language (Speedle Policy Definition Language - SPDL) in the most intuitive and natural way."
 
 [CloudNative]
 other = "Cloud Native"

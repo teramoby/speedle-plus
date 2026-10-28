@@ -1,6 +1,6 @@
 +++
 title = "SPDL - Speedle 策略定义语言"
-description = "Understand the basics of SPDL"
+description = "SPDL 的全称是 Speedle Policy Definition Language（Speedle 策略定义语言），用于编写 Speedle 策略和角色策略。"
 weight = 5
 draft = false
 toc = true
