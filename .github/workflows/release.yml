@@ -1,0 +1,80 @@
+name: Release
+
+# Run by hand from the Actions tab (or the API) to tag a master commit and
+# publish a GitHub release. Only users with write access can dispatch it.
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Semantic version tag, for example v2.0.0"
+        required: true
+        type: string
+      commit:
+        description: "Full 40-character SHA of the master commit to tag"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: release
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Validate inputs
+        env:
+          VERSION: ${{ inputs.version }}
+          COMMIT: ${{ inputs.commit }}
+        run: |
+          set -euo pipefail
+          [[ "${VERSION}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "Version must look like v2.0.0." >&2; exit 1; }
+          [[ "${COMMIT}" =~ ^[0-9a-f]{40}$ ]] || { echo "Commit must be a full lowercase SHA." >&2; exit 1; }
+
+      - name: Checkout master
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: master
+          fetch-depth: 0
+
+      - name: Check the commit, module path and tag
+        env:
+          VERSION: ${{ inputs.version }}
+          COMMIT: ${{ inputs.commit }}
+        run: |
+          set -euo pipefail
+          git merge-base --is-ancestor "${COMMIT}" origin/master || { echo "${COMMIT} is not on master." >&2; exit 1; }
+          # Go accepts a v2+ tag only when the module path ends in the major version.
+          major="${VERSION%%.*}"
+          module=$(git show "${COMMIT}:go.mod" | awk '$1 == "module" { print $2; exit }')
+          case "${major}" in
+            v0|v1) expected=github.com/teramoby/speedle-plus ;;
+            *) expected="github.com/teramoby/speedle-plus/${major}" ;;
+          esac
+          [[ "${module}" == "${expected}" ]] || { echo "go.mod at ${COMMIT} declares ${module}; ${VERSION} needs ${expected}." >&2; exit 1; }
+          if git ls-remote --exit-code --tags origin "refs/tags/${VERSION}" >/dev/null; then
+            echo "Tag ${VERSION} already exists; the Go module proxy caches tags, so it is never moved." >&2
+            exit 1
+          fi
+
+      - name: Create and push the tag
+        env:
+          VERSION: ${{ inputs.version }}
+          COMMIT: ${{ inputs.commit }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "${VERSION}" "${COMMIT}" -m "Speedle+ ${VERSION}"
+          git push origin "refs/tags/${VERSION}"
+
+      - name: Publish the GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ inputs.version }}
+        run: gh release create "${VERSION}" --repo "${GITHUB_REPOSITORY}" --verify-tag --title "${VERSION}" --generate-notes
