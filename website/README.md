@@ -50,7 +50,8 @@ Use the existing Hugo 0.48 toolchain, and always render into a separate director
 HUGO_BIN=/path/to/hugo-0.48 website/build-site.sh /tmp/speedle-site
 ```
 
-The build renders Hugo then runs `localize-links.py`. This postprocessor handles
+The build renders Hugo, runs `localize-links.py`, then validates rendered SEO
+contracts with `tests/check_seo.py`. The postprocessor handles
 legacy relative URLs, pagination, and same-origin links written in Markdown or
 HTML. It fails on missing counterparts or broken local anchor destinations and
 does not rewrite external links or translate source code.
@@ -75,3 +76,8 @@ build with the checksum-pinned official Hugo 0.48 binary. Existing homepage/CSS
 and source/output invariants remain checked. The language-navigation release
 query on the legacy script and Playground entry module refreshes previously
 cached browser code when this feature is deployed.
+
+See [SEO.md](SEO.md) for the bilingual topic map, metadata contracts and
+post-deployment measurement. Public guides are source content, not hidden
+search-only pages. The shared sidebar uses local template variables so concurrent
+Hugo renders do not overwrite another page's menu entries.

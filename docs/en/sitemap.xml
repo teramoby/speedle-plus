@@ -146,6 +146,34 @@
   </url>
   
   <url>
+    <loc>https://speedle.io/docs/access-control/rbac/</loc>
+    <xhtml:link
+                rel="alternate"
+                hreflang="zh"
+                href="https://speedle.io/zh/docs/access-control/rbac/"
+                />
+    <xhtml:link
+                rel="alternate"
+                hreflang="en"
+                href="https://speedle.io/docs/access-control/rbac/"
+                />
+  </url>
+  
+  <url>
+    <loc>https://speedle.io/docs/access-control/</loc>
+    <xhtml:link
+                rel="alternate"
+                hreflang="zh"
+                href="https://speedle.io/zh/docs/access-control/"
+                />
+    <xhtml:link
+                rel="alternate"
+                hreflang="en"
+                href="https://speedle.io/docs/access-control/"
+                />
+  </url>
+  
+  <url>
     <loc>https://speedle.io/docs/deployment-embeded/</loc>
     <xhtml:link
                 rel="alternate"
@@ -171,6 +199,20 @@
                 rel="alternate"
                 hreflang="en"
                 href="https://speedle.io/blog/discovery/"
+                />
+  </url>
+  
+  <url>
+    <loc>https://speedle.io/docs/access-control/abac/</loc>
+    <xhtml:link
+                rel="alternate"
+                hreflang="zh"
+                href="https://speedle.io/zh/docs/access-control/abac/"
+                />
+    <xhtml:link
+                rel="alternate"
+                hreflang="en"
+                href="https://speedle.io/docs/access-control/abac/"
                 />
   </url>
   
@@ -204,6 +246,20 @@
   </url>
   
   <url>
+    <loc>https://speedle.io/docs/access-control/pbac/</loc>
+    <xhtml:link
+                rel="alternate"
+                hreflang="zh"
+                href="https://speedle.io/zh/docs/access-control/pbac/"
+                />
+    <xhtml:link
+                rel="alternate"
+                hreflang="en"
+                href="https://speedle.io/docs/access-control/pbac/"
+                />
+  </url>
+  
+  <url>
     <loc>https://speedle.io/docs/idd/</loc>
     <lastmod>2019-01-17T13:20:07+08:00</lastmod>
     <xhtml:link
@@ -215,6 +271,34 @@
                 rel="alternate"
                 hreflang="en"
                 href="https://speedle.io/docs/idd/"
+                />
+  </url>
+  
+  <url>
+    <loc>https://speedle.io/docs/access-control/identity-iam/</loc>
+    <xhtml:link
+                rel="alternate"
+                hreflang="zh"
+                href="https://speedle.io/zh/docs/access-control/identity-iam/"
+                />
+    <xhtml:link
+                rel="alternate"
+                hreflang="en"
+                href="https://speedle.io/docs/access-control/identity-iam/"
+                />
+  </url>
+  
+  <url>
+    <loc>https://speedle.io/docs/access-control/oes/</loc>
+    <xhtml:link
+                rel="alternate"
+                hreflang="zh"
+                href="https://speedle.io/zh/docs/access-control/oes/"
+                />
+    <xhtml:link
+                rel="alternate"
+                hreflang="en"
+                href="https://speedle.io/docs/access-control/oes/"
                 />
   </url>
   
@@ -244,6 +328,20 @@
                 rel="alternate"
                 hreflang="en"
                 href="https://speedle.io/docs/deployment/"
+                />
+  </url>
+  
+  <url>
+    <loc>https://speedle.io/docs/access-control/xacml/</loc>
+    <xhtml:link
+                rel="alternate"
+                hreflang="zh"
+                href="https://speedle.io/zh/docs/access-control/xacml/"
+                />
+    <xhtml:link
+                rel="alternate"
+                hreflang="en"
+                href="https://speedle.io/docs/access-control/xacml/"
                 />
   </url>
   
@@ -1165,21 +1263,6 @@
   </url>
   
   <url>
-    <loc>https://speedle.io/tags/versions/</loc>
-    <priority>0</priority>
-    <xhtml:link
-                rel="alternate"
-                hreflang="zh"
-                href="https://speedle.io/zh/tags/versions/"
-                />
-    <xhtml:link
-                rel="alternate"
-                hreflang="en"
-                href="https://speedle.io/tags/versions/"
-                />
-  </url>
-  
-  <url>
     <loc>https://speedle.io/versions/</loc>
     <priority>0</priority>
     <xhtml:link
@@ -1191,6 +1274,21 @@
                 rel="alternate"
                 hreflang="en"
                 href="https://speedle.io/versions/"
+                />
+  </url>
+  
+  <url>
+    <loc>https://speedle.io/tags/versions/</loc>
+    <priority>0</priority>
+    <xhtml:link
+                rel="alternate"
+                hreflang="zh"
+                href="https://speedle.io/zh/tags/versions/"
+                />
+    <xhtml:link
+                rel="alternate"
+                hreflang="en"
+                href="https://speedle.io/tags/versions/"
                 />
   </url>
   

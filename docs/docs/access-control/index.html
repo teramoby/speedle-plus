@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta name="generator" content="Hugo 0.48" />
+    <link rel="icon" type="image/png" sizes="1024x1024" href="https://speedle.io/images/speedle_black.png">
+
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1"><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Authorization and access control - Speedle</title>
+<meta name="description" content="How Speedle&#43; implements authorization and fine-grained access control using RBAC, ABAC and PBAC, integrates with identity and IAM, and relates to OES and XACML.">
+<link rel="alternate" hreflang="en" href="https://speedle.io/docs/access-control/">
+<link rel="alternate" hreflang="x-default" href="https://speedle.io/docs/access-control/"><link rel="alternate" hreflang="zh-CN" href="https://speedle.io/zh/docs/access-control/">
+
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Speedle Authorization Engine">
+<meta property="og:title" content="Authorization and access control">
+<meta property="og:description" content="How Speedle&#43; implements authorization and fine-grained access control using RBAC, ABAC and PBAC, integrates with identity and IAM, and relates to OES and XACML.">
+<meta property="og:url" content="https://speedle.io/docs/access-control/">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Authorization and access control">
+<meta name="twitter:description" content="How Speedle&#43; implements authorization and fine-grained access control using RBAC, ABAC and PBAC, integrates with identity and IAM, and relates to OES and XACML.">
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://speedle.io/docs/access-control/#page","@type":"WebPage","about":{"@id":"https://speedle.io/#software"},"description":"How Speedle+ implements authorization and fine-grained access control using RBAC, ABAC and PBAC, integrates with identity and IAM, and relates to OES and XACML.","inLanguage":"en","isPartOf":{"@id":"https://speedle.io/#website"},"keywords":["Speedle+","authorization","access control","RBAC","ABAC","PBAC","identity","IAM","OES","XACML","SPDL","authorization engine","fine grained access control","fine-grained access control","FGA","policy engine","authorization policy engine","externalized authorization","PAP","policy administration point","PDP","policy decision point","PEP","policy enforcement point","PIP","policy information point","centralized authorization","authorization policy management","authorization decision service","API authorization","microservices authorization","cloud-native authorization","zero trust"],"name":"Authorization and access control","url":"https://speedle.io/docs/access-control/"}</script>
+
+<meta name="generator" content="Hugo 0.48" />
+<link href="https://speedle.io/index.xml" rel="alternate" type="application/rss+xml">
+<link rel="canonical" href="https://speedle.io/docs/access-control/">
+<link rel="stylesheet" href="/css/theme.min.css">
+<script src="https://use.fontawesome.com/releases/v5.0.6/js/all.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+<script src="/js/functions.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jquery.easing@1.4.1/jquery.easing.min.js"></script>
+
+
+<script src="/js/jquery.backtothetop/jquery.backtothetop.min.js"></script>
+
+<script type="text/javascript" src="/js/tocbot.min.js"></script>
+<link href="/css/font.css" rel="stylesheet" type="text/css">
+    <link href="/css/kube.min.css" rel="stylesheet" type="text/css">
+    <link href="/css/kube.legenda.css" rel="stylesheet" type="text/css">
+    <link href="/css/highlight.css" rel="stylesheet" type="text/css">
+    <link href="/css/master.css" rel="stylesheet" type="text/css">
+    <link href="/css/kube.demo.css" rel="stylesheet" type="text/css">
+    <link href="/css/swagger-ui.css" rel="stylesheet" type="text/css">
+    
+    
+    <link href="/css/custom.css" rel="stylesheet" type="text/css">
+    <link href="https://fonts.googleapis.com/css?family=IBM+Plex+Sans" rel="stylesheet">
+    <link href="/css/brand.css?v=1" rel="stylesheet" type="text/css">
+    <link href="/css/navigation.css?v=header-20261027" rel="stylesheet">
+    <script src="/js/navigation.js?v=header-20261027" defer></script>
+</head>
+
+<body class="page-kube" style="background: none">
+    <header class="site-header">
+    <div class="wrap nav">
+      <a class="brand" href="/#top" aria-label="Speedle home"><img src="/img/speedle/Speedle_logo_home_bold.svg?v=4" alt="Speedle"></a>
+      <button class="menu" type="button" aria-expanded="false" aria-controls="nav-links" aria-label="Open navigation">☰</button>
+      <nav class="nav-links" id="nav-links" aria-label="Main navigation">
+        <a href="/#about">About</a><a href="/#features">Features</a><a href="/#integrations">Integrations</a>
+        <a href="/quick-start/">Getting started</a><a href="/docs/">Docs</a><a href="/playground/">Playground</a>
+        <a href="/zh/docs/access-control/" lang="zh-CN" hreflang="zh-CN" aria-label="切换到中文">中文</a>
+        <a class="nav-github" href="https://github.com/teramoby/speedle-plus">GitHub</a>
+      </nav>
+    </div>
+  </header>
+    <div class="container">
+        <div class="content-container">
+            <main><div id="main">
+  <h1>Authorization and access control</h1>
+  <p></p>
+
+<h2 id="what-does-speedle-authorize">What does Speedle authorize?</h2>
+
+<p>Speedle+ is an open-source authorization engine. It answers whether a subject may perform an action on a resource within a service. Applications enforce that answer. Moving access control into policies lets services share authorization rules without embedding each rule in application code.</p>
+
+<p>Authentication establishes an identity; authorization determines what that identity can do. Speedle can work with identities supplied by a trusted application or a configured token asserter. It does not replace every component of an identity and access management (IAM) system.</p>
+
+<h2 id="fine-grained-access-control-fga-and-zero-trust">Fine-grained access control (FGA) and zero trust</h2>
+
+<p>Fine-grained access control (FGA) decides each request from its specific subject, action, resource and context, instead of granting broad access to a whole application or network. Speedle+ evaluates every request against SPDL policies, so a decision can depend on the user, their groups and roles, the exact resource and attributes of the request.</p>
+
+<p>A zero trust architecture trusts no request because of where it comes from; every access to a protected resource is authorized explicitly. Speedle+ supplies that authorization decision. In XACML terms, the application or gateway is the policy enforcement point (PEP) and asks the Authorization Decision Service, the policy decision point (PDP), about each protected operation. Policies are administered through the Policy Management Service, the policy administration point (PAP), and trusted identity and attribute sources act as policy information points (PIP); see <a href="/docs/access-control/xacml/">XACML and SPDL</a>. Speedle+ does not provide authentication, device posture or network controls itself. A zero trust deployment combines it with those components.</p>
+
+<h2 id="choose-an-access-control-model">Choose an access control model</h2>
+
+<table>
+<thead>
+<tr>
+<th>Topic</th>
+<th>How it applies to Speedle+</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td><a href="/docs/access-control/rbac/">RBAC: role-based access control</a></td>
+<td>Assign roles to users or groups and grant permissions to roles.</td>
+</tr>
+
+<tr>
+<td><a href="/docs/access-control/abac/">ABAC: attribute-based access control</a></td>
+<td>Add conditions using attributes supplied by trusted infrastructure.</td>
+</tr>
+
+<tr>
+<td><a href="/docs/access-control/pbac/">PBAC: policy-based access control</a></td>
+<td>Manage authorization rules centrally and evaluate them through a decision service or embedded evaluator.</td>
+</tr>
+
+<tr>
+<td><a href="/docs/access-control/identity-iam/">Identity and IAM</a></td>
+<td>Connect identity providers, distinguish identity domains and define the trust boundary.</td>
+</tr>
+
+<tr>
+<td><a href="/docs/access-control/oes/">OES and Speedle</a></td>
+<td>Compare Oracle Entitlements Server concepts and plan a migration assessment.</td>
+</tr>
+
+<tr>
+<td><a href="/docs/access-control/xacml/">XACML and SPDL</a></td>
+<td>Map PAP/PDP/PEP responsibilities and understand policy-language differences.</td>
+</tr>
+</tbody>
+</table>
+
+<p>RBAC and ABAC can coexist in a policy-based design. These names describe different aspects of access control; choosing PBAC does not require abandoning roles or attributes.</p>
+
+<h2 id="a-first-authorization-policy">A first authorization policy</h2>
+
+<p>Paste this SPDL policy into the <a href="/playground/">Playground</a>:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">grant user alice read book
+deny user alice delete book</code></pre></div>
+<p>Set the user to <code>alice</code>, resource to <code>book</code>, and action to <code>read</code>: the expected result is Allow. Change the action to <code>delete</code>: the expected result is Deny. With action <code>write</code>, no grant matches, so access is denied by default. Test both successful and rejected requests before deploying a policy.</p>
+
+<p>In a deployed service, the <a href="/docs/decisions/">Authorization Decision Service</a> evaluates the request and the application must enforce its result, including handling evaluation errors. The browser Playground runs the real Go authorization engine locally, but does not contact identity providers or external custom functions.</p>
+
+<p>Continue with the <a href="/docs/architecture/">architecture</a>, <a href="/docs/spdl/">SPDL reference</a> and <a href="/quick-start/">quick start</a>.</p>
+</div></main><div class="sidebar">
+<nav>
+<ul>
+
+
+
+<li class="parent"><span>Speedle Documents</span>
+<ul class="sub-menu">
+<li class=""><a href="/docs/usecases/">Usecases</a></li>
+<li class=""><a href="/docs/spdl/">SPDL - Speedle Policy Definition Language</a></li>
+<li class=""><a href="/docs/architecture/">Architecture</a></li>
+
+
+
+<li class="parent active"><span>Authorization and access control</span>
+<ul class="sub-menu">
+<li class=""><a href="/docs/access-control/rbac/">RBAC: role-based access control</a></li>
+<li class=""><a href="/docs/access-control/abac/">ABAC: attribute-based access control</a></li>
+<li class=""><a href="/docs/access-control/pbac/">PBAC: policy-based access control</a></li>
+<li class=""><a href="/docs/access-control/identity-iam/">Identity and IAM integration</a></li>
+<li class=""><a href="/docs/access-control/oes/">Oracle Entitlements Server (OES) and Speedle</a></li>
+<li class=""><a href="/docs/access-control/xacml/">XACML, SPDL and authorization architecture</a></li>
+</ul>
+  
+</li>
+<li class=""><a href="/docs/deployment-embeded/">Speedle embedded mode</a></li>
+
+
+
+<li class=""><span>Speedle Policy</span>
+<ul class="">
+<li class=""><a href="/docs/pms/policy-mgmt/">Policy Management</a></li>
+<li class=""><a href="/docs/pms/global-policy/">Global Policy</a></li>
+<li class=""><a href="/docs/pms/diagnosis/">Policy Diagnosis</a></li>
+<li class=""><a href="/docs/pms/discover/">Policy Discovery</a></li>
+</ul>
+  
+</li>
+<li class=""><a href="/docs/decisions/">Authorization Decisions</a></li>
+<li class=""><a href="/docs/idd/">Identity Domain</a></li>
+<li class=""><a href="/docs/assertor/">Token asserter</a></li>
+<li class=""><a href="/docs/deployment/">Deployment</a></li>
+<li class=""><a href="/docs/store/">Pluggable Storage</a></li>
+
+
+
+<li class=""><span>API</span>
+<ul class="">
+<li class=""><a href="/docs/api/decision_api/">Authorization Runtime/Decision API</a></li>
+<li class=""><a href="/docs/api/management_api/">Policy Management API</a></li>
+<li class=""><a href="/docs/api/asserter_api/">Token Assertion Plugin API</a></li>
+</ul>
+  
+</li>
+<li class=""><a href="/docs/security/">Security</a></li>
+<li class=""><a href="/docs/logging/">Logging Framework</a></li>
+<li class=""><a href="/docs/versions/">Versions</a></li>
+<li class=""><a href="/docs/custom-function/">Custom Function</a></li>
+</ul>
+  
+</li>
+
+
+
+
+</ul>
+</nav>
+
+
+<div class="sidebar-footer"></div>
+</div>
+</div>
+    </div>
+    <footer class="row"> <div class="col col-3">
+  Licensed under <a href="https://oss.oracle.com/licenses/upl/">UPL</a>
+</div>
+<div class="col col-6 center">
+  <div>Copyright &copy; 2019–2026. All rights reserved.</div>
+</div>
+<div class="col col-3">
+  <nav>
+    <a title="contact@speedle.io" aria-label="Email contact@speedle.io" href="mailto:contact@speedle.io">
+      <img src="/img/speedle/28. Mail.svg" alt="" />
+    </a>
+    <a title="Google Groups — speedle-users" aria-label="Google Groups" href="https://groups.google.com/forum/#!forum/speedle-users">
+      <img src="/img/speedle/Google-Groups.svg" alt="" />
+    </a>
+    <a title="speedle" href="https://github.com/oracle/speedle">
+      <img src="/img/speedle/18. Github.svg" />
+    </a>
+    <a title="Discord" href="https://discord.gg/uaY2xVsbbT">
+      <img src="/img/speedle/Discord.svg" />
+    </a>
+  </nav>
+</div>
+</footer>
+    <script src="/js/kube.js" type="text/javascript">
+    </script>
+    <script src="/js/kube.legenda.js" type="text/javascript">
+    </script>
+    <script src="/js/master.js?v=language-direct-20261026" type="text/javascript">
+    </script>
+</body>
+
+</html>

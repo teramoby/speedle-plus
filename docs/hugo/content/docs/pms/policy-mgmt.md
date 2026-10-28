@@ -1,5 +1,6 @@
 +++
 title = "Policy Management"
+keywords = ["Speedle+", "authorization engine", "fine grained access control", "fine-grained access control", "FGA", "policy engine", "authorization policy engine", "externalized authorization", "PAP", "policy administration point", "centralized authorization", "authorization policy management"]
 description = "Manage policy lifecycle "
 weight = 1
 draft = false

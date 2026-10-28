@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+    <meta name="generator" content="Hugo 0.48" />
+    <link rel="icon" type="image/png" sizes="1024x1024" href="https://speedle.io/images/speedle_black.png">
+
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1"><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>RBAC：基于角色的访问控制 - Speedle</title>
+<meta name="description" content="使用 Speedle&#43; 实现基于角色的访问控制（RBAC，role-based access control）：角色分配、资源范围、角色继承及可运行的 SPDL 示例。">
+<link rel="alternate" hreflang="en" href="https://speedle.io/docs/access-control/rbac/">
+<link rel="alternate" hreflang="x-default" href="https://speedle.io/docs/access-control/rbac/"><link rel="alternate" hreflang="zh-CN" href="https://speedle.io/zh/docs/access-control/rbac/">
+
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Speedle Authorization Engine">
+<meta property="og:title" content="RBAC：基于角色的访问控制">
+<meta property="og:description" content="使用 Speedle&#43; 实现基于角色的访问控制（RBAC，role-based access control）：角色分配、资源范围、角色继承及可运行的 SPDL 示例。">
+<meta property="og:url" content="https://speedle.io/zh/docs/access-control/rbac/">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="RBAC：基于角色的访问控制">
+<meta name="twitter:description" content="使用 Speedle&#43; 实现基于角色的访问控制（RBAC，role-based access control）：角色分配、资源范围、角色继承及可运行的 SPDL 示例。">
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://speedle.io/zh/docs/access-control/rbac/#page","@type":"TechArticle","about":{"@id":"https://speedle.io/#software"},"description":"使用 Speedle+ 实现基于角色的访问控制（RBAC，role-based access control）：角色分配、资源范围、角色继承及可运行的 SPDL 示例。","inLanguage":"zh-CN","isPartOf":{"@id":"https://speedle.io/#website"},"keywords":["RBAC","role-based access control","基于角色的访问控制","授权","Speedle+","authorization engine","fine grained access control","fine-grained access control","FGA","policy engine","authorization policy engine","externalized authorization","授权引擎","细粒度访问控制","策略引擎","授权策略引擎","外置授权","授权外部化"],"name":"RBAC：基于角色的访问控制","url":"https://speedle.io/zh/docs/access-control/rbac/"}</script>
+
+<meta name="generator" content="Hugo 0.48" />
+<link href="https://speedle.io/index.xml" rel="alternate" type="application/rss+xml">
+<link rel="canonical" href="https://speedle.io/zh/docs/access-control/rbac/">
+<link rel="stylesheet" href="/css/theme.min.css">
+<script src="https://use.fontawesome.com/releases/v5.0.6/js/all.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+<script src="/js/functions.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jquery.easing@1.4.1/jquery.easing.min.js"></script>
+
+
+<script src="/js/jquery.backtothetop/jquery.backtothetop.min.js"></script>
+
+<script type="text/javascript" src="/js/tocbot.min.js"></script>
+<link href="/css/font.css" rel="stylesheet" type="text/css">
+    <link href="/css/kube.min.css" rel="stylesheet" type="text/css">
+    <link href="/css/kube.legenda.css" rel="stylesheet" type="text/css">
+    <link href="/css/highlight.css" rel="stylesheet" type="text/css">
+    <link href="/css/master.css" rel="stylesheet" type="text/css">
+    <link href="/css/kube.demo.css" rel="stylesheet" type="text/css">
+    <link href="/css/swagger-ui.css" rel="stylesheet" type="text/css">
+    
+    
+    <link href="/css/custom.css" rel="stylesheet" type="text/css">
+    <link href="https://fonts.googleapis.com/css?family=IBM+Plex+Sans" rel="stylesheet">
+    <link href="/css/brand.css?v=1" rel="stylesheet" type="text/css">
+    <link href="/css/navigation.css?v=header-20261027" rel="stylesheet">
+    <script src="/js/navigation.js?v=header-20261027" defer></script>
+</head>
+
+<body class="page-kube" style="background: none">
+    <header class="site-header">
+    <div class="wrap nav">
+      <a class="brand" href="/zh/#top" aria-label="Speedle 中文首页"><img src="/img/speedle/Speedle_logo_home_bold.svg?v=4" alt="Speedle"></a>
+      <button class="menu" type="button" aria-expanded="false" aria-controls="nav-links" aria-label="展开导航">☰</button>
+      <nav class="nav-links" id="nav-links" aria-label="主导航">
+        <a href="/zh/#about">关于</a><a href="/zh/#features">功能</a><a href="/zh/#integrations">集成</a>
+        <a href="/zh/quick-start/">快速入门</a><a href="/zh/docs/">文档</a><a href="/zh/playground/">Playground</a>
+        <a href="/docs/access-control/rbac/" lang="en" hreflang="en" aria-label="Switch to English">English</a>
+        <a class="nav-github" href="https://github.com/teramoby/speedle-plus">GitHub</a>
+      </nav>
+    </div>
+  </header>
+    <div class="container">
+        <div class="content-container">
+            <main>
+<div id="main">
+  
+  <h1>RBAC：基于角色的访问控制</h1>
+  <p>通过角色授予权限，减少逐个用户重复配置</p>
+
+  
+
+
+
+
+  <br />
+  <div id="kube-component" class="content">
+    
+
+<h2 id="speedle-如何实现-rbac">Speedle 如何实现 RBAC</h2>
+
+<p>基于角色的访问控制（Role-Based Access Control，RBAC）将角色分配与操作权限分开。Speedle 的角色策略把角色分配给用户、组或其他角色；授权策略则允许角色对资源执行某项操作。评估请求时，引擎会解析当前主体适用的角色。</p>
+
+<p>当多人承担相同职责时，这种方式可以减少重复配置：修改“读者”的权限，只需调整相关授权策略，无需逐个修改用户。</p>
+
+<h2 id="验证具有资源范围的角色">验证具有资源范围的角色</h2>
+
+<p>把下面两行粘贴到 <a href="/zh/playground/">Playground</a>：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">grant user alice reader on book
+grant role reader read book</code></pre></div>
+<p>用户填 <code>alice</code>，资源填 <code>book</code>，操作填 <code>read</code>，结果为允许：Alice 获得该资源上的 <code>reader</code> 角色，而此角色具有读取权限。把用户换成 <code>bob</code>，同样请求会被拒绝；Alice 执行 <code>delete</code> 也会被拒绝，因为角色没有删除权限。</p>
+
+<p><code>on book</code> 限定了角色分配的资源范围，删除这一限定会改变角色的适用范围。名为 <code>reader</code> 的身份本身不等于获得角色，角色关系应通过明确的角色策略建立。</p>
+
+<h2 id="角色继承与显式拒绝">角色继承与显式拒绝</h2>
+
+<p>角色策略还可以把角色分配给另一个角色。例如，将上面的策略替换为：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">grant user alice editor on book
+grant role editor reader on book
+grant role reader read book</code></pre></div>
+<p>相同的 <code>alice</code> / <code>book</code> / <code>read</code> 请求会通过角色链获得允许。角色层级应保持清晰，并验证最终权限。匹配的显式拒绝策略可以覆盖允许策略，因此拥有某个角色并不保证一定允许访问。</p>
+
+<p>如果决策还依赖部门、密级或资源分类，可以组合使用 <a href="/zh/docs/access-control/abac/">ABAC 属性条件</a>。<a href="/zh/docs/access-control/pbac/">PBAC 策略访问控制</a>说明管理与执行职责，<a href="/zh/docs/decisions/">授权决策文档</a>提供角色查询 API。</p>
+
+  </div>
+</div>
+</main><div class="sidebar">
+<nav>
+<ul>
+
+
+
+<li class="parent"><span>Speedle文档</span>
+<ul class="sub-menu">
+<li class=""><a href="/zh/docs/usecases/">使用场景</a></li>
+<li class=""><a href="/zh/docs/spdl/">SPDL - Speedle 策略定义语言</a></li>
+<li class=""><a href="/zh/docs/architecture/">系统架构</a></li>
+<li class=""><a href="/zh/docs/deployment-embeded/">Speedle嵌入模式</a></li>
+
+
+
+<li class="parent"><span>授权与访问控制</span>
+<ul class="sub-menu">
+<li class="active"><a href="/zh/docs/access-control/rbac/">RBAC：基于角色的访问控制</a></li>
+<li class=""><a href="/zh/docs/access-control/abac/">ABAC：基于属性的访问控制</a></li>
+<li class=""><a href="/zh/docs/access-control/pbac/">PBAC：基于策略的访问控制</a></li>
+<li class=""><a href="/zh/docs/access-control/identity-iam/">身份与 IAM 集成</a></li>
+<li class=""><a href="/zh/docs/access-control/oes/">Oracle Entitlements Server（OES）与 Speedle</a></li>
+<li class=""><a href="/zh/docs/access-control/xacml/">XACML、SPDL 与授权架构</a></li>
+</ul>
+  
+</li>
+<li class=""><a href="/zh/docs/deployment/">Speedle服务的部署方式</a></li>
+
+
+
+<li class=""><span>Speedle策略</span>
+<ul class="">
+<li class=""><a href="/zh/docs/pms/policy-mgmt/">策略管理</a></li>
+<li class=""><a href="/zh/docs/pms/global-policy/">全局角色策略</a></li>
+<li class=""><a href="/zh/docs/pms/diagnosis/">授权诊断</a></li>
+<li class=""><a href="/zh/docs/pms/discover/">策略发现</a></li>
+</ul>
+  
+</li>
+<li class=""><a href="/zh/docs/decisions/">授权查询</a></li>
+<li class=""><a href="/zh/docs/idd/">用户身份域</a></li>
+<li class=""><a href="/zh/docs/assertor/">令牌用户身份断言</a></li>
+<li class=""><a href="/zh/docs/store/">存储扩展</a></li>
+
+
+
+<li class=""><span>API</span>
+<ul class="">
+<li class=""><a href="/zh/docs/api/decision_api/">Authorization Runtime/Decision API</a></li>
+<li class=""><a href="/zh/docs/api/management_api/">Policy Management API</a></li>
+<li class=""><a href="/zh/docs/api/asserter_api/">Token Assertion Plugin API</a></li>
+</ul>
+  
+</li>
+<li class=""><a href="/zh/docs/security/">安全</a></li>
+<li class=""><a href="/zh/docs/logging/">日志</a></li>
+<li class=""><a href="/zh/docs/versions/">版本</a></li>
+<li class=""><a href="/zh/docs/custom-function/">Custom Function</a></li>
+</ul>
+  
+</li>
+
+
+
+
+</ul>
+</nav>
+
+
+<div class="sidebar-footer"></div>
+</div>
+</div>
+    </div>
+    <footer class="row"> <div class="col col-3">
+  Licensed under <a href="https://oss.oracle.com/licenses/upl/">UPL</a>
+</div>
+<div class="col col-6 center">
+  <div>Copyright &copy; 2019–2026. All rights reserved.</div>
+</div>
+<div class="col col-3">
+  <nav>
+    <a title="contact@speedle.io" aria-label="发送邮件至 contact@speedle.io" href="mailto:contact@speedle.io">
+      <img src="/img/speedle/28. Mail.svg" alt="" />
+    </a>
+    <a title="Google Groups — speedle-users" aria-label="Google Groups 讨论组" href="https://groups.google.com/forum/#!forum/speedle-users">
+      <img src="/img/speedle/Google-Groups.svg" alt="" />
+    </a>
+    <a title="speedle" href="https://github.com/oracle/speedle">
+      <img src="/img/speedle/18. Github.svg" />
+    </a>
+    <a title="Discord" href="https://discord.gg/uaY2xVsbbT">
+      <img src="/img/speedle/Discord.svg" />
+    </a>
+  </nav>
+</div>
+</footer>
+    <script src="/js/kube.js" type="text/javascript">
+    </script>
+    <script src="/js/kube.legenda.js" type="text/javascript">
+    </script>
+    <script src="/js/master.js?v=language-direct-20261026" type="text/javascript">
+    </script>
+</body>
+
+</html>

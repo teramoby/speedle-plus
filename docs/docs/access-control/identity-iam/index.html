@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta name="generator" content="Hugo 0.48" />
+    <link rel="icon" type="image/png" sizes="1024x1024" href="https://speedle.io/images/speedle_black.png">
+
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1"><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Identity and IAM integration - Speedle</title>
+<meta name="description" content="Place Speedle&#43; authorization in an identity and access management (IAM) architecture: trusted identities, identity domains, token asserters and access control.">
+<link rel="alternate" hreflang="en" href="https://speedle.io/docs/access-control/identity-iam/">
+<link rel="alternate" hreflang="x-default" href="https://speedle.io/docs/access-control/identity-iam/"><link rel="alternate" hreflang="zh-CN" href="https://speedle.io/zh/docs/access-control/identity-iam/">
+
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Speedle Authorization Engine">
+<meta property="og:title" content="Identity and IAM integration">
+<meta property="og:description" content="Place Speedle&#43; authorization in an identity and access management (IAM) architecture: trusted identities, identity domains, token asserters and access control.">
+<meta property="og:url" content="https://speedle.io/docs/access-control/identity-iam/">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Identity and IAM integration">
+<meta name="twitter:description" content="Place Speedle&#43; authorization in an identity and access management (IAM) architecture: trusted identities, identity domains, token asserters and access control.">
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://speedle.io/docs/access-control/identity-iam/#page","@type":"TechArticle","about":{"@id":"https://speedle.io/#software"},"description":"Place Speedle+ authorization in an identity and access management (IAM) architecture: trusted identities, identity domains, token asserters and access control.","inLanguage":"en","isPartOf":{"@id":"https://speedle.io/#website"},"keywords":["identity","IAM","identity and access management","authorization","access control","Speedle+","authorization engine","fine grained access control","fine-grained access control","FGA","policy engine","authorization policy engine","externalized authorization","zero trust"],"name":"Identity and IAM integration","url":"https://speedle.io/docs/access-control/identity-iam/"}</script>
+
+<meta name="generator" content="Hugo 0.48" />
+<link href="https://speedle.io/index.xml" rel="alternate" type="application/rss+xml">
+<link rel="canonical" href="https://speedle.io/docs/access-control/identity-iam/">
+<link rel="stylesheet" href="/css/theme.min.css">
+<script src="https://use.fontawesome.com/releases/v5.0.6/js/all.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+<script src="/js/functions.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jquery.easing@1.4.1/jquery.easing.min.js"></script>
+
+
+<script src="/js/jquery.backtothetop/jquery.backtothetop.min.js"></script>
+
+<script type="text/javascript" src="/js/tocbot.min.js"></script>
+<link href="/css/font.css" rel="stylesheet" type="text/css">
+    <link href="/css/kube.min.css" rel="stylesheet" type="text/css">
+    <link href="/css/kube.legenda.css" rel="stylesheet" type="text/css">
+    <link href="/css/highlight.css" rel="stylesheet" type="text/css">
+    <link href="/css/master.css" rel="stylesheet" type="text/css">
+    <link href="/css/kube.demo.css" rel="stylesheet" type="text/css">
+    <link href="/css/swagger-ui.css" rel="stylesheet" type="text/css">
+    
+    
+    <link href="/css/custom.css" rel="stylesheet" type="text/css">
+    <link href="https://fonts.googleapis.com/css?family=IBM+Plex+Sans" rel="stylesheet">
+    <link href="/css/brand.css?v=1" rel="stylesheet" type="text/css">
+    <link href="/css/navigation.css?v=header-20261027" rel="stylesheet">
+    <script src="/js/navigation.js?v=header-20261027" defer></script>
+</head>
+
+<body class="page-kube" style="background: none">
+    <header class="site-header">
+    <div class="wrap nav">
+      <a class="brand" href="/#top" aria-label="Speedle home"><img src="/img/speedle/Speedle_logo_home_bold.svg?v=4" alt="Speedle"></a>
+      <button class="menu" type="button" aria-expanded="false" aria-controls="nav-links" aria-label="Open navigation">☰</button>
+      <nav class="nav-links" id="nav-links" aria-label="Main navigation">
+        <a href="/#about">About</a><a href="/#features">Features</a><a href="/#integrations">Integrations</a>
+        <a href="/quick-start/">Getting started</a><a href="/docs/">Docs</a><a href="/playground/">Playground</a>
+        <a href="/zh/docs/access-control/identity-iam/" lang="zh-CN" hreflang="zh-CN" aria-label="切换到中文">中文</a>
+        <a class="nav-github" href="https://github.com/teramoby/speedle-plus">GitHub</a>
+      </nav>
+    </div>
+  </header>
+    <div class="container">
+        <div class="content-container">
+            <main>
+<div id="main">
+  
+  <h1>Identity and IAM integration</h1>
+  <p>Connect identity to authorization while keeping responsibilities explicit</p>
+
+  
+
+
+
+
+  <br />
+  <div id="kube-component" class="content">
+    
+
+<h2 id="where-speedle-fits-in-iam">Where Speedle fits in IAM</h2>
+
+<p>Identity and access management (IAM) includes establishing identities, authenticating users, managing account lifecycles and controlling access. Speedle+ supplies an authorization engine within that architecture: it evaluates what an identified user, group or service may do. It is not a complete identity directory, login service or account-provisioning system.</p>
+
+<table>
+<thead>
+<tr>
+<th>Responsibility</th>
+<th>Typical owner</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td>Accounts, credentials and login</td>
+<td>Identity provider and directory</td>
+</tr>
+
+<tr>
+<td>Trusted principal names, groups and attributes</td>
+<td>Application integration or token asserter</td>
+</tr>
+
+<tr>
+<td>Authorization and role policies</td>
+<td>Speedle Policy Management Service</td>
+</tr>
+
+<tr>
+<td>Access decision</td>
+<td>Speedle Authorization Decision Service or embedded evaluator</td>
+</tr>
+
+<tr>
+<td>Enforcing the decision on the actual resource</td>
+<td>Application or gateway</td>
+</tr>
+</tbody>
+</table>
+
+<h2 id="supply-a-trusted-identity">Supply a trusted identity</h2>
+
+<p>A trusted application can send explicit principals in the decision request. Alternatively, a configured <a href="/docs/assertor/">token asserter</a> validates and interprets a token and returns the identities used for policy evaluation. Implement and configure the asserter for the actual identity provider; the existence of the webhook does not establish compatibility with every token format or protocol.</p>
+
+<p>Do not expose an authorization endpoint that lets an untrusted caller impersonate another user by simply naming that user. Authenticate callers, derive identity and attributes from trusted sources, and protect decision and management services according to the <a href="/docs/security/">security guidance</a>.</p>
+
+<h2 id="distinguish-identity-domains">Distinguish identity domains</h2>
+
+<p>The same user name may exist in multiple domains. Try this policy in the <a href="/playground/">Playground</a>:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">grant user alice from workforce read book</code></pre></div>
+<p>Use user <code>alice</code>, identity domain <code>workforce</code>, resource <code>book</code> and action <code>read</code>: access is allowed. Change only the identity domain to <code>partner</code>: access is denied. The domain string is an explicit namespace in the request, not proof that authentication occurred.</p>
+
+<p>The equivalent Playground request is:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">{
+  <span style="color:#ff79c6">&#34;subject&#34;</span>: {<span style="color:#ff79c6">&#34;principals&#34;</span>: [{<span style="color:#ff79c6">&#34;type&#34;</span>: <span style="color:#f1fa8c">&#34;user&#34;</span>, <span style="color:#ff79c6">&#34;name&#34;</span>: <span style="color:#f1fa8c">&#34;alice&#34;</span>, <span style="color:#ff79c6">&#34;idd&#34;</span>: <span style="color:#f1fa8c">&#34;workforce&#34;</span>}]},
+  <span style="color:#ff79c6">&#34;resource&#34;</span>: <span style="color:#f1fa8c">&#34;book&#34;</span>,
+  <span style="color:#ff79c6">&#34;action&#34;</span>: <span style="color:#f1fa8c">&#34;read&#34;</span>
+}</code></pre></div>
+<p>Omitting <code>from workforce</code> from the policy would allow the named user to match across identity domains. Review that choice carefully in multitenant integrations. The browser demo accepts explicit principals for experimentation; it does not authenticate users or invoke the token asserter.</p>
+
+<p>See <a href="/docs/idd/">identity domains</a>, <a href="/docs/access-control/abac/">ABAC attributes</a> and the <a href="/docs/api/asserter_api/">token assertion API</a> for implementation details.</p>
+
+  </div>
+</div>
+</main><div class="sidebar">
+<nav>
+<ul>
+
+
+
+<li class="parent"><span>Speedle Documents</span>
+<ul class="sub-menu">
+<li class=""><a href="/docs/usecases/">Usecases</a></li>
+<li class=""><a href="/docs/spdl/">SPDL - Speedle Policy Definition Language</a></li>
+<li class=""><a href="/docs/architecture/">Architecture</a></li>
+
+
+
+<li class="parent"><span>Authorization and access control</span>
+<ul class="sub-menu">
+<li class=""><a href="/docs/access-control/rbac/">RBAC: role-based access control</a></li>
+<li class=""><a href="/docs/access-control/abac/">ABAC: attribute-based access control</a></li>
+<li class=""><a href="/docs/access-control/pbac/">PBAC: policy-based access control</a></li>
+<li class="active"><a href="/docs/access-control/identity-iam/">Identity and IAM integration</a></li>
+<li class=""><a href="/docs/access-control/oes/">Oracle Entitlements Server (OES) and Speedle</a></li>
+<li class=""><a href="/docs/access-control/xacml/">XACML, SPDL and authorization architecture</a></li>
+</ul>
+  
+</li>
+<li class=""><a href="/docs/deployment-embeded/">Speedle embedded mode</a></li>
+
+
+
+<li class=""><span>Speedle Policy</span>
+<ul class="">
+<li class=""><a href="/docs/pms/policy-mgmt/">Policy Management</a></li>
+<li class=""><a href="/docs/pms/global-policy/">Global Policy</a></li>
+<li class=""><a href="/docs/pms/diagnosis/">Policy Diagnosis</a></li>
+<li class=""><a href="/docs/pms/discover/">Policy Discovery</a></li>
+</ul>
+  
+</li>
+<li class=""><a href="/docs/decisions/">Authorization Decisions</a></li>
+<li class=""><a href="/docs/idd/">Identity Domain</a></li>
+<li class=""><a href="/docs/assertor/">Token asserter</a></li>
+<li class=""><a href="/docs/deployment/">Deployment</a></li>
+<li class=""><a href="/docs/store/">Pluggable Storage</a></li>
+
+
+
+<li class=""><span>API</span>
+<ul class="">
+<li class=""><a href="/docs/api/decision_api/">Authorization Runtime/Decision API</a></li>
+<li class=""><a href="/docs/api/management_api/">Policy Management API</a></li>
+<li class=""><a href="/docs/api/asserter_api/">Token Assertion Plugin API</a></li>
+</ul>
+  
+</li>
+<li class=""><a href="/docs/security/">Security</a></li>
+<li class=""><a href="/docs/logging/">Logging Framework</a></li>
+<li class=""><a href="/docs/versions/">Versions</a></li>
+<li class=""><a href="/docs/custom-function/">Custom Function</a></li>
+</ul>
+  
+</li>
+
+
+
+
+</ul>
+</nav>
+
+
+<div class="sidebar-footer"></div>
+</div>
+</div>
+    </div>
+    <footer class="row"> <div class="col col-3">
+  Licensed under <a href="https://oss.oracle.com/licenses/upl/">UPL</a>
+</div>
+<div class="col col-6 center">
+  <div>Copyright &copy; 2019–2026. All rights reserved.</div>
+</div>
+<div class="col col-3">
+  <nav>
+    <a title="contact@speedle.io" aria-label="Email contact@speedle.io" href="mailto:contact@speedle.io">
+      <img src="/img/speedle/28. Mail.svg" alt="" />
+    </a>
+    <a title="Google Groups — speedle-users" aria-label="Google Groups" href="https://groups.google.com/forum/#!forum/speedle-users">
+      <img src="/img/speedle/Google-Groups.svg" alt="" />
+    </a>
+    <a title="speedle" href="https://github.com/oracle/speedle">
+      <img src="/img/speedle/18. Github.svg" />
+    </a>
+    <a title="Discord" href="https://discord.gg/uaY2xVsbbT">
+      <img src="/img/speedle/Discord.svg" />
+    </a>
+  </nav>
+</div>
+</footer>
+    <script src="/js/kube.js" type="text/javascript">
+    </script>
+    <script src="/js/kube.legenda.js" type="text/javascript">
+    </script>
+    <script src="/js/master.js?v=language-direct-20261026" type="text/javascript">
+    </script>
+</body>
+
+</html>

@@ -11,8 +11,7 @@
   {{- else }}
   <title>{{ .Title }} - {{ .Site.Title }}</title>
   {{- end }}
-  {{ with .Description }}
-  <meta name="description" content="{{ . }}"> {{ end }}
+  {{ partial "seo.html" . }}
   <!-- noindex meta -->
   {{ $default_noindex_kinds := slice "section" "taxonomy" "taxonomyTerm" }}
   {{ $noindex_kinds := .Site.Params.noindex_kinds | default $default_noindex_kinds }}
@@ -22,7 +21,6 @@
   {{ end }}
 
   {{ partial "meta/name-author" . }}
-  {{ template "_internal/opengraph.html" . }}
   {{ partial "meta/ogimage" . }}
   <!-- Site verification -->
   {{ if .IsHome }} {{ partial "site-verification" . }} {{ end }}

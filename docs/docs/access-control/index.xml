@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Authorization and access control on Speedle</title>
+    <link>https://speedle.io/docs/access-control/</link>
+    <description>Recent content in Authorization and access control on Speedle</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language>
+    
+	<atom:link href="https://speedle.io/docs/access-control/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>RBAC: role-based access control</title>
+      <link>https://speedle.io/docs/access-control/rbac/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://speedle.io/docs/access-control/rbac/</guid>
+      <description>How RBAC works in Speedle Role-based access control (RBAC) separates role assignments from permissions. A Speedle role policy assigns a role to a user, group or another role. An authorization policy grants a role permission to perform an action on a resource. The evaluator resolves the applicable roles when answering the request.
+This is useful when many people share a job function: changing a reader&amp;rsquo;s permissions updates one authorization policy rather than every user&amp;rsquo;s grants.</description>
+    </item>
+    
+    <item>
+      <title>ABAC: attribute-based access control</title>
+      <link>https://speedle.io/docs/access-control/abac/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://speedle.io/docs/access-control/abac/</guid>
+      <description>How ABAC works in Speedle Attribute-based access control (ABAC) uses properties of the subject, resource or request environment to determine access. In Speedle, SPDL conditions evaluate runtime attributes alongside the principal, action and resource. An application or trusted integration must collect those attributes and give them consistent names and types.
+For example, a role may establish that Alice is a reader, while a clearance attribute determines whether she may read a particular class of information.</description>
+    </item>
+    
+    <item>
+      <title>PBAC: policy-based access control</title>
+      <link>https://speedle.io/docs/access-control/pbac/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://speedle.io/docs/access-control/pbac/</guid>
+      <description>What PBAC means here Policy-based access control (PBAC) expresses authorization rules as managed policies instead of scattering permission checks across application code. Speedle+ uses the Security Policy Definition Language (SPDL), a Policy Management Service (PMS), and an Authorization Decision Service (ADS) or embedded evaluator.
+PBAC describes how rules are expressed and managed. RBAC describes role relationships; ABAC describes attribute conditions. A Speedle policy-based system can use both.
+From policy to enforcement  Define the service, principal names, resource identifiers and supported actions.</description>
+    </item>
+    
+    <item>
+      <title>Identity and IAM integration</title>
+      <link>https://speedle.io/docs/access-control/identity-iam/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://speedle.io/docs/access-control/identity-iam/</guid>
+      <description>Where Speedle fits in IAM Identity and access management (IAM) includes establishing identities, authenticating users, managing account lifecycles and controlling access. Speedle+ supplies an authorization engine within that architecture: it evaluates what an identified user, group or service may do. It is not a complete identity directory, login service or account-provisioning system.
+   Responsibility Typical owner     Accounts, credentials and login Identity provider and directory   Trusted principal names, groups and attributes Application integration or token asserter   Authorization and role policies Speedle Policy Management Service   Access decision Speedle Authorization Decision Service or embedded evaluator   Enforcing the decision on the actual resource Application or gateway    Supply a trusted identity A trusted application can send explicit principals in the decision request.</description>
+    </item>
+    
+    <item>
+      <title>Oracle Entitlements Server (OES) and Speedle</title>
+      <link>https://speedle.io/docs/access-control/oes/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://speedle.io/docs/access-control/oes/</guid>
+      <description>Why compare OES and Speedle? Oracle Entitlements Server (OES) and Speedle+ both address externalized, fine-grained authorization. Oracle&amp;rsquo;s OES architecture documentation describes centralized policy management and security modules that evaluate and enforce authorization policies. Speedle provides policy management and authorization decisions through its own services and APIs.
+The comparison is useful when reviewing an existing OES integration or evaluating an open-source authorization engine. Similar responsibilities do not make the products interchangeable.</description>
+    </item>
+    
+    <item>
+      <title>XACML, SPDL and authorization architecture</title>
+      <link>https://speedle.io/docs/access-control/xacml/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://speedle.io/docs/access-control/xacml/</guid>
+      <description>What is the relationship to XACML? The eXtensible Access Control Markup Language (XACML) is an OASIS access control standard defining policy and request/response concepts. Speedle+ uses its own Security Policy Definition Language (SPDL) and APIs. The OASIS XACML 3.0 specification is the reference for XACML behavior; this page explains architectural correspondences, not XACML conformance.
+Map the responsibilities    XACML concept Responsibility Speedle+ correspondence     PAP: Policy Administration Point Manage authorization policy Policy Management Service (PMS)   PDP: Policy Decision Point Evaluate authorization requests Authorization Decision Service (ADS) or embedded evaluator   PEP: Policy Enforcement Point Enforce a decision on an operation Application, gateway or integration calling Speedle   PIP: Policy Information Point Supply attributes used by a decision Trusted application data and configured identity/attribute integrations; no claim of a built-in XACML PIP interface    Speedle&amp;rsquo;s architecture page already describes the PAP/PDP correspondence.</description>
+    </item>
+    
+  </channel>
+</rss>

@@ -168,7 +168,7 @@ Message security / TLS TLS is a cryptographic protocol that provides communicati
       <pubDate>Thu, 17 Jan 2019 13:20:07 +0800</pubDate>
       
       <guid>https://speedle.io/docs/</guid>
-      <description></description>
+      <description>Start with authorization and access control for role-based access control (RBAC), attribute-based access control (ABAC), policy-based access control (PBAC), identity and IAM integration, and OES/XACML comparisons. Then use the quick start or test a policy in the Playground.</description>
     </item>
     
     <item>

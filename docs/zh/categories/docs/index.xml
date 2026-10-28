@@ -263,7 +263,7 @@ HTTP Request Body:</description>
       <pubDate>Thu, 17 Jan 2019 13:20:07 +0800</pubDate>
       
       <guid>https://speedle.io/zh/docs/</guid>
-      <description></description>
+      <description>从授权与访问控制开始，了解基于角色的访问控制（RBAC）、基于属性的访问控制（ABAC）、基于策略的访问控制（PBAC）、身份与 IAM 集成，以及 OES/XACML 比较。随后可以阅读快速入门，或在 Playground 中验证策略。</description>
     </item>
     
     <item>

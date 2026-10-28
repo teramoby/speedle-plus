@@ -118,6 +118,20 @@
   </url>
   
   <url>
+    <loc>https://speedle.io/zh/docs/access-control/rbac/</loc>
+    <xhtml:link
+                rel="alternate"
+                hreflang="en"
+                href="https://speedle.io/docs/access-control/rbac/"
+                />
+    <xhtml:link
+                rel="alternate"
+                hreflang="zh"
+                href="https://speedle.io/zh/docs/access-control/rbac/"
+                />
+  </url>
+  
+  <url>
     <loc>https://speedle.io/zh/quick-start/</loc>
     <xhtml:link
                 rel="alternate"
@@ -160,6 +174,20 @@
   </url>
   
   <url>
+    <loc>https://speedle.io/zh/docs/access-control/</loc>
+    <xhtml:link
+                rel="alternate"
+                hreflang="en"
+                href="https://speedle.io/docs/access-control/"
+                />
+    <xhtml:link
+                rel="alternate"
+                hreflang="zh"
+                href="https://speedle.io/zh/docs/access-control/"
+                />
+  </url>
+  
+  <url>
     <loc>https://speedle.io/zh/docs/deployment/</loc>
     <xhtml:link
                 rel="alternate"
@@ -189,6 +217,20 @@
   </url>
   
   <url>
+    <loc>https://speedle.io/zh/docs/access-control/abac/</loc>
+    <xhtml:link
+                rel="alternate"
+                hreflang="en"
+                href="https://speedle.io/docs/access-control/abac/"
+                />
+    <xhtml:link
+                rel="alternate"
+                hreflang="zh"
+                href="https://speedle.io/zh/docs/access-control/abac/"
+                />
+  </url>
+  
+  <url>
     <loc>https://speedle.io/zh/docs/pms/</loc>
     <lastmod>2019-01-18T21:19:44+08:00</lastmod>
     <xhtml:link
@@ -200,6 +242,20 @@
                 rel="alternate"
                 hreflang="zh"
                 href="https://speedle.io/zh/docs/pms/"
+                />
+  </url>
+  
+  <url>
+    <loc>https://speedle.io/zh/docs/access-control/pbac/</loc>
+    <xhtml:link
+                rel="alternate"
+                hreflang="en"
+                href="https://speedle.io/docs/access-control/pbac/"
+                />
+    <xhtml:link
+                rel="alternate"
+                hreflang="zh"
+                href="https://speedle.io/zh/docs/access-control/pbac/"
                 />
   </url>
   
@@ -233,6 +289,34 @@
   </url>
   
   <url>
+    <loc>https://speedle.io/zh/docs/access-control/identity-iam/</loc>
+    <xhtml:link
+                rel="alternate"
+                hreflang="en"
+                href="https://speedle.io/docs/access-control/identity-iam/"
+                />
+    <xhtml:link
+                rel="alternate"
+                hreflang="zh"
+                href="https://speedle.io/zh/docs/access-control/identity-iam/"
+                />
+  </url>
+  
+  <url>
+    <loc>https://speedle.io/zh/docs/access-control/oes/</loc>
+    <xhtml:link
+                rel="alternate"
+                hreflang="en"
+                href="https://speedle.io/docs/access-control/oes/"
+                />
+    <xhtml:link
+                rel="alternate"
+                hreflang="zh"
+                href="https://speedle.io/zh/docs/access-control/oes/"
+                />
+  </url>
+  
+  <url>
     <loc>https://speedle.io/zh/docs/assertor/</loc>
     <lastmod>2019-01-21T09:28:30+08:00</lastmod>
     <xhtml:link
@@ -244,6 +328,20 @@
                 rel="alternate"
                 hreflang="zh"
                 href="https://speedle.io/zh/docs/assertor/"
+                />
+  </url>
+  
+  <url>
+    <loc>https://speedle.io/zh/docs/access-control/xacml/</loc>
+    <xhtml:link
+                rel="alternate"
+                hreflang="en"
+                href="https://speedle.io/docs/access-control/xacml/"
+                />
+    <xhtml:link
+                rel="alternate"
+                hreflang="zh"
+                href="https://speedle.io/zh/docs/access-control/xacml/"
                 />
   </url>
   
