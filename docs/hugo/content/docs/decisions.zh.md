@@ -114,4 +114,14 @@ curl --fail --silent --show-error -H 'Content-Type: application/json' \
 
 ## 属性、诊断与令牌身份
 
-REST 请求属性是带类型的对象数组，例如 `{"name":"clearance","type":"numeric","value":4}`；嵌入式 Go 使用 `map[string]interface{}`。诊断响应的属性也是对象，不能与请求属性数组混淆。属性类型与条件见 [SPDL](/docs/spdl/)，过程明细见[授权诊断](/docs/pms/diagnosis/)，令牌校验见[令牌断言](/docs/assertor/)。
+REST 请求属性是带类型的对象数组。例如，其中一个属性对象为：
+
+```json
+{
+  "name": "clearance",
+  "type": "numeric",
+  "value": 4
+}
+```
+
+嵌入式 Go 使用 `map[string]interface{}`。诊断响应的属性也是对象，不能与请求属性数组混淆。属性类型与条件见 [SPDL](/docs/spdl/)，过程明细见[授权诊断](/docs/pms/diagnosis/)，令牌校验见[令牌断言](/docs/assertor/)。

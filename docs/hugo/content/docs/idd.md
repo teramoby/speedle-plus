@@ -23,7 +23,15 @@ grant user user1 from github read book
 grant user user1 from IDCS.tenant01 read book
 ```
 
-Use `from <identity-domain>` immediately after the principal name. In a PMS JSON policy, encode the same principal as `idd=github:user:user1`. In a decision request, use `{"type":"user","name":"user1","idd":"github"}`.
+Use `from <identity-domain>` immediately after the principal name. In a PMS JSON policy, encode the same principal as `idd=github:user:user1`. In a decision request, represent this principal as:
+
+```json
+{
+  "type": "user",
+  "name": "user1",
+  "idd": "github"
+}
+```
 
 A policy with `from github` matches that domain only. Omitting `from` matches that principal name across domains. Review this explicitly for multitenant applications; a domain string by itself does not validate a token. See [identity/IAM](/docs/access-control/identity-iam/) and [token assertion](/docs/assertor/).
 

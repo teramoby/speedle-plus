@@ -23,7 +23,15 @@ grant user user1 from github read book
 grant user user1 from IDCS.tenant01 read book
 ```
 
-在主体名后使用 `from <identity-domain>`。PMS JSON 策略中的等价编码为 `idd=github:user:user1`；决策请求则使用 `{"type":"user","name":"user1","idd":"github"}`。
+在主体名后使用 `from <identity-domain>`。PMS JSON 策略中的等价编码为 `idd=github:user:user1`；决策请求中的主体表示为：
+
+```json
+{
+  "type": "user",
+  "name": "user1",
+  "idd": "github"
+}
+```
 
 带 `from github` 的策略只匹配该域；省略 `from` 则按主体名跨域匹配。多租户应用应明确审查这一选择；域字符串不能用于验证令牌。更多内容见[身份与 IAM](/docs/access-control/identity-iam/)和[令牌断言](/docs/assertor/)。
 

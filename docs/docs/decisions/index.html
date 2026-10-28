@@ -211,7 +211,13 @@ headingSelector: 'h2'
 
 <h2 id="attributes-diagnosis-and-token-identity">Attributes, diagnosis and token identity</h2>
 
-<p>REST request attributes are typed objects in an array, such as <code>{&quot;name&quot;:&quot;clearance&quot;,&quot;type&quot;:&quot;numeric&quot;,&quot;value&quot;:4}</code>. Embedded Go attributes are <code>map[string]interface{}</code>; diagnostic response attributes are also an object, not that request array. See <a href="/docs/spdl/">SPDL</a> for types and conditions, <a href="/docs/pms/diagnosis/">diagnosis</a> for evaluation detail, and <a href="/docs/assertor/">token assertion</a> for configured token validation.</p>
+<p>REST request attributes are typed objects in an array. For example, an attribute item is:</p>
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">{
+  <span style="color:#000">&#34;name&#34;</span>: <span style="color:#c41a16">&#34;clearance&#34;</span>,
+  <span style="color:#000">&#34;type&#34;</span>: <span style="color:#c41a16">&#34;numeric&#34;</span>,
+  <span style="color:#000">&#34;value&#34;</span>: <span style="color:#1c01ce">4</span>
+}</code></pre></div>
+<p>Embedded Go attributes are <code>map[string]interface{}</code>; diagnostic response attributes are also an object, not that request array. See <a href="/docs/spdl/">SPDL</a> for types and conditions, <a href="/docs/pms/diagnosis/">diagnosis</a> for evaluation detail, and <a href="/docs/assertor/">token assertion</a> for configured token validation.</p>
 
   </div>
 </div>

@@ -211,7 +211,13 @@ headingSelector: 'h2'
 
 <h2 id="属性-诊断与令牌身份">属性、诊断与令牌身份</h2>
 
-<p>REST 请求属性是带类型的对象数组，例如 <code>{&quot;name&quot;:&quot;clearance&quot;,&quot;type&quot;:&quot;numeric&quot;,&quot;value&quot;:4}</code>；嵌入式 Go 使用 <code>map[string]interface{}</code>。诊断响应的属性也是对象，不能与请求属性数组混淆。属性类型与条件见 <a href="/zh/docs/spdl/">SPDL</a>，过程明细见<a href="/zh/docs/pms/diagnosis/">授权诊断</a>，令牌校验见<a href="/zh/docs/assertor/">令牌断言</a>。</p>
+<p>REST 请求属性是带类型的对象数组。例如，其中一个属性对象为：</p>
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">{
+  <span style="color:#000">&#34;name&#34;</span>: <span style="color:#c41a16">&#34;clearance&#34;</span>,
+  <span style="color:#000">&#34;type&#34;</span>: <span style="color:#c41a16">&#34;numeric&#34;</span>,
+  <span style="color:#000">&#34;value&#34;</span>: <span style="color:#1c01ce">4</span>
+}</code></pre></div>
+<p>嵌入式 Go 使用 <code>map[string]interface{}</code>。诊断响应的属性也是对象，不能与请求属性数组混淆。属性类型与条件见 <a href="/zh/docs/spdl/">SPDL</a>，过程明细见<a href="/zh/docs/pms/diagnosis/">授权诊断</a>，令牌校验见<a href="/zh/docs/assertor/">令牌断言</a>。</p>
 
   </div>
 </div>
