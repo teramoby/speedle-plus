@@ -5,7 +5,7 @@ library to WebAssembly. It is not a JavaScript reimplementation or production
 policy enforcement point.
 
 Upstream: https://github.com/teramoby/speedle-plus
-Revision: 7f61995d3344e94ed614494e013dacdcfa491b26
+Revision: 8fb1481d715e476242a991d391778b4334763afd
 Toolchain: Go 1.26.3 (GOOS=js, GOARCH=wasm)
 Documentation: https://speedle.io/docs/spdl/
 Combining algorithm: upstream deny-overrides.
@@ -35,6 +35,6 @@ EDITOR VALIDATION (stricter than the service's fail-closed result)
 - Invalid syntax/regex, missing attributes, condition runtime errors and
   nonboolean conditions are shown as errors, never as a normal false result.
 - Unknown request fields, spoofed runtime attributes and token fields rejected.
-- Limits: 256 KiB total input, 500 statements, 200 request principals, upstream
+- Limits: 256 KiB total input, 500 statements, 200 request principals,
   4096-byte conditions and 1024-byte resource regex, 5-second evaluation timeout.
 - Only complete JSON + successful upstream evaluations display true or false.

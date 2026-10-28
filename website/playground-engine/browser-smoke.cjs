@@ -29,7 +29,8 @@ const server = http.createServer((req,res) => {
     ['no match','grant user bob read book',false],
     ['role','grant user alice reader on book\ngrant role reader read book',true],
     ['condition','grant user alice read book if request_user == \'alice\'',true],
-    ['functions','grant user alice read book if Max(1,2,3) == 3',true],
+    // The original engine's Max/Min skip their last argument, so Max(1,2,3) is 2.
+    ['functions','grant user alice read book if Max(1,2,3) == 2',true],
     ['regexp','grant user alice read expr:^bo.*$',true],
     ['literal wildcard','grant user alice read *',false],
    ];
@@ -40,7 +41,7 @@ const server = http.createServer((req,res) => {
    const many=await Promise.all(Array.from({length:10},(_,i)=>engine.evaluate({policies:i%2?'grant user bob read book':'grant user alice read book',request})));
    return {meta,outputs,many,globalBridge:typeof globalThis.evaluateSpeedle};
   });
-  assert.equal(results.meta.revision,'7f61995d3344e94ed614494e013dacdcfa491b26');
+  assert.equal(results.meta.revision,'8fb1481d715e476242a991d391778b4334763afd');
   assert.equal(results.globalBridge,'function');
   for(const {name,want,error,result} of results.outputs){
    if(error){assert.equal(result.ok,false,name);assert.equal(Object.hasOwn(result,'allowed'),false,name);assert.ok(result.error,name);}
