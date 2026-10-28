@@ -26,7 +26,7 @@ GO_BIN=/path/to/go website/playground-engine/build.sh
 
 `go.mod` replaces the Speedle+ dependency with this repository's root. The
 underlying engine source (`api/`, `pkg/`, `3rdparty/`, `go.mod`, `go.sum`) is pinned
-to commit `8fb1481d715e476242a991d391778b4334763afd`. The script extracts those
+to commit `dd628a6df3f2ce46126896c1322cb6ef21f75449`. The script extracts those
 paths from the pinned Git commit into a temporary build tree, then copies the
 current adapter there. Later server or dependency changes cannot silently change
 the published engine or prevent rebuilding it. Full Git history is required (`git fetch --unshallow` for a shallow
