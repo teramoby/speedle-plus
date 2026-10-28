@@ -1,6 +1,5 @@
 +++
 title = "Usecases"
-keywords = ["Speedle+", "authorization engine", "fine grained access control", "fine-grained access control", "FGA", "policy engine", "authorization policy engine", "externalized authorization", "centralized authorization", "authorization policy management", "API authorization", "microservices authorization", "cloud-native authorization"]
 description = "Who, What & Where?"
 weight = 1
 draft = false

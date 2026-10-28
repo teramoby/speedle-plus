@@ -2,8 +2,8 @@
     <img src="/docs/images/sp_logo.png" height="50%" width="50%" class="center"/>
 </p>
 <p align="center">
-    <a href="https://discord.gg/uaY2xVsbbT">
-        <img src="https://img.shields.io/badge/Discord-Speedle-5865F2?logo=discord&amp;logoColor=white">
+    <a href="https://join.slack.com/t/speedleproject/shared_invite/enQtNTUzODM3NDY0ODE2LTg0ODc0NzQ1MjVmM2NiODVmMThkMmVjNmMyODA0ZWJjZjQ3NDc2MjdlMzliN2U4MDRkZjhlYzYzMDEyZTgxMGQ">
+        <img src="https://img.shields.io/badge/slack-speedle-red.svg">
     </a>
     <a href="https://github.com/teramoby/speedle-plus/tags">
         <img src="https://img.shields.io/github/v/tag/teramoby/speedle-plus">
@@ -1019,7 +1019,7 @@ make test
 
 ### 获取帮助
 
-- Discord：加入 [Speedle 社区](https://discord.gg/uaY2xVsbbT)
+- Slack：加入 [#speedle-users](https://join.slack.com/t/speedleproject/shared_invite/zt-72fgiyuo-QKJAhHAqVbn17KRFbd7aZw)
 - 邮件列表：speedle-users@googlegroups.com
 - QQ 群：643201591
 

@@ -11,7 +11,8 @@
   {{- else }}
   <title>{{ .Title }} - {{ .Site.Title }}</title>
   {{- end }}
-  {{ partial "seo.html" . }}
+  {{ with .Description }}
+  <meta name="description" content="{{ . }}"> {{ end }}
   <!-- noindex meta -->
   {{ $default_noindex_kinds := slice "section" "taxonomy" "taxonomyTerm" }}
   {{ $noindex_kinds := .Site.Params.noindex_kinds | default $default_noindex_kinds }}
@@ -21,6 +22,7 @@
   {{ end }}
 
   {{ partial "meta/name-author" . }}
+  {{ template "_internal/opengraph.html" . }}
   {{ partial "meta/ogimage" . }}
   <!-- Site verification -->
   {{ if .IsHome }} {{ partial "site-verification" . }} {{ end }}
@@ -62,8 +64,6 @@
   <script type="text/javascript" src="{{ "/js/tocbot.min.js" | relURL }}"></script>
 
   <link href="{{ "/css/brand.css?v=1" | relURL }}" rel="stylesheet" type="text/css">
-  <link href="{{ "/css/navigation.css?v=header-20261027" | relURL }}" rel="stylesheet">
-  <script src="{{ "/js/navigation.js?v=header-20261027" | relURL }}" defer></script>
 </head>
 
 {{ if and (isset .Params "landingpage") .Params.landingpage }}
@@ -74,7 +74,7 @@
   <body class="page-kube">
     {{ end }}
 
-    <header class="site-header">{{ block "header" . }}{{ end }}</header>
+    <header>{{ block "header" . }}{{ end }}</header>
     <main>{{ block "main" . }}{{ end }}</main>
     <footer class="row">{{ block "footer" . }}{{ end }}</footer>
 
@@ -82,7 +82,7 @@
     </script>
     <script src="{{ "/js/kube.legenda.js" | relURL }}" type="text/javascript">
     </script>
-    <script src="{{ "/js/master.js?v=language-20261026" | relURL }}" type="text/javascript">
+    <script src="{{ "/js/master.js" | relURL }}" type="text/javascript">
     </script>
   </body>
 

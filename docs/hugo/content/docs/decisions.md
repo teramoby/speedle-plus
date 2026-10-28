@@ -1,6 +1,5 @@
 +++
 title = "Authorization Decisions"
-keywords = ["Speedle+", "authorization engine", "fine grained access control", "fine-grained access control", "FGA", "policy engine", "authorization policy engine", "externalized authorization", "PDP", "policy decision point", "authorization decision service", "API authorization"]
 description = "Get authorization decisions for your service interactions"
 weight = 30
 draft = false

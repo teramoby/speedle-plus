@@ -6,8 +6,6 @@
   <meta name="theme-color" content="#25134e">
   <meta name="description" content="Try real Speedle+ authorization in your browser. Write SPDL policies, fill out a request and evaluate RBAC and ABAC decisions locally with WebAssembly.">
   <link rel="canonical" href="https://speedle.io/playground/">
-  <link rel="alternate" hreflang="en" href="https://speedle.io/playground/">
-  <link rel="alternate" hreflang="zh-CN" href="https://speedle.io/zh/playground/">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Speedle+">
   <meta property="og:title" content="Speedle+ Playground">
@@ -16,7 +14,7 @@
   <title>Playground | Speedle+ Authorization Engine</title>
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23814ce4'/%3E%3Cpath d='M32 9 48 18v28L32 55 16 46V18zM32 17l-9 5v20l9 5 9-5V22z' fill='none' stroke='white' stroke-width='3'/%3E%3Ccircle cx='32' cy='32' r='5' fill='%2301e7cb'/%3E%3C/svg%3E">
   <link rel="stylesheet" href="/css/site.css">
-  <link rel="stylesheet" href="/css/navigation.css?v=header-20261027">
+  <link rel="stylesheet" href="/css/navigation.css">
   <link rel="stylesheet" href="./playground.css">
 </head>
 <body>
@@ -39,7 +37,6 @@
       <nav class="nav-links" id="nav-links" aria-label="Main navigation">
         <a href="/#about">About</a><a href="/#features">Features</a><a href="/#integrations">Integrations</a>
         <a href="/quick-start/">Getting started</a><a href="/docs/">Docs</a><a href="/playground/" aria-current="page">Playground</a>
-        <a href="/zh/playground/" lang="zh-CN" hreflang="zh-CN" aria-label="切换到中文">中文</a>
         <a class="nav-github" href="https://github.com/teramoby/speedle-plus">GitHub</a>
       </nav>
     </div>
@@ -85,7 +82,7 @@
       <div class="result-card idle" id="result-card" role="status" aria-live="polite" aria-atomic="true"><div class="result-symbol" id="result-symbol"><svg class="icon"><use href="#i-terminal"/></svg></div><div class="result-body"><div class="result-label" id="result-label">Ready to test your policies.</div><p id="result-description">Select Evaluate to check whether this request is allowed.</p></div><div class="result-type" id="result-type">BOOLEAN OUTPUT</div></div>
       <details class="result-details" id="result-details" hidden><summary>Inspect engine response <span class="details-hint">JSON</span></summary><pre id="result-json"></pre></details>
     </section>
-    <details class="quick-reference"><summary><span><svg class="icon"><use href="#i-book"/></svg>New to SPDL?<span class="reference-teaser">A one-minute reference</span></span><span class="expand-indicator">+</span></summary><div class="reference-grid"><div><h3>Write a policy</h3><code>grant user alice read book</code><p>Use effect, principal type, principal, action and resource. Each line is a statement; <code>deny</code> explicitly denies access.</p></div><div><h3>Add a condition</h3><code>grant user alice read book if clearance &gt;= 3</code><p>Add an attribute and select its type. Use multiple values for an array. Load the Conditions example to try it.</p></div><div><h3>Read the result</h3><p><strong class="allow-text">true</strong> — the request is allowed.<br><strong class="deny-text">false</strong> — access is denied or no grant applies.<br>Input and execution errors are shown separately, never as false.</p><a href="/docs/spdl/" target="_blank" rel="noopener noreferrer">Full SPDL documentation ↗</a></div></div></details>
+    <details class="quick-reference"><summary><span><svg class="icon"><use href="#i-book"/></svg>New to SPDL?<span class="reference-teaser">A one-minute reference</span></span><span class="expand-indicator">+</span></summary><div class="reference-grid"><div><h3>Write a policy</h3><code>grant user alice read book</code><p>Use effect, principal type, principal, action and resource. Each line is a statement; <code>deny</code> explicitly denies access.</p></div><div><h3>Add a condition</h3><code>grant user alice read book if clearance &gt;= 3</code><p>Add an attribute and select its type. Use multiple values for an array. Load the Conditions example to try it.</p></div><div><h3>Read the result</h3><p><strong class="allow-text">true</strong> — the request is allowed.<br><strong class="deny-text">false</strong> — access is denied or no grant applies.<br>Input and execution errors are shown separately, never as false.</p><a href="https://speedle.io/docs/spdl/" target="_blank" rel="noopener noreferrer">Full SPDL documentation ↗</a></div></div></details>
     <p class="sandbox-note"><strong>Browser sandbox</strong> One service · up to 500 statements · 256 KiB total input · 5-second evaluation deadline.<span>External custom functions and token assertion are not supported. Enter test identities under Subject.</span></p>
 
     <p class="engine-credit">Powered by Speedle+ · Go + WebAssembly · <a href="./ENGINE-NOTICE.txt">Engine &amp; license notices</a> · <a href="https://github.com/teramoby/speedle-plus/tree/master/website/playground-engine">Source &amp; build instructions</a></p>
@@ -93,18 +90,28 @@
   </main>
   <footer>
     <div class="wrap footer-inner">
-      <div class="footer-brand"><img src="/img/speedle/Speedle_logo_w.svg" alt="Speedle"><p>Licensed under the Universal Permissive License v1.0.</p><p>Copyright &copy; 2019–2026. All rights reserved.</p></div>
+      <div class="footer-brand"><img src="/img/speedle/Speedle_logo_w.svg" alt="Speedle"><p>Licensed under the Universal Permissive License v1.0.</p></div>
       <nav class="social" aria-label="Community links">
-        <a href="mailto:contact@speedle.io" aria-label="Email contact@speedle.io" title="contact@speedle.io"><img src="/img/speedle/28.%20Mail.svg" alt=""></a>
-        <a href="https://groups.google.com/forum/#!forum/speedle-users" aria-label="Google Groups" title="Google Groups — speedle-users"><img src="/img/speedle/Google-Groups.svg" alt=""></a>
+        <a href="https://groups.google.com/forum/#!forum/speedle-users" aria-label="Mailing list"><img src="/img/speedle/28.%20Mail.svg" alt=""></a>
         <a href="https://github.com/teramoby/speedle-plus" aria-label="GitHub"><img src="/img/speedle/18.%20Github.svg" alt=""></a>
-        <a href="https://discord.gg/uaY2xVsbbT" aria-label="Discord"><img src="/img/speedle/Discord.svg" alt=""></a>
+        <a href="https://join.slack.com/t/speedleproject/shared_invite/enQtNTUzODM3NDY0ODE2LTg0ODc0NzQ1MjVmM2NiODVmMThkMmVjNmMyODA0ZWJjZjQ3NDc2MjdlMzliN2U4MDRkZjhlYzYzMDEyZTgxMGQ" aria-label="Slack"><img src="/img/speedle/29.%20Slack.svg" alt=""></a>
       </nav>
     </div>
   </footer>
   <div id="toast" class="toast" role="status" hidden></div>
   <noscript><div class="noscript">This playground requires JavaScript and WebAssembly.</div></noscript>
-  <script src="/js/navigation.js?v=header-20261027" defer></script>
-  <script type="module" src="./app.js?v=language-20261026"></script>
+  <script>
+    const button = document.querySelector('.menu');
+    const nav = document.querySelector('.nav-links');
+    button.addEventListener('click', () => {
+      const open = nav.classList.toggle('open');
+      button.setAttribute('aria-expanded', String(open));
+      button.textContent = open ? '×' : '☰';
+    });
+    nav.addEventListener('click', (event) => {
+      if (event.target.matches('a') && nav.classList.contains('open')) button.click();
+    });
+  </script>
+  <script type="module" src="./app.js"></script>
 </body>
 </html>

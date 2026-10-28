@@ -32,7 +32,11 @@
 
 {{if ne $numberOfPages 0}}
 <ul class="{{ if .IsAncestor $currentNode }}sub-menu{{ end }}">
-    {{- $pages := .Pages | union .Sections -}}
+    {{- .Scratch.Set "pages" .Pages -}}
+    {{- if .Sections -}}
+      {{- .Scratch.Set "pages" (.Pages | union .Sections) -}}
+    {{- end -}}
+    {{- $pages := (.Scratch.Get "pages") -}}
     {{- if eq .Site.Params.ordersectionsby "title" -}}
       {{- range $pages.ByTitle -}}
         {{- if and .Params.hidden (not $.showhidden) -}}

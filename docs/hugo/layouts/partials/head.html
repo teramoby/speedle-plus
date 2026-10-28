@@ -6,7 +6,11 @@
 {{- else }}
 <title>{{ .Title }} - {{ .Site.Title }}</title>
 {{- end }}
-{{ partial "seo.html" . }}
+{{- if ne .Description "" }}
+<meta name="description" content="{{ .Description }}">
+{{- else if isset .Site.Params "description" }}
+<meta name="description" content="{{ .Site.Params.description }}">
+{{- end }}
 {{ .Hugo.Generator }}
 <link href="{{ .Site.BaseURL }}index.xml" rel="alternate" type="application/rss+xml">
 <link rel="canonical" href="{{ .Permalink }}">
