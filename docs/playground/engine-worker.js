@@ -1,4 +1,4 @@
-/* Speedle+ 8fb1481d715e476242a991d391778b4334763afd, compiled unmodified to Go WASM. */
+/* Speedle+ dd628a6df3f2ce46126896c1322cb6ef21f75449, compiled unmodified to Go WASM. */
 import './wasm_exec.js';
 let ready;
 function initialize() {
@@ -11,7 +11,7 @@ function initialize() {
     const { instance } = await WebAssembly.instantiate(await response.arrayBuffer(), go.importObject);
     go.run(instance).catch(error => self.postMessage({ type: 'fatal', message: error.message || String(error) }));
     if (typeof globalThis.__speedleEvaluateJSON !== 'function') throw new Error('Speedle engine did not initialize.');
-    return { engine: 'Speedle+', revision: '8fb1481d715e476242a991d391778b4334763afd', runtime: 'Go 1.26.3 WebAssembly' };
+    return { engine: 'Speedle+', revision: 'dd628a6df3f2ce46126896c1322cb6ef21f75449', runtime: 'Go 1.26.3 WebAssembly' };
   })();
   return ready;
 }

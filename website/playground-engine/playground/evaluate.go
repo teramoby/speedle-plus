@@ -22,7 +22,7 @@ import (
 	"github.com/teramoby/speedle-plus/pkg/pdl"
 )
 
-const Revision = "8fb1481d715e476242a991d391778b4334763afd"
+const Revision = "dd628a6df3f2ce46126896c1322cb6ef21f75449"
 const MaxInputBytes = 256 * 1024
 const MaxStatements = 500
 
