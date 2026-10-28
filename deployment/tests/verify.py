@@ -136,13 +136,25 @@ class Acceptance:
             run(base+(trust if tls else ['--insecure']),self.env)
             if tls:
                 for credentials in [['--insecure'],trust[:2]]:
-                    assert run(base+credentials,self.env,ok=False).returncode!=0, 'Unauthenticated RPC succeeded'
+                    isolated=list(base)
+                    target=self.forward('speedle-prod-'+service,50001 if service=='pms' else 50002)
+                    isolated[isolated.index('--endpoint')+1]=f'127.0.0.1:{target}'
+                    run(isolated+trust,self.env)
+                    assert run(isolated+credentials,self.env,ok=False).returncode!=0, 'Unauthenticated RPC succeeded'
 
     def check_no_cert(self):
         context=ssl.create_default_context(cafile=self.phase_dir/'tls/ca.crt')
         no_cert=urllib.request.build_opener(urllib.request.ProxyHandler({}),urllib.request.HTTPSHandler(context=context))
-        for target,path in [('PMS_PORT','/policy-mgmt/v1/service'),('ADS_PORT','/authz-check/v1/is-allowed')]:
-            try:no_cert.open('https://127.0.0.1:'+self.phase[target]+path,timeout=3)
+        for service,remote,path in [('pms',6733,'/policy-mgmt/v1/service'),('ads',6734,'/authz-check/v1/is-allowed')]:
+            target=self.forward('speedle-prod-'+service,remote)
+            url=f'https://127.0.0.1:{target}'+path
+            # Establish that this exact transport accepts a trusted client.
+            try:self.client(True).open(url,timeout=3).close()
+            except urllib.error.HTTPError as error:
+                if error.code not in (404,405):raise
+            try:no_cert.open(url,timeout=3)
+            except urllib.error.HTTPError as error:
+                raise AssertionError('Business API completed HTTP without a client certificate') from error
             except (urllib.error.URLError,ssl.SSLError,ConnectionError):pass
             else:raise AssertionError('Business API accepted a missing client certificate')
 
