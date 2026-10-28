@@ -4,13 +4,16 @@
 package flags
 
 import (
+	"context"
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"os"
+	"runtime/debug"
 	"strings"
+	"time"
 
 	"github.com/teramoby/speedle-plus/pkg/assertion"
 	"github.com/teramoby/speedle-plus/pkg/cfg"
@@ -20,11 +23,14 @@ import (
 	"strconv"
 
 	"github.com/natefinch/lumberjack"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
 
 	"github.com/gorilla/handlers"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/status"
 )
 
 // Parameters is the parameters for Speedle
@@ -84,7 +90,7 @@ const (
 	// If command line argument --pms-endpint and no pms-endpint defined in configure file, use this default value.
 	DefaultPolicyManagmentConnectEndpoint = "http://127.0.0.1:6733/policy-mgmt/v1/"
 	DefaultAuthzCheckEndPoint             = "0.0.0.0:6734"
-	DefaultInsecure                       = true
+	DefaultInsecure                       = false
 	DefaultEnableAuthz                    = false
 
 	DefaultStoreType = cfg.StorageTypeFile //file
@@ -122,9 +128,21 @@ func (k *Parameters) NewHTTPServer(handler http.Handler) (*http.Server, error) {
 			Addr:    k.Endpoint.Value,
 			Handler: cosHandler,
 		}
+		limitServer(&server)
 		return &server, nil
 	}
 	return k.newTLSServer(cosHandler)
+}
+
+// limitServer bounds how long a client may take to send a request or read a
+// response, and how long an idle connection stays open, so slow or stalled
+// clients cannot hold connections indefinitely.
+func limitServer(server *http.Server) {
+	server.ReadHeaderTimeout = 10 * time.Second
+	server.ReadTimeout = 30 * time.Second
+	server.WriteTimeout = 60 * time.Second
+	server.IdleTimeout = 120 * time.Second
+	server.MaxHeaderBytes = http.DefaultMaxHeaderBytes
 }
 
 func (k *Parameters) newTLSServer(handler http.Handler) (*http.Server, error) {
@@ -137,15 +155,22 @@ func (k *Parameters) newTLSServer(handler http.Handler) (*http.Server, error) {
 		Handler:   handler,
 		TLSConfig: tlsConfig,
 	}
+	limitServer(&server)
 	return &server, nil
 }
 
-// GRPCServerOptions returns the gRPC server's transport options: the same
-// TLS settings as the REST server, or plaintext when insecure is true.
-func (k *Parameters) GRPCServerOptions() ([]grpc.ServerOption, error) {
+// IsInsecure reports whether the servers run without TLS.
+func (k *Parameters) IsInsecure() bool {
 	insecure, _ := strconv.ParseBool(k.Insecure.Value)
-	if insecure {
-		return nil, nil
+	return insecure
+}
+
+// GRPCServerOptions returns the gRPC server's options: panic recovery, and the
+// same TLS settings as the REST server unless insecure is true.
+func (k *Parameters) GRPCServerOptions() ([]grpc.ServerOption, error) {
+	options := []grpc.ServerOption{grpc.UnaryInterceptor(recoverUnary)}
+	if k.IsInsecure() {
+		return options, nil
 	}
 	tlsConfig, err := k.serverTLSConfig()
 	if err != nil {
@@ -156,7 +181,19 @@ func (k *Parameters) GRPCServerOptions() ([]grpc.ServerOption, error) {
 		return nil, errors.Wrapf(err, errors.ConfigError, "unable to load server certificate %s and key %s", k.CertPath.Value, k.KeyPath.Value)
 	}
 	tlsConfig.Certificates = []tls.Certificate{cert}
-	return []grpc.ServerOption{grpc.Creds(credentials.NewTLS(tlsConfig))}, nil
+	return append(options, grpc.Creds(credentials.NewTLS(tlsConfig))), nil
+}
+
+// recoverUnary turns a panic in a gRPC handler into an Internal error for that
+// call. net/http already does this for REST; without it a gRPC panic exits.
+func recoverUnary(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Errorf("panic in gRPC method %s: %v\n%s", info.FullMethod, r, debug.Stack())
+			err = status.Error(codes.Internal, "internal error")
+		}
+	}()
+	return handler(ctx, req)
 }
 
 func (k *Parameters) serverTLSConfig() (*tls.Config, error) {

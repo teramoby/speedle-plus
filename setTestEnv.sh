@@ -121,16 +121,18 @@ function startPMS() {
     ensureTestDir $1
     shift
 
-    # The gRPC tests connect to localhost:50001.
-    pms --grpc-endpoint 127.0.0.1:50001 $@ &
+    # Plain HTTP unless a test passes --insecure=false; the gRPC tests
+    # connect to localhost:50001.
+    pms --insecure=true --grpc-endpoint 127.0.0.1:50001 $@ &
     serverPID=$!
     add_exit_trap "kill ${serverPID}"
     waitService PMS 6733 || exit 1
 }
 
 function startADS() {
-    # The gRPC tests connect to localhost:50002.
-    ads --grpc-endpoint 127.0.0.1:50002 $@ &
+    # Plain HTTP unless a test passes --insecure=false; the gRPC tests
+    # connect to localhost:50002.
+    ads --insecure=true --grpc-endpoint 127.0.0.1:50002 $@ &
     serverPID=$!
     add_exit_trap "kill ${serverPID}"
     waitService ADS 6734 || exit 1

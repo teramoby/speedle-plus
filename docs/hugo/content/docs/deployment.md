@@ -420,6 +420,8 @@ spec:
             [
               '--endpoint',
               '0.0.0.0:6733',
+              '--insecure',
+              'true',
               '--store-type',
               'etcd',
               '--etcdstore-endpoint',
@@ -456,6 +458,8 @@ spec:
             [
               '--endpoint',
               '0.0.0.0:6734',
+              '--insecure',
+              'true',
               '--store-type',
               'etcd',
               '--etcdstore-endpoint',

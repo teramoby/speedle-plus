@@ -135,7 +135,7 @@ func newGRPCServer(params *flags.Parameters, ps pms.PolicyStoreManager) (*grpc.S
 	if err != nil {
 		return nil, err
 	}
-	if options == nil {
+	if params.IsInsecure() {
 		log.Warningf("The gRPC server on %s is plaintext because insecure is true.", params.GRPCEndpoint.Value)
 	}
 	server := grpc.NewServer(options...)
