@@ -12,56 +12,64 @@ import (
 
 // Add all built-in functions in this file
 
+// numbers returns the arguments as float64, or false when any is not numeric
+// (including nil).
+func numbers(args []interface{}) ([]float64, bool) {
+	values := make([]float64, len(args))
+	for i, arg := range args {
+		value, ok := arg.(float64)
+		if !ok {
+			return nil, false
+		}
+		values[i] = value
+	}
+	return values, true
+}
+
 func Sqrt(args ...interface{}) (interface{}, error) {
 	err := errors.New(errors.BuiltInFuncError, "Usage: Sqrt(x)")
-	if len(args) != 1 {
+	values, ok := numbers(args)
+	if !ok || len(values) != 1 {
 		return nil, err
 	}
-	if reflect.TypeOf(args[0]).Kind() != reflect.Float64 {
-		return nil, err
-	}
-	x := args[0].(float64)
-	return math.Sqrt(x), nil
+	return math.Sqrt(values[0]), nil
 }
 
 func Max(args ...interface{}) (interface{}, error) {
 	err := errors.New(errors.BuiltInFuncError, "Usage: Max(x1, x2, ...), xi must be numeric")
-	if len(args) < 1 {
+	values, ok := numbers(args)
+	if !ok || len(values) < 1 {
 		return nil, err
 	}
-	var max = args[0].(float64)
-	for i := range args[1:] {
-		if reflect.TypeOf(args[i]).Kind() != reflect.Float64 {
-			return nil, err
-		}
-		max = math.Max(max, args[i].(float64))
+	max := values[0]
+	for _, value := range values[1:] {
+		max = math.Max(max, value)
 	}
 	return max, nil
 }
 
 func Min(args ...interface{}) (interface{}, error) {
 	err := errors.New(errors.BuiltInFuncError, "Usage: Min(x1, x2, ...), xi must be numeric")
-	if len(args) < 1 {
+	values, ok := numbers(args)
+	if !ok || len(values) < 1 {
 		return nil, err
 	}
-	var min = args[0].(float64)
-	for i := range args[1:] {
-		if reflect.TypeOf(args[i]).Kind() != reflect.Float64 {
-			return nil, err
-		}
-		min = math.Min(min, args[i].(float64))
+	min := values[0]
+	for _, value := range values[1:] {
+		min = math.Min(min, value)
 	}
 	return min, nil
 }
 
 func Sum(args ...interface{}) (interface{}, error) {
 	err := errors.New(errors.BuiltInFuncError, "Usage: Sum(x1, x2, ...), xi must be numeric")
+	values, ok := numbers(args)
+	if !ok {
+		return nil, err
+	}
 	var sum float64 = 0
-	for i := range args {
-		if reflect.TypeOf(args[i]).Kind() != reflect.Float64 {
-			return nil, err
-		}
-		sum += args[i].(float64)
+	for _, value := range values {
+		sum += value
 	}
 	return sum, nil
 }
@@ -70,7 +78,7 @@ func Avg(args ...interface{}) (interface{}, error) {
 	if len(args) == 0 {
 		return float64(0), nil
 	}
-	sum, err := Sum(args)
+	sum, err := Sum(args...)
 	if err != nil {
 		return nil, err
 	}
@@ -90,7 +98,7 @@ func IsSubSet(args ...interface{}) (interface{}, error) {
 		copy(buf, args)
 		s1 = buf
 	}
-	if reflect.TypeOf(s1).Kind() != reflect.Slice || reflect.TypeOf(s2).Kind() != reflect.Slice {
+	if s2 == nil || reflect.TypeOf(s1).Kind() != reflect.Slice || reflect.TypeOf(s2).Kind() != reflect.Slice {
 		return nil, err
 	}
 	v1 := reflect.ValueOf(s1)
