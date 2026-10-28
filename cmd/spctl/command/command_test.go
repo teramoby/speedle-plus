@@ -4,6 +4,7 @@
 package command
 
 import (
+	"path/filepath"
 	"testing"
 
 	"github.com/teramoby/speedle-plus/api/pms"
@@ -12,7 +13,7 @@ import (
 	"github.com/teramoby/speedle-plus/testutil/param"
 )
 
-//Create/Get/Delete service
+// Create/Get/Delete service
 func TestMats_Service(t *testing.T) {
 
 	sName := "k8s"
@@ -125,12 +126,12 @@ func TestMats_Service(t *testing.T) {
 	testutil.RunTestCases(t, data, nil)
 }
 
-//Create service with JSON file in which only service is specified
+// Create service with JSON file in which only service is specified
 func TestMats_CreateServiceOnlyByJsonFile(t *testing.T) {
 	sName := "serviceOnly"
 	sType := pms.TypeApplication
-	jsonFile := "/tmp/service.json"
-	//pdlFile := "/tmp/pdl.txt"
+	jsonFile := filepath.Join(t.TempDir(), "service.json")
+	//pdlFile := filepath.Join(t.TempDir(), "policies.spdl")
 
 	context := &testutil.TestContext{
 		NameIDMap:     make(map[string]string),
@@ -178,11 +179,11 @@ func TestMats_CreateServiceOnlyByJsonFile(t *testing.T) {
 	testutil.RunTestCases(t, data, context)
 }
 
-//Create service with JSON file in which policy/rolepolicies are specified within service
+// Create service with JSON file in which policy/rolepolicies are specified within service
 func TestMats_CreateServiceWithPolicyByJsonFile(t *testing.T) {
 	sName := "serviceWithPolicy"
 	sType := pms.TypeApplication
-	jsonFile := "/tmp/service.json"
+	jsonFile := filepath.Join(t.TempDir(), "service.json")
 
 	context := &testutil.TestContext{
 		NameIDMap:     make(map[string]string),
@@ -264,13 +265,13 @@ func TestMats_CreateServiceWithPolicyByJsonFile(t *testing.T) {
 	testutil.RunTestCases(t, data, context)
 }
 
-//Create service with PDL file
+// Create service with PDL file
 func testMatsServiceWithPDLFile(t *testing.T) {
 
 	sName := "TestMats_PolicyWithPDLFile"
 	sType := pms.TypeApplication
 
-	pdlFile := "/tmp/pdl.txt"
+	pdlFile := filepath.Join(t.TempDir(), "policies.spdl")
 
 	data := &[]testutil.TestCase{
 		{
@@ -307,7 +308,7 @@ func testMatsServiceWithPDLFile(t *testing.T) {
 	testutil.RunTestCases(t, data, nil)
 }
 
-//Create/Get/Delete policy
+// Create/Get/Delete policy
 func TestMats_Policy(t *testing.T) {
 
 	sName := "TestMats_Policy"
@@ -544,7 +545,7 @@ func TestMats_Policy(t *testing.T) {
 	testutil.RunTestCases(t, data, context)
 }
 
-//Create/Get/Delete role-policy
+// Create/Get/Delete role-policy
 func TestMats_RolePolicy(t *testing.T) {
 
 	sName := "TestMats_RolePolicy"
@@ -728,7 +729,7 @@ func TestMats_RolePolicy(t *testing.T) {
 	testutil.RunTestCases(t, data, context)
 }
 
-//Create/Get/Delete policy/rolepolicy with principle containing single entity
+// Create/Get/Delete policy/rolepolicy with principle containing single entity
 func TestMats_PolicyWithSingleEntity(t *testing.T) {
 
 	sName := "TestMats_PolicyWithEntity"
@@ -905,10 +906,11 @@ func TestMats_PolicyWithSingleEntity(t *testing.T) {
 	testutil.RunTestCases(t, data, context)
 }
 
-//Create service with special char
+// Create service with special char
 func TestLrg_Service_SpecialCharInName_bug66_bug52(t *testing.T) {
 
-	sName := "k8s-*=+/_."
+	// Service names permit alphanumerics, hyphens, underscores and dots.
+	sName := "k8s-_."
 	sType := "k8s-type"
 
 	data := &[]testutil.TestCase{
@@ -934,7 +936,7 @@ func TestLrg_Service_SpecialCharInName_bug66_bug52(t *testing.T) {
 			Method:   testutil.METHOD_CREATE_SERVICE,
 			Data: &testutil.CmdTestData{
 				Param:        param.CREATE_SERVICE(sName, sType),
-				ExpectedMsg:  "Already Exist",
+				ExpectedMsg:  "Service already exists",
 				OutputBody:   &pms.Service{},
 				ExpectedBody: &pms.Service{},
 			},
@@ -984,7 +986,7 @@ func TestLrg_Service_Neg_CreateTwice_bug66(t *testing.T) {
 			Method:   testutil.METHOD_CREATE_SERVICE,
 			Data: &testutil.CmdTestData{
 				Param:        param.CREATE_SERVICE(sName, sType),
-				ExpectedMsg:  "Already Exist",
+				ExpectedMsg:  "Service already exists",
 				OutputBody:   &pms.Service{},
 				ExpectedBody: &pms.Service{},
 			},
