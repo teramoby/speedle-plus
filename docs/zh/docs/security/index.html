@@ -11,19 +11,19 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>安全 - Speedle</title>
-<meta name="description" content="Secure your Speedle instances">
+<meta name="description" content="配置 REST/gRPC TLS、双向 TLS 和调用方访问边界">
 <link rel="alternate" hreflang="en" href="https://speedle.io/docs/security/">
 <link rel="alternate" hreflang="x-default" href="https://speedle.io/docs/security/"><link rel="alternate" hreflang="zh-CN" href="https://speedle.io/zh/docs/security/">
 
 <meta property="og:type" content="article">
 <meta property="og:site_name" content="Speedle Authorization Engine">
 <meta property="og:title" content="安全">
-<meta property="og:description" content="Secure your Speedle instances">
+<meta property="og:description" content="配置 REST/gRPC TLS、双向 TLS 和调用方访问边界">
 <meta property="og:url" content="https://speedle.io/zh/docs/security/">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="安全">
-<meta name="twitter:description" content="Secure your Speedle instances">
-<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://speedle.io/zh/docs/security/#page","@type":"TechArticle","about":{"@id":"https://speedle.io/#software"},"description":"Secure your Speedle instances","inLanguage":"zh-CN","isPartOf":{"@id":"https://speedle.io/#website"},"keywords":["Speedle+"],"name":"安全","url":"https://speedle.io/zh/docs/security/"}</script>
+<meta name="twitter:description" content="配置 REST/gRPC TLS、双向 TLS 和调用方访问边界">
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://speedle.io/zh/docs/security/#page","@type":"TechArticle","about":{"@id":"https://speedle.io/#software"},"description":"配置 REST/gRPC TLS、双向 TLS 和调用方访问边界","inLanguage":"zh-CN","isPartOf":{"@id":"https://speedle.io/#website"},"keywords":["Speedle+"],"name":"安全","url":"https://speedle.io/zh/docs/security/"}</script>
 
 <meta name="generator" content="Hugo 0.48" />
 <link href="https://speedle.io/index.xml" rel="alternate" type="application/rss+xml">
@@ -103,180 +103,88 @@ headingSelector: 'h2'
   <div id="kube-component" class="content">
     
 
-<h2 id="概要">概要</h2>
+<h2 id="同时保护两种-api-传输">同时保护两种 API 传输</h2>
 
-<h3 id="api-endpoint-安全-认证和授权">API Endpoint 安全/认证和授权</h3>
+<p>独立运行的 PMS 与 ADS 都提供 <strong>REST 和 gRPC</strong>。现在两者共同使用 <code>--insecure</code>、<code>--cert</code>、<code>--key</code>、<code>--client-cert</code> 和 <code>--force-client-cert</code> 配置。证书或信任配置无效时启动失败，安全模式不会降级为明文。</p>
 
-<p>Speedle API Endpoint 自身仅支持 TLS mutual auth（TLS 相互身份验证）这种认证和授权.</p>
+<p>TLS 加密连接并认证服务端。若要强制认证客户端，必须通过 <code>--client-cert</code> 提供客户端 CA，<strong>同时</strong>设置 <code>--force-client-cert=true</code>。只提供 CA 时，仅在客户端主动发送证书的情况下验证该证书。TLS 本身不决定谁有管理员权限，也不提供 Bearer token 校验。管理、诊断、发现接口需要认证网关或等价的访问控制。<code>--enable-authz</code> 参数不提供内置的端点授权策略。</p>
 
-<p>您可以使用像 Ambassador API Gateway 等既存的方案对 Speedle API endpoint 进行保护。</p>
-
-<h3 id="消息安全-tls">消息安全 / TLS</h3>
-
-<p>TLS 是一种提供通信安全性的加密协议，它提供了许多不同的交换密钥进行身份验证，加密数据和保证消息完整性的方法。</p>
-
-<p>Speedle 支持使用 TLS 来保护在非信任环境中的消息传输，也支持使用 TLS mutual auth 来验证客户端身份。</p>
-
-<p>在下文中，我们将介绍如何在 Speedle（作为一个独立应用程序）中启用 TLS，以及如何使用 Speedle CLI / curl 访问启用 TLS 的 Speedle 服务。</p>
-
-<p>如果您希望通过 TLS 保护在 Kubernetes 中的 Speedle 部署，请单击 <a href="/zh/docs/deployment/">此处</a></p>
-
-<h2 id="先决条件">先决条件</h2>
-
-<p>为了启用 TLS，Speedle 必须为其外部接口（IP 地址或 DNS 名称）配置相关的“证书”，以接受安全连接。</p>
-
-<p>此证书由受信任的第三方（证书颁发机构）加密签名。要获取签名证书，您需要选择 CA 并按照所选 CA 提供的说明获取证书。</p>
-
-<p>在测试环境中，可以创建一个“自签名”证书。自签名证书是未经知名 CA 签名的用户自己生成的证书，无法保证证书的真实性，因此它们不适合在生产环境中使用。</p>
-
-<p>为方便起见，您可以使用 <a href="https://github.com/cloudflare/cfssl">cfssl</a> 工具来生成自签名证书，步骤如下：</p>
-
-<h3 id="安装-cfssl">安装 cfssl</h3>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl -s -L -o /usr/bin/cfssl https://pkg.cfssl.org/R1.2/cfssl_linux-amd64
-curl -s -L -o /usr/bin/cfssljson https://pkg.cfssl.org/R1.2/cfssljson_linux-amd64</code></pre></div>
-<p>或者使用 Go 来安装：</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">go get -u github.com/cloudflare/cfssl/cmd/cfssl
-go get -u github.com/cloudflare/cfssl/cmd/cfssljson</code></pre></div>
-<h3 id="生成-ca-和证书">生成 CA 和证书</h3>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#a90d91">echo</span> <span style="color:#c41a16">&#39;{&#34;CN&#34;:&#34;CA&#34;,&#34;key&#34;:{&#34;algo&#34;:&#34;rsa&#34;,&#34;size&#34;:2048}}&#39;</span> | cfssl gencert -initca - | cfssljson -bare ca -
-<span style="color:#a90d91">echo</span> <span style="color:#c41a16">&#39;{&#34;signing&#34;:{&#34;default&#34;:{&#34;expiry&#34;:&#34;43800h&#34;,&#34;usages&#34;:[&#34;signing&#34;,&#34;key encipherment&#34;,&#34;server auth&#34;,&#34;client auth&#34;]}}}&#39;</span> &gt; ca-config.json
-<span style="color:#177500"># replace this with your ip address or dns
-</span><span style="color:#177500"></span><span style="color:#a90d91">export</span> <span style="color:#000">ADDRESS</span><span style="color:#000">=</span>localhost,127.0.0.1
-<span style="color:#a90d91">export</span> <span style="color:#000">NAME</span><span style="color:#000">=</span>server
-<span style="color:#a90d91">echo</span> <span style="color:#c41a16">&#39;{&#34;CN&#34;:&#34;&#39;</span><span style="color:#000">$NAME</span><span style="color:#c41a16">&#39;&#34;,&#34;hosts&#34;:[&#34;&#34;],&#34;key&#34;:{&#34;algo&#34;:&#34;rsa&#34;,&#34;size&#34;:2048}}&#39;</span> | cfssl gencert -config<span style="color:#000">=</span>ca-config.json -ca<span style="color:#000">=</span>ca.pem -ca-key<span style="color:#000">=</span>ca-key.pem -hostname<span style="color:#000">=</span><span style="color:#c41a16">&#34;</span><span style="color:#000">$ADDRESS</span><span style="color:#c41a16">&#34;</span> - | cfssljson -bare <span style="color:#000">$NAME</span>
-<span style="color:#a90d91">export</span> <span style="color:#000">ADDRESS</span><span style="color:#000">=</span>
-<span style="color:#a90d91">export</span> <span style="color:#000">NAME</span><span style="color:#000">=</span>client
-<span style="color:#a90d91">echo</span> <span style="color:#c41a16">&#39;{&#34;CN&#34;:&#34;&#39;</span><span style="color:#000">$NAME</span><span style="color:#c41a16">&#39;&#34;,&#34;hosts&#34;:[&#34;&#34;],&#34;key&#34;:{&#34;algo&#34;:&#34;rsa&#34;,&#34;size&#34;:2048}}&#39;</span> | cfssl gencert -config<span style="color:#000">=</span>ca-config.json -ca<span style="color:#000">=</span>ca.pem -ca-key<span style="color:#000">=</span>ca-key.pem -hostname<span style="color:#000">=</span><span style="color:#c41a16">&#34;</span><span style="color:#000">$ADDRESS</span><span style="color:#c41a16">&#34;</span> - | cfssljson -bare <span style="color:#000">$NAME</span>
-
-mv server.pem server.crt
-mv server-key.pem server.key
-cp ca.pem server-ca.crt
-
-mv client.pem client.crt
-mv client-key.pem client.key
-cp ca.pem client-ca.crt</code></pre></div>
-<h2 id="在-speedle-中启用-tls">在 Speedle 中启用 TLS</h2>
-
-<h3 id="命令行参数">命令行参数</h3>
-
-<p>Speedle <code>PMS</code>（Policy Management Service）和<code>ADS</code>（Authorization Decision Service）的 TLS 相关配置参数：</p>
+<h2 id="监听地址与兼容性">监听地址与兼容性</h2>
 
 <table>
 <thead>
 <tr>
-<th>名称</th>
-<th>值</th>
-<th>默认</th>
-<th>注释</th>
+<th>服务</th>
+<th>默认 REST 地址</th>
+<th>默认 gRPC 地址</th>
 </tr>
 </thead>
 
 <tbody>
 <tr>
-<td>insecure</td>
-<td>true, false</td>
-<td>false</td>
-<td>指定是否为非安全方式， true: 禁用, false: 启用。</td>
+<td>PMS</td>
+<td><code>0.0.0.0:6733</code></td>
+<td>REST 的主机地址，端口 <code>50001</code></td>
 </tr>
 
 <tr>
-<td>cert</td>
-<td>TLS certificate path</td>
-<td></td>
-<td>指定 TLS 证书文件的目录。</td>
-</tr>
-
-<tr>
-<td>key</td>
-<td>TLS private key path</td>
-<td></td>
-<td>指定 TLS 私钥文件的目录。</td>
-</tr>
-
-<tr>
-<td>client-cert</td>
-<td>client CA path</td>
-<td></td>
-<td>指定用于客户端认证的 CA 证书的目录。</td>
-</tr>
-
-<tr>
-<td>force-client-cert</td>
-<td>true, false</td>
-<td>false</td>
-<td>指定是否强制客户端证书认证。</td>
+<td>ADS</td>
+<td><code>0.0.0.0:6734</code></td>
+<td>REST 的主机地址，端口 <code>50002</code></td>
 </tr>
 </tbody>
 </table>
 
-<h3 id="示例">示例</h3>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ speedle-pms --store-type file --endpoint<span style="color:#000">=</span><span style="color:#c41a16">&#34;127.0.0.1:6733&#34;</span> --insecure<span style="color:#000">=</span><span style="color:#a90d91">false</span> --key<span style="color:#000">=</span><span style="color:#000">$tls_config_path</span>/server.key --cert<span style="color:#000">=</span><span style="color:#000">$tls_config_path</span>/server.crt --client-cert<span style="color:#000">=</span><span style="color:#000">$tls_config_path</span>/client-ca.crt
+<p>因此，<code>--endpoint 127.0.0.1:6733</code> 也会把 PMS 默认 gRPC 监听限制在 <code>127.0.0.1:50001</code>。可用 <code>--grpc-endpoint</code> 指定另一网卡或端口；<code>127.0.0.1:0</code> 可为隔离测试选择临时端口。需要 IPv6 时明确使用 <code>--endpoint '[::]:6733'</code> 或 <code>--grpc-endpoint '[::]:50001'</code>。与旧版本不同，限制或加密 REST 后，gRPC 不再悄悄保持全部网卡监听或明文传输。</p>
 
-$ speedle-ads --store-type file --endpoint<span style="color:#000">=</span><span style="color:#c41a16">&#34;127.0.0.1:6735&#34;</span> --insecure<span style="color:#000">=</span><span style="color:#a90d91">false</span> --force-client-cert<span style="color:#000">=</span><span style="color:#a90d91">true</span> --key<span style="color:#000">=</span><span style="color:#000">$tls_config_path</span>/server.key --cert<span style="color:#000">=</span><span style="color:#000">$tls_config_path</span>/server.crt --client-cert<span style="color:#000">=</span><span style="color:#000">$tls_config_path</span>/client-ca.crt</code></pre></div>
-<p><strong>注意: 请在指定 TLS 相关目录时使用绝对目录。</strong></p>
+<p>配置优先级为命令行、<code>SPDL_*</code> 环境变量、JSON 配置、默认值。gRPC 对应 <code>--grpc-endpoint</code>、<code>SPDL_GRPC_ENDPOINT</code> 和 <code>serverConfig.grpcEndpoint</code>。<a href="/zh/docs/api/">API 总览</a>提供当前 proto 契约及客户端生成说明。</p>
 
-<h2 id="使用-spctl-cli-访问启用-tls-的-speedle">使用<code>spctl</code> CLI 访问启用 TLS 的 Speedle</h2>
+<h2 id="生成本地测试证书">生成本地测试证书</h2>
 
-<h3 id="命令行参数-1">命令行参数</h3>
+<p>先按<a href="/zh/quick-start/">快速入门</a>编译二进制，然后从仓库根目录使用 Go 1.26 或更高版本生成本地 CA、独立的服务端与客户端证书。服务端证书的 SAN 包括 <code>localhost</code>、<code>127.0.0.1</code>、<code>::1</code>，私钥权限为 0600。这些是<strong>有效期 24 小时的演示证书</strong>，不能作为生产凭据。工具拒绝覆盖已有文件；重新生成时使用新的输出目录。</p>
 
-<p>Spctl CLI TLS 相关配置参数：</p>
+<!-- docs-check: certificates -->
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">go run ./samples/docs/certificates --out ./tls</code></pre></div>
+<h2 id="启动双向-tls-服务">启动双向 TLS 服务</h2>
 
-<table>
-<thead>
-<tr>
-<th>名称</th>
-<th>值</th>
-<th>默认</th>
-<th>注释</th>
-</tr>
-</thead>
+<p>先停止两个服务，再初始化新的策略文件；只执行一次：</p>
 
-<tbody>
-<tr>
-<td>skipverify</td>
-<td>true, false</td>
-<td>false</td>
-<td>指定是否跳过 Speedle 的 TLS 证书校验 certificate.</td>
-</tr>
+<!-- docs-check: setup -->
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#a90d91">printf</span> <span style="color:#c41a16">&#39;{}\n&#39;</span> &gt; docs-policies.json</code></pre></div>
+<p>终端一启动 PMS：</p>
 
-<tr>
-<td>cert</td>
-<td>TLS certificate path</td>
-<td></td>
-<td>指定客户端 TLS 证书的目录。</td>
-</tr>
+<!-- docs-check: secure-pms -->
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./bin/speedle-pms --store-type file --filestore-loc ./docs-policies.json <span style="color:#c41a16">\
+</span><span style="color:#c41a16"></span>  --endpoint <span style="color:#1c01ce">127</span>.0.0.1:6733 --grpc-endpoint <span style="color:#1c01ce">127</span>.0.0.1:50001 <span style="color:#c41a16">\
+</span><span style="color:#c41a16"></span>  --cert ./tls/server.crt --key ./tls/server.key <span style="color:#c41a16">\
+</span><span style="color:#c41a16"></span>  --client-cert ./tls/ca.crt --force-client-cert<span style="color:#000">=</span>true</code></pre></div>
+<p>终端二启动 ADS：</p>
 
-<tr>
-<td>key</td>
-<td>TLS private key path</td>
-<td></td>
-<td>指定客户端 TLS 私钥的目录。</td>
-</tr>
+<!-- docs-check: secure-ads -->
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./bin/speedle-ads --store-type file --filestore-loc ./docs-policies.json <span style="color:#c41a16">\
+</span><span style="color:#c41a16"></span>  --endpoint <span style="color:#1c01ce">127</span>.0.0.1:6734 --grpc-endpoint <span style="color:#1c01ce">127</span>.0.0.1:50002 <span style="color:#c41a16">\
+</span><span style="color:#c41a16"></span>  --cert ./tls/server.crt --key ./tls/server.key <span style="color:#c41a16">\
+</span><span style="color:#c41a16"></span>  --client-cert ./tls/ca.crt --force-client-cert<span style="color:#000">=</span>true</code></pre></div>
+<p>两个终端都从同一仓库根目录运行并保持打开。完成后分别按 Ctrl-C 停止。生产证书必须覆盖实际域名/IP，并来自组织信任的 CA。</p>
 
-<tr>
-<td>client-cert</td>
-<td>client CA path</td>
-<td></td>
-<td>指定 CA 证书的目录。</td>
-</tr>
+<h2 id="使用-spctl-和-curl">使用 spctl 和 curl</h2>
 
-<tr>
-<td>force-client-cert</td>
-<td>true, false</td>
-<td>false</td>
-<td>specifies if the client certificate authentication is forced or not.</td>
-</tr>
-</tbody>
-</table>
+<!-- docs-check: secure-cli -->
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./bin/spctl --pms-endpoint https://127.0.0.1:6733/policy-mgmt/v1/ <span style="color:#c41a16">\
+</span><span style="color:#c41a16"></span>  --skipverify<span style="color:#000">=</span><span style="color:#a90d91">false</span> --cacert ./tls/ca.crt --cert ./tls/client.crt --key ./tls/client.key <span style="color:#c41a16">\
+</span><span style="color:#c41a16"></span>  get service --all</code></pre></div>
+<!-- docs-check: secure-curl -->
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl --fail --silent --show-error --cacert ./tls/ca.crt <span style="color:#c41a16">\
+</span><span style="color:#c41a16"></span>  --cert ./tls/client.crt --key ./tls/client.key <span style="color:#c41a16">\
+</span><span style="color:#c41a16"></span>  https://127.0.0.1:6733/policy-mgmt/v1/service</code></pre></div>
+<p>空存储返回 <code>[]</code>。不带客户端证书时 TLS 握手失败。<code>spctl</code> 的 <code>--cacert</code> 用来验证服务器，<code>--cert</code>/<code>--key</code> 提供客户端身份；<code>--client-cert</code> 和 <code>--force-client-cert</code> 是服务端参数。保持 <code>--skipverify=false</code>（默认值）。</p>
 
-<h3 id="示例-1">示例</h3>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ spctl config skipverify <span style="color:#a90d91">false</span> cacert <span style="color:#000">$tls_config_path</span>/server-ca.crt cert <span style="color:#000">$tls_config_path</span>/client.crt key <span style="color:#000">$tls_config_path</span>/client.key pms-endpoint <span style="color:#c41a16">&#34;https://localhost:6733/policy-mgmt/v1/&#34;</span>
-$ spctl create service <span style="color:#a90d91">test</span>
-$ spctl get service --all</code></pre></div>
-<h2 id="使用-curl-访问启用-tls-的-speedle">使用<code>curl</code>访问启用 TLS 的 Speedle</h2>
+<p>gRPC 客户端通道同样需要 CA、与证书匹配的服务端名称、客户端证书与私钥。PMS 的服务名称是 <code>pms_pb.PolicyManager</code>，ADS 是 <code>ads_pb.Evaluator</code>。明文通道无法调用上述 TLS 端点。</p>
 
-<h3 id="示例-2">示例</h3>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ curl --cacert <span style="color:#000">$tls_config_path</span>/server-ca.crt --cert <span style="color:#000">$tls_config_path</span>/client.crt --key <span style="color:#000">$tls_config_path</span>/client.key https://localhost:6733/policy-mgmt/v1/service</code></pre></div>
+<h2 id="本地明文开发">本地明文开发</h2>
+
+<p>只有显式 <code>--insecure=true</code> 才会为两种传输启用明文。此时 REST/gRPC 都应绑定回环地址。不要公开这些未认证端点，也不要信任非可信调用者填写的主体名或属性。<a href="/zh/docs/assertor/">令牌断言服务</a>验证已配置的身份令牌，并不能自动认证每一个 PMS/ADS 调用方或替代端点访问控制。</p>
+
   </div>
 </div>
 </main><div class="sidebar">
@@ -327,16 +235,16 @@ $ spctl get service --all</code></pre></div>
 
 <li class=""><span>API</span>
 <ul class="">
-<li class=""><a href="/zh/docs/api/decision_api/">Authorization Runtime/Decision API</a></li>
-<li class=""><a href="/zh/docs/api/management_api/">Policy Management API</a></li>
-<li class=""><a href="/zh/docs/api/asserter_api/">Token Assertion Plugin API</a></li>
+<li class=""><a href="/zh/docs/api/asserter_api/">令牌断言插件 API</a></li>
+<li class=""><a href="/zh/docs/api/decision_api/">授权决策 API</a></li>
+<li class=""><a href="/zh/docs/api/management_api/">策略管理 API</a></li>
 </ul>
   
 </li>
 <li class="active"><a href="/zh/docs/security/">安全</a></li>
 <li class=""><a href="/zh/docs/logging/">日志</a></li>
 <li class=""><a href="/zh/docs/versions/">版本</a></li>
-<li class=""><a href="/zh/docs/custom-function/">Custom Function</a></li>
+<li class=""><a href="/zh/docs/custom-function/">自定义函数</a></li>
 </ul>
   
 </li>

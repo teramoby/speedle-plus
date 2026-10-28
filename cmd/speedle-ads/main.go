@@ -96,7 +96,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	grpcServer, err := newGRPCServer(evaluator)
+	grpcServer, err := newGRPCServer(&params, evaluator)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -107,7 +107,7 @@ func main() {
 	errChan := make(chan error, 2)
 	go func() {
 		log.Info("Starting the gRPC server for authorization service...")
-		errChan <- listenGRPCServer(grpcServer)
+		errChan <- listenGRPCServer(grpcServer, &params)
 	}()
 
 	go func() {
@@ -186,18 +186,21 @@ func newEvaluator(conf *cfg.Config) (eval.InternalEvaluator, error) {
 	return evaluator, nil
 }
 
-func newGRPCServer(evaluator eval.InternalEvaluator) (*grpc.Server, error) {
+func newGRPCServer(params *flags.Parameters, evaluator eval.InternalEvaluator) (*grpc.Server, error) {
 
 	serviceImpl, err := adsgrpc.NewGRPCService(evaluator)
 	if err != nil {
 		return nil, err
 	}
 
-	server := grpc.NewServer(
+	server, err := params.NewGRPCServer(
 		grpc.UnaryInterceptor(svcs.PanicRecoveryInterceptor()),
 		grpc.MaxRecvMsgSize(4<<20), // 4 MB
 		grpc.MaxSendMsgSize(4<<20), // 4 MB
 	)
+	if err != nil {
+		return nil, err
+	}
 	pb.RegisterEvaluatorServer(server, serviceImpl)
 	// WARNING: gRPC reflection exposes all service methods and message types.
 	// Disable in production to prevent information disclosure.
@@ -205,13 +208,17 @@ func newGRPCServer(evaluator eval.InternalEvaluator) (*grpc.Server, error) {
 	return server, nil
 }
 
-func listenGRPCServer(server *grpc.Server) error {
-	lis, err := net.Listen("tcp", ":50002")
+func listenGRPCServer(server *grpc.Server, params *flags.Parameters) error {
+	address, err := params.GRPCListenAddress("50002")
 	if err != nil {
-		return errors.Wrap(err, errors.ServerError, "failed to listen on endpoint :50002")
+		return err
+	}
+	lis, err := net.Listen("tcp", address)
+	if err != nil {
+		return errors.Wrapf(err, errors.ServerError, "failed to listen on gRPC endpoint %s", address)
 	}
 	if err := server.Serve(lis); err != nil {
-		return errors.Wrap(err, errors.ServerError, "failed to serve for endpoint :50002")
+		return errors.Wrapf(err, errors.ServerError, "failed to serve gRPC endpoint %s", address)
 	}
 	return nil
 }

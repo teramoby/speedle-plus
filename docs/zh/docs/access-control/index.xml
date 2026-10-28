@@ -47,7 +47,7 @@ grant user alice read book if clearance &amp;gt;= 3 用户填 alice，资源填 
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://speedle.io/zh/docs/access-control/pbac/</guid>
-      <description>这里的 PBAC 是什么 基于策略的访问控制（Policy-Based Access Control，PBAC）将授权规则表达为可管理的策略，减少分散在业务代码中的权限判断。Speedle+ 提供安全策略定义语言（SPDL）、策略管理服务（PMS），以及授权决策服务（ADS）或嵌入式评估引擎。
+      <description>这里的 PBAC 是什么 基于策略的访问控制（Policy-Based Access Control，PBAC）将授权规则表达为可管理的策略，减少分散在业务代码中的权限判断。Speedle+ 提供Speedle 策略定义语言（SPDL）、策略管理服务（PMS），以及授权决策服务（ADS）或嵌入式评估引擎。
 PBAC 描述规则如何表达和管理；RBAC描述角色关系；ABAC描述属性条件。同一个 Speedle 策略体系可以同时使用角色与属性。
 从策略到执行  约定服务、主体名称、资源标识与操作名称。 通过 PMS创建授权策略和角色策略。 确认决策服务已接收到预期的策略版本。 将当前主体、资源、操作及可信属性发送给 ADS。 由应用、网关或其他执行点落实决策，并明确处理超时和评估错误。  集中管理并不免除应用执行决策的职责，也不意味着每个引擎都能瞬间收到更新。应验证所选策略存储的更新行为。
 验证拒绝优先 在 Playground 中输入：
@@ -88,7 +88,7 @@ grant user alice from workforce read book 用户填 alice，身份域填 workfor
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://speedle.io/zh/docs/access-control/xacml/</guid>
-      <description>Speedle 与 XACML 有什么关系？ 可扩展访问控制标记语言（eXtensible Access Control Markup Language，XACML）是 OASIS 访问控制标准，定义策略及请求、响应等概念。Speedle+ 使用自己的安全策略定义语言（SPDL）与 API。XACML 的行为以 OASIS XACML 3.0 标准为准；本文说明架构职责的对应关系，不代表 XACML 标准符合性声明。
+      <description>Speedle 与 XACML 有什么关系？ 可扩展访问控制标记语言（eXtensible Access Control Markup Language，XACML）是 OASIS 访问控制标准，定义策略及请求、响应等概念。Speedle+ 使用自己的Speedle 策略定义语言（SPDL）与 API。XACML 的行为以 OASIS XACML 3.0 标准为准；本文说明架构职责的对应关系，不代表 XACML 标准符合性声明。
 对应组件职责    XACML 概念 职责 Speedle+ 中的对应方式     PAP：策略管理点 管理授权策略 策略管理服务（PMS）   PDP：策略决策点 评估授权请求 授权决策服务（ADS）或嵌入式引擎   PEP：策略执行点 对实际操作执行决策 调用 Speedle 的应用、网关或集成组件   PIP：策略信息点 提供决策使用的属性 可信应用数据及配置的身份、属性集成；不代表内置 XACML PIP 接口    现有架构文档已经介绍 PAP/PDP 的对应关系。决策拒绝或评估失败时，执行点仍需阻止实际操作。
 策略语法与决策语义 SPDL 授权语句指定效果、主体、操作和资源，并可附加条件：
 grant user alice read book if clearance &amp;gt;= 3 在 Playground 中，用户为 alice、操作为 read、资源为 book、数值属性 clearance = 4 时，该语句允许访问；值为 2 时不满足条件。</description>

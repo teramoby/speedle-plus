@@ -86,28 +86,30 @@
 
 <h2 id="modules">Modules</h2>
 
-<p>Speedle is an authorization engine comprised of these components:</p>
+<p>Speedle is an authorization engine with three main components:</p>
 
 <ul>
-<li><p>Policy Management Service (PMS) API - Manages the authorization and role policies, and the objects from which they are created.</p></li>
-
-<li><p>Policy repository - Stores all the policy artifacts. The policy repository can be a json file, or a persistent store such as a database or etcd.</p></li>
-
-<li><p>Authorization Decision Service (ADS) API - Evaluates the authorization requests against the applicable policies and returns GRANT/DENY decisions.</p></li>
+<li><strong>Policy Management Service (PMS)</strong> manages services, authorization policies, role policies and custom functions.</li>
+<li><strong>Policy repository</strong> persists those objects using a registered store such as file, etcd or MongoDB.</li>
+<li><strong>Authorization Decision Service (ADS)</strong> evaluates a subject, resource, action and trusted attributes against the applicable policies.</li>
 </ul>
-
-<p>This diagram shows the interaction between these components.</p>
 
 <p><img src="/img/speedle/spdlarch.jpg" /></p>
 
-<p>(1) Users create/manage policies through the Policy Management Service API.<br />
-(2) The Policy Management Service persists the policies in the policy repository.<br />
-(3) The policies are provisioned from the policy repository to the Authorization Decision Service API.<br />
-(4) Users systems invoke the Authorization Decision Service API for authorization checks.</p>
+<p>The historical diagram labels the decision component <strong>ARS</strong>; this is the component called <strong>ADS</strong> in current documentation and APIs.</p>
 
-<p>If you are familiar with the XACML model, the Policy Management Service (PMS) serves as the Policy Administration Point (PAP), and the Authorization Decision Service (ADS) serves as the Policy Decision Point (PDP).</p>
+<p>(1) Administrators manage policies through PMS.<br>
+(2) PMS persists policy objects in the repository.<br>
+(3) ADS loads them and observes supported store changes asynchronously.<br>
+(4) The application supplies trusted request context, calls ADS and enforces the returned result, including rejecting on errors.</p>
 
-<p>See <a href="/docs/access-control/">authorization and access control</a> for RBAC, ABAC and PBAC examples, <a href="/docs/access-control/identity-iam/">identity and IAM integration</a> for identity boundaries, and the <a href="/docs/access-control/oes/">OES</a> and <a href="/docs/access-control/xacml/">XACML</a> comparisons for architecture and migration considerations.</p>
+<h2 id="responsibilities-and-trust-boundaries">Responsibilities and trust boundaries</h2>
+
+<p>In XACML terminology, PMS corresponds to the Policy Administration Point (PAP), ADS or the embedded evaluator to the Policy Decision Point (PDP), and the application/gateway to the Policy Enforcement Point (PEP). Attribute sources serve the information-supply responsibility (PIP); this mapping does not claim XACML protocol support.</p>
+
+<p>Policy management and evaluation are separate from authenticating API callers. Both standalone transports, REST and gRPC, need appropriate <a href="/docs/security/">security configuration</a>. A <a href="/docs/assertor/">token asserter</a> can validate configured identity tokens. A policy decision alone neither authenticates every caller nor prevents an application from executing an operation.</p>
+
+<p>See <a href="/docs/access-control/">authorization/access control</a> for RBAC, ABAC and PBAC, <a href="/docs/access-control/identity-iam/">identity/IAM</a> for identity boundaries, <a href="/docs/access-control/oes/">OES</a> and <a href="/docs/access-control/xacml/">XACML</a> for architectural comparisons, and <a href="/docs/deployment-embeded/">embedded mode</a> for an in-process Go integration.</p>
 
   </div>
 </div>

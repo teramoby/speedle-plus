@@ -1,84 +1,101 @@
-swagger: "2.0"
-info:
-  description: "This is webhook interface for assertion service"
-  version: "1.0.0"
-  title: "Assertion service"
-basePath: "/assert"
-schemes:
-- "http"
-paths:
-  /v1:
-    get:
-      tags:
-      - "assert"
-      summary: "Assert given token"
-      description: "Assert given token"
-      operationId: "assert"
-      produces:
-      - "application/json"
-      parameters:
-      - name: "x-token"
-        in: "header"
-        description: "valid token issued by identity provider"
-        required: true
-        type: "string"
-      - name: "x-idp"
-        in: "header"
-        description: "identity provider's identifier, such as GITHUB|OIDC|WERCKER|IDCS"
-        required: false
-        type: "string"
-      - name: "x-allowedIDD"
-        in: "header"
-        description: "Allowed identity domains of the user represented by token, if user does not belong to this allowed identity domain, assertion will fail, multiple identity domains are splited by comma"
-        required: false
-        type: "string"
-      - name: "x-ecid"
-        in: "header"
-        description: "extra header will be passed along to backend identity provider"
-        required: false
-        type: "string"
-      responses:
-        200:
-          description: "successful operation"
-          schema:
-            $ref: "#/definitions/Subject"
-        400:
-          description: "Invalid assertion request"
-        500:
-          description: "Assertion service internal error"
-
+basePath: /v1
 definitions:
-  Subject:
-    type: object
+  Attribute:
     properties:
-      principals:
-        type: array
-        items:
-          $ref: '#/definitions/Principal'
-      attributes:
-        type: array
-        items:
-          $ref: '#/definitions/Attribute'
-      errCode:
+      name:
         type: string
+      type:
+        enum:
+          - string
+          - bool
+          - numeric
+          - datetime
+        type: string
+      value: {}
+    type: object
+  Principal:
+    properties:
+      idd:
+        type: string
+      name:
+        type: string
+      type:
+        enum:
+          - user
+          - group
+          - entity
+        type: string
+    type: object
+  Subject:
+    properties:
+      attributes:
+        additionalProperties: {}
+        type: object
+      errCode:
+        format: int32
+        type: integer
       errMessage:
         type: string
-  Principal:
+      principals:
+        items:
+          $ref: '#/definitions/Principal'
+        type: array
+    required:
+      - errCode
     type: object
-    properties:
-      type:
-        type: string
-        enum: [user, group, entity]
-      name:
-        type: string
-      idd:
-        type:  string
-  Attribute:
-    type: object
-    properties:
-      name:
-        type:  string
-      type:
-        type:  string
-        enum: [string, bool, numeric, datetime]
-      value: {}
+info:
+  description: Webhook contract. Configure the actual URL in asserterWebhookConfig.endpoint. The local demonstration uses /v1/assert; real identity providers require a separate implementation. errCode is an integer and attributes is an object.
+  title: Token assertion webhook
+  version: 1.0.0
+paths:
+  /assert:
+    get:
+      description: Validate a token and return principals
+      operationId: assert
+      parameters:
+        - description: valid token issued by identity provider
+          in: header
+          name: x-token
+          required: true
+          type: string
+        - description: identity provider's identifier, such as GITHUB|OIDC|WERCKER|IDCS
+          in: header
+          name: x-idp
+          required: true
+          type: string
+        - description: Allowed identity domains of the user represented by token, if user does not belong to this allowed identity domain, assertion will fail, multiple identity domains are splited by comma
+          in: header
+          name: x-allowedIDD
+          required: false
+          type: string
+        - description: extra header will be passed along to backend identity provider
+          in: header
+          name: x-ecid
+          required: false
+          type: string
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: Successful operation
+          schema:
+            $ref: '#/definitions/Subject'
+        "400":
+          description: Invalid assertion request
+        "401":
+          description: Token assertion failed
+          schema:
+            $ref: '#/definitions/Subject'
+        "403":
+          description: Token assertion failed
+          schema:
+            $ref: '#/definitions/Subject'
+        "500":
+          description: Assertion service internal error
+      summary: Validate a token and return principals
+      tags:
+        - assert
+schemes:
+  - https
+  - http
+swagger: "2.0"

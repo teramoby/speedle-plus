@@ -11,85 +11,61 @@ bref = ""
 
 ## What is embedded mode?
 
-Unlike service mode, embedded mode runs the Speedle policy decision engine inside
-the calling process. Applications call the evaluator API directly to obtain
-authorization decisions.
+An embedded Go application evaluates policies in its own process. It still supplies trusted identities and attributes and enforces the returned decision. Try the [Playground](/playground/) first to explore policy semantics without a server.
 
-## Limitations
+## Supported configurations
 
-- Only Go applications are supported. The original setup instructions use Go 1.10.
-- Policies must use the file store.
+Use Go 1.26 or later, as required by the current `go.mod`. Within your own application module, add a dependency with `go get github.com/teramoby/speedle-plus@<reviewed-tag-or-commit>` after `go mod init`; replace the placeholder with the revision you intend to use. The historical v2.0 release and current master have different dependencies and behavior; see [versions](/docs/versions/).
 
-## Using embedded mode
+`eval.NewFromFile(location, watch)` is a convenience API for JSON or SPDL files. Embedded mode can also use `eval.NewFromConfig` or `eval.NewWithStore` with a registered store implementing the ADS interface. The file-only restriction applies to `NewFromFile`, not every embedded evaluator. Import the store implementation, for example `pkg/store/file`, so its builder is registered.
 
-### Add Speedle to your project
+## Run a complete example
 
-Download the Speedle source using one of the following approaches.
+From the checked-out repository root, this example reads [policies.json](https://github.com/teramoby/speedle-plus/blob/master/samples/docs/embedded/policies.json): it grants Alice `read` on `book` within `library`. Bob has no matching grant.
 
-1. Use `go get`:
-
+<!-- docs-check: embedded -->
 ```bash
-go get github.com/teramoby/speedle-plus
+go run ./samples/docs/embedded
 ```
 
-2. Use `dep`. Add this constraint to `Gopkg.toml`:
 
-```toml
-[[constraint]]
-  name = "github.com/teramoby/speedle-plus"
-  branch = "master"
-```
+Expected decisions: `alice: allowed=true` and `bob: allowed=false`.
 
-Then add the source to your `vendor` directory:
-
-```bash
-dep ensure -update github.com/teramoby/speedle-plus
-```
-
-### Initialize an evaluator
-
-`func eval.NewFromFile(loc string, isWatch bool) (ads.PolicyEvaluator, error)`
-initializes an evaluator from a policy file. It takes two arguments:
-
-- `loc`: the policy file location. JSON and SPDL formats are supported.
-- `isWatch`: when `true`, the evaluator reloads policies when the file changes;
-  when `false`, it does not watch for changes.
-
-The method returns an evaluator instance. For example:
-
+<!-- docs-source: samples/docs/embedded/main.go -->
 ```go
+package main
+
 import (
-  "github.com/teramoby/speedle-plus/pkg/eval"
+	"flag"
+	"fmt"
+	ads "github.com/teramoby/speedle-plus/api/ads"
+	"github.com/teramoby/speedle-plus/pkg/cfg"
+	"github.com/teramoby/speedle-plus/pkg/eval"
+	_ "github.com/teramoby/speedle-plus/pkg/store/file"
+	"log"
 )
 
-func foo() {
-    evaluator, err := eval.NewFromFile(spdlLoc, true)
-    // Handle err before using evaluator.
-    _, _ = evaluator, err
+func main() {
+	policies := flag.String("policies", "samples/docs/embedded/policies.json", "Policy file")
+	flag.Parse()
+	evaluator, err := eval.NewFromConfig(&cfg.Config{StoreConfig: &cfg.StoreConfig{StoreType: "file", StoreProps: map[string]interface{}{"FileLocation": *policies}}, EnableWatch: false})
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer evaluator.Close()
+	for _, user := range []string{"alice", "bob"} {
+		allowed, reason, err := evaluator.IsAllowed(ads.RequestContext{Subject: &ads.Subject{Principals: []*ads.Principal{{Type: "user", Name: user}}}, ServiceName: "library", Resource: "book", Action: "read"})
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Printf("%s: allowed=%t reason=%s\n", user, allowed, reason.String())
+	}
 }
 ```
 
-### Request an authorization decision
 
-`IsAllowed` evaluates a request against the policies. The `ads.RequestContext`
-argument contains the subject, service name, resource, action and attributes:
+## Handle results and lifecycle
 
-```go
-type RequestContext struct {
-  Subject     *ads.Subject
-  ServiceName string
-  Resource    string
-  Action      string
-  Attributes  map[string]interface{}
-}
-```
+`IsAllowed(ads.RequestContext)` returns `(allowed bool, reason ads.Reason, err error)`. An application must reject an operation when `err != nil` or `allowed == false`; a decision does not enforce access by itself. `GetAllGrantedRoles`, `GetAllGrantedPermissions` and `Diagnose` provide additional evaluation APIs.
 
-The result has three values:
-
-1. `allowed bool`: whether the subject may perform the action on the resource.
-2. `reason Reason`: the reason for the decision.
-3. `err error`: an evaluation error, or `nil` if evaluation succeeds.
-
-## Example
-
-See the [embedded expenses example](https://github.com/teramoby/speedle-plus/tree/master/samples/embedded/expenses).
+The example uses `NewFromConfig`, which returns an evaluator with `Close()`. Close it when finished to stop background work and release the store. Set `EnableWatch: true` when policy changes must be observed; updates are asynchronous, so verify the intended revision before relying on it. See [policy storage](/docs/store/) and the [embedded expenses sample](https://github.com/teramoby/speedle-plus/tree/master/samples/embedded/expenses) for larger integrations.

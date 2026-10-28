@@ -11,19 +11,19 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>Speedle embedded mode - Speedle</title>
-<meta name="description" content="What is embedded mode? Unlike service mode, embedded mode runs the Speedle policy decision engine inside the calling process. Applications call the evaluator API directly to obtain …">
+<meta name="description" content="What is embedded mode? An embedded Go application evaluates policies in its own process. It still supplies trusted identities and attributes and enforces the returned decision. Try …">
 <link rel="alternate" hreflang="en" href="https://speedle.io/docs/deployment-embeded/">
 <link rel="alternate" hreflang="x-default" href="https://speedle.io/docs/deployment-embeded/"><link rel="alternate" hreflang="zh-CN" href="https://speedle.io/zh/docs/deployment-embeded/">
 
 <meta property="og:type" content="article">
 <meta property="og:site_name" content="Speedle Authorization Engine">
 <meta property="og:title" content="Speedle embedded mode">
-<meta property="og:description" content="What is embedded mode? Unlike service mode, embedded mode runs the Speedle policy decision engine inside the calling process. Applications call the evaluator API directly to obtain …">
+<meta property="og:description" content="What is embedded mode? An embedded Go application evaluates policies in its own process. It still supplies trusted identities and attributes and enforces the returned decision. Try …">
 <meta property="og:url" content="https://speedle.io/docs/deployment-embeded/">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Speedle embedded mode">
-<meta name="twitter:description" content="What is embedded mode? Unlike service mode, embedded mode runs the Speedle policy decision engine inside the calling process. Applications call the evaluator API directly to obtain …">
-<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://speedle.io/docs/deployment-embeded/#page","@type":"TechArticle","about":{"@id":"https://speedle.io/#software"},"description":"What is embedded mode? Unlike service mode, embedded mode runs the Speedle policy decision engine inside the calling process. Applications call the evaluator API directly to obtain …","inLanguage":"en","isPartOf":{"@id":"https://speedle.io/#website"},"keywords":["Speedle+"],"name":"Speedle embedded mode","url":"https://speedle.io/docs/deployment-embeded/"}</script>
+<meta name="twitter:description" content="What is embedded mode? An embedded Go application evaluates policies in its own process. It still supplies trusted identities and attributes and enforces the returned decision. Try …">
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://speedle.io/docs/deployment-embeded/#page","@type":"TechArticle","about":{"@id":"https://speedle.io/#software"},"description":"What is embedded mode? An embedded Go application evaluates policies in its own process. It still supplies trusted identities and attributes and enforces the returned decision. Try …","inLanguage":"en","isPartOf":{"@id":"https://speedle.io/#website"},"keywords":["Speedle+"],"name":"Speedle embedded mode","url":"https://speedle.io/docs/deployment-embeded/"}</script>
 
 <meta name="generator" content="Hugo 0.48" />
 <link href="https://speedle.io/index.xml" rel="alternate" type="application/rss+xml">
@@ -105,78 +105,56 @@ headingSelector: 'h2'
 
 <h2 id="what-is-embedded-mode">What is embedded mode?</h2>
 
-<p>Unlike service mode, embedded mode runs the Speedle policy decision engine inside
-the calling process. Applications call the evaluator API directly to obtain
-authorization decisions.</p>
+<p>An embedded Go application evaluates policies in its own process. It still supplies trusted identities and attributes and enforces the returned decision. Try the <a href="/playground/">Playground</a> first to explore policy semantics without a server.</p>
 
-<h2 id="limitations">Limitations</h2>
+<h2 id="supported-configurations">Supported configurations</h2>
 
-<ul>
-<li>Only Go applications are supported. The original setup instructions use Go 1.10.</li>
-<li>Policies must use the file store.</li>
-</ul>
+<p>Use Go 1.26 or later, as required by the current <code>go.mod</code>. Within your own application module, add a dependency with <code>go get github.com/teramoby/speedle-plus@&lt;reviewed-tag-or-commit&gt;</code> after <code>go mod init</code>; replace the placeholder with the revision you intend to use. The historical v2.0 release and current master have different dependencies and behavior; see <a href="/docs/versions/">versions</a>.</p>
 
-<h2 id="using-embedded-mode">Using embedded mode</h2>
+<p><code>eval.NewFromFile(location, watch)</code> is a convenience API for JSON or SPDL files. Embedded mode can also use <code>eval.NewFromConfig</code> or <code>eval.NewWithStore</code> with a registered store implementing the ADS interface. The file-only restriction applies to <code>NewFromFile</code>, not every embedded evaluator. Import the store implementation, for example <code>pkg/store/file</code>, so its builder is registered.</p>
 
-<h3 id="add-speedle-to-your-project">Add Speedle to your project</h3>
+<h2 id="run-a-complete-example">Run a complete example</h2>
 
-<p>Download the Speedle source using one of the following approaches.</p>
+<p>From the checked-out repository root, this example reads <a href="https://github.com/teramoby/speedle-plus/blob/master/samples/docs/embedded/policies.json">policies.json</a>: it grants Alice <code>read</code> on <code>book</code> within <code>library</code>. Bob has no matching grant.</p>
 
-<ol>
-<li>Use <code>go get</code>:</li>
-</ol>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">go get github.com/teramoby/speedle-plus</code></pre></div>
-<ol>
-<li>Use <code>dep</code>. Add this constraint to <code>Gopkg.toml</code>:</li>
-</ol>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-toml" data-lang="toml">[[<span style="color:#000">constraint</span>]]
-  <span style="color:#000">name</span> = <span style="color:#c41a16">&#34;github.com/teramoby/speedle-plus&#34;</span>
-  <span style="color:#000">branch</span> = <span style="color:#c41a16">&#34;master&#34;</span></code></pre></div>
-<p>Then add the source to your <code>vendor</code> directory:</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">dep ensure -update github.com/teramoby/speedle-plus</code></pre></div>
-<h3 id="initialize-an-evaluator">Initialize an evaluator</h3>
+<!-- docs-check: embedded -->
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">go run ./samples/docs/embedded</code></pre></div>
+<p>Expected decisions: <code>alice: allowed=true</code> and <code>bob: allowed=false</code>.</p>
 
-<p><code>func eval.NewFromFile(loc string, isWatch bool) (ads.PolicyEvaluator, error)</code>
-initializes an evaluator from a policy file. It takes two arguments:</p>
+<!-- docs-source: samples/docs/embedded/main.go -->
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#a90d91">package</span> <span style="color:#000">main</span>
 
-<ul>
-<li><code>loc</code>: the policy file location. JSON and SPDL formats are supported.</li>
-<li><code>isWatch</code>: when <code>true</code>, the evaluator reloads policies when the file changes;
-when <code>false</code>, it does not watch for changes.</li>
-</ul>
-
-<p>The method returns an evaluator instance. For example:</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#a90d91">import</span> (
-  <span style="color:#c41a16">&#34;github.com/teramoby/speedle-plus/pkg/eval&#34;</span>
+<span style="color:#a90d91">import</span> (
+	<span style="color:#c41a16">&#34;flag&#34;</span>
+	<span style="color:#c41a16">&#34;fmt&#34;</span>
+	<span style="color:#000">ads</span> <span style="color:#c41a16">&#34;github.com/teramoby/speedle-plus/api/ads&#34;</span>
+	<span style="color:#c41a16">&#34;github.com/teramoby/speedle-plus/pkg/cfg&#34;</span>
+	<span style="color:#c41a16">&#34;github.com/teramoby/speedle-plus/pkg/eval&#34;</span>
+	<span style="color:#000">_</span> <span style="color:#c41a16">&#34;github.com/teramoby/speedle-plus/pkg/store/file&#34;</span>
+	<span style="color:#c41a16">&#34;log&#34;</span>
 )
 
-<span style="color:#a90d91">func</span> <span style="color:#000">foo</span>() {
-    <span style="color:#000">evaluator</span>, <span style="color:#000">err</span> <span style="color:#000">:=</span> <span style="color:#000">eval</span>.<span style="color:#000">NewFromFile</span>(<span style="color:#000">spdlLoc</span>, <span style="color:#a90d91">true</span>)
-    <span style="color:#177500">// Handle err before using evaluator.
-</span><span style="color:#177500"></span>    <span style="color:#000">_</span>, <span style="color:#000">_</span> = <span style="color:#000">evaluator</span>, <span style="color:#000">err</span>
+<span style="color:#a90d91">func</span> <span style="color:#000">main</span>() {
+	<span style="color:#000">policies</span> <span style="color:#000">:=</span> <span style="color:#000">flag</span>.<span style="color:#000">String</span>(<span style="color:#c41a16">&#34;policies&#34;</span>, <span style="color:#c41a16">&#34;samples/docs/embedded/policies.json&#34;</span>, <span style="color:#c41a16">&#34;Policy file&#34;</span>)
+	<span style="color:#000">flag</span>.<span style="color:#000">Parse</span>()
+	<span style="color:#000">evaluator</span>, <span style="color:#000">err</span> <span style="color:#000">:=</span> <span style="color:#000">eval</span>.<span style="color:#000">NewFromConfig</span>(<span style="color:#000">&amp;</span><span style="color:#000">cfg</span>.<span style="color:#000">Config</span>{<span style="color:#000">StoreConfig</span>: <span style="color:#000">&amp;</span><span style="color:#000">cfg</span>.<span style="color:#000">StoreConfig</span>{<span style="color:#000">StoreType</span>: <span style="color:#c41a16">&#34;file&#34;</span>, <span style="color:#000">StoreProps</span>: <span style="color:#a90d91">map</span>[<span style="color:#a90d91">string</span>]<span style="color:#a90d91">interface</span>{}{<span style="color:#c41a16">&#34;FileLocation&#34;</span>: <span style="color:#000">*</span><span style="color:#000">policies</span>}}, <span style="color:#000">EnableWatch</span>: <span style="color:#a90d91">false</span>})
+	<span style="color:#a90d91">if</span> <span style="color:#000">err</span> <span style="color:#000">!=</span> <span style="color:#a90d91">nil</span> {
+		<span style="color:#000">log</span>.<span style="color:#000">Fatal</span>(<span style="color:#000">err</span>)
+	}
+	<span style="color:#a90d91">defer</span> <span style="color:#000">evaluator</span>.<span style="color:#000">Close</span>()
+	<span style="color:#a90d91">for</span> <span style="color:#000">_</span>, <span style="color:#000">user</span> <span style="color:#000">:=</span> <span style="color:#a90d91">range</span> []<span style="color:#a90d91">string</span>{<span style="color:#c41a16">&#34;alice&#34;</span>, <span style="color:#c41a16">&#34;bob&#34;</span>} {
+		<span style="color:#000">allowed</span>, <span style="color:#000">reason</span>, <span style="color:#000">err</span> <span style="color:#000">:=</span> <span style="color:#000">evaluator</span>.<span style="color:#000">IsAllowed</span>(<span style="color:#000">ads</span>.<span style="color:#000">RequestContext</span>{<span style="color:#000">Subject</span>: <span style="color:#000">&amp;</span><span style="color:#000">ads</span>.<span style="color:#000">Subject</span>{<span style="color:#000">Principals</span>: []<span style="color:#000">*</span><span style="color:#000">ads</span>.<span style="color:#000">Principal</span>{{<span style="color:#000">Type</span>: <span style="color:#c41a16">&#34;user&#34;</span>, <span style="color:#000">Name</span>: <span style="color:#000">user</span>}}}, <span style="color:#000">ServiceName</span>: <span style="color:#c41a16">&#34;library&#34;</span>, <span style="color:#000">Resource</span>: <span style="color:#c41a16">&#34;book&#34;</span>, <span style="color:#000">Action</span>: <span style="color:#c41a16">&#34;read&#34;</span>})
+		<span style="color:#a90d91">if</span> <span style="color:#000">err</span> <span style="color:#000">!=</span> <span style="color:#a90d91">nil</span> {
+			<span style="color:#000">log</span>.<span style="color:#000">Fatal</span>(<span style="color:#000">err</span>)
+		}
+		<span style="color:#000">fmt</span>.<span style="color:#000">Printf</span>(<span style="color:#c41a16">&#34;%s: allowed=%t reason=%s\n&#34;</span>, <span style="color:#000">user</span>, <span style="color:#000">allowed</span>, <span style="color:#000">reason</span>.<span style="color:#000">String</span>())
+	}
 }</code></pre></div>
-<h3 id="request-an-authorization-decision">Request an authorization decision</h3>
+<h2 id="handle-results-and-lifecycle">Handle results and lifecycle</h2>
 
-<p><code>IsAllowed</code> evaluates a request against the policies. The <code>ads.RequestContext</code>
-argument contains the subject, service name, resource, action and attributes:</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#a90d91">type</span> <span style="color:#000">RequestContext</span> <span style="color:#a90d91">struct</span> {
-  <span style="color:#000">Subject</span>     <span style="color:#000">*</span><span style="color:#000">ads</span>.<span style="color:#000">Subject</span>
-  <span style="color:#000">ServiceName</span> <span style="color:#a90d91">string</span>
-  <span style="color:#000">Resource</span>    <span style="color:#a90d91">string</span>
-  <span style="color:#000">Action</span>      <span style="color:#a90d91">string</span>
-  <span style="color:#000">Attributes</span>  <span style="color:#a90d91">map</span>[<span style="color:#a90d91">string</span>]<span style="color:#a90d91">interface</span>{}
-}</code></pre></div>
-<p>The result has three values:</p>
+<p><code>IsAllowed(ads.RequestContext)</code> returns <code>(allowed bool, reason ads.Reason, err error)</code>. An application must reject an operation when <code>err != nil</code> or <code>allowed == false</code>; a decision does not enforce access by itself. <code>GetAllGrantedRoles</code>, <code>GetAllGrantedPermissions</code> and <code>Diagnose</code> provide additional evaluation APIs.</p>
 
-<ol>
-<li><code>allowed bool</code>: whether the subject may perform the action on the resource.</li>
-<li><code>reason Reason</code>: the reason for the decision.</li>
-<li><code>err error</code>: an evaluation error, or <code>nil</code> if evaluation succeeds.</li>
-</ol>
-
-<h2 id="example">Example</h2>
-
-<p>See the <a href="https://github.com/teramoby/speedle-plus/tree/master/samples/embedded/expenses">embedded expenses example</a>.</p>
+<p>The example uses <code>NewFromConfig</code>, which returns an evaluator with <code>Close()</code>. Close it when finished to stop background work and release the store. Set <code>EnableWatch: true</code> when policy changes must be observed; updates are asynchronous, so verify the intended revision before relying on it. See <a href="/docs/store/">policy storage</a> and the <a href="https://github.com/teramoby/speedle-plus/tree/master/samples/embedded/expenses">embedded expenses sample</a> for larger integrations.</p>
 
   </div>
 </div>

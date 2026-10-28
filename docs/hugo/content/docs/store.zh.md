@@ -1,6 +1,6 @@
 +++
 title = "存储扩展"
-description = "Bring your own persistence store!"
+description = "内置策略存储、配置与自定义后端接口"
 weight = 130
 draft = false
 toc = true
@@ -10,186 +10,93 @@ categories = ["docs"]
 bref = ""
 +++
 
-## 概述
+## 内置存储与扩展接口
 
-Speedle 现在支持两种数据存储，OOTB:文件存储和 etcd 存储。
-但是，您可以实现自己的数据存储(例如使用 mongodb 等)
+独立服务在 `pkg/store` 下注册 file、etcd、MongoDB 实现。可用不代表具有相同的运维保证，部署前应分别审查后端认证、持久化、事务与 watch 行为。下方配置说明属性名称，本地示例不涉及启动 etcd/MongoDB 集群。
 
-- 请注意数据存储需要支持“watch”功能
+完整后端实现 [pms.PolicyStoreManager](https://github.com/teramoby/speedle-plus/blob/master/api/pms/interface.go)：服务、授权策略、角色策略、函数管理，以及快照读取、健康检查、watch/stop、close。ADS 接受较窄的只读/watch 接口 `PolicyStoreManagerADS`。实现新后端时应以实际接口为准，不能照搬历史文档中不完整的方法列表。
 
-本文档将说明如何逐步实现一个数据存储。
+## 实现并注册 builder
 
-## 实现 PolicyStoreManager 接口
+[store.StoreBuilder](https://github.com/teramoby/speedle-plus/blob/master/pkg/store/store.go)提供 `NewStore(map[string]interface{}) (pms.PolicyStoreManager, error)` 与 `GetStoreParams() map[string]string`。后者把 flag 名称映射到配置属性名。在 `init()` 或调用 `store.NewStore` 之前注册唯一的存储类型，重复注册会报错。
 
-在 store 目录下创建一个“mystore”目录并导航到它目录下面。
-创建一个类似 mystore 之类的存储代码文件，并在此文件中实现“PolicyStoreManager”接口。
+以下完整示例复用文件后端，演示工厂接口与注册流程，并不声称实现了一个新数据库：
 
-Example in `store/etcd/etcdStore.go`:
-
-```golang
-type Store struct {
-    ...
-}
-func (s *Store) ReadPolicyStore() (*pms.PolicyStore, error) {
-  ...
-}
-func (s *Store) CreateService(service *pms.Service) error {
-  ...
-}
-...
+<!-- docs-check: store -->
+```bash
+go run ./samples/docs/store
 ```
 
-请注意这个 watch 的功能。该功能将监视数据存储的更改。这个函数需要返回一个“StorageChangeChannel”对象，每个 store change event(请查看“api/pms/types/StoreChangeEvent”以获取详细信息)都会被发送到这个 Channel。ADS 将接收这些更改事件并立即更新其缓存。
 
-## 编写 storeBuilder 代码
-
-### 理解 Speedle 存储配置
-
-Speedle 从三个不同的源读取存储配置信息:flags、环境变量和配置文件。
-
-flags 具有最高优先级，然后是环境变量，然后是配置文件。这意味着高优先级源中的配置项将覆盖低优先级源中的相同配置项。
-
-存储所有者需要在 init 函数中提供 flags 定义，我们使用[pflag](https://github.com/spf13/pflag)来定义 flags。
-
-`store/etcd/storeBuilder.go` 中的 flags 定义:
-
-```golang
-const (
-    IsEmbeddedEtcdFlagName             = "etcdstore-isembedded"
-    EmbeddedEtcdDataDirFlagName        = "etcdstore-embeddedDataDir"
-    EtcdEndpointFlagName               = "etcdstore-endpoint"
-    EtcdKeyPrefixFlagName              = "etcdstore-keyprefix"
-    EtcdTLSClientCertFileFlagName      = "etcdstore-tls-cert"
-    EtcdTLSClientKeyFileFlagName       = "etcdstore-tls-key"
-    EtcdTLSClientTrustedCAFileFlagName = "etcdstore-tls-ca"
-    EtcdTLSAllowedCNFlagName           = "etcdstore-tls-allowedCN"
-    EtcdTLSServerNameFlagName          = "etcdstore-tls-serverName"
-    EtcdTLSCRLFileFlagName             = "etcdstore-tls-crlFile"
-    EtcdTLSInsecureSkipVerifyFlagName  = "etcdstore-tls-insecureSkipVerify"
-
-    //default property values
-    DefaultKeyPrefix           = "/speedle_ps/"
-    DefaultEtcdStoreEndpoint   = "localhost:2379"
-    DefaultEtcdStoreKeyPrefix  = "/speedle_ps/"
-    DefaultEtcdStoreIsEmbedded = false
-)
-
-func init() {
-    pflag.String(EtcdEndpointFlagName, DefaultEtcdStoreEndpoint, "Store config: endpoint of etcd store.")
-    pflag.String(EtcdKeyPrefixFlagName, DefaultEtcdStoreKeyPrefix, "Store config: key prefix to store speedle policy data in etcd store.")
-    pflag.Bool(IsEmbeddedEtcdFlagName, DefaultEtcdStoreIsEmbedded, "Store config: is embedded etcd store or not.")
-    pflag.String(EmbeddedEtcdDataDirFlagName, "", "Store config: data dir for embedded etcd store.")
-    pflag.String(EtcdTLSClientCertFileFlagName, "", "Store config: etcd x509 client cert.")
-    pflag.String(EtcdTLSClientKeyFileFlagName, "", "Store config: etcd x509 client key.")
-    pflag.String(EtcdTLSClientTrustedCAFileFlagName, "", "Store config: etcd x509 client CA cert.")
-    pflag.String(EtcdTLSAllowedCNFlagName, "", "Store config: etcd x509 allowed CN.")
-    pflag.String(EtcdTLSServerNameFlagName, "", "Store config: etcd x509 server name.")
-    pflag.String(EtcdTLSCRLFileFlagName, "", "Store config: etcd x509 CRL file.")
-    pflag.Bool(EtcdTLSInsecureSkipVerifyFlagName, false, "Store config: etcd x509 insecure skip verify.")
-}
-```
-
-环境变量名称是 flag 名称的转换，规则是:添加一个“SPDL*”前缀，将每个“-”替换为“*”，并将所有字母转换为大写。例如:
-`etcdstore-endpoint` -> `SPDL_ETCDSTORE_ENDPOINT`
-
-存储所有者还需要定义配置文件中使用的存储属性名，通过提供{' flagName:storePropName '} map。这个映射将显示 flag 和 store 属性之间的对应关系。
-
-Config file example:
-
-```json
-{
-	"storeConfig": {
-		"storeType": "etcd",
-		"storeProps": {
-			"EtcdEndpoint": "localhost:2379",
-			"EtcdKeyPrefix": "/opss_ps/",
-			"IsEmbeddedEtcd": true,
-			"EmbeddedEtcdDataDir": "./speedle.etcd"
-		}
-	}
-}
-```
-
-### 实现 StoreBuilder 接口
-
-StoreBuild 将提供关于创建存储的函数，以及获取该存储相关参数的函数。
-
-Example in `store/etcd/storeBuilder.go`:
-
-```golang
-type Etcd3StoreBuilder struct{}
-
-func (esb Etcd3StoreBuilder) NewStore(config map[string]interface{}) (pms.PolicyStoreManager, error) {
-   ...
-}
-func (fs FileStoreBuilder) GetStoreParams() map[string]string {
-   ...
-}
-```
-
-“NewStore”方法需要返回实现“PolicyStoreManager”接口的存储实例。
-输入参数是一个配置 map，对应于配置文件中的“storeProps”，它将于与来自 flags 和环境变量的配置信息合并在一起。
-您可以从这个配置 map 中读取配置项的值来构建存储。如果您想读取' EtcdEndpoint '值，可以这样做:
-
-```
-etcdEndpoint, ok := config[EtcdEndpointKey].(string)
-```
-
-请注意，配置值可能来自不同的源(flag、环境变量、配置文件)，配置值类型可能是您的期望类型(如 int 或 bool)或字符串类型。因此，您需要检查值类型，并可能需要将值从 string 类型转换为您期望的类型。
-
-接口“GetStoreParams()”需要返回一个{“flagName:storePropName”}map。这个 map 将显示 flag 和 store 属性之间的对应关系。
-
-etcd storeBuilder `GetStoreParams`() function example:
-
-```golang
-func (esb Etcd3StoreBuilder) GetStoreParams() map[string]string {
-    return map[string]string{
-
-        IsEmbeddedEtcdFlagName:             IsEmbeddedEtcdKey,
-        EmbeddedEtcdDataDirFlagName:        EmbeddedEtcdDataDirKey,
-        EtcdEndpointFlagName:               EtcdEndpointKey,
-        EtcdKeyPrefixFlagName:              EtcdKeyPrefixKey,
-        EtcdTLSClientCertFileFlagName:      EtcdTLSClientCertFileKey,
-        EtcdTLSClientKeyFileFlagName:       EtcdTLSClientKeyFileKey,
-        EtcdTLSClientTrustedCAFileFlagName: EtcdTLSClientTrustedCAFileKey,
-        EtcdTLSAllowedCNFlagName:           EtcdTLSAllowedCNKey,
-        EtcdTLSServerNameFlagName:          EtcdTLSServerNameKey,
-        EtcdTLSCRLFileFlagName:             EtcdTLSCRLFileKey,
-        EtcdTLSInsecureSkipVerifyFlagName:  EtcdTLSInsecureSkipVerifyKey,
-    }
-
-}
-```
-
-### 注册 storeBuilder
-
-注册 storeBuilder 将根据提供的名称使这种类型的存储可用。
-init 函数需要声明这个存储所需的所有 flags。
-
-Example in `store/etcd/storeBuilder.go`:
-
-```golang
-func init() {
-    pflag.String(EtcdEndpointFlagName, DefaultEtcdStoreEndpoint, "Store config: endpoint of etcd store.")
-    pflag.Bool(IsEmbeddedEtcdFlagName, DefaultEtcdStoreIsEmbedded, "Store config: is embedded etcd store or not.")
-    ...
-
-    store.Register(StoreType, Etcd3StoreBuilder{})
-}
-```
-
-## 链接新存储到 Speedle
-
-在目录 cmd/speedle-ads 和目录 cmd/speedle-pms 中，你可以找到一个 store.go 文件，其具有下面的内容：
-
-```golang
+<!-- docs-source: samples/docs/store/main.go -->
+```go
 package main
 
 import (
-    _ "github.com/teramoby/speedle-plus/store/etcd"
-    _ "github.com/teramoby/speedle-plus/store/file"
+	"fmt"
+	"github.com/teramoby/speedle-plus/pkg/store"
+	"github.com/teramoby/speedle-plus/pkg/store/file"
+	"log"
+	"os"
+	"path/filepath"
+)
+
+// This example delegates to the file backend to demonstrate registration.
+// A new backend must implement the complete PolicyStoreManager contract.
+type Builder struct{ file.FileStoreBuilder }
+
+func main() {
+	dir, err := os.MkdirTemp("", "speedle-store-example-")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer os.RemoveAll(dir)
+	store.Register("myfile", Builder{})
+	policies, err := store.NewStore("myfile", map[string]interface{}{"FileLocation": filepath.Join(dir, "policies.json")})
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer policies.Close()
+	snapshot, err := policies.ReadPolicyStore()
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Printf("Registered myfile store; services=%d\n", len(snapshot.Services))
+}
+```
+
+
+## 正确合并配置
+
+独立命令的优先级为显式 flag、非空环境变量、配置文件属性、默认值。环境变量名称的规则是添加 `SPDL_`、将 `-` 替换为 `_`，再转为大写；例如 `etcdstore-endpoint` 对应 `SPDL_ETCDSTORE_ENDPOINT`。flag/env 可能提供字符串，JSON 可能提供带类型的值，builder 必须明确验证并转换。
+
+```json
+{
+  "storeConfig": {
+    "storeType": "etcd",
+    "storeProps": {
+      "EtcdEndpoint": "localhost:2379",
+      "EtcdKeyPrefix": "/speedle_ps/",
+      "IsEmbeddedEtcd": true,
+      "EmbeddedEtcdDataDir": "./speedle.etcd"
+    }
+  },
+  "enableWatch": true
+}
+```
+
+自定义 flag 需在解析前通过 `pflag` 定义，并由 `GetStoreParams` 返回 flag 到属性的映射。嵌入式调用直接把配置 map 交给 `store.NewStore` 或 `eval.NewFromConfig`；工厂本身不会自动读取命令行或环境变量。
+
+## 链接后端并处理更新
+
+若在 `init()` 中注册，独立 PMS、ADS 或嵌入式应用都要通过 side-effect import 链接实现：
+
+```go
+import (
+    _ "github.com/teramoby/speedle-plus/pkg/store/etcd"
+    _ "github.com/teramoby/speedle-plus/pkg/store/file"
+    _ "github.com/teramoby/speedle-plus/pkg/store/mongodb"
 )
 ```
 
-在这个文件中，我们用一个 side-effect 导入(使用一个空白导入名称)来链接每个存储的实现。您也可以在这里添加自己的存储。
-如果你想在“in-process”模式下使用 Speedle，你可以复制这个 store.go 文件。转到您自己的 package 中，将 package 名字修改为您自己的 package 名字。
+`Watch()` 通过 `pms.StorageChangeChannel` 返回正确的快照/变更事件，`StopWatch()` 与 `Close()` 应能释放相关资源。ADS 异步更新运行时缓存。需测试 watch 断连、漏事件、恢复、写入失败与并发读取；不能仅因后端支持 watch，就承诺策略会瞬间传播。

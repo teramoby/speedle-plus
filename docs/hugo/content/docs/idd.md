@@ -14,177 +14,88 @@ tags = ["identity domain", "identity"]
 
 ## What is an identity domain?
 
-An identity domain is a logical namespace for users and groups, typically representing a discrete set of users and groups in the physical data store. Each identity domain manages users and groups independently. User and group names must be unique in an identity domain.
+An identity domain (`idd`) is an explicit namespace for a principal. Two users named `user1` can belong to different domains. The string is supplied by trusted integration code or a configured token asserter; it is not proof of authentication. Speedle does not infer or validate a provider's tenant model merely from the domain name.
 
-## How Speedle handles multiple identity domains
+## Represent domains in policies and requests
 
-In an integrated environment, identities may come from multiple identity domains. Consider, for example, the following policy where a user with the identifier `user1` is authorized to perform a `rent` action on the resource `book`. This policy grants permission for `user1` from any identity domain to rent the book resource.
+```text
+grant user user1 from github read book
+grant user user1 from IDCS.tenant01 read book
+```
 
+Use `from <identity-domain>` immediately after the principal name. In a PMS JSON policy, encode the same principal as `idd=github:user:user1`. In a decision request, use `{"type":"user","name":"user1","idd":"github"}`.
+
+A policy with `from github` matches that domain only. Omitting `from` matches that principal name across domains. Review this explicitly for multitenant applications; a domain string by itself does not validate a token. See [identity/IAM](/docs/access-control/identity-iam/) and [token assertion](/docs/assertor/).
+
+## Before running the examples
+
+Build `./bin/spctl`, `./bin/speedle-pms` and `./bin/speedle-ads` using the [quick start](/quick-start/). Use Go 1.26 or later, Bash, curl and Python 3. Run each terminal from the repository root. Use a fresh policy file for this page; reset it only after stopping both services.
+
+Initialize an empty policy file:
+
+<!-- docs-check: setup -->
 ```bash
-
-./spctl create policy -c "grant user user1 rent book" --service-name=booksvc
-
+printf '{}\n' > docs-policies.json
 ```
 
-However, the service only expects `user1` from the identity domain `github` to have the `rent` permission. Therefore, Speedle must be able to distinguish between users coming from different identity domains.
+In terminal one, start PMS and leave it running:
 
-With Speedle, to ensure that only the user from the expected identity domain is granted permission, you construct a new user/group identifier based on the incoming user/group identifier and the user/group identity domain. You can then use the new user/group identifier in the Speedle policies. The new identifier structure is defined as follows, where IDD represents the identity domain property.
-
-```go
-
-type Principal struct {
-	Type string `json:"type,omitempty"`
-	Name string `json:"name,omitempty"`
-	IDD  string `json:"idd,omitempty"`
-}
-
-```
-
-**Note:** Identity providers such as [Google account](https://account.google.com/) don't support multiple identity domains, while [Oracle Identity Cloud Service (IDCS)](https://www.oracle.com/cloud/paas/identity-cloud-service.html) does support multiple identity domains. The value of the identity domain property is implementation dependent.
-
-## Defining policies with identity domains
-
-To specify that the policy is defined for a user from the specified identity domain, use the [SPDL](../spdl) keyword: _**from &lt;identity domain&gt;**_
-
-POLICY = EFFECT SUBJECT _**from &lt;identity domain&lt;**_ ACTION RESOURCE if CONDITION
-
-### Examples
-
-This policy demonstrates that only `user1` from the `github` identity provider can perform the `read` action on the `book` resource:
-
+<!-- docs-check: pms -->
 ```bash
-
-# grant user1 from github permission to perform the action: read on the resource: book
-./spctl create policy -c "grant user user1 from github read book" --service-name=booksvc
-
+./bin/speedle-pms --store-type file --filestore-loc ./docs-policies.json --endpoint 127.0.0.1:6733 --grpc-endpoint 127.0.0.1:0 --insecure=true
 ```
 
-This policy demonstrates that only `user1` from identity domain `tenant01` of identity provider `IDCS` can perform the `read` action on the `book` resource:
+In terminal two, start ADS and leave it running:
 
+<!-- docs-check: ads -->
 ```bash
-
-# grant user1 from tenant01 of IDCS permission to perform action: read on resource: book
-./spctl create policy -c "grant user user1 from IDCS.tenant01 read book" --service-name=booksvc
-
+./bin/speedle-ads --store-type file --filestore-loc ./docs-policies.json --endpoint 127.0.0.1:6734 --grpc-endpoint 127.0.0.1:0 --insecure=true
 ```
 
-### Policy Management REST APIs
+Run the remaining commands in a third terminal. PMS and ADS share the file; watch propagates changes asynchronously. Confirm the intended update has reached ADS before relying on it. `--insecure=true` is only for this loopback example; see [security](/docs/security/) for production connections. Explicit PMS addresses avoid changing `~/.spctlconfig`. Stop both server terminals with Ctrl-C when finished.
 
-Prefix each principal with _**"idd=&lt;identity domain&gt;:"**_
 
-#### Example
+## Load the test policies
 
+The [fixture](https://github.com/teramoby/speedle-plus/blob/master/samples/docs/idd.json) grants `read` to GitHub's `user1`, `write` to Google's `user1`, and `rent` to `user1` from any domain. The lowercase domain values are demonstration namespaces.
+
+<!-- docs-check: idd-fixture -->
 ```bash
-
-# Create a policy: allow user1 coming from identity domain: github to perform action: read on resource: book
-curl -v -X POST -d '{"name": "policy1","effect": "grant","permissions": [{"resource": "book","actions": ["read"]}],"principals": [["idd=github:user:user1"]]}' http://127.0.0.1:6733/policy-mgmt/v1/service/booksvc/policy
-
+./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ create service --json-file samples/docs/idd.json
 ```
 
-### How policies with identity domains are evaluated
 
-- **Policy defined with an identity domain**
+## Compare decisions
 
-      	The evaluation engine first tests whether the user's identity domain in the incoming request strictly matches the identity domain defined in the policy. If there is an exact match, it then evaluates the policy. If there is not an exact match, the evaluation result for the defined policy is false.
+In order, expect Allow, Deny, Allow, Deny. A user in `notgoogle` cannot use Google's `write` grant.
 
-- **Policy defined without an identity domain**
-
-      	The evaluation engine evaluates the policy without considering the identity domain in the incoming request and will match principals from any identity domains.
-
-## Samples
-
-These samples show how to create a policy with identity domains using the `spctl` CLI and the Policy Management API, and the expected results. The sample policy demonstrates how a user with the same name, `user1`, is granted different permissions depending on which identity provider the user is from.
-
-### Creating a policy with identity domains using the spctl CLI
-
+<!-- docs-check: idd-allow -->
 ```bash
-
-./spctl create service booksvc
-# grant user1 coming from github permission to perform action: read on resource: book
-./spctl create policy -c "grant user user1 from github read book" --service-name=booksvc
-# grant user1 coming from google permission to perform action: write on resource: book
-./spctl create policy -c "grant user user1 from google write book" --service-name=booksvc
-# grant user1 coming from any identity provider permission to perform action: rent on resource: book
-./spctl create policy -c "grant user user1 rent book" --service-name=booksvc
-
+curl --fail --silent --show-error -H 'Content-Type: application/json' \
+  -d '{"subject":{"principals":[{"type":"user","name":"user1","idd":"github"}]},"serviceName":"booksvc","resource":"book","action":"read"}' \
+  http://127.0.0.1:6734/authz-check/v1/is-allowed
 ```
 
-JSON format of policy data
-
-```json
-{
-	"services": [
-		{
-			"name": "booksvc",
-			"policies": [
-				{
-					"id": "policy1",
-					"effect": "grant",
-					"permissions": [
-						{
-							"resource": "book",
-							"actions": ["read"]
-						}
-					],
-					"principals": [["idd=github:user:user1"]]
-				},
-				{
-					"id": "policy2",
-					"effect": "grant",
-					"permissions": [
-						{
-							"resource": "book",
-							"actions": ["write"]
-						}
-					],
-					"principals": [["idd=google:user:user1"]]
-				},
-				{
-					"id": "policy3",
-					"effect": "grant",
-					"permissions": [
-						{
-							"resource": "book",
-							"actions": ["rent"]
-						}
-					],
-					"principals": [["user:user1"]]
-				}
-			]
-		}
-	]
-}
-```
-
-### Creating a policy with identity domains using the Policy Management API
-
+<!-- docs-check: idd-deny -->
 ```bash
-
-curl -v -X POST -d '{"name": "policy1","effect": "grant","permissions": [{"resource": "book","actions": ["read"]}],"principals": [["idd=github:user:user1"]]}' http://127.0.0.1:6733/policy-mgmt/v1/service/booksvc/policy
-
-curl -v -X POST -d '{"name": "policy1","effect": "grant","permissions": [{"resource": "book","actions": ["write"]}],"principals": [["idd=google:user:user1"]]}' http://127.0.0.1:6733/policy-mgmt/v1/service/booksvc/policy
-
-curl -v -X POST -d '{"name": "policy1","effect": "grant","permissions": [{"resource": "book","actions": ["rent"]}],"principals": [["user:user1"]]}' http://127.0.0.1:6733/policy-mgmt/v1/service/booksvc/policy
-
+curl --fail --silent --show-error -H 'Content-Type: application/json' \
+  -d '{"subject":{"principals":[{"type":"user","name":"user1","idd":"gitlab"}]},"serviceName":"booksvc","resource":"book","action":"read"}' \
+  http://127.0.0.1:6734/authz-check/v1/is-allowed
 ```
 
-### Policy evaluation results
-
-The following policy evaluation results are based on the policies defined in the samples above.
-
+<!-- docs-check: idd-any -->
 ```bash
-# The evaluation result is true.
-curl -v -X POST -d '{ "subject": {"principals":[{"type":"user","name":"user1","idd":"github"}] },"serviceName":"booksvc","resource":"book","action":"read"}'  http://127.0.0.1:6734/authz-check/v1/is-allowed
-
-# The evaluation result is false because of different identity domain: gitlab
-curl -v -X POST -d '{ "subject": {"principals":[{"type":"user","name":"user1","idd":"gitlab"}] },"serviceName":"booksvc","resource":"book","action":"read"}'  http://127.0.0.1:6734/authz-check/v1/is-allowed
-
-# The evaluation result is true because of user1 coming from any identity providers can perform rent action
-curl -v -X POST -d '{ "subject": {"principals":[{"type":"user","name":"user1"}] },"serviceName":"booksvc","resource":"book","action":"rent"}'  http://127.0.0.1:6734/authz-check/v1/is-allowed
-
-curl -v -X POST -d '{ "subject": {"principals":[{"type":"user","name":"user1","idd":"google"}] },"serviceName":"booksvc","resource":"book","action":"rent"}'  http://127.0.0.1:6734/authz-check/v1/is-allowed
-
-# The evaluation result is false because of different identity domain "idd":"notgoogle"
-curl -v -X POST -d '{ "subject": {"principals":[{"type":"user","name":"user1","idd":"notgoogle"}] },"serviceName":"booksvc","resource":"book","action":"write"}'  http://127.0.0.1:6734/authz-check/v1/is-allowed
-
+curl --fail --silent --show-error -H 'Content-Type: application/json' \
+  -d '{"subject":{"principals":[{"type":"user","name":"user1","idd":"google"}]},"serviceName":"booksvc","resource":"book","action":"rent"}' \
+  http://127.0.0.1:6734/authz-check/v1/is-allowed
 ```
+
+<!-- docs-check: idd-write-deny -->
+```bash
+curl --fail --silent --show-error -H 'Content-Type: application/json' \
+  -d '{"subject":{"principals":[{"type":"user","name":"user1","idd":"notgoogle"}]},"serviceName":"booksvc","resource":"book","action":"write"}' \
+  http://127.0.0.1:6734/authz-check/v1/is-allowed
+```
+
+
+JSON requests require `Content-Type: application/json`. Management examples use string policy IDs and `permissions` (plural); see the [management API](/docs/api/management_api/).

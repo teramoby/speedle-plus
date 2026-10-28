@@ -2,6 +2,8 @@ syntax = "proto3";
 
 package pms_pb;
 
+option go_package = "github.com/teramoby/speedle-plus/pkg/svcs/pmsgrpc/pb;pb";
+
 service PolicyManager {
     rpc CreateFunction(Function) returns(Function) {}
     rpc QueryFunctions(FunctionQueryRequest) returns(FunctionQueryResponse) {}

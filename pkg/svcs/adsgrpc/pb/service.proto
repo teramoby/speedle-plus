@@ -2,6 +2,8 @@ syntax = "proto3";
 
 package ads_pb;
 
+option go_package = "github.com/teramoby/speedle-plus/pkg/svcs/adsgrpc/pb;pb";
+
 service Evaluator {
     rpc IsAllowed(ContextRequest) returns(IsAllowedResponse) {}
     rpc GetAllGrantedRoles(ContextRequest) returns(AllRoleResponse) {}

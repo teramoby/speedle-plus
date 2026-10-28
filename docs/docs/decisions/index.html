@@ -105,190 +105,113 @@ headingSelector: 'h2'
 
 <h2 id="what-is-an-authorization-decision">What is an authorization decision?</h2>
 
-<ul>
-<li><p>An authorization decision determines whether a subject performing an action on a resource is allowed.</p></li>
+<p>Speedle evaluates a subject, action and resource within a service. The application must enforce the result. Treat an evaluation error or timeout separately from a normal Deny and fail closed. REST, gRPC and embedded Go APIs have different wire representations; use their respective <a href="/docs/api/">contracts</a>.</p>
 
-<li><p>An authorization decision is the result of real-time evaluation based on policies and attributes.</p></li>
-</ul>
+<h2 id="before-running-the-examples">Before running the examples</h2>
 
-<h2 id="ways-to-get-authorization-decisions">Ways to get authorization decisions</h2>
+<p>Build <code>./bin/spctl</code>, <code>./bin/speedle-pms</code> and <code>./bin/speedle-ads</code> using the <a href="/quick-start/">quick start</a>. Use Go 1.26 or later, Bash, curl and Python 3. Run each terminal from the repository root. Use a fresh policy file for this page; reset it only after stopping both services.</p>
 
-<p>Authorization decisions can be performed by the Authorization Decision Service or an by an embedded evaluator:</p>
+<p>Initialize an empty policy file:</p>
 
-<ul>
-<li>Authorization Decision Service (ADS)
+<!-- docs-check: setup -->
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#a90d91">printf</span> <span style="color:#c41a16">&#39;{}\n&#39;</span> &gt; docs-policies.json</code></pre></div>
+<p>In terminal one, start PMS and leave it running:</p>
 
-<ul>
-<li>REST API</li>
-<li>Grpc API</li>
-</ul></li>
-<li>Embedded Evaluator
+<!-- docs-check: pms -->
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./bin/speedle-pms --store-type file --filestore-loc ./docs-policies.json --endpoint <span style="color:#1c01ce">127</span>.0.0.1:6733 --grpc-endpoint <span style="color:#1c01ce">127</span>.0.0.1:0 --insecure<span style="color:#000">=</span>true</code></pre></div>
+<p>In terminal two, start ADS and leave it running:</p>
 
-<ul>
-<li>Golang API</li>
-</ul></li>
-</ul>
+<!-- docs-check: ads -->
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./bin/speedle-ads --store-type file --filestore-loc ./docs-policies.json --endpoint <span style="color:#1c01ce">127</span>.0.0.1:6734 --grpc-endpoint <span style="color:#1c01ce">127</span>.0.0.1:0 --insecure<span style="color:#000">=</span>true</code></pre></div>
+<p>Run the remaining commands in a third terminal. PMS and ADS share the file; watch propagates changes asynchronously. Confirm the intended update has reached ADS before relying on it. <code>--insecure=true</code> is only for this loopback example; see <a href="/docs/security/">security</a> for production connections. Explicit PMS addresses avoid changing <code>~/.spctlconfig</code>. Stop both server terminals with Ctrl-C when finished.</p>
 
-<h2 id="apis-and-samples">APIs and Samples</h2>
+<h2 id="create-a-reproducible-policy-set">Create a reproducible policy set</h2>
 
-<p>The ADS decision APIs make authorization decisions based on policies that describe the actions, permissions, and roles granted to a subject.</p>
+<p>The <a href="https://github.com/teramoby/speedle-plus/blob/master/samples/docs/bookstore.json">fixture</a> assigns Alan <code>role1</code> and <code>role2</code>; <code>role1</code> may download <code>/books/HarryPotter</code>.</p>
 
-<h3 id="get-decision">Get decision</h3>
+<!-- docs-check: bookstore-fixture -->
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ create service --json-file samples/docs/bookstore.json</code></pre></div>
+<h2 id="get-a-decision">Get a decision</h2>
 
-<p>Get a decision on whether a subject performing an action on a resource is allowed.</p>
+<p>Alan is allowed; Bob is denied because no grant applies.</p>
 
-<ul>
-<li>API overview
+<!-- docs-check: decision-allow -->
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl --fail --silent --show-error -H <span style="color:#c41a16">&#39;Content-Type: application/json&#39;</span> <span style="color:#c41a16">\
+</span><span style="color:#c41a16"></span>  -d <span style="color:#c41a16">&#39;{&#34;subject&#34;:{&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;,&#34;name&#34;:&#34;Alan&#34;}]},&#34;serviceName&#34;:&#34;onlineBookStore&#34;,&#34;resource&#34;:&#34;/books/HarryPotter&#34;,&#34;action&#34;:&#34;download&#34;}&#39;</span> <span style="color:#c41a16">\
+</span><span style="color:#c41a16"></span>  http://127.0.0.1:6734/authz-check/v1/is-allowed</code></pre></div>
+<!-- docs-check: decision-deny -->
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl --fail --silent --show-error -H <span style="color:#c41a16">&#39;Content-Type: application/json&#39;</span> <span style="color:#c41a16">\
+</span><span style="color:#c41a16"></span>  -d <span style="color:#c41a16">&#39;{&#34;subject&#34;:{&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;,&#34;name&#34;:&#34;Bob&#34;}]},&#34;serviceName&#34;:&#34;onlineBookStore&#34;,&#34;resource&#34;:&#34;/books/HarryPotter&#34;,&#34;action&#34;:&#34;download&#34;}&#39;</span> <span style="color:#c41a16">\
+</span><span style="color:#c41a16"></span>  http://127.0.0.1:6734/authz-check/v1/is-allowed</code></pre></div>
+<p>Successful decisions return <code>{&quot;allowed&quot;:true,&quot;reason&quot;:0}</code> or a corresponding Deny object. HTTP errors return an error response, not a successful grant. Reason codes are:</p>
 
-<ul>
-<li>IN</li>
-<li>Given the request: subject, action, resource</li>
-<li>Given the runtime attributes **optional**</li>
-<li>Given the service scope</li>
-<li>OUT</li>
-<li>Returns <em>true</em> if allowed, <em>false</em> if <em>NOT</em> allowed</li>
-<li>Returns reason for the decision</li>
-<li>Returns errors if an error occurs</li>
-</ul></li>
-<li>Sample
+<table>
+<thead>
+<tr>
+<th>Code</th>
+<th>Meaning</th>
+</tr>
+</thead>
 
-<ul>
-<li>Get a decision on whether user Alan is allowed to download a book from an online bookstore</li>
-<li>Decision is based on policies defined in a service named &ldquo;onlineBookStore&rdquo;</li>
-</ul></li>
-</ul>
+<tbody>
+<tr>
+<td>0</td>
+<td>GRANT_POLICY_FOUND</td>
+</tr>
 
-<p><strong>REST API example:</strong></p>
+<tr>
+<td>1</td>
+<td>DENY_POLICY_FOUND</td>
+</tr>
 
-<p><em>Request:</em></p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">curl -X POST  http://localhost:6734/authz-check/v1/is-allowed \
--d @- &lt;&lt; EOF
-{
- &#34;subject&#34;: {&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;, &#34;name&#34;:&#34;Alan&#34;}]},
- &#34;action&#34;: &#34;download&#34;,
- &#34;resource&#34;:&#34;/books/HarryPotter&#34;,
- &#34;serviceName&#34;: &#34;onlineBookStore&#34;
-}
-EOF</pre></div>
-<p><em>Response:</em></p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">{&#34;allowed&#34;:true,&#34;reason&#34;:0}</pre></div>
-<p>Here, reason &lsquo;0&rsquo; means that the ADS found the grant policy. The list of reasons and definitions are as follows:</p>
+<tr>
+<td>2</td>
+<td>SERVICE_NOT_FOUND</td>
+</tr>
 
-<p><table class="bordered striped">
-    <thead>
-      <tr>
-        <th>Reason</th>
-        <th>Definition</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td> 0 </td>
-        <td> GRANT_POLICY_FOUND </td>
-      </tr>
-      <tr>
-        <td> 1 </td>
-        <td> DENY_POLICY_FOUND </td>
-      </tr>
-      <tr>
-        <td> 2 </td>
-        <td> SERVICE_NOT_FOUND </td>
-      </tr>
-      <tr>
-        <td> 3 </td>
-        <td> NO_APPLICABLE_POLICIES </td>
-      </tr>
-      <tr>
-        <td> 4 </td>
-        <td> ERROR_IN_EVALUATION </td>
-      </tr>
-      <tr>
-        <td> 5 </td>
-        <td> DISCOVER_MODE </td>
-      </tr>
-   </tbody>
- </table></p>
+<tr>
+<td>3</td>
+<td>NO_APPLICABLE_POLICIES</td>
+</tr>
 
-<h3 id="get-roles">Get Roles</h3>
+<tr>
+<td>4</td>
+<td>ERROR_IN_EVALUATION</td>
+</tr>
 
-<p>Get all the roles granted to the subject in a request.</p>
+<tr>
+<td>5</td>
+<td>DISCOVER_MODE</td>
+</tr>
 
-<ul>
-<li><p>API overview</p>
+<tr>
+<td>6</td>
+<td>REASON_NOT_AVAILABLE</td>
+</tr>
+</tbody>
+</table>
 
-<ul>
-<li>IN</li>
-<li>Given the subject</li>
-<li>Given the runtime attributes **optional**</li>
-<li>Given the service scope</li>
-<li>OUT</li>
-<li>Returns a slice of roles granted to current subject</li>
-<li>Returns errors if an error occurs</li>
-</ul></li>
+<p><code>DISCOVER_MODE</code> is not a production authorization grant. <code>REASON_NOT_AVAILABLE</code> is the fallback reason value. Do not assume these numbers are HTTP status codes.</p>
 
-<li><p>Sample</p>
+<h2 id="get-granted-roles">Get granted roles</h2>
 
-<ul>
-<li>Get the roles granted to the user Alan</li>
-<li>Decision is based on policies defined in service named &ldquo;onlineBookStore&rdquo;</li>
-</ul></li>
-</ul>
+<!-- docs-check: decision-roles -->
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl --fail --silent --show-error -H <span style="color:#c41a16">&#39;Content-Type: application/json&#39;</span> <span style="color:#c41a16">\
+</span><span style="color:#c41a16"></span>  -d <span style="color:#c41a16">&#39;{&#34;subject&#34;:{&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;,&#34;name&#34;:&#34;Alan&#34;}]},&#34;serviceName&#34;:&#34;onlineBookStore&#34;,&#34;resource&#34;:&#34;/books/HarryPotter&#34;,&#34;action&#34;:&#34;download&#34;}&#39;</span> <span style="color:#c41a16">\
+</span><span style="color:#c41a16"></span>  http://127.0.0.1:6734/authz-check/v1/all-granted-roles</code></pre></div>
+<p>Expected roles are <code>role1</code> and <code>role2</code> (ordering is not significant). Include <code>resource</code> when querying resource-scoped role assignments.</p>
 
-<p><strong>REST API example:</strong><br />
-<em>Request:</em></p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">curl -X POST  http://localhost:6734/authz-check/v1/all-granted-roles \
--d @- &lt;&lt; EOF
-{
- &#34;subject&#34;: {&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;, &#34;name&#34;:&#34;Alan&#34;}]},
- &#34;serviceName&#34;: &#34;onlineBookStore&#34;
-}
-EOF</pre></div>
-<p><em>Response:</em></p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">[&#34;role1&#34;, &#34;role2&#34;]</pre></div>
-<h3 id="get-permissions">Get Permissions</h3>
+<h2 id="get-granted-permissions">Get granted permissions</h2>
 
-<p>Get all permissions granted to the subject in a request.</p>
+<!-- docs-check: decision-permissions -->
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl --fail --silent --show-error -H <span style="color:#c41a16">&#39;Content-Type: application/json&#39;</span> <span style="color:#c41a16">\
+</span><span style="color:#c41a16"></span>  -d <span style="color:#c41a16">&#39;{&#34;subject&#34;:{&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;,&#34;name&#34;:&#34;Alan&#34;}]},&#34;serviceName&#34;:&#34;onlineBookStore&#34;,&#34;resource&#34;:&#34;/books/HarryPotter&#34;,&#34;action&#34;:&#34;download&#34;}&#39;</span> <span style="color:#c41a16">\
+</span><span style="color:#c41a16"></span>  http://127.0.0.1:6734/authz-check/v1/all-granted-permissions</code></pre></div>
+<p>Expected permission: resource <code>/books/HarryPotter</code>, action <code>download</code>. This API describes effective granted permissions; enforce a particular operation with <code>is-allowed</code> rather than treating a permission-list response as a replacement for request evaluation.</p>
 
-<ul>
-<li><p>API overview</p>
+<h2 id="attributes-diagnosis-and-token-identity">Attributes, diagnosis and token identity</h2>
 
-<ul>
-<li>IN</li>
-<li>Given the subject</li>
-<li>Given the runtime attributes **optional**</li>
-<li>Given the service scope</li>
-<li>OUT</li>
-<li>Returns a slice of (actions, resource) pairs, current subject is allowed to perform.</li>
-<li>Returns errors if an error occurs</li>
-</ul></li>
-
-<li><p>Sample</p>
-
-<ul>
-<li>Get all permissions granted to user Alan</li>
-<li>Decision is based on policies defined in service named &ldquo;onlineBookStore&rdquo;</li>
-</ul></li>
-</ul>
-
-<p><strong>REST API example:</strong><br />
-<em>Request:</em></p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">curl -X POST  http://localhost:6734/authz-check/v1/all-granted-permissions \
--d @- &lt;&lt; EOF
-{
- &#34;subject&#34;: {&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;, &#34;name&#34;:&#34;Alan&#34;}]},
- &#34;serviceName&#34;: &#34;onlineBookStore&#34;
-}
-EOF</pre></div>
-<p><em>Response:</em></p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">[{
-    &#34;resource&#34;:&#34;/books/HarryPotter&#34;,
-    &#34;actions&#34;:[&#34;download&#34;,&#34;read&#34;]
- },
- {
-    &#34;resource&#34;:&#34;/books/ThreeBodyProblem&#34;,
-    &#34;actions&#34;:[&#34;borrow&#34;]
- }]</pre></div>
-<p>For details, see <a href="/docs/api/decision_api/">Authorization Runtime/Decision API</a>.</p>
+<p>REST request attributes are typed objects in an array, such as <code>{&quot;name&quot;:&quot;clearance&quot;,&quot;type&quot;:&quot;numeric&quot;,&quot;value&quot;:4}</code>. Embedded Go attributes are <code>map[string]interface{}</code>; diagnostic response attributes are also an object, not that request array. See <a href="/docs/spdl/">SPDL</a> for types and conditions, <a href="/docs/pms/diagnosis/">diagnosis</a> for evaluation detail, and <a href="/docs/assertor/">token assertion</a> for configured token validation.</p>
 
   </div>
 </div>

@@ -16,9 +16,8 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://speedle.io/docs/versions/</guid>
-      <description> Version 0.2.0 (planning) &amp;hellip;
-Version 0.1.0 release notes: This is the first open source version. All basic functions are available in this version, including
- Policy Management Service Authorization Runtime Service Command line tool Integration samples  </description>
+      <description>Current development documentation These pages describe the current master source, not a frozen historical release. The current module requires Go 1.26 or later. The quick-start workflow verifies Go 1.26.10 and 1.27.3; those tested patch versions are not a promise that an old release has the same requirements.
+When upgrading, review the chosen commit and dependencies and repeat the integration checks for your store, transport and identity provider. Current standalone gRPC uses the same TLS/mTLS settings as REST and inherits its listening host unless --grpc-endpoint is supplied.</description>
     </item>
     
   </channel>

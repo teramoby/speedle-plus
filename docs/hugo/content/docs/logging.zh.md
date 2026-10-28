@@ -1,6 +1,6 @@
 +++
 title = "日志"
-description = "Speedle logging"
+description = "日志级别、格式与滚动配置"
 weight = 320
 draft = false
 toc = true
@@ -22,7 +22,7 @@ Speedle 使用了下面两个开源项目来处理日志,
 
 Logrus 是一个针对 go 语言的结构化的日志处理器，它与 go 语言标准的 logger 库完全 API 兼容。因为 logrus 不支持对日志循环滚动处理（rotation），所以我们引入了另外一个开源项目 lumberjack。Logrus 与 lumberjack 之间通过 io.Writer 接口交互，如下图所示,
 
-![Speedle Logging](../public/speedle/docs/img/logger.jpg)
+![Speedle Logging](/img/speedle/logger.jpg)
 
 ## 日志配置
 
@@ -30,7 +30,7 @@ Logrus 是一个针对 go 语言的结构化的日志处理器，它与 go 语�
 
 ### 通过命令行参数配置日志
 
-所有的命令行参数如下所示。前两个参数供 logrus 使用，其它的参数则是为 lumberjack 准备的。
+所有的命令行参数如下所示。level、formatter、reportcaller 配置 logrus，文件与滚动相关设置配置 lumberjack。
 
 ```
 --log-level string
@@ -75,12 +75,12 @@ ocean","size":10,"time":"2014-03-10 19:57:38.562264131 -0400 EDT"}
 
 下面就是一个配置文件的例子，每一项的含义与对应的命令行参数完全一样。同样，所有配置项都是可选的。
 
-```go
+```json
 {
     "logConfig": {
         "level": "info",
         "formatter": "text",
-        "setReportCaller": "false",
+        "setReportCaller": false,
         "rotationConfig": {
             "filename": "/mnt/logs/speedle.log",
             "maxSize": 20,

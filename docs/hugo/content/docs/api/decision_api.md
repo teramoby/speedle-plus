@@ -8,4 +8,8 @@ customcss = true
 customcssfile = "swagger-custom.css"
 +++
 
-{{< swagger-spec url="/swagger/policy-check.yaml"  >}}
+Reference for your configured ADS. Request attributes are typed arrays; diagnostic attributes are objects.
+
+[Security and endpoint configuration](/docs/security/). This is a contract reference, not a backend hosted by speedle.io.
+
+{{< swagger-spec url="/swagger/policy-check.yaml" >}}
