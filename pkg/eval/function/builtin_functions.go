@@ -7,7 +7,7 @@ import (
 	"math"
 	"reflect"
 
-	"github.com/teramoby/speedle-plus/pkg/errors"
+	"github.com/teramoby/speedle-plus/v2/pkg/errors"
 )
 
 // Add all built-in functions in this file

@@ -3,7 +3,7 @@
 
 package ads
 
-import "github.com/teramoby/speedle-plus/api/pms"
+import "github.com/teramoby/speedle-plus/v2/api/pms"
 
 type Principal struct {
 	Type string `json:"type,omitempty"`

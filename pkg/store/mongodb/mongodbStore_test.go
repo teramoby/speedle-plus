@@ -6,9 +6,9 @@ import (
 	"os"
 	"testing"
 
-	"github.com/teramoby/speedle-plus/api/pms"
-	"github.com/teramoby/speedle-plus/pkg/cfg"
-	"github.com/teramoby/speedle-plus/pkg/store"
+	"github.com/teramoby/speedle-plus/v2/api/pms"
+	"github.com/teramoby/speedle-plus/v2/pkg/cfg"
+	"github.com/teramoby/speedle-plus/v2/pkg/store"
 )
 
 var storeConfig *cfg.StoreConfig

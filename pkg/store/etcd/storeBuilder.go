@@ -10,11 +10,11 @@ import (
 
 	clientv3 "go.etcd.io/etcd/client/v3"
 	"go.etcd.io/etcd/client/pkg/v3/transport"
-	"github.com/teramoby/speedle-plus/pkg/errors"
+	"github.com/teramoby/speedle-plus/v2/pkg/errors"
 	log "github.com/sirupsen/logrus"
 
-	"github.com/teramoby/speedle-plus/api/pms"
-	"github.com/teramoby/speedle-plus/pkg/store"
+	"github.com/teramoby/speedle-plus/v2/api/pms"
+	"github.com/teramoby/speedle-plus/v2/pkg/store"
 	"github.com/spf13/pflag"
 )
 

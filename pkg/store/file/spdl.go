@@ -11,10 +11,10 @@ import (
 	"strings"
 
 	log "github.com/sirupsen/logrus"
-	"github.com/teramoby/speedle-plus/api/pms"
-	"github.com/teramoby/speedle-plus/pkg/errors"
-	"github.com/teramoby/speedle-plus/pkg/pdl"
-	"github.com/teramoby/speedle-plus/pkg/suid"
+	"github.com/teramoby/speedle-plus/v2/api/pms"
+	"github.com/teramoby/speedle-plus/v2/pkg/errors"
+	"github.com/teramoby/speedle-plus/v2/pkg/pdl"
+	"github.com/teramoby/speedle-plus/v2/pkg/suid"
 )
 
 type phase int

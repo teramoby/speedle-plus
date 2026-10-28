@@ -12,8 +12,8 @@ import (
 
 	"net/http/httptest"
 
-	"github.com/teramoby/speedle-plus/pkg/assertion"
-	"github.com/teramoby/speedle-plus/pkg/svcs"
+	"github.com/teramoby/speedle-plus/v2/pkg/assertion"
+	"github.com/teramoby/speedle-plus/v2/pkg/svcs"
 )
 
 func TestSettingPrincipalHeader(t *testing.T) {

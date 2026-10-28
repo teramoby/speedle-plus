@@ -27,7 +27,7 @@ bref = ""
 1. 使用 go get
 
 ```bash
-go get github.com/teramoby/speedle-plus
+go get github.com/teramoby/speedle-plus/v2
 ```
 
 2. 使用 dep 工具
@@ -59,7 +59,7 @@ dep ensure -update github.com/teramoby/speedle-plus
 
 ```go
 import (
-  "github.com/teramoby/speedle-plus/pkg/eval"
+  "github.com/teramoby/speedle-plus/v2/pkg/eval"
 )
 
 func foo() {

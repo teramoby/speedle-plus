@@ -11,11 +11,11 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/teramoby/speedle-plus/pkg/errors"
-	"github.com/teramoby/speedle-plus/pkg/suid"
+	"github.com/teramoby/speedle-plus/v2/pkg/errors"
+	"github.com/teramoby/speedle-plus/v2/pkg/suid"
 
 	"github.com/fsnotify/fsnotify"
-	"github.com/teramoby/speedle-plus/api/pms"
+	"github.com/teramoby/speedle-plus/v2/api/pms"
 	log "github.com/sirupsen/logrus"
 )
 

@@ -12,5 +12,5 @@ startPMS etcd --config-file ${shell_dir}/../pmsrest/config_etcd.json
 startADS --config-file ${shell_dir}/../pmsrest/config_etcd.json
 
 
-go test ${TEST_OPTS} github.com/teramoby/speedle-plus/pkg/svcs/adsgrpc -run=TestMats
+go test ${TEST_OPTS} github.com/teramoby/speedle-plus/v2/pkg/svcs/adsgrpc -run=TestMats
 rm -rf ./speedle.etcd

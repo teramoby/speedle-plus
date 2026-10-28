@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	radix "github.com/armon/go-radix"
-	"github.com/teramoby/speedle-plus/3rdparty/github.com/Knetic/govaluate"
+	"github.com/teramoby/speedle-plus/v2/3rdparty/github.com/Knetic/govaluate"
 )
 
 // Patterns used to match resource expression.

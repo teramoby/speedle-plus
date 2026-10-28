@@ -13,8 +13,8 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
-	"github.com/teramoby/speedle-plus/cmd/spctl/client"
-	"github.com/teramoby/speedle-plus/pkg/svcs/pmsrest"
+	"github.com/teramoby/speedle-plus/v2/cmd/spctl/client"
+	"github.com/teramoby/speedle-plus/v2/pkg/svcs/pmsrest"
 )
 
 var (

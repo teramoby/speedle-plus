@@ -5,11 +5,11 @@ package adsrest
 import (
 	"net/http/httptest"
 
-	adsapi "github.com/teramoby/speedle-plus/api/ads"
-	"github.com/teramoby/speedle-plus/pkg/assertion"
-	"github.com/teramoby/speedle-plus/pkg/cfg"
-	"github.com/teramoby/speedle-plus/pkg/eval"
-	_ "github.com/teramoby/speedle-plus/pkg/store/file"
+	adsapi "github.com/teramoby/speedle-plus/v2/api/ads"
+	"github.com/teramoby/speedle-plus/v2/pkg/assertion"
+	"github.com/teramoby/speedle-plus/v2/pkg/cfg"
+	"github.com/teramoby/speedle-plus/v2/pkg/eval"
+	_ "github.com/teramoby/speedle-plus/v2/pkg/store/file"
 )
 
 var storeLocation = "./fakestore.json"

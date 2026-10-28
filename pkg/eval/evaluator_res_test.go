@@ -6,8 +6,8 @@ package eval
 import (
 	"testing"
 
-	adsapi "github.com/teramoby/speedle-plus/api/ads"
-	"github.com/teramoby/speedle-plus/api/pms"
+	adsapi "github.com/teramoby/speedle-plus/v2/api/ads"
+	"github.com/teramoby/speedle-plus/v2/api/pms"
 )
 
 func TestGetResourcesWithoutApp(t *testing.T) {

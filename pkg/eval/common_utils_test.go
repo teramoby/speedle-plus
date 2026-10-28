@@ -9,12 +9,12 @@ import (
 	"os"
 	"testing"
 
-	"github.com/teramoby/speedle-plus/pkg/cfg"
-	"github.com/teramoby/speedle-plus/pkg/store"
-	_ "github.com/teramoby/speedle-plus/pkg/store/etcd"
-	_ "github.com/teramoby/speedle-plus/pkg/store/file"
+	"github.com/teramoby/speedle-plus/v2/pkg/cfg"
+	"github.com/teramoby/speedle-plus/v2/pkg/store"
+	_ "github.com/teramoby/speedle-plus/v2/pkg/store/etcd"
+	_ "github.com/teramoby/speedle-plus/v2/pkg/store/file"
 
-	"github.com/teramoby/speedle-plus/api/pms"
+	"github.com/teramoby/speedle-plus/v2/api/pms"
 	log "github.com/sirupsen/logrus"
 )
 

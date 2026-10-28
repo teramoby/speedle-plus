@@ -4,7 +4,7 @@
 package ads
 
 import (
-	"github.com/teramoby/speedle-plus/api/pms"
+	"github.com/teramoby/speedle-plus/v2/api/pms"
 )
 
 type PolicyEvaluator interface {

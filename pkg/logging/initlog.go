@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/natefinch/lumberjack"
-	"github.com/teramoby/speedle-plus/pkg/errors"
+	"github.com/teramoby/speedle-plus/v2/pkg/errors"
 	log "github.com/sirupsen/logrus"
 )
 

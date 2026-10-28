@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"io/ioutil"
 
-	logging "github.com/teramoby/speedle-plus/pkg/logging"
+	logging "github.com/teramoby/speedle-plus/v2/pkg/logging"
 	log "github.com/sirupsen/logrus"
 )
 

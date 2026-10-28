@@ -10,11 +10,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/teramoby/speedle-plus/pkg/store"
-	storeetcd "github.com/teramoby/speedle-plus/pkg/store/etcd"
-	storefile "github.com/teramoby/speedle-plus/pkg/store/file"
-	"github.com/teramoby/speedle-plus/pkg/svcs/pmsrest"
-	"github.com/teramoby/speedle-plus/testutil"
+	"github.com/teramoby/speedle-plus/v2/pkg/store"
+	storeetcd "github.com/teramoby/speedle-plus/v2/pkg/store/etcd"
+	storefile "github.com/teramoby/speedle-plus/v2/pkg/store/file"
+	"github.com/teramoby/speedle-plus/v2/pkg/svcs/pmsrest"
+	"github.com/teramoby/speedle-plus/v2/testutil"
 	"go.etcd.io/etcd/server/v3/embed"
 )
 

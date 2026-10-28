@@ -9,8 +9,8 @@ import (
 	"net/http"
 	"os"
 
-	_ "github.com/teramoby/speedle-plus/pkg/store/file"
-	"github.com/teramoby/speedle-plus/samples/embedded/expenses"
+	_ "github.com/teramoby/speedle-plus/v2/pkg/store/file"
+	"github.com/teramoby/speedle-plus/v2/samples/embedded/expenses"
 )
 
 func main() {

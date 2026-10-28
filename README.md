@@ -55,7 +55,7 @@ grant role librarian read,update book
 grant user alice librarian
 ```
 
-Add the module with `go get github.com/teramoby/speedle-plus`, then evaluate a request:
+Add the module with `go get github.com/teramoby/speedle-plus/v2`, then evaluate a request:
 
 ```go
 package main
@@ -63,9 +63,9 @@ package main
 import (
 	"fmt"
 
-	"github.com/teramoby/speedle-plus/api/ads"
-	"github.com/teramoby/speedle-plus/pkg/eval"
-	_ "github.com/teramoby/speedle-plus/pkg/store/file" // registers the file store
+	"github.com/teramoby/speedle-plus/v2/api/ads"
+	"github.com/teramoby/speedle-plus/v2/pkg/eval"
+	_ "github.com/teramoby/speedle-plus/v2/pkg/store/file" // registers the file store
 )
 
 func main() {
@@ -94,26 +94,39 @@ bob false NO_APPLICABLE_POLICIES <nil>
 
 See [Embedded mode](https://speedle.io/docs/deployment-embeded/) for details.
 
-## Build
+## Install
+
+With Go 1.25 or newer:
+
+```
+go install github.com/teramoby/speedle-plus/v2/cmd/...@latest
+```
+
+This installs `spctl`, `speedle-pms` and `speedle-ads` into `$(go env GOPATH)/bin`, or `$GOBIN` if it is set.
+
+## Build from source
 
 ### Prerequisites
 
--   GO 1.13 or greater <https://golang.org/doc/install>
--   Set `GOROOT` and `GOPATH` properly
+-   Go 1.25 or newer <https://go.dev/doc/install>. Speedle+ supports the three most recent Go releases. Go sets `GOROOT` and `GOPATH` itself.
 
-### Step
+### Steps
 
 ```
-$ go get github.com/teramoby/speedle-plus/cmd/...
-$ ls $GOPATH/bin
-spctl  speedle-ads  speedle-pms
+git clone https://github.com/teramoby/speedle-plus.git
+cd speedle-plus
+go build -o ./bin/ ./cmd/spctl ./cmd/speedle-pms ./cmd/speedle-ads
+ls bin
 ```
+
+The output is `spctl  speedle-ads  speedle-pms`.
 
 ## Test
 
+Run the unit tests, which need no external services:
+
 ```
-$ cd $GOPATH/src/github.com/teramoby/speedle-plus
-$ make test
+go test $(go list ./pkg/... ./cmd/... ./api/... | grep -v -e adsgrpc -e pmsgrpc -e pmsrest)
 ```
 
 ## Get Help
