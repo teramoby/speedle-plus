@@ -11,6 +11,12 @@ on:
 permissions:
   contents: read
 
+# A new push to a pull request supersedes its older, still-running checks.
+# master pushes are never cancelled.
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   # Run only what a change can affect:
   #   go      - Go lint/test/build: anything outside docs/, website/ and root
