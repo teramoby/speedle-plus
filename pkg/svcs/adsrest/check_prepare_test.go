@@ -8,7 +8,7 @@ package adsrest
 import (
 	"testing"
 
-	"github.com/teramoby/speedle-plus/testutil"
+	"github.com/teramoby/speedle-plus/v2/testutil"
 )
 
 //Prepare service/policy/rolepolicy in store for runtime_test

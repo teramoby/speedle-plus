@@ -6,9 +6,9 @@ package pmsgrpc
 import (
 	"testing"
 
-	"github.com/teramoby/speedle-plus/pkg/svcs/pmsgrpc/pb"
-	"github.com/teramoby/speedle-plus/testutil"
-	"github.com/teramoby/speedle-plus/testutil/grpctest"
+	"github.com/teramoby/speedle-plus/v2/pkg/svcs/pmsgrpc/pb"
+	"github.com/teramoby/speedle-plus/v2/testutil"
+	"github.com/teramoby/speedle-plus/v2/testutil/grpctest"
 )
 
 //Test GRpc API for Service Manangement

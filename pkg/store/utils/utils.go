@@ -8,8 +8,8 @@ import (
 	"io"
 	"os"
 
-	"github.com/teramoby/speedle-plus/api/pms"
-	"github.com/teramoby/speedle-plus/pkg/errors"
+	"github.com/teramoby/speedle-plus/v2/api/pms"
+	"github.com/teramoby/speedle-plus/v2/pkg/errors"
 )
 
 func ReadFilePolicyStore(policyStoreFile string) (*pms.PolicyStore, error) {

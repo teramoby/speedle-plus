@@ -11,8 +11,8 @@ import (
 	"net/http"
 	"testing"
 
-	adsapi "github.com/teramoby/speedle-plus/api/ads"
-	"github.com/teramoby/speedle-plus/api/ext"
+	adsapi "github.com/teramoby/speedle-plus/v2/api/ads"
+	"github.com/teramoby/speedle-plus/v2/api/ext"
 )
 
 var (

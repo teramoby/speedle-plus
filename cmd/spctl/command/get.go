@@ -9,9 +9,9 @@ import (
 	"os"
 	"strings"
 
-	"github.com/teramoby/speedle-plus/cmd/spctl/client"
+	"github.com/teramoby/speedle-plus/v2/cmd/spctl/client"
 
-	"github.com/teramoby/speedle-plus/api/pms"
+	"github.com/teramoby/speedle-plus/v2/api/pms"
 
 	"github.com/spf13/cobra"
 )

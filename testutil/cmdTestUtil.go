@@ -14,10 +14,10 @@ import (
 	"reflect"
 	"strings"
 
-	pmsapi "github.com/teramoby/speedle-plus/api/pms"
-	"github.com/teramoby/speedle-plus/pkg/svcs"
-	"github.com/teramoby/speedle-plus/testutil/msg"
-	"github.com/teramoby/speedle-plus/testutil/param"
+	pmsapi "github.com/teramoby/speedle-plus/v2/api/pms"
+	"github.com/teramoby/speedle-plus/v2/pkg/svcs"
+	"github.com/teramoby/speedle-plus/v2/testutil/msg"
+	"github.com/teramoby/speedle-plus/v2/testutil/param"
 )
 
 const (

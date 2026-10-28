@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/teramoby/speedle-plus/3rdparty/github.com/Knetic/govaluate"
-	"github.com/teramoby/speedle-plus/api/pms"
+	"github.com/teramoby/speedle-plus/v2/3rdparty/github.com/Knetic/govaluate"
+	"github.com/teramoby/speedle-plus/v2/api/pms"
 	log "github.com/sirupsen/logrus"
 )
 

@@ -16,4 +16,4 @@ startPMS mongodb --config-file ${shell_dir}/config_mongodb.json
 
 sleep 5
 ${GOPATH}/bin/spctl delete service --all
-go test ${TEST_OPTS} github.com/teramoby/speedle-plus/pkg/svcs/pmsrest $*
+go test ${TEST_OPTS} github.com/teramoby/speedle-plus/v2/pkg/svcs/pmsrest $*

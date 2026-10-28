@@ -6,11 +6,11 @@ package adsgrpc
 import (
 	"testing"
 
-	adsapi "github.com/teramoby/speedle-plus/api/ads"
-	adsPB "github.com/teramoby/speedle-plus/pkg/svcs/adsgrpc/pb"
-	pmsPB "github.com/teramoby/speedle-plus/pkg/svcs/pmsgrpc/pb"
-	"github.com/teramoby/speedle-plus/testutil"
-	"github.com/teramoby/speedle-plus/testutil/grpctest"
+	adsapi "github.com/teramoby/speedle-plus/v2/api/ads"
+	adsPB "github.com/teramoby/speedle-plus/v2/pkg/svcs/adsgrpc/pb"
+	pmsPB "github.com/teramoby/speedle-plus/v2/pkg/svcs/pmsgrpc/pb"
+	"github.com/teramoby/speedle-plus/v2/testutil"
+	"github.com/teramoby/speedle-plus/v2/testutil/grpctest"
 )
 
 var POLICY_RELOAD_TIME = 500 //ms

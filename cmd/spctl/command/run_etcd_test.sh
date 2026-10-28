@@ -9,5 +9,5 @@ go clean -testcache
 ${GOPATH}/bin/spctl config pms-endpoint http://localhost:6733/policy-mgmt/v1/
 
 startPMS etcd --config-file pkg/svcs/pmsrest/config_etcd.json
-go test ${TEST_OPTS} github.com/teramoby/speedle-plus/cmd/spctl/command -run=TestMats
+go test ${TEST_OPTS} github.com/teramoby/speedle-plus/v2/cmd/spctl/command -run=TestMats
 
