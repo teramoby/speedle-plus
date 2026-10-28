@@ -133,7 +133,7 @@ class Site:
         self.pages = {}
         for file in self.root.rglob("*.html"):
             relative = file.relative_to(self.root)
-            if relative.parts[0] in {"hugo", "beta"}:
+            if relative.parts[0] == "hugo":
                 continue
             route = "/" + relative.as_posix()
             if route.endswith("index.html"):
