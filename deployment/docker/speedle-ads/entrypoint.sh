@@ -1,11 +1,17 @@
 #!/bin/sh
 set -eu
-# Both development containers share one volume. Create only a missing store;
-# noclobber prevents concurrent startup from truncating another container's file.
+# Publish a complete initial store without replacing an existing policy file.
+# The two development containers may initialize the shared volume concurrently.
 if [ "${SPDL_STORE_TYPE:-file}" = file ]; then
     store_file="${SPDL_FILESTORE_LOC:-/var/lib/speedle/policies.json}"
     if [ ! -e "$store_file" ]; then
-        (umask 077; set -C; printf '{}\n' > "$store_file") || test -f "$store_file"
+        candidate=$(mktemp "${store_file}.init.XXXXXX")
+        trap 'rm -f "$candidate"' EXIT
+        chmod 600 "$candidate"
+        printf '{}\n' > "$candidate"
+        ln "$candidate" "$store_file" 2>/dev/null || test -f "$store_file"
+        rm -f "$candidate"
+        trap - EXIT
     fi
 fi
 exec speedle-ads "$@"

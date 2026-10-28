@@ -17,6 +17,6 @@ python3 website/tests/check_quick_start.py --toolchain go1.26.10
 python3 website/tests/check_quick_start.py --toolchain go1.27.3
 website/playground-engine/verify-hugo.sh
 # Container acceptance uses only task-owned resources on the self-hosted host.
-deployment/tests/check-environment.sh
+python3 deployment/tests/verify.py
 git diff --exit-code -- docs/playground docs/hugo/static/playground docs/css docs/hugo/static/css
 test -z "$(git ls-files --others --exclude-standard -- docs/playground docs/hugo/static/playground docs/css docs/hugo/static/css)"

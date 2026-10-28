@@ -33,14 +33,29 @@ self-hosted build pipeline. The existing quick-start checks still exercise their
 exact documented steps on Go 1.26.10 and Go 1.27.3. HTML, language routes, SEO,
 Playground and pinned Hugo checks remain in that pipeline.
 
-## Current scope
+## Docker and Kubernetes deployment validation
 
-The owner deferred the container/Kubernetes batch (audit D14-D17). Do not include
-changes to `deployment/` or the two service-deployment Markdown pages in this
-repair. Their outstanding toolchain, Helm, image-build, YAML and probe issues
-remain deferred. The deployment-page portions of D07/D22/D23 remain deferred too.
-Current docs and downloadable APIs are updated; historical version archives remain
-historical. Stylesheets, templates, image assets and site design are unchanged.
+`python3 deployment/tests/verify.py` executes the paired deployment guide blocks
+against task-owned Docker resources and a temporary kind cluster. It requires a
+Linux Docker engine accessible to the runner account, BuildKit, Bash, curl,
+Python 3 and Go. It downloads checksum-verified Helm 4.3.1, kind 0.33.0 and
+kubectl 1.36.4 into its disposable directory, without replacing host tools.
+
+It covers repository-root image builds, tags, registry push/pull, the Docker
+file-store example, Helm and independently applied YAML, both locales,
+server-side dry runs, rollout, policy CRUD, Allow/Deny and real TLS/mTLS clients.
+Fault checks distinguish backend readiness from process liveness and verify
+policy persistence across etcd replacement. A process freeze tests liveness
+restart behavior. The cluster uses a pinned node image, its own kubeconfig and
+namespaces; API/registry forwards bind only to loopback and avoid fixed host
+ports. A host lock serializes container acceptance across the two runners.
+Cleanup touches only resources created by this invocation.
+
+`deployment/render-manifests.sh` regenerates standalone manifests from the same
+charts. Runtime acceptance verifies that those committed copies match. The
+single-member etcd manifest is a test example with a PVC; production deployments
+must supply their required etcd availability, backups, trust and access control.
+Website styling, templates and image assets remain unchanged.
 
 ## Protobuf generation
 

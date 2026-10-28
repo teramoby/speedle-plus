@@ -267,13 +267,13 @@ Kubernetes 示例结束后，停止所选部署方式的端口转发进程：
 
 <!-- deployment-check: forward-dev-cleanup -->
 ```bash
-kill "$DEV_FORWARD_PID"
+kill "$DEV_FORWARD_PID" 2>/dev/null || true
 wait "$DEV_FORWARD_PID" || true
 ```
 
 <!-- deployment-check: forward-prod-cleanup -->
 ```bash
-kill "$PMS_FORWARD_PID" "$ADS_FORWARD_PID"
+kill "$PMS_FORWARD_PID" "$ADS_FORWARD_PID" 2>/dev/null || true
 wait "$PMS_FORWARD_PID" "$ADS_FORWARD_PID" || true
 ```
 

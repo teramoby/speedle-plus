@@ -268,13 +268,13 @@ For Kubernetes, stop the forwarding process(es) used by your chosen path:
 
 <!-- deployment-check: forward-dev-cleanup -->
 ```bash
-kill "$DEV_FORWARD_PID"
+kill "$DEV_FORWARD_PID" 2>/dev/null || true
 wait "$DEV_FORWARD_PID" || true
 ```
 
 <!-- deployment-check: forward-prod-cleanup -->
 ```bash
-kill "$PMS_FORWARD_PID" "$ADS_FORWARD_PID"
+kill "$PMS_FORWARD_PID" "$ADS_FORWARD_PID" 2>/dev/null || true
 wait "$PMS_FORWARD_PID" "$ADS_FORWARD_PID" || true
 ```
 
