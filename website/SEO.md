@@ -35,6 +35,16 @@ Existing noindex taxonomy rules and pagination canonicals remain in place.
 Static homepage and Playground metadata are maintained in their existing sources.
 Archives retain their original content and metadata.
 
+Current pages use the existing square black Speedle mark at
+`/images/speedle_black.png` as a crawlable PNG favicon, instead of a data URL.
+The original 1024px asset is also in Hugo's static sources so a clean build
+publishes it. The homepages declare `Speedle Authorization Engine` as the
+preferred `WebSite` name, with `Speedle` and `Speedle+` as alternatives; Open
+Graph site names match across current pages. Homepage titles and social titles
+use the same name (with a Chinese description on the Chinese homepage).
+These are preferences for Google's automated systems, not guarantees of search
+appearance. Favicon changes require recrawling and processing.
+
 The English/Chinese integration overviews explicitly set `noindex = false`.
 Front matter overrides the default kind-based indexing policy, including false;
 other section and taxonomy defaults remain in place. Release checks verify the
