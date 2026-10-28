@@ -8,7 +8,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Quick Start - Speedle</title>
   
-  <meta name="description" content="Up and running in under a minute"> 
+  <meta name="description" content="Build Speedle&#43; with a current Go toolchain and verify policy management, direct grants, role grants and denials."> 
   
   
   
@@ -21,7 +21,7 @@
 
 
   <meta property="og:title" content="Quick Start" />
-<meta property="og:description" content="Up and running in under a minute" />
+<meta property="og:description" content="Build Speedle&#43; with a current Go toolchain and verify policy management, direct grants, role grants and denials." />
 <meta property="og:type" content="article" />
 <meta property="og:url" content="https://speedle.io/quick-start/" />
   
@@ -51,6 +51,10 @@
 
   <link href="/css/swagger-ui.css" rel="stylesheet" type="text/css">
 
+  
+  
+  <link href="/css/command-copy.css" rel="stylesheet" type="text/css">
+  
   
   
   <link href="/css/custom.css" rel="stylesheet" type="text/css">
@@ -93,10 +97,10 @@
     <h1>Quick Start</h1>
 
     
-    <p class="subtitle">Up and running in under a minute</p>
+    <p class="subtitle">Build Speedle&#43; with a current Go toolchain and verify policy management, direct grants, role grants and denials.</p>
     
     
-    <p style="margin: 2px">Speedle is an open source authorization project that allows you to create policies using the user-friendly SPDL language, and manage the policies using the policy management framework. Speedle accepts authorization requests (that is, who can do what in what context), evaluates the applicable policies, and then returns a GRANT/DENY decision using the authorization decision service. Let&#39;s take a quick tour of how to use Speedle</p>
+    <p style="margin: 2px">Build Speedle&#43; from source, create policies with SPDL and spctl, and test authorization decisions using the REST API. This guide uses a local file store.</p>
     
     
 
@@ -107,72 +111,107 @@
     <div id="kube-component" class="content">
       
 
+<h2 id="try-speedle-in-the-playground-first">Try Speedle in the Playground first</h2>
+
+<p><strong>You can try Speedle&rsquo;s basic features before installing anything.</strong> Open the <a href="/playground/">Playground</a> to edit SPDL policies, set a user, resource and action, and see real Allow/Deny decisions entirely in your browser. No Go installation or running server is required.</p>
+
+<p>Continue below when you are ready to build and run Speedle locally.</p>
+
 <h2 id="prerequisites">Prerequisites</h2>
 
-<h3 id="1-install-the-go-programming-language">1. Install the Go programming language</h3>
+<p>Use Linux or macOS with Bash, Git, curl and <strong>Go 1.26.3 or newer</strong>. The module requires Go 1.26; this guide is verified with <strong>Go 1.26.10 and Go 1.27.3</strong>. Go 1.27.3 is the recommended stable release for this walkthrough.</p>
 
-<p>The minimum version required is 1.13.</p>
+<p>Install Go using the <a href="https://go.dev/doc/install">official installation instructions</a>, then check the installed version:</p>
 
-<p>See <a href="https://golang.org/doc/install">https://golang.org/doc/install</a></p>
+<!-- quick-start: version -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">go version</code></pre></div>
+<p>Go configures <code>GOROOT</code> and its default <code>GOPATH</code> automatically. No custom values are needed. The commands below build into the checkout&rsquo;s <code>bin</code> directory.</p>
 
-<p>If you use Oracle Linux, simply run one of below commmands.</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ sudo yum install -y oracle-golang-release-el7
-$ sudo yum install -y golang</code></pre></div>
-<h3 id="2-set-the-go-environment-variables">2. Set the Go environment variables</h3>
-
-<p><code>GOROOT</code> is the folder where you installed Go.<br />
-<code>GOPATH</code> is the folder where your Go projects are stored.</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ <span style="color:#a90d91">export</span> <span style="color:#000">GOROOT</span><span style="color:#000">=</span>/scratch/tools/go
-$ <span style="color:#a90d91">export</span> <span style="color:#000">GOPATH</span><span style="color:#000">=</span>/scratch/xuwwang/go</code></pre></div>
 <h2 id="download-source-code-and-build-speedle">Download Source Code and Build Speedle</h2>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ go get github.com/teramoby/speedle-plus/cmd/...
-$ ls <span style="color:#000">$GOPATH</span>/bin
-spctl  speedle-ads  speedle-pms</code></pre></div>
-<p>Three binary files are generated in the <code>$GOPATH/bin</code> directory:</p>
 
+<!-- quick-start: build -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">git clone --depth <span style="color:#bd93f9">1</span> https://github.com/teramoby/speedle-plus.git
+<span style="color:#8be9fd;font-style:italic">cd</span> speedle-plus
+mkdir -p bin
+go build -o ./bin/ ./cmd/spctl ./cmd/speedle-pms ./cmd/speedle-ads
+ls bin</code></pre></div>
+<p>The output directory contains:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">spctl  speedle-ads  speedle-pms</code></pre></div>
 <ul>
-<li>spctl - Speedle command line interface</li>
-<li>speedle-pms - Speedle policy management service</li>
-<li>speedle-ads - Speedle authorization decision service</li>
+<li><code>spctl</code>: the command line interface.</li>
+<li><code>speedle-pms</code>: the Policy Management Service (PMS).</li>
+<li><code>speedle-ads</code>: the Authorization Decision Service (ADS).</li>
 </ul>
+
+<p>Modern Go uses <code>go build</code> or <code>go install</code> to build executables; <code>go get</code> manages module dependencies.</p>
 
 <h2 id="run-speedle">Run Speedle</h2>
 
+<p>Run this walkthrough on a local development machine. <code>--insecure=true</code> enables plain HTTP for the REST examples; the binaries also open gRPC ports 50001 and 50002. For production transport and authorization settings, see <a href="/docs/security/">Security</a>.</p>
+
 <h3 id="1-start-the-policy-management-service">1. Start the Policy Management Service</h3>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ <span style="color:#a90d91">cd</span> <span style="color:#000">$GOPATH</span>/bin
-$ ./speedle-pms --store-type file</code></pre></div>
-<p>Note: A default policy store file is created at <code>/tmp/speedle-test-file-store.json</code>.</p>
+
+<p>In the first terminal, from the <code>speedle-plus</code> directory:</p>
+
+<!-- quick-start: pms -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./bin/speedle-pms --store-type file --filestore-loc ./quick-start-policies.json --endpoint <span style="color:#bd93f9">127</span>.0.0.1:6733 --insecure<span style="color:#ff79c6">=</span>true</code></pre></div>
+<p>Leave it running. PMS creates <code>quick-start-policies.json</code> in this checkout. Wait for the REST server to start before continuing. Both services must use this same file.</p>
 
 <h3 id="2-create-policies-using-spctl">2. Create policies using spctl</h3>
 
-<p>2.1.  Create a service container for the authorization and role policies.</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ ./spctl create service mysvc</code></pre></div>
-<p>2.2. Create authorization policies in the mysvc service.</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ ./spctl create policy -c <span style="color:#c41a16">&#34;grant user user1 get,del res1&#34;</span> --service-name<span style="color:#000">=</span>mysvc
-$ ./spctl create policy -c <span style="color:#c41a16">&#34;grant role role2 get,del res2&#34;</span> --service-name<span style="color:#000">=</span>mysvc</code></pre></div>
-<p>2.3. Create a role policy in the mysvc service.</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ ./spctl create rolepolicy -c <span style="color:#c41a16">&#34;grant user user2 role2 on res2&#34;</span> --service-name<span style="color:#000">=</span>mysvc</code></pre></div>
-<p>2.4. List all services</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ <span style="color:#a90d91">cd</span> <span style="color:#000">$GOPATH</span>/bin
-$ ./spctl get service --all</code></pre></div>
-<p>The content of service mysvc displays.</p>
+<p>Open a second terminal in the same <code>speedle-plus</code> directory.</p>
+
+<p>Create a service container:</p>
+
+<!-- quick-start: service -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ create service mysvc</code></pre></div>
+<p>Grant <code>user1</code> permission to get or delete <code>res1</code>, and grant <code>role2</code> the same actions on <code>res2</code>:</p>
+
+<!-- quick-start: policies -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ create policy -c <span style="color:#f1fa8c">&#34;grant user user1 get,del res1&#34;</span> --service-name<span style="color:#ff79c6">=</span>mysvc
+./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ create policy -c <span style="color:#f1fa8c">&#34;grant role role2 get,del res2&#34;</span> --service-name<span style="color:#ff79c6">=</span>mysvc</code></pre></div>
+<p>Assign <code>role2</code> to <code>user2</code> on <code>res2</code>:</p>
+
+<!-- quick-start: roles -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ create rolepolicy -c <span style="color:#f1fa8c">&#34;grant user user2 role2 on res2&#34;</span> --service-name<span style="color:#ff79c6">=</span>mysvc</code></pre></div>
+<p>List the service and its policies:</p>
+
+<!-- quick-start: list -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ get service --all</code></pre></div>
+<p>The output includes <code>mysvc</code>, two authorization policies and one role policy.</p>
 
 <h3 id="3-start-the-authorization-decision-service">3. Start the Authorization Decision Service</h3>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ ./speedle-ads --store-type file</code></pre></div>
-<h3 id="4-verify-the-authorization-result">4. Verify the authorization result</h3>
 
-<p>To see the policies you defined take effect, run these commands in a separate command window:</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ curl -X POST --data <span style="color:#c41a16">&#39;{&#34;subject&#34;:{&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;,&#34;name&#34;:&#34;user1&#34;}]},&#34;serviceName&#34;:&#34;mysvc&#34;,&#34;resource&#34;:&#34;res1&#34;,&#34;action&#34;:&#34;get&#34;}&#39;</span> http://127.0.0.1:6734/authz-check/v1/is-allowed
+<p>Open a third terminal in the same <code>speedle-plus</code> directory:</p>
 
-$ curl -X POST --data <span style="color:#c41a16">&#39;{&#34;subject&#34;:{&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;,&#34;name&#34;:&#34;user2&#34;}]},&#34;serviceName&#34;:&#34;mysvc&#34;,&#34;resource&#34;:&#34;res2&#34;,&#34;action&#34;:&#34;get&#34;}&#39;</span> http://127.0.0.1:6734/authz-check/v1/is-allowed</code></pre></div>
-<p>The result for both commands is allowed:true.</p>
+<!-- quick-start: ads -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./bin/speedle-ads --store-type file --filestore-loc ./quick-start-policies.json --endpoint <span style="color:#bd93f9">127</span>.0.0.1:6734 --insecure<span style="color:#ff79c6">=</span>true</code></pre></div>
+<p>Leave it running and wait for its REST server to start.</p>
 
-<h3 id="tls-https">TLS/HTTPS</h3>
+<h3 id="4-verify-authorization-decisions">4. Verify authorization decisions</h3>
 
-<p>For TLS configuration, see <a href="/docs/security/#message-security-tls">Message security</a>.</p>
+<p>Run these requests in the second terminal. The first request checks the direct grant to <code>user1</code>:</p>
 
-<p>Looking for more deployment types? See <a href="/docs/deployment/">Deployment page</a>.</p>
+<!-- quick-start: allow-direct -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl --fail --silent --show-error --header <span style="color:#f1fa8c">&#39;Content-Type: application/json&#39;</span> --data <span style="color:#f1fa8c">&#39;{&#34;subject&#34;:{&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;,&#34;name&#34;:&#34;user1&#34;}]},&#34;serviceName&#34;:&#34;mysvc&#34;,&#34;resource&#34;:&#34;res1&#34;,&#34;action&#34;:&#34;get&#34;}&#39;</span> http://127.0.0.1:6734/authz-check/v1/is-allowed</code></pre></div>
+<p>The response contains <code>&quot;allowed&quot;:true</code>.</p>
 
+<p>The next request checks the role grant to <code>user2</code>:</p>
+
+<!-- quick-start: allow-role -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl --fail --silent --show-error --header <span style="color:#f1fa8c">&#39;Content-Type: application/json&#39;</span> --data <span style="color:#f1fa8c">&#39;{&#34;subject&#34;:{&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;,&#34;name&#34;:&#34;user2&#34;}]},&#34;serviceName&#34;:&#34;mysvc&#34;,&#34;resource&#34;:&#34;res2&#34;,&#34;action&#34;:&#34;get&#34;}&#39;</span> http://127.0.0.1:6734/authz-check/v1/is-allowed</code></pre></div>
+<p>The response contains <code>&quot;allowed&quot;:true</code>.</p>
+
+<p>A user without a matching grant is denied:</p>
+
+<!-- quick-start: deny -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl --fail --silent --show-error --header <span style="color:#f1fa8c">&#39;Content-Type: application/json&#39;</span> --data <span style="color:#f1fa8c">&#39;{&#34;subject&#34;:{&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;,&#34;name&#34;:&#34;user3&#34;}]},&#34;serviceName&#34;:&#34;mysvc&#34;,&#34;resource&#34;:&#34;res1&#34;,&#34;action&#34;:&#34;get&#34;}&#39;</span> http://127.0.0.1:6734/authz-check/v1/is-allowed</code></pre></div>
+<p>The response contains <code>&quot;allowed&quot;:false</code>.</p>
+
+<p>When finished, press <strong>Ctrl+C</strong> in the PMS and ADS terminals. The policy file remains in the checkout; use a fresh file for another run of the creation commands.</p>
+
+<p>For TLS configuration, see <a href="/docs/security/#message-security-tls">Message security</a>. For other deployment types, see <a href="/docs/deployment/">Deployment</a>.</p>
+<script src="/js/command-copy.js" defer></script>
     </div>
   </div>
 </div>

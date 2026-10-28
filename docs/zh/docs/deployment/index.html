@@ -115,39 +115,39 @@ headingSelector: 'h2'
 <li>一个 Kubernetes 集群。</li>
 <li>为你的 Docker registry 设置一个 Kubernetes Secret</li>
 </ol>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#177500"># 为Docker registry设置Kubernetes Secret
-</span><span style="color:#177500"></span>$ kubectl create secret docker-registry reg-speedle --docker-server<span style="color:#000">=</span><span style="color:#000">$DOCKER_LOGIN_SERVER</span> --docker-username<span style="color:#000">=</span><span style="color:#000">$DOCKER_LOGIN_USER</span> --docker-password<span style="color:#000">=</span><span style="color:#000">$DOCKER_LOGIN_PASSWORD</span></code></pre></div>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#6272a4"># 为Docker registry设置Kubernetes Secret
+</span><span style="color:#6272a4"></span>$ kubectl create secret docker-registry reg-speedle --docker-server<span style="color:#ff79c6">=</span><span style="color:#8be9fd;font-style:italic">$DOCKER_LOGIN_SERVER</span> --docker-username<span style="color:#ff79c6">=</span><span style="color:#8be9fd;font-style:italic">$DOCKER_LOGIN_USER</span> --docker-password<span style="color:#ff79c6">=</span><span style="color:#8be9fd;font-style:italic">$DOCKER_LOGIN_PASSWORD</span></code></pre></div>
 <h2 id="开发环境下部署-speedle-服务">开发环境下部署 Speedle 服务</h2>
 
 <p>开发环境下可以使用<code>helm</code>部署 Speedle 服务。</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ helm install -n speedle deployment/helm/speedle-dev
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ helm install -n speedle deployment/helm/speedle-dev
 NAME:   speedle
-LAST DEPLOYED: Tue Nov <span style="color:#1c01ce">27</span> <span style="color:#1c01ce">23</span>:19:37 <span style="color:#1c01ce">2018</span>
+LAST DEPLOYED: Tue Nov <span style="color:#bd93f9">27</span> <span style="color:#bd93f9">23</span>:19:37 <span style="color:#bd93f9">2018</span>
 NAMESPACE: default
 STATUS: DEPLOYED
 
 RESOURCES:
-<span style="color:#000">==</span>&gt; v1/Service
-NAME         TYPE       CLUSTER-IP      EXTERNAL-IP  PORT<span style="color:#000">(</span>S<span style="color:#000">)</span>   AGE
-speedle-pms  ClusterIP  <span style="color:#1c01ce">10</span>.101.117.233  &lt;none&gt;       <span style="color:#1c01ce">6733</span>/TCP  1s
-speedle-ads  ClusterIP  <span style="color:#1c01ce">10</span>.104.5.111    &lt;none&gt;       <span style="color:#1c01ce">6734</span>/TCP  <span style="color:#000">1s</span>
+<span style="color:#ff79c6">==</span>&gt; v1/Service
+NAME         TYPE       CLUSTER-IP      EXTERNAL-IP  PORT<span style="color:#ff79c6">(</span>S<span style="color:#ff79c6">)</span>   AGE
+speedle-pms  ClusterIP  <span style="color:#bd93f9">10</span>.101.117.233  &lt;none&gt;       <span style="color:#bd93f9">6733</span>/TCP  1s
+speedle-ads  ClusterIP  <span style="color:#bd93f9">10</span>.104.5.111    &lt;none&gt;       <span style="color:#bd93f9">6734</span>/TCP  <span style="color:#8be9fd;font-style:italic">1s</span>
 
-<span style="color:#000">==</span>&gt; v1beta2/Deployment
+<span style="color:#ff79c6">==</span>&gt; v1beta2/Deployment
 NAME         DESIRED  CURRENT  UP-TO-DATE  AVAILABLE  AGE
-speedle-pms  <span style="color:#1c01ce">1</span>        <span style="color:#1c01ce">1</span>        <span style="color:#1c01ce">1</span>           <span style="color:#1c01ce">0</span>          1s
-speedle-ads  <span style="color:#1c01ce">1</span>        <span style="color:#1c01ce">1</span>        <span style="color:#1c01ce">1</span>           <span style="color:#1c01ce">0</span>          <span style="color:#000">1s</span>
+speedle-pms  <span style="color:#bd93f9">1</span>        <span style="color:#bd93f9">1</span>        <span style="color:#bd93f9">1</span>           <span style="color:#bd93f9">0</span>          1s
+speedle-ads  <span style="color:#bd93f9">1</span>        <span style="color:#bd93f9">1</span>        <span style="color:#bd93f9">1</span>           <span style="color:#bd93f9">0</span>          <span style="color:#8be9fd;font-style:italic">1s</span>
 
-<span style="color:#000">==</span>&gt; v1/Pod<span style="color:#000">(</span>related<span style="color:#000">)</span>
+<span style="color:#ff79c6">==</span>&gt; v1/Pod<span style="color:#ff79c6">(</span>related<span style="color:#ff79c6">)</span>
 NAME                          READY  STATUS             RESTARTS  AGE
-speedle-pms-867787bc95-kftbr  <span style="color:#1c01ce">0</span>/1    ContainerCreating  <span style="color:#1c01ce">0</span>         1s
-speedle-ads-7877ffbbf7-bwwtd  <span style="color:#1c01ce">0</span>/1    ContainerCreating  <span style="color:#1c01ce">0</span>         1s
+speedle-pms-867787bc95-kftbr  <span style="color:#bd93f9">0</span>/1    ContainerCreating  <span style="color:#bd93f9">0</span>         1s
+speedle-ads-7877ffbbf7-bwwtd  <span style="color:#bd93f9">0</span>/1    ContainerCreating  <span style="color:#bd93f9">0</span>         1s
 
 
 NOTES:
-<span style="color:#1c01ce">1</span>. $ kubectl port-forward svc/speedle-pms <span style="color:#1c01ce">6733</span>:6733
+<span style="color:#bd93f9">1</span>. $ kubectl port-forward svc/speedle-pms <span style="color:#bd93f9">6733</span>:6733
   Then access http://127.0.0.1:6733/policy-mgmt/v1/ to manage policies.
 
-<span style="color:#1c01ce">2</span>. $ kubectl port-forward svc/speedle-ads <span style="color:#1c01ce">6734</span>:6734
+<span style="color:#bd93f9">2</span>. $ kubectl port-forward svc/speedle-ads <span style="color:#bd93f9">6734</span>:6734
   Then access http://127.0.0.1:6734/authz-check/v1/is-allowed to check permissions.</code></pre></div>
 <h2 id="生产环境下部署-speedle-服务">生产环境下部署 Speedle 服务</h2>
 
@@ -156,59 +156,59 @@ NOTES:
 <p>强烈建议使用<code>etcd-operator</code>部署<code>etcd</code>。<a href="https://github.com/coreos/etcd-operator">https://github.com/coreos/etcd-operator</a></p>
 
 <p>使用<code>helm</code>部署<code>etcd-operator</code>：</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ helm install stable/etcd-operator --name my-release</code></pre></div>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ helm install stable/etcd-operator --name my-release</code></pre></div>
 <p>安装一个新的<code>etcd</code>集群：</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ kubectl create -f https://raw.githubusercontent.com/coreos/etcd-operator/master/example/example-etcd-cluster.yaml</code></pre></div>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ kubectl create -f https://raw.githubusercontent.com/coreos/etcd-operator/master/example/example-etcd-cluster.yaml</code></pre></div>
 <p>一个 3 节点的<code>etcd</code>集群将被安装：</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ kubectl get pods
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ kubectl get pods
 NAME                            READY     STATUS    RESTARTS   AGE
-example-etcd-cluster-gxkmr9ql7z   <span style="color:#1c01ce">1</span>/1       Running   <span style="color:#1c01ce">0</span>          1m
-example-etcd-cluster-m6g62x6mwc   <span style="color:#1c01ce">1</span>/1       Running   <span style="color:#1c01ce">0</span>          1m
-example-etcd-cluster-rqk62l46kw   <span style="color:#1c01ce">1</span>/1       Running   <span style="color:#1c01ce">0</span>          1m</code></pre></div>
+example-etcd-cluster-gxkmr9ql7z   <span style="color:#bd93f9">1</span>/1       Running   <span style="color:#bd93f9">0</span>          1m
+example-etcd-cluster-m6g62x6mwc   <span style="color:#bd93f9">1</span>/1       Running   <span style="color:#bd93f9">0</span>          1m
+example-etcd-cluster-rqk62l46kw   <span style="color:#bd93f9">1</span>/1       Running   <span style="color:#bd93f9">0</span>          1m</code></pre></div>
 <p>如果你希望安装一个支持 TLS 协议的<code>etcd</code>集群，请参考一下文档：
 <a href="https://github.com/coreos/etcd-operator/blob/master/doc/user/cluster_tls.md">https://github.com/coreos/etcd-operator/blob/master/doc/user/cluster_tls.md</a></p>
 
 <h3 id="部署-speedle">部署 Speedle</h3>
 
 <p>编辑文件<code>values.yaml</code>，修改跟<code>etcd</code>的监听地址。</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">store:
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4">store:
   type: etcd
   etcd:
     endpoint: http://&lt;etcdServiceName&gt;:&lt;etcdServicePort&gt;</pre></div>
 <p>你也可以在执行命令<code>helm install</code>的时候，使用参数<code>--set store.etcd.endpoint=http://&lt;etcdServiceName&gt;:&lt;etcdServicePort&gt;</code>指定<code>etcd</code>的监听地址。</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ helm install -n speedle deployment/helm/speedle-prod
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ helm install -n speedle deployment/helm/speedle-prod
 NAME:   speedle
-LAST DEPLOYED: Tue Nov <span style="color:#1c01ce">27</span> <span style="color:#1c01ce">23</span>:19:37 <span style="color:#1c01ce">2018</span>
+LAST DEPLOYED: Tue Nov <span style="color:#bd93f9">27</span> <span style="color:#bd93f9">23</span>:19:37 <span style="color:#bd93f9">2018</span>
 NAMESPACE: default
 STATUS: DEPLOYED
 
 RESOURCES:
-<span style="color:#000">==</span>&gt; v1/Service
-NAME         TYPE       CLUSTER-IP      EXTERNAL-IP  PORT<span style="color:#000">(</span>S<span style="color:#000">)</span>   AGE
-speedle-pms  ClusterIP  <span style="color:#1c01ce">10</span>.101.117.233  &lt;none&gt;       <span style="color:#1c01ce">6733</span>/TCP  1s
-speedle-ads  ClusterIP  <span style="color:#1c01ce">10</span>.104.5.111    &lt;none&gt;       <span style="color:#1c01ce">6734</span>/TCP  <span style="color:#000">1s</span>
+<span style="color:#ff79c6">==</span>&gt; v1/Service
+NAME         TYPE       CLUSTER-IP      EXTERNAL-IP  PORT<span style="color:#ff79c6">(</span>S<span style="color:#ff79c6">)</span>   AGE
+speedle-pms  ClusterIP  <span style="color:#bd93f9">10</span>.101.117.233  &lt;none&gt;       <span style="color:#bd93f9">6733</span>/TCP  1s
+speedle-ads  ClusterIP  <span style="color:#bd93f9">10</span>.104.5.111    &lt;none&gt;       <span style="color:#bd93f9">6734</span>/TCP  <span style="color:#8be9fd;font-style:italic">1s</span>
 
-<span style="color:#000">==</span>&gt; v1beta2/Deployment
+<span style="color:#ff79c6">==</span>&gt; v1beta2/Deployment
 NAME         DESIRED  CURRENT  UP-TO-DATE  AVAILABLE  AGE
-speedle-pms  <span style="color:#1c01ce">1</span>        <span style="color:#1c01ce">1</span>        <span style="color:#1c01ce">1</span>           <span style="color:#1c01ce">0</span>          1s
-speedle-ads  <span style="color:#1c01ce">1</span>        <span style="color:#1c01ce">1</span>        <span style="color:#1c01ce">1</span>           <span style="color:#1c01ce">0</span>          <span style="color:#000">1s</span>
+speedle-pms  <span style="color:#bd93f9">1</span>        <span style="color:#bd93f9">1</span>        <span style="color:#bd93f9">1</span>           <span style="color:#bd93f9">0</span>          1s
+speedle-ads  <span style="color:#bd93f9">1</span>        <span style="color:#bd93f9">1</span>        <span style="color:#bd93f9">1</span>           <span style="color:#bd93f9">0</span>          <span style="color:#8be9fd;font-style:italic">1s</span>
 
-<span style="color:#000">==</span>&gt; v1/Pod<span style="color:#000">(</span>related<span style="color:#000">)</span>
+<span style="color:#ff79c6">==</span>&gt; v1/Pod<span style="color:#ff79c6">(</span>related<span style="color:#ff79c6">)</span>
 NAME                          READY  STATUS             RESTARTS  AGE
-speedle-pms-867787bc95-kftbr  <span style="color:#1c01ce">0</span>/1    ContainerCreating  <span style="color:#1c01ce">0</span>         1s
-speedle-ads-7877ffbbf7-bwwtd  <span style="color:#1c01ce">0</span>/1    ContainerCreating  <span style="color:#1c01ce">0</span>         1s
+speedle-pms-867787bc95-kftbr  <span style="color:#bd93f9">0</span>/1    ContainerCreating  <span style="color:#bd93f9">0</span>         1s
+speedle-ads-7877ffbbf7-bwwtd  <span style="color:#bd93f9">0</span>/1    ContainerCreating  <span style="color:#bd93f9">0</span>         1s
 
 
 NOTES:
-<span style="color:#1c01ce">1</span>. $ kubectl port-forward svc/speedle-pms <span style="color:#1c01ce">6733</span>:6733
+<span style="color:#bd93f9">1</span>. $ kubectl port-forward svc/speedle-pms <span style="color:#bd93f9">6733</span>:6733
   Then access http://127.0.0.1:6733/policy-mgmt/v1/ to manage policies.
 
-<span style="color:#1c01ce">2</span>. $ kubectl port-forward svc/speedle-ads <span style="color:#1c01ce">6734</span>:6734
+<span style="color:#bd93f9">2</span>. $ kubectl port-forward svc/speedle-ads <span style="color:#bd93f9">6734</span>:6734
   Then access http://127.0.0.1:6734/authz-check/v1/is-allowed to check permissions.</code></pre></div>
 <p>如果你的<code>etcd</code>启用了 TLS，请在<code>values.yaml</code>中设置以下变量：</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">store:
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">store:
   etcd:
-    endpoint: https://example-client.default.svc:<span style="color:#1c01ce">2379</span>
+    endpoint: https://example-client.default.svc:<span style="color:#bd93f9">2379</span>
     etcdClientCertSecret: etcd-client-tls
     certFile: etcd-client.crt
     keyFile: etcd-client.key
@@ -218,29 +218,29 @@ NOTES:
 <h3 id="配置-spctl">配置 <code>spctl</code></h3>
 
 <p><em>如果你在任何一个 Kubernetes 节点上运行<code>spctl</code>，PMS 的 IP 地址是 Kubernetes Service <code>Speedle</code>的 Cluster-IP. 在这个例子中，IP 地址是 10.101.117.233。如果你想在 Kubernetes 集群外运行<code>spctl</code>，请将 Kubernetes Service <code>Speedle</code>定义为一个<code>nodePort</code> Service，请参考 Kubernetes 文档<a href="https://kubernetes.io/docs/concepts/services-networking/service/。">https://kubernetes.io/docs/concepts/services-networking/service/。</a></em></p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ spctl config pms-endpoint http://10.108.146.148:6733/policy-mgmt/v1/
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ spctl config pms-endpoint http://10.108.146.148:6733/policy-mgmt/v1/
 $ spctl config --list
-<span style="color:#000">cacert</span> <span style="color:#000">=</span>
-<span style="color:#000">cert</span> <span style="color:#000">=</span>
-<span style="color:#000">key</span> <span style="color:#000">=</span>
-pms-endpoint <span style="color:#000">=</span> http://10.108.146.148:6733/policy-mgmt/v1/
-<span style="color:#000">timeout</span> <span style="color:#000">=</span> 5s</code></pre></div>
+<span style="color:#8be9fd;font-style:italic">cacert</span> <span style="color:#ff79c6">=</span>
+<span style="color:#8be9fd;font-style:italic">cert</span> <span style="color:#ff79c6">=</span>
+<span style="color:#8be9fd;font-style:italic">key</span> <span style="color:#ff79c6">=</span>
+pms-endpoint <span style="color:#ff79c6">=</span> http://10.108.146.148:6733/policy-mgmt/v1/
+<span style="color:#8be9fd;font-style:italic">timeout</span> <span style="color:#ff79c6">=</span> 5s</code></pre></div>
 <h3 id="用-spctl-新建一个-speedle-service">用<code>spctl</code>新建一个 Speedle Service</h3>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ spctl create service <span style="color:#a90d91">test</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ spctl create service <span style="color:#8be9fd;font-style:italic">test</span>
 service created
-<span style="color:#000">{</span><span style="color:#c41a16">&#34;name&#34;</span>:<span style="color:#c41a16">&#34;test&#34;</span>,<span style="color:#c41a16">&#34;type&#34;</span>:<span style="color:#c41a16">&#34;application&#34;</span><span style="color:#000">}</span></code></pre></div>
+<span style="color:#ff79c6">{</span><span style="color:#f1fa8c">&#34;name&#34;</span>:<span style="color:#f1fa8c">&#34;test&#34;</span>,<span style="color:#f1fa8c">&#34;type&#34;</span>:<span style="color:#f1fa8c">&#34;application&#34;</span><span style="color:#ff79c6">}</span></code></pre></div>
 <h3 id="用-spctl-新建一条策略">用<code>spctl</code>新建一条策略</h3>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ spctl create policy -c <span style="color:#c41a16">&#34;grant user jiefu read book&#34;</span> --service-name <span style="color:#a90d91">test</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ spctl create policy -c <span style="color:#f1fa8c">&#34;grant user jiefu read book&#34;</span> --service-name <span style="color:#8be9fd;font-style:italic">test</span>
 policy created
-<span style="color:#000">{</span><span style="color:#c41a16">&#34;id&#34;</span>:<span style="color:#c41a16">&#34;ta55v3kyzux5ssiy3wwr&#34;</span>,<span style="color:#c41a16">&#34;name&#34;</span>:<span style="color:#c41a16">&#34;&#34;</span>,<span style="color:#c41a16">&#34;effect&#34;</span>:<span style="color:#c41a16">&#34;grant&#34;</span>,<span style="color:#c41a16">&#34;permissions&#34;</span>:<span style="color:#000">[{</span><span style="color:#c41a16">&#34;resource&#34;</span>:<span style="color:#c41a16">&#34;book&#34;</span>,<span style="color:#c41a16">&#34;actions&#34;</span>:<span style="color:#000">[</span><span style="color:#c41a16">&#34;read&#34;</span><span style="color:#000">]}]</span>,<span style="color:#c41a16">&#34;principals&#34;</span>:<span style="color:#000">[[</span><span style="color:#c41a16">&#34;user:jiefu&#34;</span><span style="color:#000">]]}</span></code></pre></div>
+<span style="color:#ff79c6">{</span><span style="color:#f1fa8c">&#34;id&#34;</span>:<span style="color:#f1fa8c">&#34;ta55v3kyzux5ssiy3wwr&#34;</span>,<span style="color:#f1fa8c">&#34;name&#34;</span>:<span style="color:#f1fa8c">&#34;&#34;</span>,<span style="color:#f1fa8c">&#34;effect&#34;</span>:<span style="color:#f1fa8c">&#34;grant&#34;</span>,<span style="color:#f1fa8c">&#34;permissions&#34;</span>:<span style="color:#ff79c6">[{</span><span style="color:#f1fa8c">&#34;resource&#34;</span>:<span style="color:#f1fa8c">&#34;book&#34;</span>,<span style="color:#f1fa8c">&#34;actions&#34;</span>:<span style="color:#ff79c6">[</span><span style="color:#f1fa8c">&#34;read&#34;</span><span style="color:#ff79c6">]}]</span>,<span style="color:#f1fa8c">&#34;principals&#34;</span>:<span style="color:#ff79c6">[[</span><span style="color:#f1fa8c">&#34;user:jiefu&#34;</span><span style="color:#ff79c6">]]}</span></code></pre></div>
 <h3 id="用-curl-测试策略">用<code>curl</code>测试策略</h3>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ curl -X POST -d <span style="color:#c41a16">&#39;{&#34;subject&#34;:{&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;,&#34;name&#34;:&#34;jiefu&#34;}]},&#34;serviceName&#34;:&#34;test&#34;,&#34;resource&#34;:&#34;book&#34;,&#34;action&#34;:&#34;read&#34;}&#39;</span> http://10.108.146.148:6734/authz-check/v1/is-allowed
-<span style="color:#000">{</span><span style="color:#c41a16">&#34;allowed&#34;</span>:true,<span style="color:#c41a16">&#34;reason&#34;</span>:0</code></pre></div>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ curl -X POST -d <span style="color:#f1fa8c">&#39;{&#34;subject&#34;:{&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;,&#34;name&#34;:&#34;jiefu&#34;}]},&#34;serviceName&#34;:&#34;test&#34;,&#34;resource&#34;:&#34;book&#34;,&#34;action&#34;:&#34;read&#34;}&#39;</span> http://10.108.146.148:6734/authz-check/v1/is-allowed
+<span style="color:#ff79c6">{</span><span style="color:#f1fa8c">&#34;allowed&#34;</span>:true,<span style="color:#f1fa8c">&#34;reason&#34;</span>:0</code></pre></div>
 <h2 id="疑难解答">疑难解答</h2>
 
 <p>如果 Speedle 的映像放在你私人的 Speedle Registry 上，在部署 Speedle 服务之前，请先添加一个 Kubernetes Secret。</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">kubectl create secret docker-registry &lt;secret name&gt; --docker-username<span style="color:#000">=</span>&lt;user name&gt; --docker-password<span style="color:#000">=</span><span style="color:#c41a16">&#34;&lt;Password&gt;&#34;</span> --docker-email<span style="color:#000">=</span><span style="color:#c41a16">&#34;your@email.com&#34;</span>
---docker-server<span style="color:#000">=</span>&lt;server-add&gt;</code></pre></div>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">kubectl create secret docker-registry &lt;secret name&gt; --docker-username<span style="color:#ff79c6">=</span>&lt;user name&gt; --docker-password<span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;&lt;Password&gt;&#34;</span> --docker-email<span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;your@email.com&#34;</span>
+--docker-server<span style="color:#ff79c6">=</span>&lt;server-add&gt;</code></pre></div>
 <p>更多的关于 Kubernetes Secret 详细，请参考：
 <a href="https://kubernetes.io/docs/concepts/configuration/secret/">https://kubernetes.io/docs/concepts/configuration/secret/</a></p>
 

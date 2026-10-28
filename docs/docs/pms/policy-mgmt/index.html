@@ -120,7 +120,7 @@ headingSelector: 'h2'
 <p>You create authorization policies to grant or deny principals (user/role/group/entity) permission to perform specific actions on specific resources if the condition is true.</p>
 
 <p>Sample:</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">grant group Administrators list,watch,get expr:c1/default/core/pods/*</pre></div>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4">grant group Administrators list,watch,get expr:c1/default/core/pods/*</pre></div>
 <p>This sample grants the group &ldquo;Administrators&rdquo; permission to perform &ldquo;list&rdquo;, &ldquo;watch&rdquo;, and &ldquo;get&rdquo; operations on the resource that matches the name expression <code>c1/default/core/pods/*</code>.</p>
 
 <h4 id="role-policy">Role policy</h4>
@@ -132,7 +132,7 @@ headingSelector: 'h2'
 <p>You create role policies to grant or deny roles, which you created using Speedle, to principals (user/role/group/entity) on specific resources if the condition is true.</p>
 
 <p>Sample:</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">grant user alan manager on res1</pre></div>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4">grant user alan manager on res1</pre></div>
 <p>This sample grants user &ldquo;alan&rdquo; the &ldquo;manager&rdquo; role on the resource &ldquo;res1&rdquo;. In other words, user &ldquo;alan&rdquo; can perform operations on the resource &ldquo;res1&rdquo; because &ldquo;alan&rdquo; has the permissions assigned to the role &ldquo;manager&rdquo;.</p>
 
 <h4 id="policy-elements">Policy elements</h4>
@@ -157,7 +157,7 @@ When Speedle evaluates policies, the final authorization decision is based on th
 <p><img src="/img/speedle/andprincipal.png"/></p>
 
 <p>Sample:</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">grant role (designer, dba) update db_design_doc</pre></div>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4">grant role (designer, dba) update db_design_doc</pre></div>
 <p>In this sample, only a user with both roles &ldquo;designer&rdquo; and &ldquo;dba&rdquo; can update the resource &ldquo;db_design_doc&rdquo;.</p>
 
 <h5 id="resource">Resource</h5>
@@ -202,40 +202,40 @@ You can perform the following management operations on service instances.</p>
 <ul>
 <li>Create a &ldquo;test&rdquo; service:</li>
 </ul>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ ./spctl create service <span style="color:#a90d91">test</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ ./spctl create service <span style="color:#8be9fd;font-style:italic">test</span>
 service created
-<span style="color:#000">{</span><span style="color:#c41a16">&#34;name&#34;</span>:<span style="color:#c41a16">&#34;test&#34;</span>,<span style="color:#c41a16">&#34;type&#34;</span>:<span style="color:#c41a16">&#34;application&#34;</span>,<span style="color:#c41a16">&#34;metadata&#34;</span>:<span style="color:#000">{</span><span style="color:#c41a16">&#34;createby&#34;</span>:<span style="color:#c41a16">&#34;&#34;</span>,<span style="color:#c41a16">&#34;createtime&#34;</span>:<span style="color:#c41a16">&#34;2019-02-12T22:51:19-08:00&#34;</span><span style="color:#000">}}</span></code></pre></div>
+<span style="color:#ff79c6">{</span><span style="color:#f1fa8c">&#34;name&#34;</span>:<span style="color:#f1fa8c">&#34;test&#34;</span>,<span style="color:#f1fa8c">&#34;type&#34;</span>:<span style="color:#f1fa8c">&#34;application&#34;</span>,<span style="color:#f1fa8c">&#34;metadata&#34;</span>:<span style="color:#ff79c6">{</span><span style="color:#f1fa8c">&#34;createby&#34;</span>:<span style="color:#f1fa8c">&#34;&#34;</span>,<span style="color:#f1fa8c">&#34;createtime&#34;</span>:<span style="color:#f1fa8c">&#34;2019-02-12T22:51:19-08:00&#34;</span><span style="color:#ff79c6">}}</span></code></pre></div>
 <ul>
 <li>Get the &ldquo;test&rdquo; service:</li>
 </ul>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ ./spctl get service <span style="color:#a90d91">test</span>
-<span style="color:#000">{</span>
-    <span style="color:#c41a16">&#34;name&#34;</span>: <span style="color:#c41a16">&#34;test&#34;</span>,
-    <span style="color:#c41a16">&#34;type&#34;</span>: <span style="color:#c41a16">&#34;application&#34;</span>,
-    <span style="color:#c41a16">&#34;metadata&#34;</span>: <span style="color:#000">{</span>
-        <span style="color:#c41a16">&#34;createby&#34;</span>: <span style="color:#c41a16">&#34;&#34;</span>,
-        <span style="color:#c41a16">&#34;createtime&#34;</span>: <span style="color:#c41a16">&#34;2019-02-12T22:51:19-08:00&#34;</span>
-    <span style="color:#000">}</span>
-<span style="color:#000">}</span></code></pre></div>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ ./spctl get service <span style="color:#8be9fd;font-style:italic">test</span>
+<span style="color:#ff79c6">{</span>
+    <span style="color:#f1fa8c">&#34;name&#34;</span>: <span style="color:#f1fa8c">&#34;test&#34;</span>,
+    <span style="color:#f1fa8c">&#34;type&#34;</span>: <span style="color:#f1fa8c">&#34;application&#34;</span>,
+    <span style="color:#f1fa8c">&#34;metadata&#34;</span>: <span style="color:#ff79c6">{</span>
+        <span style="color:#f1fa8c">&#34;createby&#34;</span>: <span style="color:#f1fa8c">&#34;&#34;</span>,
+        <span style="color:#f1fa8c">&#34;createtime&#34;</span>: <span style="color:#f1fa8c">&#34;2019-02-12T22:51:19-08:00&#34;</span>
+    <span style="color:#ff79c6">}</span>
+<span style="color:#ff79c6">}</span></code></pre></div>
 <ul>
 <li>Get all services:</li>
 </ul>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ ./spctl get service --all
-<span style="color:#000">[</span>
-    <span style="color:#000">{</span>
-        <span style="color:#c41a16">&#34;name&#34;</span>: <span style="color:#c41a16">&#34;test&#34;</span>,
-        <span style="color:#c41a16">&#34;type&#34;</span>: <span style="color:#c41a16">&#34;application&#34;</span>,
-        <span style="color:#c41a16">&#34;metadata&#34;</span>: <span style="color:#000">{</span>
-            <span style="color:#c41a16">&#34;createby&#34;</span>: <span style="color:#c41a16">&#34;&#34;</span>,
-            <span style="color:#c41a16">&#34;createtime&#34;</span>: <span style="color:#c41a16">&#34;2019-02-12T22:51:19-08:00&#34;</span>
-        <span style="color:#000">}</span>
-    <span style="color:#000">}</span>
-<span style="color:#000">]</span></code></pre></div>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ ./spctl get service --all
+<span style="color:#ff79c6">[</span>
+    <span style="color:#ff79c6">{</span>
+        <span style="color:#f1fa8c">&#34;name&#34;</span>: <span style="color:#f1fa8c">&#34;test&#34;</span>,
+        <span style="color:#f1fa8c">&#34;type&#34;</span>: <span style="color:#f1fa8c">&#34;application&#34;</span>,
+        <span style="color:#f1fa8c">&#34;metadata&#34;</span>: <span style="color:#ff79c6">{</span>
+            <span style="color:#f1fa8c">&#34;createby&#34;</span>: <span style="color:#f1fa8c">&#34;&#34;</span>,
+            <span style="color:#f1fa8c">&#34;createtime&#34;</span>: <span style="color:#f1fa8c">&#34;2019-02-12T22:51:19-08:00&#34;</span>
+        <span style="color:#ff79c6">}</span>
+    <span style="color:#ff79c6">}</span>
+<span style="color:#ff79c6">]</span></code></pre></div>
 <ul>
 <li>Delete the &ldquo;test&rdquo; service:</li>
 </ul>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ ./spctl delete service <span style="color:#a90d91">test</span>
-service <span style="color:#a90d91">test</span> deleted.</code></pre></div>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ ./spctl delete service <span style="color:#8be9fd;font-style:italic">test</span>
+service <span style="color:#8be9fd;font-style:italic">test</span> deleted.</code></pre></div>
 <h4 id="managing-authorization-policies">Managing authorization policies</h4>
 
 <p>You can perform the following management operations on authorization policies.</p>
@@ -243,39 +243,39 @@ service <span style="color:#a90d91">test</span> deleted.</code></pre></div>
 <ul>
 <li>Create a policy named &ldquo;policy1&rdquo; in the &ldquo;test&rdquo; service:</li>
 </ul>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ ./spctl create policy policy1 -c <span style="color:#c41a16">&#34;grant user alan read book&#34;</span> --service-name <span style="color:#a90d91">test</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ ./spctl create policy policy1 -c <span style="color:#f1fa8c">&#34;grant user alan read book&#34;</span> --service-name <span style="color:#8be9fd;font-style:italic">test</span>
 policy created
-<span style="color:#000">{</span><span style="color:#c41a16">&#34;id&#34;</span>:<span style="color:#c41a16">&#34;ao3olis24hrzchwjduea&#34;</span>,<span style="color:#c41a16">&#34;name&#34;</span>:<span style="color:#c41a16">&#34;policy1&#34;</span>,<span style="color:#c41a16">&#34;effect&#34;</span>:<span style="color:#c41a16">&#34;grant&#34;</span>,<span style="color:#c41a16">&#34;permissions&#34;</span>:<span style="color:#000">[{</span><span style="color:#c41a16">&#34;resource&#34;</span>:<span style="color:#c41a16">&#34;book&#34;</span>,<span style="color:#c41a16">&#34;actions&#34;</span>:<span style="color:#000">[</span><span style="color:#c41a16">&#34;read&#34;</span><span style="color:#000">]}]</span>,<span style="color:#c41a16">&#34;principals&#34;</span>:<span style="color:#000">[[</span><span style="color:#c41a16">&#34;user:alan&#34;</span><span style="color:#000">]]</span>,<span style="color:#c41a16">&#34;metadata&#34;</span>:<span style="color:#000">{</span><span style="color:#c41a16">&#34;createby&#34;</span>:<span style="color:#c41a16">&#34;&#34;</span>,<span style="color:#c41a16">&#34;createtime&#34;</span>:<span style="color:#c41a16">&#34;2019-02-12T22:57:46-08:00&#34;</span><span style="color:#000">}}</span></code></pre></div>
+<span style="color:#ff79c6">{</span><span style="color:#f1fa8c">&#34;id&#34;</span>:<span style="color:#f1fa8c">&#34;ao3olis24hrzchwjduea&#34;</span>,<span style="color:#f1fa8c">&#34;name&#34;</span>:<span style="color:#f1fa8c">&#34;policy1&#34;</span>,<span style="color:#f1fa8c">&#34;effect&#34;</span>:<span style="color:#f1fa8c">&#34;grant&#34;</span>,<span style="color:#f1fa8c">&#34;permissions&#34;</span>:<span style="color:#ff79c6">[{</span><span style="color:#f1fa8c">&#34;resource&#34;</span>:<span style="color:#f1fa8c">&#34;book&#34;</span>,<span style="color:#f1fa8c">&#34;actions&#34;</span>:<span style="color:#ff79c6">[</span><span style="color:#f1fa8c">&#34;read&#34;</span><span style="color:#ff79c6">]}]</span>,<span style="color:#f1fa8c">&#34;principals&#34;</span>:<span style="color:#ff79c6">[[</span><span style="color:#f1fa8c">&#34;user:alan&#34;</span><span style="color:#ff79c6">]]</span>,<span style="color:#f1fa8c">&#34;metadata&#34;</span>:<span style="color:#ff79c6">{</span><span style="color:#f1fa8c">&#34;createby&#34;</span>:<span style="color:#f1fa8c">&#34;&#34;</span>,<span style="color:#f1fa8c">&#34;createtime&#34;</span>:<span style="color:#f1fa8c">&#34;2019-02-12T22:57:46-08:00&#34;</span><span style="color:#ff79c6">}}</span></code></pre></div>
 <ul>
 <li>Get &ldquo;policy1&rdquo; in the &ldquo;test&rdquo; service using the policy id:</li>
 </ul>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ ./spctl get policy ao3olis24hrzchwjduea --service-name<span style="color:#000">=</span><span style="color:#a90d91">test</span>
-<span style="color:#000">{</span>
-    <span style="color:#c41a16">&#34;effect&#34;</span>: <span style="color:#c41a16">&#34;grant&#34;</span>,
-    <span style="color:#c41a16">&#34;id&#34;</span>: <span style="color:#c41a16">&#34;ao3olis24hrzchwjduea&#34;</span>,
-    <span style="color:#c41a16">&#34;metadata&#34;</span>: <span style="color:#000">{</span>
-        <span style="color:#c41a16">&#34;createby&#34;</span>: <span style="color:#c41a16">&#34;&#34;</span>,
-        <span style="color:#c41a16">&#34;createtime&#34;</span>: <span style="color:#c41a16">&#34;2019-02-12T22:57:46-08:00&#34;</span>
-    <span style="color:#000">}</span>,
-    <span style="color:#c41a16">&#34;name&#34;</span>: <span style="color:#c41a16">&#34;policy1&#34;</span>,
-    <span style="color:#c41a16">&#34;permissions&#34;</span>: <span style="color:#000">[</span>
-        <span style="color:#000">{</span>
-            <span style="color:#c41a16">&#34;actions&#34;</span>: <span style="color:#000">[</span>
-                <span style="color:#c41a16">&#34;read&#34;</span>
-            <span style="color:#000">]</span>,
-            <span style="color:#c41a16">&#34;resource&#34;</span>: <span style="color:#c41a16">&#34;book&#34;</span>
-        <span style="color:#000">}</span>
-    <span style="color:#000">]</span>,
-    <span style="color:#c41a16">&#34;principals&#34;</span>: <span style="color:#000">[</span>
-        <span style="color:#000">[</span>
-            <span style="color:#c41a16">&#34;user:alan&#34;</span>
-        <span style="color:#000">]</span>
-    <span style="color:#000">]</span>
-<span style="color:#000">}</span></code></pre></div>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ ./spctl get policy ao3olis24hrzchwjduea --service-name<span style="color:#ff79c6">=</span><span style="color:#8be9fd;font-style:italic">test</span>
+<span style="color:#ff79c6">{</span>
+    <span style="color:#f1fa8c">&#34;effect&#34;</span>: <span style="color:#f1fa8c">&#34;grant&#34;</span>,
+    <span style="color:#f1fa8c">&#34;id&#34;</span>: <span style="color:#f1fa8c">&#34;ao3olis24hrzchwjduea&#34;</span>,
+    <span style="color:#f1fa8c">&#34;metadata&#34;</span>: <span style="color:#ff79c6">{</span>
+        <span style="color:#f1fa8c">&#34;createby&#34;</span>: <span style="color:#f1fa8c">&#34;&#34;</span>,
+        <span style="color:#f1fa8c">&#34;createtime&#34;</span>: <span style="color:#f1fa8c">&#34;2019-02-12T22:57:46-08:00&#34;</span>
+    <span style="color:#ff79c6">}</span>,
+    <span style="color:#f1fa8c">&#34;name&#34;</span>: <span style="color:#f1fa8c">&#34;policy1&#34;</span>,
+    <span style="color:#f1fa8c">&#34;permissions&#34;</span>: <span style="color:#ff79c6">[</span>
+        <span style="color:#ff79c6">{</span>
+            <span style="color:#f1fa8c">&#34;actions&#34;</span>: <span style="color:#ff79c6">[</span>
+                <span style="color:#f1fa8c">&#34;read&#34;</span>
+            <span style="color:#ff79c6">]</span>,
+            <span style="color:#f1fa8c">&#34;resource&#34;</span>: <span style="color:#f1fa8c">&#34;book&#34;</span>
+        <span style="color:#ff79c6">}</span>
+    <span style="color:#ff79c6">]</span>,
+    <span style="color:#f1fa8c">&#34;principals&#34;</span>: <span style="color:#ff79c6">[</span>
+        <span style="color:#ff79c6">[</span>
+            <span style="color:#f1fa8c">&#34;user:alan&#34;</span>
+        <span style="color:#ff79c6">]</span>
+    <span style="color:#ff79c6">]</span>
+<span style="color:#ff79c6">}</span></code></pre></div>
 <ul>
 <li>Delete &ldquo;policy1&rdquo; in the &ldquo;test&rdquo; service using the policy id:</li>
 </ul>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ ./spctl delete policy ao3olis24hrzchwjduea --service-name<span style="color:#000">=</span><span style="color:#a90d91">test</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ ./spctl delete policy ao3olis24hrzchwjduea --service-name<span style="color:#ff79c6">=</span><span style="color:#8be9fd;font-style:italic">test</span>
 policy ao3olis24hrzchwjduea deleted.</code></pre></div>
 <h4 id="managing-role-policies">Managing role policies</h4>
 
@@ -284,32 +284,32 @@ policy ao3olis24hrzchwjduea deleted.</code></pre></div>
 <ul>
 <li>Create a new role policy named &ldquo;rolepolicy01&rdquo; in the &ldquo;test&rdquo; service:</li>
 </ul>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ ./spctl create rolepolicy rolepolicy01 -c <span style="color:#c41a16">&#34;grant user alan manager&#34;</span> --service-name <span style="color:#a90d91">test</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ ./spctl create rolepolicy rolepolicy01 -c <span style="color:#f1fa8c">&#34;grant user alan manager&#34;</span> --service-name <span style="color:#8be9fd;font-style:italic">test</span>
 rolepolicy created
-<span style="color:#000">{</span><span style="color:#c41a16">&#34;id&#34;</span>:<span style="color:#c41a16">&#34;4gskmqamoiebmidyw2fi&#34;</span>,<span style="color:#c41a16">&#34;name&#34;</span>:<span style="color:#c41a16">&#34;rolepolicy01&#34;</span>,<span style="color:#c41a16">&#34;effect&#34;</span>:<span style="color:#c41a16">&#34;grant&#34;</span>,<span style="color:#c41a16">&#34;roles&#34;</span>:<span style="color:#000">[</span><span style="color:#c41a16">&#34;manager&#34;</span><span style="color:#000">]</span>,<span style="color:#c41a16">&#34;principals&#34;</span>:<span style="color:#000">[</span><span style="color:#c41a16">&#34;user:alan&#34;</span><span style="color:#000">]</span>,<span style="color:#c41a16">&#34;metadata&#34;</span>:<span style="color:#000">{</span><span style="color:#c41a16">&#34;createby&#34;</span>:<span style="color:#c41a16">&#34;&#34;</span>,<span style="color:#c41a16">&#34;createtime&#34;</span>:<span style="color:#c41a16">&#34;2019-02-12T23:00:44-08:00&#34;</span><span style="color:#000">}}</span></code></pre></div>
+<span style="color:#ff79c6">{</span><span style="color:#f1fa8c">&#34;id&#34;</span>:<span style="color:#f1fa8c">&#34;4gskmqamoiebmidyw2fi&#34;</span>,<span style="color:#f1fa8c">&#34;name&#34;</span>:<span style="color:#f1fa8c">&#34;rolepolicy01&#34;</span>,<span style="color:#f1fa8c">&#34;effect&#34;</span>:<span style="color:#f1fa8c">&#34;grant&#34;</span>,<span style="color:#f1fa8c">&#34;roles&#34;</span>:<span style="color:#ff79c6">[</span><span style="color:#f1fa8c">&#34;manager&#34;</span><span style="color:#ff79c6">]</span>,<span style="color:#f1fa8c">&#34;principals&#34;</span>:<span style="color:#ff79c6">[</span><span style="color:#f1fa8c">&#34;user:alan&#34;</span><span style="color:#ff79c6">]</span>,<span style="color:#f1fa8c">&#34;metadata&#34;</span>:<span style="color:#ff79c6">{</span><span style="color:#f1fa8c">&#34;createby&#34;</span>:<span style="color:#f1fa8c">&#34;&#34;</span>,<span style="color:#f1fa8c">&#34;createtime&#34;</span>:<span style="color:#f1fa8c">&#34;2019-02-12T23:00:44-08:00&#34;</span><span style="color:#ff79c6">}}</span></code></pre></div>
 <ul>
 <li>Get the role policy using the policy id:</li>
 </ul>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ ./spctl get rolepolicy 4gskmqamoiebmidyw2fi --service-name <span style="color:#a90d91">test</span>
-<span style="color:#000">{</span>
-    <span style="color:#c41a16">&#34;effect&#34;</span>: <span style="color:#c41a16">&#34;grant&#34;</span>,
-    <span style="color:#c41a16">&#34;id&#34;</span>: <span style="color:#c41a16">&#34;4gskmqamoiebmidyw2fi&#34;</span>,
-    <span style="color:#c41a16">&#34;metadata&#34;</span>: <span style="color:#000">{</span>
-        <span style="color:#c41a16">&#34;createby&#34;</span>: <span style="color:#c41a16">&#34;&#34;</span>,
-        <span style="color:#c41a16">&#34;createtime&#34;</span>: <span style="color:#c41a16">&#34;2019-02-12T23:00:44-08:00&#34;</span>
-    <span style="color:#000">}</span>,
-    <span style="color:#c41a16">&#34;name&#34;</span>: <span style="color:#c41a16">&#34;rolepolicy01&#34;</span>,
-    <span style="color:#c41a16">&#34;principals&#34;</span>: <span style="color:#000">[</span>
-        <span style="color:#c41a16">&#34;user:alan&#34;</span>
-    <span style="color:#000">]</span>,
-    <span style="color:#c41a16">&#34;roles&#34;</span>: <span style="color:#000">[</span>
-        <span style="color:#c41a16">&#34;manager&#34;</span>
-    <span style="color:#000">]</span>
-<span style="color:#000">}</span></code></pre></div>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ ./spctl get rolepolicy 4gskmqamoiebmidyw2fi --service-name <span style="color:#8be9fd;font-style:italic">test</span>
+<span style="color:#ff79c6">{</span>
+    <span style="color:#f1fa8c">&#34;effect&#34;</span>: <span style="color:#f1fa8c">&#34;grant&#34;</span>,
+    <span style="color:#f1fa8c">&#34;id&#34;</span>: <span style="color:#f1fa8c">&#34;4gskmqamoiebmidyw2fi&#34;</span>,
+    <span style="color:#f1fa8c">&#34;metadata&#34;</span>: <span style="color:#ff79c6">{</span>
+        <span style="color:#f1fa8c">&#34;createby&#34;</span>: <span style="color:#f1fa8c">&#34;&#34;</span>,
+        <span style="color:#f1fa8c">&#34;createtime&#34;</span>: <span style="color:#f1fa8c">&#34;2019-02-12T23:00:44-08:00&#34;</span>
+    <span style="color:#ff79c6">}</span>,
+    <span style="color:#f1fa8c">&#34;name&#34;</span>: <span style="color:#f1fa8c">&#34;rolepolicy01&#34;</span>,
+    <span style="color:#f1fa8c">&#34;principals&#34;</span>: <span style="color:#ff79c6">[</span>
+        <span style="color:#f1fa8c">&#34;user:alan&#34;</span>
+    <span style="color:#ff79c6">]</span>,
+    <span style="color:#f1fa8c">&#34;roles&#34;</span>: <span style="color:#ff79c6">[</span>
+        <span style="color:#f1fa8c">&#34;manager&#34;</span>
+    <span style="color:#ff79c6">]</span>
+<span style="color:#ff79c6">}</span></code></pre></div>
 <ul>
 <li>Delete the role policy using the policy id:</li>
 </ul>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ ./spctl delete rolepolicy 4gskmqamoiebmidyw2fi --service-name <span style="color:#a90d91">test</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ ./spctl delete rolepolicy 4gskmqamoiebmidyw2fi --service-name <span style="color:#8be9fd;font-style:italic">test</span>
 rolepolicy 4gskmqamoiebmidyw2fi deleted.</code></pre></div>
   </div>
 </div>

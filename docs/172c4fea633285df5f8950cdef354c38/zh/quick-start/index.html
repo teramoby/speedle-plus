@@ -118,9 +118,9 @@ $ ./spctl create service library $ ./spctl create policy -c &#34;grant user Zhan
 <li>设置 GOPATH 环境变量</li>
 <li>运行如下命令</li>
 </ol>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ go get github.com/teramoby/speedle-plus/cmd/…</code></pre></div>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ go get github.com/teramoby/speedle-plus/cmd/…</code></pre></div>
 <p>该命令会从 github 下载代码并自动编译。命令执行完毕后，我们可以检查\$GOPATH/bin 目录，应该有三个文件在该目录下：</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ ls <span style="color:#000">$GOPATH</span>/bin
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ ls <span style="color:#f8f8f2">$GOPATH</span>/bin
 spctl speedle-ads speedle-pms</code></pre></div>
 <p>speedle-pms 是授权策略（Policy）管理服务<br />
 speedle-ads 是授权决定服务（运行时）<br />
@@ -129,7 +129,7 @@ spctl 是命令行工具</p>
 <h2 id="第二步-运行">第二步 运行</h2>
 
 <p>启动 PMS 和 ADS</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ <span style="color:#a90d91">cd</span> <span style="color:#000">$GOPATH</span>/bin
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ <span style="color:#ff79c6">cd</span> <span style="color:#f8f8f2">$GOPATH</span>/bin
 $ ./speedle-pms --store-type file &amp;
 $ ./speedle-ads --store-type file &amp;</code></pre></div>
 <h2 id="第三步-使用">第三步 使用</h2>
@@ -142,18 +142,18 @@ $ ./speedle-ads --store-type file &amp;</code></pre></div>
 </ol>
 
 <p>例如，对于图书馆管理系统，我们要定义一个 Policy 说“张三可以借书”。我们可以进行如下操作：</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ ./spctl create service library
-$ ./spctl create policy -c <span style="color:#c41a16">&#34;grant user ZhangSan borrow book&#34;</span> --service-name<span style="color:#000">=</span>library</code></pre></div>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ ./spctl create service library
+$ ./spctl create policy -c <span style="color:#f1fa8c">&#34;grant user ZhangSan borrow book&#34;</span> --service-name<span style="color:#f8f8f2">=</span>library</code></pre></div>
 <p>这样 Policy 就存储在 Speedle 中，接下来我们测试一下 Speedle 可不可以正确处理授权请求。</p>
 
 <h2 id="测试">测试</h2>
 
 <p>问问它张三可不可以借书：</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ curl -X POST --data <span style="color:#c41a16">&#39;{&#34;subject&#34;:{&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;,&#34;name&#34;:&#34;ZhangSan&#34;}]},&#34;serviceName&#34;:&#34;library&#34;,&#34;resource&#34;:&#34;book&#34;,&#34;action&#34;:&#34;borrow&#34;}&#39;</span> http://127.0.0.1:6734/authz-check/v1/is-allowed</code></pre></div>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ curl -X POST --data <span style="color:#f1fa8c">&#39;{&#34;subject&#34;:{&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;,&#34;name&#34;:&#34;ZhangSan&#34;}]},&#34;serviceName&#34;:&#34;library&#34;,&#34;resource&#34;:&#34;book&#34;,&#34;action&#34;:&#34;borrow&#34;}&#39;</span> http://127.0.0.1:6734/authz-check/v1/is-allowed</code></pre></div>
 <p>它回答可以</p>
 
 <p>再问问它李四可不可以借书</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ curl -X POST --data <span style="color:#c41a16">&#39;{&#34;subject&#34;:{&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;,&#34;name&#34;:&#34;LiSi&#34;}]},&#34;serviceName&#34;:&#34;library&#34;,&#34;resource&#34;:&#34;book&#34;,&#34;action&#34;:&#34;borrow&#34;}&#39;</span> http://127.0.0.1:6734/authz-check/v1/is-allowed</code></pre></div>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ curl -X POST --data <span style="color:#f1fa8c">&#39;{&#34;subject&#34;:{&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;,&#34;name&#34;:&#34;LiSi&#34;}]},&#34;serviceName&#34;:&#34;library&#34;,&#34;resource&#34;:&#34;book&#34;,&#34;action&#34;:&#34;borrow&#34;}&#39;</span> http://127.0.0.1:6734/authz-check/v1/is-allowed</code></pre></div>
 <p>它回答不可以</p>
 
 <p>就这么简单！下一步您可以深入了解 SPDL 语言的用法。它可以支持普通的 ACL,也支持 RBAC 和 ABAC，也可以 RBAC 和 ABAC 混合使用。能满足各种应用场景。期待您去尝试。</p>

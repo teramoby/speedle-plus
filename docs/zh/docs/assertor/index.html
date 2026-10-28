@@ -112,213 +112,213 @@ headingSelector: 'h2'
 <p><strong>备注:</strong> 此示例断言器服务仅用于测试目的。</p>
 
 <p>示例断言器服务源代码：</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#a90d91">package</span> <span style="color:#000">main</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#ff79c6">package</span> main
 
-<span style="color:#a90d91">import</span> (
-    <span style="color:#c41a16">&#34;encoding/json&#34;</span>
-    <span style="color:#c41a16">&#34;log&#34;</span>
-    <span style="color:#c41a16">&#34;net/http&#34;</span>
+<span style="color:#ff79c6">import</span> (
+    <span style="color:#f1fa8c">&#34;encoding/json&#34;</span>
+    <span style="color:#f1fa8c">&#34;log&#34;</span>
+    <span style="color:#f1fa8c">&#34;net/http&#34;</span>
 )
 
-<span style="color:#a90d91">const</span> (
-    <span style="color:#177500">// user type of Principal
-</span><span style="color:#177500"></span>    <span style="color:#000">PRINCIPAL_TYPE_USER</span>   = <span style="color:#c41a16">&#34;user&#34;</span>
-    <span style="color:#177500">// group type of Principal
-</span><span style="color:#177500"></span>    <span style="color:#000">PRINCIPAL_TYPE_GROUP</span>  = <span style="color:#c41a16">&#34;group&#34;</span>
-    <span style="color:#177500">// entity type of Principal
-</span><span style="color:#177500"></span>    <span style="color:#000">PRINCIPAL_TYPE_ENTITY</span> = <span style="color:#c41a16">&#34;entity&#34;</span>
+<span style="color:#8be9fd;font-style:italic">const</span> (
+    <span style="color:#6272a4">// user type of Principal
+</span><span style="color:#6272a4"></span>    PRINCIPAL_TYPE_USER   = <span style="color:#f1fa8c">&#34;user&#34;</span>
+    <span style="color:#6272a4">// group type of Principal
+</span><span style="color:#6272a4"></span>    PRINCIPAL_TYPE_GROUP  = <span style="color:#f1fa8c">&#34;group&#34;</span>
+    <span style="color:#6272a4">// entity type of Principal
+</span><span style="color:#6272a4"></span>    PRINCIPAL_TYPE_ENTITY = <span style="color:#f1fa8c">&#34;entity&#34;</span>
 )
 
-<span style="color:#177500">// Principal of Speedle
-</span><span style="color:#177500"></span><span style="color:#a90d91">type</span> <span style="color:#000">Principal</span> <span style="color:#a90d91">struct</span> {
-    <span style="color:#000">Type</span> <span style="color:#a90d91">string</span> <span style="color:#c41a16">`json:&#34;type,omitempty&#34;`</span>
-    <span style="color:#000">Name</span> <span style="color:#a90d91">string</span> <span style="color:#c41a16">`json:&#34;name,omitempty&#34;`</span>
-    <span style="color:#000">IDD</span>  <span style="color:#a90d91">string</span> <span style="color:#c41a16">`json:&#34;idd,omitempty&#34;`</span>
+<span style="color:#6272a4">// Principal of Speedle
+</span><span style="color:#6272a4"></span><span style="color:#8be9fd;font-style:italic">type</span> Principal <span style="color:#8be9fd;font-style:italic">struct</span> {
+    Type <span style="color:#8be9fd">string</span> <span style="color:#f1fa8c">`json:&#34;type,omitempty&#34;`</span>
+    Name <span style="color:#8be9fd">string</span> <span style="color:#f1fa8c">`json:&#34;name,omitempty&#34;`</span>
+    IDD  <span style="color:#8be9fd">string</span> <span style="color:#f1fa8c">`json:&#34;idd,omitempty&#34;`</span>
 }
 
-<span style="color:#177500">// AssertResponse assertion response
-</span><span style="color:#177500"></span><span style="color:#a90d91">type</span> <span style="color:#000">AssertResponse</span> <span style="color:#a90d91">struct</span> {
-    <span style="color:#000">Principals</span> []<span style="color:#000">*</span><span style="color:#000">Principal</span>           <span style="color:#c41a16">`json:&#34;principals,omitempty&#34;`</span>
-    <span style="color:#000">Attributes</span> <span style="color:#a90d91">map</span>[<span style="color:#a90d91">string</span>]<span style="color:#a90d91">interface</span>{} <span style="color:#c41a16">`json:&#34;attributes,omitempty&#34;`</span>
-    <span style="color:#177500">// non zero indicates errors happen
-</span><span style="color:#177500"></span>    <span style="color:#000">ErrCode</span>    <span style="color:#a90d91">int</span>                    <span style="color:#c41a16">`json:&#34;errCode&#34;`</span>
-    <span style="color:#000">ErrMessage</span> <span style="color:#a90d91">string</span>                 <span style="color:#c41a16">`json:&#34;errMessage,omitempty&#34;`</span>
+<span style="color:#6272a4">// AssertResponse assertion response
+</span><span style="color:#6272a4"></span><span style="color:#8be9fd;font-style:italic">type</span> AssertResponse <span style="color:#8be9fd;font-style:italic">struct</span> {
+    Principals []<span style="color:#ff79c6">*</span>Principal           <span style="color:#f1fa8c">`json:&#34;principals,omitempty&#34;`</span>
+    Attributes <span style="color:#8be9fd;font-style:italic">map</span>[<span style="color:#8be9fd">string</span>]<span style="color:#8be9fd;font-style:italic">interface</span>{} <span style="color:#f1fa8c">`json:&#34;attributes,omitempty&#34;`</span>
+    <span style="color:#6272a4">// non zero indicates errors happen
+</span><span style="color:#6272a4"></span>    ErrCode    <span style="color:#8be9fd">int</span>                    <span style="color:#f1fa8c">`json:&#34;errCode&#34;`</span>
+    ErrMessage <span style="color:#8be9fd">string</span>                 <span style="color:#f1fa8c">`json:&#34;errMessage,omitempty&#34;`</span>
 }
 
-<span style="color:#177500">// SampleAsserter for testing only
-</span><span style="color:#177500"></span><span style="color:#a90d91">type</span> <span style="color:#000">SampleAsserter</span> <span style="color:#a90d91">struct</span> {
+<span style="color:#6272a4">// SampleAsserter for testing only
+</span><span style="color:#6272a4"></span><span style="color:#8be9fd;font-style:italic">type</span> SampleAsserter <span style="color:#8be9fd;font-style:italic">struct</span> {
 }
 
-<span style="color:#a90d91">func</span> (<span style="color:#000">a</span> <span style="color:#000">SampleAsserter</span>) <span style="color:#000">ServeHTTP</span>(<span style="color:#000">w</span> <span style="color:#000">http</span>.<span style="color:#000">ResponseWriter</span>, <span style="color:#000">r</span> <span style="color:#000">*</span><span style="color:#000">http</span>.<span style="color:#000">Request</span>) {
-    <span style="color:#a90d91">if</span> <span style="color:#000">r</span>.<span style="color:#000">Method</span> <span style="color:#000">==</span> <span style="color:#000">http</span>.<span style="color:#000">MethodGet</span> {
-        <span style="color:#000">token</span> <span style="color:#000">:=</span> <span style="color:#000">r</span>.<span style="color:#000">Header</span>.<span style="color:#000">Get</span>(<span style="color:#c41a16">&#34;x-token&#34;</span>)
-        <span style="color:#000">idp</span> <span style="color:#000">:=</span> <span style="color:#000">r</span>.<span style="color:#000">Header</span>.<span style="color:#000">Get</span>(<span style="color:#c41a16">&#34;x-idp&#34;</span>)
+<span style="color:#8be9fd;font-style:italic">func</span> (a SampleAsserter) ServeHTTP(w http.ResponseWriter, r <span style="color:#ff79c6">*</span>http.Request) {
+    <span style="color:#ff79c6">if</span> r.Method <span style="color:#ff79c6">==</span> http.MethodGet {
+        token <span style="color:#ff79c6">:=</span> r.Header.Get(<span style="color:#f1fa8c">&#34;x-token&#34;</span>)
+        idp <span style="color:#ff79c6">:=</span> r.Header.Get(<span style="color:#f1fa8c">&#34;x-idp&#34;</span>)
 
-        <span style="color:#000">log</span>.<span style="color:#000">Printf</span>(<span style="color:#c41a16">&#34;ServeHTTP, token: %s, idp: %s \n&#34;</span>, <span style="color:#000">token</span>, <span style="color:#000">idp</span>)
+        log.Printf(<span style="color:#f1fa8c">&#34;ServeHTTP, token: %s, idp: %s \n&#34;</span>, token, idp)
 
-        <span style="color:#000">subj</span> <span style="color:#000">:=</span> <span style="color:#000">AssertResponse</span>{}
+        subj <span style="color:#ff79c6">:=</span> AssertResponse{}
 
-        <span style="color:#a90d91">if</span> <span style="color:#a90d91">len</span>(<span style="color:#000">token</span>) <span style="color:#000">==</span> <span style="color:#1c01ce">0</span> <span style="color:#000">||</span> <span style="color:#a90d91">len</span>(<span style="color:#000">idp</span>) <span style="color:#000">==</span> <span style="color:#1c01ce">0</span> {
-            <span style="color:#000">subj</span>.<span style="color:#000">ErrCode</span> = <span style="color:#000">http</span>.<span style="color:#000">StatusBadRequest</span>
-            <span style="color:#000">subj</span>.<span style="color:#000">ErrMessage</span> = <span style="color:#c41a16">&#34;token or idp is empty&#34;</span>
-            <span style="color:#000">sendResp</span>(<span style="color:#000">w</span>, <span style="color:#000">http</span>.<span style="color:#000">StatusBadRequest</span>, <span style="color:#000">&amp;</span><span style="color:#000">subj</span>)
-            <span style="color:#a90d91">return</span>
-        } <span style="color:#a90d91">else</span> {
-            <span style="color:#177500">// Parse token and validate token
-</span><span style="color:#177500"></span>            <span style="color:#177500">// Retrieve groups etc. from token issuer
-</span><span style="color:#177500"></span>            <span style="color:#177500">// Here we just return a sample result
-</span><span style="color:#177500"></span>            <span style="color:#000">subj</span>.<span style="color:#000">ErrCode</span> = <span style="color:#1c01ce">0</span>
-            <span style="color:#000">subj</span>.<span style="color:#000">ErrMessage</span> = <span style="color:#c41a16">&#34;&#34;</span>
-            <span style="color:#000">subj</span>.<span style="color:#000">Principals</span> = []<span style="color:#000">*</span><span style="color:#000">Principal</span>{
-                <span style="color:#000">&amp;</span><span style="color:#000">Principal</span>{
-                    <span style="color:#000">Type</span>: <span style="color:#000">PRINCIPAL_TYPE_USER</span>,
-                    <span style="color:#000">Name</span>: <span style="color:#c41a16">&#34;user1&#34;</span>,
-                    <span style="color:#000">IDD</span>:  <span style="color:#000">idp</span>,
+        <span style="color:#ff79c6">if</span> <span style="color:#8be9fd;font-style:italic">len</span>(token) <span style="color:#ff79c6">==</span> <span style="color:#bd93f9">0</span> <span style="color:#ff79c6">||</span> <span style="color:#8be9fd;font-style:italic">len</span>(idp) <span style="color:#ff79c6">==</span> <span style="color:#bd93f9">0</span> {
+            subj.ErrCode = http.StatusBadRequest
+            subj.ErrMessage = <span style="color:#f1fa8c">&#34;token or idp is empty&#34;</span>
+            sendResp(w, http.StatusBadRequest, <span style="color:#ff79c6">&amp;</span>subj)
+            <span style="color:#ff79c6">return</span>
+        } <span style="color:#ff79c6">else</span> {
+            <span style="color:#6272a4">// Parse token and validate token
+</span><span style="color:#6272a4"></span>            <span style="color:#6272a4">// Retrieve groups etc. from token issuer
+</span><span style="color:#6272a4"></span>            <span style="color:#6272a4">// Here we just return a sample result
+</span><span style="color:#6272a4"></span>            subj.ErrCode = <span style="color:#bd93f9">0</span>
+            subj.ErrMessage = <span style="color:#f1fa8c">&#34;&#34;</span>
+            subj.Principals = []<span style="color:#ff79c6">*</span>Principal{
+                <span style="color:#ff79c6">&amp;</span>Principal{
+                    Type: PRINCIPAL_TYPE_USER,
+                    Name: <span style="color:#f1fa8c">&#34;user1&#34;</span>,
+                    IDD:  idp,
                 },
             }
 
-            <span style="color:#000">sendResp</span>(<span style="color:#000">w</span>, <span style="color:#000">http</span>.<span style="color:#000">StatusOK</span>, <span style="color:#000">&amp;</span><span style="color:#000">subj</span>)
+            sendResp(w, http.StatusOK, <span style="color:#ff79c6">&amp;</span>subj)
         }
     }
 }
 
-<span style="color:#a90d91">func</span> <span style="color:#000">sendResp</span>(<span style="color:#000">w</span> <span style="color:#000">http</span>.<span style="color:#000">ResponseWriter</span>, <span style="color:#000">status</span> <span style="color:#a90d91">int</span>, <span style="color:#000">data</span> <span style="color:#000">*</span><span style="color:#000">AssertResponse</span>) {
-    <span style="color:#000">w</span>.<span style="color:#000">Header</span>().<span style="color:#000">Set</span>(<span style="color:#c41a16">&#34;Content-Type&#34;</span>, <span style="color:#c41a16">&#34;application/json&#34;</span>)
-    <span style="color:#000">w</span>.<span style="color:#000">WriteHeader</span>(<span style="color:#000">status</span>)
-    <span style="color:#000">raw</span>, <span style="color:#000">_</span> <span style="color:#000">:=</span> <span style="color:#000">json</span>.<span style="color:#000">Marshal</span>(<span style="color:#000">data</span>)
+<span style="color:#8be9fd;font-style:italic">func</span> sendResp(w http.ResponseWriter, status <span style="color:#8be9fd">int</span>, data <span style="color:#ff79c6">*</span>AssertResponse) {
+    w.Header().Set(<span style="color:#f1fa8c">&#34;Content-Type&#34;</span>, <span style="color:#f1fa8c">&#34;application/json&#34;</span>)
+    w.WriteHeader(status)
+    raw, _ <span style="color:#ff79c6">:=</span> json.Marshal(data)
 
-    <span style="color:#000">log</span>.<span style="color:#000">Printf</span>(<span style="color:#c41a16">&#34;ServeHTTP, asserted subject: %s \n&#34;</span>, <span style="color:#a90d91">string</span>(<span style="color:#000">raw</span>))
+    log.Printf(<span style="color:#f1fa8c">&#34;ServeHTTP, asserted subject: %s \n&#34;</span>, <span style="color:#8be9fd;font-style:italic">string</span>(raw))
 
-    <span style="color:#000">w</span>.<span style="color:#000">Write</span>(<span style="color:#000">raw</span>)
+    w.Write(raw)
 }
 
-<span style="color:#a90d91">func</span> <span style="color:#000">main</span>() {
+<span style="color:#8be9fd;font-style:italic">func</span> main() {
 
-    <span style="color:#000">mux</span> <span style="color:#000">:=</span> <span style="color:#000">http</span>.<span style="color:#000">NewServeMux</span>()
+    mux <span style="color:#ff79c6">:=</span> http.NewServeMux()
 
-    <span style="color:#000">asserter</span> <span style="color:#000">:=</span> <span style="color:#000">SampleAsserter</span>{}
+    asserter <span style="color:#ff79c6">:=</span> SampleAsserter{}
 
-    <span style="color:#000">mux</span>.<span style="color:#000">Handle</span>(<span style="color:#c41a16">&#34;/v1/assert&#34;</span>, <span style="color:#000">asserter</span>)
+    mux.Handle(<span style="color:#f1fa8c">&#34;/v1/assert&#34;</span>, asserter)
 
-    <span style="color:#a90d91">if</span> <span style="color:#000">err</span> <span style="color:#000">:=</span> <span style="color:#000">http</span>.<span style="color:#000">ListenAndServe</span>(<span style="color:#c41a16">&#34;:8080&#34;</span>, <span style="color:#000">mux</span>); <span style="color:#000">err</span> <span style="color:#000">!=</span> <span style="color:#a90d91">nil</span> {
-        <span style="color:#000">log</span>.<span style="color:#000">Fatalf</span>(<span style="color:#c41a16">&#34;start server error: %v&#34;</span>, <span style="color:#000">err</span>)
+    <span style="color:#ff79c6">if</span> err <span style="color:#ff79c6">:=</span> http.ListenAndServe(<span style="color:#f1fa8c">&#34;:8080&#34;</span>, mux); err <span style="color:#ff79c6">!=</span> <span style="color:#ff79c6">nil</span> {
+        log.Fatalf(<span style="color:#f1fa8c">&#34;start server error: %v&#34;</span>, err)
     }
 
 }</code></pre></div>
 <p>a. 编译</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">go build src/asserter/asserter.go</code></pre></div>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">go build src/asserter/asserter.go</code></pre></div>
 <p>b. 启动示例断言服务</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./asserter
-<span style="color:#1c01ce">2019</span>/01/25 <span style="color:#1c01ce">14</span>:42:54 ServeHTTP, token: test-token, idp: github
-<span style="color:#1c01ce">2019</span>/01/25 <span style="color:#1c01ce">14</span>:42:54 ServeHTTP, asserted subject: <span style="color:#000">{</span><span style="color:#c41a16">&#34;principals&#34;</span>:<span style="color:#000">[{</span><span style="color:#c41a16">&#34;type&#34;</span>:<span style="color:#c41a16">&#34;user&#34;</span>,<span style="color:#c41a16">&#34;name&#34;</span>:<span style="color:#c41a16">&#34;user1&#34;</span>,<span style="color:#c41a16">&#34;idd&#34;</span>:<span style="color:#c41a16">&#34;github&#34;</span><span style="color:#000">}]</span>,<span style="color:#c41a16">&#34;errCode&#34;</span>:0<span style="color:#000">}</span>
-<span style="color:#1c01ce">2019</span>/01/25 <span style="color:#1c01ce">14</span>:43:18 ServeHTTP, token: test-token, idp: google
-<span style="color:#1c01ce">2019</span>/01/25 <span style="color:#1c01ce">14</span>:43:18 ServeHTTP, asserted subject: <span style="color:#000">{</span><span style="color:#c41a16">&#34;principals&#34;</span>:<span style="color:#000">[{</span><span style="color:#c41a16">&#34;type&#34;</span>:<span style="color:#c41a16">&#34;user&#34;</span>,<span style="color:#c41a16">&#34;name&#34;</span>:<span style="color:#c41a16">&#34;user1&#34;</span>,<span style="color:#c41a16">&#34;idd&#34;</span>:<span style="color:#c41a16">&#34;google&#34;</span><span style="color:#000">}]</span>,<span style="color:#c41a16">&#34;errCode&#34;</span>:0<span style="color:#000">}</span>
-<span style="color:#1c01ce">2019</span>/01/25 <span style="color:#1c01ce">14</span>:43:29 ServeHTTP, token: , idp: google
-<span style="color:#1c01ce">2019</span>/01/25 <span style="color:#1c01ce">14</span>:43:29 ServeHTTP, asserted subject: <span style="color:#000">{</span><span style="color:#c41a16">&#34;errCode&#34;</span>:400,<span style="color:#c41a16">&#34;errMessage&#34;</span>:<span style="color:#c41a16">&#34;token or idp is empty&#34;</span><span style="color:#000">}</span></code></pre></div>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./asserter
+<span style="color:#bd93f9">2019</span>/01/25 <span style="color:#bd93f9">14</span>:42:54 ServeHTTP, token: test-token, idp: github
+<span style="color:#bd93f9">2019</span>/01/25 <span style="color:#bd93f9">14</span>:42:54 ServeHTTP, asserted subject: <span style="color:#ff79c6">{</span><span style="color:#f1fa8c">&#34;principals&#34;</span>:<span style="color:#ff79c6">[{</span><span style="color:#f1fa8c">&#34;type&#34;</span>:<span style="color:#f1fa8c">&#34;user&#34;</span>,<span style="color:#f1fa8c">&#34;name&#34;</span>:<span style="color:#f1fa8c">&#34;user1&#34;</span>,<span style="color:#f1fa8c">&#34;idd&#34;</span>:<span style="color:#f1fa8c">&#34;github&#34;</span><span style="color:#ff79c6">}]</span>,<span style="color:#f1fa8c">&#34;errCode&#34;</span>:0<span style="color:#ff79c6">}</span>
+<span style="color:#bd93f9">2019</span>/01/25 <span style="color:#bd93f9">14</span>:43:18 ServeHTTP, token: test-token, idp: google
+<span style="color:#bd93f9">2019</span>/01/25 <span style="color:#bd93f9">14</span>:43:18 ServeHTTP, asserted subject: <span style="color:#ff79c6">{</span><span style="color:#f1fa8c">&#34;principals&#34;</span>:<span style="color:#ff79c6">[{</span><span style="color:#f1fa8c">&#34;type&#34;</span>:<span style="color:#f1fa8c">&#34;user&#34;</span>,<span style="color:#f1fa8c">&#34;name&#34;</span>:<span style="color:#f1fa8c">&#34;user1&#34;</span>,<span style="color:#f1fa8c">&#34;idd&#34;</span>:<span style="color:#f1fa8c">&#34;google&#34;</span><span style="color:#ff79c6">}]</span>,<span style="color:#f1fa8c">&#34;errCode&#34;</span>:0<span style="color:#ff79c6">}</span>
+<span style="color:#bd93f9">2019</span>/01/25 <span style="color:#bd93f9">14</span>:43:29 ServeHTTP, token: , idp: google
+<span style="color:#bd93f9">2019</span>/01/25 <span style="color:#bd93f9">14</span>:43:29 ServeHTTP, asserted subject: <span style="color:#ff79c6">{</span><span style="color:#f1fa8c">&#34;errCode&#34;</span>:400,<span style="color:#f1fa8c">&#34;errMessage&#34;</span>:<span style="color:#f1fa8c">&#34;token or idp is empty&#34;</span><span style="color:#ff79c6">}</span></code></pre></div>
 <p>c. 测试示例断言服务</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl -v -H <span style="color:#c41a16">&#34;x-token:test-token&#34;</span> -H <span style="color:#c41a16">&#34;x-idp:github&#34;</span> http://localhost:8080/v1/assert
-* About to connect<span style="color:#000">()</span> to localhost port <span style="color:#1c01ce">8080</span> <span style="color:#000">(</span><span style="color:#177500">#0)
-</span><span style="color:#177500"></span>*   Trying ::1...
-* Connected to localhost <span style="color:#000">(</span>::1<span style="color:#000">)</span> port <span style="color:#1c01ce">8080</span> <span style="color:#000">(</span><span style="color:#177500">#0)
-</span><span style="color:#177500"></span>&gt; GET /v1/assert HTTP/1.1
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl -v -H <span style="color:#f1fa8c">&#34;x-token:test-token&#34;</span> -H <span style="color:#f1fa8c">&#34;x-idp:github&#34;</span> http://localhost:8080/v1/assert
+* About to connect<span style="color:#ff79c6">()</span> to localhost port <span style="color:#bd93f9">8080</span> <span style="color:#ff79c6">(</span><span style="color:#6272a4">#0)
+</span><span style="color:#6272a4"></span>*   Trying ::1...
+* Connected to localhost <span style="color:#ff79c6">(</span>::1<span style="color:#ff79c6">)</span> port <span style="color:#bd93f9">8080</span> <span style="color:#ff79c6">(</span><span style="color:#6272a4">#0)
+</span><span style="color:#6272a4"></span>&gt; GET /v1/assert HTTP/1.1
 &gt; User-Agent: curl/7.29.0
 &gt; Host: localhost:8080
 &gt; Accept: */*
 &gt; x-token:test-token
 &gt; x-idp:github
 &gt;
-&lt; HTTP/1.1 <span style="color:#1c01ce">200</span> OK
+&lt; HTTP/1.1 <span style="color:#bd93f9">200</span> OK
 &lt; Content-Type: application/json
-&lt; Date: Fri, <span style="color:#1c01ce">25</span> Jan <span style="color:#1c01ce">2019</span> <span style="color:#1c01ce">06</span>:42:54 GMT
-&lt; Content-Length: <span style="color:#1c01ce">74</span>
+&lt; Date: Fri, <span style="color:#bd93f9">25</span> Jan <span style="color:#bd93f9">2019</span> <span style="color:#bd93f9">06</span>:42:54 GMT
+&lt; Content-Length: <span style="color:#bd93f9">74</span>
 &lt;
-* Connection <span style="color:#177500">#0 to host localhost left intact
-</span><span style="color:#177500"></span><span style="color:#000">{</span><span style="color:#c41a16">&#34;principals&#34;</span>:<span style="color:#000">[{</span><span style="color:#c41a16">&#34;type&#34;</span>:<span style="color:#c41a16">&#34;user&#34;</span>,<span style="color:#c41a16">&#34;name&#34;</span>:<span style="color:#c41a16">&#34;user1&#34;</span>,<span style="color:#c41a16">&#34;idd&#34;</span>:<span style="color:#c41a16">&#34;github&#34;</span><span style="color:#000">}]</span>,<span style="color:#c41a16">&#34;errCode&#34;</span>:0<span style="color:#000">}</span>
+* Connection <span style="color:#6272a4">#0 to host localhost left intact
+</span><span style="color:#6272a4"></span><span style="color:#ff79c6">{</span><span style="color:#f1fa8c">&#34;principals&#34;</span>:<span style="color:#ff79c6">[{</span><span style="color:#f1fa8c">&#34;type&#34;</span>:<span style="color:#f1fa8c">&#34;user&#34;</span>,<span style="color:#f1fa8c">&#34;name&#34;</span>:<span style="color:#f1fa8c">&#34;user1&#34;</span>,<span style="color:#f1fa8c">&#34;idd&#34;</span>:<span style="color:#f1fa8c">&#34;github&#34;</span><span style="color:#ff79c6">}]</span>,<span style="color:#f1fa8c">&#34;errCode&#34;</span>:0<span style="color:#ff79c6">}</span>
 
 
-curl -v -H <span style="color:#c41a16">&#34;x-token:test-token&#34;</span> -H <span style="color:#c41a16">&#34;x-idp:google&#34;</span> http://localhost:8080/v1/assert
-* About to connect<span style="color:#000">()</span> to localhost port <span style="color:#1c01ce">8080</span> <span style="color:#000">(</span><span style="color:#177500">#0)
-</span><span style="color:#177500"></span>*   Trying ::1...
-* Connected to localhost <span style="color:#000">(</span>::1<span style="color:#000">)</span> port <span style="color:#1c01ce">8080</span> <span style="color:#000">(</span><span style="color:#177500">#0)
-</span><span style="color:#177500"></span>&gt; GET /v1/assert HTTP/1.1
+curl -v -H <span style="color:#f1fa8c">&#34;x-token:test-token&#34;</span> -H <span style="color:#f1fa8c">&#34;x-idp:google&#34;</span> http://localhost:8080/v1/assert
+* About to connect<span style="color:#ff79c6">()</span> to localhost port <span style="color:#bd93f9">8080</span> <span style="color:#ff79c6">(</span><span style="color:#6272a4">#0)
+</span><span style="color:#6272a4"></span>*   Trying ::1...
+* Connected to localhost <span style="color:#ff79c6">(</span>::1<span style="color:#ff79c6">)</span> port <span style="color:#bd93f9">8080</span> <span style="color:#ff79c6">(</span><span style="color:#6272a4">#0)
+</span><span style="color:#6272a4"></span>&gt; GET /v1/assert HTTP/1.1
 &gt; User-Agent: curl/7.29.0
 &gt; Host: localhost:8080
 &gt; Accept: */*
 &gt; x-token:test-token
 &gt; x-idp:google
 &gt;
-&lt; HTTP/1.1 <span style="color:#1c01ce">200</span> OK
+&lt; HTTP/1.1 <span style="color:#bd93f9">200</span> OK
 &lt; Content-Type: application/json
-&lt; Date: Fri, <span style="color:#1c01ce">25</span> Jan <span style="color:#1c01ce">2019</span> <span style="color:#1c01ce">06</span>:43:18 GMT
-&lt; Content-Length: <span style="color:#1c01ce">74</span>
+&lt; Date: Fri, <span style="color:#bd93f9">25</span> Jan <span style="color:#bd93f9">2019</span> <span style="color:#bd93f9">06</span>:43:18 GMT
+&lt; Content-Length: <span style="color:#bd93f9">74</span>
 &lt;
-* Connection <span style="color:#177500">#0 to host localhost left intact
-</span><span style="color:#177500"></span><span style="color:#000">{</span><span style="color:#c41a16">&#34;principals&#34;</span>:<span style="color:#000">[{</span><span style="color:#c41a16">&#34;type&#34;</span>:<span style="color:#c41a16">&#34;user&#34;</span>,<span style="color:#c41a16">&#34;name&#34;</span>:<span style="color:#c41a16">&#34;user1&#34;</span>,<span style="color:#c41a16">&#34;idd&#34;</span>:<span style="color:#c41a16">&#34;google&#34;</span><span style="color:#000">}]</span>,<span style="color:#c41a16">&#34;errCode&#34;</span>:0<span style="color:#000">}</span>
+* Connection <span style="color:#6272a4">#0 to host localhost left intact
+</span><span style="color:#6272a4"></span><span style="color:#ff79c6">{</span><span style="color:#f1fa8c">&#34;principals&#34;</span>:<span style="color:#ff79c6">[{</span><span style="color:#f1fa8c">&#34;type&#34;</span>:<span style="color:#f1fa8c">&#34;user&#34;</span>,<span style="color:#f1fa8c">&#34;name&#34;</span>:<span style="color:#f1fa8c">&#34;user1&#34;</span>,<span style="color:#f1fa8c">&#34;idd&#34;</span>:<span style="color:#f1fa8c">&#34;google&#34;</span><span style="color:#ff79c6">}]</span>,<span style="color:#f1fa8c">&#34;errCode&#34;</span>:0<span style="color:#ff79c6">}</span>
 
-curl -v -H <span style="color:#c41a16">&#34;x-token:&#34;</span> -H <span style="color:#c41a16">&#34;x-idp:google&#34;</span> http://localhost:8080/v1/assert
-* About to connect<span style="color:#000">()</span> to localhost port <span style="color:#1c01ce">8080</span> <span style="color:#000">(</span><span style="color:#177500">#0)
-</span><span style="color:#177500"></span>*   Trying ::1...
-* Connected to localhost <span style="color:#000">(</span>::1<span style="color:#000">)</span> port <span style="color:#1c01ce">8080</span> <span style="color:#000">(</span><span style="color:#177500">#0)
-</span><span style="color:#177500"></span>&gt; GET /v1/assert HTTP/1.1
+curl -v -H <span style="color:#f1fa8c">&#34;x-token:&#34;</span> -H <span style="color:#f1fa8c">&#34;x-idp:google&#34;</span> http://localhost:8080/v1/assert
+* About to connect<span style="color:#ff79c6">()</span> to localhost port <span style="color:#bd93f9">8080</span> <span style="color:#ff79c6">(</span><span style="color:#6272a4">#0)
+</span><span style="color:#6272a4"></span>*   Trying ::1...
+* Connected to localhost <span style="color:#ff79c6">(</span>::1<span style="color:#ff79c6">)</span> port <span style="color:#bd93f9">8080</span> <span style="color:#ff79c6">(</span><span style="color:#6272a4">#0)
+</span><span style="color:#6272a4"></span>&gt; GET /v1/assert HTTP/1.1
 &gt; User-Agent: curl/7.29.0
 &gt; Host: localhost:8080
 &gt; Accept: */*
 &gt; x-idp:google
 &gt;
-&lt; HTTP/1.1 <span style="color:#1c01ce">400</span> Bad Request
+&lt; HTTP/1.1 <span style="color:#bd93f9">400</span> Bad Request
 &lt; Content-Type: application/json
-&lt; Date: Fri, <span style="color:#1c01ce">25</span> Jan <span style="color:#1c01ce">2019</span> <span style="color:#1c01ce">06</span>:43:29 GMT
-&lt; Content-Length: <span style="color:#1c01ce">50</span>
+&lt; Date: Fri, <span style="color:#bd93f9">25</span> Jan <span style="color:#bd93f9">2019</span> <span style="color:#bd93f9">06</span>:43:29 GMT
+&lt; Content-Length: <span style="color:#bd93f9">50</span>
 &lt;
-* Connection <span style="color:#177500">#0 to host localhost left intact
-</span><span style="color:#177500"></span><span style="color:#000">{</span><span style="color:#c41a16">&#34;errCode&#34;</span>:400,<span style="color:#c41a16">&#34;errMessage&#34;</span>:<span style="color:#c41a16">&#34;token or idp is empty&#34;</span><span style="color:#000">}</span></code></pre></div>
+* Connection <span style="color:#6272a4">#0 to host localhost left intact
+</span><span style="color:#6272a4"></span><span style="color:#ff79c6">{</span><span style="color:#f1fa8c">&#34;errCode&#34;</span>:400,<span style="color:#f1fa8c">&#34;errMessage&#34;</span>:<span style="color:#f1fa8c">&#34;token or idp is empty&#34;</span><span style="color:#ff79c6">}</span></code></pre></div>
 <h3 id="2-启动断言服务">2. 启动断言服务</h3>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./asserter</code></pre></div>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./asserter</code></pre></div>
 <h3 id="3-配置决策服务使用断言服务">3. 配置决策服务使用断言服务</h3>
 
 <p>在 config.json 文件中为授权决策服务（ADS）配置断言服务的 webhook，并启动 ADS 服务。</p>
 
 <p>示例配置 config.json:</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">{
-    <span style="color:#000">&#34;storeConfig&#34;</span>: {
-        <span style="color:#000">&#34;storeType&#34;</span>: <span style="color:#c41a16">&#34;file&#34;</span>,
-        <span style="color:#000">&#34;storeProps&#34;</span>: {
-            <span style="color:#000">&#34;FileLocation&#34;</span>: <span style="color:#c41a16">&#34;./ps.json&#34;</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">{
+    <span style="color:#ff79c6">&#34;storeConfig&#34;</span>: {
+        <span style="color:#ff79c6">&#34;storeType&#34;</span>: <span style="color:#f1fa8c">&#34;file&#34;</span>,
+        <span style="color:#ff79c6">&#34;storeProps&#34;</span>: {
+            <span style="color:#ff79c6">&#34;FileLocation&#34;</span>: <span style="color:#f1fa8c">&#34;./ps.json&#34;</span>
         }
     },
-    <span style="color:#000">&#34;enableWatch&#34;</span>: <span style="color:#a90d91">true</span>,
-    <span style="color:#000">&#34;asserterWebhookConfig&#34;</span>: {
-        <span style="color:#000">&#34;endpoint&#34;</span>: <span style="color:#c41a16">&#34;http://host:port/v1/assert&#34;</span>,
-        <span style="color:#000">&#34;clientCert&#34;</span>: <span style="color:#c41a16">&#34;&#34;</span>,
-        <span style="color:#000">&#34;clientKey&#34;</span>: <span style="color:#c41a16">&#34;&#34;</span>,
-        <span style="color:#000">&#34;caCert&#34;</span>: <span style="color:#c41a16">&#34;&#34;</span>
+    <span style="color:#ff79c6">&#34;enableWatch&#34;</span>: <span style="color:#ff79c6">true</span>,
+    <span style="color:#ff79c6">&#34;asserterWebhookConfig&#34;</span>: {
+        <span style="color:#ff79c6">&#34;endpoint&#34;</span>: <span style="color:#f1fa8c">&#34;http://host:port/v1/assert&#34;</span>,
+        <span style="color:#ff79c6">&#34;clientCert&#34;</span>: <span style="color:#f1fa8c">&#34;&#34;</span>,
+        <span style="color:#ff79c6">&#34;clientKey&#34;</span>: <span style="color:#f1fa8c">&#34;&#34;</span>,
+        <span style="color:#ff79c6">&#34;caCert&#34;</span>: <span style="color:#f1fa8c">&#34;&#34;</span>
     },
-    <span style="color:#000">&#34;serverConfig&#34;</span>: {
-        <span style="color:#000">&#34;endpoint&#34;</span>: <span style="color:#c41a16">&#34;&#34;</span>,
-        <span style="color:#000">&#34;insecure&#34;</span>: <span style="color:#c41a16">&#34;&#34;</span>,
-        <span style="color:#000">&#34;certPath&#34;</span>: <span style="color:#c41a16">&#34;&#34;</span>,
-        <span style="color:#000">&#34;clientCertPath&#34;</span>: <span style="color:#c41a16">&#34;&#34;</span>,
-        <span style="color:#000">&#34;keyPath&#34;</span>: <span style="color:#c41a16">&#34;&#34;</span>
+    <span style="color:#ff79c6">&#34;serverConfig&#34;</span>: {
+        <span style="color:#ff79c6">&#34;endpoint&#34;</span>: <span style="color:#f1fa8c">&#34;&#34;</span>,
+        <span style="color:#ff79c6">&#34;insecure&#34;</span>: <span style="color:#f1fa8c">&#34;&#34;</span>,
+        <span style="color:#ff79c6">&#34;certPath&#34;</span>: <span style="color:#f1fa8c">&#34;&#34;</span>,
+        <span style="color:#ff79c6">&#34;clientCertPath&#34;</span>: <span style="color:#f1fa8c">&#34;&#34;</span>,
+        <span style="color:#ff79c6">&#34;keyPath&#34;</span>: <span style="color:#f1fa8c">&#34;&#34;</span>
     },
-    <span style="color:#000">&#34;logConfig&#34;</span>: {
-        <span style="color:#000">&#34;level&#34;</span>: <span style="color:#c41a16">&#34;info&#34;</span>,
-        <span style="color:#000">&#34;formatter&#34;</span>: <span style="color:#c41a16">&#34;text&#34;</span>,
-        <span style="color:#000">&#34;rotationConfig&#34;</span>: {
-            <span style="color:#000">&#34;filename&#34;</span>: <span style="color:#c41a16">&#34;.speedle.log&#34;</span>,
-            <span style="color:#000">&#34;maxSize&#34;</span>: <span style="color:#1c01ce">10</span>,
-            <span style="color:#000">&#34;maxBackups&#34;</span>: <span style="color:#1c01ce">5</span>,
-            <span style="color:#000">&#34;maxAge&#34;</span>: <span style="color:#1c01ce">0</span>,
-            <span style="color:#000">&#34;LocalTime&#34;</span>: <span style="color:#a90d91">false</span>,
-            <span style="color:#000">&#34;compress&#34;</span>: <span style="color:#a90d91">false</span>
+    <span style="color:#ff79c6">&#34;logConfig&#34;</span>: {
+        <span style="color:#ff79c6">&#34;level&#34;</span>: <span style="color:#f1fa8c">&#34;info&#34;</span>,
+        <span style="color:#ff79c6">&#34;formatter&#34;</span>: <span style="color:#f1fa8c">&#34;text&#34;</span>,
+        <span style="color:#ff79c6">&#34;rotationConfig&#34;</span>: {
+            <span style="color:#ff79c6">&#34;filename&#34;</span>: <span style="color:#f1fa8c">&#34;.speedle.log&#34;</span>,
+            <span style="color:#ff79c6">&#34;maxSize&#34;</span>: <span style="color:#bd93f9">10</span>,
+            <span style="color:#ff79c6">&#34;maxBackups&#34;</span>: <span style="color:#bd93f9">5</span>,
+            <span style="color:#ff79c6">&#34;maxAge&#34;</span>: <span style="color:#bd93f9">0</span>,
+            <span style="color:#ff79c6">&#34;LocalTime&#34;</span>: <span style="color:#ff79c6">false</span>,
+            <span style="color:#ff79c6">&#34;compress&#34;</span>: <span style="color:#ff79c6">false</span>
         }
     }
 }</code></pre></div>
 <p>更新 <code>asserterWebhookConfig</code> 部分为如下所示.</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json"><span style="color:#c41a16">&#34;asserterWebhookConfig&#34;</span><span style="color:#000">:</span> {
-        <span style="color:#000">&#34;endpoint&#34;</span>: <span style="color:#c41a16">&#34;http://localhost:8080/v1/assert&#34;</span>,
-        <span style="color:#000">&#34;clientCert&#34;</span>: <span style="color:#c41a16">&#34;&#34;</span>,
-        <span style="color:#000">&#34;clientKey&#34;</span>: <span style="color:#c41a16">&#34;&#34;</span>,
-        <span style="color:#000">&#34;caCert&#34;</span>: <span style="color:#c41a16">&#34;&#34;</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json"><span style="color:#f1fa8c">&#34;asserterWebhookConfig&#34;</span>: {
+        <span style="color:#ff79c6">&#34;endpoint&#34;</span>: <span style="color:#f1fa8c">&#34;http://localhost:8080/v1/assert&#34;</span>,
+        <span style="color:#ff79c6">&#34;clientCert&#34;</span>: <span style="color:#f1fa8c">&#34;&#34;</span>,
+        <span style="color:#ff79c6">&#34;clientKey&#34;</span>: <span style="color:#f1fa8c">&#34;&#34;</span>,
+        <span style="color:#ff79c6">&#34;caCert&#34;</span>: <span style="color:#f1fa8c">&#34;&#34;</span>
     }</code></pre></div>
 <p>本例中:</p>
 
@@ -332,13 +332,13 @@ curl -v -H <span style="color:#c41a16">&#34;x-token:&#34;</span> -H <span style=
 <h3 id="4-创建测试策略">4. 创建测试策略</h3>
 
 <p>以下策略在[identity domain]（../ idd）页面上定义。</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./spctl create service booksvc
-<span style="color:#177500"># grant user1 coming from github to perform action: read on resource: book
-</span><span style="color:#177500"></span>./spctl create policy -c <span style="color:#c41a16">&#34;grant user user1 from github read book&#34;</span> --service-name<span style="color:#000">=</span>booksvc
-<span style="color:#177500"># grant user1 coming from google to perform action: write on resource: book
-</span><span style="color:#177500"></span>./spctl create policy -c <span style="color:#c41a16">&#34;grant user user1 from google write book&#34;</span> --service-name<span style="color:#000">=</span>booksvc
-<span style="color:#177500"># grant user1 coming from any identity providers to perform action: rent on resource: book
-</span><span style="color:#177500"></span>./spctl create policy -c <span style="color:#c41a16">&#34;grant user user1 rent book&#34;</span> --service-name<span style="color:#000">=</span>booksvc</code></pre></div>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./spctl create service booksvc
+<span style="color:#6272a4"># grant user1 coming from github to perform action: read on resource: book
+</span><span style="color:#6272a4"></span>./spctl create policy -c <span style="color:#f1fa8c">&#34;grant user user1 from github read book&#34;</span> --service-name<span style="color:#ff79c6">=</span>booksvc
+<span style="color:#6272a4"># grant user1 coming from google to perform action: write on resource: book
+</span><span style="color:#6272a4"></span>./spctl create policy -c <span style="color:#f1fa8c">&#34;grant user user1 from google write book&#34;</span> --service-name<span style="color:#ff79c6">=</span>booksvc
+<span style="color:#6272a4"># grant user1 coming from any identity providers to perform action: rent on resource: book
+</span><span style="color:#6272a4"></span>./spctl create policy -c <span style="color:#f1fa8c">&#34;grant user user1 rent book&#34;</span> --service-name<span style="color:#ff79c6">=</span>booksvc</code></pre></div>
 <h3 id="5-从身份提供者中获取身份令牌">5. 从身份提供者中获取身份令牌</h3>
 
 <p>此步骤取决于您的服务如何与身份提供商集成。 如果您的服务与支持[OpenID Connect]（<a href="https://openid.net/connect/）或[OAuth]（https://oauth.net/2/）协议的身份提供商集成，那么您的服务始终可以获取身份提供者颁发的有效身份令牌或访问令牌。">https://openid.net/connect/）或[OAuth]（https://oauth.net/2/）协议的身份提供商集成，那么您的服务始终可以获取身份提供者颁发的有效身份令牌或访问令牌。</a></p>
@@ -348,18 +348,18 @@ curl -v -H <span style="color:#c41a16">&#34;x-token:&#34;</span> -H <span style=
 <h3 id="6-使用由不同身份提供者发布的身份令牌获取策略评估结果">6. 使用由不同身份提供者发布的身份令牌获取策略评估结果</h3>
 
 <p>以下策略评估结果基于上一节中定义的测试策略。</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#177500"># 评估结果为： 是.
-</span><span style="color:#177500"></span>curl -v -k -X POST -d <span style="color:#c41a16">&#39;{ &#34;subject&#34;: {&#34;token&#34;: &#34;githubtoken&#34;, &#34;tokenType&#34;:&#34;github&#34;},&#34;serviceName&#34;:&#34;booksvc&#34;,&#34;resource&#34;:&#34;book&#34;,&#34;action&#34;:&#34;read&#34;}&#39;</span>  http://127.0.0.1:6734/authz-check/v1/is-allowed
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#6272a4"># 评估结果为： 是.
+</span><span style="color:#6272a4"></span>curl -v -k -X POST -d <span style="color:#f1fa8c">&#39;{ &#34;subject&#34;: {&#34;token&#34;: &#34;githubtoken&#34;, &#34;tokenType&#34;:&#34;github&#34;},&#34;serviceName&#34;:&#34;booksvc&#34;,&#34;resource&#34;:&#34;book&#34;,&#34;action&#34;:&#34;read&#34;}&#39;</span>  http://127.0.0.1:6734/authz-check/v1/is-allowed
 
-<span style="color:#177500"># 评估结果为： 否, 因为评估请求中的用户来自不同的身份域: gitlab
-</span><span style="color:#177500"></span>curl -v -k -X POST -d <span style="color:#c41a16">&#39;{ &#34;subject&#34;: {&#34;token&#34;: &#34;gitlabtoken&#34;, &#34;tokenType&#34;:&#34;github&#34;},&#34;serviceName&#34;:&#34;booksvc&#34;,&#34;resource&#34;:&#34;book&#34;,&#34;action&#34;:&#34;read&#34;}&#39;</span>  http://127.0.0.1:6734/authz-check/v1/is-allowed
+<span style="color:#6272a4"># 评估结果为： 否, 因为评估请求中的用户来自不同的身份域: gitlab
+</span><span style="color:#6272a4"></span>curl -v -k -X POST -d <span style="color:#f1fa8c">&#39;{ &#34;subject&#34;: {&#34;token&#34;: &#34;gitlabtoken&#34;, &#34;tokenType&#34;:&#34;github&#34;},&#34;serviceName&#34;:&#34;booksvc&#34;,&#34;resource&#34;:&#34;book&#34;,&#34;action&#34;:&#34;read&#34;}&#39;</span>  http://127.0.0.1:6734/authz-check/v1/is-allowed
 
-<span style="color:#177500"># 评估结果为： 是, 因为来自任何身份域的用户 user1 都可以对资源： book执行 rent 操作
-</span><span style="color:#177500"></span>curl -v -k -X POST -d <span style="color:#c41a16">&#39;{ &#34;subject&#34;: {&#34;token&#34;: &#34;githubtoken&#34;, &#34;tokenType&#34;:&#34;github&#34;},&#34;serviceName&#34;:&#34;booksvc&#34;,&#34;resource&#34;:&#34;book&#34;,&#34;action&#34;:&#34;rent&#34;}&#39;</span>  http://127.0.0.1:6734/authz-check/v1/is-allowed
+<span style="color:#6272a4"># 评估结果为： 是, 因为来自任何身份域的用户 user1 都可以对资源： book执行 rent 操作
+</span><span style="color:#6272a4"></span>curl -v -k -X POST -d <span style="color:#f1fa8c">&#39;{ &#34;subject&#34;: {&#34;token&#34;: &#34;githubtoken&#34;, &#34;tokenType&#34;:&#34;github&#34;},&#34;serviceName&#34;:&#34;booksvc&#34;,&#34;resource&#34;:&#34;book&#34;,&#34;action&#34;:&#34;rent&#34;}&#39;</span>  http://127.0.0.1:6734/authz-check/v1/is-allowed
 
 
-<span style="color:#177500"># 评估结果为： 否, 因为评估请求中的用户来自不同的身份域: notgoogle
-</span><span style="color:#177500"></span>curl -v -k -X POST -d <span style="color:#c41a16">&#39;{ &#34;subject&#34;: {&#34;token&#34;: &#34;id token not issued by google&#34;, &#34;tokenType&#34;:&#34;google&#34;},&#34;serviceName&#34;:&#34;booksvc&#34;,&#34;resource&#34;:&#34;book&#34;,&#34;action&#34;:&#34;write&#34;}&#39;</span>  http://127.0.0.1:6734/authz-check/v1/is-allowed</code></pre></div>
+<span style="color:#6272a4"># 评估结果为： 否, 因为评估请求中的用户来自不同的身份域: notgoogle
+</span><span style="color:#6272a4"></span>curl -v -k -X POST -d <span style="color:#f1fa8c">&#39;{ &#34;subject&#34;: {&#34;token&#34;: &#34;id token not issued by google&#34;, &#34;tokenType&#34;:&#34;google&#34;},&#34;serviceName&#34;:&#34;booksvc&#34;,&#34;resource&#34;:&#34;book&#34;,&#34;action&#34;:&#34;write&#34;}&#39;</span>  http://127.0.0.1:6734/authz-check/v1/is-allowed</code></pre></div>
   </div>
 </div>
 </main><div class="sidebar">
@@ -375,10 +375,33 @@ curl -v -H <span style="color:#c41a16">&#34;x-token:&#34;</span> -H <span style=
 <li class=""><a href="/zh/docs/architecture/">系统架构</a></li>
 <li class=""><a href="/zh/docs/deployment-embeded/">Speedle嵌入模式</a></li>
 <li class=""><a href="/zh/docs/deployment/">Speedle服务的部署方式</a></li>
+
+
+
+<li class=""><span>Speedle策略</span>
+<ul class="">
+<li class=""><a href="/zh/docs/pms/policy-mgmt/">策略管理</a></li>
+<li class=""><a href="/zh/docs/pms/global-policy/">全局角色策略</a></li>
+<li class=""><a href="/zh/docs/pms/diagnosis/">授权诊断</a></li>
+<li class=""><a href="/zh/docs/pms/discover/">策略发现</a></li>
+</ul>
+  
+</li>
 <li class=""><a href="/zh/docs/decisions/">授权查询</a></li>
 <li class=""><a href="/zh/docs/idd/">用户身份域</a></li>
 <li class="active"><a href="/zh/docs/assertor/">令牌用户身份断言</a></li>
 <li class=""><a href="/zh/docs/store/">存储扩展</a></li>
+
+
+
+<li class=""><span>API</span>
+<ul class="">
+<li class=""><a href="/zh/docs/api/decision_api/">Authorization Runtime/Decision API</a></li>
+<li class=""><a href="/zh/docs/api/management_api/">Policy Management API</a></li>
+<li class=""><a href="/zh/docs/api/asserter_api/">Token Assertion Plugin API</a></li>
+</ul>
+  
+</li>
 <li class=""><a href="/zh/docs/security/">安全</a></li>
 <li class=""><a href="/zh/docs/logging/">日志</a></li>
 <li class=""><a href="/zh/docs/versions/">版本</a></li>

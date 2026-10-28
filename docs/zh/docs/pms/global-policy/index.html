@@ -102,21 +102,21 @@ headingSelector: 'h2'
 <ol>
 <li>首先需要创建一个名字为&rsquo;global&rsquo;的 service：</li>
 </ol>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">spctl create service global</pre></div>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4">spctl create service global</pre></div>
 <ol>
 <li>然后就可以在&rsquo;global&rsquo; service 里创建角色了：</li>
 </ol>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">spctl create rolepolicy -c &#34;grant user Emma AdminRole&#34; --service-name=global</pre></div>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4">spctl create rolepolicy -c &#34;grant user Emma AdminRole&#34; --service-name=global</pre></div>
 <h2 id="使用全局角色策略">使用全局角色策略</h2>
 
 <ol>
 <li>在其它的 service 里定义角色或者授权时，可以引用全局角色：</li>
 </ol>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">spctl create policy -c &#34;grant role AdminRole borrow books&#34; --service-name=library</pre></div>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4">spctl create policy -c &#34;grant role AdminRole borrow books&#34; --service-name=library</pre></div>
 <ol>
 <li>运行时全局角色会生效：</li>
 </ol>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">curl -X POST  http://localhost:6734/authz-check/v1/is-allowed \
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4">curl -X POST  http://localhost:6734/authz-check/v1/is-allowed \
 -d @- &lt;&lt; EOF
 {
  &#34;subject&#34;: {&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;, &#34;name&#34;:&#34;Emma&#34;}]},

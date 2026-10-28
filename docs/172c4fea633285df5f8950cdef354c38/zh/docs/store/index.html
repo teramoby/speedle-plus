@@ -105,16 +105,16 @@ headingSelector: 'h2'
 创建一个类似 mystore 之类的存储代码文件，并在此文件中实现“PolicyStoreManager”接口。</p>
 
 <p>Example in <code>store/etcd/etcdStore.go</code>:</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-golang" data-lang="golang"><span style="color:#a90d91">type</span> <span style="color:#000">Store</span> <span style="color:#a90d91">struct</span> {
-    <span style="color:#000">...</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-golang" data-lang="golang"><span style="color:#ff79c6">type</span> <span style="color:#f8f8f2">Store</span> <span style="color:#ff79c6">struct</span> {
+    <span style="color:#f8f8f2">...</span>
 }
-<span style="color:#a90d91">func</span> (<span style="color:#000">s</span> <span style="color:#000">*</span><span style="color:#000">Store</span>) <span style="color:#000">ReadPolicyStore</span>() (<span style="color:#000">*</span><span style="color:#000">pms</span>.<span style="color:#000">PolicyStore</span>, <span style="color:#a90d91">error</span>) {
-  <span style="color:#000">...</span>
+<span style="color:#ff79c6">func</span> (<span style="color:#f8f8f2">s</span> <span style="color:#f8f8f2">*</span><span style="color:#f8f8f2">Store</span>) <span style="color:#f8f8f2">ReadPolicyStore</span>() (<span style="color:#f8f8f2">*</span><span style="color:#f8f8f2">pms</span>.<span style="color:#f8f8f2">PolicyStore</span>, <span style="color:#ff79c6">error</span>) {
+  <span style="color:#f8f8f2">...</span>
 }
-<span style="color:#a90d91">func</span> (<span style="color:#000">s</span> <span style="color:#000">*</span><span style="color:#000">Store</span>) <span style="color:#000">CreateService</span>(<span style="color:#000">service</span> <span style="color:#000">*</span><span style="color:#000">pms</span>.<span style="color:#000">Service</span>) <span style="color:#a90d91">error</span> {
-  <span style="color:#000">...</span>
+<span style="color:#ff79c6">func</span> (<span style="color:#f8f8f2">s</span> <span style="color:#f8f8f2">*</span><span style="color:#f8f8f2">Store</span>) <span style="color:#f8f8f2">CreateService</span>(<span style="color:#f8f8f2">service</span> <span style="color:#f8f8f2">*</span><span style="color:#f8f8f2">pms</span>.<span style="color:#f8f8f2">Service</span>) <span style="color:#ff79c6">error</span> {
+  <span style="color:#f8f8f2">...</span>
 }
-<span style="color:#000">...</span></code></pre></div>
+<span style="color:#f8f8f2">...</span></code></pre></div>
 <p>请注意这个 watch 的功能。该功能将监视数据存储的更改。这个函数需要返回一个“StorageChangeChannel”对象，每个 store change event(请查看“api/pms/types/StoreChangeEvent”以获取详细信息)都会被发送到这个 Channel。ADS 将接收这些更改事件并立即更新其缓存。</p>
 
 <h2 id="编写-storebuilder-代码">编写 storeBuilder 代码</h2>
@@ -128,38 +128,38 @@ headingSelector: 'h2'
 <p>存储所有者需要在 init 函数中提供 flags 定义，我们使用<a href="https://github.com/spf13/pflag">pflag</a>来定义 flags。</p>
 
 <p><code>store/etcd/storeBuilder.go</code> 中的 flags 定义:</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-golang" data-lang="golang"><span style="color:#a90d91">const</span> (
-    <span style="color:#000">IsEmbeddedEtcdFlagName</span>             = <span style="color:#c41a16">&#34;etcdstore-isembedded&#34;</span>
-    <span style="color:#000">EmbeddedEtcdDataDirFlagName</span>        = <span style="color:#c41a16">&#34;etcdstore-embeddedDataDir&#34;</span>
-    <span style="color:#000">EtcdEndpointFlagName</span>               = <span style="color:#c41a16">&#34;etcdstore-endpoint&#34;</span>
-    <span style="color:#000">EtcdKeyPrefixFlagName</span>              = <span style="color:#c41a16">&#34;etcdstore-keyprefix&#34;</span>
-    <span style="color:#000">EtcdTLSClientCertFileFlagName</span>      = <span style="color:#c41a16">&#34;etcdstore-tls-cert&#34;</span>
-    <span style="color:#000">EtcdTLSClientKeyFileFlagName</span>       = <span style="color:#c41a16">&#34;etcdstore-tls-key&#34;</span>
-    <span style="color:#000">EtcdTLSClientTrustedCAFileFlagName</span> = <span style="color:#c41a16">&#34;etcdstore-tls-ca&#34;</span>
-    <span style="color:#000">EtcdTLSAllowedCNFlagName</span>           = <span style="color:#c41a16">&#34;etcdstore-tls-allowedCN&#34;</span>
-    <span style="color:#000">EtcdTLSServerNameFlagName</span>          = <span style="color:#c41a16">&#34;etcdstore-tls-serverName&#34;</span>
-    <span style="color:#000">EtcdTLSCRLFileFlagName</span>             = <span style="color:#c41a16">&#34;etcdstore-tls-crlFile&#34;</span>
-    <span style="color:#000">EtcdTLSInsecureSkipVerifyFlagName</span>  = <span style="color:#c41a16">&#34;etcdstore-tls-insecureSkipVerify&#34;</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-golang" data-lang="golang"><span style="color:#ff79c6">const</span> (
+    <span style="color:#f8f8f2">IsEmbeddedEtcdFlagName</span>             = <span style="color:#f1fa8c">&#34;etcdstore-isembedded&#34;</span>
+    <span style="color:#f8f8f2">EmbeddedEtcdDataDirFlagName</span>        = <span style="color:#f1fa8c">&#34;etcdstore-embeddedDataDir&#34;</span>
+    <span style="color:#f8f8f2">EtcdEndpointFlagName</span>               = <span style="color:#f1fa8c">&#34;etcdstore-endpoint&#34;</span>
+    <span style="color:#f8f8f2">EtcdKeyPrefixFlagName</span>              = <span style="color:#f1fa8c">&#34;etcdstore-keyprefix&#34;</span>
+    <span style="color:#f8f8f2">EtcdTLSClientCertFileFlagName</span>      = <span style="color:#f1fa8c">&#34;etcdstore-tls-cert&#34;</span>
+    <span style="color:#f8f8f2">EtcdTLSClientKeyFileFlagName</span>       = <span style="color:#f1fa8c">&#34;etcdstore-tls-key&#34;</span>
+    <span style="color:#f8f8f2">EtcdTLSClientTrustedCAFileFlagName</span> = <span style="color:#f1fa8c">&#34;etcdstore-tls-ca&#34;</span>
+    <span style="color:#f8f8f2">EtcdTLSAllowedCNFlagName</span>           = <span style="color:#f1fa8c">&#34;etcdstore-tls-allowedCN&#34;</span>
+    <span style="color:#f8f8f2">EtcdTLSServerNameFlagName</span>          = <span style="color:#f1fa8c">&#34;etcdstore-tls-serverName&#34;</span>
+    <span style="color:#f8f8f2">EtcdTLSCRLFileFlagName</span>             = <span style="color:#f1fa8c">&#34;etcdstore-tls-crlFile&#34;</span>
+    <span style="color:#f8f8f2">EtcdTLSInsecureSkipVerifyFlagName</span>  = <span style="color:#f1fa8c">&#34;etcdstore-tls-insecureSkipVerify&#34;</span>
 
-    <span style="color:#177500">//default property values
-</span><span style="color:#177500"></span>    <span style="color:#000">DefaultKeyPrefix</span>           = <span style="color:#c41a16">&#34;/speedle_ps/&#34;</span>
-    <span style="color:#000">DefaultEtcdStoreEndpoint</span>   = <span style="color:#c41a16">&#34;localhost:2379&#34;</span>
-    <span style="color:#000">DefaultEtcdStoreKeyPrefix</span>  = <span style="color:#c41a16">&#34;/speedle_ps/&#34;</span>
-    <span style="color:#000">DefaultEtcdStoreIsEmbedded</span> = <span style="color:#a90d91">false</span>
+    <span style="color:#6272a4">//default property values
+</span><span style="color:#6272a4"></span>    <span style="color:#f8f8f2">DefaultKeyPrefix</span>           = <span style="color:#f1fa8c">&#34;/speedle_ps/&#34;</span>
+    <span style="color:#f8f8f2">DefaultEtcdStoreEndpoint</span>   = <span style="color:#f1fa8c">&#34;localhost:2379&#34;</span>
+    <span style="color:#f8f8f2">DefaultEtcdStoreKeyPrefix</span>  = <span style="color:#f1fa8c">&#34;/speedle_ps/&#34;</span>
+    <span style="color:#f8f8f2">DefaultEtcdStoreIsEmbedded</span> = <span style="color:#ff79c6">false</span>
 )
 
-<span style="color:#a90d91">func</span> <span style="color:#000">init</span>() {
-    <span style="color:#000">pflag</span>.<span style="color:#000">String</span>(<span style="color:#000">EtcdEndpointFlagName</span>, <span style="color:#000">DefaultEtcdStoreEndpoint</span>, <span style="color:#c41a16">&#34;Store config: endpoint of etcd store.&#34;</span>)
-    <span style="color:#000">pflag</span>.<span style="color:#000">String</span>(<span style="color:#000">EtcdKeyPrefixFlagName</span>, <span style="color:#000">DefaultEtcdStoreKeyPrefix</span>, <span style="color:#c41a16">&#34;Store config: key prefix to store speedle policy data in etcd store.&#34;</span>)
-    <span style="color:#000">pflag</span>.<span style="color:#000">Bool</span>(<span style="color:#000">IsEmbeddedEtcdFlagName</span>, <span style="color:#000">DefaultEtcdStoreIsEmbedded</span>, <span style="color:#c41a16">&#34;Store config: is embedded etcd store or not.&#34;</span>)
-    <span style="color:#000">pflag</span>.<span style="color:#000">String</span>(<span style="color:#000">EmbeddedEtcdDataDirFlagName</span>, <span style="color:#c41a16">&#34;&#34;</span>, <span style="color:#c41a16">&#34;Store config: data dir for embedded etcd store.&#34;</span>)
-    <span style="color:#000">pflag</span>.<span style="color:#000">String</span>(<span style="color:#000">EtcdTLSClientCertFileFlagName</span>, <span style="color:#c41a16">&#34;&#34;</span>, <span style="color:#c41a16">&#34;Store config: etcd x509 client cert.&#34;</span>)
-    <span style="color:#000">pflag</span>.<span style="color:#000">String</span>(<span style="color:#000">EtcdTLSClientKeyFileFlagName</span>, <span style="color:#c41a16">&#34;&#34;</span>, <span style="color:#c41a16">&#34;Store config: etcd x509 client key.&#34;</span>)
-    <span style="color:#000">pflag</span>.<span style="color:#000">String</span>(<span style="color:#000">EtcdTLSClientTrustedCAFileFlagName</span>, <span style="color:#c41a16">&#34;&#34;</span>, <span style="color:#c41a16">&#34;Store config: etcd x509 client CA cert.&#34;</span>)
-    <span style="color:#000">pflag</span>.<span style="color:#000">String</span>(<span style="color:#000">EtcdTLSAllowedCNFlagName</span>, <span style="color:#c41a16">&#34;&#34;</span>, <span style="color:#c41a16">&#34;Store config: etcd x509 allowed CN.&#34;</span>)
-    <span style="color:#000">pflag</span>.<span style="color:#000">String</span>(<span style="color:#000">EtcdTLSServerNameFlagName</span>, <span style="color:#c41a16">&#34;&#34;</span>, <span style="color:#c41a16">&#34;Store config: etcd x509 server name.&#34;</span>)
-    <span style="color:#000">pflag</span>.<span style="color:#000">String</span>(<span style="color:#000">EtcdTLSCRLFileFlagName</span>, <span style="color:#c41a16">&#34;&#34;</span>, <span style="color:#c41a16">&#34;Store config: etcd x509 CRL file.&#34;</span>)
-    <span style="color:#000">pflag</span>.<span style="color:#000">Bool</span>(<span style="color:#000">EtcdTLSInsecureSkipVerifyFlagName</span>, <span style="color:#a90d91">false</span>, <span style="color:#c41a16">&#34;Store config: etcd x509 insecure skip verify.&#34;</span>)
+<span style="color:#ff79c6">func</span> <span style="color:#f8f8f2">init</span>() {
+    <span style="color:#f8f8f2">pflag</span>.<span style="color:#f8f8f2">String</span>(<span style="color:#f8f8f2">EtcdEndpointFlagName</span>, <span style="color:#f8f8f2">DefaultEtcdStoreEndpoint</span>, <span style="color:#f1fa8c">&#34;Store config: endpoint of etcd store.&#34;</span>)
+    <span style="color:#f8f8f2">pflag</span>.<span style="color:#f8f8f2">String</span>(<span style="color:#f8f8f2">EtcdKeyPrefixFlagName</span>, <span style="color:#f8f8f2">DefaultEtcdStoreKeyPrefix</span>, <span style="color:#f1fa8c">&#34;Store config: key prefix to store speedle policy data in etcd store.&#34;</span>)
+    <span style="color:#f8f8f2">pflag</span>.<span style="color:#f8f8f2">Bool</span>(<span style="color:#f8f8f2">IsEmbeddedEtcdFlagName</span>, <span style="color:#f8f8f2">DefaultEtcdStoreIsEmbedded</span>, <span style="color:#f1fa8c">&#34;Store config: is embedded etcd store or not.&#34;</span>)
+    <span style="color:#f8f8f2">pflag</span>.<span style="color:#f8f8f2">String</span>(<span style="color:#f8f8f2">EmbeddedEtcdDataDirFlagName</span>, <span style="color:#f1fa8c">&#34;&#34;</span>, <span style="color:#f1fa8c">&#34;Store config: data dir for embedded etcd store.&#34;</span>)
+    <span style="color:#f8f8f2">pflag</span>.<span style="color:#f8f8f2">String</span>(<span style="color:#f8f8f2">EtcdTLSClientCertFileFlagName</span>, <span style="color:#f1fa8c">&#34;&#34;</span>, <span style="color:#f1fa8c">&#34;Store config: etcd x509 client cert.&#34;</span>)
+    <span style="color:#f8f8f2">pflag</span>.<span style="color:#f8f8f2">String</span>(<span style="color:#f8f8f2">EtcdTLSClientKeyFileFlagName</span>, <span style="color:#f1fa8c">&#34;&#34;</span>, <span style="color:#f1fa8c">&#34;Store config: etcd x509 client key.&#34;</span>)
+    <span style="color:#f8f8f2">pflag</span>.<span style="color:#f8f8f2">String</span>(<span style="color:#f8f8f2">EtcdTLSClientTrustedCAFileFlagName</span>, <span style="color:#f1fa8c">&#34;&#34;</span>, <span style="color:#f1fa8c">&#34;Store config: etcd x509 client CA cert.&#34;</span>)
+    <span style="color:#f8f8f2">pflag</span>.<span style="color:#f8f8f2">String</span>(<span style="color:#f8f8f2">EtcdTLSAllowedCNFlagName</span>, <span style="color:#f1fa8c">&#34;&#34;</span>, <span style="color:#f1fa8c">&#34;Store config: etcd x509 allowed CN.&#34;</span>)
+    <span style="color:#f8f8f2">pflag</span>.<span style="color:#f8f8f2">String</span>(<span style="color:#f8f8f2">EtcdTLSServerNameFlagName</span>, <span style="color:#f1fa8c">&#34;&#34;</span>, <span style="color:#f1fa8c">&#34;Store config: etcd x509 server name.&#34;</span>)
+    <span style="color:#f8f8f2">pflag</span>.<span style="color:#f8f8f2">String</span>(<span style="color:#f8f8f2">EtcdTLSCRLFileFlagName</span>, <span style="color:#f1fa8c">&#34;&#34;</span>, <span style="color:#f1fa8c">&#34;Store config: etcd x509 CRL file.&#34;</span>)
+    <span style="color:#f8f8f2">pflag</span>.<span style="color:#f8f8f2">Bool</span>(<span style="color:#f8f8f2">EtcdTLSInsecureSkipVerifyFlagName</span>, <span style="color:#ff79c6">false</span>, <span style="color:#f1fa8c">&#34;Store config: etcd x509 insecure skip verify.&#34;</span>)
 }</code></pre></div>
 <p>环境变量名称是 flag 名称的转换，规则是:添加一个“SPDL*”前缀，将每个“-”替换为“*”，并将所有字母转换为大写。例如:
 <code>etcdstore-endpoint</code> -&gt; <code>SPDL_ETCDSTORE_ENDPOINT</code></p>
@@ -167,14 +167,14 @@ headingSelector: 'h2'
 <p>存储所有者还需要定义配置文件中使用的存储属性名，通过提供{&rsquo; flagName:storePropName &lsquo;} map。这个映射将显示 flag 和 store 属性之间的对应关系。</p>
 
 <p>Config file example:</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">{
-	<span style="color:#000">&#34;storeConfig&#34;</span>: {
-		<span style="color:#000">&#34;storeType&#34;</span>: <span style="color:#c41a16">&#34;etcd&#34;</span>,
-		<span style="color:#000">&#34;storeProps&#34;</span>: {
-			<span style="color:#000">&#34;EtcdEndpoint&#34;</span>: <span style="color:#c41a16">&#34;localhost:2379&#34;</span>,
-			<span style="color:#000">&#34;EtcdKeyPrefix&#34;</span>: <span style="color:#c41a16">&#34;/opss_ps/&#34;</span>,
-			<span style="color:#000">&#34;IsEmbeddedEtcd&#34;</span>: <span style="color:#a90d91">true</span>,
-			<span style="color:#000">&#34;EmbeddedEtcdDataDir&#34;</span>: <span style="color:#c41a16">&#34;./speedle.etcd&#34;</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">{
+	<span style="color:#f8f8f2">&#34;storeConfig&#34;</span>: {
+		<span style="color:#f8f8f2">&#34;storeType&#34;</span>: <span style="color:#f1fa8c">&#34;etcd&#34;</span>,
+		<span style="color:#f8f8f2">&#34;storeProps&#34;</span>: {
+			<span style="color:#f8f8f2">&#34;EtcdEndpoint&#34;</span>: <span style="color:#f1fa8c">&#34;localhost:2379&#34;</span>,
+			<span style="color:#f8f8f2">&#34;EtcdKeyPrefix&#34;</span>: <span style="color:#f1fa8c">&#34;/opss_ps/&#34;</span>,
+			<span style="color:#f8f8f2">&#34;IsEmbeddedEtcd&#34;</span>: <span style="color:#ff79c6">true</span>,
+			<span style="color:#f8f8f2">&#34;EmbeddedEtcdDataDir&#34;</span>: <span style="color:#f1fa8c">&#34;./speedle.etcd&#34;</span>
 		}
 	}
 }</code></pre></div>
@@ -183,37 +183,37 @@ headingSelector: 'h2'
 <p>StoreBuild 将提供关于创建存储的函数，以及获取该存储相关参数的函数。</p>
 
 <p>Example in <code>store/etcd/storeBuilder.go</code>:</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-golang" data-lang="golang"><span style="color:#a90d91">type</span> <span style="color:#000">Etcd3StoreBuilder</span> <span style="color:#a90d91">struct</span>{}
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-golang" data-lang="golang"><span style="color:#ff79c6">type</span> <span style="color:#f8f8f2">Etcd3StoreBuilder</span> <span style="color:#ff79c6">struct</span>{}
 
-<span style="color:#a90d91">func</span> (<span style="color:#000">esb</span> <span style="color:#000">Etcd3StoreBuilder</span>) <span style="color:#000">NewStore</span>(<span style="color:#000">config</span> <span style="color:#a90d91">map</span>[<span style="color:#a90d91">string</span>]<span style="color:#a90d91">interface</span>{}) (<span style="color:#000">pms</span>.<span style="color:#000">PolicyStoreManager</span>, <span style="color:#a90d91">error</span>) {
-   <span style="color:#000">...</span>
+<span style="color:#ff79c6">func</span> (<span style="color:#f8f8f2">esb</span> <span style="color:#f8f8f2">Etcd3StoreBuilder</span>) <span style="color:#f8f8f2">NewStore</span>(<span style="color:#f8f8f2">config</span> <span style="color:#ff79c6">map</span>[<span style="color:#ff79c6">string</span>]<span style="color:#ff79c6">interface</span>{}) (<span style="color:#f8f8f2">pms</span>.<span style="color:#f8f8f2">PolicyStoreManager</span>, <span style="color:#ff79c6">error</span>) {
+   <span style="color:#f8f8f2">...</span>
 }
-<span style="color:#a90d91">func</span> (<span style="color:#000">fs</span> <span style="color:#000">FileStoreBuilder</span>) <span style="color:#000">GetStoreParams</span>() <span style="color:#a90d91">map</span>[<span style="color:#a90d91">string</span>]<span style="color:#a90d91">string</span> {
-   <span style="color:#000">...</span>
+<span style="color:#ff79c6">func</span> (<span style="color:#f8f8f2">fs</span> <span style="color:#f8f8f2">FileStoreBuilder</span>) <span style="color:#f8f8f2">GetStoreParams</span>() <span style="color:#ff79c6">map</span>[<span style="color:#ff79c6">string</span>]<span style="color:#ff79c6">string</span> {
+   <span style="color:#f8f8f2">...</span>
 }</code></pre></div>
 <p>“NewStore”方法需要返回实现“PolicyStoreManager”接口的存储实例。
 输入参数是一个配置 map，对应于配置文件中的“storeProps”，它将于与来自 flags 和环境变量的配置信息合并在一起。
 您可以从这个配置 map 中读取配置项的值来构建存储。如果您想读取&rsquo; EtcdEndpoint &lsquo;值，可以这样做:</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">etcdEndpoint, ok := config[EtcdEndpointKey].(string)</pre></div>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4">etcdEndpoint, ok := config[EtcdEndpointKey].(string)</pre></div>
 <p>请注意，配置值可能来自不同的源(flag、环境变量、配置文件)，配置值类型可能是您的期望类型(如 int 或 bool)或字符串类型。因此，您需要检查值类型，并可能需要将值从 string 类型转换为您期望的类型。</p>
 
 <p>接口“GetStoreParams()”需要返回一个{“flagName:storePropName”}map。这个 map 将显示 flag 和 store 属性之间的对应关系。</p>
 
 <p>etcd storeBuilder <code>GetStoreParams</code>() function example:</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-golang" data-lang="golang"><span style="color:#a90d91">func</span> (<span style="color:#000">esb</span> <span style="color:#000">Etcd3StoreBuilder</span>) <span style="color:#000">GetStoreParams</span>() <span style="color:#a90d91">map</span>[<span style="color:#a90d91">string</span>]<span style="color:#a90d91">string</span> {
-    <span style="color:#a90d91">return</span> <span style="color:#a90d91">map</span>[<span style="color:#a90d91">string</span>]<span style="color:#a90d91">string</span>{
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-golang" data-lang="golang"><span style="color:#ff79c6">func</span> (<span style="color:#f8f8f2">esb</span> <span style="color:#f8f8f2">Etcd3StoreBuilder</span>) <span style="color:#f8f8f2">GetStoreParams</span>() <span style="color:#ff79c6">map</span>[<span style="color:#ff79c6">string</span>]<span style="color:#ff79c6">string</span> {
+    <span style="color:#ff79c6">return</span> <span style="color:#ff79c6">map</span>[<span style="color:#ff79c6">string</span>]<span style="color:#ff79c6">string</span>{
 
-        <span style="color:#000">IsEmbeddedEtcdFlagName</span>:             <span style="color:#000">IsEmbeddedEtcdKey</span>,
-        <span style="color:#000">EmbeddedEtcdDataDirFlagName</span>:        <span style="color:#000">EmbeddedEtcdDataDirKey</span>,
-        <span style="color:#000">EtcdEndpointFlagName</span>:               <span style="color:#000">EtcdEndpointKey</span>,
-        <span style="color:#000">EtcdKeyPrefixFlagName</span>:              <span style="color:#000">EtcdKeyPrefixKey</span>,
-        <span style="color:#000">EtcdTLSClientCertFileFlagName</span>:      <span style="color:#000">EtcdTLSClientCertFileKey</span>,
-        <span style="color:#000">EtcdTLSClientKeyFileFlagName</span>:       <span style="color:#000">EtcdTLSClientKeyFileKey</span>,
-        <span style="color:#000">EtcdTLSClientTrustedCAFileFlagName</span>: <span style="color:#000">EtcdTLSClientTrustedCAFileKey</span>,
-        <span style="color:#000">EtcdTLSAllowedCNFlagName</span>:           <span style="color:#000">EtcdTLSAllowedCNKey</span>,
-        <span style="color:#000">EtcdTLSServerNameFlagName</span>:          <span style="color:#000">EtcdTLSServerNameKey</span>,
-        <span style="color:#000">EtcdTLSCRLFileFlagName</span>:             <span style="color:#000">EtcdTLSCRLFileKey</span>,
-        <span style="color:#000">EtcdTLSInsecureSkipVerifyFlagName</span>:  <span style="color:#000">EtcdTLSInsecureSkipVerifyKey</span>,
+        <span style="color:#f8f8f2">IsEmbeddedEtcdFlagName</span>:             <span style="color:#f8f8f2">IsEmbeddedEtcdKey</span>,
+        <span style="color:#f8f8f2">EmbeddedEtcdDataDirFlagName</span>:        <span style="color:#f8f8f2">EmbeddedEtcdDataDirKey</span>,
+        <span style="color:#f8f8f2">EtcdEndpointFlagName</span>:               <span style="color:#f8f8f2">EtcdEndpointKey</span>,
+        <span style="color:#f8f8f2">EtcdKeyPrefixFlagName</span>:              <span style="color:#f8f8f2">EtcdKeyPrefixKey</span>,
+        <span style="color:#f8f8f2">EtcdTLSClientCertFileFlagName</span>:      <span style="color:#f8f8f2">EtcdTLSClientCertFileKey</span>,
+        <span style="color:#f8f8f2">EtcdTLSClientKeyFileFlagName</span>:       <span style="color:#f8f8f2">EtcdTLSClientKeyFileKey</span>,
+        <span style="color:#f8f8f2">EtcdTLSClientTrustedCAFileFlagName</span>: <span style="color:#f8f8f2">EtcdTLSClientTrustedCAFileKey</span>,
+        <span style="color:#f8f8f2">EtcdTLSAllowedCNFlagName</span>:           <span style="color:#f8f8f2">EtcdTLSAllowedCNKey</span>,
+        <span style="color:#f8f8f2">EtcdTLSServerNameFlagName</span>:          <span style="color:#f8f8f2">EtcdTLSServerNameKey</span>,
+        <span style="color:#f8f8f2">EtcdTLSCRLFileFlagName</span>:             <span style="color:#f8f8f2">EtcdTLSCRLFileKey</span>,
+        <span style="color:#f8f8f2">EtcdTLSInsecureSkipVerifyFlagName</span>:  <span style="color:#f8f8f2">EtcdTLSInsecureSkipVerifyKey</span>,
     }
 
 }</code></pre></div>
@@ -223,21 +223,21 @@ headingSelector: 'h2'
 init 函数需要声明这个存储所需的所有 flags。</p>
 
 <p>Example in <code>store/etcd/storeBuilder.go</code>:</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-golang" data-lang="golang"><span style="color:#a90d91">func</span> <span style="color:#000">init</span>() {
-    <span style="color:#000">pflag</span>.<span style="color:#000">String</span>(<span style="color:#000">EtcdEndpointFlagName</span>, <span style="color:#000">DefaultEtcdStoreEndpoint</span>, <span style="color:#c41a16">&#34;Store config: endpoint of etcd store.&#34;</span>)
-    <span style="color:#000">pflag</span>.<span style="color:#000">Bool</span>(<span style="color:#000">IsEmbeddedEtcdFlagName</span>, <span style="color:#000">DefaultEtcdStoreIsEmbedded</span>, <span style="color:#c41a16">&#34;Store config: is embedded etcd store or not.&#34;</span>)
-    <span style="color:#000">...</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-golang" data-lang="golang"><span style="color:#ff79c6">func</span> <span style="color:#f8f8f2">init</span>() {
+    <span style="color:#f8f8f2">pflag</span>.<span style="color:#f8f8f2">String</span>(<span style="color:#f8f8f2">EtcdEndpointFlagName</span>, <span style="color:#f8f8f2">DefaultEtcdStoreEndpoint</span>, <span style="color:#f1fa8c">&#34;Store config: endpoint of etcd store.&#34;</span>)
+    <span style="color:#f8f8f2">pflag</span>.<span style="color:#f8f8f2">Bool</span>(<span style="color:#f8f8f2">IsEmbeddedEtcdFlagName</span>, <span style="color:#f8f8f2">DefaultEtcdStoreIsEmbedded</span>, <span style="color:#f1fa8c">&#34;Store config: is embedded etcd store or not.&#34;</span>)
+    <span style="color:#f8f8f2">...</span>
 
-    <span style="color:#000">store</span>.<span style="color:#000">Register</span>(<span style="color:#000">StoreType</span>, <span style="color:#000">Etcd3StoreBuilder</span>{})
+    <span style="color:#f8f8f2">store</span>.<span style="color:#f8f8f2">Register</span>(<span style="color:#f8f8f2">StoreType</span>, <span style="color:#f8f8f2">Etcd3StoreBuilder</span>{})
 }</code></pre></div>
 <h2 id="链接新存储到-speedle">链接新存储到 Speedle</h2>
 
 <p>在目录 cmd/speedle-ads 和目录 cmd/speedle-pms 中，你可以找到一个 store.go 文件，其具有下面的内容：</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-golang" data-lang="golang"><span style="color:#a90d91">package</span> <span style="color:#000">main</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-golang" data-lang="golang"><span style="color:#ff79c6">package</span> <span style="color:#f8f8f2">main</span>
 
-<span style="color:#a90d91">import</span> (
-    <span style="color:#000">_</span> <span style="color:#c41a16">&#34;github.com/teramoby/speedle-plus/store/etcd&#34;</span>
-    <span style="color:#000">_</span> <span style="color:#c41a16">&#34;github.com/teramoby/speedle-plus/store/file&#34;</span>
+<span style="color:#ff79c6">import</span> (
+    <span style="color:#f8f8f2">_</span> <span style="color:#f1fa8c">&#34;github.com/teramoby/speedle-plus/store/etcd&#34;</span>
+    <span style="color:#f8f8f2">_</span> <span style="color:#f1fa8c">&#34;github.com/teramoby/speedle-plus/store/file&#34;</span>
 )</code></pre></div>
 <p>在这个文件中，我们用一个 side-effect 导入(使用一个空白导入名称)来链接每个存储的实现。您也可以在这里添加自己的存储。
 如果你想在“in-process”模式下使用 Speedle，你可以复制这个 store.go 文件。转到您自己的 package 中，将 package 名字修改为您自己的 package 名字。</p>

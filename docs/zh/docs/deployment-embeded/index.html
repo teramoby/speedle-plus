@@ -110,17 +110,17 @@ headingSelector: 'h2'
 <ol>
 <li>使用 go get</li>
 </ol>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">go get github.com/teramoby/speedle-plus</code></pre></div>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">go get github.com/teramoby/speedle-plus</code></pre></div>
 <ol>
 <li>使用 dep 工具</li>
 </ol>
 
 <p>在你的 Gopkg.toml 文件中添加以下几行</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-toml" data-lang="toml">[[<span style="color:#000">constraint</span>]]
-  <span style="color:#000">name</span> = <span style="color:#c41a16">&#34;github.com/teramoby/speedle-plus&#34;</span>
-  <span style="color:#000">branch</span> = <span style="color:#c41a16">&#34;master&#34;</span></code></pre></div>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-toml" data-lang="toml">[[constraint]]
+  name = <span style="color:#f1fa8c">&#34;github.com/teramoby/speedle-plus&#34;</span>
+  branch = <span style="color:#f1fa8c">&#34;master&#34;</span></code></pre></div>
 <p>使用 dep 工具将 Speedle 源代码添加到<code>vendor</code>目录下：</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">dep ensure -update github.com/teramoby/speedle-plus</code></pre></div>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">dep ensure -update github.com/teramoby/speedle-plus</code></pre></div>
 <h3 id="在代码中初始化一个-evalautor-实例">在代码中初始化一个 Evalautor 实例</h3>
 
 <p>方法<code>func eval.NewFromFile(loc string, isWatch bool) (ads.PolicyEvaluator, error)</code>使用一个策略定义文件初始化一个 Evaluator 实例。该方法接受两个参数：</p>
@@ -133,25 +133,25 @@ headingSelector: 'h2'
 <p>该方法返回一个 Evaluator 示例。</p>
 
 <p>以下代码片段展示如何初始化一个 Evaluator 实例。</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#a90d91">import</span> (
-  <span style="color:#c41a16">&#34;github.com/teramoby/speedle-plus/pkg/eval&#34;</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#ff79c6">import</span> (
+  <span style="color:#f1fa8c">&#34;github.com/teramoby/speedle-plus/pkg/eval&#34;</span>
 )
 
-<span style="color:#a90d91">func</span> <span style="color:#000">foo</span>() {
-    <span style="color:#000">eval</span>, <span style="color:#000">err</span> <span style="color:#000">:=</span> <span style="color:#000">evaluator</span>.<span style="color:#000">NewFromFile</span>(<span style="color:#000">spdlLoc</span>, <span style="color:#a90d91">true</span>)
+<span style="color:#8be9fd;font-style:italic">func</span> foo() {
+    eval, err <span style="color:#ff79c6">:=</span> evaluator.NewFromFile(spdlLoc, <span style="color:#ff79c6">true</span>)
 }</code></pre></div>
 <h3 id="调用-evaluator-api-进行决策">调用 Evaluator API 进行决策</h3>
 
 <p>方法<code>func ads.IsAllowed(c ads.RequestContext) (allowed bool, reason Reason, err error)</code>依据策略定义文件中定义的策略进行决策。</p>
 
 <p>该方法接受一个参数<code>ads.RequestContext</code>，该结构的定义如下：</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#000">typedef</span> <span style="color:#000">RequestContext</span> {
-  <span style="color:#000">Subject</span>     <span style="color:#000">*</span><span style="color:#000">ads</span>.<span style="color:#000">Subject</span>                 <span style="color:#177500">// Subject包含用户信息，用户名，组名等。
-</span><span style="color:#177500"></span>  <span style="color:#000">ServiceName</span> <span style="color:#a90d91">string</span>                       <span style="color:#177500">// Speedle Service
-</span><span style="color:#177500"></span>  <span style="color:#000">Resource</span>    <span style="color:#a90d91">string</span>                       <span style="color:#177500">// Resource Name
-</span><span style="color:#177500"></span>  <span style="color:#000">Action</span>      <span style="color:#a90d91">string</span>                       <span style="color:#177500">// Action Name
-</span><span style="color:#177500"></span>  <span style="color:#000">Attributes</span>  <span style="color:#a90d91">map</span>[<span style="color:#a90d91">string</span>]<span style="color:#a90d91">interface</span>{}       <span style="color:#177500">// Attributes
-</span><span style="color:#177500"></span>}</code></pre></div>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">typedef RequestContext {
+  Subject     <span style="color:#ff79c6">*</span>ads.Subject                 <span style="color:#6272a4">// Subject包含用户信息，用户名，组名等。
+</span><span style="color:#6272a4"></span>  ServiceName <span style="color:#8be9fd">string</span>                       <span style="color:#6272a4">// Speedle Service
+</span><span style="color:#6272a4"></span>  Resource    <span style="color:#8be9fd">string</span>                       <span style="color:#6272a4">// Resource Name
+</span><span style="color:#6272a4"></span>  Action      <span style="color:#8be9fd">string</span>                       <span style="color:#6272a4">// Action Name
+</span><span style="color:#6272a4"></span>  Attributes  <span style="color:#8be9fd;font-style:italic">map</span>[<span style="color:#8be9fd">string</span>]<span style="color:#8be9fd;font-style:italic">interface</span>{}       <span style="color:#6272a4">// Attributes
+</span><span style="color:#6272a4"></span>}</code></pre></div>
 <p>该方法有 3 个返回值：</p>
 
 <ol>

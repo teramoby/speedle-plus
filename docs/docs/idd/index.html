@@ -98,14 +98,14 @@ headingSelector: 'h2'
 <h2 id="how-speedle-handles-multiple-identity-domains">How Speedle handles multiple identity domains</h2>
 
 <p>In an integrated environment, identities may come from multiple identity domains. Consider, for example, the following policy where a user with the identifier <code>user1</code> is authorized to perform a <code>rent</code> action on the resource <code>book</code>. This policy grants permission for <code>user1</code> from any identity domain to rent the book resource.</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./spctl create policy -c <span style="color:#c41a16">&#34;grant user user1 rent book&#34;</span> --service-name<span style="color:#000">=</span>booksvc</code></pre></div>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./spctl create policy -c <span style="color:#f1fa8c">&#34;grant user user1 rent book&#34;</span> --service-name<span style="color:#ff79c6">=</span>booksvc</code></pre></div>
 <p>However, the service only expects <code>user1</code> from the identity domain <code>github</code> to have the <code>rent</code> permission. Therefore, Speedle must be able to distinguish between users coming from different identity domains.</p>
 
 <p>With Speedle, to ensure that only the user from the expected identity domain is granted permission, you construct a new user/group identifier based on the incoming user/group identifier and the user/group identity domain. You can then use the new user/group identifier in the Speedle policies. The new identifier structure is defined as follows, where IDD represents the identity domain property.</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#a90d91">type</span> <span style="color:#000">Principal</span> <span style="color:#a90d91">struct</span> {
-	<span style="color:#000">Type</span> <span style="color:#a90d91">string</span> <span style="color:#c41a16">`json:&#34;type,omitempty&#34;`</span>
-	<span style="color:#000">Name</span> <span style="color:#a90d91">string</span> <span style="color:#c41a16">`json:&#34;name,omitempty&#34;`</span>
-	<span style="color:#000">IDD</span>  <span style="color:#a90d91">string</span> <span style="color:#c41a16">`json:&#34;idd,omitempty&#34;`</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#8be9fd;font-style:italic">type</span> Principal <span style="color:#8be9fd;font-style:italic">struct</span> {
+	Type <span style="color:#8be9fd">string</span> <span style="color:#f1fa8c">`json:&#34;type,omitempty&#34;`</span>
+	Name <span style="color:#8be9fd">string</span> <span style="color:#f1fa8c">`json:&#34;name,omitempty&#34;`</span>
+	IDD  <span style="color:#8be9fd">string</span> <span style="color:#f1fa8c">`json:&#34;idd,omitempty&#34;`</span>
 }</code></pre></div>
 <p><strong>Note:</strong> Identity providers such as <a href="https://account.google.com/">Google account</a> don&rsquo;t support multiple identity domains, while <a href="https://www.oracle.com/cloud/paas/identity-cloud-service.html">Oracle Identity Cloud Service (IDCS)</a> does support multiple identity domains. The value of the identity domain property is implementation dependent.</p>
 
@@ -118,26 +118,26 @@ headingSelector: 'h2'
 <h3 id="examples">Examples</h3>
 
 <p>This policy demonstrates that only <code>user1</code> from the <code>github</code> identity provider can perform the <code>read</code> action on the <code>book</code> resource:</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#177500"># grant user1 from github permission to perform the action: read on the resource: book
-</span><span style="color:#177500"></span>./spctl create policy -c <span style="color:#c41a16">&#34;grant user user1 from github read book&#34;</span> --service-name<span style="color:#000">=</span>booksvc</code></pre></div>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#6272a4"># grant user1 from github permission to perform the action: read on the resource: book
+</span><span style="color:#6272a4"></span>./spctl create policy -c <span style="color:#f1fa8c">&#34;grant user user1 from github read book&#34;</span> --service-name<span style="color:#ff79c6">=</span>booksvc</code></pre></div>
 <p>This policy demonstrates that only <code>user1</code> from identity domain <code>tenant01</code> of identity provider <code>IDCS</code> can perform the <code>read</code> action on the <code>book</code> resource:</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#177500"># grant user1 from tenant01 of IDCS permission to perform action: read on resource: book
-</span><span style="color:#177500"></span>./spctl create policy -c <span style="color:#c41a16">&#34;grant user user1 from IDCS.tenant01 read book&#34;</span> --service-name<span style="color:#000">=</span>booksvc</code></pre></div>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#6272a4"># grant user1 from tenant01 of IDCS permission to perform action: read on resource: book
+</span><span style="color:#6272a4"></span>./spctl create policy -c <span style="color:#f1fa8c">&#34;grant user user1 from IDCS.tenant01 read book&#34;</span> --service-name<span style="color:#ff79c6">=</span>booksvc</code></pre></div>
 <h3 id="policy-management-rest-apis">Policy Management REST APIs</h3>
 
 <p>Prefix each principal with <em><strong>&ldquo;idd=&lt;identity domain&gt;:&rdquo;</strong></em></p>
 
 <h4 id="example">Example</h4>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#177500"># Create a policy: allow user1 coming from identity domain: github to perform action: read on resource: book
-</span><span style="color:#177500"></span>curl -v -X POST -d <span style="color:#c41a16">&#39;{&#34;name&#34;: &#34;policy1&#34;,&#34;effect&#34;: &#34;grant&#34;,&#34;permissions&#34;: [{&#34;resource&#34;: &#34;book&#34;,&#34;actions&#34;: [&#34;read&#34;]}],&#34;principals&#34;: [[&#34;idd=github:user:user1&#34;]]}&#39;</span> http://127.0.0.1:6733/policy-mgmt/v1/service/booksvc/policy</code></pre></div>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#6272a4"># Create a policy: allow user1 coming from identity domain: github to perform action: read on resource: book
+</span><span style="color:#6272a4"></span>curl -v -X POST -d <span style="color:#f1fa8c">&#39;{&#34;name&#34;: &#34;policy1&#34;,&#34;effect&#34;: &#34;grant&#34;,&#34;permissions&#34;: [{&#34;resource&#34;: &#34;book&#34;,&#34;actions&#34;: [&#34;read&#34;]}],&#34;principals&#34;: [[&#34;idd=github:user:user1&#34;]]}&#39;</span> http://127.0.0.1:6733/policy-mgmt/v1/service/booksvc/policy</code></pre></div>
 <h3 id="how-policies-with-identity-domains-are-evaluated">How policies with identity domains are evaluated</h3>
 
 <ul>
 <li><p><strong>Policy defined with an identity domain</strong></p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">The evaluation engine first tests whether the user&#39;s identity domain in the incoming request strictly matches the identity domain defined in the policy. If there is an exact match, it then evaluates the policy. If there is not an exact match, the evaluation result for the defined policy is false.</pre></div></li>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4">The evaluation engine first tests whether the user&#39;s identity domain in the incoming request strictly matches the identity domain defined in the policy. If there is an exact match, it then evaluates the policy. If there is not an exact match, the evaluation result for the defined policy is false.</pre></div></li>
 
 <li><p><strong>Policy defined without an identity domain</strong></p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4">The evaluation engine evaluates the policy without considering the identity domain in the incoming request and will match principals from any identity domains.</pre></div></li>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4">The evaluation engine evaluates the policy without considering the identity domain in the incoming request and will match principals from any identity domains.</pre></div></li>
 </ul>
 
 <h2 id="samples">Samples</h2>
@@ -145,78 +145,78 @@ headingSelector: 'h2'
 <p>These samples show how to create a policy with identity domains using the <code>spctl</code> CLI and the Policy Management API, and the expected results. The sample policy demonstrates how a user with the same name, <code>user1</code>, is granted different permissions depending on which identity provider the user is from.</p>
 
 <h3 id="creating-a-policy-with-identity-domains-using-the-spctl-cli">Creating a policy with identity domains using the spctl CLI</h3>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./spctl create service booksvc
-<span style="color:#177500"># grant user1 coming from github permission to perform action: read on resource: book
-</span><span style="color:#177500"></span>./spctl create policy -c <span style="color:#c41a16">&#34;grant user user1 from github read book&#34;</span> --service-name<span style="color:#000">=</span>booksvc
-<span style="color:#177500"># grant user1 coming from google permission to perform action: write on resource: book
-</span><span style="color:#177500"></span>./spctl create policy -c <span style="color:#c41a16">&#34;grant user user1 from google write book&#34;</span> --service-name<span style="color:#000">=</span>booksvc
-<span style="color:#177500"># grant user1 coming from any identity provider permission to perform action: rent on resource: book
-</span><span style="color:#177500"></span>./spctl create policy -c <span style="color:#c41a16">&#34;grant user user1 rent book&#34;</span> --service-name<span style="color:#000">=</span>booksvc</code></pre></div>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./spctl create service booksvc
+<span style="color:#6272a4"># grant user1 coming from github permission to perform action: read on resource: book
+</span><span style="color:#6272a4"></span>./spctl create policy -c <span style="color:#f1fa8c">&#34;grant user user1 from github read book&#34;</span> --service-name<span style="color:#ff79c6">=</span>booksvc
+<span style="color:#6272a4"># grant user1 coming from google permission to perform action: write on resource: book
+</span><span style="color:#6272a4"></span>./spctl create policy -c <span style="color:#f1fa8c">&#34;grant user user1 from google write book&#34;</span> --service-name<span style="color:#ff79c6">=</span>booksvc
+<span style="color:#6272a4"># grant user1 coming from any identity provider permission to perform action: rent on resource: book
+</span><span style="color:#6272a4"></span>./spctl create policy -c <span style="color:#f1fa8c">&#34;grant user user1 rent book&#34;</span> --service-name<span style="color:#ff79c6">=</span>booksvc</code></pre></div>
 <p>JSON format of policy data</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">{
-	<span style="color:#000">&#34;services&#34;</span>: [
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">{
+	<span style="color:#ff79c6">&#34;services&#34;</span>: [
 		{
-			<span style="color:#000">&#34;name&#34;</span>: <span style="color:#c41a16">&#34;booksvc&#34;</span>,
-			<span style="color:#000">&#34;policies&#34;</span>: [
+			<span style="color:#ff79c6">&#34;name&#34;</span>: <span style="color:#f1fa8c">&#34;booksvc&#34;</span>,
+			<span style="color:#ff79c6">&#34;policies&#34;</span>: [
 				{
-					<span style="color:#000">&#34;id&#34;</span>: <span style="color:#c41a16">&#34;policy1&#34;</span>,
-					<span style="color:#000">&#34;effect&#34;</span>: <span style="color:#c41a16">&#34;grant&#34;</span>,
-					<span style="color:#000">&#34;permissions&#34;</span>: [
+					<span style="color:#ff79c6">&#34;id&#34;</span>: <span style="color:#f1fa8c">&#34;policy1&#34;</span>,
+					<span style="color:#ff79c6">&#34;effect&#34;</span>: <span style="color:#f1fa8c">&#34;grant&#34;</span>,
+					<span style="color:#ff79c6">&#34;permissions&#34;</span>: [
 						{
-							<span style="color:#000">&#34;resource&#34;</span>: <span style="color:#c41a16">&#34;book&#34;</span>,
-							<span style="color:#000">&#34;actions&#34;</span>: [<span style="color:#c41a16">&#34;read&#34;</span>]
+							<span style="color:#ff79c6">&#34;resource&#34;</span>: <span style="color:#f1fa8c">&#34;book&#34;</span>,
+							<span style="color:#ff79c6">&#34;actions&#34;</span>: [<span style="color:#f1fa8c">&#34;read&#34;</span>]
 						}
 					],
-					<span style="color:#000">&#34;principals&#34;</span>: [[<span style="color:#c41a16">&#34;idd=github:user:user1&#34;</span>]]
+					<span style="color:#ff79c6">&#34;principals&#34;</span>: [[<span style="color:#f1fa8c">&#34;idd=github:user:user1&#34;</span>]]
 				},
 				{
-					<span style="color:#000">&#34;id&#34;</span>: <span style="color:#c41a16">&#34;policy2&#34;</span>,
-					<span style="color:#000">&#34;effect&#34;</span>: <span style="color:#c41a16">&#34;grant&#34;</span>,
-					<span style="color:#000">&#34;permissions&#34;</span>: [
+					<span style="color:#ff79c6">&#34;id&#34;</span>: <span style="color:#f1fa8c">&#34;policy2&#34;</span>,
+					<span style="color:#ff79c6">&#34;effect&#34;</span>: <span style="color:#f1fa8c">&#34;grant&#34;</span>,
+					<span style="color:#ff79c6">&#34;permissions&#34;</span>: [
 						{
-							<span style="color:#000">&#34;resource&#34;</span>: <span style="color:#c41a16">&#34;book&#34;</span>,
-							<span style="color:#000">&#34;actions&#34;</span>: [<span style="color:#c41a16">&#34;write&#34;</span>]
+							<span style="color:#ff79c6">&#34;resource&#34;</span>: <span style="color:#f1fa8c">&#34;book&#34;</span>,
+							<span style="color:#ff79c6">&#34;actions&#34;</span>: [<span style="color:#f1fa8c">&#34;write&#34;</span>]
 						}
 					],
-					<span style="color:#000">&#34;principals&#34;</span>: [[<span style="color:#c41a16">&#34;idd=google:user:user1&#34;</span>]]
+					<span style="color:#ff79c6">&#34;principals&#34;</span>: [[<span style="color:#f1fa8c">&#34;idd=google:user:user1&#34;</span>]]
 				},
 				{
-					<span style="color:#000">&#34;id&#34;</span>: <span style="color:#c41a16">&#34;policy3&#34;</span>,
-					<span style="color:#000">&#34;effect&#34;</span>: <span style="color:#c41a16">&#34;grant&#34;</span>,
-					<span style="color:#000">&#34;permissions&#34;</span>: [
+					<span style="color:#ff79c6">&#34;id&#34;</span>: <span style="color:#f1fa8c">&#34;policy3&#34;</span>,
+					<span style="color:#ff79c6">&#34;effect&#34;</span>: <span style="color:#f1fa8c">&#34;grant&#34;</span>,
+					<span style="color:#ff79c6">&#34;permissions&#34;</span>: [
 						{
-							<span style="color:#000">&#34;resource&#34;</span>: <span style="color:#c41a16">&#34;book&#34;</span>,
-							<span style="color:#000">&#34;actions&#34;</span>: [<span style="color:#c41a16">&#34;rent&#34;</span>]
+							<span style="color:#ff79c6">&#34;resource&#34;</span>: <span style="color:#f1fa8c">&#34;book&#34;</span>,
+							<span style="color:#ff79c6">&#34;actions&#34;</span>: [<span style="color:#f1fa8c">&#34;rent&#34;</span>]
 						}
 					],
-					<span style="color:#000">&#34;principals&#34;</span>: [[<span style="color:#c41a16">&#34;user:user1&#34;</span>]]
+					<span style="color:#ff79c6">&#34;principals&#34;</span>: [[<span style="color:#f1fa8c">&#34;user:user1&#34;</span>]]
 				}
 			]
 		}
 	]
 }</code></pre></div>
 <h3 id="creating-a-policy-with-identity-domains-using-the-policy-management-api">Creating a policy with identity domains using the Policy Management API</h3>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl -v -X POST -d <span style="color:#c41a16">&#39;{&#34;name&#34;: &#34;policy1&#34;,&#34;effect&#34;: &#34;grant&#34;,&#34;permissions&#34;: [{&#34;resource&#34;: &#34;book&#34;,&#34;actions&#34;: [&#34;read&#34;]}],&#34;principals&#34;: [[&#34;idd=github:user:user1&#34;]]}&#39;</span> http://127.0.0.1:6733/policy-mgmt/v1/service/booksvc/policy
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl -v -X POST -d <span style="color:#f1fa8c">&#39;{&#34;name&#34;: &#34;policy1&#34;,&#34;effect&#34;: &#34;grant&#34;,&#34;permissions&#34;: [{&#34;resource&#34;: &#34;book&#34;,&#34;actions&#34;: [&#34;read&#34;]}],&#34;principals&#34;: [[&#34;idd=github:user:user1&#34;]]}&#39;</span> http://127.0.0.1:6733/policy-mgmt/v1/service/booksvc/policy
 
-curl -v -X POST -d <span style="color:#c41a16">&#39;{&#34;name&#34;: &#34;policy1&#34;,&#34;effect&#34;: &#34;grant&#34;,&#34;permissions&#34;: [{&#34;resource&#34;: &#34;book&#34;,&#34;actions&#34;: [&#34;write&#34;]}],&#34;principals&#34;: [[&#34;idd=google:user:user1&#34;]]}&#39;</span> http://127.0.0.1:6733/policy-mgmt/v1/service/booksvc/policy
+curl -v -X POST -d <span style="color:#f1fa8c">&#39;{&#34;name&#34;: &#34;policy1&#34;,&#34;effect&#34;: &#34;grant&#34;,&#34;permissions&#34;: [{&#34;resource&#34;: &#34;book&#34;,&#34;actions&#34;: [&#34;write&#34;]}],&#34;principals&#34;: [[&#34;idd=google:user:user1&#34;]]}&#39;</span> http://127.0.0.1:6733/policy-mgmt/v1/service/booksvc/policy
 
-curl -v -X POST -d <span style="color:#c41a16">&#39;{&#34;name&#34;: &#34;policy1&#34;,&#34;effect&#34;: &#34;grant&#34;,&#34;permissions&#34;: [{&#34;resource&#34;: &#34;book&#34;,&#34;actions&#34;: [&#34;rent&#34;]}],&#34;principals&#34;: [[&#34;user:user1&#34;]]}&#39;</span> http://127.0.0.1:6733/policy-mgmt/v1/service/booksvc/policy</code></pre></div>
+curl -v -X POST -d <span style="color:#f1fa8c">&#39;{&#34;name&#34;: &#34;policy1&#34;,&#34;effect&#34;: &#34;grant&#34;,&#34;permissions&#34;: [{&#34;resource&#34;: &#34;book&#34;,&#34;actions&#34;: [&#34;rent&#34;]}],&#34;principals&#34;: [[&#34;user:user1&#34;]]}&#39;</span> http://127.0.0.1:6733/policy-mgmt/v1/service/booksvc/policy</code></pre></div>
 <h3 id="policy-evaluation-results">Policy evaluation results</h3>
 
 <p>The following policy evaluation results are based on the policies defined in the samples above.</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#177500"># The evaluation result is true.
-</span><span style="color:#177500"></span>curl -v -X POST -d <span style="color:#c41a16">&#39;{ &#34;subject&#34;: {&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;,&#34;name&#34;:&#34;user1&#34;,&#34;idd&#34;:&#34;github&#34;}] },&#34;serviceName&#34;:&#34;booksvc&#34;,&#34;resource&#34;:&#34;book&#34;,&#34;action&#34;:&#34;read&#34;}&#39;</span>  http://127.0.0.1:6734/authz-check/v1/is-allowed
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#6272a4"># The evaluation result is true.
+</span><span style="color:#6272a4"></span>curl -v -X POST -d <span style="color:#f1fa8c">&#39;{ &#34;subject&#34;: {&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;,&#34;name&#34;:&#34;user1&#34;,&#34;idd&#34;:&#34;github&#34;}] },&#34;serviceName&#34;:&#34;booksvc&#34;,&#34;resource&#34;:&#34;book&#34;,&#34;action&#34;:&#34;read&#34;}&#39;</span>  http://127.0.0.1:6734/authz-check/v1/is-allowed
 
-<span style="color:#177500"># The evaluation result is false because of different identity domain: gitlab
-</span><span style="color:#177500"></span>curl -v -X POST -d <span style="color:#c41a16">&#39;{ &#34;subject&#34;: {&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;,&#34;name&#34;:&#34;user1&#34;,&#34;idd&#34;:&#34;gitlab&#34;}] },&#34;serviceName&#34;:&#34;booksvc&#34;,&#34;resource&#34;:&#34;book&#34;,&#34;action&#34;:&#34;read&#34;}&#39;</span>  http://127.0.0.1:6734/authz-check/v1/is-allowed
+<span style="color:#6272a4"># The evaluation result is false because of different identity domain: gitlab
+</span><span style="color:#6272a4"></span>curl -v -X POST -d <span style="color:#f1fa8c">&#39;{ &#34;subject&#34;: {&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;,&#34;name&#34;:&#34;user1&#34;,&#34;idd&#34;:&#34;gitlab&#34;}] },&#34;serviceName&#34;:&#34;booksvc&#34;,&#34;resource&#34;:&#34;book&#34;,&#34;action&#34;:&#34;read&#34;}&#39;</span>  http://127.0.0.1:6734/authz-check/v1/is-allowed
 
-<span style="color:#177500"># The evaluation result is true because of user1 coming from any identity providers can perform rent action
-</span><span style="color:#177500"></span>curl -v -X POST -d <span style="color:#c41a16">&#39;{ &#34;subject&#34;: {&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;,&#34;name&#34;:&#34;user1&#34;}] },&#34;serviceName&#34;:&#34;booksvc&#34;,&#34;resource&#34;:&#34;book&#34;,&#34;action&#34;:&#34;rent&#34;}&#39;</span>  http://127.0.0.1:6734/authz-check/v1/is-allowed
+<span style="color:#6272a4"># The evaluation result is true because of user1 coming from any identity providers can perform rent action
+</span><span style="color:#6272a4"></span>curl -v -X POST -d <span style="color:#f1fa8c">&#39;{ &#34;subject&#34;: {&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;,&#34;name&#34;:&#34;user1&#34;}] },&#34;serviceName&#34;:&#34;booksvc&#34;,&#34;resource&#34;:&#34;book&#34;,&#34;action&#34;:&#34;rent&#34;}&#39;</span>  http://127.0.0.1:6734/authz-check/v1/is-allowed
 
-curl -v -X POST -d <span style="color:#c41a16">&#39;{ &#34;subject&#34;: {&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;,&#34;name&#34;:&#34;user1&#34;,&#34;idd&#34;:&#34;google&#34;}] },&#34;serviceName&#34;:&#34;booksvc&#34;,&#34;resource&#34;:&#34;book&#34;,&#34;action&#34;:&#34;rent&#34;}&#39;</span>  http://127.0.0.1:6734/authz-check/v1/is-allowed
+curl -v -X POST -d <span style="color:#f1fa8c">&#39;{ &#34;subject&#34;: {&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;,&#34;name&#34;:&#34;user1&#34;,&#34;idd&#34;:&#34;google&#34;}] },&#34;serviceName&#34;:&#34;booksvc&#34;,&#34;resource&#34;:&#34;book&#34;,&#34;action&#34;:&#34;rent&#34;}&#39;</span>  http://127.0.0.1:6734/authz-check/v1/is-allowed
 
-<span style="color:#177500"># The evaluation result is false because of different identity domain &#34;idd&#34;:&#34;notgoogle&#34;
-</span><span style="color:#177500"></span>curl -v -X POST -d <span style="color:#c41a16">&#39;{ &#34;subject&#34;: {&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;,&#34;name&#34;:&#34;user1&#34;,&#34;idd&#34;:&#34;notgoogle&#34;}] },&#34;serviceName&#34;:&#34;booksvc&#34;,&#34;resource&#34;:&#34;book&#34;,&#34;action&#34;:&#34;write&#34;}&#39;</span>  http://127.0.0.1:6734/authz-check/v1/is-allowed</code></pre></div>
+<span style="color:#6272a4"># The evaluation result is false because of different identity domain &#34;idd&#34;:&#34;notgoogle&#34;
+</span><span style="color:#6272a4"></span>curl -v -X POST -d <span style="color:#f1fa8c">&#39;{ &#34;subject&#34;: {&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;,&#34;name&#34;:&#34;user1&#34;,&#34;idd&#34;:&#34;notgoogle&#34;}] },&#34;serviceName&#34;:&#34;booksvc&#34;,&#34;resource&#34;:&#34;book&#34;,&#34;action&#34;:&#34;write&#34;}&#39;</span>  http://127.0.0.1:6734/authz-check/v1/is-allowed</code></pre></div>
   </div>
 </div>
 </main><div class="sidebar">
