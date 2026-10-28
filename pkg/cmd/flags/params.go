@@ -419,7 +419,7 @@ func (k *Parameters) ParseFlags(defaultEndpoint string, printVersionInfoFun func
 					}
 				case k.AsserterConf.AsserterClientTimeout.Name:
 					if conf != nil && conf.AsserterWebhookConfig != nil {
-						f.Value.Set(string(conf.AsserterWebhookConfig.HTTPTimeout))
+						f.Value.Set(strconv.Itoa(conf.AsserterWebhookConfig.HTTPTimeout))
 					}
 				default:
 					//
