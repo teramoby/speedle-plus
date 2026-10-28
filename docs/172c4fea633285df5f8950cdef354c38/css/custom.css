@@ -216,11 +216,10 @@ body.page-kube > .container {
 #contents:before { content: "On this page"; display: block; margin-bottom: 8px; color: var(--speedle-ink); font-size: .8rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
 #contents ol { margin: 0; padding-left: 20px; }
 
+/* The documentation index lists every page in full; it never scrolls on its own
+   (theme.min.css forces overflow-y: scroll). */
 .sidebar {
-  position: sticky;
-  top: 104px;
-  max-height: calc(100vh - 126px);
-  overflow: auto;
+  overflow: visible;
   padding: 22px;
   background: var(--speedle-soft);
   border: 1px solid var(--speedle-line);
@@ -276,7 +275,7 @@ body.page-kube > footer nav img { width: 23px; height: 23px; margin: 0; }
   #top:target nav ul { align-items: flex-start; flex-direction: column; }
   #top:target #top-brand { display: none; }
   .content-container { display: block; }
-  .sidebar { position: static; max-height: none; margin-top: 52px; }
+  .sidebar { margin-top: 52px; }
   #main h1 { font-size: 2.5rem; }
   #main .top-right-icon { position: static; margin: 0 0 24px; width: 92px; height: 92px; }
   body.page-kube > footer.row { grid-template-columns: 1fr; text-align: left; }
