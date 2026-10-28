@@ -147,12 +147,14 @@ class Acceptance:
             else:raise AssertionError('Business API accepted a missing client certificate')
 
     def forward(self,service,remote):
-        target=port();log=(self.phase_dir/(service+'-'+str(remote)+'.log')).open('w')
+        target=port();logpath=self.phase_dir/(service+'-'+str(remote)+'-'+str(target)+'.log');log=logpath.open('w')
         process=subprocess.Popen(['kubectl','--context','kind-'+self.cluster,'--namespace',self.phase['NAMESPACE'],'port-forward','--address','127.0.0.1','svc/'+service,f'{target}:{remote}'],env=self.env,cwd=ROOT,stdout=log,stderr=subprocess.STDOUT,start_new_session=True)
         self.processes.append((process,log))
         def bound():
-            if process.poll() is not None:raise RuntimeError('Forwarding process exited')
-            with socket.create_connection(('127.0.0.1',target),timeout=1):return True
+            if process.poll() is not None:raise RuntimeError('Forwarding process exited: '+logpath.read_text())
+            # Opening and closing a bare TCP socket against a TLS service can
+            # reset the forwarded stream. Wait for kubectl's listener instead.
+            return 'Forwarding from 127.0.0.1:' in logpath.read_text()
         wait(bound,'gRPC forwarding');return target
 
     def check_backend_failure(self):
@@ -177,18 +179,21 @@ class Acceptance:
         print('PASS backend outage: readiness fails, liveness stays healthy, no restart, PVC data recovers',flush=True)
 
     def check_etcd_auth(self):
-        target=self.forward('speedle-etcd',2379)
         directory=self.phase_dir/'etcd-tls'
-        base=[str(self.work/'grpcprobe'),'--service','etcd','--endpoint',f'127.0.0.1:{target}',
-              '--cacert',str(directory/'ca.crt'),'--key-name','/'+self.id+'/auth-probe']
         def probe(credentials):
+            # A failed TLS handshake may terminate a port-forward stream;
+            # give each control its own owned transport to the same backend.
+            target=self.forward('speedle-etcd',2379)
+            base=[str(self.work/'grpcprobe'),'--service','etcd','--endpoint',f'127.0.0.1:{target}',
+                  '--timeout','5s','--cacert',str(directory/'ca.crt'),'--key-name','/'+self.id+'/auth-probe']
             trust=['--cert',str(credentials/'client.crt'),'--key',str(credentials/'client.key')] if credentials else []
             return run(base+trust,self.env,ok=False)
         positive=probe(directory)
         assert positive.returncode==0, 'Trusted etcd client cannot write/read/delete: '+positive.stderr
         for credentials in [None,self.phase_dir/'tls']:
             assert probe(credentials).returncode!=0, 'etcd accepted missing/untrusted client certificate'
-        assert probe(directory).returncode==0, 'etcd became unavailable during rejection checks'
+        positive=probe(directory)
+        assert positive.returncode==0, 'etcd became unavailable during rejection checks: '+positive.stderr
         print('PASS etcd gRPC authentication: trusted write/read/delete succeeds; missing and foreign client certificates rejected',flush=True)
 
     def check_liveness_failure(self):
@@ -350,6 +355,8 @@ def main():
                 if acceptance.kind_created and (work/'kubeconfig').exists():
                     for args in [('get','pods','-A','-o','wide'),('get','events','-A','--sort-by=.lastTimestamp')]:
                         print(acceptance.kube(*args,ok=False).stdout[-12000:],flush=True)
+                    for log in acceptance.phase_dir.glob('*.log'):
+                        print(f'{log.name}:\n{log.read_text()[-4000:]}',flush=True)
                 raise
             finally:acceptance.cleanup()
 

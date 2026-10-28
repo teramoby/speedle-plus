@@ -22,6 +22,7 @@ func main() {
 	endpoint := flag.String("endpoint", "", "gRPC address")
 	kind := flag.String("service", "pms", "pms, ads or etcd")
 	keyName := flag.String("key-name", "", "Owned etcd probe key")
+	timeout := flag.Duration("timeout", 2*time.Second, "RPC deadline")
 	ca := flag.String("cacert", "", "CA file")
 	cert := flag.String("cert", "", "Client certificate")
 	key := flag.String("key", "", "Client key")
@@ -49,7 +50,7 @@ func main() {
 	conn, err := grpc.NewClient(*endpoint, grpc.WithTransportCredentials(creds))
 	check(err)
 	defer conn.Close()
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), *timeout)
 	defer cancel()
 	if *kind == "etcd" {
 		if *keyName == "" {
