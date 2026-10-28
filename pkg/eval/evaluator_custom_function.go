@@ -8,7 +8,7 @@ import (
 	"crypto/x509"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strings"
 	"sync"
@@ -24,6 +24,12 @@ import (
 
 const (
 	defaultCustomerFunctionCallTimeout = 5 * time.Second
+	// maxCustomerFunctionResponseBytes bounds how much of a customer
+	// function's response ADS reads.
+	maxCustomerFunctionResponseBytes = 1 << 20
+	// maxFuncResultCacheEntries bounds the function result cache. When it is
+	// full, new results are returned without being cached.
+	maxFuncResultCacheEntries = 10000
 )
 
 type Request2Delegator struct {
@@ -55,6 +61,9 @@ func (frc *FuncResultCache) delete(key string) {
 func (frc *FuncResultCache) add(key string, value FuncResult) {
 	frc.Lock()
 	defer frc.Unlock()
+	if _, ok := frc.Results[key]; !ok && len(frc.Results) >= maxFuncResultCacheEntries {
+		return
+	}
 	frc.Results[key] = value
 }
 
@@ -144,9 +153,7 @@ func (frc *FuncResultCache) generateCustomerExpressionFunction(cfdUrl *string, c
 }
 
 func getKey(funcName string, arguments []interface{}) string {
-	key := fmt.Sprintf("%s(%v)", funcName, arguments)
-	fmt.Println("key=", key)
-	return key
+	return fmt.Sprintf("%s(%v)", funcName, arguments)
 }
 
 func isFunc(key, funcName string) bool {
@@ -226,20 +233,24 @@ func CallCustomerFunction(cf *pms.Function, request *ext.CustomerFunctionRequest
 }
 
 func getFunctionResp(client *http.Client, request *http.Request, cf *pms.Function) (interface{}, error) {
+	// Each call builds its own client; release its connections when done.
+	defer client.CloseIdleConnections()
 	resp, err := client.Do(request)
 	if err != nil {
 		log.Errorf("error happens when calling customer function %s, err is: %v\n", cf.Name, err)
 		return nil, errors.Wrapf(err, errors.CustomerFuncError, "failed to do customer function request for customer function %q", cf.Name)
 	}
+	defer resp.Body.Close()
 
 	switch resp.StatusCode {
 	case http.StatusOK:
-		defer resp.Body.Close()
-		//TODO: We might need to limit the larget size we want to receive
-		body, err := ioutil.ReadAll(resp.Body)
+		body, err := io.ReadAll(io.LimitReader(resp.Body, maxCustomerFunctionResponseBytes+1))
 		if err != nil {
 			log.Errorf("error reading response from customer function %s, err is: %v\n", cf.Name, err)
 			return nil, errors.Wrapf(err, errors.CustomerFuncError, "fail to read response for customer function %q", cf.Name)
+		}
+		if len(body) > maxCustomerFunctionResponseBytes {
+			return nil, errors.Errorf(errors.CustomerFuncError, "response of customer function %q exceeds %d bytes", cf.Name, maxCustomerFunctionResponseBytes)
 		}
 		response := ext.CustomerFunctionResponse{}
 		if err = json.Unmarshal(body, &response); err != nil {
