@@ -211,6 +211,9 @@ func ConvMultipleValues(dataType string, values interface{}) (interface{}, error
 	var prevType string
 	for i := 0; i < v.Len(); i = i + 1 {
 		vi := v.Index(i)
+		if vi.Interface() == nil {
+			return nil, errors.New(errors.InvalidRequest, "null value is not allowed in an array")
+		}
 		item, err := ConvSingleValue(dataType, vi.Interface())
 		if err != nil {
 			return nil, err
