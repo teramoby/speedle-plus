@@ -4,6 +4,7 @@
 package etcd
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 
@@ -73,11 +74,8 @@ func (esb Etcd3StoreBuilder) NewStore(config map[string]interface{}) (pms.Policy
 	var etcd3ClientConf clientv3.Config
 	if isEmbeddedEtcd {
 		etcdEndpoint := "localhost:2379"
-		embeddedEtcdDataDir, ok := config[EmbeddedEtcdDataDirKey].(string)
-		if !ok {
-			embeddedEtcdDataDir = ""
-		}
-	log.Infof("Etcd store created")
+		embeddedEtcdDataDir, _ := config[EmbeddedEtcdDataDirKey].(string)
+		fmt.Printf("new embedded Etcd store: embeddedEtcdDataDir = %q, etcdEndpoint = %q, keyPrefix = %q\n", embeddedEtcdDataDir, etcdEndpoint, keyPrefix)
 		embeddedInst, embeddedDir, err := StartEmbeddedEtcd(embeddedEtcdDataDir)
 		if err != nil {
 			return nil, err
@@ -132,7 +130,7 @@ func (esb Etcd3StoreBuilder) NewStore(config map[string]interface{}) (pms.Policy
 				return nil, err
 			}
 
-	log.Debugf("tlsInfo: %v", tlsInfo)
+			fmt.Printf("tlsInfo: %v\n", tlsInfo)
 			etcd3ClientConf.TLS = tlsConfig
 		}
 	}
@@ -143,17 +141,17 @@ func (esb Etcd3StoreBuilder) NewStore(config map[string]interface{}) (pms.Policy
 	store.client = cli
 	store.Config = &etcd3ClientConf
 	store.KeyPrefix = keyPrefix
-	log.Infof("Etcd store created")
+	fmt.Println("Etcd store...")
 	return &store, nil
 }
 
 func convertValueToBool(val interface{}, keyName string) (bool, error) {
 	switch x := val.(type) {
 	case bool:
-		boolValule := x
+		boolValule := val.(bool)
 		return boolValule, nil
 	case string:
-		boolValule, err := strconv.ParseBool(x)
+		boolValule, err := strconv.ParseBool(val.(string))
 		if err != nil {
 			return false, errors.Wrapf(err, errors.ConfigError, "failed to convert configure %q", keyName)
 		}

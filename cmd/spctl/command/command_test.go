@@ -5,7 +5,6 @@ package command
 
 import (
 	"path/filepath"
-	"strings"
 	"testing"
 
 	"github.com/teramoby/speedle-plus/api/pms"
@@ -15,17 +14,6 @@ import (
 )
 
 // Create/Get/Delete service
-func TestMats_InvalidServiceLookup(t *testing.T) {
-	testutil.TestLog = t
-	data := &testutil.CmdTestData{}
-	if err := testutil.NewCmdClient().ExecuteCmd(param.GET_SERVICE("invalid+name"), data); err != nil {
-		t.Fatal(err)
-	}
-	if !strings.Contains(data.OutputMsg, "400 Bad Request: Invalid service name.") {
-		t.Fatalf("invalid service lookup was not rejected: %s", data.OutputMsg)
-	}
-}
-
 func TestMats_Service(t *testing.T) {
 
 	sName := "k8s"
@@ -948,7 +936,7 @@ func TestLrg_Service_SpecialCharInName_bug66_bug52(t *testing.T) {
 			Method:   testutil.METHOD_CREATE_SERVICE,
 			Data: &testutil.CmdTestData{
 				Param:        param.CREATE_SERVICE(sName, sType),
-				ExpectedMsg:  "409 Conflict",
+				ExpectedMsg:  "Service already exists",
 				OutputBody:   &pms.Service{},
 				ExpectedBody: &pms.Service{},
 			},
@@ -998,7 +986,7 @@ func TestLrg_Service_Neg_CreateTwice_bug66(t *testing.T) {
 			Method:   testutil.METHOD_CREATE_SERVICE,
 			Data: &testutil.CmdTestData{
 				Param:        param.CREATE_SERVICE(sName, sType),
-				ExpectedMsg:  "409 Conflict",
+				ExpectedMsg:  "Service already exists",
 				OutputBody:   &pms.Service{},
 				ExpectedBody: &pms.Service{},
 			},

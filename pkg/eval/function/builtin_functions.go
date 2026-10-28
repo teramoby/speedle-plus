@@ -12,65 +12,64 @@ import (
 
 // Add all built-in functions in this file
 
+// numbers returns the arguments as float64, or false when any is not numeric
+// (including nil).
+func numbers(args []interface{}) ([]float64, bool) {
+	values := make([]float64, len(args))
+	for i, arg := range args {
+		value, ok := arg.(float64)
+		if !ok {
+			return nil, false
+		}
+		values[i] = value
+	}
+	return values, true
+}
+
 func Sqrt(args ...interface{}) (interface{}, error) {
 	err := errors.New(errors.BuiltInFuncError, "Usage: Sqrt(x)")
-	if len(args) != 1 {
+	values, ok := numbers(args)
+	if !ok || len(values) != 1 {
 		return nil, err
 	}
-	x, ok := args[0].(float64)
-	if !ok {
-		return nil, err
-	}
-	return math.Sqrt(x), nil
+	return math.Sqrt(values[0]), nil
 }
 
 func Max(args ...interface{}) (interface{}, error) {
 	err := errors.New(errors.BuiltInFuncError, "Usage: Max(x1, x2, ...), xi must be numeric")
-	if len(args) < 1 {
+	values, ok := numbers(args)
+	if !ok || len(values) < 1 {
 		return nil, err
 	}
-	max, ok := args[0].(float64)
-	if !ok {
-		return nil, err
-	}
-	for i := 1; i < len(args); i++ {
-		v, ok := args[i].(float64)
-		if !ok {
-			return nil, err
-		}
-		max = math.Max(max, v)
+	max := values[0]
+	for _, value := range values[1:] {
+		max = math.Max(max, value)
 	}
 	return max, nil
 }
 
 func Min(args ...interface{}) (interface{}, error) {
 	err := errors.New(errors.BuiltInFuncError, "Usage: Min(x1, x2, ...), xi must be numeric")
-	if len(args) < 1 {
+	values, ok := numbers(args)
+	if !ok || len(values) < 1 {
 		return nil, err
 	}
-	min, ok := args[0].(float64)
-	if !ok {
-		return nil, err
-	}
-	for i := 1; i < len(args); i++ {
-		v, ok := args[i].(float64)
-		if !ok {
-			return nil, err
-		}
-		min = math.Min(min, v)
+	min := values[0]
+	for _, value := range values[1:] {
+		min = math.Min(min, value)
 	}
 	return min, nil
 }
 
 func Sum(args ...interface{}) (interface{}, error) {
 	err := errors.New(errors.BuiltInFuncError, "Usage: Sum(x1, x2, ...), xi must be numeric")
+	values, ok := numbers(args)
+	if !ok {
+		return nil, err
+	}
 	var sum float64 = 0
-	for i := range args {
-		v, ok := args[i].(float64)
-		if !ok {
-			return nil, err
-		}
-		sum += v
+	for _, value := range values {
+		sum += value
 	}
 	return sum, nil
 }
@@ -83,11 +82,7 @@ func Avg(args ...interface{}) (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-	s, ok := sum.(float64)
-	if !ok {
-		return nil, errors.New(errors.BuiltInFuncError, "Sum did not return a float64")
-	}
-	return s / float64(len(args)), nil
+	return sum.(float64) / float64(len(args)), nil
 }
 
 // IsSubSet(S1, S2) means "is S1 a subset of S2"
@@ -97,41 +92,15 @@ func IsSubSet(args ...interface{}) (interface{}, error) {
 	if n < 2 {
 		return nil, err
 	}
-
-	var s1, s2 interface{}
-	if n == 2 {
-		// The expression evaluator (govaluate) converts typed slices to
-		// []interface{} via MapParameters.Get. When s1 has a single
-		// element, the separatorStage places it as a bare value instead of
-		// wrapping it in a slice. Detect and repair that case.
-		s1, s2 = args[0], args[1]
-		// Guard against nil arguments (e.g. a referenced attribute that
-		// resolved to JSON null). reflect.TypeOf(nil) returns nil, and
-		// calling .Kind() on a nil Type panics.
-		t1, t2 := reflect.TypeOf(s1), reflect.TypeOf(s2)
-		if t1 == nil || t2 == nil {
-			return false, nil
-		}
-		if t1.Kind() != reflect.Slice && t2.Kind() == reflect.Slice {
-			s1 = []interface{}{args[0]}
-		}
-	} else {
-		// More than 2 args: the evaluator expanded both parameters into
-		// individual elements. Reconstruct: first n-1 args form s1, last
-		// arg is s2 (which itself is an []interface{} from the evaluator).
+	s1, s2 := args[0], args[n-1]
+	if n >= 2 {
 		buf := make([]interface{}, n-1)
-		copy(buf, args[:n-1])
+		copy(buf, args)
 		s1 = buf
-		s2 = args[n-1]
 	}
-
-	// Both s1 and s2 must be slices.
-	t1, t2 := reflect.TypeOf(s1), reflect.TypeOf(s2)
-	if t1 == nil || t2 == nil ||
-		t1.Kind() != reflect.Slice || t2.Kind() != reflect.Slice {
+	if s2 == nil || reflect.TypeOf(s1).Kind() != reflect.Slice || reflect.TypeOf(s2).Kind() != reflect.Slice {
 		return nil, err
 	}
-
 	v1 := reflect.ValueOf(s1)
 	v2 := reflect.ValueOf(s2)
 	n1 := v1.Len()
@@ -139,7 +108,6 @@ func IsSubSet(args ...interface{}) (interface{}, error) {
 	if n1 == 0 || n2 == 0 || n1 > n2 {
 		return false, nil
 	}
-
 outer:
 	for i := 0; i < n1; i++ {
 		for j := 0; j < n2; j++ {

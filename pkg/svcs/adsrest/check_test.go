@@ -41,11 +41,9 @@ func TestSettingPrincipalHeader(t *testing.T) {
 		t.Fatal("failed to marshal test request")
 	}
 	req, err := http.NewRequest("POST", isAllowedURL, bytes.NewBuffer(buf))
-		req.Header.Set("Content-Type", "application/json")
 	if err != nil {
 		t.Fatal("failed to make test request")
 	}
-	req.Header.Set("Content-Type", "application/json")
 
 	var client *http.Client
 	client = &http.Client{
@@ -71,7 +69,6 @@ func TestSettingPrincipalHeader(t *testing.T) {
 		t.Fatal("failed to marshal test request")
 	}
 	req, err = http.NewRequest("POST", isAllowedURL, bytes.NewBuffer(buf))
-		req.Header.Set("Content-Type", "application/json")
 	if err != nil {
 		t.Fatal("failed to make test request")
 	}
@@ -98,7 +95,6 @@ func TestSettingPrincipalHeader(t *testing.T) {
 		t.Fatal("failed to marshal test request")
 	}
 	req, err = http.NewRequest("POST", isAllowedURL, bytes.NewBuffer(buf))
-		req.Header.Set("Content-Type", "application/json")
 	if err != nil {
 		t.Fatal("failed to make test request")
 	}

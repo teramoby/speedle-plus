@@ -118,7 +118,7 @@
 
 <h2 id="prerequisites">Prerequisites</h2>
 
-<p>Use Linux or macOS with Bash, Git, curl and <strong>Go 1.26.3 or newer</strong>. The module requires Go 1.26; this guide is verified with <strong>Go 1.26.10 and Go 1.27.3</strong>. Go 1.27.3 is the recommended stable release for this walkthrough.</p>
+<p>Use Linux or macOS with Bash, Git, curl and <strong>Go 1.25 or newer</strong>. Speedle+ supports the three most recent Go releases; this guide is verified with <strong>Go 1.25.14, Go 1.26.10 and Go 1.27.3</strong>. Go 1.27.3 is the recommended stable release for this walkthrough.</p>
 
 <p>Install Go using the <a href="https://go.dev/doc/install">official installation instructions</a>, then check the installed version:</p>
 
@@ -146,7 +146,7 @@ ls bin</code></pre></div>
 
 <h2 id="run-speedle">Run Speedle</h2>
 
-<p>Run this walkthrough on a local development machine. <code>--insecure=true</code> enables plain HTTP for the REST examples; the binaries also open gRPC ports 50001 and 50002. For production transport and authorization settings, see <a href="/docs/security/">Security</a>.</p>
+<p>Run this walkthrough on a local development machine. <code>--insecure=true</code> enables plain HTTP for the REST examples. The gRPC servers are off unless you start them with <code>--grpc-endpoint</code>, for example <code>--grpc-endpoint 127.0.0.1:50001</code> for PMS and <code>--grpc-endpoint 127.0.0.1:50002</code> for ADS; gRPC uses the same TLS settings as REST. For production transport and authorization settings, see <a href="/docs/security/">Security</a>.</p>
 
 <h3 id="1-start-the-policy-management-service">1. Start the Policy Management Service</h3>
 

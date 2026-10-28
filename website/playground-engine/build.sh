@@ -2,7 +2,7 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 ROOT=$(git rev-parse --show-toplevel)
-REVISION=7f61995d3344e94ed614494e013dacdcfa491b26
+REVISION=8fb1481d715e476242a991d391778b4334763afd
 GO_BIN="${GO_BIN:-go}"
 export GOTOOLCHAIN=local
 # The build tree is a git archive; never read VCS state from an enclosing checkout.

@@ -8,7 +8,9 @@ import (
 	"log"
 	"os"
 	"strconv"
+	"sync"
 	"testing"
+	"time"
 
 	"github.com/teramoby/speedle-plus/api/pms"
 	"github.com/teramoby/speedle-plus/pkg/store"
@@ -403,9 +405,9 @@ func TestFunctionManagement(t *testing.T) {
 			ResultTTL:      300,
 			CA:             "-----BEGIN CERTIFICATE-----\nMIID7TCCAtWgAwIBAgIJALM3l/OZ9uJKMA0GCSqGSIb3DQEBCwUAMIGMMQswCQYD\nVQQGEwJjbjEQMA4GA1UECAwHYmVpamluZzEQMA4GA1UEBwwHYmVpamluZzEPMA0G\nA1UECgwGb3JhY2xlMQwwCgYDVQQLDANpZG0xEjAQBgNVBAMMCWxvY2FsaG9zdDEm\nMCQGCSqGSIb3DQEJARYXY3ludGhpYS5kaW5nQG9yYWNsZS5jb20wHhcNMTgwNDI1\nMDc1MDMwWhcNMTkwNDI1MDc1MDMwWjCBjDELMAkGA1UEBhMCY24xEDAOBgNVBAgM\nB2JlaWppbmcxEDAOBgNVBAcMB2JlaWppbmcxDzANBgNVBAoMBm9yYWNsZTEMMAoG\nA1UECwwDaWRtMRIwEAYDVQQDDAlsb2NhbGhvc3QxJjAkBgkqhkiG9w0BCQEWF2N5\nbnRoaWEuZGluZ0BvcmFjbGUuY29tMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIB\nCgKCAQEAn/AFElluGOZYfvlzBGfHfkd/Q9SuQFsSnQt7Qp63Yuf5Ie/q4NACzWPC\nB/L6nQrut4OMxJHvhVAswJozRZrQxXvX/vUxkg+TmALj3U9ejF/5arGtjy5v+yGi\nwci7zM4r7VNFJGRkfluNRC1kJi4AY6jk6Gl4d/bX4tBXE8mEFY1rUswYtat3OMja\njVAoocClk6WcaQuK9R1uB+BPyxHLJ04RyKRuepPYRBQjgwHK5kMF3s5p07Os+2JH\n5jyJYW2NPs6pQe0k8GWpaar/yZ2eut9gsgHnu5JCWnyedo4nEx6I/G4GSaX+0SeU\n/Wb2aqq1QGfVOESml7CVcEa/buTeUwIDAQABo1AwTjAdBgNVHQ4EFgQU5i7CO32N\nspQ5AaG/aRU0LX2koYwwHwYDVR0jBBgwFoAU5i7CO32NspQ5AaG/aRU0LX2koYww\nDAYDVR0TBAUwAwEB/zANBgkqhkiG9w0BAQsFAAOCAQEAbQuCMPK8f8QuEmTpZBFv\naka9qruT/0/TrxrbxEh68N4moXSTVv4tSrDTmdkwUiiwayuGS7fvKjSV6hwGkQbV\nzGbFDdwOw1tPE2OwnA7/+RPl4KmE4iTHnnIanyg9CKmBW/tMp/vUyv5nIt7Xw5n4\ntx3C9/hme+Rlx+SVPIAwAjl4nVFNLfzyG+JDBnQWygySm88SzzK0WRgh5V+gyXCK\nucDW5rA6X9/CM3QrSY50mSM6dbyYDMtmTI4dX7E9STTBCNsNNcmgYkX0N9lm5RoF\nuBsAcPmp1SVIbXelDHJiIXxMKzwZy8riZQ8+Dw6LMs6wZX7COVvMWN4Dfcuo89av\nIQ==\n-----END CERTIFICATE-----",
 		}
-		_, cErr := store.CreateFunction(testFunc)
-		if cErr != nil {
-			t.Fatal("Failed to create function:", cErr)
+		_, err := store.CreateFunction(testFunc)
+		if err != nil {
+			t.Fatal("Failed to create function:", err)
 		}
 		i++
 	}
@@ -429,4 +431,59 @@ func TestFunctionManagement(t *testing.T) {
 	if len(testFunctions) != 0 {
 		t.Fatal("Failed to delete all function:", err)
 	}
+}
+
+func TestWatch(t *testing.T) {
+	store, err := store.NewStore("file", storeConfig)
+	if err != nil {
+		t.Fatal("fail to new file store:", err)
+	}
+	//defer store.StopWatch()
+	if err != nil {
+		t.Fatal("fail to new file store:", err)
+	}
+
+	ch, err := store.Watch()
+	if err != nil {
+		t.Fatal("fail to watch:", err)
+	}
+	time.Sleep(2 * time.Second)
+
+	//add new app
+	rolePolicy1 := pms.RolePolicy{Name: "rp1", Effect: "grant", Roles: []string{"role1"}, Principals: []string{"user:Alice"}}
+	rolePolicy2 := pms.RolePolicy{Name: "rp2", Effect: "grant", Roles: []string{"role2"}, Principals: []string{"user:Bill"}}
+	service := pms.Service{
+		Name:         "app1_new",
+		Type:         pms.TypeApplication,
+		RolePolicies: []*pms.RolePolicy{&rolePolicy1, &rolePolicy2},
+	}
+	err = store.CreateService(&service)
+	if err != nil {
+		t.Fatal("fail to write application:", err)
+	}
+
+	var wg sync.WaitGroup
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		i := 0
+		for e := range ch {
+			i = i + 1
+			t.Logf("Receive one event, type is %d\n", e.Type)
+			if e.Type != pms.FULL_RELOAD {
+				t.Errorf("expected event type: %d, received event type :%d\n", pms.FULL_RELOAD, e.Type)
+			}
+		}
+		if i < 2 {
+			t.Errorf("Not receive enough event")
+		}
+	}()
+
+	//delete app
+	store.DeleteService("app1_new")
+
+	time.Sleep(2 * time.Second)
+	store.StopWatch()
+	wg.Wait()
 }

@@ -78,7 +78,6 @@ func runCLITests(m *testing.M) int {
 		fmt.Fprintln(os.Stderr, err)
 		return 1
 	}
-	defer manager.Close()
 	router, err := pmsrest.NewRouter(manager)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)

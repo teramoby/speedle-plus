@@ -1,19 +1,24 @@
 //Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
 //Licensed under the Universal Permissive License (UPL) Version 1.0 as shown at http://oss.oracle.com/licenses/upl.
 
-package testutil
+// Package grpctest holds the gRPC test helpers. They are kept apart from
+// testutil because the ADS and PMS pb packages share the proto package "pb",
+// and loading both in one binary panics on duplicate registration.
+package grpctest
 
 import (
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"reflect"
 	"sort"
 	"strings"
 
 	adsPB "github.com/teramoby/speedle-plus/pkg/svcs/adsgrpc/pb"
 	pmsPB "github.com/teramoby/speedle-plus/pkg/svcs/pmsgrpc/pb"
+	. "github.com/teramoby/speedle-plus/testutil"
 
 	"google.golang.org/grpc"
 )
@@ -36,7 +41,8 @@ func (gc *GRpcClient) SetupConnection() error {
 	if gc.pmsConn == nil {
 		tmpConn, err := grpc.Dial("localhost:50001", grpc.WithInsecure())
 		if err != nil {
-			return fmt.Errorf("did not pmsConnect: %v", err)
+			log.Fatalf("did not pmsConnect: %v", err)
+			return err
 		}
 		gc.pmsClient = pmsPB.NewPolicyManagerClient(tmpConn)
 		gc.pmsConn = tmpConn
@@ -45,7 +51,8 @@ func (gc *GRpcClient) SetupConnection() error {
 	if gc.adsConn == nil {
 		tmpConn, err := grpc.Dial("localhost:50002", grpc.WithInsecure())
 		if err != nil {
-			return fmt.Errorf("did not adsConnect: %v", err)
+			log.Fatalf("did not adsConnect: %v", err)
+			return err
 		}
 		gc.adsClient = adsPB.NewEvaluatorClient(tmpConn)
 		gc.adsConn = tmpConn
@@ -58,22 +65,9 @@ func (gc *GRpcClient) CloseConnection() {
 		gc.pmsConn.Close()
 		gc.pmsConn = nil
 	}
-	if gc.adsConn != nil {
-		gc.adsConn.Close()
-		gc.adsConn = nil
-	}
 }
 
 //-------------------GRpcTest definition------------------------
-//test data for spxctl command
-type GRpcTestData struct {
-	InputBody    interface{} //Optional. Request body for method
-	OutputMsg    string      //Optional. Actual output Message
-	OutputBody   interface{} //Optional. Actual output body for json object
-	ExpectedMsg  string      //Optional. expected message for the command
-	ExpectedBody interface{} //Optional. expected body about json object string
-}
-
 type GRpcTest struct {
 	Client *GRpcClient
 }

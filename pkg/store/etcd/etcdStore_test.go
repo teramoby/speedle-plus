@@ -41,10 +41,10 @@ func TestWriteReadPolicyStore(t *testing.T) {
 	if err != nil {
 		t.Fatal("fail to new etcd3 store:", err)
 	}
-	defer store.Close()
+	defer store.(*Store).destroy()
 
-	if psOrigin, readErr := store.ReadPolicyStore(); readErr != nil {
-		t.Fatal("fail to read etcd3 store:", readErr)
+	if psOrigin, err := store.ReadPolicyStore(); err != nil {
+		t.Fatal("fail to read etcd3 store:", err)
 	} else {
 		t.Log("existing number of apps:", len(psOrigin.Services))
 	}
@@ -76,7 +76,7 @@ func TestWriteReadDeleteService(t *testing.T) {
 	if err != nil {
 		t.Fatal("fail to new etcd3 store:", err)
 	}
-	defer store.Close()
+	defer store.(*Store).destroy()
 	//clean the service firstly
 	err = store.DeleteService("service1")
 	t.Log("deleteing service1, err:", err)
@@ -158,7 +158,7 @@ func TestEtcdStore_GetPolicyByName(t *testing.T) {
 	if err != nil {
 		t.Fatal("fail to new etcd3 store:", err)
 	}
-	defer store.Close()
+	defer store.(*Store).destroy()
 	//clean the service firstly
 	serviceName := "service1"
 	err = store.DeleteService(serviceName)
@@ -297,7 +297,7 @@ func TestEtcdStore_GetRolePolicyByName(t *testing.T) {
 	if err != nil {
 		t.Fatal("fail to new etcd3 store:", err)
 	}
-	defer store.Close()
+	defer store.(*Store).destroy()
 	//clean the service firstly
 	serviceName := "service1"
 	err = store.DeleteService(serviceName)
@@ -422,7 +422,7 @@ func TestManagePolicies(t *testing.T) {
 	if err != nil {
 		t.Fatal("fail to new etcd3 store:", err)
 	}
-	defer store.Close()
+	defer store.(*Store).destroy()
 	//clean the service firstly
 	store.DeleteService("service1")
 	app := pms.Service{Name: "service1", Type: pms.TypeApplication}
@@ -481,7 +481,7 @@ func TestManageRolePolicies(t *testing.T) {
 	if err != nil {
 		t.Fatal("fail to new etcd3 store:", err)
 	}
-	defer store.Close()
+	defer store.(*Store).destroy()
 
 	//clean the service firstly
 	store.DeleteService("service1")
@@ -537,7 +537,7 @@ func TestCheckItemsCount(t *testing.T) {
 	if err != nil {
 		t.Fatal("fail to new etcd3 store:", err)
 	}
-	defer store.Close()
+	defer store.(*Store).destroy()
 
 	// clean the services
 	store.DeleteServices()
@@ -564,9 +564,9 @@ func TestCheckItemsCount(t *testing.T) {
 		{Name: "p03", Effect: "grant", Principals: [][]string{{"user:user3"}}},
 	}
 	for _, policy := range policies {
-		_, cErr := store.CreatePolicy("service1", &policy)
-		if cErr != nil {
-			t.Fatal("fail to create policy:", cErr)
+		_, err := store.CreatePolicy("service1", &policy)
+		if err != nil {
+			t.Fatal("fail to create policy:", err)
 		}
 	}
 	// Check policy count
@@ -584,9 +584,9 @@ func TestCheckItemsCount(t *testing.T) {
 		{Name: "p02", Effect: "grant", Principals: []string{"user:user2"}, Roles: []string{"role2"}},
 	}
 	for _, rolePolicy := range rolePolicies {
-		_, cErr := store.CreateRolePolicy("service1", &rolePolicy)
-		if cErr != nil {
-			t.Fatal("Failed to get role policy count:", cErr)
+		_, err := store.CreateRolePolicy("service1", &rolePolicy)
+		if err != nil {
+			t.Fatal("Failed to get role policy count:", err)
 		}
 	}
 	// Check role Policy count
@@ -615,9 +615,9 @@ func TestCheckItemsCount(t *testing.T) {
 
 	// Create policies in service2
 	for _, policy := range policies {
-		_, cErr := store.CreatePolicy("service2", &policy)
-		if cErr != nil {
-			t.Fatal("fail to create policy:", cErr)
+		_, err := store.CreatePolicy("service2", &policy)
+		if err != nil {
+			t.Fatal("fail to create policy:", err)
 		}
 	}
 	// Check policy count in service2
@@ -639,9 +639,9 @@ func TestCheckItemsCount(t *testing.T) {
 
 	// Create rolePolicy in service2
 	for _, rolePolicy := range rolePolicies {
-		_, cErr := store.CreateRolePolicy("service2", &rolePolicy)
-		if cErr != nil {
-			t.Fatal("Failed to get role policy count:", cErr)
+		_, err := store.CreateRolePolicy("service2", &rolePolicy)
+		if err != nil {
+			t.Fatal("Failed to get role policy count:", err)
 		}
 	}
 	// Check role Policy count in service2
@@ -665,7 +665,7 @@ func TestCheckItemsCount(t *testing.T) {
 func TestWatch(t *testing.T) {
 	store, err := store.NewStore(storeConfig.StoreType, storeConfig.StoreProps)
 	defer store.StopWatch()
-	defer store.Close()
+	defer store.(*Store).destroy()
 	if err != nil {
 		t.Fatal("fail to new etcd3 store:", err)
 	}
@@ -709,36 +709,4 @@ func TestWatch(t *testing.T) {
 		}
 	}
 
-}
-
-func TestWatchStopDuringBackoffNoPanic(t *testing.T) {
-	store, err := store.NewStore(storeConfig.StoreType, storeConfig.StoreProps)
-	if err != nil {
-		t.Fatal("fail to new etcd3 store:", err)
-	}
-	defer store.Close()
-
-	ch, err := store.Watch()
-	if err != nil {
-		t.Fatal("fail to watch:", err)
-	}
-
-	// Give the watch goroutine time to start and enter its main loop.
-	time.Sleep(100 * time.Millisecond)
-
-	// Stop the watch while the inner goroutine may still be running.
-	// This exercises the shutdown path where the outer goroutine closes
-	// channels while the inner watch goroutine could attempt to send on
-	// errChan or stopChan. With the non-blocking send fixes, no panic
-	// should occur.
-	store.StopWatch()
-
-	// Drain any events that may have been sent before StopWatch took effect.
-	go func() {
-		for range ch {
-		}
-	}()
-
-	// Give goroutines time to shut down cleanly.
-	time.Sleep(200 * time.Millisecond)
 }

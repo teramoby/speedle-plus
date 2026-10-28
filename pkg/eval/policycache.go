@@ -4,7 +4,9 @@
 package eval
 
 import (
+	"regexp"
 
+	log "github.com/sirupsen/logrus"
 
 	"github.com/teramoby/speedle-plus/3rdparty/github.com/Knetic/govaluate"
 	"github.com/teramoby/speedle-plus/api/pms"
@@ -241,10 +243,7 @@ func (p *PolicyCacheData) getPoliciesFromResourceExpressionMap(resourceToPolicyM
 	if matchResource {
 
 		fn := func(s string, v interface{}) bool {
-			policyIDSet, ok := v.(map[string]bool)
-			if !ok {
-				return false
-			}
+			policyIDSet := v.(map[string]bool)
 			for id := range policyIDSet {
 				resultPolicyMap[id] = p.PolicyMap[id]
 			}
@@ -261,7 +260,12 @@ func (p *PolicyCacheData) getPoliciesFromResourceExpressionMap(resourceToPolicyM
 
 		if resourceToPolicyMap.ResourceExpressionToPolicies != nil {
 			for resExp, policyIDSet := range resourceToPolicyMap.ResourceExpressionToPolicies {
-							if matchRegexCompiled(resExp, resource) {
+				matched, err := regexp.MatchString(resExp, resource)
+				if err != nil {
+					log.Errorf("Meet error when match the resource expression in poliy. err: %s", err)
+					continue
+				}
+				if matched {
 					//Add all related policies to result policy map
 					for id := range policyIDSet {
 						resultPolicyMap[id] = p.PolicyMap[id]
@@ -272,10 +276,7 @@ func (p *PolicyCacheData) getPoliciesFromResourceExpressionMap(resourceToPolicyM
 	} else {
 
 		fn := func(s string, v interface{}) bool {
-			policyIDSet, ok := v.(map[string]bool)
-			if !ok {
-				return false
-			}
+			policyIDSet := v.(map[string]bool)
 			for id := range policyIDSet {
 				resultPolicyMap[id] = p.PolicyMap[id]
 			}

@@ -36,7 +36,6 @@ type Parameters struct {
 	ListenPort     string
 	KubeConfigFile string
 	SpeedleHost    string
-	Debug          bool
 }
 
 func usage() {
@@ -122,7 +121,6 @@ func (k *Parameters) parseFlags() {
 	defaultConfigPath := strings.Join([]string{home, ".kube", "config"}, string(os.PathSeparator))
 	flag.StringVar(&k.KubeConfigFile, "kubeconfig", defaultConfigPath, "K8s configure file.")
 	flag.StringVar(&k.SpeedleHost, "speedle-host", "", "Speedle host.")
-	flag.BoolVar(&k.Debug, "debug", false, "Enable debug logging of full request bodies.")
 	flag.Parse()
 }
 
@@ -130,7 +128,6 @@ type handlerImpl struct {
 	speedleClient client.ADSClient
 	clusterName   string
 	kubeClientset *kubernetes.Clientset
-	debug         bool
 }
 
 func New(params *Parameters) (*handlerImpl, error) {
@@ -159,7 +156,6 @@ func New(params *Parameters) (*handlerImpl, error) {
 		speedleClient: speedleClient,
 		clusterName:   params.ClusterName,
 		kubeClientset: clientset,
-		debug:         params.Debug,
 	}
 	return &handler, nil
 }
@@ -178,10 +174,8 @@ func (impl *handlerImpl) atzHandler(w http.ResponseWriter, r *http.Request) {
 	if err := r.Body.Close(); err != nil {
 		panic(err)
 	}
-	if impl.debug {
-		fmt.Println("-------------------------------")
-		fmt.Print(string(body))
-	}
+	fmt.Println("-------------------------------")
+	fmt.Print(string(body))
 	var ar v1beta1.SubjectAccessReview
 	if err := json.Unmarshal(body, &ar); err != nil {
 		w.Header().Set("Content-Type", "application/json; charset=UTF-8")

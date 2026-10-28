@@ -3,15 +3,8 @@
 
 package ads
 
-import (
-	"encoding/json"
+import "github.com/teramoby/speedle-plus/api/pms"
 
-	"github.com/teramoby/speedle-plus/api/pms"
-)
-
-// Principal represents an authenticated entity (user, group, role, or entity).
-// It carries the principal type, a human-readable name, and an identity domain
-// qualifier (IDD) used for multi-tenant authorization decisions.
 type Principal struct {
 	Type string `json:"type,omitempty"`
 	Name string `json:"name,omitempty"`
@@ -19,17 +12,9 @@ type Principal struct {
 }
 
 func (p *Principal) String() string {
-	b, err := json.Marshal(p)
-	if err != nil {
-		return ""
-	}
-	return string(b)
+	return "{" + "\"type\": \"" + p.Type + "\", \"name\": \"" + p.Name + "\", \"idd\":\"" + p.IDD + "\"}"
 }
 
-// Subject represents the caller in an authorization request.
-// It contains a list of principals extracted from the caller's token,
-// the original token and its type, and a flag indicating whether
-// token assertion has been performed.
 type Subject struct {
 	Principals []*Principal `json:"principals,omitempty"`
 	TokenType  string       `json:"tokenType,omitempty"`
@@ -37,10 +22,6 @@ type Subject struct {
 	Asserted   bool         `json:"asserted,omitempty"`
 }
 
-// RequestContext captures all the details of an authorization request.
-// It includes the caller's subject, the target service and resource,
-// the requested action, and any additional attributes provided by
-// the caller for use in policy evaluation and condition matching.
 type RequestContext struct {
 	Subject     *Subject               `json:"subject,omitempty"`
 	ServiceName string                 `json:"serviceName,omitempty"`
@@ -49,10 +30,6 @@ type RequestContext struct {
 	Attributes  map[string]interface{} `json:"attributes,omitempty"`
 }
 
-// EvaluationResult is the outcome of an authorization decision.
-// It reports whether the request is allowed, the reason for the decision,
-// the original request context, any granted roles, and details on which
-// policies and role policies were evaluated.
 type EvaluationResult struct {
 	Allowed      bool                   `json:"allowed"`
 	Reason       Reason                 `json:"reason"`
@@ -146,9 +123,4 @@ const (
 )
 
 // String returns the English name of the Reason
-func (m Reason) String() string {
-	if int(m) >= len(reason) {
-		return "REASON_NOT_AVAILABLE"
-	}
-	return reason[m]
-}
+func (m Reason) String() string { return reason[m] }

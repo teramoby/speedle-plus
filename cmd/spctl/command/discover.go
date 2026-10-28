@@ -8,10 +8,8 @@ import (
 	"fmt"
 	"net/url"
 	"os"
-	"os/signal"
 	"strconv"
 	"strings"
-	"syscall"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -94,22 +92,11 @@ func discoverCommandFunc(cmd *cobra.Command, args []string) {
 					if json.Unmarshal(res, &response) == nil {
 						revision = response.Revision
 						for _, request := range response.Requests {
-							resOutput, merr := json.MarshalIndent(&request, "", strings.Repeat(" ", 4))
-							if merr != nil {
-								fmt.Fprintln(os.Stderr, merr)
-							}
-							fmt.Println(string(resOutput))
+							output, _ = json.MarshalIndent(&request, "", strings.Repeat(" ", 4))
+							fmt.Println(string(output))
 						}
 					}
-					sigCh := make(chan os.Signal, 1)
-					signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
-					defer signal.Stop(sigCh)
 					for {
-						select {
-						case <-sigCh:
-							return
-						default:
-						}
 						v = url.Values{}
 						v.Add("revision", strconv.FormatInt(revision, 10))
 						res, err = cli.Get([]string{"discover-request", serviceName}, v, "")
@@ -117,11 +104,8 @@ func discoverCommandFunc(cmd *cobra.Command, args []string) {
 							if json.Unmarshal(res, &response) == nil {
 								revision = response.Revision
 								for _, request := range response.Requests {
-									resOutput, merr := json.MarshalIndent(&request, "", strings.Repeat(" ", 4))
-									if merr != nil {
-										fmt.Fprintln(os.Stderr, merr)
-									}
-									fmt.Println(string(resOutput))
+									output, _ = json.MarshalIndent(&request, "", strings.Repeat(" ", 4))
+									fmt.Println(string(output))
 								}
 							}
 						} else {
@@ -138,11 +122,8 @@ func discoverCommandFunc(cmd *cobra.Command, args []string) {
 					var response pmsrest.GetDiscoverRequestsResponse
 					if json.Unmarshal(res, &response) == nil {
 						for _, request := range response.Requests {
-							resOutput, merr := json.MarshalIndent(&request, "", strings.Repeat(" ", 4))
-							if merr != nil {
-								fmt.Fprintln(os.Stderr, merr)
-							}
-							fmt.Println(string(resOutput))
+							output, _ = json.MarshalIndent(&request, "", strings.Repeat(" ", 4))
+							fmt.Println(string(output))
 						}
 					}
 				}
@@ -180,10 +161,7 @@ func discoverCommandFunc(cmd *cobra.Command, args []string) {
 			err = json.Unmarshal(res, &response)
 			if err == nil {
 				if len(response.Services) > 0 {
-					output, err = json.MarshalIndent(response.Services[0], "", strings.Repeat(" ", 4))
-				if err != nil {
-					fmt.Fprintln(os.Stderr, err)
-				}
+					output, _ = json.MarshalIndent(response.Services[0], "", strings.Repeat(" ", 4))
 					fmt.Println(string(output))
 				} else {
 					fmt.Println("no policy discovered for the service")
