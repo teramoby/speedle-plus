@@ -118,7 +118,7 @@ func NewAsserter(conf *AsserterConfig, tenant *string) (TokenAsserter, error) {
 
 // AssertToken assert token via webhook
 func (a *WebHookAsserter) AssertToken(token string, idpType string, allowedIDD string, requestHeaders map[string]string) (*AssertResponse, error) {
-	log.Debugf("token: %s, idpType: %s, allowedIDD: %s, requestHeaders: %v", token, idpType, allowedIDD, requestHeaders)
+	log.Debugf("idpType: %s, allowedIDD: %s", idpType, allowedIDD)
 
 	if len(token) == 0 {
 		log.Errorf("token is empty")
