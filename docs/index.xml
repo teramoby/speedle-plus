@@ -18,7 +18,7 @@
       
       <guid>https://speedle.io/docs/pms/policy-mgmt/</guid>
       <description>What is a Speedle policy? A Speedle policy is a set of criteria that specify whether a user is granted access to a particular protected resource or assignment to a particular role. You manage Speedle policies using the Speedle Policy Management Service(PMS).
-Understanding the Speedle Policy Module Note: The Speedle syntax used in this document is defined in SPDL - Security Policy Definition Language.
+Understanding the Speedle Policy Module Note: The Speedle syntax used in this document is defined in SPDL - Speedle Policy Definition Language.
 Policy store The policy store maintains all policy artifacts and can be persisted to an etcd store or a JSON file.</description>
     </item>
     
@@ -61,7 +61,7 @@ How to use policy diagnosis The usage of policy diagnosis request is almost iden
     </item>
     
     <item>
-      <title>SPDL - Security Policy Definition Language</title>
+      <title>SPDL - Speedle Policy Definition Language</title>
       <link>https://speedle.io/docs/spdl/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
@@ -110,12 +110,9 @@ Join us at speedle-users and/or speedle-developers groups.</description>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://speedle.io/quick-start/</guid>
-      <description>Prerequisites 1. Install the Go programming language The minimum version required is 1.13.
-See https://golang.org/doc/install
-If you use Oracle Linux, simply run one of below commmands.
-$ sudo yum install -y oracle-golang-release-el7 $ sudo yum install -y golang 2. Set the Go environment variables GOROOT is the folder where you installed Go.
-GOPATH is the folder where your Go projects are stored.
-$ export GOROOT=/scratch/tools/go $ export GOPATH=/scratch/xuwwang/go Download Source Code and Build Speedle $ go get github.</description>
+      <description>Try Speedle in the Playground first You can try Speedle&amp;rsquo;s basic features before installing anything. Open the Playground to edit SPDL policies, set a user, resource and action, and see real Allow/Deny decisions entirely in your browser. No Go installation or running server is required.
+Continue below when you are ready to build and run Speedle locally.
+Prerequisites Use Linux or macOS with Bash, Git, curl and Go 1.26.3 or newer.</description>
     </item>
     
     <item>
@@ -179,7 +176,7 @@ For example, a role may establish that Alice is a reader, while a clearance attr
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://speedle.io/docs/access-control/pbac/</guid>
-      <description>What PBAC means here Policy-based access control (PBAC) expresses authorization rules as managed policies instead of scattering permission checks across application code. Speedle+ uses the Security Policy Definition Language (SPDL), a Policy Management Service (PMS), and an Authorization Decision Service (ADS) or embedded evaluator.
+      <description>What PBAC means here Policy-based access control (PBAC) expresses authorization rules as managed policies instead of scattering permission checks across application code. Speedle+ uses the Speedle Policy Definition Language (SPDL), a Policy Management Service (PMS), and an Authorization Decision Service (ADS) or embedded evaluator.
 PBAC describes how rules are expressed and managed. RBAC describes role relationships; ABAC describes attribute conditions. A Speedle policy-based system can use both.
 From policy to enforcement  Define the service, principal names, resource identifiers and supported actions.</description>
     </item>
@@ -240,7 +237,7 @@ Deploy Speedle as a service You can deploy Speedle as a service on Kubernetes in
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://speedle.io/docs/access-control/xacml/</guid>
-      <description>What is the relationship to XACML? The eXtensible Access Control Markup Language (XACML) is an OASIS access control standard defining policy and request/response concepts. Speedle+ uses its own Security Policy Definition Language (SPDL) and APIs. The OASIS XACML 3.0 specification is the reference for XACML behavior; this page explains architectural correspondences, not XACML conformance.
+      <description>What is the relationship to XACML? The eXtensible Access Control Markup Language (XACML) is an OASIS access control standard defining policy and request/response concepts. Speedle+ uses its own Speedle Policy Definition Language (SPDL) and APIs. The OASIS XACML 3.0 specification is the reference for XACML behavior; this page explains architectural correspondences, not XACML conformance.
 Map the responsibilities    XACML concept Responsibility Speedle+ correspondence     PAP: Policy Administration Point Manage authorization policy Policy Management Service (PMS)   PDP: Policy Decision Point Evaluate authorization requests Authorization Decision Service (ADS) or embedded evaluator   PEP: Policy Enforcement Point Enforce a decision on an operation Application, gateway or integration calling Speedle   PIP: Policy Information Point Supply attributes used by a decision Trusted application data and configured identity/attribute integrations; no claim of a built-in XACML PIP interface    Speedle&amp;rsquo;s architecture page already describes the PAP/PDP correspondence.</description>
     </item>
     

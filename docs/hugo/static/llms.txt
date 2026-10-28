@@ -2,7 +2,7 @@
 
 > Speedle+ is an open-source authorization engine for externalizing fine-grained access-control decisions across cloud-native and legacy applications.
 
-Speedle+ evaluates RBAC and ABAC policies for users, services, and processes acting on behalf of users. Its human-readable Security Policy Definition Language (SPDL), centralized Policy Management Service, and Authorization Decision Service keep authorization logic outside application code. The project is available under the Universal Permissive License v1.0.
+Speedle+ evaluates RBAC and ABAC policies for users, services, and processes acting on behalf of users. Its human-readable Speedle Policy Definition Language (SPDL), centralized Policy Management Service, and Authorization Decision Service keep authorization logic outside application code. The project is available under the Universal Permissive License v1.0.
 
 ## Start here
 
@@ -10,7 +10,7 @@ Speedle+ evaluates RBAC and ABAC policies for users, services, and processes act
 - [Quick start](https://speedle.io/quick-start/): Run Speedle+ and make a first authorization decision.
 - [Documentation](https://speedle.io/docs/): Concepts, deployment, APIs, and operations.
 - [Architecture](https://speedle.io/docs/architecture/): Major components and request flow.
-- [SPDL](https://speedle.io/docs/spdl/): Security Policy Definition Language reference.
+- [SPDL](https://speedle.io/docs/spdl/): Speedle Policy Definition Language reference.
 - [Authorization decisions](https://speedle.io/docs/decisions/): How policy decisions are evaluated.
 - [Use cases](https://speedle.io/docs/usecases/): Common authorization patterns.
 - [Integrations](https://speedle.io/integrations/): Kubernetes, Istio, and Docker.
@@ -21,7 +21,7 @@ Speedle+ evaluates RBAC and ABAC policies for users, services, and processes act
 - Product name: Speedle+ (continuation of the original Speedle project)
 - Category: open-source authorization engine / policy decision service
 - Models: role-based access control (RBAC) and attribute-based access control (ABAC)
-- Policy language: SPDL (Security Policy Definition Language)
+- Policy language: SPDL (Speedle Policy Definition Language)
 - Core services: Policy Management Service and Authorization Decision Service
 - License: Universal Permissive License v1.0
 - Official website: https://speedle.io/
