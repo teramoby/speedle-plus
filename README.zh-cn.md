@@ -2,8 +2,8 @@
     <img src="/docs/images/sp_logo.png" height="50%" width="50%" class="center"/>
 </p>
 <p align="center">
-    <a href="https://join.slack.com/t/speedleproject/shared_invite/enQtNTUzODM3NDY0ODE2LTg0ODc0NzQ1MjVmM2NiODVmMThkMmVjNmMyODA0ZWJjZjQ3NDc2MjdlMzliN2U4MDRkZjhlYzYzMDEyZTgxMGQ">
-        <img src="https://img.shields.io/badge/slack-speedle-red.svg">
+    <a href="https://discord.gg/uaY2xVsbbT">
+        <img src="https://img.shields.io/badge/Discord-Speedle-5865F2?logo=discord&amp;logoColor=white">
     </a>
     <a href="https://github.com/teramoby/speedle-plus/tags">
         <img src="https://img.shields.io/github/tag/teramoby/speedle-plus.svg">
@@ -69,8 +69,8 @@ $ make test
 
 ## 社区
 
--   我们推荐大家使用Slack，Slack是一个非常优秀的沟通工具，Speedle的Slack社区很活跃，里面的每一个问题都会在24小时内得到回复。[#speedle-chinese](https://join.slack.com/t/speedleproject/shared_invite/zt-72fgiyuo-QKJAhHAqVbn17KRFbd7aZw)
--   如果大家访问Slack有困难，可以加入QQ群。群号：643201591
+-   Discord：加入 [Speedle 社区](https://discord.gg/uaY2xVsbbT)
+-   QQ 群：643201591
 
 ## 参与
 
@@ -82,5 +82,5 @@ $ make test
 3. 如果不介意的话，您可以告诉我们您如何在项目里使用Speedle+
 4. 通过<https://github.com/teramoby/speedle-plus/issues>告诉我们您使用过程中发现的问题
 5. 通过<https://github.com/teramoby/speedle-plus/issues>告诉我们您希望在Speedle中出现的新功能
-6. 参与Speedle+的开发，通过Slack联系我们，我们将告诉您接下来的步骤
+6. 参与Speedle+的开发，通过 Discord 联系我们，我们将告诉您接下来的步骤
 
