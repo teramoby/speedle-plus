@@ -56,7 +56,7 @@ Modern Go uses `go build` or `go install` to build executables; `go get` manages
 
 ## Run Speedle
 
-Run this walkthrough on a local development machine. `--insecure=true` enables plain HTTP for the REST examples; the binaries also open gRPC ports 50001 and 50002. For production transport and authorization settings, see [Security](../docs/security/).
+Run this walkthrough on a local development machine. `--insecure=true` enables plain HTTP for the REST examples. The gRPC servers are off unless you start them with `--grpc-endpoint`, for example `--grpc-endpoint 127.0.0.1:50001` for PMS and `--grpc-endpoint 127.0.0.1:50002` for ADS; gRPC uses the same TLS settings as REST. For production transport and authorization settings, see [Security](../docs/security/).
 
 ### 1. Start the Policy Management Service
 

@@ -77,19 +77,27 @@ func main() {
 		log.Fatal(err)
 	}
 
-	grpcServer, err := newGRPCServer(ps)
-	if err != nil {
-		log.Fatal(err)
+	var grpcServer *grpc.Server
+	grpcEndpoint := params.GRPCEndpoint.Value
+	if grpcEndpoint != "" {
+		grpcServer, err = newGRPCServer(&params, ps)
+		if err != nil {
+			log.Fatal(err)
+		}
+	} else {
+		log.Info("The gRPC server is off; set --grpc-endpoint to start it.")
 	}
 
 	intChan := make(chan os.Signal, 1)
 	signal.Notify(intChan, os.Interrupt)
 
 	errChan := make(chan error, 2)
-	go func() {
-		log.Info("Starting the gRPC server for policy management service...")
-		errChan <- listenGRPCServer(grpcServer)
-	}()
+	if grpcServer != nil {
+		go func() {
+			log.Infof("Starting the gRPC server for policy management service on %s...", grpcEndpoint)
+			errChan <- listenGRPCServer(grpcServer, grpcEndpoint)
+		}()
+	}
 
 	go func() {
 		log.Info("Starting the REST server for policy management service...")
@@ -122,21 +130,27 @@ func main() {
 	}
 }
 
-func newGRPCServer(ps pms.PolicyStoreManager) (*grpc.Server, error) {
-	server := grpc.NewServer()
+func newGRPCServer(params *flags.Parameters, ps pms.PolicyStoreManager) (*grpc.Server, error) {
+	options, err := params.GRPCServerOptions()
+	if err != nil {
+		return nil, err
+	}
+	if options == nil {
+		log.Warningf("The gRPC server on %s is plaintext because insecure is true.", params.GRPCEndpoint.Value)
+	}
+	server := grpc.NewServer(options...)
 	pb.RegisterPolicyManagerServer(server, pmsgrpc.NewServiceImpl(ps))
 	reflection.Register(server)
 	return server, nil
 }
 
-func listenGRPCServer(server *grpc.Server) error {
-	// Register reflection service on gRPC server.
-	lis, err := net.Listen("tcp", ":50001")
+func listenGRPCServer(server *grpc.Server, endpoint string) error {
+	lis, err := net.Listen("tcp", endpoint)
 	if err != nil {
-		return errors.Wrap(err, errors.ServerError, "failed to listen on endpoint :50001")
+		return errors.Wrapf(err, errors.ServerError, "failed to listen on endpoint %s", endpoint)
 	}
 	if err := server.Serve(lis); err != nil {
-		return errors.Wrap(err, errors.ServerError, "failed to serve for endpoint :50001")
+		return errors.Wrapf(err, errors.ServerError, "failed to serve for endpoint %s", endpoint)
 	}
 	return nil
 }

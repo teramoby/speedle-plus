@@ -23,6 +23,8 @@ import (
 	"github.com/spf13/pflag"
 
 	"github.com/gorilla/handlers"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 )
 
 // Parameters is the parameters for Speedle
@@ -33,6 +35,7 @@ type Parameters struct {
 	//////////Server config//////////////
 	ConfigFile      StrParamDetail
 	Endpoint        StrParamDetail
+	GRPCEndpoint    StrParamDetail
 	Insecure        StrParamDetail
 	EnableAuthz     StrParamDetail
 	KeyPath         StrParamDetail
@@ -125,6 +128,38 @@ func (k *Parameters) NewHTTPServer(handler http.Handler) (*http.Server, error) {
 }
 
 func (k *Parameters) newTLSServer(handler http.Handler) (*http.Server, error) {
+	tlsConfig, err := k.serverTLSConfig()
+	if err != nil {
+		return nil, err
+	}
+	server := http.Server{
+		Addr:      k.Endpoint.Value,
+		Handler:   handler,
+		TLSConfig: tlsConfig,
+	}
+	return &server, nil
+}
+
+// GRPCServerOptions returns the gRPC server's transport options: the same
+// TLS settings as the REST server, or plaintext when insecure is true.
+func (k *Parameters) GRPCServerOptions() ([]grpc.ServerOption, error) {
+	insecure, _ := strconv.ParseBool(k.Insecure.Value)
+	if insecure {
+		return nil, nil
+	}
+	tlsConfig, err := k.serverTLSConfig()
+	if err != nil {
+		return nil, err
+	}
+	cert, err := tls.LoadX509KeyPair(k.CertPath.Value, k.KeyPath.Value)
+	if err != nil {
+		return nil, errors.Wrapf(err, errors.ConfigError, "unable to load server certificate %s and key %s", k.CertPath.Value, k.KeyPath.Value)
+	}
+	tlsConfig.Certificates = []tls.Certificate{cert}
+	return []grpc.ServerOption{grpc.Creds(credentials.NewTLS(tlsConfig))}, nil
+}
+
+func (k *Parameters) serverTLSConfig() (*tls.Config, error) {
 	// Set HTTPS client
 	tlsConfig := &tls.Config{}
 
@@ -151,13 +186,7 @@ func (k *Parameters) newTLSServer(handler http.Handler) (*http.Server, error) {
 	}
 
 	tlsConfig.BuildNameToCertificate()
-
-	server := http.Server{
-		Addr:      k.Endpoint.Value,
-		Handler:   handler,
-		TLSConfig: tlsConfig,
-	}
-	return &server, nil
+	return tlsConfig, nil
 }
 
 func (k *Parameters) ListenAndServe(s *http.Server) error {
@@ -179,6 +208,8 @@ func (k *Parameters) ParseFlags(defaultEndpoint string, printVersionInfoFun func
 	params = append(params, &k.ConfigFile)
 	k.Endpoint = StrParamDetail{Name: "endpoint", DefaultValue: defaultEndpoint, Usage: "Server config: Endpoint the server listen and serve."}
 	params = append(params, &k.Endpoint)
+	k.GRPCEndpoint = StrParamDetail{Name: "grpc-endpoint", Usage: "Server config: Endpoint the gRPC server listens on, for example 127.0.0.1:50002. The gRPC server is off when this is empty."}
+	params = append(params, &k.GRPCEndpoint)
 	k.Insecure = StrParamDetail{Name: "insecure", DefaultValue: strconv.FormatBool(DefaultInsecure), Usage: "Server config: Disable transport security."}
 	params = append(params, &k.Insecure)
 	k.EnableAuthz = StrParamDetail{Name: "enable-authz", DefaultValue: strconv.FormatBool(DefaultEnableAuthz), Usage: "Server config: Enable authorization check."}
