@@ -176,7 +176,7 @@ func processSection(ps *pms.PolicyStore, lc *lineCtx) error {
 }
 
 func processPolicyPDL(ps *pms.PolicyStore, lc *lineCtx) error {
-	policy, err := pdl.ParsePolicy(lc.trimed, "")
+	policy, _, err := pdl.ParsePolicy(lc.trimed, "")
 	if err != nil {
 		return err
 	}
@@ -186,7 +186,7 @@ func processPolicyPDL(ps *pms.PolicyStore, lc *lineCtx) error {
 }
 
 func processRolePolicyPDL(ps *pms.PolicyStore, lc *lineCtx) error {
-	rolePolicy, err := pdl.ParseRolePolicy(lc.trimed, "")
+	rolePolicy, _, err := pdl.ParseRolePolicy(lc.trimed, "")
 	if err != nil {
 		return err
 	}

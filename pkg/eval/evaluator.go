@@ -4,11 +4,10 @@
 package eval
 
 import (
-	"runtime/debug"
+	"fmt"
 	"sort"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/teramoby/speedle-plus/3rdparty/github.com/Knetic/govaluate"
@@ -41,9 +40,6 @@ type TokenAsserter interface {
 type InternalEvaluator interface {
 	adsapi.PolicyEvaluator
 	TokenAsserter
-	// Close shuts down the evaluator and releases all resources
-	// including the underlying policy store.
-	Close()
 }
 
 type internalRequestContext struct {
@@ -68,9 +64,6 @@ type PolicyEvalImpl struct {
 	RuntimePolicyStore *RuntimePolicyStore //This is runtime policy store
 	Store              pms.PolicyStoreManagerADS
 	AsserterFunc       func(ctx *adsapi.RequestContext) error
-	done               chan struct{}
-	closeOnce          sync.Once
-	wg                 sync.WaitGroup
 }
 
 func (p *PolicyEvalImpl) deleteService(serviceName string) {
@@ -157,10 +150,7 @@ func (p *PolicyEvalImpl) populateContext(ctx *adsapi.RequestContext) (*internalR
 
 	var globalService *RuntimeService
 	if ctx.ServiceName != pms.GlobalService {
-		globalService, err = p.getService(pms.GlobalService)
-		if err != nil {
-			log.Warnf("Failed to get global service: %v", err)
-		}
+		globalService, _ = p.getService(pms.GlobalService)
 	}
 
 	newCtx := internalRequestContext{
@@ -168,7 +158,7 @@ func (p *PolicyEvalImpl) populateContext(ctx *adsapi.RequestContext) (*internalR
 		Action:        ctx.Action,
 		Service:       service,
 		GlobalService: globalService,
-		Attributes:    make(map[string]interface{}, 7+len(ctx.Attributes)),
+		Attributes:    make(map[string]interface{}),
 	}
 
 	now := time.Now()
@@ -185,21 +175,17 @@ func (p *PolicyEvalImpl) populateContext(ctx *adsapi.RequestContext) (*internalR
 		Groups:   []string{},
 		Entities: []string{},
 	}
-	// Declare identity-derived values at function scope so they can be
-	// re-asserted after the user-attribute merge below.
-	var user, entity interface{}
-	groups := []interface{}{}
 	if ctx.Subject != nil {
-		groups = make([]interface{}, 0, len(ctx.Subject.Principals))
+		groups := []interface{}{}
+		var user, entity interface{}
 		for _, principal := range ctx.Subject.Principals {
-			encodedPrincipal, err := subjectutils.EncodePrincipal(principal)
-		if err != nil {
-			log.Warnf("failed to encode principal: %v", err)
-			continue
-		}
+			encodedPrincipal := subjectutils.EncodePrincipal(principal)
 			principalWithoutIDD := ""
 			if len(principal.IDD) != 0 {
-				principalWithoutIDD = principal.Type + ":" + principal.Name
+				principalWithoutIDD = subjectutils.EncodePrincipal(&adsapi.Principal{
+					Type: principal.Type,
+					Name: principal.Name,
+				})
 			}
 			switch principal.Type {
 			case adsapi.PRINCIPAL_TYPE_USER:
@@ -243,27 +229,6 @@ func (p *PolicyEvalImpl) populateContext(ctx *adsapi.RequestContext) (*internalR
 		newCtx.Attributes[key] = value
 	}
 
-	// Re-assert ALL built-in attributes after user attributes are merged
-	// to prevent user-supplied attributes from overriding identity-derived
-	// or system-derived values (e.g. a caller injecting request_user="admin"
-	// to bypass a policy condition). This covers request_user, request_groups,
-	// request_entity (identity-derived) as well as resource/action/time.
-	if user != nil {
-		newCtx.Attributes[adsapi.BuiltIn_Attr_RequestUser] = user
-	}
-	newCtx.Attributes[adsapi.BuiltIn_Attr_RequestGroups] = groups
-	if entity != nil {
-		newCtx.Attributes[adsapi.BuiltIn_Attr_RequestEntity] = entity
-	}
-	newCtx.Attributes[adsapi.BuiltIn_Attr_RequestResource] = ctx.Resource
-	newCtx.Attributes[adsapi.BuiltIn_Attr_RequestAction] = ctx.Action
-	newCtx.Attributes[adsapi.BuiltIn_Attr_RequestTime] = now.Unix()
-	newCtx.Attributes[adsapi.BuiltIn_Attr_RequestYear] = year
-	newCtx.Attributes[adsapi.BuiltIn_Attr_RequestMonth] = int(month)
-	newCtx.Attributes[adsapi.BuiltIn_Attr_RequestDay] = day
-	newCtx.Attributes[adsapi.BuiltIn_Attr_RequestWeekday] = now.Weekday().String()
-	newCtx.Attributes[adsapi.BuiltIn_Attr_RequestHour] = now.Hour()
-
 	updateSubjectWithBuiltInRoles(newCtx.Subject)
 
 	return &newCtx, nil
@@ -291,7 +256,7 @@ func (p *PolicyEvalImpl) InternalIsAllowed(ctx *adsapi.RequestContext, evaluatio
 		evaluationResult.Attributes = newCtx.Attributes
 	}
 
-	if err = p.resolveSubject(newCtx, evaluationResult); err != nil {
+	if err := p.resolveSubject(newCtx, evaluationResult); err != nil {
 		return false, adsapi.ERROR_IN_EVALUATION, err
 	}
 
@@ -337,7 +302,7 @@ func (p *PolicyEvalImpl) GetAllGrantedRoles(ctx adsapi.RequestContext) ([]string
 	return ret, err
 }
 
-// Limitations: This function only calculate granted permissions with resource, will not calculate granted permissions with resource expression.
+//Limitations: This function only calculate granted permissions with resource, will not calculate granted permissions with resource expression.
 func (p *PolicyEvalImpl) GetAllGrantedPermissions(ctx adsapi.RequestContext) ([]pms.Permission, error) {
 	p.RuntimePolicyStore.RLock()
 	defer p.RuntimePolicyStore.RUnlock()
@@ -352,7 +317,7 @@ func (p *PolicyEvalImpl) GetAllGrantedPermissions(ctx adsapi.RequestContext) ([]
 		return []pms.Permission{}, nil
 	}
 
-	if err = p.resolveSubject(newCtx, nil); err != nil {
+	if err := p.resolveSubject(newCtx, nil); err != nil {
 		return nil, err
 	}
 
@@ -420,17 +385,17 @@ func (p *PolicyEvalImpl) resolveSubject(ctx *internalRequestContext, evaluationR
 
 // The firstly returned is granted rolePolicies.
 // The second returned value is denied rolePolicies.
-func (p *PolicyEvalImpl) getDirectRolePolicies(principals []string,
+func (p *PolicyEvalImpl) getDirectRolePolices(principals []string,
 	ctx *internalRequestContext, policyIDMap map[string]bool, evaluationResult *adsapi.EvaluationResult) ([]*pms.RolePolicy, []*pms.RolePolicy, error) {
 
 	grantedRolePolicies := make([]*pms.RolePolicy, 0)
 	deniedRolePolicies := make([]*pms.RolePolicy, 0)
-	grantedRolePolicies, deniedRolePolicies, err := p.getDirectRolePoliciesInService(principals, ctx.Service, ctx.Resource, ctx.Attributes, policyIDMap, evaluationResult, grantedRolePolicies, deniedRolePolicies)
+	grantedRolePolicies, deniedRolePolicies, err := p.getDirectRolePolicesInService(principals, ctx.Service, ctx.Resource, ctx.Attributes, policyIDMap, evaluationResult, grantedRolePolicies, deniedRolePolicies)
 	if err != nil {
 		return nil, nil, err
 	}
 	if ctx.GlobalService != nil {
-		grantedRolePolicies, deniedRolePolicies, err = p.getDirectRolePoliciesInService(principals, ctx.GlobalService, ctx.Resource, ctx.Attributes, policyIDMap, evaluationResult, grantedRolePolicies, deniedRolePolicies)
+		grantedRolePolicies, deniedRolePolicies, err = p.getDirectRolePolicesInService(principals, ctx.GlobalService, ctx.Resource, ctx.Attributes, policyIDMap, evaluationResult, grantedRolePolicies, deniedRolePolicies)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -438,13 +403,8 @@ func (p *PolicyEvalImpl) getDirectRolePolicies(principals []string,
 	return grantedRolePolicies, deniedRolePolicies, nil
 }
 
-func (p *PolicyEvalImpl) getDirectRolePoliciesInService(principals []string,
+func (p *PolicyEvalImpl) getDirectRolePolicesInService(principals []string,
 	service *RuntimeService, resource string, attributes map[string]interface{}, policyIDMap map[string]bool, evaluationResult *adsapi.EvaluationResult, grantedRolePolicies []*pms.RolePolicy, deniedRolePolicies []*pms.RolePolicy) ([]*pms.RolePolicy, []*pms.RolePolicy, error) {
-		subjectSet := make(map[string]bool, len(principals))
-		for _, sp := range principals {
-			subjectSet[sp] = true
-		}
-
 	for _, policy := range service.GetRelatedRolePolicyMap(principals, resource) {
 
 		if policyIDMap[policy.ID] {
@@ -452,7 +412,7 @@ func (p *PolicyEvalImpl) getDirectRolePoliciesInService(principals []string,
 		}
 
 		// No principal defined. that means the roles are granted to any user
-		if (policy.Principals == nil || len(policy.Principals) == 0 || matchRolePolicyPrincipals(subjectSet, policy.Principals)) && matchResource(resource, policy.Resources, policy.ResourceExpressions) {
+		if (policy.Principals == nil || len(policy.Principals) == 0 || matchRolePolicyPrincipals(principals, policy.Principals)) && matchResource(resource, policy.Resources, policy.ResourceExpressions) {
 			// Evaluate conditions
 			condition, ok := service.RolePoliciesCache.Conditions[policy.ID]
 			// If no conditions defined, the condition evaluation result is true
@@ -465,21 +425,7 @@ func (p *PolicyEvalImpl) getDirectRolePoliciesInService(principals []string,
 				}
 			}
 			if condition != nil {
-				r, e := evaluateCondition(condition, attributes)
-				if e != nil {
-					log.Warnf("Error evaluating condition for role policy %s: %v", policy.Name, e)
-					// Fail closed: when a deny role policy's condition cannot be
-					// evaluated, apply the denial rather than silently dropping
-					// it (which would fail open).
-					if policy.Effect == pms.Deny {
-						if evaluationResult != nil {
-							evaluationResult.AddRolePolicy(policy, true)
-						}
-						deniedRolePolicies = append(deniedRolePolicies, policy)
-						continue
-					}
-				}
-				result = r
+				result, _ = evaluateCondition(condition, attributes)
 			}
 
 			if evaluationResult != nil {
@@ -512,9 +458,9 @@ type Role struct {
 	DeniedByPrincipals map[string]bool //TODO this could be removed?
 }
 
-// assume role policy does not support AND Principal
-// assume ctx.Subject.Principals does not contain user defined roles,
-// assume built-in role like anonymous role and authenticated role can't be used in role policy
+//assume role policy does not support AND Principal
+//assume ctx.Subject.Principals does not contain user defined roles,
+//assume built-in role like anonymous role and authenticated role can't be used in role policy
 func (p *PolicyEvalImpl) getGrantedRolesFromService(ctx *internalRequestContext, evaluationResult *adsapi.EvaluationResult) ([]string, error) {
 	if ctx.GlobalService != nil {
 		ctx.GlobalService.RLock()
@@ -524,7 +470,6 @@ func (p *PolicyEvalImpl) getGrantedRolesFromService(ctx *internalRequestContext,
 	relatedRolesMap := make(map[string]*Role) //contain all role info related to the role calculation
 	policyIDMap := make(map[string]bool)      // this is to avoid repeat processing of same policy.
 	grantedRoleMap := make(map[string]bool)   //this is to keep all possiblely granted roles
-	processedRoles := make(map[string]bool)   // track roles already expanded, to detect cycles in role DAG
 
 	subjectPrincipalMap := make(map[string]bool) //this contains non-role principals of ctx.Subject
 	for _, principal := range ctx.Subject.Principals {
@@ -532,7 +477,7 @@ func (p *PolicyEvalImpl) getGrantedRolesFromService(ctx *internalRequestContext,
 			subjectPrincipalMap[principal] = true
 		}
 	}
-	directGrantedRolePolicies, directDeniedRolePolicies, err := p.getDirectRolePolicies(ctx.Subject.Principals, ctx, policyIDMap, evaluationResult)
+	directGrantedRolePolicies, directDeniedRolePolicies, err := p.getDirectRolePolices(ctx.Subject.Principals, ctx, policyIDMap, evaluationResult)
 	if err != nil {
 		return nil, err
 	}
@@ -551,51 +496,34 @@ func (p *PolicyEvalImpl) getGrantedRolesFromService(ctx *internalRequestContext,
 	for _, rolePolicy := range directGrantedRolePolicies {
 		if _, ok := policyIDMap[rolePolicy.ID]; !ok {
 			policyIDMap[rolePolicy.ID] = true
-			roles := updateRelatedRoleMapWithGrantRolePolicy(rolePolicy, relatedRolesMap, subjectPrincipalMap, directDeniedRoleMap, grantedRoleMap)
-			for _, role := range roles {
-				if !processedRoles[role] {
-					newlyGrantedRoles = append(newlyGrantedRoles, role)
-				}
-			}
+			newlyGrantedRoles = append(newlyGrantedRoles, updateRelatedRoleMapWithGrantRolePolicy(rolePolicy, relatedRolesMap, subjectPrincipalMap, directDeniedRoleMap, grantedRoleMap)...)
 		}
 	}
 
 	for len(newlyGrantedRoles) != 0 {
-		newSubjectPrincipals := make([]string, 0, len(newlyGrantedRoles))
+		newSubjectPrincipals := []string{}
 		for _, role := range newlyGrantedRoles {
 			newSubjectPrincipals = append(newSubjectPrincipals, convertRoleToPrincipal(role))
 		}
-		var indirectGrantedRolePolicies []*pms.RolePolicy
-		indirectGrantedRolePolicies, _, err = p.getDirectRolePolicies(newSubjectPrincipals, ctx, policyIDMap, evaluationResult)
+		indirectGrantedRolePolicies, _, err := p.getDirectRolePolices(newSubjectPrincipals, ctx, policyIDMap, evaluationResult)
 		if err != nil {
 			return nil, err
-		}
-
-		// Mark the current batch of roles as processed so they are not expanded again,
-		// preventing infinite loops when role policies form a cycle.
-		for _, role := range newlyGrantedRoles {
-			processedRoles[role] = true
 		}
 
 		newlyGrantedRoles = []string{}
 		for _, rolePolicy := range indirectGrantedRolePolicies {
 			if _, ok := policyIDMap[rolePolicy.ID]; !ok {
 				policyIDMap[rolePolicy.ID] = true
-				roles := updateRelatedRoleMapWithGrantRolePolicy(rolePolicy, relatedRolesMap, subjectPrincipalMap, directDeniedRoleMap, grantedRoleMap)
-				for _, role := range roles {
-					if !processedRoles[role] {
-						newlyGrantedRoles = append(newlyGrantedRoles, role)
-					}
-				}
+				newlyGrantedRoles = append(newlyGrantedRoles, updateRelatedRoleMapWithGrantRolePolicy(rolePolicy, relatedRolesMap, subjectPrincipalMap, directDeniedRoleMap, grantedRoleMap)...)
 			}
 		}
 	}
 
-	newSubjectPrincipals := make([]string, 0, len(grantedRoleMap))
+	newSubjectPrincipals := []string{}
 	for role := range grantedRoleMap {
 		newSubjectPrincipals = append(newSubjectPrincipals, convertRoleToPrincipal(role))
 	}
-	_, DeniedRolePolicies, err := p.getDirectRolePolicies(newSubjectPrincipals, ctx, policyIDMap, evaluationResult)
+	_, DeniedRolePolicies, err := p.getDirectRolePolices(newSubjectPrincipals, ctx, policyIDMap, evaluationResult)
 	if err != nil {
 		return nil, err
 	}
@@ -606,14 +534,12 @@ func (p *PolicyEvalImpl) getGrantedRolesFromService(ctx *internalRequestContext,
 			updateRelatedRoleMapWithDenyRolePolicy(rolePolicy, relatedRolesMap, subjectPrincipalMap, directDeniedRoleMap, grantedRoleMap, deniedRoleMap)
 		}
 	}
-	// Prune non-granted roles from ParentRoles/ChildRoles/DeniedRoles
-	// but preserve DeniedByRoles so the deny resolution loop can
-	// traverse the complete deny graph.
-	cleanRelatedRoleMapPartial(relatedRolesMap, grantedRoleMap)
+	//only keep role node that is in possible granted roles
+	cleanRelatedRoleMap(relatedRolesMap, grantedRoleMap)
 
 	for {
 		//find safely denied role
-		safelyDeniedRoles := make([]string, 0, len(deniedRoleMap))
+		safelyDeniedRoles := []string{}
 		for deniedRole := range deniedRoleMap {
 			if couldRoleSafelyBeDenied(deniedRole, relatedRolesMap, deniedRoleMap) {
 				safelyDeniedRoles = append(safelyDeniedRoles, deniedRole)
@@ -623,6 +549,7 @@ func (p *PolicyEvalImpl) getGrantedRolesFromService(ctx *internalRequestContext,
 		if len(safelyDeniedRoles) > 0 {
 			for _, deniedRole := range safelyDeniedRoles {
 				denyRoleAndDescendants(deniedRole, relatedRolesMap, grantedRoleMap, deniedRoleMap)
+				//printRelatedRoleMap(relatedRolesMap)
 			}
 			//get deniedRoles based on the left role nodes.
 			deniedRoleMap = getDeniedRoles(relatedRolesMap, grantedRoleMap)
@@ -637,11 +564,7 @@ func (p *PolicyEvalImpl) getGrantedRolesFromService(ctx *internalRequestContext,
 		}
 
 	}
-
-	//only keep role node that is in possible granted roles
-	cleanRelatedRoleMap(relatedRolesMap, grantedRoleMap)
-
-	finalGrantedRoles := make([]string, 0, len(grantedRoleMap))
+	finalGrantedRoles := []string{}
 	for role := range grantedRoleMap {
 		finalGrantedRoles = append(finalGrantedRoles, role)
 	}
@@ -649,10 +572,19 @@ func (p *PolicyEvalImpl) getGrantedRolesFromService(ctx *internalRequestContext,
 	return finalGrantedRoles, nil
 }
 
+func printRelatedRoleMap(relatedRoleMap map[string]*Role) {
+	fmt.Println("----related role map start----")
+	for roleName, roleNode := range relatedRoleMap {
+		fmt.Printf("%s :\n    parentPrincipals=%v\n    parentRoles=%v\n    deniedByRoles=%v\n    deniedByPrinncipals=%v\n    childRoles=%v\n    denedRoles=%v\n",
+			roleName, roleNode.ParentPrincipals, roleNode.ParentRoles, roleNode.DeniedByRoles, roleNode.DeniedByPrincipals, roleNode.ChildRoles, roleNode.DeniedRoles)
+	}
+	fmt.Println("----related role map end----")
+}
+
 func updateRelatedRoleMapWithGrantRolePolicy(rolePolicy *pms.RolePolicy, relatedRolesMap map[string]*Role,
 	subjectPrincipalMap map[string]bool, directDeniedRoleMap map[string]bool, grantedRoleMap map[string]bool) []string {
 
-	newlyGrantedRoles := make([]string, 0, len(rolePolicy.Roles))
+	newlyGrantedRoles := []string{}
 
 	parentRoles := []string{}
 	parentPrincipals := []string{}
@@ -787,41 +719,6 @@ func updateRelatedRoleMapWithDenyRolePolicy(rolePolicy *pms.RolePolicy, relatedR
 	}
 }
 
-// cleanRelatedRoleMapPartial prunes non-granted roles from ParentRoles,
-// ChildRoles, and DeniedRoles of each node, and removes non-granted role
-// nodes that have no remaining DeniedByRoles relationships. Unlike
-// cleanRelatedRoleMap, it preserves DeniedByRoles edges so the deny
-// resolution loop can traverse the complete deny graph.
-func cleanRelatedRoleMapPartial(relatedRoleMap map[string]*Role, grantedRoleMap map[string]bool) {
-	for role, roleNode := range relatedRoleMap {
-		if _, ok := grantedRoleMap[role]; !ok {
-			// Remove non-granted roles only if they have no
-			// DeniedByRoles or DeniedRoles edges.
-			if len(roleNode.DeniedByRoles) == 0 && len(roleNode.DeniedRoles) == 0 {
-				delete(relatedRoleMap, role)
-			}
-			continue
-		}
-		for pRole := range roleNode.ParentRoles {
-			if _, ok := grantedRoleMap[pRole]; !ok {
-				delete(roleNode.ParentRoles, pRole)
-			}
-		}
-		for cRole := range roleNode.ChildRoles {
-			if _, ok := grantedRoleMap[cRole]; !ok {
-				delete(roleNode.ChildRoles, cRole)
-			}
-		}
-		// Prune DeniedRoles (roles denied BY this role) from non-granted roles.
-		// DeniedByRoles (roles that deny this role) are intentionally preserved.
-		for dRole := range roleNode.DeniedRoles {
-			if _, ok := grantedRoleMap[dRole]; !ok {
-				delete(roleNode.DeniedRoles, dRole)
-			}
-		}
-	}
-}
-
 func cleanRelatedRoleMap(relatedRoleMap map[string]*Role, grantedRoleMap map[string]bool) {
 	for role, roleNode := range relatedRoleMap {
 		if _, ok := grantedRoleMap[role]; !ok {
@@ -856,18 +753,7 @@ func getDeniedRoles(relatedRoleMap map[string]*Role, grantedRoleMap map[string]b
 	for role, roleNode := range relatedRoleMap {
 		if len(roleNode.DeniedByRoles) > 0 {
 			if _, ok := grantedRoleMap[role]; ok {
-				// Only count the role as denied if at least one DeniedByRole
-				// is itself in the granted role map (i.e., the denier is active).
-				hasActiveDenier := false
-				for deniedByRole := range roleNode.DeniedByRoles {
-					if _, ok := grantedRoleMap[deniedByRole]; ok {
-						hasActiveDenier = true
-						break
-					}
-				}
-				if hasActiveDenier {
-					deniedRoleMap[role] = true
-				}
+				deniedRoleMap[role] = true
 			}
 		}
 	}
@@ -878,6 +764,7 @@ func denyRoleAndDescendants(role string, relatedRoleMap map[string]*Role, grante
 	deletedRoles := make(map[string]bool)
 	deletedRoles[role] = true
 	descendants := getDeniableDescendantRoles(role, relatedRoleMap)
+	//fmt.Printf("deniable descendants for %s are %v \n", role, descendants)
 	for _, d := range descendants {
 		deletedRoles[d] = true
 	}
@@ -903,40 +790,21 @@ func denyRoleAndDescendants(role string, relatedRoleMap map[string]*Role, grante
 }
 
 func getDeniableDescendantRoles(role string, relatedRoleMap map[string]*Role) []string {
-	visited := make(map[string]bool)
-	return getDeniableDescendantRolesHelper(role, relatedRoleMap, visited)
-}
-
-func getDeniableDescendantRolesHelper(role string, relatedRoleMap map[string]*Role, visited map[string]bool) []string {
-	if visited[role] {
-		return nil
-	}
-	visited[role] = true
-
 	descendants := []string{}
-	descendantsSet := make(map[string]bool)
 	if roleNode, ok := relatedRoleMap[role]; ok {
 		//get descendant nodes
 		for childrole := range roleNode.ChildRoles {
-			if visited[childrole] {
-				continue
-			}
 			if childRoleNode, ok := relatedRoleMap[childrole]; ok {
 				allParentRolesDenied := true
 				for parentRole := range childRoleNode.ParentRoles {
-					if parentRole != role && !descendantsSet[parentRole] {
+					if parentRole != role && !contains(descendants, parentRole) {
 						allParentRolesDenied = false
 						break
 					}
 				}
 				if allParentRolesDenied && len(childRoleNode.ParentPrincipals) == 0 {
-					descendantsSet[childrole] = true
 					descendants = append(descendants, childrole)
-					childDescendants := getDeniableDescendantRolesHelper(childrole, relatedRoleMap, visited)
-					for _, d := range childDescendants {
-						descendantsSet[d] = true
-					}
-					descendants = append(descendants, childDescendants...)
+					descendants = append(descendants, getDeniableDescendantRoles(childrole, relatedRoleMap)...)
 				}
 			}
 		}
@@ -944,7 +812,16 @@ func getDeniableDescendantRolesHelper(role string, relatedRoleMap map[string]*Ro
 	return descendants
 }
 
-// If any of the deniedByRole and all its ancestors are not denied, we take it as could be safely denied.
+func contains(a []string, x string) bool {
+	for _, n := range a {
+		if x == n {
+			return true
+		}
+	}
+	return false
+}
+
+//If any of the deniedByRole and all its ancestors are not denied, we take it as could be safely denied.
 func couldRoleSafelyBeDenied(role string, relatedRoleMap map[string]*Role, deniedRoleMap map[string]bool) bool {
 	allDeniedByRoleBeDenied := true
 	if roleNode, ok := relatedRoleMap[role]; ok {
@@ -955,7 +832,7 @@ func couldRoleSafelyBeDenied(role string, relatedRoleMap map[string]*Role, denie
 			}
 		}
 	} else {
-		log.Debugf("error in couldRoleSafelyBeDenied")
+		fmt.Println("error in couldRoleSafelyBeDenied")
 	}
 	return !allDeniedByRoleBeDenied
 }
@@ -977,7 +854,7 @@ func selfOrAncestorsBeDenied(deniedByRole string, relatedRoleMap map[string]*Rol
 		}
 
 	} else {
-		log.Debugf("error in selfOrAncestorsBeDenied")
+		fmt.Println("error in selfOrAncestorsBeDenied")
 	}
 	return true
 }
@@ -986,18 +863,13 @@ func selfOrAncestorsBeDenied(deniedByRole string, relatedRoleMap map[string]*Rol
 // The first returned value is granted policies
 // The second returned value is denied policies
 func (p *PolicyEvalImpl) getPolicyList(ctx *internalRequestContext, matchResource bool, matchCondition bool, evaluationResult *adsapi.EvaluationResult) ([]*pms.Policy, []*pms.Policy, error) {
-	grantedPolicyList := make([]*pms.Policy, 0, len(ctx.Service.PoliciesCache.PolicyMap))
-	deniedPolicyList := make([]*pms.Policy, 0, len(ctx.Service.PoliciesCache.PolicyMap))
+	var grantedPolicyList []*pms.Policy
+	var deniedPolicyList []*pms.Policy
 
 	principals := ctx.Subject.Principals
-	subjectSet := make(map[string]bool, len(principals))
-	for _, sp := range principals {
-		subjectSet[sp] = true
-	}
-
 	for _, policy := range ctx.Service.GetRelatedPolicyMap(principals, ctx.Resource, matchResource) {
 		// No principal defined. that means the resource actions are granted to any user
-		if policy.Principals == nil || len(policy.Principals) == 0 || matchPrincipals(subjectSet, policy.Principals) {
+		if policy.Principals == nil || len(policy.Principals) == 0 || matchPrincipals(principals, policy.Principals) {
 			// Check the resource and action
 			if !matchResource || (matchResource && matchResourceAction(policy, ctx)) {
 				// Evaluate conditions
@@ -1012,18 +884,7 @@ func (p *PolicyEvalImpl) getPolicyList(ctx *internalRequestContext, matchResourc
 					}
 				}
 				if condition != nil {
-					var evalErr error
-					result, evalErr = evaluateCondition(condition, ctx.Attributes)
-					if evalErr != nil {
-						log.Warnf("Error evaluating condition for policy %s: %v", policy.Name, evalErr)
-						// Fail closed: when a deny policy's condition cannot be
-						// evaluated, apply the denial rather than silently
-						// dropping it (which would fail open and grant access).
-						if policy.Effect == pms.Deny {
-							deniedPolicyList = append(deniedPolicyList, policy)
-							continue
-						}
-					}
+					result, _ = evaluateCondition(condition, ctx.Attributes)
 				}
 
 				if result {
@@ -1047,14 +908,13 @@ func (p *PolicyEvalImpl) getPolicyList(ctx *internalRequestContext, matchResourc
 	return grantedPolicyList, deniedPolicyList, nil
 }
 
-// dataSet should be this:
-//
-//	{
-//	  [] string, //service name slice
-//	  map[int]string, //map of policy ID to it's serviceName
-//	  map[int]string, //map of rolePolicy ID to it's serviceName
-//	  [] string, //custom function slice
-//	}
+//dataSet should be this:
+// {
+//   [] string, //service name slice
+//   map[int]string, //map of policy ID to it's serviceName
+//   map[int]string, //map of rolePolicy ID to it's serviceName
+//   [] string, //custom function slice
+// }
 func (p *PolicyEvalImpl) syncRuntimeCache(dataSet []interface{}) error {
 	log.Info("start to sync runtime cache data.")
 	if len(dataSet) != 4 {
@@ -1209,7 +1069,7 @@ func (p *PolicyEvalImpl) getRolePolicySetInCache() (map[int]string, []int, error
 }
 
 func (p *PolicyEvalImpl) getCustFunctionSetInCache() ([]string, error) {
-	resultSet := make([]string, 0, len(p.RuntimePolicyStore.Functions))
+	resultSet := []string{}
 	for funcName := range p.RuntimePolicyStore.Functions {
 		if _, ok := builtinFunctions[funcName]; !ok {
 			resultSet = append(resultSet, funcName)
@@ -1219,104 +1079,51 @@ func (p *PolicyEvalImpl) getCustFunctionSetInCache() ([]string, error) {
 }
 
 func (p *PolicyEvalImpl) updateRuntimeCacheWithStoreChange(updateChan pms.StorageChangeChannel) {
-	defer p.wg.Done()
 	for e := range updateChan {
 		switch e.Type {
 		case pms.SERVICE_ADD: ///Event content: StoreUpdateData{ParentID:serviceName, Data:*service}
-			serviceGot, ok := e.Content.(*pms.Service)
-			if !ok {
-				log.Warnf("unexpected Content type for SERVICE_ADD event")
-				continue
-			}
+			serviceGot := e.Content.(*pms.Service)
 			p.AddServiceInRuntimeCache(serviceGot)
 		case pms.SERVICE_DELETE: //Event content:[]StoreUpdateData{ParentID:serviceName, Data:servieName}
-			services, ok := e.Content.([]string)
-			if !ok {
-				log.Warnf("unexpected Content type for SERVICE_DELETE event")
-				continue
-			}
+			services := e.Content.([]string)
 			for _, s := range services {
 				p.deleteService(s)
 			}
 		case pms.POLICY_ADD: //Event content :[]StoreUpdateData{ParentID:serviceName, Data:*policy}
-			data, ok := e.Content.([]pms.StoreUpdateData)
-			if !ok {
-				log.Warnf("unexpected Content type for store update event")
-				continue
-			}
+			data := e.Content.([]pms.StoreUpdateData)
 			for _, s := range data {
-				policy, ok := s.Data.(*pms.Policy)
-				if !ok {
-					log.Warnf("unexpected Data type for POLICY_ADD event")
-					continue
-				}
+				policy := s.Data.(*pms.Policy)
 				p.AddPolicyInRuntimeCache(s.ServiceName, policy)
 			}
 		case pms.POLICY_DELETE: // Event content:[]StoreUpdateData{ParentID:serviceName, Data:*pms.Policy}
-			data, ok := e.Content.([]pms.StoreUpdateData)
-			if !ok {
-				log.Warnf("unexpected Content type for store update event")
-				continue
-			}
+			data := e.Content.([]pms.StoreUpdateData)
 			for _, s := range data {
-				policy, ok := s.Data.(*pms.Policy)
-				if !ok {
-					log.Warnf("unexpected Data type for POLICY_DELETE event")
-					continue
-				}
+				policy := s.Data.(*pms.Policy)
 				p.DeletePolicyInRuntimeCache(s.ServiceName, policy.ID)
 			}
 		case pms.ROLEPOLICY_ADD: //Event content :[]StoreUpdateData{ParentID:serviceName, Data:*rolepolicy}
-			data, ok := e.Content.([]pms.StoreUpdateData)
-			if !ok {
-				log.Warnf("unexpected Content type for store update event")
-				continue
-			}
+			data := e.Content.([]pms.StoreUpdateData)
 			for _, s := range data {
-				rolepolicy, ok := s.Data.(*pms.RolePolicy)
-				if !ok {
-					log.Warnf("unexpected Data type for ROLEPOLICY_ADD event")
-					continue
-				}
+				rolepolicy := s.Data.(*pms.RolePolicy)
 				p.AddRolePolicyInRuntimeCache(s.ServiceName, rolepolicy)
 			}
 		case pms.ROLEPOLICY_DELETE: //Event content:[]StoreUpdateData{ParentID:serviceName, Data:*pms.RolePolicy}
-			data, ok := e.Content.([]pms.StoreUpdateData)
-			if !ok {
-				log.Warnf("unexpected Content type for store update event")
-				continue
-			}
+			data := e.Content.([]pms.StoreUpdateData)
 			for _, s := range data {
-				rolePolicy, ok := s.Data.(*pms.RolePolicy)
-				if !ok {
-					log.Warnf("unexpected Data type for ROLEPOLICY_ADD event")
-					continue
-				}
+				rolePolicy := s.Data.(*pms.RolePolicy)
 				p.DeleteRolePolicyInRuntimeCache(s.ServiceName, rolePolicy.ID)
 			}
 		case pms.SYNC_RELOAD:
-			data, ok := e.Content.([]interface{})
-			if !ok {
-				log.Warnf("unexpected Content type for SYNC_RELOAD event")
-				continue
-			}
+			data := e.Content.([]interface{})
 			err := p.syncRuntimeCache(data)
 			if err != nil {
 				log.Error("failed to reload cache data. ", err)
 			}
 		case pms.FUNCTION_ADD:
-			f, ok := e.Content.(*pms.Function)
-			if !ok {
-				log.Warnf("unexpected Content type for FUNCTION_ADD event")
-				continue
-			}
+			f := e.Content.(*pms.Function)
 			p.AddFunctionInRuntimeCache(f)
 		case pms.FUNCTION_DELETE:
-			fs, ok := e.Content.([]string)
-			if !ok {
-				log.Warnf("unexpected Content type for FUNCTION_DELETE event")
-				continue
-			}
+			fs := e.Content.([]string)
 			for _, f := range fs {
 				p.DeleteFunctionInRuntimeCache(f)
 			}
@@ -1324,55 +1131,18 @@ func (p *PolicyEvalImpl) updateRuntimeCacheWithStoreChange(updateChan pms.Storag
 			p.fullReloadRuntimeCache()
 		}
 	}
-	select {
-	case <-p.done:
-		log.Warn("Watch channel closed during shutdown; skipping full reload.")
-	default:
-		log.Warn("Watch channel closed, runtime cache may be stale. Triggering full reload.")
-		p.fullReloadRuntimeCache()
-	}
 }
 
 func (p *PolicyEvalImpl) cleanExpiredFunctionResultPeriodically() {
 	ticker := time.NewTicker(30 * time.Minute)
-	p.wg.Add(1)
 	go func() {
-		defer p.wg.Done()
-		defer func() {
-			if r := recover(); r != nil {
-				log.Errorf("Panic in cleanExpiredFunctionResultPeriodically goroutine: %v\n%s", r, debug.Stack())
-			}
-			ticker.Stop()
-		}()
 		for {
 			select {
 			case <-ticker.C:
 				p.CleanExpiredFunctionResult()
-			case <-p.done:
-				return
 			}
 		}
 	}()
-}
-
-// Close shuts down the evaluator, stopping all background goroutines
-// and closing the underlying policy store.
-// After Close returns, the evaluator should not be used.
-func (p *PolicyEvalImpl) Close() {
-	p.closeOnce.Do(func() {
-		if p.done != nil {
-			close(p.done)
-		}
-		// Close the store first to stop the watch channel, which
-		// unblocks updateRuntimeCacheWithStoreChange so it can exit.
-		if p.Store != nil {
-			if err := p.Store.Close(); err != nil {
-				log.Errorf("Failed to close policy store: %v", err)
-			}
-		}
-		// Wait for all background goroutines to finish.
-		p.wg.Wait()
-	})
 }
 
 // StopWatch stops watching policy store.
@@ -1399,12 +1169,9 @@ func difPolicySets(oldSet, newSet []int) (missed, removed []int) {
 		if oldSet[i] == newSet[j] {
 			i++
 			j++
-		} else if oldSet[i] < newSet[j] {
+		} else {
 			removedData = append(removedData, oldSet[i])
 			i++
-		} else {
-			missedData = append(missedData, newSet[j])
-			j++
 		}
 	}
 	return missedData, removedData
@@ -1424,7 +1191,7 @@ func difFuncSets(oldSet, newSet []string) (missed, removed []string) {
 		newMap[v] = true
 	}
 	oldMap := make(map[string]bool)
-	for _, v := range oldSet {
+	for _, v := range newSet {
 		oldMap[v] = true
 	}
 	for _, v := range newSet {

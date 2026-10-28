@@ -6,9 +6,7 @@ package etcd
 import (
 	"encoding/json"
 	"fmt"
-	"runtime/debug"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/teramoby/speedle-plus/api/ads"
 	"github.com/teramoby/speedle-plus/api/pms"
 	"github.com/teramoby/speedle-plus/pkg/errors"
@@ -31,23 +29,14 @@ func (s *Store) SaveDiscoverRequest(request *ads.RequestContext) error {
 }
 
 func (s *Store) PutRequest(request *ads.RequestContext) (int64, error) {
-	if err := validateServiceName(request.ServiceName); err != nil {
-		return 0, err
-	}
-	// Redact token before persisting to prevent credential leakage in discover storage.
-	if request.Subject != nil && request.Subject.Token != "" {
-		origToken := request.Subject.Token
-		request.Subject.Token = ""
-		defer func() { request.Subject.Token = origToken }()
-	}
 	value, err := json.Marshal(request)
 	if err != nil {
 		return -1, errors.Wrap(err, errors.SerializationError, "failed to marshal request")
 	}
 	succeed := false
 	for !succeed {
-		key := DiscoverPrefix + request.ServiceName + "/" + fmt.Sprintf("%d", time.Now().UnixNano())
-		txnResp, err := s.client.KV.Txn(context.Background()).If(
+		key := DiscoverPrefix + request.ServiceName + "/" + time.Now().String()
+		txnResp, err := s.client.KV.Txn(context.TODO()).If(
 			clientv3.Compare(clientv3.CreateRevision(key), "=", 0), //key does not exist
 		).Then(
 			clientv3.OpPut(key, string(value)),
@@ -59,29 +48,17 @@ func (s *Store) PutRequest(request *ads.RequestContext) (int64, error) {
 		}
 		if txnResp.Succeeded { //if not succeed, the key already exist, try again
 			succeed = true
-			if len(txnResp.Responses) < 3 {
-				return -1, errors.New(errors.StoreError, "unexpected number of responses in txn")
-			}
 			count := txnResp.Responses[1].GetResponseRange().Count
 			if count >= store.MaxDiscoverRequestNum { //reach Max number of requests, remove the oldest ones.
 				keys := []string{}
 				for _, kv := range txnResp.Responses[2].GetResponseRange().Kvs {
 					keys = append(keys, string(kv.Key))
 				}
-				go func() {
-				defer func() {
-					if r := recover(); r != nil {
-						log.Errorf("panic in DeleteRequests cleanup goroutine: %v\n%s", r, debug.Stack())
-					}
-				}()
-				if err := s.DeleteRequests(keys); err != nil {
-					log.Errorf("failed to delete old discover requests: %v", err)
-				}
-			}()
+				go s.DeleteRequests(keys)
 			}
 			return count, nil
 		}
-		log.Debug("key already exist, try with a new key...")
+		fmt.Println("key already exist, try with a new key...")
 	}
 	return -1, nil //should not go here
 }
@@ -91,7 +68,7 @@ func (s *Store) DeleteRequests(keys []string) error {
 	for _, key := range keys {
 		deleteOps = append(deleteOps, clientv3.OpDelete(key))
 	}
-	_, err := s.client.KV.Txn(context.Background()).Then(deleteOps...).Commit()
+	_, err := s.client.KV.Txn(context.TODO()).Then(deleteOps...).Commit()
 	if err != nil {
 		return errors.Wrapf(err, errors.StoreError, "unable to delete all discover requests %v", keys)
 	}
@@ -105,12 +82,12 @@ func (s *Store) GetLastDiscoverRequest(serviceName string) (*ads.RequestContext,
 	if len(serviceName) > 0 {
 		keyPrefix4Search = keyPrefix4Search + serviceName + KeySeparator
 	}
-	getResp, err := s.client.Get(context.Background(), keyPrefix4Search, getOpts...)
+	getResp, err := s.client.Get(context.TODO(), keyPrefix4Search, getOpts...)
 	if err != nil {
 		return nil, -1, err
 	}
 	if len(getResp.Kvs) == 0 {
-		return nil, -1, errors.Errorf(errors.EntityNotFound, "no request found for service %q", serviceName)
+		return nil, -1, errors.Wrapf(err, errors.EntityNotFound, "no request found for service %q", serviceName)
 	}
 	var request ads.RequestContext
 	err = json.Unmarshal(getResp.Kvs[0].Value, &request)
@@ -121,17 +98,12 @@ func (s *Store) GetLastDiscoverRequest(serviceName string) (*ads.RequestContext,
 }
 
 func (s *Store) GetDiscoverRequestsSinceRevision(serviceName string, revision int64) ([]*ads.RequestContext, int64, error) {
-	if serviceName != "" {
-		if err := validateServiceName(serviceName); err != nil {
-			return nil, 0, err
-		}
-	}
 	getOpts := []clientv3.OpOption{clientv3.WithMinCreateRev(revision + 1), clientv3.WithPrefix(), clientv3.WithSort(clientv3.SortByCreateRevision, clientv3.SortAscend)}
 	keyPrefix4Search := DiscoverPrefix
 	if len(serviceName) > 0 {
 		keyPrefix4Search = keyPrefix4Search + serviceName + KeySeparator
 	}
-	getResp, err := s.client.Get(context.Background(), keyPrefix4Search, getOpts...)
+	getResp, err := s.client.Get(context.TODO(), keyPrefix4Search, getOpts...)
 	if err != nil {
 		return nil, revision, errors.Wrapf(err, errors.StoreError, "unable to get discover request for service %q with revision %d", serviceName, revision)
 	}
@@ -153,7 +125,7 @@ func (s *Store) GetRequests(keyPrefix string, pageSize int64) ([]*ads.RequestCon
 	getOpts := []clientv3.OpOption{clientv3.WithPrefix(), clientv3.WithLimit(pageSize), clientv3.WithSort(clientv3.SortByCreateRevision, clientv3.SortAscend)}
 	var revision int64
 	for {
-		getResp, err := s.client.Get(context.Background(), keyPrefix, getOpts...)
+		getResp, err := s.client.Get(context.TODO(), keyPrefix, getOpts...)
 		if err != nil {
 			return nil, -1, errors.Wrapf(err, errors.StoreError, "unable to get discover requests from etcd server for prefix %q", keyPrefix)
 		}
@@ -165,9 +137,9 @@ func (s *Store) GetRequests(keyPrefix string, pageSize int64) ([]*ads.RequestCon
 			}
 			requests = append(requests, &req)
 		}
-		log.Debugf("len=%d more=%v revision=%d", len(getResp.Kvs), getResp.More, getResp.Header.Revision)
+		fmt.Println("len=", len(getResp.Kvs), "more:", getResp.More, "revision:", getResp.Header.Revision)
 		if getResp.More {
-			revision = getResp.Kvs[pageSize-1].CreateRevision
+			revision := getResp.Kvs[pageSize-1].CreateRevision
 			getOpts = []clientv3.OpOption{clientv3.WithPrefix(), clientv3.WithMinCreateRev(revision + 1), clientv3.WithLimit(pageSize), clientv3.WithSort(clientv3.SortByCreateRevision, clientv3.SortAscend)}
 		} else {
 			revision = getResp.Header.Revision
@@ -179,11 +151,6 @@ func (s *Store) GetRequests(keyPrefix string, pageSize int64) ([]*ads.RequestCon
 }
 
 func (s *Store) GetDiscoverRequests(serviceName string) ([]*ads.RequestContext, int64, error) {
-	if serviceName != "" {
-		if err := validateServiceName(serviceName); err != nil {
-			return nil, 0, err
-		}
-	}
 	if len(serviceName) == 0 {
 		return s.GetRequests(DiscoverPrefix, DefaultPageSize)
 	} else {
@@ -193,16 +160,11 @@ func (s *Store) GetDiscoverRequests(serviceName string) ([]*ads.RequestContext, 
 }
 
 func (s *Store) ResetDiscoverRequests(serviceName string) error {
-	if serviceName != "" {
-		if err := validateServiceName(serviceName); err != nil {
-			return err
-		}
-	}
 	var err error
 	if len(serviceName) == 0 {
-		_, err = s.client.Delete(context.Background(), DiscoverPrefix, clientv3.WithPrefix())
+		_, err = s.client.Delete(context.TODO(), DiscoverPrefix, clientv3.WithPrefix())
 	} else {
-		_, err = s.client.Delete(context.Background(), DiscoverPrefix+serviceName+KeySeparator, clientv3.WithPrefix())
+		_, err = s.client.Delete(context.TODO(), DiscoverPrefix+serviceName+KeySeparator, clientv3.WithPrefix())
 	}
 	if err != nil {
 		return errors.Errorf(errors.StoreError, "unable to reset discover requests from service %q", serviceName)

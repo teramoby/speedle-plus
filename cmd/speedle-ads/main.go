@@ -10,8 +10,6 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"syscall"
-	"time"
 
 	adsapi "github.com/teramoby/speedle-plus/api/ads"
 	"github.com/teramoby/speedle-plus/pkg/assertion"
@@ -21,7 +19,6 @@ import (
 	"github.com/teramoby/speedle-plus/pkg/eval"
 	"github.com/teramoby/speedle-plus/pkg/logging"
 	"github.com/teramoby/speedle-plus/pkg/store"
-	"github.com/teramoby/speedle-plus/pkg/svcs"
 	"github.com/teramoby/speedle-plus/pkg/svcs/adsgrpc"
 	"github.com/teramoby/speedle-plus/pkg/svcs/adsgrpc/pb"
 	"github.com/teramoby/speedle-plus/pkg/svcs/adsrest"
@@ -29,7 +26,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"google.golang.org/grpc"
-	_ "google.golang.org/grpc/reflection" // Available for development; disabled in production
+	"google.golang.org/grpc/reflection"
 )
 
 var gitCommit string
@@ -48,23 +45,10 @@ func main() {
 	storeParamsMap := store.GetAllStoreParams()
 
 	var params flags.Parameters
-	if err := params.ParseFlags(flags.DefaultAuthzCheckEndPoint, printVersionInfo, storeParamsMap); err != nil {
-		fmt.Fprintf(os.Stderr, "Error parsing flags: %v\n", err)
-		os.Exit(1)
-	}
-	if params.ShowVersionAndExit {
-		os.Exit(0)
-	}
-	if err := params.ValidateFlags(); err != nil {
-		fmt.Fprintf(os.Stderr, "Error validating flags: %v\n", err)
-		os.Exit(1)
-	}
+	params.ParseFlags(flags.DefaultAuthzCheckEndPoint, printVersionInfo, storeParamsMap)
+	params.ValidateFlags()
 
-	conf, err := params.Param2Config(storeParamsMap)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error creating config: %v\n", err)
-		os.Exit(1)
-	}
+	conf, _ := params.Param2Config(storeParamsMap)
 
 	// Initialize the logging
 	if conf.LogConfig != nil {
@@ -102,7 +86,7 @@ func main() {
 	}
 
 	intChan := make(chan os.Signal, 1)
-	signal.Notify(intChan, os.Interrupt, syscall.SIGTERM)
+	signal.Notify(intChan, os.Interrupt)
 
 	errChan := make(chan error, 2)
 	go func() {
@@ -119,30 +103,21 @@ func main() {
 	select {
 	case err = <-errChan:
 		log.Errorf("Error occured %s.", err)
-		// Do not close errChan: the second goroutine may still send to it.
+		close(errChan)
 	case <-intChan:
 		log.Info("Interrupt signal")
-		signal.Stop(intChan)
+		close(intChan)
 	}
 
 	log.Info("Stopping servers...")
 	// Stop all services
 	if httpServer != nil {
 		log.Info("Stopping HTTP Server.")
-		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-		defer cancel()
-		if serveErr := httpServer.Shutdown(ctx); serveErr != nil {
-			log.Errorf("HTTP server shutdown error: %v", serveErr)
-		}
+		httpServer.Shutdown(context.Background())
 	}
 	if grpcServer != nil {
 		log.Info("Stopping GRPC Server.")
 		grpcServer.Stop()
-	}
-
-	log.Info("Closing evaluator and store...")
-	if evaluator != nil {
-		evaluator.Close()
 	}
 
 	if err != nil {
@@ -167,7 +142,7 @@ func newEvaluator(conf *cfg.Config) (eval.InternalEvaluator, error) {
 				len(ctx.Subject.Token) != 0 {
 				tokenType := ctx.Subject.TokenType
 				token := ctx.Subject.Token
-				log.Debugf("Asserting token (len=%d) with token type %s.", len(token), tokenType)
+				log.Debugf("Asserting token %s with token type %s.", token, tokenType)
 				s, err := as.AssertToken(token, tokenType, "", nil)
 				if err == nil {
 					for _, p := range s.Principals {
@@ -193,15 +168,10 @@ func newGRPCServer(evaluator eval.InternalEvaluator) (*grpc.Server, error) {
 		return nil, err
 	}
 
-	server := grpc.NewServer(
-		grpc.UnaryInterceptor(svcs.PanicRecoveryInterceptor()),
-		grpc.MaxRecvMsgSize(4<<20), // 4 MB
-		grpc.MaxSendMsgSize(4<<20), // 4 MB
-	)
+	server := grpc.NewServer()
 	pb.RegisterEvaluatorServer(server, serviceImpl)
-	// WARNING: gRPC reflection exposes all service methods and message types.
-	// Disable in production to prevent information disclosure.
-	// Enable for development only: reflection.Register(server)
+	// Register reflection service on gRPC server.
+	reflection.Register(server)
 	return server, nil
 }
 

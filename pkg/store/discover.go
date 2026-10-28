@@ -4,7 +4,7 @@
 package store
 
 import (
-	"fmt"
+	"reflect"
 
 	"github.com/teramoby/speedle-plus/api/ads"
 	"github.com/teramoby/speedle-plus/api/pms"
@@ -48,7 +48,7 @@ func GeneratePoliciesFromDiscoverRequests(requests []*ads.RequestContext, princi
 				RolePolicies: []*pms.RolePolicy{},
 				Policies:     []*pms.Policy{}}
 		}
-		if req.Subject == nil || len(req.Subject.Principals) == 0 { //anonymous_role
+		if len(req.Subject.Principals) == 0 { //anonymous_role
 			roleName := ads.BuiltIn_Role_Anonymous
 			policyKey := "svc=" + req.ServiceName + ";res=" + req.Resource + ";role=" + roleName
 			if p, ok := policyMap[policyKey]; ok {
@@ -73,7 +73,7 @@ func GeneratePoliciesFromDiscoverRequests(requests []*ads.RequestContext, princi
 						},
 					},
 				}
-				serviceMap[req.ServiceName].Policies = append(serviceMap[req.ServiceName].Policies, &policy)
+				serviceMap[req.ServiceName].Policies = appendPolicyIfUnique(serviceMap[req.ServiceName].Policies, &policy)
 				policyMap[policyKey] = &policy
 			}
 		} else {
@@ -81,12 +81,9 @@ func GeneratePoliciesFromDiscoverRequests(requests []*ads.RequestContext, princi
 				if principalType != "" && principalType != princ.Type ||
 					principalName != "" && principalName != princ.Name ||
 					principalIDD != "" && principalIDD != princ.IDD {
-					continue
+					break
 				}
-				encodedPrincipal, err := subjectutils.EncodePrincipal(princ)
-				if err != nil {
-					return nil, fmt.Errorf("failed to encode principal: %w", err)
-				}
+				encodedPrincipal := subjectutils.EncodePrincipal(princ)
 				roleName := "role_" + encodedPrincipal
 				policyKey := "svc=" + req.ServiceName + ";res=" + req.Resource + ";role=" + roleName
 
@@ -122,7 +119,7 @@ func GeneratePoliciesFromDiscoverRequests(requests []*ads.RequestContext, princi
 							},
 						},
 					}
-					serviceMap[req.ServiceName].Policies = append(serviceMap[req.ServiceName].Policies, &policy)
+					serviceMap[req.ServiceName].Policies = appendPolicyIfUnique(serviceMap[req.ServiceName].Policies, &policy)
 					policyMap[policyKey] = &policy
 				}
 			}
@@ -132,3 +129,11 @@ func GeneratePoliciesFromDiscoverRequests(requests []*ads.RequestContext, princi
 	return serviceMap, nil
 }
 
+func appendPolicyIfUnique(policies []*pms.Policy, newPolicy *pms.Policy) []*pms.Policy {
+	for _, policy := range policies {
+		if reflect.DeepEqual(*policy, *newPolicy) {
+			return policies
+		}
+	}
+	return append(policies, newPolicy)
+}

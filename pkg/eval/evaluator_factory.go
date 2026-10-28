@@ -4,8 +4,6 @@
 package eval
 
 import (
-	"runtime/debug"
-
 	"github.com/teramoby/speedle-plus/pkg/cfg"
 	"github.com/teramoby/speedle-plus/pkg/store"
 
@@ -47,12 +45,7 @@ func NewFromConfig(conf *cfg.Config) (InternalEvaluator, error) {
 		return nil, err
 	}
 
-	eval, err := NewWithStore(conf, s)
-	if err != nil {
-		s.Close()
-		return nil, err
-	}
-	return eval, nil
+	return NewWithStore(conf, s)
 }
 
 // NewWithStore creates a policy evaluator with policy store
@@ -77,21 +70,12 @@ func NewWithStore(conf *cfg.Config, s pms.PolicyStoreManagerADS) (InternalEvalua
 	p := &PolicyEvalImpl{
 		RuntimePolicyStore: runtimePolicyStore,
 		Store:              s,
-		done:               make(chan struct{}),
 	}
 
 	// start a goroutine watching to the channel for update events and
 	// refresh runtime cache accordingly once receiving any events
 	if updateChan != nil {
-		p.wg.Add(1)
-		go func() {
-			defer func() {
-				if r := recover(); r != nil {
-					log.Errorf("panic in updateRuntimeCacheWithStoreChange goroutine: %v\n%s", r, debug.Stack())
-				}
-			}()
-			p.updateRuntimeCacheWithStoreChange(updateChan)
-		}()
+		go p.updateRuntimeCacheWithStoreChange(updateChan)
 	}
 
 	p.cleanExpiredFunctionResultPeriodically()

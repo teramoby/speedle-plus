@@ -8,6 +8,6 @@ const (
 	PolicyMgmtPath = "/policy-mgmt/v1/"
 	// PolicyAtzPath is the prefix for ads rest service
 	PolicyAtzPath = "/authz-check/v1/"
-	// Header to store asserted principals
+	// Header to store asserted pincipals
 	PrincipalsHeader = "Speedle-Principals"
 )

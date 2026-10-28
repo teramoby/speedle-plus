@@ -5,15 +5,9 @@ package command
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/spf13/cobra"
-)
-
-// Version variables set by the main package at startup.
-var (
-	GitCommit      string
-	ProductVersion string
-	GoVersion      string
 )
 
 func newVersionCommand() *cobra.Command {
@@ -28,8 +22,8 @@ func newVersionCommand() *cobra.Command {
 }
 
 func versionCommand(cmd *cobra.Command, args []string) {
-	fmt.Printf("spctl:\n")
-	fmt.Printf(" Version:       %s\n", ProductVersion)
-	fmt.Printf(" Go Version:    %s\n", GoVersion)
-	fmt.Printf(" Git commit:    %s\n", GitCommit)
+	if len(args) > 0 {
+		fmt.Println("Usage: spctl version")
+		os.Exit(1)
+	}
 }

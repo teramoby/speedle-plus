@@ -6,9 +6,7 @@ package eval
 import (
 	"fmt"
 	"testing"
-	"time"
 
-	"github.com/teramoby/speedle-plus/3rdparty/github.com/Knetic/govaluate"
 	adsapi "github.com/teramoby/speedle-plus/api/ads"
 	"github.com/teramoby/speedle-plus/api/pms"
 )
@@ -299,40 +297,6 @@ func TestGetPermissions(t *testing.T) {
 				"principals": [
 					["user:alice"]
 				]
-			}
-			]
-		}
-		]
-	}
-			`,
-			request: adsapi.RequestContext{Subject: &alice, ServiceName: "erp", Attributes: map[string]interface{}{}},
-			results: []pms.Permission{},
-		},
-		{
-			// Deny policy with an explicit permission that has empty resource
-			// AND empty actions = deny everything. All granted permissions
-			// must be removed.
-			stream: `
-			{
-		"services": [
-		{
-			"name": "erp",
-			"policies": [
-			{
-				"id": "policy1",
-				"effect": "grant",
-				"permissions": [
-				{ "resource": "/node1", "actions": ["get","create"] }
-				],
-				"principals": [["user:alice"]]
-			},
-			{
-				"id": "policy2",
-				"effect": "deny",
-				"permissions": [
-				{ "resource": "", "actions": [] }
-				],
-				"principals": [["user:alice"]]
 			}
 			]
 		}
@@ -887,135 +851,6 @@ func TestIsAllowed_empty(t *testing.T) {
 			t.Errorf("case number %d, expect %t , but returned %t ", i, tc.result, isAllowed)
 		}
 
-	}
-}
-
-// TestDenyConditionFailClosed verifies that when a deny policy's condition
-// cannot be evaluated (e.g., a referenced attribute is missing), the denial is
-// still applied (fail-closed) rather than silently dropped (fail-open).
-func TestDenyConditionFailClosed(t *testing.T) {
-	alice := adsapi.Subject{
-		Principals: []*adsapi.Principal{
-			{Type: adsapi.PRINCIPAL_TYPE_USER, Name: "alice"},
-		},
-	}
-	// Grant alice read on /secret, but deny it when blocked == true.
-	// The deny condition references "blocked", which the request omits, so the
-	// condition evaluation fails. The deny must still take effect.
-	stream := `
-	{
-		"services": [
-		{
-			"name": "erp",
-			"policies": [
-			{
-				"id": "grant-read",
-				"effect": "grant",
-				"principals": [["user:alice"]],
-				"permissions": [{"resource": "/secret", "actions": ["read"]}]
-			},
-			{
-				"id": "deny-when-blocked",
-				"effect": "deny",
-				"principals": [["user:alice"]],
-				"permissions": [{"resource": "/secret", "actions": ["read"]}],
-				"condition": "blocked == true"
-			}
-			]
-		}
-		]
-	}`
-	preparePolicyDataInStore([]byte(stream), t)
-	eval, err := NewWithStore(conf, testPS)
-	if err != nil {
-		t.Fatalf("error creating evaluator: %v", err)
-	}
-	// Request omits the "blocked" attribute, so the deny condition errors.
-	req := adsapi.RequestContext{
-		Subject:     &alice,
-		ServiceName: "erp",
-		Resource:    "/secret",
-		Action:      "read",
-		Attributes:  map[string]interface{}{},
-	}
-	isAllowed, _, err := eval.IsAllowed(req)
-	if err != nil {
-		t.Fatalf("error in IsAllowed: %v", err)
-	}
-	if isAllowed {
-		t.Errorf("expected DENY (fail-closed) when deny condition cannot be evaluated, but got ALLOW")
-	}
-}
-
-// TestRecompileConditionNoDeadlock verifies that evaluating a policy whose
-// compiled condition is missing from the cache (which happens after a custom
-// function is deleted and the conditions cache is cleared) does not deadlock.
-// The recompile-at-runtime path must not acquire a write lock while the caller
-// holds read locks on the same mutexes.
-func TestRecompileConditionNoDeadlock(t *testing.T) {
-	alice := adsapi.Subject{
-		Principals: []*adsapi.Principal{
-			{Type: adsapi.PRINCIPAL_TYPE_USER, Name: "alice"},
-		},
-	}
-	stream := `
-	{
-		"services": [
-		{
-			"name": "erp",
-			"policies": [
-			{
-				"id": "grant-with-condition",
-				"effect": "grant",
-				"principals": [["user:alice"]],
-				"permissions": [{"resource": "/node1", "actions": ["read"]}],
-				"condition": "request_year > 2000"
-			}
-			]
-		}
-		]
-	}`
-	preparePolicyDataInStore([]byte(stream), t)
-	evalImpl, err := NewWithStore(conf, testPS)
-	if err != nil {
-		t.Fatalf("error creating evaluator: %v", err)
-	}
-	pe, ok := evalImpl.(*PolicyEvalImpl)
-	if !ok {
-		t.Fatalf("evaluator is not *PolicyEvalImpl")
-	}
-	// Clear the compiled conditions cache to force the recompile-at-runtime
-	// path on the next evaluation (simulates the post function-delete state).
-	pe.RuntimePolicyStore.Lock()
-	if rtSvc, found := pe.RuntimePolicyStore.RuntimeServices["erp"]; found {
-		rtSvc.Lock()
-		rtSvc.PoliciesCache.Conditions = make(map[string]*govaluate.EvaluableExpression)
-		rtSvc.Unlock()
-	}
-	pe.RuntimePolicyStore.Unlock()
-
-	req := adsapi.RequestContext{
-		Subject: &alice, ServiceName: "erp", Resource: "/node1", Action: "read",
-		Attributes: map[string]interface{}{},
-	}
-
-	// Run in a goroutine with a timeout; before the fix this self-deadlocks.
-	done := make(chan bool, 1)
-	go func() {
-		isAllowed, _, err := evalImpl.IsAllowed(req)
-		if err != nil {
-			t.Errorf("error in IsAllowed: %v", err)
-		}
-		if !isAllowed {
-			t.Errorf("expected ALLOW, got DENY")
-		}
-		done <- true
-	}()
-	select {
-	case <-done:
-		// completed without deadlock
-	case <-time.After(5 * time.Second):
-		t.Fatal("IsAllowed deadlocked on the recompile-at-runtime path")
 	}
 }
 

@@ -6,16 +6,13 @@ package testutil
 import (
 	"encoding/json"
 	"errors"
-	"go/build"
 	"io/ioutil"
 	"log"
 	"os"
-	"path/filepath"
 	"reflect"
 	"strings"
 
 	pmsapi "github.com/teramoby/speedle-plus/api/pms"
-	"github.com/teramoby/speedle-plus/pkg/svcs"
 	"github.com/teramoby/speedle-plus/testutil/msg"
 	"github.com/teramoby/speedle-plus/testutil/param"
 )
@@ -24,7 +21,7 @@ const (
 	SP_APP_NAME = "SP_APP_NAME"
 )
 
-// Test Methods for Speedle
+//Test Methods for Speedle
 const (
 	METHOD_CONFIG = "config"
 )
@@ -36,7 +33,7 @@ type CmdClient struct {
 	output string
 }
 
-// execute spxctl command with specified parameter and test data
+//execute spxctl command with specified parameter and test data
 func (client *CmdClient) ExecuteCmd(parameter string, data *CmdTestData) error {
 	cmdStr := client.cmd + parameter
 
@@ -45,13 +42,7 @@ func (client *CmdClient) ExecuteCmd(parameter string, data *CmdTestData) error {
 
 	c := Command("/bin/bash", "-c", cmdStr)
 	c.Run()
-	if !c.Success() {
-		TestLog.Logf("CLI failed: %v\n%s", c.runError, c.Stderr())
-	}
 	client.output = c.Stdout()
-	if !c.Success() {
-		client.output += c.Stderr()
-	}
 	TestLog.Log("The output of command is:-------")
 	TestLog.Log(client.output)
 
@@ -65,37 +56,48 @@ func (client *CmdClient) ExecuteCmd(parameter string, data *CmdTestData) error {
 	return nil
 }
 
-// Get the test client for Cmd
+//Get the test client for Cmd
 func NewCmdClient() *CmdClient {
-	return NewCmdClient_token(GetOSEnv(PMS_ADMIN_TOKEN, ""))
+	var cmdStr string
+	binPath := os.Getenv("GOPATH")
+	if strings.Compare(string(binPath[len(binPath)-1:]), "/") != 0 {
+		binPath = binPath + "/"
+	}
+
+	cmdStr = binPath + "bin/" + os.Getenv(SP_APP_NAME) + " "
+	token := GetOSEnv(PMS_ADMIN_TOKEN, "")
+	if len(token) > 0 {
+		cmdStr = cmdStr + " --token " + token + " "
+	}
+
+	return &CmdClient{
+		cmd:    cmdStr,
+		output: "",
+	}
 }
 
-// NewCmdClient_token supports an explicit fixture binary without installing it
-// into a shared GOPATH. Existing externally provisioned test scripts still work.
+//Get the test client for Cmd
 func NewCmdClient_token(token string) *CmdClient {
-	binary := GetOSEnv(SP_APP_NAME, "spctl")
-	if !filepath.IsAbs(binary) {
-		gopath := GetOSEnv("GOPATH", build.Default.GOPATH)
-		binary = filepath.Join(filepath.SplitList(gopath)[0], "bin", binary)
+	var cmdStr string
+	binPath := os.Getenv("GOPATH")
+	if strings.Compare(string(binPath[len(binPath)-1:]), "/") != 0 {
+		binPath = binPath + "/"
 	}
-	quote := func(value string) string { return "'" + strings.ReplaceAll(value, "'", "'\"'\"'") + "'" }
-	cmdStr := quote(binary) + " "
-	if endpoint := os.Getenv(PMS_ENDPOINT); endpoint != "" {
-		endpoint = strings.TrimRight(endpoint, "/")
-		if !strings.HasSuffix(endpoint, strings.TrimRight(svcs.PolicyMgmtPath, "/")) {
-			endpoint += svcs.PolicyMgmtPath
-		}
-		cmdStr += "--pms-endpoint " + quote(endpoint) + " --timeout 5s "
+
+	cmdStr = binPath + "bin/" + os.Getenv(SP_APP_NAME) + " "
+	if len(token) > 0 {
+		cmdStr = cmdStr + " --token " + token + " "
 	}
-	if token != "" {
-		cmdStr += "--token " + quote(token) + " "
+
+	return &CmdClient{
+		cmd:    cmdStr,
+		output: "",
 	}
-	return &CmdClient{cmd: cmdStr}
 }
 
 //--------------CmdTest and CmdTestData definition-----------
 
-// test data for spctl command
+//test data for spctl command
 type CmdTestData struct {
 	Param        string      //parameter string after spxctl command
 	FileContent  interface{} //The content of File (JSON or PDL )
@@ -113,7 +115,7 @@ func NewCmdTest() TestExecuter {
 	return &CmdTest{}
 }
 
-// Prepare for Test Execution. Set the default func in testcase
+//Prepare for Test Execution. Set the default func in testcase
 func (test *CmdTest) PreExecute(testcase *TestCase, ctx *TestContext) error {
 	test.Client = NewCmdClient()
 	testcase.SetVerifyTestFunc(VerifyCmdTestByDefault)
@@ -166,7 +168,7 @@ func (test *CmdTest) PreExecute(testcase *TestCase, ctx *TestContext) error {
 	return nil
 }
 
-// Execute current test with test data and context
+//Execute current test with test data and context
 func (test *CmdTest) Execute(testcase *TestCase, ctx *TestContext) error {
 	testData := testcase.Data
 	cmdTD := testData.(*CmdTestData)
@@ -186,7 +188,7 @@ func (test *CmdTest) Execute(testcase *TestCase, ctx *TestContext) error {
 	return nil
 }
 
-// Parse output result for creating service/policy/rolepolicy
+//Parse output result for creating service/policy/rolepolicy
 func (test *CmdTest) ParseOutputForCreate(testData interface{}) error {
 	cmdTD := testData.(*CmdTestData)
 	tmp := test.Client.output
@@ -205,7 +207,7 @@ func (test *CmdTest) ParseOutputForCreate(testData interface{}) error {
 	return nil
 }
 
-// Parse output result for getting service/policy/rolepolicy
+//Parse output result for getting service/policy/rolepolicy
 func (test *CmdTest) ParseOutputForGet(data interface{}) error {
 	cmdTD := data.(*CmdTestData)
 
@@ -225,7 +227,7 @@ func (test *CmdTest) ParseOutputForGet(data interface{}) error {
 
 //-------------Common util func for REST------------------------
 
-// Verify CmdTestData By Default
+//Verify CmdTestData By Default
 func VerifyCmdTestByDefault(data interface{}, context *TestContext) bool {
 	cmdTD, ok := data.(*CmdTestData)
 	if !ok {
@@ -271,7 +273,7 @@ func createFile(fileNameWithPath string, content []byte) {
 	}
 }
 
-// generate a file according to pdl list
+//generate a file according to pdl list
 func GeneratePdlFile(fileNameWithPath string, pdlList []string) {
 	var tmp = ""
 	if pdlList != nil {
@@ -283,7 +285,7 @@ func GeneratePdlFile(fileNameWithPath string, pdlList []string) {
 	createFile(fileNameWithPath, buf)
 }
 
-// generate a json file according to service object
+//generate a json file according to service object
 func GenerateJsonFileWithService(fileNameWithPath string, service *pmsapi.Service) {
 	tmp, err := json.Marshal(service)
 	if err != nil {
@@ -292,7 +294,7 @@ func GenerateJsonFileWithService(fileNameWithPath string, service *pmsapi.Servic
 	createFile(fileNameWithPath, tmp)
 }
 
-// generate a json file according to policy object
+//generate a json file according to policy object
 func GenerateJsonFileWithPolicy(fileNameWithPath string, policy *pmsapi.Policy) {
 	tmp, err := json.Marshal(policy)
 	if err != nil {
@@ -301,7 +303,7 @@ func GenerateJsonFileWithPolicy(fileNameWithPath string, policy *pmsapi.Policy) 
 	createFile(fileNameWithPath, tmp)
 }
 
-// generate a json file according to role policy object
+//generate a json file according to role policy object
 func GenerateJsonFileWithRolePolicy(fileNameWithPath string, service *pmsapi.RolePolicy) {
 	tmp, err := json.Marshal(service)
 	if err != nil {
@@ -310,7 +312,7 @@ func GenerateJsonFileWithRolePolicy(fileNameWithPath string, service *pmsapi.Rol
 	createFile(fileNameWithPath, tmp)
 }
 
-// Create service with PDL file
+//Create service with PDL file
 func (client *CmdClient) CreateServiceWithPDL(serviceName string, pdl []string) bool {
 	//delete service firstly
 	cmdStr := client.cmd + param.DELETE_SERVICE(serviceName)
@@ -319,7 +321,7 @@ func (client *CmdClient) CreateServiceWithPDL(serviceName string, pdl []string) 
 	log.Println("DeleteService firstly. Output is: " + c.stdout)
 
 	//create service
-	tmpPDLFile := filepath.Join(TestLog.TempDir(), "policies.spdl")
+	tmpPDLFile := "/tmp/pdl-file"
 	GeneratePdlFile(tmpPDLFile, pdl)
 	cmdStr = client.cmd + param.CREATE_SERVICE_WITH_PDLFILE(serviceName, pmsapi.TypeApplication, tmpPDLFile)
 	log.Println("CreateServiceWithPDL cmdstr= " + cmdStr)

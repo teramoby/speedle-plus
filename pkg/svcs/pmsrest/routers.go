@@ -18,11 +18,6 @@ type route struct {
 	HandlerFunc http.HandlerFunc
 }
 
-// SECURITY: All management endpoints defined below (service CRUD, policy CRUD,
-// role-policy CRUD, function CRUD, discover requests) have NO authentication.
-// In production, the PMS server MUST be bound to localhost only (e.g., run behind
-// a reverse proxy with authentication or restrict with --listen-address=127.0.0.1).
-// TODO: Add authentication middleware for production deployments.
 func initRouters(ps pms.PolicyStoreManager) (*[]route, error) {
 
 	manager, err := NewRestService(ps)
@@ -246,7 +241,7 @@ func NewRouter(ps pms.PolicyStoreManager) (*mux.Router, error) {
 
 	for _, route := range *routes {
 		var handler http.Handler
-		handler = svcs.HTTPPanicRecoveryMiddleware(route.HandlerFunc)
+		handler = route.HandlerFunc
 		router.
 			Methods(route.Method).
 			Path(route.Pattern).

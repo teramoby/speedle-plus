@@ -5,60 +5,13 @@ package eval
 
 import (
 	"regexp"
-	"sync"
-	"sync/atomic"
+	"strings"
 
 	"github.com/teramoby/speedle-plus/3rdparty/github.com/Knetic/govaluate"
 	adsapi "github.com/teramoby/speedle-plus/api/ads"
 	"github.com/teramoby/speedle-plus/api/pms"
 	log "github.com/sirupsen/logrus"
 )
-
-const (
-	// maxRegexCacheSize is the maximum number of entries in the compiled regex cache.
-	// When this limit is reached, new patterns are still compiled but not cached.
-	maxRegexCacheSize = 10000
-)
-
-var (
-	compiledRegexCache     sync.Map
-	compiledRegexCacheSize int64 // atomic counter
-)
-
-// maxRegexPatternLen is the maximum allowed length for a regex pattern.
-// Patterns longer than this are rejected to prevent resource exhaustion.
-const maxRegexPatternLen = 1024
-
-// matchRegexCompiled compiles the pattern once and caches the result.
-// It returns true if pattern matches s.
-func matchRegexCompiled(pattern, s string) bool {
-	if len(pattern) > maxRegexPatternLen {
-		log.Warnf("regex pattern exceeds maximum length of %d: len=%d", maxRegexPatternLen, len(pattern))
-		return false
-	}
-	re, ok := compiledRegexCache.Load(pattern)
-	if !ok {
-		var err error
-		re, err = regexp.Compile(pattern)
-		if err != nil {
-			return false
-		}
-		// Only cache if we haven't exceeded the maximum cache size.
-		if atomic.LoadInt64(&compiledRegexCacheSize) < maxRegexCacheSize {
-			var loaded bool
-			re, loaded = compiledRegexCache.LoadOrStore(pattern, re)
-			if !loaded {
-				atomic.AddInt64(&compiledRegexCacheSize, 1)
-			}
-		}
-	}
-	compiled, ok := re.(*regexp.Regexp)
-	if !ok {
-		log.Warnf("invalid type in compiledRegexCache, expected *regexp.Regexp, got %T", re)
-		return false
-	}
-	return compiled.MatchString(s)
-}
 
 func matchResource(requestRes string, resources, resExpressions []string) bool {
 	//in role policy, resources/resExpressions could be empty, which means any resource
@@ -71,7 +24,8 @@ func matchResource(requestRes string, resources, resExpressions []string) bool {
 		}
 	}
 	for _, resExp := range resExpressions {
-		if matchRegexCompiled(resExp, requestRes) {
+		matched, err := regexp.MatchString(resExp, requestRes)
+		if err == nil && matched {
 			return true
 		}
 	}
@@ -87,7 +41,7 @@ func matchResourceAction(policy *pms.Policy, ctx *internalRequestContext) bool {
 	for _, perm := range policy.Permissions {
 		resExpMatch := false
 		if len(perm.ResourceExpression) != 0 {
-			resExpMatch = matchRegexCompiled(perm.ResourceExpression, ctx.Resource)
+			resExpMatch, _ = regexp.MatchString(perm.ResourceExpression, ctx.Resource)
 			//TODO log error
 		}
 		resNameMatch := perm.Resource == ctx.Resource
@@ -166,87 +120,51 @@ func calculatePermissions(grantedPermissions, deniedPermissions []pms.Permission
 	if len(deniedPermissions) == 0 {
 		return grantedPermissions
 	}
-
-	// Pre-build maps for O(1) lookups instead of O(G*D) nested scans.
-	// deniedByResource maps an exact resource name to a set of denied actions.
-	deniedByResource := make(map[string]map[string]bool, len(deniedPermissions))
-	// deniedByExpr stores denied permissions that use resource expressions.
-	type deniedExprEntry struct {
-		expr    string
-		actions map[string]bool
-	}
-	var deniedByExpr []deniedExprEntry
-	// denyAllActions is true when a denied permission has no resource and no expression (matches everything).
-	var denyAllActions map[string]bool
-
-	for _, dp := range deniedPermissions {
-		// A denied permission with no resource and no expression matches every
-		// resource. If it additionally has no actions, it denies ALL actions on
-		// ALL resources -> no permission survives. Return empty immediately,
-		// matching IsAllowed's "empty resource + empty actions = deny all"
-		// semantics in matchResourceAction.
-		if len(dp.Resource) == 0 && len(dp.ResourceExpression) == 0 && len(dp.Actions) == 0 {
-			return nil
-		}
-		actions := make(map[string]bool, len(dp.Actions))
-		for _, a := range dp.Actions {
-			actions[a] = true
-		}
-		if len(dp.Resource) == 0 && len(dp.ResourceExpression) == 0 {
-			denyAllActions = actions
-		} else if len(dp.ResourceExpression) > 0 {
-			deniedByExpr = append(deniedByExpr, deniedExprEntry{expr: dp.ResourceExpression, actions: actions})
-		} else {
-			deniedByResource[dp.Resource] = actions
-		}
-	}
-
 	var finalPermissions []pms.Permission
 	for _, permission := range grantedPermissions {
-		grantActions := make([]string, 0, len(permission.Actions))
+		grantPermission := pms.Permission{
+			Resource: permission.Resource,
+			Actions:  permission.Actions,
+		}
 		isDenied := false
-
-		for _, grantedAction := range permission.Actions {
-			actionDenied := false
-
-			// Check deny-all (matches any resource).
-			if denyAllActions != nil && denyAllActions[grantedAction] {
-				actionDenied = true
-			}
-
-			// Check exact resource match.
-			if !actionDenied {
-				if deniedActions, ok := deniedByResource[permission.Resource]; ok {
-					actionDenied = deniedActions[grantedAction]
+		for _, deniedPermission := range deniedPermissions {
+			expMatched := false
+			if len(deniedPermission.ResourceExpression) > 0 {
+				matched, err := regexp.MatchString(deniedPermission.ResourceExpression, grantPermission.Resource)
+				if err != nil || matched {
+					//TODO: log err
+					expMatched = true
 				}
 			}
 
-			// Check resource expression match.
-			if !actionDenied {
-				for _, de := range deniedByExpr {
-					if matchRegexCompiled(de.expr, permission.Resource) {
-						if de.actions[grantedAction] {
+			if (len(deniedPermission.Resource) == 0 && len(deniedPermission.ResourceExpression) == 0) || expMatched || strings.Compare(deniedPermission.Resource, grantPermission.Resource) == 0 {
+				//if resource match, then remove denied actions
+				var actions []string
+				for _, grantedAction := range grantPermission.Actions {
+					actionDenied := false
+					for _, deniedAction := range deniedPermission.Actions {
+						if grantedAction == deniedAction {
 							actionDenied = true
 							break
 						}
 					}
+					if !actionDenied {
+						actions = append(actions, grantedAction)
+					}
+				}
+				if len(actions) == 0 {
+					isDenied = true
+					break
+				} else {
+					grantPermission = pms.Permission{
+						Resource: grantPermission.Resource,
+						Actions:  actions,
+					}
 				}
 			}
-
-			if !actionDenied {
-				grantActions = append(grantActions, grantedAction)
-			}
 		}
-
-		if len(grantActions) == 0 {
-			isDenied = true
-		}
-
 		if !isDenied {
-			finalPermissions = append(finalPermissions, pms.Permission{
-				Resource: permission.Resource,
-				Actions:  grantActions,
-			})
+			finalPermissions = append(finalPermissions, grantPermission)
 		}
 	}
 	return finalPermissions
@@ -255,40 +173,44 @@ func calculatePermissions(grantedPermissions, deniedPermissions []pms.Permission
 
 func evaluateCondition(condition *govaluate.EvaluableExpression, attributes map[string]interface{}) (bool, error) {
 	res, err := condition.Evaluate(attributes)
-	if err != nil {
-		log.Errorf("Error happens in evaluating condition (%s): %v", condition.String(), err)
+	if err != nil || res != true {
+		if err != nil {
+			log.Errorf("Error happens in evaluating condition (%s): %v", condition.String(), err)
+		}
 		return false, err
-	}
-	b, ok := res.(bool)
-	if !ok || !b {
-		return false, nil
 	}
 	return true, nil
 }
 
-func matchRolePolicyPrincipals(subjectSet map[string]bool, rolePolicyPrincipalList []string) bool {
-	if subjectSet == nil || len(subjectSet) == 0 {
+func matchRolePolicyPrincipals(subjectPrincipalList []string, rolePolicyPrincipalList []string) bool {
+	if subjectPrincipalList == nil || len(subjectPrincipalList) == 0 {
 		return false
 	}
 
 	if rolePolicyPrincipalList == nil || len(rolePolicyPrincipalList) == 0 {
 		return true
 	}
-
+	matched := false
 	for _, policyPrincipal := range rolePolicyPrincipalList {
-		if subjectSet[policyPrincipal] {
-			return true
+		for _, subjectPrincipal := range subjectPrincipalList {
+			if policyPrincipal == subjectPrincipal {
+				matched = true
+				break
+			}
+		}
+		if matched {
+			break
 		}
 	}
-	return false
+	return matched
 
 }
 
 /**
 It's regarded as matched only if all items in princs2 are included in princs1
 */
-func matchPrincipals(subjectSet map[string]bool, policyPrincipalList [][]string) bool {
-	if subjectSet == nil || len(subjectSet) == 0 {
+func matchPrincipals(subjectPrincipalList []string, policyPrincipalList [][]string) bool {
+	if subjectPrincipalList == nil || len(subjectPrincipalList) == 0 {
 		return false
 	}
 
@@ -300,7 +222,17 @@ func matchPrincipals(subjectSet map[string]bool, policyPrincipalList [][]string)
 		// one of item in policy principals matched, returns true
 		matched := true
 		for _, policyPrincipal := range andPrincipals {
-			if !subjectSet[policyPrincipal] {
+			matchedOnePrincipal := false
+			// Check if the policy principal in subject principal list
+			for _, subjectPrincipal := range subjectPrincipalList {
+				if policyPrincipal == subjectPrincipal {
+					// matched
+					matchedOnePrincipal = true
+					break
+				}
+			}
+			// The policy principal is not found in subjectPrincipalList, not match
+			if !matchedOnePrincipal {
 				matched = false
 				break
 			}
