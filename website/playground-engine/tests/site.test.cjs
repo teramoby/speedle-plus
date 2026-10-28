@@ -18,8 +18,13 @@ const contactLinks = '<a href="mailto:contact@speedle.io" aria-label="Email cont
 const copyright = '<p>Copyright &copy; 2019–2026. All rights reserved.</p>';
 const originalNavigationScript = original.match(/  <script>[\s\S]*?<\/script>/)[0];
 const sharedNavigationScript = '  <script src="/js/navigation.js?v=header-20261027" defer></script>';
-const restored = home.replace('Bring Your Own Storage','Bring Your Own Store').replace(contactLinks,originalMailingLink).replace(sharedNavigationScript,originalNavigationScript).replace(copyright,'').replace(discordLink,oldCommunityLink).replace('  <link rel="stylesheet" href="/css/site.css">\n  <link rel="stylesheet" href="/css/navigation.css?v=header-20261027">', `  <style>${read('docs/css/site.css')}</style>`).replace('<a href="/playground/">Playground</a>','').replace(`        ${chineseLink}\n`,'');
-assert.equal(restored,original,'Homepage content is unchanged except shared navigation assets/entries, community/contact links, storage heading and copyright notice');
+const originNote = /        <p class="license origin-note"><em>.*<\/em><\/p>\n/;
+for (const name of ['docs/index.html','docs/zh/index.html']) {
+  const note = read(name).match(originNote)?.[0];
+  assert.ok(note && note.includes('href="https://github.com/oracle/speedle" style="text-decoration:underline"><svg') && note.includes('href="mailto:contact@speedle.io" style="text-decoration:underline"'), `Origin note links in ${name}`);
+}
+const restored = home.replace(originNote,'').replace('Bring Your Own Storage','Bring Your Own Store').replace(contactLinks,originalMailingLink).replace(sharedNavigationScript,originalNavigationScript).replace(copyright,'').replace(discordLink,oldCommunityLink).replace('  <link rel="stylesheet" href="/css/site.css">\n  <link rel="stylesheet" href="/css/navigation.css?v=header-20261027">', `  <style>${read('docs/css/site.css')}</style>`).replace('<a href="/playground/">Playground</a>','').replace(`        ${chineseLink}\n`,'');
+assert.equal(restored,original,'Homepage content is unchanged except shared navigation assets/entries, community/contact links, storage heading, origin note and copyright notice');
 assert.ok(home.includes(chineseLink), 'English homepage exposes the Chinese homepage');
 assert.ok(page.includes(playgroundChineseLink), 'Playground switches to its Chinese counterpart');
 assert.ok(read('docs/zh/index.html').includes('href="/" lang="en" hreflang="en"'), 'Chinese homepage links back to English');
