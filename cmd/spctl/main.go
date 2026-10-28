@@ -22,8 +22,11 @@ func printVersionInfo() {
 	fmt.Printf(" Version:       %s\n", productVersion)
 	fmt.Printf(" Go Version:    %s\n", goVersion)
 	fmt.Printf(" Git commit:    %s\n", gitCommit)
-	os.Exit(0)
+	exit(0)
 }
+
+// exit is os.Exit, replaced in tests.
+var exit = os.Exit
 
 func main() {
 	printVersionInfo()

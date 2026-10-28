@@ -34,10 +34,32 @@ func runCLITests(m *testing.M) int {
 	}
 	defer os.RemoveAll(directory)
 	binary := filepath.Join(directory, "spctl")
-	build := exec.Command("go", "build", "-o", binary, "..")
+	buildArgs := []string{"build", "-o", binary}
+	// The tests run spctl as a subprocess, so its coverage is collected
+	// separately: with SPEEDLE_CLI_COVERPROFILE set, spctl is built with
+	// coverage and its counters are written there as a text profile.
+	coverProfile := os.Getenv("SPEEDLE_CLI_COVERPROFILE")
+	coverDir := filepath.Join(directory, "cover")
+	if coverProfile != "" {
+		if err := os.Mkdir(coverDir, 0700); err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			return 1
+		}
+		os.Setenv("GOCOVERDIR", coverDir)
+		buildArgs = append(buildArgs, "-cover", "-coverpkg=github.com/teramoby/speedle-plus/cmd/spctl/...")
+	}
+	build := exec.Command("go", append(buildArgs, "..")...)
 	if output, err := build.CombinedOutput(); err != nil {
 		fmt.Fprintf(os.Stderr, "build fixture spctl: %v\n%s", err, output)
 		return 1
+	}
+	if coverProfile != "" {
+		defer func() {
+			convert := exec.Command("go", "tool", "covdata", "textfmt", "-i", coverDir, "-o", coverProfile)
+			if output, err := convert.CombinedOutput(); err != nil {
+				fmt.Fprintf(os.Stderr, "write spctl coverage: %v\n%s", err, output)
+			}
+		}()
 	}
 
 	storeType := testutil.GetOSEnv("STORE_TYPE", "file")
