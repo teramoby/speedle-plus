@@ -790,10 +790,19 @@ func denyRoleAndDescendants(role string, relatedRoleMap map[string]*Role, grante
 }
 
 func getDeniableDescendantRoles(role string, relatedRoleMap map[string]*Role) []string {
+	return deniableDescendantRoles(role, relatedRoleMap, map[string]bool{role: true})
+}
+
+// deniableDescendantRoles skips roles already visited, so a cyclic role
+// graph cannot recurse forever.
+func deniableDescendantRoles(role string, relatedRoleMap map[string]*Role, visited map[string]bool) []string {
 	descendants := []string{}
 	if roleNode, ok := relatedRoleMap[role]; ok {
 		//get descendant nodes
 		for childrole := range roleNode.ChildRoles {
+			if visited[childrole] {
+				continue
+			}
 			if childRoleNode, ok := relatedRoleMap[childrole]; ok {
 				allParentRolesDenied := true
 				for parentRole := range childRoleNode.ParentRoles {
@@ -803,8 +812,9 @@ func getDeniableDescendantRoles(role string, relatedRoleMap map[string]*Role) []
 					}
 				}
 				if allParentRolesDenied && len(childRoleNode.ParentPrincipals) == 0 {
+					visited[childrole] = true
 					descendants = append(descendants, childrole)
-					descendants = append(descendants, getDeniableDescendantRoles(childrole, relatedRoleMap)...)
+					descendants = append(descendants, deniableDescendantRoles(childrole, relatedRoleMap, visited)...)
 				}
 			}
 		}
@@ -1166,12 +1176,16 @@ func difPolicySets(oldSet, newSet []int) (missed, removed []int) {
 			break
 		}
 
+		// Both sets are sorted: the smaller ID is missing from the other set.
 		if oldSet[i] == newSet[j] {
 			i++
 			j++
-		} else {
+		} else if oldSet[i] < newSet[j] {
 			removedData = append(removedData, oldSet[i])
 			i++
+		} else {
+			missedData = append(missedData, newSet[j])
+			j++
 		}
 	}
 	return missedData, removedData
@@ -1191,7 +1205,7 @@ func difFuncSets(oldSet, newSet []string) (missed, removed []string) {
 		newMap[v] = true
 	}
 	oldMap := make(map[string]bool)
-	for _, v := range newSet {
+	for _, v := range oldSet {
 		oldMap[v] = true
 	}
 	for _, v := range newSet {
