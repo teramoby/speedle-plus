@@ -11,19 +11,19 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>Deployment - Speedle</title>
-<meta name="description" content="Recommended deployment topology for Speedle">
+<meta name="description" content="Deploy Speedle with Docker or Kubernetes, file storage or etcd, and TLS/mTLS">
 <link rel="alternate" hreflang="en" href="https://speedle.io/docs/deployment/">
 <link rel="alternate" hreflang="x-default" href="https://speedle.io/docs/deployment/"><link rel="alternate" hreflang="zh-CN" href="https://speedle.io/zh/docs/deployment/">
 
 <meta property="og:type" content="article">
 <meta property="og:site_name" content="Speedle Authorization Engine">
 <meta property="og:title" content="Deployment">
-<meta property="og:description" content="Recommended deployment topology for Speedle">
+<meta property="og:description" content="Deploy Speedle with Docker or Kubernetes, file storage or etcd, and TLS/mTLS">
 <meta property="og:url" content="https://speedle.io/docs/deployment/">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Deployment">
-<meta name="twitter:description" content="Recommended deployment topology for Speedle">
-<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://speedle.io/docs/deployment/#page","@type":"TechArticle","about":{"@id":"https://speedle.io/#software"},"description":"Recommended deployment topology for Speedle","inLanguage":"en","isPartOf":{"@id":"https://speedle.io/#website"},"keywords":["Speedle+"],"name":"Deployment","url":"https://speedle.io/docs/deployment/"}</script>
+<meta name="twitter:description" content="Deploy Speedle with Docker or Kubernetes, file storage or etcd, and TLS/mTLS">
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://speedle.io/docs/deployment/#page","@type":"TechArticle","about":{"@id":"https://speedle.io/#software"},"description":"Deploy Speedle with Docker or Kubernetes, file storage or etcd, and TLS/mTLS","inLanguage":"en","isPartOf":{"@id":"https://speedle.io/#website"},"keywords":["Speedle+"],"name":"Deployment","url":"https://speedle.io/docs/deployment/"}</script>
 
 <meta name="generator" content="Hugo 0.48" />
 <link href="https://speedle.io/index.xml" rel="alternate" type="application/rss+xml">
@@ -73,7 +73,7 @@
 <div id="main">
   
   <h1>Deployment</h1>
-  <p>Deploy Speedle in embedded mode or as a service</p>
+  <p>Deploy Speedle with Docker or Kubernetes</p>
 
   
 <script type="text/javascript">
@@ -105,7 +105,7 @@ headingSelector: 'h2'
 
 <h2 id="choose-a-deployment-path">Choose a deployment path</h2>
 
-<p>You can try basic policies immediately in the <a href="/playground/">Playground</a>. For a native process, start with the <a href="/quick-start/">quick start</a>.</p>
+<p>You can try basic policies immediately in the <a href="/playground/">Playground</a>. For a native process, start with the <a href="/quick-start/">quick start</a>; to embed the engine in Go, see <a href="/docs/deployment-embeded/">embedded mode</a>.</p>
 
 <p>This guide covers a local Docker demonstration, a single-Pod Kubernetes file-store demonstration, and separate PMS/ADS Pods backed by etcd. Follow one deployment path, then run the authorization checks below. Run commands in Bash from the repository root.</p>
 

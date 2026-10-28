@@ -1,6 +1,9 @@
 {{- if ne .Values.store.type "etcd" }}
 {{- fail "The multi-Pod chart requires store.type=etcd; use the development chart for a shared file store." }}
 {{- end }}
+{{- if and .Values.store.etcd.etcdClientCertSecret (ne (empty .Values.store.etcd.certFile) (empty .Values.store.etcd.keyFile)) }}
+{{- fail "The etcd client certificate and key must both be configured or both be empty." }}
+{{- end }}
 {{- if and .Values.tls.enabled (or (empty .Values.tls.certSecret) (empty .Values.tls.certFile) (empty .Values.tls.keyFile)) }}
 {{- fail "TLS requires tls.certSecret, tls.certFile and tls.keyFile." }}
 {{- end }}
@@ -50,9 +53,13 @@ spec:
             - --store-type=etcd
             - --etcdstore-endpoint={{ required "store.etcd.endpoint is required" $.Values.store.etcd.endpoint }}
             {{- if $.Values.store.etcd.etcdClientCertSecret }}
+            {{- if $.Values.store.etcd.certFile }}
             - --etcdstore-tls-cert=/etc/etcdtls/{{ $.Values.store.etcd.certFile }}
             - --etcdstore-tls-key=/etc/etcdtls/{{ $.Values.store.etcd.keyFile }}
+            {{- end }}
+            {{- if $.Values.store.etcd.trustedCAFile }}
             - --etcdstore-tls-ca=/etc/etcdtls/{{ $.Values.store.etcd.trustedCAFile }}
+            {{- end }}
             {{- end }}
             {{- if $.Values.tls.enabled }}
             - --insecure=false

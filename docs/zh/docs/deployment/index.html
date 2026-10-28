@@ -11,19 +11,19 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>Speedle服务的部署方式 - Speedle</title>
-<meta name="description" content="Recommended deployment topology for Speedle">
+<meta name="description" content="使用 Docker 或 Kubernetes 部署 Speedle，配置文件存储、etcd 与 TLS/mTLS">
 <link rel="alternate" hreflang="en" href="https://speedle.io/docs/deployment/">
 <link rel="alternate" hreflang="x-default" href="https://speedle.io/docs/deployment/"><link rel="alternate" hreflang="zh-CN" href="https://speedle.io/zh/docs/deployment/">
 
 <meta property="og:type" content="article">
 <meta property="og:site_name" content="Speedle Authorization Engine">
 <meta property="og:title" content="Speedle服务的部署方式">
-<meta property="og:description" content="Recommended deployment topology for Speedle">
+<meta property="og:description" content="使用 Docker 或 Kubernetes 部署 Speedle，配置文件存储、etcd 与 TLS/mTLS">
 <meta property="og:url" content="https://speedle.io/zh/docs/deployment/">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Speedle服务的部署方式">
-<meta name="twitter:description" content="Recommended deployment topology for Speedle">
-<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://speedle.io/zh/docs/deployment/#page","@type":"TechArticle","about":{"@id":"https://speedle.io/#software"},"description":"Recommended deployment topology for Speedle","inLanguage":"zh-CN","isPartOf":{"@id":"https://speedle.io/#website"},"keywords":["Speedle+"],"name":"Speedle服务的部署方式","url":"https://speedle.io/zh/docs/deployment/"}</script>
+<meta name="twitter:description" content="使用 Docker 或 Kubernetes 部署 Speedle，配置文件存储、etcd 与 TLS/mTLS">
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://speedle.io/zh/docs/deployment/#page","@type":"TechArticle","about":{"@id":"https://speedle.io/#software"},"description":"使用 Docker 或 Kubernetes 部署 Speedle，配置文件存储、etcd 与 TLS/mTLS","inLanguage":"zh-CN","isPartOf":{"@id":"https://speedle.io/#website"},"keywords":["Speedle+"],"name":"Speedle服务的部署方式","url":"https://speedle.io/zh/docs/deployment/"}</script>
 
 <meta name="generator" content="Hugo 0.48" />
 <link href="https://speedle.io/index.xml" rel="alternate" type="application/rss+xml">
@@ -105,7 +105,7 @@ headingSelector: 'h2'
 
 <h2 id="选择部署方式">选择部署方式</h2>
 
-<p>可以先在 <a href="/zh/playground/">Playground</a> 试用基本策略；本地进程部署见<a href="/zh/quick-start/">快速入门</a>。</p>
+<p>可以先在 <a href="/zh/playground/">Playground</a> 试用基本策略；本地进程部署见<a href="/zh/quick-start/">快速入门</a>，在 Go 中嵌入引擎见<a href="/zh/docs/deployment-embeded/">嵌入式部署</a>。</p>
 
 <p>本页提供本地 Docker 示例、单 Pod 的 Kubernetes 文件存储示例，以及使用 etcd 的独立 PMS/ADS Pod 部署。选择一种部署方式完成后，再执行后面的授权检查。所有命令均在仓库根目录的 Bash 中执行。</p>
 

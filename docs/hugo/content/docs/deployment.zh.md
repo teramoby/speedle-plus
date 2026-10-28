@@ -1,6 +1,6 @@
 +++
 title = "Speedle服务的部署方式"
-description = "Recommended deployment topology for Speedle"
+description = "使用 Docker 或 Kubernetes 部署 Speedle，配置文件存储、etcd 与 TLS/mTLS"
 weight = 14
 draft = false
 toc = true
@@ -11,7 +11,7 @@ categories = ["docs"]
 
 ## 选择部署方式
 
-可以先在 [Playground](/playground/) 试用基本策略；本地进程部署见[快速入门](/quick-start/)。
+可以先在 [Playground](/playground/) 试用基本策略；本地进程部署见[快速入门](/quick-start/)，在 Go 中嵌入引擎见[嵌入式部署](/docs/deployment-embeded/)。
 
 本页提供本地 Docker 示例、单 Pod 的 Kubernetes 文件存储示例，以及使用 etcd 的独立 PMS/ADS Pod 部署。选择一种部署方式完成后，再执行后面的授权检查。所有命令均在仓库根目录的 Bash 中执行。
 

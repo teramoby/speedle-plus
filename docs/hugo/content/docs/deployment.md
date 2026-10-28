@@ -1,18 +1,18 @@
 +++
 title = "Deployment"
-description = "Recommended deployment topology for Speedle"
+description = "Deploy Speedle with Docker or Kubernetes, file storage or etcd, and TLS/mTLS"
 weight = 60
 draft = false
 toc = true
 tocheading = "h2"
 tocsidebar = false
 categories = ["docs"]
-bref = "Deploy Speedle in embedded mode or as a service"
+bref = "Deploy Speedle with Docker or Kubernetes"
 +++
 
 ## Choose a deployment path
 
-You can try basic policies immediately in the [Playground](/playground/). For a native process, start with the [quick start](/quick-start/).
+You can try basic policies immediately in the [Playground](/playground/). For a native process, start with the [quick start](/quick-start/); to embed the engine in Go, see [embedded mode](/docs/deployment-embeded/).
 
 This guide covers a local Docker demonstration, a single-Pod Kubernetes file-store demonstration, and separate PMS/ADS Pods backed by etcd. Follow one deployment path, then run the authorization checks below. Run commands in Bash from the repository root.
 
