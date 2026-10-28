@@ -549,7 +549,6 @@ func (p *PolicyEvalImpl) getGrantedRolesFromService(ctx *internalRequestContext,
 		if len(safelyDeniedRoles) > 0 {
 			for _, deniedRole := range safelyDeniedRoles {
 				denyRoleAndDescendants(deniedRole, relatedRolesMap, grantedRoleMap, deniedRoleMap)
-				//printRelatedRoleMap(relatedRolesMap)
 			}
 			//get deniedRoles based on the left role nodes.
 			deniedRoleMap = getDeniedRoles(relatedRolesMap, grantedRoleMap)
@@ -570,15 +569,6 @@ func (p *PolicyEvalImpl) getGrantedRolesFromService(ctx *internalRequestContext,
 	}
 
 	return finalGrantedRoles, nil
-}
-
-func printRelatedRoleMap(relatedRoleMap map[string]*Role) {
-	fmt.Println("----related role map start----")
-	for roleName, roleNode := range relatedRoleMap {
-		fmt.Printf("%s :\n    parentPrincipals=%v\n    parentRoles=%v\n    deniedByRoles=%v\n    deniedByPrinncipals=%v\n    childRoles=%v\n    denedRoles=%v\n",
-			roleName, roleNode.ParentPrincipals, roleNode.ParentRoles, roleNode.DeniedByRoles, roleNode.DeniedByPrincipals, roleNode.ChildRoles, roleNode.DeniedRoles)
-	}
-	fmt.Println("----related role map end----")
 }
 
 func updateRelatedRoleMapWithGrantRolePolicy(rolePolicy *pms.RolePolicy, relatedRolesMap map[string]*Role,

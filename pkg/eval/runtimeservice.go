@@ -38,13 +38,6 @@ type RuntimeService struct {
 	Functions         map[string]govaluate.ExpressionFunction
 }
 
-func NewRuntimeService() *RuntimeService {
-	return &RuntimeService{
-		PoliciesCache:     NewPolicyCacheData(),
-		RolePoliciesCache: NewRolePolicyCacheData(),
-	}
-}
-
 func (rtps *RuntimePolicyStore) init(ps *pms.PolicyStore, funcSvcEndpoint string) {
 	if funcSvcEndpoint != "" {
 		rtps.FuncSvcEndpoint = funcSvcEndpoint

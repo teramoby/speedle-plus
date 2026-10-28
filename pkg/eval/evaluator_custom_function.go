@@ -53,11 +53,6 @@ func (frc *FuncResultCache) get(key string) (FuncResult, bool) {
 	result, ok := frc.Results[key]
 	return result, ok
 }
-func (frc *FuncResultCache) delete(key string) {
-	frc.Lock()
-	defer frc.Unlock()
-	delete(frc.Results, key)
-}
 func (frc *FuncResultCache) add(key string, value FuncResult) {
 	frc.Lock()
 	defer frc.Unlock()
@@ -182,6 +177,9 @@ func CallCustomerFunctionViaDelegator(delegatorUrl string, cf *pms.Function, req
 	return getFunctionResp(client, req, cf)
 }
 
+// systemCertPool is x509.SystemCertPool, replaced in tests.
+var systemCertPool = x509.SystemCertPool
+
 func CallCustomerFunction(cf *pms.Function, request *ext.CustomerFunctionRequest) (interface{}, error) {
 	var client *http.Client
 	if strings.HasPrefix(strings.ToLower(cf.FuncURL), "https:") {
@@ -192,8 +190,14 @@ func CallCustomerFunction(cf *pms.Function, request *ext.CustomerFunctionRequest
 			log.Fatal(err)
 		}*/
 
-		caCertPool := x509.NewCertPool()
-		if len(cf.CA) > 0 { //this is only required if func server use certificate which is signed by unknown CA
+		// Trust the system roots, plus the function's own CA when it has one
+		// (only needed for a certificate signed by an unknown CA). An empty
+		// pool would reject every publicly signed function server.
+		caCertPool, err := systemCertPool()
+		if err != nil {
+			caCertPool = x509.NewCertPool()
+		}
+		if len(cf.CA) > 0 {
 			caCertPool.AppendCertsFromPEM([]byte(cf.CA))
 		}
 
