@@ -6,7 +6,10 @@ package cfg
 import (
 	"encoding/json"
 	"os"
+	"path/filepath"
 	"testing"
+
+	"github.com/teramoby/speedle-plus/pkg/errors"
 )
 
 func WriteConfig(mConfig Config, fileName string) error {
@@ -50,5 +53,35 @@ func TestWriteConfig(t *testing.T) {
 	mConfig := Config{
 		StoreConfig: &storeConfig,
 	}
-	WriteConfig(mConfig, "./myconfig.json")
+	location := filepath.Join(t.TempDir(), "myconfig.json")
+	if err := WriteConfig(mConfig, location); err != nil {
+		t.Fatal(err)
+	}
+	read, err := ReadConfig(location)
+	if err != nil || read.StoreConfig.StoreProps["FileLocation"] != "./ps.json" {
+		t.Fatalf("ReadConfig = %+v, %v", read, err)
+	}
+}
+
+func TestReadConfigErrors(t *testing.T) {
+	dir := t.TempDir()
+	bad := filepath.Join(dir, "bad.json")
+	os.WriteFile(bad, []byte("{"), 0600)
+	for _, location := range []string{bad, filepath.Join(dir, "missing.json")} {
+		if _, err := ReadConfig(location); errors.Code(err) != errors.ConfigError {
+			t.Errorf("ReadConfig(%s): %v", location, err)
+		}
+		if _, err := ReadStoreConfig(location); errors.Code(err) != errors.ConfigError {
+			t.Errorf("ReadStoreConfig(%s): %v", location, err)
+		}
+	}
+}
+
+func TestReadStoreConfig(t *testing.T) {
+	location := filepath.Join(t.TempDir(), "store.json")
+	os.WriteFile(location, []byte(`{"storeType":"etcd","storeProps":{"etcdEndpoint":"e:1"}}`), 0600)
+	conf, err := ReadStoreConfig(location)
+	if err != nil || conf.StoreType != "etcd" || conf.StoreProps["etcdEndpoint"] != "e:1" {
+		t.Fatalf("ReadStoreConfig = %+v, %v", conf, err)
+	}
 }
