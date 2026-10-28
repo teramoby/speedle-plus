@@ -137,6 +137,9 @@ def check(root):
         if "/playground/" not in route:
             assert page.alternates.get("x-default") == expected["x-default"], route
             assert page.schemas, route
+        if neutral == "/integrations/":
+            assert "noindex" not in " ".join(page.metas.get("robots", [])).casefold(), route
+            assert ORIGIN + metadata_route in sitemaps, route
         if neutral == "/":
             software = [entity for schema in page.schemas for entity in schema.get("@graph", [schema])
                         if entity.get("@type") == "SoftwareSourceCode"]
@@ -154,6 +157,12 @@ def check(root):
             assert "noindex" not in " ".join(page.metas.get("robots", [])), route
             assert page.schemas[0]["inLanguage"] == ("zh-CN" if zh else "en"), route
         pages += 1
+    # Explicit false only opens the selected sections; kind defaults still apply.
+    for prefix in ("", "zh/"):
+        for name in ("blog/index.html", "categories/cloudnative/index.html", "tags/policy/index.html"):
+            relative = prefix + name
+            blocked = Page((root / relative).read_text())
+            assert "noindex" in " ".join(blocked.metas.get("robots", [])).casefold(), relative
     for prefix in ("", "/zh"):
         for topic in TOPICS:
             route = prefix + "/docs/access-control/" + topic
