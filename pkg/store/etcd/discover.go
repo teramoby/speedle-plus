@@ -87,7 +87,8 @@ func (s *Store) GetLastDiscoverRequest(serviceName string) (*ads.RequestContext,
 		return nil, -1, err
 	}
 	if len(getResp.Kvs) == 0 {
-		return nil, -1, errors.Wrapf(err, errors.EntityNotFound, "no request found for service %q", serviceName)
+		// err is nil here, and errors.Wrapf(nil, ...) is nil.
+		return nil, -1, errors.Errorf(errors.EntityNotFound, "no request found for service %q", serviceName)
 	}
 	var request ads.RequestContext
 	err = json.Unmarshal(getResp.Kvs[0].Value, &request)

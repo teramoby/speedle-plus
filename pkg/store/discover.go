@@ -81,7 +81,8 @@ func GeneratePoliciesFromDiscoverRequests(requests []*ads.RequestContext, princi
 				if principalType != "" && principalType != princ.Type ||
 					principalName != "" && principalName != princ.Name ||
 					principalIDD != "" && principalIDD != princ.IDD {
-					break
+					// Another principal of the same request may match.
+					continue
 				}
 				encodedPrincipal := subjectutils.EncodePrincipal(princ)
 				roleName := "role_" + encodedPrincipal

@@ -217,7 +217,8 @@ func (s *Store) GetServiceItself(serviceName string) (*pms.Service, error) {
 	defer cancel()
 	serviceKey := s.KeyPrefix + ServicesKey + KeySeparator + serviceName
 	getOpts := []clientv3.OpOption{clientv3.WithKeysOnly(), clientv3.WithPrefix(), clientv3.WithLimit(int64(1))}
-	resp, err := s.client.Get(ctx, serviceKey, getOpts...)
+	// The separator keeps "app" from matching the keys of "app2".
+	resp, err := s.client.Get(ctx, serviceKey+KeySeparator, getOpts...)
 	if err != nil {
 		return nil, err
 	}
