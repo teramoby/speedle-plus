@@ -25,9 +25,9 @@
 
 # Speedle+
 
-Speedle+是一个通用授权引擎。用户可以使用它非常易用的策略定义语言构建自己的授权模型，并能在数毫秒之内得到授权结果。Speedle非常易用，非常高效，而且可扩展性能力非常强。用户可以在Speedle里面管理百万规模级的授权策略。
+Speedle+ 是一个用 Go 编写的开源授权引擎。应用向它询问某个主体能否对某个资源执行某个操作，它根据集中管理的策略在数毫秒内给出允许或拒绝，让授权逻辑独立于应用代码。它支持基于角色（RBAC）和基于属性（ABAC）的访问控制；拒绝策略优先于授权策略，没有授权的一律拒绝。用户可以在 Speedle 里管理百万规模级的授权策略。
 
-作为一个开源项目，Speedle包括策略定义语言（SPDL)，策略管理模块，授权决策模块，命令行工具，以及数个和流行系统集成的示例。
+Speedle+ 包括 Speedle 策略定义语言（Speedle Policy Definition Language，SPDL）、策略管理服务（PMS，即策略管理点 PAP）、授权决策服务（ADS，即策略决策点 PDP，也可以嵌入 Go 应用）、命令行工具 `spctl`，以及 Docker、Kubernetes、Istio 的集成示例。这些组件和常见授权术语的对应关系见[概览](https://speedle.io/zh/docs/overview/)。
 
 Speedle+项目基于Speedle项目<https://github.com/oracle/speedle>，两个项目都遵守UPL协议。
 
@@ -44,6 +44,57 @@ Speedle+项目基于Speedle项目<https://github.com/oracle/speedle>，两个项
 请参阅 <https://speedle.io/quick-start/>。   
 
 更详细的内容可以查阅[这里](https://github.com/teramoby/speedle-plus/tree/master/docs/%E4%B8%AD%E6%96%87%E8%B5%84%E6%96%99)。
+
+## 嵌入 Go 应用
+
+授权决策服务可以直接运行在 Go 进程里。先把策略保存为 `policies.spdl`：
+
+```text
+[service.library]
+[policy]
+grant role librarian read,update book
+[rolepolicy]
+grant user alice librarian
+```
+
+用 `go get github.com/teramoby/speedle-plus` 引入模块，然后评估一个请求：
+
+```go
+package main
+
+import (
+	"fmt"
+
+	"github.com/teramoby/speedle-plus/api/ads"
+	"github.com/teramoby/speedle-plus/pkg/eval"
+	_ "github.com/teramoby/speedle-plus/pkg/store/file" // registers the file store
+)
+
+func main() {
+	evaluator, err := eval.NewFromFile("policies.spdl", false)
+	if err != nil {
+		panic(err)
+	}
+	for _, user := range []string{"alice", "bob"} {
+		allowed, reason, err := evaluator.IsAllowed(ads.RequestContext{
+			Subject:     &ads.Subject{Principals: []*ads.Principal{{Type: "user", Name: user}}},
+			ServiceName: "library",
+			Resource:    "book",
+			Action:      "update",
+		})
+		fmt.Println(user, allowed, reason, err)
+	}
+}
+```
+
+输出：
+
+```text
+alice true GRANT_POLICY_FOUND <nil>
+bob false NO_APPLICABLE_POLICIES <nil>
+```
+
+详见[嵌入模式](https://speedle.io/zh/docs/deployment-embeded/)。
 
 ## 构建
 

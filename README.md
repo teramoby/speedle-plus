@@ -25,9 +25,9 @@
 
 # Speedle+
 
-Speedle+ is a general purpose authorization engine. It allows users to construct their policy model with user-friendly policy definition language and get authorization decision in milliseconds based on the policies. Speedle is very user-friendly, efficient, and extremely scalable. 
+Speedle+ is an open-source authorization engine written in Go. Applications ask it whether a subject may perform an action on a resource, and it answers allow or deny in milliseconds from centrally managed policies, so authorization logic stays out of application code. It supports role-based (RBAC) and attribute-based (ABAC) access control; deny policies override grants, and anything not granted is denied.
 
-Speedle+ open source project consits of a policy definition language, policy management module, authorization runtime module, commandline tool, and integration samples with popular systems.
+Speedle+ consists of the Speedle Policy Definition Language (SPDL), the Policy Management Service (PMS, the policy administration point), the Authorization Decision Service (ADS, the policy decision point, which can also be embedded in Go applications), the `spctl` command-line tool, and integration samples for Docker, Kubernetes and Istio. See the [overview](https://speedle.io/docs/overview/) for how these map to common authorization terms.
 
 Speedle+ is based on Speedle open source project which is hosted at https://github.com/oracle/speedle under UPL.
 
@@ -42,6 +42,57 @@ Latest documentations are available at <https://speedle.io/docs>.
 ## Get Started
 
 See Getting Started at <https://speedle.io/quick-start/>.
+
+## Embed in a Go application
+
+The Authorization Decision Service can run inside a Go process. Save the policies as `policies.spdl`:
+
+```text
+[service.library]
+[policy]
+grant role librarian read,update book
+[rolepolicy]
+grant user alice librarian
+```
+
+Add the module with `go get github.com/teramoby/speedle-plus`, then evaluate a request:
+
+```go
+package main
+
+import (
+	"fmt"
+
+	"github.com/teramoby/speedle-plus/api/ads"
+	"github.com/teramoby/speedle-plus/pkg/eval"
+	_ "github.com/teramoby/speedle-plus/pkg/store/file" // registers the file store
+)
+
+func main() {
+	evaluator, err := eval.NewFromFile("policies.spdl", false)
+	if err != nil {
+		panic(err)
+	}
+	for _, user := range []string{"alice", "bob"} {
+		allowed, reason, err := evaluator.IsAllowed(ads.RequestContext{
+			Subject:     &ads.Subject{Principals: []*ads.Principal{{Type: "user", Name: user}}},
+			ServiceName: "library",
+			Resource:    "book",
+			Action:      "update",
+		})
+		fmt.Println(user, allowed, reason, err)
+	}
+}
+```
+
+Output:
+
+```text
+alice true GRANT_POLICY_FOUND <nil>
+bob false NO_APPLICABLE_POLICIES <nil>
+```
+
+See [Embedded mode](https://speedle.io/docs/deployment-embeded/) for details.
 
 ## Build
 

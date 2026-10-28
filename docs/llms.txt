@@ -1,28 +1,42 @@
 # Speedle+
 
-> Speedle+ is an open-source authorization engine for externalizing fine-grained access-control decisions across cloud-native and legacy applications.
+> Speedle+ is an open-source authorization engine, written in Go, for externalizing fine-grained access-control decisions across cloud-native and legacy applications.
 
 Speedle+ evaluates RBAC and ABAC policies for users, services, and processes acting on behalf of users. Its human-readable Speedle Policy Definition Language (SPDL), centralized Policy Management Service, and Authorization Decision Service keep authorization logic outside application code. The project is available under the Universal Permissive License v1.0.
 
 ## Start here
 
+- [Speedle overview](https://speedle.io/docs/overview/): How Speedle+ maps to authorization terms: PAP, PDP, PEP, PIP, RBAC, ABAC, PBAC, XACML, identity, IAM and zero trust.
 - [Project overview](https://speedle.io/about/): What Speedle+ is and why the project exists.
 - [Quick start](https://speedle.io/quick-start/): Run Speedle+ and make a first authorization decision.
 - [Documentation](https://speedle.io/docs/): Concepts, deployment, APIs, and operations.
 - [Architecture](https://speedle.io/docs/architecture/): Major components and request flow.
 - [SPDL](https://speedle.io/docs/spdl/): Speedle Policy Definition Language reference.
 - [Authorization decisions](https://speedle.io/docs/decisions/): How policy decisions are evaluated.
+- [Embedded mode](https://speedle.io/docs/deployment-embeded/): Evaluate policies inside a Go process.
 - [Use cases](https://speedle.io/docs/usecases/): Common authorization patterns.
 - [Integrations](https://speedle.io/integrations/): Kubernetes, Istio, and Docker.
 - [Source code](https://github.com/teramoby/speedle-plus): Canonical Speedle+ repository.
+
+## When to use Speedle+
+
+- An application needs authorization decisions (may this subject perform this action on this resource?) kept out of its own code.
+- Policies should be managed centrally and shared by several services.
+- Access depends on roles (RBAC), on request attributes (ABAC), or on both.
+- A Go application wants to evaluate policies in-process, without a network call.
+- Users come from several identity providers, and policies must tell them apart (identity domains).
 
 ## Canonical facts
 
 - Product name: Speedle+ (continuation of the original Speedle project)
 - Category: open-source authorization engine / policy decision service
+- Language: Go; add with `go get github.com/teramoby/speedle-plus`
 - Models: role-based access control (RBAC) and attribute-based access control (ABAC)
-- Policy language: SPDL (Speedle Policy Definition Language)
-- Core services: Policy Management Service and Authorization Decision Service
+- Policy language: SPDL (Speedle Policy Definition Language), for example `grant role librarian read,update book`
+- Core services: Policy Management Service (PMS, the policy administration point) and Authorization Decision Service (ADS, the policy decision point)
+- Decision rules: deny policies override grants; a request with no applicable grant is denied
+- Interfaces: REST APIs, gRPC (enabled with `--grpc-endpoint`), the `spctl` CLI, and an embedded Go evaluator
+- Scope: Speedle+ makes authorization decisions only. It is not an identity provider and does not authenticate users. It follows the XACML PAP/PDP/PEP/PIP roles but does not use or import XACML policies.
 - License: Universal Permissive License v1.0
 - Official website: https://speedle.io/
 - Code repository: https://github.com/teramoby/speedle-plus
@@ -31,3 +45,4 @@ Speedle+ evaluates RBAC and ABAC policies for users, services, and processes act
 
 - [English](https://speedle.io/)
 - [简体中文](https://speedle.io/zh/)
+- [Speedle 概览（中文）](https://speedle.io/zh/docs/overview/)
