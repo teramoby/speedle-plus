@@ -46,6 +46,20 @@
   </url>
   
   <url>
+    <loc>https://speedle.io/docs/overview/</loc>
+    <xhtml:link
+                rel="alternate"
+                hreflang="zh"
+                href="https://speedle.io/zh/docs/overview/"
+                />
+    <xhtml:link
+                rel="alternate"
+                hreflang="en"
+                href="https://speedle.io/docs/overview/"
+                />
+  </url>
+  
+  <url>
     <loc>https://speedle.io/docs/pms/diagnosis/</loc>
     <lastmod>2019-01-18T15:46:59+08:00</lastmod>
     <xhtml:link

@@ -81,6 +81,16 @@ Policy store The policy store maintains all policy artifacts and can be persiste
     </item>
     
     <item>
+      <title>Speedle Overview: Authorization Engine for Fine-Grained Access Control</title>
+      <link>https://speedle.io/docs/overview/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://speedle.io/docs/overview/</guid>
+      <description>Speedle is an open-source authorization engine. Applications send it a question such as &amp;ldquo;may this user perform this action on this resource?&amp;rdquo;, and Speedle answers allow or deny according to centrally managed policies. This page connects common authorization terms to the Speedle components that implement them, and links to the guides that cover each one.
+The examples below use a service named library. Each policy was created through the Policy Management Service REST API and each decision was returned by the Authorization Decision Service REST API.</description>
+    </item>
+    
+    <item>
       <title>Speedle Policy</title>
       <link>https://speedle.io/docs/pms/</link>
       <pubDate>Fri, 18 Jan 2019 21:19:44 +0800</pubDate>

@@ -42,6 +42,16 @@ Centalized policy enforcement and management Jin Chen is a security manager of m
     </item>
     
     <item>
+      <title>Speedle Overview: Authorization Engine for Fine-Grained Access Control</title>
+      <link>https://speedle.io/docs/overview/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://speedle.io/docs/overview/</guid>
+      <description>Speedle is an open-source authorization engine. Applications send it a question such as &amp;ldquo;may this user perform this action on this resource?&amp;rdquo;, and Speedle answers allow or deny according to centrally managed policies. This page connects common authorization terms to the Speedle components that implement them, and links to the guides that cover each one.
+The examples below use a service named library. Each policy was created through the Policy Management Service REST API and each decision was returned by the Authorization Decision Service REST API.</description>
+    </item>
+    
+    <item>
       <title>Policy Diagnosis</title>
       <link>https://speedle.io/docs/pms/diagnosis/</link>
       <pubDate>Fri, 18 Jan 2019 15:46:59 +0800</pubDate>
@@ -152,6 +162,15 @@ Write store code to implement the PolicyStoreManager interface Create a &amp;ldq
     </item>
     
     <item>
+      <title>Policy Management API</title>
+      <link>https://speedle.io/docs/api/management_api/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://speedle.io/docs/api/management_api/</guid>
+      <description>              (function() { var url = &#34;\/swagger\/policy-manage.yaml&#34;; const ui = SwaggerUIBundle({ url: url, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.presets.apis ], plugins: [ SwaggerUIBundle.plugins.DownloadUrl ], validatorUrl: null, layout: &#34;BaseLayout&#34; }) window.ui = ui })();  </description>
+    </item>
+    
+    <item>
       <title>Security</title>
       <link>https://speedle.io/docs/security/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
@@ -160,15 +179,6 @@ Write store code to implement the PolicyStoreManager interface Create a &amp;ldq
       <description>Overview API Endpoint Security / Authentication and Authorization Authentication and authorization for client requests (other than TLS mutual auth) are not supported by Speedle.
 If you want to protect Speedle API endpoints, you can use any existing/stock solutions to secure these APIs (e.g. an API Gateway like Ambassador with tokens etc).
 Message security / TLS TLS is a cryptographic protocol that provides communications security, it offers many different ways of exchanging keys for authentication, encrypting data, and guaranteeing message integrity.</description>
-    </item>
-    
-    <item>
-      <title>Speedle Documents</title>
-      <link>https://speedle.io/docs/</link>
-      <pubDate>Thu, 17 Jan 2019 13:20:07 +0800</pubDate>
-      
-      <guid>https://speedle.io/docs/</guid>
-      <description></description>
     </item>
     
     <item>
@@ -210,12 +220,12 @@ Version 0.1.0 release notes: This is the first open source version. All basic fu
     </item>
     
     <item>
-      <title>Policy Management API</title>
-      <link>https://speedle.io/docs/api/management_api/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <title>Speedle Documents</title>
+      <link>https://speedle.io/docs/</link>
+      <pubDate>Thu, 17 Jan 2019 13:20:07 +0800</pubDate>
       
-      <guid>https://speedle.io/docs/api/management_api/</guid>
-      <description>              (function() { var url = &#34;\/swagger\/policy-manage.yaml&#34;; const ui = SwaggerUIBundle({ url: url, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.presets.apis ], plugins: [ SwaggerUIBundle.plugins.DownloadUrl ], validatorUrl: null, layout: &#34;BaseLayout&#34; }) window.ui = ui })();  </description>
+      <guid>https://speedle.io/docs/</guid>
+      <description></description>
     </item>
     
     <item>

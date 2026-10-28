@@ -1,6 +1,6 @@
 +++
 title = "SPDL - Speedle Policy Definition Language"
-description = "Understand the basics of SPDL"
+description = "SPDL stands for Speedle Policy Definition Language, the language for writing Speedle policies and role policies."
 weight = 5
 draft = false
 toc = true

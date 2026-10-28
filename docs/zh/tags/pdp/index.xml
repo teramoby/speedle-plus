@@ -11,6 +11,22 @@
     
     
     <item>
+      <title>Speedle 概览：面向细粒度访问控制的授权引擎</title>
+      <link>https://speedle.io/zh/docs/overview/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://speedle.io/zh/docs/overview/</guid>
+      <description>Speedle 是一个开源的授权引擎（authorization engine）。应用向它提出“这个用户能否对这个资源执行这个操作”这样的问题，Speedle 根据集中管理的策略回答允许或拒绝。本页把常见的授权术语和 Speedle 中实现它们的组件对应起来，并链接到相应的文档。
+下面的示例使用名为 library 的服务。每条策略都通过策略管理服务的 REST API 创建，每个决策都由授权决策服务的 REST API 返回。reason 代码的含义见授权查询。
+授权引擎（Authorization engine） 授权引擎根据策略评估访问请求并返回决策，使授权逻辑独立于应用代码。Speedle 由策略管理服务（PMS）、策略存储和授权决策服务（ADS）组成。ADS 可以作为独立服务运行，也可以嵌入 Go 应用。
+授权与访问控制（Authorization and access control） 认证（authentication）确认调用者是谁；授权（authorization）决定调用者能做什么；访问控制（access control）则是执行这些决策。Speedle 只负责授权：它接收已经认证过的主体，返回决策，由调用它的应用或网关执行。参见授权查询。
+细粒度访问控制（Fine-grained access control，FGA） 细粒度访问控制按用户、资源和操作逐一决定访问权限，还可以结合请求上下文，而不是对整个应用一次性放行。Speedle 的策略写明主体、操作和资源，并可以附加条件；角色策略可以只在某一个资源上授予角色。参见 SPDL。
+PAP：策略管理点（Policy Administration Point） PAP 是创建和管理策略的地方。在 Speedle 中，PAP 就是 PMS，可以通过 REST API、gRPC API 或命令行工具 spctl 使用。参见策略管理。
+PDP：策略决策点（Policy Decision Point） PDP 根据策略评估请求并返回决策。在 Speedle 中，PDP 是 ADS；Speedle 嵌入 Go 进程运行时，则是嵌入式求值器。一个决策请求如下：
+curl --header &amp;#39;Content-Type: application/json&amp;#39; --data &amp;#39;{&amp;#34;subject&amp;#34;:{&amp;#34;principals&amp;#34;:[{&amp;#34;type&amp;#34;:&amp;#34;user&amp;#34;,&amp;#34;name&amp;#34;:&amp;#34;alice&amp;#34;}]},&amp;#34;serviceName&amp;#34;:&amp;#34;library&amp;#34;,&amp;#34;resource&amp;#34;:&amp;#34;book&amp;#34;,&amp;#34;action&amp;#34;:&amp;#34;update&amp;#34;}&amp;#39; http://127.</description>
+    </item>
+    
+    <item>
       <title>授权查询</title>
       <link>https://speedle.io/zh/docs/decisions/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>

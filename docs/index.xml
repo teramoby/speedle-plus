@@ -42,6 +42,16 @@ Centalized policy enforcement and management Jin Chen is a security manager of m
     </item>
     
     <item>
+      <title>Speedle Overview: Authorization Engine for Fine-Grained Access Control</title>
+      <link>https://speedle.io/docs/overview/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://speedle.io/docs/overview/</guid>
+      <description>Speedle is an open-source authorization engine. Applications send it a question such as &amp;ldquo;may this user perform this action on this resource?&amp;rdquo;, and Speedle answers allow or deny according to centrally managed policies. This page connects common authorization terms to the Speedle components that implement them, and links to the guides that cover each one.
+The examples below use a service named library. Each policy was created through the Policy Management Service REST API and each decision was returned by the Authorization Decision Service REST API.</description>
+    </item>
+    
+    <item>
       <title>Policy Diagnosis</title>
       <link>https://speedle.io/docs/pms/diagnosis/</link>
       <pubDate>Fri, 18 Jan 2019 15:46:59 +0800</pubDate>
@@ -267,8 +277,8 @@ Version 0.1.0 release notes: This is the first open source version. All basic fu
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://speedle.io/about/</guid>
-      <description>Speedle is an open source, fine-grained access control engine built to address authorization requirements in cloud-native applications. Speedle offers policy-driven access control that provides the ability to externalize authorization decisions to a policy engine that that can evaluate RBAC/ABAC policies for a given logged-in user, or on a process acting on behalf of a user. Speedle includes the SPDL policy definition language.
-The open source version of Speedle consists of:</description>
+      <description>Speedle is an open source, fine-grained access control engine built to address authorization requirements in cloud-native applications. Speedle offers policy-driven access control that provides the ability to externalize authorization decisions to a policy engine that that can evaluate RBAC/ABAC policies for a given logged-in user, or on a process acting on behalf of a user. Speedle includes SPDL, the Speedle Policy Definition Language.
+Speedle was first developed at Oracle, whose commercial product for fine-grained authorization is Oracle Entitlements Server (OES).</description>
     </item>
     
     <item>
