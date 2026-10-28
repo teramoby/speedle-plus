@@ -53,18 +53,18 @@ Plase refer to [token assertor](/docs/assertor)
     <div class="col col-2"></div>
     <div class="col col-8 center" style="font-size: 25px">
     <div>
-        <p>Can’t see the answer you’re looking for?</p>
-        <p>Try our Slack workspace #speedleproject</p>
+        <p>还没找到需要的答案？</p>
+        <p>加入 Speedle Discord 社区，向社区提问和交流。</p>
         <p>
-          <a class="button primary started" style="font-size:18px" href="/quick-start">
-            <span>Visit Slack channel →</span>
+          <a class="button primary started" style="font-size:18px" href="https://discord.gg/uaY2xVsbbT">
+            <span>加入 Discord →</span>
           </a>
         </p>
     </div>
     </div>
     <div class="col col-2 right">
-      <a title="slack" href="https://join.slack.com/t/speedleproject/shared_invite/enQtNTUzODM3NDY0ODE2LTg0ODc0NzQ1MjVmM2NiODVmMThkMmVjNmMyODA0ZWJjZjQ3NDc2MjdlMzliN2U4MDRkZjhlYzYzMDEyZTgxMGQ">
-        <img class="svg" src="/img/speedle/Slack_RGB.svg" />
+      <a title="Discord" href="https://discord.gg/uaY2xVsbbT">
+        <img class="svg" src="/img/speedle/Discord-color.svg" />
       </a>
     </div>
 </div>

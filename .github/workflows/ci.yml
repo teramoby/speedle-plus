@@ -6,14 +6,90 @@ permissions:
   contents: read
 
 jobs:
+  # Changes confined to docs/ (the GitHub Pages site) skip the Go jobs and run
+  # only the site checks; anything else runs the full suite.
+  changes:
+    name: changes
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      docs_only: ${{ steps.scope.outputs.docs_only }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Classify changed files
+        id: scope
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          PR_BASE: ${{ github.event.pull_request.base.sha }}
+          PUSH_BEFORE: ${{ github.event.before }}
+        run: |
+          set -euo pipefail
+          case "${EVENT_NAME}" in
+            pull_request) base="${PR_BASE}" ;;
+            push) base="${PUSH_BEFORE}" ;;
+            *) base="" ;;
+          esac
+          docs_only=false
+          if [[ -n "${base}" && "${base}" != 0000000000000000000000000000000000000000 ]] && git cat-file -e "${base}^{commit}" 2>/dev/null; then
+            changed=$(git diff --name-only "${base}" "${GITHUB_SHA}")
+            if [[ -n "${changed}" ]] && ! grep -qv '^docs/' <<< "${changed}"; then
+              docs_only=true
+            fi
+          fi
+          echo "docs_only=${docs_only}" >> "${GITHUB_OUTPUT}"
+          echo "Docs-only change: ${docs_only}"
+
+  site:
+    name: site
+    needs: changes
+    if: needs.changes.outputs.docs_only == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+          # site.test.cjs compares the homepage with a historical commit.
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '22'
+          package-manager-cache: false
+
+      # The Playground release checks without rebuilding its Go engine.
+      - name: Verify site
+        run: |
+          set -euo pipefail
+          node website/playground-engine/tests/form-model.test.cjs
+          node website/playground-engine/tests/form-dom.test.cjs
+          PLAYGROUND_LOCALE=zh node website/playground-engine/tests/form-dom.test.cjs
+          node website/playground-engine/tests/site.test.cjs
+          python3 website/tests/test_language_routes.py
+          python3 website/localize-links.py docs --check
+          website/playground-engine/verify-hugo.sh
+
   lint:
     name: lint
+    needs: changes
+    if: needs.changes.outputs.docs_only != 'true'
     uses: teramoby/speedle-plus/.github/workflows/go-ci-worker.yml@master
     with:
       mode: lint
 
   test:
     name: test (${{ matrix.store-type }})
+    needs: changes
+    if: needs.changes.outputs.docs_only != 'true'
     strategy:
       fail-fast: false
       matrix:
@@ -25,6 +101,8 @@ jobs:
 
   build:
     name: build
+    needs: changes
+    if: needs.changes.outputs.docs_only != 'true'
     uses: teramoby/speedle-plus/.github/workflows/go-ci-worker.yml@master
     with:
       mode: build

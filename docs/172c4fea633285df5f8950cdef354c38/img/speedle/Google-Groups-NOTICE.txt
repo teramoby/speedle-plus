@@ -1,0 +1,5 @@
+Google-Groups.svg uses the groups icon from Google Material Icons.
+Copyright Google LLC. Licensed under the Apache License, Version 2.0.
+License: Material-Icons-LICENSE.txt (in this directory).
+Source: https://raw.githubusercontent.com/google/material-design-icons/10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7/src/social/groups/materialicons/24px.svg
+Modification: changed the icon fill to white to match the Speedle footer.

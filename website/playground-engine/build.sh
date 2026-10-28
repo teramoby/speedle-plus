@@ -5,6 +5,8 @@ ROOT=$(git rev-parse --show-toplevel)
 REVISION=7f61995d3344e94ed614494e013dacdcfa491b26
 GO_BIN="${GO_BIN:-go}"
 export GOTOOLCHAIN=local
+# The build tree is a git archive; never read VCS state from an enclosing checkout.
+export GOFLAGS=-buildvcs=false
 if [[ "$("$GO_BIN" env GOVERSION)" != go1.26.3 ]]; then
   echo 'Use Go 1.26.3 for a reproducible build (set GO_BIN=/path/to/go).' >&2
   exit 1
