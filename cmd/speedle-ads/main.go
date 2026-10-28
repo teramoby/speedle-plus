@@ -100,11 +100,24 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	healthServer, err := params.NewHealthServer(func(ctx context.Context) error {
+		health, ok := evaluator.(interface{ Health(context.Context) error })
+		if !ok {
+			return fmt.Errorf("evaluator does not support backend health checks")
+		}
+		return health.Health(ctx)
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	intChan := make(chan os.Signal, 1)
 	signal.Notify(intChan, os.Interrupt, syscall.SIGTERM)
 
-	errChan := make(chan error, 2)
+	errChan := make(chan error, 3)
+	if healthServer != nil {
+		go func() { errChan <- healthServer.ListenAndServe() }()
+	}
 	go func() {
 		log.Info("Starting the gRPC server for authorization service...")
 		errChan <- listenGRPCServer(grpcServer, &params)
@@ -126,6 +139,9 @@ func main() {
 	}
 
 	log.Info("Stopping servers...")
+	if healthServer != nil {
+		_ = healthServer.Close()
+	}
 	// Stop all services
 	if httpServer != nil {
 		log.Info("Stopping HTTP Server.")

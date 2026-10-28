@@ -15,17 +15,19 @@ import (
 	"net"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 )
 
 func main() {
 	out := flag.String("out", "./tls", "New directory for demonstration certificates")
+	dnsNames := flag.String("dns-names", "", "Additional comma-separated DNS names for the server certificate")
 	flag.Parse()
-	if err := generate(*out); err != nil {
+	if err := generate(*out, *dnsNames); err != nil {
 		log.Fatal(err)
 	}
 }
-func generate(out string) error {
+func generate(out, dnsNames string) error {
 	if err := os.MkdirAll(out, 0700); err != nil {
 		return err
 	}
@@ -53,6 +55,11 @@ func generate(out string) error {
 		} else if name == "server" {
 			template.ExtKeyUsage = []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth}
 			template.DNSNames = []string{"localhost"}
+			for _, name := range strings.Split(dnsNames, ",") {
+				if name = strings.TrimSpace(name); name != "" {
+					template.DNSNames = append(template.DNSNames, name)
+				}
+			}
 			template.IPAddresses = []net.IP{net.ParseIP("127.0.0.1"), net.ParseIP("::1")}
 		} else {
 			template.ExtKeyUsage = []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth}

@@ -1,46 +1,38 @@
-# Default values for speedle.
-# This is a YAML-formatted file.
-# Declare variables to be passed into your templates.
-
 replicaCount: 1
-
 image:
-  pms: r.authz.fun/speedle-pms:v0.1
-  ads: r.authz.fun/speedle-ads:v0.1
-  pullPolicy: Always
-  pullSecret: "reg-speedle"
-
+  pms: speedle-pms:dev
+  ads: speedle-ads:dev
+  pullPolicy: IfNotPresent
+  pullSecret: ""
 service:
   type: ClusterIP
   pmsPort: 6733
   adsPort: 6734
-
 resources:
   requests:
-    memory: "64Mi"
-    cpu: "50m"
+    memory: 64Mi
+    cpu: 50m
   limits:
-    memory: "256Mi"
-    cpu: "200m"
-
+    memory: 256Mi
+    cpu: 200m
 serviceAccount:
   create: true
   name: ""
-
 tls:
+  enabled: true
   certSecret: speedle-server-tls
   certFile: server.crt
   keyFile: server.key
-  trustedCAFile: server-ca.crt
+  trustedCAFile: ca.crt
   forceClientCert: true
-
 store:
   type: etcd
   etcd:
-    endpoint: http://localhost:2379
-    # TLS enabled
-    # endpoint: https://example-client.default.svc:2379
-    # etcdClientCertSecret: etcd-client-tls
-    # certFile: etcd-client.crt
-    # keyFile: etcd-client.key
-    # trustedCAFile: etcd-client-ca.crt
+    # Supply a protected backend explicitly; see values-example.yaml.
+    endpoint: ""
+    # Legacy/externally protected backends require an intentional opt-in.
+    allowInsecure: false
+    etcdClientCertSecret: ""
+    certFile: client.crt
+    keyFile: client.key
+    trustedCAFile: ca.crt

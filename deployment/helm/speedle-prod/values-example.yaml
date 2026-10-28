@@ -1,0 +1,6 @@
+# Explicit settings for the mTLS-protected, single-member test fixture.
+# Supply your own protected etcd endpoint and credentials for production.
+store:
+  etcd:
+    endpoint: https://speedle-etcd:2379
+    etcdClientCertSecret: etcd-client-tls

@@ -1,133 +1,136 @@
-{{- define "deploymentTemplate" }}
-{{- with .chart }}
+{{- if ne .Values.store.type "etcd" }}
+{{- fail "The multi-Pod chart requires store.type=etcd; use the development chart for a shared file store." }}
+{{- end }}
+{{- $endpoint := required "store.etcd.endpoint must explicitly name a protected etcd backend" .Values.store.etcd.endpoint }}
+{{- if not (kindIs "bool" .Values.store.etcd.allowInsecure) }}
+{{- fail "store.etcd.allowInsecure must be a YAML boolean, not a string." }}
+{{- end }}
+{{- if not .Values.store.etcd.allowInsecure }}
+{{- if or (not (hasPrefix "https://" $endpoint)) (empty .Values.store.etcd.etcdClientCertSecret) (empty .Values.store.etcd.certFile) (empty .Values.store.etcd.keyFile) (empty .Values.store.etcd.trustedCAFile) }}
+{{- fail "Production etcd requires an https:// endpoint, etcdClientCertSecret, certFile, keyFile and trustedCAFile. Only explicitly protected legacy backends may opt out with store.etcd.allowInsecure=true." }}
+{{- end }}
+{{- end }}
+{{- if and .Values.store.etcd.etcdClientCertSecret (ne (empty .Values.store.etcd.certFile) (empty .Values.store.etcd.keyFile)) }}
+{{- fail "The etcd client certificate and key must both be configured or both be empty." }}
+{{- end }}
+{{- if and .Values.tls.enabled (or (empty .Values.tls.certSecret) (empty .Values.tls.certFile) (empty .Values.tls.keyFile)) }}
+{{- fail "TLS requires tls.certSecret, tls.certFile and tls.keyFile." }}
+{{- end }}
+{{- if and .Values.tls.enabled .Values.tls.forceClientCert (empty .Values.tls.trustedCAFile) }}
+{{- fail "mTLS requires tls.trustedCAFile." }}
+{{- end }}
+{{- range $service := list (dict "name" "pms" "port" 6733 "grpc" 50001 "health" 8081) (dict "name" "ads" "port" 6734 "grpc" 50002 "health" 8082) }}
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ template "speedle.fullname" . }}-{{ $.serviceName }}
-  labels:
-    app: {{ $.serviceName }}
-    chart: {{ template "speedle.chart" . }}
-    release: {{ .Release.Name }}
-    heritage: {{ .Release.Service }}
+  name: {{ include "speedle.fullname" $ }}-{{ $service.name }}
 spec:
-  replicas: {{ .Values.replicaCount }}
+  replicas: {{ $.Values.replicaCount }}
   selector:
     matchLabels:
-      app: {{ $.serviceName }}
-      release: {{ .Release.Name }}
+      app: {{ $service.name }}
+      release: {{ $.Release.Name }}
   template:
     metadata:
       labels:
-        app: {{ $.serviceName }}
-        release: {{ .Release.Name }}
+        app: {{ $service.name }}
+        release: {{ $.Release.Name }}
     spec:
-      serviceAccountName: {{ template "speedle.fullname" . }}
+      serviceAccountName: {{ include "speedle.serviceAccountName" $ }}
+      automountServiceAccountToken: false
       securityContext:
         runAsNonRoot: true
         runAsUser: 1000
+        runAsGroup: 1000
         fsGroup: 1000
+      {{- if $.Values.image.pullSecret }}
       imagePullSecrets:
-        - name: "{{ .Values.image.pullSecret }}"
+        - name: {{ $.Values.image.pullSecret | quote }}
+      {{- end }}
       containers:
-        - name: {{ .Chart.Name }}
-          image: "{{ $.image }}"
-          imagePullPolicy: {{ .Values.image.pullPolicy }}
-          {{- if eq .Values.store.type "etcd" }}
-          command:
-            - speedle-{{ $.serviceName }}
-          {{- end }}
+        - name: {{ $service.name }}
+          image: {{ index $.Values.image $service.name | quote }}
+          imagePullPolicy: {{ $.Values.image.pullPolicy }}
+          env:
+            - name: SPDL_STORE_TYPE
+              value: etcd
           args:
-          {{- if eq .Values.store.type "etcd" }}
-            - --store-type
-            - etcd
-            - --etcdstore-endpoint
-            - {{ .Values.store.etcd.endpoint }}
-            {{- if .Values.store.etcd.certFile }}
-            - --etcdstore-tls-cert
-            - /etc/etcdtls/{{ .Values.store.etcd.certFile }}
+            - --endpoint=0.0.0.0:{{ $service.port }}
+            - --grpc-endpoint=0.0.0.0:{{ $service.grpc }}
+            - --health-endpoint=127.0.0.1:{{ $service.health }}
+            - --store-type=etcd
+            - --etcdstore-endpoint={{ required "store.etcd.endpoint is required" $.Values.store.etcd.endpoint }}
+            {{- if $.Values.store.etcd.etcdClientCertSecret }}
+            {{- if $.Values.store.etcd.certFile }}
+            - --etcdstore-tls-cert=/etc/etcdtls/{{ $.Values.store.etcd.certFile }}
+            - --etcdstore-tls-key=/etc/etcdtls/{{ $.Values.store.etcd.keyFile }}
             {{- end }}
-            {{- if .Values.store.etcd.keyFile }}
-            - --etcdstore-tls-key
-            - /etc/etcdtls/{{ .Values.store.etcd.keyFile }}
+            {{- if $.Values.store.etcd.trustedCAFile }}
+            - --etcdstore-tls-ca=/etc/etcdtls/{{ $.Values.store.etcd.trustedCAFile }}
             {{- end }}
-            {{- if .Values.store.etcd.trustedCAFile }}
-            - --etcdstore-tls-ca
-            - /etc/etcdtls/{{ .Values.store.etcd.trustedCAFile }}
             {{- end }}
-          {{- end }}
-          {{- if .Values.tls }}
-            - --insecure
-            - "false"
-            {{- if .Values.tls.certFile }}
-            - --cert
-            - /etc/tls/{{ .Values.tls.certFile }}
+            {{- if $.Values.tls.enabled }}
+            - --insecure=false
+            - --cert=/etc/tls/{{ $.Values.tls.certFile }}
+            - --key=/etc/tls/{{ $.Values.tls.keyFile }}
+            {{- if $.Values.tls.trustedCAFile }}
+            - --client-cert=/etc/tls/{{ $.Values.tls.trustedCAFile }}
             {{- end }}
-            {{- if .Values.tls.keyFile }}
-            - --key
-            - /etc/tls/{{ .Values.tls.keyFile }}
+            - --force-client-cert={{ $.Values.tls.forceClientCert }}
+            {{- else }}
+            - --insecure=true
             {{- end }}
-            {{- if .Values.tls.trustedCAFile }}
-            - --client-cert
-            - /etc/tls/{{ .Values.tls.trustedCAFile }}
-            {{- end }}
-            {{- if .Values.tls.forceClientCert }}
-            - --force-client-cert
-            - "{{ .Values.tls.forceClientCert }}"
-            {{- end }}
-          {{- end }}
+          ports:
+            - name: http
+              containerPort: {{ $service.port }}
+            - name: grpc
+              containerPort: {{ $service.grpc }}
+          {{- if or $.Values.tls.enabled $.Values.store.etcd.etcdClientCertSecret }}
           volumeMounts:
-          {{- if .Values.store.etcd.etcdClientCertSecret }}
-            - name: etcd-client-tls
-              mountPath: /etc/etcdtls
-              readOnly: true
-          {{- end }}
-          {{- if .Values.tls }}
-            {{- if .Values.tls.certSecret }}
-            - name: client-tls
+            {{- if $.Values.tls.enabled }}
+            - name: server-tls
               mountPath: /etc/tls
               readOnly: true
             {{- end }}
+            {{- if $.Values.store.etcd.etcdClientCertSecret }}
+            - name: etcd-client-tls
+              mountPath: /etc/etcdtls
+              readOnly: true
+            {{- end }}
           {{- end }}
-          ports:
-            - name: http
-              containerPort: {{ $.port }}
-              protocol: TCP
           securityContext:
-            runAsNonRoot: true
-            readOnlyRootFilesystem: false
             allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
           resources:
-            {{- toYaml .Values.resources | nindent 12 }}
+            {{- toYaml $.Values.resources | nindent 12 }}
+          startupProbe:
+            {{- include "speedle.execProbe" (dict "port" $service.health "path" "livez") | nindent 12 }}
+            periodSeconds: 2
+            failureThreshold: 30
           livenessProbe:
-            httpGet:
-              path: /health
-              port: {{ $.port }}
-            initialDelaySeconds: 30
+            {{- include "speedle.execProbe" (dict "port" $service.health "path" "livez") | nindent 12 }}
             periodSeconds: 10
+            failureThreshold: 3
           readinessProbe:
-            httpGet:
-              path: /health
-              port: {{ $.port }}
-            initialDelaySeconds: 5
+            {{- include "speedle.execProbe" (dict "port" $service.health "path" "readyz") | nindent 12 }}
             periodSeconds: 5
+            failureThreshold: 3
+      {{- if or $.Values.tls.enabled $.Values.store.etcd.etcdClientCertSecret }}
       volumes:
-      {{- if .Values.store.etcd.etcdClientCertSecret }}
-      - name: etcd-client-tls
-        secret:
-          defaultMode: 420
-          secretName: {{ .Values.store.etcd.etcdClientCertSecret }}
-      {{- end }}
-      {{- if .Values.tls }}
-        {{- if .Values.tls.certSecret }}
-        - name: client-tls
+        {{- if $.Values.tls.enabled }}
+        - name: server-tls
           secret:
-            defaultMode: 420
-            secretName: {{ .Values.tls.certSecret }}
+            secretName: {{ $.Values.tls.certSecret }}
+            defaultMode: 0440
+        {{- end }}
+        {{- if $.Values.store.etcd.etcdClientCertSecret }}
+        - name: etcd-client-tls
+          secret:
+            secretName: {{ $.Values.store.etcd.etcdClientCertSecret }}
+            defaultMode: 0440
         {{- end }}
       {{- end }}
 {{- end }}
-{{- end }}
-
-{{- template "deploymentTemplate" dict "chart" $ "serviceName" "pms" "image" .Values.image.pms "port" 6733 }}
----
-{{- template "deploymentTemplate" dict "chart" $ "serviceName" "ads" "image" .Values.image.ads "port" 6734 }}

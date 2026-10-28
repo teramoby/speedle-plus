@@ -1,23 +1,22 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ template "speedle.fullname" . }}
-  labels:
-    app: speedle
-    chart: {{ template "speedle.chart" . }}
-    release: {{ .Release.Name }}
-    heritage: {{ .Release.Service }}
+  name: {{ include "speedle.fullname" . }}
 spec:
   type: {{ .Values.service.type }}
-  ports:
-    - port: {{ .Values.service.pmsPort }}
-      targetPort: pms
-      protocol: TCP
-      name: pms
-    - port: {{ .Values.service.adsPort }}
-      targetPort: ads
-      protocol: TCP
-      name: ads
   selector:
     app: speedle
     release: {{ .Release.Name }}
+  ports:
+    - name: pms
+      port: {{ .Values.service.pmsPort }}
+      targetPort: pms
+    - name: ads
+      port: {{ .Values.service.adsPort }}
+      targetPort: ads
+    - name: pms-grpc
+      port: 50001
+      targetPort: pms-grpc
+    - name: ads-grpc
+      port: 50002
+      targetPort: ads-grpc

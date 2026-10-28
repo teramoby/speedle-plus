@@ -198,10 +198,11 @@ package main import ( &amp;#34;flag&amp;#34; &amp;#34;fmt&amp;#34; ads &amp;#34;
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://speedle.io/zh/docs/deployment/</guid>
-      <description>Speedle 支持两种部署方式
- 开发模式  在开发模式下，Speedle 使用一个文件作为策略仓库，用户使用 RESTful API 和 CLI 工具访问 Speedle 的各项服务。
- 生产模式  在生产模式下，Speedle 使用etcd作为策略仓库，用户使用 RESTful API 和 CLI 工具访问 Speedle 的各项服务。
-准备工作  Golang 1.10.0 开发环境已经安装好。 Docker 1.12 或更高的版本已经安装好。 一个 Docker registry。该 Docker registry 被用作推送和拉取 Speedle 的 Docker 映像。 在目录\$GOPATH/src/github.com/teramoby/speedle-plus/下同步最新的 Speedle 代码。 一个 Kubernetes 集群。 为你的 Docker registry 设置一个 Kubernetes Secret  # 为Docker registry设置Kubernetes Secret $ kubectl create secret docker-registry reg-speedle --docker-server=$DOCKER_LOGIN_SERVER --docker-username=$DOCKER_LOGIN_USER --docker-password=$DOCKER_LOGIN_PASSWORD 开发环境下部署 Speedle 服务 开发环境下可以使用helm部署 Speedle 服务。</description>
+      <description>选择部署方式 可以先在 Playground 试用基本策略；本地进程部署见快速入门，在 Go 中嵌入引擎见嵌入式部署。
+本页提供本地 Docker 示例、单 Pod 的 Kubernetes 文件存储示例，以及使用 etcd 的独立 PMS/ADS Pod 部署。选择一种部署方式完成后，再执行后面的授权检查。所有命令均在仓库根目录的 Bash 中执行。
+前提条件  可用的 Docker 引擎与 BuildKit。镜像内部使用 Go 1.26.10 编译；证书示例需要本机 Go 1.26 或更高版本。 Kubernetes 部署需要可访问的测试集群、kubectl，以及创建新 namespace 的权限。示例使用 Kubernetes/kubectl 1.36.4、Helm 4.3.1 和 etcd 3.5.35。etcd 示例的 1 GiB PVC 需要默认 StorageClass。 curl，以及可用的本机 6733&amp;frasl;6734 端口；也可通过下方的 PMS_PORT、ADS_PORT 覆盖。  自动化部署检查使用隔离的 kind 0.33.0 集群，无需付费云集群。
+构建和分发镜像 在同一个终端初始化以下变量。IMAGE_PREFIX 默认为 speedle；如果需要其他节点拉取镜像，请先将它设置为自己的镜像仓库前缀。IMAGE_TAG 用来选择固定版本或本地开发标签。DEMO、NAMESPACE 标识本页创建的资源，请使用新的 namespace。
+export IMAGE_PREFIX=&amp;#34;${IMAGE_PREFIX:-speedle}&amp;#34; export IMAGE_TAG=&amp;#34;${IMAGE_TAG:-dev}&amp;#34; export PMS_IMAGE=&amp;#34;${IMAGE_PREFIX}-pms:${IMAGE_TAG}&amp;#34; export ADS_IMAGE=&amp;#34;${IMAGE_PREFIX}-ads:${IMAGE_TAG}&amp;#34; export PMS_PORT=&amp;#34;${PMS_PORT:-6733}&amp;#34; export ADS_PORT=&amp;#34;${ADS_PORT:-6734}&amp;#34; export DEMO=&amp;#34;${DEMO:-speedle-demo-$(date +%s)}&amp;#34; export NAMESPACE=&amp;#34;${NAMESPACE:-$DEMO}&amp;#34; export DOCS_WORKDIR=&amp;#34;${DOCS_WORKDIR:-$(mktemp -d)}&amp;#34; export TLS_DIR=&amp;#34;$DOCS_WORKDIR/tls&amp;#34; 从仓库根目录构建两个镜像，无需先将本机编译的二进制复制到 Docker 构建目录。</description>
     </item>
     
     <item>

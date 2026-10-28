@@ -42,9 +42,7 @@ def steps(page,locale):
 def static_checks():
     for page in PAGES:
         assert steps(page,'en')==steps(page,'zh'), (page,'English/Chinese command drift')
-    # Deployment is explicitly deferred by the owner; leave these source pages unchanged.
     for path in DOCS.rglob('*.md'):
-        if path.name in ('deployment.md','deployment.zh.md'):continue
         text=path.read_text()
         for match in re.finditer(r'^```[^\n]*\n(.*?)\n```',text,re.S|re.M):
             code=match[1].replace('\\\n',' ')

@@ -1,235 +1,242 @@
-kind: Namespace
-apiVersion: v1
-metadata:
-  name: speedle
-
+# Generated from deployment/helm/speedle-prod; run deployment/render-manifests.sh to update.
 ---
-
-kind: Service
-apiVersion: v1
-metadata:
-  name: speedle-pms
-  namespace: speedle
-spec:
-  selector:
-    app: speedle
-    name: pms
-  type: NodePort
-  ports:
-  - protocol: TCP
-    port: 6733
-    targetPort: 6733
-    name: pms
-
----
-
-kind: Service
-apiVersion: v1
-metadata:
-  name: speedle-ads
-  namespace: speedle
-spec:
-  selector:
-    app: speedle
-    name: ads
-  ports:
-  - protocol: TCP
-    port: 6734
-    targetPort: 6734
-    name: ads
-
----
-
-kind: Service
-apiVersion: v1
-metadata:
-  name: speedle-etcd
-  namespace: speedle
-spec:
-  selector:
-    app: speedle
-    name: etcd
-  ports:
-  - protocol: TCP
-    port: 2379
-    targetPort: 2379
-    name: etcd
-
----
-
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: speedle-etcd
-  namespace: speedle
-  labels:
-    app: speedle
-    name: etcd
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: speedle
-      name: etcd
-  template:
-    metadata:
-      labels:
-        app: speedle
-        name: etcd
-    spec:
-      serviceAccountName: speedle
-      securityContext:
-        runAsNonRoot: true
-        runAsUser: 1000
-        fsGroup: 1000
-      containers:
-      - name: etcd
-        image: quay.io/coreos/etcd:v3.5.18
-        command: ["/usr/local/bin/etcd"]
-        args: ["--listen-client-urls", "http://0.0.0.0:2379", "--advertise-client-urls", "http://0.0.0.0:2379"]
-        ports:
-        - containerPort: 2379
-        securityContext:
-          runAsNonRoot: true
-          readOnlyRootFilesystem: false
-          allowPrivilegeEscalation: false
-        resources:
-          requests:
-            memory: "128Mi"
-            cpu: "100m"
-          limits:
-            memory: "512Mi"
-            cpu: "500m"
-        livenessProbe:
-          tcpSocket:
-            port: 2379
-          initialDelaySeconds: 30
-          periodSeconds: 10
-        readinessProbe:
-          tcpSocket:
-            port: 2379
-          initialDelaySeconds: 5
-          periodSeconds: 5
-
----
-
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: speedle-pms
-  namespace: speedle
-  labels:
-    app: speedle
-    name: pms
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: speedle
-      name: pms
-  template:
-    metadata:
-      labels:
-        app: speedle
-        name: pms
-    spec:
-      serviceAccountName: speedle
-      securityContext:
-        runAsNonRoot: true
-        runAsUser: 1000
-        fsGroup: 1000
-      containers:
-      - name: pms
-        image: r.authz.fun/speedle-pms:v0.1  # please update image location
-        command: ["speedle-pms"]
-        args: ["--endpoint", "0.0.0.0:6733", "--store-type", "etcd", "--etcdstore-endpoint", "speedle-etcd:2379"]
-        ports:
-        - containerPort: 6733
-        securityContext:
-          runAsNonRoot: true
-          readOnlyRootFilesystem: true
-          allowPrivilegeEscalation: false
-        resources:
-          requests:
-            memory: "64Mi"
-            cpu: "50m"
-          limits:
-            memory: "256Mi"
-            cpu: "200m"
-        livenessProbe:
-          httpGet:
-            path: /health
-            port: 6733
-          initialDelaySeconds: 30
-          periodSeconds: 10
-        readinessProbe:
-          httpGet:
-            path: /health
-            port: 6733
-          initialDelaySeconds: 5
-          periodSeconds: 5
-
----
-
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: speedle-ads
-  namespace: speedle
-  labels:
-    app: speedle
-    name: ads
-spec:
-  replicas: 3
-  selector:
-    matchLabels:
-      app: speedle
-      name: ads
-  template:
-    metadata:
-      labels:
-        app: speedle
-        name: ads
-    spec:
-      serviceAccountName: speedle
-      securityContext:
-        runAsNonRoot: true
-        runAsUser: 1000
-        fsGroup: 1000
-      containers:
-      - name: ads
-        image: r.authz.fun/speedle-ads:v0.1  # please update image location
-        command: ["speedle-ads"]
-        args: ["--endpoint", "0.0.0.0:6734", "--store-type", "etcd", "--etcdstore-endpoint", "speedle-etcd:2379"]
-        ports:
-        - containerPort: 6734
-        securityContext:
-          runAsNonRoot: true
-          readOnlyRootFilesystem: true
-          allowPrivilegeEscalation: false
-        resources:
-          requests:
-            memory: "64Mi"
-            cpu: "50m"
-          limits:
-            memory: "256Mi"
-            cpu: "200m"
-        livenessProbe:
-          httpGet:
-            path: /health
-            port: 6734
-          initialDelaySeconds: 30
-          periodSeconds: 10
-        readinessProbe:
-          httpGet:
-            path: /health
-            port: 6734
-          initialDelaySeconds: 5
-          periodSeconds: 5
-
----
+# Source: speedle/templates/serviceaccount.yaml
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: speedle
-  namespace: speedle
+  name: speedle-prod
+automountServiceAccountToken: false
+
+---
+# Source: speedle/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: speedle-prod-pms
+spec:
+  type: ClusterIP
+  selector:
+    app: pms
+    release: speedle-prod
+  ports:
+    - name: http
+      port: 6733
+      targetPort: http
+    - name: grpc
+      port: 50001
+      targetPort: grpc
+
+---
+# Source: speedle/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: speedle-prod-ads
+spec:
+  type: ClusterIP
+  selector:
+    app: ads
+    release: speedle-prod
+  ports:
+    - name: http
+      port: 6734
+      targetPort: http
+    - name: grpc
+      port: 50002
+      targetPort: grpc
+
+---
+# Source: speedle/templates/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: speedle-prod-pms
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pms
+      release: speedle-prod
+  template:
+    metadata:
+      labels:
+        app: pms
+        release: speedle-prod
+    spec:
+      serviceAccountName: speedle-prod
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+      containers:
+        - name: pms
+          image: "speedle-pms:dev"
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: SPDL_STORE_TYPE
+              value: etcd
+          args:
+            - --endpoint=0.0.0.0:6733
+            - --grpc-endpoint=0.0.0.0:50001
+            - --health-endpoint=127.0.0.1:8081
+            - --store-type=etcd
+            - --etcdstore-endpoint=https://speedle-etcd:2379
+            - --etcdstore-tls-cert=/etc/etcdtls/client.crt
+            - --etcdstore-tls-key=/etc/etcdtls/client.key
+            - --etcdstore-tls-ca=/etc/etcdtls/ca.crt
+            - --insecure=false
+            - --cert=/etc/tls/server.crt
+            - --key=/etc/tls/server.key
+            - --client-cert=/etc/tls/ca.crt
+            - --force-client-cert=true
+          ports:
+            - name: http
+              containerPort: 6733
+            - name: grpc
+              containerPort: 50001
+          volumeMounts:
+            - name: server-tls
+              mountPath: /etc/tls
+              readOnly: true
+            - name: etcd-client-tls
+              mountPath: /etc/etcdtls
+              readOnly: true
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          resources:
+            limits:
+              cpu: 200m
+              memory: 256Mi
+            requests:
+              cpu: 50m
+              memory: 64Mi
+          startupProbe:
+            exec:
+              command: ["wget", "-q", "-T", "2", "-O", "/dev/null", "http://127.0.0.1:8081/livez"]
+            timeoutSeconds: 3
+            periodSeconds: 2
+            failureThreshold: 30
+          livenessProbe:
+            exec:
+              command: ["wget", "-q", "-T", "2", "-O", "/dev/null", "http://127.0.0.1:8081/livez"]
+            timeoutSeconds: 3
+            periodSeconds: 10
+            failureThreshold: 3
+          readinessProbe:
+            exec:
+              command: ["wget", "-q", "-T", "2", "-O", "/dev/null", "http://127.0.0.1:8081/readyz"]
+            timeoutSeconds: 3
+            periodSeconds: 5
+            failureThreshold: 3
+      volumes:
+        - name: server-tls
+          secret:
+            secretName: speedle-server-tls
+            defaultMode: 0440
+        - name: etcd-client-tls
+          secret:
+            secretName: etcd-client-tls
+            defaultMode: 0440
+
+---
+# Source: speedle/templates/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: speedle-prod-ads
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ads
+      release: speedle-prod
+  template:
+    metadata:
+      labels:
+        app: ads
+        release: speedle-prod
+    spec:
+      serviceAccountName: speedle-prod
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+      containers:
+        - name: ads
+          image: "speedle-ads:dev"
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: SPDL_STORE_TYPE
+              value: etcd
+          args:
+            - --endpoint=0.0.0.0:6734
+            - --grpc-endpoint=0.0.0.0:50002
+            - --health-endpoint=127.0.0.1:8082
+            - --store-type=etcd
+            - --etcdstore-endpoint=https://speedle-etcd:2379
+            - --etcdstore-tls-cert=/etc/etcdtls/client.crt
+            - --etcdstore-tls-key=/etc/etcdtls/client.key
+            - --etcdstore-tls-ca=/etc/etcdtls/ca.crt
+            - --insecure=false
+            - --cert=/etc/tls/server.crt
+            - --key=/etc/tls/server.key
+            - --client-cert=/etc/tls/ca.crt
+            - --force-client-cert=true
+          ports:
+            - name: http
+              containerPort: 6734
+            - name: grpc
+              containerPort: 50002
+          volumeMounts:
+            - name: server-tls
+              mountPath: /etc/tls
+              readOnly: true
+            - name: etcd-client-tls
+              mountPath: /etc/etcdtls
+              readOnly: true
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          resources:
+            limits:
+              cpu: 200m
+              memory: 256Mi
+            requests:
+              cpu: 50m
+              memory: 64Mi
+          startupProbe:
+            exec:
+              command: ["wget", "-q", "-T", "2", "-O", "/dev/null", "http://127.0.0.1:8082/livez"]
+            timeoutSeconds: 3
+            periodSeconds: 2
+            failureThreshold: 30
+          livenessProbe:
+            exec:
+              command: ["wget", "-q", "-T", "2", "-O", "/dev/null", "http://127.0.0.1:8082/livez"]
+            timeoutSeconds: 3
+            periodSeconds: 10
+            failureThreshold: 3
+          readinessProbe:
+            exec:
+              command: ["wget", "-q", "-T", "2", "-O", "/dev/null", "http://127.0.0.1:8082/readyz"]
+            timeoutSeconds: 3
+            periodSeconds: 5
+            failureThreshold: 3
+      volumes:
+        - name: server-tls
+          secret:
+            secretName: speedle-server-tls
+            defaultMode: 0440
+        - name: etcd-client-tls
+          secret:
+            secretName: etcd-client-tls
+            defaultMode: 0440

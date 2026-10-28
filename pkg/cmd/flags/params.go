@@ -33,6 +33,7 @@ type Parameters struct {
 	ConfigFile      StrParamDetail
 	Endpoint        StrParamDetail
 	GRPCEndpoint    StrParamDetail
+	HealthEndpoint  StrParamDetail
 	Insecure        StrParamDetail
 	EnableAuthz     StrParamDetail
 	KeyPath         StrParamDetail
@@ -223,6 +224,8 @@ func (k *Parameters) ParseFlags(defaultEndpoint string, printVersionInfoFun func
 	params = append(params, &k.Endpoint)
 	k.GRPCEndpoint = StrParamDetail{Name: "grpc-endpoint", Usage: "Server config: gRPC listen address; default is the REST host with port 50001 (PMS) or 50002 (ADS)."}
 	params = append(params, &k.GRPCEndpoint)
+	k.HealthEndpoint = StrParamDetail{Name: "health-endpoint", Usage: "Optional loopback-only HTTP health listener; exposes /livez and /readyz, disabled by default."}
+	params = append(params, &k.HealthEndpoint)
 	k.Insecure = StrParamDetail{Name: "insecure", DefaultValue: strconv.FormatBool(DefaultInsecure), Usage: "Server config: Disable transport security."}
 	params = append(params, &k.Insecure)
 	k.EnableAuthz = StrParamDetail{Name: "enable-authz", DefaultValue: strconv.FormatBool(DefaultEnableAuthz), Usage: "Server config: Enable authorization check."}
@@ -343,6 +346,10 @@ func (k *Parameters) ParseFlags(defaultEndpoint string, printVersionInfoFun func
 				case k.GRPCEndpoint.Name:
 					if conf != nil && conf.ServerConfig != nil && conf.ServerConfig.GRPCEndpoint != "" {
 						f.Value.Set(conf.ServerConfig.GRPCEndpoint)
+					}
+				case k.HealthEndpoint.Name:
+					if conf != nil && conf.ServerConfig != nil && conf.ServerConfig.HealthEndpoint != "" {
+						f.Value.Set(conf.ServerConfig.HealthEndpoint)
 					}
 				case k.Insecure.Name:
 					if conf != nil && conf.ServerConfig != nil && len(conf.ServerConfig.Insecure) != 0 {
