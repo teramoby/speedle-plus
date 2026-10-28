@@ -34,8 +34,7 @@ install -m 0644 "$GOROOT/LICENSE" "$OUT/licenses/Go-BSD-3-Clause.txt"
 install -m 0644 "$BUILD_ROOT/LICENSE" "$OUT/licenses/Speedle-UPL-1.0.txt"
 install -m 0644 "$BUILD_ROOT/3rdparty/github.com/Knetic/govaluate/LICENSE" "$OUT/licenses/govaluate-MIT.txt"
 install -m 0644 "$BUILD_ROOT/THIRD_PARTY_LICENSES.txt" "$OUT/licenses/Speedle-upstream-third-party.txt"
-# The immutable archive has no VCS checkout; dependency inventory needs none.
-GOOS=js GOARCH=wasm "$GO_BIN" list -mod=readonly -buildvcs=false -deps -f '{{with .Module}}{{.Path}}|{{.Dir}}{{end}}' ./cmd/wasm | sort -u | while IFS='|' read -r module directory; do
+GOOS=js GOARCH=wasm "$GO_BIN" list -mod=readonly -deps -f '{{with .Module}}{{.Path}}|{{.Dir}}{{end}}' ./cmd/wasm | sort -u | while IFS='|' read -r module directory; do
   [[ -n "$module" && "$module" != speedle-playground && "$module" != github.com/teramoby/speedle-plus ]] || continue
   safe_name=${module//\//_}
   for license in LICENSE LICENSE.txt LICENSE.md COPYING NOTICE; do
@@ -44,12 +43,7 @@ GOOS=js GOARCH=wasm "$GO_BIN" list -mod=readonly -buildvcs=false -deps -f '{{wit
 done
 # Hugo source is authoritative; GitHub Pages serves the checked-in docs copy.
 cp -R "$OUT/." "$ROOT/docs/playground/"
-mkdir -p "$ROOT/docs/zh/playground"
-cp "$ROOT/docs/hugo/static/zh/playground/index.html" "$ROOT/docs/zh/playground/index.html"
-cp "$ROOT/docs/hugo/static/index.html" "$ROOT/docs/index.html"
-cp "$ROOT/docs/hugo/static/zh/index.html" "$ROOT/docs/zh/index.html"
 for stylesheet in site.css navigation.css; do
   cp "$ROOT/docs/hugo/static/css/$stylesheet" "$ROOT/docs/css/$stylesheet"
 done
-cp "$ROOT/docs/hugo/static/js/navigation.js" "$ROOT/docs/js/navigation.js"
 sha256sum "$OUT/speedle.wasm"

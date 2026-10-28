@@ -20,12 +20,12 @@
   <title>Speedle+ Open-Source Authorization Engine | RBAC &amp; ABAC</title>
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23814ce4'/%3E%3Cpath d='M32 9 48 18v28L32 55 16 46V18zM32 17l-9 5v20l9 5 9-5V22z' fill='none' stroke='white' stroke-width='3'/%3E%3Ccircle cx='32' cy='32' r='5' fill='%2301e7cb'/%3E%3C/svg%3E">
   <link rel="stylesheet" href="/css/site.css">
-  <link rel="stylesheet" href="/css/navigation.css?v=header-20261027">
+  <link rel="stylesheet" href="/css/navigation.css">
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
     "@graph": [
-      {"@type":"SoftwareSourceCode","@id":"https://speedle.io/#software","name":"Speedle+","alternateName":"Speedle","url":"https://speedle.io/","codeRepository":"https://github.com/teramoby/speedle-plus","programmingLanguage":"Go","runtimePlatform":"Linux, macOS","license":"https://oss.oracle.com/licenses/upl/","description":"An open-source authorization engine that externalizes fine-grained RBAC and ABAC policy decisions for cloud-native and legacy applications.","keywords":["authorization engine","RBAC","ABAC","policy decision service","SPDL","fine grained access control","fine-grained access control","FGA","policy engine","authorization policy engine","externalized authorization","PAP","policy administration point","PDP","policy decision point","PEP","policy enforcement point","PIP","policy information point","centralized authorization","authorization policy management","authorization decision service","API authorization","microservices authorization","cloud-native authorization","zero trust"]},
+      {"@type":"SoftwareSourceCode","@id":"https://speedle.io/#software","name":"Speedle+","alternateName":"Speedle","url":"https://speedle.io/","codeRepository":"https://github.com/teramoby/speedle-plus","programmingLanguage":"Go","runtimePlatform":"Linux, macOS","license":"https://oss.oracle.com/licenses/upl/","description":"An open-source authorization engine that externalizes fine-grained RBAC and ABAC policy decisions for cloud-native and legacy applications.","keywords":["authorization engine","RBAC","ABAC","policy decision service","SPDL"]},
       {"@type":"WebSite","@id":"https://speedle.io/#website","url":"https://speedle.io/","name":"Speedle+","description":"Official documentation and project site for the Speedle+ open-source authorization engine.","inLanguage":["en","zh-CN"]}
     ]
   }
@@ -39,7 +39,6 @@
       <nav class="nav-links" id="nav-links" aria-label="Main navigation">
         <a href="#about">About</a><a href="#features">Features</a><a href="#integrations">Integrations</a>
         <a href="/quick-start/">Getting started</a><a href="/docs/">Docs</a><a href="/playground/">Playground</a>
-        <a href="/zh/" lang="zh-CN" hreflang="zh-CN" aria-label="切换到中文">中文</a>
         <a class="nav-github" href="https://github.com/teramoby/speedle-plus">GitHub</a>
       </nav>
     </div>
@@ -110,7 +109,7 @@
           <article class="feature-card"><img class="feature-icon" src="/img/speedle/4.%20RBAC-ABAC.svg" alt=""><h3>RBAC / ABAC</h3><p>Combine roles and attributes for precise access decisions.</p><a href="/tags/policy/">Learn more</a></article>
           <article class="feature-card"><img class="feature-icon" src="/img/speedle/5.%20Centralized%20Policy%20Management.svg" alt=""><h3>Centralized Management</h3><p>Manage policy for disparate services from one place.</p><a href="/docs/pms/">Learn more</a></article>
           <article class="feature-card"><img class="feature-icon" src="/img/speedle/6.%20Pluggable%20Identity.svg" alt=""><h3>Pluggable Identity</h3><p>Connect GitHub, Okta or your own identity provider.</p><a href="/docs/assertor/">Learn more</a></article>
-          <article class="feature-card"><img class="feature-icon" src="/img/speedle/7.%20Persistence.svg" alt=""><h3>Bring Your Own Storage</h3><p>Use etcd or implement the persistence interface for your storage layer.</p><a href="/docs/store/">Learn more</a></article>
+          <article class="feature-card"><img class="feature-icon" src="/img/speedle/7.%20Persistence.svg" alt=""><h3>Bring Your Own Store</h3><p>Use etcd or implement the persistence interface for your storage layer.</p><a href="/docs/store/">Learn more</a></article>
         </div>
       </div>
     </section>
@@ -160,15 +159,25 @@
 
   <footer>
     <div class="wrap footer-inner">
-      <div class="footer-brand"><img src="/img/speedle/Speedle_logo_w.svg" alt="Speedle"><p>Licensed under the Universal Permissive License v1.0.</p><p>Copyright &copy; 2019–2026. All rights reserved.</p></div>
+      <div class="footer-brand"><img src="/img/speedle/Speedle_logo_w.svg" alt="Speedle"><p>Licensed under the Universal Permissive License v1.0.</p></div>
       <nav class="social" aria-label="Community links">
-        <a href="mailto:contact@speedle.io" aria-label="Email contact@speedle.io" title="contact@speedle.io"><img src="/img/speedle/28.%20Mail.svg" alt=""></a>
-        <a href="https://groups.google.com/forum/#!forum/speedle-users" aria-label="Google Groups" title="Google Groups — speedle-users"><img src="/img/speedle/Google-Groups.svg" alt=""></a>
+        <a href="https://groups.google.com/forum/#!forum/speedle-users" aria-label="Mailing list"><img src="/img/speedle/28.%20Mail.svg" alt=""></a>
         <a href="https://github.com/teramoby/speedle-plus" aria-label="GitHub"><img src="/img/speedle/18.%20Github.svg" alt=""></a>
-        <a href="https://discord.gg/uaY2xVsbbT" aria-label="Discord"><img src="/img/speedle/Discord.svg" alt=""></a>
+        <a href="https://join.slack.com/t/speedleproject/shared_invite/enQtNTUzODM3NDY0ODE2LTg0ODc0NzQ1MjVmM2NiODVmMThkMmVjNmMyODA0ZWJjZjQ3NDc2MjdlMzliN2U4MDRkZjhlYzYzMDEyZTgxMGQ" aria-label="Slack"><img src="/img/speedle/29.%20Slack.svg" alt=""></a>
       </nav>
     </div>
   </footer>
-  <script src="/js/navigation.js?v=header-20261027" defer></script>
+  <script>
+    const button = document.querySelector('.menu');
+    const nav = document.querySelector('.nav-links');
+    button.addEventListener('click', () => {
+      const open = nav.classList.toggle('open');
+      button.setAttribute('aria-expanded', String(open));
+      button.textContent = open ? '×' : '☰';
+    });
+    nav.addEventListener('click', (event) => {
+      if (event.target.matches('a') && nav.classList.contains('open')) button.click();
+    });
+  </script>
 </body>
 </html>

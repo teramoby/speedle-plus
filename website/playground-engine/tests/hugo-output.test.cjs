@@ -19,44 +19,13 @@ function compareAssets(relative) {
   }
 }
 compareAssets('playground');
-for (const name of ['index.html','zh/index.html','playground/index.html','zh/playground/index.html']) {
-  const html = fs.readFileSync(path.join(output, name), 'utf8');
-  assert.ok(html.includes('/css/navigation.css?v=header-20261027') && html.includes('/js/navigation.js?v=header-20261027'), `Shared navigation assets in ${name}`);
-}
-for (const name of ['site.css', 'navigation.css', 'custom.css']) {
+for (const name of ['site.css', 'navigation.css']) {
   assert.deepEqual(fs.readFileSync(path.join(output, 'css', name)), fs.readFileSync(path.join(root, 'docs/css', name)));
 }
 const sitemap = fs.readFileSync(path.join(output, 'sitemap.xml'), 'utf8');
 assert.ok(sitemap.includes('https://speedle.io/en/sitemap.xml'), 'Multilingual sitemap index');
 assert.ok(fs.readFileSync(path.join(output, 'en/sitemap.xml'), 'utf8').includes('https://speedle.io/playground/'));
 for (const name of ['quick-start/index.html', 'zh/quick-start/index.html']) {
-  const target = name.startsWith('zh/') ? '/zh/playground/' : '/playground/';
-  assert.ok(fs.readFileSync(path.join(output, name), 'utf8').includes(`href="${target}"`), `Generated ${name} navigation`);
-}
-for (const name of ['docs/index.html', 'zh/docs/index.html', 'docs/spdl/index.html', 'zh/docs/spdl/index.html']) {
-  const html = fs.readFileSync(path.join(output, name), 'utf8');
-  const zh = name.startsWith('zh/');
-  const target = '/' + (zh ? name.slice(3) : 'zh/' + name).replace(/index\.html$/, '');
-  const navigation = html.match(/<nav class="nav-links"[^>]*>[\s\S]*?<\/nav>/)?.[0];
-  assert.ok(navigation, `Language navigation in ${name}`);
-  assert.equal((navigation.match(/hreflang=/g) || []).length, 1, `One language choice in ${name}`);
-  assert.ok(navigation.includes(`href="${target}"`) && navigation.includes(`>${zh ? 'English' : '中文'}</a>`), `Direct counterpart in ${name}`);
-  assert.ok(!navigation.includes('hide-sm'), `Same control available in mobile navigation in ${name}`);
-  assert.ok(!html.includes('langselFloatDiv') && !html.includes('langNameArrow'), `No dropdown in ${name}`);
-  const homepage = fs.readFileSync(path.join(output, zh ? 'zh/index.html' : 'index.html'), 'utf8');
-  const labels = value => [...value.matchAll(/<a\b[^>]*>([^<]+)<\/a>/g)].map(m => m[1]);
-  const homeNavigation = homepage.match(/<nav class="nav-links"[^>]*>[\s\S]*?<\/nav>/)[0];
-  assert.deepEqual(labels(navigation), labels(homeNavigation), `Homepage navigation order/labels in ${name}`);
-  assert.ok(navigation.includes(`href="/${zh ? 'zh/' : ''}#features"`), `Features returns to localized homepage from ${name}`);
-  assert.ok(html.includes('/css/navigation.css?v=header-20261027') && html.includes('/js/navigation.js?v=header-20261027'), `Shared versioned navigation assets in ${name}`);
+  assert.ok(/href="(?:https:\/\/speedle\.io)?\/playground\/"/.test(fs.readFileSync(path.join(output, name), 'utf8')), `Generated ${name} navigation`);
 }
 console.log('PASS Hugo 0.48 output: editor, navigation, sitemap and matching release assets');
-
-for (const locale of ['', 'zh/']) {
-  for (const topic of ['', 'rbac/', 'abac/', 'pbac/', 'identity-iam/', 'oes/', 'xacml/']) {
-    const name = `${locale}docs/access-control/${topic}index.html`;
-    assert.deepEqual(fs.readFileSync(path.join(output, name)), fs.readFileSync(path.join(root, 'docs', name)), `Generated bilingual topic ${name}`);
-  }
-}
-assert.equal(fs.readFileSync(path.join(output, 'llms.txt'), 'utf8'), fs.readFileSync(path.join(root, 'docs/llms.txt'), 'utf8'));
-console.log('PASS generated bilingual topic HTML and llms.txt match published copies');

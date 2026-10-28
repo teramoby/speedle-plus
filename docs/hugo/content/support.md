@@ -16,11 +16,11 @@ Speedle is an open source project for access management. You can embed it in you
 
 ### Does the world need one more policy engine?
 
-Well, please spend 15 minutes on [Quick Start](/quick-start) steps. Then you will have the answer. Why not give a try? :-)
+Well, please spend 15 minutes on [Quick Start](./quick-start) steps. Then you will have the answer. Why not give a try? :-)
 
 ### How do I contribute?
 
-Please refer to [contribution guide](/contribute/#code)
+Please refer to [contribution guide](./contribute/#code)
 
 ### What does the future hold for Speedle? What’s the plan?
 
@@ -43,28 +43,28 @@ Speedle focuses on authorization field. It doesn't cover authentication function
 
 ### How do I plug in my own backend store?
 
-Please refer to [Pluggable Storage](/docs/store/)
+Please refer to [Pluggable Storage](./docs/store/)
 
 ### How do I plug in my own token assertor?
 
-Plase refer to [token assertor](/docs/assertor)
+Plase refer to [token assertor](./docs/assertor)
 
 <div class="row" style="padding-top: 50px">
     <div class="col col-2"></div>
     <div class="col col-8 center" style="font-size: 25px">
     <div>
         <p>Can’t see the answer you’re looking for?</p>
-        <p>Join the Speedle Discord community</p>
+        <p>Try our Slack workspace #speedleproject</p>
         <span>
-          <a class="button primary started" style="font-size:18px" href="https://discord.gg/uaY2xVsbbT">
-            <span>Join Discord →</span>
+          <a class="button primary started" style="font-size:18px" href="./quick-start">
+            <span>Visit Slack channel →</span>
           </a>
         </span>
     </div>
     </div>
     <div class="col col-2 right">
-      <a title="Discord" href="https://discord.gg/uaY2xVsbbT">
-        <img class="svg" src="/img/speedle/Discord-color.svg" />
+      <a title="slack" href="https://join.slack.com/t/speedleproject/shared_invite/enQtNTUzODM3NDY0ODE2LTg0ODc0NzQ1MjVmM2NiODVmMThkMmVjNmMyODA0ZWJjZjQ3NDc2MjdlMzliN2U4MDRkZjhlYzYzMDEyZTgxMGQ">
+        <img class="svg" src="/img/speedle/Slack_RGB.svg" />
       </a>
     </div>
 </div>

@@ -1,6 +1,5 @@
 +++
 title = "授权查询"
-keywords = ["Speedle+", "authorization engine", "fine grained access control", "fine-grained access control", "FGA", "policy engine", "authorization policy engine", "externalized authorization", "授权引擎", "细粒度访问控制", "策略引擎", "授权策略引擎", "外置授权", "授权外部化", "PDP", "policy decision point", "策略决策点", "authorization decision service", "授权决策服务", "API authorization", "API 授权", "API 权限控制"]
 description = "Get authorization decisions for your service interactions"
 weight = 30
 draft = false

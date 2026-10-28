@@ -142,12 +142,11 @@
       .footer-inner { padding: 48px 0; grid-template-columns: 1fr; }
     }
   </style>
-  <link rel="stylesheet" href="/css/navigation.css?v=header-20261027">
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
     "@graph": [
-      {"@type":"SoftwareSourceCode","@id":"https://speedle.io/#software","name":"Speedle+","alternateName":"Speedle","url":"https://speedle.io/","codeRepository":"https://github.com/teramoby/speedle-plus","programmingLanguage":"Go","runtimePlatform":"Linux, macOS","license":"https://oss.oracle.com/licenses/upl/","description":"开源权限控制引擎，将细粒度 RBAC 和 ABAC 授权决策从云原生与传统应用中独立出来。","keywords":["authorization engine","RBAC","ABAC","policy decision service","SPDL","fine grained access control","fine-grained access control","FGA","policy engine","authorization policy engine","externalized authorization","授权引擎","细粒度访问控制","策略引擎","授权策略引擎","外置授权","授权外部化","PAP","policy administration point","策略管理点","PDP","policy decision point","策略决策点","PEP","policy enforcement point","策略执行点","PIP","policy information point","策略信息点","centralized authorization","集中式授权","authorization policy management","授权策略管理","authorization decision service","授权决策服务","API authorization","API 授权","API 权限控制","microservices authorization","微服务授权","微服务权限控制","cloud-native authorization","云原生授权","zero trust","零信任"]},
+      {"@type":"SoftwareSourceCode","@id":"https://speedle.io/#software","name":"Speedle+","alternateName":"Speedle","url":"https://speedle.io/","codeRepository":"https://github.com/teramoby/speedle-plus","programmingLanguage":"Go","runtimePlatform":"Linux, macOS","license":"https://oss.oracle.com/licenses/upl/","description":"开源权限控制引擎，将细粒度 RBAC 和 ABAC 授权决策从云原生与传统应用中独立出来。","keywords":["authorization engine","RBAC","ABAC","policy decision service","SPDL"]},
       {"@type":"WebSite","@id":"https://speedle.io/#website","url":"https://speedle.io/","name":"Speedle+","description":"Speedle+ 开源权限控制引擎的官方文档与项目网站。","inLanguage":["en","zh-CN"]}
     ]
   }
@@ -160,8 +159,8 @@
       <button class="menu" type="button" aria-expanded="false" aria-controls="nav-links" aria-label="展开导航">☰</button>
       <nav class="nav-links" id="nav-links" aria-label="主导航">
         <a href="#about">关于</a><a href="#features">功能</a><a href="#integrations">集成</a>
-        <a href="/zh/quick-start/">快速入门</a><a href="/zh/docs/">文档</a><a href="/zh/playground/">Playground</a>
-        <a href="/" lang="en" hreflang="en" aria-label="Switch to English">English</a>
+        <a href="/zh/quick-start/">快速入门</a><a href="/zh/docs/">文档</a><a href="/playground/">Playground</a>
+        <a href="/" lang="en" hreflang="en">English</a>
         <a class="nav-github" href="https://github.com/teramoby/speedle-plus">GitHub</a>
       </nav>
     </div>
@@ -282,15 +281,25 @@
 
   <footer>
     <div class="wrap footer-inner">
-      <div class="footer-brand"><img src="/img/speedle/Speedle_logo_w.svg" alt="Speedle"><p>采用 Universal Permissive License v1.0 许可证。</p><p>Copyright &copy; 2019–2026. All rights reserved.</p></div>
+      <div class="footer-brand"><img src="/img/speedle/Speedle_logo_w.svg" alt="Speedle"><p>采用 Universal Permissive License v1.0 许可证。</p></div>
       <nav class="social" aria-label="社区链接">
-        <a href="mailto:contact@speedle.io" aria-label="发送邮件至 contact@speedle.io" title="contact@speedle.io"><img src="/img/speedle/28.%20Mail.svg" alt=""></a>
-        <a href="https://groups.google.com/forum/#!forum/speedle-users" aria-label="Google Groups 讨论组" title="Google Groups — speedle-users"><img src="/img/speedle/Google-Groups.svg" alt=""></a>
+        <a href="https://groups.google.com/forum/#!forum/speedle-users" aria-label="邮件列表"><img src="/img/speedle/28.%20Mail.svg" alt=""></a>
         <a href="https://github.com/teramoby/speedle-plus" aria-label="GitHub"><img src="/img/speedle/18.%20Github.svg" alt=""></a>
-        <a href="https://discord.gg/uaY2xVsbbT" aria-label="Discord"><img src="/img/speedle/Discord.svg" alt=""></a>
+        <a href="https://join.slack.com/t/speedleproject/shared_invite/enQtNTUzODM3NDY0ODE2LTg0ODc0NzQ1MjVmM2NiODVmMThkMmVjNmMyODA0ZWJjZjQ3NDc2MjdlMzliN2U4MDRkZjhlYzYzMDEyZTgxMGQ" aria-label="Slack"><img src="/img/speedle/29.%20Slack.svg" alt=""></a>
       </nav>
     </div>
   </footer>
-  <script src="/js/navigation.js?v=header-20261027" defer></script>
+  <script>
+    const button = document.querySelector('.menu');
+    const nav = document.querySelector('.nav-links');
+    button.addEventListener('click', () => {
+      const open = nav.classList.toggle('open');
+      button.setAttribute('aria-expanded', String(open));
+      button.textContent = open ? '×' : '☰';
+    });
+    nav.addEventListener('click', (event) => {
+      if (event.target.matches('a') && nav.classList.contains('open')) button.click();
+    });
+  </script>
 </body>
 </html>

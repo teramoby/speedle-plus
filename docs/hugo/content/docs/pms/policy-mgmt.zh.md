@@ -1,6 +1,5 @@
 +++
 title = "策略管理"
-keywords = ["Speedle+", "authorization engine", "fine grained access control", "fine-grained access control", "FGA", "policy engine", "authorization policy engine", "externalized authorization", "授权引擎", "细粒度访问控制", "策略引擎", "授权策略引擎", "外置授权", "授权外部化", "PAP", "policy administration point", "策略管理点", "centralized authorization", "集中式授权", "authorization policy management", "授权策略管理"]
 description = "Manage policy lifecycle "
 weight = 1
 draft = false
@@ -121,7 +120,7 @@ Speedle allows administrators to perform create, read, and delete operations on 
 
 -   Using the PMS Golang Management API in Embedded Mode (as described in the [Speedle API doc](https://github.com/teramoby/speedle-plus/tree/master/api/pms).
 
--   Using the PMS REST Service (as described in the [Speedle Policy Management API](/docs/api/management_api/)).
+-   Using the PMS REST Service (as described in the [Speedle Policy Management API](../docs/api/management_api)).
 
 -   Using the PMS gRPC Service (as described in the [Speedle GRPC document](/protobuf/pms.proto)).
 
