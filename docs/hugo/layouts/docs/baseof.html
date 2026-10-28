@@ -23,7 +23,8 @@
     {{ end }}
     {{end}}
     <!-- Your own theme here -->
-    <link href="{{ "/css/custom.css" | relURL }}" rel="stylesheet" type="text/css">
+    <link href="{{ "/css/custom.css" | relURL }}" rel="stylesheet" type="text/css">{{ if .Params.singlelinetitle }}
+    <link href="{{ "/css/spdl-title.css" | relURL }}" rel="stylesheet" type="text/css">{{ end }}
     <link href="https://fonts.googleapis.com/css?family=IBM+Plex+Sans" rel="stylesheet">
     <link href="{{ "/css/brand.css?v=1" | relURL }}" rel="stylesheet" type="text/css">
     <link href="{{ "/css/navigation.css?v=header-20261027" | relURL }}" rel="stylesheet">
@@ -35,7 +36,7 @@
         {{- partial "header.html" . -}}
     </header>
     <div class="container">
-        <div class="content-container">
+        <div class="content-container{{ if .Params.singlelinetitle }} single-line-title{{ end }}">
             <main>{{ block "main" . }}{{ end }}</main>
             {{- partial "sidebar.html" . -}}
         </div>

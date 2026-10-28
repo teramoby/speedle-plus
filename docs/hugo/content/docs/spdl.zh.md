@@ -1,9 +1,10 @@
 +++
-title = "SPDL - 策略定义语言"
+title = "SPDL - Speedle 策略定义语言"
 description = "Understand the basics of SPDL"
 weight = 5
 draft = false
 toc = true
+singlelinetitle = true
 tocheading = "h2"
 tocsidebar = false
 tags = ["v0.1.0", "core", "policy", "spdl"]
