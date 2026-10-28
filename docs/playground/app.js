@@ -1,4 +1,5 @@
 import { requestToForm, serializeRequest } from './request-model.js';
+import { t } from './i18n.js';
 const $ = (id) => document.getElementById(id);
 const baseRequest = { subject: { principals: [{ type: 'user', name: 'alice' }] }, action: 'read', resource: 'book', serviceName: 'playground' };
 const samples = {
@@ -35,7 +36,7 @@ function renderEditor(editor) {
   editor.highlight.innerHTML = highlight(editor.input.value, editor.language);
   const lines = editor.input.value.split('\n').length;
   editor.gutter.textContent = Array.from({length:lines}, (_, n) => n + 1).join('\n');
-  editor.count.textContent = `${lines} lines`;
+  editor.count.textContent = t(`${lines} lines`);
   syncScroll(editor);
 }
 function syncScroll(editor) {
@@ -47,10 +48,10 @@ function icon(id) { $('result-symbol').replaceChildren(); const svg = document.c
 function resetResult(edited = false) {
   engineErrorVisible = false;
   $('result-card').className = 'result-card idle'; icon('terminal');
-  $('result-label').textContent = edited ? 'Inputs updated. Evaluate again to see the result.' : 'Ready to test your policies.';
-  $('result-description').textContent = 'Select Evaluate to check whether this request is allowed.';
-  $('result-type').textContent = 'BOOLEAN OUTPUT';
-  $('result-meta').textContent = edited ? 'Run again' : 'Not run yet';
+  $('result-label').textContent = edited ? t('Inputs updated. Evaluate again to see the result.') : t('Ready to test your policies.');
+  $('result-description').textContent = t('Select Evaluate to check whether this request is allowed.');
+  $('result-type').textContent = t('BOOLEAN OUTPUT');
+  $('result-meta').textContent = edited ? t('Run again') : t('Not run yet');
   $('result-details').hidden = true;
   $('result-details').open = false;
   $('result-json').textContent = '';
@@ -84,17 +85,17 @@ function setSample(key) {
   document.querySelectorAll('[data-sample]').forEach(b => {const selected=b.dataset.sample===key;b.classList.toggle('active',selected);b.setAttribute('aria-pressed',String(selected));});
 }
 function notify(message) {
-  clearTimeout(toastTimer); $('toast').textContent = message; $('toast').hidden = false;
+  clearTimeout(toastTimer); $('toast').textContent = t(message); $('toast').hidden = false;
   toastTimer=setTimeout(() => {$('toast').hidden=true;},2400);
 }
 function showError(error, raw) {
   const stage = error.stage || 'evaluation';
   engineErrorVisible = stage === 'engine' || stage === 'initialization';
-  const labels = { policies:'SPDL policy error', policy:'SPDL policy error', parse:'SPDL policy error', request:'Request format error', json:'JSON format error', condition:'Condition expression error', input:'Input validation failed', evaluation:'Evaluation error', engine:'Engine unavailable', initialization:'Engine unavailable', validation:'Input validation failed' };
+  const labels = { policies:t('SPDL policy error'), policy:t('SPDL policy error'), parse:t('SPDL policy error'), request:t('Request format error'), json:t('JSON format error'), condition:t('Condition expression error'), input:t('Input validation failed'), evaluation:t('Evaluation error'), engine:t('Engine unavailable'), initialization:t('Engine unavailable'), validation:t('Input validation failed') };
   $('result-card').className = 'result-card error'; icon('alert');
-  $('result-label').textContent = labels[stage] || 'Input or evaluation error';
-  $('result-description').textContent = `${error.line ? `Line ${error.line} · ` : ''}${error.message || 'Unknown error. Check your inputs and try again.'}`;
-  $('result-type').textContent = 'ERROR · NOT FALSE'; $('result-meta').textContent='No authorization result';
+  $('result-label').textContent = labels[stage] || t('Input or evaluation error');
+  $('result-description').textContent = t(`${error.line ? `Line ${error.line} · ` : ''}${error.message || t('Unknown error. Check your inputs and try again.')}`);
+  $('result-type').textContent = t('ERROR · NOT FALSE'); $('result-meta').textContent=t('No authorization result');
   const policyStage = /polic|parse|spdl|condition/i.test(stage), requestStage = /request|json/i.test(stage);
   editors.forEach((e,i) => { if ((i===0 && policyStage)||(i===1 && requestStage)) {e.container.classList.add('invalid');e.input.setAttribute('aria-invalid','true');} });
   if(raw) showRaw(raw); else {$('result-details').hidden=true;$('result-json').textContent='';}
@@ -102,19 +103,19 @@ function showError(error, raw) {
 function showRaw(data) { $('result-details').hidden = false; $('result-json').textContent = JSON.stringify(data,null,2); }
 function updateButton() {
   $('evaluate').disabled = !ready || busy;
-  $('evaluate-label').textContent = busy ? 'Evaluating…' : ready ? 'Evaluate' : 'Engine not ready';
+  $('evaluate-label').textContent = busy ? t('Evaluating…') : ready ? t('Evaluate') : t('Engine not ready');
 }
 async function loadEngine() {
-  ready=false; updateButton(); $('evaluate-label').textContent='Loading engine'; $('retry-engine').hidden=true;
-  $('engine-text').textContent='Loading WebAssembly…'; $('engine-status').firstElementChild.className='status-dot loading';
+  ready=false; updateButton(); $('evaluate-label').textContent=t('Loading engine'); $('retry-engine').hidden=true;
+  $('engine-text').textContent=t('Loading WebAssembly…'); $('engine-status').firstElementChild.className='status-dot loading';
   try {
     engine = await import('./engine.js');
     const metadata = await engine.initEngine(); ready=true;
     $('engine-status').title = `${metadata.engine || 'Speedle+'} · ${metadata.revision?.slice(0,7) || ''} · ${metadata.runtime || 'WebAssembly'}`;
     if(engineErrorVisible) resetResult();
-    $('engine-text').textContent='WebAssembly · Ready'; $('engine-status').firstElementChild.className='status-dot';
+    $('engine-text').textContent=t('WebAssembly · Ready'); $('engine-status').firstElementChild.className='status-dot';
   } catch(error) {
-    $('engine-text').textContent='Load failed · Retry'; $('engine-status').firstElementChild.className='status-dot error';
+    $('engine-text').textContent=t('Load failed · Retry'); $('engine-status').firstElementChild.className='status-dot error';
     $('retry-engine').hidden=false;
     showError({stage:'engine',message:`Unable to load the Speedle engine. ${error.message || String(error)}`});
   }
@@ -124,41 +125,41 @@ async function evaluate() {
   if (!ready || busy) return;
   const policies=$('policies').value, version=inputVersion;
   resetResult();
-  if (!policies.trim()) {showError({stage:'policies',message:'Enter at least one SPDL policy.'});$('policies').focus();return;}
+  if (!policies.trim()) {showError({stage:'policies',message:t('Enter at least one SPDL policy.')});$('policies').focus();return;}
   const converted=serializeRequest(readForm());
-  if(!converted.ok){showFormErrors(converted.errors);showError({stage:'request',message:'Check the highlighted fields, then evaluate again.'});return;}
+  if(!converted.ok){showFormErrors(converted.errors);showError({stage:'request',message:t('Check the highlighted fields, then evaluate again.')});return;}
   const request=converted.request;
   busy=true; updateButton();
-  $('result-card').className='result-card pending';icon('terminal');$('result-label').textContent='Evaluating…';$('result-description').textContent='Evaluating these policies and this request with Speedle.';$('result-meta').textContent='RUNNING';
+  $('result-card').className='result-card pending';icon('terminal');$('result-label').textContent=t('Evaluating…');$('result-description').textContent=t('Evaluating these policies and this request with Speedle.');$('result-meta').textContent=t('RUNNING');
   try {
     await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
     const result=await engine.evaluate({policies,request});
     if(version!==inputVersion) return;
-    if(result.ok===false || result.error) {showError(result.error || {message:'Speedle did not return a valid result.'}, result);return;}
-    if(typeof result.allowed!=='boolean') {showError({stage:'evaluation',message:'The engine did not return a valid boolean authorization result.'},result);return;}
+    if(result.ok===false || result.error) {showError(result.error || {message:t('Speedle did not return a valid result.')}, result);return;}
+    if(typeof result.allowed!=='boolean') {showError({stage:'evaluation',message:t('The engine did not return a valid boolean authorization result.')},result);return;}
     $('result-card').className=`result-card ${result.allowed?'allowed':'denied'}`;
     icon(result.allowed?'check':'close');$('result-label').textContent=String(result.allowed);
-    const reasons={GRANT_POLICY_FOUND:'A grant policy matched. This request is allowed.',DENY_POLICY_FOUND:'An explicit deny policy matched. This request is denied.',NO_APPLICABLE_POLICIES:'No applicable grant policy. This request is denied by default.',SERVICE_NOT_FOUND:'Service not found. This request is denied.'};
+    const reasons={GRANT_POLICY_FOUND:t('A grant policy matched. This request is allowed.'),DENY_POLICY_FOUND:t('An explicit deny policy matched. This request is denied.'),NO_APPLICABLE_POLICIES:t('No applicable grant policy. This request is denied by default.'),SERVICE_NOT_FOUND:t('Service not found. This request is denied.')};
     const codeReasons={0:reasons.GRANT_POLICY_FOUND,1:reasons.DENY_POLICY_FOUND,2:reasons.SERVICE_NOT_FOUND,3:reasons.NO_APPLICABLE_POLICIES};
-    $('result-description').textContent=reasons[result.reason] || codeReasons[result.reasonCode] || (result.allowed?'This request is allowed.':'This request is not allowed.');
-    $('result-type').textContent=result.allowed?'ACCESS GRANTED':'ACCESS DENIED';
-    $('result-meta').textContent=`Speedle+ · ${typeof result.durationMs==='number'?`${result.durationMs.toFixed(2)} ms`:'Evaluation complete'}`;
+    $('result-description').textContent=reasons[result.reason] || codeReasons[result.reasonCode] || (result.allowed?t('This request is allowed.'):t('This request is not allowed.'));
+    $('result-type').textContent=result.allowed?t('ACCESS GRANTED'):t('ACCESS DENIED');
+    $('result-meta').textContent=`Speedle+ · ${typeof result.durationMs==='number'?`${result.durationMs.toFixed(2)} ms`:t('Evaluation complete')}`;
     showRaw(result);
   } catch(error) {
     ready=false;
-    $('engine-text').textContent='Reload required'; $('engine-status').firstElementChild.className='status-dot error'; $('retry-engine').hidden=false;
+    $('engine-text').textContent=t('Reload required'); $('engine-status').firstElementChild.className='status-dot error'; $('retry-engine').hidden=false;
     if(version===inputVersion)showError({stage:'engine',message:error.message || String(error)});
   }
   finally {busy=false;updateButton();}
 }
 async function copyInput(id) {
-  try {await navigator.clipboard.writeText($(id).value);notify('Copied to clipboard');}
-  catch {$(id).focus();$(id).select();notify('Clipboard unavailable. Text selected; copy it manually.');}
+  try {await navigator.clipboard.writeText($(id).value);notify(t('Copied to clipboard'));}
+  catch {$(id).focus();$(id).select();notify(t('Clipboard unavailable. Text selected; copy it manually.'));}
 }
 document.querySelectorAll('[data-sample]').forEach(button=>button.addEventListener('click',()=>setSample(button.dataset.sample)));
 $('evaluate').addEventListener('click',evaluate);
 $('retry-engine').addEventListener('click',loadEngine);
-$('reset-button').addEventListener('click',()=>{setSample('allow');notify('Default example restored');});
+$('reset-button').addEventListener('click',()=>{setSample('allow');notify(t('Default example restored'));});
 $('copy-policies').addEventListener('click',()=>copyInput('policies'));
 
 document.addEventListener('keydown',event=>{if((event.ctrlKey||event.metaKey)&&event.key==='Enter'){event.preventDefault();evaluate();}});
@@ -170,15 +171,15 @@ function element(tag, attrs = {}, text = '') {
     if(key==='class')node.className=value;
     else if(key==='checked')node.checked=Boolean(value);
     else if(key==='value')node.value=value;
-    else node.setAttribute(key,String(value));
+    else node.setAttribute(key,['aria-label','title','placeholder'].includes(key)?t(value):String(value));
   }
-  if(text)node.textContent=text;
+  if(text)node.textContent=t(text);
   return node;
 }
 function field(path,label,caption,value,kind='text',options) {
   const wrap=element('div',{'class':'form-field','data-field-wrapper':path});
   const id=`field-${path.replaceAll('.','-')}`;
-  const title=element('label',{for:id});title.append(document.createTextNode(label));
+  const title=element('label',{for:id});title.append(document.createTextNode(t(label)));
   if(caption)title.append(element('span',{},caption));
   const control=options?element('select',{id,'data-field':path}):element('input',{id,'data-field':path,type:kind,autocomplete:'off'});
   if(options)for(const [v,t] of options)control.append(element('option',{value:v},t));
@@ -188,7 +189,7 @@ function field(path,label,caption,value,kind='text',options) {
   wrap.append(title,control,message);return wrap;
 }
 const principalTypes=[['user','user'],['group','group'],['entity','entity']];
-const attributeTypes=[['string','string · Text'],['numeric','numeric · Number'],['bool','bool · Boolean'],['datetime','datetime · Date & time']];
+const attributeTypes=[['string',t('string · Text')],['numeric',t('numeric · Number')],['bool',t('bool · Boolean')],['datetime',t('datetime · Date & time')]];
 function removeButton(label,action,index,valueIndex) {
   const button=element('button',{type:'button','class':'remove-button','aria-label':label,'data-action':action,'data-index':index,title:label},'×');
   if(valueIndex!==undefined)button.dataset.valueIndex=valueIndex;
@@ -198,33 +199,33 @@ function renderLists(focusPath) {
   const principals=$('principal-list');principals.replaceChildren();
   formState.principals.forEach((principal,i)=>{
     const row=element('div',{'class':'principal-row','data-principal-index':i});
-    row.append(field(`principals.${i}.type`,'Type','',principal.type,'text',principalTypes),field(`principals.${i}.name`,'Name','Required',principal.name),field(`principals.${i}.idd`,'Identity domain','Optional',principal.idd),removeButton(`Remove principal ${i+1}`,'remove-principal',i));
+    row.append(field(`principals.${i}.type`,t('Type'),'',principal.type,'text',principalTypes),field(`principals.${i}.name`,t('Name'),t('Required'),principal.name),field(`principals.${i}.idd`,t('Identity domain'),t('Optional'),principal.idd),removeButton(`Remove principal ${i+1}`,'remove-principal',i));
     principals.append(row);
   });
-  if(!formState.principals.length)principals.append(element('p',{'class':'empty-state'},'No principals. Test an anonymous request, or add a user, group or entity.'));
+  if(!formState.principals.length)principals.append(element('p',{'class':'empty-state'},t('No principals. Test an anonymous request, or add a user, group or entity.')));
   const attributes=$('attribute-list');attributes.replaceChildren();
   formState.attributes.forEach((attribute,i)=>{
     const row=element('div',{'class':'attribute-row','data-attribute-index':i});
     const head=element('div',{'class':'attribute-head'});
-    head.append(field(`attributes.${i}.name`,'Name','Required',attribute.name),field(`attributes.${i}.type`,'Type','',attribute.type,'text',attributeTypes),removeButton(`Remove attribute ${i+1}`,'remove-attribute',i));
+    head.append(field(`attributes.${i}.name`,t('Name'),t('Required'),attribute.name),field(`attributes.${i}.type`,t('Type'),'',attribute.type,'text',attributeTypes),removeButton(`Remove attribute ${i+1}`,'remove-attribute',i));
     const mode=element('label',{'class':'array-toggle'});const checkbox=element('input',{type:'checkbox','data-multiple':i,checked:attribute.multiple});
-    mode.append(checkbox,document.createTextNode('Multiple values'),element('span',{},'Array'));
+    mode.append(checkbox,document.createTextNode(t('Multiple values')),element('span',{},t('Array')));
     const values=element('div',{'class':'attribute-values'});
     attribute.values.forEach((value,j)=>{
       const valueRow=element('div',{'class':'attribute-value'});
       const kind=attribute.type==='numeric'?'number':attribute.type==='datetime'?'datetime-local':'text';
-      const valueField=field(`attributes.${i}.values.${j}`,attribute.multiple?`Value ${j+1}`:'Value',attribute.type==='datetime'?'UTC date & time':'',value,kind,attribute.type==='bool'?[['true','true'],['false','false']]:undefined);
+      const valueField=field(`attributes.${i}.values.${j}`,attribute.multiple?`Value ${j+1}`:t('Value'),attribute.type==='datetime'?t('UTC date & time'):'',value,kind,attribute.type==='bool'?[['true','true'],['false','false']]:undefined);
       valueField.querySelector('input,select').dataset.attributeValue='';
       valueRow.append(valueField);
       if(attribute.multiple)valueRow.append(removeButton(`Remove value ${j+1} from attribute ${i+1}`,'remove-value',i,j));
       values.append(valueRow);
     });
-    if(attribute.multiple && !attribute.values.length)values.append(element('p',{'class':'empty-state compact'},'Empty array. Select Add value to enter items.'));
+    if(attribute.multiple && !attribute.values.length)values.append(element('p',{'class':'empty-state compact'},t('Empty array. Select Add value to enter items.')));
     row.append(head,mode,values);
-    if(attribute.multiple)row.append(element('button',{type:'button','class':'add-button add-value','data-action':'add-value','data-index':i},'+ Add value'));
+    if(attribute.multiple)row.append(element('button',{type:'button','class':'add-button add-value','data-action':'add-value','data-index':i},t('+ Add value')));
     attributes.append(row);
   });
-  if(!formState.attributes.length)attributes.append(element('p',{'class':'empty-state'},'No attributes. Add them when a policy condition needs them.'));
+  if(!formState.attributes.length)attributes.append(element('p',{'class':'empty-state'},t('No attributes. Add them when a policy condition needs them.')));
   if(focusPath){const control=$('request-form').querySelector(`[data-field="${focusPath}"]`);control?.focus();}
 }
 function populateForm(state) {
@@ -251,7 +252,7 @@ function showFormErrors(errors) {
     if(!control)continue;
     const box=control.closest('.form-field').querySelector('.field-error');
     if(!box.id)box.id=`error-${path.replaceAll('.','-')}`;
-    box.textContent=message;box.hidden=false;control.setAttribute('aria-invalid','true');control.setAttribute('aria-describedby',box.id);first??=control;
+    box.textContent=t(message);box.hidden=false;control.setAttribute('aria-invalid','true');control.setAttribute('aria-describedby',box.id);first??=control;
   }
   first?.focus();
 }
@@ -282,7 +283,7 @@ $('request-form').addEventListener('click',event=>{
   changed();renderLists(focus);
   if(!focus){if(action==='remove-principal')$('add-principal').focus();else if(action==='remove-attribute')$('add-attribute').focus();else $('attribute-list').querySelector(`[data-action="add-value"][data-index="${i}"]`)?.focus();}
 });
-$('add-principal').addEventListener('click',()=>{formState=readForm();if(formState.principals.length>=200){notify('A maximum of 200 principals is supported');return;}formState.principals.push({type:'user',name:'',idd:''});changed();renderLists(`principals.${formState.principals.length-1}.name`);});
+$('add-principal').addEventListener('click',()=>{formState=readForm();if(formState.principals.length>=200){notify(t('A maximum of 200 principals is supported'));return;}formState.principals.push({type:'user',name:'',idd:''});changed();renderLists(`principals.${formState.principals.length-1}.name`);});
 $('add-attribute').addEventListener('click',()=>{formState=readForm();formState.attributes.push({name:'',type:'string',multiple:false,values:['']});changed();renderLists(`attributes.${formState.attributes.length-1}.name`);});
 setSample('allow');
 loadEngine();

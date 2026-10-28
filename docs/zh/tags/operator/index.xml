@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Operator on Speedle</title>
+    <link>https://speedle.io/zh/tags/operator/</link>
+    <description>Recent content in Operator on Speedle</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh-cn</language>
+    
+	<atom:link href="https://speedle.io/zh/tags/operator/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>运维指南</title>
+      <link>https://speedle.io/zh/devops/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://speedle.io/zh/devops/</guid>
+      <description> 待完善 策略调试？
+策略管理员 了解 SPDL 基础并建立策略模型 部署应用 使用策略发现模式 使用策略管理服务 API    应用开发者 了解 SPDL 基础 策略管理服务 API 授权决策服务 API 令牌断言 API    </description>
+    </item>
+    
+  </channel>
+</rss>

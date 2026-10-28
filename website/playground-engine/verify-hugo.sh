@@ -15,6 +15,5 @@ if [[ -z "$HUGO_BIN" ]]; then
   tar -xzf "$WORK/hugo.tar.gz" -C "$WORK"
   HUGO_BIN="$WORK/hugo"
 fi
-"$HUGO_BIN" version | grep -E 'v0\.48([ /-]|$)'
-"$HUGO_BIN" --source "$ROOT/docs/hugo" --destination "$WORK/site"
+HUGO_BIN="$HUGO_BIN" "$ROOT/website/build-site.sh" "$WORK/site"
 node "$ROOT/website/playground-engine/tests/hugo-output.test.cjs" "$WORK/site"

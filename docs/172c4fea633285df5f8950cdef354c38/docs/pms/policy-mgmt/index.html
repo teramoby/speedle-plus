@@ -68,65 +68,18 @@
       <li><a id="blogLink" href="https://medium.com/speedle" target="_blank">Blog</a>
       </li>
       
-      <li><a href="/172c4fea633285df5f8950cdef354c38/docs/usecases">Docs</a>
+      <li><a href="/172c4fea633285df5f8950cdef354c38/docs/usecases/">Docs</a>
       </li>
       
       <li><a href="https://github.com/teramoby/speedle-plus">Github</a>
       </li>
       
-      <li><a href="/172c4fea633285df5f8950cdef354c38/about">About</a>
+      <li><a href="/172c4fea633285df5f8950cdef354c38/about/">About</a>
       </li>
       
     </ul>
   </nav>
-  <nav id="top-nav-lang" class="hide-sm">
-    <ul>
-      
-      <li class="langName">
-        <span class="pointerCursor">English
-        <img class="langNameArrow" src="/172c4fea633285df5f8950cdef354c38/img/speedle/arrow.svg" /></span>
-      </li>
-      
-    </ul>
-  </nav><div class="langsel hide-sm" id="langselFloatDiv" style="visibility: hidden;">
-    <ul id="langselUl">
-      
-      
-      
-      
-      <li class="lang">
-        <span>
-          <a class="langNameOption" href="/172c4fea633285df5f8950cdef354c38/zh">中文</a>
-        </span>
-      </li>
-      
-      
-    </ul>
-  </div>
-  <nav class="langsel show-sm">
-    <ul>
-      <li class="lang">
-        
-        <span>
-          <a style="pointer-events:none;" href="/172c4fea633285df5f8950cdef354c38/en">
-            <span class="langSelected">☑︎
-            </span>
-            <span class="langName">English</span>
-          </a>
-        </span>
-        
-        <span>
-          <a  href="/172c4fea633285df5f8950cdef354c38/zh">
-            <span class="langSelected">☐
-            </span>
-            <span class="langName">中文</span>
-          </a>
-        </span>
-        
-      </li>
-    </ul>
-  </nav>
-</div></header>
+  <nav id="top-nav-lang" aria-label="Language"><ul><li><a href="/172c4fea633285df5f8950cdef354c38/zh/docs/pms/policy-mgmt/" lang="zh-CN" hreflang="zh-CN">中文</a></li></ul></nav></div></header>
     <div class="container">
         <div class="content-container">
             <main>
@@ -169,7 +122,7 @@ headingSelector: 'h2'
 
 <h2 id="understanding-the-speedle-policy-module">Understanding the Speedle Policy Module</h2>
 
-<p><strong>Note:</strong> The Speedle syntax used in this document is defined in <a href="../../spdl">SPDL - Security Policy Definition Language</a>.</p>
+<p><strong>Note:</strong> The Speedle syntax used in this document is defined in <a href="/172c4fea633285df5f8950cdef354c38/docs/spdl/">SPDL - Security Policy Definition Language</a>.</p>
 
 <h4 id="policy-store">Policy store</h4>
 
@@ -181,7 +134,7 @@ headingSelector: 'h2'
 
 <p>A service is a container that contains a set of authorization and role policies that exist only in the scope of that service. Policies and role policies are evaluated within the scope of the service in which they were defined, not in the entire policy store. You can manage multiple services with Speedle.</p>
 
-<p>You can also define global policies in a global service. Global policies take effect globally across all services. For details, see <a href="../global-policy">Global Policy</a>.</p>
+<p>You can also define global policies in a global service. Global policies take effect globally across all services. For details, see <a href="/172c4fea633285df5f8950cdef354c38/docs/pms/global-policy/">Global Policy</a>.</p>
 
 <h4 id="authorization-policy">Authorization policy</h4>
 
@@ -248,7 +201,7 @@ When Speedle evaluates policies, the final authorization decision is based on th
 
 <p>A condition is a bool expression that is constructed using attributes, functions, constants, operators, comparators or parenthesis and produces a bool value. Conditions are supported in both role and authorization policies. The policy or role policy can take effect only when the condition is met.</p>
 
-<p>For details, see <a href="../../spdl">SPDL - Security Policy Definition Language</a>.</p>
+<p>For details, see <a href="/172c4fea633285df5f8950cdef354c38/docs/spdl/">SPDL - Security Policy Definition Language</a>.</p>
 
 <h2 id="managing-speedle-policies">Managing Speedle policies</h2>
 
@@ -261,7 +214,7 @@ When Speedle evaluates policies, the final authorization decision is based on th
 
 <li><p>Using the PMS Golang Management API in Embedded Mode (as described in the <a href="https://github.com/teramoby/speedle-plus/tree/master/api/pms">Speedle API doc</a>.</p></li>
 
-<li><p>Using the PMS REST Service (as described in the <a href="../docs/api/management_api">Speedle Policy Management API</a>).</p></li>
+<li><p>Using the PMS REST Service (as described in the <a href="/172c4fea633285df5f8950cdef354c38/docs/api/management_api/">Speedle Policy Management API</a>).</p></li>
 
 <li><p>Using the PMS gRPC Service (as described in the <a href="/172c4fea633285df5f8950cdef354c38/protobuf/pms.proto">Speedle GRPC document</a>).</p></li>
 </ul>
@@ -466,7 +419,7 @@ rolepolicy 4gskmqamoiebmidyw2fi deleted.</code></pre></div>
     </script>
     <script src="/172c4fea633285df5f8950cdef354c38/js/kube.legenda.js" type="text/javascript">
     </script>
-    <script src="/172c4fea633285df5f8950cdef354c38/js/master.js" type="text/javascript">
+    <script src="/172c4fea633285df5f8950cdef354c38/js/master.js?v=language-direct-20261026" type="text/javascript">
     </script>
 </body>
 
