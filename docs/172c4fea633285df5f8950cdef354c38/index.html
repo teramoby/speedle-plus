@@ -129,18 +129,20 @@
       .footer-inner { padding: 48px 0; grid-template-columns: 1fr; }
     }
   </style>
-<link rel="stylesheet" href="/172c4fea633285df5f8950cdef354c38/css/navigation.css">
+<link href="/css/navigation.css?v=header-20261027" rel="stylesheet">
+<script src="/js/navigation.js?v=header-20261027" defer></script>
 </head>
 <body>
   <header class="site-header">
     <div class="wrap nav">
-      <a class="brand" href="#top" aria-label="Speedle home"><img src="/img/speedle/Speedle_logo_home_bold.svg?v=4" alt="Speedle"></a>
+      <a class="brand" href="/172c4fea633285df5f8950cdef354c38/#top" aria-label="Speedle home"><img src="/img/speedle/Speedle_logo_home_bold.svg?v=4" alt="Speedle"></a>
       <button class="menu" type="button" aria-expanded="false" aria-controls="nav-links" aria-label="Open navigation">☰</button>
       <nav class="nav-links" id="nav-links" aria-label="Main navigation">
-        <a href="#about">About</a><a href="#features">Features</a><a href="#integrations">Integrations</a>
-        <a href="/172c4fea633285df5f8950cdef354c38/quick-start/">Getting started</a><a href="/172c4fea633285df5f8950cdef354c38/docs/">Docs</a>
+        <a href="/172c4fea633285df5f8950cdef354c38/#about">About</a><a href="/172c4fea633285df5f8950cdef354c38/#features">Features</a><a href="/172c4fea633285df5f8950cdef354c38/#integrations">Integrations</a>
+        <a href="/172c4fea633285df5f8950cdef354c38/quick-start/">Getting started</a><a href="/172c4fea633285df5f8950cdef354c38/docs/">Docs</a><a href="/playground/">Playground</a>
+        <a href="/172c4fea633285df5f8950cdef354c38/zh/" lang="zh-CN" hreflang="zh-CN" aria-label="切换到中文">中文</a>
         <a class="nav-github" href="https://github.com/teramoby/speedle-plus">GitHub</a>
-      <a href="/172c4fea633285df5f8950cdef354c38/zh/" lang="zh-CN" hreflang="zh-CN">中文</a></nav>
+      </nav>
     </div>
   </header>
 
@@ -267,17 +269,5 @@
       </nav>
     </div>
   </footer>
-  <script>
-    const button = document.querySelector('.menu');
-    const nav = document.querySelector('.nav-links');
-    button.addEventListener('click', () => {
-      const open = nav.classList.toggle('open');
-      button.setAttribute('aria-expanded', String(open));
-      button.textContent = open ? '×' : '☰';
-    });
-    nav.addEventListener('click', (event) => {
-      if (event.target.matches('a') && nav.classList.contains('open')) button.click();
-    });
-  </script>
 </body>
 </html>

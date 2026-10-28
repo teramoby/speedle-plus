@@ -16,8 +16,16 @@ pages, `中文` on English pages), including inside the mobile navigation menu.
   English HTML; `static/zh/playground/index.html`: Chinese HTML using the same
   engine. `i18n.js` translates display text only, retaining request values and
   original engine diagnostics.
-- `docs/hugo/layouts/partials/header.html`: language-aware legacy documentation
-  navigation. `master.js` also handles its mobile menu directly.
+- `docs/hugo/layouts/partials/header.html`: reuses the approved English/Chinese
+  homepage headers for current Hugo pages. `css/navigation.css` and
+  `js/navigation.js` provide the same header layout and mobile interaction on
+  homepages, Playground and documentation. Home-section links return to the
+  localized homepage; the language router keeps language switches on the same
+  page. Mobile links stay visible until their controller initializes, so primary
+  navigation also works when JavaScript is disabled or the script fails to load.
+  `localize-links.py` gives archived snapshots the same header: its links stay in
+  the snapshot where it has the page (and anchor), and otherwise lead to the
+  current site.
 
 ## Generate and publish
 
