@@ -1,19 +1,32 @@
 name: Speedle Plus CI
 
-on: [push, pull_request, workflow_dispatch]
+on:
+  # Pull requests are checked by their pull_request run; pushes are checked on
+  # master only, so a pull request branch is not tested twice.
+  push:
+    branches: [master]
+  pull_request:
+  workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
-  # Changes confined to docs/ (the GitHub Pages site) skip the Go jobs and run
-  # only the site checks; anything else runs the full suite.
+  # Run only what a change can affect:
+  #   go      - Go lint/test/build: anything outside docs/, website/ and root
+  #             Markdown, including CI configuration
+  #   website - Playground engine and site tooling (build job runs verify.sh,
+  #             including the site checks and the native quick-start check)
+  #   docs    - published GitHub Pages content only: the light site job
+  # An unknown base (workflow_dispatch, new branch) runs everything.
   changes:
     name: changes
     runs-on: ubuntu-latest
     timeout-minutes: 5
     outputs:
-      docs_only: ${{ steps.scope.outputs.docs_only }}
+      go: ${{ steps.scope.outputs.go }}
+      website: ${{ steps.scope.outputs.website }}
+      docs: ${{ steps.scope.outputs.docs }}
     steps:
       - name: Checkout code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -35,20 +48,33 @@ jobs:
             push) base="${PUSH_BEFORE}" ;;
             *) base="" ;;
           esac
-          docs_only=false
+          go=true website=true docs=true
           if [[ -n "${base}" && "${base}" != 0000000000000000000000000000000000000000 ]] && git cat-file -e "${base}^{commit}" 2>/dev/null; then
             changed=$(git diff --name-only "${base}" "${GITHUB_SHA}")
-            if [[ -n "${changed}" ]] && ! grep -qv '^docs/' <<< "${changed}"; then
-              docs_only=true
-            fi
+            go=false website=false docs=false
+            while IFS= read -r file; do
+              case "${file}" in
+                '') ;;
+                docs/*) docs=true ;;
+                website/*) website=true ;;
+                */*) go=true ;;
+                *.md) ;;
+                *) go=true ;;
+              esac
+            done <<< "${changed}"
           fi
-          echo "docs_only=${docs_only}" >> "${GITHUB_OUTPUT}"
-          echo "Docs-only change: ${docs_only}"
+          {
+            echo "go=${go}"
+            echo "website=${website}"
+            echo "docs=${docs}"
+          } >> "${GITHUB_OUTPUT}"
+          echo "Go: ${go}; website tooling: ${website}; docs: ${docs}"
 
   site:
     name: site
     needs: changes
-    if: needs.changes.outputs.docs_only == 'true'
+    # The build job's verify.sh already includes these checks.
+    if: needs.changes.outputs.docs == 'true' && needs.changes.outputs.go != 'true' && needs.changes.outputs.website != 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -81,7 +107,7 @@ jobs:
   lint:
     name: lint
     needs: changes
-    if: needs.changes.outputs.docs_only != 'true'
+    if: needs.changes.outputs.go == 'true'
     uses: teramoby/speedle-plus/.github/workflows/go-ci-worker.yml@master
     with:
       mode: lint
@@ -89,7 +115,7 @@ jobs:
   test:
     name: test (${{ matrix.store-type }})
     needs: changes
-    if: needs.changes.outputs.docs_only != 'true'
+    if: needs.changes.outputs.go == 'true'
     strategy:
       fail-fast: false
       matrix:
@@ -102,7 +128,7 @@ jobs:
   build:
     name: build
     needs: changes
-    if: needs.changes.outputs.docs_only != 'true'
+    if: needs.changes.outputs.go == 'true' || needs.changes.outputs.website == 'true'
     uses: teramoby/speedle-plus/.github/workflows/go-ci-worker.yml@master
     with:
       mode: build
