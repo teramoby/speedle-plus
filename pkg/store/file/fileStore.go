@@ -285,8 +285,7 @@ func (s *Store) DeleteService(serviceName string) error {
 	if !found {
 		return errors.Errorf(errors.EntityNotFound, "service %q is not found", serviceName)
 	}
-	s.writePolicyStoreWithoutLock(ps)
-	return nil
+	return s.writePolicyStoreWithoutLock(ps)
 
 }
 
