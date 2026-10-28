@@ -1,0 +1,75 @@
+name: Nightly tests
+
+on:
+  schedule:
+    # 01:00 GMT+8 every day.
+    - cron: '0 17 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nightly-tests
+  cancel-in-progress: false
+
+jobs:
+  # Race-detector run of every package with both stores, the quick start with
+  # every supported Go release, govulncheck and the CI script tests, on the
+  # self-hosted test runner (see scripts/ci/run-go-tests.sh).
+  run:
+    name: run
+    uses: teramoby/speedle-plus/.github/workflows/go-ci-worker.yml@master
+    with:
+      mode: nightly
+
+  # Ark analysis, email to the maintainer and one tracking issue per failing
+  # test. Hosted, so the test runner never holds the Ark, SMTP or issue tokens.
+  report:
+    name: report
+    needs: run
+    if: always() && github.repository == 'teramoby/speedle-plus'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Download results
+        continue-on-error: true
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: nightly-results
+          path: test-results
+
+      - name: Analyze, mail and track failures
+        env:
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          RUN_RESULT: ${{ needs.run.result }}
+          ARK_API_KEY: ${{ secrets.ARK_API_KEY }}
+          ARK_MODEL: ${{ vars.ARK_REVIEW_MODEL || 'kimi-k3' }}
+          SMTP_SERVER: ${{ secrets.SMTP_SERVER }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          SMTP_USERNAME: ${{ secrets.SMTP_USERNAME }}
+          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+          MAIL_FROM: ${{ secrets.MAIL_FROM }}
+          MAIL_TO: ${{ vars.TEST_REPORT_MAIL_TO || 'caiwl@acm.org' }}
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          checks=()
+          # A run that ended before writing results (cancelled, timed out,
+          # runner lost) is a failure of its own.
+          if [[ "${RUN_RESULT}" != success && ! -s test-results/checks.txt ]]; then
+            echo "Worker ended with ${RUN_RESULT} before reporting." > worker.log
+            checks+=(--check "worker=1:worker.log")
+          fi
+          python3 scripts/ci/test_report.py --kind nightly --results-dir test-results \
+            --summary-file report.txt "${checks[@]}"
+          cat report.txt >> "${GITHUB_STEP_SUMMARY}"

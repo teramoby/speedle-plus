@@ -57,58 +57,61 @@ function context(eventName, head = repository, repo = repository) {
     ref: eventName === 'pull_request' ? 'refs/pull/7/merge' : 'refs/heads/feature',
     event: {sender: {type: 'User'}, pull_request: {head: {repo: {full_name: head}}, user: {type: 'User'}}}};
 }
-test('worker owns runner selection and exposes only mode/store inputs, never a caller checkout ref', () => {
+const testModes = ['test', 'nightly', 'weekly'];
+const allModes = ['lint', 'build', ...testModes];
+test('worker owns runner selection and exposes only the mode input, never a caller checkout ref', () => {
   const inputBlock = source.split('\npermissions:', 1)[0];
   assert.match(inputBlock, /^  workflow_call:$/m);
   assert.deepEqual([...inputBlock.matchAll(/^  ([\w-]+):/gm)].map(x => x[1]), ['workflow_call']);
   assert.deepEqual([...source.split(/^jobs:\s*$/m)[1].matchAll(/^  ([\w-]+):\s*$/gm)].map(x => x[1]), ['execute']);
-  assert.deepEqual([...inputBlock.matchAll(/^      ([\w-]+):$/gm)].map(x => x[1]), ['mode', 'store_type']);
+  assert.deepEqual([...inputBlock.matchAll(/^      ([\w-]+):$/gm)].map(x => x[1]), ['mode']);
   assert.match(source, /^permissions:\n  contents: read$/m);
   assert.match(step('Checkout code'), /ref: \$\{\{ github.sha \}\}/);
   assert.match(step('Checkout code'), /persist-credentials: false/);
   assert.match(step('Setup Go'), /uses: actions\/setup-go@[a-f0-9]{40}(?:\s|$)/);
   assert.match(step('Setup Go'), /go-version: '1\.26'/);
-  assert.doesNotMatch(source, /secrets:|secrets\.inherit|\$\{\{\s*inputs\.(?:ref|sha|runner)/);
+  assert.doesNotMatch(source, /secrets:|secrets\.inherit|\$\{\{\s*inputs\.(?:ref|sha|runner|store_type)/);
 });
-test('trusted events pool lint/build while fixed-port tests stay on the original runner', () => {
+test('trusted events pool lint/build while fixed-port test modes stay on the original runner', () => {
   const push = context('push'), dispatch = context('workflow_dispatch');
   push.event = {sender: {type: 'User'}}; dispatch.event = {sender: {type: 'User'}};
   const merged = context('push'); merged.ref = 'refs/heads/master'; merged.event = {sender: {type: 'Bot'}};
   const botPR = context('pull_request'); botPR.event.pull_request.user.type = 'Bot';
   const botPush = context('push'); botPush.event.sender.type = 'Bot';
   const botTag = context('push'); botTag.event.sender.type = 'Bot'; botTag.ref = 'refs/tags/release';
-  for (const github of [push, dispatch, context('pull_request'), merged, botPR, botPush, botTag]) {
-    for (const mode of ['lint', 'build', 'test']) for (const store_type of ['file', 'etcd']) {
-      assert.deepEqual(route(github, {mode, store_type}), mode === 'test' ? expected : pool);
-    }
+  const scheduled = context('schedule'); scheduled.ref = 'refs/heads/master'; scheduled.event = {};
+  for (const github of [push, dispatch, context('pull_request'), merged, botPR, botPush, botTag, scheduled]) {
+    for (const mode of allModes) assert.deepEqual(route(github, {mode}), testModes.includes(mode) ? expected : pool);
   }
 });
-test('forks, missing metadata and copied repositories stay hosted regardless of inputs', () => {
+test('forks, missing metadata, copied repositories and off-master schedules stay hosted regardless of inputs', () => {
   const missing = context('pull_request'); missing.event.pull_request.head.repo = null;
   const forkBot = context('pull_request', 'outsider/speedle-plus'); forkBot.event.pull_request.user.type = 'Bot';
   const unknownAuthor = context('pull_request'); delete unknownAuthor.event.pull_request.user;
   const missingSender = context('push'); missingSender.event = {};
   const foreignMaster = context('push', 'outsider/speedle-plus', 'outsider/speedle-plus');
   foreignMaster.ref = 'refs/heads/master'; foreignMaster.event = {sender: {type: 'Bot'}};
+  const branchSchedule = context('schedule'); branchSchedule.event = {};
+  const foreignSchedule = context('schedule', 'outsider/speedle-plus', 'outsider/speedle-plus'); foreignSchedule.ref = 'refs/heads/master';
   const cases = [context('pull_request', 'outsider/speedle-plus'), missing,
     {repository, event_name: 'pull_request', event: {}}, {repository, event_name: 'pull_request', event: {pull_request: {}}},
     context('pull_request_target'), context('issue_comment'), context('unknown'),
     context('push', 'outsider/speedle-plus', 'outsider/speedle-plus'),
     context('workflow_dispatch', 'outsider/speedle-plus', 'outsider/speedle-plus'), context('push', undefined, ''),
-    forkBot, unknownAuthor, missingSender, foreignMaster];
+    forkBot, unknownAuthor, missingSender, foreignMaster, branchSchedule, foreignSchedule];
   for (const github of cases) {
-    for (const inputs of [{mode: 'test', store_type: 'file'}, {mode: 'lint'}, {mode: 'build', store_type: 'etcd'}, {mode: 'self-hosted', store_type: 'charming-speedle', ref: 'master'}]) {
-      assert.equal(route(github, inputs), 'ubuntu-latest');
+    for (const inputs of [...allModes.map(mode => ({mode})), {mode: 'self-hosted', ref: 'master'}]) {
+      assert.equal(route(github, inputs), 'ubuntu-latest', JSON.stringify([github, inputs]));
     }
   }
 });
-test('identity check accepts both pool runners but refuses fixed-port tests on runner 2', () => {
+test('identity check accepts both pool runners but keeps fixed-port test modes on runner 1', () => {
   for (const RUNNER_NAME of ['charming-speedle', 'charming-speedle-2', 'unexpected-host']) {
-    for (const CI_TASK of ['lint', 'build', 'test']) {
+    for (const CI_TASK of allModes) {
       const result = spawnSync('bash', ['-c', script('Verify self-hosted runner identity')], {
         encoding: 'utf8', env: {...process.env, RUNNER_NAME, RUNNER_OS: 'Linux', RUNNER_ARCH: 'X64', CI_TASK},
       });
-      const allowed = RUNNER_NAME === 'charming-speedle' || (RUNNER_NAME === 'charming-speedle-2' && CI_TASK !== 'test');
+      const allowed = RUNNER_NAME === 'charming-speedle' || (RUNNER_NAME === 'charming-speedle-2' && !testModes.includes(CI_TASK));
       assert.equal(result.status === 0, allowed, `${RUNNER_NAME}/${CI_TASK}: ${result.stderr}`);
     }
   }
@@ -117,68 +120,115 @@ test('task validation permits only exact enum values and treats shell metacharac
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'speedle-worker-input-'));
   try {
     const marker = path.join(directory, 'injected');
-    for (const mode of ['lint', 'test', 'build']) for (const store of ['file', 'etcd']) {
-      const result = spawnSync('bash', ['-c', script('Validate CI task')], {encoding: 'utf8', env: {...process.env, CI_TASK: mode, TEST_STORE: store}});
+    for (const mode of allModes) {
+      const result = spawnSync('bash', ['-c', script('Validate CI task')], {encoding: 'utf8', env: {...process.env, CI_TASK: mode}});
       assert.equal(result.status, 0, result.stderr);
     }
-    for (const [mode, store] of [['', 'file'], ['Lint', 'file'], ['test', 'mongo'],
-      [`lint; touch ${marker}`, 'file'], [`$(touch ${marker})`, 'file'], ['test', `file\n$(touch ${marker})`]]) {
-      const result = spawnSync('bash', ['-c', script('Validate CI task')], {encoding: 'utf8', env: {...process.env, CI_TASK: mode, TEST_STORE: store}});
+    for (const mode of ['', 'Lint', 'gate', 'nightly ', `lint; touch ${marker}`, `$(touch ${marker})`, `test\n$(touch ${marker})`]) {
+      const result = spawnSync('bash', ['-c', script('Validate CI task')], {encoding: 'utf8', env: {...process.env, CI_TASK: mode}});
       assert.notEqual(result.status, 0); assert.equal(fs.existsSync(marker), false);
     }
     assert.ok(source.indexOf('Validate CI task') < source.indexOf('Checkout code'));
     assert.doesNotMatch(script('Validate CI task'), /\$\{\{/);
   } finally {fs.rmSync(directory, {recursive: true, force: true});}
 });
-function testEnvironment(store) {
-  const block = step('Run tests with coverage').split('        env:\n')[1]?.split('        run:', 1)[0];
+function testEnvironment(mode) {
+  const block = step('Run Go tests').split('        env:\n')[1]?.split('        run:', 1)[0];
   assert.ok(block, 'Missing sanitized test environment');
   const env = {};
   for (const line of block.trimEnd().split('\n')) {
     const match = line.match(/^          ([A-Z_]+): (.*)$/); assert.ok(match, `Unexpected environment entry ${line}`);
-    env[match[1]] = match[2] === "''" ? '' : match[2].replace('${{ inputs.store_type }}', store);
+    env[match[1]] = match[2] === "''" ? '' : match[2].replace('${{ inputs.mode }}', mode);
   }
   return env;
 }
 const cleanKeys = ['SP_APP_NAME', 'PMS_ADMIN_TOKEN', 'ADS_ADMIN_TOKEN', 'CA_LOCATION', 'CERT_LOCATION', 'KEY_LOCATION'];
 test('test environment neutralizes inherited CLI names, tokens, certificates and remote service endpoints', () => {
-  for (const store of ['file', 'etcd']) {
-    const env = testEnvironment(store);
-    assert.equal(env.STORE_TYPE, store);
+  for (const mode of testModes) {
+    const env = testEnvironment(mode);
+    assert.equal(env.CI_TASK, mode); assert.equal(env.RESULTS_DIR, 'test-results');
     for (const key of cleanKeys) assert.equal(env[key], '', key);
     assert.equal(env.PMS_ENDPOINT, 'http://127.0.0.1:6733'); assert.equal(env.ADS_ENDPOINT, 'http://127.0.0.1:6734');
   }
   assert.doesNotMatch(source, /^\s+(?:export )?(?:HOME|home|CODEX_HOME)=|^\s+(?:HOME|home|CODEX_HOME):/m);
+  assert.match(step('Run Go tests'), /if: inputs.mode == 'test' \|\| inputs.mode == 'nightly' \|\| inputs.mode == 'weekly'/);
 });
-function runGo({store = 'file', testExit = 0, listExit = 0} = {}) {
+
+// Run the worker step and scripts/ci/run-go-tests.sh against stub go,
+// python3 and node that record their calls and exit with fixture statuses.
+const repoRoot = path.resolve(__dirname, '../..');
+const recorded = ['STORE_TYPE', 'SPEEDLE_CLI_COVERPROFILE', 'GOTOOLCHAIN', 'RESULTS_DIR', ...cleanKeys, 'PMS_ENDPOINT', 'ADS_ENDPOINT', 'GOPATH'];
+function runSuite(mode, {listExit = 0, failMatching = ''} = {}) {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'speedle-worker-go-'));
   try {
     const calls = path.join(directory, 'calls.jsonl');
-    const stub = `#!${process.execPath}\nconst fs=require('node:fs');const a=process.argv.slice(2);if(a[0]==='env'){console.log(process.env.FIXTURE_GOPATH);process.exit(0)}if(a[0]==='list'){console.log('example.invalid/fixture');process.exit(Number(process.env.FIXTURE_LIST_EXIT))}fs.appendFileSync(process.env.FIXTURE_CALLS,JSON.stringify({args:a,env:Object.fromEntries(${JSON.stringify([...cleanKeys, 'STORE_TYPE', 'PMS_ENDPOINT', 'ADS_ENDPOINT', 'GOPATH'])}.map(k=>[k,process.env[k]]))})+'\\n');process.exit(Number(process.env.FIXTURE_TEST_EXIT));\n`;
-    fs.writeFileSync(path.join(directory, 'go'), stub); fs.chmodSync(path.join(directory, 'go'), 0o755);
+    const stub = tool => `#!${process.execPath}
+const fs=require('node:fs');const a=process.argv.slice(2);
+if(${JSON.stringify(tool)}==='go'&&a[0]==='env'){console.log(a[1]==='CC'?'true':process.env.FIXTURE_GOPATH);process.exit(0)}
+if(${JSON.stringify(tool)}==='go'&&a[0]==='list'){console.log('example.invalid/pkg/a\\nexample.invalid/pkg/store/mongodb\\nexample.invalid/samples/x\\nexample.invalid/pkg/svcs/adsgrpc/pb');process.exit(Number(process.env.FIXTURE_LIST_EXIT))}
+fs.appendFileSync(process.env.FIXTURE_CALLS,JSON.stringify({tool:${JSON.stringify(tool)},args:a,env:Object.fromEntries(${JSON.stringify(recorded)}.map(k=>[k,process.env[k]]))})+'\\n');
+const fail=process.env.FIXTURE_FAIL;process.exit(fail&&a.join(' ').includes(fail)?7:0);\n`;
+    for (const tool of ['go', 'python3', 'node']) {
+      fs.writeFileSync(path.join(directory, tool), stub(tool)); fs.chmodSync(path.join(directory, tool), 0o755);
+    }
     const inherited = Object.fromEntries(cleanKeys.map(key => [key, 'fixture-inherited-value']));
-    const result = spawnSync('bash', ['-c', script('Run tests with coverage')], {encoding: 'utf8', env: {
+    const work = path.join(directory, 'work'); fs.mkdirSync(work);
+    const result = spawnSync('bash', ['-c', script('Run Go tests')], {cwd: repoRoot, encoding: 'utf8', env: {
       ...process.env, ...inherited, GOPATH: '/fixture-inherited-gopath',
-      PMS_ENDPOINT: 'https://fixture.invalid/pms', ADS_ENDPOINT: 'https://fixture.invalid/ads', ...testEnvironment(store),
+      PMS_ENDPOINT: 'https://fixture.invalid/pms', ADS_ENDPOINT: 'https://fixture.invalid/ads', ...testEnvironment(mode),
+      RESULTS_DIR: path.join(work, 'results'),
       PATH: `${directory}${path.delimiter}${process.env.PATH}`, FIXTURE_CALLS: calls,
-      FIXTURE_GOPATH: directory, FIXTURE_LIST_EXIT: String(listExit), FIXTURE_TEST_EXIT: String(testExit),
+      FIXTURE_GOPATH: directory, FIXTURE_LIST_EXIT: String(listExit), FIXTURE_FAIL: failMatching,
     }});
     const records = fs.existsSync(calls) ? fs.readFileSync(calls, 'utf8').trim().split('\n').map(line => JSON.parse(line)) : [];
-    return {result, records, directory};
-  } finally {fs.rmSync(directory, {recursive: true, force: true});}
+    const checks = fs.existsSync(path.join(work, 'results', 'checks.txt')) ? fs.readFileSync(path.join(work, 'results', 'checks.txt'), 'utf8') : '';
+    return {result, records, checks, directory};
+  } finally {fs.rmSync(directory, {recursive: true, force: true}); fs.rmSync(path.join(repoRoot, 'coverage.out'), {force: true});}
 }
-test('actual test script preserves Go exit status, serializes packages and passes only sanitized environment', () => {
-  for (const store of ['file', 'etcd']) for (const testExit of [0, 23]) {
-    const {result, records, directory} = runGo({store, testExit}); assert.equal(result.status, testExit, result.stderr);
-    assert.equal(records.length, 1); assert.deepEqual(records[0].args.slice(0, 3), ['test', '-p', '1']);
-    for (const key of cleanKeys) assert.equal(records[0].env[key], '', key);
-    assert.equal(records[0].env.STORE_TYPE, store); assert.equal(records[0].env.GOPATH, directory);
-    assert.equal(records[0].env.PMS_ENDPOINT, 'http://127.0.0.1:6733'); assert.equal(records[0].env.ADS_ENDPOINT, 'http://127.0.0.1:6734');
+const goTests = records => records.filter(r => r.tool === 'go' && r.args[0] === 'test');
+test('gate runs every package once, only store-dependent packages again with etcd, then the coverage gate', () => {
+  const {result, records} = runSuite('test'); assert.equal(result.status, 0, result.stderr);
+  const [file, etcd] = goTests(records);
+  assert.deepEqual(file.args.slice(0, 3), ['test', '-p', '1']);
+  assert.equal(file.env.STORE_TYPE, 'file'); assert.ok(file.args.includes('example.invalid/pkg/a'));
+  assert.ok(!file.args.some(a => a.includes('mongodb') || a.includes('samples') || a.endsWith('/pb')),
+    'MongoDB, samples and generated protobuf packages are not gated');
+  assert.equal(file.env.SPEEDLE_CLI_COVERPROFILE, path.join(repoRoot, 'coverage-cli.out'));
+  assert.equal(etcd.env.SPEEDLE_CLI_COVERPROFILE, undefined);
+  assert.equal(etcd.env.STORE_TYPE, 'etcd'); assert.deepEqual(etcd.args.slice(-2), ['./pkg/eval', './cmd/spctl/command']);
+  assert.equal(goTests(records).length, 2);
+  const gate = records.find(r => r.tool === 'python3');
+  assert.deepEqual(gate.args.slice(0, 6),
+    ['scripts/ci/coverage.py', 'coverage.out', '--merge', 'coverage-cli.out', '--min-file', 'scripts/ci/coverage-min.txt']);
+  for (const record of records) {
+    for (const key of cleanKeys) assert.equal(record.env[key], '', key);
+    assert.equal(record.env.PMS_ENDPOINT, 'http://127.0.0.1:6733'); assert.equal(record.env.ADS_ENDPOINT, 'http://127.0.0.1:6734');
   }
 });
+test('gate preserves the failing status and stops before the coverage gate', () => {
+  const {result, records} = runSuite('test', {failMatching: 'example.invalid/pkg/a'});
+  assert.equal(result.status, 7); assert.equal(records.filter(r => r.tool === 'python3').length, 0);
+});
 test('package discovery failure cannot turn a partial package list into a green test run', () => {
-  const {result, records} = runGo({listExit: 17});
-  assert.notEqual(result.status, 0); assert.equal(records.length, 0);
+  for (const mode of testModes) {
+    const {result, records} = runSuite(mode, {listExit: 17});
+    assert.notEqual(result.status, 0, mode); assert.equal(goTests(records).length, 0, mode);
+  }
+});
+test('nightly runs every suite even after a failure, records checks and fails at the end', () => {
+  const {result, records, checks} = runSuite('nightly', {failMatching: 'go1.25.14'});
+  assert.equal(result.status, 1);
+  const [file, etcd] = goTests(records);
+  assert.ok(file.args.includes('-race') && file.args.includes('-json')); assert.equal(file.env.STORE_TYPE, 'file');
+  assert.equal(etcd.env.STORE_TYPE, 'etcd'); assert.ok(etcd.args.includes('-race'));
+  for (const toolchain of ['go1.25.14', 'go1.26.10', 'go1.27.3']) assert.match(checks, new RegExp(`quick-start-${toolchain}=\\d+:`));
+  assert.match(checks, /quick-start-go1\.25\.14=7:/); assert.match(checks, /quick-start-go1\.27\.3=0:/);
+  assert.match(checks, /govulncheck=0:govulncheck\.log/); assert.match(checks, /ci-script-tests=0:/);
+});
+test('weekly tests the other supported Go releases and runs staticcheck', () => {
+  const {result, records, checks} = runSuite('weekly'); assert.equal(result.status, 0, result.stderr);
+  assert.deepEqual(goTests(records).map(r => r.env.GOTOOLCHAIN), ['go1.25.14', 'go1.27.3']);
+  assert.match(checks, /^staticcheck=0:staticcheck\.log$/m);
 });
 
 function listen(host = '127.0.0.1', handler) {
@@ -198,7 +248,7 @@ async function freePorts(excluded = []) {
 }
 function guard(ports) {
   const selected = step('Ensure test services are not already running');
-  assert.match(selected, /inputs.mode == 'test' && runner.environment == 'self-hosted'/);
+  assert.match(selected, /\(inputs.mode == 'test' \|\| inputs.mode == 'nightly' \|\| inputs.mode == 'weekly'\) && runner.environment == 'self-hosted'/);
   const body = script('Ensure test services are not already running').match(/^python3 - <<'PYTHON'\n([\s\S]+)\nPYTHON$/)?.[1];
   assert.ok(body); assert.equal((body.match(/for port in \(2379, 2380, 27017, 6733, 6734\):/g) || []).length, 1);
   assert.equal(new Set(ports).size, 5);

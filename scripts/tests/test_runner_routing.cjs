@@ -13,6 +13,7 @@ const read = name => fs.readFileSync(path.join(root, '.github/workflows', name),
 const sources = {
   ci: read('ci.yml'), review: read('reviewbot.yml'),
   commands: read('reviewbot-command.yml'), inline: read('reviewbot-inline.yml'),
+  nightly: read('nightly.yml'), weekly: read('weekly.yml'),
 };
 function jobs(source) {
   const section = source.split(/^jobs:\s*$/m)[1];
@@ -93,7 +94,7 @@ function script(block, name) {
 }
 
 test('review and command jobs retain their explicit runner policies and isolated Speedle label', () => {
-  assert.deepEqual(Object.keys(job.ci), ['lint', 'test', 'build']);
+  assert.deepEqual(Object.keys(job.ci), ['changes', 'site', 'lint', 'test', 'build']);
   assert.deepEqual(Object.keys(job.review), ['diff-regression', 'review', 'publish', 'automerge-dependabot']);
   assert.deepEqual(Object.keys(job.commands), ['prepare', 'analyze', 'publish']);
   assert.deepEqual(Object.keys(job.inline), ['route']);
@@ -135,24 +136,49 @@ test('inline pointer stays hosted and secret-bearing command receiver keeps defa
   assert.match(job.commands.analyze, /needs\.prepare\.outputs\.should_run == 'true'/);
   assert.match(job.commands.publish, /needs\.prepare\.outputs\.should_run == 'true'/);
 });
-test('Go CI caller delegates only known task inputs to the protected default-branch worker', () => {
+const worker = 'teramoby/speedle-plus/.github/workflows/go-ci-worker.yml@master';
+function workerInputs(block, id) {
+  assert.equal(value(block, 'uses'), worker, id);
+  assert.doesNotMatch(block, /^    (?:runs-on|steps|container|env|secrets|timeout-minutes|strategy):/m, id);
+  const mapping = block.split('    with:\n')[1];
+  assert.ok(mapping, `Missing worker task inputs for ${id}`);
+  return Object.fromEntries([...mapping.matchAll(/^      ([a-z_]+): (.+)$/gm)].map(match => [match[1], match[2]]));
+}
+test('Go CI caller delegates only the task mode to the protected default-branch worker', () => {
   assert.match(sources.ci, /^permissions:\n  contents: read$/m);
-  assert.match(sources.ci, /^on: \[push, pull_request, workflow_dispatch\]$/m);
-  for (const [id, block] of Object.entries(job.ci)) {
-    assert.equal(value(block, 'uses'), 'teramoby/speedle-plus/.github/workflows/go-ci-worker.yml@master');
-    assert.doesNotMatch(block, /^    (?:runs-on|steps|container|env|secrets|timeout-minutes):/m);
-    const mapping = block.split('    with:\n')[1];
-    assert.ok(mapping, `Missing worker task inputs for ${id}`);
-    const inputs = Object.fromEntries([...mapping.matchAll(/^      ([a-z_]+): (.+)$/gm)].map(match => [match[1], match[2]]));
-    assert.equal(inputs.mode, id);
-    assert.deepEqual(Object.keys(inputs), id === 'test' ? ['mode', 'store_type'] : ['mode']);
-    if (id === 'test') {
-      assert.match(block, /fail-fast: false/);
-      assert.equal(inputs.store_type, '${{ matrix.store-type }}');
-      assert.match(block, /store-type: \[file, etcd\]/);
-      assert.match(block, /name: test \(\$\{\{ matrix.store-type \}\}\)/);
+  assert.match(sources.ci, /^on:\n(?:  #.*\n)*  push:\n    branches: \[master\]\n  pull_request:\n  workflow_dispatch:\n/m);
+  for (const id of ['lint', 'test', 'build']) assert.deepEqual(workerInputs(job.ci[id], id), {mode: id});
+  assert.match(job.ci.test, /name: test$/m);
+  for (const id of ['changes', 'site']) {
+    assert.equal(route(job.ci[id]), 'ubuntu-latest');
+    assert.doesNotMatch(job.ci[id], /secrets\.|uses: teramoby/);
+  }
+});
+test('scheduled suites run through the worker and report from a hosted job', () => {
+  const cron = {nightly: "'0 17 * * *'", weekly: "'0 11 * * 0'"};  // 01:00 and Sunday 19:00 GMT+8
+  for (const kind of ['nightly', 'weekly']) {
+    const source = sources[kind];
+    assert.match(source, /^permissions:\n  contents: read$/m);
+    assert.match(source, new RegExp(`^    - cron: ${cron[kind].replace(/[*]/g, '\\*')}$`, 'm'));
+    assert.match(source, /^  workflow_dispatch:$/m);
+    assert.deepEqual(workerInputs(job[kind].run, `${kind}.run`), {mode: kind});
+    const report = job[kind].report;
+    assert.equal(route(report), 'ubuntu-latest');
+    assert.match(report, /needs: (?:run|\[run, mongodb\])$/m);
+    assert.match(report, /if: always\(\) && github.repository == 'teramoby\/speedle-plus'/);
+    assert.match(report, /permissions:\n      contents: read\n      issues: write\n/);
+    assert.match(report, /persist-credentials: false/);
+    assert.match(report, /ARK_API_KEY: \$\{\{ secrets.ARK_API_KEY \}\}/);
+    assert.match(report, /ARK_MODEL: \$\{\{ vars.ARK_REVIEW_MODEL \|\| 'kimi-k3' \}\}/);
+    assert.match(report, /MAIL_TO: \$\{\{ vars.TEST_REPORT_MAIL_TO \|\| 'caiwl@acm.org' \}\}/);
+    assert.match(report, new RegExp(`scripts/ci/test_report.py --kind ${kind} `));
+    for (const [id, block] of Object.entries(job[kind])) {
+      if (id !== 'report') assert.doesNotMatch(block, /secrets\./, `${kind}.${id} must not receive secrets`);
     }
   }
+  assert.deepEqual(Object.keys(job.weekly), ['run', 'mongodb', 'report']);
+  assert.equal(route(job.weekly.mongodb), 'ubuntu-latest');
+  assert.match(job.weekly.mongodb, /SPEEDLE_REQUIRE_MONGO: '1'/);
 });
 test('fixture job installs pinned Node 22 before running Node regression suites', () => {
   const block = job.review['diff-regression'];
