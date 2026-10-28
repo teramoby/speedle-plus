@@ -182,10 +182,16 @@ func TestCLICreateServiceFromFiles(t *testing.T) {
 func TestCLIDiscover(t *testing.T) {
 	c := newCLI(t)
 	c.expect(0, []string{"All requests are deleted"}, "discover", "reset")
-	// Without recorded requests the PMS answers 404.
-	c.expect(1, []string{"fail to discover policy", "not found"}, "discover", "policy", "--service-name", "cli-none")
+	// Without recorded requests the file store answers 404 and etcd an
+	// empty result.
+	if testutil.GetOSEnv("STORE_TYPE", "file") == "etcd" {
+		c.expect(0, []string{"no policy discovered"}, "discover", "policy", "--service-name", "cli-none")
+		c.expect(0, []string{"[]"}, "discover", "request")
+	} else {
+		c.expect(1, []string{"fail to discover policy", "not found"}, "discover", "policy", "--service-name", "cli-none")
+		c.expect(1, []string{"not found"}, "discover", "request")
+	}
 	c.expect(0, []string{"pls specify service name"}, "discover", "policy")
-	c.expect(1, []string{"not found"}, "discover", "request")
 	c.expect(1, []string{"not found"}, "discover", "request", "--last", "--service-name", "cli-none")
 	c.expect(0, []string{"are deleted"}, "discover", "reset", "--service-name", "cli-none")
 }
