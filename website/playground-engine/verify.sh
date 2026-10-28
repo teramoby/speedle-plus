@@ -19,7 +19,7 @@ website/playground-engine/verify-hugo.sh
 # Run the full container gate on the merge candidate and after publication.
 # A branch push has a parallel PR run; duplicating kind here occupies both
 # runner processes while one waits for the same Docker-host lock.
-if [[ "${GITHUB_ACTIONS:-}" == true && "${GITHUB_EVENT_NAME:-}" == push && "${GITHUB_REF:-}" != refs/heads/master ]]; then
+if [[ "${GITHUB_ACTIONS:-}" == true && "${GITHUB_EVENT_NAME:-}" == push && "${GITHUB_REF:-}" == refs/heads/* && "${GITHUB_REF:-}" != refs/heads/master ]]; then
   echo 'Deployment acceptance is covered by the PR run; branch push keeps the build, native docs and website checks.'
 else
   python3 deployment/tests/verify.py
