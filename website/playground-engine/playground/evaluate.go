@@ -22,7 +22,7 @@ import (
 	"github.com/teramoby/speedle-plus/pkg/pdl"
 )
 
-const Revision = "7f61995d3344e94ed614494e013dacdcfa491b26"
+const Revision = "8fb1481d715e476242a991d391778b4334763afd"
 const MaxInputBytes = 256 * 1024
 const MaxStatements = 500
 
@@ -169,7 +169,7 @@ func EvaluateJSON(data []byte) (out Result) {
 		}
 		for _, pattern := range expressions {
 			if len(pattern) > 1024 {
-				return fail("policy", "Resource expression exceeds Speedle+'s 1024-byte regex limit.", index+1)
+				return fail("policy", "Resource expression exceeds the playground's 1024-byte regex limit.", index+1)
 			}
 			if _, err := regexp.Compile(pattern); err != nil {
 				return fail("policy", "Invalid resource expression: "+err.Error(), index+1)
@@ -177,7 +177,7 @@ func EvaluateJSON(data []byte) (out Result) {
 		}
 		if condition != "" {
 			if len(condition) > 4096 {
-				return fail("condition", "Condition exceeds Speedle+'s 4096-byte limit.", index+1)
+				return fail("condition", "Condition exceeds the playground's 4096-byte limit.", index+1)
 			}
 			expression, err := govaluate.NewEvaluableExpressionWithFunctions(condition, builtinFunctions)
 			if err != nil {
@@ -258,12 +258,12 @@ func lineFor(id string, statements []Statement) int {
 	return 0
 }
 func parsePolicyStrict(line, name string) (*pms.Policy, error) {
-	p, err := pdl.ParsePolicy(line, name)
+	p, _, err := pdl.ParsePolicy(line, name)
 	if err != nil {
 		return nil, err
 	}
 	if p.Condition == "" {
-		check, err := pdl.ParsePolicy(line+" if true", name)
+		check, _, err := pdl.ParsePolicy(line+" if true", name)
 		if err != nil || check.Condition != "true" {
 			return nil, fmt.Errorf("unexpected trailing text or incomplete condition")
 		}
@@ -271,12 +271,12 @@ func parsePolicyStrict(line, name string) (*pms.Policy, error) {
 	return p, nil
 }
 func parseRoleStrict(line, name string) (*pms.RolePolicy, error) {
-	p, err := pdl.ParseRolePolicy(line, name)
+	p, _, err := pdl.ParseRolePolicy(line, name)
 	if err != nil {
 		return nil, err
 	}
 	if p.Condition == "" {
-		check, err := pdl.ParseRolePolicy(line+" if true", name)
+		check, _, err := pdl.ParseRolePolicy(line+" if true", name)
 		if err != nil || check.Condition != "true" {
 			return nil, fmt.Errorf("unexpected trailing text or incomplete condition")
 		}

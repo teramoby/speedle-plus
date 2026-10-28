@@ -10,15 +10,12 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"syscall"
-	"time"
 
 	"github.com/teramoby/speedle-plus/api/pms"
 	"github.com/teramoby/speedle-plus/pkg/cmd/flags"
 	"github.com/teramoby/speedle-plus/pkg/errors"
 	"github.com/teramoby/speedle-plus/pkg/logging"
 	"github.com/teramoby/speedle-plus/pkg/store"
-	"github.com/teramoby/speedle-plus/pkg/svcs"
 	"github.com/teramoby/speedle-plus/pkg/svcs/pmsgrpc"
 	"github.com/teramoby/speedle-plus/pkg/svcs/pmsgrpc/pb"
 	"github.com/teramoby/speedle-plus/pkg/svcs/pmsrest"
@@ -26,7 +23,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"google.golang.org/grpc"
-	_ "google.golang.org/grpc/reflection" // Available for development; disabled in production
+	"google.golang.org/grpc/reflection"
 )
 
 var gitCommit string
@@ -45,23 +42,10 @@ func main() {
 	storeParamsMap := store.GetAllStoreParams()
 
 	var params flags.Parameters
-	if err := params.ParseFlags(flags.DefaultPolicyManagementListenPoint, printVersionInfo, storeParamsMap); err != nil {
-		fmt.Fprintf(os.Stderr, "Error parsing flags: %v\n", err)
-		os.Exit(1)
-	}
-	if params.ShowVersionAndExit {
-		os.Exit(0)
-	}
-	if err := params.ValidateFlags(); err != nil {
-		fmt.Fprintf(os.Stderr, "Error validating flags: %v\n", err)
-		os.Exit(1)
-	}
+	params.ParseFlags(flags.DefaultPolicyManagementListenPoint, printVersionInfo, storeParamsMap)
+	params.ValidateFlags()
 
-	conf, err := params.Param2Config(storeParamsMap)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error creating config: %v\n", err)
-		os.Exit(1)
-	}
+	conf, _ := params.Param2Config(storeParamsMap)
 
 	// Initialize the logging
 	if conf.LogConfig != nil {
@@ -93,19 +77,27 @@ func main() {
 		log.Fatal(err)
 	}
 
-	grpcServer, err := newGRPCServer(ps)
-	if err != nil {
-		log.Fatal(err)
+	var grpcServer *grpc.Server
+	grpcEndpoint := params.GRPCEndpoint.Value
+	if grpcEndpoint != "" {
+		grpcServer, err = newGRPCServer(&params, ps)
+		if err != nil {
+			log.Fatal(err)
+		}
+	} else {
+		log.Info("The gRPC server is off; set --grpc-endpoint to start it.")
 	}
 
 	intChan := make(chan os.Signal, 1)
-	signal.Notify(intChan, os.Interrupt, syscall.SIGTERM)
+	signal.Notify(intChan, os.Interrupt)
 
 	errChan := make(chan error, 2)
-	go func() {
-		log.Info("Starting the gRPC server for policy management service...")
-		errChan <- listenGRPCServer(grpcServer)
-	}()
+	if grpcServer != nil {
+		go func() {
+			log.Infof("Starting the gRPC server for policy management service on %s...", grpcEndpoint)
+			errChan <- listenGRPCServer(grpcServer, grpcEndpoint)
+		}()
+	}
 
 	go func() {
 		log.Info("Starting the REST server for policy management service...")
@@ -116,32 +108,21 @@ func main() {
 	select {
 	case err = <-errChan:
 		log.Errorf("Error occured %s.", err)
-		// Do not close errChan: the second goroutine may still send to it.
+		close(errChan)
 	case <-intChan:
 		log.Info("Interrupt signal")
-		signal.Stop(intChan)
+		close(intChan)
 	}
 
 	log.Info("Stopping servers...")
 	// Stop all services
 	if httpServer != nil {
 		log.Info("Stopping HTTP Server...")
-		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-		defer cancel()
-		if serveErr := httpServer.Shutdown(ctx); serveErr != nil {
-			log.Errorf("HTTP server shutdown error: %v", serveErr)
-		}
+		httpServer.Shutdown(context.Background())
 	}
 	if grpcServer != nil {
 		log.Info("Stopping GRPC Server...")
 		grpcServer.Stop()
-	}
-
-	log.Info("Closing policy store...")
-	if ps != nil {
-		if closeErr := ps.Close(); closeErr != nil {
-			log.Errorf("Failed to close policy store: %v", closeErr)
-		}
 	}
 
 	if err != nil {
@@ -149,27 +130,27 @@ func main() {
 	}
 }
 
-func newGRPCServer(ps pms.PolicyStoreManager) (*grpc.Server, error) {
-	server := grpc.NewServer(
-		grpc.UnaryInterceptor(svcs.PanicRecoveryInterceptor()),
-		grpc.MaxRecvMsgSize(4<<20), // 4 MB
-		grpc.MaxSendMsgSize(4<<20), // 4 MB
-	)
+func newGRPCServer(params *flags.Parameters, ps pms.PolicyStoreManager) (*grpc.Server, error) {
+	options, err := params.GRPCServerOptions()
+	if err != nil {
+		return nil, err
+	}
+	if options == nil {
+		log.Warningf("The gRPC server on %s is plaintext because insecure is true.", params.GRPCEndpoint.Value)
+	}
+	server := grpc.NewServer(options...)
 	pb.RegisterPolicyManagerServer(server, pmsgrpc.NewServiceImpl(ps))
-	// WARNING: gRPC reflection exposes all service methods and message types.
-	// Disable in production to prevent information disclosure.
-	// Enable for development only: reflection.Register(server)
+	reflection.Register(server)
 	return server, nil
 }
 
-func listenGRPCServer(server *grpc.Server) error {
-	// Register reflection service on gRPC server.
-	lis, err := net.Listen("tcp", ":50001")
+func listenGRPCServer(server *grpc.Server, endpoint string) error {
+	lis, err := net.Listen("tcp", endpoint)
 	if err != nil {
-		return errors.Wrap(err, errors.ServerError, "failed to listen on endpoint :50001")
+		return errors.Wrapf(err, errors.ServerError, "failed to listen on endpoint %s", endpoint)
 	}
 	if err := server.Serve(lis); err != nil {
-		return errors.Wrap(err, errors.ServerError, "failed to serve for endpoint :50001")
+		return errors.Wrapf(err, errors.ServerError, "failed to serve for endpoint %s", endpoint)
 	}
 	return nil
 }

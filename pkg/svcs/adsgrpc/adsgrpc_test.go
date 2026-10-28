@@ -10,6 +10,7 @@ import (
 	adsPB "github.com/teramoby/speedle-plus/pkg/svcs/adsgrpc/pb"
 	pmsPB "github.com/teramoby/speedle-plus/pkg/svcs/pmsgrpc/pb"
 	"github.com/teramoby/speedle-plus/testutil"
+	"github.com/teramoby/speedle-plus/testutil/grpctest"
 )
 
 var POLICY_RELOAD_TIME = 500 //ms
@@ -23,7 +24,7 @@ func TestMats_GRpc_IsAllowed_User(t *testing.T) {
 		{
 			Name:     "TestAddService",
 			Enabled:  true,
-			Executer: testutil.NewGRpcTestExecuter,
+			Executer: grpctest.NewGRpcTestExecuter,
 			Method:   testutil.METHOD_CREATE_SERVICE,
 			Data: &testutil.GRpcTestData{
 				InputBody: &pmsPB.ServiceRequest{
@@ -40,7 +41,7 @@ func TestMats_GRpc_IsAllowed_User(t *testing.T) {
 		{
 			Name:     "TestAddPolicy1",
 			Enabled:  true,
-			Executer: testutil.NewGRpcTestExecuter,
+			Executer: grpctest.NewGRpcTestExecuter,
 			Method:   testutil.METHOD_CREATE_POLICY,
 			Data: &testutil.GRpcTestData{
 				InputBody: &pmsPB.PolicyRequest{
@@ -84,7 +85,7 @@ func TestMats_GRpc_IsAllowed_User(t *testing.T) {
 		{
 			Name:     "TestIsAllowed=true (userA read res1)",
 			Enabled:  true,
-			Executer: testutil.NewGRpcTestExecuter,
+			Executer: grpctest.NewGRpcTestExecuter,
 			Method:   testutil.METHOD_IS_ALLOWED,
 			Data: &testutil.GRpcTestData{
 				InputBody: &adsPB.ContextRequest{
@@ -110,7 +111,7 @@ func TestMats_GRpc_IsAllowed_User(t *testing.T) {
 		{
 			Name:     "TestIsAllowed=false (invalid-userA read res1)",
 			Enabled:  true,
-			Executer: testutil.NewGRpcTestExecuter,
+			Executer: grpctest.NewGRpcTestExecuter,
 			Method:   testutil.METHOD_IS_ALLOWED,
 			Data: &testutil.GRpcTestData{
 				InputBody: &adsPB.ContextRequest{
@@ -136,7 +137,7 @@ func TestMats_GRpc_IsAllowed_User(t *testing.T) {
 		{
 			Name:     "TestIsAllowed=false (userA invalid-read res1)",
 			Enabled:  true,
-			Executer: testutil.NewGRpcTestExecuter,
+			Executer: grpctest.NewGRpcTestExecuter,
 			Method:   testutil.METHOD_IS_ALLOWED,
 			Data: &testutil.GRpcTestData{
 				InputBody: &adsPB.ContextRequest{
@@ -162,7 +163,7 @@ func TestMats_GRpc_IsAllowed_User(t *testing.T) {
 		{
 			Name:     "TestIsAllowed=false (userA read invalid-res1)",
 			Enabled:  true,
-			Executer: testutil.NewGRpcTestExecuter,
+			Executer: grpctest.NewGRpcTestExecuter,
 			Method:   testutil.METHOD_IS_ALLOWED,
 			Data: &testutil.GRpcTestData{
 				InputBody: &adsPB.ContextRequest{
@@ -188,7 +189,7 @@ func TestMats_GRpc_IsAllowed_User(t *testing.T) {
 		{
 			Name:     "TesDeleteService1",
 			Enabled:  true,
-			Executer: testutil.NewGRpcTestExecuter,
+			Executer: grpctest.NewGRpcTestExecuter,
 			Method:   testutil.METHOD_DELETE_SERVICE,
 			Data: &testutil.GRpcTestData{
 				InputBody: &pmsPB.ServiceQueryRequest{
@@ -216,7 +217,7 @@ func TestMats_GRpc_IsAllowed_Role(t *testing.T) {
 		{
 			Name:     "TestAddService",
 			Enabled:  true,
-			Executer: testutil.NewGRpcTestExecuter,
+			Executer: grpctest.NewGRpcTestExecuter,
 			Method:   testutil.METHOD_CREATE_SERVICE,
 			Data: &testutil.GRpcTestData{
 				InputBody: &pmsPB.ServiceRequest{
@@ -233,7 +234,7 @@ func TestMats_GRpc_IsAllowed_Role(t *testing.T) {
 		{
 			Name:     "TestAddRolePolicy1",
 			Enabled:  true,
-			Executer: testutil.NewGRpcTestExecuter,
+			Executer: grpctest.NewGRpcTestExecuter,
 			Method:   testutil.METHOD_CREATE_ROLEPOLICY,
 			Data: &testutil.GRpcTestData{
 				InputBody: &pmsPB.RolePolicyRequest{
@@ -260,7 +261,7 @@ func TestMats_GRpc_IsAllowed_Role(t *testing.T) {
 		{
 			Name:     "TestAddPolicy1",
 			Enabled:  true,
-			Executer: testutil.NewGRpcTestExecuter,
+			Executer: grpctest.NewGRpcTestExecuter,
 			Method:   testutil.METHOD_CREATE_POLICY,
 			Data: &testutil.GRpcTestData{
 				InputBody: &pmsPB.PolicyRequest{
@@ -304,7 +305,7 @@ func TestMats_GRpc_IsAllowed_Role(t *testing.T) {
 		{
 			Name:     "TestIsAllowed=true (userA read res1)",
 			Enabled:  true,
-			Executer: testutil.NewGRpcTestExecuter,
+			Executer: grpctest.NewGRpcTestExecuter,
 			Method:   testutil.METHOD_IS_ALLOWED,
 			Data: &testutil.GRpcTestData{
 				InputBody: &adsPB.ContextRequest{
@@ -330,7 +331,7 @@ func TestMats_GRpc_IsAllowed_Role(t *testing.T) {
 		{
 			Name:     "TesDeleteService",
 			Enabled:  true,
-			Executer: testutil.NewGRpcTestExecuter,
+			Executer: grpctest.NewGRpcTestExecuter,
 			Method:   testutil.METHOD_DELETE_SERVICE,
 			Data: &testutil.GRpcTestData{
 				InputBody: &pmsPB.ServiceQueryRequest{
@@ -359,7 +360,7 @@ func TestMats_GRpc_GetAllGrantedRoles_basic(t *testing.T) {
 		{
 			Name:     "TestAddService",
 			Enabled:  true,
-			Executer: testutil.NewGRpcTestExecuter,
+			Executer: grpctest.NewGRpcTestExecuter,
 			Method:   testutil.METHOD_CREATE_SERVICE,
 			Data: &testutil.GRpcTestData{
 				InputBody: &pmsPB.ServiceRequest{
@@ -376,7 +377,7 @@ func TestMats_GRpc_GetAllGrantedRoles_basic(t *testing.T) {
 		{
 			Name:     "TestAddRolePolicy1(grant user userA role1,role2)",
 			Enabled:  true,
-			Executer: testutil.NewGRpcTestExecuter,
+			Executer: grpctest.NewGRpcTestExecuter,
 			Method:   testutil.METHOD_CREATE_ROLEPOLICY,
 			Data: &testutil.GRpcTestData{
 				InputBody: &pmsPB.RolePolicyRequest{
@@ -401,7 +402,7 @@ func TestMats_GRpc_GetAllGrantedRoles_basic(t *testing.T) {
 		{
 			Name:     "TestAddRolePolicy2(grant user userA role3,role4 on res2)",
 			Enabled:  true,
-			Executer: testutil.NewGRpcTestExecuter,
+			Executer: grpctest.NewGRpcTestExecuter,
 			Method:   testutil.METHOD_CREATE_ROLEPOLICY,
 			Data: &testutil.GRpcTestData{
 				InputBody: &pmsPB.RolePolicyRequest{
@@ -429,7 +430,7 @@ func TestMats_GRpc_GetAllGrantedRoles_basic(t *testing.T) {
 		{
 			Name:     "TestGetAllGrantedRoles with userA on res1, result is role1,role2,role3,role4",
 			Enabled:  true,
-			Executer: testutil.NewGRpcTestExecuter,
+			Executer: grpctest.NewGRpcTestExecuter,
 			Method:   testutil.METHOD_GET_GRANTED_ROLES,
 			Data: &testutil.GRpcTestData{
 				InputBody: &adsPB.ContextRequest{
@@ -453,7 +454,7 @@ func TestMats_GRpc_GetAllGrantedRoles_basic(t *testing.T) {
 		{
 			Name:     "TestGetAllGrantedRoles with userA, result is role1,role2",
 			Enabled:  true,
-			Executer: testutil.NewGRpcTestExecuter,
+			Executer: grpctest.NewGRpcTestExecuter,
 			Method:   testutil.METHOD_GET_GRANTED_ROLES,
 			Data: &testutil.GRpcTestData{
 				InputBody: &adsPB.ContextRequest{
@@ -476,7 +477,7 @@ func TestMats_GRpc_GetAllGrantedRoles_basic(t *testing.T) {
 		{
 			Name:     "TesDeleteService",
 			Enabled:  true,
-			Executer: testutil.NewGRpcTestExecuter,
+			Executer: grpctest.NewGRpcTestExecuter,
 			Method:   testutil.METHOD_DELETE_SERVICE,
 			Data: &testutil.GRpcTestData{
 				InputBody: &pmsPB.ServiceQueryRequest{
@@ -507,7 +508,7 @@ func TestMats_GRpc_GetAllGrantedRoles_RoleToRole(t *testing.T) {
 		{
 			Name:     "TestAddService",
 			Enabled:  true,
-			Executer: testutil.NewGRpcTestExecuter,
+			Executer: grpctest.NewGRpcTestExecuter,
 			Method:   testutil.METHOD_CREATE_SERVICE,
 			Data: &testutil.GRpcTestData{
 				InputBody: &pmsPB.ServiceRequest{
@@ -524,7 +525,7 @@ func TestMats_GRpc_GetAllGrantedRoles_RoleToRole(t *testing.T) {
 		{
 			Name:     "TestAddRolePolicy1(grant user userA role1,role2 on res1)",
 			Enabled:  true,
-			Executer: testutil.NewGRpcTestExecuter,
+			Executer: grpctest.NewGRpcTestExecuter,
 			Method:   testutil.METHOD_CREATE_ROLEPOLICY,
 			Data: &testutil.GRpcTestData{
 				InputBody: &pmsPB.RolePolicyRequest{
@@ -551,7 +552,7 @@ func TestMats_GRpc_GetAllGrantedRoles_RoleToRole(t *testing.T) {
 		{
 			Name:     "TestAddRolePolicy2(grant user userA role3,role4 on res2)",
 			Enabled:  true,
-			Executer: testutil.NewGRpcTestExecuter,
+			Executer: grpctest.NewGRpcTestExecuter,
 			Method:   testutil.METHOD_CREATE_ROLEPOLICY,
 			Data: &testutil.GRpcTestData{
 				InputBody: &pmsPB.RolePolicyRequest{
@@ -578,7 +579,7 @@ func TestMats_GRpc_GetAllGrantedRoles_RoleToRole(t *testing.T) {
 		{
 			Name:     "TestAddRolePolicy3(grant role role1 role5)",
 			Enabled:  true,
-			Executer: testutil.NewGRpcTestExecuter,
+			Executer: grpctest.NewGRpcTestExecuter,
 			Method:   testutil.METHOD_CREATE_ROLEPOLICY,
 			Data: &testutil.GRpcTestData{
 				InputBody: &pmsPB.RolePolicyRequest{
@@ -604,7 +605,7 @@ func TestMats_GRpc_GetAllGrantedRoles_RoleToRole(t *testing.T) {
 		{
 			Name:     "TestGetAllGrantedRoles with userA on res1, result is role1,role2,role5",
 			Enabled:  true,
-			Executer: testutil.NewGRpcTestExecuter,
+			Executer: grpctest.NewGRpcTestExecuter,
 			Method:   testutil.METHOD_GET_GRANTED_ROLES,
 			Data: &testutil.GRpcTestData{
 				InputBody: &adsPB.ContextRequest{
@@ -628,7 +629,7 @@ func TestMats_GRpc_GetAllGrantedRoles_RoleToRole(t *testing.T) {
 		{
 			Name:     "TestGetAllGrantedRoles with userA on res2, result is role3,role4",
 			Enabled:  true,
-			Executer: testutil.NewGRpcTestExecuter,
+			Executer: grpctest.NewGRpcTestExecuter,
 			Method:   testutil.METHOD_GET_GRANTED_ROLES,
 			Data: &testutil.GRpcTestData{
 				InputBody: &adsPB.ContextRequest{
@@ -652,7 +653,7 @@ func TestMats_GRpc_GetAllGrantedRoles_RoleToRole(t *testing.T) {
 		{
 			Name:     "TestGetAllGrantedRoles with userA, result is empty",
 			Enabled:  true,
-			Executer: testutil.NewGRpcTestExecuter,
+			Executer: grpctest.NewGRpcTestExecuter,
 			Method:   testutil.METHOD_GET_GRANTED_ROLES,
 			Data: &testutil.GRpcTestData{
 				InputBody: &adsPB.ContextRequest{
@@ -673,7 +674,7 @@ func TestMats_GRpc_GetAllGrantedRoles_RoleToRole(t *testing.T) {
 		{
 			Name:     "TesDeleteService",
 			Enabled:  true,
-			Executer: testutil.NewGRpcTestExecuter,
+			Executer: grpctest.NewGRpcTestExecuter,
 			Method:   testutil.METHOD_DELETE_SERVICE,
 			Data: &testutil.GRpcTestData{
 				InputBody: &pmsPB.ServiceQueryRequest{
@@ -704,7 +705,7 @@ func TestMats_GRpc_GetAllGrantedPermission(t *testing.T) {
 		{
 			Name:     "TestAddService",
 			Enabled:  true,
-			Executer: testutil.NewGRpcTestExecuter,
+			Executer: grpctest.NewGRpcTestExecuter,
 			Method:   testutil.METHOD_CREATE_SERVICE,
 			Data: &testutil.GRpcTestData{
 				InputBody: &pmsPB.ServiceRequest{
@@ -721,7 +722,7 @@ func TestMats_GRpc_GetAllGrantedPermission(t *testing.T) {
 		{
 			Name:     "TestAddPolicy1 (grant user userA read res1)",
 			Enabled:  true,
-			Executer: testutil.NewGRpcTestExecuter,
+			Executer: grpctest.NewGRpcTestExecuter,
 			Method:   testutil.METHOD_CREATE_POLICY,
 			Data: &testutil.GRpcTestData{
 				InputBody: &pmsPB.PolicyRequest{
@@ -764,7 +765,7 @@ func TestMats_GRpc_GetAllGrantedPermission(t *testing.T) {
 		{
 			Name:     "TestAddPolicy2(grant user userA write res1)",
 			Enabled:  true,
-			Executer: testutil.NewGRpcTestExecuter,
+			Executer: grpctest.NewGRpcTestExecuter,
 			Method:   testutil.METHOD_CREATE_POLICY,
 			Data: &testutil.GRpcTestData{
 				InputBody: &pmsPB.PolicyRequest{
@@ -807,7 +808,7 @@ func TestMats_GRpc_GetAllGrantedPermission(t *testing.T) {
 		{
 			Name:     "TestAddRolePolicy(grant user userA role1)",
 			Enabled:  true,
-			Executer: testutil.NewGRpcTestExecuter,
+			Executer: grpctest.NewGRpcTestExecuter,
 			Method:   testutil.METHOD_CREATE_ROLEPOLICY,
 			Data: &testutil.GRpcTestData{
 				InputBody: &pmsPB.RolePolicyRequest{
@@ -832,7 +833,7 @@ func TestMats_GRpc_GetAllGrantedPermission(t *testing.T) {
 		{
 			Name:     "TestAddPolicy3(grant role role1 read res2)",
 			Enabled:  true,
-			Executer: testutil.NewGRpcTestExecuter,
+			Executer: grpctest.NewGRpcTestExecuter,
 			Method:   testutil.METHOD_CREATE_POLICY,
 			Data: &testutil.GRpcTestData{
 				InputBody: &pmsPB.PolicyRequest{
@@ -876,7 +877,7 @@ func TestMats_GRpc_GetAllGrantedPermission(t *testing.T) {
 		{
 			Name:     "TestGetPermissions with userA",
 			Enabled:  true,
-			Executer: testutil.NewGRpcTestExecuter,
+			Executer: grpctest.NewGRpcTestExecuter,
 			Method:   testutil.METHOD_GET_GRANTED_PERMISSIONS,
 			Data: &testutil.GRpcTestData{
 				InputBody: &adsPB.ContextRequest{
@@ -911,7 +912,7 @@ func TestMats_GRpc_GetAllGrantedPermission(t *testing.T) {
 		{
 			Name:     "TesDeleteService1",
 			Enabled:  true,
-			Executer: testutil.NewGRpcTestExecuter,
+			Executer: grpctest.NewGRpcTestExecuter,
 			Method:   testutil.METHOD_DELETE_SERVICE,
 			Data: &testutil.GRpcTestData{
 				InputBody: &pmsPB.ServiceQueryRequest{

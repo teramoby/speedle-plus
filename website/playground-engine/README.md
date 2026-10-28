@@ -26,7 +26,7 @@ GO_BIN=/path/to/go website/playground-engine/build.sh
 
 `go.mod` replaces the Speedle+ dependency with this repository's root. The
 underlying engine source (`api/`, `pkg/`, `3rdparty/`, `go.mod`, `go.sum`) is pinned
-to commit `7f61995d3344e94ed614494e013dacdcfa491b26`. The script extracts those
+to commit `8fb1481d715e476242a991d391778b4334763afd`. The script extracts those
 paths from the pinned Git commit into a temporary build tree, then copies the
 current adapter there. Later server or dependency changes cannot silently change
 the published engine or prevent rebuilding it. Full Git history is required (`git fetch --unshallow` for a shallow
@@ -130,7 +130,7 @@ not authenticated users. Roles are derived by role policies. Typed attributes
 accept string, numeric, bool and datetime scalars or arrays. Runtime `request_*`
 attributes cannot be spoofed. Time-based functions use the browser/engine clock.
 
-Limits: 256 KiB input, 500 statements, 200 principals, upstream 4096-byte
+Limits: 256 KiB input, 500 statements, 200 principals, 4096-byte
 conditions and 1024-byte resource regexes. No external custom functions, token
 assertion, persistent stores, discovery, multiple service stores or external ADS
 connection. This is a learning sandbox, not a production enforcement point.

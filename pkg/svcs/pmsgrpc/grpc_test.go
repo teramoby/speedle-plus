@@ -8,6 +8,7 @@ import (
 
 	"github.com/teramoby/speedle-plus/pkg/svcs/pmsgrpc/pb"
 	"github.com/teramoby/speedle-plus/testutil"
+	"github.com/teramoby/speedle-plus/testutil/grpctest"
 )
 
 //Test GRpc API for Service Manangement
@@ -18,7 +19,7 @@ func TestMats_GRpc_Service(t *testing.T) {
 		{
 			Name:     "TestAddService",
 			Enabled:  true,
-			Executer: testutil.NewGRpcTestExecuter,
+			Executer: grpctest.NewGRpcTestExecuter,
 			Method:   testutil.METHOD_CREATE_SERVICE,
 			Data: &testutil.GRpcTestData{
 				InputBody: &pb.ServiceRequest{
@@ -35,7 +36,7 @@ func TestMats_GRpc_Service(t *testing.T) {
 		{
 			Name:     "TestAddService1",
 			Enabled:  true,
-			Executer: testutil.NewGRpcTestExecuter,
+			Executer: grpctest.NewGRpcTestExecuter,
 			Method:   testutil.METHOD_CREATE_SERVICE,
 			Data: &testutil.GRpcTestData{
 				InputBody: &pb.ServiceRequest{
@@ -52,7 +53,7 @@ func TestMats_GRpc_Service(t *testing.T) {
 		{
 			Name:     "TestQueryServiceWithSpecifiedName",
 			Enabled:  true,
-			Executer: testutil.NewGRpcTestExecuter,
+			Executer: grpctest.NewGRpcTestExecuter,
 			Method:   testutil.METHOD_QUERY_SERVICE,
 			Data: &testutil.GRpcTestData{
 				InputBody: &pb.ServiceQueryRequest{
@@ -70,7 +71,7 @@ func TestMats_GRpc_Service(t *testing.T) {
 		{
 			Name:     "TestQueryServiceWithoutName",
 			Enabled:  true,
-			Executer: testutil.NewGRpcTestExecuter,
+			Executer: grpctest.NewGRpcTestExecuter,
 			Method:   testutil.METHOD_QUERY_SERVICE,
 			Data: &testutil.GRpcTestData{
 				InputBody:  &pb.ServiceQueryRequest{},
@@ -91,7 +92,7 @@ func TestMats_GRpc_Service(t *testing.T) {
 		{
 			Name:     "TestDeleteService",
 			Enabled:  true,
-			Executer: testutil.NewGRpcTestExecuter,
+			Executer: grpctest.NewGRpcTestExecuter,
 			Method:   testutil.METHOD_DELETE_SERVICE,
 			Data: &testutil.GRpcTestData{
 				InputBody: &pb.ServiceQueryRequest{
@@ -104,7 +105,7 @@ func TestMats_GRpc_Service(t *testing.T) {
 		{
 			Name:     "TestQueryService1",
 			Enabled:  true,
-			Executer: testutil.NewGRpcTestExecuter,
+			Executer: grpctest.NewGRpcTestExecuter,
 			Method:   testutil.METHOD_QUERY_SERVICE,
 			Data: &testutil.GRpcTestData{
 				InputBody: &pb.ServiceQueryRequest{
@@ -121,7 +122,7 @@ func TestMats_GRpc_Service(t *testing.T) {
 		{
 			Name:     "TesDeleteService1",
 			Enabled:  true,
-			Executer: testutil.NewGRpcTestExecuter,
+			Executer: grpctest.NewGRpcTestExecuter,
 			Method:   testutil.METHOD_DELETE_SERVICE,
 			Data: &testutil.GRpcTestData{
 				InputBody: &pb.ServiceQueryRequest{
@@ -147,7 +148,7 @@ func TestMats_GRpc_Policy(t *testing.T) {
 		{
 			Name:     "TestAddService",
 			Enabled:  true,
-			Executer: testutil.NewGRpcTestExecuter,
+			Executer: grpctest.NewGRpcTestExecuter,
 			Method:   testutil.METHOD_CREATE_SERVICE,
 			Data: &testutil.GRpcTestData{
 				InputBody: &pb.ServiceRequest{
@@ -164,7 +165,7 @@ func TestMats_GRpc_Policy(t *testing.T) {
 		{
 			Name:     "TestAddPolicy1",
 			Enabled:  true,
-			Executer: testutil.NewGRpcTestExecuter,
+			Executer: grpctest.NewGRpcTestExecuter,
 			Method:   testutil.METHOD_CREATE_POLICY,
 			Data: &testutil.GRpcTestData{
 				InputBody: &pb.PolicyRequest{
@@ -207,7 +208,7 @@ func TestMats_GRpc_Policy(t *testing.T) {
 		{
 			Name:     "TestAddPolicy2",
 			Enabled:  true,
-			Executer: testutil.NewGRpcTestExecuter,
+			Executer: grpctest.NewGRpcTestExecuter,
 			Method:   testutil.METHOD_CREATE_POLICY,
 			Data: &testutil.GRpcTestData{
 				InputBody: &pb.PolicyRequest{
@@ -256,7 +257,7 @@ func TestMats_GRpc_Policy(t *testing.T) {
 		{
 			Name:     "TestGetPolicy",
 			Enabled:  true,
-			Executer: testutil.NewGRpcTestExecuter,
+			Executer: grpctest.NewGRpcTestExecuter,
 			Method:   testutil.METHOD_QUERY_POLICY,
 			Data: &testutil.GRpcTestData{
 				InputBody: &pb.PolicyQueryRequest{
@@ -286,7 +287,7 @@ func TestMats_GRpc_Policy(t *testing.T) {
 		{
 			Name:     "TestListAllPolicies",
 			Enabled:  true,
-			Executer: testutil.NewGRpcTestExecuter,
+			Executer: grpctest.NewGRpcTestExecuter,
 			Method:   testutil.METHOD_QUERY_POLICY,
 			Data: &testutil.GRpcTestData{
 				InputBody: &pb.PolicyQueryRequest{
@@ -334,7 +335,7 @@ func TestMats_GRpc_Policy(t *testing.T) {
 		{
 			Name:     "TestListPoliciesByName",
 			Enabled:  true,
-			Executer: testutil.NewGRpcTestExecuter,
+			Executer: grpctest.NewGRpcTestExecuter,
 			Method:   testutil.METHOD_QUERY_POLICY,
 			Data: &testutil.GRpcTestData{
 				InputBody: &pb.PolicyQueryRequest{
@@ -365,7 +366,7 @@ func TestMats_GRpc_Policy(t *testing.T) {
 		{
 			Name:     "TesDeletePolicy",
 			Enabled:  true,
-			Executer: testutil.NewGRpcTestExecuter,
+			Executer: grpctest.NewGRpcTestExecuter,
 			Method:   testutil.METHOD_DELETE_POLICY,
 			Data: &testutil.GRpcTestData{
 				InputBody: &pb.PolicyQueryRequest{
@@ -379,7 +380,7 @@ func TestMats_GRpc_Policy(t *testing.T) {
 		{
 			Name:     "TestGetPolicy-Non-existing",
 			Enabled:  true,
-			Executer: testutil.NewGRpcTestExecuter,
+			Executer: grpctest.NewGRpcTestExecuter,
 			Method:   testutil.METHOD_DELETE_POLICY,
 			Data: &testutil.GRpcTestData{
 				InputBody: &pb.PolicyQueryRequest{
@@ -394,7 +395,7 @@ func TestMats_GRpc_Policy(t *testing.T) {
 		{
 			Name:     "TestAddPolicyContainingEntityPrinciple",
 			Enabled:  true,
-			Executer: testutil.NewGRpcTestExecuter,
+			Executer: grpctest.NewGRpcTestExecuter,
 			Method:   testutil.METHOD_CREATE_POLICY,
 			Data: &testutil.GRpcTestData{
 				InputBody: &pb.PolicyRequest{
@@ -443,7 +444,7 @@ func TestMats_GRpc_Policy(t *testing.T) {
 		{
 			Name:     "TesDeleteService",
 			Enabled:  true,
-			Executer: testutil.NewGRpcTestExecuter,
+			Executer: grpctest.NewGRpcTestExecuter,
 			Method:   testutil.METHOD_DELETE_SERVICE,
 			Data: &testutil.GRpcTestData{
 				InputBody: &pb.ServiceQueryRequest{
@@ -469,7 +470,7 @@ func TestMats_GRpc_RolePolicy(t *testing.T) {
 		{
 			Name:     "TestAddService",
 			Enabled:  true,
-			Executer: testutil.NewGRpcTestExecuter,
+			Executer: grpctest.NewGRpcTestExecuter,
 			Method:   testutil.METHOD_CREATE_SERVICE,
 			Data: &testutil.GRpcTestData{
 				InputBody: &pb.ServiceRequest{
@@ -486,7 +487,7 @@ func TestMats_GRpc_RolePolicy(t *testing.T) {
 		{
 			Name:     "TestAddRolePolicy1",
 			Enabled:  true,
-			Executer: testutil.NewGRpcTestExecuter,
+			Executer: grpctest.NewGRpcTestExecuter,
 			Method:   testutil.METHOD_CREATE_ROLEPOLICY,
 			Data: &testutil.GRpcTestData{
 				InputBody: &pb.RolePolicyRequest{
@@ -513,7 +514,7 @@ func TestMats_GRpc_RolePolicy(t *testing.T) {
 		{
 			Name:     "TestAddRolePolicy2",
 			Enabled:  true,
-			Executer: testutil.NewGRpcTestExecuter,
+			Executer: grpctest.NewGRpcTestExecuter,
 			Method:   testutil.METHOD_CREATE_ROLEPOLICY,
 			Data: &testutil.GRpcTestData{
 				InputBody: &pb.RolePolicyRequest{
@@ -540,7 +541,7 @@ func TestMats_GRpc_RolePolicy(t *testing.T) {
 		{
 			Name:     "TestGetRolePolicy",
 			Enabled:  true,
-			Executer: testutil.NewGRpcTestExecuter,
+			Executer: grpctest.NewGRpcTestExecuter,
 			Method:   testutil.METHOD_QUERY_ROLEPOLICY,
 			Data: &testutil.GRpcTestData{
 				InputBody: &pb.RolePolicyQueryRequest{
@@ -562,7 +563,7 @@ func TestMats_GRpc_RolePolicy(t *testing.T) {
 		{
 			Name:     "TestListAllRolePolicies",
 			Enabled:  true,
-			Executer: testutil.NewGRpcTestExecuter,
+			Executer: grpctest.NewGRpcTestExecuter,
 			Method:   testutil.METHOD_QUERY_ROLEPOLICY,
 			Data: &testutil.GRpcTestData{
 				InputBody: &pb.RolePolicyQueryRequest{
@@ -591,7 +592,7 @@ func TestMats_GRpc_RolePolicy(t *testing.T) {
 		{
 			Name:     "TestListAllRolePoliciesByName",
 			Enabled:  true,
-			Executer: testutil.NewGRpcTestExecuter,
+			Executer: grpctest.NewGRpcTestExecuter,
 			Method:   testutil.METHOD_QUERY_ROLEPOLICY,
 			Data: &testutil.GRpcTestData{
 				InputBody: &pb.RolePolicyQueryRequest{
@@ -614,7 +615,7 @@ func TestMats_GRpc_RolePolicy(t *testing.T) {
 		{
 			Name:     "TesDeleteRolePolicy",
 			Enabled:  true,
-			Executer: testutil.NewGRpcTestExecuter,
+			Executer: grpctest.NewGRpcTestExecuter,
 			Method:   testutil.METHOD_DELETE_ROLEPOLICY,
 			Data: &testutil.GRpcTestData{
 				InputBody: &pb.RolePolicyQueryRequest{
@@ -628,7 +629,7 @@ func TestMats_GRpc_RolePolicy(t *testing.T) {
 		{
 			Name:     "TestGetPolicy-Non-existing",
 			Enabled:  true,
-			Executer: testutil.NewGRpcTestExecuter,
+			Executer: grpctest.NewGRpcTestExecuter,
 			Method:   testutil.METHOD_QUERY_ROLEPOLICY,
 			Data: &testutil.GRpcTestData{
 				InputBody: &pb.RolePolicyQueryRequest{
@@ -641,7 +642,7 @@ func TestMats_GRpc_RolePolicy(t *testing.T) {
 		{
 			Name:     "TesDeleteService",
 			Enabled:  true,
-			Executer: testutil.NewGRpcTestExecuter,
+			Executer: grpctest.NewGRpcTestExecuter,
 			Method:   testutil.METHOD_DELETE_SERVICE,
 			Data: &testutil.GRpcTestData{
 				InputBody: &pb.ServiceQueryRequest{

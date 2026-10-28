@@ -9,6 +9,12 @@ import (
 
 func (p *PolicyEvalImpl) Discover(ctx ads.RequestContext) (bool, ads.Reason, error) {
 	if d, ok := p.Store.(store.DiscoverRequestManager); ok {
+		// Discover requests are kept in the store; never keep the bearer token.
+		if ctx.Subject != nil && ctx.Subject.Token != "" {
+			subject := *ctx.Subject
+			subject.Token = ""
+			ctx.Subject = &subject
+		}
 		err := d.SaveDiscoverRequest(&ctx)
 		if err != nil {
 			log.Warn("error in saving discover request, ", err)

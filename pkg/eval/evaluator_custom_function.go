@@ -8,10 +8,8 @@ import (
 	"crypto/x509"
 	"encoding/json"
 	"fmt"
-	"io"
+	"io/ioutil"
 	"net/http"
-	"net"
-	"net/url"
 	"strings"
 	"sync"
 	"time"
@@ -27,58 +25,6 @@ import (
 const (
 	defaultCustomerFunctionCallTimeout = 5 * time.Second
 )
-
-var (
-	// Shared HTTP client with connection pooling for plain HTTP calls.
-	defaultHTTPClient = &http.Client{
-		Timeout:       defaultCustomerFunctionCallTimeout,
-		CheckRedirect: ssrfSafeRedirectCheck,
-		Transport: &http.Transport{
-			MaxIdleConnsPerHost: 20,
-			Proxy:               http.ProxyFromEnvironment,
-		},
-	}
-
-	// Cached HTTPS clients keyed by CA certificate content.
-	httpsClients sync.Map
-)
-
-// getHTTPSClient returns a cached or newly created HTTPS client for the given CA.
-func getHTTPSClient(ca string) *http.Client {
-	if client, ok := httpsClients.Load(ca); ok {
-		if c2, ok2 := client.(*http.Client); ok2 {
-			return c2
-		}
-		// Corrupted cache entry; fall through to create a new client.
-		log.Warnf("invalid type in httpsClients cache for CA %q, expected *http.Client, got %T", ca, client)
-	}
-	caCertPool := x509.NewCertPool()
-	if len(ca) > 0 {
-		caCertPool.AppendCertsFromPEM([]byte(ca))
-	}
-	tlsConfig := &tls.Config{
-		RootCAs:    caCertPool,
-		MinVersion: tls.VersionTLS12,
-	}
-	transport := &http.Transport{
-		TLSClientConfig:       tlsConfig,
-		Proxy:                 http.ProxyFromEnvironment,
-		ResponseHeaderTimeout: 10 * time.Second,
-			MaxIdleConnsPerHost:   20,
-	}
-	client := &http.Client{
-		Transport:     transport,
-		Timeout:       defaultCustomerFunctionCallTimeout,
-		CheckRedirect: ssrfSafeRedirectCheck,
-	}
-	actual, _ := httpsClients.LoadOrStore(ca, client)
-	if c2, ok2 := actual.(*http.Client); ok2 {
-		return c2
-	}
-	// Corrupted cache entry; fall back to the new client we created.
-	log.Warnf("invalid type in httpsClients cache for CA %q, expected *http.Client, got %T", ca, actual)
-	return client
-}
 
 type Request2Delegator struct {
 	Function *pms.Function                `json:"function"`
@@ -112,19 +58,8 @@ func (frc *FuncResultCache) add(key string, value FuncResult) {
 	frc.Results[key] = value
 }
 
-// maxFuncResultCacheSize is the maximum number of entries in the function result cache.
-// When this limit is reached, new results are not cached (callers still get the result).
-const maxFuncResultCacheSize = 50000
-
 func (frc *FuncResultCache) AddToCache(key string, cf *pms.Function, result interface{}) {
 	if cf.ResultCachable {
-		// Skip caching if the cache has grown too large to prevent unbounded memory use.
-		frc.RLock()
-		size := len(frc.Results)
-		frc.RUnlock()
-		if size > maxFuncResultCacheSize {
-			return
-		}
 		ttl := int64(0)
 		if cf.ResultTTL > 0 {
 			ttl = time.Now().Unix() + cf.ResultTTL
@@ -144,9 +79,7 @@ func (frc *FuncResultCache) ReadFromCache(key string, cf *pms.Function) interfac
 			if ret.TTL == 0 || time.Now().Unix() <= ret.TTL {
 				return ret.Result
 			}
-			// Entry is expired. Return nil and let the periodic cleaner
-			// (CleanExpiredResult) handle deletion to avoid write-lock
-			// contention on the read path.
+			frc.deleteIfExpired(key)
 		}
 	}
 	return nil
@@ -157,6 +90,17 @@ func (frc *FuncResultCache) DeleteFromCache(funcName string) {
 	defer frc.Unlock()
 	for key := range frc.Results {
 		if isFunc(key, funcName) {
+			delete(frc.Results, key)
+		}
+	}
+}
+
+func (frc *FuncResultCache) deleteIfExpired(key string) {
+	frc.Lock()
+	defer frc.Unlock()
+	ret, ok := frc.Results[key]
+	if ok {
+		if ret.TTL != 0 && time.Now().Unix() > ret.TTL {
 			delete(frc.Results, key)
 		}
 	}
@@ -200,64 +144,24 @@ func (frc *FuncResultCache) generateCustomerExpressionFunction(cfdUrl *string, c
 }
 
 func getKey(funcName string, arguments []interface{}) string {
-	return fmt.Sprintf("%s(%v)", funcName, arguments)
+	key := fmt.Sprintf("%s(%v)", funcName, arguments)
+	fmt.Println("key=", key)
+	return key
 }
 
-
-// hasPrivateIP checks if a hostname resolves to a private/internal IP address.
-func hasPrivateIP(hostport string) bool {
-	host, _, err := net.SplitHostPort(hostport)
-	if err != nil {
-		host = hostport
-	}
-	// Strip brackets from IPv6 addresses (e.g., "[::1]" -> "::1") to prevent
-	// SSRF bypass where a bracketed address evades the localhost check.
-	host = strings.Trim(host, "[]")
-	// Allow localhost for local development/testing.
-	if host == "localhost" || host == "127.0.0.1" || host == "::1" {
-		return false
-	}
-	ip := net.ParseIP(host)
-	if ip != nil {
-		if ip.IsPrivate() || ip.IsLinkLocalUnicast() || ip.IsLinkLocalMulticast() || ip.IsUnspecified() || ip.IsLoopback() {
-			return true
-		}
-	}
-	return false
-}
-
-// ssrfSafeRedirectCheck validates each redirect target against SSRF rules.
-// It is used as the CheckRedirect function on HTTP clients to prevent
-// open-redirect-based SSRF bypasses.
-func ssrfSafeRedirectCheck(req *http.Request, via []*http.Request) error {
-	return validateCustomerFunctionURL(req.URL.String())
-}
-
-// validateCustomerFunctionURL checks that a function URL is safe to call.
-func validateCustomerFunctionURL(urlStr string) error {
-	parsed, err := url.Parse(urlStr)
-	if err != nil {
-		return errors.Wrapf(err, errors.CustomerFuncError, "invalid function URL %q", urlStr)
-	}
-	if parsed.Scheme != "http" && parsed.Scheme != "https" {
-		return errors.Errorf(errors.CustomerFuncError, "unsupported URL scheme %q in function URL %q", parsed.Scheme, urlStr)
-	}
-	if hasPrivateIP(parsed.Host) {
-		return errors.Errorf(errors.CustomerFuncError, "function URL %q resolves to a private/internal address, which is not allowed", urlStr)
-	}
-	return nil
-}
 func isFunc(key, funcName string) bool {
 	return strings.HasPrefix(key, funcName+"(")
 }
 
 func CallCustomerFunctionViaDelegator(delegatorUrl string, cf *pms.Function, request *ext.CustomerFunctionRequest) (interface{}, error) {
-	if err := validateCustomerFunctionURL(delegatorUrl); err != nil {
-		return nil, err
-	}
 	req2Delegator := Request2Delegator{
 		Function: cf,
 		Request:  request,
+	}
+	var client *http.Client
+	//assume that http is used when communicate with delegator.
+	client = &http.Client{
+		Timeout: defaultCustomerFunctionCallTimeout,
 	}
 	buf, err := json.Marshal(req2Delegator)
 	if err != nil {
@@ -268,18 +172,42 @@ func CallCustomerFunctionViaDelegator(delegatorUrl string, cf *pms.Function, req
 		return nil, err
 	}
 	req.Header.Set("Content-Type", "application/json")
-	return getFunctionResp(defaultHTTPClient, req, cf)
+	return getFunctionResp(client, req, cf)
 }
 
 func CallCustomerFunction(cf *pms.Function, request *ext.CustomerFunctionRequest) (interface{}, error) {
-	if err := validateCustomerFunctionURL(cf.FuncURL); err != nil {
-		return nil, err
-	}
 	var client *http.Client
 	if strings.HasPrefix(strings.ToLower(cf.FuncURL), "https:") {
-		client = getHTTPSClient(cf.CA)
+		//TODO: load sphinx cert in case func server verifies client
+		/*var cert tls.Certificate
+		cert, err := tls.LoadX509KeyPair("./client.crt",	"./client.key")
+		if err != nil {
+			log.Fatal(err)
+		}*/
+
+		caCertPool := x509.NewCertPool()
+		if len(cf.CA) > 0 { //this is only required if func server use certificate which is signed by unknown CA
+			caCertPool.AppendCertsFromPEM([]byte(cf.CA))
+		}
+
+		// Setup HTTPS client
+		tlsConfig := &tls.Config{
+			//Certificates: []tls.Certificate{cert},
+			RootCAs: caCertPool,
+		}
+		transport := &http.Transport{
+			TLSClientConfig: tlsConfig,
+			Proxy:           http.ProxyFromEnvironment,
+		}
+		client = &http.Client{
+			Transport: transport,
+			Timeout:   defaultCustomerFunctionCallTimeout,
+		}
+
 	} else if strings.HasPrefix(strings.ToLower(cf.FuncURL), "http:") {
-		client = defaultHTTPClient
+		client = &http.Client{
+			Timeout: defaultCustomerFunctionCallTimeout,
+		}
 	} else {
 		return nil, errors.Errorf(errors.CustomerFuncError, "URL of customer function %q is not supported", cf.FuncURL)
 	}
@@ -303,11 +231,12 @@ func getFunctionResp(client *http.Client, request *http.Request, cf *pms.Functio
 		log.Errorf("error happens when calling customer function %s, err is: %v\n", cf.Name, err)
 		return nil, errors.Wrapf(err, errors.CustomerFuncError, "failed to do customer function request for customer function %q", cf.Name)
 	}
-	defer resp.Body.Close()
 
 	switch resp.StatusCode {
 	case http.StatusOK:
-		body, err := io.ReadAll(io.LimitReader(resp.Body, 1<<20)) // 1MB limit
+		defer resp.Body.Close()
+		//TODO: We might need to limit the larget size we want to receive
+		body, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
 			log.Errorf("error reading response from customer function %s, err is: %v\n", cf.Name, err)
 			return nil, errors.Wrapf(err, errors.CustomerFuncError, "fail to read response for customer function %q", cf.Name)

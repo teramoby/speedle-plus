@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io"
 	"strings"
+	"unicode"
 
 	"github.com/teramoby/speedle-plus/api/ads"
 	"github.com/teramoby/speedle-plus/api/pms"
@@ -21,57 +22,28 @@ const (
 	deny  = "deny"
 
 	resExprPrefix = "expr:"
-
-	// maxPDLInputLength is the maximum allowed length of a PDL input string (1 MiB).
-	maxPDLInputLength = 1 << 20
 )
 
-// hasPrefixFoldASCII checks whether s starts with prefix using ASCII-only
-// case-insensitive comparison. It is a faster replacement for
-// strings.EqualFold when both strings are known to be ASCII.
-func hasPrefixFoldASCII(s, prefix string) bool {
-	if len(s) < len(prefix) {
-		return false
-	}
-	for i := 0; i < len(prefix); i++ {
-		sc := s[i]
-		pc := prefix[i]
-		if sc >= 'A' && sc <= 'Z' {
-			sc += 'a' - 'A'
-		}
-		if pc >= 'A' && pc <= 'Z' {
-			pc += 'a' - 'A'
-		}
-		if sc != pc {
-			return false
-		}
-	}
-	return true
-}
-
 // ParsePolicy parses a line to a policy object
-func ParsePolicy(cmd, name string) (*pms.Policy, error) {
-	if len(cmd) > maxPDLInputLength {
-		return nil, fmt.Errorf("PDL input exceeds maximum length of %d bytes", maxPDLInputLength)
-	}
+func ParsePolicy(cmd, name string) (*pms.Policy, io.Reader, error) {
 	effect, i, err := getEffect(cmd)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	principals, i, err := getOrPrincipals(cmd, i)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	perms, i, err := getPermissions(cmd, i)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	if len(perms) == 0 {
-		return nil, errors.New("No permission found")
+		return nil, nil, errors.New("No permission found")
 	}
 	condition, _, err := getCondition(cmd, i)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	policy := pms.Policy{
@@ -82,36 +54,33 @@ func ParsePolicy(cmd, name string) (*pms.Policy, error) {
 		Condition:   condition,
 	}
 
-	return &policy, nil
+	return &policy, toJSON(policy), nil
 }
 
 // ParseRolePolicy parses a line to a role policy object
-func ParseRolePolicy(cmd, name string) (*pms.RolePolicy, error) {
-	if len(cmd) > maxPDLInputLength {
-		return nil, fmt.Errorf("PDL input exceeds maximum length of %d bytes", maxPDLInputLength)
-	}
+func ParseRolePolicy(cmd, name string) (*pms.RolePolicy, io.Reader, error) {
 	effect, i, err := getEffect(cmd)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	principals, i, err := getRolePolicyPrincipals(cmd, i)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	roles, i, err := getRoles(cmd, i)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	if len(roles) == 0 {
-		return nil, errors.New("No role found")
+		return nil, nil, errors.New("No role found")
 	}
 	resources, resExps, i, err := getResources(cmd, i)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	condition, _, err := getCondition(cmd, i)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	rolePolicy := pms.RolePolicy{
 		Name:                name,
@@ -122,34 +91,22 @@ func ParseRolePolicy(cmd, name string) (*pms.RolePolicy, error) {
 		Roles:               roles,
 		Condition:           condition,
 	}
-	return &rolePolicy, nil
+	return &rolePolicy, toJSON(rolePolicy), nil
 }
 
-// PolicyToJSON serializes a Policy to JSON and returns it as an io.Reader.
-func PolicyToJSON(p *pms.Policy) (io.Reader, error) {
-	return toJSON(p)
-}
-
-// RolePolicyToJSON serializes a RolePolicy to JSON and returns it as an io.Reader.
-func RolePolicyToJSON(r *pms.RolePolicy) (io.Reader, error) {
-	return toJSON(r)
-}
-
-func toJSON(i interface{}) (io.Reader, error) {
+func toJSON(i interface{}) io.Reader {
 	buf := &bytes.Buffer{}
 	encoder := json.NewEncoder(buf)
 	encoder.SetEscapeHTML(false)
-	if err := encoder.Encode(i); err != nil {
-		return nil, fmt.Errorf("failed to encode to JSON: %w", err)
-	}
-	return buf, nil
+	encoder.Encode(i)
+	return buf
 }
 
 func getEffect(cmd string) (string, int, error) {
 	i := skipSpaces(cmd, 0)
-	if hasPrefixFoldASCII(cmd[i:], "grant ") {
+	if (i+6 <= len(cmd)) && strings.EqualFold("grant ", cmd[i:i+6]) {
 		return grant, i + 6, nil
-	} else if hasPrefixFoldASCII(cmd[i:], "deny ") {
+	} else if i+5 <= len(cmd) && strings.EqualFold("deny ", cmd[i:i+5]) {
 		return deny, i + 5, nil
 	} else {
 		return "", -1, getError("Not found valid effect", cmd, i)
@@ -218,8 +175,8 @@ func getAndPrincipals(cmd string, i int) ([]string, int, error) {
 	}
 	if cmd[i] != '(' {
 		// No ( found, only one principal found
-		onePrincipal, j, err := getPrincipal(cmd, i)
-		return []string{onePrincipal}, j, err
+		onePrincipal, i, err := getPrincipal(cmd, i)
+		return []string{onePrincipal}, i, err
 	}
 
 	i++
@@ -285,64 +242,47 @@ func getPrincipal(cmd string, i int) (string, int, error) {
 	i = skipSpaces(cmd, i)
 
 	var principal ads.Principal
-	if hasPrefixFoldASCII(cmd[i:], "user ") {
+	if (i+5 <= len(cmd)) && strings.EqualFold("user ", cmd[i:i+5]) {
 		i += 5
 		principal.Type = ads.PRINCIPAL_TYPE_USER
-	} else if hasPrefixFoldASCII(cmd[i:], "group ") {
+	} else if i+6 <= len(cmd) && strings.EqualFold("group ", cmd[i:i+6]) {
 		i += 6
 		principal.Type = ads.PRINCIPAL_TYPE_GROUP
-	} else if hasPrefixFoldASCII(cmd[i:], "role ") {
+	} else if i+5 <= len(cmd) && strings.EqualFold("role ", cmd[i:i+5]) {
 		i += 5
 		principal.Type = ads.PRINCIPAL_TYPE_ROLE
-	} else if hasPrefixFoldASCII(cmd[i:], "entity ") {
+	} else if i+7 <= len(cmd) && strings.EqualFold("entity ", cmd[i:i+7]) {
 		i += 7
 		principal.Type = ads.PRINCIPAL_TYPE_ENTITY
 	} else {
 		return "", -1, getError("Not found principal type (user|group|role)", cmd, i)
 	}
 
-	var err error
-	principal.Name, i, err = getToken(cmd, i)
-	if err != nil {
-		return "", -1, err
-	}
+	principal.Name, i = getToken(cmd, i)
 	if principal.Name == "" {
 		return "", -1, getError("Not found principal name", cmd, i)
 	}
 
 	i = skipSpaces(cmd, i)
-	if hasPrefixFoldASCII(cmd[i:], "from ") {
+	if i+5 <= len(cmd) && strings.EqualFold("from ", cmd[i:i+5]) {
 		// principal has idd with key word "from"
 		i += 5
 		i = skipSpaces(cmd, i)
-		principal.IDD, i, err = getToken(cmd, i)
-		if err != nil {
-			return "", -1, err
-		}
+		principal.IDD, i = getToken(cmd, i)
 		if len(principal.IDD) == 0 {
 			// no IDD found
 			return "", -1, getError("No idd found after key word \"from\"", cmd, i)
 		}
 	}
 
-	encoded, err := subjectutils.EncodePrincipal(&principal)
-	if err != nil {
-		return "", -1, fmt.Errorf("failed to encode principal: %w", err)
-	}
-	return encoded, i, nil
+	return subjectutils.EncodePrincipal(&principal), i, nil
 }
 
 func getRoles(cmd string, i int) ([]string, int, error) {
 	tokens := []string{}
-	t, i, err := getToken(cmd, i)
-	if err != nil {
-		return nil, -1, err
-	}
-	if len(t) == 4 && hasPrefixFoldASCII(t, "role") {
-		t, i, err = getToken(cmd, i)
-		if err != nil {
-			return nil, -1, err
-		}
+	t, i := getToken(cmd, i)
+	if strings.EqualFold("role", t) {
+		t, i = getToken(cmd, i)
 	}
 	if t == "" {
 		return tokens, i, nil
@@ -351,15 +291,9 @@ func getRoles(cmd string, i int) ([]string, int, error) {
 	tokens = append(tokens, t)
 	i = skipSpaces(cmd, i)
 	for i < len(cmd) && cmd[i] == ',' {
-		t, i, err = getToken(cmd, i+1)
-		if err != nil {
-			return nil, -1, err
-		}
-		if len(t) == 4 && hasPrefixFoldASCII(t, "role") {
-			t, i, err = getToken(cmd, i)
-			if err != nil {
-				return nil, -1, err
-			}
+		t, i = getToken(cmd, i+1)
+		if strings.EqualFold("role", t) {
+			t, i = getToken(cmd, i)
 		}
 		if t == "" {
 			return nil, -1, getError("Not found role", cmd, i)
@@ -403,10 +337,7 @@ func getPermission(cmd string, i int) (*pms.Permission, int, error) {
 	if len(acts) == 0 {
 		return nil, i, getError("Not found permission", cmd, i)
 	}
-	res, i, err := getToken(cmd, i)
-	if err != nil {
-		return nil, i, err
-	}
+	res, i := getToken(cmd, i)
 	if res == "" {
 		return nil, i, getError("Not found permission", cmd, i)
 	}
@@ -427,14 +358,14 @@ func isResExpr(res string) (bool, string) {
 
 func getResources(cmd string, i int) ([]string, []string, int, error) {
 	i = skipSpaces(cmd, i)
-	if hasPrefixFoldASCII(cmd[i:], "on ") {
+	if i+3 <= len(cmd) && strings.EqualFold("on ", cmd[i:i+3]) {
 		i += 3
-		tokens, j, err := getTokens(cmd, i, "resource")
+		tokens, i, err := getTokens(cmd, i, "resource")
 		if err != nil {
-			return nil, nil, j, err
+			return nil, nil, i, err
 		}
 		if len(tokens) == 0 {
-			return nil, nil, -1, getError("Not found resource", cmd, j)
+			return nil, nil, -1, getError("Not found resource", cmd, i)
 		}
 		var resources, resExps []string
 		for _, token := range tokens {
@@ -445,30 +376,28 @@ func getResources(cmd string, i int) ([]string, []string, int, error) {
 				resExps = append(resExps, resExp)
 			}
 		}
-		return resources, resExps, j, nil
+		return resources, resExps, i, nil
 	}
 	return nil, []string{}, i, nil
 }
 
 func getService(cmd string, i int) (string, int, error) {
 	i = skipSpaces(cmd, i)
-	if hasPrefixFoldASCII(cmd[i:], "in ") {
+	if i+3 <= len(cmd) && strings.EqualFold("in ", cmd[i:i+3]) {
 		i += 3
-		serv, j, err := getToken(cmd, i)
-		if err != nil {
-			return "", -1, err
-		}
+		var serv string
+		serv, i = getToken(cmd, i)
 		if serv == "" {
-			return "", -1, getError("Not found service", cmd, j)
+			return "", -1, getError("Not found service", cmd, i)
 		}
-		return serv, j, nil
+		return serv, i, nil
 	}
 	return "", i, nil
 }
 
 func getCondition(cmd string, i int) (string, int, error) {
 	i = skipSpaces(cmd, i)
-	if hasPrefixFoldASCII(cmd[i:], "if ") {
+	if i+3 <= len(cmd) && strings.EqualFold("if ", cmd[i:i+3]) {
 		i += 3
 		if i >= len(cmd) {
 			return "", -1, getError("Unexpected EOF found", cmd, i)
@@ -477,7 +406,8 @@ func getCondition(cmd string, i int) (string, int, error) {
 		if i >= len(cmd) {
 			return "", -1, getError("Unexpected EOF found", cmd, i)
 		}
-		ret := strings.TrimSpace(cmd[i:])
+		ret := cmd[i:]
+		ret = strings.TrimRight(ret, " ")
 		i = len(cmd)
 		return ret, i, nil
 	}
@@ -486,20 +416,14 @@ func getCondition(cmd string, i int) (string, int, error) {
 
 func getTokens(cmd string, i int, e string) ([]string, int, error) {
 	tokens := []string{}
-	t, i, err := getToken(cmd, i)
-	if err != nil {
-		return nil, -1, err
-	}
+	t, i := getToken(cmd, i)
 	if t == "" {
 		return tokens, i, nil
 	}
 	tokens = append(tokens, t)
 	i = skipSpaces(cmd, i)
 	for i < len(cmd) && cmd[i] == ',' {
-		t, i, err = getToken(cmd, i+1)
-		if err != nil {
-			return nil, -1, err
-		}
+		t, i = getToken(cmd, i+1)
 		if t == "" {
 			return nil, -1, getError(fmt.Sprintf("Not found %s", e), cmd, i)
 		}
@@ -509,48 +433,49 @@ func getTokens(cmd string, i int, e string) ([]string, int, error) {
 	return tokens, i, nil
 }
 
-func getToken(cmd string, i int) (string, int, error) {
+func getToken(cmd string, i int) (string, int) {
 	i = skipSpaces(cmd, i)
 	if i >= len(cmd) {
-		return "", i, nil
+		return "", i
 	}
-	start := i
-	quoted := false
-	var end byte
-	if cmd[i] == '"' || cmd[i] == '\'' {
-		quoted = true
-		end = cmd[i]
+	end := cmd[i]
+	if end == '"' || end == '\'' {
 		i++
-		start = i
 	}
+
+	var buffer bytes.Buffer
 	for ; i < len(cmd); i++ {
-		if quoted {
+		if end == '"' || end == '\'' {
 			if cmd[i] == end {
-				return cmd[start:i], i + 1, nil
+				i++
+				break
 			}
 		} else if cmd[i] == ' ' || cmd[i] == ',' || cmd[i] == '(' || cmd[i] == ')' {
-			return cmd[start:i], i, nil
+			break
 		}
+		buffer.WriteByte(cmd[i])
 	}
-	if quoted {
-		return "", i, fmt.Errorf("unclosed quote")
-	}
-	return cmd[start:i], i, nil
+	return buffer.String(), i
 }
 
 func skipSpaces(cmd string, i int) int {
-	for i < len(cmd) {
-		c := cmd[i]
-		if c != ' ' && c != '\t' && c != '\n' && c != '\r' {
-			return i
+	var j int
+	var v rune
+	for j, v = range cmd[i:] {
+		if !unicode.IsSpace(v) {
+			return i + j
 		}
-		i++
 	}
-	return i
+	return i + j
 }
 
 func getErrorIndicator(cmd string, pos int) string {
-	return fmt.Sprintf("%s\n%s^", cmd, strings.Repeat(" ", pos))
+	var buffer bytes.Buffer
+	for i := 0; i < pos; i++ {
+		buffer.WriteRune(' ')
+	}
+	buffer.WriteRune('^')
+	return fmt.Sprintf("%s\n%s", cmd, buffer.String())
 }
 
 func getError(msg, cmd string, pos int) error {

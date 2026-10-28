@@ -29,7 +29,7 @@ func quotedPDLName(name string) string {
 
 func TestQuotedPDLName(t *testing.T) {
 	for _, name := range []string{"simple", "name with spaces", "$name", "(name)", "it's", `a "name"`} {
-		policy, err := pdl.ParsePolicy("grant user "+quotedPDLName(name)+" read books", "fixture")
+		policy, _, err := pdl.ParsePolicy("grant user "+quotedPDLName(name)+" read books", "fixture")
 		if err != nil {
 			t.Fatalf("%q: %v", name, err)
 		}

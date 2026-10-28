@@ -49,6 +49,7 @@ func testMain(m *testing.M) int {
 		log.Info("Start file!")
 		configFile = "../cfg/config_file.json"
 		defer os.Remove("./ps.json")
+		defer os.Remove("./speedle_discover_requests.json")
 	}
 
 	var err error

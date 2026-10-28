@@ -65,10 +65,6 @@ def server_lock():
                     raise RuntimeError("Another quick-start check still holds the service-port lock")
                 time.sleep(0.2)
         try:
-            for port in (50001, 50002):
-                with socket.socket() as probe:
-                    probe.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-                    probe.bind(("0.0.0.0", port))
             yield
         finally:
             fcntl.flock(lock, fcntl.LOCK_UN)

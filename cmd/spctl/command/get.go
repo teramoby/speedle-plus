@@ -79,10 +79,7 @@ func getCommandFunc(cmd *cobra.Command, args []string) {
 			if err == nil {
 				services := []pms.Service{}
 				if json.Unmarshal(res, &services) == nil {
-					output, err = json.MarshalIndent(&services, "", strings.Repeat(" ", 4))
-					if err != nil {
-						fmt.Fprintln(os.Stderr, err)
-					}
+					output, _ = json.MarshalIndent(&services, "", strings.Repeat(" ", 4))
 				}
 			}
 		} else {
@@ -96,10 +93,7 @@ func getCommandFunc(cmd *cobra.Command, args []string) {
 					break
 				}
 				if json.Unmarshal(res, &service) == nil {
-					s, merr := json.MarshalIndent(&service, "", strings.Repeat(" ", 4))
-					if merr != nil {
-						fmt.Fprintln(os.Stderr, merr)
-					}
+					s, _ := json.MarshalIndent(&service, "", strings.Repeat(" ", 4))
 					output = append(output, s...)
 					output = append(output, byte('\n'))
 				}
@@ -127,10 +121,7 @@ func getCommandFunc(cmd *cobra.Command, args []string) {
 				}
 
 				if json.Unmarshal(res, &policies) == nil {
-					output, err = json.MarshalIndent(&policies, "", strings.Repeat(" ", 4))
-					if err != nil {
-						fmt.Fprintln(os.Stderr, err)
-					}
+					output, _ = json.MarshalIndent(&policies, "", strings.Repeat(" ", 4))
 				}
 			}
 		} else {
@@ -150,10 +141,7 @@ func getCommandFunc(cmd *cobra.Command, args []string) {
 					break
 				}
 				if json.Unmarshal(res, &policy) == nil {
-					s, merr := json.MarshalIndent(&policy, "", strings.Repeat(" ", 4))
-					if merr != nil {
-						fmt.Fprintln(os.Stderr, merr)
-					}
+					s, _ := json.MarshalIndent(&policy, "", strings.Repeat(" ", 4))
 					output = append(output, s...)
 					output = append(output, byte('\n'))
 				}
@@ -165,10 +153,7 @@ func getCommandFunc(cmd *cobra.Command, args []string) {
 			if err == nil {
 				functions := []pms.Function{}
 				if json.Unmarshal(res, &functions) == nil {
-					output, err = json.MarshalIndent(&functions, "", strings.Repeat(" ", 4))
-					if err != nil {
-						fmt.Fprintln(os.Stderr, err)
-					}
+					output, _ = json.MarshalIndent(&functions, "", strings.Repeat(" ", 4))
 				}
 			}
 		} else {
@@ -182,10 +167,7 @@ func getCommandFunc(cmd *cobra.Command, args []string) {
 					break
 				}
 				if json.Unmarshal(res, &function) == nil {
-					s, merr := json.MarshalIndent(&function, "", strings.Repeat(" ", 4))
-					if merr != nil {
-						fmt.Fprintln(os.Stderr, merr)
-					}
+					s, _ := json.MarshalIndent(&function, "", strings.Repeat(" ", 4))
 					output = append(output, s...)
 					output = append(output, byte('\n'))
 				}

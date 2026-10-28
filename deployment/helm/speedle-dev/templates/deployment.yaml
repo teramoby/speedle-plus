@@ -1,4 +1,4 @@
-apiVersion: apps/v1
+apiVersion: apps/v1beta2
 kind: Deployment
 metadata:
   name: {{ template "speedle.fullname" . }}
@@ -19,11 +19,6 @@ spec:
         app: speedle
         release: {{ .Release.Name }}
     spec:
-      serviceAccountName: {{ template "speedle.fullname" . }}
-      securityContext:
-        runAsNonRoot: true
-        runAsUser: 1000
-        fsGroup: 1000
       imagePullSecrets:
         - name: "{{ .Values.image.pullSecret }}"
       containers:
@@ -37,24 +32,6 @@ spec:
             - name: pms
               containerPort: 6733
               protocol: TCP
-          securityContext:
-            runAsNonRoot: true
-            readOnlyRootFilesystem: false
-            allowPrivilegeEscalation: false
-          resources:
-            {{- toYaml .Values.resources | nindent 12 }}
-          livenessProbe:
-            httpGet:
-              path: /health
-              port: 6733
-            initialDelaySeconds: 30
-            periodSeconds: 10
-          readinessProbe:
-            httpGet:
-              path: /health
-              port: 6733
-            initialDelaySeconds: 5
-            periodSeconds: 5
         - name: ads
           image: "{{ .Values.image.ads }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
@@ -65,24 +42,6 @@ spec:
             - name: ads
               containerPort: 6734
               protocol: TCP
-          securityContext:
-            runAsNonRoot: true
-            readOnlyRootFilesystem: false
-            allowPrivilegeEscalation: false
-          resources:
-            {{- toYaml .Values.resources | nindent 12 }}
-          livenessProbe:
-            httpGet:
-              path: /health
-              port: 6734
-            initialDelaySeconds: 30
-            periodSeconds: 10
-          readinessProbe:
-            httpGet:
-              path: /health
-              port: 6734
-            initialDelaySeconds: 5
-            periodSeconds: 5
       volumes:
       - name: policy-store
         hostPath:
