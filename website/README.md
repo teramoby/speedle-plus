@@ -60,6 +60,15 @@ and source/output invariants remain checked. The language-navigation release
 query on the legacy script and Playground entry module refreshes previously
 cached browser code when this feature is deployed.
 
+The release gate also executes every Bash block from both quick-start guides
+against native PMS/ADS with Go 1.26.10 and 1.27.3. It performs a public shallow
+clone, checks out the captured CI revision, builds the three executables, creates
+and lists policies, and checks direct/role grants and denials. Temporary policy
+files and alternate REST ports isolate these checks from other jobs; a shared
+host lock serializes the binaries' fixed gRPC ports. Only processes started by
+the checker are stopped. The same checks run on the existing self-hosted build
+runner pool through `playground-engine/verify.sh`.
+
 See [SEO.md](SEO.md) for the bilingual topic map, metadata contracts and
 post-deployment measurement. Public guides are source content, not hidden
 search-only pages. The shared sidebar uses local template variables so concurrent

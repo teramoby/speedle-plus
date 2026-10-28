@@ -6,20 +6,20 @@
   <meta charset="utf-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Speedle 五分钟入门 - Speedle</title>
-  <meta name="description" content="第一步 编译  先安装 GO 编译器，安装文件在https://golang.org/dl/ 设置 GOPATH 环境变量 运行如下命令  $ go get github.com/teramoby/speedle-plus/cmd/… 该命令会从 github 下载代码并自动编译。命令执行完毕后，我们可以检查\$GOPATH/bin 目录，应该有三个文件在该 …">
+  <title>Speedle 快速入门 - Speedle</title>
+  <meta name="description" content="使用当前 Go 工具链编译 Speedle&#43;，验证策略管理、直接授权和拒绝结果。">
 <link rel="alternate" hreflang="en" href="https://speedle.io/quick-start/">
 <link rel="alternate" hreflang="x-default" href="https://speedle.io/quick-start/"><link rel="alternate" hreflang="zh-CN" href="https://speedle.io/zh/quick-start/">
 
 <meta property="og:type" content="article">
 <meta property="og:site_name" content="Speedle Authorization Engine">
-<meta property="og:title" content="Speedle 五分钟入门">
-<meta property="og:description" content="第一步 编译  先安装 GO 编译器，安装文件在https://golang.org/dl/ 设置 GOPATH 环境变量 运行如下命令  $ go get github.com/teramoby/speedle-plus/cmd/… 该命令会从 github 下载代码并自动编译。命令执行完毕后，我们可以检查\$GOPATH/bin 目录，应该有三个文件在该 …">
+<meta property="og:title" content="Speedle 快速入门">
+<meta property="og:description" content="使用当前 Go 工具链编译 Speedle&#43;，验证策略管理、直接授权和拒绝结果。">
 <meta property="og:url" content="https://speedle.io/zh/quick-start/">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="Speedle 五分钟入门">
-<meta name="twitter:description" content="第一步 编译  先安装 GO 编译器，安装文件在https://golang.org/dl/ 设置 GOPATH 环境变量 运行如下命令  $ go get github.com/teramoby/speedle-plus/cmd/… 该命令会从 github 下载代码并自动编译。命令执行完毕后，我们可以检查\$GOPATH/bin 目录，应该有三个文件在该 …">
-<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://speedle.io/zh/quick-start/#page","@type":"WebPage","about":{"@id":"https://speedle.io/#software"},"description":"第一步 编译  先安装 GO 编译器，安装文件在https://golang.org/dl/ 设置 GOPATH 环境变量 运行如下命令  $ go get github.com/teramoby/speedle-plus/cmd/… 该命令会从 github 下载代码并自动编译。命令执行完毕后，我们可以检查\\$GOPATH/bin 目录，应该有三个文件在该 …","inLanguage":"zh-CN","isPartOf":{"@id":"https://speedle.io/#website"},"keywords":["Speedle+"],"name":"Speedle 五分钟入门","url":"https://speedle.io/zh/quick-start/"}</script>
+<meta name="twitter:title" content="Speedle 快速入门">
+<meta name="twitter:description" content="使用当前 Go 工具链编译 Speedle&#43;，验证策略管理、直接授权和拒绝结果。">
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://speedle.io/zh/quick-start/#page","@type":"WebPage","about":{"@id":"https://speedle.io/#software"},"description":"使用当前 Go 工具链编译 Speedle+，验证策略管理、直接授权和拒绝结果。","inLanguage":"zh-CN","isPartOf":{"@id":"https://speedle.io/#website"},"keywords":["Speedle+"],"name":"Speedle 快速入门","url":"https://speedle.io/zh/quick-start/"}</script>
 
   
   
@@ -97,11 +97,13 @@
     
     <image class="top-right-icon" src="https://speedle.io/img/speedle/9.%20Getting%20Started.svg" />
     
-    <h1>Speedle 五分钟入门</h1>
+    <h1>Speedle 快速入门</h1>
 
     
+    <p class="subtitle">使用当前 Go 工具链编译 Speedle&#43;，验证策略管理、直接授权和拒绝结果。</p>
     
-    <p style="margin: 2px">Speedle 是一个非常强大的企业级权限管理方案。不同于传统企业级应用，Speedle 简单易学。使用者可以在 5 分钟之内编译，部署，和简单使用 Speedle。</p>
+    
+    <p style="margin: 2px">从源码编译 Speedle&#43;，使用 SPDL 和 spctl 创建策略，再通过 REST API 验证授权结果。本教程使用本地文件存储策略。</p>
     
     
 
@@ -112,52 +114,93 @@
     <div id="kube-component" class="content">
       
 
-<h2 id="第一步-编译">第一步 编译</h2>
+<h2 id="先在-playground-中试用">先在 Playground 中试用</h2>
 
-<ol>
-<li>先安装 GO 编译器，安装文件在<a href="https://golang.org/dl/">https://golang.org/dl/</a></li>
-<li>设置 GOPATH 环境变量</li>
-<li>运行如下命令</li>
-</ol>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ go get github.com/teramoby/speedle-plus/cmd/…</code></pre></div>
-<p>该命令会从 github 下载代码并自动编译。命令执行完毕后，我们可以检查\$GOPATH/bin 目录，应该有三个文件在该目录下：</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ ls <span style="color:#000">$GOPATH</span>/bin
-spctl speedle-ads speedle-pms</code></pre></div>
-<p>speedle-pms 是授权策略（Policy）管理服务<br />
-speedle-ads 是授权决定服务（运行时）<br />
-spctl 是命令行工具</p>
+<p><strong>无需安装，即可先体验 Speedle 的基本功能。</strong> 打开 <a href="/zh/playground/">Playground 策略实验室</a>，编辑 SPDL 策略、设置用户、资源和动作，即可在浏览器中查看真实的 Allow/Deny（允许／拒绝）授权结果，无需安装 Go 或启动服务。</p>
 
-<h2 id="第二步-运行">第二步 运行</h2>
+<p>准备在本机编译和运行 Speedle 时，再继续下面的步骤。</p>
 
-<p>启动 PMS 和 ADS</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ <span style="color:#a90d91">cd</span> <span style="color:#000">$GOPATH</span>/bin
-$ ./speedle-pms --store-type file &amp;
-$ ./speedle-ads --store-type file &amp;</code></pre></div>
-<h2 id="第三步-使用">第三步 使用</h2>
+<h2 id="准备环境">准备环境</h2>
 
-<p>作为权限控制软件，最基本的功能有两个：</p>
+<p>准备 Linux 或 macOS、Bash、Git、curl，以及 <strong>Go 1.26.3 或更新版本</strong>。项目模块要求 Go 1.26；本教程已在 <strong>Go 1.26.10 和 Go 1.27.3</strong> 上验证，推荐使用稳定版 Go 1.27.3 完成本教程。</p>
 
-<ol>
-<li>管理授权策略（Policy)</li>
-<li>处理授权请求，根据定义的 Policy 得出授权决定</li>
-</ol>
+<p>按照 <a href="https://go.dev/doc/install">Go 官方安装说明</a>安装，然后检查版本：</p>
 
-<p>例如，对于图书馆管理系统，我们要定义一个 Policy 说“张三可以借书”。我们可以进行如下操作：</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ ./spctl create service library
-$ ./spctl create policy -c <span style="color:#c41a16">&#34;grant user ZhangSan borrow book&#34;</span> --service-name<span style="color:#000">=</span>library</code></pre></div>
-<p>这样 Policy 就存储在 Speedle 中，接下来我们测试一下 Speedle 可不可以正确处理授权请求。</p>
+<!-- quick-start: version -->
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">go version</code></pre></div>
+<p>Go 会自动配置 <code>GOROOT</code> 和默认的 <code>GOPATH</code>，无需手动指定。下面将程序编译到源码目录下的 <code>bin</code> 目录。</p>
 
-<h2 id="测试">测试</h2>
+<h2 id="第一步-下载源码并编译">第一步：下载源码并编译</h2>
 
-<p>问问它张三可不可以借书：</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ curl -X POST --data <span style="color:#c41a16">&#39;{&#34;subject&#34;:{&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;,&#34;name&#34;:&#34;ZhangSan&#34;}]},&#34;serviceName&#34;:&#34;library&#34;,&#34;resource&#34;:&#34;book&#34;,&#34;action&#34;:&#34;borrow&#34;}&#39;</span> http://127.0.0.1:6734/authz-check/v1/is-allowed</code></pre></div>
-<p>它回答可以</p>
+<!-- quick-start: build -->
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">git clone --depth <span style="color:#1c01ce">1</span> https://github.com/teramoby/speedle-plus.git
+<span style="color:#a90d91">cd</span> speedle-plus
+mkdir -p bin
+go build -o ./bin/ ./cmd/spctl ./cmd/speedle-pms ./cmd/speedle-ads
+ls bin</code></pre></div>
+<p>输出目录中应有三个程序：</p>
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">spctl  speedle-ads  speedle-pms</code></pre></div>
+<ul>
+<li><code>spctl</code>：命令行工具。</li>
+<li><code>speedle-pms</code>：授权策略管理服务（PMS）。</li>
+<li><code>speedle-ads</code>：授权决策服务（ADS）。</li>
+</ul>
 
-<p>再问问它李四可不可以借书</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ curl -X POST --data <span style="color:#c41a16">&#39;{&#34;subject&#34;:{&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;,&#34;name&#34;:&#34;LiSi&#34;}]},&#34;serviceName&#34;:&#34;library&#34;,&#34;resource&#34;:&#34;book&#34;,&#34;action&#34;:&#34;borrow&#34;}&#39;</span> http://127.0.0.1:6734/authz-check/v1/is-allowed</code></pre></div>
-<p>它回答不可以</p>
+<p>新版 Go 使用 <code>go build</code> 或 <code>go install</code> 构建可执行程序；<code>go get</code> 用于管理模块依赖。</p>
 
-<p>就这么简单！下一步您可以深入了解 SPDL 语言的用法。它可以支持普通的 ACL,也支持 RBAC 和 ABAC，也可以 RBAC 和 ABAC 混合使用。能满足各种应用场景。期待您去尝试。</p>
+<h2 id="第二步-启动策略管理服务">第二步：启动策略管理服务</h2>
+
+<p>本教程用于本机开发演示。<code>--insecure=true</code> 为下面的 REST 示例启用明文 HTTP；服务还会打开 gRPC 端口 50001 和 50002。生产环境的传输安全和授权配置请参阅<a href="/zh/docs/security/">安全指南</a>。</p>
+
+<p>在第一个终端中，进入 <code>speedle-plus</code> 源码目录后执行：</p>
+
+<!-- quick-start: pms -->
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./bin/speedle-pms --store-type file --filestore-loc ./quick-start-policies.json --endpoint <span style="color:#1c01ce">127</span>.0.0.1:6733 --insecure<span style="color:#000">=</span>true</code></pre></div>
+<p>保持服务运行，等待 REST 服务启动后再继续。PMS 会在当前源码目录创建 <code>quick-start-policies.json</code>；PMS 和 ADS 必须使用同一个文件。</p>
+
+<h2 id="第三步-创建和查看策略">第三步：创建和查看策略</h2>
+
+<p>打开第二个终端，进入同一个 <code>speedle-plus</code> 源码目录。</p>
+
+<p>以图书馆为例，创建 <code>library</code> 服务：</p>
+
+<!-- quick-start: service -->
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ create service library</code></pre></div>
+<p>添加“张三可以借书”的策略：</p>
+
+<!-- quick-start: policies -->
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ create policy -c <span style="color:#c41a16">&#34;grant user ZhangSan borrow book&#34;</span> --service-name<span style="color:#000">=</span>library</code></pre></div>
+<p>查看服务及其策略：</p>
+
+<!-- quick-start: list -->
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ get service --all</code></pre></div>
+<p>输出中应包含 <code>library</code> 服务及刚创建的授权策略。</p>
+
+<h2 id="第四步-启动授权决策服务">第四步：启动授权决策服务</h2>
+
+<p>打开第三个终端，进入同一个 <code>speedle-plus</code> 源码目录：</p>
+
+<!-- quick-start: ads -->
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./bin/speedle-ads --store-type file --filestore-loc ./quick-start-policies.json --endpoint <span style="color:#1c01ce">127</span>.0.0.1:6734 --insecure<span style="color:#000">=</span>true</code></pre></div>
+<p>保持服务运行，等待 REST 服务启动后再继续。</p>
+
+<h2 id="第五步-验证授权结果">第五步：验证授权结果</h2>
+
+<p>在第二个终端中，询问张三是否可以借书：</p>
+
+<!-- quick-start: allow-direct -->
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl --fail --silent --show-error --header <span style="color:#c41a16">&#39;Content-Type: application/json&#39;</span> --data <span style="color:#c41a16">&#39;{&#34;subject&#34;:{&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;,&#34;name&#34;:&#34;ZhangSan&#34;}]},&#34;serviceName&#34;:&#34;library&#34;,&#34;resource&#34;:&#34;book&#34;,&#34;action&#34;:&#34;borrow&#34;}&#39;</span> http://127.0.0.1:6734/authz-check/v1/is-allowed</code></pre></div>
+<p>响应中应包含 <code>&quot;allowed&quot;:true</code>。</p>
+
+<p>再询问没有获得授权的李四是否可以借书：</p>
+
+<!-- quick-start: deny -->
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl --fail --silent --show-error --header <span style="color:#c41a16">&#39;Content-Type: application/json&#39;</span> --data <span style="color:#c41a16">&#39;{&#34;subject&#34;:{&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;,&#34;name&#34;:&#34;LiSi&#34;}]},&#34;serviceName&#34;:&#34;library&#34;,&#34;resource&#34;:&#34;book&#34;,&#34;action&#34;:&#34;borrow&#34;}&#39;</span> http://127.0.0.1:6734/authz-check/v1/is-allowed</code></pre></div>
+<p>响应中应包含 <code>&quot;allowed&quot;:false</code>。</p>
+
+<p>使用结束后，在 PMS 和 ADS 的终端分别按 <strong>Ctrl+C</strong> 停止服务。策略文件会保留在源码目录中；再次执行创建命令时，请使用新的策略文件。</p>
+
+<p>下一步可阅读 <a href="/zh/docs/spdl/">SPDL 语言</a>、<a href="/zh/docs/security/#message-security-tls">TLS 配置</a>和<a href="/zh/docs/deployment/">部署指南</a>，了解 ACL、RBAC、ABAC 及其他部署方式。</p>
 
     </div>
   </div>

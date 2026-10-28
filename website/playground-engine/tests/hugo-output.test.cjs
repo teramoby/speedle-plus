@@ -30,6 +30,7 @@ const sitemap = fs.readFileSync(path.join(output, 'sitemap.xml'), 'utf8');
 assert.ok(sitemap.includes('https://speedle.io/en/sitemap.xml'), 'Multilingual sitemap index');
 assert.ok(fs.readFileSync(path.join(output, 'en/sitemap.xml'), 'utf8').includes('https://speedle.io/playground/'));
 for (const name of ['quick-start/index.html', 'zh/quick-start/index.html']) {
+  assert.deepEqual(fs.readFileSync(path.join(output, name)), fs.readFileSync(path.join(root, 'docs', name)), `Generated quick-start guide ${name}`);
   const target = name.startsWith('zh/') ? '/zh/playground/' : '/playground/';
   assert.ok(fs.readFileSync(path.join(output, name), 'utf8').includes(`href="${target}"`), `Generated ${name} navigation`);
 }

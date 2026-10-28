@@ -130,19 +130,17 @@ grant user alice editor on book grant role editor reader on book grant role read
     </item>
     
     <item>
-      <title>Speedle 五分钟入门</title>
+      <title>Speedle 快速入门</title>
       <link>https://speedle.io/zh/quick-start/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://speedle.io/zh/quick-start/</guid>
-      <description>第一步 编译  先安装 GO 编译器，安装文件在https://golang.org/dl/ 设置 GOPATH 环境变量 运行如下命令  $ go get github.com/teramoby/speedle-plus/cmd/… 该命令会从 github 下载代码并自动编译。命令执行完毕后，我们可以检查\$GOPATH/bin 目录，应该有三个文件在该目录下：
-$ ls $GOPATH/bin spctl speedle-ads speedle-pms speedle-pms 是授权策略（Policy）管理服务
-speedle-ads 是授权决定服务（运行时）
-spctl 是命令行工具
-第二步 运行 启动 PMS 和 ADS
-$ cd $GOPATH/bin $ ./speedle-pms --store-type file &amp;amp; $ ./speedle-ads --store-type file &amp;amp; 第三步 使用 作为权限控制软件，最基本的功能有两个：
- 管理授权策略（Policy) 处理授权请求，根据定义的 Policy 得出授权决定  例如，对于图书馆管理系统，我们要定义一个 Policy 说“张三可以借书”。我们可以进行如下操作：
-$ ./spctl create service library $ ./spctl create policy -c &amp;#34;grant user ZhangSan borrow book&amp;#34; --service-name=library 这样 Policy 就存储在 Speedle 中，接下来我们测试一下 Speedle 可不可以正确处理授权请求。</description>
+      <description>先在 Playground 中试用 无需安装，即可先体验 Speedle 的基本功能。 打开 Playground 策略实验室，编辑 SPDL 策略、设置用户、资源和动作，即可在浏览器中查看真实的 Allow/Deny（允许／拒绝）授权结果，无需安装 Go 或启动服务。
+准备在本机编译和运行 Speedle 时，再继续下面的步骤。
+准备环境 准备 Linux 或 macOS、Bash、Git、curl，以及 Go 1.26.3 或更新版本。项目模块要求 Go 1.26；本教程已在 Go 1.26.10 和 Go 1.27.3 上验证，推荐使用稳定版 Go 1.27.3 完成本教程。
+按照 Go 官方安装说明安装，然后检查版本：
+go version Go 会自动配置 GOROOT 和默认的 GOPATH，无需手动指定。下面将程序编译到源码目录下的 bin 目录。
+第一步：下载源码并编译 git clone --depth 1 https://github.com/teramoby/speedle-plus.git cd speedle-plus mkdir -p bin go build -o ./bin/ ./cmd/spctl ./cmd/speedle-pms ./cmd/speedle-ads ls bin 输出目录中应有三个程序：</description>
     </item>
     
     <item>
