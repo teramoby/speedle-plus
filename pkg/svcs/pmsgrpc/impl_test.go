@@ -19,6 +19,7 @@ import (
 	"github.com/teramoby/speedle-plus/pkg/store"
 	_ "github.com/teramoby/speedle-plus/pkg/store/file"
 	"github.com/teramoby/speedle-plus/pkg/svcs/pmsgrpc/pb"
+	"github.com/teramoby/speedle-plus/testutil/storetest"
 )
 
 func newStore(t *testing.T) pms.PolicyStoreManager {
@@ -382,5 +383,69 @@ func TestConvertRPCService(t *testing.T) {
 	}
 	if convertAPISubject(nil) != nil || convertAPIPrincipals(nil) != nil {
 		t.Fatal("nil subject or principals must convert to nil")
+	}
+}
+
+func TestStoreErrors(t *testing.T) {
+	failing := storetest.NewFailingStore()
+	failing.CountsSucceed = true
+	impl := NewServiceImpl(failing)
+	policy := &pb.Policy{Name: "p", Effect: pb.Effect_GRANT}
+	rolePolicy := &pb.RolePolicy{Name: "rp", Effect: pb.Effect_GRANT}
+	calls := map[string]func() error{
+		"CreateFunction": func() error { _, err := impl.CreateFunction(ctx, &pb.Function{Name: "f"}); return err },
+		"QueryFunctions": func() error { _, err := impl.QueryFunctions(ctx, &pb.FunctionQueryRequest{}); return err },
+		"QueryFunctionsFilter": func() error {
+			_, err := impl.QueryFunctions(ctx, &pb.FunctionQueryRequest{Filters: "name eq f"})
+			return err
+		},
+		"DeleteFunctionsAll": func() error {
+			_, err := impl.DeleteFunctions(ctx, &pb.FunctionQueryRequest{Filters: "all"})
+			return err
+		},
+		"CreateService":     func() error { _, err := impl.CreateService(ctx, &pb.ServiceRequest{Name: "s"}); return err },
+		"QueryServices":     func() error { _, err := impl.QueryServices(ctx, &pb.ServiceQueryRequest{}); return err },
+		"DeleteServicesAll": func() error { _, err := impl.DeleteServices(ctx, &pb.ServiceQueryRequest{}); return err },
+		"CreatePolicy": func() error {
+			_, err := impl.CreatePolicy(ctx, &pb.PolicyRequest{ServiceName: "s", Policy: policy})
+			return err
+		},
+		"QueryPoliciesFilter": func() error {
+			_, err := impl.QueryPolicies(ctx, &pb.PolicyQueryRequest{ServiceName: "s", Filters: "name eq p"})
+			return err
+		},
+		"CreateRolePolicy": func() error {
+			_, err := impl.CreateRolePolicy(ctx, &pb.RolePolicyRequest{ServiceName: "s", RolePolicy: rolePolicy})
+			return err
+		},
+		"QueryRolePoliciesFilter": func() error {
+			_, err := impl.QueryRolePolicies(ctx, &pb.RolePolicyQueryRequest{ServiceName: "s", Filters: "name eq rp"})
+			return err
+		},
+		"ListPolicyCounts":    func() error { _, err := impl.ListPolicyCounts(ctx, &pb.Empty{}); return err },
+		"GetDiscoverRequests": func() error { _, err := impl.GetDiscoverRequests(ctx, &pb.DiscoverRequestsRequest{}); return err },
+		"GetDiscoverRequestsSince": func() error {
+			_, err := impl.GetDiscoverRequests(ctx, &pb.DiscoverRequestsRequest{Revision: 3})
+			return err
+		},
+		"ResetDiscoverRequests": func() error { _, err := impl.ResetDiscoverRequests(ctx, &pb.ResetRequestsRequest{}); return err },
+		"GetDiscoverPolicies":   func() error { _, err := impl.GetDiscoverPolicies(ctx, &pb.DiscoverPoliciesRequest{}); return err },
+	}
+	for name, call := range calls {
+		if err := call(); code(err) != codes.Internal {
+			t.Errorf("%s: error = %v, want Internal", name, err)
+		}
+	}
+
+	// Limit checks fail first when the counts fail.
+	impl = NewServiceImpl(storetest.NewFailingStore())
+	if _, err := impl.CreateService(ctx, &pb.ServiceRequest{Name: "s"}); code(err) != codes.Internal {
+		t.Errorf("CreateService with failing counts: %v", err)
+	}
+	if _, err := impl.CreatePolicy(ctx, &pb.PolicyRequest{ServiceName: "s", Policy: policy}); code(err) != codes.Internal {
+		t.Errorf("CreatePolicy with failing counts: %v", err)
+	}
+	if _, err := impl.CreateRolePolicy(ctx, &pb.RolePolicyRequest{ServiceName: "s", RolePolicy: rolePolicy}); code(err) != codes.Internal {
+		t.Errorf("CreateRolePolicy with failing counts: %v", err)
 	}
 }

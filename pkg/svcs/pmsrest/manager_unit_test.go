@@ -29,7 +29,12 @@ var creator = "creator"
 var testserver *httptest.Server
 
 func NewTestServer() (*httptest.Server, error) {
+	return newTestServerWithStore(storeFile)
+}
+
+func newTestServerWithStore(location string) (*httptest.Server, error) {
 	conf := GenerateServerConfig()
+	conf.StoreConfig.StoreProps["FileLocation"] = location
 	ps, err := store.NewStore(conf.StoreConfig.StoreType, conf.StoreConfig.StoreProps)
 	if err != nil {
 		return nil, err
@@ -87,6 +92,23 @@ func testMain(m *testing.M) int {
 		return 1
 	}
 	defer testserver.Close()
+
+	// The REST scenario tests (manager_test.go) expect an empty store of
+	// their own.
+	scenarioStore := "./scenariostore.json"
+	if err := ioutil.WriteFile(scenarioStore, []byte(`{}`), 0600); err != nil {
+		log.Print(err)
+		return 1
+	}
+	defer os.Remove(scenarioStore)
+	scenarioServer, err := newTestServerWithStore(scenarioStore)
+	if err != nil {
+		log.Print("failed to start the scenario server. error:", err)
+		return 1
+	}
+	defer scenarioServer.Close()
+	os.Setenv("PMS_ENDPOINT", scenarioServer.URL)
+	os.Setenv("PMS_ADMIN_TOKEN", "")
 	return m.Run()
 }
 
