@@ -11,19 +11,19 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>版本 - Speedle</title>
-<meta name="description" content="What&#39;s New? Speedle versions and changelog! ">
+<meta name="description" content="当前开发版本与历史发布的范围和兼容性">
 <link rel="alternate" hreflang="en" href="https://speedle.io/docs/versions/">
 <link rel="alternate" hreflang="x-default" href="https://speedle.io/docs/versions/"><link rel="alternate" hreflang="zh-CN" href="https://speedle.io/zh/docs/versions/">
 
 <meta property="og:type" content="article">
 <meta property="og:site_name" content="Speedle Authorization Engine">
 <meta property="og:title" content="版本">
-<meta property="og:description" content="What&#39;s New? Speedle versions and changelog! ">
+<meta property="og:description" content="当前开发版本与历史发布的范围和兼容性">
 <meta property="og:url" content="https://speedle.io/zh/docs/versions/">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="版本">
-<meta name="twitter:description" content="What&#39;s New? Speedle versions and changelog! ">
-<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://speedle.io/zh/docs/versions/#page","@type":"TechArticle","about":{"@id":"https://speedle.io/#software"},"description":"What\u0026#39;s New? Speedle versions and changelog! ","inLanguage":"zh-CN","isPartOf":{"@id":"https://speedle.io/#website"},"keywords":["Speedle+"],"name":"版本","url":"https://speedle.io/zh/docs/versions/"}</script>
+<meta name="twitter:description" content="当前开发版本与历史发布的范围和兼容性">
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://speedle.io/zh/docs/versions/#page","@type":"TechArticle","about":{"@id":"https://speedle.io/#software"},"description":"当前开发版本与历史发布的范围和兼容性","inLanguage":"zh-CN","isPartOf":{"@id":"https://speedle.io/#website"},"keywords":["Speedle+"],"name":"版本","url":"https://speedle.io/zh/docs/versions/"}</script>
 
 <meta name="generator" content="Hugo 0.48" />
 <link href="https://speedle.io/index.xml" rel="alternate" type="application/rss+xml">
@@ -103,20 +103,21 @@ headingSelector: 'h2'
   <div id="kube-component" class="content">
     
 
-<h2 id="version-0-2-0-planning">Version 0.2.0 (planning)</h2>
+<h2 id="当前开发版本文档">当前开发版本文档</h2>
 
-<p>&hellip;</p>
+<p>这些页面说明当前 <code>master</code> 源码，不是冻结的历史发布版本。当前 module 要求 Go 1.26 或更高版本；快速入门流程验证 Go 1.26.10 和 1.27.3。这两个经过测试的补丁版本不意味着旧发布包有相同要求。</p>
 
-<h2 id="version-0-1-0">Version 0.1.0</h2>
+<p>升级前应审查所选提交及依赖，并重新验证所用存储、传输与身份提供方。当前独立服务的 gRPC 与 REST 使用相同的 TLS/mTLS 配置；未指定 <code>--grpc-endpoint</code> 时沿用 REST 监听的主机地址。服务名称为 <code>pms_pb.PolicyManager</code>、<code>ads_pb.Evaluator</code>，<a href="/zh/docs/api/">公开 proto</a>应与生成客户端配套使用。</p>
 
-<p><strong>release notes</strong>: This is the first open source version. All basic functions are available in this version, including</p>
+<h2 id="历史发布">历史发布</h2>
 
-<ul>
-<li>Policy Management Service</li>
-<li>Authorization Runtime Service</li>
-<li>Command line tool</li>
-<li>Integration samples</li>
-</ul>
+<p>仓库提供 <a href="https://github.com/teramoby/speedle-plus/releases/tag/v2.0">v2.0（2020 年 7 月）</a>和 <a href="https://github.com/teramoby/speedle-plus/releases/tag/baseline">baseline 标签</a>。这些发布资产与源码快照属于历史版本。已发布文件以<a href="https://github.com/teramoby/speedle-plus/releases">发布列表</a>为准，标签名称本身不保证与当前依赖或安全行为兼容。</p>
+
+<p>早期 0.1.0 说明列出策略管理、授权运行时、CLI 和集成示例。旧页面中的“0.2.0 planning”占位不再作为当前发布路线图。</p>
+
+<h2 id="可重复使用">可重复使用</h2>
+
+<p>应用依赖应选择发布标签或不可变提交，并把修订号、策略 fixture、预期决策一并记录。<a href="/zh/quick-start/">快速入门</a>提供原生构建步骤，<a href="/zh/docs/deployment-embeded/">嵌入模式</a>说明库集成，<a href="/zh/docs/security/">安全配置</a>说明当前连接行为。</p>
 
   </div>
 </div>
@@ -168,16 +169,16 @@ headingSelector: 'h2'
 
 <li class=""><span>API</span>
 <ul class="">
-<li class=""><a href="/zh/docs/api/decision_api/">Authorization Runtime/Decision API</a></li>
-<li class=""><a href="/zh/docs/api/management_api/">Policy Management API</a></li>
-<li class=""><a href="/zh/docs/api/asserter_api/">Token Assertion Plugin API</a></li>
+<li class=""><a href="/zh/docs/api/asserter_api/">令牌断言插件 API</a></li>
+<li class=""><a href="/zh/docs/api/decision_api/">授权决策 API</a></li>
+<li class=""><a href="/zh/docs/api/management_api/">策略管理 API</a></li>
 </ul>
   
 </li>
 <li class=""><a href="/zh/docs/security/">安全</a></li>
 <li class=""><a href="/zh/docs/logging/">日志</a></li>
 <li class="active"><a href="/zh/docs/versions/">版本</a></li>
-<li class=""><a href="/zh/docs/custom-function/">Custom Function</a></li>
+<li class=""><a href="/zh/docs/custom-function/">自定义函数</a></li>
 </ul>
   
 </li>

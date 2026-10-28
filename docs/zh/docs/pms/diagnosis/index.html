@@ -11,19 +11,19 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>授权诊断 - Speedle</title>
-<meta name="description" content="Authorization policy diagnosis">
+<meta name="description" content="解释授权评估的策略与属性明细">
 <link rel="alternate" hreflang="en" href="https://speedle.io/docs/pms/diagnosis/">
 <link rel="alternate" hreflang="x-default" href="https://speedle.io/docs/pms/diagnosis/"><link rel="alternate" hreflang="zh-CN" href="https://speedle.io/zh/docs/pms/diagnosis/">
 
 <meta property="og:type" content="article">
 <meta property="og:site_name" content="Speedle Authorization Engine">
 <meta property="og:title" content="授权诊断">
-<meta property="og:description" content="Authorization policy diagnosis">
+<meta property="og:description" content="解释授权评估的策略与属性明细">
 <meta property="og:url" content="https://speedle.io/zh/docs/pms/diagnosis/">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="授权诊断">
-<meta name="twitter:description" content="Authorization policy diagnosis">
-<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://speedle.io/zh/docs/pms/diagnosis/#page","@type":"TechArticle","about":{"@id":"https://speedle.io/#software"},"description":"Authorization policy diagnosis","inLanguage":"zh-CN","isPartOf":{"@id":"https://speedle.io/#website"},"keywords":["Speedle+"],"name":"授权诊断","url":"https://speedle.io/zh/docs/pms/diagnosis/"}</script>
+<meta name="twitter:description" content="解释授权评估的策略与属性明细">
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://speedle.io/zh/docs/pms/diagnosis/#page","@type":"TechArticle","about":{"@id":"https://speedle.io/#software"},"description":"解释授权评估的策略与属性明细","inLanguage":"zh-CN","isPartOf":{"@id":"https://speedle.io/#website"},"keywords":["Speedle+"],"name":"授权诊断","url":"https://speedle.io/zh/docs/pms/diagnosis/"}</script>
 
 <meta name="generator" content="Hugo 0.48" />
 <link href="https://speedle.io/index.xml" rel="alternate" type="application/rss+xml">
@@ -103,155 +103,88 @@ headingSelector: 'h2'
   <div id="kube-component" class="content">
     
 
-<p>授权诊断是 Speedle 的一个高级特性，用于诊断授权评估的过程。当一个用户被拒绝操作一个资源时，这个特性就可以用来找出拒绝的原因，例如，是哪条策略（policy）导致用户对资源的操作被拒绝的。</p>
+<h2 id="授权诊断提供什么">授权诊断提供什么？</h2>
 
-<h2 id="授权诊断响应包的格式">授权诊断响应包的格式</h2>
+<p><code>Diagnose</code> 用于解释一次授权评估：决策、原因、有效角色、属性及参与评估的策略。其请求上下文与 <code>IsAllowed</code> 相同；REST 路径为 <code>/authz-check/v1/diagnose</code>，Go/gRPC 方法均名为 <code>Diagnose</code>。</p>
 
-<p>授权诊断响应包的格式如下：</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#a90d91">type</span> <span style="color:#000">EvaluationDebugResponse</span> <span style="color:#a90d91">struct</span> {
-    <span style="color:#000">Allowed</span>       <span style="color:#a90d91">bool</span>                    <span style="color:#c41a16">`json:&#34;allowed&#34;`</span>
-    <span style="color:#000">Reason</span>        <span style="color:#a90d91">string</span>                  <span style="color:#c41a16">`json:&#34;reason&#34;`</span>
-    <span style="color:#000">RequestCtx</span>    <span style="color:#000">*</span><span style="color:#000">RequestContext</span>         <span style="color:#c41a16">`json:&#34;requestContext,omitempty&#34;`</span>
-    <span style="color:#000">Attributes</span>    <span style="color:#a90d91">map</span>[<span style="color:#a90d91">string</span>]<span style="color:#a90d91">interface</span>{}  <span style="color:#c41a16">`json:&#34;attributes,omitempty&#34;`</span>
-    <span style="color:#000">GrantedRoles</span>  []<span style="color:#a90d91">string</span>                <span style="color:#c41a16">`json:&#34;grantedRoles,omitempty&#34;`</span>
-    <span style="color:#000">RolePolicies</span>  []<span style="color:#000">*</span><span style="color:#000">EvaluatedRolePolicy</span>  <span style="color:#c41a16">`json:&#34;rolePolicies,omitempty&#34;`</span>
-    <span style="color:#000">Policies</span>      []<span style="color:#000">*</span><span style="color:#000">EvaluatedPolicy</span>      <span style="color:#c41a16">`json:&#34;policies,omitempty&#34;`</span>
-}
+<p>诊断会暴露策略定义和请求上下文，必须通过<a href="/zh/docs/security/">API 安全配置</a>限制为可信运维人员访问，不能作为公开调试端点。</p>
 
-<span style="color:#a90d91">type</span> <span style="color:#000">EvaluatedPolicy</span> <span style="color:#a90d91">struct</span> {
-    <span style="color:#000">Status</span>      <span style="color:#a90d91">string</span>              <span style="color:#c41a16">`json:&#34;status,omitempty&#34;`</span>
-    <span style="color:#000">ID</span>          <span style="color:#a90d91">string</span>              <span style="color:#c41a16">`json:&#34;id,omitempty&#34;`</span>
-    <span style="color:#000">Name</span>        <span style="color:#a90d91">string</span>              <span style="color:#c41a16">`json:&#34;name,omitempty&#34;`</span>
-    <span style="color:#000">Effect</span>      <span style="color:#a90d91">string</span>              <span style="color:#c41a16">`json:&#34;effect,omitempty&#34;`</span>
-    <span style="color:#000">Permissions</span> []<span style="color:#000">Permission</span>        <span style="color:#c41a16">`json:&#34;permissions,omitempty&#34;`</span>
-    <span style="color:#000">Principals</span>  []<span style="color:#a90d91">string</span>            <span style="color:#c41a16">`json:&#34;principals,omitempty&#34;`</span>
-    <span style="color:#000">Condition</span>   <span style="color:#000">*</span><span style="color:#000">EvaluatedCondition</span> <span style="color:#c41a16">`json:&#34;condition,omitempty&#34;`</span>
-}
+<h2 id="运行示例前">运行示例前</h2>
 
-<span style="color:#a90d91">type</span> <span style="color:#000">EvaluatedRolePolicy</span> <span style="color:#a90d91">struct</span> {
-    <span style="color:#000">Status</span>              <span style="color:#a90d91">string</span>              <span style="color:#c41a16">`json:&#34;status,omitempty&#34;`</span>
-    <span style="color:#000">ID</span>                  <span style="color:#a90d91">string</span>              <span style="color:#c41a16">`json:&#34;id,omitempty&#34;`</span>
-    <span style="color:#000">Name</span>                <span style="color:#a90d91">string</span>              <span style="color:#c41a16">`json:&#34;name,omitempty&#34;`</span>
-    <span style="color:#000">Effect</span>              <span style="color:#a90d91">string</span>              <span style="color:#c41a16">`json:&#34;effect,omitempty&#34;`</span>
-    <span style="color:#000">Roles</span>               []<span style="color:#a90d91">string</span>            <span style="color:#c41a16">`json:&#34;roles,omitempty&#34;`</span>
-    <span style="color:#000">Principals</span>          []<span style="color:#a90d91">string</span>            <span style="color:#c41a16">`json:&#34;principals,omitempty&#34;`</span>
-    <span style="color:#000">Resources</span>           []<span style="color:#a90d91">string</span>            <span style="color:#c41a16">`json:&#34;resources,omitempty&#34;`</span>
-    <span style="color:#000">ResourceExpressions</span> []<span style="color:#a90d91">string</span>            <span style="color:#c41a16">`json:&#34;resourceExpression,omitempty&#34;`</span>
-    <span style="color:#000">Condition</span>           <span style="color:#000">*</span><span style="color:#000">EvaluatedCondition</span> <span style="color:#c41a16">`json:&#34;condition,omitempty&#34;`</span>
-}
+<p>先按<a href="/zh/quick-start/">快速入门</a>编译仓库根目录下的 <code>./bin/spctl</code>、<code>./bin/speedle-pms</code> 和 <code>./bin/speedle-ads</code>，需要 Go 1.26 或更高版本、Bash、curl 和 Python 3。下面各终端都从仓库根目录运行。为本页使用一个新的策略文件；仅在两个服务都停止后重建该文件。</p>
 
-<span style="color:#a90d91">type</span> <span style="color:#000">EvaluatedCondition</span> <span style="color:#a90d91">struct</span> {
-    <span style="color:#000">ConditionExpression</span>  <span style="color:#a90d91">string</span>  <span style="color:#c41a16">`json:&#34;conditionExpression,omitempty&#34;`</span>
-    <span style="color:#000">EvaluationResult</span>     <span style="color:#a90d91">string</span>  <span style="color:#c41a16">`json:&#34;evaluationResult,omitempty&#34;`</span>
-}</code></pre></div>
-<h2 id="示例">示例</h2>
+<p>初始化空策略文件：</p>
 
-<p>注意：原请求中的属性以及 Speedle 内置的属性都会包含在诊断响应包的属性列表中。</p>
+<!-- docs-check: setup -->
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#a90d91">printf</span> <span style="color:#c41a16">&#39;{}\n&#39;</span> &gt; docs-policies.json</code></pre></div>
+<p>终端一启动 PMS，并保持运行：</p>
 
-<p>策略（policy）和角色策略（rolePolicy）中的字段&rdquo;status&rdquo;有三个有效的值，即：“takeEffect”、“conditionFailed”和&rdquo;ignored&rdquo;。</p>
+<!-- docs-check: pms -->
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./bin/speedle-pms --store-type file --filestore-loc ./docs-policies.json --endpoint <span style="color:#1c01ce">127</span>.0.0.1:6733 --grpc-endpoint <span style="color:#1c01ce">127</span>.0.0.1:0 --insecure<span style="color:#000">=</span>true</code></pre></div>
+<p>终端二启动 ADS，并保持运行：</p>
 
-<ul>
-<li>takeEffect</li>
-</ul>
+<!-- docs-check: ads -->
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./bin/speedle-ads --store-type file --filestore-loc ./docs-policies.json --endpoint <span style="color:#1c01ce">127</span>.0.0.1:6734 --grpc-endpoint <span style="color:#1c01ce">127</span>.0.0.1:0 --insecure<span style="color:#000">=</span>true</code></pre></div>
+<p>在第三个终端运行后续命令。PMS/ADS 共享同一个文件，策略更新通过 watch 异步到达 ADS；先查询确认已更新，再依赖新策略做决策。<code>--insecure=true</code> 仅用于回环地址上的本地示例，生产连接见<a href="/zh/docs/security/">安全配置</a>。示例显式指定 PMS 地址，不修改 <code>~/.spctlconfig</code>。完成后在两个服务终端按 Ctrl-C。</p>
 
-<p>&ldquo;takeEffect&rdquo;意思是策略（policy）或角色策略（rolePolicy）匹配并且已经被评估过了。</p>
+<h2 id="创建示例策略">创建示例策略</h2>
 
-<ul>
-<li>conditioFailed</li>
-</ul>
+<p><a href="https://github.com/teramoby/speedle-plus/blob/master/samples/docs/diagnosis.json">测试文件</a>允许 <code>user1</code> 对 <code>^/api/v1/example/.*$</code> 下的资源执行 <code>get</code>，但显式拒绝 <code>/api/v1/example/res1</code>。</p>
 
-<p>&ldquo;conditionFailed&rdquo;意思是策略（policy）或角色策略（rolePolicy）与请求中的服务名称（service name）、主体（subject）、资源（resource）以及操作（action）匹配，但是条件的评估结果是 false。</p>
+<!-- docs-check: diagnosis-fixture -->
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ create service --json-file samples/docs/diagnosis.json</code></pre></div>
+<h2 id="比较决策与诊断">比较决策与诊断</h2>
 
-<ul>
-<li>ignored</li>
-</ul>
+<!-- docs-check: diagnosis-deny -->
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl --fail --silent --show-error -H <span style="color:#c41a16">&#39;Content-Type: application/json&#39;</span> <span style="color:#c41a16">\
+</span><span style="color:#c41a16"></span>  -d <span style="color:#c41a16">&#39;{&#34;subject&#34;:{&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;,&#34;name&#34;:&#34;user1&#34;}]},&#34;serviceName&#34;:&#34;srv1&#34;,&#34;resource&#34;:&#34;/api/v1/example/res1&#34;,&#34;action&#34;:&#34;get&#34;}&#39;</span> <span style="color:#c41a16">\
+</span><span style="color:#c41a16"></span>  http://127.0.0.1:6734/authz-check/v1/is-allowed</code></pre></div>
+<p>预期 <code>allowed=false</code>，<code>reason=1</code>，表示匹配显式拒绝策略。</p>
 
-<p>&ldquo;ignored&rdquo;意思是授权评估过程已经结束，因此该策略（policy）已经没有评估的必要了。</p>
+<!-- docs-check: diagnose -->
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl --fail --silent --show-error -H <span style="color:#c41a16">&#39;Content-Type: application/json&#39;</span> <span style="color:#c41a16">\
+</span><span style="color:#c41a16"></span>  -d <span style="color:#c41a16">&#39;{&#34;subject&#34;:{&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;,&#34;name&#34;:&#34;user1&#34;}]},&#34;serviceName&#34;:&#34;srv1&#34;,&#34;resource&#34;:&#34;/api/v1/example/res1&#34;,&#34;action&#34;:&#34;get&#34;}&#39;</span> <span style="color:#c41a16">\
+</span><span style="color:#c41a16"></span>  http://127.0.0.1:6734/authz-check/v1/diagnose</code></pre></div>
+<p>诊断响应的 <code>allowed</code> 是布尔值，<code>reason</code> 是 <code>DENY_POLICY_FOUND</code> 等字符串，<code>attributes</code> 是按名称索引的对象，<code>request_month</code> 是数字月份。<code>requestContext.subject.principals</code> 为数组；授权策略中的 <code>principals</code> 是二维数组，表示多组 AND 主体之间的 OR 关系。</p>
 
-<p>下面就是授权诊断响应包的一个例子，</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">{
-  <span style="color:#c41a16">&#34;Allowed&#34;</span>: <span style="color:#c41a16">&#34;true&#34;</span>,
-  <span style="color:#c41a16">&#34;requestContext&#34;</span>: {
-    <span style="color:#c41a16">&#34;subject&#34;</span>: {
-      <span style="color:#c41a16">&#34;user&#34;</span>: <span style="color:#c41a16">&#34;user1&#34;</span>,
-      <span style="color:#c41a16">&#34;groups&#34;</span>: <span style="color:#000">null</span>,
-      <span style="color:#c41a16">&#34;attributes&#34;</span>: <span style="color:#000">null</span>
-    },
-    <span style="color:#c41a16">&#34;serviceName&#34;</span>: <span style="color:#c41a16">&#34;srv1&#34;</span>,
-    <span style="color:#c41a16">&#34;resource&#34;</span>: <span style="color:#c41a16">&#34;res1&#34;</span>,
-    <span style="color:#c41a16">&#34;action&#34;</span>: <span style="color:#c41a16">&#34;read&#34;</span>,
-    <span style="color:#c41a16">&#34;attributes&#34;</span>: <span style="color:#000">null</span>,
-    <span style="color:#c41a16">&#34;token&#34;</span>: <span style="color:#000">null</span>
-  },
-  <span style="color:#c41a16">&#34;attributes&#34;</span>: {
-    <span style="color:#c41a16">&#34;request_action&#34;</span>: <span style="color:#c41a16">&#34;read&#34;</span>,
-    <span style="color:#c41a16">&#34;request_day&#34;</span>: <span style="color:#1c01ce">23</span>,
-    <span style="color:#c41a16">&#34;request_groups&#34;</span>: <span style="color:#000">null</span>,
-    <span style="color:#c41a16">&#34;request_month&#34;</span>: <span style="color:#c41a16">&#34;November&#34;</span>,
-    <span style="color:#c41a16">&#34;request_resource&#34;</span>: <span style="color:#c41a16">&#34;res1&#34;</span>,
-    <span style="color:#c41a16">&#34;request_time&#34;</span>: <span style="color:#1c01ce">1511406017</span>,
-    <span style="color:#c41a16">&#34;request_user&#34;</span>: <span style="color:#c41a16">&#34;user1&#34;</span>,
-    <span style="color:#c41a16">&#34;request_weekday&#34;</span>: <span style="color:#c41a16">&#34;Thursday&#34;</span>,
-    <span style="color:#c41a16">&#34;request_year&#34;</span>: <span style="color:#1c01ce">2017</span>
-  },
-  <span style="color:#c41a16">&#34;grantedRoles&#34;</span>: [
-    <span style="color:#c41a16">&#34;role1&#34;</span>
-  ],
-  <span style="color:#c41a16">&#34;rolePolicies&#34;</span>: [
-    {
-      <span style="color:#c41a16">&#34;status&#34;</span>: <span style="color:#c41a16">&#34;takeEffect&#34;</span>,
-      <span style="color:#c41a16">&#34;id&#34;</span>: <span style="color:#c41a16">&#34;c8087db3-60cf-4dad-aa9d-033eb6da0b15&#34;</span>,
-      <span style="color:#c41a16">&#34;name&#34;</span>: <span style="color:#c41a16">&#34;rp01&#34;</span>,
-      <span style="color:#c41a16">&#34;effect&#34;</span>: <span style="color:#c41a16">&#34;grant&#34;</span>,
-      <span style="color:#c41a16">&#34;roles&#34;</span>: [
-        <span style="color:#c41a16">&#34;role1&#34;</span>
-      ],
-      <span style="color:#c41a16">&#34;principals&#34;</span>: [
-        <span style="color:#c41a16">&#34;user:user1&#34;</span>,
-        <span style="color:#c41a16">&#34;user:user2&#34;</span>
-      ],
-      <span style="color:#c41a16">&#34;resources&#34;</span>: [
-        <span style="color:#c41a16">&#34;res1&#34;</span>,
-        <span style="color:#c41a16">&#34;res2&#34;</span>
-      ],
-      <span style="color:#c41a16">&#34;condition&#34;</span>: {
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>含义</th>
+</tr>
+</thead>
 
-      }
-    }
-  ],
-  <span style="color:#c41a16">&#34;policies&#34;</span>: [
-    {
-      <span style="color:#c41a16">&#34;status&#34;</span>: <span style="color:#c41a16">&#34;takeEffect&#34;</span>,
-      <span style="color:#c41a16">&#34;id&#34;</span>: <span style="color:#c41a16">&#34;f56b494f-dd6b-42af-962e-a109c890b7a0&#34;</span>,
-      <span style="color:#c41a16">&#34;name&#34;</span>: <span style="color:#c41a16">&#34;p01&#34;</span>,
-      <span style="color:#c41a16">&#34;effect&#34;</span>: <span style="color:#c41a16">&#34;grant&#34;</span>,
-      <span style="color:#c41a16">&#34;permissions&#34;</span>: [
-        {
-          <span style="color:#c41a16">&#34;resource&#34;</span>: <span style="color:#c41a16">&#34;res1&#34;</span>,
-          <span style="color:#c41a16">&#34;actions&#34;</span>: [
-            <span style="color:#c41a16">&#34;list&#34;</span>,
-            <span style="color:#c41a16">&#34;read&#34;</span>,
-            <span style="color:#c41a16">&#34;write&#34;</span>
-          ]
-        },
-        {
-          <span style="color:#c41a16">&#34;resource&#34;</span>: <span style="color:#c41a16">&#34;res2&#34;</span>,
-          <span style="color:#c41a16">&#34;actions&#34;</span>: [
-            <span style="color:#c41a16">&#34;list&#34;</span>
-          ]
-        }
-      ],
-      <span style="color:#c41a16">&#34;principals&#34;</span>: [
-        <span style="color:#c41a16">&#34;user:user1&#34;</span>,
-        <span style="color:#c41a16">&#34;user:user2&#34;</span>
-      ],
-      <span style="color:#c41a16">&#34;condition&#34;</span>: {
-        <span style="color:#c41a16">&#34;conditionExpression&#34;</span>: <span style="color:#c41a16">&#34;request_year ==2017&#34;</span>,
-        <span style="color:#c41a16">&#34;evaluationResult&#34;</span>: <span style="color:#c41a16">&#34;true&#34;</span>
-      }
-    }
-  ]
-}</code></pre></div>
+<tbody>
+<tr>
+<td><code>requestContext</code></td>
+<td>实际评估的请求；这里的 REST 属性仍是带类型的数组</td>
+</tr>
+
+<tr>
+<td><code>attributes</code></td>
+<td>请求属性与内置属性，以属性名作为键</td>
+</tr>
+
+<tr>
+<td><code>grantedRoles</code></td>
+<td>存在时返回有效角色</td>
+</tr>
+
+<tr>
+<td><code>rolePolicies</code>、<code>policies</code></td>
+<td>存在时返回角色策略与授权策略的评估明细</td>
+</tr>
+
+<tr>
+<td><code>condition</code></td>
+<td>条件表达式及结果；无条件策略可返回空对象</td>
+</tr>
+</tbody>
+</table>
+
+<p>策略状态包括 <code>takeEffect</code>（生效）、<code>conditionFailed</code>（条件不满足）、<code>ignored</code>（最终结果已确定，无需再评估）。顺序可能变化，应根据 ID 与状态解释结果，不要逐字匹配历史响应。完整响应结构见<a href="/zh/docs/api/decision_api/">决策 API</a>。</p>
+
   </div>
 </div>
 </main><div class="sidebar">
@@ -302,16 +235,16 @@ headingSelector: 'h2'
 
 <li class=""><span>API</span>
 <ul class="">
-<li class=""><a href="/zh/docs/api/decision_api/">Authorization Runtime/Decision API</a></li>
-<li class=""><a href="/zh/docs/api/management_api/">Policy Management API</a></li>
-<li class=""><a href="/zh/docs/api/asserter_api/">Token Assertion Plugin API</a></li>
+<li class=""><a href="/zh/docs/api/asserter_api/">令牌断言插件 API</a></li>
+<li class=""><a href="/zh/docs/api/decision_api/">授权决策 API</a></li>
+<li class=""><a href="/zh/docs/api/management_api/">策略管理 API</a></li>
 </ul>
   
 </li>
 <li class=""><a href="/zh/docs/security/">安全</a></li>
 <li class=""><a href="/zh/docs/logging/">日志</a></li>
 <li class=""><a href="/zh/docs/versions/">版本</a></li>
-<li class=""><a href="/zh/docs/custom-function/">Custom Function</a></li>
+<li class=""><a href="/zh/docs/custom-function/">自定义函数</a></li>
 </ul>
   
 </li>

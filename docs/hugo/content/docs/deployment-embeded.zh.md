@@ -9,88 +9,63 @@ tocsidebar = false
 bref = ""
 +++
 
-## 什么是 Speedle 嵌入模式
+## 什么是嵌入模式？
 
-区别于 Speedle 服务模式，Speedle 嵌入模式把 Speedle 的策略决策引擎嵌入到调用者进程内部，作为进程的一部分运行。调用者可以直接调用 Speedle 的 API 获得策略决策的结果。
+Go 应用可以在自身进程中运行策略引擎，直接调用 API 决策。应用仍需提供可信身份与属性，并执行返回的允许或拒绝结果。也可以先用 [Playground](/playground/) 了解策略语义，无需启动服务器。
 
-## 嵌入模式的局限
+## 支持范围与依赖
 
-- 只支持 Golang，推荐使用 Golang 1.10。
-- 只接受文件存储策略。
+当前 `go.mod` 要求 Go 1.26 或更高版本。在自己的应用中，先执行 `go mod init`，再用 `go get github.com/teramoby/speedle-plus@<reviewed-tag-or-commit>` 添加依赖；将占位符替换为已审查的标签或提交。历史 v2.0 发布包与当前 master 的依赖和行为不同，见[版本说明](/docs/versions/)。
 
-## 如何使用嵌入模式
+`eval.NewFromFile(location, watch)` 用于 JSON 或 SPDL 文件。嵌入模式还可以通过 `eval.NewFromConfig` 或 `eval.NewWithStore` 使用实现 ADS 接口的已注册存储。只接受文件是 `NewFromFile` 的限制，不是整个嵌入模式的限制。需要导入对应实现，例如 `pkg/store/file`，完成 builder 注册。
 
-### 把 Speedle 代码添加到你的工程中
+## 运行完整示例
 
-在嵌入模式中，需要先将 Speedle 源代码从代码仓库中下载下来。主要有一下几种方式：
+从仓库根目录运行。示例读取 [policies.json](https://github.com/teramoby/speedle-plus/blob/master/samples/docs/embedded/policies.json)：在 `library` 服务中允许 Alice 对 `book` 执行 `read`，Bob 没有匹配的允许策略。
 
-1. 使用 go get
-
+<!-- docs-check: embedded -->
 ```bash
-go get github.com/teramoby/speedle-plus
+go run ./samples/docs/embedded
 ```
 
-2. 使用 dep 工具
 
-在你的 Gopkg.toml 文件中添加以下几行
+预期输出包含 `alice: allowed=true` 和 `bob: allowed=false`。
 
-```toml
-[[constraint]]
-  name = "github.com/teramoby/speedle-plus"
-  branch = "master"
-```
-
-使用 dep 工具将 Speedle 源代码添加到`vendor`目录下：
-
-```bash
-dep ensure -update github.com/teramoby/speedle-plus
-```
-
-### 在代码中初始化一个 Evalautor 实例
-
-方法`func eval.NewFromFile(loc string, isWatch bool) (ads.PolicyEvaluator, error)`使用一个策略定义文件初始化一个 Evaluator 实例。该方法接受两个参数：
-
-- loc：决策定义文件的路径。支持两种决策文件格式：JSON 格式和 SPDL 格式。
-- isWatch: 如果值为`true`，当策略定义文件发生改动，Speedle 决策引擎能自动以最新的文件内容进行决策。如果值为`false`，Speedle 决策引擎不监视策略定义文件的任何改动。
-
-该方法返回一个 Evaluator 示例。
-
-以下代码片段展示如何初始化一个 Evaluator 实例。
-
+<!-- docs-source: samples/docs/embedded/main.go -->
 ```go
+package main
+
 import (
-  "github.com/teramoby/speedle-plus/pkg/eval"
+	"flag"
+	"fmt"
+	ads "github.com/teramoby/speedle-plus/api/ads"
+	"github.com/teramoby/speedle-plus/pkg/cfg"
+	"github.com/teramoby/speedle-plus/pkg/eval"
+	_ "github.com/teramoby/speedle-plus/pkg/store/file"
+	"log"
 )
 
-func foo() {
-    eval, err := evaluator.NewFromFile(spdlLoc, true)
+func main() {
+	policies := flag.String("policies", "samples/docs/embedded/policies.json", "Policy file")
+	flag.Parse()
+	evaluator, err := eval.NewFromConfig(&cfg.Config{StoreConfig: &cfg.StoreConfig{StoreType: "file", StoreProps: map[string]interface{}{"FileLocation": *policies}}, EnableWatch: false})
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer evaluator.Close()
+	for _, user := range []string{"alice", "bob"} {
+		allowed, reason, err := evaluator.IsAllowed(ads.RequestContext{Subject: &ads.Subject{Principals: []*ads.Principal{{Type: "user", Name: user}}}, ServiceName: "library", Resource: "book", Action: "read"})
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Printf("%s: allowed=%t reason=%s\n", user, allowed, reason.String())
+	}
 }
 ```
 
-### 调用 Evaluator API 进行决策
 
-方法`func ads.IsAllowed(c ads.RequestContext) (allowed bool, reason Reason, err error)`依据策略定义文件中定义的策略进行决策。
+## 处理结果与生命周期
 
-该方法接受一个参数`ads.RequestContext`，该结构的定义如下：
+`IsAllowed(ads.RequestContext)` 返回 `(allowed bool, reason ads.Reason, err error)`。只要 `err != nil` 或 `allowed == false`，应用就应拒绝操作；引擎返回决策，并不会自动阻止业务操作。还可通过 `GetAllGrantedRoles`、`GetAllGrantedPermissions` 与 `Diagnose` 查询评估信息。
 
-```go
-typedef RequestContext {
-  Subject     *ads.Subject                 // Subject包含用户信息，用户名，组名等。
-  ServiceName string                       // Speedle Service
-  Resource    string                       // Resource Name
-  Action      string                       // Action Name
-  Attributes  map[string]interface{}       // Attributes
-}
-```
-
-该方法有 3 个返回值：
-
-1. allowed bool: `true`，`Subject`指定的用户有权限操作资源(Action, Resource)。`false`，没有权限操作资源(Action, Resource)。
-2. reason Reason: 做出决策的原因。
-3. err error: 决策过程中出现的异常。如果没有异常，返回 nil。
-
-## 嵌入模式的例子
-
-例子可以在
-https://github.com/teramoby/speedle-plus/tree/master/samples/embedded/expenses
-中找到。
+示例使用 `NewFromConfig`，其返回值提供 `Close()`。使用完应关闭评估器，停止后台任务并释放存储。需要观察策略更新时设置 `EnableWatch: true`；更新是异步的，应确认目标版本到达后再依赖新策略。更多内容见[策略存储](/docs/store/)和[嵌入式费用报销示例](https://github.com/teramoby/speedle-plus/tree/master/samples/embedded/expenses)。

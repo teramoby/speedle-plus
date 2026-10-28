@@ -10,20 +10,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1"><meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>Policy Management API - Speedle</title>
-<meta name="description" content="Swagger documentation for the management endpoint. CRUD on services, functions, policies and role-policies. Handle your simple and complex usecases using a simple declarative way!">
+<title>策略管理 API - Speedle</title>
+<meta name="description" content="管理服务、函数、授权策略与角色策略的 JSON API">
 <link rel="alternate" hreflang="en" href="https://speedle.io/docs/api/management_api/">
 <link rel="alternate" hreflang="x-default" href="https://speedle.io/docs/api/management_api/"><link rel="alternate" hreflang="zh-CN" href="https://speedle.io/zh/docs/api/management_api/">
 
 <meta property="og:type" content="article">
 <meta property="og:site_name" content="Speedle Authorization Engine">
-<meta property="og:title" content="Policy Management API">
-<meta property="og:description" content="Swagger documentation for the management endpoint. CRUD on services, functions, policies and role-policies. Handle your simple and complex usecases using a simple declarative way!">
+<meta property="og:title" content="策略管理 API">
+<meta property="og:description" content="管理服务、函数、授权策略与角色策略的 JSON API">
 <meta property="og:url" content="https://speedle.io/zh/docs/api/management_api/">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="Policy Management API">
-<meta name="twitter:description" content="Swagger documentation for the management endpoint. CRUD on services, functions, policies and role-policies. Handle your simple and complex usecases using a simple declarative way!">
-<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://speedle.io/zh/docs/api/management_api/#page","@type":"TechArticle","about":{"@id":"https://speedle.io/#software"},"description":"Swagger documentation for the management endpoint. CRUD on services, functions, policies and role-policies. Handle your simple and complex usecases using a simple declarative way!","inLanguage":"zh-CN","isPartOf":{"@id":"https://speedle.io/#website"},"keywords":["Speedle+","authorization engine","fine grained access control","fine-grained access control","FGA","policy engine","authorization policy engine","externalized authorization","授权引擎","细粒度访问控制","策略引擎","授权策略引擎","外置授权","授权外部化","PAP","policy administration point","策略管理点","authorization policy management","授权策略管理","API authorization","API 授权","API 权限控制"],"name":"Policy Management API","url":"https://speedle.io/zh/docs/api/management_api/"}</script>
+<meta name="twitter:title" content="策略管理 API">
+<meta name="twitter:description" content="管理服务、函数、授权策略与角色策略的 JSON API">
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://speedle.io/zh/docs/api/management_api/#page","@type":"TechArticle","about":{"@id":"https://speedle.io/#software"},"description":"管理服务、函数、授权策略与角色策略的 JSON API","inLanguage":"zh-CN","isPartOf":{"@id":"https://speedle.io/#website"},"keywords":["Speedle+","authorization engine","fine grained access control","fine-grained access control","FGA","policy engine","authorization policy engine","externalized authorization","授权引擎","细粒度访问控制","策略引擎","授权策略引擎","外置授权","授权外部化","PAP","policy administration point","策略管理点","authorization policy management","授权策略管理","API authorization","API 授权","API 权限控制"],"name":"策略管理 API","url":"https://speedle.io/zh/docs/api/management_api/"}</script>
 
 <meta name="generator" content="Hugo 0.48" />
 <link href="https://speedle.io/index.xml" rel="alternate" type="application/rss+xml">
@@ -74,7 +74,7 @@
             <main>
 <div id="main">
   
-  <h1>Policy Management API</h1>
+  <h1>策略管理 API</h1>
   <p></p>
 
   
@@ -84,7 +84,11 @@
 
   <br />
   <div id="kube-component" class="content">
-    <div id="swagger-ui"></div>
+    <p>已配置 PMS 的接口参考。请求与响应使用 JSON，策略 ID 为字符串，响应为扁平对象。</p>
+
+<p>请配置<a href="/zh/docs/security/">安全连接与端点访问控制</a>。这是接口契约，speedle.io 不托管授权后端。</p>
+
+<div id="swagger-ui"></div>
  <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" style="position:absolute;width:0;height:0">
   <defs>
     <symbol viewBox="0 0 20 20" id="unlocked">
@@ -120,7 +124,7 @@
 <script src="/js/swagger-js/swagger-ui-bundle.js"> </script>
 <script>
 (function() {
-  var url = "\/swagger\/policy-manage.yaml";
+  var url = "\/swagger\/policy-manage.zh.yaml";
   
   const ui = SwaggerUIBundle({
     url: url,
@@ -191,16 +195,16 @@
 
 <li class="parent"><span>API</span>
 <ul class="sub-menu">
-<li class=""><a href="/zh/docs/api/decision_api/">Authorization Runtime/Decision API</a></li>
-<li class="active"><a href="/zh/docs/api/management_api/">Policy Management API</a></li>
-<li class=""><a href="/zh/docs/api/asserter_api/">Token Assertion Plugin API</a></li>
+<li class=""><a href="/zh/docs/api/asserter_api/">令牌断言插件 API</a></li>
+<li class=""><a href="/zh/docs/api/decision_api/">授权决策 API</a></li>
+<li class="active"><a href="/zh/docs/api/management_api/">策略管理 API</a></li>
 </ul>
   
 </li>
 <li class=""><a href="/zh/docs/security/">安全</a></li>
 <li class=""><a href="/zh/docs/logging/">日志</a></li>
 <li class=""><a href="/zh/docs/versions/">版本</a></li>
-<li class=""><a href="/zh/docs/custom-function/">Custom Function</a></li>
+<li class=""><a href="/zh/docs/custom-function/">自定义函数</a></li>
 </ul>
   
 </li>

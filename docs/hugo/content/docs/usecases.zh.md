@@ -1,14 +1,14 @@
 +++
 title = "使用场景"
 keywords = ["Speedle+", "authorization engine", "fine grained access control", "fine-grained access control", "FGA", "policy engine", "authorization policy engine", "externalized authorization", "授权引擎", "细粒度访问控制", "策略引擎", "授权策略引擎", "外置授权", "授权外部化", "centralized authorization", "集中式授权", "authorization policy management", "授权策略管理", "API authorization", "API 授权", "API 权限控制", "microservices authorization", "微服务授权", "微服务权限控制", "cloud-native authorization", "云原生授权"]
-description = "Who, What & Where?"
+description = "授权集成场景与性能适用范围"
 weight = 1
 draft = false
 toc = true
 tocheading = "h2"
 tags = ["guide", "usecase"]
 categories = ["docs"]
-bref = "本文描述几个通用的用户场景，抛砖引玉，希望可以给读者带来一点启发。"
+bref = "理解不同应用如何集成策略管理与授权决策"
 +++
 
 ## 嵌入到 GO 语言编写的应用程序
@@ -29,10 +29,10 @@ H 公司正在开发一套远程医疗系统。健康数据属于个人隐私，
 
 如何解决这个问题？Speedle 能帮上忙。
 
-1. Speedle 的授权策略语言足够灵活，可以完美支持 ABAC，RBAC，ACL 等各种流行的模型。
-2. Speedle 提供 REST，gRPC 和 GO API，很容易和各种系统集成。
-3. Speedle 可以支持百万量级的授权策略，足够支持一个企业的所有业务需求。
-4. Speedle 运行速度很快，可以在数毫秒内处理一个授权请求。不会拖慢现有系统。
-5. 一个 Speedle 实例每秒钟可以处理 30,000 - 40,000 次并发授权请求。如果这还不够，再启动一个实例，Speedle 有几乎无限的可扩展性。
+1. Speedle 可以表达 RBAC、ABAC 和部分 ACL 场景，具体规则应根据所需语义验证。
+2. Speedle 提供 REST、gRPC 和 Go API；集成工作包括可信身份/属性映射、错误处理、结果执行与接口安全。
+3. 可承载的策略数量取决于策略结构、角色关系、存储与实例资源，应使用实际数据集验证。
+4. 延迟与吞吐应以所用版本、接口、硬件、数据集和缓存条件下的测试结果为准，不能据此承诺不会影响业务。
+5. 当前 REST 服务默认限流为每秒 1000 请求、突发 200；这不是 Go 嵌入式引擎的性能基准。扩容还需验证存储容量、策略传播与负载分配。
 
 基于以上特性，陈先生可以启动一组 Speedle 服务，把各个系统的权限控制模块指向 Speedle 服务。这样就可以用统一个授权模型和语言来管理这些系统了。

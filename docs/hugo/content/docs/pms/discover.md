@@ -21,9 +21,9 @@ Note that when using discover mode, the discover endpoint must be called by ever
 
 ### \* Generate policies using the discovered requests
 
-You can generate policies based on the authorization requests that you record. In one scenario, a developer runs a test suite that mimics all the interactions in your system, and Speedle records all the necessary authorization calls. For example, Service A (a UI) calls Service B (a database). Speedle can effectively record - "Service A called Service B with these attributes..." and generates a policy that will allow such a request (is-allowed=true). You can then import the policy directly into Speedle.
+You can generate policies based on the authorization requests that you record. In one scenario, a developer runs a test suite that mimics all the interactions in your system, and Speedle records all the necessary authorization calls. For example, Service A (a UI) calls Service B (a database). Speedle can effectively record - "Service A called Service B with these attributes..." and generates a policy that will allow such a request (is-allowed=true). Review the generated grants, identity domains and observation scope before importing, then verify positive and negative test cases.
 
-All of the policies generated are _is-allowed_ policies because they are recorded directly from allowed authorization requests on protected resources.
+Generated policies grant the observed operations. Discovery records observed requests without checking whether the formal policies would allow them; the generated grants are not evidence that the original access was authorized.
 
 ### \* Disable authorization without changing the code
 
@@ -31,6 +31,10 @@ When using Speedle for authorization checks, calls made to the _is-allowed_ endp
 However, when you use discover mode and replace _is-allowed_ with _discover_ in the url, all authorization checks return an "is-allowed=true" result. Because discover mode does not perform authorization checks, it provides a convenient way for developers to disable authorization checks when diagnosing failures.
 
 ## How do I use discover mode?
+
+Use this mode only in an isolated, controlled test environment. Restore every `is-allowed` call before returning to normal enforcement. Successful discovery returns `allowed=true`; invalid requests, token assertion failures and storage errors still return errors.
+
+
 
 ### Step 1. Change all **is-allowed** calls in your system to **discover** calls
 
@@ -72,7 +76,7 @@ Use the `spctl create` command to create a service with policies using the json 
 spctl create service --json-file service.json
 ```
 
-### Step 6. [optional] Change all the **discover** calls in your system back to **is-allowed** calls
+### Step 6. Restore is-allowed before normal enforcement (required)
 
 After you create your policies and import them into your system, you should update the endpoints to remove `discover` and use `is-allowed` instead. Be sure to apply the configuration changes.
 

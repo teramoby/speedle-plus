@@ -11,22 +11,22 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>Speedle嵌入模式 - Speedle</title>
-<meta name="description" content="什么是 Speedle 嵌入模式 区别于 Speedle 服务模式，Speedle 嵌入模式把 Speedle 的策略决策引擎嵌入到调用者进程内部，作为进程的一部分运行。调用者可以直接调用 Speedle 的 API 获得策略决策的结果。
-嵌入模式的局限  只支持 Golang，推荐使用 Golang 1.10。 只接受文件存储策略。 …">
+<meta name="description" content="什么是嵌入模式？ Go 应用可以在自身进程中运行策略引擎，直接调用 API 决策。应用仍需提供可信身份与属性，并执行返回的允许或拒绝结果。也可以先用 Playground 了解策略语义，无需启动服务器。
+支持范围与依赖 当前 go.mod 要求 Go 1.26 或更高版本。在自己的应用中，先执行 go mod init，再用 go get …">
 <link rel="alternate" hreflang="en" href="https://speedle.io/docs/deployment-embeded/">
 <link rel="alternate" hreflang="x-default" href="https://speedle.io/docs/deployment-embeded/"><link rel="alternate" hreflang="zh-CN" href="https://speedle.io/zh/docs/deployment-embeded/">
 
 <meta property="og:type" content="article">
 <meta property="og:site_name" content="Speedle Authorization Engine">
 <meta property="og:title" content="Speedle嵌入模式">
-<meta property="og:description" content="什么是 Speedle 嵌入模式 区别于 Speedle 服务模式，Speedle 嵌入模式把 Speedle 的策略决策引擎嵌入到调用者进程内部，作为进程的一部分运行。调用者可以直接调用 Speedle 的 API 获得策略决策的结果。
-嵌入模式的局限  只支持 Golang，推荐使用 Golang 1.10。 只接受文件存储策略。 …">
+<meta property="og:description" content="什么是嵌入模式？ Go 应用可以在自身进程中运行策略引擎，直接调用 API 决策。应用仍需提供可信身份与属性，并执行返回的允许或拒绝结果。也可以先用 Playground 了解策略语义，无需启动服务器。
+支持范围与依赖 当前 go.mod 要求 Go 1.26 或更高版本。在自己的应用中，先执行 go mod init，再用 go get …">
 <meta property="og:url" content="https://speedle.io/zh/docs/deployment-embeded/">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Speedle嵌入模式">
-<meta name="twitter:description" content="什么是 Speedle 嵌入模式 区别于 Speedle 服务模式，Speedle 嵌入模式把 Speedle 的策略决策引擎嵌入到调用者进程内部，作为进程的一部分运行。调用者可以直接调用 Speedle 的 API 获得策略决策的结果。
-嵌入模式的局限  只支持 Golang，推荐使用 Golang 1.10。 只接受文件存储策略。 …">
-<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://speedle.io/zh/docs/deployment-embeded/#page","@type":"TechArticle","about":{"@id":"https://speedle.io/#software"},"description":"什么是 Speedle 嵌入模式 区别于 Speedle 服务模式，Speedle 嵌入模式把 Speedle 的策略决策引擎嵌入到调用者进程内部，作为进程的一部分运行。调用者可以直接调用 Speedle 的 API 获得策略决策的结果。\n嵌入模式的局限  只支持 Golang，推荐使用 Golang 1.10。 只接受文件存储策略。 …","inLanguage":"zh-CN","isPartOf":{"@id":"https://speedle.io/#website"},"keywords":["Speedle+"],"name":"Speedle嵌入模式","url":"https://speedle.io/zh/docs/deployment-embeded/"}</script>
+<meta name="twitter:description" content="什么是嵌入模式？ Go 应用可以在自身进程中运行策略引擎，直接调用 API 决策。应用仍需提供可信身份与属性，并执行返回的允许或拒绝结果。也可以先用 Playground 了解策略语义，无需启动服务器。
+支持范围与依赖 当前 go.mod 要求 Go 1.26 或更高版本。在自己的应用中，先执行 go mod init，再用 go get …">
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://speedle.io/zh/docs/deployment-embeded/#page","@type":"TechArticle","about":{"@id":"https://speedle.io/#software"},"description":"什么是嵌入模式？ Go 应用可以在自身进程中运行策略引擎，直接调用 API 决策。应用仍需提供可信身份与属性，并执行返回的允许或拒绝结果。也可以先用 Playground 了解策略语义，无需启动服务器。\n支持范围与依赖 当前 go.mod 要求 Go 1.26 或更高版本。在自己的应用中，先执行 go mod init，再用 go get …","inLanguage":"zh-CN","isPartOf":{"@id":"https://speedle.io/#website"},"keywords":["Speedle+"],"name":"Speedle嵌入模式","url":"https://speedle.io/zh/docs/deployment-embeded/"}</script>
 
 <meta name="generator" content="Hugo 0.48" />
 <link href="https://speedle.io/index.xml" rel="alternate" type="application/rss+xml">
@@ -106,81 +106,58 @@ headingSelector: 'h2'
   <div id="kube-component" class="content">
     
 
-<h2 id="什么是-speedle-嵌入模式">什么是 Speedle 嵌入模式</h2>
+<h2 id="什么是嵌入模式">什么是嵌入模式？</h2>
 
-<p>区别于 Speedle 服务模式，Speedle 嵌入模式把 Speedle 的策略决策引擎嵌入到调用者进程内部，作为进程的一部分运行。调用者可以直接调用 Speedle 的 API 获得策略决策的结果。</p>
+<p>Go 应用可以在自身进程中运行策略引擎，直接调用 API 决策。应用仍需提供可信身份与属性，并执行返回的允许或拒绝结果。也可以先用 <a href="/zh/playground/">Playground</a> 了解策略语义，无需启动服务器。</p>
 
-<h2 id="嵌入模式的局限">嵌入模式的局限</h2>
+<h2 id="支持范围与依赖">支持范围与依赖</h2>
 
-<ul>
-<li>只支持 Golang，推荐使用 Golang 1.10。</li>
-<li>只接受文件存储策略。</li>
-</ul>
+<p>当前 <code>go.mod</code> 要求 Go 1.26 或更高版本。在自己的应用中，先执行 <code>go mod init</code>，再用 <code>go get github.com/teramoby/speedle-plus@&lt;reviewed-tag-or-commit&gt;</code> 添加依赖；将占位符替换为已审查的标签或提交。历史 v2.0 发布包与当前 master 的依赖和行为不同，见<a href="/zh/docs/versions/">版本说明</a>。</p>
 
-<h2 id="如何使用嵌入模式">如何使用嵌入模式</h2>
+<p><code>eval.NewFromFile(location, watch)</code> 用于 JSON 或 SPDL 文件。嵌入模式还可以通过 <code>eval.NewFromConfig</code> 或 <code>eval.NewWithStore</code> 使用实现 ADS 接口的已注册存储。只接受文件是 <code>NewFromFile</code> 的限制，不是整个嵌入模式的限制。需要导入对应实现，例如 <code>pkg/store/file</code>，完成 builder 注册。</p>
 
-<h3 id="把-speedle-代码添加到你的工程中">把 Speedle 代码添加到你的工程中</h3>
+<h2 id="运行完整示例">运行完整示例</h2>
 
-<p>在嵌入模式中，需要先将 Speedle 源代码从代码仓库中下载下来。主要有一下几种方式：</p>
+<p>从仓库根目录运行。示例读取 <a href="https://github.com/teramoby/speedle-plus/blob/master/samples/docs/embedded/policies.json">policies.json</a>：在 <code>library</code> 服务中允许 Alice 对 <code>book</code> 执行 <code>read</code>，Bob 没有匹配的允许策略。</p>
 
-<ol>
-<li>使用 go get</li>
-</ol>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">go get github.com/teramoby/speedle-plus</code></pre></div>
-<ol>
-<li>使用 dep 工具</li>
-</ol>
+<!-- docs-check: embedded -->
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">go run ./samples/docs/embedded</code></pre></div>
+<p>预期输出包含 <code>alice: allowed=true</code> 和 <code>bob: allowed=false</code>。</p>
 
-<p>在你的 Gopkg.toml 文件中添加以下几行</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-toml" data-lang="toml">[[<span style="color:#000">constraint</span>]]
-  <span style="color:#000">name</span> = <span style="color:#c41a16">&#34;github.com/teramoby/speedle-plus&#34;</span>
-  <span style="color:#000">branch</span> = <span style="color:#c41a16">&#34;master&#34;</span></code></pre></div>
-<p>使用 dep 工具将 Speedle 源代码添加到<code>vendor</code>目录下：</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">dep ensure -update github.com/teramoby/speedle-plus</code></pre></div>
-<h3 id="在代码中初始化一个-evalautor-实例">在代码中初始化一个 Evalautor 实例</h3>
+<!-- docs-source: samples/docs/embedded/main.go -->
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#a90d91">package</span> <span style="color:#000">main</span>
 
-<p>方法<code>func eval.NewFromFile(loc string, isWatch bool) (ads.PolicyEvaluator, error)</code>使用一个策略定义文件初始化一个 Evaluator 实例。该方法接受两个参数：</p>
-
-<ul>
-<li>loc：决策定义文件的路径。支持两种决策文件格式：JSON 格式和 SPDL 格式。</li>
-<li>isWatch: 如果值为<code>true</code>，当策略定义文件发生改动，Speedle 决策引擎能自动以最新的文件内容进行决策。如果值为<code>false</code>，Speedle 决策引擎不监视策略定义文件的任何改动。</li>
-</ul>
-
-<p>该方法返回一个 Evaluator 示例。</p>
-
-<p>以下代码片段展示如何初始化一个 Evaluator 实例。</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#a90d91">import</span> (
-  <span style="color:#c41a16">&#34;github.com/teramoby/speedle-plus/pkg/eval&#34;</span>
+<span style="color:#a90d91">import</span> (
+	<span style="color:#c41a16">&#34;flag&#34;</span>
+	<span style="color:#c41a16">&#34;fmt&#34;</span>
+	<span style="color:#000">ads</span> <span style="color:#c41a16">&#34;github.com/teramoby/speedle-plus/api/ads&#34;</span>
+	<span style="color:#c41a16">&#34;github.com/teramoby/speedle-plus/pkg/cfg&#34;</span>
+	<span style="color:#c41a16">&#34;github.com/teramoby/speedle-plus/pkg/eval&#34;</span>
+	<span style="color:#000">_</span> <span style="color:#c41a16">&#34;github.com/teramoby/speedle-plus/pkg/store/file&#34;</span>
+	<span style="color:#c41a16">&#34;log&#34;</span>
 )
 
-<span style="color:#a90d91">func</span> <span style="color:#000">foo</span>() {
-    <span style="color:#000">eval</span>, <span style="color:#000">err</span> <span style="color:#000">:=</span> <span style="color:#000">evaluator</span>.<span style="color:#000">NewFromFile</span>(<span style="color:#000">spdlLoc</span>, <span style="color:#a90d91">true</span>)
+<span style="color:#a90d91">func</span> <span style="color:#000">main</span>() {
+	<span style="color:#000">policies</span> <span style="color:#000">:=</span> <span style="color:#000">flag</span>.<span style="color:#000">String</span>(<span style="color:#c41a16">&#34;policies&#34;</span>, <span style="color:#c41a16">&#34;samples/docs/embedded/policies.json&#34;</span>, <span style="color:#c41a16">&#34;Policy file&#34;</span>)
+	<span style="color:#000">flag</span>.<span style="color:#000">Parse</span>()
+	<span style="color:#000">evaluator</span>, <span style="color:#000">err</span> <span style="color:#000">:=</span> <span style="color:#000">eval</span>.<span style="color:#000">NewFromConfig</span>(<span style="color:#000">&amp;</span><span style="color:#000">cfg</span>.<span style="color:#000">Config</span>{<span style="color:#000">StoreConfig</span>: <span style="color:#000">&amp;</span><span style="color:#000">cfg</span>.<span style="color:#000">StoreConfig</span>{<span style="color:#000">StoreType</span>: <span style="color:#c41a16">&#34;file&#34;</span>, <span style="color:#000">StoreProps</span>: <span style="color:#a90d91">map</span>[<span style="color:#a90d91">string</span>]<span style="color:#a90d91">interface</span>{}{<span style="color:#c41a16">&#34;FileLocation&#34;</span>: <span style="color:#000">*</span><span style="color:#000">policies</span>}}, <span style="color:#000">EnableWatch</span>: <span style="color:#a90d91">false</span>})
+	<span style="color:#a90d91">if</span> <span style="color:#000">err</span> <span style="color:#000">!=</span> <span style="color:#a90d91">nil</span> {
+		<span style="color:#000">log</span>.<span style="color:#000">Fatal</span>(<span style="color:#000">err</span>)
+	}
+	<span style="color:#a90d91">defer</span> <span style="color:#000">evaluator</span>.<span style="color:#000">Close</span>()
+	<span style="color:#a90d91">for</span> <span style="color:#000">_</span>, <span style="color:#000">user</span> <span style="color:#000">:=</span> <span style="color:#a90d91">range</span> []<span style="color:#a90d91">string</span>{<span style="color:#c41a16">&#34;alice&#34;</span>, <span style="color:#c41a16">&#34;bob&#34;</span>} {
+		<span style="color:#000">allowed</span>, <span style="color:#000">reason</span>, <span style="color:#000">err</span> <span style="color:#000">:=</span> <span style="color:#000">evaluator</span>.<span style="color:#000">IsAllowed</span>(<span style="color:#000">ads</span>.<span style="color:#000">RequestContext</span>{<span style="color:#000">Subject</span>: <span style="color:#000">&amp;</span><span style="color:#000">ads</span>.<span style="color:#000">Subject</span>{<span style="color:#000">Principals</span>: []<span style="color:#000">*</span><span style="color:#000">ads</span>.<span style="color:#000">Principal</span>{{<span style="color:#000">Type</span>: <span style="color:#c41a16">&#34;user&#34;</span>, <span style="color:#000">Name</span>: <span style="color:#000">user</span>}}}, <span style="color:#000">ServiceName</span>: <span style="color:#c41a16">&#34;library&#34;</span>, <span style="color:#000">Resource</span>: <span style="color:#c41a16">&#34;book&#34;</span>, <span style="color:#000">Action</span>: <span style="color:#c41a16">&#34;read&#34;</span>})
+		<span style="color:#a90d91">if</span> <span style="color:#000">err</span> <span style="color:#000">!=</span> <span style="color:#a90d91">nil</span> {
+			<span style="color:#000">log</span>.<span style="color:#000">Fatal</span>(<span style="color:#000">err</span>)
+		}
+		<span style="color:#000">fmt</span>.<span style="color:#000">Printf</span>(<span style="color:#c41a16">&#34;%s: allowed=%t reason=%s\n&#34;</span>, <span style="color:#000">user</span>, <span style="color:#000">allowed</span>, <span style="color:#000">reason</span>.<span style="color:#000">String</span>())
+	}
 }</code></pre></div>
-<h3 id="调用-evaluator-api-进行决策">调用 Evaluator API 进行决策</h3>
+<h2 id="处理结果与生命周期">处理结果与生命周期</h2>
 
-<p>方法<code>func ads.IsAllowed(c ads.RequestContext) (allowed bool, reason Reason, err error)</code>依据策略定义文件中定义的策略进行决策。</p>
+<p><code>IsAllowed(ads.RequestContext)</code> 返回 <code>(allowed bool, reason ads.Reason, err error)</code>。只要 <code>err != nil</code> 或 <code>allowed == false</code>，应用就应拒绝操作；引擎返回决策，并不会自动阻止业务操作。还可通过 <code>GetAllGrantedRoles</code>、<code>GetAllGrantedPermissions</code> 与 <code>Diagnose</code> 查询评估信息。</p>
 
-<p>该方法接受一个参数<code>ads.RequestContext</code>，该结构的定义如下：</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#000">typedef</span> <span style="color:#000">RequestContext</span> {
-  <span style="color:#000">Subject</span>     <span style="color:#000">*</span><span style="color:#000">ads</span>.<span style="color:#000">Subject</span>                 <span style="color:#177500">// Subject包含用户信息，用户名，组名等。
-</span><span style="color:#177500"></span>  <span style="color:#000">ServiceName</span> <span style="color:#a90d91">string</span>                       <span style="color:#177500">// Speedle Service
-</span><span style="color:#177500"></span>  <span style="color:#000">Resource</span>    <span style="color:#a90d91">string</span>                       <span style="color:#177500">// Resource Name
-</span><span style="color:#177500"></span>  <span style="color:#000">Action</span>      <span style="color:#a90d91">string</span>                       <span style="color:#177500">// Action Name
-</span><span style="color:#177500"></span>  <span style="color:#000">Attributes</span>  <span style="color:#a90d91">map</span>[<span style="color:#a90d91">string</span>]<span style="color:#a90d91">interface</span>{}       <span style="color:#177500">// Attributes
-</span><span style="color:#177500"></span>}</code></pre></div>
-<p>该方法有 3 个返回值：</p>
-
-<ol>
-<li>allowed bool: <code>true</code>，<code>Subject</code>指定的用户有权限操作资源(Action, Resource)。<code>false</code>，没有权限操作资源(Action, Resource)。</li>
-<li>reason Reason: 做出决策的原因。</li>
-<li>err error: 决策过程中出现的异常。如果没有异常，返回 nil。</li>
-</ol>
-
-<h2 id="嵌入模式的例子">嵌入模式的例子</h2>
-
-<p>例子可以在
-<a href="https://github.com/teramoby/speedle-plus/tree/master/samples/embedded/expenses">https://github.com/teramoby/speedle-plus/tree/master/samples/embedded/expenses</a>
-中找到。</p>
+<p>示例使用 <code>NewFromConfig</code>，其返回值提供 <code>Close()</code>。使用完应关闭评估器，停止后台任务并释放存储。需要观察策略更新时设置 <code>EnableWatch: true</code>；更新是异步的，应确认目标版本到达后再依赖新策略。更多内容见<a href="/zh/docs/store/">策略存储</a>和<a href="https://github.com/teramoby/speedle-plus/tree/master/samples/embedded/expenses">嵌入式费用报销示例</a>。</p>
 
   </div>
 </div>
@@ -232,16 +209,16 @@ headingSelector: 'h2'
 
 <li class=""><span>API</span>
 <ul class="">
-<li class=""><a href="/zh/docs/api/decision_api/">Authorization Runtime/Decision API</a></li>
-<li class=""><a href="/zh/docs/api/management_api/">Policy Management API</a></li>
-<li class=""><a href="/zh/docs/api/asserter_api/">Token Assertion Plugin API</a></li>
+<li class=""><a href="/zh/docs/api/asserter_api/">令牌断言插件 API</a></li>
+<li class=""><a href="/zh/docs/api/decision_api/">授权决策 API</a></li>
+<li class=""><a href="/zh/docs/api/management_api/">策略管理 API</a></li>
 </ul>
   
 </li>
 <li class=""><a href="/zh/docs/security/">安全</a></li>
 <li class=""><a href="/zh/docs/logging/">日志</a></li>
 <li class=""><a href="/zh/docs/versions/">版本</a></li>
-<li class=""><a href="/zh/docs/custom-function/">Custom Function</a></li>
+<li class=""><a href="/zh/docs/custom-function/">自定义函数</a></li>
 </ul>
   
 </li>

@@ -93,7 +93,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	grpcServer, err := newGRPCServer(ps)
+	grpcServer, err := newGRPCServer(&params, ps)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -104,7 +104,7 @@ func main() {
 	errChan := make(chan error, 2)
 	go func() {
 		log.Info("Starting the gRPC server for policy management service...")
-		errChan <- listenGRPCServer(grpcServer)
+		errChan <- listenGRPCServer(grpcServer, &params)
 	}()
 
 	go func() {
@@ -149,12 +149,15 @@ func main() {
 	}
 }
 
-func newGRPCServer(ps pms.PolicyStoreManager) (*grpc.Server, error) {
-	server := grpc.NewServer(
+func newGRPCServer(params *flags.Parameters, ps pms.PolicyStoreManager) (*grpc.Server, error) {
+	server, err := params.NewGRPCServer(
 		grpc.UnaryInterceptor(svcs.PanicRecoveryInterceptor()),
 		grpc.MaxRecvMsgSize(4<<20), // 4 MB
 		grpc.MaxSendMsgSize(4<<20), // 4 MB
 	)
+	if err != nil {
+		return nil, err
+	}
 	pb.RegisterPolicyManagerServer(server, pmsgrpc.NewServiceImpl(ps))
 	// WARNING: gRPC reflection exposes all service methods and message types.
 	// Disable in production to prevent information disclosure.
@@ -162,14 +165,18 @@ func newGRPCServer(ps pms.PolicyStoreManager) (*grpc.Server, error) {
 	return server, nil
 }
 
-func listenGRPCServer(server *grpc.Server) error {
+func listenGRPCServer(server *grpc.Server, params *flags.Parameters) error {
 	// Register reflection service on gRPC server.
-	lis, err := net.Listen("tcp", ":50001")
+	address, err := params.GRPCListenAddress("50001")
 	if err != nil {
-		return errors.Wrap(err, errors.ServerError, "failed to listen on endpoint :50001")
+		return err
+	}
+	lis, err := net.Listen("tcp", address)
+	if err != nil {
+		return errors.Wrapf(err, errors.ServerError, "failed to listen on gRPC endpoint %s", address)
 	}
 	if err := server.Serve(lis); err != nil {
-		return errors.Wrap(err, errors.ServerError, "failed to serve for endpoint :50001")
+		return errors.Wrapf(err, errors.ServerError, "failed to serve gRPC endpoint %s", address)
 	}
 	return nil
 }

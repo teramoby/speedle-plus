@@ -1,0 +1,12 @@
+{
+  "services": [{
+    "name": "library",
+    "type": "application",
+    "policies": [{
+      "id": "read-book",
+      "effect": "grant",
+      "principals": [["user:alice"]],
+      "permissions": [{"resource": "book", "actions": ["read"]}]
+    }]
+  }]
+}

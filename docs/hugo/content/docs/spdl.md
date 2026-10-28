@@ -20,41 +20,16 @@ bref = "Basics of SPDL"
 
 ### Keywords
 
-The reserved keywords in SPDL are as follows. You cannot use any of these keywords as user name, group name, action, resource, attribute name, and so on.
-
-- _role_
-- _user_
-- _group_
-- _entity_
-- _grant_
-- _deny_
-- _if_
-- _in_
-- _on_
-- _from_
-
-The keywords are all case-insensitive, which means that you cannot use one of "role", "ROLE", "Role", "rOLe", etc as user name, group name, action, resource, attribute name, and so on.
+`grant`, `deny`, `user`, `group`, `entity`, `role`, `from`, `on`, `if` and `in` have special meanings in their syntax positions. Statement keywords are case-insensitive. In conditions, use `in` or `IN`; function names are case-sensitive. Principal, action and resource names are also case-sensitive. The current parser accepts keyword-like names in some name positions, so a blanket prohibition is not a validation rule. Prefer unambiguous names for review and client interoperability.
 
 ### Naming Convention
 
-<pre>
-User Name: a user name consists of letters, decimal digits, punctuation marks except for comma  i.e. [\p{L}\p{Nd}[\p{Punct}&&[^,]]]+
-
-Group Name: a group name consists of letters, decimal digits, punctuation marks except for comma i.e. [\p{L}\p{Nd}[\p{Punct}&&[^,]]]+
-
-Role Name: a role name consists of letters, decimal digits, punctuation marks except for comma i.e. [\p{L}\p{Nd}[\p{Punct}&&[^,]]]+
-
-Action: an action consists of letters, decimal digits, punctuation marks except for comma i.e. [\p{L}\p{Nd}[\p{Punct}&&[^,]]]+
-
-Resource: a resource consists of letters, decimal digits, punctuation marks i.e. [\p{L}\p{Nd}\p{Punct}]+
-</pre>
-
-Please see [Unicode Standard](http://www.unicode.org/reports/tr18/) and [Javadoc](https://docs.oracle.com/javase/7/docs/api/java/util/regex/Pattern.html) for the definition of letter, decimal digit, and punctuation mark.
+Prefer simple, stable identifiers. Quote names containing whitespace or separators using the parser’s single- or double-quoted form, and test the actual input. Historical Java regular-expression character classes are not a validation contract for the Go parser. The `expr:` resource prefix uses Go regular expressions, not shell globs. Attribute and function names in conditions are described below.
 
 ### Syntax
 
 <pre>
-POLICY = EFFECT SUBJECT ACTION RESOURCE if CONDITION
+POLICY = EFFECT SUBJECT ACTION RESOURCE [if CONDITION]
 EFFECT = grant | deny
 SUBJECT = AND_PRINCIPALS (, AND_PRINCIPALS)*
 AND_PRINCIPALS = PRINCIPAL | \( PRINCIPAL_LIST \)
@@ -62,25 +37,25 @@ PRINCIPAL_LIST = PRINCIPAL (, PRINCIPAL)*
 PRINCIPAL = PRINCIPAL_TYPE PRINCIPAL_NAME [PRINCIPAL_IDD]
 PRINCIPAL_TYPE = user|group|entity|role
 PRINCIPAL_IDD = from IDD_IDENTIFIER
-IDD_IDENTIFIER = [\p{L}\p{Nd}\p{Punct}]+
+IDD_IDENTIFIER = NAME
 ACTION = (ACTION_IDENTIFIER)(, ACTION_IDENTIFIER)*
 RESOURCE = RESOURCE_IDENTIFIER
-PRINCIPAL_NAME = [\p{L}\p{Nd}[\p{Punct}&&[^,]]]+
-ACTION_IDENTIFIER = [\p{L}\p{Nd}[\p{Punct}&&[^,]]]+
-RESOURCE_IDENTIFIER = [\p{L}\p{Nd}\p{Punct}]+
+PRINCIPAL_NAME = NAME
+ACTION_IDENTIFIER = NAME
+RESOURCE_IDENTIFIER = NAME
 </pre>
 <pre>
-ROLE_POLICY = EFFECT SUBJECT ROLE (on RESOURCE)? if CONDITION
+ROLE_POLICY = EFFECT SUBJECT ROLE (on RESOURCE)? [if CONDITION]
 EFFECT = grant | deny
 SUBJECT = PRINCIPAL (, PRINCIPAL)*
 PRINCIPAL = PRINCIPAL_TYPE PRINCIPAL_NAME [PRINCIPAL_IDD]
 PRINCIPAL_TYPE = user|group|entity|role
 PRINCIPAL_IDD = from IDD_IDENTIFIER
-IDD_IDENTIFIER = [\p{L}\p{Nd}\p{Punct}]+
+IDD_IDENTIFIER = NAME
 ROLE = (role)? SUBJECT_IDENTIFIER
 RESOURCE = RESOURCE_IDENTIFIER
-SUBJECT_IDENTIFIER = [\p{L}\p{Nd}[\p{Punct}&&[^,]]]+
-RESOURCE_IDENTIFIER = [\p{L}\p{Nd}\p{Punct}]+
+SUBJECT_IDENTIFIER = NAME
+RESOURCE_IDENTIFIER = NAME
 </pre>
 
 ## Condition
@@ -120,7 +95,7 @@ The data types and the corresponding supported operators and comparators are lis
       <tr>
         <td>numeric</td>
         <td> + <br> - <br> * <br> / <br> %</td>
-        <td>== <br> != <br> =~ <br> > <br> >= <br> < <br> <= </td>
+        <td>== <br> != <br>  > <br> >= <br> < <br> <= </td>
         <td></td>
       </tr>
       <tr>
@@ -249,7 +224,7 @@ Built-in attributes are as follows:
 
 ###### 2.2.2.1 name
 
-A valid customer attribute name is a sequence of letters, digits or the underscore character `" _ "`. It must begin with a letter, and is limited to 255 characters. Customer attribute names must adhere to this rule, and should not use any reserved words (built-in attribute, built-in function name, operators, comparators) as attribute names.
+For portable condition references, prefer `[A-Za-z][A-Za-z0-9_]*` and avoid built-in attribute/function names. The REST layer actually accepts up to 256 ASCII letters, digits, underscores, hyphens and dots. Test expression references containing a hyphen or dot rather than assuming they are ordinary identifiers instead of operators.
 
 ###### 2.2.2.2 value
 
@@ -375,7 +350,7 @@ Speedle provides the following built-in functions.
         <td>Check if the first set/array is a subset of the second set/array</td>
         <td>2 sets/arrays, elements of the 2 sets/arrays have same data type</td>
         <td>bool</td>
-        <td>IsSubset(s1, s2))</td>
+        <td>IsSubSet(s1, s2)</td>
       </tr>
     </tbody>
     <tfoot>
@@ -399,70 +374,9 @@ When an expression has two operators with the same precedence, the expression is
 
 ##### 2.5.3 Precedence and Associativity of Supported Operators and Comparators
 
-The following table lists all supported operators/comparators from highest to lowest precedence, along with their associativity.
+The following table summarizes the documented expression syntax from highest to lowest precedence. Comparisons bind before logical AND/OR; use parentheses to make complex conditions clear.
 
-<table class="bordered striped">
-    <thead>
-      <tr>
-        <th>Precedence</th>
-        <th>Operator/Comparator</th>
-        <th>Description</th>
-        <th>Associativity</th>
-      </tr>
-    </thead>
-    <tbody>
-    <tr>
-        <td>7</td>
-        <td>( )</td>
-        <td>parentheses</td>
-        <td>N/A</td>
-      </tr>
-    <tr>
-        <td>6</td>
-        <td>function call</td>
-        <td></td>
-        <td>N/A</td>
-      </tr>
-       <tr>
-        <td>5</td>
-        <td>* <br>/<br>%<br></td>
-        <td></td>
-        <td>Left to right</td>
-      </tr>
-       <tr>
-        <td>4</td>
-        <td>+<br>-<br></td>
-        <td>1+ numeric parameters</td>
-        <td>Left to right</td>
-      </tr>
-       <tr>
-        <td>3</td>
-        <td>!</td>
-        <td></td>
-        <td>N/A</td>
-      </tr>
-       <tr>
-        <td>2</td>
-        <td>&&</td>
-        <td></td>
-        <td>Left to right</td>
-      </tr>
-      <tr>
-        <td>1</td>
-        <td>||</td>
-        <td></td>
-        <td>Left to right</td>
-      </tr>
-      <tr>
-        <td>0</td>
-        <td>==<br>!=<br>=~<br>><br>>=<br><<br><=<br>in<br></td>
-        <td></td>
-        <td>N/A</td>
-      </tr>
-    </tbody>
-    <tfoot>
-    </tfoot>
-  </table>
+<table class="bordered striped"><thead><tr><th>Precedence (highest first)</th><th>Operator/comparator</th><th>Associativity</th></tr></thead><tbody><tr><td>1</td><td>( )</td><td>N/A</td></tr><tr><td>2</td><td>function call</td><td>N/A</td></tr><tr><td>3</td><td>! and unary -</td><td>Right to left</td></tr><tr><td>4</td><td>* / %</td><td>Left to right</td></tr><tr><td>5</td><td>+ -</td><td>Left to right</td></tr><tr><td>6</td><td>== != =~ &gt; &gt;= &lt; &lt;= in</td><td>N/A</td></tr><tr><td>7</td><td>&amp;&amp;</td><td>Left to right</td></tr><tr><td>8</td><td>||</td><td>Left to right</td></tr></tbody></table>
 
 #### 2.6 Sample Conditions
 
@@ -478,8 +392,8 @@ The following table lists all supported operators/comparators from highest to lo
     <tr><td>a!='abc'</td><td></td></tr>
     <tr><td>a>='abc'</td><td></td></tr>
     <tr><td>a+b=='ab'</td><td></td></tr>
-    <tr><td>a=~'\^get.*'</td><td>Value of attribute 'a' matches regular expression '\^get.*'</td></tr>
-<tr><td>a=123</td><td></td></tr>
+    <tr><td>a=~'^get.*'</td><td>Value of attribute 'a' matches regular expression '^get.*'</td></tr>
+<tr><td>a==123</td><td></td></tr>
 <tr><td>a-b>123</td><td></td></tr>
 <tr><td>a in (1, 2, 3) </td><td>Value of attribute 'a' is one of 1, 2, 3 </td></tr>
 <tr><td>'manager' in a </td><td>'a' is an attribute of string array, 'manager' is one of the array element </td></tr>
@@ -493,7 +407,7 @@ The following table lists all supported operators/comparators from highest to lo
 
 ### Condition Definition
 
-Condition should be a valid bool expression. The bool expression Speedle supports is strictly defined as follows:
+Condition should be a valid bool expression. The following summarizes common expressions; validate exact inputs against the current parser:
 
 ```
 BoolExpr: ('!')BoolExpr
@@ -544,8 +458,8 @@ StringConstant: single quoted string, for example, 'string1'
 BoolConstant: true|false
 DateTimeConstant: single quoted datetime, datetime should conform to the format defined by RFC3339: YYYY-MM-DDTHH:mm:SS[.sssssssss]Z, Z is [+|-]HH:mm. For example, '2016-01-02T15:04:05-07:00'
 
-Attribute: attribute name should conform to  [a-zA-Z]+[a-zA-Z0-9_]*, length should be <=255
-Function: FuntionName '(' Argument [,Argument]* ')'
+Attribute: attribute name should conform to  [a-zA-Z]+[a-zA-Z0-9_]*, prefer simple portable identifiers; REST attribute names are limited to 256 ASCII characters
+Function: FunctionName '(' Argument [,Argument]* ')'
 
 ```
 

@@ -550,20 +550,6 @@
   </url>
   
   <url>
-    <loc>https://speedle.io/zh/docs/api/decision_api/</loc>
-    <xhtml:link
-                rel="alternate"
-                hreflang="en"
-                href="https://speedle.io/docs/api/decision_api/"
-                />
-    <xhtml:link
-                rel="alternate"
-                hreflang="zh"
-                href="https://speedle.io/zh/docs/api/decision_api/"
-                />
-  </url>
-  
-  <url>
     <loc>https://speedle.io/zh/categories/blog/</loc>
     <lastmod>2017-03-02T21:56:55+01:00</lastmod>
     <priority>0</priority>
@@ -951,20 +937,6 @@
   </url>
   
   <url>
-    <loc>https://speedle.io/zh/docs/api/management_api/</loc>
-    <xhtml:link
-                rel="alternate"
-                hreflang="en"
-                href="https://speedle.io/docs/api/management_api/"
-                />
-    <xhtml:link
-                rel="alternate"
-                hreflang="zh"
-                href="https://speedle.io/zh/docs/api/management_api/"
-                />
-  </url>
-  
-  <url>
     <loc>https://speedle.io/zh/tags/releases/</loc>
     <priority>0</priority>
     <xhtml:link
@@ -1118,20 +1090,6 @@
   </url>
   
   <url>
-    <loc>https://speedle.io/zh/docs/api/asserter_api/</loc>
-    <xhtml:link
-                rel="alternate"
-                hreflang="en"
-                href="https://speedle.io/docs/api/asserter_api/"
-                />
-    <xhtml:link
-                rel="alternate"
-                hreflang="zh"
-                href="https://speedle.io/zh/docs/api/asserter_api/"
-                />
-  </url>
-  
-  <url>
     <loc>https://speedle.io/zh/categories/tour/</loc>
     <priority>0</priority>
     <xhtml:link
@@ -1178,21 +1136,6 @@
   </url>
   
   <url>
-    <loc>https://speedle.io/zh/tags/versions/</loc>
-    <priority>0</priority>
-    <xhtml:link
-                rel="alternate"
-                hreflang="en"
-                href="https://speedle.io/tags/versions/"
-                />
-    <xhtml:link
-                rel="alternate"
-                hreflang="zh"
-                href="https://speedle.io/zh/tags/versions/"
-                />
-  </url>
-  
-  <url>
     <loc>https://speedle.io/zh/versions/</loc>
     <priority>0</priority>
     <xhtml:link
@@ -1204,6 +1147,21 @@
                 rel="alternate"
                 hreflang="zh"
                 href="https://speedle.io/zh/versions/"
+                />
+  </url>
+  
+  <url>
+    <loc>https://speedle.io/zh/tags/versions/</loc>
+    <priority>0</priority>
+    <xhtml:link
+                rel="alternate"
+                hreflang="en"
+                href="https://speedle.io/tags/versions/"
+                />
+    <xhtml:link
+                rel="alternate"
+                hreflang="zh"
+                href="https://speedle.io/zh/tags/versions/"
                 />
   </url>
   
@@ -1239,6 +1197,20 @@
   </url>
   
   <url>
+    <loc>https://speedle.io/zh/docs/api/asserter_api/</loc>
+    <xhtml:link
+                rel="alternate"
+                hreflang="en"
+                href="https://speedle.io/docs/api/asserter_api/"
+                />
+    <xhtml:link
+                rel="alternate"
+                hreflang="zh"
+                href="https://speedle.io/zh/docs/api/asserter_api/"
+                />
+  </url>
+  
+  <url>
     <loc>https://speedle.io/zh/developer/</loc>
     <xhtml:link
                 rel="alternate"
@@ -1249,6 +1221,20 @@
                 rel="alternate"
                 hreflang="zh"
                 href="https://speedle.io/zh/developer/"
+                />
+  </url>
+  
+  <url>
+    <loc>https://speedle.io/zh/docs/api/decision_api/</loc>
+    <xhtml:link
+                rel="alternate"
+                hreflang="en"
+                href="https://speedle.io/docs/api/decision_api/"
+                />
+    <xhtml:link
+                rel="alternate"
+                hreflang="zh"
+                href="https://speedle.io/zh/docs/api/decision_api/"
                 />
   </url>
   
@@ -1277,6 +1263,20 @@
                 rel="alternate"
                 hreflang="zh"
                 href="https://speedle.io/zh/playground/"
+                />
+  </url>
+  
+  <url>
+    <loc>https://speedle.io/zh/docs/api/management_api/</loc>
+    <xhtml:link
+                rel="alternate"
+                hreflang="en"
+                href="https://speedle.io/docs/api/management_api/"
+                />
+    <xhtml:link
+                rel="alternate"
+                hreflang="zh"
+                href="https://speedle.io/zh/docs/api/management_api/"
                 />
   </url>
   

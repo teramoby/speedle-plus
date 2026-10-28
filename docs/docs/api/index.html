@@ -73,59 +73,37 @@
   <h1>API</h1>
   <p></p>
 
-<h4 id="rest-apis">REST APIs</h4>
+<h2 id="rest-apis">REST APIs</h2>
 
-<nav id="contents">
-    <ol class="js-toc">
-    <ul class="toc-list ">
-    <li class="toc-list-item">
-    <a data-scroll="" href="/docs/api/management_api/" class="toc-link node-name--H3  is-active-link">Policy Management Service API</a>
-    </li>
-    <li class="toc-list-item">
-     <a data-scroll="" href="/docs/api/decision_api/" class="toc-link node-name--H3">Authorization Decision Service API</a>
-    </li>
-    <li class="toc-list-item">
-      <a data-scroll="" href="/docs/api/asserter_api/" class="toc-link node-name--H3">Token Assertion API</a>
-    </li>
-    </ul>
-    </ol>
-</nav>
+<p>These are reference contracts for <strong>your configured PMS/ADS or asserter endpoint</strong>. <code>speedle.io</code> serves documentation and the browser Playground; it is not a hosted PMS/ADS service. Supply JSON with <code>Content-Type: application/json</code>, and configure <a href="/docs/security/">TLS/mTLS and caller access controls</a>.</p>
 
-<h4 id="grpc-apis">GRPC APIs</h4>
+<ul>
+<li><a href="/docs/api/management_api/">Policy management API</a></li>
+<li><a href="/docs/api/decision_api/">Authorization decision API</a></li>
+<li><a href="/docs/api/asserter_api/">Token assertion webhook</a></li>
+</ul>
 
-<nav id="contents">
-  <ol class="js-toc">
-    <ul class="toc-list ">
-    <li class="toc-list-item">
-    <a data-scroll="" href="/protobuf/pms.proto" class="toc-link node-name--H3  is-active-link">Policy Management Service API</a>
-    </li>
-    <li class="toc-list-item">
-     <a data-scroll="" href="/protobuf/ads.proto" class="toc-link node-name--H3">Authorization Decision Service API</a>
-    </li>
-    </ul>
-    </ol>
-</nav>
+<p>Policy and role-policy IDs are strings. PMS responses are flat objects; authorization permissions use <code>permissions</code> (plural). REST decision requests use a typed attribute array, whereas diagnostic response attributes and webhook attributes are objects.</p>
 
-<h4 id="golang-apis">Golang APIs</h4>
+<h2 id="grpc-apis">gRPC APIs</h2>
 
-<p><nav id="contents">
-  <ol class="js-toc">
-    <ul class="toc-list ">
-    <li class="toc-list-item">
-    <a href="https://github.com/teramoby/speedle-plus/tree/master/api/pms">Policy Management Service
-API</a>
-    </li>
-    <li class="toc-list-item">
-    <a href="https://github.com/teramoby/speedle-plus/tree/master/api/ads">Authorization Decision Service API</a>
-    </li>
-    </ul>
-    </ol>
-</nav>
-<div id="action-buttons" align="left">
-    <a class="button primary" href="/docs/api/management_api/">Policy Management</a>
-    <a class="button primary" href="/docs/api/decision_api/">Authorization Decision</a>
-    <a class="button primary" href="/docs/api/asserter_api/">Token Assertion</a>
-  </div></p>
+<ul>
+<li><a href="/protobuf/pms.proto">PMS proto</a>: <code>pms_pb.PolicyManager</code></li>
+<li><a href="/protobuf/ads.proto">ADS proto</a>: <code>ads_pb.Evaluator</code></li>
+</ul>
+
+<p>Use the current proto and generated client together. The former <code>/pb.*</code> client method paths do not match the server namespaces. Generated Go bindings retain the existing package API; maintainers can reproduce them with <code>scripts/generate-protobuf.sh</code> using its pinned protoc/generator versions. gRPC uses the same transport security configuration as REST; plaintext channels cannot call a TLS endpoint.</p>
+
+<p>The legacy gRPC <code>ContextRequest.attributes</code> map contains strings. It is not the REST typed attribute-array format and does not offer its numeric/bool/date typing. Use REST or embedded Go for conditions requiring those types unless your gRPC adapter explicitly implements the required conversion.</p>
+
+<h2 id="embedded-go-apis">Embedded Go APIs</h2>
+
+<ul>
+<li><a href="https://github.com/teramoby/speedle-plus/tree/master/api/pms">Policy management interfaces</a></li>
+<li><a href="https://github.com/teramoby/speedle-plus/tree/master/api/ads">Authorization decision interfaces</a></li>
+</ul>
+
+<p>See <a href="/docs/deployment-embeded/">embedded mode</a> for a complete application and resource lifecycle example.</p>
 </div></main><div class="sidebar">
 <nav>
 <ul>

@@ -1,6 +1,6 @@
 +++
 title = "SPDL - Speedle 策略定义语言"
-description = "Understand the basics of SPDL"
+description = "SPDL 语法、属性、条件和函数参考"
 weight = 5
 draft = false
 toc = true
@@ -20,41 +20,16 @@ bref = ""
 
 ### 保留关键字
 
-SPDL 的保留关键字如下. 这些关键字不能用作 user name, group name, action, resource, attribute name 等等。
-
-- _role_
-- _user_
-- _group_
-- _entity_
-- _grant_
-- _deny_
-- _if_
-- _in_
-- _on_
-- _from_
-
-这些关键字均大小写不敏感。这意味着，"role", "ROLE", "Role", "rOLe" 都不能用作 user name, group name, action, resource, attribute name 等等。
+`grant`、`deny`、`user`、`group`、`entity`、`role`、`from`、`on`、`if`、`in` 在各自语法位置有特定含义，策略语句的关键字大小写不敏感；条件成员运算使用 `in` 或 `IN`，函数名区分大小写。主体、操作和资源名称也区分大小写。当前解析器在部分名称位置可接受类似关键字的名称，不能把“所有位置都禁止关键字”当作验证规则。为便于审查与客户端互通，建议避免这类名称。
 
 ### 命名规范
 
-<pre>
-User Name: a user name consists of letters, decimal digits, punctuation marks except for comma  i.e. [\p{L}\p{Nd}[\p{Punct}&&[^,]]]+
-
-Group Name: a group name consists of letters, decimal digits, punctuation marks except for comma i.e. [\p{L}\p{Nd}[\p{Punct}&&[^,]]]+
-
-Role Name: a role name consists of letters, decimal digits, punctuation marks except for comma i.e. [\p{L}\p{Nd}[\p{Punct}&&[^,]]]+
-
-Action: an action consists of letters, decimal digits, punctuation marks except for comma i.e. [\p{L}\p{Nd}[\p{Punct}&&[^,]]]+
-
-Resource: a resource consists of letters, decimal digits, punctuation marks i.e. [\p{L}\p{Nd}\p{Punct}]+
-</pre>
-
-Please see [Unicode Standard](http://www.unicode.org/reports/tr18/) and [Javadoc](https://docs.oracle.com/javase/7/docs/api/java/util/regex/Pattern.html) for the definition of letter, decimal digit, and punctuation mark.
+推荐使用简明、稳定的标识符；名称包含空格或分隔符时使用解析器支持的单引号或双引号形式，并测试实际输入。不应把历史 Java 正则字符类当作当前 Go 解析器的严格校验。资源前缀 `expr:` 表示 Go 正则表达式，不是 shell 通配符。条件的属性与函数名称另见下文。
 
 ### 语法
 
 <pre>
-POLICY = EFFECT SUBJECT ACTION RESOURCE if CONDITION
+POLICY = EFFECT SUBJECT ACTION RESOURCE [if CONDITION]
 EFFECT = grant | deny
 SUBJECT = AND_PRINCIPALS (, AND_PRINCIPALS)*
 AND_PRINCIPALS = PRINCIPAL | \( PRINCIPAL_LIST \)
@@ -62,25 +37,25 @@ PRINCIPAL_LIST = PRINCIPAL (, PRINCIPAL)*
 PRINCIPAL = PRINCIPAL_TYPE PRINCIPAL_NAME [PRINCIPAL_IDD]
 PRINCIPAL_TYPE = user|group|entity|role
 PRINCIPAL_IDD = from IDD_IDENTIFIER
-IDD_IDENTIFIER = [\p{L}\p{Nd}\p{Punct}]+
+IDD_IDENTIFIER = NAME
 ACTION = (ACTION_IDENTIFIER)(, ACTION_IDENTIFIER)*
 RESOURCE = RESOURCE_IDENTIFIER
-PRINCIPAL_NAME = [\p{L}\p{Nd}[\p{Punct}&&[^,]]]+
-ACTION_IDENTIFIER = [\p{L}\p{Nd}[\p{Punct}&&[^,]]]+
-RESOURCE_IDENTIFIER = [\p{L}\p{Nd}\p{Punct}]+
+PRINCIPAL_NAME = NAME
+ACTION_IDENTIFIER = NAME
+RESOURCE_IDENTIFIER = NAME
 </pre>
 <pre>
-ROLE_POLICY = EFFECT SUBJECT ROLE (on RESOURCE)? if CONDITION
+ROLE_POLICY = EFFECT SUBJECT ROLE (on RESOURCE)? [if CONDITION]
 EFFECT = grant | deny
 SUBJECT = PRINCIPAL (, PRINCIPAL)*
 PRINCIPAL = PRINCIPAL_TYPE PRINCIPAL_NAME [PRINCIPAL_IDD]
 PRINCIPAL_TYPE = user|group|entity|role
 PRINCIPAL_IDD = from IDD_IDENTIFIER
-IDD_IDENTIFIER = [\p{L}\p{Nd}\p{Punct}]+
+IDD_IDENTIFIER = NAME
 ROLE = (role)? SUBJECT_IDENTIFIER
 RESOURCE = RESOURCE_IDENTIFIER
-SUBJECT_IDENTIFIER = [\p{L}\p{Nd}[\p{Punct}&&[^,]]]+
-RESOURCE_IDENTIFIER = [\p{L}\p{Nd}\p{Punct}]+
+SUBJECT_IDENTIFIER = NAME
+RESOURCE_IDENTIFIER = NAME
 </pre>
 
 ## 条件（Condition）
@@ -120,7 +95,7 @@ Condition 就是一个布尔表达式。由属性(attributes), 函数(functions)
       <tr>
         <td>numeric</td>
         <td> + <br> - <br> * <br> / <br> %</td>
-        <td>== <br> != <br> =~ <br> > <br> >= <br> < <br> <= </td>
+        <td>== <br> != <br>  > <br> >= <br> < <br> <= </td>
         <td></td>
       </tr>
       <tr>
@@ -241,7 +216,7 @@ Speedle 预定义的内置属性如下:
 
 ###### 2.2.2.1 属性名(name)
 
-一个合法的属性名由字母，数字和下划线`" _ "`组成，必须以字母开头，小于 255 个字符，且不能用保留关键字。
+为便于在条件中直接引用，推荐属性名符合 `[A-Za-z][A-Za-z0-9_]*`，并避免与内置属性/函数重名。REST 请求层实际接受最长 256 个字符的 ASCII 字母、数字、下划线、连字符与点；包含连字符或点时，应测试表达式中的引用方式，不要把它们误读为运算符。
 
 ###### 2.2.2.2 属性值(value)
 
@@ -367,7 +342,7 @@ Speedle 提供以下内置函数：
         <td>第一个参数是否是第二个参数的子集</td>
         <td>2 sets/arrays, elements of the 2 sets/arrays have same data type</td>
         <td>bool</td>
-        <td>IsSubset(s1, s2))</td>
+        <td>IsSubSet(s1, s2)</td>
       </tr>
     </tbody>
     <tfoot>
@@ -391,70 +366,9 @@ Speedle 提供以下内置函数：
 
 ##### 2.5.3 Precedence and Associativity of Supported Operators and Comparators
 
-下表按优先级列出了所有运算和比较操作符及其关联性.
+下表列出本文公开语法的优先级。比较运算先于逻辑与/或；组合复杂条件时建议使用括号。
 
-<table class="bordered striped">
-    <thead>
-      <tr>
-        <th>优先级<br>Precedence</th>
-        <th>运算/比较操作符<br>Operator/Comparator</th>
-        <th>描述<br>Description</th>
-        <th>关联<br>Associativity</th>
-      </tr>
-    </thead>
-    <tbody>
-    <tr>
-        <td>7</td>
-        <td>( )</td>
-        <td>parentheses</td>
-        <td>N/A</td>
-      </tr>
-    <tr>
-        <td>6</td>
-        <td>function call</td>
-        <td></td>
-        <td>N/A</td>
-      </tr>
-       <tr>
-        <td>5</td>
-        <td>* <br>/<br>%<br></td>
-        <td></td>
-        <td>Left to right</td>
-      </tr>
-       <tr>
-        <td>4</td>
-        <td>+<br>-<br></td>
-        <td>1+ numeric parameters</td>
-        <td>Left to right</td>
-      </tr>
-       <tr>
-        <td>3</td>
-        <td>!</td>
-        <td></td>
-        <td>N/A</td>
-      </tr>
-       <tr>
-        <td>2</td>
-        <td>&&</td>
-        <td></td>
-        <td>Left to right</td>
-      </tr>
-      <tr>
-        <td>1</td>
-        <td>||</td>
-        <td></td>
-        <td>Left to right</td>
-      </tr>
-      <tr>
-        <td>0</td>
-        <td>==<br>!=<br>=~<br>><br>>=<br><<br><=<br>in<br></td>
-        <td></td>
-        <td>N/A</td>
-      </tr>
-    </tbody>
-    <tfoot>
-    </tfoot>
-  </table>
+<table class="bordered striped"><thead><tr><th>优先级（由高到低）</th><th>运算符/比较符</th><th>结合性</th></tr></thead><tbody><tr><td>1</td><td>( )</td><td>N/A</td></tr><tr><td>2</td><td>function call</td><td>N/A</td></tr><tr><td>3</td><td>! and unary -</td><td>Right to left</td></tr><tr><td>4</td><td>* / %</td><td>Left to right</td></tr><tr><td>5</td><td>+ -</td><td>Left to right</td></tr><tr><td>6</td><td>== != =~ &gt; &gt;= &lt; &lt;= in</td><td>N/A</td></tr><tr><td>7</td><td>&amp;&amp;</td><td>Left to right</td></tr><tr><td>8</td><td>||</td><td>Left to right</td></tr></tbody></table>
 
 #### 2.6 Condition 示例
 
@@ -470,8 +384,8 @@ Speedle 提供以下内置函数：
     <tr><td>a!='abc'</td><td></td></tr>
     <tr><td>a>='abc'</td><td></td></tr>
     <tr><td>a+b=='ab'</td><td></td></tr>
-    <tr><td>a=~'\^get.*'</td><td>Value of attribute 'a' matches regular expression '\^get.*'</td></tr>
-<tr><td>a=123</td><td></td></tr>
+    <tr><td>a=~'^get.*'</td><td>Value of attribute 'a' matches regular expression '^get.*'</td></tr>
+<tr><td>a==123</td><td></td></tr>
 <tr><td>a-b>123</td><td></td></tr>
 <tr><td>a in (1, 2, 3) </td><td>Value of attribute 'a' is one of 1, 2, 3 </td></tr>
 <tr><td>'manager' in a </td><td>'a' is an attribute of string array, 'manager' is one of the array element </td></tr>
@@ -485,7 +399,7 @@ Speedle 提供以下内置函数：
 
 ### Condition 定义
 
-Condition 必须是一个合法的布尔表达式。 Speedle 支持的布尔表达式严格定义如下:
+Condition 必须是一个合法的布尔表达式。 下面是常用表达式的语法摘要，具体输入应以当前解析器和实际测试为准：
 
 ```
 BoolExpr: ('!')BoolExpr
@@ -536,8 +450,8 @@ StringConstant: single quoted string, for example, 'string1'
 BoolConstant: true|false
 DateTimeConstant: single quoted datetime, datetime should conform to the format defined by RFC3339: YYYY-MM-DDTHH:mm:SS[.sssssssss]Z, Z is [+|-]HH:mm. For example, '2016-01-02T15:04:05-07:00'
 
-Attribute: attribute name should conform to  [a-zA-Z]+[a-zA-Z0-9_]*, length should be <=255
-Function: FuntionName '(' Argument [,Argument]* ')'
+Attribute: attribute name should conform to  [a-zA-Z]+[a-zA-Z0-9_]*, prefer simple portable identifiers; REST attribute names are limited to 256 ASCII characters
+Function: FunctionName '(' Argument [,Argument]* ')'
 
 ```
 

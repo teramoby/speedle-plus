@@ -11,6 +11,8 @@ python3 website/tests/test_language_routes.py
 python3 website/localize-links.py docs --check
 python3 website/tests/check_seo.py docs
 node website/tests/check-doc-examples.cjs
+go test -count=1 ./website/tests/docscheck
+python3 website/tests/check_docs.py
 python3 website/tests/check_quick_start.py --toolchain go1.26.10
 python3 website/tests/check_quick_start.py --toolchain go1.27.3
 website/playground-engine/verify-hugo.sh

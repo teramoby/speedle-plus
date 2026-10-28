@@ -1,0 +1,101 @@
+basePath: /v1
+definitions:
+  Attribute:
+    properties:
+      name:
+        type: string
+      type:
+        enum:
+          - string
+          - bool
+          - numeric
+          - datetime
+        type: string
+      value: {}
+    type: object
+  Principal:
+    properties:
+      idd:
+        type: string
+      name:
+        type: string
+      type:
+        enum:
+          - user
+          - group
+          - entity
+        type: string
+    type: object
+  Subject:
+    properties:
+      attributes:
+        additionalProperties: {}
+        type: object
+      errCode:
+        format: int32
+        type: integer
+      errMessage:
+        type: string
+      principals:
+        items:
+          $ref: '#/definitions/Principal'
+        type: array
+    required:
+      - errCode
+    type: object
+info:
+  description: 通过 asserterWebhookConfig.endpoint 配置实际 URL。本地示例使用 /v1/assert；对接真实身份提供方需要单独实现。errCode 是整数，attributes 是对象。
+  title: 令牌断言 webhook
+  version: 1.0.0
+paths:
+  /assert:
+    get:
+      description: 验证令牌并返回主体身份
+      operationId: assert
+      parameters:
+        - description: 待验证的令牌
+          in: header
+          name: x-token
+          required: true
+          type: string
+        - description: 身份提供方标识；本地示例必须与演示令牌对应
+          in: header
+          name: x-idp
+          required: true
+          type: string
+        - description: 可选的允许身份域，以逗号分隔
+          in: header
+          name: x-allowedIDD
+          required: false
+          type: string
+        - description: 要转交身份提供方的其他 header 名称列表
+          in: header
+          name: x-ecid
+          required: false
+          type: string
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: 成功
+          schema:
+            $ref: '#/definitions/Subject'
+        "400":
+          description: JSON 或请求数据无效
+        "401":
+          description: 令牌无效
+          schema:
+            $ref: '#/definitions/Subject'
+        "403":
+          description: 身份域不被允许
+          schema:
+            $ref: '#/definitions/Subject'
+        "500":
+          description: 评估、断言或存储失败
+      summary: 验证令牌并返回主体身份
+      tags:
+        - assert
+schemes:
+  - https
+  - http
+swagger: "2.0"
