@@ -5,5 +5,6 @@ if [ ! -e /var/lib/speedle/policies.json ]; then
 fi
 
 
-speedle-ads --filestore-loc /var/lib/speedle/policies.json --endpoint 0.0.0.0:6734 $*
+# Plain HTTP for this development image; pass --insecure=false with --cert/--key for TLS.
+speedle-ads --filestore-loc /var/lib/speedle/policies.json --endpoint 0.0.0.0:6734 --insecure=true $*
 

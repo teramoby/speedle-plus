@@ -111,7 +111,7 @@ spec:
       - name: pms
         image: r.authz.fun/speedle-pms:v0.1  // please update image location
         command: ["speedle-pms"]
-        args: ["--endpoint", "0.0.0.0:6733", "--store-type", "etcd", "--etcdstore-endpoint", "speedle-etcd:2379"]
+        args: ["--endpoint", "0.0.0.0:6733", "--insecure", "true", "--store-type", "etcd", "--etcdstore-endpoint", "speedle-etcd:2379"]
         ports:
         - containerPort: 6733
 
@@ -141,7 +141,7 @@ spec:
       - name: ads
         image: r.authz.fun/speedle-ads:v0.1  // please update image location
         command: ["speedle-ads"]
-        args: ["--endpoint", "0.0.0.0:6734", "--store-type", "etcd", "--etcdstore-endpoint", "speedle-etcd:2379"]
+        args: ["--endpoint", "0.0.0.0:6734", "--insecure", "true", "--store-type", "etcd", "--etcdstore-endpoint", "speedle-etcd:2379"]
         ports:
         - containerPort: 6734
 

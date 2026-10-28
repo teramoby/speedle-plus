@@ -69,6 +69,9 @@ spec:
             - --force-client-cert
             - "{{ .Values.tls.forceClientCert }}"
             {{- end }}
+          {{- else }}
+            - --insecure
+            - "true"
           {{- end }}
           volumeMounts:
           {{- if .Values.store.etcd.etcdClientCertSecret }}
