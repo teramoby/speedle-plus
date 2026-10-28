@@ -16,7 +16,7 @@
   {{ $default_noindex_kinds := slice "section" "taxonomy" "taxonomyTerm" }}
   {{ $noindex_kinds := .Site.Params.noindex_kinds | default $default_noindex_kinds }}
   {{ $is_noindex_true := and (isset .Params "noindex") .Params.noindex }}
-  {{ if or $is_noindex_true (and (not (isset .Params "noindex")) (in $noindex_kinds .Kind)) }}
+  {{ if or (in $noindex_kinds .Kind) ($is_noindex_true) }}
   <meta name="robots" content="noindex">
   {{ end }}
 

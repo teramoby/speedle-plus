@@ -1,12 +1,9 @@
 +++
-title = "SPDL - Speedle Policy Definition Language"
+title = "SPDL - Security Policy Definition Language"
 description = "Understand the basics of SPDL"
 weight = 5
 draft = false
 toc = true
-singlelinetitle = true
-customcss = true
-customcssfile = "spdl-title.css"
 tocheading = "h2"
 tocsidebar = false
 tags = ["v0.1.0", "core", "policy", "spdl"]

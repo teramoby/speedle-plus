@@ -18,7 +18,7 @@ A Speedle policy is a set of criteria that specify whether a user is granted acc
 
 ## Understanding the Speedle Policy Module
 
-**Note:** The Speedle syntax used in this document is defined in [SPDL - Speedle Policy Definition Language](../../spdl).
+**Note:** The Speedle syntax used in this document is defined in [SPDL - Security Policy Definition Language](../../spdl).
 
 #### Policy store
 
@@ -109,7 +109,7 @@ An action is an operation that can be performed on the protected resource. Actio
 
 A condition is a bool expression that is constructed using attributes, functions, constants, operators, comparators or parenthesis and produces a bool value. Conditions are supported in both role and authorization policies. The policy or role policy can take effect only when the condition is met.
 
-For details, see [SPDL - Speedle Policy Definition Language](../../spdl).
+For details, see [SPDL - Security Policy Definition Language](../../spdl).
 
 ## Managing Speedle policies
 
