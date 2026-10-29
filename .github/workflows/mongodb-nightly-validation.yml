@@ -8,21 +8,18 @@ permissions:
   contents: read
 
 jobs:
-  nightly:
-    uses: teramoby/speedle-plus/.github/workflows/go-ci-worker.yml@master
-    with:
-      mode: nightly
-
   mongodb:
     name: MongoDB on fiona
-    runs-on: [self-hosted, Linux, X64, fiona-speedle]
+    runs-on: [self-hosted, macOS, ARM64, fiona-speedle]
     timeout-minutes: 20
     steps:
       - name: Verify runner identity
         run: |
           set -euo pipefail
           test "${RUNNER_NAME}" = fiona-speedle
-          echo "MongoDB runner: ${RUNNER_NAME}"
+          test "${RUNNER_OS}" = macOS
+          test "${RUNNER_ARCH}" = ARM64
+          echo "MongoDB runner: ${RUNNER_NAME} (${RUNNER_OS}/${RUNNER_ARCH})"
 
       - name: Checkout validation revision
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1

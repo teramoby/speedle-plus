@@ -18,12 +18,22 @@ cleanup() {
   exit "${status}"
 }
 trap cleanup EXIT
-archive=mongodb-linux-x86_64-ubuntu2204-7.0.16.tgz
-curl --fail --silent --show-error --location --retry 3 "https://fastdl.mongodb.org/linux/${archive}" -o "${validation_dir}/${archive}"
-curl --fail --silent --show-error --location --retry 3 "https://fastdl.mongodb.org/linux/${archive}.sha256" -o "${validation_dir}/checksum"
+case "$(uname -s)/$(uname -m)" in
+  Darwin/arm64)
+    archive=mongodb-macos-arm64-7.0.16.tgz
+    download_base=https://fastdl.mongodb.org/osx
+    ;;
+  Linux/x86_64)
+    archive=mongodb-linux-x86_64-ubuntu2204-7.0.16.tgz
+    download_base=https://fastdl.mongodb.org/linux
+    ;;
+  *) echo 'Unsupported MongoDB validation platform.' >&2; exit 1 ;;
+esac
+curl --fail --silent --show-error --location --retry 3 "${download_base}/${archive}" -o "${validation_dir}/${archive}"
+curl --fail --silent --show-error --location --retry 3 "${download_base}/${archive}.sha256" -o "${validation_dir}/checksum"
 expected=$(awk 'NR == 1 {print $1}' "${validation_dir}/checksum")
 [[ "${expected}" =~ ^[a-fA-F0-9]{64}$ ]]
-printf '%s  %s\n' "${expected}" "${validation_dir}/${archive}" | sha256sum --check -
+printf '%s  %s\n' "${expected}" "${validation_dir}/${archive}" | shasum -a 256 --check -
 tar -xzf "${validation_dir}/${archive}" -C "${validation_dir}" --strip-components=1
 mongo_port=$(python3 - <<'PY'
 import socket
