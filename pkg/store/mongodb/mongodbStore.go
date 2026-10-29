@@ -10,9 +10,9 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 
 	log "github.com/sirupsen/logrus"
-	"github.com/teramoby/speedle-plus/v2/api/pms"
-	"github.com/teramoby/speedle-plus/v2/pkg/errors"
-	"github.com/teramoby/speedle-plus/v2/pkg/suid"
+	"github.com/teramoby/speedle-plus/api/pms"
+	"github.com/teramoby/speedle-plus/pkg/errors"
+	"github.com/teramoby/speedle-plus/pkg/suid"
 )
 
 type Store struct {

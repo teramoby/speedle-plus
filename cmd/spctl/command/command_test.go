@@ -7,10 +7,10 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/teramoby/speedle-plus/v2/api/pms"
-	"github.com/teramoby/speedle-plus/v2/testutil"
-	"github.com/teramoby/speedle-plus/v2/testutil/msg"
-	"github.com/teramoby/speedle-plus/v2/testutil/param"
+	"github.com/teramoby/speedle-plus/api/pms"
+	"github.com/teramoby/speedle-plus/testutil"
+	"github.com/teramoby/speedle-plus/testutil/msg"
+	"github.com/teramoby/speedle-plus/testutil/param"
 )
 
 // Create/Get/Delete service

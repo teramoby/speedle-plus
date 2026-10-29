@@ -29,7 +29,7 @@ Download the Speedle source using one of the following approaches.
 1. Use `go get`:
 
 ```bash
-go get github.com/teramoby/speedle-plus/v2
+go get github.com/teramoby/speedle-plus
 ```
 
 2. Use `dep`. Add this constraint to `Gopkg.toml`:
@@ -59,7 +59,7 @@ The method returns an evaluator instance. For example:
 
 ```go
 import (
-  "github.com/teramoby/speedle-plus/v2/pkg/eval"
+  "github.com/teramoby/speedle-plus/pkg/eval"
 )
 
 func foo() {

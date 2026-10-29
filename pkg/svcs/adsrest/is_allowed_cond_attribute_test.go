@@ -6,8 +6,8 @@
 package adsrest
 
 import (
-	adsapi "github.com/teramoby/speedle-plus/v2/api/ads"
-	"github.com/teramoby/speedle-plus/v2/testutil"
+	adsapi "github.com/teramoby/speedle-plus/api/ads"
+	"github.com/teramoby/speedle-plus/testutil"
 	"testing"
 )
 

@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/teramoby/speedle-plus/v2/api/ext"
-	"github.com/teramoby/speedle-plus/v2/api/pms"
+	"github.com/teramoby/speedle-plus/api/ext"
+	"github.com/teramoby/speedle-plus/api/pms"
 )
 
 func TestCustomerFunctionResponseIsBounded(t *testing.T) {

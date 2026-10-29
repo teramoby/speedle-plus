@@ -16,9 +16,9 @@ import (
 	"sort"
 	"strings"
 
-	adsPB "github.com/teramoby/speedle-plus/v2/pkg/svcs/adsgrpc/pb"
-	pmsPB "github.com/teramoby/speedle-plus/v2/pkg/svcs/pmsgrpc/pb"
-	. "github.com/teramoby/speedle-plus/v2/testutil"
+	adsPB "github.com/teramoby/speedle-plus/pkg/svcs/adsgrpc/pb"
+	pmsPB "github.com/teramoby/speedle-plus/pkg/svcs/pmsgrpc/pb"
+	. "github.com/teramoby/speedle-plus/testutil"
 
 	"google.golang.org/grpc"
 )

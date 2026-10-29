@@ -12,9 +12,9 @@ ${GOPATH}/bin/spctl config pms-endpoint http://localhost:6733/policy-mgmt/v1/
 
 startPMS file --config-file ${shell_dir}/../pmsrest/config_file.json
 ${GOPATH}/bin/spctl delete service --all
-go test ${TEST_OPTS} github.com/teramoby/speedle-plus/v2/pkg/svcs/adsrest -tags=runtime_test_prepare
+go test ${TEST_OPTS} github.com/teramoby/speedle-plus/pkg/svcs/adsrest -tags=runtime_test_prepare
 $GOPATH/bin/spctl get service --all
 
 startADS --config-file ${shell_dir}/../pmsrest/config_file.json
 sleep 2
-go test ${TEST_OPTS} github.com/teramoby/speedle-plus/v2/pkg/svcs/adsrest -tags="runtime_test runtime_cache_test" -run=TestMats
+go test ${TEST_OPTS} github.com/teramoby/speedle-plus/pkg/svcs/adsrest -tags="runtime_test runtime_cache_test" -run=TestMats

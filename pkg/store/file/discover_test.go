@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/teramoby/speedle-plus/v2/api/ads"
-	"github.com/teramoby/speedle-plus/v2/pkg/store"
+	"github.com/teramoby/speedle-plus/api/ads"
+	"github.com/teramoby/speedle-plus/pkg/store"
 )
 
 func TestSaveGetLastRequest(t *testing.T) {

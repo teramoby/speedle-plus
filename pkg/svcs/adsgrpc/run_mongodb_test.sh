@@ -15,4 +15,4 @@ startADS --config-file ${shell_dir}/../pmsrest/config_mongodb.json
 
 sleep 5
 ${GOPATH}/bin/spctl delete service --all
-go test ${TEST_OPTS} github.com/teramoby/speedle-plus/v2/pkg/svcs/adsgrpc -run=TestMats
+go test ${TEST_OPTS} github.com/teramoby/speedle-plus/pkg/svcs/adsgrpc -run=TestMats

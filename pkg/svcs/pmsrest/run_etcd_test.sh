@@ -10,4 +10,4 @@ go clean -testcache
 
 startPMS etcd --config-file ${shell_dir}/config_etcd.json
 
-go test ${TEST_OPTS} github.com/teramoby/speedle-plus/v2/pkg/svcs/pmsrest $*
+go test ${TEST_OPTS} github.com/teramoby/speedle-plus/pkg/svcs/pmsrest $*

@@ -1,4 +1,4 @@
-module github.com/teramoby/speedle-plus/v2
+module github.com/teramoby/speedle-plus
 
 go 1.25.0
 

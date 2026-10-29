@@ -11,6 +11,6 @@ serverPID=$!
 add_exit_trap "kill ${serverPID}"
 waitService ADS 6734 || exit 1
 
-#go test ${TEST_OPTS} github.com/teramoby/speedle-plus/v2/pkg/svcs/adsrest -v -tags="runtime_test runtime_cache_test" -run=TestMats
-go test ${TEST_OPTS} github.com/teramoby/speedle-plus/v2/pkg/svcs/adsrest -v -tags="runtime_cache_test" -run=TestMats
+#go test ${TEST_OPTS} github.com/teramoby/speedle-plus/pkg/svcs/adsrest -v -tags="runtime_test runtime_cache_test" -run=TestMats
+go test ${TEST_OPTS} github.com/teramoby/speedle-plus/pkg/svcs/adsrest -v -tags="runtime_cache_test" -run=TestMats
 

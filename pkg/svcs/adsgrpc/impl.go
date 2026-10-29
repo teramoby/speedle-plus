@@ -7,12 +7,12 @@ import (
 	"context"
 	"fmt"
 
-	adsapi "github.com/teramoby/speedle-plus/v2/api/ads"
-	"github.com/teramoby/speedle-plus/v2/api/pms"
-	"github.com/teramoby/speedle-plus/v2/pkg/eval"
-	"github.com/teramoby/speedle-plus/v2/pkg/svcs/adsgrpc/pb"
+	adsapi "github.com/teramoby/speedle-plus/api/ads"
+	"github.com/teramoby/speedle-plus/api/pms"
+	"github.com/teramoby/speedle-plus/pkg/eval"
+	"github.com/teramoby/speedle-plus/pkg/svcs/adsgrpc/pb"
 
-	"github.com/teramoby/speedle-plus/v2/pkg/logging"
+	"github.com/teramoby/speedle-plus/pkg/logging"
 )
 
 // GRPCService is the ADS GRPC implementation

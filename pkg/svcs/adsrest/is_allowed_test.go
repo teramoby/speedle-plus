@@ -9,9 +9,9 @@ import (
 	"testing"
 	"time"
 
-	adsapi "github.com/teramoby/speedle-plus/v2/api/ads"
-	"github.com/teramoby/speedle-plus/v2/pkg/svcs"
-	"github.com/teramoby/speedle-plus/v2/testutil"
+	adsapi "github.com/teramoby/speedle-plus/api/ads"
+	"github.com/teramoby/speedle-plus/pkg/svcs"
+	"github.com/teramoby/speedle-plus/testutil"
 )
 
 const (

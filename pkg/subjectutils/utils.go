@@ -6,7 +6,7 @@ package subjectutils
 import (
 	"fmt"
 
-	adsapi "github.com/teramoby/speedle-plus/v2/api/ads"
+	adsapi "github.com/teramoby/speedle-plus/api/ads"
 )
 
 // EncodePrincipal encodes prinicpal object to string

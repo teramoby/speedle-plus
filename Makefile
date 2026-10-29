@@ -16,13 +16,13 @@ all: build
 build: buildPms buildAds buildSpctl
 
 buildPms:
-	go build ${goLDFlags} -o ${gopath}/bin/speedle-pms github.com/teramoby/speedle-plus/v2/cmd/speedle-pms
+	go build ${goLDFlags} -o ${gopath}/bin/speedle-pms github.com/teramoby/speedle-plus/cmd/speedle-pms
 
 buildAds:
-	go build ${goLDFlags} -o ${gopath}/bin/speedle-ads github.com/teramoby/speedle-plus/v2/cmd/speedle-ads
+	go build ${goLDFlags} -o ${gopath}/bin/speedle-ads github.com/teramoby/speedle-plus/cmd/speedle-ads
 
 buildSpctl:
-	go build ${goLDFlags} -o ${gopath}/bin/spctl  github.com/teramoby/speedle-plus/v2/cmd/spctl
+	go build ${goLDFlags} -o ${gopath}/bin/spctl  github.com/teramoby/speedle-plus/cmd/spctl
 
 image: imagePms imageAds
 
@@ -41,18 +41,18 @@ test: testAll
 testAll: speedleUnitTests testSpeedleRest testSpeedleGRpc testSpctl testSpeedleRestADSCheck testSpeedleGRpcADSCheck testSpeedleTls
 
 speedleUnitTests:
-	go test ${TEST_OPTS} github.com/teramoby/speedle-plus/v2/pkg/cfg 
-	go test ${TEST_OPTS} github.com/teramoby/speedle-plus/v2/pkg/eval 
-	go test ${TEST_OPTS} github.com/teramoby/speedle-plus/v2/pkg/store/file
-	go test ${TEST_OPTS} github.com/teramoby/speedle-plus/v2/pkg/store/etcd
-	go test ${TEST_OPTS} github.com/teramoby/speedle-plus/v2/pkg/store/mongodb
-	go test ${TEST_OPTS} github.com/teramoby/speedle-plus/v2/pkg/pdl
-	go test ${TEST_OPTS} github.com/teramoby/speedle-plus/v2/pkg/suid
-	go test ${TEST_OPTS} github.com/teramoby/speedle-plus/v2/pkg/assertion
+	go test ${TEST_OPTS} github.com/teramoby/speedle-plus/pkg/cfg 
+	go test ${TEST_OPTS} github.com/teramoby/speedle-plus/pkg/eval 
+	go test ${TEST_OPTS} github.com/teramoby/speedle-plus/pkg/store/file
+	go test ${TEST_OPTS} github.com/teramoby/speedle-plus/pkg/store/etcd
+	go test ${TEST_OPTS} github.com/teramoby/speedle-plus/pkg/store/mongodb
+	go test ${TEST_OPTS} github.com/teramoby/speedle-plus/pkg/pdl
+	go test ${TEST_OPTS} github.com/teramoby/speedle-plus/pkg/suid
+	go test ${TEST_OPTS} github.com/teramoby/speedle-plus/pkg/assertion
 	go clean -testcache
-	STORE_TYPE=etcd go test ${TEST_OPTS} github.com/teramoby/speedle-plus/v2/pkg/eval
+	STORE_TYPE=etcd go test ${TEST_OPTS} github.com/teramoby/speedle-plus/pkg/eval
 	go clean -testcache
-	STORE_TYPE=mongodb go test ${TEST_OPTS} github.com/teramoby/speedle-plus/v2/pkg/eval
+	STORE_TYPE=mongodb go test ${TEST_OPTS} github.com/teramoby/speedle-plus/pkg/eval
 
 testSpeedleRest:
 	pkg/svcs/pmsrest/run_file_test.sh
