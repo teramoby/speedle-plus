@@ -2,7 +2,7 @@
 # Validation-only harness: own a temporary mongod, never touch resident services.
 set -euo pipefail
 cd "$(dirname "$0")/../.."
-test "${RUNNER_NAME}" = charming-speedle
+test "${RUNNER_NAME}" = fiona-speedle
 printf 'MongoDB validation runner: %s\n' "${RUNNER_NAME}"
 validation_dir=$(mktemp -d "${RUNNER_TEMP:-/tmp}/speedle-mongo.XXXXXXXX")
 mongo_pid=''
@@ -84,5 +84,9 @@ func main() {
 }
 GO
 go run "${validation_dir}/init.go"
-gofmt -d pkg/store/mongodb/mongodbStore.go pkg/store/mongodb/regression_test.go
+unformatted=$(gofmt -l pkg/store/mongodb/mongodbStore.go pkg/store/mongodb/regression_test.go)
+if [[ -n "${unformatted}" ]]; then
+  printf 'Go files need formatting:\n%s\n' "${unformatted}" >&2
+  exit 1
+fi
 go test -race -v -count=1 -timeout 300s ./pkg/store/mongodb

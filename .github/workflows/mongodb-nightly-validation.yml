@@ -12,3 +12,40 @@ jobs:
     uses: teramoby/speedle-plus/.github/workflows/go-ci-worker.yml@master
     with:
       mode: nightly
+
+  mongodb:
+    name: MongoDB on fiona
+    runs-on: [self-hosted, Linux, X64, fiona-speedle]
+    timeout-minutes: 20
+    steps:
+      - name: Verify runner identity
+        run: |
+          set -euo pipefail
+          test "${RUNNER_NAME}" = fiona-speedle
+          echo "MongoDB runner: ${RUNNER_NAME}"
+
+      - name: Checkout validation revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Setup Go
+        uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff
+        with:
+          go-version: '1.26'
+          cache: false
+
+      - name: MongoDB replica set and race tests
+        run: |
+          set -euo pipefail
+          mkdir -p mongodb-results
+          bash scripts/ci/validate-mongodb.sh 2>&1 | tee mongodb-results/mongodb.log
+
+      - name: Upload MongoDB results
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: mongodb-results
+          path: mongodb-results/
+          if-no-files-found: warn

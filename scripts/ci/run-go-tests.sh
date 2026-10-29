@@ -79,7 +79,6 @@ case "${mode}" in
     ;;
   nightly)
     mkdir -p "${results}"; : > "${results}/checks.txt"
-    check mongodb bash scripts/ci/validate-mongodb.sh
     listed=$(packages); mapfile -t pkgs <<< "${listed}"
     race=(-race)
     if ! CGO_ENABLED=1 go env CC >/dev/null 2>&1 || ! command -v "$(go env CC)" >/dev/null 2>&1; then

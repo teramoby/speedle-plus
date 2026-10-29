@@ -166,7 +166,7 @@ func TestBulkDeleteWatchAndStop(t *testing.T) {
 			t.Fatal("watch channel remained open after StopWatch")
 		}
 	}
-	stop() // idle cursor
+	stop()        // idle cursor
 	s.StopWatch() // idempotent
 	changes, err = s.Watch()
 	if err != nil {
