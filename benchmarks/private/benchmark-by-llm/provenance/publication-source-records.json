@@ -8,7 +8,7 @@
   "TEST_PLAN.md": {
     "source_id": "benchmark-workspace/TEST_PLAN.md",
     "original_sha256": "a4f9d5f613a238af13174a2d03ff7b73cb8961d4525bf93b86ba78f7d65c913b",
-    "published_sha256": "b081041080c07330511e9f6c0cdcf654884324df56e40cda92ecebee55795992",
+    "published_sha256": "af20c7078c8f38d348f895e7d81bc0a2b14f045d15d7736d107335db524e78b7",
     "transformations": [
       {
         "type": "local-account-path",
@@ -17,6 +17,9 @@
       {
         "type": "local-account-path",
         "occurrences": 1
+      },
+      {
+        "type": "ssh-account-and-key-filename-labels"
       }
     ]
   },
@@ -954,7 +957,7 @@
   "prompts/claude-handoff-original.md": {
     "source_id": "handoff/TEST_PLAN.md-before-execution",
     "original_sha256": "c2650dcaa12ae39e0341395e653f09854bf317342213f828ed51eccae1159b4c",
-    "published_sha256": "5a8f609107ad2a674578d63da7d3b418247d21c0e977394bfb7e48b5dc9f3259",
+    "published_sha256": "7ac73ec5759e943894e1866052f4286a6b1b2ba619ebac5a318457c8032fadd2",
     "transformations": [
       {
         "type": "local-account-path",
@@ -963,13 +966,16 @@
       {
         "type": "local-account-path",
         "occurrences": 1
+      },
+      {
+        "type": "ssh-account-and-key-filename-labels"
       }
     ]
   },
   "prompts/user-pasted-handoff.txt": {
     "source_id": "user-provided-handoff-attachment",
     "original_sha256": "a05ca60f5078b5b134ddb4055a6e735e0410f8ca3c5bca8d696ffacf1f5ef67e",
-    "published_sha256": "b54afa0bb890eff3fb2c8963c70be3309f9d283628c1f0c5d49e2e3b60faf79d",
+    "published_sha256": "1237f20c68b2220b312e2e8dcc88a84d292eacefeead4ad9c4338eafbd206f03",
     "transformations": [
       {
         "type": "local-account-path",
@@ -978,6 +984,9 @@
       {
         "type": "local-account-path",
         "occurrences": 1
+      },
+      {
+        "type": "ssh-account-and-key-filename-labels"
       }
     ]
   },
@@ -990,13 +999,17 @@
   "provenance/before-preparation-HISTORICAL.tar.gz": {
     "source_id": "normalized-and-redacted-handoff-backup",
     "original_sha256": "fbfc73b534443accd36f89627487fca48f2b0e3d056e58a73d3539debfbfbb2e",
-    "published_sha256": "fbfc73b534443accd36f89627487fca48f2b0e3d056e58a73d3539debfbfbb2e",
-    "transformations": []
+    "published_sha256": "5dbfd2e5f5d29aa531bd10b84cf5ed7a66d1638ddcb8b9e5bf119f5af8bdce05",
+    "transformations": [
+      {
+        "type": "ssh-account-and-key-filename-labels-in-members"
+      }
+    ]
   },
   "provenance/archive-entry-hashes.json": {
     "source_id": "generated-for-publication",
     "original_sha256": "b4324f5267330b8c1eb2479d0d96144e9af08ec76ed4d2b2f431da3e69524f43",
-    "published_sha256": "b4324f5267330b8c1eb2479d0d96144e9af08ec76ed4d2b2f431da3e69524f43",
+    "published_sha256": "8adbcbf64deb038ce31de5db9489e1b5158f872ca347c691580608a3322eb6df",
     "transformations": []
   },
   "provenance/build-artifacts.json": {

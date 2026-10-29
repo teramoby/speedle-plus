@@ -129,7 +129,7 @@
     "archive": "provenance/before-preparation-HISTORICAL.tar.gz",
     "path": "TEST_PLAN.md",
     "original_sha256": "c2650dcaa12ae39e0341395e653f09854bf317342213f828ed51eccae1159b4c",
-    "published_sha256": "5a8f609107ad2a674578d63da7d3b418247d21c0e977394bfb7e48b5dc9f3259",
+    "published_sha256": "7ac73ec5759e943894e1866052f4286a6b1b2ba619ebac5a318457c8032fadd2",
     "transformations": [
       {
         "type": "local-account-path",
@@ -138,6 +138,9 @@
       {
         "type": "local-account-path",
         "occurrences": 1
+      },
+      {
+        "type": "ssh-account-and-key-filename-labels"
       }
     ]
   },

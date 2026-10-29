@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "created_at": "2026-10-29T11:08:55.324482+08:00",
+  "created_at": "2026-10-29T11:22:58.402130+08:00",
   "scope": "public archive; excludes MANIFEST.json itself and ignored build/cache directories",
   "files": [
     {
@@ -45,8 +45,8 @@
     },
     {
       "path": "PROMPTS.md",
-      "bytes": 2952,
-      "sha256": "2eb772eeedb3df8b60254ec3d05478b21d80640065d0abb7a301558b5090b2ac"
+      "bytes": 3049,
+      "sha256": "812b17825c61952e3697d9b8215bf543cb67fd0c1022651ab73abbc7e49b2326"
     },
     {
       "path": "README.md",
@@ -65,8 +65,8 @@
     },
     {
       "path": "TEST_PLAN.md",
-      "bytes": 22764,
-      "sha256": "b081041080c07330511e9f6c0cdcf654884324df56e40cda92ecebee55795992"
+      "bytes": 22769,
+      "sha256": "af20c7078c8f38d348f895e7d81bc0a2b14f045d15d7736d107335db524e78b7"
     },
     {
       "path": "bench_test.go",
@@ -210,23 +210,23 @@
     },
     {
       "path": "prompts/claude-handoff-original.md",
-      "bytes": 21937,
-      "sha256": "5a8f609107ad2a674578d63da7d3b418247d21c0e977394bfb7e48b5dc9f3259"
+      "bytes": 21942,
+      "sha256": "7ac73ec5759e943894e1866052f4286a6b1b2ba619ebac5a318457c8032fadd2"
     },
     {
       "path": "prompts/user-pasted-handoff.txt",
-      "bytes": 20243,
-      "sha256": "b54afa0bb890eff3fb2c8963c70be3309f9d283628c1f0c5d49e2e3b60faf79d"
+      "bytes": 20248,
+      "sha256": "1237f20c68b2220b312e2e8dcc88a84d292eacefeead4ad9c4338eafbd206f03"
     },
     {
       "path": "provenance/archive-entry-hashes.json",
-      "bytes": 8075,
-      "sha256": "b4324f5267330b8c1eb2479d0d96144e9af08ec76ed4d2b2f431da3e69524f43"
+      "bytes": 8147,
+      "sha256": "8adbcbf64deb038ce31de5db9489e1b5158f872ca347c691580608a3322eb6df"
     },
     {
       "path": "provenance/before-preparation-HISTORICAL.tar.gz",
       "bytes": 24777,
-      "sha256": "fbfc73b534443accd36f89627487fca48f2b0e3d056e58a73d3539debfbfbb2e"
+      "sha256": "5dbfd2e5f5d29aa531bd10b84cf5ed7a66d1638ddcb8b9e5bf119f5af8bdce05"
     },
     {
       "path": "provenance/build-artifacts.json",
@@ -245,8 +245,8 @@
     },
     {
       "path": "provenance/publication-source-records.json",
-      "bytes": 54320,
-      "sha256": "d88f067edbab003c02866efb1a5ab2d3ded66daf22553ff7ec5ca911cd42f72e"
+      "bytes": 54619,
+      "sha256": "e51b52728613abfbf60591afcfe3ee2b1c965814304c40848c6dc1017f9c066e"
     },
     {
       "path": "results/retest-20261029/EXECUTION.md",
@@ -865,8 +865,8 @@
     },
     {
       "path": "verify_archive.py",
-      "bytes": 3919,
-      "sha256": "14836569d88c4a29063974f57b9d20a46353aac0a20d34472e0990cc38ada355"
+      "bytes": 4648,
+      "sha256": "3bed6f482d2773d0f4437fbed412ef1ed4c390754976208bb89cb15c4cfd1eda"
     }
   ]
 }

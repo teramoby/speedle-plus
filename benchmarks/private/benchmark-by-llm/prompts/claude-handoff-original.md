@@ -18,7 +18,7 @@
 | 用途 | 存放测试代码、交叉编译、汇总结果、写报告 | 运行全部测试 |
 | 硬件 | Apple M1 Pro 8 核、16 GB | Intel Core i5-7360U @ 2.30GHz，2 核 4 线程，15 GiB 内存，2 GiB swap，NVMe |
 | 系统 | macOS 27.0.1，Go 1.27.2（`/opt/homebrew/bin/go`） | Linux Mint 22.3（Ubuntu 24.04 基础），x86_64；没有安装 Go |
-| 访问 | 本机 | 在 shrek 上执行 `ssh charming.local`（用户 `wcai`，密钥 `~/.ssh/id_ed25519` 已授权；用 `-o BatchMode=yes` 防止弹出密码提示） |
+| 访问 | 本机 | 在 shrek 上执行 `ssh charming.local`（用户 `REMOTE_USER`，密钥 `~/.ssh/KEY_FILE` 已授权；用 `-o BatchMode=yes` 防止弹出密码提示） |
 
 charming 上的 GitHub Actions runner（目录都在 `/home/REMOTE_USER/` 下）：`actions-runner`、`actions-runner-2`、`actions-runner-3`、`actions-runner-speedle`、`actions-runner-speedle-2`。只有 `Runner.Listener` 进程表示空闲；出现 `Runner.Worker` 进程表示正在跑 CI 任务（`pgrep -c Runner.Worker` 可以计数）。
 

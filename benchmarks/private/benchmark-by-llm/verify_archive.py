@@ -45,6 +45,20 @@ with tarfile.open(root/'provenance/executed-source.tar.gz') as tar:
    assert tar.extractfile(member).read()==(root/member.name).read_bytes(),member.name
    checked+=1
 assert checked==15,'executed runtime source count'
+entry_hashes=json.loads((root/'provenance/archive-entry-hashes.json').read_text())
+archive_members=0
+for archive in ['provenance/executed-source.tar.gz','provenance/before-preparation-HISTORICAL.tar.gz']:
+ with tarfile.open(root/archive) as tar:
+  for member in tar.getmembers():
+   path=Path(member.name)
+   assert member.isfile() and not path.is_absolute() and '..' not in path.parts
+   assert member.uid==member.gid==0 and not member.uname and not member.gname
+   data=tar.extractfile(member).read()
+   entry=next(e for e in entry_hashes if e['archive']==archive and e['path']==member.name)
+   assert hashlib.sha256(data).hexdigest()==entry['published_sha256']
+   archive_members+=1
+assert archive_members==len(entry_hashes)
+
 for md in root.glob('*.md'):
  for target in re.findall(r'\]\(([^)]+)\)',md.read_text()):
   if '://' in target or target.startswith('#'):continue
