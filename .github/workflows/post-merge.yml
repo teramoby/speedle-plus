@@ -1,0 +1,65 @@
+name: Post-merge regression
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  # A race-detector run of every package with the file store and the
+  # executable guides from docs/, for every commit that lands on master, on the
+  # self-hosted runners (scripts/ci/run-go-tests.sh regression). Runs are not
+  # cancelled or collapsed: each merged commit gets its own result, and the
+  # worker's host lock serializes them with the other test runs.
+  run:
+    name: run
+    uses: teramoby/speedle-plus/.github/workflows/go-ci-worker.yml@master
+    with:
+      mode: regression
+
+  # On failure only: an English Ark analysis, a Feishu message, and one
+  # tracking issue per failing test with its output and the analysis. Hosted,
+  # so the test runner never holds the Ark, Feishu or issue tokens.
+  report:
+    name: report
+    needs: run
+    if: always() && github.repository == 'teramoby/speedle-plus'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Download results
+        continue-on-error: true
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: regression-results
+          path: test-results
+
+      - name: Analyze and track failures
+        env:
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          COMMIT_URL: ${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}
+          RUN_RESULT: ${{ needs.run.result }}
+          ARK_API_KEY: ${{ secrets.ARK_API_KEY }}
+          ARK_MODEL: ${{ vars.ARK_REVIEW_MODEL || 'kimi-k3' }}
+          FEISHU_WEBHOOK: ${{ secrets.FEISHU_WEBHOOK }}
+          FEISHU_WEBHOOK_SECRET: ${{ secrets.FEISHU_WEBHOOK_SECRET }}
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          # A job that did not succeed is reported as failed even when its
+          # results are partial or show no failure.
+          python3 scripts/ci/test_report.py --kind regression \
+            --source "run:${RUN_RESULT}:test-results" --summary-file report.txt
+          cat report.txt >> "${GITHUB_STEP_SUMMARY}"

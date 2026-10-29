@@ -13,7 +13,7 @@ const read = name => fs.readFileSync(path.join(root, '.github/workflows', name),
 const sources = {
   ci: read('ci.yml'), review: read('reviewbot.yml'),
   commands: read('reviewbot-command.yml'), inline: read('reviewbot-inline.yml'),
-  nightly: read('nightly.yml'), weekly: read('weekly.yml'),
+  nightly: read('nightly.yml'), weekly: read('weekly.yml'), postMerge: read('post-merge.yml'),
 };
 function jobs(source) {
   const section = source.split(/^jobs:\s*$/m)[1];
@@ -186,6 +186,27 @@ test('scheduled suites run through the worker and report from a hosted job', () 
   assert.match(job.nightly.mongodb, /!\(github.event_name == 'workflow_dispatch' && inputs.mysql_only\)/);
   assert.match(job.nightly.report, /needs: \[run, mongodb\]$/m);
   assert.match(job.nightly.report, /--source "mongodb:\$\{MONGODB_RESULT\}:mongodb-results\/go-mongodb.json"/);
+});
+test('every merge to master runs the file regression and reports failures from a hosted job', () => {
+  const source = sources.postMerge;
+  assert.match(source, /^on:\n  push:\n    branches: \[master\]\n  workflow_dispatch:$/m);
+  assert.match(source, /^permissions:\n  contents: read$/m);
+  assert.doesNotMatch(source, /concurrency:|cancel-in-progress|paths:|paths-ignore:/, 'every merged commit is tested');
+  assert.deepEqual(Object.keys(job.postMerge), ['run', 'report']);
+  assert.deepEqual(workerInputs(job.postMerge.run, 'postMerge.run'), {mode: 'regression'});
+  assert.doesNotMatch(job.postMerge.run, /secrets\./);
+  const report = job.postMerge.report;
+  assert.equal(route(report), 'ubuntu-latest');
+  assert.match(report, /needs: run$/m);
+  assert.match(report, /if: always\(\) && github.repository == 'teramoby\/speedle-plus'/);
+  assert.match(report, /permissions:\n      contents: read\n      issues: write\n/);
+  assert.match(report, /persist-credentials: false/);
+  assert.match(report, /name: regression-results/);
+  assert.match(report, /ARK_API_KEY: \$\{\{ secrets.ARK_API_KEY \}\}/);
+  assert.match(report, /FEISHU_WEBHOOK: \$\{\{ secrets.FEISHU_WEBHOOK \}\}/);
+  assert.match(report, /COMMIT_URL: .*\/commit\/\$\{\{ github.sha \}\}/);
+  assert.doesNotMatch(report, /SMTP_|MAIL_/, 'no email for the post-merge regression');
+  assert.match(report, /scripts\/ci\/test_report.py --kind regression /);
 });
 test('fixture job installs pinned Node 22 before running Node regression suites', () => {
   const block = job.review['diff-regression'];
