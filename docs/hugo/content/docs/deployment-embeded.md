@@ -1,6 +1,6 @@
 +++
 title = "Speedle embedded mode"
-description = ""
+description = "Embed Speedle in a Go application using Go modules and verify Allow/Deny decisions."
 weight = 12
 draft = false
 toc = true
@@ -11,85 +11,120 @@ bref = ""
 
 ## What is embedded mode?
 
-Unlike service mode, embedded mode runs the Speedle policy decision engine inside
-the calling process. Applications call the evaluator API directly to obtain
-authorization decisions.
+Embedded mode runs the Speedle policy decision engine inside your Go application. Call the evaluator directly without starting PMS or ADS servers. Your application authenticates users and supplies the subject, resource and action for each decision.
 
-## Limitations
+To try basic policies before writing code, open the [Playground](../../playground/). To run Speedle as standalone services, follow [Quick Start](../../quick-start/).
 
-- Only Go applications are supported. The original setup instructions use Go 1.10.
-- Policies must use the file store.
+## Prerequisites
 
-## Using embedded mode
+Use Linux or macOS with a shell and **Go 1.25 or newer**, the same minimum as [Quick Start](../../quick-start/). This walkthrough uses Go modules and the published **Speedle+ v1.6.0** release. Go 1.27.3 is the recommended toolchain; the example is verified with Go 1.25.14, Go 1.26.10 and Go 1.27.3.
 
-### Add Speedle to your project
+Install Go using the [official installation instructions](https://go.dev/doc/install), then check your version:
 
-Download the Speedle source using one of the following approaches.
-
-1. Use `go get`:
-
+<!-- embedded: version -->
 ```bash
-go get github.com/teramoby/speedle-plus
+go version
 ```
 
-2. Use `dep`. Add this constraint to `Gopkg.toml`:
+Go configures `GOROOT` and its default `GOPATH` automatically; no custom values are needed.
 
-```toml
-[[constraint]]
-  name = "github.com/teramoby/speedle-plus"
-  branch = "master"
-```
+## Create an application module
 
-Then add the source to your `vendor` directory:
+Start in a writable directory outside the Speedle source checkout. Use a new directory for this walkthrough:
 
+<!-- embedded: setup -->
 ```bash
-dep ensure -update github.com/teramoby/speedle-plus
+mkdir speedle-embedded-demo
+cd speedle-embedded-demo
+go mod init example.com/speedle-embedded-demo
+go get github.com/teramoby/speedle-plus/pkg/eval@v1.6.0
 ```
 
-### Initialize an evaluator
+In an existing Go module, run only the final `go get` command from that module's directory.
 
-`func eval.NewFromFile(loc string, isWatch bool) (ads.PolicyEvaluator, error)`
-initializes an evaluator from a policy file. It takes two arguments:
+Here, `go get` adds a versioned **library dependency** to `go.mod` and `go.sum`; it does not install a program. This differs from Quick Start, which uses `git clone` and `go build` to build the standalone service executables. Both use Go modules. Keep `go.mod` and `go.sum` in version control.
 
-- `loc`: the policy file location. JSON and SPDL formats are supported.
-- `isWatch`: when `true`, the evaluator reloads policies when the file changes;
-  when `false`, it does not watch for changes.
+## Create a policy file
 
-The method returns an evaluator instance. For example:
+In `speedle-embedded-demo`, save this content as `policies.spdl`. It grants `alice` permission to `get` resource `res1` in service `mysvc`:
 
+<!-- embedded: policies -->
+```ini
+[service.mysvc]
+[policy]
+grant user alice get res1
+```
+
+The `eval.NewFromFile` constructor loads a local file containing SPDL or JSON policies. This walkthrough uses SPDL.
+
+## Initialize the evaluator and request decisions
+
+Save the following complete program as `main.go` in the same directory:
+
+<!-- embedded: program -->
 ```go
+package main
+
 import (
-  "github.com/teramoby/speedle-plus/pkg/eval"
+	"fmt"
+	"log"
+
+	"github.com/teramoby/speedle-plus/api/ads"
+	"github.com/teramoby/speedle-plus/pkg/eval"
+	_ "github.com/teramoby/speedle-plus/pkg/store/file"
 )
 
-func foo() {
-    evaluator, err := eval.NewFromFile(spdlLoc, true)
-    // Handle err before using evaluator.
-    _, _ = evaluator, err
+func main() {
+	evaluator, err := eval.NewFromFile("./policies.spdl", false)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	for _, user := range []string{"alice", "bob"} {
+		allowed, _, err := evaluator.IsAllowed(ads.RequestContext{
+			Subject: &ads.Subject{
+				Principals: []*ads.Principal{{Type: ads.PRINCIPAL_TYPE_USER, Name: user}},
+			},
+			ServiceName: "mysvc",
+			Resource:    "res1",
+			Action:      "get",
+		})
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Printf("%s allowed=%t\n", user, allowed)
+	}
 }
 ```
 
-### Request an authorization decision
+The blank import `_ "github.com/teramoby/speedle-plus/pkg/store/file"` registers the file-store driver. Omitting it causes an `unknown store type "file"` error.
 
-`IsAllowed` evaluates a request against the policies. The `ads.RequestContext`
-argument contains the subject, service name, resource, action and attributes:
+`eval.NewFromFile(loc, isWatch)` returns an `ads.PolicyEvaluator` and an error. Check the error before using the evaluator. With `isWatch=false`, policies are loaded once; setting it to `true` enables file watching for a long-running application.
 
-```go
-type RequestContext struct {
-  Subject     *ads.Subject
-  ServiceName string
-  Resource    string
-  Action      string
-  Attributes  map[string]interface{}
-}
+Call `evaluator.IsAllowed(ctx)` on that instance. Its `ads.RequestContext` contains the subject's principals, `ServiceName`, `Resource`, `Action` and optional `Attributes`. It returns `(allowed bool, reason ads.Reason, err error)`. An evaluation error must be handled separately from a successful `allowed=false` decision.
+
+## Build and run
+
+From `speedle-embedded-demo`, resolve dependencies and build your application:
+
+<!-- embedded: build -->
+```bash
+go mod tidy
+go build -o ./bin/embedded-demo .
 ```
 
-The result has three values:
+Run it from the same directory so that `./policies.spdl` resolves correctly:
 
-1. `allowed bool`: whether the subject may perform the action on the resource.
-2. `reason Reason`: the reason for the decision.
-3. `err error`: an evaluation error, or `nil` if evaluation succeeds.
+<!-- embedded: run -->
+```bash
+./bin/embedded-demo
+```
 
-## Example
+The decision output is:
 
-See the [embedded expenses example](https://github.com/teramoby/speedle-plus/tree/master/samples/embedded/expenses).
+```text
+alice allowed=true
+bob allowed=false
+```
+
+`alice` matches the grant; `bob` has no matching grant and is denied. No network services or database are needed for this example.

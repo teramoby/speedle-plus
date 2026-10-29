@@ -1,6 +1,6 @@
 +++
 title = "Speedle嵌入模式"
-description = ""
+description = "使用 Go modules 将 Speedle 嵌入 Go 应用，并验证允许与拒绝的授权结果。"
 weight = 12
 draft = false
 toc = true
@@ -11,86 +11,120 @@ bref = ""
 
 ## 什么是 Speedle 嵌入模式
 
-区别于 Speedle 服务模式，Speedle 嵌入模式把 Speedle 的策略决策引擎嵌入到调用者进程内部，作为进程的一部分运行。调用者可以直接调用 Speedle 的 API 获得策略决策的结果。
+嵌入模式将 Speedle 策略决策引擎运行在你的 Go 应用进程中，通过 evaluator 直接决策，无需启动 PMS 或 ADS 服务。应用负责认证用户，并为每次决策提供主体、资源和操作。
 
-## 嵌入模式的局限
+编写代码前，可以先用 [Playground](../../playground/) 体验基本策略功能。如果希望以独立服务运行 Speedle，请参阅[快速入门](../../quick-start/)。
 
-- 只支持 Golang，推荐使用 Golang 1.10。
-- 只接受文件存储策略。
+## 前提条件
 
-## 如何使用嵌入模式
+使用 Linux 或 macOS、命令行 shell，以及 **Go 1.25 或更新版本**，最低版本与[快速入门](../../quick-start/)一致。本例使用 Go modules 和已发布的 **Speedle+ v1.6.0**，推荐使用 Go 1.27.3；示例已在 Go 1.25.14、Go 1.26.10 和 Go 1.27.3 下验证。
 
-### 把 Speedle 代码添加到你的工程中
+按照 [Go 官方安装说明](https://go.dev/doc/install)安装 Go，然后检查版本：
 
-在嵌入模式中，需要先将 Speedle 源代码从代码仓库中下载下来。主要有一下几种方式：
-
-1. 使用 go get
-
+<!-- embedded: version -->
 ```bash
-go get github.com/teramoby/speedle-plus
+go version
 ```
 
-2. 使用 dep 工具
+Go 会自动配置 `GOROOT` 和默认 `GOPATH`，无需手工设置。
 
-在你的 Gopkg.toml 文件中添加以下几行
+## 创建应用模块
 
-```toml
-[[constraint]]
-  name = "github.com/teramoby/speedle-plus"
-  branch = "master"
-```
+在 Speedle 源码目录之外，选择一个有写入权限的目录，从新目录开始本例：
 
-使用 dep 工具将 Speedle 源代码添加到`vendor`目录下：
-
+<!-- embedded: setup -->
 ```bash
-dep ensure -update github.com/teramoby/speedle-plus
+mkdir speedle-embedded-demo
+cd speedle-embedded-demo
+go mod init example.com/speedle-embedded-demo
+go get github.com/teramoby/speedle-plus/pkg/eval@v1.6.0
 ```
 
-### 在代码中初始化一个 Evalautor 实例
+如果已有包含 `go.mod` 的应用，只需在该应用的模块目录中执行最后一条 `go get` 命令。
 
-方法`func eval.NewFromFile(loc string, isWatch bool) (ads.PolicyEvaluator, error)`使用一个策略定义文件初始化一个 Evaluator 实例。该方法接受两个参数：
+这里的 `go get` 将指定版本的**库依赖**加入 `go.mod` 和 `go.sum`，不会安装程序。快速入门使用 `git clone` 和 `go build` 构建独立服务的可执行文件，两种用法均使用 Go modules。请将 `go.mod` 和 `go.sum` 纳入版本控制。
 
-- loc：决策定义文件的路径。支持两种决策文件格式：JSON 格式和 SPDL 格式。
-- isWatch: 如果值为`true`，当策略定义文件发生改动，Speedle 决策引擎能自动以最新的文件内容进行决策。如果值为`false`，Speedle 决策引擎不监视策略定义文件的任何改动。
+## 创建策略文件
 
-该方法返回一个 Evaluator 示例。
+在 `speedle-embedded-demo` 目录中，将以下内容保存为 `policies.spdl`。它允许 `alice` 对服务 `mysvc` 中的资源 `res1` 执行 `get` 操作：
 
-以下代码片段展示如何初始化一个 Evaluator 实例。
+<!-- embedded: policies -->
+```ini
+[service.mysvc]
+[policy]
+grant user alice get res1
+```
 
+`eval.NewFromFile` 从本地文件加载策略，支持 SPDL 和 JSON 两种格式。本例使用 SPDL。
+
+## 初始化 evaluator 并请求决策
+
+将以下完整程序保存为同一目录下的 `main.go`：
+
+<!-- embedded: program -->
 ```go
+package main
+
 import (
-  "github.com/teramoby/speedle-plus/pkg/eval"
+	"fmt"
+	"log"
+
+	"github.com/teramoby/speedle-plus/api/ads"
+	"github.com/teramoby/speedle-plus/pkg/eval"
+	_ "github.com/teramoby/speedle-plus/pkg/store/file"
 )
 
-func foo() {
-    eval, err := evaluator.NewFromFile(spdlLoc, true)
+func main() {
+	evaluator, err := eval.NewFromFile("./policies.spdl", false)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	for _, user := range []string{"alice", "bob"} {
+		allowed, _, err := evaluator.IsAllowed(ads.RequestContext{
+			Subject: &ads.Subject{
+				Principals: []*ads.Principal{{Type: ads.PRINCIPAL_TYPE_USER, Name: user}},
+			},
+			ServiceName: "mysvc",
+			Resource:    "res1",
+			Action:      "get",
+		})
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Printf("%s allowed=%t\n", user, allowed)
+	}
 }
 ```
 
-### 调用 Evaluator API 进行决策
+空白导入 `_ "github.com/teramoby/speedle-plus/pkg/store/file"` 用于注册文件存储驱动；省略它会出现 `unknown store type "file"` 错误。
 
-方法`func ads.IsAllowed(c ads.RequestContext) (allowed bool, reason Reason, err error)`依据策略定义文件中定义的策略进行决策。
+`eval.NewFromFile(loc, isWatch)` 返回 `ads.PolicyEvaluator` 实例和错误。使用实例前必须检查错误。`isWatch=false` 表示只加载一次策略；长期运行的应用可设为 `true`，启用文件变更监听。
 
-该方法接受一个参数`ads.RequestContext`，该结构的定义如下：
+在该实例上调用 `evaluator.IsAllowed(ctx)`。参数 `ads.RequestContext` 包含主体的 principals、`ServiceName`、`Resource`、`Action` 和可选的 `Attributes`。返回值为 `(allowed bool, reason ads.Reason, err error)`。请区分决策失败的错误与正常返回 `allowed=false` 的拒绝结果。
 
-```go
-typedef RequestContext {
-  Subject     *ads.Subject                 // Subject包含用户信息，用户名，组名等。
-  ServiceName string                       // Speedle Service
-  Resource    string                       // Resource Name
-  Action      string                       // Action Name
-  Attributes  map[string]interface{}       // Attributes
-}
+## 构建并运行
+
+在 `speedle-embedded-demo` 目录中，整理依赖并构建应用：
+
+<!-- embedded: build -->
+```bash
+go mod tidy
+go build -o ./bin/embedded-demo .
 ```
 
-该方法有 3 个返回值：
+仍在同一目录中运行，确保 `./policies.spdl` 指向刚才创建的文件：
 
-1. allowed bool: `true`，`Subject`指定的用户有权限操作资源(Action, Resource)。`false`，没有权限操作资源(Action, Resource)。
-2. reason Reason: 做出决策的原因。
-3. err error: 决策过程中出现的异常。如果没有异常，返回 nil。
+<!-- embedded: run -->
+```bash
+./bin/embedded-demo
+```
 
-## 嵌入模式的例子
+决策输出如下：
 
-例子可以在
-https://github.com/teramoby/speedle-plus/tree/master/samples/embedded/expenses
-中找到。
+```text
+alice allowed=true
+bob allowed=false
+```
+
+`alice` 匹配授权策略；`bob` 没有匹配的授权策略，因此被拒绝。本例无需启动网络服务或数据库。
