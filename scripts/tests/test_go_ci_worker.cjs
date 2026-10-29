@@ -158,17 +158,19 @@ test('test environment neutralizes inherited CLI names, tokens, certificates and
 // python3 and node that record their calls and exit with fixture statuses.
 const repoRoot = path.resolve(__dirname, '../..');
 const recorded = ['STORE_TYPE', 'SPEEDLE_CLI_COVERPROFILE', 'GOTOOLCHAIN', 'RESULTS_DIR', ...cleanKeys, 'PMS_ENDPOINT', 'ADS_ENDPOINT', 'GOPATH'];
-function runSuite(mode, {listExit = 0, failMatching = '', mysqlOnly = false} = {}) {
+function runSuite(mode, {listExit = 0, failMatching = '', mysqlOnly = false, docker = 'reachable'} = {}) {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'speedle-worker-go-'));
   try {
     const calls = path.join(directory, 'calls.jsonl');
     const stub = tool => `#!${process.execPath}
 const fs=require('node:fs');const a=process.argv.slice(2);
 if(${JSON.stringify(tool)}==='go'&&a[0]==='env'){console.log(a[1]==='CC'?'true':a[1]==='GOVERSION'?'go1.26.10':process.env.FIXTURE_GOPATH);process.exit(0)}
+if(${JSON.stringify(tool)}==='docker')process.exit(process.env.FIXTURE_DOCKER==='reachable'?0:1)
+if(${JSON.stringify(tool)}==='id'){console.log(a[0]==='-un'?'runner':process.env.FIXTURE_DOCKER==='group'?'runner docker':'runner');process.exit(0)}
 if(${JSON.stringify(tool)}==='go'&&a[0]==='list'){console.log('example.invalid/pkg/a\\nexample.invalid/pkg/store/mongodb\\nexample.invalid/samples/x\\nexample.invalid/pkg/svcs/adsgrpc/pb');process.exit(Number(process.env.FIXTURE_LIST_EXIT))}
 fs.appendFileSync(process.env.FIXTURE_CALLS,JSON.stringify({tool:${JSON.stringify(tool)},args:a,env:Object.fromEntries(${JSON.stringify(recorded)}.map(k=>[k,process.env[k]]))})+'\\n');
 const fail=process.env.FIXTURE_FAIL;process.exit(fail&&a.join(' ').includes(fail)?7:0);\n`;
-    for (const tool of ['go', 'python3', 'node', 'flock']) {
+    for (const tool of ['go', 'python3', 'node', 'flock', 'docker', 'id', 'sg']) {
       fs.writeFileSync(path.join(directory, tool), stub(tool)); fs.chmodSync(path.join(directory, tool), 0o755);
     }
     const inherited = Object.fromEntries(cleanKeys.map(key => [key, 'fixture-inherited-value']));
@@ -181,7 +183,7 @@ const fail=process.env.FIXTURE_FAIL;process.exit(fail&&a.join(' ').includes(fail
       RESULTS_DIR: path.join(work, 'results'),
       GITHUB_EVENT_NAME: mysqlOnly ? 'workflow_dispatch' : 'push', GITHUB_EVENT_PATH: event,
       PATH: `${directory}${path.delimiter}${process.env.PATH}`, FIXTURE_CALLS: calls,
-      FIXTURE_GOPATH: directory, FIXTURE_LIST_EXIT: String(listExit), FIXTURE_FAIL: failMatching,
+      FIXTURE_GOPATH: directory, FIXTURE_LIST_EXIT: String(listExit), FIXTURE_FAIL: failMatching, FIXTURE_DOCKER: docker,
     }});
     const records = fs.existsSync(calls) ? fs.readFileSync(calls, 'utf8').trim().split('\n').map(line => JSON.parse(line)).filter(r => !(r.tool === 'python3' && r.args[0] === '-')) : [];
     const checks = fs.existsSync(path.join(work, 'results', 'checks.txt')) ? fs.readFileSync(path.join(work, 'results', 'checks.txt'), 'utf8') : '';
@@ -253,6 +255,22 @@ test('manual MySQL trial runs the full database suite and CI checks without the 
   assert.match(checks, /ci-script-tests=0:ci-script-tests\.log/);
   assert.doesNotMatch(checks, /etcd-docs|mongodb-docs/);
   assert.ok(records.some(r => r.args.includes('scripts/ci/run-mysql-tests.py')));
+});
+test('Docker guide checks use the account docker group the runner process lacks', () => {
+  const guides = ['website/tests/check_etcd.py', 'website/tests/check_mongodb.py'];
+  const direct = runSuite('nightly');
+  assert.equal(direct.result.status, 0, direct.result.stderr);
+  for (const guide of guides) assert.ok(direct.records.some(r => r.tool === 'python3' && r.args[0] === guide), guide);
+  assert.ok(!direct.records.some(r => r.tool === 'sg'));
+  const {result, records, checks} = runSuite('nightly', {docker: 'group'});
+  assert.equal(result.status, 0, result.stderr);
+  for (const guide of guides) {
+    assert.ok(records.some(r => r.tool === 'sg' && r.args[0] === 'docker' && r.args[1] === '-c' && r.args[2] === `python3 ${guide} `), guide);
+    assert.ok(!records.some(r => r.tool === 'python3' && r.args[0] === guide), guide);
+  }
+  assert.match(checks, /^etcd-docs=0:etcd-docs\.log$/m); assert.match(checks, /^mongodb-docs=0:mongodb-docs\.log$/m);
+  const none = runSuite('nightly', {docker: 'none'});
+  assert.ok(!none.records.some(r => r.tool === 'sg'), 'without the docker group, the guide runs and reports its own error');
 });
 test('weekly tests the other supported Go releases and runs staticcheck', () => {
   const {result, records, checks} = runSuite('weekly'); assert.equal(result.status, 0, result.stderr);

@@ -54,6 +54,16 @@ check() {
   (( status == 0 )) || failed=1
   echo "${name}: exit ${status}"
 }
+with_docker() {
+  # with_docker COMMAND...: run COMMAND where it can reach Docker. A runner
+  # service started before its account joined the docker group lacks that
+  # group; like run-mysql-tests.py, use the account's existing membership.
+  if docker info > /dev/null 2>&1 || ! id -nG "$(id -un)" | grep -qw docker; then
+    "$@"
+  else
+    sg docker -c "$(printf '%q ' "$@")"
+  fi
+}
 gotest_json() {
   # gotest_json NAME [ENV=VALUE...] -- go test args...: run go test -json.
   local name=$1 status=0
@@ -105,8 +115,8 @@ case "${mode}" in
     gotest_json go-file STORE_TYPE=file -- -p 1 -count=1 -timeout 600s "${race[@]}" "${pkgs[@]}"
     gotest_json go-etcd STORE_TYPE=etcd -- -p 1 -count=1 -timeout 600s "${race[@]}" "${pkgs[@]}"
     check mysql-full python3 scripts/ci/run-mysql-tests.py
-    check etcd-docs python3 website/tests/check_etcd.py
-    check mongodb-docs python3 website/tests/check_mongodb.py
+    check etcd-docs with_docker python3 website/tests/check_etcd.py
+    check mongodb-docs with_docker python3 website/tests/check_mongodb.py
     for toolchain in "${all_toolchains[@]}"; do
       check "quick-start-${toolchain}" python3 website/tests/check_quick_start.py --toolchain "${toolchain}"
     done
