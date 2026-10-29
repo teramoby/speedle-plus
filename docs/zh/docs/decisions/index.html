@@ -90,191 +90,121 @@ headingSelector: 'h2'
   <div id="kube-component" class="content">
     
 
-<h2 id="1-什么是授权查询">1. 什么是授权查询?</h2>
+<h2 id="什么是授权决策">什么是授权决策？</h2>
 
-<ul>
-<li><p>授权查询是 Speedle ADS(Authorization Decision Service)提供的服务接口， 一般用于查询某个主体(subject)对某个资源(resource)实施某项操作(action)是否被允许。</p></li>
+<p>Speedle 在指定服务内评估主体、操作与资源，由应用执行结果。应区分评估错误、超时与正常的 Deny，并在出错时拒绝访问。REST、gRPC、嵌入式 Go 的数据表示不同，应分别遵循各自的 <a href="/zh/docs/api/">API 契约</a>。</p>
 
-<li><p>授权查询的结果是基于角色策略(role-policies)和策略(policies)的实时运算。</p></li>
-</ul>
+<h2 id="运行示例前">运行示例前</h2>
 
-<h2 id="2-授权查询的方式">2. 授权查询的方式</h2>
+<p>先按<a href="/zh/quick-start/">快速入门</a>编译仓库根目录下的 <code>./bin/spctl</code>、<code>./bin/speedle-pms</code> 和 <code>./bin/speedle-ads</code>，需要 Go 1.26.10 或 Go 1.27.3（也可使用同一大版本的更新补丁版本）、Bash、curl 和 Python 3。下面各终端都从仓库根目录运行。为本页使用一个新的策略文件；仅在两个服务都停止后重建该文件。</p>
 
-<p>Speedle 支持以下 3 种方式进行授权查询：</p>
+<p>初始化空策略文件：</p>
 
-<ul>
-<li>REST API provided by Authorization Decision Service(ADS)</li>
-<li>Grpc API provided by Authorization Decision Service(ADS)</li>
-<li>Golang API</li>
-</ul>
+<!-- docs-check: setup -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#8be9fd;font-style:italic">printf</span> <span style="color:#f1fa8c">&#39;{}\n&#39;</span> &gt; docs-policies.json</code></pre></div>
+<p>终端一启动 PMS，并保持运行：</p>
 
-<h2 id="3-授权查询-api-及其示例">3. 授权查询 API 及其示例</h2>
+<!-- docs-check: pms -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./bin/speedle-pms --store-type file --filestore-loc ./docs-policies.json --endpoint <span style="color:#bd93f9">127</span>.0.0.1:6733 --grpc-endpoint <span style="color:#bd93f9">127</span>.0.0.1:0 --insecure<span style="color:#ff79c6">=</span>true</code></pre></div>
+<p>终端二启动 ADS，并保持运行：</p>
 
-<p>The ADS decision APIs make authorization decisions based on policies that describe the actions, permissions, and roles granted to a subject.</p>
+<!-- docs-check: ads -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./bin/speedle-ads --store-type file --filestore-loc ./docs-policies.json --endpoint <span style="color:#bd93f9">127</span>.0.0.1:6734 --grpc-endpoint <span style="color:#bd93f9">127</span>.0.0.1:0 --insecure<span style="color:#ff79c6">=</span>true</code></pre></div>
+<p>在第三个终端运行后续命令。PMS/ADS 共享同一个文件，策略更新通过 watch 异步到达 ADS；先查询确认已更新，再依赖新策略做决策。<code>--insecure=true</code> 仅用于回环地址上的本地示例，生产连接见<a href="/zh/docs/security/">安全配置</a>。示例显式指定 PMS 地址，不修改 <code>~/.spctlconfig</code>。完成后在两个服务终端按 Ctrl-C。</p>
 
-<h3 id="3-1-查询授权决定">3.1 查询授权决定</h3>
+<h2 id="创建可重复的测试策略">创建可重复的测试策略</h2>
 
-<p>查询某个主体(subject)对某个资源(resource)实施某项操作(action)是否被允许</p>
+<p><a href="https://github.com/teramoby/speedle-plus/blob/master/website/tests/examples/bookstore.json">测试文件</a>给 Alan 分配 <code>role1</code>、<code>role2</code>；其中 <code>role1</code> 可以下载 <code>/books/HarryPotter</code>。</p>
 
-<ul>
-<li>API overview
+<!-- docs-check: bookstore-fixture -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ create service --json-file website/tests/examples/bookstore.json</code></pre></div>
+<h2 id="获取授权决策">获取授权决策</h2>
 
-<ul>
-<li>IN</li>
-<li>Given the request: subject, action, resource</li>
-<li>Given the runtime attributes **optional**</li>
-<li>Given the service scope</li>
-<li>OUT</li>
-<li>Returns <em>true</em> if allowed, <em>false</em> if <em>NOT</em> allowed</li>
-<li>Returns reason for the decision</li>
-<li>Returns errors if an error occurs</li>
-</ul></li>
-<li>Sample
+<p>Alan 的请求允许；Bob 没有适用的允许策略，请求被拒绝。</p>
 
-<ul>
-<li>查询 user Alan 从 onlineBookStore 应用 下载 HarryPotter 这本书是否被允许。</li>
-<li>授权结果基于定义在 &ldquo;onlineBookStore&rdquo; 这个 service 中的所有角色策略(role-policies)和策略(policies)的。</li>
-</ul></li>
-</ul>
+<!-- docs-check: decision-allow -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl --fail --silent --show-error -H <span style="color:#f1fa8c">&#39;Content-Type: application/json&#39;</span> <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  -d <span style="color:#f1fa8c">&#39;{&#34;subject&#34;:{&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;,&#34;name&#34;:&#34;Alan&#34;}]},&#34;serviceName&#34;:&#34;onlineBookStore&#34;,&#34;resource&#34;:&#34;/books/HarryPotter&#34;,&#34;action&#34;:&#34;download&#34;}&#39;</span> <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  http://127.0.0.1:6734/authz-check/v1/is-allowed</code></pre></div>
+<!-- docs-check: decision-deny -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl --fail --silent --show-error -H <span style="color:#f1fa8c">&#39;Content-Type: application/json&#39;</span> <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  -d <span style="color:#f1fa8c">&#39;{&#34;subject&#34;:{&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;,&#34;name&#34;:&#34;Bob&#34;}]},&#34;serviceName&#34;:&#34;onlineBookStore&#34;,&#34;resource&#34;:&#34;/books/HarryPotter&#34;,&#34;action&#34;:&#34;download&#34;}&#39;</span> <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  http://127.0.0.1:6734/authz-check/v1/is-allowed</code></pre></div>
+<p>成功评估返回 <code>{&quot;allowed&quot;:true,&quot;reason&quot;:0}</code> 或对应的 Deny 对象。HTTP 错误返回错误响应，不能视为成功授权。原因码如下：</p>
 
-<p><strong>REST API example:</strong></p>
+<table>
+<thead>
+<tr>
+<th>数值</th>
+<th>含义</th>
+</tr>
+</thead>
 
-<p><em>Request:</em></p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4">curl -X POST  http://localhost:6734/authz-check/v1/is-allowed \
--d @- &lt;&lt; EOF
-{
- &#34;subject&#34;: {&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;, &#34;name&#34;:&#34;Alan&#34;}]},
- &#34;action&#34;: &#34;download&#34;,
- &#34;resource&#34;:&#34;/books/HarryPotter&#34;,
- &#34;serviceName&#34;: &#34;onlineBookStore&#34;
-}
-EOF</pre></div>
-<p><em>Response:</em></p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4">{&#34;allowed&#34;:true,&#34;reason&#34;:0}</pre></div>
-<p>这里 reason &lsquo;0&rsquo;表示 ADS 找到了授权策略. 下表列出了所有原因的定义:</p>
+<tbody>
+<tr>
+<td>0</td>
+<td>GRANT_POLICY_FOUND</td>
+</tr>
 
-<p><table class="bordered striped">
-    <thead>
-      <tr>
-        <th>原因<br>Reason</th>
-        <th>定义<br>Definition</th>
-        <th>含义<br>Comment</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td> 0 </td>
-        <td> GRANT_POLICY_FOUND </td>
-        <td> 找到了授权策略 </td>
-      </tr>
-      <tr>
-        <td> 1 </td>
-        <td> DENY_POLICY_FOUND </td>
-        <td> 找到了拒绝授权策略 </td>
-      </tr>
-      <tr>
-        <td> 2 </td>
-        <td> SERVICE_NOT_FOUND </td>
-        <td> 没找到服务 </td>
-      </tr>
-      <tr>
-        <td> 3 </td>
-        <td> NO_APPLICABLE_POLICIES </td>
-        <td> 没找到匹配的策略 </td>
-      </tr>
-      <tr>
-        <td> 4 </td>
-        <td> ERROR_IN_EVALUATION </td>
-        <td> 策略运算中出现错误 </td>
-      </tr>
-      <tr>
-        <td> 5 </td>
-        <td> DISCOVER_MODE </td>
-        <td> 处于Discovery Mode </td>
-      </tr>
-   </tbody>
- </table></p>
+<tr>
+<td>1</td>
+<td>DENY_POLICY_FOUND</td>
+</tr>
 
-<h3 id="3-2-查询某一主体-subject-的所有角色-roles">3.2 查询某一主体(subject)的所有角色(Roles)</h3>
+<tr>
+<td>2</td>
+<td>SERVICE_NOT_FOUND</td>
+</tr>
 
-<p>取得某一主体(subject)的所有角色(roles)</p>
+<tr>
+<td>3</td>
+<td>NO_APPLICABLE_POLICIES</td>
+</tr>
 
-<ul>
-<li><p>API overview</p>
+<tr>
+<td>4</td>
+<td>ERROR_IN_EVALUATION</td>
+</tr>
 
-<ul>
-<li>IN</li>
-<li>Given the subject</li>
-<li>Given the runtime attributes **optional**</li>
-<li>Given the service scope</li>
-<li>OUT</li>
-<li>Returns a slice of roles granted to current subject</li>
-<li>Returns errors if an error occurs</li>
-</ul></li>
+<tr>
+<td>5</td>
+<td>DISCOVER_MODE</td>
+</tr>
 
-<li><p>Sample</p>
+<tr>
+<td>6</td>
+<td>REASON_NOT_AVAILABLE</td>
+</tr>
+</tbody>
+</table>
 
-<ul>
-<li>取得 user Alan 被授予的所有角色(roles)</li>
-<li>结果基于定义在 &ldquo;onlineBookStore&rdquo; 这个 service 中的所有角色策略(role-policies)。</li>
-</ul></li>
-</ul>
+<p><code>DISCOVER_MODE</code> 不表示生产授权通过；<code>REASON_NOT_AVAILABLE</code> 是回退原因值。这些数值不是 HTTP 状态码。</p>
 
-<p><strong>REST API example:</strong><br />
-<em>Request:</em></p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4">curl -X POST  http://localhost:6734/authz-check/v1/all-granted-roles \
--d @- &lt;&lt; EOF
-{
- &#34;subject&#34;: {&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;, &#34;name&#34;:&#34;Alan&#34;}]},
- &#34;serviceName&#34;: &#34;onlineBookStore&#34;
-}
-EOF</pre></div>
-<p><em>Response:</em></p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4">[&#34;role1&#34;, &#34;role2&#34;]</pre></div>
-<h3 id="3-3-查询某一主体-subject-被授予的所有权限-permissions">3.3 查询某一主体(subject)被授予的所有权限(Permissions)</h3>
+<h2 id="查询已授予角色">查询已授予角色</h2>
 
-<p>取得授予某一主体(subject)的所有的权限(permissions).</p>
+<!-- docs-check: decision-roles -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl --fail --silent --show-error -H <span style="color:#f1fa8c">&#39;Content-Type: application/json&#39;</span> <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  -d <span style="color:#f1fa8c">&#39;{&#34;subject&#34;:{&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;,&#34;name&#34;:&#34;Alan&#34;}]},&#34;serviceName&#34;:&#34;onlineBookStore&#34;,&#34;resource&#34;:&#34;/books/HarryPotter&#34;,&#34;action&#34;:&#34;download&#34;}&#39;</span> <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  http://127.0.0.1:6734/authz-check/v1/all-granted-roles</code></pre></div>
+<p>预期包含 <code>role1</code>、<code>role2</code>，顺序无意义。查询有资源范围的角色分配时，需要传入对应的 <code>resource</code>。</p>
 
-<ul>
-<li><p>API overview</p>
+<h2 id="查询已授予权限">查询已授予权限</h2>
 
-<ul>
-<li>IN</li>
-<li>Given the subject</li>
-<li>Given the runtime attributes **optional**</li>
-<li>Given the service scope</li>
-<li>OUT</li>
-<li>Returns a slice of (actions, resource) pairs, current subject is allowed to perform.</li>
-<li>Returns errors if an error occurs</li>
-</ul></li>
+<!-- docs-check: decision-permissions -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl --fail --silent --show-error -H <span style="color:#f1fa8c">&#39;Content-Type: application/json&#39;</span> <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  -d <span style="color:#f1fa8c">&#39;{&#34;subject&#34;:{&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;,&#34;name&#34;:&#34;Alan&#34;}]},&#34;serviceName&#34;:&#34;onlineBookStore&#34;,&#34;resource&#34;:&#34;/books/HarryPotter&#34;,&#34;action&#34;:&#34;download&#34;}&#39;</span> <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  http://127.0.0.1:6734/authz-check/v1/all-granted-permissions</code></pre></div>
+<p>预期权限为资源 <code>/books/HarryPotter</code> 上的 <code>download</code> 操作。此接口列出已授予权限；执行具体业务操作仍应调用 <code>is-allowed</code>，不能用权限列表代替完整的请求评估。</p>
 
-<li><p>Sample</p>
+<h2 id="属性-诊断与令牌身份">属性、诊断与令牌身份</h2>
 
-<ul>
-<li>取得授予 user Alan 的所有的权限(permissions).</li>
-<li>结果基于定义在 &ldquo;onlineBookStore&rdquo; 这个 service 中的所有角色策略(role-policies)和策略(policies)。</li>
-</ul></li>
-</ul>
-
-<p><strong>REST API example:</strong><br />
-<em>Request:</em></p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4">curl -X POST  http://localhost:6734/authz-check/v1/all-granted-permissions \
--d @- &lt;&lt; EOF
-{
- &#34;subject&#34;: {&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;, &#34;name&#34;:&#34;Alan&#34;}]},
- &#34;serviceName&#34;: &#34;onlineBookStore&#34;
-}
-EOF</pre></div>
-<p><em>Response:</em></p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4">[{
-    &#34;resource&#34;:&#34;/books/HarryPotter&#34;,
-    &#34;actions&#34;:[&#34;download&#34;,&#34;read&#34;]
- },
- {
-    &#34;resource&#34;:&#34;/books/ThreeBodyProblem&#34;,
-    &#34;actions&#34;:[&#34;borrow&#34;]
- }]</pre></div>
-<p>For details, see <a href="/zh/docs/api/decision_api/">Authorization Runtime/Decision API</a>.</p>
+<p>REST 请求属性是带类型的对象数组。例如，其中一个属性对象为：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">{
+  <span style="color:#ff79c6">&#34;name&#34;</span>: <span style="color:#f1fa8c">&#34;clearance&#34;</span>,
+  <span style="color:#ff79c6">&#34;type&#34;</span>: <span style="color:#f1fa8c">&#34;numeric&#34;</span>,
+  <span style="color:#ff79c6">&#34;value&#34;</span>: <span style="color:#bd93f9">4</span>
+}</code></pre></div>
+<p>嵌入式 Go 使用 <code>map[string]interface{}</code>。诊断响应的属性也是对象，不能与请求属性数组混淆。属性类型与条件见 <a href="/zh/docs/spdl/">SPDL</a>，过程明细见<a href="/zh/docs/pms/diagnosis/">授权诊断</a>，令牌校验见<a href="/zh/docs/assertor/">令牌断言</a>。</p>
 
   </div>
 </div>

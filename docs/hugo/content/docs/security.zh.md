@@ -11,120 +11,89 @@ categories = ["docs"]
 bref = ""
 +++
 
-## 概要
+## 同时保护两种 API 传输
 
-### API Endpoint 安全/认证和授权
+独立运行的 PMS 与 ADS 都提供 **REST 和 gRPC**。现在两者共同使用 `--insecure`、`--cert`、`--key`、`--client-cert` 和 `--force-client-cert` 配置。证书或信任配置无效时启动失败，安全模式不会降级为明文。
 
-Speedle API Endpoint 自身仅支持 TLS mutual auth（TLS 相互身份验证）这种认证和授权.
+TLS 加密连接并认证服务端。若要强制认证客户端，必须通过 `--client-cert` 提供客户端 CA，**同时**设置 `--force-client-cert=true`。只提供 CA 时，仅在客户端主动发送证书的情况下验证该证书。TLS 本身不决定谁有管理员权限，也不提供 Bearer token 校验。管理、诊断、发现接口需要认证网关或等价的访问控制。`--enable-authz` 参数不提供内置的端点授权策略。
 
-您可以使用像 Ambassador API Gateway 等既存的方案对 Speedle API endpoint 进行保护。
+## 监听地址与兼容性
 
-### 消息安全 / TLS
+| 服务 | 默认 REST 地址 | 默认 gRPC 地址 |
+| --- | --- | --- |
+| PMS | `0.0.0.0:6733` | 默认关闭；需设置 `--grpc-endpoint` |
+| ADS | `0.0.0.0:6734` | 默认关闭；需设置 `--grpc-endpoint` |
 
-TLS 是一种提供通信安全性的加密协议，它提供了许多不同的交换密钥进行身份验证，加密数据和保证消息完整性的方法。
+REST 与 gRPC 的地址分别配置。仅设置 `--endpoint` 不会启用 gRPC；请显式使用 `--grpc-endpoint 127.0.0.1:50001`（PMS）或 `127.0.0.1:50002`（ADS）。`127.0.0.1:0` 为隔离测试选择临时端口。需要 IPv6 时显式指定 IPv6 监听地址。
 
-Speedle 支持使用 TLS 来保护在非信任环境中的消息传输，也支持使用 TLS mutual auth 来验证客户端身份。
+配置优先级为命令行、`SPDL_*` 环境变量、JSON 配置、默认值。gRPC 对应 `--grpc-endpoint`、`SPDL_GRPC_ENDPOINT` 和 `serverConfig.grpcEndpoint`。[API 总览](/docs/api/)提供当前 proto 契约及客户端生成说明。
 
-在下文中，我们将介绍如何在 Speedle（作为一个独立应用程序）中启用 TLS，以及如何使用 Speedle CLI / curl 访问启用 TLS 的 Speedle 服务。
+## 生成本地测试证书
 
-如果您希望通过 TLS 保护在 Kubernetes 中的 Speedle 部署，请单击 [此处](../deployment)
+先按[快速入门](/quick-start/)编译二进制，然后从仓库根目录使用 Go 1.26.10 或 Go 1.27.3（也可使用同一大版本的更新补丁版本）生成本地 CA、独立的服务端与客户端证书。服务端证书的 SAN 包括 `localhost`、`127.0.0.1`、`::1`，私钥权限为 0600。这些是**有效期 24 小时的演示证书**，不能作为生产凭据。工具拒绝覆盖已有文件；重新生成时使用新的输出目录。
 
-## 先决条件
-
-为了启用 TLS，Speedle 必须为其外部接口（IP 地址或 DNS 名称）配置相关的“证书”，以接受安全连接。
-
-此证书由受信任的第三方（证书颁发机构）加密签名。要获取签名证书，您需要选择 CA 并按照所选 CA 提供的说明获取证书。
-
-在测试环境中，可以创建一个“自签名”证书。自签名证书是未经知名 CA 签名的用户自己生成的证书，无法保证证书的真实性，因此它们不适合在生产环境中使用。
-
-为方便起见，您可以使用 [cfssl](https://github.com/cloudflare/cfssl) 工具来生成自签名证书，步骤如下：
-
-### 安装 cfssl
-
+<!-- docs-check: certificates -->
 ```bash
-curl -s -L -o /usr/bin/cfssl https://pkg.cfssl.org/R1.2/cfssl_linux-amd64
-curl -s -L -o /usr/bin/cfssljson https://pkg.cfssl.org/R1.2/cfssljson_linux-amd64
+go run ./website/tests/examples/certificates --out ./tls
 ```
 
-或者使用 Go 来安装：
 
+## 启动双向 TLS 服务
+
+先停止两个服务，再初始化新的策略文件；只执行一次：
+
+<!-- docs-check: setup -->
 ```bash
-go get -u github.com/cloudflare/cfssl/cmd/cfssl
-go get -u github.com/cloudflare/cfssl/cmd/cfssljson
+printf '{}\n' > docs-policies.json
 ```
 
-### 生成 CA 和证书
 
+终端一启动 PMS：
+
+<!-- docs-check: secure-pms -->
 ```bash
-echo '{"CN":"CA","key":{"algo":"rsa","size":2048}}' | cfssl gencert -initca - | cfssljson -bare ca -
-echo '{"signing":{"default":{"expiry":"43800h","usages":["signing","key encipherment","server auth","client auth"]}}}' > ca-config.json
-# replace this with your ip address or dns
-export ADDRESS=localhost,127.0.0.1
-export NAME=server
-echo '{"CN":"'$NAME'","hosts":[""],"key":{"algo":"rsa","size":2048}}' | cfssl gencert -config=ca-config.json -ca=ca.pem -ca-key=ca-key.pem -hostname="$ADDRESS" - | cfssljson -bare $NAME
-export ADDRESS=
-export NAME=client
-echo '{"CN":"'$NAME'","hosts":[""],"key":{"algo":"rsa","size":2048}}' | cfssl gencert -config=ca-config.json -ca=ca.pem -ca-key=ca-key.pem -hostname="$ADDRESS" - | cfssljson -bare $NAME
-
-mv server.pem server.crt
-mv server-key.pem server.key
-cp ca.pem server-ca.crt
-
-mv client.pem client.crt
-mv client-key.pem client.key
-cp ca.pem client-ca.crt
+./bin/speedle-pms --store-type file --filestore-loc ./docs-policies.json \
+  --endpoint 127.0.0.1:6733 --grpc-endpoint 127.0.0.1:50001 \
+  --cert ./tls/server.crt --key ./tls/server.key \
+  --client-cert ./tls/ca.crt --force-client-cert=true
 ```
 
-## 在 Speedle 中启用 TLS
 
-### 命令行参数
+终端二启动 ADS：
 
-Speedle `PMS`（Policy Management Service）和`ADS`（Authorization Decision Service）的 TLS 相关配置参数：
-
-| 名称              | 值                   | 默认  | 注释                                             |
-| ----------------- | -------------------- | ----- | ------------------------------------------------ |
-| insecure          | true, false          | false | 指定是否为非安全方式， true: 禁用, false: 启用。 |
-| cert              | TLS certificate path |       | 指定 TLS 证书文件的目录。                        |
-| key               | TLS private key path |       | 指定 TLS 私钥文件的目录。                        |
-| client-cert       | client CA path       |       | 指定用于客户端认证的 CA 证书的目录。             |
-| force-client-cert | true, false          | false | 指定是否强制客户端证书认证。                     |
-
-### 示例
-
+<!-- docs-check: secure-ads -->
 ```bash
-$ speedle-pms --store-type file --endpoint="127.0.0.1:6733" --insecure=false --key=$tls_config_path/server.key --cert=$tls_config_path/server.crt --client-cert=$tls_config_path/client-ca.crt
-
-$ speedle-ads --store-type file --endpoint="127.0.0.1:6735" --insecure=false --force-client-cert=true --key=$tls_config_path/server.key --cert=$tls_config_path/server.crt --client-cert=$tls_config_path/client-ca.crt
+./bin/speedle-ads --store-type file --filestore-loc ./docs-policies.json \
+  --endpoint 127.0.0.1:6734 --grpc-endpoint 127.0.0.1:50002 \
+  --cert ./tls/server.crt --key ./tls/server.key \
+  --client-cert ./tls/ca.crt --force-client-cert=true
 ```
 
-**注意: 请在指定 TLS 相关目录时使用绝对目录。**
 
-## 使用`spctl` CLI 访问启用 TLS 的 Speedle
+两个终端都从同一仓库根目录运行并保持打开。完成后分别按 Ctrl-C 停止。生产证书必须覆盖实际域名/IP，并来自组织信任的 CA。
 
-### 命令行参数
+## 使用 spctl 和 curl
 
-Spctl CLI TLS 相关配置参数：
-
-| 名称              | 值                   | 默认  | 注释                                                                 |
-| ----------------- | -------------------- | ----- | -------------------------------------------------------------------- |
-| skipverify        | true, false          | false | 指定是否跳过 Speedle 的 TLS 证书校验 certificate.                    |
-| cert              | TLS certificate path |       | 指定客户端 TLS 证书的目录。                                          |
-| key               | TLS private key path |       | 指定客户端 TLS 私钥的目录。                                          |
-| client-cert       | client CA path       |       | 指定 CA 证书的目录。                                                 |
-| force-client-cert | true, false          | false | specifies if the client certificate authentication is forced or not. |
-
-### 示例
-
+<!-- docs-check: secure-cli -->
 ```bash
-$ spctl config skipverify false cacert $tls_config_path/server-ca.crt cert $tls_config_path/client.crt key $tls_config_path/client.key pms-endpoint "https://localhost:6733/policy-mgmt/v1/"
-$ spctl create service test
-$ spctl get service --all
+./bin/spctl --pms-endpoint https://127.0.0.1:6733/policy-mgmt/v1/ \
+  --skipverify=false --cacert ./tls/ca.crt --cert ./tls/client.crt --key ./tls/client.key \
+  get service --all
 ```
 
-## 使用`curl`访问启用 TLS 的 Speedle
 
-### 示例
-
+<!-- docs-check: secure-curl -->
 ```bash
-$ curl --cacert $tls_config_path/server-ca.crt --cert $tls_config_path/client.crt --key $tls_config_path/client.key https://localhost:6733/policy-mgmt/v1/service
+curl --fail --silent --show-error --cacert ./tls/ca.crt \
+  --cert ./tls/client.crt --key ./tls/client.key \
+  https://127.0.0.1:6733/policy-mgmt/v1/service
 ```
+
+
+空存储返回 `[]`。不带客户端证书时 TLS 握手失败。`spctl` 的 `--cacert` 用来验证服务器，`--cert`/`--key` 提供客户端身份；`--client-cert` 和 `--force-client-cert` 是服务端参数。保持 `--skipverify=false`（默认值）。
+
+gRPC 客户端通道同样需要 CA、与证书匹配的服务端名称、客户端证书与私钥。PMS 的服务名称是 `pb.PolicyManager`，ADS 是 `pb.Evaluator`。明文通道无法调用上述 TLS 端点。
+
+## 本地明文开发
+
+只有显式 `--insecure=true` 才会为两种传输启用明文。此时 REST/gRPC 都应绑定回环地址。不要公开这些未认证端点，也不要信任非可信调用者填写的主体名或属性。[令牌断言服务](/docs/assertor/)验证已配置的身份令牌，并不能自动认证每一个 PMS/ADS 调用方或替代端点访问控制。

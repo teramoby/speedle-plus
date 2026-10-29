@@ -1,0 +1,8 @@
+{
+  "name": "srv1",
+  "type": "application",
+  "policies": [
+    {"id": "deny-res1", "effect": "deny", "principals": [["user:user1"]], "permissions": [{"resource": "/api/v1/example/res1", "actions": ["get"]}]},
+    {"id": "grant-example", "effect": "grant", "principals": [["user:user1"]], "permissions": [{"resourceExpression": "^/api/v1/example/.*$", "actions": ["get"]}]}
+  ]
+}

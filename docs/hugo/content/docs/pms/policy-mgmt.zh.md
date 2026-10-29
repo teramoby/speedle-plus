@@ -11,253 +11,104 @@ categories = ["docs"]
 bref = "Basics of policy management"
 +++
 
-## What is a Speedle policy?
+## 什么是 Speedle 策略？
 
-A Speedle policy is a set of criteria that specify whether a user is granted access to a particular protected resource or assignment to a particular role. You manage Speedle policies using the Speedle Policy Management Service(PMS).
-
-## Understanding the Speedle Policy Module
-
-**Note:** The Speedle syntax used in this document is defined in [SPDL - Speedle Policy Definition Language](../../spdl).
-
-#### Policy store
-
-The policy store maintains all policy artifacts and can be persisted to an etcd store or a JSON file.
+策略管理服务（PMS）管理服务、授权策略、角色策略与自定义函数，由已注册的[存储后端](/docs/store/)持久化这些对象。
 
 <img src="/img/speedle/policystore.png"/>
 
-#### Service
+## 服务与授权策略
 
-A service is a container that contains a set of authorization and role policies that exist only in the scope of that service. Policies and role policies are evaluated within the scope of the service in which they were defined, not in the entire policy store. You can manage multiple services with Speedle.
-
-You can also define global policies in a global service. Global policies take effect globally across all services. For details, see [Global Policy](../global-policy).
-
-#### Authorization policy
-
-An authorization policy defines the criteria that controls access to protected resources.
+服务限定策略的作用范围。授权策略允许或拒绝主体对资源执行操作，并可附带条件。除[全局角色策略](/docs/pms/global-policy/)外，一个服务的策略不会自动在另一个服务中生效。
 
 <img src="/img/speedle/authzpolicy.png"/>
 
-You create authorization policies to grant or deny principals (user/role/group/entity) permission to perform specific actions on specific resources if the condition is true.
-
-Sample:
-
-```
-grant group Administrators list,watch,get expr:c1/default/core/pods/*
+```text
+grant group Administrators list,watch,get expr:^c1/default/core/pods/.*$
 ```
 
-This sample grants the group "Administrators" permission to perform "list", "watch", and "get" operations on the resource that matches the name expression `c1/default/core/pods/*`.
+此正则只匹配 `c1/default/core/pods/` 下的资源，不匹配 `c1/default/core/podssecret` 或带额外前缀的路径。`expr:` 使用正则表达式，不是 shell 通配符：任意字符使用 `.*`，需要匹配完整标识符时加 `^`、`$`。
 
-#### Role policy
-
-A role policy defines the criteria that controls how principals (user/role/group/entity) are granted or denied membership to roles created using Speedle.
+## 角色策略
 
 <img src="/img/speedle/rolepolicy.png"/>
 
-You create role policies to grant or deny roles, which you created using Speedle, to principals (user/role/group/entity) on specific resources if the condition is true.
-
-Sample:
-
-```
+```text
 grant user alan manager on res1
+grant role manager update res1
 ```
 
-This sample grants user "alan" the "manager" role on the resource "res1". In other words, user "alan" can perform operations on the resource "res1" because "alan" has the permissions assigned to the role "manager".
+第一行把指定资源上的角色分配给 Alan，第二行才为该角色授予操作权限。仅分配角色不会自动产生权限。适用的显式拒绝优先于允许。
 
-#### Policy elements
+## 主体与条件
 
-##### Effect
-
-Effect has two values: "grant" or "deny".  
-When Speedle evaluates policies, the final authorization decision is based on the "DENY overrides" combining algorithm. For example, if there is a policy that grants permission to a subject at the same time as a policy that denies the same permission to the subject, then the "deny" policy takes effect and overrides the "grant" policy.
-
-##### Principal
-
-In authorization and role policies, the principal is the identity object to which the access rights or roles can be granted or denied. A principal can be a user, a group, an entity or a role. Most frequently, it is a role.
+主体可以是用户、组、实体或角色。实体表示服务等非人身份，集成代码必须从可信来源获取这些身份。
 
 <img src="/img/speedle/principal.png"/>
 
-User, group and entity are principals from the identity store and are usually obtained after authentication or token assertion. Users and groups represent a human identity; an entity represents a non-human identity such as a service, a Kubernetes pod, and so on.
-
-#### AND principal
-
-AND principal is a combination of a small set of principals, separated by commas. If a policy uses AND principal, the policy can take effect only when all of these principles are matched.
+AND 主体组要求组内所有身份均匹配，多组之间为 OR。以下例子要求两个角色都有效：
 
 <img src="/img/speedle/andprincipal.png"/>
 
-Sample:
-
-```
-grant role (designer, dba) update db_design_doc
+```text
+grant (role designer, role dba) update db_design_doc
 ```
 
-In this sample, only a user with both roles "designer" and "dba" can update the resource "db_design_doc".
-
-##### Resource
-
-A resource is a protected object to which access is granted or denied. A resource represents the application component or business object that is secured by an authorization policy.
+资源是被保护的对象，操作是应用定义的动作。条件是由可信属性、常量、运算符与受支持函数构成的布尔表达式。
 
 <img src="/img/speedle/resource.png"/>
 
-resourceNameExpression supports regular expressions.
+语法见 [SPDL](/docs/spdl/)，完整决策示例见 [RBAC](/docs/overview/) 与 [ABAC](/docs/overview/)。
 
-##### Action
+## 运行示例前
 
-An action is an operation that can be performed on the protected resource. Action is just a string in a policy. You can define any actions when you create the policy.
+先按[快速入门](/quick-start/)编译仓库根目录下的 `./bin/spctl`、`./bin/speedle-pms` 和 `./bin/speedle-ads`，需要 Go 1.26.10 或 Go 1.27.3（也可使用同一大版本的更新补丁版本）、Bash、curl 和 Python 3。下面各终端都从仓库根目录运行。为本页使用一个新的策略文件；仅在两个服务都停止后重建该文件。
 
-##### Condition
+初始化空策略文件：
 
-A condition is a bool expression that is constructed using attributes, functions, constants, operators, comparators or parenthesis and produces a bool value. Conditions are supported in both role and authorization policies. The policy or role policy can take effect only when the condition is met.
-
-For details, see [SPDL - Speedle Policy Definition Language](../../spdl).
-
-## Managing Speedle policies
-
-Use the Speedle Policy Management Service (PMS) to manage authorization and role policies, and the security objects from which they are created.
-
-Speedle allows administrators to perform create, read, and delete operations on all policy objects. You can do this in any of the following ways:
-
--   Using the Speedle command line interface `spctl` (as described here. This is the recommended method.)
-
--   Using the PMS Golang Management API in Embedded Mode (as described in the [Speedle API doc](https://github.com/teramoby/speedle-plus/tree/master/api/pms).
-
--   Using the PMS REST Service (as described in the [Speedle Policy Management API](/docs/api/management_api/)).
-
--   Using the PMS gRPC Service (as described in the [Speedle GRPC document](/protobuf/pms.proto)).
-
-#### Managing services
-
-You create a service as the overall container for authorization and role policies.
-You can perform the following management operations on service instances.
-
--   Create a "test" service:
-
+<!-- docs-check: setup -->
 ```bash
-$ ./spctl create service test
-service created
-{"name":"test","type":"application","metadata":{"createby":"","createtime":"2019-02-12T22:51:19-08:00"}}
+printf '{}\n' > docs-policies.json
 ```
 
--   Get the "test" service:
+终端一启动 PMS，并保持运行：
 
+<!-- docs-check: pms -->
 ```bash
-$ ./spctl get service test
-{
-    "name": "test",
-    "type": "application",
-    "metadata": {
-        "createby": "",
-        "createtime": "2019-02-12T22:51:19-08:00"
-    }
-}
+./bin/speedle-pms --store-type file --filestore-loc ./docs-policies.json --endpoint 127.0.0.1:6733 --grpc-endpoint 127.0.0.1:0 --insecure=true
 ```
 
--   Get all services:
+终端二启动 ADS，并保持运行：
 
+<!-- docs-check: ads -->
 ```bash
-$ ./spctl get service --all
-[
-    {
-        "name": "test",
-        "type": "application",
-        "metadata": {
-            "createby": "",
-            "createtime": "2019-02-12T22:51:19-08:00"
-        }
-    }
-]
+./bin/speedle-ads --store-type file --filestore-loc ./docs-policies.json --endpoint 127.0.0.1:6734 --grpc-endpoint 127.0.0.1:0 --insecure=true
 ```
 
--   Delete the "test" service:
+在第三个终端运行后续命令。PMS/ADS 共享同一个文件，策略更新通过 watch 异步到达 ADS；先查询确认已更新，再依赖新策略做决策。`--insecure=true` 仅用于回环地址上的本地示例，生产连接见[安全配置](/docs/security/)。示例显式指定 PMS 地址，不修改 `~/.spctlconfig`。完成后在两个服务终端按 Ctrl-C。
 
+
+## 使用 spctl 管理服务与策略
+
+在新存储上按顺序执行。ID 从实际查询响应中取得，不使用历史输出里的固定值。所有依赖服务的操作完成后，再删除服务。
+
+<!-- docs-check: policy-management -->
 ```bash
-$ ./spctl delete service test
-service test deleted.
+./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ create service test
+./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ get service test
+./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ get service --all
+./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ create policy policy1 -c "grant user alan read book" --service-name test
+policy_id=$(./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ get policy --all --service-name test | python3 -c 'import json,sys; print(next(p["id"] for p in json.load(sys.stdin) if p.get("name")=="policy1"))')
+./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ get policy "$policy_id" --service-name test
+./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ create rolepolicy rolepolicy01 -c "grant user alan manager on res1" --service-name test
+role_policy_id=$(./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ get rolepolicy --all --service-name test | python3 -c 'import json,sys; print(next(p["id"] for p in json.load(sys.stdin) if p.get("name")=="rolepolicy01"))')
+./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ get rolepolicy "$role_policy_id" --service-name test
+./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ delete policy "$policy_id" --service-name test
+./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ delete rolepolicy "$role_policy_id" --service-name test
+./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ delete service test
 ```
 
-#### Managing authorization policies
 
-You can perform the following management operations on authorization policies.
+## 其他管理接口
 
--   Create a policy named "policy1" in the "test" service:
-
-```bash
-$ ./spctl create policy policy1 -c "grant user alan read book" --service-name test
-policy created
-{"id":"ao3olis24hrzchwjduea","name":"policy1","effect":"grant","permissions":[{"resource":"book","actions":["read"]}],"principals":[["user:alan"]],"metadata":{"createby":"","createtime":"2019-02-12T22:57:46-08:00"}}
-```
-
--   Get "policy1" in the "test" service using the policy id:
-
-```bash
-$ ./spctl get policy ao3olis24hrzchwjduea --service-name=test
-{
-    "effect": "grant",
-    "id": "ao3olis24hrzchwjduea",
-    "metadata": {
-        "createby": "",
-        "createtime": "2019-02-12T22:57:46-08:00"
-    },
-    "name": "policy1",
-    "permissions": [
-        {
-            "actions": [
-                "read"
-            ],
-            "resource": "book"
-        }
-    ],
-    "principals": [
-        [
-            "user:alan"
-        ]
-    ]
-}
-```
-
--   Delete "policy1" in the "test" service using the policy id:
-
-```bash
-$ ./spctl delete policy ao3olis24hrzchwjduea --service-name=test
-policy ao3olis24hrzchwjduea deleted.
-```
-
-#### Managing role policies
-
-You can perform the following management operations on role policies.
-
--   Create a new role policy named "rolepolicy01" in the "test" service:
-
-```bash
-$ ./spctl create rolepolicy rolepolicy01 -c "grant user alan manager" --service-name test
-rolepolicy created
-{"id":"4gskmqamoiebmidyw2fi","name":"rolepolicy01","effect":"grant","roles":["manager"],"principals":["user:alan"],"metadata":{"createby":"","createtime":"2019-02-12T23:00:44-08:00"}}
-```
-
--   Get the role policy using the policy id:
-
-```bash
-$ ./spctl get rolepolicy 4gskmqamoiebmidyw2fi --service-name test
-{
-    "effect": "grant",
-    "id": "4gskmqamoiebmidyw2fi",
-    "metadata": {
-        "createby": "",
-        "createtime": "2019-02-12T23:00:44-08:00"
-    },
-    "name": "rolepolicy01",
-    "principals": [
-        "user:alan"
-    ],
-    "roles": [
-        "manager"
-    ]
-}
-
-```
-
--   Delete the role policy using the policy id:
-
-```bash
-$ ./spctl delete rolepolicy 4gskmqamoiebmidyw2fi --service-name test
-rolepolicy 4gskmqamoiebmidyw2fi deleted.
-```
+[PMS REST API](/docs/api/management_api/)使用 JSON，返回包含字符串 ID 的扁平策略对象。Go 应用可直接使用 [PMS 接口](https://github.com/teramoby/speedle-plus/tree/master/api/pms)，gRPC 客户端使用[公开的 PMS proto](/protobuf/pms.proto)。管理操作必须配置[传输安全与调用方访问控制](/docs/security/)。

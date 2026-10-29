@@ -17,9 +17,8 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://speedle.io/docs/pms/policy-mgmt/</guid>
-      <description>What is a Speedle policy? A Speedle policy is a set of criteria that specify whether a user is granted access to a particular protected resource or assignment to a particular role. You manage Speedle policies using the Speedle Policy Management Service(PMS).
-Understanding the Speedle Policy Module Note: The Speedle syntax used in this document is defined in SPDL - Speedle Policy Definition Language.
-Policy store The policy store maintains all policy artifacts and can be persisted to an etcd store or a JSON file.</description>
+      <description>What is a Speedle policy? The Policy Management Service (PMS) manages services, authorization policies, role policies and custom functions. A policy store persists those objects using a registered storage backend.
+Services and authorization policies A service scopes its policies. An authorization policy grants or denies a principal permission to perform an action on a resource, optionally subject to a condition. Except for global role policies, policies do not automatically apply in another service.</description>
     </item>
     
     <item>
@@ -38,7 +37,9 @@ Centalized policy enforcement and management Jin Chen is a security manager of m
       <pubDate>Fri, 18 Jan 2019 21:19:44 +0800</pubDate>
       
       <guid>https://speedle.io/docs/pms/global-policy/</guid>
-      <description>How global policies simplify policy management In Speedle, role policies and policies are defined and evaluated within a scope, which is called a &amp;lsquo;service&amp;rsquo;. For example, when creating a policy, you need to specify the service in which to create the policy. When calling the Authorization Decision Service API, you need to specify a service name so that the policies and role policies are evaluated within the scope of that service.</description>
+      <description>When should a role be global? Ordinary roles are scoped to a service. When several services share a role assignment, define the assignment in the specially named global service and use that role in each service&amp;rsquo;s own authorization policies.
+Only global role policies are supported. A global role assignment does not itself grant every operation; each ordinary service still defines its permissions. Global authorization policies are not supported.
+Before running the examples Build .</description>
     </item>
     
     <item>
@@ -57,8 +58,9 @@ The examples below use a service named library. Each policy was created through 
       <pubDate>Fri, 18 Jan 2019 15:46:59 +0800</pubDate>
       
       <guid>https://speedle.io/docs/pms/diagnosis/</guid>
-      <description>What&amp;rsquo;s policy diagnosis Policy diagnosis is one of the Speedle&amp;rsquo;s advanced features, which is used to diagnose the evaluation process of authorization. When the evaluation result isn&amp;rsquo;t expected or a user isn&amp;rsquo;t allowed to operate on a resource, then this feature is useful to find out the reason, i.e., what&amp;rsquo;s the policy which denies the operation on the resource.
-How to use policy diagnosis The usage of policy diagnosis request is almost identical to the usage of authorization decision request.</description>
+      <description>What does diagnosis show? Diagnose explains an authorization evaluation: decision, reason, effective roles, attributes, and the policies examined. It accepts the same request context as IsAllowed; REST uses /authz-check/v1/diagnose, and both Go/gRPC use Diagnose.
+Diagnosis exposes policy definitions and request context. Restrict it to trusted operators using the API security controls; it is not a public debugging endpoint.
+Before running the examples Build ./bin/spctl, ./bin/speedle-pms and ./bin/speedle-ads using the quick start.</description>
     </item>
     
     <item>
@@ -67,7 +69,8 @@ How to use policy diagnosis The usage of policy diagnosis request is almost iden
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://speedle.io/docs/pms/discover/</guid>
-      <description>What can discover mode do? * Help you discover existing authorization requests The is-allowed API endpoint and the discover API endpoint use the same request and response format. When you replace is-allowed with discover in the URL of the API, each authorization request that is returned shows WHO carries out WHAT action on WHICH resource. Discover mode does not evaluate the authorization decision; it simply records the authorization decision requests, along with the actions and the resources protected, and returns &amp;ldquo;is-allowed=true&amp;rdquo;.</description>
+      <description>What discovery does Discovery records requests and returns allowed=true with reason 5 for a successful recording operation. It does not prove that an existing policy authorized the operation. Use it only in an isolated test environment, review generated grants, and restore normal is-allowed enforcement afterwards. Assertion or storage errors must still be handled; never treat an error as an authorization grant.
+Start a reproducible local example Build the binaries using Quick Start, then run all terminals from the checkout root.</description>
     </item>
     
     <item>
@@ -76,8 +79,7 @@ How to use policy diagnosis The usage of policy diagnosis request is almost iden
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://speedle.io/docs/spdl/</guid>
-      <description>Syntax Keywords The reserved keywords in SPDL are as follows. You cannot use any of these keywords as user name, group name, action, resource, attribute name, and so on.
- role user group entity grant deny if in on from  The keywords are all case-insensitive, which means that you cannot use one of &amp;ldquo;role&amp;rdquo;, &amp;ldquo;ROLE&amp;rdquo;, &amp;ldquo;Role&amp;rdquo;, &amp;ldquo;rOLe&amp;rdquo;, etc as user name, group name, action, resource, attribute name, and so on.</description>
+      <description>Syntax Keywords grant, deny, user, group, entity, role, from, on, if and in have special meanings in their syntax positions. Statement keywords are case-insensitive. In conditions, use in or IN; function names are case-sensitive. Principal, action and resource names are also case-sensitive. The current parser accepts keyword-like names in some name positions, so a blanket prohibition is not a validation rule. Prefer unambiguous names for review and client interoperability.</description>
     </item>
     
     <item>
@@ -122,7 +124,7 @@ Join us at speedle-users and/or speedle-developers groups.</description>
       <guid>https://speedle.io/quick-start/</guid>
       <description>Try Speedle in the Playground first You can try Speedle&amp;rsquo;s basic features before installing anything. Open the Playground to edit SPDL policies, set a user, resource and action, and see real Allow/Deny decisions entirely in your browser. No Go installation or running server is required.
 Continue below when you are ready to build and run Speedle locally.
-Prerequisites Use Linux or macOS with Bash, Git, curl and Go 1.25 or newer.</description>
+Prerequisites Use Linux or macOS with Bash, Git, curl and Go 1.26.10 or Go 1.27.3 (or a newer patch on the same release branch).</description>
     </item>
     
     <item>
@@ -154,10 +156,8 @@ Lorem Epsum Apple pie chocolate cake jelly-o icing bonbon. Gingerbread pastry fr
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://speedle.io/docs/decisions/</guid>
-      <description>What is an authorization decision?  An authorization decision determines whether a subject performing an action on a resource is allowed.
- An authorization decision is the result of real-time evaluation based on policies and attributes.
-  Ways to get authorization decisions Authorization decisions can be performed by the Authorization Decision Service or an by an embedded evaluator:
- Authorization Decision Service (ADS)  REST API Grpc API  Embedded Evaluator  Golang API   APIs and Samples The ADS decision APIs make authorization decisions based on policies that describe the actions, permissions, and roles granted to a subject.</description>
+      <description>What is an authorization decision? Speedle evaluates a subject, action and resource within a service. The application must enforce the result. Treat an evaluation error or timeout separately from a normal Deny and fail closed. REST, gRPC and embedded Go APIs have different wire representations; use their respective contracts.
+Before running the examples Build ./bin/spctl, ./bin/speedle-pms and ./bin/speedle-ads using the quick start. Use Go 1.26.10 or Go 1.27.3 (or a newer patch on the same release branch), Bash, curl and Python 3.</description>
     </item>
     
     <item>
@@ -166,8 +166,8 @@ Lorem Epsum Apple pie chocolate cake jelly-o icing bonbon. Gingerbread pastry fr
       <pubDate>Thu, 17 Jan 2019 13:20:07 +0800</pubDate>
       
       <guid>https://speedle.io/docs/idd/</guid>
-      <description>What is an identity domain? An identity domain is a logical namespace for users and groups, typically representing a discrete set of users and groups in the physical data store. Each identity domain manages users and groups independently. User and group names must be unique in an identity domain.
-How Speedle handles multiple identity domains In an integrated environment, identities may come from multiple identity domains. Consider, for example, the following policy where a user with the identifier user1 is authorized to perform a rent action on the resource book.</description>
+      <description>What is an identity domain? An identity domain (idd) is an explicit namespace for a principal. Two users named user1 can belong to different domains. The string is supplied by trusted integration code or a configured token asserter; it is not proof of authentication. Speedle does not infer or validate a provider&amp;rsquo;s tenant model merely from the domain name.
+Represent domains in policies and requests grant user user1 from github read book grant user user1 from IDCS.</description>
     </item>
     
     <item>
@@ -176,8 +176,8 @@ How Speedle handles multiple identity domains In an integrated environment, iden
       <pubDate>Mon, 21 Jan 2019 09:28:30 +0800</pubDate>
       
       <guid>https://speedle.io/docs/assertor/</guid>
-      <description>Benefits of the token asserter An evaluation request can contain an identity token issued by any identity provider as an incoming user identity, instead of specifying the user identities (user identifier and those groups user belongs to) explicitly. When you integrate Speedle into your service, your service does not need to validate and parse identity tokens. Speedle can do it for you.
-The Speedle evaluation engine checks whether the incoming request contains an identity token.</description>
+      <description>What does a token asserter do? A configured asserter validates a token and returns explicit principals, including their identity domains. Speedle can then evaluate policies using those identities. A production implementation must validate the token&amp;rsquo;s signature or introspection result, issuer, audience, expiry and any provider-specific requirements. The webhook alone does not establish compatibility with arbitrary OAuth/OIDC tokens.
+The Token Assertion Plugin API uses integer errCode and an optional attribute object, not a typed attribute array.</description>
     </item>
     
     <item>
@@ -186,8 +186,8 @@ The Speedle evaluation engine checks whether the incoming request contains an id
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://speedle.io/docs/deployment/</guid>
-      <description>Deploy Speedle in embedded mode Speedle works as a Go library. To deploy Speedle in embedded mode, simply pull Speedle from the repository and import it in golang code. The Policy Management Service (PMS) golang API is called to do policy management, and the Authorization Decision Service (ADS) golang API is called to do runtime authorization checks.
-Deploy Speedle as a service You can deploy Speedle as a service on Kubernetes in these modes:</description>
+      <description>Choose a deployment mode Use embedded mode to run the evaluator in your Go process. Use standalone PMS and ADS when applications call Speedle over REST or gRPC. The Quick Start provides a complete local policy-management and authorization walkthrough.
+Build with current Go Use Go 1.26.10 or Go 1.27.3 (or a newer patch on the same release branch) (Go 1.27.3 is recommended), Git and a shell on Linux or macOS. Use Go modules; the checkout can be anywhere writable. No custom GOROOT, GOPATH, dep or GOPATH source layout is needed.</description>
     </item>
     
     <item>
@@ -207,9 +207,8 @@ Run speedle refer to speedle quickstart</description>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://speedle.io/docs/store/</guid>
-      <description>Overview Speedle now supports two kinds of data store, OOTB: file store and etcd store. However, you can implement your own data store (e.g. with mongodb, etc)
- Please note the data store needs to support the watch function.  This document walks through step-by-step instructions to implement a data store.
-Write store code to implement the PolicyStoreManager interface Create a &amp;ldquo;mystore&amp;rdquo; directory under store directory and navigate to it.</description>
+      <description>Built-in stores and extension contracts The standalone binaries register file, etcd and MongoDB implementations under pkg/store. Availability does not mean identical operational guarantees; review backend authentication, persistence, transaction and watch behavior for your deployment. The configuration below illustrates property names; running etcd/MongoDB deployments is outside this local example.
+A full backend implements pms.PolicyStoreManager: service, authorization-policy, role-policy and function management, snapshot reads and watch/stop. ADS accepts the narrower PolicyStoreManagerADS read/watch interface.</description>
     </item>
     
     <item>
@@ -236,9 +235,8 @@ Write store code to implement the PolicyStoreManager interface Create a &amp;ldq
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://speedle.io/docs/security/</guid>
-      <description>Overview API Endpoint Security / Authentication and Authorization Authentication and authorization for client requests (other than TLS mutual auth) are not supported by Speedle.
-If you want to protect Speedle API endpoints, you can use any existing/stock solutions to secure these APIs (e.g. an API Gateway like Ambassador with tokens etc).
-Message security / TLS TLS is a cryptographic protocol that provides communications security, it offers many different ways of exchanging keys for authentication, encrypting data, and guaranteeing message integrity.</description>
+      <description>Protect both API transports Speedle&amp;rsquo;s standalone PMS and ADS expose REST and gRPC. Both now use the same --insecure, --cert, --key, --client-cert and --force-client-cert transport settings. Invalid certificates or trust configuration cause startup to fail; secure mode does not fall back to plaintext.
+TLS encrypts the connection and authenticates the server. To require authenticated clients, provide a client CA with --client-cert and set --force-client-cert=true. Without that flag, a configured CA validates a client certificate only when the client supplies one.</description>
     </item>
     
     <item>
@@ -257,9 +255,8 @@ Message security / TLS TLS is a cryptographic protocol that provides communicati
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://speedle.io/docs/versions/</guid>
-      <description> Version 0.2.0 (planning) &amp;hellip;
-Version 0.1.0 release notes: This is the first open source version. All basic functions are available in this version, including
- Policy Management Service Authorization Runtime Service Command line tool Integration samples  </description>
+      <description>Speedle+ releases Use the GitHub Releases page for published versions and release notes. v1.6.0 is the version pinned by the current embedded Go walkthrough. Use an explicit released version for reproducible module dependencies; the embedded guide explains the setup.
+Historical Oracle Speedle release Version 0.1.0 was the original open-source release, including policy management, authorization decisions, the command-line tool and integration samples. The historical 0.2.0 planning note is not the current Speedle+ release roadmap.</description>
     </item>
     
     <item>
@@ -268,7 +265,8 @@ Version 0.1.0 release notes: This is the first open source version. All basic fu
       <pubDate>Mon, 21 Jan 2019 10:43:02 +0800</pubDate>
       
       <guid>https://speedle.io/docs/custom-function/</guid>
-      <description>Why use custom functions? In Speedle, policies and role policies may include conditions. You can create conditions using expressions. or use the built-in functions that are provided with Speedle. If the condition is very complicated, it may be too difficult to create using expressions and built-in functions. In that case, you can use a custom function that you define, which extends the ability of the authorization engine. Custom functions supplement the built-in functions that Speedle provides, increasing the flexibility for defining conditions.</description>
+      <description>Why use a custom function? SPDL conditions can call a configured function when built-in operators or functions do not express the required rule. Speedle calls its REST endpoint with POST {&amp;quot;params&amp;quot;:[...]} and expects {&amp;quot;result&amp;quot;:...} or {&amp;quot;error&amp;quot;:&amp;quot;...&amp;quot;}. Parameter order/types and the result type must match the condition. Function failures are evaluation errors; applications must fail closed.
+Start the local example This example accepts numeric values from 100 to 50000. Wrong parameter types or an empty parameter list return an HTTP error.</description>
     </item>
     
     <item>
@@ -287,7 +285,9 @@ Speedle was built by the team behind Oracle Entitlements Server (OES).</descript
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://speedle.io/docs/api/decision_api/</guid>
-      <description>              (function() { var url = &#34;\/swagger\/policy-check.yaml&#34;; const ui = SwaggerUIBundle({ url: url, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.presets.apis ], plugins: [ SwaggerUIBundle.plugins.DownloadUrl ], validatorUrl: null, layout: &#34;BaseLayout&#34; }) window.ui = ui })();  </description>
+      <description>Reference for your configured ADS. Request attributes are typed arrays; diagnostic attributes are objects.
+Security and endpoint configuration. This is a contract reference, not a backend hosted by speedle.io.
+              (function() { var url = &#34;\/swagger\/policy-check.yaml&#34;; const ui = SwaggerUIBundle({ url: url, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.presets.apis ], plugins: [ SwaggerUIBundle.plugins.DownloadUrl ], validatorUrl: null, layout: &#34;</description>
     </item>
     
     <item>
@@ -333,7 +333,9 @@ Policy Administrator Understand the basics of SPDL to model policies Deploy your
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://speedle.io/docs/api/management_api/</guid>
-      <description>              (function() { var url = &#34;\/swagger\/policy-manage.yaml&#34;; const ui = SwaggerUIBundle({ url: url, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.presets.apis ], plugins: [ SwaggerUIBundle.plugins.DownloadUrl ], validatorUrl: null, layout: &#34;BaseLayout&#34; }) window.ui = ui })();  </description>
+      <description>Reference for your configured PMS. Requests and responses are JSON; policy IDs are strings and responses are flat objects.
+Security and endpoint configuration. This is a contract reference, not a backend hosted by speedle.io.
+              (function() { var url = &#34;\/swagger\/policy-manage.yaml&#34;; const ui = SwaggerUIBundle({ url: url, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.presets.apis ], plugins: [ SwaggerUIBundle.</description>
     </item>
     
     <item>
@@ -352,7 +354,9 @@ Does the world need one more policy engine? Well, please spend 15 minutes on Qui
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://speedle.io/docs/api/asserter_api/</guid>
-      <description>              (function() { var url = &#34;\/swagger\/asserter.yaml&#34;; const ui = SwaggerUIBundle({ url: url, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.presets.apis ], plugins: [ SwaggerUIBundle.plugins.DownloadUrl ], validatorUrl: null, layout: &#34;BaseLayout&#34; }) window.ui = ui })();  </description>
+      <description>Webhook reference. errCode is an integer and attributes is an object. Configure the actual endpoint in the ADS asserter configuration.
+Security and endpoint configuration. This is a contract reference, not a backend hosted by speedle.io.
+              (function() { var url = &#34;\/swagger\/asserter.yaml&#34;; const ui = SwaggerUIBundle({ url: url, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.presets.apis ], plugins: [ SwaggerUIBundle.</description>
     </item>
     
   </channel>

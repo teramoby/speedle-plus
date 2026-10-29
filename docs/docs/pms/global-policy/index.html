@@ -90,60 +90,52 @@ headingSelector: 'h2'
   <div id="kube-component" class="content">
     
 
-<h2 id="how-global-policies-simplify-policy-management">How global policies simplify policy management</h2>
+<h2 id="when-should-a-role-be-global">When should a role be global?</h2>
 
-<p>In Speedle, role policies and policies are defined and evaluated within a scope, which is called a &lsquo;service&rsquo;. For example, when creating a policy, you need to specify the service in which to create the policy.
-When calling the Authorization Decision Service API, you need to specify a service name so that the policies and role policies are evaluated within the scope of that service.</p>
+<p>Ordinary roles are scoped to a service. When several services share a role assignment, define the assignment in the specially named <code>global</code> service and use that role in each service&rsquo;s own authorization policies.</p>
 
-<p>However, in a large system with many sub-systems, for example, each sub-system has its own specific authorization requirement, and each sub-system defines role policies and policies within its own service scope. Because all of the sub-systems are under the same large system, it is likely that there are role policies or policies that are common across all sub-systems. In this case, the same policies have to be defined in each service, and it becomes increasingly hard to manage as the number of policies grows.</p>
+<p>Only global <strong>role policies</strong> are supported. A global role assignment does not itself grant every operation; each ordinary service still defines its permissions. Global authorization policies are not supported.</p>
 
-<p>To avoid creating the same role policies or policies repeatedly in each service, you can create a &lsquo;global policy&rsquo; in a &lsquo;global service&rsquo;, which is a policy or role policy that can take effect globally across all services.</p>
+<h2 id="before-running-the-examples">Before running the examples</h2>
 
-<p><strong>Note:</strong> Global authorization policies are not currently supported.</p>
+<p>Build <code>./bin/spctl</code>, <code>./bin/speedle-pms</code> and <code>./bin/speedle-ads</code> using the <a href="/quick-start/">quick start</a>. Use Go 1.26.10 or Go 1.27.3 (or a newer patch on the same release branch), Bash, curl and Python 3. Run each terminal from the repository root. Use a fresh policy file for this page; reset it only after stopping both services.</p>
 
-<h2 id="how-to-use-global-role-policies">How to use global role policies</h2>
+<p>Initialize an empty policy file:</p>
 
-<p>You define global role policies in a special &lsquo;global&rsquo; service. You can create and delete global services, and call the ADS API in the scope of a global service in the same way you create or call any other service. Global role policies are evaluated in global services just as if they were created in an ordinary service.</p>
+<!-- docs-check: setup -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#8be9fd;font-style:italic">printf</span> <span style="color:#f1fa8c">&#39;{}\n&#39;</span> &gt; docs-policies.json</code></pre></div>
+<p>In terminal one, start PMS and leave it running:</p>
 
-<p>To use global policies in your system, follow these steps.</p>
+<!-- docs-check: pms -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./bin/speedle-pms --store-type file --filestore-loc ./docs-policies.json --endpoint <span style="color:#bd93f9">127</span>.0.0.1:6733 --grpc-endpoint <span style="color:#bd93f9">127</span>.0.0.1:0 --insecure<span style="color:#ff79c6">=</span>true</code></pre></div>
+<p>In terminal two, start ADS and leave it running:</p>
 
-<h3 id="1-create-a-global-service">1. Create a global service</h3>
+<!-- docs-check: ads -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./bin/speedle-ads --store-type file --filestore-loc ./docs-policies.json --endpoint <span style="color:#bd93f9">127</span>.0.0.1:6734 --grpc-endpoint <span style="color:#bd93f9">127</span>.0.0.1:0 --insecure<span style="color:#ff79c6">=</span>true</code></pre></div>
+<p>Run the remaining commands in a third terminal. PMS and ADS share the file; watch propagates changes asynchronously. Confirm the intended update has reached ADS before relying on it. <code>--insecure=true</code> is only for this loopback example; see <a href="/docs/security/">security</a> for production connections. Explicit PMS addresses avoid changing <code>~/.spctlconfig</code>. Stop both server terminals with Ctrl-C when finished.</p>
 
-<p>Create a service named &lsquo;global&rsquo;.</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4">./spctl create service global</pre></div>
-<h3 id="2-create-a-global-role-policy">2. Create a global role policy</h3>
+<h2 id="create-a-global-role-and-a-local-permission">Create a global role and a local permission</h2>
 
-<p>Create a role policy in the global service granting user Emma the Admin role.</p>
+<!-- docs-check: global-fixture -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ create service global
+./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ create rolepolicy -c <span style="color:#f1fa8c">&#34;grant user Emma AdminRole&#34;</span> --service-name global
+./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ create service library
+./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ create policy -c <span style="color:#f1fa8c">&#34;grant role AdminRole borrow books&#34;</span> --service-name library</code></pre></div>
+<p><code>global</code> must use exactly that service name. <code>library</code> is created before its policy. Both are managed through normal service APIs.</p>
 
-<p>For example:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4">./spctl create rolepolicy -c &#34;grant user Emma AdminRole&#34; --service-name=global</pre></div>
-<h3 id="3-create-an-ordinary-service">3. Create an ordinary service</h3>
+<h2 id="check-the-result">Check the result</h2>
 
-<p>Create an ordinary service named &lsquo;library&rsquo;.</p>
+<p>Emma is allowed through <code>AdminRole</code>; Bob is denied.</p>
 
-<p>For example:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4">./spctl create service library</pre></div>
-<h3 id="4-create-a-policy-in-the-ordinary-service">4. Create a policy in the ordinary service</h3>
-
-<p>Create a policy that allows users in the AdminRole permission to borrow books.</p>
-
-<p>For example:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4">./spctl create policy -c &#34;grant role AdminRole borrow books&#34; --service-name=library</pre></div>
-<h3 id="5-call-the-ads-is-allowed-api-within-the-scope-of-the-ordinary-service">5. Call the ADS is-allowed API within the scope of the ordinary service</h3>
-
-<p>Call the <code>is-allowed</code> API in the ordinary service scope, where the global role policy will also take effect.</p>
-
-<p>For example:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4">curl -X POST  http://localhost:6734/authz-check/v1/is-allowed \
--d @- &lt;&lt; EOF
-{
- &#34;subject&#34;: {&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;, &#34;name&#34;:&#34;Emma&#34;}]},
- &#34;serviceName&#34;: &#34;library&#34;,
- &#34;resource&#34;:&#34;books&#34;,
- &#34;action&#34;: &#34;borrow&#34;
-}
-EOF</pre></div>
-<p>In this example, the API returns <code>allowed = true</code>, because the role policy defined in the global service (user Emma is assigned the Admin role) takes effect.</p>
+<!-- docs-check: global-allow -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl --fail --silent --show-error -H <span style="color:#f1fa8c">&#39;Content-Type: application/json&#39;</span> <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  -d <span style="color:#f1fa8c">&#39;{&#34;subject&#34;:{&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;,&#34;name&#34;:&#34;Emma&#34;}]},&#34;serviceName&#34;:&#34;library&#34;,&#34;resource&#34;:&#34;books&#34;,&#34;action&#34;:&#34;borrow&#34;}&#39;</span> <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  http://127.0.0.1:6734/authz-check/v1/is-allowed</code></pre></div>
+<!-- docs-check: global-deny -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl --fail --silent --show-error -H <span style="color:#f1fa8c">&#39;Content-Type: application/json&#39;</span> <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  -d <span style="color:#f1fa8c">&#39;{&#34;subject&#34;:{&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;,&#34;name&#34;:&#34;Bob&#34;}]},&#34;serviceName&#34;:&#34;library&#34;,&#34;resource&#34;:&#34;books&#34;,&#34;action&#34;:&#34;borrow&#34;}&#39;</span> <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  http://127.0.0.1:6734/authz-check/v1/is-allowed</code></pre></div>
+<p>A resource-scoped global role policy applies only to its resource scope. Keep cross-service role assignments under review, especially when identities span <a href="/docs/idd/">different domains</a>.</p>
 
   </div>
 </div>

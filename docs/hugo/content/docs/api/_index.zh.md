@@ -11,56 +11,28 @@ categories = ["docs"]
 bref = "Open API Specification Docs. Use the API to model your simple and complex policies in a declarative way; get decisions, discover policies dynamically and debug policy evaluation."
 +++
 
-#### REST APIs
+## REST API
 
-<nav id="contents">
-    <ol class="js-toc">
-    <ul class="toc-list ">
-    <li class="toc-list-item">
-    <a data-scroll="" href="./management_api" class="toc-link node-name--H3  is-active-link">Policy Management Service API</a>
-    </li>
-    <li class="toc-list-item">
-     <a data-scroll="" href="./decision_api" class="toc-link node-name--H3">Authorization Decision Service API</a>
-    </li>
-    <li class="toc-list-item">
-      <a data-scroll="" href="./asserter_api" class="toc-link node-name--H3">Token Assertion API</a>
-    </li>
-    </ul>
-    </ol>
-</nav>
+这些接口说明面向**你配置的 PMS、ADS 或断言服务端点**。`speedle.io` 提供文档与浏览器 Playground，不托管 PMS/ADS 后端。发送 JSON 时必须设置 `Content-Type: application/json`，并配置 [TLS/mTLS 与调用方访问控制](/docs/security/)。
 
-#### GRPC APIs
+- [策略管理 API](/docs/api/management_api/)
+- [授权决策 API](/docs/api/decision_api/)
+- [令牌断言 webhook](/docs/api/asserter_api/)
 
-<nav id="contents">
-  <ol class="js-toc">
-    <ul class="toc-list ">
-    <li class="toc-list-item">
-    <a data-scroll="" href="/protobuf/pms.proto" class="toc-link node-name--H3  is-active-link">Policy Management Service API</a>
-    </li>
-    <li class="toc-list-item">
-     <a data-scroll="" href="/protobuf/ads.proto" class="toc-link node-name--H3">Authorization Decision Service API</a>
-    </li>
-    </ul>
-    </ol>
-</nav>
+策略和角色策略的 ID 是字符串，PMS 返回扁平对象；授权权限字段为复数 `permissions`。REST 决策请求使用带类型的属性数组，诊断响应及断言 webhook 的属性则为对象。
 
-#### Golang APIs
+## gRPC API
 
-<nav id="contents">
-  <ol class="js-toc">
-    <ul class="toc-list ">
-    <li class="toc-list-item">
-    [Policy Management Service
-API](https://github.com/teramoby/speedle-plus/tree/master/api/pms)
-    </li>
-    <li class="toc-list-item">
-    [Authorization Decision Service API](https://github.com/teramoby/speedle-plus/tree/master/api/ads)
-    </li>
-    </ul>
-    </ol>
-</nav>
-<div id="action-buttons" align="left">
-    <a class="button primary" href="./management_api">Policy Management</a>
-    <a class="button primary" href="./decision_api">Authorization Decision</a>
-    <a class="button primary" href="./asserter_api">Token Assertion</a>
-  </div>
+- [PMS proto](/protobuf/pms.proto)：`pb.PolicyManager`
+- [ADS proto](/protobuf/ads.proto)：`pb.Evaluator`
+
+当前 proto 必须与生成客户端配套使用。PMS 的服务名为 `pb.PolicyManager`，ADS 为 `pb.Evaluator`。这两份历史协议重用了消息名，应分别生成和加载，不要合并进同一 descriptor set。默认不启用 gRPC；需通过 `--grpc-endpoint` 显式开启，其 TLS 配置与 REST 相同。
+
+历史 gRPC 的 `ContextRequest.attributes` 是字符串 map，不是 REST 的带类型属性数组，也不提供同样的数值、布尔、日期类型。条件需要这些类型时，应使用 REST 或嵌入式 Go，除非你的 gRPC 适配层明确实现了相应转换。
+
+## 嵌入式 Go API
+
+- [策略管理接口](https://github.com/teramoby/speedle-plus/tree/master/api/pms)
+- [授权决策接口](https://github.com/teramoby/speedle-plus/tree/master/api/ads)
+
+完整应用示例见[嵌入模式](/docs/deployment-embeded/)。

@@ -13,251 +13,102 @@ bref = "Basics of policy management"
 
 ## What is a Speedle policy?
 
-A Speedle policy is a set of criteria that specify whether a user is granted access to a particular protected resource or assignment to a particular role. You manage Speedle policies using the Speedle Policy Management Service(PMS).
-
-## Understanding the Speedle Policy Module
-
-**Note:** The Speedle syntax used in this document is defined in [SPDL - Speedle Policy Definition Language](../../spdl).
-
-#### Policy store
-
-The policy store maintains all policy artifacts and can be persisted to an etcd store or a JSON file.
+The Policy Management Service (PMS) manages services, authorization policies, role policies and custom functions. A policy store persists those objects using a registered [storage backend](/docs/store/).
 
 <img src="/img/speedle/policystore.png"/>
 
-#### Service
+## Services and authorization policies
 
-A service is a container that contains a set of authorization and role policies that exist only in the scope of that service. Policies and role policies are evaluated within the scope of the service in which they were defined, not in the entire policy store. You can manage multiple services with Speedle.
-
-You can also define global policies in a global service. Global policies take effect globally across all services. For details, see [Global Policy](../global-policy).
-
-#### Authorization policy
-
-An authorization policy defines the criteria that controls access to protected resources.
+A service scopes its policies. An authorization policy grants or denies a principal permission to perform an action on a resource, optionally subject to a condition. Except for [global role policies](/docs/pms/global-policy/), policies do not automatically apply in another service.
 
 <img src="/img/speedle/authzpolicy.png"/>
 
-You create authorization policies to grant or deny principals (user/role/group/entity) permission to perform specific actions on specific resources if the condition is true.
-
-Sample:
-
-```
-grant group Administrators list,watch,get expr:c1/default/core/pods/*
+```text
+grant group Administrators list,watch,get expr:^c1/default/core/pods/.*$
 ```
 
-This sample grants the group "Administrators" permission to perform "list", "watch", and "get" operations on the resource that matches the name expression `c1/default/core/pods/*`.
+This regular expression matches resources under `c1/default/core/pods/`. It does not match `c1/default/core/podssecret` or an extra prefix before `c1`. `expr:` uses regular-expression matching, not shell globs: use `.*` for arbitrary characters and `^`/`$` when the complete identifier must match.
 
-#### Role policy
-
-A role policy defines the criteria that controls how principals (user/role/group/entity) are granted or denied membership to roles created using Speedle.
+## Role policies
 
 <img src="/img/speedle/rolepolicy.png"/>
 
-You create role policies to grant or deny roles, which you created using Speedle, to principals (user/role/group/entity) on specific resources if the condition is true.
-
-Sample:
-
-```
+```text
 grant user alan manager on res1
+grant role manager update res1
 ```
 
-This sample grants user "alan" the "manager" role on the resource "res1". In other words, user "alan" can perform operations on the resource "res1" because "alan" has the permissions assigned to the role "manager".
+The first statement assigns Alan a resource-scoped role; the second grants that role an operation. Assigning a role alone does not create permissions. An applicable explicit deny overrides a grant.
 
-#### Policy elements
+## Principals and conditions
 
-##### Effect
-
-Effect has two values: "grant" or "deny".  
-When Speedle evaluates policies, the final authorization decision is based on the "DENY overrides" combining algorithm. For example, if there is a policy that grants permission to a subject at the same time as a policy that denies the same permission to the subject, then the "deny" policy takes effect and overrides the "grant" policy.
-
-##### Principal
-
-In authorization and role policies, the principal is the identity object to which the access rights or roles can be granted or denied. A principal can be a user, a group, an entity or a role. Most frequently, it is a role.
+A principal may be a user, group, entity or role. An entity represents a non-human identity, such as a service. Integrations must derive these identities from trusted sources.
 
 <img src="/img/speedle/principal.png"/>
 
-User, group and entity are principals from the identity store and are usually obtained after authentication or token assertion. Users and groups represent a human identity; an entity represents a non-human identity such as a service, a Kubernetes pod, and so on.
-
-#### AND principal
-
-AND principal is a combination of a small set of principals, separated by commas. If a policy uses AND principal, the policy can take effect only when all of these principles are matched.
+An AND group requires every listed principal; separate groups are alternatives. For example, both roles below must apply:
 
 <img src="/img/speedle/andprincipal.png"/>
 
-Sample:
-
-```
-grant role (designer, dba) update db_design_doc
+```text
+grant (role designer, role dba) update db_design_doc
 ```
 
-In this sample, only a user with both roles "designer" and "dba" can update the resource "db_design_doc".
-
-##### Resource
-
-A resource is a protected object to which access is granted or denied. A resource represents the application component or business object that is secured by an authorization policy.
+A resource names the protected object; an action names an application operation. A condition is a Boolean expression evaluated from trusted attributes, constants, operators and supported functions.
 
 <img src="/img/speedle/resource.png"/>
 
-resourceNameExpression supports regular expressions.
+See [SPDL](/docs/spdl/) for grammar and [RBAC](/docs/overview/)/[ABAC](/docs/overview/) for complete decision examples.
 
-##### Action
+## Before running the examples
 
-An action is an operation that can be performed on the protected resource. Action is just a string in a policy. You can define any actions when you create the policy.
+Build `./bin/spctl`, `./bin/speedle-pms` and `./bin/speedle-ads` using the [quick start](/quick-start/). Use Go 1.26.10 or Go 1.27.3 (or a newer patch on the same release branch), Bash, curl and Python 3. Run each terminal from the repository root. Use a fresh policy file for this page; reset it only after stopping both services.
 
-##### Condition
+Initialize an empty policy file:
 
-A condition is a bool expression that is constructed using attributes, functions, constants, operators, comparators or parenthesis and produces a bool value. Conditions are supported in both role and authorization policies. The policy or role policy can take effect only when the condition is met.
-
-For details, see [SPDL - Speedle Policy Definition Language](../../spdl).
-
-## Managing Speedle policies
-
-Use the Speedle Policy Management Service (PMS) to manage authorization and role policies, and the security objects from which they are created.
-
-Speedle allows administrators to perform create, read, and delete operations on all policy objects. You can do this in any of the following ways:
-
--   Using the Speedle command line interface `spctl` (as described here. This is the recommended method.)
-
--   Using the PMS Golang Management API in Embedded Mode (as described in the [Speedle API doc](https://github.com/teramoby/speedle-plus/tree/master/api/pms).
-
--   Using the PMS REST Service (as described in the [Speedle Policy Management API](/docs/api/management_api/)).
-
--   Using the PMS gRPC Service (as described in the [Speedle GRPC document](/protobuf/pms.proto)).
-
-#### Managing services
-
-You create a service as the overall container for authorization and role policies.
-You can perform the following management operations on service instances.
-
--   Create a "test" service:
-
+<!-- docs-check: setup -->
 ```bash
-$ ./spctl create service test
-service created
-{"name":"test","type":"application","metadata":{"createby":"","createtime":"2019-02-12T22:51:19-08:00"}}
+printf '{}\n' > docs-policies.json
 ```
 
--   Get the "test" service:
+In terminal one, start PMS and leave it running:
 
+<!-- docs-check: pms -->
 ```bash
-$ ./spctl get service test
-{
-    "name": "test",
-    "type": "application",
-    "metadata": {
-        "createby": "",
-        "createtime": "2019-02-12T22:51:19-08:00"
-    }
-}
+./bin/speedle-pms --store-type file --filestore-loc ./docs-policies.json --endpoint 127.0.0.1:6733 --grpc-endpoint 127.0.0.1:0 --insecure=true
 ```
 
--   Get all services:
+In terminal two, start ADS and leave it running:
 
+<!-- docs-check: ads -->
 ```bash
-$ ./spctl get service --all
-[
-    {
-        "name": "test",
-        "type": "application",
-        "metadata": {
-            "createby": "",
-            "createtime": "2019-02-12T22:51:19-08:00"
-        }
-    }
-]
+./bin/speedle-ads --store-type file --filestore-loc ./docs-policies.json --endpoint 127.0.0.1:6734 --grpc-endpoint 127.0.0.1:0 --insecure=true
 ```
 
--   Delete the "test" service:
+Run the remaining commands in a third terminal. PMS and ADS share the file; watch propagates changes asynchronously. Confirm the intended update has reached ADS before relying on it. `--insecure=true` is only for this loopback example; see [security](/docs/security/) for production connections. Explicit PMS addresses avoid changing `~/.spctlconfig`. Stop both server terminals with Ctrl-C when finished.
 
+
+## Manage services and policies with spctl
+
+Run this sequence against a fresh store. IDs come from the live query responses; they are not fixed values copied from an older run. Deletion happens after all operations that need the service.
+
+<!-- docs-check: policy-management -->
 ```bash
-$ ./spctl delete service test
-service test deleted.
+./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ create service test
+./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ get service test
+./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ get service --all
+./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ create policy policy1 -c "grant user alan read book" --service-name test
+policy_id=$(./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ get policy --all --service-name test | python3 -c 'import json,sys; print(next(p["id"] for p in json.load(sys.stdin) if p.get("name")=="policy1"))')
+./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ get policy "$policy_id" --service-name test
+./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ create rolepolicy rolepolicy01 -c "grant user alan manager on res1" --service-name test
+role_policy_id=$(./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ get rolepolicy --all --service-name test | python3 -c 'import json,sys; print(next(p["id"] for p in json.load(sys.stdin) if p.get("name")=="rolepolicy01"))')
+./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ get rolepolicy "$role_policy_id" --service-name test
+./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ delete policy "$policy_id" --service-name test
+./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ delete rolepolicy "$role_policy_id" --service-name test
+./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ delete service test
 ```
 
-#### Managing authorization policies
 
-You can perform the following management operations on authorization policies.
+## Other interfaces
 
--   Create a policy named "policy1" in the "test" service:
-
-```bash
-$ ./spctl create policy policy1 -c "grant user alan read book" --service-name test
-policy created
-{"id":"ao3olis24hrzchwjduea","name":"policy1","effect":"grant","permissions":[{"resource":"book","actions":["read"]}],"principals":[["user:alan"]],"metadata":{"createby":"","createtime":"2019-02-12T22:57:46-08:00"}}
-```
-
--   Get "policy1" in the "test" service using the policy id:
-
-```bash
-$ ./spctl get policy ao3olis24hrzchwjduea --service-name=test
-{
-    "effect": "grant",
-    "id": "ao3olis24hrzchwjduea",
-    "metadata": {
-        "createby": "",
-        "createtime": "2019-02-12T22:57:46-08:00"
-    },
-    "name": "policy1",
-    "permissions": [
-        {
-            "actions": [
-                "read"
-            ],
-            "resource": "book"
-        }
-    ],
-    "principals": [
-        [
-            "user:alan"
-        ]
-    ]
-}
-```
-
--   Delete "policy1" in the "test" service using the policy id:
-
-```bash
-$ ./spctl delete policy ao3olis24hrzchwjduea --service-name=test
-policy ao3olis24hrzchwjduea deleted.
-```
-
-#### Managing role policies
-
-You can perform the following management operations on role policies.
-
--   Create a new role policy named "rolepolicy01" in the "test" service:
-
-```bash
-$ ./spctl create rolepolicy rolepolicy01 -c "grant user alan manager" --service-name test
-rolepolicy created
-{"id":"4gskmqamoiebmidyw2fi","name":"rolepolicy01","effect":"grant","roles":["manager"],"principals":["user:alan"],"metadata":{"createby":"","createtime":"2019-02-12T23:00:44-08:00"}}
-```
-
--   Get the role policy using the policy id:
-
-```bash
-$ ./spctl get rolepolicy 4gskmqamoiebmidyw2fi --service-name test
-{
-    "effect": "grant",
-    "id": "4gskmqamoiebmidyw2fi",
-    "metadata": {
-        "createby": "",
-        "createtime": "2019-02-12T23:00:44-08:00"
-    },
-    "name": "rolepolicy01",
-    "principals": [
-        "user:alan"
-    ],
-    "roles": [
-        "manager"
-    ]
-}
-
-```
-
--   Delete the role policy using the policy id:
-
-```bash
-$ ./spctl delete rolepolicy 4gskmqamoiebmidyw2fi --service-name test
-rolepolicy 4gskmqamoiebmidyw2fi deleted.
-```
+The [PMS REST API](/docs/api/management_api/) uses JSON and returns flat policy objects with string IDs. Go applications can call the [PMS interfaces](https://github.com/teramoby/speedle-plus/tree/master/api/pms) directly; gRPC clients use the [published PMS proto](/protobuf/pms.proto). Apply [transport and caller access controls](/docs/security/) to administrative operations.

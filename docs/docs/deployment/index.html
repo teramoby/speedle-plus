@@ -90,482 +90,134 @@ headingSelector: 'h2'
   <div id="kube-component" class="content">
     
 
-<h2 id="deploy-speedle-in-embedded-mode">Deploy Speedle in embedded mode</h2>
+<h2 id="choose-a-deployment-mode">Choose a deployment mode</h2>
 
-<p>Speedle works as a Go library. To deploy Speedle in embedded mode, simply pull Speedle from the repository and import it in golang code.
-The Policy Management Service (PMS) golang API is called to do policy management, and the Authorization Decision Service (ADS) golang API is called to do runtime authorization checks.</p>
+<p>Use <a href="/docs/deployment-embeded/">embedded mode</a> to run the evaluator in your Go process. Use standalone PMS and ADS when applications call Speedle over REST or gRPC. The <a href="/quick-start/">Quick Start</a> provides a complete local policy-management and authorization walkthrough.</p>
 
-<h2 id="deploy-speedle-as-a-service">Deploy Speedle as a service</h2>
+<h2 id="build-with-current-go">Build with current Go</h2>
 
-<p>You can deploy Speedle as a service on Kubernetes in these modes:</p>
+<p>Use Go 1.26.10 or Go 1.27.3 (or a newer patch on the same release branch) (Go 1.27.3 is recommended), Git and a shell on Linux or macOS. Use Go modules; the checkout can be anywhere writable. No custom <code>GOROOT</code>, <code>GOPATH</code>, <code>dep</code> or GOPATH source layout is needed.</p>
 
-<ul>
-<li><p><strong>Dev mode</strong> - where Speedle components run using a file as a policy store.</p></li>
+<!-- deployment-check: source-build -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">git clone --depth <span style="color:#bd93f9">1</span> https://github.com/teramoby/speedle-plus.git
+<span style="color:#8be9fd;font-style:italic">cd</span> speedle-plus
+mkdir -p bin
+go build -o ./bin/ ./cmd/spctl ./cmd/speedle-pms ./cmd/speedle-ads</code></pre></div>
+<p>The executables are <code>bin/spctl</code>, <code>bin/speedle-pms</code> and <code>bin/speedle-ads</code>. From the checkout root, use one shared file for the local example:</p>
 
-<li><p><strong>Production mode</strong> - where Speedle components run on an etcd cluster as a policy store.</p></li>
-</ul>
+<!-- deployment-check: pms -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./bin/speedle-pms --store-type file --filestore-loc ./docs-policies.json --endpoint <span style="color:#bd93f9">127</span>.0.0.1:6733 --insecure<span style="color:#ff79c6">=</span>true</code></pre></div>
+<p>Keep PMS running; start ADS in another terminal in the same checkout:</p>
 
-<p>In both modes, users can access the Speedle service using the REST API or the <code>spctl</code> CLI tool.</p>
+<!-- deployment-check: ads -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./bin/speedle-ads --store-type file --filestore-loc ./docs-policies.json --endpoint <span style="color:#bd93f9">127</span>.0.0.1:6734 --insecure<span style="color:#ff79c6">=</span>true</code></pre></div>
+<p>Use a fresh policy file; PMS creates it if absent. Follow <a href="/quick-start/">Quick Start</a> for creation and Allow/Deny requests, then stop both services with Ctrl+C. gRPC is disabled unless explicitly enabled with <code>--grpc-endpoint</code>. Plain HTTP is for this loopback example; see <a href="/docs/security/">Security</a> for TLS and client authentication.</p>
 
-<h3 id="deploy-speedle-on-kubernetes">Deploy Speedle on Kubernetes</h3>
+<h2 id="build-container-images">Build container images</h2>
 
-<p>Deploy Speedle on Kubernetes in both dev and production modes using Helm, or manually. Both methods are described here.</p>
+<p>For an optional Linux/amd64 container deployment, first build static Linux binaries from the checkout root:</p>
 
-<h4 id="prerequisites">Prerequisites</h4>
+<!-- deployment-check: linux-build -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">mkdir -p ./bin/linux-amd64
+<span style="color:#8be9fd;font-style:italic">CGO_ENABLED</span><span style="color:#ff79c6">=</span><span style="color:#bd93f9">0</span> <span style="color:#8be9fd;font-style:italic">GOOS</span><span style="color:#ff79c6">=</span>linux <span style="color:#8be9fd;font-style:italic">GOARCH</span><span style="color:#ff79c6">=</span>amd64 go build -o ./bin/linux-amd64/ ./cmd/speedle-pms ./cmd/speedle-ads</code></pre></div>
+<p>Save this as <code>bin/linux-amd64/Dockerfile.pms</code>. Create <code>Dockerfile.ads</code> alongside it by replacing both occurrences of <code>speedle-pms</code> with <code>speedle-ads</code>. The binaries run directly without the historical image entrypoint scripts:</p>
 
-<ul>
-<li>Golang 1.10.0 environment installed on your development box</li>
-<li>Docker 1.12 or higher installed on your development box</li>
-<li>A Docker registry to publish Docker images</li>
-<li>The latest code from the Speedle repository synced to folder <code>$GOPATH/src/github.com/teramoby/speedle-plus/</code> on your dev box</li>
-<li>A Kubernetes cluster or an OKE cluster</li>
-<li>A Docker-registry secret. To create one:</li>
-</ul>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">kubectl create secret docker-registry reg-speedle --docker-server<span style="color:#ff79c6">=</span><span style="color:#8be9fd;font-style:italic">$DOCKER_LOGIN_SERVER</span> --docker-username<span style="color:#ff79c6">=</span><span style="color:#8be9fd;font-style:italic">$DOCKER_LOGIN_USER</span> --docker-password<span style="color:#ff79c6">=</span><span style="color:#8be9fd;font-style:italic">$DOCKER_LOGIN_PASSWORD</span> --docker-email<span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;youremail@yourcorp.com&#34;</span></code></pre></div>
-<h4 id="deploy-speedle-using-helm">Deploy Speedle using Helm</h4>
+<!-- deployment-template: image -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-dockerfile" data-lang="dockerfile"><span style="color:#ff79c6">FROM</span><span style="color:#f1fa8c"> scratch</span>
+COPY speedle-pms /speedle-pms
+USER <span style="color:#bd93f9">65532</span>:65532
+<span style="color:#ff79c6">ENTRYPOINT</span><span style="color:#f1fa8c"> [&#34;/speedle-pms&#34;]</span></code></pre></div>
+<p>Use a current Docker Engine with BuildKit and a registry you can push to. Set <code>PMS_IMAGE</code> and <code>ADS_IMAGE</code> to your own complete image names/tags, authenticate to that registry, then build and publish:</p>
 
-<p>You can use Helm to deploy Speedle in both dev and production modes.</p>
+<!-- deployment-template: image-build -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker build --platform linux/amd64 -f ./bin/linux-amd64/Dockerfile.pms -t <span style="color:#f1fa8c">&#34;</span><span style="color:#8be9fd;font-style:italic">$PMS_IMAGE</span><span style="color:#f1fa8c">&#34;</span> ./bin/linux-amd64
+docker build --platform linux/amd64 -f ./bin/linux-amd64/Dockerfile.ads -t <span style="color:#f1fa8c">&#34;</span><span style="color:#8be9fd;font-style:italic">$ADS_IMAGE</span><span style="color:#f1fa8c">&#34;</span> ./bin/linux-amd64
+docker push <span style="color:#f1fa8c">&#34;</span><span style="color:#8be9fd;font-style:italic">$PMS_IMAGE</span><span style="color:#f1fa8c">&#34;</span>
+docker push <span style="color:#f1fa8c">&#34;</span><span style="color:#8be9fd;font-style:italic">$ADS_IMAGE</span><span style="color:#f1fa8c">&#34;</span></code></pre></div>
+<p>These images target Linux/amd64 nodes. Build an architecture matching your nodes if different. Provide CA files explicitly for TLS endpoints when using this minimal image.</p>
 
-<h5 id="dev-mode">Dev mode</h5>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ helm install -n speedle-dev deployment/helm/speedle-dev
-NAME:   speedle-dev
-LAST DEPLOYED: Tue Nov <span style="color:#bd93f9">27</span> <span style="color:#bd93f9">23</span>:21:18 <span style="color:#bd93f9">2018</span>
-NAMESPACE: default
-STATUS: DEPLOYED
+<h2 id="kubernetes-development-example">Kubernetes development example</h2>
 
-RESOURCES:
-<span style="color:#ff79c6">==</span>&gt; v1/Service
-NAME         TYPE       CLUSTER-IP      EXTERNAL-IP  PORT<span style="color:#ff79c6">(</span>S<span style="color:#ff79c6">)</span>            AGE
-speedle-dev  ClusterIP  <span style="color:#bd93f9">10</span>.101.133.188  &lt;none&gt;       <span style="color:#bd93f9">6733</span>/TCP,6734/TCP  <span style="color:#8be9fd;font-style:italic">0s</span>
+<p>Use a current Kubernetes cluster and compatible <code>kubectl</code>. Save the following as <code>speedle-dev.yaml</code>. It uses <code>apps/v1</code>, one pod with PMS/ADS sharing one file, a non-root application UID and an internal ClusterIP service. This is an isolated development example: <code>emptyDir</code> policies are lost when the pod is replaced, and HTTP endpoints need cluster access controls. Use a private-registry pull secret if required by your registry.</p>
 
-<span style="color:#ff79c6">==</span>&gt; v1beta2/Deployment
-NAME         DESIRED  CURRENT  UP-TO-DATE  AVAILABLE  AGE
-speedle-dev  <span style="color:#bd93f9">1</span>        <span style="color:#bd93f9">1</span>        <span style="color:#bd93f9">1</span>           <span style="color:#bd93f9">0</span>          <span style="color:#8be9fd;font-style:italic">0s</span>
-
-<span style="color:#ff79c6">==</span>&gt; v1/Pod<span style="color:#ff79c6">(</span>related<span style="color:#ff79c6">)</span>
-NAME                          READY  STATUS             RESTARTS  AGE
-speedle-dev-7568f8dc44-mwh5m  <span style="color:#bd93f9">0</span>/2    ContainerCreating  <span style="color:#bd93f9">0</span>         0s</code></pre></div>
-<p>NOTES:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ kubectl port-forward svc/speedle-dev <span style="color:#bd93f9">6733</span>:6733 <span style="color:#bd93f9">6734</span>:6734</code></pre></div>
-<ul>
-<li>To manage policies, access <a href="http://127.0.0.1:6733/policy-mgmt/v1/">http://127.0.0.1:6733/policy-mgmt/v1/</a></li>
-<li>To check permissions: access <a href="http://127.0.0.1:6734/authz-check/v1/is-allowed">http://127.0.0.1:6734/authz-check/v1/is-allowed</a></li>
-</ul>
-
-<h5 id="production-mode">Production mode</h5>
-
-<p>Before you deploy Speedle in production mode, you need to install and configure etcd. If you are using TLS, you also have to create a Kubernetes secret.</p>
-
-<h6 id="install-etcd">Install etcd</h6>
-
-<p>The best way to install etcd is using the etcd-operator. Here we show the simplest steps to install a sample etcd cluster. For more information, see <a href="https://github.com/coreos/etcd-operator">etcd-operator</a> on GitHub.</p>
-
-<ol>
-<li>Install the etcd-operator using Helm</li>
-</ol>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ helm install stable/etcd-operator --name my-release</code></pre></div>
-<ol>
-<li>Create an etcd cluster</li>
-</ol>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ kubectl create -f https://raw.githubusercontent.com/coreos/etcd-operator/master/example/example-etcd-cluster.yaml</code></pre></div>
-<p>A 3 member etcd cluster is created.</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ kubectl get pods
-NAME                            READY     STATUS    RESTARTS   AGE
-example-etcd-cluster-gxkmr9ql7z   <span style="color:#bd93f9">1</span>/1       Running   <span style="color:#bd93f9">0</span>          1m
-example-etcd-cluster-m6g62x6mwc   <span style="color:#bd93f9">1</span>/1       Running   <span style="color:#bd93f9">0</span>          1m
-example-etcd-cluster-rqk62l46kw   <span style="color:#bd93f9">1</span>/1       Running   <span style="color:#bd93f9">0</span>          1m</code></pre></div>
-<p>Create a TLS-enabled etcd cluster using a static cluster TLS policy as described in
-<a href="https://github.com/coreos/etcd-operator/blob/master/doc/user/cluster_tls.md">Cluster TLS policy</a></p>
-
-<h6 id="create-a-kubernetes-secret-for-tls">Create a Kubernetes secret for TLS</h6>
-
-<p>If you want to enable TLS for the Speedle server (see <a href="/docs/security/">Security</a>), you need to create the TLS Kubernetes secret as described in these steps.</p>
-
-<ol>
-<li>Install the CloudFlare PKI/TLS Toolkit (CFSSL)</li>
-</ol>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl -s -L -o /usr/bin/cfssl https://pkg.cfssl.org/R1.2/cfssl_linux-amd64
-curl -s -L -o /usr/bin/cfssljson https://pkg.cfssl.org/R1.2/cfssljson_linux-amd64</code></pre></div>
-<ol>
-<li>Generate the CA and certificates</li>
-</ol>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#8be9fd;font-style:italic">echo</span> <span style="color:#f1fa8c">&#39;{&#34;CN&#34;:&#34;CA&#34;,&#34;key&#34;:{&#34;algo&#34;:&#34;rsa&#34;,&#34;size&#34;:2048}}&#39;</span> | cfssl gencert -initca - | cfssljson -bare ca -
-<span style="color:#8be9fd;font-style:italic">echo</span> <span style="color:#f1fa8c">&#39;{&#34;signing&#34;:{&#34;default&#34;:{&#34;expiry&#34;:&#34;43800h&#34;,&#34;usages&#34;:[&#34;signing&#34;,&#34;key encipherment&#34;,&#34;server auth&#34;,&#34;client auth&#34;]}}}&#39;</span> &gt; ca-config.json
-<span style="color:#6272a4"># replace this address with your IP address or DNS
-</span><span style="color:#6272a4"></span><span style="color:#8be9fd;font-style:italic">export</span> <span style="color:#8be9fd;font-style:italic">ADDRESS</span><span style="color:#ff79c6">=</span>localhost,127.0.0.1,speedle-ads.default.svc
-<span style="color:#8be9fd;font-style:italic">export</span> <span style="color:#8be9fd;font-style:italic">NAME</span><span style="color:#ff79c6">=</span>server
-<span style="color:#8be9fd;font-style:italic">echo</span> <span style="color:#f1fa8c">&#39;{&#34;CN&#34;:&#34;&#39;</span><span style="color:#8be9fd;font-style:italic">$NAME</span><span style="color:#f1fa8c">&#39;&#34;,&#34;hosts&#34;:[&#34;&#34;],&#34;key&#34;:{&#34;algo&#34;:&#34;rsa&#34;,&#34;size&#34;:2048}}&#39;</span> | cfssl gencert -config<span style="color:#ff79c6">=</span>ca-config.json -ca<span style="color:#ff79c6">=</span>ca.pem -ca-key<span style="color:#ff79c6">=</span>ca-key.pem -hostname<span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;</span><span style="color:#8be9fd;font-style:italic">$ADDRESS</span><span style="color:#f1fa8c">&#34;</span> - | cfssljson -bare <span style="color:#8be9fd;font-style:italic">$NAME</span>
-<span style="color:#8be9fd;font-style:italic">export</span> <span style="color:#8be9fd;font-style:italic">ADDRESS</span><span style="color:#ff79c6">=</span>
-<span style="color:#8be9fd;font-style:italic">export</span> <span style="color:#8be9fd;font-style:italic">NAME</span><span style="color:#ff79c6">=</span>client
-<span style="color:#8be9fd;font-style:italic">echo</span> <span style="color:#f1fa8c">&#39;{&#34;CN&#34;:&#34;&#39;</span><span style="color:#8be9fd;font-style:italic">$NAME</span><span style="color:#f1fa8c">&#39;&#34;,&#34;hosts&#34;:[&#34;&#34;],&#34;key&#34;:{&#34;algo&#34;:&#34;rsa&#34;,&#34;size&#34;:2048}}&#39;</span> | cfssl gencert -config<span style="color:#ff79c6">=</span>ca-config.json -ca<span style="color:#ff79c6">=</span>ca.pem -ca-key<span style="color:#ff79c6">=</span>ca-key.pem -hostname<span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;</span><span style="color:#8be9fd;font-style:italic">$ADDRESS</span><span style="color:#f1fa8c">&#34;</span> - | cfssljson -bare <span style="color:#8be9fd;font-style:italic">$NAME</span></code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">mv server.pem server.crt
-mv server-key.pem server.key
-cp ca.pem server-ca.crt</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">mv client.pem client.crt
-mv client-key.pem client.key
-cp ca.pem client-ca.crt</code></pre></div>
-<ol>
-<li>Create the TLS secret</li>
-</ol>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">kubectl create secret generic speedle-server-tls --from-file<span style="color:#ff79c6">=</span>server-ca.crt --from-file<span style="color:#ff79c6">=</span>server.crt --from-file<span style="color:#ff79c6">=</span>server.key</code></pre></div>
-<h6 id="deploy-speedle">Deploy Speedle</h6>
-
-<ul>
-<li>To deploy Speedle with TLS disabled:</li>
-</ul>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ helm install -n speedle deployment/helm/speedle-prod --set store.etcd.endpoint<span style="color:#ff79c6">=</span>http://example-etcd-cluster-client:2379,tls<span style="color:#ff79c6">=</span></code></pre></div>
-<ul>
-<li>To deploy Speedle with TLS enabled:</li>
-</ul>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ helm install -n speedle deployment/helm/speedle-prod --set store.etcd.endpoint<span style="color:#ff79c6">=</span>http://example-etcd-cluster-client:2379,tls.certSecret<span style="color:#ff79c6">=</span>speedle-server-tls,tls.certFile<span style="color:#ff79c6">=</span>server.crt,tls.keyFile<span style="color:#ff79c6">=</span>server.key,tls.trustedCAFile<span style="color:#ff79c6">=</span>server-ca.crt,tls.forceClientCert<span style="color:#ff79c6">=</span>true</code></pre></div>
-<p>If the etcd cluster is <strong>TLS enabled</strong>, set the following variables (see <a href="https://github.com/coreos/etcd-operator/blob/master/doc/user/cluster_tls.md#operatorsecret">operatorSecret</a> in the etcd-operator documentation on GitHub):</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">store:
-  etcd:
-    endpoint: https://example-etcd-cluster-client.default.svc:<span style="color:#bd93f9">2379</span>
-    etcdClientCertSecret: etcd-client-tls
-    certFile: etcd-client.crt
-    keyFile: etcd-client.key
-    trustedCAFile: etcd-client-ca.crt</code></pre></div>
-<h4 id="deploy-speedle-manually">Deploy Speedle manually</h4>
-
-<p>Before deploying Speedle manually, you need to build Speedle and build and push the Speedle Docker images.</p>
-
-<h5 id="build-speedle">Build Speedle</h5>
-
-<p>You can build Speedle by executing the following command. This command assumes that you have already set the GOPATH environment variable, and that the Speedle code is located in the directory <code>$GOPATH/src/github.com/teramoby/speedle-plus/</code></p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#8be9fd;font-style:italic">cd</span> <span style="color:#8be9fd;font-style:italic">$GOPATH</span>/src/github.com/teramoby/speedle-plus
-make</code></pre></div>
-<p>When the build completes, three files are located in the <code>$GOPATH/bin</code> directory:</p>
-
-<ul>
-<li>spctl</li>
-<li>speedle-pms</li>
-<li>speedle-ads</li>
-</ul>
-
-<h5 id="build-and-push-speedle-docker-images">Build and push Speedle Docker images</h5>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#8be9fd;font-style:italic">export</span> <span style="color:#8be9fd;font-style:italic">pmsImageRepo</span><span style="color:#ff79c6">=</span>Docker repository of the Speedle policy management service
-<span style="color:#8be9fd;font-style:italic">export</span> <span style="color:#8be9fd;font-style:italic">pmsImageImageVersion</span><span style="color:#ff79c6">=</span>Docker image version of the Speedle PMS
-<span style="color:#8be9fd;font-style:italic">export</span> <span style="color:#8be9fd;font-style:italic">adsImageRepo</span><span style="color:#ff79c6">=</span>Docker repository of the Speedle authorization decision service
-<span style="color:#8be9fd;font-style:italic">export</span> <span style="color:#8be9fd;font-style:italic">adsImageImageVersion</span><span style="color:#ff79c6">=</span>Docker image version of the Speedle ADS
-
-<span style="color:#8be9fd;font-style:italic">cd</span> <span style="color:#8be9fd;font-style:italic">$GOPATH</span>/src/github.com/teramoby/speedle-plus
-make image</code></pre></div>
-<h5 id="deploy-speedle-in-dev-mode">Deploy Speedle in dev mode</h5>
-
-<h6 id="create-the-dev-mode-kubernetes-deployment">Create the dev mode Kubernetes deployment</h6>
-
-<p>Create a YAML file, named <code>speedle-dev.yaml</code>, using the values appropriate for your environment, that can deploy both speedle-pms and speedle-ads in one Kubernetes deployment. A sample <code>speedle-dev.yaml</code>file is available in the <a href="https://github.com/teramoby/speedle-plus/blob/master/deployment/k8s/speedle-dev.yaml">Speedle GIT repository</a>.</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">kind: Service
-apiVersion: v1
+<!-- deployment-template: kubernetes -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">apiVersion: apps/v1
+kind: Deployment
 metadata:
   name: speedle-dev
 spec:
-  selector:
-    app: speedle
-  ports:
-    - protocol: TCP
-      port: <span style="color:#bd93f9">6733</span>
-      targetPort: <span style="color:#bd93f9">6733</span>
-      name: pms
-    - protocol: TCP
-      port: <span style="color:#bd93f9">6734</span>
-      targetPort: <span style="color:#bd93f9">6734</span>
-      name: ads
-
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: speedle
-  labels:
-    app: speedle
-spec:
   replicas: <span style="color:#bd93f9">1</span>
+  strategy:
+    type: Recreate
   selector:
     matchLabels:
-      app: speedle
-      name: ads
+      app: speedle-dev
   template:
     metadata:
       labels:
-        app: speedle
-        name: ads
+        app: speedle-dev
     spec:
+      initContainers:
+        - name: policy-file
+          image: busybox:<span style="color:#bd93f9">1.37</span>.<span style="color:#bd93f9">0</span>
+          command: [<span style="color:#f1fa8c">&#34;sh&#34;</span>, <span style="color:#f1fa8c">&#34;-c&#34;</span>, <span style="color:#f1fa8c">&#34;printf &#39;{}\n&#39; &gt; /data/policies.json; chown 65532:65532 /data/policies.json; chmod 600 /data/policies.json&#34;</span>]
+          volumeMounts:
+            - name: policies
+              mountPath: /data
       containers:
+        - name: pms
+          image: registry.example.com/speedle-pms:demo
+          args: [<span style="color:#f1fa8c">&#34;--store-type&#34;</span>, <span style="color:#f1fa8c">&#34;file&#34;</span>, <span style="color:#f1fa8c">&#34;--filestore-loc&#34;</span>, <span style="color:#f1fa8c">&#34;/data/policies.json&#34;</span>, <span style="color:#f1fa8c">&#34;--endpoint&#34;</span>, <span style="color:#f1fa8c">&#34;0.0.0.0:6733&#34;</span>, <span style="color:#f1fa8c">&#34;--insecure=true&#34;</span>]
+          ports:
+            - containerPort: <span style="color:#bd93f9">6733</span>
+          readinessProbe:
+            tcpSocket:
+              port: <span style="color:#bd93f9">6733</span>
+          volumeMounts:
+            - name: policies
+              mountPath: /data
         - name: ads
-          image: r.authz.fun/speedle-ads:v0.<span style="color:#bd93f9">1</span>  // please update image location
+          image: registry.example.com/speedle-ads:demo
+          args: [<span style="color:#f1fa8c">&#34;--store-type&#34;</span>, <span style="color:#f1fa8c">&#34;file&#34;</span>, <span style="color:#f1fa8c">&#34;--filestore-loc&#34;</span>, <span style="color:#f1fa8c">&#34;/data/policies.json&#34;</span>, <span style="color:#f1fa8c">&#34;--endpoint&#34;</span>, <span style="color:#f1fa8c">&#34;0.0.0.0:6734&#34;</span>, <span style="color:#f1fa8c">&#34;--insecure=true&#34;</span>]
           ports:
             - containerPort: <span style="color:#bd93f9">6734</span>
+          readinessProbe:
+            tcpSocket:
+              port: <span style="color:#bd93f9">6734</span>
           volumeMounts:
-            - mountPath: /var/lib/speedle
-              name: policy-store
-        - name: pms
-          image: r.authz.fun/speedle-pms:v0.<span style="color:#bd93f9">1</span>  // please update image location
-          ports:
-            - containerPort: <span style="color:#bd93f9">6733</span>
-          volumeMounts:
-            - mountPath: /var/lib/speedle
-              name: policy-store
+            - name: policies
+              mountPath: /data
       volumes:
-        - name: policy-store
-          hostPath:
-            path: /home/opc/policystore   // Depends on your file system, there should be a valid file <span style="color:#f1fa8c">&#34;policies.json&#34;</span> under this folder. A valid policy store should contain at least one line `{}` for an empty policy store.
-      nodeSelector:
-        kubernetes.io/hostname: host-ad1-vm1-<span style="color:#bd93f9">2</span>-<span style="color:#bd93f9">1</span>  // please replace host-ad1-vm1-<span style="color:#bd93f9">2</span>-<span style="color:#bd93f9">1</span> with actual node</code></pre></div>
-<h6 id="install-the-dev-mode-kubernetes-deployment">Install the dev mode Kubernetes deployment</h6>
-
-<p>Use the <code>kubectl create</code> command to create the Speedle deployment service using the <code>speedle-dev.yaml</code> file that you created in the previous step.</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">kubectl create -f speedle-dev.yaml</code></pre></div>
-<p>You can then use the <code>kubectl get</code> command to find one Speedle deployment, one pod and one service.</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ kubectl get deployment speedle
-NAME      DESIRED   CURRENT   UP-TO-DATE   AVAILABLE   AGE
-speedle   <span style="color:#bd93f9">1</span>         <span style="color:#bd93f9">1</span>         <span style="color:#bd93f9">1</span>            <span style="color:#bd93f9">1</span>           37m
-$ kubectl get pods -l <span style="color:#8be9fd;font-style:italic">app</span><span style="color:#ff79c6">=</span>speedle
-NAME                       READY     STATUS    RESTARTS   AGE
-speedle-65f68c67fd-qqzhj   <span style="color:#bd93f9">2</span>/2       Running   <span style="color:#bd93f9">0</span>          38m
-$ kubectl get services
-NAME      TYPE        CLUSTER-IP       EXTERNAL-IP   PORT<span style="color:#ff79c6">(</span>S<span style="color:#ff79c6">)</span>             AGE
-speedle-dev   ClusterIP   <span style="color:#bd93f9">10</span>.108.146.148   &lt;none&gt;        <span style="color:#bd93f9">6733</span>/TCP,6734/TCP   39m</code></pre></div>
-<h5 id="deploy-speedle-in-production-mode">Deploy Speedle in production mode</h5>
-
-<h6 id="create-the-production-mode-kubernetes-deployment">Create the production mode Kubernetes deployment</h6>
-
-<p>Create a YAML file, named <code>speedle-prod.yaml</code>, using the values appropriate for your environment, that can deploy both speedle-pms and speedle-ads in one Kubernetes deployment. A sample <code>speedle-prod.yaml</code> file is available
-in the <a href="https://github.com/teramoby/speedle-plus/blob/master/deployment/k8s/speedle-prod.yaml">Speedle GIT repository</a></p>
-
-<p>In this sample deployment file, etcd runs in one Kubernetes Pod.</p>
-
-<p>A high availability etcd cluster depends on the user&rsquo;s environment. If you want to run Speedle on an etcd cluster, see the <a href="https://coreos.com/etcd/docs/latest/v2/clustering.html">etcd Clustering Guide</a>. You must first create the etcd cluster, then modify the <code>speedle-prod.yaml</code> file with the etcd
-cluster settings, and lastly deploy the modified <code>speedle-prod.yaml</code> file.</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">kind: Service
+        - name: policies
+          emptyDir: {}
+---
 apiVersion: v1
+kind: Service
 metadata:
-  name: speedle-pms
+  name: speedle-dev
 spec:
+  type: ClusterIP
   selector:
-    app: speedle
-    name: pms
+    app: speedle-dev
   ports:
-    - protocol: TCP
+    - name: pms
       port: <span style="color:#bd93f9">6733</span>
       targetPort: <span style="color:#bd93f9">6733</span>
-      name: pms
-
----
-kind: Service
-apiVersion: v1
-metadata:
-  name: speedle-ads
-spec:
-  selector:
-    app: speedle
-    name: ads
-  ports:
-    - protocol: TCP
+    - name: ads
       port: <span style="color:#bd93f9">6734</span>
-      targetPort: <span style="color:#bd93f9">6734</span>
-      name: ads
+      targetPort: <span style="color:#bd93f9">6734</span></code></pre></div>
+<p>Keep <code>PMS_IMAGE</code> and <code>ADS_IMAGE</code> set to the images you published. Substitute them locally before applying; keep port-forward running while using Quick Start clients:</p>
 
----
-kind: Service
-apiVersion: v1
-metadata:
-  name: speedle-etcd
-spec:
-  selector:
-    app: speedle
-    name: etcd
-  ports:
-    - protocol: TCP
-      port: <span style="color:#bd93f9">2379</span>
-      targetPort: <span style="color:#bd93f9">2379</span>
-      name: etcd
+<!-- deployment-template: apply -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">kubectl <span style="color:#8be9fd;font-style:italic">set</span> image --local -f speedle-dev.yaml <span style="color:#8be9fd;font-style:italic">pms</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;</span><span style="color:#8be9fd;font-style:italic">$PMS_IMAGE</span><span style="color:#f1fa8c">&#34;</span> <span style="color:#8be9fd;font-style:italic">ads</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;</span><span style="color:#8be9fd;font-style:italic">$ADS_IMAGE</span><span style="color:#f1fa8c">&#34;</span> -o yaml | kubectl apply -f -
+kubectl rollout status deployment/speedle-dev
+kubectl port-forward service/speedle-dev <span style="color:#bd93f9">6733</span>:6733 <span style="color:#bd93f9">6734</span>:6734</code></pre></div>
+<h2 id="production-deployments">Production deployments</h2>
 
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: speedle-etcd
-  labels:
-    app: speedle
-    name: etcd
-spec:
-  replicas: <span style="color:#bd93f9">1</span>
-  selector:
-    matchLabels:
-      app: speedle
-      name: etcd
-  template:
-    metadata:
-      labels:
-        app: speedle
-        name: etcd
-    spec:
-      containers:
-        - name: pms
-          image: quay.io/coreos/etcd:v3.<span style="color:#bd93f9">2</span>
-          command: [<span style="color:#f1fa8c">&#39;/usr/local/bin/etcd&#39;</span>]
-          args:
-            [
-              <span style="color:#f1fa8c">&#39;--listen-client-urls&#39;</span>,
-              <span style="color:#f1fa8c">&#39;http://0.0.0.0:2379&#39;</span>,
-              <span style="color:#f1fa8c">&#39;--advertise-client-urls&#39;</span>,
-              <span style="color:#f1fa8c">&#39;http://0.0.0.0:2379&#39;</span>,
-            ]
-          ports:
-            - containerPort: <span style="color:#bd93f9">2379</span>
+<p>Use durable policy storage, protect management and decision endpoints, and configure TLS/mTLS for clients and the policy backend. <a href="/docs/store/">Pluggable Storage</a> documents the current store configuration; <a href="/docs/security/">Security</a> covers current transport flags. Size and operate the etcd deployment using the current etcd documentation, not the retired etcd-operator example.</p>
 
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: speedle-pms
-  labels:
-    app: speedle
-    name: pms
-spec:
-  replicas: <span style="color:#bd93f9">3</span>
-  selector:
-    matchLabels:
-      app: speedle
-      name: pms
-  template:
-    metadata:
-      labels:
-        app: speedle
-        name: pms
-    spec:
-      containers:
-        - name: pms
-          image: r.authz.fun/speedle-pms:v0.<span style="color:#bd93f9">1</span>  // please update image location
-          command: [<span style="color:#f1fa8c">&#39;speedle-pms&#39;</span>]
-          args:
-            [
-              <span style="color:#f1fa8c">&#39;--endpoint&#39;</span>,
-              <span style="color:#f1fa8c">&#39;0.0.0.0:6733&#39;</span>,
-              <span style="color:#f1fa8c">&#39;--insecure&#39;</span>,
-              <span style="color:#f1fa8c">&#39;true&#39;</span>,
-              <span style="color:#f1fa8c">&#39;--store-type&#39;</span>,
-              <span style="color:#f1fa8c">&#39;etcd&#39;</span>,
-              <span style="color:#f1fa8c">&#39;--etcdstore-endpoint&#39;</span>,
-              <span style="color:#f1fa8c">&#39;speedle-etcd:2379&#39;</span>,
-            ]
-          ports:
-            - containerPort: <span style="color:#bd93f9">6733</span>
+<p>The repository contains historical Helm/Kubernetes examples. The old Helm 2 <code>helm install -n ...</code>, <code>stable/etcd-operator</code>, <code>apps/v1beta2</code>, and <code>r.authz.fun</code> image instructions are not the deployment flow above. Container build/push, cluster admission, registry access, storage and rollout depend on your environment; validate them in your target cluster before production use.</p>
 
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: speedle-ads
-  labels:
-    app: speedle
-    name: ads
-spec:
-  replicas: <span style="color:#bd93f9">3</span>
-  selector:
-    matchLabels:
-      app: speedle
-      name: ads
-  template:
-    metadata:
-      labels:
-        app: speedle
-        name: ads
-    spec:
-      containers:
-        - name: ads
-          image: r.authz.fun/speedle-ads:v0.<span style="color:#bd93f9">1</span>  // please update image location
-          command: [<span style="color:#f1fa8c">&#39;speedle-ads&#39;</span>]
-          args:
-            [
-              <span style="color:#f1fa8c">&#39;--endpoint&#39;</span>,
-              <span style="color:#f1fa8c">&#39;0.0.0.0:6734&#39;</span>,
-              <span style="color:#f1fa8c">&#39;--insecure&#39;</span>,
-              <span style="color:#f1fa8c">&#39;true&#39;</span>,
-              <span style="color:#f1fa8c">&#39;--store-type&#39;</span>,
-              <span style="color:#f1fa8c">&#39;etcd&#39;</span>,
-              <span style="color:#f1fa8c">&#39;--etcdstore-endpoint&#39;</span>,
-              <span style="color:#f1fa8c">&#39;speedle-etcd:2379&#39;</span>,
-            ]
-          ports:
-            - containerPort: <span style="color:#bd93f9">6734</span></code></pre></div>
-<h6 id="install-the-production-mode-kubernetes-deployment">Install the production mode Kubernetes deployment</h6>
-
-<p>Use the <code>kubectl create</code> command to create a Speedle deployment service using the <code>speedle-prod.yaml</code> file that you created in the previous step.</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">kubectl create -f speedle-prod.yaml</code></pre></div>
-<p>You can then use the <code>kubectl get</code> command to find one Speedle deployment, one pod and one service.</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ kubectl get deployment speedle
-NAME          DESIRED   CURRENT   UP-TO-DATE   AVAILABLE   AGE
-speedle-pms   <span style="color:#bd93f9">1</span>         <span style="color:#bd93f9">1</span>         <span style="color:#bd93f9">1</span>            <span style="color:#bd93f9">1</span>           37m
-speedle-ads   <span style="color:#bd93f9">3</span>         <span style="color:#bd93f9">3</span>         <span style="color:#bd93f9">3</span>            <span style="color:#bd93f9">3</span>           37m
-speedle-etcd  <span style="color:#bd93f9">1</span>         <span style="color:#bd93f9">1</span>         <span style="color:#bd93f9">1</span>            <span style="color:#bd93f9">1</span>           37m
-
-$ kubectl get services
-NAME          TYPE        CLUSTER-IP       EXTERNAL-IP   PORT<span style="color:#ff79c6">(</span>S<span style="color:#ff79c6">)</span>    AGE
-speedle-pms   ClusterIP   <span style="color:#bd93f9">10</span>.108.146.148   &lt;none&gt;        <span style="color:#bd93f9">6733</span>/TCP   38m
-speedle-ads   ClusterIP   <span style="color:#bd93f9">10</span>.108.146.136   &lt;none&gt;        <span style="color:#bd93f9">6734</span>/TCP   38m
-speedle-etcd  ClusterIP   <span style="color:#bd93f9">10</span>.108.146.118   &lt;none&gt;        <span style="color:#bd93f9">2379</span>/TCP   38m</code></pre></div>
-<h3 id="try-it-out">Try it out</h3>
-
-<h4 id="prerequisites-1">Prerequisites</h4>
-
-<ul>
-<li>Ensure that you have built Speedle as described in <a href="#build-speedle">Build Speedle</a>.</li>
-<li>Verify that the files <code>spctl</code>, <code>speedle-pms</code> and <code>speedle-ads</code> were created in the <code>$GOPATH/bin</code> after executing the build.</li>
-</ul>
-
-<h4 id="pms-and-ads-endpoints">PMS and ADS endpoints</h4>
-
-<p>If you access the PMS/ADS service on any of the Kubernetes nodes, you can use the CLUSTER-IPs of the Kubernetes services of speedle-dev (in dev mode) or speedle-pms/speedle-ads (in production mode).</p>
-
-<p>If you want to run the Speedle CLI <code>spctl</code> out of the Kubernetes cluster, you can port-forward the services to your local machine.</p>
-
-<p>Dev mode:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">kubectl port-forward svc/speedle-dev <span style="color:#bd93f9">6733</span>:6733 <span style="color:#bd93f9">6734</span>:6734 &amp;</code></pre></div>
-<p>Production mode:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">kubectl port-forward svc/speedle-pms <span style="color:#bd93f9">6733</span>:6733 &amp;
-kubectl port-forward svc/speedle-ads <span style="color:#bd93f9">6734</span>:6734 &amp;</code></pre></div>
-<p>Or, you can change the service type from ClusterIP to NodePort or LoadBalancer as described in the Kubernetes <a href="https://kubernetes.io/docs/concepts/services-networking/service/">Services</a> documentation.</p>
-
-<p>The following steps assume that you have port-forwarded the PMS/ADS service locally.</p>
-
-<h4 id="configure-the-pms-endpoint-using-spctl">Configure the pms-endpoint using <code>spctl</code></h4>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ spctl config pms-endpoint http://localhost:6733/policy-mgmt/v1/
-$ spctl config --list
-<span style="color:#8be9fd;font-style:italic">cacert</span> <span style="color:#ff79c6">=</span>
-<span style="color:#8be9fd;font-style:italic">cert</span> <span style="color:#ff79c6">=</span>
-<span style="color:#8be9fd;font-style:italic">key</span> <span style="color:#ff79c6">=</span>
-pms-endpoint <span style="color:#ff79c6">=</span> http://localhost:6733/policy-mgmt/v1/
-<span style="color:#8be9fd;font-style:italic">timeout</span> <span style="color:#ff79c6">=</span> 5s
-
-<span style="color:#6272a4"># If TLS is enabled
-</span><span style="color:#6272a4"></span>$ spctl config skipverify <span style="color:#8be9fd;font-style:italic">false</span> cacert <span style="color:#8be9fd;font-style:italic">$tls_config_path</span>/server-ca.crt cert <span style="color:#8be9fd;font-style:italic">$tls_config_path</span>/client.crt key <span style="color:#8be9fd;font-style:italic">$tls_config_path</span>/client.key pms-endpoint <span style="color:#f1fa8c">&#34;https://localhost:6733/policy-mgmt/v1/&#34;</span>
-$ spctl config --list
-<span style="color:#8be9fd;font-style:italic">cacert</span> <span style="color:#ff79c6">=</span> &lt;tls_config_path&gt;/server-ca.crt
-<span style="color:#8be9fd;font-style:italic">cert</span> <span style="color:#ff79c6">=</span> &lt;tls_config_path&gt;/client.crt
-<span style="color:#8be9fd;font-style:italic">key</span> <span style="color:#ff79c6">=</span> &lt;tls_config_path&gt;/client.key
-pms-endpoint <span style="color:#ff79c6">=</span> https://localhost:6733/policy-mgmt/v1/
-<span style="color:#8be9fd;font-style:italic">skipverify</span> <span style="color:#ff79c6">=</span> <span style="color:#8be9fd;font-style:italic">false</span>
-<span style="color:#8be9fd;font-style:italic">timeout</span> <span style="color:#ff79c6">=</span> 5s</code></pre></div>
-<h4 id="create-a-service-named-test-using-spctl">Create a service named &ldquo;test&rdquo; using <code>spctl</code></h4>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ spctl create service <span style="color:#8be9fd;font-style:italic">test</span>
-service created
-<span style="color:#ff79c6">{</span><span style="color:#f1fa8c">&#34;name&#34;</span>:<span style="color:#f1fa8c">&#34;test&#34;</span>,<span style="color:#f1fa8c">&#34;type&#34;</span>:<span style="color:#f1fa8c">&#34;application&#34;</span><span style="color:#ff79c6">}</span></code></pre></div>
-<h4 id="create-a-policy-using-spctl">Create a policy using <code>spctl</code></h4>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ spctl create policy -c <span style="color:#f1fa8c">&#34;grant user jiefu read book&#34;</span> --service-name <span style="color:#8be9fd;font-style:italic">test</span>
-policy created
-<span style="color:#ff79c6">{</span><span style="color:#f1fa8c">&#34;id&#34;</span>:<span style="color:#f1fa8c">&#34;ta55v3kyzux5ssiy3wwr&#34;</span>,<span style="color:#f1fa8c">&#34;name&#34;</span>:<span style="color:#f1fa8c">&#34;&#34;</span>,<span style="color:#f1fa8c">&#34;effect&#34;</span>:<span style="color:#f1fa8c">&#34;grant&#34;</span>,<span style="color:#f1fa8c">&#34;permissions&#34;</span>:<span style="color:#ff79c6">[{</span><span style="color:#f1fa8c">&#34;resource&#34;</span>:<span style="color:#f1fa8c">&#34;book&#34;</span>,<span style="color:#f1fa8c">&#34;actions&#34;</span>:<span style="color:#ff79c6">[</span><span style="color:#f1fa8c">&#34;read&#34;</span><span style="color:#ff79c6">]}]</span>,<span style="color:#f1fa8c">&#34;principals&#34;</span>:<span style="color:#ff79c6">[[</span><span style="color:#f1fa8c">&#34;user:jiefu&#34;</span><span style="color:#ff79c6">]]}</span></code></pre></div>
-<h4 id="trigger-a-policy-evaluation">Trigger a policy evaluation</h4>
-
-<ul>
-<li>If TLS is disabled:</li>
-</ul>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ curl -X POST -d <span style="color:#f1fa8c">&#39;{&#34;subject&#34;:{&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;,&#34;name&#34;:&#34;jiefu&#34;}]},&#34;serviceName&#34;:&#34;test&#34;,&#34;resource&#34;:&#34;book&#34;,&#34;action&#34;:&#34;read&#34;}&#39;</span> https://localhost:6734/authz-check/v1/is-allowed
-<span style="color:#ff79c6">{</span><span style="color:#f1fa8c">&#34;allowed&#34;</span>:true,<span style="color:#f1fa8c">&#34;reason&#34;</span>:0<span style="color:#ff79c6">}</span></code></pre></div>
-<ul>
-<li>If TLS is enabled:</li>
-</ul>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ curl -i --cacert <span style="color:#8be9fd;font-style:italic">$tls_config_path</span>/server-ca.crt --cert <span style="color:#8be9fd;font-style:italic">$tls_config_path</span>/client.crt --key <span style="color:#8be9fd;font-style:italic">$tls_config_path</span>/client.key -X POST -d <span style="color:#f1fa8c">&#39;{&#34;subject&#34;:{&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;,&#34;name&#34;:&#34;jiefu&#34;}]},&#34;serviceName&#34;:&#34;test&#34;,&#34;resource&#34;:&#34;book&#34;,&#34;action&#34;:&#34;read&#34;}&#39;</span> https://localhost:6734/authz-check/v1/is-allowed</code></pre></div>
   </div>
 </div>
 </main><div class="sidebar">

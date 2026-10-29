@@ -90,135 +90,67 @@ headingSelector: 'h2'
   <div id="kube-component" class="content">
     
 
-<h2 id="什么是用户身份域">什么是用户身份域?</h2>
+<h2 id="什么是身份域">什么是身份域？</h2>
 
-<p>身份域是用户和组的逻辑名称空间，通常表示物理数据存储中的一组离散用户和组。 每个身份域独立管理用户和组， 用户名和组名在标识域中必须是唯一的。</p>
+<p>身份域（<code>idd</code>）为主体提供显式命名空间。同名的 <code>user1</code> 可以属于不同的域。域字符串由可信应用或已配置的令牌断言服务提供，本身不代表完成了身份认证。Speedle 不会仅根据域名称推断或验证身份提供方的租户模型。</p>
 
-<h2 id="问题">问题</h2>
-
-<p>在集成环境中，身份可能来自多个身份域。 例如，考虑以下场景，具有身份为<code>user1</code>的用户被授权对资源<code>book</code>执行<code>rent</code>操作。 此授权策略表示来自任何身份域的身份为<code>user1</code>的用户都具有权限以租用图书资源。</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./spctl create policy -c <span style="color:#f1fa8c">&#34;grant user user1 rent book&#34;</span> --service-name<span style="color:#ff79c6">=</span>booksvc</code></pre></div>
-<p>但是，该服务只希望来自身份域<code>github</code>的<code>user1</code>具有<code>rent</code>权限。 因此，Speedle 必须能够区分来自不同身份域的用户。</p>
-
-<h2 id="解决方案">解决方案</h2>
-
-<p>要确保仅授予来自预期身份域的用户权限，您需要根据用户/组标识符和用户/组身份域构造新的用户/组标识符。 然后，您可以在 Speedle 策略中使用新的用户/组标识符。 新标识符结构定义如下，其中 IDD 表示身份域属性。</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#8be9fd;font-style:italic">type</span> Principal <span style="color:#8be9fd;font-style:italic">struct</span> {
-	Type <span style="color:#8be9fd">string</span> <span style="color:#f1fa8c">`json:&#34;type,omitempty&#34;`</span>
-	Name <span style="color:#8be9fd">string</span> <span style="color:#f1fa8c">`json:&#34;name,omitempty&#34;`</span>
-	IDD  <span style="color:#8be9fd">string</span> <span style="color:#f1fa8c">`json:&#34;idd,omitempty&#34;`</span>
-}</code></pre></div>
-<p><strong>备注:</strong> 身份提供商（如[google account]（<a href="https://account.google.com/））不支持多个身份域，而[IDCS]（https://www.oracle.com/cloud/paas/identity-cloud">https://account.google.com/））不支持多个身份域，而[IDCS]（https://www.oracle.com/cloud/paas/identity-cloud</a> -service.html）确实支持多个身份域。 身份域属性的值取决于实现。</p>
-
-<h2 id="使用身份域定义授权策略">使用身份域定义授权策略</h2>
-
-<p>要指定从指定的标识域为用户定义策略，请使用[SPDL]（../ spdl）关键字: <em><strong>from &lt;identity domain&gt;</strong></em></p>
-
-<p>POLICY = EFFECT SUBJECT <em><strong>from &lt;identity domain&lt;</strong></em> ACTION RESOURCE if CONDITION</p>
-
-<h3 id="示例">示例</h3>
-
-<p>这个策略表明只有来自<code>github</code>身份提供者的<code>user1</code>才能对<code>book</code>资源执行<code>read</code>动作：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#6272a4"># 授权来自 github 的名为 user1 的用户可以对资源： book具有 read的权限
-</span><span style="color:#6272a4"></span>./spctl create policy -c <span style="color:#f1fa8c">&#34;grant user user1 from github read book&#34;</span> --service-name<span style="color:#ff79c6">=</span>booksvc</code></pre></div>
-<p>这个策略表明只有来自身份提供商<code>IDCS</code>的身份域<code>tenant01</code>的<code>user1</code>才能对<code>book</code>资源执行<code>read</code>动作：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#6272a4"># 授权来自身份提供商IDCS的身份域tenant01的名为 user1 的用户可以对资源： book具有 read的权限
-</span><span style="color:#6272a4"></span>./spctl create policy -c <span style="color:#f1fa8c">&#34;grant user user1 from IDCS.tenant01 read book&#34;</span> --service-name<span style="color:#ff79c6">=</span>booksvc</code></pre></div>
-<h3 id="授权策略管理的-rest-apis">授权策略管理的 REST APIs</h3>
-
-<p>需要为每一个用户身份加上前缀: <em><strong>&ldquo;idd=&lt;identity domain&gt;:&rdquo;</strong></em></p>
-
-<h4 id="示例-1">示例</h4>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#6272a4"># 创建一个授权策略: 允许 user1 来自身份域: github 可以对资源: book 执行： read 操作
-</span><span style="color:#6272a4"></span>curl -v -X POST -d <span style="color:#f1fa8c">&#39;{&#34;name&#34;: &#34;policy1&#34;,&#34;effect&#34;: &#34;grant&#34;,&#34;permissions&#34;: [{&#34;resource&#34;: &#34;book&#34;,&#34;actions&#34;: [&#34;read&#34;]}],&#34;principals&#34;: [[&#34;idd=github:user:user1&#34;]]}&#39;</span> http://127.0.0.1:6733/policy-mgmt/v1/service/booksvc/policy</code></pre></div>
-<h3 id="具有身份域的策略在策略决策中的作用">具有身份域的策略在策略决策中的作用</h3>
-
-<ul>
-<li><p><strong>具有身份域的授权策略</strong></p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4">决策引擎首先测试传入请求中的用户身份域是否严格匹配策略中定义的身份域。 如果存在完全匹配，则会继续评估该策略。 如果没有完全匹配，则定义的策略的评估结果直接为否。</pre></div></li>
-
-<li><p><strong>没有身份域的授权策略</strong></p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4">决策引擎在不考虑传入请求中的身份域的情况下评估策略，意味着所定义的授权策略将匹配来自任何身份域的用户。</pre></div></li>
-</ul>
-
-<h2 id="示例-2">示例</h2>
-
-<p>这些示例显示如何使用<code>spctl</code> CLI 和 Policy Management API 以及预期结果创建具有标识域的策略。 示例策略演示了具有相同名称的用户<code>user1</code>如何被授予不同的权限，具体取决于用户来自哪个身份提供者。</p>
-
-<h3 id="使用-spctl-cli-创建具有身份域的策略">使用 spctl CLI 创建具有身份域的策略</h3>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./spctl create service booksvc
-<span style="color:#6272a4"># 允许 user1 来自身份域: github 可以对资源: book 执行： read 操作
-</span><span style="color:#6272a4"></span>./spctl create policy -c <span style="color:#f1fa8c">&#34;grant user user1 from github read book&#34;</span> --service-name<span style="color:#ff79c6">=</span>booksvc
-<span style="color:#6272a4"># 允许 user1 来自身份域: google 可以对资源: book 执行： write 操作
-</span><span style="color:#6272a4"></span>./spctl create policy -c <span style="color:#f1fa8c">&#34;grant user user1 from google write book&#34;</span> --service-name<span style="color:#ff79c6">=</span>booksvc
-<span style="color:#6272a4"># 允许 user1 来自任何身份域可以对资源: book 执行： rent 操作
-</span><span style="color:#6272a4"></span>./spctl create policy -c <span style="color:#f1fa8c">&#34;grant user user1 rent book&#34;</span> --service-name<span style="color:#ff79c6">=</span>booksvc</code></pre></div>
-<p>JSON 格式的策略数据</p>
+<h2 id="在策略与请求中表示身份域">在策略与请求中表示身份域</h2>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">grant user user1 from github read book
+grant user user1 from IDCS.tenant01 read book</code></pre></div>
+<p>在主体名后使用 <code>from &lt;identity-domain&gt;</code>。PMS JSON 策略中的等价编码为 <code>idd=github:user:user1</code>；决策请求中的主体表示为：</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">{
-	<span style="color:#ff79c6">&#34;services&#34;</span>: [
-		{
-			<span style="color:#ff79c6">&#34;name&#34;</span>: <span style="color:#f1fa8c">&#34;booksvc&#34;</span>,
-			<span style="color:#ff79c6">&#34;policies&#34;</span>: [
-				{
-					<span style="color:#ff79c6">&#34;id&#34;</span>: <span style="color:#f1fa8c">&#34;policy1&#34;</span>,
-					<span style="color:#ff79c6">&#34;effect&#34;</span>: <span style="color:#f1fa8c">&#34;grant&#34;</span>,
-					<span style="color:#ff79c6">&#34;permissions&#34;</span>: [
-						{
-							<span style="color:#ff79c6">&#34;resource&#34;</span>: <span style="color:#f1fa8c">&#34;book&#34;</span>,
-							<span style="color:#ff79c6">&#34;actions&#34;</span>: [<span style="color:#f1fa8c">&#34;read&#34;</span>]
-						}
-					],
-					<span style="color:#ff79c6">&#34;principals&#34;</span>: [[<span style="color:#f1fa8c">&#34;idd=github:user:user1&#34;</span>]]
-				},
-				{
-					<span style="color:#ff79c6">&#34;id&#34;</span>: <span style="color:#f1fa8c">&#34;policy2&#34;</span>,
-					<span style="color:#ff79c6">&#34;effect&#34;</span>: <span style="color:#f1fa8c">&#34;grant&#34;</span>,
-					<span style="color:#ff79c6">&#34;permissions&#34;</span>: [
-						{
-							<span style="color:#ff79c6">&#34;resource&#34;</span>: <span style="color:#f1fa8c">&#34;book&#34;</span>,
-							<span style="color:#ff79c6">&#34;actions&#34;</span>: [<span style="color:#f1fa8c">&#34;write&#34;</span>]
-						}
-					],
-					<span style="color:#ff79c6">&#34;principals&#34;</span>: [[<span style="color:#f1fa8c">&#34;idd=google:user:user1&#34;</span>]]
-				},
-				{
-					<span style="color:#ff79c6">&#34;id&#34;</span>: <span style="color:#f1fa8c">&#34;policy3&#34;</span>,
-					<span style="color:#ff79c6">&#34;effect&#34;</span>: <span style="color:#f1fa8c">&#34;grant&#34;</span>,
-					<span style="color:#ff79c6">&#34;permissions&#34;</span>: [
-						{
-							<span style="color:#ff79c6">&#34;resource&#34;</span>: <span style="color:#f1fa8c">&#34;book&#34;</span>,
-							<span style="color:#ff79c6">&#34;actions&#34;</span>: [<span style="color:#f1fa8c">&#34;rent&#34;</span>]
-						}
-					],
-					<span style="color:#ff79c6">&#34;principals&#34;</span>: [[<span style="color:#f1fa8c">&#34;user:user1&#34;</span>]]
-				}
-			]
-		}
-	]
+  <span style="color:#ff79c6">&#34;type&#34;</span>: <span style="color:#f1fa8c">&#34;user&#34;</span>,
+  <span style="color:#ff79c6">&#34;name&#34;</span>: <span style="color:#f1fa8c">&#34;user1&#34;</span>,
+  <span style="color:#ff79c6">&#34;idd&#34;</span>: <span style="color:#f1fa8c">&#34;github&#34;</span>
 }</code></pre></div>
-<h3 id="使用策略管理-api-创建具有身份域的策略">使用策略管理 API 创建具有身份域的策略</h3>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl -v -X POST -d <span style="color:#f1fa8c">&#39;{&#34;name&#34;: &#34;policy1&#34;,&#34;effect&#34;: &#34;grant&#34;,&#34;permissions&#34;: [{&#34;resource&#34;: &#34;book&#34;,&#34;actions&#34;: [&#34;read&#34;]}],&#34;principals&#34;: [[&#34;idd=github:user:user1&#34;]]}&#39;</span> http://127.0.0.1:6733/policy-mgmt/v1/service/booksvc/policy
+<p>带 <code>from github</code> 的策略只匹配该域；省略 <code>from</code> 则按主体名跨域匹配。多租户应用应明确审查这一选择；域字符串不能用于验证令牌。更多内容见<a href="/zh/docs/overview/">身份与 IAM</a>和<a href="/zh/docs/assertor/">令牌断言</a>。</p>
 
-curl -v -X POST -d <span style="color:#f1fa8c">&#39;{&#34;name&#34;: &#34;policy1&#34;,&#34;effect&#34;: &#34;grant&#34;,&#34;permissions&#34;: [{&#34;resource&#34;: &#34;book&#34;,&#34;actions&#34;: [&#34;write&#34;]}],&#34;principals&#34;: [[&#34;idd=google:user:user1&#34;]]}&#39;</span> http://127.0.0.1:6733/policy-mgmt/v1/service/booksvc/policy
+<h2 id="运行示例前">运行示例前</h2>
 
-curl -v -X POST -d <span style="color:#f1fa8c">&#39;{&#34;name&#34;: &#34;policy1&#34;,&#34;effect&#34;: &#34;grant&#34;,&#34;permissions&#34;: [{&#34;resource&#34;: &#34;book&#34;,&#34;actions&#34;: [&#34;rent&#34;]}],&#34;principals&#34;: [[&#34;user:user1&#34;]]}&#39;</span> http://127.0.0.1:6733/policy-mgmt/v1/service/booksvc/policy</code></pre></div>
-<h3 id="策略请求的评估结果">策略请求的评估结果</h3>
+<p>先按<a href="/zh/quick-start/">快速入门</a>编译仓库根目录下的 <code>./bin/spctl</code>、<code>./bin/speedle-pms</code> 和 <code>./bin/speedle-ads</code>，需要 Go 1.26.10 或 Go 1.27.3（也可使用同一大版本的更新补丁版本）、Bash、curl 和 Python 3。下面各终端都从仓库根目录运行。为本页使用一个新的策略文件；仅在两个服务都停止后重建该文件。</p>
 
-<p>以下策略评估结果基于上述示例中定义的策略。</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#6272a4"># 评估结果为： 是.
-</span><span style="color:#6272a4"></span>curl -v -X POST -d <span style="color:#f1fa8c">&#39;{ &#34;subject&#34;: {&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;,&#34;name&#34;:&#34;user1&#34;,&#34;idd&#34;:&#34;github&#34;}] },&#34;serviceName&#34;:&#34;booksvc&#34;,&#34;resource&#34;:&#34;book&#34;,&#34;action&#34;:&#34;read&#34;}&#39;</span>  http://127.0.0.1:6734/authz-check/v1/is-allowed
+<p>初始化空策略文件：</p>
 
-<span style="color:#6272a4"># 评估结果为： 否, 因为评估请求中的用户来自不同的身份域: gitlab
-</span><span style="color:#6272a4"></span>curl -v -X POST -d <span style="color:#f1fa8c">&#39;{ &#34;subject&#34;: {&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;,&#34;name&#34;:&#34;user1&#34;,&#34;idd&#34;:&#34;gitlab&#34;}] },&#34;serviceName&#34;:&#34;booksvc&#34;,&#34;resource&#34;:&#34;book&#34;,&#34;action&#34;:&#34;read&#34;}&#39;</span>  http://127.0.0.1:6734/authz-check/v1/is-allowed
+<!-- docs-check: setup -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#8be9fd;font-style:italic">printf</span> <span style="color:#f1fa8c">&#39;{}\n&#39;</span> &gt; docs-policies.json</code></pre></div>
+<p>终端一启动 PMS，并保持运行：</p>
 
-<span style="color:#6272a4"># 评估结果为： 是, 因为来自任何身份域的用户 user1 都可以对资源： book执行 rent 操作
-</span><span style="color:#6272a4"></span>curl -v -X POST -d <span style="color:#f1fa8c">&#39;{ &#34;subject&#34;: {&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;,&#34;name&#34;:&#34;user1&#34;}] },&#34;serviceName&#34;:&#34;booksvc&#34;,&#34;resource&#34;:&#34;book&#34;,&#34;action&#34;:&#34;rent&#34;}&#39;</span>  http://127.0.0.1:6734/authz-check/v1/is-allowed
+<!-- docs-check: pms -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./bin/speedle-pms --store-type file --filestore-loc ./docs-policies.json --endpoint <span style="color:#bd93f9">127</span>.0.0.1:6733 --grpc-endpoint <span style="color:#bd93f9">127</span>.0.0.1:0 --insecure<span style="color:#ff79c6">=</span>true</code></pre></div>
+<p>终端二启动 ADS，并保持运行：</p>
 
-<span style="color:#6272a4"># 评估结果为： 是, 因为来自任何身份域的用户 user1 都可以对资源： book执行 rent 操作
-</span><span style="color:#6272a4"></span>curl -v -X POST -d <span style="color:#f1fa8c">&#39;{ &#34;subject&#34;: {&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;,&#34;name&#34;:&#34;user1&#34;,&#34;idd&#34;:&#34;google&#34;}] },&#34;serviceName&#34;:&#34;booksvc&#34;,&#34;resource&#34;:&#34;book&#34;,&#34;action&#34;:&#34;rent&#34;}&#39;</span>  http://127.0.0.1:6734/authz-check/v1/is-allowed
+<!-- docs-check: ads -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./bin/speedle-ads --store-type file --filestore-loc ./docs-policies.json --endpoint <span style="color:#bd93f9">127</span>.0.0.1:6734 --grpc-endpoint <span style="color:#bd93f9">127</span>.0.0.1:0 --insecure<span style="color:#ff79c6">=</span>true</code></pre></div>
+<p>在第三个终端运行后续命令。PMS/ADS 共享同一个文件，策略更新通过 watch 异步到达 ADS；先查询确认已更新，再依赖新策略做决策。<code>--insecure=true</code> 仅用于回环地址上的本地示例，生产连接见<a href="/zh/docs/security/">安全配置</a>。示例显式指定 PMS 地址，不修改 <code>~/.spctlconfig</code>。完成后在两个服务终端按 Ctrl-C。</p>
 
-<span style="color:#6272a4"># 评估结果为： 否, 因为评估请求中的用户来自不同的身份域: notgoogle
-</span><span style="color:#6272a4"></span>curl -v -X POST -d <span style="color:#f1fa8c">&#39;{ &#34;subject&#34;: {&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;,&#34;name&#34;:&#34;user1&#34;,&#34;idd&#34;:&#34;notgoogle&#34;}] },&#34;serviceName&#34;:&#34;booksvc&#34;,&#34;resource&#34;:&#34;book&#34;,&#34;action&#34;:&#34;write&#34;}&#39;</span>  http://127.0.0.1:6734/authz-check/v1/is-allowed</code></pre></div>
+<h2 id="导入测试策略">导入测试策略</h2>
+
+<p><a href="https://github.com/teramoby/speedle-plus/blob/master/website/tests/examples/idd.json">测试文件</a>允许 GitHub 的 <code>user1</code> 读取、Google 的 <code>user1</code> 写入，并允许任何域的 <code>user1</code> 租借。小写域名是演示命名空间。</p>
+
+<!-- docs-check: idd-fixture -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ create service --json-file website/tests/examples/idd.json</code></pre></div>
+<h2 id="比较决策">比较决策</h2>
+
+<p>依次预期为 Allow、Deny、Allow、Deny。<code>notgoogle</code> 中的用户不能使用授予 Google 身份的 <code>write</code> 权限。</p>
+
+<!-- docs-check: idd-allow -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl --fail --silent --show-error -H <span style="color:#f1fa8c">&#39;Content-Type: application/json&#39;</span> <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  -d <span style="color:#f1fa8c">&#39;{&#34;subject&#34;:{&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;,&#34;name&#34;:&#34;user1&#34;,&#34;idd&#34;:&#34;github&#34;}]},&#34;serviceName&#34;:&#34;booksvc&#34;,&#34;resource&#34;:&#34;book&#34;,&#34;action&#34;:&#34;read&#34;}&#39;</span> <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  http://127.0.0.1:6734/authz-check/v1/is-allowed</code></pre></div>
+<!-- docs-check: idd-deny -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl --fail --silent --show-error -H <span style="color:#f1fa8c">&#39;Content-Type: application/json&#39;</span> <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  -d <span style="color:#f1fa8c">&#39;{&#34;subject&#34;:{&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;,&#34;name&#34;:&#34;user1&#34;,&#34;idd&#34;:&#34;gitlab&#34;}]},&#34;serviceName&#34;:&#34;booksvc&#34;,&#34;resource&#34;:&#34;book&#34;,&#34;action&#34;:&#34;read&#34;}&#39;</span> <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  http://127.0.0.1:6734/authz-check/v1/is-allowed</code></pre></div>
+<!-- docs-check: idd-any -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl --fail --silent --show-error -H <span style="color:#f1fa8c">&#39;Content-Type: application/json&#39;</span> <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  -d <span style="color:#f1fa8c">&#39;{&#34;subject&#34;:{&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;,&#34;name&#34;:&#34;user1&#34;,&#34;idd&#34;:&#34;google&#34;}]},&#34;serviceName&#34;:&#34;booksvc&#34;,&#34;resource&#34;:&#34;book&#34;,&#34;action&#34;:&#34;rent&#34;}&#39;</span> <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  http://127.0.0.1:6734/authz-check/v1/is-allowed</code></pre></div>
+<!-- docs-check: idd-write-deny -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl --fail --silent --show-error -H <span style="color:#f1fa8c">&#39;Content-Type: application/json&#39;</span> <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  -d <span style="color:#f1fa8c">&#39;{&#34;subject&#34;:{&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;,&#34;name&#34;:&#34;user1&#34;,&#34;idd&#34;:&#34;notgoogle&#34;}]},&#34;serviceName&#34;:&#34;booksvc&#34;,&#34;resource&#34;:&#34;book&#34;,&#34;action&#34;:&#34;write&#34;}&#39;</span> <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  http://127.0.0.1:6734/authz-check/v1/is-allowed</code></pre></div>
+<p>JSON 请求必须提供 <code>Content-Type: application/json</code>。管理接口使用字符串策略 ID 和复数形式的 <code>permissions</code> 字段，见<a href="/zh/docs/api/management_api/">管理 API</a>。</p>
+
   </div>
 </div>
 </main><div class="sidebar">

@@ -90,276 +90,144 @@ headingSelector: 'h2'
   <div id="kube-component" class="content">
     
 
-<h2 id="benefits-of-the-token-asserter">Benefits of the token asserter</h2>
+<h2 id="what-does-a-token-asserter-do">What does a token asserter do?</h2>
 
-<p>An evaluation request can contain an identity token issued by any identity provider as an incoming user identity, instead of specifying the user identities (user identifier and those groups user belongs to) explicitly. When you integrate Speedle into your service, your service does not need to validate and parse identity tokens. Speedle can do it for you.</p>
+<p>A configured asserter validates a token and returns explicit principals, including their identity domains. Speedle can then evaluate policies using those identities. A production implementation must validate the token&rsquo;s signature or introspection result, issuer, audience, expiry and any provider-specific requirements. The webhook alone does not establish compatibility with arbitrary OAuth/OIDC tokens.</p>
 
-<p>The Speedle evaluation engine checks whether the incoming request contains an identity token. If yes, then the evaluation engine invokes the token asserter webhook to assert the identity token and obtains the explicit user identities (user identifier and groups). The evaluation engine can then execute the policy evaluation based on the user identifier and groups.</p>
+<p>The <a href="/docs/api/asserter_api/">Token Assertion Plugin API</a> uses integer <code>errCode</code> and an optional attribute <strong>object</strong>, not a typed attribute array. <code>asserterWebhookConfig.endpoint</code> is the complete URL; the sample below uses <code>/v1/assert</code>.</p>
 
-<h2 id="how-to-evaluate-authorization-requests-containing-identity-tokens">How to evaluate authorization requests containing identity tokens</h2>
+<h2 id="run-a-deterministic-local-mock">Run a deterministic local mock</h2>
 
-<p>To evaluate authorization requests that contain an identity token, follow these steps.</p>
+<p>This mock recognizes only <code>githubtoken</code>/<code>github</code>, <code>googletoken</code>/<code>google</code>, and <code>gitlabtoken</code>/<code>gitlab</code>. Each represents <code>user1</code> in the named domain. Wrong token/provider pairs fail. <strong>It is a test fixture, not real token validation.</strong> It does not log tokens. Keep it on loopback and use a real provider integration in production.</p>
 
-<h3 id="1-implement-the-webhook-interface-of-the-asserter">1. Implement the webhook interface of the asserter</h3>
+<p>Start it in a separate terminal from the repository root:</p>
 
-<p>The asserter service which implements <a href="/docs/api/asserter_api/">Token Assertion Plugin API</a> takes the identity token, the identity provider, and the allowedIDD as inputs and performs token validation and parsing. The service then retrieves explicit identities (user identifier and groups) represented by the identity token.</p>
-
-<p>Note that if the principal&rsquo;s identity domain is set, then the asserted identity may contain the identity domain of the user/group.</p>
-
-<h4 id="sample-asserter-service">Sample asserter service</h4>
-
-<p><strong>Note:</strong> This sample asserter service is for testing purposes only.</p>
-
-<p>Sample asserter service source code:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#ff79c6">package</span> main
+<!-- docs-check: mock-asserter -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">go run ./website/tests/examples/asserter</code></pre></div>
+<!-- docs-source: website/tests/examples/asserter/main.go -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#6272a4">// A deterministic mock for the token-assertion tutorial. Never use for real tokens.
+</span><span style="color:#6272a4"></span><span style="color:#ff79c6">package</span> main
 
 <span style="color:#ff79c6">import</span> (
-    <span style="color:#f1fa8c">&#34;encoding/json&#34;</span>
-    <span style="color:#f1fa8c">&#34;log&#34;</span>
-    <span style="color:#f1fa8c">&#34;net/http&#34;</span>
+	<span style="color:#f1fa8c">&#34;encoding/json&#34;</span>
+	<span style="color:#f1fa8c">&#34;flag&#34;</span>
+	<span style="color:#f1fa8c">&#34;log&#34;</span>
+	<span style="color:#f1fa8c">&#34;net/http&#34;</span>
+	<span style="color:#f1fa8c">&#34;strings&#34;</span>
+	<span style="color:#f1fa8c">&#34;time&#34;</span>
 )
 
-<span style="color:#8be9fd;font-style:italic">const</span> (
-    <span style="color:#6272a4">// user type of Principal
-</span><span style="color:#6272a4"></span>    PRINCIPAL_TYPE_USER   = <span style="color:#f1fa8c">&#34;user&#34;</span>
-    <span style="color:#6272a4">// group type of Principal
-</span><span style="color:#6272a4"></span>    PRINCIPAL_TYPE_GROUP  = <span style="color:#f1fa8c">&#34;group&#34;</span>
-    <span style="color:#6272a4">// entity type of Principal
-</span><span style="color:#6272a4"></span>    PRINCIPAL_TYPE_ENTITY = <span style="color:#f1fa8c">&#34;entity&#34;</span>
-)
-
-<span style="color:#6272a4">// Principal of Speedle
-</span><span style="color:#6272a4"></span><span style="color:#8be9fd;font-style:italic">type</span> Principal <span style="color:#8be9fd;font-style:italic">struct</span> {
-    Type <span style="color:#8be9fd">string</span> <span style="color:#f1fa8c">`json:&#34;type,omitempty&#34;`</span>
-    Name <span style="color:#8be9fd">string</span> <span style="color:#f1fa8c">`json:&#34;name,omitempty&#34;`</span>
-    IDD  <span style="color:#8be9fd">string</span> <span style="color:#f1fa8c">`json:&#34;idd,omitempty&#34;`</span>
+<span style="color:#8be9fd;font-style:italic">type</span> principal <span style="color:#8be9fd;font-style:italic">struct</span> {
+	Type <span style="color:#8be9fd">string</span> <span style="color:#f1fa8c">`json:&#34;type&#34;`</span>
+	Name <span style="color:#8be9fd">string</span> <span style="color:#f1fa8c">`json:&#34;name&#34;`</span>
+	IDD  <span style="color:#8be9fd">string</span> <span style="color:#f1fa8c">`json:&#34;idd&#34;`</span>
+}
+<span style="color:#8be9fd;font-style:italic">type</span> response <span style="color:#8be9fd;font-style:italic">struct</span> {
+	Principals []principal <span style="color:#f1fa8c">`json:&#34;principals,omitempty&#34;`</span>
+	ErrCode    <span style="color:#8be9fd">int</span>         <span style="color:#f1fa8c">`json:&#34;errCode&#34;`</span>
+	ErrMessage <span style="color:#8be9fd">string</span>      <span style="color:#f1fa8c">`json:&#34;errMessage,omitempty&#34;`</span>
 }
 
-<span style="color:#6272a4">// AssertResponse assertion response
-</span><span style="color:#6272a4"></span><span style="color:#8be9fd;font-style:italic">type</span> AssertResponse <span style="color:#8be9fd;font-style:italic">struct</span> {
-    Principals []<span style="color:#ff79c6">*</span>Principal           <span style="color:#f1fa8c">`json:&#34;principals,omitempty&#34;`</span>
-    Attributes <span style="color:#8be9fd;font-style:italic">map</span>[<span style="color:#8be9fd">string</span>]<span style="color:#8be9fd;font-style:italic">interface</span>{} <span style="color:#f1fa8c">`json:&#34;attributes,omitempty&#34;`</span>
-    <span style="color:#6272a4">// non zero indicates errors happen
-</span><span style="color:#6272a4"></span>    ErrCode    <span style="color:#8be9fd">int</span>                    <span style="color:#f1fa8c">`json:&#34;errCode&#34;`</span>
-    ErrMessage <span style="color:#8be9fd">string</span>                 <span style="color:#f1fa8c">`json:&#34;errMessage,omitempty&#34;`</span>
+<span style="color:#8be9fd;font-style:italic">func</span> assert(w http.ResponseWriter, r <span style="color:#ff79c6">*</span>http.Request) {
+	send <span style="color:#ff79c6">:=</span> <span style="color:#8be9fd;font-style:italic">func</span>(status <span style="color:#8be9fd">int</span>, value response) {
+		w.Header().Set(<span style="color:#f1fa8c">&#34;Content-Type&#34;</span>, <span style="color:#f1fa8c">&#34;application/json&#34;</span>)
+		w.WriteHeader(status)
+		_ = json.NewEncoder(w).Encode(value)
+	}
+	<span style="color:#ff79c6">if</span> r.Method <span style="color:#ff79c6">!=</span> http.MethodGet {
+		w.Header().Set(<span style="color:#f1fa8c">&#34;Allow&#34;</span>, <span style="color:#f1fa8c">&#34;GET&#34;</span>)
+		send(<span style="color:#bd93f9">405</span>, response{ErrCode: <span style="color:#bd93f9">405</span>, ErrMessage: <span style="color:#f1fa8c">&#34;GET required&#34;</span>})
+		<span style="color:#ff79c6">return</span>
+	}
+	<span style="color:#6272a4">// Fixed fixtures model successful assertion. This is not signature validation.
+</span><span style="color:#6272a4"></span>	domains <span style="color:#ff79c6">:=</span> <span style="color:#8be9fd;font-style:italic">map</span>[<span style="color:#8be9fd">string</span>]<span style="color:#8be9fd">string</span>{<span style="color:#f1fa8c">&#34;githubtoken&#34;</span>: <span style="color:#f1fa8c">&#34;github&#34;</span>, <span style="color:#f1fa8c">&#34;googletoken&#34;</span>: <span style="color:#f1fa8c">&#34;google&#34;</span>, <span style="color:#f1fa8c">&#34;gitlabtoken&#34;</span>: <span style="color:#f1fa8c">&#34;gitlab&#34;</span>}
+	domain, ok <span style="color:#ff79c6">:=</span> domains[r.Header.Get(<span style="color:#f1fa8c">&#34;x-token&#34;</span>)]
+	<span style="color:#ff79c6">if</span> !ok <span style="color:#ff79c6">||</span> domain <span style="color:#ff79c6">!=</span> r.Header.Get(<span style="color:#f1fa8c">&#34;x-idp&#34;</span>) {
+		send(<span style="color:#bd93f9">401</span>, response{ErrCode: <span style="color:#bd93f9">401</span>, ErrMessage: <span style="color:#f1fa8c">&#34;invalid demonstration token or identity provider&#34;</span>})
+		<span style="color:#ff79c6">return</span>
+	}
+	<span style="color:#ff79c6">if</span> allowed <span style="color:#ff79c6">:=</span> r.Header.Get(<span style="color:#f1fa8c">&#34;x-allowedIDD&#34;</span>); allowed <span style="color:#ff79c6">!=</span> <span style="color:#f1fa8c">&#34;&#34;</span> {
+		found <span style="color:#ff79c6">:=</span> <span style="color:#ff79c6">false</span>
+		<span style="color:#ff79c6">for</span> _, name <span style="color:#ff79c6">:=</span> <span style="color:#ff79c6">range</span> strings.Split(allowed, <span style="color:#f1fa8c">&#34;,&#34;</span>) {
+			found = found <span style="color:#ff79c6">||</span> strings.TrimSpace(name) <span style="color:#ff79c6">==</span> domain
+		}
+		<span style="color:#ff79c6">if</span> !found {
+			send(<span style="color:#bd93f9">403</span>, response{ErrCode: <span style="color:#bd93f9">403</span>, ErrMessage: <span style="color:#f1fa8c">&#34;identity domain is not allowed&#34;</span>})
+			<span style="color:#ff79c6">return</span>
+		}
+	}
+	send(<span style="color:#bd93f9">200</span>, response{Principals: []principal{{Type: <span style="color:#f1fa8c">&#34;user&#34;</span>, Name: <span style="color:#f1fa8c">&#34;user1&#34;</span>, IDD: domain}}})
 }
-
-<span style="color:#6272a4">// SampleAsserter for testing only
-</span><span style="color:#6272a4"></span><span style="color:#8be9fd;font-style:italic">type</span> SampleAsserter <span style="color:#8be9fd;font-style:italic">struct</span> {
-}
-
-<span style="color:#8be9fd;font-style:italic">func</span> (a SampleAsserter) ServeHTTP(w http.ResponseWriter, r <span style="color:#ff79c6">*</span>http.Request) {
-    <span style="color:#ff79c6">if</span> r.Method <span style="color:#ff79c6">==</span> http.MethodGet {
-        token <span style="color:#ff79c6">:=</span> r.Header.Get(<span style="color:#f1fa8c">&#34;x-token&#34;</span>)
-        idp <span style="color:#ff79c6">:=</span> r.Header.Get(<span style="color:#f1fa8c">&#34;x-idp&#34;</span>)
-
-        log.Printf(<span style="color:#f1fa8c">&#34;ServeHTTP, token: %s, idp: %s \n&#34;</span>, token, idp)
-
-        subj <span style="color:#ff79c6">:=</span> AssertResponse{}
-
-        <span style="color:#ff79c6">if</span> <span style="color:#8be9fd;font-style:italic">len</span>(token) <span style="color:#ff79c6">==</span> <span style="color:#bd93f9">0</span> <span style="color:#ff79c6">||</span> <span style="color:#8be9fd;font-style:italic">len</span>(idp) <span style="color:#ff79c6">==</span> <span style="color:#bd93f9">0</span> {
-            subj.ErrCode = http.StatusBadRequest
-            subj.ErrMessage = <span style="color:#f1fa8c">&#34;token or idp is empty&#34;</span>
-            sendResp(w, http.StatusBadRequest, <span style="color:#ff79c6">&amp;</span>subj)
-            <span style="color:#ff79c6">return</span>
-        } <span style="color:#ff79c6">else</span> {
-            <span style="color:#6272a4">// Parse token and validate token
-</span><span style="color:#6272a4"></span>            <span style="color:#6272a4">// Retrieve groups etc. from token issuer
-</span><span style="color:#6272a4"></span>            <span style="color:#6272a4">// Here we just return a sample result
-</span><span style="color:#6272a4"></span>            subj.ErrCode = <span style="color:#bd93f9">0</span>
-            subj.ErrMessage = <span style="color:#f1fa8c">&#34;&#34;</span>
-            subj.Principals = []<span style="color:#ff79c6">*</span>Principal{
-                <span style="color:#ff79c6">&amp;</span>Principal{
-                    Type: PRINCIPAL_TYPE_USER,
-                    Name: <span style="color:#f1fa8c">&#34;user1&#34;</span>,
-                    IDD:  idp,
-                },
-            }
-
-            sendResp(w, http.StatusOK, <span style="color:#ff79c6">&amp;</span>subj)
-        }
-    }
-}
-
-<span style="color:#8be9fd;font-style:italic">func</span> sendResp(w http.ResponseWriter, status <span style="color:#8be9fd">int</span>, data <span style="color:#ff79c6">*</span>AssertResponse) {
-    w.Header().Set(<span style="color:#f1fa8c">&#34;Content-Type&#34;</span>, <span style="color:#f1fa8c">&#34;application/json&#34;</span>)
-    w.WriteHeader(status)
-    raw, _ <span style="color:#ff79c6">:=</span> json.Marshal(data)
-
-    log.Printf(<span style="color:#f1fa8c">&#34;ServeHTTP, asserted subject: %s \n&#34;</span>, <span style="color:#8be9fd;font-style:italic">string</span>(raw))
-
-    w.Write(raw)
-}
-
 <span style="color:#8be9fd;font-style:italic">func</span> main() {
-
-    mux <span style="color:#ff79c6">:=</span> http.NewServeMux()
-
-    asserter <span style="color:#ff79c6">:=</span> SampleAsserter{}
-
-    mux.Handle(<span style="color:#f1fa8c">&#34;/v1/assert&#34;</span>, asserter)
-
-    <span style="color:#ff79c6">if</span> err <span style="color:#ff79c6">:=</span> http.ListenAndServe(<span style="color:#f1fa8c">&#34;:8080&#34;</span>, mux); err <span style="color:#ff79c6">!=</span> <span style="color:#ff79c6">nil</span> {
-        log.Fatalf(<span style="color:#f1fa8c">&#34;start server error: %v&#34;</span>, err)
-    }
-
+	listen <span style="color:#ff79c6">:=</span> flag.String(<span style="color:#f1fa8c">&#34;listen&#34;</span>, <span style="color:#f1fa8c">&#34;127.0.0.1:8080&#34;</span>, <span style="color:#f1fa8c">&#34;Local demonstration endpoint&#34;</span>)
+	flag.Parse()
+	mux <span style="color:#ff79c6">:=</span> http.NewServeMux()
+	mux.HandleFunc(<span style="color:#f1fa8c">&#34;/v1/assert&#34;</span>, assert)
+	server <span style="color:#ff79c6">:=</span> <span style="color:#ff79c6">&amp;</span>http.Server{Addr: <span style="color:#ff79c6">*</span>listen, Handler: mux, ReadHeaderTimeout: <span style="color:#bd93f9">5</span> <span style="color:#ff79c6">*</span> time.Second, ReadTimeout: <span style="color:#bd93f9">10</span> <span style="color:#ff79c6">*</span> time.Second, WriteTimeout: <span style="color:#bd93f9">10</span> <span style="color:#ff79c6">*</span> time.Second}
+	log.Fatal(server.ListenAndServe())
 }</code></pre></div>
-<p>a. Compile the sample</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">go build src/asserter/asserter.go</code></pre></div>
-<p>b. Start the sample asserter service</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./asserter
-<span style="color:#bd93f9">2019</span>/01/25 <span style="color:#bd93f9">14</span>:42:54 ServeHTTP, token: test-token, idp: github
-<span style="color:#bd93f9">2019</span>/01/25 <span style="color:#bd93f9">14</span>:42:54 ServeHTTP, asserted subject: <span style="color:#ff79c6">{</span><span style="color:#f1fa8c">&#34;principals&#34;</span>:<span style="color:#ff79c6">[{</span><span style="color:#f1fa8c">&#34;type&#34;</span>:<span style="color:#f1fa8c">&#34;user&#34;</span>,<span style="color:#f1fa8c">&#34;name&#34;</span>:<span style="color:#f1fa8c">&#34;user1&#34;</span>,<span style="color:#f1fa8c">&#34;idd&#34;</span>:<span style="color:#f1fa8c">&#34;github&#34;</span><span style="color:#ff79c6">}]</span>,<span style="color:#f1fa8c">&#34;errCode&#34;</span>:0<span style="color:#ff79c6">}</span>
-<span style="color:#bd93f9">2019</span>/01/25 <span style="color:#bd93f9">14</span>:43:18 ServeHTTP, token: test-token, idp: google
-<span style="color:#bd93f9">2019</span>/01/25 <span style="color:#bd93f9">14</span>:43:18 ServeHTTP, asserted subject: <span style="color:#ff79c6">{</span><span style="color:#f1fa8c">&#34;principals&#34;</span>:<span style="color:#ff79c6">[{</span><span style="color:#f1fa8c">&#34;type&#34;</span>:<span style="color:#f1fa8c">&#34;user&#34;</span>,<span style="color:#f1fa8c">&#34;name&#34;</span>:<span style="color:#f1fa8c">&#34;user1&#34;</span>,<span style="color:#f1fa8c">&#34;idd&#34;</span>:<span style="color:#f1fa8c">&#34;google&#34;</span><span style="color:#ff79c6">}]</span>,<span style="color:#f1fa8c">&#34;errCode&#34;</span>:0<span style="color:#ff79c6">}</span>
-<span style="color:#bd93f9">2019</span>/01/25 <span style="color:#bd93f9">14</span>:43:29 ServeHTTP, token: , idp: google
-<span style="color:#bd93f9">2019</span>/01/25 <span style="color:#bd93f9">14</span>:43:29 ServeHTTP, asserted subject: <span style="color:#ff79c6">{</span><span style="color:#f1fa8c">&#34;errCode&#34;</span>:400,<span style="color:#f1fa8c">&#34;errMessage&#34;</span>:<span style="color:#f1fa8c">&#34;token or idp is empty&#34;</span><span style="color:#ff79c6">}</span></code></pre></div>
-<p>c. Test the sample</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl -v -H <span style="color:#f1fa8c">&#34;x-token:test-token&#34;</span> -H <span style="color:#f1fa8c">&#34;x-idp:github&#34;</span> http://localhost:8080/v1/assert
-* About to connect<span style="color:#ff79c6">()</span> to localhost port <span style="color:#bd93f9">8080</span> <span style="color:#ff79c6">(</span><span style="color:#6272a4">#0)
-</span><span style="color:#6272a4"></span>*   Trying ::1...
-* Connected to localhost <span style="color:#ff79c6">(</span>::1<span style="color:#ff79c6">)</span> port <span style="color:#bd93f9">8080</span> <span style="color:#ff79c6">(</span><span style="color:#6272a4">#0)
-</span><span style="color:#6272a4"></span>&gt; GET /v1/assert HTTP/1.1
-&gt; User-Agent: curl/7.29.0
-&gt; Host: localhost:8080
-&gt; Accept: */*
-&gt; x-token:test-token
-&gt; x-idp:github
-&gt;
-&lt; HTTP/1.1 <span style="color:#bd93f9">200</span> OK
-&lt; Content-Type: application/json
-&lt; Date: Fri, <span style="color:#bd93f9">25</span> Jan <span style="color:#bd93f9">2019</span> <span style="color:#bd93f9">06</span>:42:54 GMT
-&lt; Content-Length: <span style="color:#bd93f9">74</span>
-&lt;
-* Connection <span style="color:#6272a4">#0 to host localhost left intact
-</span><span style="color:#6272a4"></span><span style="color:#ff79c6">{</span><span style="color:#f1fa8c">&#34;principals&#34;</span>:<span style="color:#ff79c6">[{</span><span style="color:#f1fa8c">&#34;type&#34;</span>:<span style="color:#f1fa8c">&#34;user&#34;</span>,<span style="color:#f1fa8c">&#34;name&#34;</span>:<span style="color:#f1fa8c">&#34;user1&#34;</span>,<span style="color:#f1fa8c">&#34;idd&#34;</span>:<span style="color:#f1fa8c">&#34;github&#34;</span><span style="color:#ff79c6">}]</span>,<span style="color:#f1fa8c">&#34;errCode&#34;</span>:0<span style="color:#ff79c6">}</span>
+<h2 id="before-running-the-examples">Before running the examples</h2>
 
+<p>Build <code>./bin/spctl</code>, <code>./bin/speedle-pms</code> and <code>./bin/speedle-ads</code> using the <a href="/quick-start/">quick start</a>. Use Go 1.26.10 or Go 1.27.3 (or a newer patch on the same release branch), Bash, curl and Python 3. Run each terminal from the repository root. Use a fresh policy file for this page; reset it only after stopping both services.</p>
 
-curl -v -H <span style="color:#f1fa8c">&#34;x-token:test-token&#34;</span> -H <span style="color:#f1fa8c">&#34;x-idp:google&#34;</span> http://localhost:8080/v1/assert
-* About to connect<span style="color:#ff79c6">()</span> to localhost port <span style="color:#bd93f9">8080</span> <span style="color:#ff79c6">(</span><span style="color:#6272a4">#0)
-</span><span style="color:#6272a4"></span>*   Trying ::1...
-* Connected to localhost <span style="color:#ff79c6">(</span>::1<span style="color:#ff79c6">)</span> port <span style="color:#bd93f9">8080</span> <span style="color:#ff79c6">(</span><span style="color:#6272a4">#0)
-</span><span style="color:#6272a4"></span>&gt; GET /v1/assert HTTP/1.1
-&gt; User-Agent: curl/7.29.0
-&gt; Host: localhost:8080
-&gt; Accept: */*
-&gt; x-token:test-token
-&gt; x-idp:google
-&gt;
-&lt; HTTP/1.1 <span style="color:#bd93f9">200</span> OK
-&lt; Content-Type: application/json
-&lt; Date: Fri, <span style="color:#bd93f9">25</span> Jan <span style="color:#bd93f9">2019</span> <span style="color:#bd93f9">06</span>:43:18 GMT
-&lt; Content-Length: <span style="color:#bd93f9">74</span>
-&lt;
-* Connection <span style="color:#6272a4">#0 to host localhost left intact
-</span><span style="color:#6272a4"></span><span style="color:#ff79c6">{</span><span style="color:#f1fa8c">&#34;principals&#34;</span>:<span style="color:#ff79c6">[{</span><span style="color:#f1fa8c">&#34;type&#34;</span>:<span style="color:#f1fa8c">&#34;user&#34;</span>,<span style="color:#f1fa8c">&#34;name&#34;</span>:<span style="color:#f1fa8c">&#34;user1&#34;</span>,<span style="color:#f1fa8c">&#34;idd&#34;</span>:<span style="color:#f1fa8c">&#34;google&#34;</span><span style="color:#ff79c6">}]</span>,<span style="color:#f1fa8c">&#34;errCode&#34;</span>:0<span style="color:#ff79c6">}</span>
+<p>Initialize an empty policy file:</p>
 
-curl -v -H <span style="color:#f1fa8c">&#34;x-token:&#34;</span> -H <span style="color:#f1fa8c">&#34;x-idp:google&#34;</span> http://localhost:8080/v1/assert
-* About to connect<span style="color:#ff79c6">()</span> to localhost port <span style="color:#bd93f9">8080</span> <span style="color:#ff79c6">(</span><span style="color:#6272a4">#0)
-</span><span style="color:#6272a4"></span>*   Trying ::1...
-* Connected to localhost <span style="color:#ff79c6">(</span>::1<span style="color:#ff79c6">)</span> port <span style="color:#bd93f9">8080</span> <span style="color:#ff79c6">(</span><span style="color:#6272a4">#0)
-</span><span style="color:#6272a4"></span>&gt; GET /v1/assert HTTP/1.1
-&gt; User-Agent: curl/7.29.0
-&gt; Host: localhost:8080
-&gt; Accept: */*
-&gt; x-idp:google
-&gt;
-&lt; HTTP/1.1 <span style="color:#bd93f9">400</span> Bad Request
-&lt; Content-Type: application/json
-&lt; Date: Fri, <span style="color:#bd93f9">25</span> Jan <span style="color:#bd93f9">2019</span> <span style="color:#bd93f9">06</span>:43:29 GMT
-&lt; Content-Length: <span style="color:#bd93f9">50</span>
-&lt;
-* Connection <span style="color:#6272a4">#0 to host localhost left intact
-</span><span style="color:#6272a4"></span><span style="color:#ff79c6">{</span><span style="color:#f1fa8c">&#34;errCode&#34;</span>:400,<span style="color:#f1fa8c">&#34;errMessage&#34;</span>:<span style="color:#f1fa8c">&#34;token or idp is empty&#34;</span><span style="color:#ff79c6">}</span></code></pre></div>
-<h3 id="2-start-the-asserter-service">2. Start the asserter service</h3>
+<!-- docs-check: setup -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#8be9fd;font-style:italic">printf</span> <span style="color:#f1fa8c">&#39;{}\n&#39;</span> &gt; docs-policies.json</code></pre></div>
+<p>In terminal one, start PMS and leave it running:</p>
 
-<p>Start the sample asserter.</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./asserter</code></pre></div>
-<h3 id="3-configure-the-identity-asserter-webhook">3. Configure the identity asserter webhook</h3>
+<!-- docs-check: pms -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./bin/speedle-pms --store-type file --filestore-loc ./docs-policies.json --endpoint <span style="color:#bd93f9">127</span>.0.0.1:6733 --grpc-endpoint <span style="color:#bd93f9">127</span>.0.0.1:0 --insecure<span style="color:#ff79c6">=</span>true</code></pre></div>
+<p>In terminal two, start ADS and leave it running:</p>
 
-<p>Configure the asserter webhook in the config.json file for the authorization decision service (ADS), and start the ADS service.</p>
+<!-- docs-check: ads -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./bin/speedle-ads --store-type file --filestore-loc ./docs-policies.json --endpoint <span style="color:#bd93f9">127</span>.0.0.1:6734 --grpc-endpoint <span style="color:#bd93f9">127</span>.0.0.1:0 --insecure<span style="color:#ff79c6">=</span><span style="color:#8be9fd;font-style:italic">true</span> --asserter-endpoint http://127.0.0.1:8080/v1/assert</code></pre></div>
+<p>Run the remaining commands in a third terminal. PMS and ADS share the file; watch propagates changes asynchronously. Confirm the intended update has reached ADS before relying on it. <code>--insecure=true</code> is only for this loopback example; see <a href="/docs/security/">security</a> for production connections. Explicit PMS addresses avoid changing <code>~/.spctlconfig</code>. Stop both server terminals with Ctrl-C when finished.</p>
 
-<p>Sample config.json:</p>
+<h2 id="create-domain-specific-test-policies">Create domain-specific test policies</h2>
+
+<!-- docs-check: idd-fixture -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ create service --json-file website/tests/examples/idd.json</code></pre></div>
+<p>The fixture grants GitHub <code>user1</code> read access, Google <code>user1</code> write access, and all domains rent access. This is the same <a href="/docs/idd/">identity-domain example</a>.</p>
+
+<h2 id="exercise-token-based-decisions">Exercise token-based decisions</h2>
+
+<p>In order, expect Allow, Deny, Allow. The second request is a valid <strong>GitLab</strong> identity, so it cannot use the GitHub-only read grant.</p>
+
+<!-- docs-check: token-allow -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl --fail --silent --show-error -H <span style="color:#f1fa8c">&#39;Content-Type: application/json&#39;</span> <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  -d <span style="color:#f1fa8c">&#39;{&#34;subject&#34;:{&#34;token&#34;:&#34;githubtoken&#34;,&#34;tokenType&#34;:&#34;github&#34;},&#34;serviceName&#34;:&#34;booksvc&#34;,&#34;resource&#34;:&#34;book&#34;,&#34;action&#34;:&#34;read&#34;}&#39;</span> <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  http://127.0.0.1:6734/authz-check/v1/is-allowed</code></pre></div>
+<!-- docs-check: token-deny -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl --fail --silent --show-error -H <span style="color:#f1fa8c">&#39;Content-Type: application/json&#39;</span> <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  -d <span style="color:#f1fa8c">&#39;{&#34;subject&#34;:{&#34;token&#34;:&#34;gitlabtoken&#34;,&#34;tokenType&#34;:&#34;gitlab&#34;},&#34;serviceName&#34;:&#34;booksvc&#34;,&#34;resource&#34;:&#34;book&#34;,&#34;action&#34;:&#34;read&#34;}&#39;</span> <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  http://127.0.0.1:6734/authz-check/v1/is-allowed</code></pre></div>
+<!-- docs-check: token-any -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl --fail --silent --show-error -H <span style="color:#f1fa8c">&#39;Content-Type: application/json&#39;</span> <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  -d <span style="color:#f1fa8c">&#39;{&#34;subject&#34;:{&#34;token&#34;:&#34;gitlabtoken&#34;,&#34;tokenType&#34;:&#34;gitlab&#34;},&#34;serviceName&#34;:&#34;booksvc&#34;,&#34;resource&#34;:&#34;book&#34;,&#34;action&#34;:&#34;rent&#34;}&#39;</span> <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  http://127.0.0.1:6734/authz-check/v1/is-allowed</code></pre></div>
+<p>An invalid token is an assertion error, not an ordinary policy Deny. This REST implementation may still return HTTP 200 with <code>allowed=false</code> and a nonempty <code>errorMessage</code>; check the response body as well as HTTP status. Do not treat <code>reason</code> alone as proof that evaluation succeeded:</p>
+
+<!-- docs-check: token-invalid -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl --silent --show-error -H <span style="color:#f1fa8c">&#39;Content-Type: application/json&#39;</span> <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  -d <span style="color:#f1fa8c">&#39;{&#34;subject&#34;:{&#34;token&#34;:&#34;invalid-token&#34;,&#34;tokenType&#34;:&#34;google&#34;},&#34;serviceName&#34;:&#34;booksvc&#34;,&#34;resource&#34;:&#34;book&#34;,&#34;action&#34;:&#34;write&#34;}&#39;</span> <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  -w <span style="color:#f1fa8c">&#39;\nHTTP %{http_code}\n&#39;</span> http://127.0.0.1:6734/authz-check/v1/is-allowed</code></pre></div>
+<p>Stop the mock and both servers with Ctrl-C when finished.</p>
+
+<h2 id="configure-your-provider-integration">Configure your provider integration</h2>
+
+<p>Instead of the local flag, a full JSON configuration may set:</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">{
-  <span style="color:#ff79c6">&#34;storeConfig&#34;</span>: {
-    <span style="color:#ff79c6">&#34;storeType&#34;</span>: <span style="color:#f1fa8c">&#34;file&#34;</span>,
-    <span style="color:#ff79c6">&#34;storeProps&#34;</span>: {
-      <span style="color:#ff79c6">&#34;FileLocation&#34;</span>: <span style="color:#f1fa8c">&#34;./ps.json&#34;</span>
-    }
-  },
-  <span style="color:#ff79c6">&#34;enableWatch&#34;</span>: <span style="color:#ff79c6">true</span>,
   <span style="color:#ff79c6">&#34;asserterWebhookConfig&#34;</span>: {
-    <span style="color:#ff79c6">&#34;endpoint&#34;</span>: <span style="color:#f1fa8c">&#34;http://host:port/v1/assert&#34;</span>,
-    <span style="color:#ff79c6">&#34;clientCert&#34;</span>: <span style="color:#f1fa8c">&#34;&#34;</span>,
-    <span style="color:#ff79c6">&#34;clientKey&#34;</span>: <span style="color:#f1fa8c">&#34;&#34;</span>,
-    <span style="color:#ff79c6">&#34;caCert&#34;</span>: <span style="color:#f1fa8c">&#34;&#34;</span>
-  },
-  <span style="color:#ff79c6">&#34;serverConfig&#34;</span>: {
-    <span style="color:#ff79c6">&#34;endpoint&#34;</span>: <span style="color:#f1fa8c">&#34;&#34;</span>,
-    <span style="color:#ff79c6">&#34;insecure&#34;</span>: <span style="color:#f1fa8c">&#34;&#34;</span>,
-    <span style="color:#ff79c6">&#34;certPath&#34;</span>: <span style="color:#f1fa8c">&#34;&#34;</span>,
-    <span style="color:#ff79c6">&#34;clientCertPath&#34;</span>: <span style="color:#f1fa8c">&#34;&#34;</span>,
-    <span style="color:#ff79c6">&#34;keyPath&#34;</span>: <span style="color:#f1fa8c">&#34;&#34;</span>
-  },
-  <span style="color:#ff79c6">&#34;logConfig&#34;</span>: {
-    <span style="color:#ff79c6">&#34;level&#34;</span>: <span style="color:#f1fa8c">&#34;info&#34;</span>,
-    <span style="color:#ff79c6">&#34;formatter&#34;</span>: <span style="color:#f1fa8c">&#34;text&#34;</span>,
-    <span style="color:#ff79c6">&#34;rotationConfig&#34;</span>: {
-      <span style="color:#ff79c6">&#34;filename&#34;</span>: <span style="color:#f1fa8c">&#34;.speedle.log&#34;</span>,
-      <span style="color:#ff79c6">&#34;maxSize&#34;</span>: <span style="color:#bd93f9">10</span>,
-      <span style="color:#ff79c6">&#34;maxBackups&#34;</span>: <span style="color:#bd93f9">5</span>,
-      <span style="color:#ff79c6">&#34;maxAge&#34;</span>: <span style="color:#bd93f9">0</span>,
-      <span style="color:#ff79c6">&#34;LocalTime&#34;</span>: <span style="color:#ff79c6">false</span>,
-      <span style="color:#ff79c6">&#34;compress&#34;</span>: <span style="color:#ff79c6">false</span>
-    }
+    <span style="color:#ff79c6">&#34;endpoint&#34;</span>: <span style="color:#f1fa8c">&#34;https://identity.example/v1/assert&#34;</span>,
+    <span style="color:#ff79c6">&#34;clientCert&#34;</span>: <span style="color:#f1fa8c">&#34;/absolute/path/client.crt&#34;</span>,
+    <span style="color:#ff79c6">&#34;clientKey&#34;</span>: <span style="color:#f1fa8c">&#34;/absolute/path/client.key&#34;</span>,
+    <span style="color:#ff79c6">&#34;caCert&#34;</span>: <span style="color:#f1fa8c">&#34;/absolute/path/issuer-ca.crt&#34;</span>,
+    <span style="color:#ff79c6">&#34;httpTimeout&#34;</span>: <span style="color:#bd93f9">5</span>
   }
 }</code></pre></div>
-<p>Update the <code>asserterWebhookConfig</code> section of the config.json file to correspond to URI of the asserter service.</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json"><span style="color:#f1fa8c">&#34;asserterWebhookConfig&#34;</span>: {
-        <span style="color:#ff79c6">&#34;endpoint&#34;</span>: <span style="color:#f1fa8c">&#34;http://localhost:8080/v1/assert&#34;</span>,
-        <span style="color:#ff79c6">&#34;clientCert&#34;</span>: <span style="color:#f1fa8c">&#34;&#34;</span>,
-        <span style="color:#ff79c6">&#34;clientKey&#34;</span>: <span style="color:#f1fa8c">&#34;&#34;</span>,
-        <span style="color:#ff79c6">&#34;caCert&#34;</span>: <span style="color:#f1fa8c">&#34;&#34;</span>
-    }</code></pre></div>
-<p>In this example:</p>
+<p>This is the asserter portion of the server configuration; supply the store/server settings for the deployed instance as well. <code>caCert</code> verifies the webhook server; <code>clientCert</code> and <code>clientKey</code> are used if that server requires mTLS. Collect tokens using the provider&rsquo;s documented <a href="https://openid.net/connect/">OpenID Connect</a> or <a href="https://oauth.net/2/">OAuth</a> integration, and validate the token type actually accepted by that provider. Protect PMS/ADS callers separately as described in <a href="/docs/security/">security</a>.</p>
 
-<ul>
-<li><code>endpoint</code> - Endpoint of the asserter service</li>
-<li><code>clientCert</code> - Path to the client certificate file, if the asserter service requires two-way SSL verification</li>
-<li><code>clientKey</code> - Path to the client private key file, if the asserter service requires two-way SSL verification</li>
-<li><code>caCert</code> - Path to the asserter service&rsquo;s CA certificate file, if the asserter service is exposed as an HTTPS service</li>
-</ul>
-
-<h3 id="4-create-test-policies">4. Create test policies</h3>
-
-<p>The following policies are defined on the <a href="/docs/idd/">identity domain</a> page.</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./spctl create service booksvc
-<span style="color:#6272a4"># grant user1 coming from github to perform action: read on resource: book
-</span><span style="color:#6272a4"></span>./spctl create policy -c <span style="color:#f1fa8c">&#34;grant user user1 from github read book&#34;</span> --service-name<span style="color:#ff79c6">=</span>booksvc
-<span style="color:#6272a4"># grant user1 coming from google to perform action: write on resource: book
-</span><span style="color:#6272a4"></span>./spctl create policy -c <span style="color:#f1fa8c">&#34;grant user user1 from google write book&#34;</span> --service-name<span style="color:#ff79c6">=</span>booksvc
-<span style="color:#6272a4"># grant user1 coming from any identity providers to perform action: rent on resource: book
-</span><span style="color:#6272a4"></span>./spctl create policy -c <span style="color:#f1fa8c">&#34;grant user user1 rent book&#34;</span> --service-name<span style="color:#ff79c6">=</span>booksvc</code></pre></div>
-<h3 id="5-retrieve-identity-token-from-identity-provider">5. Retrieve identity token from identity provider</h3>
-
-<p>This step depends on how your service integrates with the identity provider. If your service integrates with an identity provider that supports the <a href="https://openid.net/connect/">OpenID Connect</a> or <a href="https://oauth.net/2/">OAuth </a> protocols, then your service can always get a valid identity token or access token issued by the identity provider.</p>
-
-<p>For detailed steps for retrieving the identity token, see the documents provided by the identity provider.</p>
-
-<h3 id="6-evaluate-the-policy-with-identity-tokens-issued-by-different-identity-providers">6. Evaluate the policy with identity tokens issued by different identity providers</h3>
-
-<p>The following policy evaluation results are based on the test policies defined in the previous section.</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#6272a4"># The evaluation result is true.
-</span><span style="color:#6272a4"></span>curl -v -k -X POST -d <span style="color:#f1fa8c">&#39;{ &#34;subject&#34;: {&#34;token&#34;: &#34;githubtoken&#34;, &#34;tokenType&#34;:&#34;github&#34;},&#34;serviceName&#34;:&#34;booksvc&#34;,&#34;resource&#34;:&#34;book&#34;,&#34;action&#34;:&#34;read&#34;}&#39;</span>  http://127.0.0.1:6734/authz-check/v1/is-allowed
-
-<span style="color:#6272a4"># The evaluation result is false because the identity token was issued by a different identity provider: gitlab
-</span><span style="color:#6272a4"></span>curl -v -k -X POST -d <span style="color:#f1fa8c">&#39;{ &#34;subject&#34;: {&#34;token&#34;: &#34;gitlabtoken&#34;, &#34;tokenType&#34;:&#34;github&#34;},&#34;serviceName&#34;:&#34;booksvc&#34;,&#34;resource&#34;:&#34;book&#34;,&#34;action&#34;:&#34;read&#34;}&#39;</span>  http://127.0.0.1:6734/authz-check/v1/is-allowed
-
-<span style="color:#6272a4"># The evaluation result is true.
-</span><span style="color:#6272a4"></span>curl -v -k -X POST -d <span style="color:#f1fa8c">&#39;{ &#34;subject&#34;: {&#34;token&#34;: &#34;githubtoken&#34;, &#34;tokenType&#34;:&#34;github&#34;},&#34;serviceName&#34;:&#34;booksvc&#34;,&#34;resource&#34;:&#34;book&#34;,&#34;action&#34;:&#34;rent&#34;}&#39;</span>  http://127.0.0.1:6734/authz-check/v1/is-allowed
-
-<span style="color:#6272a4"># The evaluation result is false because of different identity domain &#34;idd&#34;:&#34;notgoogle&#34;
-</span><span style="color:#6272a4"></span>curl -v -k -X POST -d <span style="color:#f1fa8c">&#39;{ &#34;subject&#34;: {&#34;token&#34;: &#34;id token not issued by google&#34;, &#34;tokenType&#34;:&#34;google&#34;},&#34;serviceName&#34;:&#34;booksvc&#34;,&#34;resource&#34;:&#34;book&#34;,&#34;action&#34;:&#34;write&#34;}&#39;</span>  http://127.0.0.1:6734/authz-check/v1/is-allowed</code></pre></div>
   </div>
 </div>
 </main><div class="sidebar">

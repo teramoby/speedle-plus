@@ -33,7 +33,9 @@ embedded deployment guides directly from `docs/hugo/content/` on every run.
 PMS/ADS; `tests/check_embedded.py` extracts the Bash, Go and SPDL blocks, builds
 an external application against the documented public release and the current
 candidate library, and checks Allow/Deny output for both. Both checkers use the
-document blocks as executable inputs.
+document blocks as executable inputs. The same global gate runs
+`go test ./website/tests/docscheck` for the documented API contracts and
+`tests/check_docs.py` for the remaining bilingual executable API/deployment guides.
 The gate uses its current Go toolchain; nightly Quick Start checks additionally
 cover Go 1.26.10 and 1.27.3.
 The Quick Start check performs a public shallow clone, checks out the captured CI revision, builds

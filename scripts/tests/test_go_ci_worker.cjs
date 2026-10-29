@@ -196,13 +196,15 @@ test('gate runs every package once, only store-dependent packages again with etc
   assert.equal(file.env.SPEEDLE_CLI_COVERPROFILE, path.join(repoRoot, 'coverage-cli.out'));
   assert.equal(etcd.env.SPEEDLE_CLI_COVERPROFILE, undefined);
   assert.equal(etcd.env.STORE_TYPE, 'etcd'); assert.deepEqual(etcd.args.slice(-2), ['./pkg/eval', './cmd/spctl/command']);
-  assert.equal(goTests(records).length, 2);
+  assert.equal(goTests(records).length, 3);
+  assert.deepEqual(goTests(records)[2].args, ['test', '-count=1', './website/tests/docscheck']);
   const gate = records.find(r => r.tool === 'python3');
   assert.deepEqual(gate.args.slice(0, 6),
     ['scripts/ci/coverage.py', 'coverage.out', '--merge', 'coverage-cli.out', '--min-file', 'scripts/ci/coverage-min.txt']);
   assert.deepEqual(records.filter(r => r.tool === 'python3').slice(1).map(r => r.args), [
     ['website/tests/check_quick_start.py', '--toolchain', 'go1.26.10'],
     ['website/tests/check_embedded.py', '--toolchain', 'go1.26.10', '--candidate'],
+    ['website/tests/check_docs.py'],
   ]);
   for (const record of records) {
     for (const key of cleanKeys) assert.equal(record.env[key], '', key);
@@ -210,10 +212,10 @@ test('gate runs every package once, only store-dependent packages again with etc
   }
 });
 test('a failure in either executable guide blocks the merge-gating test job', () => {
-  for (const guide of ['check_quick_start.py', 'check_embedded.py']) {
+  for (const guide of ['check_quick_start.py', 'check_embedded.py', 'check_docs.py', './website/tests/docscheck']) {
     const {result, records} = runSuite('test', {failMatching: guide});
     assert.equal(result.status, 7, guide);
-    assert.ok(records.some(r => r.tool === 'python3' && r.args[0].endsWith(guide)));
+    assert.ok(records.some(r => r.args.some(arg => arg.endsWith(guide))));
   }
 });
 test('gate preserves the failing status and stops before the coverage gate', () => {

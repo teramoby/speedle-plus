@@ -92,224 +92,80 @@ headingSelector: 'h2'
 
 <h2 id="what-is-a-speedle-policy">What is a Speedle policy?</h2>
 
-<p>A Speedle policy is a set of criteria that specify whether a user is granted access to a particular protected resource or assignment to a particular role. You manage Speedle policies using the Speedle Policy Management Service(PMS).</p>
-
-<h2 id="understanding-the-speedle-policy-module">Understanding the Speedle Policy Module</h2>
-
-<p><strong>Note:</strong> The Speedle syntax used in this document is defined in <a href="/docs/spdl/">SPDL - Speedle Policy Definition Language</a>.</p>
-
-<h4 id="policy-store">Policy store</h4>
-
-<p>The policy store maintains all policy artifacts and can be persisted to an etcd store or a JSON file.</p>
+<p>The Policy Management Service (PMS) manages services, authorization policies, role policies and custom functions. A policy store persists those objects using a registered <a href="/docs/store/">storage backend</a>.</p>
 
 <p><img src="/img/speedle/policystore.png"/></p>
 
-<h4 id="service">Service</h4>
+<h2 id="services-and-authorization-policies">Services and authorization policies</h2>
 
-<p>A service is a container that contains a set of authorization and role policies that exist only in the scope of that service. Policies and role policies are evaluated within the scope of the service in which they were defined, not in the entire policy store. You can manage multiple services with Speedle.</p>
-
-<p>You can also define global policies in a global service. Global policies take effect globally across all services. For details, see <a href="/docs/pms/global-policy/">Global Policy</a>.</p>
-
-<h4 id="authorization-policy">Authorization policy</h4>
-
-<p>An authorization policy defines the criteria that controls access to protected resources.</p>
+<p>A service scopes its policies. An authorization policy grants or denies a principal permission to perform an action on a resource, optionally subject to a condition. Except for <a href="/docs/pms/global-policy/">global role policies</a>, policies do not automatically apply in another service.</p>
 
 <p><img src="/img/speedle/authzpolicy.png"/></p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">grant group Administrators list,watch,get expr:^c1/default/core/pods/.*$</code></pre></div>
+<p>This regular expression matches resources under <code>c1/default/core/pods/</code>. It does not match <code>c1/default/core/podssecret</code> or an extra prefix before <code>c1</code>. <code>expr:</code> uses regular-expression matching, not shell globs: use <code>.*</code> for arbitrary characters and <code>^</code>/<code>$</code> when the complete identifier must match.</p>
 
-<p>You create authorization policies to grant or deny principals (user/role/group/entity) permission to perform specific actions on specific resources if the condition is true.</p>
-
-<p>Sample:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4">grant group Administrators list,watch,get expr:c1/default/core/pods/*</pre></div>
-<p>This sample grants the group &ldquo;Administrators&rdquo; permission to perform &ldquo;list&rdquo;, &ldquo;watch&rdquo;, and &ldquo;get&rdquo; operations on the resource that matches the name expression <code>c1/default/core/pods/*</code>.</p>
-
-<h4 id="role-policy">Role policy</h4>
-
-<p>A role policy defines the criteria that controls how principals (user/role/group/entity) are granted or denied membership to roles created using Speedle.</p>
+<h2 id="role-policies">Role policies</h2>
 
 <p><img src="/img/speedle/rolepolicy.png"/></p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">grant user alan manager on res1
+grant role manager update res1</code></pre></div>
+<p>The first statement assigns Alan a resource-scoped role; the second grants that role an operation. Assigning a role alone does not create permissions. An applicable explicit deny overrides a grant.</p>
 
-<p>You create role policies to grant or deny roles, which you created using Speedle, to principals (user/role/group/entity) on specific resources if the condition is true.</p>
+<h2 id="principals-and-conditions">Principals and conditions</h2>
 
-<p>Sample:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4">grant user alan manager on res1</pre></div>
-<p>This sample grants user &ldquo;alan&rdquo; the &ldquo;manager&rdquo; role on the resource &ldquo;res1&rdquo;. In other words, user &ldquo;alan&rdquo; can perform operations on the resource &ldquo;res1&rdquo; because &ldquo;alan&rdquo; has the permissions assigned to the role &ldquo;manager&rdquo;.</p>
-
-<h4 id="policy-elements">Policy elements</h4>
-
-<h5 id="effect">Effect</h5>
-
-<p>Effect has two values: &ldquo;grant&rdquo; or &ldquo;deny&rdquo;.<br />
-When Speedle evaluates policies, the final authorization decision is based on the &ldquo;DENY overrides&rdquo; combining algorithm. For example, if there is a policy that grants permission to a subject at the same time as a policy that denies the same permission to the subject, then the &ldquo;deny&rdquo; policy takes effect and overrides the &ldquo;grant&rdquo; policy.</p>
-
-<h5 id="principal">Principal</h5>
-
-<p>In authorization and role policies, the principal is the identity object to which the access rights or roles can be granted or denied. A principal can be a user, a group, an entity or a role. Most frequently, it is a role.</p>
+<p>A principal may be a user, group, entity or role. An entity represents a non-human identity, such as a service. Integrations must derive these identities from trusted sources.</p>
 
 <p><img src="/img/speedle/principal.png"/></p>
 
-<p>User, group and entity are principals from the identity store and are usually obtained after authentication or token assertion. Users and groups represent a human identity; an entity represents a non-human identity such as a service, a Kubernetes pod, and so on.</p>
-
-<h4 id="and-principal">AND principal</h4>
-
-<p>AND principal is a combination of a small set of principals, separated by commas. If a policy uses AND principal, the policy can take effect only when all of these principles are matched.</p>
+<p>An AND group requires every listed principal; separate groups are alternatives. For example, both roles below must apply:</p>
 
 <p><img src="/img/speedle/andprincipal.png"/></p>
-
-<p>Sample:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4">grant role (designer, dba) update db_design_doc</pre></div>
-<p>In this sample, only a user with both roles &ldquo;designer&rdquo; and &ldquo;dba&rdquo; can update the resource &ldquo;db_design_doc&rdquo;.</p>
-
-<h5 id="resource">Resource</h5>
-
-<p>A resource is a protected object to which access is granted or denied. A resource represents the application component or business object that is secured by an authorization policy.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">grant (role designer, role dba) update db_design_doc</code></pre></div>
+<p>A resource names the protected object; an action names an application operation. A condition is a Boolean expression evaluated from trusted attributes, constants, operators and supported functions.</p>
 
 <p><img src="/img/speedle/resource.png"/></p>
 
-<p>resourceNameExpression supports regular expressions.</p>
+<p>See <a href="/docs/spdl/">SPDL</a> for grammar and <a href="/docs/overview/">RBAC</a>/<a href="/docs/overview/">ABAC</a> for complete decision examples.</p>
 
-<h5 id="action">Action</h5>
+<h2 id="before-running-the-examples">Before running the examples</h2>
 
-<p>An action is an operation that can be performed on the protected resource. Action is just a string in a policy. You can define any actions when you create the policy.</p>
+<p>Build <code>./bin/spctl</code>, <code>./bin/speedle-pms</code> and <code>./bin/speedle-ads</code> using the <a href="/quick-start/">quick start</a>. Use Go 1.26.10 or Go 1.27.3 (or a newer patch on the same release branch), Bash, curl and Python 3. Run each terminal from the repository root. Use a fresh policy file for this page; reset it only after stopping both services.</p>
 
-<h5 id="condition">Condition</h5>
+<p>Initialize an empty policy file:</p>
 
-<p>A condition is a bool expression that is constructed using attributes, functions, constants, operators, comparators or parenthesis and produces a bool value. Conditions are supported in both role and authorization policies. The policy or role policy can take effect only when the condition is met.</p>
+<!-- docs-check: setup -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#8be9fd;font-style:italic">printf</span> <span style="color:#f1fa8c">&#39;{}\n&#39;</span> &gt; docs-policies.json</code></pre></div>
+<p>In terminal one, start PMS and leave it running:</p>
 
-<p>For details, see <a href="/docs/spdl/">SPDL - Speedle Policy Definition Language</a>.</p>
+<!-- docs-check: pms -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./bin/speedle-pms --store-type file --filestore-loc ./docs-policies.json --endpoint <span style="color:#bd93f9">127</span>.0.0.1:6733 --grpc-endpoint <span style="color:#bd93f9">127</span>.0.0.1:0 --insecure<span style="color:#ff79c6">=</span>true</code></pre></div>
+<p>In terminal two, start ADS and leave it running:</p>
 
-<h2 id="managing-speedle-policies">Managing Speedle policies</h2>
+<!-- docs-check: ads -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./bin/speedle-ads --store-type file --filestore-loc ./docs-policies.json --endpoint <span style="color:#bd93f9">127</span>.0.0.1:6734 --grpc-endpoint <span style="color:#bd93f9">127</span>.0.0.1:0 --insecure<span style="color:#ff79c6">=</span>true</code></pre></div>
+<p>Run the remaining commands in a third terminal. PMS and ADS share the file; watch propagates changes asynchronously. Confirm the intended update has reached ADS before relying on it. <code>--insecure=true</code> is only for this loopback example; see <a href="/docs/security/">security</a> for production connections. Explicit PMS addresses avoid changing <code>~/.spctlconfig</code>. Stop both server terminals with Ctrl-C when finished.</p>
 
-<p>Use the Speedle Policy Management Service (PMS) to manage authorization and role policies, and the security objects from which they are created.</p>
+<h2 id="manage-services-and-policies-with-spctl">Manage services and policies with spctl</h2>
 
-<p>Speedle allows administrators to perform create, read, and delete operations on all policy objects. You can do this in any of the following ways:</p>
+<p>Run this sequence against a fresh store. IDs come from the live query responses; they are not fixed values copied from an older run. Deletion happens after all operations that need the service.</p>
 
-<ul>
-<li><p>Using the Speedle command line interface <code>spctl</code> (as described here. This is the recommended method.)</p></li>
+<!-- docs-check: policy-management -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ create service <span style="color:#8be9fd;font-style:italic">test</span>
+./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ get service <span style="color:#8be9fd;font-style:italic">test</span>
+./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ get service --all
+./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ create policy policy1 -c <span style="color:#f1fa8c">&#34;grant user alan read book&#34;</span> --service-name <span style="color:#8be9fd;font-style:italic">test</span>
+<span style="color:#8be9fd;font-style:italic">policy_id</span><span style="color:#ff79c6">=</span><span style="color:#ff79c6">$(</span>./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ get policy --all --service-name <span style="color:#8be9fd;font-style:italic">test</span> | python3 -c <span style="color:#f1fa8c">&#39;import json,sys; print(next(p[&#34;id&#34;] for p in json.load(sys.stdin) if p.get(&#34;name&#34;)==&#34;policy1&#34;))&#39;</span><span style="color:#ff79c6">)</span>
+./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ get policy <span style="color:#f1fa8c">&#34;</span><span style="color:#8be9fd;font-style:italic">$policy_id</span><span style="color:#f1fa8c">&#34;</span> --service-name <span style="color:#8be9fd;font-style:italic">test</span>
+./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ create rolepolicy rolepolicy01 -c <span style="color:#f1fa8c">&#34;grant user alan manager on res1&#34;</span> --service-name <span style="color:#8be9fd;font-style:italic">test</span>
+<span style="color:#8be9fd;font-style:italic">role_policy_id</span><span style="color:#ff79c6">=</span><span style="color:#ff79c6">$(</span>./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ get rolepolicy --all --service-name <span style="color:#8be9fd;font-style:italic">test</span> | python3 -c <span style="color:#f1fa8c">&#39;import json,sys; print(next(p[&#34;id&#34;] for p in json.load(sys.stdin) if p.get(&#34;name&#34;)==&#34;rolepolicy01&#34;))&#39;</span><span style="color:#ff79c6">)</span>
+./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ get rolepolicy <span style="color:#f1fa8c">&#34;</span><span style="color:#8be9fd;font-style:italic">$role_policy_id</span><span style="color:#f1fa8c">&#34;</span> --service-name <span style="color:#8be9fd;font-style:italic">test</span>
+./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ delete policy <span style="color:#f1fa8c">&#34;</span><span style="color:#8be9fd;font-style:italic">$policy_id</span><span style="color:#f1fa8c">&#34;</span> --service-name <span style="color:#8be9fd;font-style:italic">test</span>
+./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ delete rolepolicy <span style="color:#f1fa8c">&#34;</span><span style="color:#8be9fd;font-style:italic">$role_policy_id</span><span style="color:#f1fa8c">&#34;</span> --service-name <span style="color:#8be9fd;font-style:italic">test</span>
+./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ delete service test</code></pre></div>
+<h2 id="other-interfaces">Other interfaces</h2>
 
-<li><p>Using the PMS Golang Management API in Embedded Mode (as described in the <a href="https://github.com/teramoby/speedle-plus/tree/master/api/pms">Speedle API doc</a>.</p></li>
+<p>The <a href="/docs/api/management_api/">PMS REST API</a> uses JSON and returns flat policy objects with string IDs. Go applications can call the <a href="https://github.com/teramoby/speedle-plus/tree/master/api/pms">PMS interfaces</a> directly; gRPC clients use the <a href="/protobuf/pms.proto">published PMS proto</a>. Apply <a href="/docs/security/">transport and caller access controls</a> to administrative operations.</p>
 
-<li><p>Using the PMS REST Service (as described in the <a href="/docs/api/management_api/">Speedle Policy Management API</a>).</p></li>
-
-<li><p>Using the PMS gRPC Service (as described in the <a href="/protobuf/pms.proto">Speedle GRPC document</a>).</p></li>
-</ul>
-
-<h4 id="managing-services">Managing services</h4>
-
-<p>You create a service as the overall container for authorization and role policies.
-You can perform the following management operations on service instances.</p>
-
-<ul>
-<li>Create a &ldquo;test&rdquo; service:</li>
-</ul>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ ./spctl create service <span style="color:#8be9fd;font-style:italic">test</span>
-service created
-<span style="color:#ff79c6">{</span><span style="color:#f1fa8c">&#34;name&#34;</span>:<span style="color:#f1fa8c">&#34;test&#34;</span>,<span style="color:#f1fa8c">&#34;type&#34;</span>:<span style="color:#f1fa8c">&#34;application&#34;</span>,<span style="color:#f1fa8c">&#34;metadata&#34;</span>:<span style="color:#ff79c6">{</span><span style="color:#f1fa8c">&#34;createby&#34;</span>:<span style="color:#f1fa8c">&#34;&#34;</span>,<span style="color:#f1fa8c">&#34;createtime&#34;</span>:<span style="color:#f1fa8c">&#34;2019-02-12T22:51:19-08:00&#34;</span><span style="color:#ff79c6">}}</span></code></pre></div>
-<ul>
-<li>Get the &ldquo;test&rdquo; service:</li>
-</ul>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ ./spctl get service <span style="color:#8be9fd;font-style:italic">test</span>
-<span style="color:#ff79c6">{</span>
-    <span style="color:#f1fa8c">&#34;name&#34;</span>: <span style="color:#f1fa8c">&#34;test&#34;</span>,
-    <span style="color:#f1fa8c">&#34;type&#34;</span>: <span style="color:#f1fa8c">&#34;application&#34;</span>,
-    <span style="color:#f1fa8c">&#34;metadata&#34;</span>: <span style="color:#ff79c6">{</span>
-        <span style="color:#f1fa8c">&#34;createby&#34;</span>: <span style="color:#f1fa8c">&#34;&#34;</span>,
-        <span style="color:#f1fa8c">&#34;createtime&#34;</span>: <span style="color:#f1fa8c">&#34;2019-02-12T22:51:19-08:00&#34;</span>
-    <span style="color:#ff79c6">}</span>
-<span style="color:#ff79c6">}</span></code></pre></div>
-<ul>
-<li>Get all services:</li>
-</ul>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ ./spctl get service --all
-<span style="color:#ff79c6">[</span>
-    <span style="color:#ff79c6">{</span>
-        <span style="color:#f1fa8c">&#34;name&#34;</span>: <span style="color:#f1fa8c">&#34;test&#34;</span>,
-        <span style="color:#f1fa8c">&#34;type&#34;</span>: <span style="color:#f1fa8c">&#34;application&#34;</span>,
-        <span style="color:#f1fa8c">&#34;metadata&#34;</span>: <span style="color:#ff79c6">{</span>
-            <span style="color:#f1fa8c">&#34;createby&#34;</span>: <span style="color:#f1fa8c">&#34;&#34;</span>,
-            <span style="color:#f1fa8c">&#34;createtime&#34;</span>: <span style="color:#f1fa8c">&#34;2019-02-12T22:51:19-08:00&#34;</span>
-        <span style="color:#ff79c6">}</span>
-    <span style="color:#ff79c6">}</span>
-<span style="color:#ff79c6">]</span></code></pre></div>
-<ul>
-<li>Delete the &ldquo;test&rdquo; service:</li>
-</ul>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ ./spctl delete service <span style="color:#8be9fd;font-style:italic">test</span>
-service <span style="color:#8be9fd;font-style:italic">test</span> deleted.</code></pre></div>
-<h4 id="managing-authorization-policies">Managing authorization policies</h4>
-
-<p>You can perform the following management operations on authorization policies.</p>
-
-<ul>
-<li>Create a policy named &ldquo;policy1&rdquo; in the &ldquo;test&rdquo; service:</li>
-</ul>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ ./spctl create policy policy1 -c <span style="color:#f1fa8c">&#34;grant user alan read book&#34;</span> --service-name <span style="color:#8be9fd;font-style:italic">test</span>
-policy created
-<span style="color:#ff79c6">{</span><span style="color:#f1fa8c">&#34;id&#34;</span>:<span style="color:#f1fa8c">&#34;ao3olis24hrzchwjduea&#34;</span>,<span style="color:#f1fa8c">&#34;name&#34;</span>:<span style="color:#f1fa8c">&#34;policy1&#34;</span>,<span style="color:#f1fa8c">&#34;effect&#34;</span>:<span style="color:#f1fa8c">&#34;grant&#34;</span>,<span style="color:#f1fa8c">&#34;permissions&#34;</span>:<span style="color:#ff79c6">[{</span><span style="color:#f1fa8c">&#34;resource&#34;</span>:<span style="color:#f1fa8c">&#34;book&#34;</span>,<span style="color:#f1fa8c">&#34;actions&#34;</span>:<span style="color:#ff79c6">[</span><span style="color:#f1fa8c">&#34;read&#34;</span><span style="color:#ff79c6">]}]</span>,<span style="color:#f1fa8c">&#34;principals&#34;</span>:<span style="color:#ff79c6">[[</span><span style="color:#f1fa8c">&#34;user:alan&#34;</span><span style="color:#ff79c6">]]</span>,<span style="color:#f1fa8c">&#34;metadata&#34;</span>:<span style="color:#ff79c6">{</span><span style="color:#f1fa8c">&#34;createby&#34;</span>:<span style="color:#f1fa8c">&#34;&#34;</span>,<span style="color:#f1fa8c">&#34;createtime&#34;</span>:<span style="color:#f1fa8c">&#34;2019-02-12T22:57:46-08:00&#34;</span><span style="color:#ff79c6">}}</span></code></pre></div>
-<ul>
-<li>Get &ldquo;policy1&rdquo; in the &ldquo;test&rdquo; service using the policy id:</li>
-</ul>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ ./spctl get policy ao3olis24hrzchwjduea --service-name<span style="color:#ff79c6">=</span><span style="color:#8be9fd;font-style:italic">test</span>
-<span style="color:#ff79c6">{</span>
-    <span style="color:#f1fa8c">&#34;effect&#34;</span>: <span style="color:#f1fa8c">&#34;grant&#34;</span>,
-    <span style="color:#f1fa8c">&#34;id&#34;</span>: <span style="color:#f1fa8c">&#34;ao3olis24hrzchwjduea&#34;</span>,
-    <span style="color:#f1fa8c">&#34;metadata&#34;</span>: <span style="color:#ff79c6">{</span>
-        <span style="color:#f1fa8c">&#34;createby&#34;</span>: <span style="color:#f1fa8c">&#34;&#34;</span>,
-        <span style="color:#f1fa8c">&#34;createtime&#34;</span>: <span style="color:#f1fa8c">&#34;2019-02-12T22:57:46-08:00&#34;</span>
-    <span style="color:#ff79c6">}</span>,
-    <span style="color:#f1fa8c">&#34;name&#34;</span>: <span style="color:#f1fa8c">&#34;policy1&#34;</span>,
-    <span style="color:#f1fa8c">&#34;permissions&#34;</span>: <span style="color:#ff79c6">[</span>
-        <span style="color:#ff79c6">{</span>
-            <span style="color:#f1fa8c">&#34;actions&#34;</span>: <span style="color:#ff79c6">[</span>
-                <span style="color:#f1fa8c">&#34;read&#34;</span>
-            <span style="color:#ff79c6">]</span>,
-            <span style="color:#f1fa8c">&#34;resource&#34;</span>: <span style="color:#f1fa8c">&#34;book&#34;</span>
-        <span style="color:#ff79c6">}</span>
-    <span style="color:#ff79c6">]</span>,
-    <span style="color:#f1fa8c">&#34;principals&#34;</span>: <span style="color:#ff79c6">[</span>
-        <span style="color:#ff79c6">[</span>
-            <span style="color:#f1fa8c">&#34;user:alan&#34;</span>
-        <span style="color:#ff79c6">]</span>
-    <span style="color:#ff79c6">]</span>
-<span style="color:#ff79c6">}</span></code></pre></div>
-<ul>
-<li>Delete &ldquo;policy1&rdquo; in the &ldquo;test&rdquo; service using the policy id:</li>
-</ul>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ ./spctl delete policy ao3olis24hrzchwjduea --service-name<span style="color:#ff79c6">=</span><span style="color:#8be9fd;font-style:italic">test</span>
-policy ao3olis24hrzchwjduea deleted.</code></pre></div>
-<h4 id="managing-role-policies">Managing role policies</h4>
-
-<p>You can perform the following management operations on role policies.</p>
-
-<ul>
-<li>Create a new role policy named &ldquo;rolepolicy01&rdquo; in the &ldquo;test&rdquo; service:</li>
-</ul>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ ./spctl create rolepolicy rolepolicy01 -c <span style="color:#f1fa8c">&#34;grant user alan manager&#34;</span> --service-name <span style="color:#8be9fd;font-style:italic">test</span>
-rolepolicy created
-<span style="color:#ff79c6">{</span><span style="color:#f1fa8c">&#34;id&#34;</span>:<span style="color:#f1fa8c">&#34;4gskmqamoiebmidyw2fi&#34;</span>,<span style="color:#f1fa8c">&#34;name&#34;</span>:<span style="color:#f1fa8c">&#34;rolepolicy01&#34;</span>,<span style="color:#f1fa8c">&#34;effect&#34;</span>:<span style="color:#f1fa8c">&#34;grant&#34;</span>,<span style="color:#f1fa8c">&#34;roles&#34;</span>:<span style="color:#ff79c6">[</span><span style="color:#f1fa8c">&#34;manager&#34;</span><span style="color:#ff79c6">]</span>,<span style="color:#f1fa8c">&#34;principals&#34;</span>:<span style="color:#ff79c6">[</span><span style="color:#f1fa8c">&#34;user:alan&#34;</span><span style="color:#ff79c6">]</span>,<span style="color:#f1fa8c">&#34;metadata&#34;</span>:<span style="color:#ff79c6">{</span><span style="color:#f1fa8c">&#34;createby&#34;</span>:<span style="color:#f1fa8c">&#34;&#34;</span>,<span style="color:#f1fa8c">&#34;createtime&#34;</span>:<span style="color:#f1fa8c">&#34;2019-02-12T23:00:44-08:00&#34;</span><span style="color:#ff79c6">}}</span></code></pre></div>
-<ul>
-<li>Get the role policy using the policy id:</li>
-</ul>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ ./spctl get rolepolicy 4gskmqamoiebmidyw2fi --service-name <span style="color:#8be9fd;font-style:italic">test</span>
-<span style="color:#ff79c6">{</span>
-    <span style="color:#f1fa8c">&#34;effect&#34;</span>: <span style="color:#f1fa8c">&#34;grant&#34;</span>,
-    <span style="color:#f1fa8c">&#34;id&#34;</span>: <span style="color:#f1fa8c">&#34;4gskmqamoiebmidyw2fi&#34;</span>,
-    <span style="color:#f1fa8c">&#34;metadata&#34;</span>: <span style="color:#ff79c6">{</span>
-        <span style="color:#f1fa8c">&#34;createby&#34;</span>: <span style="color:#f1fa8c">&#34;&#34;</span>,
-        <span style="color:#f1fa8c">&#34;createtime&#34;</span>: <span style="color:#f1fa8c">&#34;2019-02-12T23:00:44-08:00&#34;</span>
-    <span style="color:#ff79c6">}</span>,
-    <span style="color:#f1fa8c">&#34;name&#34;</span>: <span style="color:#f1fa8c">&#34;rolepolicy01&#34;</span>,
-    <span style="color:#f1fa8c">&#34;principals&#34;</span>: <span style="color:#ff79c6">[</span>
-        <span style="color:#f1fa8c">&#34;user:alan&#34;</span>
-    <span style="color:#ff79c6">]</span>,
-    <span style="color:#f1fa8c">&#34;roles&#34;</span>: <span style="color:#ff79c6">[</span>
-        <span style="color:#f1fa8c">&#34;manager&#34;</span>
-    <span style="color:#ff79c6">]</span>
-<span style="color:#ff79c6">}</span></code></pre></div>
-<ul>
-<li>Delete the role policy using the policy id:</li>
-</ul>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ ./spctl delete rolepolicy 4gskmqamoiebmidyw2fi --service-name <span style="color:#8be9fd;font-style:italic">test</span>
-rolepolicy 4gskmqamoiebmidyw2fi deleted.</code></pre></div>
   </div>
 </div>
 </main><div class="sidebar">

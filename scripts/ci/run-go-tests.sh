@@ -74,6 +74,8 @@ case "${mode}" in
     toolchain=$(go env GOVERSION)
     python3 website/tests/check_quick_start.py --toolchain "${toolchain}"
     python3 website/tests/check_embedded.py --toolchain "${toolchain}" --candidate
+    go test -count=1 ./website/tests/docscheck
+    python3 website/tests/check_docs.py
     ;;
   nightly)
     mkdir -p "${results}"; : > "${results}/checks.txt"
