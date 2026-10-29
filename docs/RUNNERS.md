@@ -24,6 +24,7 @@ The group also restricts access to these exact default-branch workflows:
 - `teramoby/speedle-plus/.github/workflows/go-ci-worker.yml@refs/heads/master`
 - `teramoby/speedle-plus/.github/workflows/reviewbot.yml@refs/heads/master`
 - `teramoby/speedle-plus/.github/workflows/reviewbot-command.yml@refs/heads/master`
+- `teramoby/speedle-plus/.github/workflows/mongodb-nightly-validation.yml@refs/heads/master`
 
 `ci.yml` calls the reusable Go worker at `@master`. Jobs are defined in that
 trusted callee, which derives runner eligibility and checkout SHA from the
@@ -132,8 +133,8 @@ label for workflow validation.
 ## Database regression allocation
 
 MySQL validation stays on charming. MongoDB validation selects the
-`speedle-runner` label, which charming, charming-2 and fiona carry, and accepts
-macOS ARM64 or Linux x64. It shares the nightly's concurrency group, so the two
+`speedle-runner` label, which charming, charming-2 and fiona (macOS ARM64, also
+in the `Speedle` group) carry, and accepts macOS ARM64 or Linux x64. It shares the nightly's concurrency group, so the two
 never run at once on the etcd ports.
 The MongoDB launcher owns a temporary native replica set, and both launchers use
 `scripts/ci/store_regression.py` for the same full Go and native PMS/ADS runtime

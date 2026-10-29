@@ -138,6 +138,6 @@ when their database is absent. Skips and failures are included in the summary.
 The engine then builds/starts native PMS and ADS over one database, runs fixture
 preparation, and executes every tagged ADS runtime/cache test.
 
-MySQL remains on charming. MongoDB validation uses `runs-on: fiona-speedle` and
-an owned macOS ARM64 replica set on fiona. This does not change the runner-group
-workflow allowlist or merge/deploy either backend automatically.
+MySQL remains on charming. MongoDB validation runs on any `speedle-runner`
+(charming, charming-2 or fiona) against an owned replica set; see
+`docs/RUNNERS.md`. Neither backend is merged or deployed automatically.
