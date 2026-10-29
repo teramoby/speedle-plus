@@ -29,7 +29,7 @@
       <guid>https://speedle.io/zh/docs/store/</guid>
       <description>内置存储与扩展接口 独立服务在 pkg/store 下注册 file、etcd、MongoDB、MySQL 实现。可用不代表具有相同的运维保证，部署前应分别审查后端认证、持久化、事务与 watch 行为。下方配置说明属性名称，本地示例不涉及启动 etcd/MongoDB 集群。
 完整后端实现 pms.PolicyStoreManager：服务、授权策略、角色策略、函数管理，以及快照读取与 watch/stop。ADS 接受较窄的只读/watch 接口 PolicyStoreManagerADS。实现新后端时应以实际接口为准，不能照搬历史文档中不完整的方法列表。
-逐步部署教程：MySQL 配置指南与 etcd 配置指南。
+逐步部署教程：MySQL 配置指南、etcd 配置指南与 MongoDB 配置指南。
 MySQL 8.4 策略存储 按照 MySQL 配置指南逐步建库、创建 PMS/ADS 独立账号、配置并启动服务，最后验证策略同步和授权结果。
 mysql 后端完整实现 PMS 与 ADS 所需的策略存储接口，首版不支持 Discover 访问请求收集和策略生成。使用纯 Go 的 go-sql-driver/mysql 驱动；数据库需要预先创建。
 { &amp;#34;storeConfig&amp;#34;: { &amp;#34;storeType&amp;#34;: &amp;#34;mysql&amp;#34;, &amp;#34;storeProps&amp;#34;: { &amp;#34;MySQLDSN&amp;#34;: &amp;#34;speedle:replace-me@tcp(db.example.com:3306)/speedle?tls=true&amp;#34;, &amp;#34;MySQLInitSchema&amp;#34;: true, &amp;#34;MySQLPollInterval&amp;#34;: &amp;#34;1s&amp;#34;, &amp;#34;MySQLQueryTimeout&amp;#34;: &amp;#34;10s&amp;#34; } }, &amp;#34;enableWatch&amp;#34;: true }    配置属性 命令行参数 默认值     MySQLDSN --mysqlstore-dsn 必填，包含数据库名   MySQLInitSchema --mysqlstore-init-schema true   MySQLPollInterval --mysqlstore-poll-interval 1s   MySQLQueryTimeout --mysqlstore-query-timeout 10s    环境变量沿用相同映射，例如 SPDL_MYSQLSTORE_DSN。时间间隔必须是正的时长字符串；MySQLInitSchema 接受 JSON 布尔值或布尔字符串。优先级依次为显式参数、非空环境变量、配置文件、默认值。嵌入使用时导入 pkg/store/mysql，直接将上述属性传给 store.</description>

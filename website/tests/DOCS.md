@@ -43,9 +43,12 @@ Container build/push and Kubernetes admission/rollout require a target registry/
 | `store/_index` | Updated in both languages | Paired native commands and API results |
 | `store/mysql` | Added in both languages | Docker MySQL 8.4, native PMS/ADS, provisioning, live updates and restart checks |
 | `store/etcd` | Added in both languages | External Docker etcd, shared prefix, Allow/Deny, watch updates, snapshot and container restart |
+| `store/mongodb` | Added in both languages | Docker MongoDB replica set, shared database, Allow/Deny, change stream updates, stored documents, backup and container restart |
 | `usecases` | Reviewed; retained | Source review; no obsolete build/API example found |
 | `versions` | Updated in both languages | Published release/tag links |
 
 `check_mysql.py` executes both MySQL setup guides against owned Docker containers and named volumes, with native race-enabled PMS/ADS. It checks account grants, automatic schema creation, read-only ADS, allow/deny, polling propagation, process restart, and prebuilt schemas after revoking DDL privileges. The hosted MySQL CI job and charming MySQL nightly run this checker; the global documentation gate checks its paired commands and Bash syntax.
 
 `check_etcd.py` executes the paired external-etcd setup guides using disposable Docker containers/volumes and native race-enabled PMS/ADS. It checks startup, initial policy load, live watch updates, stored keys, snapshot creation/export/status, and authorization persistence across an etcd container restart. TLS configuration JSON is checked statically; external production certificates and multi-member operation require environment-specific verification. The hosted storage CI job runs it for code, site-tooling and documentation changes.
+
+`check_mongodb.py` executes the paired MongoDB setup guides against an owned single-node replica set in Docker, with native race-enabled PMS/ADS. It checks replica set initialization, initial policy load, live change stream updates, the stored service document, a `mongodump` archive, and authorization persistence across a MongoDB container restart. The production connection string is checked statically; authentication, TLS and multi-member operation require environment-specific verification. The hosted storage CI job runs it with the etcd and MySQL guide checks.

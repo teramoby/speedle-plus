@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+    <meta name="generator" content="Hugo 0.48" />
+    <link rel="icon" type="image/png" sizes="1024x1024" href="https://speedle.io/images/speedle_black.png">
+
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1"><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>MongoDB 配置指南 - Speedle</title>
+<meta name="description" content="逐步部署 MongoDB 策略存储，配置 PMS/ADS，并验证同步和持久化。">
+<meta name="generator" content="Hugo 0.48" />
+<link href="https://speedle.io/index.xml" rel="alternate" type="application/rss+xml">
+<link rel="canonical" href="https://speedle.io/zh/docs/store/mongodb/">
+<link rel="stylesheet" href="/css/theme.min.css">
+<script src="https://use.fontawesome.com/releases/v5.0.6/js/all.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+<script src="/js/functions.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jquery.easing@1.4.1/jquery.easing.min.js"></script>
+
+
+<script src="/js/jquery.backtothetop/jquery.backtothetop.min.js"></script>
+
+<script type="text/javascript" src="/js/tocbot.min.js"></script>
+<link href="/css/font.css" rel="stylesheet" type="text/css">
+    <link href="/css/kube.min.css" rel="stylesheet" type="text/css">
+    <link href="/css/kube.legenda.css" rel="stylesheet" type="text/css">
+    <link href="/css/highlight.css" rel="stylesheet" type="text/css">
+    <link href="/css/master.css" rel="stylesheet" type="text/css">
+    <link href="/css/kube.demo.css" rel="stylesheet" type="text/css">
+    <link href="/css/swagger-ui.css" rel="stylesheet" type="text/css">
+    
+    
+    <link href="/css/custom.css" rel="stylesheet" type="text/css">
+    <link href="https://fonts.googleapis.com/css?family=IBM+Plex+Sans" rel="stylesheet">
+    <link href="/css/brand.css?v=1" rel="stylesheet" type="text/css">
+    <link href="/css/navigation.css?v=header-20261027" rel="stylesheet">
+    <script src="/js/navigation.js?v=header-20261027" defer></script>
+</head>
+
+<body class="page-kube" style="background: none">
+    <header class="site-header">
+    <div class="wrap nav">
+      <a class="brand" href="/zh/#top" aria-label="Speedle 中文首页"><img src="/img/speedle/Speedle_logo_home_bold.svg?v=4" alt="Speedle"></a>
+      <button class="menu" type="button" aria-expanded="false" aria-controls="nav-links" aria-label="展开导航">☰</button>
+      <nav class="nav-links" id="nav-links" aria-label="主导航">
+        <a href="/zh/#about">关于</a><a href="/zh/#features">功能</a><a href="/zh/#integrations">集成</a>
+        <a href="/zh/quick-start/">快速入门</a><a href="/zh/docs/">文档</a><a href="/zh/playground/">Playground</a>
+        <a href="/docs/store/mongodb/" lang="en" hreflang="en" aria-label="Switch to English">English</a>
+        <a class="nav-github" href="https://github.com/teramoby/speedle-plus">GitHub</a>
+      </nav>
+    </div>
+  </header>
+    <div class="container">
+        <div class="content-container">
+            <main>
+<div id="main">
+  
+  <h1>MongoDB 配置指南</h1>
+  <p>启动 MongoDB 副本集，连接 PMS 与 ADS，验证策略自动更新，并创建备份。</p>
+
+  
+<script type="text/javascript">
+document.addEventListener("DOMContentLoaded",
+function(){
+tocbot.init({
+tocSelector: '.js-toc',
+contentSelector: '.content',
+headingSelector: 'h2'
+})
+}
+);
+</script>
+
+
+<nav id="contents">
+    <ol class="js-toc">
+    </ol>
+</nav>
+
+
+
+
+
+
+  <br />
+  <div id="kube-component" class="content">
+    
+
+<p>本指南使用 <strong>MongoDB 7.0.16</strong> 单节点副本集和 Docker 持久化卷。PMS 写入策略，ADS 通过 change stream 跟踪同一个数据库。本地示例只监听回环地址且不开启身份认证，用于开发环境；生产环境的身份认证、TLS 与副本集配置见后文。</p>
+
+<p>MongoDB 必须以<strong>副本集或分片集群</strong>方式运行：ADS 使用 change stream 监听数据库，整体替换策略存储时使用事务，独立运行的 <code>mongod</code> 两者都不支持。开发环境使用单节点副本集即可。</p>
+
+<h2 id="1-编译-speedle">1. 编译 Speedle</h2>
+
+<p>准备 Bash、Git、curl、已启动的 Docker，以及 Go 1.26.10 或 Go 1.27.3，然后从源码编译：</p>
+
+<!-- mongodb-step: build -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">git clone --depth <span style="color:#bd93f9">1</span> https://github.com/teramoby/speedle-plus.git
+<span style="color:#8be9fd;font-style:italic">cd</span> speedle-plus
+mkdir -p bin
+go build -o ./bin/ ./cmd/spctl ./cmd/speedle-pms ./cmd/speedle-ads</code></pre></div>
+<p>后续命令均在这个代码目录执行。确认 27017、6733、6734 端口可用；修改端口时要同步修改命令和配置。</p>
+
+<h2 id="2-启动-mongodb">2. 启动 MongoDB</h2>
+
+<p>命名卷保存 MongoDB 数据。<code>--replSet</code> 让 <code>mongod</code> 作为副本集 <code>speedle-rs</code> 的成员启动；只把数据库端口发布到宿主机的回环地址。</p>
+
+<!-- mongodb-step: database -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker run --name speedle-mongodb --detach <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  --publish <span style="color:#bd93f9">127</span>.0.0.1:27017:27017 <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  --volume speedle-mongodb-data:/data/db <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  mongo:7.0.16 <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  --replSet speedle-rs --bind_ip_all</code></pre></div>
+<p>等待服务开始接受命令：</p>
+
+<!-- mongodb-step: ready -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#ff79c6">until</span> docker <span style="color:#8be9fd;font-style:italic">exec</span> speedle-mongodb mongosh --quiet <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  --eval <span style="color:#f1fa8c">&#39;db.adminCommand({ping: 1}).ok&#39;</span> &gt;/dev/null <span style="color:#bd93f9">2</span>&gt;&amp;<span style="color:#bd93f9">1</span>
+<span style="color:#ff79c6">do</span>
+  sleep <span style="color:#bd93f9">1</span>
+<span style="color:#ff79c6">done</span></code></pre></div>
+<p>如果已有 MongoDB 副本集，可跳过容器命令和第 3 步，在下文使用它的连接字符串。容器用法详见<a href="https://hub.docker.com/_/mongo">官方 Docker 镜像说明</a>。</p>
+
+<h2 id="3-初始化副本集">3. 初始化副本集</h2>
+
+<p>以这台服务器作为唯一成员初始化副本集（只需执行一次），并等待它成为主节点：</p>
+
+<!-- mongodb-step: replica-set -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker <span style="color:#8be9fd;font-style:italic">exec</span> speedle-mongodb mongosh --quiet --eval <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  <span style="color:#f1fa8c">&#39;rs.initiate({_id: &#34;speedle-rs&#34;, members: [{_id: 0, host: &#34;127.0.0.1:27017&#34;}]})&#39;</span>
+<span style="color:#ff79c6">until</span> docker <span style="color:#8be9fd;font-style:italic">exec</span> speedle-mongodb mongosh --quiet <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  --eval <span style="color:#f1fa8c">&#39;db.hello().isWritablePrimary&#39;</span> | grep -qx <span style="color:#8be9fd;font-style:italic">true</span>
+<span style="color:#ff79c6">do</span>
+  sleep <span style="color:#bd93f9">1</span>
+<span style="color:#ff79c6">done</span></code></pre></div>
+<p>成员地址 <code>127.0.0.1:27017</code> 会告知客户端去连接，因此 PMS 和 ADS 必须能访问这个地址。这里端口发布在相同的回环地址上，所以可以访问。副本集配置保存在数据卷中，容器重启后不要再次执行 <code>rs.initiate</code>。</p>
+
+<h2 id="4-配置共享存储">4. 配置共享存储</h2>
+
+<p>为本地这一组 PMS/ADS 创建配置文件：</p>
+
+<!-- mongodb-step: configuration -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">mkdir -p mongodb-demo
+cat &gt; mongodb-demo/config.json <span style="color:#f1fa8c">&lt;&lt;&#39;JSON&#39;
+</span><span style="color:#f1fa8c">{
+</span><span style="color:#f1fa8c">  &#34;storeConfig&#34;: {
+</span><span style="color:#f1fa8c">    &#34;storeType&#34;: &#34;mongodb&#34;,
+</span><span style="color:#f1fa8c">    &#34;storeProps&#34;: {
+</span><span style="color:#f1fa8c">      &#34;MongoURI&#34;: &#34;mongodb://127.0.0.1:27017/?replicaSet=speedle-rs&#34;,
+</span><span style="color:#f1fa8c">      &#34;MongoDatabase&#34;: &#34;speedle_demo&#34;
+</span><span style="color:#f1fa8c">    }
+</span><span style="color:#f1fa8c">  },
+</span><span style="color:#f1fa8c">  &#34;enableWatch&#34;: true
+</span><span style="color:#f1fa8c">}
+</span><span style="color:#f1fa8c">JSON</span></code></pre></div>
+<p>PMS 与 ADS 必须使用<strong>同一个部署和同一个数据库</strong>。每个独立的策略存储使用单独的数据库；服务和函数分别保存在 <code>services</code> 和 <code>functions</code> 集合中。MongoDB 在首次写入时自动创建数据库和集合，无需初始化 schema。<code>enableWatch: true</code> 让 ADS 通过 change stream 获取更新，无需配置轮询间隔。</p>
+
+<h2 id="5-启动-pms">5. 启动 PMS</h2>
+
+<p>在终端 A 启动 PMS，并保持运行：</p>
+
+<!-- mongodb-step: pms -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./bin/speedle-pms --config-file mongodb-demo/config.json --endpoint <span style="color:#bd93f9">127</span>.0.0.1:6733 --insecure<span style="color:#ff79c6">=</span>true</code></pre></div>
+<p>等待 REST 监听启动。本演示仅在回环地址使用 HTTP；Speedle 自身的 TLS 与 API 授权见<a href="/zh/docs/security/">安全</a>。</p>
+
+<h2 id="6-创建策略">6. 创建策略</h2>
+
+<p>在终端 B 的同一代码目录中，授予 Alice 读取 <code>book</code> 的权限：</p>
+
+<!-- mongodb-step: policy -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl -fsS -X POST http://127.0.0.1:6733/policy-mgmt/v1/service <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  -H <span style="color:#f1fa8c">&#39;Content-Type: application/json&#39;</span> <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  -d <span style="color:#f1fa8c">&#39;{&#34;name&#34;:&#34;mongodb-demo&#34;,&#34;type&#34;:&#34;application&#34;,&#34;policies&#34;:[{&#34;name&#34;:&#34;alice-read&#34;,&#34;effect&#34;:&#34;grant&#34;,&#34;principals&#34;:[[&#34;user:alice&#34;]],&#34;permissions&#34;:[{&#34;resource&#34;:&#34;book&#34;,&#34;actions&#34;:[&#34;read&#34;]}]}]}&#39;</span></code></pre></div>
+<p>PMS 返回服务及生成的策略 ID，策略此时已写入 MongoDB。</p>
+
+<h2 id="7-启动-ads-并验证授权">7. 启动 ADS 并验证授权</h2>
+
+<p>在终端 C 使用同一个配置文件启动 ADS，并保持运行：</p>
+
+<!-- mongodb-step: ads -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./bin/speedle-ads --config-file mongodb-demo/config.json --endpoint <span style="color:#bd93f9">127</span>.0.0.1:6734 --insecure<span style="color:#ff79c6">=</span>true</code></pre></div>
+<p>等待启动完成，然后在终端 B 执行以下检查。Alice 应被允许：</p>
+
+<!-- mongodb-step: allow -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl -fsS -X POST http://127.0.0.1:6734/authz-check/v1/is-allowed <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  -H <span style="color:#f1fa8c">&#39;Content-Type: application/json&#39;</span> <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  -d <span style="color:#f1fa8c">&#39;{&#34;subject&#34;:{&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;,&#34;name&#34;:&#34;alice&#34;}]},&#34;serviceName&#34;:&#34;mongodb-demo&#34;,&#34;resource&#34;:&#34;book&#34;,&#34;action&#34;:&#34;read&#34;}&#39;</span></code></pre></div>
+<p>预期结果：<code>{&quot;allowed&quot;:true,&quot;reason&quot;:0}</code>。Bob 没有匹配的授权：</p>
+
+<!-- mongodb-step: deny -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl -fsS -X POST http://127.0.0.1:6734/authz-check/v1/is-allowed <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  -H <span style="color:#f1fa8c">&#39;Content-Type: application/json&#39;</span> <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  -d <span style="color:#f1fa8c">&#39;{&#34;subject&#34;:{&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;,&#34;name&#34;:&#34;bob&#34;}]},&#34;serviceName&#34;:&#34;mongodb-demo&#34;,&#34;resource&#34;:&#34;book&#34;,&#34;action&#34;:&#34;read&#34;}&#39;</span></code></pre></div>
+<p>预期结果：<code>{&quot;allowed&quot;:false,&quot;reason&quot;:3}</code>。</p>
+
+<h2 id="8-验证存储的文档和自动更新">8. 验证存储的文档和自动更新</h2>
+
+<p>查看服务文档，服务名保存在 <code>_id</code> 中：</p>
+
+<!-- mongodb-step: documents -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker <span style="color:#8be9fd;font-style:italic">exec</span> speedle-mongodb mongosh speedle_demo --quiet --eval <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  <span style="color:#f1fa8c">&#39;db.services.find({}, {&#34;policies.name&#34;: 1, &#34;policies.effect&#34;: 1}).toArray()&#39;</span></code></pre></div>
+<p>输出中应包含 <code>_id: 'mongodb-demo'</code> 及其 <code>alice-read</code> 授权。这些文档由存储后端管理，策略变更请通过 PMS 完成。</p>
+
+<p>保持 ADS 运行，为 Alice 新增一条拒绝策略：</p>
+
+<!-- mongodb-step: update -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl -fsS -X POST http://127.0.0.1:6733/policy-mgmt/v1/service/mongodb-demo/policy <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  -H <span style="color:#f1fa8c">&#39;Content-Type: application/json&#39;</span> <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  -d <span style="color:#f1fa8c">&#39;{&#34;name&#34;:&#34;alice-deny&#34;,&#34;effect&#34;:&#34;deny&#34;,&#34;principals&#34;:[[&#34;user:alice&#34;]],&#34;permissions&#34;:[{&#34;resource&#34;:&#34;book&#34;,&#34;actions&#34;:[&#34;read&#34;]}]}&#39;</span></code></pre></div>
+<p>再次执行第 7 步 Alice 的请求。change stream 异步更新后，应返回 <code>{&quot;allowed&quot;:false,&quot;reason&quot;:1}</code>。如果同步尚未完成，稍后重试；这种正常策略更新无需重启 ADS。</p>
+
+<h2 id="9-创建备份并验证持久化">9. 创建备份并验证持久化</h2>
+
+<p>把策略数据库导出为归档文件，并复制到容器外：</p>
+
+<!-- mongodb-step: backup -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker <span style="color:#8be9fd;font-style:italic">exec</span> speedle-mongodb mongodump --quiet <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  --db speedle_demo --archive<span style="color:#ff79c6">=</span>/tmp/speedle-demo.archive
+docker cp speedle-mongodb:/tmp/speedle-demo.archive ./mongodb-demo/speedle-demo.archive</code></pre></div>
+<p>归档只包含 <code>speedle_demo</code> 数据库。备份应保存在独立且有访问控制的存储上。恢复时先停止策略写入，再对主节点执行 <code>mongorestore --drop --archive=...</code>，详见<a href="https://www.mongodb.com/docs/manual/tutorial/backup-and-restore-tools/">官方备份与恢复指南</a>。</p>
+
+<p>先按 Ctrl+C 停止 PMS 和 ADS，再执行容器重启检查：</p>
+
+<!-- mongodb-step: restart -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker restart speedle-mongodb</code></pre></div>
+<p>执行第 2 步和第 3 步中的两个等待循环（跳过 <code>rs.initiate</code>），再用原配置重新启动 PMS 与 ADS。重复 Alice 的请求，仍应返回 <code>{&quot;allowed&quot;:false,&quot;reason&quot;:1}</code>，说明命名卷在容器重启后保留了数据和副本集配置。</p>
+
+<p>恢复数据后，重启 ADS，让它读取恢复后的策略，再对外提供授权服务。恢复后应重新验证授权结果；原来运行中的缓存不能证明已包含恢复后的策略集。</p>
+
+<h2 id="生产环境-身份认证-tls-与副本集">生产环境：身份认证、TLS 与副本集</h2>
+
+<p>开启访问控制，为 PMS 和 ADS 分别创建用户，并通过 TLS 连接。PMS 需要策略数据库的 <code>readWrite</code> 角色；ADS 只读取和监听，内置的 <code>read</code> 角色即可，其用户无法修改策略：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-javascript" data-lang="javascript">use speedle
+db.createUser({user<span style="color:#ff79c6">:</span> <span style="color:#f1fa8c">&#34;speedle-pms&#34;</span>, pwd<span style="color:#ff79c6">:</span> passwordPrompt(), roles<span style="color:#ff79c6">:</span> [{role<span style="color:#ff79c6">:</span> <span style="color:#f1fa8c">&#34;readWrite&#34;</span>, db<span style="color:#ff79c6">:</span> <span style="color:#f1fa8c">&#34;speedle&#34;</span>}]})
+db.createUser({user<span style="color:#ff79c6">:</span> <span style="color:#f1fa8c">&#34;speedle-ads&#34;</span>, pwd<span style="color:#ff79c6">:</span> passwordPrompt(), roles<span style="color:#ff79c6">:</span> [{role<span style="color:#ff79c6">:</span> <span style="color:#f1fa8c">&#34;read&#34;</span>, db<span style="color:#ff79c6">:</span> <span style="color:#f1fa8c">&#34;speedle&#34;</span>}]})
+</code></pre></div>
+<p>再为每个服务配置各自的连接字符串：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">{
+  <span style="color:#ff79c6">&#34;storeConfig&#34;</span>: {
+    <span style="color:#ff79c6">&#34;storeType&#34;</span>: <span style="color:#f1fa8c">&#34;mongodb&#34;</span>,
+    <span style="color:#ff79c6">&#34;storeProps&#34;</span>: {
+      <span style="color:#ff79c6">&#34;MongoURI&#34;</span>: <span style="color:#f1fa8c">&#34;mongodb://speedle-ads:replace-me@mongo1.example.com:27017,mongo2.example.com:27017,mongo3.example.com:27017/?replicaSet=speedle-rs&amp;authSource=speedle&amp;tls=true&amp;tlsCAFile=/etc/speedle/mongodb/ca.pem&#34;</span>,
+      <span style="color:#ff79c6">&#34;MongoDatabase&#34;</span>: <span style="color:#f1fa8c">&#34;speedle&#34;</span>
+    }
+  },
+  <span style="color:#ff79c6">&#34;enableWatch&#34;</span>: <span style="color:#ff79c6">true</span>
+}</code></pre></div>
+<p>CA 路径位于 PMS/ADS 主机上。URI 中的凭据需要进行百分号编码，包含凭据的配置文件应仅允许服务账号读取；也可以通过 <code>SPDL_MONGOSTORE_URI</code> 传入 URI。<a href="https://www.mongodb.com/docs/manual/reference/connection-string/">MongoDB 连接字符串</a>的所有选项都会原样传给 Go 驱动，包括客户端证书（<code>tlsCertificateKeyFile</code>）和其他认证机制。连接 MongoDB 的 TLS 与 Speedle REST/gRPC 监听端的 TLS 分别配置。</p>
+
+<p>副本集开启访问控制后，成员之间也需要通过 key file 或 X.509 证书认证。详见官方<a href="https://www.mongodb.com/docs/manual/tutorial/deploy-replica-set-with-keyfile-access-control/">使用 keyfile 认证部署副本集</a>和<a href="https://www.mongodb.com/docs/manual/tutorial/configure-ssl/">配置 TLS</a>。</p>
+
+<p>高可用部署至少使用三个数据节点，并在连接字符串中列出多个成员。单节点演示无法承受唯一成员故障。选举新主节点期间，通过 PMS 的写入可能失败，选举完成后重试即可。</p>
+
+<h2 id="配置速查与故障排查">配置速查与故障排查</h2>
+
+<table>
+<thead>
+<tr>
+<th>配置属性</th>
+<th>命令行参数</th>
+<th>环境变量</th>
+<th>默认值</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td><code>MongoURI</code></td>
+<td><code>--mongostore_uri</code></td>
+<td><code>SPDL_MONGOSTORE_URI</code></td>
+<td><code>mongodb://localhost:27017</code></td>
+</tr>
+
+<tr>
+<td><code>MongoDatabase</code></td>
+<td><code>--mongostore_database</code></td>
+<td><code>SPDL_MONGOSTORE_DATABASE</code></td>
+<td><code>speedleplus</code></td>
+</tr>
+</tbody>
+</table>
+
+<p>配置优先级为：显式参数 → 非空环境变量 → 配置文件 → 默认值。使用 <code>--store-type mongodb</code> 或 <code>SPDL_STORE_TYPE=mongodb</code> 选择后端。内嵌使用时，导入 <code>pkg/store/mongodb</code>，并把这些属性传给 <code>store.NewStore</code>。</p>
+
+<p>运维时需要了解的行为：</p>
+
+<ul>
+<li>整体替换策略存储（<code>WritePolicyStore</code>）在一个事务中完成，保留已提供的策略 ID 并为缺失的策略生成 ID；在独立运行的服务器上会失败，且不修改现有数据。</li>
+<li>删除全部服务或函数时保留集合，change stream 保持打开，ADS 会移除对应的缓存。</li>
+<li>读取整个存储时分别读取服务和函数，不是同一个快照。</li>
+<li>change stream 因错误结束后，ADS 保留最后加载的策略，不会重新打开 change stream；数据库恢复后请重启 ADS。</li>
+<li>不支持 Discover 访问请求收集和策略生成；file 与 etcd 存储支持该功能。</li>
+</ul>
+
+<table>
+<thead>
+<tr>
+<th>现象</th>
+<th>检查项</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td>启动时 server selection 超时</td>
+<td>副本集是否已初始化并有主节点、<code>rs.conf()</code> 中的成员地址能否从 PMS/ADS 访问、URI 主机与端口、防火墙。</td>
+</tr>
+
+<tr>
+<td>ADS 退出并报告 <code>The $changeStream stage is only supported on replica sets</code></td>
+<td>当前是独立运行的 <code>mongod</code>；请使用副本集或分片集群。</td>
+</tr>
+
+<tr>
+<td>PMS 已写入，但 ADS 找不到服务</td>
+<td>两份配置中的 URI 部署和 <code>MongoDatabase</code> 名称是否一致。</td>
+</tr>
+
+<tr>
+<td>策略变更未同步到 ADS</td>
+<td>watch 是否开启及 ADS 日志中的 change stream 错误；恢复后重启 ADS。</td>
+</tr>
+
+<tr>
+<td>身份认证失败</td>
+<td>用户名、密码编码、<code>authSource</code> 以及策略数据库上的角色。</td>
+</tr>
+
+<tr>
+<td>TLS 错误</td>
+<td><code>tls=true</code>、CA 文件路径和证书主机名。</td>
+</tr>
+</tbody>
+</table>
+
+<p>后端接口和配置合并规则详见<a href="/zh/docs/store/">存储扩展</a>。</p>
+
+  </div>
+</div>
+</main><div class="sidebar">
+<nav>
+<ul>
+
+
+
+<li class="parent"><span>Speedle文档</span>
+<ul class="sub-menu">
+<li class=""><a href="/zh/docs/usecases/">使用场景</a></li>
+<li class=""><a href="/zh/docs/overview/">概览</a></li>
+<li class=""><a href="/zh/docs/spdl/">SPDL - Speedle 策略定义语言</a></li>
+<li class=""><a href="/zh/docs/architecture/">系统架构</a></li>
+<li class=""><a href="/zh/docs/deployment-embeded/">Speedle嵌入模式</a></li>
+<li class=""><a href="/zh/docs/deployment/">Speedle服务的部署方式</a></li>
+
+
+
+<li class=""><span>Speedle策略</span>
+<ul class="">
+<li class=""><a href="/zh/docs/pms/policy-mgmt/">策略管理</a></li>
+<li class=""><a href="/zh/docs/pms/global-policy/">全局角色策略</a></li>
+<li class=""><a href="/zh/docs/pms/diagnosis/">授权诊断</a></li>
+<li class=""><a href="/zh/docs/pms/discover/">策略发现</a></li>
+</ul>
+  
+</li>
+<li class=""><a href="/zh/docs/decisions/">授权查询</a></li>
+<li class=""><a href="/zh/docs/idd/">用户身份域</a></li>
+<li class=""><a href="/zh/docs/assertor/">令牌用户身份断言</a></li>
+
+
+
+<li class="parent"><a href="/zh/docs/store/">存储扩展</a>
+<ul class="sub-menu">
+<li class=""><a href="/zh/docs/store/mysql/">MySQL 配置指南</a></li>
+<li class=""><a href="/zh/docs/store/etcd/">etcd 配置指南</a></li>
+<li class="active"><a href="/zh/docs/store/mongodb/">MongoDB 配置指南</a></li>
+</ul>
+  
+</li>
+
+
+
+<li class=""><span>API</span>
+<ul class="">
+<li class=""><a href="/zh/docs/api/decision_api/">Authorization Runtime/Decision API</a></li>
+<li class=""><a href="/zh/docs/api/management_api/">Policy Management API</a></li>
+<li class=""><a href="/zh/docs/api/asserter_api/">Token Assertion Plugin API</a></li>
+</ul>
+  
+</li>
+<li class=""><a href="/zh/docs/security/">安全</a></li>
+<li class=""><a href="/zh/docs/logging/">日志</a></li>
+<li class=""><a href="/zh/docs/versions/">版本</a></li>
+<li class=""><a href="/zh/docs/custom-function/">Custom Function</a></li>
+</ul>
+  
+</li>
+
+
+
+
+</ul>
+</nav>
+
+
+<div class="sidebar-footer"></div>
+</div>
+</div>
+    </div>
+    <footer class="row"> <div class="col col-3">
+  Licensed under <a href="https://oss.oracle.com/licenses/upl/">UPL</a>
+</div>
+<div class="col col-6 center">
+  <div>Copyright &copy; 2019–2026. All rights reserved.</div>
+</div>
+<div class="col col-3">
+  <nav>
+    <a title="contact@speedle.io" aria-label="发送邮件至 contact@speedle.io" href="mailto:contact@speedle.io">
+      <img src="/img/speedle/28. Mail.svg" alt="" />
+    </a>
+    <a title="Google Groups — speedle-users" aria-label="Google Groups 讨论组" href="https://groups.google.com/forum/#!forum/speedle-users">
+      <img src="/img/speedle/Google-Groups.svg" alt="" />
+    </a>
+    <a title="speedle" href="https://github.com/oracle/speedle">
+      <img src="/img/speedle/18. Github.svg" />
+    </a>
+    <a title="Discord" href="https://discord.gg/uaY2xVsbbT">
+      <img src="/img/speedle/Discord.svg" />
+    </a>
+  </nav>
+</div>
+</footer>
+    <script src="/js/kube.js" type="text/javascript">
+    </script>
+    <script src="/js/kube.legenda.js" type="text/javascript">
+    </script>
+    <script src="/js/master.js?v=language-direct-20261026" type="text/javascript">
+    </script>
+</body>
+
+</html>

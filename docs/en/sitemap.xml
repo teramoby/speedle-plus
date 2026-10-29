@@ -246,6 +246,20 @@
   </url>
   
   <url>
+    <loc>https://speedle.io/docs/store/mongodb/</loc>
+    <xhtml:link
+                rel="alternate"
+                hreflang="zh"
+                href="https://speedle.io/zh/docs/store/mongodb/"
+                />
+    <xhtml:link
+                rel="alternate"
+                hreflang="en"
+                href="https://speedle.io/docs/store/mongodb/"
+                />
+  </url>
+  
+  <url>
     <loc>https://speedle.io/docs/idd/</loc>
     <lastmod>2019-01-17T13:20:07+08:00</lastmod>
     <xhtml:link
@@ -874,6 +888,21 @@
                 rel="alternate"
                 hreflang="en"
                 href="https://speedle.io/tags/logging/"
+                />
+  </url>
+  
+  <url>
+    <loc>https://speedle.io/tags/mongodb/</loc>
+    <priority>0</priority>
+    <xhtml:link
+                rel="alternate"
+                hreflang="zh"
+                href="https://speedle.io/zh/tags/mongodb/"
+                />
+    <xhtml:link
+                rel="alternate"
+                hreflang="en"
+                href="https://speedle.io/tags/mongodb/"
                 />
   </url>
   

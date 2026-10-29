@@ -242,6 +242,20 @@ docker run --name speedle-etcd --detach \  --publish 127.0.0.1:2379:2379 \  --vo
     </item>
     
     <item>
+      <title>MongoDB 配置指南</title>
+      <link>https://speedle.io/zh/docs/store/mongodb/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://speedle.io/zh/docs/store/mongodb/</guid>
+      <description>本指南使用 MongoDB 7.0.16 单节点副本集和 Docker 持久化卷。PMS 写入策略，ADS 通过 change stream 跟踪同一个数据库。本地示例只监听回环地址且不开启身份认证，用于开发环境；生产环境的身份认证、TLS 与副本集配置见后文。
+MongoDB 必须以副本集或分片集群方式运行：ADS 使用 change stream 监听数据库，整体替换策略存储时使用事务，独立运行的 mongod 两者都不支持。开发环境使用单节点副本集即可。
+1. 编译 Speedle 准备 Bash、Git、curl、已启动的 Docker，以及 Go 1.26.10 或 Go 1.27.3，然后从源码编译：
+git clone --depth 1 https://github.com/teramoby/speedle-plus.git cd speedle-plus mkdir -p bin go build -o ./bin/ ./cmd/spctl ./cmd/speedle-pms ./cmd/speedle-ads 后续命令均在这个代码目录执行。确认 27017、6733、6734 端口可用；修改端口时要同步修改命令和配置。
+2. 启动 MongoDB 命名卷保存 MongoDB 数据。--replSet 让 mongod 作为副本集 speedle-rs 的成员启动；只把数据库端口发布到宿主机的回环地址。
+docker run --name speedle-mongodb --detach \  --publish 127.</description>
+    </item>
+    
+    <item>
       <title>授权查询</title>
       <link>https://speedle.io/zh/docs/decisions/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>

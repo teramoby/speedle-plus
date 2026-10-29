@@ -2,7 +2,7 @@ name: MongoDB nightly validation
 
 on:
   push:
-    branches: [codex/mongodb-store-charming-validation]
+    branches: [codex/mongodb-store-charming-validation, claude/mongodb-store]
 
 permissions:
   contents: read

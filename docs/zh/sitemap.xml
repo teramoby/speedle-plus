@@ -246,6 +246,20 @@
   </url>
   
   <url>
+    <loc>https://speedle.io/zh/docs/store/mongodb/</loc>
+    <xhtml:link
+                rel="alternate"
+                hreflang="en"
+                href="https://speedle.io/docs/store/mongodb/"
+                />
+    <xhtml:link
+                rel="alternate"
+                hreflang="zh"
+                href="https://speedle.io/zh/docs/store/mongodb/"
+                />
+  </url>
+  
+  <url>
     <loc>https://speedle.io/zh/docs/decisions/</loc>
     <xhtml:link
                 rel="alternate"
@@ -817,6 +831,21 @@
                 rel="alternate"
                 hreflang="zh"
                 href="https://speedle.io/zh/tags/logging/"
+                />
+  </url>
+  
+  <url>
+    <loc>https://speedle.io/zh/tags/mongodb/</loc>
+    <priority>0</priority>
+    <xhtml:link
+                rel="alternate"
+                hreflang="en"
+                href="https://speedle.io/tags/mongodb/"
+                />
+    <xhtml:link
+                rel="alternate"
+                hreflang="zh"
+                href="https://speedle.io/zh/tags/mongodb/"
                 />
   </url>
   

@@ -182,6 +182,9 @@ jobs:
       - name: Execute bilingual etcd setup guides
         run: python3 website/tests/check_etcd.py > mysql-results/etcd-docs.log 2>&1
 
+      - name: Execute bilingual MongoDB setup guides
+        run: python3 website/tests/check_mongodb.py > mysql-results/mongodb-docs.log 2>&1
+
       - name: Upload MySQL results
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
