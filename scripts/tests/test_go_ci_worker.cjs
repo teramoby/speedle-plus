@@ -202,7 +202,7 @@ test('gate runs every package once, only store-dependent packages again with etc
     ['scripts/ci/coverage.py', 'coverage.out', '--merge', 'coverage-cli.out', '--min-file', 'scripts/ci/coverage-min.txt']);
   assert.deepEqual(records.filter(r => r.tool === 'python3').slice(1).map(r => r.args), [
     ['website/tests/check_quick_start.py', '--toolchain', 'go1.26.10'],
-    ['website/tests/check_embedded.py', '--toolchain', 'go1.26.10'],
+    ['website/tests/check_embedded.py', '--toolchain', 'go1.26.10', '--candidate'],
   ]);
   for (const record of records) {
     for (const key of cleanKeys) assert.equal(record.env[key], '', key);

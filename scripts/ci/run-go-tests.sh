@@ -73,7 +73,7 @@ case "${mode}" in
     # fenced commands/program/policy blocks; failures block the same test job.
     toolchain=$(go env GOVERSION)
     python3 website/tests/check_quick_start.py --toolchain "${toolchain}"
-    python3 website/tests/check_embedded.py --toolchain "${toolchain}"
+    python3 website/tests/check_embedded.py --toolchain "${toolchain}" --candidate
     ;;
   nightly)
     mkdir -p "${results}"; : > "${results}/checks.txt"
