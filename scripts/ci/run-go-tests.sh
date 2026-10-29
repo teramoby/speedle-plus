@@ -43,7 +43,11 @@ check() {
   # check NAME COMMAND...: run COMMAND, record its status and log.
   local name=$1 status=0
   shift
-  "$@" > "${results}/${name}.log" 2>&1 || status=$?
+  if [[ "$name" == mysql-full ]]; then
+    "$@" 2>&1 | tee "${results}/${name}.log" || status=$?
+  else
+    "$@" > "${results}/${name}.log" 2>&1 || status=$?
+  fi
   echo "${name}=${status}:${name}.log" >> "${results}/checks.txt"
   (( status == 0 )) || failed=1
   echo "${name}: exit ${status}"

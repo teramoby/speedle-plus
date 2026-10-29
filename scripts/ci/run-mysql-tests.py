@@ -99,6 +99,7 @@ def main():
 
     def suite(name, args, env=None):
         nonlocal failed
+        print(f"{name}: starting", flush=True)
         with (results / (name + ".json")).open("w") as out, (results / (name + ".stderr")).open("w") as err:
             code = subprocess.run(args, cwd=ROOT, env=env or environment, stdout=out, stderr=err).returncode
         failed |= code != 0
@@ -128,6 +129,7 @@ def main():
                     if time.monotonic() > deadline:
                         raise RuntimeError("owned MySQL container did not become ready")
                     time.sleep(1)
+            print(f"MySQL ready: container={container}, loopback_port={port}", flush=True)
             environment["SPEEDLE_MYSQL_TEST_DSN"] = f"root:{password}@tcp(127.0.0.1:{port})/speedle_test"
             # Native binaries and go test itself both run under the race detector.
             binaries = work / "bin"

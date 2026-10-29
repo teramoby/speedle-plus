@@ -1,7 +1,8 @@
 //Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
 //Licensed under the Universal Permissive License (UPL) Version 1.0 as shown at http://oss.oracle.com/licenses/upl.
 
-//+build runtime_test_prepare
+//go:build runtime_test_prepare
+// +build runtime_test_prepare
 
 package adsrest
 
@@ -11,8 +12,10 @@ import (
 	"github.com/teramoby/speedle-plus/testutil"
 )
 
-//Prepare service/policy/rolepolicy in store for runtime_test
+// Prepare service/policy/rolepolicy in store for runtime_test
 func TestPrepareCheckEnvironment(t *testing.T) {
+	// This preparer is also run on its own, before any RunTestCases call.
+	testutil.TestLog = t
 
 	cc := testutil.NewCmdClient()
 
