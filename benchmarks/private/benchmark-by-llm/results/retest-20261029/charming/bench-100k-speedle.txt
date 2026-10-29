@@ -1,0 +1,20 @@
+goos: linux
+goarch: amd64
+pkg: authzbench
+cpu: Intel(R) Core(TM) i5-7360U CPU @ 2.30GHz
+BenchmarkRBACAllow/n=100000/speedle-2 	  331192	      5530 ns/op	    2864 B/op	      47 allocs/op
+BenchmarkRBACAllow/n=100000/speedle-2 	  332847	      5111 ns/op	    2864 B/op	      47 allocs/op
+BenchmarkRBACAllow/n=100000/speedle-2 	  323970	      4607 ns/op	    2864 B/op	      47 allocs/op
+BenchmarkRBACAllow/n=100000/speedle-2 	  333187	      5358 ns/op	    2864 B/op	      47 allocs/op
+BenchmarkRBACAllow/n=100000/speedle-2 	  330913	      5378 ns/op	    2864 B/op	      47 allocs/op
+BenchmarkRBACDeny/n=100000/speedle-2  	  350698	      5321 ns/op	    2648 B/op	      45 allocs/op
+BenchmarkRBACDeny/n=100000/speedle-2  	  348446	      4674 ns/op	    2648 B/op	      45 allocs/op
+BenchmarkRBACDeny/n=100000/speedle-2  	  348555	      4864 ns/op	    2648 B/op	      45 allocs/op
+BenchmarkRBACDeny/n=100000/speedle-2  	  354781	      4957 ns/op	    2648 B/op	      45 allocs/op
+BenchmarkRBACDeny/n=100000/speedle-2  	  348696	      4323 ns/op	    2648 B/op	      45 allocs/op
+BenchmarkRBACMixed/n=100000/speedle-2 	  197700	      7506 ns/op	    2821 B/op	      46 allocs/op
+BenchmarkRBACMixed/n=100000/speedle-2 	  196472	      7837 ns/op	    2821 B/op	      46 allocs/op
+BenchmarkRBACMixed/n=100000/speedle-2 	  198184	      7468 ns/op	    2821 B/op	      46 allocs/op
+BenchmarkRBACMixed/n=100000/speedle-2 	  198646	      7856 ns/op	    2821 B/op	      46 allocs/op
+BenchmarkRBACMixed/n=100000/speedle-2 	  194954	      7765 ns/op	    2821 B/op	      46 allocs/op
+PASS

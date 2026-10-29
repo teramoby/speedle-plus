@@ -1,0 +1,4 @@
+{
+  "user_roles": {"leo": ["analyst"]},
+  "grants": {"analyst": [{"action": "read", "resource": "/reports/**"}]}
+}

@@ -1,0 +1,5 @@
+[service.app]
+[policy]
+GRANT ROLE analyst read expr:/reports/.*
+[rolepolicy]
+GRANT USER leo analyst

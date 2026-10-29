@@ -1,0 +1,55 @@
+goos: linux
+goarch: amd64
+pkg: authzbench
+cpu: Intel(R) Core(TM) i5-7360U CPU @ 2.30GHz
+BenchmarkManyUsers/n=1000/casbin-2  	   28662	     41768 ns/op	   13499 B/op	     385 allocs/op
+BenchmarkManyUsers/n=1000/casbin-2  	   29131	     41766 ns/op	   13492 B/op	     385 allocs/op
+BenchmarkManyUsers/n=1000/casbin-2  	   28820	     40671 ns/op	   13494 B/op	     385 allocs/op
+BenchmarkManyUsers/n=1000/casbin-2  	   29236	     41420 ns/op	   13490 B/op	     385 allocs/op
+BenchmarkManyUsers/n=1000/casbin-2  	   29294	     41820 ns/op	   13492 B/op	     385 allocs/op
+BenchmarkManyUsers/n=1000/casbin-cached-2         	 6577598	       179.7 ns/op	      58 B/op	       3 allocs/op
+BenchmarkManyUsers/n=1000/casbin-cached-2         	 6624556	       179.5 ns/op	      58 B/op	       3 allocs/op
+BenchmarkManyUsers/n=1000/casbin-cached-2         	 6600540	       179.8 ns/op	      58 B/op	       3 allocs/op
+BenchmarkManyUsers/n=1000/casbin-cached-2         	 6611814	       195.0 ns/op	      58 B/op	       3 allocs/op
+BenchmarkManyUsers/n=1000/casbin-cached-2         	 6597081	       181.7 ns/op	      58 B/op	       3 allocs/op
+BenchmarkManyUsers/n=1000/casbin-tuned-2          	   42540	     28666 ns/op	    9111 B/op	     201 allocs/op
+BenchmarkManyUsers/n=1000/casbin-tuned-2          	   41005	     28495 ns/op	    9111 B/op	     201 allocs/op
+BenchmarkManyUsers/n=1000/casbin-tuned-2          	   42848	     28013 ns/op	    9114 B/op	     201 allocs/op
+BenchmarkManyUsers/n=1000/casbin-tuned-2          	   42502	     29135 ns/op	    9112 B/op	     201 allocs/op
+BenchmarkManyUsers/n=1000/casbin-tuned-2          	   40536	     28130 ns/op	    9113 B/op	     201 allocs/op
+BenchmarkManyUsers/n=1000/opa-2                   	   29703	     37126 ns/op	   13874 B/op	     281 allocs/op
+BenchmarkManyUsers/n=1000/opa-2                   	   34651	     33443 ns/op	   13874 B/op	     281 allocs/op
+BenchmarkManyUsers/n=1000/opa-2                   	   39034	     32523 ns/op	   13874 B/op	     281 allocs/op
+BenchmarkManyUsers/n=1000/opa-2                   	   33141	     31901 ns/op	   13874 B/op	     281 allocs/op
+BenchmarkManyUsers/n=1000/opa-2                   	   33470	     33702 ns/op	   13874 B/op	     281 allocs/op
+BenchmarkManyUsers/n=1000/speedle-2               	  262132	      4552 ns/op	    2819 B/op	      46 allocs/op
+BenchmarkManyUsers/n=1000/speedle-2               	  241474	      4552 ns/op	    2819 B/op	      46 allocs/op
+BenchmarkManyUsers/n=1000/speedle-2               	  249746	      4502 ns/op	    2819 B/op	      46 allocs/op
+BenchmarkManyUsers/n=1000/speedle-2               	  246764	      4549 ns/op	    2819 B/op	      46 allocs/op
+BenchmarkManyUsers/n=1000/speedle-2               	  249036	      4840 ns/op	    2819 B/op	      46 allocs/op
+BenchmarkManyUsers/n=100000/casbin-2              	   31362	     48992 ns/op	   13463 B/op	     383 allocs/op
+BenchmarkManyUsers/n=100000/casbin-2              	   32368	     48249 ns/op	   13456 B/op	     383 allocs/op
+BenchmarkManyUsers/n=100000/casbin-2              	   30878	     49182 ns/op	   13464 B/op	     383 allocs/op
+BenchmarkManyUsers/n=100000/casbin-2              	   33189	     48323 ns/op	   13459 B/op	     383 allocs/op
+BenchmarkManyUsers/n=100000/casbin-2              	   32712	     48837 ns/op	   13459 B/op	     383 allocs/op
+BenchmarkManyUsers/n=100000/casbin-cached-2       	 6127878	       239.5 ns/op	     107 B/op	       3 allocs/op
+BenchmarkManyUsers/n=100000/casbin-cached-2       	 6909415	       245.3 ns/op	     107 B/op	       3 allocs/op
+BenchmarkManyUsers/n=100000/casbin-cached-2       	 7023638	       246.8 ns/op	     107 B/op	       3 allocs/op
+BenchmarkManyUsers/n=100000/casbin-cached-2       	 6979896	       245.7 ns/op	     107 B/op	       3 allocs/op
+BenchmarkManyUsers/n=100000/casbin-cached-2       	 6704503	       241.2 ns/op	     107 B/op	       3 allocs/op
+BenchmarkManyUsers/n=100000/casbin-tuned-2        	   45912	     34089 ns/op	    9079 B/op	     200 allocs/op
+BenchmarkManyUsers/n=100000/casbin-tuned-2        	   47466	     34094 ns/op	    9082 B/op	     200 allocs/op
+BenchmarkManyUsers/n=100000/casbin-tuned-2        	   47198	     33050 ns/op	    9082 B/op	     200 allocs/op
+BenchmarkManyUsers/n=100000/casbin-tuned-2        	   47302	     33845 ns/op	    9083 B/op	     200 allocs/op
+BenchmarkManyUsers/n=100000/casbin-tuned-2        	   47395	     33828 ns/op	    9082 B/op	     200 allocs/op
+BenchmarkManyUsers/n=100000/opa-2                 	   43268	     36062 ns/op	   13875 B/op	     281 allocs/op
+BenchmarkManyUsers/n=100000/opa-2                 	   43018	     37135 ns/op	   13873 B/op	     281 allocs/op
+BenchmarkManyUsers/n=100000/opa-2                 	   45013	     39237 ns/op	   13871 B/op	     281 allocs/op
+BenchmarkManyUsers/n=100000/opa-2                 	   48320	     37436 ns/op	   13871 B/op	     281 allocs/op
+BenchmarkManyUsers/n=100000/opa-2                 	   33442	     39862 ns/op	   13871 B/op	     281 allocs/op
+BenchmarkManyUsers/n=100000/speedle-2             	  275604	      6602 ns/op	    2819 B/op	      46 allocs/op
+BenchmarkManyUsers/n=100000/speedle-2             	  281636	      6754 ns/op	    2819 B/op	      46 allocs/op
+BenchmarkManyUsers/n=100000/speedle-2             	  273788	      6547 ns/op	    2819 B/op	      46 allocs/op
+BenchmarkManyUsers/n=100000/speedle-2             	  280214	      6778 ns/op	    2819 B/op	      46 allocs/op
+BenchmarkManyUsers/n=100000/speedle-2             	  274461	      6713 ns/op	    2819 B/op	      46 allocs/op
+PASS

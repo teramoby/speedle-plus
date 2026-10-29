@@ -1,0 +1,7 @@
+[service.app]
+[policy]
+GRANT ROLE admin read,write /data1
+GRANT ROLE viewer read /data1
+[rolepolicy]
+GRANT USER alice admin
+GRANT USER bob viewer

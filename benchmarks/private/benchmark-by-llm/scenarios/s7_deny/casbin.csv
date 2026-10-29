@@ -1,0 +1,4 @@
+p, staff, /hr/*, read, allow
+p, kim, /hr/salaries, read, deny
+g, kim, staff
+g, lee, staff

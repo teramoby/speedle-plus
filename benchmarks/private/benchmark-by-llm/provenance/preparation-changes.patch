@@ -1,0 +1,614 @@
+--- before/gen.go
++++ executed/gen.go
+@@ -107,6 +107,15 @@
+ }
+ 
+ func GenPolicies(dir, kind string, n, users int) (GenSet, error) {
++	if n <= 0 || users <= 0 {
++		return GenSet{}, fmt.Errorf("n and users must be positive")
++	}
++	if kind == "manyusers" {
++		return genManyUsers(dir, n)
++	}
++	if kind != "plain" && kind != "abac" && kind != "wildcard" {
++		return GenSet{}, fmt.Errorf("unknown policy kind %q", kind)
++	}
+ 	g := GenSet{Kind: kind, N: n, Users: users}
+ 	base := filepath.Join(dir, fmt.Sprintf("%s_%d", kind, n))
+ 	g.CasbinConf, g.CasbinCSV = base+"_casbin.conf", base+"_casbin.csv"
+@@ -272,7 +281,7 @@
+ 		}
+ 		out["casbin-tuned"] = ct
+ 	}
+-	if g.Kind == "plain" && !synced && want("casbin-cached") {
++	if (g.Kind == "plain" || g.Kind == "manyusers") && !synced && want("casbin-cached") {
+ 		ce, err := casbin.NewCachedEnforcer(g.CasbinTunedConf, g.CasbinCSV)
+ 		if err != nil {
+ 			return nil, fmt.Errorf("casbin-cached: %w", err)
+@@ -295,3 +304,82 @@
+ 	}
+ 	return out, nil
+ }
++
++// manyusers keeps permission count fixed at 100 while growing membership.
++func genManyUsers(dir string, n int) (GenSet, error) {
++	tmp, err := os.MkdirTemp(dir, "manyusers-build-")
++	if err != nil {
++		return GenSet{}, err
++	}
++	defer os.RemoveAll(tmp)
++	g, err := GenPolicies(tmp, "plain", 10, 1)
++	if err != nil {
++		return g, err
++	}
++	g.Kind, g.N, g.Users = "manyusers", n, n
++	err = writeFile(g.CasbinCSV, func(w *bufio.Writer) {
++		for r := 1; r <= 10; r++ {
++			for k := 1; k <= 10; k++ {
++				fmt.Fprintf(w, "p, role%d, /books/book%d-%d, read\n", r, r, k)
++			}
++		}
++		for u := 1; u <= n; u++ {
++			fmt.Fprintf(w, "g, user%d, role%d\n", u, (u-1)%10+1)
++		}
++	})
++	if err != nil {
++		return g, err
++	}
++	err = writeFile(g.OPAJSON, func(w *bufio.Writer) {
++		w.WriteString(`{"user_roles":{`)
++		for u := 1; u <= n; u++ {
++			if u > 1 {
++				w.WriteByte(',')
++			}
++			fmt.Fprintf(w, `"user%d":["role%d"]`, u, (u-1)%10+1)
++		}
++		w.WriteString(`},"role_perms":{`)
++		for r := 1; r <= 10; r++ {
++			if r > 1 {
++				w.WriteByte(',')
++			}
++			fmt.Fprintf(w, `"role%d":[`, r)
++			for k := 1; k <= 10; k++ {
++				if k > 1 {
++					w.WriteByte(',')
++				}
++				fmt.Fprintf(w, `{"action":"read","resource":"/books/book%d-%d"}`, r, k)
++			}
++			w.WriteByte(']')
++		}
++		w.WriteString("}}")
++	})
++	if err != nil {
++		return g, err
++	}
++	err = writeFile(g.SpeedleSPDL, func(w *bufio.Writer) {
++		w.WriteString("[service.app]\n[policy]\n")
++		for r := 1; r <= 10; r++ {
++			for k := 1; k <= 10; k++ {
++				fmt.Fprintf(w, "GRANT ROLE role%d read /books/book%d-%d\n", r, r, k)
++			}
++		}
++		w.WriteString("[rolepolicy]\n")
++		for u := 1; u <= n; u++ {
++			fmt.Fprintf(w, "GRANT USER user%d role%d\n", u, (u-1)%10+1)
++		}
++	})
++	// Files must be distinct from plain/10, which can coexist in one process.
++	for _, pp := range []*string{&g.CasbinConf, &g.CasbinTunedConf, &g.CasbinCSV, &g.OPARego, &g.OPAJSON, &g.SpeedleSPDL} {
++		dst := filepath.Join(dir, strings.Replace(filepath.Base(*pp), "plain_10_", fmt.Sprintf("manyusers_%d_", n), 1))
++		b, e := os.ReadFile(*pp)
++		if e != nil {
++			return g, e
++		}
++		if e = os.WriteFile(dst, b, 0644); e != nil {
++			return g, e
++		}
++		*pp = dst
++	}
++	return g, err
++}
+--- before/bench_test.go
++++ executed/bench_test.go
+@@ -84,7 +84,9 @@
+ 			b.ReportAllocs()
+ 			b.ResetTimer()
+ 			for i := 0; i < b.N; i++ {
+-				check()
++				if ok, err := check(); err != nil || ok != want {
++					b.Fatalf("decision: %v %v", ok, err)
++				}
+ 			}
+ 		})
+ 	}
+@@ -225,11 +227,18 @@
+ 
+ // BenchmarkRBACMixed: 4096 different requests cycled, so no engine benefits
+ // from asking the same question repeatedly.
+-func BenchmarkRBACMixed(b *testing.B) {
+-	for _, n := range benchSizes {
+-		b.Run(fmt.Sprintf("n=%d", n), func(b *testing.B) {
+-			es := engines(b, "plain", n, false)
++func BenchmarkRBACMixed(b *testing.B) { benchmarkMixed(b, "plain", benchSizes) }
++
++func BenchmarkManyUsers(b *testing.B) { benchmarkMixed(b, "manyusers", []int{1000, 100000}) }
++
++func benchmarkMixed(b *testing.B, kind string, sizes []int) {
++	for _, n := range sizes {
++		b.Run(fmt.Sprintf("n=%d", n), func(b *testing.B) {
++			es := engines(b, kind, n, false)
+ 			reqs, want := mixedReqs(n, 4096)
++			if kind == "manyusers" {
++				reqs, want = manyUsersReqs(n, 4096)
++			}
+ 			for _, name := range names(es) {
+ 				checks := make([]func() (bool, error), len(reqs))
+ 				for j, r := range reqs {
+@@ -240,17 +249,36 @@
+ 						if ok, err := c(); err != nil || ok != want[j] {
+ 							b.Fatalf("%s: %+v: got %v, %v; want %v", name, reqs[j], ok, err, want[j])
+ 						}
+-						if j == 255 {
++						if j == 31 && name != "casbin-cached" {
+ 							break
+ 						}
+ 					}
+ 					b.ReportAllocs()
+ 					b.ResetTimer()
+ 					for i := 0; i < b.N; i++ {
+-						checks[i&4095]()
++						j := i & 4095
++						if ok, err := checks[j](); err != nil || ok != want[j] {
++							b.Fatalf("%s decision: %v %v want %v", name, ok, err, want[j])
++						}
+ 					}
+ 				})
+ 			}
+ 		})
+ 	}
+ }
++
++func manyUsersReqs(n, k int) ([]Req, []bool) {
++	rng := rand.New(rand.NewPCG(42, 7))
++	reqs, want := make([]Req, k), make([]bool, k)
++	for j := range reqs {
++		u := rng.IntN(n) + 1
++		r := (u-1)%10 + 1
++		book := rng.IntN(10) + 1
++		want[j] = rng.IntN(10) < 8
++		if !want[j] {
++			r = r%10 + 1
++		}
++		reqs[j] = Req{User: fmt.Sprintf("user%d", u), Action: "read", Resource: fmt.Sprintf("/books/book%d-%d", r, book)}
++	}
++	return reqs, want
++}
+--- before/stress.sh
++++ executed/stress.sh
+@@ -1,46 +1,77 @@
+ #!/usr/bin/env bash
+-# Load-test the three engines over HTTP.
+-#
+-#   ./stress.sh [roles] [duration] ["concurrency levels"]
+-#
+-# Thin HTTP rows: the same small net/http server (cmd/authzd) around each
+-# embedded engine. Official rows: `opa run --server` and Speedle+ `speedle-ads`
+-# (Casbin ships no HTTP server in its core library).
+-# Servers get SRV_PROCS cores and the load generator GEN_PROCS, via GOMAXPROCS.
++# Full defaults: two policy shapes, three concurrency levels, three interleaved rounds.
+ set -euo pipefail
+ cd "$(dirname "$0")"
+ N=${1:-10000}; D=${2:-15s}; CS=${3:-"1 16 64"}
+-SRV_PROCS=${SRV_PROCS:-4}; GEN_PROCS=${GEN_PROCS:-4}
+-BIN=${BIN:-./bin}
+-WORK=$(mktemp -d)
+-trap 'kill $(jobs -p) 2>/dev/null || true; rm -rf "$WORK"' EXIT
+-read -r REGO JSON SPDL < <("$BIN/authzd" -gen "$WORK" -n "$N")
+-
++MN=${MANYUSERS_N:-100000}; ROUNDS=${ROUNDS:-3}; WARMUP=${WARMUP:-3s}
++BIN=${BIN:-./bin}; DATASETS=${DATASETS:-"plain manyusers"}
++WORK=$(mktemp -d); ACTIVE_PID=""
++LOGDIR=${STRESS_LOGDIR:-$WORK/logs}; mkdir -p "$LOGDIR"
++stop() { if [[ -n "$ACTIVE_PID" ]]; then kill "$ACTIVE_PID" 2>/dev/null || true; wait "$ACTIVE_PID" 2>/dev/null || true; ACTIVE_PID=""; fi; }
++trap 'stop; rm -rf "$WORK"' EXIT
++trap 'exit 130' INT TERM
++# Respect cpuset restrictions and separate physical cores when possible.
++SRV_CPUS=""; GEN_CPUS=""; SRV_PROCS=${SRV_PROCS:-2}; GEN_PROCS=${GEN_PROCS:-2}
++if command -v taskset >/dev/null && [[ -r /sys/devices/system/cpu/cpu0/topology/thread_siblings_list ]]; then
++  read -r SRV_CPUS GEN_CPUS SRV_PROCS GEN_PROCS < <(python3 - <<'PY'
++import os,pathlib
++allowed=sorted(os.sched_getaffinity(0)); first=allowed[0]
++def expand(s):
++ out=[]
++ for part in s.strip().split(','):
++  ab=list(map(int,part.split('-'))); out.extend(range(ab[0],ab[-1]+1))
++ return out
++siblings=expand(pathlib.Path(f'/sys/devices/system/cpu/cpu{first}/topology/thread_siblings_list').read_text())
++srv=[c for c in allowed if c in siblings]; gen=[c for c in allowed if c not in srv]
++if not gen: srv,gen=allowed[:max(1,len(allowed)//2)],allowed[max(1,len(allowed)//2):]
++if not gen: gen=srv
++print(','.join(map(str,srv)),','.join(map(str,gen)),len(srv),len(gen))
++PY
++  )
++fi
++srv() { if [[ -n "$SRV_CPUS" ]]; then GOMAXPROCS=$SRV_PROCS exec taskset -c "$SRV_CPUS" "$@"; else GOMAXPROCS=$SRV_PROCS exec "$@"; fi; }
++gen() { if [[ -n "$GEN_CPUS" ]]; then GOMAXPROCS=$GEN_PROCS taskset -c "$GEN_CPUS" "$@"; else GOMAXPROCS=$GEN_PROCS "$@"; fi; }
++echo "CPU allocation: server=$SRV_CPUS GOMAXPROCS=$SRV_PROCS generator=$GEN_CPUS GOMAXPROCS=$GEN_PROCS" >&2
+ wait_ready() {
+-  for _ in $(seq 1 1200); do curl -s -o /dev/null "$1" && return 0; sleep 0.5; done
+-  echo "server at $1 not ready" >&2; return 1
++  for ((i=0;i<1200;i++)); do
++    if ! kill -0 "$ACTIVE_PID" 2>/dev/null; then echo "server exited; logs: $LOGDIR" >&2; return 1; fi
++    if curl -s --max-time 1 -o /dev/null "$1"; then return 0; fi
++    sleep 0.25
++  done
++  echo "server not ready: $1" >&2; return 1
+ }
+-run() { # label target url
+-  for c in $CS; do GOMAXPROCS=$GEN_PROCS "$BIN/loadgen" -target "$2" -url "$3" -n "$N" -c "$c" -d "$D" -label "$1"; done
+-}
+-stop() { kill "$1" 2>/dev/null || true; wait "$1" 2>/dev/null || true; }
+-
+-echo "| setup | conc | req/s | p50 µs | p90 µs | p99 µs | p99.9 µs | max µs | errors | wrong |"
+-echo "|---|---|---|---|---|---|---|---|---|---|"
+-for e in ${ENGINES:-casbin opa speedle}; do
+-  GOMAXPROCS=$SRV_PROCS "$BIN/authzd" -engine "$e" -n "$N" -addr 127.0.0.1:9000 2>"$WORK/authzd-$e.log" &
+-  pid=$!; wait_ready http://127.0.0.1:9000/health
+-  run "thin HTTP + $e" thin http://127.0.0.1:9000/check
+-  stop $pid
++for kind in $DATASETS; do
++  n=$N; [[ "$kind" == manyusers ]] && n=$MN
++  mkdir -p "$WORK/$kind"
++  "$BIN/authzd" -kind "$kind" -gen "$WORK/$kind" -n "$n" >/dev/null
+ done
+-
+-GOMAXPROCS=$SRV_PROCS "$BIN/opa" run --server --addr 127.0.0.1:8181 --log-level error "$REGO" "$JSON" 2>"$WORK/opa.log" &
+-pid=$!; wait_ready http://127.0.0.1:8181/health
+-run "opa run --server" opa http://127.0.0.1:8181/v1/data/authz/allow
+-stop $pid
+-
+-GOMAXPROCS=$SRV_PROCS "$BIN/speedle-ads" --store-type file --filestore-loc "$SPDL" --endpoint 127.0.0.1:6734 \
+-  --insecure=true --log-level error --auditlog-level error --enable-watch false >"$WORK/ads.log" 2>&1 &
+-pid=$!; wait_ready http://127.0.0.1:6734/authz-check/v1/is-allowed
+-run "speedle-ads" speedle http://127.0.0.1:6734/authz-check/v1/is-allowed
+-stop $pid
++printf '| dataset | round | setup | conc | req/s | p50 µs | p90 µs | p99 µs | p99.9 µs | max µs | errors | wrong | srv cores | gen cores |\n'
++printf '|---|---|---|---|---|---|---|---|---|---|---|---|---|---|\n'
++for ((round=1;round<=ROUNDS;round++)); do
++  for kind in $DATASETS; do
++    n=$N; [[ "$kind" == manyusers ]] && n=$MN
++    base="$WORK/$kind/${kind}_${n}"
++    for setup in thin-casbin thin-opa thin-speedle opa-server speedle-ads; do
++      logfile="$LOGDIR/$kind-round$round-$setup.log"
++      case "$setup" in
++      thin-*)
++        srv "$BIN/authzd" -engine "${setup#thin-}" -kind "$kind" -n "$n" -addr 127.0.0.1:19000 >"$logfile" 2>&1 &
++        target=thin; url=http://127.0.0.1:19000/check; health=http://127.0.0.1:19000/health ;;
++      opa-server)
++        srv "$BIN/opa" run --server --addr 127.0.0.1:18181 --log-level error "${base}_opa.rego" "${base}_opa.json" >"$logfile" 2>&1 &
++        target=opa; url=http://127.0.0.1:18181/v1/data/authz/allow; health=http://127.0.0.1:18181/health ;;
++      speedle-ads)
++        srv "$BIN/speedle-ads" --store-type file --filestore-loc "${base}_speedle.spdl" --endpoint 127.0.0.1:16735 --insecure=true --log-level error --auditlog-level error --enable-watch false >"$logfile" 2>&1 &
++        target=speedle; url=http://127.0.0.1:16735/authz-check/v1/is-allowed; health=$url ;;
++      esac
++      ACTIVE_PID=$!
++      wait_ready "$health"
++      for c in $CS; do
++        echo "round=$round dataset=$kind n=$n setup=$setup c=$c pid=$ACTIVE_PID" >&2
++        row=$(gen "$BIN/loadgen" -target "$target" -url "$url" -kind "$kind" -n "$n" -c "$c" -d "$D" -warmup "$WARMUP" -srv-pid "$ACTIVE_PID" -label "$setup")
++        printf '| %s n=%s | %s %s\n' "$kind" "$n" "$round" "$row"
++      done
++      stop
++    done
++  done
++done
+--- before/run-all.sh
++++ executed/run-all.sh
+@@ -1,53 +1,101 @@
+ #!/usr/bin/env bash
+-# Run the whole comparison on this machine and write results/<host>/.
+-#
+-#   ./run-all.sh                       # every step
+-#   STEPS="bench stress" ./run-all.sh  # some steps
+-#
+-# Expects bin/authzbench.test (go test -c), bin/authzd, bin/loadgen, bin/opa
+-# and bin/speedle-ads. n=100000 runs one engine per process to keep memory
+-# down; Casbin at that size needs about 1 GB.
+ set -uo pipefail
+ cd "$(dirname "$0")"
+-BIN=${BIN:-./bin}
+-T="$BIN/authzbench.test"
+-OUT=results/$(hostname -s)
+-mkdir -p "$OUT"
+-STEPS=${STEPS:-"machine functional loadcost bench parallel stress"}
+-log() { echo "[$(date +%H:%M:%S)] $*"; }
+-bench() { "$T" -test.run '^$' -test.benchtime 1s -test.count 5 -test.timeout 0 "$@"; }
+-
+-for step in $STEPS; do
+-  case $step in
++BIN=${BIN:-./bin}; T="$BIN/authzbench.test"
++OUT=${OUT:-results/$(hostname -s)}; mkdir -p "$OUT"
++STEPS=${STEPS:-"machine functional capabilities watchcheck loadcost bench-small bench-manyusers bench-100k-speedle bench-100k-opa bench-100k-casbin-tuned bench-100k-casbin parallel stress"}
++log() { printf '[%s] %s\n' "$(date -Iseconds)" "$*" | tee -a "$OUT/run-all.log"; }
++workers() { pgrep -c '[R]unner.Worker' || true; }
++sample() {
++  local now load count top swap
++  now=$(date +%s); load=$(awk '{print $1}' /proc/loadavg); count=$(workers)
++  top=$(ps -eo pid,pcpu,comm --sort=-pcpu | awk 'NR>1 && NR<=4 {printf "%s:%s:%s;",$1,$2,$3}')
++  swap=$(awk '/^pswpin / {a=$2} /^pswpout / {b=$2} END {printf "pswpin=%s pswpout=%s",a,b}' /proc/vmstat)
++  printf '%s load=%s workers=%s %s top=%s\n' "$now" "$load" "$count" "$swap" "$top" >> "$OUT/activity.log"
++}
++cleanup() {
++  # Only terminate descendants launched by this run; never match global command names.
++  python3 - "$$" <<'PY'
++import os,signal,sys,pathlib
++parent=int(sys.argv[1]); me=os.getpid(); pairs=[]
++for p in pathlib.Path('/proc').iterdir():
++ if not p.name.isdigit(): continue
++ try:
++  s=(p/'stat').read_text(); f=s[s.rfind(')')+1:].split(); pairs.append((int(p.name),int(f[1])))
++ except (OSError,ValueError,IndexError): pass
++def stop(pid):
++ for child,ppid in pairs:
++  if ppid==pid and child!=me:
++   stop(child)
++   try: os.kill(child,signal.SIGTERM)
++   except ProcessLookupError: pass
++stop(parent)
++PY
++}
++trap cleanup EXIT
++trap 'log "interrupted"; exit 130' INT TERM
++: > "$OUT/activity.log"; : > "$OUT/run-all.log"; : > "$OUT/steps.tsv"
++(while true; do sample; sleep 5; done) & MONITOR_PID=$!
++wait_idle() {
++  while true; do
++    while [[ $(workers) != 0 ]]; do log 'waiting for CI'; sleep 5; done
++    local begin lines
++    begin=$(wc -l < "$OUT/activity.log")
++    sleep "${COOLDOWN:-10}"; sample
++    lines=$(tail -n +$((begin+1)) "$OUT/activity.log" | grep -Ec 'workers=[1-9]' || true)
++    [[ "$lines" == 0 && $(workers) == 0 ]] && return 0
++  done
++}
++bench() { "$T" -test.run '^$' -test.benchtime "${BENCHTIME:-1s}" -test.count "${COUNT:-5}" -test.timeout 0 "$@"; }
++execute_step() {
++  case "$1" in
+   machine)
+     {
+-      date; uname -a; echo "cores: $(getconf _NPROCESSORS_ONLN)"
+-      lscpu 2>/dev/null | grep -E "Model name|^CPU\(s\)|Thread|MHz" || sysctl -n machdep.cpu.brand_string
+-      free -h 2>/dev/null || sysctl hw.memsize
+-      uptime
++      date -Iseconds; cat /etc/os-release; uname -a; uname -r; lscpu
++      echo '=== frequency governors ==='
++      for p in /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor; do [[ -r "$p" ]] && echo "$p: $(cat "$p")"; done
++      echo '=== turbo ==='; cat /sys/devices/system/cpu/intel_pstate/no_turbo 2>/dev/null || true
++      echo '=== memory, disk, swap, affinity ==='; free -h; df -h /tmp; lsblk -o NAME,MODEL,SIZE,TYPE; taskset -pc $$; vmstat 1 3; uptime
++      echo '=== build provenance captured on shrek ==='; cat build-info.txt; sha256sum bin/*
+     } > "$OUT/machine.txt" 2>&1 ;;
+-  functional)
+-    log functional
+-    "$T" -test.run 'TestScenarios|TestPolicySize' -test.v > "$OUT/functional.txt" 2>&1 ;;
+-  loadcost)
+-    log loadcost
+-    LOADCOST=1 "$T" -test.run TestLoadCost -test.v -test.timeout 0 > "$OUT/loadcost.txt" 2>&1 ;;
+-  bench)
+-    log "bench n<=10000"
+-    bench -test.cpu 2 -test.bench '^BenchmarkRBAC(Mixed|Allow|Deny)$/^n=(100|1000|10000)$/' > "$OUT/bench-seq.txt" 2>&1
+-    bench -test.cpu 2 -test.bench '^Benchmark(ABAC|Wildcard)$' >> "$OUT/bench-seq.txt" 2>&1
+-    : > "$OUT/bench-100k.txt"
+-    for e in speedle opa casbin-tuned casbin; do
+-      log "bench n=100000 $e"
+-      AUTHZ_ENGINES=$e bench -test.cpu 2 -test.bench '^BenchmarkRBAC(Mixed|Allow|Deny)$/^n=100000$/' >> "$OUT/bench-100k.txt" 2>&1
+-    done ;;
+-  parallel)
+-    log parallel
+-    bench -test.cpu 4 -test.bench '^BenchmarkParallel$' > "$OUT/bench-par.txt" 2>&1 ;;
+-  stress)
+-    log stress
+-    BIN=$BIN ./stress.sh 10000 15s "1 16 64" > "$OUT/stress.md" 2> "$OUT/stress.err" ;;
++  functional) "$T" -test.run '^(TestScenarios|TestPolicySize|TestGeneratedManyUsers)$' -test.v > "$OUT/functional.txt" 2>&1 ;;
++  capabilities) "$T" -test.run '^(TestListPermissions|TestExplain|TestRuntimeUpdate|TestErrorMessages|TestBrokenPolicyBehavior)$' -test.v > "$OUT/capabilities.txt" 2>&1 ;;
++  watchcheck)
++    : > "$OUT/watchcheck.txt"
++    for mode in inplace rename; do
++      "$BIN/watchcheck" "$mode" >> "$OUT/watchcheck.txt" 2>&1; rc=$?
++      echo "mode=$mode exit_code=$rc" >> "$OUT/watchcheck.txt"
++    done; return 0 ;;
++  loadcost) LOADCOST=1 "$T" -test.run '^TestLoadCost$' -test.v -test.timeout 0 > "$OUT/loadcost.txt" 2>&1 ;;
++  bench-small)
++    bench -test.cpu 2 -test.bench '^BenchmarkRBAC(Mixed|Allow|Deny)$/^n=(100|1000|10000)$/' > "$OUT/bench-seq.txt" 2>&1 || return $?
++    bench -test.cpu 2 -test.bench '^Benchmark(ABAC|Wildcard)$' >> "$OUT/bench-seq.txt" 2>&1 ;;
++  bench-manyusers) bench -test.cpu 2 -test.bench '^BenchmarkManyUsers$' > "$OUT/bench-manyusers.txt" 2>&1 ;;
++  bench-100k-*) e=${1#bench-100k-}; AUTHZ_ENGINES=$e bench -test.cpu 2 -test.bench '^BenchmarkRBAC(Mixed|Allow|Deny)$/^n=100000$/' > "$OUT/bench-100k-$e.txt" 2>&1 ;;
++  parallel) bench -test.cpu 1,2,4 -test.bench '^BenchmarkParallel$' > "$OUT/bench-par.txt" 2>&1 ;;
++  stress) BIN=$BIN STRESS_LOGDIR="$OUT/stress-logs" ./stress.sh > "$OUT/stress.md" 2> "$OUT/stress.err" ;;
++  *) echo "unknown step: $1" >&2; return 2 ;;
+   esac
++}
++for step in $STEPS; do
++  accepted=0
++  for attempt in 1 2 3; do
++    wait_idle; sample; start=$(date +%s); first=$(( $(wc -l < "$OUT/activity.log") + 1 ))
++    log "start step=$step attempt=$attempt"
++    execute_step "$step" & STEP_PID=$!; wait "$STEP_PID"; rc=$?
++    sample; end=$(date +%s)
++    dirty=$(tail -n +"$first" "$OUT/activity.log" | grep -Ec 'workers=[1-9]' || true)
++    if [[ "$dirty" != 0 ]]; then
++      log "contaminated step=$step attempt=$attempt rc=$rc; retry after CI ends"
++      printf '%s\t%s\t%s\t%s\t%s\tcontaminated\n' "$step" "$attempt" "$start" "$end" "$rc" >> "$OUT/steps.tsv"
++      dest="$OUT/contaminated/$step-attempt$attempt"; mkdir -p "$dest"
++      cp "$OUT"/*.txt "$OUT"/stress.md "$OUT"/stress.err "$dest/" 2>/dev/null || true
++      continue
++    fi
++    printf '%s\t%s\t%s\t%s\t%s\tclean\n' "$step" "$attempt" "$start" "$end" "$rc" >> "$OUT/steps.tsv"
++    if [[ "$rc" != 0 ]]; then log "FAILED step=$step rc=$rc"; exit "$rc"; fi
++    accepted=1; log "complete step=$step attempt=$attempt"; break
++  done
++  if [[ "$accepted" != 1 ]]; then log "FAILED CI remained disruptive after 2 reruns: $step"; exit 1; fi
+ done
+-uptime >> "$OUT/machine.txt"
+-log "done: $OUT"
++sample; uptime >> "$OUT/machine.txt"; log "done: $OUT"; touch "$OUT/COMPLETE"
+--- before/cmd/authzd/main.go
++++ executed/cmd/authzd/main.go
+@@ -23,6 +23,7 @@
+ 
+ func main() {
+ 	engine := flag.String("engine", "opa", "casbin | opa | speedle")
++	kind := flag.String("kind", "plain", "plain | manyusers")
+ 	n := flag.Int("n", 10000, "number of roles (10 users each)")
+ 	addr := flag.String("addr", "127.0.0.1:9000", "listen address")
+ 	gen := flag.String("gen", "", "write policy files to this directory and exit")
+@@ -38,7 +39,7 @@
+ 	} else if err := os.MkdirAll(dir, 0o755); err != nil {
+ 		log.Fatal(err)
+ 	}
+-	g, err := ab.GenPolicies(dir, "plain", *n, 10)
++	g, err := ab.GenPolicies(dir, *kind, *n, 10)
+ 	if err != nil {
+ 		log.Fatal(err)
+ 	}
+--- before/cmd/loadgen/main.go
++++ executed/cmd/loadgen/main.go
+@@ -20,7 +20,10 @@
+ 	"math/rand/v2"
+ 	"net/http"
+ 	"os"
++	"os/exec"
++	"runtime"
+ 	"sort"
++	"strconv"
+ 	"strings"
+ 	"sync"
+ 	"sync/atomic"
+@@ -66,12 +69,19 @@
+ func main() {
+ 	target := flag.String("target", "thin", "thin | opa | speedle")
+ 	url := flag.String("url", "http://127.0.0.1:9000/check", "endpoint")
++	kind := flag.String("kind", "plain", "plain | manyusers")
++	srvPID := flag.Int("srv-pid", 0, "server PID for Linux CPU measurement")
+ 	n := flag.Int("n", 10000, "number of roles in the policy set")
+ 	c := flag.Int("c", 16, "concurrent workers")
+ 	d := flag.Duration("d", 20*time.Second, "measured duration")
+ 	warm := flag.Duration("warmup", 3*time.Second, "unrecorded warmup")
+ 	label := flag.String("label", "", "row label")
+ 	flag.Parse()
++	if *n < 2 || *c < 1 || *d <= 0 || *warm < 0 || (*kind != "plain" && *kind != "manyusers") {
++		fmt.Fprintln(os.Stderr, "invalid parameters")
++		os.Exit(2)
++	}
++	ticks := clockTicks()
+ 
+ 	tr := &http.Transport{MaxIdleConns: *c * 2, MaxIdleConnsPerHost: *c * 2, IdleConnTimeout: time.Minute}
+ 	client := &http.Client{Transport: tr, Timeout: 10 * time.Second}
+@@ -99,20 +109,31 @@
+ 				if !want {
+ 					res = fmt.Sprintf("/books/book%d", i%*n+1)
+ 				}
++				if *kind == "manyusers" {
++					r := (i-1)%10 + 1
++					if !want {
++						r = r%10 + 1
++					}
++					user = fmt.Sprintf("user%d", i)
++					res = fmt.Sprintf("/books/book%d-%d", r, rng.IntN(10)+1)
++				}
++				measured := recording.Load()
+ 				t0 := time.Now()
+ 				resp, err := client.Post(*url, "application/json", bytes.NewReader(body(*target, user, res)))
+ 				var got bool
+ 				if err == nil {
+-					b, _ := io.ReadAll(resp.Body)
++					b, readErr := io.ReadAll(resp.Body)
+ 					resp.Body.Close()
+-					if resp.StatusCode != 200 {
++					if readErr != nil {
++						err = readErr
++					} else if resp.StatusCode != 200 {
+ 						err = fmt.Errorf("status %d: %s", resp.StatusCode, strings.TrimSpace(string(b)))
+ 					} else {
+ 						got, err = allowed(*target, b)
+ 					}
+ 				}
+ 				dt := time.Since(t0)
+-				if !recording.Load() {
++				if !measured || !recording.Load() {
+ 					continue
+ 				}
+ 				if err != nil {
+@@ -132,17 +153,69 @@
+ 		}(uint64(w + 1))
+ 	}
+ 	time.Sleep(*warm)
++	srv0, gen0 := cpuTime(*srvPID), cpuTime(os.Getpid())
++	start := time.Now()
+ 	recording.Store(true)
+-	start := time.Now()
+ 	time.Sleep(*d)
+ 	recording.Store(false)
+ 	elapsed := time.Since(start)
++	srv1, gen1 := cpuTime(*srvPID), cpuTime(os.Getpid())
+ 	stop.Store(true)
+ 	wg.Wait()
+ 
+ 	sort.Slice(all, func(i, j int) bool { return all[i] < all[j] })
+ 	us := func(x time.Duration) string { return fmt.Sprintf("%.0f", float64(x.Nanoseconds())/1000) }
+-	fmt.Printf("| %s | %d | %.0f | %s | %s | %s | %s | %s | %d | %d |\n", *label, *c,
++	var maxLatency time.Duration
++	if len(all) > 0 {
++		maxLatency = all[len(all)-1]
++	}
++	fmt.Printf("| %s | %d | %.0f | %s | %s | %s | %s | %s | %d | %d | %s | %s |\n", *label, *c,
+ 		float64(len(all))/elapsed.Seconds(), us(pct(all, 50)), us(pct(all, 90)), us(pct(all, 99)),
+-		us(pct(all, 99.9)), us(all[len(all)-1]), errs.Load(), wrong.Load())
+-}
++		us(pct(all, 99.9)), us(maxLatency), errs.Load(), wrong.Load(), cores(srv0, srv1, ticks, elapsed), cores(gen0, gen1, ticks, elapsed))
++	if len(all) == 0 || errs.Load() > 0 || wrong.Load() > 0 {
++		os.Exit(1)
++	}
++}
++
++func clockTicks() float64 {
++	if runtime.GOOS != "linux" {
++		return 0
++	}
++	b, err := exec.Command("getconf", "CLK_TCK").Output()
++	if err != nil {
++		return 0
++	}
++	v, _ := strconv.ParseFloat(strings.TrimSpace(string(b)), 64)
++	return v
++}
++
++// /proc stat comm may contain spaces and ')': split after the final ')'.
++func cpuTime(pid int) int64 {
++	if runtime.GOOS != "linux" || pid <= 0 {
++		return -1
++	}
++	b, err := os.ReadFile(fmt.Sprintf("/proc/%d/stat", pid))
++	if err != nil {
++		return -1
++	}
++	end := strings.LastIndexByte(string(b), ')')
++	if end < 0 {
++		return -1
++	}
++	fields := strings.Fields(string(b[end+1:]))
++	if len(fields) < 13 {
++		return -1
++	}
++	u, e1 := strconv.ParseInt(fields[11], 10, 64)
++	s, e2 := strconv.ParseInt(fields[12], 10, 64)
++	if e1 != nil || e2 != nil {
++		return -1
++	}
++	return u + s
++}
++func cores(a, b int64, ticks float64, elapsed time.Duration) string {
++	if a < 0 || b < a || ticks <= 0 {
++		return "-"
++	}
++	return fmt.Sprintf("%.3f", float64(b-a)/ticks/elapsed.Seconds())
++}

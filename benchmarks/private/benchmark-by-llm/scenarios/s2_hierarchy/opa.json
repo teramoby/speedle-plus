@@ -1,0 +1,8 @@
+{
+  "user_roles": {"dave": ["editor"], "vic": ["viewer"]},
+  "role_inherits": {"editor": ["viewer"], "viewer": []},
+  "role_perms": {
+    "viewer": [{"action": "read", "resource": "/docs"}],
+    "editor": [{"action": "write", "resource": "/docs"}]
+  }
+}

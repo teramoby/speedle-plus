@@ -1,0 +1,5 @@
+[service.app]
+[policy]
+GRANT ROLE dev deploy /svc
+[rolepolicy]
+GRANT GROUP eng dev

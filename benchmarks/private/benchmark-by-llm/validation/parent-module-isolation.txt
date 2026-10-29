@@ -1,0 +1,8 @@
+Command: go list -e -mod=readonly ./... (from repository root)
+Packages listed: 46
+Nested authzbench module included: false
+
+Plain go list without -e returned two existing legacy GOPATH sample import errors:
+samples/adsclient/go/src/speedle/rest/authz/client: speedle/api/authz
+samples/adsclient/go/src/speedle/rest/authz/client/example: speedle/rest/authz/client
+These sample imports are outside this archive and were not modified. The repository CI vets pkg/, cmd/, api/ separately.
