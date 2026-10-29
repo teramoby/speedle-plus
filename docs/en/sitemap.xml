@@ -262,6 +262,20 @@
   </url>
   
   <url>
+    <loc>https://speedle.io/docs/console/</loc>
+    <xhtml:link
+                rel="alternate"
+                hreflang="zh"
+                href="https://speedle.io/zh/docs/console/"
+                />
+    <xhtml:link
+                rel="alternate"
+                hreflang="en"
+                href="https://speedle.io/docs/console/"
+                />
+  </url>
+  
+  <url>
     <loc>https://speedle.io/integrations/docker/</loc>
     <lastmod>2017-04-10T16:41:54+01:00</lastmod>
     <xhtml:link
@@ -569,6 +583,21 @@
                 rel="alternate"
                 hreflang="en"
                 href="https://speedle.io/tags/community/"
+                />
+  </url>
+  
+  <url>
+    <loc>https://speedle.io/tags/console/</loc>
+    <priority>0</priority>
+    <xhtml:link
+                rel="alternate"
+                hreflang="zh"
+                href="https://speedle.io/zh/tags/console/"
+                />
+    <xhtml:link
+                rel="alternate"
+                hreflang="en"
+                href="https://speedle.io/tags/console/"
                 />
   </url>
   
@@ -1179,21 +1208,6 @@
   </url>
   
   <url>
-    <loc>https://speedle.io/tags/versions/</loc>
-    <priority>0</priority>
-    <xhtml:link
-                rel="alternate"
-                hreflang="zh"
-                href="https://speedle.io/zh/tags/versions/"
-                />
-    <xhtml:link
-                rel="alternate"
-                hreflang="en"
-                href="https://speedle.io/tags/versions/"
-                />
-  </url>
-  
-  <url>
     <loc>https://speedle.io/versions/</loc>
     <priority>0</priority>
     <xhtml:link
@@ -1205,6 +1219,21 @@
                 rel="alternate"
                 hreflang="en"
                 href="https://speedle.io/versions/"
+                />
+  </url>
+  
+  <url>
+    <loc>https://speedle.io/tags/versions/</loc>
+    <priority>0</priority>
+    <xhtml:link
+                rel="alternate"
+                hreflang="zh"
+                href="https://speedle.io/zh/tags/versions/"
+                />
+    <xhtml:link
+                rel="alternate"
+                hreflang="en"
+                href="https://speedle.io/tags/versions/"
                 />
   </url>
   

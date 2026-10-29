@@ -56,7 +56,7 @@ func NewComponents(cfg *Config) (*Components, error) {
 	if err != nil {
 		return nil, err
 	}
-	guard := &auth.Guard{Codec: codec, DevMode: cfg.DevNoAuth, Secure: !cfg.Insecure, Bootstrap: map[string]bool{}}
+	guard := &auth.Guard{Codec: codec, DevMode: cfg.DevNoAuth, Secure: !cfg.Insecure || cfg.SecureCookie, Bootstrap: map[string]bool{}}
 	if cfg.DevNoAuth {
 		log.Warning("Development mode: everyone who can reach the console is an administrator.")
 	} else {

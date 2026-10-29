@@ -32,3 +32,37 @@ store:
     # certFile: etcd-client.crt
     # keyFile: etcd-client.key
     # trustedCAFile: etcd-client-ca.crt
+
+# The policy management console (speedle-console). Off by default.
+console:
+  enabled: false
+  replicaCount: 1
+  image: r.authz.fun/speedle-console:v0.1
+  port: 6735
+  # Token asserter webhook that signs users in, such as
+  # https://asserter:8443/assert. Required when the console is enabled.
+  asserterEndpoint: ""
+  # Speedle service whose policies grant read and write on the console resource.
+  authzService: speedle-console
+  # Comma-separated principals (type:name) with full access before console
+  # policies exist. Remove them once the policies are written.
+  bootstrapAdmins: ""
+  # Secret with a key named session.key (32 bytes or more) that signs session
+  # cookies. Required with more than one replica.
+  sessionKeySecret: ""
+  # The console's own HTTPS certificate. Leave certSecret empty to serve
+  # HTTP behind a proxy that terminates TLS; secureCookie then keeps the
+  # session cookie HTTPS-only.
+  tls:
+    certSecret: ""
+    certFile: tls.crt
+    keyFile: tls.key
+  secureCookie: true
+  # How the console reaches PMS and ADS when tls above is set: the CA that
+  # signed their certificates and, with forceClientCert, the client
+  # certificate they require.
+  upstreamTLS:
+    certSecret: ""
+    caFile: ca.crt
+    certFile: tls.crt
+    keyFile: tls.key

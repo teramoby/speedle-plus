@@ -18,6 +18,12 @@ spec:
       targetPort: ads
       protocol: TCP
       name: ads
+    {{- if .Values.console.enabled }}
+    - port: {{ .Values.console.port }}
+      targetPort: console
+      protocol: TCP
+      name: console
+    {{- end }}
   selector:
     app: speedle
     release: {{ .Release.Name }}

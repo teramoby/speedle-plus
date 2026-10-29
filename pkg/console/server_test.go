@@ -263,6 +263,18 @@ func TestNewComponentsFailures(t *testing.T) {
 	}
 }
 
+func TestSecureCookieBehindAProxy(t *testing.T) {
+	c := validConfig()
+	c.SecureCookie = true
+	components, err := NewComponents(&c)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !components.Guard.Secure {
+		t.Error("the cookie is not Secure")
+	}
+}
+
 func TestServerParams(t *testing.T) {
 	c := validConfig()
 	c.Insecure, c.CertPath, c.KeyPath = false, "c.pem", "k.pem"

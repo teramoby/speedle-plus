@@ -124,7 +124,7 @@ Join us at speedle-users and/or speedle-developers groups.</description>
       <guid>https://speedle.io/quick-start/</guid>
       <description>Try Speedle in the Playground first You can try Speedle&amp;rsquo;s basic features before installing anything. Open the Playground to edit SPDL policies, set a user, resource and action, and see real Allow/Deny decisions entirely in your browser. No Go installation or running server is required.
 Continue below when you are ready to build and run Speedle locally.
-Prerequisites Use Linux or macOS with Bash, Git, curl and Go 1.26.10 or Go 1.27.3 (or a newer patch on the same release branch).</description>
+Prerequisites Use Linux or macOS with Bash, Git, curl and Go 1.26.10 or Go 1.</description>
     </item>
     
     <item>
@@ -187,7 +187,17 @@ The Token Assertion Plugin API uses integer errCode and an optional attribute ob
       
       <guid>https://speedle.io/docs/deployment/</guid>
       <description>Choose a deployment mode Use embedded mode to run the evaluator in your Go process. Use standalone PMS and ADS when applications call Speedle over REST or gRPC. The Quick Start provides a complete local policy-management and authorization walkthrough.
-Build with current Go Use Go 1.26.10 or Go 1.27.3 (or a newer patch on the same release branch) (Go 1.27.3 is recommended), Git and a shell on Linux or macOS. Use Go modules; the checkout can be anywhere writable. No custom GOROOT, GOPATH, dep or GOPATH source layout is needed.</description>
+Build with current Go Use Go 1.26.10 or Go 1.27.3 (or a newer patch on the same release branch) (Go 1.27.3 is recommended), Git and a shell on Linux or macOS.</description>
+    </item>
+    
+    <item>
+      <title>Policy Management Console</title>
+      <link>https://speedle.io/docs/console/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://speedle.io/docs/console/</guid>
+      <description>What the console does speedle-console is a separate server that serves a web page and forwards its calls to PMS and ADS. It offers:
+ Services, policies and role policies: list, filter, create, edit and delete. Edits use PUT with the item&amp;rsquo;s ETag, so a change made by someone else in the meantime is reported instead of overwritten. Role analysis: a graph of who is granted which role, directly or through other roles, including the role policies of the global service.</description>
     </item>
     
     <item>

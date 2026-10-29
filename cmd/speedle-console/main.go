@@ -42,6 +42,7 @@ func parseFlags(args []string, getenv func(string) string, out io.Writer) (*cons
 	fs.BoolVar(&cfg.Insecure, "insecure", false, "Serve plain HTTP instead of HTTPS.")
 	fs.StringVar(&cfg.CertPath, "cert", "", "TLS certificate of the console.")
 	fs.StringVar(&cfg.KeyPath, "key", "", "TLS private key of the console.")
+	fs.BoolVar(&cfg.SecureCookie, "secure-cookie", false, "Mark the session cookie Secure while serving plain HTTP behind a proxy that terminates TLS.")
 	fs.StringVar(&cfg.PMSURL, "pms-url", "", "Base URL of the policy management service, such as https://pms:6733.")
 	fs.StringVar(&cfg.ADSURL, "ads-url", "", "Base URL of the authorization decision service, such as https://ads:6734.")
 	fs.StringVar(&cfg.UpstreamCA, "upstream-ca", "", "CA certificate that verifies PMS and ADS.")

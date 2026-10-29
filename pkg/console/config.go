@@ -26,6 +26,9 @@ type Config struct {
 	Insecure bool
 	CertPath string
 	KeyPath  string
+	// SecureCookie marks the session cookie Secure even over plain HTTP,
+	// for a console behind a proxy that terminates TLS.
+	SecureCookie bool
 
 	// PMSURL and ADSURL are the base URLs of the services, such as
 	// https://pms:6733.

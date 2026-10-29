@@ -110,6 +110,29 @@ jobs:
           python3 website/localize-links.py docs --check
           website/playground-engine/verify-hugo.sh
 
+  # The policy console's page: plain ES modules tested with node --test.
+  console-web:
+    name: console-web
+    needs: changes
+    if: needs.changes.outputs.go == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Setup Node
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '22'
+          package-manager-cache: false
+
+      - name: Test the console page
+        run: node --test 'pkg/console/web/tests/*.test.mjs'
+
   lint:
     name: lint
     needs: changes

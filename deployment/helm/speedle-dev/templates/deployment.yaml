@@ -42,6 +42,28 @@ spec:
             - name: ads
               containerPort: 6734
               protocol: TCP
+        {{- if .Values.console.enabled }}
+        - name: console
+          image: "{{ .Values.console.image }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          args:
+            - --pms-url
+            - http://127.0.0.1:6733
+            - --ads-url
+            - http://127.0.0.1:6734
+            - --asserter-endpoint
+            - {{ required "console.asserterEndpoint is required when the console is enabled" .Values.console.asserterEndpoint | quote }}
+            - --authz-service
+            - {{ .Values.console.authzService | quote }}
+            {{- with .Values.console.bootstrapAdmins }}
+            - --bootstrap-admins
+            - {{ . | quote }}
+            {{- end }}
+          ports:
+            - name: console
+              containerPort: 6735
+              protocol: TCP
+        {{- end }}
       volumes:
       - name: policy-store
         hostPath:

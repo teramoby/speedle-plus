@@ -14,3 +14,18 @@ service:
   type: ClusterIP
   pmsPort: 6733
   adsPort: 6734
+
+# The policy management console (speedle-console), in the same pod as PMS
+# and ADS. Off by default.
+console:
+  enabled: false
+  image: r.authz.fun/speedle-console:v0.1
+  port: 6735
+  # Token asserter webhook that signs users in, such as
+  # http://asserter:8080/assert. Required when the console is enabled.
+  asserterEndpoint: ""
+  # Speedle service whose policies grant read and write on the console resource.
+  authzService: speedle-console
+  # Comma-separated principals (type:name) with full access before console
+  # policies exist. Remove them once the policies are written.
+  bootstrapAdmins: ""

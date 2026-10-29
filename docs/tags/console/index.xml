@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Console on Speedle</title>
+    <link>https://speedle.io/tags/console/</link>
+    <description>Recent content in Console on Speedle</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language>
+    
+	<atom:link href="https://speedle.io/tags/console/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>Policy Management Console</title>
+      <link>https://speedle.io/docs/console/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://speedle.io/docs/console/</guid>
+      <description>What the console does speedle-console is a separate server that serves a web page and forwards its calls to PMS and ADS. It offers:
+ Services, policies and role policies: list, filter, create, edit and delete. Edits use PUT with the item&amp;rsquo;s ETag, so a change made by someone else in the meantime is reported instead of overwritten. Role analysis: a graph of who is granted which role, directly or through other roles, including the role policies of the global service.</description>
+    </item>
+    
+  </channel>
+</rss>

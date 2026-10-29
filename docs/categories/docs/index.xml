@@ -138,7 +138,16 @@ The Token Assertion Plugin API uses integer errCode and an optional attribute ob
       
       <guid>https://speedle.io/docs/deployment/</guid>
       <description>Choose a deployment mode Use embedded mode to run the evaluator in your Go process. Use standalone PMS and ADS when applications call Speedle over REST or gRPC. The Quick Start provides a complete local policy-management and authorization walkthrough.
-Build with current Go Use Go 1.26.10 or Go 1.27.3 (or a newer patch on the same release branch) (Go 1.27.3 is recommended), Git and a shell on Linux or macOS. Use Go modules; the checkout can be anywhere writable. No custom GOROOT, GOPATH, dep or GOPATH source layout is needed.</description>
+Build with current Go Use Go 1.26.10 or Go 1.27.3 (or a newer patch on the same release branch) (Go 1.27.3 is recommended), Git and a shell on Linux or macOS.</description>
+    </item>
+    
+    <item>
+      <title>Integrations</title>
+      <link>https://speedle.io/integrations/</link>
+      <pubDate>Mon, 10 Apr 2017 16:41:54 +0100</pubDate>
+      
+      <guid>https://speedle.io/integrations/</guid>
+      <description></description>
     </item>
     
     <item>
@@ -170,6 +179,16 @@ A full backend implements pms.PolicyStoreManager: service, authorization-policy,
       <description>Reference for your configured PMS. Requests and responses are JSON; policy IDs are strings and responses are flat objects.
 Security and endpoint configuration. This is a contract reference, not a backend hosted by speedle.io.
               (function() { var url = &#34;\/swagger\/policy-manage.yaml&#34;; const ui = SwaggerUIBundle({ url: url, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.presets.apis ], plugins: [ SwaggerUIBundle.</description>
+    </item>
+    
+    <item>
+      <title>Policy Management Console</title>
+      <link>https://speedle.io/docs/console/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://speedle.io/docs/console/</guid>
+      <description>What the console does speedle-console is a separate server that serves a web page and forwards its calls to PMS and ADS. It offers:
+ Services, policies and role policies: list, filter, create, edit and delete. Edits use PUT with the item&amp;rsquo;s ETag, so a change made by someone else in the meantime is reported instead of overwritten. Role analysis: a graph of who is granted which role, directly or through other roles, including the role policies of the global service.</description>
     </item>
     
     <item>
@@ -211,15 +230,6 @@ Start the local example This example accepts numeric values from 100 to 50000. W
       <description>Reference for your configured ADS. Request attributes are typed arrays; diagnostic attributes are objects.
 Security and endpoint configuration. This is a contract reference, not a backend hosted by speedle.io.
               (function() { var url = &#34;\/swagger\/policy-check.yaml&#34;; const ui = SwaggerUIBundle({ url: url, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.presets.apis ], plugins: [ SwaggerUIBundle.plugins.DownloadUrl ], validatorUrl: null, layout: &#34;</description>
-    </item>
-    
-    <item>
-      <title>Integrations</title>
-      <link>https://speedle.io/integrations/</link>
-      <pubDate>Mon, 10 Apr 2017 16:41:54 +0100</pubDate>
-      
-      <guid>https://speedle.io/integrations/</guid>
-      <description></description>
     </item>
     
     <item>

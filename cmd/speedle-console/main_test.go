@@ -21,7 +21,7 @@ func env(vars map[string]string) func(string) string {
 var required = []string{"--insecure", "--pms-url", "http://pms:6733", "--ads-url", "http://ads:6734", "--asserter-endpoint", "http://a/assert"}
 
 func TestParseFlags(t *testing.T) {
-	args := append([]string{"--bootstrap-admins", " user:alice, ,group:ops", "--authz-cache-ttl", "1s"}, required...)
+	args := append([]string{"--bootstrap-admins", " user:alice, ,group:ops", "--authz-cache-ttl", "1s", "--secure-cookie"}, required...)
 	cfg, err := parseFlags(args, env(map[string]string{
 		"SPEEDLE_CONSOLE_AUTHZ_SERVICE": "my-console",
 		"SPEEDLE_CONSOLE_PMS_URL":       "http://ignored",
@@ -30,7 +30,7 @@ func TestParseFlags(t *testing.T) {
 		t.Fatal(err)
 	}
 	if cfg.PMSURL != "http://pms:6733" || cfg.AuthzService != "my-console" || cfg.AuthzCacheTTL != time.Second ||
-		strings.Join(cfg.BootstrapAdmins, "|") != "user:alice|group:ops" || cfg.Endpoint != "0.0.0.0:6735" {
+		strings.Join(cfg.BootstrapAdmins, "|") != "user:alice|group:ops" || cfg.Endpoint != "0.0.0.0:6735" || !cfg.SecureCookie {
 		t.Errorf("config %+v", cfg)
 	}
 }

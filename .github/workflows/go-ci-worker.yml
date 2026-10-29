@@ -132,7 +132,7 @@ jobs:
 
       - name: Build
         if: inputs.mode == 'build'
-        run: go build ./cmd/speedle-pms/... ./cmd/speedle-ads/... ./cmd/spctl/...
+        run: go build ./cmd/speedle-pms/... ./cmd/speedle-ads/... ./cmd/spctl/... ./cmd/speedle-console/...
 
       # The default-branch worker keeps scheduling policy outside PR control.
       - name: Setup pinned Playground Go

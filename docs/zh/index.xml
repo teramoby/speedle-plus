@@ -40,7 +40,7 @@ grant (role designer, role dba) update db_design_doc 资源是被保护的对象
 语法见 SPDL，完整决策示例见 RBAC 与 ABAC。
 运行示例前 先按快速入门编译仓库根目录下的 ./bin/spctl、./bin/speedle-pms 和 ./bin/speedle-ads，需要 Go 1.26.10 或 Go 1.27.3（也可使用同一大版本的更新补丁版本）、Bash、curl 和 Python 3。下面各终端都从仓库根目录运行。为本页使用一个新的策略文件；仅在两个服务都停止后重建该文件。
 初始化空策略文件：
-printf &amp;#39;{}\n&amp;#39; &amp;gt; docs-policies.json 终端一启动 PMS，并保持运行：</description>
+printf &amp;#39;{}\n&amp;#39; &amp;gt; docs-policies.</description>
     </item>
     
     <item>
@@ -157,10 +157,10 @@ Issue的内容请包括：
       <guid>https://speedle.io/zh/quick-start/</guid>
       <description>先在 Playground 中试用 无需安装，即可先体验 Speedle 的基本功能。 打开 Playground 策略实验室，编辑 SPDL 策略、设置用户、资源和动作，即可在浏览器中查看真实的 Allow/Deny（允许／拒绝）授权结果，无需安装 Go 或启动服务。
 准备在本机编译和运行 Speedle 时，再继续下面的步骤。
-准备环境 准备 Linux 或 macOS、Bash、Git、curl，以及 Go 1.26.10 或 Go 1.27.3（也可使用同一大版本的更新补丁版本）。Speedle+ 支持最近的三个 Go 大版本；本教程已在 Go 1.25.14、Go 1.26.10 和 Go 1.27.3 上验证，推荐使用稳定版 Go 1.27.3 完成本教程。
+准备环境 准备 Linux 或 macOS、Bash、Git、curl，以及 Go 1.26.10 或 Go 1.27.3（也可使用同一大版本的更新补丁版本）。Speedle+ 支持 Go 1.26 和 Go 1.27 的安全补丁版本；本教程已在 Go 1.26.10 和 Go 1.27.3 上验证，推荐使用稳定版 Go 1.27.3 完成本教程。
 按照 Go 官方安装说明安装，然后检查版本：
 go version Go 会自动配置 GOROOT 和默认的 GOPATH，无需手动指定。下面将程序编译到源码目录下的 bin 目录。
-第一步：下载源码并编译 git clone --depth 1 https://github.com/teramoby/speedle-plus.git cd speedle-plus mkdir -p bin go build -o ./bin/ ./cmd/spctl ./cmd/speedle-pms ./cmd/speedle-ads ls bin 输出目录中应有三个程序：</description>
+第一步：下载源码并编译 git clone --depth 1 https://github.com/teramoby/speedle-plus.git cd speedle-plus mkdir -p bin go build -o .</description>
     </item>
     
     <item>
@@ -183,11 +183,11 @@ go version Go 会自动配置 GOROOT 和默认的 GOPATH，无需手动指定。
       <guid>https://speedle.io/zh/docs/deployment-embeded/</guid>
       <description>什么是 Speedle 嵌入模式 嵌入模式将 Speedle 策略决策引擎运行在你的 Go 应用进程中，通过 evaluator 直接决策，无需启动 PMS 或 ADS 服务。应用负责认证用户，并为每次决策提供主体、资源和操作。
 编写代码前，可以先用 Playground 体验基本策略功能。如果希望以独立服务运行 Speedle，请参阅快速入门。
-前提条件 使用 Linux 或 macOS、命令行 shell，以及 Go 1.26.10 或 Go 1.27.3（也可使用同一大版本的更新补丁版本），最低版本与快速入门一致。本例使用 Go modules 和已发布的 Speedle+ v1.6.0，推荐使用 Go 1.27.3；示例已在 Go 1.25.14、Go 1.26.10 和 Go 1.27.3 下验证。
+前提条件 使用 Linux 或 macOS、命令行 shell，以及 Go 1.26.10 或 Go 1.27.3（也可使用同一大版本的更新补丁版本），安全补丁版本要求与快速入门一致。本例使用 Go modules 和已发布的 Speedle+ v1.6.0，推荐使用 Go 1.27.3；示例已在 Go 1.26.10 和 Go 1.27.3 下验证。
 按照 Go 官方安装说明安装 Go，然后检查版本：
 go version Go 会自动配置 GOROOT 和默认 GOPATH，无需手工设置。
 创建应用模块 在 Speedle 源码目录之外，选择一个有写入权限的目录，从新目录开始本例：
-mkdir speedle-embedded-demo cd speedle-embedded-demo go mod init example.com/speedle-embedded-demo go get github.com/teramoby/speedle-plus/pkg/eval@v1.6.0 如果已有包含 go.mod 的应用，只需在该应用的模块目录中执行最后一条 go get 命令。</description>
+mkdir speedle-embedded-demo cd speedle-embedded-demo go mod init example.com/speedle-embedded-demo go get github.com/teramoby/speedle-plus/pkg/eval@v1.6.0 如果已有包含 go.</description>
     </item>
     
     <item>
@@ -228,7 +228,7 @@ printf &amp;#39;{}\n&amp;#39; &amp;gt; docs-policies.json 终端一启动 PMS，
 ./bin/speedle-pms --store-type file --filestore-loc ./docs-policies.json --endpoint 127.0.0.1:6733 --grpc-endpoint 127.0.0.1:0 --insecure=true 终端二启动 ADS，并保持运行：
 ./bin/speedle-ads --store-type file --filestore-loc ./docs-policies.json --endpoint 127.0.0.1:6734 --grpc-endpoint 127.0.0.1:0 --insecure=true 在第三个终端运行后续命令。PMS/ADS 共享同一个文件，策略更新通过 watch 异步到达 ADS；先查询确认已更新，再依赖新策略做决策。--insecure=true 仅用于回环地址上的本地示例，生产连接见安全配置。示例显式指定 PMS 地址，不修改 ~/.spctlconfig。完成后在两个服务终端按 Ctrl-C。
 创建可重复的测试策略 测试文件给 Alan 分配 role1、role2；其中 role1 可以下载 /books/HarryPotter。
-./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ create service --json-file website/tests/examples/bookstore.</description>
+./bin/spctl --pms-endpoint http://127.</description>
     </item>
     
     <item>
@@ -243,7 +243,7 @@ printf &amp;#39;{}\n&amp;#39; &amp;gt; docs-policies.json 终端一启动 PMS，
 运行示例前 先按快速入门编译仓库根目录下的 ./bin/spctl、./bin/speedle-pms 和 ./bin/speedle-ads，需要 Go 1.26.10 或 Go 1.27.3（也可使用同一大版本的更新补丁版本）、Bash、curl 和 Python 3。下面各终端都从仓库根目录运行。为本页使用一个新的策略文件；仅在两个服务都停止后重建该文件。
 初始化空策略文件：
 printf &amp;#39;{}\n&amp;#39; &amp;gt; docs-policies.json 终端一启动 PMS，并保持运行：
-./bin/speedle-pms --store-type file --filestore-loc ./docs-policies.json --endpoint 127.0.0.1:6733 --grpc-endpoint 127.0.0.1:0 --insecure=true 终端二启动 ADS，并保持运行：</description>
+./bin/speedle-pms --store-type file --filestore-loc ./docs-policies.json --endpoint 127.0.0.1:6733 --grpc-endpoint 127.</description>
     </item>
     
     <item>
@@ -257,6 +257,21 @@ printf &amp;#39;{}\n&amp;#39; &amp;gt; docs-policies.json 终端一启动 PMS，
 启动确定性的本地 mock 此 mock 只识别 githubtoken/github、googletoken/google、gitlabtoken/gitlab 三组输入，分别表示对应域的 user1。令牌与提供方不匹配时失败。它是测试 fixture，不验证真实令牌。 不会记录令牌值。仅绑定回环地址，生产环境必须替换为真实身份集成。
 从仓库根目录在单独终端运行：
 go run ./website/tests/examples/asserter // A deterministic mock for the token-assertion tutorial. Never use for real tokens. package main import ( &amp;#34;encoding/json&amp;#34; &amp;#34;flag&amp;#34; &amp;#34;log&amp;#34; &amp;#34;net/http&amp;#34; &amp;#34;strings&amp;#34; &amp;#34;time&amp;#34; ) type principal struct { Type string `json:&amp;#34;type&amp;#34;` Name string `json:&amp;#34;name&amp;#34;` IDD string `json:&amp;#34;idd&amp;#34;` } type response struct { Principals []principal `json:&amp;#34;principals,omitempty&amp;#34;` ErrCode int `json:&amp;#34;errCode&amp;#34;` ErrMessage string `json:&amp;#34;errMessage,omitempty&amp;#34;` } func assert(w http.</description>
+    </item>
+    
+    <item>
+      <title>策略管理控制台</title>
+      <link>https://speedle.io/zh/docs/console/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://speedle.io/zh/docs/console/</guid>
+      <description>控制台能做什么 speedle-console 是一个独立的服务，提供网页，并把页面发出的请求转发给 PMS 和 ADS。功能包括：
+ 服务、授权策略和角色策略：列表、筛选、新建、修改、删除。修改时用 PUT 并带上对象的 ETag，如果期间有人改过同一项，会提示而不是直接覆盖。 角色关系分析：用关系图展示谁直接或经由其他角色获得了哪些角色，可以包含 global 服务的角色策略。会标出循环、被引用却没有任何角色策略授予的角色，以及被授予却从未使用的角色。选择一个角色，可以查看谁持有它、经由哪些角色、是否只在满足条件或资源范围时才持有。 诊断：向 ADS 发送一个请求，查看结果、原因、获得的角色，以及每条生效的角色策略和授权策略及其条件结果。  页面支持中文和英文。
+PMS 和 ADS 必须隔离 PMS 没有认证，并且直接根据调用方发送的 Speedle-Principals 请求头记录修改人。控制台会验证用户身份并检查权限，但任何能直接访问 PMS 的人都可以修改任意策略。只对外开放控制台，PMS 和 ADS 只允许控制台和你的应用访问：使用网络策略，或启用双向 TLS 并设置 forceClientCert，给控制台配置客户端证书。
+在本机试用 按快速入门启动 PMS 和 ADS，然后以开发模式构建并运行控制台。开发模式无需登录，所有人都是管理员，因此只能监听回环地址。
+go build -o ./bin/speedle-console ./cmd/speedle-console ./bin/speedle-console --dev-no-auth --insecure --endpoint 127.0.0.1:6735 --pms-url http://127.0.0.1:6733 --ads-url http://127.0.0.1:6734 打开 http://127.0.0.1:6735/console/。
+登录与权限 用户使用令牌登录。控制台把令牌发给令牌断言服务（与 ADS 使用的是同一个 webhook），并把返回的主体保存在签名的 HttpOnly、SameSite=Strict cookie 中，令牌本身不会保存。每次修改还需要会话专属的 CSRF 令牌，页面会自动带上。
+用户能做什么由 Speedle 自己决定。每次 API 调用时，控制台都会询问 ADS：用户的主体能否在服务 speedle-console（可用 --authz-service 修改）中对资源 console 执行某个操作：</description>
     </item>
     
     <item>
