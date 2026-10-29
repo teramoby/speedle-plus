@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"path"
@@ -47,12 +46,12 @@ func (c *Client) delete(u *url.URL, token string) error {
 		return errors.New(resp.Status)
 	case http.StatusBadRequest:
 		defer resp.Body.Close()
-		body, err := ioutil.ReadAll(resp.Body)
+		body, err := io.ReadAll(resp.Body)
 		if err == nil {
 			var errorDetail httputils.ErrorResponse
 			err = json.Unmarshal(body, &errorDetail)
 			if err == nil {
-				return errors.New(fmt.Sprintf("%s: %s", resp.Status, errorDetail.Error))
+				return fmt.Errorf("%s: %s", resp.Status, errorDetail.Error)
 			}
 		}
 		return errors.New(resp.Status)
@@ -95,7 +94,7 @@ func (c *Client) get(u *url.URL, paths []string, params url.Values, token string
 		return nil, fmt.Errorf("%s not found", strings.Join(paths, " "))
 	case http.StatusOK:
 		defer resp.Body.Close()
-		body, err := ioutil.ReadAll(resp.Body)
+		body, err := io.ReadAll(resp.Body)
 		if err != nil {
 			return nil, err
 		}
@@ -105,12 +104,12 @@ func (c *Client) get(u *url.URL, paths []string, params url.Values, token string
 		return nil, errors.New(resp.Status)
 	case http.StatusBadRequest:
 		defer resp.Body.Close()
-		body, err := ioutil.ReadAll(resp.Body)
+		body, err := io.ReadAll(resp.Body)
 		if err == nil {
 			var errorDetail httputils.ErrorResponse
 			err = json.Unmarshal(body, &errorDetail)
 			if err == nil {
-				return nil, errors.New(fmt.Sprintf("%s: %s", resp.Status, errorDetail.Error))
+				return nil, fmt.Errorf("%s: %s", resp.Status, errorDetail.Error)
 			}
 		}
 		return nil, errors.New(resp.Status)
@@ -141,7 +140,7 @@ func (c *Client) post(u *url.URL, paths []string, payload io.Reader, token strin
 	switch resp.StatusCode {
 	case http.StatusCreated, http.StatusOK:
 		defer resp.Body.Close()
-		body, err := ioutil.ReadAll(resp.Body)
+		body, err := io.ReadAll(resp.Body)
 		if err != nil {
 			return "", err
 		}
@@ -151,12 +150,12 @@ func (c *Client) post(u *url.URL, paths []string, payload io.Reader, token strin
 		return "", errors.New(resp.Status)
 	case http.StatusBadRequest:
 		defer resp.Body.Close()
-		body, err := ioutil.ReadAll(resp.Body)
+		body, err := io.ReadAll(resp.Body)
 		if err == nil {
 			var errorDetail httputils.ErrorResponse
 			err = json.Unmarshal(body, &errorDetail)
 			if err == nil {
-				return "", errors.New(fmt.Sprintf("%s: %s", resp.Status, errorDetail.Error))
+				return "", fmt.Errorf("%s: %s", resp.Status, errorDetail.Error)
 			}
 		}
 		return "", errors.New(resp.Status)

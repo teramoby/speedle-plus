@@ -155,9 +155,7 @@ func newEvaluator(conf *cfg.Config) (eval.InternalEvaluator, error) {
 				log.Debugf("Asserting token with token type %s.", tokenType)
 				s, err := as.AssertToken(token, tokenType, "", nil)
 				if err == nil {
-					for _, p := range s.Principals {
-						ctx.Subject.Principals = append(ctx.Subject.Principals, p)
-					}
+					ctx.Subject.Principals = append(ctx.Subject.Principals, s.Principals...)
 				} else {
 					log.Errorf("Failed to assert due to error %v.", err)
 					return err

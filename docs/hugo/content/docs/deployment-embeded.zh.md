@@ -17,7 +17,7 @@ bref = ""
 
 ## 前提条件
 
-使用 Linux 或 macOS、命令行 shell，以及 **Go 1.25 或更新版本**，最低版本与[快速入门](../../quick-start/)一致。本例使用 Go modules 和已发布的 **Speedle+ v1.6.0**，推荐使用 Go 1.27.3；示例已在 Go 1.25.14、Go 1.26.10 和 Go 1.27.3 下验证。
+使用 Linux 或 macOS、命令行 shell，以及 **Go 1.26.10 或 Go 1.27.3**（也可使用同一大版本的更新补丁版本），安全补丁版本要求与[快速入门](../../quick-start/)一致。本例使用 Go modules 和已发布的 **Speedle+ v1.6.0**，推荐使用 Go 1.27.3；示例已在 Go 1.26.10 和 Go 1.27.3 下验证。
 
 按照 [Go 官方安装说明](https://go.dev/doc/install)安装 Go，然后检查版本：
 

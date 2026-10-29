@@ -196,14 +196,12 @@ func (p *PolicyEvalImpl) populateContext(ctx *adsapi.RequestContext) (*internalR
 				if user == nil {
 					user = principal.Name
 				}
-				break
 			case adsapi.PRINCIPAL_TYPE_GROUP:
 				newCtx.Subject.Groups = append(newCtx.Subject.Groups, encodedPrincipal)
 				groups = append(groups, principal.Name)
 				if len(principalWithoutIDD) != 0 {
 					newCtx.Subject.Groups = append(newCtx.Subject.Groups, principalWithoutIDD)
 				}
-				break
 			case adsapi.PRINCIPAL_TYPE_ENTITY:
 				newCtx.Subject.Entities = append(newCtx.Subject.Entities, encodedPrincipal)
 				if len(principalWithoutIDD) != 0 {
@@ -212,7 +210,6 @@ func (p *PolicyEvalImpl) populateContext(ctx *adsapi.RequestContext) (*internalR
 				if entity == nil {
 					entity = principal.Name
 				}
-				break
 			}
 		}
 		if user != nil {
@@ -302,7 +299,7 @@ func (p *PolicyEvalImpl) GetAllGrantedRoles(ctx adsapi.RequestContext) ([]string
 	return ret, err
 }
 
-//Limitations: This function only calculate granted permissions with resource, will not calculate granted permissions with resource expression.
+// Limitations: This function only calculate granted permissions with resource, will not calculate granted permissions with resource expression.
 func (p *PolicyEvalImpl) GetAllGrantedPermissions(ctx adsapi.RequestContext) ([]pms.Permission, error) {
 	p.RuntimePolicyStore.RLock()
 	defer p.RuntimePolicyStore.RUnlock()
@@ -412,7 +409,7 @@ func (p *PolicyEvalImpl) getDirectRolePolicesInService(principals []string,
 		}
 
 		// No principal defined. that means the roles are granted to any user
-		if (policy.Principals == nil || len(policy.Principals) == 0 || matchRolePolicyPrincipals(principals, policy.Principals)) && matchResource(resource, policy.Resources, policy.ResourceExpressions) {
+		if (len(policy.Principals) == 0 || matchRolePolicyPrincipals(principals, policy.Principals)) && matchResource(resource, policy.Resources, policy.ResourceExpressions) {
 			// Evaluate conditions
 			condition, ok := service.RolePoliciesCache.Conditions[policy.ID]
 			// If no conditions defined, the condition evaluation result is true
@@ -435,10 +432,8 @@ func (p *PolicyEvalImpl) getDirectRolePolicesInService(principals []string,
 				switch policy.Effect {
 				case pms.Grant:
 					grantedRolePolicies = append(grantedRolePolicies, policy)
-					break
 				case pms.Deny:
 					deniedRolePolicies = append(deniedRolePolicies, policy)
-					break
 				default:
 					// TODO: Log a warning, currently do nothing
 				}
@@ -458,9 +453,9 @@ type Role struct {
 	DeniedByPrincipals map[string]bool //TODO this could be removed?
 }
 
-//assume role policy does not support AND Principal
-//assume ctx.Subject.Principals does not contain user defined roles,
-//assume built-in role like anonymous role and authenticated role can't be used in role policy
+// assume role policy does not support AND Principal
+// assume ctx.Subject.Principals does not contain user defined roles,
+// assume built-in role like anonymous role and authenticated role can't be used in role policy
 func (p *PolicyEvalImpl) getGrantedRolesFromService(ctx *internalRequestContext, evaluationResult *adsapi.EvaluationResult) ([]string, error) {
 	if ctx.GlobalService != nil {
 		ctx.GlobalService.RLock()
@@ -821,7 +816,7 @@ func contains(a []string, x string) bool {
 	return false
 }
 
-//If any of the deniedByRole and all its ancestors are not denied, we take it as could be safely denied.
+// If any of the deniedByRole and all its ancestors are not denied, we take it as could be safely denied.
 func couldRoleSafelyBeDenied(role string, relatedRoleMap map[string]*Role, deniedRoleMap map[string]bool) bool {
 	allDeniedByRoleBeDenied := true
 	if roleNode, ok := relatedRoleMap[role]; ok {
@@ -869,7 +864,7 @@ func (p *PolicyEvalImpl) getPolicyList(ctx *internalRequestContext, matchResourc
 	principals := ctx.Subject.Principals
 	for _, policy := range ctx.Service.GetRelatedPolicyMap(principals, ctx.Resource, matchResource) {
 		// No principal defined. that means the resource actions are granted to any user
-		if policy.Principals == nil || len(policy.Principals) == 0 || matchPrincipals(principals, policy.Principals) {
+		if len(policy.Principals) == 0 || matchPrincipals(principals, policy.Principals) {
 			// Check the resource and action
 			if !matchResource || (matchResource && matchResourceAction(policy, ctx)) {
 				// Evaluate conditions
@@ -891,10 +886,8 @@ func (p *PolicyEvalImpl) getPolicyList(ctx *internalRequestContext, matchResourc
 					switch policy.Effect {
 					case pms.Grant:
 						grantedPolicyList = append(grantedPolicyList, policy)
-						break
 					case pms.Deny:
 						deniedPolicyList = append(deniedPolicyList, policy)
-						break
 					default:
 						// TODO: Log a warning, currently do nothing.
 					}
@@ -908,13 +901,14 @@ func (p *PolicyEvalImpl) getPolicyList(ctx *internalRequestContext, matchResourc
 	return grantedPolicyList, deniedPolicyList, nil
 }
 
-//dataSet should be this:
-// {
-//   [] string, //service name slice
-//   map[int]string, //map of policy ID to it's serviceName
-//   map[int]string, //map of rolePolicy ID to it's serviceName
-//   [] string, //custom function slice
-// }
+// dataSet should be this:
+//
+//	{
+//	  [] string, //service name slice
+//	  map[int]string, //map of policy ID to it's serviceName
+//	  map[int]string, //map of rolePolicy ID to it's serviceName
+//	  [] string, //custom function slice
+//	}
 func (p *PolicyEvalImpl) syncRuntimeCache(dataSet []interface{}) error {
 	log.Info("start to sync runtime cache data.")
 	if len(dataSet) != 4 {
@@ -1136,11 +1130,8 @@ func (p *PolicyEvalImpl) updateRuntimeCacheWithStoreChange(updateChan pms.Storag
 func (p *PolicyEvalImpl) cleanExpiredFunctionResultPeriodically() {
 	ticker := time.NewTicker(30 * time.Minute)
 	go func() {
-		for {
-			select {
-			case <-ticker.C:
-				p.CleanExpiredFunctionResult()
-			}
+		for range ticker.C {
+			p.CleanExpiredFunctionResult()
 		}
 	}()
 }

@@ -8,7 +8,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"strings"
 
@@ -118,7 +117,7 @@ func createCommandFunc(cmd *cobra.Command, args []string) {
 				printHelpAndExit(cmd)
 			}
 			if jsonFileName != "" {
-				buf, err = ioutil.ReadFile(jsonFileName)
+				buf, err = os.ReadFile(jsonFileName)
 			} else if pdlFileName != "" {
 				fileStore, err := store.NewStore(file.StoreType, map[string]interface{}{
 					file.FileLocationKey: pdlFileName,
@@ -134,6 +133,10 @@ func createCommandFunc(cmd *cobra.Command, args []string) {
 					os.Exit(1)
 				}
 				buf, err = json.Marshal(services)
+				if err != nil {
+					fmt.Fprintln(os.Stderr, err)
+					os.Exit(1)
+				}
 			}
 		} else if len(args) == 2 {
 			serviceName = args[1]
@@ -144,6 +147,10 @@ func createCommandFunc(cmd *cobra.Command, args []string) {
 			if pdlFileName == "" {
 				service := pms.Service{Name: serviceName, Type: serviceType}
 				buf, err = json.Marshal(service)
+				if err != nil {
+					fmt.Fprintln(os.Stderr, err)
+					os.Exit(1)
+				}
 			} else {
 				fileStore, err := store.NewStore(file.StoreType, map[string]interface{}{
 					file.FileLocationKey: pdlFileName,
@@ -159,6 +166,10 @@ func createCommandFunc(cmd *cobra.Command, args []string) {
 						os.Exit(1)
 					}
 					buf, err = json.Marshal(service)
+					if err != nil {
+						fmt.Fprintln(os.Stderr, err)
+						os.Exit(1)
+					}
 				}
 			}
 
@@ -172,7 +183,7 @@ func createCommandFunc(cmd *cobra.Command, args []string) {
 			printHelpAndExit(cmd)
 		}
 		var kind string
-		if "policy" == strings.ToLower(args[0]) {
+		if strings.ToLower(args[0]) == "policy" {
 			kind = "policy"
 		} else {
 			kind = "role-policy"
@@ -197,7 +208,7 @@ func createCommandFunc(cmd *cobra.Command, args []string) {
 				printHelpAndExit(cmd)
 			}
 			var buf []byte
-			buf, err = ioutil.ReadFile(jsonFileName)
+			buf, err = os.ReadFile(jsonFileName)
 			if err == nil {
 				res, err = cli.Post([]string{"service", serviceName, kind}, bytes.NewBuffer(buf), "")
 			}
@@ -208,7 +219,7 @@ func createCommandFunc(cmd *cobra.Command, args []string) {
 			if jsonFileName == "" {
 				printHelpAndExit(cmd)
 			}
-			buf, err = ioutil.ReadFile(jsonFileName)
+			buf, err = os.ReadFile(jsonFileName)
 
 		} else if len(args) == 2 {
 			funcName := args[1]

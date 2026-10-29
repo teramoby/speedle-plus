@@ -7,15 +7,15 @@ import (
 	"regexp"
 	"strings"
 
+	log "github.com/sirupsen/logrus"
 	"github.com/teramoby/speedle-plus/3rdparty/github.com/Knetic/govaluate"
 	adsapi "github.com/teramoby/speedle-plus/api/ads"
 	"github.com/teramoby/speedle-plus/api/pms"
-	log "github.com/sirupsen/logrus"
 )
 
 func matchResource(requestRes string, resources, resExpressions []string) bool {
 	//in role policy, resources/resExpressions could be empty, which means any resource
-	if (resources == nil || len(resources) == 0) && (resExpressions == nil || len(resExpressions) == 0) {
+	if (len(resources) == 0) && (len(resExpressions) == 0) {
 		return true
 	}
 	for _, res := range resources {
@@ -35,7 +35,7 @@ func matchResource(requestRes string, resources, resExpressions []string) bool {
 // Returns if policy is matched
 func matchResourceAction(policy *pms.Policy, ctx *internalRequestContext) bool {
 	//we interpret nil or empty resource/permission/action/principal etc as ANY resource/permission/action/principal
-	if policy.Permissions == nil || len(policy.Permissions) == 0 { //any permissions
+	if len(policy.Permissions) == 0 { //any permissions
 		return true
 	}
 	for _, perm := range policy.Permissions {
@@ -46,7 +46,7 @@ func matchResourceAction(policy *pms.Policy, ctx *internalRequestContext) bool {
 		}
 		resNameMatch := perm.Resource == ctx.Resource
 		if (len(perm.Resource) == 0 && len(perm.ResourceExpression) == 0) || resExpMatch || resNameMatch {
-			if perm.Actions == nil || len(perm.Actions) == 0 { //any action
+			if len(perm.Actions) == 0 { //any action
 				return true
 			}
 			for _, act := range perm.Actions {
@@ -183,11 +183,11 @@ func evaluateCondition(condition *govaluate.EvaluableExpression, attributes map[
 }
 
 func matchRolePolicyPrincipals(subjectPrincipalList []string, rolePolicyPrincipalList []string) bool {
-	if subjectPrincipalList == nil || len(subjectPrincipalList) == 0 {
+	if len(subjectPrincipalList) == 0 {
 		return false
 	}
 
-	if rolePolicyPrincipalList == nil || len(rolePolicyPrincipalList) == 0 {
+	if len(rolePolicyPrincipalList) == 0 {
 		return true
 	}
 	matched := false
@@ -206,15 +206,16 @@ func matchRolePolicyPrincipals(subjectPrincipalList []string, rolePolicyPrincipa
 
 }
 
-/**
+/*
+*
 It's regarded as matched only if all items in princs2 are included in princs1
 */
 func matchPrincipals(subjectPrincipalList []string, policyPrincipalList [][]string) bool {
-	if subjectPrincipalList == nil || len(subjectPrincipalList) == 0 {
+	if len(subjectPrincipalList) == 0 {
 		return false
 	}
 
-	if policyPrincipalList == nil || len(policyPrincipalList) == 0 {
+	if len(policyPrincipalList) == 0 {
 		return true
 	}
 

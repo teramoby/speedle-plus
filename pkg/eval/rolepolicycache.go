@@ -30,11 +30,7 @@ func NewRolePolicyCacheData() (p *RolePolicyCacheData) {
 }
 
 func nilPrincipalRolePolicy(rolePolicy *pms.RolePolicy) (result bool) {
-	if rolePolicy.Principals == nil || len(rolePolicy.Principals) == 0 {
-		return true
-	}
-
-	return false
+	return len(rolePolicy.Principals) == 0
 }
 
 func (p *RolePolicyCacheData) AddRolePolicyToCache(policy *pms.RolePolicy, condition *govaluate.EvaluableExpression) {
@@ -135,8 +131,8 @@ func (p *RolePolicyCacheData) DeleteRolePolicyFromCache(policyID string) {
 }
 
 func nilResourceRolePolicy(rolePolicy *pms.RolePolicy) (result bool) {
-	if (rolePolicy.Resources == nil || len(rolePolicy.Resources) == 0) &&
-		(rolePolicy.ResourceExpressions == nil || len(rolePolicy.ResourceExpressions) == 0) {
+	if (len(rolePolicy.Resources) == 0) &&
+		(len(rolePolicy.ResourceExpressions) == 0) {
 		return true
 	}
 
@@ -176,7 +172,7 @@ func (p *RolePolicyCacheData) GetRelatedRolePolicyMap(subjectPrincipals []string
 	p.getRolePolicyFromResourceToRolePolicyMap(p.NilPrincipalToPolicies, resultRolePolicyMap, resource)
 
 	//Only return the role policy grant to nil principal if subject principals are nil
-	if subjectPrincipals == nil || len(subjectPrincipals) == 0 {
+	if len(subjectPrincipals) == 0 {
 		return resultRolePolicyMap
 	}
 

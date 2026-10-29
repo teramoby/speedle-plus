@@ -30,7 +30,7 @@ Configuration precedence is command line, then `SPDL_*` environment variables, t
 
 ## Generate certificates for a local test
 
-Build the binaries using the [quick start](/quick-start/). From the repository root, use Go 1.25 or later to generate a local CA plus separate server/client certificates. The server certificate has SANs for `localhost`, `127.0.0.1` and `::1`; private keys use mode 0600. These **24-hour demonstration certificates** are not production credentials. The generator refuses to overwrite existing files: choose a new output directory when regenerating.
+Build the binaries using the [quick start](/quick-start/). From the repository root, use Go 1.26.10 or Go 1.27.3 (or a newer patch on the same release branch) to generate a local CA plus separate server/client certificates. The server certificate has SANs for `localhost`, `127.0.0.1` and `::1`; private keys use mode 0600. These **24-hour demonstration certificates** are not production credentials. The generator refuses to overwrite existing files: choose a new output directory when regenerating.
 
 <!-- docs-check: certificates -->
 ```bash

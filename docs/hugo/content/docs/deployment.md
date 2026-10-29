@@ -16,7 +16,7 @@ Use [embedded mode](../deployment-embeded/) to run the evaluator in your Go proc
 
 ## Build with current Go
 
-Use Go 1.25 or newer (Go 1.27.3 is recommended), Git and a shell on Linux or macOS. Use Go modules; the checkout can be anywhere writable. No custom `GOROOT`, `GOPATH`, `dep` or GOPATH source layout is needed.
+Use Go 1.26.10 or Go 1.27.3 (or a newer patch on the same release branch) (Go 1.27.3 is recommended), Git and a shell on Linux or macOS. Use Go modules; the checkout can be anywhere writable. No custom `GOROOT`, `GOPATH`, `dep` or GOPATH source layout is needed.
 
 <!-- deployment-check: source-build -->
 ```bash

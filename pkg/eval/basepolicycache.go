@@ -33,18 +33,15 @@ type ResourceToPolicyMap struct {
 }
 
 func (p *ResourceToPolicyMap) isEmpty() bool {
-	if p.NilResourceToPolicies != nil &&
-		len(p.NilResourceToPolicies) > 0 {
+	if len(p.NilResourceToPolicies) > 0 {
 		return false
 	}
 
-	if p.ResourceExpressionToPolicies != nil &&
-		len(p.ResourceExpressionToPolicies) > 0 {
+	if len(p.ResourceExpressionToPolicies) > 0 {
 		return false
 	}
 
-	if p.ResourceToPolicies != nil &&
-		len(p.ResourceToPolicies) > 0 {
+	if len(p.ResourceToPolicies) > 0 {
 		return false
 	}
 
@@ -75,7 +72,7 @@ type BasePolicyCacheData struct {
 }
 
 func (p *BasePolicyCacheData) isEmpty() bool {
-	if p.PrincipalToPolicies != nil && len(p.PrincipalToPolicies) > 0 {
+	if len(p.PrincipalToPolicies) > 0 {
 		return false
 	}
 

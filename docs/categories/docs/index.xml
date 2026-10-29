@@ -70,7 +70,7 @@ Before running the examples Build ./bin/spctl, ./bin/speedle-pms and ./bin/speed
       
       <guid>https://speedle.io/docs/decisions/</guid>
       <description>What is an authorization decision? Speedle evaluates a subject, action and resource within a service. The application must enforce the result. Treat an evaluation error or timeout separately from a normal Deny and fail closed. REST, gRPC and embedded Go APIs have different wire representations; use their respective contracts.
-Before running the examples Build ./bin/spctl, ./bin/speedle-pms and ./bin/speedle-ads using the quick start. Use Go 1.25 or later, Bash, curl and Python 3.</description>
+Before running the examples Build ./bin/spctl, ./bin/speedle-pms and ./bin/speedle-ads using the quick start. Use Go 1.26.10 or Go 1.27.3 (or a newer patch on the same release branch), Bash, curl and Python 3.</description>
     </item>
     
     <item>
@@ -138,7 +138,7 @@ The Token Assertion Plugin API uses integer errCode and an optional attribute ob
       
       <guid>https://speedle.io/docs/deployment/</guid>
       <description>Choose a deployment mode Use embedded mode to run the evaluator in your Go process. Use standalone PMS and ADS when applications call Speedle over REST or gRPC. The Quick Start provides a complete local policy-management and authorization walkthrough.
-Build with current Go Use Go 1.25 or newer (Go 1.27.3 is recommended), Git and a shell on Linux or macOS. Use Go modules; the checkout can be anywhere writable. No custom GOROOT, GOPATH, dep or GOPATH source layout is needed.</description>
+Build with current Go Use Go 1.26.10 or Go 1.27.3 (or a newer patch on the same release branch) (Go 1.27.3 is recommended), Git and a shell on Linux or macOS. Use Go modules; the checkout can be anywhere writable. No custom GOROOT, GOPATH, dep or GOPATH source layout is needed.</description>
     </item>
     
     <item>

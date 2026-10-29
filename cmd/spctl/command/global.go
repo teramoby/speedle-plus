@@ -8,7 +8,6 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -52,7 +51,7 @@ func httpClient() (*http.Client, error) {
 	tlsConfig := &tls.Config{}
 	tlsConfig.InsecureSkipVerify = globalFlags.InsecureSkipVerify
 	if globalFlags.CAFile != "" {
-		caCert, err := ioutil.ReadFile(globalFlags.CAFile)
+		caCert, err := os.ReadFile(globalFlags.CAFile)
 		if err != nil {
 			log.Fatal(err)
 			return nil, err
@@ -124,7 +123,7 @@ func writeConfigFile(flags map[string]string) error {
 	defer f.Close()
 	w := bufio.NewWriter(f)
 	for name, val := range flags {
-		fmt.Fprintln(w, fmt.Sprintf("%s=%s", name, val))
+		fmt.Fprintf(w, "%s=%s\n", name, val)
 	}
 	return w.Flush()
 }

@@ -9,13 +9,13 @@ import (
 	"strings"
 
 	"github.com/gorilla/mux"
+	log "github.com/sirupsen/logrus"
 	"github.com/teramoby/speedle-plus/api/ads"
 	"github.com/teramoby/speedle-plus/api/pms"
 	"github.com/teramoby/speedle-plus/pkg/errors"
 	"github.com/teramoby/speedle-plus/pkg/httputils"
 	"github.com/teramoby/speedle-plus/pkg/logging"
 	"github.com/teramoby/speedle-plus/pkg/store"
-	log "github.com/sirupsen/logrus"
 )
 
 type GetDiscoverRequestsResponse struct {
@@ -64,7 +64,7 @@ func (e *RESTService) GetAllDiscoverRequests(w http.ResponseWriter, r *http.Requ
 	} else if len(revisionStr) != 0 { //get discover requests since revision
 		revision, err := strconv.ParseInt(revisionStr, 10, 64)
 		if err != nil {
-			err = errors.Errorf(errors.InvalidRequest, "invlid revision number %q", revision)
+			err = errors.Errorf(errors.InvalidRequest, "invlid revision number %q", revisionStr)
 			log.Error(err)
 			httputils.HandleError(w, err)
 
@@ -143,7 +143,7 @@ func (e *RESTService) GetDiscoverRequests(w http.ResponseWriter, r *http.Request
 	} else if len(revisionStr) != 0 { //get discover requests since revision
 		revision, err := strconv.ParseInt(revisionStr, 10, 64)
 		if err != nil {
-			err = errors.Errorf(errors.InvalidRequest, "invlid revision number %q", revision)
+			err = errors.Errorf(errors.InvalidRequest, "invlid revision number %q", revisionStr)
 			log.Error(err)
 			httputils.HandleError(w, err)
 

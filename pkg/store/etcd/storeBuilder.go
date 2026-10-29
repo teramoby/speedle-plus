@@ -8,14 +8,14 @@ import (
 	"strconv"
 	"strings"
 
-	clientv3 "go.etcd.io/etcd/client/v3"
-	"go.etcd.io/etcd/client/pkg/v3/transport"
-	"github.com/teramoby/speedle-plus/pkg/errors"
 	log "github.com/sirupsen/logrus"
+	"github.com/teramoby/speedle-plus/pkg/errors"
+	"go.etcd.io/etcd/client/pkg/v3/transport"
+	clientv3 "go.etcd.io/etcd/client/v3"
 
+	"github.com/spf13/pflag"
 	"github.com/teramoby/speedle-plus/api/pms"
 	"github.com/teramoby/speedle-plus/pkg/store"
-	"github.com/spf13/pflag"
 )
 
 const (
@@ -121,8 +121,8 @@ func (esb Etcd3StoreBuilder) NewStore(config map[string]interface{}) (pms.Policy
 				tlsInfo.ServerName = serverName
 			}
 
-			if allowedCN, ok := config[EtcdTLSAllowedCNKey].(string); ok {
-				tlsInfo.AllowedCN = allowedCN
+			if allowedCN, ok := config[EtcdTLSAllowedCNKey].(string); ok && allowedCN != "" {
+				tlsInfo.AllowedCNs = []string{allowedCN}
 			}
 
 			tlsConfig, err := tlsInfo.ClientConfig()

@@ -128,7 +128,7 @@ headingSelector: 'h2'
 
 <h2 id="generate-certificates-for-a-local-test">Generate certificates for a local test</h2>
 
-<p>Build the binaries using the <a href="/quick-start/">quick start</a>. From the repository root, use Go 1.25 or later to generate a local CA plus separate server/client certificates. The server certificate has SANs for <code>localhost</code>, <code>127.0.0.1</code> and <code>::1</code>; private keys use mode 0600. These <strong>24-hour demonstration certificates</strong> are not production credentials. The generator refuses to overwrite existing files: choose a new output directory when regenerating.</p>
+<p>Build the binaries using the <a href="/quick-start/">quick start</a>. From the repository root, use Go 1.26.10 or Go 1.27.3 (or a newer patch on the same release branch) to generate a local CA plus separate server/client certificates. The server certificate has SANs for <code>localhost</code>, <code>127.0.0.1</code> and <code>::1</code>; private keys use mode 0600. These <strong>24-hour demonstration certificates</strong> are not production credentials. The generator refuses to overwrite existing files: choose a new output directory when regenerating.</p>
 
 <!-- docs-check: certificates -->
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">go run ./website/tests/examples/certificates --out ./tls</code></pre></div>

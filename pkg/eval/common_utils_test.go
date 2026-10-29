@@ -5,7 +5,6 @@ package eval
 
 import (
 	"encoding/json"
-	"io/ioutil"
 	"os"
 	"testing"
 
@@ -13,17 +12,18 @@ import (
 	"github.com/teramoby/speedle-plus/pkg/store"
 	_ "github.com/teramoby/speedle-plus/pkg/store/etcd"
 	_ "github.com/teramoby/speedle-plus/pkg/store/file"
+	"github.com/teramoby/speedle-plus/testutil/storetest"
 
-	"github.com/teramoby/speedle-plus/api/pms"
 	log "github.com/sirupsen/logrus"
+	"github.com/teramoby/speedle-plus/api/pms"
 )
 
 func WriteToTempFile(content []byte) (string, error) {
-	tmpfile, err := ioutil.TempFile("", "authz-evaluator-")
-	defer tmpfile.Close()
+	tmpfile, err := os.CreateTemp("", "authz-evaluator-")
 	if err != nil {
 		return "", err
 	}
+	defer tmpfile.Close()
 
 	if _, err := tmpfile.Write(content); err != nil {
 		return "", err
@@ -33,7 +33,6 @@ func WriteToTempFile(content []byte) (string, error) {
 }
 
 var testPS pms.PolicyStoreManager
-var configFile string
 var conf *cfg.Config
 
 func testMain(m *testing.M) int {
@@ -68,6 +67,12 @@ func testMain(m *testing.M) int {
 		os.Exit(1)
 	}
 	conf = mConfig
+	if os.Getenv("STORE_TYPE") == "etcd" {
+		if err := storetest.WaitForEtcdHTTP(); err != nil {
+			log.Print(err)
+			return 1
+		}
+	}
 	ret := m.Run()
 	return ret
 }
@@ -87,15 +92,6 @@ func preparePolicyDataInStore(data []byte, t *testing.T) error {
 	return nil
 }
 
-//This method can help to print service, policy or rolepolicy instance. When debugger cannot work, you can use it to
-//print data to help investigation.
-func printObject(p interface{}) {
-	b, e := json.MarshalIndent(p, "", "	")
-	if e != nil {
-		log.Warning("Failed to marshal policy!")
-	}
-	log.Info(string(b))
-}
 func TestMain(m *testing.M) {
 	os.Exit(testMain(m))
 }

@@ -67,10 +67,8 @@ func convertRPCServiceRequest(rpcService *pb.ServiceRequest) *pms.Service {
 	switch rpcService.Type {
 	case pb.ServiceType_APPLICATION:
 		ret.Type = pms.TypeApplication
-		break
 	case pb.ServiceType_K8S_CLUSTER:
 		ret.Type = pms.TypeK8SCluster
-		break
 	}
 
 	return &ret
@@ -97,10 +95,8 @@ func convertRPCRolePolicy(rpcPolicy *pb.RolePolicy) *pms.RolePolicy {
 	switch rpcPolicy.Effect {
 	case pb.Effect_GRANT:
 		ret.Effect = pms.Grant
-		break
 	case pb.Effect_DENY:
 		ret.Effect = pms.Deny
-		break
 	}
 	return &ret
 }
@@ -115,10 +111,8 @@ func convertRPCPolicy(rpcPolicy *pb.Policy) *pms.Policy {
 	switch rpcPolicy.Effect {
 	case pb.Effect_GRANT:
 		ret.Effect = pms.Grant
-		break
 	case pb.Effect_DENY:
 		ret.Effect = pms.Deny
-		break
 	}
 	if rpcPolicy.Permissions == nil {
 		return &ret
@@ -146,10 +140,8 @@ func convertMetaService(service *pms.Service) *pb.Service {
 	switch service.Type {
 	case pms.TypeApplication:
 		ret.Type = pb.ServiceType_APPLICATION
-		break
 	case pms.TypeK8SCluster:
 		ret.Type = pb.ServiceType_K8S_CLUSTER
-		break
 	}
 	if len(service.Policies) > 0 {
 		for _, policy := range service.Policies {
@@ -188,10 +180,8 @@ func convertMetaRolePolicy(policy *pms.RolePolicy) *pb.RolePolicy {
 	switch policy.Effect {
 	case pms.Grant:
 		ret.Effect = pb.Effect_GRANT
-		break
 	case pms.Deny:
 		ret.Effect = pb.Effect_DENY
-		break
 	}
 	return &ret
 }
@@ -206,10 +196,8 @@ func convertMetaPolicy(policy *pms.Policy) *pb.Policy {
 	switch policy.Effect {
 	case pms.Grant:
 		ret.Effect = pb.Effect_GRANT
-		break
 	case pms.Deny:
 		ret.Effect = pb.Effect_DENY
-		break
 	}
 
 	if len(policy.Permissions) == 0 {

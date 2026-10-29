@@ -97,13 +97,10 @@ func TestRolePolicyWithoutResWithCondition(t *testing.T) {
 		switch role {
 		case "role1":
 			foundRole1 = true
-			break
 		case "role2":
 			foundRole2 = true
-			break
 		case "role3":
 			foundRole3 = true
-			break
 		}
 	}
 	if !foundRole1 {
@@ -212,13 +209,10 @@ func TestRolePolicyWithoutResCondifiton(t *testing.T) {
 		switch role {
 		case "role1":
 			foundRole1 = true
-			break
 		case "role2":
 			foundRole2 = true
-			break
 		case "role3":
 			foundRole3 = true
-			break
 		}
 	}
 	if !foundRole1 {
@@ -521,13 +515,10 @@ func TestRolePolicyWithResWithCondition(t *testing.T) {
 		switch role {
 		case "role1":
 			foundRole1 = true
-			break
 		case "role2":
 			foundRole2 = true
-			break
 		case "role3":
 			foundRole3 = true
-			break
 		}
 	}
 	if !foundRole1 {

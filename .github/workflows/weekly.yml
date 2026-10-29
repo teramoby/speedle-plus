@@ -14,7 +14,7 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  # Every package with the oldest and newest supported Go releases, and
+  # Every package with the newest supported Go release, and
   # staticcheck, on the self-hosted test runner (scripts/ci/run-go-tests.sh).
   run:
     name: run

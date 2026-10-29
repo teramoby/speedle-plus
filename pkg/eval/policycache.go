@@ -29,11 +29,7 @@ func NewPolicyCacheData() (p *PolicyCacheData) {
 }
 
 func nilPrincipalPolicy(policy *pms.Policy) (result bool) {
-	if policy.Principals == nil || len(policy.Principals) == 0 {
-		return true
-	}
-
-	return false
+	return len(policy.Principals) == 0
 }
 
 func (p *PolicyCacheData) AddPolicyToCache(policy *pms.Policy, condition *govaluate.EvaluableExpression) {
@@ -74,7 +70,7 @@ func (p *PolicyCacheData) AddPolicyToCache(policy *pms.Policy, condition *govalu
 func (p *PolicyCacheData) addPolicyToResourceToPolicyMap(resourceToPolicyMap *ResourceToPolicyMap, policy *pms.Policy) {
 
 	//Nil permissions
-	if policy.Permissions == nil || len(policy.Permissions) == 0 {
+	if len(policy.Permissions) == 0 {
 		if resourceToPolicyMap.NilResourceToPolicies == nil {
 			resourceToPolicyMap.NilResourceToPolicies = make(map[string]bool)
 		}
@@ -150,7 +146,7 @@ func (p *PolicyCacheData) DeletePolicyFromCache(policyID string) {
 func (p *PolicyCacheData) deletePolicyFromResourceToPolicyMap(resourceToPolicyMap *ResourceToPolicyMap, policy *pms.Policy) {
 
 	//Nil permissions policy
-	if policy.Permissions == nil || len(policy.Permissions) == 0 {
+	if len(policy.Permissions) == 0 {
 		if resourceToPolicyMap.NilResourceToPolicies != nil {
 			delete(resourceToPolicyMap.NilResourceToPolicies, policy.ID)
 		}
@@ -186,7 +182,7 @@ func (p *PolicyCacheData) GetRelatedPolicyMap(subjectPrincipals []string, resour
 	//First add nil principal policies
 	p.getPolicyFromResourceToPolicyMap(p.NilPrincipalToPolicies, resultPolicyMap, resource, matchResource)
 
-	if subjectPrincipals == nil || len(subjectPrincipals) == 0 {
+	if len(subjectPrincipals) == 0 {
 		return resultPolicyMap
 	}
 

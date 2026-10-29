@@ -126,7 +126,10 @@ func TestCacheFollowsFunctionEvents(t *testing.T) {
 	}
 	apply(p, pms.StoreChangeEvent{Type: pms.FUNCTION_ADD, Content: &pms.Function{Name: "isOpen", FuncURL: server.URL, ResultCachable: true}})
 	// Conditions compiled before the function existed are recompiled.
-	if !allowed(t, p, "app", "alice", "r", "read") || !allowed(t, p, "app", "alice", "r", "read") {
+	if !allowed(t, p, "app", "alice", "r", "read") {
+		t.Fatal("the added function was not used")
+	}
+	if !allowed(t, p, "app", "alice", "r", "read") {
 		t.Fatal("the added function was not used")
 	}
 	if calls != 1 {

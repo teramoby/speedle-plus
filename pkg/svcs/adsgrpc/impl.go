@@ -272,7 +272,7 @@ func convertAPIPolicy2EvaluatedPolicyResponse(apiPolicy *adsapi.EvaluatedPolicy,
 	policyResp.Name = apiPolicy.Name
 	policyResp.Effect = apiPolicy.Effect
 	policyResp.Permissions = retPermission
-	if apiPolicy.Principals != nil && len(apiPolicy.Principals) > 0 {
+	if len(apiPolicy.Principals) > 0 {
 		policyResp.Principals = apiPolicy.Principals[0]
 	}
 	if apiPolicy.Condition != nil {
@@ -310,7 +310,7 @@ func convertAPIRolePolicy2EvaluatedRolePolicyResponse(apiRolePolicy *adsapi.Eval
 	rolePolicyResp.Name = apiRolePolicy.Name
 	rolePolicyResp.Effect = apiRolePolicy.Effect
 	rolePolicyResp.Roles = apiRolePolicy.Roles
-	if apiRolePolicy.Principals != nil && len(apiRolePolicy.Principals) > 0 {
+	if len(apiRolePolicy.Principals) > 0 {
 		rolePolicyResp.Principals = apiRolePolicy.Principals
 	}
 	rolePolicyResp.Resources = apiRolePolicy.Resources

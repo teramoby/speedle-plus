@@ -29,7 +29,7 @@ pages, `中文` on English pages), including inside the mobile navigation menu.
 
 The release gate also executes every Bash block from both quick-start guides
 against native PMS/ADS (`tests/check_quick_start.py`): merge gating with Go
-1.26.10, the nightly run with Go 1.25.14, 1.26.10 and 1.27.3.
+1.26.10, the nightly run with Go 1.26.10 and 1.27.3.
 It performs a public shallow clone, checks out the captured CI revision, builds
 the three executables, creates and lists policies, and checks direct/role grants
 and denials. On Linux the documented service and client commands run in

@@ -216,18 +216,18 @@ test('package discovery failure cannot turn a partial package list into a green 
   }
 });
 test('nightly runs every suite even after a failure, records checks and fails at the end', () => {
-  const {result, records, checks} = runSuite('nightly', {failMatching: 'go1.25.14'});
+  const {result, records, checks} = runSuite('nightly', {failMatching: 'go1.26.10'});
   assert.equal(result.status, 1);
   const [file, etcd] = goTests(records);
   assert.ok(file.args.includes('-race') && file.args.includes('-json')); assert.equal(file.env.STORE_TYPE, 'file');
   assert.equal(etcd.env.STORE_TYPE, 'etcd'); assert.ok(etcd.args.includes('-race'));
-  for (const toolchain of ['go1.25.14', 'go1.26.10', 'go1.27.3']) assert.match(checks, new RegExp(`quick-start-${toolchain}=\\d+:`));
-  assert.match(checks, /quick-start-go1\.25\.14=7:/); assert.match(checks, /quick-start-go1\.27\.3=0:/);
+  for (const toolchain of ['go1.26.10', 'go1.27.3']) assert.match(checks, new RegExp(`quick-start-${toolchain}=\\d+:`));
+  assert.match(checks, /quick-start-go1\.26\.10=7:/); assert.match(checks, /quick-start-go1\.27\.3=0:/);
   assert.match(checks, /govulncheck=0:govulncheck\.log/); assert.match(checks, /ci-script-tests=0:/);
 });
 test('weekly tests the other supported Go releases and runs staticcheck', () => {
   const {result, records, checks} = runSuite('weekly'); assert.equal(result.status, 0, result.stderr);
-  assert.deepEqual(goTests(records).map(r => r.env.GOTOOLCHAIN), ['go1.25.14', 'go1.27.3']);
+  assert.deepEqual(goTests(records).map(r => r.env.GOTOOLCHAIN), ['go1.27.3']);
   assert.match(checks, /^staticcheck=0:staticcheck\.log$/m);
 });
 
