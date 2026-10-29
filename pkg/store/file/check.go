@@ -15,6 +15,8 @@ import (
 	"github.com/teramoby/speedle-plus/pkg/eval/condition"
 )
 
+var errUnexpectedData = errors.New("unexpected data after the policy store")
+
 // CheckJSON reads a policy store in JSON from r, named name in errors, and
 // returns every error in it. Unlike loading, it rejects fields the store does
 // not have, since a misspelled field such as "conditon" is otherwise dropped.
@@ -26,11 +28,26 @@ func CheckJSON(r io.Reader, name string) (*pms.PolicyStore, []error) {
 	var ps pms.PolicyStore
 	dec := json.NewDecoder(bytes.NewReader(data))
 	dec.DisallowUnknownFields()
-	if err := dec.Decode(&ps); err != nil {
+	err = dec.Decode(&ps)
+	extraAt := int64(-1)
+	if err == nil {
+		// The file must hold only the store.
+		extraAt = dec.InputOffset() + int64(len(data[dec.InputOffset():])-len(bytes.TrimLeft(data[dec.InputOffset():], " \t\r\n")))
+		var extra json.RawMessage
+		switch err = dec.Decode(&extra); err {
+		case io.EOF:
+			err = nil
+		case nil:
+			err = errUnexpectedData
+		}
+	}
+	if err != nil {
 		offset := dec.InputOffset()
 		var syntaxErr *json.SyntaxError
 		var typeErr *json.UnmarshalTypeError
-		if errors.As(err, &syntaxErr) {
+		if err == errUnexpectedData {
+			offset = extraAt
+		} else if errors.As(err, &syntaxErr) {
 			// Offset is just past the byte that is wrong.
 			offset = max(syntaxErr.Offset-1, 0)
 		} else if errors.As(err, &typeErr) {
@@ -47,17 +64,29 @@ func CheckJSON(r io.Reader, name string) (*pms.PolicyStore, []error) {
 
 	var errs []error
 	for i, service := range ps.Services {
+		if service == nil {
+			errs = append(errs, fmt.Errorf("%s: service %d: null", name, i+1))
+			continue
+		}
 		where := fmt.Sprintf("%s: service %q", name, service.Name)
 		if service.Name == "" {
 			where = fmt.Sprintf("%s: service %d", name, i+1)
 			errs = append(errs, fmt.Errorf("%s: no name", where))
 		}
 		for j, policy := range service.Policies {
+			if policy == nil {
+				errs = append(errs, fmt.Errorf("%s policy %d: null", where, j+1))
+				continue
+			}
 			for _, problem := range policyProblems(policy) {
 				errs = append(errs, fmt.Errorf("%s %s: %s", where, describe("policy", policy.Name, j), problem))
 			}
 		}
 		for j, rolePolicy := range service.RolePolicies {
+			if rolePolicy == nil {
+				errs = append(errs, fmt.Errorf("%s role policy %d: null", where, j+1))
+				continue
+			}
 			for _, problem := range rolePolicyProblems(rolePolicy) {
 				errs = append(errs, fmt.Errorf("%s %s: %s", where, describe("role policy", rolePolicy.Name, j), problem))
 			}

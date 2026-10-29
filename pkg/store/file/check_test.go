@@ -108,3 +108,32 @@ func TestLineAndColumn(t *testing.T) {
 		}
 	}
 }
+
+func TestCheckJSONReportsNullEntries(t *testing.T) {
+	_, errs := CheckJSON(strings.NewReader(`{"services":[null,{"name":"a","policies":[null],"rolePolicies":[null]}]}`), "s.json")
+	want := []string{
+		`s.json: service 1: null`,
+		`s.json: service "a" policy 1: null`,
+		`s.json: service "a" role policy 1: null`,
+	}
+	if got := errorTexts(errs); strings.Join(got, "\n") != strings.Join(want, "\n") {
+		t.Fatalf("errors:\n%s\nwant:\n%s", strings.Join(got, "\n"), strings.Join(want, "\n"))
+	}
+}
+
+func TestCheckJSONRejectsDataAfterTheStore(t *testing.T) {
+	cases := []struct{ name, json, want string }{
+		{"second value", `{"services":[]} {"services":[]}`, "s.json:1:17: unexpected data after the policy store"},
+		{"garbage", "{\"services\":[]}\n garbage", "s.json:2:2: invalid character 'g' looking for beginning of value"},
+	}
+	for _, c := range cases {
+		_, errs := CheckJSON(strings.NewReader(c.json), "s.json")
+		if len(errs) != 1 || errs[0].Error() != c.want {
+			t.Errorf("%s: errors %q, want %q", c.name, errorTexts(errs), c.want)
+		}
+	}
+	// Trailing white space is fine.
+	if _, errs := CheckJSON(strings.NewReader("{\"services\":[]}\n\n"), "s.json"); len(errs) != 0 {
+		t.Errorf("trailing new lines: errors %q", errorTexts(errs))
+	}
+}
