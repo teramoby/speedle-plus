@@ -14,6 +14,7 @@ import (
 
 	"github.com/teramoby/speedle-plus/api/ads"
 	"github.com/teramoby/speedle-plus/api/pms"
+	"github.com/teramoby/speedle-plus/pkg/eval/condition"
 	"github.com/teramoby/speedle-plus/pkg/subjectutils"
 )
 
@@ -410,6 +411,14 @@ func getCondition(cmd string, i int) (string, int, error) {
 		}
 		ret := cmd[i:]
 		ret = strings.TrimRight(ret, " ")
+		if err := condition.Check(ret); err != nil {
+			var condErr *condition.Error
+			if errors.As(err, &condErr) && condErr.Position >= 0 {
+				pos := i + len(string([]rune(ret)[:condErr.Position]))
+				return "", -1, getError("Invalid condition: "+condErr.Reason, cmd, pos)
+			}
+			return "", -1, err
+		}
 		i = len(cmd)
 		return ret, i, nil
 	}
