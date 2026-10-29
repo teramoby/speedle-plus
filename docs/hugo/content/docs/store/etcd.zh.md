@@ -1,5 +1,5 @@
 +++
-title = "etcd 部署指南"
+title = "etcd 配置指南"
 description = "逐步部署 etcd 策略存储，配置 PMS/ADS，并验证同步和持久化。"
 weight = 20
 draft = false

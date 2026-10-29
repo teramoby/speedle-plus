@@ -1,6 +1,6 @@
 +++
-title = "etcd Deployment"
-description = "Deploy etcd policy storage for PMS and ADS, step by step."
+title = "etcd Setup"
+description = "Set up etcd policy storage for PMS and ADS, step by step."
 weight = 20
 draft = false
 toc = true

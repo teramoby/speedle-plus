@@ -179,7 +179,7 @@ jobs:
       - name: Execute bilingual MySQL setup guides
         run: python3 website/tests/check_mysql.py > mysql-results/docs.log 2>&1
 
-      - name: Execute bilingual etcd deployment guides
+      - name: Execute bilingual etcd setup guides
         run: python3 website/tests/check_etcd.py > mysql-results/etcd-docs.log 2>&1
 
       - name: Upload MySQL results

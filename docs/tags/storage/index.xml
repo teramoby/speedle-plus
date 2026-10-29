@@ -31,7 +31,7 @@ A full backend implements pms.PolicyStoreManager: service, authorization-policy,
     </item>
     
     <item>
-      <title>etcd Deployment</title>
+      <title>etcd Setup</title>
       <link>https://speedle.io/docs/store/etcd/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
