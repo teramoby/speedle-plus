@@ -136,3 +136,24 @@ func TestCheckMaxSizeUnmarshalable(t *testing.T) {
 		t.Fatalf("checkMaxSize(chan) = %v, %v", valid, err)
 	}
 }
+
+// An update replaces an item, so it passes even when the store is full.
+func TestCheckUpdatesIgnoreTheCount(t *testing.T) {
+	setLimits(t, -1, 2, -1, 100)
+	big := string(make([]byte, 200))
+	for _, c := range []struct {
+		name string
+		err  error
+		want errors.ErrorCode
+	}{
+		{"policy fits", CheckPolicyUpdate("app", &pms.Policy{ID: "p", Effect: "grant"}), ""},
+		{"policy in global service", CheckPolicyUpdate(pms.GlobalService, &pms.Policy{ID: "p", Effect: "grant"}), errors.InvalidRequest},
+		{"policy without effect", CheckPolicyUpdate("app", &pms.Policy{ID: "p"}), errors.InvalidRequest},
+		{"policy too big", CheckPolicyUpdate("app", &pms.Policy{Effect: "deny", Condition: big}), errors.ExceedLimit},
+		{"role policy fits", CheckRolePolicyUpdate(&pms.RolePolicy{ID: "rp", Effect: "grant"}), ""},
+		{"role policy without effect", CheckRolePolicyUpdate(&pms.RolePolicy{ID: "rp"}), errors.InvalidRequest},
+		{"role policy too big", CheckRolePolicyUpdate(&pms.RolePolicy{Effect: "deny", Condition: big}), errors.ExceedLimit},
+	} {
+		wantCode(t, c.name, c.err, c.want)
+	}
+}

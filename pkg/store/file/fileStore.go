@@ -517,6 +517,29 @@ func (s *Store) CreatePolicy(serviceName string, policy *pms.Policy) (*pms.Polic
 	return &dupPolicy, nil
 }
 
+// UpdatePolicy replaces the policy with the same ID, keeping its ID.
+func (s *Store) UpdatePolicy(serviceName string, policy *pms.Policy) (*pms.Policy, error) {
+
+	s.rwLock.Lock()
+	defer s.rwLock.Unlock()
+
+	service, err := s.getServiceWithoutLock(serviceName)
+	if err != nil {
+		return nil, err
+	}
+	for index, existing := range service.Policies {
+		if existing.ID == policy.ID {
+			dupPolicy := *policy
+			service.Policies[index] = &dupPolicy
+			if err := s.writeServiceWithoutLock(service); err != nil {
+				return nil, err
+			}
+			return &dupPolicy, nil
+		}
+	}
+	return nil, errors.Errorf(errors.EntityNotFound, "unable to find policy %q in service %q", policy.ID, serviceName)
+}
+
 // For role policy manager
 func (s *Store) ListAllRolePolicies(serviceName string, filter string) ([]*pms.RolePolicy, error) {
 
@@ -654,6 +677,29 @@ func (s *Store) CreateRolePolicy(serviceName string, rolePolicy *pms.RolePolicy)
 		return nil, err
 	}
 	return &dupRolePolicy, nil
+}
+
+// UpdateRolePolicy replaces the role policy with the same ID, keeping its ID.
+func (s *Store) UpdateRolePolicy(serviceName string, rolePolicy *pms.RolePolicy) (*pms.RolePolicy, error) {
+
+	s.rwLock.Lock()
+	defer s.rwLock.Unlock()
+
+	service, err := s.getServiceWithoutLock(serviceName)
+	if err != nil {
+		return nil, err
+	}
+	for index, existing := range service.RolePolicies {
+		if existing.ID == rolePolicy.ID {
+			dupRolePolicy := *rolePolicy
+			service.RolePolicies[index] = &dupRolePolicy
+			if err := s.writeServiceWithoutLock(service); err != nil {
+				return nil, err
+			}
+			return &dupRolePolicy, nil
+		}
+	}
+	return nil, errors.Errorf(errors.EntityNotFound, "unable to find role policy %q in service %q", rolePolicy.ID, serviceName)
 }
 
 func validateFunc(function *pms.Function) error {

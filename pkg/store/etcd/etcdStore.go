@@ -862,6 +862,47 @@ func (s *Store) CreatePolicy(serviceName string, policy *pms.Policy) (*pms.Polic
 	return &dupPolicy, nil
 }
 
+// UpdatePolicy replaces the policy with the same ID, keeping its ID.
+func (s *Store) UpdatePolicy(serviceName string, policy *pms.Policy) (*pms.Policy, error) {
+	dupPolicy := *policy
+	value, err := json.Marshal(dupPolicy)
+	if err != nil {
+		return nil, errors.Wrap(err, errors.SerializationError, "failed to marshal policy")
+	}
+	if err := s.updateItem(serviceName, PoliciesKey, "policy", policy.ID, value); err != nil {
+		return nil, err
+	}
+	return &dupPolicy, nil
+}
+
+// updateItem replaces the existing policy or role policy kind/id of a
+// service. The service node is written last so the watcher reloads the
+// service, as the create and delete operations do.
+func (s *Store) updateItem(serviceName, kind, what, id string, value []byte) error {
+	ctx, cancel := context.WithTimeout(context.Background(), requestTimeout)
+	defer cancel()
+	serviceKey := s.KeyPrefix + ServicesKey + KeySeparator + serviceName + KeySeparator
+	itemKey := serviceKey + kind + KeySeparator + id
+	txnResp, err := s.client.KV.Txn(ctx).If(
+		clientv3.Compare(clientv3.Version(itemKey), ">", 0), //item exists
+	).Then(
+		clientv3.OpPut(itemKey, string(value)),
+		//make sure updating service key is the last operation, so watch could work correctly
+		clientv3.OpPut(serviceKey, ""),
+	).Commit()
+	if err != nil {
+		return errors.Wrapf(err, errors.StoreError, "failed to update a %s in service %q", what, serviceName)
+	}
+	if !txnResp.Succeeded {
+		getResp, err := s.client.Get(ctx, serviceKey)
+		if err == nil && len(getResp.Kvs) == 0 {
+			return errors.Errorf(errors.EntityNotFound, "service %q is not found", serviceName)
+		}
+		return errors.Errorf(errors.EntityNotFound, "%s %q is not found in service %q", what, id, serviceName)
+	}
+	return nil
+}
+
 // For role policy manager
 func (s *Store) ListAllRolePolicies(serviceName string, filter string) ([]*pms.RolePolicy, error) {
 	f := parseFilter(filter)
@@ -962,6 +1003,19 @@ func (s *Store) GetPolicies(serviceName string, startID string, amount int) (pol
 		}
 	}
 	return policies, nextID, err
+}
+
+// UpdateRolePolicy replaces the role policy with the same ID, keeping its ID.
+func (s *Store) UpdateRolePolicy(serviceName string, rolePolicy *pms.RolePolicy) (*pms.RolePolicy, error) {
+	dupRolePolicy := *rolePolicy
+	value, err := json.Marshal(dupRolePolicy)
+	if err != nil {
+		return nil, errors.Wrap(err, errors.SerializationError, "failed to marshal role policy")
+	}
+	if err := s.updateItem(serviceName, RolePoliciesKey, "role policy", rolePolicy.ID, value); err != nil {
+		return nil, err
+	}
+	return &dupRolePolicy, nil
 }
 
 func (s *Store) GetRolePolicy(serviceName string, id string) (*pms.RolePolicy, error) {

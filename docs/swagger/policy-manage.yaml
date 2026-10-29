@@ -932,6 +932,61 @@ paths:
       summary: Get an authorization policy
       tags:
         - policy
+    put:
+      consumes:
+        - application/json
+      description: Replace an authorization policy, keeping its ID. Metadata keeps createby and createtime and records updateby and updatetime.
+      operationId: updatePolicy
+      parameters:
+        - description: Service name
+          in: path
+          name: serviceName
+          required: true
+          type: string
+        - description: Policy ID
+          in: path
+          name: policyID
+          required: true
+          type: string
+        - description: ETag returned by GET; the update fails with 412 if the item changed since then
+          in: header
+          name: If-Match
+          required: false
+          type: string
+        - description: The new policy
+          in: body
+          name: body
+          required: true
+          schema:
+            $ref: '#/definitions/Policy'
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: Successful operation
+          headers:
+            ETag:
+              description: ETag of the updated item
+              type: string
+          schema:
+            $ref: '#/definitions/PolicyResponse'
+        "400":
+          description: Invalid JSON or request data, or the ID in the body differs from the path
+          schema:
+            $ref: '#/definitions/Error'
+        "404":
+          description: service or policy is not found
+        "412":
+          description: If-Match does not match the current ETag
+          schema:
+            $ref: '#/definitions/Error'
+        "500":
+          description: Evaluation, assertion or storage failure
+          schema:
+            $ref: '#/definitions/Error'
+      summary: Update an authorization policy
+      tags:
+        - policy
   /service/{serviceName}/role-policy:
     delete:
       description: Delete all role policies in a service
@@ -1099,6 +1154,61 @@ paths:
           schema:
             $ref: '#/definitions/Error'
       summary: Get a role policy
+      tags:
+        - role-policy
+    put:
+      consumes:
+        - application/json
+      description: Replace a role policy, keeping its ID. Metadata keeps createby and createtime and records updateby and updatetime.
+      operationId: updateRolePolicy
+      parameters:
+        - description: Service name
+          in: path
+          name: serviceName
+          required: true
+          type: string
+        - description: Role policy ID
+          in: path
+          name: rolePolicyID
+          required: true
+          type: string
+        - description: ETag returned by GET; the update fails with 412 if the item changed since then
+          in: header
+          name: If-Match
+          required: false
+          type: string
+        - description: The new role policy
+          in: body
+          name: body
+          required: true
+          schema:
+            $ref: '#/definitions/RolePolicy'
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: Successful operation
+          headers:
+            ETag:
+              description: ETag of the updated item
+              type: string
+          schema:
+            $ref: '#/definitions/RolePolicyResponse'
+        "400":
+          description: Invalid JSON or request data, or the ID in the body differs from the path
+          schema:
+            $ref: '#/definitions/Error'
+        "404":
+          description: service or role policy is not found
+        "412":
+          description: If-Match does not match the current ETag
+          schema:
+            $ref: '#/definitions/Error'
+        "500":
+          description: Evaluation, assertion or storage failure
+          schema:
+            $ref: '#/definitions/Error'
+      summary: Update a role policy
       tags:
         - role-policy
 schemes:

@@ -31,6 +31,8 @@ type ServiceManager interface {
 
 type PolicyManager interface {
 	CreatePolicy(serviceName string, policy *Policy) (*Policy, error)
+	// UpdatePolicy replaces the policy whose ID is policy.ID, keeping the ID.
+	UpdatePolicy(serviceName string, policy *Policy) (*Policy, error)
 	DeletePolicy(serviceName string, id string) error
 	DeletePolicies(serviceName string) error
 	GetPolicy(serviceName string, id string) (*Policy, error)
@@ -40,6 +42,8 @@ type PolicyManager interface {
 
 type RolePolicyManager interface {
 	CreateRolePolicy(serviceName string, policy *RolePolicy) (*RolePolicy, error)
+	// UpdateRolePolicy replaces the role policy whose ID is policy.ID, keeping the ID.
+	UpdateRolePolicy(serviceName string, policy *RolePolicy) (*RolePolicy, error)
 	DeleteRolePolicy(serviceName string, id string) error
 	DeleteRolePolicies(serviceName string) error
 	GetRolePolicy(serviceName string, id string) (*RolePolicy, error)

@@ -9,6 +9,7 @@ import (
 	"github.com/teramoby/speedle-plus/api/pms"
 	"github.com/teramoby/speedle-plus/pkg/cfg"
 	"github.com/teramoby/speedle-plus/pkg/store"
+	"github.com/teramoby/speedle-plus/testutil/storetest"
 )
 
 var storeConfig *cfg.StoreConfig
@@ -736,4 +737,20 @@ func TestCheckItemsCount(t *testing.T) {
 		t.Fatal("incorrect role policy number")
 	}
 	t.Log(counts)
+}
+
+func TestUpdateConformance(t *testing.T) {
+	if !mongoAvailable {
+		t.Skip("MongoDB not available")
+	}
+	storetest.RunUpdateConformance(t, func(t *testing.T) pms.PolicyStoreManager {
+		s, err := store.NewStore(storeConfig.StoreType, storeConfig.StoreProps)
+		if err != nil {
+			t.Fatal("fail to new mongodb store:", err)
+		}
+		if err := s.DeleteServices(); err != nil {
+			t.Fatal("fail to clean the mongodb store:", err)
+		}
+		return s
+	})
 }

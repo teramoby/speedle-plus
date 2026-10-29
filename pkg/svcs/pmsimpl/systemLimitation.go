@@ -101,6 +101,21 @@ func CheckPolicy(serviceName string, policy *pms.Policy, policyStore pms.PolicyS
 	return nil
 }
 
+// CheckPolicyUpdate checks a policy that replaces an existing one: the same
+// rules as CheckPolicy except the policy count, which an update keeps.
+func CheckPolicyUpdate(serviceName string, policy *pms.Policy) error {
+	if serviceName == pms.GlobalService {
+		return errors.New(errors.InvalidRequest, "global policy doesn't support authorization policies")
+	}
+	if len(policy.Effect) <= 0 {
+		return errors.New(errors.InvalidRequest, "no effect provided in policy.")
+	}
+	if sizeValid, err := checkMaxSize(*policy, MaxPolicySize); !sizeValid {
+		return err
+	}
+	return nil
+}
+
 /*
 Check the following items:
 	1. The maximum number of Policy + RolePolicy;
@@ -127,6 +142,18 @@ func CheckRolePolicy(serviceName string, rolePolicy *pms.RolePolicy, policyStore
 		return err
 	}
 
+	return nil
+}
+
+// CheckRolePolicyUpdate checks a role policy that replaces an existing one:
+// the same rules as CheckRolePolicy except the policy count.
+func CheckRolePolicyUpdate(rolePolicy *pms.RolePolicy) error {
+	if len(rolePolicy.Effect) <= 0 {
+		return errors.New(errors.InvalidRequest, "no effect provided in role policy.")
+	}
+	if sizeValid, err := checkMaxSize(*rolePolicy, MaxPolicySize); !sizeValid {
+		return err
+	}
 	return nil
 }
 

@@ -50,6 +50,13 @@ func initRouters(ps pms.PolicyStoreManager) (*[]route, error) {
 		},
 
 		{
+			"UpdatePolicy",
+			"PUT",
+			svcs.PolicyMgmtPath + "service/{serviceName}/policy/{policyID}",
+			manager.UpdatePolicy,
+		},
+
+		{
 			"GetPolicy",
 			"GET",
 			svcs.PolicyMgmtPath + "service/{serviceName}/policy/{policyID}",
@@ -82,6 +89,13 @@ func initRouters(ps pms.PolicyStoreManager) (*[]route, error) {
 			"DELETE",
 			svcs.PolicyMgmtPath + "service/{serviceName}/role-policy/{rolePolicyID}",
 			manager.DeleteRolePolicy,
+		},
+
+		{
+			"UpdateRolePolicy",
+			"PUT",
+			svcs.PolicyMgmtPath + "service/{serviceName}/role-policy/{rolePolicyID}",
+			manager.UpdateRolePolicy,
 		},
 
 		{

@@ -589,6 +589,36 @@ func (s *Store) CreatePolicy(serviceName string, policy *pms.Policy) (*pms.Polic
 
 }
 
+// UpdatePolicy replaces the policy with the same ID, keeping its ID.
+func (s *Store) UpdatePolicy(serviceName string, policy *pms.Policy) (*pms.Policy, error) {
+	dupPolicy := *policy
+	if err := s.updateItem(serviceName, "policies", "policy", policy.ID, dupPolicy); err != nil {
+		return nil, err
+	}
+	return &dupPolicy, nil
+}
+
+// updateItem replaces the element with _id id of the service's array field.
+func (s *Store) updateItem(serviceName, field, what, id string, item interface{}) error {
+	serviceCollection := s.client.Database(s.Database).Collection("services")
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	filter := bson.D{{Key: "_id", Value: serviceName}, {Key: field + "._id", Value: id}}
+	update := bson.D{{Key: "$set", Value: bson.D{{Key: field + ".$", Value: item}}}}
+	result, err := serviceCollection.UpdateOne(ctx, filter, update)
+	if err != nil {
+		return errors.Wrapf(err, errors.StoreError, "failed to update a %s in service %q", what, serviceName)
+	}
+	if result.MatchedCount == 0 {
+		count, err := serviceCollection.CountDocuments(ctx, bson.D{{Key: "_id", Value: serviceName}})
+		if err == nil && count == 0 {
+			return errors.Errorf(errors.EntityNotFound, "service %q is not found", serviceName)
+		}
+		return errors.Errorf(errors.EntityNotFound, "%s %q is not found in service %q", what, id, serviceName)
+	}
+	return nil
+}
+
 // For role policy manager
 func (s *Store) ListAllRolePolicies(serviceName string, filter string) ([]*pms.RolePolicy, error) {
 	serviceCollection := s.client.Database(s.Database).Collection("services")
@@ -663,6 +693,15 @@ func (s *Store) GetRolePolicyCount(serviceName string) (int64, error) {
 
 	return policyCount, nil
 
+}
+
+// UpdateRolePolicy replaces the role policy with the same ID, keeping its ID.
+func (s *Store) UpdateRolePolicy(serviceName string, rolePolicy *pms.RolePolicy) (*pms.RolePolicy, error) {
+	dupRolePolicy := *rolePolicy
+	if err := s.updateItem(serviceName, "rolepolicies", "role policy", rolePolicy.ID, dupRolePolicy); err != nil {
+		return nil, err
+	}
+	return &dupRolePolicy, nil
 }
 
 func (s *Store) GetRolePolicy(serviceName string, id string) (*pms.RolePolicy, error) {

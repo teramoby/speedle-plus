@@ -328,6 +328,7 @@ func (mgr *RESTService) GetPolicy(w http.ResponseWriter, r *http.Request) {
 	}
 
 	logging.WriteSucceededAuditLog("GetPolicy", ctxFields, map[string]interface{}{"policy": policy})
+	w.Header().Set("ETag", etagOf(policy))
 	httputils.SendOKResponse(w, &policy)
 }
 
@@ -462,6 +463,7 @@ func (mgr *RESTService) GetRolePolicy(w http.ResponseWriter, r *http.Request) {
 	}
 
 	logging.WriteSucceededAuditLog("GetRolePolicy", ctxFields, map[string]interface{}{"rolePolicy": rolePolicy})
+	w.Header().Set("ETag", etagOf(rolePolicy))
 	httputils.SendOKResponse(w, &rolePolicy)
 }
 
