@@ -19,9 +19,15 @@ import (
 )
 
 const (
-	DiscoverPrefix  = "/isAllowedRequests/"
+	// DiscoverPrefix names discover requests under the store's KeyPrefix, so
+	// stores with different prefixes on one etcd keep separate requests.
+	DiscoverPrefix  = "isAllowedRequests/"
 	DefaultPageSize = int64(1000)
 )
+
+func (s *Store) discoverPrefix() string {
+	return s.KeyPrefix + DiscoverPrefix
+}
 
 func (s *Store) SaveDiscoverRequest(request *ads.RequestContext) error {
 	_, err := s.PutRequest(request)
@@ -35,13 +41,13 @@ func (s *Store) PutRequest(request *ads.RequestContext) (int64, error) {
 	}
 	succeed := false
 	for !succeed {
-		key := DiscoverPrefix + request.ServiceName + "/" + time.Now().String()
+		key := s.discoverPrefix() + request.ServiceName + "/" + time.Now().String()
 		txnResp, err := s.client.KV.Txn(context.TODO()).If(
 			clientv3.Compare(clientv3.CreateRevision(key), "=", 0), //key does not exist
 		).Then(
 			clientv3.OpPut(key, string(value)),
-			clientv3.OpGet(DiscoverPrefix, clientv3.WithPrefix(), clientv3.WithCountOnly()), //get number of requests
-			clientv3.OpGet(DiscoverPrefix, clientv3.WithLimit(store.DeleteNumWhenReachMaxDiscoverRequest), clientv3.WithPrefix(), clientv3.WithKeysOnly(), clientv3.WithSort(clientv3.SortByCreateRevision, clientv3.SortAscend)), //get oldest keys
+			clientv3.OpGet(s.discoverPrefix(), clientv3.WithPrefix(), clientv3.WithCountOnly()), //get number of requests
+			clientv3.OpGet(s.discoverPrefix(), clientv3.WithLimit(store.DeleteNumWhenReachMaxDiscoverRequest), clientv3.WithPrefix(), clientv3.WithKeysOnly(), clientv3.WithSort(clientv3.SortByCreateRevision, clientv3.SortAscend)), //get oldest keys
 		).Commit()
 		if err != nil {
 			return -1, err
@@ -78,7 +84,7 @@ func (s *Store) DeleteRequests(keys []string) error {
 
 func (s *Store) GetLastDiscoverRequest(serviceName string) (*ads.RequestContext, int64, error) {
 	getOpts := append(clientv3.WithLastCreate(), clientv3.WithPrefix())
-	keyPrefix4Search := DiscoverPrefix
+	keyPrefix4Search := s.discoverPrefix()
 	if len(serviceName) > 0 {
 		keyPrefix4Search = keyPrefix4Search + serviceName + KeySeparator
 	}
@@ -100,7 +106,7 @@ func (s *Store) GetLastDiscoverRequest(serviceName string) (*ads.RequestContext,
 
 func (s *Store) GetDiscoverRequestsSinceRevision(serviceName string, revision int64) ([]*ads.RequestContext, int64, error) {
 	getOpts := []clientv3.OpOption{clientv3.WithMinCreateRev(revision + 1), clientv3.WithPrefix(), clientv3.WithSort(clientv3.SortByCreateRevision, clientv3.SortAscend)}
-	keyPrefix4Search := DiscoverPrefix
+	keyPrefix4Search := s.discoverPrefix()
 	if len(serviceName) > 0 {
 		keyPrefix4Search = keyPrefix4Search + serviceName + KeySeparator
 	}
@@ -153,9 +159,9 @@ func (s *Store) GetRequests(keyPrefix string, pageSize int64) ([]*ads.RequestCon
 
 func (s *Store) GetDiscoverRequests(serviceName string) ([]*ads.RequestContext, int64, error) {
 	if len(serviceName) == 0 {
-		return s.GetRequests(DiscoverPrefix, DefaultPageSize)
+		return s.GetRequests(s.discoverPrefix(), DefaultPageSize)
 	} else {
-		return s.GetRequests(DiscoverPrefix+serviceName+KeySeparator, DefaultPageSize)
+		return s.GetRequests(s.discoverPrefix()+serviceName+KeySeparator, DefaultPageSize)
 	}
 
 }
@@ -163,9 +169,9 @@ func (s *Store) GetDiscoverRequests(serviceName string) ([]*ads.RequestContext, 
 func (s *Store) ResetDiscoverRequests(serviceName string) error {
 	var err error
 	if len(serviceName) == 0 {
-		_, err = s.client.Delete(context.TODO(), DiscoverPrefix, clientv3.WithPrefix())
+		_, err = s.client.Delete(context.TODO(), s.discoverPrefix(), clientv3.WithPrefix())
 	} else {
-		_, err = s.client.Delete(context.TODO(), DiscoverPrefix+serviceName+KeySeparator, clientv3.WithPrefix())
+		_, err = s.client.Delete(context.TODO(), s.discoverPrefix()+serviceName+KeySeparator, clientv3.WithPrefix())
 	}
 	if err != nil {
 		return errors.Errorf(errors.StoreError, "unable to reset discover requests from service %q", serviceName)

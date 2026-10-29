@@ -83,10 +83,9 @@ func releaseEtcd() {
 	}
 }
 
-// EtcdFixture owns a key prefix on the fixture etcd. Separate fixtures cannot
-// overwrite each other's policies. Discover requests use one global etcd
-// prefix, which no fixture clears: fixtures open at the same time share those
-// requests, and the etcd starts empty and is removed with its last fixture.
+// EtcdFixture owns a key prefix on the fixture etcd, which holds its
+// policies and discover requests, so separate fixtures cannot see or
+// overwrite each other's data.
 type EtcdFixture struct {
 	Store  pms.PolicyStoreManager
 	Config *cfg.StoreConfig

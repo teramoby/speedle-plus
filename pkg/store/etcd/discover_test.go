@@ -180,7 +180,7 @@ func TestGetRequests(t *testing.T) {
 		i++
 	}
 	fmt.Println("starting get requests, time is:", time.Now())
-	requests, _, err := s.(*Store).GetRequests(DiscoverPrefix, 100)
+	requests, _, err := s.(*Store).GetRequests(s.(*Store).discoverPrefix(), 100)
 	fmt.Println("finish get requests, time is:", time.Now())
 	if err != nil {
 		t.Errorf("failed to GetRequests: %v", err)
