@@ -98,6 +98,8 @@ headingSelector: 'h2'
 
 <h2 id="mysql-8-4-策略存储">MySQL 8.4 策略存储</h2>
 
+<p>按照 <a href="/zh/docs/store/mysql/">MySQL 配置指南</a>逐步建库、创建 PMS/ADS 独立账号、配置并启动服务，最后验证策略同步和授权结果。</p>
+
 <p><code>mysql</code> 后端完整实现 PMS 与 ADS 所需的策略存储接口，首版不支持 Discover 访问请求收集和策略生成。使用纯 Go 的 <code>go-sql-driver/mysql</code> 驱动；数据库需要预先创建。</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">{
   <span style="color:#ff79c6">&#34;storeConfig&#34;</span>: {
@@ -265,7 +267,15 @@ headingSelector: 'h2'
 <li class=""><a href="/zh/docs/decisions/">授权查询</a></li>
 <li class=""><a href="/zh/docs/idd/">用户身份域</a></li>
 <li class=""><a href="/zh/docs/assertor/">令牌用户身份断言</a></li>
-<li class="active"><a href="/zh/docs/store/">存储扩展</a></li>
+
+
+
+<li class="parent active"><a href="/zh/docs/store/">存储扩展</a>
+<ul class="sub-menu">
+<li class=""><a href="/zh/docs/store/mysql/">MySQL 配置指南</a></li>
+</ul>
+  
+</li>
 
 
 

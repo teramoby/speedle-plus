@@ -21,7 +21,7 @@ import urllib.request
 
 ROOT=Path(__file__).resolve().parents[2]
 DOCS=ROOT/'docs/hugo/content/docs'
-PAGES=['deployment','pms/discover','store','idd','decisions','pms/diagnosis','pms/policy-mgmt','pms/global-policy','assertor','custom-function','security']
+PAGES=['deployment','pms/discover','store/_index','idd','decisions','pms/diagnosis','pms/policy-mgmt','pms/global-policy','assertor','custom-function','security']
 PATTERN=r'<!-- (?:docs-check|deployment-check): ([a-z0-9-]+) -->\s*```bash\n(.*?)\n```'
 CLIENT=urllib.request.build_opener(urllib.request.ProxyHandler({}))
 
@@ -40,6 +40,8 @@ def steps(page,locale):
     return result
 
 def static_checks():
+    from check_mysql import static_checks as mysql_static_checks
+    mysql_static_checks()
     for page in PAGES:
         assert steps(page,'en')==steps(page,'zh'), (page,'English/Chinese command drift')
     for path in DOCS.rglob('*.md'):

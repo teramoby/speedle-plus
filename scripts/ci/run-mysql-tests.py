@@ -78,6 +78,9 @@ def main():
         owned = run(["docker", "ps", "--all", "--quiet", "--filter", "label=com.speedle.mysql.run=" + label], capture_output=True).stdout.split()
         if owned:
             run(["docker", "rm", "--force", *owned])
+        volumes = run(["docker", "volume", "ls", "--quiet", "--filter", "label=com.speedle.mysql.run=" + label], capture_output=True).stdout.split()
+        if volumes:
+            run(["docker", "volume", "rm", *volumes])
         return 0
     results = Path(os.environ.get("RESULTS_DIR", "test-results")).resolve()
     results.mkdir(parents=True, exist_ok=True)
@@ -191,6 +194,13 @@ def main():
                 failed = True
             if any(p.poll() is not None for p in processes):
                 raise RuntimeError("native PMS/ADS exited during runtime tests")
+            print("mysql-docs: starting", flush=True)
+            with (results / "mysql-docs.log").open("w") as log:
+                code = subprocess.run(["python3", "website/tests/check_mysql.py", "--binaries", str(binaries)],
+                                      cwd=ROOT, env=environment, stdout=log, stderr=log).returncode
+            suites.append(("mysql-docs", code))
+            failed |= code != 0
+            print(f"mysql-docs: exit {code}", flush=True)
     except BaseException as error:
         # Do not print a command line or exception containing the generated DSN.
         print("MySQL full regression failed: " + str(error).replace(password, "[redacted]"), file=sys.stderr, flush=True)

@@ -98,6 +98,9 @@ headingSelector: 'h2'
 
 <h2 id="mysql-8-4-policy-store">MySQL 8.4 policy store</h2>
 
+<p>Follow the <a href="/docs/store/mysql/">step-by-step MySQL setup guide</a> to create a
+database, configure separate PMS/ADS accounts, and verify policy synchronization.</p>
+
 <p>The <code>mysql</code> backend implements the complete policy-store interface for PMS and ADS. Discover request collection and policy generation are not supported. It uses the pure-Go <code>go-sql-driver/mysql</code> driver; the database must already exist.</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">{
   <span style="color:#ff79c6">&#34;storeConfig&#34;</span>: {
@@ -265,7 +268,15 @@ headingSelector: 'h2'
 <li class=""><a href="/docs/idd/">Identity Domain</a></li>
 <li class=""><a href="/docs/assertor/">Token asserter</a></li>
 <li class=""><a href="/docs/deployment/">Deployment</a></li>
-<li class="active"><a href="/docs/store/">Pluggable Storage</a></li>
+
+
+
+<li class="parent active"><a href="/docs/store/">Pluggable Storage</a>
+<ul class="sub-menu">
+<li class=""><a href="/docs/store/mysql/">MySQL Setup</a></li>
+</ul>
+  
+</li>
 
 
 

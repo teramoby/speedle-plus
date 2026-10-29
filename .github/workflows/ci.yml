@@ -139,7 +139,7 @@ jobs:
   mysql:
     name: mysql
     needs: changes
-    if: needs.changes.outputs.go == 'true'
+    if: needs.changes.outputs.go == 'true' || needs.changes.outputs.website == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     services:
@@ -175,6 +175,9 @@ jobs:
           mkdir -p mysql-results
           go test -race -json -count=1 -timeout 300s -coverprofile=mysql-results/coverage.out ./pkg/store/mysql > mysql-results/tests.json
           python3 scripts/ci/coverage.py mysql-results/coverage.out --min-file scripts/ci/coverage-min.txt ./pkg/store/mysql
+
+      - name: Execute bilingual MySQL setup guides
+        run: python3 website/tests/check_mysql.py > mysql-results/docs.log 2>&1
 
       - name: Upload MySQL results
         if: always()

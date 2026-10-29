@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta name="generator" content="Hugo 0.48" />
+    <link rel="icon" type="image/png" sizes="1024x1024" href="https://speedle.io/images/speedle_black.png">
+
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1"><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>MySQL Setup - Speedle</title>
+<meta name="description" content="Configure MySQL 8.4 policy storage for PMS and ADS, step by step.">
+<meta name="generator" content="Hugo 0.48" />
+<link href="https://speedle.io/index.xml" rel="alternate" type="application/rss+xml">
+<link rel="canonical" href="https://speedle.io/docs/store/mysql/">
+<link rel="stylesheet" href="/css/theme.min.css">
+<script src="https://use.fontawesome.com/releases/v5.0.6/js/all.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+<script src="/js/functions.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jquery.easing@1.4.1/jquery.easing.min.js"></script>
+
+
+<script src="/js/jquery.backtothetop/jquery.backtothetop.min.js"></script>
+
+<script type="text/javascript" src="/js/tocbot.min.js"></script>
+<link href="/css/font.css" rel="stylesheet" type="text/css">
+    <link href="/css/kube.min.css" rel="stylesheet" type="text/css">
+    <link href="/css/kube.legenda.css" rel="stylesheet" type="text/css">
+    <link href="/css/highlight.css" rel="stylesheet" type="text/css">
+    <link href="/css/master.css" rel="stylesheet" type="text/css">
+    <link href="/css/kube.demo.css" rel="stylesheet" type="text/css">
+    <link href="/css/swagger-ui.css" rel="stylesheet" type="text/css">
+    
+    
+    <link href="/css/custom.css" rel="stylesheet" type="text/css">
+    <link href="https://fonts.googleapis.com/css?family=IBM+Plex+Sans" rel="stylesheet">
+    <link href="/css/brand.css?v=1" rel="stylesheet" type="text/css">
+    <link href="/css/navigation.css?v=header-20261027" rel="stylesheet">
+    <script src="/js/navigation.js?v=header-20261027" defer></script>
+</head>
+
+<body class="page-kube" style="background: none">
+    <header class="site-header">
+    <div class="wrap nav">
+      <a class="brand" href="/#top" aria-label="Speedle home"><img src="/img/speedle/Speedle_logo_home_bold.svg?v=4" alt="Speedle"></a>
+      <button class="menu" type="button" aria-expanded="false" aria-controls="nav-links" aria-label="Open navigation">☰</button>
+      <nav class="nav-links" id="nav-links" aria-label="Main navigation">
+        <a href="/#about">About</a><a href="/#features">Features</a><a href="/#integrations">Integrations</a>
+        <a href="/quick-start/">Getting started</a><a href="/docs/">Docs</a><a href="/playground/">Playground</a>
+        <a href="/zh/docs/store/mysql/" lang="zh-CN" hreflang="zh-CN" aria-label="切换到中文">中文</a>
+        <a class="nav-github" href="https://github.com/teramoby/speedle-plus">GitHub</a>
+      </nav>
+    </div>
+  </header>
+    <div class="container">
+        <div class="content-container">
+            <main>
+<div id="main">
+  
+  <h1>MySQL Setup</h1>
+  <p>Create a database, configure PMS and ADS, then verify authorization and automatic policy synchronization.</p>
+
+  
+<script type="text/javascript">
+document.addEventListener("DOMContentLoaded",
+function(){
+tocbot.init({
+tocSelector: '.js-toc',
+contentSelector: '.content',
+headingSelector: 'h2'
+})
+}
+);
+</script>
+
+
+<nav id="contents">
+    <ol class="js-toc">
+    </ol>
+</nav>
+
+
+
+
+
+
+  <br />
+  <div id="kube-component" class="content">
+    
+
+<p>This guide uses <strong>MySQL 8.4 LTS</strong> and two native Speedle processes: PMS writes
+policies, and ADS reads the same database with a separate read-only account.
+The local example uses Docker and plain HTTP on loopback. For a remote deployment,
+use your existing MySQL server and the <a href="/docs/security/">Security guide</a>.</p>
+
+<h2 id="1-build-speedle-with-the-mysql-backend">1. Build Speedle with the MySQL backend</h2>
+
+<p>Install Git, Bash, curl, Docker and a supported Go toolchain (Go 1.26.10 or
+Go 1.27.3). Docker must be running. Build from current source so both binaries
+contain the <code>mysql</code> store; an older installed release may not contain it.</p>
+
+<!-- mysql-step: build -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">git clone --depth <span style="color:#bd93f9">1</span> https://github.com/teramoby/speedle-plus.git
+<span style="color:#8be9fd;font-style:italic">cd</span> speedle-plus
+mkdir -p bin
+go build -o ./bin/ ./cmd/spctl ./cmd/speedle-pms ./cmd/speedle-ads</code></pre></div>
+<p>Run the remaining commands from this <code>speedle-plus</code> directory. Keep ports 3306,
+6733 and 6734 free, or change the corresponding addresses in every command and
+configuration below.</p>
+
+<h2 id="2-start-mysql-8-4">2. Start MySQL 8.4</h2>
+
+<p>The fixed passwords below are <strong>local demo credentials</strong>. Use your own credentials
+and secret delivery mechanism when deploying. The named Docker volume preserves
+the database when this container is stopped or recreated.</p>
+
+<!-- mysql-step: database -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker run --name speedle-mysql --detach <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  --publish <span style="color:#bd93f9">127</span>.0.0.1:3306:3306 <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  --volume speedle-mysql-data:/var/lib/mysql <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  --env <span style="color:#8be9fd;font-style:italic">MYSQL_ROOT_PASSWORD</span><span style="color:#ff79c6">=</span>SpeedleDemoRoot84 <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  mysql:8.4</code></pre></div>
+<p>Wait for initialization to finish:</p>
+
+<!-- mysql-step: ready -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#ff79c6">until</span> docker <span style="color:#8be9fd;font-style:italic">exec</span> speedle-mysql mysqladmin ping <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  --host<span style="color:#ff79c6">=</span><span style="color:#bd93f9">127</span>.0.0.1 --user<span style="color:#ff79c6">=</span>root --password<span style="color:#ff79c6">=</span>SpeedleDemoRoot84 --silent
+<span style="color:#ff79c6">do</span>
+  sleep <span style="color:#bd93f9">1</span>
+<span style="color:#ff79c6">done</span></code></pre></div>
+<p>If you already have MySQL 8.4, skip these Docker commands and run the SQL in the
+next step using your database administrator&rsquo;s client. The Docker image initializes
+credentials only when its data directory is empty; changing an environment
+variable does not reset a password in an existing volume.</p>
+
+<h2 id="3-create-the-database-and-service-accounts">3. Create the database and service accounts</h2>
+
+<p>Speedle creates tables by default, but <strong>does not create the database</strong>. Use an
+administrator to create <code>speedle</code> and two accounts:</p>
+
+<!-- mysql-step: accounts -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker <span style="color:#8be9fd;font-style:italic">exec</span> -i speedle-mysql mysql --user<span style="color:#ff79c6">=</span>root --password<span style="color:#ff79c6">=</span>SpeedleDemoRoot84 <span style="color:#f1fa8c">&lt;&lt;&#39;SQL&#39;
+</span><span style="color:#f1fa8c">CREATE DATABASE speedle CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_bin;
+</span><span style="color:#f1fa8c">CREATE USER &#39;speedle_pms&#39;@&#39;%&#39; IDENTIFIED BY &#39;SpeedleDemoPms84&#39;;
+</span><span style="color:#f1fa8c">CREATE USER &#39;speedle_ads&#39;@&#39;%&#39; IDENTIFIED BY &#39;SpeedleDemoAds84&#39;;
+</span><span style="color:#f1fa8c">GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, REFERENCES ON speedle.* TO &#39;speedle_pms&#39;@&#39;%&#39;;
+</span><span style="color:#f1fa8c">GRANT SELECT ON speedle.* TO &#39;speedle_ads&#39;@&#39;%&#39;;
+</span><span style="color:#f1fa8c">SQL</span></code></pre></div>
+<p>PMS needs <code>CREATE</code> and <code>REFERENCES</code> for automatic schema initialization, plus
+<code>SELECT</code>, <code>INSERT</code>, <code>UPDATE</code> and <code>DELETE</code> for policy management. ADS needs only
+<code>SELECT</code> and must disable automatic schema initialization. The <code>%</code> account host
+allows connections from the host through Docker; restrict account hosts to your
+actual PMS/ADS machines for a remote deployment.</p>
+
+<h2 id="4-write-the-pms-and-ads-configuration-files">4. Write the PMS and ADS configuration files</h2>
+
+<p>Both DSNs must select the <strong>same server and database</strong>. A DSN follows the driver
+syntax <code>user:password@tcp(host:port)/database</code>.</p>
+
+<!-- mysql-step: configuration -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">mkdir -p mysql-demo
+cat &gt; mysql-demo/pms.json <span style="color:#f1fa8c">&lt;&lt;&#39;JSON&#39;
+</span><span style="color:#f1fa8c">{
+</span><span style="color:#f1fa8c">  &#34;storeConfig&#34;: {
+</span><span style="color:#f1fa8c">    &#34;storeType&#34;: &#34;mysql&#34;,
+</span><span style="color:#f1fa8c">    &#34;storeProps&#34;: {
+</span><span style="color:#f1fa8c">      &#34;MySQLDSN&#34;: &#34;speedle_pms:SpeedleDemoPms84@tcp(127.0.0.1:3306)/speedle&#34;,
+</span><span style="color:#f1fa8c">      &#34;MySQLInitSchema&#34;: true,
+</span><span style="color:#f1fa8c">      &#34;MySQLPollInterval&#34;: &#34;1s&#34;,
+</span><span style="color:#f1fa8c">      &#34;MySQLQueryTimeout&#34;: &#34;10s&#34;
+</span><span style="color:#f1fa8c">    }
+</span><span style="color:#f1fa8c">  }
+</span><span style="color:#f1fa8c">}
+</span><span style="color:#f1fa8c">JSON</span>
+cat &gt; mysql-demo/ads.json <span style="color:#f1fa8c">&lt;&lt;&#39;JSON&#39;
+</span><span style="color:#f1fa8c">{
+</span><span style="color:#f1fa8c">  &#34;storeConfig&#34;: {
+</span><span style="color:#f1fa8c">    &#34;storeType&#34;: &#34;mysql&#34;,
+</span><span style="color:#f1fa8c">    &#34;storeProps&#34;: {
+</span><span style="color:#f1fa8c">      &#34;MySQLDSN&#34;: &#34;speedle_ads:SpeedleDemoAds84@tcp(127.0.0.1:3306)/speedle&#34;,
+</span><span style="color:#f1fa8c">      &#34;MySQLInitSchema&#34;: false,
+</span><span style="color:#f1fa8c">      &#34;MySQLPollInterval&#34;: &#34;1s&#34;,
+</span><span style="color:#f1fa8c">      &#34;MySQLQueryTimeout&#34;: &#34;10s&#34;
+</span><span style="color:#f1fa8c">    }
+</span><span style="color:#f1fa8c">  },
+</span><span style="color:#f1fa8c">  &#34;enableWatch&#34;: true
+</span><span style="color:#f1fa8c">}
+</span><span style="color:#f1fa8c">JSON</span>
+chmod <span style="color:#bd93f9">600</span> mysql-demo/pms.json mysql-demo/ads.json</code></pre></div>
+<p><code>MySQLInitSchema: false</code> makes startup check the existing schema without executing
+DDL. <code>enableWatch: true</code> lets ADS follow committed changes. Do not commit these
+credential-bearing configuration files.</p>
+
+<h2 id="5-start-pms-then-ads">5. Start PMS, then ADS</h2>
+
+<p>In terminal A, start PMS first so it can create the tables:</p>
+
+<!-- mysql-step: pms -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./bin/speedle-pms --config-file mysql-demo/pms.json --endpoint <span style="color:#bd93f9">127</span>.0.0.1:6733 --insecure<span style="color:#ff79c6">=</span>true</code></pre></div>
+<p>Leave PMS running. In terminal B, from the same checkout, confirm initialization:</p>
+
+<!-- mysql-step: tables -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker <span style="color:#8be9fd;font-style:italic">exec</span> speedle-mysql mysql --user<span style="color:#ff79c6">=</span>speedle_ads --password<span style="color:#ff79c6">=</span>SpeedleDemoAds84 speedle -e <span style="color:#f1fa8c">&#39;SHOW TABLES;&#39;</span></code></pre></div>
+<p>You should see five tables:</p>
+
+<table>
+<thead>
+<tr>
+<th>Table</th>
+<th>Contents</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td><code>speedle_services</code></td>
+<td>Services and service metadata</td>
+</tr>
+
+<tr>
+<td><code>speedle_policies</code></td>
+<td>Authorization policies</td>
+</tr>
+
+<tr>
+<td><code>speedle_role_policies</code></td>
+<td>Role policies</td>
+</tr>
+
+<tr>
+<td><code>speedle_functions</code></td>
+<td>Custom function definitions</td>
+</tr>
+
+<tr>
+<td><code>speedle_store_meta</code></td>
+<td>Schema version and committed policy revision</td>
+</tr>
+</tbody>
+</table>
+
+<p>Then start ADS in terminal B and leave it running:</p>
+
+<!-- mysql-step: ads -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./bin/speedle-ads --config-file mysql-demo/ads.json --endpoint <span style="color:#bd93f9">127</span>.0.0.1:6734 --insecure<span style="color:#ff79c6">=</span>true</code></pre></div>
+<p>Wait for each service&rsquo;s REST listener to start before continuing. The gRPC servers
+remain off unless you also pass <code>--grpc-endpoint</code>.</p>
+
+<h2 id="6-create-a-policy-and-check-authorization">6. Create a policy and check authorization</h2>
+
+<p>In terminal C, create a service with a policy granting Alice permission to read
+<code>book</code>:</p>
+
+<!-- mysql-step: policy -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl -fsS -X POST http://127.0.0.1:6733/policy-mgmt/v1/service <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  -H <span style="color:#f1fa8c">&#39;Content-Type: application/json&#39;</span> <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  -d <span style="color:#f1fa8c">&#39;{&#34;name&#34;:&#34;mysql-demo&#34;,&#34;type&#34;:&#34;application&#34;,&#34;policies&#34;:[{&#34;id&#34;:&#34;alice-read&#34;,&#34;name&#34;:&#34;alice-read&#34;,&#34;effect&#34;:&#34;grant&#34;,&#34;principals&#34;:[[&#34;user:alice&#34;]],&#34;permissions&#34;:[{&#34;resource&#34;:&#34;book&#34;,&#34;actions&#34;:[&#34;read&#34;]}]}]}&#39;</span></code></pre></div>
+<p>Allow up to a polling interval (1 second by default), plus query/cache rebuild
+time, for ADS to load the change. Repeat the request if synchronization is still
+in progress:</p>
+
+<!-- mysql-step: allow -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl -fsS -X POST http://127.0.0.1:6734/authz-check/v1/is-allowed <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  -H <span style="color:#f1fa8c">&#39;Content-Type: application/json&#39;</span> <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  -d <span style="color:#f1fa8c">&#39;{&#34;subject&#34;:{&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;,&#34;name&#34;:&#34;alice&#34;}]},&#34;serviceName&#34;:&#34;mysql-demo&#34;,&#34;resource&#34;:&#34;book&#34;,&#34;action&#34;:&#34;read&#34;}&#39;</span></code></pre></div>
+<p>Expected response: <code>{&quot;allowed&quot;:true,&quot;reason&quot;:0}</code>. Bob has no matching grant:</p>
+
+<!-- mysql-step: deny -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl -fsS -X POST http://127.0.0.1:6734/authz-check/v1/is-allowed <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  -H <span style="color:#f1fa8c">&#39;Content-Type: application/json&#39;</span> <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  -d <span style="color:#f1fa8c">&#39;{&#34;subject&#34;:{&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;,&#34;name&#34;:&#34;bob&#34;}]},&#34;serviceName&#34;:&#34;mysql-demo&#34;,&#34;resource&#34;:&#34;book&#34;,&#34;action&#34;:&#34;read&#34;}&#39;</span></code></pre></div>
+<p>Expected response: <code>{&quot;allowed&quot;:false,&quot;reason&quot;:3}</code>.</p>
+
+<h2 id="7-verify-automatic-updates-and-persistence">7. Verify automatic updates and persistence</h2>
+
+<p>Add an explicit deny for Alice through PMS, without restarting ADS:</p>
+
+<!-- mysql-step: update -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl -fsS -X POST http://127.0.0.1:6733/policy-mgmt/v1/service/mysql-demo/policy <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  -H <span style="color:#f1fa8c">&#39;Content-Type: application/json&#39;</span> <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  -d <span style="color:#f1fa8c">&#39;{&#34;id&#34;:&#34;alice-deny&#34;,&#34;name&#34;:&#34;alice-deny&#34;,&#34;effect&#34;:&#34;deny&#34;,&#34;principals&#34;:[[&#34;user:alice&#34;]],&#34;permissions&#34;:[{&#34;resource&#34;:&#34;book&#34;,&#34;actions&#34;:[&#34;read&#34;]}]}&#39;</span></code></pre></div>
+<p>After synchronization, repeat Alice&rsquo;s request from step 6. It should now return
+<code>{&quot;allowed&quot;:false,&quot;reason&quot;:1}</code>: the explicit deny takes priority. You can stop
+PMS and ADS with Ctrl+C, restart them with the commands in step 5, and repeat the
+same request. The stored policy and denial persist in MySQL.</p>
+
+<p>Policy changes must go through PMS or the store interface so that data and the
+revision advance in the same transaction. Direct SQL edits do not automatically
+trigger an ADS reload. During a database outage, an already-running ADS retains
+its last loaded policies and retries synchronization; starting ADS still requires
+a reachable database.</p>
+
+<h2 id="pre-create-the-schema-without-runtime-ddl-privileges">Pre-create the schema without runtime DDL privileges</h2>
+
+<p>As an alternative to automatic table creation, run the repository&rsquo;s
+<a href="https://github.com/teramoby/speedle-plus/blob/master/pkg/store/mysql/schema.sql">schema.sql</a>
+with a provisioning account before starting either service:</p>
+
+<!-- mysql-step: schema -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker <span style="color:#8be9fd;font-style:italic">exec</span> -i speedle-mysql mysql --user<span style="color:#ff79c6">=</span>root --password<span style="color:#ff79c6">=</span>SpeedleDemoRoot84 speedle &lt; pkg/store/mysql/schema.sql</code></pre></div>
+<p>Set <code>MySQLInitSchema</code> to <code>false</code> in <strong>both</strong> configuration files. If you followed
+the demo above, remove the extra initialization privileges:</p>
+
+<!-- mysql-step: revoke-ddl -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker <span style="color:#8be9fd;font-style:italic">exec</span> speedle-mysql mysql --user<span style="color:#ff79c6">=</span>root --password<span style="color:#ff79c6">=</span>SpeedleDemoRoot84 -e <span style="color:#f1fa8c">&#34;REVOKE CREATE, REFERENCES ON speedle.* FROM &#39;speedle_pms&#39;@&#39;%&#39;;&#34;</span></code></pre></div>
+<p>PMS then runs with <code>SELECT</code>, <code>INSERT</code>, <code>UPDATE</code>, <code>DELETE</code>; ADS stays read-only.
+Restart both services after changing their configuration. Schema initialization
+does not migrate existing tables; unsupported schema versions fail startup.</p>
+
+<h2 id="configuration-reference-and-troubleshooting">Configuration reference and troubleshooting</h2>
+
+<table>
+<thead>
+<tr>
+<th>Property</th>
+<th>Flag</th>
+<th>Environment variable</th>
+<th>Default</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td><code>MySQLDSN</code></td>
+<td><code>--mysqlstore-dsn</code></td>
+<td><code>SPDL_MYSQLSTORE_DSN</code></td>
+<td>Required, including database name</td>
+</tr>
+
+<tr>
+<td><code>MySQLInitSchema</code></td>
+<td><code>--mysqlstore-init-schema</code></td>
+<td><code>SPDL_MYSQLSTORE_INIT_SCHEMA</code></td>
+<td><code>true</code></td>
+</tr>
+
+<tr>
+<td><code>MySQLPollInterval</code></td>
+<td><code>--mysqlstore-poll-interval</code></td>
+<td><code>SPDL_MYSQLSTORE_POLL_INTERVAL</code></td>
+<td><code>1s</code></td>
+</tr>
+
+<tr>
+<td><code>MySQLQueryTimeout</code></td>
+<td><code>--mysqlstore-query-timeout</code></td>
+<td><code>SPDL_MYSQLSTORE_QUERY_TIMEOUT</code></td>
+<td><code>10s</code></td>
+</tr>
+</tbody>
+</table>
+
+<p>The selection flag is <code>--store-type mysql</code> (<code>SPDL_STORE_TYPE=mysql</code>). Explicit
+flags override nonempty environment variables, then configuration files, then
+defaults. For remote MySQL, use a hostname with a trusted server certificate and
+add <code>?tls=true</code> to the DSN; custom CA configuration follows the
+<a href="https://github.com/go-sql-driver/mysql/tree/v1.10.1#tls">driver TLS documentation</a>.</p>
+
+<table>
+<thead>
+<tr>
+<th>Symptom</th>
+<th>Check</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td>Unknown <code>mysql</code> store or flag</td>
+<td>Rebuild both binaries from source containing <code>pkg/store/mysql</code>.</td>
+</tr>
+
+<tr>
+<td>Connection refused / access denied</td>
+<td>Database readiness, DSN host/port, password and MySQL account host restrictions.</td>
+</tr>
+
+<tr>
+<td>Unknown database</td>
+<td>Create the database first; Speedle creates only tables.</td>
+</tr>
+
+<tr>
+<td>Missing tables or DDL denied</td>
+<td>Start PMS first, or pre-create the schema; read-only ADS must set <code>MySQLInitSchema</code> to <code>false</code>.</td>
+</tr>
+
+<tr>
+<td>Policy change is not visible</td>
+<td>Same database in both DSNs, ADS watch enabled, polling delay, and no overriding <code>SPDL_*</code> variables.</td>
+</tr>
+</tbody>
+</table>
+
+<p>MySQL does not support Discover request collection or policy generation. See
+<a href="/docs/store/">Pluggable Storage</a> for transaction, snapshot and recovery details.</p>
+
+  </div>
+</div>
+</main><div class="sidebar">
+<nav>
+<ul>
+
+
+
+<li class="parent"><span>Speedle Documents</span>
+<ul class="sub-menu">
+<li class=""><a href="/docs/usecases/">Usecases</a></li>
+<li class=""><a href="/docs/overview/">Overview</a></li>
+<li class=""><a href="/docs/spdl/">SPDL - Speedle Policy Definition Language</a></li>
+<li class=""><a href="/docs/architecture/">Architecture</a></li>
+<li class=""><a href="/docs/deployment-embeded/">Speedle embedded mode</a></li>
+
+
+
+<li class=""><span>Speedle Policy</span>
+<ul class="">
+<li class=""><a href="/docs/pms/policy-mgmt/">Policy Management</a></li>
+<li class=""><a href="/docs/pms/global-policy/">Global Policy</a></li>
+<li class=""><a href="/docs/pms/diagnosis/">Policy Diagnosis</a></li>
+<li class=""><a href="/docs/pms/discover/">Policy Discovery</a></li>
+</ul>
+  
+</li>
+<li class=""><a href="/docs/decisions/">Authorization Decisions</a></li>
+<li class=""><a href="/docs/idd/">Identity Domain</a></li>
+<li class=""><a href="/docs/assertor/">Token asserter</a></li>
+<li class=""><a href="/docs/deployment/">Deployment</a></li>
+
+
+
+<li class="parent"><a href="/docs/store/">Pluggable Storage</a>
+<ul class="sub-menu">
+<li class="active"><a href="/docs/store/mysql/">MySQL Setup</a></li>
+</ul>
+  
+</li>
+
+
+
+<li class=""><span>API</span>
+<ul class="">
+<li class=""><a href="/docs/api/decision_api/">Authorization Runtime/Decision API</a></li>
+<li class=""><a href="/docs/api/management_api/">Policy Management API</a></li>
+<li class=""><a href="/docs/api/asserter_api/">Token Assertion Plugin API</a></li>
+</ul>
+  
+</li>
+<li class=""><a href="/docs/security/">Security</a></li>
+<li class=""><a href="/docs/logging/">Logging Framework</a></li>
+<li class=""><a href="/docs/versions/">Versions</a></li>
+<li class=""><a href="/docs/custom-function/">Custom Function</a></li>
+</ul>
+  
+</li>
+
+
+
+
+</ul>
+</nav>
+
+
+<div class="sidebar-footer"></div>
+</div>
+</div>
+    </div>
+    <footer class="row"> <div class="col col-3">
+  Licensed under <a href="https://oss.oracle.com/licenses/upl/">UPL</a>
+</div>
+<div class="col col-6 center">
+  <div>Copyright &copy; 2019–2026. All rights reserved.</div>
+</div>
+<div class="col col-3">
+  <nav>
+    <a title="contact@speedle.io" aria-label="Email contact@speedle.io" href="mailto:contact@speedle.io">
+      <img src="/img/speedle/28. Mail.svg" alt="" />
+    </a>
+    <a title="Google Groups — speedle-users" aria-label="Google Groups" href="https://groups.google.com/forum/#!forum/speedle-users">
+      <img src="/img/speedle/Google-Groups.svg" alt="" />
+    </a>
+    <a title="speedle" href="https://github.com/oracle/speedle">
+      <img src="/img/speedle/18. Github.svg" />
+    </a>
+    <a title="Discord" href="https://discord.gg/uaY2xVsbbT">
+      <img src="/img/speedle/Discord.svg" />
+    </a>
+  </nav>
+</div>
+</footer>
+    <script src="/js/kube.js" type="text/javascript">
+    </script>
+    <script src="/js/kube.legenda.js" type="text/javascript">
+    </script>
+    <script src="/js/master.js?v=language-direct-20261026" type="text/javascript">
+    </script>
+</body>
+
+</html>

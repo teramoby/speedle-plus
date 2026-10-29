@@ -146,6 +146,20 @@
   </url>
   
   <url>
+    <loc>https://speedle.io/docs/store/mysql/</loc>
+    <xhtml:link
+                rel="alternate"
+                hreflang="zh"
+                href="https://speedle.io/zh/docs/store/mysql/"
+                />
+    <xhtml:link
+                rel="alternate"
+                hreflang="en"
+                href="https://speedle.io/docs/store/mysql/"
+                />
+  </url>
+  
+  <url>
     <loc>https://speedle.io/quick-start/</loc>
     <xhtml:link
                 rel="alternate"
@@ -835,6 +849,21 @@
   </url>
   
   <url>
+    <loc>https://speedle.io/tags/mysql/</loc>
+    <priority>0</priority>
+    <xhtml:link
+                rel="alternate"
+                hreflang="zh"
+                href="https://speedle.io/zh/tags/mysql/"
+                />
+    <xhtml:link
+                rel="alternate"
+                hreflang="en"
+                href="https://speedle.io/tags/mysql/"
+                />
+  </url>
+  
+  <url>
     <loc>https://speedle.io/tags/operator/</loc>
     <priority>0</priority>
     <xhtml:link
@@ -1179,21 +1208,6 @@
   </url>
   
   <url>
-    <loc>https://speedle.io/tags/versions/</loc>
-    <priority>0</priority>
-    <xhtml:link
-                rel="alternate"
-                hreflang="zh"
-                href="https://speedle.io/zh/tags/versions/"
-                />
-    <xhtml:link
-                rel="alternate"
-                hreflang="en"
-                href="https://speedle.io/tags/versions/"
-                />
-  </url>
-  
-  <url>
     <loc>https://speedle.io/versions/</loc>
     <priority>0</priority>
     <xhtml:link
@@ -1205,6 +1219,21 @@
                 rel="alternate"
                 hreflang="en"
                 href="https://speedle.io/versions/"
+                />
+  </url>
+  
+  <url>
+    <loc>https://speedle.io/tags/versions/</loc>
+    <priority>0</priority>
+    <xhtml:link
+                rel="alternate"
+                hreflang="zh"
+                href="https://speedle.io/zh/tags/versions/"
+                />
+    <xhtml:link
+                rel="alternate"
+                hreflang="en"
+                href="https://speedle.io/tags/versions/"
                 />
   </url>
   

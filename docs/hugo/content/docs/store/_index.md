@@ -4,6 +4,8 @@ description = "Bring your own persistence store!"
 weight = 130
 draft = false
 toc = true
+layout = "single"
+linksection = true
 tocheading = "h2"
 tags = ["storage", "pluggable"]
 categories = ["docs"]
@@ -17,6 +19,9 @@ The standalone binaries register file, etcd, MongoDB and MySQL implementations u
 A full backend implements [pms.PolicyStoreManager](https://github.com/teramoby/speedle-plus/blob/master/api/pms/interface.go): service, authorization-policy, role-policy and function management, snapshot reads and watch/stop. ADS accepts the narrower `PolicyStoreManagerADS` read/watch interface. Check the actual interfaces when implementing a backend, rather than copying a partial historical method list.
 
 ## MySQL 8.4 policy store
+
+Follow the [step-by-step MySQL setup guide](/docs/store/mysql/) to create a
+database, configure separate PMS/ADS accounts, and verify policy synchronization.
 
 The `mysql` backend implements the complete policy-store interface for PMS and ADS. Discover request collection and policy generation are not supported. It uses the pure-Go `go-sql-driver/mysql` driver; the database must already exist.
 

@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+    <meta name="generator" content="Hugo 0.48" />
+    <link rel="icon" type="image/png" sizes="1024x1024" href="https://speedle.io/images/speedle_black.png">
+
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1"><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>MySQL 配置指南 - Speedle</title>
+<meta name="description" content="逐步配置 MySQL 8.4 策略存储，启动 PMS 与 ADS，并验证策略同步。">
+<meta name="generator" content="Hugo 0.48" />
+<link href="https://speedle.io/index.xml" rel="alternate" type="application/rss+xml">
+<link rel="canonical" href="https://speedle.io/zh/docs/store/mysql/">
+<link rel="stylesheet" href="/css/theme.min.css">
+<script src="https://use.fontawesome.com/releases/v5.0.6/js/all.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+<script src="/js/functions.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jquery.easing@1.4.1/jquery.easing.min.js"></script>
+
+
+<script src="/js/jquery.backtothetop/jquery.backtothetop.min.js"></script>
+
+<script type="text/javascript" src="/js/tocbot.min.js"></script>
+<link href="/css/font.css" rel="stylesheet" type="text/css">
+    <link href="/css/kube.min.css" rel="stylesheet" type="text/css">
+    <link href="/css/kube.legenda.css" rel="stylesheet" type="text/css">
+    <link href="/css/highlight.css" rel="stylesheet" type="text/css">
+    <link href="/css/master.css" rel="stylesheet" type="text/css">
+    <link href="/css/kube.demo.css" rel="stylesheet" type="text/css">
+    <link href="/css/swagger-ui.css" rel="stylesheet" type="text/css">
+    
+    
+    <link href="/css/custom.css" rel="stylesheet" type="text/css">
+    <link href="https://fonts.googleapis.com/css?family=IBM+Plex+Sans" rel="stylesheet">
+    <link href="/css/brand.css?v=1" rel="stylesheet" type="text/css">
+    <link href="/css/navigation.css?v=header-20261027" rel="stylesheet">
+    <script src="/js/navigation.js?v=header-20261027" defer></script>
+</head>
+
+<body class="page-kube" style="background: none">
+    <header class="site-header">
+    <div class="wrap nav">
+      <a class="brand" href="/zh/#top" aria-label="Speedle 中文首页"><img src="/img/speedle/Speedle_logo_home_bold.svg?v=4" alt="Speedle"></a>
+      <button class="menu" type="button" aria-expanded="false" aria-controls="nav-links" aria-label="展开导航">☰</button>
+      <nav class="nav-links" id="nav-links" aria-label="主导航">
+        <a href="/zh/#about">关于</a><a href="/zh/#features">功能</a><a href="/zh/#integrations">集成</a>
+        <a href="/zh/quick-start/">快速入门</a><a href="/zh/docs/">文档</a><a href="/zh/playground/">Playground</a>
+        <a href="/docs/store/mysql/" lang="en" hreflang="en" aria-label="Switch to English">English</a>
+        <a class="nav-github" href="https://github.com/teramoby/speedle-plus">GitHub</a>
+      </nav>
+    </div>
+  </header>
+    <div class="container">
+        <div class="content-container">
+            <main>
+<div id="main">
+  
+  <h1>MySQL 配置指南</h1>
+  <p>从建库、创建账号到配置 PMS/ADS，再验证授权、策略自动同步与持久化。</p>
+
+  
+<script type="text/javascript">
+document.addEventListener("DOMContentLoaded",
+function(){
+tocbot.init({
+tocSelector: '.js-toc',
+contentSelector: '.content',
+headingSelector: 'h2'
+})
+}
+);
+</script>
+
+
+<nav id="contents">
+    <ol class="js-toc">
+    </ol>
+</nav>
+
+
+
+
+
+
+  <br />
+  <div id="kube-component" class="content">
+    
+
+<p>本指南使用 <strong>MySQL 8.4 LTS</strong>，分别启动 PMS 和 ADS：PMS 写入策略，ADS 使用独立的只读账号读取同一个数据库。本地演示使用 Docker，HTTP 服务只监听本机回环地址。远程部署可使用已有的 MySQL，并参考<a href="/zh/docs/security/">安全配置</a>。</p>
+
+<h2 id="1-编译包含-mysql-后端的-speedle">1. 编译包含 MySQL 后端的 Speedle</h2>
+
+<p>准备 Git、Bash、curl、已启动的 Docker，以及支持的 Go 工具链（Go 1.26.10 或 Go 1.27.3）。从当前源码编译，确保两个服务都包含 <code>mysql</code> 后端；已安装的旧版本可能没有该后端。</p>
+
+<!-- mysql-step: build -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">git clone --depth <span style="color:#bd93f9">1</span> https://github.com/teramoby/speedle-plus.git
+<span style="color:#8be9fd;font-style:italic">cd</span> speedle-plus
+mkdir -p bin
+go build -o ./bin/ ./cmd/spctl ./cmd/speedle-pms ./cmd/speedle-ads</code></pre></div>
+<p>后续命令都在这个 <code>speedle-plus</code> 目录执行。确认 3306、6733、6734 端口未被占用；若修改端口，需同步修改下文的命令和配置。</p>
+
+<h2 id="2-启动-mysql-8-4">2. 启动 MySQL 8.4</h2>
+
+<p>下列固定密码仅为<strong>本地演示凭据</strong>。部署时请使用自己的凭据与密钥交付方式。命名卷会在容器停止或重建后保留数据库。</p>
+
+<!-- mysql-step: database -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker run --name speedle-mysql --detach <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  --publish <span style="color:#bd93f9">127</span>.0.0.1:3306:3306 <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  --volume speedle-mysql-data:/var/lib/mysql <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  --env <span style="color:#8be9fd;font-style:italic">MYSQL_ROOT_PASSWORD</span><span style="color:#ff79c6">=</span>SpeedleDemoRoot84 <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  mysql:8.4</code></pre></div>
+<p>等待 MySQL 初始化完成：</p>
+
+<!-- mysql-step: ready -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#ff79c6">until</span> docker <span style="color:#8be9fd;font-style:italic">exec</span> speedle-mysql mysqladmin ping <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  --host<span style="color:#ff79c6">=</span><span style="color:#bd93f9">127</span>.0.0.1 --user<span style="color:#ff79c6">=</span>root --password<span style="color:#ff79c6">=</span>SpeedleDemoRoot84 --silent
+<span style="color:#ff79c6">do</span>
+  sleep <span style="color:#bd93f9">1</span>
+<span style="color:#ff79c6">done</span></code></pre></div>
+<p>已有 MySQL 8.4 时，跳过 Docker 启动命令，使用管理员客户端执行下一步 SQL。Docker 镜像只在数据目录为空时初始化账号；对已有数据卷修改环境变量不会重置密码。</p>
+
+<h2 id="3-创建数据库和服务账号">3. 创建数据库和服务账号</h2>
+
+<p>Speedle 默认自动建表，但<strong>不会创建数据库</strong>。先以管理员身份创建 <code>speedle</code> 数据库及两个独立账号：</p>
+
+<!-- mysql-step: accounts -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker <span style="color:#8be9fd;font-style:italic">exec</span> -i speedle-mysql mysql --user<span style="color:#ff79c6">=</span>root --password<span style="color:#ff79c6">=</span>SpeedleDemoRoot84 <span style="color:#f1fa8c">&lt;&lt;&#39;SQL&#39;
+</span><span style="color:#f1fa8c">CREATE DATABASE speedle CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_bin;
+</span><span style="color:#f1fa8c">CREATE USER &#39;speedle_pms&#39;@&#39;%&#39; IDENTIFIED BY &#39;SpeedleDemoPms84&#39;;
+</span><span style="color:#f1fa8c">CREATE USER &#39;speedle_ads&#39;@&#39;%&#39; IDENTIFIED BY &#39;SpeedleDemoAds84&#39;;
+</span><span style="color:#f1fa8c">GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, REFERENCES ON speedle.* TO &#39;speedle_pms&#39;@&#39;%&#39;;
+</span><span style="color:#f1fa8c">GRANT SELECT ON speedle.* TO &#39;speedle_ads&#39;@&#39;%&#39;;
+</span><span style="color:#f1fa8c">SQL</span></code></pre></div>
+<p>PMS 自动建表需要 <code>CREATE</code>、<code>REFERENCES</code>，管理策略还需要 <code>SELECT</code>、<code>INSERT</code>、<code>UPDATE</code>、<code>DELETE</code>。ADS 只需 <code>SELECT</code>，并必须关闭自动建表。示例中的账号主机 <code>%</code> 允许宿主机通过 Docker 连接；远程部署应限制为实际 PMS/ADS 主机。</p>
+
+<h2 id="4-写入-pms-与-ads-配置文件">4. 写入 PMS 与 ADS 配置文件</h2>
+
+<p>两个 DSN 必须指向<strong>同一个 MySQL 服务和数据库</strong>。DSN 格式为 <code>用户:密码@tcp(主机:端口)/数据库</code>。</p>
+
+<!-- mysql-step: configuration -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">mkdir -p mysql-demo
+cat &gt; mysql-demo/pms.json <span style="color:#f1fa8c">&lt;&lt;&#39;JSON&#39;
+</span><span style="color:#f1fa8c">{
+</span><span style="color:#f1fa8c">  &#34;storeConfig&#34;: {
+</span><span style="color:#f1fa8c">    &#34;storeType&#34;: &#34;mysql&#34;,
+</span><span style="color:#f1fa8c">    &#34;storeProps&#34;: {
+</span><span style="color:#f1fa8c">      &#34;MySQLDSN&#34;: &#34;speedle_pms:SpeedleDemoPms84@tcp(127.0.0.1:3306)/speedle&#34;,
+</span><span style="color:#f1fa8c">      &#34;MySQLInitSchema&#34;: true,
+</span><span style="color:#f1fa8c">      &#34;MySQLPollInterval&#34;: &#34;1s&#34;,
+</span><span style="color:#f1fa8c">      &#34;MySQLQueryTimeout&#34;: &#34;10s&#34;
+</span><span style="color:#f1fa8c">    }
+</span><span style="color:#f1fa8c">  }
+</span><span style="color:#f1fa8c">}
+</span><span style="color:#f1fa8c">JSON</span>
+cat &gt; mysql-demo/ads.json <span style="color:#f1fa8c">&lt;&lt;&#39;JSON&#39;
+</span><span style="color:#f1fa8c">{
+</span><span style="color:#f1fa8c">  &#34;storeConfig&#34;: {
+</span><span style="color:#f1fa8c">    &#34;storeType&#34;: &#34;mysql&#34;,
+</span><span style="color:#f1fa8c">    &#34;storeProps&#34;: {
+</span><span style="color:#f1fa8c">      &#34;MySQLDSN&#34;: &#34;speedle_ads:SpeedleDemoAds84@tcp(127.0.0.1:3306)/speedle&#34;,
+</span><span style="color:#f1fa8c">      &#34;MySQLInitSchema&#34;: false,
+</span><span style="color:#f1fa8c">      &#34;MySQLPollInterval&#34;: &#34;1s&#34;,
+</span><span style="color:#f1fa8c">      &#34;MySQLQueryTimeout&#34;: &#34;10s&#34;
+</span><span style="color:#f1fa8c">    }
+</span><span style="color:#f1fa8c">  },
+</span><span style="color:#f1fa8c">  &#34;enableWatch&#34;: true
+</span><span style="color:#f1fa8c">}
+</span><span style="color:#f1fa8c">JSON</span>
+chmod <span style="color:#bd93f9">600</span> mysql-demo/pms.json mysql-demo/ads.json</code></pre></div>
+<p><code>MySQLInitSchema: false</code> 表示只检查已有表结构，不执行 DDL。<code>enableWatch: true</code> 让 ADS 自动同步已提交的变更。配置文件包含密码，请勿提交到代码仓库。</p>
+
+<h2 id="5-先启动-pms-再启动-ads">5. 先启动 PMS，再启动 ADS</h2>
+
+<p>在终端 A 中启动 PMS，由它完成建表：</p>
+
+<!-- mysql-step: pms -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./bin/speedle-pms --config-file mysql-demo/pms.json --endpoint <span style="color:#bd93f9">127</span>.0.0.1:6733 --insecure<span style="color:#ff79c6">=</span>true</code></pre></div>
+<p>保持 PMS 运行。在终端 B 中进入同一个代码目录，确认表已创建：</p>
+
+<!-- mysql-step: tables -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker <span style="color:#8be9fd;font-style:italic">exec</span> speedle-mysql mysql --user<span style="color:#ff79c6">=</span>speedle_ads --password<span style="color:#ff79c6">=</span>SpeedleDemoAds84 speedle -e <span style="color:#f1fa8c">&#39;SHOW TABLES;&#39;</span></code></pre></div>
+<p>应看到下面五张表：</p>
+
+<table>
+<thead>
+<tr>
+<th>表名</th>
+<th>保存内容</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td><code>speedle_services</code></td>
+<td>服务及服务元数据</td>
+</tr>
+
+<tr>
+<td><code>speedle_policies</code></td>
+<td>授权策略</td>
+</tr>
+
+<tr>
+<td><code>speedle_role_policies</code></td>
+<td>角色策略</td>
+</tr>
+
+<tr>
+<td><code>speedle_functions</code></td>
+<td>自定义函数定义</td>
+</tr>
+
+<tr>
+<td><code>speedle_store_meta</code></td>
+<td>结构版本与已提交的策略修订号</td>
+</tr>
+</tbody>
+</table>
+
+<p>然后在终端 B 中启动 ADS，并保持运行：</p>
+
+<!-- mysql-step: ads -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./bin/speedle-ads --config-file mysql-demo/ads.json --endpoint <span style="color:#bd93f9">127</span>.0.0.1:6734 --insecure<span style="color:#ff79c6">=</span>true</code></pre></div>
+<p>等两个服务的 REST 监听启动后再继续。未传入 <code>--grpc-endpoint</code> 时，gRPC 服务默认关闭。</p>
+
+<h2 id="6-创建策略并检查授权">6. 创建策略并检查授权</h2>
+
+<p>在终端 C 创建服务，授予 Alice 读取 <code>book</code> 的权限：</p>
+
+<!-- mysql-step: policy -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl -fsS -X POST http://127.0.0.1:6733/policy-mgmt/v1/service <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  -H <span style="color:#f1fa8c">&#39;Content-Type: application/json&#39;</span> <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  -d <span style="color:#f1fa8c">&#39;{&#34;name&#34;:&#34;mysql-demo&#34;,&#34;type&#34;:&#34;application&#34;,&#34;policies&#34;:[{&#34;id&#34;:&#34;alice-read&#34;,&#34;name&#34;:&#34;alice-read&#34;,&#34;effect&#34;:&#34;grant&#34;,&#34;principals&#34;:[[&#34;user:alice&#34;]],&#34;permissions&#34;:[{&#34;resource&#34;:&#34;book&#34;,&#34;actions&#34;:[&#34;read&#34;]}]}]}&#39;</span></code></pre></div>
+<p>等待 ADS 同步。默认轮询间隔为 1 秒，还需加上查询和缓存重建时间；如果请求发生在同步完成之前，稍后重试：</p>
+
+<!-- mysql-step: allow -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl -fsS -X POST http://127.0.0.1:6734/authz-check/v1/is-allowed <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  -H <span style="color:#f1fa8c">&#39;Content-Type: application/json&#39;</span> <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  -d <span style="color:#f1fa8c">&#39;{&#34;subject&#34;:{&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;,&#34;name&#34;:&#34;alice&#34;}]},&#34;serviceName&#34;:&#34;mysql-demo&#34;,&#34;resource&#34;:&#34;book&#34;,&#34;action&#34;:&#34;read&#34;}&#39;</span></code></pre></div>
+<p>预期返回 <code>{&quot;allowed&quot;:true,&quot;reason&quot;:0}</code>。Bob 没有匹配的授权策略：</p>
+
+<!-- mysql-step: deny -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl -fsS -X POST http://127.0.0.1:6734/authz-check/v1/is-allowed <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  -H <span style="color:#f1fa8c">&#39;Content-Type: application/json&#39;</span> <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  -d <span style="color:#f1fa8c">&#39;{&#34;subject&#34;:{&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;,&#34;name&#34;:&#34;bob&#34;}]},&#34;serviceName&#34;:&#34;mysql-demo&#34;,&#34;resource&#34;:&#34;book&#34;,&#34;action&#34;:&#34;read&#34;}&#39;</span></code></pre></div>
+<p>预期返回 <code>{&quot;allowed&quot;:false,&quot;reason&quot;:3}</code>。</p>
+
+<h2 id="7-验证自动更新和持久化">7. 验证自动更新和持久化</h2>
+
+<p>通过 PMS 新增一条拒绝 Alice 的策略，无需重启 ADS：</p>
+
+<!-- mysql-step: update -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl -fsS -X POST http://127.0.0.1:6733/policy-mgmt/v1/service/mysql-demo/policy <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  -H <span style="color:#f1fa8c">&#39;Content-Type: application/json&#39;</span> <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  -d <span style="color:#f1fa8c">&#39;{&#34;id&#34;:&#34;alice-deny&#34;,&#34;name&#34;:&#34;alice-deny&#34;,&#34;effect&#34;:&#34;deny&#34;,&#34;principals&#34;:[[&#34;user:alice&#34;]],&#34;permissions&#34;:[{&#34;resource&#34;:&#34;book&#34;,&#34;actions&#34;:[&#34;read&#34;]}]}&#39;</span></code></pre></div>
+<p>同步后，再执行第 6 步 Alice 的请求，应返回 <code>{&quot;allowed&quot;:false,&quot;reason&quot;:1}</code>，表示显式 deny 优先。也可以按 Ctrl+C 停止 PMS 和 ADS，再用第 5 步命令启动。再次请求仍应拒绝 Alice，说明策略已保存在 MySQL 中。</p>
+
+<p>策略变更应通过 PMS 或存储接口完成，确保数据与修订号在同一事务内提交。直接修改 SQL 不会自动触发 ADS 重载。数据库断线时，已运行的 ADS 保留最后加载的策略并重试同步；ADS 启动时仍需要数据库可连接。</p>
+
+<h2 id="可选-预先建表-运行时不授予-ddl-权限">可选：预先建表，运行时不授予 DDL 权限</h2>
+
+<p>如果不允许服务账号自动建表，可在启动服务前，用初始化账号执行仓库中的同一份 <a href="https://github.com/teramoby/speedle-plus/blob/master/pkg/store/mysql/schema.sql">schema.sql</a>：</p>
+
+<!-- mysql-step: schema -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker <span style="color:#8be9fd;font-style:italic">exec</span> -i speedle-mysql mysql --user<span style="color:#ff79c6">=</span>root --password<span style="color:#ff79c6">=</span>SpeedleDemoRoot84 speedle &lt; pkg/store/mysql/schema.sql</code></pre></div>
+<p>将<strong>两个</strong>配置文件中的 <code>MySQLInitSchema</code> 都设置为 <code>false</code>。如果沿用了本指南前面的演示账号，可撤销 PMS 的初始化权限：</p>
+
+<!-- mysql-step: revoke-ddl -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker <span style="color:#8be9fd;font-style:italic">exec</span> speedle-mysql mysql --user<span style="color:#ff79c6">=</span>root --password<span style="color:#ff79c6">=</span>SpeedleDemoRoot84 -e <span style="color:#f1fa8c">&#34;REVOKE CREATE, REFERENCES ON speedle.* FROM &#39;speedle_pms&#39;@&#39;%&#39;;&#34;</span></code></pre></div>
+<p>此后 PMS 仅需 <code>SELECT</code>、<code>INSERT</code>、<code>UPDATE</code>、<code>DELETE</code>，ADS 保持只读。修改配置后重启两个服务。初始化 SQL 不会迁移已有表；不支持的结构版本会导致启动失败。</p>
+
+<h2 id="配置速查与故障排查">配置速查与故障排查</h2>
+
+<table>
+<thead>
+<tr>
+<th>配置属性</th>
+<th>命令行参数</th>
+<th>环境变量</th>
+<th>默认值</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td><code>MySQLDSN</code></td>
+<td><code>--mysqlstore-dsn</code></td>
+<td><code>SPDL_MYSQLSTORE_DSN</code></td>
+<td>必填，必须包含数据库名</td>
+</tr>
+
+<tr>
+<td><code>MySQLInitSchema</code></td>
+<td><code>--mysqlstore-init-schema</code></td>
+<td><code>SPDL_MYSQLSTORE_INIT_SCHEMA</code></td>
+<td><code>true</code></td>
+</tr>
+
+<tr>
+<td><code>MySQLPollInterval</code></td>
+<td><code>--mysqlstore-poll-interval</code></td>
+<td><code>SPDL_MYSQLSTORE_POLL_INTERVAL</code></td>
+<td><code>1s</code></td>
+</tr>
+
+<tr>
+<td><code>MySQLQueryTimeout</code></td>
+<td><code>--mysqlstore-query-timeout</code></td>
+<td><code>SPDL_MYSQLSTORE_QUERY_TIMEOUT</code></td>
+<td><code>10s</code></td>
+</tr>
+</tbody>
+</table>
+
+<p>选择后端的参数是 <code>--store-type mysql</code>，对应 <code>SPDL_STORE_TYPE=mysql</code>。配置优先级为：显式参数 → 非空环境变量 → 配置文件 → 默认值。连接远程数据库时，使用带可信服务端证书的主机名，并在 DSN 后添加 <code>?tls=true</code>；自定义 CA 的配置请参阅<a href="https://github.com/go-sql-driver/mysql/tree/v1.10.1#tls">驱动 TLS 文档</a>。</p>
+
+<table>
+<thead>
+<tr>
+<th>现象</th>
+<th>检查项</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td>不识别 <code>mysql</code> 后端或参数</td>
+<td>从包含 <code>pkg/store/mysql</code> 的源码重新编译两个服务。</td>
+</tr>
+
+<tr>
+<td>连接被拒绝或访问被拒绝</td>
+<td>MySQL 是否就绪，DSN 地址、端口、密码及账号主机限制是否正确。</td>
+</tr>
+
+<tr>
+<td>数据库不存在</td>
+<td>先创建数据库，Speedle 只负责建表。</td>
+</tr>
+
+<tr>
+<td>表不存在或 DDL 权限不足</td>
+<td>先启动 PMS 或手动建表；只读 ADS 必须设置 <code>MySQLInitSchema: false</code>。</td>
+</tr>
+
+<tr>
+<td>修改策略后未生效</td>
+<td>两个 DSN 是否同库、ADS 是否启用 watch、是否已等待同步，以及 <code>SPDL_*</code> 环境变量是否覆盖了文件配置。</td>
+</tr>
+</tbody>
+</table>
+
+<p>MySQL 不支持 Discover 访问请求收集和策略生成。事务、快照和恢复机制详见<a href="/zh/docs/store/">存储扩展</a>。</p>
+
+  </div>
+</div>
+</main><div class="sidebar">
+<nav>
+<ul>
+
+
+
+<li class="parent"><span>Speedle文档</span>
+<ul class="sub-menu">
+<li class=""><a href="/zh/docs/usecases/">使用场景</a></li>
+<li class=""><a href="/zh/docs/overview/">概览</a></li>
+<li class=""><a href="/zh/docs/spdl/">SPDL - Speedle 策略定义语言</a></li>
+<li class=""><a href="/zh/docs/architecture/">系统架构</a></li>
+<li class=""><a href="/zh/docs/deployment-embeded/">Speedle嵌入模式</a></li>
+<li class=""><a href="/zh/docs/deployment/">Speedle服务的部署方式</a></li>
+
+
+
+<li class=""><span>Speedle策略</span>
+<ul class="">
+<li class=""><a href="/zh/docs/pms/policy-mgmt/">策略管理</a></li>
+<li class=""><a href="/zh/docs/pms/global-policy/">全局角色策略</a></li>
+<li class=""><a href="/zh/docs/pms/diagnosis/">授权诊断</a></li>
+<li class=""><a href="/zh/docs/pms/discover/">策略发现</a></li>
+</ul>
+  
+</li>
+<li class=""><a href="/zh/docs/decisions/">授权查询</a></li>
+<li class=""><a href="/zh/docs/idd/">用户身份域</a></li>
+<li class=""><a href="/zh/docs/assertor/">令牌用户身份断言</a></li>
+
+
+
+<li class="parent"><a href="/zh/docs/store/">存储扩展</a>
+<ul class="sub-menu">
+<li class="active"><a href="/zh/docs/store/mysql/">MySQL 配置指南</a></li>
+</ul>
+  
+</li>
+
+
+
+<li class=""><span>API</span>
+<ul class="">
+<li class=""><a href="/zh/docs/api/decision_api/">Authorization Runtime/Decision API</a></li>
+<li class=""><a href="/zh/docs/api/management_api/">Policy Management API</a></li>
+<li class=""><a href="/zh/docs/api/asserter_api/">Token Assertion Plugin API</a></li>
+</ul>
+  
+</li>
+<li class=""><a href="/zh/docs/security/">安全</a></li>
+<li class=""><a href="/zh/docs/logging/">日志</a></li>
+<li class=""><a href="/zh/docs/versions/">版本</a></li>
+<li class=""><a href="/zh/docs/custom-function/">Custom Function</a></li>
+</ul>
+  
+</li>
+
+
+
+
+</ul>
+</nav>
+
+
+<div class="sidebar-footer"></div>
+</div>
+</div>
+    </div>
+    <footer class="row"> <div class="col col-3">
+  Licensed under <a href="https://oss.oracle.com/licenses/upl/">UPL</a>
+</div>
+<div class="col col-6 center">
+  <div>Copyright &copy; 2019–2026. All rights reserved.</div>
+</div>
+<div class="col col-3">
+  <nav>
+    <a title="contact@speedle.io" aria-label="发送邮件至 contact@speedle.io" href="mailto:contact@speedle.io">
+      <img src="/img/speedle/28. Mail.svg" alt="" />
+    </a>
+    <a title="Google Groups — speedle-users" aria-label="Google Groups 讨论组" href="https://groups.google.com/forum/#!forum/speedle-users">
+      <img src="/img/speedle/Google-Groups.svg" alt="" />
+    </a>
+    <a title="speedle" href="https://github.com/oracle/speedle">
+      <img src="/img/speedle/18. Github.svg" />
+    </a>
+    <a title="Discord" href="https://discord.gg/uaY2xVsbbT">
+      <img src="/img/speedle/Discord.svg" />
+    </a>
+  </nav>
+</div>
+</footer>
+    <script src="/js/kube.js" type="text/javascript">
+    </script>
+    <script src="/js/kube.legenda.js" type="text/javascript">
+    </script>
+    <script src="/js/master.js?v=language-direct-20261026" type="text/javascript">
+    </script>
+</body>
+
+</html>

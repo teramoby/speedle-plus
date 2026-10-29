@@ -4,6 +4,8 @@ description = "Bring your own persistence store!"
 weight = 130
 draft = false
 toc = true
+layout = "single"
+linksection = true
 tocheading = "h2"
 tags = ["storage", "pluggable"]
 categories = ["docs"]
@@ -17,6 +19,8 @@ bref = ""
 完整后端实现 [pms.PolicyStoreManager](https://github.com/teramoby/speedle-plus/blob/master/api/pms/interface.go)：服务、授权策略、角色策略、函数管理，以及快照读取与 watch/stop。ADS 接受较窄的只读/watch 接口 `PolicyStoreManagerADS`。实现新后端时应以实际接口为准，不能照搬历史文档中不完整的方法列表。
 
 ## MySQL 8.4 策略存储
+
+按照 [MySQL 配置指南](/docs/store/mysql/)逐步建库、创建 PMS/ADS 独立账号、配置并启动服务，最后验证策略同步和授权结果。
 
 `mysql` 后端完整实现 PMS 与 ADS 所需的策略存储接口，首版不支持 Discover 访问请求收集和策略生成。使用纯 Go 的 `go-sql-driver/mysql` 驱动；数据库需要预先创建。
 
