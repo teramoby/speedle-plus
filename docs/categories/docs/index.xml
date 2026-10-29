@@ -74,6 +74,26 @@ Before running the examples Build ./bin/spctl, ./bin/speedle-pms and ./bin/speed
     </item>
     
     <item>
+      <title>Authorization Runtime/Decision API</title>
+      <link>https://speedle.io/docs/api/decision_api/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://speedle.io/docs/api/decision_api/</guid>
+      <description>Reference for your configured ADS. Request attributes are typed arrays; diagnostic attributes are objects.
+Security and endpoint configuration. This is a contract reference, not a backend hosted by speedle.io.
+              (function() { var url = &#34;\/swagger\/policy-check.yaml&#34;; const ui = SwaggerUIBundle({ url: url, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.presets.apis ], plugins: [ SwaggerUIBundle.plugins.DownloadUrl ], validatorUrl: null, layout: &#34;</description>
+    </item>
+    
+    <item>
+      <title>Integrations</title>
+      <link>https://speedle.io/integrations/</link>
+      <pubDate>Mon, 10 Apr 2017 16:41:54 +0100</pubDate>
+      
+      <guid>https://speedle.io/integrations/</guid>
+      <description></description>
+    </item>
+    
+    <item>
       <title>MySQL Setup</title>
       <link>https://speedle.io/docs/store/mysql/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
@@ -94,6 +114,17 @@ Start a reproducible local example Build the binaries using Quick Start, then ru
     </item>
     
     <item>
+      <title>Policy Management API</title>
+      <link>https://speedle.io/docs/api/management_api/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://speedle.io/docs/api/management_api/</guid>
+      <description>Reference for your configured PMS. Requests and responses are JSON; policy IDs are strings and responses are flat objects.
+Security and endpoint configuration. This is a contract reference, not a backend hosted by speedle.io.
+              (function() { var url = &#34;\/swagger\/policy-manage.yaml&#34;; const ui = SwaggerUIBundle({ url: url, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.presets.apis ], plugins: [ SwaggerUIBundle.</description>
+    </item>
+    
+    <item>
       <title>SPDL - Speedle Policy Definition Language</title>
       <link>https://speedle.io/docs/spdl/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
@@ -109,6 +140,17 @@ Start a reproducible local example Build the binaries using Quick Start, then ru
       
       <guid>https://speedle.io/docs/pms/</guid>
       <description> Policy Management Global Policy Policy Discovery Policy Diagnosis  </description>
+    </item>
+    
+    <item>
+      <title>etcd Setup</title>
+      <link>https://speedle.io/docs/store/etcd/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://speedle.io/docs/store/etcd/</guid>
+      <description>This walkthrough uses an external etcd v3.6.14 server with a persistent Docker volume. PMS writes policies and ADS watches the same key prefix. The single-node example listens on loopback and uses plain HTTP for local development. Production TLS and cluster configuration follow the walkthrough.
+1. Build Speedle Prepare Bash, Git, curl, Docker and Go 1.26.10 or Go 1.27.3. Start Docker, then build the native services:
+git clone --depth 1 https://github.</description>
     </item>
     
     <item>
@@ -152,15 +194,6 @@ Build with current Go Use Go 1.26.10 or Go 1.27.3 (or a newer patch on the same 
     </item>
     
     <item>
-      <title>Integrations</title>
-      <link>https://speedle.io/integrations/</link>
-      <pubDate>Mon, 10 Apr 2017 16:41:54 +0100</pubDate>
-      
-      <guid>https://speedle.io/integrations/</guid>
-      <description></description>
-    </item>
-    
-    <item>
       <title>Logging Framework</title>
       <link>https://speedle.io/docs/logging/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
@@ -178,17 +211,6 @@ Build with current Go Use Go 1.26.10 or Go 1.27.3 (or a newer patch on the same 
       <guid>https://speedle.io/docs/store/</guid>
       <description>Built-in stores and extension contracts The standalone binaries register file, etcd, MongoDB and MySQL implementations under pkg/store. Availability does not mean identical operational guarantees; review backend authentication, persistence, transaction and watch behavior for your deployment. The configuration below illustrates property names; running etcd/MongoDB deployments is outside this local example.
 A full backend implements pms.PolicyStoreManager: service, authorization-policy, role-policy and function management, snapshot reads and watch/stop. ADS accepts the narrower PolicyStoreManagerADS read/watch interface.</description>
-    </item>
-    
-    <item>
-      <title>Policy Management API</title>
-      <link>https://speedle.io/docs/api/management_api/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://speedle.io/docs/api/management_api/</guid>
-      <description>Reference for your configured PMS. Requests and responses are JSON; policy IDs are strings and responses are flat objects.
-Security and endpoint configuration. This is a contract reference, not a backend hosted by speedle.io.
-              (function() { var url = &#34;\/swagger\/policy-manage.yaml&#34;; const ui = SwaggerUIBundle({ url: url, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.presets.apis ], plugins: [ SwaggerUIBundle.</description>
     </item>
     
     <item>
@@ -219,17 +241,6 @@ Historical Oracle Speedle release Version 0.1.0 was the original open-source rel
       <guid>https://speedle.io/docs/custom-function/</guid>
       <description>Why use a custom function? SPDL conditions can call a configured function when built-in operators or functions do not express the required rule. Speedle calls its REST endpoint with POST {&amp;quot;params&amp;quot;:[...]} and expects {&amp;quot;result&amp;quot;:...} or {&amp;quot;error&amp;quot;:&amp;quot;...&amp;quot;}. Parameter order/types and the result type must match the condition. Function failures are evaluation errors; applications must fail closed.
 Start the local example This example accepts numeric values from 100 to 50000. Wrong parameter types or an empty parameter list return an HTTP error.</description>
-    </item>
-    
-    <item>
-      <title>Authorization Runtime/Decision API</title>
-      <link>https://speedle.io/docs/api/decision_api/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://speedle.io/docs/api/decision_api/</guid>
-      <description>Reference for your configured ADS. Request attributes are typed arrays; diagnostic attributes are objects.
-Security and endpoint configuration. This is a contract reference, not a backend hosted by speedle.io.
-              (function() { var url = &#34;\/swagger\/policy-check.yaml&#34;; const ui = SwaggerUIBundle({ url: url, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.presets.apis ], plugins: [ SwaggerUIBundle.plugins.DownloadUrl ], validatorUrl: null, layout: &#34;</description>
     </item>
     
     <item>

@@ -218,6 +218,20 @@
   </url>
   
   <url>
+    <loc>https://speedle.io/docs/store/etcd/</loc>
+    <xhtml:link
+                rel="alternate"
+                hreflang="zh"
+                href="https://speedle.io/zh/docs/store/etcd/"
+                />
+    <xhtml:link
+                rel="alternate"
+                hreflang="en"
+                href="https://speedle.io/docs/store/etcd/"
+                />
+  </url>
+  
+  <url>
     <loc>https://speedle.io/docs/decisions/</loc>
     <xhtml:link
                 rel="alternate"
@@ -691,6 +705,21 @@
                 rel="alternate"
                 hreflang="en"
                 href="https://speedle.io/categories/docs/"
+                />
+  </url>
+  
+  <url>
+    <loc>https://speedle.io/tags/etcd/</loc>
+    <priority>0</priority>
+    <xhtml:link
+                rel="alternate"
+                hreflang="zh"
+                href="https://speedle.io/zh/tags/etcd/"
+                />
+    <xhtml:link
+                rel="alternate"
+                hreflang="en"
+                href="https://speedle.io/tags/etcd/"
                 />
   </url>
   
