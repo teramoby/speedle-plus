@@ -19,14 +19,23 @@ import (
 )
 
 const (
-	// DiscoverPrefix names discover requests under the store's KeyPrefix, so
-	// stores with different prefixes on one etcd keep separate requests.
-	DiscoverPrefix  = "isAllowedRequests/"
+	// DiscoverPrefix holds the discover requests of a store with the default
+	// key prefix, where every store kept them before they were scoped.
+	DiscoverPrefix  = "/isAllowedRequests/"
 	DefaultPageSize = int64(1000)
+
+	discoverKey = "isAllowedRequests/"
 )
 
+// discoverPrefix keeps discover requests with the store's other keys, so
+// stores with different key prefixes on one etcd keep separate requests. The
+// default key prefix keeps the original location, so requests recorded
+// before the upgrade stay visible.
 func (s *Store) discoverPrefix() string {
-	return s.KeyPrefix + DiscoverPrefix
+	if s.KeyPrefix == DefaultKeyPrefix {
+		return DiscoverPrefix
+	}
+	return s.KeyPrefix + discoverKey
 }
 
 func (s *Store) SaveDiscoverRequest(request *ads.RequestContext) error {
