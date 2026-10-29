@@ -292,8 +292,8 @@ db.createUser({user<span style="color:#ff79c6">:</span> <span style="color:#f1fa
 <ul>
 <li>Replacing the whole store (<code>WritePolicyStore</code>) runs in one transaction. It keeps supplied policy IDs and generates missing ones. On a standalone server it fails without changing existing data.</li>
 <li>Deleting all services or functions keeps the collections, so the change stream stays open and ADS removes the cached entries.</li>
-<li>Reading the whole store reads services and functions separately, not in one snapshot.</li>
-<li>If the change stream ends with an error, ADS keeps its last loaded policies and does not reopen the stream. Restart ADS after the database recovers.</li>
+<li>Reading the whole store reads services and functions in one snapshot on a replica set or sharded cluster.</li>
+<li>If the change stream ends, ADS reopens it with a backoff of up to 30 seconds, then reloads the whole store, so changes made in between are not lost. Until then it keeps serving its last loaded policies.</li>
 <li>Discover request collection and policy generation are not supported; they are available with the file and etcd stores.</li>
 </ul>
 
@@ -323,7 +323,7 @@ db.createUser({user<span style="color:#ff79c6">:</span> <span style="color:#f1fa
 
 <tr>
 <td>Changes do not reach ADS</td>
-<td>Watch enabled, change stream errors in ADS logs; restart ADS after a recovery.</td>
+<td>Watch enabled; change stream and reopen errors in ADS logs, which repeat until ADS reaches the database again.</td>
 </tr>
 
 <tr>

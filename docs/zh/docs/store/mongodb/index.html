@@ -292,8 +292,8 @@ db.createUser({user<span style="color:#ff79c6">:</span> <span style="color:#f1fa
 <ul>
 <li>整体替换策略存储（<code>WritePolicyStore</code>）在一个事务中完成，保留已提供的策略 ID 并为缺失的策略生成 ID；在独立运行的服务器上会失败，且不修改现有数据。</li>
 <li>删除全部服务或函数时保留集合，change stream 保持打开，ADS 会移除对应的缓存。</li>
-<li>读取整个存储时分别读取服务和函数，不是同一个快照。</li>
-<li>change stream 因错误结束后，ADS 保留最后加载的策略，不会重新打开 change stream；数据库恢复后请重启 ADS。</li>
+<li>在副本集或分片集群上，读取整个存储时在同一个快照中读取服务和函数。</li>
+<li>change stream 结束后，ADS 以最长 30 秒的退避间隔重新打开它，然后重新加载整个存储，期间的变更不会丢失；在此之前继续使用最后加载的策略。</li>
 <li>不支持 Discover 访问请求收集和策略生成；file 与 etcd 存储支持该功能。</li>
 </ul>
 
@@ -323,7 +323,7 @@ db.createUser({user<span style="color:#ff79c6">:</span> <span style="color:#f1fa
 
 <tr>
 <td>策略变更未同步到 ADS</td>
-<td>watch 是否开启及 ADS 日志中的 change stream 错误；恢复后重启 ADS。</td>
+<td>watch 是否开启；ADS 日志中的 change stream 和重新打开错误，在 ADS 重新连上数据库前会反复出现。</td>
 </tr>
 
 <tr>

@@ -238,8 +238,8 @@ Behaviour to know when operating the store:
 
 - Replacing the whole store (`WritePolicyStore`) runs in one transaction. It keeps supplied policy IDs and generates missing ones. On a standalone server it fails without changing existing data.
 - Deleting all services or functions keeps the collections, so the change stream stays open and ADS removes the cached entries.
-- Reading the whole store reads services and functions separately, not in one snapshot.
-- If the change stream ends with an error, ADS keeps its last loaded policies and does not reopen the stream. Restart ADS after the database recovers.
+- Reading the whole store reads services and functions in one snapshot on a replica set or sharded cluster.
+- If the change stream ends, ADS reopens it with a backoff of up to 30 seconds, then reloads the whole store, so changes made in between are not lost. Until then it keeps serving its last loaded policies.
 - Discover request collection and policy generation are not supported; they are available with the file and etcd stores.
 
 | Symptom | Check |
@@ -247,7 +247,7 @@ Behaviour to know when operating the store:
 | Server selection timeout at startup | Replica set initialized and primary, the member host in `rs.conf()` reachable from PMS/ADS, URI host and port, firewall. |
 | ADS exits with `The $changeStream stage is only supported on replica sets` | The deployment is a standalone `mongod`; use a replica set or sharded cluster. |
 | PMS writes but ADS has no service | Same URI deployment and `MongoDatabase` name in both configurations. |
-| Changes do not reach ADS | Watch enabled, change stream errors in ADS logs; restart ADS after a recovery. |
+| Changes do not reach ADS | Watch enabled; change stream and reopen errors in ADS logs, which repeat until ADS reaches the database again. |
 | Authentication failed | User, password encoding, `authSource` and the role on the policy database. |
 | TLS error | `tls=true`, CA file path and certificate host names. |
 

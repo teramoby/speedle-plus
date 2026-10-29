@@ -179,6 +179,116 @@ func TestBulkDeleteWatchAndStop(t *testing.T) {
 	stop()
 }
 
+func TestWatchReopensAndReloadsAfterTheStreamEnds(t *testing.T) {
+	s := isolatedStore(t)
+	if !supportsTransactions(t, s) {
+		t.Skip("change streams require a replica set or sharded cluster")
+	}
+	defer func(previous time.Duration) { watchRetryMin = previous }(watchRetryMin)
+	watchRetryMin = 2 * time.Second
+	if err := s.CreateService(&pms.Service{Name: "before"}); err != nil {
+		t.Fatal(err)
+	}
+	changes, err := s.Watch()
+	if err != nil {
+		t.Fatal(err)
+	}
+	receive := func(within time.Duration) (pms.StoreChangeEvent, bool) {
+		select {
+		case event, ok := <-changes:
+			if !ok {
+				t.Fatal("watch closed after the change stream ended")
+			}
+			return event, true
+		case <-time.After(within):
+			return pms.StoreChangeEvent{}, false
+		}
+	}
+	// Dropping the database invalidates the stream, as a terminal error would end it.
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	if err := s.client.Database(s.Database).Drop(ctx); err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := receive(10 * time.Second); !ok {
+		t.Fatal("no event for the dropped database")
+	}
+	for {
+		if _, ok := receive(500 * time.Millisecond); !ok {
+			break
+		}
+	}
+	// No stream is open now: this change reaches ADS only through the reload
+	// that follows the reopened stream.
+	if err := s.CreateService(&pms.Service{Name: "between"}); err != nil {
+		t.Fatal(err)
+	}
+	if event, ok := receive(10 * time.Second); !ok || event.Type != pms.FULL_RELOAD {
+		t.Fatalf("event after reopening: %+v (received %v), want FULL_RELOAD", event, ok)
+	}
+	if err := s.CreateService(&pms.Service{Name: "after"}); err != nil {
+		t.Fatal(err)
+	}
+	if event, ok := receive(10 * time.Second); !ok || event.Type != pms.SERVICE_ADD || event.Content.(*pms.Service).Name != "after" {
+		t.Fatalf("event on the reopened stream: %+v (received %v), want SERVICE_ADD after", event, ok)
+	}
+}
+
+func TestReadPolicyStoreSeesOneGeneration(t *testing.T) {
+	s := isolatedStore(t)
+	if !supportsTransactions(t, s) {
+		t.Skip("snapshot reads require a replica set or sharded cluster")
+	}
+	generation := func(name string) *pms.PolicyStore {
+		return &pms.PolicyStore{
+			Services:  []*pms.Service{{Name: name}},
+			Functions: []*pms.Function{{Name: name, FuncURL: "http://" + name}},
+		}
+	}
+	if err := s.WritePolicyStore(generation("a")); err != nil {
+		t.Fatal(err)
+	}
+	stop := make(chan struct{})
+	written := make(chan error, 1)
+	go func() {
+		for i := 0; ; i++ {
+			select {
+			case <-stop:
+				written <- nil
+				return
+			default:
+			}
+			if err := s.WritePolicyStore(generation([]string{"a", "b"}[i%2])); err != nil {
+				written <- err
+				return
+			}
+		}
+	}()
+	deadline := time.Now().Add(3 * time.Second)
+	for time.Now().Before(deadline) {
+		ps, err := s.ReadPolicyStore()
+		if err != nil {
+			t.Fatal(err)
+		}
+		if len(ps.Services) != 1 || len(ps.Functions) != 1 || ps.Services[0].Name != ps.Functions[0].Name {
+			names := []string{}
+			for _, service := range ps.Services {
+				names = append(names, "service "+service.Name)
+			}
+			for _, function := range ps.Functions {
+				names = append(names, "function "+function.Name)
+			}
+			close(stop)
+			<-written
+			t.Fatalf("read a store that was never written: %v", names)
+		}
+	}
+	close(stop)
+	if err := <-written; err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestSnapshotReplacementIsOneReload(t *testing.T) {
 	s := isolatedStore(t)
 	if !supportsTransactions(t, s) {

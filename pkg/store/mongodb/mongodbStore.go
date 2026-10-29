@@ -10,6 +10,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/mongo/readconcern"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/teramoby/speedle-plus/api/pms"
@@ -26,21 +27,59 @@ type Store struct {
 }
 
 // ReadPolicyStore reads policy store from a file
+//
+// On a replica set or sharded cluster both collections are read in one
+// snapshot, so a concurrent WritePolicyStore is seen entirely or not at all.
 func (s *Store) ReadPolicyStore() (*pms.PolicyStore, error) {
-
-	var ps pms.PolicyStore
-	services, err := s.ListAllServices()
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	read := func(ctx context.Context) (interface{}, error) {
+		services, err := s.findServices(ctx)
+		if err != nil {
+			return nil, err
+		}
+		functions, err := s.findFunctions(ctx, bson.D{})
+		if err != nil {
+			return nil, err
+		}
+		return &pms.PolicyStore{Services: services, Functions: functions}, nil
+	}
+	transactional, err := s.supportsTransactions(ctx)
 	if err != nil {
 		return nil, err
 	}
-	ps.Services = services
-	functions, err := s.ListAllFunctions("")
+	if !transactional {
+		ps, err := read(ctx)
+		if err != nil {
+			return nil, err
+		}
+		return ps.(*pms.PolicyStore), nil
+	}
+	session, err := s.client.StartSession()
 	if err != nil {
 		return nil, err
 	}
-	ps.Functions = functions
-	return &ps, nil
+	defer session.EndSession(context.Background())
+	ps, err := session.WithTransaction(ctx, func(ctx mongo.SessionContext) (interface{}, error) {
+		return read(ctx)
+	}, options.Transaction().SetReadConcern(readconcern.Snapshot()))
+	if err != nil {
+		return nil, err
+	}
+	return ps.(*pms.PolicyStore), nil
+}
 
+// supportsTransactions reports whether the deployment is a replica set or a
+// sharded cluster.
+func (s *Store) supportsTransactions(ctx context.Context) (bool, error) {
+	var hello struct {
+		SetName string `bson:"setName"`
+		Message string `bson:"msg"`
+	}
+	if err := s.client.Database("admin").RunCommand(ctx, bson.D{{Key: "hello", Value: 1}}).Decode(&hello); err != nil {
+		return false, err
+	}
+	return hello.SetName != "" || hello.Message == "isdbgrid", nil
 }
 
 // WritePolicyStore atomically replaces the snapshot. MongoDB transactions require
@@ -129,9 +168,13 @@ func (s *Store) WritePolicyStore(ps *pms.PolicyStore) error {
 
 // ListAllServices lists all the services
 func (s *Store) ListAllServices() ([]*pms.Service, error) {
-	serviceCollection := s.client.Database(s.Database).Collection("services")
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
+	return s.findServices(ctx)
+}
+
+func (s *Store) findServices(ctx context.Context) ([]*pms.Service, error) {
+	serviceCollection := s.client.Database(s.Database).Collection("services")
 	cur, err := serviceCollection.Find(ctx, bson.M{})
 	if err != nil {
 		return nil, err
@@ -313,7 +356,15 @@ func (s *Store) DeleteServices() error {
 	return err
 }
 
-// Watch streams committed changes until StopWatch is called or the stream fails.
+// Bounds of the delay before reopening a change stream that ended.
+var (
+	watchRetryMin = 100 * time.Millisecond
+	watchRetryMax = 30 * time.Second
+)
+
+// Watch streams committed changes until StopWatch is called. When the change
+// stream ends, after an error or an invalidate, Watch reopens it with backoff
+// and then sends a FULL_RELOAD, so changes made in between are not lost.
 func (s *Store) Watch() (pms.StorageChangeChannel, error) {
 	s.watchMu.Lock()
 	defer s.watchMu.Unlock()
@@ -321,7 +372,10 @@ func (s *Store) Watch() (pms.StorageChangeChannel, error) {
 		return nil, errors.New(errors.StoreError, "policy store is already being watched")
 	}
 	ctx, cancel := context.WithCancel(context.Background())
-	stream, err := s.client.Database(s.Database).Watch(ctx, mongo.Pipeline{}, options.ChangeStream().SetFullDocument(options.UpdateLookup))
+	open := func() (*mongo.ChangeStream, error) {
+		return s.client.Database(s.Database).Watch(ctx, mongo.Pipeline{}, options.ChangeStream().SetFullDocument(options.UpdateLookup))
+	}
+	stream, err := open()
 	if err != nil {
 		cancel()
 		return nil, err
@@ -329,56 +383,104 @@ func (s *Store) Watch() (pms.StorageChangeChannel, error) {
 	changes := make(pms.StorageChangeChannel)
 	done := make(chan struct{})
 	s.watchCancel, s.watchDone = cancel, done
+	send := func(change pms.StoreChangeEvent) bool {
+		select {
+		case changes <- change:
+			return true
+		case <-ctx.Done():
+			return false
+		}
+	}
 	go func() {
 		defer close(done)
 		defer close(changes)
 		defer cancel()
-		defer func() {
-			closeCtx, closeCancel := context.WithTimeout(context.Background(), 5*time.Second)
-			defer closeCancel()
-			if err := stream.Close(closeCtx); err != nil {
-				log.Error(err)
+		delay := watchRetryMin
+		for {
+			opened := time.Now()
+			if !follow(ctx, stream, send) {
+				return
 			}
-		}()
-		var lastTransaction string
-		for stream.Next(ctx) {
-			var event mongoChangeEvent
-			if err := stream.Decode(&event); err != nil {
-				log.Error(err)
-				continue
+			// A stream that stayed open for a while starts the backoff again.
+			if time.Since(opened) > watchRetryMax {
+				delay = watchRetryMin
 			}
-			var events []pms.StoreChangeEvent
-			if event.TxnNumber != nil {
-				// A transaction (WritePolicyStore) replaces the whole store, and its
-				// events arrive only after it commits. Reload once from the committed
-				// state instead of replaying deletes and inserts one by one, which
-				// would leave the cache empty or partial in between.
-				transaction := fmt.Sprintf("%x/%d", []byte(event.LSID), *event.TxnNumber)
-				if transaction == lastTransaction {
-					continue
-				}
-				lastTransaction = transaction
-				events = []pms.StoreChangeEvent{{Type: pms.FULL_RELOAD, ID: time.Now().UnixNano()}}
-			} else {
-				var err error
-				if events, err = event.storeEvents(); err != nil {
-					log.Error(err)
-					continue
-				}
-			}
-			for _, change := range events {
+			for {
 				select {
-				case changes <- change:
+				case <-time.After(delay):
 				case <-ctx.Done():
 					return
 				}
+				if delay *= 2; delay > watchRetryMax {
+					delay = watchRetryMax
+				}
+				if stream, err = open(); err == nil {
+					break
+				}
+				if ctx.Err() != nil {
+					return
+				}
+				log.Error("reopen MongoDB change stream: ", err)
 			}
-		}
-		if err := stream.Err(); err != nil && ctx.Err() == nil {
-			log.Error(err)
+			// The new stream starts now; reload what was committed while
+			// there was none.
+			if !send(pms.StoreChangeEvent{Type: pms.FULL_RELOAD, ID: time.Now().UnixNano()}) {
+				return
+			}
 		}
 	}()
 	return changes, nil
+}
+
+// follow sends the stream's events until it ends, and closes it. It returns
+// false when the watch was stopped.
+func follow(ctx context.Context, stream *mongo.ChangeStream, send func(pms.StoreChangeEvent) bool) bool {
+	defer func() {
+		closeCtx, closeCancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer closeCancel()
+		if err := stream.Close(closeCtx); err != nil {
+			log.Error(err)
+		}
+	}()
+	var lastTransaction string
+	for stream.Next(ctx) {
+		var event mongoChangeEvent
+		if err := stream.Decode(&event); err != nil {
+			log.Error(err)
+			continue
+		}
+		var events []pms.StoreChangeEvent
+		if event.TxnNumber != nil {
+			// A transaction (WritePolicyStore) replaces the whole store, and its
+			// events arrive only after it commits. Reload once from the committed
+			// state instead of replaying deletes and inserts one by one, which
+			// would leave the cache empty or partial in between.
+			transaction := fmt.Sprintf("%x/%d", []byte(event.LSID), *event.TxnNumber)
+			if transaction == lastTransaction {
+				continue
+			}
+			lastTransaction = transaction
+			events = []pms.StoreChangeEvent{{Type: pms.FULL_RELOAD, ID: time.Now().UnixNano()}}
+		} else {
+			var err error
+			if events, err = event.storeEvents(); err != nil {
+				log.Error(err)
+				continue
+			}
+		}
+		for _, change := range events {
+			if !send(change) {
+				return false
+			}
+		}
+	}
+	if ctx.Err() != nil {
+		return false
+	}
+	if err := stream.Err(); err != nil {
+		log.Error("MongoDB change stream ended: ", err)
+	}
+	return true
 }
 
 // StopWatch also unblocks a watcher waiting for a consumer to receive an event.
@@ -897,7 +999,6 @@ func (s *Store) GetFunction(funcName string) (*pms.Function, error) {
 }
 
 func (s *Store) ListAllFunctions(filter string) ([]*pms.Function, error) {
-	serviceCollection := s.client.Database(s.Database).Collection("functions")
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	condition, err := parseFilter(filter)
@@ -908,6 +1009,11 @@ func (s *Store) ListAllFunctions(filter string) ([]*pms.Function, error) {
 		{"vars", bson.D{{"p", bson.D{{"name", "$_id"}}}}},
 		{"in", condition},
 	}}}}}
+	return s.findFunctions(ctx, query)
+}
+
+func (s *Store) findFunctions(ctx context.Context, query interface{}) ([]*pms.Function, error) {
+	serviceCollection := s.client.Database(s.Database).Collection("functions")
 	cur, err := serviceCollection.Find(ctx, query)
 	if err != nil {
 		return nil, err

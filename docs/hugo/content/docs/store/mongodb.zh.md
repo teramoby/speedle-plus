@@ -238,8 +238,8 @@ CA 路径位于 PMS/ADS 主机上。URI 中的凭据需要进行百分号编码�
 
 - 整体替换策略存储（`WritePolicyStore`）在一个事务中完成，保留已提供的策略 ID 并为缺失的策略生成 ID；在独立运行的服务器上会失败，且不修改现有数据。
 - 删除全部服务或函数时保留集合，change stream 保持打开，ADS 会移除对应的缓存。
-- 读取整个存储时分别读取服务和函数，不是同一个快照。
-- change stream 因错误结束后，ADS 保留最后加载的策略，不会重新打开 change stream；数据库恢复后请重启 ADS。
+- 在副本集或分片集群上，读取整个存储时在同一个快照中读取服务和函数。
+- change stream 结束后，ADS 以最长 30 秒的退避间隔重新打开它，然后重新加载整个存储，期间的变更不会丢失；在此之前继续使用最后加载的策略。
 - 不支持 Discover 访问请求收集和策略生成；file 与 etcd 存储支持该功能。
 
 | 现象 | 检查项 |
@@ -247,7 +247,7 @@ CA 路径位于 PMS/ADS 主机上。URI 中的凭据需要进行百分号编码�
 | 启动时 server selection 超时 | 副本集是否已初始化并有主节点、`rs.conf()` 中的成员地址能否从 PMS/ADS 访问、URI 主机与端口、防火墙。 |
 | ADS 退出并报告 `The $changeStream stage is only supported on replica sets` | 当前是独立运行的 `mongod`；请使用副本集或分片集群。 |
 | PMS 已写入，但 ADS 找不到服务 | 两份配置中的 URI 部署和 `MongoDatabase` 名称是否一致。 |
-| 策略变更未同步到 ADS | watch 是否开启及 ADS 日志中的 change stream 错误；恢复后重启 ADS。 |
+| 策略变更未同步到 ADS | watch 是否开启；ADS 日志中的 change stream 和重新打开错误，在 ADS 重新连上数据库前会反复出现。 |
 | 身份认证失败 | 用户名、密码编码、`authSource` 以及策略数据库上的角色。 |
 | TLS 错误 | `tls=true`、CA 文件路径和证书主机名。 |
 
