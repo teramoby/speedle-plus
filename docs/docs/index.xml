@@ -59,9 +59,9 @@ The examples below use a service named library. Each policy was created through 
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://speedle.io/docs/deployment-embeded/</guid>
-      <description>What is embedded mode? Unlike service mode, embedded mode runs the Speedle policy decision engine inside the calling process. Applications call the evaluator API directly to obtain authorization decisions.
-Limitations  Only Go applications are supported. The original setup instructions use Go 1.10. Policies must use the file store.  Using embedded mode Add Speedle to your project Download the Speedle source using one of the following approaches.
- Use go get:  go get github.</description>
+      <description>What is embedded mode? Embedded mode runs the Speedle policy decision engine inside your Go application. Call the evaluator directly without starting PMS or ADS servers. Your application authenticates users and supplies the subject, resource and action for each decision.
+To try basic policies before writing code, open the Playground. To run Speedle as standalone services, follow Quick Start.
+Prerequisites Use Linux or macOS with a shell and Go 1.</description>
     </item>
     
     <item>
