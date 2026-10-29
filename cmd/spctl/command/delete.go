@@ -24,9 +24,6 @@ var (
 		# Delete policy "p01" in service "foo"
 		spctl delete policy p01 --service-name=foo
 		
-		# Delete policy "p01" in  admin policy
-		spctl delete policy p01 --admin-policy
-		
 		# Delete function "foo"
 		spctl delete function foo
 		

@@ -4,6 +4,7 @@
 package flags
 
 import (
+	"bytes"
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
@@ -17,6 +18,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -91,6 +93,28 @@ func TestParseFlagsDefaultsAndCommandLine(t *testing.T) {
 func TestParseFlagsVersionExits(t *testing.T) {
 	if _, code := parse(t, []string{"--version"}, nil); code != 0 {
 		t.Fatalf("--version exit %d, want 0", code)
+	}
+}
+
+func TestParseFlagsHelpListsEveryFlag(t *testing.T) {
+	for _, arg := range []string{"--help", "-h"} {
+		oldArgs, oldFlags := os.Args, pflag.CommandLine
+		os.Args = []string{"speedle-test", arg}
+		pflag.CommandLine = pflag.NewFlagSet("speedle", pflag.ContinueOnError)
+		var out bytes.Buffer
+		pflag.CommandLine.SetOutput(&out)
+		params := &Parameters{}
+		code := run(t, func() { params.ParseFlags("0.0.0.0:1", func() {}, nil) })
+		os.Args, pflag.CommandLine = oldArgs, oldFlags
+		if code != 0 {
+			t.Fatalf("%s exit %d, want 0", arg, code)
+		}
+		help := out.String()
+		for _, want := range []string{"Usage: speedle-test [flags]", "-h, --help", "--version", "--log-level", "--store-type", "SPDL_LOG_LEVEL"} {
+			if !strings.Contains(help, want) {
+				t.Errorf("%s output lacks %q:\n%s", arg, want, help)
+			}
+		}
 	}
 }
 

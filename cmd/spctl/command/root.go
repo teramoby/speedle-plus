@@ -9,7 +9,9 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 	"github.com/teramoby/speedle-plus/pkg/cmd/flags"
+	"github.com/teramoby/speedle-plus/pkg/store/file"
 )
 
 const (
@@ -36,6 +38,10 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&globalFlags.KeyFile, "key", "", "identify secure client using this TLS key file")
 	rootCmd.PersistentFlags().StringVar(&globalFlags.CAFile, "cacert", "", "verify certificates of TLS-enabled secure servers using this CA bundle")
 	rootCmd.PersistentFlags().BoolVar(&globalFlags.InsecureSkipVerify, "skipverify", false, "control whether a client verifies the server's certificate chain and host name or not")
+
+	// The file store registers --filestore-loc on the global flag set for
+	// the servers; spctl only uses the store to read PDL files and ignores it.
+	pflag.CommandLine.MarkHidden(file.FileLocationFlagName)
 
 	args, _ := readConfigFile()
 	for name, val := range args {
