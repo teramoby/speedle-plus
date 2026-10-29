@@ -3,15 +3,20 @@
 and track failing tests in GitHub issues.
 
 Inputs are `go test -json` streams and plain check results. Every external
-step is optional and fails soft: without an Ark key the raw summary is
-mailed, without SMTP settings nothing is mailed, and without a GitHub token
-no issues are touched. The script exits non-zero only on bad input.
+step is optional and fails soft: without an Ark key the raw summary is sent,
+without a Feishu webhook or SMTP settings nothing is sent that way, and
+without a GitHub token no issues are touched. The script exits non-zero only
+on bad input.
 """
 import argparse
+import base64
+import hashlib
+import hmac
 import json
 import os
 import smtplib
 import sys
+import time
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -185,6 +190,67 @@ def send_mail(subject, body, env):
     return True
 
 
+FEISHU_ANALYSIS_CHARS = 1500
+FEISHU_LISTED_FAILURES = 10
+
+
+def feishu_sign(secret, timestamp):
+    """Signature of a Feishu custom bot with signature verification on."""
+    key = f"{timestamp}\n{secret}".encode()
+    return base64.b64encode(hmac.new(key, b"", hashlib.sha256).digest()).decode()
+
+
+def feishu_card(kind, ok, packages, failed, analysis, run_url, issues_url):
+    """A short card: verdict, counts, the first failures, the analysis and links."""
+    total = {k: sum(c[k] for c in packages.values()) for k in ("pass", "fail", "skip")}
+    lines = [f"**Go 测试**：{total['pass']} 通过，{total['fail']} 失败，{total['skip']} 跳过（{len(packages)} 个包）"]
+    if failed:
+        lines.append(f"**失败项**（{len(failed)}）：")
+        lines += [f"- {name}" for name in failed[:FEISHU_LISTED_FAILURES]]
+        if len(failed) > FEISHU_LISTED_FAILURES:
+            lines.append(f"- ……另有 {len(failed) - FEISHU_LISTED_FAILURES} 项")
+    if analysis:
+        text = analysis if len(analysis) <= FEISHU_ANALYSIS_CHARS else analysis[:FEISHU_ANALYSIS_CHARS] + "……"
+        lines += ["**Ark 分析**：", text]
+    else:
+        lines.append("（Ark 分析不可用）")
+    links = [f"[运行详情]({run_url})"] if run_url else []
+    if failed and issues_url:
+        links.append(f"[失败跟踪 issue]({issues_url})")
+    if links:
+        lines.append(" · ".join(links))
+    return {
+        "header": {"template": "green" if ok else "red",
+                   "title": {"tag": "plain_text", "content": f"Speedle+ {kind} 测试：{'通过' if ok else '失败'}"}},
+        "elements": [{"tag": "markdown", "content": "\n".join(lines)}],
+    }
+
+
+def send_feishu(card, env, now=time.time):
+    webhook = env.get("FEISHU_WEBHOOK")
+    if not webhook:
+        print("::warning::FEISHU_WEBHOOK is not configured; no Feishu message is sent.", file=sys.stderr)
+        return False
+    body = {"msg_type": "interactive", "card": card}
+    if env.get("FEISHU_WEBHOOK_SECRET"):
+        timestamp = str(int(now()))
+        body.update(timestamp=timestamp, sign=feishu_sign(env["FEISHU_WEBHOOK_SECRET"], timestamp))
+    request = urllib.request.Request(webhook, data=json.dumps(body).encode(), method="POST",
+                                     headers={"Content-Type": "application/json"})
+    try:
+        with urllib.request.urlopen(request, timeout=30) as response:
+            reply = json.loads(response.read() or b"{}")
+    except (urllib.error.URLError, OSError, ValueError) as error:
+        # Never echo the webhook URL: it is a credential.
+        print(f"::warning::Feishu message failed ({type(error).__name__}).", file=sys.stderr)
+        return False
+    if reply.get("code", reply.get("StatusCode", 0)) != 0:
+        print(f"::warning::Feishu rejected the message (code {reply.get('code', reply.get('StatusCode'))}).",
+              file=sys.stderr)
+        return False
+    return True
+
+
 class GitHub:
     def __init__(self, token, repository, api="https://api.github.com"):
         self.token, self.repository, self.api = token, repository, api
@@ -309,6 +375,11 @@ def main(argv=None, env=os.environ):
             print(f"Tracked failures: {created} issues opened, {commented} comments added.")
         except (urllib.error.URLError, OSError, ValueError) as error:
             print(f"::warning::Failure issues not updated ({type(error).__name__}).", file=sys.stderr)
+    failed = [issue_title(f).removeprefix("Test failure: ") for f in tracked]
+    repository = env.get("GITHUB_REPOSITORY")
+    issues_url = (f"https://github.com/{repository}/issues?q=is%3Aopen+label%3A{ISSUE_LABEL}"
+                  if repository else "")
+    send_feishu(feishu_card(args.kind, ok, packages, failed, analysis, run_url, issues_url), env)
     print(summary)
     return 0
 

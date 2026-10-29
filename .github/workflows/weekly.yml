@@ -70,7 +70,8 @@ jobs:
           path: mongodb-results/
           if-no-files-found: warn
 
-  # Ark analysis, email to the maintainer and one tracking issue per failing test.
+  # Ark analysis, a Feishu message and email to the maintainer, and one
+  # tracking issue per failing test.
   report:
     name: report
     needs: [run, mongodb]
@@ -114,6 +115,8 @@ jobs:
           SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
           MAIL_FROM: ${{ secrets.MAIL_FROM }}
           MAIL_TO: ${{ vars.TEST_REPORT_MAIL_TO || 'caiwl@acm.org' }}
+          FEISHU_WEBHOOK: ${{ secrets.FEISHU_WEBHOOK }}
+          FEISHU_WEBHOOK_SECRET: ${{ secrets.FEISHU_WEBHOOK_SECRET }}
           GITHUB_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail

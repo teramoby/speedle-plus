@@ -171,6 +171,8 @@ test('scheduled suites run through the worker and report from a hosted job', () 
     assert.match(report, /ARK_API_KEY: \$\{\{ secrets.ARK_API_KEY \}\}/);
     assert.match(report, /ARK_MODEL: \$\{\{ vars.ARK_REVIEW_MODEL \|\| 'kimi-k3' \}\}/);
     assert.match(report, /MAIL_TO: \$\{\{ vars.TEST_REPORT_MAIL_TO \|\| 'caiwl@acm.org' \}\}/);
+    assert.match(report, /FEISHU_WEBHOOK: \$\{\{ secrets.FEISHU_WEBHOOK \}\}/);
+    assert.match(report, /FEISHU_WEBHOOK_SECRET: \$\{\{ secrets.FEISHU_WEBHOOK_SECRET \}\}/);
     assert.match(report, new RegExp(`scripts/ci/test_report.py --kind ${kind} `));
     for (const [id, block] of Object.entries(job[kind])) {
       if (id !== 'report') assert.doesNotMatch(block, /secrets\./, `${kind}.${id} must not receive secrets`);

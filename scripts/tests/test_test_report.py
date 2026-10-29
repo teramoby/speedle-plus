@@ -221,5 +221,75 @@ class SourceTest(unittest.TestCase):
         self.assertNotIn(" job: FAILED", text)
 
 
+class FeishuTest(unittest.TestCase):
+    def card(self, ok=False, failed=("p TestX",), analysis="结论：失败"):
+        packages = {"p": {"pass": 3, "fail": 1, "skip": 2, "package_failed": False}}
+        return test_report.feishu_card("nightly", ok, packages, list(failed), analysis,
+                                       "http://run", "http://issues")
+
+    def test_signature_matches_feishu_algorithm(self):
+        import base64, hashlib, hmac
+        expected = base64.b64encode(hmac.new(b"1700000000\nsecret", b"", hashlib.sha256).digest()).decode()
+        self.assertEqual(test_report.feishu_sign("secret", "1700000000"), expected)
+
+    def test_card_content(self):
+        card = self.card()
+        self.assertEqual(card["header"]["template"], "red")
+        self.assertIn("失败", card["header"]["title"]["content"])
+        text = card["elements"][0]["content"]
+        for part in ("3 通过，1 失败，2 跳过", "- p TestX", "结论：失败", "[运行详情](http://run)", "[失败跟踪 issue](http://issues)"):
+            self.assertIn(part, text)
+        passed = self.card(ok=True, failed=(), analysis=None)
+        self.assertEqual(passed["header"]["template"], "green")
+        self.assertIn("Ark 分析不可用", passed["elements"][0]["content"])
+        self.assertNotIn("issue", passed["elements"][0]["content"])
+
+    def test_card_bounds_long_lists_and_analysis(self):
+        card = self.card(failed=[f"p Test{i}" for i in range(15)], analysis="x" * 5000)
+        text = card["elements"][0]["content"]
+        self.assertIn("另有 5 项", text)
+        self.assertNotIn("p Test10", text)
+        self.assertLess(len(text), 2500)
+
+    def send(self, env, reply=b'{"code":0,"msg":"success"}', error=None):
+        response = mock.MagicMock()
+        response.__enter__.return_value.read.return_value = reply
+        with mock.patch("urllib.request.urlopen", return_value=response, side_effect=error) as urlopen, \
+                mock.patch("builtins.print"):
+            result = test_report.send_feishu(self.card(), env, now=lambda: 1700000000.5)
+        return result, urlopen
+
+    def test_signed_message(self):
+        ok, urlopen = self.send({"FEISHU_WEBHOOK": "https://open.feishu.cn/hook/x", "FEISHU_WEBHOOK_SECRET": "secret"})
+        self.assertTrue(ok)
+        request = urlopen.call_args[0][0]
+        body = json.loads(request.data)
+        self.assertEqual(request.full_url, "https://open.feishu.cn/hook/x")
+        self.assertEqual(body["msg_type"], "interactive")
+        self.assertEqual(body["timestamp"], "1700000000")
+        self.assertEqual(body["sign"], test_report.feishu_sign("secret", "1700000000"))
+
+    def test_unsigned_message_and_failures(self):
+        ok, urlopen = self.send({"FEISHU_WEBHOOK": "https://hook"})
+        self.assertTrue(ok)
+        self.assertNotIn("sign", json.loads(urlopen.call_args[0][0].data))
+        self.assertFalse(self.send({"FEISHU_WEBHOOK": "https://hook"}, reply=b'{"code":19021,"msg":"sign match fail"}')[0])
+        self.assertFalse(self.send({"FEISHU_WEBHOOK": "https://hook"}, error=OSError("down"))[0])
+        ok, urlopen = self.send({})
+        self.assertFalse(ok)
+        urlopen.assert_not_called()
+
+    def test_main_sends_the_card(self):
+        directory = Path(tempfile.mkdtemp())
+        (directory / "go.json").write_text(events(("fail", "p", "TestZ", None)))
+        with mock.patch.object(test_report, "send_feishu", return_value=True) as send, mock.patch("builtins.print"):
+            test_report.main(["--kind", "weekly", "--go-json", str(directory / "go.json")],
+                             env={"GITHUB_REPOSITORY": "o/r", "RUN_URL": "http://run"})
+        card = send.call_args[0][0]
+        self.assertEqual(card["header"]["template"], "red")
+        self.assertIn("p TestZ", card["elements"][0]["content"])
+        self.assertIn("https://github.com/o/r/issues?q=is%3Aopen+label%3Atest-failure", card["elements"][0]["content"])
+
+
 if __name__ == "__main__":
     unittest.main()
