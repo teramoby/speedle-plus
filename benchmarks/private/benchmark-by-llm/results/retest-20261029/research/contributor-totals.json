@@ -1,0 +1,23 @@
+{
+  "queried_at": "2026-10-29T09:23:35.369052+08:00",
+  "results": [
+    {
+      "repo": "apache/casbin",
+      "count": 173,
+      "anonymous_entries": 18,
+      "definition": "GitHub contributors API anon=1; account and anonymous entries, including bots; not active-human count"
+    },
+    {
+      "repo": "open-policy-agent/opa",
+      "count": 625,
+      "anonymous_entries": 210,
+      "definition": "GitHub contributors API anon=1; account and anonymous entries, including bots; not active-human count"
+    },
+    {
+      "repo": "teramoby/speedle-plus",
+      "count": 8,
+      "anonymous_entries": 3,
+      "definition": "GitHub contributors API anon=1; account and anonymous entries, including bots; not active-human count"
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+time="2026-10-29T09:20:12+08:00" level=info msg="Watch policy store."
+time="2026-10-29T09:20:12+08:00" level=info msg="Enter Watch..."
+time="2026-10-29T09:20:12+08:00" level=info msg="Reloading the file store..."
+mode=inplace: survived, change visible after 11ms
+mode=inplace exit_code=0
+time="2026-10-29T09:20:12+08:00" level=info msg="Watch policy store."
+time="2026-10-29T09:20:12+08:00" level=info msg="Enter Watch..."
+time="2026-10-29T09:20:12+08:00" level=info msg="Operation \"CHMOD\" was detected on the policy file \"/tmp/watchcheck-4111682893/policy.spdl\""
+time="2026-10-29T09:20:12+08:00" level=fatal msg="The policy file \"/tmp/watchcheck-4111682893/policy.spdl\" has already been removed, please double check"
+mode=rename exit_code=1

@@ -1,0 +1,3 @@
+[service.app]
+[policy]
+GRANT ROLE authenticated_role edit expr:/docs/.* if owner == request_user

@@ -1,0 +1,50 @@
+{
+  "queried_at": "2026-10-29T09:20:37.971521+08:00",
+  "contributors": [
+    {
+      "repo": "apache/casbin",
+      "error": "HTTP Error 403: rate limit exceeded",
+      "partial_count": 0
+    },
+    {
+      "repo": "open-policy-agent/opa",
+      "error": "HTTP Error 403: rate limit exceeded",
+      "partial_count": 0
+    },
+    {
+      "repo": "teramoby/speedle-plus",
+      "error": "HTTP Error 403: rate limit exceeded",
+      "partial_count": 0
+    }
+  ],
+  "stackoverflow": [
+    {
+      "tag": "casbin",
+      "url": "https://api.stackexchange.com/2.3/questions?site=stackoverflow&tagged=casbin&filter=total",
+      "data": {
+        "total": 33
+      }
+    },
+    {
+      "tag": "open-policy-agent",
+      "url": "https://api.stackexchange.com/2.3/questions?site=stackoverflow&tagged=open-policy-agent&filter=total",
+      "data": {
+        "total": 270
+      }
+    },
+    {
+      "tag": "rego",
+      "url": "https://api.stackexchange.com/2.3/questions?site=stackoverflow&tagged=rego&filter=total",
+      "data": {
+        "total": 176
+      }
+    },
+    {
+      "tag": "speedle",
+      "url": "https://api.stackexchange.com/2.3/questions?site=stackoverflow&tagged=speedle&filter=total",
+      "data": {
+        "total": 0
+      }
+    }
+  ]
+}

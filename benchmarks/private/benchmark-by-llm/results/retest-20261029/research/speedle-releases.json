@@ -1,0 +1,38 @@
+[
+  {
+    "html_url": "https://github.com/teramoby/speedle-plus/releases/tag/v1.6.0",
+    "id": 427329830,
+    "tag_name": "v1.6.0",
+    "target_commitish": "master",
+    "name": "v1.6.0",
+    "draft": false,
+    "prerelease": false,
+    "created_at": "2026-10-29T00:18:23Z",
+    "published_at": "2026-10-29T00:18:25Z",
+    "assets": []
+  },
+  {
+    "html_url": "https://github.com/teramoby/speedle-plus/releases/tag/v2.0",
+    "id": 28112743,
+    "tag_name": "v2.0",
+    "target_commitish": "master",
+    "name": "v2.0 - the first version of SP",
+    "draft": false,
+    "prerelease": false,
+    "created_at": "2020-07-01T08:27:49Z",
+    "published_at": "2020-07-01T12:35:07Z",
+    "assets": []
+  },
+  {
+    "html_url": "https://github.com/teramoby/speedle-plus/releases/tag/baseline",
+    "id": 27298591,
+    "tag_name": "baseline",
+    "target_commitish": "master",
+    "name": "baseline",
+    "draft": false,
+    "prerelease": false,
+    "created_at": "2020-06-07T07:54:44Z",
+    "published_at": "2020-06-07T07:57:32Z",
+    "assets": []
+  }
+]

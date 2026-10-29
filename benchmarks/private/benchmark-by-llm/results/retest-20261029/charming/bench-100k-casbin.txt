@@ -1,0 +1,20 @@
+goos: linux
+goarch: amd64
+pkg: authzbench
+cpu: Intel(R) Core(TM) i5-7360U CPU @ 2.30GHz
+BenchmarkRBACAllow/n=100000/casbin-2  	      36	  31811570 ns/op	10407048 B/op	  300016 allocs/op
+BenchmarkRBACAllow/n=100000/casbin-2  	      37	  34937128 ns/op	10407048 B/op	  300016 allocs/op
+BenchmarkRBACAllow/n=100000/casbin-2  	      38	  32633859 ns/op	10407048 B/op	  300016 allocs/op
+BenchmarkRBACAllow/n=100000/casbin-2  	      36	  32068476 ns/op	10407048 B/op	  300016 allocs/op
+BenchmarkRBACAllow/n=100000/casbin-2  	      37	  35512254 ns/op	10407048 B/op	  300016 allocs/op
+BenchmarkRBACDeny/n=100000/casbin-2   	      16	  73682226 ns/op	19207032 B/op	  600015 allocs/op
+BenchmarkRBACDeny/n=100000/casbin-2   	      18	  72227285 ns/op	19209089 B/op	  600015 allocs/op
+BenchmarkRBACDeny/n=100000/casbin-2   	      18	  67518627 ns/op	19207032 B/op	  600015 allocs/op
+BenchmarkRBACDeny/n=100000/casbin-2   	      18	  73287016 ns/op	19207032 B/op	  600015 allocs/op
+BenchmarkRBACDeny/n=100000/casbin-2   	      18	  72371324 ns/op	19207032 B/op	  600015 allocs/op
+BenchmarkRBACMixed/n=100000/casbin-2  	      26	  51336985 ns/op	11774876 B/op	  346646 allocs/op
+BenchmarkRBACMixed/n=100000/casbin-2  	      26	  48790773 ns/op	11774876 B/op	  346646 allocs/op
+BenchmarkRBACMixed/n=100000/casbin-2  	      25	  47065162 ns/op	11477590 B/op	  336511 allocs/op
+BenchmarkRBACMixed/n=100000/casbin-2  	      26	  48886837 ns/op	11774876 B/op	  346646 allocs/op
+BenchmarkRBACMixed/n=100000/casbin-2  	      26	  48895998 ns/op	11774876 B/op	  346646 allocs/op
+PASS

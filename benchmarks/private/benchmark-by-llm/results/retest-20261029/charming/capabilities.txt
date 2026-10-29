@@ -1,0 +1,57 @@
+=== RUN   TestBrokenPolicyBehavior
+time="2026-10-29T09:20:02+08:00" level=error msg="Error happens in parsing condition (amount <=): Unexpected end of expression"
+speedle load err=<nil>
+recompile condition for policy: &{juyfj5iq2bjrv2ovwqh5  grant [0x21f6eef9a3c0] [[role:manager]] amount <= map[]}
+time="2026-10-29T09:20:02+08:00" level=error msg="Error happens in parsing condition (amount <=): Unexpected end of expression"
+speedle approve amount=1 -> allowed=false reason=ERROR_IN_EVALUATION err=Unexpected end of expression
+recompile condition for policy: &{juyfj5iq2bjrv2ovwqh5  grant [0x21f6eef9a3c0] [[role:manager]] amount <= map[]}
+time="2026-10-29T09:20:02+08:00" level=error msg="Error happens in parsing condition (amount <=): Unexpected end of expression"
+speedle approve amount=1e+09 -> allowed=false reason=ERROR_IN_EVALUATION err=Unexpected end of expression
+speedle read (valid sibling policy) -> allowed=true err=<nil>
+casbin typo model: load err=<nil>
+casbin typo model: first Enforce -> allowed=false err=No parameter 'p_ob' found.
+--- PASS: TestBrokenPolicyBehavior (0.00s)
+=== RUN   TestListPermissions
+casbin  GetImplicitPermissionsForUser(alice) = [[admin /data1 read] [admin /data1 write]], err=<nil>
+opa     data.authz.permissions (a rule written for it) = [map[action:read resource:/data1] map[action:write resource:/data1]], err=<nil>
+speedle GetAllGrantedPermissions(alice) = [/data1:[read write]], err=<nil>
+--- PASS: TestListPermissions (0.00s)
+=== RUN   TestExplain
+casbin  EnforceEx -> allowed=false explain=[kim /hr/salaries read deny] err=<nil>
+opa     allowed=false err=<nil>; trace has 81 events / 81 lines; first lines:
+        query:1         Enter data.authz.allow = _
+        query:1         | Eval data.authz.allow = _
+        query:1         | Unify data.authz.allow = _
+        query:1         | Index data.authz.allow (matched 1 rule, early exit)
+        opa.rego:7      | Enter data.authz.allow
+        opa.rego:8      | | Eval __local9__ = input.user
+        opa.rego:8      | | Unify __local9__ = input.user
+        opa.rego:8      | | Unify "kim" = __local9__
+speedle IsAllowed -> allowed=false reason=DENY_POLICY_FOUND err=<nil>
+speedle Diagnose -> grantedRoles=[staff] policy{{Status:takeEffect ID:e6wrs33zdwtowyfv7jbi Name: Effect:deny Permissions:[{Resource:/hr/salaries ResourceExpression: Actions:[read]}] Principals:[[user:kim]] Condition:<nil>}} policy{{Status:ignored ID:wzs5tkuo47z6hsdl2w5v Name: Effect:grant Permissions:[{Resource: ResourceExpression:/hr/.* Actions:[read]}] Principals:[[role:staff]] Condition:<nil>}}
+--- PASS: TestExplain (0.00s)
+=== RUN   TestRuntimeUpdate
+casbin  AddPolicy in-process: allowed=true after 38.228µs (err=<nil>)
+opa     storage write in-process: allowed=true after 80.994µs (err=<nil>)
+time="2026-10-29T09:20:02+08:00" level=info msg="Watch policy store."
+time="2026-10-29T09:20:02+08:00" level=info msg="Enter Watch..."
+time="2026-10-29T09:20:02+08:00" level=info msg="Reloading the file store..."
+speedle embedded file watch: allowed=true after 5ms
+--- PASS: TestRuntimeUpdate (0.01s)
+=== RUN   TestErrorMessages
+casbin  unbalanced paren in matcher: Unbalanced parenthesis
+casbin  typo p.ob in matcher: No parameter 'p_ob' found.
+opa     missing closing brace: 1 error occurred: bad1.rego:14: rego_parse_error: unexpected contains keyword: expected \n or ; or }
+	permissions contains perm if {
+	            ^
+opa     typo permm.action: bundle activation failed: 1 error occurred: bad2.rego:10: rego_unsafe_var_error: var permm is unsafe
+speedle missing resource: Not found permission
+GRANT ROLE admin read
+                     ^
+speedle typo GRAN: Not found valid effect
+GRAN ROLE admin read /data1
+^
+time="2026-10-29T09:20:02+08:00" level=error msg="Error happens in parsing condition (amount <=): Unexpected end of expression"
+speedle incomplete condition: <nil>
+--- PASS: TestErrorMessages (0.00s)
+PASS

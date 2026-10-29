@@ -1,0 +1,8 @@
+2026-10-29 10:13:35 +0800
+ProductName:		macOS
+ProductVersion:		27.0.1
+BuildVersion:		26A434
+shrek.local
+Apple M1 Pro
+17179869184
+go version go1.27.2 darwin/arm64

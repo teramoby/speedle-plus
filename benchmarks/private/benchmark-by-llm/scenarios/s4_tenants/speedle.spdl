@@ -1,0 +1,7 @@
+[service.app]
+[policy]
+GRANT ROLE admin read,write expr:/[^/]+/data
+GRANT ROLE viewer read expr:/[^/]+/data
+[rolepolicy]
+GRANT USER gina admin ON expr:/tenant1/.*
+GRANT USER gina viewer ON expr:/tenant2/.*

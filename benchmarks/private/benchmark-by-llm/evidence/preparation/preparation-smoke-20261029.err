@@ -1,0 +1,11 @@
+CPU allocation: server= GOMAXPROCS=2 generator= GOMAXPROCS=2
+round=1 dataset=plain n=100 setup=thin-casbin c=2 pid=95672
+round=1 dataset=plain n=100 setup=thin-opa c=2 pid=95682
+round=1 dataset=plain n=100 setup=thin-speedle c=2 pid=95706
+round=1 dataset=plain n=100 setup=opa-server c=2 pid=95717
+round=1 dataset=plain n=100 setup=speedle-ads c=2 pid=95727
+round=1 dataset=manyusers n=1000 setup=thin-casbin c=2 pid=95733
+round=1 dataset=manyusers n=1000 setup=thin-opa c=2 pid=95739
+round=1 dataset=manyusers n=1000 setup=thin-speedle c=2 pid=95745
+round=1 dataset=manyusers n=1000 setup=opa-server c=2 pid=95751
+round=1 dataset=manyusers n=1000 setup=speedle-ads c=2 pid=95759

@@ -1,0 +1,196 @@
+[
+  {
+    "archive": "provenance/executed-source.tar.gz",
+    "path": "gen.go",
+    "original_sha256": "35269c8caa15dffd9b3536d5a9d725d3de8658faae05832b02e4437b353d5b6b",
+    "published_sha256": "35269c8caa15dffd9b3536d5a9d725d3de8658faae05832b02e4437b353d5b6b",
+    "transformations": []
+  },
+  {
+    "archive": "provenance/executed-source.tar.gz",
+    "path": "engines.go",
+    "original_sha256": "2df575ef90d27140a0670a8dd0acf49333c324f9c502af242262d38e5974dc6a",
+    "published_sha256": "2df575ef90d27140a0670a8dd0acf49333c324f9c502af242262d38e5974dc6a",
+    "transformations": []
+  },
+  {
+    "archive": "provenance/executed-source.tar.gz",
+    "path": "bench_test.go",
+    "original_sha256": "a2cc46be80557785924ca04be1183f76a60386460704ee649444802e8a9e08d2",
+    "published_sha256": "a2cc46be80557785924ca04be1183f76a60386460704ee649444802e8a9e08d2",
+    "transformations": []
+  },
+  {
+    "archive": "provenance/executed-source.tar.gz",
+    "path": "scenarios_test.go",
+    "original_sha256": "10c0bd1e1e68d5f38c944bcfe2e2bc2b3ec18f7088d36ef2b9a14b923e3b70c6",
+    "published_sha256": "10c0bd1e1e68d5f38c944bcfe2e2bc2b3ec18f7088d36ef2b9a14b923e3b70c6",
+    "transformations": []
+  },
+  {
+    "archive": "provenance/executed-source.tar.gz",
+    "path": "generated_test.go",
+    "original_sha256": "aade6277669955efed1e440eaf5a09193add6609f495bba2878e14da18365dcd",
+    "published_sha256": "aade6277669955efed1e440eaf5a09193add6609f495bba2878e14da18365dcd",
+    "transformations": []
+  },
+  {
+    "archive": "provenance/executed-source.tar.gz",
+    "path": "capabilities_test.go",
+    "original_sha256": "cce2d5fb15ab10ba9515f6779857be4d01e4c9275e421397bfb3caf0de8fa80a",
+    "published_sha256": "cce2d5fb15ab10ba9515f6779857be4d01e4c9275e421397bfb3caf0de8fa80a",
+    "transformations": []
+  },
+  {
+    "archive": "provenance/executed-source.tar.gz",
+    "path": "broken_test.go",
+    "original_sha256": "ef0a73b968da20df6c27cc08a8240817477489f8fda6efff6b7e4b37f9890b2d",
+    "published_sha256": "ef0a73b968da20df6c27cc08a8240817477489f8fda6efff6b7e4b37f9890b2d",
+    "transformations": []
+  },
+  {
+    "archive": "provenance/executed-source.tar.gz",
+    "path": "go.mod",
+    "original_sha256": "ba47ba8b6b08044a5856866d6650425725ee6dec15401947d7e0bcf4b301a066",
+    "published_sha256": "ba47ba8b6b08044a5856866d6650425725ee6dec15401947d7e0bcf4b301a066",
+    "transformations": []
+  },
+  {
+    "archive": "provenance/executed-source.tar.gz",
+    "path": "go.sum",
+    "original_sha256": "ae604569849529b54c3450a8bb6934d4bb44553fd8430554a9f126fdeceec478",
+    "published_sha256": "ae604569849529b54c3450a8bb6934d4bb44553fd8430554a9f126fdeceec478",
+    "transformations": []
+  },
+  {
+    "archive": "provenance/executed-source.tar.gz",
+    "path": "deps.go",
+    "original_sha256": "d892ff9817ca117a71feb26a623b03dbe3d631efe6a697bfbac50ebd1645e94d",
+    "published_sha256": "d892ff9817ca117a71feb26a623b03dbe3d631efe6a697bfbac50ebd1645e94d",
+    "transformations": []
+  },
+  {
+    "archive": "provenance/executed-source.tar.gz",
+    "path": "cmd/loadgen/main.go",
+    "original_sha256": "777bec490e8c312d4ec15e1ee0091e7dbc4b0f630622d1fd06a9620d8827758e",
+    "published_sha256": "777bec490e8c312d4ec15e1ee0091e7dbc4b0f630622d1fd06a9620d8827758e",
+    "transformations": []
+  },
+  {
+    "archive": "provenance/executed-source.tar.gz",
+    "path": "cmd/watchcheck/main.go",
+    "original_sha256": "83d87a2761d302b38722df9caaaac5909d5998fa0a7f13903485e23d4170905d",
+    "published_sha256": "83d87a2761d302b38722df9caaaac5909d5998fa0a7f13903485e23d4170905d",
+    "transformations": []
+  },
+  {
+    "archive": "provenance/executed-source.tar.gz",
+    "path": "cmd/authzd/main.go",
+    "original_sha256": "e2da76449e47b79c6382383918aafae9ae2897a24ce1224f745638d84f49b789",
+    "published_sha256": "e2da76449e47b79c6382383918aafae9ae2897a24ce1224f745638d84f49b789",
+    "transformations": []
+  },
+  {
+    "archive": "provenance/executed-source.tar.gz",
+    "path": "stress.sh",
+    "original_sha256": "b6f69f8e0969bef1757539016c069770d24427a207f9a25bd66b674a46461b9e",
+    "published_sha256": "b6f69f8e0969bef1757539016c069770d24427a207f9a25bd66b674a46461b9e",
+    "transformations": []
+  },
+  {
+    "archive": "provenance/executed-source.tar.gz",
+    "path": "run-all.sh",
+    "original_sha256": "dca5dc21ea9231e236a7c89446d5fcf865e2b22329ae7458032c41461d07762d",
+    "published_sha256": "dca5dc21ea9231e236a7c89446d5fcf865e2b22329ae7458032c41461d07762d",
+    "transformations": []
+  },
+  {
+    "archive": "provenance/executed-source.tar.gz",
+    "path": "summarize.py",
+    "original_sha256": "afcff732c291e272a4f5e8169c84fee8af33889d855d4ec6933165261acf9792",
+    "published_sha256": "afcff732c291e272a4f5e8169c84fee8af33889d855d4ec6933165261acf9792",
+    "transformations": []
+  },
+  {
+    "archive": "provenance/before-preparation-HISTORICAL.tar.gz",
+    "path": "README.md",
+    "original_sha256": "b0e2805d4b5949b09bb913f47ecc15939ea8a763bc79e4cc36d8428672d22ece",
+    "published_sha256": "b0e2805d4b5949b09bb913f47ecc15939ea8a763bc79e4cc36d8428672d22ece",
+    "transformations": []
+  },
+  {
+    "archive": "provenance/before-preparation-HISTORICAL.tar.gz",
+    "path": "REPORT.md",
+    "original_sha256": "7d7d7aabf2093a57ea3499fe37f304ffe908293b81913344ae138035cde0afc6",
+    "published_sha256": "7d7d7aabf2093a57ea3499fe37f304ffe908293b81913344ae138035cde0afc6",
+    "transformations": []
+  },
+  {
+    "archive": "provenance/before-preparation-HISTORICAL.tar.gz",
+    "path": "TEST_PLAN.md",
+    "original_sha256": "c2650dcaa12ae39e0341395e653f09854bf317342213f828ed51eccae1159b4c",
+    "published_sha256": "7ac73ec5759e943894e1866052f4286a6b1b2ba619ebac5a318457c8032fadd2",
+    "transformations": [
+      {
+        "type": "local-account-path",
+        "occurrences": 4
+      },
+      {
+        "type": "local-account-path",
+        "occurrences": 1
+      },
+      {
+        "type": "ssh-account-and-key-filename-labels"
+      }
+    ]
+  },
+  {
+    "archive": "provenance/before-preparation-HISTORICAL.tar.gz",
+    "path": "bench_test.go",
+    "original_sha256": "cde97da2befac02d9803261c1669ace4e5e43e3e026019e3a6356485522c8ae8",
+    "published_sha256": "cde97da2befac02d9803261c1669ace4e5e43e3e026019e3a6356485522c8ae8",
+    "transformations": []
+  },
+  {
+    "archive": "provenance/before-preparation-HISTORICAL.tar.gz",
+    "path": "cmd/authzd/main.go",
+    "original_sha256": "648ab87c9b4973ee00ed1638f6e6727ae56a1cf0aa404c078270710a8eb745d8",
+    "published_sha256": "648ab87c9b4973ee00ed1638f6e6727ae56a1cf0aa404c078270710a8eb745d8",
+    "transformations": []
+  },
+  {
+    "archive": "provenance/before-preparation-HISTORICAL.tar.gz",
+    "path": "cmd/loadgen/main.go",
+    "original_sha256": "dc5cba2ab3f762dacae2a5122bd3efc021b78e5d48d85d62152b68717ac46198",
+    "published_sha256": "dc5cba2ab3f762dacae2a5122bd3efc021b78e5d48d85d62152b68717ac46198",
+    "transformations": []
+  },
+  {
+    "archive": "provenance/before-preparation-HISTORICAL.tar.gz",
+    "path": "cmd/watchcheck/main.go",
+    "original_sha256": "83d87a2761d302b38722df9caaaac5909d5998fa0a7f13903485e23d4170905d",
+    "published_sha256": "83d87a2761d302b38722df9caaaac5909d5998fa0a7f13903485e23d4170905d",
+    "transformations": []
+  },
+  {
+    "archive": "provenance/before-preparation-HISTORICAL.tar.gz",
+    "path": "gen.go",
+    "original_sha256": "13c7addffe9c642d6a5b8332496b53e769ad59603300ea87e95d41dafa75b33c",
+    "published_sha256": "13c7addffe9c642d6a5b8332496b53e769ad59603300ea87e95d41dafa75b33c",
+    "transformations": []
+  },
+  {
+    "archive": "provenance/before-preparation-HISTORICAL.tar.gz",
+    "path": "run-all.sh",
+    "original_sha256": "15a5f1552f9ce9203d3205328283f85be7e583ef7c3e3cd91df5b16b2254f1b6",
+    "published_sha256": "15a5f1552f9ce9203d3205328283f85be7e583ef7c3e3cd91df5b16b2254f1b6",
+    "transformations": []
+  },
+  {
+    "archive": "provenance/before-preparation-HISTORICAL.tar.gz",
+    "path": "stress.sh",
+    "original_sha256": "65065d451017c23968bf0f13bca6b1a37d13d32a3175df48d24ed216a604c3c6",
+    "published_sha256": "65065d451017c23968bf0f13bca6b1a37d13d32a3175df48d24ed216a604c3c6",
+    "transformations": []
+  }
+]

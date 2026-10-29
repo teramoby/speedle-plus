@@ -1,0 +1,5 @@
+{
+  "user_roles": {"kim": ["staff"], "lee": ["staff"]},
+  "grants": {"staff": [{"action": "read", "resource": "/hr/*"}]},
+  "denies": {"kim": [{"action": "read", "resource": "/hr/salaries"}]}
+}

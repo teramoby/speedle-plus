@@ -1,0 +1,19 @@
+{
+  "v1.6.0": {
+    "url": "https://proxy.golang.org/github.com/teramoby/speedle-plus/@v/v1.6.0.info",
+    "info": {
+      "Version": "v1.6.0",
+      "Time": "2026-10-29T00:17:59Z",
+      "Origin": {
+        "VCS": "git",
+        "URL": "https://github.com/teramoby/speedle-plus",
+        "Hash": "17da10eb3d4efd80f95aee0da909640f632e6fa7",
+        "Ref": "refs/tags/v1.6.0"
+      }
+    }
+  },
+  "v2.0.0": {
+    "url": "https://proxy.golang.org/github.com/teramoby/speedle-plus/@v/v2.0.0.info",
+    "error": "HTTP Error 404: Not Found"
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "parent": {
+    "doc:D1": ["folder:F1"], "doc:D2": ["folder:F2"],
+    "folder:F1a": ["folder:F1"], "doc:D3": ["folder:F1a"],
+    "folder:F1": [], "folder:F2": []
+  },
+  "grants": {"mia": {"folder:F1": ["read"]}}
+}

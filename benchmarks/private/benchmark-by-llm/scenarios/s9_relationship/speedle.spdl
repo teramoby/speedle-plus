@@ -1,0 +1,3 @@
+[service.app]
+[policy]
+GRANT USER mia read expr:/F1/.*

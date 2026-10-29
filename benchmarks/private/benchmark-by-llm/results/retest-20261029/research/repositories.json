@@ -1,0 +1,80 @@
+{
+  "queried_at": "2026-10-29T09:20:00+08:00",
+  "data": [
+    {
+      "repo": "apache/casbin",
+      "data": {
+        "id": 87617508,
+        "full_name": "apache/casbin",
+        "html_url": "https://github.com/apache/casbin",
+        "description": "Apache Casbin: an authorization library that supports access control models like ACL, RBAC, ABAC.",
+        "created_at": "2017-04-08T07:51:23Z",
+        "updated_at": "2026-10-28T20:51:14Z",
+        "pushed_at": "2026-10-21T00:39:29Z",
+        "homepage": "https://casbin.apache.org/",
+        "stargazers_count": 20473,
+        "forks_count": 1764,
+        "archived": false,
+        "open_issues_count": 39,
+        "license": {
+          "key": "apache-2.0",
+          "name": "Apache License 2.0",
+          "spdx_id": "Apache-2.0",
+          "url": "https://api.github.com/licenses/apache-2.0",
+          "node_id": "MDc6TGljZW5zZTI="
+        },
+        "default_branch": "master"
+      }
+    },
+    {
+      "repo": "open-policy-agent/opa",
+      "data": {
+        "id": 48714685,
+        "full_name": "open-policy-agent/opa",
+        "html_url": "https://github.com/open-policy-agent/opa",
+        "description": "Open Policy Agent (OPA) is an open source, general-purpose policy engine.",
+        "created_at": "2015-12-28T22:08:25Z",
+        "updated_at": "2026-10-28T17:16:01Z",
+        "pushed_at": "2026-10-28T17:15:55Z",
+        "homepage": "https://www.openpolicyagent.org",
+        "stargazers_count": 12411,
+        "forks_count": 1705,
+        "archived": false,
+        "open_issues_count": 279,
+        "license": {
+          "key": "apache-2.0",
+          "name": "Apache License 2.0",
+          "spdx_id": "Apache-2.0",
+          "url": "https://api.github.com/licenses/apache-2.0",
+          "node_id": "MDc6TGljZW5zZTI="
+        },
+        "default_branch": "main"
+      }
+    },
+    {
+      "repo": "teramoby/speedle-plus",
+      "data": {
+        "id": 267174078,
+        "full_name": "teramoby/speedle-plus",
+        "html_url": "https://github.com/teramoby/speedle-plus",
+        "description": "Speedle+ is an open source project for access management. It is based on Speedle open source project and maintained by previous Speedle maintainers.",
+        "created_at": "2020-05-26T23:33:38Z",
+        "updated_at": "2026-10-29T00:50:44Z",
+        "pushed_at": "2026-10-29T01:04:02Z",
+        "homepage": "https://speedle.io",
+        "stargazers_count": 62,
+        "forks_count": 16,
+        "archived": false,
+        "open_issues_count": 10,
+        "license": {
+          "key": "upl-1.0",
+          "name": "Universal Permissive License v1.0",
+          "spdx_id": "UPL-1.0",
+          "url": "https://api.github.com/licenses/upl-1.0",
+          "node_id": "MDc6TGljZW5zZTMz"
+        },
+        "default_branch": "master"
+      }
+    }
+  ]
+}

@@ -1,0 +1,6 @@
+bin/
+dist/
+__pycache__/
+*.pyc
+.report-venv/
+.venv/

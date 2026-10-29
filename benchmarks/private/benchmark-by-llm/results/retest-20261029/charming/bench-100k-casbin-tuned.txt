@@ -1,0 +1,20 @@
+goos: linux
+goarch: amd64
+pkg: authzbench
+cpu: Intel(R) Core(TM) i5-7360U CPU @ 2.30GHz
+BenchmarkRBACAllow/n=100000/casbin-tuned-2         	      57	  18781533 ns/op	 6407777 B/op	  150019 allocs/op
+BenchmarkRBACAllow/n=100000/casbin-tuned-2         	      64	  20738916 ns/op	 6407128 B/op	  150019 allocs/op
+BenchmarkRBACAllow/n=100000/casbin-tuned-2         	      64	  20521859 ns/op	 6407128 B/op	  150019 allocs/op
+BenchmarkRBACAllow/n=100000/casbin-tuned-2         	      64	  19280470 ns/op	 6407128 B/op	  150019 allocs/op
+BenchmarkRBACAllow/n=100000/casbin-tuned-2         	      64	  20705631 ns/op	 6407128 B/op	  150019 allocs/op
+BenchmarkRBACDeny/n=100000/casbin-tuned-2          	      31	  43259869 ns/op	11207128 B/op	  300019 allocs/op
+BenchmarkRBACDeny/n=100000/casbin-tuned-2          	      30	  40279140 ns/op	11207128 B/op	  300019 allocs/op
+BenchmarkRBACDeny/n=100000/casbin-tuned-2          	      31	  42050126 ns/op	11208322 B/op	  300019 allocs/op
+BenchmarkRBACDeny/n=100000/casbin-tuned-2          	      31	  39198310 ns/op	11207128 B/op	  300019 allocs/op
+BenchmarkRBACDeny/n=100000/casbin-tuned-2          	      31	  41734671 ns/op	11207128 B/op	  300019 allocs/op
+BenchmarkRBACMixed/n=100000/casbin-tuned-2         	      50	  23014302 ns/op	 7156186 B/op	  173424 allocs/op
+BenchmarkRBACMixed/n=100000/casbin-tuned-2         	      55	  24240651 ns/op	 7402831 B/op	  181133 allocs/op
+BenchmarkRBACMixed/n=100000/casbin-tuned-2         	      44	  23175989 ns/op	 7024556 B/op	  169313 allocs/op
+BenchmarkRBACMixed/n=100000/casbin-tuned-2         	      54	  23927193 ns/op	 7385291 B/op	  180586 allocs/op
+BenchmarkRBACMixed/n=100000/casbin-tuned-2         	      52	  23166593 ns/op	 7252801 B/op	  176446 allocs/op
+PASS
