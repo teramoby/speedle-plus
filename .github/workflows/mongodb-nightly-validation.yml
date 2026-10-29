@@ -10,7 +10,7 @@ permissions:
 jobs:
   mongodb:
     name: MongoDB on fiona
-    runs-on: [self-hosted, macOS, ARM64, fiona-speedle]
+    runs-on: fiona-speedle
     timeout-minutes: 20
     steps:
       - name: Verify runner identity
