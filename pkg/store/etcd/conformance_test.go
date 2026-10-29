@@ -12,12 +12,12 @@ import (
 	"github.com/teramoby/speedle-plus/testutil/storetest"
 )
 
-// newPrefixedStore returns a store on the TestMain etcd under a key prefix
+// newPrefixedStore returns a store on the embedded etcd under a key prefix
 // of its own, so it starts empty.
 func newPrefixedStore(t *testing.T) pms.PolicyStoreManager {
 	t.Helper()
 	s, err := store.NewStore(StoreType, map[string]interface{}{
-		EtcdEndpointKey:  storeConfig.StoreProps[EtcdEndpointKey],
+		EtcdEndpointKey:  etcdStoreConfig(t).StoreProps[EtcdEndpointKey],
 		EtcdKeyPrefixKey: "/conformance/" + strings.ReplaceAll(t.Name(), "/", "_") + "/",
 	})
 	if err != nil {
