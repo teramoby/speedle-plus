@@ -55,6 +55,7 @@ func init() {
 		newConfigCommand(),
 		newDiscoverCommand(),
 		newVersionCommand(),
+		newCheckCommand(),
 	)
 }
 

@@ -71,8 +71,6 @@ type lineCtx struct {
 var emptyPS pms.PolicyStore
 
 func (s *Store) readSPDLWithoutLock() (*pms.PolicyStore, error) {
-	var ps pms.PolicyStore
-
 	f, err := os.Open(s.FileLocation)
 	if err != nil {
 		return &emptyPS, errors.Wrapf(err, errors.StoreError, "unable to open file %q", s.FileLocation)
@@ -83,38 +81,62 @@ func (s *Store) readSPDLWithoutLock() (*pms.PolicyStore, error) {
 		}
 	}()
 
+	var firstErr error
+	ps := parseSPDL(f, s.FileLocation, func(err error) bool {
+		firstErr = err
+		return false
+	})
+	if firstErr != nil {
+		return &emptyPS, firstErr
+	}
+	return ps, nil
+}
+
+// parseSPDL reads SPDL from r, named name in errors. It calls onError with
+// each error and stops when onError returns false.
+func parseSPDL(r io.Reader, name string, onError func(error) bool) *pms.PolicyStore {
+	var ps pms.PolicyStore
 	lc := lineCtx{}
-	r := bufio.NewReader(f)
+	br := bufio.NewReader(r)
 	for {
-		if err := readLine(r, &lc); err != nil {
-			if err == io.EOF {
-				break
-			} else {
-				return &emptyPS, err
+		if err := readLine(br, &lc); err != nil {
+			if err != io.EOF {
+				onError(err)
 			}
+			break
 		}
 
-		if err := determineType(&lc); err != nil {
-			return &emptyPS, err
+		var err error
+		if err = determineType(&lc); err == nil {
+			switch lc.ltype {
+			case lineEmpty:
+			case lineSection:
+				err = processSection(&ps, &lc)
+			case linePolicyDef:
+				if err = processPolicyDef(&ps, &lc); err != nil {
+					err = fmt.Errorf("%s:%d: %w", name, lc.no, err)
+				}
+			default:
+				//lint:ignore ST1005 Preserve the public parser error text for existing callers.
+				err = fmt.Errorf("Unknown line type %s", lc.ltype)
+			}
 		}
-		switch lc.ltype {
-		case lineEmpty:
-			continue
-		case lineSection:
-			if err := processSection(&ps, &lc); err != nil {
-				return &emptyPS, err
-			}
-		case linePolicyDef:
-			if err := processPolicyDef(&ps, &lc); err != nil {
-				return &emptyPS, err
-			}
-		default:
-			//lint:ignore ST1005 Preserve the public parser error text for existing callers.
-			return &emptyPS, fmt.Errorf("Unknown line type %s", lc.ltype)
+		if err != nil && !onError(err) {
+			break
 		}
 	}
+	return &ps
+}
 
-	return &ps, nil
+// CheckSPDL reads the SPDL in r, named name in errors, and returns every
+// error in it rather than only the first.
+func CheckSPDL(r io.Reader, name string) (*pms.PolicyStore, []error) {
+	var errs []error
+	ps := parseSPDL(r, name, func(err error) bool {
+		errs = append(errs, err)
+		return true
+	})
+	return ps, errs
 }
 
 func getServiceSection(ps *pms.PolicyStore, service string) *pms.Service {

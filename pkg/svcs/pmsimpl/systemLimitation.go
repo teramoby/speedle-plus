@@ -5,9 +5,11 @@ package pmsimpl
 
 import (
 	"encoding/json"
+	"fmt"
 
 	"github.com/teramoby/speedle-plus/api/pms"
 	"github.com/teramoby/speedle-plus/pkg/errors"
+	"github.com/teramoby/speedle-plus/pkg/eval/condition"
 )
 
 var (
@@ -23,6 +25,7 @@ Check the following items:
 	1. The maximum number of service;
 	2. The maximum number of Policy + RolePolicy;
 	3. The size of each Policy and RolePolicy;
+	4. The syntax of each condition;
 */
 func CheckService(service *pms.Service, policyStore pms.PolicyStoreManager) error {
 	// Check the number of the service
@@ -64,6 +67,17 @@ func CheckService(service *pms.Service, policyStore pms.PolicyStoreManager) erro
 		}
 	}
 
+	for i, policy := range service.Policies {
+		if err := checkCondition(policy.Condition, "policy", policy.Name, i); err != nil {
+			return err
+		}
+	}
+	for i, rolePolicy := range service.RolePolicies {
+		if err := checkCondition(rolePolicy.Condition, "role policy", rolePolicy.Name, i); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
@@ -72,6 +86,7 @@ Check the following items:
 	1. The maximum number of Policy + RolePolicy;
 	2. The size of the Policy;
     3. If the effect field of policy is empty;
+	4. The syntax of the condition;
 */
 func CheckPolicy(serviceName string, policy *pms.Policy, policyStore pms.PolicyStoreManager) error {
 	// Check global service
@@ -98,7 +113,7 @@ func CheckPolicy(serviceName string, policy *pms.Policy, policyStore pms.PolicyS
 		return err
 	}
 
-	return nil
+	return checkCondition(policy.Condition, "policy", policy.Name, -1)
 }
 
 /*
@@ -106,6 +121,7 @@ Check the following items:
 	1. The maximum number of Policy + RolePolicy;
 	2. The size of the RolePolicy;
     3. If the effect field of RolePolicy is empty;
+	4. The syntax of the condition;
 */
 func CheckRolePolicy(serviceName string, rolePolicy *pms.RolePolicy, policyStore pms.PolicyStoreManager) error {
 	if len(rolePolicy.Effect) <= 0 {
@@ -127,7 +143,24 @@ func CheckRolePolicy(serviceName string, rolePolicy *pms.RolePolicy, policyStore
 		return err
 	}
 
-	return nil
+	return checkCondition(rolePolicy.Condition, "role policy", rolePolicy.Name, -1)
+}
+
+// checkCondition returns an InvalidRequest error naming the policy and saying
+// where its condition is wrong. index is the policy's position in a service
+// being created, or -1.
+func checkCondition(cond, kind, name string, index int) error {
+	err := condition.Check(cond)
+	if err == nil {
+		return nil
+	}
+	what := kind
+	if name != "" {
+		what = fmt.Sprintf("%s %q", kind, name)
+	} else if index >= 0 {
+		what = fmt.Sprintf("%s %d", kind, index+1)
+	}
+	return errors.Errorf(errors.InvalidRequest, "%s: %v", what, err)
 }
 
 // get the existing number of policy + rolePolicy
