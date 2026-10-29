@@ -28,6 +28,10 @@ func TestMain(m *testing.M) {
 func runCLITests(m *testing.M) int {
 	// Preserve the explicit external-fixture mode used by run_*_test.sh.
 	if os.Getenv(testutil.SP_APP_NAME) != "" {
+		// The external PMS's store is not reachable from here; only the file
+		// and etcd stores implement Discover.
+		storeType := testutil.GetOSEnv("STORE_TYPE", "file")
+		cliFixtureSupportsDiscover = storeType == "file" || storeType == "etcd"
 		return m.Run()
 	}
 	directory, err := os.MkdirTemp("", "speedle-cli-tests-")
