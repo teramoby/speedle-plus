@@ -284,6 +284,19 @@ func (s *Store) timeOutGet(key string, opts ...clientv3.OpOption) (*clientv3.Get
 	return s.client.Get(ctx, key, opts...)
 }
 
+// serviceNotFound returns EntityNotFound when serviceName has no service key,
+// as the file and MySQL stores do.
+func (s *Store) serviceNotFound(serviceName string) error {
+	resp, err := s.timeOutGet(s.KeyPrefix+ServicesKey+KeySeparator+serviceName+KeySeparator, clientv3.WithCountOnly())
+	if err != nil {
+		return errors.Wrapf(err, errors.StoreError, "failed to get service %q from etcd server", serviceName)
+	}
+	if resp.Count == 0 {
+		return errors.Errorf(errors.EntityNotFound, "service %q is not found", serviceName)
+	}
+	return nil
+}
+
 func (s *Store) prefixGet(prefix string, opts ...clientv3.OpOption) ([]*clientv3.GetResponse, error) {
 	end := clientv3.GetPrefixRangeEnd(prefix)
 	getOpts := []clientv3.OpOption{clientv3.WithPrefix(), clientv3.WithLimit(pageSize), clientv3.WithSort(clientv3.SortByKey, clientv3.SortAscend)}
@@ -676,6 +689,9 @@ func (s *Store) StopWatch() {
 func (s *Store) ListAllPolicies(serviceName string, filter string) ([]*pms.Policy, error) {
 	f := parseFilter(filter)
 
+	if err := s.serviceNotFound(serviceName); err != nil {
+		return nil, err
+	}
 	policyKeyPrefix := s.KeyPrefix + ServicesKey + KeySeparator + serviceName + KeySeparator + PoliciesKey
 	responses, err := s.prefixGet(policyKeyPrefix)
 	if err != nil {
@@ -819,13 +835,19 @@ func (s *Store) DeletePolicy(serviceName string, id string) error {
 func (s *Store) DeletePolicies(serviceName string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), requestTimeout)
 	defer cancel()
-	_, err := s.client.KV.Txn(ctx).Then(
-		clientv3.OpDelete(s.KeyPrefix+ServicesKey+KeySeparator+serviceName+KeySeparator+PoliciesKey, clientv3.WithPrefix()),
+	serviceKey := s.KeyPrefix + ServicesKey + KeySeparator + serviceName + KeySeparator
+	txnResp, err := s.client.KV.Txn(ctx).If(
+		clientv3.Compare(clientv3.Version(serviceKey), ">", 0), //service key exist
+	).Then(
+		clientv3.OpDelete(serviceKey+PoliciesKey, clientv3.WithPrefix()),
 		//make sure updating service key is the last operation, so watch could work correctly
-		clientv3.OpPut(s.KeyPrefix+ServicesKey+KeySeparator+serviceName+KeySeparator, ""),
+		clientv3.OpPut(serviceKey, ""),
 	).Commit()
 	if err != nil {
 		return errors.Wrap(err, errors.StoreError, "failed to delete all policies from etcd server")
+	}
+	if !txnResp.Succeeded {
+		return errors.Errorf(errors.EntityNotFound, "service %q is not found", serviceName)
 	}
 	return nil
 }
@@ -857,6 +879,9 @@ func (s *Store) CreatePolicy(serviceName string, policy *pms.Policy) (*pms.Polic
 		return nil, errors.Wrapf(err, errors.StoreError, "falied to create a policy in service %q", serviceName)
 	}
 	if !txnResp.Succeeded {
+		if err := s.serviceNotFound(serviceName); err != nil {
+			return nil, err
+		}
 		return nil, errors.Errorf(errors.EntityAlreadyExists, "policy %q already exists in service %q", policy.ID, serviceName)
 	}
 	return &dupPolicy, nil
@@ -865,6 +890,9 @@ func (s *Store) CreatePolicy(serviceName string, policy *pms.Policy) (*pms.Polic
 // For role policy manager
 func (s *Store) ListAllRolePolicies(serviceName string, filter string) ([]*pms.RolePolicy, error) {
 	f := parseFilter(filter)
+	if err := s.serviceNotFound(serviceName); err != nil {
+		return nil, err
+	}
 	rolePolicyKeyPrefix := s.KeyPrefix + ServicesKey + KeySeparator + serviceName + KeySeparator + RolePoliciesKey
 	responses, err := s.prefixGet(rolePolicyKeyPrefix)
 	if err != nil {
@@ -1006,13 +1034,19 @@ func (s *Store) DeleteRolePolicy(serviceName string, id string) error {
 func (s *Store) DeleteRolePolicies(serviceName string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), requestTimeout)
 	defer cancel()
-	_, err := s.client.KV.Txn(ctx).Then(
-		clientv3.OpDelete(s.KeyPrefix+ServicesKey+KeySeparator+serviceName+KeySeparator+RolePoliciesKey, clientv3.WithPrefix()),
+	serviceKey := s.KeyPrefix + ServicesKey + KeySeparator + serviceName + KeySeparator
+	txnResp, err := s.client.KV.Txn(ctx).If(
+		clientv3.Compare(clientv3.Version(serviceKey), ">", 0), //service key exist
+	).Then(
+		clientv3.OpDelete(serviceKey+RolePoliciesKey, clientv3.WithPrefix()),
 		//make sure updating service key is the last operation, so watch could work correctly
-		clientv3.OpPut(s.KeyPrefix+ServicesKey+KeySeparator+serviceName+KeySeparator, ""),
+		clientv3.OpPut(serviceKey, ""),
 	).Commit()
 	if err != nil {
 		return errors.Wrap(err, errors.StoreError, "failed to delete all policies from etcd server")
+	}
+	if !txnResp.Succeeded {
+		return errors.Errorf(errors.EntityNotFound, "service %q is not found", serviceName)
 	}
 	return nil
 }
@@ -1044,6 +1078,9 @@ func (s *Store) CreateRolePolicy(serviceName string, rolePolicy *pms.RolePolicy)
 		return nil, errors.Wrap(err, errors.StoreError, "failed to create role policy in etcd server")
 	}
 	if !txnResp.Succeeded {
+		if err := s.serviceNotFound(serviceName); err != nil {
+			return nil, err
+		}
 		return nil, errors.Errorf(errors.EntityAlreadyExists, "role policy %q already exists in service %q", dupRolePolicy.ID, serviceName)
 	}
 	return &dupRolePolicy, nil
