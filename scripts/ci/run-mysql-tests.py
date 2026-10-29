@@ -56,6 +56,23 @@ def run(args, **kwargs):
     return subprocess.run(args, cwd=ROOT, check=True, text=True, **kwargs)
 
 
+def count_test_events(results):
+    """Count go test -json pass/fail/skip events of the MySQL suites."""
+    counts = {"pass": 0, "fail": 0, "skip": 0}
+    for path in results.glob("mysql-*.json"):
+        # The shared engine's summary is JSON too, but not a go test stream.
+        if path.name == "mysql-summary.json":
+            continue
+        for line in path.read_text().splitlines():
+            try:
+                event = json.loads(line)
+            except ValueError:
+                continue
+            if isinstance(event, dict) and event.get("Test") and event.get("Action") in counts:
+                counts[event["Action"]] += 1
+    return counts
+
+
 def free_port():
     with socket.socket() as listener:
         listener.bind(("127.0.0.1", 0))
@@ -162,15 +179,7 @@ def main():
                 if "WARNING: DATA RACE" in data:
                     failed = True
                 path.write_text(data.replace(password, "[redacted]"))
-        counts = {"pass": 0, "fail": 0, "skip": 0}
-        for path in results.glob("mysql-*.json"):
-            for line in path.read_text().splitlines():
-                try:
-                    event = json.loads(line)
-                except ValueError:
-                    continue
-                if event.get("Test") and event.get("Action") in counts:
-                    counts[event["Action"]] += 1
+        counts = count_test_events(results)
         summary = f"MySQL full regression: {counts}; suites={suites}; failed={failed}\n"
         (results / "mysql-summary.txt").write_text(summary)
         print(summary, end="", flush=True)
