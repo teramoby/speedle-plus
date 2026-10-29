@@ -27,16 +27,26 @@ pages, `中文` on English pages), including inside the mobile navigation menu.
   the snapshot where it has the page (and anchor), and otherwise lead to the
   current site.
 
-The release gate also executes every Bash block from both quick-start guides
-against native PMS/ADS (`tests/check_quick_start.py`): merge gating with Go
-1.26.10, the nightly run with Go 1.26.10 and 1.27.3.
-It performs a public shallow clone, checks out the captured CI revision, builds
+The merge-gating test job executes the English and Chinese Quick Start and
+embedded deployment guides directly from `docs/hugo/content/` on every run.
+`tests/check_quick_start.py` extracts the actual Bash blocks and exercises native
+PMS/ADS; `tests/check_embedded.py` extracts the Bash, Go and SPDL blocks, builds
+an external application against the documented public release and the current
+candidate library, and checks Allow/Deny output for both. Both checkers use the
+document blocks as executable inputs. The same global gate runs
+`go test ./website/tests/docscheck` for the documented API contracts and
+`tests/check_docs.py` for the remaining bilingual executable API/deployment guides.
+The gate uses its current Go toolchain; nightly Quick Start checks additionally
+cover Go 1.26.10 and 1.27.3.
+The Quick Start check performs a public shallow clone, checks out the captured CI revision, builds
 the three executables, creates and lists policies, and checks direct/role grants
 and denials. On Linux the documented service and client commands run in
 unprivileged user/network/PID namespaces with a private loopback interface, so
 existing host services are untouched; this needs util-linux and iproute2. The
-checks run on the self-hosted build runner through `playground-engine/verify.sh`
-(`QUICK_START_TOOLCHAINS` selects the releases) and `scripts/ci/run-go-tests.sh nightly`.
+checks run through `scripts/ci/run-go-tests.sh gate` on the test runner for every
+PR and every master push, regardless of changed paths. Other jobs retain path
+classification. The site/build checks also verify that generated HTML matches
+the Hugo sources.
 
 Both quick-start guides enable `copycommands` with the page-specific
 `command-copy.css` and `command-copy.js` assets. Executable Bash blocks gain a

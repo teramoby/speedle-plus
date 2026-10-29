@@ -1,11 +1,12 @@
 # Documentation example checks
 
-Run `website/playground-engine/verify.sh` for the release checks, or run these focused checks from the repository root:
+Every PR and master push runs these checks in the global test gate (`scripts/ci/run-go-tests.sh gate`). The gate reads the current files under `docs/hugo/content/`. For focused checks from the repository root:
 
 ```sh
 go test -count=1 ./website/tests/docscheck
 python3 website/tests/check_docs.py
-python3 website/tests/check_embedded.py --toolchain go1.25.14
+python3 website/tests/check_quick_start.py --toolchain go1.26.10
+python3 website/tests/check_embedded.py --toolchain go1.26.10 --candidate
 ```
 
 The current docs inventory is 48 Markdown pages (24 English/Chinese pairs). Historical snapshot directories are unchanged. No shared stylesheet, template, logo or homepage design changes are part of this repair.
@@ -27,7 +28,7 @@ Container build/push and Kubernetes admission/rollout require a target registry/
 | `assertor` | Updated in both languages | Paired native commands and API results |
 | `custom-function` | Updated in both languages | Paired native commands and API results |
 | `decisions` | Updated in both languages | Paired native commands and API results |
-| `deployment-embeded` | Reviewed; retained | Existing public-module walkthrough check |
+| `deployment-embeded` | Reviewed; retained | Public-module and candidate-library walkthrough checks |
 | `deployment` | Updated in both languages | Shared Quick Start build, cross-build, native services, typed manifest; cluster rollout excluded |
 | `idd` | Updated in both languages | Paired native commands and API results |
 | `logging` | Updated in both languages | JSON syntax and current logging/config source review |

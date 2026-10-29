@@ -2,7 +2,7 @@
 """Build and run the bilingual embedded guide as an external Go module.
 
 Execute the documented shell commands and compile the actual Go/SPDL blocks
-against the public release, without a local module replacement or any servers.
+against the public release and, in the merge gate, the candidate library too.
 """
 import argparse
 import json
@@ -27,14 +27,15 @@ def blocks(locale):
 
 
 def run(command, cwd, env):
-    result = subprocess.run(["bash", "-euc", command], cwd=cwd, env=env,
+    args = ["bash", "-euc", command] if isinstance(command, str) else command
+    result = subprocess.run(args, cwd=cwd, env=env,
                             text=True, capture_output=True, timeout=600)
     if result.returncode:
         raise RuntimeError(f"{command}\n{result.stdout}\n{result.stderr}")
     return result.stdout
 
 
-def verify(locale, steps, toolchain):
+def verify(locale, steps, toolchain, candidate=False):
     env = dict(os.environ, GOWORK="off")
     # This throwaway application has no Git history. Persistent runner Git
     # metadata must not affect an external-module compilation (or runtime).
@@ -58,16 +59,26 @@ def verify(locale, steps, toolchain):
         assert output.splitlines() == ["alice allowed=true", "bob allowed=false"], output
         assert (app / "go.mod").is_file() and (app / "go.sum").is_file()
         print(f"{locale}: PASS module setup, published {module['Version']}, build, allow and deny", flush=True)
+        if candidate:
+            revision = run(["git", "rev-parse", "HEAD"], ROOT, env).strip()
+            run(["go", "mod", "edit", "-replace", f"github.com/teramoby/speedle-plus={ROOT}"], app, env)
+            run(steps["build"], app, env)
+            selected = json.loads(run("go list -m -json github.com/teramoby/speedle-plus", app, env))
+            assert Path(selected["Replace"]["Dir"]).resolve() == ROOT.resolve(), selected
+            output = run(steps["run"], app, env).strip()
+            assert output.splitlines() == ["alice allowed=true", "bob allowed=false"], output
+            print(f"{locale}: PASS same documented program against candidate {revision}, allow and deny", flush=True)
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--toolchain", help="Exact Go toolchain, for example go1.27.3")
+    parser.add_argument("--candidate", action="store_true", help="Also verify the same example against this checkout")
     args = parser.parse_args()
     english, chinese = blocks("en"), blocks("zh")
     assert english == chinese, "English and Chinese executable examples differ"
     for locale, steps in (("en", english), ("zh", chinese)):
-        verify(locale, steps, args.toolchain)
+        verify(locale, steps, args.toolchain, args.candidate)
     print("PASS English and Chinese embedded guides against the public Go module", flush=True)
 
 

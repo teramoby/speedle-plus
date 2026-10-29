@@ -2,7 +2,8 @@
 # Run the Go test suites for one CI mode.
 #
 #   gate     every package once with the file store, the store-dependent
-#            packages again with etcd, then the coverage gate (merge gating)
+#            packages again with etcd, the coverage gate, and both bilingual
+#            executable guides from docs/ (merge gating)
 #   nightly  race-detector run of every package with both stores, the
 #            quick start with every supported Go release, govulncheck and the
 #            CI script tests
@@ -68,6 +69,13 @@ case "${mode}" in
     STORE_TYPE=etcd go test -p 1 -count=1 -timeout 300s "${store_dependent[@]}"
     python3 scripts/ci/coverage.py coverage.out --merge coverage-cli.out \
       --min-file scripts/ci/coverage-min.txt "${pkgs[@]}"
+    # Read the candidate's documentation on every run. These execute the actual
+    # fenced commands/program/policy blocks; failures block the same test job.
+    toolchain=$(go env GOVERSION)
+    python3 website/tests/check_quick_start.py --toolchain "${toolchain}"
+    python3 website/tests/check_embedded.py --toolchain "${toolchain}" --candidate
+    go test -count=1 ./website/tests/docscheck
+    python3 website/tests/check_docs.py
     ;;
   nightly)
     mkdir -p "${results}"; : > "${results}/checks.txt"
