@@ -95,7 +95,7 @@ bob false NO_APPLICABLE_POLICIES <nil>
 
 ## 安装
 
-需要 Go 1.26 或更新版本：
+需要 Go 1.26.10 或 Go 1.27.3（也可使用同一大版本的更新补丁版本）：
 
 ```
 go install github.com/teramoby/speedle-plus/cmd/...@latest
@@ -107,7 +107,7 @@ go install github.com/teramoby/speedle-plus/cmd/...@latest
 
 ### 前期准备
 
--   Go 1.26 或更新版本 <https://go.dev/doc/install>。Speedle+ 支持最近的两个 Go 版本。Go 会自动设置 `GOROOT` 和 `GOPATH`，不需要手动配置。
+-   Go 1.26.10 或 Go 1.27.3（也可使用同一大版本的更新补丁版本）<https://go.dev/doc/install>。Speedle+ 支持 Go 1.26 和 Go 1.27 的安全补丁版本。Go 会自动设置 `GOROOT` 和 `GOPATH`，不需要手动配置。
 
 ### 步骤
 

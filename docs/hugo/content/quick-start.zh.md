@@ -20,7 +20,7 @@ icon = "9. Getting Started.svg"
 
 ## 准备环境
 
-准备 Linux 或 macOS、Bash、Git、curl，以及 **Go 1.26 或更新版本**。Speedle+ 支持最近的两个 Go 大版本；本教程已在 **Go 1.26.10 和 Go 1.27.3** 上验证，推荐使用稳定版 Go 1.27.3 完成本教程。
+准备 Linux 或 macOS、Bash、Git、curl，以及 **Go 1.26.10 或 Go 1.27.3**（也可使用同一大版本的更新补丁版本）。Speedle+ 支持 Go 1.26 和 Go 1.27 的安全补丁版本；本教程已在 **Go 1.26.10 和 Go 1.27.3** 上验证，推荐使用稳定版 Go 1.27.3 完成本教程。
 
 按照 [Go 官方安装说明](https://go.dev/doc/install)安装，然后检查版本：
 
