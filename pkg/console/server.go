@@ -28,11 +28,12 @@ const (
 const contentSecurityPolicy = "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; " +
 	"connect-src 'self'; font-src 'self'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'"
 
-// Components are the parts the console is built from. NewHandler fills them
-// from a Config; tests may set their own.
+// Components are the parts the console is built from. NewComponents fills
+// them from a Config; tests may set their own.
 type Components struct {
-	Guard *auth.Guard
-	Proxy *proxy.Proxy
+	Guard        *auth.Guard
+	Proxy        *proxy.Proxy
+	AuthzService string
 }
 
 // NewComponents builds the console's parts from cfg.
@@ -73,11 +74,15 @@ func NewComponents(cfg *Config) (*Components, error) {
 				cfg.BootstrapAdmins, cfg.AuthzService)
 		}
 	}
-	return &Components{Guard: guard, Proxy: &proxy.Proxy{Client: client, PMSURL: cfg.PMSURL, ADSURL: cfg.ADSURL}}, nil
+	return &Components{Guard: guard, Proxy: &proxy.Proxy{Client: client, PMSURL: cfg.PMSURL, ADSURL: cfg.ADSURL},
+		AuthzService: cfg.AuthzService}, nil
 }
 
 type publicConfig struct {
 	DevMode bool `json:"devMode"`
+	// AuthzService holds the console's own policies; the page warns before
+	// they are edited.
+	AuthzService string `json:"authzService"`
 }
 
 // NewRouter routes the page and the console API.
@@ -89,7 +94,7 @@ func NewRouter(c *Components) *mux.Router {
 
 	api := router.PathPrefix(APIPath).Subrouter()
 	api.Methods(http.MethodGet).Path("/config").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		auth.SendJSON(w, http.StatusOK, publicConfig{DevMode: c.Guard.DevMode})
+		auth.SendJSON(w, http.StatusOK, publicConfig{DevMode: c.Guard.DevMode, AuthzService: c.AuthzService})
 	})
 	api.Methods(http.MethodPost).Path("/login").HandlerFunc(c.Guard.Login)
 	api.Methods(http.MethodPost).Path("/logout").HandlerFunc(c.Guard.Logout)

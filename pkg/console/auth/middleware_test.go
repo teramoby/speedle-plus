@@ -133,7 +133,7 @@ func TestRequire(t *testing.T) {
 	}
 
 	// Bootstrap principals need no policy, even with ADS down.
-	g.Bootstrap["group:ops@corp"] = true
+	g.Bootstrap["idd=corp:group:ops"] = true
 	if rec := (request{method: "GET", cookie: cookie}).do(write); rec.Code != http.StatusOK {
 		t.Errorf("bootstrap write: %d", rec.Code)
 	}

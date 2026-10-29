@@ -18,6 +18,7 @@ import (
 
 	"github.com/teramoby/speedle-plus/api/ads"
 	"github.com/teramoby/speedle-plus/pkg/errors"
+	"github.com/teramoby/speedle-plus/pkg/subjectutils"
 )
 
 // MinKeySize is the shortest session signing key accepted.
@@ -38,17 +39,13 @@ type Session struct {
 	CSRF       string           `json:"c"`
 }
 
-// PrincipalString formats a principal as type:name, with @idd when it has an
-// identity domain.
+// PrincipalString formats a principal as policies write it:
+// [idd=<IDD>:]<type>:<name>.
 func PrincipalString(p *ads.Principal) string {
-	s := p.Type + ":" + p.Name
-	if p.IDD != "" {
-		s += "@" + p.IDD
-	}
-	return s
+	return subjectutils.EncodePrincipal(p)
 }
 
-// Strings returns the session's principals as type:name strings.
+// Strings returns the session's principals as policies write them.
 func (s *Session) Strings() []string {
 	out := make([]string, 0, len(s.Principals))
 	for _, p := range s.Principals {

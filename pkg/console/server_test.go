@@ -156,8 +156,8 @@ func TestPageAndHeaders(t *testing.T) {
 	b.do("DELETE", "/console/api/pms/service", "", nil, http.StatusNotFound)
 	var config publicConfig
 	decode(t, b.do("GET", "/console/api/config", "", nil, http.StatusOK), &config)
-	if config.DevMode {
-		t.Error("dev mode reported")
+	if config.DevMode || config.AuthzService != "speedle-console" {
+		t.Errorf("config %+v", config)
 	}
 	if resp := b.do("GET", "/console/api/me", "", nil, http.StatusUnauthorized); resp.Header.Get("Access-Control-Allow-Origin") != "" {
 		t.Error("CORS header sent")

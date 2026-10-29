@@ -41,7 +41,7 @@ func TestSessionRoundTrip(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got.CSRF != s.CSRF || got.User() != "alice" || strings.Join(got.Strings(), ",") != "user:alice,group:ops@corp" {
+	if got.CSRF != s.CSRF || got.User() != "alice" || strings.Join(got.Strings(), ",") != "user:alice,idd=corp:group:ops" {
 		t.Errorf("decoded %+v", got)
 	}
 	if c.TTL() != time.Hour {
