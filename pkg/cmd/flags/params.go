@@ -504,7 +504,7 @@ func (k *Parameters) ParseFlags(defaultEndpoint string, printVersionInfoFun func
 							case string:
 								f.Value.Set(value.(string))
 							default:
-								fmt.Printf("Unsupported type: %T\n", x)
+								log.Warnf("Unsupported type %T for parameter %q", x, f.Name)
 							}
 						}
 					}
@@ -514,7 +514,7 @@ func (k *Parameters) ParseFlags(defaultEndpoint string, printVersionInfoFun func
 		}
 	})
 
-	fmt.Printf("parameters:%v\n", k)
+	log.Debugf("parameters: %v", k)
 }
 
 // FlagToEnv converts flag string to upper-case environment variable key string.
@@ -702,7 +702,7 @@ func (k *Parameters) Param2Config(storeParamsMap map[string]string) (*cfg.Config
 		conf.AsserterWebhookConfig = &asserterConf
 	}
 
-	fmt.Printf("%v\n", conf.AsserterWebhookConfig)
+	log.Debugf("asserter webhook config: %v", conf.AsserterWebhookConfig)
 
 	return &conf, nil
 }

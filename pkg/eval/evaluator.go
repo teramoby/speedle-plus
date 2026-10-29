@@ -4,7 +4,6 @@
 package eval
 
 import (
-	"fmt"
 	"sort"
 	"strconv"
 	"strings"
@@ -827,7 +826,7 @@ func couldRoleSafelyBeDenied(role string, relatedRoleMap map[string]*Role, denie
 			}
 		}
 	} else {
-		fmt.Println("error in couldRoleSafelyBeDenied")
+		log.Warnf("Role %q is not in the related role map", role)
 	}
 	return !allDeniedByRoleBeDenied
 }
@@ -849,7 +848,7 @@ func selfOrAncestorsBeDenied(deniedByRole string, relatedRoleMap map[string]*Rol
 		}
 
 	} else {
-		fmt.Println("error in selfOrAncestorsBeDenied")
+		log.Warnf("Role %q is not in the related role map", deniedByRole)
 	}
 	return true
 }
