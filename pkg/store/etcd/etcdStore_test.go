@@ -5,10 +5,12 @@ package etcd
 
 import (
 	"fmt"
-	"log"
 	"os"
+	"sync"
 	"testing"
 	"time"
+
+	"go.etcd.io/etcd/server/v3/embed"
 
 	"github.com/teramoby/speedle-plus/api/pms"
 	"github.com/teramoby/speedle-plus/pkg/cfg"
@@ -16,33 +18,43 @@ import (
 	"github.com/teramoby/speedle-plus/testutil/storetest"
 )
 
-var storeConfig *cfg.StoreConfig
+var (
+	etcdOnce    sync.Once
+	etcdServer  *embed.Etcd
+	etcdDataDir string
+	storeConfig *cfg.StoreConfig
+	etcdErr     error
+)
 
 func TestMain(m *testing.M) {
-	os.Exit(testMain(m))
+	code := m.Run()
+	CleanEmbeddedEtcd(etcdServer, etcdDataDir)
+	os.Exit(code)
 }
 
-func testMain(m *testing.M) int {
-	etcd, etcdDir, err := StartEmbeddedEtcd("")
-	defer CleanEmbeddedEtcd(etcd, etcdDir)
-	if err != nil {
-		log.Fatal("Fail to start embed etcd")
-		os.Exit(1)
+// etcdStoreConfig starts the embedded etcd on first use and returns its store
+// config. It runs from a test rather than TestMain: with go test -json, m.Run
+// sets os.Stderr, which etcd's serving goroutines read (logrus.New in the
+// websocket proxy), so goroutines started before m.Run race with it (#127).
+func etcdStoreConfig(t testing.TB) *cfg.StoreConfig {
+	t.Helper()
+	etcdOnce.Do(func() {
+		if etcdServer, etcdDataDir, etcdErr = StartEmbeddedEtcd(""); etcdErr != nil {
+			return
+		}
+		if storeConfig, etcdErr = cfg.ReadStoreConfig("./etcdStoreConfig.json"); etcdErr != nil {
+			return
+		}
+		etcdErr = storetest.WaitForEtcdHTTP()
+	})
+	if etcdErr != nil {
+		t.Fatal("embedded etcd:", etcdErr)
 	}
-
-	storeConfig, err = cfg.ReadStoreConfig("./etcdStoreConfig.json")
-	if err != nil {
-		log.Fatal("fail to read config file", err)
-	}
-	if err := storetest.WaitForEtcdHTTP(); err != nil {
-		log.Print(err)
-		return 1
-	}
-	return m.Run()
+	return storeConfig
 }
 
 func TestWriteReadPolicyStore(t *testing.T) {
-	store, err := store.NewStore(storeConfig.StoreType, storeConfig.StoreProps)
+	store, err := store.NewStore(etcdStoreConfig(t).StoreType, etcdStoreConfig(t).StoreProps)
 	if err != nil {
 		t.Fatal("fail to new etcd3 store:", err)
 	}
@@ -77,7 +89,7 @@ func TestWriteReadPolicyStore(t *testing.T) {
 }
 
 func TestWriteReadDeleteService(t *testing.T) {
-	store, err := store.NewStore(storeConfig.StoreType, storeConfig.StoreProps)
+	store, err := store.NewStore(etcdStoreConfig(t).StoreType, etcdStoreConfig(t).StoreProps)
 	if err != nil {
 		t.Fatal("fail to new etcd3 store:", err)
 	}
@@ -159,7 +171,7 @@ func TestWriteReadDeleteService(t *testing.T) {
 }
 
 func TestEtcdStore_GetPolicyByName(t *testing.T) {
-	store, err := store.NewStore(storeConfig.StoreType, storeConfig.StoreProps)
+	store, err := store.NewStore(etcdStoreConfig(t).StoreType, etcdStoreConfig(t).StoreProps)
 	if err != nil {
 		t.Fatal("fail to new etcd3 store:", err)
 	}
@@ -298,7 +310,7 @@ func TestEtcdStore_GetPolicyByName(t *testing.T) {
 }
 
 func TestEtcdStore_GetRolePolicyByName(t *testing.T) {
-	store, err := store.NewStore(storeConfig.StoreType, storeConfig.StoreProps)
+	store, err := store.NewStore(etcdStoreConfig(t).StoreType, etcdStoreConfig(t).StoreProps)
 	if err != nil {
 		t.Fatal("fail to new etcd3 store:", err)
 	}
@@ -423,7 +435,7 @@ func TestEtcdStore_GetRolePolicyByName(t *testing.T) {
 }
 
 func TestManagePolicies(t *testing.T) {
-	store, err := store.NewStore(storeConfig.StoreType, storeConfig.StoreProps)
+	store, err := store.NewStore(etcdStoreConfig(t).StoreType, etcdStoreConfig(t).StoreProps)
 	if err != nil {
 		t.Fatal("fail to new etcd3 store:", err)
 	}
@@ -482,7 +494,7 @@ func TestManagePolicies(t *testing.T) {
 }
 
 func TestManageRolePolicies(t *testing.T) {
-	store, err := store.NewStore(storeConfig.StoreType, storeConfig.StoreProps)
+	store, err := store.NewStore(etcdStoreConfig(t).StoreType, etcdStoreConfig(t).StoreProps)
 	if err != nil {
 		t.Fatal("fail to new etcd3 store:", err)
 	}
@@ -538,7 +550,7 @@ func TestManageRolePolicies(t *testing.T) {
 }
 
 func TestCheckItemsCount(t *testing.T) {
-	store, err := store.NewStore(storeConfig.StoreType, storeConfig.StoreProps)
+	store, err := store.NewStore(etcdStoreConfig(t).StoreType, etcdStoreConfig(t).StoreProps)
 	if err != nil {
 		t.Fatal("fail to new etcd3 store:", err)
 	}
@@ -668,7 +680,7 @@ func TestCheckItemsCount(t *testing.T) {
 }
 
 func TestWatch(t *testing.T) {
-	store, err := store.NewStore(storeConfig.StoreType, storeConfig.StoreProps)
+	store, err := store.NewStore(etcdStoreConfig(t).StoreType, etcdStoreConfig(t).StoreProps)
 	defer store.StopWatch()
 	defer store.(*Store).destroy()
 	if err != nil {
