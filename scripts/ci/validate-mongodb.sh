@@ -44,26 +44,31 @@ import (
     "context"
     "log"
     "os"
+    "net/url"
     "time"
     "go.mongodb.org/mongo-driver/bson"
     "go.mongodb.org/mongo-driver/mongo"
     "go.mongodb.org/mongo-driver/mongo/options"
+    "go.mongodb.org/mongo-driver/mongo/readpref"
 )
 
 func main() {
     ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
     defer cancel()
-    client, err := mongo.Connect(ctx, options.Client().ApplyURI(os.Getenv("SPEEDLE_MONGO_URI")).SetDirect(true).SetServerSelectionTimeout(time.Second))
+    bootstrapURL, err := url.Parse(os.Getenv("SPEEDLE_MONGO_URI"))
+    if err != nil { log.Fatal(err) }
+    // Do not require replicaSet membership before replSetInitiate has run.
+    // This direct bootstrap connection must also allow a non-primary node.
+    bootstrapURI := "mongodb://" + bootstrapURL.Host + "/"
+    client, err := mongo.Connect(ctx, options.Client().ApplyURI(bootstrapURI).SetDirect(true).SetReadPreference(readpref.Nearest()).SetServerSelectionTimeout(time.Second))
     if err != nil { log.Fatal(err) }
     defer client.Disconnect(context.Background())
-    for client.Ping(ctx, nil) != nil {
+    for client.Ping(ctx, readpref.Nearest()) != nil {
         if ctx.Err() != nil { log.Fatal(ctx.Err()) }
         time.Sleep(200*time.Millisecond)
     }
     // The process was just started, so initialize this instance only.
-    uri := os.Getenv("SPEEDLE_MONGO_URI")
-    address := uri[len("mongodb://"):]
-    for i, c := range address { if c == '/' { address = address[:i]; break } }
+    address := bootstrapURL.Host
     command := bson.D{{Key:"replSetInitiate", Value:bson.D{
         {Key:"_id", Value:"speedle-validation"},
         {Key:"members", Value:bson.A{bson.D{{Key:"_id", Value:0}, {Key:"host", Value:address}}}},
