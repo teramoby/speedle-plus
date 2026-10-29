@@ -1,0 +1,1107 @@
+basePath: /policy-mgmt/v1
+definitions:
+  AndPrincipals:
+    items:
+      type: string
+    type: array
+  DiscoverPolicies:
+    properties:
+      revision:
+        format: int64
+        type: integer
+      services:
+        items:
+          $ref: '#/definitions/Service'
+        type: array
+        x-nullable: true
+    required:
+      - services
+      - revision
+    type: object
+  DiscoverRequest:
+    description: 已记录的请求及版本号
+    properties:
+      requests:
+        items:
+          $ref: '#/definitions/RequestContext'
+        type: array
+        x-nullable: true
+      revision:
+        format: int64
+        type: integer
+    required:
+      - requests
+      - revision
+    type: object
+  EffectEnum:
+    enum:
+      - grant
+      - deny
+    type: string
+  Error:
+    properties:
+      error:
+        type: string
+    type: object
+  Function:
+    properties:
+      ca:
+        type: string
+      description:
+        type: string
+      funcURL:
+        type: string
+      localFuncURL:
+        type: string
+      name:
+        type: string
+      resultCachable:
+        type: boolean
+      resultTTL:
+        format: int64
+        type: integer
+    required:
+      - name
+      - funcURL
+    type: object
+  Policy:
+    properties:
+      condition:
+        type: string
+      effect:
+        $ref: '#/definitions/EffectEnum'
+      id:
+        type: string
+      metadata:
+        additionalProperties:
+          type: string
+        type: object
+      name:
+        type: string
+      permissions:
+        items:
+          properties:
+            actions:
+              items:
+                type: string
+              type: array
+            resource:
+              type: string
+            resourceExpression:
+              type: string
+          type: object
+        type: array
+      principals:
+        $ref: '#/definitions/Principals'
+    required:
+      - effect
+    type: object
+  PolicyCounts:
+    additionalProperties:
+      properties:
+        policycount:
+          format: int64
+          type: integer
+        rolePolicycount:
+          format: int64
+          type: integer
+      type: object
+    type: object
+  PolicyResponse:
+    properties:
+      condition:
+        type: string
+      effect:
+        $ref: '#/definitions/EffectEnum'
+      id:
+        type: string
+      metadata:
+        additionalProperties:
+          type: string
+        type: object
+      name:
+        type: string
+      permissions:
+        items:
+          properties:
+            actions:
+              items:
+                type: string
+              type: array
+            resource:
+              type: string
+            resourceExpression:
+              type: string
+          type: object
+        type: array
+      principals:
+        $ref: '#/definitions/Principals'
+    required:
+      - effect
+    type: object
+  Principal:
+    description: 授权请求中的主体身份
+    properties:
+      idd:
+        type: string
+      name:
+        type: string
+      type:
+        type: string
+    type: object
+  Principals:
+    items:
+      $ref: '#/definitions/AndPrincipals'
+    type: array
+  RequestContext:
+    description: 授权请求上下文
+    properties:
+      action:
+        type: string
+      attributes:
+        additionalProperties: {}
+        type: object
+      resource:
+        type: string
+      serviceName:
+        type: string
+      subject:
+        $ref: '#/definitions/Subject'
+    type: object
+  RolePolicy:
+    properties:
+      condition:
+        type: string
+      effect:
+        $ref: '#/definitions/EffectEnum'
+      id:
+        type: string
+      metadata:
+        additionalProperties:
+          type: string
+        type: object
+      name:
+        type: string
+      principals:
+        items:
+          type: string
+        type: array
+      resourceExpressions:
+        items:
+          type: string
+        type: array
+      resources:
+        items:
+          type: string
+        type: array
+      roles:
+        items:
+          type: string
+        type: array
+    required:
+      - effect
+      - roles
+    type: object
+  RolePolicyResponse:
+    properties:
+      condition:
+        type: string
+      effect:
+        $ref: '#/definitions/EffectEnum'
+      id:
+        type: string
+      metadata:
+        additionalProperties:
+          type: string
+        type: object
+      name:
+        type: string
+      principals:
+        items:
+          type: string
+        type: array
+      resourceExpressions:
+        items:
+          type: string
+        type: array
+      resources:
+        items:
+          type: string
+        type: array
+      roles:
+        items:
+          type: string
+        type: array
+    required:
+      - effect
+      - roles
+    type: object
+  Service:
+    properties:
+      metadata:
+        additionalProperties:
+          type: string
+        type: object
+      name:
+        type: string
+      policies:
+        items:
+          $ref: '#/definitions/Policy'
+        type: array
+      rolePolicies:
+        items:
+          $ref: '#/definitions/RolePolicy'
+        type: array
+      type:
+        $ref: '#/definitions/ServiceTypeEnum'
+    required:
+      - name
+    type: object
+  ServiceTypeEnum:
+    description: 服务类型是自由字符串，最多 256 个 UTF-8 字节。常见值为 application 和 k8s-cluster。
+    type: string
+  Subject:
+    description: 授权请求的主体
+    properties:
+      principals:
+        items:
+          $ref: '#/definitions/Principal'
+        type: array
+      token:
+        type: string
+      tokenType:
+        type: string
+    type: object
+info:
+  description: 用于已配置 PMS 端点的 JSON REST API。策略和角色策略返回扁平对象，ID 为字符串。管理端点应通过双向 TLS 或认证网关限制访问。
+  title: 策略管理 API
+  version: v1
+paths:
+  /discover-policy:
+    get:
+      description: 从全部记录的请求生成策略
+      operationId: listDiscoverPolicies
+      parameters:
+        - description: 按主体类型过滤
+          in: query
+          name: principalType
+          type: string
+        - description: 按主体名称过滤
+          in: query
+          name: principalName
+          type: string
+        - description: 按身份域过滤
+          in: query
+          name: principalIDD
+          type: string
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: 成功
+          schema:
+            $ref: '#/definitions/DiscoverPolicies'
+        "400":
+          description: JSON 或请求数据无效
+          schema:
+            $ref: '#/definitions/Error'
+        "404":
+          description: 对象不存在
+        "500":
+          description: 评估、断言或存储失败
+          schema:
+            $ref: '#/definitions/Error'
+      summary: 从全部记录的请求生成策略
+      tags:
+        - policy discovery
+  /discover-policy/{serviceName}:
+    get:
+      description: 从指定服务记录的请求生成策略
+      operationId: getServiecDiscoverPolicies
+      parameters:
+        - description: 服务名称
+          in: path
+          name: serviceName
+          required: true
+          type: string
+        - description: 按主体类型过滤
+          in: query
+          name: principalType
+          type: string
+        - description: 按主体名称过滤
+          in: query
+          name: principalName
+          type: string
+        - description: 按身份域过滤
+          in: query
+          name: principalIDD
+          type: string
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: 成功
+          schema:
+            $ref: '#/definitions/DiscoverPolicies'
+        "400":
+          description: JSON 或请求数据无效
+          schema:
+            $ref: '#/definitions/Error'
+        "404":
+          description: 对象不存在
+        "500":
+          description: 评估、断言或存储失败
+          schema:
+            $ref: '#/definitions/Error'
+      summary: 从指定服务记录的请求生成策略
+      tags:
+        - policy discovery
+  /discover-request:
+    delete:
+      description: 删除全部记录的请求
+      operationId: deleteDiscoverRequests
+      produces:
+        - application/json
+      responses:
+        "204":
+          description: 删除成功，无响应体
+        "400":
+          description: JSON 或请求数据无效
+          schema:
+            $ref: '#/definitions/Error'
+        "404":
+          description: 对象不存在
+        "500":
+          description: 评估、断言或存储失败
+          schema:
+            $ref: '#/definitions/Error'
+      summary: 删除全部记录的请求
+      tags:
+        - policy discovery
+    get:
+      description: 列出记录的请求及版本号
+      operationId: listDiscoverRequests
+      parameters:
+        - description: 是否仅返回最新请求
+          in: query
+          name: last
+          type: boolean
+        - description: 返回此版本号之后的请求
+          format: int64
+          in: query
+          name: revision
+          type: integer
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: 成功
+          schema:
+            $ref: '#/definitions/DiscoverRequest'
+        "400":
+          description: JSON 或请求数据无效
+          schema:
+            $ref: '#/definitions/Error'
+        "404":
+          description: 对象不存在
+        "500":
+          description: 评估、断言或存储失败
+          schema:
+            $ref: '#/definitions/Error'
+      summary: 列出记录的请求及版本号
+      tags:
+        - policy discovery
+  /discover-request/{serviceName}:
+    delete:
+      description: 删除指定服务记录的请求
+      operationId: deleteServiceDiscoverRequest
+      parameters:
+        - description: 服务名称
+          in: path
+          name: serviceName
+          required: true
+          type: string
+      produces:
+        - application/json
+      responses:
+        "204":
+          description: 删除成功，无响应体
+        "400":
+          description: JSON 或请求数据无效
+          schema:
+            $ref: '#/definitions/Error'
+        "404":
+          description: 对象不存在
+        "500":
+          description: 评估、断言或存储失败
+          schema:
+            $ref: '#/definitions/Error'
+      summary: 删除指定服务记录的请求
+      tags:
+        - policy discovery
+    get:
+      description: 列出指定服务记录的请求
+      operationId: listServiceDiscoverRequests
+      parameters:
+        - description: 服务名称
+          in: path
+          name: serviceName
+          required: true
+          type: string
+        - description: 是否仅返回最新请求
+          in: query
+          name: last
+          type: boolean
+        - description: 返回此版本号之后的请求
+          format: int64
+          in: query
+          name: revision
+          type: integer
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: 成功
+          schema:
+            $ref: '#/definitions/DiscoverRequest'
+        "400":
+          description: JSON 或请求数据无效
+          schema:
+            $ref: '#/definitions/Error'
+        "404":
+          description: 对象不存在
+        "500":
+          description: 评估、断言或存储失败
+          schema:
+            $ref: '#/definitions/Error'
+      summary: 列出指定服务记录的请求
+      tags:
+        - policy discovery
+  /function:
+    delete:
+      description: 删除全部自定义函数
+      operationId: deleteFunctions
+      produces:
+        - application/json
+      responses:
+        "204":
+          description: 删除成功，无响应体
+        "400":
+          description: JSON 或请求数据无效
+          schema:
+            $ref: '#/definitions/Error'
+        "500":
+          description: 评估、断言或存储失败
+          schema:
+            $ref: '#/definitions/Error'
+      summary: 删除全部自定义函数
+      tags:
+        - function
+    get:
+      description: 列出自定义函数
+      operationId: listFunctions
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: 成功
+          schema:
+            items:
+              $ref: '#/definitions/Function'
+            type: array
+        "400":
+          description: JSON 或请求数据无效
+          schema:
+            $ref: '#/definitions/Error'
+        "500":
+          description: 评估、断言或存储失败
+          schema:
+            $ref: '#/definitions/Error'
+      summary: 列出自定义函数
+      tags:
+        - function
+    post:
+      consumes:
+        - application/json
+      description: 创建自定义函数
+      operationId: createFunction
+      parameters:
+        - description: JSON 请求体
+          in: body
+          name: body
+          required: true
+          schema:
+            $ref: '#/definitions/Function'
+      produces:
+        - application/json
+      responses:
+        "201":
+          description: 创建成功
+          schema:
+            $ref: '#/definitions/Function'
+        "400":
+          description: JSON 或请求数据无效
+          schema:
+            $ref: '#/definitions/Error'
+        "415":
+          description: Content-Type 必须为 application/json
+        "500":
+          description: 评估、断言或存储失败
+          schema:
+            $ref: '#/definitions/Error'
+      summary: 创建自定义函数
+      tags:
+        - function
+  /function/{functionName}:
+    delete:
+      description: 删除自定义函数
+      operationId: deleteFunction
+      parameters:
+        - description: 函数名称
+          in: path
+          name: functionName
+          required: true
+          type: string
+      produces:
+        - application/json
+      responses:
+        "204":
+          description: 删除成功，无响应体
+        "400":
+          description: JSON 或请求数据无效
+          schema:
+            $ref: '#/definitions/Error'
+        "404":
+          description: 对象不存在
+        "500":
+          description: 评估、断言或存储失败
+          schema:
+            $ref: '#/definitions/Error'
+      summary: 删除自定义函数
+      tags:
+        - function
+    get:
+      description: 获取自定义函数
+      operationId: getFunction
+      parameters:
+        - description: 函数名称
+          in: path
+          name: functionName
+          required: true
+          type: string
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: 成功
+          schema:
+            $ref: '#/definitions/Function'
+        "400":
+          description: JSON 或请求数据无效
+          schema:
+            $ref: '#/definitions/Error'
+        "404":
+          description: 对象不存在
+        "500":
+          description: 评估、断言或存储失败
+          schema:
+            $ref: '#/definitions/Error'
+      summary: 获取自定义函数
+      tags:
+        - function
+  /policy-counts:
+    get:
+      description: 按服务统计授权策略和角色策略
+      operationId: listPolicyCounts
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: 成功
+          schema:
+            $ref: '#/definitions/PolicyCounts'
+        "400":
+          description: JSON 或请求数据无效
+          schema:
+            $ref: '#/definitions/Error'
+        "500":
+          description: 评估、断言或存储失败
+          schema:
+            $ref: '#/definitions/Error'
+      summary: 按服务统计授权策略和角色策略
+      tags:
+        - service
+  /service:
+    delete:
+      description: 删除全部服务
+      operationId: deleteServices
+      produces:
+        - application/json
+      responses:
+        "204":
+          description: 删除成功，无响应体
+        "400":
+          description: JSON 或请求数据无效
+          schema:
+            $ref: '#/definitions/Error'
+        "500":
+          description: 评估、断言或存储失败
+          schema:
+            $ref: '#/definitions/Error'
+      summary: 删除全部服务
+      tags:
+        - service
+    get:
+      description: 列出服务
+      operationId: listServices
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: 成功
+          schema:
+            items:
+              $ref: '#/definitions/Service'
+            type: array
+        "400":
+          description: JSON 或请求数据无效
+          schema:
+            $ref: '#/definitions/Error'
+        "500":
+          description: 评估、断言或存储失败
+          schema:
+            $ref: '#/definitions/Error'
+      summary: 列出服务
+      tags:
+        - service
+    post:
+      consumes:
+        - application/json
+      description: 创建服务，可附带策略
+      operationId: createService
+      parameters:
+        - description: JSON 请求体
+          in: body
+          name: body
+          required: true
+          schema:
+            $ref: '#/definitions/Service'
+      produces:
+        - application/json
+      responses:
+        "201":
+          description: 创建成功
+          schema:
+            $ref: '#/definitions/Service'
+        "400":
+          description: JSON 或请求数据无效
+          schema:
+            $ref: '#/definitions/Error'
+        "415":
+          description: Content-Type 必须为 application/json
+        "500":
+          description: 评估、断言或存储失败
+          schema:
+            $ref: '#/definitions/Error'
+      summary: 创建服务，可附带策略
+      tags:
+        - service
+  /service/{serviceName}:
+    delete:
+      description: 删除服务及其策略
+      operationId: deleteService
+      parameters:
+        - description: 服务名称
+          in: path
+          name: serviceName
+          required: true
+          type: string
+      produces:
+        - application/json
+      responses:
+        "204":
+          description: 删除成功，无响应体
+        "400":
+          description: JSON 或请求数据无效
+          schema:
+            $ref: '#/definitions/Error'
+        "404":
+          description: 对象不存在
+        "500":
+          description: 评估、断言或存储失败
+          schema:
+            $ref: '#/definitions/Error'
+      summary: 删除服务及其策略
+      tags:
+        - service
+    get:
+      description: 获取服务及其策略
+      operationId: getService
+      parameters:
+        - description: 服务名称
+          in: path
+          name: serviceName
+          required: true
+          type: string
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: 成功
+          schema:
+            $ref: '#/definitions/Service'
+        "400":
+          description: JSON 或请求数据无效
+          schema:
+            $ref: '#/definitions/Error'
+        "404":
+          description: 对象不存在
+        "500":
+          description: 评估、断言或存储失败
+          schema:
+            $ref: '#/definitions/Error'
+      summary: 获取服务及其策略
+      tags:
+        - service
+  /service/{serviceName}/policy:
+    delete:
+      description: 删除服务中的全部授权策略
+      operationId: deletePolicies
+      parameters:
+        - description: 服务名称
+          in: path
+          name: serviceName
+          required: true
+          type: string
+      produces:
+        - application/json
+      responses:
+        "204":
+          description: 删除成功，无响应体
+        "400":
+          description: JSON 或请求数据无效
+          schema:
+            $ref: '#/definitions/Error'
+        "404":
+          description: 对象不存在
+        "500":
+          description: 评估、断言或存储失败
+          schema:
+            $ref: '#/definitions/Error'
+      summary: 删除服务中的全部授权策略
+      tags:
+        - policy
+    get:
+      description: 列出授权策略
+      operationId: listPolicies
+      parameters:
+        - description: 服务名称
+          in: path
+          name: serviceName
+          required: true
+          type: string
+        - description: 可选的存储过滤表达式
+          in: query
+          name: filter
+          type: string
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: 成功
+          schema:
+            items:
+              $ref: '#/definitions/PolicyResponse'
+            type: array
+        "400":
+          description: JSON 或请求数据无效
+          schema:
+            $ref: '#/definitions/Error'
+        "404":
+          description: 对象不存在
+        "500":
+          description: 评估、断言或存储失败
+          schema:
+            $ref: '#/definitions/Error'
+      summary: 列出授权策略
+      tags:
+        - policy
+    post:
+      consumes:
+        - application/json
+      description: 创建授权策略
+      operationId: createPolicy
+      parameters:
+        - description: 服务名称
+          in: path
+          name: serviceName
+          required: true
+          type: string
+        - description: JSON 请求体
+          in: body
+          name: body
+          required: true
+          schema:
+            $ref: '#/definitions/Policy'
+      produces:
+        - application/json
+      responses:
+        "201":
+          description: 创建成功
+          schema:
+            $ref: '#/definitions/PolicyResponse'
+        "400":
+          description: JSON 或请求数据无效
+          schema:
+            $ref: '#/definitions/Error'
+        "404":
+          description: 对象不存在
+        "415":
+          description: Content-Type 必须为 application/json
+        "500":
+          description: 评估、断言或存储失败
+          schema:
+            $ref: '#/definitions/Error'
+      summary: 创建授权策略
+      tags:
+        - policy
+  /service/{serviceName}/policy/{policyID}:
+    delete:
+      description: 删除授权策略
+      operationId: deletePolicy
+      parameters:
+        - description: 服务名称
+          in: path
+          name: serviceName
+          required: true
+          type: string
+        - description: 授权策略 ID
+          in: path
+          name: policyID
+          required: true
+          type: string
+      produces:
+        - application/json
+      responses:
+        "204":
+          description: 删除成功，无响应体
+        "400":
+          description: JSON 或请求数据无效
+          schema:
+            $ref: '#/definitions/Error'
+        "404":
+          description: 对象不存在
+        "500":
+          description: 评估、断言或存储失败
+          schema:
+            $ref: '#/definitions/Error'
+      summary: 删除授权策略
+      tags:
+        - policy
+    get:
+      description: 获取授权策略
+      operationId: getPolicy
+      parameters:
+        - description: 服务名称
+          in: path
+          name: serviceName
+          required: true
+          type: string
+        - description: 授权策略 ID
+          in: path
+          name: policyID
+          required: true
+          type: string
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: 成功
+          schema:
+            $ref: '#/definitions/PolicyResponse'
+        "400":
+          description: JSON 或请求数据无效
+          schema:
+            $ref: '#/definitions/Error'
+        "404":
+          description: 对象不存在
+        "500":
+          description: 评估、断言或存储失败
+          schema:
+            $ref: '#/definitions/Error'
+      summary: 获取授权策略
+      tags:
+        - policy
+  /service/{serviceName}/role-policy:
+    delete:
+      description: 删除服务中的全部角色策略
+      operationId: deleteRolePolicies
+      parameters:
+        - description: 服务名称
+          in: path
+          name: serviceName
+          required: true
+          type: string
+      produces:
+        - application/json
+      responses:
+        "204":
+          description: 删除成功，无响应体
+        "400":
+          description: JSON 或请求数据无效
+          schema:
+            $ref: '#/definitions/Error'
+        "404":
+          description: 对象不存在
+        "500":
+          description: 评估、断言或存储失败
+          schema:
+            $ref: '#/definitions/Error'
+      summary: 删除服务中的全部角色策略
+      tags:
+        - role-policy
+    get:
+      description: 列出角色策略
+      operationId: listRolePolicies
+      parameters:
+        - description: 服务名称
+          in: path
+          name: serviceName
+          required: true
+          type: string
+        - description: 可选的存储过滤表达式
+          in: query
+          name: filter
+          type: string
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: 成功
+          schema:
+            items:
+              $ref: '#/definitions/RolePolicyResponse'
+            type: array
+        "400":
+          description: JSON 或请求数据无效
+          schema:
+            $ref: '#/definitions/Error'
+        "404":
+          description: 对象不存在
+        "500":
+          description: 评估、断言或存储失败
+          schema:
+            $ref: '#/definitions/Error'
+      summary: 列出角色策略
+      tags:
+        - role-policy
+    post:
+      consumes:
+        - application/json
+      description: 创建角色策略
+      operationId: createRolePolicy
+      parameters:
+        - description: 服务名称
+          in: path
+          name: serviceName
+          required: true
+          type: string
+        - description: JSON 请求体
+          in: body
+          name: body
+          required: true
+          schema:
+            $ref: '#/definitions/RolePolicy'
+      produces:
+        - application/json
+      responses:
+        "201":
+          description: 创建成功
+          schema:
+            $ref: '#/definitions/RolePolicyResponse'
+        "400":
+          description: JSON 或请求数据无效
+          schema:
+            $ref: '#/definitions/Error'
+        "404":
+          description: 对象不存在
+        "415":
+          description: Content-Type 必须为 application/json
+        "500":
+          description: 评估、断言或存储失败
+          schema:
+            $ref: '#/definitions/Error'
+      summary: 创建角色策略
+      tags:
+        - role-policy
+  /service/{serviceName}/role-policy/{rolePolicyID}:
+    delete:
+      description: 删除角色策略
+      operationId: deleteRolePolicy
+      parameters:
+        - description: 服务名称
+          in: path
+          name: serviceName
+          required: true
+          type: string
+        - description: 角色策略 ID
+          in: path
+          name: rolePolicyID
+          required: true
+          type: string
+      produces:
+        - application/json
+      responses:
+        "204":
+          description: 删除成功，无响应体
+        "400":
+          description: JSON 或请求数据无效
+          schema:
+            $ref: '#/definitions/Error'
+        "404":
+          description: 对象不存在
+        "500":
+          description: 评估、断言或存储失败
+          schema:
+            $ref: '#/definitions/Error'
+      summary: 删除角色策略
+      tags:
+        - role-policy
+    get:
+      description: 获取角色策略
+      operationId: getRolePolicy
+      parameters:
+        - description: 服务名称
+          in: path
+          name: serviceName
+          required: true
+          type: string
+        - description: 角色策略 ID
+          in: path
+          name: rolePolicyID
+          required: true
+          type: string
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: 成功
+          schema:
+            $ref: '#/definitions/RolePolicyResponse'
+        "400":
+          description: JSON 或请求数据无效
+          schema:
+            $ref: '#/definitions/Error'
+        "404":
+          description: 对象不存在
+        "500":
+          description: 评估、断言或存储失败
+          schema:
+            $ref: '#/definitions/Error'
+      summary: 获取角色策略
+      tags:
+        - role-policy
+schemes:
+  - https
+  - http
+swagger: "2.0"

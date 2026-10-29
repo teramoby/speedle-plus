@@ -105,7 +105,7 @@ headingSelector: 'h2'
 
 <h3 id="configure-logging-via-command-line-arguments">Configure logging via command line arguments</h3>
 
-<p>All the available command line arguments are listed below. The first two items are for logrus, and others are for lumberjack.</p>
+<p>All the available command line arguments are listed below. The level, formatter and reportcaller settings configure logrus; file/rotation settings configure lumberjack.</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4">--log-level string
 --log-formatter string
 --log-reportcaller bool
@@ -191,18 +191,18 @@ ocean&#34;,&#34;size&#34;:10,&#34;time&#34;:&#34;2014-03-10 19:57:38.562264131 -
 <h3 id="configure-logging-via-configuration-file">Configure logging via configuration file</h3>
 
 <p>An example is as below. Again, any configuration item is optional as well.</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">{
-    <span style="color:#f1fa8c">&#34;logConfig&#34;</span>: {
-        <span style="color:#f1fa8c">&#34;level&#34;</span>: <span style="color:#f1fa8c">&#34;info&#34;</span>,
-        <span style="color:#f1fa8c">&#34;formatter&#34;</span>: <span style="color:#f1fa8c">&#34;text&#34;</span>,
-        <span style="color:#f1fa8c">&#34;setReportCaller&#34;</span>: <span style="color:#f1fa8c">&#34;false&#34;</span>,
-        <span style="color:#f1fa8c">&#34;rotationConfig&#34;</span>: {
-            <span style="color:#f1fa8c">&#34;filename&#34;</span>: <span style="color:#f1fa8c">&#34;/mnt/logs/speedle.log&#34;</span>,
-            <span style="color:#f1fa8c">&#34;maxSize&#34;</span>: <span style="color:#bd93f9">20</span>,
-            <span style="color:#f1fa8c">&#34;maxBackups&#34;</span>: <span style="color:#bd93f9">5</span>,
-            <span style="color:#f1fa8c">&#34;maxAge&#34;</span>: <span style="color:#bd93f9">0</span>,
-            <span style="color:#f1fa8c">&#34;LocalTime&#34;</span>: <span style="color:#ff79c6">false</span>,
-            <span style="color:#f1fa8c">&#34;compress&#34;</span>: <span style="color:#ff79c6">false</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">{
+    <span style="color:#ff79c6">&#34;logConfig&#34;</span>: {
+        <span style="color:#ff79c6">&#34;level&#34;</span>: <span style="color:#f1fa8c">&#34;info&#34;</span>,
+        <span style="color:#ff79c6">&#34;formatter&#34;</span>: <span style="color:#f1fa8c">&#34;text&#34;</span>,
+        <span style="color:#ff79c6">&#34;setReportCaller&#34;</span>: <span style="color:#ff79c6">false</span>,
+        <span style="color:#ff79c6">&#34;rotationConfig&#34;</span>: {
+            <span style="color:#ff79c6">&#34;filename&#34;</span>: <span style="color:#f1fa8c">&#34;/mnt/logs/speedle.log&#34;</span>,
+            <span style="color:#ff79c6">&#34;maxSize&#34;</span>: <span style="color:#bd93f9">20</span>,
+            <span style="color:#ff79c6">&#34;maxBackups&#34;</span>: <span style="color:#bd93f9">5</span>,
+            <span style="color:#ff79c6">&#34;maxAge&#34;</span>: <span style="color:#bd93f9">0</span>,
+            <span style="color:#ff79c6">&#34;LocalTime&#34;</span>: <span style="color:#ff79c6">false</span>,
+            <span style="color:#ff79c6">&#34;compress&#34;</span>: <span style="color:#ff79c6">false</span>
         }
     }
 }</code></pre></div>
@@ -232,7 +232,7 @@ ocean&#34;,&#34;size&#34;:10,&#34;time&#34;:&#34;2014-03-10 19:57:38.562264131 -
   log.Warn(<span style="color:#f1fa8c">&#34;This is a warning log entry&#34;</span>)
   log.Warning(<span style="color:#f1fa8c">&#34;This is a warning log entry again&#34;</span>)
   log.Error(<span style="color:#f1fa8c">&#34;This is a error log entry&#34;</span>)</code></pre></div>
-<p>Please refer to <a href="https://github.com/teramoby/speedle-plus/blob/master/logging/demo/demo.go">speedle/logging/demo/demo.go</a> to get more detailed info.</p>
+<p>Please refer to <a href="https://github.com/teramoby/speedle-plus/blob/master/pkg/logging/demo/demo.go">speedle/logging/demo/demo.go</a> to get more detailed info.</p>
 
 <h2 id="integration-with-3rd-party-log-collectors">Integration with 3rd-party log collectors</h2>
 

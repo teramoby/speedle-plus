@@ -1,0 +1,9 @@
+{
+  "name": "booksvc",
+  "type": "application",
+  "policies": [
+    {"id": "github-read", "effect": "grant", "permissions": [{"resource": "book", "actions": ["read"]}], "principals": [["idd=github:user:user1"]]},
+    {"id": "google-write", "effect": "grant", "permissions": [{"resource": "book", "actions": ["write"]}], "principals": [["idd=google:user:user1"]]},
+    {"id": "any-domain-rent", "effect": "grant", "permissions": [{"resource": "book", "actions": ["rent"]}], "principals": [["user:user1"]]}
+  ]
+}

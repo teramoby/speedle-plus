@@ -11,153 +11,78 @@ tocsidebar = false
 categories = ["docs"]
 +++
 
-授权诊断是 Speedle 的一个高级特性，用于诊断授权评估的过程。当一个用户被拒绝操作一个资源时，这个特性就可以用来找出拒绝的原因，例如，是哪条策略（policy）导致用户对资源的操作被拒绝的。
+## 授权诊断提供什么？
 
-## 授权诊断响应包的格式
+`Diagnose` 用于解释一次授权评估：决策、原因、有效角色、属性及参与评估的策略。其请求上下文与 `IsAllowed` 相同；REST 路径为 `/authz-check/v1/diagnose`，Go/gRPC 方法均名为 `Diagnose`。
 
-授权诊断响应包的格式如下：
+诊断会暴露策略定义和请求上下文，必须通过[API 安全配置](/docs/security/)限制为可信运维人员访问，不能作为公开调试端点。
 
-```go
-type EvaluationDebugResponse struct {
-	Allowed       bool                    `json:"allowed"`
-	Reason        string                  `json:"reason"`
-	RequestCtx    *RequestContext         `json:"requestContext,omitempty"`
-	Attributes    map[string]interface{}  `json:"attributes,omitempty"`
-	GrantedRoles  []string                `json:"grantedRoles,omitempty"`
-	RolePolicies  []*EvaluatedRolePolicy  `json:"rolePolicies,omitempty"`
-	Policies      []*EvaluatedPolicy      `json:"policies,omitempty"`
-}
+## 运行示例前
 
-type EvaluatedPolicy struct {
-	Status      string              `json:"status,omitempty"`
-	ID          string              `json:"id,omitempty"`
-	Name        string              `json:"name,omitempty"`
-	Effect      string              `json:"effect,omitempty"`
-	Permissions []Permission        `json:"permissions,omitempty"`
-	Principals  []string            `json:"principals,omitempty"`
-	Condition   *EvaluatedCondition `json:"condition,omitempty"`
-}
+先按[快速入门](/quick-start/)编译仓库根目录下的 `./bin/spctl`、`./bin/speedle-pms` 和 `./bin/speedle-ads`，需要 Go 1.25 或更新版本、Bash、curl 和 Python 3。下面各终端都从仓库根目录运行。为本页使用一个新的策略文件；仅在两个服务都停止后重建该文件。
 
-type EvaluatedRolePolicy struct {
-	Status              string              `json:"status,omitempty"`
-	ID                  string              `json:"id,omitempty"`
-	Name                string              `json:"name,omitempty"`
-	Effect              string              `json:"effect,omitempty"`
-	Roles               []string            `json:"roles,omitempty"`
-	Principals          []string            `json:"principals,omitempty"`
-	Resources           []string            `json:"resources,omitempty"`
-	ResourceExpressions []string            `json:"resourceExpression,omitempty"`
-	Condition           *EvaluatedCondition `json:"condition,omitempty"`
-}
+初始化空策略文件：
 
-type EvaluatedCondition struct {
-	ConditionExpression  string  `json:"conditionExpression,omitempty"`
-	EvaluationResult     string  `json:"evaluationResult,omitempty"`
-}
+<!-- docs-check: setup -->
+```bash
+printf '{}\n' > docs-policies.json
 ```
 
-## 示例
+终端一启动 PMS，并保持运行：
 
-注意：原请求中的属性以及 Speedle 内置的属性都会包含在诊断响应包的属性列表中。
-
-策略（policy）和角色策略（rolePolicy）中的字段"status"有三个有效的值，即：“takeEffect”、“conditionFailed”和"ignored"。
-
-- takeEffect
-
-"takeEffect"意思是策略（policy）或角色策略（rolePolicy）匹配并且已经被评估过了。
-
-- conditioFailed
-
-"conditionFailed"意思是策略（policy）或角色策略（rolePolicy）与请求中的服务名称（service name）、主体（subject）、资源（resource）以及操作（action）匹配，但是条件的评估结果是 false。
-
-- ignored
-
-"ignored"意思是授权评估过程已经结束，因此该策略（policy）已经没有评估的必要了。
-
-下面就是授权诊断响应包的一个例子，
-
-```go
-{
-  "Allowed": "true",
-  "requestContext": {
-    "subject": {
-      "user": "user1",
-      "groups": null,
-      "attributes": null
-    },
-    "serviceName": "srv1",
-    "resource": "res1",
-    "action": "read",
-    "attributes": null,
-    "token": null
-  },
-  "attributes": {
-    "request_action": "read",
-    "request_day": 23,
-    "request_groups": null,
-    "request_month": "November",
-    "request_resource": "res1",
-    "request_time": 1511406017,
-    "request_user": "user1",
-    "request_weekday": "Thursday",
-    "request_year": 2017
-  },
-  "grantedRoles": [
-    "role1"
-  ],
-  "rolePolicies": [
-    {
-      "status": "takeEffect",
-      "id": "c8087db3-60cf-4dad-aa9d-033eb6da0b15",
-      "name": "rp01",
-      "effect": "grant",
-      "roles": [
-        "role1"
-      ],
-      "principals": [
-        "user:user1",
-        "user:user2"
-      ],
-      "resources": [
-        "res1",
-        "res2"
-      ],
-      "condition": {
-
-      }
-    }
-  ],
-  "policies": [
-    {
-      "status": "takeEffect",
-      "id": "f56b494f-dd6b-42af-962e-a109c890b7a0",
-      "name": "p01",
-      "effect": "grant",
-      "permissions": [
-        {
-          "resource": "res1",
-          "actions": [
-            "list",
-            "read",
-            "write"
-          ]
-        },
-        {
-          "resource": "res2",
-          "actions": [
-            "list"
-          ]
-        }
-      ],
-      "principals": [
-        "user:user1",
-        "user:user2"
-      ],
-      "condition": {
-        "conditionExpression": "request_year ==2017",
-        "evaluationResult": "true"
-      }
-    }
-  ]
-}
+<!-- docs-check: pms -->
+```bash
+./bin/speedle-pms --store-type file --filestore-loc ./docs-policies.json --endpoint 127.0.0.1:6733 --grpc-endpoint 127.0.0.1:0 --insecure=true
 ```
+
+终端二启动 ADS，并保持运行：
+
+<!-- docs-check: ads -->
+```bash
+./bin/speedle-ads --store-type file --filestore-loc ./docs-policies.json --endpoint 127.0.0.1:6734 --grpc-endpoint 127.0.0.1:0 --insecure=true
+```
+
+在第三个终端运行后续命令。PMS/ADS 共享同一个文件，策略更新通过 watch 异步到达 ADS；先查询确认已更新，再依赖新策略做决策。`--insecure=true` 仅用于回环地址上的本地示例，生产连接见[安全配置](/docs/security/)。示例显式指定 PMS 地址，不修改 `~/.spctlconfig`。完成后在两个服务终端按 Ctrl-C。
+
+
+## 创建示例策略
+
+[测试文件](https://github.com/teramoby/speedle-plus/blob/master/website/tests/examples/diagnosis.json)允许 `user1` 对 `^/api/v1/example/.*$` 下的资源执行 `get`，但显式拒绝 `/api/v1/example/res1`。
+
+<!-- docs-check: diagnosis-fixture -->
+```bash
+./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ create service --json-file website/tests/examples/diagnosis.json
+```
+
+
+## 比较决策与诊断
+
+<!-- docs-check: diagnosis-deny -->
+```bash
+curl --fail --silent --show-error -H 'Content-Type: application/json' \
+  -d '{"subject":{"principals":[{"type":"user","name":"user1"}]},"serviceName":"srv1","resource":"/api/v1/example/res1","action":"get"}' \
+  http://127.0.0.1:6734/authz-check/v1/is-allowed
+```
+
+
+预期 `allowed=false`，`reason=1`，表示匹配显式拒绝策略。
+
+<!-- docs-check: diagnose -->
+```bash
+curl --fail --silent --show-error -H 'Content-Type: application/json' \
+  -d '{"subject":{"principals":[{"type":"user","name":"user1"}]},"serviceName":"srv1","resource":"/api/v1/example/res1","action":"get"}' \
+  http://127.0.0.1:6734/authz-check/v1/diagnose
+```
+
+
+诊断响应的 `allowed` 是布尔值，`reason` 是 `DENY_POLICY_FOUND` 等字符串，`attributes` 是按名称索引的对象，`request_month` 是数字月份。`requestContext.subject.principals` 为数组；授权策略中的 `principals` 是二维数组，表示多组 AND 主体之间的 OR 关系。
+
+| 字段 | 含义 |
+| --- | --- |
+| `requestContext` | 实际评估的请求；这里的 REST 属性仍是带类型的数组 |
+| `attributes` | 请求属性与内置属性，以属性名作为键 |
+| `grantedRoles` | 存在时返回有效角色 |
+| `rolePolicies`、`policies` | 存在时返回角色策略与授权策略的评估明细 |
+| `condition` | 条件表达式及结果；无条件策略可返回空对象 |
+
+策略状态包括 `takeEffect`（生效）、`conditionFailed`（条件不满足）、`ignored`（最终结果已确定，无需再评估）。顺序可能变化，应根据 ID 与状态解释结果，不要逐字匹配历史响应。完整响应结构见[决策 API](/docs/api/decision_api/)。
