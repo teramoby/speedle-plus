@@ -5,8 +5,6 @@ on:
     # 01:00 GMT+8 every day, after the MySQL nightly (shared group below).
     - cron: '0 17 * * *'
   workflow_dispatch:
-  push:
-    branches: [codex/mongodb-store-charming-validation, claude/mongodb-store]
 
 permissions:
   contents: read
