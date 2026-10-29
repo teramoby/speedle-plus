@@ -169,6 +169,24 @@ func PolicyStore(t testing.TB, location string) pms.PolicyStoreManager {
 		}
 		return manager
 	}
+	return fixtureFromFile(t, location).Store
+}
+
+// ConfigFromFile ports tests that construct a store through a service factory.
+func ConfigFromFile(t testing.TB, location string) *cfg.StoreConfig {
+	t.Helper()
+	if SelectedBackend() == "file" {
+		configuration, err := FixtureConfig(location)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return configuration
+	}
+	return fixtureFromFile(t, location).Config
+}
+
+func fixtureFromFile(t testing.TB, location string) *Fixture {
+	t.Helper()
 	raw, err := os.ReadFile(location)
 	if err != nil {
 		t.Fatal(err)
@@ -183,5 +201,5 @@ func PolicyStore(t testing.TB, location string) pms.PolicyStoreManager {
 	}
 	t.Cleanup(fixture.Close)
 	t.Logf("integration fixture backend=%s", fixture.Config.StoreType)
-	return fixture.Store
+	return fixture
 }

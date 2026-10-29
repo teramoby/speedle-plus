@@ -1,7 +1,7 @@
 package main
 
 import (
-	"context"
+	stdcontext "context"
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/json"
@@ -228,7 +228,7 @@ func (impl *handlerImpl) getResourceByName(namespace string, resource string, re
 
 	switch resource {
 	case "pods":
-		pod, err := impl.kubeClientset.CoreV1().Pods(namespace).Get(context.Background(), resourceName, metav1.GetOptions{})
+		pod, err := impl.kubeClientset.CoreV1().Pods(namespace).Get(stdcontext.Background(), resourceName, metav1.GetOptions{})
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error when get pod details due to error %v.", err)
 			return nil, owners, err
@@ -237,7 +237,7 @@ func (impl *handlerImpl) getResourceByName(namespace string, resource string, re
 		owners = pod.OwnerReferences
 		return resMeta, owners, nil
 	case "daemonsets":
-		daemonset, err := impl.kubeClientset.AppsV1().DaemonSets(namespace).Get(context.Background(), resourceName, metav1.GetOptions{})
+		daemonset, err := impl.kubeClientset.AppsV1().DaemonSets(namespace).Get(stdcontext.Background(), resourceName, metav1.GetOptions{})
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error when get daemon set details due to error %v.", err)
 			return nil, owners, err
@@ -246,7 +246,7 @@ func (impl *handlerImpl) getResourceByName(namespace string, resource string, re
 		owners = daemonset.OwnerReferences
 		return resMeta, owners, nil
 	case "deployments":
-		deployment, err := impl.kubeClientset.AppsV1().Deployments(namespace).Get(context.Background(), resourceName, metav1.GetOptions{})
+		deployment, err := impl.kubeClientset.AppsV1().Deployments(namespace).Get(stdcontext.Background(), resourceName, metav1.GetOptions{})
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error when get deployment details due to error %v.", err)
 			return nil, owners, err
@@ -255,7 +255,7 @@ func (impl *handlerImpl) getResourceByName(namespace string, resource string, re
 		owners = deployment.OwnerReferences
 		return resMeta, owners, nil
 	case "replicasets":
-		repSet, err := impl.kubeClientset.AppsV1().ReplicaSets(namespace).Get(context.Background(), resourceName, metav1.GetOptions{})
+		repSet, err := impl.kubeClientset.AppsV1().ReplicaSets(namespace).Get(stdcontext.Background(), resourceName, metav1.GetOptions{})
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error when get replication set details due to error %v.", err)
 			return nil, owners, err
@@ -264,7 +264,7 @@ func (impl *handlerImpl) getResourceByName(namespace string, resource string, re
 		owners = repSet.OwnerReferences
 		return resMeta, owners, nil
 	case "replicationcontrollers":
-		rc, err := impl.kubeClientset.CoreV1().ReplicationControllers(namespace).Get(context.Background(), resourceName, metav1.GetOptions{})
+		rc, err := impl.kubeClientset.CoreV1().ReplicationControllers(namespace).Get(stdcontext.Background(), resourceName, metav1.GetOptions{})
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error when get replication controller details due to error %v.", err)
 			return nil, owners, err
@@ -273,7 +273,7 @@ func (impl *handlerImpl) getResourceByName(namespace string, resource string, re
 		owners = rc.OwnerReferences
 		return resMeta, owners, nil
 	case "statefulsets":
-		sf, err := impl.kubeClientset.AppsV1().StatefulSets(namespace).Get(context.Background(), resourceName, metav1.GetOptions{})
+		sf, err := impl.kubeClientset.AppsV1().StatefulSets(namespace).Get(stdcontext.Background(), resourceName, metav1.GetOptions{})
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error when get stateful set details due to error %v.", err)
 			return nil, owners, err
@@ -282,7 +282,7 @@ func (impl *handlerImpl) getResourceByName(namespace string, resource string, re
 		owners = sf.OwnerReferences
 		return resMeta, owners, nil
 	case "nodes":
-		node, err := impl.kubeClientset.CoreV1().Nodes().Get(context.Background(), resourceName, metav1.GetOptions{})
+		node, err := impl.kubeClientset.CoreV1().Nodes().Get(stdcontext.Background(), resourceName, metav1.GetOptions{})
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error when get node details due to error %v.", err)
 			return nil, owners, err
@@ -291,7 +291,7 @@ func (impl *handlerImpl) getResourceByName(namespace string, resource string, re
 		owners = node.OwnerReferences
 		return resMeta, owners, nil
 	case "namespaces":
-		ns, err := impl.kubeClientset.CoreV1().Namespaces().Get(context.Background(), resourceName, metav1.GetOptions{})
+		ns, err := impl.kubeClientset.CoreV1().Namespaces().Get(stdcontext.Background(), resourceName, metav1.GetOptions{})
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error when get node details due to error %v.", err)
 			return nil, owners, err
@@ -343,7 +343,7 @@ func (impl *handlerImpl) fillAttributesWithResource(context *authz.RequestContex
 
 	switch resource {
 	case "pods":
-		pod, err := impl.kubeClientset.CoreV1().Pods(namespace).Get(context.Background(), resourceName, metav1.GetOptions{})
+		pod, err := impl.kubeClientset.CoreV1().Pods(namespace).Get(stdcontext.Background(), resourceName, metav1.GetOptions{})
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error when get pod details due to error %v.", err)
 			return
@@ -352,7 +352,7 @@ func (impl *handlerImpl) fillAttributesWithResource(context *authz.RequestContex
 		owners = pod.OwnerReferences
 		break
 	case "daemonsets":
-		daemonset, err := impl.kubeClientset.AppsV1().DaemonSets(namespace).Get(context.Background(), resourceName, metav1.GetOptions{})
+		daemonset, err := impl.kubeClientset.AppsV1().DaemonSets(namespace).Get(stdcontext.Background(), resourceName, metav1.GetOptions{})
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error when get daemon set details due to error %v.", err)
 			return
@@ -361,7 +361,7 @@ func (impl *handlerImpl) fillAttributesWithResource(context *authz.RequestContex
 		owners = daemonset.OwnerReferences
 		break
 	case "deployments":
-		deployment, err := impl.kubeClientset.AppsV1().Deployments(namespace).Get(context.Background(), resourceName, metav1.GetOptions{})
+		deployment, err := impl.kubeClientset.AppsV1().Deployments(namespace).Get(stdcontext.Background(), resourceName, metav1.GetOptions{})
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error when get deployment details due to error %v.", err)
 			return
@@ -370,7 +370,7 @@ func (impl *handlerImpl) fillAttributesWithResource(context *authz.RequestContex
 		owners = deployment.OwnerReferences
 		break
 	case "replicasets":
-		repSet, err := impl.kubeClientset.AppsV1().ReplicaSets(namespace).Get(context.Background(), resourceName, metav1.GetOptions{})
+		repSet, err := impl.kubeClientset.AppsV1().ReplicaSets(namespace).Get(stdcontext.Background(), resourceName, metav1.GetOptions{})
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error when get replication set details due to error %v.", err)
 			return
@@ -379,7 +379,7 @@ func (impl *handlerImpl) fillAttributesWithResource(context *authz.RequestContex
 		owners = repSet.OwnerReferences
 		break
 	case "replicationcontrollers":
-		rc, err := impl.kubeClientset.CoreV1().ReplicationControllers(namespace).Get(context.Background(), resourceName, metav1.GetOptions{})
+		rc, err := impl.kubeClientset.CoreV1().ReplicationControllers(namespace).Get(stdcontext.Background(), resourceName, metav1.GetOptions{})
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error when get replication controller details due to error %v.", err)
 			return
@@ -388,7 +388,7 @@ func (impl *handlerImpl) fillAttributesWithResource(context *authz.RequestContex
 		owners = rc.OwnerReferences
 		break
 	case "statefulsets":
-		sf, err := impl.kubeClientset.AppsV1().StatefulSets(namespace).Get(context.Background(), resourceName, metav1.GetOptions{})
+		sf, err := impl.kubeClientset.AppsV1().StatefulSets(namespace).Get(stdcontext.Background(), resourceName, metav1.GetOptions{})
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error when get stateful set details due to error %v.", err)
 			return
@@ -397,7 +397,7 @@ func (impl *handlerImpl) fillAttributesWithResource(context *authz.RequestContex
 		owners = sf.OwnerReferences
 		break
 	case "nodes":
-		node, err := impl.kubeClientset.CoreV1().Nodes().Get(context.Background(), resourceName, metav1.GetOptions{})
+		node, err := impl.kubeClientset.CoreV1().Nodes().Get(stdcontext.Background(), resourceName, metav1.GetOptions{})
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error when get node details due to error %v.", err)
 			return
@@ -406,7 +406,7 @@ func (impl *handlerImpl) fillAttributesWithResource(context *authz.RequestContex
 		owners = node.OwnerReferences
 		break
 	case "namespaces":
-		ns, err := impl.kubeClientset.CoreV1().Namespaces().Get(context.Background(), resourceName, metav1.GetOptions{})
+		ns, err := impl.kubeClientset.CoreV1().Namespaces().Get(stdcontext.Background(), resourceName, metav1.GetOptions{})
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error when get node details due to error %v.", err)
 			return
