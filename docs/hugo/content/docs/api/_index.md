@@ -11,56 +11,28 @@ categories = ["docs"]
 bref = "Open API Specification Docs. Use the API to model your simple and complex policies in a declarative way; get decisions, discover policies dynamically and debug policy evaluation."
 +++
 
-#### REST APIs
+## REST APIs
 
-<nav id="contents">
-    <ol class="js-toc">
-    <ul class="toc-list ">
-    <li class="toc-list-item">
-    <a data-scroll="" href="./management_api" class="toc-link node-name--H3  is-active-link">Policy Management Service API</a>
-    </li>
-    <li class="toc-list-item">
-     <a data-scroll="" href="./decision_api" class="toc-link node-name--H3">Authorization Decision Service API</a>
-    </li>
-    <li class="toc-list-item">
-      <a data-scroll="" href="./asserter_api" class="toc-link node-name--H3">Token Assertion API</a>
-    </li>
-    </ul>
-    </ol>
-</nav>
+These are reference contracts for **your configured PMS/ADS or asserter endpoint**. `speedle.io` serves documentation and the browser Playground; it is not a hosted PMS/ADS service. Supply JSON with `Content-Type: application/json`, and configure [TLS/mTLS and caller access controls](/docs/security/).
 
-#### GRPC APIs
+- [Policy management API](/docs/api/management_api/)
+- [Authorization decision API](/docs/api/decision_api/)
+- [Token assertion webhook](/docs/api/asserter_api/)
 
-<nav id="contents">
-  <ol class="js-toc">
-    <ul class="toc-list ">
-    <li class="toc-list-item">
-    <a data-scroll="" href="/protobuf/pms.proto" class="toc-link node-name--H3  is-active-link">Policy Management Service API</a>
-    </li>
-    <li class="toc-list-item">
-     <a data-scroll="" href="/protobuf/ads.proto" class="toc-link node-name--H3">Authorization Decision Service API</a>
-    </li>
-    </ul>
-    </ol>
-</nav>
+Policy and role-policy IDs are strings. PMS responses are flat objects; authorization permissions use `permissions` (plural). REST decision requests use a typed attribute array, whereas diagnostic response attributes and webhook attributes are objects.
 
-#### Golang APIs
+## gRPC APIs
 
-<nav id="contents">
-  <ol class="js-toc">
-    <ul class="toc-list ">
-    <li class="toc-list-item">
-    [Policy Management Service
-API](https://github.com/teramoby/speedle-plus/tree/master/api/pms)
-    </li>
-    <li class="toc-list-item">
-    [Authorization Decision Service API](https://github.com/teramoby/speedle-plus/tree/master/api/ads)
-    </li>
-    </ul>
-    </ol>
-</nav>
-<div id="action-buttons" align="left">
-    <a class="button primary" href="./management_api">Policy Management</a>
-    <a class="button primary" href="./decision_api">Authorization Decision</a>
-    <a class="button primary" href="./asserter_api">Token Assertion</a>
-  </div>
+- [PMS proto](/protobuf/pms.proto): `pb.PolicyManager`
+- [ADS proto](/protobuf/ads.proto): `pb.Evaluator`
+
+Use the current proto and generated client together. PMS uses `pb.PolicyManager`, and ADS uses `pb.Evaluator`. The two historical contracts reuse message names and must be generated/loaded separately; do not combine them in one descriptor set. gRPC is off unless the server is started with `--grpc-endpoint`, and uses the same TLS settings as REST.
+
+The legacy gRPC `ContextRequest.attributes` map contains strings. It is not the REST typed attribute-array format and does not offer its numeric/bool/date typing. Use REST or embedded Go for conditions requiring those types unless your gRPC adapter explicitly implements the required conversion.
+
+## Embedded Go APIs
+
+- [Policy management interfaces](https://github.com/teramoby/speedle-plus/tree/master/api/pms)
+- [Authorization decision interfaces](https://github.com/teramoby/speedle-plus/tree/master/api/ads)
+
+See [embedded mode](/docs/deployment-embeded/) for a complete application and resource lifecycle example.

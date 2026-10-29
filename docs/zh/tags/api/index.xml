@@ -17,7 +17,11 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://speedle.io/zh/docs/api/</guid>
-      <description>REST APIs Policy Management Service API  Authorization Decision Service API  Token Assertion API     GRPC APIs Policy Management Service API  Authorization Decision Service API     Golang APIs Policy Management Service API  Authorization Decision Service API     Policy Management Authorization Decision Token Assertion</description>
+      <description>REST API 这些接口说明面向你配置的 PMS、ADS 或断言服务端点。speedle.io 提供文档与浏览器 Playground，不托管 PMS/ADS 后端。发送 JSON 时必须设置 Content-Type: application/json，并配置 TLS/mTLS 与调用方访问控制。
+ 策略管理 API 授权决策 API 令牌断言 webhook  策略和角色策略的 ID 是字符串，PMS 返回扁平对象；授权权限字段为复数 permissions。REST 决策请求使用带类型的属性数组，诊断响应及断言 webhook 的属性则为对象。
+gRPC API  PMS proto：pb.PolicyManager ADS proto：pb.Evaluator  当前 proto 必须与生成客户端配套使用。PMS 的服务名为 pb.PolicyManager，ADS 为 pb.Evaluator。这两份历史协议重用了消息名，应分别生成和加载，不要合并进同一 descriptor set。默认不启用 gRPC；需通过 --grpc-endpoint 显式开启，其 TLS 配置与 REST 相同。
+历史 gRPC 的 ContextRequest.attributes 是字符串 map，不是 REST 的带类型属性数组，也不提供同样的数值、布尔、日期类型。条件需要这些类型时，应使用 REST 或嵌入式 Go，除非你的 gRPC 适配层明确实现了相应转换。
+嵌入式 Go API  策略管理接口 授权决策接口  完整应用示例见嵌入模式。</description>
     </item>
     
     <item>
@@ -26,7 +30,9 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://speedle.io/zh/docs/api/decision_api/</guid>
-      <description>              (function() { var url = &#34;\/swagger\/policy-check.yaml&#34;; const ui = SwaggerUIBundle({ url: url, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.presets.apis ], plugins: [ SwaggerUIBundle.plugins.DownloadUrl ], validatorUrl: null, layout: &#34;BaseLayout&#34; }) window.ui = ui })();  </description>
+      <description>已配置 ADS 的接口参考。请求属性是带类型的数组，诊断响应属性是对象。
+请配置安全连接与端点访问控制。这是接口契约，speedle.io 不托管授权后端。
+              (function() { var url = &#34;\/swagger\/policy-check.zh.yaml&#34;; const ui = SwaggerUIBundle({ url: url, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.presets.apis ], plugins: [ SwaggerUIBundle.plugins.DownloadUrl ], validatorUrl: null, layout: &#34;BaseLayout&#34; }) window.ui = ui })();  </description>
     </item>
     
     <item>
@@ -35,7 +41,9 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://speedle.io/zh/docs/api/management_api/</guid>
-      <description>              (function() { var url = &#34;\/swagger\/policy-manage.yaml&#34;; const ui = SwaggerUIBundle({ url: url, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.presets.apis ], plugins: [ SwaggerUIBundle.plugins.DownloadUrl ], validatorUrl: null, layout: &#34;BaseLayout&#34; }) window.ui = ui })();  </description>
+      <description>已配置 PMS 的接口参考。请求与响应使用 JSON，策略 ID 为字符串，响应为扁平对象。
+请配置安全连接与端点访问控制。这是接口契约，speedle.io 不托管授权后端。
+              (function() { var url = &#34;\/swagger\/policy-manage.zh.yaml&#34;; const ui = SwaggerUIBundle({ url: url, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.presets.apis ], plugins: [ SwaggerUIBundle.plugins.DownloadUrl ], validatorUrl: null, layout: &#34;BaseLayout&#34; }) window.ui = ui })();  </description>
     </item>
     
     <item>
@@ -53,7 +61,9 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://speedle.io/zh/docs/api/asserter_api/</guid>
-      <description>              (function() { var url = &#34;\/swagger\/asserter.yaml&#34;; const ui = SwaggerUIBundle({ url: url, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.presets.apis ], plugins: [ SwaggerUIBundle.plugins.DownloadUrl ], validatorUrl: null, layout: &#34;BaseLayout&#34; }) window.ui = ui })();  </description>
+      <description>令牌断言 webhook 参考。errCode 为整数，attributes 为对象。实际端点由 ADS 断言配置指定。
+请配置安全连接与端点访问控制。这是接口契约，speedle.io 不托管授权后端。
+              (function() { var url = &#34;\/swagger\/asserter.zh.yaml&#34;; const ui = SwaggerUIBundle({ url: url, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.presets.apis ], plugins: [ SwaggerUIBundle.plugins.DownloadUrl ], validatorUrl: null, layout: &#34;BaseLayout&#34; }) window.ui = ui })();  </description>
     </item>
     
   </channel>

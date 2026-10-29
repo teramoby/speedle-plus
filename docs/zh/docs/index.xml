@@ -46,9 +46,9 @@ curl --header &amp;#39;Content-Type: application/json&amp;#39; --data &amp;#39;{
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://speedle.io/zh/docs/spdl/</guid>
-      <description>基本的策略定义语言 保留关键字 SPDL 的保留关键字如下. 这些关键字不能用作 user name, group name, action, resource, attribute name 等等。
- role user group entity grant deny if in on from  这些关键字均大小写不敏感。这意味着，&amp;rdquo;role&amp;rdquo;, &amp;ldquo;ROLE&amp;rdquo;, &amp;ldquo;Role&amp;rdquo;, &amp;ldquo;rOLe&amp;rdquo; 都不能用作 user name, group name, action, resource, attribute name 等等。
-命名规范  User Name: a user name consists of letters, decimal digits, punctuation marks except for comma i.e. [\p{L}\p{Nd}[\p{Punct}&amp;&amp;[^,]]]+ Group Name: a group name consists of letters, decimal digits, punctuation marks except for comma i.</description>
+      <description>基本的策略定义语言 保留关键字 grant、deny、user、group、entity、role、from、on、if、in 在各自语法位置有特定含义，策略语句的关键字大小写不敏感；条件成员运算使用 in 或 IN，函数名区分大小写。主体、操作和资源名称也区分大小写。当前解析器在部分名称位置可接受类似关键字的名称，不能把“所有位置都禁止关键字”当作验证规则。为便于审查与客户端互通，建议避免这类名称。
+命名规范 推荐使用简明、稳定的标识符；名称包含空格或分隔符时使用解析器支持的单引号或双引号形式，并测试实际输入。不应把历史 Java 正则字符类当作当前 Go 解析器的严格校验。资源前缀 expr: 表示 Go 正则表达式，不是 shell 通配符。条件的属性与函数名称另见下文。
+语法  POLICY = EFFECT SUBJECT ACTION RESOURCE [if CONDITION] EFFECT = grant | deny SUBJECT = AND_PRINCIPALS (, AND_PRINCIPALS)* AND_PRINCIPALS = PRINCIPAL | \( PRINCIPAL_LIST \) PRINCIPAL_LIST = PRINCIPAL (, PRINCIPAL)* PRINCIPAL = PRINCIPAL_TYPE PRINCIPAL_NAME [PRINCIPAL_IDD] PRINCIPAL_TYPE = user|group|entity|role PRINCIPAL_IDD = from IDD_IDENTIFIER IDD_IDENTIFIER = NAME ACTION = (ACTION_IDENTIFIER)(, ACTION_IDENTIFIER)* RESOURCE = RESOURCE_IDENTIFIER PRINCIPAL_NAME = NAME ACTION_IDENTIFIER = NAME RESOURCE_IDENTIFIER = NAME   ROLE_POLICY = EFFECT SUBJECT ROLE (on RESOURCE)?</description>
     </item>
     
     <item>
@@ -69,11 +69,13 @@ curl --header &amp;#39;Content-Type: application/json&amp;#39; --data &amp;#39;{
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://speedle.io/zh/docs/deployment-embeded/</guid>
-      <description>什么是 Speedle 嵌入模式 区别于 Speedle 服务模式，Speedle 嵌入模式把 Speedle 的策略决策引擎嵌入到调用者进程内部，作为进程的一部分运行。调用者可以直接调用 Speedle 的 API 获得策略决策的结果。
-嵌入模式的局限  只支持 Golang，推荐使用 Golang 1.10。 只接受文件存储策略。  如何使用嵌入模式 把 Speedle 代码添加到你的工程中 在嵌入模式中，需要先将 Speedle 源代码从代码仓库中下载下来。主要有一下几种方式：
- 使用 go get  go get github.com/teramoby/speedle-plus  使用 dep 工具  在你的 Gopkg.toml 文件中添加以下几行
-[[constraint]] name = &amp;#34;github.com/teramoby/speedle-plus&amp;#34; branch = &amp;#34;master&amp;#34; 使用 dep 工具将 Speedle 源代码添加到vendor目录下：
-dep ensure -update github.com/teramoby/speedle-plus 在代码中初始化一个 Evalautor 实例 方法func eval.NewFromFile(loc string, isWatch bool) (ads.PolicyEvaluator, error)使用一个策略定义文件初始化一个 Evaluator 实例。该方法接受两个参数：</description>
+      <description>什么是 Speedle 嵌入模式 嵌入模式将 Speedle 策略决策引擎运行在你的 Go 应用进程中，通过 evaluator 直接决策，无需启动 PMS 或 ADS 服务。应用负责认证用户，并为每次决策提供主体、资源和操作。
+编写代码前，可以先用 Playground 体验基本策略功能。如果希望以独立服务运行 Speedle，请参阅快速入门。
+前提条件 使用 Linux 或 macOS、命令行 shell，以及 Go 1.25 或更新版本，最低版本与快速入门一致。本例使用 Go modules 和已发布的 Speedle+ v1.6.0，推荐使用 Go 1.27.3；示例已在 Go 1.25.14、Go 1.26.10 和 Go 1.27.3 下验证。
+按照 Go 官方安装说明安装 Go，然后检查版本：
+go version Go 会自动配置 GOROOT 和默认 GOPATH，无需手工设置。
+创建应用模块 在 Speedle 源码目录之外，选择一个有写入权限的目录，从新目录开始本例：
+mkdir speedle-embedded-demo cd speedle-embedded-demo go mod init example.com/speedle-embedded-demo go get github.com/teramoby/speedle-plus/pkg/eval@v1.6.0 如果已有包含 go.mod 的应用，只需在该应用的模块目录中执行最后一条 go get 命令。</description>
     </item>
     
     <item>
@@ -82,10 +84,11 @@ dep ensure -update github.com/teramoby/speedle-plus 在代码中初始化一个 
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://speedle.io/zh/docs/deployment/</guid>
-      <description>Speedle 支持两种部署方式
- 开发模式  在开发模式下，Speedle 使用一个文件作为策略仓库，用户使用 RESTful API 和 CLI 工具访问 Speedle 的各项服务。
- 生产模式  在生产模式下，Speedle 使用etcd作为策略仓库，用户使用 RESTful API 和 CLI 工具访问 Speedle 的各项服务。
-准备工作  Golang 1.10.0 开发环境已经安装好。 Docker 1.12 或更高的版本已经安装好。 一个 Docker registry。该 Docker registry 被用作推送和拉取 Speedle 的 Docker 映像。 在目录\$GOPATH/src/github.com/teramoby/speedle-plus/下同步最新的 Speedle 代码。 一个 Kubernetes 集群。 为你的 Docker registry 设置一个 Kubernetes Secret  # 为Docker registry设置Kubernetes Secret $ kubectl create secret docker-registry reg-speedle --docker-server=$DOCKER_LOGIN_SERVER --docker-username=$DOCKER_LOGIN_USER --docker-password=$DOCKER_LOGIN_PASSWORD 开发环境下部署 Speedle 服务 开发环境下可以使用helm部署 Speedle 服务。</description>
+      <description>选择部署方式 通过嵌入模式可以在 Go 进程内运行决策引擎；如果应用通过 REST 或 gRPC 调用 Speedle，则运行独立的 PMS 和 ADS。快速入门提供了完整的本地策略管理和授权验证步骤。
+使用当前 Go 版本构建 在 Linux 或 macOS 上准备 Go 1.25 或更新版本（推荐 Go 1.27.3）、Git 和命令行 shell。使用 Go modules，源码可放在任意可写目录，无需手工配置 GOROOT、GOPATH、dep 或 GOPATH 源码路径。
+git clone --depth 1 https://github.com/teramoby/speedle-plus.git cd speedle-plus mkdir -p bin go build -o ./bin/ ./cmd/spctl ./cmd/speedle-pms ./cmd/speedle-ads 生成的可执行文件为 bin/spctl、bin/speedle-pms 和 bin/speedle-ads。从源码根目录运行下面的本地示例，两个服务共享同一策略文件：
+./bin/speedle-pms --store-type file --filestore-loc ./docs-policies.json --endpoint 127.0.0.1:6733 --insecure=true 保持 PMS 运行，在同一源码目录的另一个终端启动 ADS：
+./bin/speedle-ads --store-type file --filestore-loc .</description>
     </item>
     
     <item>
@@ -94,12 +97,14 @@ dep ensure -update github.com/teramoby/speedle-plus 在代码中初始化一个 
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://speedle.io/zh/docs/decisions/</guid>
-      <description>1. 什么是授权查询?  授权查询是 Speedle ADS(Authorization Decision Service)提供的服务接口， 一般用于查询某个主体(subject)对某个资源(resource)实施某项操作(action)是否被允许。
- 授权查询的结果是基于角色策略(role-policies)和策略(policies)的实时运算。
-  2. 授权查询的方式 Speedle 支持以下 3 种方式进行授权查询：
- REST API provided by Authorization Decision Service(ADS) Grpc API provided by Authorization Decision Service(ADS) Golang API  3. 授权查询 API 及其示例 The ADS decision APIs make authorization decisions based on policies that describe the actions, permissions, and roles granted to a subject.
-3.1 查询授权决定 查询某个主体(subject)对某个资源(resource)实施某项操作(action)是否被允许
- API overview  IN Given the request: subject, action, resource Given the runtime attributes **optional** Given the service scope OUT Returns true if allowed, false if NOT allowed Returns reason for the decision Returns errors if an error occurs  Sample  查询 user Alan 从 onlineBookStore 应用 下载 HarryPotter 这本书是否被允许。 授权结果基于定义在 &amp;ldquo;onlineBookStore&amp;rdquo; 这个 service 中的所有角色策略(role-policies)和策略(policies)的。   REST API example:</description>
+      <description>什么是授权决策？ Speedle 在指定服务内评估主体、操作与资源，由应用执行结果。应区分评估错误、超时与正常的 Deny，并在出错时拒绝访问。REST、gRPC、嵌入式 Go 的数据表示不同，应分别遵循各自的 API 契约。
+运行示例前 先按快速入门编译仓库根目录下的 ./bin/spctl、./bin/speedle-pms 和 ./bin/speedle-ads，需要 Go 1.25 或更新版本、Bash、curl 和 Python 3。下面各终端都从仓库根目录运行。为本页使用一个新的策略文件；仅在两个服务都停止后重建该文件。
+初始化空策略文件：
+printf &amp;#39;{}\n&amp;#39; &amp;gt; docs-policies.json 终端一启动 PMS，并保持运行：
+./bin/speedle-pms --store-type file --filestore-loc ./docs-policies.json --endpoint 127.0.0.1:6733 --grpc-endpoint 127.0.0.1:0 --insecure=true 终端二启动 ADS，并保持运行：
+./bin/speedle-ads --store-type file --filestore-loc ./docs-policies.json --endpoint 127.0.0.1:6734 --grpc-endpoint 127.0.0.1:0 --insecure=true 在第三个终端运行后续命令。PMS/ADS 共享同一个文件，策略更新通过 watch 异步到达 ADS；先查询确认已更新，再依赖新策略做决策。--insecure=true 仅用于回环地址上的本地示例，生产连接见安全配置。示例显式指定 PMS 地址，不修改 ~/.spctlconfig。完成后在两个服务终端按 Ctrl-C。
+创建可重复的测试策略 测试文件给 Alan 分配 role1、role2；其中 role1 可以下载 /books/HarryPotter。
+./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ create service --json-file website/tests/examples/bookstore.</description>
     </item>
     
     <item>
@@ -108,15 +113,13 @@ dep ensure -update github.com/teramoby/speedle-plus 在代码中初始化一个 
       <pubDate>Thu, 17 Jan 2019 13:20:07 +0800</pubDate>
       
       <guid>https://speedle.io/zh/docs/idd/</guid>
-      <description>什么是用户身份域? 身份域是用户和组的逻辑名称空间，通常表示物理数据存储中的一组离散用户和组。 每个身份域独立管理用户和组， 用户名和组名在标识域中必须是唯一的。
-问题 在集成环境中，身份可能来自多个身份域。 例如，考虑以下场景，具有身份为user1的用户被授权对资源book执行rent操作。 此授权策略表示来自任何身份域的身份为user1的用户都具有权限以租用图书资源。
-./spctl create policy -c &amp;#34;grant user user1 rent book&amp;#34; --service-name=booksvc 但是，该服务只希望来自身份域github的user1具有rent权限。 因此，Speedle 必须能够区分来自不同身份域的用户。
-解决方案 要确保仅授予来自预期身份域的用户权限，您需要根据用户/组标识符和用户/组身份域构造新的用户/组标识符。 然后，您可以在 Speedle 策略中使用新的用户/组标识符。 新标识符结构定义如下，其中 IDD 表示身份域属性。
-type Principal struct { Type string `json:&amp;#34;type,omitempty&amp;#34;` Name string `json:&amp;#34;name,omitempty&amp;#34;` IDD string `json:&amp;#34;idd,omitempty&amp;#34;` } 备注: 身份提供商（如[google account]（https://account.google.com/））不支持多个身份域，而[IDCS]（https://www.oracle.com/cloud/paas/identity-cloud -service.html）确实支持多个身份域。 身份域属性的值取决于实现。
-使用身份域定义授权策略 要指定从指定的标识域为用户定义策略，请使用[SPDL]（../ spdl）关键字: from &amp;lt;identity domain&amp;gt;
-POLICY = EFFECT SUBJECT from &amp;lt;identity domain&amp;lt; ACTION RESOURCE if CONDITION
-示例 这个策略表明只有来自github身份提供者的user1才能对book资源执行read动作：
-# 授权来自 github 的名为 user1 的用户可以对资源： book具有 read的权限 .</description>
+      <description>什么是身份域？ 身份域（idd）为主体提供显式命名空间。同名的 user1 可以属于不同的域。域字符串由可信应用或已配置的令牌断言服务提供，本身不代表完成了身份认证。Speedle 不会仅根据域名称推断或验证身份提供方的租户模型。
+在策略与请求中表示身份域 grant user user1 from github read book grant user user1 from IDCS.tenant01 read book 在主体名后使用 from &amp;lt;identity-domain&amp;gt;。PMS JSON 策略中的等价编码为 idd=github:user:user1；决策请求中的主体表示为：
+{ &amp;#34;type&amp;#34;: &amp;#34;user&amp;#34;, &amp;#34;name&amp;#34;: &amp;#34;user1&amp;#34;, &amp;#34;idd&amp;#34;: &amp;#34;github&amp;#34; } 带 from github 的策略只匹配该域；省略 from 则按主体名跨域匹配。多租户应用应明确审查这一选择；域字符串不能用于验证令牌。更多内容见身份与 IAM和令牌断言。
+运行示例前 先按快速入门编译仓库根目录下的 ./bin/spctl、./bin/speedle-pms 和 ./bin/speedle-ads，需要 Go 1.25 或更新版本、Bash、curl 和 Python 3。下面各终端都从仓库根目录运行。为本页使用一个新的策略文件；仅在两个服务都停止后重建该文件。
+初始化空策略文件：
+printf &amp;#39;{}\n&amp;#39; &amp;gt; docs-policies.json 终端一启动 PMS，并保持运行：
+./bin/speedle-pms --store-type file --filestore-loc ./docs-policies.json --endpoint 127.0.0.1:6733 --grpc-endpoint 127.0.0.1:0 --insecure=true 终端二启动 ADS，并保持运行：</description>
     </item>
     
     <item>
@@ -125,14 +128,11 @@ POLICY = EFFECT SUBJECT from &amp;lt;identity domain&amp;lt; ACTION RESOURCE if 
       <pubDate>Mon, 21 Jan 2019 09:28:30 +0800</pubDate>
       
       <guid>https://speedle.io/zh/docs/assertor/</guid>
-      <description>令牌用户身份断言的好处 评估请求可以包含由任何身份提供者作为传入用户身份发布的身份令牌，而不是明确指定用户身份（用户标识符和用户所属的那些组）。 将 Speedle 集成到服务中时，您的服务无需验证和解析身份令牌。 Speedle 可以为您做到。
-Speedle 评估引擎检查传入请求是否包含身份令牌。 如果是，则评估引擎调用令牌断言服务的 webhook 以获得显式用户身份（用户标识符和组）。 然后，评估引擎可以基于用户身份域和组来执行策略评估。
-如何评估包含身份令牌的授权请求 要评估包含身份令牌的授权请求，请按照下列步骤操作。
-1. 实现断言服务的 webhook 接口 实现[Token Assertion Plugin API]（../ api / asserter_api）的断言服务将身份令牌，身份提供者和允许的身份域作为输入，并执行令牌验证和解析。 然后，该服务返回由身份令牌表示的显式身份（用户标识符和组）。
-请注意，如果设置了用户的身份域，则经过断言服务的用户标识可能包含用户/组的身份域。
-示例断言服务 备注: 此示例断言器服务仅用于测试目的。
-示例断言器服务源代码：
-package main import ( &amp;#34;encoding/json&amp;#34; &amp;#34;log&amp;#34; &amp;#34;net/http&amp;#34; ) const ( // user type of Principal  PRINCIPAL_TYPE_USER = &amp;#34;user&amp;#34; // group type of Principal  PRINCIPAL_TYPE_GROUP = &amp;#34;group&amp;#34; // entity type of Principal  PRINCIPAL_TYPE_ENTITY = &amp;#34;entity&amp;#34; ) // Principal of Speedle type Principal struct { Type string `json:&amp;#34;type,omitempty&amp;#34;` Name string `json:&amp;#34;name,omitempty&amp;#34;` IDD string `json:&amp;#34;idd,omitempty&amp;#34;` } // AssertResponse assertion response type AssertResponse struct { Principals []*Principal `json:&amp;#34;principals,omitempty&amp;#34;` Attributes map[string]interface{} `json:&amp;#34;attributes,omitempty&amp;#34;` // non zero indicates errors happen  ErrCode int `json:&amp;#34;errCode&amp;#34;` ErrMessage string `json:&amp;#34;errMessage,omitempty&amp;#34;` } // SampleAsserter for testing only type SampleAsserter struct { } func (a SampleAsserter) ServeHTTP(w http.</description>
+      <description>令牌断言服务负责什么？ 已配置的断言服务验证令牌，并返回显式主体及其身份域，再由 Speedle 使用这些身份评估策略。生产实现必须验证签名或 introspection 结果、签发者、受众、有效期及身份提供方要求。仅有 webhook 接口并不意味着自动兼容任意 OAuth/OIDC 令牌。
+令牌断言 API中的 errCode 为整数，可选的属性是对象，不是带类型的属性数组。asserterWebhookConfig.endpoint 是完整 URL，下面的示例使用 /v1/assert。
+启动确定性的本地 mock 此 mock 只识别 githubtoken/github、googletoken/google、gitlabtoken/gitlab 三组输入，分别表示对应域的 user1。令牌与提供方不匹配时失败。它是测试 fixture，不验证真实令牌。 不会记录令牌值。仅绑定回环地址，生产环境必须替换为真实身份集成。
+从仓库根目录在单独终端运行：
+go run ./website/tests/examples/asserter // A deterministic mock for the token-assertion tutorial. Never use for real tokens. package main import ( &amp;#34;encoding/json&amp;#34; &amp;#34;flag&amp;#34; &amp;#34;log&amp;#34; &amp;#34;net/http&amp;#34; &amp;#34;strings&amp;#34; &amp;#34;time&amp;#34; ) type principal struct { Type string `json:&amp;#34;type&amp;#34;` Name string `json:&amp;#34;name&amp;#34;` IDD string `json:&amp;#34;idd&amp;#34;` } type response struct { Principals []principal `json:&amp;#34;principals,omitempty&amp;#34;` ErrCode int `json:&amp;#34;errCode&amp;#34;` ErrMessage string `json:&amp;#34;errMessage,omitempty&amp;#34;` } func assert(w http.</description>
     </item>
     
     <item>
@@ -141,14 +141,11 @@ package main import ( &amp;#34;encoding/json&amp;#34; &amp;#34;log&amp;#34; &amp
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://speedle.io/zh/docs/store/</guid>
-      <description>概述 Speedle 现在支持两种数据存储，OOTB:文件存储和 etcd 存储。 但是，您可以实现自己的数据存储(例如使用 mongodb 等)
- 请注意数据存储需要支持“watch”功能  本文档将说明如何逐步实现一个数据存储。
-实现 PolicyStoreManager 接口 在 store 目录下创建一个“mystore”目录并导航到它目录下面。 创建一个类似 mystore 之类的存储代码文件，并在此文件中实现“PolicyStoreManager”接口。
-Example in store/etcd/etcdStore.go:
-type Store struct { ... } func (s *Store) ReadPolicyStore() (*pms.PolicyStore, error) { ... } func (s *Store) CreateService(service *pms.Service) error { ... } ... 请注意这个 watch 的功能。该功能将监视数据存储的更改。这个函数需要返回一个“StorageChangeChannel”对象，每个 store change event(请查看“api/pms/types/StoreChangeEvent”以获取详细信息)都会被发送到这个 Channel。ADS 将接收这些更改事件并立即更新其缓存。
-编写 storeBuilder 代码 理解 Speedle 存储配置 Speedle 从三个不同的源读取存储配置信息:flags、环境变量和配置文件。
-flags 具有最高优先级，然后是环境变量，然后是配置文件。这意味着高优先级源中的配置项将覆盖低优先级源中的相同配置项。
-存储所有者需要在 init 函数中提供 flags 定义，我们使用pflag来定义 flags。</description>
+      <description>内置存储与扩展接口 独立服务在 pkg/store 下注册 file、etcd、MongoDB 实现。可用不代表具有相同的运维保证，部署前应分别审查后端认证、持久化、事务与 watch 行为。下方配置说明属性名称，本地示例不涉及启动 etcd/MongoDB 集群。
+完整后端实现 pms.PolicyStoreManager：服务、授权策略、角色策略、函数管理，以及快照读取与 watch/stop。ADS 接受较窄的只读/watch 接口 PolicyStoreManagerADS。实现新后端时应以实际接口为准，不能照搬历史文档中不完整的方法列表。
+实现并注册 builder store.StoreBuilder提供 NewStore(map[string]interface{}) (pms.PolicyStoreManager, error) 与 GetStoreParams() map[string]string。后者把 flag 名称映射到配置属性名。在 init() 或调用 store.NewStore 之前注册唯一的存储类型，重复注册会报错。
+以下完整示例复用文件后端，演示工厂接口与注册流程，并不声称实现了一个新数据库：
+go run ./website/tests/examples/store package main import ( &amp;#34;fmt&amp;#34; &amp;#34;github.com/teramoby/speedle-plus/pkg/store&amp;#34; &amp;#34;github.com/teramoby/speedle-plus/pkg/store/file&amp;#34; &amp;#34;log&amp;#34; &amp;#34;os&amp;#34; &amp;#34;path/filepath&amp;#34; ) // This example delegates to the file backend to demonstrate registration. // A new backend must implement the complete PolicyStoreManager contract. type Builder struct{ file.</description>
     </item>
     
     <item>
@@ -157,15 +154,9 @@ flags 具有最高优先级，然后是环境变量，然后是配置文件。�
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://speedle.io/zh/docs/security/</guid>
-      <description>概要 API Endpoint 安全/认证和授权 Speedle API Endpoint 自身仅支持 TLS mutual auth（TLS 相互身份验证）这种认证和授权.
-您可以使用像 Ambassador API Gateway 等既存的方案对 Speedle API endpoint 进行保护。
-消息安全 / TLS TLS 是一种提供通信安全性的加密协议，它提供了许多不同的交换密钥进行身份验证，加密数据和保证消息完整性的方法。
-Speedle 支持使用 TLS 来保护在非信任环境中的消息传输，也支持使用 TLS mutual auth 来验证客户端身份。
-在下文中，我们将介绍如何在 Speedle（作为一个独立应用程序）中启用 TLS，以及如何使用 Speedle CLI / curl 访问启用 TLS 的 Speedle 服务。
-如果您希望通过 TLS 保护在 Kubernetes 中的 Speedle 部署，请单击 此处
-先决条件 为了启用 TLS，Speedle 必须为其外部接口（IP 地址或 DNS 名称）配置相关的“证书”，以接受安全连接。
-此证书由受信任的第三方（证书颁发机构）加密签名。要获取签名证书，您需要选择 CA 并按照所选 CA 提供的说明获取证书。
-在测试环境中，可以创建一个“自签名”证书。自签名证书是未经知名 CA 签名的用户自己生成的证书，无法保证证书的真实性，因此它们不适合在生产环境中使用。</description>
+      <description>同时保护两种 API 传输 独立运行的 PMS 与 ADS 都提供 REST 和 gRPC。现在两者共同使用 --insecure、--cert、--key、--client-cert 和 --force-client-cert 配置。证书或信任配置无效时启动失败，安全模式不会降级为明文。
+TLS 加密连接并认证服务端。若要强制认证客户端，必须通过 --client-cert 提供客户端 CA，同时设置 --force-client-cert=true。只提供 CA 时，仅在客户端主动发送证书的情况下验证该证书。TLS 本身不决定谁有管理员权限，也不提供 Bearer token 校验。管理、诊断、发现接口需要认证网关或等价的访问控制。--enable-authz 参数不提供内置的端点授权策略。
+监听地址与兼容性    服务 默认 REST 地址 默认 gRPC 地址     PMS 0.0.0.0:6733 默认关闭；需设置 --grpc-endpoint   ADS 0.0.0.0:6734 默认关闭；需设置 --grpc-endpoint    REST 与 gRPC 的地址分别配置。仅设置 --endpoint 不会启用 gRPC；请显式使用 --grpc-endpoint 127.0.0.1:50001（PMS）或 127.0.0.1:50002（ADS）。127.0.0.1:0 为隔离测试选择临时端口。需要 IPv6 时显式指定 IPv6 监听地址。</description>
     </item>
     
     <item>
@@ -177,7 +168,7 @@ Speedle 支持使用 TLS 来保护在非信任环境中的消息传输，也支�
       <description>概述 Speedle 使用了下面两个开源项目来处理日志,
 1. https://github.com/sirupsen/logrus 2. https://github.com/natefinch/lumberjack Logrus 是一个针对 go 语言的结构化的日志处理器，它与 go 语言标准的 logger 库完全 API 兼容。因为 logrus 不支持对日志循环滚动处理（rotation），所以我们引入了另外一个开源项目 lumberjack。Logrus 与 lumberjack 之间通过 io.Writer 接口交互，如下图所示,
 日志配置 可以通过两种方式对 Speedle 的日志模块进行配置，即命令行参数或者配置文件。
-通过命令行参数配置日志 所有的命令行参数如下所示。前两个参数供 logrus 使用，其它的参数则是为 lumberjack 准备的。
+通过命令行参数配置日志 所有的命令行参数如下所示。level、formatter、reportcaller 配置 logrus，文件与滚动相关设置配置 lumberjack。
 --log-level string --log-formatter string --log-reportcaller bool --log-filename string --log-maxsize int --log-maxbackups int --log-maxage int --log-localtime bool --log-compress bool 上面每一个参数的详细信息包含在下面的表格中。所有的参数都收可选的。 如果所有参数都没有配置，那么日志消息默认会输出到标准错误输出（stderr），而且默认的日志级别是 info。
    配置项 描述 默认值     &amp;ndash;log-level 日志级别, 有效的日志级别包括：panic、fatal、error、warn、info、debug info   &amp;ndash;log-formatter 日志格式, 有效的日志格式包括：text、json text   &amp;ndash;log-reportcaller 用于控制是否将调用信息 (文件名, 行数和函数名)包含在日志消息中 false   &amp;ndash;log-filename 日志文件名 没有默认值。 如果没有配置，那么日志消息默认会输出到标准错误输出（stderr）   &amp;ndash;log-maxsize 每个日志文件的最大尺寸。 注意该参数只有在&amp;rdquo;&amp;ndash;log-filename&amp;rdquo;已经配置的情况下才有效 100M   &amp;ndash;log-maxbackups 历史日志文件保留的最大数量。 注意该参数只有在&amp;rdquo;&amp;ndash;log-filename&amp;rdquo;已经配置的情况下才有效 0, 保留所有历史日志文件（注意历史日志文件可能由于达到了 maxAge 设定的时间限制而被删除）   &amp;ndash;log-maxage 历史日志文件保留的最多天数。注意该参数只有在&amp;rdquo;&amp;ndash;log-filename&amp;rdquo;已经配置的情况下才有效 0, 不删除任何历史日志文件（注意历史日志文件可能由于达到了 maxbackups 的限制而被删除）   &amp;ndash;log-localtime 用于控制在生成滚动日志文件时是否使用本地时间。注意该参数只有在&amp;rdquo;&amp;ndash;log-filename&amp;rdquo;已经配置的情况下才有效 false, 使用 UTC 时间   &amp;ndash;log-compress 用于控制在生成滚动日志文件时是否需要压缩。注意该参数只有在&amp;rdquo;&amp;ndash;log-filename&amp;rdquo;已经配置的情况下才有效 false, 不压缩    下面是两个日志消息的示例，第一个使用 text 格式输出，第二个则是使用 json 格式输出，</description>
     </item>
@@ -188,9 +179,8 @@ Speedle 支持使用 TLS 来保护在非信任环境中的消息传输，也支�
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://speedle.io/zh/docs/versions/</guid>
-      <description> Version 0.2.0 (planning) &amp;hellip;
-Version 0.1.0 release notes: This is the first open source version. All basic functions are available in this version, including
- Policy Management Service Authorization Runtime Service Command line tool Integration samples  </description>
+      <description>Speedle+ 发布版本 已发布版本及发行说明以 GitHub Releases 为准。v1.6.0 是当前嵌入式 Go 示例固定使用的版本。为确保模块依赖可复现，应指定已发布版本；安装方式见嵌入模式。
+Oracle Speedle 历史版本 0.1.0 是原项目首次开源的版本，包含策略管理、授权决策、命令行工具及集成示例。历史文档中的 0.2.0 规划不是当前 Speedle+ 的发布路线图。</description>
     </item>
     
     <item>
@@ -199,11 +189,10 @@ Version 0.1.0 release notes: This is the first open source version. All basic fu
       <pubDate>Mon, 21 Jan 2019 10:43:02 +0800</pubDate>
       
       <guid>https://speedle.io/zh/docs/custom-function/</guid>
-      <description>为什么需要 Custom Function? 在 Speedle 中, Policy 和 RolePolicy 都支持 Condition。参见 SPDL(Speedle Policy Definition Language)中的 if 语句。Condition 是由 attribute, function, constant, operator, comparator 等构成。Speedle 提供少量的内置 function。实际应用中存在一些复杂的 Condition，用现有的机制难以表达，比如需要访问其他数据源。这种情况下，custom function 就能发挥作用了。custom function 是对 Condition 中内置 function 的扩展，使得 condition 的定义更为灵活。
-如何使用 Custom Function? 下面介绍使用 Custom Function 的步骤：
-1. 实现 Custom Function， 并按照 Speedle 预定义的 Custom Function RESTFul 接口暴露服务 Speedle 按预定义的接口调用 custom function，Custom fundtion 的 RESTful endpoint 必须遵循如下接口约定：
-HTTP Verb: POST
-HTTP Request Body:</description>
+      <description>为什么使用自定义函数？ 当内置运算或函数不能表达规则时，SPDL 条件可以调用已配置的函数。Speedle 向其 REST 端点发送 POST {&amp;quot;params&amp;quot;:[...]}，预期返回 {&amp;quot;result&amp;quot;:...} 或 {&amp;quot;error&amp;quot;:&amp;quot;...&amp;quot;}。参数顺序、类型和返回类型必须与条件一致。函数失败是评估错误，应用应拒绝访问。
+启动本地示例 示例接受 100 至 50000 之间的数值。参数类型错误或列表为空时返回 HTTP 错误。只有回环 IP 可以使用明文，其他监听地址必须提供 TLS。
+在单独终端运行：
+go run ./website/tests/examples/custom-function package main import ( &amp;#34;encoding/json&amp;#34; &amp;#34;flag&amp;#34; &amp;#34;log&amp;#34; &amp;#34;net&amp;#34; &amp;#34;net/http&amp;#34; &amp;#34;time&amp;#34; ) type request struct { Params []interface{} `json:&amp;#34;params&amp;#34;` } type response struct { Result interface{} `json:&amp;#34;result,omitempty&amp;#34;` Error string `json:&amp;#34;error,omitempty&amp;#34;` } func isValid(w http.ResponseWriter, r *http.Request) { send := func(status int, value response) { w.</description>
     </item>
     
   </channel>

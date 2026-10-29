@@ -12,315 +12,178 @@ categories = ["docs"]
 tags = ["Identity", "Token asserter"]
 +++
 
-## 令牌用户身份断言的好处
+## 令牌断言服务负责什么？
 
-评估请求可以包含由任何身份提供者作为传入用户身份发布的身份令牌，而不是明确指定用户身份（用户标识符和用户所属的那些组）。 将 Speedle 集成到服务中时，您的服务无需验证和解析身份令牌。 Speedle 可以为您做到。
+已配置的断言服务验证令牌，并返回显式主体及其身份域，再由 Speedle 使用这些身份评估策略。生产实现必须验证签名或 introspection 结果、签发者、受众、有效期及身份提供方要求。仅有 webhook 接口并不意味着自动兼容任意 OAuth/OIDC 令牌。
 
-Speedle 评估引擎检查传入请求是否包含身份令牌。 如果是，则评估引擎调用令牌断言服务的 webhook 以获得显式用户身份（用户标识符和组）。 然后，评估引擎可以基于用户身份域和组来执行策略评估。
+[令牌断言 API](/docs/api/asserter_api/)中的 `errCode` 为整数，可选的属性是**对象**，不是带类型的属性数组。`asserterWebhookConfig.endpoint` 是完整 URL，下面的示例使用 `/v1/assert`。
 
-## 如何评估包含身份令牌的授权请求
+## 启动确定性的本地 mock
 
-要评估包含身份令牌的授权请求，请按照下列步骤操作。
+此 mock 只识别 `githubtoken`/`github`、`googletoken`/`google`、`gitlabtoken`/`gitlab` 三组输入，分别表示对应域的 `user1`。令牌与提供方不匹配时失败。**它是测试 fixture，不验证真实令牌。** 不会记录令牌值。仅绑定回环地址，生产环境必须替换为真实身份集成。
 
-### 1. 实现断言服务的 webhook 接口
+从仓库根目录在单独终端运行：
 
-实现[Token Assertion Plugin API]（../ api / asserter_api）的断言服务将身份令牌，身份提供者和允许的身份域作为输入，并执行令牌验证和解析。 然后，该服务返回由身份令牌表示的显式身份（用户标识符和组）。
+<!-- docs-check: mock-asserter -->
+```bash
+go run ./website/tests/examples/asserter
+```
 
-请注意，如果设置了用户的身份域，则经过断言服务的用户标识可能包含用户/组的身份域。
 
-#### 示例断言服务
-
-**备注:** 此示例断言器服务仅用于测试目的。
-
-示例断言器服务源代码：
-
+<!-- docs-source: website/tests/examples/asserter/main.go -->
 ```go
+// A deterministic mock for the token-assertion tutorial. Never use for real tokens.
 package main
 
 import (
 	"encoding/json"
+	"flag"
 	"log"
 	"net/http"
+	"strings"
+	"time"
 )
 
-const (
-	// user type of Principal
-	PRINCIPAL_TYPE_USER   = "user"
-	// group type of Principal
-	PRINCIPAL_TYPE_GROUP  = "group"
-	// entity type of Principal
-	PRINCIPAL_TYPE_ENTITY = "entity"
-)
-
-// Principal of Speedle
-type Principal struct {
-	Type string `json:"type,omitempty"`
-	Name string `json:"name,omitempty"`
-	IDD  string `json:"idd,omitempty"`
+type principal struct {
+	Type string `json:"type"`
+	Name string `json:"name"`
+	IDD  string `json:"idd"`
+}
+type response struct {
+	Principals []principal `json:"principals,omitempty"`
+	ErrCode    int         `json:"errCode"`
+	ErrMessage string      `json:"errMessage,omitempty"`
 }
 
-// AssertResponse assertion response
-type AssertResponse struct {
-	Principals []*Principal           `json:"principals,omitempty"`
-	Attributes map[string]interface{} `json:"attributes,omitempty"`
-	// non zero indicates errors happen
-	ErrCode    int                    `json:"errCode"`
-	ErrMessage string                 `json:"errMessage,omitempty"`
-}
-
-// SampleAsserter for testing only
-type SampleAsserter struct {
-}
-
-func (a SampleAsserter) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if r.Method == http.MethodGet {
-		token := r.Header.Get("x-token")
-		idp := r.Header.Get("x-idp")
-
-		log.Printf("ServeHTTP, token: %s, idp: %s \n", token, idp)
-
-		subj := AssertResponse{}
-
-		if len(token) == 0 || len(idp) == 0 {
-			subj.ErrCode = http.StatusBadRequest
-			subj.ErrMessage = "token or idp is empty"
-			sendResp(w, http.StatusBadRequest, &subj)
+func assert(w http.ResponseWriter, r *http.Request) {
+	send := func(status int, value response) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(status)
+		_ = json.NewEncoder(w).Encode(value)
+	}
+	if r.Method != http.MethodGet {
+		w.Header().Set("Allow", "GET")
+		send(405, response{ErrCode: 405, ErrMessage: "GET required"})
+		return
+	}
+	// Fixed fixtures model successful assertion. This is not signature validation.
+	domains := map[string]string{"githubtoken": "github", "googletoken": "google", "gitlabtoken": "gitlab"}
+	domain, ok := domains[r.Header.Get("x-token")]
+	if !ok || domain != r.Header.Get("x-idp") {
+		send(401, response{ErrCode: 401, ErrMessage: "invalid demonstration token or identity provider"})
+		return
+	}
+	if allowed := r.Header.Get("x-allowedIDD"); allowed != "" {
+		found := false
+		for _, name := range strings.Split(allowed, ",") {
+			found = found || strings.TrimSpace(name) == domain
+		}
+		if !found {
+			send(403, response{ErrCode: 403, ErrMessage: "identity domain is not allowed"})
 			return
-		} else {
-			// Parse token and validate token
-			// Retrieve groups etc. from token issuer
-			// Here we just return a sample result
-			subj.ErrCode = 0
-			subj.ErrMessage = ""
-			subj.Principals = []*Principal{
-				&Principal{
-					Type: PRINCIPAL_TYPE_USER,
-					Name: "user1",
-					IDD:  idp,
-				},
-			}
-
-			sendResp(w, http.StatusOK, &subj)
 		}
 	}
+	send(200, response{Principals: []principal{{Type: "user", Name: "user1", IDD: domain}}})
 }
-
-func sendResp(w http.ResponseWriter, status int, data *AssertResponse) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(status)
-	raw, _ := json.Marshal(data)
-
-	log.Printf("ServeHTTP, asserted subject: %s \n", string(raw))
-
-	w.Write(raw)
-}
-
 func main() {
-
+	listen := flag.String("listen", "127.0.0.1:8080", "Local demonstration endpoint")
+	flag.Parse()
 	mux := http.NewServeMux()
-
-	asserter := SampleAsserter{}
-
-	mux.Handle("/v1/assert", asserter)
-
-	if err := http.ListenAndServe(":8080", mux); err != nil {
-		log.Fatalf("start server error: %v", err)
-	}
-
+	mux.HandleFunc("/v1/assert", assert)
+	server := &http.Server{Addr: *listen, Handler: mux, ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 10 * time.Second, WriteTimeout: 10 * time.Second}
+	log.Fatal(server.ListenAndServe())
 }
-
-
 ```
 
-a. 编译
 
+## 运行示例前
+
+先按[快速入门](/quick-start/)编译仓库根目录下的 `./bin/spctl`、`./bin/speedle-pms` 和 `./bin/speedle-ads`，需要 Go 1.25 或更新版本、Bash、curl 和 Python 3。下面各终端都从仓库根目录运行。为本页使用一个新的策略文件；仅在两个服务都停止后重建该文件。
+
+初始化空策略文件：
+
+<!-- docs-check: setup -->
 ```bash
-
-go build src/asserter/asserter.go
-
+printf '{}\n' > docs-policies.json
 ```
 
-b. 启动示例断言服务
+终端一启动 PMS，并保持运行：
 
+<!-- docs-check: pms -->
 ```bash
-./asserter
-2019/01/25 14:42:54 ServeHTTP, token: test-token, idp: github
-2019/01/25 14:42:54 ServeHTTP, asserted subject: {"principals":[{"type":"user","name":"user1","idd":"github"}],"errCode":0}
-2019/01/25 14:43:18 ServeHTTP, token: test-token, idp: google
-2019/01/25 14:43:18 ServeHTTP, asserted subject: {"principals":[{"type":"user","name":"user1","idd":"google"}],"errCode":0}
-2019/01/25 14:43:29 ServeHTTP, token: , idp: google
-2019/01/25 14:43:29 ServeHTTP, asserted subject: {"errCode":400,"errMessage":"token or idp is empty"}
-
+./bin/speedle-pms --store-type file --filestore-loc ./docs-policies.json --endpoint 127.0.0.1:6733 --grpc-endpoint 127.0.0.1:0 --insecure=true
 ```
 
-c. 测试示例断言服务
+终端二启动 ADS，并保持运行：
 
+<!-- docs-check: ads -->
 ```bash
-curl -v -H "x-token:test-token" -H "x-idp:github" http://localhost:8080/v1/assert
-* About to connect() to localhost port 8080 (#0)
-*   Trying ::1...
-* Connected to localhost (::1) port 8080 (#0)
-> GET /v1/assert HTTP/1.1
-> User-Agent: curl/7.29.0
-> Host: localhost:8080
-> Accept: */*
-> x-token:test-token
-> x-idp:github
->
-< HTTP/1.1 200 OK
-< Content-Type: application/json
-< Date: Fri, 25 Jan 2019 06:42:54 GMT
-< Content-Length: 74
-<
-* Connection #0 to host localhost left intact
-{"principals":[{"type":"user","name":"user1","idd":"github"}],"errCode":0}
-
-
-curl -v -H "x-token:test-token" -H "x-idp:google" http://localhost:8080/v1/assert
-* About to connect() to localhost port 8080 (#0)
-*   Trying ::1...
-* Connected to localhost (::1) port 8080 (#0)
-> GET /v1/assert HTTP/1.1
-> User-Agent: curl/7.29.0
-> Host: localhost:8080
-> Accept: */*
-> x-token:test-token
-> x-idp:google
->
-< HTTP/1.1 200 OK
-< Content-Type: application/json
-< Date: Fri, 25 Jan 2019 06:43:18 GMT
-< Content-Length: 74
-<
-* Connection #0 to host localhost left intact
-{"principals":[{"type":"user","name":"user1","idd":"google"}],"errCode":0}
-
-curl -v -H "x-token:" -H "x-idp:google" http://localhost:8080/v1/assert
-* About to connect() to localhost port 8080 (#0)
-*   Trying ::1...
-* Connected to localhost (::1) port 8080 (#0)
-> GET /v1/assert HTTP/1.1
-> User-Agent: curl/7.29.0
-> Host: localhost:8080
-> Accept: */*
-> x-idp:google
->
-< HTTP/1.1 400 Bad Request
-< Content-Type: application/json
-< Date: Fri, 25 Jan 2019 06:43:29 GMT
-< Content-Length: 50
-<
-* Connection #0 to host localhost left intact
-{"errCode":400,"errMessage":"token or idp is empty"}
-
+./bin/speedle-ads --store-type file --filestore-loc ./docs-policies.json --endpoint 127.0.0.1:6734 --grpc-endpoint 127.0.0.1:0 --insecure=true --asserter-endpoint http://127.0.0.1:8080/v1/assert
 ```
 
-### 2. 启动断言服务
+在第三个终端运行后续命令。PMS/ADS 共享同一个文件，策略更新通过 watch 异步到达 ADS；先查询确认已更新，再依赖新策略做决策。`--insecure=true` 仅用于回环地址上的本地示例，生产连接见[安全配置](/docs/security/)。示例显式指定 PMS 地址，不修改 `~/.spctlconfig`。完成后在两个服务终端按 Ctrl-C。
 
+
+## 创建带身份域的测试策略
+
+<!-- docs-check: idd-fixture -->
 ```bash
-./asserter
+./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ create service --json-file website/tests/examples/idd.json
 ```
 
-### 3. 配置决策服务使用断言服务
 
-在 config.json 文件中为授权决策服务（ADS）配置断言服务的 webhook，并启动 ADS 服务。
+测试策略允许 GitHub 的 `user1` 读取、Google 的 `user1` 写入，所有域的 `user1` 租借。与[身份域示例](/docs/idd/)使用同一组规则。
 
-示例配置 config.json:
+## 验证令牌请求
+
+依次预期为 Allow、Deny、Allow。第二条请求使用有效的 **GitLab** 身份，因此不能使用仅授予 GitHub 身份的读取权限。
+
+<!-- docs-check: token-allow -->
+```bash
+curl --fail --silent --show-error -H 'Content-Type: application/json' \
+  -d '{"subject":{"token":"githubtoken","tokenType":"github"},"serviceName":"booksvc","resource":"book","action":"read"}' \
+  http://127.0.0.1:6734/authz-check/v1/is-allowed
+```
+<!-- docs-check: token-deny -->
+```bash
+curl --fail --silent --show-error -H 'Content-Type: application/json' \
+  -d '{"subject":{"token":"gitlabtoken","tokenType":"gitlab"},"serviceName":"booksvc","resource":"book","action":"read"}' \
+  http://127.0.0.1:6734/authz-check/v1/is-allowed
+```
+<!-- docs-check: token-any -->
+```bash
+curl --fail --silent --show-error -H 'Content-Type: application/json' \
+  -d '{"subject":{"token":"gitlabtoken","tokenType":"gitlab"},"serviceName":"booksvc","resource":"book","action":"rent"}' \
+  http://127.0.0.1:6734/authz-check/v1/is-allowed
+```
+
+
+无效令牌属于断言错误，不是正常的策略 Deny。当前 REST 实现仍可能返回 HTTP 200，同时包含 `allowed=false` 和非空的 `errorMessage`；必须同时检查响应体和 HTTP 状态，不能仅依据 `reason` 判断评估是否成功：
+
+<!-- docs-check: token-invalid -->
+```bash
+curl --silent --show-error -H 'Content-Type: application/json' \
+  -d '{"subject":{"token":"invalid-token","tokenType":"google"},"serviceName":"booksvc","resource":"book","action":"write"}' \
+  -w '\nHTTP %{http_code}\n' http://127.0.0.1:6734/authz-check/v1/is-allowed
+```
+
+
+结束后分别在 mock、PMS、ADS 终端按 Ctrl-C。
+
+## 对接真实提供方
+
+可用完整 JSON 配置替代本地参数，其中断言部分如下：
 
 ```json
 {
-	"storeConfig": {
-		"storeType": "file",
-		"storeProps": {
-			"FileLocation": "./ps.json"
-		}
-	},
-	"enableWatch": true,
-	"asserterWebhookConfig": {
-		"endpoint": "http://host:port/v1/assert",
-		"clientCert": "",
-		"clientKey": "",
-		"caCert": ""
-	},
-	"serverConfig": {
-		"endpoint": "",
-		"insecure": "",
-		"certPath": "",
-		"clientCertPath": "",
-		"keyPath": ""
-	},
-	"logConfig": {
-		"level": "info",
-		"formatter": "text",
-		"rotationConfig": {
-			"filename": ".speedle.log",
-			"maxSize": 10,
-			"maxBackups": 5,
-			"maxAge": 0,
-			"LocalTime": false,
-			"compress": false
-		}
-	}
+  "asserterWebhookConfig": {
+    "endpoint": "https://identity.example/v1/assert",
+    "clientCert": "/absolute/path/client.crt",
+    "clientKey": "/absolute/path/client.key",
+    "caCert": "/absolute/path/issuer-ca.crt",
+    "httpTimeout": 5
+  }
 }
 ```
 
-更新 `asserterWebhookConfig` 部分为如下所示.
-
-```json
-
-"asserterWebhookConfig": {
-        "endpoint": "http://localhost:8080/v1/assert",
-        "clientCert": "",
-        "clientKey": "",
-        "caCert": ""
-    }
-
-```
-
-本例中:
-
-- `endpoint` - 断言服务的 url
-- `clientCert` - 如果断言器服务需要双向 SSL 验证，则为客户端证书文件的路径
-- `clientKey` - 如果断言器服务需要双向 SSL 验证，则为客户端私钥文件的路径
-- `caCert` - 如果断言器服务作为 HTTPS 服务公开，则为断言服务的 CA 证书文件的路径
-
-### 4. 创建测试策略
-
-以下策略在[identity domain]（../ idd）页面上定义。
-
-```bash
-
-./spctl create service booksvc
-# grant user1 coming from github to perform action: read on resource: book
-./spctl create policy -c "grant user user1 from github read book" --service-name=booksvc
-# grant user1 coming from google to perform action: write on resource: book
-./spctl create policy -c "grant user user1 from google write book" --service-name=booksvc
-# grant user1 coming from any identity providers to perform action: rent on resource: book
-./spctl create policy -c "grant user user1 rent book" --service-name=booksvc
-
-```
-
-### 5. 从身份提供者中获取身份令牌
-
-此步骤取决于您的服务如何与身份提供商集成。 如果您的服务与支持[OpenID Connect]（https://openid.net/connect/）或[OAuth]（https://oauth.net/2/）协议的身份提供商集成，那么您的服务始终可以获取身份提供者颁发的有效身份令牌或访问令牌。
-
-有关获取身份令牌的详细步骤，请参阅身份提供者提供的文档。
-
-### 6. 使用由不同身份提供者发布的身份令牌获取策略评估结果
-
-以下策略评估结果基于上一节中定义的测试策略。
-
-```bash
-# 评估结果为： 是.
-curl -v -k -X POST -d '{ "subject": {"token": "githubtoken", "tokenType":"github"},"serviceName":"booksvc","resource":"book","action":"read"}'  http://127.0.0.1:6734/authz-check/v1/is-allowed
-
-# 评估结果为： 否, 因为评估请求中的用户来自不同的身份域: gitlab
-curl -v -k -X POST -d '{ "subject": {"token": "gitlabtoken", "tokenType":"github"},"serviceName":"booksvc","resource":"book","action":"read"}'  http://127.0.0.1:6734/authz-check/v1/is-allowed
-
-# 评估结果为： 是, 因为来自任何身份域的用户 user1 都可以对资源： book执行 rent 操作
-curl -v -k -X POST -d '{ "subject": {"token": "githubtoken", "tokenType":"github"},"serviceName":"booksvc","resource":"book","action":"rent"}'  http://127.0.0.1:6734/authz-check/v1/is-allowed
-
-
-# 评估结果为： 否, 因为评估请求中的用户来自不同的身份域: notgoogle
-curl -v -k -X POST -d '{ "subject": {"token": "id token not issued by google", "tokenType":"google"},"serviceName":"booksvc","resource":"book","action":"write"}'  http://127.0.0.1:6734/authz-check/v1/is-allowed
-```
+这是服务器配置中的断言部分，部署时还要提供存储和服务端配置。`caCert` 验证 webhook 服务器，`clientCert` 与 `clientKey` 用于对方要求双向 TLS 的情况。按身份提供方文档通过 [OpenID Connect](https://openid.net/connect/) 或 [OAuth](https://oauth.net/2/) 获取令牌，并验证其实际支持的令牌类型。PMS/ADS 调用方仍需单独遵循[安全配置](/docs/security/)。

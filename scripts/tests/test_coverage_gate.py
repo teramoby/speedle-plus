@@ -49,6 +49,14 @@ class CoverageTest(unittest.TestCase):
             self.assertEqual(coverage.main([str(below), "--min-file", str(self.min)]), 1)
             self.assertEqual(coverage.main([str(below), "--merge", str(cli), "--min-file", str(self.min)]), 0)
 
+    def test_accepts_packages_after_the_options_as_run_go_tests_passes_them(self):
+        # run-go-tests.sh gate: profile --merge cli --min-file min packages...
+        result = mock.Mock(stdout=f"{M}pkg/a 1 0\n")
+        argv = [str(profile("pkg/a/x.go:1.1,2.2 9 1")), "--merge", str(profile("pkg/a/x.go:1.1,2.2 9 1")),
+                "--min-file", str(self.min), f"{M}pkg/a", f"{M}pkg/b"]
+        with mock.patch("subprocess.run", return_value=result), mock.patch("builtins.print"):
+            self.assertEqual(coverage.main(argv), 0)
+
     def test_passes_at_the_minimum(self):
         self.assertEqual(self.run_gate(profile("pkg/a/x.go:1.1,2.2 9 1", "pkg/a/x.go:3.1,4.2 1 0")), 0)
 

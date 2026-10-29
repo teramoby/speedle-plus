@@ -16,9 +16,8 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://speedle.io/docs/pms/policy-mgmt/</guid>
-      <description>What is a Speedle policy? A Speedle policy is a set of criteria that specify whether a user is granted access to a particular protected resource or assignment to a particular role. You manage Speedle policies using the Speedle Policy Management Service(PMS).
-Understanding the Speedle Policy Module Note: The Speedle syntax used in this document is defined in SPDL - Speedle Policy Definition Language.
-Policy store The policy store maintains all policy artifacts and can be persisted to an etcd store or a JSON file.</description>
+      <description>What is a Speedle policy? The Policy Management Service (PMS) manages services, authorization policies, role policies and custom functions. A policy store persists those objects using a registered storage backend.
+Services and authorization policies A service scopes its policies. An authorization policy grants or denies a principal permission to perform an action on a resource, optionally subject to a condition. Except for global role policies, policies do not automatically apply in another service.</description>
     </item>
     
     <item>
@@ -27,7 +26,9 @@ Policy store The policy store maintains all policy artifacts and can be persiste
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://speedle.io/docs/api/management_api/</guid>
-      <description>              (function() { var url = &#34;\/swagger\/policy-manage.yaml&#34;; const ui = SwaggerUIBundle({ url: url, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.presets.apis ], plugins: [ SwaggerUIBundle.plugins.DownloadUrl ], validatorUrl: null, layout: &#34;BaseLayout&#34; }) window.ui = ui })();  </description>
+      <description>Reference for your configured PMS. Requests and responses are JSON; policy IDs are strings and responses are flat objects.
+Security and endpoint configuration. This is a contract reference, not a backend hosted by speedle.io.
+              (function() { var url = &#34;\/swagger\/policy-manage.yaml&#34;; const ui = SwaggerUIBundle({ url: url, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.presets.apis ], plugins: [ SwaggerUIBundle.</description>
     </item>
     
   </channel>

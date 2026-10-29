@@ -30,7 +30,7 @@ There are two ways to configure logging for Speedle, either via command line arg
 
 ### Configure logging via command line arguments
 
-All the available command line arguments are listed below. The first two items are for logrus, and others are for lumberjack.
+All the available command line arguments are listed below. The level, formatter and reportcaller settings configure logrus; file/rotation settings configure lumberjack.
 
 ```
 --log-level string
@@ -75,12 +75,12 @@ ocean","size":10,"time":"2014-03-10 19:57:38.562264131 -0400 EDT"}
 
 An example is as below. Again, any configuration item is optional as well.
 
-```go
+```json
 {
     "logConfig": {
         "level": "info",
         "formatter": "text",
-        "setReportCaller": "false",
+        "setReportCaller": false,
         "rotationConfig": {
             "filename": "/mnt/logs/speedle.log",
             "maxSize": 20,
@@ -131,7 +131,7 @@ Secondly output any log messages anywhere you want. For example,
   log.Error("This is a error log entry")
 ```
 
-Please refer to [speedle/logging/demo/demo.go](https://github.com/teramoby/speedle-plus/blob/master/logging/demo/demo.go) to get more detailed info.
+Please refer to [speedle/logging/demo/demo.go](https://github.com/teramoby/speedle-plus/blob/master/pkg/logging/demo/demo.go) to get more detailed info.
 
 ## Integration with 3rd-party log collectors
 

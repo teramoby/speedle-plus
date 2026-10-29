@@ -76,7 +76,9 @@ def main(argv=None):
     parser.add_argument("--min-file", required=True, help="file holding the minimum percentage")
     parser.add_argument("--json", help="also write the totals as JSON")
     parser.add_argument("packages", nargs="*", help="packages the gate tested")
-    args = parser.parse_args(argv)
+    # Packages follow the options (see run-go-tests.sh); before Python 3.13,
+    # parse_args rejects positionals that come after optional arguments.
+    args = parser.parse_intermixed_args(argv)
 
     minimum = float(Path(args.min_file).read_text().strip())
     total, covered = load_profile(args.profile, *args.merge)

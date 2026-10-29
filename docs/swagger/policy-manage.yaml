@@ -1,900 +1,1107 @@
-swagger: '2.0'
-info:
-  description: This is the definition for authorization management APIs.
-  version: v1
-  title: Authorization policy management API
 basePath: /policy-mgmt/v1
-schemes:
-  - http
-paths:
-  /function:
-    post:
-      tags:
-        - function
-      summary: Create a function
-      description: Create a function.
-      operationId: createFunction
-      consumes:
-        - application/json
-        - application/yaml
-      produces:
-        - application/json
-        - application/yaml
-      parameters:
-        - in: body
-          name: body
-          description: Request of creating a function
-          required: true
-          schema:
-            $ref: '#/definitions/Function'
-      responses:
-        '201':
-          description: successfully create a function
-          schema:
-            $ref: '#/definitions/Function'
-        '400':
-          description: Bad request
-          schema:
-            $ref: '#/definitions/Error'
-    get:
-      tags:
-        - function
-      summary: List all functions
-      description: List all functions
-      operationId: listFunctions
-      consumes:
-        - application/json
-        - application/yaml
-      produces:
-        - application/json
-        - application/yaml
-      responses:
-        '200':
-          description: successfully list all functions
-          schema:
-            type: array
-            items:
-              $ref: '#/definitions/Function'
-        '400':
-          description: Bad request
-          schema:
-            $ref: '#/definitions/Error'
-    delete:
-      tags:
-        - function
-      summary: Delete all functions
-      description: Delete all functions
-      operationId: deleteFunctions
-      consumes:
-        - application/json
-        - application/yaml
-      produces:
-        - application/json
-        - application/yaml
-      responses:
-        '204':
-          description: successfully delete all functions
-        '400':
-          description: Bad request
-          schema:
-            $ref: '#/definitions/Error'
-  '/function/{functionName}':
-    get:
-      tags:
-        - function
-      summary: Get a function
-      description: Get a function.
-      operationId: getFunction
-      consumes:
-        - application/json
-        - application/yaml
-      produces:
-        - application/json
-        - application/yaml
-      parameters:
-        - name: functionName
-          in: path
-          description: Function name
-          required: true
-          type: string
-      responses:
-        '200':
-          description: successful operation
-          schema:
-            $ref: '#/definitions/Function'
-        '400':
-          description: Bad request
-          schema:
-            $ref: '#/definitions/Error'
-        '404':
-          description: function is not found
-    delete:
-      tags:
-        - function
-      summary: Delete a function
-      description: Delete a function.
-      operationId: deleteFunction
-      consumes:
-        - application/json
-      produces:
-        - application/json
-      parameters:
-        - name: functionName
-          in: path
-          description: Function name
-          required: true
-          type: string
-      responses:
-        '204':
-          description: successfully deleted
-        '400':
-          description: Bad request
-          schema:
-            $ref: '#/definitions/Error'
-        '404':
-          description: function is not found
-  /service:
-    post:
-      tags:
-        - service
-      summary: Create a service
-      description: Create a service.
-      operationId: createService
-      consumes:
-        - application/json
-        - application/yaml
-      produces:
-        - application/json
-        - application/yaml
-      parameters:
-        - in: body
-          name: body
-          description: Request of creating a service
-          required: true
-          schema:
-            $ref: '#/definitions/Service'
-      responses:
-        '201':
-          description: successfully create a service
-          schema:
-            type: array
-            items:
-              $ref: '#/definitions/Service'
-        '400':
-          description: Bad request
-          schema:
-            $ref: '#/definitions/Error'
-    get:
-      tags:
-        - service
-      summary: List all services
-      description: List all services
-      operationId: listServices
-      consumes:
-        - application/json
-        - application/yaml
-      produces:
-        - application/json
-        - application/yaml
-      responses:
-        '200':
-          description: successfully list all services
-          schema:
-            type: array
-            items:
-              $ref: '#/definitions/Service'
-        '400':
-          description: Bad request
-          schema:
-            $ref: '#/definitions/Error'
-    delete:
-      tags:
-        - service
-      summary: Delete all services
-      description: Delete all services
-      operationId: deleteServices
-      consumes:
-        - application/json
-        - application/yaml
-      produces:
-        - application/json
-        - application/yaml
-      responses:
-        '204':
-          description: successfully delete all services
-        '400':
-          description: Bad request
-          schema:
-            $ref: '#/definitions/Error'
-  '/service/{serviceName}':
-    get:
-      tags:
-        - service
-      summary: Get a service
-      description: Get a service.
-      operationId: getService
-      consumes:
-        - application/json
-        - application/yaml
-      produces:
-        - application/json
-        - application/yaml
-      parameters:
-        - name: serviceName
-          in: path
-          description: Service name
-          required: true
-          type: string
-      responses:
-        '200':
-          description: successful operation
-          schema:
-            $ref: '#/definitions/Service'
-        '400':
-          description: Bad request
-          schema:
-            $ref: '#/definitions/Error'
-        '404':
-          description: service is not found
-    delete:
-      tags:
-        - service
-      summary: Delete a service
-      description: Delete a service.
-      operationId: deleteService
-      consumes:
-        - application/json
-      produces:
-        - application/json
-      parameters:
-        - name: serviceName
-          in: path
-          description: Service name
-          required: true
-          type: string
-      responses:
-        '204':
-          description: successfully deleted
-        '400':
-          description: Bad request
-          schema:
-            $ref: '#/definitions/Error'
-        '404':
-          description: service is not found
-  '/service/{serviceName}/policy':
-    post:
-      tags:
-        - policy
-      summary: Create a policy
-      description: Create a policy.
-      operationId: createPolicy
-      consumes:
-        - application/json
-        - application/yaml
-      produces:
-        - application/json
-        - application/yaml
-      parameters:
-        - name: serviceName
-          in: path
-          description: Service name
-          required: true
-          type: string
-        - in: body
-          name: body
-          description: Request of creating a service
-          required: true
-          schema:
-            $ref: '#/definitions/Policy'
-      responses:
-        '201':
-          description: successfully create a policy
-          schema:
-            type: array
-            items:
-              $ref: '#/definitions/PolicyResponse'
-        '400':
-          description: Bad request
-          schema:
-            $ref: '#/definitions/Error'
-        '404':
-          description: service is not found
-    get:
-      tags:
-        - policy
-      summary: List all policies
-      description: List all policies
-      operationId: listPolicies
-      consumes:
-        - application/json
-      produces:
-        - application/json
-      parameters:
-        - name: serviceName
-          in: path
-          description: Service name
-          required: true
-          type: string
-      responses:
-        '200':
-          description: successfully list all services
-          schema:
-            type: array
-            items:
-              $ref: '#/definitions/PolicyResponse'
-        '400':
-          description: Bad request
-          schema:
-            $ref: '#/definitions/Error'
-        '404':
-          description: service is not found
-    delete:
-      tags:
-        - policy
-      summary: Delete all policies
-      description: Delete all policies
-      operationId: deletePolicies
-      consumes:
-        - application/json
-        - application/yaml
-      produces:
-        - application/json
-        - application/yaml
-      parameters:
-        - name: serviceName
-          in: path
-          description: Service name
-          required: true
-          type: string
-      responses:
-        '204':
-          description: successfully delete all policies
-        '400':
-          description: Bad request
-          schema:
-            $ref: '#/definitions/Error'
-        '404':
-          description: service is not found
-  '/service/{serviceName}/policy/{policyID}':
-    get:
-      tags:
-        - policy
-      summary: Get a policy
-      description: Get a policy.
-      operationId: getPolicy
-      consumes:
-        - application/json
-        - application/yaml
-      produces:
-        - application/json
-        - application/yaml
-      parameters:
-        - name: serviceName
-          in: path
-          description: Service name
-          required: true
-          type: string
-        - name: policyID
-          in: path
-          description: Policy ID
-          required: true
-          type: string
-      responses:
-        '200':
-          description: successful operation
-          schema:
-            $ref: '#/definitions/PolicyResponse'
-        '400':
-          description: Bad request
-          schema:
-            $ref: '#/definitions/Error'
-        '404':
-          description: service or policy is not found
-    delete:
-      tags:
-        - policy
-      summary: Delete a policy
-      description: Delete a policy.
-      operationId: deletePolicy
-      consumes:
-        - application/json
-        - application/yaml
-      produces:
-        - application/json
-        - application/yaml
-      parameters:
-        - name: serviceName
-          in: path
-          description: Service name
-          required: true
-          type: string
-        - name: policyID
-          in: path
-          description: Policy ID
-          required: true
-          type: string
-      responses:
-        '204':
-          description: successfully deleted
-        '400':
-          description: Bad request
-          schema:
-            $ref: '#/definitions/Error'
-        '404':
-          description: service or policy is not found
-  '/service/{serviceName}/role-policy':
-    post:
-      tags:
-        - role-policy
-      summary: Create a role policy
-      description: Create a role policy.
-      operationId: createRolePolicy
-      consumes:
-        - application/json
-        - application/yaml
-      produces:
-        - application/json
-        - application/yaml
-      parameters:
-        - name: serviceName
-          in: path
-          description: Service name
-          required: true
-          type: string
-        - in: body
-          name: body
-          description: Request of creating a service
-          required: true
-          schema:
-            $ref: '#/definitions/RolePolicy'
-      responses:
-        '201':
-          description: successfully create a role policy
-          schema:
-            type: array
-            items:
-              $ref: '#/definitions/RolePolicyResponse'
-        '400':
-          description: Bad request
-          schema:
-            $ref: '#/definitions/Error'
-        '404':
-          description: service is not found
-    get:
-      tags:
-        - role-policy
-      summary: List all role policies
-      description: List all role policies
-      operationId: listRolePolicies
-      consumes:
-        - application/json
-      produces:
-        - application/json
-      parameters:
-        - name: serviceName
-          in: path
-          description: Service name
-          required: true
-          type: string
-      responses:
-        '200':
-          description: successfully list all services
-          schema:
-            type: array
-            items:
-              $ref: '#/definitions/RolePolicyResponse'
-        '400':
-          description: Bad request
-          schema:
-            $ref: '#/definitions/Error'
-        '404':
-          description: service is not found
-    delete:
-      tags:
-        - role-policy
-      summary: Delete all role policies
-      description: Delete all role policies
-      operationId: deleteRolePolicies
-      consumes:
-        - application/json
-        - application/yaml
-      produces:
-        - application/json
-        - application/yaml
-      parameters:
-        - name: serviceName
-          in: path
-          description: Service name
-          required: true
-          type: string
-      responses:
-        '204':
-          description: successful delete all role policies
-        '400':
-          description: Bad request
-          schema:
-            $ref: '#/definitions/Error'
-        '404':
-          description: service is not found
-  '/service/{serviceName}/role-policy/{rolePolicyID}':
-    get:
-      tags:
-        - role-policy
-      summary: Get a role policy
-      description: Get a role policy.
-      operationId: getRolePolicy
-      consumes:
-        - application/json
-        - application/yaml
-      produces:
-        - application/json
-        - application/yaml
-      parameters:
-        - name: serviceName
-          in: path
-          description: Service name
-          required: true
-          type: string
-        - name: rolePolicyID
-          in: path
-          description: Role Policy ID
-          required: true
-          type: string
-      responses:
-        '200':
-          description: successful operation
-          schema:
-            $ref: '#/definitions/RolePolicyResponse'
-        '400':
-          description: Bad request
-          schema:
-            $ref: '#/definitions/Error'
-        '404':
-          description: service or role policy is not found
-    delete:
-      tags:
-        - role-policy
-      summary: Delete a role policy
-      description: Delete a role policy.
-      operationId: deleteRolePolicy
-      consumes:
-        - application/json
-      produces:
-        - application/json
-      parameters:
-        - name: serviceName
-          in: path
-          description: Service name
-          required: true
-          type: string
-        - name: rolePolicyID
-          in: path
-          description: Role Policy ID
-          required: true
-          type: string
-      responses:
-        '204':
-          description: successfully deleted
-        '400':
-          description: Bad request
-          schema:
-            $ref: '#/definitions/Error'
-        '404':
-          description: service or role policy is not found
-  '/discover-request':
-    get:
-      tags:
-        - policy discovery
-      summary: List all discover requests
-      description: List all discover requests
-      operationId: listDiscoverRequests
-      consumes:
-        - application/json
-      produces:
-        - application/json
-      responses:
-        '200':
-          description: successfully list all discover requests
-          schema:
-            type: array
-            items:
-              $ref: '#/definitions/DiscoverRequest'
-        '400':
-          description: Bad request
-          schema:
-            $ref: '#/definitions/Error'
-        '404':
-          description: Discover request is not found
-    delete:
-      tags:
-        - policy discovery
-      summary: Delete all discover requests
-      description: Delete all discover requests
-      operationId: deleteDiscoverRequests
-      consumes:
-        - application/json
-        - application/yaml
-      produces:
-        - application/json
-        - application/yaml      
-      responses:
-        '204':
-          description: successful delete all discover requests
-        '400':
-          description: Bad request
-          schema:
-            $ref: '#/definitions/Error'
-        '404':
-          description: discover request is not found
- 
-  '/discover-request/{serviceName}':
-    get:
-      tags:
-        - policy discovery
-      summary: List discover requests for a specified service
-      description: List discover requests for a specified servce
-      operationId: listServiceDiscoverRequests
-      consumes:
-        - application/json
-      produces:
-        - application/json
-      parameters:
-        - name: serviceName
-          in: path
-          description: Service name
-          required: true
-          type: string
-      responses:
-        '200':
-          description: successfully list discover requests for a specified service
-          schema:
-            type: array
-            items:
-              $ref: '#/definitions/DiscoverRequest'
-        '400':
-          description: Bad request
-          schema:
-            $ref: '#/definitions/Error'
-        '404':
-          description: discover request is not found
-    delete:
-      tags:
-        - policy discovery
-      summary: Delete all discover requests for a specified service
-      description: Delete all discover requests for a specified service
-      operationId: deleteServiceDiscoverRequest
-      consumes:
-        - application/json
-        - application/yaml
-      produces:
-        - application/json
-        - application/yaml
-      parameters:
-        - name: serviceName
-          in: path
-          description: Service name
-          required: true
-          type: string
-      responses:
-        '204':
-          description: successful delete all discover requests for the specified service
-        '400':
-          description: Bad request
-          schema:
-            $ref: '#/definitions/Error'
-        '404':
-          description: discover request is not found
-  '/discover-policy':
-    get:
-      tags:
-        - policy discovery
-      summary: List all services with policies generated based on existing discover requests.
-      description: List all services with policies generated based on existing discover requests.
-      operationId: listDiscoverPolicies
-      consumes:
-        - application/json
-      produces:
-        - application/json      
-      responses:
-        '200':
-          description: successfully list all discover requests
-          schema:
-            type: array
-            items:
-              $ref: '#/definitions/Service'
-        '400':
-          description: Bad request
-          schema:
-            $ref: '#/definitions/Error'
-        '404':
-          description: discover request is not found    
-  '/discover-policy/{serviceName}':
-    get:
-      tags:
-        - policy discovery
-      summary: List service with policies generated based on existing discover requests for a specifieed service.
-      description: List service with policies generated based on existing discover requests fora specified service.
-      operationId: getServiecDiscoverPolicies
-      consumes:
-        - application/json
-      produces:
-        - application/json
-      parameters:
-        - name: serviceName
-          in: path
-          description: Service name
-          required: true
-          type: string
-      responses:
-        '200':
-          description: successfully get discovered policies
-          schema:
-            $ref: '#/definitions/Service'
-        '400':
-          description: Bad request
-          schema:
-            $ref: '#/definitions/Error'
-        '404':
-          description: service is not found    
 definitions:
+  AndPrincipals:
+    items:
+      type: string
+    type: array
+  DiscoverPolicies:
+    properties:
+      revision:
+        format: int64
+        type: integer
+      services:
+        items:
+          $ref: '#/definitions/Service'
+        type: array
+        x-nullable: true
+    required:
+      - services
+      - revision
+    type: object
+  DiscoverRequest:
+    description: Response for discover request
+    properties:
+      requests:
+        items:
+          $ref: '#/definitions/RequestContext'
+        type: array
+        x-nullable: true
+      revision:
+        format: int64
+        type: integer
+    required:
+      - requests
+      - revision
+    type: object
   EffectEnum:
-    type: string
     enum:
       - grant
       - deny
-  ServiceTypeEnum:
     type: string
-    enum:
-      - k8s-cluster
-      - custom-service
-  AndPrincipals:
-    type: array
-    items:
-      type: string
-  Principals:
-    type: array
-    items:
-      $ref: '#/definitions/AndPrincipals'
-  Policy:
-    type: object
+  Error:
     properties:
-      name:
+      error:
         type: string
-      effect:
-        $ref: '#/definitions/EffectEnum'
-      permission:
-        type: array
-        items:
-          type: object
-          properties:
-            resource:
-              type: string
-            resourceExpression:
-              type: string
-            actions:
-              type: array
-              items:
-                type: string
-      principals:
-        $ref: '#/definitions/Principals'
-      condition:
-        type: string
-  PolicyResponse:
     type: object
-    properties:
-      id:
-        type: integer
-        format: int32
-      policy:
-        $ref: '#/definitions/Policy'
-  RolePolicy:
-    type: object
-    properties:
-      name:
-        type: string
-      effect:
-        $ref: '#/definitions/EffectEnum'
-      roles:
-        type: array
-        items:
-          type: string
-      resources:
-        type: array
-        items:
-          type: string
-      principals:
-        type: array
-        items:
-          type: string
-      condition:
-        type: string
-  RolePolicyResponse:
-    type: object
-    properties:
-      id:
-        type: integer
-        format: int32
-      policy:
-        $ref: '#/definitions/RolePolicy'
-  Service:
-    type: object
-    properties:
-      name:
-        type: string
-      type:
-        $ref: '#/definitions/ServiceTypeEnum'
   Function:
-    type: object
     properties:
-      name:
+      ca:
         type: string
       description:
         type: string
       funcURL:
         type: string
-      ca:
+      localFuncURL:
+        type: string
+      name:
         type: string
       resultCachable:
         type: boolean
       resultTTL:
+        format: int64
         type: integer
-        format: int32
-        
-  Principal:
+    required:
+      - name
+      - funcURL
     type: object
+  Policy:
+    properties:
+      condition:
+        type: string
+      effect:
+        $ref: '#/definitions/EffectEnum'
+      id:
+        type: string
+      metadata:
+        additionalProperties:
+          type: string
+        type: object
+      name:
+        type: string
+      permissions:
+        items:
+          properties:
+            actions:
+              items:
+                type: string
+              type: array
+            resource:
+              type: string
+            resourceExpression:
+              type: string
+          type: object
+        type: array
+      principals:
+        $ref: '#/definitions/Principals'
+    required:
+      - effect
+    type: object
+  PolicyCounts:
+    additionalProperties:
+      properties:
+        policycount:
+          format: int64
+          type: integer
+        rolePolicycount:
+          format: int64
+          type: integer
+      type: object
+    type: object
+  PolicyResponse:
+    properties:
+      condition:
+        type: string
+      effect:
+        $ref: '#/definitions/EffectEnum'
+      id:
+        type: string
+      metadata:
+        additionalProperties:
+          type: string
+        type: object
+      name:
+        type: string
+      permissions:
+        items:
+          properties:
+            actions:
+              items:
+                type: string
+              type: array
+            resource:
+              type: string
+            resourceExpression:
+              type: string
+          type: object
+        type: array
+      principals:
+        $ref: '#/definitions/Principals'
+    required:
+      - effect
+    type: object
+  Principal:
     description: Principal of policy evaluation request
     properties:
+      idd:
+        type: string
       name:
         type: string
       type:
         type: string
-      idd:
-        type: string
-        
-  Subject:
     type: object
-    description: Subject of policy evaluation request
-    properties:
-      tokenType:
-        type: string
-      token:
-        type: string
-      principals:
-        type: array
-        items:
-          $ref: '#/definitions/Principal'
-  
+  Principals:
+    items:
+      $ref: '#/definitions/AndPrincipals'
+    type: array
   RequestContext:
-    type: object
     description: Context of policy evaluation request
     properties:
-      serviceName:
+      action:
         type: string
+      attributes:
+        additionalProperties: {}
+        type: object
       resource:
         type: string
-      action:
+      serviceName:
         type: string
       subject:
         $ref: '#/definitions/Subject'
-      attributes:
-        type: object
-        additionalProperties:
-          type: object
-
-  DiscoverRequest:
     type: object
-    description: Response for discover request
+  RolePolicy:
     properties:
-      requests:
-        type: array
-        items:
-          $ref: '#/definitions/RequestContext'
-      revision:
-        type: integer
-        format: int64
-
-  Error:
-    type: object
-    properties:
-      error:
+      condition:
         type: string
+      effect:
+        $ref: '#/definitions/EffectEnum'
+      id:
+        type: string
+      metadata:
+        additionalProperties:
+          type: string
+        type: object
+      name:
+        type: string
+      principals:
+        items:
+          type: string
+        type: array
+      resourceExpressions:
+        items:
+          type: string
+        type: array
+      resources:
+        items:
+          type: string
+        type: array
+      roles:
+        items:
+          type: string
+        type: array
+    required:
+      - effect
+      - roles
+    type: object
+  RolePolicyResponse:
+    properties:
+      condition:
+        type: string
+      effect:
+        $ref: '#/definitions/EffectEnum'
+      id:
+        type: string
+      metadata:
+        additionalProperties:
+          type: string
+        type: object
+      name:
+        type: string
+      principals:
+        items:
+          type: string
+        type: array
+      resourceExpressions:
+        items:
+          type: string
+        type: array
+      resources:
+        items:
+          type: string
+        type: array
+      roles:
+        items:
+          type: string
+        type: array
+    required:
+      - effect
+      - roles
+    type: object
+  Service:
+    properties:
+      metadata:
+        additionalProperties:
+          type: string
+        type: object
+      name:
+        type: string
+      policies:
+        items:
+          $ref: '#/definitions/Policy'
+        type: array
+      rolePolicies:
+        items:
+          $ref: '#/definitions/RolePolicy'
+        type: array
+      type:
+        $ref: '#/definitions/ServiceTypeEnum'
+    required:
+      - name
+    type: object
+  ServiceTypeEnum:
+    description: Service type is a free-form string, limited to 256 UTF-8 bytes. Common values are application and k8s-cluster.
+    type: string
+  Subject:
+    description: Subject of policy evaluation request
+    properties:
+      principals:
+        items:
+          $ref: '#/definitions/Principal'
+        type: array
+      token:
+        type: string
+      tokenType:
+        type: string
+    type: object
+info:
+  description: JSON REST APIs for a configured PMS endpoint. Policy and role-policy responses are flat objects with string IDs. Protect management access with mutual TLS or an authenticated gateway.
+  title: Policy management API
+  version: v1
+paths:
+  /discover-policy:
+    get:
+      description: Generate policies from all recorded requests
+      operationId: listDiscoverPolicies
+      parameters:
+        - description: Filter by principal type
+          in: query
+          name: principalType
+          type: string
+        - description: Filter by principal name
+          in: query
+          name: principalName
+          type: string
+        - description: Filter by identity domain
+          in: query
+          name: principalIDD
+          type: string
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: Successful operation
+          schema:
+            $ref: '#/definitions/DiscoverPolicies'
+        "400":
+          description: Invalid JSON or request data
+          schema:
+            $ref: '#/definitions/Error'
+        "404":
+          description: discover request is not found
+        "500":
+          description: Evaluation, assertion or storage failure
+          schema:
+            $ref: '#/definitions/Error'
+      summary: Generate policies from all recorded requests
+      tags:
+        - policy discovery
+  /discover-policy/{serviceName}:
+    get:
+      description: Generate policies from a service’s recorded requests
+      operationId: getServiecDiscoverPolicies
+      parameters:
+        - description: Service name
+          in: path
+          name: serviceName
+          required: true
+          type: string
+        - description: Filter by principal type
+          in: query
+          name: principalType
+          type: string
+        - description: Filter by principal name
+          in: query
+          name: principalName
+          type: string
+        - description: Filter by identity domain
+          in: query
+          name: principalIDD
+          type: string
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: Successful operation
+          schema:
+            $ref: '#/definitions/DiscoverPolicies'
+        "400":
+          description: Invalid JSON or request data
+          schema:
+            $ref: '#/definitions/Error'
+        "404":
+          description: service is not found
+        "500":
+          description: Evaluation, assertion or storage failure
+          schema:
+            $ref: '#/definitions/Error'
+      summary: Generate policies from a service’s recorded requests
+      tags:
+        - policy discovery
+  /discover-request:
+    delete:
+      description: Delete all recorded requests
+      operationId: deleteDiscoverRequests
+      produces:
+        - application/json
+      responses:
+        "204":
+          description: Successful operation
+        "400":
+          description: Invalid JSON or request data
+          schema:
+            $ref: '#/definitions/Error'
+        "404":
+          description: discover request is not found
+        "500":
+          description: Evaluation, assertion or storage failure
+          schema:
+            $ref: '#/definitions/Error'
+      summary: Delete all recorded requests
+      tags:
+        - policy discovery
+    get:
+      description: List recorded requests and their revision
+      operationId: listDiscoverRequests
+      parameters:
+        - description: Return the most recent request
+          in: query
+          name: last
+          type: boolean
+        - description: Return requests after this revision
+          format: int64
+          in: query
+          name: revision
+          type: integer
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: Successful operation
+          schema:
+            $ref: '#/definitions/DiscoverRequest'
+        "400":
+          description: Invalid JSON or request data
+          schema:
+            $ref: '#/definitions/Error'
+        "404":
+          description: Discover request is not found
+        "500":
+          description: Evaluation, assertion or storage failure
+          schema:
+            $ref: '#/definitions/Error'
+      summary: List recorded requests and their revision
+      tags:
+        - policy discovery
+  /discover-request/{serviceName}:
+    delete:
+      description: Delete recorded requests for a service
+      operationId: deleteServiceDiscoverRequest
+      parameters:
+        - description: Service name
+          in: path
+          name: serviceName
+          required: true
+          type: string
+      produces:
+        - application/json
+      responses:
+        "204":
+          description: Successful operation
+        "400":
+          description: Invalid JSON or request data
+          schema:
+            $ref: '#/definitions/Error'
+        "404":
+          description: discover request is not found
+        "500":
+          description: Evaluation, assertion or storage failure
+          schema:
+            $ref: '#/definitions/Error'
+      summary: Delete recorded requests for a service
+      tags:
+        - policy discovery
+    get:
+      description: List recorded requests for a service
+      operationId: listServiceDiscoverRequests
+      parameters:
+        - description: Service name
+          in: path
+          name: serviceName
+          required: true
+          type: string
+        - description: Return the most recent request
+          in: query
+          name: last
+          type: boolean
+        - description: Return requests after this revision
+          format: int64
+          in: query
+          name: revision
+          type: integer
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: Successful operation
+          schema:
+            $ref: '#/definitions/DiscoverRequest'
+        "400":
+          description: Invalid JSON or request data
+          schema:
+            $ref: '#/definitions/Error'
+        "404":
+          description: discover request is not found
+        "500":
+          description: Evaluation, assertion or storage failure
+          schema:
+            $ref: '#/definitions/Error'
+      summary: List recorded requests for a service
+      tags:
+        - policy discovery
+  /function:
+    delete:
+      description: Delete all custom functions
+      operationId: deleteFunctions
+      produces:
+        - application/json
+      responses:
+        "204":
+          description: Successful operation
+        "400":
+          description: Invalid JSON or request data
+          schema:
+            $ref: '#/definitions/Error'
+        "500":
+          description: Evaluation, assertion or storage failure
+          schema:
+            $ref: '#/definitions/Error'
+      summary: Delete all custom functions
+      tags:
+        - function
+    get:
+      description: List custom functions
+      operationId: listFunctions
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: Successful operation
+          schema:
+            items:
+              $ref: '#/definitions/Function'
+            type: array
+        "400":
+          description: Invalid JSON or request data
+          schema:
+            $ref: '#/definitions/Error'
+        "500":
+          description: Evaluation, assertion or storage failure
+          schema:
+            $ref: '#/definitions/Error'
+      summary: List custom functions
+      tags:
+        - function
+    post:
+      consumes:
+        - application/json
+      description: Create a custom function
+      operationId: createFunction
+      parameters:
+        - description: Request of creating a function
+          in: body
+          name: body
+          required: true
+          schema:
+            $ref: '#/definitions/Function'
+      produces:
+        - application/json
+      responses:
+        "201":
+          description: Successful operation
+          schema:
+            $ref: '#/definitions/Function'
+        "400":
+          description: Invalid JSON or request data
+          schema:
+            $ref: '#/definitions/Error'
+        "415":
+          description: Content-Type must be application/json
+        "500":
+          description: Evaluation, assertion or storage failure
+          schema:
+            $ref: '#/definitions/Error'
+      summary: Create a custom function
+      tags:
+        - function
+  /function/{functionName}:
+    delete:
+      description: Delete a custom function
+      operationId: deleteFunction
+      parameters:
+        - description: Function name
+          in: path
+          name: functionName
+          required: true
+          type: string
+      produces:
+        - application/json
+      responses:
+        "204":
+          description: Successful operation
+        "400":
+          description: Invalid JSON or request data
+          schema:
+            $ref: '#/definitions/Error'
+        "404":
+          description: function is not found
+        "500":
+          description: Evaluation, assertion or storage failure
+          schema:
+            $ref: '#/definitions/Error'
+      summary: Delete a custom function
+      tags:
+        - function
+    get:
+      description: Get a custom function
+      operationId: getFunction
+      parameters:
+        - description: Function name
+          in: path
+          name: functionName
+          required: true
+          type: string
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: Successful operation
+          schema:
+            $ref: '#/definitions/Function'
+        "400":
+          description: Invalid JSON or request data
+          schema:
+            $ref: '#/definitions/Error'
+        "404":
+          description: function is not found
+        "500":
+          description: Evaluation, assertion or storage failure
+          schema:
+            $ref: '#/definitions/Error'
+      summary: Get a custom function
+      tags:
+        - function
+  /policy-counts:
+    get:
+      description: Count authorization and role policies by service
+      operationId: listPolicyCounts
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: Successful operation
+          schema:
+            $ref: '#/definitions/PolicyCounts'
+        "400":
+          description: Invalid JSON or request data
+          schema:
+            $ref: '#/definitions/Error'
+        "500":
+          description: Evaluation, assertion or storage failure
+          schema:
+            $ref: '#/definitions/Error'
+      summary: Count authorization and role policies by service
+      tags:
+        - service
+  /service:
+    delete:
+      description: Delete all services
+      operationId: deleteServices
+      produces:
+        - application/json
+      responses:
+        "204":
+          description: Successful operation
+        "400":
+          description: Invalid JSON or request data
+          schema:
+            $ref: '#/definitions/Error'
+        "500":
+          description: Evaluation, assertion or storage failure
+          schema:
+            $ref: '#/definitions/Error'
+      summary: Delete all services
+      tags:
+        - service
+    get:
+      description: List services
+      operationId: listServices
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: Successful operation
+          schema:
+            items:
+              $ref: '#/definitions/Service'
+            type: array
+        "400":
+          description: Invalid JSON or request data
+          schema:
+            $ref: '#/definitions/Error'
+        "500":
+          description: Evaluation, assertion or storage failure
+          schema:
+            $ref: '#/definitions/Error'
+      summary: List services
+      tags:
+        - service
+    post:
+      consumes:
+        - application/json
+      description: Create a service, optionally with policies
+      operationId: createService
+      parameters:
+        - description: Request of creating a service
+          in: body
+          name: body
+          required: true
+          schema:
+            $ref: '#/definitions/Service'
+      produces:
+        - application/json
+      responses:
+        "201":
+          description: Successful operation
+          schema:
+            $ref: '#/definitions/Service'
+        "400":
+          description: Invalid JSON or request data
+          schema:
+            $ref: '#/definitions/Error'
+        "415":
+          description: Content-Type must be application/json
+        "500":
+          description: Evaluation, assertion or storage failure
+          schema:
+            $ref: '#/definitions/Error'
+      summary: Create a service, optionally with policies
+      tags:
+        - service
+  /service/{serviceName}:
+    delete:
+      description: Delete a service and its policies
+      operationId: deleteService
+      parameters:
+        - description: Service name
+          in: path
+          name: serviceName
+          required: true
+          type: string
+      produces:
+        - application/json
+      responses:
+        "204":
+          description: Successful operation
+        "400":
+          description: Invalid JSON or request data
+          schema:
+            $ref: '#/definitions/Error'
+        "404":
+          description: service is not found
+        "500":
+          description: Evaluation, assertion or storage failure
+          schema:
+            $ref: '#/definitions/Error'
+      summary: Delete a service and its policies
+      tags:
+        - service
+    get:
+      description: Get a service and its policies
+      operationId: getService
+      parameters:
+        - description: Service name
+          in: path
+          name: serviceName
+          required: true
+          type: string
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: Successful operation
+          schema:
+            $ref: '#/definitions/Service'
+        "400":
+          description: Invalid JSON or request data
+          schema:
+            $ref: '#/definitions/Error'
+        "404":
+          description: service is not found
+        "500":
+          description: Evaluation, assertion or storage failure
+          schema:
+            $ref: '#/definitions/Error'
+      summary: Get a service and its policies
+      tags:
+        - service
+  /service/{serviceName}/policy:
+    delete:
+      description: Delete all authorization policies in a service
+      operationId: deletePolicies
+      parameters:
+        - description: Service name
+          in: path
+          name: serviceName
+          required: true
+          type: string
+      produces:
+        - application/json
+      responses:
+        "204":
+          description: Successful operation
+        "400":
+          description: Invalid JSON or request data
+          schema:
+            $ref: '#/definitions/Error'
+        "404":
+          description: service is not found
+        "500":
+          description: Evaluation, assertion or storage failure
+          schema:
+            $ref: '#/definitions/Error'
+      summary: Delete all authorization policies in a service
+      tags:
+        - policy
+    get:
+      description: List authorization policies
+      operationId: listPolicies
+      parameters:
+        - description: Service name
+          in: path
+          name: serviceName
+          required: true
+          type: string
+        - description: Optional store-supported filter expression
+          in: query
+          name: filter
+          type: string
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: Successful operation
+          schema:
+            items:
+              $ref: '#/definitions/PolicyResponse'
+            type: array
+        "400":
+          description: Invalid JSON or request data
+          schema:
+            $ref: '#/definitions/Error'
+        "404":
+          description: service is not found
+        "500":
+          description: Evaluation, assertion or storage failure
+          schema:
+            $ref: '#/definitions/Error'
+      summary: List authorization policies
+      tags:
+        - policy
+    post:
+      consumes:
+        - application/json
+      description: Create an authorization policy
+      operationId: createPolicy
+      parameters:
+        - description: Service name
+          in: path
+          name: serviceName
+          required: true
+          type: string
+        - description: Request of creating a service
+          in: body
+          name: body
+          required: true
+          schema:
+            $ref: '#/definitions/Policy'
+      produces:
+        - application/json
+      responses:
+        "201":
+          description: Successful operation
+          schema:
+            $ref: '#/definitions/PolicyResponse'
+        "400":
+          description: Invalid JSON or request data
+          schema:
+            $ref: '#/definitions/Error'
+        "404":
+          description: service is not found
+        "415":
+          description: Content-Type must be application/json
+        "500":
+          description: Evaluation, assertion or storage failure
+          schema:
+            $ref: '#/definitions/Error'
+      summary: Create an authorization policy
+      tags:
+        - policy
+  /service/{serviceName}/policy/{policyID}:
+    delete:
+      description: Delete an authorization policy
+      operationId: deletePolicy
+      parameters:
+        - description: Service name
+          in: path
+          name: serviceName
+          required: true
+          type: string
+        - description: Policy ID
+          in: path
+          name: policyID
+          required: true
+          type: string
+      produces:
+        - application/json
+      responses:
+        "204":
+          description: Successful operation
+        "400":
+          description: Invalid JSON or request data
+          schema:
+            $ref: '#/definitions/Error'
+        "404":
+          description: service or policy is not found
+        "500":
+          description: Evaluation, assertion or storage failure
+          schema:
+            $ref: '#/definitions/Error'
+      summary: Delete an authorization policy
+      tags:
+        - policy
+    get:
+      description: Get an authorization policy
+      operationId: getPolicy
+      parameters:
+        - description: Service name
+          in: path
+          name: serviceName
+          required: true
+          type: string
+        - description: Policy ID
+          in: path
+          name: policyID
+          required: true
+          type: string
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: Successful operation
+          schema:
+            $ref: '#/definitions/PolicyResponse'
+        "400":
+          description: Invalid JSON or request data
+          schema:
+            $ref: '#/definitions/Error'
+        "404":
+          description: service or policy is not found
+        "500":
+          description: Evaluation, assertion or storage failure
+          schema:
+            $ref: '#/definitions/Error'
+      summary: Get an authorization policy
+      tags:
+        - policy
+  /service/{serviceName}/role-policy:
+    delete:
+      description: Delete all role policies in a service
+      operationId: deleteRolePolicies
+      parameters:
+        - description: Service name
+          in: path
+          name: serviceName
+          required: true
+          type: string
+      produces:
+        - application/json
+      responses:
+        "204":
+          description: Successful operation
+        "400":
+          description: Invalid JSON or request data
+          schema:
+            $ref: '#/definitions/Error'
+        "404":
+          description: service is not found
+        "500":
+          description: Evaluation, assertion or storage failure
+          schema:
+            $ref: '#/definitions/Error'
+      summary: Delete all role policies in a service
+      tags:
+        - role-policy
+    get:
+      description: List role policies
+      operationId: listRolePolicies
+      parameters:
+        - description: Service name
+          in: path
+          name: serviceName
+          required: true
+          type: string
+        - description: Optional store-supported filter expression
+          in: query
+          name: filter
+          type: string
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: Successful operation
+          schema:
+            items:
+              $ref: '#/definitions/RolePolicyResponse'
+            type: array
+        "400":
+          description: Invalid JSON or request data
+          schema:
+            $ref: '#/definitions/Error'
+        "404":
+          description: service is not found
+        "500":
+          description: Evaluation, assertion or storage failure
+          schema:
+            $ref: '#/definitions/Error'
+      summary: List role policies
+      tags:
+        - role-policy
+    post:
+      consumes:
+        - application/json
+      description: Create a role policy
+      operationId: createRolePolicy
+      parameters:
+        - description: Service name
+          in: path
+          name: serviceName
+          required: true
+          type: string
+        - description: Request of creating a service
+          in: body
+          name: body
+          required: true
+          schema:
+            $ref: '#/definitions/RolePolicy'
+      produces:
+        - application/json
+      responses:
+        "201":
+          description: Successful operation
+          schema:
+            $ref: '#/definitions/RolePolicyResponse'
+        "400":
+          description: Invalid JSON or request data
+          schema:
+            $ref: '#/definitions/Error'
+        "404":
+          description: service is not found
+        "415":
+          description: Content-Type must be application/json
+        "500":
+          description: Evaluation, assertion or storage failure
+          schema:
+            $ref: '#/definitions/Error'
+      summary: Create a role policy
+      tags:
+        - role-policy
+  /service/{serviceName}/role-policy/{rolePolicyID}:
+    delete:
+      description: Delete a role policy
+      operationId: deleteRolePolicy
+      parameters:
+        - description: Service name
+          in: path
+          name: serviceName
+          required: true
+          type: string
+        - description: Role Policy ID
+          in: path
+          name: rolePolicyID
+          required: true
+          type: string
+      produces:
+        - application/json
+      responses:
+        "204":
+          description: Successful operation
+        "400":
+          description: Invalid JSON or request data
+          schema:
+            $ref: '#/definitions/Error'
+        "404":
+          description: service or role policy is not found
+        "500":
+          description: Evaluation, assertion or storage failure
+          schema:
+            $ref: '#/definitions/Error'
+      summary: Delete a role policy
+      tags:
+        - role-policy
+    get:
+      description: Get a role policy
+      operationId: getRolePolicy
+      parameters:
+        - description: Service name
+          in: path
+          name: serviceName
+          required: true
+          type: string
+        - description: Role Policy ID
+          in: path
+          name: rolePolicyID
+          required: true
+          type: string
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: Successful operation
+          schema:
+            $ref: '#/definitions/RolePolicyResponse'
+        "400":
+          description: Invalid JSON or request data
+          schema:
+            $ref: '#/definitions/Error'
+        "404":
+          description: service or role policy is not found
+        "500":
+          description: Evaluation, assertion or storage failure
+          schema:
+            $ref: '#/definitions/Error'
+      summary: Get a role policy
+      tags:
+        - role-policy
+schemes:
+  - https
+  - http
+swagger: "2.0"
