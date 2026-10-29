@@ -51,6 +51,9 @@ The suites are:
   including both `TestMats` and `TestLrg`, using native PMS/ADS. Preparation
   failure blocks this stage and fails the run. Authorization assertions are
   retained.
+- `mysql-docs`: both step-by-step MySQL guides, executed against owned MySQL
+  containers with native PMS/ADS, including read-only ADS, automatic schema
+  creation, live synchronization, restart, and provisioning without runtime DDL.
 
 The ordinary package selection follows the product CI gate: generated protobuf
 packages, samples, the logging demo and the independently provisioned MongoDB
@@ -80,7 +83,7 @@ whose database starts with `speedle_test`, and creates/drops only fresh owned
 databases. Database creation privileges are needed for tests, independently of
 the permissions of a deployed PMS/ADS account.
 
-## Initial complete trial
+## Regression repairs and verification
 
 At commit `8d4a7f8aed8b40bad9a707792579415036771ba3`, the
 [charming runner trial](https://github.com/teramoby/speedle-plus/actions/runs/40841295197)
@@ -95,5 +98,15 @@ A local file-store control run of the same tagged tests produced the same 27
 failing test names and the same 307 pass events, with no MySQL-only failure.
 The failures involve permission-list order, obsolete denial reason expectations,
 invalid attribute responses, Boolean fixtures and built-in date expectations.
-This is evidence of parity for that trial, not a green full regression result.
-The nightly remains failing while those assertions fail.
+The failing cases were subsequently repaired without filtering tests or relaxing
+Allow/Deny checks: permission responses are compared without imposing order
+while still detecting missing/extra/duplicate permissions; explicit deny
+expects DENY_POLICY_FOUND; invalid typed attributes assert HTTP 400 and the
+actual error response schema; Boolean inputs use explicit types; month/day
+fixtures use the numeric month and correct built-in day attribute.
+
+The [charming verification after these repairs](https://github.com/teramoby/speedle-plus/actions/runs/40845891556)
+passed all suites at commit `9332c3b1`: 1,032 pass events, no failures and one
+optional Discover skip. The CI script checks passed 52 Python and 134 Node
+tests. Event counts include parent tests and subtests. Later runs also execute
+the bilingual MySQL setup instructions directly from the documentation.
