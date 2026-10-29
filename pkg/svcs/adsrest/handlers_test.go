@@ -19,7 +19,9 @@ import (
 	"github.com/teramoby/speedle-plus/api/pms"
 	"github.com/teramoby/speedle-plus/pkg/cfg"
 	"github.com/teramoby/speedle-plus/pkg/eval"
+	"github.com/teramoby/speedle-plus/pkg/store"
 	"github.com/teramoby/speedle-plus/pkg/svcs"
+	"github.com/teramoby/speedle-plus/testutil/storetest"
 )
 
 const handlerPolicies = `{"services":[{"name":"app","type":"application",
@@ -30,6 +32,11 @@ const handlerPolicies = `{"services":[{"name":"app","type":"application",
   {"id":"rp1","name":"rp1","effect":"grant","roles":["admin"],"principals":["user:alice"],"condition":"level > 0"}]}]}`
 
 func newHandlerRouter(t *testing.T) http.Handler {
+	router, _ := newHandlerRouterWithStore(t)
+	return router
+}
+
+func newHandlerRouterWithStore(t *testing.T) (http.Handler, pms.PolicyStoreManager) {
 	t.Helper()
 	dir := t.TempDir()
 	location := filepath.Join(dir, "policies.json")
@@ -41,18 +48,17 @@ func newHandlerRouter(t *testing.T) http.Handler {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { os.Chdir(wd) })
-	service, err := NewRESTService(&cfg.Config{StoreConfig: &cfg.StoreConfig{
-		StoreType:  cfg.StorageTypeFile,
-		StoreProps: map[string]interface{}{"FileLocation": location},
-	}})
+	manager := storetest.PolicyStore(t, location)
+	evaluator, err := eval.NewWithStore(&cfg.Config{}, manager)
 	if err != nil {
 		t.Fatal(err)
 	}
-	router, err := NewRouter(service.Evaluator)
+	t.Cleanup(func() { _ = evaluator.(*eval.PolicyEvalImpl).Close() })
+	router, err := NewRouter(evaluator)
 	if err != nil {
 		t.Fatal(err)
 	}
-	return router
+	return router, manager
 }
 
 func post(t *testing.T, router http.Handler, path, body string, status int) *httptest.ResponseRecorder {
@@ -179,7 +185,14 @@ func TestDiagnoseHandler(t *testing.T) {
 }
 
 func TestDiscoverHandler(t *testing.T) {
-	router := newHandlerRouter(t)
+	router, manager := newHandlerRouterWithStore(t)
+	if _, supported := manager.(store.DiscoverRequestManager); !supported {
+		rec := post(t, router, "discover", `{"serviceName":"app","resource":"r","action":"read"}`, 200)
+		if !strings.Contains(rec.Body.String(), "unsupported store type") {
+			t.Fatal(rec.Body.String())
+		}
+		return
+	}
 	rec := post(t, router, "discover", `{"subject":{"principals":[{"type":"user","name":"carol"}]},"serviceName":"app","resource":"x","action":"y"}`, 200)
 	var got IsAllowedResponse
 	json.Unmarshal(rec.Body.Bytes(), &got)

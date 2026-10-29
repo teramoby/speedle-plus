@@ -4,6 +4,7 @@
 package flags
 
 import (
+	"bytes"
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
@@ -17,11 +18,13 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/spf13/pflag"
 	"github.com/teramoby/speedle-plus/pkg/errors"
+	mysqlstore "github.com/teramoby/speedle-plus/pkg/store/mysql"
 )
 
 // exited is the panic value of the test exit function.
@@ -75,6 +78,65 @@ func TestFlagToEnv(t *testing.T) {
 	}
 }
 
+func TestMySQLPropertyPrecedence(t *testing.T) {
+	for _, source := range []string{"defaults", "file", "environment", "flag", "invalid"} {
+		t.Run(source, func(t *testing.T) {
+			oldArgs, oldFlags := os.Args, pflag.CommandLine
+			defer func() { os.Args, pflag.CommandLine = oldArgs, oldFlags }()
+			pflag.CommandLine = pflag.NewFlagSet("mysql-config", pflag.ContinueOnError)
+			// Register the actual backend flags on the isolated parser, restoring
+			// their values afterward so this does not contaminate other tests.
+			mapping := (mysqlstore.MySQLStoreBuilder{}).GetStoreParams()
+			for name := range mapping {
+				flag := oldFlags.Lookup(name)
+				value, changed := flag.Value.String(), flag.Changed
+				defer func() { _ = flag.Value.Set(value); flag.Changed = changed }()
+				_ = flag.Value.Set(flag.DefValue)
+				flag.Changed = false
+				pflag.CommandLine.AddFlag(flag)
+			}
+			os.Args = []string{"speedle"}
+			wantDSN, wantSchema, wantPoll := "", "true", "1s"
+			if source != "defaults" {
+				path := writeFile(t, "mysql.json", `{"storeConfig":{"storeType":"mysql","storeProps":{"MySQLDSN":"from-file","MySQLInitSchema":false,"MySQLPollInterval":"2s"}}}`)
+				os.Args = append(os.Args, "--config-file", path)
+				wantDSN, wantSchema, wantPoll = "from-file", "false", "2s"
+			}
+			if source == "environment" || source == "flag" {
+				t.Setenv("SPDL_MYSQLSTORE_DSN", "from-environment")
+				t.Setenv("SPDL_MYSQLSTORE_POLL_INTERVAL", "3s")
+				wantDSN, wantPoll = "from-environment", "3s"
+			}
+			if source == "flag" {
+				os.Args = append(os.Args, "--mysqlstore-dsn=from-flag", "--mysqlstore-init-schema=true")
+				wantDSN, wantSchema = "from-flag", "true"
+			}
+			if source == "invalid" {
+				t.Setenv("SPDL_MYSQLSTORE_INIT_SCHEMA", "invalid")
+				wantSchema = "invalid"
+			}
+			params := &Parameters{}
+			if code := run(t, func() { params.ParseFlags("127.0.0.1:0", func() {}, mapping) }); code != -1 {
+				t.Fatalf("exit %d", code)
+			}
+			configuration, err := params.Param2Config(mapping)
+			if err != nil {
+				t.Fatal(err)
+			}
+			properties := configuration.StoreConfig.StoreProps
+			if properties[mysqlstore.DSNKey] != wantDSN || properties[mysqlstore.InitSchemaKey] != wantSchema || properties[mysqlstore.PollIntervalKey] != wantPoll {
+				t.Fatalf("%s: %+v", source, properties)
+			}
+			if source == "invalid" {
+				properties[mysqlstore.DSNKey] = "user:password@tcp(127.0.0.1:1)/db"
+				if _, err := (mysqlstore.MySQLStoreBuilder{}).NewStore(properties); errors.Code(err) != errors.ConfigError {
+					t.Fatalf("invalid flag reached connection or DDL: %v", err)
+				}
+			}
+		})
+	}
+}
+
 func TestParseFlagsDefaultsAndCommandLine(t *testing.T) {
 	params, code := parse(t, []string{"--insecure=true", "--log-level=debug"}, nil)
 	if code != -1 {
@@ -91,6 +153,28 @@ func TestParseFlagsDefaultsAndCommandLine(t *testing.T) {
 func TestParseFlagsVersionExits(t *testing.T) {
 	if _, code := parse(t, []string{"--version"}, nil); code != 0 {
 		t.Fatalf("--version exit %d, want 0", code)
+	}
+}
+
+func TestParseFlagsHelpListsEveryFlag(t *testing.T) {
+	for _, arg := range []string{"--help", "-h"} {
+		oldArgs, oldFlags := os.Args, pflag.CommandLine
+		os.Args = []string{"speedle-test", arg}
+		pflag.CommandLine = pflag.NewFlagSet("speedle", pflag.ContinueOnError)
+		var out bytes.Buffer
+		pflag.CommandLine.SetOutput(&out)
+		params := &Parameters{}
+		code := run(t, func() { params.ParseFlags("0.0.0.0:1", func() {}, nil) })
+		os.Args, pflag.CommandLine = oldArgs, oldFlags
+		if code != 0 {
+			t.Fatalf("%s exit %d, want 0", arg, code)
+		}
+		help := out.String()
+		for _, want := range []string{"Usage: speedle-test [flags]", "-h, --help", "--version", "--log-level", "--store-type", "SPDL_LOG_LEVEL"} {
+			if !strings.Contains(help, want) {
+				t.Errorf("%s output lacks %q:\n%s", arg, want, help)
+			}
+		}
 	}
 }
 

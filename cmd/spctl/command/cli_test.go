@@ -181,6 +181,11 @@ func TestCLICreateServiceFromFiles(t *testing.T) {
 
 func TestCLIDiscover(t *testing.T) {
 	c := newCLI(t)
+	if !cliFixtureSupportsDiscover {
+		c.expect(1, []string{"doesn't support discover"}, "discover", "request")
+		c.expect(1, []string{"doesn't support discover"}, "discover", "reset")
+		return
+	}
 	c.expect(0, []string{"All requests are deleted"}, "discover", "reset")
 	// Without recorded requests the file store answers 404 and etcd an
 	// empty result.
@@ -277,6 +282,15 @@ func TestCLIConfig(t *testing.T) {
 	if code != 0 || !strings.Contains(out, "timeout = 7s") || !strings.Contains(out, "skipverify = true") {
 		t.Errorf("config --list: exit %d\n%s", code, out)
 	}
+	// --filestore-loc comes from the file store for the servers; spctl ignores
+	// it, so it is hidden but still accepted.
+	if strings.Contains(out, "filestore-loc") {
+		t.Errorf("config --list shows filestore-loc\n%s", out)
+	}
+	if out, code := c.runAt("", "--help"); code != 0 || strings.Contains(out, "filestore-loc") || !strings.Contains(out, "--pms-endpoint") {
+		t.Errorf("--help: exit %d\n%s", code, out)
+	}
+	c.expect(0, nil, "--filestore-loc", "/tmp/unused.json", "config", "--list")
 
 	// An unwritable home fails.
 	c.home = filepath.Join(c.home, "missing")
@@ -330,5 +344,24 @@ func TestCLIHTTPSClient(t *testing.T) {
 	cmd.Env = append(os.Environ(), "HOME="+c.home, "http_proxy=http://127.0.0.1:1", "NO_PROXY=127.0.0.1")
 	if out, err := cmd.CombinedOutput(); err != nil {
 		t.Errorf("with http_proxy: %v\n%s", err, out)
+	}
+}
+
+func TestCLICheck(t *testing.T) {
+	c := newCLI(t)
+	// check works without PMS.
+	if out, code := c.runAt("", "check", "policy", "grant user alice read /x if a > 1"); code != 0 || out != "policy OK\n" {
+		t.Errorf("valid policy: exit %d\n%s", code, out)
+	}
+	if out, code := c.runAt("", "check", "policy", "grant user alice read /x if a >"); code != 1 || !strings.Contains(out, "Invalid condition: Unexpected end of expression") {
+		t.Errorf("invalid policy: exit %d\n%s", code, out)
+	}
+	spdl := filepath.Join(t.TempDir(), "p.spdl")
+	os.WriteFile(spdl, []byte("[service.a]\n[policy]\nGRANT USER alice read /x if a >\n"), 0600)
+	if out, code := c.runAt("", "check", "--file", spdl); code != 1 || !strings.Contains(out, spdl+":3: Invalid condition") {
+		t.Errorf("invalid file: exit %d\n%s", code, out)
+	}
+	if out, code := c.runAt("", "check"); code != 1 || !strings.Contains(out, "Usage:") {
+		t.Errorf("no arguments: exit %d\n%s", code, out)
 	}
 }

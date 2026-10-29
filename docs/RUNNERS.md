@@ -128,3 +128,15 @@ after validation. Do not allow PR merge refs or wildcard workflow revisions.
 The workflows limit GitHub tokens to required permissions and do not persist Git
 credentials during CI checkout. `.github/actionlint.yaml` declares the custom
 label for workflow validation.
+
+## Database regression allocation
+
+MySQL validation stays on charming. MongoDB validation selects the unique
+`fiona-speedle` label directly (`runs-on: fiona-speedle`); fiona is macOS ARM64.
+The MongoDB launcher owns a temporary native replica set, and both launchers use
+`scripts/ci/store_regression.py` for the same full Go and native PMS/ADS runtime
+stages. The runner group must allow the exact validation workflow and ref.
+
+Shared integration fixtures select `file`, `etcd`, `mongodb` or `mysql` through
+`STORE_TYPE`. `SPEEDLE_TEST_STORE_PROPS` supplies backend connection properties;
+see `docs/MYSQL_TESTS.md` for isolation, optional-capability checks and artifacts.

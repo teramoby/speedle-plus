@@ -16,8 +16,10 @@ import (
 	"github.com/teramoby/speedle-plus/api/pms"
 	"github.com/teramoby/speedle-plus/pkg/cfg"
 	"github.com/teramoby/speedle-plus/pkg/eval"
+	"github.com/teramoby/speedle-plus/pkg/store"
 	_ "github.com/teramoby/speedle-plus/pkg/store/file"
 	"github.com/teramoby/speedle-plus/pkg/svcs/adsgrpc/pb"
+	"github.com/teramoby/speedle-plus/testutil/storetest"
 )
 
 const testPolicies = `{"services":[{"name":"app","type":"application",
@@ -44,10 +46,12 @@ func newService(t *testing.T) *GRPCService {
 		StoreType:  cfg.StorageTypeFile,
 		StoreProps: map[string]interface{}{"FileLocation": location},
 	}}
-	evaluator, err := eval.NewFromConfig(conf)
+	manager := storetest.PolicyStore(t, location)
+	evaluator, err := eval.NewWithStore(conf, manager)
 	if err != nil {
 		t.Fatal(err)
 	}
+	t.Cleanup(func() { _ = evaluator.(*eval.PolicyEvalImpl).Close() })
 	service, err := NewGRPCService(evaluator)
 	if err != nil {
 		t.Fatal(err)
@@ -121,6 +125,12 @@ func TestGetAllGrantedRolesAndPermissions(t *testing.T) {
 func TestDiscover(t *testing.T) {
 	service := newService(t)
 	got, err := service.Discover(context.Background(), request("carol", "res9", "read", map[string]string{"k": "v"}))
+	if _, supported := service.evaluator.(*eval.PolicyEvalImpl).Store.(store.DiscoverRequestManager); !supported {
+		if err == nil {
+			t.Fatal("Discover must report unsupported backend")
+		}
+		return
+	}
 	if err != nil {
 		t.Fatal(err)
 	}

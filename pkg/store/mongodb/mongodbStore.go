@@ -431,6 +431,14 @@ func (e mongoChangeEvent) storeEvents() ([]pms.StoreChangeEvent, error) {
 	return append(events, change(pms.SERVICE_ADD, &service)), nil
 }
 
+// Close stops watching and releases the MongoDB client's connections.
+func (s *Store) Close() error {
+	s.StopWatch()
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	return s.client.Disconnect(ctx)
+}
+
 func (s *Store) Type() string {
 	return StoreType
 }

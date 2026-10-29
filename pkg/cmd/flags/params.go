@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"path/filepath"
 	"runtime/debug"
 	"strings"
 	"time"
@@ -36,6 +37,7 @@ import (
 type Parameters struct {
 	////////// Common flags //////////
 	Version bool
+	Help    bool
 
 	//////////Server config//////////////
 	ConfigFile      StrParamDetail
@@ -259,7 +261,7 @@ func (k *Parameters) ParseFlags(defaultEndpoint string, printVersionInfoFun func
 	k.ForceClientCert = StrParamDetail{Name: "force-client-cert", ShortName: "f", Usage: "Server config: Force Client certification."}
 	params = append(params, &k.ForceClientCert)
 
-	k.StoreType = StrParamDetail{Name: "store-type", DefaultValue: DefaultStoreType, Usage: "Store config: Policy store type, etcd or file."}
+	k.StoreType = StrParamDetail{Name: "store-type", DefaultValue: DefaultStoreType, Usage: "Store config: policy store type (file, etcd, mongodb, mysql)."}
 	params = append(params, &k.StoreType)
 	k.StoreWatchEnabled = StrParamDetail{Name: "enable-watch", DefaultValue: strconv.FormatBool(DefaultStoreWatchEnabled), Usage: "Evaluator config: Whether enable watch store changes."}
 	params = append(params, &k.StoreWatchEnabled)
@@ -316,11 +318,18 @@ func (k *Parameters) ParseFlags(defaultEndpoint string, printVersionInfoFun func
 	params = append(params, &k.AsserterConf.AsserterClientTimeout)
 
 	pflag.BoolVarP(&k.Version, "version", "", false, "print version information")
+	pflag.BoolVarP(&k.Help, "help", "h", false, "print this help message")
+	pflag.Usage = printUsage
 
 	for _, paramDetail := range params {
 		pflag.StringVarP(&(paramDetail.Value), paramDetail.Name, paramDetail.ShortName, paramDetail.DefaultValue, paramDetail.Usage)
 	}
 	pflag.Parse()
+
+	if k.Help {
+		pflag.Usage()
+		exit(0)
+	}
 
 	if k.Version {
 		printVersionInfoFun()
@@ -709,6 +718,16 @@ func (k *Parameters) Param2Config(storeParamsMap map[string]string) (*cfg.Config
 
 // exit is os.Exit, replaced in tests.
 var exit = os.Exit
+
+// printUsage prints every flag, and how else a flag can be set.
+func printUsage() {
+	out := pflag.CommandLine.Output()
+	fmt.Fprintf(out, "Usage: %s [flags]\n\nFlags:\n", filepath.Base(os.Args[0]))
+	pflag.PrintDefaults()
+	fmt.Fprintf(out, "\nA flag not set on the command line is read from the environment variable %s_<FLAG>,\n"+
+		"with the flag name in upper case and dashes replaced by underscores (for example, --log-level\n"+
+		"is %s), and then from the --config-file for the flags it covers.\n", EnvVarPrefix, FlagToEnv("log-level"))
+}
 
 func (k *Parameters) usage() {
 	pflag.Usage()

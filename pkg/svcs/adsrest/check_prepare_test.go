@@ -1,18 +1,22 @@
 //Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
 //Licensed under the Universal Permissive License (UPL) Version 1.0 as shown at http://oss.oracle.com/licenses/upl.
 
-//+build runtime_test_prepare
+//go:build runtime_test_prepare
+// +build runtime_test_prepare
 
 package adsrest
 
 import (
 	"testing"
 
+	"github.com/teramoby/speedle-plus/pkg/pdl"
 	"github.com/teramoby/speedle-plus/testutil"
 )
 
-//Prepare service/policy/rolepolicy in store for runtime_test
+// Prepare service/policy/rolepolicy in store for runtime_test
 func TestPrepareCheckEnvironment(t *testing.T) {
+	// This preparer is also run on its own, before any RunTestCases call.
+	testutil.TestLog = t
 
 	cc := testutil.NewCmdClient()
 
@@ -345,10 +349,10 @@ func TestPrepareCheckEnvironment(t *testing.T) {
 		"grant user  user_attri1   get,del res_request_year_greater_2017 if request_year >= 2017",
 
 		//"request_month == 'September'",
-		"grant user  user_attri1   get,del res_request_month_nov if request_month == 'November'",
+		"grant user  user_attri1   get,del res_request_month_nov if request_month == 11",
 
 		//"request_day == 14",
-		"grant user  user_attri1   get,del res_request_day_14 if request_month == 14",
+		"grant user  user_attri1   get,del res_request_day_14 if request_day == 14",
 	}
 	if !cc.CreateServiceWithPDL("service-builtin-attribute", serviceForBuiltinAttributePDL) {
 		t.Fatalf("Create service(service-builtin-attribute) failed via pdl ")
@@ -476,9 +480,14 @@ func TestPrepareCheckEnvironment(t *testing.T) {
 		"grant (group group4, role role2),(user user4, role role2) get,del res4",
 		"grant group group5, role role2 get,del res5",
 	}
-	if !cc.CreateServiceWithPDL("service-with-complex-principle_rolePolicy", serviceWithComplexPrincipleInRolePolicyPDL) {
-		t.Fatalf("Create service(service-with-complex-principle_rolePolicy) failed via pdl ")
-	}
+	// The corresponding _TestMats_IsAllowed_ComplexPrincipleInRolePolicy
+	// is intentionally disabled in the original corpus: AND role principals
+	// are unsupported. Verify that limit without blocking every active case.
+	t.Run("RolePolicyANDPrincipalUnsupported", func(t *testing.T) {
+		if _, _, err := pdl.ParseRolePolicy(serviceWithComplexPrincipleInRolePolicyPDL[1], ""); err == nil {
+			t.Fatal("AND role principals now parse; enable the original disabled scenario")
+		}
+	})
 
 	serviceWithEntityPrinciplePDL := []string{
 		//https://golang.org/pkg/regexp/syntax

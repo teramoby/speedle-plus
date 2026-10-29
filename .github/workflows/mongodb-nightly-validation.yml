@@ -11,7 +11,7 @@ jobs:
   mongodb:
     name: MongoDB on fiona
     runs-on: fiona-speedle
-    timeout-minutes: 20
+    timeout-minutes: 60
     steps:
       - name: Verify runner identity
         run: |
@@ -33,7 +33,7 @@ jobs:
           go-version: '1.26'
           cache: false
 
-      - name: MongoDB replica set and race tests
+      - name: Full test suite against MongoDB
         run: |
           set -euo pipefail
           mkdir -p mongodb-results

@@ -94,9 +94,8 @@ func main() {
 }
 GO
 go run "${validation_dir}/init.go"
-unformatted=$(gofmt -l pkg/store/mongodb/mongodbStore.go pkg/store/mongodb/regression_test.go)
-if [[ -n "${unformatted}" ]]; then
-  printf 'Go files need formatting:\n%s\n' "${unformatted}" >&2
-  exit 1
-fi
-go test -race -v -count=1 -timeout 300s ./pkg/store/mongodb
+export STORE_TYPE=mongodb
+export SPEEDLE_REQUIRE_MYSQL=0
+export RESULTS_DIR="${RESULTS_DIR:-mongodb-results}"
+unset SPEEDLE_TEST_STORE_PROPS
+python3 scripts/ci/run-store-tests.py

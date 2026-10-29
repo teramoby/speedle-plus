@@ -4,6 +4,7 @@
 package pmsimpl
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/teramoby/speedle-plus/api/pms"
@@ -53,7 +54,7 @@ func wantCode(t *testing.T, name string, err error, want errors.ErrorCode) {
 func TestCheckService(t *testing.T) {
 	setLimits(t, 2, 3, -1, 100)
 	small := &pms.Policy{ID: "p", Effect: "grant"}
-	big := &pms.Policy{ID: "p", Effect: "grant", Condition: string(make([]byte, 200))}
+	big := &pms.Policy{ID: "p", Effect: "grant", Condition: strings.Repeat("a", 200)}
 	cases := []struct {
 		name    string
 		store   *countingStore
@@ -65,7 +66,7 @@ func TestCheckService(t *testing.T) {
 		{"too many policies", &countingStore{policies: 2, rolePolicies: 1}, &pms.Service{Policies: []*pms.Policy{small}}, errors.ExceedLimit},
 		{"role policies count too", &countingStore{}, &pms.Service{RolePolicies: make([]*pms.RolePolicy, 4)}, errors.ExceedLimit},
 		{"policy too big", &countingStore{}, &pms.Service{Policies: []*pms.Policy{big}}, errors.ExceedLimit},
-		{"role policy too big", &countingStore{}, &pms.Service{RolePolicies: []*pms.RolePolicy{{Condition: string(make([]byte, 200))}}}, errors.ExceedLimit},
+		{"role policy too big", &countingStore{}, &pms.Service{RolePolicies: []*pms.RolePolicy{{Condition: strings.Repeat("a", 200)}}}, errors.ExceedLimit},
 		{"role policy fits", &countingStore{}, &pms.Service{RolePolicies: []*pms.RolePolicy{{ID: "rp"}}}, ""},
 		{"service count fails", &countingStore{err: errors.New(errors.StoreError, "x")}, &pms.Service{}, errors.StoreError},
 		{"policy count fails", &countingStore{failRolePolicyCount: true}, &pms.Service{}, errors.StoreError},
@@ -77,7 +78,7 @@ func TestCheckService(t *testing.T) {
 
 func TestCheckServiceWithoutLimits(t *testing.T) {
 	setLimits(t, -1, -1, -1, -1)
-	service := &pms.Service{Policies: []*pms.Policy{{Condition: string(make([]byte, 5000))}}}
+	service := &pms.Service{Policies: []*pms.Policy{{Condition: strings.Repeat("a", 5000)}}}
 	wantCode(t, "unlimited", CheckService(service, &countingStore{services: 1000, policies: 1000}), "")
 }
 
@@ -95,7 +96,7 @@ func TestCheckPolicy(t *testing.T) {
 		{"global service", pms.GlobalService, policy, &countingStore{}, errors.InvalidRequest},
 		{"no effect", "app", &pms.Policy{ID: "p"}, &countingStore{}, errors.InvalidRequest},
 		{"too many", "app", policy, &countingStore{policies: 1, rolePolicies: 1}, errors.ExceedLimit},
-		{"too big", "app", &pms.Policy{Effect: "deny", Condition: string(make([]byte, 200))}, &countingStore{}, errors.ExceedLimit},
+		{"too big", "app", &pms.Policy{Effect: "deny", Condition: strings.Repeat("a", 200)}, &countingStore{}, errors.ExceedLimit},
 		{"count fails", "app", policy, &countingStore{err: errors.New(errors.StoreError, "x")}, errors.StoreError},
 	}
 	for _, c := range cases {
@@ -115,7 +116,7 @@ func TestCheckRolePolicy(t *testing.T) {
 		{"fits", rolePolicy, &countingStore{rolePolicies: 1}, ""},
 		{"no effect", &pms.RolePolicy{ID: "rp"}, &countingStore{}, errors.InvalidRequest},
 		{"too many", rolePolicy, &countingStore{policies: 2}, errors.ExceedLimit},
-		{"too big", &pms.RolePolicy{Effect: "deny", Condition: string(make([]byte, 200))}, &countingStore{}, errors.ExceedLimit},
+		{"too big", &pms.RolePolicy{Effect: "deny", Condition: strings.Repeat("a", 200)}, &countingStore{}, errors.ExceedLimit},
 		{"count fails", rolePolicy, &countingStore{failRolePolicyCount: true}, errors.StoreError},
 	}
 	for _, c := range cases {
@@ -135,4 +136,26 @@ func TestCheckMaxSizeUnmarshalable(t *testing.T) {
 	if valid || errors.Code(err) != errors.SerializationError {
 		t.Fatalf("checkMaxSize(chan) = %v, %v", valid, err)
 	}
+}
+
+func TestInvalidConditionIsRejectedWithItsPosition(t *testing.T) {
+	setLimits(t, -1, -1, -1, -1)
+	bad := "amount <="
+	want := "invalid condition at character 10: Unexpected end of expression\namount <=\n         ^"
+	cases := []struct {
+		name, prefix string
+		err          error
+	}{
+		{"policy", `policy "p1": `, CheckPolicy("app", &pms.Policy{Name: "p1", Effect: "grant", Condition: bad}, &countingStore{})},
+		{"role policy", `role policy "rp1": `, CheckRolePolicy("app", &pms.RolePolicy{Name: "rp1", Effect: "grant", Condition: bad}, &countingStore{})},
+		{"policy in service", "policy 2: ", CheckService(&pms.Service{Policies: []*pms.Policy{{Effect: "grant"}, {Effect: "grant", Condition: bad}}}, &countingStore{})},
+		{"role policy in service", "role policy 1: ", CheckService(&pms.Service{RolePolicies: []*pms.RolePolicy{{Effect: "grant", Condition: bad}}}, &countingStore{})},
+	}
+	for _, c := range cases {
+		wantCode(t, c.name, c.err, errors.InvalidRequest)
+		if c.err != nil && !strings.HasSuffix(c.err.Error(), c.prefix+want) {
+			t.Errorf("%s: error %q, want it to end with %q", c.name, c.err, c.prefix+want)
+		}
+	}
+	wantCode(t, "valid condition", CheckPolicy("app", &pms.Policy{Effect: "grant", Condition: "amount <= 5"}, &countingStore{}), "")
 }

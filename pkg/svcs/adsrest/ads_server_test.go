@@ -4,18 +4,20 @@ package adsrest
 
 import (
 	"net/http/httptest"
+	"testing"
 
 	adsapi "github.com/teramoby/speedle-plus/api/ads"
 	"github.com/teramoby/speedle-plus/pkg/assertion"
 	"github.com/teramoby/speedle-plus/pkg/cfg"
 	"github.com/teramoby/speedle-plus/pkg/eval"
 	_ "github.com/teramoby/speedle-plus/pkg/store/file"
+	"github.com/teramoby/speedle-plus/testutil/storetest"
 )
 
 var storeLocation = "./fakestore.json"
 
-func NewTestServerWithConfig(conf *cfg.Config) (*httptest.Server, error) {
-	e, err := newEvaluator(conf)
+func NewTestServerWithConfig(t *testing.T, conf *cfg.Config) (*httptest.Server, error) {
+	e, err := newEvaluator(t, conf)
 	if err != nil {
 		return nil, err
 	}
@@ -29,9 +31,9 @@ func NewTestServerWithConfig(conf *cfg.Config) (*httptest.Server, error) {
 	return server, nil
 }
 
-func NewTestServer() (*httptest.Server, error) {
+func NewTestServer(t *testing.T) (*httptest.Server, error) {
 	conf := GenerateServerConfig()
-	evaluator, err := newEvaluator(conf)
+	evaluator, err := newEvaluator(t, conf)
 	if err != nil {
 		return nil, err
 	}
@@ -56,12 +58,14 @@ func GenerateServerConfig() *cfg.Config {
 	return &conf
 }
 
-func newEvaluator(conf *cfg.Config) (eval.InternalEvaluator, error) {
-	evaluator, err := eval.NewFromConfig(conf)
+func newEvaluator(t *testing.T, conf *cfg.Config) (eval.InternalEvaluator, error) {
+	manager := storetest.PolicyStore(t, conf.StoreConfig.StoreProps["FileLocation"].(string))
+	evaluator, err := eval.NewWithStore(conf, manager)
 	if err != nil {
 		return nil, err
 	}
 
+	t.Cleanup(func() { _ = evaluator.(*eval.PolicyEvalImpl).Close() })
 	as, errLoadAsserter := assertion.NewAsserter(conf.AsserterWebhookConfig, nil)
 	if errLoadAsserter != nil {
 		return nil, errLoadAsserter

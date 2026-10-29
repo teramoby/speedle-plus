@@ -40,6 +40,18 @@ func testMain(m *testing.M) int {
 	var configFile string
 
 	log.Infof("STORE_TYPE = %s\n", os.Getenv("STORE_TYPE"))
+	if storetest.SelectedBackend() != "file" && (storetest.SelectedBackend() != "etcd" || os.Getenv("SPEEDLE_TEST_STORE_PROPS") != "" || os.Getenv("SPEEDLE_ETCD_ENDPOINT") != "") {
+		fixture, err := storetest.NewFixture(&pms.PolicyStore{})
+		if err != nil {
+			log.Print(err)
+			return 1
+		}
+		defer fixture.Close()
+		testPS = fixture.Store
+		conf = &cfg.Config{StoreConfig: fixture.Config}
+		return m.Run()
+	}
+
 	if os.Getenv("STORE_TYPE") == "etcd" {
 		log.Info("Start etcd!")
 		configFile = "../cfg/config_etcd.json"

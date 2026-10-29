@@ -15,7 +15,6 @@ import (
 	"github.com/teramoby/speedle-plus/api/pms"
 	"github.com/teramoby/speedle-plus/pkg/cfg"
 	"github.com/teramoby/speedle-plus/pkg/errors"
-	"github.com/teramoby/speedle-plus/pkg/store"
 	"github.com/teramoby/speedle-plus/testutil/storetest"
 )
 
@@ -28,10 +27,7 @@ func newFileEvaluator(t *testing.T, content string) (*PolicyEvalImpl, pms.Policy
 		t.Fatal(err)
 	}
 	conf := &cfg.Config{StoreConfig: &cfg.StoreConfig{StoreType: "file", StoreProps: map[string]interface{}{"FileLocation": location}}}
-	ps, err := store.NewStore("file", conf.StoreConfig.StoreProps)
-	if err != nil {
-		t.Fatal(err)
-	}
+	ps := storetest.PolicyStore(t, location)
 	evaluator, err := NewWithStore(conf, ps)
 	if err != nil {
 		t.Fatal(err)

@@ -53,10 +53,7 @@ func newFileRouter(t *testing.T) (*mux.Router, pms.PolicyStoreManager) {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { os.Chdir(wd) })
-	ps, err := store.NewStore("file", map[string]interface{}{"FileLocation": location})
-	if err != nil {
-		t.Fatal(err)
-	}
+	ps := storetest.PolicyStore(t, location)
 	router, err := NewRouter(ps)
 	if err != nil {
 		t.Fatal(err)
@@ -149,7 +146,11 @@ func TestServiceAndPolicyHandlers(t *testing.T) {
 
 func TestDiscoverHandlers(t *testing.T) {
 	router, ps := newFileRouter(t)
-	manager := ps.(store.DiscoverRequestManager)
+	manager, supported := ps.(store.DiscoverRequestManager)
+	if !supported {
+		serve(t, router, call{"GET", base + "discover-request", "", 400})
+		return
+	}
 	for _, resource := range []string{"r1", "r2"} {
 		if err := manager.SaveDiscoverRequest(&ads.RequestContext{
 			Subject:     &ads.Subject{Principals: []*ads.Principal{{Type: "user", Name: "alice"}}},

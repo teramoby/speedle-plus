@@ -316,7 +316,9 @@ func (this lexerState) canTransitionTo(kind TokenKind) bool {
 	return false
 }
 
-func checkExpressionSyntax(tokens []ExpressionToken) error {
+// checkExpressionSyntax checks the token order. end is the position reported
+// for an expression that ends too early.
+func checkExpressionSyntax(tokens []ExpressionToken, end int) error {
 
 	var state lexerState
 	var lastToken ExpressionToken
@@ -330,31 +332,31 @@ func checkExpressionSyntax(tokens []ExpressionToken) error {
 
 			// call out a specific error for tokens looking like they want to be functions.
 			if lastToken.Kind == VARIABLE && token.Kind == CLAUSE {
-				return errors.New("Undefined function " + lastToken.Value.(string))
+				return &ExpressionError{Message: "Undefined function " + lastToken.Value.(string), Position: lastToken.Position}
 			}
 
 			firstStateName := fmt.Sprintf("%s [%v]", state.kind.String(), lastToken.Value)
 			nextStateName := fmt.Sprintf("%s [%v]", token.Kind.String(), token.Value)
 
-			return errors.New("Cannot transition token types from " + firstStateName + " to " + nextStateName)
+			return &ExpressionError{Message: "Cannot transition token types from " + firstStateName + " to " + nextStateName, Position: token.Position}
 		}
 
 		state, err = getLexerStateForToken(token.Kind)
 		if err != nil {
-			return err
+			return withPosition(err, token.Position)
 		}
 
 		if !state.isNullable && token.Value == nil {
 
 			errorMsg := fmt.Sprintf("Token kind '%v' cannot have a nil value", token.Kind.String())
-			return errors.New(errorMsg)
+			return &ExpressionError{Message: errorMsg, Position: token.Position}
 		}
 
 		lastToken = token
 	}
 
 	if !state.isEOF {
-		return errors.New("Unexpected end of expression")
+		return &ExpressionError{Message: "Unexpected end of expression", Position: end}
 	}
 	return nil
 }

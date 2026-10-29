@@ -18,8 +18,8 @@ var (
 		# List all global flags
 		spctl config --list
 		
-		# Set global flag "timeout" and "insecure"
-		spctl config timeout 500ms insecure true`
+		# Set global flag "timeout" and "skipverify"
+		spctl config timeout 500ms skipverify true`
 )
 
 func newConfigCommand() *cobra.Command {
@@ -39,6 +39,9 @@ func configCommandFunc(cmd *cobra.Command, args []string) {
 		// setflagsFromConfigFile(cmd)
 		fs := cmd.InheritedFlags()
 		fs.VisitAll(func(f *pflag.Flag) {
+			if f.Hidden {
+				return
+			}
 			fmt.Printf("%v = %v\n", f.Name, f.Value)
 		})
 	} else {

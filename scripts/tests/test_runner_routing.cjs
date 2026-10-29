@@ -94,7 +94,11 @@ function script(block, name) {
 }
 
 test('review and command jobs retain their explicit runner policies and isolated Speedle label', () => {
-  assert.deepEqual(Object.keys(job.ci), ['changes', 'site', 'lint', 'test', 'build']);
+  assert.deepEqual(Object.keys(job.ci), ['changes', 'site', 'lint', 'test', 'build', 'mysql']);
+  assert.equal(route(job.ci.mysql), 'ubuntu-latest');
+  assert.match(job.ci.mysql, /SPEEDLE_REQUIRE_MYSQL: '1'/);
+  assert.match(job.ci.mysql, /go test -race .*\.\/pkg\/store\/mysql/);
+  assert.match(job.ci.mysql, /coverage\.py .*--min-file scripts\/ci\/coverage-min\.txt/);
   assert.deepEqual(Object.keys(job.review), ['diff-regression', 'review', 'publish', 'automerge-dependabot']);
   assert.deepEqual(Object.keys(job.commands), ['prepare', 'analyze', 'publish']);
   assert.deepEqual(Object.keys(job.inline), ['route']);

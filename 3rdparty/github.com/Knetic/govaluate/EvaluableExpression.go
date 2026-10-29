@@ -64,7 +64,7 @@ func NewEvaluableExpressionFromTokens(tokens []ExpressionToken) (*EvaluableExpre
 		return nil, err
 	}
 
-	err = checkExpressionSyntax(tokens)
+	err = checkExpressionSyntax(tokens, -1)
 	if err != nil {
 		return nil, err
 	}
@@ -106,7 +106,7 @@ func NewEvaluableExpressionWithFunctions(expression string, functions map[string
 		return nil, err
 	}
 
-	err = checkExpressionSyntax(ret.tokens)
+	err = checkExpressionSyntax(ret.tokens, len([]rune(expression)))
 	if err != nil {
 		return nil, err
 	}
