@@ -106,7 +106,7 @@ func (s *Store) readSPDLWithoutLock() (*pms.PolicyStore, error) {
 			}
 		case linePolicyDef:
 			if err := processPolicyDef(&ps, &lc); err != nil {
-				return &emptyPS, err
+				return &emptyPS, fmt.Errorf("%s:%d: %w", s.FileLocation, lc.no, err)
 			}
 		default:
 			//lint:ignore ST1005 Preserve the public parser error text for existing callers.

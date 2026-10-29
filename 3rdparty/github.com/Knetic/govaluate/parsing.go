@@ -25,19 +25,25 @@ func parseTokens(expression string, functions map[string]ExpressionFunction) ([]
 
 	for stream.canRead() {
 
+		for stream.canRead() && unicode.IsSpace(stream.source[stream.position]) {
+			stream.position++
+		}
+		start := stream.position
+
 		token, err, found = readToken(stream, state, functions)
 
 		if err != nil {
-			return ret, err
+			return ret, withPosition(err, start)
 		}
 
 		if !found {
 			break
 		}
+		token.Position = start
 
 		state, err = getLexerStateForToken(token.Kind)
 		if err != nil {
-			return ret, err
+			return ret, withPosition(err, start)
 		}
 
 		// append this valid token
@@ -392,6 +398,8 @@ func checkBalance(tokens []ExpressionToken) error {
 	var stream *tokenStream
 	var token ExpressionToken
 	var parens int
+	var open []int // positions of the unclosed parentheses
+	firstExtraClose := -1
 
 	stream = newTokenStream(tokens)
 
@@ -400,16 +408,26 @@ func checkBalance(tokens []ExpressionToken) error {
 		token = stream.next()
 		if token.Kind == CLAUSE {
 			parens++
+			open = append(open, token.Position)
 			continue
 		}
 		if token.Kind == CLAUSE_CLOSE {
 			parens--
+			if len(open) > 0 {
+				open = open[:len(open)-1]
+			} else if firstExtraClose < 0 {
+				firstExtraClose = token.Position
+			}
 			continue
 		}
 	}
 
 	if parens != 0 {
-		return errors.New("Unbalanced parenthesis")
+		position := firstExtraClose
+		if parens > 0 && len(open) > 0 {
+			position = open[len(open)-1]
+		}
+		return &ExpressionError{Message: "Unbalanced parenthesis", Position: position}
 	}
 	return nil
 }

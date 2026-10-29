@@ -7,6 +7,8 @@ import (
 	"bufio"
 	"fmt"
 	"io"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -108,5 +110,18 @@ func TestReadSPDLWithoutLock(t *testing.T) {
 		default:
 			t.Fatalf("Unknown service name")
 		}
+	}
+}
+
+func TestReadSPDLReportsTheLineOfAnInvalidCondition(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "bad.spdl")
+	content := "[service.app]\n[policy]\nGRANT USER alice read /data1\nGRANT USER alice approve /data1 if amount <=\n"
+	if err := os.WriteFile(path, []byte(content), 0600); err != nil {
+		t.Fatal(err)
+	}
+	store := Store{FileLocation: path}
+	_, err := store.readSPDLWithoutLock()
+	if err == nil || !strings.HasPrefix(err.Error(), path+":4: Invalid condition: Unexpected end of expression") {
+		t.Fatalf("error %v, want it at %s:4", err, path)
 	}
 }
