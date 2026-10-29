@@ -237,6 +237,7 @@ test('nightly runs every suite even after a failure, records checks and fails at
   const [file, etcd] = goTests(records);
   assert.ok(file.args.includes('-race') && file.args.includes('-json')); assert.equal(file.env.STORE_TYPE, 'file');
   assert.equal(etcd.env.STORE_TYPE, 'etcd'); assert.ok(etcd.args.includes('-race'));
+  assert.ok(etcd.args.includes('example.invalid/pkg/a'), 'nightly reruns every package with etcd');
   for (const toolchain of ['go1.26.10', 'go1.27.3']) assert.match(checks, new RegExp(`quick-start-${toolchain}=\\d+:`));
   assert.match(checks, /quick-start-go1\.26\.10=7:/); assert.match(checks, /quick-start-go1\.27\.3=0:/);
   assert.match(checks, /mysql-full=0:mysql-full\.log/);

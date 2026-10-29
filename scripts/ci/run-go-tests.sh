@@ -4,9 +4,10 @@
 #   gate     every package once with the file store, the store-dependent
 #            packages again with etcd, the coverage gate, and both bilingual
 #            executable guides from docs/ (merge gating)
-#   nightly  race-detector runs with file, etcd and MySQL (including the
-#            tagged ADS runtime/cache suite against native PMS/ADS), the
-#            etcd and MongoDB setup guides, the quick start with every supported Go
+#   nightly  race-detector full regressions of every package with file,
+#            etcd and MySQL (MySQL also runs the tagged ADS runtime/cache
+#            suite against native PMS/ADS), the etcd and MongoDB setup guides,
+#            the quick start with every supported Go
 #            release, govulncheck and the CI script tests (MongoDB runs in
 #            nightly.yml's hosted job)
 #   weekly   every package with the newest supported Go release
@@ -22,8 +23,8 @@ cd "$(dirname "$0")/../.."
 mode=${1:?usage: run-go-tests.sh gate|nightly|weekly}
 results=${RESULTS_DIR:-test-results}
 
-# Only these packages read STORE_TYPE; every other package tests its own
-# store or none, so running them twice would repeat identical work.
+# The gate reruns only these packages with etcd; nightly reruns every
+# package, whose STORE_TYPE-aware fixtures (testutil/storetest) then use etcd.
 store_dependent=(./pkg/eval ./cmd/spctl/command)
 # Supported Go releases besides the CI default (see the quick start).
 other_toolchains=(go1.27.3)
@@ -102,7 +103,7 @@ case "${mode}" in
       failed=1
     fi
     gotest_json go-file STORE_TYPE=file -- -p 1 -count=1 -timeout 600s "${race[@]}" "${pkgs[@]}"
-    gotest_json go-etcd STORE_TYPE=etcd -- -p 1 -count=1 -timeout 600s "${race[@]}" "${store_dependent[@]}"
+    gotest_json go-etcd STORE_TYPE=etcd -- -p 1 -count=1 -timeout 600s "${race[@]}" "${pkgs[@]}"
     check mysql-full python3 scripts/ci/run-mysql-tests.py
     check etcd-docs python3 website/tests/check_etcd.py
     check mongodb-docs python3 website/tests/check_mongodb.py

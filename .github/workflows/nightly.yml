@@ -20,10 +20,11 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  # Race-detector run with file, etcd and a disposable MySQL Docker fixture,
-  # including the tagged ADS runtime/cache cases, the etcd and MongoDB setup guides, the
-  # quick start with every supported Go release, govulncheck and the CI script
-  # tests, on the self-hosted test runner (see scripts/ci/run-go-tests.sh).
+  # Race-detector full regressions with file, etcd and a disposable MySQL
+  # Docker fixture, the tagged ADS runtime/cache cases, the etcd and MongoDB
+  # setup guides, the quick start with every supported Go release, govulncheck
+  # and the CI script tests, on the self-hosted test runner
+  # (see scripts/ci/run-go-tests.sh).
   run:
     name: run
     uses: teramoby/speedle-plus/.github/workflows/go-ci-worker.yml@master

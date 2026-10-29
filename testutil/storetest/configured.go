@@ -56,12 +56,11 @@ func FixtureConfig(location string) (*cfg.StoreConfig, error) {
 	case "file":
 		properties["FileLocation"] = location
 	case "etcd":
+		// Without an endpoint, NewFixture uses the shared embedded etcd.
 		if _, ok := properties["EtcdEndpoint"]; !ok {
-			endpoint := os.Getenv("SPEEDLE_ETCD_ENDPOINT")
-			if endpoint == "" {
-				endpoint = "localhost:2379"
+			if endpoint := os.Getenv("SPEEDLE_ETCD_ENDPOINT"); endpoint != "" {
+				properties["EtcdEndpoint"] = endpoint
 			}
-			properties["EtcdEndpoint"] = endpoint
 		}
 		prefix, _ := properties["EtcdKeyPrefix"].(string)
 		properties["EtcdKeyPrefix"] = strings.TrimRight(prefix, "/") + "/speedle_test_" + suid.New().String() + "/"
@@ -97,6 +96,13 @@ func NewFixture(initial *pms.PolicyStore) (*Fixture, error) {
 	configuration, err := FixtureConfig("")
 	if err != nil {
 		return nil, err
+	}
+	if _, ok := configuration.StoreProps["EtcdEndpoint"]; configuration.StoreType == "etcd" && !ok {
+		fixture, err := NewEtcdFixture(initial)
+		if err != nil {
+			return nil, err
+		}
+		return &Fixture{Store: fixture.Store, Config: fixture.Config, cleanup: fixture.Close}, nil
 	}
 	if configuration.StoreType == "mysql" {
 		fixture, err := NewMySQLFixture(initial, configuration.StoreProps)

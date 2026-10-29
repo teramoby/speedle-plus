@@ -40,7 +40,7 @@ func testMain(m *testing.M) int {
 	var configFile string
 
 	log.Infof("STORE_TYPE = %s\n", os.Getenv("STORE_TYPE"))
-	if storetest.SelectedBackend() != "file" && (storetest.SelectedBackend() != "etcd" || os.Getenv("SPEEDLE_TEST_STORE_PROPS") != "" || os.Getenv("SPEEDLE_ETCD_ENDPOINT") != "") {
+	if storetest.SelectedBackend() != "file" {
 		fixture, err := storetest.NewFixture(&pms.PolicyStore{})
 		if err != nil {
 			log.Print(err)
@@ -52,16 +52,10 @@ func testMain(m *testing.M) int {
 		return m.Run()
 	}
 
-	if os.Getenv("STORE_TYPE") == "etcd" {
-		log.Info("Start etcd!")
-		configFile = "../cfg/config_etcd.json"
-		defer os.RemoveAll("./speedle.etcd")
-	} else {
-		log.Info("Start file!")
-		configFile = "../cfg/config_file.json"
-		defer os.Remove("./ps.json")
-		defer os.Remove("./speedle_discover_requests.json")
-	}
+	log.Info("Start file!")
+	configFile = "../cfg/config_file.json"
+	defer os.Remove("./ps.json")
+	defer os.Remove("./speedle_discover_requests.json")
 
 	var err error
 	mConfig, err = cfg.ReadConfig(configFile)
@@ -79,12 +73,6 @@ func testMain(m *testing.M) int {
 		os.Exit(1)
 	}
 	conf = mConfig
-	if os.Getenv("STORE_TYPE") == "etcd" {
-		if err := storetest.WaitForEtcdHTTP(); err != nil {
-			log.Print(err)
-			return 1
-		}
-	}
 	ret := m.Run()
 	return ret
 }
