@@ -9,6 +9,8 @@ import (
 
 	"github.com/teramoby/speedle-plus/pkg/cfg"
 	"github.com/teramoby/speedle-plus/pkg/eval"
+	_ "github.com/teramoby/speedle-plus/pkg/store/etcd"
+	_ "github.com/teramoby/speedle-plus/pkg/store/file"
 	"github.com/teramoby/speedle-plus/pkg/svcs/adsrest"
 	"github.com/teramoby/speedle-plus/samples/adsclient/go/src/speedle/api/authz"
 	"github.com/teramoby/speedle-plus/testutil/storetest"
