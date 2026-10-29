@@ -19,10 +19,10 @@ concurrency:
 
 jobs:
   # Run only what a change can affect:
-  #   go      - Go lint/test/build: anything outside docs/, website/ and root
+  #   go      - Go lint/build: anything outside docs/, website/ and root
   #             Markdown, including CI configuration
   #   website - Playground engine and site tooling (build job runs verify.sh,
-  #             including the site checks and the native quick-start check)
+  #             including the generated-site checks)
   #   docs    - published GitHub Pages content only: the light site job
   # An unknown base (workflow_dispatch, new branch) runs everything.
   changes:
@@ -118,12 +118,11 @@ jobs:
     with:
       mode: lint
 
-  # One run: every package with the file store, the two store-dependent
-  # packages again with etcd, then the coverage gate (scripts/ci/run-go-tests.sh).
+  # Global merge gate for every PR and master push, regardless of changed paths:
+  # Go tests, coverage, and both executable documentation walkthroughs.
   test:
     name: test
     needs: changes
-    if: needs.changes.outputs.go == 'true'
     uses: teramoby/speedle-plus/.github/workflows/go-ci-worker.yml@master
     with:
       mode: test

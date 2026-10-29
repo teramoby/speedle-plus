@@ -17,7 +17,7 @@ To try basic policies before writing code, open the [Playground](../../playgroun
 
 ## Prerequisites
 
-Use Linux or macOS with a shell and **Go 1.25 or newer**, the same minimum as [Quick Start](../../quick-start/). This walkthrough uses Go modules and the published **Speedle+ v1.6.0** release. Go 1.27.3 is the recommended toolchain; the example is verified with Go 1.25.14, Go 1.26.10 and Go 1.27.3.
+Use Linux or macOS with a shell and **Go 1.26.10 or Go 1.27.3** (or a newer patch on the same release branch), matching [Quick Start](../../quick-start/). This walkthrough uses Go modules and the published **Speedle+ v1.6.0** release. Go 1.27.3 is the recommended toolchain; the example is verified with Go 1.26.10 and Go 1.27.3.
 
 Install Go using the [official installation instructions](https://go.dev/doc/install), then check your version:
 
