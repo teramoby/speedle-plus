@@ -1,0 +1,38 @@
+[
+  {
+    "repo": "apache/casbin",
+    "type": "issue",
+    "total_count": 942,
+    "incomplete_results": false
+  },
+  {
+    "repo": "apache/casbin",
+    "type": "pr",
+    "total_count": 674,
+    "incomplete_results": false
+  },
+  {
+    "repo": "open-policy-agent/opa",
+    "type": "issue",
+    "total_count": 3054,
+    "incomplete_results": false
+  },
+  {
+    "repo": "open-policy-agent/opa",
+    "type": "pr",
+    "total_count": 6354,
+    "incomplete_results": false
+  },
+  {
+    "repo": "teramoby/speedle-plus",
+    "type": "issue",
+    "total_count": 16,
+    "incomplete_results": false
+  },
+  {
+    "repo": "teramoby/speedle-plus",
+    "type": "pr",
+    "total_count": 114,
+    "incomplete_results": false
+  }
+]

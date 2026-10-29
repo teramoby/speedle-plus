@@ -1,0 +1,5 @@
+p, viewer, /docs, read
+p, editor, /docs, write
+g, editor, viewer
+g, dave, editor
+g, vic, viewer

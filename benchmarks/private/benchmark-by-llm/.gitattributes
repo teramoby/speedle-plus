@@ -1,0 +1,5 @@
+# Preserve original whitespace in saved evidence and generated figures.
+provenance/*.patch -whitespace
+results/** -whitespace
+prompts/** -whitespace
+evidence/** -whitespace

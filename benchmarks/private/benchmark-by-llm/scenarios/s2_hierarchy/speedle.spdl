@@ -1,0 +1,8 @@
+[service.app]
+[policy]
+GRANT ROLE viewer read /docs
+GRANT ROLE editor write /docs
+[rolepolicy]
+GRANT ROLE editor viewer
+GRANT USER dave editor
+GRANT USER vic viewer

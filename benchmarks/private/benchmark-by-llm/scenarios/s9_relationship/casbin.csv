@@ -1,0 +1,5 @@
+p, mia, folder:F1, read
+g2, doc:D1, folder:F1
+g2, doc:D2, folder:F2
+g2, folder:F1a, folder:F1
+g2, doc:D3, folder:F1a

@@ -1,0 +1,42 @@
+=== RUN   TestGeneratedManyUsers
+=== RUN   TestGeneratedManyUsers/casbin
+=== RUN   TestGeneratedManyUsers/casbin-cached
+=== RUN   TestGeneratedManyUsers/casbin-tuned
+=== RUN   TestGeneratedManyUsers/opa
+=== RUN   TestGeneratedManyUsers/speedle
+--- PASS: TestGeneratedManyUsers (0.42s)
+    --- PASS: TestGeneratedManyUsers/casbin (0.11s)
+    --- PASS: TestGeneratedManyUsers/casbin-cached (0.08s)
+    --- PASS: TestGeneratedManyUsers/casbin-tuned (0.08s)
+    --- PASS: TestGeneratedManyUsers/opa (0.13s)
+    --- PASS: TestGeneratedManyUsers/speedle (0.01s)
+=== RUN   TestScenarios
+
+| Scenario | Casbin | OPA | Speedle+ |
+|---|---|---|---|
+| Basic RBAC | 4/4 | 4/4 | 4/4 |
+| Role hierarchy | 4/4 | 4/4 | 4/4 |
+| Groups | 3/3 | 3/3 | 3/3 |
+| Multi-tenant roles | 4/4 | 4/4 | 4/4 |
+| ABAC: approval limit | 3/3 | 3/3 | 3/3 |
+| ABAC: owner can edit | 3/3 | 3/3 | 3/3 |
+| Deny overrides grant | 3/3 | 3/3 | 3/3 |
+| Wildcard resources | 3/3 | 3/3 | 3/3 |
+| Relationship: doc in (nested) folder | 3/3 | 3/3 | 3/3 |
+--- PASS: TestScenarios (0.01s)
+=== RUN   TestPolicySize
+
+| Scenario | Casbin lines (chars) | OPA lines (chars) | Speedle+ lines (chars) |
+|---|---|---|---|
+| Basic RBAC | 15 (267) | 20 (472) | 7 (125) |
+| Role hierarchy | 15 (262) | 20 (460) | 8 (140) |
+| Groups | 13 (219) | 14 (286) | 5 (71) |
+| Multi-tenant roles | 15 (292) | 16 (416) | 7 (181) |
+| ABAC: approval limit | 13 (319) | 13 (271) | 6 (146) |
+| ABAC: owner can edit | 8 (152) | 8 (104) | 3 (86) |
+| Deny overrides grant | 14 (297) | 20 (474) | 7 (123) |
+| Wildcard resources | 12 (230) | 13 (291) | 5 (88) |
+| Relationship: doc in (nested) folder | 16 (293) | 15 (330) | 3 (48) |
+| **Total** | **121 (2331)** | **139 (3104)** | **51 (1008)** |
+--- PASS: TestPolicySize (0.00s)
+PASS

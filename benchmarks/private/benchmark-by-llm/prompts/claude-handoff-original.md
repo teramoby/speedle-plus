@@ -1,0 +1,234 @@
+# 测试计划：Casbin、OPA、Speedle+ 授权引擎对比（交接文档）
+
+这份文档写给接手执行的 AI 助手。读完它就能独立完成全部工作，不需要之前的对话记录。所有路径、命令、版本都写全了；文中“用户”指委托这项测试的人。
+
+## 0. 先读这一节
+
+- **任务：** 在 Linux 机器 `charming` 上，对三个开源授权引擎 Casbin、OPA、Speedle+ 做一次完整、公平、可复现的对比：功能、性能（进程内延迟、多核吞吐、加载成本）、HTTP 压力测试、易用性与学习曲线。产出一份中文测试报告。
+- **三个引擎全部从头重测。** 之前在 macOS 笔记本 shrek 和 charming 上跑过的结果都不完整，或者受了干扰（换页、CI 任务），只能留作参考，不能写进报告。
+- **测试环境必须完整写进报告**，具体内容见第 7 节。
+- **未经用户通知不要开始在 charming 上跑。** 用户会先停掉 charming 上的其他工作（包括 GitHub Actions CI 任务），然后明确告诉你可以开始。
+- **利益相关：** 用户本人是 Speedle+ 的维护者。结论必须中立；对 Speedle+ 的问题要如实、具体地写出来。
+- **不要做的事：** 不要用密码登录任何机器；不要碰不是你启动的进程（比如 charming 上别的会话起的 `speedle-ads`）；不要推送代码或发布任何东西；用户说停就立刻停。
+
+## 1. 机器与访问
+
+| | shrek（准备与汇总用） | charming（唯一的测试机） |
+|---|---|---|
+| 用途 | 存放测试代码、交叉编译、汇总结果、写报告 | 运行全部测试 |
+| 硬件 | Apple M1 Pro 8 核、16 GB | Intel Core i5-7360U @ 2.30GHz，2 核 4 线程，15 GiB 内存，2 GiB swap，NVMe |
+| 系统 | macOS 27.0.1，Go 1.27.2（`/opt/homebrew/bin/go`） | Linux Mint 22.3（Ubuntu 24.04 基础），x86_64；没有安装 Go |
+| 访问 | 本机 | 在 shrek 上执行 `ssh charming.local`（用户 `REMOTE_USER`，密钥 `~/.ssh/KEY_FILE` 已授权；用 `-o BatchMode=yes` 防止弹出密码提示） |
+
+charming 上的 GitHub Actions runner（目录都在 `/home/REMOTE_USER/` 下）：`actions-runner`、`actions-runner-2`、`actions-runner-3`、`actions-runner-speedle`、`actions-runner-speedle-2`。只有 `Runner.Listener` 进程表示空闲；出现 `Runner.Worker` 进程表示正在跑 CI 任务（`pgrep -c Runner.Worker` 可以计数）。
+
+## 2. 被测版本（固定，不要升级）
+
+| 引擎 | Go 模块 | 版本 |
+|---|---|---|
+| Casbin | `github.com/casbin/casbin/v3` | v3.11.0（项目已进入 Apache 孵化器，仓库 `apache/casbin`） |
+| OPA | `github.com/open-policy-agent/opa` | v1.21.4（进程内用 `github.com/open-policy-agent/opa/v1/rego`） |
+| Speedle+ | `github.com/teramoby/speedle-plus` | `v0.0.0-20261028230603-b27604c077ce`（伪版本，对应 commit `b27604c077ce`；项目没有 Go 能识别的正式版本） |
+
+所有程序都在 shrek 上用 Go 1.27.2 编译。charming 用的是交叉编译出来的静态 Linux 程序（`GOOS=linux GOARCH=amd64 CGO_ENABLED=0`）。
+
+## 3. 测试代码（已经写好的部分）
+
+代码在 shrek 的 `/Users/LOCAL_USER/cc/authz-bench/`（Go 模块名 `authzbench`）。
+
+| 文件 | 作用 |
+|---|---|
+| `scenarios/s1_rbac` … `scenarios/s9_relationship` | 9 个功能场景，每个场景三份策略：`casbin.conf`+`casbin.csv`、`opa.rego`+`opa.json`、`speedle.spdl` |
+| `engines.go` | 统一接口 `Engine`：`Allowed(Req)`、`Prepare(Req)`（先把请求转换成引擎原生格式，基准只计决策本身） |
+| `scenarios_test.go` | `TestScenarios`（打印 9×3 通过矩阵）、`TestPolicySize`（每个场景的策略行数和字符数） |
+| `capabilities_test.go` | `TestListPermissions`、`TestExplain`、`TestRuntimeUpdate`、`TestErrorMessages` |
+| `broken_test.go` | `TestBrokenPolicyBehavior`：坏策略在什么时候报错，报错后怎么判定 |
+| `gen.go` | 生成大规模策略，三种格式各一份。形状：n 个角色，`roleI` 可读 `/books/bookI`，每个角色 10 个用户 `userI-1..10`。种类：`plain`（精确匹配）、`abac`（每条规则带条件 `att1=="val1" && att2=="val2"`）、`wildcard`（`/books/typeI/` 前缀）。环境变量 `AUTHZ_ENGINES=a,b` 只加载指定引擎 |
+| `bench_test.go` | `BenchmarkRBACAllow`、`BenchmarkRBACDeny`、`BenchmarkRBACMixed`（4096 个随机请求循环，80% 允许、20% 拒绝）、`BenchmarkABAC`、`BenchmarkWildcard`、`BenchmarkParallel`、`TestLoadCost`（需 `LOADCOST=1`） |
+| `cmd/authzd` | 同一个精简 HTTP 服务包住任一引擎：`POST /check {"user","action","resource"}` → `{"allowed":bool}`；`-gen DIR` 只生成策略文件 |
+| `cmd/loadgen` | 闭环压测客户端：`-target thin|opa|speedle`，`-c` 并发，`-d` 时长，`-warmup` 预热；每个响应都和预期判定核对；输出一行 markdown：吞吐、p50/p90/p99/p99.9/max（微秒）、错误数、判错数 |
+| `cmd/watchcheck` | 验证 Speedle+ 嵌入模式文件监听：`inplace`（原地写）和 `rename`（写临时文件再改名覆盖） |
+| `stress.sh` | HTTP 压测：精简服务 ×3 引擎，加上官方服务 `opa run --server` 和 `speedle-ads`（Casbin 核心库没有 HTTP 服务） |
+| `run-all.sh` | 一键按步骤运行，结果写到 `results/<主机名>/` |
+| `README.md`、`REPORT.md` | 说明，以及报告草稿（草稿里的数字来自 shrek，要用 charming 的结果整体替换） |
+
+基准里的引擎变体名：
+
+- `casbin`：默认 matcher `g(r.sub, p.sub) && r.obj == p.obj && r.act == p.act`
+- `casbin-tuned`：把角色查找放到最后，`r.obj == p.obj && r.act == p.act && g(r.sub, p.sub)`，这是公平起见给 Casbin 的优化
+- `casbin-cached`：`CachedEnforcer`，结果只代表“同一请求重复出现”时的缓存命中，报告里必须这样标注
+- `casbin-matcher`（只在 ABAC 里）：条件写进 matcher，而不是每条规则用 `eval()`
+- `opa`：数据驱动、按 key 查找的 Rego 写法，用 `PrepareForEval` 后的查询
+- `speedle`：`eval.NewFromFile` 的嵌入式评估器
+
+## 4. 开跑前要先完成的改动
+
+下面五项是计划中但还没实现的。先在 shrek 上改完，用小参数验证一遍，再交叉编译打包。
+
+1. **新增策略形状 `manyusers`（少角色、多用户），对 Casbin 更友好。**
+   - 10 个角色，每个角色 10 条权限：`roleR` 可读 `/books/bookR-K`（R、K 都取 1..10，共 100 条规则）。用户 `userU`（U 取 1..n）拥有角色 `role((U-1)%10+1)`。Speedle+ 的角色授予每个用户一行：`GRANT USER userU roleR`。
+   - 随机请求：随机挑用户 U，角色 R 按上式计算；80% 请求 `/books/bookR-K`（K 随机，应允许），20% 请求 `/books/bookR2-K`，其中 `R2 = R%10+1`（应拒绝）。
+   - 在 `gen.go` 加这个种类（同样生成 `casbin-tuned` 和 `casbin-cached`）；在 `bench_test.go` 加 `BenchmarkManyUsers`，n 取 1000 和 100000；`cmd/authzd` 和 `cmd/loadgen` 加 `-kind plain|manyusers` 参数。
+2. **压测记录 CPU 占用。** `loadgen` 加 `-srv-pid` 参数，在计时开始和结束时读取 `/proc/<pid>/stat` 的 utime+stime（除以时钟频率，一般是 100），算出服务端在测量窗口里平均用了几个核；同样读 `/proc/self/stat` 算压测端自己用了几个核。输出多两列：`srv cores`、`gen cores`。macOS 上没有 `/proc`，这两列输出 `-`。
+3. **`stress.sh` 改进。**
+   - 用 `taskset` 绑核：服务端绑在第一个物理核的两个线程上（读取 `/sys/devices/system/cpu/cpu0/topology/thread_siblings_list`），压测端绑在其余线程上；两边的 `GOMAXPROCS` 各等于分到的线程数。没有 `taskset` 时退回只设 `GOMAXPROCS`。
+   - 两组数据：`plain` n=10000（很多角色）和 `manyusers` n=100000（很多用户）。
+   - 并发 1、16、64；每次预热 3 秒、测 15 秒；整套重复 3 轮，按轮次交错（第 1 轮依次跑完所有配置，再跑第 2 轮），避免时间漂移只影响某个引擎。
+   - 所有服务只监听 `127.0.0.1`。`speedle-ads` 加 `--insecure=true --log-level error --auditlog-level error --enable-watch false`（它的审计日志默认是 info 级，会拖慢它，而 OPA 默认不写决策日志）；`opa run --server` 加 `--log-level error`。
+4. **`run-all.sh` 加上防 CI 干扰。**
+   - 后台每 5 秒记录一行到 `activity.log`：时间、1 分钟负载、`Runner.Worker` 个数、CPU 占用最高的三个进程。
+   - 每一步开始前等待：`Runner.Worker` 为 0，并且冷却 10 秒。
+   - 每一步结束后，检查这一步时间窗口内的 `activity.log`；只要出现过 CI 任务，就把这一步标记为受污染，等 CI 结束后重跑，最多重跑 2 次。每次重跑都写进 `run-all.log`。
+   - 增加两个步骤：`capabilities`（运行 `TestListPermissions|TestExplain|TestRuntimeUpdate|TestErrorMessages|TestBrokenPolicyBehavior`）和 `watchcheck`（分别运行 `watchcheck inplace` 和 `watchcheck rename`，记录输出和退出码）。`watchcheck` 也要交叉编译进包里。
+   - `machine` 步骤除了现有内容，还要记录：`uname -r`（内核版本）、`/sys/devices/system/cpu/cpu*/cpufreq/scaling_governor`、`/sys/devices/system/cpu/intel_pstate/no_turbo`（如果存在）、`lscpu` 全文、`free -h`、`df -h /tmp`、每个程序的 `go version -m`（它会列出依赖模块的版本，可以证明测的是哪个版本）。
+   - 清理进程时，`pkill -f` 的模式要写成 `"[r]un-all.sh"` 这种形式，否则会匹配到执行它的那个 shell，把自己的会话也杀掉。
+5. **写汇总脚本 `summarize.py`。** 输入 `results/charming/`，输出 `results/charming/summary.md`：
+   - 功能矩阵和策略体量（直接摘录 `functional.txt` 里的 markdown 表）
+   - 能力测试输出（摘录）
+   - 加载成本表
+   - 每个基准、每个规模、每个引擎变体的 ns/op 中位数（也给出 5 次中的最小值和最大值），以及 B/op、allocs/op
+   - 多核吞吐：把 ns/op 换算成每秒决策数
+   - 压测：同一（数据集、配置、并发）3 轮取中位数
+   - 时间单位自动选 ns、µs、ms
+
+## 5. 测试矩阵
+
+### 5.1 功能（9 个场景，30 个用例）
+
+每个用例都要求三个引擎给出同样的判定。场景和用例已经写在 `scenarios_test.go` 里：
+
+| 场景 | 要点 | 用例（期望结果） |
+|---|---|---|
+| s1 基本 RBAC | alice=admin（读写 /data1），bob=viewer（只读） | alice 写 ✔；bob 写 ✘；bob 读 ✔；carol 读 ✘ |
+| s2 角色继承 | editor 继承 viewer；dave=editor，vic=viewer | dave 读 ✔、写 ✔；vic 读 ✔、写 ✘ |
+| s3 用户组 | 组 eng 拥有角色 dev（可 deploy /svc） | erin(eng) ✔；frank 无组 ✘；frank(ops) ✘ |
+| s4 多租户 | gina 在 tenant1 是 admin，在 tenant2 是 viewer | t1 写 ✔；t2 写 ✘；t2 读 ✔；t3 读 ✘ |
+| s5 ABAC 审批额度 | manager 可审批 ≤1000 | hank 500 ✔；hank 5000 ✘；ivy 10 ✘ |
+| s6 只有所有者能改 | owner == 请求用户才能 edit | ivan 改自己的 ✔；judy 改 ivan 的 ✘；ivan delete ✘ |
+| s7 拒绝优先 | staff 可读 /hr/*，但 kim 被明确拒绝读 /hr/salaries | kim 读 salaries ✘；kim 读 handbook ✔；lee 读 salaries ✔ |
+| s8 通配资源 | analyst 可读 /reports/ 下所有资源 | leo 读 /reports/2026/q3 ✔；读 /secret/x ✘；写 ✘ |
+| s9 关系 | 文档在（嵌套）文件夹里，mia 可读 F1 | D1 ✔；D2 ✘；D3（在 F1 的子文件夹里）✔ |
+
+实现差异要在报告里写明：Speedle+ 的多租户把租户编码进资源路径（`ON expr:/tenant1/.*`）；关系场景只能把文件夹层级编码进路径（`/F1/F1a/D3`），文档移动或有多个父级时表达不了；“所有者”场景用了文档里没写的内置角色 `authenticated_role`。Casbin 的用户组成员关系存在策略里，OPA 和 Speedle+ 的组从请求里带入。
+
+### 5.2 决策之外的能力
+
+- 列出某用户的全部权限（s1，alice）
+- 解释一次拒绝（s7，kim 读 /hr/salaries）：Casbin `EnforceEx`、OPA 求值轨迹、Speedle+ `IsAllowed` 的原因和 `Diagnose`
+- 运行时改策略的生效时间（s1，给 viewer 加写权限后 bob 能否写）：Casbin `AddPolicy`、OPA 写 store、Speedle+ 改文件并监听
+- 策略写错时的错误信息：Casbin matcher 括号不配对、字段拼错；OPA 少右括号、变量拼错；Speedle+ 少资源、`GRANT` 拼错、条件不完整
+- 坏策略加载后的判定（Speedle+ 条件不完整；Casbin matcher 拼错）
+- Speedle+ 嵌入模式替换策略文件：`watchcheck inplace` 和 `watchcheck rename`
+
+### 5.3 进程内性能（`-test.benchtime 1s -test.count 5`）
+
+| 基准 | 规模 | CPU | 引擎变体 |
+|---|---|---|---|
+| RBACAllow、RBACDeny、RBACMixed | n=100、1000、10000 | `-test.cpu 2` | 全部 |
+| 同上 | n=100000 | `-test.cpu 2` | 每个引擎单独一个进程：`AUTHZ_ENGINES=speedle`、`opa`、`casbin-tuned`、`casbin` |
+| ABAC、Wildcard | n=1000、10000 | `-test.cpu 2` | 全部 |
+| ManyUsers（新增） | n=1000、100000 用户 | `-test.cpu 2` | 全部 |
+| Parallel | n=1000、10000 | `-test.cpu 1,2,4` | Casbin 用 `SyncedEnforcer` |
+| TestLoadCost | n=1000、10000、100000 | | casbin、opa、speedle：加载时间和常驻堆内存 |
+
+100K 规模下 Casbin 约占 1 GB 内存，默认 matcher 加随机请求每次决策要 100 ms 以上，所以必须每个引擎单独一个进程。
+
+### 5.4 HTTP 压测
+
+按第 4 节第 3 项改好的 `stress.sh` 运行：5 种配置（精简服务 + casbin/opa/speedle、`opa run --server`、`speedle-ads`）× 2 组数据 × 3 档并发 × 3 轮。
+
+### 5.5 易用性与学习曲线（普通开发者视角）
+
+逐项对比，结论写进报告：
+
+- 安装方式、有没有预编译程序、能否在浏览器里先试（Casbin 在线编辑器、OPA Playground、Speedle+ Playground）
+- 嵌入 Go 需要的代码量（以 `engines.go` 为准）
+- 要学的概念：Casbin 的 PERM 模型 DSL；OPA 的 Rego（声明式，`some`/`every`、未定义和 false 的区别、`data` 和 `input`）；Speedle+ 的 SPDL
+- 文档质量和时效：例如 Speedle+ 的 README 构建说明仍是 Go 1.13、GOPATH、`go get`，而网站的 Quick Start 已经更新；嵌入模式文档还在讲 `dep`；Istio 集成基于 Istio 1.8 已删除的 Mixer
+- 工具：`opa eval/test/fmt/check/bench`、REPL；Casbin 的 `EnforceEx`；Speedle+ 的 `spctl`、`Diagnose`
+- 错误信息质量（来自 5.2）
+- 遇到问题时能找到多少帮助：用 GitHub API 和 Stack Overflow API 现查，写明查询日期
+
+## 6. 执行步骤
+
+1. **等用户通知 charming 已空出来。**
+2. 在 shrek 上完成第 4 节的改动；`go vet ./...`；用小参数验证（例如 `./stress.sh 1000 3s 8`，基准用 `-test.benchtime 100x`）。
+3. 交叉编译并打包（在 `/Users/LOCAL_USER/cc/authz-bench` 下执行）：
+
+   ```bash
+   D=dist/authz-bench-linux; rm -rf dist; mkdir -p $D/bin
+   export GOOS=linux GOARCH=amd64 CGO_ENABLED=0
+   go test -c -o $D/bin/authzbench.test .
+   go build -o $D/bin/ ./cmd/authzd ./cmd/loadgen ./cmd/watchcheck
+   go build -o $D/bin/opa github.com/open-policy-agent/opa
+   go build -o $D/bin/speedle-ads github.com/teramoby/speedle-plus/cmd/speedle-ads
+   unset GOOS GOARCH CGO_ENABLED
+   cp -R scenarios stress.sh run-all.sh $D/
+   COPYFILE_DISABLE=1 tar czf dist/authz-bench-linux.tar.gz -C dist authz-bench-linux
+   ```
+
+   如果 `go build` 报 `missing go.sum entry`，先运行 `go get github.com/open-policy-agent/opa@v1.21.4` 或 `go get github.com/teramoby/speedle-plus/cmd/speedle-ads@b27604c077ce`，再重新编译。`COPYFILE_DISABLE=1` 可以避免 Linux 上解压时出现大量 `LIBARCHIVE.xattr` 警告（这些警告本身无害）。
+4. 预检查（只读）：`ssh -o BatchMode=yes charming.local 'uptime; pgrep -c Runner.Worker; ps -eo pcpu,pmem,comm --sort=-pcpu | head -8; free -h'`。确认没有 CI 任务、负载低，没有别的重进程。如果发现别人的进程在占 CPU，告诉用户，不要自己去停。
+5. 上传并在后台启动（断开 SSH 也会继续跑）：
+
+   ```bash
+   scp -q dist/authz-bench-linux.tar.gz charming.local:/tmp/
+   ssh -o BatchMode=yes charming.local 'cd /tmp && rm -rf authz-bench-linux && tar xzf authz-bench-linux.tar.gz && cd authz-bench-linux && (nohup ./run-all.sh > run-all.out 2>&1 &)'
+   ```
+
+   charming 上还留着上一次的旧目录 `/tmp/authz-bench-linux`，上面的命令会先删掉它。
+6. 监控：每隔几分钟看一次 `results/charming/run-all.log` 和 `activity.log`，不要连续轮询。预计 1 到 1.5 小时（charming 的 CPU 比较慢）。
+7. 取回结果：`scp -r charming.local:/tmp/authz-bench-linux/results/charming /Users/LOCAL_USER/cc/authz-bench/results/`，然后运行 `summarize.py`。
+8. 写报告（见第 7 节）。
+
+## 7. 报告要求
+
+更新 `/Users/LOCAL_USER/cc/authz-bench/REPORT.md`，用中文，语气中立。可以沿用现有草稿的章节结构，但所有数字都必须换成 charming 的结果。
+
+1. **结论**：放在最前面，每个维度（功能、性能、资源、易用性、生态）各两三句，有数字支撑。
+2. **测试环境**（必须有）：
+   - 硬件：CPU 型号、核数和线程数、内存、磁盘；CPU 调频策略和睿频状态
+   - 系统：发行版、内核版本
+   - 编译：Go 版本，交叉编译参数
+   - 被测版本：三个引擎的模块版本（以 `go version -m` 的输出为准）
+   - 运行条件：CPU 分配（`-test.cpu` 设置、压测的绑核方式）、测试期间的负载和 CI 情况（引用 `activity.log`，写明有没有步骤因为 CI 重跑过）、测试日期
+3. **方法**：策略形状、请求组成、重复次数和取值方法（中位数）、判定都逐一核对过、各个引擎变体的含义
+4. **功能结果**：通过矩阵、实现差异、策略体量
+5. **能力对比**：列权限、解释、运行时更新、错误信息、坏策略行为、文件监听
+6. **性能结果**：进程内延迟（按规模）、ABAC、通配、ManyUsers、多核吞吐、加载成本、HTTP 压测（含 srv cores 和 gen cores，用来判断瓶颈在哪边）
+7. **易用性与学习曲线**
+8. **生态与成熟度**：star、贡献者、issue/PR 数、最近正式版本、Stack Overflow 问题数、治理（Casbin 在 Apache 孵化器；OPA 是 CNCF 毕业项目；Speedle+ 是原 Oracle Speedle 的分支），写明数据的查询日期
+9. **发现的问题**：特别是 Speedle+，见第 8 节
+10. **局限**：只测了一台机器；策略形状有限；OPA 性能依赖 Rego 写法；没有测分布式部署和高可用
+
+## 8. 之前已经发现、需要在 charming 上复核的问题
+
+只在 macOS 上验证过，Linux 上要重新确认，并写明是在哪个平台验证的：
+
+1. **Speedle+ 嵌入模式替换策略文件会让宿主进程退出。** `pkg/store/file/fileStore.go` 第 341、350、354 行，在文件被删除、被改名，或重新监听失败时调用 `log.Fatalf`。macOS 实测：原地写入约 10 ms 重新加载；写临时文件再改名覆盖会让进程以状态 1 退出。Linux 用的是 inotify，行为可能不同，用 `watchcheck rename` 复核。
+2. **Speedle+ 条件写错，加载时不报错。** `if amount <=` 加载成功，只打一条日志；之后每个请求返回 `ERROR_IN_EVALUATION`，结果是拒绝；`pkg/eval/runtimeservice.go` 第 94、118 行的 `fmt.Println` 会把整条策略打到标准输出。
+3. **Casbin 的 matcher 拼错，加载时不报错**，第一次 `Enforce` 才报 `No parameter 'p_ob' found.`，信息里没有位置。OPA 在编译时就报错，带文件名和行号。
+4. **Speedle+ 的其他问题：** 没有 Go 能识别的正式版本（tag 是 `v2.0`，模块路径没有 `/v2`）；README 过时；Istio 集成基于已删除的 Mixer；内置角色 `authenticated_role`、`everyone_role`、`anonymous_role` 没有写进文档（只在 `api/ads/types.go` 里）。
+
+## 9. 之前踩过的坑
+
+- **Speedle+ 的文件监听：** 被监听的文件一旦删除，监听器会调用 `log.Fatalf`。所以测试里被监听的策略文件不能放在 `t.TempDir()` 里，否则清理临时目录时整个测试进程会退出（`capabilities_test.go` 已经改成 `os.MkdirTemp`）。
+- **Go 基准的 `-bench` 正则：** 正则按 `/` 拆成多层，`|` 不能跨层用。要写成 `'^BenchmarkRBAC(Mixed|Allow|Deny)$/^n=(100|1000|10000)$/'` 这种形式。
+- **zsh 通配符：** 匹配不到文件时，zsh 会中止整行命令。命令里不要写可能匹配不到的通配符。
+- **`pkill -f` 会匹配到自己：** 模式要写成 `"[r]un-all.sh"`，见第 4 节第 4 项。
+- **`speedle-ads` 默认监听 `0.0.0.0:6734`：** 一定要显式指定 `--endpoint 127.0.0.1:6734`。
+- **基准请求的写法：** 同一个请求反复执行，结果会偏乐观，Casbin 尤其明显。要以 `RBACMixed`（随机请求）为主要指标。
+- **shrek 的负载：** 浏览器等应用常年开着，负载在 8 以上，swap 接近用满。这正是要改到 charming 上测的原因。
+
+## 10. 参考：之前在 shrek 上的初步数字（不进报告）
+
+`RBACMixed` 中位数，进程内单次决策，`-cpu 2`，当时 shrek 负载 8–11，只用来判断结果量级是否合理：
+
+| 引擎 | n=100 | n=1K | n=10K | n=100K |
+|---|---|---|---|---|
+| speedle | 3.3 µs | 4.6 µs | 5.0 µs | 5.0 µs |
+| opa | 11.5 µs | 14.2 µs | 18.3 µs | 11.6 µs |
+| casbin-tuned | 15.7 µs | 160 µs | 1.75 ms | 21 ms |
+| casbin | 27 µs | 318 µs | 3.35 ms | 159 ms |
+
+加载成本（n=100K 角色、100 万用户）：casbin 6.3 s / 1024 MB；opa 1.3 s / 197 MB；speedle 1.3 s / 500 MB。charming 的 CPU 更慢，绝对数字会更大，但排序应该一致；如果排序变了，要查明原因再写报告。

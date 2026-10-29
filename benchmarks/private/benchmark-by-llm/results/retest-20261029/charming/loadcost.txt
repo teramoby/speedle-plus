@@ -1,0 +1,15 @@
+=== RUN   TestLoadCost
+
+| n roles (users) | engine | load time | retained heap |
+|---|---|---|---|
+| 1000 (10000) | casbin | 64ms | 10.2 MB |
+| 1000 (10000) | opa | 15ms | 1.9 MB |
+| 1000 (10000) | speedle | 18ms | 4.9 MB |
+| 10000 (100000) | casbin | 634ms | 101.0 MB |
+| 10000 (100000) | opa | 144ms | 16.8 MB |
+| 10000 (100000) | speedle | 180ms | 48.2 MB |
+| 100000 (1000000) | casbin | 8.551s | 1024.1 MB |
+| 100000 (1000000) | opa | 1.819s | 197.2 MB |
+| 100000 (1000000) | speedle | 2.056s | 500.4 MB |
+--- PASS: TestLoadCost (16.69s)
+PASS

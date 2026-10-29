@@ -1,0 +1,12 @@
+{
+  "hashes": {
+    "authzbench.test": "e720e6a0947b3eedbe8bd2156e94ce8839821bbebc80f539aa335b739dc35bf5",
+    "authzd": "baef83ccad30db9e174d8198c1f53156b4b9b7fc99e2e3962b1b3944633a4906",
+    "loadgen": "303a8ba4432db8ea946fbcc0fe883596f621d12d8cb21a7611b98a0581b4ee8d",
+    "opa": "c585f809fa5dc4dced49b59d55c1ba73dc388d07053e54951148ce014ef75ec5",
+    "speedle-ads": "9496cef77cf56d01fa218dca184414b1ec3cc0d89dd162ae505d790bd3140dc1",
+    "watchcheck": "a99223bca7fdfe79dd9f7783aa1385184ed032554fa7dabada44a034d0019b24"
+  },
+  "remaining_test_processes": [],
+  "remaining_test_listeners": []
+}

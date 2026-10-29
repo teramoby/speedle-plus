@@ -1,0 +1,203 @@
+[
+  {
+    "repo": "apache/casbin",
+    "html_url": "https://github.com/apache/casbin/releases/tag/v3.11.0",
+    "id": 373463750,
+    "tag_name": "v3.11.0",
+    "target_commitish": "master",
+    "name": "Apache Casbin (Incubating) 3.11.0",
+    "draft": false,
+    "prerelease": false,
+    "created_at": "2026-08-04T09:03:20Z",
+    "published_at": "2026-08-20T02:57:58Z",
+    "assets": [
+      {
+        "name": "apache-casbin-incubating-3.11.0-src.tar.gz",
+        "content_type": "application/x-gtar",
+        "state": "uploaded",
+        "size": 171920,
+        "digest": "sha256:8217ea76f9b80cb414d6b777d78cb9061404639fb8aeccd15dbfa11745d1845d",
+        "browser_download_url": "https://github.com/apache/casbin/releases/download/v3.11.0/apache-casbin-incubating-3.11.0-src.tar.gz"
+      },
+      {
+        "name": "apache-casbin-incubating-3.11.0-src.tar.gz.sha512",
+        "content_type": "application/octet-stream",
+        "state": "uploaded",
+        "size": 173,
+        "digest": "sha256:c55ec1a519cfd1aac793e52e1ab5240b336a6c61f1dd3a8d8bb32975f5d7fea1",
+        "browser_download_url": "https://github.com/apache/casbin/releases/download/v3.11.0/apache-casbin-incubating-3.11.0-src.tar.gz.sha512"
+      },
+      {
+        "name": "apache-casbin-incubating-3.11.0-src.zip",
+        "content_type": "application/zip",
+        "state": "uploaded",
+        "size": 296576,
+        "digest": "sha256:1b8e41cdef91b6bced51a1c3b9686c824f7759bc180cd9374a7a2129ca66c864",
+        "browser_download_url": "https://github.com/apache/casbin/releases/download/v3.11.0/apache-casbin-incubating-3.11.0-src.zip"
+      },
+      {
+        "name": "apache-casbin-incubating-3.11.0-src.zip.sha512",
+        "content_type": "application/octet-stream",
+        "state": "uploaded",
+        "size": 170,
+        "digest": "sha256:dc346019331903300771b442965090147d943d7c7eb7c0c411caf456d881f272",
+        "browser_download_url": "https://github.com/apache/casbin/releases/download/v3.11.0/apache-casbin-incubating-3.11.0-src.zip.sha512"
+      }
+    ]
+  },
+  {
+    "repo": "open-policy-agent/opa",
+    "html_url": "https://github.com/open-policy-agent/opa/releases/tag/v1.21.4",
+    "id": 421887268,
+    "tag_name": "v1.21.4",
+    "target_commitish": "main",
+    "name": "v1.21.4",
+    "draft": false,
+    "prerelease": false,
+    "created_at": "2026-10-23T13:00:56Z",
+    "published_at": "2026-10-23T13:42:06Z",
+    "assets": [
+      {
+        "name": "opa_darwin_amd64",
+        "content_type": "application/octet-stream",
+        "state": "uploaded",
+        "size": 64633184,
+        "digest": "sha256:8802bd39bc14b58a705e6b3d4f4dd14f7f24ee657f0362c737338be243190c7e",
+        "browser_download_url": "https://github.com/open-policy-agent/opa/releases/download/v1.21.4/opa_darwin_amd64"
+      },
+      {
+        "name": "opa_darwin_amd64.sha256",
+        "content_type": "application/octet-stream",
+        "state": "uploaded",
+        "size": 83,
+        "digest": "sha256:79fc5dae101dcfd43619a56565e89b467431cf614d418aba5a541728e728a80f",
+        "browser_download_url": "https://github.com/open-policy-agent/opa/releases/download/v1.21.4/opa_darwin_amd64.sha256"
+      },
+      {
+        "name": "opa_darwin_arm64",
+        "content_type": "application/octet-stream",
+        "state": "uploaded",
+        "size": 62448546,
+        "digest": "sha256:4c105208a9282f590385bccbe600875c011f0894ccf9431782dfe855e1f99aa6",
+        "browser_download_url": "https://github.com/open-policy-agent/opa/releases/download/v1.21.4/opa_darwin_arm64"
+      },
+      {
+        "name": "opa_darwin_arm64.sha256",
+        "content_type": "application/octet-stream",
+        "state": "uploaded",
+        "size": 83,
+        "digest": "sha256:f257185ac02ba6059f437bfbdb8bbc8fbc2cd8ae3d941ae297a686ba53902077",
+        "browser_download_url": "https://github.com/open-policy-agent/opa/releases/download/v1.21.4/opa_darwin_arm64.sha256"
+      },
+      {
+        "name": "opa_darwin_arm64_static",
+        "content_type": "application/octet-stream",
+        "state": "uploaded",
+        "size": 62448546,
+        "digest": "sha256:4c105208a9282f590385bccbe600875c011f0894ccf9431782dfe855e1f99aa6",
+        "browser_download_url": "https://github.com/open-policy-agent/opa/releases/download/v1.21.4/opa_darwin_arm64_static"
+      },
+      {
+        "name": "opa_darwin_arm64_static.sha256",
+        "content_type": "application/octet-stream",
+        "state": "uploaded",
+        "size": 90,
+        "digest": "sha256:3ad17b7f8bc82ca5f175cfe860e837f44d5702c3992b2f8216133a84b3a4e1c6",
+        "browser_download_url": "https://github.com/open-policy-agent/opa/releases/download/v1.21.4/opa_darwin_arm64_static.sha256"
+      },
+      {
+        "name": "opa_linux_amd64",
+        "content_type": "application/octet-stream",
+        "state": "uploaded",
+        "size": 64185386,
+        "digest": "sha256:5ae411b3ae2cb093ac1f70cc20df4b372eead7be61f7de989b33a3dbd6cbe09b",
+        "browser_download_url": "https://github.com/open-policy-agent/opa/releases/download/v1.21.4/opa_linux_amd64"
+      },
+      {
+        "name": "opa_linux_amd64.sha256",
+        "content_type": "application/octet-stream",
+        "state": "uploaded",
+        "size": 82,
+        "digest": "sha256:467957dd254f969192ff345678cef07abdc607a10b098606982f8a5fea153725",
+        "browser_download_url": "https://github.com/open-policy-agent/opa/releases/download/v1.21.4/opa_linux_amd64.sha256"
+      },
+      {
+        "name": "opa_linux_amd64_static",
+        "content_type": "application/octet-stream",
+        "state": "uploaded",
+        "size": 64185386,
+        "digest": "sha256:2ab571f367f293bb19523b76f92f1945bbf245003392c7f392903f95c2b9b630",
+        "browser_download_url": "https://github.com/open-policy-agent/opa/releases/download/v1.21.4/opa_linux_amd64_static"
+      },
+      {
+        "name": "opa_linux_amd64_static.sha256",
+        "content_type": "application/octet-stream",
+        "state": "uploaded",
+        "size": 89,
+        "digest": "sha256:ed073d3c5a15724e7c3d9c16db22f38cb51ce0e26e7310df1b94f74e06acca3f",
+        "browser_download_url": "https://github.com/open-policy-agent/opa/releases/download/v1.21.4/opa_linux_amd64_static.sha256"
+      },
+      {
+        "name": "opa_linux_arm64",
+        "content_type": "application/octet-stream",
+        "state": "uploaded",
+        "size": 60319859,
+        "digest": "sha256:327e9bdd754972b2eb604fd52ebfd6c01af3596700d1d0a060f3b9cd09e0bc2e",
+        "browser_download_url": "https://github.com/open-policy-agent/opa/releases/download/v1.21.4/opa_linux_arm64"
+      },
+      {
+        "name": "opa_linux_arm64.sha256",
+        "content_type": "application/octet-stream",
+        "state": "uploaded",
+        "size": 82,
+        "digest": "sha256:3df7418134cb7a13aeadb4514b0921aca0a7430f7fd101c596dbf2b2aeb88331",
+        "browser_download_url": "https://github.com/open-policy-agent/opa/releases/download/v1.21.4/opa_linux_arm64.sha256"
+      },
+      {
+        "name": "opa_linux_arm64_static",
+        "content_type": "application/octet-stream",
+        "state": "uploaded",
+        "size": 60319859,
+        "digest": "sha256:810aa96e44f1f852d044888cf830324e44eafd0f510345339011347ab4deaab1",
+        "browser_download_url": "https://github.com/open-policy-agent/opa/releases/download/v1.21.4/opa_linux_arm64_static"
+      },
+      {
+        "name": "opa_linux_arm64_static.sha256",
+        "content_type": "application/octet-stream",
+        "state": "uploaded",
+        "size": 89,
+        "digest": "sha256:00815d1e38eb0cac4fff95e8f0bc0c6cfb0fe3b0f9c40b23af63006ae791f86f",
+        "browser_download_url": "https://github.com/open-policy-agent/opa/releases/download/v1.21.4/opa_linux_arm64_static.sha256"
+      },
+      {
+        "name": "opa_windows_amd64.exe",
+        "content_type": "application/octet-stream",
+        "state": "uploaded",
+        "size": 64628224,
+        "digest": "sha256:efad1c0ee4e3150d213f7babdaff3440b18b93c7368b465fca42cda392947f7c",
+        "browser_download_url": "https://github.com/open-policy-agent/opa/releases/download/v1.21.4/opa_windows_amd64.exe"
+      },
+      {
+        "name": "opa_windows_amd64.exe.sha256",
+        "content_type": "application/octet-stream",
+        "state": "uploaded",
+        "size": 88,
+        "digest": "sha256:9d9d5fe20bc8162ee50b880a6277185533e41e40ac8223aa24530b5d2cb844ba",
+        "browser_download_url": "https://github.com/open-policy-agent/opa/releases/download/v1.21.4/opa_windows_amd64.exe.sha256"
+      }
+    ]
+  },
+  {
+    "repo": "teramoby/speedle-plus",
+    "html_url": "https://github.com/teramoby/speedle-plus/releases/tag/v1.6.0",
+    "id": 427329830,
+    "tag_name": "v1.6.0",
+    "target_commitish": "master",
+    "name": "v1.6.0",
+    "draft": false,
+    "prerelease": false,
+    "created_at": "2026-10-29T00:18:23Z",
+    "published_at": "2026-10-29T00:18:25Z",
+    "assets": []
+  }
+]

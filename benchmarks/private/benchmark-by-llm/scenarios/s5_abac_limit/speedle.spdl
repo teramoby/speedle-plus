@@ -1,0 +1,6 @@
+[service.app]
+[policy]
+GRANT ROLE manager approve /expense if amount <= 1000
+GRANT ROLE director approve /expense if amount <= 100000
+[rolepolicy]
+GRANT USER hank manager

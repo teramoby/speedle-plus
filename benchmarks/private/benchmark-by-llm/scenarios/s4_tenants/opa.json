@@ -1,0 +1,7 @@
+{
+  "tenant_roles": {"tenant1": {"gina": ["admin"]}, "tenant2": {"gina": ["viewer"]}},
+  "role_perms": {
+    "admin": [{"action": "read", "resource": "/data"}, {"action": "write", "resource": "/data"}],
+    "viewer": [{"action": "read", "resource": "/data"}]
+  }
+}

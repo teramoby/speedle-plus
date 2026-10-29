@@ -1,0 +1,4 @@
+{
+  "group_roles": {"eng": ["dev"]},
+  "role_perms": {"dev": [{"action": "deploy", "resource": "/svc"}]}
+}

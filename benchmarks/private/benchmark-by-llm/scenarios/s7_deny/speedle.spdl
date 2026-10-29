@@ -1,0 +1,7 @@
+[service.app]
+[policy]
+GRANT ROLE staff read expr:/hr/.*
+DENY USER kim read /hr/salaries
+[rolepolicy]
+GRANT USER kim staff
+GRANT USER lee staff

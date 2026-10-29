@@ -1,0 +1,4 @@
+{
+  "user_roles": {"hank": ["manager"]},
+  "approval_limit": {"manager": 1000, "director": 100000}
+}

@@ -1,0 +1,7 @@
+{
+  "user_roles": {"alice": ["admin"], "bob": ["viewer"]},
+  "role_perms": {
+    "admin": [{"action": "read", "resource": "/data1"}, {"action": "write", "resource": "/data1"}],
+    "viewer": [{"action": "read", "resource": "/data1"}]
+  }
+}
