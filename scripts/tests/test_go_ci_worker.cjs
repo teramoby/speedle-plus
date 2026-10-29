@@ -72,7 +72,7 @@ test('worker owns runner selection and exposes only the mode input, never a call
   assert.match(step('Setup Go'), /go-version: '1\.26'/);
   assert.doesNotMatch(source, /secrets:|secrets\.inherit|\$\{\{\s*inputs\.(?:ref|sha|runner|store_type)/);
 });
-test('trusted events pool lint/build while fixed-port test modes stay on the original runner', () => {
+test('trusted events pool lint/build/nightly while test and weekly stay on the original runner', () => {
   const push = context('push'), dispatch = context('workflow_dispatch');
   push.event = {sender: {type: 'User'}}; dispatch.event = {sender: {type: 'User'}};
   const merged = context('push'); merged.ref = 'refs/heads/master'; merged.event = {sender: {type: 'Bot'}};
@@ -158,7 +158,7 @@ test('test environment neutralizes inherited CLI names, tokens, certificates and
 // python3 and node that record their calls and exit with fixture statuses.
 const repoRoot = path.resolve(__dirname, '../..');
 const recorded = ['STORE_TYPE', 'SPEEDLE_CLI_COVERPROFILE', 'GOTOOLCHAIN', 'RESULTS_DIR', ...cleanKeys, 'PMS_ENDPOINT', 'ADS_ENDPOINT', 'GOPATH'];
-function runSuite(mode, {listExit = 0, failMatching = ''} = {}) {
+function runSuite(mode, {listExit = 0, failMatching = '', mysqlOnly = false} = {}) {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'speedle-worker-go-'));
   try {
     const calls = path.join(directory, 'calls.jsonl');
@@ -173,10 +173,13 @@ const fail=process.env.FIXTURE_FAIL;process.exit(fail&&a.join(' ').includes(fail
     }
     const inherited = Object.fromEntries(cleanKeys.map(key => [key, 'fixture-inherited-value']));
     const work = path.join(directory, 'work'); fs.mkdirSync(work);
+    const event = path.join(directory, 'event.json');
+    fs.writeFileSync(event, JSON.stringify({inputs: {mysql_only: mysqlOnly}}));
     const result = spawnSync('bash', ['-c', script('Run Go tests')], {cwd: repoRoot, encoding: 'utf8', env: {
       ...process.env, ...inherited, GOPATH: '/fixture-inherited-gopath',
       PMS_ENDPOINT: 'https://fixture.invalid/pms', ADS_ENDPOINT: 'https://fixture.invalid/ads', ...testEnvironment(mode),
       RESULTS_DIR: path.join(work, 'results'),
+      GITHUB_EVENT_NAME: mysqlOnly ? 'workflow_dispatch' : 'push', GITHUB_EVENT_PATH: event,
       PATH: `${directory}${path.delimiter}${process.env.PATH}`, FIXTURE_CALLS: calls,
       FIXTURE_GOPATH: directory, FIXTURE_LIST_EXIT: String(listExit), FIXTURE_FAIL: failMatching,
     }});
@@ -238,6 +241,14 @@ test('nightly runs every suite even after a failure, records checks and fails at
   assert.match(checks, /quick-start-go1\.26\.10=7:/); assert.match(checks, /quick-start-go1\.27\.3=0:/);
   assert.match(checks, /mysql-full=0:mysql-full\.log/);
   assert.match(checks, /govulncheck=0:govulncheck\.log/); assert.match(checks, /ci-script-tests=0:/);
+});
+test('manual MySQL trial runs the full database suite and CI checks without the other backends', () => {
+  const {result, records, checks} = runSuite('nightly', {mysqlOnly: true, failMatching: 'run-mysql-tests.py'});
+  assert.equal(result.status, 1);
+  assert.equal(goTests(records).length, 0);
+  assert.match(checks, /mysql-full=7:mysql-full\.log/);
+  assert.match(checks, /ci-script-tests=0:ci-script-tests\.log/);
+  assert.ok(records.some(r => r.args.includes('scripts/ci/run-mysql-tests.py')));
 });
 test('weekly tests the other supported Go releases and runs staticcheck', () => {
   const {result, records, checks} = runSuite('weekly'); assert.equal(result.status, 0, result.stderr);

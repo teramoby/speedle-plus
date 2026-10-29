@@ -89,6 +89,7 @@ case "${mode}" in
     if [[ "${GITHUB_EVENT_NAME:-}" == workflow_dispatch && -f "${GITHUB_EVENT_PATH:-}" ]] &&
        python3 -c 'import json,sys; value=json.load(open(sys.argv[1])).get("inputs",{}).get("mysql_only",False); sys.exit(0 if value is True or value == "true" else 1)' "$GITHUB_EVENT_PATH"; then
       check mysql-full python3 scripts/ci/run-mysql-tests.py
+      check ci-script-tests bash -c 'python3 -m unittest discover -s scripts/tests -p "test_*.py" && node --test scripts/tests/*.cjs'
       exit "${failed}"
     fi
     listed=$(packages); mapfile -t pkgs <<< "${listed}"
