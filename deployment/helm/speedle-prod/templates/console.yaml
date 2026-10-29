@@ -1,0 +1,127 @@
+{{- if .Values.console.enabled }}
+{{- $scheme := ternary "https" "http" (not (empty .Values.tls)) }}
+apiVersion: apps/v1beta2
+kind: Deployment
+metadata:
+  name: {{ template "speedle.fullname" . }}-console
+  labels:
+    app: console
+    chart: {{ template "speedle.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  replicas: {{ .Values.console.replicaCount }}
+  selector:
+    matchLabels:
+      app: console
+      release: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app: console
+        release: {{ .Release.Name }}
+    spec:
+      imagePullSecrets:
+        - name: "{{ .Values.image.pullSecret }}"
+      containers:
+        - name: console
+          image: "{{ .Values.console.image }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          args:
+            - --pms-url
+            - {{ $scheme }}://{{ template "speedle.fullname" . }}-pms:{{ .Values.service.pmsPort }}
+            - --ads-url
+            - {{ $scheme }}://{{ template "speedle.fullname" . }}-ads:{{ .Values.service.adsPort }}
+            - --asserter-endpoint
+            - {{ required "console.asserterEndpoint is required when the console is enabled" .Values.console.asserterEndpoint | quote }}
+            - --authz-service
+            - {{ .Values.console.authzService | quote }}
+            {{- with .Values.console.bootstrapAdmins }}
+            - --bootstrap-admins
+            - {{ . | quote }}
+            {{- end }}
+            {{- if .Values.console.sessionKeySecret }}
+            - --session-key-file
+            - /etc/console-session/session.key
+            {{- end }}
+            {{- if .Values.console.tls.certSecret }}
+            - --insecure=false
+            - --cert
+            - /etc/console-tls/{{ .Values.console.tls.certFile }}
+            - --key
+            - /etc/console-tls/{{ .Values.console.tls.keyFile }}
+            {{- else if .Values.console.secureCookie }}
+            - --secure-cookie
+            {{- end }}
+            {{- if .Values.console.upstreamTLS.certSecret }}
+            - --upstream-ca
+            - /etc/upstream-tls/{{ .Values.console.upstreamTLS.caFile }}
+            {{- if .Values.tls }}
+            {{- if .Values.tls.forceClientCert }}
+            - --upstream-cert
+            - /etc/upstream-tls/{{ .Values.console.upstreamTLS.certFile }}
+            - --upstream-key
+            - /etc/upstream-tls/{{ .Values.console.upstreamTLS.keyFile }}
+            {{- end }}
+            {{- end }}
+            {{- end }}
+          volumeMounts:
+          {{- if .Values.console.sessionKeySecret }}
+            - name: session-key
+              mountPath: /etc/console-session
+              readOnly: true
+          {{- end }}
+          {{- if .Values.console.tls.certSecret }}
+            - name: console-tls
+              mountPath: /etc/console-tls
+              readOnly: true
+          {{- end }}
+          {{- if .Values.console.upstreamTLS.certSecret }}
+            - name: upstream-tls
+              mountPath: /etc/upstream-tls
+              readOnly: true
+          {{- end }}
+          ports:
+            - name: http
+              containerPort: 6735
+              protocol: TCP
+      volumes:
+      {{- if .Values.console.sessionKeySecret }}
+        - name: session-key
+          secret:
+            defaultMode: 256
+            secretName: {{ .Values.console.sessionKeySecret }}
+      {{- end }}
+      {{- if .Values.console.tls.certSecret }}
+        - name: console-tls
+          secret:
+            defaultMode: 256
+            secretName: {{ .Values.console.tls.certSecret }}
+      {{- end }}
+      {{- if .Values.console.upstreamTLS.certSecret }}
+        - name: upstream-tls
+          secret:
+            defaultMode: 256
+            secretName: {{ .Values.console.upstreamTLS.certSecret }}
+      {{- end }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ template "speedle.fullname" . }}-console
+  labels:
+    app: console
+    chart: {{ template "speedle.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+    - port: {{ .Values.console.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    app: console
+    release: {{ .Release.Name }}
+{{- end }}

@@ -1,2 +1,9 @@
 $ kubectl port-forward svc/{{ template "speedle.fullname" . }} 6733:6733 6734:6734 
   Then access http://127.0.0.1:6733/policy-mgmt/v1/ to manage policies, access http://127.0.0.1:6734/authz-check/v1/is-allowed to check permissions.
+{{- if .Values.console.enabled }}
+
+The policy management console:
+$ kubectl port-forward svc/{{ template "speedle.fullname" . }} {{ .Values.console.port }}:{{ .Values.console.port }}
+  Then open http://127.0.0.1:{{ .Values.console.port }}/console/ and sign in with a token.
+  PMS and ADS trust any caller that reaches them: keep their ports inside the cluster.
+{{- end }}

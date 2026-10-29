@@ -932,6 +932,61 @@ paths:
       summary: 获取授权策略
       tags:
         - policy
+    put:
+      consumes:
+        - application/json
+      description: 整体替换授权策略，保持 ID 不变。metadata 保留 createby 和 createtime，并记录 updateby 和 updatetime。
+      operationId: updatePolicy
+      parameters:
+        - description: 服务名称
+          in: path
+          name: serviceName
+          required: true
+          type: string
+        - description: 授权策略 ID
+          in: path
+          name: policyID
+          required: true
+          type: string
+        - description: GET 返回的 ETag；如果对象在此之后被修改，更新返回 412
+          in: header
+          name: If-Match
+          required: false
+          type: string
+        - description: 新的授权策略
+          in: body
+          name: body
+          required: true
+          schema:
+            $ref: '#/definitions/Policy'
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: 成功
+          headers:
+            ETag:
+              description: 更新后对象的 ETag
+              type: string
+          schema:
+            $ref: '#/definitions/PolicyResponse'
+        "400":
+          description: JSON 或请求数据无效，或请求体中的 ID 与路径不一致
+          schema:
+            $ref: '#/definitions/Error'
+        "404":
+          description: 对象不存在
+        "412":
+          description: If-Match 与当前 ETag 不一致
+          schema:
+            $ref: '#/definitions/Error'
+        "500":
+          description: 评估、断言或存储失败
+          schema:
+            $ref: '#/definitions/Error'
+      summary: 更新授权策略
+      tags:
+        - policy
   /service/{serviceName}/role-policy:
     delete:
       description: 删除服务中的全部角色策略
@@ -1099,6 +1154,61 @@ paths:
           schema:
             $ref: '#/definitions/Error'
       summary: 获取角色策略
+      tags:
+        - role-policy
+    put:
+      consumes:
+        - application/json
+      description: 整体替换角色策略，保持 ID 不变。metadata 保留 createby 和 createtime，并记录 updateby 和 updatetime。
+      operationId: updateRolePolicy
+      parameters:
+        - description: 服务名称
+          in: path
+          name: serviceName
+          required: true
+          type: string
+        - description: 角色策略 ID
+          in: path
+          name: rolePolicyID
+          required: true
+          type: string
+        - description: GET 返回的 ETag；如果对象在此之后被修改，更新返回 412
+          in: header
+          name: If-Match
+          required: false
+          type: string
+        - description: 新的角色策略
+          in: body
+          name: body
+          required: true
+          schema:
+            $ref: '#/definitions/RolePolicy'
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: 成功
+          headers:
+            ETag:
+              description: 更新后对象的 ETag
+              type: string
+          schema:
+            $ref: '#/definitions/RolePolicyResponse'
+        "400":
+          description: JSON 或请求数据无效，或请求体中的 ID 与路径不一致
+          schema:
+            $ref: '#/definitions/Error'
+        "404":
+          description: 对象不存在
+        "412":
+          description: If-Match 与当前 ETag 不一致
+          schema:
+            $ref: '#/definitions/Error'
+        "500":
+          description: 评估、断言或存储失败
+          schema:
+            $ref: '#/definitions/Error'
+      summary: 更新角色策略
       tags:
         - role-policy
 schemes:

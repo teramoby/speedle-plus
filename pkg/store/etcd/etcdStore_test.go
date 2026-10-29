@@ -727,3 +727,58 @@ func TestWatch(t *testing.T) {
 	}
 
 }
+
+// An update touches the service node, so watchers reload the service and see
+// the new content.
+func TestWatchSeesUpdates(t *testing.T) {
+	s, err := store.NewStore(storeConfig.StoreType, storeConfig.StoreProps)
+	if err != nil {
+		t.Fatal("fail to new etcd3 store:", err)
+	}
+	defer s.(*Store).destroy()
+	defer s.StopWatch()
+	must := func(err error) {
+		t.Helper()
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+	must(s.CreateService(&pms.Service{Name: "app_update", Type: pms.TypeApplication}))
+	policy, err := s.CreatePolicy("app_update", &pms.Policy{Name: "before", Effect: pms.Grant})
+	must(err)
+	rolePolicy, err := s.CreateRolePolicy("app_update", &pms.RolePolicy{Name: "before", Effect: pms.Grant})
+	must(err)
+
+	ch, err := s.Watch()
+	must(err)
+	time.Sleep(2 * time.Second)
+
+	waitFor := func(what string, done func(*pms.Service) bool) {
+		t.Helper()
+		timeout := time.After(5 * time.Second)
+		for {
+			select {
+			case <-timeout:
+				t.Fatalf("no SERVICE_ADD event with %s", what)
+			case e := <-ch:
+				if service, ok := e.Content.(*pms.Service); ok && e.Type == pms.SERVICE_ADD && done(service) {
+					return
+				}
+			}
+		}
+	}
+
+	policy.Name = "after"
+	_, err = s.UpdatePolicy("app_update", policy)
+	must(err)
+	waitFor("the updated policy", func(service *pms.Service) bool {
+		return len(service.Policies) == 1 && service.Policies[0].Name == "after"
+	})
+
+	rolePolicy.Name = "after"
+	_, err = s.UpdateRolePolicy("app_update", rolePolicy)
+	must(err)
+	waitFor("the updated role policy", func(service *pms.Service) bool {
+		return len(service.RolePolicies) == 1 && service.RolePolicies[0].Name == "after"
+	})
+}

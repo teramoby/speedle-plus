@@ -117,20 +117,27 @@ type StrParamDetail struct {
 }
 
 func (k *Parameters) NewHTTPServer(handler http.Handler) (*http.Server, error) {
-	insecure, _ := strconv.ParseBool(k.Insecure.Value)
-	headersOk := handlers.AllowedHeaders([]string{"X-Requested-With", "Content-Type"})
+	headersOk := handlers.AllowedHeaders([]string{"X-Requested-With", "Content-Type", "If-Match"})
 	originsOk := handlers.AllowedOrigins([]string{"*"})
-	methodsOk := handlers.AllowedMethods([]string{"GET", "HEAD", "POST", "DELETE", "OPTIONS"})
-	cosHandler := handlers.CORS(originsOk, headersOk, methodsOk)(handler)
+	methodsOk := handlers.AllowedMethods([]string{"GET", "HEAD", "POST", "PUT", "DELETE", "OPTIONS"})
+	exposedOk := handlers.ExposedHeaders([]string{"ETag"})
+	return k.NewSameOriginHTTPServer(handlers.CORS(originsOk, headersOk, methodsOk, exposedOk)(handler))
+}
+
+// NewSameOriginHTTPServer creates a server with the same TLS and timeout
+// settings as NewHTTPServer, but without CORS headers, so browsers only let
+// pages from the server's own origin call it.
+func (k *Parameters) NewSameOriginHTTPServer(handler http.Handler) (*http.Server, error) {
+	insecure, _ := strconv.ParseBool(k.Insecure.Value)
 	if insecure {
 		server := http.Server{
 			Addr:    k.Endpoint.Value,
-			Handler: cosHandler,
+			Handler: handler,
 		}
 		limitServer(&server)
 		return &server, nil
 	}
-	return k.newTLSServer(cosHandler)
+	return k.newTLSServer(handler)
 }
 
 // limitServer bounds how long a client may take to send a request or read a

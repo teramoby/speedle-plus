@@ -10,3 +10,9 @@ Then access {{ template "schema" . }}://127.0.0.1:6733/policy-mgmt/v1 to manage 
 
 2. $ kubectl port-forward svc/{{ template "speedle.fullname" . }}-ads 6734:6734
 Then access {{ template "schema" . }}://127.0.0.1:6733/authz-check/v1/is-allowed to manage policies.
+{{- if .Values.console.enabled }}
+
+3. $ kubectl port-forward svc/{{ template "speedle.fullname" . }}-console {{ .Values.console.port }}:{{ .Values.console.port }}
+Then open {{ if .Values.console.tls.certSecret }}https{{ else }}http{{ end }}://127.0.0.1:{{ .Values.console.port }}/console/ and sign in with a token.
+PMS and ADS trust the Speedle-Principals header of any caller: keep them reachable only from the console and your applications, with forceClientCert.
+{{- end }}

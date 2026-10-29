@@ -46,6 +46,7 @@ func (s *FailingStore) GetPolicyAndRolePolicyCounts() (map[string]*pms.PolicyAnd
 }
 
 func (s *FailingStore) CreatePolicy(string, *pms.Policy) (*pms.Policy, error) { return nil, s.Err }
+func (s *FailingStore) UpdatePolicy(string, *pms.Policy) (*pms.Policy, error) { return nil, s.Err }
 func (s *FailingStore) DeletePolicy(string, string) error                     { return s.Err }
 func (s *FailingStore) DeletePolicies(string) error                           { return s.Err }
 func (s *FailingStore) GetPolicy(string, string) (*pms.Policy, error)         { return nil, s.Err }
@@ -53,6 +54,9 @@ func (s *FailingStore) ListAllPolicies(string, string) ([]*pms.Policy, error) { 
 func (s *FailingStore) GetPolicyCount(string) (int64, error)                  { return s.count() }
 
 func (s *FailingStore) CreateRolePolicy(string, *pms.RolePolicy) (*pms.RolePolicy, error) {
+	return nil, s.Err
+}
+func (s *FailingStore) UpdateRolePolicy(string, *pms.RolePolicy) (*pms.RolePolicy, error) {
 	return nil, s.Err
 }
 func (s *FailingStore) DeleteRolePolicy(string, string) error                 { return s.Err }

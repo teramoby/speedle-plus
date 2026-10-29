@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Console on Speedle</title>
+    <link>https://speedle.io/zh/tags/console/</link>
+    <description>Recent content in Console on Speedle</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh-cn</language>
+    
+	<atom:link href="https://speedle.io/zh/tags/console/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>策略管理控制台</title>
+      <link>https://speedle.io/zh/docs/console/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://speedle.io/zh/docs/console/</guid>
+      <description>控制台能做什么 speedle-console 是一个独立的服务，提供网页，并把页面发出的请求转发给 PMS 和 ADS。功能包括：
+ 服务、授权策略和角色策略：列表、筛选、新建、修改、删除。修改时用 PUT 并带上对象的 ETag，如果期间有人改过同一项，会提示而不是直接覆盖。 角色关系分析：用关系图展示谁直接或经由其他角色获得了哪些角色，可以包含 global 服务的角色策略。会标出循环、被引用却没有任何角色策略授予的角色，以及被授予却从未使用的角色。选择一个角色，可以查看谁持有它、经由哪些角色、是否只在满足条件或资源范围时才持有。 诊断：向 ADS 发送一个请求，查看结果、原因、获得的角色，以及每条生效的角色策略和授权策略及其条件结果。  页面支持中文和英文。
+PMS 和 ADS 必须隔离 PMS 没有认证，并且直接根据调用方发送的 Speedle-Principals 请求头记录修改人。控制台会验证用户身份并检查权限，但任何能直接访问 PMS 的人都可以修改任意策略。只对外开放控制台，PMS 和 ADS 只允许控制台和你的应用访问：使用网络策略，或启用双向 TLS 并设置 forceClientCert，给控制台配置客户端证书。
+在本机试用 按快速入门启动 PMS 和 ADS，然后以开发模式构建并运行控制台。开发模式无需登录，所有人都是管理员，因此只能监听回环地址。
+go build -o ./bin/speedle-console ./cmd/speedle-console ./bin/speedle-console --dev-no-auth --insecure --endpoint 127.0.0.1:6735 --pms-url http://127.0.0.1:6733 --ads-url http://127.0.0.1:6734 打开 http://127.0.0.1:6735/console/。
+登录与权限 用户使用令牌登录。控制台把令牌发给令牌断言服务（与 ADS 使用的是同一个 webhook），并把返回的主体保存在签名的 HttpOnly、SameSite=Strict cookie 中，令牌本身不会保存。每次修改还需要会话专属的 CSRF 令牌，页面会自动带上。
+用户能做什么由 Speedle 自己决定。每次 API 调用时，控制台都会询问 ADS：用户的主体能否在服务 speedle-console（可用 --authz-service 修改）中对资源 console 执行某个操作：</description>
+    </item>
+    
+  </channel>
+</rss>

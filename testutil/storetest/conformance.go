@@ -22,6 +22,7 @@ func RunConformance(t *testing.T, newStore func(t *testing.T) pms.PolicyStoreMan
 	t.Run("Services", func(t *testing.T) { testServices(t, newStore(t)) })
 	t.Run("Policies", func(t *testing.T) { testPolicies(t, newStore(t)) })
 	t.Run("RolePolicies", func(t *testing.T) { testRolePolicies(t, newStore(t)) })
+	RunUpdateConformance(t, newStore)
 	t.Run("Functions", func(t *testing.T) { testFunctions(t, newStore(t)) })
 	t.Run("PolicyStore", func(t *testing.T) { testPolicyStore(t, newStore(t)) })
 	t.Run("Discover", func(t *testing.T) {
@@ -320,4 +321,90 @@ func testDiscover(t *testing.T, m store.DiscoverRequestManager) {
 	if all, _, _ := m.GetDiscoverRequests(""); len(all) != 0 {
 		t.Errorf("%d requests survived a full reset", len(all))
 	}
+}
+
+// RunUpdateConformance checks updating policies and role policies in place.
+// RunConformance runs it too; stores whose other behaviour differs from the
+// shared suite can run it alone.
+func RunUpdateConformance(t *testing.T, newStore func(t *testing.T) pms.PolicyStoreManager) {
+	t.Run("UpdatePolicies", func(t *testing.T) { testUpdatePolicies(t, newStore(t)) })
+	t.Run("UpdateRolePolicies", func(t *testing.T) { testUpdateRolePolicies(t, newStore(t)) })
+}
+
+func testUpdatePolicies(t *testing.T, s pms.PolicyStoreManager) {
+	must(t, s.CreateService(&pms.Service{Name: "app"}))
+	alpha, err := s.CreatePolicy("app", policyNamed("alpha"))
+	must(t, err)
+	beta, err := s.CreatePolicy("app", policyNamed("beta"))
+	must(t, err)
+
+	changed := policyNamed("alpha2")
+	changed.ID = alpha.ID
+	changed.Effect = pms.Deny
+	changed.Permissions[0].Actions = []string{"get", "put"}
+	updated, err := s.UpdatePolicy("app", changed)
+	must(t, err)
+	if updated.ID != alpha.ID || updated.Name != "alpha2" {
+		t.Errorf("updated %+v", updated)
+	}
+	got, err := s.GetPolicy("app", alpha.ID)
+	must(t, err)
+	if got.Name != "alpha2" || got.Effect != pms.Deny || len(got.Permissions[0].Actions) != 2 {
+		t.Errorf("after update got %+v", got)
+	}
+	other, err := s.GetPolicy("app", beta.ID)
+	must(t, err)
+	if other.Name != "beta" {
+		t.Errorf("the other policy changed: %+v", other)
+	}
+	if count, _ := s.GetPolicyCount("app"); count != 2 {
+		t.Errorf("app has %d policies after an update", count)
+	}
+
+	missing := policyNamed("x")
+	missing.ID = "nope"
+	_, err = s.UpdatePolicy("app", missing)
+	wantCode(t, "updating a missing policy", err, errors.EntityNotFound)
+	changed.ID = alpha.ID
+	_, err = s.UpdatePolicy("missing", changed)
+	wantCode(t, "updating a policy of a missing service", err, errors.EntityNotFound)
+}
+
+func testUpdateRolePolicies(t *testing.T, s pms.PolicyStoreManager) {
+	must(t, s.CreateService(&pms.Service{Name: "app"}))
+	alpha, err := s.CreateRolePolicy("app", rolePolicyNamed("alpha"))
+	must(t, err)
+	beta, err := s.CreateRolePolicy("app", rolePolicyNamed("beta"))
+	must(t, err)
+
+	changed := rolePolicyNamed("alpha2")
+	changed.ID = alpha.ID
+	changed.Roles = []string{"auditor"}
+	changed.Principals = []string{"group:ops"}
+	updated, err := s.UpdateRolePolicy("app", changed)
+	must(t, err)
+	if updated.ID != alpha.ID || updated.Name != "alpha2" {
+		t.Errorf("updated %+v", updated)
+	}
+	got, err := s.GetRolePolicy("app", alpha.ID)
+	must(t, err)
+	if got.Name != "alpha2" || got.Roles[0] != "auditor" || got.Principals[0] != "group:ops" {
+		t.Errorf("after update got %+v", got)
+	}
+	other, err := s.GetRolePolicy("app", beta.ID)
+	must(t, err)
+	if other.Name != "beta" {
+		t.Errorf("the other role policy changed: %+v", other)
+	}
+	if count, _ := s.GetRolePolicyCount("app"); count != 2 {
+		t.Errorf("app has %d role policies after an update", count)
+	}
+
+	missing := rolePolicyNamed("x")
+	missing.ID = "nope"
+	_, err = s.UpdateRolePolicy("app", missing)
+	wantCode(t, "updating a missing role policy", err, errors.EntityNotFound)
+	changed.ID = alpha.ID
+	_, err = s.UpdateRolePolicy("missing", changed)
+	wantCode(t, "updating a role policy of a missing service", err, errors.EntityNotFound)
 }
