@@ -36,6 +36,9 @@ def run(command, cwd, env):
 
 def verify(locale, steps, toolchain):
     env = dict(os.environ, GOWORK="off")
+    # This throwaway application has no Git history. Persistent runner Git
+    # metadata must not affect an external-module compilation (or runtime).
+    env["GOFLAGS"] = (env.get("GOFLAGS", "") + " -buildvcs=false").strip()
     if toolchain:
         env["GOTOOLCHAIN"] = toolchain
     with tempfile.TemporaryDirectory(prefix="speedle-embedded-") as temporary:
