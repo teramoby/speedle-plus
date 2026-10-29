@@ -10,10 +10,12 @@ pmsImageRepo := speedle-pms
 pmsImageTag := v0.1
 adsImageRepo := speedle-ads
 adsImageTag := v0.1
+consoleImageRepo := speedle-console
+consoleImageTag := v0.1
 
 all: build
 
-build: buildPms buildAds buildSpctl
+build: buildPms buildAds buildSpctl buildConsole
 
 buildPms:
 	go build ${goLDFlags} -o ${gopath}/bin/speedle-pms github.com/teramoby/speedle-plus/cmd/speedle-pms
@@ -24,7 +26,10 @@ buildAds:
 buildSpctl:
 	go build ${goLDFlags} -o ${gopath}/bin/spctl  github.com/teramoby/speedle-plus/cmd/spctl
 
-image: imagePms imageAds
+buildConsole:
+	go build ${goLDFlags} -o ${gopath}/bin/speedle-console github.com/teramoby/speedle-plus/cmd/speedle-console
+
+image: imagePms imageAds imageConsole
 
 imagePms:
 	cp ${gopath}/bin/speedle-pms deployment/docker/speedle-pms/.
@@ -35,6 +40,11 @@ imageAds:
 	cp ${gopath}/bin/speedle-ads deployment/docker/speedle-ads/.
 	docker build -t ${adsImageRepo}:${adsImageTag} --rm --no-cache deployment/docker/speedle-ads
 	rm deployment/docker/speedle-ads/speedle-ads
+
+imageConsole:
+	cp ${gopath}/bin/speedle-console deployment/docker/speedle-console/.
+	docker build -t ${consoleImageRepo}:${consoleImageTag} --rm --no-cache deployment/docker/speedle-console
+	rm deployment/docker/speedle-console/speedle-console
 
 test: testAll
 
@@ -87,3 +97,4 @@ clean:
 	rm -f ${gopath}/bin/speedle-pms
 	rm -f ${gopath}/bin/speedle-ads
 	rm -f ${gopath}/bin/spctl
+	rm -f ${gopath}/bin/speedle-console
