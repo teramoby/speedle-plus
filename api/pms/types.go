@@ -95,6 +95,8 @@ type StoreChangeEvent struct {
 	// Event content.
 	// In case of a delete event, the content is the identity of the deleted item, such as the application name;
 	// in case of put events, the content is the value of the newly created item, like an application
+	// FULL_RELOAD may carry *PolicyStore, an already-read consistent snapshot.
+	// With nil content the evaluator reads the store as before.
 	Content interface{}
 }
 
@@ -105,5 +107,5 @@ type StoreUpdateData struct {
 
 // StorageChangeChannel is the channel through which the policy evaluator
 // gets StoreChangeEvent for refreshing cache
-//TODO It's better to change to pointer type @tony
+// TODO It's better to change to pointer type @tony
 type StorageChangeChannel chan StoreChangeEvent

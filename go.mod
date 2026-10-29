@@ -3,9 +3,11 @@ module github.com/teramoby/speedle-plus
 go 1.26.10
 
 require (
+	github.com/DATA-DOG/go-sqlmock v1.5.2
 	github.com/armon/go-radix v1.0.0
 	github.com/docker/go-plugins-helpers v0.0.0-20240701071450-45e2431495c8
 	github.com/fsnotify/fsnotify v1.4.7
+	github.com/go-sql-driver/mysql v1.10.1
 	github.com/golang/protobuf v1.5.4
 	github.com/gorilla/handlers v1.4.2
 	github.com/gorilla/mux v1.6.1
@@ -30,6 +32,7 @@ require (
 )
 
 require (
+	filippo.io/edwards25519 v1.2.0 // indirect
 	github.com/BurntSushi/toml v1.6.0 // indirect
 	github.com/Microsoft/go-winio v0.6.2 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect

@@ -6,6 +6,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"io"
 	"net"
 	"net/http"
 	"os"
@@ -84,6 +85,9 @@ func run(params *flags.Parameters, conf *cfg.Config, stop <-chan os.Signal) erro
 	evaluator, err := newEvaluator(conf)
 	if err != nil {
 		return err
+	}
+	if closer, ok := evaluator.(io.Closer); ok {
+		defer closer.Close()
 	}
 
 	httpServer, err := newHTTPServer(params, evaluator)

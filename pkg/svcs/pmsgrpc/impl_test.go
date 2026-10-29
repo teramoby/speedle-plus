@@ -48,6 +48,25 @@ func code(err error) codes.Code {
 
 var ctx = context.Background()
 
+// Expose only the required interface, hiding the file store's optional Discover.
+type withoutDiscover struct{ pms.PolicyStoreManager }
+
+func TestDiscoverUnsupportedStore(t *testing.T) {
+	impl := NewServiceImpl(withoutDiscover{newStore(t)})
+	_, err := impl.GetDiscoverRequests(ctx, &pb.DiscoverRequestsRequest{})
+	if code(err) != codes.Unimplemented {
+		t.Fatalf("GetDiscoverRequests: %v", err)
+	}
+	_, err = impl.ResetDiscoverRequests(ctx, &pb.ResetRequestsRequest{})
+	if code(err) != codes.Unimplemented {
+		t.Fatalf("ResetDiscoverRequests: %v", err)
+	}
+	_, err = impl.GetDiscoverPolicies(ctx, &pb.DiscoverPoliciesRequest{})
+	if code(err) != codes.Unimplemented {
+		t.Fatalf("GetDiscoverPolicies: %v", err)
+	}
+}
+
 func TestServices(t *testing.T) {
 	impl := NewServiceImpl(newStore(t))
 	for _, in := range []*pb.ServiceRequest{

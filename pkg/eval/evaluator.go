@@ -5,9 +5,11 @@ package eval
 
 import (
 	"fmt"
+	"io"
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/teramoby/speedle-plus/3rdparty/github.com/Knetic/govaluate"
@@ -64,6 +66,10 @@ type PolicyEvalImpl struct {
 	RuntimePolicyStore *RuntimePolicyStore //This is runtime policy store
 	Store              pms.PolicyStoreManagerADS
 	AsserterFunc       func(ctx *adsapi.RequestContext) error
+	cleanupStop        chan struct{}
+	closeOnce          sync.Once
+	watchStopOnce      sync.Once
+	closeErr           error
 }
 
 func (p *PolicyEvalImpl) deleteService(serviceName string) {
@@ -1122,24 +1128,51 @@ func (p *PolicyEvalImpl) updateRuntimeCacheWithStoreChange(updateChan pms.Storag
 				p.DeleteFunctionInRuntimeCache(f)
 			}
 		case pms.FULL_RELOAD:
-			p.fullReloadRuntimeCache()
+			if snapshot, ok := e.Content.(*pms.PolicyStore); ok && snapshot != nil {
+				p.RuntimePolicyStore.reloadPolicyStore(snapshot)
+			} else {
+				p.fullReloadRuntimeCache()
+			}
 		}
 	}
 }
 
 func (p *PolicyEvalImpl) cleanExpiredFunctionResultPeriodically() {
 	ticker := time.NewTicker(30 * time.Minute)
+	p.cleanupStop = make(chan struct{})
 	go func() {
-		for range ticker.C {
-			p.CleanExpiredFunctionResult()
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ticker.C:
+				p.CleanExpiredFunctionResult()
+			case <-p.cleanupStop:
+				return
+			}
 		}
 	}()
+}
+
+// Close releases evaluator resources, including a closable backing store.
+// NewWithStore callers should close the evaluator only when they also intend
+// to close the supplied store. StopWatch alone leaves the store usable.
+func (p *PolicyEvalImpl) Close() error {
+	p.closeOnce.Do(func() {
+		if p.cleanupStop != nil {
+			close(p.cleanupStop)
+		}
+		p.StopWatch()
+		if closer, ok := p.Store.(io.Closer); ok {
+			p.closeErr = closer.Close()
+		}
+	})
+	return p.closeErr
 }
 
 // StopWatch stops watching policy store.
 // After stopping watching, policy changes will not be updated automatically
 func (p *PolicyEvalImpl) StopWatch() {
-	p.Store.StopWatch()
+	p.watchStopOnce.Do(func() { p.Store.StopWatch() })
 }
 
 func difPolicySets(oldSet, newSet []int) (missed, removed []int) {
