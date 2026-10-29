@@ -44,7 +44,7 @@ jobs:
       - name: Start MongoDB replica set
         run: |
           set -euo pipefail
-          docker run -d --name speedle-mongodb --network host mongo:7 --replSet speedle --bind_ip_all
+          docker run -d --name speedle-mongodb --network host mongo:7 --replSet speedle --bind_ip 127.0.0.1
           for attempt in $(seq 1 60); do
             if docker exec speedle-mongodb mongosh --quiet --eval 'db.adminCommand({ping: 1})' >/dev/null 2>&1; then
               break
