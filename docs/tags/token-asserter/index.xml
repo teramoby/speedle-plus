@@ -17,8 +17,8 @@
       <pubDate>Mon, 21 Jan 2019 09:28:30 +0800</pubDate>
       
       <guid>https://speedle.io/docs/assertor/</guid>
-      <description>Benefits of the token asserter An evaluation request can contain an identity token issued by any identity provider as an incoming user identity, instead of specifying the user identities (user identifier and those groups user belongs to) explicitly. When you integrate Speedle into your service, your service does not need to validate and parse identity tokens. Speedle can do it for you.
-The Speedle evaluation engine checks whether the incoming request contains an identity token.</description>
+      <description>What does a token asserter do? A configured asserter validates a token and returns explicit principals, including their identity domains. Speedle can then evaluate policies using those identities. A production implementation must validate the token&amp;rsquo;s signature or introspection result, issuer, audience, expiry and any provider-specific requirements. The webhook alone does not establish compatibility with arbitrary OAuth/OIDC tokens.
+The Token Assertion Plugin API uses integer errCode and an optional attribute object, not a typed attribute array.</description>
     </item>
     
   </channel>

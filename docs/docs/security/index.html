@@ -90,182 +90,88 @@ headingSelector: 'h2'
   <div id="kube-component" class="content">
     
 
-<h2 id="overview">Overview</h2>
+<h2 id="protect-both-api-transports">Protect both API transports</h2>
 
-<h3 id="api-endpoint-security-authentication-and-authorization">API Endpoint Security / Authentication and Authorization</h3>
+<p>Speedle&rsquo;s standalone PMS and ADS expose <strong>REST and gRPC</strong>. Both now use the same <code>--insecure</code>, <code>--cert</code>, <code>--key</code>, <code>--client-cert</code> and <code>--force-client-cert</code> transport settings. Invalid certificates or trust configuration cause startup to fail; secure mode does not fall back to plaintext.</p>
 
-<p>Authentication and authorization for client requests (other than TLS mutual auth) are not supported by Speedle.</p>
+<p>TLS encrypts the connection and authenticates the server. To require authenticated clients, provide a client CA with <code>--client-cert</code> <strong>and</strong> set <code>--force-client-cert=true</code>. Without that flag, a configured CA validates a client certificate only when the client supplies one. TLS alone does not authorize an administrator or provide bearer-token validation. Use an authenticated gateway or equivalent access controls for management, diagnosis and discovery endpoints. The <code>--enable-authz</code> flag does not provide a built-in endpoint authorization policy.</p>
 
-<p>If you want to protect Speedle API endpoints, you can use any existing/stock solutions to secure these APIs (e.g. an API Gateway like Ambassador with tokens etc).</p>
-
-<h3 id="message-security-tls">Message security / TLS</h3>
-
-<p>TLS is a cryptographic protocol that provides communications security, it offers many different ways of exchanging keys for authentication, encrypting data, and guaranteeing message integrity.</p>
-
-<p>Speedle supports using TLS to secure the message transport inside untrusted environments.
-TLS mutual authentication is also supported for the authentication of the client.</p>
-
-<p>In the bellow sections, we&rsquo;ll describe how to enable TLS in Speedle server as a standalone application and how to use Speedle CLI/curl to access the TLS-enabled Speedle server.</p>
-
-<p>Looking for securing your kubernetes deployment with TLS? - click <a href="/docs/deployment/">here</a></p>
-
-<h2 id="prerequisites">Prerequisites</h2>
-
-<p>In order to implement TLS, Speedle must have an associated <code>Certificate</code> configured for its external interface (IP address or DNS name) that accepts secure connections.</p>
-
-<p>This certificate is cryptographically signed by a trusted third party. These are called <code>Certificate Authorities</code> (<code>CA</code>s). To obtain a signed certificate, you need to choose a CA and follow the instructions your chosen CA provides to obtain your certificate.</p>
-
-<p>In your test enviroment, you can create a <code>self-signed</code> certificate. Self-signed certificates are simply user generated certificates which have not been signed by a well-known CA and are, therefore, not really guaranteed to be authentic at all. They are not suitable for production use.</p>
-
-<p>For convenience, the cfssl tool provides an easy interface to certificate generation.
-The steps to use <a href="https://github.com/cloudflare/cfssl">cfssl</a> to generate self-signed certificates are as following:</p>
-
-<h3 id="install-cfssl">Install cfssl</h3>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl -s -L -o /usr/bin/cfssl https://pkg.cfssl.org/R1.2/cfssl_linux-amd64
-curl -s -L -o /usr/bin/cfssljson https://pkg.cfssl.org/R1.2/cfssljson_linux-amd64</code></pre></div>
-<p>Or install by Go:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">go get -u github.com/cloudflare/cfssl/cmd/cfssl
-go get -u github.com/cloudflare/cfssl/cmd/cfssljson</code></pre></div>
-<h3 id="generate-ca-and-certificates">Generate CA and Certificates</h3>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#8be9fd;font-style:italic">echo</span> <span style="color:#f1fa8c">&#39;{&#34;CN&#34;:&#34;CA&#34;,&#34;key&#34;:{&#34;algo&#34;:&#34;rsa&#34;,&#34;size&#34;:2048}}&#39;</span> | cfssl gencert -initca - | cfssljson -bare ca -
-<span style="color:#8be9fd;font-style:italic">echo</span> <span style="color:#f1fa8c">&#39;{&#34;signing&#34;:{&#34;default&#34;:{&#34;expiry&#34;:&#34;43800h&#34;,&#34;usages&#34;:[&#34;signing&#34;,&#34;key encipherment&#34;,&#34;server auth&#34;,&#34;client auth&#34;]}}}&#39;</span> &gt; ca-config.json
-<span style="color:#6272a4"># replace this with your ip address or dns
-</span><span style="color:#6272a4"></span><span style="color:#8be9fd;font-style:italic">export</span> <span style="color:#8be9fd;font-style:italic">ADDRESS</span><span style="color:#ff79c6">=</span>localhost,127.0.0.1
-<span style="color:#8be9fd;font-style:italic">export</span> <span style="color:#8be9fd;font-style:italic">NAME</span><span style="color:#ff79c6">=</span>server
-<span style="color:#8be9fd;font-style:italic">echo</span> <span style="color:#f1fa8c">&#39;{&#34;CN&#34;:&#34;&#39;</span><span style="color:#8be9fd;font-style:italic">$NAME</span><span style="color:#f1fa8c">&#39;&#34;,&#34;hosts&#34;:[&#34;&#34;],&#34;key&#34;:{&#34;algo&#34;:&#34;rsa&#34;,&#34;size&#34;:2048}}&#39;</span> | cfssl gencert -config<span style="color:#ff79c6">=</span>ca-config.json -ca<span style="color:#ff79c6">=</span>ca.pem -ca-key<span style="color:#ff79c6">=</span>ca-key.pem -hostname<span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;</span><span style="color:#8be9fd;font-style:italic">$ADDRESS</span><span style="color:#f1fa8c">&#34;</span> - | cfssljson -bare <span style="color:#8be9fd;font-style:italic">$NAME</span>
-<span style="color:#8be9fd;font-style:italic">export</span> <span style="color:#8be9fd;font-style:italic">ADDRESS</span><span style="color:#ff79c6">=</span>
-<span style="color:#8be9fd;font-style:italic">export</span> <span style="color:#8be9fd;font-style:italic">NAME</span><span style="color:#ff79c6">=</span>client
-<span style="color:#8be9fd;font-style:italic">echo</span> <span style="color:#f1fa8c">&#39;{&#34;CN&#34;:&#34;&#39;</span><span style="color:#8be9fd;font-style:italic">$NAME</span><span style="color:#f1fa8c">&#39;&#34;,&#34;hosts&#34;:[&#34;&#34;],&#34;key&#34;:{&#34;algo&#34;:&#34;rsa&#34;,&#34;size&#34;:2048}}&#39;</span> | cfssl gencert -config<span style="color:#ff79c6">=</span>ca-config.json -ca<span style="color:#ff79c6">=</span>ca.pem -ca-key<span style="color:#ff79c6">=</span>ca-key.pem -hostname<span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;</span><span style="color:#8be9fd;font-style:italic">$ADDRESS</span><span style="color:#f1fa8c">&#34;</span> - | cfssljson -bare <span style="color:#8be9fd;font-style:italic">$NAME</span>
-
-mv server.pem server.crt
-mv server-key.pem server.key
-cp ca.pem server-ca.crt
-
-mv client.pem client.crt
-mv client-key.pem client.key
-cp ca.pem client-ca.crt</code></pre></div>
-<h2 id="tls-enabled-speedle-server">TLS-enabled Speedle Server</h2>
-
-<h3 id="command-line-flags">Command Line Flags</h3>
-
-<p>Use the following flags to configure TLS for <code>PMS</code> (Policy Management Service) and <code>ADS</code> (Authorization Decision Service).</p>
+<h2 id="listen-addresses-and-compatibility">Listen addresses and compatibility</h2>
 
 <table>
 <thead>
 <tr>
-<th>Name</th>
-<th>Value</th>
-<th>Default</th>
-<th>Comments</th>
+<th>Service</th>
+<th>Default REST address</th>
+<th>Default gRPC address</th>
 </tr>
 </thead>
 
 <tbody>
 <tr>
-<td>insecure</td>
-<td>true, false</td>
-<td>false</td>
-<td>specifies when TLS is enabled or not, true: disabled, false: enabled.</td>
+<td>PMS</td>
+<td><code>0.0.0.0:6733</code></td>
+<td>disabled until <code>--grpc-endpoint</code> is set</td>
 </tr>
 
 <tr>
-<td>cert</td>
-<td>TLS certificate path</td>
-<td></td>
-<td>specifies the path of the file containing the TLS certificate.</td>
-</tr>
-
-<tr>
-<td>key</td>
-<td>TLS private key path</td>
-<td></td>
-<td>specifies the path of the file containing the TLS private key.</td>
-</tr>
-
-<tr>
-<td>client-cert</td>
-<td>client CA path</td>
-<td></td>
-<td>specifies the path of the file containing the trusted CA File for client certificate authentication.</td>
-</tr>
-
-<tr>
-<td>force-client-cert</td>
-<td>true, false</td>
-<td>false</td>
-<td>specifies if the client certificate authentication is forced or not.</td>
+<td>ADS</td>
+<td><code>0.0.0.0:6734</code></td>
+<td>disabled until <code>--grpc-endpoint</code> is set</td>
 </tr>
 </tbody>
 </table>
 
-<h3 id="example">Example</h3>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ speedle-pms --store-type file --endpoint<span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;127.0.0.1:6733&#34;</span> --insecure<span style="color:#ff79c6">=</span><span style="color:#8be9fd;font-style:italic">false</span> --key<span style="color:#ff79c6">=</span><span style="color:#8be9fd;font-style:italic">$tls_config_path</span>/server.key --cert<span style="color:#ff79c6">=</span><span style="color:#8be9fd;font-style:italic">$tls_config_path</span>/server.crt --client-cert<span style="color:#ff79c6">=</span><span style="color:#8be9fd;font-style:italic">$tls_config_path</span>/client-ca.crt
+<p>REST and gRPC listen addresses are configured separately. Setting <code>--endpoint</code> alone does not enable gRPC. Explicitly use <code>--grpc-endpoint 127.0.0.1:50001</code> for PMS or <code>127.0.0.1:50002</code> for ADS. <code>127.0.0.1:0</code> requests an ephemeral port for isolated tests; specify an IPv6 address explicitly when needed.</p>
 
-$ speedle-ads --store-type file --endpoint<span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;127.0.0.1:6735&#34;</span> --insecure<span style="color:#ff79c6">=</span><span style="color:#8be9fd;font-style:italic">false</span> --force-client-cert<span style="color:#ff79c6">=</span><span style="color:#8be9fd;font-style:italic">true</span> --key<span style="color:#ff79c6">=</span><span style="color:#8be9fd;font-style:italic">$tls_config_path</span>/server.key --cert<span style="color:#ff79c6">=</span><span style="color:#8be9fd;font-style:italic">$tls_config_path</span>/server.crt --client-cert<span style="color:#ff79c6">=</span><span style="color:#8be9fd;font-style:italic">$tls_config_path</span>/client-ca.crt</code></pre></div>
-<p><strong>Note: Please use absolute pathes for the cert files.</strong></p>
+<p>Configuration precedence is command line, then <code>SPDL_*</code> environment variables, then JSON, then defaults. The gRPC overrides are <code>--grpc-endpoint</code>, <code>SPDL_GRPC_ENDPOINT</code>, and <code>serverConfig.grpcEndpoint</code>. See the <a href="/docs/api/">current proto contracts</a> for RPC namespaces and client generation.</p>
 
-<h2 id="use-spctl-cli-to-access-tls-enabled-speedle">Use <code>spctl</code> CLI to Access TLS-enabled Speedle</h2>
+<h2 id="generate-certificates-for-a-local-test">Generate certificates for a local test</h2>
 
-<h3 id="command-line-flags-1">Command Line Flags</h3>
+<p>Build the binaries using the <a href="/quick-start/">quick start</a>. From the repository root, use Go 1.25 or later to generate a local CA plus separate server/client certificates. The server certificate has SANs for <code>localhost</code>, <code>127.0.0.1</code> and <code>::1</code>; private keys use mode 0600. These <strong>24-hour demonstration certificates</strong> are not production credentials. The generator refuses to overwrite existing files: choose a new output directory when regenerating.</p>
 
-<p>Use the following flags to configure TLS for Spctl CLI.</p>
+<!-- docs-check: certificates -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">go run ./website/tests/examples/certificates --out ./tls</code></pre></div>
+<h2 id="start-mutually-authenticated-services">Start mutually authenticated services</h2>
 
-<table>
-<thead>
-<tr>
-<th>Name</th>
-<th>Value</th>
-<th>Default</th>
-<th>Comments</th>
-</tr>
-</thead>
+<p>Initialize a fresh policy file once, with both services stopped:</p>
 
-<tbody>
-<tr>
-<td>skipverify</td>
-<td>true, false</td>
-<td>false</td>
-<td>specifies if skip verifing PMS server&rsquo;s TLS certificate.</td>
-</tr>
+<!-- docs-check: setup -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#8be9fd;font-style:italic">printf</span> <span style="color:#f1fa8c">&#39;{}\n&#39;</span> &gt; docs-policies.json</code></pre></div>
+<p>Start PMS in one terminal:</p>
 
-<tr>
-<td>cert</td>
-<td>TLS certificate path</td>
-<td></td>
-<td>specifies the path of the file containing the client TLS certificate.</td>
-</tr>
+<!-- docs-check: secure-pms -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./bin/speedle-pms --store-type file --filestore-loc ./docs-policies.json <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  --endpoint <span style="color:#bd93f9">127</span>.0.0.1:6733 --grpc-endpoint <span style="color:#bd93f9">127</span>.0.0.1:50001 <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  --cert ./tls/server.crt --key ./tls/server.key <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  --client-cert ./tls/ca.crt --force-client-cert<span style="color:#ff79c6">=</span>true</code></pre></div>
+<p>Start ADS in a second terminal:</p>
 
-<tr>
-<td>key</td>
-<td>TLS private key path</td>
-<td></td>
-<td>specifies the path of the file containing the client TLS private key.</td>
-</tr>
+<!-- docs-check: secure-ads -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./bin/speedle-ads --store-type file --filestore-loc ./docs-policies.json <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  --endpoint <span style="color:#bd93f9">127</span>.0.0.1:6734 --grpc-endpoint <span style="color:#bd93f9">127</span>.0.0.1:50002 <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  --cert ./tls/server.crt --key ./tls/server.key <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  --client-cert ./tls/ca.crt --force-client-cert<span style="color:#ff79c6">=</span>true</code></pre></div>
+<p>Run both terminals from the same repository root. Keep them open; stop each with Ctrl-C when finished. Production certificates must cover the actual DNS names/IPs and come from your organization&rsquo;s trusted CA.</p>
 
-<tr>
-<td>client-cert</td>
-<td>client CA path</td>
-<td></td>
-<td>specifies the path of the file containing the trusted CA File for server certificate authentication.</td>
-</tr>
+<h2 id="connect-with-spctl-and-curl">Connect with spctl and curl</h2>
 
-<tr>
-<td>force-client-cert</td>
-<td>true, false</td>
-<td>false</td>
-<td>specifies if the client certificate authentication is forced or not.</td>
-</tr>
-</tbody>
-</table>
+<!-- docs-check: secure-cli -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./bin/spctl --pms-endpoint https://127.0.0.1:6733/policy-mgmt/v1/ <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  --skipverify<span style="color:#ff79c6">=</span><span style="color:#8be9fd;font-style:italic">false</span> --cacert ./tls/ca.crt --cert ./tls/client.crt --key ./tls/client.key <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  get service --all</code></pre></div>
+<!-- docs-check: secure-curl -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl --fail --silent --show-error --cacert ./tls/ca.crt <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  --cert ./tls/client.crt --key ./tls/client.key <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  https://127.0.0.1:6733/policy-mgmt/v1/service</code></pre></div>
+<p>An empty store returns <code>[]</code>. Omitting the client certificate fails the TLS handshake. <code>spctl</code> uses <code>--cacert</code> for server trust and <code>--cert</code>/<code>--key</code> for its own identity; <code>--client-cert</code> and <code>--force-client-cert</code> are server flags. Keep <code>--skipverify=false</code> (the default).</p>
 
-<h3 id="example-1">Example</h3>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ spctl config skipverify <span style="color:#8be9fd;font-style:italic">false</span> cacert <span style="color:#8be9fd;font-style:italic">$tls_config_path</span>/server-ca.crt cert <span style="color:#8be9fd;font-style:italic">$tls_config_path</span>/client.crt key <span style="color:#8be9fd;font-style:italic">$tls_config_path</span>/client.key pms-endpoint <span style="color:#f1fa8c">&#34;https://localhost:6733/policy-mgmt/v1/&#34;</span>
-$ spctl create service <span style="color:#8be9fd;font-style:italic">test</span>
-$ spctl get service --all</code></pre></div>
-<h2 id="use-curl-to-access-tls-enabled-speedle">Use <code>curl</code> to Access TLS-enabled Speedle</h2>
+<p>For gRPC, configure the generated client&rsquo;s channel with the same CA, a matching server name, and the client certificate/key. PMS uses <code>pb.PolicyManager</code>; ADS uses <code>pb.Evaluator</code>. An insecure channel must fail against these TLS endpoints.</p>
 
-<h3 id="example-2">Example</h3>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ curl --cacert <span style="color:#8be9fd;font-style:italic">$tls_config_path</span>/server-ca.crt --cert <span style="color:#8be9fd;font-style:italic">$tls_config_path</span>/client.crt --key <span style="color:#8be9fd;font-style:italic">$tls_config_path</span>/client.key https://localhost:6733/policy-mgmt/v1/service</code></pre></div>
+<h2 id="local-plaintext-development">Local plaintext development</h2>
+
+<p>Only an explicit <code>--insecure=true</code> enables plaintext for both transports. Bind REST and gRPC to loopback for that mode. Do not publish these unauthenticated endpoints or trust principal names/attributes supplied by untrusted callers. The <a href="/docs/assertor/">token asserter</a> validates a configured identity token; it does not authenticate every PMS/ADS caller or replace endpoint access controls.</p>
+
   </div>
 </div>
 </main><div class="sidebar">

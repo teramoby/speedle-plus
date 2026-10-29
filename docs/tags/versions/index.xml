@@ -16,9 +16,8 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://speedle.io/docs/versions/</guid>
-      <description> Version 0.2.0 (planning) &amp;hellip;
-Version 0.1.0 release notes: This is the first open source version. All basic functions are available in this version, including
- Policy Management Service Authorization Runtime Service Command line tool Integration samples  </description>
+      <description>Speedle+ releases Use the GitHub Releases page for published versions and release notes. v1.6.0 is the version pinned by the current embedded Go walkthrough. Use an explicit released version for reproducible module dependencies; the embedded guide explains the setup.
+Historical Oracle Speedle release Version 0.1.0 was the original open-source release, including policy management, authorization decisions, the command-line tool and integration samples. The historical 0.2.0 planning note is not the current Speedle+ release roadmap.</description>
     </item>
     
   </channel>
