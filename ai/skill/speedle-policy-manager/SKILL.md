@@ -132,8 +132,8 @@ Note: assigning a role grants nothing by itself; there must also be an authoriza
 ```
 [service.expense]
 [policy]
-# R1
-grant role Employee create expr:^/expense/[^/]+$
+# R1 (create targets the department collection /expense/{dept})
+grant role Employee create expr:^/expense/[^/]+$ if request_resource == '/expense/' + requester_dept
 # R2
 grant role Employee read,update expr:^/expense/[^/]+/[^/]+$ if owner == request_user
 # R3 (scope limited by the `on` in the role policy)
@@ -154,10 +154,13 @@ grant user lisi FinanceDirector
 grant user zhangsan DeptManager on expr:^/expense/sales/.*$
 ```
 
-Resource path: `/expense/{dept}/{reportId}`. Attributes: `owner` (string, report submitter, from the database), `amount` (numeric), `status` (string).
+Resource paths: `/expense/{dept}` for creating a report, `/expense/{dept}/{reportId}` for an existing report. Attributes: `requester_dept` (string, the requester's department, from the HR directory), `owner` (string, report submitter, from the database), `amount` (numeric), `status` (string).
 
 | Subject | Resource | Action | Attributes | Result |
 |---|---|---|---|---|
+| wang (AllStaff) | /expense/sales | create | requester_dept=sales | Allow |
+| wang | /expense/rd | create | requester_dept=sales | Deny (R1, other department) |
+| wang | /expense/sales | create | requester_dept not passed | Deny (fail closed) |
 | zhangsan (AllStaff) | /expense/sales/r2 | approve | owner=zhao, amount=3000 | Allow |
 | zhangsan | /expense/sales/r3 | approve | owner=zhangsan, amount=3000 | Deny (R6) |
 | zhangsan | /expense/sales/r3 | approve | owner not passed | Deny (fail closed) |
