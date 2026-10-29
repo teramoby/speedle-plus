@@ -19,10 +19,9 @@ import (
 // pkg/store/etcd's own tests import this package, so its names are repeated
 // here; callers register the etcd store by importing pkg/store/etcd.
 const (
-	etcdStoreType      = "etcd"
-	etcdEndpointKey    = "EtcdEndpoint"
-	etcdKeyPrefixKey   = "EtcdKeyPrefix"
-	etcdDiscoverPrefix = "/isAllowedRequests/"
+	etcdStoreType    = "etcd"
+	etcdEndpointKey  = "EtcdEndpoint"
+	etcdKeyPrefixKey = "EtcdKeyPrefix"
 )
 
 // UseEtcd reports whether STORE_TYPE selects etcd fixtures.
@@ -86,7 +85,8 @@ func releaseEtcd() {
 
 // EtcdFixture owns a key prefix on the fixture etcd. Separate fixtures cannot
 // overwrite each other's policies. Discover requests use one global etcd
-// prefix, so each fixture starts and ends with none.
+// prefix, which no fixture clears: fixtures open at the same time share those
+// requests, and the etcd starts empty and is removed with its last fixture.
 type EtcdFixture struct {
 	Store  pms.PolicyStoreManager
 	Config *cfg.StoreConfig
@@ -105,10 +105,6 @@ func NewEtcdFixture(initial *pms.PolicyStore) (*EtcdFixture, error) {
 		return nil, err
 	}
 	f := &EtcdFixture{client: client, prefix: "/speedle-test/" + suid.New().String() + "/"}
-	if err := f.clear(); err != nil {
-		f.Close()
-		return nil, err
-	}
 	f.Config = &cfg.StoreConfig{StoreType: etcdStoreType, StoreProps: map[string]interface{}{
 		etcdEndpointKey: endpoint, etcdKeyPrefixKey: f.prefix,
 	}}
@@ -126,20 +122,11 @@ func NewEtcdFixture(initial *pms.PolicyStore) (*EtcdFixture, error) {
 	return f, nil
 }
 
-func (f *EtcdFixture) clear() error {
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
-	for _, prefix := range []string{f.prefix, etcdDiscoverPrefix} {
-		if _, err := f.client.Delete(ctx, prefix, clientv3.WithPrefix()); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
 func (f *EtcdFixture) Close() {
 	if f.client != nil {
-		_ = f.clear()
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		_, _ = f.client.Delete(ctx, f.prefix, clientv3.WithPrefix())
+		cancel()
 		_ = f.client.Close()
 		f.client = nil
 		releaseEtcd()
