@@ -94,11 +94,8 @@ function script(block, name) {
 }
 
 test('review and command jobs retain their explicit runner policies and isolated Speedle label', () => {
-  assert.deepEqual(Object.keys(job.ci), ['changes', 'site', 'lint', 'test', 'build', 'mysql']);
-  assert.equal(route(job.ci.mysql), 'ubuntu-latest');
-  assert.match(job.ci.mysql, /SPEEDLE_REQUIRE_MYSQL: '1'/);
-  assert.match(job.ci.mysql, /go test -race .*\.\/pkg\/store\/mysql/);
-  assert.match(job.ci.mysql, /coverage\.py .*--min-file scripts\/ci\/coverage-min\.txt/);
+  assert.deepEqual(Object.keys(job.ci), ['changes', 'site', 'lint', 'test', 'build']);
+  assert.doesNotMatch(sources.ci.replace(/^\s*#.*$/gm, ''), /mysql|mongo|check_etcd/i, 'database backends run nightly, not per PR');
   assert.deepEqual(Object.keys(job.review), ['diff-regression', 'review', 'publish', 'automerge-dependabot']);
   assert.deepEqual(Object.keys(job.commands), ['prepare', 'analyze', 'publish']);
   assert.deepEqual(Object.keys(job.inline), ['route']);
@@ -182,9 +179,13 @@ test('scheduled suites run through the worker and report from a hosted job', () 
       if (id !== 'report') assert.doesNotMatch(block, /secrets\./, `${kind}.${id} must not receive secrets`);
     }
   }
-  assert.deepEqual(Object.keys(job.weekly), ['run', 'mongodb', 'report']);
-  assert.equal(route(job.weekly.mongodb), 'ubuntu-latest');
-  assert.match(job.weekly.mongodb, /SPEEDLE_REQUIRE_MONGO: '1'/);
+  assert.deepEqual(Object.keys(job.nightly), ['run', 'mongodb', 'report']);
+  assert.deepEqual(Object.keys(job.weekly), ['run', 'report']);
+  assert.equal(route(job.nightly.mongodb), 'ubuntu-latest');
+  assert.match(job.nightly.mongodb, /SPEEDLE_REQUIRE_MONGO: '1'/);
+  assert.match(job.nightly.mongodb, /!\(github.event_name == 'workflow_dispatch' && inputs.mysql_only\)/);
+  assert.match(job.nightly.report, /needs: \[run, mongodb\]$/m);
+  assert.match(job.nightly.report, /--source "mongodb:\$\{MONGODB_RESULT\}:mongodb-results\/go-mongodb.json"/);
 });
 test('fixture job installs pinned Node 22 before running Node regression suites', () => {
   const block = job.review['diff-regression'];

@@ -240,6 +240,7 @@ test('nightly runs every suite even after a failure, records checks and fails at
   for (const toolchain of ['go1.26.10', 'go1.27.3']) assert.match(checks, new RegExp(`quick-start-${toolchain}=\\d+:`));
   assert.match(checks, /quick-start-go1\.26\.10=7:/); assert.match(checks, /quick-start-go1\.27\.3=0:/);
   assert.match(checks, /mysql-full=0:mysql-full\.log/);
+  assert.match(checks, /^etcd-docs=0:etcd-docs\.log$/m);
   assert.match(checks, /govulncheck=0:govulncheck\.log/); assert.match(checks, /ci-script-tests=0:/);
 });
 test('manual MySQL trial runs the full database suite and CI checks without the other backends', () => {
@@ -248,6 +249,7 @@ test('manual MySQL trial runs the full database suite and CI checks without the 
   assert.equal(goTests(records).length, 0);
   assert.match(checks, /mysql-full=7:mysql-full\.log/);
   assert.match(checks, /ci-script-tests=0:ci-script-tests\.log/);
+  assert.doesNotMatch(checks, /etcd-docs/);
   assert.ok(records.some(r => r.args.includes('scripts/ci/run-mysql-tests.py')));
 });
 test('weekly tests the other supported Go releases and runs staticcheck', () => {
