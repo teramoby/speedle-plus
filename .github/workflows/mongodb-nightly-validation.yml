@@ -1,0 +1,14 @@
+name: MongoDB nightly validation
+
+on:
+  push:
+    branches: [codex/mongodb-store-charming-validation]
+
+permissions:
+  contents: read
+
+jobs:
+  nightly:
+    uses: teramoby/speedle-plus/.github/workflows/go-ci-worker.yml@master
+    with:
+      mode: nightly

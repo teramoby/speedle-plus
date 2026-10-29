@@ -99,3 +99,14 @@ import (
 ```
 
 Implement `Watch()` so it returns the correct snapshot/change events through `pms.StorageChangeChannel`; support `StopWatch()` without leaking watch resources. ADS updates its runtime cache asynchronously. Test missed/disconnected watches, recovery, failure during a write, and concurrent readers; do not promise instantaneous propagation simply because the backend supports watch.
+
+## MongoDB deployment requirements
+
+MongoDB change streams (`Watch`) and atomic snapshot replacement
+(`WritePolicyStore`) require a replica set or sharded cluster. A single-node
+replica set is sufficient for local testing. Standalone MongoDB can serve ordinary
+CRUD operations, but rejects snapshot replacement without deleting existing data.
+Snapshot replacement preserves supplied policy IDs and generates missing IDs.
+Bulk service/function deletion keeps the collections and emits document deletion
+events so ADS can remove cached entries. Call `StopWatch()` to cancel the stream
+and close its event channel before releasing a store.
