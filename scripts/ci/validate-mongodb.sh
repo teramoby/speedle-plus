@@ -2,7 +2,6 @@
 # Validation-only harness: own a temporary mongod, never touch resident services.
 set -euo pipefail
 cd "$(dirname "$0")/../.."
-test "${RUNNER_NAME}" = fiona-speedle
 printf 'MongoDB validation runner: %s\n' "${RUNNER_NAME}"
 validation_dir=$(mktemp -d "${RUNNER_TEMP:-/tmp}/speedle-mongo.XXXXXXXX")
 mongo_pid=''
