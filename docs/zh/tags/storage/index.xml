@@ -24,6 +24,19 @@ docker run --name speedle-mysql --detach \  --publish 127.0.0.1:3306:3306 \  --v
     </item>
     
     <item>
+      <title>etcd 部署指南</title>
+      <link>https://speedle.io/zh/docs/store/etcd/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://speedle.io/zh/docs/store/etcd/</guid>
+      <description>本指南使用独立的 etcd v3.6.14 和 Docker 持久化卷。PMS 写入策略，ADS 监听同一个 key prefix。本地单节点示例通过回环地址提供 HTTP 服务；生产环境的 TLS 与集群配置见后文。
+1. 编译 Speedle 准备 Bash、Git、curl、已启动的 Docker，以及 Go 1.26.10 或 Go 1.27.3，然后从源码编译：
+git clone --depth 1 https://github.com/teramoby/speedle-plus.git cd speedle-plus mkdir -p bin go build -o ./bin/ ./cmd/spctl ./cmd/speedle-pms ./cmd/speedle-ads 后续命令均在这个代码目录执行。确认 2379、6733、6734 端口可用；修改端口时要同步修改命令和配置。
+2. 启动独立 etcd 服务 命名卷保存 etcd 数据。这里只把客户端端口发布到宿主机，单节点内部通信使用的 peer 端口保留在容器内。
+docker run --name speedle-etcd --detach \  --publish 127.0.0.1:2379:2379 \  --volume speedle-etcd-data:/etcd-data \  gcr.</description>
+    </item>
+    
+    <item>
       <title>存储扩展</title>
       <link>https://speedle.io/zh/docs/store/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
@@ -31,6 +44,7 @@ docker run --name speedle-mysql --detach \  --publish 127.0.0.1:3306:3306 \  --v
       <guid>https://speedle.io/zh/docs/store/</guid>
       <description>内置存储与扩展接口 独立服务在 pkg/store 下注册 file、etcd、MongoDB、MySQL 实现。可用不代表具有相同的运维保证，部署前应分别审查后端认证、持久化、事务与 watch 行为。下方配置说明属性名称，本地示例不涉及启动 etcd/MongoDB 集群。
 完整后端实现 pms.PolicyStoreManager：服务、授权策略、角色策略、函数管理，以及快照读取与 watch/stop。ADS 接受较窄的只读/watch 接口 PolicyStoreManagerADS。实现新后端时应以实际接口为准，不能照搬历史文档中不完整的方法列表。
+逐步部署教程：MySQL 配置指南与 etcd 部署指南。
 MySQL 8.4 策略存储 按照 MySQL 配置指南逐步建库、创建 PMS/ADS 独立账号、配置并启动服务，最后验证策略同步和授权结果。
 mysql 后端完整实现 PMS 与 ADS 所需的策略存储接口，首版不支持 Discover 访问请求收集和策略生成。使用纯 Go 的 go-sql-driver/mysql 驱动；数据库需要预先创建。
 { &amp;#34;storeConfig&amp;#34;: { &amp;#34;storeType&amp;#34;: &amp;#34;mysql&amp;#34;, &amp;#34;storeProps&amp;#34;: { &amp;#34;MySQLDSN&amp;#34;: &amp;#34;speedle:replace-me@tcp(db.example.com:3306)/speedle?tls=true&amp;#34;, &amp;#34;MySQLInitSchema&amp;#34;: true, &amp;#34;MySQLPollInterval&amp;#34;: &amp;#34;1s&amp;#34;, &amp;#34;MySQLQueryTimeout&amp;#34;: &amp;#34;10s&amp;#34; } }, &amp;#34;enableWatch&amp;#34;: true }    配置属性 命令行参数 默认值     MySQLDSN --mysqlstore-dsn 必填，包含数据库名   MySQLInitSchema --mysqlstore-init-schema true   MySQLPollInterval --mysqlstore-poll-interval 1s   MySQLQueryTimeout --mysqlstore-query-timeout 10s    环境变量沿用相同映射，例如 SPDL_MYSQLSTORE_DSN。时间间隔必须是正的时长字符串；MySQLInitSchema 接受 JSON 布尔值或布尔字符串。优先级依次为显式参数、非空环境变量、配置文件、默认值。嵌入使用时导入 pkg/store/mysql，直接将上述属性传给 store.</description>

@@ -9,7 +9,7 @@ python3 website/tests/check_quick_start.py --toolchain go1.26.10
 python3 website/tests/check_embedded.py --toolchain go1.26.10 --candidate
 ```
 
-The current docs inventory is 50 Markdown pages (25 English/Chinese pairs). Historical snapshot directories are unchanged. No shared stylesheet, template, logo or homepage design changes are part of this repair.
+The current docs inventory is 52 Markdown pages (26 English/Chinese pairs). Historical snapshot directories are unchanged. No shared stylesheet, template, logo or homepage design changes are part of this repair.
 
 `check_docs.py` executes 134 Bash blocks against owned native PMS/ADS, mock assertion and custom-function services, including Linux/amd64 cross-compilation, Allow/Deny, diagnosis, discovery/import/enforcement, TLS/mTLS and rejected credentials. Two deployment clone/build blocks are identical to the Quick Start build sequence, which the release check executes separately. Linux uses private user/network/PID namespaces and the documented ports; macOS remaps only the owned fixture ports. All fixture processes and temporary policy/certificate files are cleaned up.
 
@@ -42,7 +42,10 @@ Container build/push and Kubernetes admission/rollout require a target registry/
 | `spdl` | Updated in both languages | Extracted condition/parser tests |
 | `store/_index` | Updated in both languages | Paired native commands and API results |
 | `store/mysql` | Added in both languages | Docker MySQL 8.4, native PMS/ADS, provisioning, live updates and restart checks |
+| `store/etcd` | Added in both languages | External Docker etcd, shared prefix, Allow/Deny, watch updates, snapshot and container restart |
 | `usecases` | Reviewed; retained | Source review; no obsolete build/API example found |
 | `versions` | Updated in both languages | Published release/tag links |
 
 `check_mysql.py` executes both MySQL setup guides against owned Docker containers and named volumes, with native race-enabled PMS/ADS. It checks account grants, automatic schema creation, read-only ADS, allow/deny, polling propagation, process restart, and prebuilt schemas after revoking DDL privileges. The hosted MySQL CI job and charming MySQL nightly run this checker; the global documentation gate checks its paired commands and Bash syntax.
+
+`check_etcd.py` executes the paired external-etcd deployment guides using disposable Docker containers/volumes and native race-enabled PMS/ADS. It checks startup, initial policy load, live watch updates, stored keys, snapshot creation/export/status, and authorization persistence across an etcd container restart. TLS configuration JSON is checked statically; external production certificates and multi-member operation require environment-specific verification. The hosted storage CI job runs it for code, site-tooling and documentation changes.

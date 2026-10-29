@@ -40,6 +40,8 @@ def steps(page,locale):
     return result
 
 def static_checks():
+    from check_etcd import static_checks as etcd_static_checks
+    etcd_static_checks()
     from check_mysql import static_checks as mysql_static_checks
     mysql_static_checks()
     for page in PAGES:
