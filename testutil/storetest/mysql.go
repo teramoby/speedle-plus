@@ -79,10 +79,11 @@ func (f *MySQLFixture) Close() {
 }
 
 // PolicyStore ports a backend-agnostic test fixture without changing its data
-// or assertions. Adapter-specific file/etcd tests keep their own factories.
+// or assertions. Adapter-specific file/etcd tests keep their own factories;
+// STORE_TYPE selects MySQL or the owned external etcd, otherwise the file store.
 func PolicyStore(t testing.TB, location string) pms.PolicyStoreManager {
 	t.Helper()
-	if os.Getenv("STORE_TYPE") != "mysql" {
+	if os.Getenv("STORE_TYPE") != "mysql" && !UseEtcd() {
 		s, err := store.NewStore("file", map[string]interface{}{"FileLocation": location})
 		if err != nil {
 			t.Fatal(err)
@@ -96,6 +97,14 @@ func PolicyStore(t testing.TB, location string) pms.PolicyStoreManager {
 	var initial pms.PolicyStore
 	if err := json.Unmarshal(raw, &initial); err != nil {
 		t.Fatal(err)
+	}
+	if UseEtcd() {
+		f, err := NewEtcdFixture(&initial)
+		if err != nil {
+			t.Fatal(err)
+		}
+		t.Cleanup(f.Close)
+		return f.Store
 	}
 	f, err := NewMySQLFixture(&initial)
 	if err != nil {

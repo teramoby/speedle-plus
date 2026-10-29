@@ -51,17 +51,22 @@ func testMain(m *testing.M) int {
 		conf = &cfg.Config{StoreConfig: fixture.Config}
 		return m.Run()
 	}
-
-	if os.Getenv("STORE_TYPE") == "etcd" {
-		log.Info("Start etcd!")
-		configFile = "../cfg/config_etcd.json"
-		defer os.RemoveAll("./speedle.etcd")
-	} else {
-		log.Info("Start file!")
-		configFile = "../cfg/config_file.json"
-		defer os.Remove("./ps.json")
-		defer os.Remove("./speedle_discover_requests.json")
+	if storetest.UseEtcd() {
+		fixture, err := storetest.NewEtcdFixture(&pms.PolicyStore{})
+		if err != nil {
+			log.Print(err)
+			return 1
+		}
+		defer fixture.Close()
+		testPS = fixture.Store
+		conf = &cfg.Config{StoreConfig: fixture.Config}
+		return m.Run()
 	}
+
+	log.Info("Start file!")
+	configFile = "../cfg/config_file.json"
+	defer os.Remove("./ps.json")
+	defer os.Remove("./speedle_discover_requests.json")
 
 	var err error
 	mConfig, err = cfg.ReadConfig(configFile)
@@ -79,12 +84,6 @@ func testMain(m *testing.M) int {
 		os.Exit(1)
 	}
 	conf = mConfig
-	if os.Getenv("STORE_TYPE") == "etcd" {
-		if err := storetest.WaitForEtcdHTTP(); err != nil {
-			log.Print(err)
-			return 1
-		}
-	}
 	ret := m.Run()
 	return ret
 }

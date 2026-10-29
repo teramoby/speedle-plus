@@ -20,6 +20,7 @@ import (
 	pmsapi "github.com/teramoby/speedle-plus/api/pms"
 	"github.com/teramoby/speedle-plus/pkg/cfg"
 	"github.com/teramoby/speedle-plus/pkg/store"
+	_ "github.com/teramoby/speedle-plus/pkg/store/etcd"
 	_ "github.com/teramoby/speedle-plus/pkg/store/file"
 	"github.com/teramoby/speedle-plus/pkg/svcs"
 	"github.com/teramoby/speedle-plus/testutil/storetest"
@@ -39,7 +40,7 @@ func newTestServerWithStore(location string) (*httptest.Server, error) {
 	conf.StoreConfig.StoreProps["FileLocation"] = location
 	var ps pmsapi.PolicyStoreManager
 	var err error
-	if os.Getenv("STORE_TYPE") == "mysql" {
+	if os.Getenv("STORE_TYPE") == "mysql" || storetest.UseEtcd() {
 		var initial pmsapi.PolicyStore
 		raw, readErr := os.ReadFile(location)
 		if readErr != nil {
@@ -48,12 +49,21 @@ func newTestServerWithStore(location string) (*httptest.Server, error) {
 		if err := json.Unmarshal(raw, &initial); err != nil {
 			return nil, err
 		}
-		fixture, fixtureErr := storetest.NewMySQLFixture(&initial)
-		if fixtureErr != nil {
-			return nil, fixtureErr
+		if storetest.UseEtcd() {
+			fixture, fixtureErr := storetest.NewEtcdFixture(&initial)
+			if fixtureErr != nil {
+				return nil, fixtureErr
+			}
+			fixtureCleanup = append(fixtureCleanup, fixture.Close)
+			ps = fixture.Store
+		} else {
+			fixture, fixtureErr := storetest.NewMySQLFixture(&initial)
+			if fixtureErr != nil {
+				return nil, fixtureErr
+			}
+			fixtureCleanup = append(fixtureCleanup, fixture.Close)
+			ps = fixture.Store
 		}
-		fixtureCleanup = append(fixtureCleanup, fixture.Close)
-		ps = fixture.Store
 	} else {
 		ps, err = store.NewStore(conf.StoreConfig.StoreType, conf.StoreConfig.StoreProps)
 	}
