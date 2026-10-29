@@ -320,16 +320,37 @@ func (client *CmdClient) CreateServiceWithPDL(serviceName string, pdl []string) 
 
 	//create service
 	tmpPDLFile := filepath.Join(TestLog.TempDir(), "policies.spdl")
-	GeneratePdlFile(tmpPDLFile, pdl)
+	GeneratePdlFile(tmpPDLFile, serviceSPDL(serviceName, pdl))
 	cmdStr = client.cmd + param.CREATE_SERVICE_WITH_PDLFILE(serviceName, pmsapi.TypeApplication, tmpPDLFile)
 	log.Println("CreateServiceWithPDL cmdstr= " + cmdStr)
 	c = Command("/bin/bash", "-c", cmdStr)
 	c.Run()
 	client.output = c.Stdout()
 	log.Println("CreateServiceWithPDL cmd output-" + client.output)
+	if !c.Success() {
+		TestLog.Logf("CreateServiceWithPDL failed: %s", c.Stderr())
+		return false
+	}
 	if !strings.Contains(client.output, msg.OUTPUT_SERVICE_CREATED()) {
 		log.Println("Service created failed.")
 		return false
 	}
 	return true
+}
+
+// The legacy runtime corpus supplies role-policies:/policies: fragments.
+// The CLI now reads complete SPDL documents with named service sections.
+func serviceSPDL(name string, fragment []string) []string {
+	result := []string{"[service." + name + "]"}
+	for _, line := range fragment {
+		switch strings.TrimSpace(line) {
+		case "role-policies:":
+			result = append(result, "[rolepolicy]")
+		case "policies:":
+			result = append(result, "[policy]")
+		default:
+			result = append(result, line)
+		}
+	}
+	return result
 }

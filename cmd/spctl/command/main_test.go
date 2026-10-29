@@ -15,6 +15,7 @@ import (
 	storefile "github.com/teramoby/speedle-plus/pkg/store/file"
 	"github.com/teramoby/speedle-plus/pkg/svcs/pmsrest"
 	"github.com/teramoby/speedle-plus/testutil"
+	"github.com/teramoby/speedle-plus/testutil/storetest"
 	"go.etcd.io/etcd/server/v3/embed"
 )
 
@@ -91,6 +92,14 @@ func runCLITests(m *testing.M) int {
 			storeetcd.EtcdEndpointKey:  server.Clients[0].Addr().String(),
 			storeetcd.EtcdKeyPrefixKey: "/speedle-cli-tests/",
 		}
+	} else if storeType == "mysql" {
+		fixture, err := storetest.NewMySQLFixture(nil)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			return 1
+		}
+		defer fixture.Close()
+		properties = fixture.Config.StoreProps
 	} else if storeType != "file" {
 		fmt.Fprintf(os.Stderr, "unsupported CLI fixture store %q\n", storeType)
 		return 1
@@ -99,6 +108,9 @@ func runCLITests(m *testing.M) int {
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return 1
+	}
+	if closer, ok := manager.(interface{ Close() error }); ok {
+		defer closer.Close()
 	}
 	router, err := pmsrest.NewRouter(manager)
 	if err != nil {

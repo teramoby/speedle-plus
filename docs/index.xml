@@ -117,6 +117,16 @@ Join us at speedle-users and/or speedle-developers groups.</description>
     </item>
     
     <item>
+      <title>MySQL Setup</title>
+      <link>https://speedle.io/docs/store/mysql/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://speedle.io/docs/store/mysql/</guid>
+      <description>This guide uses MySQL 8.4 LTS and two native Speedle processes: PMS writes policies, and ADS reads the same database with a separate read-only account. The local example uses Docker and plain HTTP on loopback. For a remote deployment, use your existing MySQL server and the Security guide.
+1. Build Speedle with the MySQL backend Install Git, Bash, curl, Docker and a supported Go toolchain (Go 1.26.10 or Go 1.</description>
+    </item>
+    
+    <item>
       <title>Quick Start</title>
       <link>https://speedle.io/quick-start/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
@@ -124,7 +134,7 @@ Join us at speedle-users and/or speedle-developers groups.</description>
       <guid>https://speedle.io/quick-start/</guid>
       <description>Try Speedle in the Playground first You can try Speedle&amp;rsquo;s basic features before installing anything. Open the Playground to edit SPDL policies, set a user, resource and action, and see real Allow/Deny decisions entirely in your browser. No Go installation or running server is required.
 Continue below when you are ready to build and run Speedle locally.
-Prerequisites Use Linux or macOS with Bash, Git, curl and Go 1.26.10 or Go 1.27.3 (or a newer patch on the same release branch).</description>
+Prerequisites Use Linux or macOS with Bash, Git, curl and Go 1.26.10 or Go 1.</description>
     </item>
     
     <item>
@@ -187,7 +197,7 @@ The Token Assertion Plugin API uses integer errCode and an optional attribute ob
       
       <guid>https://speedle.io/docs/deployment/</guid>
       <description>Choose a deployment mode Use embedded mode to run the evaluator in your Go process. Use standalone PMS and ADS when applications call Speedle over REST or gRPC. The Quick Start provides a complete local policy-management and authorization walkthrough.
-Build with current Go Use Go 1.26.10 or Go 1.27.3 (or a newer patch on the same release branch) (Go 1.27.3 is recommended), Git and a shell on Linux or macOS. Use Go modules; the checkout can be anywhere writable. No custom GOROOT, GOPATH, dep or GOPATH source layout is needed.</description>
+Build with current Go Use Go 1.26.10 or Go 1.27.3 (or a newer patch on the same release branch) (Go 1.27.3 is recommended), Git and a shell on Linux or macOS.</description>
     </item>
     
     <item>
@@ -199,16 +209,6 @@ Build with current Go Use Go 1.26.10 or Go 1.27.3 (or a newer patch on the same 
       <description>Docker authorization plugin Docker users can implement a docker authorization plugin for authorization check, the docker official document &amp;ldquo;Access authorization plugin&amp;rdquo; shows the details.
 Build git clone git@github.com:teramoby/speedle-plus.git # make sure the speedle golang adsclient code is in your $GOPATH/src package.  cp -r samples/adsclient/go/src/speedle/ $GOPATH/src # Get docker authorization plugin  go get github.com/docker/go-plugins-helpers/authorization cd samples/integration/docker-integration make Executable speedle-docker-plugin could be found in \$HOME/go/bin
 Run speedle refer to speedle quickstart</description>
-    </item>
-    
-    <item>
-      <title>Pluggable Storage</title>
-      <link>https://speedle.io/docs/store/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://speedle.io/docs/store/</guid>
-      <description>Built-in stores and extension contracts The standalone binaries register file, etcd and MongoDB implementations under pkg/store. Availability does not mean identical operational guarantees; review backend authentication, persistence, transaction and watch behavior for your deployment. The configuration below illustrates property names; running etcd/MongoDB deployments is outside this local example.
-A full backend implements pms.PolicyStoreManager: service, authorization-policy, role-policy and function management, snapshot reads and watch/stop. ADS accepts the narrower PolicyStoreManagerADS read/watch interface.</description>
     </item>
     
     <item>

@@ -5,6 +5,12 @@ on:
     # 01:00 GMT+8 every day.
     - cron: '0 17 * * *'
   workflow_dispatch:
+    inputs:
+      mysql_only:
+        description: Run the MySQL full regression and CI script checks (manual trial)
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -14,7 +20,8 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  # Race-detector run of every package with both stores, the quick start with
+  # Race-detector run with file, etcd and a disposable MySQL Docker fixture,
+  # including the tagged ADS runtime/cache cases, the quick start with
   # every supported Go release, govulncheck and the CI script tests, on the
   # self-hosted test runner (see scripts/ci/run-go-tests.sh).
   run:
@@ -28,7 +35,7 @@ jobs:
   report:
     name: report
     needs: run
-    if: always() && github.repository == 'teramoby/speedle-plus'
+    if: always() && github.repository == 'teramoby/speedle-plus' && !(github.event_name == 'workflow_dispatch' && inputs.mysql_only)
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:

@@ -72,7 +72,7 @@ test('worker owns runner selection and exposes only the mode input, never a call
   assert.match(step('Setup Go'), /go-version: '1\.26'/);
   assert.doesNotMatch(source, /secrets:|secrets\.inherit|\$\{\{\s*inputs\.(?:ref|sha|runner|store_type)/);
 });
-test('trusted events pool lint/build while fixed-port test modes stay on the original runner', () => {
+test('trusted events pool lint/build/nightly while test and weekly stay on the original runner', () => {
   const push = context('push'), dispatch = context('workflow_dispatch');
   push.event = {sender: {type: 'User'}}; dispatch.event = {sender: {type: 'User'}};
   const merged = context('push'); merged.ref = 'refs/heads/master'; merged.event = {sender: {type: 'Bot'}};
@@ -81,7 +81,7 @@ test('trusted events pool lint/build while fixed-port test modes stay on the ori
   const botTag = context('push'); botTag.event.sender.type = 'Bot'; botTag.ref = 'refs/tags/release';
   const scheduled = context('schedule'); scheduled.ref = 'refs/heads/master'; scheduled.event = {};
   for (const github of [push, dispatch, context('pull_request'), merged, botPR, botPush, botTag, scheduled]) {
-    for (const mode of allModes) assert.deepEqual(route(github, {mode}), testModes.includes(mode) ? expected : pool);
+    for (const mode of allModes) assert.deepEqual(route(github, {mode}), ['test', 'weekly'].includes(mode) ? expected : pool);
   }
 });
 test('forks, missing metadata, copied repositories and off-master schedules stay hosted regardless of inputs', () => {
@@ -111,7 +111,7 @@ test('identity check accepts both pool runners but keeps fixed-port test modes o
       const result = spawnSync('bash', ['-c', script('Verify self-hosted runner identity')], {
         encoding: 'utf8', env: {...process.env, RUNNER_NAME, RUNNER_OS: 'Linux', RUNNER_ARCH: 'X64', CI_TASK},
       });
-      const allowed = RUNNER_NAME === 'charming-speedle' || (RUNNER_NAME === 'charming-speedle-2' && !testModes.includes(CI_TASK));
+      const allowed = RUNNER_NAME === 'charming-speedle' || (RUNNER_NAME === 'charming-speedle-2' && !['test', 'weekly'].includes(CI_TASK));
       assert.equal(result.status === 0, allowed, `${RUNNER_NAME}/${CI_TASK}: ${result.stderr}`);
     }
   }
@@ -158,7 +158,7 @@ test('test environment neutralizes inherited CLI names, tokens, certificates and
 // python3 and node that record their calls and exit with fixture statuses.
 const repoRoot = path.resolve(__dirname, '../..');
 const recorded = ['STORE_TYPE', 'SPEEDLE_CLI_COVERPROFILE', 'GOTOOLCHAIN', 'RESULTS_DIR', ...cleanKeys, 'PMS_ENDPOINT', 'ADS_ENDPOINT', 'GOPATH'];
-function runSuite(mode, {listExit = 0, failMatching = ''} = {}) {
+function runSuite(mode, {listExit = 0, failMatching = '', mysqlOnly = false} = {}) {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'speedle-worker-go-'));
   try {
     const calls = path.join(directory, 'calls.jsonl');
@@ -168,19 +168,22 @@ if(${JSON.stringify(tool)}==='go'&&a[0]==='env'){console.log(a[1]==='CC'?'true':
 if(${JSON.stringify(tool)}==='go'&&a[0]==='list'){console.log('example.invalid/pkg/a\\nexample.invalid/pkg/store/mongodb\\nexample.invalid/samples/x\\nexample.invalid/pkg/svcs/adsgrpc/pb');process.exit(Number(process.env.FIXTURE_LIST_EXIT))}
 fs.appendFileSync(process.env.FIXTURE_CALLS,JSON.stringify({tool:${JSON.stringify(tool)},args:a,env:Object.fromEntries(${JSON.stringify(recorded)}.map(k=>[k,process.env[k]]))})+'\\n');
 const fail=process.env.FIXTURE_FAIL;process.exit(fail&&a.join(' ').includes(fail)?7:0);\n`;
-    for (const tool of ['go', 'python3', 'node']) {
+    for (const tool of ['go', 'python3', 'node', 'flock']) {
       fs.writeFileSync(path.join(directory, tool), stub(tool)); fs.chmodSync(path.join(directory, tool), 0o755);
     }
     const inherited = Object.fromEntries(cleanKeys.map(key => [key, 'fixture-inherited-value']));
     const work = path.join(directory, 'work'); fs.mkdirSync(work);
+    const event = path.join(directory, 'event.json');
+    fs.writeFileSync(event, JSON.stringify({inputs: {mysql_only: mysqlOnly}}));
     const result = spawnSync('bash', ['-c', script('Run Go tests')], {cwd: repoRoot, encoding: 'utf8', env: {
       ...process.env, ...inherited, GOPATH: '/fixture-inherited-gopath',
       PMS_ENDPOINT: 'https://fixture.invalid/pms', ADS_ENDPOINT: 'https://fixture.invalid/ads', ...testEnvironment(mode),
       RESULTS_DIR: path.join(work, 'results'),
+      GITHUB_EVENT_NAME: mysqlOnly ? 'workflow_dispatch' : 'push', GITHUB_EVENT_PATH: event,
       PATH: `${directory}${path.delimiter}${process.env.PATH}`, FIXTURE_CALLS: calls,
       FIXTURE_GOPATH: directory, FIXTURE_LIST_EXIT: String(listExit), FIXTURE_FAIL: failMatching,
     }});
-    const records = fs.existsSync(calls) ? fs.readFileSync(calls, 'utf8').trim().split('\n').map(line => JSON.parse(line)) : [];
+    const records = fs.existsSync(calls) ? fs.readFileSync(calls, 'utf8').trim().split('\n').map(line => JSON.parse(line)).filter(r => !(r.tool === 'python3' && r.args[0] === '-')) : [];
     const checks = fs.existsSync(path.join(work, 'results', 'checks.txt')) ? fs.readFileSync(path.join(work, 'results', 'checks.txt'), 'utf8') : '';
     return {result, records, checks, directory};
   } finally {fs.rmSync(directory, {recursive: true, force: true}); fs.rmSync(path.join(repoRoot, 'coverage.out'), {force: true});}
@@ -236,7 +239,16 @@ test('nightly runs every suite even after a failure, records checks and fails at
   assert.equal(etcd.env.STORE_TYPE, 'etcd'); assert.ok(etcd.args.includes('-race'));
   for (const toolchain of ['go1.26.10', 'go1.27.3']) assert.match(checks, new RegExp(`quick-start-${toolchain}=\\d+:`));
   assert.match(checks, /quick-start-go1\.26\.10=7:/); assert.match(checks, /quick-start-go1\.27\.3=0:/);
+  assert.match(checks, /mysql-full=0:mysql-full\.log/);
   assert.match(checks, /govulncheck=0:govulncheck\.log/); assert.match(checks, /ci-script-tests=0:/);
+});
+test('manual MySQL trial runs the full database suite and CI checks without the other backends', () => {
+  const {result, records, checks} = runSuite('nightly', {mysqlOnly: true, failMatching: 'run-mysql-tests.py'});
+  assert.equal(result.status, 1);
+  assert.equal(goTests(records).length, 0);
+  assert.match(checks, /mysql-full=7:mysql-full\.log/);
+  assert.match(checks, /ci-script-tests=0:ci-script-tests\.log/);
+  assert.ok(records.some(r => r.args.includes('scripts/ci/run-mysql-tests.py')));
 });
 test('weekly tests the other supported Go releases and runs staticcheck', () => {
   const {result, records, checks} = runSuite('weekly'); assert.equal(result.status, 0, result.stderr);
@@ -260,9 +272,9 @@ async function freePorts(excluded = []) {
   } finally {await Promise.all(servers.map(close));}
 }
 function guard(ports) {
-  const selected = step('Ensure test services are not already running');
-  assert.match(selected, /\(inputs.mode == 'test' \|\| inputs.mode == 'nightly' \|\| inputs.mode == 'weekly'\) && runner.environment == 'self-hosted'/);
-  const body = script('Ensure test services are not already running').match(/^python3 - <<'PYTHON'\n([\s\S]+)\nPYTHON$/)?.[1];
+  const selected = step('Run Go tests');
+  assert.match(selected, /flock -w 7200 9/);
+  const body = script('Run Go tests').match(/python3 - <<'PYTHON'\n([\s\S]+?)\nPYTHON/)?.[1];
   assert.ok(body); assert.equal((body.match(/for port in \(2379, 2380, 27017, 6733, 6734\):/g) || []).length, 1);
   assert.equal(new Set(ports).size, 5);
   for (const port of ports) assert.ok(![2379, 2380, 27017, 6733, 6734].includes(port));

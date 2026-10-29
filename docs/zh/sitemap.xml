@@ -132,6 +132,20 @@
   </url>
   
   <url>
+    <loc>https://speedle.io/zh/docs/store/mysql/</loc>
+    <xhtml:link
+                rel="alternate"
+                hreflang="en"
+                href="https://speedle.io/docs/store/mysql/"
+                />
+    <xhtml:link
+                rel="alternate"
+                hreflang="zh"
+                href="https://speedle.io/zh/docs/store/mysql/"
+                />
+  </url>
+  
+  <url>
     <loc>https://speedle.io/zh/quick-start/</loc>
     <xhtml:link
                 rel="alternate"
@@ -402,20 +416,6 @@
                 rel="alternate"
                 hreflang="zh"
                 href="https://speedle.io/zh/tags/2018/"
-                />
-  </url>
-  
-  <url>
-    <loc>https://speedle.io/zh/about/</loc>
-    <xhtml:link
-                rel="alternate"
-                hreflang="en"
-                href="https://speedle.io/about/"
-                />
-    <xhtml:link
-                rel="alternate"
-                hreflang="zh"
-                href="https://speedle.io/zh/about/"
                 />
   </url>
   
@@ -792,6 +792,21 @@
   </url>
   
   <url>
+    <loc>https://speedle.io/zh/tags/mysql/</loc>
+    <priority>0</priority>
+    <xhtml:link
+                rel="alternate"
+                hreflang="en"
+                href="https://speedle.io/tags/mysql/"
+                />
+    <xhtml:link
+                rel="alternate"
+                hreflang="zh"
+                href="https://speedle.io/zh/tags/mysql/"
+                />
+  </url>
+  
+  <url>
     <loc>https://speedle.io/zh/tags/operator/</loc>
     <priority>0</priority>
     <xhtml:link
@@ -1094,21 +1109,6 @@
   </url>
   
   <url>
-    <loc>https://speedle.io/zh/tags/versions/</loc>
-    <priority>0</priority>
-    <xhtml:link
-                rel="alternate"
-                hreflang="en"
-                href="https://speedle.io/tags/versions/"
-                />
-    <xhtml:link
-                rel="alternate"
-                hreflang="zh"
-                href="https://speedle.io/zh/tags/versions/"
-                />
-  </url>
-  
-  <url>
     <loc>https://speedle.io/zh/versions/</loc>
     <priority>0</priority>
     <xhtml:link
@@ -1120,6 +1120,21 @@
                 rel="alternate"
                 hreflang="zh"
                 href="https://speedle.io/zh/versions/"
+                />
+  </url>
+  
+  <url>
+    <loc>https://speedle.io/zh/tags/versions/</loc>
+    <priority>0</priority>
+    <xhtml:link
+                rel="alternate"
+                hreflang="en"
+                href="https://speedle.io/tags/versions/"
+                />
+    <xhtml:link
+                rel="alternate"
+                hreflang="zh"
+                href="https://speedle.io/zh/tags/versions/"
                 />
   </url>
   
@@ -1151,6 +1166,20 @@
                 rel="alternate"
                 hreflang="zh"
                 href="https://speedle.io/zh/tags/why/"
+                />
+  </url>
+  
+  <url>
+    <loc>https://speedle.io/zh/about/</loc>
+    <xhtml:link
+                rel="alternate"
+                hreflang="en"
+                href="https://speedle.io/about/"
+                />
+    <xhtml:link
+                rel="alternate"
+                hreflang="zh"
+                href="https://speedle.io/zh/about/"
                 />
   </url>
   

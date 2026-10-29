@@ -261,7 +261,7 @@ func (k *Parameters) ParseFlags(defaultEndpoint string, printVersionInfoFun func
 	k.ForceClientCert = StrParamDetail{Name: "force-client-cert", ShortName: "f", Usage: "Server config: Force Client certification."}
 	params = append(params, &k.ForceClientCert)
 
-	k.StoreType = StrParamDetail{Name: "store-type", DefaultValue: DefaultStoreType, Usage: "Store config: Policy store type, etcd or file."}
+	k.StoreType = StrParamDetail{Name: "store-type", DefaultValue: DefaultStoreType, Usage: "Store config: policy store type (file, etcd, mongodb, mysql)."}
 	params = append(params, &k.StoreType)
 	k.StoreWatchEnabled = StrParamDetail{Name: "enable-watch", DefaultValue: strconv.FormatBool(DefaultStoreWatchEnabled), Usage: "Evaluator config: Whether enable watch store changes."}
 	params = append(params, &k.StoreWatchEnabled)

@@ -6,6 +6,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"io"
 	"net"
 	"net/http"
 	"os"
@@ -82,6 +83,9 @@ func run(params *flags.Parameters, conf *cfg.Config, stop <-chan os.Signal) erro
 	ps, err := store.NewStore(conf.StoreConfig.StoreType, conf.StoreConfig.StoreProps)
 	if err != nil {
 		return err
+	}
+	if closer, ok := ps.(io.Closer); ok {
+		defer closer.Close()
 	}
 
 	httpServer, err := newHTTPServer(params, ps)

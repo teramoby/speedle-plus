@@ -53,3 +53,23 @@ for (const name of ['docs/index.html', 'zh/docs/index.html', 'docs/spdl/index.ht
   assert.ok(html.includes('/css/navigation.css?v=header-20261027') && html.includes('/js/navigation.js?v=header-20261027'), `Shared versioned navigation assets in ${name}`);
 }
 console.log('PASS Hugo 0.48 output: editor, navigation, sitemap and matching release assets');
+
+// Every documentation sidebar must retain its complete section tree. A shared
+// Page.Scratch value can expose an incomplete tree during parallel Hugo renders.
+function checkStorageNavigation(directory, locale = '') {
+  for (const entry of fs.readdirSync(directory, {withFileTypes: true})) {
+    const name = path.join(directory, entry.name);
+    if (entry.isDirectory()) checkStorageNavigation(name, locale);
+    else if (entry.name === 'index.html') {
+      const html = fs.readFileSync(name, 'utf8');
+      if (!html.includes('<div class="sidebar">')) continue;
+      const sidebar = html.split('<div class="sidebar">')[1];
+      for (const target of ['store/', 'store/mysql/', 'pms/policy-mgmt/', 'api/decision_api/']) {
+        assert.ok(sidebar.includes(`href="/${locale}docs/${target}"`), `Complete sidebar ${target} in ${name}`);
+      }
+    }
+  }
+}
+checkStorageNavigation(path.join(output, 'docs'));
+checkStorageNavigation(path.join(output, 'zh/docs'), 'zh/');
+console.log('PASS complete bilingual documentation sidebars with nested MySQL guide');

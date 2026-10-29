@@ -181,6 +181,11 @@ func TestCLICreateServiceFromFiles(t *testing.T) {
 
 func TestCLIDiscover(t *testing.T) {
 	c := newCLI(t)
+	if testutil.GetOSEnv("STORE_TYPE", "file") == "mysql" {
+		c.expect(1, []string{"doesn't support discover"}, "discover", "request")
+		c.expect(1, []string{"doesn't support discover"}, "discover", "reset")
+		return
+	}
 	c.expect(0, []string{"All requests are deleted"}, "discover", "reset")
 	// Without recorded requests the file store answers 404 and etcd an
 	// empty result.

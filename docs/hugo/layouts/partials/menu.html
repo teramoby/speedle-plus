@@ -25,18 +25,14 @@
 
 {{- $numberOfPages := (add (len .Pages) (len .Sections)) -}}
 {{if ne $numberOfPages 0}}
-<li class="{{ if .IsAncestor $currentNode }}parent{{ end }}{{ if eq .UniqueID $currentNode.UniqueID }} active{{ end }}{{ if .Params.alwaysopen }} parent{{ end }}"><span>{{ safeHTML .Params.Pre }}{{ .Title }}{{ safeHTML .Params.Post }}</span>
+<li class="{{ if .IsAncestor $currentNode }}parent{{ end }}{{ if eq .UniqueID $currentNode.UniqueID }} active{{ end }}{{ if .Params.alwaysopen }} parent{{ end }}">{{ if .Params.linksection }}<a href="{{ .URL }}">{{ safeHTML .Params.Pre }}{{ .Title }}{{ safeHTML .Params.Post }}</a>{{ else }}<span>{{ safeHTML .Params.Pre }}{{ .Title }}{{ safeHTML .Params.Post }}</span>{{ end }}
 {{- else -}}
 <li class="{{ if .IsAncestor $currentNode }}parent{{ end }}{{ if eq .UniqueID $currentNode.UniqueID }} active{{ end }}{{ if .Params.alwaysopen }} parent{{ end }}"><a href="{{ .URL }}">{{ safeHTML .Params.Pre }}{{ .Title }}{{ safeHTML .Params.Post }}</a>
 {{- end -}}
 
 {{if ne $numberOfPages 0}}
 <ul class="{{ if .IsAncestor $currentNode }}sub-menu{{ end }}">
-    {{- .Scratch.Set "pages" .Pages -}}
-    {{- if .Sections -}}
-      {{- .Scratch.Set "pages" (.Pages | union .Sections) -}}
-    {{- end -}}
-    {{- $pages := (.Scratch.Get "pages") -}}
+    {{- $pages := (.Pages | union .Sections) -}}
     {{- if eq .Site.Params.ordersectionsby "title" -}}
       {{- range $pages.ByTitle -}}
         {{- if and .Params.hidden (not $.showhidden) -}}

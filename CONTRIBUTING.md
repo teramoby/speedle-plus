@@ -44,6 +44,10 @@ with write permission can request `@reviewbot review`, `@reviewbot recheck` or
 `@reviewbot explain` in PR comments. See [ReviewBot](docs/REVIEWBOT.md) for its
 commands, configuration and data boundaries.
 
+The nightly suite also runs the existing Go, REST/gRPC, CLI and tagged ADS
+authorization/cache tests with MySQL. See [MySQL regression tests](docs/MYSQL_TESTS.md)
+for runner selection, manual trials, fixture ownership and result artifacts.
+
 ## Code of Conduct
 
 Follow the [Golden Rule](https://en.wikipedia.org/wiki/Golden_Rule). If

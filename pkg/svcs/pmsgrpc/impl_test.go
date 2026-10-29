@@ -35,10 +35,7 @@ func newStore(t *testing.T) pms.PolicyStoreManager {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { os.Chdir(wd) })
-	ps, err := store.NewStore("file", map[string]interface{}{"FileLocation": location})
-	if err != nil {
-		t.Fatal(err)
-	}
+	ps := storetest.PolicyStore(t, location)
 	return ps
 }
 
@@ -47,6 +44,25 @@ func code(err error) codes.Code {
 }
 
 var ctx = context.Background()
+
+// Expose only the required interface, hiding the file store's optional Discover.
+type withoutDiscover struct{ pms.PolicyStoreManager }
+
+func TestDiscoverUnsupportedStore(t *testing.T) {
+	impl := NewServiceImpl(withoutDiscover{newStore(t)})
+	_, err := impl.GetDiscoverRequests(ctx, &pb.DiscoverRequestsRequest{})
+	if code(err) != codes.Unimplemented {
+		t.Fatalf("GetDiscoverRequests: %v", err)
+	}
+	_, err = impl.ResetDiscoverRequests(ctx, &pb.ResetRequestsRequest{})
+	if code(err) != codes.Unimplemented {
+		t.Fatalf("ResetDiscoverRequests: %v", err)
+	}
+	_, err = impl.GetDiscoverPolicies(ctx, &pb.DiscoverPoliciesRequest{})
+	if code(err) != codes.Unimplemented {
+		t.Fatalf("GetDiscoverPolicies: %v", err)
+	}
+}
 
 func TestServices(t *testing.T) {
 	impl := NewServiceImpl(newStore(t))
@@ -304,7 +320,14 @@ func TestFunctions(t *testing.T) {
 func TestDiscover(t *testing.T) {
 	ps := newStore(t)
 	impl := NewServiceImpl(ps)
-	manager := ps.(store.DiscoverRequestManager)
+	manager, supported := ps.(store.DiscoverRequestManager)
+	if !supported {
+		_, err := impl.GetDiscoverRequests(ctx, &pb.DiscoverRequestsRequest{})
+		if code(err) != codes.Unimplemented {
+			t.Fatal(err)
+		}
+		return
+	}
 	for _, resource := range []string{"r1", "r2"} {
 		err := manager.SaveDiscoverRequest(&ads.RequestContext{
 			Subject:     &ads.Subject{Principals: []*ads.Principal{{Type: "user", Name: "alice", IDD: "idd"}}, TokenType: "t", Token: "x"},

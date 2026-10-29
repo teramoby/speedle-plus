@@ -9,7 +9,7 @@ python3 website/tests/check_quick_start.py --toolchain go1.26.10
 python3 website/tests/check_embedded.py --toolchain go1.26.10 --candidate
 ```
 
-The current docs inventory is 48 Markdown pages (24 English/Chinese pairs). Historical snapshot directories are unchanged. No shared stylesheet, template, logo or homepage design changes are part of this repair.
+The current docs inventory is 50 Markdown pages (25 English/Chinese pairs). Historical snapshot directories are unchanged. No shared stylesheet, template, logo or homepage design changes are part of this repair.
 
 `check_docs.py` executes 134 Bash blocks against owned native PMS/ADS, mock assertion and custom-function services, including Linux/amd64 cross-compilation, Allow/Deny, diagnosis, discovery/import/enforcement, TLS/mTLS and rejected credentials. Two deployment clone/build blocks are identical to the Quick Start build sequence, which the release check executes separately. Linux uses private user/network/PID namespaces and the documented ports; macOS remaps only the owned fixture ports. All fixture processes and temporary policy/certificate files are cleaned up.
 
@@ -40,6 +40,9 @@ Container build/push and Kubernetes admission/rollout require a target registry/
 | `pms/policy-mgmt` | Updated in both languages | Paired native commands and API results |
 | `security` | Updated in both languages | Paired native commands and API results |
 | `spdl` | Updated in both languages | Extracted condition/parser tests |
-| `store` | Updated in both languages | Paired native commands and API results |
+| `store/_index` | Updated in both languages | Paired native commands and API results |
+| `store/mysql` | Added in both languages | Docker MySQL 8.4, native PMS/ADS, provisioning, live updates and restart checks |
 | `usecases` | Reviewed; retained | Source review; no obsolete build/API example found |
 | `versions` | Updated in both languages | Published release/tag links |
+
+`check_mysql.py` executes both MySQL setup guides against owned Docker containers and named volumes, with native race-enabled PMS/ADS. It checks account grants, automatic schema creation, read-only ADS, allow/deny, polling propagation, process restart, and prebuilt schemas after revoking DDL privileges. The hosted MySQL CI job and charming MySQL nightly run this checker; the global documentation gate checks its paired commands and Bash syntax.

@@ -22,11 +22,13 @@ import (
 	"github.com/teramoby/speedle-plus/pkg/store"
 	_ "github.com/teramoby/speedle-plus/pkg/store/file"
 	"github.com/teramoby/speedle-plus/pkg/svcs"
+	"github.com/teramoby/speedle-plus/testutil/storetest"
 )
 
 var storeFile = "./fakestore.json"
 var creator = "creator"
 var testserver *httptest.Server
+var fixtureCleanup []func()
 
 func NewTestServer() (*httptest.Server, error) {
 	return newTestServerWithStore(storeFile)
@@ -35,7 +37,27 @@ func NewTestServer() (*httptest.Server, error) {
 func newTestServerWithStore(location string) (*httptest.Server, error) {
 	conf := GenerateServerConfig()
 	conf.StoreConfig.StoreProps["FileLocation"] = location
-	ps, err := store.NewStore(conf.StoreConfig.StoreType, conf.StoreConfig.StoreProps)
+	var ps pmsapi.PolicyStoreManager
+	var err error
+	if os.Getenv("STORE_TYPE") == "mysql" {
+		var initial pmsapi.PolicyStore
+		raw, readErr := os.ReadFile(location)
+		if readErr != nil {
+			return nil, readErr
+		}
+		if err := json.Unmarshal(raw, &initial); err != nil {
+			return nil, err
+		}
+		fixture, fixtureErr := storetest.NewMySQLFixture(&initial)
+		if fixtureErr != nil {
+			return nil, fixtureErr
+		}
+		fixtureCleanup = append(fixtureCleanup, fixture.Close)
+		ps = fixture.Store
+	} else {
+		ps, err = store.NewStore(conf.StoreConfig.StoreType, conf.StoreConfig.StoreProps)
+	}
+
 	if err != nil {
 		return nil, err
 	}
@@ -80,6 +102,11 @@ func TestMain(m *testing.M) {
 }
 
 func testMain(m *testing.M) int {
+	defer func() {
+		for i := len(fixtureCleanup) - 1; i >= 0; i-- {
+			fixtureCleanup[i]()
+		}
+	}()
 	err := os.WriteFile(storeFile, []byte(`{"services":[{"name":"fakeservice","type":"app"}]}`), 0644)
 	if err != nil {
 		log.Fatal(err)
@@ -107,7 +134,9 @@ func testMain(m *testing.M) int {
 		return 1
 	}
 	defer scenarioServer.Close()
-	os.Setenv("PMS_ENDPOINT", scenarioServer.URL)
+	if os.Getenv("SPEEDLE_MYSQL_EXTERNAL") != "1" {
+		os.Setenv("PMS_ENDPOINT", scenarioServer.URL)
+	}
 	os.Setenv("PMS_ADMIN_TOKEN", "")
 	return m.Run()
 }
