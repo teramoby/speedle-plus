@@ -118,7 +118,7 @@ jobs:
       - name: Clean owned MySQL containers
         if: always() && inputs.mode == 'nightly'
         run: |
-          docker ps --all --quiet --filter "label=com.speedle.mysql.run=${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}" | xargs --no-run-if-empty docker rm --force
+          python3 scripts/ci/run-mysql-tests.py --cleanup
 
       - name: Upload coverage
         if: always() && inputs.mode == 'test'

@@ -5,9 +5,12 @@ This is executed by the GitHub Actions runner, not a resident host service.
 The database, native PMS/ADS, CLI config and every listen port belong to this run.
 """
 import json
+import grp
 import os
+import pwd
 from pathlib import Path
 import secrets
+import shlex
 import signal
 import socket
 import subprocess
@@ -19,6 +22,33 @@ import urllib.request
 ROOT = Path(__file__).resolve().parents[2]
 IMAGE = "mysql:8.4@sha256:a0225d1ea6631c8bc2385dc4c2faba17bbf1834ecf369e1659a9a382bd8d5dd7"
 CLIENT = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+
+
+def ensure_docker_access():
+    """Refresh an existing group membership in a long-running runner process.
+
+    Installing Docker/adduser can happen after the runner service starts. sg
+    starts a child with the account's already-authorized docker group; it does
+    not edit /etc/group, change socket permissions, or restart a host service.
+    """
+    probe = subprocess.run(["docker", "info"], stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, text=True)
+    if probe.returncode == 0:
+        return
+    user = pwd.getpwuid(os.getuid())
+    current = os.getgroups()
+    print(f"Docker preflight: runner={os.environ.get('RUNNER_NAME', 'local')}, user={user.pw_name}, groups={current}", flush=True)
+    try:
+        docker_group = grp.getgrnam("docker")
+    except KeyError:
+        raise RuntimeError("Docker daemon unavailable and the host has no docker group")
+    eligible = os.getgrouplist(user.pw_name, user.pw_gid)
+    if (docker_group.gr_gid in eligible and docker_group.gr_gid not in current
+            and os.environ.get("SPEEDLE_DOCKER_GROUP_REFRESHED") != "1"):
+        print("Refreshing the runner account's existing docker group for this job.", flush=True)
+        environment = dict(os.environ, SPEEDLE_DOCKER_GROUP_REFRESHED="1")
+        command = "exec " + shlex.join([sys.executable, str(Path(__file__).resolve()), *sys.argv[1:]])
+        os.execvpe("sg", ["sg", "docker", "-c", command], environment)
+    raise RuntimeError("runner cannot access Docker; " + probe.stderr.strip())
 
 
 def run(args, **kwargs):
@@ -42,6 +72,13 @@ def stop(process):
 
 
 def main():
+    ensure_docker_access()
+    if "--cleanup" in sys.argv:
+        label = os.environ["GITHUB_RUN_ID"] + "-" + os.environ.get("GITHUB_RUN_ATTEMPT", "1")
+        owned = run(["docker", "ps", "--all", "--quiet", "--filter", "label=com.speedle.mysql.run=" + label], capture_output=True).stdout.split()
+        if owned:
+            run(["docker", "rm", "--force", *owned])
+        return 0
     results = Path(os.environ.get("RESULTS_DIR", "test-results")).resolve()
     results.mkdir(parents=True, exist_ok=True)
     container = "speedle-mysql-nightly-" + secrets.token_hex(6)
