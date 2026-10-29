@@ -123,6 +123,9 @@ Integration fixtures share `storetest.PolicyStore` / `storetest.NewFixture`.
 `SPEEDLE_TEST_STORE_PROPS` accepts a native JSON connection-property map;
 `SPEEDLE_MONGO_URI`, `SPEEDLE_MYSQL_TEST_DSN` and `SPEEDLE_ETCD_ENDPOINT` are
 connection fallbacks. Fixtures generate isolated databases or key prefixes.
+For `STORE_TYPE=etcd`, `run-store-tests.py` requires an endpoint on a port other
+than 2379/2380: the engine refuses to start while those ports are in use, because
+the etcd implementation tests start their own server there.
 MongoDB/MySQL database prefixes must start with `speedle_test`. Invalid or unknown
 backends fail instead of falling back to file. Optional Discover is checked
 through the store's interface, independently of the selected backend name.

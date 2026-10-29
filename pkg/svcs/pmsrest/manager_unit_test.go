@@ -20,6 +20,7 @@ import (
 	pmsapi "github.com/teramoby/speedle-plus/api/pms"
 	"github.com/teramoby/speedle-plus/pkg/cfg"
 	"github.com/teramoby/speedle-plus/pkg/store"
+	_ "github.com/teramoby/speedle-plus/pkg/store/etcd"
 	_ "github.com/teramoby/speedle-plus/pkg/store/file"
 	"github.com/teramoby/speedle-plus/pkg/svcs"
 	"github.com/teramoby/speedle-plus/testutil/storetest"

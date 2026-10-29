@@ -14,6 +14,7 @@ import (
 	"github.com/teramoby/speedle-plus/pkg/store"
 	_ "github.com/teramoby/speedle-plus/pkg/store/mongodb"
 	"github.com/teramoby/speedle-plus/pkg/suid"
+	clientv3 "go.etcd.io/etcd/client/v3"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -132,6 +133,8 @@ func NewFixture(initial *pms.PolicyStore) (*Fixture, error) {
 	// Retain the exact owned namespace even if a caller changes its config map.
 	mongoURI, _ := configuration.StoreProps["MongoURI"].(string)
 	mongoDatabase, _ := configuration.StoreProps["MongoDatabase"].(string)
+	etcdEndpoint, _ := configuration.StoreProps["EtcdEndpoint"].(string)
+	etcdPrefix, _ := configuration.StoreProps["EtcdKeyPrefix"].(string)
 	fixture.cleanup = func() {
 		if closer, ok := manager.(interface{ Close() error }); ok {
 			_ = closer.Close()
@@ -145,6 +148,16 @@ func NewFixture(initial *pms.PolicyStore) (*Fixture, error) {
 			if err == nil {
 				_ = client.Database(mongoDatabase).Drop(ctx)
 				_ = client.Disconnect(ctx)
+			}
+		}
+		if configuration.StoreType == "etcd" && etcdPrefix != "" {
+			// Remove every key under the fixture's own prefix.
+			client, err := clientv3.New(clientv3.Config{Endpoints: []string{etcdEndpoint}, DialTimeout: 10 * time.Second})
+			if err == nil {
+				ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+				_, _ = client.Delete(ctx, etcdPrefix, clientv3.WithPrefix())
+				cancel()
+				_ = client.Close()
 			}
 		}
 		cleanup()

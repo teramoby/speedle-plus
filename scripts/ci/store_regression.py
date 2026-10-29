@@ -141,10 +141,15 @@ def run_regression(environment, configuration, results):
         counts = {'pass': 0, 'fail': 0, 'skip': 0}
         failed_tests, skipped_tests = [], []
         for path in results.glob(backend + '-*.json'):
+            # A reused results directory holds the previous run's summary.
+            if path.name == backend + '-summary.json':
+                continue
             for line in path.read_text().splitlines():
                 try:
                     event = json.loads(line)
                 except ValueError:
+                    continue
+                if not isinstance(event, dict):
                     continue
                 action = event.get('Action')
                 if event.get('Test') and action in counts:

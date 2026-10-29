@@ -179,6 +179,55 @@ func TestBulkDeleteWatchAndStop(t *testing.T) {
 	stop()
 }
 
+func TestSnapshotReplacementIsOneReload(t *testing.T) {
+	s := isolatedStore(t)
+	if !supportsTransactions(t, s) {
+		t.Skip("change streams require a replica set or sharded cluster")
+	}
+	snapshot := func(names ...string) *pms.PolicyStore {
+		ps := &pms.PolicyStore{}
+		for _, name := range names {
+			ps.Services = append(ps.Services, &pms.Service{Name: name})
+		}
+		return ps
+	}
+	if err := s.WritePolicyStore(snapshot("a", "b")); err != nil {
+		t.Fatal(err)
+	}
+	changes, err := s.Watch()
+	if err != nil {
+		t.Fatal(err)
+	}
+	next := func() pms.StoreChangeEvent {
+		t.Helper()
+		select {
+		case event, ok := <-changes:
+			if !ok {
+				t.Fatal("watch closed")
+			}
+			return event
+		case <-time.After(10 * time.Second):
+			t.Fatal("no change event")
+		}
+		return pms.StoreChangeEvent{}
+	}
+	// The transaction deletes a and b and inserts a, b and c. A watcher must not
+	// see those one by one, with the services missing in between.
+	if err := s.WritePolicyStore(snapshot("a", "b", "c")); err != nil {
+		t.Fatal(err)
+	}
+	if event := next(); event.Type != pms.FULL_RELOAD {
+		t.Fatalf("first event after snapshot replacement: %+v, want FULL_RELOAD", event)
+	}
+	// The next event is the next write, not the rest of the transaction.
+	if err := s.CreateService(&pms.Service{Name: "d"}); err != nil {
+		t.Fatal(err)
+	}
+	if event := next(); event.Type != pms.SERVICE_ADD || event.Content.(*pms.Service).Name != "d" {
+		t.Fatalf("event after the reload: %+v, want SERVICE_ADD d", event)
+	}
+}
+
 func TestChangeEventReload(t *testing.T) {
 	for _, operation := range []string{"drop", "rename", "dropDatabase", "invalidate", "update"} {
 		t.Run(operation, func(t *testing.T) {

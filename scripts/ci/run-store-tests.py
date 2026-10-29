@@ -23,7 +23,12 @@ def main():
         if not isinstance(dsn, str) or not dsn.rsplit('/', 1)[-1].split('?', 1)[0].startswith('speedle_test'):
             raise ValueError('MySQL regression requires a disposable speedle_test database')
     elif backend == 'etcd':
-        properties.setdefault('EtcdEndpoint', os.environ.get('SPEEDLE_ETCD_ENDPOINT', 'localhost:2379'))
+        properties.setdefault('EtcdEndpoint', os.environ.get('SPEEDLE_ETCD_ENDPOINT', ''))
+        # The regression refuses to run while anything listens on 2379/2380,
+        # which the etcd implementation tests start their own server on.
+        endpoint = properties['EtcdEndpoint']
+        if not isinstance(endpoint, str) or not endpoint or endpoint.rsplit(':', 1)[-1] in ('2379', '2380'):
+            raise ValueError('etcd regression requires SPEEDLE_ETCD_ENDPOINT on a port other than 2379/2380')
         properties['EtcdKeyPrefix'] = properties.get('EtcdKeyPrefix', '').rstrip('/') + '/speedle_test_runtime_' + secrets.token_hex(8) + '/'
     configuration = {'storeConfig': {'storeType': backend, 'storeProps': properties}, 'enableWatch': True}
     failed, _ = run_regression(os.environ, configuration, Path(os.environ.get('RESULTS_DIR', 'test-results')))

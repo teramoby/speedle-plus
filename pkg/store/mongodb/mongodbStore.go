@@ -2,6 +2,7 @@ package mongodb
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"sync"
 	"time"
@@ -339,16 +340,31 @@ func (s *Store) Watch() (pms.StorageChangeChannel, error) {
 				log.Error(err)
 			}
 		}()
+		var lastTransaction string
 		for stream.Next(ctx) {
 			var event mongoChangeEvent
 			if err := stream.Decode(&event); err != nil {
 				log.Error(err)
 				continue
 			}
-			events, err := event.storeEvents()
-			if err != nil {
-				log.Error(err)
-				continue
+			var events []pms.StoreChangeEvent
+			if event.TxnNumber != nil {
+				// A transaction (WritePolicyStore) replaces the whole store, and its
+				// events arrive only after it commits. Reload once from the committed
+				// state instead of replaying deletes and inserts one by one, which
+				// would leave the cache empty or partial in between.
+				transaction := fmt.Sprintf("%x/%d", []byte(event.LSID), *event.TxnNumber)
+				if transaction == lastTransaction {
+					continue
+				}
+				lastTransaction = transaction
+				events = []pms.StoreChangeEvent{{Type: pms.FULL_RELOAD, ID: time.Now().UnixNano()}}
+			} else {
+				var err error
+				if events, err = event.storeEvents(); err != nil {
+					log.Error(err)
+					continue
+				}
 			}
 			for _, change := range events {
 				select {
@@ -385,6 +401,9 @@ type mongoChangeEvent struct {
 		ID string `bson:"_id"`
 	} `bson:"documentKey"`
 	FullDocument bson.Raw `bson:"fullDocument"`
+	// Set only for operations in a multi-document transaction.
+	LSID      bson.Raw `bson:"lsid,omitempty"`
+	TxnNumber *int64   `bson:"txnNumber,omitempty"`
 }
 
 func (e mongoChangeEvent) storeEvents() ([]pms.StoreChangeEvent, error) {

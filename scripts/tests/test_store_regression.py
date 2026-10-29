@@ -79,6 +79,39 @@ class StoreRegressionTests(unittest.TestCase):
         self.assertTrue(blocked)
         self.assertTrue(summary['failed_tests'])
 
+    def test_previous_summary_in_results_directory_is_not_counted(self):
+        with tempfile.TemporaryDirectory() as directory:
+            previous = {'backend': 'mongodb', 'counts': {'pass': 9, 'fail': 9, 'skip': 9},
+                        'suites': [['mongodb-go', 0]], 'failed': False}
+            (Path(directory) / 'mongodb-summary.json').write_text(json.dumps(previous, indent=2))
+            with patch.object(REGRESSION.tempfile, 'TemporaryDirectory', side_effect=RuntimeError('stop')), \
+                 contextlib.redirect_stdout(io.StringIO()):
+                failed, _ = REGRESSION.run_regression({}, {'storeConfig': {'storeType': 'mongodb', 'storeProps': {}}}, directory)
+            summary = json.loads((Path(directory) / 'mongodb-summary.json').read_text())
+        self.assertTrue(failed)
+        self.assertEqual(summary['counts'], {'pass': 0, 'fail': 0, 'skip': 0})
+
+    def test_etcd_launcher_rejects_the_ports_the_regression_needs(self):
+        spec = importlib.util.spec_from_file_location('run_store_tests', Path(__file__).parents[1] / 'ci' / 'run-store-tests.py')
+        launcher = importlib.util.module_from_spec(spec)
+        with patch.dict('sys.modules', {'store_regression': REGRESSION}):
+            spec.loader.exec_module(launcher)
+        for endpoint in (None, 'localhost:2379', '127.0.0.1:2380'):
+            environment = {'STORE_TYPE': 'etcd'}
+            if endpoint:
+                environment['SPEEDLE_ETCD_ENDPOINT'] = endpoint
+            with patch.dict(launcher.os.environ, environment, clear=True), \
+                 patch.object(launcher, 'run_regression') as run:
+                with self.assertRaises(ValueError):
+                    launcher.main()
+                run.assert_not_called()
+        with patch.dict(launcher.os.environ, {'STORE_TYPE': 'etcd', 'SPEEDLE_ETCD_ENDPOINT': '127.0.0.1:23790'}, clear=True), \
+             patch.object(launcher, 'run_regression', return_value=(False, [])) as run:
+            self.assertEqual(launcher.main(), 0)
+        properties = run.call_args[0][1]['storeConfig']['storeProps']
+        self.assertEqual(properties['EtcdEndpoint'], '127.0.0.1:23790')
+        self.assertRegex(properties['EtcdKeyPrefix'], r'^/speedle_test_runtime_[0-9a-f]{16}/$')
+
     def test_unknown_backend_cannot_fall_back_to_file(self):
         with self.assertRaises(ValueError):
             REGRESSION.run_regression({}, {'storeConfig': {'storeType': 'unknown'}}, Path('.'))
