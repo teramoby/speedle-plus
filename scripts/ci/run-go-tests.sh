@@ -6,8 +6,9 @@
 #            executable guides from docs/ (merge gating)
 #   nightly  race-detector runs with file, etcd and MySQL (including the
 #            tagged ADS runtime/cache suite against native PMS/ADS), the
-#            quick start with every supported Go release, govulncheck and the
-#            CI script tests
+#            etcd setup guides, the quick start with every supported Go
+#            release, govulncheck and the CI script tests (MongoDB runs in
+#            nightly.yml's hosted job)
 #   weekly   every package with the newest supported Go release
 #            (the gate uses the go.mod/CI release) and staticcheck
 #
@@ -29,7 +30,7 @@ other_toolchains=(go1.27.3)
 all_toolchains=(go1.26.10 go1.27.3)
 
 packages() {
-  # MongoDB runs in the weekly hosted job; generated protobuf packages,
+  # MongoDB runs in the nightly hosted job; generated protobuf packages,
   # samples and demos are not product code.
   local listed
   # Checked explicitly: errexit does not reach into command substitutions.
@@ -103,6 +104,7 @@ case "${mode}" in
     gotest_json go-file STORE_TYPE=file -- -p 1 -count=1 -timeout 600s "${race[@]}" "${pkgs[@]}"
     gotest_json go-etcd STORE_TYPE=etcd -- -p 1 -count=1 -timeout 600s "${race[@]}" "${store_dependent[@]}"
     check mysql-full python3 scripts/ci/run-mysql-tests.py
+    check etcd-docs python3 website/tests/check_etcd.py
     for toolchain in "${all_toolchains[@]}"; do
       check "quick-start-${toolchain}" python3 website/tests/check_quick_start.py --toolchain "${toolchain}"
     done
