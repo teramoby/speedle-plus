@@ -11,10 +11,10 @@ import (
 	"path/filepath"
 	"sync"
 
-	"github.com/teramoby/speedle-plus/v2/api/ads"
-	"github.com/teramoby/speedle-plus/v2/api/pms"
-	"github.com/teramoby/speedle-plus/v2/pkg/errors"
-	"github.com/teramoby/speedle-plus/v2/pkg/store"
+	"github.com/teramoby/speedle-plus/api/ads"
+	"github.com/teramoby/speedle-plus/api/pms"
+	"github.com/teramoby/speedle-plus/pkg/errors"
+	"github.com/teramoby/speedle-plus/pkg/store"
 	log "github.com/sirupsen/logrus"
 )
 

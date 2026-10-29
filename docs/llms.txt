@@ -30,7 +30,7 @@ Speedle+ evaluates RBAC and ABAC policies for users, services, and processes act
 
 - Product name: Speedle+ (continuation of the original Speedle project)
 - Category: open-source authorization engine / policy decision service
-- Language: Go; module path `github.com/teramoby/speedle-plus/v2`; add with `go get github.com/teramoby/speedle-plus/v2`; install the commands with `go install github.com/teramoby/speedle-plus/v2/cmd/...@latest`
+- Language: Go; module path `github.com/teramoby/speedle-plus`; add with `go get github.com/teramoby/speedle-plus`; install the commands with `go install github.com/teramoby/speedle-plus/cmd/...@latest`
 - Models: role-based access control (RBAC) and attribute-based access control (ABAC)
 - Policy language: SPDL (Speedle Policy Definition Language), for example `grant role librarian read,update book`
 - Core services: Policy Management Service (PMS, the policy administration point) and Authorization Decision Service (ADS, the policy decision point)

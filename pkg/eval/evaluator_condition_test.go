@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	adsapi "github.com/teramoby/speedle-plus/v2/api/ads"
+	adsapi "github.com/teramoby/speedle-plus/api/ads"
 )
 
 func TestConditions(t *testing.T) {

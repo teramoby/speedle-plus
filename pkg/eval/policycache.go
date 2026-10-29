@@ -8,8 +8,8 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/teramoby/speedle-plus/v2/3rdparty/github.com/Knetic/govaluate"
-	"github.com/teramoby/speedle-plus/v2/api/pms"
+	"github.com/teramoby/speedle-plus/3rdparty/github.com/Knetic/govaluate"
+	"github.com/teramoby/speedle-plus/api/pms"
 )
 
 type PolicyCacheData struct {

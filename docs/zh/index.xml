@@ -163,7 +163,7 @@ go version Go 会自动配置 GOROOT 和默认的 GOPATH，无需手动指定。
       <guid>https://speedle.io/zh/docs/deployment-embeded/</guid>
       <description>什么是 Speedle 嵌入模式 区别于 Speedle 服务模式，Speedle 嵌入模式把 Speedle 的策略决策引擎嵌入到调用者进程内部，作为进程的一部分运行。调用者可以直接调用 Speedle 的 API 获得策略决策的结果。
 嵌入模式的局限  只支持 Golang，推荐使用 Golang 1.10。 只接受文件存储策略。  如何使用嵌入模式 把 Speedle 代码添加到你的工程中 在嵌入模式中，需要先将 Speedle 源代码从代码仓库中下载下来。主要有一下几种方式：
- 使用 go get  go get github.com/teramoby/speedle-plus/v2  使用 dep 工具  在你的 Gopkg.toml 文件中添加以下几行
+ 使用 go get  go get github.com/teramoby/speedle-plus  使用 dep 工具  在你的 Gopkg.toml 文件中添加以下几行
 [[constraint]] name = &amp;#34;github.com/teramoby/speedle-plus&amp;#34; branch = &amp;#34;master&amp;#34; 使用 dep 工具将 Speedle 源代码添加到vendor目录下：
 dep ensure -update github.com/teramoby/speedle-plus 在代码中初始化一个 Evalautor 实例 方法func eval.NewFromFile(loc string, isWatch bool) (ads.PolicyEvaluator, error)使用一个策略定义文件初始化一个 Evaluator 实例。该方法接受两个参数：</description>
     </item>

@@ -8,4 +8,4 @@ source ${GOPATH}/src/github.com/teramoby/speedle-plus/setTestEnv.sh
 
 startPMS file --config-file ${shell_dir}/../pmsrest/config_file.json
 
-go test ${TEST_OPTS} github.com/teramoby/speedle-plus/v2/pkg/svcs/pmsgrpc -run=TestMats
+go test ${TEST_OPTS} github.com/teramoby/speedle-plus/pkg/svcs/pmsgrpc -run=TestMats

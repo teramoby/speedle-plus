@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/teramoby/speedle-plus/v2/api/pms"
+	"github.com/teramoby/speedle-plus/api/pms"
 )
 
 func TestParsingPolicy(t *testing.T) {

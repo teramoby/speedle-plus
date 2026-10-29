@@ -3,7 +3,7 @@ package store
 import (
 	"testing"
 
-	"github.com/teramoby/speedle-plus/v2/api/ads"
+	"github.com/teramoby/speedle-plus/api/ads"
 )
 
 func TestGeneratePoliciesForAnonymousRequest(t *testing.T) {

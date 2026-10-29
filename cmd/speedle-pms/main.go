@@ -11,14 +11,14 @@ import (
 	"os"
 	"os/signal"
 
-	"github.com/teramoby/speedle-plus/v2/api/pms"
-	"github.com/teramoby/speedle-plus/v2/pkg/cmd/flags"
-	"github.com/teramoby/speedle-plus/v2/pkg/errors"
-	"github.com/teramoby/speedle-plus/v2/pkg/logging"
-	"github.com/teramoby/speedle-plus/v2/pkg/store"
-	"github.com/teramoby/speedle-plus/v2/pkg/svcs/pmsgrpc"
-	"github.com/teramoby/speedle-plus/v2/pkg/svcs/pmsgrpc/pb"
-	"github.com/teramoby/speedle-plus/v2/pkg/svcs/pmsrest"
+	"github.com/teramoby/speedle-plus/api/pms"
+	"github.com/teramoby/speedle-plus/pkg/cmd/flags"
+	"github.com/teramoby/speedle-plus/pkg/errors"
+	"github.com/teramoby/speedle-plus/pkg/logging"
+	"github.com/teramoby/speedle-plus/pkg/store"
+	"github.com/teramoby/speedle-plus/pkg/svcs/pmsgrpc"
+	"github.com/teramoby/speedle-plus/pkg/svcs/pmsgrpc/pb"
+	"github.com/teramoby/speedle-plus/pkg/svcs/pmsrest"
 
 	log "github.com/sirupsen/logrus"
 

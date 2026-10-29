@@ -57,7 +57,7 @@ grant role librarian read,update book
 grant user alice librarian
 ```
 
-用 `go get github.com/teramoby/speedle-plus/v2` 引入模块，然后评估一个请求：
+用 `go get github.com/teramoby/speedle-plus` 引入模块，然后评估一个请求：
 
 ```go
 package main
@@ -65,9 +65,9 @@ package main
 import (
 	"fmt"
 
-	"github.com/teramoby/speedle-plus/v2/api/ads"
-	"github.com/teramoby/speedle-plus/v2/pkg/eval"
-	_ "github.com/teramoby/speedle-plus/v2/pkg/store/file" // registers the file store
+	"github.com/teramoby/speedle-plus/api/ads"
+	"github.com/teramoby/speedle-plus/pkg/eval"
+	_ "github.com/teramoby/speedle-plus/pkg/store/file" // registers the file store
 )
 
 func main() {
@@ -101,7 +101,7 @@ bob false NO_APPLICABLE_POLICIES <nil>
 需要 Go 1.25 或更新版本：
 
 ```
-go install github.com/teramoby/speedle-plus/v2/cmd/...@latest
+go install github.com/teramoby/speedle-plus/cmd/...@latest
 ```
 
 这会把 `spctl`、`speedle-pms` 和 `speedle-ads` 安装到 `$(go env GOPATH)/bin`；如果设置了 `$GOBIN`，则安装到 `$GOBIN`。

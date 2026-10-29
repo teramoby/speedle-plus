@@ -14,8 +14,8 @@ startPMS mongodb --config-file ${shell_dir}/../pmsrest/config_mongodb.json
 startADS --config-file ${shell_dir}/../pmsrest/config_mongodb.json
 
 ${GOPATH}/bin/spctl delete service --all
-go test ${TEST_OPTS} github.com/teramoby/speedle-plus/v2/pkg/svcs/adsrest -tags=runtime_test_prepare
+go test ${TEST_OPTS} github.com/teramoby/speedle-plus/pkg/svcs/adsrest -tags=runtime_test_prepare
 ${GOPATH}/bin/spctl get service --all
 sleep 2
-go test ${TEST_OPTS} github.com/teramoby/speedle-plus/v2/pkg/svcs/adsrest -tags="runtime_test runtime_cache_test" -run=TestMats
+go test ${TEST_OPTS} github.com/teramoby/speedle-plus/pkg/svcs/adsrest -tags="runtime_test runtime_cache_test" -run=TestMats
 

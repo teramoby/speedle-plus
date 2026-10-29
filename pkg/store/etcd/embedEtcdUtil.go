@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"go.etcd.io/etcd/server/v3/embed"
-	"github.com/teramoby/speedle-plus/v2/pkg/errors"
+	"github.com/teramoby/speedle-plus/pkg/errors"
 	log "github.com/sirupsen/logrus"
 )
 

@@ -55,7 +55,7 @@ grant role librarian read,update book
 grant user alice librarian
 ```
 
-Add the module with `go get github.com/teramoby/speedle-plus/v2`, then evaluate a request:
+Add the module with `go get github.com/teramoby/speedle-plus`, then evaluate a request:
 
 ```go
 package main
@@ -63,9 +63,9 @@ package main
 import (
 	"fmt"
 
-	"github.com/teramoby/speedle-plus/v2/api/ads"
-	"github.com/teramoby/speedle-plus/v2/pkg/eval"
-	_ "github.com/teramoby/speedle-plus/v2/pkg/store/file" // registers the file store
+	"github.com/teramoby/speedle-plus/api/ads"
+	"github.com/teramoby/speedle-plus/pkg/eval"
+	_ "github.com/teramoby/speedle-plus/pkg/store/file" // registers the file store
 )
 
 func main() {
@@ -99,7 +99,7 @@ See [Embedded mode](https://speedle.io/docs/deployment-embeded/) for details.
 With Go 1.25 or newer:
 
 ```
-go install github.com/teramoby/speedle-plus/v2/cmd/...@latest
+go install github.com/teramoby/speedle-plus/cmd/...@latest
 ```
 
 This installs `spctl`, `speedle-pms` and `speedle-ads` into `$(go env GOPATH)/bin`, or `$GOBIN` if it is set.
