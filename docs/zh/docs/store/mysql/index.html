@@ -234,7 +234,7 @@ chmod <span style="color:#bd93f9">600</span> mysql-demo/pms.json mysql-demo/ads.
 <!-- mysql-step: policy -->
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl -fsS -X POST http://127.0.0.1:6733/policy-mgmt/v1/service <span style="color:#f1fa8c">\
 </span><span style="color:#f1fa8c"></span>  -H <span style="color:#f1fa8c">&#39;Content-Type: application/json&#39;</span> <span style="color:#f1fa8c">\
-</span><span style="color:#f1fa8c"></span>  -d <span style="color:#f1fa8c">&#39;{&#34;name&#34;:&#34;mysql-demo&#34;,&#34;type&#34;:&#34;application&#34;,&#34;policies&#34;:[{&#34;id&#34;:&#34;alice-read&#34;,&#34;name&#34;:&#34;alice-read&#34;,&#34;effect&#34;:&#34;grant&#34;,&#34;principals&#34;:[[&#34;user:alice&#34;]],&#34;permissions&#34;:[{&#34;resource&#34;:&#34;book&#34;,&#34;actions&#34;:[&#34;read&#34;]}]}]}&#39;</span></code></pre></div>
+</span><span style="color:#f1fa8c"></span>  -d <span style="color:#f1fa8c">&#39;{&#34;name&#34;:&#34;mysql-demo&#34;,&#34;type&#34;:&#34;application&#34;,&#34;policies&#34;:[{&#34;name&#34;:&#34;alice-read&#34;,&#34;effect&#34;:&#34;grant&#34;,&#34;principals&#34;:[[&#34;user:alice&#34;]],&#34;permissions&#34;:[{&#34;resource&#34;:&#34;book&#34;,&#34;actions&#34;:[&#34;read&#34;]}]}]}&#39;</span></code></pre></div>
 <p>等待 ADS 同步。默认轮询间隔为 1 秒，还需加上查询和缓存重建时间；如果请求发生在同步完成之前，稍后重试：</p>
 
 <!-- mysql-step: allow -->
@@ -256,7 +256,7 @@ chmod <span style="color:#bd93f9">600</span> mysql-demo/pms.json mysql-demo/ads.
 <!-- mysql-step: update -->
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl -fsS -X POST http://127.0.0.1:6733/policy-mgmt/v1/service/mysql-demo/policy <span style="color:#f1fa8c">\
 </span><span style="color:#f1fa8c"></span>  -H <span style="color:#f1fa8c">&#39;Content-Type: application/json&#39;</span> <span style="color:#f1fa8c">\
-</span><span style="color:#f1fa8c"></span>  -d <span style="color:#f1fa8c">&#39;{&#34;id&#34;:&#34;alice-deny&#34;,&#34;name&#34;:&#34;alice-deny&#34;,&#34;effect&#34;:&#34;deny&#34;,&#34;principals&#34;:[[&#34;user:alice&#34;]],&#34;permissions&#34;:[{&#34;resource&#34;:&#34;book&#34;,&#34;actions&#34;:[&#34;read&#34;]}]}&#39;</span></code></pre></div>
+</span><span style="color:#f1fa8c"></span>  -d <span style="color:#f1fa8c">&#39;{&#34;name&#34;:&#34;alice-deny&#34;,&#34;effect&#34;:&#34;deny&#34;,&#34;principals&#34;:[[&#34;user:alice&#34;]],&#34;permissions&#34;:[{&#34;resource&#34;:&#34;book&#34;,&#34;actions&#34;:[&#34;read&#34;]}]}&#39;</span></code></pre></div>
 <p>同步后，再执行第 6 步 Alice 的请求，应返回 <code>{&quot;allowed&quot;:false,&quot;reason&quot;:1}</code>，表示显式 deny 优先。也可以按 Ctrl+C 停止 PMS 和 ADS，再用第 5 步命令启动。再次请求仍应拒绝 Alice，说明策略已保存在 MySQL 中。</p>
 
 <p>策略变更应通过 PMS 或存储接口完成，确保数据与修订号在同一事务内提交。直接修改 SQL 不会自动触发 ADS 重载。数据库断线时，已运行的 ADS 保留最后加载的策略并重试同步；ADS 启动时仍需要数据库可连接。</p>

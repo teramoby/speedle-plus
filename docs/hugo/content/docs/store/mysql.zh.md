@@ -151,7 +151,7 @@ docker exec speedle-mysql mysql --user=speedle_ads --password=SpeedleDemoAds84 s
 ```bash
 curl -fsS -X POST http://127.0.0.1:6733/policy-mgmt/v1/service \
   -H 'Content-Type: application/json' \
-  -d '{"name":"mysql-demo","type":"application","policies":[{"id":"alice-read","name":"alice-read","effect":"grant","principals":[["user:alice"]],"permissions":[{"resource":"book","actions":["read"]}]}]}'
+  -d '{"name":"mysql-demo","type":"application","policies":[{"name":"alice-read","effect":"grant","principals":[["user:alice"]],"permissions":[{"resource":"book","actions":["read"]}]}]}'
 ```
 
 等待 ADS 同步。默认轮询间隔为 1 秒，还需加上查询和缓存重建时间；如果请求发生在同步完成之前，稍后重试：
@@ -182,7 +182,7 @@ curl -fsS -X POST http://127.0.0.1:6734/authz-check/v1/is-allowed \
 ```bash
 curl -fsS -X POST http://127.0.0.1:6733/policy-mgmt/v1/service/mysql-demo/policy \
   -H 'Content-Type: application/json' \
-  -d '{"id":"alice-deny","name":"alice-deny","effect":"deny","principals":[["user:alice"]],"permissions":[{"resource":"book","actions":["read"]}]}'
+  -d '{"name":"alice-deny","effect":"deny","principals":[["user:alice"]],"permissions":[{"resource":"book","actions":["read"]}]}'
 ```
 
 同步后，再执行第 6 步 Alice 的请求，应返回 `{"allowed":false,"reason":1}`，表示显式 deny 优先。也可以按 Ctrl+C 停止 PMS 和 ADS，再用第 5 步命令启动。再次请求仍应拒绝 Alice，说明策略已保存在 MySQL 中。

@@ -140,7 +140,9 @@ def verify(locale, binaries, parent, environment):
                               "speedle_functions", "speedle_store_meta"}, tables
             start("ads")
             service = json.loads(run(local(commands["policy"])).stdout)
-            assert service["name"] == "mysql-demo" and service["policies"][0]["id"] == "alice-read", service
+            assert service["name"] == "mysql-demo" and service["policies"][0]["name"] == "alice-read", service
+            policy_id = service["policies"][0]["id"]
+            assert isinstance(policy_id, str) and policy_id, service
             decision(commands["allow"], True, 0)
             decision(commands["deny"], False, 3)
             run(local(commands["update"]))
@@ -164,7 +166,7 @@ def verify(locale, binaries, parent, environment):
                 start(kind)
             decision(commands["allow"], False, 1)
             # PMS can still write using only its documented DML privileges.
-            run(local("curl -fsS -X DELETE http://127.0.0.1:6733/policy-mgmt/v1/service/mysql-demo/policy/alice-read"))
+            run(local("curl -fsS -X DELETE http://127.0.0.1:6733/policy-mgmt/v1/service/mysql-demo/policy/" + policy_id))
             print("PASS MySQL guide " + locale + ": accounts, auto schema, read-only ADS, allow/deny, live update, restart, no-DDL provisioning", flush=True)
         except BaseException as error:
             details = str(error) + "\n" + "\n".join(path.read_text(errors="replace") for path in logs)

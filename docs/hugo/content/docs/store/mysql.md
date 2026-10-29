@@ -173,7 +173,7 @@ In terminal C, create a service with a policy granting Alice permission to read
 ```bash
 curl -fsS -X POST http://127.0.0.1:6733/policy-mgmt/v1/service \
   -H 'Content-Type: application/json' \
-  -d '{"name":"mysql-demo","type":"application","policies":[{"id":"alice-read","name":"alice-read","effect":"grant","principals":[["user:alice"]],"permissions":[{"resource":"book","actions":["read"]}]}]}'
+  -d '{"name":"mysql-demo","type":"application","policies":[{"name":"alice-read","effect":"grant","principals":[["user:alice"]],"permissions":[{"resource":"book","actions":["read"]}]}]}'
 ```
 
 Allow up to a polling interval (1 second by default), plus query/cache rebuild
@@ -206,7 +206,7 @@ Add an explicit deny for Alice through PMS, without restarting ADS:
 ```bash
 curl -fsS -X POST http://127.0.0.1:6733/policy-mgmt/v1/service/mysql-demo/policy \
   -H 'Content-Type: application/json' \
-  -d '{"id":"alice-deny","name":"alice-deny","effect":"deny","principals":[["user:alice"]],"permissions":[{"resource":"book","actions":["read"]}]}'
+  -d '{"name":"alice-deny","effect":"deny","principals":[["user:alice"]],"permissions":[{"resource":"book","actions":["read"]}]}'
 ```
 
 After synchronization, repeat Alice's request from step 6. It should now return
