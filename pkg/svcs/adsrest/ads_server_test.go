@@ -10,6 +10,7 @@ import (
 	"github.com/teramoby/speedle-plus/pkg/assertion"
 	"github.com/teramoby/speedle-plus/pkg/cfg"
 	"github.com/teramoby/speedle-plus/pkg/eval"
+	_ "github.com/teramoby/speedle-plus/pkg/store/etcd"
 	_ "github.com/teramoby/speedle-plus/pkg/store/file"
 	"github.com/teramoby/speedle-plus/testutil/storetest"
 )

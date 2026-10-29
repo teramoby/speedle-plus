@@ -3,20 +3,17 @@ package command
 import (
 	"fmt"
 	"net/http/httptest"
-	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"testing"
-	"time"
 
 	"github.com/teramoby/speedle-plus/pkg/store"
-	storeetcd "github.com/teramoby/speedle-plus/pkg/store/etcd"
+	_ "github.com/teramoby/speedle-plus/pkg/store/etcd"
 	storefile "github.com/teramoby/speedle-plus/pkg/store/file"
 	"github.com/teramoby/speedle-plus/pkg/svcs/pmsrest"
 	"github.com/teramoby/speedle-plus/testutil"
 	"github.com/teramoby/speedle-plus/testutil/storetest"
-	"go.etcd.io/etcd/server/v3/embed"
 )
 
 func TestMain(m *testing.M) {
@@ -65,33 +62,14 @@ func runCLITests(m *testing.M) int {
 
 	storeType := testutil.GetOSEnv("STORE_TYPE", "file")
 	properties := map[string]interface{}{storefile.FileLocationKey: filepath.Join(directory, "policies.json")}
-	if storeType == "etcd" {
-		// Own random loopback listeners; never attach to an installed etcd.
-		configuration := embed.NewConfig()
-		configuration.Dir = filepath.Join(directory, "etcd")
-		configuration.LogLevel = "error"
-		loopback, _ := url.Parse("http://127.0.0.1:0")
-		configuration.ListenClientUrls = []url.URL{*loopback}
-		configuration.AdvertiseClientUrls = []url.URL{*loopback}
-		configuration.ListenPeerUrls = []url.URL{*loopback}
-		configuration.AdvertisePeerUrls = []url.URL{*loopback}
-		configuration.InitialCluster = configuration.InitialClusterFromName(configuration.Name)
-		server, err := embed.StartEtcd(configuration)
+	if storetest.UseEtcd() {
+		fixture, err := storetest.NewEtcdFixture(nil)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			return 1
 		}
-		defer server.Close()
-		select {
-		case <-server.Server.ReadyNotify():
-		case <-time.After(10 * time.Second):
-			fmt.Fprintln(os.Stderr, "fixture etcd did not become ready")
-			return 1
-		}
-		properties = map[string]interface{}{
-			storeetcd.EtcdEndpointKey:  server.Clients[0].Addr().String(),
-			storeetcd.EtcdKeyPrefixKey: "/speedle-cli-tests/",
-		}
+		defer fixture.Close()
+		properties = fixture.Config.StoreProps
 	} else if storeType == "mysql" {
 		fixture, err := storetest.NewMySQLFixture(nil)
 		if err != nil {
