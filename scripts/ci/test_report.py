@@ -78,6 +78,30 @@ def parse_check(spec):
     return {"name": name, "passed": int(status) == 0, "output": tail(text)}
 
 
+def expand_results_dir(directory):
+    """Return the go test -json streams and check specs a results directory holds."""
+    if not directory.is_dir():
+        return [], [f"results {directory.name}=1:"]
+    streams = sorted(str(p) for p in directory.glob("*.json"))
+    specs = []
+    checks_file = directory / "checks.txt"
+    if checks_file.is_file():
+        for line in checks_file.read_text().splitlines():
+            name, _, rest = line.partition("=")
+            status, _, log = rest.partition(":")
+            specs.append(f"{name}={status}:{directory / log}" if log else line)
+    return streams, specs
+
+
+def collect(go_json, check_specs):
+    """Parse streams and checks; a missing stream is a failed check."""
+    packages, failures = parse_go_json(p for p in go_json if Path(p).is_file())
+    checks = [parse_check(spec) for spec in check_specs]
+    checks += [{"name": f"results {Path(p).name}", "passed": False, "output": "result file is missing"}
+               for p in go_json if not Path(p).is_file()]
+    return packages, failures, checks
+
+
 def summarize(kind, packages, failures, checks, run_url):
     total = {k: sum(c[k] for c in packages.values()) for k in ("pass", "fail", "skip")}
     failed_checks = [c for c in checks if not c["passed"]]
@@ -224,24 +248,41 @@ def main(argv=None, env=os.environ):
     parser.add_argument("--check", action="append", default=[], help="name=exit_status:log_file")
     parser.add_argument("--results-dir", action="append", default=[],
                         help="directory written by run-go-tests.sh: *.json streams and checks.txt")
+    parser.add_argument("--source", action="append", default=[],
+                        help="JOB:RESULT:PATH - results of a workflow job (a results directory or a "
+                             "go test -json file) and the job's result, such as success or cancelled")
     parser.add_argument("--summary-file", help="also write the summary here")
     args = parser.parse_args(argv)
 
-    for directory in map(Path, args.results_dir):
-        if not directory.is_dir():
-            args.check.append(f"results {directory.name}=1:")
-            continue
-        args.go_json += sorted(str(p) for p in directory.glob("*.json"))
-        checks_file = directory / "checks.txt"
-        if checks_file.is_file():
-            for line in checks_file.read_text().splitlines():
-                name, _, rest = line.partition("=")
-                status, _, log = rest.partition(":")
-                args.check.append(f"{name}={status}:{directory / log}" if log else line)
-    packages, failures = parse_go_json(p for p in args.go_json if Path(p).is_file())
-    missing = [p for p in args.go_json if not Path(p).is_file()]
-    checks = [parse_check(spec) for spec in args.check]
-    checks += [{"name": f"results {Path(p).name}", "passed": False, "output": "result file is missing"} for p in missing]
+    go_json, check_specs = list(args.go_json), list(args.check)
+    for directory in args.results_dir:
+        streams, specs = expand_results_dir(Path(directory))
+        go_json += streams
+        check_specs += specs
+    packages, failures, checks = collect(go_json, check_specs)
+    # A job that did not succeed must show up as failed even when the results
+    # it left behind, if any, hold no failure: it may have been cancelled or
+    # timed out mid-suite, or a suite may have exited non-zero without a
+    # failure event.
+    for spec in args.source:
+        job, _, rest = spec.partition(":")
+        result, _, path = rest.partition(":")
+        path = Path(path)
+        if path.is_dir() or not path.suffix:
+            streams, specs = expand_results_dir(path)
+        else:
+            streams, specs = [str(path)], []
+        job_packages, job_failures, job_checks = collect(streams, specs)
+        for package, counts in job_packages.items():
+            merged = packages.setdefault(package, {"pass": 0, "fail": 0, "skip": 0, "package_failed": False})
+            for key in ("pass", "fail", "skip"):
+                merged[key] += counts[key]
+        failures += job_failures
+        checks += job_checks
+        if result not in ("", "success") and not job_failures and all(c["passed"] for c in job_checks):
+            checks.append({"name": f"{job} job", "passed": False,
+                           "output": f"The {job} job ended with {result} and its results show no failure; "
+                                     "they may be incomplete."})
     run_url = env.get("RUN_URL", "")
     ok, summary = summarize(args.kind, packages, failures, checks, run_url)
 

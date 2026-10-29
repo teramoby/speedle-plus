@@ -63,13 +63,8 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          checks=()
-          # A run that ended before writing results (cancelled, timed out,
-          # runner lost) is a failure of its own.
-          if [[ "${RUN_RESULT}" != success && ! -s test-results/checks.txt ]]; then
-            echo "Worker ended with ${RUN_RESULT} before reporting." > worker.log
-            checks+=(--check "worker=1:worker.log")
-          fi
-          python3 scripts/ci/test_report.py --kind nightly --results-dir test-results \
-            --summary-file report.txt "${checks[@]}"
+          # A job that did not succeed is reported as failed even when its
+          # results are partial or show no failure.
+          python3 scripts/ci/test_report.py --kind nightly \
+            --source "run:${RUN_RESULT}:test-results" --summary-file report.txt
           cat report.txt >> "${GITHUB_STEP_SUMMARY}"

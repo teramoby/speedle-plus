@@ -176,5 +176,50 @@ class ResultsDirTest(unittest.TestCase):
         self.assertIn("results absent: FAILED", text)
 
 
+class SourceTest(unittest.TestCase):
+    def report(self, *sources):
+        summary = Path(tempfile.mkdtemp()) / "out.txt"
+        with mock.patch("builtins.print"):
+            test_report.main(["--kind", "nightly", *[a for s in sources for a in ("--source", s)],
+                              "--summary-file", str(summary)], env={})
+        return summary.read_text()
+
+    def results(self, *checks, stream=None):
+        directory = Path(tempfile.mkdtemp())
+        (directory / "checks.txt").write_text("".join(f"{c}\n" for c in checks))
+        if stream is not None:
+            (directory / "go-file.json").write_text(stream)
+        return directory
+
+    def test_a_cancelled_job_with_only_passing_partial_results_fails(self):
+        # The worker wrote one passing check, then was cancelled mid-suite.
+        directory = self.results("quick=0:quick.log", stream=events(("pass", "p", "TestA", None)))
+        text = self.report(f"run:cancelled:{directory}")
+        self.assertIn("FAILED", text.splitlines()[2])
+        self.assertIn("run job: FAILED", text)
+        self.assertIn("ended with cancelled", text)
+
+    def test_a_failed_job_with_failing_results_adds_no_extra_failure(self):
+        directory = self.results("quick=1:quick.log", stream=events(("fail", "p", "TestB", None)))
+        text = self.report(f"run:failure:{directory}")
+        self.assertIn("quick: FAILED", text)
+        self.assertIn("p TestB", text)
+        self.assertNotIn("run job", text)
+
+    def test_a_successful_job_and_a_failed_file_source(self):
+        stream = Path(tempfile.mkdtemp()) / "go-mongodb.json"
+        stream.write_text(events(("pass", "m", "TestM", None)))
+        text = self.report(f"run:success:{self.results('quick=0:quick.log')}", f"mongodb:timed_out:{stream}")
+        self.assertIn("mongodb job: FAILED", text)
+        self.assertNotIn("run job", text)
+        self.assertIn("1 passed", text)
+
+    def test_missing_results_of_a_failed_job_are_reported_once(self):
+        text = self.report("run:failure:/nonexistent/test-results", "mongodb:failure:/nonexistent/go-mongodb.json")
+        self.assertIn("results test-results: FAILED", text)
+        self.assertIn("results go-mongodb.json: FAILED", text)
+        self.assertNotIn(" job: FAILED", text)
+
+
 if __name__ == "__main__":
     unittest.main()

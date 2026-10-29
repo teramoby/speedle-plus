@@ -117,15 +117,9 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          checks=()
-          if [[ "${RUN_RESULT}" != success && ! -s test-results/checks.txt ]]; then
-            echo "Worker ended with ${RUN_RESULT} before reporting." > worker.log
-            checks+=(--check "worker=1:worker.log")
-          fi
-          if [[ "${MONGODB_RESULT}" != success && ! -s mongodb-results/go-mongodb.json ]]; then
-            echo "MongoDB job ended with ${MONGODB_RESULT} before reporting." > mongodb.log
-            checks+=(--check "mongodb=1:mongodb.log")
-          fi
-          python3 scripts/ci/test_report.py --kind weekly --results-dir test-results \
-            --go-json mongodb-results/go-mongodb.json --summary-file report.txt "${checks[@]}"
+          # A job that did not succeed is reported as failed even when its
+          # results are partial or show no failure.
+          python3 scripts/ci/test_report.py --kind weekly \
+            --source "run:${RUN_RESULT}:test-results" \
+            --source "mongodb:${MONGODB_RESULT}:mongodb-results/go-mongodb.json" --summary-file report.txt
           cat report.txt >> "${GITHUB_STEP_SUMMARY}"
