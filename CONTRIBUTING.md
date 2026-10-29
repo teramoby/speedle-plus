@@ -45,7 +45,8 @@ with write permission can request `@reviewbot review`, `@reviewbot recheck` or
 commands, configuration and data boundaries.
 
 The nightly suite also runs the existing Go, REST/gRPC, CLI and tagged ADS
-authorization/cache tests with MySQL. See [MySQL regression tests](docs/MYSQL_TESTS.md)
+authorization/cache tests with MySQL, and the MongoDB store tests; pull request
+CI does not run either database. See [MySQL regression tests](docs/MYSQL_TESTS.md)
 for runner selection, manual trials, fixture ownership and result artifacts.
 
 ## Code of Conduct

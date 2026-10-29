@@ -165,6 +165,13 @@ body.page-kube > .container { padding: 58px 0 100px; }
   font-size: .9rem;
   line-height: 1.72;
 }
+/* Plain fences render as a bare pre without the .highlight wrapper; give them the same rounded frame. */
+#main pre:not(.highlight pre) {
+  margin: 24px 0;
+  border: 1px solid #2a2040;
+  border-radius: 13px;
+  box-shadow: 0 14px 34px rgba(20, 12, 40, .1);
+}
 #main .highlight code, #main pre code { padding: 0; color: inherit; background: transparent; }
 
 #main table { width: 100%; margin: 26px 0; overflow: hidden; border: 1px solid var(--speedle-line); border-collapse: separate; border-spacing: 0; border-radius: 12px; }

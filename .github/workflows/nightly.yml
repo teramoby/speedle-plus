@@ -21,20 +21,82 @@ concurrency:
 
 jobs:
   # Race-detector run with file, etcd and a disposable MySQL Docker fixture,
-  # including the tagged ADS runtime/cache cases, the quick start with
-  # every supported Go release, govulncheck and the CI script tests, on the
-  # self-hosted test runner (see scripts/ci/run-go-tests.sh).
+  # including the tagged ADS runtime/cache cases, the etcd and MongoDB setup guides, the
+  # quick start with every supported Go release, govulncheck and the CI script
+  # tests, on the self-hosted test runner (see scripts/ci/run-go-tests.sh).
   run:
     name: run
     uses: teramoby/speedle-plus/.github/workflows/go-ci-worker.yml@master
     with:
       mode: nightly
 
+  # The MongoDB store against a real MongoDB. Hosted: the test runner keeps
+  # 27017 free and never runs a resident database.
+  mongodb:
+    name: mongodb
+    # The manual MySQL trial skips the other backends.
+    if: github.repository == 'teramoby/speedle-plus' && !(github.event_name == 'workflow_dispatch' && inputs.mysql_only)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Setup Go
+        uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
+        with:
+          go-version: '1.26'
+
+      # Transactions and change streams need a replica set.
+      - name: Start MongoDB replica set
+        run: |
+          set -euo pipefail
+          docker run -d --name speedle-mongodb --network host mongo:7 --replSet speedle --bind_ip 127.0.0.1
+          for attempt in $(seq 1 60); do
+            if docker exec speedle-mongodb mongosh --quiet --eval 'db.adminCommand({ping: 1})' >/dev/null 2>&1; then
+              break
+            fi
+            sleep 1
+          done
+          docker exec speedle-mongodb mongosh --quiet --eval 'rs.initiate({_id: "speedle", members: [{_id: 0, host: "127.0.0.1:27017"}]})'
+          for attempt in $(seq 1 60); do
+            if docker exec speedle-mongodb mongosh --quiet --eval 'if (!db.hello().isWritablePrimary) quit(1)' >/dev/null 2>&1; then
+              exit 0
+            fi
+            sleep 1
+          done
+          docker logs speedle-mongodb
+          exit 1
+
+      - name: Test the MongoDB store
+        env:
+          SPEEDLE_MONGO_URI: mongodb://127.0.0.1:27017/?replicaSet=speedle
+          SPEEDLE_REQUIRE_MONGO: '1'
+        run: |
+          set -euo pipefail
+          mkdir -p mongodb-results
+          status=0
+          go test -json -count=1 -timeout 600s -coverprofile=mongodb-results/coverage.out ./pkg/store/mongodb/ \
+            > mongodb-results/go-mongodb.json || status=$?
+          go tool cover -func=mongodb-results/coverage.out | tail -1 | tee mongodb-results/coverage.txt || true
+          exit "${status}"
+
+      - name: Upload results
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: mongodb-results
+          path: mongodb-results/
+          if-no-files-found: warn
+
   # Ark analysis, a Feishu message and email to the maintainer, and one tracking issue per failing
   # test. Hosted, so the test runner never holds the Ark, Feishu, SMTP or issue tokens.
   report:
     name: report
-    needs: run
+    needs: [run, mongodb]
     if: always() && github.repository == 'teramoby/speedle-plus' && !(github.event_name == 'workflow_dispatch' && inputs.mysql_only)
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -55,10 +117,18 @@ jobs:
           name: nightly-results
           path: test-results
 
+      - name: Download MongoDB results
+        continue-on-error: true
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: mongodb-results
+          path: mongodb-results
+
       - name: Analyze, mail and track failures
         env:
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           RUN_RESULT: ${{ needs.run.result }}
+          MONGODB_RESULT: ${{ needs.mongodb.result }}
           ARK_API_KEY: ${{ secrets.ARK_API_KEY }}
           ARK_MODEL: ${{ vars.ARK_REVIEW_MODEL || 'kimi-k3' }}
           SMTP_SERVER: ${{ secrets.SMTP_SERVER }}
@@ -75,5 +145,6 @@ jobs:
           # A job that did not succeed is reported as failed even when its
           # results are partial or show no failure.
           python3 scripts/ci/test_report.py --kind nightly \
-            --source "run:${RUN_RESULT}:test-results" --summary-file report.txt
+            --source "run:${RUN_RESULT}:test-results" \
+            --source "mongodb:${MONGODB_RESULT}:mongodb-results/go-mongodb.json" --summary-file report.txt
           cat report.txt >> "${GITHUB_STEP_SUMMARY}"

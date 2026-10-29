@@ -27,8 +27,9 @@ gh workflow run nightly.yml --repo teramoby/speedle-plus \
 
 This manual mode runs MySQL and CI script checks. It skips the other nightly
 backends and the notification/issue-report job. A normal scheduled run includes
-file, etcd and MySQL, supported-toolchain Quick Start checks, govulncheck and
-the CI script tests.
+file, etcd and MySQL, the etcd and MongoDB setup guides, a hosted MongoDB job,
+supported-toolchain Quick Start checks, govulncheck and the CI script tests.
+Pull request CI does not run MySQL, MongoDB or the Docker storage guides.
 
 ## What runs against MySQL
 
