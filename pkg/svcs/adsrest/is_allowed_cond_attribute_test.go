@@ -1,18 +1,20 @@
 //Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
 //Licensed under the Universal Permissive License (UPL) Version 1.0 as shown at http://oss.oracle.com/licenses/upl.
 
-//+build runtime_test
+//go:build runtime_test
+// +build runtime_test
 
 package adsrest
 
 import (
 	adsapi "github.com/teramoby/speedle-plus/api/ads"
+	"github.com/teramoby/speedle-plus/pkg/httputils"
 	"github.com/teramoby/speedle-plus/testutil"
 	"testing"
 )
 
-//Policies are defined in check_prepare_test.go : "service-condition-attribute"
-//Policy's condition contains bool attribute
+// Policies are defined in check_prepare_test.go : "service-condition-attribute"
+// Policy's condition contains bool attribute
 func TestMats_IsAllowed_Attri_Bool(t *testing.T) {
 
 	data := &[]testutil.TestCase{
@@ -244,8 +246,8 @@ func TestMats_IsAllowed_Attri_Bool(t *testing.T) {
 	testutil.RunTestCases(t, data, nil)
 }
 
-//Failed due to issue#162 in Gitlab
-//Policy's condition contains bool attribute, and no space between the operators in bool expression
+// Failed due to issue#162 in Gitlab
+// Policy's condition contains bool attribute, and no space between the operators in bool expression
 func TestLrg_IsAllowed_Attri_Bool_NoSpace_Between_Operator_bug162(t *testing.T) {
 
 	data := &[]testutil.TestCase{
@@ -319,7 +321,7 @@ func TestLrg_IsAllowed_Attri_Bool_NoSpace_Between_Operator_bug162(t *testing.T) 
 	testutil.RunTestCases(t, data, nil)
 }
 
-//Policy's condition contains Numeric attribute
+// Policy's condition contains Numeric attribute
 func TestMats_IsAllowed_Attri_Num(t *testing.T) {
 
 	data := &[]testutil.TestCase{
@@ -789,8 +791,8 @@ func TestMats_IsAllowed_Attri_Num(t *testing.T) {
 	testutil.RunTestCases(t, data, nil)
 }
 
-//Failed due to issue#163 in Gitlab
-//Policy's condition contains String attribute
+// Failed due to issue#163 in Gitlab
+// Policy's condition contains String attribute
 func TestMats_IsAllowed_Attri_String(t *testing.T) {
 
 	data := &[]testutil.TestCase{
@@ -1219,7 +1221,7 @@ func TestMats_IsAllowed_Attri_String(t *testing.T) {
 	testutil.RunTestCases(t, data, nil)
 }
 
-//Policy's condition contains Datetime attribute
+// Policy's condition contains Datetime attribute
 func TestMats_IsAllowed_Attri_Datetime(t *testing.T) {
 
 	data := &[]testutil.TestCase{
@@ -1595,7 +1597,7 @@ func TestMats_IsAllowed_Attri_Datetime(t *testing.T) {
 	testutil.RunTestCases(t, data, nil)
 }
 
-//Datetime is not in valid format
+// Datetime is not in valid format
 func TestLrg_IsAllowed_Negative_Datetime_InvalidFormat(t *testing.T) {
 
 	data := &[]testutil.TestCase{
@@ -1617,8 +1619,8 @@ func TestLrg_IsAllowed_Negative_Datetime_InvalidFormat(t *testing.T) {
 						{Name: "s2", Type: "datetime", Value: "2017-01-22T15:04:05-07:00"}},
 				},
 				ExpectedStatus: 400,
-				OutputBody:     &IsAllowedResponse{},
-				ExpectedBody:   &IsAllowedResponse{Allowed: false, Reason: int32(adsapi.ERROR_IN_EVALUATION), ErrorMessage: "Invalid datetime value"}},
+				OutputBody:     &httputils.ErrorResponse{},
+				ExpectedBody:   &httputils.ErrorResponse{Error: "SPDL-0004 value \"2017-02-29T15:04:05-07:00\" is not a supported date time"}},
 		},
 		{
 			Name:     "Condition(s1=s2),invalid Attribute type : error",
@@ -1636,8 +1638,8 @@ func TestLrg_IsAllowed_Negative_Datetime_InvalidFormat(t *testing.T) {
 						{Name: "s2", Type: "date-time", Value: "2017-01-02T15:04:05-07:00"}},
 				},
 				ExpectedStatus: 400,
-				OutputBody:     &IsAllowedResponse{},
-				ExpectedBody:   &IsAllowedResponse{Allowed: false, Reason: int32(adsapi.ERROR_IN_EVALUATION), ErrorMessage: "Invalid attribute type"}},
+				OutputBody:     &httputils.ErrorResponse{},
+				ExpectedBody:   &httputils.ErrorResponse{Error: "SPDL-0004 inputted data type date-time is not supported"}},
 		},
 		{
 			Name:     "Condition(s1=s2),invalid datetime value ': error",
@@ -1651,19 +1653,19 @@ func TestLrg_IsAllowed_Negative_Datetime_InvalidFormat(t *testing.T) {
 					Resource:    "res1",
 					Action:      "get",
 					Attributes: []*JsonAttribute{
-						{Name: "s1", Type: "date-time", Value: "2017-01-02T15:04:05"},
-						{Name: "s2", Type: "date-time", Value: "2017-01-02T15:04:05"}},
+						{Name: "s1", Type: "datetime", Value: "2017-01-02T15:04:05"},
+						{Name: "s2", Type: "datetime", Value: "2017-01-02T15:04:05"}},
 				},
 				ExpectedStatus: 400,
-				OutputBody:     &IsAllowedResponse{},
-				ExpectedBody:   &IsAllowedResponse{Allowed: false, Reason: int32(adsapi.ERROR_IN_EVALUATION), ErrorMessage: "Invalid datetime value"}},
+				OutputBody:     &httputils.ErrorResponse{},
+				ExpectedBody:   &httputils.ErrorResponse{Error: "SPDL-0004 value \"2017-01-02T15:04:05\" is not a supported date time"}},
 		},
 	}
 	testutil.RunTestCases(t, data, nil)
 
 }
 
-//Policy's condition is string in (string_array)
+// Policy's condition is string in (string_array)
 func TestMats_IsAllowed_Attri_InArray_String(t *testing.T) {
 
 	data := &[]testutil.TestCase{
@@ -1869,7 +1871,7 @@ func TestMats_IsAllowed_Attri_InArray_String(t *testing.T) {
 
 }
 
-//Policy's condition is num in (num_array)
+// Policy's condition is num in (num_array)
 func TestMats_IsAllowed_Attri_InArray_Num(t *testing.T) {
 
 	data := &[]testutil.TestCase{
@@ -2054,7 +2056,7 @@ func TestMats_IsAllowed_Attri_InArray_Num(t *testing.T) {
 
 }
 
-//Policy's condition is bool in (boolean_array)
+// Policy's condition is bool in (boolean_array)
 func TestMats_IsAllowed_Attri_InArray_Boolean(t *testing.T) {
 
 	data := &[]testutil.TestCase{
@@ -2143,7 +2145,7 @@ func TestMats_IsAllowed_Attri_InArray_Boolean(t *testing.T) {
 	testutil.RunTestCases(t, data, nil)
 }
 
-//Policy's condition is S1 in (S2, S3), and S* may be any type
+// Policy's condition is S1 in (S2, S3), and S* may be any type
 func TestMats_IsAllowed_Attri_InArray_All(t *testing.T) {
 
 	data := &[]testutil.TestCase{
@@ -2344,7 +2346,7 @@ func TestMats_IsAllowed_Attri_InArray_All(t *testing.T) {
 
 }
 
-//Policy's condition is isSubSet(S1,S2),  and S* may be any type
+// Policy's condition is isSubSet(S1,S2),  and S* may be any type
 func TestMats_IsAllowed_Attri_IsSubset(t *testing.T) {
 
 	data := &[]testutil.TestCase{
@@ -2562,7 +2564,7 @@ func TestMats_IsAllowed_Attri_IsSubset(t *testing.T) {
 	testutil.RunTestCases(t, data, nil)
 }
 
-//An array can't be used in left hand of in operator
+// An array can't be used in left hand of in operator
 func TestLrg_IsAllowed_Negative_LeftHandOfInIsArray(t *testing.T) {
 
 	data := &[]testutil.TestCase{
@@ -2593,8 +2595,8 @@ func TestLrg_IsAllowed_Negative_LeftHandOfInIsArray(t *testing.T) {
 	testutil.RunTestCases(t, data, nil)
 }
 
-//disable temporarily for bug#179.
-//Policy's condition is datetime in (datetime_array)
+// disable temporarily for bug#179.
+// Policy's condition is datetime in (datetime_array)
 func TestMats_IsAllowed_Attri_In_Datetime(t *testing.T) {
 
 	data := &[]testutil.TestCase{
@@ -2683,8 +2685,8 @@ func TestMats_IsAllowed_Attri_In_Datetime(t *testing.T) {
 	testutil.RunTestCases(t, data, nil)
 }
 
-//Failed due to issue#163 in Gitlab
-//Boolean attribute is invalid (string or num)
+// Failed due to issue#163 in Gitlab
+// Boolean attribute is invalid (string or num)
 func TestLrg_IsAllowed_Negative_Attri_Bool_bug163(t *testing.T) {
 
 	data := &[]testutil.TestCase{
@@ -2703,11 +2705,11 @@ func TestLrg_IsAllowed_Negative_Attri_Bool_bug163(t *testing.T) {
 					Resource:    "res_equal2",
 					Action:      "get",
 					Attributes: []*JsonAttribute{
-						{Name: "x", Value: "abc"}},
+						{Name: "x", Type: "bool", Value: "abc"}},
 				},
-				ExpectedStatus: 200,
-				OutputBody:     &IsAllowedResponse{},
-				ExpectedBody:   &IsAllowedResponse{Allowed: false, Reason: int32(adsapi.ERROR_IN_EVALUATION), ErrorMessage: "Invalid attribute value"}},
+				ExpectedStatus: 400,
+				OutputBody:     &httputils.ErrorResponse{},
+				ExpectedBody:   &httputils.ErrorResponse{Error: "SPDL-0004 value data type string is not equals to inputted data type bool"}},
 		},
 		// x='0' error
 		//"grant user  user_bool_notequal   get,del res_equal2 if x != true",
@@ -2723,11 +2725,11 @@ func TestLrg_IsAllowed_Negative_Attri_Bool_bug163(t *testing.T) {
 					Resource:    "res_equal2",
 					Action:      "get",
 					Attributes: []*JsonAttribute{
-						{Name: "x", Value: '0'}},
+						{Name: "x", Type: "bool", Value: "0"}},
 				},
-				ExpectedStatus: 200,
-				OutputBody:     &IsAllowedResponse{},
-				ExpectedBody:   &IsAllowedResponse{Allowed: false, Reason: int32(adsapi.NO_APPLICABLE_POLICIES)}},
+				ExpectedStatus: 400,
+				OutputBody:     &httputils.ErrorResponse{},
+				ExpectedBody:   &httputils.ErrorResponse{Error: "SPDL-0004 value data type string is not equals to inputted data type bool"}},
 		},
 		//s1=abc,s2=true,s3=abc error
 		//s1=False,s2=True,s3=False error
@@ -2744,13 +2746,13 @@ func TestLrg_IsAllowed_Negative_Attri_Bool_bug163(t *testing.T) {
 					Resource:    "res_complex",
 					Action:      "get",
 					Attributes: []*JsonAttribute{
-						{Name: "s1", Value: "abc"},
+						{Name: "s1", Type: "bool", Value: "abc"},
 						{Name: "s2", Value: true},
-						{Name: "s3", Value: "abc"}},
+						{Name: "s3", Type: "bool", Value: "abc"}},
 				},
-				ExpectedStatus: 200,
-				OutputBody:     &IsAllowedResponse{},
-				ExpectedBody:   &IsAllowedResponse{Allowed: false, Reason: int32(adsapi.ERROR_IN_EVALUATION), ErrorMessage: "Invalid parameter value"}},
+				ExpectedStatus: 400,
+				OutputBody:     &httputils.ErrorResponse{},
+				ExpectedBody:   &httputils.ErrorResponse{Error: "SPDL-0004 value data type string is not equals to inputted data type bool"}},
 		},
 	}
 	testutil.RunTestCases(t, data, nil)

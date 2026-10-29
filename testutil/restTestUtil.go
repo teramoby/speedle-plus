@@ -15,6 +15,7 @@ import (
 	"net/http"
 	"net/url"
 	"reflect"
+	"sort"
 	"strings"
 
 	pmsapi "github.com/teramoby/speedle-plus/api/pms"
@@ -51,36 +52,36 @@ type RestClient struct {
 	userPwd    string //the userPwd for basic authentication
 }
 
-//Set prefix of RestClient
+// Set prefix of RestClient
 func (client *RestClient) SetPrefix(newPrefix string) {
 	client.prefix = newPrefix
 }
 
-//Get prefix of RestClient
+// Get prefix of RestClient
 func (client *RestClient) Prefix() string {
 	return client.prefix
 }
 
-//Set token of RestClient
+// Set token of RestClient
 func (client *RestClient) SetToken(newToken string) {
 	client.token = newToken
 	client.userName = ""
 	client.userPwd = ""
 }
 
-//Get token of RestClient
+// Get token of RestClient
 func (client *RestClient) Token() string {
 	return client.token
 }
 
-//Set baisc auth userName/userPwd of RestClient
+// Set baisc auth userName/userPwd of RestClient
 func (client *RestClient) SetBasicAuth(name string, pwd string) {
 	client.userName = name
 	client.userPwd = pwd
 	client.token = ""
 }
 
-//Do REST GET api method with specified data (RestTestData)
+// Do REST GET api method with specified data (RestTestData)
 func (client *RestClient) Get(data interface{}) error {
 	restTD, ok := data.(*RestTestData)
 	if !ok {
@@ -121,7 +122,7 @@ func (client *RestClient) Get(data interface{}) error {
 	return nil
 }
 
-//Do REST DELETE api method with specified data (RestTestData)
+// Do REST DELETE api method with specified data (RestTestData)
 func (client *RestClient) Delete(data interface{}) error {
 	restTD, ok := data.(*RestTestData)
 	if !ok {
@@ -162,7 +163,7 @@ func (client *RestClient) Delete(data interface{}) error {
 	return nil
 }
 
-//Do REST POST api method with specified data (RestTestData)
+// Do REST POST api method with specified data (RestTestData)
 func (client *RestClient) Post(data interface{}) error {
 	restTD, ok := data.(*RestTestData)
 	if !ok {
@@ -250,7 +251,7 @@ func (client *RestClient) Post(data interface{}) error {
 	return nil
 }
 
-//Do REST PUT api method with specified data (RestTestData)
+// Do REST PUT api method with specified data (RestTestData)
 func (client *RestClient) Put(data interface{}) error {
 	restTD, ok := data.(*RestTestData)
 	if !ok {
@@ -308,8 +309,8 @@ func (client *RestClient) Put(data interface{}) error {
 	return nil
 }
 
-//Get Rest Client
-//if both curToken and basicAuth are specified, curToken would do effect
+// Get Rest Client
+// if both curToken and basicAuth are specified, curToken would do effect
 func NewRestClient(endpoint string, curToken string, basicAuthName string, basicAuthPwd string) (*RestClient, error) {
 	caLoc := GetOSEnv(CA_LOCATION, "")
 	certLoc := GetOSEnv(CERT_LOCATION, "")
@@ -358,7 +359,7 @@ func NewRestClient(endpoint string, curToken string, basicAuthName string, basic
 	}, nil
 }
 
-//Get RestClient for policy management
+// Get RestClient for policy management
 func NewRestClient_PMS() *RestClient {
 
 	pmsEndpoint := GetOSEnv(PMS_ENDPOINT, "http://"+flags.DefaultPolicyManagmentConnectEndpoint)
@@ -375,7 +376,7 @@ func NewRestClient_PMS() *RestClient {
 	return client
 }
 
-//Get RestClient for Authz check
+// Get RestClient for Authz check
 func NewRestClient_ADS() *RestClient {
 
 	adsEndpoint := GetOSEnv(ADS_ENDPOINT, "http://"+flags.DefaultAuthzCheckEndPoint)
@@ -394,7 +395,7 @@ func NewRestClient_ADS() *RestClient {
 
 //--------------RestTest and RestTestData definition-----------
 
-//TestData for REST API testing
+// TestData for REST API testing
 type RestTestData struct {
 	URI            string
 	actualStatus   int
@@ -404,12 +405,12 @@ type RestTestData struct {
 	ExpectedBody   interface{} //Expected output data
 }
 
-//Rest Test including RestClient and implementing Executer interface
+// Rest Test including RestClient and implementing Executer interface
 type RestTest struct {
 	Client *RestClient
 }
 
-//Prepare for Test Execution. Set the default func in testcase
+// Prepare for Test Execution. Set the default func in testcase
 func (test *RestTest) PreExecute(testcase *TestCase, ctx *TestContext) error {
 
 	testcase.SetVerifyTestFunc(VerifyRestTestByDefault)
@@ -480,7 +481,7 @@ func (test *RestTest) PreExecute(testcase *TestCase, ctx *TestContext) error {
 	return nil
 }
 
-//Execute current test with test data and context
+// Execute current test with test data and context
 func (test *RestTest) Execute(testcase *TestCase, ctx *TestContext) error {
 	testData := testcase.Data
 
@@ -498,7 +499,7 @@ func (test *RestTest) Execute(testcase *TestCase, ctx *TestContext) error {
 	}
 }
 
-//New RestTest
+// New RestTest
 func NewRestTestExecuter() TestExecuter {
 	return &RestTest{
 		Client: nil,
@@ -507,7 +508,7 @@ func NewRestTestExecuter() TestExecuter {
 
 //-------------Common util func for REST------------------------
 
-//Verify RestTestData By Default
+// Verify RestTestData By Default
 func VerifyRestTestByDefault(data interface{}, context *TestContext) bool {
 	restTD, ok := data.(*RestTestData)
 	if !ok {
@@ -523,7 +524,7 @@ func VerifyRestTestByDefault(data interface{}, context *TestContext) bool {
 
 	removeMetaData(reflect.ValueOf(restTD.OutputBody))
 	//verify the response body
-	equal := reflect.DeepEqual(restTD.ExpectedBody, restTD.OutputBody)
+	equal := equalResponseBodies(restTD.ExpectedBody, restTD.OutputBody)
 	if !equal {
 		epc, _ := json.Marshal(restTD.ExpectedBody)
 		act, _ := json.Marshal(restTD.OutputBody)
@@ -540,7 +541,29 @@ func VerifyRestTestByDefault(data interface{}, context *TestContext) bool {
 	return equal
 }
 
-//GetRestTestData for creating service
+// Permission responses are unordered. Keep duplicates and every permission field
+// in the comparison, without changing either caller's expected/actual slices.
+func equalResponseBodies(expected, actual interface{}) bool {
+	want, ok := expected.(*[]pmsapi.Permission)
+	got, sameType := actual.(*[]pmsapi.Permission)
+	if !ok || !sameType || want == nil || got == nil {
+		return reflect.DeepEqual(expected, actual)
+	}
+	canonical := func(permissions []pmsapi.Permission) []string {
+		result := make([]string, 0, len(permissions))
+		for _, permission := range permissions {
+			permission.Actions = append([]string(nil), permission.Actions...)
+			sort.Strings(permission.Actions)
+			encoded, _ := json.Marshal(permission)
+			result = append(result, string(encoded))
+		}
+		sort.Strings(result)
+		return result
+	}
+	return reflect.DeepEqual(canonical(*want), canonical(*got))
+}
+
+// GetRestTestData for creating service
 func GetRestTestData_CreateService(step string, srvName string) TestCase {
 	return TestCase{
 		Name:     fmt.Sprintf("Step%s-AddService", step),
@@ -566,7 +589,7 @@ func GetRestTestData_CreateService(step string, srvName string) TestCase {
 	}
 }
 
-//GetRestTestData for deleting service
+// GetRestTestData for deleting service
 func GetRestTestData_DeleteService(step string, srvName string) TestCase {
 	return TestCase{
 		Name:     fmt.Sprintf("Step%s-Delete Service", step),
@@ -579,7 +602,7 @@ func GetRestTestData_DeleteService(step string, srvName string) TestCase {
 	}
 }
 
-//GetRestTestData for creating rolepolicy
+// GetRestTestData for creating rolepolicy
 func GetRestTestData_CreateRolePolicy(step string, srvName string, rolePolicyName string, effect string, roles []string, principals []string, resources []string) TestCase {
 	return TestCase{
 		Name:     fmt.Sprintf("Step%s-Add RolePolicy", step),
@@ -608,7 +631,7 @@ func GetRestTestData_CreateRolePolicy(step string, srvName string, rolePolicyNam
 	}
 }
 
-//GetRestTestData for creating policy
+// GetRestTestData for creating policy
 func GetRestTestData_CreatePolicy(step string, srvName string, policyName string, effect string, principals [][]string, resource string, actions []string) TestCase {
 	return TestCase{
 		Name:     fmt.Sprintf("Step%s-Add Policy", step),
@@ -645,7 +668,7 @@ func GetRestTestData_CreatePolicy(step string, srvName string, policyName string
 	}
 }
 
-//Get TestData for sleeping a while (in ms)
+// Get TestData for sleeping a while (in ms)
 func GetTestData_Sleep(sleep int) TestCase {
 	sleepStr := fmt.Sprintf("sleep_%d", sleep)
 	return TestCase{

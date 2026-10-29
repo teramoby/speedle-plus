@@ -349,10 +349,10 @@ func TestPrepareCheckEnvironment(t *testing.T) {
 		"grant user  user_attri1   get,del res_request_year_greater_2017 if request_year >= 2017",
 
 		//"request_month == 'September'",
-		"grant user  user_attri1   get,del res_request_month_nov if request_month == 'November'",
+		"grant user  user_attri1   get,del res_request_month_nov if request_month == 11",
 
 		//"request_day == 14",
-		"grant user  user_attri1   get,del res_request_day_14 if request_month == 14",
+		"grant user  user_attri1   get,del res_request_day_14 if request_day == 14",
 	}
 	if !cc.CreateServiceWithPDL("service-builtin-attribute", serviceForBuiltinAttributePDL) {
 		t.Fatalf("Create service(service-builtin-attribute) failed via pdl ")
