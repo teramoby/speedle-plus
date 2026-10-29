@@ -9,6 +9,7 @@ package adsrest
 import (
 	"testing"
 
+	"github.com/teramoby/speedle-plus/pkg/pdl"
 	"github.com/teramoby/speedle-plus/testutil"
 )
 
@@ -479,9 +480,14 @@ func TestPrepareCheckEnvironment(t *testing.T) {
 		"grant (group group4, role role2),(user user4, role role2) get,del res4",
 		"grant group group5, role role2 get,del res5",
 	}
-	if !cc.CreateServiceWithPDL("service-with-complex-principle_rolePolicy", serviceWithComplexPrincipleInRolePolicyPDL) {
-		t.Fatalf("Create service(service-with-complex-principle_rolePolicy) failed via pdl ")
-	}
+	// The corresponding _TestMats_IsAllowed_ComplexPrincipleInRolePolicy
+	// is intentionally disabled in the original corpus: AND role principals
+	// are unsupported. Verify that limit without blocking every active case.
+	t.Run("RolePolicyANDPrincipalUnsupported", func(t *testing.T) {
+		if _, _, err := pdl.ParseRolePolicy(serviceWithComplexPrincipleInRolePolicyPDL[1], ""); err == nil {
+			t.Fatal("AND role principals now parse; enable the original disabled scenario")
+		}
+	})
 
 	serviceWithEntityPrinciplePDL := []string{
 		//https://golang.org/pkg/regexp/syntax

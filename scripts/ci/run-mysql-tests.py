@@ -136,7 +136,7 @@ def main():
             binaries.mkdir()
             for name in ("speedle-pms", "speedle-ads", "spctl"):
                 run(["go", "build", "-race", "-o", str(binaries / name), "./cmd/" + name], env=environment)
-            listed = run(["go", "list", "./pkg/...", "./cmd/...", "./api/..."], env=environment, capture_output=True).stdout.splitlines()
+            listed = run(["go", "list", "./pkg/...", "./cmd/...", "./api/...", "./testutil/..."], env=environment, capture_output=True).stdout.splitlines()
             packages = [p for p in listed if not any(x in p for x in ("/samples", "/pkg/store/mongodb", "/pkg/logging/demo")) and not p.endswith("/pb")]
             if not packages:
                 raise RuntimeError("no Go packages discovered")
