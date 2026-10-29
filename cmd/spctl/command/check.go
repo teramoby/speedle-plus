@@ -25,8 +25,11 @@ var checkExample = `
 		# Check one role policy
 		spctl check rolepolicy "grant user alice manager on /orders"
 
-		# Check policy store files, SPDL (.spdl) or JSON; every error is listed
-		spctl check -f policies.spdl -f store.json`
+		# Check a policy store file, SPDL (.spdl) or JSON; every error is listed
+		spctl check -f policies.spdl
+
+		# Check several policy store files; each is checked as a separate store
+		spctl check -f prod.spdl -f staging.json`
 
 func newCheckCommand() *cobra.Command {
 	cmd := &cobra.Command{
@@ -43,7 +46,7 @@ when there is any error.`,
 			os.Exit(runCheck(args, checkFiles, os.Stdout))
 		},
 	}
-	cmd.Flags().StringArrayVarP(&checkFiles, "file", "f", nil, "policy store file to check, SPDL if it ends in .spdl and JSON otherwise; can be repeated")
+	cmd.Flags().StringArrayVarP(&checkFiles, "file", "f", nil, "policy store file to check, SPDL if it ends in .spdl and JSON otherwise; repeat to check several files, each as a separate store")
 	return cmd
 }
 
