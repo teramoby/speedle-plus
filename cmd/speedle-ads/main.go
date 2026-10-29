@@ -50,6 +50,17 @@ func main() {
 
 	conf, _ := params.Param2Config(storeParamsMap)
 
+	intChan := make(chan os.Signal, 1)
+	signal.Notify(intChan, os.Interrupt)
+	if err := run(&params, conf, intChan); err != nil {
+		log.Error(err)
+		os.Exit(1)
+	}
+}
+
+// run starts the servers and serves until one of them fails or stop
+// receives a signal.
+func run(params *flags.Parameters, conf *cfg.Config, stop <-chan os.Signal) error {
 	// Initialize the logging
 	if conf.LogConfig != nil {
 		err := logging.InitLog(conf.LogConfig)
@@ -72,27 +83,24 @@ func main() {
 
 	evaluator, err := newEvaluator(conf)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
-	httpServer, err := newHTTPServer(&params, evaluator)
+	httpServer, err := newHTTPServer(params, evaluator)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	var grpcServer *grpc.Server
 	grpcEndpoint := params.GRPCEndpoint.Value
 	if grpcEndpoint != "" {
-		grpcServer, err = newGRPCServer(&params, evaluator)
+		grpcServer, err = newGRPCServer(params, evaluator)
 		if err != nil {
-			log.Fatal(err)
+			return err
 		}
 	} else {
 		log.Info("The gRPC server is off; set --grpc-endpoint to start it.")
 	}
-
-	intChan := make(chan os.Signal, 1)
-	signal.Notify(intChan, os.Interrupt)
 
 	errChan := make(chan error, 2)
 	if grpcServer != nil {
@@ -107,14 +115,11 @@ func main() {
 		errChan <- params.ListenAndServe(httpServer)
 	}()
 
-	err = nil
+	// errChan is never closed: the other server may still report an error.
 	select {
 	case err = <-errChan:
-		log.Errorf("Error occured %s.", err)
-		close(errChan)
-	case <-intChan:
+	case <-stop:
 		log.Info("Interrupt signal")
-		close(intChan)
 	}
 
 	log.Info("Stopping servers...")
@@ -127,10 +132,7 @@ func main() {
 		log.Info("Stopping GRPC Server.")
 		grpcServer.Stop()
 	}
-
-	if err != nil {
-		os.Exit(1)
-	}
+	return err
 }
 
 func newEvaluator(conf *cfg.Config) (eval.InternalEvaluator, error) {

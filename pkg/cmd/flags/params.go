@@ -208,7 +208,8 @@ func (k *Parameters) serverTLSConfig() (*tls.Config, error) {
 
 		caCertPool := x509.NewCertPool()
 		if !caCertPool.AppendCertsFromPEM(caCert) {
-			return nil, errors.Wrap(err, errors.ConfigError, "failed to append certificates to pool")
+			// err is nil here, and errors.Wrap(nil, ...) is nil.
+			return nil, errors.Errorf(errors.ConfigError, "no client CA certificates found in file %s", k.ClientCertPath.Value)
 		}
 
 		tlsConfig.ClientCAs = caCertPool
@@ -325,7 +326,7 @@ func (k *Parameters) ParseFlags(defaultEndpoint string, printVersionInfoFun func
 
 	if k.Version {
 		printVersionInfoFun()
-		os.Exit(0)
+		exit(0)
 	}
 
 	if len(k.ConfigFile.Value) == 0 {
@@ -622,7 +623,7 @@ func (k *Parameters) Param2Config(storeParamsMap map[string]string) (*cfg.Config
 			}
 			if len(k.LogConf.LogLocalTime.Value) != 0 {
 				value, _ := strconv.ParseBool(k.LogConf.LogLocalTime.Value)
-				rotateConfig.Compress = value
+				rotateConfig.LocalTime = value
 			}
 			logConf.RotationConfig = &rotateConfig
 		}
@@ -673,7 +674,7 @@ func (k *Parameters) Param2Config(storeParamsMap map[string]string) (*cfg.Config
 			}
 			if len(k.AuditLogConf.LogLocalTime.Value) != 0 {
 				value, _ := strconv.ParseBool(k.AuditLogConf.LogLocalTime.Value)
-				rotateConfig.Compress = value
+				rotateConfig.LocalTime = value
 			}
 			auditLogConf.RotationConfig = &rotateConfig
 		}
@@ -708,7 +709,10 @@ func (k *Parameters) Param2Config(storeParamsMap map[string]string) (*cfg.Config
 	return &conf, nil
 }
 
+// exit is os.Exit, replaced in tests.
+var exit = os.Exit
+
 func (k *Parameters) usage() {
 	pflag.Usage()
-	os.Exit(1)
+	exit(1)
 }

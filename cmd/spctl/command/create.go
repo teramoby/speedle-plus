@@ -4,14 +4,12 @@
 package command
 
 import (
-	"bufio"
 	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
-	"strconv"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -92,55 +90,6 @@ func newCreateCommand() *cobra.Command {
 	cmd.Flags().BoolVarP(&funcResultCachable, "cachable", "", false, "whether the function result is cachable")
 	cmd.Flags().Int64VarP(&funcResultTTL, "cache-ttl", "", 0, "How many seconds could the function result be kept in cache, 0 means the result could be kept in cache forever")
 	return cmd
-}
-
-func parsePdlFile(pdlFileName string, serviceName, serviceType string) (*pms.Service, error) {
-	f, err := os.Open(pdlFileName)
-	if err != nil {
-		return nil, err
-	}
-	defer f.Close()
-
-	var lines []string
-	scanner := bufio.NewScanner(f)
-	for scanner.Scan() {
-		lines = append(lines, scanner.Text())
-	}
-	if err = scanner.Err(); err != nil {
-		fmt.Fprintln(os.Stderr, err)
-	}
-	service := pms.Service{Name: serviceName, Type: serviceType}
-	isRolePolicy := false
-	isPolicy := false
-	for i, line := range lines {
-		line = strings.Trim(line, " \t")
-		if "policies:" == line {
-			isPolicy = true
-			isRolePolicy = false
-		} else if "role-policies:" == line {
-			isPolicy = false
-			isRolePolicy = true
-		} else {
-			if isPolicy {
-				var policy *pms.Policy
-				name := pdlFileName + "_policy_" + strconv.Itoa(i+1)
-				policy, _, err := pdl.ParsePolicy(line, name)
-				if err == nil {
-					service.Policies = append(service.Policies, policy)
-				}
-			}
-			if isRolePolicy {
-				var rolePolicy *pms.RolePolicy
-				name := pdlFileName + "_role_policy_" + strconv.Itoa(i+1)
-				rolePolicy, _, err := pdl.ParseRolePolicy(line, name)
-				if err == nil {
-					service.RolePolicies = append(service.RolePolicies, rolePolicy)
-				}
-			}
-		}
-	}
-
-	return &service, err
 }
 
 func createCommandFunc(cmd *cobra.Command, args []string) {

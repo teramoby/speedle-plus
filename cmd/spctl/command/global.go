@@ -12,7 +12,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"os/user"
 	"path"
 	"strings"
 	"time"
@@ -87,26 +86,25 @@ func httpClient() (*http.Client, error) {
 
 func readConfigFile() (map[string]string, error) {
 	flags := make(map[string]string)
-	u, err := user.Current()
+	// $HOME, so a different home (as in the tests) keeps its own settings.
+	home, err := os.UserHomeDir()
 	if err != nil {
 		return flags, err
 	}
-	if u != nil {
-		cfg := path.Join(u.HomeDir, configFile)
-		if _, err = os.Stat(cfg); !os.IsNotExist(err) {
-			f, err := os.Open(cfg)
-			if err != nil {
-				return flags, err
-			}
-			defer f.Close()
-			scanner := bufio.NewScanner(f)
-			for scanner.Scan() {
-				kv := strings.Split(scanner.Text(), "=")
-				if len(kv) == 2 {
-					k := strings.Trim(kv[0], " ")
-					v := strings.Trim(kv[1], " ")
-					flags[k] = v
-				}
+	cfg := path.Join(home, configFile)
+	if _, err = os.Stat(cfg); !os.IsNotExist(err) {
+		f, err := os.Open(cfg)
+		if err != nil {
+			return flags, err
+		}
+		defer f.Close()
+		scanner := bufio.NewScanner(f)
+		for scanner.Scan() {
+			kv := strings.Split(scanner.Text(), "=")
+			if len(kv) == 2 {
+				k := strings.Trim(kv[0], " ")
+				v := strings.Trim(kv[1], " ")
+				flags[k] = v
 			}
 		}
 	}
@@ -114,24 +112,19 @@ func readConfigFile() (map[string]string, error) {
 }
 
 func writeConfigFile(flags map[string]string) error {
-	u, err := user.Current()
+	home, err := os.UserHomeDir()
 	if err != nil {
 		return err
 	}
-	if u != nil {
-		cfg := path.Join(u.HomeDir, configFile)
-		f, err := os.OpenFile(cfg, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
-		if err != nil {
-			return err
-		}
-		defer f.Close()
-		w := bufio.NewWriter(f)
-		if flags != nil {
-			for name, val := range flags {
-				fmt.Fprintln(w, fmt.Sprintf("%s=%s", name, val))
-			}
-		}
-		return w.Flush()
+	cfg := path.Join(home, configFile)
+	f, err := os.OpenFile(cfg, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
+	if err != nil {
+		return err
 	}
-	return nil
+	defer f.Close()
+	w := bufio.NewWriter(f)
+	for name, val := range flags {
+		fmt.Fprintln(w, fmt.Sprintf("%s=%s", name, val))
+	}
+	return w.Flush()
 }

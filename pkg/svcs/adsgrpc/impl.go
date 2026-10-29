@@ -171,7 +171,7 @@ func (impl *GRPCService) Discover(ctx context.Context, in *pb.ContextRequest) (*
 }
 
 func convertAttributes(in map[string]interface{}) map[string]string {
-	var out map[string]string
+	out := make(map[string]string, len(in))
 	for k, v := range in {
 		out[k] = fmt.Sprintf("%v", v)
 	}

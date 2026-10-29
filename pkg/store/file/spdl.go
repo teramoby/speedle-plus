@@ -28,7 +28,7 @@ const (
 )
 
 func (t phase) String() string {
-	name := []string{"phaseRoot", "phaseService", "phasePolicy", "phaseRolepolicy"}
+	name := []string{"phaseRoot", "phaseService", "phasePolicy", "phaseRolepolicy", "phaseUnknown"}
 	i := int(t)
 	switch {
 	case i < int(phaseUnknown):

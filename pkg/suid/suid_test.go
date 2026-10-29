@@ -4,6 +4,7 @@
 package suid
 
 import (
+	"sync"
 	"testing"
 )
 
@@ -27,5 +28,44 @@ func TestNoDuplicate(t *testing.T) {
 			t.Fatalf("SUID \"%s\" is duplicated.", str)
 		}
 		idmap[str] = true
+	}
+}
+
+func TestConcurrentNew(t *testing.T) {
+	const workers, perWorker = 8, 2000
+	ids := make(chan string, workers*perWorker)
+	var wg sync.WaitGroup
+	for w := 0; w < workers; w++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for i := 0; i < perWorker; i++ {
+				ids <- New().String()
+			}
+		}()
+	}
+	wg.Wait()
+	close(ids)
+	seen := make(map[string]bool)
+	for id := range ids {
+		if seen[id] {
+			t.Fatalf("SUID %q is duplicated", id)
+		}
+		seen[id] = true
+	}
+}
+
+func TestParseSUID(t *testing.T) {
+	id := New().String()
+	cases := map[string]string{
+		"":                    "",
+		id:                    id,
+		"policy/" + id + "/x": id,
+		"short":               "short",
+	}
+	for src, want := range cases {
+		if got := ParseSUID(src); got != want {
+			t.Errorf("ParseSUID(%q) = %q, want %q", src, got, want)
+		}
 	}
 }
