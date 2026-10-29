@@ -9,11 +9,15 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"unicode"
 
 	"github.com/teramoby/speedle-plus/3rdparty/github.com/Knetic/govaluate"
 )
 
-const undefinedFunction = "Undefined function "
+const (
+	undefinedFunction = "Undefined function "
+	maxRetries        = 8
+)
 
 // Error is a condition that does not compile.
 type Error struct {
@@ -40,7 +44,12 @@ func Check(condition string) error {
 		return nil
 	}
 	functions := map[string]govaluate.ExpressionFunction{}
-	for {
+	for _, name := range calledNames(condition) {
+		functions[name] = anyFunction
+	}
+	// calledNames finds the calls, so this loop should not need to retry; the
+	// bound keeps the work linear if it does.
+	for retries := 0; ; retries++ {
 		_, err := govaluate.NewEvaluableExpressionWithFunctions(condition, functions)
 		if err == nil {
 			return nil
@@ -48,7 +57,7 @@ func Check(condition string) error {
 		position := -1
 		var expErr *govaluate.ExpressionError
 		if errors.As(err, &expErr) {
-			if name := strings.TrimPrefix(expErr.Message, undefinedFunction); name != expErr.Message && functions[name] == nil {
+			if name := strings.TrimPrefix(expErr.Message, undefinedFunction); name != expErr.Message && functions[name] == nil && retries < maxRetries {
 				functions[name] = anyFunction
 				continue
 			}
@@ -57,6 +66,45 @@ func Check(condition string) error {
 		}
 		return &Error{Condition: condition, Position: position, Reason: strings.TrimSpace(err.Error())}
 	}
+}
+
+// keywords are words the parser reads as operators or values, not names.
+var keywords = map[string]bool{"in": true, "IN": true, "true": true, "false": true}
+
+// calledNames returns the names followed by "(" outside string literals and
+// escaped [variables], so that one parse is enough to check a condition.
+func calledNames(condition string) []string {
+	var names []string
+	runes := []rune(condition)
+	for i := 0; i < len(runes); {
+		switch r := runes[i]; {
+		case r == '\'' || r == '"' || r == '[':
+			end := r
+			if r == '[' {
+				end = ']'
+			}
+			i++
+			for i < len(runes) && runes[i] != end {
+				i++
+			}
+			i++
+		case unicode.IsLetter(r) || r == '_':
+			start := i
+			for i < len(runes) && (unicode.IsLetter(runes[i]) || unicode.IsDigit(runes[i]) || runes[i] == '_' || runes[i] == '.') {
+				i++
+			}
+			name := string(runes[start:i])
+			for i < len(runes) && unicode.IsSpace(runes[i]) {
+				i++
+			}
+			if i < len(runes) && runes[i] == '(' && !keywords[name] {
+				names = append(names, name)
+			}
+		default:
+			i++
+		}
+	}
+	return names
 }
 
 func anyFunction(args ...interface{}) (interface{}, error) {

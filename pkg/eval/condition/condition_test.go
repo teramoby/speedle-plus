@@ -5,7 +5,10 @@ package condition
 
 import (
 	"errors"
+	"fmt"
+	"strings"
 	"testing"
+	"time"
 )
 
 func TestCheckAcceptsValidConditions(t *testing.T) {
@@ -58,5 +61,36 @@ func TestErrorMessage(t *testing.T) {
 	err = &Error{Condition: "x =~ '['", Position: -1, Reason: "bad regexp"}
 	if want := `invalid condition "x =~ '['": bad regexp`; err.Error() != want {
 		t.Errorf("Error() = %q, want %q", err.Error(), want)
+	}
+}
+
+func TestCalledNames(t *testing.T) {
+	got := calledNames(`f(a) && g.h (b) && a in (1) && x == 'k(' && [m(] > 1 && "n(" != y && _p2(z)`)
+	want := []string{"f", "g.h", "_p2"}
+	if len(got) != len(want) {
+		t.Fatalf("calledNames = %q, want %q", got, want)
+	}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Fatalf("calledNames = %q, want %q", got, want)
+		}
+	}
+}
+
+func TestCheckParsesOnceForManyFunctions(t *testing.T) {
+	// Each unknown function used to cost another parse of the whole condition.
+	var b strings.Builder
+	for i := 0; i < 2000; i++ {
+		if i > 0 {
+			b.WriteString(" && ")
+		}
+		fmt.Fprintf(&b, "f%d(x)", i)
+	}
+	start := time.Now()
+	if err := Check(b.String()); err != nil {
+		t.Fatal(err)
+	}
+	if d := time.Since(start); d > 2*time.Second {
+		t.Errorf("Check took %v", d)
 	}
 }
