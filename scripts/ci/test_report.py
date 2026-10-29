@@ -279,12 +279,26 @@ def issue_title(failure):
     return f"Test failure: {failure['package']} {failure['test']}"
 
 
+def dedupe_failures(failures):
+    """Merge failures with the same issue title, such as one test failing with
+    both stores or both toolchains, keeping each output."""
+    merged = {}
+    for failure in failures:
+        title = issue_title(failure)
+        if title in merged:
+            if failure["output"] and failure["output"] not in merged[title]["output"]:
+                merged[title]["output"] = (merged[title]["output"] + "\n----\n" + failure["output"]).strip()
+        else:
+            merged[title] = dict(failure)
+    return list(merged.values())
+
+
 def track_failures(github, kind, failures, run_url, analysis):
     """Comment on an open issue for a known failure, otherwise open one."""
     existing = {i["title"]: i["number"] for i in github.open_issues()}
     created = commented = 0
     pending = []
-    for failure in failures:
+    for failure in dedupe_failures(failures):
         title = issue_title(failure)
         body = (f"The {kind} run failed `{failure['test']}` in `{failure['package']}`.\n\n"
                 f"Run: {run_url}\n\n```\n{failure['output'] or '(no output)'}\n```\n")
@@ -375,7 +389,7 @@ def main(argv=None, env=os.environ):
             print(f"Tracked failures: {created} issues opened, {commented} comments added.")
         except (urllib.error.URLError, OSError, ValueError) as error:
             print(f"::warning::Failure issues not updated ({type(error).__name__}).", file=sys.stderr)
-    failed = [issue_title(f).removeprefix("Test failure: ") for f in tracked]
+    failed = [issue_title(f).removeprefix("Test failure: ") for f in dedupe_failures(tracked)]
     repository = env.get("GITHUB_REPOSITORY")
     issues_url = (f"https://github.com/{repository}/issues?q=is%3Aopen+label%3A{ISSUE_LABEL}"
                   if repository else "")

@@ -221,6 +221,31 @@ class SourceTest(unittest.TestCase):
         self.assertNotIn(" job: FAILED", text)
 
 
+class DedupeTest(unittest.TestCase):
+    def test_a_failure_in_two_streams_opens_one_issue(self):
+        github = FakeGitHub()
+        failures = [{"package": "p", "test": "TestX", "output": "file store"},
+                    {"package": "p", "test": "TestX", "output": "etcd store"},
+                    {"package": "p", "test": "TestX", "output": "file store"},
+                    {"package": "p", "test": "TestY", "output": ""}]
+        created, commented = test_report.track_failures(github, "nightly", failures, "http://run", None)
+        issues = [c[2] for c in github.calls if c[1] == "/issues"]
+        self.assertEqual((created, commented), (2, 0))
+        self.assertEqual(sorted(i["title"] for i in issues), ["Test failure: p TestX", "Test failure: p TestY"])
+        body = next(i["body"] for i in issues if i["title"].endswith("TestX"))
+        self.assertIn("file store", body)
+        self.assertIn("etcd store", body)
+        self.assertEqual(body.count("file store"), 1)
+
+    def test_feishu_lists_each_failure_once(self):
+        directory = Path(tempfile.mkdtemp())
+        for name in ("go-file.json", "go-etcd.json"):
+            (directory / name).write_text(events(("fail", "p", "TestZ", None)))
+        with mock.patch.object(test_report, "send_feishu", return_value=True) as send, mock.patch("builtins.print"):
+            test_report.main(["--kind", "nightly", "--results-dir", str(directory)], env={})
+        self.assertEqual(send.call_args[0][0]["elements"][0]["content"].count("- p TestZ"), 1)
+
+
 class FeishuTest(unittest.TestCase):
     def card(self, ok=False, failed=("p TestX",), analysis="结论：失败"):
         packages = {"p": {"pass": 3, "fail": 1, "skip": 2, "package_failed": False}}
