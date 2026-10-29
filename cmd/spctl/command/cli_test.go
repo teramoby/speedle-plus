@@ -277,6 +277,15 @@ func TestCLIConfig(t *testing.T) {
 	if code != 0 || !strings.Contains(out, "timeout = 7s") || !strings.Contains(out, "skipverify = true") {
 		t.Errorf("config --list: exit %d\n%s", code, out)
 	}
+	// --filestore-loc comes from the file store for the servers; spctl ignores
+	// it, so it is hidden but still accepted.
+	if strings.Contains(out, "filestore-loc") {
+		t.Errorf("config --list shows filestore-loc\n%s", out)
+	}
+	if out, code := c.runAt("", "--help"); code != 0 || strings.Contains(out, "filestore-loc") || !strings.Contains(out, "--pms-endpoint") {
+		t.Errorf("--help: exit %d\n%s", code, out)
+	}
+	c.expect(0, nil, "--filestore-loc", "/tmp/unused.json", "config", "--list")
 
 	// An unwritable home fails.
 	c.home = filepath.Join(c.home, "missing")
