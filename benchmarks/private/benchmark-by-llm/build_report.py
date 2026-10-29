@@ -85,6 +85,8 @@ report=f'''# Casbin、OPA、Speedle+ 授权引擎实测对比
 
 测试日期：2026-10-29，Asia/Shanghai。全部正式测试在 charming 从头运行；本报告不使用 shrek 或旧 charming 运行的数字。委托人是 Speedle+ 维护者；以下判断以本次观测为依据，固定版本的缺陷与今天的项目现状分别说明。
 
+> 文档与生态状态对应 2026-10-29 上午约 09:20–09:25 的查询快照，原文中的“当前”按该采集时点解释。归档整理时确认 [PR #133](https://github.com/teramoby/speedle-plus/pull/133) 已于 10:59（Asia/Shanghai）更新嵌入部署说明；该文档问题不再描述为归档时的现存问题。此后续更新没有改变本轮固定版本、实测结果或已复核的运行时行为。
+
 ## 1. 结论
 
 {conclusion}

@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "created_at": "2026-10-29T11:02:12.886437+08:00",
+  "created_at": "2026-10-29T11:08:55.324482+08:00",
   "scope": "public archive; excludes MANIFEST.json itself and ignored build/cache directories",
   "files": [
     {
@@ -15,8 +15,8 @@
     },
     {
       "path": "CORRECTIONS.md",
-      "bytes": 1843,
-      "sha256": "b3f85df0be2b9087c71215ad0ee3e5a7b179368cef5ac078809678d141a2d35e"
+      "bytes": 2258,
+      "sha256": "d1e87914c5f0580141afc29680af14c2b90b25efa5b0568a2013d6128577dff4"
     },
     {
       "path": "DEPLOYMENT.md",
@@ -45,13 +45,13 @@
     },
     {
       "path": "PROMPTS.md",
-      "bytes": 2675,
-      "sha256": "6b0857acb768042ce79faebce3355c6217f76e05d95c727d10922e1ce8b84675"
+      "bytes": 2952,
+      "sha256": "2eb772eeedb3df8b60254ec3d05478b21d80640065d0abb7a301558b5090b2ac"
     },
     {
       "path": "README.md",
-      "bytes": 3438,
-      "sha256": "d32cb16d3380475c4dfa98657fac79e52f9e74c853192540fe99439daf2210be"
+      "bytes": 3784,
+      "sha256": "17812e9a38501e0221a927399d25e958d32d3eb7d7048d8805c34a3a77a833c8"
     },
     {
       "path": "RECOMMENDATION.md",
@@ -60,8 +60,8 @@
     },
     {
       "path": "REPORT.md",
-      "bytes": 28834,
-      "sha256": "17eff8d16a3bbd24373250d76c6026e9993a2e097bbfeed35af61271bc9f7712"
+      "bytes": 29261,
+      "sha256": "c62ad9a6173872d9cea1345d2d9d76d2a636e7fe2da7494d76d3bfd98732ee54"
     },
     {
       "path": "TEST_PLAN.md",
@@ -85,8 +85,8 @@
     },
     {
       "path": "build_report.py",
-      "bytes": 28975,
-      "sha256": "f15fbd45753462ba773579466a7a2f5a1813e3b5b59cdc2b324496fc20c180ec"
+      "bytes": 29402,
+      "sha256": "585b430726950592106bbb9044d8836b8d62d3af71ef96cc7c950e6ae7f84b5f"
     },
     {
       "path": "capabilities_test.go",
@@ -246,7 +246,7 @@
     {
       "path": "provenance/publication-source-records.json",
       "bytes": 54320,
-      "sha256": "eef9af15a0c4e2d4cf0ea696ad1b28f837075f8dd9044e615ca337ecebc74c29"
+      "sha256": "d88f067edbab003c02866efb1a5ab2d3ded66daf22553ff7ec5ca911cd42f72e"
     },
     {
       "path": "results/retest-20261029/EXECUTION.md",

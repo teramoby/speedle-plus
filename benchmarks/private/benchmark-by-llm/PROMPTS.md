@@ -24,7 +24,7 @@
 
 当时进程内 107 组已完成，HTTP 尚未收齐三轮。回复中的 HTTP 数字明确标记为第一轮，最终使用完整三轮中位数；归档的 summary.md 是完整版本。
 
-## 用户授权归档到 GitHub（原文）
+## 用户授权归档到 GitHub（原文，链接按纯文本规范化）
 
 > 把相应的prompt、测试环境、测试计划、部署情况、测试报告 等等相关内容/证据都放到 https://github.com/teramoby/speedle-plus/benchmarks/ private/benchmark-by-llm
 
@@ -43,3 +43,9 @@
 > 有什么问题
 
 这些追问促成对关系授权能力判断的修正，未增加或伪造新测试结果。最终解释见 [RECOMMENDATION.md](RECOMMENDATION.md) 与 [CORRECTIONS.md](CORRECTIONS.md)。
+
+## 归档进度追问（原文）
+
+> 你现在在做什么？ merge了吗
+
+追问时已完成本地归档校验，尚未推送；随后创建归档PR #134并等待必需CI。最终合并状态以该PR为准，本文件不预先宣称已合并。

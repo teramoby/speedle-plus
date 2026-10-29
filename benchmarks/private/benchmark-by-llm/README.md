@@ -36,3 +36,5 @@ python3 plot_results.py results/retest-20261029/charming
 ```
 
 可执行二进制和 97 MB 的 Linux 总包未写入 Git；原包哈希、六个二进制哈希、相同源码重建逐字节一致的证明，以及小型源码快照均在 [provenance/](provenance/)。没有密钥、凭据、本机配置或完整用户目录。历史交接归档中的旧 macOS 报告只用于过程审计，不是最终报告的数据来源。
+
+归档发布 PR：[\#134](https://github.com/teramoby/speedle-plus/pull/134)。文档与生态数据是上午约09:20–09:25采集的快照；归档期间已合并的[\#133](https://github.com/teramoby/speedle-plus/pull/133)更新了嵌入部署文档。相关旧描述只用于历史观察，更新情况见[CORRECTIONS.md](CORRECTIONS.md)。
