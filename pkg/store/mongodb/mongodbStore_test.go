@@ -24,11 +24,20 @@ func testMain(m *testing.M) int {
 	if err != nil {
 		log.Fatal("fail to read config file", err)
 	}
+	// The weekly CI job points the tests at its MongoDB service and requires
+	// it, so a broken service fails the run instead of skipping every test.
+	if uri := os.Getenv("SPEEDLE_MONGO_URI"); uri != "" {
+		storeConfig.StoreProps[MongoURIKey] = uri
+	}
 	fmt.Println(storeConfig)
 
 	// Check if MongoDB is available
 	testStore, err := store.NewStore(storeConfig.StoreType, storeConfig.StoreProps)
 	if err != nil {
+		if os.Getenv("SPEEDLE_REQUIRE_MONGO") == "1" {
+			log.Printf("MongoDB is required but not available: %v", err)
+			return 1
+		}
 		log.Printf("MongoDB not available: %v - tests will be skipped", err)
 		mongoAvailable = false
 	} else {

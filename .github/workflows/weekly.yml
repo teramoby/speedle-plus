@@ -1,0 +1,128 @@
+name: Weekly tests
+
+on:
+  schedule:
+    # Sunday 19:00 GMT+8.
+    - cron: '0 11 * * 0'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: weekly-tests
+  cancel-in-progress: false
+
+jobs:
+  # Every package with the oldest and newest supported Go releases, and
+  # staticcheck, on the self-hosted test runner (scripts/ci/run-go-tests.sh).
+  run:
+    name: run
+    uses: teramoby/speedle-plus/.github/workflows/go-ci-worker.yml@master
+    with:
+      mode: weekly
+
+  # The MongoDB store against a real MongoDB. Hosted: the test runner keeps
+  # 27017 free and never runs a resident database.
+  mongodb:
+    name: mongodb
+    if: github.repository == 'teramoby/speedle-plus'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      mongodb:
+        image: mongo:7
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --quiet --eval 'db.runCommand({ping: 1}).ok'"
+          --health-interval 5s --health-timeout 5s --health-retries 20
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Setup Go
+        uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
+        with:
+          go-version: '1.26'
+
+      - name: Test the MongoDB store
+        env:
+          SPEEDLE_MONGO_URI: mongodb://127.0.0.1:27017
+          SPEEDLE_REQUIRE_MONGO: '1'
+        run: |
+          set -euo pipefail
+          mkdir -p mongodb-results
+          status=0
+          go test -json -count=1 -timeout 600s -coverprofile=mongodb-results/coverage.out ./pkg/store/mongodb/ \
+            > mongodb-results/go-mongodb.json || status=$?
+          go tool cover -func=mongodb-results/coverage.out | tail -1 | tee mongodb-results/coverage.txt || true
+          exit "${status}"
+
+      - name: Upload results
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: mongodb-results
+          path: mongodb-results/
+          if-no-files-found: warn
+
+  # Ark analysis, a Feishu message and email to the maintainer, and one
+  # tracking issue per failing test.
+  report:
+    name: report
+    needs: [run, mongodb]
+    if: always() && github.repository == 'teramoby/speedle-plus'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Download runner results
+        continue-on-error: true
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: weekly-results
+          path: test-results
+
+      - name: Download MongoDB results
+        continue-on-error: true
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: mongodb-results
+          path: mongodb-results
+
+      - name: Analyze, mail and track failures
+        env:
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          RUN_RESULT: ${{ needs.run.result }}
+          MONGODB_RESULT: ${{ needs.mongodb.result }}
+          ARK_API_KEY: ${{ secrets.ARK_API_KEY }}
+          ARK_MODEL: ${{ vars.ARK_REVIEW_MODEL || 'kimi-k3' }}
+          SMTP_SERVER: ${{ secrets.SMTP_SERVER }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          SMTP_USERNAME: ${{ secrets.SMTP_USERNAME }}
+          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+          MAIL_FROM: ${{ secrets.MAIL_FROM }}
+          MAIL_TO: ${{ vars.TEST_REPORT_MAIL_TO || 'caiwl@acm.org' }}
+          FEISHU_WEBHOOK: ${{ secrets.FEISHU_WEBHOOK }}
+          FEISHU_WEBHOOK_SECRET: ${{ secrets.FEISHU_WEBHOOK_SECRET }}
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          # A job that did not succeed is reported as failed even when its
+          # results are partial or show no failure.
+          python3 scripts/ci/test_report.py --kind weekly \
+            --source "run:${RUN_RESULT}:test-results" \
+            --source "mongodb:${MONGODB_RESULT}:mongodb-results/go-mongodb.json" --summary-file report.txt
+          cat report.txt >> "${GITHUB_STEP_SUMMARY}"

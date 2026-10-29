@@ -6,9 +6,6 @@ on:
       mode:
         required: true
         type: string
-      store_type:
-        default: file
-        type: string
 
 permissions:
   contents: read
@@ -20,17 +17,15 @@ jobs:
     # derive runner eligibility or checkout revision from caller inputs.
     # Tests stay on one instance to avoid shared-host port collisions.
     runs-on: >-
-      ${{ github.repository == 'teramoby/speedle-plus' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.event.sender.type == 'User' || github.event.sender.type == 'Bot')) || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && (github.event.pull_request.user.type == 'User' || github.event.pull_request.user.type == 'Bot'))) && fromJSON(inputs.mode == 'test' && '["self-hosted","Linux","X64","charming-speedle"]' || '["self-hosted","Linux","X64","speedle-linux"]') || 'ubuntu-latest' }}
-    timeout-minutes: 20
+      ${{ github.repository == 'teramoby/speedle-plus' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'schedule' && github.ref == 'refs/heads/master') || (github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.event.sender.type == 'User' || github.event.sender.type == 'Bot')) || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && (github.event.pull_request.user.type == 'User' || github.event.pull_request.user.type == 'Bot'))) && fromJSON((inputs.mode == 'test' || inputs.mode == 'nightly' || inputs.mode == 'weekly') && '["self-hosted","Linux","X64","charming-speedle"]' || '["self-hosted","Linux","X64","speedle-linux"]') || 'ubuntu-latest' }}
+    timeout-minutes: ${{ (inputs.mode == 'nightly' || inputs.mode == 'weekly') && 150 || 30 }}
     steps:
       - name: Validate CI task
         env:
           CI_TASK: ${{ inputs.mode }}
-          TEST_STORE: ${{ inputs.store_type }}
         run: |
           set -euo pipefail
-          case "${CI_TASK}" in lint|test|build) ;; *) echo 'Invalid CI task.' >&2; exit 1 ;; esac
-          case "${TEST_STORE}" in file|etcd) ;; *) echo 'Invalid test store.' >&2; exit 1 ;; esac
+          case "${CI_TASK}" in lint|test|build|nightly|weekly) ;; *) echo 'Invalid CI task.' >&2; exit 1 ;; esac
 
       - name: Verify self-hosted runner identity
         if: runner.environment == 'self-hosted'
@@ -39,7 +34,7 @@ jobs:
         run: |
           set -euo pipefail
           case "${RUNNER_NAME}" in charming-speedle|charming-speedle-2) ;; *) echo 'Unexpected runner.' >&2; exit 1 ;; esac
-          if [[ "${CI_TASK}" == test ]]; then test "${RUNNER_NAME}" = charming-speedle; fi
+          case "${CI_TASK}" in test|nightly|weekly) test "${RUNNER_NAME}" = charming-speedle ;; esac
           test "${RUNNER_OS}" = Linux
           command -v git >/dev/null
           command -v python3 >/dev/null
@@ -69,7 +64,7 @@ jobs:
         run: go mod tidy -diff
 
       - name: Ensure test services are not already running
-        if: inputs.mode == 'test' && runner.environment == 'self-hosted'
+        if: (inputs.mode == 'test' || inputs.mode == 'nightly' || inputs.mode == 'weekly') && runner.environment == 'self-hosted'
         run: |
           python3 - <<'PYTHON'
           import errno
@@ -89,10 +84,20 @@ jobs:
           print('Local etcd, MongoDB, PMS and ADS test ports are unused.')
           PYTHON
 
-      - name: Run tests with coverage
-        if: inputs.mode == 'test'
+      - name: Setup Node for scheduled checks
+        if: inputs.mode == 'nightly'
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '22'
+          package-manager-cache: false
+
+      # scripts/ci/run-go-tests.sh chooses the packages, stores and checks for
+      # each mode; see its header.
+      - name: Run Go tests
+        if: inputs.mode == 'test' || inputs.mode == 'nightly' || inputs.mode == 'weekly'
         env:
-          STORE_TYPE: ${{ inputs.store_type }}
+          CI_TASK: ${{ inputs.mode }}
+          RESULTS_DIR: test-results
           SP_APP_NAME: ''
           PMS_ADMIN_TOKEN: ''
           ADS_ADMIN_TOKEN: ''
@@ -104,20 +109,26 @@ jobs:
         run: |
           set -euo pipefail
           export GOPATH="$(go env GOPATH)"
-          discovered_packages=$(go list ./pkg/... ./cmd/... ./api/... | grep -v samples | grep -v adsgrpc | grep -v pmsgrpc | grep -v pmsrest)
-          test_packages=()
-          while IFS= read -r test_package; do
-            test_packages+=("${test_package}")
-          done <<< "${discovered_packages}"
-          go test -p 1 -count=1 -timeout 60s -coverprofile=coverage.out "${test_packages[@]}"
+          case "${CI_TASK}" in
+            test) scripts/ci/run-go-tests.sh gate ;;
+            *) scripts/ci/run-go-tests.sh "${CI_TASK}" ;;
+          esac
 
       - name: Upload coverage
         if: always() && inputs.mode == 'test'
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: coverage-${{ inputs.store_type }}
+          name: coverage
           path: coverage.out
           if-no-files-found: ignore
+
+      - name: Upload scheduled test results
+        if: always() && (inputs.mode == 'nightly' || inputs.mode == 'weekly')
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: ${{ inputs.mode }}-results
+          path: test-results/
+          if-no-files-found: warn
 
       - name: Build
         if: inputs.mode == 'build'

@@ -1,2 +1,8 @@
 # Discover requests written by file store tests
 speedle_discover_requests.json
+
+# Python bytecode from the CI script tests
+__pycache__/
+# Go coverage written by scripts/ci/run-go-tests.sh
+coverage.out
+coverage-cli.out

@@ -118,18 +118,15 @@ jobs:
     with:
       mode: lint
 
+  # One run: every package with the file store, the two store-dependent
+  # packages again with etcd, then the coverage gate (scripts/ci/run-go-tests.sh).
   test:
-    name: test (${{ matrix.store-type }})
+    name: test
     needs: changes
     if: needs.changes.outputs.go == 'true'
-    strategy:
-      fail-fast: false
-      matrix:
-        store-type: [file, etcd]
     uses: teramoby/speedle-plus/.github/workflows/go-ci-worker.yml@master
     with:
       mode: test
-      store_type: ${{ matrix.store-type }}
 
   build:
     name: build
