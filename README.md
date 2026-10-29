@@ -130,6 +130,7 @@ go test $(go list ./pkg/... ./cmd/... ./api/... | grep -v -e adsgrpc -e pmsgrpc 
 
 -   Join us on Discord: [Speedle community](https://discord.gg/uaY2xVsbbT)
 -   Mailing List: speedle-users@googlegroups.com
+-   Contact: [contact@speedle.io](mailto:contact@speedle.io)
 
 ## Get Involved
 

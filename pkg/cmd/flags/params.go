@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"path/filepath"
 	"runtime/debug"
 	"strings"
 	"time"
@@ -36,6 +37,7 @@ import (
 type Parameters struct {
 	////////// Common flags //////////
 	Version bool
+	Help    bool
 
 	//////////Server config//////////////
 	ConfigFile      StrParamDetail
@@ -316,11 +318,18 @@ func (k *Parameters) ParseFlags(defaultEndpoint string, printVersionInfoFun func
 	params = append(params, &k.AsserterConf.AsserterClientTimeout)
 
 	pflag.BoolVarP(&k.Version, "version", "", false, "print version information")
+	pflag.BoolVarP(&k.Help, "help", "h", false, "print this help message")
+	pflag.Usage = printUsage
 
 	for _, paramDetail := range params {
 		pflag.StringVarP(&(paramDetail.Value), paramDetail.Name, paramDetail.ShortName, paramDetail.DefaultValue, paramDetail.Usage)
 	}
 	pflag.Parse()
+
+	if k.Help {
+		pflag.Usage()
+		exit(0)
+	}
 
 	if k.Version {
 		printVersionInfoFun()
@@ -504,7 +513,7 @@ func (k *Parameters) ParseFlags(defaultEndpoint string, printVersionInfoFun func
 							case string:
 								f.Value.Set(value.(string))
 							default:
-								fmt.Printf("Unsupported type: %T\n", x)
+								log.Warnf("Unsupported type %T for parameter %q", x, f.Name)
 							}
 						}
 					}
@@ -514,7 +523,7 @@ func (k *Parameters) ParseFlags(defaultEndpoint string, printVersionInfoFun func
 		}
 	})
 
-	fmt.Printf("parameters:%v\n", k)
+	log.Debugf("parameters: %v", k)
 }
 
 // FlagToEnv converts flag string to upper-case environment variable key string.
@@ -702,13 +711,23 @@ func (k *Parameters) Param2Config(storeParamsMap map[string]string) (*cfg.Config
 		conf.AsserterWebhookConfig = &asserterConf
 	}
 
-	fmt.Printf("%v\n", conf.AsserterWebhookConfig)
+	log.Debugf("asserter webhook config: %v", conf.AsserterWebhookConfig)
 
 	return &conf, nil
 }
 
 // exit is os.Exit, replaced in tests.
 var exit = os.Exit
+
+// printUsage prints every flag, and how else a flag can be set.
+func printUsage() {
+	out := pflag.CommandLine.Output()
+	fmt.Fprintf(out, "Usage: %s [flags]\n\nFlags:\n", filepath.Base(os.Args[0]))
+	pflag.PrintDefaults()
+	fmt.Fprintf(out, "\nA flag not set on the command line is read from the environment variable %s_<FLAG>,\n"+
+		"with the flag name in upper case and dashes replaced by underscores (for example, --log-level\n"+
+		"is %s), and then from the --config-file for the flags it covers.\n", EnvVarPrefix, FlagToEnv("log-level"))
+}
 
 func (k *Parameters) usage() {
 	pflag.Usage()

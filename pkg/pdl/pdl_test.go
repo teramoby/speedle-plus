@@ -479,25 +479,25 @@ func TestConditions(t *testing.T) {
 		want string
 	}{
 		{
-			cmd:  "if a=3",
-			want: "a=3",
+			cmd:  "if a==3",
+			want: "a==3",
 		},
 		{
-			cmd:  "IF a=3",
-			want: "a=3",
+			cmd:  "IF a==3",
+			want: "a==3",
 		},
 		{
-			cmd:  "if        a=3      ",
-			want: "a=3",
+			cmd:  "if        a==3      ",
+			want: "a==3",
 		},
 		{
-			cmd:  "if a = 3",
-			want: "a = 3",
+			cmd:  "if a == 3",
+			want: "a == 3",
 		},
 
 		{
-			cmd:  "if a = 3 &&   b == 4     ",
-			want: "a = 3 &&   b == 4",
+			cmd:  "if a == 3 &&   b == 4     ",
+			want: "a == 3 &&   b == 4",
 		},
 	}
 
@@ -523,5 +523,25 @@ func TestFullCmd(t *testing.T) {
 	_, _, err := ParsePolicy(cmd, "test")
 	if err != nil {
 		t.Fatalf("%v\n", err)
+	}
+}
+
+func TestInvalidConditionPointsIntoTheLine(t *testing.T) {
+	_, _, err := ParsePolicy("grant user alice approve /data1 if amount <=", "")
+	want := "Invalid condition: Unexpected end of expression\n" +
+		"grant user alice approve /data1 if amount <=\n" +
+		"                                            ^"
+	if err == nil || err.Error() != want {
+		t.Errorf("ParsePolicy error %q, want %q", err, want)
+	}
+	_, _, err = ParseRolePolicy("grant user alice manager on /x if (a > 1", "")
+	want = "Invalid condition: Unbalanced parenthesis\n" +
+		"grant user alice manager on /x if (a > 1\n" +
+		"                                  ^"
+	if err == nil || err.Error() != want {
+		t.Errorf("ParseRolePolicy error %q, want %q", err, want)
+	}
+	if _, _, err = ParsePolicy("grant user alice read /x if x =~ '['", ""); err == nil || !strings.Contains(err.Error(), "invalid condition") {
+		t.Errorf("ParsePolicy with a bad regexp: error %v", err)
 	}
 }

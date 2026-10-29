@@ -10,6 +10,7 @@ import (
 	"os"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/teramoby/speedle-plus/pkg/errors"
 	"github.com/teramoby/speedle-plus/pkg/suid"
@@ -334,22 +335,16 @@ func (s *Store) Watch() (pms.StorageChangeChannel, error) {
 					log.Info("Reloading the file store...")
 					reloadEvent := pms.StoreChangeEvent{Type: pms.FULL_RELOAD}
 					storeChangeChan <- reloadEvent
-				case event.Op&fsnotify.Rename == fsnotify.Rename:
-					if _, err := os.Lstat(s.FileLocation); os.IsNotExist(err) {
-						log.Fatalf("The policy file %q has already been renamed, please double check", s.FileLocation)
-					} else {
-						// This is just a workaround for the issue https://github.com/fsnotify/fsnotify/issues/282
-						log.Info("Reloading the file store....")
-						reloadEvent := pms.StoreChangeEvent{Type: pms.FULL_RELOAD}
-						storeChangeChan <- reloadEvent
-
-						err = watcher.Add(s.FileLocation)
-						if err != nil {
-							log.Fatalf("Failed to add the file %q into the watch list again, error: %v", s.FileLocation, err)
-						}
+				case event.Op&(fsnotify.Rename|fsnotify.Remove) != 0:
+					// Editors and config tools often save the file by replacing it
+					// (write a temporary file, then rename it over the original),
+					// which shows up as a rename or remove of the watched file.
+					if err := s.rewatch(watcher); err != nil {
+						log.Fatalf("The policy file %q has been renamed or removed, please double check, error: %v", s.FileLocation, err)
 					}
-				case event.Op&fsnotify.Remove == fsnotify.Remove:
-					log.Fatalf("The policy file %q has already been removed, please double check", s.FileLocation)
+					log.Info("Reloading the file store....")
+					reloadEvent := pms.StoreChangeEvent{Type: pms.FULL_RELOAD}
+					storeChangeChan <- reloadEvent
 				default:
 					log.Infof("Operation %q was detected on the policy file %q", event.Op, s.FileLocation)
 				}
@@ -363,6 +358,25 @@ func (s *Store) Watch() (pms.StorageChangeChannel, error) {
 	}()
 
 	return storeChangeChan, nil
+}
+
+// policyFileReturnTimeout is how long Watch waits for the policy file to be
+// back at its path after it is renamed or removed.
+var policyFileReturnTimeout = 2 * time.Second
+
+// rewatch watches the file now at the policy file path, waiting up to
+// policyFileReturnTimeout for it to appear.
+func (s *Store) rewatch(watcher *fsnotify.Watcher) error {
+	// Drop the watch on the old file, if fsnotify has not dropped it already.
+	watcher.Remove(s.FileLocation)
+	deadline := time.Now().Add(policyFileReturnTimeout)
+	for {
+		err := watcher.Add(s.FileLocation)
+		if err == nil || time.Now().After(deadline) {
+			return err
+		}
+		time.Sleep(50 * time.Millisecond)
+	}
 }
 
 func (s *Store) StopWatch() {
