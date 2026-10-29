@@ -3,6 +3,7 @@ package mongodb
 import (
 	"context"
 	"strings"
+	"sync"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -16,8 +17,11 @@ import (
 )
 
 type Store struct {
-	client   *mongo.Client
-	Database string
+	client      *mongo.Client
+	Database    string
+	watchMu     sync.Mutex
+	watchCancel context.CancelFunc
+	watchDone   chan struct{}
 }
 
 // ReadPolicyStore reads policy store from a file
@@ -38,30 +42,88 @@ func (s *Store) ReadPolicyStore() (*pms.PolicyStore, error) {
 
 }
 
-// WritePolicyStore writes policies to a file
+// WritePolicyStore atomically replaces the snapshot. MongoDB transactions require
+// a replica set or sharded cluster; unsupported deployments fail without deleting data.
 func (s *Store) WritePolicyStore(ps *pms.PolicyStore) error {
-	err := s.DeleteServices()
-	if err != nil {
-		return err
+	if ps == nil {
+		return errors.New(errors.InvalidRequest, "policy store must not be nil")
 	}
-	err = s.DeleteFunctions()
-	if err != nil {
-		return err
-	}
+	// Encode before starting the transaction, so invalid input never removes data.
+	services := make([]interface{}, 0, len(ps.Services))
 	for _, service := range ps.Services {
-		err = s.CreateService(service)
+		if service == nil {
+			return errors.New(errors.InvalidRequest, "service must not be nil")
+		}
+		data, err := bson.Marshal(service)
 		if err != nil {
 			return err
 		}
+		var copy pms.Service
+		if err := bson.Unmarshal(data, &copy); err != nil {
+			return err
+		}
+		for _, policy := range copy.Policies {
+			if policy == nil {
+				return errors.New(errors.InvalidRequest, "policy must not be nil")
+			}
+			if policy.ID == "" {
+				policy.ID = suid.New().String()
+			}
+		}
+		for _, policy := range copy.RolePolicies {
+			if policy == nil {
+				return errors.New(errors.InvalidRequest, "role policy must not be nil")
+			}
+			if policy.ID == "" {
+				policy.ID = suid.New().String()
+			}
+		}
+		services = append(services, &copy)
 	}
-	for _, f := range ps.Functions {
-		_, err = s.CreateFunction(f)
+	functions := make([]interface{}, 0, len(ps.Functions))
+	for _, function := range ps.Functions {
+		if function == nil {
+			return errors.New(errors.InvalidRequest, "function must not be nil")
+		}
+		if err := validateFunc(function); err != nil {
+			return err
+		}
+		data, err := bson.Marshal(function)
 		if err != nil {
 			return err
 		}
+		functions = append(functions, bson.Raw(data))
 	}
-	return nil
-
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	session, err := s.client.StartSession()
+	if err != nil {
+		return err
+	}
+	defer session.EndSession(context.Background())
+	_, err = session.WithTransaction(ctx, func(ctx mongo.SessionContext) (interface{}, error) {
+		database := s.client.Database(s.Database)
+		serviceCollection := database.Collection("services")
+		functionCollection := database.Collection("functions")
+		if _, err := serviceCollection.DeleteMany(ctx, bson.D{}); err != nil {
+			return nil, err
+		}
+		if _, err := functionCollection.DeleteMany(ctx, bson.D{}); err != nil {
+			return nil, err
+		}
+		if len(services) > 0 {
+			if _, err := serviceCollection.InsertMany(ctx, services); err != nil {
+				return nil, err
+			}
+		}
+		if len(functions) > 0 {
+			if _, err := functionCollection.InsertMany(ctx, functions); err != nil {
+				return nil, err
+			}
+		}
+		return nil, nil
+	})
+	return err
 }
 
 // ListAllServices lists all the services
@@ -84,7 +146,10 @@ func (s *Store) ListAllServices() ([]*pms.Service, error) {
 		services = append(services, &service)
 	}
 
-	return services, err
+	if err := cur.Err(); err != nil {
+		return nil, err
+	}
+	return services, nil
 
 }
 
@@ -93,10 +158,9 @@ func (s *Store) GetServiceNames() ([]string, error) {
 	serviceCollection := s.client.Database(s.Database).Collection("services")
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	matchstag := bson.D{{"$match", bson.D{{"$exists", true}}}}
 	projectstag := bson.D{{"$project", bson.D{{"_id", 1}}}}
 	opts := options.Aggregate().SetMaxTime(2 * time.Second)
-	cur, err := serviceCollection.Aggregate(ctx, mongo.Pipeline{matchstag, projectstag}, opts)
+	cur, err := serviceCollection.Aggregate(ctx, mongo.Pipeline{projectstag}, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -214,6 +278,9 @@ func (s *Store) CreateService(service *pms.Service) error {
 	defer cancel()
 	serviceWithID, _ := generateID(service)
 	insertResult, err := serviceCollection.InsertOne(ctx, serviceWithID)
+	if mongo.IsDuplicateKeyError(err) {
+		return errors.Errorf(errors.EntityAlreadyExists, "service %q already exists", service.Name)
+	}
 	if err != nil {
 		return err
 	}
@@ -241,188 +308,178 @@ func (s *Store) DeleteServices() error {
 	serviceCollection := s.client.Database(s.Database).Collection("services")
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	err := serviceCollection.Drop(ctx)
+	_, err := serviceCollection.DeleteMany(ctx, bson.D{})
 	return err
 }
 
+// Watch streams committed changes until StopWatch is called or the stream fails.
 func (s *Store) Watch() (pms.StorageChangeChannel, error) {
-	log.Info("Enter Watch...")
-	streamOptions := options.ChangeStream().SetFullDocument(options.UpdateLookup)
-	changeStream, err := s.client.Database(s.Database).Watch(context.TODO(), mongo.Pipeline{}, streamOptions)
+	s.watchMu.Lock()
+	defer s.watchMu.Unlock()
+	if s.watchCancel != nil {
+		return nil, errors.New(errors.StoreError, "policy store is already being watched")
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	stream, err := s.client.Database(s.Database).Watch(ctx, mongo.Pipeline{}, options.ChangeStream().SetFullDocument(options.UpdateLookup))
 	if err != nil {
-		log.Error(err)
+		cancel()
 		return nil, err
 	}
-
-	var storeChangeChan pms.StorageChangeChannel = make(chan pms.StoreChangeEvent)
-
+	changes := make(pms.StorageChangeChannel)
+	done := make(chan struct{})
+	s.watchCancel, s.watchDone = cancel, done
 	go func() {
+		defer close(done)
+		defer close(changes)
+		defer cancel()
 		defer func() {
-			changeStream.Close(context.TODO())
-			close(storeChangeChan)
+			closeCtx, closeCancel := context.WithTimeout(context.Background(), 5*time.Second)
+			defer closeCancel()
+			if err := stream.Close(closeCtx); err != nil {
+				log.Error(err)
+			}
 		}()
-
-		for changeStream.Next(context.TODO()) {
-			// A new event variable should be declared for each event.
-			var event bson.M
-			if err := changeStream.Decode(&event); err != nil {
+		for stream.Next(ctx) {
+			var event mongoChangeEvent
+			if err := stream.Decode(&event); err != nil {
 				log.Error(err)
 				continue
 			}
-			log.Info("-----watched event:", event)
-			log.Info("---------- fulldocument:", event["fullDocument"])
-			var ns bson.M = event["ns"].(bson.M)
-
-			//ns.coll =="services"
-			if ns["coll"] == "services" {
-				//operationType == update
-				if event["operationType"] == "update" {
-					log.Info("===update service")
-					id := time.Now().Unix()
-					var service pms.Service
-					docb, err := bson.Marshal(event["fullDocument"])
-					if err != nil {
-						log.Error(err)
-						continue
-					}
-					err = bson.Unmarshal(docb, &service)
-					if err != nil {
-						log.Error(err)
-						continue
-					}
-
-					serviceDeleteEvent := pms.StoreChangeEvent{Type: pms.SERVICE_DELETE, ID: id, Content: []string{service.Name}}
-					log.Info("serviceDeleteEvent:", serviceDeleteEvent)
-					storeChangeChan <- serviceDeleteEvent
-					id = time.Now().Unix()
-					serviceAddEvent := pms.StoreChangeEvent{Type: pms.SERVICE_ADD, ID: id, Content: &service}
-					log.Info("serviceAddEvent:", serviceAddEvent)
-					storeChangeChan <- serviceAddEvent
-
-				} else if event["operationType"] == "insert" {
-					log.Info("===insert service")
-					id := time.Now().Unix()
-					var service pms.Service
-					docb, err := bson.Marshal(event["fullDocument"])
-					if err != nil {
-						log.Error(err)
-						continue
-					}
-					err = bson.Unmarshal(docb, &service)
-					if err != nil {
-						log.Error(err)
-						continue
-					}
-					serviceAddEvent := pms.StoreChangeEvent{Type: pms.SERVICE_ADD, ID: id, Content: &service}
-					log.Info("###serviceAddEvent:", serviceAddEvent)
-					storeChangeChan <- serviceAddEvent
-
-				} else if event["operationType"] == "delete" {
-					log.Info("===delete service")
-					id := time.Now().Unix()
-					serviceName := event["documentKey"].(bson.M)["_id"].(string)
-					serviceDeleteEvent := pms.StoreChangeEvent{Type: pms.SERVICE_DELETE, ID: id, Content: []string{serviceName}}
-					log.Info("###serviceDeleteEvent:", serviceDeleteEvent)
-					storeChangeChan <- serviceDeleteEvent
-
-				}
-			} else if ns["coll"] == "functions" {
-
-				if event["operationType"] == "insert" {
-					log.Info("===insert function")
-					id := time.Now().Unix()
-					var f pms.Function
-					docb, err := bson.Marshal(event["fullDocument"])
-					if err != nil {
-						log.Error(err)
-						continue
-					}
-					err = bson.Unmarshal(docb, &f)
-					if err != nil {
-						log.Error(err)
-						continue
-					}
-					funcAddEvent := pms.StoreChangeEvent{Type: pms.FUNCTION_ADD, ID: id, Content: &f}
-					log.Info("###funcAddEvent:", funcAddEvent)
-					storeChangeChan <- funcAddEvent
-
-				} else if event["operationType"] == "delete" {
-					log.Info("===delete function")
-					id := time.Now().Unix()
-					funcName := event["documentKey"].(bson.M)["_id"].(string)
-					funcDeleteEvent := pms.StoreChangeEvent{Type: pms.FUNCTION_DELETE, ID: id, Content: []string{funcName}}
-					log.Info("###funcDeleteEvent:", funcDeleteEvent)
-					storeChangeChan <- funcDeleteEvent
-
+			events, err := event.storeEvents()
+			if err != nil {
+				log.Error(err)
+				continue
+			}
+			for _, change := range events {
+				select {
+				case changes <- change:
+				case <-ctx.Done():
+					return
 				}
 			}
-
 		}
-		log.Info("###exit for loop")
-
-		if err := changeStream.Err(); err != nil {
+		if err := stream.Err(); err != nil && ctx.Err() == nil {
 			log.Error(err)
 		}
-
 	}()
-
-	return storeChangeChan, nil
-
+	return changes, nil
 }
 
+// StopWatch also unblocks a watcher waiting for a consumer to receive an event.
 func (s *Store) StopWatch() {
+	s.watchMu.Lock()
+	defer s.watchMu.Unlock()
+	if s.watchCancel != nil {
+		s.watchCancel()
+		<-s.watchDone
+		s.watchCancel, s.watchDone = nil, nil
+	}
+}
 
+type mongoChangeEvent struct {
+	Operation string `bson:"operationType"`
+	Namespace struct {
+		Collection string `bson:"coll"`
+	} `bson:"ns"`
+	DocumentKey struct {
+		ID string `bson:"_id"`
+	} `bson:"documentKey"`
+	FullDocument bson.Raw `bson:"fullDocument"`
+}
+
+func (e mongoChangeEvent) storeEvents() ([]pms.StoreChangeEvent, error) {
+	change := func(kind pms.EventType, content interface{}) pms.StoreChangeEvent {
+		return pms.StoreChangeEvent{Type: kind, ID: time.Now().UnixNano(), Content: content}
+	}
+	if e.Operation == "dropDatabase" || e.Operation == "invalidate" {
+		return []pms.StoreChangeEvent{change(pms.FULL_RELOAD, nil)}, nil
+	}
+	collection := e.Namespace.Collection
+	if collection != "services" && collection != "functions" {
+		return nil, nil
+	}
+	if e.Operation == "drop" || e.Operation == "rename" {
+		return []pms.StoreChangeEvent{change(pms.FULL_RELOAD, nil)}, nil
+	}
+	if e.Operation == "delete" {
+		kind := pms.SERVICE_DELETE
+		if collection == "functions" {
+			kind = pms.FUNCTION_DELETE
+		}
+		return []pms.StoreChangeEvent{change(kind, []string{e.DocumentKey.ID})}, nil
+	}
+	if e.Operation != "insert" && e.Operation != "update" && e.Operation != "replace" {
+		return nil, nil
+	}
+	// UpdateLookup may return null if a later operation already deleted the document.
+	// Reload rather than publishing an empty service or silently retaining stale data.
+	if len(e.FullDocument) == 0 {
+		return []pms.StoreChangeEvent{change(pms.FULL_RELOAD, nil)}, nil
+	}
+	if collection == "functions" {
+		var function pms.Function
+		if err := bson.Unmarshal(e.FullDocument, &function); err != nil {
+			return nil, err
+		}
+		return []pms.StoreChangeEvent{change(pms.FUNCTION_ADD, &function)}, nil
+	}
+	var service pms.Service
+	if err := bson.Unmarshal(e.FullDocument, &service); err != nil {
+		return nil, err
+	}
+	events := []pms.StoreChangeEvent{}
+	if e.Operation != "insert" {
+		events = append(events, change(pms.SERVICE_DELETE, []string{service.Name}))
+	}
+	return append(events, change(pms.SERVICE_ADD, &service)), nil
+}
+
+// Close stops watching and releases the MongoDB client's connections.
+func (s *Store) Close() error {
+	s.StopWatch()
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	return s.client.Disconnect(ctx)
 }
 
 func (s *Store) Type() string {
 	return StoreType
 }
 
+// parseFilter follows the shared name-filter contract. Unknown fields/operators
+// are ignored, and target strings are literals rather than aggregation paths.
 func parseFilter(filterStr string) (bson.D, error) {
-	if len(filterStr) == 0 {
-		return bson.D{{"$eq", bson.A{1, 1}}}, nil
-	}
+	all := bson.D{{"$eq", bson.A{1, 1}}}
 	values := strings.Split(filterStr, " ")
-	if len(values) == 2 {
-		field := values[0]
-		operator := values[1]
-		switch operator {
-		case "pr":
-			return bson.D{{"$gt", bson.A{"$$p." + field, nil}}}, nil
-		default:
-			log.Error("invalid name filter:", filterStr)
-			return nil, errors.Errorf(errors.InvalidRequest, "invalid filter %q", filterStr)
-		}
-
-	} else if len(values) == 3 {
-		field := values[0]
-		operator := values[1]
-		target := values[2]
-		switch operator {
-		case "eq":
-			return bson.D{{"$eq", bson.A{"$$p." + field, target}}}, nil
-		case "co":
-			return bson.D{{"$gte", bson.A{bson.D{{"$indexOfBytes", bson.A{"$$p." + field, target}}}, 0}}}, nil
-		case "sw":
-			return bson.D{{"$eq", bson.A{0, bson.D{{"$indexOfBytes", bson.A{"$$p." + field, target}}}}}}, nil
-		case "gt":
-			return bson.D{{"$gt", bson.A{"$$p." + field, target}}}, nil
-		case "ge":
-			return bson.D{{"$gte", bson.A{"$$p." + field, target}}}, nil
-		case "lt":
-			return bson.D{{"$lt", bson.A{"$$p." + field, target}}}, nil
-		case "le":
-			return bson.D{{"$lte", bson.A{"$$p." + field, target}}}, nil
-		default:
-			log.Error("invalid name filter:", filterStr)
-			return nil, errors.Errorf(errors.InvalidRequest, "invalid filter %q", filterStr)
-		}
-
-	} else {
-		log.Error("invalid filter string:", filterStr)
-		return nil, errors.Errorf(errors.InvalidRequest, "invalid filter %q", filterStr)
+	if len(values) < 2 || values[0] != "name" {
+		return all, nil
 	}
-
+	value := bson.D{{"$ifNull", bson.A{"$$p.name", ""}}}
+	target := ""
+	if len(values) > 2 {
+		target = values[2]
+	}
+	literal := bson.D{{"$literal", target}}
+	switch values[1] {
+	case "pr":
+		return bson.D{{"$ne", bson.A{value, ""}}}, nil
+	case "eq":
+		return bson.D{{"$eq", bson.A{value, literal}}}, nil
+	case "co":
+		return bson.D{{"$gte", bson.A{bson.D{{"$indexOfBytes", bson.A{value, literal}}}, 0}}}, nil
+	case "sw":
+		return bson.D{{"$eq", bson.A{0, bson.D{{"$indexOfBytes", bson.A{value, literal}}}}}}, nil
+	case "gt":
+		return bson.D{{"$gt", bson.A{value, literal}}}, nil
+	case "ge":
+		return bson.D{{"$gte", bson.A{value, literal}}}, nil
+	case "lt":
+		return bson.D{{"$lt", bson.A{value, literal}}}, nil
+	case "le":
+		return bson.D{{"$lte", bson.A{value, literal}}}, nil
+	default:
+		return all, nil
+	}
 }
 
 // For policy manager
@@ -767,6 +824,9 @@ func (s *Store) CreateFunction(function *pms.Function) (*pms.Function, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	insertResult, err := serviceCollection.InsertOne(ctx, function)
+	if mongo.IsDuplicateKeyError(err) {
+		return nil, errors.Errorf(errors.EntityAlreadyExists, "function %q already exists", function.Name)
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -794,7 +854,7 @@ func (s *Store) DeleteFunctions() error {
 	serviceCollection := s.client.Database(s.Database).Collection("functions")
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	err := serviceCollection.Drop(ctx)
+	_, err := serviceCollection.DeleteMany(ctx, bson.D{})
 	return err
 
 }
@@ -804,6 +864,9 @@ func (s *Store) GetFunction(funcName string) (*pms.Function, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	singleResult := serviceCollection.FindOne(ctx, bson.M{"_id": funcName})
+	if singleResult.Err() == mongo.ErrNoDocuments {
+		return nil, errors.Errorf(errors.EntityNotFound, "function %q is not found", funcName)
+	}
 	if singleResult.Err() != nil {
 		return nil, singleResult.Err()
 	}
@@ -818,7 +881,15 @@ func (s *Store) ListAllFunctions(filter string) ([]*pms.Function, error) {
 	serviceCollection := s.client.Database(s.Database).Collection("functions")
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	cur, err := serviceCollection.Find(ctx, bson.M{})
+	condition, err := parseFilter(filter)
+	if err != nil {
+		return nil, err
+	}
+	query := bson.D{{"$expr", bson.D{{"$let", bson.D{
+		{"vars", bson.D{{"p", bson.D{{"name", "$_id"}}}}},
+		{"in", condition},
+	}}}}}
+	cur, err := serviceCollection.Find(ctx, query)
 	if err != nil {
 		return nil, err
 	}
@@ -831,6 +902,9 @@ func (s *Store) ListAllFunctions(filter string) ([]*pms.Function, error) {
 			return nil, err
 		}
 		functions = append(functions, &f)
+	}
+	if err := cur.Err(); err != nil {
+		return nil, err
 	}
 	return functions, nil
 

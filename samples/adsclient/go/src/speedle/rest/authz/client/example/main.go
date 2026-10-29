@@ -1,10 +1,10 @@
 package main
 
 import (
+	"github.com/teramoby/speedle-plus/samples/adsclient/go/src/speedle/api/authz"
+	"github.com/teramoby/speedle-plus/samples/adsclient/go/src/speedle/rest/authz/client"
 	"log"
 	"os"
-	"speedle/api/authz"
-	"speedle/rest/authz/client"
 )
 
 func main() {

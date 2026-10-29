@@ -14,6 +14,7 @@ import (
 	"github.com/teramoby/speedle-plus/pkg/cfg"
 	"github.com/teramoby/speedle-plus/pkg/cmd/flags"
 	"github.com/teramoby/speedle-plus/pkg/logging"
+	"github.com/teramoby/speedle-plus/testutil/storetest"
 )
 
 func freeAddress(t *testing.T) string {
@@ -26,13 +27,13 @@ func freeAddress(t *testing.T) string {
 	return listener.Addr().String()
 }
 
-func fileConfig(t *testing.T) *cfg.Config {
+func fixtureConfig(t *testing.T) *cfg.Config {
 	t.Helper()
 	location := filepath.Join(t.TempDir(), "policies.json")
 	if err := os.WriteFile(location, []byte(`{}`), 0600); err != nil {
 		t.Fatal(err)
 	}
-	return &cfg.Config{StoreConfig: &cfg.StoreConfig{StoreType: "file", StoreProps: map[string]interface{}{"FileLocation": location}}}
+	return &cfg.Config{StoreConfig: storetest.ConfigFromFile(t, location)}
 }
 
 func insecureParams(endpoint, grpcEndpoint string) *flags.Parameters {
@@ -54,7 +55,7 @@ func waitFor(t *testing.T, ok func() bool) {
 
 func TestRunServesUntilStopped(t *testing.T) {
 	address, grpcAddress := freeAddress(t), freeAddress(t)
-	conf := fileConfig(t)
+	conf := fixtureConfig(t)
 	// Bad log settings are reported and the defaults kept.
 	conf.LogConfig = &logging.LogConfig{Level: "loud"}
 	conf.AuditLogConfig = &logging.LogConfig{Formatter: "xml"}
@@ -89,19 +90,19 @@ func TestRunReportsServeErrors(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer busy.Close()
-	conf := fileConfig(t)
+	conf := fixtureConfig(t)
 	conf.LogConfig = &logging.LogConfig{}
 	conf.AuditLogConfig = &logging.LogConfig{}
 	if err := run(insecureParams(busy.Addr().String(), ""), conf, nil); err == nil {
 		t.Fatal("run must fail when the REST endpoint is taken")
 	}
-	if err := run(insecureParams(freeAddress(t), busy.Addr().String()), fileConfig(t), nil); err == nil {
+	if err := run(insecureParams(freeAddress(t), busy.Addr().String()), fixtureConfig(t), nil); err == nil {
 		t.Fatal("run must fail when the gRPC endpoint is taken")
 	}
 }
 
 func TestRunReportsSetupErrors(t *testing.T) {
-	conf := fileConfig(t)
+	conf := fixtureConfig(t)
 	conf.StoreConfig.StoreType = "nosuchstore"
 	if err := run(insecureParams(freeAddress(t), ""), conf, nil); err == nil {
 		t.Fatal("run must fail with an unknown store")
@@ -110,15 +111,15 @@ func TestRunReportsSetupErrors(t *testing.T) {
 	// TLS without certificates.
 	params := insecureParams(freeAddress(t), freeAddress(t))
 	params.Insecure.Value = "false"
-	if err := run(params, fileConfig(t), nil); err == nil {
+	if err := run(params, fixtureConfig(t), nil); err == nil {
 		t.Fatal("run must fail when the gRPC certificates are missing")
 	}
 	params.GRPCEndpoint.Value = ""
-	if err := run(params, fileConfig(t), nil); err == nil {
+	if err := run(params, fixtureConfig(t), nil); err == nil {
 		t.Fatal("run must fail when the REST certificates are missing")
 	}
 	params.ClientCertPath.Value = filepath.Join(t.TempDir(), "missing.pem")
-	if err := run(params, fileConfig(t), nil); err == nil {
+	if err := run(params, fixtureConfig(t), nil); err == nil {
 		t.Fatal("run must fail with a missing client CA")
 	}
 }

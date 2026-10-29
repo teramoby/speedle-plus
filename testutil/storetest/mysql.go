@@ -3,11 +3,9 @@ package storetest
 import (
 	"context"
 	"database/sql"
-	"encoding/json"
 	"fmt"
 	"os"
 	"strings"
-	"testing"
 	"time"
 
 	driver "github.com/go-sql-driver/mysql"
@@ -27,8 +25,13 @@ type MySQLFixture struct {
 	database string
 }
 
-func NewMySQLFixture(initial *pms.PolicyStore) (*MySQLFixture, error) {
+func NewMySQLFixture(initial *pms.PolicyStore, overrides ...map[string]interface{}) (*MySQLFixture, error) {
 	dsn := os.Getenv("SPEEDLE_MYSQL_TEST_DSN")
+	if len(overrides) > 0 {
+		if value, ok := overrides[0][mysqlstore.DSNKey].(string); ok {
+			dsn = value
+		}
+	}
 	configuration, err := driver.ParseDSN(dsn)
 	if err != nil || dsn == "" || !strings.HasPrefix(configuration.DBName, "speedle_test") {
 		return nil, fmt.Errorf("MySQL fixture requires SPEEDLE_MYSQL_TEST_DSN naming a disposable speedle_test database")
@@ -49,6 +52,13 @@ func NewMySQLFixture(initial *pms.PolicyStore) (*MySQLFixture, error) {
 	conf := &cfg.StoreConfig{StoreType: "mysql", StoreProps: map[string]interface{}{
 		mysqlstore.DSNKey: configuration.FormatDSN(), mysqlstore.PollIntervalKey: "20ms", mysqlstore.QueryTimeoutKey: "30s",
 	}}
+	if len(overrides) > 0 {
+		for key, value := range overrides[0] {
+			if key != mysqlstore.DSNKey {
+				conf.StoreProps[key] = value
+			}
+		}
+	}
 	f := &MySQLFixture{Config: conf, admin: admin, database: name}
 	manager, err := store.NewStore("mysql", conf.StoreProps)
 	if err != nil {
@@ -76,31 +86,4 @@ func (f *MySQLFixture) Close() {
 		_ = f.admin.Close()
 		f.admin = nil
 	}
-}
-
-// PolicyStore ports a backend-agnostic test fixture without changing its data
-// or assertions. Adapter-specific file/etcd tests keep their own factories.
-func PolicyStore(t testing.TB, location string) pms.PolicyStoreManager {
-	t.Helper()
-	if os.Getenv("STORE_TYPE") != "mysql" {
-		s, err := store.NewStore("file", map[string]interface{}{"FileLocation": location})
-		if err != nil {
-			t.Fatal(err)
-		}
-		return s
-	}
-	raw, err := os.ReadFile(location)
-	if err != nil {
-		t.Fatal(err)
-	}
-	var initial pms.PolicyStore
-	if err := json.Unmarshal(raw, &initial); err != nil {
-		t.Fatal(err)
-	}
-	f, err := NewMySQLFixture(&initial)
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(f.Close)
-	return f.Store
 }

@@ -4,9 +4,9 @@ import (
 	"fmt"
 
 	"github.com/docker/go-plugins-helpers/authorization"
+	"github.com/teramoby/speedle-plus/samples/adsclient/go/src/speedle/api/authz"
+	"github.com/teramoby/speedle-plus/samples/adsclient/go/src/speedle/rest/authz/client"
 	"net/url"
-	"speedle/api/authz"
-	"speedle/rest/authz/client"
 	"strings"
 )
 

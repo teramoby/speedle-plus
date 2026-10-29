@@ -18,15 +18,15 @@ import (
 	"github.com/teramoby/speedle-plus/testutil/storetest"
 )
 
-// newFileEvaluator returns an evaluator over its own file store holding
+// newFixtureEvaluator returns an evaluator over its configured fixture holding
 // content, and the store.
-func newFileEvaluator(t *testing.T, content string) (*PolicyEvalImpl, pms.PolicyStoreManager) {
+func newFixtureEvaluator(t *testing.T, content string) (*PolicyEvalImpl, pms.PolicyStoreManager) {
 	t.Helper()
 	location := filepath.Join(t.TempDir(), "policies.json")
 	if err := os.WriteFile(location, []byte(content), 0600); err != nil {
 		t.Fatal(err)
 	}
-	conf := &cfg.Config{StoreConfig: &cfg.StoreConfig{StoreType: "file", StoreProps: map[string]interface{}{"FileLocation": location}}}
+	conf := &cfg.Config{}
 	ps := storetest.PolicyStore(t, location)
 	evaluator, err := NewWithStore(conf, ps)
 	if err != nil {
@@ -60,7 +60,7 @@ func grantPolicy(id, user, resource string) *pms.Policy {
 }
 
 func TestCacheFollowsStoreEvents(t *testing.T) {
-	p, _ := newFileEvaluator(t, `{}`)
+	p, _ := newFixtureEvaluator(t, `{}`)
 
 	apply(p, pms.StoreChangeEvent{Type: pms.SERVICE_ADD, Content: &pms.Service{Name: "app", Policies: []*pms.Policy{grantPolicy("1", "alice", "r1")}}})
 	if !allowed(t, p, "app", "alice", "r1", "read") {
@@ -115,7 +115,7 @@ func TestCacheFollowsFunctionEvents(t *testing.T) {
 	}))
 	defer server.Close()
 
-	p, _ := newFileEvaluator(t, `{"services":[{"name":"app","policies":[
+	p, _ := newFixtureEvaluator(t, `{"services":[{"name":"app","policies":[
 		{"id":"1","effect":"grant","principals":[["user:alice"]],"permissions":[{"resource":"r","actions":["read"]}],"condition":"isOpen()"}]}]}`)
 	if allowed(t, p, "app", "alice", "r", "read") {
 		t.Fatal("a condition with an unknown function must not grant")
@@ -145,7 +145,7 @@ func TestCacheFollowsFunctionEvents(t *testing.T) {
 }
 
 func TestFullReload(t *testing.T) {
-	p, ps := newFileEvaluator(t, `{"services":[{"name":"app","policies":[
+	p, ps := newFixtureEvaluator(t, `{"services":[{"name":"app","policies":[
 		{"id":"1","effect":"grant","principals":[["user:alice"]],"permissions":[{"resource":"r","actions":["read"]}]}]}]}`)
 	var replaced pms.PolicyStore
 	json.Unmarshal([]byte(`{"services":[{"name":"app","policies":[
@@ -174,7 +174,7 @@ func TestFullReload(t *testing.T) {
 }
 
 func TestSyncReload(t *testing.T) {
-	p, ps := newFileEvaluator(t, `{"services":[
+	p, ps := newFixtureEvaluator(t, `{"services":[
 		{"name":"gone","policies":[{"id":"9","effect":"grant","principals":[["user:x"]]}]},
 		{"name":"app","policies":[
 			{"id":"1","effect":"grant","principals":[["user:alice"]],"permissions":[{"resource":"r","actions":["read"]}]}],
@@ -213,7 +213,7 @@ func TestSyncReload(t *testing.T) {
 }
 
 func TestSyncReloadErrors(t *testing.T) {
-	p, _ := newFileEvaluator(t, `{"services":[{"name":"app","policies":[{"id":"1","effect":"grant"}],
+	p, _ := newFixtureEvaluator(t, `{"services":[{"name":"app","policies":[{"id":"1","effect":"grant"}],
 		"rolePolicies":[{"id":"2","effect":"grant"}]}]}`)
 	services, policies, rolePolicies, functions := []string{"app"}, map[int]string{1: "app"}, map[int]string{2: "app"}, []string{}
 	cases := map[string][]interface{}{
@@ -262,12 +262,19 @@ func TestEvaluatorFactories(t *testing.T) {
 	}
 
 	config := filepath.Join(t.TempDir(), "config.json")
-	os.WriteFile(config, []byte(`{"storeConfig":{"storeType":"file","storeProps":{"FileLocation":"`+location+`"}},"enableWatch":true}`), 0600)
+	configuration, err := json.Marshal(&cfg.Config{StoreConfig: storetest.ConfigFromFile(t, location), EnableWatch: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(config, configuration, 0600); err != nil {
+		t.Fatal(err)
+	}
 	watched, err := New(config)
 	if err != nil {
 		t.Fatal(err)
 	}
 	watched.(*PolicyEvalImpl).StopWatch()
+	t.Cleanup(func() { _ = watched.(*PolicyEvalImpl).Close() })
 
 	if _, err := New(filepath.Join(t.TempDir(), "missing.json")); err == nil {
 		t.Fatal("New with a missing config must fail")

@@ -19,6 +19,8 @@ import (
 	"go.etcd.io/etcd/server/v3/embed"
 )
 
+var cliFixtureSupportsDiscover = true
+
 func TestMain(m *testing.M) {
 	os.Exit(runCLITests(m))
 }
@@ -65,7 +67,7 @@ func runCLITests(m *testing.M) int {
 
 	storeType := testutil.GetOSEnv("STORE_TYPE", "file")
 	properties := map[string]interface{}{storefile.FileLocationKey: filepath.Join(directory, "policies.json")}
-	if storeType == "etcd" {
+	if storeType == "etcd" && os.Getenv("SPEEDLE_TEST_STORE_PROPS") == "" && os.Getenv("SPEEDLE_ETCD_ENDPOINT") == "" {
 		// Own random loopback listeners; never attach to an installed etcd.
 		configuration := embed.NewConfig()
 		configuration.Dir = filepath.Join(directory, "etcd")
@@ -92,17 +94,14 @@ func runCLITests(m *testing.M) int {
 			storeetcd.EtcdEndpointKey:  server.Clients[0].Addr().String(),
 			storeetcd.EtcdKeyPrefixKey: "/speedle-cli-tests/",
 		}
-	} else if storeType == "mysql" {
-		fixture, err := storetest.NewMySQLFixture(nil)
+	} else if storeType != "file" {
+		fixture, err := storetest.NewFixture(nil)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			return 1
 		}
 		defer fixture.Close()
 		properties = fixture.Config.StoreProps
-	} else if storeType != "file" {
-		fmt.Fprintf(os.Stderr, "unsupported CLI fixture store %q\n", storeType)
-		return 1
 	}
 	manager, err := store.NewStore(storeType, properties)
 	if err != nil {
@@ -112,6 +111,7 @@ func runCLITests(m *testing.M) int {
 	if closer, ok := manager.(interface{ Close() error }); ok {
 		defer closer.Close()
 	}
+	_, cliFixtureSupportsDiscover = manager.(store.DiscoverRequestManager)
 	router, err := pmsrest.NewRouter(manager)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)

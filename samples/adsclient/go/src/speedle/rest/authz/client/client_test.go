@@ -1,40 +1,55 @@
 package client
 
 import (
-	"log"
-	"speedle/api/authz"
+	"net"
+	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"testing"
+
+	"github.com/teramoby/speedle-plus/pkg/cfg"
+	"github.com/teramoby/speedle-plus/pkg/eval"
+	_ "github.com/teramoby/speedle-plus/pkg/store/etcd"
+	_ "github.com/teramoby/speedle-plus/pkg/store/file"
+	"github.com/teramoby/speedle-plus/pkg/svcs/adsrest"
+	"github.com/teramoby/speedle-plus/samples/adsclient/go/src/speedle/api/authz"
+	"github.com/teramoby/speedle-plus/testutil/storetest"
 )
 
-var connectionProperties = map[string]string{}
-
 func TestIsAllowed(t *testing.T) {
-	client, err := New(connectionProperties)
+	location := filepath.Join(t.TempDir(), "policies.json")
+	if err := os.WriteFile(location, []byte(`{"services":[{"name":"acao","policies":[{"id":"sample","effect":"grant","principals":[["user:alan.cao"]],"permissions":[{"resource":"/home/acao/Downloads","actions":["read"]}]}]}]}`), 0600); err != nil {
+		t.Fatal(err)
+	}
+	manager := storetest.PolicyStore(t, location)
+	evaluator, err := eval.NewWithStore(&cfg.Config{}, manager)
 	if err != nil {
-		log.Printf("Error in creating a new client due to error %v.\n", err)
-		t.FailNow()
+		t.Fatal(err)
 	}
-
-	context := authz.RequestContext{
-		Subject: &authz.Subject{
-			Principals: []*authz.Principal{
-				{
-					Type: "user",
-					Name: "alan.cao",
-				},
-			},
-		},
-		ServiceName: "acao",
-		Resource:    "/home/acao/Downloads",
-		Action:      "read",
-	}
-	allowed, err := client.IsAllowed(context)
+	t.Cleanup(func() { _ = evaluator.(*eval.PolicyEvalImpl).Close() })
+	router, err := adsrest.NewRouter(evaluator)
 	if err != nil {
-		log.Printf("Error in calling IsAllowed due to error %v.\n", err)
-		t.FailNow()
+		t.Fatal(err)
 	}
-	log.Printf("Evaluation result: %v.", allowed)
+	server := httptest.NewServer(router)
+	defer server.Close()
+	host, port, err := net.SplitHostPort(server.Listener.Addr().String())
+	if err != nil {
+		t.Fatal(err)
+	}
+	client, err := New(map[string]string{authz.HOST_PROP: host, authz.ADS_PORT_PROP: port, authz.IS_SECURE_PROP: "false"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	request := authz.RequestContext{
+		Subject:     &authz.Subject{Principals: []*authz.Principal{{Type: "user", Name: "alan.cao"}}},
+		ServiceName: "acao", Resource: "/home/acao/Downloads", Action: "read",
+	}
+	allowed, err := client.IsAllowed(request)
+	if err != nil {
+		t.Fatal(err)
+	}
 	if !allowed {
-		log.Printf("Wrong result %v.", allowed)
+		t.Fatal("sample client did not receive the configured grant")
 	}
 }

@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/teramoby/speedle-plus/samples/adsclient/go/src/speedle/api/authz"
 	"log"
 	"net/http"
-	"speedle/api/authz"
 	"strconv"
 	"time"
 )
