@@ -131,8 +131,8 @@ label for workflow validation.
 
 ## Database regression allocation
 
-MySQL validation stays on charming. MongoDB validation selects
-`[self-hosted, macOS, ARM64, speedle-macos]` (fiona is macOS ARM64).
+MySQL validation stays on charming. MongoDB validation selects the
+`speedle-macos` label and checks that the runner is macOS ARM64, as fiona is.
 The MongoDB launcher owns a temporary native replica set, and both launchers use
 `scripts/ci/store_regression.py` for the same full Go and native PMS/ADS runtime
 stages. It runs every day at 17:00 UTC (01:00 GMT+8), the same time as the MySQL

@@ -20,8 +20,9 @@ concurrency:
 jobs:
   mongodb:
     name: MongoDB on macOS
-    # validate-mongodb.sh downloads the macOS ARM64 mongod.
-    runs-on: [self-hosted, macOS, ARM64, speedle-macos]
+    # validate-mongodb.sh downloads the macOS ARM64 mongod; the first step
+    # checks the platform.
+    runs-on: speedle-macos
     timeout-minutes: 60
     steps:
       - name: Verify runner identity
