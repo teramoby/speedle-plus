@@ -278,6 +278,9 @@ func (s *Store) CreateService(service *pms.Service) error {
 	defer cancel()
 	serviceWithID, _ := generateID(service)
 	insertResult, err := serviceCollection.InsertOne(ctx, serviceWithID)
+	if mongo.IsDuplicateKeyError(err) {
+		return errors.Errorf(errors.EntityAlreadyExists, "service %q already exists", service.Name)
+	}
 	if err != nil {
 		return err
 	}
@@ -443,51 +446,40 @@ func (s *Store) Type() string {
 	return StoreType
 }
 
+// parseFilter follows the shared name-filter contract. Unknown fields/operators
+// are ignored, and target strings are literals rather than aggregation paths.
 func parseFilter(filterStr string) (bson.D, error) {
-	if len(filterStr) == 0 {
-		return bson.D{{"$eq", bson.A{1, 1}}}, nil
-	}
+	all := bson.D{{"$eq", bson.A{1, 1}}}
 	values := strings.Split(filterStr, " ")
-	if len(values) == 2 {
-		field := values[0]
-		operator := values[1]
-		switch operator {
-		case "pr":
-			return bson.D{{"$gt", bson.A{"$$p." + field, nil}}}, nil
-		default:
-			log.Error("invalid name filter:", filterStr)
-			return nil, errors.Errorf(errors.InvalidRequest, "invalid filter %q", filterStr)
-		}
-
-	} else if len(values) == 3 {
-		field := values[0]
-		operator := values[1]
-		target := values[2]
-		switch operator {
-		case "eq":
-			return bson.D{{"$eq", bson.A{"$$p." + field, target}}}, nil
-		case "co":
-			return bson.D{{"$gte", bson.A{bson.D{{"$indexOfBytes", bson.A{"$$p." + field, target}}}, 0}}}, nil
-		case "sw":
-			return bson.D{{"$eq", bson.A{0, bson.D{{"$indexOfBytes", bson.A{"$$p." + field, target}}}}}}, nil
-		case "gt":
-			return bson.D{{"$gt", bson.A{"$$p." + field, target}}}, nil
-		case "ge":
-			return bson.D{{"$gte", bson.A{"$$p." + field, target}}}, nil
-		case "lt":
-			return bson.D{{"$lt", bson.A{"$$p." + field, target}}}, nil
-		case "le":
-			return bson.D{{"$lte", bson.A{"$$p." + field, target}}}, nil
-		default:
-			log.Error("invalid name filter:", filterStr)
-			return nil, errors.Errorf(errors.InvalidRequest, "invalid filter %q", filterStr)
-		}
-
-	} else {
-		log.Error("invalid filter string:", filterStr)
-		return nil, errors.Errorf(errors.InvalidRequest, "invalid filter %q", filterStr)
+	if len(values) < 2 || values[0] != "name" {
+		return all, nil
 	}
-
+	value := bson.D{{"$ifNull", bson.A{"$$p.name", ""}}}
+	target := ""
+	if len(values) > 2 {
+		target = values[2]
+	}
+	literal := bson.D{{"$literal", target}}
+	switch values[1] {
+	case "pr":
+		return bson.D{{"$ne", bson.A{value, ""}}}, nil
+	case "eq":
+		return bson.D{{"$eq", bson.A{value, literal}}}, nil
+	case "co":
+		return bson.D{{"$gte", bson.A{bson.D{{"$indexOfBytes", bson.A{value, literal}}}, 0}}}, nil
+	case "sw":
+		return bson.D{{"$eq", bson.A{0, bson.D{{"$indexOfBytes", bson.A{value, literal}}}}}}, nil
+	case "gt":
+		return bson.D{{"$gt", bson.A{value, literal}}}, nil
+	case "ge":
+		return bson.D{{"$gte", bson.A{value, literal}}}, nil
+	case "lt":
+		return bson.D{{"$lt", bson.A{value, literal}}}, nil
+	case "le":
+		return bson.D{{"$lte", bson.A{value, literal}}}, nil
+	default:
+		return all, nil
+	}
 }
 
 // For policy manager
@@ -832,6 +824,9 @@ func (s *Store) CreateFunction(function *pms.Function) (*pms.Function, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	insertResult, err := serviceCollection.InsertOne(ctx, function)
+	if mongo.IsDuplicateKeyError(err) {
+		return nil, errors.Errorf(errors.EntityAlreadyExists, "function %q already exists", function.Name)
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -869,6 +864,9 @@ func (s *Store) GetFunction(funcName string) (*pms.Function, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	singleResult := serviceCollection.FindOne(ctx, bson.M{"_id": funcName})
+	if singleResult.Err() == mongo.ErrNoDocuments {
+		return nil, errors.Errorf(errors.EntityNotFound, "function %q is not found", funcName)
+	}
 	if singleResult.Err() != nil {
 		return nil, singleResult.Err()
 	}
@@ -883,7 +881,15 @@ func (s *Store) ListAllFunctions(filter string) ([]*pms.Function, error) {
 	serviceCollection := s.client.Database(s.Database).Collection("functions")
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	cur, err := serviceCollection.Find(ctx, bson.M{})
+	condition, err := parseFilter(filter)
+	if err != nil {
+		return nil, err
+	}
+	query := bson.D{{"$expr", bson.D{{"$let", bson.D{
+		{"vars", bson.D{{"p", bson.D{{"name", "$_id"}}}}},
+		{"in", condition},
+	}}}}}
+	cur, err := serviceCollection.Find(ctx, query)
 	if err != nil {
 		return nil, err
 	}

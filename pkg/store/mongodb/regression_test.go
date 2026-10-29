@@ -250,3 +250,21 @@ func TestChangeEventDocuments(t *testing.T) {
 		}
 	}
 }
+
+func TestNameFilterValuesAreLiterals(t *testing.T) {
+	s := isolatedStore(t)
+	if err := s.CreateService(&pms.Service{Name: "app", Policies: []*pms.Policy{{Name: "$special"}, {Name: "ordinary"}}}); err != nil {
+		t.Fatal(err)
+	}
+	policies, err := s.ListAllPolicies("app", "name eq $special")
+	if err != nil || len(policies) != 1 || policies[0].Name != "$special" {
+		t.Fatalf("literal policy filter: %+v, %v", policies, err)
+	}
+	if _, err := s.CreateFunction(&pms.Function{Name: "$function", FuncURL: "http://function"}); err != nil {
+		t.Fatal(err)
+	}
+	functions, err := s.ListAllFunctions("name eq $function")
+	if err != nil || len(functions) != 1 || functions[0].Name != "$function" {
+		t.Fatalf("literal function filter: %+v, %v", functions, err)
+	}
+}

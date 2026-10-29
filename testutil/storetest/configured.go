@@ -129,6 +129,9 @@ func NewFixture(initial *pms.PolicyStore) (*Fixture, error) {
 		return nil, err
 	}
 	fixture := &Fixture{Store: manager, Config: configuration}
+	// Retain the exact owned namespace even if a caller changes its config map.
+	mongoURI, _ := configuration.StoreProps["MongoURI"].(string)
+	mongoDatabase, _ := configuration.StoreProps["MongoDatabase"].(string)
 	fixture.cleanup = func() {
 		if closer, ok := manager.(interface{ Close() error }); ok {
 			_ = closer.Close()
@@ -138,9 +141,9 @@ func NewFixture(initial *pms.PolicyStore) (*Fixture, error) {
 		if configuration.StoreType == "mongodb" {
 			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 			defer cancel()
-			client, err := mongo.Connect(ctx, options.Client().ApplyURI(configuration.StoreProps["MongoURI"].(string)))
+			client, err := mongo.Connect(ctx, options.Client().ApplyURI(mongoURI))
 			if err == nil {
-				_ = client.Database(configuration.StoreProps["MongoDatabase"].(string)).Drop(ctx)
+				_ = client.Database(mongoDatabase).Drop(ctx)
 				_ = client.Disconnect(ctx)
 			}
 		}
