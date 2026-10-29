@@ -11,22 +11,22 @@ on:
 permissions:
   contents: read
 
-# fiona runs one MongoDB regression at a time; its replica set and the etcd
-# ports the Go tests use are host-wide.
+# One MongoDB regression at a time: the etcd ports the Go tests use are
+# host-wide.
 concurrency:
   group: mongodb-nightly
   cancel-in-progress: false
 
 jobs:
   mongodb:
-    name: MongoDB on fiona
-    runs-on: fiona-speedle
+    name: MongoDB on macOS
+    # validate-mongodb.sh downloads the macOS ARM64 mongod.
+    runs-on: [self-hosted, macOS, ARM64, speedle-macos]
     timeout-minutes: 60
     steps:
       - name: Verify runner identity
         run: |
           set -euo pipefail
-          test "${RUNNER_NAME}" = fiona-speedle
           test "${RUNNER_OS}" = macOS
           test "${RUNNER_ARCH}" = ARM64
           echo "MongoDB runner: ${RUNNER_NAME} (${RUNNER_OS}/${RUNNER_ARCH})"
