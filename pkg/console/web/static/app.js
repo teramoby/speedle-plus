@@ -3,8 +3,10 @@ import { createApi } from './api.js';
 import { h, mount } from './dom.js';
 import { getLocale, initLocale, setLocale, t } from './i18n.js';
 import { alertBox, loading } from './views/common.js';
+import { diagnoseView } from './views/diagnose.js';
 import { editorView } from './views/editor.js';
 import { loginView } from './views/login.js';
+import { rolesView } from './views/roles.js';
 import { listView } from './views/service.js';
 import { servicesView } from './views/services.js';
 
@@ -22,7 +24,7 @@ export function resolve(parts) {
     if (kind === 'policies' || kind === 'role-policies') {
       return id ? { view: 'editor', service, kind, id } : { view: 'list', service, kind };
     }
-    if (kind === 'roles') return { view: 'roles', service };
+    if (kind === 'roles') return { view: 'roles', service, role: id || '' };
     return { view: 'list', service, kind: 'policies' };
   }
   if (section === 'diagnose') return { view: 'diagnose' };
@@ -99,7 +101,8 @@ export function start(root = document.getElementById('app')) {
       if (target.view === 'services') await servicesView(ctx, main);
       else if (target.view === 'list') await listView(ctx, main, target.service, target.kind);
       else if (target.view === 'editor') await editorView(ctx, main, target.service, target.kind, target.id);
-      else await servicesView(ctx, main);
+      else if (target.view === 'roles') await rolesView(ctx, main, target.service, target.role);
+      else if (target.view === 'diagnose') await diagnoseView(ctx, main);
     } catch (err) {
       if (err.status === 401) { ctx.me = null; renderChrome(); route(); return; }
       mount(main, alertBox(err));

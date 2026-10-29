@@ -201,6 +201,13 @@ func TestAdministrator(t *testing.T) {
 	b.do("POST", "/console/api/ads/diagnose", `{"subject":{"principals":[{"type":"user","name":"bob"}]},"serviceName":"speedle-console","resource":"console","action":"read"}`, nil, http.StatusOK)
 	b.do("DELETE", policy, "", nil, http.StatusNoContent)
 
+	// Names are decoded once: %41 stays %41 and does not become A.
+	b.do("POST", "/console/api/pms/service", `{"name":"a%41"}`, nil, http.StatusCreated)
+	b.do("GET", "/console/api/pms/service/a%2541", "", nil, http.StatusOK)
+	b.do("GET", "/console/api/pms/service/aA", "", nil, http.StatusNotFound)
+	b.do("GET", "/console/api/services/a%2541/role-graph", "", nil, http.StatusOK)
+	b.do("GET", "/console/api/pms/service/a%2Fb", "", nil, http.StatusBadRequest)
+
 	// Cross-site and CSRF-less writes are refused.
 	b.do("DELETE", "/console/api/pms/service/app", "", map[string]string{"Origin": "https://evil.example"}, http.StatusForbidden)
 	b.csrf = ""

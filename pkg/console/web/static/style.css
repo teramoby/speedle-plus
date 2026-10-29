@@ -100,3 +100,40 @@ input[type=search] { max-width: 320px; }
   .perm-row { grid-template-columns: 1fr; }
   .grid { display: block; overflow-x: auto; }
 }
+
+/* Roles and diagnosis */
+.check { display: inline-flex; gap: 6px; align-items: center; font-weight: 400; }
+.graph-box { overflow: auto; background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 8px; max-height: 70vh; }
+.graph .node rect { fill: var(--panel); stroke: var(--muted); stroke-width: 1.2; }
+.graph .node text { fill: var(--text); font-size: 13px; }
+.graph .node.role rect { fill: var(--code-bg); stroke: var(--accent); }
+.graph .node.role { cursor: pointer; }
+.graph .node.role:focus { outline: none; }
+.graph .node.role:focus rect, .graph .node.selected rect { stroke-width: 3; stroke: var(--focus); }
+.graph .node.everyone rect { stroke-dasharray: 4 3; }
+.graph .node.cycle rect { stroke: var(--danger); }
+.graph .node.undefined rect { stroke: var(--warning-text); stroke-dasharray: 2 2; }
+.graph .node.unused text { fill: var(--muted); }
+.graph .edge { fill: none; stroke: var(--muted); stroke-width: 1.4; }
+.graph .edge.deny { stroke: var(--danger); }
+.graph .edge.conditional { stroke-dasharray: 5 4; }
+.graph .arrowhead { fill: var(--muted); }
+.legend { font-size: 13px; }
+.issues { list-style: none; padding: 0; margin: 12px 0; display: grid; gap: 6px; }
+.issue { padding: 6px 12px; border-radius: 6px; background: var(--code-bg); }
+.issue.error { background: var(--danger-bg); color: var(--danger); }
+.issue.warning { background: var(--warning-bg); color: var(--warning-text); }
+.panels { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; margin-top: 16px; align-items: start; }
+.panel h2 { margin-top: 0; }
+.panel h3 { font-size: 15px; margin: 16px 0 6px; }
+.chips { list-style: none; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+.chips li { background: var(--code-bg); border-radius: 12px; padding: 2px 10px; }
+.role-list li.deny { color: var(--danger); }
+.grid-form { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0 12px; }
+.verdict { display: inline-block; font-size: 20px; font-weight: 700; padding: 4px 16px; border-radius: 6px; }
+.verdict.allowed { background: var(--code-bg); color: var(--ok); }
+.verdict.denied { background: var(--danger-bg); color: var(--danger); }
+.card + .card, .card + div > .card { margin-top: 16px; }
+@media (max-width: 900px) {
+  .panels, .grid-form { grid-template-columns: 1fr; }
+}

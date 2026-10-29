@@ -64,7 +64,8 @@ test('routes', () => {
   assert.deepEqual(resolve(['services', 'app']), { view: 'list', service: 'app', kind: 'policies' });
   assert.deepEqual(resolve(['services', 'app', 'role-policies']), { view: 'list', service: 'app', kind: 'role-policies' });
   assert.deepEqual(resolve(['services', 'app', 'policies', 'new']), { view: 'editor', service: 'app', kind: 'policies', id: 'new' });
-  assert.deepEqual(resolve(['services', 'app', 'roles']), { view: 'roles', service: 'app' });
+  assert.deepEqual(resolve(['services', 'app', 'roles']), { view: 'roles', service: 'app', role: '' });
+  assert.deepEqual(resolve(['services', 'app', 'roles', 'admin']), { view: 'roles', service: 'app', role: 'admin' });
   assert.deepEqual(resolve(['diagnose']), { view: 'diagnose' });
 });
 

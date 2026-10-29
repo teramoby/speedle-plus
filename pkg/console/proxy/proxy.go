@@ -56,9 +56,9 @@ func (p *Proxy) Routes() []Route {
 	return routes
 }
 
-// validName accepts the names PMS stores: anything printable without a
+// ValidName accepts the names PMS stores: anything printable without a
 // slash, except the dot segments a server would resolve.
-func validName(name string) bool {
+func ValidName(name string) bool {
 	if name == "" || name == "." || name == ".." || len(name) > maxNameLength || strings.Contains(name, "/") {
 		return false
 	}
@@ -77,7 +77,7 @@ func targetPath(r *http.Request, s spec) (string, bool) {
 	target := s.target
 	for name, raw := range vars {
 		value, err := url.PathUnescape(raw)
-		if err != nil || !validName(value) {
+		if err != nil || !ValidName(value) {
 			return "", false
 		}
 		target = strings.ReplaceAll(target, "{"+name+"}", url.PathEscape(value))

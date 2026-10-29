@@ -92,17 +92,23 @@ func NewRouter(c *Components) *mux.Router {
 	router.UseEncodedPath()
 	router.Use(securityHeaders)
 
-	api := router.PathPrefix(APIPath).Subrouter()
-	api.Methods(http.MethodGet).Path("/config").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		auth.SendJSON(w, http.StatusOK, publicConfig{DevMode: c.Guard.DevMode, AuthzService: c.AuthzService})
-	})
-	api.Methods(http.MethodPost).Path("/login").HandlerFunc(c.Guard.Login)
-	api.Methods(http.MethodPost).Path("/logout").HandlerFunc(c.Guard.Logout)
-	api.Methods(http.MethodGet).Path("/me").Handler(c.Guard.Require("", http.HandlerFunc(c.Guard.Me)))
-	for _, route := range c.Proxy.Routes() {
-		api.Methods(route.Method).Path(route.Path).Handler(c.Guard.Require(route.Action, route.Handler))
+	// Routes sit on the root router: in this mux version a subrouter does
+	// not match encoded paths, and would decode names twice.
+	api := func(method, path string, handler http.Handler) {
+		router.Methods(method).Path(APIPath + path).Handler(handler)
 	}
-	api.PathPrefix("/").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	api(http.MethodGet, "/config", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		auth.SendJSON(w, http.StatusOK, publicConfig{DevMode: c.Guard.DevMode, AuthzService: c.AuthzService})
+	}))
+	api(http.MethodPost, "/login", http.HandlerFunc(c.Guard.Login))
+	api(http.MethodPost, "/logout", http.HandlerFunc(c.Guard.Logout))
+	api(http.MethodGet, "/me", c.Guard.Require("", http.HandlerFunc(c.Guard.Me)))
+	api(http.MethodGet, "/services/{service}/role-graph", c.Guard.Require(auth.ActionRead, http.HandlerFunc(c.RoleGraph)))
+	api(http.MethodGet, "/services/{service}/roles/{role}/holders", c.Guard.Require(auth.ActionRead, http.HandlerFunc(c.RoleHolders)))
+	for _, route := range c.Proxy.Routes() {
+		api(route.Method, route.Path, c.Guard.Require(route.Action, route.Handler))
+	}
+	router.PathPrefix(APIPath + "/").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		auth.SendError(w, http.StatusNotFound, "No such console API.")
 	})
 

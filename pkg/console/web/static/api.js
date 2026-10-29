@@ -77,6 +77,10 @@ export function createApi({ fetch = globalThis.fetch.bind(globalThis), base = '/
     updateRolePolicy: (s, p, etag) => request('PUT', `${svc(s)}/role-policy/${enc(p.id)}`, { body: p, ifMatch: etag }),
     deleteRolePolicy: (s, id) => request('DELETE', `${svc(s)}/role-policy/${enc(id)}`),
 
+    roleGraph: (s, includeGlobal = true) => get(`/services/${enc(s)}/role-graph${includeGlobal ? '' : '?includeGlobal=false'}`),
+    roleHolders: (s, role, includeGlobal = true) =>
+      get(`/services/${enc(s)}/roles/${enc(role)}/holders${includeGlobal ? '' : '?includeGlobal=false'}`),
+
     isAllowed: async (req) => (await request('POST', '/ads/is-allowed', { body: req })).data,
     grantedRoles: async (req) => (await request('POST', '/ads/all-granted-roles', { body: req })).data,
     grantedPermissions: async (req) => (await request('POST', '/ads/all-granted-permissions', { body: req })).data,
