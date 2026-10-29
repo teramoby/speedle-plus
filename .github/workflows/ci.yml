@@ -21,11 +21,12 @@ jobs:
   # Run only what a change can affect:
   #   go      - Go lint/build: anything outside docs/, website/ and root
   #             Markdown, including CI configuration
-  #   website - Playground engine and site tooling (build job runs verify.sh,
-  #             including the generated-site checks)
-  #   docs    - published GitHub Pages content only: the light site job
-  # An unknown base (workflow_dispatch, new branch) runs everything.
-  # MySQL, MongoDB and the Docker storage guides run nightly, not here.
+  #   website - Playground engine and site tooling
+  #   docs    - published GitHub Pages content
+  # The build job runs verify.sh, including the generated-site checks, for
+  # any of them. An unknown base (workflow_dispatch, new branch) runs
+  # everything. Every test runs on the self-hosted runners through the
+  # worker; MySQL, MongoDB and the Docker storage guides run nightly.
   changes:
     name: changes
     runs-on: ubuntu-latest
@@ -77,40 +78,6 @@ jobs:
           } >> "${GITHUB_OUTPUT}"
           echo "Go: ${go}; website tooling: ${website}; docs: ${docs}"
 
-  site:
-    name: site
-    needs: changes
-    # The build job's verify.sh already includes these checks.
-    if: needs.changes.outputs.docs == 'true' && needs.changes.outputs.go != 'true' && needs.changes.outputs.website != 'true'
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          ref: ${{ github.sha }}
-          persist-credentials: false
-          # site.test.cjs compares the homepage with a historical commit.
-          fetch-depth: 0
-
-      - name: Setup Node
-        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
-        with:
-          node-version: '22'
-          package-manager-cache: false
-
-      # The Playground release checks without rebuilding its Go engine.
-      - name: Verify site
-        run: |
-          set -euo pipefail
-          node website/playground-engine/tests/form-model.test.cjs
-          node website/playground-engine/tests/form-dom.test.cjs
-          PLAYGROUND_LOCALE=zh node website/playground-engine/tests/form-dom.test.cjs
-          node website/playground-engine/tests/site.test.cjs
-          python3 website/tests/test_language_routes.py
-          python3 website/localize-links.py docs --check
-          website/playground-engine/verify-hugo.sh
-
   lint:
     name: lint
     needs: changes
@@ -131,7 +98,7 @@ jobs:
   build:
     name: build
     needs: changes
-    if: needs.changes.outputs.go == 'true' || needs.changes.outputs.website == 'true'
+    if: needs.changes.outputs.go == 'true' || needs.changes.outputs.website == 'true' || needs.changes.outputs.docs == 'true'
     uses: teramoby/speedle-plus/.github/workflows/go-ci-worker.yml@master
     with:
       mode: build

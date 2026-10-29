@@ -13,7 +13,7 @@ const read = name => fs.readFileSync(path.join(root, '.github/workflows', name),
 const sources = {
   ci: read('ci.yml'), review: read('reviewbot.yml'),
   commands: read('reviewbot-command.yml'), inline: read('reviewbot-inline.yml'),
-  nightly: read('nightly.yml'), weekly: read('weekly.yml'),
+  nightly: read('nightly.yml'), weekly: read('weekly.yml'), mongodb: read('mongodb-nightly-validation.yml'),
 };
 function jobs(source) {
   const section = source.split(/^jobs:\s*$/m)[1];
@@ -94,7 +94,7 @@ function script(block, name) {
 }
 
 test('review and command jobs retain their explicit runner policies and isolated Speedle label', () => {
-  assert.deepEqual(Object.keys(job.ci), ['changes', 'site', 'lint', 'test', 'build']);
+  assert.deepEqual(Object.keys(job.ci), ['changes', 'lint', 'test', 'build']);
   assert.doesNotMatch(sources.ci.replace(/^\s*#.*$/gm, ''), /mysql|mongo|check_etcd/i, 'database backends run nightly, not per PR');
   assert.deepEqual(Object.keys(job.review), ['diff-regression', 'review', 'publish', 'automerge-dependabot']);
   assert.deepEqual(Object.keys(job.commands), ['prepare', 'analyze', 'publish']);
@@ -150,10 +150,21 @@ test('Go CI caller delegates only the task mode to the protected default-branch 
   assert.match(sources.ci, /^on:\n(?:  #.*\n)*  push:\n    branches: \[master\]\n  pull_request:\n  workflow_dispatch:\n/m);
   for (const id of ['lint', 'test', 'build']) assert.deepEqual(workerInputs(job.ci[id], id), {mode: id});
   assert.match(job.ci.test, /name: test$/m);
-  for (const id of ['changes', 'site']) {
-    assert.equal(route(job.ci[id]), 'ubuntu-latest');
-    assert.doesNotMatch(job.ci[id], /secrets\.|uses: teramoby/);
+  assert.equal(route(job.ci.changes), 'ubuntu-latest');
+  assert.doesNotMatch(job.ci.changes, /secrets\.|uses: teramoby/);
+  // The site checks run in the worker's build (verify.sh) for docs changes too.
+  assert.match(value(job.ci.build, 'if'), /needs\.changes\.outputs\.docs == 'true'/);
+});
+test('every test job runs on the Speedle runners; only classification and reporting are hosted', () => {
+  const hosted = {ci: ['changes'], nightly: ['report'], weekly: ['report']};
+  for (const [kind, ids] of Object.entries(hosted)) {
+    for (const [id, block] of Object.entries(job[kind])) {
+      if (ids.includes(id)) continue;
+      assert.equal(value(block, 'uses'), worker, `${kind}.${id} must run through the protected worker`);
+    }
   }
+  assert.deepEqual(Object.keys(job.mongodb), ['mongodb']);
+  assert.equal(route(job.mongodb.mongodb), 'speedle-runner');
 });
 test('scheduled suites run through the worker and report from a hosted job', () => {
   const cron = {nightly: "'0 17 * * *'", weekly: "'0 11 * * 0'"};  // 01:00 and Sunday 19:00 GMT+8
@@ -165,7 +176,7 @@ test('scheduled suites run through the worker and report from a hosted job', () 
     assert.deepEqual(workerInputs(job[kind].run, `${kind}.run`), {mode: kind});
     const report = job[kind].report;
     assert.equal(route(report), 'ubuntu-latest');
-    assert.match(report, /needs: (?:run|\[run, mongodb\])$/m);
+    assert.match(report, /needs: run$/m);
     assert.match(report, /if: always\(\) && github.repository == 'teramoby\/speedle-plus'/);
     assert.match(report, /permissions:\n      contents: read\n      issues: write\n/);
     assert.match(report, /persist-credentials: false/);
@@ -179,13 +190,11 @@ test('scheduled suites run through the worker and report from a hosted job', () 
       if (id !== 'report') assert.doesNotMatch(block, /secrets\./, `${kind}.${id} must not receive secrets`);
     }
   }
-  assert.deepEqual(Object.keys(job.nightly), ['run', 'mongodb', 'report']);
+  assert.deepEqual(Object.keys(job.nightly), ['run', 'report']);
   assert.deepEqual(Object.keys(job.weekly), ['run', 'report']);
-  assert.equal(route(job.nightly.mongodb), 'ubuntu-latest');
-  assert.match(job.nightly.mongodb, /SPEEDLE_REQUIRE_MONGO: '1'/);
-  assert.match(job.nightly.mongodb, /!\(github.event_name == 'workflow_dispatch' && inputs.mysql_only\)/);
-  assert.match(job.nightly.report, /needs: \[run, mongodb\]$/m);
-  assert.match(job.nightly.report, /--source "mongodb:\$\{MONGODB_RESULT\}:mongodb-results\/go-mongodb.json"/);
+  // The nightly runs MongoDB with the other backends; this workflow is manual.
+  assert.doesNotMatch(sources.mongodb, /^  schedule:/m);
+  assert.match(sources.mongodb, /^  workflow_dispatch:$/m);
 });
 test('fixture job installs pinned Node 22 before running Node regression suites', () => {
   const block = job.review['diff-regression'];

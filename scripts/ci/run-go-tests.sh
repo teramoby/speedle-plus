@@ -4,12 +4,12 @@
 #   gate     every package once with the file store, the store-dependent
 #            packages again with etcd, the coverage gate, and both bilingual
 #            executable guides from docs/ (merge gating)
-#   nightly  race-detector full regressions of every package with file,
-#            etcd and MySQL (MySQL also runs the tagged ADS runtime/cache
-#            suite against native PMS/ADS), the etcd and MongoDB setup guides,
-#            the quick start with every supported Go
-#            release, govulncheck and the CI script tests (MongoDB runs in
-#            nightly.yml's hosted job)
+#   nightly  the same full regression (scripts/ci/store_regression.py: every
+#            package under the race detector, then the tagged ADS
+#            runtime/cache suites against native PMS/ADS) with file, etcd,
+#            MySQL and MongoDB, each on a store this run owns; the etcd and
+#            MongoDB setup guides, the quick start with every supported Go
+#            release, govulncheck and the CI script tests
 #   weekly   every package with the newest supported Go release
 #            (the gate uses the go.mod/CI release) and staticcheck
 #
@@ -45,7 +45,7 @@ check() {
   # check NAME COMMAND...: run COMMAND, record its status and log.
   local name=$1 status=0
   shift
-  if [[ "$name" == mysql-full ]]; then
+  if [[ "$name" == *-full ]]; then
     "$@" 2>&1 | tee "${results}/${name}.log" || status=$?
   else
     "$@" > "${results}/${name}.log" 2>&1 || status=$?
@@ -104,17 +104,18 @@ case "${mode}" in
       check ci-script-tests bash -c 'python3 -m unittest discover -s scripts/tests -p "test_*.py" && node --test scripts/tests/*.cjs'
       exit "${failed}"
     fi
-    listed=$(packages); mapfile -t pkgs <<< "${listed}"
-    race=(-race)
     if ! CGO_ENABLED=1 go env CC >/dev/null 2>&1 || ! command -v "$(go env CC)" >/dev/null 2>&1; then
-      race=()
       echo "race=1:race.log" >> "${results}/checks.txt"
-      echo 'The race detector needs a C compiler; tests ran without -race.' > "${results}/race.log"
+      echo 'The race detector needs a C compiler; the full regressions cannot run.' > "${results}/race.log"
       failed=1
     fi
-    gotest_json go-file STORE_TYPE=file -- -p 1 -count=1 -timeout 600s "${race[@]}" "${pkgs[@]}"
-    gotest_json go-etcd STORE_TYPE=etcd -- -p 1 -count=1 -timeout 600s "${race[@]}" "${pkgs[@]}"
+    # Every backend runs the identical regression; the launchers only provision
+    # the store, and the engine writes <backend>-*.json into RESULTS_DIR.
+    export RESULTS_DIR="${results}"
+    check file-full env STORE_TYPE=file python3 scripts/ci/run-store-tests.py
+    check etcd-full bash scripts/ci/validate-etcd.sh
     check mysql-full python3 scripts/ci/run-mysql-tests.py
+    check mongodb-full bash scripts/ci/validate-mongodb.sh
     check etcd-docs with_docker python3 website/tests/check_etcd.py
     check mongodb-docs with_docker python3 website/tests/check_mongodb.py
     for toolchain in "${all_toolchains[@]}"; do
