@@ -6,10 +6,10 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"os"
 
-	logging "github.com/teramoby/speedle-plus/pkg/logging"
 	log "github.com/sirupsen/logrus"
+	logging "github.com/teramoby/speedle-plus/pkg/logging"
 )
 
 type Config struct {
@@ -70,24 +70,24 @@ func main() {
 }
 
 func initLog() error {
-	raw, err := ioutil.ReadFile("./config.json")
+	raw, err := os.ReadFile("./config.json")
 	if err != nil {
-		return fmt.Errorf("Failed to load the config file, err: %v. \n", err)
+		return fmt.Errorf("failed to load the config file, err: %v", err)
 	}
 
 	var config Config
 	err = json.Unmarshal(raw, &config)
 	if err != nil {
-		return fmt.Errorf("Failed to parse the config file, err: %v. \n", err)
+		return fmt.Errorf("failed to parse the config file, err: %v", err)
 	}
 
 	if config.LogConfig != nil {
 		err = logging.InitLog(config.LogConfig)
 		if err != nil {
-			return fmt.Errorf("Failed to initialize the log library, err: %v. \n", err)
+			return fmt.Errorf("failed to initialize the log library, err: %v", err)
 		}
 	} else {
-		return fmt.Errorf("No any log configurations.\n")
+		return fmt.Errorf("no log configurations")
 	}
 
 	return nil

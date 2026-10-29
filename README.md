@@ -93,7 +93,7 @@ See [Embedded mode](https://speedle.io/docs/deployment-embeded/) for details.
 
 ## Install
 
-With Go 1.25 or newer:
+With Go 1.26 or newer:
 
 ```
 go install github.com/teramoby/speedle-plus/cmd/...@latest
@@ -105,7 +105,7 @@ This installs `spctl`, `speedle-pms` and `speedle-ads` into `$(go env GOPATH)/bi
 
 ### Prerequisites
 
--   Go 1.25 or newer <https://go.dev/doc/install>. Speedle+ supports the three most recent Go releases. Go sets `GOROOT` and `GOPATH` itself.
+-   Go 1.26 or newer <https://go.dev/doc/install>. Speedle+ supports the two most recent Go releases. Go sets `GOROOT` and `GOPATH` itself.
 
 ### Steps
 

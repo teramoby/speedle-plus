@@ -162,7 +162,7 @@ func TestGetResourcesNoPrincDef(t *testing.T) {
 		return
 	}
 	t.Logf("resActions %v", resActsList)
-	if "/node1" != resActsList[0].Resource || "get" != resActsList[0].Actions[0] {
+	if resActsList[0].Resource != "/node1" || resActsList[0].Actions[0] != "get" {
 		t.Fatalf("Resource name is incorrect, expected [%v], but returned [%v].", "/node1:get", resActsList[0].Resource)
 		return
 	}
@@ -289,16 +289,12 @@ func TestGetResourcesMatch(t *testing.T) {
 		switch resActs.Resource {
 		case "/node1":
 			foundResActs1 = true
-			break
 		case "/node2":
 			foundResActs2 = true
-			break
 		case "/node3":
 			foundResActs3 = true
-			break
 		case "/node4":
 			foundResActs4 = true
-			break
 		}
 	}
 	if !foundResActs1 {

@@ -1,5 +1,5 @@
-//Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
-//Licensed under the Universal Permissive License (UPL) Version 1.0 as shown at http://oss.oracle.com/licenses/upl.
+// Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+// Licensed under the Universal Permissive License (UPL) Version 1.0 as shown at http://oss.oracle.com/licenses/upl.
 package eval
 
 import (
@@ -17,9 +17,9 @@ import (
 	"github.com/teramoby/speedle-plus/api/ext"
 	"github.com/teramoby/speedle-plus/api/pms"
 
+	log "github.com/sirupsen/logrus"
 	"github.com/teramoby/speedle-plus/3rdparty/github.com/Knetic/govaluate"
 	"github.com/teramoby/speedle-plus/pkg/errors"
-	log "github.com/sirupsen/logrus"
 )
 
 const (
@@ -123,9 +123,7 @@ func (frc *FuncResultCache) CleanExpiredResult() {
 func (frc *FuncResultCache) generateCustomerExpressionFunction(cfdUrl *string, cf *pms.Function) (govaluate.ExpressionFunction, error) {
 	return func(arguments ...interface{}) (interface{}, error) {
 		params := []interface{}{}
-		for _, param := range arguments {
-			params = append(params, param)
-		}
+		params = append(params, arguments...)
 		request := &ext.CustomerFunctionRequest{
 			Params: params,
 		}
@@ -160,9 +158,8 @@ func CallCustomerFunctionViaDelegator(delegatorUrl string, cf *pms.Function, req
 		Function: cf,
 		Request:  request,
 	}
-	var client *http.Client
 	//assume that http is used when communicate with delegator.
-	client = &http.Client{
+	var client *http.Client = &http.Client{
 		Timeout: defaultCustomerFunctionCallTimeout,
 	}
 	buf, err := json.Marshal(req2Delegator)

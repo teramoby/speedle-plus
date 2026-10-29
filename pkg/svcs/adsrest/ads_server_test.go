@@ -1,5 +1,5 @@
-//Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
-//Licensed under the Universal Permissive License (UPL) Version 1.0 as shown at http://oss.oracle.com/licenses/upl.
+// Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+// Licensed under the Universal Permissive License (UPL) Version 1.0 as shown at http://oss.oracle.com/licenses/upl.
 package adsrest
 
 import (
@@ -74,9 +74,7 @@ func newEvaluator(conf *cfg.Config) (eval.InternalEvaluator, error) {
 				token := ctx.Subject.Token
 				s, err := as.AssertToken(token, tokenType, "", nil)
 				if err == nil {
-					for _, p := range s.Principals {
-						ctx.Subject.Principals = append(ctx.Subject.Principals, p)
-					}
+					ctx.Subject.Principals = append(ctx.Subject.Principals, s.Principals...)
 				} else {
 					return err
 				}

@@ -63,7 +63,6 @@ type lineCtx struct {
 	origin  string
 	trimed  string
 	ltype   lineType
-	errLoc  int
 	section string
 	phs     phase
 	service *pms.Service
@@ -110,6 +109,7 @@ func (s *Store) readSPDLWithoutLock() (*pms.PolicyStore, error) {
 				return &emptyPS, err
 			}
 		default:
+			//lint:ignore ST1005 Preserve the public parser error text for existing callers.
 			return &emptyPS, fmt.Errorf("Unknown line type %s", lc.ltype)
 		}
 	}
@@ -129,6 +129,7 @@ func getServiceSection(ps *pms.PolicyStore, service string) *pms.Service {
 func processPolicySection(ps *pms.PolicyStore, lc *lineCtx) error {
 	// Check if in correct service
 	if lc.phs == phaseRoot {
+		//lint:ignore ST1005 Preserve the public parser error text for existing callers.
 		return fmt.Errorf("Policy section %s is in wrong service section", lc.section)
 	}
 	lc.phs = phasePolicy
@@ -139,6 +140,7 @@ func processPolicySection(ps *pms.PolicyStore, lc *lineCtx) error {
 func processRolePolicySection(ps *pms.PolicyStore, lc *lineCtx) error {
 	// Check if in correct service
 	if lc.phs == phaseRoot {
+		//lint:ignore ST1005 Preserve the public parser error text for existing callers.
 		return fmt.Errorf("Policy section %s is in wrong service section", lc.section)
 	}
 	lc.phs = phaseRolepolicy
@@ -171,6 +173,7 @@ func processSection(ps *pms.PolicyStore, lc *lineCtx) error {
 	case lc.section == "rolepolicy":
 		return processRolePolicySection(ps, lc)
 	default:
+		//lint:ignore ST1005 Preserve the public parser error text for existing callers.
 		return fmt.Errorf("Unknown section %s", lc.section)
 	}
 }
@@ -202,6 +205,7 @@ func processPolicyDef(ps *pms.PolicyStore, lc *lineCtx) error {
 	case phaseRolepolicy:
 		return processRolePolicyPDL(ps, lc)
 	default:
+		//lint:ignore ST1005 Preserve the public parser error text for existing callers.
 		return fmt.Errorf("Wrong policy definition at line %d", lc.no)
 	}
 }
@@ -223,12 +227,14 @@ func determineType(lc *lineCtx) error {
 	}
 
 	if lc.trimed[0] == ']' {
+		//lint:ignore ST1005 Preserve the public parser error text for existing callers.
 		return fmt.Errorf("Syntax error near %s at line %d", lc.trimed, lc.no)
 	}
 
 	if lc.trimed[0] == '[' {
 		if len(lc.trimed) == 2 || lc.trimed[len(lc.trimed)-1] != ']' {
 			// This is an error, begin with [, but don't end with ]
+			//lint:ignore ST1005 Preserve the public parser error text for existing callers.
 			return fmt.Errorf("Syntax error near %s at line %d", lc.trimed, lc.no)
 		}
 		// length > 2 and wrap with []

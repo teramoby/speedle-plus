@@ -16,8 +16,8 @@ import (
 	"github.com/teramoby/speedle-plus/pkg/httputils"
 	"github.com/teramoby/speedle-plus/pkg/logging"
 
-	"github.com/teramoby/speedle-plus/pkg/svcs"
 	log "github.com/sirupsen/logrus"
+	"github.com/teramoby/speedle-plus/pkg/svcs"
 )
 
 type JsonAttribute struct {
@@ -240,7 +240,7 @@ func ConvValue(dataType string, value interface{}) (interface{}, error) {
 
 func DumpRequestAttributes(attrs []*JsonAttribute) (map[string]interface{}, error) {
 	// No attributes found
-	if attrs == nil || len(attrs) == 0 {
+	if len(attrs) == 0 {
 		return nil, nil
 	}
 

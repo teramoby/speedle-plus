@@ -189,10 +189,8 @@ func TestGetDirectRolesMatch(t *testing.T) {
 		switch role {
 		case "role1":
 			foundRole1 = true
-			break
 		case "role2":
 			foundRole2 = true
-			break
 		}
 	}
 	if foundRole1 {

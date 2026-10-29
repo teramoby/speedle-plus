@@ -39,6 +39,7 @@ func ParsePolicy(cmd, name string) (*pms.Policy, io.Reader, error) {
 		return nil, nil, err
 	}
 	if len(perms) == 0 {
+		//lint:ignore ST1005 Preserve the public parser error text for existing callers.
 		return nil, nil, errors.New("No permission found")
 	}
 	condition, _, err := getCondition(cmd, i)
@@ -72,6 +73,7 @@ func ParseRolePolicy(cmd, name string) (*pms.RolePolicy, io.Reader, error) {
 		return nil, nil, err
 	}
 	if len(roles) == 0 {
+		//lint:ignore ST1005 Preserve the public parser error text for existing callers.
 		return nil, nil, errors.New("No role found")
 	}
 	resources, resExps, i, err := getResources(cmd, i)

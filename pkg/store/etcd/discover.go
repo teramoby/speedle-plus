@@ -7,11 +7,11 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"context"
 	"github.com/teramoby/speedle-plus/api/ads"
 	"github.com/teramoby/speedle-plus/api/pms"
 	"github.com/teramoby/speedle-plus/pkg/errors"
 	"github.com/teramoby/speedle-plus/pkg/store"
-	"golang.org/x/net/context"
 
 	"time"
 
@@ -173,7 +173,7 @@ func (s *Store) ResetDiscoverRequests(serviceName string) error {
 	return nil
 }
 
-//This method is implemented as common method at evaluator part
+// This method is implemented as common method at evaluator part
 func (d *Store) GeneratePolicies(serviceName, principalType, principalName, principalIDD string) (map[string]*pms.Service, int64, error) {
 	requests, revision, err := d.GetDiscoverRequests(serviceName)
 	if err != nil {

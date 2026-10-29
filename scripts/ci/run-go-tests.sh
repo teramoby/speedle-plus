@@ -6,7 +6,7 @@
 #   nightly  race-detector run of every package with both stores, the
 #            quick start with every supported Go release, govulncheck and the
 #            CI script tests
-#   weekly   every package with the oldest and newest supported Go releases
+#   weekly   every package with the newest supported Go release
 #            (the gate uses the go.mod/CI release) and staticcheck
 #
 # nightly and weekly never stop at the first failure: each suite writes its
@@ -23,8 +23,8 @@ results=${RESULTS_DIR:-test-results}
 # store or none, so running them twice would repeat identical work.
 store_dependent=(./pkg/eval ./cmd/spctl/command)
 # Supported Go releases besides the CI default (see the quick start).
-other_toolchains=(go1.25.14 go1.27.3)
-all_toolchains=(go1.25.14 go1.26.10 go1.27.3)
+other_toolchains=(go1.27.3)
+all_toolchains=(go1.26.10 go1.27.3)
 
 packages() {
   # MongoDB runs in the weekly hosted job; generated protobuf packages,

@@ -6,6 +6,7 @@ package etcd
 import (
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 	"testing"
 	"time"
@@ -32,6 +33,20 @@ func testMain(m *testing.M) int {
 	storeConfig, err = cfg.ReadStoreConfig("./etcdStoreConfig.json")
 	if err != nil {
 		log.Fatal("fail to read config file", err)
+	}
+	// ReadyNotify does not wait for the HTTP gateway's logrus.New call.
+	// Finish HTTP startup before m.Run redirects os.Stderr for test2json.
+	client := &http.Client{Timeout: 10 * time.Second}
+	defer client.CloseIdleConnections()
+	response, err := client.Get("http://localhost:2379/health")
+	if err != nil {
+		log.Print("embedded etcd HTTP startup failed: ", err)
+		return 1
+	}
+	response.Body.Close()
+	if response.StatusCode != http.StatusOK {
+		log.Print("embedded etcd is unhealthy: ", response.Status)
+		return 1
 	}
 	return m.Run()
 }
@@ -63,7 +78,7 @@ func TestWriteReadPolicyStore(t *testing.T) {
 	if err != nil {
 		t.Fatal("fail to read policy store:", err)
 	}
-	if 10 != len(psr.Services) {
+	if len(psr.Services) != 10 {
 		t.Error("should have 10 applications in the store")
 	}
 	for _, app := range psr.Services {
@@ -118,7 +133,7 @@ func TestWriteReadDeleteService(t *testing.T) {
 		t.Log("fail to get application:", err)
 		t.FailNow()
 	}
-	if "service1" != appr.Name {
+	if appr.Name != "service1" {
 		t.Log("app name should be service1")
 		t.FailNow()
 	}
@@ -139,7 +154,7 @@ func TestWriteReadDeleteService(t *testing.T) {
 		t.Log("fail to delete application:", err)
 		t.FailNow()
 	}
-	appr, err = store.GetService("service1")
+	_, err = store.GetService("service1")
 	t.Log("get non exist service:", err)
 	if err == nil {
 		t.Log("should fail as app is already deleted")
@@ -431,7 +446,7 @@ func TestManagePolicies(t *testing.T) {
 		t.Fatal("fail to create application:", err)
 	}
 	var policy pms.Policy
-	policy.Name = fmt.Sprintf("policy1")
+	policy.Name = "policy1"
 	policy.Effect = "grant"
 	policy.Permissions = []*pms.Permission{
 		{

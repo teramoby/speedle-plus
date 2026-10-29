@@ -14,10 +14,10 @@ import (
 
 	"github.com/teramoby/speedle-plus/api/pms"
 
+	"context"
 	clientv3 "go.etcd.io/etcd/client/v3"
 	"go.etcd.io/etcd/client/v3/concurrency"
 	"go.etcd.io/etcd/server/v3/embed"
-	"golang.org/x/net/context"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -53,7 +53,7 @@ func (s *Store) destroy() error {
 	return nil
 }
 
-//read policy store from etcd3
+// read policy store from etcd3
 func (s *Store) ReadPolicyStore() (*pms.PolicyStore, error) {
 	serviceNames, err := s.GetServiceNames()
 	if err != nil {
@@ -75,7 +75,7 @@ func (s *Store) ReadPolicyStore() (*pms.PolicyStore, error) {
 	return &ps, nil
 }
 
-//write policy store to etcd3
+// write policy store to etcd3
 func (s *Store) WritePolicyStore(ps *pms.PolicyStore) error {
 	err := s.DeleteServices()
 	if err != nil {
@@ -109,7 +109,7 @@ func (s *Store) GetServiceNames() (serviceNames []string, err error) {
 		for _, kv := range resp.Kvs {
 			key := strings.TrimPrefix(string(kv.Key), serviceKeyPrefix)
 			key = strings.TrimSuffix(key, KeySeparator)
-			if len(key) > 0 && strings.Index(key, KeySeparator) == -1 {
+			if len(key) > 0 && !strings.Contains(key, KeySeparator) {
 				serviceNames = append(serviceNames, key)
 			}
 		}
@@ -174,7 +174,7 @@ func (s *Store) ListAllServices() (services []*pms.Service, err error) {
 	return services, nil
 }
 
-//TODO: to be implemented
+// TODO: to be implemented
 func (s *Store) GetServices(startName string, amount int, retrivePolcies bool) ([]*pms.Service, string, error) {
 	var services []*pms.Service
 	serviceNames, err := s.GetServiceNames()
@@ -383,7 +383,7 @@ func (s *Store) CreateService(service *pms.Service) error {
 
 }
 
-//delete application from etcd3
+// delete application from etcd3
 func (s *Store) DeleteService(serviceName string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), requestTimeout)
 	defer cancel()
@@ -413,7 +413,7 @@ func (s *Store) DeleteServices() error {
 	return nil
 }
 
-//get the storage type of the store
+// get the storage type of the store
 func (s *Store) Type() string {
 	return StoreType
 }
@@ -620,7 +620,7 @@ func watch(evalChan chan pms.StoreChangeEvent, s *Store, errChan chan error, sto
 					if strings.HasPrefix(string(e.Kv.Key), s.KeyPrefix+ServicesKey+KeySeparator) {
 						serviceName := strings.TrimPrefix(string(e.Kv.Key), s.KeyPrefix+ServicesKey+KeySeparator)
 						serviceName = strings.TrimSuffix(serviceName, KeySeparator)
-						if strings.Index(serviceName, KeySeparator) == -1 {
+						if !strings.Contains(serviceName, KeySeparator) {
 							evalChan <- pms.StoreChangeEvent{Type: pms.SERVICE_DELETE, ID: id, Content: []string{serviceName}}
 						}
 					} else if strings.HasPrefix(string(e.Kv.Key), s.KeyPrefix+FunctionsKey+KeySeparator) {
@@ -632,7 +632,7 @@ func watch(evalChan chan pms.StoreChangeEvent, s *Store, errChan chan error, sto
 					if strings.HasPrefix(string(e.Kv.Key), s.KeyPrefix+ServicesKey+KeySeparator) {
 						serviceName := strings.TrimPrefix(string(e.Kv.Key), s.KeyPrefix+ServicesKey+KeySeparator)
 						serviceName = strings.TrimSuffix(serviceName, KeySeparator)
-						if strings.Index(serviceName, KeySeparator) == -1 {
+						if !strings.Contains(serviceName, KeySeparator) {
 							service, err := s.GetService(serviceName)
 							if err != nil {
 								log.Warningf("Unable get service due to error %v.\n", err)
@@ -760,7 +760,7 @@ func (s *Store) GetPolicy(serviceName string, id string) (*pms.Policy, error) {
 	return &policy, nil
 }
 
-//TODO: to be implemented
+// TODO: to be implemented
 func (s *Store) GetRolePolicies(serviceName string, startID string, amount int) (policies []*pms.RolePolicy, nextID string, err error) {
 	if amount <= 0 {
 		return nil, "", errors.Errorf(errors.InvalidRequest, "invalid amount %d", amount)
@@ -929,7 +929,7 @@ func (s *Store) getRolePolicyCountImpl(serviceName string) (int64, error) {
 	return getResp.Count, nil
 }
 
-//TODO: to be implemented
+// TODO: to be implemented
 func (s *Store) GetPolicies(serviceName string, startID string, amount int) (policies []*pms.Policy, nextID string, err error) {
 	if amount <= 0 {
 		return nil, "", errors.Errorf(errors.InvalidRequest, "invalid input amount %d", amount)

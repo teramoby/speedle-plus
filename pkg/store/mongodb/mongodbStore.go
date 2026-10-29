@@ -105,7 +105,7 @@ func (s *Store) GetServiceNames() ([]string, error) {
 		return nil, err
 	}
 	names := []string{}
-	if services == nil || len(services) == 0 {
+	if len(services) == 0 {
 		return names, nil
 	}
 	for _, service := range services {
@@ -142,7 +142,7 @@ func (s *Store) GetPolicyAndRolePolicyCounts() (map[string]*pms.PolicyAndRolePol
 		return nil, err
 	}
 	countMap := make(map[string]*pms.PolicyAndRolePolicyCount)
-	if results == nil || len(results) == 0 {
+	if len(results) == 0 {
 		return countMap, nil
 	}
 	for _, res := range results {
@@ -191,8 +191,7 @@ func (s *Store) GetService(serviceName string) (*pms.Service, error) {
 }
 
 func generateID(service *pms.Service) (*pms.Service, error) {
-	var result pms.Service
-	result = *service
+	var result pms.Service = *service
 	if result.Policies == nil {
 		result.Policies = []*pms.Policy{}
 	}
@@ -255,8 +254,7 @@ func (s *Store) Watch() (pms.StorageChangeChannel, error) {
 		return nil, err
 	}
 
-	var storeChangeChan pms.StorageChangeChannel
-	storeChangeChan = make(chan pms.StoreChangeEvent)
+	var storeChangeChan pms.StorageChangeChannel = make(chan pms.StoreChangeEvent)
 
 	go func() {
 		defer func() {
@@ -273,8 +271,7 @@ func (s *Store) Watch() (pms.StorageChangeChannel, error) {
 			}
 			log.Info("-----watched event:", event)
 			log.Info("---------- fulldocument:", event["fullDocument"])
-			var ns bson.M
-			ns = event["ns"].(bson.M)
+			var ns bson.M = event["ns"].(bson.M)
 
 			//ns.coll =="services"
 			if ns["coll"] == "services" {
@@ -457,7 +454,7 @@ func (s *Store) ListAllPolicies(serviceName string, filter string) ([]*pms.Polic
 	if err = cur.All(ctx, &services); err != nil {
 		return nil, errors.New(errors.StoreError, err.Error())
 	}
-	if services == nil || len(services) == 0 {
+	if len(services) == 0 {
 		return nil, errors.Errorf(errors.EntityNotFound, "service %q is not found", serviceName)
 	}
 
@@ -487,7 +484,7 @@ func (s *Store) GetPolicyCount(serviceName string) (int64, error) {
 	if err = cur.All(ctx, &results); err != nil {
 		return -1, err
 	}
-	if results == nil || len(results) == 0 {
+	if len(results) == 0 {
 		if len(serviceName) != 0 {
 			return -1, errors.Errorf(errors.EntityNotFound, "service %q is not found", serviceName)
 		} else {
@@ -528,10 +525,10 @@ func (s *Store) GetPolicy(serviceName string, id string) (*pms.Policy, error) {
 	if err = cur.All(ctx, &services); err != nil {
 		return nil, err
 	}
-	if services == nil || len(services) == 0 {
+	if len(services) == 0 {
 		return nil, errors.Errorf(errors.EntityNotFound, "service %q is not found", serviceName)
 	}
-	if services[0].Policies == nil || len(services[0].Policies) == 0 {
+	if len(services[0].Policies) == 0 {
 		return nil, errors.Errorf(errors.EntityNotFound, "policy %q is not found", id)
 	}
 	return services[0].Policies[0], nil
@@ -621,7 +618,7 @@ func (s *Store) ListAllRolePolicies(serviceName string, filter string) ([]*pms.R
 	if err = cur.All(ctx, &services); err != nil {
 		return nil, errors.New(errors.StoreError, err.Error())
 	}
-	if services == nil || len(services) == 0 {
+	if len(services) == 0 {
 		return nil, errors.Errorf(errors.EntityNotFound, "service %q is not found", serviceName)
 	}
 
@@ -651,7 +648,7 @@ func (s *Store) GetRolePolicyCount(serviceName string) (int64, error) {
 	if err = cur.All(ctx, &results); err != nil {
 		return -1, err
 	}
-	if results == nil || len(results) == 0 {
+	if len(results) == 0 {
 		if len(serviceName) != 0 {
 			return -1, errors.Errorf(errors.EntityNotFound, "service %q is not found", serviceName)
 		} else {
@@ -692,10 +689,10 @@ func (s *Store) GetRolePolicy(serviceName string, id string) (*pms.RolePolicy, e
 	if err = cur.All(ctx, &services); err != nil {
 		return nil, err
 	}
-	if services == nil || len(services) == 0 {
+	if len(services) == 0 {
 		return nil, errors.Errorf(errors.EntityNotFound, "service %q is not found", serviceName)
 	}
-	if services[0].RolePolicies == nil || len(services[0].RolePolicies) == 0 {
+	if len(services[0].RolePolicies) == 0 {
 		return nil, errors.Errorf(errors.EntityNotFound, "rolepolicy %q is not found", id)
 	}
 	return services[0].RolePolicies[0], nil

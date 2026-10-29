@@ -265,49 +265,6 @@ func TestMats_CreateServiceWithPolicyByJsonFile(t *testing.T) {
 	testutil.RunTestCases(t, data, context)
 }
 
-// Create service with PDL file
-func testMatsServiceWithPDLFile(t *testing.T) {
-
-	sName := "TestMats_PolicyWithPDLFile"
-	sType := pms.TypeApplication
-
-	pdlFile := filepath.Join(t.TempDir(), "policies.spdl")
-
-	data := &[]testutil.TestCase{
-		{
-			Name:     "TestCreateServiceWithPdlFile",
-			Enabled:  true,
-			Executer: testutil.NewCmdTest,
-			Method:   testutil.METHOD_CREATE_SERVICE,
-			Data: &testutil.CmdTestData{
-				Param: param.CREATE_SERVICE_WITH_PDLFILE(sName, sType, pdlFile),
-				FileContent: []string{
-					"grant user User1 Role1 on res1",
-					"grant group Group1 Role2 on res2",
-					"grant group Administrators GET,POST,DELETE expr:/service/*",
-				},
-				ExpectedMsg: msg.OUTPUT_SERVICE_CREATED(),
-				OutputBody:  &pms.Service{},
-				ExpectedBody: &pms.Service{
-					Name: sName,
-					Type: sType},
-			},
-		},
-		{
-			Name:     "TestDeleteService1",
-			Enabled:  true,
-			Executer: testutil.NewCmdTest,
-			Method:   testutil.METHOD_DELETE_SERVICE,
-			Data: &testutil.CmdTestData{
-				Param:       param.DELETE_SERVICE(sName),
-				ExpectedMsg: msg.OUTPUT_SERVICE_DELETED(sName),
-			},
-		},
-	}
-
-	testutil.RunTestCases(t, data, nil)
-}
-
 // Create/Get/Delete policy
 func TestMats_Policy(t *testing.T) {
 

@@ -55,7 +55,7 @@ func TestWriteReadPolicyStore(t *testing.T) {
 	if err != nil {
 		t.Fatal("fail to read policy store:", err)
 	}
-	if 10 != len(psr.Services) {
+	if len(psr.Services) != 10 {
 		t.Error("should have 10 services in the store")
 	}
 	for _, service := range psr.Services {
@@ -79,14 +79,14 @@ func TestWriteReadService(t *testing.T) {
 	if errr != nil {
 		t.Fatal("fail to read service:", err)
 	}
-	if "app1" != servicer.Name {
+	if servicer.Name != "app1" {
 		t.Error("app name should be app1")
 	}
 	err = store.DeleteService("app1")
 	if err != nil {
 		t.Fatal("fail to delete application:", err)
 	}
-	servicer, err = store.GetService("app1")
+	_, err = store.GetService("app1")
 	t.Log(err)
 	if err == nil {
 		t.Fatal("should fail as app is already deleted")

@@ -5,17 +5,16 @@ package file
 
 import (
 	"encoding/json"
-	"io/ioutil"
 	"math"
 	"os"
 	"path/filepath"
 	"sync"
 
+	log "github.com/sirupsen/logrus"
 	"github.com/teramoby/speedle-plus/api/ads"
 	"github.com/teramoby/speedle-plus/api/pms"
 	"github.com/teramoby/speedle-plus/pkg/errors"
 	"github.com/teramoby/speedle-plus/pkg/store"
-	log "github.com/sirupsen/logrus"
 )
 
 type discoverRequestStore struct {
@@ -36,7 +35,7 @@ const (
 	discoverStoreFileName = "speedle_discover_requests.json"
 )
 
-//read policy store from file
+// read policy store from file
 func (s *discoverRequestStore) ReadDiscoverRequestStore() (*StoreContent, error) {
 
 	s.rwLock.RLock()
@@ -47,7 +46,7 @@ func (s *discoverRequestStore) ReadDiscoverRequestStore() (*StoreContent, error)
 
 func (s *discoverRequestStore) readDiscoverRequestStoreWithoutLock() (*StoreContent, error) {
 	var drs StoreContent
-	raw, err := ioutil.ReadFile(s.FileLocation)
+	raw, err := os.ReadFile(s.FileLocation)
 	if err != nil {
 		return &drs, errors.Wrapf(err, errors.StoreError, "unable to read file %q", s.FileLocation)
 	}
@@ -67,10 +66,10 @@ func (s *discoverRequestStore) WriteDiscoverRequestStore(drs *StoreContent) erro
 
 func (s *discoverRequestStore) writeDiscoverRequestStoreWithoutLock(drs *StoreContent) error {
 	jsonFile, err := os.Create(s.FileLocation)
-	defer jsonFile.Close()
 	if err != nil {
 		return errors.Wrapf(err, errors.StoreError, "unable to create file %q", s.FileLocation)
 	}
+	defer jsonFile.Close()
 	drsB, err := json.MarshalIndent(*drs, "", "    ")
 	if err != nil {
 		log.Errorf("marshal indent filed becuase of %v", err)
@@ -95,7 +94,7 @@ func getDiscoverRequestStore(s *Store) (*discoverRequestStore, error) {
 		log.Infof("discover store file location:%s\n", discoverFileLocation)
 		if _, err := os.Stat(discoverFileLocation); os.IsNotExist(err) {
 			log.Infof("discover store file does not exist, create one...")
-			if err1 := ioutil.WriteFile(discoverFileLocation, []byte("{}"), 0644); err1 != nil {
+			if err1 := os.WriteFile(discoverFileLocation, []byte("{}"), 0644); err1 != nil {
 				log.Errorf("error creating discover store file: %v\n", err1)
 				return nil, err1
 			}
@@ -122,7 +121,7 @@ func (s *discoverRequestStore) saveDiscoverRequest(discoverRequest *ads.RequestC
 		return err
 	}
 	var idx = int64(0)
-	if sContent.Requests != nil && len(sContent.Requests) > 0 {
+	if len(sContent.Requests) > 0 {
 		if math.MaxInt64 == sContent.Requests[len(sContent.Requests)-1].Index {
 			return errors.New(errors.ExceedLimit, "reach largest revision number")
 		}
@@ -149,7 +148,7 @@ func (s *discoverRequestStore) getLastDiscoverRequest(serviceName string) (*ads.
 		return nil, -1, err
 	}
 
-	if sContent.Requests != nil && len(sContent.Requests) > 0 {
+	if len(sContent.Requests) > 0 {
 		if serviceName == "" {
 			reqItem := sContent.Requests[len(sContent.Requests)-1]
 			return reqItem.Request, reqItem.Index, nil
@@ -180,7 +179,7 @@ func (s *discoverRequestStore) getDiscoverRequestsSinceRevision(serviceName stri
 		return nil, -1, err
 	}
 	requests := []*ads.RequestContext{}
-	if sContent.Requests != nil && len(sContent.Requests) > 0 {
+	if len(sContent.Requests) > 0 {
 		for _, reqItem := range sContent.Requests {
 			if reqItem.Index > revision {
 				if serviceName == "" || serviceName == reqItem.Request.ServiceName {
@@ -211,7 +210,7 @@ func (s *discoverRequestStore) getDiscoverRequests(serviceName string) ([]*ads.R
 	}
 	requests := []*ads.RequestContext{}
 
-	if sContent.Requests != nil && len(sContent.Requests) > 0 {
+	if len(sContent.Requests) > 0 {
 		for _, reqItem := range sContent.Requests {
 			if serviceName == "" || serviceName == reqItem.Request.ServiceName {
 				requests = append(requests, reqItem.Request)
@@ -241,7 +240,7 @@ func (s *discoverRequestStore) resetDiscoverRequests(serviceName string) error {
 	if err != nil {
 		return err
 	}
-	if sContent.Requests != nil && len(sContent.Requests) != 0 {
+	if len(sContent.Requests) != 0 {
 		if serviceName == "" { //reset all
 			sContent = &StoreContent{Requests: []*RequestItem{}}
 		} else {
@@ -256,7 +255,7 @@ func (s *discoverRequestStore) resetDiscoverRequests(serviceName string) error {
 	return nil
 }
 
-//Generate policies for principal based on existing request logs. Generate policies for all principals when principalXXX are empty.
+// Generate policies for principal based on existing request logs. Generate policies for all principals when principalXXX are empty.
 func (s *Store) GeneratePolicies(serviceName, principalType, principalName, principalIDD string) (map[string]*pms.Service, int64, error) {
 	if discoverStore, err := getDiscoverRequestStore(s); err == nil {
 		return discoverStore.generatePolicies(serviceName, principalType, principalName, principalIDD)

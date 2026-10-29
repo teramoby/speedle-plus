@@ -104,7 +104,7 @@ func getCommandFunc(cmd *cobra.Command, args []string) {
 			printHelpAndExit(cmd)
 		}
 		var kind string
-		if "policy" == strings.ToLower(args[0]) {
+		if strings.ToLower(args[0]) == "policy" {
 			kind = "policy"
 		} else {
 			kind = "role-policy"

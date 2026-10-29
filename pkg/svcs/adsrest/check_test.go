@@ -1,5 +1,5 @@
-//Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
-//Licensed under the Universal Permissive License (UPL) Version 1.0 as shown at http://oss.oracle.com/licenses/upl.
+// Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+// Licensed under the Universal Permissive License (UPL) Version 1.0 as shown at http://oss.oracle.com/licenses/upl.
 package adsrest
 
 import (
@@ -45,8 +45,7 @@ func TestSettingPrincipalHeader(t *testing.T) {
 		t.Fatal("failed to make test request")
 	}
 
-	var client *http.Client
-	client = &http.Client{
+	var client *http.Client = &http.Client{
 		Timeout: 5 * time.Second,
 	}
 	resp, err := client.Do(req)

@@ -8,7 +8,6 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"runtime/debug"
@@ -201,7 +200,7 @@ func (k *Parameters) serverTLSConfig() (*tls.Config, error) {
 	tlsConfig := &tls.Config{}
 
 	if k.ClientCertPath.Value != "" {
-		caCert, err := ioutil.ReadFile(k.ClientCertPath.Value)
+		caCert, err := os.ReadFile(k.ClientCertPath.Value)
 		if err != nil {
 			return nil, errors.Wrapf(err, errors.ConfigError, "unable to read client CA certification from file %s", k.ClientCertPath.Value)
 		}
@@ -223,7 +222,6 @@ func (k *Parameters) serverTLSConfig() (*tls.Config, error) {
 		tlsConfig.ClientAuth = tls.NoClientCert
 	}
 
-	tlsConfig.BuildNameToCertificate()
 	return tlsConfig, nil
 }
 

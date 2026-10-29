@@ -15,8 +15,8 @@ import (
 	"github.com/teramoby/speedle-plus/pkg/suid"
 
 	"github.com/fsnotify/fsnotify"
-	"github.com/teramoby/speedle-plus/api/pms"
 	log "github.com/sirupsen/logrus"
+	"github.com/teramoby/speedle-plus/api/pms"
 )
 
 type Store struct {
@@ -71,10 +71,10 @@ func (s *Store) WritePolicyStore(ps *pms.PolicyStore) error {
 
 func (s *Store) writePolicyStoreWithoutLock(ps *pms.PolicyStore) error {
 	jsonFile, err := os.Create(s.FileLocation)
-	defer jsonFile.Close()
 	if err != nil {
 		return errors.Wrapf(err, errors.StoreError, "unable to create file %q", s.FileLocation)
 	}
+	defer jsonFile.Close()
 	psB, err := json.MarshalIndent(ps, "", "    ")
 	if err != nil {
 		return errors.Wrap(err, errors.StoreError, "marshal indent failed")
@@ -225,8 +225,7 @@ func (s *Store) CreateService(service *pms.Service) error {
 }
 
 func generateID(service *pms.Service) (*pms.Service, error) {
-	var result pms.Service
-	result = *service
+	var result pms.Service = *service
 	for _, policy := range result.Policies {
 		policy.ID = suid.New().String()
 	}
@@ -317,8 +316,7 @@ func (s *Store) Watch() (pms.StorageChangeChannel, error) {
 		return nil, errors.Wrapf(err, errors.StoreError, "Failed to add the file %q into the watch list", s.FileLocation)
 	}
 
-	var storeChangeChan pms.StorageChangeChannel
-	storeChangeChan = make(chan pms.StoreChangeEvent)
+	var storeChangeChan pms.StorageChangeChannel = make(chan pms.StoreChangeEvent)
 
 	s.stop = make(chan struct{})
 
