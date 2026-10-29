@@ -35,10 +35,7 @@ func newStore(t *testing.T) pms.PolicyStoreManager {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { os.Chdir(wd) })
-	ps, err := store.NewStore("file", map[string]interface{}{"FileLocation": location})
-	if err != nil {
-		t.Fatal(err)
-	}
+	ps := storetest.PolicyStore(t, location)
 	return ps
 }
 
@@ -323,7 +320,14 @@ func TestFunctions(t *testing.T) {
 func TestDiscover(t *testing.T) {
 	ps := newStore(t)
 	impl := NewServiceImpl(ps)
-	manager := ps.(store.DiscoverRequestManager)
+	manager, supported := ps.(store.DiscoverRequestManager)
+	if !supported {
+		_, err := impl.GetDiscoverRequests(ctx, &pb.DiscoverRequestsRequest{})
+		if code(err) != codes.Unimplemented {
+			t.Fatal(err)
+		}
+		return
+	}
 	for _, resource := range []string{"r1", "r2"} {
 		err := manager.SaveDiscoverRequest(&ads.RequestContext{
 			Subject:     &ads.Subject{Principals: []*ads.Principal{{Type: "user", Name: "alice", IDD: "idd"}}, TokenType: "t", Token: "x"},

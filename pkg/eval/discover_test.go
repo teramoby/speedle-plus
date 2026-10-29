@@ -19,6 +19,12 @@ func TestDiscoverDoesNotStoreToken(t *testing.T) {
 		Token:      "secret-token",
 	}
 	ctx := adsapi.RequestContext{Subject: subject, ServiceName: "discover-token", Resource: "/r", Action: "get"}
+	if _, supported := testPS.(store.DiscoverRequestManager); !supported {
+		if _, _, err := evaluator.Discover(ctx); err == nil {
+			t.Fatal("Discover must report unsupported backend")
+		}
+		return
+	}
 	if _, _, err := evaluator.Discover(ctx); err != nil {
 		t.Fatal(err)
 	}

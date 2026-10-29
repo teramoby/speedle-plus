@@ -4,7 +4,8 @@
 #   gate     every package once with the file store, the store-dependent
 #            packages again with etcd, the coverage gate, and both bilingual
 #            executable guides from docs/ (merge gating)
-#   nightly  race-detector run of every package with both stores, the
+#   nightly  race-detector runs with file, etcd and MySQL (including the
+#            tagged ADS runtime/cache suite against native PMS/ADS), the
 #            quick start with every supported Go release, govulncheck and the
 #            CI script tests
 #   weekly   every package with the newest supported Go release
@@ -79,6 +80,13 @@ case "${mode}" in
     ;;
   nightly)
     mkdir -p "${results}"; : > "${results}/checks.txt"
+    # A branch can be tried immediately through the existing protected worker.
+    # Normal scheduled runs always include all backends.
+    if [[ "${GITHUB_EVENT_NAME:-}" == workflow_dispatch && -f "${GITHUB_EVENT_PATH:-}" ]] &&
+       python3 -c 'import json,sys; value=json.load(open(sys.argv[1])).get("inputs",{}).get("mysql_only",False); sys.exit(0 if value is True or value == "true" else 1)' "$GITHUB_EVENT_PATH"; then
+      check mysql-full python3 scripts/ci/run-mysql-tests.py
+      exit "${failed}"
+    fi
     listed=$(packages); mapfile -t pkgs <<< "${listed}"
     race=(-race)
     if ! CGO_ENABLED=1 go env CC >/dev/null 2>&1 || ! command -v "$(go env CC)" >/dev/null 2>&1; then
@@ -89,6 +97,7 @@ case "${mode}" in
     fi
     gotest_json go-file STORE_TYPE=file -- -p 1 -count=1 -timeout 600s "${race[@]}" "${pkgs[@]}"
     gotest_json go-etcd STORE_TYPE=etcd -- -p 1 -count=1 -timeout 600s "${race[@]}" "${store_dependent[@]}"
+    check mysql-full python3 scripts/ci/run-mysql-tests.py
     for toolchain in "${all_toolchains[@]}"; do
       check "quick-start-${toolchain}" python3 website/tests/check_quick_start.py --toolchain "${toolchain}"
     done

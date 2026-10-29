@@ -115,5 +115,5 @@ func newADSServerWithAsserter(assertserverendpoint string, t *testing.T) (*httpt
 		Endpoint: assertserverendpoint + "/assert",
 	}
 	conf.AsserterWebhookConfig = asconfig
-	return NewTestServerWithConfig(conf)
+	return NewTestServerWithConfig(t, conf)
 }

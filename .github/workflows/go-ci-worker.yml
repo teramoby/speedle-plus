@@ -15,9 +15,10 @@ jobs:
     name: execute
     # The runner group accepts only this callee at refs/heads/master. Never
     # derive runner eligibility or checkout revision from caller inputs.
-    # Tests stay on one instance to avoid shared-host port collisions.
+    # Nightly can use either charming runner; the host lock below protects
+    # legacy fixed-port tests shared by both instances.
     runs-on: >-
-      ${{ github.repository == 'teramoby/speedle-plus' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'schedule' && github.ref == 'refs/heads/master') || (github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.event.sender.type == 'User' || github.event.sender.type == 'Bot')) || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && (github.event.pull_request.user.type == 'User' || github.event.pull_request.user.type == 'Bot'))) && fromJSON((inputs.mode == 'test' || inputs.mode == 'nightly' || inputs.mode == 'weekly') && '["self-hosted","Linux","X64","charming-speedle"]' || '["self-hosted","Linux","X64","speedle-linux"]') || 'ubuntu-latest' }}
+      ${{ github.repository == 'teramoby/speedle-plus' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'schedule' && github.ref == 'refs/heads/master') || (github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.event.sender.type == 'User' || github.event.sender.type == 'Bot')) || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && (github.event.pull_request.user.type == 'User' || github.event.pull_request.user.type == 'Bot'))) && fromJSON((inputs.mode == 'test' || inputs.mode == 'weekly') && '["self-hosted","Linux","X64","charming-speedle"]' || '["self-hosted","Linux","X64","speedle-linux"]') || 'ubuntu-latest' }}
     timeout-minutes: ${{ (inputs.mode == 'nightly' || inputs.mode == 'weekly') && 150 || 30 }}
     steps:
       - name: Validate CI task
@@ -34,7 +35,7 @@ jobs:
         run: |
           set -euo pipefail
           case "${RUNNER_NAME}" in charming-speedle|charming-speedle-2) ;; *) echo 'Unexpected runner.' >&2; exit 1 ;; esac
-          case "${CI_TASK}" in test|nightly|weekly) test "${RUNNER_NAME}" = charming-speedle ;; esac
+          case "${CI_TASK}" in test|weekly) test "${RUNNER_NAME}" = charming-speedle ;; esac
           test "${RUNNER_OS}" = Linux
           command -v git >/dev/null
           command -v python3 >/dev/null
@@ -63,27 +64,6 @@ jobs:
         if: inputs.mode == 'lint'
         run: go mod tidy -diff
 
-      - name: Ensure test services are not already running
-        if: (inputs.mode == 'test' || inputs.mode == 'nightly' || inputs.mode == 'weekly') && runner.environment == 'self-hosted'
-        run: |
-          python3 - <<'PYTHON'
-          import errno
-          import socket
-          for port in (2379, 2380, 27017, 6733, 6734):
-              for family, address in ((socket.AF_INET, '0.0.0.0'), (socket.AF_INET, '127.0.0.1'), (socket.AF_INET6, '::'), (socket.AF_INET6, '::1')):
-                  try:
-                      with socket.socket(family, socket.SOCK_STREAM) as probe:
-                          probe.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-                          if family == socket.AF_INET6:
-                              probe.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 1)
-                          probe.bind((address, port))
-                  except OSError as error:
-                      if family == socket.AF_INET6 and error.errno in (errno.EAFNOSUPPORT, errno.EADDRNOTAVAIL):
-                          continue
-                      raise SystemExit(f'Test service port {port} is in use; refusing to touch an existing service.') from error
-          print('Local etcd, MongoDB, PMS and ADS test ports are unused.')
-          PYTHON
-
       - name: Setup Node for scheduled checks
         if: inputs.mode == 'nightly'
         uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
@@ -109,10 +89,36 @@ jobs:
         run: |
           set -euo pipefail
           export GOPATH="$(go env GOPATH)"
+          # The two runners share a physical host. Hold the lock across the
+          # port preflight and every service lifetime, never kill foreign jobs.
+          exec 9>/tmp/speedle-plus-test-services.lock
+          flock -w 7200 9
+          python3 - <<'PYTHON'
+          import errno
+          import socket
+          for port in (2379, 2380, 27017, 6733, 6734):
+              for family, address in ((socket.AF_INET, '0.0.0.0'), (socket.AF_INET, '127.0.0.1'), (socket.AF_INET6, '::'), (socket.AF_INET6, '::1')):
+                  try:
+                      with socket.socket(family, socket.SOCK_STREAM) as probe:
+                          probe.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+                          if family == socket.AF_INET6:
+                              probe.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 1)
+                          probe.bind((address, port))
+                  except OSError as error:
+                      if family == socket.AF_INET6 and error.errno in (errno.EAFNOSUPPORT, errno.EADDRNOTAVAIL):
+                          continue
+                      raise SystemExit(f'Test service port {port} is in use; refusing to touch an existing service.') from error
+          print('Local etcd, MongoDB, PMS and ADS test ports are unused.')
+          PYTHON
           case "${CI_TASK}" in
             test) scripts/ci/run-go-tests.sh gate ;;
             *) scripts/ci/run-go-tests.sh "${CI_TASK}" ;;
           esac
+
+      - name: Clean owned MySQL containers
+        if: always() && inputs.mode == 'nightly'
+        run: |
+          docker ps --all --quiet --filter "label=com.speedle.mysql.run=${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}" | xargs --no-run-if-empty docker rm --force
 
       - name: Upload coverage
         if: always() && inputs.mode == 'test'
