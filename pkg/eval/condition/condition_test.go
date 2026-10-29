@@ -77,6 +77,21 @@ func TestCalledNames(t *testing.T) {
 	}
 }
 
+func TestCalledNamesSkipsEscapedQuotes(t *testing.T) {
+	// More calls than Check retries, after literals with escaped quotes.
+	var b strings.Builder
+	b.WriteString(`x == '\'' && y == "\"" && [v\]w] > 0`)
+	for i := 0; i < maxRetries+2; i++ {
+		fmt.Fprintf(&b, " && f%d(a)", i)
+	}
+	if err := Check(b.String()); err != nil {
+		t.Fatal(err)
+	}
+	if got := len(calledNames(b.String())); got != maxRetries+2 {
+		t.Errorf("calledNames found %d calls, want %d", got, maxRetries+2)
+	}
+}
+
 func TestCheckParsesOnceForManyFunctions(t *testing.T) {
 	// Each unknown function used to cost another parse of the whole condition.
 	var b strings.Builder
