@@ -2,7 +2,7 @@ name: MongoDB nightly validation
 
 on:
   schedule:
-    # 01:00 GMT+8 every day, with the MySQL nightly on charming.
+    # 01:00 GMT+8 every day, after the MySQL nightly (shared group below).
     - cron: '0 17 * * *'
   workflow_dispatch:
   push:
@@ -11,25 +11,26 @@ on:
 permissions:
   contents: read
 
-# One MongoDB regression at a time: the etcd ports the Go tests use are
-# host-wide.
+# Shares the nightly's group: both use the host-wide etcd ports the Go tests
+# need, and any speedle-runner may run either.
 concurrency:
-  group: mongodb-nightly
+  group: nightly-tests
   cancel-in-progress: false
 
 jobs:
   mongodb:
-    name: MongoDB on macOS
-    # validate-mongodb.sh downloads the macOS ARM64 mongod; the first step
-    # checks the platform.
-    runs-on: speedle-macos
+    name: MongoDB
+    runs-on: speedle-runner
     timeout-minutes: 60
     steps:
       - name: Verify runner identity
         run: |
           set -euo pipefail
-          test "${RUNNER_OS}" = macOS
-          test "${RUNNER_ARCH}" = ARM64
+          # The platforms validate-mongodb.sh downloads mongod for.
+          case "${RUNNER_OS}/${RUNNER_ARCH}" in
+            macOS/ARM64 | Linux/X64) ;;
+            *) echo "Unsupported MongoDB runner ${RUNNER_OS}/${RUNNER_ARCH}" >&2; exit 1 ;;
+          esac
           echo "MongoDB runner: ${RUNNER_NAME} (${RUNNER_OS}/${RUNNER_ARCH})"
 
       - name: Checkout validation revision

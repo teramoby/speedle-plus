@@ -132,11 +132,13 @@ label for workflow validation.
 ## Database regression allocation
 
 MySQL validation stays on charming. MongoDB validation selects the
-`speedle-macos` label and checks that the runner is macOS ARM64, as fiona is.
+`speedle-runner` label, which charming, charming-2 and fiona carry, and accepts
+macOS ARM64 or Linux x64. It shares the nightly's concurrency group, so the two
+never run at once on the etcd ports.
 The MongoDB launcher owns a temporary native replica set, and both launchers use
 `scripts/ci/store_regression.py` for the same full Go and native PMS/ADS runtime
-stages. It runs every day at 17:00 UTC (01:00 GMT+8), the same time as the MySQL
-nightly, and on demand through `workflow_dispatch`.
+stages. It is scheduled every day at 17:00 UTC (01:00 GMT+8), with the MySQL
+nightly, and runs on demand through `workflow_dispatch`.
 
 Shared integration fixtures select `file`, `etcd`, `mongodb` or `mysql` through
 `STORE_TYPE`. `SPEEDLE_TEST_STORE_PROPS` supplies backend connection properties;

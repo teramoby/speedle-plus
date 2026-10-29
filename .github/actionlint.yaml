@@ -3,4 +3,4 @@ self-hosted-runner:
     - charming-speedle
     - speedle-linux
     - speedle-control
-    - speedle-macos
+    - speedle-runner
