@@ -1,11 +1,21 @@
 name: MongoDB nightly validation
 
 on:
+  schedule:
+    # 01:00 GMT+8 every day, with the MySQL nightly on charming.
+    - cron: '0 17 * * *'
+  workflow_dispatch:
   push:
     branches: [codex/mongodb-store-charming-validation, claude/mongodb-store]
 
 permissions:
   contents: read
+
+# fiona runs one MongoDB regression at a time; its replica set and the etcd
+# ports the Go tests use are host-wide.
+concurrency:
+  group: mongodb-nightly
+  cancel-in-progress: false
 
 jobs:
   mongodb:

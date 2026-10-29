@@ -135,7 +135,9 @@ MySQL validation stays on charming. MongoDB validation selects the unique
 `fiona-speedle` label directly (`runs-on: fiona-speedle`); fiona is macOS ARM64.
 The MongoDB launcher owns a temporary native replica set, and both launchers use
 `scripts/ci/store_regression.py` for the same full Go and native PMS/ADS runtime
-stages. The runner group must allow the exact validation workflow and ref.
+stages. It runs every day at 17:00 UTC (01:00 GMT+8), the same time as the MySQL
+nightly, and on demand through `workflow_dispatch`. The runner group must allow
+the exact validation workflow and ref, including `master` for scheduled runs.
 
 Shared integration fixtures select `file`, `etcd`, `mongodb` or `mysql` through
 `STORE_TYPE`. `SPEEDLE_TEST_STORE_PROPS` supplies backend connection properties;
