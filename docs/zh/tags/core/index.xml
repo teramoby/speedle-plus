@@ -100,7 +100,7 @@ curl --header &amp;#39;Content-Type: application/json&amp;#39; --data &amp;#39;{
       
       <guid>https://speedle.io/zh/docs/decisions/</guid>
       <description>什么是授权决策？ Speedle 在指定服务内评估主体、操作与资源，由应用执行结果。应区分评估错误、超时与正常的 Deny，并在出错时拒绝访问。REST、gRPC、嵌入式 Go 的数据表示不同，应分别遵循各自的 API 契约。
-运行示例前 先按快速入门编译仓库根目录下的 ./bin/spctl、./bin/speedle-pms 和 ./bin/speedle-ads，需要 Go 1.25 或更新版本、Bash、curl 和 Python 3。下面各终端都从仓库根目录运行。为本页使用一个新的策略文件；仅在两个服务都停止后重建该文件。
+运行示例前 先按快速入门编译仓库根目录下的 ./bin/spctl、./bin/speedle-pms 和 ./bin/speedle-ads，需要 Go 1.26.10 或 Go 1.27.3（也可使用同一大版本的更新补丁版本）、Bash、curl 和 Python 3。下面各终端都从仓库根目录运行。为本页使用一个新的策略文件；仅在两个服务都停止后重建该文件。
 初始化空策略文件：
 printf &amp;#39;{}\n&amp;#39; &amp;gt; docs-policies.json 终端一启动 PMS，并保持运行：
 ./bin/speedle-pms --store-type file --filestore-loc ./docs-policies.json --endpoint 127.0.0.1:6733 --grpc-endpoint 127.0.0.1:0 --insecure=true 终端二启动 ADS，并保持运行：
@@ -139,7 +139,7 @@ grant group Administrators list,watch,get expr:^c1/default/core/pods/.*$ 此正�
 AND 主体组要求组内所有身份均匹配，多组之间为 OR。以下例子要求两个角色都有效：
 grant (role designer, role dba) update db_design_doc 资源是被保护的对象，操作是应用定义的动作。条件是由可信属性、常量、运算符与受支持函数构成的布尔表达式。
 语法见 SPDL，完整决策示例见 RBAC 与 ABAC。
-运行示例前 先按快速入门编译仓库根目录下的 ./bin/spctl、./bin/speedle-pms 和 ./bin/speedle-ads，需要 Go 1.25 或更新版本、Bash、curl 和 Python 3。下面各终端都从仓库根目录运行。为本页使用一个新的策略文件；仅在两个服务都停止后重建该文件。
+运行示例前 先按快速入门编译仓库根目录下的 ./bin/spctl、./bin/speedle-pms 和 ./bin/speedle-ads，需要 Go 1.26.10 或 Go 1.27.3（也可使用同一大版本的更新补丁版本）、Bash、curl 和 Python 3。下面各终端都从仓库根目录运行。为本页使用一个新的策略文件；仅在两个服务都停止后重建该文件。
 初始化空策略文件：
 printf &amp;#39;{}\n&amp;#39; &amp;gt; docs-policies.json 终端一启动 PMS，并保持运行：</description>
     </item>

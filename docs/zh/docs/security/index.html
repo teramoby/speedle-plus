@@ -128,7 +128,7 @@ headingSelector: 'h2'
 
 <h2 id="生成本地测试证书">生成本地测试证书</h2>
 
-<p>先按<a href="/zh/quick-start/">快速入门</a>编译二进制，然后从仓库根目录使用 Go 1.25 或更新版本生成本地 CA、独立的服务端与客户端证书。服务端证书的 SAN 包括 <code>localhost</code>、<code>127.0.0.1</code>、<code>::1</code>，私钥权限为 0600。这些是<strong>有效期 24 小时的演示证书</strong>，不能作为生产凭据。工具拒绝覆盖已有文件；重新生成时使用新的输出目录。</p>
+<p>先按<a href="/zh/quick-start/">快速入门</a>编译二进制，然后从仓库根目录使用 Go 1.26.10 或 Go 1.27.3（也可使用同一大版本的更新补丁版本）生成本地 CA、独立的服务端与客户端证书。服务端证书的 SAN 包括 <code>localhost</code>、<code>127.0.0.1</code>、<code>::1</code>，私钥权限为 0600。这些是<strong>有效期 24 小时的演示证书</strong>，不能作为生产凭据。工具拒绝覆盖已有文件；重新生成时使用新的输出目录。</p>
 
 <!-- docs-check: certificates -->
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">go run ./website/tests/examples/certificates --out ./tls</code></pre></div>

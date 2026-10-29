@@ -71,7 +71,7 @@ curl --header &amp;#39;Content-Type: application/json&amp;#39; --data &amp;#39;{
       <guid>https://speedle.io/zh/docs/deployment-embeded/</guid>
       <description>什么是 Speedle 嵌入模式 嵌入模式将 Speedle 策略决策引擎运行在你的 Go 应用进程中，通过 evaluator 直接决策，无需启动 PMS 或 ADS 服务。应用负责认证用户，并为每次决策提供主体、资源和操作。
 编写代码前，可以先用 Playground 体验基本策略功能。如果希望以独立服务运行 Speedle，请参阅快速入门。
-前提条件 使用 Linux 或 macOS、命令行 shell，以及 Go 1.25 或更新版本，最低版本与快速入门一致。本例使用 Go modules 和已发布的 Speedle+ v1.6.0，推荐使用 Go 1.27.3；示例已在 Go 1.25.14、Go 1.26.10 和 Go 1.27.3 下验证。
+前提条件 使用 Linux 或 macOS、命令行 shell，以及 Go 1.26.10 或 Go 1.27.3（也可使用同一大版本的更新补丁版本），最低版本与快速入门一致。本例使用 Go modules 和已发布的 Speedle+ v1.6.0，推荐使用 Go 1.27.3；示例已在 Go 1.25.14、Go 1.26.10 和 Go 1.27.3 下验证。
 按照 Go 官方安装说明安装 Go，然后检查版本：
 go version Go 会自动配置 GOROOT 和默认 GOPATH，无需手工设置。
 创建应用模块 在 Speedle 源码目录之外，选择一个有写入权限的目录，从新目录开始本例：
@@ -85,7 +85,7 @@ mkdir speedle-embedded-demo cd speedle-embedded-demo go mod init example.com/spe
       
       <guid>https://speedle.io/zh/docs/deployment/</guid>
       <description>选择部署方式 通过嵌入模式可以在 Go 进程内运行决策引擎；如果应用通过 REST 或 gRPC 调用 Speedle，则运行独立的 PMS 和 ADS。快速入门提供了完整的本地策略管理和授权验证步骤。
-使用当前 Go 版本构建 在 Linux 或 macOS 上准备 Go 1.25 或更新版本（推荐 Go 1.27.3）、Git 和命令行 shell。使用 Go modules，源码可放在任意可写目录，无需手工配置 GOROOT、GOPATH、dep 或 GOPATH 源码路径。
+使用当前 Go 版本构建 在 Linux 或 macOS 上准备 Go 1.26.10 或 Go 1.27.3（也可使用同一大版本的更新补丁版本）（推荐 Go 1.27.3）、Git 和命令行 shell。使用 Go modules，源码可放在任意可写目录，无需手工配置 GOROOT、GOPATH、dep 或 GOPATH 源码路径。
 git clone --depth 1 https://github.com/teramoby/speedle-plus.git cd speedle-plus mkdir -p bin go build -o ./bin/ ./cmd/spctl ./cmd/speedle-pms ./cmd/speedle-ads 生成的可执行文件为 bin/spctl、bin/speedle-pms 和 bin/speedle-ads。从源码根目录运行下面的本地示例，两个服务共享同一策略文件：
 ./bin/speedle-pms --store-type file --filestore-loc ./docs-policies.json --endpoint 127.0.0.1:6733 --insecure=true 保持 PMS 运行，在同一源码目录的另一个终端启动 ADS：
 ./bin/speedle-ads --store-type file --filestore-loc .</description>
@@ -98,7 +98,7 @@ git clone --depth 1 https://github.com/teramoby/speedle-plus.git cd speedle-plus
       
       <guid>https://speedle.io/zh/docs/decisions/</guid>
       <description>什么是授权决策？ Speedle 在指定服务内评估主体、操作与资源，由应用执行结果。应区分评估错误、超时与正常的 Deny，并在出错时拒绝访问。REST、gRPC、嵌入式 Go 的数据表示不同，应分别遵循各自的 API 契约。
-运行示例前 先按快速入门编译仓库根目录下的 ./bin/spctl、./bin/speedle-pms 和 ./bin/speedle-ads，需要 Go 1.25 或更新版本、Bash、curl 和 Python 3。下面各终端都从仓库根目录运行。为本页使用一个新的策略文件；仅在两个服务都停止后重建该文件。
+运行示例前 先按快速入门编译仓库根目录下的 ./bin/spctl、./bin/speedle-pms 和 ./bin/speedle-ads，需要 Go 1.26.10 或 Go 1.27.3（也可使用同一大版本的更新补丁版本）、Bash、curl 和 Python 3。下面各终端都从仓库根目录运行。为本页使用一个新的策略文件；仅在两个服务都停止后重建该文件。
 初始化空策略文件：
 printf &amp;#39;{}\n&amp;#39; &amp;gt; docs-policies.json 终端一启动 PMS，并保持运行：
 ./bin/speedle-pms --store-type file --filestore-loc ./docs-policies.json --endpoint 127.0.0.1:6733 --grpc-endpoint 127.0.0.1:0 --insecure=true 终端二启动 ADS，并保持运行：
@@ -116,7 +116,7 @@ printf &amp;#39;{}\n&amp;#39; &amp;gt; docs-policies.json 终端一启动 PMS，
       <description>什么是身份域？ 身份域（idd）为主体提供显式命名空间。同名的 user1 可以属于不同的域。域字符串由可信应用或已配置的令牌断言服务提供，本身不代表完成了身份认证。Speedle 不会仅根据域名称推断或验证身份提供方的租户模型。
 在策略与请求中表示身份域 grant user user1 from github read book grant user user1 from IDCS.tenant01 read book 在主体名后使用 from &amp;lt;identity-domain&amp;gt;。PMS JSON 策略中的等价编码为 idd=github:user:user1；决策请求中的主体表示为：
 { &amp;#34;type&amp;#34;: &amp;#34;user&amp;#34;, &amp;#34;name&amp;#34;: &amp;#34;user1&amp;#34;, &amp;#34;idd&amp;#34;: &amp;#34;github&amp;#34; } 带 from github 的策略只匹配该域；省略 from 则按主体名跨域匹配。多租户应用应明确审查这一选择；域字符串不能用于验证令牌。更多内容见身份与 IAM和令牌断言。
-运行示例前 先按快速入门编译仓库根目录下的 ./bin/spctl、./bin/speedle-pms 和 ./bin/speedle-ads，需要 Go 1.25 或更新版本、Bash、curl 和 Python 3。下面各终端都从仓库根目录运行。为本页使用一个新的策略文件；仅在两个服务都停止后重建该文件。
+运行示例前 先按快速入门编译仓库根目录下的 ./bin/spctl、./bin/speedle-pms 和 ./bin/speedle-ads，需要 Go 1.26.10 或 Go 1.27.3（也可使用同一大版本的更新补丁版本）、Bash、curl 和 Python 3。下面各终端都从仓库根目录运行。为本页使用一个新的策略文件；仅在两个服务都停止后重建该文件。
 初始化空策略文件：
 printf &amp;#39;{}\n&amp;#39; &amp;gt; docs-policies.json 终端一启动 PMS，并保持运行：
 ./bin/speedle-pms --store-type file --filestore-loc ./docs-policies.json --endpoint 127.0.0.1:6733 --grpc-endpoint 127.0.0.1:0 --insecure=true 终端二启动 ADS，并保持运行：</description>
