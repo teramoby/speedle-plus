@@ -12,6 +12,7 @@ import (
 	"github.com/teramoby/speedle-plus/pkg/store"
 	_ "github.com/teramoby/speedle-plus/pkg/store/etcd"
 	_ "github.com/teramoby/speedle-plus/pkg/store/file"
+	"github.com/teramoby/speedle-plus/testutil/storetest"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/teramoby/speedle-plus/api/pms"
@@ -66,6 +67,12 @@ func testMain(m *testing.M) int {
 		os.Exit(1)
 	}
 	conf = mConfig
+	if os.Getenv("STORE_TYPE") == "etcd" {
+		if err := storetest.WaitForEtcdHTTP(); err != nil {
+			log.Print(err)
+			return 1
+		}
+	}
 	ret := m.Run()
 	return ret
 }

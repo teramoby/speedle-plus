@@ -6,7 +6,6 @@ package etcd
 import (
 	"fmt"
 	"log"
-	"net/http"
 	"os"
 	"testing"
 	"time"
@@ -14,6 +13,7 @@ import (
 	"github.com/teramoby/speedle-plus/api/pms"
 	"github.com/teramoby/speedle-plus/pkg/cfg"
 	"github.com/teramoby/speedle-plus/pkg/store"
+	"github.com/teramoby/speedle-plus/testutil/storetest"
 )
 
 var storeConfig *cfg.StoreConfig
@@ -34,18 +34,8 @@ func testMain(m *testing.M) int {
 	if err != nil {
 		log.Fatal("fail to read config file", err)
 	}
-	// ReadyNotify does not wait for the HTTP gateway's logrus.New call.
-	// Finish HTTP startup before m.Run redirects os.Stderr for test2json.
-	client := &http.Client{Timeout: 10 * time.Second}
-	defer client.CloseIdleConnections()
-	response, err := client.Get("http://localhost:2379/health")
-	if err != nil {
-		log.Print("embedded etcd HTTP startup failed: ", err)
-		return 1
-	}
-	response.Body.Close()
-	if response.StatusCode != http.StatusOK {
-		log.Print("embedded etcd is unhealthy: ", response.Status)
+	if err := storetest.WaitForEtcdHTTP(); err != nil {
+		log.Print(err)
 		return 1
 	}
 	return m.Run()
