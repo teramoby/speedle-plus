@@ -18,7 +18,7 @@ func TestGetResourcesWithoutApp(t *testing.T) {
 
 	preparePolicyDataInStore([]byte(appStream), t)
 
-	evaluator, err := NewWithStore(conf, testPS)
+	evaluator, err := NewWithStore(conf, testStore())
 	if err != nil {
 		t.Errorf("Unable to initialize evaluator due to error [%v].", err)
 		return
@@ -52,7 +52,7 @@ func TestGetResourcesNotMatchApp(t *testing.T) {
 
 	preparePolicyDataInStore([]byte(appStream), t)
 
-	evaluator, err := NewWithStore(conf, testPS)
+	evaluator, err := NewWithStore(conf, testStore())
 	if err != nil {
 		t.Errorf("Unable to initialize evaluator due to error [%v].", err)
 		return
@@ -86,7 +86,7 @@ func TestGetResourcesNoPolicy(t *testing.T) {
 
 	preparePolicyDataInStore([]byte(appStream), t)
 
-	evaluator, err := NewWithStore(conf, testPS)
+	evaluator, err := NewWithStore(conf, testStore())
 	if err != nil {
 		t.Errorf("Unable to initialize evaluator due to error [%v].", err)
 		return
@@ -137,7 +137,7 @@ func TestGetResourcesNoPrincDef(t *testing.T) {
 
 	preparePolicyDataInStore([]byte(appStream), t)
 
-	evaluator, err := NewWithStore(conf, testPS)
+	evaluator, err := NewWithStore(conf, testStore())
 	if err != nil {
 		t.Errorf("Unable to initialize evaluator due to error [%v].", err)
 		return
@@ -253,7 +253,7 @@ func TestGetResourcesMatch(t *testing.T) {
 
 	preparePolicyDataInStore([]byte(appStream), t)
 
-	evaluator, err := NewWithStore(conf, testPS)
+	evaluator, err := NewWithStore(conf, testStore())
 	if err != nil {
 		t.Errorf("Unable to initialize evaluator due to error [%v].", err)
 		return

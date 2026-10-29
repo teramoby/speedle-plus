@@ -17,7 +17,7 @@ import (
 func newPrefixedStore(t *testing.T) pms.PolicyStoreManager {
 	t.Helper()
 	s, err := store.NewStore(StoreType, map[string]interface{}{
-		EtcdEndpointKey:  storeConfig.StoreProps[EtcdEndpointKey],
+		EtcdEndpointKey:  testStoreConfig().StoreProps[EtcdEndpointKey],
 		EtcdKeyPrefixKey: "/conformance/" + strings.ReplaceAll(t.Name(), "/", "_") + "/",
 	})
 	if err != nil {

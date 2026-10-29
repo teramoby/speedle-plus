@@ -310,7 +310,7 @@ func TestGetPermissions(t *testing.T) {
 
 	for i, tc := range testCases {
 		preparePolicyDataInStore([]byte(tc.stream), t)
-		eval, err := NewWithStore(conf, testPS)
+		eval, err := NewWithStore(conf, testStore())
 		if err != nil {
 			t.Errorf("case number %d, error creating evaluator : %v", i, err)
 			continue
@@ -513,7 +513,7 @@ func TestGetRoles_empty(t *testing.T) {
 	}
 	for i, tc := range testCases {
 		preparePolicyDataInStore([]byte(tc.stream), t)
-		eval, err := NewWithStore(conf, testPS)
+		eval, err := NewWithStore(conf, testStore())
 		if err != nil {
 			t.Errorf("case number %d, error creating evaluator : %v", i, err)
 			continue
@@ -838,7 +838,7 @@ func TestIsAllowed_empty(t *testing.T) {
 
 	for i, tc := range testCases {
 		preparePolicyDataInStore([]byte(tc.stream), t)
-		eval, err := NewWithStore(conf, testPS)
+		eval, err := NewWithStore(conf, testStore())
 		if err != nil {
 			t.Errorf("case number %d, error creating evaluator : %v", i, err)
 			continue
@@ -927,7 +927,7 @@ func TestEntityPrincipal(t *testing.T) {
 	}`
 
 	preparePolicyDataInStore([]byte(ps), t)
-	eval, err := NewWithStore(conf, testPS)
+	eval, err := NewWithStore(conf, testStore())
 	if err != nil {
 		t.Error("Fail to new evaluator")
 	}

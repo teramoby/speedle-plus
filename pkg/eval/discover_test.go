@@ -9,7 +9,7 @@ import (
 
 func TestDiscoverDoesNotStoreToken(t *testing.T) {
 	preparePolicyDataInStore([]byte(`{"services": [{"name": "discover-token"}]}`), t)
-	evaluator, err := NewWithStore(conf, testPS)
+	evaluator, err := NewWithStore(conf, testStore())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -25,7 +25,7 @@ func TestDiscoverDoesNotStoreToken(t *testing.T) {
 	if subject.Token != "secret-token" {
 		t.Errorf("the caller's subject was changed: token %q", subject.Token)
 	}
-	saved, _, err := testPS.(store.DiscoverRequestManager).GetLastDiscoverRequest("discover-token")
+	saved, _, err := testStore().(store.DiscoverRequestManager).GetLastDiscoverRequest("discover-token")
 	if err != nil || saved == nil || saved.Subject == nil {
 		t.Fatalf("no saved discover request: %v", err)
 	}

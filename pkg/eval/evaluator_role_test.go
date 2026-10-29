@@ -17,7 +17,7 @@ func TestGetRolesWithoutApp(t *testing.T) {
 
 	preparePolicyDataInStore([]byte(appStream), t)
 
-	evaluator, err := NewWithStore(conf, testPS)
+	evaluator, err := NewWithStore(conf, testStore())
 	if err != nil {
 		t.Errorf("Unable to initialize evaluator due to error [%v].", err)
 		return
@@ -52,7 +52,7 @@ func TestGetRolesNotMatchApp(t *testing.T) {
 
 	preparePolicyDataInStore([]byte(appStream), t)
 
-	evaluator, err := NewWithStore(conf, testPS)
+	evaluator, err := NewWithStore(conf, testStore())
 	if err != nil {
 		t.Errorf("Unable to initialize evaluator due to error [%v].", err)
 		return
@@ -87,7 +87,7 @@ func TestGetRolesNoRole(t *testing.T) {
 
 	preparePolicyDataInStore([]byte(appStream), t)
 
-	evaluator, err := NewWithStore(conf, testPS)
+	evaluator, err := NewWithStore(conf, testStore())
 	if err != nil {
 		t.Errorf("Unable to initialize evaluator due to error [%v].", err)
 		return
@@ -154,7 +154,7 @@ func TestGetDirectRolesMatch(t *testing.T) {
 
 	preparePolicyDataInStore([]byte(appStream), t)
 
-	evaluator, err := NewWithStore(conf, testPS)
+	evaluator, err := NewWithStore(conf, testStore())
 	if err != nil {
 		t.Errorf("Unable to initialize evaluator due to error [%v].", err)
 		return
@@ -251,7 +251,7 @@ func TestGetHierarchyRolesMatch(t *testing.T) {
 
 	preparePolicyDataInStore([]byte(appStream), t)
 
-	evaluator, err := NewWithStore(conf, testPS)
+	evaluator, err := NewWithStore(conf, testStore())
 	if err != nil {
 		t.Errorf("Unable to initialize evaluator due to error [%v].", err)
 		return

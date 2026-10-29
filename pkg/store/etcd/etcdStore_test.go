@@ -7,37 +7,51 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"sync"
 	"testing"
 	"time"
 
 	"github.com/teramoby/speedle-plus/api/pms"
 	"github.com/teramoby/speedle-plus/pkg/cfg"
 	"github.com/teramoby/speedle-plus/pkg/store"
+	"go.etcd.io/etcd/server/v3/embed"
 )
 
-var storeConfig *cfg.StoreConfig
+var (
+	fixtureOnce   sync.Once
+	fixtureConfig *cfg.StoreConfig
+	fixtureEtcd   *embed.Etcd
+	fixtureDir    string
+)
 
-func TestMain(m *testing.M) {
-	os.Exit(testMain(m))
+// testStoreConfig starts the embedded etcd on first use. It must not start
+// before m.Run: testing.M.Run writes os.Stderr, which etcd's serving
+// goroutines read, and the race detector reports that.
+func testStoreConfig() *cfg.StoreConfig {
+	fixtureOnce.Do(func() {
+		var err error
+		fixtureEtcd, fixtureDir, err = StartEmbeddedEtcd("")
+		if err != nil {
+			log.Fatal("Fail to start embed etcd: ", err)
+		}
+		fixtureConfig, err = cfg.ReadStoreConfig("./etcdStoreConfig.json")
+		if err != nil {
+			log.Fatal("fail to read config file", err)
+		}
+	})
+	return fixtureConfig
 }
 
-func testMain(m *testing.M) int {
-	etcd, etcdDir, err := StartEmbeddedEtcd("")
-	defer CleanEmbeddedEtcd(etcd, etcdDir)
-	if err != nil {
-		log.Fatal("Fail to start embed etcd")
-		os.Exit(1)
+func TestMain(m *testing.M) {
+	code := m.Run()
+	if fixtureEtcd != nil {
+		CleanEmbeddedEtcd(fixtureEtcd, fixtureDir)
 	}
-
-	storeConfig, err = cfg.ReadStoreConfig("./etcdStoreConfig.json")
-	if err != nil {
-		log.Fatal("fail to read config file", err)
-	}
-	return m.Run()
+	os.Exit(code)
 }
 
 func TestWriteReadPolicyStore(t *testing.T) {
-	store, err := store.NewStore(storeConfig.StoreType, storeConfig.StoreProps)
+	store, err := store.NewStore(testStoreConfig().StoreType, testStoreConfig().StoreProps)
 	if err != nil {
 		t.Fatal("fail to new etcd3 store:", err)
 	}
@@ -72,7 +86,7 @@ func TestWriteReadPolicyStore(t *testing.T) {
 }
 
 func TestWriteReadDeleteService(t *testing.T) {
-	store, err := store.NewStore(storeConfig.StoreType, storeConfig.StoreProps)
+	store, err := store.NewStore(testStoreConfig().StoreType, testStoreConfig().StoreProps)
 	if err != nil {
 		t.Fatal("fail to new etcd3 store:", err)
 	}
@@ -154,7 +168,7 @@ func TestWriteReadDeleteService(t *testing.T) {
 }
 
 func TestEtcdStore_GetPolicyByName(t *testing.T) {
-	store, err := store.NewStore(storeConfig.StoreType, storeConfig.StoreProps)
+	store, err := store.NewStore(testStoreConfig().StoreType, testStoreConfig().StoreProps)
 	if err != nil {
 		t.Fatal("fail to new etcd3 store:", err)
 	}
@@ -293,7 +307,7 @@ func TestEtcdStore_GetPolicyByName(t *testing.T) {
 }
 
 func TestEtcdStore_GetRolePolicyByName(t *testing.T) {
-	store, err := store.NewStore(storeConfig.StoreType, storeConfig.StoreProps)
+	store, err := store.NewStore(testStoreConfig().StoreType, testStoreConfig().StoreProps)
 	if err != nil {
 		t.Fatal("fail to new etcd3 store:", err)
 	}
@@ -418,7 +432,7 @@ func TestEtcdStore_GetRolePolicyByName(t *testing.T) {
 }
 
 func TestManagePolicies(t *testing.T) {
-	store, err := store.NewStore(storeConfig.StoreType, storeConfig.StoreProps)
+	store, err := store.NewStore(testStoreConfig().StoreType, testStoreConfig().StoreProps)
 	if err != nil {
 		t.Fatal("fail to new etcd3 store:", err)
 	}
@@ -477,7 +491,7 @@ func TestManagePolicies(t *testing.T) {
 }
 
 func TestManageRolePolicies(t *testing.T) {
-	store, err := store.NewStore(storeConfig.StoreType, storeConfig.StoreProps)
+	store, err := store.NewStore(testStoreConfig().StoreType, testStoreConfig().StoreProps)
 	if err != nil {
 		t.Fatal("fail to new etcd3 store:", err)
 	}
@@ -533,7 +547,7 @@ func TestManageRolePolicies(t *testing.T) {
 }
 
 func TestCheckItemsCount(t *testing.T) {
-	store, err := store.NewStore(storeConfig.StoreType, storeConfig.StoreProps)
+	store, err := store.NewStore(testStoreConfig().StoreType, testStoreConfig().StoreProps)
 	if err != nil {
 		t.Fatal("fail to new etcd3 store:", err)
 	}
@@ -663,7 +677,7 @@ func TestCheckItemsCount(t *testing.T) {
 }
 
 func TestWatch(t *testing.T) {
-	store, err := store.NewStore(storeConfig.StoreType, storeConfig.StoreProps)
+	store, err := store.NewStore(testStoreConfig().StoreType, testStoreConfig().StoreProps)
 	defer store.StopWatch()
 	defer store.(*Store).destroy()
 	if err != nil {

@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"os"
+	"sync"
 	"testing"
 
 	"github.com/teramoby/speedle-plus/pkg/cfg"
@@ -32,7 +33,25 @@ func WriteToTempFile(content []byte) (string, error) {
 	return tmpfile.Name(), nil
 }
 
-var testPS pms.PolicyStoreManager
+var (
+	testStoreOnce sync.Once
+	testPS        pms.PolicyStoreManager
+)
+
+// testStore creates the shared test store on first use. With the etcd store
+// that starts an embedded etcd, which must not happen before m.Run:
+// testing.M.Run writes os.Stderr, which etcd's serving goroutines read, and
+// the race detector reports that.
+func testStore() pms.PolicyStoreManager {
+	testStoreOnce.Do(func() {
+		var err error
+		testPS, err = store.NewStore(conf.StoreConfig.StoreType, conf.StoreConfig.StoreProps)
+		if err != nil {
+			log.Fatal("Fail to NewStore: ", err)
+		}
+	})
+	return testPS
+}
 var configFile string
 var conf *cfg.Config
 
@@ -62,11 +81,6 @@ func testMain(m *testing.M) int {
 	//Since we don't need watch function in the unit tests of evaluator, so disable it.
 	mConfig.EnableWatch = false
 
-	testPS, err = store.NewStore(mConfig.StoreConfig.StoreType, mConfig.StoreConfig.StoreProps)
-	if err != nil {
-		log.Fatal("Fail to NewStore")
-		os.Exit(1)
-	}
 	conf = mConfig
 	ret := m.Run()
 	return ret
@@ -79,7 +93,7 @@ func preparePolicyDataInStore(data []byte, t *testing.T) error {
 		t.Fatal("Fail to prepare data", err)
 		return err
 	}
-	err = testPS.WritePolicyStore(&ps)
+	err = testStore().WritePolicyStore(&ps)
 	if err != nil {
 		t.Fatal("Fail to prepare data:", err)
 		return err

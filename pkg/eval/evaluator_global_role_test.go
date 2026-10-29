@@ -59,7 +59,7 @@ func TestGetRoles232_1(t *testing.T) {
 
 	// Global role should take effect in isAllowed API too.
 	// Bill should be allowed to get /node1.
-	evaluator, err := NewWithStore(conf, testPS)
+	evaluator, err := NewWithStore(conf, testStore())
 	if err != nil {
 		t.Errorf("Unable to initialize evaluator due to error [%v].", err)
 		return
@@ -241,7 +241,7 @@ func evaluate(t *testing.T, appStream string, expectedRoles []string) {
 
 	preparePolicyDataInStore([]byte(appStream), t)
 
-	evaluator, err := NewWithStore(conf, testPS)
+	evaluator, err := NewWithStore(conf, testStore())
 	if err != nil {
 		t.Errorf("Unable to initialize evaluator due to error [%v].", err)
 		return

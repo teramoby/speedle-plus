@@ -69,6 +69,10 @@ func runCLITests(m *testing.M) int {
 		configuration := embed.NewConfig()
 		configuration.Dir = filepath.Join(directory, "etcd")
 		configuration.LogLevel = "error"
+		// The HTTP gateway is not used, and its websocket proxy reads
+		// os.Stderr while testing.M.Run writes it, which the race
+		// detector reports.
+		configuration.EnableGRPCGateway = false
 		loopback, _ := url.Parse("http://127.0.0.1:0")
 		configuration.ListenClientUrls = []url.URL{*loopback}
 		configuration.AdvertiseClientUrls = []url.URL{*loopback}

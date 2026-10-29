@@ -230,7 +230,7 @@ func TestConditions(t *testing.T) {
 
 	for _, tc := range testCases {
 		preparePolicyDataInStore([]byte(tc.stream), t)
-		eval, err := NewWithStore(conf, testPS)
+		eval, err := NewWithStore(conf, testStore())
 		if err != nil {
 			t.Errorf("error creating evaluator : %v", err)
 			continue
@@ -325,7 +325,7 @@ func TestStringConditionsPostive(t *testing.T) {
 
 	for _, tc := range testCases {
 		preparePolicyDataInStore([]byte(tc.stream), t)
-		eval, err := NewWithStore(conf, testPS)
+		eval, err := NewWithStore(conf, testStore())
 		if err != nil {
 			t.Errorf("error creating evaluator : %v", err)
 			continue
@@ -420,7 +420,7 @@ func TestNumericConditionsPostive(t *testing.T) { //float64
 
 	for _, tc := range testCases {
 		preparePolicyDataInStore([]byte(tc.stream), t)
-		eval, err := NewWithStore(conf, testPS)
+		eval, err := NewWithStore(conf, testStore())
 		if err != nil {
 			t.Errorf("error creating evaluator : %v", err)
 			continue
@@ -499,7 +499,7 @@ func TestDatetimeConditionsPostive(t *testing.T) {
 
 	for _, tc := range testCases {
 		preparePolicyDataInStore([]byte(tc.stream), t)
-		eval, err := NewWithStore(conf, testPS)
+		eval, err := NewWithStore(conf, testStore())
 		if err != nil {
 			t.Errorf("error creating evaluator : %v", err)
 			continue
@@ -564,7 +564,7 @@ func TestBoolConditionsPostive(t *testing.T) {
 
 	for _, tc := range testCases {
 		preparePolicyDataInStore([]byte(tc.stream), t)
-		eval, err := NewWithStore(conf, testPS)
+		eval, err := NewWithStore(conf, testStore())
 		if err != nil {
 			t.Errorf("error creating evaluator : %v", err)
 			continue
@@ -646,7 +646,7 @@ func TestArrayConditionsPostive(t *testing.T) { //float64, string, datetime
 
 	for _, tc := range testCases {
 		preparePolicyDataInStore([]byte(tc.stream), t)
-		eval, err := NewWithStore(conf, testPS)
+		eval, err := NewWithStore(conf, testStore())
 		if err != nil {
 			t.Errorf("error creating evaluator : %v", err)
 			continue
@@ -700,7 +700,7 @@ func TestComplexConditionsPostive(t *testing.T) {
 
 	for _, tc := range testCases {
 		preparePolicyDataInStore([]byte(tc.stream), t)
-		eval, err := NewWithStore(conf, testPS)
+		eval, err := NewWithStore(conf, testStore())
 		if err != nil {
 			t.Errorf("error creating evaluator : %v", err)
 			continue

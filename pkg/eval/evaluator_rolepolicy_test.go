@@ -59,7 +59,7 @@ func TestRolePolicyWithoutResWithCondition(t *testing.T) {
 	`
 
 	preparePolicyDataInStore([]byte(appStream), t)
-	evaluator, err := NewWithStore(conf, testPS)
+	evaluator, err := NewWithStore(conf, testStore())
 	if err != nil {
 		t.Errorf("Unable to initialize evaluator due to error [%v].", err)
 		return
@@ -176,7 +176,7 @@ func TestRolePolicyWithoutResCondifiton(t *testing.T) {
 
 	preparePolicyDataInStore([]byte(appStream), t)
 
-	evaluator, err := NewWithStore(conf, testPS)
+	evaluator, err := NewWithStore(conf, testStore())
 	if err != nil {
 		t.Errorf("Unable to initialize evaluator due to error [%v].", err)
 		return
@@ -298,7 +298,7 @@ func TestRolePolicyHierarchy(t *testing.T) {
 
 	preparePolicyDataInStore([]byte(appStream), t)
 
-	evaluator, err := NewWithStore(conf, testPS)
+	evaluator, err := NewWithStore(conf, testStore())
 	if err != nil {
 		t.Errorf("Unable to initialize evaluator due to error [%v].", err)
 		return
@@ -483,7 +483,7 @@ func TestRolePolicyWithResWithCondition(t *testing.T) {
 	`
 
 	preparePolicyDataInStore([]byte(appStream), t)
-	evaluator, err := NewWithStore(conf, testPS)
+	evaluator, err := NewWithStore(conf, testStore())
 	if err != nil {
 		t.Errorf("Unable to initialize evaluator due to error [%v].", err)
 		return

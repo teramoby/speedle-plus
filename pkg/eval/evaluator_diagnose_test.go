@@ -16,7 +16,7 @@ func TestDiagnoseWithoutApp(t *testing.T) {
 	`
 	preparePolicyDataInStore([]byte(appStream), t)
 
-	evaluator, err := NewWithStore(conf, testPS)
+	evaluator, err := NewWithStore(conf, testStore())
 	if err != nil {
 		t.Errorf("Unable to initialize evaluator due to error [%v].", err)
 		return
@@ -62,7 +62,7 @@ func TestDiagnoseNotMatchApp(t *testing.T) {
 	}
 	`
 	preparePolicyDataInStore([]byte(appStream), t)
-	evaluator, err := NewWithStore(conf, testPS)
+	evaluator, err := NewWithStore(conf, testStore())
 	if err != nil {
 		t.Errorf("Unable to initialize evaluator due to error [%v].", err)
 		return
@@ -105,7 +105,7 @@ func TestDiagnoseNoPolicy(t *testing.T) {
 	`
 
 	preparePolicyDataInStore([]byte(appStream), t)
-	evaluator, err := NewWithStore(conf, testPS)
+	evaluator, err := NewWithStore(conf, testStore())
 	if err != nil {
 		t.Errorf("Unable to initialize evaluator due to error [%v].", err)
 		return
@@ -169,7 +169,7 @@ func TestDiagnoseNoPrincDef(t *testing.T) {
 
 	preparePolicyDataInStore([]byte(appStream), t)
 
-	evaluator, err := NewWithStore(conf, testPS)
+	evaluator, err := NewWithStore(conf, testStore())
 	if err != nil {
 		t.Errorf("Unable to initialize evaluator due to error [%v].", err)
 		return

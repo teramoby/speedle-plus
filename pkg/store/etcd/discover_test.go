@@ -14,7 +14,7 @@ import (
 )
 
 func TestPutGetLastRequest(t *testing.T) {
-	s, err := store.NewStore(storeConfig.StoreType, storeConfig.StoreProps)
+	s, err := store.NewStore(testStoreConfig().StoreType, testStoreConfig().StoreProps)
 	if err != nil {
 		t.Fatal("fail to new etcd store")
 	}
@@ -51,7 +51,7 @@ func TestPutGetLastRequest(t *testing.T) {
 }
 
 func TestGetLastRequestContinously(t *testing.T) {
-	s, err := store.NewStore(storeConfig.StoreType, storeConfig.StoreProps)
+	s, err := store.NewStore(testStoreConfig().StoreType, testStoreConfig().StoreProps)
 	if err != nil {
 		t.Fatal("fail to new etcd store")
 	}
@@ -105,7 +105,7 @@ func TestGetLastRequestContinously(t *testing.T) {
 }
 
 func TestResetDiscoverRequests(t *testing.T) {
-	s, err := store.NewStore(storeConfig.StoreType, storeConfig.StoreProps)
+	s, err := store.NewStore(testStoreConfig().StoreType, testStoreConfig().StoreProps)
 	if err != nil {
 		t.Fatal("fail to new etcd store")
 	}
@@ -153,7 +153,7 @@ func TestResetDiscoverRequests(t *testing.T) {
 }
 
 func TestGetRequests(t *testing.T) {
-	s, err := store.NewStore(storeConfig.StoreType, storeConfig.StoreProps)
+	s, err := store.NewStore(testStoreConfig().StoreType, testStoreConfig().StoreProps)
 	if err != nil {
 		t.Fatal("fail to new etcd store")
 	}
@@ -196,7 +196,7 @@ func TestGetRequests(t *testing.T) {
 }
 
 func TestGeneratePolicies(t *testing.T) {
-	s, err := store.NewStore(storeConfig.StoreType, storeConfig.StoreProps)
+	s, err := store.NewStore(testStoreConfig().StoreType, testStoreConfig().StoreProps)
 	if err != nil {
 		t.Fatal("fail to new etcd store")
 	}

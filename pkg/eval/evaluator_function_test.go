@@ -181,7 +181,7 @@ func TestFunctions(t *testing.T) {
 	for _, tc := range testCases {
 		tc.stream = strings.NewReplacer("http://localhost:12345", httpURL, "https://localhost:23456", httpsURL).Replace(tc.stream)
 		preparePolicyDataInStore([]byte(tc.stream), t)
-		eval, err := NewWithStore(conf, testPS)
+		eval, err := NewWithStore(conf, testStore())
 		if err != nil {
 			t.Errorf("error creating evaluator : %v", err)
 			continue

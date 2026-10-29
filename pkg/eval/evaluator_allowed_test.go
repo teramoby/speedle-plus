@@ -17,7 +17,7 @@ func TestIsAllowedWithoutApp(t *testing.T) {
 	preparePolicyDataInStore([]byte(appStream), t)
 
 	//evaluator, err := New(configFile)
-	evaluator, err := NewWithStore(conf, testPS)
+	evaluator, err := NewWithStore(conf, testStore())
 	if err != nil {
 		t.Errorf("Unable to initialize evaluator due to error [%v].", err)
 		return
@@ -60,7 +60,7 @@ func TestIsAllowedNotMatchApp(t *testing.T) {
 	preparePolicyDataInStore([]byte(appStream), t)
 
 	//evaluator, err := New(configFile)
-	evaluator, err := NewWithStore(conf, testPS)
+	evaluator, err := NewWithStore(conf, testStore())
 	if err != nil {
 		t.Errorf("Unable to initialize evaluator due to error [%v].", err)
 		return
@@ -104,7 +104,7 @@ func TestIsAllowedNoPolicy(t *testing.T) {
 	preparePolicyDataInStore([]byte(appStream), t)
 
 	//evaluator, err := New(configFile)
-	evaluator, err := NewWithStore(conf, testPS)
+	evaluator, err := NewWithStore(conf, testStore())
 	if err != nil {
 		t.Errorf("Unable to initialize evaluator due to error [%v].", err)
 		return
@@ -165,7 +165,7 @@ func TestIsAllowedNoPrincDef(t *testing.T) {
 	preparePolicyDataInStore([]byte(appStream), t)
 
 	//evaluator, err := New(configFile)
-	evaluator, err := NewWithStore(conf, testPS)
+	evaluator, err := NewWithStore(conf, testStore())
 	if err != nil {
 		t.Errorf("Unable to initialize evaluator due to error [%v].", err)
 		return
@@ -399,7 +399,7 @@ func TestIsAllowedMatch(t *testing.T) {
 	preparePolicyDataInStore([]byte(appStream), t)
 
 	//evaluator, err := New(configFile)
-	evaluator, err := NewWithStore(conf, testPS)
+	evaluator, err := NewWithStore(conf, testStore())
 	if err != nil {
 		t.Errorf("Unable to initialize evaluator due to error [%v].", err)
 		return
@@ -678,7 +678,7 @@ func ANDPrincpal_IN_RolePolicy_TestIsAllowedMatch_1(t *testing.T) {
 	preparePolicyDataInStore([]byte(appStream), t)
 
 	//evaluator, err := New(configFile)
-	evaluator, err := NewWithStore(conf, testPS)
+	evaluator, err := NewWithStore(conf, testStore())
 	if err != nil {
 		t.Errorf("Unable to initialize evaluator due to error [%v].", err)
 		return
@@ -761,7 +761,7 @@ func ANDPrincpal_IN_RolePolicy_TestIsAllowedMatch_2(t *testing.T) {
 	preparePolicyDataInStore([]byte(appStream), t)
 
 	//evaluator, err := New(configFile)
-	evaluator, err := NewWithStore(conf, testPS)
+	evaluator, err := NewWithStore(conf, testStore())
 	if err != nil {
 		t.Errorf("Unable to initialize evaluator due to error [%v].", err)
 		return
@@ -851,7 +851,7 @@ func TestIsAllowedMatch_3(t *testing.T) {
 	preparePolicyDataInStore([]byte(appStream), t)
 
 	//evaluator, err := New(configFile)
-	evaluator, err := NewWithStore(conf, testPS)
+	evaluator, err := NewWithStore(conf, testStore())
 	if err != nil {
 		t.Errorf("Unable to initialize evaluator due to error [%v].", err)
 		return
@@ -928,7 +928,7 @@ func TestIsAllowedWithIDD(t *testing.T) {
 	preparePolicyDataInStore([]byte(appStream), t)
 
 	//evaluator, err := New(configFile)
-	evaluator, err := NewWithStore(conf, testPS)
+	evaluator, err := NewWithStore(conf, testStore())
 	if err != nil {
 		t.Errorf("Unable to initialize evaluator due to error [%v].", err)
 		return
