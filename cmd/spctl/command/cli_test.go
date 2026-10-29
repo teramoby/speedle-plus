@@ -332,3 +332,22 @@ func TestCLIHTTPSClient(t *testing.T) {
 		t.Errorf("with http_proxy: %v\n%s", err, out)
 	}
 }
+
+func TestCLICheck(t *testing.T) {
+	c := newCLI(t)
+	// check works without PMS.
+	if out, code := c.runAt("", "check", "policy", "grant user alice read /x if a > 1"); code != 0 || out != "policy OK\n" {
+		t.Errorf("valid policy: exit %d\n%s", code, out)
+	}
+	if out, code := c.runAt("", "check", "policy", "grant user alice read /x if a >"); code != 1 || !strings.Contains(out, "Invalid condition: Unexpected end of expression") {
+		t.Errorf("invalid policy: exit %d\n%s", code, out)
+	}
+	spdl := filepath.Join(t.TempDir(), "p.spdl")
+	os.WriteFile(spdl, []byte("[service.a]\n[policy]\nGRANT USER alice read /x if a >\n"), 0600)
+	if out, code := c.runAt("", "check", "--file", spdl); code != 1 || !strings.Contains(out, spdl+":3: Invalid condition") {
+		t.Errorf("invalid file: exit %d\n%s", code, out)
+	}
+	if out, code := c.runAt("", "check"); code != 1 || !strings.Contains(out, "Usage:") {
+		t.Errorf("no arguments: exit %d\n%s", code, out)
+	}
+}
