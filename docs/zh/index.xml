@@ -161,11 +161,13 @@ go version Go 会自动配置 GOROOT 和默认的 GOPATH，无需手动指定。
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://speedle.io/zh/docs/deployment-embeded/</guid>
-      <description>什么是 Speedle 嵌入模式 区别于 Speedle 服务模式，Speedle 嵌入模式把 Speedle 的策略决策引擎嵌入到调用者进程内部，作为进程的一部分运行。调用者可以直接调用 Speedle 的 API 获得策略决策的结果。
-嵌入模式的局限  只支持 Golang，推荐使用 Golang 1.10。 只接受文件存储策略。  如何使用嵌入模式 把 Speedle 代码添加到你的工程中 在嵌入模式中，需要先将 Speedle 源代码从代码仓库中下载下来。主要有一下几种方式：
- 使用 go get  go get github.com/teramoby/speedle-plus  使用 dep 工具  在你的 Gopkg.toml 文件中添加以下几行
-[[constraint]] name = &amp;#34;github.com/teramoby/speedle-plus&amp;#34; branch = &amp;#34;master&amp;#34; 使用 dep 工具将 Speedle 源代码添加到vendor目录下：
-dep ensure -update github.com/teramoby/speedle-plus 在代码中初始化一个 Evalautor 实例 方法func eval.NewFromFile(loc string, isWatch bool) (ads.PolicyEvaluator, error)使用一个策略定义文件初始化一个 Evaluator 实例。该方法接受两个参数：</description>
+      <description>什么是 Speedle 嵌入模式 嵌入模式将 Speedle 策略决策引擎运行在你的 Go 应用进程中，通过 evaluator 直接决策，无需启动 PMS 或 ADS 服务。应用负责认证用户，并为每次决策提供主体、资源和操作。
+编写代码前，可以先用 Playground 体验基本策略功能。如果希望以独立服务运行 Speedle，请参阅快速入门。
+前提条件 使用 Linux 或 macOS、命令行 shell，以及 Go 1.25 或更新版本，最低版本与快速入门一致。本例使用 Go modules 和已发布的 Speedle+ v1.6.0，推荐使用 Go 1.27.3；示例已在 Go 1.25.14、Go 1.26.10 和 Go 1.27.3 下验证。
+按照 Go 官方安装说明安装 Go，然后检查版本：
+go version Go 会自动配置 GOROOT 和默认 GOPATH，无需手工设置。
+创建应用模块 在 Speedle 源码目录之外，选择一个有写入权限的目录，从新目录开始本例：
+mkdir speedle-embedded-demo cd speedle-embedded-demo go mod init example.com/speedle-embedded-demo go get github.com/teramoby/speedle-plus/pkg/eval@v1.6.0 如果已有包含 go.mod 的应用，只需在该应用的模块目录中执行最后一条 go get 命令。</description>
     </item>
     
     <item>

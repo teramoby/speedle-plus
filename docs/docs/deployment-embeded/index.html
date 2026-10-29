@@ -11,6 +11,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>Speedle embedded mode - Speedle</title>
+<meta name="description" content="Embed Speedle in a Go application using Go modules and verify Allow/Deny decisions.">
 <meta name="generator" content="Hugo 0.48" />
 <link href="https://speedle.io/index.xml" rel="alternate" type="application/rss+xml">
 <link rel="canonical" href="https://speedle.io/docs/deployment-embeded/">
@@ -91,78 +92,101 @@ headingSelector: 'h2'
 
 <h2 id="what-is-embedded-mode">What is embedded mode?</h2>
 
-<p>Unlike service mode, embedded mode runs the Speedle policy decision engine inside
-the calling process. Applications call the evaluator API directly to obtain
-authorization decisions.</p>
+<p>Embedded mode runs the Speedle policy decision engine inside your Go application. Call the evaluator directly without starting PMS or ADS servers. Your application authenticates users and supplies the subject, resource and action for each decision.</p>
 
-<h2 id="limitations">Limitations</h2>
+<p>To try basic policies before writing code, open the <a href="/playground/">Playground</a>. To run Speedle as standalone services, follow <a href="/quick-start/">Quick Start</a>.</p>
 
-<ul>
-<li>Only Go applications are supported. The original setup instructions use Go 1.10.</li>
-<li>Policies must use the file store.</li>
-</ul>
+<h2 id="prerequisites">Prerequisites</h2>
 
-<h2 id="using-embedded-mode">Using embedded mode</h2>
+<p>Use Linux or macOS with a shell and <strong>Go 1.25 or newer</strong>, the same minimum as <a href="/quick-start/">Quick Start</a>. This walkthrough uses Go modules and the published <strong>Speedle+ v1.6.0</strong> release. Go 1.27.3 is the recommended toolchain; the example is verified with Go 1.25.14, Go 1.26.10 and Go 1.27.3.</p>
 
-<h3 id="add-speedle-to-your-project">Add Speedle to your project</h3>
+<p>Install Go using the <a href="https://go.dev/doc/install">official installation instructions</a>, then check your version:</p>
 
-<p>Download the Speedle source using one of the following approaches.</p>
+<!-- embedded: version -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">go version</code></pre></div>
+<p>Go configures <code>GOROOT</code> and its default <code>GOPATH</code> automatically; no custom values are needed.</p>
 
-<ol>
-<li>Use <code>go get</code>:</li>
-</ol>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">go get github.com/teramoby/speedle-plus</code></pre></div>
-<ol>
-<li>Use <code>dep</code>. Add this constraint to <code>Gopkg.toml</code>:</li>
-</ol>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-toml" data-lang="toml">[[constraint]]
-  name = <span style="color:#f1fa8c">&#34;github.com/teramoby/speedle-plus&#34;</span>
-  branch = <span style="color:#f1fa8c">&#34;master&#34;</span></code></pre></div>
-<p>Then add the source to your <code>vendor</code> directory:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">dep ensure -update github.com/teramoby/speedle-plus</code></pre></div>
-<h3 id="initialize-an-evaluator">Initialize an evaluator</h3>
+<h2 id="create-an-application-module">Create an application module</h2>
 
-<p><code>func eval.NewFromFile(loc string, isWatch bool) (ads.PolicyEvaluator, error)</code>
-initializes an evaluator from a policy file. It takes two arguments:</p>
+<p>Start in a writable directory outside the Speedle source checkout. Use a new directory for this walkthrough:</p>
 
-<ul>
-<li><code>loc</code>: the policy file location. JSON and SPDL formats are supported.</li>
-<li><code>isWatch</code>: when <code>true</code>, the evaluator reloads policies when the file changes;
-when <code>false</code>, it does not watch for changes.</li>
-</ul>
+<!-- embedded: setup -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">mkdir speedle-embedded-demo
+<span style="color:#8be9fd;font-style:italic">cd</span> speedle-embedded-demo
+go mod init example.com/speedle-embedded-demo
+go get github.com/teramoby/speedle-plus/pkg/eval@v1.6.0</code></pre></div>
+<p>In an existing Go module, run only the final <code>go get</code> command from that module&rsquo;s directory.</p>
 
-<p>The method returns an evaluator instance. For example:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#ff79c6">import</span> (
-  <span style="color:#f1fa8c">&#34;github.com/teramoby/speedle-plus/pkg/eval&#34;</span>
+<p>Here, <code>go get</code> adds a versioned <strong>library dependency</strong> to <code>go.mod</code> and <code>go.sum</code>; it does not install a program. This differs from Quick Start, which uses <code>git clone</code> and <code>go build</code> to build the standalone service executables. Both use Go modules. Keep <code>go.mod</code> and <code>go.sum</code> in version control.</p>
+
+<h2 id="create-a-policy-file">Create a policy file</h2>
+
+<p>In <code>speedle-embedded-demo</code>, save this content as <code>policies.spdl</code>. It grants <code>alice</code> permission to <code>get</code> resource <code>res1</code> in service <code>mysvc</code>:</p>
+
+<!-- embedded: policies -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ini" data-lang="ini"><span style="color:#ff79c6">[service.mysvc]</span>
+<span style="color:#ff79c6">[policy]</span>
+<span style="color:#50fa7b">grant user alice get res1</span></code></pre></div>
+<p>The <code>eval.NewFromFile</code> constructor loads a local file containing SPDL or JSON policies. This walkthrough uses SPDL.</p>
+
+<h2 id="initialize-the-evaluator-and-request-decisions">Initialize the evaluator and request decisions</h2>
+
+<p>Save the following complete program as <code>main.go</code> in the same directory:</p>
+
+<!-- embedded: program -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#ff79c6">package</span> main
+
+<span style="color:#ff79c6">import</span> (
+	<span style="color:#f1fa8c">&#34;fmt&#34;</span>
+	<span style="color:#f1fa8c">&#34;log&#34;</span>
+
+	<span style="color:#f1fa8c">&#34;github.com/teramoby/speedle-plus/api/ads&#34;</span>
+	<span style="color:#f1fa8c">&#34;github.com/teramoby/speedle-plus/pkg/eval&#34;</span>
+	_ <span style="color:#f1fa8c">&#34;github.com/teramoby/speedle-plus/pkg/store/file&#34;</span>
 )
 
-<span style="color:#8be9fd;font-style:italic">func</span> foo() {
-    evaluator, err <span style="color:#ff79c6">:=</span> eval.NewFromFile(spdlLoc, <span style="color:#ff79c6">true</span>)
-    <span style="color:#6272a4">// Handle err before using evaluator.
-</span><span style="color:#6272a4"></span>    _, _ = evaluator, err
+<span style="color:#8be9fd;font-style:italic">func</span> main() {
+	evaluator, err <span style="color:#ff79c6">:=</span> eval.NewFromFile(<span style="color:#f1fa8c">&#34;./policies.spdl&#34;</span>, <span style="color:#ff79c6">false</span>)
+	<span style="color:#ff79c6">if</span> err <span style="color:#ff79c6">!=</span> <span style="color:#ff79c6">nil</span> {
+		log.Fatal(err)
+	}
+
+	<span style="color:#ff79c6">for</span> _, user <span style="color:#ff79c6">:=</span> <span style="color:#ff79c6">range</span> []<span style="color:#8be9fd">string</span>{<span style="color:#f1fa8c">&#34;alice&#34;</span>, <span style="color:#f1fa8c">&#34;bob&#34;</span>} {
+		allowed, _, err <span style="color:#ff79c6">:=</span> evaluator.IsAllowed(ads.RequestContext{
+			Subject: <span style="color:#ff79c6">&amp;</span>ads.Subject{
+				Principals: []<span style="color:#ff79c6">*</span>ads.Principal{{Type: ads.PRINCIPAL_TYPE_USER, Name: user}},
+			},
+			ServiceName: <span style="color:#f1fa8c">&#34;mysvc&#34;</span>,
+			Resource:    <span style="color:#f1fa8c">&#34;res1&#34;</span>,
+			Action:      <span style="color:#f1fa8c">&#34;get&#34;</span>,
+		})
+		<span style="color:#ff79c6">if</span> err <span style="color:#ff79c6">!=</span> <span style="color:#ff79c6">nil</span> {
+			log.Fatal(err)
+		}
+		fmt.Printf(<span style="color:#f1fa8c">&#34;%s allowed=%t\n&#34;</span>, user, allowed)
+	}
 }</code></pre></div>
-<h3 id="request-an-authorization-decision">Request an authorization decision</h3>
+<p>The blank import <code>_ &quot;github.com/teramoby/speedle-plus/pkg/store/file&quot;</code> registers the file-store driver. Omitting it causes an <code>unknown store type &quot;file&quot;</code> error.</p>
 
-<p><code>IsAllowed</code> evaluates a request against the policies. The <code>ads.RequestContext</code>
-argument contains the subject, service name, resource, action and attributes:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#8be9fd;font-style:italic">type</span> RequestContext <span style="color:#8be9fd;font-style:italic">struct</span> {
-  Subject     <span style="color:#ff79c6">*</span>ads.Subject
-  ServiceName <span style="color:#8be9fd">string</span>
-  Resource    <span style="color:#8be9fd">string</span>
-  Action      <span style="color:#8be9fd">string</span>
-  Attributes  <span style="color:#8be9fd;font-style:italic">map</span>[<span style="color:#8be9fd">string</span>]<span style="color:#8be9fd;font-style:italic">interface</span>{}
-}</code></pre></div>
-<p>The result has three values:</p>
+<p><code>eval.NewFromFile(loc, isWatch)</code> returns an <code>ads.PolicyEvaluator</code> and an error. Check the error before using the evaluator. With <code>isWatch=false</code>, policies are loaded once; setting it to <code>true</code> enables file watching for a long-running application.</p>
 
-<ol>
-<li><code>allowed bool</code>: whether the subject may perform the action on the resource.</li>
-<li><code>reason Reason</code>: the reason for the decision.</li>
-<li><code>err error</code>: an evaluation error, or <code>nil</code> if evaluation succeeds.</li>
-</ol>
+<p>Call <code>evaluator.IsAllowed(ctx)</code> on that instance. Its <code>ads.RequestContext</code> contains the subject&rsquo;s principals, <code>ServiceName</code>, <code>Resource</code>, <code>Action</code> and optional <code>Attributes</code>. It returns <code>(allowed bool, reason ads.Reason, err error)</code>. An evaluation error must be handled separately from a successful <code>allowed=false</code> decision.</p>
 
-<h2 id="example">Example</h2>
+<h2 id="build-and-run">Build and run</h2>
 
-<p>See the <a href="https://github.com/teramoby/speedle-plus/tree/master/samples/embedded/expenses">embedded expenses example</a>.</p>
+<p>From <code>speedle-embedded-demo</code>, resolve dependencies and build your application:</p>
+
+<!-- embedded: build -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">go mod tidy
+go build -o ./bin/embedded-demo .</code></pre></div>
+<p>Run it from the same directory so that <code>./policies.spdl</code> resolves correctly:</p>
+
+<!-- embedded: run -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./bin/embedded-demo</code></pre></div>
+<p>The decision output is:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">alice allowed=true
+bob allowed=false</code></pre></div>
+<p><code>alice</code> matches the grant; <code>bob</code> has no matching grant and is denied. No network services or database are needed for this example.</p>
 
   </div>
 </div>
