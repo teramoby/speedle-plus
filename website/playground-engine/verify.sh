@@ -15,6 +15,8 @@ for toolchain in ${QUICK_START_TOOLCHAINS:-go1.26.10}; do
   python3 website/tests/check_quick_start.py --toolchain "${toolchain}"
   python3 website/tests/check_embedded.py --toolchain "${toolchain}"
 done
+go test -count=1 ./website/tests/docscheck
+python3 website/tests/check_docs.py
 website/playground-engine/verify-hugo.sh
 git diff --exit-code -- docs/playground docs/hugo/static/playground docs/css docs/hugo/static/css
 test -z "$(git ls-files --others --exclude-standard -- docs/playground docs/hugo/static/playground docs/css docs/hugo/static/css)"

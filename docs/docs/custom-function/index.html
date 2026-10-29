@@ -90,194 +90,133 @@ headingSelector: 'h2'
   <div id="kube-component" class="content">
     
 
-<h2 id="why-use-custom-functions">Why use custom functions?</h2>
+<h2 id="why-use-a-custom-function">Why use a custom function?</h2>
 
-<p>In Speedle, policies and role policies may include conditions. You can create conditions using expressions. or use the built-in functions that are provided with Speedle. If the condition is very complicated, it may be too difficult to create using expressions and built-in functions. In that case, you can use a custom function that you define, which extends the ability of the authorization engine. Custom functions supplement the built-in functions that Speedle provides, increasing the flexibility for defining conditions.</p>
+<p>SPDL conditions can call a configured function when built-in operators or functions do not express the required rule. Speedle calls its REST endpoint with <code>POST {&quot;params&quot;:[...]}</code> and expects <code>{&quot;result&quot;:...}</code> or <code>{&quot;error&quot;:&quot;...&quot;}</code>. Parameter order/types and the result type must match the condition. Function failures are evaluation errors; applications must fail closed.</p>
 
-<h2 id="how-do-i-use-custom-functions">How do I use custom functions?</h2>
+<h2 id="start-the-local-example">Start the local example</h2>
 
-<p>These steps demonstrate how to define a custom function and use it in a condition.</p>
+<p>This example accepts numeric values from 100 to 50000. Wrong parameter types or an empty parameter list return an HTTP error. It uses plaintext only on a loopback IP; use TLS for other interfaces.</p>
 
-<h3 id="1-implement-your-function-logic-and-expose-the-function-through-the-public-rest-api-endpoint">1) Implement your function logic and expose the function through the public REST API endpoint</h3>
+<p>Start it in a separate terminal:</p>
 
-<p>Speedle calls custom functions with a predefined REST API. The REST endpoint of a custom function must be as follows:</p>
-
-<h4 id="http-verb-post">HTTP Verb: POST</h4>
-
-<h4 id="http-request-body">HTTP Request Body:</h4>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4">type CustomerFunctionRequest struct {
-	Params []interface{} `json:&#34;params&#34;`
-}</pre></div>
-<h4 id="http-response-body">HTTP Response Body:</h4>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4">type CustomerFunctionResponse struct {
-	Result interface{} `json:&#34;result,omitempty&#34;`
-	Error  string      `json:&#34;error,omitempty&#34;`
-}</pre></div>
-<h4 id="sample-customer-function-implementation">Sample customer function implementation</h4>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><span style="color:#ff79c6">package</span> main
+<!-- docs-check: function-server -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">go run ./website/tests/examples/custom-function</code></pre></div>
+<!-- docs-source: website/tests/examples/custom-function/main.go -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#ff79c6">package</span> main
 
 <span style="color:#ff79c6">import</span> (
 	<span style="color:#f1fa8c">&#34;encoding/json&#34;</span>
-	<span style="color:#f1fa8c">&#34;fmt&#34;</span>
-	<span style="color:#f1fa8c">&#34;io/ioutil&#34;</span>
+	<span style="color:#f1fa8c">&#34;flag&#34;</span>
+	<span style="color:#f1fa8c">&#34;log&#34;</span>
+	<span style="color:#f1fa8c">&#34;net&#34;</span>
 	<span style="color:#f1fa8c">&#34;net/http&#34;</span>
-	<span style="color:#f1fa8c">&#34;os&#34;</span>
+	<span style="color:#f1fa8c">&#34;time&#34;</span>
 )
 
-<span style="color:#8be9fd;font-style:italic">var</span> (
-	funcServerCert = <span style="color:#f1fa8c">`-----BEGIN CERTIFICATE-----
-</span><span style="color:#f1fa8c">MIID7TCCAtWgAwIBAgIJALM3l/OZ9uJKMA0GCSqGSIb3DQEBCwUAMIGMMQswCQYD
-</span><span style="color:#f1fa8c">VQQGEwJjbjEQMA4GA1UECAwHYmVpamluZzEQMA4GA1UEBwwHYmVpamluZzEPMA0G
-</span><span style="color:#f1fa8c">A1UECgwGb3JhY2xlMQwwCgYDVQQLDANpZG0xEjAQBgNVBAMMCWxvY2FsaG9zdDEm
-</span><span style="color:#f1fa8c">MCQGCSqGSIb3DQEJARYXY3ludGhpYS5kaW5nQG9yYWNsZS5jb20wHhcNMTgwNDI1
-</span><span style="color:#f1fa8c">MDc1MDMwWhcNMTkwNDI1MDc1MDMwWjCBjDELMAkGA1UEBhMCY24xEDAOBgNVBAgM
-</span><span style="color:#f1fa8c">B2JlaWppbmcxEDAOBgNVBAcMB2JlaWppbmcxDzANBgNVBAoMBm9yYWNsZTEMMAoG
-</span><span style="color:#f1fa8c">A1UECwwDaWRtMRIwEAYDVQQDDAlsb2NhbGhvc3QxJjAkBgkqhkiG9w0BCQEWF2N5
-</span><span style="color:#f1fa8c">bnRoaWEuZGluZ0BvcmFjbGUuY29tMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIB
-</span><span style="color:#f1fa8c">CgKCAQEAn/AFElluGOZYfvlzBGfHfkd/Q9SuQFsSnQt7Qp63Yuf5Ie/q4NACzWPC
-</span><span style="color:#f1fa8c">B/L6nQrut4OMxJHvhVAswJozRZrQxXvX/vUxkg+TmALj3U9ejF/5arGtjy5v+yGi
-</span><span style="color:#f1fa8c">wci7zM4r7VNFJGRkfluNRC1kJi4AY6jk6Gl4d/bX4tBXE8mEFY1rUswYtat3OMja
-</span><span style="color:#f1fa8c">jVAoocClk6WcaQuK9R1uB+BPyxHLJ04RyKRuepPYRBQjgwHK5kMF3s5p07Os+2JH
-</span><span style="color:#f1fa8c">5jyJYW2NPs6pQe0k8GWpaar/yZ2eut9gsgHnu5JCWnyedo4nEx6I/G4GSaX+0SeU
-</span><span style="color:#f1fa8c">/Wb2aqq1QGfVOESml7CVcEa/buTeUwIDAQABo1AwTjAdBgNVHQ4EFgQU5i7CO32N
-</span><span style="color:#f1fa8c">spQ5AaG/aRU0LX2koYwwHwYDVR0jBBgwFoAU5i7CO32NspQ5AaG/aRU0LX2koYww
-</span><span style="color:#f1fa8c">DAYDVR0TBAUwAwEB/zANBgkqhkiG9w0BAQsFAAOCAQEAbQuCMPK8f8QuEmTpZBFv
-</span><span style="color:#f1fa8c">aka9qruT/0/TrxrbxEh68N4moXSTVv4tSrDTmdkwUiiwayuGS7fvKjSV6hwGkQbV
-</span><span style="color:#f1fa8c">zGbFDdwOw1tPE2OwnA7/+RPl4KmE4iTHnnIanyg9CKmBW/tMp/vUyv5nIt7Xw5n4
-</span><span style="color:#f1fa8c">tx3C9/hme+Rlx+SVPIAwAjl4nVFNLfzyG+JDBnQWygySm88SzzK0WRgh5V+gyXCK
-</span><span style="color:#f1fa8c">ucDW5rA6X9/CM3QrSY50mSM6dbyYDMtmTI4dX7E9STTBCNsNNcmgYkX0N9lm5RoF
-</span><span style="color:#f1fa8c">uBsAcPmp1SVIbXelDHJiIXxMKzwZy8riZQ8+Dw6LMs6wZX7COVvMWN4Dfcuo89av
-</span><span style="color:#f1fa8c">IQ==
-</span><span style="color:#f1fa8c">-----END CERTIFICATE-----`</span>
-	funcServerKey = <span style="color:#f1fa8c">`-----BEGIN PRIVATE KEY-----
-</span><span style="color:#f1fa8c">MIIEwAIBADANBgkqhkiG9w0BAQEFAASCBKowggSmAgEAAoIBAQCf8AUSWW4Y5lh+
-</span><span style="color:#f1fa8c">+XMEZ8d+R39D1K5AWxKdC3tCnrdi5/kh7+rg0ALNY8IH8vqdCu63g4zEke+FUCzA
-</span><span style="color:#f1fa8c">mjNFmtDFe9f+9TGSD5OYAuPdT16MX/lqsa2PLm/7IaLByLvMzivtU0UkZGR+W41E
-</span><span style="color:#f1fa8c">LWQmLgBjqOToaXh39tfi0FcTyYQVjWtSzBi1q3c4yNqNUCihwKWTpZxpC4r1HW4H
-</span><span style="color:#f1fa8c">4E/LEcsnThHIpG56k9hEFCODAcrmQwXezmnTs6z7YkfmPIlhbY0+zqlB7STwZalp
-</span><span style="color:#f1fa8c">qv/JnZ6632CyAee7kkJafJ52jicTHoj8bgZJpf7RJ5T9ZvZqqrVAZ9U4RKaXsJVw
-</span><span style="color:#f1fa8c">Rr9u5N5TAgMBAAECggEBAJCavJsojGiq61xyQVG8WxyLnD9B7gJ11VB0bw9+3SPp
-</span><span style="color:#f1fa8c">xNCwUNbOe5okFeyF/Z07ozX9FKstnzgTk0LYqH7ISPYk0NfN7PG4b6PDCS6xcjTN
-</span><span style="color:#f1fa8c">GX8kAl4wiEKw2K0IxvOXfRPoc91Bf7LXJ9R6jdAPS37P15ditO8SGYMTB4f2bRvm
-</span><span style="color:#f1fa8c">AMcaVGFZVNrvxbzC7bw+HWX1k1dezjkGf4jl9M6u252K/gMWZz8KaeDlqj48Kwg/
-</span><span style="color:#f1fa8c">k6hAnk5h28qCFe0wENOOZySgkrGaIV0hO/PeGydALUAbEL1Fn+20+eblT0IhD1v0
-</span><span style="color:#f1fa8c">6icQMhaxSTtTgnk9GbHF4L+T2quRAwQ4PAR+9t9Vk6ECgYEA1KZWRzBv4q4u075W
-</span><span style="color:#f1fa8c">Xu7NORmYJ9HuqL5QdQSb5qsFU7MfXQpK5BP9VDc38qTL5zyD5D40Tpjio7WX6BCp
-</span><span style="color:#f1fa8c">yWwH+brBmijneZFJ3r/pI8Oyut0m7uX/bbkOmTFrrIwE8lpeOzcUObtUw7uwByWV
-</span><span style="color:#f1fa8c">lmHP/fYiGMVNitxuTauxVejN6QsCgYEAwIrD3TRC6B9VHRLNiU/F1iuZTPWrCN+j
-</span><span style="color:#f1fa8c">XXA4ihzlcZFXqBNqlCrN0BDn7cOloob0zLB5T+8hoL5hsIiVg8tn7qDVqnvgql0e
-</span><span style="color:#f1fa8c">XKcasw0nGv4zI8cpHx7X7V8FxZUyyIAVd3rf33MO8qMTzBrshTh+JSsg5A1eVkjd
-</span><span style="color:#f1fa8c">9cONGAgLfNkCgYEAidvYPUiqkGNp2j4gEmVwSF9OZCpWNbFDyckWJQGkb3HFmHTO
-</span><span style="color:#f1fa8c">vnQzHIC71aN+yUdTHgoxsO6up4FXnMwItptBxGWNk5qHDinhoPX7eAMsALbUwbX7
-</span><span style="color:#f1fa8c">1S9OxoPikTcpEdECHBOGGjNXLZmk8c0s4BRDWhpSWoq2zZpALDxtuAs4SqcCgYEA
-</span><span style="color:#f1fa8c">m9y5CQwRTU5v3AUolQsan3DTvFTyi1BeMnlxi3ww0GpThx+Qmzi7Or80wGgsYRDW
-</span><span style="color:#f1fa8c">ggwpZ+ewVStIcVtfjTzPeYCA9m0pRT/0IBS1rFPtYBB+3WuPgj25ldHiHjvUzDHD
-</span><span style="color:#f1fa8c">LuEs8Pl3FDum/waciItesj/jdDjOMRLzess+IEIC6qECgYEAiA9S52BhIs8R3bYl
-</span><span style="color:#f1fa8c">5urE2VBVchLLNejgCEyhCv6rE4MibqX4oWwsmLM960rFhw+8UGwPKb0fwwq456f1
-</span><span style="color:#f1fa8c">vFKFOLz3XCMP6kg1g4dDcB7oRhO+9B4dk+QrUt349VlSaBA/sZ96mEL9ajudec5v
-</span><span style="color:#f1fa8c">5Amt4mqzY19IT2D8tE+saR2/U4I=
-</span><span style="color:#f1fa8c">-----END PRIVATE KEY-----`</span>
-)
-
-<span style="color:#8be9fd;font-style:italic">type</span> CustomerFunctionRequest <span style="color:#8be9fd;font-style:italic">struct</span> {
+<span style="color:#8be9fd;font-style:italic">type</span> request <span style="color:#8be9fd;font-style:italic">struct</span> {
 	Params []<span style="color:#8be9fd;font-style:italic">interface</span>{} <span style="color:#f1fa8c">`json:&#34;params&#34;`</span>
 }
-
-<span style="color:#8be9fd;font-style:italic">type</span> CustomerFunctionResponse <span style="color:#8be9fd;font-style:italic">struct</span> {
+<span style="color:#8be9fd;font-style:italic">type</span> response <span style="color:#8be9fd;font-style:italic">struct</span> {
 	Result <span style="color:#8be9fd;font-style:italic">interface</span>{} <span style="color:#f1fa8c">`json:&#34;result,omitempty&#34;`</span>
 	Error  <span style="color:#8be9fd">string</span>      <span style="color:#f1fa8c">`json:&#34;error,omitempty&#34;`</span>
 }
 
-<span style="color:#8be9fd;font-style:italic">func</span> CustomFunctionIsValid(w http.ResponseWriter, r <span style="color:#ff79c6">*</span>http.Request) {
-	decoder <span style="color:#ff79c6">:=</span> json.NewDecoder(r.Body)
-	<span style="color:#8be9fd;font-style:italic">var</span> request CustomerFunctionRequest
-	<span style="color:#8be9fd;font-style:italic">var</span> response CustomerFunctionResponse
-	httpSatus <span style="color:#ff79c6">:=</span> http.StatusOK
-
-	<span style="color:#ff79c6">if</span> err <span style="color:#ff79c6">:=</span> decoder.Decode(<span style="color:#ff79c6">&amp;</span>request); err <span style="color:#ff79c6">!=</span> <span style="color:#ff79c6">nil</span> {
-		fmt.Println(err)
-		response = CustomerFunctionResponse{
-			Error: <span style="color:#f1fa8c">&#34;error decoding request&#34;</span>,
+<span style="color:#8be9fd;font-style:italic">func</span> isValid(w http.ResponseWriter, r <span style="color:#ff79c6">*</span>http.Request) {
+	send <span style="color:#ff79c6">:=</span> <span style="color:#8be9fd;font-style:italic">func</span>(status <span style="color:#8be9fd">int</span>, value response) {
+		w.Header().Set(<span style="color:#f1fa8c">&#34;Content-Type&#34;</span>, <span style="color:#f1fa8c">&#34;application/json&#34;</span>)
+		w.WriteHeader(status)
+		_ = json.NewEncoder(w).Encode(value)
+	}
+	<span style="color:#ff79c6">if</span> r.Method <span style="color:#ff79c6">!=</span> http.MethodPost {
+		w.Header().Set(<span style="color:#f1fa8c">&#34;Allow&#34;</span>, <span style="color:#f1fa8c">&#34;POST&#34;</span>)
+		send(<span style="color:#bd93f9">405</span>, response{Error: <span style="color:#f1fa8c">&#34;POST required&#34;</span>})
+		<span style="color:#ff79c6">return</span>
+	}
+	decoder <span style="color:#ff79c6">:=</span> json.NewDecoder(http.MaxBytesReader(w, r.Body, <span style="color:#bd93f9">1</span><span style="color:#ff79c6">&lt;&lt;</span><span style="color:#bd93f9">20</span>))
+	decoder.DisallowUnknownFields()
+	<span style="color:#8be9fd;font-style:italic">var</span> input request
+	<span style="color:#ff79c6">if</span> err <span style="color:#ff79c6">:=</span> decoder.Decode(<span style="color:#ff79c6">&amp;</span>input); err <span style="color:#ff79c6">!=</span> <span style="color:#ff79c6">nil</span> <span style="color:#ff79c6">||</span> <span style="color:#8be9fd;font-style:italic">len</span>(input.Params) <span style="color:#ff79c6">==</span> <span style="color:#bd93f9">0</span> {
+		send(<span style="color:#bd93f9">400</span>, response{Error: <span style="color:#f1fa8c">&#34;params must contain at least one number&#34;</span>})
+		<span style="color:#ff79c6">return</span>
+	}
+	valid <span style="color:#ff79c6">:=</span> <span style="color:#ff79c6">true</span>
+	<span style="color:#ff79c6">for</span> _, param <span style="color:#ff79c6">:=</span> <span style="color:#ff79c6">range</span> input.Params {
+		value, ok <span style="color:#ff79c6">:=</span> param.(<span style="color:#8be9fd">float64</span>)
+		<span style="color:#ff79c6">if</span> !ok {
+			send(<span style="color:#bd93f9">400</span>, response{Error: <span style="color:#f1fa8c">&#34;all params must be numbers&#34;</span>})
+			<span style="color:#ff79c6">return</span>
 		}
-		httpSatus = http.StatusBadRequest
-	} <span style="color:#ff79c6">else</span> {
-		fmt.Printf(<span style="color:#f1fa8c">&#34;request = %v\n&#34;</span>, request)
-		maxValue <span style="color:#ff79c6">:=</span> <span style="color:#8be9fd;font-style:italic">float64</span>(<span style="color:#bd93f9">50000</span>)
-		minValue <span style="color:#ff79c6">:=</span> <span style="color:#8be9fd;font-style:italic">float64</span>(<span style="color:#bd93f9">100</span>)
-		isValid <span style="color:#ff79c6">:=</span> <span style="color:#ff79c6">true</span>
-		<span style="color:#ff79c6">for</span> index, param <span style="color:#ff79c6">:=</span> <span style="color:#ff79c6">range</span> request.Params {
-			fmt.Printf(<span style="color:#f1fa8c">&#34;param %d: value=%v\n&#34;</span>, index, param)
-			paramValue <span style="color:#ff79c6">:=</span> param.(<span style="color:#8be9fd">float64</span>)
-			<span style="color:#ff79c6">if</span> paramValue &lt; minValue <span style="color:#ff79c6">||</span> paramValue &gt; maxValue {
-				fmt.Println(<span style="color:#f1fa8c">&#34;invalid&#34;</span>)
-				isValid = <span style="color:#ff79c6">false</span>
-				<span style="color:#ff79c6">break</span>
-			}
-		}
-		response = CustomerFunctionResponse{
-			Result: isValid,
+		<span style="color:#ff79c6">if</span> value &lt; <span style="color:#bd93f9">100</span> <span style="color:#ff79c6">||</span> value &gt; <span style="color:#bd93f9">50000</span> {
+			valid = <span style="color:#ff79c6">false</span>
 		}
 	}
-	payload, err <span style="color:#ff79c6">:=</span> json.Marshal(response)
-	<span style="color:#ff79c6">if</span> err <span style="color:#ff79c6">!=</span> <span style="color:#ff79c6">nil</span> {
-		fmt.Println(err)
-	} <span style="color:#ff79c6">else</span> {
-		fmt.Println(<span style="color:#f1fa8c">&#34;repsonse=&#34;</span>, <span style="color:#8be9fd;font-style:italic">string</span>(payload))
-	}
-	w.Header().Set(<span style="color:#f1fa8c">&#34;Content-Type&#34;</span>, <span style="color:#f1fa8c">&#34;application/json; charset=UTF-8&#34;</span>)
-	w.WriteHeader(httpSatus)
-	w.Write(payload)
+	send(<span style="color:#bd93f9">200</span>, response{Result: valid})
 }
-
 <span style="color:#8be9fd;font-style:italic">func</span> main() {
-	http.HandleFunc(<span style="color:#f1fa8c">&#34;/func/isValid&#34;</span>, CustomFunctionIsValid)
-	<span style="color:#6272a4">// cp the content of funcServerCert to ./funcServer.crt, cp the content of funcServerKey to ./funcServer.key
-</span><span style="color:#6272a4"></span>	<span style="color:#ff79c6">if</span> _, err <span style="color:#ff79c6">:=</span> os.Stat(<span style="color:#f1fa8c">&#34;./funcServer.crt&#34;</span>); os.IsNotExist(err) {
-		<span style="color:#ff79c6">if</span> err1 <span style="color:#ff79c6">:=</span> ioutil.WriteFile(<span style="color:#f1fa8c">&#34;./funcServer.crt&#34;</span>, []<span style="color:#8be9fd;font-style:italic">byte</span>(funcServerCert), <span style="color:#bd93f9">0644</span>); err1 <span style="color:#ff79c6">!=</span> <span style="color:#ff79c6">nil</span> {
-			fmt.Println(<span style="color:#f1fa8c">&#34;error creating crt file&#34;</span>)
-		}
+	listen <span style="color:#ff79c6">:=</span> flag.String(<span style="color:#f1fa8c">&#34;listen&#34;</span>, <span style="color:#f1fa8c">&#34;127.0.0.1:23456&#34;</span>, <span style="color:#f1fa8c">&#34;Function listen address&#34;</span>)
+	cert <span style="color:#ff79c6">:=</span> flag.String(<span style="color:#f1fa8c">&#34;cert&#34;</span>, <span style="color:#f1fa8c">&#34;&#34;</span>, <span style="color:#f1fa8c">&#34;TLS server certificate&#34;</span>)
+	key <span style="color:#ff79c6">:=</span> flag.String(<span style="color:#f1fa8c">&#34;key&#34;</span>, <span style="color:#f1fa8c">&#34;&#34;</span>, <span style="color:#f1fa8c">&#34;TLS server key&#34;</span>)
+	flag.Parse()
+	<span style="color:#ff79c6">if</span> (<span style="color:#ff79c6">*</span>cert <span style="color:#ff79c6">==</span> <span style="color:#f1fa8c">&#34;&#34;</span>) <span style="color:#ff79c6">!=</span> (<span style="color:#ff79c6">*</span>key <span style="color:#ff79c6">==</span> <span style="color:#f1fa8c">&#34;&#34;</span>) {
+		log.Fatal(<span style="color:#f1fa8c">&#34;provide both --cert and --key&#34;</span>)
 	}
-	<span style="color:#ff79c6">if</span> _, err <span style="color:#ff79c6">:=</span> os.Stat(<span style="color:#f1fa8c">&#34;./funcServer.key&#34;</span>); os.IsNotExist(err) {
-		<span style="color:#ff79c6">if</span> err1 <span style="color:#ff79c6">:=</span> ioutil.WriteFile(<span style="color:#f1fa8c">&#34;./funcServer.key&#34;</span>, []<span style="color:#8be9fd;font-style:italic">byte</span>(funcServerKey), <span style="color:#bd93f9">0644</span>); err1 <span style="color:#ff79c6">!=</span> <span style="color:#ff79c6">nil</span> {
-			fmt.Println(<span style="color:#f1fa8c">&#34;error creating key file&#34;</span>)
-		}
+	mux <span style="color:#ff79c6">:=</span> http.NewServeMux()
+	mux.HandleFunc(<span style="color:#f1fa8c">&#34;/func/isValid&#34;</span>, isValid)
+	server <span style="color:#ff79c6">:=</span> <span style="color:#ff79c6">&amp;</span>http.Server{Addr: <span style="color:#ff79c6">*</span>listen, Handler: mux, ReadHeaderTimeout: <span style="color:#bd93f9">5</span> <span style="color:#ff79c6">*</span> time.Second, ReadTimeout: <span style="color:#bd93f9">10</span> <span style="color:#ff79c6">*</span> time.Second, WriteTimeout: <span style="color:#bd93f9">10</span> <span style="color:#ff79c6">*</span> time.Second}
+	<span style="color:#ff79c6">if</span> <span style="color:#ff79c6">*</span>cert <span style="color:#ff79c6">!=</span> <span style="color:#f1fa8c">&#34;&#34;</span> {
+		log.Fatal(server.ListenAndServeTLS(<span style="color:#ff79c6">*</span>cert, <span style="color:#ff79c6">*</span>key))
 	}
-	err <span style="color:#ff79c6">:=</span> http.ListenAndServeTLS(<span style="color:#f1fa8c">&#34;:23456&#34;</span>, <span style="color:#f1fa8c">&#34;./funcServer.crt&#34;</span>, <span style="color:#f1fa8c">&#34;./funcServer.key&#34;</span>, <span style="color:#ff79c6">nil</span>)
-	<span style="color:#ff79c6">if</span> err <span style="color:#ff79c6">!=</span> <span style="color:#ff79c6">nil</span> {
-		fmt.Println(err.Error())
+	host, _, err <span style="color:#ff79c6">:=</span> net.SplitHostPort(<span style="color:#ff79c6">*</span>listen)
+	<span style="color:#ff79c6">if</span> err <span style="color:#ff79c6">!=</span> <span style="color:#ff79c6">nil</span> <span style="color:#ff79c6">||</span> !net.ParseIP(host).IsLoopback() {
+		log.Fatal(<span style="color:#f1fa8c">&#34;plaintext examples require a loopback IP; provide TLS certificates for other addresses&#34;</span>)
 	}
-}</pre></div>
-<h3 id="2-create-the-custom-function-definition-in-speedle-and-associate-the-function-name-with-the-rest-endpoint">2) Create the custom function definition in Speedle and associate the function name with the REST endpoint</h3>
+	log.Fatal(server.ListenAndServe())
+}</code></pre></div>
+<h2 id="before-running-the-examples">Before running the examples</h2>
 
-<p>The definition of a custom function is as follows:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4">type Function struct {
-	Name           string            `json:&#34;name&#34;`
-	Description    string            `json:&#34;description,omitempty&#34;`
-	FuncURL        string            `json:&#34;funcURL&#34;`                  //endpoint of the function
-	CA             string            `json:&#34;ca,omitempty&#34;`             //tls related configurations
-	ResultCachable bool              `json:&#34;resultCachable,omitempty&#34;` //false by default
-	ResultTTL      int64             `json:&#34;resultTTL,omitempty&#34;`      //TTL of function result in second
-}</pre></div>
-<p>You can create a custom function using either the Speedle Policy Management Service (PMS) REST API, or using the Speedle CLI (<code>spctl</code>).</p>
+<p>Build <code>./bin/spctl</code>, <code>./bin/speedle-pms</code> and <code>./bin/speedle-ads</code> using the <a href="/quick-start/">quick start</a>. Use Go 1.25 or later, Bash, curl and Python 3. Run each terminal from the repository root. Use a fresh policy file for this page; reset it only after stopping both services.</p>
 
-<p>The following example shows how to create a custom function <code>isValid</code> using the <code>spctl</code> CLI and the JSON file (<code>function.json</code>) that contains the custom function definition of <code>isValid</code>.</p>
+<p>Initialize an empty policy file:</p>
 
-<p><code>function.json</code> file:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4">{
-    &#34;name&#34; : &#34;isValid&#34;,
-    &#34;funcURL&#34; : &#34;https://localhost:23456/func/isValid&#34;,
-    &#34;resultCachable&#34;: true,
-    &#34;resultTTL&#34;: 300,
-    &#34;ca&#34;:&#34;-----BEGIN CERTIFICATE-----\nMIID7TCCAtWgAwIBAgIJALM3l/OZ9uJKMA0GCSqGSIb3DQEBCwUAMIGMMQswCQYD\nVQQGEwJjbjEQMA4GA1UECAwHYmVpamluZzEQMA4GA1UEBwwHYmVpamluZzEPMA0G\nA1UECgwGb3JhY2xlMQwwCgYDVQQLDANpZG0xEjAQBgNVBAMMCWxvY2FsaG9zdDEm\nMCQGCSqGSIb3DQEJARYXY3ludGhpYS5kaW5nQG9yYWNsZS5jb20wHhcNMTgwNDI1\nMDc1MDMwWhcNMTkwNDI1MDc1MDMwWjCBjDELMAkGA1UEBhMCY24xEDAOBgNVBAgM\nB2JlaWppbmcxEDAOBgNVBAcMB2JlaWppbmcxDzANBgNVBAoMBm9yYWNsZTEMMAoG\nA1UECwwDaWRtMRIwEAYDVQQDDAlsb2NhbGhvc3QxJjAkBgkqhkiG9w0BCQEWF2N5\nbnRoaWEuZGluZ0BvcmFjbGUuY29tMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIB\nCgKCAQEAn/AFElluGOZYfvlzBGfHfkd/Q9SuQFsSnQt7Qp63Yuf5Ie/q4NACzWPC\nB/L6nQrut4OMxJHvhVAswJozRZrQxXvX/vUxkg+TmALj3U9ejF/5arGtjy5v+yGi\nwci7zM4r7VNFJGRkfluNRC1kJi4AY6jk6Gl4d/bX4tBXE8mEFY1rUswYtat3OMja\njVAoocClk6WcaQuK9R1uB+BPyxHLJ04RyKRuepPYRBQjgwHK5kMF3s5p07Os+2JH\n5jyJYW2NPs6pQe0k8GWpaar/yZ2eut9gsgHnu5JCWnyedo4nEx6I/G4GSaX+0SeU\n/Wb2aqq1QGfVOESml7CVcEa/buTeUwIDAQABo1AwTjAdBgNVHQ4EFgQU5i7CO32N\nspQ5AaG/aRU0LX2koYwwHwYDVR0jBBgwFoAU5i7CO32NspQ5AaG/aRU0LX2koYww\nDAYDVR0TBAUwAwEB/zANBgkqhkiG9w0BAQsFAAOCAQEAbQuCMPK8f8QuEmTpZBFv\naka9qruT/0/TrxrbxEh68N4moXSTVv4tSrDTmdkwUiiwayuGS7fvKjSV6hwGkQbV\nzGbFDdwOw1tPE2OwnA7/+RPl4KmE4iTHnnIanyg9CKmBW/tMp/vUyv5nIt7Xw5n4\ntx3C9/hme+Rlx+SVPIAwAjl4nVFNLfzyG+JDBnQWygySm88SzzK0WRgh5V+gyXCK\nucDW5rA6X9/CM3QrSY50mSM6dbyYDMtmTI4dX7E9STTBCNsNNcmgYkX0N9lm5RoF\nuBsAcPmp1SVIbXelDHJiIXxMKzwZy8riZQ8+Dw6LMs6wZX7COVvMWN4Dfcuo89av\nIQ==\n-----END CERTIFICATE-----&#34;
-}</pre></div>
-<p>Use the <code>spctl create function</code> command to create the custom function:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4">./spctl create function --json-file=function.json</pre></div>
-<h4 id="3-use-the-custom-function-in-the-condition-of-a-policy-or-role-policy">3) Use the custom function in the condition of a policy or role-policy</h4>
+<!-- docs-check: setup -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#8be9fd;font-style:italic">printf</span> <span style="color:#f1fa8c">&#39;{}\n&#39;</span> &gt; docs-policies.json</code></pre></div>
+<p>In terminal one, start PMS and leave it running:</p>
 
-<p>The following example shows how to create a policy using the <code>isValid</code> custom function in the condition.</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4">./spctl create policy -c &#34;grant user Ally access library if isValid(attr1)&#34; --service-name=service1</pre></div>
-<p><strong>Note:</strong>
-You must ensure that the parameters of the function in the condition match the parameters accepted by the function&rsquo;s REST endpoint.</p>
+<!-- docs-check: pms -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./bin/speedle-pms --store-type file --filestore-loc ./docs-policies.json --endpoint <span style="color:#bd93f9">127</span>.0.0.1:6733 --grpc-endpoint <span style="color:#bd93f9">127</span>.0.0.1:0 --insecure<span style="color:#ff79c6">=</span>true</code></pre></div>
+<p>In terminal two, start ADS and leave it running:</p>
+
+<!-- docs-check: ads -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./bin/speedle-ads --store-type file --filestore-loc ./docs-policies.json --endpoint <span style="color:#bd93f9">127</span>.0.0.1:6734 --grpc-endpoint <span style="color:#bd93f9">127</span>.0.0.1:0 --insecure<span style="color:#ff79c6">=</span>true</code></pre></div>
+<p>Run the remaining commands in a third terminal. PMS and ADS share the file; watch propagates changes asynchronously. Confirm the intended update has reached ADS before relying on it. <code>--insecure=true</code> is only for this loopback example; see <a href="/docs/security/">security</a> for production connections. Explicit PMS addresses avoid changing <code>~/.spctlconfig</code>. Stop both server terminals with Ctrl-C when finished.</p>
+
+<h2 id="register-and-call-the-function">Register and call the function</h2>
+
+<p>The definition below disables result caching so that decisions reflect each request. It creates the service before its policy.</p>
+
+<!-- docs-check: function-fixture -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">cat &gt; <span style="color:#ff79c6">function</span>.json <span style="color:#f1fa8c">&lt;&lt;&#39;JSON&#39;
+</span><span style="color:#f1fa8c">{&#34;name&#34;:&#34;isValid&#34;,&#34;funcURL&#34;:&#34;http://127.0.0.1:23456/func/isValid&#34;,&#34;resultCachable&#34;:false}
+</span><span style="color:#f1fa8c">JSON</span>
+./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ create <span style="color:#ff79c6">function</span> --json-file <span style="color:#ff79c6">function</span>.json
+./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ create service service1
+./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ create policy -c <span style="color:#f1fa8c">&#34;grant user Ally access library if isValid(attr1)&#34;</span> --service-name service1</code></pre></div>
+<p>The following requests return Allow (<code>200</code> is in range) and Deny (<code>50</code> is outside it):</p>
+
+<!-- docs-check: function-allow -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl --fail --silent --show-error -H <span style="color:#f1fa8c">&#39;Content-Type: application/json&#39;</span> <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  -d <span style="color:#f1fa8c">&#39;{&#34;subject&#34;:{&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;,&#34;name&#34;:&#34;Ally&#34;}]},&#34;serviceName&#34;:&#34;service1&#34;,&#34;resource&#34;:&#34;library&#34;,&#34;action&#34;:&#34;access&#34;,&#34;attributes&#34;:[{&#34;name&#34;:&#34;attr1&#34;,&#34;type&#34;:&#34;numeric&#34;,&#34;value&#34;:200}]}&#39;</span> <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  http://127.0.0.1:6734/authz-check/v1/is-allowed</code></pre></div>
+<!-- docs-check: function-deny -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl --fail --silent --show-error -H <span style="color:#f1fa8c">&#39;Content-Type: application/json&#39;</span> <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  -d <span style="color:#f1fa8c">&#39;{&#34;subject&#34;:{&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;,&#34;name&#34;:&#34;Ally&#34;}]},&#34;serviceName&#34;:&#34;service1&#34;,&#34;resource&#34;:&#34;library&#34;,&#34;action&#34;:&#34;access&#34;,&#34;attributes&#34;:[{&#34;name&#34;:&#34;attr1&#34;,&#34;type&#34;:&#34;numeric&#34;,&#34;value&#34;:50}]}&#39;</span> <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  http://127.0.0.1:6734/authz-check/v1/is-allowed</code></pre></div>
+<h2 id="tls-and-caching">TLS and caching</h2>
+
+<p>For a TLS endpoint, generate fresh <a href="/docs/security/">local test certificates</a>, then start the function with <code>go run ./website/tests/examples/custom-function --cert ./tls/server.crt --key ./tls/server.key</code>. Register <code>funcURL</code> as <code>https://localhost:23456/func/isValid</code> and set <code>ca</code> to the <strong>PEM certificate contents</strong> from <code>tls/ca.crt</code>, not its file path. Production certificates must cover the actual host. No expired hard-coded certificate or private key is required.</p>
+
+<p><code>resultCachable</code> defaults to false; <code>resultTTL</code> is the cached lifetime in seconds when caching is enabled. Enable caching only if the result remains correct for that period and parameter set. External state such as account status may change before the TTL expires. Use <a href="/docs/api/management_api/">PMS function management</a> to manage definitions; external function invocation is not available in the browser Playground.</p>
 
   </div>
 </div>

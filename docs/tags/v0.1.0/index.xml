@@ -17,7 +17,8 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://speedle.io/docs/api/</guid>
-      <description>REST APIs Policy Management Service API  Authorization Decision Service API  Token Assertion API     GRPC APIs Policy Management Service API  Authorization Decision Service API     Golang APIs Policy Management Service API  Authorization Decision Service API     Policy Management Authorization Decision Token Assertion</description>
+      <description>REST APIs These are reference contracts for your configured PMS/ADS or asserter endpoint. speedle.io serves documentation and the browser Playground; it is not a hosted PMS/ADS service. Supply JSON with Content-Type: application/json, and configure TLS/mTLS and caller access controls.
+ Policy management API Authorization decision API Token assertion webhook  Policy and role-policy IDs are strings. PMS responses are flat objects; authorization permissions use permissions (plural). REST decision requests use a typed attribute array, whereas diagnostic response attributes and webhook attributes are objects.</description>
     </item>
     
     <item>
@@ -26,7 +27,9 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://speedle.io/docs/api/decision_api/</guid>
-      <description>              (function() { var url = &#34;\/swagger\/policy-check.yaml&#34;; const ui = SwaggerUIBundle({ url: url, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.presets.apis ], plugins: [ SwaggerUIBundle.plugins.DownloadUrl ], validatorUrl: null, layout: &#34;BaseLayout&#34; }) window.ui = ui })();  </description>
+      <description>Reference for your configured ADS. Request attributes are typed arrays; diagnostic attributes are objects.
+Security and endpoint configuration. This is a contract reference, not a backend hosted by speedle.io.
+              (function() { var url = &#34;\/swagger\/policy-check.yaml&#34;; const ui = SwaggerUIBundle({ url: url, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.presets.apis ], plugins: [ SwaggerUIBundle.plugins.DownloadUrl ], validatorUrl: null, layout: &#34;</description>
     </item>
     
     <item>
@@ -45,7 +48,9 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://speedle.io/docs/api/management_api/</guid>
-      <description>              (function() { var url = &#34;\/swagger\/policy-manage.yaml&#34;; const ui = SwaggerUIBundle({ url: url, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.presets.apis ], plugins: [ SwaggerUIBundle.plugins.DownloadUrl ], validatorUrl: null, layout: &#34;BaseLayout&#34; }) window.ui = ui })();  </description>
+      <description>Reference for your configured PMS. Requests and responses are JSON; policy IDs are strings and responses are flat objects.
+Security and endpoint configuration. This is a contract reference, not a backend hosted by speedle.io.
+              (function() { var url = &#34;\/swagger\/policy-manage.yaml&#34;; const ui = SwaggerUIBundle({ url: url, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.presets.apis ], plugins: [ SwaggerUIBundle.</description>
     </item>
     
     <item>
@@ -54,8 +59,7 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://speedle.io/docs/spdl/</guid>
-      <description>Syntax Keywords The reserved keywords in SPDL are as follows. You cannot use any of these keywords as user name, group name, action, resource, attribute name, and so on.
- role user group entity grant deny if in on from  The keywords are all case-insensitive, which means that you cannot use one of &amp;ldquo;role&amp;rdquo;, &amp;ldquo;ROLE&amp;rdquo;, &amp;ldquo;Role&amp;rdquo;, &amp;ldquo;rOLe&amp;rdquo;, etc as user name, group name, action, resource, attribute name, and so on.</description>
+      <description>Syntax Keywords grant, deny, user, group, entity, role, from, on, if and in have special meanings in their syntax positions. Statement keywords are case-insensitive. In conditions, use in or IN; function names are case-sensitive. Principal, action and resource names are also case-sensitive. The current parser accepts keyword-like names in some name positions, so a blanket prohibition is not a validation rule. Prefer unambiguous names for review and client interoperability.</description>
     </item>
     
     <item>
@@ -73,7 +77,9 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://speedle.io/docs/api/asserter_api/</guid>
-      <description>              (function() { var url = &#34;\/swagger\/asserter.yaml&#34;; const ui = SwaggerUIBundle({ url: url, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.presets.apis ], plugins: [ SwaggerUIBundle.plugins.DownloadUrl ], validatorUrl: null, layout: &#34;BaseLayout&#34; }) window.ui = ui })();  </description>
+      <description>Webhook reference. errCode is an integer and attributes is an object. Configure the actual endpoint in the ADS asserter configuration.
+Security and endpoint configuration. This is a contract reference, not a backend hosted by speedle.io.
+              (function() { var url = &#34;\/swagger\/asserter.yaml&#34;; const ui = SwaggerUIBundle({ url: url, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.presets.apis ], plugins: [ SwaggerUIBundle.</description>
     </item>
     
   </channel>

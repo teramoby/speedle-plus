@@ -90,158 +90,133 @@ headingSelector: 'h2'
   <div id="kube-component" class="content">
     
 
-<p>Speedle 支持两种部署方式</p>
+<h2 id="选择部署方式">选择部署方式</h2>
 
-<ol>
-<li>开发模式</li>
-</ol>
+<p>通过<a href="/zh/docs/deployment-embeded/">嵌入模式</a>可以在 Go 进程内运行决策引擎；如果应用通过 REST 或 gRPC 调用 Speedle，则运行独立的 PMS 和 ADS。<a href="/zh/quick-start/">快速入门</a>提供了完整的本地策略管理和授权验证步骤。</p>
 
-<p>在开发模式下，Speedle 使用一个文件作为策略仓库，用户使用 RESTful API 和 CLI 工具访问 Speedle 的各项服务。</p>
+<h2 id="使用当前-go-版本构建">使用当前 Go 版本构建</h2>
 
-<ol>
-<li>生产模式</li>
-</ol>
+<p>在 Linux 或 macOS 上准备 Go 1.25 或更新版本（推荐 Go 1.27.3）、Git 和命令行 shell。使用 Go modules，源码可放在任意可写目录，无需手工配置 <code>GOROOT</code>、<code>GOPATH</code>、<code>dep</code> 或 GOPATH 源码路径。</p>
 
-<p>在生产模式下，Speedle 使用<code>etcd</code>作为策略仓库，用户使用 RESTful API 和 CLI 工具访问 Speedle 的各项服务。</p>
+<!-- deployment-check: source-build -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">git clone --depth <span style="color:#bd93f9">1</span> https://github.com/teramoby/speedle-plus.git
+<span style="color:#8be9fd;font-style:italic">cd</span> speedle-plus
+mkdir -p bin
+go build -o ./bin/ ./cmd/spctl ./cmd/speedle-pms ./cmd/speedle-ads</code></pre></div>
+<p>生成的可执行文件为 <code>bin/spctl</code>、<code>bin/speedle-pms</code> 和 <code>bin/speedle-ads</code>。从源码根目录运行下面的本地示例，两个服务共享同一策略文件：</p>
 
-<h2 id="准备工作">准备工作</h2>
+<!-- deployment-check: pms -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./bin/speedle-pms --store-type file --filestore-loc ./docs-policies.json --endpoint <span style="color:#bd93f9">127</span>.0.0.1:6733 --insecure<span style="color:#ff79c6">=</span>true</code></pre></div>
+<p>保持 PMS 运行，在同一源码目录的另一个终端启动 ADS：</p>
 
-<ol>
-<li>Golang 1.10.0 开发环境已经安装好。</li>
-<li>Docker 1.12 或更高的版本已经安装好。</li>
-<li>一个 Docker registry。该 Docker registry 被用作推送和拉取 Speedle 的 Docker 映像。</li>
-<li>在目录<code>\$GOPATH/src/github.com/teramoby/speedle-plus/</code>下同步最新的 Speedle 代码。</li>
-<li>一个 Kubernetes 集群。</li>
-<li>为你的 Docker registry 设置一个 Kubernetes Secret</li>
-</ol>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#6272a4"># 为Docker registry设置Kubernetes Secret
-</span><span style="color:#6272a4"></span>$ kubectl create secret docker-registry reg-speedle --docker-server<span style="color:#ff79c6">=</span><span style="color:#8be9fd;font-style:italic">$DOCKER_LOGIN_SERVER</span> --docker-username<span style="color:#ff79c6">=</span><span style="color:#8be9fd;font-style:italic">$DOCKER_LOGIN_USER</span> --docker-password<span style="color:#ff79c6">=</span><span style="color:#8be9fd;font-style:italic">$DOCKER_LOGIN_PASSWORD</span></code></pre></div>
-<h2 id="开发环境下部署-speedle-服务">开发环境下部署 Speedle 服务</h2>
+<!-- deployment-check: ads -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./bin/speedle-ads --store-type file --filestore-loc ./docs-policies.json --endpoint <span style="color:#bd93f9">127</span>.0.0.1:6734 --insecure<span style="color:#ff79c6">=</span>true</code></pre></div>
+<p>使用新的策略文件；文件不存在时 PMS 会创建它。创建策略和验证 Allow/Deny 的完整请求见<a href="/zh/quick-start/">快速入门</a>，结束后用 Ctrl+C 停止两个服务。默认关闭 gRPC，只有设置 <code>--grpc-endpoint</code> 才启用。此处明文 HTTP 仅用于本机示例，TLS 和客户端认证见<a href="/zh/docs/security/">安全配置</a>。</p>
 
-<p>开发环境下可以使用<code>helm</code>部署 Speedle 服务。</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ helm install -n speedle deployment/helm/speedle-dev
-NAME:   speedle
-LAST DEPLOYED: Tue Nov <span style="color:#bd93f9">27</span> <span style="color:#bd93f9">23</span>:19:37 <span style="color:#bd93f9">2018</span>
-NAMESPACE: default
-STATUS: DEPLOYED
+<h2 id="构建容器映像">构建容器映像</h2>
 
-RESOURCES:
-<span style="color:#ff79c6">==</span>&gt; v1/Service
-NAME         TYPE       CLUSTER-IP      EXTERNAL-IP  PORT<span style="color:#ff79c6">(</span>S<span style="color:#ff79c6">)</span>   AGE
-speedle-pms  ClusterIP  <span style="color:#bd93f9">10</span>.101.117.233  &lt;none&gt;       <span style="color:#bd93f9">6733</span>/TCP  1s
-speedle-ads  ClusterIP  <span style="color:#bd93f9">10</span>.104.5.111    &lt;none&gt;       <span style="color:#bd93f9">6734</span>/TCP  <span style="color:#8be9fd;font-style:italic">1s</span>
+<p>如果需要部署到 Linux/amd64 容器，在源码根目录先构建静态 Linux 二进制：</p>
 
-<span style="color:#ff79c6">==</span>&gt; v1beta2/Deployment
-NAME         DESIRED  CURRENT  UP-TO-DATE  AVAILABLE  AGE
-speedle-pms  <span style="color:#bd93f9">1</span>        <span style="color:#bd93f9">1</span>        <span style="color:#bd93f9">1</span>           <span style="color:#bd93f9">0</span>          1s
-speedle-ads  <span style="color:#bd93f9">1</span>        <span style="color:#bd93f9">1</span>        <span style="color:#bd93f9">1</span>           <span style="color:#bd93f9">0</span>          <span style="color:#8be9fd;font-style:italic">1s</span>
+<!-- deployment-check: linux-build -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">mkdir -p ./bin/linux-amd64
+<span style="color:#8be9fd;font-style:italic">CGO_ENABLED</span><span style="color:#ff79c6">=</span><span style="color:#bd93f9">0</span> <span style="color:#8be9fd;font-style:italic">GOOS</span><span style="color:#ff79c6">=</span>linux <span style="color:#8be9fd;font-style:italic">GOARCH</span><span style="color:#ff79c6">=</span>amd64 go build -o ./bin/linux-amd64/ ./cmd/speedle-pms ./cmd/speedle-ads</code></pre></div>
+<p>将下面内容保存为 <code>bin/linux-amd64/Dockerfile.pms</code>，再将其中两处 <code>speedle-pms</code> 替换成 <code>speedle-ads</code>，另存为同目录下的 <code>Dockerfile.ads</code>。映像直接运行二进制，不依赖历史映像的入口脚本：</p>
 
-<span style="color:#ff79c6">==</span>&gt; v1/Pod<span style="color:#ff79c6">(</span>related<span style="color:#ff79c6">)</span>
-NAME                          READY  STATUS             RESTARTS  AGE
-speedle-pms-867787bc95-kftbr  <span style="color:#bd93f9">0</span>/1    ContainerCreating  <span style="color:#bd93f9">0</span>         1s
-speedle-ads-7877ffbbf7-bwwtd  <span style="color:#bd93f9">0</span>/1    ContainerCreating  <span style="color:#bd93f9">0</span>         1s
+<!-- deployment-template: image -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-dockerfile" data-lang="dockerfile"><span style="color:#ff79c6">FROM</span><span style="color:#f1fa8c"> scratch</span>
+COPY speedle-pms /speedle-pms
+USER <span style="color:#bd93f9">65532</span>:65532
+<span style="color:#ff79c6">ENTRYPOINT</span><span style="color:#f1fa8c"> [&#34;/speedle-pms&#34;]</span></code></pre></div>
+<p>准备支持 BuildKit 的当前 Docker Engine 和可推送的映像仓库。将 <code>PMS_IMAGE</code>、<code>ADS_IMAGE</code> 设置为自己的完整映像名称与标签，登录该仓库，然后构建并推送：</p>
 
+<!-- deployment-template: image-build -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker build --platform linux/amd64 -f ./bin/linux-amd64/Dockerfile.pms -t <span style="color:#f1fa8c">&#34;</span><span style="color:#8be9fd;font-style:italic">$PMS_IMAGE</span><span style="color:#f1fa8c">&#34;</span> ./bin/linux-amd64
+docker build --platform linux/amd64 -f ./bin/linux-amd64/Dockerfile.ads -t <span style="color:#f1fa8c">&#34;</span><span style="color:#8be9fd;font-style:italic">$ADS_IMAGE</span><span style="color:#f1fa8c">&#34;</span> ./bin/linux-amd64
+docker push <span style="color:#f1fa8c">&#34;</span><span style="color:#8be9fd;font-style:italic">$PMS_IMAGE</span><span style="color:#f1fa8c">&#34;</span>
+docker push <span style="color:#f1fa8c">&#34;</span><span style="color:#8be9fd;font-style:italic">$ADS_IMAGE</span><span style="color:#f1fa8c">&#34;</span></code></pre></div>
+<p>这些映像面向 Linux/amd64 节点；如果节点架构不同，应构建对应架构。使用此最小映像连接 TLS 端点时，需要明确提供 CA 文件。</p>
 
-NOTES:
-<span style="color:#bd93f9">1</span>. $ kubectl port-forward svc/speedle-pms <span style="color:#bd93f9">6733</span>:6733
-  Then access http://127.0.0.1:6733/policy-mgmt/v1/ to manage policies.
+<h2 id="kubernetes-开发示例">Kubernetes 开发示例</h2>
 
-<span style="color:#bd93f9">2</span>. $ kubectl port-forward svc/speedle-ads <span style="color:#bd93f9">6734</span>:6734
-  Then access http://127.0.0.1:6734/authz-check/v1/is-allowed to check permissions.</code></pre></div>
-<h2 id="生产环境下部署-speedle-服务">生产环境下部署 Speedle 服务</h2>
+<p>使用当前 Kubernetes 集群和兼容的 <code>kubectl</code>。将以下内容保存为 <code>speedle-dev.yaml</code>。它使用 <code>apps/v1</code>，在同一 Pod 内让 PMS/ADS 共享文件，以非 root 用户运行应用，并通过内部 ClusterIP 服务访问。这是隔离开发环境示例：Pod 被替换后 <code>emptyDir</code> 中的策略会丢失，HTTP 端点需要集群访问控制。私有映像仓库需要时应配置 imagePullSecrets。</p>
 
-<h3 id="安装-etcd-集群">安装 etcd 集群</h3>
+<!-- deployment-template: kubernetes -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: speedle-dev
+spec:
+  replicas: <span style="color:#bd93f9">1</span>
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: speedle-dev
+  template:
+    metadata:
+      labels:
+        app: speedle-dev
+    spec:
+      initContainers:
+        - name: policy-file
+          image: busybox:<span style="color:#bd93f9">1.37</span>.<span style="color:#bd93f9">0</span>
+          command: [<span style="color:#f1fa8c">&#34;sh&#34;</span>, <span style="color:#f1fa8c">&#34;-c&#34;</span>, <span style="color:#f1fa8c">&#34;printf &#39;{}\n&#39; &gt; /data/policies.json; chown 65532:65532 /data/policies.json; chmod 600 /data/policies.json&#34;</span>]
+          volumeMounts:
+            - name: policies
+              mountPath: /data
+      containers:
+        - name: pms
+          image: registry.example.com/speedle-pms:demo
+          args: [<span style="color:#f1fa8c">&#34;--store-type&#34;</span>, <span style="color:#f1fa8c">&#34;file&#34;</span>, <span style="color:#f1fa8c">&#34;--filestore-loc&#34;</span>, <span style="color:#f1fa8c">&#34;/data/policies.json&#34;</span>, <span style="color:#f1fa8c">&#34;--endpoint&#34;</span>, <span style="color:#f1fa8c">&#34;0.0.0.0:6733&#34;</span>, <span style="color:#f1fa8c">&#34;--insecure=true&#34;</span>]
+          ports:
+            - containerPort: <span style="color:#bd93f9">6733</span>
+          readinessProbe:
+            tcpSocket:
+              port: <span style="color:#bd93f9">6733</span>
+          volumeMounts:
+            - name: policies
+              mountPath: /data
+        - name: ads
+          image: registry.example.com/speedle-ads:demo
+          args: [<span style="color:#f1fa8c">&#34;--store-type&#34;</span>, <span style="color:#f1fa8c">&#34;file&#34;</span>, <span style="color:#f1fa8c">&#34;--filestore-loc&#34;</span>, <span style="color:#f1fa8c">&#34;/data/policies.json&#34;</span>, <span style="color:#f1fa8c">&#34;--endpoint&#34;</span>, <span style="color:#f1fa8c">&#34;0.0.0.0:6734&#34;</span>, <span style="color:#f1fa8c">&#34;--insecure=true&#34;</span>]
+          ports:
+            - containerPort: <span style="color:#bd93f9">6734</span>
+          readinessProbe:
+            tcpSocket:
+              port: <span style="color:#bd93f9">6734</span>
+          volumeMounts:
+            - name: policies
+              mountPath: /data
+      volumes:
+        - name: policies
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: speedle-dev
+spec:
+  type: ClusterIP
+  selector:
+    app: speedle-dev
+  ports:
+    - name: pms
+      port: <span style="color:#bd93f9">6733</span>
+      targetPort: <span style="color:#bd93f9">6733</span>
+    - name: ads
+      port: <span style="color:#bd93f9">6734</span>
+      targetPort: <span style="color:#bd93f9">6734</span></code></pre></div>
+<p>保持 <code>PMS_IMAGE</code>、<code>ADS_IMAGE</code> 指向刚才推送的映像。先在本地替换清单中的映像，再应用；使用快速入门客户端时保持端口转发运行：</p>
 
-<p>强烈建议使用<code>etcd-operator</code>部署<code>etcd</code>。<a href="https://github.com/coreos/etcd-operator">https://github.com/coreos/etcd-operator</a></p>
+<!-- deployment-template: apply -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">kubectl <span style="color:#8be9fd;font-style:italic">set</span> image --local -f speedle-dev.yaml <span style="color:#8be9fd;font-style:italic">pms</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;</span><span style="color:#8be9fd;font-style:italic">$PMS_IMAGE</span><span style="color:#f1fa8c">&#34;</span> <span style="color:#8be9fd;font-style:italic">ads</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;</span><span style="color:#8be9fd;font-style:italic">$ADS_IMAGE</span><span style="color:#f1fa8c">&#34;</span> -o yaml | kubectl apply -f -
+kubectl rollout status deployment/speedle-dev
+kubectl port-forward service/speedle-dev <span style="color:#bd93f9">6733</span>:6733 <span style="color:#bd93f9">6734</span>:6734</code></pre></div>
+<h2 id="生产部署">生产部署</h2>
 
-<p>使用<code>helm</code>部署<code>etcd-operator</code>：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ helm install stable/etcd-operator --name my-release</code></pre></div>
-<p>安装一个新的<code>etcd</code>集群：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ kubectl create -f https://raw.githubusercontent.com/coreos/etcd-operator/master/example/example-etcd-cluster.yaml</code></pre></div>
-<p>一个 3 节点的<code>etcd</code>集群将被安装：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ kubectl get pods
-NAME                            READY     STATUS    RESTARTS   AGE
-example-etcd-cluster-gxkmr9ql7z   <span style="color:#bd93f9">1</span>/1       Running   <span style="color:#bd93f9">0</span>          1m
-example-etcd-cluster-m6g62x6mwc   <span style="color:#bd93f9">1</span>/1       Running   <span style="color:#bd93f9">0</span>          1m
-example-etcd-cluster-rqk62l46kw   <span style="color:#bd93f9">1</span>/1       Running   <span style="color:#bd93f9">0</span>          1m</code></pre></div>
-<p>如果你希望安装一个支持 TLS 协议的<code>etcd</code>集群，请参考一下文档：
-<a href="https://github.com/coreos/etcd-operator/blob/master/doc/user/cluster_tls.md">https://github.com/coreos/etcd-operator/blob/master/doc/user/cluster_tls.md</a></p>
+<p>生产环境应使用持久化策略存储，保护管理与决策端点，并为客户端和策略后端配置 TLS/mTLS。当前存储配置见<a href="/zh/docs/store/">可插拔存储</a>，传输参数见<a href="/zh/docs/security/">安全配置</a>。请按当前 etcd 文档部署和运维 etcd，不要继续使用已停止维护的 etcd-operator 示例。</p>
 
-<h3 id="部署-speedle">部署 Speedle</h3>
-
-<p>编辑文件<code>values.yaml</code>，修改跟<code>etcd</code>的监听地址。</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4">store:
-  type: etcd
-  etcd:
-    endpoint: http://&lt;etcdServiceName&gt;:&lt;etcdServicePort&gt;</pre></div>
-<p>你也可以在执行命令<code>helm install</code>的时候，使用参数<code>--set store.etcd.endpoint=http://&lt;etcdServiceName&gt;:&lt;etcdServicePort&gt;</code>指定<code>etcd</code>的监听地址。</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ helm install -n speedle deployment/helm/speedle-prod
-NAME:   speedle
-LAST DEPLOYED: Tue Nov <span style="color:#bd93f9">27</span> <span style="color:#bd93f9">23</span>:19:37 <span style="color:#bd93f9">2018</span>
-NAMESPACE: default
-STATUS: DEPLOYED
-
-RESOURCES:
-<span style="color:#ff79c6">==</span>&gt; v1/Service
-NAME         TYPE       CLUSTER-IP      EXTERNAL-IP  PORT<span style="color:#ff79c6">(</span>S<span style="color:#ff79c6">)</span>   AGE
-speedle-pms  ClusterIP  <span style="color:#bd93f9">10</span>.101.117.233  &lt;none&gt;       <span style="color:#bd93f9">6733</span>/TCP  1s
-speedle-ads  ClusterIP  <span style="color:#bd93f9">10</span>.104.5.111    &lt;none&gt;       <span style="color:#bd93f9">6734</span>/TCP  <span style="color:#8be9fd;font-style:italic">1s</span>
-
-<span style="color:#ff79c6">==</span>&gt; v1beta2/Deployment
-NAME         DESIRED  CURRENT  UP-TO-DATE  AVAILABLE  AGE
-speedle-pms  <span style="color:#bd93f9">1</span>        <span style="color:#bd93f9">1</span>        <span style="color:#bd93f9">1</span>           <span style="color:#bd93f9">0</span>          1s
-speedle-ads  <span style="color:#bd93f9">1</span>        <span style="color:#bd93f9">1</span>        <span style="color:#bd93f9">1</span>           <span style="color:#bd93f9">0</span>          <span style="color:#8be9fd;font-style:italic">1s</span>
-
-<span style="color:#ff79c6">==</span>&gt; v1/Pod<span style="color:#ff79c6">(</span>related<span style="color:#ff79c6">)</span>
-NAME                          READY  STATUS             RESTARTS  AGE
-speedle-pms-867787bc95-kftbr  <span style="color:#bd93f9">0</span>/1    ContainerCreating  <span style="color:#bd93f9">0</span>         1s
-speedle-ads-7877ffbbf7-bwwtd  <span style="color:#bd93f9">0</span>/1    ContainerCreating  <span style="color:#bd93f9">0</span>         1s
-
-
-NOTES:
-<span style="color:#bd93f9">1</span>. $ kubectl port-forward svc/speedle-pms <span style="color:#bd93f9">6733</span>:6733
-  Then access http://127.0.0.1:6733/policy-mgmt/v1/ to manage policies.
-
-<span style="color:#bd93f9">2</span>. $ kubectl port-forward svc/speedle-ads <span style="color:#bd93f9">6734</span>:6734
-  Then access http://127.0.0.1:6734/authz-check/v1/is-allowed to check permissions.</code></pre></div>
-<p>如果你的<code>etcd</code>启用了 TLS，请在<code>values.yaml</code>中设置以下变量：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">store:
-  etcd:
-    endpoint: https://example-client.default.svc:<span style="color:#bd93f9">2379</span>
-    etcdClientCertSecret: etcd-client-tls
-    certFile: etcd-client.crt
-    keyFile: etcd-client.key
-    trustedCAFile: etcd-client-ca.crt</code></pre></div>
-<h2 id="使用-speedle">使用 Speedle</h2>
-
-<h3 id="配置-spctl">配置 <code>spctl</code></h3>
-
-<p><em>如果你在任何一个 Kubernetes 节点上运行<code>spctl</code>，PMS 的 IP 地址是 Kubernetes Service <code>Speedle</code>的 Cluster-IP. 在这个例子中，IP 地址是 10.101.117.233。如果你想在 Kubernetes 集群外运行<code>spctl</code>，请将 Kubernetes Service <code>Speedle</code>定义为一个<code>nodePort</code> Service，请参考 Kubernetes 文档<a href="https://kubernetes.io/docs/concepts/services-networking/service/。">https://kubernetes.io/docs/concepts/services-networking/service/。</a></em></p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ spctl config pms-endpoint http://10.108.146.148:6733/policy-mgmt/v1/
-$ spctl config --list
-<span style="color:#8be9fd;font-style:italic">cacert</span> <span style="color:#ff79c6">=</span>
-<span style="color:#8be9fd;font-style:italic">cert</span> <span style="color:#ff79c6">=</span>
-<span style="color:#8be9fd;font-style:italic">key</span> <span style="color:#ff79c6">=</span>
-pms-endpoint <span style="color:#ff79c6">=</span> http://10.108.146.148:6733/policy-mgmt/v1/
-<span style="color:#8be9fd;font-style:italic">timeout</span> <span style="color:#ff79c6">=</span> 5s</code></pre></div>
-<h3 id="用-spctl-新建一个-speedle-service">用<code>spctl</code>新建一个 Speedle Service</h3>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ spctl create service <span style="color:#8be9fd;font-style:italic">test</span>
-service created
-<span style="color:#ff79c6">{</span><span style="color:#f1fa8c">&#34;name&#34;</span>:<span style="color:#f1fa8c">&#34;test&#34;</span>,<span style="color:#f1fa8c">&#34;type&#34;</span>:<span style="color:#f1fa8c">&#34;application&#34;</span><span style="color:#ff79c6">}</span></code></pre></div>
-<h3 id="用-spctl-新建一条策略">用<code>spctl</code>新建一条策略</h3>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ spctl create policy -c <span style="color:#f1fa8c">&#34;grant user jiefu read book&#34;</span> --service-name <span style="color:#8be9fd;font-style:italic">test</span>
-policy created
-<span style="color:#ff79c6">{</span><span style="color:#f1fa8c">&#34;id&#34;</span>:<span style="color:#f1fa8c">&#34;ta55v3kyzux5ssiy3wwr&#34;</span>,<span style="color:#f1fa8c">&#34;name&#34;</span>:<span style="color:#f1fa8c">&#34;&#34;</span>,<span style="color:#f1fa8c">&#34;effect&#34;</span>:<span style="color:#f1fa8c">&#34;grant&#34;</span>,<span style="color:#f1fa8c">&#34;permissions&#34;</span>:<span style="color:#ff79c6">[{</span><span style="color:#f1fa8c">&#34;resource&#34;</span>:<span style="color:#f1fa8c">&#34;book&#34;</span>,<span style="color:#f1fa8c">&#34;actions&#34;</span>:<span style="color:#ff79c6">[</span><span style="color:#f1fa8c">&#34;read&#34;</span><span style="color:#ff79c6">]}]</span>,<span style="color:#f1fa8c">&#34;principals&#34;</span>:<span style="color:#ff79c6">[[</span><span style="color:#f1fa8c">&#34;user:jiefu&#34;</span><span style="color:#ff79c6">]]}</span></code></pre></div>
-<h3 id="用-curl-测试策略">用<code>curl</code>测试策略</h3>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ curl -X POST -d <span style="color:#f1fa8c">&#39;{&#34;subject&#34;:{&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;,&#34;name&#34;:&#34;jiefu&#34;}]},&#34;serviceName&#34;:&#34;test&#34;,&#34;resource&#34;:&#34;book&#34;,&#34;action&#34;:&#34;read&#34;}&#39;</span> http://10.108.146.148:6734/authz-check/v1/is-allowed
-<span style="color:#ff79c6">{</span><span style="color:#f1fa8c">&#34;allowed&#34;</span>:true,<span style="color:#f1fa8c">&#34;reason&#34;</span>:0</code></pre></div>
-<h2 id="疑难解答">疑难解答</h2>
-
-<p>如果 Speedle 的映像放在你私人的 Speedle Registry 上，在部署 Speedle 服务之前，请先添加一个 Kubernetes Secret。</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">kubectl create secret docker-registry &lt;secret name&gt; --docker-username<span style="color:#ff79c6">=</span>&lt;user name&gt; --docker-password<span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;&lt;Password&gt;&#34;</span> --docker-email<span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;your@email.com&#34;</span>
---docker-server<span style="color:#ff79c6">=</span>&lt;server-add&gt;</code></pre></div>
-<p>更多的关于 Kubernetes Secret 详细，请参考：
-<a href="https://kubernetes.io/docs/concepts/configuration/secret/">https://kubernetes.io/docs/concepts/configuration/secret/</a></p>
+<p>仓库中保留了历史 Helm/Kubernetes 示例。旧的 Helm 2 <code>helm install -n ...</code>、<code>stable/etcd-operator</code>、<code>apps/v1beta2</code> 和 <code>r.authz.fun</code> 映像说明均不是本页的新部署流程。容器构建推送、集群准入、仓库访问、存储与 rollout 依赖具体环境，应在目标集群中验证后再用于生产。</p>
 
   </div>
 </div>

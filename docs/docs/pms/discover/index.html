@@ -90,96 +90,54 @@ headingSelector: 'h2'
   <div id="kube-component" class="content">
     
 
-<h2 id="what-can-discover-mode-do">What can discover mode do?</h2>
+<h2 id="what-discovery-does">What discovery does</h2>
 
-<h3 id="help-you-discover-existing-authorization-requests">* Help you discover existing authorization requests</h3>
+<p>Discovery records requests and returns <code>allowed=true</code> with reason 5 for a successful recording operation. It does not prove that an existing policy authorized the operation. Use it only in an isolated test environment, review generated grants, and restore normal <code>is-allowed</code> enforcement afterwards. Assertion or storage errors must still be handled; never treat an error as an authorization grant.</p>
 
-<p>The <em>is-allowed</em> API endpoint and the <em>discover</em> API endpoint use the same request and response format. When you replace <em>is-allowed</em> with <em>discover</em> in the URL of the API, each authorization request that is returned shows <em>WHO</em> carries out <em>WHAT</em> action on <em>WHICH</em> resource. Discover mode does not evaluate the authorization decision; it simply records the authorization decision requests, along with the actions and the resources protected, and returns &ldquo;is-allowed=true&rdquo;.</p>
+<h2 id="start-a-reproducible-local-example">Start a reproducible local example</h2>
 
-<p>Note that when using discover mode, the discover endpoint must be called by every service. Therefore, Speedle must be integrated into your system so that every authorization request flows through it.</p>
+<p>Build the binaries using <a href="/quick-start/">Quick Start</a>, then run all terminals from the checkout root. Use a fresh file and stop previous page fixtures before starting.</p>
 
-<h3 id="generate-policies-using-the-discovered-requests">* Generate policies using the discovered requests</h3>
+<!-- docs-check: setup -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#8be9fd;font-style:italic">printf</span> <span style="color:#f1fa8c">&#39;{}\n&#39;</span> &gt; docs-policies.json</code></pre></div>
+<p>In terminal one:</p>
 
-<p>You can generate policies based on the authorization requests that you record. In one scenario, a developer runs a test suite that mimics all the interactions in your system, and Speedle records all the necessary authorization calls. For example, Service A (a UI) calls Service B (a database). Speedle can effectively record - &ldquo;Service A called Service B with these attributes&hellip;&rdquo; and generates a policy that will allow such a request (is-allowed=true). You can then import the policy directly into Speedle.</p>
+<!-- docs-check: pms -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./bin/speedle-pms --store-type file --filestore-loc ./docs-policies.json --endpoint <span style="color:#bd93f9">127</span>.0.0.1:6733 --insecure<span style="color:#ff79c6">=</span>true</code></pre></div>
+<p>In terminal two:</p>
 
-<p>All of the policies generated are <em>is-allowed</em> policies because they are recorded directly from allowed authorization requests on protected resources.</p>
+<!-- docs-check: ads -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./bin/speedle-ads --store-type file --filestore-loc ./docs-policies.json --endpoint <span style="color:#bd93f9">127</span>.0.0.1:6734 --insecure<span style="color:#ff79c6">=</span>true</code></pre></div>
+<p>Keep both running. In terminal three, record one request:</p>
 
-<h3 id="disable-authorization-without-changing-the-code">* Disable authorization without changing the code</h3>
+<!-- docs-check: discover-record -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl --fail --silent --show-error -H <span style="color:#f1fa8c">&#39;Content-Type: application/json&#39;</span> <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  -d <span style="color:#f1fa8c">&#39;{&#34;subject&#34;:{&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;,&#34;name&#34;:&#34;alice&#34;}]},&#34;serviceName&#34;:&#34;observed&#34;,&#34;resource&#34;:&#34;book&#34;,&#34;action&#34;:&#34;read&#34;}&#39;</span> <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  http://127.0.0.1:6734/authz-check/v1/discover</code></pre></div>
+<p>Inspect the captured request, then generate a proposed service definition:</p>
 
-<p>When using Speedle for authorization checks, calls made to the <em>is-allowed</em> endpoint return true or false, depending on whether the call is allowed or not.
-However, when you use discover mode and replace <em>is-allowed</em> with <em>discover</em> in the url, all authorization checks return an &ldquo;is-allowed=true&rdquo; result. Because discover mode does not perform authorization checks, it provides a convenient way for developers to disable authorization checks when diagnosing failures.</p>
+<!-- docs-check: discover-list -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ discover request --service-name observed</code></pre></div>
+<!-- docs-check: discover-export -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ discover policy --service-name observed &gt; discovered-service.json</code></pre></div>
+<p>Review <code>discovered-service.json</code>, including generated roles, identity domains and resources. The fresh example has no existing service named <code>observed</code>, so it can be imported directly; for an existing service, reconcile its policies rather than blindly recreating it.</p>
 
-<h2 id="how-do-i-use-discover-mode">How do I use discover mode?</h2>
+<!-- docs-check: discover-import -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ create service --json-file discovered-service.json</code></pre></div>
+<h2 id="restore-and-verify-normal-enforcement">Restore and verify normal enforcement</h2>
 
-<h3 id="step-1-change-all-is-allowed-calls-in-your-system-to-discover-calls">Step 1. Change all <strong>is-allowed</strong> calls in your system to <strong>discover</strong> calls</h3>
+<p>Call <code>is-allowed</code> again. Alice should be allowed after ADS has loaded the policy update; Bob must still be denied:</p>
 
-<p>If your system calls the authorization decision API through REST, the REST endpoint of the authorization decision API is usually configured somewhere in your system. In this case, just change the REST endpoint of the authorization decision API from an <em>is-allowed</em> endpoint to a <em>discover</em> endpoint. Be sure to apply the configuration changes.</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4">http://localhost:6734/authz-check/v1/is-allowed ---&gt; http://localhost:6734/authz-check/v1/discover</pre></div>
-<p>If your system calls the authorization decision API through Grpc or a golang API, then change all the authorization calls from <em>is-allowed</em> to <em>discover</em>, rebuild the changed code, and restart your system to make the change take effect.</p>
+<!-- docs-check: discover-allow -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl --fail --silent --show-error -H <span style="color:#f1fa8c">&#39;Content-Type: application/json&#39;</span> <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  -d <span style="color:#f1fa8c">&#39;{&#34;subject&#34;:{&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;,&#34;name&#34;:&#34;alice&#34;}]},&#34;serviceName&#34;:&#34;observed&#34;,&#34;resource&#34;:&#34;book&#34;,&#34;action&#34;:&#34;read&#34;}&#39;</span> <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  http://127.0.0.1:6734/authz-check/v1/is-allowed</code></pre></div>
+<!-- docs-check: discover-deny -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl --fail --silent --show-error -H <span style="color:#f1fa8c">&#39;Content-Type: application/json&#39;</span> <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  -d <span style="color:#f1fa8c">&#39;{&#34;subject&#34;:{&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;,&#34;name&#34;:&#34;bob&#34;}]},&#34;serviceName&#34;:&#34;observed&#34;,&#34;resource&#34;:&#34;book&#34;,&#34;action&#34;:&#34;read&#34;}&#39;</span> <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  http://127.0.0.1:6734/authz-check/v1/is-allowed</code></pre></div>
+<p>Stop both services with Ctrl+C. For gRPC use <code>Discover</code>/<code>IsAllowed</code> on the generated client; embedded Go uses <code>evaluator.Discover(ctx)</code>/<code>evaluator.IsAllowed(ctx)</code>. For CLI options, run <code>./bin/spctl discover --help</code>. Do not leave a real application pointing at <code>/discover</code>.</p>
 
-<h3 id="step-2-optional-discover-the-authorization-requests">Step 2. [optional] Discover the authorization requests</h3>
-
-<p>Use the <code>spctl discover request</code> command to list all request details for the specified service. Using the <code>--force</code> option continuously discovers the last request.</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4">spctl discover request --last --force --service-name=YOUR_SERVICE_NAME</pre></div>
-<p>Keep the window open so that you can review the requests in the next step.</p>
-
-<h3 id="step-3-access-the-resources-that-are-protected-in-your-system">Step 3. Access the resources that are protected in your system</h3>
-
-<p>How you access the resources depends on your system, such as through a UI or through REST endpoints. Accessing protected resources triggers authorization decision requests to Speedle, which Speedle can then record. Depending on your system, this may trigger a lot of authorization requests.</p>
-
-<h3 id="step-4-generate-policies-for-your-service-based-on-the-authorization-requests">Step 4. Generate policies for your service based on the authorization requests</h3>
-
-<p>Use the <code>spctl discover policy</code> command to generate a JSON-based policy definition for the specified service. In this example, the policy definition is named <code>service.json</code>.</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4">spctl discover policy --service-name=YOUR_SERVICE_NAME &gt; service.json</pre></div>
-<h3 id="step-5-optional-import-the-policies-into-speedle">Step 5. [optional] Import the policies into Speedle</h3>
-
-<p>Use the <code>spctl create</code> command to create a service with policies using the json service definition created in step 4.</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4">spctl create service --json-file service.json</pre></div>
-<h3 id="step-6-optional-change-all-the-discover-calls-in-your-system-back-to-is-allowed-calls">Step 6. [optional] Change all the <strong>discover</strong> calls in your system back to <strong>is-allowed</strong> calls</h3>
-
-<p>After you create your policies and import them into your system, you should update the endpoints to remove <code>discover</code> and use <code>is-allowed</code> instead. Be sure to apply the configuration changes.</p>
-
-<h2 id="discover-mode-command-line-reference">Discover mode command line reference</h2>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4">$ ./spctl discover --help
-discover request or policy for services
-
-Usage:
-  spctl discover (request/policy/reset  | --service-name=NAME | --last | --force | --principal-name=USERNAME) [flags]
-
-Examples:
-
-        # List all request details for all services
-        spctl discover request
-
-        # List all request details for the given service
-        spctl discover request --service-name=&#34;foo&#34;
-
-        # List the last request details for service &#34;foo&#34;
-        spctl discover request --last --service-name=&#34;foo&#34;
-
-        # List the latest request details for service &#34;foo&#34;, doesn&#39;t exit until you kill it using &#34;Ctrl-C&#34;
-        spctl discover request --last --service-name=&#34;foo&#34; -f
-
-        # cleanup all requests
-        spctl discover reset
-
-        # clean up the requests for service &#34;foo&#34;
-        spctl discover reset --service-name=&#34;foo&#34;
-
-        # Generate JSON based policy definition, all users are converted to a role. For example, user Jon visited resourceA. Then the following policy is generated &#34;grant role role_Jon visit resourceA&#34;
-        spctl discover policy  --service-name=&#34;foo&#34;
-
-        # Generate JSON based policy definition, only for discover requests triggered by principal which has name &#39;Jon&#39;
-        spctl discover policy --principal-name=&#34;Jon&#34; --service-name=&#34;foo&#34;
-
-Flags:
-  -f, --force                   continuously discover last request
-  -h, --help                    help for discover
-  -l, --last                    list last request
-      --principal-IDD string    principal Identity Domain
-      --principal-name string   principal name
-      --principal-type string   principal type, could be &#39;user&#39;, &#39;group&#39;,&#39;entity&#39;
-  -s, --service-name string     service name</pre></div>
   </div>
 </div>
 </main><div class="sidebar">

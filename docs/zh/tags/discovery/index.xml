@@ -17,12 +17,14 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://speedle.io/zh/docs/pms/discover/</guid>
-      <description>什么是 discovery mode? 当一个系统使用 Speedle 作为权限控制引擎时，在所有保护资源被访问之前， 都会向 Speedle 的 ARS(Authorization Runtime Service)发 authorization 请求。所有的 authorization 请求都被被发送到 Speedle ARS 的 is-allowed RESTful endpoint。ARS 根据系统中的所有 policy 计算出当前请求的资源访问是否允许。
-当系统中需要保护的资源越来越多，为这些资源创建 policy 就是一件比较痛苦的事情。因为 policy 的制定者需要知道如何在 policy 中正确表述资源。discover mode 就是为了解决这一痛点而设计的。简单来说， 我们提供了一个和 is-allowed 有着相同输入和输出的接口 discover, 这个接口永远返回 allowed, 同时记录下 authorization 请求。并提供命令行工具查询被 discover 接口记录下的 authorization 请求,甚至为这些请求生成 Policy.
-当我们把系统中的 is-allowed 接口统统换成 discover 接口,我们称系统工作在 discovery mode.
-discovery mode 能帮我们做什么?  记录 authorization 请求的内容
- 根据记录的 authorization 请求生成 Policy
- 关闭权限检查</description>
+      <description>策略发现的作用 发现模式记录请求，成功记录时返回 allowed=true、reason 5，不代表既有策略曾授权该操作。仅在隔离测试环境使用，审核生成的授权，并在结束后恢复正常的 is-allowed 检查。断言或存储错误仍需单独处理，不能把错误当作授权成功。
+启动可复现的本地示例 先按快速入门编译二进制。下面各终端均从源码根目录运行，使用新的策略文件，并先停止其他页面示例的服务。
+printf &amp;#39;{}\n&amp;#39; &amp;gt; docs-policies.json 终端一：
+./bin/speedle-pms --store-type file --filestore-loc ./docs-policies.json --endpoint 127.0.0.1:6733 --insecure=true 终端二：
+./bin/speedle-ads --store-type file --filestore-loc ./docs-policies.json --endpoint 127.0.0.1:6734 --insecure=true 保持两个服务运行。在终端三记录一个请求：
+curl --fail --silent --show-error -H &amp;#39;Content-Type: application/json&amp;#39; \  -d &amp;#39;{&amp;#34;subject&amp;#34;:{&amp;#34;principals&amp;#34;:[{&amp;#34;type&amp;#34;:&amp;#34;user&amp;#34;,&amp;#34;name&amp;#34;:&amp;#34;alice&amp;#34;}]},&amp;#34;serviceName&amp;#34;:&amp;#34;observed&amp;#34;,&amp;#34;resource&amp;#34;:&amp;#34;book&amp;#34;,&amp;#34;action&amp;#34;:&amp;#34;read&amp;#34;}&amp;#39; \  http://127.0.0.1:6734/authz-check/v1/discover 检查记录的请求，再生成待审核的服务定义：
+./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ discover request --service-name observed ./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ discover policy --service-name observed &amp;gt; discovered-service.json 审核 discovered-service.json 中的角色、身份域和资源。本例尚不存在名为 observed 的策略服务，因此可以直接导入；已有同名服务时应合并和审核其策略，而不是直接重复创建。
+./bin/spctl --pms-endpoint http://127.</description>
     </item>
     
     <item>
