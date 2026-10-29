@@ -92,6 +92,32 @@ printf &amp;#39;{}\n&amp;#39; &amp;gt; docs-policies.json 终端一启动 PMS，
     </item>
     
     <item>
+      <title>MongoDB 配置指南</title>
+      <link>https://speedle.io/zh/docs/store/mongodb/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://speedle.io/zh/docs/store/mongodb/</guid>
+      <description>本指南使用 MongoDB 7.0.16 单节点副本集和 Docker 持久化卷。PMS 写入策略，ADS 通过 change stream 跟踪同一个数据库。本地示例只监听回环地址且不开启身份认证，用于开发环境；生产环境的身份认证、TLS 与副本集配置见后文。
+MongoDB 必须以副本集或分片集群方式运行：ADS 使用 change stream 监听数据库，整体替换策略存储时使用事务，独立运行的 mongod 两者都不支持。开发环境使用单节点副本集即可。
+1. 编译 Speedle 准备 Bash、Git、curl、已启动的 Docker，以及 Go 1.26.10 或 Go 1.27.3，然后从源码编译：
+git clone --depth 1 https://github.com/teramoby/speedle-plus.git cd speedle-plus mkdir -p bin go build -o ./bin/ ./cmd/spctl ./cmd/speedle-pms ./cmd/speedle-ads 后续命令均在这个代码目录执行。确认 27017、6733、6734 端口可用；修改端口时要同步修改命令和配置。
+2. 启动 MongoDB 命名卷保存 MongoDB 数据。--replSet 让 mongod 作为副本集 speedle-rs 的成员启动；只把数据库端口发布到宿主机的回环地址。
+docker run --name speedle-mongodb --detach \  --publish 127.</description>
+    </item>
+    
+    <item>
+      <title>Custom Function</title>
+      <link>https://speedle.io/zh/docs/custom-function/</link>
+      <pubDate>Mon, 21 Jan 2019 10:43:02 +0800</pubDate>
+      
+      <guid>https://speedle.io/zh/docs/custom-function/</guid>
+      <description>为什么使用自定义函数？ 当内置运算或函数不能表达规则时，SPDL 条件可以调用已配置的函数。Speedle 向其 REST 端点发送 POST {&amp;quot;params&amp;quot;:[...]}，预期返回 {&amp;quot;result&amp;quot;:...} 或 {&amp;quot;error&amp;quot;:&amp;quot;...&amp;quot;}。参数顺序、类型和返回类型必须与条件一致。函数失败是评估错误，应用应拒绝访问。
+启动本地示例 示例接受 100 至 50000 之间的数值。参数类型错误或列表为空时返回 HTTP 错误。只有回环 IP 可以使用明文，其他监听地址必须提供 TLS。
+在单独终端运行：
+go run ./website/tests/examples/custom-function package main import ( &amp;#34;encoding/json&amp;#34; &amp;#34;flag&amp;#34; &amp;#34;log&amp;#34; &amp;#34;net&amp;#34; &amp;#34;net/http&amp;#34; &amp;#34;time&amp;#34; ) type request struct { Params []interface{} `json:&amp;#34;params&amp;#34;` } type response struct { Result interface{} `json:&amp;#34;result,omitempty&amp;#34;` Error string `json:&amp;#34;error,omitempty&amp;#34;` } func isValid(w http.ResponseWriter, r *http.Request) { send := func(status int, value response) { w.</description>
+    </item>
+    
+    <item>
       <title>Authorization Runtime/Decision API</title>
       <link>https://speedle.io/zh/docs/api/decision_api/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
@@ -273,7 +299,7 @@ gRPC API  PMS proto：pb.PolicyManager ADS proto：pb.Evaluator  当前 proto �
       <guid>https://speedle.io/zh/docs/store/</guid>
       <description>内置存储与扩展接口 独立服务在 pkg/store 下注册 file、etcd、MongoDB、MySQL 实现。可用不代表具有相同的运维保证，部署前应分别审查后端认证、持久化、事务与 watch 行为。下方配置说明属性名称，本地示例不涉及启动 etcd/MongoDB 集群。
 完整后端实现 pms.PolicyStoreManager：服务、授权策略、角色策略、函数管理，以及快照读取与 watch/stop。ADS 接受较窄的只读/watch 接口 PolicyStoreManagerADS。实现新后端时应以实际接口为准，不能照搬历史文档中不完整的方法列表。
-逐步部署教程：MySQL 配置指南与 etcd 配置指南。
+逐步部署教程：MySQL 配置指南、etcd 配置指南与 MongoDB 配置指南。
 MySQL 8.4 策略存储 按照 MySQL 配置指南逐步建库、创建 PMS/ADS 独立账号、配置并启动服务，最后验证策略同步和授权结果。
 mysql 后端完整实现 PMS 与 ADS 所需的策略存储接口，首版不支持 Discover 访问请求收集和策略生成。使用纯 Go 的 go-sql-driver/mysql 驱动；数据库需要预先创建。
 { &amp;#34;storeConfig&amp;#34;: { &amp;#34;storeType&amp;#34;: &amp;#34;mysql&amp;#34;, &amp;#34;storeProps&amp;#34;: { &amp;#34;MySQLDSN&amp;#34;: &amp;#34;speedle:replace-me@tcp(db.example.com:3306)/speedle?tls=true&amp;#34;, &amp;#34;MySQLInitSchema&amp;#34;: true, &amp;#34;MySQLPollInterval&amp;#34;: &amp;#34;1s&amp;#34;, &amp;#34;MySQLQueryTimeout&amp;#34;: &amp;#34;10s&amp;#34; } }, &amp;#34;enableWatch&amp;#34;: true }    配置属性 命令行参数 默认值     MySQLDSN --mysqlstore-dsn 必填，包含数据库名   MySQLInitSchema --mysqlstore-init-schema true   MySQLPollInterval --mysqlstore-poll-interval 1s   MySQLQueryTimeout --mysqlstore-query-timeout 10s    环境变量沿用相同映射，例如 SPDL_MYSQLSTORE_DSN。时间间隔必须是正的时长字符串；MySQLInitSchema 接受 JSON 布尔值或布尔字符串。优先级依次为显式参数、非空环境变量、配置文件、默认值。嵌入使用时导入 pkg/store/mysql，直接将上述属性传给 store.</description>
@@ -312,18 +338,6 @@ TLS 加密连接并认证服务端。若要强制认证客户端，必须通过 
       <guid>https://speedle.io/zh/docs/versions/</guid>
       <description>Speedle+ 发布版本 已发布版本及发行说明以 GitHub Releases 为准。v1.6.0 是当前嵌入式 Go 示例固定使用的版本。为确保模块依赖可复现，应指定已发布版本；安装方式见嵌入模式。
 Oracle Speedle 历史版本 0.1.0 是原项目首次开源的版本，包含策略管理、授权决策、命令行工具及集成示例。历史文档中的 0.2.0 规划不是当前 Speedle+ 的发布路线图。</description>
-    </item>
-    
-    <item>
-      <title>Custom Function</title>
-      <link>https://speedle.io/zh/docs/custom-function/</link>
-      <pubDate>Mon, 21 Jan 2019 10:43:02 +0800</pubDate>
-      
-      <guid>https://speedle.io/zh/docs/custom-function/</guid>
-      <description>为什么使用自定义函数？ 当内置运算或函数不能表达规则时，SPDL 条件可以调用已配置的函数。Speedle 向其 REST 端点发送 POST {&amp;quot;params&amp;quot;:[...]}，预期返回 {&amp;quot;result&amp;quot;:...} 或 {&amp;quot;error&amp;quot;:&amp;quot;...&amp;quot;}。参数顺序、类型和返回类型必须与条件一致。函数失败是评估错误，应用应拒绝访问。
-启动本地示例 示例接受 100 至 50000 之间的数值。参数类型错误或列表为空时返回 HTTP 错误。只有回环 IP 可以使用明文，其他监听地址必须提供 TLS。
-在单独终端运行：
-go run ./website/tests/examples/custom-function package main import ( &amp;#34;encoding/json&amp;#34; &amp;#34;flag&amp;#34; &amp;#34;log&amp;#34; &amp;#34;net&amp;#34; &amp;#34;net/http&amp;#34; &amp;#34;time&amp;#34; ) type request struct { Params []interface{} `json:&amp;#34;params&amp;#34;` } type response struct { Result interface{} `json:&amp;#34;result,omitempty&amp;#34;` Error string `json:&amp;#34;error,omitempty&amp;#34;` } func isValid(w http.ResponseWriter, r *http.Request) { send := func(status int, value response) { w.</description>
     </item>
     
     <item>

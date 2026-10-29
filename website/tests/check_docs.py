@@ -44,6 +44,8 @@ def static_checks():
     etcd_static_checks()
     from check_mysql import static_checks as mysql_static_checks
     mysql_static_checks()
+    from check_mongodb import static_checks as mongodb_static_checks
+    mongodb_static_checks()
     for page in PAGES:
         assert steps(page,'en')==steps(page,'zh'), (page,'English/Chinese command drift')
     for path in DOCS.rglob('*.md'):

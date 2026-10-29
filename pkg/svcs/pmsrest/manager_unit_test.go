@@ -40,7 +40,7 @@ func newTestServerWithStore(location string) (*httptest.Server, error) {
 	conf.StoreConfig.StoreProps["FileLocation"] = location
 	var ps pmsapi.PolicyStoreManager
 	var err error
-	if os.Getenv("STORE_TYPE") == "mysql" || storetest.UseEtcd() {
+	if storetest.SelectedBackend() != "file" {
 		var initial pmsapi.PolicyStore
 		raw, readErr := os.ReadFile(location)
 		if readErr != nil {
@@ -49,21 +49,12 @@ func newTestServerWithStore(location string) (*httptest.Server, error) {
 		if err := json.Unmarshal(raw, &initial); err != nil {
 			return nil, err
 		}
-		if storetest.UseEtcd() {
-			fixture, fixtureErr := storetest.NewEtcdFixture(&initial)
-			if fixtureErr != nil {
-				return nil, fixtureErr
-			}
-			fixtureCleanup = append(fixtureCleanup, fixture.Close)
-			ps = fixture.Store
-		} else {
-			fixture, fixtureErr := storetest.NewMySQLFixture(&initial)
-			if fixtureErr != nil {
-				return nil, fixtureErr
-			}
-			fixtureCleanup = append(fixtureCleanup, fixture.Close)
-			ps = fixture.Store
+		fixture, fixtureErr := storetest.NewFixture(&initial)
+		if fixtureErr != nil {
+			return nil, fixtureErr
 		}
+		fixtureCleanup = append(fixtureCleanup, fixture.Close)
+		ps = fixture.Store
 	} else {
 		ps, err = store.NewStore(conf.StoreConfig.StoreType, conf.StoreConfig.StoreProps)
 	}
@@ -144,7 +135,7 @@ func testMain(m *testing.M) int {
 		return 1
 	}
 	defer scenarioServer.Close()
-	if os.Getenv("SPEEDLE_MYSQL_EXTERNAL") != "1" {
+	if os.Getenv("SPEEDLE_TEST_EXTERNAL_SERVICES") != "1" && os.Getenv("SPEEDLE_MYSQL_EXTERNAL") != "1" {
 		os.Setenv("PMS_ENDPOINT", scenarioServer.URL)
 	}
 	os.Setenv("PMS_ADMIN_TOKEN", "")

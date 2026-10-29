@@ -27,7 +27,7 @@ gh workflow run nightly.yml --repo teramoby/speedle-plus \
 
 This manual mode runs MySQL and CI script checks. It skips the other nightly
 backends and the notification/issue-report job. A normal scheduled run includes
-file, etcd and MySQL, the etcd setup guides, a hosted MongoDB job,
+file, etcd and MySQL, the etcd and MongoDB setup guides, a hosted MongoDB job,
 supported-toolchain Quick Start checks, govulncheck and the CI script tests.
 Pull request CI does not run MySQL, MongoDB or the Docker storage guides.
 
@@ -111,3 +111,33 @@ passed all suites at commit `9332c3b1`: 1,032 pass events, no failures and one
 optional Discover skip. The CI script checks passed 52 Python and 134 Node
 tests. Event counts include parent tests and subtests. Later runs also execute
 the bilingual MySQL setup instructions directly from the documentation.
+
+## Shared regression and four-backend configuration
+
+`scripts/ci/store_regression.py` now owns the common native PMS/ADS, CLI,
+preparation and tagged regression stages. The MySQL launcher retains Docker
+provisioning and delegates these stages to the same engine used by MongoDB.
+`scripts/ci/run-store-tests.py` runs that engine against an explicitly
+provisioned backend selected by `STORE_TYPE=file|etcd|mongodb|mysql`.
+
+Integration fixtures share `storetest.PolicyStore` / `storetest.NewFixture`.
+`SPEEDLE_TEST_STORE_PROPS` accepts a native JSON connection-property map;
+`SPEEDLE_MONGO_URI`, `SPEEDLE_MYSQL_TEST_DSN` and `SPEEDLE_ETCD_ENDPOINT` are
+connection fallbacks. Fixtures generate isolated databases or key prefixes.
+For `STORE_TYPE=etcd`, `run-store-tests.py` requires an endpoint on a port other
+than 2379/2380: the engine refuses to start while those ports are in use, because
+the etcd implementation tests start their own server there.
+MongoDB/MySQL database prefixes must start with `speedle_test`. Invalid or unknown
+backends fail instead of falling back to file. Optional Discover is checked
+through the store's interface, independently of the selected backend name.
+
+The ordinary stage executes `go test -race -json -p 1 -count=1 -timeout 600s ./...`
+without package exclusions. Implementation-specific backend tests still exercise
+their own adapters; independently provisioned database integration tests may skip
+when their database is absent. Skips and failures are included in the summary.
+The engine then builds/starts native PMS and ADS over one database, runs fixture
+preparation, and executes every tagged ADS runtime/cache test.
+
+MySQL remains on charming. MongoDB validation uses `runs-on: fiona-speedle` and
+an owned macOS ARM64 replica set on fiona. This does not change the runner-group
+workflow allowlist or merge/deploy either backend automatically.

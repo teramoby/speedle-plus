@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Mongodb on Speedle</title>
+    <link>https://speedle.io/tags/mongodb/</link>
+    <description>Recent content in Mongodb on Speedle</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language>
+    
+	<atom:link href="https://speedle.io/tags/mongodb/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>MongoDB Setup</title>
+      <link>https://speedle.io/docs/store/mongodb/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://speedle.io/docs/store/mongodb/</guid>
+      <description>This walkthrough uses MongoDB 7.0.16 as a single-node replica set with a persistent Docker volume. PMS writes policies and ADS follows the same database through a change stream. The example listens on loopback without authentication for local development. Production authentication, TLS and replica set configuration follow the walkthrough.
+MongoDB must run as a replica set or sharded cluster. ADS watches the database with a change stream, and replacing the whole policy store runs in a transaction; a standalone mongod supports neither.</description>
+    </item>
+    
+  </channel>
+</rss>

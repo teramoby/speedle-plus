@@ -1,0 +1,60 @@
+name: MongoDB nightly validation
+
+on:
+  schedule:
+    # 01:00 GMT+8 every day, after the MySQL nightly (shared group below).
+    - cron: '0 17 * * *'
+  workflow_dispatch:
+  push:
+    branches: [codex/mongodb-store-charming-validation, claude/mongodb-store]
+
+permissions:
+  contents: read
+
+# Shares the nightly's group: both use the host-wide etcd ports the Go tests
+# need, and any speedle-runner may run either.
+concurrency:
+  group: nightly-tests
+  cancel-in-progress: false
+
+jobs:
+  mongodb:
+    name: MongoDB
+    runs-on: speedle-runner
+    timeout-minutes: 60
+    steps:
+      - name: Verify runner identity
+        run: |
+          set -euo pipefail
+          # The platforms validate-mongodb.sh downloads mongod for.
+          case "${RUNNER_OS}/${RUNNER_ARCH}" in
+            macOS/ARM64 | Linux/X64) ;;
+            *) echo "Unsupported MongoDB runner ${RUNNER_OS}/${RUNNER_ARCH}" >&2; exit 1 ;;
+          esac
+          echo "MongoDB runner: ${RUNNER_NAME} (${RUNNER_OS}/${RUNNER_ARCH})"
+
+      - name: Checkout validation revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Setup Go
+        uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff
+        with:
+          go-version: '1.26'
+          cache: false
+
+      - name: Full test suite against MongoDB
+        run: |
+          set -euo pipefail
+          mkdir -p mongodb-results
+          bash scripts/ci/validate-mongodb.sh 2>&1 | tee mongodb-results/mongodb.log
+
+      - name: Upload MongoDB results
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: mongodb-results
+          path: mongodb-results/
+          if-no-files-found: warn

@@ -74,6 +74,16 @@ Before running the examples Build ./bin/spctl, ./bin/speedle-pms and ./bin/speed
     </item>
     
     <item>
+      <title>Custom Function</title>
+      <link>https://speedle.io/docs/custom-function/</link>
+      <pubDate>Mon, 21 Jan 2019 10:43:02 +0800</pubDate>
+      
+      <guid>https://speedle.io/docs/custom-function/</guid>
+      <description>Why use a custom function? SPDL conditions can call a configured function when built-in operators or functions do not express the required rule. Speedle calls its REST endpoint with POST {&amp;quot;params&amp;quot;:[...]} and expects {&amp;quot;result&amp;quot;:...} or {&amp;quot;error&amp;quot;:&amp;quot;...&amp;quot;}. Parameter order/types and the result type must match the condition. Function failures are evaluation errors; applications must fail closed.
+Start the local example This example accepts numeric values from 100 to 50000. Wrong parameter types or an empty parameter list return an HTTP error.</description>
+    </item>
+    
+    <item>
       <title>Authorization Runtime/Decision API</title>
       <link>https://speedle.io/docs/api/decision_api/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
@@ -91,6 +101,16 @@ Security and endpoint configuration. This is a contract reference, not a backend
       
       <guid>https://speedle.io/integrations/</guid>
       <description></description>
+    </item>
+    
+    <item>
+      <title>MongoDB Setup</title>
+      <link>https://speedle.io/docs/store/mongodb/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://speedle.io/docs/store/mongodb/</guid>
+      <description>This walkthrough uses MongoDB 7.0.16 as a single-node replica set with a persistent Docker volume. PMS writes policies and ADS follows the same database through a change stream. The example listens on loopback without authentication for local development. Production authentication, TLS and replica set configuration follow the walkthrough.
+MongoDB must run as a replica set or sharded cluster. ADS watches the database with a change stream, and replacing the whole policy store runs in a transaction; a standalone mongod supports neither.</description>
     </item>
     
     <item>
@@ -224,26 +244,6 @@ TLS encrypts the connection and authenticates the server. To require authenticat
     </item>
     
     <item>
-      <title>Versions</title>
-      <link>https://speedle.io/docs/versions/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://speedle.io/docs/versions/</guid>
-      <description>Speedle+ releases Use the GitHub Releases page for published versions and release notes. v1.6.0 is the version pinned by the current embedded Go walkthrough. Use an explicit released version for reproducible module dependencies; the embedded guide explains the setup.
-Historical Oracle Speedle release Version 0.1.0 was the original open-source release, including policy management, authorization decisions, the command-line tool and integration samples. The historical 0.2.0 planning note is not the current Speedle+ release roadmap.</description>
-    </item>
-    
-    <item>
-      <title>Custom Function</title>
-      <link>https://speedle.io/docs/custom-function/</link>
-      <pubDate>Mon, 21 Jan 2019 10:43:02 +0800</pubDate>
-      
-      <guid>https://speedle.io/docs/custom-function/</guid>
-      <description>Why use a custom function? SPDL conditions can call a configured function when built-in operators or functions do not express the required rule. Speedle calls its REST endpoint with POST {&amp;quot;params&amp;quot;:[...]} and expects {&amp;quot;result&amp;quot;:...} or {&amp;quot;error&amp;quot;:&amp;quot;...&amp;quot;}. Parameter order/types and the result type must match the condition. Function failures are evaluation errors; applications must fail closed.
-Start the local example This example accepts numeric values from 100 to 50000. Wrong parameter types or an empty parameter list return an HTTP error.</description>
-    </item>
-    
-    <item>
       <title>Speedle Documents</title>
       <link>https://speedle.io/docs/</link>
       <pubDate>Thu, 17 Jan 2019 13:20:07 +0800</pubDate>
@@ -261,6 +261,16 @@ Start the local example This example accepts numeric values from 100 to 50000. W
       <description>Webhook reference. errCode is an integer and attributes is an object. Configure the actual endpoint in the ADS asserter configuration.
 Security and endpoint configuration. This is a contract reference, not a backend hosted by speedle.io.
               (function() { var url = &#34;\/swagger\/asserter.yaml&#34;; const ui = SwaggerUIBundle({ url: url, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.presets.apis ], plugins: [ SwaggerUIBundle.</description>
+    </item>
+    
+    <item>
+      <title>Versions</title>
+      <link>https://speedle.io/docs/versions/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://speedle.io/docs/versions/</guid>
+      <description>Speedle+ releases Use the GitHub Releases page for published versions and release notes. v1.6.0 is the version pinned by the current embedded Go walkthrough. Use an explicit released version for reproducible module dependencies; the embedded guide explains the setup.
+Historical Oracle Speedle release Version 0.1.0 was the original open-source release, including policy management, authorization decisions, the command-line tool and integration samples. The historical 0.2.0 planning note is not the current Speedle+ release roadmap.</description>
     </item>
     
   </channel>

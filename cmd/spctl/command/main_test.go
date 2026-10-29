@@ -16,6 +16,8 @@ import (
 	"github.com/teramoby/speedle-plus/testutil/storetest"
 )
 
+var cliFixtureSupportsDiscover = true
+
 func TestMain(m *testing.M) {
 	os.Exit(runCLITests(m))
 }
@@ -23,6 +25,10 @@ func TestMain(m *testing.M) {
 func runCLITests(m *testing.M) int {
 	// Preserve the explicit external-fixture mode used by run_*_test.sh.
 	if os.Getenv(testutil.SP_APP_NAME) != "" {
+		// The external PMS's store is not reachable from here; only the file
+		// and etcd stores implement Discover.
+		storeType := testutil.GetOSEnv("STORE_TYPE", "file")
+		cliFixtureSupportsDiscover = storeType == "file" || storeType == "etcd"
 		return m.Run()
 	}
 	directory, err := os.MkdirTemp("", "speedle-cli-tests-")
@@ -62,25 +68,14 @@ func runCLITests(m *testing.M) int {
 
 	storeType := testutil.GetOSEnv("STORE_TYPE", "file")
 	properties := map[string]interface{}{storefile.FileLocationKey: filepath.Join(directory, "policies.json")}
-	if storetest.UseEtcd() {
-		fixture, err := storetest.NewEtcdFixture(nil)
+	if storeType != "file" {
+		fixture, err := storetest.NewFixture(nil)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			return 1
 		}
 		defer fixture.Close()
 		properties = fixture.Config.StoreProps
-	} else if storeType == "mysql" {
-		fixture, err := storetest.NewMySQLFixture(nil)
-		if err != nil {
-			fmt.Fprintln(os.Stderr, err)
-			return 1
-		}
-		defer fixture.Close()
-		properties = fixture.Config.StoreProps
-	} else if storeType != "file" {
-		fmt.Fprintf(os.Stderr, "unsupported CLI fixture store %q\n", storeType)
-		return 1
 	}
 	manager, err := store.NewStore(storeType, properties)
 	if err != nil {
@@ -90,6 +85,7 @@ func runCLITests(m *testing.M) int {
 	if closer, ok := manager.(interface{ Close() error }); ok {
 		defer closer.Close()
 	}
+	_, cliFixtureSupportsDiscover = manager.(store.DiscoverRequestManager)
 	router, err := pmsrest.NewRouter(manager)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)

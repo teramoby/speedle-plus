@@ -119,7 +119,7 @@ func TestCustomerFunctionViaDelegator(t *testing.T) {
 	}
 
 	// An evaluator with a function service endpoint sends calls there.
-	p, _ := newFileEvaluator(t, `{"functions":[{"name":"f","funcURL":"https://customer/f"}],
+	p, _ := newFixtureEvaluator(t, `{"functions":[{"name":"f","funcURL":"https://customer/f"}],
 		"services":[{"name":"app","policies":[{"id":"1","effect":"grant","principals":[["user:alice"]],
 		"permissions":[{"resource":"r","actions":["read"]}],"condition":"f() == 'via delegator'"}]}]}`)
 	p.RuntimePolicyStore.FuncSvcEndpoint = delegator.URL
@@ -167,7 +167,7 @@ func TestFunctionResultCacheExpiry(t *testing.T) {
 }
 
 func TestAssertToken(t *testing.T) {
-	p, _ := newFileEvaluator(t, `{"services":[{"name":"app","policies":[{"id":"1","effect":"grant",
+	p, _ := newFixtureEvaluator(t, `{"services":[{"name":"app","policies":[{"id":"1","effect":"grant",
 		"principals":[["user:alice"]],"permissions":[{"resource":"r","actions":["read"]}]}]}]}`)
 	calls := 0
 	p.SetAsserterFunc(func(ctx *adsapi.RequestContext) error {

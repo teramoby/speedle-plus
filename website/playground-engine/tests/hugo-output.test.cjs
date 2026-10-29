@@ -64,7 +64,7 @@ function checkStorageNavigation(directory, locale = '') {
       const html = fs.readFileSync(name, 'utf8');
       if (!html.includes('<div class="sidebar">')) continue;
       const sidebar = html.split('<div class="sidebar">')[1];
-      for (const target of ['store/', 'store/mysql/', 'store/etcd/', 'pms/policy-mgmt/', 'api/decision_api/']) {
+      for (const target of ['store/', 'store/mysql/', 'store/etcd/', 'store/mongodb/', 'pms/policy-mgmt/', 'api/decision_api/']) {
         assert.ok(sidebar.includes(`href="/${locale}docs/${target}"`), `Complete sidebar ${target} in ${name}`);
       }
     }
@@ -72,4 +72,4 @@ function checkStorageNavigation(directory, locale = '') {
 }
 checkStorageNavigation(path.join(output, 'docs'));
 checkStorageNavigation(path.join(output, 'zh/docs'), 'zh/');
-console.log('PASS complete bilingual documentation sidebars with nested MySQL and etcd guides');
+console.log('PASS complete bilingual documentation sidebars with nested MySQL, etcd and MongoDB guides');

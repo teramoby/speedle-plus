@@ -181,7 +181,7 @@ func TestCLICreateServiceFromFiles(t *testing.T) {
 
 func TestCLIDiscover(t *testing.T) {
 	c := newCLI(t)
-	if testutil.GetOSEnv("STORE_TYPE", "file") == "mysql" {
+	if !cliFixtureSupportsDiscover {
 		c.expect(1, []string{"doesn't support discover"}, "discover", "request")
 		c.expect(1, []string{"doesn't support discover"}, "discover", "reset")
 		return

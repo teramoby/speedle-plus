@@ -21,9 +21,9 @@ concurrency:
 
 jobs:
   # Race-detector full regressions with file, etcd and a disposable MySQL
-  # Docker fixture, the tagged ADS runtime/cache cases, the etcd setup
-  # guides, the quick start with every supported Go release, govulncheck and
-  # the CI script tests, on the self-hosted test runner
+  # Docker fixture, the tagged ADS runtime/cache cases, the etcd and MongoDB
+  # setup guides, the quick start with every supported Go release, govulncheck
+  # and the CI script tests, on the self-hosted test runner
   # (see scripts/ci/run-go-tests.sh).
   run:
     name: run
@@ -39,14 +39,6 @@ jobs:
     if: github.repository == 'teramoby/speedle-plus' && !(github.event_name == 'workflow_dispatch' && inputs.mysql_only)
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    services:
-      mongodb:
-        image: mongo:7
-        ports:
-          - 27017:27017
-        options: >-
-          --health-cmd "mongosh --quiet --eval 'db.runCommand({ping: 1}).ok'"
-          --health-interval 5s --health-timeout 5s --health-retries 20
     steps:
       - name: Checkout code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -59,9 +51,30 @@ jobs:
         with:
           go-version: '1.26'
 
+      # Transactions and change streams need a replica set.
+      - name: Start MongoDB replica set
+        run: |
+          set -euo pipefail
+          docker run -d --name speedle-mongodb --network host mongo:7 --replSet speedle --bind_ip 127.0.0.1
+          for attempt in $(seq 1 60); do
+            if docker exec speedle-mongodb mongosh --quiet --eval 'db.adminCommand({ping: 1})' >/dev/null 2>&1; then
+              break
+            fi
+            sleep 1
+          done
+          docker exec speedle-mongodb mongosh --quiet --eval 'rs.initiate({_id: "speedle", members: [{_id: 0, host: "127.0.0.1:27017"}]})'
+          for attempt in $(seq 1 60); do
+            if docker exec speedle-mongodb mongosh --quiet --eval 'if (!db.hello().isWritablePrimary) quit(1)' >/dev/null 2>&1; then
+              exit 0
+            fi
+            sleep 1
+          done
+          docker logs speedle-mongodb
+          exit 1
+
       - name: Test the MongoDB store
         env:
-          SPEEDLE_MONGO_URI: mongodb://127.0.0.1:27017
+          SPEEDLE_MONGO_URI: mongodb://127.0.0.1:27017/?replicaSet=speedle
           SPEEDLE_REQUIRE_MONGO: '1'
         run: |
           set -euo pipefail

@@ -6,7 +6,8 @@
 #            executable guides from docs/ (merge gating)
 #   nightly  race-detector full regressions of every package with file,
 #            etcd and MySQL (MySQL also runs the tagged ADS runtime/cache
-#            suite against native PMS/ADS), the etcd setup guides, the quick start with every supported Go
+#            suite against native PMS/ADS), the etcd and MongoDB setup guides,
+#            the quick start with every supported Go
 #            release, govulncheck and the CI script tests (MongoDB runs in
 #            nightly.yml's hosted job)
 #   weekly   every package with the newest supported Go release
@@ -105,6 +106,7 @@ case "${mode}" in
     gotest_json go-etcd STORE_TYPE=etcd -- -p 1 -count=1 -timeout 600s "${race[@]}" "${pkgs[@]}"
     check mysql-full python3 scripts/ci/run-mysql-tests.py
     check etcd-docs python3 website/tests/check_etcd.py
+    check mongodb-docs python3 website/tests/check_mongodb.py
     for toolchain in "${all_toolchains[@]}"; do
       check "quick-start-${toolchain}" python3 website/tests/check_quick_start.py --toolchain "${toolchain}"
     done

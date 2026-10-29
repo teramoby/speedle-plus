@@ -16,6 +16,7 @@ import (
 	"github.com/teramoby/speedle-plus/api/pms"
 	"github.com/teramoby/speedle-plus/pkg/cfg"
 	"github.com/teramoby/speedle-plus/pkg/eval"
+	"github.com/teramoby/speedle-plus/pkg/store"
 	_ "github.com/teramoby/speedle-plus/pkg/store/etcd"
 	_ "github.com/teramoby/speedle-plus/pkg/store/file"
 	"github.com/teramoby/speedle-plus/pkg/svcs/adsgrpc/pb"
@@ -125,7 +126,7 @@ func TestGetAllGrantedRolesAndPermissions(t *testing.T) {
 func TestDiscover(t *testing.T) {
 	service := newService(t)
 	got, err := service.Discover(context.Background(), request("carol", "res9", "read", map[string]string{"k": "v"}))
-	if os.Getenv("STORE_TYPE") == "mysql" {
+	if _, supported := service.evaluator.(*eval.PolicyEvalImpl).Store.(store.DiscoverRequestManager); !supported {
 		if err == nil {
 			t.Fatal("Discover must report unsupported backend")
 		}
