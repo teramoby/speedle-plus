@@ -79,13 +79,16 @@ func calledNames(condition string) []string {
 	for i := 0; i < len(runes); {
 		switch r := runes[i]; {
 		case r == '\'' || r == '"' || r == '[':
-			end := r
+			// Like the parser: a string ends at either quote, a variable at
+			// "]", and a backslash escapes the next character.
+			isEnd := func(c rune) bool { return c == '\'' || c == '"' }
 			if r == '[' {
-				end = ']'
+				isEnd = func(c rune) bool { return c == ']' }
 			}
-			i++
-			for i < len(runes) && runes[i] != end {
-				i++
+			for i++; i < len(runes) && !isEnd(runes[i]); i++ {
+				if runes[i] == '\\' {
+					i++
+				}
 			}
 			i++
 		case unicode.IsLetter(r) || r == '_':
