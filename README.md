@@ -94,26 +94,39 @@ bob false NO_APPLICABLE_POLICIES <nil>
 
 See [Embedded mode](https://speedle.io/docs/deployment-embeded/) for details.
 
-## Build
+## Install
+
+With Go 1.25 or newer:
+
+```
+go install github.com/teramoby/speedle-plus/cmd/...@latest
+```
+
+This installs `spctl`, `speedle-pms` and `speedle-ads` into `$(go env GOPATH)/bin`, or `$GOBIN` if it is set.
+
+## Build from source
 
 ### Prerequisites
 
--   GO 1.13 or greater <https://golang.org/doc/install>
--   Set `GOROOT` and `GOPATH` properly
+-   Go 1.25 or newer <https://go.dev/doc/install>. Speedle+ supports the three most recent Go releases. Go sets `GOROOT` and `GOPATH` itself.
 
-### Step
+### Steps
 
 ```
-$ go get github.com/teramoby/speedle-plus/cmd/...
-$ ls $GOPATH/bin
-spctl  speedle-ads  speedle-pms
+git clone https://github.com/teramoby/speedle-plus.git
+cd speedle-plus
+go build -o ./bin/ ./cmd/spctl ./cmd/speedle-pms ./cmd/speedle-ads
+ls bin
 ```
+
+The output is `spctl  speedle-ads  speedle-pms`.
 
 ## Test
 
+Run the unit tests, which need no external services:
+
 ```
-$ cd $GOPATH/src/github.com/teramoby/speedle-plus
-$ make test
+go test $(go list ./pkg/... ./cmd/... ./api/... | grep -v -e adsgrpc -e pmsgrpc -e pmsrest)
 ```
 
 ## Get Help

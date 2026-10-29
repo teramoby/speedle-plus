@@ -96,26 +96,39 @@ bob false NO_APPLICABLE_POLICIES <nil>
 
 详见[嵌入模式](https://speedle.io/zh/docs/deployment-embeded/)。
 
-## 构建
+## 安装
+
+需要 Go 1.25 或更新版本：
+
+```
+go install github.com/teramoby/speedle-plus/cmd/...@latest
+```
+
+这会把 `spctl`、`speedle-pms` 和 `speedle-ads` 安装到 `$(go env GOPATH)/bin`；如果设置了 `$GOBIN`，则安装到 `$GOBIN`。
+
+## 从源码构建
 
 ### 前期准备
 
--   GO 1.13 or greater <https://golang.org/doc/install>
--   设置环境变量 `GOROOT` 和 `GOPATH` 
+-   Go 1.25 或更新版本 <https://go.dev/doc/install>。Speedle+ 支持最近的三个 Go 版本。Go 会自动设置 `GOROOT` 和 `GOPATH`，不需要手动配置。
 
 ### 步骤
 
 ```
-$ go get github.com/teramoby/speedle-plus/cmd/...
-$ ls $GOPATH/bin
-spctl  speedle-ads  speedle-pms
+git clone https://github.com/teramoby/speedle-plus.git
+cd speedle-plus
+go build -o ./bin/ ./cmd/spctl ./cmd/speedle-pms ./cmd/speedle-ads
+ls bin
 ```
+
+输出为 `spctl  speedle-ads  speedle-pms`。
 
 ## 运行测试
 
+运行单元测试，不需要任何外部服务：
+
 ```
-$ cd $GOPATH/src/github.com/teramoby/speedle-plus
-$ make test
+go test $(go list ./pkg/... ./cmd/... ./api/... | grep -v -e adsgrpc -e pmsgrpc -e pmsrest)
 ```
 
 ## 社区
