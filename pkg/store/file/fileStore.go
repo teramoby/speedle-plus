@@ -76,6 +76,11 @@ func (s *Store) WritePolicyStore(ps *pms.PolicyStore) error {
 }
 
 func (s *Store) writePolicyStoreWithoutLock(ps *pms.PolicyStore) error {
+	for _, service := range ps.Services {
+		if err := storeutils.ValidateServiceRolePolicies(service); err != nil {
+			return err
+		}
+	}
 	if err := storeutils.ValidatePolicyIDs(ps); err != nil {
 		return err
 	}
@@ -212,6 +217,9 @@ func (s *Store) getServiceWithoutLock(serviceName string) (*pms.Service, error) 
 
 // CreateService creates a new service
 func (s *Store) CreateService(service *pms.Service) error {
+	if err := storeutils.ValidateServiceRolePolicies(service); err != nil {
+		return err
+	}
 
 	s.rwLock.Lock()
 	defer s.rwLock.Unlock()
@@ -660,6 +668,9 @@ func (s *Store) DeleteRolePolicies(serviceName string) error {
 }
 
 func (s *Store) CreateRolePolicy(serviceName string, rolePolicy *pms.RolePolicy) (*pms.RolePolicy, error) {
+	if err := storeutils.ValidateRolePolicyPrincipals(rolePolicy); err != nil {
+		return nil, err
+	}
 
 	s.rwLock.Lock()
 	defer s.rwLock.Unlock()

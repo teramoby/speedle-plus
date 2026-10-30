@@ -10,17 +10,17 @@ import (
 
 func testGlobalPolicyIDs(t *testing.T, s pms.PolicyStoreManager) {
 	seed := &pms.PolicyStore{Services: []*pms.Service{
-		{Name: "app", Policies: []*pms.Policy{{ID: "p1", Effect: pms.Grant}}},
-		{Name: "global", RolePolicies: []*pms.RolePolicy{{ID: "rp1", Effect: pms.Deny, Roles: []string{"reader"}}}},
+		{Name: "app", Policies: []*pms.Policy{{Principals: [][]string{{"user:alice"}}, Permissions: []*pms.Permission{{Resource: "book", Actions: []string{"read"}}}, ID: "p1", Effect: pms.Grant}}},
+		{Name: "global", RolePolicies: []*pms.RolePolicy{{Principals: []string{"user:alice"}, ID: "rp1", Effect: pms.Deny, Roles: []string{"reader"}}}},
 	}}
 	must(t, s.WritePolicyStore(seed))
 	before, err := s.ReadPolicyStore()
 	must(t, err)
 	for _, bad := range []*pms.PolicyStore{
-		{Services: []*pms.Service{{Name: "a", Policies: []*pms.Policy{{ID: "same"}, {ID: "same"}}}}},
-		{Services: []*pms.Service{{Name: "a", Policies: []*pms.Policy{{ID: "same"}}}, {Name: "b", Policies: []*pms.Policy{{ID: "same"}}}}},
-		{Services: []*pms.Service{{Name: "app", RolePolicies: []*pms.RolePolicy{{ID: "same"}}}, {Name: "global", RolePolicies: []*pms.RolePolicy{{ID: "same"}}}}},
-		{Services: []*pms.Service{{Name: "app", Policies: []*pms.Policy{{ID: "same"}}}, {Name: "global", RolePolicies: []*pms.RolePolicy{{ID: "same"}}}}},
+		{Services: []*pms.Service{{Name: "a", Policies: []*pms.Policy{{Effect: pms.Grant, Principals: [][]string{{"user:alice"}}, Permissions: []*pms.Permission{{Resource: "book", Actions: []string{"read"}}}, ID: "same"}, {Effect: pms.Grant, Principals: [][]string{{"user:alice"}}, Permissions: []*pms.Permission{{Resource: "book", Actions: []string{"read"}}}, ID: "same"}}}}},
+		{Services: []*pms.Service{{Name: "a", Policies: []*pms.Policy{{Effect: pms.Grant, Principals: [][]string{{"user:alice"}}, Permissions: []*pms.Permission{{Resource: "book", Actions: []string{"read"}}}, ID: "same"}}}, {Name: "b", Policies: []*pms.Policy{{Effect: pms.Grant, Principals: [][]string{{"user:alice"}}, Permissions: []*pms.Permission{{Resource: "book", Actions: []string{"read"}}}, ID: "same"}}}}},
+		{Services: []*pms.Service{{Name: "app", RolePolicies: []*pms.RolePolicy{{Effect: pms.Grant, Roles: []string{"reader"}, Principals: []string{"user:alice"}, ID: "same"}}}, {Name: "global", RolePolicies: []*pms.RolePolicy{{Effect: pms.Grant, Roles: []string{"reader"}, Principals: []string{"user:alice"}, ID: "same"}}}}},
+		{Services: []*pms.Service{{Name: "app", Policies: []*pms.Policy{{Effect: pms.Grant, Principals: [][]string{{"user:alice"}}, Permissions: []*pms.Permission{{Resource: "book", Actions: []string{"read"}}}, ID: "same"}}}, {Name: "global", RolePolicies: []*pms.RolePolicy{{Effect: pms.Grant, Roles: []string{"reader"}, Principals: []string{"user:alice"}, ID: "same"}}}}},
 	} {
 		wantCode(t, "duplicate snapshot IDs", s.WritePolicyStore(bad), errors.InvalidRequest)
 		after, err := s.ReadPolicyStore()
@@ -29,7 +29,7 @@ func testGlobalPolicyIDs(t *testing.T, s pms.PolicyStoreManager) {
 			t.Fatal("invalid snapshot changed stored data")
 		}
 	}
-	missing := &pms.PolicyStore{Services: []*pms.Service{{Name: "app", Policies: []*pms.Policy{{ID: "fixed", Effect: pms.Grant}, {Effect: pms.Grant}}, RolePolicies: []*pms.RolePolicy{{Effect: pms.Grant, Roles: []string{"reader"}}}}}}
+	missing := &pms.PolicyStore{Services: []*pms.Service{{Name: "app", Policies: []*pms.Policy{{Principals: [][]string{{"user:alice"}}, Permissions: []*pms.Permission{{Resource: "book", Actions: []string{"read"}}}, ID: "fixed", Effect: pms.Grant}, {Principals: [][]string{{"user:alice"}}, Permissions: []*pms.Permission{{Resource: "book", Actions: []string{"read"}}}, Effect: pms.Grant}}, RolePolicies: []*pms.RolePolicy{{Principals: []string{"user:alice"}, Effect: pms.Grant, Roles: []string{"reader"}}}}}}
 	must(t, s.WritePolicyStore(missing))
 	if missing.Services[0].Policies[1].ID != "" || missing.Services[0].RolePolicies[0].ID != "" {
 		t.Fatal("snapshot import mutated caller IDs")
@@ -59,15 +59,15 @@ func testGlobalPolicyIDs(t *testing.T, s pms.PolicyStoreManager) {
 	}
 	// Creation always generates fresh IDs, including when callers supply one.
 	for _, name := range []string{"a", "b"} {
-		must(t, s.CreateService(&pms.Service{Name: name, Policies: []*pms.Policy{{ID: "caller", Effect: pms.Grant}}, RolePolicies: []*pms.RolePolicy{{ID: "caller", Effect: pms.Grant, Roles: []string{"r"}}}}))
+		must(t, s.CreateService(&pms.Service{Name: name, Policies: []*pms.Policy{{Principals: [][]string{{"user:alice"}}, Permissions: []*pms.Permission{{Resource: "book", Actions: []string{"read"}}}, ID: "caller", Effect: pms.Grant}}, RolePolicies: []*pms.RolePolicy{{Principals: []string{"user:alice"}, ID: "caller", Effect: pms.Grant, Roles: []string{"r"}}}}))
 		service, err := s.GetService(name)
 		must(t, err)
 		check(service.Policies[0].ID)
 		check(service.RolePolicies[0].ID)
-		policy, err := s.CreatePolicy(name, &pms.Policy{ID: "caller", Effect: pms.Grant})
+		policy, err := s.CreatePolicy(name, &pms.Policy{Principals: [][]string{{"user:alice"}}, Permissions: []*pms.Permission{{Resource: "book", Actions: []string{"read"}}}, ID: "caller", Effect: pms.Grant})
 		must(t, err)
 		check(policy.ID)
-		role, err := s.CreateRolePolicy(name, &pms.RolePolicy{ID: "caller", Effect: pms.Grant, Roles: []string{"r"}})
+		role, err := s.CreateRolePolicy(name, &pms.RolePolicy{Principals: []string{"user:alice"}, ID: "caller", Effect: pms.Grant, Roles: []string{"r"}})
 		must(t, err)
 		check(role.ID)
 	}

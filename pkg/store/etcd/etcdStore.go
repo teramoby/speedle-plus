@@ -360,8 +360,8 @@ func (s *Store) getPutOps(service *pms.Service) ([]clientv3.Op, error) {
 }
 
 func (s *Store) CreateService(service *pms.Service) error {
-	if service == nil {
-		return errors.New(errors.InvalidRequest, "service is required")
+	if err := storeutils.ValidateServiceRolePolicies(service); err != nil {
+		return err
 	}
 	copy := *service
 	copy.Policies = make([]*pms.Policy, len(service.Policies))
@@ -375,9 +375,6 @@ func (s *Store) CreateService(service *pms.Service) error {
 	}
 	copy.RolePolicies = make([]*pms.RolePolicy, len(service.RolePolicies))
 	for i, policy := range service.RolePolicies {
-		if policy == nil {
-			return errors.New(errors.InvalidRequest, "role policy is required")
-		}
 		value := *policy
 		value.ID = suid.New().String()
 		copy.RolePolicies[i] = &value
@@ -1087,6 +1084,9 @@ func (s *Store) DeleteRolePolicies(serviceName string) error {
 }
 
 func (s *Store) CreateRolePolicy(serviceName string, rolePolicy *pms.RolePolicy) (*pms.RolePolicy, error) {
+	if err := storeutils.ValidateRolePolicyPrincipals(rolePolicy); err != nil {
+		return nil, err
+	}
 	//TODO: validate rolePolicy
 	dupRolePolicy := *rolePolicy
 	dupRolePolicy.ID = suid.New().String()

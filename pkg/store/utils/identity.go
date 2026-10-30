@@ -60,8 +60,8 @@ func PreparePolicyStore(ps *pms.PolicyStore) (*pms.PolicyStore, error) {
 	prepared := *ps
 	prepared.Services = make([]*pms.Service, len(ps.Services))
 	for i, service := range ps.Services {
-		if service == nil {
-			return nil, errors.New(errors.InvalidRequest, "service is required")
+		if err := ValidateServiceRolePolicies(service); err != nil {
+			return nil, err
 		}
 		copy := *service
 		copy.Policies = make([]*pms.Policy, len(service.Policies))
@@ -77,9 +77,6 @@ func PreparePolicyStore(ps *pms.PolicyStore) (*pms.PolicyStore, error) {
 		}
 		copy.RolePolicies = make([]*pms.RolePolicy, len(service.RolePolicies))
 		for j, policy := range service.RolePolicies {
-			if policy == nil {
-				return nil, errors.New(errors.InvalidRequest, "role policy is required")
-			}
 			value := *policy
 			if value.ID == "" {
 				value.ID = suid.New().String()

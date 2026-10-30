@@ -24,6 +24,7 @@ func RunConformance(t *testing.T, newStore func(t *testing.T) pms.PolicyStoreMan
 	t.Run("RolePolicies", func(t *testing.T) { testRolePolicies(t, newStore(t)) })
 	t.Run("Functions", func(t *testing.T) { testFunctions(t, newStore(t)) })
 	t.Run("PolicyStore", func(t *testing.T) { testPolicyStore(t, newStore(t)) })
+	t.Run("RolePolicyPrincipals", func(t *testing.T) { testRolePolicyPrincipals(t, newStore(t)) })
 	t.Run("GlobalPolicyIDs", func(t *testing.T) { testGlobalPolicyIDs(t, newStore(t)) })
 	t.Run("Discover", func(t *testing.T) {
 		manager, ok := newStore(t).(store.DiscoverRequestManager)
@@ -55,7 +56,7 @@ func testServices(t *testing.T, s pms.PolicyStoreManager) {
 	for _, name := range []string{"app1", "app2"} {
 		must(t, s.CreateService(&pms.Service{Name: name, Type: pms.TypeApplication,
 			Policies:     []*pms.Policy{{Name: "p", Effect: pms.Grant}},
-			RolePolicies: []*pms.RolePolicy{{Name: "rp", Effect: pms.Grant, Roles: []string{"r"}}}}))
+			RolePolicies: []*pms.RolePolicy{{Principals: []string{"user:alice"}, Name: "rp", Effect: pms.Grant, Roles: []string{"r"}}}}))
 	}
 	wantCode(t, "duplicate service", s.CreateService(&pms.Service{Name: "app1"}), errors.EntityAlreadyExists)
 
@@ -246,7 +247,7 @@ func testPolicyStore(t *testing.T, s pms.PolicyStoreManager) {
 	in := &pms.PolicyStore{
 		Services: []*pms.Service{{Name: "app", Type: pms.TypeApplication,
 			Policies:     []*pms.Policy{{ID: "p1", Name: "p1", Effect: pms.Deny}},
-			RolePolicies: []*pms.RolePolicy{{ID: "rp1", Name: "rp1", Effect: pms.Grant}}}},
+			RolePolicies: []*pms.RolePolicy{{Principals: []string{"user:alice"}, ID: "rp1", Name: "rp1", Effect: pms.Grant, Roles: []string{"reader"}}}}},
 		Functions: []*pms.Function{{Name: "f", FuncURL: "https://f"}},
 	}
 	must(t, s.WritePolicyStore(in))

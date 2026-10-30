@@ -20,7 +20,7 @@ func TestFeatureRoleMixedGraphReference(t *testing.T) {
 	const nodes = 24
 	for _, seed := range []int64{18, 120, 214, 421, 532, 919, 2026, 7319} {
 		rng := rand.New(rand.NewSource(seed))
-		rules := []rule{{from: -1, to: 0, gate: -1}, {from: -2, to: 1, gate: 0}}
+		rules := []rule{{from: -1, to: 0, gate: -1}, {from: -1, to: 1, gate: 0}}
 		for to := 1; to < nodes; to++ {
 			if rng.Intn(4) == 0 {
 				rules = append(rules, rule{from: -1, to: to, gate: rng.Intn(4), deny: rng.Intn(3) == 0})
@@ -33,10 +33,8 @@ func TestFeatureRoleMixedGraphReference(t *testing.T) {
 		}
 		local, global := &pms.Service{Name: "app"}, &pms.Service{Name: "global"}
 		for i, rule := range rules {
-			var principals []string
-			if rule.from == -1 {
-				principals = []string{"user:alice"}
-			} else if rule.from >= 0 {
+			principals := []string{"user:alice"}
+			if rule.from >= 0 {
 				principals = []string{fmt.Sprintf("role:r%d", rule.from)}
 			}
 			effect := pms.Grant

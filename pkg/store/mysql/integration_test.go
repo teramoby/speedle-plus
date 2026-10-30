@@ -134,7 +134,7 @@ func TestMySQLAtomicWritesAndConcurrentWriters(t *testing.T) {
 	_, err = db.Exec(`CREATE TRIGGER speedle_test_fail_role BEFORE INSERT ON speedle_role_policies FOR EACH ROW SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='injected failure'`)
 	must(t, err)
 	t.Cleanup(func() { db.Exec("DROP TRIGGER IF EXISTS speedle_test_fail_role") })
-	service := &pms.Service{Name: "partial", Policies: []*pms.Policy{{Name: "p"}}, RolePolicies: []*pms.RolePolicy{{Name: "rp"}}}
+	service := &pms.Service{Name: "partial", Policies: []*pms.Policy{{Name: "p"}}, RolePolicies: []*pms.RolePolicy{{Principals: []string{"user:alice"}, Name: "rp", Effect: pms.Grant, Roles: []string{"reader"}}}}
 	if s.CreateService(service) == nil {
 		t.Fatal("trigger failure ignored")
 	}

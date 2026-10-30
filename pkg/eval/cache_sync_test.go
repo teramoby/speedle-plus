@@ -214,7 +214,7 @@ func TestSyncReload(t *testing.T) {
 
 func TestSyncReloadErrors(t *testing.T) {
 	p, _ := newFixtureEvaluator(t, `{"services":[{"name":"app","policies":[{"id":"1","effect":"grant"}],
-		"rolePolicies":[{"id":"2","effect":"grant"}]}]}`)
+		"rolePolicies":[{"id":"2","effect":"grant","principals":["user:alice"],"roles":["reader"]}]}]}`)
 	services, policies, rolePolicies, functions := []string{"app"}, map[int]string{1: "app"}, map[int]string{2: "app"}, []string{}
 	cases := map[string][]interface{}{
 		"short data set":          {services},

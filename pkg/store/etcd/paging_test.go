@@ -101,7 +101,7 @@ func TestGetPoliciesAndRolePoliciesPages(t *testing.T) {
 		if _, err := s.CreatePolicy("app", &pms.Policy{Name: fmt.Sprintf("p%d", i), Effect: pms.Grant}); err != nil {
 			t.Fatal(err)
 		}
-		if _, err := s.CreateRolePolicy("app", &pms.RolePolicy{Name: fmt.Sprintf("rp%d", i), Effect: pms.Grant}); err != nil {
+		if _, err := s.CreateRolePolicy("app", &pms.RolePolicy{Principals: []string{"user:alice"}, Name: fmt.Sprintf("rp%d", i), Effect: pms.Grant, Roles: []string{"reader"}}); err != nil {
 			t.Fatal(err)
 		}
 	}

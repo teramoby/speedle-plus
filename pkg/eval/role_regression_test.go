@@ -1,14 +1,9 @@
 package eval
 
 import (
-	"context"
 	"fmt"
-	"os"
-	"os/exec"
-	"runtime/debug"
 	"slices"
 	"testing"
-	"time"
 
 	ads "github.com/teramoby/speedle-plus/api/ads"
 	"github.com/teramoby/speedle-plus/api/pms"
@@ -64,42 +59,12 @@ func assertRoleRegression(t *testing.T, e *PolicyEvalImpl, ctx ads.RequestContex
 	}
 }
 
-func TestFeatureRoleUniversalDeny(t *testing.T) {
-	for _, public := range []bool{false, true} {
-		for _, blocked := range []bool{false, true} {
-			t.Run(fmt.Sprintf("public=%v/blocked=%v", public, blocked), func(t *testing.T) {
-				principals := []string{"user:alice"}
-				if public {
-					principals = nil
-				}
-				d := roleRegressionPolicy("deny", pms.Deny, nil, "reader")
-				d.Condition = "blocked"
-				e := roleRegressionEvaluator(t, "reader", roleRegressionPolicy("grant", pms.Grant, principals, "reader"), d)
-				ctx := featureContext()
-				if public {
-					ctx.Subject = nil
-				}
-				ctx.Attributes = map[string]interface{}{"blocked": blocked}
-				roles := []string{}
-				if !blocked {
-					roles = []string{"reader"}
-				}
-				assertRoleRegression(t, e, ctx, roles, !blocked)
-			})
-		}
-	}
-}
-
-func TestFeatureRoleUniversalGrantSurvivesUnrelatedDeny(t *testing.T) {
-	control := roleRegressionEvaluator(t, "public", roleRegressionPolicy("public", pms.Grant, nil, "public"))
-	if ok, _, err := control.IsAllowed(featureContext()); !ok || err != nil {
-		t.Fatalf("control public grant failed: %v %v", ok, err)
-	}
-	e := roleRegressionEvaluator(t, "public",
-		roleRegressionPolicy("public", pms.Grant, nil, "public"),
+func TestFeatureRoleIndependentGrantSurvivesUnrelatedDeny(t *testing.T) {
+	e := roleRegressionEvaluator(t, "independent",
+		roleRegressionPolicy("independent", pms.Grant, []string{"user:alice"}, "independent"),
 		roleRegressionPolicy("roots", pms.Grant, []string{"user:alice"}, "a", "b"),
 		roleRegressionPolicy("deny", pms.Deny, []string{"role:a"}, "b"))
-	assertRoleRegression(t, e, featureContext(), []string{"a", "public"}, true)
+	assertRoleRegression(t, e, featureContext(), []string{"a", "independent"}, true)
 }
 
 func TestFeatureRoleDiamondDeny(t *testing.T) {
@@ -150,39 +115,13 @@ func TestFeatureRoleCyclicDenier(t *testing.T) {
 	}
 }
 
-func TestFeatureRolePublicCyclicDenier(t *testing.T) {
-	if os.Getenv("SPEEDLE_ROLE_CYCLE_CHILD") != "1" {
-		binary, err := os.Executable()
-		if err != nil {
-			t.Fatal(err)
-		}
-		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-		defer cancel()
-		command := exec.CommandContext(ctx, binary, "-test.run=^TestFeatureRolePublicCyclicDenier$", "-test.timeout=25s")
-		command.Env = append(os.Environ(), "SPEEDLE_ROLE_CYCLE_CHILD=1")
-		if output, err := command.CombinedOutput(); err != nil {
-			t.Fatalf("cycle subprocess: %v: %s", err, output)
-		}
-		return
-	}
-	// A regression must fail this child quickly instead of exhausting the
-	// runner's memory. Stack overflow cannot be recovered in the parent.
-	previous := debug.SetMaxStack(512 << 10)
-	defer debug.SetMaxStack(previous)
-	e := roleRegressionEvaluator(t, "victim",
-		roleRegressionPolicy("public", pms.Grant, nil, "cycleA"),
-		roleRegressionPolicy("root", pms.Grant, []string{"user:alice"}, "victim"),
-		roleRegressionPolicy("cycle1", pms.Grant, []string{"role:cycleA"}, "cycleB"),
-		roleRegressionPolicy("cycle2", pms.Grant, []string{"role:cycleB"}, "cycleA"),
-		roleRegressionPolicy("deny", pms.Deny, []string{"role:cycleB"}, "victim"))
-	assertRoleRegression(t, e, featureContext(), []string{"cycleA", "cycleB"}, false)
-}
-
 func TestFeatureRoleConditionINNegative(t *testing.T) {
 	for _, expression := range []string{"x in (x,x)", "x in ys"} {
 		t.Run(expression, func(t *testing.T) {
 
-			e := featureEvaluator(t, &pms.PolicyStore{Services: []*pms.Service{{Name: "app", Policies: []*pms.Policy{featurePolicy("p", expression)}}}})
+			policy := featurePolicy("p", expression)
+			policy.Principals = [][]string{{"user:alice"}}
+			e := featureEvaluator(t, &pms.PolicyStore{Services: []*pms.Service{{Name: "app", Policies: []*pms.Policy{policy}}}})
 			ctx := featureContext()
 			ctx.Attributes = map[string]interface{}{"x": []interface{}{"a", "b"}, "ys": []interface{}{[]interface{}{"a", "b"}}}
 			allowed, reason, err := e.IsAllowed(ctx)
@@ -235,7 +174,9 @@ func TestFeatureRoleConditionalChainMatrix(t *testing.T) {
 	}
 	// Alternate ordinary grant survives a false or erroneous deny condition.
 	grant := featurePolicy("grant", "")
+	grant.Principals = [][]string{{"user:alice"}}
 	d := featurePolicy("deny", "blocked")
+	d.Principals = [][]string{{"user:alice"}}
 	d.Effect = pms.Deny
 	fallback := featureEvaluator(t, &pms.PolicyStore{Services: []*pms.Service{{Name: "app", Policies: []*pms.Policy{grant, d}}}})
 	for _, attrs := range []map[string]interface{}{nil, {"blocked": "bad"}, {"blocked": false}, {"blocked": true}} {
@@ -264,6 +205,7 @@ func TestFeatureRoleGlobalIDDConditionMatrix(t *testing.T) {
 	alternative.Principals = [][]string{{"user:alice"}}
 	alternative.Permissions[0].Resource = "book/1"
 	revoke := featurePolicy("revoke", "revoked")
+	revoke.Principals = [][]string{{"user:alice"}}
 	revoke.Effect = pms.Deny
 	revoke.Permissions[0].Resource = "book/1"
 	local := &pms.Service{Name: "app", Policies: []*pms.Policy{grant, alternative, revoke}, RolePolicies: []*pms.RolePolicy{next}}

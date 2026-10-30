@@ -75,6 +75,10 @@ func (rtps *RuntimePolicyStore) reloadPolicyStore(ps *pms.PolicyStore) {
 }
 
 func (rtps *RuntimePolicyStore) addService(service *pms.Service) {
+	if err := storeutils.ValidateServiceRolePolicies(service); err != nil {
+		log.Errorf("Invalid service update: %v", err)
+		return
+	}
 	rtService := rtps.convertService(service)
 
 	rtps.Lock()
@@ -172,6 +176,10 @@ func (rtps *RuntimePolicyStore) deletePolicy(serviceName string, policyID string
 }
 
 func (rtps *RuntimePolicyStore) addRolePolicy(serviceName string, rolePolicy *pms.RolePolicy) {
+	if err := storeutils.ValidateRolePolicyPrincipals(rolePolicy); err != nil {
+		log.Errorf("Invalid role policy update: %v", err)
+		return
+	}
 	rtps.RLock()
 	defer rtps.RUnlock()
 

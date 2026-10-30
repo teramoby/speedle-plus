@@ -11,8 +11,8 @@ import (
 
 func TestSnapshotIdentity(t *testing.T) {
 	ps := &pms.PolicyStore{Services: []*pms.Service{
-		{Name: "app", Policies: []*pms.Policy{{ID: "fixed"}, {}}, RolePolicies: []*pms.RolePolicy{{}}},
-		{Name: "global", RolePolicies: []*pms.RolePolicy{{ID: "role"}, {}}},
+		{Name: "app", Policies: []*pms.Policy{{Effect: pms.Grant, Principals: [][]string{{"user:alice"}}, Permissions: []*pms.Permission{{Resource: "book", Actions: []string{"read"}}}, ID: "fixed"}, {Effect: pms.Grant, Principals: [][]string{{"user:alice"}}, Permissions: []*pms.Permission{{Resource: "book", Actions: []string{"read"}}}}}, RolePolicies: []*pms.RolePolicy{{Effect: pms.Grant, Roles: []string{"reader"}, Principals: []string{"user:alice"}}}},
+		{Name: "global", RolePolicies: []*pms.RolePolicy{{Effect: pms.Grant, Roles: []string{"reader"}, Principals: []string{"user:alice"}, ID: "role"}, {Effect: pms.Grant, Roles: []string{"reader"}, Principals: []string{"user:alice"}}}},
 	}}
 	prepared, err := PreparePolicyStore(ps)
 	if err != nil {
@@ -47,24 +47,27 @@ func TestSnapshotDuplicateIDs(t *testing.T) {
 			a, b := &pms.Service{Name: "app"}, &pms.Service{Name: "global"}
 			add := func(service *pms.Service, role bool, id string) {
 				if role {
-					service.RolePolicies = append(service.RolePolicies, &pms.RolePolicy{ID: id})
+					service.RolePolicies = append(service.RolePolicies, &pms.RolePolicy{Effect: pms.Grant, Roles: []string{"reader"}, Principals: []string{"user:alice"}, ID: id})
 				} else {
-					service.Policies = append(service.Policies, &pms.Policy{ID: id})
+					service.Policies = append(service.Policies, &pms.Policy{Effect: pms.Grant, Principals: [][]string{{"user:alice"}}, Permissions: []*pms.Permission{{Resource: "book", Actions: []string{"read"}}}, ID: id})
 				}
 			}
 			add(a, roles, "same")
 			add(b, roles == sameKind, "same")
+			if len(b.Policies) > 0 {
+				b.Name = "other"
+			}
 			_, err := PreparePolicyStore(&pms.PolicyStore{Services: []*pms.Service{a, b}})
-			if errors.Code(err) != errors.InvalidRequest || !strings.Contains(err.Error(), `"same"`) || !strings.Contains(err.Error(), `"global"`) {
+			if errors.Code(err) != errors.InvalidRequest || !strings.Contains(err.Error(), `"same"`) || !strings.Contains(err.Error(), `"`+b.Name+`"`) {
 				t.Fatalf("role=%v sameKind=%v: %v", roles, sameKind, err)
 			}
 		}
 	}
 	// IDs remain case-sensitive.
-	if err := ValidatePolicyIDs(&pms.PolicyStore{Services: []*pms.Service{{Policies: []*pms.Policy{{ID: "A"}, {ID: "a"}}}}}); err != nil {
+	if err := ValidatePolicyIDs(&pms.PolicyStore{Services: []*pms.Service{{Policies: []*pms.Policy{{Effect: pms.Grant, Principals: [][]string{{"user:alice"}}, Permissions: []*pms.Permission{{Resource: "book", Actions: []string{"read"}}}, ID: "A"}, {Effect: pms.Grant, Principals: [][]string{{"user:alice"}}, Permissions: []*pms.Permission{{Resource: "book", Actions: []string{"read"}}}, ID: "a"}}}}}); err != nil {
 		t.Fatal(err)
 	}
-	if err := ValidatePolicyIDs(&pms.PolicyStore{Services: []*pms.Service{{Policies: []*pms.Policy{{ID: string([]byte{0xff})}}}}}); errors.Code(err) != errors.InvalidRequest {
+	if err := ValidatePolicyIDs(&pms.PolicyStore{Services: []*pms.Service{{Policies: []*pms.Policy{{Effect: pms.Grant, Principals: [][]string{{"user:alice"}}, Permissions: []*pms.Permission{{Resource: "book", Actions: []string{"read"}}}, ID: string([]byte{0xff})}}}}}); errors.Code(err) != errors.InvalidRequest {
 		t.Fatalf("invalid UTF-8 ID: %v", err)
 	}
 }

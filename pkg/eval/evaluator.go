@@ -413,8 +413,8 @@ func (p *PolicyEvalImpl) getDirectRolePolicesInService(principals []string,
 			continue
 		}
 
-		// No principal defined. that means the roles are granted to any user
-		if (len(policy.Principals) == 0 || matchRolePolicyPrincipals(principals, policy.Principals)) && matchResource(resource, policy.Resources, policy.ResourceExpressions) {
+		// Role policies require an explicit matching principal.
+		if matchRolePolicyPrincipals(principals, policy.Principals) && matchResource(resource, policy.Resources, policy.ResourceExpressions) {
 			// Evaluate conditions
 			condition, ok := service.RolePoliciesCache.Conditions[policy.ID]
 			// If no conditions defined, the condition evaluation result is true
@@ -450,7 +450,6 @@ func (p *PolicyEvalImpl) getDirectRolePolicesInService(principals []string,
 
 type Role struct {
 	Name               string
-	PublicGrant        bool // An applicable grant with no principals is an independent root.
 	ParentPrincipals   map[string]bool
 	ParentRoles        map[string]bool
 	ChildRoles         map[string]bool
@@ -606,7 +605,6 @@ func updateRelatedRoleMapWithGrantRolePolicy(rolePolicy *pms.RolePolicy, related
 			for _, pprincipalName := range parentPrincipals {
 				roleNode.ParentPrincipals[pprincipalName] = true
 			}
-			roleNode.PublicGrant = roleNode.PublicGrant || len(rolePolicy.Principals) == 0
 			if _, ok := grantedRoleMap[role]; !ok {
 				grantedRoleMap[role] = true
 				newlyGrantedRoles = append(newlyGrantedRoles, role)
@@ -694,7 +692,7 @@ func updateRelatedRoleMapWithDenyRolePolicy(rolePolicy *pms.RolePolicy, relatedR
 			roleNode.DeniedByPrincipals[deniedByPrincipal] = true
 		}
 
-		if len(rolePolicy.Principals) == 0 || len(deniedByPrincipals) > 0 {
+		if len(deniedByPrincipals) > 0 {
 			directDeniedRoleMap[role] = true
 		} else {
 			if _, ok := grantedRoleMap[role]; ok {
@@ -753,7 +751,7 @@ func reachableRoles(roles map[string]*Role, blocked map[string]bool) map[string]
 	reachable := make(map[string]bool)
 	queue := make([]string, 0)
 	for name, role := range roles {
-		if !blocked[name] && (role.PublicGrant || len(role.ParentPrincipals) > 0) {
+		if !blocked[name] && len(role.ParentPrincipals) > 0 {
 			reachable[name] = true
 			queue = append(queue, name)
 		}

@@ -116,6 +116,9 @@ func policyProblems(policy *pms.Policy) []string {
 
 func rolePolicyProblems(rolePolicy *pms.RolePolicy) []string {
 	problems := effectProblems(rolePolicy.Effect)
+	if err := storeutils.ValidateRolePolicyPrincipals(rolePolicy); err != nil {
+		problems = append(problems, err.Error())
+	}
 	if len(rolePolicy.Roles) == 0 {
 		problems = append(problems, "no roles")
 	}

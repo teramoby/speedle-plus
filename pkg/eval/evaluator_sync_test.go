@@ -47,9 +47,9 @@ func TestReachableRolesWithCycle(t *testing.T) {
 	if got := reachableRoles(roles, nil); len(got) != 0 {
 		t.Fatalf("unrooted cycle granted %v", got)
 	}
-	roles["role1"].PublicGrant = true
+	roles["role1"].ParentPrincipals = map[string]bool{"user:alice": true}
 	if got := reachableRoles(roles, nil); !reflect.DeepEqual(got, map[string]bool{"role1": true, "role2": true}) {
-		t.Fatalf("public root: %v", got)
+		t.Fatalf("explicit user root: %v", got)
 	}
 	if got := reachableRoles(roles, map[string]bool{"role1": true}); len(got) != 0 {
 		t.Fatalf("blocked root left cycle granted %v", got)

@@ -319,6 +319,9 @@ func generateID(service *pms.Service) (*pms.Service, error) {
 
 // CreateService creates a new service
 func (s *Store) CreateService(service *pms.Service) error {
+	if err := storeutils.ValidateServiceRolePolicies(service); err != nil {
+		return err
+	}
 	serviceCollection := s.client.Database(s.Database).Collection("services")
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -915,6 +918,9 @@ func (s *Store) DeleteRolePolicies(serviceName string) error {
 }
 
 func (s *Store) CreateRolePolicy(serviceName string, rolePolicy *pms.RolePolicy) (*pms.RolePolicy, error) {
+	if err := storeutils.ValidateRolePolicyPrincipals(rolePolicy); err != nil {
+		return nil, err
+	}
 	dupPolicy := *rolePolicy
 	dupPolicy.ID = suid.New().String()
 	serviceCollection := s.client.Database(s.Database).Collection("services")
