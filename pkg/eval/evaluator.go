@@ -283,9 +283,6 @@ func (p *PolicyEvalImpl) InternalIsAllowed(ctx *adsapi.RequestContext, evaluatio
 			if _, recovered := err.(*recoveredEvaluationError); recovered {
 				reason = adsapi.ERROR_IN_EVALUATION
 			}
-			if errors.Code(err) == errors.EvalEngineError {
-				log.WithError(err).Error("authorization evaluation failed")
-			}
 			if evaluationResult != nil {
 				evaluationResult.Allowed = false
 				evaluationResult.GrantedRoles = []string{}
@@ -977,6 +974,7 @@ func selfOrAncestorsBeDenied(role string, roles map[string]*Role, denied map[str
 		}
 	}
 	if cyclic {
+		log.Error("role dependency cycle has no independent subject source")
 		return false, errors.New(errors.EvalEngineError, "role dependency cycle has no independent subject source")
 	}
 	return true, nil

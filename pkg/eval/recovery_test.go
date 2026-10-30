@@ -399,3 +399,38 @@ func TestFeaturePartialSyncErrorFailsClosed(t *testing.T) {
 	apply(e, pms.StoreChangeEvent{Type: pms.FULL_RELOAD, Content: snapshot})
 	requireHealthyAfterRecovery(t, e)
 }
+
+type panickingCodeError struct{}
+
+func (*panickingCodeError) Error() string          { return "assertion error" }
+func (*panickingCodeError) Code() errors.ErrorCode { panic("unexpected error inspection") }
+
+func TestFeatureRecoveryDoesNotInspectExternalErrors(t *testing.T) {
+	e := featureEvaluator(t, &pms.PolicyStore{Services: []*pms.Service{{Name: "app", Policies: []*pms.Policy{recoveryGrant("grant")}}}})
+	expected := &panickingCodeError{}
+	e.SetAsserterFunc(func(*ads.RequestContext) error { return expected })
+	ctx := featureContext()
+	ctx.Subject.TokenType = "test"
+	ctx.Subject.Token = "token"
+	if allowed, _, err := e.IsAllowed(ctx); allowed || err != expected {
+		t.Fatalf("external error changed or allowed: %v %v", allowed, err)
+	}
+}
+
+type panicErrorLogHook struct{}
+
+func (panicErrorLogHook) Levels() []log.Level   { return []log.Level{log.ErrorLevel} }
+func (panicErrorLogHook) Fire(*log.Entry) error { panic("logging failed") }
+
+func TestFeatureRecoverySurvivesLoggingPanic(t *testing.T) {
+	e := featureEvaluator(t, &pms.PolicyStore{Services: []*pms.Service{{Name: "app", Policies: []*pms.Policy{recoveryGrant("grant")}}}})
+	previous := log.StandardLogger().ReplaceHooks(log.LevelHooks{log.ErrorLevel: []log.Hook{panicErrorLogHook{}}})
+	t.Cleanup(func() { log.StandardLogger().ReplaceHooks(previous) })
+	e.SetAsserterFunc(func(*ads.RequestContext) error { panic("assertion failed") })
+	ctx := featureContext()
+	ctx.Subject.TokenType = "test"
+	ctx.Subject.Token = "token"
+	if allowed, reason, err := e.IsAllowed(ctx); allowed || reason != ads.ERROR_IN_EVALUATION || errors.Code(err) != errors.EvalEngineError {
+		t.Fatalf("logger panic escaped recovery: %v %v %v", allowed, reason, err)
+	}
+}

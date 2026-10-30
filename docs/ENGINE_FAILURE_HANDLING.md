@@ -11,7 +11,8 @@ unwind before the recovery boundary, and a later healthy request can still
 succeed.
 
 Errors are logged at error level. Panic logs contain the operation, panic type
-and stack trace; panic payloads are kept out of responses and these logs. The
+and stack trace; panic payloads are kept out of responses and these logs. If the
+logger itself panics, recovery falls back to standard error and still denies. The
 REST decision response remains HTTP 200 with `allowed:false` and an error;
 gRPC keeps its existing RPC-error contract. gRPC stops on assertion failure
 instead of ignoring that error and forwarding a possibly partially asserted
