@@ -169,6 +169,8 @@ test('every test job runs on the Speedle runners; only classification and report
   // A manual run may pin one Speedle runner by its label, e.g. fiona.
   const pinned = github('workflow_dispatch', canonical, {event: {inputs: {runner: 'speedle-macos'}}});
   assert.equal(route(job.mongodb.mongodb, pinned), 'speedle-macos');
+  const trial = github('workflow_dispatch', canonical, {event: {inputs: {runner: 'speedle-linux', nightly_trial: 'true'}}});
+  assert.equal(route(job.mongodb.mongodb, trial), 'fiona-speedle');
   assert.match(sources.mongodb, /options: \[speedle-runner, speedle-macos, speedle-linux\]/);
 });
 test('scheduled suites run through the worker and report from a hosted job', () => {
@@ -234,4 +236,18 @@ test('fixture job installs pinned Node 22 before running Node regression suites'
   for (const tool of ['git', 'curl', 'jq', 'python3']) assert.ok(preflight.includes(tool));
   assert.ok(preflight.includes('https://ark.cn-beijing.volces.com/api/plan/v3/responses'));
   assert.doesNotMatch(preflight, /Authorization|ARK_API_KEY|--data|--request\s+POST/);
+});
+
+test('Fiona trial runs the complete nightly script with host isolation and separate artifacts', () => {
+  const full = job.mongodb.mongodb.split('      - name: Full nightly trial on Fiona\n')[1].split('      - name:', 1)[0];
+  assert.match(full, /inventory_only != 'true'/);
+  assert.match(full, /test "\$\{RUNNER_NAME\}\/\$\{RUNNER_OS\}\/\$\{RUNNER_ARCH\}" = fiona-speedle\/macOS\/ARM64/);
+  assert.match(full, /flock -w 7200 9/);
+  assert.match(full, /for port in \(2379, 2380, 27017, 6733, 6734\):/);
+  assert.match(full, /bash scripts\/ci\/run-go-tests.sh nightly/);
+  assert.match(full, /RESULTS_DIR: fiona-nightly-results/);
+  assert.match(full, /PMS_ADMIN_TOKEN: ''/);
+  assert.match(full, /ADS_ADMIN_TOKEN: ''/);
+  assert.match(sources.mongodb, /name: fiona-nightly-results/);
+  assert.match(sources.mongodb, /run-mysql-tests.py --cleanup/);
 });

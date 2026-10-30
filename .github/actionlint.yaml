@@ -4,3 +4,4 @@ self-hosted-runner:
     - speedle-linux
     - speedle-control
     - speedle-runner
+    - fiona-speedle

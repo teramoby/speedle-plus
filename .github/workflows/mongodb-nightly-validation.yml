@@ -5,6 +5,10 @@ name: MongoDB nightly validation
 on:
   workflow_dispatch:
     inputs:
+      nightly_trial:
+        description: Run the full nightly suite only on Fiona, without changing scheduled nightly
+        type: boolean
+        default: false
       runner:
         description: Runner label (speedle-runner lets any Speedle runner take it)
         type: choice
@@ -31,8 +35,8 @@ concurrency:
 jobs:
   mongodb:
     name: MongoDB
-    runs-on: ${{ github.event.inputs.runner || 'speedle-runner' }}
-    timeout-minutes: 60
+    runs-on: ${{ github.event.inputs.nightly_trial == 'true' && 'fiona-speedle' || github.event.inputs.runner || 'speedle-runner' }}
+    timeout-minutes: ${{ github.event.inputs.nightly_trial == 'true' && 150 || 60 }}
     steps:
       - name: Verify runner identity
         run: |
@@ -82,8 +86,63 @@ jobs:
           go-version: '1.26'
           cache: false
 
+      - name: Setup Node for nightly trial
+        if: ${{ github.event.inputs.nightly_trial == 'true' && github.event.inputs.inventory_only != 'true' }}
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
+        with:
+          node-version: '22'
+          package-manager-cache: false
+
+      - name: Full nightly trial on Fiona
+        if: ${{ github.event.inputs.nightly_trial == 'true' && github.event.inputs.inventory_only != 'true' }}
+        env:
+          RESULTS_DIR: fiona-nightly-results
+          SP_APP_NAME: ''
+          PMS_ADMIN_TOKEN: ''
+          ADS_ADMIN_TOKEN: ''
+          CA_LOCATION: ''
+          CERT_LOCATION: ''
+          KEY_LOCATION: ''
+          PMS_ENDPOINT: http://127.0.0.1:6733
+          ADS_ENDPOINT: http://127.0.0.1:6734
+        run: |
+          set -euo pipefail
+          test "${RUNNER_NAME}/${RUNNER_OS}/${RUNNER_ARCH}" = fiona-speedle/macOS/ARM64
+          export GOPATH="$(go env GOPATH)"
+          exec 9>/tmp/speedle-plus-test-services.lock
+          flock -w 7200 9
+          python3 - <<'PYTHON'
+          import errno
+          import socket
+          for port in (2379, 2380, 27017, 6733, 6734):
+              for family, address in ((socket.AF_INET, '0.0.0.0'), (socket.AF_INET, '127.0.0.1'), (socket.AF_INET6, '::'), (socket.AF_INET6, '::1')):
+                  try:
+                      with socket.socket(family, socket.SOCK_STREAM) as probe:
+                          probe.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+                          if family == socket.AF_INET6:
+                              probe.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 1)
+                          probe.bind((address, port))
+                  except OSError as error:
+                      if family == socket.AF_INET6 and error.errno in (errno.EAFNOSUPPORT, errno.EADDRNOTAVAIL):
+                          continue
+                      raise SystemExit(f'Test service port {port} is in use; refusing to touch an existing service.') from error
+          PYTHON
+          bash scripts/ci/run-go-tests.sh nightly
+
+      - name: Clean owned trial MySQL containers
+        if: ${{ always() && github.event.inputs.nightly_trial == 'true' && github.event.inputs.inventory_only != 'true' }}
+        run: python3 scripts/ci/run-mysql-tests.py --cleanup
+
+      - name: Upload Fiona nightly trial results
+        if: ${{ always() && github.event.inputs.nightly_trial == 'true' }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: fiona-nightly-results
+          path: fiona-nightly-results/
+          if-no-files-found: warn
+
       - name: Full test suite against MongoDB
-        if: ${{ github.event.inputs.inventory_only != 'true' }}
+        if: ${{ github.event.inputs.inventory_only != 'true' && github.event.inputs.nightly_trial != 'true' }}
         run: |
           set -euo pipefail
           mkdir -p mongodb-results
