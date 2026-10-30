@@ -58,7 +58,7 @@ function context(eventName, head = repository, repo = repository) {
     ref: eventName === 'pull_request' ? 'refs/pull/7/merge' : 'refs/heads/feature',
     event: {sender: {type: 'User'}, pull_request: {head: {repo: {full_name: head}}, user: {type: 'User'}}}};
 }
-const testModes = ['test', 'nightly', 'weekly'];
+const testModes = ['test', 'nightly', 'weekly', 'regression'];
 const allModes = ['lint', 'build', ...testModes];
 test('worker owns runner selection and exposes only the mode input, never a caller checkout ref', () => {
   const inputBlock = source.split('\npermissions:', 1)[0];
@@ -152,7 +152,8 @@ test('test environment neutralizes inherited CLI names, tokens, certificates and
     assert.equal(env.PMS_ENDPOINT, 'http://127.0.0.1:6733'); assert.equal(env.ADS_ENDPOINT, 'http://127.0.0.1:6734');
   }
   assert.doesNotMatch(source, /^\s+(?:export )?(?:HOME|home|CODEX_HOME)=|^\s+(?:HOME|home|CODEX_HOME):/m);
-  assert.match(step('Run Go tests'), /if: inputs.mode == 'test' \|\| inputs.mode == 'nightly' \|\| inputs.mode == 'weekly'/);
+  assert.match(step('Run Go tests'), /if: inputs.mode == 'test' \|\| inputs.mode == 'nightly' \|\| inputs.mode == 'weekly' \|\| inputs.mode == 'regression'$/m);
+  assert.match(step('Upload scheduled test results'), /inputs.mode == 'regression'/);
 });
 
 // Run the worker step and scripts/ci/run-go-tests.sh against stub go,
@@ -252,6 +253,22 @@ test('nightly runs every suite even after a failure, records checks and fails at
   assert.match(checks, /^etcd-docs=0:etcd-docs\.log$/m);
   assert.match(checks, /^mongodb-docs=0:mongodb-docs\.log$/m);
   assert.match(checks, /govulncheck=0:govulncheck\.log/); assert.match(checks, /ci-script-tests=0:/);
+});
+test('post-merge regression runs every package with the file store and the guides, to the end', () => {
+  const {result, records, checks} = runSuite('regression', {failMatching: 'check_embedded.py'});
+  assert.equal(result.status, 1, 'a failed guide fails the run at the end');
+  const tests = goTests(records);
+  assert.equal(tests.length, 2);
+  const [file, docs] = tests;
+  assert.equal(file.env.STORE_TYPE, 'file');
+  for (const flag of ['-race', '-json', '-p']) assert.ok(file.args.includes(flag), flag);
+  assert.ok(file.args.includes('example.invalid/pkg/a'));
+  assert.ok(!file.args.some(a => a.includes('mongodb') || a.includes('samples') || a.endsWith('/pb')));
+  assert.deepEqual(docs.args, ['test', '-count=1', './website/tests/docscheck']);
+  assert.ok(!records.some(r => r.env.STORE_TYPE === 'etcd'), 'no etcd run');
+  assert.ok(!records.some(r => r.args.some(a => /mysql|govulncheck|staticcheck|coverage\.py/.test(a))));
+  for (const name of ['quick-start=0', 'embedded=7', 'docs-contract=0', 'docs=0']) assert.match(checks, new RegExp(`^${name}:`, 'm'));
+  assert.equal(runSuite('regression').result.status, 0);
 });
 test('manual MySQL trial runs the full database suite and CI checks without the other backends', () => {
   const {result, records, checks} = runSuite('nightly', {mysqlOnly: true, failMatching: 'run-mysql-tests.py'});

@@ -12,15 +12,18 @@
 #            release, govulncheck and the CI script tests
 #   weekly   every package with the newest supported Go release
 #            (the gate uses the go.mod/CI release) and staticcheck
+#   regression
+#            after every merge to master: race-detector run of every package
+#            with the file store and the executable guides from docs/
 #
-# nightly and weekly never stop at the first failure: each suite writes its
-# results to RESULTS_DIR (go test -json streams plus checks.txt lines of
-# name=exit_status:log_file) for scripts/ci/test_report.py, and the script
-# exits non-zero at the end if anything failed.
+# nightly, weekly and regression never stop at the first failure: each suite
+# writes its results to RESULTS_DIR (go test -json streams plus checks.txt
+# lines of name=exit_status:log_file) for scripts/ci/test_report.py, and the
+# script exits non-zero at the end if anything failed.
 set -euo pipefail
 cd "$(dirname "$0")/../.."
 
-mode=${1:?usage: run-go-tests.sh gate|nightly|weekly}
+mode=${1:?usage: run-go-tests.sh gate|nightly|weekly|regression}
 results=${RESULTS_DIR:-test-results}
 
 # The gate reruns only these packages with etcd; nightly reruns every
@@ -62,6 +65,17 @@ with_docker() {
     "$@"
   else
     sg docker -c "$(printf '%q ' "$@")"
+  fi
+}
+set_race() {
+  # Sets race to (-race), or to () with a failed check when no C compiler is
+  # available for the race detector.
+  race=(-race)
+  if ! CGO_ENABLED=1 go env CC >/dev/null 2>&1 || ! command -v "$(go env CC)" >/dev/null 2>&1; then
+    race=()
+    echo "race=1:race.log" >> "${results}/checks.txt"
+    echo 'The race detector needs a C compiler; tests ran without -race.' > "${results}/race.log"
+    failed=1
   fi
 }
 gotest_json() {
@@ -123,6 +137,18 @@ case "${mode}" in
     done
     check govulncheck go run golang.org/x/vuln/cmd/govulncheck@v1.9.0 ./pkg/... ./cmd/... ./api/...
     check ci-script-tests bash -c 'python3 -m unittest discover -s scripts/tests -p "test_*.py" && node --test scripts/tests/*.cjs'
+    exit "${failed}"
+    ;;
+  regression)
+    mkdir -p "${results}"; : > "${results}/checks.txt"
+    listed=$(packages); mapfile -t pkgs <<< "${listed}"
+    set_race
+    gotest_json go-file STORE_TYPE=file -- -p 1 -count=1 -timeout 600s "${race[@]}" "${pkgs[@]}"
+    toolchain=$(go env GOVERSION)
+    check quick-start python3 website/tests/check_quick_start.py --toolchain "${toolchain}"
+    check embedded python3 website/tests/check_embedded.py --toolchain "${toolchain}" --candidate
+    check docs-contract go test -count=1 ./website/tests/docscheck
+    check docs python3 website/tests/check_docs.py
     exit "${failed}"
     ;;
   weekly)

@@ -15,18 +15,18 @@ jobs:
     name: execute
     # The runner group accepts only this callee at refs/heads/master. Never
     # derive runner eligibility or checkout revision from caller inputs.
-    # Nightly can use either charming runner; the host lock below protects
-    # legacy fixed-port tests shared by both instances.
+    # Nightly and post-merge regression can use either charming runner; the
+    # host lock below protects legacy fixed-port tests shared by both instances.
     runs-on: >-
       ${{ github.repository == 'teramoby/speedle-plus' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'schedule' && github.ref == 'refs/heads/master') || (github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.event.sender.type == 'User' || github.event.sender.type == 'Bot')) || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && (github.event.pull_request.user.type == 'User' || github.event.pull_request.user.type == 'Bot'))) && fromJSON((inputs.mode == 'test' || inputs.mode == 'weekly') && '["self-hosted","Linux","X64","charming-speedle"]' || '["self-hosted","Linux","X64","speedle-linux"]') || 'ubuntu-latest' }}
-    timeout-minutes: ${{ (inputs.mode == 'nightly' || inputs.mode == 'weekly') && 150 || 30 }}
+    timeout-minutes: ${{ (inputs.mode == 'nightly' || inputs.mode == 'weekly' || inputs.mode == 'regression') && 150 || 30 }}
     steps:
       - name: Validate CI task
         env:
           CI_TASK: ${{ inputs.mode }}
         run: |
           set -euo pipefail
-          case "${CI_TASK}" in lint|test|build|nightly|weekly) ;; *) echo 'Invalid CI task.' >&2; exit 1 ;; esac
+          case "${CI_TASK}" in lint|test|build|nightly|weekly|regression) ;; *) echo 'Invalid CI task.' >&2; exit 1 ;; esac
 
       - name: Verify self-hosted runner identity
         if: runner.environment == 'self-hosted'
@@ -74,7 +74,7 @@ jobs:
       # scripts/ci/run-go-tests.sh chooses the packages, stores and checks for
       # each mode; see its header.
       - name: Run Go tests
-        if: inputs.mode == 'test' || inputs.mode == 'nightly' || inputs.mode == 'weekly'
+        if: inputs.mode == 'test' || inputs.mode == 'nightly' || inputs.mode == 'weekly' || inputs.mode == 'regression'
         env:
           CI_TASK: ${{ inputs.mode }}
           RESULTS_DIR: test-results
@@ -129,7 +129,7 @@ jobs:
           if-no-files-found: ignore
 
       - name: Upload scheduled test results
-        if: always() && (inputs.mode == 'nightly' || inputs.mode == 'weekly')
+        if: always() && (inputs.mode == 'nightly' || inputs.mode == 'weekly' || inputs.mode == 'regression')
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: ${{ inputs.mode }}-results

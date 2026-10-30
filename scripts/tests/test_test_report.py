@@ -316,5 +316,75 @@ class FeishuTest(unittest.TestCase):
         self.assertIn("https://github.com/o/r/issues?q=is%3Aopen+label%3Atest-failure", card["elements"][0]["content"])
 
 
+class RegressionTest(unittest.TestCase):
+    """The post-merge regression: quiet on success, English, issues and Feishu, no mail."""
+    env = {"GITHUB_TOKEN": "t", "GITHUB_REPOSITORY": "o/r", "RUN_URL": "http://run",
+           "COMMIT_URL": "http://commit/abc", "ARK_API_KEY": "k"}
+
+    def run_main(self, text, issues=()):
+        directory = Path(tempfile.mkdtemp())
+        (directory / "go-file.json").write_text(text)
+        summary = directory / "report.txt"
+        github = FakeGitHub(issues)
+        with mock.patch.object(test_report, "GitHub", return_value=github), \
+                mock.patch.object(test_report, "ark_analyze", return_value="Likely cause: nil map.") as ark, \
+                mock.patch.object(test_report, "send_feishu", return_value=True) as feishu, \
+                mock.patch.object(test_report, "send_mail") as mail, mock.patch("builtins.print"):
+            code = test_report.main(["--kind", "regression", "--source", f"run:success:{directory}",
+                                     "--summary-file", str(summary)], env=self.env)
+        self.assertEqual(code, 0)
+        return github, ark, feishu, mail, summary.read_text()
+
+    def test_a_passing_run_sends_nothing(self):
+        github, ark, feishu, mail, summary = self.run_main(events(("pass", "p", "TestA", None)))
+        ark.assert_not_called()
+        feishu.assert_not_called()
+        mail.assert_not_called()
+        self.assertEqual(github.calls, [])
+        self.assertIn("post-merge regression test report: PASSED", summary)
+        self.assertIn("Commit: http://commit/abc", summary)
+
+    def test_a_failure_opens_an_issue_with_output_and_english_analysis(self):
+        github, ark, feishu, mail, summary = self.run_main(events(
+            ("output", "p", "TestB", "panic: assignment to entry in nil map\n"), ("fail", "p", "TestB", None)))
+        self.assertEqual(ark.call_args.kwargs["language"], "English")
+        self.assertIn("Commit: http://commit/abc", ark.call_args[0][0])
+        mail.assert_not_called()
+        self.assertIn("post-merge regression", feishu.call_args[0][0]["header"]["title"]["content"])
+        (method, path, data), = github.calls
+        self.assertEqual((method, path, data["title"]), ("POST", "/issues", "Test failure: p TestB"))
+        for part in ("post-merge regression run failed `TestB`", "Commit: http://commit/abc",
+                     "Run: http://run", "assignment to entry in nil map", "Likely cause: nil map."):
+            self.assertIn(part, data["body"])
+        self.assertTrue(summary.startswith("Likely cause: nil map."))
+
+    def test_a_known_failure_gets_a_comment_with_the_analysis(self):
+        github, *_ = self.run_main(events(("fail", "p", "TestB", None)),
+                                   issues=[{"title": "Test failure: p TestB", "number": 9}])
+        (method, path, data), = github.calls
+        self.assertEqual(path, "/issues/9/comments")
+        self.assertIn("Likely cause: nil map.", data["body"])
+        self.assertIn("Commit: http://commit/abc", data["body"])
+
+    def test_a_failed_job_without_results_is_reported(self):
+        directory = Path(tempfile.mkdtemp())
+        github = FakeGitHub()
+        with mock.patch.object(test_report, "GitHub", return_value=github), \
+                mock.patch.object(test_report, "send_feishu", return_value=True), mock.patch("builtins.print"):
+            test_report.main(["--kind", "regression", "--source", f"run:failure:{directory / 'missing'}"],
+                             env={"GITHUB_TOKEN": "t", "GITHUB_REPOSITORY": "o/r"})
+        self.assertEqual([c[2]["title"] for c in github.calls], ["Test failure: check results missing"])
+
+    def test_scheduled_runs_keep_chinese_analysis(self):
+        response = mock.MagicMock()
+        response.__enter__.return_value.read.return_value = b"{}"
+        with mock.patch("urllib.request.urlopen", return_value=response) as urlopen:
+            test_report.ark_analyze("s", "k", "m")
+            test_report.ark_analyze("s", "k", "m", language="English")
+        prompts = [json.loads(c[0][0].data)["input"] for c in urlopen.call_args_list]
+        self.assertIn("Write in Chinese", prompts[0])
+        self.assertIn("Write in English", prompts[1])
+
+
 if __name__ == "__main__":
     unittest.main()
