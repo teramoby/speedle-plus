@@ -7,6 +7,7 @@ import (
 	"regexp"
 
 	"github.com/teramoby/speedle-plus/api/pms"
+	storeutils "github.com/teramoby/speedle-plus/pkg/store/utils"
 
 	log "github.com/sirupsen/logrus"
 
@@ -29,21 +30,15 @@ func NewRolePolicyCacheData() (p *RolePolicyCacheData) {
 	}
 }
 
-func nilPrincipalRolePolicy(rolePolicy *pms.RolePolicy) (result bool) {
-	return len(rolePolicy.Principals) == 0
-}
-
 func (p *RolePolicyCacheData) AddRolePolicyToCache(policy *pms.RolePolicy, condition *govaluate.EvaluableExpression) {
+	if err := storeutils.ValidateRolePolicyPrincipals(policy); err != nil {
+		log.Errorf("Invalid role policy: %v", err)
+		return
+	}
 	//First add role policy to PolicyMap
 	p.PolicyMap[policy.ID] = policy
 	if condition != nil {
 		p.Conditions[policy.ID] = condition
-	}
-
-	//No principal defined. that means the roles are granted to any user
-	if nilPrincipalRolePolicy(policy) {
-		p.addRolePolicyToResourceToRolePolicyMap(p.NilPrincipalToPolicies, policy)
-		return
 	}
 
 	/*
@@ -112,11 +107,6 @@ func (p *RolePolicyCacheData) DeleteRolePolicyFromCache(policyID string) {
 		delete(p.Conditions, policyID)
 	}
 
-	if nilPrincipalRolePolicy(policy) {
-		p.deleteRolePolicyFromResourceToRolePolicyMap(p.NilPrincipalToPolicies, policy)
-		return
-	}
-
 	if p.PrincipalToPolicies != nil {
 		for _, principal := range policy.Principals {
 			if resourceToRolePolicyMap, exist := p.PrincipalToPolicies[principal]; exist {
@@ -167,14 +157,6 @@ func (p *RolePolicyCacheData) deleteRolePolicyFromResourceToRolePolicyMap(resour
 
 func (p *RolePolicyCacheData) GetRelatedRolePolicyMap(subjectPrincipals []string, resource string) map[string]*pms.RolePolicy {
 	resultRolePolicyMap := make(map[string]*pms.RolePolicy)
-
-	//First add null princial role policies into result map
-	p.getRolePolicyFromResourceToRolePolicyMap(p.NilPrincipalToPolicies, resultRolePolicyMap, resource)
-
-	//Only return the role policy grant to nil principal if subject principals are nil
-	if len(subjectPrincipals) == 0 {
-		return resultRolePolicyMap
-	}
 
 	if p.PrincipalToPolicies != nil {
 		for _, principal := range subjectPrincipals {

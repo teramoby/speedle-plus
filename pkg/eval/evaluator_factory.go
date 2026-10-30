@@ -8,6 +8,7 @@ import (
 
 	"github.com/teramoby/speedle-plus/pkg/cfg"
 	"github.com/teramoby/speedle-plus/pkg/store"
+	storeutils "github.com/teramoby/speedle-plus/pkg/store/utils"
 
 	adsapi "github.com/teramoby/speedle-plus/api/ads"
 	"github.com/teramoby/speedle-plus/api/pms"
@@ -59,6 +60,10 @@ func NewFromConfig(conf *cfg.Config) (InternalEvaluator, error) {
 // NewWithStore creates a policy evaluator with policy store
 func NewWithStore(conf *cfg.Config, s pms.PolicyStoreManagerADS) (InternalEvaluator, error) {
 	ps, err := s.ReadPolicyStore()
+	if err != nil {
+		return nil, err
+	}
+	ps, err = storeutils.PreparePolicyStore(ps)
 	if err != nil {
 		return nil, err
 	}

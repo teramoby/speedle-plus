@@ -9,6 +9,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/teramoby/speedle-plus/3rdparty/github.com/Knetic/govaluate"
 	"github.com/teramoby/speedle-plus/api/pms"
+	storeutils "github.com/teramoby/speedle-plus/pkg/store/utils"
 )
 
 type RuntimePolicyStore struct {
@@ -49,6 +50,11 @@ func (rtps *RuntimePolicyStore) init(ps *pms.PolicyStore, funcSvcEndpoint string
 }
 
 func (rtps *RuntimePolicyStore) reloadPolicyStore(ps *pms.PolicyStore) {
+	ps, err := storeutils.PreparePolicyStore(ps)
+	if err != nil {
+		log.Errorf("Reject invalid policy snapshot: %v", err)
+		return
+	}
 	// Clear all cached data first
 	fncsResultCache := FuncResultCache{
 		Results: make(map[string]FuncResult),
@@ -69,6 +75,10 @@ func (rtps *RuntimePolicyStore) reloadPolicyStore(ps *pms.PolicyStore) {
 }
 
 func (rtps *RuntimePolicyStore) addService(service *pms.Service) {
+	if err := storeutils.ValidateServiceRolePolicies(service); err != nil {
+		log.Errorf("Invalid service update: %v", err)
+		return
+	}
 	rtService := rtps.convertService(service)
 
 	rtps.Lock()
@@ -166,6 +176,10 @@ func (rtps *RuntimePolicyStore) deletePolicy(serviceName string, policyID string
 }
 
 func (rtps *RuntimePolicyStore) addRolePolicy(serviceName string, rolePolicy *pms.RolePolicy) {
+	if err := storeutils.ValidateRolePolicyPrincipals(rolePolicy); err != nil {
+		log.Errorf("Invalid role policy update: %v", err)
+		return
+	}
 	rtps.RLock()
 	defer rtps.RUnlock()
 

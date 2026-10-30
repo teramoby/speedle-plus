@@ -415,7 +415,7 @@ func TestStoreErrors(t *testing.T) {
 	failing.CountsSucceed = true
 	impl := NewServiceImpl(failing)
 	policy := &pb.Policy{Name: "p", Effect: pb.Effect_GRANT}
-	rolePolicy := &pb.RolePolicy{Name: "rp", Effect: pb.Effect_GRANT}
+	rolePolicy := &pb.RolePolicy{Name: "rp", Effect: pb.Effect_GRANT, Principals: []string{"user:alice"}, Roles: []string{"reader"}}
 	calls := map[string]func() error{
 		"CreateFunction": func() error { _, err := impl.CreateFunction(ctx, &pb.Function{Name: "f"}); return err },
 		"QueryFunctions": func() error { _, err := impl.QueryFunctions(ctx, &pb.FunctionQueryRequest{}); return err },
@@ -471,5 +471,24 @@ func TestStoreErrors(t *testing.T) {
 	}
 	if _, err := impl.CreateRolePolicy(ctx, &pb.RolePolicyRequest{ServiceName: "s", RolePolicy: rolePolicy}); code(err) != codes.Internal {
 		t.Errorf("CreateRolePolicy with failing counts: %v", err)
+	}
+}
+
+func TestRolePolicyRequiresPrincipals(t *testing.T) {
+	ps := newStore(t)
+	if err := ps.CreateService(&pms.Service{Name: "app"}); err != nil {
+		t.Fatal(err)
+	}
+	impl := NewServiceImpl(ps)
+	for _, effect := range []pb.Effect{pb.Effect_GRANT, pb.Effect_DENY} {
+		for _, principals := range [][]string{nil, {}, {""}, {"user:alice", ""}} {
+			role := &pb.RolePolicy{Effect: effect, Principals: principals, Roles: []string{"reader"}}
+			if _, err := impl.CreateRolePolicy(ctx, &pb.RolePolicyRequest{ServiceName: "app", RolePolicy: role}); code(err) != codes.InvalidArgument {
+				t.Fatalf("role creation without principals: %v", err)
+			}
+		}
+	}
+	if count, err := ps.GetRolePolicyCount("app"); err != nil || count != 0 {
+		t.Fatalf("invalid rule persisted: %d %v", count, err)
 	}
 }

@@ -13,6 +13,7 @@ import (
 
 	"github.com/teramoby/speedle-plus/api/pms"
 	"github.com/teramoby/speedle-plus/pkg/eval/condition"
+	storeutils "github.com/teramoby/speedle-plus/pkg/store/utils"
 )
 
 var errUnexpectedData = errors.New("unexpected data after the policy store")
@@ -63,6 +64,9 @@ func CheckJSON(r io.Reader, name string) (*pms.PolicyStore, []error) {
 	}
 
 	var errs []error
+	if err := storeutils.ValidatePolicyIDs(&ps); err != nil {
+		errs = append(errs, fmt.Errorf("%s: %v", name, err))
+	}
 	for i, service := range ps.Services {
 		if service == nil {
 			errs = append(errs, fmt.Errorf("%s: service %d: null", name, i+1))
@@ -112,6 +116,9 @@ func policyProblems(policy *pms.Policy) []string {
 
 func rolePolicyProblems(rolePolicy *pms.RolePolicy) []string {
 	problems := effectProblems(rolePolicy.Effect)
+	if err := storeutils.ValidateRolePolicyPrincipals(rolePolicy); err != nil {
+		problems = append(problems, err.Error())
+	}
 	if len(rolePolicy.Roles) == 0 {
 		problems = append(problems, "no roles")
 	}

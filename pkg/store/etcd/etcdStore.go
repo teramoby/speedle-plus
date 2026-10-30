@@ -13,6 +13,7 @@ import (
 	"github.com/teramoby/speedle-plus/pkg/suid"
 
 	"github.com/teramoby/speedle-plus/api/pms"
+	storeutils "github.com/teramoby/speedle-plus/pkg/store/utils"
 
 	"context"
 	clientv3 "go.etcd.io/etcd/client/v3"
@@ -77,12 +78,16 @@ func (s *Store) ReadPolicyStore() (*pms.PolicyStore, error) {
 
 // write policy store to etcd3
 func (s *Store) WritePolicyStore(ps *pms.PolicyStore) error {
-	err := s.DeleteServices()
+	ps, err := storeutils.PreparePolicyStore(ps)
+	if err != nil {
+		return err
+	}
+	err = s.DeleteServices()
 	if err != nil {
 		return err
 	}
 	for _, service := range ps.Services {
-		err := s.CreateService(service)
+		err := s.createService(service)
 		if err != nil {
 			return err
 		}
@@ -309,8 +314,10 @@ func (s *Store) prefixGet(prefix string, opts ...clientv3.OpOption) ([]*clientv3
 		}
 		ret = append(ret, getResp)
 		if getResp.More {
-			lastKey := string(getResp.Kvs[pageSize-1].Key)
-			prefix = clientv3.GetPrefixRangeEnd(lastKey)
+			lastKey := string(getResp.Kvs[len(getResp.Kvs)-1].Key)
+			// Resume after this exact key. Advancing the whole prefix would
+			// skip keys that extend it, such as "rp1-child" after "rp1".
+			prefix = lastKey + "\x00"
 			getOpts = []clientv3.OpOption{clientv3.WithRange(end), clientv3.WithLimit(pageSize), clientv3.WithSort(clientv3.SortByKey, clientv3.SortAscend)}
 			getOpts = append(getOpts, opts...)
 		} else {
@@ -353,6 +360,33 @@ func (s *Store) getPutOps(service *pms.Service) ([]clientv3.Op, error) {
 }
 
 func (s *Store) CreateService(service *pms.Service) error {
+	if err := storeutils.ValidateServiceRolePolicies(service); err != nil {
+		return err
+	}
+	copy := *service
+	copy.Policies = make([]*pms.Policy, len(service.Policies))
+	for i, policy := range service.Policies {
+		if policy == nil {
+			return errors.New(errors.InvalidRequest, "policy is required")
+		}
+		value := *policy
+		value.ID = suid.New().String()
+		copy.Policies[i] = &value
+	}
+	copy.RolePolicies = make([]*pms.RolePolicy, len(service.RolePolicies))
+	for i, policy := range service.RolePolicies {
+		value := *policy
+		value.ID = suid.New().String()
+		copy.RolePolicies[i] = &value
+	}
+	if err := s.createService(&copy); err != nil {
+		return err
+	}
+	*service = copy
+	return nil
+}
+
+func (s *Store) createService(service *pms.Service) error {
 	ops, err := s.getPutOps(service)
 	if err != nil {
 		return err
@@ -855,9 +889,7 @@ func (s *Store) DeletePolicies(serviceName string) error {
 func (s *Store) CreatePolicy(serviceName string, policy *pms.Policy) (*pms.Policy, error) {
 	//TODO:validate policy
 	dupPolicy := *policy
-	if policy.ID == "" {
-		dupPolicy.ID = suid.New().String()
-	}
+	dupPolicy.ID = suid.New().String()
 
 	ctx, cancel := context.WithTimeout(context.Background(), requestTimeout)
 	defer cancel()
@@ -1052,11 +1084,12 @@ func (s *Store) DeleteRolePolicies(serviceName string) error {
 }
 
 func (s *Store) CreateRolePolicy(serviceName string, rolePolicy *pms.RolePolicy) (*pms.RolePolicy, error) {
+	if err := storeutils.ValidateRolePolicyPrincipals(rolePolicy); err != nil {
+		return nil, err
+	}
 	//TODO: validate rolePolicy
 	dupRolePolicy := *rolePolicy
-	if rolePolicy.ID == "" {
-		dupRolePolicy.ID = suid.New().String()
-	}
+	dupRolePolicy.ID = suid.New().String()
 	serviceKey := s.KeyPrefix + ServicesKey + KeySeparator + serviceName + KeySeparator
 	rolePolicyKey := s.KeyPrefix + ServicesKey + KeySeparator + serviceName + KeySeparator + RolePoliciesKey + KeySeparator + dupRolePolicy.ID
 	value, err := json.Marshal(dupRolePolicy)

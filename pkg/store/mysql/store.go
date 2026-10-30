@@ -14,6 +14,7 @@ import (
 	driver "github.com/go-sql-driver/mysql"
 	"github.com/teramoby/speedle-plus/api/pms"
 	"github.com/teramoby/speedle-plus/pkg/errors"
+	storeutils "github.com/teramoby/speedle-plus/pkg/store/utils"
 	"github.com/teramoby/speedle-plus/pkg/suid"
 )
 
@@ -307,8 +308,9 @@ func insertFunction(ctx context.Context, tx *sql.Tx, v *pms.Function) error {
 }
 
 func (s *Store) WritePolicyStore(ps *pms.PolicyStore) error {
-	if ps == nil {
-		return errors.New(errors.InvalidRequest, "policy store is required")
+	ps, err := storeutils.PreparePolicyStore(ps)
+	if err != nil {
+		return err
 	}
 	return s.write(func(ctx context.Context, tx *sql.Tx) error {
 		for _, table := range []string{"speedle_services", "speedle_functions"} {
@@ -330,8 +332,8 @@ func (s *Store) WritePolicyStore(ps *pms.PolicyStore) error {
 	})
 }
 func (s *Store) CreateService(v *pms.Service) error {
-	if v == nil {
-		return errors.New(errors.InvalidRequest, "service is required")
+	if err := storeutils.ValidateServiceRolePolicies(v); err != nil {
+		return err
 	}
 	prepared := *v
 	prepared.Policies = make([]*pms.Policy, len(v.Policies))
@@ -345,9 +347,6 @@ func (s *Store) CreateService(v *pms.Service) error {
 	}
 	prepared.RolePolicies = make([]*pms.RolePolicy, len(v.RolePolicies))
 	for i, policy := range v.RolePolicies {
-		if policy == nil {
-			return errors.New(errors.InvalidRequest, "role policy is required")
-		}
 		copy := *policy
 		copy.ID = suid.New().String()
 		prepared.RolePolicies[i] = &copy
@@ -375,6 +374,9 @@ func (s *Store) CreatePolicy(name string, p *pms.Policy) (*pms.Policy, error) {
 	return result, nil
 }
 func (s *Store) CreateRolePolicy(name string, p *pms.RolePolicy) (*pms.RolePolicy, error) {
+	if err := storeutils.ValidateRolePolicyPrincipals(p); err != nil {
+		return nil, err
+	}
 	var result *pms.RolePolicy
 	err := s.write(func(ctx context.Context, tx *sql.Tx) error {
 		if err := requireService(ctx, tx, name); err != nil {

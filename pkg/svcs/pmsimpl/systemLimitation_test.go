@@ -66,8 +66,8 @@ func TestCheckService(t *testing.T) {
 		{"too many policies", &countingStore{policies: 2, rolePolicies: 1}, &pms.Service{Policies: []*pms.Policy{small}}, errors.ExceedLimit},
 		{"role policies count too", &countingStore{}, &pms.Service{RolePolicies: make([]*pms.RolePolicy, 4)}, errors.ExceedLimit},
 		{"policy too big", &countingStore{}, &pms.Service{Policies: []*pms.Policy{big}}, errors.ExceedLimit},
-		{"role policy too big", &countingStore{}, &pms.Service{RolePolicies: []*pms.RolePolicy{{Condition: strings.Repeat("a", 200)}}}, errors.ExceedLimit},
-		{"role policy fits", &countingStore{}, &pms.Service{RolePolicies: []*pms.RolePolicy{{ID: "rp"}}}, ""},
+		{"role policy too big", &countingStore{}, &pms.Service{RolePolicies: []*pms.RolePolicy{{Principals: []string{"user:alice"}, Roles: []string{"reader"}, Condition: strings.Repeat("a", 200)}}}, errors.ExceedLimit},
+		{"role policy fits", &countingStore{}, &pms.Service{RolePolicies: []*pms.RolePolicy{{Principals: []string{"user:alice"}, Roles: []string{"reader"}, ID: "rp", Effect: pms.Grant}}}, ""},
 		{"service count fails", &countingStore{err: errors.New(errors.StoreError, "x")}, &pms.Service{}, errors.StoreError},
 		{"policy count fails", &countingStore{failRolePolicyCount: true}, &pms.Service{}, errors.StoreError},
 	}
@@ -106,7 +106,7 @@ func TestCheckPolicy(t *testing.T) {
 
 func TestCheckRolePolicy(t *testing.T) {
 	setLimits(t, -1, 2, -1, 100)
-	rolePolicy := &pms.RolePolicy{ID: "rp", Effect: "grant"}
+	rolePolicy := &pms.RolePolicy{Principals: []string{"user:alice"}, Roles: []string{"reader"}, ID: "rp", Effect: "grant"}
 	cases := []struct {
 		name       string
 		rolePolicy *pms.RolePolicy
@@ -114,9 +114,9 @@ func TestCheckRolePolicy(t *testing.T) {
 		want       errors.ErrorCode
 	}{
 		{"fits", rolePolicy, &countingStore{rolePolicies: 1}, ""},
-		{"no effect", &pms.RolePolicy{ID: "rp"}, &countingStore{}, errors.InvalidRequest},
+		{"no effect", &pms.RolePolicy{Principals: []string{"user:alice"}, Roles: []string{"reader"}, ID: "rp"}, &countingStore{}, errors.InvalidRequest},
 		{"too many", rolePolicy, &countingStore{policies: 2}, errors.ExceedLimit},
-		{"too big", &pms.RolePolicy{Effect: "deny", Condition: strings.Repeat("a", 200)}, &countingStore{}, errors.ExceedLimit},
+		{"too big", &pms.RolePolicy{Principals: []string{"user:alice"}, Roles: []string{"reader"}, Effect: "deny", Condition: strings.Repeat("a", 200)}, &countingStore{}, errors.ExceedLimit},
 		{"count fails", rolePolicy, &countingStore{failRolePolicyCount: true}, errors.StoreError},
 	}
 	for _, c := range cases {
@@ -147,9 +147,9 @@ func TestInvalidConditionIsRejectedWithItsPosition(t *testing.T) {
 		err          error
 	}{
 		{"policy", `policy "p1": `, CheckPolicy("app", &pms.Policy{Name: "p1", Effect: "grant", Condition: bad}, &countingStore{})},
-		{"role policy", `role policy "rp1": `, CheckRolePolicy("app", &pms.RolePolicy{Name: "rp1", Effect: "grant", Condition: bad}, &countingStore{})},
+		{"role policy", `role policy "rp1": `, CheckRolePolicy("app", &pms.RolePolicy{Principals: []string{"user:alice"}, Roles: []string{"reader"}, Name: "rp1", Effect: "grant", Condition: bad}, &countingStore{})},
 		{"policy in service", "policy 2: ", CheckService(&pms.Service{Policies: []*pms.Policy{{Effect: "grant"}, {Effect: "grant", Condition: bad}}}, &countingStore{})},
-		{"role policy in service", "role policy 1: ", CheckService(&pms.Service{RolePolicies: []*pms.RolePolicy{{Effect: "grant", Condition: bad}}}, &countingStore{})},
+		{"role policy in service", "role policy 1: ", CheckService(&pms.Service{RolePolicies: []*pms.RolePolicy{{Principals: []string{"user:alice"}, Roles: []string{"reader"}, Effect: "grant", Condition: bad}}}, &countingStore{})},
 	}
 	for _, c := range cases {
 		wantCode(t, c.name, c.err, errors.InvalidRequest)
@@ -158,4 +158,16 @@ func TestInvalidConditionIsRejectedWithItsPosition(t *testing.T) {
 		}
 	}
 	wantCode(t, "valid condition", CheckPolicy("app", &pms.Policy{Effect: "grant", Condition: "amount <= 5"}, &countingStore{}), "")
+}
+
+func TestRolePolicyPrincipalsRequired(t *testing.T) {
+	setLimits(t, -1, -1, -1, -1)
+	for _, effect := range []string{pms.Grant, pms.Deny} {
+		for _, principals := range [][]string{nil, {}, {""}, {" \t"}, {"user:alice", ""}} {
+			role := &pms.RolePolicy{Effect: effect, Principals: principals, Roles: []string{"reader"}}
+			wantCode(t, "standalone role rule", CheckRolePolicy("app", role, &countingStore{}), errors.InvalidRequest)
+			wantCode(t, "nested role rule", CheckService(&pms.Service{Name: "app", RolePolicies: []*pms.RolePolicy{role}}, &countingStore{}), errors.InvalidRequest)
+		}
+	}
+	wantCode(t, "null role rule", CheckRolePolicy("app", nil, &countingStore{}), errors.InvalidRequest)
 }
