@@ -880,6 +880,9 @@ func deniableDescendantRoles(role string, roles map[string]*Role, visited map[st
 	}
 	stack := []frame{makeFrame(role, 0)}
 	descendants := []string{}
+	// Each recursive call previously had its own descendants slice. start
+	// marks that slice in this shared output; earlier ancestor branches are
+	// deliberately outside the current frame, preserving the legacy rule.
 	positions := make(map[string]int)
 	for len(stack) > 0 {
 		f := &stack[len(stack)-1]
@@ -1245,6 +1248,7 @@ func (p *PolicyEvalImpl) applyStoreChange(e pms.StoreChangeEvent) (err error) {
 		err := p.syncRuntimeCache(data)
 		if err != nil {
 			log.Error("failed to reload cache data. ", err)
+			return err
 		}
 	case pms.FUNCTION_ADD:
 		f := e.Content.(*pms.Function)

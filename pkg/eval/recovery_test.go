@@ -358,3 +358,44 @@ func TestFeatureAssertionPreservesNormalInputs(t *testing.T) {
 		}
 	}
 }
+
+type partialSyncFailureStore struct{ pms.PolicyStoreManagerADS }
+
+func (s *partialSyncFailureStore) GetPolicy(service, id string) (*pms.Policy, error) {
+	if id == "2" {
+		policy := recoveryGrant("2")
+		policy.Permissions[0].Resource = "unrelated"
+		return policy, nil
+	}
+	return nil, errors.New(errors.StoreError, "injected store failure after one update")
+}
+
+func TestFeaturePartialSyncErrorFailsClosed(t *testing.T) {
+	snapshot := &pms.PolicyStore{Services: []*pms.Service{{Name: "app", Policies: []*pms.Policy{recoveryGrant("1")}}}}
+	e := featureEvaluator(t, snapshot)
+	if allowed, _, err := e.IsAllowed(featureContext()); !allowed || err != nil {
+		t.Fatalf("control decision: %v %v", allowed, err)
+	}
+	original := e.Store
+	e.Store = &partialSyncFailureStore{original}
+	defer func() { e.Store = original }()
+	// The new store no longer contains grant 1. Insertion of 2 succeeds, then
+	// fetching 3 fails before the old grant's deletion. This is a partial write.
+	apply(e, pms.StoreChangeEvent{Type: pms.SYNC_RELOAD, Content: []interface{}{[]string{"app"}, map[int]string{2: "app", 3: "app"}, map[int]string{}, []string{}}})
+	cache := e.RuntimePolicyStore.RuntimeServices["app"].PoliciesCache.PolicyMap
+	if cache["1"] == nil || cache["2"] == nil {
+		t.Fatal("test did not reach the intended partial mutation")
+	}
+	if allowed, reason, err := e.IsAllowed(featureContext()); allowed || reason != ads.ERROR_IN_EVALUATION || errors.Code(err) != errors.EvalCacheError {
+		t.Fatalf("partial cache granted access: %v %v %v", allowed, reason, err)
+	}
+	if permissions, err := e.GetAllGrantedPermissions(featureContext()); len(permissions) != 0 || err == nil {
+		t.Fatalf("partial permissions escaped: %v %v", permissions, err)
+	}
+	apply(e, pms.StoreChangeEvent{Type: pms.SERVICE_ADD, Content: snapshot.Services[0]})
+	if allowed, _, err := e.IsAllowed(featureContext()); allowed || err == nil {
+		t.Fatal("incremental update cleared failed-cache state")
+	}
+	apply(e, pms.StoreChangeEvent{Type: pms.FULL_RELOAD, Content: snapshot})
+	requireHealthyAfterRecovery(t, e)
+}

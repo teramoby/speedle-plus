@@ -19,7 +19,8 @@ identity.
 
 The same request boundary cannot recover a panic in another goroutine.
 Engine-owned condition-cache updaters, cache cleanup and watch events have their
-own boundaries. A panicking watch event marks the authorization cache unusable;
+own boundaries. A panicking watch event or a failed incremental synchronization marks the
+authorization cache unusable;
 requests fail closed until a complete snapshot reload succeeds. Startup and
 explicit refresh return errors on panic instead of terminating the process.
 
