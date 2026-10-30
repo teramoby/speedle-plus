@@ -15,6 +15,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/teramoby/speedle-plus/api/pms"
 	"github.com/teramoby/speedle-plus/pkg/errors"
+	storeutils "github.com/teramoby/speedle-plus/pkg/store/utils"
 	"github.com/teramoby/speedle-plus/pkg/suid"
 )
 
@@ -85,8 +86,9 @@ func (s *Store) supportsTransactions(ctx context.Context) (bool, error) {
 // WritePolicyStore atomically replaces the snapshot. MongoDB transactions require
 // a replica set or sharded cluster; unsupported deployments fail without deleting data.
 func (s *Store) WritePolicyStore(ps *pms.PolicyStore) error {
-	if ps == nil {
-		return errors.New(errors.InvalidRequest, "policy store must not be nil")
+	ps, err := storeutils.PreparePolicyStore(ps)
+	if err != nil {
+		return err
 	}
 	// Encode before starting the transaction, so invalid input never removes data.
 	services := make([]interface{}, 0, len(ps.Services))

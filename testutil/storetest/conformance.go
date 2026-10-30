@@ -24,6 +24,7 @@ func RunConformance(t *testing.T, newStore func(t *testing.T) pms.PolicyStoreMan
 	t.Run("RolePolicies", func(t *testing.T) { testRolePolicies(t, newStore(t)) })
 	t.Run("Functions", func(t *testing.T) { testFunctions(t, newStore(t)) })
 	t.Run("PolicyStore", func(t *testing.T) { testPolicyStore(t, newStore(t)) })
+	t.Run("GlobalPolicyIDs", func(t *testing.T) { testGlobalPolicyIDs(t, newStore(t)) })
 	t.Run("Discover", func(t *testing.T) {
 		manager, ok := newStore(t).(store.DiscoverRequestManager)
 		if !ok {

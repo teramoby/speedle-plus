@@ -18,6 +18,7 @@ import (
 	"github.com/fsnotify/fsnotify"
 	log "github.com/sirupsen/logrus"
 	"github.com/teramoby/speedle-plus/api/pms"
+	storeutils "github.com/teramoby/speedle-plus/pkg/store/utils"
 )
 
 type Store struct {
@@ -64,13 +65,20 @@ func (s *Store) readPolicyStoreWithoutLock() (*pms.PolicyStore, error) {
 
 // WritePolicyStore writes policies to a file
 func (s *Store) WritePolicyStore(ps *pms.PolicyStore) error {
+	prepared, err := storeutils.PreparePolicyStore(ps)
+	if err != nil {
+		return err
+	}
 	s.rwLock.Lock()
 	defer s.rwLock.Unlock()
 
-	return s.writePolicyStoreWithoutLock(ps)
+	return s.writePolicyStoreWithoutLock(prepared)
 }
 
 func (s *Store) writePolicyStoreWithoutLock(ps *pms.PolicyStore) error {
+	if err := storeutils.ValidatePolicyIDs(ps); err != nil {
+		return err
+	}
 	jsonFile, err := os.Create(s.FileLocation)
 	if err != nil {
 		return errors.Wrapf(err, errors.StoreError, "unable to create file %q", s.FileLocation)

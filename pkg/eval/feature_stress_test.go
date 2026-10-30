@@ -7,6 +7,7 @@ import (
 	ads "github.com/teramoby/speedle-plus/api/ads"
 	"github.com/teramoby/speedle-plus/api/pms"
 	"os"
+	"slices"
 	"strconv"
 	"testing"
 )
@@ -51,6 +52,69 @@ func TestFeatureLargePolicyRoleSets(t *testing.T) {
 						if got != permitted || err != nil {
 							t.Fatalf("size=%d user=%d permitted=%v got=%v err=%v", size, i, permitted, got, err)
 						}
+					}
+				}
+			}
+		})
+	}
+}
+
+func TestFeatureRoleMixedGraphCapacity(t *testing.T) {
+	// Every component contains a diamond, a conditional denial of its only
+	// entry, and an unrelated public root. Check every role and permission.
+	for _, size := range []int{128, 1024} {
+		t.Run(fmt.Sprint(size), func(t *testing.T) {
+			service := &pms.Service{Name: "app", RolePolicies: []*pms.RolePolicy{roleRegressionPolicy("blocker", pms.Grant, []string{"user:alice"}, "blocker")}}
+			for i := 0; i < size; i++ {
+				n := fmt.Sprint(i)
+				service.RolePolicies = append(service.RolePolicies,
+					roleRegressionPolicy("root-"+n, pms.Grant, []string{"user:alice"}, "root"+n),
+					roleRegressionPolicy("public-"+n, pms.Grant, nil, "public"+n),
+					roleRegressionPolicy("diamond-"+n, pms.Grant, []string{"role:root" + n}, "middle"+n, "join"+n),
+					roleRegressionPolicy("join-"+n, pms.Grant, []string{"role:middle" + n}, "join"+n),
+					roleRegressionPolicy("leaf-"+n, pms.Grant, []string{"role:join" + n}, "leaf"+n),
+					&pms.RolePolicy{ID: "deny-" + n, Effect: pms.Deny, Principals: []string{"role:blocker"}, Roles: []string{"root" + n}, Condition: "blocked"})
+				for _, kind := range []string{"public", "leaf"} {
+					policy := featurePolicy("p-"+kind+n, "amount < 100")
+					policy.Principals = [][]string{{"role:" + kind + n}}
+					policy.Permissions[0].Resource = kind + n
+					service.Policies = append(service.Policies, policy)
+				}
+			}
+			e := featureEvaluator(t, &pms.PolicyStore{Services: []*pms.Service{service}})
+			for _, blocked := range []bool{false, true} {
+				ctx := featureContext()
+				ctx.Attributes = map[string]interface{}{"blocked": blocked, "amount": 1.0}
+				wantRoles := []string{"blocker"}
+				wantResources := map[string]bool{}
+				for i := 0; i < size; i++ {
+					n := fmt.Sprint(i)
+					wantRoles = append(wantRoles, "public"+n)
+					wantResources["public"+n] = true
+					if !blocked {
+						wantRoles = append(wantRoles, "root"+n, "middle"+n, "join"+n, "leaf"+n)
+						wantResources["leaf"+n] = true
+					}
+				}
+				roles, err := e.GetAllGrantedRoles(ctx)
+				slices.Sort(roles)
+				slices.Sort(wantRoles)
+				if err != nil || !slices.Equal(roles, wantRoles) {
+					t.Fatalf("size=%d blocked=%v roles=%d want=%d err=%v", size, blocked, len(roles), len(wantRoles), err)
+				}
+				permissions, err := e.GetAllGrantedPermissions(ctx)
+				if err != nil || len(permissions) != len(wantResources) {
+					t.Fatalf("size=%d blocked=%v permissions=%d want=%d err=%v", size, blocked, len(permissions), len(wantResources), err)
+				}
+				for _, permission := range permissions {
+					if !wantResources[permission.Resource] || !slices.Equal(permission.Actions, []string{"read"}) {
+						t.Fatalf("unexpected permission %+v", permission)
+					}
+				}
+				for _, i := range []int{0, size / 2, size - 1} {
+					for _, kind := range []string{"public", "leaf"} {
+						ctx.Resource = kind + fmt.Sprint(i)
+						assertRoleRegression(t, e, ctx, wantRoles, wantResources[ctx.Resource])
 					}
 				}
 			}

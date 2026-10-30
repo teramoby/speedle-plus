@@ -450,6 +450,7 @@ func (p *PolicyEvalImpl) getDirectRolePolicesInService(principals []string,
 
 type Role struct {
 	Name               string
+	PublicGrant        bool // An applicable grant with no principals is an independent root.
 	ParentPrincipals   map[string]bool
 	ParentRoles        map[string]bool
 	ChildRoles         map[string]bool
@@ -468,7 +469,7 @@ func (p *PolicyEvalImpl) getGrantedRolesFromService(ctx *internalRequestContext,
 	}
 
 	relatedRolesMap := make(map[string]*Role) //contain all role info related to the role calculation
-	policyIDMap := make(map[string]bool)      // this is to avoid repeat processing of same policy.
+	policyIDMap := make(map[string]bool)      // IDs are unique throughout the policy store.
 	grantedRoleMap := make(map[string]bool)   //this is to keep all possiblely granted roles
 
 	subjectPrincipalMap := make(map[string]bool) //this contains non-role principals of ctx.Subject
@@ -537,31 +538,26 @@ func (p *PolicyEvalImpl) getGrantedRolesFromService(ctx *internalRequestContext,
 	//only keep role node that is in possible granted roles
 	cleanRelatedRoleMap(relatedRolesMap, grantedRoleMap)
 
-	for {
-		//find safely denied role
-		safelyDeniedRoles := []string{}
+	for len(deniedRoleMap) > 0 {
+		// A deny is safe when its issuer has a root path that avoids every
+		// pending denial. Resolve those first, preserving the existing rule
+		// that a denied role cannot itself deny another role.
+		independentRoles := reachableRoles(relatedRolesMap, deniedRoleMap)
+		safelyDeniedRoles := make(map[string]bool)
 		for deniedRole := range deniedRoleMap {
-			if couldRoleSafelyBeDenied(deniedRole, relatedRolesMap, deniedRoleMap) {
-				safelyDeniedRoles = append(safelyDeniedRoles, deniedRole)
+			for issuer := range relatedRolesMap[deniedRole].DeniedByRoles {
+				if independentRoles[issuer] {
+					safelyDeniedRoles[deniedRole] = true
+					break
+				}
 			}
 		}
-
-		if len(safelyDeniedRoles) > 0 {
-			for _, deniedRole := range safelyDeniedRoles {
-				denyRoleAndDescendants(deniedRole, relatedRolesMap, grantedRoleMap, deniedRoleMap)
-			}
-			//get deniedRoles based on the left role nodes.
-			deniedRoleMap = getDeniedRoles(relatedRolesMap, grantedRoleMap)
-
-			continue
-		} else {
-			//when no safely denied roles found, just delete all denied roles one by one
-			for deniedRole := range deniedRoleMap {
-				denyRoleAndDescendants(deniedRole, relatedRolesMap, grantedRoleMap, deniedRoleMap)
-			}
-			break
+		if len(safelyDeniedRoles) == 0 {
+			// Preserve the conservative result for mutually dependent denies.
+			safelyDeniedRoles = deniedRoleMap
 		}
-
+		denyRolesAndDescendants(safelyDeniedRoles, relatedRolesMap, grantedRoleMap)
+		deniedRoleMap = getDeniedRoles(relatedRolesMap, grantedRoleMap)
 	}
 	finalGrantedRoles := []string{}
 	for role := range grantedRoleMap {
@@ -610,6 +606,7 @@ func updateRelatedRoleMapWithGrantRolePolicy(rolePolicy *pms.RolePolicy, related
 			for _, pprincipalName := range parentPrincipals {
 				roleNode.ParentPrincipals[pprincipalName] = true
 			}
+			roleNode.PublicGrant = roleNode.PublicGrant || len(rolePolicy.Principals) == 0
 			if _, ok := grantedRoleMap[role]; !ok {
 				grantedRoleMap[role] = true
 				newlyGrantedRoles = append(newlyGrantedRoles, role)
@@ -697,7 +694,7 @@ func updateRelatedRoleMapWithDenyRolePolicy(rolePolicy *pms.RolePolicy, relatedR
 			roleNode.DeniedByPrincipals[deniedByPrincipal] = true
 		}
 
-		if len(deniedByPrincipals) > 0 {
+		if len(rolePolicy.Principals) == 0 || len(deniedByPrincipals) > 0 {
 			directDeniedRoleMap[role] = true
 		} else {
 			if _, ok := grantedRoleMap[role]; ok {
@@ -750,113 +747,39 @@ func getDeniedRoles(relatedRoleMap map[string]*Role, grantedRoleMap map[string]b
 	return deniedRoleMap
 }
 
-func denyRoleAndDescendants(role string, relatedRoleMap map[string]*Role, grantedRoleMap map[string]bool, deniedRoleMap map[string]bool) {
-	deletedRoles := make(map[string]bool)
-	deletedRoles[role] = true
-	descendants := getDeniableDescendantRoles(role, relatedRoleMap)
-	//fmt.Printf("deniable descendants for %s are %v \n", role, descendants)
-	for _, d := range descendants {
-		deletedRoles[d] = true
+// reachableRoles finds the least grant closure from independently granted roots.
+// Blocking a role removes every path through it, including paths into cycles.
+func reachableRoles(roles map[string]*Role, blocked map[string]bool) map[string]bool {
+	reachable := make(map[string]bool)
+	queue := make([]string, 0)
+	for name, role := range roles {
+		if !blocked[name] && (role.PublicGrant || len(role.ParentPrincipals) > 0) {
+			reachable[name] = true
+			queue = append(queue, name)
+		}
 	}
-	for role, roleNode := range relatedRoleMap {
-		if _, ok := deletedRoles[role]; !ok {
-			for deletedRole := range deletedRoles {
-				delete(roleNode.ChildRoles, deletedRole)
-				delete(roleNode.ParentRoles, deletedRole)
-				delete(roleNode.DeniedRoles, deletedRole)
-				delete(roleNode.DeniedByRoles, deletedRole)
-				if len(roleNode.ParentRoles) == 0 && len(roleNode.ParentPrincipals) == 0 {
-					delete(relatedRoleMap, role)
-					delete(grantedRoleMap, role)
-				}
+	for head := 0; head < len(queue); head++ {
+		for child := range roles[queue[head]].ChildRoles {
+			if roles[child] != nil && !blocked[child] && !reachable[child] {
+				reachable[child] = true
+				queue = append(queue, child)
 			}
 		}
 	}
-	for deletedRole := range deletedRoles {
-		delete(relatedRoleMap, deletedRole)
-		delete(grantedRoleMap, deletedRole)
-	}
-	delete(deniedRoleMap, role)
+	return reachable
 }
 
-func getDeniableDescendantRoles(role string, relatedRoleMap map[string]*Role) []string {
-	return deniableDescendantRoles(role, relatedRoleMap, map[string]bool{role: true})
-}
-
-// deniableDescendantRoles skips roles already visited, so a cyclic role
-// graph cannot recurse forever.
-func deniableDescendantRoles(role string, relatedRoleMap map[string]*Role, visited map[string]bool) []string {
-	descendants := []string{}
-	if roleNode, ok := relatedRoleMap[role]; ok {
-		//get descendant nodes
-		for childrole := range roleNode.ChildRoles {
-			if visited[childrole] {
-				continue
-			}
-			if childRoleNode, ok := relatedRoleMap[childrole]; ok {
-				allParentRolesDenied := true
-				for parentRole := range childRoleNode.ParentRoles {
-					if parentRole != role && !contains(descendants, parentRole) {
-						allParentRolesDenied = false
-						break
-					}
-				}
-				if allParentRolesDenied && len(childRoleNode.ParentPrincipals) == 0 {
-					visited[childrole] = true
-					descendants = append(descendants, childrole)
-					descendants = append(descendants, deniableDescendantRoles(childrole, relatedRoleMap, visited)...)
-				}
-			}
+func denyRolesAndDescendants(denied map[string]bool, roles map[string]*Role, granted map[string]bool) {
+	// Recompute reachability as one batch: deleting parent edges one at a time
+	// made diamonds depend on map iteration and left rootless cycles granted.
+	reachable := reachableRoles(roles, denied)
+	for role := range granted {
+		if !reachable[role] {
+			delete(granted, role)
+			delete(roles, role)
 		}
 	}
-	return descendants
-}
-
-func contains(a []string, x string) bool {
-	for _, n := range a {
-		if x == n {
-			return true
-		}
-	}
-	return false
-}
-
-// If any of the deniedByRole and all its ancestors are not denied, we take it as could be safely denied.
-func couldRoleSafelyBeDenied(role string, relatedRoleMap map[string]*Role, deniedRoleMap map[string]bool) bool {
-	allDeniedByRoleBeDenied := true
-	if roleNode, ok := relatedRoleMap[role]; ok {
-		for deniedByRole := range roleNode.DeniedByRoles {
-			if !selfOrAncestorsBeDenied(deniedByRole, relatedRoleMap, deniedRoleMap) {
-				allDeniedByRoleBeDenied = false
-				break
-			}
-		}
-	} else {
-		log.Warnf("Role %q is not in the related role map", role)
-	}
-	return !allDeniedByRoleBeDenied
-}
-
-func selfOrAncestorsBeDenied(deniedByRole string, relatedRoleMap map[string]*Role, deniedRoleMap map[string]bool) bool {
-	if _, ok := deniedRoleMap[deniedByRole]; ok { //self be denied
-		return true
-	}
-
-	if deniedByRoleNode, ok := relatedRoleMap[deniedByRole]; ok {
-		if len(deniedByRoleNode.ParentPrincipals) > 0 { //first level role, we could end up here
-			return false
-		} else {
-			for parentRole := range deniedByRoleNode.ParentRoles {
-				if !selfOrAncestorsBeDenied(parentRole, relatedRoleMap, deniedRoleMap) {
-					return false
-				}
-			}
-		}
-
-	} else {
-		log.Warnf("Role %q is not in the related role map", deniedByRole)
-	}
-	return true
+	cleanRelatedRoleMap(roles, granted)
 }
 
 // Returns granted and denied policies

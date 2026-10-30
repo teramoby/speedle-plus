@@ -12,6 +12,14 @@ import (
 	"testing"
 )
 
+func TestCheckJSONRejectsStoreWideDuplicateIDs(t *testing.T) {
+	data := `{"services":[{"name":"app","policies":[{"id":"same","effect":"grant","permissions":[{"resource":"book","actions":["read"]}]}]},{"name":"global","rolePolicies":[{"id":"same","effect":"deny","roles":["reader"]}]}]}`
+	_, problems := CheckJSON(strings.NewReader(data), "duplicate.json")
+	if len(problems) != 1 || !strings.Contains(problems[0].Error(), "duplicate.json") || !strings.Contains(problems[0].Error(), `duplicate policy ID "same"`) {
+		t.Fatalf("duplicate snapshot diagnostics: %v", problems)
+	}
+}
+
 func errorTexts(errs []error) []string {
 	texts := make([]string, len(errs))
 	for i, err := range errs {

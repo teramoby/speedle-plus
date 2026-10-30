@@ -14,6 +14,7 @@ import (
 	driver "github.com/go-sql-driver/mysql"
 	"github.com/teramoby/speedle-plus/api/pms"
 	"github.com/teramoby/speedle-plus/pkg/errors"
+	storeutils "github.com/teramoby/speedle-plus/pkg/store/utils"
 	"github.com/teramoby/speedle-plus/pkg/suid"
 )
 
@@ -307,8 +308,9 @@ func insertFunction(ctx context.Context, tx *sql.Tx, v *pms.Function) error {
 }
 
 func (s *Store) WritePolicyStore(ps *pms.PolicyStore) error {
-	if ps == nil {
-		return errors.New(errors.InvalidRequest, "policy store is required")
+	ps, err := storeutils.PreparePolicyStore(ps)
+	if err != nil {
+		return err
 	}
 	return s.write(func(ctx context.Context, tx *sql.Tx) error {
 		for _, table := range []string{"speedle_services", "speedle_functions"} {
