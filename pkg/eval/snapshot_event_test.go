@@ -52,7 +52,9 @@ func TestEvaluatorCloseAndFactoryFailure(t *testing.T) {
 	p.cleanExpiredFunctionResultPeriodically()
 	p.StopWatch()
 	p.StopWatch()
-	if p.Close() != nil || p.Close() != nil || s.closes != 1 || s.stops != 1 {
+	// Close twice: the second call must succeed without closing the store again.
+	first, second := p.Close(), p.Close()
+	if first != nil || second != nil || s.closes != 1 || s.stops != 1 {
 		t.Fatalf("close=%d stop=%d", s.closes, s.stops)
 	}
 	name := "close-on-evaluator-failure-" + suid.New().String()
