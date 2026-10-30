@@ -96,7 +96,7 @@ jobs:
       - name: Full nightly trial on Fiona
         if: ${{ github.event.inputs.nightly_trial == 'true' && github.event.inputs.inventory_only != 'true' }}
         env:
-          RESULTS_DIR: fiona-nightly-results
+          RESULTS_DIR: ${{ runner.temp }}/fiona-nightly-results-${{ github.run_id }}-${{ github.run_attempt }}
           SP_APP_NAME: ''
           PMS_ADMIN_TOKEN: ''
           ADS_ADMIN_TOKEN: ''
@@ -138,7 +138,7 @@ jobs:
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: fiona-nightly-results
-          path: fiona-nightly-results/
+          path: ${{ runner.temp }}/fiona-nightly-results-${{ github.run_id }}-${{ github.run_attempt }}/
           if-no-files-found: warn
 
       - name: Full test suite against MongoDB

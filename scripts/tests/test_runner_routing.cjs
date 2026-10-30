@@ -245,7 +245,7 @@ test('Fiona trial runs the complete nightly script with host isolation and separ
   assert.match(full, /flock -w 7200 9/);
   assert.match(full, /for port in \(2379, 2380, 27017, 6733, 6734\):/);
   assert.match(full, /bash scripts\/ci\/run-go-tests.sh nightly/);
-  assert.match(full, /RESULTS_DIR: fiona-nightly-results/);
+  assert.match(full, /RESULTS_DIR: .*fiona-nightly-results-.*github.run_id.*github.run_attempt/);
   assert.match(full, /PMS_ADMIN_TOKEN: ''/);
   assert.match(full, /ADS_ADMIN_TOKEN: ''/);
   assert.match(sources.mongodb, /name: fiona-nightly-results/);
