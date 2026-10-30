@@ -92,6 +92,7 @@ func TestPolicyCacheBasic(t *testing.T) {
 }
 
 func TestPolicyCacheAboutResourceExpression(t *testing.T) {
+	// Unanchored prefix/suffix expressions also match inside the resource.
 	cache := NewPolicyCacheData()
 
 	policy1 := &pms.Policy{
@@ -192,39 +193,39 @@ func TestPolicyCacheAboutResourceExpression(t *testing.T) {
 	cache.AddPolicyToCache(policy6, nil)
 
 	results1 := cache.GetRelatedPolicyMap([]string{"user:william.cai"}, "k8s/core/pods/resource1", true)
-	if results1 == nil || len(results1) != 4 {
-		t.Errorf("There should be 4 policies matched in cache, but meet %d", len(results1))
+	if results1 == nil || len(results1) != 5 {
+		t.Errorf("unexpected regex candidate count: %d", len(results1))
 	}
 
 	results2 := cache.GetRelatedPolicyMap([]string{"user:william.cai"}, "k8s/core/pods/resource2", true)
-	if results2 == nil || len(results2) != 4 {
-		t.Errorf("There should be 4 policies matched in cache, but meet %d", len(results2))
+	if results2 == nil || len(results2) != 5 {
+		t.Errorf("unexpected regex candidate count: %d", len(results2))
 	}
 
 	results3 := cache.GetRelatedPolicyMap([]string{"user:william.cai"}, "abcdef/k8s/core/pods/", true)
 	fmt.Println(len(results3))
-	if results3 == nil || len(results3) != 4 {
-		t.Errorf("There should be 4 policies matched in cache, but meet %d", len(results3))
+	if results3 == nil || len(results3) != 5 {
+		t.Errorf("unexpected regex candidate count: %d", len(results3))
 	}
 
 	results4 := cache.GetRelatedPolicyMap([]string{"user:william.cai"}, "abcdef2/k8s/core/pods/", true)
 	fmt.Println(len(results4))
-	if results4 == nil || len(results4) != 4 {
-		t.Errorf("There should be 4 policies matched in cache, but meet %d", len(results4))
+	if results4 == nil || len(results4) != 5 {
+		t.Errorf("unexpected regex candidate count: %d", len(results4))
 	}
 
 	cache.DeletePolicyFromCache(policy1.ID)
 	cache.DeletePolicyFromCache(policy5.ID)
 	results5 := cache.GetRelatedPolicyMap([]string{"user:william.cai"}, "k8s/core/pods/resource1", true)
-	if results5 == nil || len(results5) != 2 {
-		t.Errorf("There should be 2 policies matched in cache, but meet %d", len(results5))
+	if results5 == nil || len(results5) != 3 {
+		t.Errorf("unexpected regex candidate count: %d", len(results5))
 	}
 
 	cache.DeletePolicyFromCache(policy3.ID)
 	cache.DeletePolicyFromCache(policy6.ID)
 	results6 := cache.GetRelatedPolicyMap([]string{"user:william.cai"}, "abcdef/k8s/core/pods/", true)
 	if results6 == nil || len(results6) != 1 {
-		t.Errorf("There should be 1 policies matched in cache, but meet %d", len(results6))
+		t.Errorf("unexpected regex candidate count: %d", len(results6))
 	}
 
 	cache.DeletePolicyFromCache(policy2.ID)

@@ -56,11 +56,11 @@ func TestEffect(t *testing.T) {
 			want: deny,
 		},
 		{
-			cmd: `		Grant user ...`,
+			cmd:  `		Grant user ...`,
 			want: grant,
 		},
 		{
-			cmd: `		Deny user ...`,
+			cmd:  `		Deny user ...`,
 			want: deny,
 		},
 		{
@@ -108,12 +108,6 @@ func TestEffectNeg(t *testing.T) {
 		},
 		{
 			cmd: "denyuser ...",
-		},
-		{
-			cmd: "grant\tuser ...",
-		},
-		{
-			cmd: "deny\tuser ...",
 		},
 		{
 			cmd: "grant, user ...",

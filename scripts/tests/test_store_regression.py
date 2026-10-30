@@ -38,7 +38,8 @@ class StoreRegressionTests(unittest.TestCase):
             if args[:2] == ['go', 'test']:
                 stage = 'full'
                 if '-tags' in args:
-                    stage = 'prepare' if args[args.index('-tags') + 1] == 'runtime_test_prepare' else 'runtime'
+                    stage = {'runtime_test_prepare': 'prepare', 'feature_stress': 'stress'}.get(args[args.index('-tags') + 1], 'runtime')
+                if '-fuzz' in args: stage = 'fuzz'
             code = 7 if stage == failing else 0
             if stage:
                 kwargs['stdout'].write(json.dumps({'Action': 'fail' if code else 'pass', 'Package': 'fixture/package', 'Test': stage}) + '\n')
@@ -66,16 +67,26 @@ class StoreRegressionTests(unittest.TestCase):
     def test_full_suite_failure_does_not_disappear_when_runtime_passes(self):
         failed, suites, summary, commands, _ = self.exercise('full')
         self.assertTrue(failed)
-        self.assertEqual(suites, [('mongodb-go', 7), ('mongodb-ads-prepare', 0), ('mongodb-ads-runtime', 0)])
-        self.assertEqual(summary['counts'], {'pass': 2, 'fail': 1, 'skip': 0})
+        self.assertEqual(suites[0], ('mongodb-go', 7))
+        self.assertEqual(suites[-2:], [('mongodb-ads-prepare', 0), ('mongodb-ads-runtime', 0)])
+        self.assertIn(('mongodb-feature-stress', 0), suites)
+        self.assertEqual(sum('fuzz-' in name for name, _ in suites), 3)
+        self.assertEqual(summary['counts'], {'pass': 6, 'fail': 1, 'skip': 0})
         ordinary = next(command for command in commands if command[:2] == ['go', 'test'])
         self.assertEqual(ordinary[-1], './...')
         self.assertIn('-race', ordinary)
 
+    def test_stress_and_fuzz_failures_are_preserved(self):
+        for stage in ('stress', 'fuzz'):
+            failed, _, summary, _, _ = self.exercise(stage)
+            self.assertTrue(failed)
+            self.assertTrue(summary['failed_tests'])
+
     def test_failed_preparation_blocks_runtime_without_claiming_success(self):
         failed, suites, summary, _, blocked = self.exercise('prepare')
         self.assertTrue(failed)
-        self.assertEqual(suites, [('mongodb-go', 0), ('mongodb-ads-prepare', 7)])
+        self.assertEqual(suites[-1], ('mongodb-ads-prepare', 7))
+        self.assertEqual(len(suites), 6)
         self.assertTrue(blocked)
         self.assertTrue(summary['failed_tests'])
 

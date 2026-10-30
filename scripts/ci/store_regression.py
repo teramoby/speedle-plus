@@ -81,6 +81,13 @@ def run_regression(environment, configuration, results):
                                    cwd=ROOT, env=environment, stdout=build_log, stderr=build_log, check=True)
             # Include every package in the root module, without backend filters.
             suite('go', ['go', 'test', '-race', '-json', '-p', '1', '-count=1', '-timeout', '600s', './...'])
+            # The same feature stress and fuzz stages must run for every store.
+            suite('feature-stress', ['go', 'test', '-race', '-json', '-count=1', '-timeout', '600s',
+                                     '-tags', 'feature_stress', './pkg/eval', '-run', '^TestFeature'])
+            for package, target in (('pdl', 'FuzzParseStatements'), ('eval/condition', 'FuzzConditionCheck'),
+                                    ('store/file', 'FuzzCheckSPDL')):
+                suite('fuzz-' + target, ['go', 'test', '-json', '-run', '^$', '-fuzz', '^' + target + '$',
+                                        '-fuzztime=5s', '-parallel=2', './pkg/' + package])
             pms_port, ads_port = free_port(), free_port()
             while ads_port == pms_port:
                 ads_port = free_port()

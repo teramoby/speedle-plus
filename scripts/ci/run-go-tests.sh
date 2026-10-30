@@ -92,7 +92,7 @@ gotest_json() {
 
 case "${mode}" in
   gate)
-    listed=$(packages); mapfile -t pkgs <<< "${listed}"
+    listed=$(packages); pkgs=(); while IFS= read -r package; do pkgs+=("${package}"); done <<< "${listed}"
     # The CLI tests run spctl as a subprocess; its profile is merged in.
     rm -f coverage-cli.out
     SPEEDLE_CLI_COVERPROFILE="${PWD}/coverage-cli.out" STORE_TYPE=file \
@@ -130,6 +130,12 @@ case "${mode}" in
     check etcd-full bash scripts/ci/validate-etcd.sh
     check mysql-full python3 scripts/ci/run-mysql-tests.py
     check mongodb-full bash scripts/ci/validate-mongodb.sh
+    # Manual candidate validation can omit notification/report side effects.
+    if [[ "${GITHUB_EVENT_NAME:-}" == workflow_dispatch && -f "${GITHUB_EVENT_PATH:-}" ]] &&
+       python3 -c 'import json,sys; value=json.load(open(sys.argv[1])).get("inputs",{}).get("stores_only",False); sys.exit(0 if value is True or value == "true" else 1)' "$GITHUB_EVENT_PATH"; then
+      check ci-script-tests bash -c 'python3 -m unittest discover -s scripts/tests -p "test_*.py" && node --test scripts/tests/*.cjs'
+      exit "${failed}"
+    fi
     check etcd-docs with_docker python3 website/tests/check_etcd.py
     check mongodb-docs with_docker python3 website/tests/check_mongodb.py
     for toolchain in "${all_toolchains[@]}"; do
@@ -141,7 +147,7 @@ case "${mode}" in
     ;;
   regression)
     mkdir -p "${results}"; : > "${results}/checks.txt"
-    listed=$(packages); mapfile -t pkgs <<< "${listed}"
+    listed=$(packages); pkgs=(); while IFS= read -r package; do pkgs+=("${package}"); done <<< "${listed}"
     set_race
     gotest_json go-file STORE_TYPE=file -- -p 1 -count=1 -timeout 600s "${race[@]}" "${pkgs[@]}"
     toolchain=$(go env GOVERSION)
@@ -153,10 +159,11 @@ case "${mode}" in
     ;;
   weekly)
     mkdir -p "${results}"; : > "${results}/checks.txt"
-    listed=$(packages); mapfile -t pkgs <<< "${listed}"
+    listed=$(packages); pkgs=(); while IFS= read -r package; do pkgs+=("${package}"); done <<< "${listed}"
     for toolchain in "${other_toolchains[@]}"; do
       gotest_json "go-${toolchain}" GOTOOLCHAIN="${toolchain}" STORE_TYPE=file -- -p 1 -count=1 -timeout 600s "${pkgs[@]}"
     done
+    gotest_json feature-large STORE_TYPE=file SPEEDLE_STRESS_POLICIES=100000 -- -race -count=1 -timeout 1200s -tags feature_stress ./pkg/eval -run '^TestFeatureLargePolicyRoleSets$'
     check staticcheck go run honnef.co/go/tools/cmd/staticcheck@v0.8.2 ./pkg/... ./cmd/... ./api/...
     exit "${failed}"
     ;;

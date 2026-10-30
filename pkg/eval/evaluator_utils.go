@@ -138,6 +138,11 @@ func calculatePermissions(grantedPermissions, deniedPermissions []pms.Permission
 			}
 
 			if (len(deniedPermission.Resource) == 0 && len(deniedPermission.ResourceExpression) == 0) || expMatched || strings.Compare(deniedPermission.Resource, grantPermission.Resource) == 0 {
+				// Empty deny actions mean every action, just as in IsAllowed.
+				if len(deniedPermission.Actions) == 0 {
+					isDenied = true
+					break
+				}
 				//if resource match, then remove denied actions
 				var actions []string
 				for _, grantedAction := range grantPermission.Actions {

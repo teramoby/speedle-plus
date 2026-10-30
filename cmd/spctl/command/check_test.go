@@ -5,6 +5,7 @@ package command
 
 import (
 	"bytes"
+	"github.com/teramoby/speedle-plus/testutil/pdltest"
 	"os"
 	"path/filepath"
 	"strings"
@@ -85,5 +86,16 @@ func TestCheckFiles(t *testing.T) {
 	// A policy and files can be checked together.
 	if out, code := check(t, []string{"policy", "grant user a read /x"}, []string{good}); code != 0 || !strings.HasPrefix(out, "policy OK\n") {
 		t.Errorf("policy and file: exit %d\n%s", code, out)
+	}
+}
+
+func TestCheckSharedGrammarCorpus(t *testing.T) {
+	for _, c := range pdltest.Cases {
+		t.Run(c.Name, func(t *testing.T) {
+			out, code := check(t, []string{c.Kind, c.Text}, nil)
+			if (code == 0) != c.Valid {
+				t.Fatalf("valid=%v code=%d: %s", c.Valid, code, out)
+			}
+		})
 	}
 }

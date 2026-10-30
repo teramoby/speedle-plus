@@ -435,6 +435,8 @@ RESOURCE_IDENTIFIER = NAME
     </tfoot>
   </table>
 
+<p>数值内置函数会以 <code>BuiltInFuncError</code> 拒绝非有限数值、非有限结果和负数平方根。与其他运行时条件错误一致，函数失败时该条件不匹配。<code>Sum()</code> 和 <code>Avg()</code> 保留历史行为：无参数时返回零。<code>IsSubSet</code> 忽略重复元素，拒绝不支持或混合的元素类型，并保留空集合返回 false 的历史行为。SPDL 名称引号中的反斜杠保持字面含义；名称包含引号时使用另一种引号包围。语句必须完整解析，尾随文本、不完整条件和未闭合的名称引号会被拒绝。</p>
+
 <h5 id="2-4-2-用户自定义函数-custom-functions">2.4.2 用户自定义函数(Custom Functions）</h5>
 
 <p>用户可以向 Speedle 暴露自己定义的函数, 并将自定义函数用于 condition.<br />

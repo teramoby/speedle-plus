@@ -4,7 +4,10 @@
 package eval
 
 import (
+	"encoding/json"
 	"fmt"
+	"github.com/teramoby/speedle-plus/api/pms"
+	"strings"
 	"testing"
 	"time"
 
@@ -71,7 +74,7 @@ func TestConditions(t *testing.T) {
 			want:      true,
 		},
 		{
-			condition: "attr == true",
+			condition: "a == true",
 			stream:    `{"services": [{"name": "crm","policies": [{"id": "p1", "effect": "grant", "permissions": [{"resource": "/node1","actions": ["get"]}],"condition": "a == true"}]}]}`,
 			ctx:       adsapi.RequestContext{Subject: nil, ServiceName: "crm", Resource: "/node1", Action: "get", Attributes: map[string]interface{}{"a": false}},
 			want:      false,
@@ -161,9 +164,9 @@ func TestConditions(t *testing.T) {
 			want:      true,
 		},
 		{
-			condition: "a < '2026-11-02'",
-			stream:    `{"services": [{"name": "crm","policies": [{"id": "p1", "effect": "grant", "permissions": [{"resource": "/node1","actions": ["get"]}],"condition": "a < '2026-11-02'"}]}]}`,
-			ctx:       adsapi.RequestContext{Subject: nil, ServiceName: "crm", Resource: "/node1", Action: "get", Attributes: map[string]interface{}{"a": time.Now().Unix()}},
+			condition: "a < '2030-01-01'",
+			stream:    `{"services": [{"name": "crm","policies": [{"id": "p1", "effect": "grant", "permissions": [{"resource": "/node1","actions": ["get"]}],"condition": "a < '2030-01-01'"}]}]}`,
+			ctx:       adsapi.RequestContext{Subject: nil, ServiceName: "crm", Resource: "/node1", Action: "get", Attributes: map[string]interface{}{"a": time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC).Unix()}},
 			want:      true,
 		},
 		{
@@ -229,7 +232,7 @@ func TestConditions(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		preparePolicyDataInStore([]byte(tc.stream), t)
+		prepareConditionFixture(t, tc.stream, tc.condition)
 		eval, err := NewWithStore(conf, testPS)
 		if err != nil {
 			t.Errorf("error creating evaluator : %v", err)
@@ -299,13 +302,13 @@ func TestStringConditionsPostive(t *testing.T) {
 		},
 		{
 			condition: "a=~'^get.*'",
-			stream:    `{"services": [{"name": "crm","policies": [{"id": "p1", "effect": "grant", "permissions": [{"resource": "/node1","actions": ["get"]}],"condition": "a=~'get.*'"}]}]}`,
+			stream:    `{"services": [{"name": "crm","policies": [{"id": "p1", "effect": "grant", "permissions": [{"resource": "/node1","actions": ["get"]}],"condition": "a=~'^get.*'"}]}]}`,
 			ctx:       adsapi.RequestContext{Subject: nil, ServiceName: "crm", Resource: "/node1", Action: "get", Attributes: map[string]interface{}{"a": "get_1"}},
 			want:      true,
 		},
 		{
 			condition: "!(a=~'^get.*')",
-			stream:    `{"services": [{"name": "crm","policies": [{"id": "p1", "effect": "grant", "permissions": [{"resource": "/node1","actions": ["get"]}],"condition": "!(a=~'get.*')"}]}]}`,
+			stream:    `{"services": [{"name": "crm","policies": [{"id": "p1", "effect": "grant", "permissions": [{"resource": "/node1","actions": ["get"]}],"condition": "!(a=~'^get.*')"}]}]}`,
 			ctx:       adsapi.RequestContext{Subject: nil, ServiceName: "crm", Resource: "/node1", Action: "get", Attributes: map[string]interface{}{"a": "got_1"}},
 			want:      true,
 		},
@@ -324,7 +327,7 @@ func TestStringConditionsPostive(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		preparePolicyDataInStore([]byte(tc.stream), t)
+		prepareConditionFixture(t, tc.stream, tc.condition)
 		eval, err := NewWithStore(conf, testPS)
 		if err != nil {
 			t.Errorf("error creating evaluator : %v", err)
@@ -419,7 +422,7 @@ func TestNumericConditionsPostive(t *testing.T) { //float64
 	}
 
 	for _, tc := range testCases {
-		preparePolicyDataInStore([]byte(tc.stream), t)
+		prepareConditionFixture(t, tc.stream, tc.condition)
 		eval, err := NewWithStore(conf, testPS)
 		if err != nil {
 			t.Errorf("error creating evaluator : %v", err)
@@ -498,7 +501,7 @@ func TestDatetimeConditionsPostive(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		preparePolicyDataInStore([]byte(tc.stream), t)
+		prepareConditionFixture(t, tc.stream, tc.condition)
 		eval, err := NewWithStore(conf, testPS)
 		if err != nil {
 			t.Errorf("error creating evaluator : %v", err)
@@ -563,7 +566,7 @@ func TestBoolConditionsPostive(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		preparePolicyDataInStore([]byte(tc.stream), t)
+		prepareConditionFixture(t, tc.stream, tc.condition)
 		eval, err := NewWithStore(conf, testPS)
 		if err != nil {
 			t.Errorf("error creating evaluator : %v", err)
@@ -645,7 +648,7 @@ func TestArrayConditionsPostive(t *testing.T) { //float64, string, datetime
 	}
 
 	for _, tc := range testCases {
-		preparePolicyDataInStore([]byte(tc.stream), t)
+		prepareConditionFixture(t, tc.stream, tc.condition)
 		eval, err := NewWithStore(conf, testPS)
 		if err != nil {
 			t.Errorf("error creating evaluator : %v", err)
@@ -674,19 +677,19 @@ func TestComplexConditionsPostive(t *testing.T) {
 
 		{
 			condition: "a in (1, 2, 3) && (b==c || d==3)",
-			stream:    `{"services": [{"name": "crm","policies": [{"id": "p1", "effect": "grant", "permissions": [{"resource": "/node1","actions": ["get"]}],"condition": "a in (1, 2, 3)"}]}]}`,
+			stream:    `{"services": [{"name": "crm","policies": [{"id": "p1", "effect": "grant", "permissions": [{"resource": "/node1","actions": ["get"]}],"condition": "a in (1, 2, 3) && (b==c || d==3)"}]}]}`,
 			ctx:       adsapi.RequestContext{Subject: nil, ServiceName: "crm", Resource: "/node1", Action: "get", Attributes: map[string]interface{}{"a": 1, "b": "string1", "c": "string2", "d": 3}},
 			want:      true,
 		},
 		{
 			condition: "a in (1,2,3) && (b==c || d==3) && 's1' in e",
-			stream:    `{"services": [{"name": "crm","policies": [{"id": "p1", "effect": "grant", "permissions": [{"resource": "/node1","actions": ["get"]}],"condition": "a in (1,2,3) && (b==c || d==3) || 's1' in e"}]}]}`,
+			stream:    `{"services": [{"name": "crm","policies": [{"id": "p1", "effect": "grant", "permissions": [{"resource": "/node1","actions": ["get"]}],"condition": "a in (1,2,3) && (b==c || d==3) && 's1' in e"}]}]}`,
 			ctx:       adsapi.RequestContext{Subject: nil, ServiceName: "crm", Resource: "/node1", Action: "get", Attributes: map[string]interface{}{"a": 2, "b": "string1", "c": "string2", "d": 3, "e": []string{"s1", "s2"}}},
 			want:      true,
 		},
 		{
 			condition: "a in (1,2,3) && (b==c || d==3) && IsSubSet(e, ('s1','s2','s3'))",
-			stream:    `{"services": [{"name": "crm","policies": [{"id": "p1", "effect": "grant", "permissions": [{"resource": "/node1","actions": ["get"]}],"condition": "a in (1,2,3) && (b==c || d==3) || IsSubSet(e, ('s1','s2','s3'))"}]}]}`,
+			stream:    `{"services": [{"name": "crm","policies": [{"id": "p1", "effect": "grant", "permissions": [{"resource": "/node1","actions": ["get"]}],"condition": "a in (1,2,3) && (b==c || d==3) && IsSubSet(e, ('s1','s2','s3'))"}]}]}`,
 			ctx:       adsapi.RequestContext{Subject: nil, ServiceName: "crm", Resource: "/node1", Action: "get", Attributes: map[string]interface{}{"a": 2, "b": "string1", "c": "string2", "d": 3, "e": []string{"s1", "s2"}}},
 			want:      true,
 		},
@@ -699,7 +702,7 @@ func TestComplexConditionsPostive(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		preparePolicyDataInStore([]byte(tc.stream), t)
+		prepareConditionFixture(t, tc.stream, tc.condition)
 		eval, err := NewWithStore(conf, testPS)
 		if err != nil {
 			t.Errorf("error creating evaluator : %v", err)
@@ -717,4 +720,19 @@ func TestComplexConditionsPostive(t *testing.T) {
 		}
 	}
 
+}
+
+func prepareConditionFixture(t *testing.T, stream, expression string) {
+	t.Helper()
+	var ps pms.PolicyStore
+	if err := json.Unmarshal([]byte(stream), &ps); err != nil {
+		t.Fatal(err)
+	}
+	normalize := func(s string) string { return strings.Join(strings.Fields(s), "") }
+	if normalize(ps.Services[0].Policies[0].Condition) != normalize(expression) {
+		t.Fatalf("fixture differs from description: %q vs %q", ps.Services[0].Policies[0].Condition, expression)
+	}
+	if err := preparePolicyDataInStore([]byte(stream), t); err != nil {
+		t.Fatal(err)
+	}
 }
