@@ -37,6 +37,7 @@ directly select this runner or change the trusted worker's routing policy.
 | Go lint/build for repository human/bot pushes, manual dispatch and human/bot same-repository PRs | Either runner via `speedle-linux` |
 | Go tests for those trusted events, both file/etcd modes | `charming-speedle` only, serializing fixed ports |
 | Go CI fork PRs, unknown actors or other events | GitHub-hosted |
+| Post-merge file-store regression (`post-merge.yml`, every push to master) | Either runner via `speedle-linux`, serialized by the host test lock; its report job is GitHub-hosted |
 | ReviewBot human/bot same-repository PR analysis/publication | Either runner via `speedle-linux` |
 | ReviewBot fork PRs or unknown authors | GitHub-hosted |
 | Dependency auto-merge waiter | `charming-speedle-2` via `speedle-control` |

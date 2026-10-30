@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-"""Summarize scheduled test results, analyze them with Ark, email the report
-and track failing tests in GitHub issues.
+"""Summarize scheduled and post-merge test results, analyze them with Ark,
+send the report and track failing tests in GitHub issues.
 
 Inputs are `go test -json` streams and plain check results. Every external
 step is optional and fails soft: without an Ark key the raw summary is sent,
@@ -29,6 +29,15 @@ ISSUE_LABEL = "test-failure"
 MAX_ISSUES = 20
 OUTPUT_LINES = 40
 PROMPT_LIMIT = 200_000
+
+# How each kind of run reports. Scheduled runs report every result in
+# Chinese, by Feishu and email. The post-merge regression only speaks up
+# when it fails, in English, by Feishu and issues.
+KINDS = {
+    "nightly": {"title": "nightly", "language": "Chinese", "mail": True, "quiet_on_pass": False},
+    "weekly": {"title": "weekly", "language": "Chinese", "mail": True, "quiet_on_pass": False},
+    "regression": {"title": "post-merge regression", "language": "English", "mail": False, "quiet_on_pass": True},
+}
 
 
 def parse_go_json(paths):
@@ -107,11 +116,13 @@ def collect(go_json, check_specs):
     return packages, failures, checks
 
 
-def summarize(kind, packages, failures, checks, run_url):
+def summarize(kind, packages, failures, checks, run_url, commit_url=""):
     total = {k: sum(c[k] for c in packages.values()) for k in ("pass", "fail", "skip")}
     failed_checks = [c for c in checks if not c["passed"]]
     ok = not failures and not failed_checks
-    lines = [f"# Speedle+ {kind} test report: {'PASSED' if ok else 'FAILED'}", ""]
+    lines = [f"# Speedle+ {KINDS[kind]['title']} test report: {'PASSED' if ok else 'FAILED'}", ""]
+    if commit_url:
+        lines += [f"Commit: {commit_url}", ""]
     if run_url:
         lines += [f"Run: {run_url}", ""]
     lines += [f"Go tests: {total['pass']} passed, {total['fail']} failed, {total['skip']} skipped "
@@ -129,12 +140,12 @@ def summarize(kind, packages, failures, checks, run_url):
     return ok, "\n".join(lines) + "\n"
 
 
-def ark_analyze(summary, api_key, model, url=ARK_URL, timeout=300):
+def ark_analyze(summary, api_key, model, url=ARK_URL, timeout=300, language="Chinese"):
     """Return the model's analysis, or None when Ark is unavailable."""
     prompt = (
         "You are the test-results analyst for Speedle+, an open-source Go authorization "
         "engine (PMS policy management, ADS decisions, SPDL policies, file/etcd/MongoDB stores). "
-        "Analyze the scheduled test report below for the maintainers. Write in Chinese, plain "
+        f"Analyze the test report below for the maintainers. Write in {language}, plain "
         "text. Start with a one-line overall verdict. For each failure, give the likely cause "
         "from the output, whether it looks like a product bug, a test bug, a flaky test or an "
         "environment problem, and the next step. Do not invent failures that are not in the "
@@ -221,7 +232,8 @@ def feishu_card(kind, ok, packages, failed, analysis, run_url, issues_url):
         lines.append(" · ".join(links))
     return {
         "header": {"template": "green" if ok else "red",
-                   "title": {"tag": "plain_text", "content": f"Speedle+ {kind} 测试：{'通过' if ok else '失败'}"}},
+                   "title": {"tag": "plain_text",
+                             "content": f"Speedle+ {KINDS[kind]['title']} 测试：{'通过' if ok else '失败'}"}},
         "elements": [{"tag": "markdown", "content": "\n".join(lines)}],
     }
 
@@ -293,37 +305,43 @@ def dedupe_failures(failures):
     return list(merged.values())
 
 
-def track_failures(github, kind, failures, run_url, analysis):
-    """Comment on an open issue for a known failure, otherwise open one."""
+def track_failures(github, kind, failures, run_url, analysis, commit_url=""):
+    """Comment on an open issue for a known failure, otherwise open one.
+    The post-merge regression attaches the analysis to comments as well, since
+    each comment reports a new commit."""
+    title_of_kind = KINDS[kind]["title"]
     existing = {i["title"]: i["number"] for i in github.open_issues()}
     created = commented = 0
     pending = []
+    links = (f"Commit: {commit_url}\n\n" if commit_url else "") + f"Run: {run_url}\n\n"
+    details = (f"\n<details><summary>Ark analysis of the whole run</summary>\n\n{analysis}\n\n</details>\n"
+               if analysis else "")
     for failure in dedupe_failures(failures):
         title = issue_title(failure)
-        body = (f"The {kind} run failed `{failure['test']}` in `{failure['package']}`.\n\n"
-                f"Run: {run_url}\n\n```\n{failure['output'] or '(no output)'}\n```\n")
+        body = (f"The {title_of_kind} run failed `{failure['test']}` in `{failure['package']}`.\n\n"
+                f"{links}```\n{failure['output'] or '(no output)'}\n```\n")
         if title in existing:
+            if kind == "regression":
+                body += details
             github.call("POST", f"/issues/{existing[title]}/comments", {"body": body})
             commented += 1
         else:
             pending.append((title, body))
     for title, body in pending[:MAX_ISSUES]:
-        if analysis:
-            body += f"\n<details><summary>Ark analysis of the whole run</summary>\n\n{analysis}\n\n</details>\n"
-        github.call("POST", "/issues", {"title": title, "body": body, "labels": [ISSUE_LABEL]})
+        github.call("POST", "/issues", {"title": title, "body": body + details, "labels": [ISSUE_LABEL]})
         created += 1
     if len(pending) > MAX_ISSUES:
         rest = "\n".join(f"- {t}" for t, _ in pending[MAX_ISSUES:])
         github.call("POST", "/issues", {
-            "title": f"{kind.capitalize()} run: {len(pending) - MAX_ISSUES} more failing tests",
-            "body": f"Run: {run_url}\n\nNot tracked individually:\n{rest}\n", "labels": [ISSUE_LABEL]})
+            "title": f"{title_of_kind.capitalize()} run: {len(pending) - MAX_ISSUES} more failing tests",
+            "body": f"{links}Not tracked individually:\n{rest}\n", "labels": [ISSUE_LABEL]})
         created += 1
     return created, commented
 
 
 def main(argv=None, env=os.environ):
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--kind", required=True, choices=["nightly", "weekly"])
+    parser.add_argument("--kind", required=True, choices=list(KINDS))
     parser.add_argument("--go-json", action="append", default=[], help="go test -json output")
     parser.add_argument("--check", action="append", default=[], help="name=exit_status:log_file")
     parser.add_argument("--results-dir", action="append", default=[],
@@ -363,29 +381,38 @@ def main(argv=None, env=os.environ):
             checks.append({"name": f"{job} job", "passed": False,
                            "output": f"The {job} job ended with {result} and its results show no failure; "
                                      "they may be incomplete."})
-    run_url = env.get("RUN_URL", "")
-    ok, summary = summarize(args.kind, packages, failures, checks, run_url)
+    run_url, commit_url = env.get("RUN_URL", ""), env.get("COMMIT_URL", "")
+    policy = KINDS[args.kind]
+    ok, summary = summarize(args.kind, packages, failures, checks, run_url, commit_url)
+    if ok and policy["quiet_on_pass"]:
+        if args.summary_file:
+            Path(args.summary_file).write_text(summary)
+        print(summary)
+        return 0
 
     analysis = None
     if env.get("ARK_API_KEY"):
-        analysis = ark_analyze(summary, env["ARK_API_KEY"], env.get("ARK_MODEL") or DEFAULT_MODEL)
+        analysis = ark_analyze(summary, env["ARK_API_KEY"], env.get("ARK_MODEL") or DEFAULT_MODEL,
+                               language=policy["language"])
     report = (f"{analysis}\n\n----\n\n" if analysis else
               "(Ark analysis unavailable; raw results follow.)\n\n") + summary
     if args.summary_file:
         Path(args.summary_file).write_text(report)
 
-    subject = f"[Speedle+ {args.kind}] {'PASSED' if ok else 'FAILED'}"
-    try:
-        send_mail(subject, report, env)
-    except (smtplib.SMTPException, OSError) as error:
-        print(f"::warning::Mail delivery failed ({type(error).__name__}).", file=sys.stderr)
+    if policy["mail"]:
+        subject = f"[Speedle+ {policy['title']}] {'PASSED' if ok else 'FAILED'}"
+        try:
+            send_mail(subject, report, env)
+        except (smtplib.SMTPException, OSError) as error:
+            print(f"::warning::Mail delivery failed ({type(error).__name__}).", file=sys.stderr)
 
     tracked = failures + [{"package": "check", "test": c["name"], "output": c["output"]}
                           for c in checks if not c["passed"]]
     if tracked and env.get("GITHUB_TOKEN") and env.get("GITHUB_REPOSITORY"):
         try:
             created, commented = track_failures(
-                GitHub(env["GITHUB_TOKEN"], env["GITHUB_REPOSITORY"]), args.kind, tracked, run_url, analysis)
+                GitHub(env["GITHUB_TOKEN"], env["GITHUB_REPOSITORY"]), args.kind, tracked, run_url, analysis,
+                commit_url)
             print(f"Tracked failures: {created} issues opened, {commented} comments added.")
         except (urllib.error.URLError, OSError, ValueError) as error:
             print(f"::warning::Failure issues not updated ({type(error).__name__}).", file=sys.stderr)
