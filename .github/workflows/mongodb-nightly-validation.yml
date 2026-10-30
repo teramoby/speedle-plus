@@ -12,7 +12,7 @@ on:
       ci_trial:
         description: Run one CI task only on Fiona, as go-ci-worker or ReviewBot would, without changing CI routing
         type: choice
-        options: [none, lint, test, regression, reviewbot]
+        options: [none, lint, test, regression, weekly, reviewbot]
         default: none
       runner:
         description: Runner label (speedle-runner lets any Speedle runner take it)
@@ -42,7 +42,7 @@ jobs:
   mongodb:
     name: MongoDB
     runs-on: ${{ (github.event.inputs.nightly_trial == 'true' || (github.event.inputs.ci_trial != '' && github.event.inputs.ci_trial != 'none')) && 'fiona-speedle' || github.event.inputs.runner || 'speedle-runner' }}
-    timeout-minutes: ${{ github.event.inputs.nightly_trial == 'true' && 150 || 60 }}
+    timeout-minutes: ${{ (github.event.inputs.nightly_trial == 'true' || github.event.inputs.ci_trial == 'weekly') && 150 || 60 }}
     steps:
       - name: Verify runner identity
         run: |
@@ -160,12 +160,13 @@ jobs:
               go vet -composites=false ./pkg/... ./cmd/... ./api/...
               go mod tidy -diff
               ;;
-            test|regression)
+            test|regression|weekly)
               exec 9>/tmp/speedle-plus-test-services.lock
               flock -w 7200 9
               case "${CI_TRIAL}" in
                 test) bash scripts/ci/run-go-tests.sh gate ;;
                 regression) bash scripts/ci/run-go-tests.sh regression ;;
+                weekly) bash scripts/ci/run-go-tests.sh weekly ;;
               esac
               ;;
             reviewbot)
@@ -180,7 +181,7 @@ jobs:
           esac
 
       - name: Upload Fiona CI trial results
-        if: ${{ always() && (github.event.inputs.ci_trial == 'regression' || github.event.inputs.ci_trial == 'test') }}
+        if: ${{ always() && (github.event.inputs.ci_trial == 'regression' || github.event.inputs.ci_trial == 'test' || github.event.inputs.ci_trial == 'weekly') }}
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: fiona-ci-trial-results
