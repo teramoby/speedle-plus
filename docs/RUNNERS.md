@@ -9,11 +9,10 @@ the `teramoby` default group's access policy.
 `fiona-speedle` (macOS ARM64) is a third runner in the same group. All three
 carry `speedle-runner`; only the two charming instances carry `speedle-linux`.
 
-ReviewBot and Go lint, test, post-merge regression and the nightly select
-`[self-hosted, speedle-runner]`, so any of the three may take them. Go build
-(it needs the Linux Hugo release and `sha256sum`) selects
-`[self-hosted, Linux, X64, speedle-linux]`. The weekly selects
-`[self-hosted, Linux, X64, charming-speedle]`, exclusive to the original instance.
+ReviewBot and Go lint, test, post-merge regression, the nightly and the weekly
+select `[self-hosted, speedle-runner]`, so any of the three may take them. Go
+build (it needs the Linux Hugo release and `sha256sum`) selects
+`[self-hosted, Linux, X64, speedle-linux]`.
 A runner administrator must keep `speedle-runner` and `speedle-linux` exclusive
 to these named instances; adding another host would also admit it to
 credential-bearing jobs. A runner name alone is not a scheduling label. The two
@@ -120,8 +119,8 @@ gh workflow run ci.yml --ref master
 ```
 
 Inspect each run's jobs and confirm `runner_name` is one of the three Speedle
-runners for `speedle-runner` jobs (including the nightly), a charming runner for build,
-and only `charming-speedle` for the weekly.
+runners for `speedle-runner` jobs (including the nightly and the weekly) and a
+charming runner for build.
 The regression job prints its workspace and temp paths; verify both registrations
 have distinct paths. An online/idle runner listing alone does not prove checkout,
 tool setup, tests or model connectivity work. The dedicated routing regression
@@ -180,6 +179,6 @@ commands CI uses: `lint` (go vet, go mod tidy check), `test` (the merge gate,
 (`run-go-tests.sh weekly`) or `reviewbot`
 (ReviewBot's tool and Ark reachability checks and its fixture suites, with no
 credentials). `test`, `regression` and `weekly` hold the host test lock. lint,
-test, regression and reviewbot passed on fiona before CI routed them to
-`speedle-runner`; the weekly stays on `charming-speedle` until its trial passes; `build` stays on Linux
-because it needs the Linux Hugo release and `sha256sum`.
+test, regression, weekly and reviewbot passed on fiona before CI routed them to
+`speedle-runner`; `build` stays on Linux because it needs the Linux Hugo release
+and `sha256sum`.
