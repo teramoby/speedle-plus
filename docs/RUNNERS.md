@@ -160,3 +160,13 @@ It uses the nightly host lock, port preflight and sanitized test environment;
 results are uploaded as `fiona-nightly-results`. Its concurrency group remains
 `nightly-tests`. Use `install_flock: true` if the existing macOS host lacks
 `flock`. No scheduled nightly routing changes until this trial passes.
+
+## Fiona CI trial
+
+`ci_trial` on the same workflow runs one CI task on `fiona-speedle` with the
+commands CI uses: `lint` (go vet, go mod tidy check), `test` (the merge gate,
+`run-go-tests.sh gate`), `regression` (the post-merge regression) or `reviewbot`
+(ReviewBot's tool and Ark reachability checks and its fixture suites, with no
+credentials). `test` and `regression` hold the host test lock. CI routing stays
+unchanged until each trial passes on fiona; `build` stays on Linux because it
+needs the Linux Hugo release and `sha256sum`.
