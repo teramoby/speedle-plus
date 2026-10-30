@@ -42,10 +42,6 @@ func expectLock(m sqlmock.Sqlmock) {
 	m.ExpectBegin()
 	m.ExpectQuery("SELECT revision.*FOR UPDATE").WillReturnRows(sqlmock.NewRows([]string{"revision"}).AddRow(1))
 }
-func expectCommit(m sqlmock.Sqlmock) {
-	m.ExpectExec("UPDATE speedle_store_meta").WillReturnResult(sqlmock.NewResult(0, 1))
-	m.ExpectCommit()
-}
 
 func TestInvalidConfiguration(t *testing.T) {
 	configs := []map[string]interface{}{
@@ -290,7 +286,9 @@ func TestStopWatchCancelsBlockedDeliveryAndQuery(t *testing.T) {
 func TestClosedStore(t *testing.T) {
 	s, m := mockStore(t)
 	m.ExpectClose()
-	if s.Close() != nil || s.Close() != nil {
+	// Close twice: closing an already closed store must also succeed.
+	first, second := s.Close(), s.Close()
+	if first != nil || second != nil {
 		t.Fatal("close failed")
 	}
 	if _, err := s.Watch(); errors.Code(err) != errors.StoreError {
