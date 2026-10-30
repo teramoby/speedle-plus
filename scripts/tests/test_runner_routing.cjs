@@ -166,6 +166,10 @@ test('every test job runs on the Speedle runners; only classification and report
   }
   assert.deepEqual(Object.keys(job.mongodb), ['mongodb']);
   assert.equal(route(job.mongodb.mongodb), 'speedle-runner');
+  // A manual run may pin one Speedle runner by its label, e.g. fiona.
+  const pinned = github('workflow_dispatch', canonical, {event: {inputs: {runner: 'speedle-macos'}}});
+  assert.equal(route(job.mongodb.mongodb, pinned), 'speedle-macos');
+  assert.match(sources.mongodb, /options: \[speedle-runner, speedle-macos, speedle-linux\]/);
 });
 test('scheduled suites run through the worker and report from a hosted job', () => {
   const cron = {nightly: "'0 17 * * *'", weekly: "'0 11 * * 0'"};  // 01:00 and Sunday 19:00 GMT+8

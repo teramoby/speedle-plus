@@ -4,6 +4,16 @@ name: MongoDB nightly validation
 # workflow runs it on demand, on any speedle-runner including macOS.
 on:
   workflow_dispatch:
+    inputs:
+      runner:
+        description: Runner label (speedle-runner lets any Speedle runner take it)
+        type: choice
+        options: [speedle-runner, speedle-macos, speedle-linux]
+        default: speedle-runner
+      inventory_only:
+        description: Report the runner's tools without running the regression
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -17,7 +27,7 @@ concurrency:
 jobs:
   mongodb:
     name: MongoDB
-    runs-on: speedle-runner
+    runs-on: ${{ github.event.inputs.runner || 'speedle-runner' }}
     timeout-minutes: 60
     steps:
       - name: Verify runner identity
@@ -30,19 +40,39 @@ jobs:
           esac
           echo "MongoDB runner: ${RUNNER_NAME} (${RUNNER_OS}/${RUNNER_ARCH})"
 
+      # What the CI scripts expect from a runner; reports only, never fails.
+      - name: Report runner tools
+        run: |
+          uname -a
+          id
+          for tool in bash git python3 node go docker sg flock unshare ip hugo jq curl shasum clang gcc lsof; do
+            if path=$(command -v "${tool}"); then printf '%-8s %s\n' "${tool}" "${path}"; else printf '%-8s MISSING\n' "${tool}"; fi
+          done
+          bash --version | head -1; python3 --version; node --version 2>/dev/null || true
+          docker info --format 'docker server {{.ServerVersion}}' 2>&1 | head -1 || true
+          hugo version 2>/dev/null || true
+          getconf _NPROCESSORS_ONLN 2>/dev/null || sysctl -n hw.ncpu
+          df -h "${RUNNER_TEMP:-/tmp}" | tail -1
+          for port in 2379 2380 6733 6734 27017 3306; do
+            python3 -c "import socket,sys; s=socket.socket(); s.bind(('127.0.0.1', int(sys.argv[1]))); print('port', sys.argv[1], 'free')" "${port}" 2>/dev/null || echo "port ${port} IN USE"
+          done
+
       - name: Checkout validation revision
+        if: ${{ github.event.inputs.inventory_only != 'true' }}
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           ref: ${{ github.sha }}
           persist-credentials: false
 
       - name: Setup Go
+        if: ${{ github.event.inputs.inventory_only != 'true' }}
         uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff
         with:
           go-version: '1.26'
           cache: false
 
       - name: Full test suite against MongoDB
+        if: ${{ github.event.inputs.inventory_only != 'true' }}
         run: |
           set -euo pipefail
           mkdir -p mongodb-results
