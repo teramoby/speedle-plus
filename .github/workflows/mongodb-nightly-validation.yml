@@ -26,10 +26,11 @@ on:
 permissions:
   contents: read
 
-# Shares the nightly's group: both use the host-wide etcd ports the Go tests
-# need, and any speedle-runner may run either.
+# A regression shares the nightly's group: both use the host-wide etcd ports
+# the Go tests need, and any speedle-runner may run either. An inventory-only
+# run uses no test ports, so it never waits behind a nightly.
 concurrency:
-  group: nightly-tests
+  group: ${{ github.event.inputs.inventory_only == 'true' && format('runner-inventory-{0}', github.run_id) || 'nightly-tests' }}
   cancel-in-progress: false
 
 jobs:
