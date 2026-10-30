@@ -14,6 +14,10 @@ on:
         description: Report the runner's tools without running the regression
         type: boolean
         default: false
+      install_flock:
+        description: On macOS, brew install flock when it is missing (the CI host lock needs it)
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -40,6 +44,13 @@ jobs:
           esac
           echo "MongoDB runner: ${RUNNER_NAME} (${RUNNER_OS}/${RUNNER_ARCH})"
 
+      - name: Install flock
+        if: ${{ github.event.inputs.install_flock == 'true' && runner.os == 'macOS' }}
+        run: |
+          set -euo pipefail
+          command -v flock || brew install flock
+          flock --version
+
       # What the CI scripts expect from a runner; reports only, never fails.
       - name: Report runner tools
         run: |
@@ -49,7 +60,7 @@ jobs:
             if path=$(command -v "${tool}"); then printf '%-8s %s\n' "${tool}" "${path}"; else printf '%-8s MISSING\n' "${tool}"; fi
           done
           bash --version | head -1; python3 --version; node --version 2>/dev/null || true
-          docker info --format 'docker server {{.ServerVersion}}' 2>&1 | head -1 || true
+          docker version 2>&1 | grep -iE '^(client|server)|version:|cannot connect|permission denied|error' | head -8 || true
           hugo version 2>/dev/null || true
           getconf _NPROCESSORS_ONLN 2>/dev/null || sysctl -n hw.ncpu
           df -h "${RUNNER_TEMP:-/tmp}" | tail -1
