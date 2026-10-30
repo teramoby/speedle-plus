@@ -78,7 +78,9 @@ func (impl *GRPCService) IsAllowed(ctx context.Context, in *pb.ContextRequest) (
 	reqCtx := convertGRPCContextRequest(in)
 
 	// assert token
-	impl.evaluator.AssertToken(reqCtx)
+	if err := impl.evaluator.AssertToken(reqCtx); err != nil {
+		return nil, err
+	}
 
 	allowed, reason, err := impl.evaluator.IsAllowed(*reqCtx)
 	if err != nil {
@@ -102,7 +104,9 @@ func (impl *GRPCService) GetAllGrantedRoles(ctx context.Context, in *pb.ContextR
 	reqCtx := convertGRPCContextRequest(in)
 
 	// assert token
-	impl.evaluator.AssertToken(reqCtx)
+	if err := impl.evaluator.AssertToken(reqCtx); err != nil {
+		return nil, err
+	}
 
 	roles, err := impl.evaluator.GetAllGrantedRoles(*reqCtx)
 	if err != nil {
@@ -123,7 +127,9 @@ func (impl *GRPCService) GetAllPermissions(ctx context.Context, in *pb.ContextRe
 	reqCtx := convertGRPCContextRequest(in)
 
 	// assert token
-	impl.evaluator.AssertToken(reqCtx)
+	if err := impl.evaluator.AssertToken(reqCtx); err != nil {
+		return nil, err
+	}
 
 	perms, err := impl.evaluator.GetAllGrantedPermissions(*reqCtx)
 	if err != nil {
@@ -152,7 +158,9 @@ func (impl *GRPCService) Discover(ctx context.Context, in *pb.ContextRequest) (*
 	reqCtx := convertGRPCContextRequest(in)
 
 	// assert token
-	impl.evaluator.AssertToken(reqCtx)
+	if err := impl.evaluator.AssertToken(reqCtx); err != nil {
+		return nil, err
+	}
 
 	allowed, reason, err := impl.evaluator.Discover(*reqCtx)
 	if err != nil {
@@ -327,7 +335,9 @@ func (impl *GRPCService) Diagnose(ctx context.Context, in *pb.ContextRequest) (*
 	reqCtx := convertGRPCContextRequest(in)
 
 	// assert token
-	impl.evaluator.AssertToken(reqCtx)
+	if err := impl.evaluator.AssertToken(reqCtx); err != nil {
+		return nil, err
+	}
 
 	evaResult, err := impl.evaluator.Diagnose(*reqCtx)
 	if err != nil {

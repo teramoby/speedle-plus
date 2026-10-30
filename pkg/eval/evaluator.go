@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/teramoby/speedle-plus/3rdparty/github.com/Knetic/govaluate"
@@ -69,6 +70,7 @@ type PolicyEvalImpl struct {
 	closeOnce          sync.Once
 	watchStopOnce      sync.Once
 	closeErr           error
+	cacheFailed        atomic.Bool
 }
 
 func (p *PolicyEvalImpl) deleteService(serviceName string) {
@@ -83,9 +85,11 @@ func (p *PolicyEvalImpl) fullReloadRuntimeCache() {
 		return
 	}
 	p.RuntimePolicyStore.reloadPolicyStore(ps)
+	p.cacheFailed.Store(false)
 }
 
-func (p *PolicyEvalImpl) Refresh() error {
+func (p *PolicyEvalImpl) Refresh() (err error) {
+	defer recoverEvaluation("Refresh", &err)
 	p.fullReloadRuntimeCache()
 	return nil
 }
@@ -118,6 +122,8 @@ func (p *PolicyEvalImpl) AddFunctionInRuntimeCache(cf *pms.Function) {
 }
 
 func (p *PolicyEvalImpl) CleanExpiredFunctionResult() {
+	var err error
+	defer recoverEvaluation("FunctionResultCacheCleanup", &err)
 	p.RuntimePolicyStore.expireFunctionResultCache()
 }
 
@@ -125,14 +131,39 @@ func (p *PolicyEvalImpl) SetAsserterFunc(f func(ctx *adsapi.RequestContext) erro
 	p.AsserterFunc = f
 }
 
-func (p *PolicyEvalImpl) AssertToken(ctx *adsapi.RequestContext) error {
+func (p *PolicyEvalImpl) AssertToken(ctx *adsapi.RequestContext) (err error) {
+	var original *adsapi.RequestContext
+	defer func() {
+		if err != nil && original != nil {
+			*ctx = *original
+		}
+	}()
+	defer recoverEvaluation("AssertToken", &err)
 	// Assert identity token
 	if ctx.Subject != nil &&
 		p.AsserterFunc != nil &&
 		len(ctx.Subject.TokenType) != 0 &&
 		len(ctx.Subject.Token) != 0 && !ctx.Subject.Asserted {
+		// Run on a private identity. A broken asserter can mark it trusted and
+		// then panic; that partial identity must not survive a reused request.
+		before := *ctx
+		original = &before
+		identity := *ctx.Subject
+		identity.Principals = make([]*adsapi.Principal, len(ctx.Subject.Principals))
+		for i, principal := range ctx.Subject.Principals {
+			if principal != nil {
+				copy := *principal
+				identity.Principals[i] = &copy
+			}
+		}
+		ctx.Subject = &identity
 		err := p.AsserterFunc(ctx)
 		if err == nil {
+			if ctx.Subject == nil {
+				return errors.New(errors.EvalEngineError, "identity asserter returned no subject")
+			}
+			*original.Subject = *ctx.Subject
+			ctx.Subject = original.Subject
 			ctx.Subject.Asserted = true
 		}
 		return err
@@ -241,7 +272,28 @@ func (p *PolicyEvalImpl) IsAllowed(ctx adsapi.RequestContext) (bool, adsapi.Reas
 	return p.InternalIsAllowed(&ctx, nil)
 }
 
-func (p *PolicyEvalImpl) InternalIsAllowed(ctx *adsapi.RequestContext, evaluationResult *adsapi.EvaluationResult) (bool, adsapi.Reason, error) {
+func (p *PolicyEvalImpl) InternalIsAllowed(ctx *adsapi.RequestContext, evaluationResult *adsapi.EvaluationResult) (allowed bool, reason adsapi.Reason, err error) {
+	defer func() {
+		if err != nil {
+			allowed = false
+			if _, recovered := err.(*recoveredEvaluationError); recovered {
+				reason = adsapi.ERROR_IN_EVALUATION
+			}
+			if errors.Code(err) == errors.EvalEngineError {
+				log.WithError(err).Error("authorization evaluation failed")
+			}
+			if evaluationResult != nil {
+				evaluationResult.Allowed = false
+				evaluationResult.GrantedRoles = []string{}
+				evaluationResult.RolePolicies = []*adsapi.EvaluatedRolePolicy{}
+				evaluationResult.Policies = []*adsapi.EvaluatedPolicy{}
+			}
+		}
+	}()
+	defer recoverEvaluation("IsAllowed", &err)
+	if p.cacheFailed.Load() {
+		return false, adsapi.ERROR_IN_EVALUATION, errors.New(errors.EvalCacheError, "authorization cache requires a successful full reload")
+	}
 	p.RuntimePolicyStore.RLock()
 	defer p.RuntimePolicyStore.RUnlock()
 	newCtx, err := p.populateContext(ctx)
@@ -267,7 +319,7 @@ func (p *PolicyEvalImpl) InternalIsAllowed(ctx *adsapi.RequestContext, evaluatio
 		return false, adsapi.ERROR_IN_EVALUATION, err
 	}
 
-	allowed, reason := denyOverwriteCombiner(grantedPolicies, deniedPolicies, newCtx, evaluationResult)
+	allowed, reason = denyOverwriteCombiner(grantedPolicies, deniedPolicies, newCtx, evaluationResult)
 	return allowed, reason, nil
 }
 
@@ -290,7 +342,16 @@ func (p *PolicyEvalImpl) Diagnose(ctx adsapi.RequestContext) (*adsapi.Evaluation
 	return &evaResult, err
 }
 
-func (p *PolicyEvalImpl) GetAllGrantedRoles(ctx adsapi.RequestContext) ([]string, error) {
+func (p *PolicyEvalImpl) GetAllGrantedRoles(ctx adsapi.RequestContext) (roles []string, err error) {
+	defer func() {
+		if err != nil {
+			roles = nil
+		}
+	}()
+	defer recoverEvaluation("GetAllGrantedRoles", &err)
+	if p.cacheFailed.Load() {
+		return nil, errors.New(errors.EvalCacheError, "authorization cache requires a successful full reload")
+	}
 	p.RuntimePolicyStore.RLock()
 	defer p.RuntimePolicyStore.RUnlock()
 	newCtx, err := p.populateContext(&ctx)
@@ -305,7 +366,16 @@ func (p *PolicyEvalImpl) GetAllGrantedRoles(ctx adsapi.RequestContext) ([]string
 }
 
 // Limitations: This function only calculate granted permissions with resource, will not calculate granted permissions with resource expression.
-func (p *PolicyEvalImpl) GetAllGrantedPermissions(ctx adsapi.RequestContext) ([]pms.Permission, error) {
+func (p *PolicyEvalImpl) GetAllGrantedPermissions(ctx adsapi.RequestContext) (permissions []pms.Permission, err error) {
+	defer func() {
+		if err != nil {
+			permissions = nil
+		}
+	}()
+	defer recoverEvaluation("GetAllGrantedPermissions", &err)
+	if p.cacheFailed.Load() {
+		return nil, errors.New(errors.EvalCacheError, "authorization cache requires a successful full reload")
+	}
 	p.RuntimePolicyStore.RLock()
 	defer p.RuntimePolicyStore.RUnlock()
 	newCtx, err := p.populateContext(&ctx)
@@ -541,7 +611,11 @@ func (p *PolicyEvalImpl) getGrantedRolesFromService(ctx *internalRequestContext,
 		//find safely denied role
 		safelyDeniedRoles := []string{}
 		for deniedRole := range deniedRoleMap {
-			if couldRoleSafelyBeDenied(deniedRole, relatedRolesMap, deniedRoleMap) {
+			safe, err := couldRoleSafelyBeDenied(deniedRole, relatedRolesMap, deniedRoleMap)
+			if err != nil {
+				return nil, err
+			}
+			if safe {
 				safelyDeniedRoles = append(safelyDeniedRoles, deniedRole)
 			}
 		}
@@ -783,80 +857,122 @@ func getDeniableDescendantRoles(role string, relatedRoleMap map[string]*Role) []
 	return deniableDescendantRoles(role, relatedRoleMap, map[string]bool{role: true})
 }
 
-// deniableDescendantRoles skips roles already visited, so a cyclic role
-// graph cannot recurse forever.
-func deniableDescendantRoles(role string, relatedRoleMap map[string]*Role, visited map[string]bool) []string {
+// deniableDescendantRoles retains the existing depth-first selection rules,
+// using an explicit stack so deep acyclic graphs cannot overflow the Go stack.
+func deniableDescendantRoles(role string, roles map[string]*Role, visited map[string]bool) []string {
+	type frame struct {
+		role        string
+		children    []string
+		next, start int
+	}
+	makeFrame := func(name string, start int) frame {
+		f := frame{role: name, start: start}
+		if node := roles[name]; node != nil {
+			for child := range node.ChildRoles {
+				f.children = append(f.children, child)
+			}
+		}
+		return f
+	}
+	stack := []frame{makeFrame(role, 0)}
 	descendants := []string{}
-	if roleNode, ok := relatedRoleMap[role]; ok {
-		//get descendant nodes
-		for childrole := range roleNode.ChildRoles {
-			if visited[childrole] {
-				continue
+	positions := make(map[string]int)
+	for len(stack) > 0 {
+		f := &stack[len(stack)-1]
+		if f.next == len(f.children) {
+			stack = stack[:len(stack)-1]
+			continue
+		}
+		child := f.children[f.next]
+		f.next++
+		if visited[child] {
+			continue
+		}
+		node := roles[child]
+		if node == nil || len(node.ParentPrincipals) > 0 {
+			continue
+		}
+		allDenied := true
+		for parent := range node.ParentRoles {
+			index, exists := positions[parent]
+			if parent != f.role && (!exists || index < f.start) {
+				allDenied = false
+				break
 			}
-			if childRoleNode, ok := relatedRoleMap[childrole]; ok {
-				allParentRolesDenied := true
-				for parentRole := range childRoleNode.ParentRoles {
-					if parentRole != role && !contains(descendants, parentRole) {
-						allParentRolesDenied = false
-						break
-					}
-				}
-				if allParentRolesDenied && len(childRoleNode.ParentPrincipals) == 0 {
-					visited[childrole] = true
-					descendants = append(descendants, childrole)
-					descendants = append(descendants, deniableDescendantRoles(childrole, relatedRoleMap, visited)...)
-				}
-			}
+		}
+		if allDenied {
+			visited[child] = true
+			positions[child] = len(descendants)
+			descendants = append(descendants, child)
+			stack = append(stack, makeFrame(child, len(descendants)))
 		}
 	}
 	return descendants
 }
 
-func contains(a []string, x string) bool {
-	for _, n := range a {
-		if x == n {
-			return true
-		}
-	}
-	return false
-}
-
 // If any of the deniedByRole and all its ancestors are not denied, we take it as could be safely denied.
-func couldRoleSafelyBeDenied(role string, relatedRoleMap map[string]*Role, deniedRoleMap map[string]bool) bool {
-	allDeniedByRoleBeDenied := true
+func couldRoleSafelyBeDenied(role string, relatedRoleMap map[string]*Role, deniedRoleMap map[string]bool) (bool, error) {
 	if roleNode, ok := relatedRoleMap[role]; ok {
 		for deniedByRole := range roleNode.DeniedByRoles {
-			if !selfOrAncestorsBeDenied(deniedByRole, relatedRoleMap, deniedRoleMap) {
-				allDeniedByRoleBeDenied = false
-				break
+			denied, err := selfOrAncestorsBeDenied(deniedByRole, relatedRoleMap, deniedRoleMap)
+			if err != nil {
+				return false, err
+			}
+			if !denied {
+				return true, nil
 			}
 		}
 	} else {
 		log.Warnf("Role %q is not in the related role map", role)
 	}
-	return !allDeniedByRoleBeDenied
+	return false, nil
 }
 
-func selfOrAncestorsBeDenied(deniedByRole string, relatedRoleMap map[string]*Role, deniedRoleMap map[string]bool) bool {
-	if _, ok := deniedRoleMap[deniedByRole]; ok { //self be denied
-		return true
+// Search iteratively for an independent subject source, excluding denied roles.
+// A back edge alone does not fail: a valid cycle can still reach such a source.
+// Only a closed cycle with no source is an unresolved dependency.
+func selfOrAncestorsBeDenied(role string, roles map[string]*Role, denied map[string]bool) (bool, error) {
+	type frame struct {
+		name string
+		exit bool
 	}
-
-	if deniedByRoleNode, ok := relatedRoleMap[deniedByRole]; ok {
-		if len(deniedByRoleNode.ParentPrincipals) > 0 { //first level role, we could end up here
-			return false
-		} else {
-			for parentRole := range deniedByRoleNode.ParentRoles {
-				if !selfOrAncestorsBeDenied(parentRole, relatedRoleMap, deniedRoleMap) {
-					return false
-				}
-			}
+	stack := []frame{{name: role}}
+	color := make(map[string]uint8)
+	cyclic := false
+	for len(stack) > 0 {
+		f := stack[len(stack)-1]
+		stack = stack[:len(stack)-1]
+		if f.exit {
+			color[f.name] = 2
+			continue
 		}
-
-	} else {
-		log.Warnf("Role %q is not in the related role map", deniedByRole)
+		if denied[f.name] {
+			continue
+		}
+		if color[f.name] == 1 {
+			cyclic = true
+			continue
+		}
+		if color[f.name] == 2 {
+			continue
+		}
+		node, ok := roles[f.name]
+		if !ok {
+			continue
+		}
+		if len(node.ParentPrincipals) > 0 {
+			return false, nil
+		}
+		color[f.name] = 1
+		stack = append(stack, frame{name: f.name, exit: true})
+		for parent := range node.ParentRoles {
+			stack = append(stack, frame{name: parent})
+		}
 	}
-	return true
+	if cyclic {
+		return false, errors.New(errors.EvalEngineError, "role dependency cycle has no independent subject source")
+	}
+	return true, nil
 }
 
 // Returns granted and denied policies
@@ -1079,61 +1195,70 @@ func (p *PolicyEvalImpl) getCustFunctionSetInCache() ([]string, error) {
 
 func (p *PolicyEvalImpl) updateRuntimeCacheWithStoreChange(updateChan pms.StorageChangeChannel) {
 	for e := range updateChan {
-		switch e.Type {
-		case pms.SERVICE_ADD: ///Event content: StoreUpdateData{ParentID:serviceName, Data:*service}
-			serviceGot := e.Content.(*pms.Service)
-			p.AddServiceInRuntimeCache(serviceGot)
-		case pms.SERVICE_DELETE: //Event content:[]StoreUpdateData{ParentID:serviceName, Data:servieName}
-			services := e.Content.([]string)
-			for _, s := range services {
-				p.deleteService(s)
-			}
-		case pms.POLICY_ADD: //Event content :[]StoreUpdateData{ParentID:serviceName, Data:*policy}
-			data := e.Content.([]pms.StoreUpdateData)
-			for _, s := range data {
-				policy := s.Data.(*pms.Policy)
-				p.AddPolicyInRuntimeCache(s.ServiceName, policy)
-			}
-		case pms.POLICY_DELETE: // Event content:[]StoreUpdateData{ParentID:serviceName, Data:*pms.Policy}
-			data := e.Content.([]pms.StoreUpdateData)
-			for _, s := range data {
-				policy := s.Data.(*pms.Policy)
-				p.DeletePolicyInRuntimeCache(s.ServiceName, policy.ID)
-			}
-		case pms.ROLEPOLICY_ADD: //Event content :[]StoreUpdateData{ParentID:serviceName, Data:*rolepolicy}
-			data := e.Content.([]pms.StoreUpdateData)
-			for _, s := range data {
-				rolepolicy := s.Data.(*pms.RolePolicy)
-				p.AddRolePolicyInRuntimeCache(s.ServiceName, rolepolicy)
-			}
-		case pms.ROLEPOLICY_DELETE: //Event content:[]StoreUpdateData{ParentID:serviceName, Data:*pms.RolePolicy}
-			data := e.Content.([]pms.StoreUpdateData)
-			for _, s := range data {
-				rolePolicy := s.Data.(*pms.RolePolicy)
-				p.DeleteRolePolicyInRuntimeCache(s.ServiceName, rolePolicy.ID)
-			}
-		case pms.SYNC_RELOAD:
-			data := e.Content.([]interface{})
-			err := p.syncRuntimeCache(data)
-			if err != nil {
-				log.Error("failed to reload cache data. ", err)
-			}
-		case pms.FUNCTION_ADD:
-			f := e.Content.(*pms.Function)
-			p.AddFunctionInRuntimeCache(f)
-		case pms.FUNCTION_DELETE:
-			fs := e.Content.([]string)
-			for _, f := range fs {
-				p.DeleteFunctionInRuntimeCache(f)
-			}
-		case pms.FULL_RELOAD:
-			if snapshot, ok := e.Content.(*pms.PolicyStore); ok && snapshot != nil {
-				p.RuntimePolicyStore.reloadPolicyStore(snapshot)
-			} else {
-				p.fullReloadRuntimeCache()
-			}
+		if err := p.applyStoreChange(e); err != nil {
+			p.cacheFailed.Store(true)
 		}
 	}
+}
+
+func (p *PolicyEvalImpl) applyStoreChange(e pms.StoreChangeEvent) (err error) {
+	defer recoverEvaluation("StoreChange", &err)
+	switch e.Type {
+	case pms.SERVICE_ADD: ///Event content: StoreUpdateData{ParentID:serviceName, Data:*service}
+		serviceGot := e.Content.(*pms.Service)
+		p.AddServiceInRuntimeCache(serviceGot)
+	case pms.SERVICE_DELETE: //Event content:[]StoreUpdateData{ParentID:serviceName, Data:servieName}
+		services := e.Content.([]string)
+		for _, s := range services {
+			p.deleteService(s)
+		}
+	case pms.POLICY_ADD: //Event content :[]StoreUpdateData{ParentID:serviceName, Data:*policy}
+		data := e.Content.([]pms.StoreUpdateData)
+		for _, s := range data {
+			policy := s.Data.(*pms.Policy)
+			p.AddPolicyInRuntimeCache(s.ServiceName, policy)
+		}
+	case pms.POLICY_DELETE: // Event content:[]StoreUpdateData{ParentID:serviceName, Data:*pms.Policy}
+		data := e.Content.([]pms.StoreUpdateData)
+		for _, s := range data {
+			policy := s.Data.(*pms.Policy)
+			p.DeletePolicyInRuntimeCache(s.ServiceName, policy.ID)
+		}
+	case pms.ROLEPOLICY_ADD: //Event content :[]StoreUpdateData{ParentID:serviceName, Data:*rolepolicy}
+		data := e.Content.([]pms.StoreUpdateData)
+		for _, s := range data {
+			rolepolicy := s.Data.(*pms.RolePolicy)
+			p.AddRolePolicyInRuntimeCache(s.ServiceName, rolepolicy)
+		}
+	case pms.ROLEPOLICY_DELETE: //Event content:[]StoreUpdateData{ParentID:serviceName, Data:*pms.RolePolicy}
+		data := e.Content.([]pms.StoreUpdateData)
+		for _, s := range data {
+			rolePolicy := s.Data.(*pms.RolePolicy)
+			p.DeleteRolePolicyInRuntimeCache(s.ServiceName, rolePolicy.ID)
+		}
+	case pms.SYNC_RELOAD:
+		data := e.Content.([]interface{})
+		err := p.syncRuntimeCache(data)
+		if err != nil {
+			log.Error("failed to reload cache data. ", err)
+		}
+	case pms.FUNCTION_ADD:
+		f := e.Content.(*pms.Function)
+		p.AddFunctionInRuntimeCache(f)
+	case pms.FUNCTION_DELETE:
+		fs := e.Content.([]string)
+		for _, f := range fs {
+			p.DeleteFunctionInRuntimeCache(f)
+		}
+	case pms.FULL_RELOAD:
+		if snapshot, ok := e.Content.(*pms.PolicyStore); ok && snapshot != nil {
+			p.RuntimePolicyStore.reloadPolicyStore(snapshot)
+			p.cacheFailed.Store(false)
+		} else {
+			p.fullReloadRuntimeCache()
+		}
+	}
+	return nil
 }
 
 func (p *PolicyEvalImpl) cleanExpiredFunctionResultPeriodically() {

@@ -59,6 +59,9 @@ func NewEvaluableExpressionFromTokens(tokens []ExpressionToken) (*EvaluableExpre
 	ret = new(EvaluableExpression)
 	ret.QueryDateFormat = isoDateFormat
 
+	if err = checkComplexity(tokens); err != nil {
+		return nil, err
+	}
 	err = checkBalance(tokens)
 	if err != nil {
 		return nil, err
@@ -101,6 +104,9 @@ func NewEvaluableExpressionWithFunctions(expression string, functions map[string
 		return nil, err
 	}
 
+	if err = checkComplexity(ret.tokens); err != nil {
+		return nil, err
+	}
 	err = checkBalance(ret.tokens)
 	if err != nil {
 		return nil, err

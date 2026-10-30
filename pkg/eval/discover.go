@@ -1,13 +1,20 @@
 package eval
 
 import (
+	log "github.com/sirupsen/logrus"
 	"github.com/teramoby/speedle-plus/api/ads"
 	"github.com/teramoby/speedle-plus/pkg/errors"
 	"github.com/teramoby/speedle-plus/pkg/store"
-	log "github.com/sirupsen/logrus"
 )
 
-func (p *PolicyEvalImpl) Discover(ctx ads.RequestContext) (bool, ads.Reason, error) {
+func (p *PolicyEvalImpl) Discover(ctx ads.RequestContext) (allowed bool, reason ads.Reason, err error) {
+	defer func() {
+		if _, recovered := err.(*recoveredEvaluationError); recovered {
+			allowed = false
+			reason = ads.ERROR_IN_EVALUATION
+		}
+	}()
+	defer recoverEvaluation("Discover", &err)
 	if d, ok := p.Store.(store.DiscoverRequestManager); ok {
 		// Discover requests are kept in the store; never keep the bearer token.
 		if ctx.Subject != nil && ctx.Subject.Token != "" {

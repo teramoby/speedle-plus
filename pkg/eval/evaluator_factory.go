@@ -41,13 +41,14 @@ func NewFromFile(fileLoc string, isWatch bool) (adsapi.PolicyEvaluator, error) {
 }
 
 // NewFromConfig creates a policy evaluator based on the given configuration file
-func NewFromConfig(conf *cfg.Config) (InternalEvaluator, error) {
+func NewFromConfig(conf *cfg.Config) (evaluator InternalEvaluator, err error) {
+	defer recoverEvaluation("NewFromConfig", &err)
 	s, err := store.NewStore(conf.StoreConfig.StoreType, conf.StoreConfig.StoreProps)
 	if err != nil {
 		return nil, err
 	}
 
-	evaluator, err := NewWithStore(conf, s)
+	evaluator, err = NewWithStore(conf, s)
 	if err != nil {
 		if closer, ok := s.(io.Closer); ok {
 			_ = closer.Close()
@@ -57,7 +58,14 @@ func NewFromConfig(conf *cfg.Config) (InternalEvaluator, error) {
 }
 
 // NewWithStore creates a policy evaluator with policy store
-func NewWithStore(conf *cfg.Config, s pms.PolicyStoreManagerADS) (InternalEvaluator, error) {
+func NewWithStore(conf *cfg.Config, s pms.PolicyStoreManagerADS) (evaluator InternalEvaluator, err error) {
+	var watching bool
+	defer func() {
+		if err != nil && watching {
+			stopFailedWatch(s)
+		}
+	}()
+	defer recoverEvaluation("NewWithStore", &err)
 	ps, err := s.ReadPolicyStore()
 	if err != nil {
 		return nil, err
@@ -70,6 +78,7 @@ func NewWithStore(conf *cfg.Config, s pms.PolicyStoreManagerADS) (InternalEvalua
 		if err != nil {
 			return nil, err
 		}
+		watching = true
 	}
 
 	runtimePolicyStore := NewRuntimePolicyStore()
@@ -89,4 +98,10 @@ func NewWithStore(conf *cfg.Config, s pms.PolicyStoreManagerADS) (InternalEvalua
 	p.cleanExpiredFunctionResultPeriodically()
 
 	return p, nil
+}
+
+func stopFailedWatch(s pms.PolicyStoreManagerADS) {
+	var err error
+	defer recoverEvaluation("StopWatchAfterFailedInitialization", &err)
+	s.StopWatch()
 }
