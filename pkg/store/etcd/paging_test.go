@@ -4,12 +4,61 @@
 package etcd
 
 import (
+	"context"
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/teramoby/speedle-plus/api/pms"
 	"github.com/teramoby/speedle-plus/pkg/errors"
+	clientv3 "go.etcd.io/etcd/client/v3"
 )
+
+func TestPrefixGetIncludesKeysExtendingPageBoundary(t *testing.T) {
+	s := newPrefixedStore(t).(*Store)
+	prefix := s.KeyPrefix + "/page-boundary/"
+	want := make(map[string]bool)
+	ops := make([]clientv3.Op, 0, pageSize+2)
+	for i := 0; i < pageSize; i++ {
+		key := fmt.Sprintf("%s%04d", prefix, i)
+		want[key] = true
+		ops = append(ops, clientv3.OpPut(key, "value"))
+	}
+	for _, key := range []string{fmt.Sprintf("%s%04d-child", prefix, pageSize-1), prefix + "tail"} {
+		want[key] = true
+		ops = append(ops, clientv3.OpPut(key, "value"))
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	for start := 0; start < len(ops); start += 64 {
+		if _, err := s.client.Txn(ctx).Then(ops[start:min(start+64, len(ops))]...).Commit(); err != nil {
+			t.Fatal(err)
+		}
+	}
+	for _, keysOnly := range []bool{false, true} {
+		var options []clientv3.OpOption
+		if keysOnly {
+			options = append(options, clientv3.WithKeysOnly())
+		}
+		pages, err := s.prefixGet(prefix, options...)
+		if err != nil {
+			t.Fatal(err)
+		}
+		seen := make(map[string]bool)
+		for _, page := range pages {
+			for _, kv := range page.Kvs {
+				key := string(kv.Key)
+				if !want[key] || seen[key] || (!keysOnly && string(kv.Value) != "value") {
+					t.Fatalf("keysOnly=%v unexpected key/value %q %q", keysOnly, key, kv.Value)
+				}
+				seen[key] = true
+			}
+		}
+		if len(seen) != len(want) {
+			t.Fatalf("keysOnly=%v received %d keys, want %d", keysOnly, len(seen), len(want))
+		}
+	}
+}
 
 func TestGetServiceItselfMatchesWholeNames(t *testing.T) {
 	s := newPrefixedStore(t).(*Store)

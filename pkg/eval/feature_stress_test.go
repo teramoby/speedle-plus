@@ -82,6 +82,10 @@ func TestFeatureRoleMixedGraphCapacity(t *testing.T) {
 				}
 			}
 			e := featureEvaluator(t, &pms.PolicyStore{Services: []*pms.Service{service}})
+			cached := e.RuntimePolicyStore.RuntimeServices["app"]
+			if len(cached.PoliciesCache.PolicyMap) != len(service.Policies) || len(cached.RolePoliciesCache.PolicyMap) != len(service.RolePolicies) {
+				t.Fatalf("mixed snapshot truncated: policies=%d/%d role policies=%d/%d", len(cached.PoliciesCache.PolicyMap), len(service.Policies), len(cached.RolePoliciesCache.PolicyMap), len(service.RolePolicies))
+			}
 			for _, blocked := range []bool{false, true} {
 				ctx := featureContext()
 				ctx.Attributes = map[string]interface{}{"blocked": blocked, "amount": 1.0}

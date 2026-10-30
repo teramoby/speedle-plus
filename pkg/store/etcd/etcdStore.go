@@ -314,8 +314,10 @@ func (s *Store) prefixGet(prefix string, opts ...clientv3.OpOption) ([]*clientv3
 		}
 		ret = append(ret, getResp)
 		if getResp.More {
-			lastKey := string(getResp.Kvs[pageSize-1].Key)
-			prefix = clientv3.GetPrefixRangeEnd(lastKey)
+			lastKey := string(getResp.Kvs[len(getResp.Kvs)-1].Key)
+			// Resume after this exact key. Advancing the whole prefix would
+			// skip keys that extend it, such as "rp1-child" after "rp1".
+			prefix = lastKey + "\x00"
 			getOpts = []clientv3.OpOption{clientv3.WithRange(end), clientv3.WithLimit(pageSize), clientv3.WithSort(clientv3.SortByKey, clientv3.SortAscend)}
 			getOpts = append(getOpts, opts...)
 		} else {

@@ -28,6 +28,9 @@ only its own disposable database. Failures are retained across every stage.
 * Feature stress also checks all roles and permissions of 128 and 1,024 mixed
   diamond components, including conditional revocation and unrelated public
   roots (up to 6,145 role policies and 2,048 authorization policies).
+  Snapshot counts must match the input before checking decisions. The etcd
+  page-boundary regression retains keys extending the previous page's last key;
+  a prefix successor would silently skip those keys during full-store reads.
 * Weekly adds the 100,000-policy/role capacity case with file storage. A single
   MongoDB document has a separate size limit, so this is not a claim about
   100,000 policies within a single MongoDB service document.
