@@ -149,11 +149,13 @@ func (p *PolicyEvalImpl) AssertToken(ctx *adsapi.RequestContext) (err error) {
 		before := *ctx
 		original = &before
 		identity := *ctx.Subject
-		identity.Principals = make([]*adsapi.Principal, len(ctx.Subject.Principals))
-		for i, principal := range ctx.Subject.Principals {
-			if principal != nil {
-				copy := *principal
-				identity.Principals[i] = &copy
+		if ctx.Subject.Principals != nil {
+			identity.Principals = make([]*adsapi.Principal, len(ctx.Subject.Principals))
+			for i, principal := range ctx.Subject.Principals {
+				if principal != nil {
+					copy := *principal
+					identity.Principals[i] = &copy
+				}
 			}
 		}
 		ctx.Subject = &identity
@@ -162,8 +164,10 @@ func (p *PolicyEvalImpl) AssertToken(ctx *adsapi.RequestContext) (err error) {
 			if ctx.Subject == nil {
 				return errors.New(errors.EvalEngineError, "identity asserter returned no subject")
 			}
-			*original.Subject = *ctx.Subject
-			ctx.Subject = original.Subject
+			if ctx.Subject == &identity {
+				*original.Subject = identity
+				ctx.Subject = original.Subject
+			}
 			ctx.Subject.Asserted = true
 		}
 		return err

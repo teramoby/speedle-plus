@@ -324,3 +324,37 @@ func TestFeatureBackgroundRecovery(t *testing.T) {
 	rt.FunctionResultCache = original
 	requireHealthyAfterRecovery(t, e)
 }
+
+func TestFeatureAssertionPreservesNormalInputs(t *testing.T) {
+	for _, principals := range [][]*ads.Principal{nil, {}} {
+		e := featureEvaluator(t, &pms.PolicyStore{Services: []*pms.Service{{Name: "app", Policies: []*pms.Policy{recoveryGrant("grant")}}}})
+		e.SetAsserterFunc(func(ctx *ads.RequestContext) error {
+			if (ctx.Subject.Principals == nil) != (principals == nil) {
+				return fmt.Errorf("nil/empty principal input changed")
+			}
+			ctx.Subject.Principals = []*ads.Principal{{Type: "user", Name: "alice"}}
+			return nil
+		})
+		ctx := featureContext()
+		ctx.Subject.Principals = principals
+		ctx.Subject.TokenType = "test"
+		ctx.Subject.Token = "token"
+		if allowed, _, err := e.IsAllowed(ctx); !allowed || err != nil {
+			t.Fatalf("normal assertion: %v %v", allowed, err)
+		}
+		if !ctx.Subject.Asserted || len(ctx.Subject.Principals) != 1 || ctx.Subject.Principals[0].Name != "alice" {
+			t.Fatalf("successful assertion not visible: %+v", ctx.Subject)
+		}
+		e.SetAsserterFunc(func(ctx *ads.RequestContext) error {
+			ctx.Subject = &ads.Subject{Principals: []*ads.Principal{{Type: "user", Name: "alice"}}}
+			return nil
+		})
+		direct := featureContext()
+		direct.Subject.TokenType = "test"
+		direct.Subject.Token = "token"
+		previous := direct.Subject
+		if err := e.AssertToken(&direct); err != nil || direct.Subject == previous || !direct.Subject.Asserted {
+			t.Fatalf("replacement subject semantics changed: %+v %v", direct.Subject, err)
+		}
+	}
+}
