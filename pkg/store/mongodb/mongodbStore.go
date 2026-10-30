@@ -15,7 +15,6 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/teramoby/speedle-plus/api/pms"
 	"github.com/teramoby/speedle-plus/pkg/errors"
-	storeutils "github.com/teramoby/speedle-plus/pkg/store/utils"
 	"github.com/teramoby/speedle-plus/pkg/suid"
 )
 
@@ -86,9 +85,8 @@ func (s *Store) supportsTransactions(ctx context.Context) (bool, error) {
 // WritePolicyStore atomically replaces the snapshot. MongoDB transactions require
 // a replica set or sharded cluster; unsupported deployments fail without deleting data.
 func (s *Store) WritePolicyStore(ps *pms.PolicyStore) error {
-	ps, err := storeutils.PreparePolicyStore(ps)
-	if err != nil {
-		return err
+	if ps == nil {
+		return errors.New(errors.InvalidRequest, "policy store must not be nil")
 	}
 	// Encode before starting the transaction, so invalid input never removes data.
 	services := make([]interface{}, 0, len(ps.Services))
@@ -319,9 +317,6 @@ func generateID(service *pms.Service) (*pms.Service, error) {
 
 // CreateService creates a new service
 func (s *Store) CreateService(service *pms.Service) error {
-	if err := storeutils.ValidateServiceRolePolicies(service); err != nil {
-		return err
-	}
 	serviceCollection := s.client.Database(s.Database).Collection("services")
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -918,9 +913,6 @@ func (s *Store) DeleteRolePolicies(serviceName string) error {
 }
 
 func (s *Store) CreateRolePolicy(serviceName string, rolePolicy *pms.RolePolicy) (*pms.RolePolicy, error) {
-	if err := storeutils.ValidateRolePolicyPrincipals(rolePolicy); err != nil {
-		return nil, err
-	}
 	dupPolicy := *rolePolicy
 	dupPolicy.ID = suid.New().String()
 	serviceCollection := s.client.Database(s.Database).Collection("services")

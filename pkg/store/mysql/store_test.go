@@ -182,7 +182,7 @@ func TestTransactionFailureBoundaries(t *testing.T) {
 
 func TestFailedBulkWriteLeavesInputUntouched(t *testing.T) {
 	s, m := mockStore(t)
-	input := &pms.Service{Name: "app", Policies: []*pms.Policy{{ID: "original", Name: "one"}}, RolePolicies: []*pms.RolePolicy{{Principals: []string{"user:alice"}, ID: "original-role", Effect: pms.Grant, Roles: []string{"reader"}}}}
+	input := &pms.Service{Name: "app", Policies: []*pms.Policy{{ID: "original", Name: "one"}}, RolePolicies: []*pms.RolePolicy{{ID: "original-role"}}}
 	expectLock(m)
 	m.ExpectExec("INSERT INTO speedle_services").WillReturnResult(sqlmock.NewResult(0, 1))
 	m.ExpectExec("INSERT INTO speedle_policies").WillReturnResult(sqlmock.NewResult(0, 1))

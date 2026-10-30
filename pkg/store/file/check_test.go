@@ -12,14 +12,6 @@ import (
 	"testing"
 )
 
-func TestCheckJSONRejectsStoreWideDuplicateIDs(t *testing.T) {
-	data := `{"services":[{"name":"app","policies":[{"id":"same","effect":"grant","permissions":[{"resource":"book","actions":["read"]}]}]},{"name":"global","rolePolicies":[{"id":"same","effect":"deny","principals":["user:alice"],"roles":["reader"]}]}]}`
-	_, problems := CheckJSON(strings.NewReader(data), "duplicate.json")
-	if len(problems) != 1 || !strings.Contains(problems[0].Error(), "duplicate.json") || !strings.Contains(problems[0].Error(), `duplicate policy ID "same"`) {
-		t.Fatalf("duplicate snapshot diagnostics: %v", problems)
-	}
-}
-
 func errorTexts(errs []error) []string {
 	texts := make([]string, len(errs))
 	for i, err := range errs {
@@ -68,7 +60,7 @@ func TestCheckJSONReportsPolicyProblems(t *testing.T) {
  {"name":"orders","policies":[
   {"name":"p1","effect":"Deny","permissions":[{"resource":"/o","actions":["read"]}]},
   {"effect":"grant","condition":"amount >"}
- ],"rolePolicies":[{"name":"rp1","effect":"grant","principals":["user:alice"]}, {"effect":"deny","principals":["user:alice"],"roles":["r"],"condition":"(a"}]},
+ ],"rolePolicies":[{"name":"rp1","effect":"grant"}, {"effect":"deny","roles":["r"],"condition":"(a"}]},
  {"policies":[{"effect":"grant","permissions":[{"resource":"/x"}]}]}
 ]}`
 	_, errs := CheckJSON(strings.NewReader(store), "s.json")
@@ -207,18 +199,6 @@ func TestSPDLLiteralBackslashAndEscapedConditionComments(t *testing.T) {
 		}
 		if ps.Services[0].Policies[0].Permissions[0].Resource != "book#1" {
 			t.Fatal("resource truncated")
-		}
-	}
-}
-
-func TestCheckJSONRejectsMissingRolePrincipals(t *testing.T) {
-	for _, effect := range []string{"grant", "deny"} {
-		for _, field := range []string{"", `,"principals":null`, `,"principals":[]`, `,"principals":[""]`, `,"principals":["user:alice",""]`} {
-			data := `{"services":[{"name":"app","rolePolicies":[{"effect":"` + effect + `","roles":["reader"]` + field + `}]}]}`
-			_, problems := CheckJSON(strings.NewReader(data), "invalid.json")
-			if len(problems) != 1 || !strings.Contains(problems[0].Error(), "principal") {
-				t.Fatalf("%s: %v", data, problems)
-			}
 		}
 	}
 }

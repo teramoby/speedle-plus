@@ -18,20 +18,6 @@ only its own disposable database. Failures are retained across every stage.
   Keep any failing input as a committed regression seed and fix the cause.
 * Native PMS/ADS runtime tests consume the SPDL function fixtures as actual
   authorization requests. Fixtures alone are not function-execution coverage.
-* Role regressions cover explicit-subject grants/denies, global/local roles,
-  orphan cycles and diamonds after revocation, valid cyclic deny evaluation,
-  and rejection of role rules without principals. The same expected roles
-  and permissions are checked
-  through GetAllGrantedRoles, IsAllowed, Diagnose and GetAllGrantedPermissions.
-  Mixed conditional grant/deny graphs use an independent topological reference
-  model; 128-case and 1,024-case matrices exercise layered role/policy conditions,
-  IDD, resource scopes, AND principals, alternate grants and ordinary denies.
-* Feature stress also checks all roles and permissions of 128 and 1,024 mixed
-  diamond components, including conditional revocation and independent explicit-user
-  grants (up to 6,145 role policies and 2,048 authorization policies).
-  Snapshot counts must match the input before checking decisions. The etcd
-  page-boundary regression retains keys extending the previous page's last key;
-  a prefix successor would silently skip those keys during full-store reads.
 * Weekly adds the 100,000-policy/role capacity case with file storage. A single
   MongoDB document has a separate size limit, so this is not a claim about
   100,000 policies within a single MongoDB service document.
@@ -62,16 +48,3 @@ returns false; runtime condition errors still make that condition nonmatching.
 Numeric built-ins now reject NaN/infinity, negative square roots and overflowing
 results. Duplicate set elements do not change subset membership. JSON diagnostics
 are checked by error type/location rather than Go-version-specific full messages.
-
-Policy and role-policy IDs share one store-wide namespace, including the global
-service. Normal creation uses Speedle's existing 20-character SUID generator;
-it is not a change to UUIDs. Snapshot imports preserve supplied IDs, generate
-missing IDs and reject duplicates before writing. The four-store conformance
-suite verifies invalid imports leave existing data intact. ADS rejects duplicate
-IDs at initialization and retains its cache when a replacement snapshot is
-invalid. Role Policies require nonempty principals for both grant and deny;
-omitted, null, empty or blank subjects are invalid requests at PMS, store-import
-and ADS snapshot boundaries. They do not define public roles.
-Revocation removes roles with no remaining root path, while independent grants
-survive. A denied role cannot deny other roles; unresolved mutually dependent
-denies retain the existing conservative result of rejecting all pending roles.
