@@ -44,9 +44,10 @@ with write permission can request `@reviewbot review`, `@reviewbot recheck` or
 `@reviewbot explain` in PR comments. See [ReviewBot](docs/REVIEWBOT.md) for its
 commands, configuration and data boundaries.
 
-The nightly suite also reruns every Go package, including the REST/gRPC and CLI
-tests, with etcd and with MySQL (plus the tagged ADS authorization/cache tests),
-and runs the MongoDB store tests; pull request CI does not run MySQL or MongoDB.
+The nightly suite runs the same full regression, every Go package plus the
+tagged ADS authorization/cache tests against native PMS/ADS, once each with the
+file, etcd, MySQL and MongoDB stores; pull request CI does not run MySQL or
+MongoDB.
 See [MySQL regression tests](docs/MYSQL_TESTS.md)
 for runner selection, manual trials, fixture ownership and result artifacts.
 

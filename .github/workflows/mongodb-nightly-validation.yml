@@ -1,9 +1,8 @@
 name: MongoDB nightly validation
 
+# The scheduled nightly runs this regression with every backend; this
+# workflow runs it on demand, on any speedle-runner including macOS.
 on:
-  schedule:
-    # 01:00 GMT+8 every day, after the MySQL nightly (shared group below).
-    - cron: '0 17 * * *'
   workflow_dispatch:
 
 permissions:

@@ -6,6 +6,7 @@ const os = require('node:os');
 const path = require('node:path');
 const {spawnSync} = require('node:child_process');
 const test = require('node:test');
+const realBash = spawnSync('bash', ['-c', 'command -v bash'], {encoding: 'utf8'}).stdout.trim();
 const vm = require('node:vm');
 const source = fs.readFileSync(path.resolve(__dirname, '../../.github/workflows/go-ci-worker.yml'), 'utf8');
 const expected = ['self-hosted', 'Linux', 'X64', 'charming-speedle'];
@@ -165,13 +166,14 @@ function runSuite(mode, {listExit = 0, failMatching = '', mysqlOnly = false, doc
     const calls = path.join(directory, 'calls.jsonl');
     const stub = tool => `#!${process.execPath}
 const fs=require('node:fs');const a=process.argv.slice(2);
+if(${JSON.stringify(tool)}==='bash'&&!String(a[0]).startsWith('scripts/ci/validate-')){const r=require('node:child_process').spawnSync(process.env.FIXTURE_REAL_BASH,a,{stdio:'inherit'});process.exit(r.status===null?1:r.status)}
 if(${JSON.stringify(tool)}==='go'&&a[0]==='env'){console.log(a[1]==='CC'?'true':a[1]==='GOVERSION'?'go1.26.10':process.env.FIXTURE_GOPATH);process.exit(0)}
 if(${JSON.stringify(tool)}==='docker')process.exit(process.env.FIXTURE_DOCKER==='reachable'?0:1)
 if(${JSON.stringify(tool)}==='id'){console.log(a[0]==='-un'?'runner':process.env.FIXTURE_DOCKER==='group'?'runner docker':'runner');process.exit(0)}
 if(${JSON.stringify(tool)}==='go'&&a[0]==='list'){console.log('example.invalid/pkg/a\\nexample.invalid/pkg/store/mongodb\\nexample.invalid/samples/x\\nexample.invalid/pkg/svcs/adsgrpc/pb');process.exit(Number(process.env.FIXTURE_LIST_EXIT))}
 fs.appendFileSync(process.env.FIXTURE_CALLS,JSON.stringify({tool:${JSON.stringify(tool)},args:a,env:Object.fromEntries(${JSON.stringify(recorded)}.map(k=>[k,process.env[k]]))})+'\\n');
 const fail=process.env.FIXTURE_FAIL;process.exit(fail&&a.join(' ').includes(fail)?7:0);\n`;
-    for (const tool of ['go', 'python3', 'node', 'flock', 'docker', 'id', 'sg']) {
+    for (const tool of ['go', 'python3', 'node', 'flock', 'docker', 'id', 'sg', 'bash']) {
       fs.writeFileSync(path.join(directory, tool), stub(tool)); fs.chmodSync(path.join(directory, tool), 0o755);
     }
     const inherited = Object.fromEntries(cleanKeys.map(key => [key, 'fixture-inherited-value']));
@@ -184,7 +186,7 @@ const fail=process.env.FIXTURE_FAIL;process.exit(fail&&a.join(' ').includes(fail
       RESULTS_DIR: path.join(work, 'results'),
       GITHUB_EVENT_NAME: mysqlOnly ? 'workflow_dispatch' : 'push', GITHUB_EVENT_PATH: event,
       PATH: `${directory}${path.delimiter}${process.env.PATH}`, FIXTURE_CALLS: calls,
-      FIXTURE_GOPATH: directory, FIXTURE_LIST_EXIT: String(listExit), FIXTURE_FAIL: failMatching, FIXTURE_DOCKER: docker,
+      FIXTURE_GOPATH: directory, FIXTURE_LIST_EXIT: String(listExit), FIXTURE_FAIL: failMatching, FIXTURE_DOCKER: docker, FIXTURE_REAL_BASH: realBash,
     }});
     const records = fs.existsSync(calls) ? fs.readFileSync(calls, 'utf8').trim().split('\n').map(line => JSON.parse(line)).filter(r => !(r.tool === 'python3' && r.args[0] === '-')) : [];
     const checks = fs.existsSync(path.join(work, 'results', 'checks.txt')) ? fs.readFileSync(path.join(work, 'results', 'checks.txt'), 'utf8') : '';
@@ -229,7 +231,8 @@ test('gate preserves the failing status and stops before the coverage gate', () 
   assert.equal(result.status, 7); assert.equal(records.filter(r => r.tool === 'python3').length, 0);
 });
 test('package discovery failure cannot turn a partial package list into a green test run', () => {
-  for (const mode of testModes) {
+  // nightly lists no packages: the shared regression engine tests ./...
+  for (const mode of ['test', 'weekly']) {
     const {result, records} = runSuite(mode, {listExit: 17});
     assert.notEqual(result.status, 0, mode); assert.equal(goTests(records).length, 0, mode);
   }
@@ -237,10 +240,13 @@ test('package discovery failure cannot turn a partial package list into a green 
 test('nightly runs every suite even after a failure, records checks and fails at the end', () => {
   const {result, records, checks} = runSuite('nightly', {failMatching: 'go1.26.10'});
   assert.equal(result.status, 1);
-  const [file, etcd] = goTests(records);
-  assert.ok(file.args.includes('-race') && file.args.includes('-json')); assert.equal(file.env.STORE_TYPE, 'file');
-  assert.equal(etcd.env.STORE_TYPE, 'etcd'); assert.ok(etcd.args.includes('-race'));
-  assert.ok(etcd.args.includes('example.invalid/pkg/a'), 'nightly reruns every package with etcd');
+  assert.equal(goTests(records).length, 0, 'every backend runs through the shared regression engine');
+  const file = records.find(r => r.tool === 'python3' && r.args[0] === 'scripts/ci/run-store-tests.py');
+  assert.equal(file.env.STORE_TYPE, 'file'); assert.ok(file.env.RESULTS_DIR.endsWith('results'));
+  for (const launcher of ['scripts/ci/validate-etcd.sh', 'scripts/ci/validate-mongodb.sh']) {
+    assert.ok(records.some(r => r.tool === 'bash' && r.args[0] === launcher), launcher);
+  }
+  for (const backend of ['file', 'etcd', 'mysql', 'mongodb']) assert.match(checks, new RegExp(`^${backend}-full=0:${backend}-full\\.log$`, 'm'));
   for (const toolchain of ['go1.26.10', 'go1.27.3']) assert.match(checks, new RegExp(`quick-start-${toolchain}=\\d+:`));
   assert.match(checks, /quick-start-go1\.26\.10=7:/); assert.match(checks, /quick-start-go1\.27\.3=0:/);
   assert.match(checks, /mysql-full=0:mysql-full\.log/);
@@ -270,7 +276,7 @@ test('manual MySQL trial runs the full database suite and CI checks without the 
   assert.equal(goTests(records).length, 0);
   assert.match(checks, /mysql-full=7:mysql-full\.log/);
   assert.match(checks, /ci-script-tests=0:ci-script-tests\.log/);
-  assert.doesNotMatch(checks, /etcd-docs|mongodb-docs/);
+  assert.doesNotMatch(checks, /etcd-docs|mongodb-docs|file-full|etcd-full|mongodb-full/);
   assert.ok(records.some(r => r.args.includes('scripts/ci/run-mysql-tests.py')));
 });
 test('Docker guide checks use the account docker group the runner process lacks', () => {

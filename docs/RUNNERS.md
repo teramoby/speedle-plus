@@ -34,7 +34,7 @@ directly select this runner or change the trusted worker's routing policy.
 
 | Workload | Runner |
 | --- | --- |
-| Go lint/build for repository human/bot pushes, manual dispatch and human/bot same-repository PRs | Either runner via `speedle-linux` |
+| Go lint/build (including the site checks in `verify.sh`) for repository human/bot pushes, manual dispatch and human/bot same-repository PRs | Either runner via `speedle-linux` |
 | Go tests for those trusted events, both file/etcd modes | `charming-speedle` only, serializing fixed ports |
 | Go CI fork PRs, unknown actors or other events | GitHub-hosted |
 | Post-merge file-store regression (`post-merge.yml`, every push to master) | Either runner via `speedle-linux`, serialized by the host test lock; its report job is GitHub-hosted |
@@ -133,14 +133,19 @@ label for workflow validation.
 
 ## Database regression allocation
 
-MySQL validation stays on charming. MongoDB validation selects the
-`speedle-runner` label, which charming, charming-2 and fiona (macOS ARM64, also
-in the `Speedle` group) carry, and accepts macOS ARM64 or Linux x64. It shares the nightly's concurrency group, so the two
+Every test runs on these runners; only the `changes` file classification and
+the token-holding `report` jobs are GitHub-hosted. The nightly worker runs the
+same full regression, `scripts/ci/store_regression.py` (full Go and native
+PMS/ADS runtime stages), once per backend on a charming runner: file directly,
+etcd on a temporary etcd from `validate-etcd.sh`, MySQL on an owned Docker
+container from `run-mysql-tests.py`, and MongoDB on a temporary native replica
+set from `validate-mongodb.sh`. Its results reach the nightly report.
+
+`mongodb-nightly-validation.yml` runs the MongoDB regression on demand through
+`workflow_dispatch`. It selects the `speedle-runner` label, which charming,
+charming-2 and fiona (macOS ARM64, also in the `Speedle` group) carry, accepts
+macOS ARM64 or Linux x64, and shares the nightly's concurrency group, so the two
 never run at once on the etcd ports.
-The MongoDB launcher owns a temporary native replica set, and both launchers use
-`scripts/ci/store_regression.py` for the same full Go and native PMS/ADS runtime
-stages. It is scheduled every day at 17:00 UTC (01:00 GMT+8), with the MySQL
-nightly, and runs on demand through `workflow_dispatch`.
 
 Shared integration fixtures select `file`, `etcd`, `mongodb` or `mysql` through
 `STORE_TYPE`. `SPEEDLE_TEST_STORE_PROPS` supplies backend connection properties;

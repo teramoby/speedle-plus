@@ -4,6 +4,8 @@
 package etcd
 
 import (
+	"context"
+	"encoding/json"
 	"fmt"
 	"strconv"
 	"testing"
@@ -180,7 +182,7 @@ func TestGetRequests(t *testing.T) {
 		i++
 	}
 	fmt.Println("starting get requests, time is:", time.Now())
-	requests, _, err := s.(*Store).GetRequests(DiscoverPrefix, 100)
+	requests, _, err := s.(*Store).GetRequests(s.(*Store).discoverPrefix(), 100)
 	fmt.Println("finish get requests, time is:", time.Now())
 	if err != nil {
 		t.Errorf("failed to GetRequests: %v", err)
@@ -348,4 +350,60 @@ func TestGeneratePolicies(t *testing.T) {
 		}
 	}
 
+}
+
+func newDiscoverStore(t *testing.T, keyPrefix string) *Store {
+	t.Helper()
+	props := map[string]interface{}{EtcdEndpointKey: etcdStoreConfig(t).StoreProps[EtcdEndpointKey]}
+	if keyPrefix != "" {
+		props[EtcdKeyPrefixKey] = keyPrefix
+	}
+	s, err := store.NewStore(StoreType, props)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { s.(*Store).destroy() })
+	return s.(*Store)
+}
+
+func discoverRequest(serviceName string) *ads.RequestContext {
+	subject := ads.Subject{Principals: []*ads.Principal{{Type: "user", Name: "alice"}}}
+	return &ads.RequestContext{Subject: &subject, ServiceName: serviceName, Resource: "res", Action: "read", Attributes: map[string]interface{}{}}
+}
+
+func TestDiscoverRequestsStayWithTheirKeyPrefix(t *testing.T) {
+	first, second := newDiscoverStore(t, "/discover-first/"), newDiscoverStore(t, "/discover-second/")
+	t.Cleanup(func() { first.ResetDiscoverRequests(""); second.ResetDiscoverRequests("") })
+	if err := first.SaveDiscoverRequest(discoverRequest("scoped")); err != nil {
+		t.Fatal(err)
+	}
+	if requests, _, err := second.GetDiscoverRequests("scoped"); err != nil || len(requests) != 0 {
+		t.Fatalf("another key prefix sees requests = %v, %v", requests, err)
+	}
+	if err := second.ResetDiscoverRequests(""); err != nil {
+		t.Fatal(err)
+	}
+	if requests, _, err := first.GetDiscoverRequests("scoped"); err != nil || len(requests) != 1 {
+		t.Fatalf("own requests after another prefix's reset = %v, %v", requests, err)
+	}
+}
+
+func TestDefaultKeyPrefixKeepsEarlierDiscoverRequests(t *testing.T) {
+	s := newDiscoverStore(t, "")
+	if s.KeyPrefix != DefaultKeyPrefix {
+		t.Fatalf("key prefix = %q", s.KeyPrefix)
+	}
+	t.Cleanup(func() { s.ResetDiscoverRequests("legacy") })
+	// A request as stores recorded it before discover requests were scoped.
+	value, err := json.Marshal(discoverRequest("legacy"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.client.Put(context.Background(), "/isAllowedRequests/legacy/"+time.Now().String(), string(value)); err != nil {
+		t.Fatal(err)
+	}
+	request, _, err := s.GetLastDiscoverRequest("legacy")
+	if err != nil || request == nil || request.ServiceName != "legacy" {
+		t.Fatalf("earlier request = %v, %v", request, err)
+	}
 }
