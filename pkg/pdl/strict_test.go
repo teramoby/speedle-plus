@@ -3,6 +3,7 @@ package pdl
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/teramoby/speedle-plus/api/pms"
 	"github.com/teramoby/speedle-plus/testutil/pdltest"
 	"reflect"
 	"strings"
@@ -32,9 +33,12 @@ func TestQuotedAndWhitespaceAST(t *testing.T) {
 	if !reflect.DeepEqual(p.Principals, [][]string{{"idd=corp:user:alice", "group:devs"}, {"role:admin"}}) || p.Condition != "x > 0" || p.Permissions[0].Resource != "book#1" {
 		t.Fatalf("AST %+v", p)
 	}
-	var decoded interface{}
+	var decoded pms.Policy
 	if err := json.NewDecoder(reader).Decode(&decoded); err != nil {
 		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(*p, decoded) {
+		t.Fatalf("JSON round trip: %+v != %+v", p, decoded)
 	}
 	p, _, err = ParsePolicy(`grant user "ali'ce" read 'book"one'`, "")
 	if err != nil || p.Principals[0][0] != "user:ali'ce" || p.Permissions[0].Resource != `book"one` {

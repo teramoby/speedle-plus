@@ -186,3 +186,19 @@ func FuzzCheckSPDL(f *testing.F) {
 		}
 	})
 }
+
+func TestSPDLLiteralBackslashAndEscapedConditionComments(t *testing.T) {
+	for _, line := range []string{
+		`grant user 'a\' read 'book#1' # comment`,
+		`grant user "a'b" read 'book#1' if x == 'a\' # b' # comment`,
+		`grant user if read 'book#1' # comment`,
+	} {
+		ps, errs := CheckSPDL(strings.NewReader("[service.app]\n[policy]\n"+line+"\n"), "quotes.spdl")
+		if len(errs) > 0 {
+			t.Fatalf("%s: %v", line, errs)
+		}
+		if ps.Services[0].Policies[0].Permissions[0].Resource != "book#1" {
+			t.Fatal("resource truncated")
+		}
+	}
+}

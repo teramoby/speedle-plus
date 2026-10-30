@@ -9,6 +9,8 @@ import (
 	"io"
 	"os"
 	"strings"
+	"unicode"
+	"unicode/utf8"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/teramoby/speedle-plus/api/pms"
@@ -236,18 +238,26 @@ func determineType(lc *lineCtx) error {
 	lc.trimed = lc.origin
 	// Trim comments
 	var quote byte
+	inCondition := false
 	for i := 0; i < len(lc.origin); i++ {
 		c := lc.origin[i]
 		if quote != 0 {
-			if c == '\\' && i+1 < len(lc.origin) {
+			if inCondition && c == '\\' && i+1 < len(lc.origin) {
 				i++
 				continue
 			}
 			if c == quote {
 				quote = 0
 			}
-		} else if c == '\'' || c == '"' {
+		} else if (c == '\'' || c == '"') && (inCondition || i == 0 || nameBoundary(lc.origin[:i])) {
 			quote = c
+		} else if !inCondition && i+2 <= len(lc.origin) && strings.EqualFold(lc.origin[i:i+2], "if") && (i == 0 || nameBoundary(lc.origin[:i])) && (i+2 == len(lc.origin) || startsSpace(lc.origin[i+2:])) {
+			// Name quotes keep backslashes literal. Expression strings use
+			// escaping. A valid statement prefix distinguishes the condition
+			// keyword from principals/resources whose name happens to be if.
+			_, _, policyErr := pdl.ParsePolicy(lc.origin[:i], "")
+			_, _, roleErr := pdl.ParseRolePolicy(lc.origin[:i], "")
+			inCondition = policyErr == nil || roleErr == nil
 		} else if c == '#' {
 			lc.trimed = lc.origin[:i]
 			break
@@ -301,3 +311,9 @@ func readLine(r *bufio.Reader, lc *lineCtx) error {
 
 	return nil
 }
+
+func nameBoundary(prefix string) bool {
+	r, _ := utf8.DecodeLastRuneInString(prefix)
+	return unicode.IsSpace(r) || r == ',' || r == '('
+}
+func startsSpace(text string) bool { r, _ := utf8.DecodeRuneInString(text); return unicode.IsSpace(r) }
