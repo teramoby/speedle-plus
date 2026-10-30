@@ -24,6 +24,12 @@ set -euo pipefail
 cd "$(dirname "$0")/../.."
 
 mode=${1:?usage: run-go-tests.sh gate|nightly|weekly|regression}
+# Docker Desktop on macOS pulls images through docker-credential-desktop,
+# which lives in the app bundle; a runner service's PATH does not include it.
+docker_desktop_bin=/Applications/Docker.app/Contents/Resources/bin
+if [[ "$(uname -s)" == Darwin && -x "${docker_desktop_bin}/docker-credential-desktop" ]]; then
+  export PATH="${PATH}:${docker_desktop_bin}"
+fi
 results=${RESULTS_DIR:-test-results}
 
 # The gate reruns only these packages with etcd; nightly reruns every
