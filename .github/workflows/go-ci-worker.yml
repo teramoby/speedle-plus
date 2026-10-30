@@ -15,11 +15,15 @@ jobs:
     name: execute
     # The runner group accepts only this callee at refs/heads/master. Never
     # derive runner eligibility or checkout revision from caller inputs.
-    # Nightly and post-merge regression can use either charming runner; the
-    # host lock below protects legacy fixed-port tests shared by both instances.
+    # Lint, test and post-merge regression go to any Speedle runner
+    # (speedle-runner: both charming instances and fiona). Build needs the
+    # Linux Hugo release and nightly needs Docker, so both stay on the charming
+    # pool; weekly stays on the original runner. The host lock below keeps
+    # fixed-port tests from overlapping on the charming host.
     runs-on: >-
-      ${{ github.repository == 'teramoby/speedle-plus' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'schedule' && github.ref == 'refs/heads/master') || (github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.event.sender.type == 'User' || github.event.sender.type == 'Bot')) || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && (github.event.pull_request.user.type == 'User' || github.event.pull_request.user.type == 'Bot'))) && fromJSON((inputs.mode == 'test' || inputs.mode == 'weekly') && '["self-hosted","Linux","X64","charming-speedle"]' || '["self-hosted","Linux","X64","speedle-linux"]') || 'ubuntu-latest' }}
-    timeout-minutes: ${{ (inputs.mode == 'nightly' || inputs.mode == 'weekly' || inputs.mode == 'regression') && 150 || 30 }}
+      ${{ github.repository == 'teramoby/speedle-plus' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'schedule' && github.ref == 'refs/heads/master') || (github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.event.sender.type == 'User' || github.event.sender.type == 'Bot')) || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && (github.event.pull_request.user.type == 'User' || github.event.pull_request.user.type == 'Bot'))) && fromJSON(inputs.mode == 'weekly' && '["self-hosted","Linux","X64","charming-speedle"]' || (inputs.mode == 'build' || inputs.mode == 'nightly') && '["self-hosted","Linux","X64","speedle-linux"]' || '["self-hosted","speedle-runner"]') || 'ubuntu-latest' }}
+    # test can wait on the host lock behind a nightly on the other charming runner.
+    timeout-minutes: ${{ (inputs.mode == 'nightly' || inputs.mode == 'weekly' || inputs.mode == 'regression' || inputs.mode == 'test') && 150 || 30 }}
     steps:
       - name: Validate CI task
         env:
@@ -34,9 +38,13 @@ jobs:
           CI_TASK: ${{ inputs.mode }}
         run: |
           set -euo pipefail
-          case "${RUNNER_NAME}" in charming-speedle|charming-speedle-2) ;; *) echo 'Unexpected runner.' >&2; exit 1 ;; esac
-          case "${CI_TASK}" in test|weekly) test "${RUNNER_NAME}" = charming-speedle ;; esac
-          test "${RUNNER_OS}" = Linux
+          case "${RUNNER_NAME}/${RUNNER_OS}/${RUNNER_ARCH}" in
+            charming-speedle/Linux/X64|charming-speedle-2/Linux/X64) ;;
+            fiona-speedle/macOS/ARM64)
+              case "${CI_TASK}" in lint|test|regression) ;; *) echo "Task ${CI_TASK} needs a Linux runner." >&2; exit 1 ;; esac ;;
+            *) echo 'Unexpected runner.' >&2; exit 1 ;;
+          esac
+          case "${CI_TASK}" in weekly) test "${RUNNER_NAME}" = charming-speedle ;; esac
           command -v git >/dev/null
           command -v python3 >/dev/null
           echo "Using runner ${RUNNER_NAME} (${RUNNER_OS}/${RUNNER_ARCH})."

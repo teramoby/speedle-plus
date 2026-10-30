@@ -6,13 +6,19 @@
 this public repository. It does not reuse or change `pavulabs` registrations or
 the `teramoby` default group's access policy.
 
-ReviewBot and Go lint/build select `[self-hosted, Linux, X64, speedle-linux]`,
-which both instances carry. Fixed-port Go tests select
+`fiona-speedle` (macOS ARM64) is a third runner in the same group. All three
+carry `speedle-runner`; only the two charming instances carry `speedle-linux`.
+
+ReviewBot and Go lint, test and post-merge regression select
+`[self-hosted, speedle-runner]`, so any of the three may take them. Go build
+(it needs the Linux Hugo release and `sha256sum`) and the nightly (it needs
+Docker) select `[self-hosted, Linux, X64, speedle-linux]`. The weekly selects
 `[self-hosted, Linux, X64, charming-speedle]`, exclusive to the original instance.
-A runner administrator must keep `speedle-linux` exclusive to these two named
-instances; adding another host would also admit it to credential-bearing jobs.
-A runner name alone is not a scheduling label. Keep the test label exclusive so
-two registrations on the same physical host cannot run these tests concurrently.
+A runner administrator must keep `speedle-runner` and `speedle-linux` exclusive
+to these named instances; adding another host would also admit it to
+credential-bearing jobs. A runner name alone is not a scheduling label. The two
+charming registrations share a physical host, so fixed-port tests there take
+the host test lock (`/tmp/speedle-plus-test-services.lock`) and never overlap.
 Each registration must use its own runner installation and work directory.
 
 The `speedle-control` label belongs only to `charming-speedle-2`. ReviewBot's
@@ -34,14 +40,15 @@ directly select this runner or change the trusted worker's routing policy.
 
 | Workload | Runner |
 | --- | --- |
-| Go lint/build (including the site checks in `verify.sh`) for repository human/bot pushes, manual dispatch and human/bot same-repository PRs | Either runner via `speedle-linux` |
-| Go tests for those trusted events, both file/etcd modes | `charming-speedle` only, serializing fixed ports |
+| Go lint for repository human/bot pushes, manual dispatch and human/bot same-repository PRs | Any runner via `speedle-runner` |
+| Go build (including the site checks in `verify.sh`) for those trusted events | Either charming runner via `speedle-linux` |
+| Go tests for those trusted events, both file/etcd modes | Any runner via `speedle-runner`, serialized by the host test lock |
 | Go CI fork PRs, unknown actors or other events | GitHub-hosted |
-| Post-merge file-store regression (`post-merge.yml`, every push to master) | Either runner via `speedle-linux`, serialized by the host test lock; its report job is GitHub-hosted |
-| ReviewBot human/bot same-repository PR analysis/publication | Either runner via `speedle-linux` |
+| Post-merge file-store regression (`post-merge.yml`, every push to master) | Any runner via `speedle-runner`, serialized by the host test lock; its report job is GitHub-hosted |
+| ReviewBot human/bot same-repository PR analysis/publication | Any runner via `speedle-runner` |
 | ReviewBot fork PRs or unknown authors | GitHub-hosted |
 | Dependency auto-merge waiter | `charming-speedle-2` via `speedle-control` |
-| ReviewBot regression dispatch and authorized command analysis/publication | Either runner via `speedle-linux` |
+| ReviewBot regression dispatch and authorized command analysis/publication | Any runner via `speedle-runner` |
 | Public comment authorization and unprivileged inline-comment pointer | GitHub-hosted |
 
 Fork code must not be routed to this persistent host. The inline pointer is also
@@ -112,8 +119,9 @@ gh workflow run reviewbot.yml --ref master
 gh workflow run ci.yml --ref master
 ```
 
-Inspect each run's jobs and confirm `runner_name` is `charming-speedle` or
-`charming-speedle-2` for pooled jobs, and only `charming-speedle` for Go tests.
+Inspect each run's jobs and confirm `runner_name` is one of the three Speedle
+runners for `speedle-runner` jobs, a charming runner for build and nightly,
+and only `charming-speedle` for the weekly.
 The regression job prints its workspace and temp paths; verify both registrations
 have distinct paths. An online/idle runner listing alone does not prove checkout,
 tool setup, tests or model connectivity work. The dedicated routing regression
@@ -167,6 +175,6 @@ results are uploaded as `fiona-nightly-results`. Its concurrency group remains
 commands CI uses: `lint` (go vet, go mod tidy check), `test` (the merge gate,
 `run-go-tests.sh gate`), `regression` (the post-merge regression) or `reviewbot`
 (ReviewBot's tool and Ark reachability checks and its fixture suites, with no
-credentials). `test` and `regression` hold the host test lock. CI routing stays
-unchanged until each trial passes on fiona; `build` stays on Linux because it
-needs the Linux Hugo release and `sha256sum`.
+credentials). `test` and `regression` hold the host test lock. All four passed on
+fiona before CI routed these tasks to `speedle-runner`; `build` stays on Linux
+because it needs the Linux Hugo release and `sha256sum`.

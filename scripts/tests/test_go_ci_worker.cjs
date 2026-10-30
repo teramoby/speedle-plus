@@ -11,6 +11,10 @@ const vm = require('node:vm');
 const source = fs.readFileSync(path.resolve(__dirname, '../../.github/workflows/go-ci-worker.yml'), 'utf8');
 const expected = ['self-hosted', 'Linux', 'X64', 'charming-speedle'];
 const pool = ['self-hosted', 'Linux', 'X64', 'speedle-linux'];
+const anyRunner = ['self-hosted', 'speedle-runner'];
+// lint, test and regression may run on any Speedle runner; build and nightly
+// need the Linux pool and weekly stays on the original runner.
+const routeFor = mode => mode === 'weekly' ? expected : ['build', 'nightly'].includes(mode) ? pool : anyRunner;
 const repository = 'teramoby/speedle-plus';
 function step(name) {
   const parts = source.split(`      - name: ${name}\n`);
@@ -73,7 +77,7 @@ test('worker owns runner selection and exposes only the mode input, never a call
   assert.match(step('Setup Go'), /go-version: '1\.26'/);
   assert.doesNotMatch(source, /secrets:|secrets\.inherit|\$\{\{\s*inputs\.(?:ref|sha|runner|store_type)/);
 });
-test('trusted events pool lint/build/nightly while test and weekly stay on the original runner', () => {
+test('trusted events send lint/test/regression to any Speedle runner, build/nightly to Linux and weekly to runner 1', () => {
   const push = context('push'), dispatch = context('workflow_dispatch');
   push.event = {sender: {type: 'User'}}; dispatch.event = {sender: {type: 'User'}};
   const merged = context('push'); merged.ref = 'refs/heads/master'; merged.event = {sender: {type: 'Bot'}};
@@ -82,7 +86,7 @@ test('trusted events pool lint/build/nightly while test and weekly stay on the o
   const botTag = context('push'); botTag.event.sender.type = 'Bot'; botTag.ref = 'refs/tags/release';
   const scheduled = context('schedule'); scheduled.ref = 'refs/heads/master'; scheduled.event = {};
   for (const github of [push, dispatch, context('pull_request'), merged, botPR, botPush, botTag, scheduled]) {
-    for (const mode of allModes) assert.deepEqual(route(github, {mode}), ['test', 'weekly'].includes(mode) ? expected : pool);
+    for (const mode of allModes) assert.deepEqual(route(github, {mode}), routeFor(mode), mode);
   }
 });
 test('forks, missing metadata, copied repositories and off-master schedules stay hosted regardless of inputs', () => {
@@ -106,14 +110,19 @@ test('forks, missing metadata, copied repositories and off-master schedules stay
     }
   }
 });
-test('identity check accepts both pool runners but keeps fixed-port test modes on runner 1', () => {
-  for (const RUNNER_NAME of ['charming-speedle', 'charming-speedle-2', 'unexpected-host']) {
+test('identity check accepts the three Speedle runners for the tasks each may run', () => {
+  const runners = [['charming-speedle', 'Linux', 'X64'], ['charming-speedle-2', 'Linux', 'X64'], ['fiona-speedle', 'macOS', 'ARM64'],
+    ['fiona-speedle', 'Linux', 'X64'], ['charming-speedle', 'macOS', 'ARM64'], ['unexpected-host', 'Linux', 'X64']];
+  for (const [RUNNER_NAME, RUNNER_OS, RUNNER_ARCH] of runners) {
     for (const CI_TASK of allModes) {
       const result = spawnSync('bash', ['-c', script('Verify self-hosted runner identity')], {
-        encoding: 'utf8', env: {...process.env, RUNNER_NAME, RUNNER_OS: 'Linux', RUNNER_ARCH: 'X64', CI_TASK},
+        encoding: 'utf8', env: {...process.env, RUNNER_NAME, RUNNER_OS, RUNNER_ARCH, CI_TASK},
       });
-      const allowed = RUNNER_NAME === 'charming-speedle' || (RUNNER_NAME === 'charming-speedle-2' && !['test', 'weekly'].includes(CI_TASK));
-      assert.equal(result.status === 0, allowed, `${RUNNER_NAME}/${CI_TASK}: ${result.stderr}`);
+      const host = `${RUNNER_NAME}/${RUNNER_OS}/${RUNNER_ARCH}`;
+      const allowed = host === 'charming-speedle/Linux/X64' ||
+        (host === 'charming-speedle-2/Linux/X64' && CI_TASK !== 'weekly') ||
+        (host === 'fiona-speedle/macOS/ARM64' && ['lint', 'test', 'regression'].includes(CI_TASK));
+      assert.equal(result.status === 0, allowed, `${host}/${CI_TASK}: ${result.stderr}`);
     }
   }
 });

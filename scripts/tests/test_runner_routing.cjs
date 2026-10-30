@@ -7,7 +7,7 @@ const vm = require('node:vm');
 
 const root = path.resolve(__dirname, '../..');
 const canonical = 'teramoby/speedle-plus';
-const labels = ['self-hosted', 'Linux', 'X64', 'speedle-linux'];
+const labels = ['self-hosted', 'speedle-runner'];
 const controlLabels = ['self-hosted', 'Linux', 'X64', 'speedle-control'];
 const read = name => fs.readFileSync(path.join(root, '.github/workflows', name), 'utf8');
 const sources = {
@@ -237,8 +237,8 @@ test('fixture job installs pinned Node 22 before running Node regression suites'
   assert.match(setup, /node-version: '22'/);
   assert.ok(block.indexOf('Set up Node for regression tests') < block.indexOf('node --test'));
   const preflight = script(block, 'Verify runner identity and tools');
-  assert.match(preflight, /case "\$\{RUNNER_NAME\}" in charming-speedle\|charming-speedle-2\)/);
-  assert.match(preflight, /test "\$\{RUNNER_OS\}" = Linux/);
+  assert.match(preflight, /charming-speedle\/Linux\/X64\|charming-speedle-2\/Linux\/X64\|fiona-speedle\/macOS\/ARM64\) ;;/);
+  assert.match(preflight, /\*\) echo 'Unexpected runner.' >&2; exit 1 ;;/);
   for (const tool of ['git', 'curl', 'jq', 'python3']) assert.ok(preflight.includes(tool));
   assert.ok(preflight.includes('https://ark.cn-beijing.volces.com/api/plan/v3/responses'));
   assert.doesNotMatch(preflight, /Authorization|ARK_API_KEY|--data|--request\s+POST/);
