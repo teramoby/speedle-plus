@@ -9,10 +9,10 @@ the `teramoby` default group's access policy.
 `fiona-speedle` (macOS ARM64) is a third runner in the same group. All three
 carry `speedle-runner`; only the two charming instances carry `speedle-linux`.
 
-ReviewBot and Go lint, test and post-merge regression select
+ReviewBot and Go lint, test, post-merge regression and the nightly select
 `[self-hosted, speedle-runner]`, so any of the three may take them. Go build
-(it needs the Linux Hugo release and `sha256sum`) and the nightly (it needs
-Docker) select `[self-hosted, Linux, X64, speedle-linux]`. The weekly selects
+(it needs the Linux Hugo release and `sha256sum`) selects
+`[self-hosted, Linux, X64, speedle-linux]`. The weekly selects
 `[self-hosted, Linux, X64, charming-speedle]`, exclusive to the original instance.
 A runner administrator must keep `speedle-runner` and `speedle-linux` exclusive
 to these named instances; adding another host would also admit it to
@@ -120,7 +120,7 @@ gh workflow run ci.yml --ref master
 ```
 
 Inspect each run's jobs and confirm `runner_name` is one of the three Speedle
-runners for `speedle-runner` jobs, a charming runner for build and nightly,
+runners for `speedle-runner` jobs (including the nightly), a charming runner for build,
 and only `charming-speedle` for the weekly.
 The regression job prints its workspace and temp paths; verify both registrations
 have distinct paths. An online/idle runner listing alone does not prove checkout,
@@ -144,7 +144,7 @@ label for workflow validation.
 Every test runs on these runners; only the `changes` file classification and
 the token-holding `report` jobs are GitHub-hosted. The nightly worker runs the
 same full regression, `scripts/ci/store_regression.py` (full Go and native
-PMS/ADS runtime stages), once per backend on a charming runner: file directly,
+PMS/ADS runtime stages), once per backend on any Speedle runner: file directly,
 etcd on a temporary etcd from `validate-etcd.sh`, MySQL on an owned Docker
 container from `run-mysql-tests.py`, and MongoDB on a temporary native replica
 set from `validate-mongodb.sh`. Its results reach the nightly report.
@@ -167,14 +167,19 @@ four stores, executable guides, supported Go releases and CI script checks.
 It uses the nightly host lock, port preflight and sanitized test environment;
 results are uploaded as `fiona-nightly-results`. Its concurrency group remains
 `nightly-tests`. Use `install_flock: true` if the existing macOS host lacks
-`flock`. No scheduled nightly routing changes until this trial passes.
+`flock`. The nightly moved to `speedle-runner` after this trial passed on fiona
+with Docker Desktop running. On macOS, `run-go-tests.sh` gives Docker a copy of
+the user's config without its keychain credential store, which a runner
+service cannot open; the test images are public.
 
 ## Fiona CI trial
 
 `ci_trial` on the same workflow runs one CI task on `fiona-speedle` with the
 commands CI uses: `lint` (go vet, go mod tidy check), `test` (the merge gate,
-`run-go-tests.sh gate`), `regression` (the post-merge regression) or `reviewbot`
+`run-go-tests.sh gate`), `regression` (the post-merge regression), `weekly`
+(`run-go-tests.sh weekly`) or `reviewbot`
 (ReviewBot's tool and Ark reachability checks and its fixture suites, with no
-credentials). `test` and `regression` hold the host test lock. All four passed on
-fiona before CI routed these tasks to `speedle-runner`; `build` stays on Linux
+credentials). `test`, `regression` and `weekly` hold the host test lock. lint,
+test, regression and reviewbot passed on fiona before CI routed them to
+`speedle-runner`; the weekly stays on `charming-speedle` until its trial passes; `build` stays on Linux
 because it needs the Linux Hugo release and `sha256sum`.

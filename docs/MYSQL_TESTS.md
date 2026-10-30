@@ -10,11 +10,12 @@ unsupported response; the supported backends retain their Discover tests.
 (01:00 Asia/Shanghai). GitHub schedules execute the workflow on the default
 branch, so a workflow change in an unmerged PR does not activate the schedule.
 
-Trusted nightly jobs use the `speedle-linux` self-hosted runner pool on charming:
-`charming-speedle` and `charming-speedle-2`. The first runner's registered name
-does not have a `-1` suffix. The worker holds a host-wide `flock` before checking
-legacy fixed test ports and running tests, to serialize their use across the
-two runner processes. It refuses occupied ports without stopping host services.
+Trusted nightly jobs use any Speedle runner via `speedle-runner`:
+`charming-speedle`, `charming-speedle-2` or `fiona-speedle` (macOS ARM64 with
+Docker Desktop). The first runner's registered name does not have a `-1` suffix.
+The worker holds a host-wide `flock` before checking legacy fixed test ports and
+running tests, to serialize their use across the two charming runner processes,
+which share a host. It refuses occupied ports without stopping host services.
 The protected reusable worker is loaded from `master`; candidate worker changes
 take effect after merge.
 

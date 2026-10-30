@@ -171,7 +171,7 @@ test('every test job runs on the Speedle runners; only classification and report
   assert.equal(route(job.mongodb.mongodb, pinned), 'speedle-macos');
   const trial = github('workflow_dispatch', canonical, {event: {inputs: {runner: 'speedle-linux', nightly_trial: 'true'}}});
   assert.equal(route(job.mongodb.mongodb, trial), 'fiona-speedle');
-  for (const task of ['lint', 'test', 'regression', 'reviewbot']) {
+  for (const task of ['lint', 'test', 'regression', 'weekly', 'reviewbot']) {
     const ci = github('workflow_dispatch', canonical, {event: {inputs: {runner: 'speedle-linux', ci_trial: task}}});
     assert.equal(route(job.mongodb.mongodb, ci), 'fiona-speedle', task);
   }
@@ -258,7 +258,7 @@ test('Fiona trial runs the complete nightly script with host isolation and separ
   assert.match(sources.mongodb, /run-mysql-tests.py --cleanup/);
 });
 test('Fiona CI trial runs the worker and ReviewBot commands without touching CI routing', () => {
-  assert.match(sources.mongodb, /options: \[none, lint, test, regression, reviewbot\]/);
+  assert.match(sources.mongodb, /options: \[none, lint, test, regression, weekly, reviewbot\]/);
   const trial = job.mongodb.mongodb.split('      - name: CI trial on Fiona\n')[1].split('      - name:', 1)[0];
   assert.match(trial, /nightly_trial != 'true' && github.event.inputs.inventory_only != 'true'/);
   assert.match(trial, /test "\$\{RUNNER_NAME\}\/\$\{RUNNER_OS\}\/\$\{RUNNER_ARCH\}" = fiona-speedle\/macOS\/ARM64/);
@@ -266,6 +266,7 @@ test('Fiona CI trial runs the worker and ReviewBot commands without touching CI 
   assert.match(trial, /flock -w 7200 9/);
   assert.match(trial, /test\) bash scripts\/ci\/run-go-tests.sh gate ;;/);
   assert.match(trial, /regression\) bash scripts\/ci\/run-go-tests.sh regression ;;/);
+  assert.match(trial, /weekly\) bash scripts\/ci\/run-go-tests.sh weekly ;;/);
   assert.match(trial, /node --test scripts\/tests\/test_reviewbot_commands.cjs/);
   assert.doesNotMatch(trial, /secrets\.|ARK_API_KEY|Authorization/);
 });

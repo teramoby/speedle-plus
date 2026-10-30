@@ -12,9 +12,9 @@ const source = fs.readFileSync(path.resolve(__dirname, '../../.github/workflows/
 const expected = ['self-hosted', 'Linux', 'X64', 'charming-speedle'];
 const pool = ['self-hosted', 'Linux', 'X64', 'speedle-linux'];
 const anyRunner = ['self-hosted', 'speedle-runner'];
-// lint, test and regression may run on any Speedle runner; build and nightly
-// need the Linux pool and weekly stays on the original runner.
-const routeFor = mode => mode === 'weekly' ? expected : ['build', 'nightly'].includes(mode) ? pool : anyRunner;
+// lint, test, regression and nightly may run on any Speedle runner; build
+// needs the Linux pool and weekly stays on the original runner.
+const routeFor = mode => mode === 'weekly' ? expected : mode === 'build' ? pool : anyRunner;
 const repository = 'teramoby/speedle-plus';
 function step(name) {
   const parts = source.split(`      - name: ${name}\n`);
@@ -121,7 +121,7 @@ test('identity check accepts the three Speedle runners for the tasks each may ru
       const host = `${RUNNER_NAME}/${RUNNER_OS}/${RUNNER_ARCH}`;
       const allowed = host === 'charming-speedle/Linux/X64' ||
         (host === 'charming-speedle-2/Linux/X64' && CI_TASK !== 'weekly') ||
-        (host === 'fiona-speedle/macOS/ARM64' && ['lint', 'test', 'regression'].includes(CI_TASK));
+        (host === 'fiona-speedle/macOS/ARM64' && ['lint', 'test', 'regression', 'nightly'].includes(CI_TASK));
       assert.equal(result.status === 0, allowed, `${host}/${CI_TASK}: ${result.stderr}`);
     }
   }
