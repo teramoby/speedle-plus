@@ -12,6 +12,12 @@ on:
         type: boolean
         default: false
 
+      stores_only:
+        description: Run all four stores including feature stress and fuzz (manual trial)
+        required: false
+        type: boolean
+        default: false
+
 permissions:
   contents: read
 
@@ -35,7 +41,7 @@ jobs:
   report:
     name: report
     needs: run
-    if: always() && github.repository == 'teramoby/speedle-plus' && !(github.event_name == 'workflow_dispatch' && inputs.mysql_only)
+    if: always() && github.repository == 'teramoby/speedle-plus' && !(github.event_name == 'workflow_dispatch' && (inputs.mysql_only || inputs.stores_only))
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:

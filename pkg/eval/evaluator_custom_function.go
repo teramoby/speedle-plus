@@ -7,7 +7,6 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
 	"strings"
@@ -127,7 +126,10 @@ func (frc *FuncResultCache) generateCustomerExpressionFunction(cfdUrl *string, c
 		request := &ext.CustomerFunctionRequest{
 			Params: params,
 		}
-		key := getKey(cf.Name, arguments)
+		key, keyErr := getKey(cf.Name, arguments)
+		if keyErr != nil {
+			return nil, keyErr
+		}
 		var result interface{}
 		var err error
 		if result = frc.ReadFromCache(key, cf); result != nil {
@@ -145,8 +147,13 @@ func (frc *FuncResultCache) generateCustomerExpressionFunction(cfdUrl *string, c
 	}, nil
 }
 
-func getKey(funcName string, arguments []interface{}) string {
-	return fmt.Sprintf("%s(%v)", funcName, arguments)
+func getKey(funcName string, arguments []interface{}) (string, error) {
+	// JSON matches the function wire format and preserves type/argument boundaries.
+	data, err := json.Marshal(arguments)
+	if err != nil {
+		return "", err
+	}
+	return funcName + "(" + string(data) + ")", nil
 }
 
 func isFunc(key, funcName string) bool {

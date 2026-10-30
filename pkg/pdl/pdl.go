@@ -11,6 +11,7 @@ import (
 	"io"
 	"strings"
 	"unicode"
+	"unicode/utf8"
 
 	"github.com/teramoby/speedle-plus/api/ads"
 	"github.com/teramoby/speedle-plus/api/pms"
@@ -27,6 +28,9 @@ const (
 
 // ParsePolicy parses a line to a policy object
 func ParsePolicy(cmd, name string) (*pms.Policy, io.Reader, error) {
+	if !utf8.ValidString(cmd) {
+		return nil, nil, getError("Invalid UTF-8", cmd, 0)
+	}
 	effect, i, err := getEffect(cmd)
 	if err != nil {
 		return nil, nil, err
@@ -43,11 +47,14 @@ func ParsePolicy(cmd, name string) (*pms.Policy, io.Reader, error) {
 		//lint:ignore ST1005 Preserve the public parser error text for existing callers.
 		return nil, nil, errors.New("No permission found")
 	}
-	condition, _, err := getCondition(cmd, i)
+	condition, end, err := getCondition(cmd, i)
 	if err != nil {
 		return nil, nil, err
 	}
 
+	if skipSpaces(cmd, end) != len(cmd) {
+		return nil, nil, getError("Unexpected trailing input", cmd, end)
+	}
 	policy := pms.Policy{
 		Name:        name,
 		Effect:      effect,
@@ -61,6 +68,9 @@ func ParsePolicy(cmd, name string) (*pms.Policy, io.Reader, error) {
 
 // ParseRolePolicy parses a line to a role policy object
 func ParseRolePolicy(cmd, name string) (*pms.RolePolicy, io.Reader, error) {
+	if !utf8.ValidString(cmd) {
+		return nil, nil, getError("Invalid UTF-8", cmd, 0)
+	}
 	effect, i, err := getEffect(cmd)
 	if err != nil {
 		return nil, nil, err
@@ -81,9 +91,12 @@ func ParseRolePolicy(cmd, name string) (*pms.RolePolicy, io.Reader, error) {
 	if err != nil {
 		return nil, nil, err
 	}
-	condition, _, err := getCondition(cmd, i)
+	condition, end, err := getCondition(cmd, i)
 	if err != nil {
 		return nil, nil, err
+	}
+	if skipSpaces(cmd, end) != len(cmd) {
+		return nil, nil, getError("Unexpected trailing input", cmd, end)
 	}
 	rolePolicy := pms.RolePolicy{
 		Name:                name,
@@ -105,15 +118,30 @@ func toJSON(i interface{}) io.Reader {
 	return buf
 }
 
+// keyword recognizes a whole keyword followed by whitespace or EOF.
+func keyword(cmd string, i int, word string) (int, bool) {
+	end := i + len(word)
+	if end > len(cmd) || !strings.EqualFold(cmd[i:end], word) {
+		return i, false
+	}
+	if end == len(cmd) {
+		return end, true
+	}
+	r, size := utf8.DecodeRuneInString(cmd[end:])
+	if !unicode.IsSpace(r) {
+		return i, false
+	}
+	return end + size, true
+}
+
 func getEffect(cmd string) (string, int, error) {
 	i := skipSpaces(cmd, 0)
-	if (i+6 <= len(cmd)) && strings.EqualFold("grant ", cmd[i:i+6]) {
-		return grant, i + 6, nil
-	} else if i+5 <= len(cmd) && strings.EqualFold("deny ", cmd[i:i+5]) {
-		return deny, i + 5, nil
-	} else {
-		return "", -1, getError("Not found valid effect", cmd, i)
+	for _, effect := range []string{grant, deny} {
+		if end, ok := keyword(cmd, i, effect); ok {
+			return effect, end, nil
+		}
 	}
+	return "", -1, getError("Not found valid effect", cmd, i)
 }
 
 func getRolePolicyPrincipals(cmd string, i int) ([]string, int, error) {
@@ -245,20 +273,15 @@ func getPrincipal(cmd string, i int) (string, int, error) {
 	i = skipSpaces(cmd, i)
 
 	var principal ads.Principal
-	if (i+5 <= len(cmd)) && strings.EqualFold("user ", cmd[i:i+5]) {
-		i += 5
-		principal.Type = ads.PRINCIPAL_TYPE_USER
-	} else if i+6 <= len(cmd) && strings.EqualFold("group ", cmd[i:i+6]) {
-		i += 6
-		principal.Type = ads.PRINCIPAL_TYPE_GROUP
-	} else if i+5 <= len(cmd) && strings.EqualFold("role ", cmd[i:i+5]) {
-		i += 5
-		principal.Type = ads.PRINCIPAL_TYPE_ROLE
-	} else if i+7 <= len(cmd) && strings.EqualFold("entity ", cmd[i:i+7]) {
-		i += 7
-		principal.Type = ads.PRINCIPAL_TYPE_ENTITY
-	} else {
-		return "", -1, getError("Not found principal type (user|group|role)", cmd, i)
+	for _, kind := range []string{ads.PRINCIPAL_TYPE_USER, ads.PRINCIPAL_TYPE_GROUP, ads.PRINCIPAL_TYPE_ROLE, ads.PRINCIPAL_TYPE_ENTITY} {
+		if end, ok := keyword(cmd, i, kind); ok {
+			principal.Type = kind
+			i = end
+			break
+		}
+	}
+	if principal.Type == "" {
+		return "", -1, getError("Not found principal type (user|group|role|entity)", cmd, i)
 	}
 
 	principal.Name, i = getToken(cmd, i)
@@ -267,9 +290,9 @@ func getPrincipal(cmd string, i int) (string, int, error) {
 	}
 
 	i = skipSpaces(cmd, i)
-	if i+5 <= len(cmd) && strings.EqualFold("from ", cmd[i:i+5]) {
+	if end, ok := keyword(cmd, i, "from"); ok {
 		// principal has idd with key word "from"
-		i += 5
+		i = end
 		i = skipSpaces(cmd, i)
 		principal.IDD, i = getToken(cmd, i)
 		if len(principal.IDD) == 0 {
@@ -361,8 +384,8 @@ func isResExpr(res string) (bool, string) {
 
 func getResources(cmd string, i int) ([]string, []string, int, error) {
 	i = skipSpaces(cmd, i)
-	if i+3 <= len(cmd) && strings.EqualFold("on ", cmd[i:i+3]) {
-		i += 3
+	if end, ok := keyword(cmd, i, "on"); ok {
+		i = end
 		tokens, i, err := getTokens(cmd, i, "resource")
 		if err != nil {
 			return nil, nil, i, err
@@ -386,8 +409,8 @@ func getResources(cmd string, i int) ([]string, []string, int, error) {
 
 func getService(cmd string, i int) (string, int, error) {
 	i = skipSpaces(cmd, i)
-	if i+3 <= len(cmd) && strings.EqualFold("in ", cmd[i:i+3]) {
-		i += 3
+	if end, ok := keyword(cmd, i, "in"); ok {
+		i = end
 		var serv string
 		serv, i = getToken(cmd, i)
 		if serv == "" {
@@ -400,8 +423,8 @@ func getService(cmd string, i int) (string, int, error) {
 
 func getCondition(cmd string, i int) (string, int, error) {
 	i = skipSpaces(cmd, i)
-	if i+3 <= len(cmd) && strings.EqualFold("if ", cmd[i:i+3]) {
-		i += 3
+	if end, ok := keyword(cmd, i, "if"); ok {
+		i = end
 		if i >= len(cmd) {
 			return "", -1, getError("Unexpected EOF found", cmd, i)
 		}
@@ -410,7 +433,7 @@ func getCondition(cmd string, i int) (string, int, error) {
 			return "", -1, getError("Unexpected EOF found", cmd, i)
 		}
 		ret := cmd[i:]
-		ret = strings.TrimRight(ret, " ")
+		ret = strings.TrimRightFunc(ret, unicode.IsSpace)
 		if err := condition.Check(ret); err != nil {
 			var condErr *condition.Error
 			if errors.As(err, &condErr) && condErr.Position >= 0 {
@@ -449,35 +472,31 @@ func getToken(cmd string, i int) (string, int) {
 	if i >= len(cmd) {
 		return "", i
 	}
-	end := cmd[i]
-	if end == '"' || end == '\'' {
-		i++
-	}
-
-	var buffer bytes.Buffer
-	for ; i < len(cmd); i++ {
-		if end == '"' || end == '\'' {
-			if cmd[i] == end {
-				i++
-				break
+	quote := cmd[i]
+	if quote == '"' || quote == '\'' {
+		var buffer strings.Builder
+		for i++; i < len(cmd); i++ {
+			if cmd[i] == quote {
+				return buffer.String(), i + 1
 			}
-		} else if cmd[i] == ' ' || cmd[i] == ',' || cmd[i] == '(' || cmd[i] == ')' {
+			buffer.WriteByte(cmd[i])
+		}
+		// A partial quoted name must never become an ordinary resource/principal.
+		return "", i
+	}
+	start := i
+	for i < len(cmd) {
+		r, size := utf8.DecodeRuneInString(cmd[i:])
+		if unicode.IsSpace(r) || r == ',' || r == '(' || r == ')' {
 			break
 		}
-		buffer.WriteByte(cmd[i])
+		i += size
 	}
-	return buffer.String(), i
+	return cmd[start:i], i
 }
 
 func skipSpaces(cmd string, i int) int {
-	var j int
-	var v rune
-	for j, v = range cmd[i:] {
-		if !unicode.IsSpace(v) {
-			return i + j
-		}
-	}
-	return i + j
+	return len(cmd) - len(strings.TrimLeftFunc(cmd[i:], unicode.IsSpace))
 }
 
 func getErrorIndicator(cmd string, pos int) string {

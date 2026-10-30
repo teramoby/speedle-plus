@@ -235,9 +235,23 @@ func processPolicyDef(ps *pms.PolicyStore, lc *lineCtx) error {
 func determineType(lc *lineCtx) error {
 	lc.trimed = lc.origin
 	// Trim comments
-	idx := strings.Index(lc.origin, "#")
-	if idx != -1 {
-		lc.trimed = lc.origin[0:idx]
+	var quote byte
+	for i := 0; i < len(lc.origin); i++ {
+		c := lc.origin[i]
+		if quote != 0 {
+			if c == '\\' && i+1 < len(lc.origin) {
+				i++
+				continue
+			}
+			if c == quote {
+				quote = 0
+			}
+		} else if c == '\'' || c == '"' {
+			quote = c
+		} else if c == '#' {
+			lc.trimed = lc.origin[:i]
+			break
+		}
 	}
 
 	// Trim spaces

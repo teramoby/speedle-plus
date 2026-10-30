@@ -4,6 +4,7 @@ type lexerStream struct {
 	source   []rune
 	position int
 	length   int
+	err      error
 }
 
 func newLexerStream(source string) *lexerStream {

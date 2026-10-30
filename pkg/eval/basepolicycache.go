@@ -13,8 +13,8 @@ import (
 
 // Patterns used to match resource expression.
 // Now support prefix, suffix and all three patterns.
-var /*const*/ Prefix_Pattern = regexp.MustCompile(`^\^?[\w/]+\.\*\$?$`)
-var /*const*/ Suffix_Pattern = regexp.MustCompile(`^\^?\.\*[\w/]+\$?$`)
+var /*const*/ Prefix_Pattern = regexp.MustCompile(`^\^[\w/]+\.\*\$?$`)
+var /*const*/ Suffix_Pattern = regexp.MustCompile(`^\^?\.\*[\w/]+\$$`)
 var /*const*/ All_Pattern = regexp.MustCompile(`^\^?\.\*\$?$`)
 
 type ResourceToPolicyMap struct {

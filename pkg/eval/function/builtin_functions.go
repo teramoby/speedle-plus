@@ -5,6 +5,7 @@ package function
 
 import (
 	"math"
+	"math/big"
 	"reflect"
 
 	"github.com/teramoby/speedle-plus/pkg/errors"
@@ -18,7 +19,7 @@ func numbers(args []interface{}) ([]float64, bool) {
 	values := make([]float64, len(args))
 	for i, arg := range args {
 		value, ok := arg.(float64)
-		if !ok {
+		if !ok || math.IsNaN(value) || math.IsInf(value, 0) {
 			return nil, false
 		}
 		values[i] = value
@@ -29,7 +30,7 @@ func numbers(args []interface{}) ([]float64, bool) {
 func Sqrt(args ...interface{}) (interface{}, error) {
 	err := errors.New(errors.BuiltInFuncError, "Usage: Sqrt(x)")
 	values, ok := numbers(args)
-	if !ok || len(values) != 1 {
+	if !ok || len(values) != 1 || values[0] < 0 {
 		return nil, err
 	}
 	return math.Sqrt(values[0]), nil
@@ -71,51 +72,107 @@ func Sum(args ...interface{}) (interface{}, error) {
 	for _, value := range values {
 		sum += value
 	}
+	if math.IsNaN(sum) || math.IsInf(sum, 0) {
+		return nil, errors.New(errors.BuiltInFuncError, "Sum result is not finite")
+	}
 	return sum, nil
 }
 
 func Avg(args ...interface{}) (interface{}, error) {
-	if len(args) == 0 {
+	values, ok := numbers(args)
+	if !ok {
+		return nil, errors.New(errors.BuiltInFuncError, "Usage: Avg(x1, x2, ...), xi must be finite numeric")
+	}
+	// Keep ordinary arithmetic stable (including cancellation), scaling only
+	// when the intermediate sum overflows but the mean is representable.
+	if len(values) == 0 {
 		return float64(0), nil
 	}
-	sum, err := Sum(args...)
-	if err != nil {
-		return nil, err
+	var sum float64
+	for _, value := range values {
+		sum += value
 	}
-	return sum.(float64) / float64(len(args)), nil
+	if !math.IsNaN(sum) && !math.IsInf(sum, 0) {
+		return sum / float64(len(values)), nil
+	}
+	var avg float64
+	for _, value := range values {
+		avg += value / float64(len(values))
+	}
+	if math.IsNaN(avg) || math.IsInf(avg, 0) {
+		return nil, errors.New(errors.BuiltInFuncError, "Avg result is not finite")
+	}
+
+	return avg, nil
 }
 
-// IsSubSet(S1, S2) means "is S1 a subset of S2"
+// IsSubSet accepts two scalar slices, or the flattened first slice supplied by
+// govaluate. Empty sets retain the historical false result. Duplicates do not
+// change membership. Unsupported/mixed element types return BuiltInFuncError.
 func IsSubSet(args ...interface{}) (interface{}, error) {
-	err := errors.New(errors.BuiltInFuncError, "Usage: IsSubSet(S1, S2) - S1 and S2 are both slice, and test if S1 is a subset of S2")
-	n := len(args)
-	if n < 2 {
+	err := errors.New(errors.BuiltInFuncError, "Usage: IsSubSet(S1, S2) - homogeneous scalar sets required")
+	if len(args) < 2 {
 		return nil, err
 	}
-	s1, s2 := args[0], args[n-1]
-	if n >= 2 {
-		buf := make([]interface{}, n-1)
-		copy(buf, args)
-		s1 = buf
-	}
-	if s2 == nil || reflect.TypeOf(s1).Kind() != reflect.Slice || reflect.TypeOf(s2).Kind() != reflect.Slice {
+	last := reflect.ValueOf(args[len(args)-1])
+	if !last.IsValid() || last.Kind() != reflect.Slice {
 		return nil, err
 	}
-	v1 := reflect.ValueOf(s1)
-	v2 := reflect.ValueOf(s2)
-	n1 := v1.Len()
-	n2 := v2.Len()
-	if n1 == 0 || n2 == 0 || n1 > n2 {
-		return false, nil
+	first := reflect.ValueOf(args[:len(args)-1])
+	if len(args) == 2 && args[0] != nil && reflect.TypeOf(args[0]).Kind() == reflect.Slice {
+		first = reflect.ValueOf(args[0])
 	}
-outer:
-	for i := 0; i < n1; i++ {
-		for j := 0; j < n2; j++ {
-			if v1.Index(i).Interface() == v2.Index(j).Interface() {
-				continue outer
-			}
+	kind := ""
+	convert := func(v interface{}) (interface{}, bool) {
+		if v == nil {
+			return nil, false
 		}
-		return false, nil
+		r := reflect.ValueOf(v)
+		var k string
+		switch r.Kind() {
+		case reflect.String:
+			k = "string"
+			v = r.String()
+		case reflect.Bool:
+			k = "bool"
+			v = r.Bool()
+		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+			k = "number"
+			v = new(big.Rat).SetInt64(r.Int()).String()
+		case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+			k = "number"
+			v = new(big.Rat).SetUint64(r.Uint()).String()
+		case reflect.Float32, reflect.Float64:
+			k = "number"
+			number := r.Float()
+			if math.IsNaN(number) || math.IsInf(number, 0) {
+				return nil, false
+			}
+			v = new(big.Rat).SetFloat64(number).String()
+		default:
+			return nil, false
+		}
+		if kind != "" && kind != k {
+			return nil, false
+		}
+		kind = k
+		return v, true
 	}
-	return true, nil
+	set := make(map[interface{}]bool, last.Len())
+	for i := 0; i < last.Len(); i++ {
+		v, ok := convert(last.Index(i).Interface())
+		if !ok {
+			return nil, err
+		}
+		set[v] = true
+	}
+	matched := true
+	for i := 0; i < first.Len(); i++ {
+		v, ok := convert(first.Index(i).Interface())
+		if !ok {
+			return nil, err
+		}
+		matched = matched && set[v]
+	}
+	return first.Len() > 0 && last.Len() > 0 && matched, nil
 }

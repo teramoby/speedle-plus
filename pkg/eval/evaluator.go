@@ -345,7 +345,7 @@ func (p *PolicyEvalImpl) GetAllGrantedPermissions(ctx adsapi.RequestContext) ([]
 	}
 	for _, policy := range deniedPolicies {
 		permissions := policy.Permissions
-		if permissions == nil { //means deny any permission
+		if len(permissions) == 0 { //means deny any permission
 			return []pms.Permission{}, nil
 		}
 		for _, permission := range permissions {

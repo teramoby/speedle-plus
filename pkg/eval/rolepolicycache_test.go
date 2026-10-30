@@ -79,6 +79,7 @@ func TestRolePolicyCache(t *testing.T) {
 }
 
 func TestRolePolicyCacheAboutResourceExpression(t *testing.T) {
+	// Unanchored prefix/suffix expressions also match inside the resource.
 	cache := NewRolePolicyCacheData()
 
 	policy1 := &pms.RolePolicy{
@@ -142,42 +143,42 @@ func TestRolePolicyCacheAboutResourceExpression(t *testing.T) {
 	cache.AddRolePolicyToCache(policy6, nil)
 
 	results := cache.GetRelatedRolePolicyMap([]string{"group:Dev"}, "k8s/core/pods/resource1")
-	if results == nil || len(results) != 4 {
-		t.Errorf("There should be 4 role policies matched in cache, but meet %d", len(results))
+	if results == nil || len(results) != 5 {
+		t.Errorf("unexpected regex candidate count: %d", len(results))
 	}
 
 	results2 := cache.GetRelatedRolePolicyMap([]string{"group:Dev"}, "/tmp/abc/test")
 	if results2 == nil || len(results2) != 2 {
-		t.Errorf("There should be 2 role policies matched in cache, but meet %d", len(results2))
+		t.Errorf("unexpected regex candidate count: %d", len(results2))
 	}
 
 	results3 := cache.GetRelatedRolePolicyMap([]string{"group:Dev"}, "k8s/core/pods/.abc")
-	if results3 == nil || len(results3) != 4 {
-		t.Errorf("There should be 4 role policies matched in cache, but meet %d", len(results3))
+	if results3 == nil || len(results3) != 5 {
+		t.Errorf("unexpected regex candidate count: %d", len(results3))
 	}
 
 	results4 := cache.GetRelatedRolePolicyMap([]string{"group:Dev"}, "site1/k8s/core/pods/")
-	if results4 == nil || len(results4) != 4 {
-		t.Errorf("There should be 4 role policies matched in cache, but meet %d", len(results4))
+	if results4 == nil || len(results4) != 5 {
+		t.Errorf("unexpected regex candidate count: %d", len(results4))
 	}
 
 	results5 := cache.GetRelatedRolePolicyMap([]string{"group:Dev"}, "site2/k8s/core/pods/")
-	if results5 == nil || len(results5) != 4 {
-		t.Errorf("There should be 4 role policies matched in cache, but meet %d", len(results5))
+	if results5 == nil || len(results5) != 5 {
+		t.Errorf("unexpected regex candidate count: %d", len(results5))
 	}
 
 	cache.DeleteRolePolicyFromCache(policy2.ID)
 	cache.DeleteRolePolicyFromCache(policy5.ID)
 	results6 := cache.GetRelatedRolePolicyMap([]string{"group:Dev"}, "k8s/core/pods/.abc")
-	if results6 == nil || len(results6) != 2 {
-		t.Errorf("There should be 2 role policies matched in cache, but meet %d", len(results6))
+	if results6 == nil || len(results6) != 3 {
+		t.Errorf("unexpected regex candidate count: %d", len(results6))
 	}
 
 	cache.DeleteRolePolicyFromCache(policy3.ID)
 	cache.DeleteRolePolicyFromCache(policy6.ID)
 	results7 := cache.GetRelatedRolePolicyMap([]string{"group:Dev"}, "site2/k8s/core/pods/")
-	if results7 == nil || len(results7) != 1 {
-		t.Errorf("There should be 1 role policies matched in cache, but meet %d", len(results7))
+	if results7 == nil || len(results7) != 2 {
+		t.Errorf("unexpected regex candidate count: %d", len(results7))
 	}
 
 	cache.DeleteRolePolicyFromCache(policy1.ID)

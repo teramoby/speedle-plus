@@ -445,6 +445,8 @@ Adhere to these rules when passing customer attribute values to a REST API:</p>
     </tfoot>
   </table>
 
+<p>Numeric built-ins reject non-finite inputs/results and negative square roots with <code>BuiltInFuncError</code>. A failed function makes its condition nonmatching, as with other runtime condition errors. <code>Sum()</code> and <code>Avg()</code> retain their historical empty-input result of zero. <code>IsSubSet</code> ignores duplicate elements, rejects unsupported or mixed element types, and retains the historical false result for an empty set. SPDL quoted names preserve literal backslashes; use the other quote style when a name contains a quote. Statements must be fully consumed: trailing text, incomplete conditions and unclosed name quotes are rejected.</p>
+
 <h5 id="2-4-2-custom-functions">2.4.2 Custom Functions</h5>
 
 <p>Customers can also expose their own functions through a REST API, and use custom functions in a condition expression.<br />

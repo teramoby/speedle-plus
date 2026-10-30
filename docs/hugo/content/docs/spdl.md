@@ -355,6 +355,8 @@ Speedle provides the following built-in functions.
     </tfoot>
   </table>
 
+Numeric built-ins reject non-finite inputs/results and negative square roots with `BuiltInFuncError`. A failed function makes its condition nonmatching, as with other runtime condition errors. `Sum()` and `Avg()` retain their historical empty-input result of zero. `IsSubSet` ignores duplicate elements, rejects unsupported or mixed element types, and retains the historical false result for an empty set. SPDL quoted names preserve literal backslashes; use the other quote style when a name contains a quote. Statements must be fully consumed: trailing text, incomplete conditions and unclosed name quotes are rejected.
+
 ##### 2.4.2 Custom Functions
 
 Customers can also expose their own functions through a REST API, and use custom functions in a condition expression.  

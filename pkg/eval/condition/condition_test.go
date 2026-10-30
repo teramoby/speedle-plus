@@ -109,3 +109,21 @@ func TestCheckParsesOnceForManyFunctions(t *testing.T) {
 		t.Errorf("Check took %v", d)
 	}
 }
+
+func FuzzConditionCheck(f *testing.F) {
+	for _, c := range []string{"x > 0", "(x", "a === b", "IsSubSet(x,('a','b'))", "unknown(x)", "x == 'R#D'"} {
+		f.Add(c)
+	}
+	f.Fuzz(func(t *testing.T, s string) {
+		if len(s) > 8192 {
+			return
+		}
+		err := Check(s)
+		if err != nil {
+			var detail *Error
+			if !errors.As(err, &detail) || detail.Position > len([]rune(s)) {
+				t.Fatalf("invalid diagnostic %v", err)
+			}
+		}
+	})
+}

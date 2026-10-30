@@ -297,7 +297,8 @@ test('Docker guide checks use the account docker group the runner process lacks'
 });
 test('weekly tests the other supported Go releases and runs staticcheck', () => {
   const {result, records, checks} = runSuite('weekly'); assert.equal(result.status, 0, result.stderr);
-  assert.deepEqual(goTests(records).map(r => r.env.GOTOOLCHAIN), ['go1.27.3']);
+  assert.equal(goTests(records)[0].env.GOTOOLCHAIN, 'go1.27.3');
+  assert.ok(goTests(records).some(r => r.args.includes('feature_stress') && r.args.includes('^TestFeatureLargePolicyRoleSets$')));
   assert.match(checks, /^staticcheck=0:staticcheck\.log$/m);
 });
 

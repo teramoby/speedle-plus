@@ -4,6 +4,10 @@
 package file
 
 import (
+	"encoding/json"
+	"errors"
+	"github.com/teramoby/speedle-plus/testutil/pdltest"
+	"reflect"
 	"strings"
 	"testing"
 )
@@ -77,7 +81,6 @@ func TestCheckJSONReportsWhereTheFileIsWrong(t *testing.T) {
 	cases := []struct{ name, json, want string }{
 		{"syntax", "{\"services\":[{\"name\":\"x\",}]}", "s.json:1:26: invalid character '}' looking for beginning of object key string"},
 		{"unknown field", "{\"services\":[{\"name\":\"x\",\n \"policies\":[{\"effect\":\"grant\",\"conditon\":\"a\"}]}]}", `s.json:2:32: json: unknown field "conditon"`},
-		{"type", "{\"services\":[{\"name\":7}]}", "s.json:1:23: json: cannot unmarshal number into Go struct field Service.services.name of type string"},
 	}
 	for _, c := range cases {
 		_, errs := CheckJSON(strings.NewReader(c.json), "s.json")
@@ -136,4 +139,50 @@ func TestCheckJSONRejectsDataAfterTheStore(t *testing.T) {
 	if _, errs := CheckJSON(strings.NewReader("{\"services\":[]}\n\n"), "s.json"); len(errs) != 0 {
 		t.Errorf("trailing new lines: errors %q", errorTexts(errs))
 	}
+}
+
+func TestCheckJSONTypeError(t *testing.T) {
+	_, errs := CheckJSON(strings.NewReader(`{"services":[{"name":7}]}`), "s.json")
+	if len(errs) != 1 {
+		t.Fatalf("errors %v", errs)
+	}
+	var typeErr *json.UnmarshalTypeError
+	if !errors.As(errs[0], &typeErr) || typeErr.Value != "number" || typeErr.Type != reflect.TypeOf("") || !strings.HasPrefix(errs[0].Error(), "s.json:1:23:") || !strings.HasSuffix(typeErr.Field, "name") {
+		t.Fatalf("unstable/missing diagnostic: %v", errs[0])
+	}
+}
+
+func TestSPDLGrammarCorpus(t *testing.T) {
+	for _, c := range pdltest.Cases {
+		t.Run(c.Name, func(t *testing.T) {
+			section := c.Kind
+			ps, errs := CheckSPDL(strings.NewReader("[service.app]\n["+section+"]\n"+c.Text+"\n"), "corpus.spdl")
+			if (len(errs) == 0) != c.Valid {
+				t.Fatalf("valid=%v errors=%v", c.Valid, errs)
+			}
+			if c.Valid && c.Name == "hash" && ps.Services[0].Policies[0].Permissions[0].Resource != "book#1" {
+				t.Fatal("quoted hash was truncated")
+			}
+		})
+	}
+}
+func TestSPDLQuotedComment(t *testing.T) {
+	ps, errs := CheckSPDL(strings.NewReader("[service.app]\n[policy]\ngrant user alice read 'book#1' if department == 'R#D' # comment\n"), "comment.spdl")
+	if len(errs) > 0 {
+		t.Fatal(errs)
+	}
+	p := ps.Services[0].Policies[0]
+	if p.Condition != "department == 'R#D'" || p.Permissions[0].Resource != "book#1" {
+		t.Fatalf("%+v", p)
+	}
+}
+func FuzzCheckSPDL(f *testing.F) {
+	for _, c := range pdltest.Cases {
+		f.Add("[service.app]\n[" + c.Kind + "]\n" + c.Text + "\n")
+	}
+	f.Fuzz(func(t *testing.T, s string) {
+		if len(s) <= 8192 {
+			CheckSPDL(strings.NewReader(s), "fuzz.spdl")
+		}
+	})
 }
