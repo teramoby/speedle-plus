@@ -150,3 +150,13 @@ never run at once on the etcd ports.
 Shared integration fixtures select `file`, `etcd`, `mongodb` or `mysql` through
 `STORE_TYPE`. `SPEEDLE_TEST_STORE_PROPS` supplies backend connection properties;
 see `docs/MYSQL_TESTS.md` for isolation, optional-capability checks and artifacts.
+
+## Fiona full nightly trial
+
+The manual MongoDB validation workflow accepts `nightly_trial: true` to run
+the complete nightly script on `fiona-speedle` (macOS ARM64), including all
+four stores, executable guides, supported Go releases and CI script checks.
+It uses the nightly host lock, port preflight and sanitized test environment;
+results are uploaded as `fiona-nightly-results`. Its concurrency group remains
+`nightly-tests`. Use `install_flock: true` if the existing macOS host lacks
+`flock`. No scheduled nightly routing changes until this trial passes.
