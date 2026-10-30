@@ -434,3 +434,140 @@ func TestFeatureRecoverySurvivesLoggingPanic(t *testing.T) {
 		t.Fatalf("logger panic escaped recovery: %v %v %v", allowed, reason, err)
 	}
 }
+
+type blockingSyncFailureStore struct {
+	pms.PolicyStoreManagerADS
+	partial chan struct{}
+	release chan struct{}
+}
+
+func (s *blockingSyncFailureStore) GetPolicy(service, id string) (*pms.Policy, error) {
+	if id == "2" {
+		policy := recoveryGrant("2")
+		policy.Permissions[0].Resource = "unrelated"
+		return policy, nil
+	}
+	close(s.partial)
+	<-s.release
+	return nil, errors.New(errors.StoreError, "injected failure after partial synchronization")
+}
+
+func TestFeatureConcurrentSyncFailureCannotAuthorize(t *testing.T) {
+	e := featureEvaluator(t, &pms.PolicyStore{Services: []*pms.Service{{Name: "app", Policies: []*pms.Policy{recoveryGrant("1")}}}})
+	original := e.Store
+	blocked := &blockingSyncFailureStore{PolicyStoreManagerADS: original, partial: make(chan struct{}), release: make(chan struct{})}
+	e.Store = blocked
+	defer func() { e.Store = original }()
+	synchronized := make(chan struct{})
+	go func() {
+		apply(e, pms.StoreChangeEvent{Type: pms.SYNC_RELOAD, Content: []interface{}{[]string{"app"}, map[int]string{2: "app", 3: "app"}, map[int]string{}, []string{}}})
+		close(synchronized)
+	}()
+	select {
+	case <-blocked.partial:
+	case <-time.After(5 * time.Second):
+		t.Fatal("sync never reached partial mutation")
+	}
+	started := make(chan struct{})
+	type outcome struct {
+		allowed bool
+		reason  ads.Reason
+		err     error
+	}
+	result := make(chan outcome, 1)
+	go func() {
+		close(started)
+		allowed, reason, err := e.IsAllowed(featureContext())
+		result <- outcome{allowed, reason, err}
+	}()
+	<-started
+	early := false
+	select {
+	case <-result:
+		early = true
+	case <-time.After(50 * time.Millisecond):
+	}
+	close(blocked.release)
+	select {
+	case <-synchronized:
+	case <-time.After(5 * time.Second):
+		t.Fatal("synchronization did not finish")
+	}
+	if early {
+		t.Fatal("authorization observed a partially synchronized cache")
+	}
+	select {
+	case got := <-result:
+		if got.allowed || got.reason != ads.ERROR_IN_EVALUATION || errors.Code(got.err) != errors.EvalCacheError {
+			t.Fatalf("concurrent sync failure allowed request: %+v", got)
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("authorization remained blocked after sync failed")
+	}
+	apply(e, pms.StoreChangeEvent{Type: pms.FULL_RELOAD, Content: &pms.PolicyStore{Services: []*pms.Service{{Name: "app", Policies: []*pms.Policy{recoveryGrant("healthy")}}}}})
+	requireHealthyAfterRecovery(t, e)
+}
+
+func TestFeatureSyncWaitsForActiveDecision(t *testing.T) {
+	e := featureEvaluator(t, &pms.PolicyStore{Services: []*pms.Service{{Name: "app", Policies: []*pms.Policy{recoveryGrant("1")}}}})
+	assertionEntered := make(chan struct{})
+	releaseAssertion := make(chan struct{})
+	e.SetAsserterFunc(func(*ads.RequestContext) error { close(assertionEntered); <-releaseAssertion; return nil })
+	type outcome struct {
+		allowed bool
+		err     error
+	}
+	result := make(chan outcome, 1)
+	ctx := featureContext()
+	ctx.Subject.TokenType = "test"
+	ctx.Subject.Token = "token"
+	go func() { allowed, _, err := e.IsAllowed(ctx); result <- outcome{allowed, err} }()
+	select {
+	case <-assertionEntered:
+	case <-time.After(5 * time.Second):
+		t.Fatal("decision did not enter assertion")
+	}
+	original := e.Store
+	blocked := &blockingSyncFailureStore{PolicyStoreManagerADS: original, partial: make(chan struct{}), release: make(chan struct{})}
+	e.Store = blocked
+	defer func() { e.Store = original }()
+	synchronized := make(chan struct{})
+	go func() {
+		apply(e, pms.StoreChangeEvent{Type: pms.SYNC_RELOAD, Content: []interface{}{[]string{"app"}, map[int]string{2: "app", 3: "app"}, map[int]string{}, []string{}}})
+		close(synchronized)
+	}()
+	early := false
+	select {
+	case <-blocked.partial:
+		early = true
+	case <-time.After(50 * time.Millisecond):
+	}
+	close(releaseAssertion)
+	select {
+	case got := <-result:
+		if !got.allowed || got.err != nil {
+			t.Fatalf("pre-update decision changed: %+v", got)
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("active decision remained blocked")
+	}
+	if !early {
+		select {
+		case <-blocked.partial:
+		case <-time.After(5 * time.Second):
+			t.Fatal("sync did not start after decision finished")
+		}
+	}
+	close(blocked.release)
+	select {
+	case <-synchronized:
+	case <-time.After(5 * time.Second):
+		t.Fatal("sync did not finish")
+	}
+	if early {
+		t.Fatal("synchronization mutated cache while a decision was active")
+	}
+	if allowed, _, err := e.IsAllowed(featureContext()); allowed || err == nil {
+		t.Fatal("post-failure decision did not fail closed")
+	}
+}

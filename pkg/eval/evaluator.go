@@ -71,6 +71,7 @@ type PolicyEvalImpl struct {
 	watchStopOnce      sync.Once
 	closeErr           error
 	cacheFailed        atomic.Bool
+	cacheGate          sync.RWMutex
 }
 
 func (p *PolicyEvalImpl) deleteService(serviceName string) {
@@ -90,6 +91,8 @@ func (p *PolicyEvalImpl) fullReloadRuntimeCache() {
 
 func (p *PolicyEvalImpl) Refresh() (err error) {
 	defer recoverEvaluation("Refresh", &err)
+	p.cacheGate.Lock()
+	defer p.cacheGate.Unlock()
 	p.fullReloadRuntimeCache()
 	return nil
 }
@@ -292,6 +295,8 @@ func (p *PolicyEvalImpl) InternalIsAllowed(ctx *adsapi.RequestContext, evaluatio
 		}
 	}()
 	defer recoverEvaluation("IsAllowed", &err)
+	p.cacheGate.RLock()
+	defer p.cacheGate.RUnlock()
 	if p.cacheFailed.Load() {
 		return false, adsapi.ERROR_IN_EVALUATION, errors.New(errors.EvalCacheError, "authorization cache requires a successful full reload")
 	}
@@ -350,6 +355,8 @@ func (p *PolicyEvalImpl) GetAllGrantedRoles(ctx adsapi.RequestContext) (roles []
 		}
 	}()
 	defer recoverEvaluation("GetAllGrantedRoles", &err)
+	p.cacheGate.RLock()
+	defer p.cacheGate.RUnlock()
 	if p.cacheFailed.Load() {
 		return nil, errors.New(errors.EvalCacheError, "authorization cache requires a successful full reload")
 	}
@@ -374,6 +381,8 @@ func (p *PolicyEvalImpl) GetAllGrantedPermissions(ctx adsapi.RequestContext) (pe
 		}
 	}()
 	defer recoverEvaluation("GetAllGrantedPermissions", &err)
+	p.cacheGate.RLock()
+	defer p.cacheGate.RUnlock()
 	if p.cacheFailed.Load() {
 		return nil, errors.New(errors.EvalCacheError, "authorization cache requires a successful full reload")
 	}
@@ -1200,13 +1209,18 @@ func (p *PolicyEvalImpl) getCustFunctionSetInCache() ([]string, error) {
 
 func (p *PolicyEvalImpl) updateRuntimeCacheWithStoreChange(updateChan pms.StorageChangeChannel) {
 	for e := range updateChan {
-		if err := p.applyStoreChange(e); err != nil {
-			p.cacheFailed.Store(true)
-		}
+		_ = p.applyStoreChange(e)
 	}
 }
 
 func (p *PolicyEvalImpl) applyStoreChange(e pms.StoreChangeEvent) (err error) {
+	p.cacheGate.Lock()
+	defer func() {
+		if err != nil {
+			p.cacheFailed.Store(true)
+		}
+		p.cacheGate.Unlock()
+	}()
 	defer recoverEvaluation("StoreChange", &err)
 	switch e.Type {
 	case pms.SERVICE_ADD: ///Event content: StoreUpdateData{ParentID:serviceName, Data:*service}

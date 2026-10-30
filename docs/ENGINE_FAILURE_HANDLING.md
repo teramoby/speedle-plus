@@ -22,7 +22,11 @@ The same request boundary cannot recover a panic in another goroutine.
 Engine-owned condition-cache updaters, cache cleanup and watch events have their
 own boundaries. A panicking watch event or a failed incremental synchronization marks the
 authorization cache unusable;
-requests fail closed until a complete snapshot reload succeeds. Startup and
+requests fail closed until a complete snapshot reload succeeds. Cache batches
+and decisions share a read/write gate. A decision holds its read lock from the
+failed-state check through evaluation; a batch sets failure before releasing
+its write lock. Concurrent requests wait for the whole batch rather than
+observing partially applied updates. Startup and
 explicit refresh return errors on panic instead of terminating the process.
 
 ## Stack exhaustion
