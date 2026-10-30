@@ -28,6 +28,10 @@ failed-state check through evaluation; a batch sets failure before releasing
 its write lock. Concurrent requests wait for the whole batch rather than
 observing partially applied updates. Startup and
 explicit refresh return errors on panic instead of terminating the process.
+A read-only refresh failure preserves the last complete cache, as the existing
+TestFullReload contract requires. Refresh reports the storage-read error; a
+watcher logs it and retries. Such a failure cannot clear a previously failed
+cache state, since no replacement snapshot was installed.
 
 ## Stack exhaustion
 
@@ -45,7 +49,8 @@ prevents the known engine paths from reaching that state:
   escaped variable names do not count as clauses. Conditions over these limits
   fail the whole evaluation; an alternate grant cannot hide the failure.
 - Subprocess regressions reduce Go's maximum stack and exercise 20,000-level
-  role graphs, the original malformed closed-cycle probe and oversized/nested
+  role graphs, a valid explicit-subject cycle whose only entry is pending denial, the original
+  malformed closed-cycle probe and oversized/nested
   conditions, followed by healthy requests.
 
 This is panic containment and stack-exhaustion prevention, not recovery from

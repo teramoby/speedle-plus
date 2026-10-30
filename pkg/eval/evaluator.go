@@ -79,22 +79,22 @@ func (p *PolicyEvalImpl) deleteService(serviceName string) {
 	p.RuntimePolicyStore.deleteService(serviceName)
 }
 
-func (p *PolicyEvalImpl) fullReloadRuntimeCache() {
+func (p *PolicyEvalImpl) fullReloadRuntimeCache() error {
 	ps, err := p.Store.ReadPolicyStore()
 	if err != nil {
 		log.Errorf("Fail to full reload runtime cache, err:%v", err)
-		return
+		return err
 	}
 	p.RuntimePolicyStore.reloadPolicyStore(ps)
 	p.cacheFailed.Store(false)
+	return nil
 }
 
 func (p *PolicyEvalImpl) Refresh() (err error) {
 	defer recoverEvaluation("Refresh", &err)
 	p.cacheGate.Lock()
 	defer p.cacheGate.Unlock()
-	p.fullReloadRuntimeCache()
-	return nil
+	return p.fullReloadRuntimeCache()
 }
 
 func (p *PolicyEvalImpl) AddServiceInRuntimeCache(service *pms.Service) {
@@ -1275,7 +1275,11 @@ func (p *PolicyEvalImpl) applyStoreChange(e pms.StoreChangeEvent) (err error) {
 			p.RuntimePolicyStore.reloadPolicyStore(snapshot)
 			p.cacheFailed.Store(false)
 		} else {
-			p.fullReloadRuntimeCache()
+			// A read error has not mutated the complete cached snapshot. Keep
+			// it usable, as required by the existing TestFullReload contract.
+			// The helper logs read errors; partial-write errors above instead
+			// poison the cache until a complete reload succeeds.
+			_ = p.fullReloadRuntimeCache()
 		}
 	}
 	return nil

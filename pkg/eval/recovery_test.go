@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"runtime/debug"
 	"strings"
 	"testing"
@@ -147,16 +148,35 @@ func TestFeatureMalformedRequestRecovery(t *testing.T) {
 	}
 }
 
+func isolatedRecoveryChild(t *testing.T, ctx context.Context, testName, marker string) *exec.Cmd {
+	t.Helper()
+	binary, err := os.Executable()
+	if err != nil {
+		t.Fatal(err)
+	}
+	root := t.TempDir()
+	work := filepath.Join(root, "eval")
+	config := filepath.Join(root, "cfg")
+	if err := os.MkdirAll(work, 0700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(config, 0700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(config, "config_file.json"), []byte(`{"storeConfig":{"storeType":"file","storeProps":{"FileLocation":"./ps.json"}}}`), 0600); err != nil {
+		t.Fatal(err)
+	}
+	command := exec.CommandContext(ctx, binary, "-test.run=^"+testName+"$", "-test.timeout=40s")
+	command.Dir = work
+	command.Env = append(os.Environ(), marker+"=1")
+	return command
+}
+
 func TestFeatureRoleStackExhaustionPrevention(t *testing.T) {
 	if os.Getenv("SPEEDLE_RECOVERY_CHILD") != "1" {
-		binary, err := os.Executable()
-		if err != nil {
-			t.Fatal(err)
-		}
 		ctx, cancel := context.WithTimeout(context.Background(), 45*time.Second)
 		defer cancel()
-		cmd := exec.CommandContext(ctx, binary, "-test.run=^TestFeatureRoleStackExhaustionPrevention$", "-test.timeout=40s")
-		cmd.Env = append(os.Environ(), "SPEEDLE_RECOVERY_CHILD=1")
+		cmd := isolatedRecoveryChild(t, ctx, "TestFeatureRoleStackExhaustionPrevention", "SPEEDLE_RECOVERY_CHILD")
 		if output, err := cmd.CombinedOutput(); err != nil {
 			t.Fatalf("bounded-stack process: %v\n%s", err, output)
 		}
@@ -199,6 +219,19 @@ func TestFeatureRoleStackExhaustionPrevention(t *testing.T) {
 		t.Fatalf("cyclic roles: %v %v", result, err)
 	}
 	requireHealthyAfterRecovery(t, e)
+	// Every rule here has explicit principals. The pending denial of entry
+	// removes the only independent source for A/B during ancestor analysis.
+	valid := featureEvaluator(t, &pms.PolicyStore{Services: []*pms.Service{{Name: "app", Policies: []*pms.Policy{recoveryGrant("permission")}, RolePolicies: []*pms.RolePolicy{
+		role("roots", pms.Grant, []string{"user:alice"}, "entry", "blocker", "victim"),
+		role("start", pms.Grant, []string{"role:entry"}, "A"),
+		role("ab", pms.Grant, []string{"role:A"}, "B"),
+		role("ba", pms.Grant, []string{"role:B"}, "A"),
+		role("deny-entry", pms.Deny, []string{"role:blocker"}, "entry"),
+		role("deny-victim", pms.Deny, []string{"role:A"}, "victim"),
+	}}}})
+	requireRecoveredDecision(t, valid, featureContext())
+	requireHealthyAfterRecovery(t, valid)
+
 }
 
 func TestFeatureWatchPanicRecovery(t *testing.T) {
@@ -264,14 +297,9 @@ func TestFeatureRoleConditionPanicRecovery(t *testing.T) {
 
 func TestFeatureConditionStackExhaustionPrevention(t *testing.T) {
 	if os.Getenv("SPEEDLE_CONDITION_LIMIT_CHILD") != "1" {
-		binary, err := os.Executable()
-		if err != nil {
-			t.Fatal(err)
-		}
 		ctx, cancel := context.WithTimeout(context.Background(), 45*time.Second)
 		defer cancel()
-		cmd := exec.CommandContext(ctx, binary, "-test.run=^TestFeatureConditionStackExhaustionPrevention$", "-test.timeout=40s")
-		cmd.Env = append(os.Environ(), "SPEEDLE_CONDITION_LIMIT_CHILD=1")
+		cmd := isolatedRecoveryChild(t, ctx, "TestFeatureConditionStackExhaustionPrevention", "SPEEDLE_CONDITION_LIMIT_CHILD")
 		if output, err := cmd.CombinedOutput(); err != nil {
 			t.Fatalf("bounded condition process: %v\n%s", err, output)
 		}
@@ -569,5 +597,36 @@ func TestFeatureSyncWaitsForActiveDecision(t *testing.T) {
 	}
 	if allowed, _, err := e.IsAllowed(featureContext()); allowed || err == nil {
 		t.Fatal("post-failure decision did not fail closed")
+	}
+}
+
+type readFailureStore struct{ pms.PolicyStoreManagerADS }
+
+func (*readFailureStore) ReadPolicyStore() (*pms.PolicyStore, error) {
+	return nil, errors.New(errors.StoreError, "temporary read failure")
+}
+
+func TestFeatureReadFailureKeepsCompleteCache(t *testing.T) {
+	e := featureEvaluator(t, &pms.PolicyStore{Services: []*pms.Service{{Name: "app", Policies: []*pms.Policy{recoveryGrant("grant")}}}})
+	original := e.Store
+	e.Store = &readFailureStore{original}
+	defer func() { e.Store = original }()
+	if err := e.Refresh(); errors.Code(err) != errors.StoreError {
+		t.Fatalf("Refresh swallowed read error: %v", err)
+	}
+	if allowed, _, err := e.IsAllowed(featureContext()); !allowed || err != nil {
+		t.Fatalf("read-only failure invalidated complete cache: %v %v", allowed, err)
+	}
+	apply(e, pms.StoreChangeEvent{Type: pms.FULL_RELOAD})
+	if allowed, _, err := e.IsAllowed(featureContext()); !allowed || err != nil {
+		t.Fatalf("watch read failure invalidated complete cache: %v %v", allowed, err)
+	}
+	// A read failure must never make an already-incomplete cache usable.
+	apply(e, pms.StoreChangeEvent{Type: pms.POLICY_ADD, Content: "invalid event"})
+	if err := e.Refresh(); err == nil {
+		t.Fatal("read failure not reported")
+	}
+	if allowed, _, err := e.IsAllowed(featureContext()); allowed || err == nil {
+		t.Fatal("read failure cleared failed-cache state")
 	}
 }
