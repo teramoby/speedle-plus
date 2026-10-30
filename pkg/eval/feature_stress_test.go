@@ -32,6 +32,10 @@ func TestFeatureLargePolicyRoleSets(t *testing.T) {
 				s.RolePolicies = append(s.RolePolicies, &pms.RolePolicy{ID: "r" + id, Effect: pms.Grant, Principals: []string{"user:u" + id}, Roles: []string{"r" + id}})
 			}
 			e := featureEvaluator(t, &pms.PolicyStore{Services: []*pms.Service{s}})
+			cached := e.RuntimePolicyStore.RuntimeServices["app"]
+			if len(cached.PoliciesCache.PolicyMap) != size || len(cached.RolePoliciesCache.PolicyMap) != size {
+				t.Fatalf("snapshot truncated: policies=%d roles=%d want=%d", len(cached.PoliciesCache.PolicyMap), len(cached.RolePoliciesCache.PolicyMap), size)
+			}
 			for _, i := range []int{0, size / 2, size - 1} {
 				for _, permitted := range []bool{true, false} {
 					ctx := featureContext()
