@@ -326,19 +326,38 @@ func TestFeatureConcurrentSnapshotRefresh(t *testing.T) {
 	b, _ := json.Marshal(snapshot(0))
 	e, store := newFixtureEvaluator(t, string(b))
 	defer e.Close()
-	var wg sync.WaitGroup
+	var wg, ready sync.WaitGroup
 	var failed atomic.Bool
+	done := make(chan struct{})
+	var finishOnce sync.Once
+	finish := func() { finishOnce.Do(func() { close(done); wg.Wait() }) }
+	defer finish()
+	ready.Add(4)
 	for reader := 0; reader < 4; reader++ {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			for i := 0; i < 250; i++ {
+			check := func() {
 				if ok, _, err := e.IsAllowed(featureContext()); !ok || err != nil {
 					failed.Store(true)
 				}
 			}
+			check()
+			ready.Done()
+			for {
+				select {
+				case <-done:
+					return
+				default:
+					check()
+				}
+			}
 		}()
 	}
+	// Keep readers active throughout all database writes and publications; a
+	// fixed read count could finish before the first database-backed refresh.
+	ready.Wait()
+
 	for generation := 1; generation <= 12; generation++ {
 		if err := store.WritePolicyStore(snapshot(generation)); err != nil {
 			t.Fatal(err)
@@ -347,7 +366,7 @@ func TestFeatureConcurrentSnapshotRefresh(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	wg.Wait()
+	finish()
 	if failed.Load() {
 		t.Fatal("authorization saw a mixed snapshot")
 	}
