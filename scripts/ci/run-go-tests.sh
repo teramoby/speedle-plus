@@ -24,11 +24,24 @@ set -euo pipefail
 cd "$(dirname "$0")/../.."
 
 mode=${1:?usage: run-go-tests.sh gate|nightly|weekly|regression}
-# Docker Desktop on macOS pulls images through docker-credential-desktop,
-# which lives in the app bundle; a runner service's PATH does not include it.
-docker_desktop_bin=/Applications/Docker.app/Contents/Resources/bin
-if [[ "$(uname -s)" == Darwin && -x "${docker_desktop_bin}/docker-credential-desktop" ]]; then
-  export PATH="${PATH}:${docker_desktop_bin}"
+# Docker Desktop on macOS stores registry credentials in the login keychain,
+# which a runner service cannot open, so every image pull fails. The tests
+# pull only public images: give Docker a copy of the user's config without
+# the credential store, keeping its contexts so it still reaches the daemon.
+user_docker_config=${DOCKER_CONFIG:-${HOME}/.docker}
+if [[ "$(uname -s)" == Darwin && -f "${user_docker_config}/config.json" ]] &&
+   grep -qE '"(credsStore|credHelpers)"' "${user_docker_config}/config.json"; then
+  DOCKER_CONFIG=$(mktemp -d "${TMPDIR:-/tmp}/speedle-docker-config.XXXXXX")
+  trap 'rm -rf "${DOCKER_CONFIG}"' EXIT
+  python3 -c 'import json, sys
+config = json.load(open(sys.argv[1]))
+for key in ("credsStore", "credHelpers", "auths"):
+    config.pop(key, None)
+json.dump(config, open(sys.argv[2], "w"))' "${user_docker_config}/config.json" "${DOCKER_CONFIG}/config.json"
+  if [[ -d "${user_docker_config}/contexts" ]]; then
+    ln -s "${user_docker_config}/contexts" "${DOCKER_CONFIG}/contexts"
+  fi
+  export DOCKER_CONFIG
 fi
 results=${RESULTS_DIR:-test-results}
 
