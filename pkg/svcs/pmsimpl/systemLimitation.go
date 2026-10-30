@@ -10,7 +10,6 @@ import (
 	"github.com/teramoby/speedle-plus/api/pms"
 	"github.com/teramoby/speedle-plus/pkg/errors"
 	"github.com/teramoby/speedle-plus/pkg/eval/condition"
-	storeutils "github.com/teramoby/speedle-plus/pkg/store/utils"
 )
 
 var (
@@ -23,10 +22,10 @@ var (
 
 /*
 Check the following items:
- 1. The maximum number of service;
- 2. The maximum number of Policy + RolePolicy;
- 3. The size of each Policy and RolePolicy;
- 4. The syntax of each condition;
+	1. The maximum number of service;
+	2. The maximum number of Policy + RolePolicy;
+	3. The size of each Policy and RolePolicy;
+	4. The syntax of each condition;
 */
 func CheckService(service *pms.Service, policyStore pms.PolicyStoreManager) error {
 	// Check the number of the service
@@ -52,10 +51,6 @@ func CheckService(service *pms.Service, policyStore pms.PolicyStoreManager) erro
 	}
 	if MaxPolicyNum > 0 && int64(existingCount)+int64(creatingCount) > MaxPolicyNum {
 		return errors.Errorf(errors.ExceedLimit, "reached the maximum number of policy and rolePolicy, existingCount: %d, creatingCount: %d", existingCount, creatingCount)
-	}
-
-	if err := storeutils.ValidateServiceRolePolicies(service); err != nil {
-		return err
 	}
 
 	// Check the size of each policy and RolePolicy
@@ -88,10 +83,10 @@ func CheckService(service *pms.Service, policyStore pms.PolicyStoreManager) erro
 
 /*
 Check the following items:
- 1. The maximum number of Policy + RolePolicy;
- 2. The size of the Policy;
- 3. If the effect field of policy is empty;
- 4. The syntax of the condition;
+	1. The maximum number of Policy + RolePolicy;
+	2. The size of the Policy;
+    3. If the effect field of policy is empty;
+	4. The syntax of the condition;
 */
 func CheckPolicy(serviceName string, policy *pms.Policy, policyStore pms.PolicyStoreManager) error {
 	// Check global service
@@ -123,15 +118,12 @@ func CheckPolicy(serviceName string, policy *pms.Policy, policyStore pms.PolicyS
 
 /*
 Check the following items:
- 1. The maximum number of Policy + RolePolicy;
- 2. The size of the RolePolicy;
- 3. If the effect field of RolePolicy is empty;
- 4. The syntax of the condition;
+	1. The maximum number of Policy + RolePolicy;
+	2. The size of the RolePolicy;
+    3. If the effect field of RolePolicy is empty;
+	4. The syntax of the condition;
 */
 func CheckRolePolicy(serviceName string, rolePolicy *pms.RolePolicy, policyStore pms.PolicyStoreManager) error {
-	if err := storeutils.ValidateRolePolicyPrincipals(rolePolicy); err != nil {
-		return err
-	}
 	if len(rolePolicy.Effect) <= 0 {
 		return errors.New(errors.InvalidRequest, "no effect provided in role policy.")
 	}
@@ -201,7 +193,7 @@ func checkMaxSize(val interface{}, maxSize int64) (bool, error) {
 
 /*
 Check the following items:
- 1. The maximum number of function;
+	1. The maximum number of function;
 */
 func CheckFunction(function *pms.Function, policyStore pms.PolicyStoreManager) error {
 	// Check the number of Policy + RolePolicy

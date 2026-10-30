@@ -151,8 +151,8 @@ func TestCreateServicePrincipalHeader(t *testing.T) {
 		Effect: "deny",
 	}
 	var rpolicy = pmsapi.RolePolicy{
-		Name: "rp1", Effect: "deny",
-		Principals: []string{"user:alice"}, Roles: []string{"reader"},
+		Name:   "rp1",
+		Effect: "deny",
 	}
 	service.Policies = []*pmsapi.Policy{&policy}
 	service.RolePolicies = []*pmsapi.RolePolicy{&rpolicy}
@@ -236,8 +236,8 @@ func TestCreatePolicyPrincipalHeader(t *testing.T) {
 func TestCreateRolePolicyPrincipalHeader(t *testing.T) {
 
 	var rpolicy = pmsapi.RolePolicy{
-		Name: "rp1", Effect: "deny",
-		Principals: []string{"user:alice"}, Roles: []string{"reader"},
+		Name:   "rp1",
+		Effect: "deny",
 	}
 	policyData, err := json.Marshal(rpolicy)
 	if err != nil {

@@ -105,7 +105,7 @@ func TestServiceAndPolicyHandlers(t *testing.T) {
 		{"POST", base + "service/app/role-policy", `{"name":"rp","effect":"grant","roles":["r"],"principals":["user:a"]}`, 201},
 		{"POST", base + "service/app/role-policy", `{"name":"rp"}`, 400},
 		{"POST", base + "service/app/role-policy", `{`, 400},
-		{"POST", base + "service/nope/role-policy", `{"name":"rp","effect":"grant","principals":["user:alice"],"roles":["reader"]}`, 404},
+		{"POST", base + "service/nope/role-policy", `{"name":"rp","effect":"grant"}`, 404},
 		{"GET", base + "service/app/role-policy", "", 200},
 		{"GET", base + "service/nope/role-policy", "", 404},
 		{"GET", base + "service/app/role-policy/nope", "", 404},
@@ -130,7 +130,7 @@ func TestServiceAndPolicyHandlers(t *testing.T) {
 	rec := serve(t, router, call{"POST", base + "service/app/policy", `{"name":"p","effect":"deny"}`, 201})
 	var policy pms.Policy
 	json.Unmarshal(rec.Body.Bytes(), &policy)
-	rec = serve(t, router, call{"POST", base + "service/app/role-policy", `{"name":"rp","effect":"deny","principals":["user:alice"],"roles":["r"]}`, 201})
+	rec = serve(t, router, call{"POST", base + "service/app/role-policy", `{"name":"rp","effect":"deny","roles":["r"]}`, 201})
 	var rolePolicy pms.RolePolicy
 	json.Unmarshal(rec.Body.Bytes(), &rolePolicy)
 	for _, c := range []call{
@@ -216,7 +216,7 @@ func TestHandlersReportStoreErrors(t *testing.T) {
 		{"DELETE", base + "service/app/policy/id", "", 500},
 		{"GET", base + "service/app/policy/id", "", 500},
 		{"GET", base + "service/app/policy", "", 500},
-		{"POST", base + "service/app/role-policy", `{"name":"rp","effect":"grant","principals":["user:alice"],"roles":["reader"]}`, 500},
+		{"POST", base + "service/app/role-policy", `{"name":"rp","effect":"grant"}`, 500},
 		{"DELETE", base + "service/app/role-policy", "", 500},
 		{"DELETE", base + "service/app/role-policy/id", "", 500},
 		{"GET", base + "service/app/role-policy/id", "", 500},
@@ -244,7 +244,7 @@ func TestHandlersReportStoreErrors(t *testing.T) {
 	for _, c := range []call{
 		{"POST", base + "service", `{"name":"app"}`, 500},
 		{"POST", base + "service/app/policy", `{"name":"p","effect":"grant"}`, 500},
-		{"POST", base + "service/app/role-policy", `{"name":"rp","effect":"grant","principals":["user:alice"],"roles":["reader"]}`, 500},
+		{"POST", base + "service/app/role-policy", `{"name":"rp","effect":"grant"}`, 500},
 		{"POST", base + "function", `{"name":"f"}`, 500},
 	} {
 		serve(t, router, c)
@@ -306,23 +306,5 @@ func TestDecodeServiceRequest(t *testing.T) {
 	}
 	if _, err := decodeServiceRequest(httptest.NewRequest("POST", "/", strings.NewReader(`{`))); err == nil {
 		t.Fatal("a malformed body must fail")
-	}
-}
-
-func TestRolePolicyRequiresPrincipals(t *testing.T) {
-	router, ps := newFileRouter(t)
-	serve(t, router, call{"POST", base + "service", `{"name":"app"}`, 201})
-	for _, effect := range []string{"grant", "deny"} {
-		for _, field := range []string{"", `,"principals":null`, `,"principals":[]`, `,"principals":[""]`, `,"principals":["user:alice",""]`} {
-			body := `{"effect":"` + effect + `","roles":["reader"]` + field + `}`
-			rec := serve(t, router, call{"POST", base + "service/app/role-policy", body, 400})
-			if !strings.Contains(rec.Body.String(), "principal") {
-				t.Fatalf("unhelpful error: %s", rec.Body.String())
-			}
-			serve(t, router, call{"POST", base + "service", `{"name":"bad","rolePolicies":[` + body + `]}`, 400})
-		}
-	}
-	if count, err := ps.GetRolePolicyCount("app"); err != nil || count != 0 {
-		t.Fatalf("invalid rule persisted: %d %v", count, err)
 	}
 }

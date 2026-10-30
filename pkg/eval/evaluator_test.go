@@ -352,7 +352,8 @@ func TestGetPermissions(t *testing.T) {
 	}
 }
 
-// Empty resource scopes mean any resource; role subjects remain explicit.
+//empty resource and empty resource expression means any resource
+//empty principals means any principal
 func TestGetRoles_empty(t *testing.T) {
 	alice := adsapi.Subject{
 		Principals: []*adsapi.Principal{
@@ -375,7 +376,7 @@ func TestGetRoles_empty(t *testing.T) {
 		request       adsapi.RequestContext
 		expectedRoles []string
 	}{
-		{ // explicit principal, any resource
+		{ // any principal, any resource
 			stream: `
 	{
 		"services": [
@@ -386,8 +387,7 @@ func TestGetRoles_empty(t *testing.T) {
 				{
 					"id": "rp1",
 					"effect": "grant",
-					"principals": ["user:alice", "user:bill"],
-					"roles": ["reader"]
+					"roles": ["anyuser"]
 				}
 			]
 		}
@@ -395,7 +395,7 @@ func TestGetRoles_empty(t *testing.T) {
 	}
 	`,
 			request:       adsapi.RequestContext{Subject: &alice, ServiceName: "erp", Attributes: map[string]interface{}{}},
-			expectedRoles: []string{"reader"},
+			expectedRoles: []string{"anyuser"},
 		},
 		{ //make sure role policy support resource exp
 			stream: `
@@ -422,7 +422,7 @@ func TestGetRoles_empty(t *testing.T) {
 			request:       adsapi.RequestContext{Subject: &alice, ServiceName: "erp", Resource: "/node1213131/wqwq", Attributes: map[string]interface{}{}},
 			expectedRoles: []string{"role1"},
 		},
-		{ //explicit principals
+		{ //any principal
 			stream: `
 	{
 		"services": [
@@ -433,7 +433,6 @@ func TestGetRoles_empty(t *testing.T) {
 				{
 					"id": "rp1",
 					"effect": "grant",
-					"principals": ["user:alice", "user:bill"],
 					"roles": ["role1"],
 					"ResourceExpressions": ["/node.*"]
 				}
@@ -445,7 +444,7 @@ func TestGetRoles_empty(t *testing.T) {
 			request:       adsapi.RequestContext{Subject: &bill, ServiceName: "erp", Resource: "/node1213131/wqwq", Attributes: map[string]interface{}{}},
 			expectedRoles: []string{"role1"},
 		},
-		{ //explicit principals
+		{ //any principal
 			stream: `
 	{
 		"services": [
@@ -456,7 +455,6 @@ func TestGetRoles_empty(t *testing.T) {
 				{
 					"id": "rp1",
 					"effect": "grant",
-					"principals": ["user:alice", "user:bill"],
 					"roles": ["role1"],
 					"ResourceExpressions": ["/node.*"]
 				}
@@ -479,7 +477,6 @@ func TestGetRoles_empty(t *testing.T) {
 				{
 					"id": "rp1",
 					"effect": "grant",
-					"principals": ["user:alice", "user:bill"],
 					"roles": ["auser"],
 					"condition": "request_user =~'al*?'"
 				}
@@ -502,7 +499,6 @@ func TestGetRoles_empty(t *testing.T) {
 				{
 					"id": "rp1",
 					"effect": "grant",
-					"principals": ["user:alice", "user:bill"],
 					"roles": ["auser"],
 					"condition": "request_user =~'al*?'"
 				}
@@ -545,9 +541,9 @@ func TestGetRoles_empty(t *testing.T) {
 	}
 }
 
-// empty Permissions means any permission
-// empty resource and empty resource expression means any resource
-// empty principals means any principal
+//empty Permissions means any permission
+//empty resource and empty resource expression means any resource
+//empty principals means any principal
 func TestIsAllowed_empty(t *testing.T) {
 	alice := adsapi.Subject{
 		Principals: []*adsapi.Principal{

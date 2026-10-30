@@ -18,7 +18,6 @@ import (
 	"github.com/fsnotify/fsnotify"
 	log "github.com/sirupsen/logrus"
 	"github.com/teramoby/speedle-plus/api/pms"
-	storeutils "github.com/teramoby/speedle-plus/pkg/store/utils"
 )
 
 type Store struct {
@@ -65,25 +64,13 @@ func (s *Store) readPolicyStoreWithoutLock() (*pms.PolicyStore, error) {
 
 // WritePolicyStore writes policies to a file
 func (s *Store) WritePolicyStore(ps *pms.PolicyStore) error {
-	prepared, err := storeutils.PreparePolicyStore(ps)
-	if err != nil {
-		return err
-	}
 	s.rwLock.Lock()
 	defer s.rwLock.Unlock()
 
-	return s.writePolicyStoreWithoutLock(prepared)
+	return s.writePolicyStoreWithoutLock(ps)
 }
 
 func (s *Store) writePolicyStoreWithoutLock(ps *pms.PolicyStore) error {
-	for _, service := range ps.Services {
-		if err := storeutils.ValidateServiceRolePolicies(service); err != nil {
-			return err
-		}
-	}
-	if err := storeutils.ValidatePolicyIDs(ps); err != nil {
-		return err
-	}
 	jsonFile, err := os.Create(s.FileLocation)
 	if err != nil {
 		return errors.Wrapf(err, errors.StoreError, "unable to create file %q", s.FileLocation)
@@ -217,9 +204,6 @@ func (s *Store) getServiceWithoutLock(serviceName string) (*pms.Service, error) 
 
 // CreateService creates a new service
 func (s *Store) CreateService(service *pms.Service) error {
-	if err := storeutils.ValidateServiceRolePolicies(service); err != nil {
-		return err
-	}
 
 	s.rwLock.Lock()
 	defer s.rwLock.Unlock()
@@ -668,9 +652,6 @@ func (s *Store) DeleteRolePolicies(serviceName string) error {
 }
 
 func (s *Store) CreateRolePolicy(serviceName string, rolePolicy *pms.RolePolicy) (*pms.RolePolicy, error) {
-	if err := storeutils.ValidateRolePolicyPrincipals(rolePolicy); err != nil {
-		return nil, err
-	}
 
 	s.rwLock.Lock()
 	defer s.rwLock.Unlock()
