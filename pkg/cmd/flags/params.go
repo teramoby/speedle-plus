@@ -50,8 +50,9 @@ type Parameters struct {
 	ClientCertPath  StrParamDetail
 	ForceClientCert StrParamDetail
 	/////////Store config////////////////
-	StoreType         StrParamDetail
-	StoreWatchEnabled StrParamDetail
+	StoreType               StrParamDetail
+	StoreWatchEnabled       StrParamDetail
+	StoreFailureGracePeriod StrParamDetail
 
 	////////Log config/////////////////////
 	LogConf      LogParameters // normal log configuration
@@ -265,6 +266,8 @@ func (k *Parameters) ParseFlags(defaultEndpoint string, printVersionInfoFun func
 	params = append(params, &k.StoreType)
 	k.StoreWatchEnabled = StrParamDetail{Name: "enable-watch", DefaultValue: strconv.FormatBool(DefaultStoreWatchEnabled), Usage: "Evaluator config: Whether enable watch store changes."}
 	params = append(params, &k.StoreWatchEnabled)
+	k.StoreFailureGracePeriod = StrParamDetail{Name: "store-failure-grace-period", DefaultValue: "0s", Usage: "Evaluator config: how long a complete cached snapshot may be used after a store failure; 0s denies immediately."}
+	params = append(params, &k.StoreFailureGracePeriod)
 
 	// Log configurations
 	k.LogConf.LogLevel = StrParamDetail{Name: "log-level", Usage: "Log config: log level, available levels are panic, fatal, error, warn, info and debug."}
@@ -401,6 +404,10 @@ func (k *Parameters) ParseFlags(defaultEndpoint string, printVersionInfoFun func
 				case k.StoreWatchEnabled.Name:
 					if conf != nil {
 						f.Value.Set(strconv.FormatBool(conf.EnableWatch))
+					}
+				case k.StoreFailureGracePeriod.Name:
+					if conf != nil && conf.StoreFailureGracePeriod != "" {
+						f.Value.Set(conf.StoreFailureGracePeriod)
 					}
 				// Log configurations
 				case k.LogConf.LogLevel.Name:
@@ -585,6 +592,13 @@ func (k *Parameters) Param2Config(storeParamsMap map[string]string) (*cfg.Config
 
 	watchEnabled, _ := strconv.ParseBool(k.StoreWatchEnabled.Value)
 	conf.EnableWatch = watchEnabled
+	conf.StoreFailureGracePeriod = k.StoreFailureGracePeriod.Value
+	if conf.StoreFailureGracePeriod != "" {
+		grace, err := time.ParseDuration(conf.StoreFailureGracePeriod)
+		if err != nil || grace < 0 {
+			return nil, errors.New(errors.ConfigError, "store-failure-grace-period must be a finite nonnegative duration")
+		}
+	}
 
 	// Log Configuration
 	if len(k.LogConf.LogLevel.Value) != 0 ||

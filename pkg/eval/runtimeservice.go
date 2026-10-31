@@ -9,6 +9,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/teramoby/speedle-plus/3rdparty/github.com/Knetic/govaluate"
 	"github.com/teramoby/speedle-plus/api/pms"
+	"github.com/teramoby/speedle-plus/pkg/errors"
 )
 
 type RuntimePolicyStore struct {
@@ -93,6 +94,8 @@ func (rtps *RuntimePolicyStore) recompilePolicyConditionAtRuntime(serviceName st
 }
 
 func updatePolicyCondition(rtps *RuntimePolicyStore, serviceName string, policy *pms.Policy, condition *govaluate.EvaluableExpression) {
+	var err error
+	defer recoverEvaluation("PolicyConditionCache", &err)
 	rtps.RLock()
 	defer rtps.RUnlock()
 	rtService, ok := rtps.RuntimeServices[serviceName]
@@ -117,6 +120,8 @@ func (rtps *RuntimePolicyStore) recompileRolePolicyConditionAtRuntime(serviceNam
 }
 
 func updateRolePolicyCondition(rtps *RuntimePolicyStore, serviceName string, policy *pms.RolePolicy, condition *govaluate.EvaluableExpression) {
+	var err error
+	defer recoverEvaluation("RoleConditionCache", &err)
 	rtps.RLock()
 	defer rtps.RUnlock()
 	rtService, ok := rtps.RuntimeServices[serviceName]
@@ -256,7 +261,10 @@ func compileCondition(condition string, functions map[string]govaluate.Expressio
 
 	exp, err := govaluate.NewEvaluableExpressionWithFunctions(condition, functions)
 	if err != nil {
-		log.Errorf("Error happens in parsing condition (%s): %v", condition, err)
+		log.Errorf("Error parsing policy condition: %v", err)
+		if _, limited := err.(*govaluate.ComplexityError); limited {
+			return nil, errors.Wrap(err, errors.EvalEngineError, "policy condition exceeds evaluation limits")
+		}
 		return nil, err
 	}
 	return exp, nil

@@ -47,6 +47,14 @@ func (s *Store) poll(ctx context.Context, w *watcher) {
 				return
 			}
 			log.Warnf("MySQL watch will retry: %v", err)
+			select {
+			case w.events <- pms.StoreChangeEvent{Type: pms.STORE_UNAVAILABLE}:
+				// Recovery must publish a complete snapshot even if the revision
+				// did not change while disconnected.
+				seen = nil
+			case <-ctx.Done():
+				return
+			}
 		} else if ps != nil {
 			select {
 			case w.events <- pms.StoreChangeEvent{Type: pms.FULL_RELOAD, ID: revision, Content: ps}:

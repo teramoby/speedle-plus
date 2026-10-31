@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/teramoby/speedle-plus/pkg/errors"
@@ -16,7 +17,6 @@ import (
 
 	"context"
 	clientv3 "go.etcd.io/etcd/client/v3"
-	"go.etcd.io/etcd/client/v3/concurrency"
 	"go.etcd.io/etcd/server/v3/embed"
 
 	log "github.com/sirupsen/logrus"
@@ -37,42 +37,35 @@ type Store struct {
 	client       *clientv3.Client
 	Config       *clientv3.Config
 	KeyPrefix    string
-	stop         chan struct{}
+	watchMu      sync.Mutex
+	watch        *etcdWatcher
+	closeOnce    sync.Once
+	closeErr     error
 	embeddedInst *embed.Etcd
 	embeddedDir  string
 }
 
 func (s *Store) destroy() error {
-	err := s.client.Close()
-	if s.embeddedInst != nil {
-		CleanEmbeddedEtcd(s.embeddedInst, s.embeddedDir)
-	}
-	if err != nil {
-		return errors.New(errors.StoreError, "unable to close connection to etcd server")
-	}
-	return nil
+	return s.Close()
+}
+
+// Close releases the subscription before closing its shared client.
+func (s *Store) Close() error {
+	s.closeOnce.Do(func() {
+		s.StopWatch()
+		if err := s.client.Close(); err != nil {
+			s.closeErr = errors.New(errors.StoreError, "unable to close connection to etcd server")
+		}
+		if s.embeddedInst != nil {
+			CleanEmbeddedEtcd(s.embeddedInst, s.embeddedDir)
+		}
+	})
+	return s.closeErr
 }
 
 // read policy store from etcd3
 func (s *Store) ReadPolicyStore() (*pms.PolicyStore, error) {
-	serviceNames, err := s.GetServiceNames()
-	if err != nil {
-		return nil, err
-	}
-	var ps pms.PolicyStore
-	for _, serviceName := range serviceNames {
-		service, err := s.GetService(serviceName)
-		if err != nil {
-			return nil, err
-		}
-		ps.Services = append(ps.Services, service)
-	}
-	functions, err := s.ListAllFunctions("")
-	if err != nil {
-		return nil, err
-	}
-	ps.Functions = functions
-	return &ps, nil
+	return s.readSnapshot(context.Background())
 }
 
 // write policy store to etcd3
@@ -555,134 +548,6 @@ func (s *Store) GetFunctionCount() (int64, error) {
 	}
 
 	return getResp.Count, nil
-}
-
-func (s *Store) Watch() (pms.StorageChangeChannel, error) {
-	log.Info("Entering Watch...")
-	evalChan := make(chan pms.StoreChangeEvent)
-	s.stop = make(chan struct{})
-	errChan := make(chan error)
-	stopChan := make(chan struct{})
-	go func() {
-		defer func() {
-			close(evalChan)
-			close(s.stop)
-			close(errChan)
-			close(stopChan)
-			log.Info("Exiting Watch...")
-		}()
-	loop:
-		for {
-			//TODO: reload policy store in case missing any changes during watch failure
-			go watch(evalChan, s, errChan, stopChan)
-			select {
-			case err := <-errChan:
-				log.Warningf("Error %v happens, restart watching...\n", err)
-				continue
-			case <-stopChan:
-				log.Warning("Receiving stop signal, stop Watching...")
-				break loop
-			}
-		}
-
-	}()
-	return evalChan, nil
-}
-
-func watch(evalChan chan pms.StoreChangeEvent, s *Store, errChan chan error, stopChan chan struct{}) {
-	watchID := time.Now().Unix()
-	log.Infof("Entering watch %v...", watchID)
-	cli, err := clientv3.New(*s.Config)
-	if err != nil {
-		log.Warningf("Error happens when new etcd client, %v, exiting watch...\n", err)
-		err := errors.Wrapf(err, errors.StoreError, "failed to connect to etcd server")
-		errChan <- err
-		return
-	}
-	defer func() {
-		cli.Close()
-		log.Infof("Exiting watch %v...", watchID)
-	}()
-
-	// Session represents a lease kept alive for the lifetime of a client. Fault-tolerant applications may use sessions to reason about liveness.
-	session, err := concurrency.NewSession(cli, concurrency.WithTTL(60))
-	if err != nil {
-		log.Warningf("Error happens when new session, %v\n", err)
-		err = errors.Wrap(err, errors.StoreError, "failed to create session with etcd server")
-		errChan <- err
-		return
-	}
-
-	etcdChan := cli.Watch(context.Background(), s.KeyPrefix, clientv3.WithPrefix())
-
-	for {
-		select {
-		// receive watch response from etcd
-		case resp := <-etcdChan:
-			if err := resp.Err(); err != nil {
-				log.Warningf("Error happens in watch response, %v\n", err)
-				err = errors.Wrap(err, errors.StoreError, "error found in watch response")
-				errChan <- err
-				return
-			}
-			for _, e := range resp.Events {
-				id := time.Now().Unix()
-				//Note: In each policy/rolePolicy creation/deletion, service node (s.KeyPrefix+serviceName+keySeparator) will be updated.
-				//so we could only check the event on service node.
-				if clientv3.EventTypeDelete == e.Type {
-					if strings.HasPrefix(string(e.Kv.Key), s.KeyPrefix+ServicesKey+KeySeparator) {
-						serviceName := strings.TrimPrefix(string(e.Kv.Key), s.KeyPrefix+ServicesKey+KeySeparator)
-						serviceName = strings.TrimSuffix(serviceName, KeySeparator)
-						if !strings.Contains(serviceName, KeySeparator) {
-							evalChan <- pms.StoreChangeEvent{Type: pms.SERVICE_DELETE, ID: id, Content: []string{serviceName}}
-						}
-					} else if strings.HasPrefix(string(e.Kv.Key), s.KeyPrefix+FunctionsKey+KeySeparator) {
-						functionName := strings.TrimPrefix(string(e.Kv.Key), s.KeyPrefix+FunctionsKey+KeySeparator)
-						evalChan <- pms.StoreChangeEvent{Type: pms.FUNCTION_DELETE, ID: id, Content: []string{functionName}}
-					}
-
-				} else if clientv3.EventTypePut == e.Type {
-					if strings.HasPrefix(string(e.Kv.Key), s.KeyPrefix+ServicesKey+KeySeparator) {
-						serviceName := strings.TrimPrefix(string(e.Kv.Key), s.KeyPrefix+ServicesKey+KeySeparator)
-						serviceName = strings.TrimSuffix(serviceName, KeySeparator)
-						if !strings.Contains(serviceName, KeySeparator) {
-							service, err := s.GetService(serviceName)
-							if err != nil {
-								log.Warningf("Unable get service due to error %v.\n", err)
-								continue
-							}
-							evalChan <- pms.StoreChangeEvent{Type: pms.SERVICE_ADD, ID: id, Content: service}
-						}
-					} else if strings.HasPrefix(string(e.Kv.Key), s.KeyPrefix+FunctionsKey+KeySeparator) {
-						functionName := strings.TrimPrefix(string(e.Kv.Key), s.KeyPrefix+FunctionsKey+KeySeparator)
-						function, err := s.GetFunction(functionName)
-						if err != nil {
-							log.Warningf("Unable to get function due to error %v.\n", err)
-						}
-						evalChan <- pms.StoreChangeEvent{Type: pms.FUNCTION_ADD, ID: id, Content: function}
-
-					}
-				}
-			}
-			// receive the stop signal
-		case <-s.stop:
-			log.Warning("Receiving stop signal")
-			stopChan <- struct{}{}
-			return
-
-		case <-session.Done(): // closed by etcd
-			log.Warning("Session is closed by etcd")
-			errChan <- errors.New(errors.StoreError, "watch session is closed by remote etcd server")
-			return
-		}
-	}
-
-}
-
-func (s *Store) StopWatch() {
-	if s.stop != nil {
-		s.stop <- struct{}{}
-	}
 }
 
 // For policy manager

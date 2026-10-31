@@ -242,11 +242,17 @@ func TestWatchRetriesWithoutLosingRevision(t *testing.T) {
 	if events != again {
 		t.Fatal("duplicate watcher")
 	}
-	for _, revision := range []int64{1, 2} {
+	for _, expected := range []struct {
+		kind     pms.EventType
+		revision int64
+	}{{pms.FULL_RELOAD, 1}, {pms.STORE_UNAVAILABLE, 0}, {pms.FULL_RELOAD, 2}} {
 		select {
 		case e := <-events:
-			if e.ID != revision || e.Type != pms.FULL_RELOAD || e.Content.(*pms.PolicyStore) == nil {
+			if e.ID != expected.revision || e.Type != expected.kind {
 				t.Fatalf("event %+v", e)
+			}
+			if e.Type == pms.FULL_RELOAD && e.Content.(*pms.PolicyStore) == nil {
+				t.Fatal("missing recovery snapshot")
 			}
 		case <-time.After(time.Second):
 			t.Fatal("watch did not recover")

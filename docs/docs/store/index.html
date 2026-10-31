@@ -99,6 +99,44 @@ headingSelector: 'h2'
 <p>For deployment walkthroughs, see <a href="/docs/store/mysql/">MySQL Setup</a>,
 <a href="/docs/store/etcd/">etcd Setup</a> and <a href="/docs/store/mongodb/">MongoDB Setup</a>.</p>
 
+<h2 id="store-failures-and-cached-authorization">Store failures and cached authorization</h2>
+
+<p>File, etcd, MySQL and MongoDB use the same ADS failure policy. The default
+<code>storeFailureGracePeriod</code> is <code>&quot;0s&quot;</code>: once a store failure is detected, authorization
+returns <code>allowed:false</code> and an evaluation error. ADS stays running and retries.
+A readable connection alone does not restore authorization; a successful complete
+snapshot reload is required. With watching enabled, a failed subscription must
+be re-established first; successful data reads while watch is broken do not reset
+the failure/grace deadline. A deleted file is retried instead of terminating ADS.</p>
+
+<p>Deployments that explicitly accept delayed revocation can set a finite duration,
+for example <code>&quot;storeFailureGracePeriod&quot;: &quot;5s&quot;</code> at the top level of the ADS JSON
+configuration. The equivalent flag is <code>--store-failure-grace-period=5s</code>, and the
+environment variable is <code>SPDL_STORE_FAILURE_GRACE_PERIOD</code>. The usual flag →
+environment → file → default precedence applies. Repeated failures do not extend
+the deadline. Within the grace period decisions use the last complete snapshot,
+so revocations cannot take effect until synchronization recovers. Partial-cache
+failures and evaluation panics never receive a grace period.</p>
+
+<p>Built-in stores have lightweight health probes, checked about once per second
+with a one-second probe timeout. Watches may report failure sooner; in-flight
+store reads also have their backend timeouts. Failure detection and ordinary
+policy propagation are asynchronous, not immediate revocation guarantees.
+With <code>enableWatch:false</code>, requests still check store health; ordinary policy
+updates require an explicit refresh. After an outage, recovery loads a complete
+snapshot even in that mode. An initial load failure cannot use a grace period.
+Custom stores can implement <code>pms.StoreHealthChecker</code> and publish
+<code>pms.STORE_UNAVAILABLE</code> events to participate in the same failure policy.</p>
+
+<p>File-store PMS writes publish a fully serialized, synced temporary file with a
+same-directory atomic rename. Independent ADS readers therefore see a complete
+old or new snapshot. The writer needs write access to the parent directory;
+existing permission bits and configured symlinks are preserved. The replacement
+file is created by the writer account, so configure directory group/ACL inheritance
+for separate PMS/ADS users. Containers must share the policy directory so
+replacements are visible to both services. Directly created new policy files use mode 0600;
+the normal file-store builder continues to initialize missing stores as before.</p>
+
 <h2 id="mysql-8-4-policy-store">MySQL 8.4 policy store</h2>
 
 <p>Follow the <a href="/docs/store/mysql/">step-by-step MySQL setup guide</a> to create a
@@ -167,7 +205,7 @@ database, configure separate PMS/ADS accounts, and verify policy synchronization
 
 <p>Each write locks the single revision row and commits data changes together with a revision increment. This serializes policy writes across PMS instances. Service creation with nested policies, cascading deletion, and whole-store replacement are atomic. Import preserves supplied policy IDs and assigns IDs where absent. Snapshot reads use one repeatable-read transaction.</p>
 
-<p>With <code>enableWatch</code>, ADS polls the revision and receives a complete consistent snapshot when it changes. Startup also sends a snapshot to cover updates between the initial read and watch registration. Propagation is asynchronous, normally within a polling interval plus query/cache-rebuild time. During a database outage ADS retains its last loaded policies, retries reads, and catches up after recovery. Changes made directly in SQL without incrementing the revision are not discovered automatically; use PMS or the store interface for policy writes.</p>
+<p>With <code>enableWatch</code>, ADS polls the revision and receives a complete consistent snapshot when it changes. Startup also sends a snapshot to cover updates between the initial read and watch registration. Propagation is asynchronous, normally within a polling interval plus query/cache-rebuild time. During a database outage ADS retains its data but suspends cached authorization by default, retries reads, and reloads a complete snapshot before resuming. The shared failure/grace policy above applies. Changes made directly in SQL without incrementing the revision are not discovered automatically; use PMS or the store interface for policy writes.</p>
 
 <p>The operation timeout also bounds connection-pool waits and transaction lock waits. Failed writes are rolled back; a connection loss during commit can leave the outcome uncertain, so callers should inspect stored state before retrying a non-idempotent create. <code>StopWatch</code> and <code>Close</code> are idempotent and release watch resources; <code>Close</code> also closes the connection pool.</p>
 

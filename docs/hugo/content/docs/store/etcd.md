@@ -243,3 +243,5 @@ Embedded mode (`IsEmbeddedEtcd: true`) is for local development/tests and uses t
 | Permission denied | Client certificate identity, enabled RBAC roles and prefix permissions. |
 
 Return to [Pluggable Storage](/docs/store/) for backend interfaces and configuration precedence.
+
+Store failures follow the same policy as every built-in store: ADS defaults to deny with an error after detecting unavailability, stays running and retries, and resumes after a successful complete reload. See [store failures and cached authorization](/docs/store/#store-failures-and-cached-authorization) for the optional finite grace period and its revocation delay.

@@ -38,14 +38,21 @@ func writeFile(t *testing.T, path, content string) {
 // change may still produce.
 func expectReload(t *testing.T, ch pms.StorageChangeChannel, after string) {
 	t.Helper()
-	select {
-	case e := <-ch:
-		if e.Type != pms.FULL_RELOAD {
-			t.Fatalf("after %s: event type %d, want %d", after, e.Type, pms.FULL_RELOAD)
+	for {
+		select {
+		case e := <-ch:
+			if e.Type == pms.STORE_UNAVAILABLE {
+				continue
+			}
+			if e.Type != pms.FULL_RELOAD {
+				t.Fatalf("after %s: event type %d, want %d", after, e.Type, pms.FULL_RELOAD)
+			}
+			goto received
+		case <-time.After(5 * time.Second):
+			t.Fatalf("after %s: no reload event", after)
 		}
-	case <-time.After(5 * time.Second):
-		t.Fatalf("after %s: no reload event", after)
 	}
+received:
 	for {
 		select {
 		case <-ch:
