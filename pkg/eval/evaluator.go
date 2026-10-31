@@ -167,6 +167,11 @@ func (p *PolicyEvalImpl) AssertToken(ctx *adsapi.RequestContext) (err error) {
 		// then panic; that partial identity must not survive a reused request.
 		before := *ctx
 		original = &before
+		attributes, err := copyAssertionAttributes(ctx.Attributes)
+		if err != nil {
+			return err
+		}
+		ctx.Attributes = attributes
 		identity := *ctx.Subject
 		if ctx.Subject.Principals != nil {
 			identity.Principals = make([]*adsapi.Principal, len(ctx.Subject.Principals))
@@ -178,7 +183,7 @@ func (p *PolicyEvalImpl) AssertToken(ctx *adsapi.RequestContext) (err error) {
 			}
 		}
 		ctx.Subject = &identity
-		err := p.AsserterFunc(ctx)
+		err = p.AsserterFunc(ctx)
 		if err == nil {
 			if ctx.Subject == nil {
 				return errors.New(errors.EvalEngineError, "identity asserter returned no subject")
@@ -188,6 +193,7 @@ func (p *PolicyEvalImpl) AssertToken(ctx *adsapi.RequestContext) (err error) {
 				ctx.Subject = original.Subject
 			}
 			ctx.Subject.Asserted = true
+			commitAssertionAttributes(original.Attributes, attributes, &ctx.Attributes)
 		}
 		return err
 	}

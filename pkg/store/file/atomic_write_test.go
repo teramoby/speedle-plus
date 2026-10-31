@@ -105,3 +105,37 @@ func TestAtomicWritePreservesModeAndSymlink(t *testing.T) {
 		t.Fatalf("temporary files left behind: %v", leftovers)
 	}
 }
+
+func TestAtomicWriteRecreatesDanglingSymlinkTarget(t *testing.T) {
+	dir := t.TempDir()
+	link, target := filepath.Join(dir, "policy.json"), filepath.Join(dir, "missing.json")
+	if err := os.Symlink("missing.json", link); err != nil {
+		t.Fatal(err)
+	}
+	s := &Store{FileLocation: link}
+	if err := s.WritePolicyStore(&pms.PolicyStore{Services: []*pms.Service{{Name: "recreated"}}}); err != nil {
+		t.Fatal(err)
+	}
+	info, err := os.Lstat(link)
+	if err != nil || info.Mode()&os.ModeSymlink == 0 {
+		t.Fatal("configured symlink replaced")
+	}
+	result, err := (&Store{FileLocation: target}).ReadPolicyStore()
+	if err != nil || len(result.Services) != 1 || result.Services[0].Name != "recreated" {
+		t.Fatalf("dangling target not recreated: %v", err)
+	}
+}
+
+func TestAtomicWriteRejectsSymlinkLoop(t *testing.T) {
+	dir := t.TempDir()
+	first, second := filepath.Join(dir, "first"), filepath.Join(dir, "second")
+	if err := os.Symlink("second", first); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink("first", second); err != nil {
+		t.Fatal(err)
+	}
+	if err := (&Store{FileLocation: first}).WritePolicyStore(&pms.PolicyStore{}); err == nil {
+		t.Fatal("symlink loop accepted")
+	}
+}

@@ -5,7 +5,8 @@ whole decision, returns `false`, `ERROR_IN_EVALUATION` and an `EvalEngineError`.
 This includes a panic in a grant or deny condition, a customer-function adapter,
 or an identity asserter. It never turns a panicking deny into a nonmatch while
 allowing another grant. Diagnose drops partial role/policy results; role and
-permission queries return no partial grants on error. Identity assertion runs on a private subject and commits it only on success,
+permission queries return no partial grants on error. Identity assertion runs on a private subject and private JSON-shaped attribute
+containers and commits them only on success,
 so a failed callback cannot leave a reused request partially trusted. Locks
 unwind before the recovery boundary, and a later healthy request can still
 succeed.
@@ -52,7 +53,8 @@ Fatal/Exit; cancellation unblocks watches even without an event consumer.
 File PMS writers serialize before touching the live file, sync a complete
 same-directory temporary file and atomically rename it into place. Separate
 readers never observe normal writes as truncated/partial JSON. Existing mode
-bits and configured symlinks are preserved; atomic replacement requires parent
+bits and configured symlinks are preserved (including recreation of a missing
+symlink target; looping chains fail with a bounded error); atomic replacement requires parent
 directory write access and creates the replacement as the writer account.
 A concurrent-manager regression reproduces unexpected EOF on the old writer.
 
