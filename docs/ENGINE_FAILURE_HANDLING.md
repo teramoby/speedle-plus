@@ -44,6 +44,12 @@ from restoring revoked grants. This also applies to custom stores without the
 optional health-check interface; they report outages through watch events or
 failed reads instead of proactive probes. Etcd recovery reads all pages at one revision.
 
+Watch invalidations arriving in a fixed five-millisecond window share one
+complete read. Continuous writes cannot extend that window indefinitely.
+Failure events and channel closure are handled as soon as they are consumed.
+Collection stops before reading, so changes arriving during a read queue a
+subsequent read and cannot be mistaken for part of the installed snapshot.
+
 `storeFailureGracePeriod` / `--store-failure-grace-period` /
 `SPDL_STORE_FAILURE_GRACE_PERIOD` defaults to `0s`. A finite explicit value allows
 the last complete snapshot to remain usable for that duration after the first

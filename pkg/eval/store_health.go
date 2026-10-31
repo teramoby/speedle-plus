@@ -106,18 +106,9 @@ func (p *PolicyEvalImpl) followStoreChanges(ch pms.StorageChangeChannel) {
 		}
 		select {
 		case event, ok := <-ch:
-			if !ok {
-				p.watchNeedsRestart.Store(true)
-				if !p.watchStopped.Load() {
-					_ = p.applyStoreChange(pms.StoreChangeEvent{Type: pms.STORE_UNAVAILABLE})
-				}
-				ch = nil
-				continue
+			if p.collectStoreInvalidations(ch, event, ok) {
+				_ = p.applyStoreChange(pms.StoreChangeEvent{Type: pms.FULL_RELOAD})
 			}
-			if event.Type != pms.STORE_UNAVAILABLE {
-				event = pms.StoreChangeEvent{Type: pms.FULL_RELOAD}
-			}
-			_ = p.applyStoreChange(event)
 		case <-ticker.C:
 			if ch == nil {
 				var err error
@@ -129,6 +120,29 @@ func (p *PolicyEvalImpl) followStoreChanges(ch pms.StorageChangeChannel) {
 				_ = p.Refresh()
 			}
 			p.ensureStoreHealth()
+		}
+	}
+}
+
+// Collect a short burst before reading. The fixed window cannot be extended
+// by continuous writers. Stop collecting before the snapshot read: any events
+// arriving during that read remain queued and require another fresh read.
+// Unavailability/closure takes effect immediately, without waiting for a timer.
+func (p *PolicyEvalImpl) collectStoreInvalidations(ch pms.StorageChangeChannel, event pms.StoreChangeEvent, ok bool) bool {
+	window := time.NewTimer(5 * time.Millisecond)
+	defer window.Stop()
+	for {
+		if !ok || event.Type == pms.STORE_UNAVAILABLE {
+			p.watchNeedsRestart.Store(true)
+			if !p.watchStopped.Load() {
+				_ = p.applyStoreChange(pms.StoreChangeEvent{Type: pms.STORE_UNAVAILABLE})
+			}
+			return false
+		}
+		select {
+		case event, ok = <-ch:
+		case <-window.C:
+			return !p.watchStopped.Load()
 		}
 	}
 }
