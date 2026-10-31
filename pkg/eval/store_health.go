@@ -1,0 +1,113 @@
+// Licensed under the Universal Permissive License (UPL) Version 1.0.
+package eval
+
+import (
+	"context"
+	"time"
+
+	log "github.com/sirupsen/logrus"
+	"github.com/teramoby/speedle-plus/api/pms"
+	"github.com/teramoby/speedle-plus/pkg/errors"
+)
+
+const storeHealthInterval = time.Second
+
+// These helpers change availability only while holding cacheGate. A failed
+// read preserves data for a configured grace period, never its validity forever.
+func (p *PolicyEvalImpl) storeUnavailableLocked() {
+	if p.storeFailureSince.IsZero() {
+		p.storeFailureSince = time.Now()
+		log.Error("Policy store unavailable; a complete reload is required")
+	}
+}
+
+func (p *PolicyEvalImpl) storeAvailableLocked() {
+	p.storeFailureSince = time.Time{}
+	p.cacheFailed.Store(false)
+}
+
+func (p *PolicyEvalImpl) cacheErrorLocked() error {
+	if p.closed.Load() {
+		return errors.New(errors.EvalCacheError, "authorization engine is closed")
+	}
+	if p.cacheFailed.Load() {
+		return errors.New(errors.EvalCacheError, "authorization cache requires a successful full reload")
+	}
+	if !p.storeFailureSince.IsZero() && time.Since(p.storeFailureSince) >= p.storeFailureGracePeriod {
+		return errors.New(errors.EvalCacheError, "policy store unavailable; a successful full reload is required")
+	}
+	return nil
+}
+
+func (p *PolicyEvalImpl) probeStoreHealth() (err error) {
+	defer recoverEvaluation("StoreHealth", &err)
+	ctx, cancel := context.WithTimeout(context.Background(), storeHealthInterval)
+	defer cancel()
+	return p.healthChecker.CheckHealth(ctx)
+}
+
+// Also used by requests when policy watching is explicitly disabled. This
+// avoids a background goroutine for static evaluators, while checking liveness
+// at most once per second. A successful probe alone never validates old data.
+func (p *PolicyEvalImpl) ensureStoreHealth() {
+	var recovered error
+	defer func() {
+		if recovered != nil {
+			p.cacheGate.Lock()
+			p.cacheFailed.Store(true)
+			p.cacheGate.Unlock()
+		}
+	}()
+	defer recoverEvaluation("StoreHealthMonitor", &recovered)
+	if p.healthChecker == nil || p.closed.Load() {
+		return
+	}
+	p.healthMu.Lock()
+	defer p.healthMu.Unlock()
+	if time.Since(p.lastHealthCheck) < storeHealthInterval {
+		return
+	}
+	err := p.probeStoreHealth()
+	p.lastHealthCheck = time.Now()
+	if err != nil {
+		p.cacheGate.Lock()
+		defer p.cacheGate.Unlock()
+		p.storeUnavailableLocked()
+		return
+	}
+	p.cacheGate.RLock()
+	reload := !p.storeFailureSince.IsZero() || p.cacheFailed.Load()
+	p.cacheGate.RUnlock()
+	if reload {
+		_ = p.Refresh()
+	}
+}
+
+// Built-in watches are invalidation signals. Read a fresh complete snapshot
+// rather than replaying stale deltas queued before/during an outage. This also
+// prevents an old payload from restoring a revoked grant after recovery.
+func (p *PolicyEvalImpl) followStoreChanges(ch pms.StorageChangeChannel) {
+	if p.healthChecker == nil {
+		p.updateRuntimeCacheWithStoreChange(ch)
+		return
+	}
+	ticker := time.NewTicker(storeHealthInterval)
+	defer ticker.Stop()
+	for {
+		select {
+		case event, ok := <-ch:
+			if !ok {
+				if !p.watchStopped.Load() {
+					_ = p.applyStoreChange(pms.StoreChangeEvent{Type: pms.STORE_UNAVAILABLE})
+				}
+				return
+			}
+			if event.Type != pms.STORE_UNAVAILABLE {
+				event = pms.StoreChangeEvent{Type: pms.FULL_RELOAD}
+			}
+			_ = p.applyStoreChange(event)
+		case <-ticker.C:
+			p.ensureStoreHealth()
+		}
+	}
+}

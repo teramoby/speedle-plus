@@ -63,15 +63,22 @@ type subject struct {
 }
 
 type PolicyEvalImpl struct {
-	RuntimePolicyStore *RuntimePolicyStore //This is runtime policy store
-	Store              pms.PolicyStoreManagerADS
-	AsserterFunc       func(ctx *adsapi.RequestContext) error
-	cleanupStop        chan struct{}
-	closeOnce          sync.Once
-	watchStopOnce      sync.Once
-	closeErr           error
-	cacheFailed        atomic.Bool
-	cacheGate          sync.RWMutex
+	RuntimePolicyStore      *RuntimePolicyStore //This is runtime policy store
+	Store                   pms.PolicyStoreManagerADS
+	AsserterFunc            func(ctx *adsapi.RequestContext) error
+	cleanupStop             chan struct{}
+	closeOnce               sync.Once
+	watchStopOnce           sync.Once
+	closeErr                error
+	cacheFailed             atomic.Bool
+	cacheGate               sync.RWMutex
+	healthChecker           pms.StoreHealthChecker
+	healthMu                sync.Mutex
+	lastHealthCheck         time.Time
+	storeFailureSince       time.Time
+	storeFailureGracePeriod time.Duration
+	watchStopped            atomic.Bool
+	closed                  atomic.Bool
 }
 
 func (p *PolicyEvalImpl) deleteService(serviceName string) {
@@ -82,18 +89,24 @@ func (p *PolicyEvalImpl) deleteService(serviceName string) {
 func (p *PolicyEvalImpl) fullReloadRuntimeCache() error {
 	ps, err := p.Store.ReadPolicyStore()
 	if err != nil {
+		p.storeUnavailableLocked()
 		log.Errorf("Fail to full reload runtime cache, err:%v", err)
 		return err
 	}
 	p.RuntimePolicyStore.reloadPolicyStore(ps)
-	p.cacheFailed.Store(false)
+	p.storeAvailableLocked()
 	return nil
 }
 
 func (p *PolicyEvalImpl) Refresh() (err error) {
-	defer recoverEvaluation("Refresh", &err)
 	p.cacheGate.Lock()
-	defer p.cacheGate.Unlock()
+	defer func() {
+		if _, panicked := err.(*recoveredEvaluationError); panicked {
+			p.cacheFailed.Store(true)
+		}
+		p.cacheGate.Unlock()
+	}()
+	defer recoverEvaluation("Refresh", &err)
 	return p.fullReloadRuntimeCache()
 }
 
@@ -295,10 +308,11 @@ func (p *PolicyEvalImpl) InternalIsAllowed(ctx *adsapi.RequestContext, evaluatio
 		}
 	}()
 	defer recoverEvaluation("IsAllowed", &err)
+	p.ensureStoreHealth()
 	p.cacheGate.RLock()
 	defer p.cacheGate.RUnlock()
-	if p.cacheFailed.Load() {
-		return false, adsapi.ERROR_IN_EVALUATION, errors.New(errors.EvalCacheError, "authorization cache requires a successful full reload")
+	if err := p.cacheErrorLocked(); err != nil {
+		return false, adsapi.ERROR_IN_EVALUATION, err
 	}
 	p.RuntimePolicyStore.RLock()
 	defer p.RuntimePolicyStore.RUnlock()
@@ -355,10 +369,11 @@ func (p *PolicyEvalImpl) GetAllGrantedRoles(ctx adsapi.RequestContext) (roles []
 		}
 	}()
 	defer recoverEvaluation("GetAllGrantedRoles", &err)
+	p.ensureStoreHealth()
 	p.cacheGate.RLock()
 	defer p.cacheGate.RUnlock()
-	if p.cacheFailed.Load() {
-		return nil, errors.New(errors.EvalCacheError, "authorization cache requires a successful full reload")
+	if err := p.cacheErrorLocked(); err != nil {
+		return nil, err
 	}
 	p.RuntimePolicyStore.RLock()
 	defer p.RuntimePolicyStore.RUnlock()
@@ -381,10 +396,11 @@ func (p *PolicyEvalImpl) GetAllGrantedPermissions(ctx adsapi.RequestContext) (pe
 		}
 	}()
 	defer recoverEvaluation("GetAllGrantedPermissions", &err)
+	p.ensureStoreHealth()
 	p.cacheGate.RLock()
 	defer p.cacheGate.RUnlock()
-	if p.cacheFailed.Load() {
-		return nil, errors.New(errors.EvalCacheError, "authorization cache requires a successful full reload")
+	if err := p.cacheErrorLocked(); err != nil {
+		return nil, err
 	}
 	p.RuntimePolicyStore.RLock()
 	defer p.RuntimePolicyStore.RUnlock()
@@ -1217,12 +1233,16 @@ func (p *PolicyEvalImpl) applyStoreChange(e pms.StoreChangeEvent) (err error) {
 	p.cacheGate.Lock()
 	defer func() {
 		if err != nil {
-			p.cacheFailed.Store(true)
+			if _, panicked := err.(*recoveredEvaluationError); panicked || e.Type != pms.FULL_RELOAD {
+				p.cacheFailed.Store(true)
+			}
 		}
 		p.cacheGate.Unlock()
 	}()
 	defer recoverEvaluation("StoreChange", &err)
 	switch e.Type {
+	case pms.STORE_UNAVAILABLE:
+		p.storeUnavailableLocked()
 	case pms.SERVICE_ADD: ///Event content: StoreUpdateData{ParentID:serviceName, Data:*service}
 		serviceGot := e.Content.(*pms.Service)
 		p.AddServiceInRuntimeCache(serviceGot)
@@ -1273,13 +1293,9 @@ func (p *PolicyEvalImpl) applyStoreChange(e pms.StoreChangeEvent) (err error) {
 	case pms.FULL_RELOAD:
 		if snapshot, ok := e.Content.(*pms.PolicyStore); ok && snapshot != nil {
 			p.RuntimePolicyStore.reloadPolicyStore(snapshot)
-			p.cacheFailed.Store(false)
+			p.storeAvailableLocked()
 		} else {
-			// A read error has not mutated the complete cached snapshot. Keep
-			// it usable, as required by the existing TestFullReload contract.
-			// The helper logs read errors; partial-write errors above instead
-			// poison the cache until a complete reload succeeds.
-			_ = p.fullReloadRuntimeCache()
+			return p.fullReloadRuntimeCache()
 		}
 	}
 	return nil
@@ -1306,6 +1322,7 @@ func (p *PolicyEvalImpl) cleanExpiredFunctionResultPeriodically() {
 // to close the supplied store. StopWatch alone leaves the store usable.
 func (p *PolicyEvalImpl) Close() error {
 	p.closeOnce.Do(func() {
+		p.closed.Store(true)
 		if p.cleanupStop != nil {
 			close(p.cleanupStop)
 		}
@@ -1320,6 +1337,7 @@ func (p *PolicyEvalImpl) Close() error {
 // StopWatch stops watching policy store.
 // After stopping watching, policy changes will not be updated automatically
 func (p *PolicyEvalImpl) StopWatch() {
+	p.watchStopped.Store(true)
 	p.watchStopOnce.Do(func() { p.Store.StopWatch() })
 }
 

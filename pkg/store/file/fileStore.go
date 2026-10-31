@@ -10,19 +10,18 @@ import (
 	"os"
 	"strings"
 	"sync"
-	"time"
 
 	"github.com/teramoby/speedle-plus/pkg/errors"
 	"github.com/teramoby/speedle-plus/pkg/suid"
 
-	"github.com/fsnotify/fsnotify"
 	log "github.com/sirupsen/logrus"
 	"github.com/teramoby/speedle-plus/api/pms"
 )
 
 type Store struct {
 	FileLocation  string
-	stop          chan struct{}
+	watchMu       sync.Mutex
+	watch         *fileWatcher
 	rwLock        sync.RWMutex
 	discoverStore *discoverRequestStore
 }
@@ -301,88 +300,6 @@ func (s *Store) DeleteServices() error {
 	ps.Services = []*pms.Service{}
 
 	return s.writePolicyStoreWithoutLock(ps)
-}
-
-func (s *Store) Watch() (pms.StorageChangeChannel, error) {
-	log.Info("Enter Watch...")
-	watcher, err := fsnotify.NewWatcher()
-	if err != nil {
-		log.Errorf("Failed to create a new watcher, error: %v", err)
-		return nil, errors.Wrap(err, errors.StoreError, "fsnotify new watcher failed")
-	}
-
-	err = watcher.Add(s.FileLocation)
-	if err != nil {
-		log.Errorf("Failed to add the file %q into the watch list, error: %v", s.FileLocation, err)
-		return nil, errors.Wrapf(err, errors.StoreError, "Failed to add the file %q into the watch list", s.FileLocation)
-	}
-
-	var storeChangeChan pms.StorageChangeChannel = make(chan pms.StoreChangeEvent)
-
-	s.stop = make(chan struct{})
-
-	go func() {
-		defer func() {
-			watcher.Close()
-			close(storeChangeChan)
-			close(s.stop)
-		}()
-		for {
-			select {
-			case event := <-watcher.Events:
-				switch {
-				case event.Op&fsnotify.Write == fsnotify.Write:
-					log.Info("Reloading the file store...")
-					reloadEvent := pms.StoreChangeEvent{Type: pms.FULL_RELOAD}
-					storeChangeChan <- reloadEvent
-				case event.Op&(fsnotify.Rename|fsnotify.Remove) != 0:
-					// Editors and config tools often save the file by replacing it
-					// (write a temporary file, then rename it over the original),
-					// which shows up as a rename or remove of the watched file.
-					if err := s.rewatch(watcher); err != nil {
-						log.Fatalf("The policy file %q has been renamed or removed, please double check, error: %v", s.FileLocation, err)
-					}
-					log.Info("Reloading the file store....")
-					reloadEvent := pms.StoreChangeEvent{Type: pms.FULL_RELOAD}
-					storeChangeChan <- reloadEvent
-				default:
-					log.Infof("Operation %q was detected on the policy file %q", event.Op, s.FileLocation)
-				}
-			case err := <-watcher.Errors:
-				log.Warningf("Error happened when watching the policy file, error: %v", err)
-			case <-s.stop:
-				log.Warning("Received stop signal")
-				return
-			}
-		}
-	}()
-
-	return storeChangeChan, nil
-}
-
-// policyFileReturnTimeout is how long Watch waits for the policy file to be
-// back at its path after it is renamed or removed.
-var policyFileReturnTimeout = 2 * time.Second
-
-// rewatch watches the file now at the policy file path, waiting up to
-// policyFileReturnTimeout for it to appear.
-func (s *Store) rewatch(watcher *fsnotify.Watcher) error {
-	// Drop the watch on the old file, if fsnotify has not dropped it already.
-	watcher.Remove(s.FileLocation)
-	deadline := time.Now().Add(policyFileReturnTimeout)
-	for {
-		err := watcher.Add(s.FileLocation)
-		if err == nil || time.Now().After(deadline) {
-			return err
-		}
-		time.Sleep(50 * time.Millisecond)
-	}
-}
-
-func (s *Store) StopWatch() {
-	if s.stop != nil {
-		s.stop <- struct{}{}
-	}
 }
 
 func (s *Store) Type() string {

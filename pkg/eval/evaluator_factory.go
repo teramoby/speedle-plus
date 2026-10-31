@@ -5,8 +5,10 @@ package eval
 
 import (
 	"io"
+	"time"
 
 	"github.com/teramoby/speedle-plus/pkg/cfg"
+	"github.com/teramoby/speedle-plus/pkg/errors"
 	"github.com/teramoby/speedle-plus/pkg/store"
 
 	adsapi "github.com/teramoby/speedle-plus/api/ads"
@@ -66,6 +68,13 @@ func NewWithStore(conf *cfg.Config, s pms.PolicyStoreManagerADS) (evaluator Inte
 		}
 	}()
 	defer recoverEvaluation("NewWithStore", &err)
+	var grace time.Duration
+	if conf.StoreFailureGracePeriod != "" {
+		grace, err = time.ParseDuration(conf.StoreFailureGracePeriod)
+		if err != nil || grace < 0 {
+			return nil, errors.New(errors.ConfigError, "storeFailureGracePeriod must be a finite nonnegative duration")
+		}
+	}
 	ps, err := s.ReadPolicyStore()
 	if err != nil {
 		return nil, err
@@ -79,20 +88,30 @@ func NewWithStore(conf *cfg.Config, s pms.PolicyStoreManagerADS) (evaluator Inte
 			return nil, err
 		}
 		watching = true
+		// File/Mongo watches are installed synchronously; etcd waits for its
+		// created acknowledgement. Read again after subscribing to close the
+		// initial read/subscribe gap. Queued events invalidate this snapshot.
+		ps, err = s.ReadPolicyStore()
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	runtimePolicyStore := NewRuntimePolicyStore()
 	runtimePolicyStore.init(ps, conf.FuncsvcEndpoint)
 
 	p := &PolicyEvalImpl{
-		RuntimePolicyStore: runtimePolicyStore,
-		Store:              s,
+		RuntimePolicyStore:      runtimePolicyStore,
+		Store:                   s,
+		storeFailureGracePeriod: grace,
+		lastHealthCheck:         time.Now(),
 	}
+	p.healthChecker, _ = s.(pms.StoreHealthChecker)
 
 	// start a goroutine watching to the channel for update events and
 	// refresh runtime cache accordingly once receiving any events
 	if updateChan != nil {
-		go p.updateRuntimeCacheWithStoreChange(updateChan)
+		go p.followStoreChanges(updateChan)
 	}
 
 	p.cleanExpiredFunctionResultPeriodically()

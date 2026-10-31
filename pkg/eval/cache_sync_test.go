@@ -165,11 +165,13 @@ func TestFullReload(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// A store that cannot be read leaves the cache as it was.
+	// A store that cannot be read suspends use of the retained cache until a
+	// successful full reload. This intentionally changes the old availability
+	// contract: stale grants must not remain usable for an unbounded outage.
 	p.Store = storetest.NewFailingStore()
 	p.Refresh()
-	if !allowed(t, p, "app", "bob", "r", "read") {
-		t.Fatal("a failed reload dropped the cache")
+	if allowed(t, p, "app", "bob", "r", "read") {
+		t.Fatal("a failed reload still authorized with stale data")
 	}
 }
 

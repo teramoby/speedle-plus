@@ -216,9 +216,11 @@ same request. The stored policy and denial persist in MySQL.
 
 Policy changes must go through PMS or the store interface so that data and the
 revision advance in the same transaction. Direct SQL edits do not automatically
-trigger an ADS reload. During a database outage, an already-running ADS retains
-its last loaded policies and retries synchronization; starting ADS still requires
-a reachable database.
+trigger an ADS reload. During a database outage, ADS stays running and retries synchronization but
+defaults to `allowed:false` and an error once the failure is detected. A complete
+snapshot must load successfully before authorization resumes. See the shared
+[store failure and grace-period policy](/docs/store/#store-failures-and-cached-authorization).
+Starting ADS still requires a reachable database.
 
 ## Pre-create the schema without runtime DDL privileges
 

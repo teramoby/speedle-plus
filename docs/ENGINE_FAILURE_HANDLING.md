@@ -28,10 +28,30 @@ failed-state check through evaluation; a batch sets failure before releasing
 its write lock. Concurrent requests wait for the whole batch rather than
 observing partially applied updates. Startup and
 explicit refresh return errors on panic instead of terminating the process.
-A read-only refresh failure preserves the last complete cache, as the existing
-TestFullReload contract requires. Refresh reports the storage-read error; a
-watcher logs it and retries. Such a failure cannot clear a previously failed
-cache state, since no replacement snapshot was installed.
+A read-only refresh failure retains the complete snapshot's data but, by default,
+suspends its use for authorization. File, etcd, MySQL and MongoDB implement the
+same lightweight health-check interface. Both watched and static evaluators
+check health about once per second (static evaluators probe on requests), with
+a one-second probe timeout. Watch/read failures can detect outages sooner.
+Only a successful full snapshot read/install restores authorization; connectivity
+alone and old incremental events cannot do so. Built-in watch events invalidate
+the snapshot and cause a new complete read, preventing queued pre-outage data
+from restoring revoked grants. Etcd recovery reads all pages at one revision.
+
+`storeFailureGracePeriod` / `--store-failure-grace-period` /
+`SPDL_STORE_FAILURE_GRACE_PERIOD` defaults to `0s`. A finite explicit value allows
+the last complete snapshot to remain usable for that duration after the first
+detected failure. Repeated failures do not reset the deadline. Partial-cache
+failures and authorization panics still deny immediately. An initial load failure
+has no snapshot to use. A lost file retries indefinitely instead of calling
+Fatal/Exit; cancellation unblocks watches even without an event consumer.
+
+This intentionally changes the old TestFullReload availability expectation:
+a failed read now denies rather than using stale grants without a time bound.
+With watching disabled, ordinary policy updates still require Refresh, but
+recovery from an outage always reloads the complete store. Failure detection
+and policy propagation remain asynchronous and bounded by probes and backend
+operation timeouts, not instantaneous revocation guarantees.
 
 ## Stack exhaustion
 
@@ -60,7 +80,9 @@ must survive them.
 
 ## Compatibility and tests
 
-Existing test inputs and expected results remain unchanged. In particular, this
+Role/condition evaluation inputs and expected results remain unchanged. The
+full-refresh availability test intentionally changes to the new fail-closed
+contract; watcher tests now accept explicit unavailability events. This
 change does not reintroduce PublicGrant, change policy-ID rules, or restore the
 other reverted changes from #166. Normal condition evaluation errors retain the
 existing nonmatching-condition behavior; an unexpected panic or a condition

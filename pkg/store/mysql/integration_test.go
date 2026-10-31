@@ -256,13 +256,20 @@ func TestMySQLWatchRecoversAfterReadTimeout(t *testing.T) {
 	time.Sleep(2300 * time.Millisecond)
 	_, err = connection.ExecContext(context.Background(), "UNLOCK TABLES")
 	must(t, err)
-	select {
-	case event := <-events:
-		if event.Content.(*pms.PolicyStore).Services[0].Name != "after-outage" {
-			t.Fatal("lost pending revision")
+	deadline := time.After(5 * time.Second)
+	for {
+		select {
+		case event := <-events:
+			if event.Type == pms.STORE_UNAVAILABLE {
+				continue
+			}
+			if event.Type != pms.FULL_RELOAD || event.Content.(*pms.PolicyStore).Services[0].Name != "after-outage" {
+				t.Fatal("lost pending revision")
+			}
+			return
+		case <-deadline:
+			t.Fatal("watch did not recover")
 		}
-	case <-time.After(3 * time.Second):
-		t.Fatal("watch did not recover")
 	}
 }
 

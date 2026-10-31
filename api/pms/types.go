@@ -86,6 +86,8 @@ const (
 	FUNCTION_ADD
 	SYNC_RELOAD
 	FULL_RELOAD
+	// STORE_UNAVAILABLE suspends authorization until a complete reload succeeds.
+	STORE_UNAVAILABLE
 )
 
 type StoreChangeEvent struct {

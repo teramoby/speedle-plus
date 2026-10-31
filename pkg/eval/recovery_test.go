@@ -326,6 +326,9 @@ func TestFeatureRefreshPanicRecovery(t *testing.T) {
 	e.Store = &panicReadStore{original}
 	requireEvaluationError(t, e.Refresh())
 	e.Store = original
+	if err := e.Refresh(); err != nil {
+		t.Fatal(err)
+	}
 	requireHealthyAfterRecovery(t, e)
 	if evaluator, err := NewFromConfig(nil); evaluator != nil || errors.Code(err) != errors.EvalEngineError {
 		t.Fatalf("nil configuration: %v %v", evaluator, err)
@@ -606,7 +609,7 @@ func (*readFailureStore) ReadPolicyStore() (*pms.PolicyStore, error) {
 	return nil, errors.New(errors.StoreError, "temporary read failure")
 }
 
-func TestFeatureReadFailureKeepsCompleteCache(t *testing.T) {
+func TestFeatureReadFailureSuspendsCompleteCache(t *testing.T) {
 	e := featureEvaluator(t, &pms.PolicyStore{Services: []*pms.Service{{Name: "app", Policies: []*pms.Policy{recoveryGrant("grant")}}}})
 	original := e.Store
 	e.Store = &readFailureStore{original}
@@ -614,12 +617,12 @@ func TestFeatureReadFailureKeepsCompleteCache(t *testing.T) {
 	if err := e.Refresh(); errors.Code(err) != errors.StoreError {
 		t.Fatalf("Refresh swallowed read error: %v", err)
 	}
-	if allowed, _, err := e.IsAllowed(featureContext()); !allowed || err != nil {
-		t.Fatalf("read-only failure invalidated complete cache: %v %v", allowed, err)
+	if allowed, _, err := e.IsAllowed(featureContext()); allowed || err == nil {
+		t.Fatalf("read-only failure still authorized: %v %v", allowed, err)
 	}
 	apply(e, pms.StoreChangeEvent{Type: pms.FULL_RELOAD})
-	if allowed, _, err := e.IsAllowed(featureContext()); !allowed || err != nil {
-		t.Fatalf("watch read failure invalidated complete cache: %v %v", allowed, err)
+	if allowed, _, err := e.IsAllowed(featureContext()); allowed || err == nil {
+		t.Fatalf("watch read failure still authorized: %v %v", allowed, err)
 	}
 	// A read failure must never make an already-incomplete cache usable.
 	apply(e, pms.StoreChangeEvent{Type: pms.POLICY_ADD, Content: "invalid event"})

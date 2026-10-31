@@ -447,7 +447,7 @@ func follow(ctx context.Context, stream *mongo.ChangeStream, send func(pms.Store
 		var event mongoChangeEvent
 		if err := stream.Decode(&event); err != nil {
 			log.Error(err)
-			continue
+			return send(pms.StoreChangeEvent{Type: pms.STORE_UNAVAILABLE})
 		}
 		var events []pms.StoreChangeEvent
 		if event.TxnNumber != nil {
@@ -465,7 +465,7 @@ func follow(ctx context.Context, stream *mongo.ChangeStream, send func(pms.Store
 			var err error
 			if events, err = event.storeEvents(); err != nil {
 				log.Error(err)
-				continue
+				return send(pms.StoreChangeEvent{Type: pms.STORE_UNAVAILABLE})
 			}
 		}
 		for _, change := range events {
@@ -480,7 +480,7 @@ func follow(ctx context.Context, stream *mongo.ChangeStream, send func(pms.Store
 	if err := stream.Err(); err != nil {
 		log.Error("MongoDB change stream ended: ", err)
 	}
-	return true
+	return send(pms.StoreChangeEvent{Type: pms.STORE_UNAVAILABLE})
 }
 
 // StopWatch also unblocks a watcher waiting for a consumer to receive an event.

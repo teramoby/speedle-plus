@@ -15,6 +15,13 @@ func (p *PolicyEvalImpl) Discover(ctx ads.RequestContext) (allowed bool, reason 
 		}
 	}()
 	defer recoverEvaluation("Discover", &err)
+	p.ensureStoreHealth()
+	p.cacheGate.RLock()
+	cacheErr := p.cacheErrorLocked()
+	p.cacheGate.RUnlock()
+	if cacheErr != nil {
+		return false, ads.ERROR_IN_EVALUATION, cacheErr
+	}
 	if d, ok := p.Store.(store.DiscoverRequestManager); ok {
 		// Discover requests are kept in the store; never keep the bearer token.
 		if ctx.Subject != nil && ctx.Subject.Token != "" {

@@ -32,13 +32,14 @@ type ServerConfig struct {
 }
 
 type Config struct {
-	StoreConfig           *StoreConfig              `json:"storeConfig"`
-	EnableWatch           bool                      `json:"enableWatch,omitempty"`
-	AsserterWebhookConfig *assertion.AsserterConfig `json:"asserterWebhookConfig,omitempty"`
-	FuncsvcEndpoint       string                    `json:"funcsvcEndpoint,omitempty"`
-	ServerConfig          *ServerConfig             `json:"serverConfig,omitempty"`
-	LogConfig             *logging.LogConfig        `json:"logConfig,omitempty"`
-	AuditLogConfig        *logging.LogConfig        `json:"auditLogConfig,omitempty"`
+	StoreConfig             *StoreConfig              `json:"storeConfig"`
+	EnableWatch             bool                      `json:"enableWatch,omitempty"`
+	StoreFailureGracePeriod string                    `json:"storeFailureGracePeriod,omitempty"`
+	AsserterWebhookConfig   *assertion.AsserterConfig `json:"asserterWebhookConfig,omitempty"`
+	FuncsvcEndpoint         string                    `json:"funcsvcEndpoint,omitempty"`
+	ServerConfig            *ServerConfig             `json:"serverConfig,omitempty"`
+	LogConfig               *logging.LogConfig        `json:"logConfig,omitempty"`
+	AuditLogConfig          *logging.LogConfig        `json:"auditLogConfig,omitempty"`
 }
 
 func ReadConfig(configFileLocation string) (*Config, error) {
