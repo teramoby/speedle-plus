@@ -386,5 +386,27 @@ class RegressionTest(unittest.TestCase):
         self.assertIn("Write in English", prompts[1])
 
 
+class PerformanceTest(unittest.TestCase):
+    def test_the_benchmark_table_is_in_the_report_and_its_json_is_not_a_test_stream(self):
+        directory = Path(tempfile.mkdtemp())
+        (directory / "go-file.json").write_text(events(("pass", "p", "TestA", None)))
+        (directory / "performance.json").write_text('{\n  "regressed": []\n}\n')
+        (directory / "performance.md").write_text("| BenchmarkOne | 100 | 101 | +1.0% |\n\nNo regression.\n")
+        (directory / "checks.txt").write_text("performance=0:performance.log\n")
+        streams, _ = test_report.expand_results_dir(directory)
+        self.assertEqual([Path(s).name for s in streams], ["go-file.json"])
+        summary = directory / "report.txt"
+        with mock.patch.object(test_report, "send_feishu", return_value=True), mock.patch("builtins.print"):
+            test_report.main(["--kind", "weekly", "--source", f"run:success:{directory}",
+                              "--summary-file", str(summary)], env={})
+        text = summary.read_text()
+        self.assertIn("weekly test report: PASSED", text)
+        self.assertIn("## Performance", text)
+        self.assertIn("| BenchmarkOne | 100 | 101 | +1.0% |", text)
+
+    def test_no_section_without_a_table(self):
+        self.assertEqual(test_report.performance_section([tempfile.mkdtemp(), "/missing"]), "")
+
+
 if __name__ == "__main__":
     unittest.main()

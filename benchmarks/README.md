@@ -31,3 +31,10 @@ Case|Size|Time overhead (μs/op)
 ----|----|----
 LargePerm|10K policies, 10K role policies, 10 users/role|8.9
 
+## Weekly comparison in CI
+The weekly CI run (`scripts/ci/run-go-tests.sh weekly`, always on the `fiona-speedle` runner) runs these
+benchmarks for the current code and for the baseline, master as it stood in May 2026 (`8fb1481d`),
+alternating five rounds of each on the same machine. It compares each benchmark's median ns/op, and a
+benchmark more than 20% slower than the baseline fails the `performance` check, which the weekly report
+analyses and tracks in an issue. The comparison table is in every weekly report; see
+[scripts/ci/benchmark.py](../scripts/ci/benchmark.py).

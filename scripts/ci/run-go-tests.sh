@@ -11,7 +11,8 @@
 #            MongoDB setup guides, the quick start with every supported Go
 #            release, govulncheck and the CI script tests
 #   weekly   every package with the newest supported Go release
-#            (the gate uses the go.mod/CI release) and staticcheck
+#            (the gate uses the go.mod/CI release), the evaluation benchmarks
+#            against master as of May 2026, and staticcheck; on fiona-speedle
 #   regression
 #            after every merge to master: race-detector run of every package
 #            with the file store and the executable guides from docs/
@@ -183,6 +184,9 @@ case "${mode}" in
       gotest_json "go-${toolchain}" GOTOOLCHAIN="${toolchain}" STORE_TYPE=file -- -p 1 -count=1 -timeout 600s "${pkgs[@]}"
     done
     gotest_json feature-large STORE_TYPE=file SPEEDLE_STRESS_POLICIES=100000 -- -race -count=1 -timeout 1200s -tags feature_stress ./pkg/eval -run '^TestFeatureLargePolicyRoleSets$'
+    # Evaluation speed against master as it stood in May 2026, measured on
+    # this runner in this run (scripts/ci/benchmark.py).
+    check performance python3 scripts/ci/benchmark.py --results "${results}"
     check staticcheck go run honnef.co/go/tools/cmd/staticcheck@v0.8.2 ./pkg/... ./cmd/... ./api/...
     exit "${failed}"
     ;;
