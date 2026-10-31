@@ -70,19 +70,11 @@ func (s *Store) WritePolicyStore(ps *pms.PolicyStore) error {
 }
 
 func (s *Store) writePolicyStoreWithoutLock(ps *pms.PolicyStore) error {
-	jsonFile, err := os.Create(s.FileLocation)
-	if err != nil {
-		return errors.Wrapf(err, errors.StoreError, "unable to create file %q", s.FileLocation)
-	}
-	defer jsonFile.Close()
-	psB, err := json.MarshalIndent(ps, "", "    ")
+	data, err := json.MarshalIndent(ps, "", "    ")
 	if err != nil {
 		return errors.Wrap(err, errors.StoreError, "marshal indent failed")
 	}
-	if _, err := jsonFile.Write(psB); err != nil {
-		return errors.Wrapf(err, errors.StoreError, "unable to write to file %q", s.FileLocation)
-	}
-	return nil
+	return replacePolicyFile(s.FileLocation, data)
 }
 
 // ListAllServices lists all the services

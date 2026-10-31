@@ -128,6 +128,15 @@ snapshot even in that mode. An initial load failure cannot use a grace period.
 Custom stores can implement <code>pms.StoreHealthChecker</code> and publish
 <code>pms.STORE_UNAVAILABLE</code> events to participate in the same failure policy.</p>
 
+<p>File-store PMS writes publish a fully serialized, synced temporary file with a
+same-directory atomic rename. Independent ADS readers therefore see a complete
+old or new snapshot. The writer needs write access to the parent directory;
+existing permission bits and configured symlinks are preserved. The replacement
+file is created by the writer account, so configure directory group/ACL inheritance
+for separate PMS/ADS users. Containers must share the policy directory so
+replacements are visible to both services. Directly created new policy files use mode 0600;
+the normal file-store builder continues to initialize missing stores as before.</p>
+
 <h2 id="mysql-8-4-policy-store">MySQL 8.4 policy store</h2>
 
 <p>Follow the <a href="/docs/store/mysql/">step-by-step MySQL setup guide</a> to create a

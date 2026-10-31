@@ -49,6 +49,13 @@ failures and authorization panics still deny immediately. An initial load failur
 has no snapshot to use. A lost file retries indefinitely instead of calling
 Fatal/Exit; cancellation unblocks watches even without an event consumer.
 
+File PMS writers serialize before touching the live file, sync a complete
+same-directory temporary file and atomically rename it into place. Separate
+readers never observe normal writes as truncated/partial JSON. Existing mode
+bits and configured symlinks are preserved; atomic replacement requires parent
+directory write access and creates the replacement as the writer account.
+A concurrent-manager regression reproduces unexpected EOF on the old writer.
+
 This intentionally changes the old TestFullReload availability expectation:
 a failed read now denies rather than using stale grants without a time bound.
 With watching disabled, ordinary policy updates still require Refresh, but
