@@ -27,7 +27,9 @@ File, etcd, MySQL and MongoDB use the same ADS failure policy. The default
 `storeFailureGracePeriod` is `"0s"`: once a store failure is detected, authorization
 returns `allowed:false` and an evaluation error. ADS stays running and retries.
 A readable connection alone does not restore authorization; a successful complete
-snapshot reload is required. A deleted file is retried instead of terminating ADS.
+snapshot reload is required. With watching enabled, a failed subscription must
+be re-established first; successful data reads while watch is broken do not reset
+the failure/grace deadline. A deleted file is retried instead of terminating ADS.
 
 Deployments that explicitly accept delayed revocation can set a finite duration,
 for example `"storeFailureGracePeriod": "5s"` at the top level of the ADS JSON

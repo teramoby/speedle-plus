@@ -34,7 +34,10 @@ same lightweight health-check interface. Both watched and static evaluators
 check health about once per second (static evaluators probe on requests), with
 a one-second probe timeout. Watch/read failures can detect outages sooner.
 Only a successful full snapshot read/install restores authorization; connectivity
-alone and old incremental events cannot do so. Built-in watch events invalidate
+alone and old incremental events cannot do so. In watch mode a detected fault
+also discards the old subscription and requires a new subscription before the
+recovery read. Manual successful reads cannot clear that state or reset its
+grace deadline while subscription recovery is still pending. Built-in watch events invalidate
 the snapshot and cause a new complete read, preventing queued pre-outage data
 from restoring revoked grants. Etcd recovery reads all pages at one revision.
 

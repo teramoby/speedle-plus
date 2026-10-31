@@ -25,7 +25,8 @@ bref = ""
 file、etcd、MySQL、MongoDB 使用相同的 ADS 故障策略。
 `storeFailureGracePeriod` 默认是 `"0s"`：检测到存储故障后，授权返回
 `allowed:false` 和求值错误。ADS 保持运行并持续重试；连接恢复后，还必须成功
-加载完整策略快照，才能恢复授权。文件被删除时会持续重试，不再退出 ADS。
+加载完整策略快照，才能恢复授权。启用 watch 时，还必须先重新建立故障的订阅；
+watch 未恢复时，成功读取数据不会重置故障或宽限期的截止时间。文件被删除时会持续重试，不再退出 ADS。
 
 如果部署方明确接受撤权延迟，可在 ADS JSON 配置的顶层设置有限时长，例如
 `"storeFailureGracePeriod": "5s"`。对应参数为

@@ -15,6 +15,9 @@ const storeHealthInterval = time.Second
 // These helpers change availability only while holding cacheGate. A failed
 // read preserves data for a configured grace period, never its validity forever.
 func (p *PolicyEvalImpl) storeUnavailableLocked() {
+	if p.watchManaged && !p.watchStopped.Load() {
+		p.watchNeedsRestart.Store(true)
+	}
 	if p.storeFailureSince.IsZero() {
 		p.storeFailureSince = time.Now()
 		log.Error("Policy store unavailable; a complete reload is required")
@@ -22,7 +25,11 @@ func (p *PolicyEvalImpl) storeUnavailableLocked() {
 }
 
 func (p *PolicyEvalImpl) storeAvailableLocked() {
-	p.storeFailureSince = time.Time{}
+	// A fresh data read does not repair a failed subscription. Keep the
+	// original failure/grace deadline until a new watch has been installed.
+	if !p.watchNeedsRestart.Load() {
+		p.storeFailureSince = time.Time{}
+	}
 	p.cacheFailed.Store(false)
 }
 
@@ -96,6 +103,9 @@ func (p *PolicyEvalImpl) followStoreChanges(ch pms.StorageChangeChannel) {
 	for {
 		if p.watchStopped.Load() {
 			return
+		}
+		if p.watchNeedsRestart.Load() {
+			ch = nil
 		}
 		select {
 		case event, ok := <-ch:

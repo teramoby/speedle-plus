@@ -170,14 +170,17 @@ func TestFeatureRecoveryIgnoresQueuedStaleGrant(t *testing.T) {
 
 type restartingWatchStore struct {
 	*availabilityStore
-	mu   sync.Mutex
-	next pms.StorageChangeChannel
+	mu       sync.Mutex
+	next     pms.StorageChangeChannel
+	watchErr error
+	attempts int
 }
 
 func (s *restartingWatchStore) Watch() (pms.StorageChangeChannel, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	return s.next, nil
+	s.attempts++
+	return s.next, s.watchErr
 }
 
 func TestFeatureClosedWatchRequiresResubscription(t *testing.T) {
@@ -207,6 +210,94 @@ func TestFeatureClosedWatchRequiresResubscription(t *testing.T) {
 			t.Fatalf("watch did not resubscribe with a fresh snapshot: %v %v", allowed, err)
 		}
 		time.Sleep(time.Millisecond)
+	}
+}
+
+func TestFeatureReadableStoreCannotClearBrokenWatch(t *testing.T) {
+	for _, grace := range []string{"0s", "100ms"} {
+		t.Run(grace, func(t *testing.T) {
+			initial := &pms.PolicyStore{Services: []*pms.Service{{Name: "app", Policies: []*pms.Policy{recoveryGrant("grant")}}}}
+			first, second := make(pms.StorageChangeChannel, 1), make(pms.StorageChangeChannel)
+			s := &restartingWatchStore{availabilityStore: &availabilityStore{snapshot: initial}, next: first}
+			engine, err := NewWithStore(&cfg.Config{EnableWatch: true, StoreFailureGracePeriod: grace}, s)
+			if err != nil {
+				t.Fatal(err)
+			}
+			e := engine.(*PolicyEvalImpl)
+			t.Cleanup(func() { _ = e.Close(); close(first); close(second) })
+			s.mu.Lock()
+			s.next = nil
+			s.watchErr = errors.New(errors.StoreError, "subscription unavailable")
+			s.mu.Unlock()
+			// The event channel stays open, as it does during a MongoDB stream retry.
+			first <- pms.StoreChangeEvent{Type: pms.STORE_UNAVAILABLE}
+			deadline := time.Now().Add(time.Second)
+			for {
+				e.cacheGate.RLock()
+				failed := !e.storeFailureSince.IsZero()
+				e.cacheGate.RUnlock()
+				if failed {
+					break
+				}
+				if time.Now().After(deadline) {
+					t.Fatal("watch failure not recorded")
+				}
+				time.Sleep(time.Millisecond)
+			}
+			e.cacheGate.Lock()
+			e.storeFailureSince = e.storeFailureSince.Add(-time.Second)
+			firstFailure := e.storeFailureSince
+			e.cacheGate.Unlock()
+			forceHealthProbe(e)
+			requireUnavailable(t, e)
+			// Even repeated successful data reads must not extend grace or validate a
+			// cache that has no working subscription.
+			if err := e.Refresh(); err != nil {
+				t.Fatal(err)
+			}
+			requireUnavailable(t, e)
+			e.cacheGate.RLock()
+			sameDeadline := e.storeFailureSince.Equal(firstFailure)
+			e.cacheGate.RUnlock()
+			if !sameDeadline {
+				t.Fatal("successful data read reset a broken watch's grace deadline")
+			}
+			deadline = time.Now().Add(3 * time.Second)
+			for {
+				s.mu.Lock()
+				attempts := s.attempts
+				s.mu.Unlock()
+				if attempts >= 2 {
+					break
+				}
+				if time.Now().After(deadline) {
+					t.Fatal("failed subscription was not retried")
+				}
+				time.Sleep(time.Millisecond)
+			}
+			requireUnavailable(t, e)
+			s.availabilityStore.mu.Lock()
+			s.snapshot = &pms.PolicyStore{Services: []*pms.Service{{Name: "app"}}}
+			s.availabilityStore.mu.Unlock()
+			s.mu.Lock()
+			s.next = second
+			s.watchErr = nil
+			s.mu.Unlock()
+			deadline = time.Now().Add(3 * time.Second)
+			for {
+				allowed, _, err := e.IsAllowed(featureContext())
+				if err == nil {
+					if allowed {
+						t.Fatal("revoked grant restored")
+					}
+					break
+				}
+				if time.Now().After(deadline) {
+					t.Fatal("working subscription and snapshot did not recover")
+				}
+				time.Sleep(time.Millisecond)
+			}
+		})
 	}
 }
 

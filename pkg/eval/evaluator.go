@@ -79,6 +79,7 @@ type PolicyEvalImpl struct {
 	storeFailureGracePeriod time.Duration
 	watchStopped            atomic.Bool
 	watchNeedsRestart       atomic.Bool
+	watchManaged            bool
 	watchLifecycleMu        sync.Mutex
 	closed                  atomic.Bool
 }
