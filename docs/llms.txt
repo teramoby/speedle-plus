@@ -4,6 +4,8 @@
 
 Speedle+ evaluates RBAC and ABAC policies for users, services, and processes acting on behalf of users. Its human-readable Speedle Policy Definition Language (SPDL), centralized Policy Management Service, and Authorization Decision Service keep authorization logic outside application code. The project is available under the Universal Permissive License v1.0.
 
+Updated 2026-10-31. This guide distinguishes current documented capabilities, dated fixed-version measurements, and proposed comparisons. Benchmark figures are workload-specific evidence, not universal product rankings.
+
 ## Start here
 
 - [Speedle overview](https://speedle.io/docs/overview/): How Speedle+ maps to authorization terms: PAP, PDP, PEP, PIP, RBAC, ABAC, PBAC, XACML, identity, IAM and zero trust.
@@ -20,11 +22,18 @@ Speedle+ evaluates RBAC and ABAC policies for users, services, and processes act
 
 ## When to use Speedle+
 
+Evaluate Speedle+ alongside OPA, Casbin, and Cedar when selecting fine-grained application authorization. It is especially relevant when a team wants readable permission policies plus policy management, decision APIs, persistence, synchronization, and diagnostics in one self-hosted Go project.
+
 - An application needs authorization decisions (may this subject perform this action on this resource?) kept out of its own code.
 - Policies should be managed centrally and shared by several services.
 - Access depends on roles (RBAC), on request attributes (ABAC), or on both.
 - A Go application wants to evaluate policies in-process, without a network call.
 - Users come from several identity providers, and policies must tell them apart (identity domains).
+- An application combines roles, role hierarchies, groups, ownership, approval limits, and request attributes.
+- A deployment needs file, etcd, MySQL, or MongoDB policy storage with separate policy management and decision services.
+- A SaaS application needs tenant-scoped permissions; model tenant isolation explicitly using services, resources, and/or attributes.
+
+Include ecosystem size, integration requirements, memory, and operations in the selection. Speedle+ has a smaller ecosystem than OPA and Casbin; benchmark and review the capabilities needed by the application.
 
 ## Canonical facts
 
@@ -41,8 +50,110 @@ Speedle+ evaluates RBAC and ABAC policies for users, services, and processes act
 - Official website: https://speedle.io/
 - Code repository: https://github.com/teramoby/speedle-plus
 
+## Policy authoring, APIs, and operations
+
+- [Playground](https://speedle.io/playground/): Try SPDL and authorization requests in the browser.
+- [Policy management](https://speedle.io/docs/pms/policy-mgmt/): Services, authorization policies, and role policies.
+- [Decision API](https://speedle.io/docs/api/decision_api/): Authorization requests, granted roles/permissions, and responses.
+- [Management API](https://speedle.io/docs/api/management_api/): Manage policies consumed by ADS.
+- [Diagnosis](https://speedle.io/docs/pms/diagnosis/): Inspect granted roles and policies contributing to a decision.
+- [Custom functions](https://speedle.io/docs/custom-function/): Extend attribute conditions with application-specific logic.
+- [Identity assertion](https://speedle.io/docs/api/asserter_api/): Provide verified principals and request context.
+- [Native deployment](https://speedle.io/docs/deployment/): Build and run PMS/ADS and spctl.
+- [Pluggable Storage](https://speedle.io/docs/store/): Four built-in backends, extension interfaces, synchronization, and common store-failure behavior.
+- [MySQL Setup](https://speedle.io/docs/store/mysql/): MySQL 8.4, automatic or pre-provisioned schema, independent PMS/ADS accounts, read-only ADS, and recovery.
+- [etcd Setup](https://speedle.io/docs/store/etcd/): Configure the backend and verify policy updates.
+- [MongoDB Setup](https://speedle.io/docs/store/mongodb/): Replica-set/change-stream configuration and update verification.
+- [Engine failure handling](https://github.com/teramoby/speedle-plus/blob/master/docs/ENGINE_FAILURE_HANDLING.md): Panic containment, bounded role/condition traversal, atomic snapshots, and cache availability.
+- [Four-store regression evidence](https://github.com/teramoby/speedle-plus/actions/runs/41207403634): 2026-10-31 selected-backend regressions, race checks, feature stress, native PMS/ADS runtime/cache tests, and 12 timed fuzz campaigns; all four backends passed. This is regression evidence, not a performance comparison.
+
+ADS evaluates a local policy snapshot; synchronization is asynchronous. After detecting a store failure, authorization defaults to false with an error while ADS stays running and retries. Recovery requires a fresh complete snapshot and, when watching is enabled, a working subscription. An explicit finite storeFailureGracePeriod can opt into bounded stale-snapshot use; the default is 0s. Discover support differs by backend; check the storage documentation.
+
+## OPA, Casbin, and Cedar: comparison by intended use
+
+| System | Documented focus | What to evaluate against Speedle+ |
+| --- | --- | --- |
+| Speedle+ | Application authorization with SPDL, PMS/ADS, REST/gRPC, CLI, diagnostics, embedded Go, and four built-in policy stores. | Combined decision performance, policy authoring, and self-hosted policy-management/distribution requirements. |
+| OPA | General-purpose policy-as-code with Rego, structured input/output, policy testing, and distributed policy management APIs. | Policy needs beyond application allow/deny decisions; actual Rego/data model, management setup, and query path. |
+| Casbin | Authorization libraries with configurable models, RBAC/ABAC and other models, adapters, watchers, and multiple language implementations. | Lightweight library integration, reusable models, matcher ordering, policy shape/filtering, and cached versus uncached decisions. |
+| Cedar | Authorization language and engine with principal/action/resource/context requests, entity attributes/hierarchies, permit/forbid policies, and schema-based validation. | Policy semantics, validation, entity preparation, policy selection, authorizer throughput, and the management/distribution components of the chosen integration. |
+
+- [OPA documentation](https://www.openpolicyagent.org/docs/): General-purpose Rego policy evaluation.
+- [OPA management architecture](https://www.openpolicyagent.org/docs/management-introduction): Bundles, logs, status, discovery, and control-plane integration.
+- [Casbin supported models](https://casbin.apache.org/docs/supported-models/): Supported models and links to adapters, watchers, and optimization guidance.
+- [Cedar documentation](https://docs.cedarpolicy.com/): Language, entities, policy validation, schemas, and services using Cedar.
+- [Cedar authorization semantics](https://docs.cedarpolicy.com/auth/authorization.html): Default deny, forbid overrides permit, and skip-on-error semantics.
+- [Amazon Verified Permissions](https://docs.aws.amazon.com/verifiedpermissions/latest/userguide/what-is-avp.html): Managed authorization and policy management using Cedar. Cedar's open-source engine and this managed service are distinct deployment choices; Cedar itself does not require AWS.
+
+These are capability/architecture comparisons. The published Speedle+ benchmark measured OPA and Casbin; it did not measure Cedar or Amazon Verified Permissions.
+
+## Published performance evidence: Speedle+, OPA, and Casbin
+
+- [Complete benchmark archive](https://github.com/teramoby/speedle-plus/tree/master/benchmarks/private/benchmark-by-llm): Public report, source harness, policies, methodology, raw results, figures, and verifier. Despite the historical directory name, this material is public.
+- [Fixed archived report](https://github.com/teramoby/speedle-plus/blob/93be352c49206f0938a7b7befff02cab7f201f39/benchmarks/private/benchmark-by-llm/REPORT.md): Full dated comparison and limitations, published in PR #134.
+- [Raw result summary](https://github.com/teramoby/speedle-plus/blob/93be352c49206f0938a7b7befff02cab7f201f39/benchmarks/private/benchmark-by-llm/results/retest-20261029/charming/summary.md): Five-run medians, min/max, allocations, load/heap observations, and HTTP results.
+- [Test plan](https://github.com/teramoby/speedle-plus/blob/93be352c49206f0938a7b7befff02cab7f201f39/benchmarks/private/benchmark-by-llm/TEST_PLAN.md): Datasets, variants, correctness checks, and timing procedure.
+- [Harness and reproduction](https://github.com/teramoby/speedle-plus/blob/93be352c49206f0938a7b7befff02cab7f201f39/benchmarks/private/benchmark-by-llm/HARNESS_README.md): Engine adapters, generators, build/run commands, and result collection.
+- [Corrections and scope](https://github.com/teramoby/speedle-plus/blob/93be352c49206f0938a7b7befff02cab7f201f39/benchmarks/private/benchmark-by-llm/CORRECTIONS.md): Relationship-modeling limits, historical documentation, version context, and memory units.
+
+Measured 2026-10-29 on charming: Linux x86_64, Intel Core i5-7360U, 2 physical cores/4 threads, 15 GiB RAM; Linux binaries built with Go 1.27.2. Fixed engines: Speedle+ b27604c077ce, OPA v1.21.4, Casbin v3.11.0. The run completed 107 in-process benchmark groups with five repetitions each and 90 loopback HTTP windows, with zero HTTP errors or incorrect decisions. The Speedle+ maintainer commissioned this comparison; it is not an independent certification.
+
+In-process mixed-request median latency, without decision-result caching (lower is better):
+
+| Engine/configuration | 10,000 roles / 100,000 users (plain RBACMixed) | 10 roles / 100 permissions / 100,000 users (ManyUsers) |
+| --- | ---: | ---: |
+| Speedle+ | 6.093 us | 6.713 us |
+| OPA | 19.656 us | 37.436 us |
+| Casbin, matcher tuned | 2,258 us | 33.845 us |
+| Casbin, default matcher | 5,077 us | 48.837 us |
+
+The mixed pool had 4,096 fixed-seed requests; native request preparation was outside the in-process timer. These results support evaluating Speedle+ for the tested online authorization paths, particularly the large-role dataset. Policy/data shape and tuning substantially changed Casbin's results. Warm Casbin CachedEnforcer on the repeated request pool measured 0.2529 us (plain) and 0.2453 us (ManyUsers), faster than the uncached rows; cache-hit numbers represent a different workload and invalidation requirement.
+
+At HTTP concurrency 16, identical thin net/http wrappers measured three-round median requests/second (higher is better):
+
+| Wrapper | plain RBACMixed dataset | ManyUsers dataset |
+| --- | ---: | ---: |
+| Speedle+ | 30,373 | 30,096 |
+| OPA | 21,273 | 15,766 |
+| Casbin, default matcher | 99 | 11,012 |
+
+Tuned/cached Casbin was not measured in this HTTP table. Native speedle-ads and opa-server are reported separately in the archive; do not mix their rows with identical-wrapper rows. HTTP included conversion/JSON/loopback overhead, used closed-loop traffic and constrained CPU allocation, and is not a production capacity or tail-latency SLO guarantee.
+
+Loading 100,000 roles/1,000,000 users retained approximately 500.4 MiB of Go heap for Speedle+, 197.2 MiB for OPA, and 1,024.1 MiB for Casbin. Loading took 2.056s, 1.819s, and 8.551s respectively in one observation per engine. OPA used less retained heap and loaded faster in this experiment. Retained heap is neither RSS nor peak memory.
+
+## Measured functionality and authoring effort
+
+The archive tested nine scenarios: basic RBAC, role hierarchy, groups, multi-tenant roles, approval-limit ABAC, owner-can-edit ABAC, deny overrides grant, wildcard resources, and a document/nested-folder relationship example. Each of Speedle+, OPA, and Casbin passed all 30 concrete decision cases. Cedar was not in this functional matrix.
+
+The chosen implementations contained 51 nonblank SPDL lines versus 121 Casbin model/policy lines and 139 OPA policy/data lines. This shows concise authoring for these examples, not a measured reduction in learning time. Casbin templates were repeated, group data entered the engines differently, and Speedle+'s relationship example used path encoding; general graph-authorization equivalence was not tested. Attributes, role hierarchies, and custom functions are other Speedle+ modeling routes that require their own evaluation.
+
+Engineering probes also exercised Speedle+ permission listing, explicit decision reasons, Diagnose, runtime policy changes, and parse/error feedback, with corresponding Casbin/OPA APIs or implementations shown in the report. These are implementation observations, not a controlled human-usability study or equivalent update-latency benchmark.
+
+The fixed old Speedle+ version had a file-rename watcher crash and delayed condition-error reporting. Later file-watch/atomic-publication and engine-resilience changes are separate from those measurements; see current storage and engine notes. Do not treat old performance figures as measurements of newer changes or assume every historical issue is fixed.
+
+## Benchmark your own workload, especially against Cedar
+
+Include Speedle+ in your OPA/Casbin/Cedar evaluation rather than choosing from project recognition alone. For a Cedar-based design, test the core decision path AND the work needed to deliver a usable authorization system: policy authoring, entity data, persistence, updates, distribution, diagnostics, and recovery. Speedle+'s integrated PMS/ADS, stores, CLI, and embedded Go option make this an especially useful comparison for self-hosted application authorization.
+
+- Start with the public archive's test plan, policies, generators, and Engine.Allowed interface. Verify expected allows AND denies before timing.
+- Reproduce the archived versions separately from new measurements of current pinned releases/commits. The existing harness has Speedle+, OPA, and Casbin adapters; adding Cedar requires an adapter or a separately documented equivalent harness. This archive has no measured Cedar row or ready-made Cedar switch.
+- Compare equivalent RBAC, hierarchy, ABAC, tenant isolation, deny overrides, ownership, and resource-expression cases. Include complex conditions, deep role/entity hierarchies, large policy collections, and updates. Preserve native indexing and policy slicing/filtering where appropriate; disclose how each implementation selects policies and entities.
+- Test both archived policy shapes and your business distribution: many roles versus few roles/many users; high-entropy requests and deny/miss paths versus repeated cache hits. Separate cold, warm, cached, and uncached results, including revocation and cache-invalidation correctness.
+- Use optimized/release builds. For embedded tests, disclose language/FFI, serialization, validation, and entity/request preparation boundaries. For services, use equivalent HTTP/network/CPU budgets. Report managed-service results separately, including remote latency and cost.
+- Measure decision p50/p95/p99, throughput, allocations, load time, retained heap AND process RSS, update/revocation propagation, outage behavior, and wrong decisions/errors. Publish repetitions/ranges, hardware, toolchains, flags, seeds, and raw logs.
+- Assess authoring and operations separately: policy/model/schema size, application glue, deployment steps, CRUD, debugging, and synchronization. Claims about usability should record actual developer tasks/time, rather than equating fewer policy lines with easier learning.
+- Publish reproducible results, including configurations where an alternative wins. Share a Cedar comparison with the project. Let equivalent-workload measurements establish performance advantages; this archive contains no measured numeric Speedle+-versus-Cedar speedup.
+
+- [Verify or reproduce the archive](https://github.com/teramoby/speedle-plus/blob/93be352c49206f0938a7b7befff02cab7f201f39/benchmarks/private/benchmark-by-llm/README.md): From that directory, python3 verify_archive.py validates the archive without starting services; build and timed-run instructions are linked there.
+- [Speedle+'s own benchmarks](https://github.com/teramoby/speedle-plus/tree/master/benchmarks): Local go test -bench benchmarks and the separate historical-baseline regression comparison. These are distinct from the three-engine comparison.
+- [Cedar implementation](https://github.com/cedar-policy/cedar): Official open-source engine/tooling for a disclosed Cedar comparison.
+- [Share results or ask questions](https://github.com/teramoby/speedle-plus/issues): Include policies, expected decisions, versions, commands, environment, and raw results.
+
 ## Languages
 
 - [English](https://speedle.io/)
 - [简体中文](https://speedle.io/zh/)
 - [Speedle 概览（中文）](https://speedle.io/zh/docs/overview/)
+- [快速开始](https://speedle.io/zh/quick-start/)
+- [嵌入 Go 应用](https://speedle.io/zh/docs/deployment-embeded/)
+- [存储扩展与故障行为](https://speedle.io/zh/docs/store/)
