@@ -86,8 +86,13 @@ def run_regression(environment, configuration, results):
                                      '-tags', 'feature_stress', './pkg/eval', '-run', '^TestFeature'])
             for package, target in (('pdl', 'FuzzParseStatements'), ('eval/condition', 'FuzzConditionCheck'),
                                     ('store/file', 'FuzzCheckSPDL')):
+                # Go 1.26's coordinator can report normal -fuzztime expiry as
+                # a failure (go.dev/issue/75804). The supported Go 1.27.3 has
+                # the fix. Keep the same campaign/workers; all other stages
+                # still use the runner's default Go 1.26 toolchain.
                 suite('fuzz-' + target, ['go', 'test', '-json', '-run', '^$', '-fuzz', '^' + target + '$',
-                                        '-fuzztime=5s', '-parallel=2', './pkg/' + package])
+                                        '-fuzztime=5s', '-parallel=2', './pkg/' + package],
+                      dict(environment, GOTOOLCHAIN='go1.27.3'))
             pms_port, ads_port = free_port(), free_port()
             while ads_port == pms_port:
                 ads_port = free_port()

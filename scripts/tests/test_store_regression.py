@@ -31,9 +31,11 @@ class Process:
 class StoreRegressionTests(unittest.TestCase):
     def exercise(self, failing):
         commands, processes = [], []
+        self.command_environments = []
 
         def run(args, **kwargs):
             commands.append(args)
+            self.command_environments.append((args, kwargs.get('env', {})))
             stage = None
             if args[:2] == ['go', 'test']:
                 stage = 'full'
@@ -81,6 +83,20 @@ class StoreRegressionTests(unittest.TestCase):
             failed, _, summary, _, _ = self.exercise(stage)
             self.assertTrue(failed)
             self.assertTrue(summary['failed_tests'])
+
+    def test_fuzz_runtime_is_fixed_without_reducing_the_campaign(self):
+        failed, _, _, _, _ = self.exercise(None)
+        self.assertFalse(failed)
+        campaigns = 0
+        for command, environment in self.command_environments:
+            if '-fuzz' in command:
+                campaigns += 1
+                self.assertEqual(environment['GOTOOLCHAIN'], 'go1.27.3')
+                self.assertIn('-fuzztime=5s', command)
+                self.assertIn('-parallel=2', command)
+            else:
+                self.assertNotIn('GOTOOLCHAIN', environment)
+        self.assertEqual(campaigns, 3)
 
     def test_failed_preparation_blocks_runtime_without_claiming_success(self):
         failed, suites, summary, _, blocked = self.exercise('prepare')
