@@ -168,6 +168,86 @@ func TestFeatureRecoveryIgnoresQueuedStaleGrant(t *testing.T) {
 	}
 }
 
+func TestFeatureCustomWatchIgnoresQueuedStaleSnapshots(t *testing.T) {
+	initial := &pms.PolicyStore{Services: []*pms.Service{{Name: "app", Policies: []*pms.Policy{recoveryGrant("old-grant")}}}}
+	first, second := make(pms.StorageChangeChannel, 2), make(pms.StorageChangeChannel, 2)
+	s := &restartingWatchStore{availabilityStore: &availabilityStore{snapshot: initial}, next: first}
+	// Expose only the original store interface, without the optional health
+	// checker. Such extensions must not replay stale grants after a fault.
+	custom := struct{ pms.PolicyStoreManagerADS }{s}
+	engine, err := NewWithStore(&cfg.Config{EnableWatch: true}, custom)
+	if err != nil {
+		t.Fatal(err)
+	}
+	e := engine.(*PolicyEvalImpl)
+	t.Cleanup(func() { _ = e.Close(); close(first); close(second) })
+	if allowed, _, err := e.IsAllowed(featureContext()); !allowed || err != nil {
+		t.Fatalf("initial grant: %v %v", allowed, err)
+	}
+	offline := errors.New(errors.StoreError, "offline")
+	s.availabilityStore.mu.Lock()
+	s.snapshot = &pms.PolicyStore{Services: []*pms.Service{{Name: "app"}}}
+	s.readErr = offline
+	s.availabilityStore.mu.Unlock()
+	s.mu.Lock()
+	s.next, s.watchErr = second, offline
+	s.mu.Unlock()
+	first <- pms.StoreChangeEvent{Type: pms.STORE_UNAVAILABLE}
+	deadline := time.Now().Add(time.Second)
+	for {
+		e.cacheGate.RLock()
+		failed := !e.storeFailureSince.IsZero()
+		e.cacheGate.RUnlock()
+		if failed {
+			break
+		}
+		if time.Now().After(deadline) {
+			t.Fatal("custom watch did not report outage")
+		}
+		time.Sleep(time.Millisecond)
+	}
+	first <- pms.StoreChangeEvent{Type: pms.FULL_RELOAD, Content: initial}
+	// A queued snapshot must neither bypass an unreadable store nor repair
+	// its failed subscription. Give the old event consumer time to replay it.
+	for deadline = time.Now().Add(100 * time.Millisecond); time.Now().Before(deadline); {
+		requireUnavailable(t, e)
+		time.Sleep(time.Millisecond)
+	}
+	s.mu.Lock()
+	s.watchErr = nil
+	s.mu.Unlock()
+	for deadline = time.Now().Add(3 * time.Second); ; {
+		s.mu.Lock()
+		attempts := s.attempts
+		s.mu.Unlock()
+		if attempts > 1 {
+			break
+		}
+		if time.Now().After(deadline) {
+			t.Fatal("custom watch was not resubscribed")
+		}
+		time.Sleep(time.Millisecond)
+	}
+	requireUnavailable(t, e) // Re-subscribing alone cannot repair a failed read.
+	s.availabilityStore.mu.Lock()
+	s.readErr = nil
+	s.availabilityStore.mu.Unlock()
+	second <- pms.StoreChangeEvent{Type: pms.FULL_RELOAD, Content: initial}
+	for deadline = time.Now().Add(3 * time.Second); ; {
+		allowed, _, err := e.IsAllowed(featureContext())
+		if err == nil {
+			if allowed {
+				t.Fatal("queued snapshot restored a revoked grant")
+			}
+			break
+		}
+		if time.Now().After(deadline) {
+			t.Fatal("custom watch did not recover with authoritative data")
+		}
+		time.Sleep(time.Millisecond)
+	}
+}
+
 type restartingWatchStore struct {
 	*availabilityStore
 	mu       sync.Mutex

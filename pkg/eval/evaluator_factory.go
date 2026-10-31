@@ -107,7 +107,7 @@ func NewWithStore(conf *cfg.Config, s pms.PolicyStoreManagerADS) (evaluator Inte
 		lastHealthCheck:         time.Now(),
 	}
 	p.healthChecker, _ = s.(pms.StoreHealthChecker)
-	p.watchManaged = updateChan != nil && p.healthChecker != nil
+	p.watchManaged = updateChan != nil
 
 	// start a goroutine watching to the channel for update events and
 	// refresh runtime cache accordingly once receiving any events

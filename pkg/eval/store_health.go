@@ -90,14 +90,11 @@ func (p *PolicyEvalImpl) ensureStoreHealth() {
 	}
 }
 
-// Built-in watches are invalidation signals. Read a fresh complete snapshot
+// Watch events are invalidation signals, including for extensions without the
+// optional health checker. Read a fresh complete snapshot
 // rather than replaying stale deltas queued before/during an outage. This also
 // prevents an old payload from restoring a revoked grant after recovery.
 func (p *PolicyEvalImpl) followStoreChanges(ch pms.StorageChangeChannel) {
-	if p.healthChecker == nil {
-		p.updateRuntimeCacheWithStoreChange(ch)
-		return
-	}
 	ticker := time.NewTicker(storeHealthInterval)
 	defer ticker.Stop()
 	for {

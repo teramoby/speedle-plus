@@ -38,9 +38,11 @@ Only a successful full snapshot read/install restores authorization; connectivit
 alone and old incremental events cannot do so. In watch mode a detected fault
 also discards the old subscription and requires a new subscription before the
 recovery read. Manual successful reads cannot clear that state or reset its
-grace deadline while subscription recovery is still pending. Built-in watch events invalidate
+grace deadline while subscription recovery is still pending. All watch events invalidate
 the snapshot and cause a new complete read, preventing queued pre-outage data
-from restoring revoked grants. Etcd recovery reads all pages at one revision.
+from restoring revoked grants. This also applies to custom stores without the
+optional health-check interface; they report outages through watch events or
+failed reads instead of proactive probes. Etcd recovery reads all pages at one revision.
 
 `storeFailureGracePeriod` / `--store-failure-grace-period` /
 `SPDL_STORE_FAILURE_GRACE_PERIOD` defaults to `0s`. A finite explicit value allows
