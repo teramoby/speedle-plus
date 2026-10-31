@@ -11,8 +11,10 @@ const vm = require('node:vm');
 const source = fs.readFileSync(path.resolve(__dirname, '../../.github/workflows/go-ci-worker.yml'), 'utf8');
 const pool = ['self-hosted', 'Linux', 'X64', 'speedle-linux'];
 const anyRunner = ['self-hosted', 'speedle-runner'];
-// Every task but build may run on any Speedle runner; build needs the Linux pool.
-const routeFor = mode => mode === 'build' ? pool : anyRunner;
+const fiona = ['self-hosted', 'fiona-speedle'];
+// Every task but build and weekly may run on any Speedle runner; build needs
+// the Linux pool and weekly always runs on fiona, for comparable benchmarks.
+const routeFor = mode => mode === 'build' ? pool : mode === 'weekly' ? fiona : anyRunner;
 const repository = 'teramoby/speedle-plus';
 function step(name) {
   const parts = source.split(`      - name: ${name}\n`);
@@ -117,7 +119,7 @@ test('identity check accepts the three Speedle runners for the tasks each may ru
         encoding: 'utf8', env: {...process.env, RUNNER_NAME, RUNNER_OS, RUNNER_ARCH, CI_TASK},
       });
       const host = `${RUNNER_NAME}/${RUNNER_OS}/${RUNNER_ARCH}`;
-      const allowed = ['charming-speedle/Linux/X64', 'charming-speedle-2/Linux/X64'].includes(host) ||
+      const allowed = (['charming-speedle/Linux/X64', 'charming-speedle-2/Linux/X64'].includes(host) && CI_TASK !== 'weekly') ||
         (host === 'fiona-speedle/macOS/ARM64' && CI_TASK !== 'build');
       assert.equal(result.status === 0, allowed, `${host}/${CI_TASK}: ${result.stderr}`);
     }
@@ -301,11 +303,20 @@ test('Docker guide checks use the account docker group the runner process lacks'
   const none = runSuite('nightly', {docker: 'none'});
   assert.ok(!none.records.some(r => r.tool === 'sg'), 'without the docker group, the guide runs and reports its own error');
 });
-test('weekly tests the other supported Go releases and runs staticcheck', () => {
+test('weekly tests the other supported Go releases, compares benchmarks with the baseline and runs staticcheck', () => {
   const {result, records, checks} = runSuite('weekly'); assert.equal(result.status, 0, result.stderr);
   assert.equal(goTests(records)[0].env.GOTOOLCHAIN, 'go1.27.3');
   assert.ok(goTests(records).some(r => r.args.includes('feature_stress') && r.args.includes('^TestFeatureLargePolicyRoleSets$')));
+  const bench = records.find(r => r.tool === 'python3' && r.args[0] === 'scripts/ci/benchmark.py');
+  assert.ok(bench, 'the benchmark comparison runs');
+  assert.equal(bench.args[1], '--results');
+  assert.match(checks, /^performance=0:performance\.log$/m);
   assert.match(checks, /^staticcheck=0:staticcheck\.log$/m);
+  // A performance regression fails the weekly run but not the checks after it.
+  const slow = runSuite('weekly', {failMatching: 'benchmark.py'});
+  assert.equal(slow.result.status, 1);
+  assert.match(slow.checks, /^performance=7:performance\.log$/m);
+  assert.match(slow.checks, /^staticcheck=0:staticcheck\.log$/m);
 });
 
 function listen(host = '127.0.0.1', handler) {

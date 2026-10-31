@@ -96,7 +96,8 @@ def expand_results_dir(directory):
     """Return the go test -json streams and check specs a results directory holds."""
     if not directory.is_dir():
         return [], [f"results {directory.name}=1:"]
-    streams = sorted(str(p) for p in directory.glob("*.json"))
+    # performance.json is scripts/ci/benchmark.py's result, not a test stream.
+    streams = sorted(str(p) for p in directory.glob("*.json") if p.name != "performance.json")
     specs = []
     checks_file = directory / "checks.txt"
     if checks_file.is_file():
@@ -116,7 +117,13 @@ def collect(go_json, check_specs):
     return packages, failures, checks
 
 
-def summarize(kind, packages, failures, checks, run_url, commit_url=""):
+def performance_section(directories):
+    """The benchmark comparison tables (performance.md) found in results directories."""
+    tables = [p.read_text().strip() for d in directories for p in [Path(d) / "performance.md"] if p.is_file()]
+    return "\n\n".join(tables)
+
+
+def summarize(kind, packages, failures, checks, run_url, commit_url="", performance=""):
     total = {k: sum(c[k] for c in packages.values()) for k in ("pass", "fail", "skip")}
     failed_checks = [c for c in checks if not c["passed"]]
     ok = not failures and not failed_checks
@@ -137,6 +144,8 @@ def summarize(kind, packages, failures, checks, run_url, commit_url=""):
             lines += [f"## {f['package']} {f['test']}", "```", f["output"] or "(no output)", "```"]
     for c in failed_checks:
         lines += [f"## Check {c['name']}", "```", c["output"] or "(no output)", "```"]
+    if performance:
+        lines += ["## Performance", "", performance]
     return ok, "\n".join(lines) + "\n"
 
 
@@ -383,7 +392,9 @@ def main(argv=None, env=os.environ):
                                      "they may be incomplete."})
     run_url, commit_url = env.get("RUN_URL", ""), env.get("COMMIT_URL", "")
     policy = KINDS[args.kind]
-    ok, summary = summarize(args.kind, packages, failures, checks, run_url, commit_url)
+    directories = list(args.results_dir) + [spec.split(":", 2)[2] for spec in args.source if spec.count(":") >= 2]
+    ok, summary = summarize(args.kind, packages, failures, checks, run_url, commit_url,
+                            performance_section(directories))
     if ok and policy["quiet_on_pass"]:
         if args.summary_file:
             Path(args.summary_file).write_text(summary)

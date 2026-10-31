@@ -9,10 +9,14 @@ the `teramoby` default group's access policy.
 `fiona-speedle` (macOS ARM64) is a third runner in the same group. All three
 carry `speedle-runner`; only the two charming instances carry `speedle-linux`.
 
-ReviewBot and Go lint, test, post-merge regression, the nightly and the weekly
-select `[self-hosted, speedle-runner]`, so any of the three may take them. Go
-build (it needs the Linux Hugo release and `sha256sum`) selects
-`[self-hosted, Linux, X64, speedle-linux]`.
+ReviewBot and Go lint, test, post-merge regression and the nightly select
+`[self-hosted, speedle-runner]`, so any of the three may take them. Go build (it
+needs the Linux Hugo release and `sha256sum`) selects
+`[self-hosted, Linux, X64, speedle-linux]`. The weekly selects
+`[self-hosted, fiona-speedle]` and its identity check refuses the charming
+runners: its benchmarks (`scripts/ci/benchmark.py`) compare the current code
+with master as of May 2026 on one fixed machine, so the numbers stay comparable
+from week to week. Keep the `fiona-speedle` label on that one instance only.
 A runner administrator must keep `speedle-runner` and `speedle-linux` exclusive
 to these named instances; adding another host would also admit it to
 credential-bearing jobs. A runner name alone is not a scheduling label. The two
@@ -119,8 +123,8 @@ gh workflow run ci.yml --ref master
 ```
 
 Inspect each run's jobs and confirm `runner_name` is one of the three Speedle
-runners for `speedle-runner` jobs (including the nightly and the weekly) and a
-charming runner for build.
+runners for `speedle-runner` jobs (including the nightly), `fiona-speedle` for
+the weekly and a charming runner for build.
 The regression job prints its workspace and temp paths; verify both registrations
 have distinct paths. An online/idle runner listing alone does not prove checkout,
 tool setup, tests or model connectivity work. The dedicated routing regression

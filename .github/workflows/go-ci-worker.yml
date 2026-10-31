@@ -15,12 +15,14 @@ jobs:
     name: execute
     # The runner group accepts only this callee at refs/heads/master. Never
     # derive runner eligibility or checkout revision from caller inputs.
-    # Every task but build goes to any Speedle runner (speedle-runner: both
-    # charming instances and fiona). Build needs the Linux Hugo release, so it
-    # stays on the charming pool. The host lock below keeps fixed-port tests
-    # from overlapping on the charming host.
+    # Every task but build and weekly goes to any Speedle runner
+    # (speedle-runner: both charming instances and fiona). Build needs the
+    # Linux Hugo release, so it stays on the charming pool. Weekly always runs
+    # on fiona, so its benchmarks compare like with like from week to week.
+    # The host lock below keeps fixed-port tests from overlapping on the
+    # charming host.
     runs-on: >-
-      ${{ github.repository == 'teramoby/speedle-plus' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'schedule' && github.ref == 'refs/heads/master') || (github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.event.sender.type == 'User' || github.event.sender.type == 'Bot')) || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && (github.event.pull_request.user.type == 'User' || github.event.pull_request.user.type == 'Bot'))) && fromJSON(inputs.mode == 'build' && '["self-hosted","Linux","X64","speedle-linux"]' || '["self-hosted","speedle-runner"]') || 'ubuntu-latest' }}
+      ${{ github.repository == 'teramoby/speedle-plus' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'schedule' && github.ref == 'refs/heads/master') || (github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.event.sender.type == 'User' || github.event.sender.type == 'Bot')) || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && (github.event.pull_request.user.type == 'User' || github.event.pull_request.user.type == 'Bot'))) && fromJSON(inputs.mode == 'build' && '["self-hosted","Linux","X64","speedle-linux"]' || inputs.mode == 'weekly' && '["self-hosted","fiona-speedle"]' || '["self-hosted","speedle-runner"]') || 'ubuntu-latest' }}
     # test can wait on the host lock behind a nightly on the other charming runner.
     timeout-minutes: ${{ (inputs.mode == 'nightly' || inputs.mode == 'weekly' || inputs.mode == 'regression' || inputs.mode == 'test') && 150 || 30 }}
     steps:
@@ -38,7 +40,8 @@ jobs:
         run: |
           set -euo pipefail
           case "${RUNNER_NAME}/${RUNNER_OS}/${RUNNER_ARCH}" in
-            charming-speedle/Linux/X64|charming-speedle-2/Linux/X64) ;;
+            charming-speedle/Linux/X64|charming-speedle-2/Linux/X64)
+              case "${CI_TASK}" in weekly) echo "Task ${CI_TASK} runs only on fiona-speedle." >&2; exit 1 ;; esac ;;
             fiona-speedle/macOS/ARM64)
               case "${CI_TASK}" in build) echo "Task ${CI_TASK} needs a Linux runner." >&2; exit 1 ;; esac ;;
             *) echo 'Unexpected runner.' >&2; exit 1 ;;
