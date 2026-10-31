@@ -168,6 +168,48 @@ func TestFeatureRecoveryIgnoresQueuedStaleGrant(t *testing.T) {
 	}
 }
 
+type restartingWatchStore struct {
+	*availabilityStore
+	mu   sync.Mutex
+	next pms.StorageChangeChannel
+}
+
+func (s *restartingWatchStore) Watch() (pms.StorageChangeChannel, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.next, nil
+}
+
+func TestFeatureClosedWatchRequiresResubscription(t *testing.T) {
+	initial := &pms.PolicyStore{Services: []*pms.Service{{Name: "app", Policies: []*pms.Policy{recoveryGrant("grant")}}}}
+	first, second := make(pms.StorageChangeChannel), make(pms.StorageChangeChannel)
+	s := &restartingWatchStore{availabilityStore: &availabilityStore{snapshot: initial}, next: first}
+	engine, err := NewWithStore(&cfg.Config{EnableWatch: true}, s)
+	if err != nil {
+		t.Fatal(err)
+	}
+	e := engine.(*PolicyEvalImpl)
+	t.Cleanup(func() { _ = e.Close(); close(second) })
+	s.mu.Lock()
+	s.next = second
+	s.mu.Unlock()
+	s.availabilityStore.mu.Lock()
+	s.snapshot = &pms.PolicyStore{Services: []*pms.Service{{Name: "app"}}}
+	s.availabilityStore.mu.Unlock()
+	close(first)
+	deadline := time.Now().Add(3 * time.Second)
+	for {
+		allowed, _, err := e.IsAllowed(featureContext())
+		if !e.watchNeedsRestart.Load() && !allowed && err == nil {
+			break
+		}
+		if time.Now().After(deadline) {
+			t.Fatalf("watch did not resubscribe with a fresh snapshot: %v %v", allowed, err)
+		}
+		time.Sleep(time.Millisecond)
+	}
+}
+
 // Runs against the selected real backend in both root and feature-stress stages.
 func TestFeatureStoreOutageRecovery(t *testing.T) {
 	for _, watching := range []bool{false, true} {

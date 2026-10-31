@@ -373,6 +373,8 @@ docker cp speedle-etcd:/etcd-data/speedle-snapshot.db ./etcd-demo/speedle-snapsh
 
 <p>Return to <a href="/docs/store/">Pluggable Storage</a> for backend interfaces and configuration precedence.</p>
 
+<p>Store failures follow the same policy as every built-in store: ADS defaults to deny with an error after detecting unavailability, stays running and retries, and resumes after a successful complete reload. See <a href="/docs/store/#store-failures-and-cached-authorization">store failures and cached authorization</a> for the optional finite grace period and its revocation delay.</p>
+
   </div>
 </div>
 </main><div class="sidebar">

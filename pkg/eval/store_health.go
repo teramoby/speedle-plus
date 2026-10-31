@@ -78,7 +78,7 @@ func (p *PolicyEvalImpl) ensureStoreHealth() {
 	p.cacheGate.RLock()
 	reload := !p.storeFailureSince.IsZero() || p.cacheFailed.Load()
 	p.cacheGate.RUnlock()
-	if reload {
+	if reload && !p.watchNeedsRestart.Load() {
 		_ = p.Refresh()
 	}
 }
@@ -94,20 +94,45 @@ func (p *PolicyEvalImpl) followStoreChanges(ch pms.StorageChangeChannel) {
 	ticker := time.NewTicker(storeHealthInterval)
 	defer ticker.Stop()
 	for {
+		if p.watchStopped.Load() {
+			return
+		}
 		select {
 		case event, ok := <-ch:
 			if !ok {
+				p.watchNeedsRestart.Store(true)
 				if !p.watchStopped.Load() {
 					_ = p.applyStoreChange(pms.StoreChangeEvent{Type: pms.STORE_UNAVAILABLE})
 				}
-				return
+				ch = nil
+				continue
 			}
 			if event.Type != pms.STORE_UNAVAILABLE {
 				event = pms.StoreChangeEvent{Type: pms.FULL_RELOAD}
 			}
 			_ = p.applyStoreChange(event)
 		case <-ticker.C:
+			if ch == nil {
+				var err error
+				ch, err = p.reopenStoreWatch()
+				if err != nil || ch == nil {
+					continue
+				}
+				p.watchNeedsRestart.Store(false)
+				_ = p.Refresh()
+			}
 			p.ensureStoreHealth()
 		}
 	}
+}
+
+func (p *PolicyEvalImpl) reopenStoreWatch() (ch pms.StorageChangeChannel, err error) {
+	defer recoverEvaluation("RestartStoreWatch", &err)
+	p.watchLifecycleMu.Lock()
+	defer p.watchLifecycleMu.Unlock()
+	if p.watchStopped.Load() || p.closed.Load() {
+		return nil, nil
+	}
+	p.Store.StopWatch()
+	return p.Store.Watch()
 }

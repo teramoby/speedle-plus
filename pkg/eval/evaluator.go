@@ -78,6 +78,8 @@ type PolicyEvalImpl struct {
 	storeFailureSince       time.Time
 	storeFailureGracePeriod time.Duration
 	watchStopped            atomic.Bool
+	watchNeedsRestart       atomic.Bool
+	watchLifecycleMu        sync.Mutex
 	closed                  atomic.Bool
 }
 
@@ -1338,7 +1340,11 @@ func (p *PolicyEvalImpl) Close() error {
 // After stopping watching, policy changes will not be updated automatically
 func (p *PolicyEvalImpl) StopWatch() {
 	p.watchStopped.Store(true)
-	p.watchStopOnce.Do(func() { p.Store.StopWatch() })
+	p.watchStopOnce.Do(func() {
+		p.watchLifecycleMu.Lock()
+		defer p.watchLifecycleMu.Unlock()
+		p.Store.StopWatch()
+	})
 }
 
 func difPolicySets(oldSet, newSet []int) (missed, removed []int) {

@@ -98,6 +98,27 @@ headingSelector: 'h2'
 
 <p>逐步部署教程：<a href="/zh/docs/store/mysql/">MySQL 配置指南</a>、<a href="/zh/docs/store/etcd/">etcd 配置指南</a>与 <a href="/zh/docs/store/mongodb/">MongoDB 配置指南</a>。</p>
 
+<h2 id="存储故障与缓存授权">存储故障与缓存授权</h2>
+
+<p>file、etcd、MySQL、MongoDB 使用相同的 ADS 故障策略。
+<code>storeFailureGracePeriod</code> 默认是 <code>&quot;0s&quot;</code>：检测到存储故障后，授权返回
+<code>allowed:false</code> 和求值错误。ADS 保持运行并持续重试；连接恢复后，还必须成功
+加载完整策略快照，才能恢复授权。文件被删除时会持续重试，不再退出 ADS。</p>
+
+<p>如果部署方明确接受撤权延迟，可在 ADS JSON 配置的顶层设置有限时长，例如
+<code>&quot;storeFailureGracePeriod&quot;: &quot;5s&quot;</code>。对应参数为
+<code>--store-failure-grace-period=5s</code>，环境变量为
+<code>SPDL_STORE_FAILURE_GRACE_PERIOD</code>，继续遵循“显式参数 → 环境变量 → 配置文件 → 默认值”。
+重试失败不会延长宽限期。宽限期内按最后一份完整快照授权，因此撤权要等同步恢复
+才能生效。缓存部分更新失败和授权计算 panic 不适用宽限期，仍然立即拒绝。</p>
+
+<p>内置存储约每秒执行一次轻量健康检查，单次检查超时为一秒；watch 可能更早报告
+故障，正在执行的存储读取也受各自后端超时限制。故障检测和正常策略传播均为异步，
+不提供瞬时撤权保证。设置 <code>enableWatch:false</code> 时，请求仍检查存储健康，普通策略
+变更需要显式刷新；故障恢复时，即使关闭 watch，也必须加载完整快照。首次加载
+失败时没有可用缓存，不适用宽限期。自定义存储可以实现 <code>pms.StoreHealthChecker</code>
+并发送 <code>pms.STORE_UNAVAILABLE</code> 事件，接入相同故障策略。</p>
+
 <h2 id="mysql-8-4-策略存储">MySQL 8.4 策略存储</h2>
 
 <p>按照 <a href="/zh/docs/store/mysql/">MySQL 配置指南</a>逐步建库、创建 PMS/ADS 独立账号、配置并启动服务，最后验证策略同步和授权结果。</p>
@@ -165,7 +186,7 @@ headingSelector: 'h2'
 
 <p>每次写入都锁定唯一的修订号记录，将数据修改与修订号递增一同提交，因此多个 PMS 实例的策略写入会串行完成。包含嵌套策略的服务创建、级联删除和整库替换均保持原子性。导入保留已有策略 ID，为缺失 ID 生成新值。快照读取使用同一个可重复读事务。</p>
 
-<p>启用 <code>enableWatch</code> 后，ADS 轮询修订号，变化时接收完整一致快照。开始监听时也发送快照，覆盖首次读取与建立监听之间的更新。传播是异步的，通常需要一个轮询周期加上查询和缓存重建时间。数据库不可用时，ADS 保留最后加载的策略并重试读取，恢复连接后重新同步。直接执行 SQL 而不更新修订号的修改不会自动触发同步；策略写入应通过 PMS 或存储接口完成。</p>
+<p>启用 <code>enableWatch</code> 后，ADS 轮询修订号，变化时接收完整一致快照。开始监听时也发送快照，覆盖首次读取与建立监听之间的更新。传播是异步的，通常需要一个轮询周期加上查询和缓存重建时间。数据库不可用时，ADS 保留数据但默认暂停缓存授权，持续重试读取，成功加载完整快照后才恢复授权；适用上文统一的故障与宽限期策略。直接执行 SQL 而不更新修订号的修改不会自动触发同步；策略写入应通过 PMS 或存储接口完成。</p>
 
 <p>操作超时也覆盖连接池等待和事务锁等待。写入失败会回滚；若提交时连接中断，结果可能无法确认，重试非幂等创建前应先检查存储状态。<code>StopWatch</code> 和 <code>Close</code> 均可重复调用，释放监听资源；<code>Close</code> 还会关闭连接池。</p>
 

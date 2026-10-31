@@ -373,6 +373,8 @@ docker cp speedle-etcd:/etcd-data/speedle-snapshot.db ./etcd-demo/speedle-snapsh
 
 <p>后端接口和配置合并规则详见<a href="/zh/docs/store/">存储扩展</a>。</p>
 
+<p>故障处理与其他内置存储一致：检测到存储不可用后，ADS 默认拒绝授权并返回错误，保持运行并重试，成功加载完整快照后恢复。可选宽限期及其撤权影响见<a href="/zh/docs/store/#存储故障与缓存授权">存储故障与缓存授权</a>。</p>
+
   </div>
 </div>
 </main><div class="sidebar">
