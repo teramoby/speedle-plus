@@ -13,6 +13,8 @@ The baseline is the code as master stood in May 2026; see BASELINE.
 """
 import argparse
 import json
+import os
+import platform
 import re
 import shutil
 import statistics
@@ -63,12 +65,22 @@ def compare(baseline, candidate, threshold=THRESHOLD):
     return rows, regressed, missing
 
 
-def render(rows, regressed, missing, baseline, candidate, rounds, threshold=THRESHOLD):
+def runner_description(env=os.environ):
+    """The machine the benchmarks ran on, as GitHub Actions names it."""
+    name = env.get("RUNNER_NAME") or platform.node() or "unknown host"
+    system = "/".join(v for v in (env.get("RUNNER_OS"), env.get("RUNNER_ARCH")) if v) or \
+        f"{platform.system()}/{platform.machine()}"
+    return f"{name} ({system})"
+
+
+def render(rows, regressed, missing, baseline, candidate, rounds, threshold=THRESHOLD, runner=""):
     lines = [f"Baseline `{baseline[:12]}` (master in May 2026) against `{candidate[:12]}`, "
              f"median of {rounds} alternating rounds on the same runner. "
-             f"A benchmark more than {threshold:.0%} slower than the baseline is a regression.", "",
-             "| Benchmark | Baseline ns/op | Current ns/op | Change | B/op | allocs/op |",
-             "| --- | ---: | ---: | ---: | ---: | ---: |"]
+             f"A benchmark more than {threshold:.0%} slower than the baseline is a regression.", ""]
+    if runner:
+        lines += [f"Runner: {runner}", ""]
+    lines += ["| Benchmark | Baseline ns/op | Current ns/op | Change | B/op | allocs/op |",
+              "| --- | ---: | ---: | ---: | ---: | ---: |"]
     for row in rows:
         mark = " ⚠️" if row["regressed"] else ""
         b, c = row["baseline"], row["candidate"]
@@ -134,10 +146,12 @@ def main(argv=None, runner=run_benchmarks):
 
     base, cand = medians(base_runs), medians(cand_runs)
     rows, regressed, missing = compare(base, cand, args.threshold)
-    report = render(rows, regressed, missing, args.baseline, candidate, args.rounds, args.threshold)
+    runner_name = runner_description()
+    report = render(rows, regressed, missing, args.baseline, candidate, args.rounds, args.threshold, runner_name)
     (results / "performance.md").write_text(report)
     (results / "performance.json").write_text(json.dumps({
-        "baseline": args.baseline, "candidate": candidate, "rounds": args.rounds, "threshold": args.threshold,
+        "baseline": args.baseline, "candidate": candidate, "runner": runner_name,
+        "rounds": args.rounds, "threshold": args.threshold,
         "benchmarks": rows, "regressed": regressed, "missing": missing}, indent=2) + "\n")
     print(report)
     return 1 if regressed or missing or not rows else 0

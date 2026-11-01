@@ -64,6 +64,16 @@ class CompareTest(unittest.TestCase):
         self.assertIn("median of 5 alternating rounds", text)
         clean = benchmark.render(*benchmark.compare(base, base), "a" * 40, "b" * 40, 5)
         self.assertIn("No regression.", clean)
+        self.assertNotIn("Runner:", clean)
+        named = benchmark.render(*benchmark.compare(base, base), "a" * 40, "b" * 40, 5, runner="fiona-speedle (macOS/ARM64)")
+        self.assertIn("Runner: fiona-speedle (macOS/ARM64)", named)
+
+    def test_runner_description(self):
+        self.assertEqual(benchmark.runner_description(
+            {"RUNNER_NAME": "charming-speedle-2", "RUNNER_OS": "Linux", "RUNNER_ARCH": "X64"}),
+            "charming-speedle-2 (Linux/X64)")
+        # Outside Actions the host name and platform are used.
+        self.assertRegex(benchmark.runner_description({}), r"^.+ \(.+/.+\)$")
 
 
 class MainTest(unittest.TestCase):
@@ -101,6 +111,8 @@ class MainTest(unittest.TestCase):
         self.assertEqual(calls, ["old", "new"] * 3)
         data = json.loads((self.results / "performance.json").read_text())
         self.assertEqual(data["baseline"], self.baseline)
+        self.assertTrue(data["runner"])
+        self.assertIn("Runner: ", (self.results / "performance.md").read_text())
         self.assertEqual(data["regressed"], [])
         self.assertIn("No regression.", (self.results / "performance.md").read_text())
         # The baseline worktree is cleaned up.
