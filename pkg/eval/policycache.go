@@ -4,8 +4,6 @@
 package eval
 
 import (
-	"regexp"
-
 	log "github.com/sirupsen/logrus"
 
 	"github.com/teramoby/speedle-plus/3rdparty/github.com/Knetic/govaluate"
@@ -256,7 +254,7 @@ func (p *PolicyCacheData) getPoliciesFromResourceExpressionMap(resourceToPolicyM
 
 		if resourceToPolicyMap.ResourceExpressionToPolicies != nil {
 			for resExp, policyIDSet := range resourceToPolicyMap.ResourceExpressionToPolicies {
-				matched, err := regexp.MatchString(resExp, resource)
+				matched, err := matchExpression(resExp, resource)
 				if err != nil {
 					log.Errorf("Meet error when match the resource expression in poliy. err: %s", err)
 					continue

@@ -4,7 +4,6 @@
 package eval
 
 import (
-	"regexp"
 	"strings"
 
 	log "github.com/sirupsen/logrus"
@@ -24,7 +23,7 @@ func matchResource(requestRes string, resources, resExpressions []string) bool {
 		}
 	}
 	for _, resExp := range resExpressions {
-		matched, err := regexp.MatchString(resExp, requestRes)
+		matched, err := matchExpression(resExp, requestRes)
 		if err == nil && matched {
 			return true
 		}
@@ -41,7 +40,7 @@ func matchResourceAction(policy *pms.Policy, ctx *internalRequestContext) bool {
 	for _, perm := range policy.Permissions {
 		resExpMatch := false
 		if len(perm.ResourceExpression) != 0 {
-			resExpMatch, _ = regexp.MatchString(perm.ResourceExpression, ctx.Resource)
+			resExpMatch, _ = matchExpression(perm.ResourceExpression, ctx.Resource)
 			//TODO log error
 		}
 		resNameMatch := perm.Resource == ctx.Resource
@@ -130,7 +129,7 @@ func calculatePermissions(grantedPermissions, deniedPermissions []pms.Permission
 		for _, deniedPermission := range deniedPermissions {
 			expMatched := false
 			if len(deniedPermission.ResourceExpression) > 0 {
-				matched, err := regexp.MatchString(deniedPermission.ResourceExpression, grantPermission.Resource)
+				matched, err := matchExpression(deniedPermission.ResourceExpression, grantPermission.Resource)
 				if err != nil || matched {
 					//TODO: log err
 					expMatched = true
