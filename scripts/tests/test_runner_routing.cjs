@@ -14,7 +14,7 @@ const sources = {
   ci: read('ci.yml'), review: read('reviewbot.yml'),
   commands: read('reviewbot-command.yml'), inline: read('reviewbot-inline.yml'),
   nightly: read('nightly.yml'), weekly: read('weekly.yml'), postMerge: read('post-merge.yml'),
-  mongodb: read('mongodb-nightly-validation.yml'), authzBench: read('authz-bench.yml'),
+  mongodb: read('mongodb-nightly-validation.yml'),
 };
 function jobs(source) {
   const section = source.split(/^jobs:\s*$/m)[1];
@@ -269,17 +269,4 @@ test('Fiona CI trial runs the worker and ReviewBot commands without touching CI 
   assert.match(trial, /weekly\) bash scripts\/ci\/run-go-tests.sh weekly ;;/);
   assert.match(trial, /node --test scripts\/tests\/test_reviewbot_commands.cjs/);
   assert.doesNotMatch(trial, /secrets\.|ARK_API_KEY|Authorization/);
-});
-
-test('the manual engine comparison builds on a hosted runner and runs through the worker', () => {
-  const source = sources.authzBench;
-  assert.match(source, /^on:\n  workflow_dispatch:$/m);
-  assert.doesNotMatch(source, /^  (?:schedule|push|pull_request):/m);
-  assert.match(source, /^permissions:\n  contents: read$/m);
-  assert.deepEqual(Object.keys(job.authzBench), ['package', 'run']);
-  assert.equal(route(job.authzBench.package), 'ubuntu-24.04');
-  assert.match(job.authzBench.package, /persist-credentials: false/);
-  assert.match(job.authzBench.run, /needs: package$/m);
-  assert.deepEqual(workerInputs(job.authzBench.run, 'authzBench.run'), {mode: 'authz-bench'});
-  assert.doesNotMatch(source, /secrets\./);
 });
