@@ -40,6 +40,8 @@ Latest documentations are available at <https://speedle.io/docs>.
 
 See Getting Started at <https://speedle.io/quick-start/>.
 
+Try the [Playground](https://speedle.io/playground/) to write SPDL policies and test authorization decisions directly in your browser, without installing Speedle+.
+
 ## Embed in a Go application
 
 The Authorization Decision Service can run inside a Go process. Save the policies as `policies.spdl`:
