@@ -46,7 +46,15 @@ Speedle+项目基于Speedle项目<https://github.com/oracle/speedle>，两个项
 
 ## 嵌入 Go 应用
 
-授权决策服务可以直接运行在 Go 进程里。先把策略保存为 `policies.spdl`：
+授权决策服务可以直接运行在 Go 进程里。先创建一个 Go 模块：
+
+```bash
+mkdir speedle-embedded-demo
+cd speedle-embedded-demo
+go mod init example.com/speedle-embedded-demo
+```
+
+如果已有 Go 模块，直接使用它的目录即可。把策略保存为 `policies.spdl`：
 
 ```text
 [service.library]
@@ -56,7 +64,7 @@ grant role librarian read,update book
 grant user alice librarian
 ```
 
-用 `go get github.com/teramoby/speedle-plus` 引入模块，然后评估一个请求：
+把下面的程序保存为 `main.go`：
 
 ```go
 package main
@@ -84,6 +92,14 @@ func main() {
 		fmt.Println(user, allowed, reason, err)
 	}
 }
+```
+
+在同一目录安装依赖并运行示例：
+
+```bash
+go get github.com/teramoby/speedle-plus
+go mod tidy
+go run .
 ```
 
 输出：
