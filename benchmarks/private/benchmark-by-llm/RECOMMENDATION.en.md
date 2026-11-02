@@ -1,0 +1,11 @@
+# Scope of performance and capability conclusions
+
+> English translation of [RECOMMENDATION.md](RECOMMENDATION.md), added 2026-11-02. This preserves the archived 2026-10-29 versions, observations, and time-specific statements; it adds no measurements.
+
+This interprets one pinned-version, single-machine experiment. It is neither a new experiment nor a recommendation covering every deployment. Full data and confirmed issues are in the [report](REPORT.en.md).
+
+For the ordinary RBAC/ABAC requests covered here, Speedle+ performed well in uncached decision latency and identical-wrapper HTTP throughput. Before adopting the measured b276 version in production, address the two observed behaviors: atomic replacement of a watched file exits the host, and malformed conditions do not fail at load time. OPA used less retained heap and loaded faster. Casbin improved substantially with few roles and permissions; warm-cache-hit results must be listed separately and cannot establish an overall ranking against all uncached paths.
+
+Relationship authorization has several modeling routes: pass relationships/ancestor sets as trusted attributes, map inheritance through a role hierarchy, or evaluate relationships in a custom function. Speedle+'s [conditions/role policies](https://speedle.io/docs/spdl/) and [custom functions](https://speedle.io/docs/custom-function/) support these mechanisms. OPA offers built-ins such as [graph.reachable](https://www.openpolicyagent.org/docs/policy-reference/builtins/graph). This run did not compare equivalent implementations for scale, updates, consistency, latency, or external-call failure handling, so it cannot rank the three products' general relationship-authorization capabilities.
+
+The earlier phrase complex graph traversal was too broad. A common business requirement is permission inheritance through relationships among users, groups, projects, folders, and documents. This is an authorization use case, but does not require every access-management product to have a separate graph engine. Scenario s2 verified ordinary role inheritance; s9 implemented only a static-path example. The user's follow-up questions and corrections are recorded in [PROMPTS.en.md](PROMPTS.en.md) and [CORRECTIONS.en.md](CORRECTIONS.en.md).

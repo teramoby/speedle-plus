@@ -867,6 +867,127 @@
       "path": "verify_archive.py",
       "bytes": 4648,
       "sha256": "3bed6f482d2773d0f4437fbed412ef1ed4c390754976208bb89cb15c4cfd1eda"
+    },
+    {
+      "path": "CORRECTIONS.en.md",
+      "bytes": 3215,
+      "sha256": "e56e74b62b1bc1fc1641fbe857255f21adb2e63d94e3827335063c9d05fe71c9",
+      "language": "en",
+      "translation_of": "CORRECTIONS.md",
+      "source_sha256": "d1e87914c5f0580141afc29680af14c2b90b25efa5b0568a2013d6128577dff4"
+    },
+    {
+      "path": "DEPLOYMENT.en.md",
+      "bytes": 5306,
+      "sha256": "4e7857e38ca6c57240da3cb54c97f50d7f04106876e76bccbcfc95a92fa677f3",
+      "language": "en",
+      "translation_of": "DEPLOYMENT.md",
+      "source_sha256": "0687ab4b2f6be5f4e5be034ccc57eba70455e0af9f3c478f1a3e9461cae649af"
+    },
+    {
+      "path": "ENVIRONMENT.en.md",
+      "bytes": 3337,
+      "sha256": "7c3281be04a6227f688d21dffb7af31146df6e0bdd8f6ac71fe7f027bdb363c8",
+      "language": "en",
+      "translation_of": "ENVIRONMENT.md",
+      "source_sha256": "a407f61af870cc6d87699fdba04e0e4822c1eb315b79300b2999a31c838d1edb"
+    },
+    {
+      "path": "EVIDENCE.en.md",
+      "bytes": 4523,
+      "sha256": "ce8806bf5fca7ddf44f36a8f759d7bc45c1b09bda6b0a374e28cac0b358ee63b",
+      "language": "en",
+      "translation_of": "EVIDENCE.md",
+      "source_sha256": "d2babad3d2cd5de66a1be9f5799d15e29209e115da60e1e88d344028521c3c8c"
+    },
+    {
+      "path": "HARNESS_README.en.md",
+      "bytes": 5243,
+      "sha256": "1577a71a820fadad3e71167ef40fb10cc71b5bf7eaeb4c5aea414adb53ac4fdc",
+      "language": "en",
+      "translation_of": "HARNESS_README.md",
+      "source_sha256": "22b4a46924f628298975f67544a4719d2d22ff67ee6625f3cb7950b319a92005"
+    },
+    {
+      "path": "PRIVACY.en.md",
+      "bytes": 2369,
+      "sha256": "a6f64008cc5bed0ddabeffd28d528d094576d0107c25687cff9806a18af51629",
+      "language": "en",
+      "translation_of": "PRIVACY.md",
+      "source_sha256": "20ea1d6e52a2c3506628852a7bd031eb3ddf3d67c51be6b8e28f638afa1de4ad"
+    },
+    {
+      "path": "PROMPTS.en.md",
+      "bytes": 4304,
+      "sha256": "d5b9e1f867e2e5ad91125d6a6e99d0b5264c021d189384ef9c632b5ffd8675e4",
+      "language": "en",
+      "translation_of": "PROMPTS.md",
+      "source_sha256": "812b17825c61952e3697d9b8215bf543cb67fd0c1022651ab73abbc7e49b2326"
+    },
+    {
+      "path": "README.en.md",
+      "bytes": 7569,
+      "sha256": "67a6320dc6df5f5ecc6dc4c21fd92805f69b43ab0ad17b898ddc50007d71c8c4",
+      "language": "en",
+      "translation_of": "README.md",
+      "source_sha256": "17812e9a38501e0221a927399d25e958d32d3eb7d7048d8805c34a3a77a833c8"
+    },
+    {
+      "path": "RECOMMENDATION.en.md",
+      "bytes": 2266,
+      "sha256": "f4d20cfa6643ab008a22391edac70661e5913b66a3c97de504efdef307c031fe",
+      "language": "en",
+      "translation_of": "RECOMMENDATION.md",
+      "source_sha256": "82af9cc8aa5c590e6b9dace44ef0528654246f876728c38a5faaf5c1fd461ffd"
+    },
+    {
+      "path": "REPORT.en.md",
+      "bytes": 32460,
+      "sha256": "6af9600e1847ff1e67389cdeb4eea04c8f8906f59ddd6ce6e765d03e6c23667e",
+      "language": "en",
+      "translation_of": "REPORT.md",
+      "source_sha256": "c62ad9a6173872d9cea1345d2d9d76d2a636e7fe2da7494d76d3bfd98732ee54"
+    },
+    {
+      "path": "TEST_PLAN.en.md",
+      "bytes": 22803,
+      "sha256": "7c3ead32e55607f1005ffbdcc8d2988f621f6cf5b3f84ac911625bea0aa19658",
+      "language": "en",
+      "translation_of": "TEST_PLAN.md",
+      "source_sha256": "af20c7078c8f38d348f895e7d81bc0a2b14f045d15d7736d107335db524e78b7"
+    },
+    {
+      "path": "prompts/claude-handoff-original.en.md",
+      "bytes": 21914,
+      "sha256": "2de92377710a0ef0f47fd42004a0fb7e3a606b8fb4dc1a5d9f46a473cf570598",
+      "language": "en",
+      "translation_of": "prompts/claude-handoff-original.md",
+      "source_sha256": "7ac73ec5759e943894e1866052f4286a6b1b2ba619ebac5a318457c8032fadd2"
+    },
+    {
+      "path": "results/retest-20261029/EXECUTION.en.md",
+      "bytes": 4684,
+      "sha256": "0bd299c568cba2f32fba8eb6bd771e6d584253f6b3ba591d8cae86ceb41bc9ee",
+      "language": "en",
+      "translation_of": "results/retest-20261029/EXECUTION.md",
+      "source_sha256": "f60f238092f75768f5993ed8fbe7d735406b126fe769834e6502b331eeca0ed0"
+    },
+    {
+      "path": "results/retest-20261029/charming/summary.en.md",
+      "bytes": 23913,
+      "sha256": "c4a5315978deae5f07c8281697fa0409734008cb0f5af7b8ed69da081d3b149c",
+      "language": "en",
+      "translation_of": "results/retest-20261029/charming/summary.md",
+      "source_sha256": "83e8f88946a4670f074428faad7dfe968a35fc1e4e1a8d063526185f24de2f38"
+    },
+    {
+      "path": "validation/README.en.md",
+      "bytes": 1588,
+      "sha256": "344665809dc83371cd2d984b8e9965094cfbe8c04b4585c01e4d437d5e329614",
+      "language": "en",
+      "translation_of": "validation/README.md",
+      "source_sha256": "16bd7ac8e23064e5195c4e8f4aba4fba6f2b4ad1e0abcb2295a354908c317b29"
     }
-  ]
+  ],
+  "translations_added_at": "2026-11-02"
 }
