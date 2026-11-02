@@ -1,0 +1,3 @@
+[
+{"uid":{"type":"User","id":"gina"},"attrs":{"adminOf":[{"__entity":{"type":"Tenant","id":"tenant1"}}],"viewerOf":[{"__entity":{"type":"Tenant","id":"tenant2"}}]},"parents":[]}
+]

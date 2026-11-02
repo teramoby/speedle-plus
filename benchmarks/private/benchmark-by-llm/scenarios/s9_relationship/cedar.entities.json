@@ -1,0 +1,6 @@
+[
+{"uid":{"type":"Folder","id":"F1a"},"attrs":{},"parents":[{"type":"Folder","id":"F1"}]},
+{"uid":{"type":"Document","id":"D1"},"attrs":{},"parents":[{"type":"Folder","id":"F1"}]},
+{"uid":{"type":"Document","id":"D2"},"attrs":{},"parents":[{"type":"Folder","id":"F2"}]},
+{"uid":{"type":"Document","id":"D3"},"attrs":{},"parents":[{"type":"Folder","id":"F1a"}]}
+]

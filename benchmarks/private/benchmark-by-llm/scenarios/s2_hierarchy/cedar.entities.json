@@ -1,0 +1,5 @@
+[
+{"uid":{"type":"Role","id":"editor"},"attrs":{},"parents":[{"type":"Role","id":"viewer"}]},
+{"uid":{"type":"User","id":"dave"},"attrs":{},"parents":[{"type":"Role","id":"editor"}]},
+{"uid":{"type":"User","id":"vic"},"attrs":{},"parents":[{"type":"Role","id":"viewer"}]}
+]

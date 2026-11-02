@@ -22,7 +22,7 @@ import (
 )
 
 func main() {
-	engine := flag.String("engine", "opa", "casbin | opa | speedle")
+	engine := flag.String("engine", "opa", "casbin | opa | cedar | cedar-data | speedle")
 	kind := flag.String("kind", "plain", "plain | manyusers")
 	n := flag.Int("n", 10000, "number of roles (10 users each)")
 	addr := flag.String("addr", "127.0.0.1:9000", "listen address")
@@ -55,6 +55,10 @@ func main() {
 		e, err = ab.NewCasbinSynced(g.CasbinConf, g.CasbinCSV, ab.CasbinArgs)
 	case "opa":
 		e, err = ab.NewOPA(g.OPARego, g.OPAJSON)
+	case "cedar":
+		e, err = ab.NewCedar("cedar", g.CedarPolicies, g.CedarEntities)
+	case "cedar-data":
+		e, err = ab.NewCedar("cedar-data", g.CedarDataPolicies, g.CedarDataEntities)
 	case "speedle":
 		e, err = ab.NewSpeedle(g.SpeedleSPDL, false)
 	default:
