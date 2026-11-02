@@ -44,7 +44,15 @@ Try the [Playground](https://speedle.io/playground/) to write SPDL policies and 
 
 ## Embed in a Go application
 
-The Authorization Decision Service can run inside a Go process. Save the policies as `policies.spdl`:
+The Authorization Decision Service can run inside a Go process. Start a new Go module:
+
+```bash
+mkdir speedle-embedded-demo
+cd speedle-embedded-demo
+go mod init example.com/speedle-embedded-demo
+```
+
+If you already have a Go module, use its directory instead. Save the policies as `policies.spdl`:
 
 ```text
 [service.library]
@@ -54,7 +62,7 @@ grant role librarian read,update book
 grant user alice librarian
 ```
 
-Add the module with `go get github.com/teramoby/speedle-plus`, then evaluate a request:
+Save the following program as `main.go`:
 
 ```go
 package main
@@ -82,6 +90,14 @@ func main() {
 		fmt.Println(user, allowed, reason, err)
 	}
 }
+```
+
+Install the dependencies and run the example from the same directory:
+
+```bash
+go get github.com/teramoby/speedle-plus
+go mod tidy
+go run .
 ```
 
 Output:
