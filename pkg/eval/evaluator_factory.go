@@ -104,8 +104,8 @@ func NewWithStore(conf *cfg.Config, s pms.PolicyStoreManagerADS) (evaluator Inte
 		RuntimePolicyStore:      runtimePolicyStore,
 		Store:                   s,
 		storeFailureGracePeriod: grace,
-		lastHealthCheck:         time.Now(),
 	}
+	p.lastHealthCheck.Store(time.Now().UnixNano())
 	p.healthChecker, _ = s.(pms.StoreHealthChecker)
 	p.watchManaged = updateChan != nil
 
