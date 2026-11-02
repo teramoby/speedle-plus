@@ -69,6 +69,8 @@ type BasePolicyCacheData struct {
 	//No principal defined in policy, mean match any principal
 	NilPrincipalToPolicies *ResourceToPolicyMap
 	Conditions             map[string]*govaluate.EvaluableExpression
+	// The compiled resource expressions of the policies in this cache.
+	Expressions ExpressionCache
 }
 
 func (p *BasePolicyCacheData) isEmpty() bool {

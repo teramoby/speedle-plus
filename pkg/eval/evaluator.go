@@ -462,7 +462,7 @@ func (p *PolicyEvalImpl) GetAllGrantedPermissions(ctx adsapi.RequestContext) (pe
 		}
 	}
 
-	ret := calculatePermissions(grantedPermissionList, deniedPermissionList)
+	ret := calculatePermissions(&newCtx.Service.PoliciesCache.Expressions, grantedPermissionList, deniedPermissionList)
 	return ret, nil
 }
 
@@ -519,7 +519,7 @@ func (p *PolicyEvalImpl) getDirectRolePolicesInService(principals []string,
 		}
 
 		// No principal defined. that means the roles are granted to any user
-		if (len(policy.Principals) == 0 || matchRolePolicyPrincipals(principals, policy.Principals)) && matchResource(resource, policy.Resources, policy.ResourceExpressions) {
+		if (len(policy.Principals) == 0 || matchRolePolicyPrincipals(principals, policy.Principals)) && matchResource(&service.RolePoliciesCache.Expressions, resource, policy.Resources, policy.ResourceExpressions) {
 			// Evaluate conditions
 			condition, ok := service.RolePoliciesCache.Conditions[policy.ID]
 			// If no conditions defined, the condition evaluation result is true
@@ -1026,7 +1026,7 @@ func (p *PolicyEvalImpl) getPolicyList(ctx *internalRequestContext, matchResourc
 		// No principal defined. that means the resource actions are granted to any user
 		if len(policy.Principals) == 0 || matchPrincipals(principals, policy.Principals) {
 			// Check the resource and action
-			if !matchResource || (matchResource && matchResourceAction(policy, ctx)) {
+			if !matchResource || (matchResource && matchResourceAction(&ctx.Service.PoliciesCache.Expressions, policy, ctx)) {
 				// Evaluate conditions
 				condition, ok := ctx.Service.PoliciesCache.Conditions[policy.ID]
 				// If no conditions defined, the condition evaluation result is true
