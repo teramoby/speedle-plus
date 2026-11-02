@@ -74,7 +74,7 @@ type PolicyEvalImpl struct {
 	cacheGate               sync.RWMutex
 	healthChecker           pms.StoreHealthChecker
 	healthMu                sync.Mutex
-	lastHealthCheck         time.Time
+	lastHealthCheck         atomic.Int64 // UnixNano of the last finished probe
 	storeFailureSince       time.Time
 	storeFailureGracePeriod time.Duration
 	watchStopped            atomic.Bool
