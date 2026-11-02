@@ -40,6 +40,8 @@ Speedle+项目基于Speedle项目<https://github.com/oracle/speedle>，两个项
 
 请参阅 <https://speedle.io/quick-start/>。   
 
+也可以打开 [Playground（在线策略实验室）](https://speedle.io/zh/playground/)，直接在浏览器中编写 SPDL 策略并测试授权结果，无需安装 Speedle+。
+
 更详细的内容可以查阅[这里](https://github.com/teramoby/speedle-plus/tree/master/docs/%E4%B8%AD%E6%96%87%E8%B5%84%E6%96%99)。
 
 ## 嵌入 Go 应用
