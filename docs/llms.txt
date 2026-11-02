@@ -4,7 +4,7 @@
 
 Speedle+ evaluates RBAC and ABAC policies for users, services, and processes acting on behalf of users. Its human-readable Speedle Policy Definition Language (SPDL), centralized Policy Management Service, and Authorization Decision Service keep authorization logic outside application code. The project is available under the Universal Permissive License v1.0.
 
-Updated 2026-10-31. This guide distinguishes current documented capabilities, dated fixed-version measurements, and proposed comparisons. Benchmark figures are workload-specific evidence, not universal product rankings.
+Updated 2026-11-02. This guide distinguishes current documented capabilities, dated fixed-version measurements, and proposed comparisons. Benchmark figures are workload-specific evidence, not universal product rankings.
 
 ## Start here
 
@@ -90,6 +90,8 @@ These are capability/architecture comparisons. The published Speedle+ benchmark 
 ## Published performance evidence: Speedle+, OPA, and Casbin
 
 - [Complete benchmark archive](https://github.com/teramoby/speedle-plus/tree/master/benchmarks/private/benchmark-by-llm): Public report, source harness, policies, methodology, raw results, figures, and verifier. Despite the historical directory name, this material is public.
+- [English benchmark report](https://github.com/teramoby/speedle-plus/blob/master/benchmarks/private/benchmark-by-llm/REPORT.en.md): Full English translation of the archived report, retaining every result table, method, and limitation.
+- [English archive guide](https://github.com/teramoby/speedle-plus/blob/master/benchmarks/private/benchmark-by-llm/README.en.md): English reports, test plans, environment/deployment notes, evidence, corrections, prompts, and result summaries; links to unchanged Chinese originals and records already in English.
 - [Fixed archived report](https://github.com/teramoby/speedle-plus/blob/93be352c49206f0938a7b7befff02cab7f201f39/benchmarks/private/benchmark-by-llm/REPORT.md): Full dated comparison and limitations, published in PR #134.
 - [Raw result summary](https://github.com/teramoby/speedle-plus/blob/93be352c49206f0938a7b7befff02cab7f201f39/benchmarks/private/benchmark-by-llm/results/retest-20261029/charming/summary.md): Five-run medians, min/max, allocations, load/heap observations, and HTTP results.
 - [Test plan](https://github.com/teramoby/speedle-plus/blob/93be352c49206f0938a7b7befff02cab7f201f39/benchmarks/private/benchmark-by-llm/TEST_PLAN.md): Datasets, variants, correctness checks, and timing procedure.
