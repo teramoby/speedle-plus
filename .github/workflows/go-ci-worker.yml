@@ -22,17 +22,16 @@ jobs:
     # they need no fixed machine. The host lock below keeps fixed-port tests
     # from overlapping on the charming host.
     runs-on: >-
-      ${{ github.repository == 'teramoby/speedle-plus' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'schedule' && github.ref == 'refs/heads/master') || (github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.event.sender.type == 'User' || github.event.sender.type == 'Bot')) || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && (github.event.pull_request.user.type == 'User' || github.event.pull_request.user.type == 'Bot'))) && fromJSON((inputs.mode == 'build' || inputs.mode == 'authz-bench') && '["self-hosted","Linux","X64","speedle-linux"]' || '["self-hosted","speedle-runner"]') || 'ubuntu-latest' }}
+      ${{ github.repository == 'teramoby/speedle-plus' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'schedule' && github.ref == 'refs/heads/master') || (github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.event.sender.type == 'User' || github.event.sender.type == 'Bot')) || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && (github.event.pull_request.user.type == 'User' || github.event.pull_request.user.type == 'Bot'))) && fromJSON(inputs.mode == 'build' && '["self-hosted","Linux","X64","speedle-linux"]' || '["self-hosted","speedle-runner"]') || 'ubuntu-latest' }}
     # test can wait on the host lock behind a nightly on the other charming runner.
-    # authz-bench waits for idle CI and runs about three hours.
-    timeout-minutes: ${{ inputs.mode == 'authz-bench' && 720 || ((inputs.mode == 'nightly' || inputs.mode == 'weekly' || inputs.mode == 'regression' || inputs.mode == 'test') && 150 || 30) }}
+    timeout-minutes: ${{ (inputs.mode == 'nightly' || inputs.mode == 'weekly' || inputs.mode == 'regression' || inputs.mode == 'test') && 150 || 30 }}
     steps:
       - name: Validate CI task
         env:
           CI_TASK: ${{ inputs.mode }}
         run: |
           set -euo pipefail
-          case "${CI_TASK}" in lint|test|build|nightly|weekly|regression|authz-bench) ;; *) echo 'Invalid CI task.' >&2; exit 1 ;; esac
+          case "${CI_TASK}" in lint|test|build|nightly|weekly|regression) ;; *) echo 'Invalid CI task.' >&2; exit 1 ;; esac
 
       - name: Verify self-hosted runner identity
         if: runner.environment == 'self-hosted'
@@ -43,7 +42,7 @@ jobs:
           case "${RUNNER_NAME}/${RUNNER_OS}/${RUNNER_ARCH}" in
             charming-speedle/Linux/X64|charming-speedle-2/Linux/X64) ;;
             fiona-speedle/macOS/ARM64)
-              case "${CI_TASK}" in build|authz-bench) echo "Task ${CI_TASK} needs a Linux runner." >&2; exit 1 ;; esac ;;
+              case "${CI_TASK}" in build) echo "Task ${CI_TASK} needs a Linux runner." >&2; exit 1 ;; esac ;;
             *) echo 'Unexpected runner.' >&2; exit 1 ;;
           esac
           command -v git >/dev/null
@@ -143,36 +142,6 @@ jobs:
         with:
           name: ${{ inputs.mode }}-results
           path: test-results/
-          if-no-files-found: warn
-
-      # The engine comparison runs prebuilt binaries from the caller's package
-      # job (benchmarks/private/benchmark-by-llm/build-package.sh). It uses
-      # no test-service ports and does not take the host lock: holding it for
-      # hours would time out other jobs. Instead run-all.sh waits until no
-      # other CI job runs on the host and repeats any step one disturbed.
-      - name: Download the comparison package
-        if: inputs.mode == 'authz-bench'
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
-        with:
-          name: authz-bench-package
-          path: ${{ runner.temp }}/authz-bench
-
-      - name: Run the engine comparison
-        if: inputs.mode == 'authz-bench'
-        env:
-          PACKAGE: ${{ runner.temp }}/authz-bench
-        run: |
-          set -euo pipefail
-          chmod +x "${PACKAGE}"/bin/* "${PACKAGE}"/*.sh
-          mkdir -p authz-bench-results
-          OUT="${PWD}/authz-bench-results/charming" SPECS="${RUNNER_TEMP}/authz-bench-specs" "${PACKAGE}/run-all.sh"
-
-      - name: Upload the comparison results
-        if: always() && inputs.mode == 'authz-bench'
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
-        with:
-          name: authz-bench-results
-          path: authz-bench-results/
           if-no-files-found: warn
 
       - name: Build
