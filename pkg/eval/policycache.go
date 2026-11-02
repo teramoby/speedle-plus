@@ -4,8 +4,6 @@
 package eval
 
 import (
-	"regexp"
-
 	log "github.com/sirupsen/logrus"
 
 	"github.com/teramoby/speedle-plus/3rdparty/github.com/Knetic/govaluate"
@@ -33,8 +31,17 @@ func nilPrincipalPolicy(policy *pms.Policy) (result bool) {
 }
 
 func (p *PolicyCacheData) AddPolicyToCache(policy *pms.Policy, condition *govaluate.EvaluableExpression) {
+	//A policy added again under its ID gives up the expressions of the old one.
+	if old := p.PolicyMap[policy.ID]; old != nil {
+		p.releaseExpressions(old)
+	}
 	//First add to PolicyMap
 	p.PolicyMap[policy.ID] = policy
+	for _, permission := range policy.Permissions {
+		if permission.ResourceExpression != "" {
+			p.Expressions.acquire(permission.ResourceExpression)
+		}
+	}
 	if condition != nil {
 		p.Conditions[policy.ID] = condition
 	}
@@ -110,6 +117,14 @@ func (p *PolicyCacheData) addPolicyToResourceToPolicyMap(resourceToPolicyMap *Re
 	}
 }
 
+func (p *PolicyCacheData) releaseExpressions(policy *pms.Policy) {
+	for _, permission := range policy.Permissions {
+		if permission.ResourceExpression != "" {
+			p.Expressions.release(permission.ResourceExpression)
+		}
+	}
+}
+
 func (p *PolicyCacheData) DeletePolicyFromCache(policyID string) {
 
 	//First delete from PolicyMap
@@ -119,6 +134,7 @@ func (p *PolicyCacheData) DeletePolicyFromCache(policyID string) {
 		return
 	}
 	delete(p.PolicyMap, policyID)
+	p.releaseExpressions(policy)
 	if len(policy.Condition) > 0 { //remove related condition cache
 		delete(p.Conditions, policyID)
 	}
@@ -256,7 +272,7 @@ func (p *PolicyCacheData) getPoliciesFromResourceExpressionMap(resourceToPolicyM
 
 		if resourceToPolicyMap.ResourceExpressionToPolicies != nil {
 			for resExp, policyIDSet := range resourceToPolicyMap.ResourceExpressionToPolicies {
-				matched, err := regexp.MatchString(resExp, resource)
+				matched, err := p.Expressions.matchString(resExp, resource)
 				if err != nil {
 					log.Errorf("Meet error when match the resource expression in poliy. err: %s", err)
 					continue

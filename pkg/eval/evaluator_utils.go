@@ -4,7 +4,6 @@
 package eval
 
 import (
-	"regexp"
 	"strings"
 
 	log "github.com/sirupsen/logrus"
@@ -13,7 +12,7 @@ import (
 	"github.com/teramoby/speedle-plus/api/pms"
 )
 
-func matchResource(requestRes string, resources, resExpressions []string) bool {
+func matchResource(expressions *ExpressionCache, requestRes string, resources, resExpressions []string) bool {
 	//in role policy, resources/resExpressions could be empty, which means any resource
 	if (len(resources) == 0) && (len(resExpressions) == 0) {
 		return true
@@ -24,7 +23,7 @@ func matchResource(requestRes string, resources, resExpressions []string) bool {
 		}
 	}
 	for _, resExp := range resExpressions {
-		matched, err := regexp.MatchString(resExp, requestRes)
+		matched, err := expressions.matchString(resExp, requestRes)
 		if err == nil && matched {
 			return true
 		}
@@ -33,7 +32,7 @@ func matchResource(requestRes string, resources, resExpressions []string) bool {
 }
 
 // Returns if policy is matched
-func matchResourceAction(policy *pms.Policy, ctx *internalRequestContext) bool {
+func matchResourceAction(expressions *ExpressionCache, policy *pms.Policy, ctx *internalRequestContext) bool {
 	//we interpret nil or empty resource/permission/action/principal etc as ANY resource/permission/action/principal
 	if len(policy.Permissions) == 0 { //any permissions
 		return true
@@ -41,7 +40,7 @@ func matchResourceAction(policy *pms.Policy, ctx *internalRequestContext) bool {
 	for _, perm := range policy.Permissions {
 		resExpMatch := false
 		if len(perm.ResourceExpression) != 0 {
-			resExpMatch, _ = regexp.MatchString(perm.ResourceExpression, ctx.Resource)
+			resExpMatch, _ = expressions.matchString(perm.ResourceExpression, ctx.Resource)
 			//TODO log error
 		}
 		resNameMatch := perm.Resource == ctx.Resource
@@ -116,7 +115,7 @@ func convertRoleToPrincipal(name string) string {
 	return "role:" + name
 }
 
-func calculatePermissions(grantedPermissions, deniedPermissions []pms.Permission) []pms.Permission {
+func calculatePermissions(expressions *ExpressionCache, grantedPermissions, deniedPermissions []pms.Permission) []pms.Permission {
 	if len(deniedPermissions) == 0 {
 		return grantedPermissions
 	}
@@ -130,7 +129,7 @@ func calculatePermissions(grantedPermissions, deniedPermissions []pms.Permission
 		for _, deniedPermission := range deniedPermissions {
 			expMatched := false
 			if len(deniedPermission.ResourceExpression) > 0 {
-				matched, err := regexp.MatchString(deniedPermission.ResourceExpression, grantPermission.Resource)
+				matched, err := expressions.matchString(deniedPermission.ResourceExpression, grantPermission.Resource)
 				if err != nil || matched {
 					//TODO: log err
 					expMatched = true

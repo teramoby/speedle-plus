@@ -4,8 +4,6 @@
 package eval
 
 import (
-	"regexp"
-
 	"github.com/teramoby/speedle-plus/api/pms"
 
 	log "github.com/sirupsen/logrus"
@@ -34,8 +32,15 @@ func nilPrincipalRolePolicy(rolePolicy *pms.RolePolicy) (result bool) {
 }
 
 func (p *RolePolicyCacheData) AddRolePolicyToCache(policy *pms.RolePolicy, condition *govaluate.EvaluableExpression) {
+	//A role policy added again under its ID gives up the expressions of the old one.
+	if old := p.PolicyMap[policy.ID]; old != nil {
+		p.releaseExpressions(old)
+	}
 	//First add role policy to PolicyMap
 	p.PolicyMap[policy.ID] = policy
+	for _, resourceExpression := range policy.ResourceExpressions {
+		p.Expressions.acquire(resourceExpression)
+	}
 	if condition != nil {
 		p.Conditions[policy.ID] = condition
 	}
@@ -99,6 +104,12 @@ func (p *RolePolicyCacheData) addRolePolicyToResourceToRolePolicyMap(resourceToR
 	}
 }
 
+func (p *RolePolicyCacheData) releaseExpressions(policy *pms.RolePolicy) {
+	for _, resourceExpression := range policy.ResourceExpressions {
+		p.Expressions.release(resourceExpression)
+	}
+}
+
 func (p *RolePolicyCacheData) DeleteRolePolicyFromCache(policyID string) {
 
 	//First delete from PolicyMap
@@ -108,6 +119,7 @@ func (p *RolePolicyCacheData) DeleteRolePolicyFromCache(policyID string) {
 		return
 	}
 	delete(p.PolicyMap, policyID)
+	p.releaseExpressions(policy)
 	if len(policy.Condition) > 0 { //remove related condition cache
 		delete(p.Conditions, policyID)
 	}
@@ -230,7 +242,7 @@ func (p *RolePolicyCacheData) getRolePoliciesFromResourceExpressionMap(resourceT
 
 	if resourceToRolePolicyMap.ResourceExpressionToPolicies != nil {
 		for resExp, policyIDSet := range resourceToRolePolicyMap.ResourceExpressionToPolicies {
-			matched, err := regexp.MatchString(resExp, resource)
+			matched, err := p.Expressions.matchString(resExp, resource)
 			if err != nil {
 				log.Errorf("Meet error when match the resource expression in role poliy. err: %s", err)
 				continue
