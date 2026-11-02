@@ -4,3 +4,4 @@ __pycache__/
 *.pyc
 .report-venv/
 .venv/
+cmd/cedar-rs/target/
