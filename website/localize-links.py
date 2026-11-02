@@ -15,6 +15,15 @@ PREVIEW = re.compile(r"^/[0-9a-f]{32}(?=/)")
 HEADER_VERSION = "header-20261027"
 HEADER_ASSETS = (f'<link href="/css/navigation.css?v={HEADER_VERSION}" rel="stylesheet">\n'
                  f'<script src="/js/navigation.js?v={HEADER_VERSION}" defer></script>\n')
+WEB_ANALYTICS = (Path(__file__).resolve().parent / "cloudflare-web-analytics.html").read_text()
+
+
+def web_analytics(text):
+    """Install the manual Cloudflare beacon once on each rendered page."""
+    if "data-cf-beacon=" in text:
+        return text
+    return re.sub(r"(?im)^([ \t]*)(</body>)",
+                  lambda match: match[1] + WEB_ANALYTICS + match[0], text, count=1)
 
 
 def logical(path):
@@ -318,6 +327,8 @@ def process(root, check=False):
             if opposite not in links.switches:
                 errors.append(f"{route}: no same-page {opposite} language switch")
         output = links.output()
+        if not redirect:
+            output = web_analytics(output)
         if output != text:
             changed += 1
             if not check:

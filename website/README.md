@@ -27,6 +27,12 @@ pages, `中文` on English pages), including inside the mobile navigation menu.
   the snapshot where it has the page (and anchor), and otherwise lead to the
   current site.
 
+Cloudflare Web Analytics uses manual JS installation. The public beacon snippet
+is in `website/cloudflare-web-analytics.html`; `localize-links.py` adds it once to
+every rendered page, including archived snapshots, and skips redirect pages.
+The four static homepage/Playground HTML sources carry the same snippet.
+The site continues to publish through GitHub Pages with the existing DNS setup.
+
 The merge-gating test job executes the English and Chinese Quick Start and
 embedded deployment guides directly from `docs/hugo/content/` on every run.
 `tests/check_quick_start.py` extracts the actual Bash blocks and exercises native
