@@ -34,6 +34,8 @@ suspends its use for authorization. File, etcd, MySQL and MongoDB implement the
 same lightweight health-check interface. Both watched and static evaluators
 check health about once per second (static evaluators probe on requests), with
 a one-second probe timeout. Watch/read failures can detect outages sooner.
+Requests never wait for a probe: one caller probes while concurrent requests
+decide with the availability known before it, and its result applies after.
 Only a successful full snapshot read/install restores authorization; connectivity
 alone and old incremental events cannot do so. In watch mode a detected fault
 also discards the old subscription and requires a new subscription before the
