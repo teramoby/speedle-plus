@@ -12,7 +12,8 @@ const source = fs.readFileSync(path.resolve(__dirname, '../../.github/workflows/
 const pool = ['self-hosted', 'Linux', 'X64', 'speedle-linux'];
 const anyRunner = ['self-hosted', 'speedle-runner'];
 // Every task but build may run on any Speedle runner; build needs the Linux pool.
-const routeFor = mode => mode === 'build' ? pool : anyRunner;
+// build needs the Linux Hugo release; authz-bench measures on charming.
+const routeFor = mode => mode === 'build' || mode === 'authz-bench' ? pool : anyRunner;
 const repository = 'teramoby/speedle-plus';
 function step(name) {
   const parts = source.split(`      - name: ${name}\n`);
@@ -61,7 +62,7 @@ function context(eventName, head = repository, repo = repository) {
     event: {sender: {type: 'User'}, pull_request: {head: {repo: {full_name: head}}, user: {type: 'User'}}}};
 }
 const testModes = ['test', 'nightly', 'weekly', 'regression'];
-const allModes = ['lint', 'build', ...testModes];
+const allModes = ['lint', 'build', 'authz-bench', ...testModes];
 test('worker owns runner selection and exposes only the mode input, never a caller checkout ref', () => {
   const inputBlock = source.split('\npermissions:', 1)[0];
   assert.match(inputBlock, /^  workflow_call:$/m);
@@ -118,7 +119,7 @@ test('identity check accepts the three Speedle runners for the tasks each may ru
       });
       const host = `${RUNNER_NAME}/${RUNNER_OS}/${RUNNER_ARCH}`;
       const allowed = ['charming-speedle/Linux/X64', 'charming-speedle-2/Linux/X64'].includes(host) ||
-        (host === 'fiona-speedle/macOS/ARM64' && CI_TASK !== 'build');
+        (host === 'fiona-speedle/macOS/ARM64' && CI_TASK !== 'build' && CI_TASK !== 'authz-bench');
       assert.equal(result.status === 0, allowed, `${host}/${CI_TASK}: ${result.stderr}`);
     }
   }
@@ -369,4 +370,15 @@ test('SO_REUSEADDR allows a recently closed test connection instead of mistaking
   } finally {await close(listener);}
   const ports = await freePorts([port]); ports[2] = port;
   const result = guard(ports); assert.equal(result.status, 0, result.stderr);
+});
+
+test('the engine comparison runs the caller-built package on charming and uploads its results', () => {
+  const download = step('Download the comparison package'), run = step('Run the engine comparison');
+  assert.match(download, /if: inputs.mode == 'authz-bench'$/m);
+  assert.match(download, /uses: actions\/download-artifact@[a-f0-9]{40}(?:\s|$)/);
+  assert.match(download, /name: authz-bench-package$/m);
+  assert.match(run, /if: inputs.mode == 'authz-bench'$/m);
+  assert.doesNotMatch(run, /flock|speedle-plus-test-services\.lock/, 'a run of hours must not hold the host lock');
+  assert.match(step('Upload the comparison results'), /if: always\(\) && inputs.mode == 'authz-bench'$/m);
+  assert.match(source, /timeout-minutes: \$\{\{ inputs.mode == 'authz-bench' && 720 \|\|/);
 });
