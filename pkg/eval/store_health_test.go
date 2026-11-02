@@ -40,7 +40,7 @@ func (*availabilityStore) StopWatch() {}
 
 func forceHealthProbe(e *PolicyEvalImpl) {
 	e.healthMu.Lock()
-	e.lastHealthCheck = time.Time{}
+	e.lastHealthCheck.Store(0)
 	e.healthMu.Unlock()
 }
 
@@ -485,4 +485,64 @@ func TestFeatureStoreOutageRecovery(t *testing.T) {
 			t.Logf("real backend %s: outage denied, process survived, revoked role absent after recovery, healthy grant restored", fixture.Config.StoreType)
 		})
 	}
+}
+
+// blockingHealthStore holds each health probe until the test releases it.
+type blockingHealthStore struct {
+	availabilityStore
+	started, release chan struct{}
+}
+
+func (s *blockingHealthStore) CheckHealth(ctx context.Context) error {
+	s.started <- struct{}{}
+	<-s.release
+	return s.availabilityStore.CheckHealth(ctx)
+}
+
+// A probe is a store round trip, up to a second when the store hangs.
+// Requests arriving meanwhile must decide at once with the availability known
+// before it, not queue behind it; the probe's result applies afterwards.
+func TestFeatureRequestsDoNotWaitForHealthProbe(t *testing.T) {
+	initial := &pms.PolicyStore{Services: []*pms.Service{{Name: "app", Policies: []*pms.Policy{recoveryGrant("grant")}}}}
+	s := &blockingHealthStore{availabilityStore: availabilityStore{snapshot: initial},
+		started: make(chan struct{}), release: make(chan struct{})}
+	engine, err := NewWithStore(&cfg.Config{}, s)
+	if err != nil {
+		t.Fatal(err)
+	}
+	e := engine.(*PolicyEvalImpl)
+	t.Cleanup(func() { _ = e.Close() })
+
+	s.mu.Lock()
+	s.healthErr = errors.New(errors.StoreError, "offline")
+	s.mu.Unlock()
+	forceHealthProbe(e)
+	probing := make(chan struct{})
+	go func() {
+		defer close(probing)
+		_, _, _ = e.IsAllowed(featureContext()) // runs the probe
+	}()
+	<-s.started
+
+	decided := make(chan error, 1)
+	go func() {
+		allowed, _, err := e.IsAllowed(featureContext())
+		if !allowed && err == nil {
+			err = errors.New(errors.EvalEngineError, "denied")
+		}
+		decided <- err
+	}()
+	select {
+	case err := <-decided:
+		if err != nil {
+			t.Fatalf("request during the probe used the wrong availability: %v", err)
+		}
+	case <-time.After(5 * time.Second):
+		close(s.release)
+		t.Fatal("a request waited for another request's health probe")
+	}
+
+	close(s.release)
+	<-probing
+	requireUnavailable(t, e)
 }

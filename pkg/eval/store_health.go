@@ -53,9 +53,19 @@ func (p *PolicyEvalImpl) probeStoreHealth() (err error) {
 	return p.healthChecker.CheckHealth(ctx)
 }
 
-// Also used by requests when policy watching is explicitly disabled. This
-// avoids a background goroutine for static evaluators, while checking liveness
-// at most once per second. A successful probe alone never validates old data.
+func (p *PolicyEvalImpl) healthCheckDue() bool {
+	return time.Since(time.Unix(0, p.lastHealthCheck.Load())) >= storeHealthInterval
+}
+
+// Called by requests and, when watching, by the watch goroutine. This avoids a
+// background goroutine for static evaluators, while checking liveness at most
+// once per second. A successful probe alone never validates old data.
+//
+// One caller probes; the others never wait for it. A probe is a store round
+// trip that can take up to storeHealthInterval when the store hangs, and
+// requests queued behind it would all stall that long. Requests that arrive
+// during a probe decide with the availability known before it, as they would
+// had they arrived just before it started.
 func (p *PolicyEvalImpl) ensureStoreHealth() {
 	var recovered error
 	defer func() {
@@ -69,13 +79,15 @@ func (p *PolicyEvalImpl) ensureStoreHealth() {
 	if p.healthChecker == nil || p.closed.Load() {
 		return
 	}
-	p.healthMu.Lock()
+	if !p.healthCheckDue() || !p.healthMu.TryLock() {
+		return
+	}
 	defer p.healthMu.Unlock()
-	if time.Since(p.lastHealthCheck) < storeHealthInterval {
+	if !p.healthCheckDue() {
 		return
 	}
 	err := p.probeStoreHealth()
-	p.lastHealthCheck = time.Now()
+	p.lastHealthCheck.Store(time.Now().UnixNano())
 	if err != nil {
 		p.cacheGate.Lock()
 		defer p.cacheGate.Unlock()
