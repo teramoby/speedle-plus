@@ -12,7 +12,7 @@
 #            release, govulncheck and the CI script tests
 #   weekly   every package with the newest supported Go release
 #            (the gate uses the go.mod/CI release), the evaluation benchmarks
-#            against master as of May 2026, and staticcheck; on fiona-speedle
+#            against master as of May 2026, and staticcheck
 #   regression
 #            after every merge to master: race-detector run of every package
 #            with the file store and the executable guides from docs/

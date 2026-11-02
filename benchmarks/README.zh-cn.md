@@ -31,7 +31,7 @@ LargeCond|10K policies with condition, 10K role policies, 10 users/role|8.0
 LargePerm|10K policies, 10K role policies, 10 users/role|8.9
 
 ## CI 每周对比
-每周的 CI（`scripts/ci/run-go-tests.sh weekly`，固定在 `fiona-speedle` runner 上）会在同一台机器上，交替运行当前代码和基准版本
+每周的 CI（`scripts/ci/run-go-tests.sh weekly`，任一 Speedle runner 均可接单，报告中注明运行机器）会在同一台机器上，交替运行当前代码和基准版本
 （2026 年 5 月时的 master，`8fb1481d`）的这些基准测试各五轮，比较每个用例的 ns/op 中位数。任一用例比基准慢 20% 以上，
 `performance` 检查失败，由 weekly 报告分析并开 issue 跟踪。每份 weekly 报告都附有对比表，详见
 [scripts/ci/benchmark.py](../scripts/ci/benchmark.py)。
