@@ -78,6 +78,60 @@ def parse_go_json(paths):
     return packages, failures
 
 
+# Skip messages of tests that can never run against a given store, so are not
+# a gap in the run (see testutil/storetest/conformance.go).
+NOT_APPLICABLE = ("the store does not manage",)
+LISTED_SKIPS = 10
+
+
+def skip_reason(lines):
+    """The t.Skip message among a test's output lines."""
+    for line in reversed(lines):
+        text = line.strip()
+        if text and not text.startswith(("---", "===")):
+            return text
+    return ""
+
+
+def classify_skips(paths):
+    """Sort the skipped tests of a run into three kinds.
+
+    A run executes the suite once per store, so a test that needs one store is
+    skipped in the passes for the others although it ran in its own. Such a
+    test counts as run elsewhere. A skip whose message says the test does not
+    apply to a store is not applicable. Every other skipped test did not run
+    in this run at all; it is listed once with its reason."""
+    passed, skipped = set(), []
+    for path in paths:
+        outputs = {}
+        for line in Path(path).read_text(errors="replace").splitlines():
+            try:
+                event = json.loads(line)
+            except ValueError:
+                continue
+            if not isinstance(event, dict) or not event.get("Test"):
+                continue
+            key = (event.get("Package", ""), event["Test"])
+            action = event.get("Action")
+            if action == "output":
+                outputs.setdefault(key, []).append(event.get("Output", ""))
+            elif action == "pass":
+                passed.add(key)
+            elif action == "skip":
+                skipped.append((key, skip_reason(outputs.get(key, []))))
+    result = {"elsewhere": 0, "not_applicable": 0, "not_run": []}
+    seen = set()
+    for key, reason in skipped:
+        if key in passed:
+            result["elsewhere"] += 1
+        elif any(marker in reason for marker in NOT_APPLICABLE):
+            result["not_applicable"] += 1
+        elif key not in seen:
+            seen.add(key)
+            result["not_run"].append({"package": key[0], "test": key[1], "reason": reason})
+    return result
+
+
 def tail(text, lines=OUTPUT_LINES):
     return "\n".join(text.rstrip().splitlines()[-lines:])
 
@@ -123,7 +177,7 @@ def performance_section(directories):
     return "\n\n".join(tables)
 
 
-def summarize(kind, packages, failures, checks, run_url, commit_url="", performance=""):
+def summarize(kind, packages, failures, checks, run_url, commit_url="", performance="", skips=None):
     total = {k: sum(c[k] for c in packages.values()) for k in ("pass", "fail", "skip")}
     failed_checks = [c for c in checks if not c["passed"]]
     ok = not failures and not failed_checks
@@ -134,6 +188,13 @@ def summarize(kind, packages, failures, checks, run_url, commit_url="", performa
         lines += [f"Run: {run_url}", ""]
     lines += [f"Go tests: {total['pass']} passed, {total['fail']} failed, {total['skip']} skipped "
               f"in {len(packages)} packages.", ""]
+    if skips is not None:
+        lines += [f"Skipped: {len(skips['not_run'])} not run in any pass; {skips['elsewhere']} skipped in one "
+                  f"store's pass but run in another's; {skips['not_applicable']} not applicable to their store.", ""]
+        if skips["not_run"]:
+            lines.append("Tests that did not run:")
+            lines += [f"- {s['package']} {s['test']}: {s['reason'] or '(no reason given)'}" for s in skips["not_run"]]
+            lines.append("")
     if checks:
         lines.append("Checks:")
         lines += [f"- {c['name']}: {'passed' if c['passed'] else 'FAILED'}" for c in checks]
@@ -220,10 +281,23 @@ def feishu_sign(secret, timestamp):
     return base64.b64encode(hmac.new(key, b"", hashlib.sha256).digest()).decode()
 
 
-def feishu_card(kind, ok, packages, failed, analysis, run_url, issues_url):
+def feishu_card(kind, ok, packages, failed, analysis, run_url, issues_url, skips=None):
     """A short card: verdict, counts, the first failures, the analysis and links."""
     total = {k: sum(c[k] for c in packages.values()) for k in ("pass", "fail", "skip")}
-    lines = [f"**Go 测试**：{total['pass']} 通过，{total['fail']} 失败，{total['skip']} 跳过（{len(packages)} 个包）"]
+    if skips is None:
+        lines = [f"**Go 测试**：{total['pass']} 通过，{total['fail']} 失败，{total['skip']} 跳过（{len(packages)} 个包）"]
+    else:
+        not_run = skips["not_run"]
+        lines = [f"**Go 测试**：{total['pass']} 通过，{total['fail']} 失败，{len(not_run)} 未运行（{len(packages)} 个包）"]
+        if skips["elsewhere"] or skips["not_applicable"]:
+            lines.append(f"跳过 {total['skip']} 项：{skips['elsewhere']} 项已在对应存储的轮次运行，"
+                         f"{skips['not_applicable']} 项不适用于该存储")
+        if not_run:
+            lines.append(f"⚠️ **未运行的测试**（{len(not_run)}）：")
+            lines += [f"- {s['package'].rsplit('/', 1)[-1]} {s['test']}：{s['reason'] or '未说明原因'}"
+                      for s in not_run[:LISTED_SKIPS]]
+            if len(not_run) > LISTED_SKIPS:
+                lines.append(f"- ……另有 {len(not_run) - LISTED_SKIPS} 项")
     if failed:
         lines.append(f"**失败项**（{len(failed)}）：")
         lines += [f"- {name}" for name in failed[:FEISHU_LISTED_FAILURES]]
@@ -367,6 +441,7 @@ def main(argv=None, env=os.environ):
         go_json += streams
         check_specs += specs
     packages, failures, checks = collect(go_json, check_specs)
+    all_streams = [p for p in go_json if Path(p).is_file()]
     # A job that did not succeed must show up as failed even when the results
     # it left behind, if any, hold no failure: it may have been cancelled or
     # timed out mid-suite, or a suite may have exited non-zero without a
@@ -380,6 +455,7 @@ def main(argv=None, env=os.environ):
         else:
             streams, specs = [str(path)], []
         job_packages, job_failures, job_checks = collect(streams, specs)
+        all_streams += [p for p in streams if Path(p).is_file()]
         for package, counts in job_packages.items():
             merged = packages.setdefault(package, {"pass": 0, "fail": 0, "skip": 0, "package_failed": False})
             for key in ("pass", "fail", "skip"):
@@ -393,8 +469,9 @@ def main(argv=None, env=os.environ):
     run_url, commit_url = env.get("RUN_URL", ""), env.get("COMMIT_URL", "")
     policy = KINDS[args.kind]
     directories = list(args.results_dir) + [spec.split(":", 2)[2] for spec in args.source if spec.count(":") >= 2]
+    skips = classify_skips(all_streams)
     ok, summary = summarize(args.kind, packages, failures, checks, run_url, commit_url,
-                            performance_section(directories))
+                            performance_section(directories), skips)
     if ok and policy["quiet_on_pass"]:
         if args.summary_file:
             Path(args.summary_file).write_text(summary)
@@ -431,7 +508,7 @@ def main(argv=None, env=os.environ):
     repository = env.get("GITHUB_REPOSITORY")
     issues_url = (f"https://github.com/{repository}/issues?q=is%3Aopen+label%3A{ISSUE_LABEL}"
                   if repository else "")
-    send_feishu(feishu_card(args.kind, ok, packages, failed, analysis, run_url, issues_url), env)
+    send_feishu(feishu_card(args.kind, ok, packages, failed, analysis, run_url, issues_url, skips), env)
     print(summary)
     return 0
 

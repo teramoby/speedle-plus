@@ -53,6 +53,69 @@ class ParseTest(unittest.TestCase):
         self.assertEqual(test_report.tail("\n".join(map(str, range(100))), 3), "97\n98\n99")
 
 
+class SkipTest(unittest.TestCase):
+    def streams(self, **texts):
+        directory = Path(tempfile.mkdtemp())
+        for name, text in texts.items():
+            (directory / f"{name}.json").write_text(text)
+        return sorted(str(p) for p in directory.glob("*.json"))
+
+    def skip(self, package, test, reason):
+        return [("output", package, test, f"    x_test.go:9: {reason}\n"),
+                ("output", package, test, f"--- SKIP: {test} (0.00s)\n"), ("skip", package, test, None)]
+
+    def test_sorts_skips_by_whether_they_ran_elsewhere(self):
+        paths = self.streams(
+            file=events(*self.skip("mongodb", "TestStore", "MongoDB not available"),
+                        *self.skip("mysql", "TestConformance/Discover", "the store does not manage discover requests"),
+                        *self.skip("cli", "TestSpctl", "needs the fixture spctl built by TestMain")),
+            mongodb=events(("pass", "mongodb", "TestStore", None),
+                           *self.skip("cli", "TestSpctl", "needs the fixture spctl built by TestMain")))
+        skips = test_report.classify_skips(paths)
+        self.assertEqual(skips["elsewhere"], 1)
+        self.assertEqual(skips["not_applicable"], 1)
+        # A test skipped in every pass is listed once, with its reason.
+        self.assertEqual(skips["not_run"], [{"package": "cli", "test": "TestSpctl",
+                                             "reason": "x_test.go:9: needs the fixture spctl built by TestMain"}])
+
+    def test_a_store_test_skipped_in_its_own_pass_did_not_run(self):
+        # The MongoDB pass lost its database: every pass skipped the test.
+        paths = self.streams(file=events(*self.skip("mongodb", "TestStore", "MongoDB not available")),
+                             mongodb=events(*self.skip("mongodb", "TestStore", "MongoDB not available")))
+        skips = test_report.classify_skips(paths)
+        self.assertEqual([s["test"] for s in skips["not_run"]], ["TestStore"])
+        self.assertEqual(skips["elsewhere"], 0)
+
+    def test_reports_show_the_classification(self):
+        skips = {"elsewhere": 63, "not_applicable": 2, "not_run": []}
+        packages = {"p": {"pass": 3, "fail": 0, "skip": 65, "package_failed": False}}
+        _, text = test_report.summarize("nightly", packages, [], [], "", skips=skips)
+        self.assertIn("Skipped: 0 not run in any pass; 63 skipped in one store's pass but run in another's; "
+                      "2 not applicable", text)
+        card = test_report.feishu_card("nightly", True, packages, [], None, "", "", skips)["elements"][0]["content"]
+        self.assertIn("3 通过，0 失败，0 未运行", card)
+        self.assertIn("跳过 65 项：63 项已在对应存储的轮次运行，2 项不适用于该存储", card)
+        self.assertNotIn("⚠️", card)
+
+        not_run = [{"package": "github.com/x/cli", "test": f"T{i}", "reason": "r"} for i in range(12)]
+        skips = {"elsewhere": 0, "not_applicable": 0, "not_run": not_run}
+        _, text = test_report.summarize("nightly", packages, [], [], "", skips=skips)
+        self.assertIn("- github.com/x/cli T0: r", text)
+        card = test_report.feishu_card("nightly", True, packages, [], None, "", "", skips)["elements"][0]["content"]
+        self.assertIn("⚠️ **未运行的测试**（12）", card)
+        self.assertIn("- cli T0：r", card)
+        self.assertIn("另有 2 项", card)
+        self.assertNotIn("T10", card)
+
+    def test_main_classifies_across_sources(self):
+        directory = Path(tempfile.mkdtemp())
+        (directory / "file-go.json").write_text(events(*self.skip("mongodb", "TestStore", "MongoDB not available")))
+        (directory / "mongodb-go.json").write_text(events(("pass", "mongodb", "TestStore", None)))
+        with mock.patch.object(test_report, "send_feishu", return_value=True) as send, mock.patch("builtins.print"):
+            test_report.main(["--kind", "nightly", "--source", f"run:success:{directory}"], env={})
+        self.assertIn("0 未运行", send.call_args[0][0]["elements"][0]["content"])
+
+
 class SummaryTest(unittest.TestCase):
     def test_summary_marks_failed_checks(self):
         ok, text = test_report.summarize("nightly", {"p": {"pass": 2, "fail": 0, "skip": 0, "package_failed": False}},
