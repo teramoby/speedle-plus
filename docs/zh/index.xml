@@ -354,6 +354,19 @@ TLS 加密连接并认证服务端。若要强制认证客户端，必须通过 
     </item>
     
     <item>
+      <title>SDKs</title>
+      <link>https://speedle.io/zh/docs/sdks/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://speedle.io/zh/docs/sdks/</guid>
+      <description>Speedle SDK 同时支持 Speedle+ 和 Speedle Cloud，六个 SDK 均采用 UPL-1.0 许可证。
+Node.js 包名： @speedle/sdk
+安装：
+npm install @speedle/sdk 用法（摘自 node/v0.1.0 README）：
+import { readFileSync } from &amp;#34;node:fs&amp;#34;; import { Auth, SpeedleClient } from &amp;#34;@speedle/sdk&amp;#34;; const speedle = new SpeedleClient({ backend: &amp;#34;speedle-plus&amp;#34;, endpoint: &amp;#34;https://ads.internal:6734&amp;#34;, auth: Auth.none(), // or Auth.mutualTls({ cert, key }) with --force-client-cert  caCert: readFileSync(&amp;#34;ca.pem&amp;#34;), // extra trust anchor for a private CA  serviceName: &amp;#34;books&amp;#34;, }); const decision = await speedle.</description>
+    </item>
+    
+    <item>
       <title>版本</title>
       <link>https://speedle.io/zh/docs/versions/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>

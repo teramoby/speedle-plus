@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+    <meta name="generator" content="Hugo 0.48" />
+    <link rel="icon" type="image/png" sizes="1024x1024" href="https://speedle.io/images/speedle_purple.png">
+
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1"><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>SDKs - Speedle</title>
+<meta name="description" content="适用于 Speedle&#43; 和 Speedle Cloud 的客户端库">
+<meta name="generator" content="Hugo 0.48" />
+<link href="https://speedle.io/index.xml" rel="alternate" type="application/rss+xml">
+<link rel="canonical" href="https://speedle.io/zh/docs/sdks/">
+<link rel="stylesheet" href="/css/theme.min.css">
+<script src="https://use.fontawesome.com/releases/v5.0.6/js/all.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+<script src="/js/functions.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jquery.easing@1.4.1/jquery.easing.min.js"></script>
+
+
+<script src="/js/jquery.backtothetop/jquery.backtothetop.min.js"></script>
+
+<script type="text/javascript" src="/js/tocbot.min.js"></script>
+<link href="/css/font.css" rel="stylesheet" type="text/css">
+    <link href="/css/kube.min.css" rel="stylesheet" type="text/css">
+    <link href="/css/kube.legenda.css" rel="stylesheet" type="text/css">
+    <link href="/css/highlight.css" rel="stylesheet" type="text/css">
+    <link href="/css/master.css" rel="stylesheet" type="text/css">
+    <link href="/css/kube.demo.css" rel="stylesheet" type="text/css">
+    <link href="/css/swagger-ui.css" rel="stylesheet" type="text/css">
+    
+    
+    <link href="/css/custom.css" rel="stylesheet" type="text/css">
+    <link href="https://fonts.googleapis.com/css?family=IBM+Plex+Sans" rel="stylesheet">
+    <link href="/css/brand.css?v=1" rel="stylesheet" type="text/css">
+    <link href="/css/navigation.css?v=header-20261027" rel="stylesheet">
+    <script src="/js/navigation.js?v=header-20261027" defer></script>
+</head>
+
+<body class="page-kube" style="background: none">
+    <header class="site-header">
+    <div class="wrap nav">
+      <a class="brand" href="/zh/#top" aria-label="Speedle 中文首页"><img src="/img/speedle/Speedle_logo_home_bold.svg?v=4" alt="Speedle"></a>
+      <button class="menu" type="button" aria-expanded="false" aria-controls="nav-links" aria-label="展开导航">☰</button>
+      <nav class="nav-links" id="nav-links" aria-label="主导航">
+        <a href="/zh/#about">关于</a><a href="/zh/#features">功能</a><a href="/zh/#integrations">集成</a>
+        <a href="/zh/quick-start/">快速入门</a><a href="/zh/docs/">文档</a><a href="/zh/playground/">Playground</a>
+        <a href="/docs/sdks/" lang="en" hreflang="en" aria-label="Switch to English">English</a>
+        <a class="nav-github" href="https://github.com/teramoby/speedle-plus">GitHub</a>
+      </nav>
+    </div>
+  </header>
+    <div class="container">
+        <div class="content-container">
+            <main>
+<div id="main">
+  
+  <h1>SDKs</h1>
+  <p>适用于 Speedle&#43; 和 Speedle Cloud 的客户端库。</p>
+
+  
+<script type="text/javascript">
+document.addEventListener("DOMContentLoaded",
+function(){
+tocbot.init({
+tocSelector: '.js-toc',
+contentSelector: '.content',
+headingSelector: 'h2'
+})
+}
+);
+</script>
+
+
+<nav id="contents">
+    <ol class="js-toc">
+    </ol>
+</nav>
+
+
+
+
+
+
+  <br />
+  <div id="kube-component" class="content">
+    
+
+<p>Speedle SDK 同时支持 Speedle+ 和 Speedle Cloud，六个 SDK 均采用 UPL-1.0 许可证。</p>
+
+<h2 id="node-js">Node.js</h2>
+
+<p><strong>包名：</strong> <code>@speedle/sdk</code></p>
+
+<p><strong>安装：</strong></p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">npm install @speedle/sdk</code></pre></div>
+<p><strong>用法（摘自 <code>node/v0.1.0</code> README）：</strong></p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ts" data-lang="ts"><span style="color:#ff79c6">import</span> { readFileSync } from <span style="color:#f1fa8c">&#34;node:fs&#34;</span>;
+<span style="color:#ff79c6">import</span> { Auth, SpeedleClient } from <span style="color:#f1fa8c">&#34;@speedle/sdk&#34;</span>;
+
+<span style="color:#ff79c6">const</span> speedle <span style="color:#ff79c6">=</span> <span style="color:#ff79c6">new</span> SpeedleClient({
+  backend<span style="color:#ff79c6">:</span> <span style="color:#f1fa8c">&#34;speedle-plus&#34;</span>,
+  endpoint<span style="color:#ff79c6">:</span> <span style="color:#f1fa8c">&#34;https://ads.internal:6734&#34;</span>,
+  auth: <span style="color:#8be9fd">Auth.none</span>(), <span style="color:#6272a4">// or Auth.mutualTls({ cert, key }) with --force-client-cert
+</span><span style="color:#6272a4"></span>  caCert: <span style="color:#8be9fd">readFileSync</span>(<span style="color:#f1fa8c">&#34;ca.pem&#34;</span>), <span style="color:#6272a4">// extra trust anchor for a private CA
+</span><span style="color:#6272a4"></span>  serviceName<span style="color:#ff79c6">:</span> <span style="color:#f1fa8c">&#34;books&#34;</span>,
+});
+
+<span style="color:#ff79c6">const</span> decision <span style="color:#ff79c6">=</span> await speedle.check(<span style="color:#f1fa8c">&#34;alice&#34;</span>, <span style="color:#f1fa8c">&#34;get&#34;</span>, <span style="color:#f1fa8c">&#34;/books/123&#34;</span>, { team<span style="color:#ff79c6">:</span> <span style="color:#f1fa8c">&#34;eng&#34;</span>, clearance: <span style="color:#8be9fd">4</span> });
+// { allowed: false, reason: 3 }</code></pre></div>
+<p><a href="https://www.npmjs.com/package/@speedle/sdk">注册中心</a> | <a href="https://github.com/teramoby/speedle-sdk/tree/node/v0.1.0/node"><code>node/v0.1.0</code> 源代码</a></p>
+
+<h2 id="python">Python</h2>
+
+<p><strong>包名：</strong> <code>speedle</code></p>
+
+<p><strong>安装：</strong></p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">pip install speedle</code></pre></div>
+<p><strong>用法（摘自 <code>python/v0.1.0</code> README）：</strong></p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#ff79c6">from</span> speedle <span style="color:#ff79c6">import</span> AsyncClient, Auth
+
+async <span style="color:#ff79c6">with</span> AsyncClient(
+    backend<span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;speedle-plus&#34;</span>,
+    endpoint<span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;https://ads.internal:6734&#34;</span>,
+    auth<span style="color:#ff79c6">=</span>Auth<span style="color:#ff79c6">.</span>none(),  <span style="color:#6272a4"># or Auth.mutual_tls(&#34;client.pem&#34;, &#34;client.key&#34;) with --force-client-cert</span>
+    ca_file<span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;ca.pem&#34;</span>,  <span style="color:#6272a4"># extra trust anchor for a private CA</span>
+    service_name<span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;books&#34;</span>,
+) <span style="color:#ff79c6">as</span> speedle:
+    decision <span style="color:#ff79c6">=</span> await speedle<span style="color:#ff79c6">.</span>check(<span style="color:#f1fa8c">&#34;alice&#34;</span>, <span style="color:#f1fa8c">&#34;get&#34;</span>, <span style="color:#f1fa8c">&#34;/books/123&#34;</span>, {<span style="color:#f1fa8c">&#34;team&#34;</span>: <span style="color:#f1fa8c">&#34;eng&#34;</span>, <span style="color:#f1fa8c">&#34;clearance&#34;</span>: <span style="color:#bd93f9">4</span>})
+    <span style="color:#6272a4"># Decision(allowed=False, reason=&lt;Reason.NO_APPLICABLE_POLICIES: 3&gt;, ...)</span></code></pre></div>
+<p><a href="https://pypi.org/project/speedle/">注册中心</a> | <a href="https://github.com/teramoby/speedle-sdk/tree/python/v0.1.0/python"><code>python/v0.1.0</code> 源代码</a></p>
+
+<h2 id="java">Java</h2>
+
+<p><strong>包名：</strong> <code>io.speedle:speedle-sdk</code></p>
+
+<p><strong>添加 Maven 依赖：</strong></p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-xml" data-lang="xml"><span style="color:#ff79c6">&lt;dependency&gt;</span>
+  <span style="color:#ff79c6">&lt;groupId&gt;</span>io.speedle<span style="color:#ff79c6">&lt;/groupId&gt;</span>
+  <span style="color:#ff79c6">&lt;artifactId&gt;</span>speedle-sdk<span style="color:#ff79c6">&lt;/artifactId&gt;</span>
+  <span style="color:#ff79c6">&lt;version&gt;</span>0.1.0<span style="color:#ff79c6">&lt;/version&gt;</span>
+<span style="color:#ff79c6">&lt;/dependency&gt;</span></code></pre></div>
+<p><strong>用法（摘自 <code>java/v0.1.0</code> README）：</strong></p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#ff79c6">try</span> <span style="color:#ff79c6">(</span>SpeedleClient speedle <span style="color:#ff79c6">=</span> SpeedleClient<span style="color:#ff79c6">.</span><span style="color:#50fa7b">builder</span><span style="color:#ff79c6">()</span>
+    <span style="color:#ff79c6">.</span><span style="color:#50fa7b">backend</span><span style="color:#ff79c6">(</span>Backend<span style="color:#ff79c6">.</span><span style="color:#50fa7b">SPEEDLE_PLUS</span><span style="color:#ff79c6">)</span>
+    <span style="color:#ff79c6">.</span><span style="color:#50fa7b">endpoint</span><span style="color:#ff79c6">(</span>URI<span style="color:#ff79c6">.</span><span style="color:#50fa7b">create</span><span style="color:#ff79c6">(</span><span style="color:#f1fa8c">&#34;https://ads.internal.example:6734&#34;</span><span style="color:#ff79c6">))</span>
+    <span style="color:#ff79c6">.</span><span style="color:#50fa7b">auth</span><span style="color:#ff79c6">(</span>Auth<span style="color:#ff79c6">.</span><span style="color:#50fa7b">none</span><span style="color:#ff79c6">())</span>                  <span style="color:#6272a4">// or Auth.mutualTls(keyStore, password)
+</span><span style="color:#6272a4"></span>    <span style="color:#ff79c6">.</span><span style="color:#50fa7b">serviceName</span><span style="color:#ff79c6">(</span><span style="color:#f1fa8c">&#34;books&#34;</span><span style="color:#ff79c6">)</span>
+    <span style="color:#ff79c6">.</span><span style="color:#50fa7b">trustStore</span><span style="color:#ff79c6">(</span>myCaTrustStore<span style="color:#ff79c6">)</span>         <span style="color:#6272a4">// extra CA for a self-hosted server, optional
+</span><span style="color:#6272a4"></span>    <span style="color:#ff79c6">.</span><span style="color:#50fa7b">build</span><span style="color:#ff79c6">())</span> <span style="color:#ff79c6">{</span>
+  Decision d <span style="color:#ff79c6">=</span> speedle<span style="color:#ff79c6">.</span><span style="color:#50fa7b">check</span><span style="color:#ff79c6">(</span>Subject<span style="color:#ff79c6">.</span><span style="color:#50fa7b">of</span><span style="color:#ff79c6">(</span>Principal<span style="color:#ff79c6">.</span><span style="color:#50fa7b">user</span><span style="color:#ff79c6">(</span><span style="color:#f1fa8c">&#34;alice&#34;</span><span style="color:#ff79c6">),</span> Principal<span style="color:#ff79c6">.</span><span style="color:#50fa7b">group</span><span style="color:#ff79c6">(</span><span style="color:#f1fa8c">&#34;eng&#34;</span><span style="color:#ff79c6">)),</span>
+      <span style="color:#f1fa8c">&#34;get&#34;</span><span style="color:#ff79c6">,</span> <span style="color:#f1fa8c">&#34;/books/123&#34;</span><span style="color:#ff79c6">,</span> List<span style="color:#ff79c6">.</span><span style="color:#50fa7b">of</span><span style="color:#ff79c6">());</span>
+  System<span style="color:#ff79c6">.</span><span style="color:#50fa7b">out</span><span style="color:#ff79c6">.</span><span style="color:#50fa7b">println</span><span style="color:#ff79c6">(</span>d<span style="color:#ff79c6">.</span><span style="color:#50fa7b">allowed</span><span style="color:#ff79c6">()</span> <span style="color:#ff79c6">+</span> <span style="color:#f1fa8c">&#34; &#34;</span> <span style="color:#ff79c6">+</span> d<span style="color:#ff79c6">.</span><span style="color:#50fa7b">reason</span><span style="color:#ff79c6">());</span>
+<span style="color:#ff79c6">}</span></code></pre></div>
+<p><a href="https://central.sonatype.com/artifact/io.speedle/speedle-sdk">注册中心</a> | <a href="https://github.com/teramoby/speedle-sdk/tree/java/v0.1.0/java"><code>java/v0.1.0</code> 源代码</a></p>
+
+<h2 id="net">.NET</h2>
+
+<p><strong>包名：</strong> <code>Speedle.Sdk</code></p>
+
+<p><strong>安装：</strong></p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">dotnet add package Speedle.Sdk</code></pre></div>
+<p><strong>用法（摘自 <code>dotnet/v0.1.0</code> README）：</strong></p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-csharp" data-lang="csharp"><span style="color:#ff79c6">await</span> <span style="color:#ff79c6">using</span> var speedle = <span style="color:#ff79c6">new</span> SpeedleClient(<span style="color:#ff79c6">new</span> SpeedleClientOptions
+{
+    Backend = Backend.SpeedlePlus,
+    Endpoint = <span style="color:#ff79c6">new</span> Uri(<span style="color:#f1fa8c">&#34;https://ads.internal.example:6734&#34;</span>),
+    Auth = Auth.None(),                 <span style="color:#6272a4">// or Auth.MutualTls(certificateWithKey)
+</span><span style="color:#6272a4"></span>    ServiceName = <span style="color:#f1fa8c">&#34;books&#34;</span>,
+    ExtraTrustedCertificates = <span style="color:#ff79c6">new</span> X509Certificate2Collection(myCa), <span style="color:#6272a4">// optional
+</span><span style="color:#6272a4"></span>});
+
+Decision d = <span style="color:#ff79c6">await</span> speedle.CheckAsync(
+    Subject.Of(Principal.User(<span style="color:#f1fa8c">&#34;alice&#34;</span>), Principal.Group(<span style="color:#f1fa8c">&#34;eng&#34;</span>)), <span style="color:#f1fa8c">&#34;get&#34;</span>, <span style="color:#f1fa8c">&#34;/books/123&#34;</span>);
+Console.WriteLine(<span style="color:#f1fa8c">$&#34;{d.Allowed} {d.Reason}&#34;</span>);</code></pre></div>
+<p><a href="https://www.nuget.org/packages/Speedle.Sdk">注册中心</a> | <a href="https://github.com/teramoby/speedle-sdk/tree/dotnet/v0.1.0/dotnet"><code>dotnet/v0.1.0</code> 源代码</a></p>
+
+<h2 id="rust">Rust</h2>
+
+<p><strong>包名：</strong> <code>speedle</code></p>
+
+<p><strong>安装：</strong></p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">cargo add speedle</code></pre></div>
+<p><strong>用法（摘自 <code>rust/v0.1.0</code> README）：</strong></p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-rust" data-lang="rust"><span style="color:#ff79c6">use</span> speedle::{Auth, Backend, Client, Principal, Subject};
+
+<span style="color:#8be9fd;font-style:italic">let</span> ca_pem <span style="color:#ff79c6">=</span> std::fs::read(<span style="color:#f1fa8c">&#34;ads-ca.pem&#34;</span>)<span style="color:#ff79c6">?</span>; <span style="color:#6272a4">// your server&#39;s CA, if not in the platform store
+</span><span style="color:#6272a4"></span><span style="color:#8be9fd;font-style:italic">let</span> client <span style="color:#ff79c6">=</span> Client::builder(Backend::SpeedlePlus, <span style="color:#f1fa8c">&#34;https://ads.internal:6734&#34;</span>, Auth::none(), <span style="color:#f1fa8c">&#34;books&#34;</span>)
+    .add_root_certificate_pem(<span style="color:#ff79c6">&amp;</span>ca_pem)
+    .build()<span style="color:#ff79c6">?</span>;
+<span style="color:#8be9fd;font-style:italic">let</span> subject <span style="color:#ff79c6">=</span> Subject::of([Principal::new(Principal::USER, <span style="color:#f1fa8c">&#34;bob&#34;</span>), Principal::new(Principal::GROUP, <span style="color:#f1fa8c">&#34;readers&#34;</span>)]);
+<span style="color:#8be9fd;font-style:italic">let</span> decision <span style="color:#ff79c6">=</span> client.check(<span style="color:#ff79c6">&amp;</span>subject, <span style="color:#f1fa8c">&#34;download&#34;</span>, <span style="color:#f1fa8c">&#34;/books/HarryPotter&#34;</span>, <span style="color:#ff79c6">&amp;</span>[]).await<span style="color:#ff79c6">?</span>;
+println<span style="color:#ff79c6">!</span>(<span style="color:#f1fa8c">&#34;{} {:?} {:?}&#34;</span>, decision.allowed, decision.reason, decision.error_message);
+</code></pre></div>
+<p><a href="https://crates.io/crates/speedle">注册中心</a> | <a href="https://github.com/teramoby/speedle-sdk/tree/rust/v0.1.0/rust"><code>rust/v0.1.0</code> 源代码</a></p>
+
+<h2 id="go">Go</h2>
+
+<p><strong>包名：</strong> <code>github.com/teramoby/speedle-sdk/go</code></p>
+
+<p><strong>安装：</strong></p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">go get github.com/teramoby/speedle-sdk/go</code></pre></div>
+<p><strong>用法（摘自 <code>main</code> 分支 README）：</strong></p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">client, err <span style="color:#ff79c6">:=</span> speedle.NewClient(speedle.Config{
+	Backend:     speedle.BackendSpeedlePlus,
+	Endpoint:    <span style="color:#f1fa8c">&#34;https://ads.internal:6734&#34;</span>,
+	Auth:        speedle.NoAuth(), <span style="color:#6272a4">// or speedle.MutualTLS(cert)
+</span><span style="color:#6272a4"></span>	ServiceName: <span style="color:#f1fa8c">&#34;books&#34;</span>,
+	RootCAs:     pool, <span style="color:#6272a4">// your server&#39;s CA; nil means the system roots
+</span><span style="color:#6272a4"></span>})
+
+d, err <span style="color:#ff79c6">:=</span> client.Check(ctx, speedle.Subject{
+	{Type: speedle.PrincipalUser, Name: <span style="color:#f1fa8c">&#34;bob&#34;</span>},
+	{Type: speedle.PrincipalGroup, Name: <span style="color:#f1fa8c">&#34;readers&#34;</span>},
+}, <span style="color:#f1fa8c">&#34;download&#34;</span>, <span style="color:#f1fa8c">&#34;/books/HarryPotter&#34;</span>, <span style="color:#ff79c6">nil</span>)
+<span style="color:#ff79c6">//</span> d.Allowed, d.Reason, d.ErrorMessage</code></pre></div>
+<p><a href="https://pkg.go.dev/github.com/teramoby/speedle-sdk/go">注册中心</a> | <a href="https://github.com/teramoby/speedle-sdk/tree/main/go"><code>main</code> 分支源代码</a></p>
+
+  </div>
+</div>
+</main><div class="sidebar">
+<nav>
+<ul>
+
+
+
+<li class="parent"><span>Speedle文档</span>
+<ul class="sub-menu">
+<li class=""><a href="/zh/docs/usecases/">使用场景</a></li>
+<li class=""><a href="/zh/docs/overview/">概览</a></li>
+<li class=""><a href="/zh/docs/spdl/">SPDL - Speedle 策略定义语言</a></li>
+<li class=""><a href="/zh/docs/architecture/">系统架构</a></li>
+<li class=""><a href="/zh/docs/deployment-embeded/">Speedle嵌入模式</a></li>
+<li class=""><a href="/zh/docs/deployment/">Speedle服务的部署方式</a></li>
+
+
+
+<li class=""><span>Speedle策略</span>
+<ul class="">
+<li class=""><a href="/zh/docs/pms/policy-mgmt/">策略管理</a></li>
+<li class=""><a href="/zh/docs/pms/global-policy/">全局角色策略</a></li>
+<li class=""><a href="/zh/docs/pms/diagnosis/">授权诊断</a></li>
+<li class=""><a href="/zh/docs/pms/discover/">策略发现</a></li>
+</ul>
+  
+</li>
+<li class=""><a href="/zh/docs/decisions/">授权查询</a></li>
+<li class=""><a href="/zh/docs/idd/">用户身份域</a></li>
+<li class=""><a href="/zh/docs/assertor/">令牌用户身份断言</a></li>
+
+
+
+<li class=""><a href="/zh/docs/store/">存储扩展</a>
+<ul class="">
+<li class=""><a href="/zh/docs/store/mysql/">MySQL 配置指南</a></li>
+<li class=""><a href="/zh/docs/store/etcd/">etcd 配置指南</a></li>
+<li class=""><a href="/zh/docs/store/mongodb/">MongoDB 配置指南</a></li>
+</ul>
+  
+</li>
+
+
+
+<li class=""><span>API</span>
+<ul class="">
+<li class=""><a href="/zh/docs/api/decision_api/">Authorization Runtime/Decision API</a></li>
+<li class=""><a href="/zh/docs/api/management_api/">Policy Management API</a></li>
+<li class=""><a href="/zh/docs/api/asserter_api/">Token Assertion Plugin API</a></li>
+</ul>
+  
+</li>
+<li class=""><a href="/zh/docs/security/">安全</a></li>
+<li class=""><a href="/zh/docs/logging/">日志</a></li>
+<li class="active"><a href="/zh/docs/sdks/">SDKs</a></li>
+<li class=""><a href="/zh/docs/versions/">版本</a></li>
+<li class=""><a href="/zh/docs/custom-function/">Custom Function</a></li>
+</ul>
+  
+</li>
+
+
+
+
+</ul>
+</nav>
+
+
+<div class="sidebar-footer"></div>
+</div>
+</div>
+    </div>
+    <footer class="row"> <div class="col col-3">
+  Licensed under <a href="https://oss.oracle.com/licenses/upl/">UPL</a>
+</div>
+<div class="col col-6 center">
+  <div>Copyright &copy; 2019–2026. All rights reserved.</div>
+</div>
+<div class="col col-3">
+  <nav>
+    <a title="contact@speedle.io" aria-label="发送邮件至 contact@speedle.io" href="mailto:contact@speedle.io">
+      <img src="/img/speedle/28. Mail.svg" alt="" />
+    </a>
+    <a title="Google Groups — speedle-users" aria-label="Google Groups 讨论组" href="https://groups.google.com/forum/#!forum/speedle-users">
+      <img src="/img/speedle/Google-Groups.svg" alt="" />
+    </a>
+    <a title="speedle" href="https://github.com/oracle/speedle">
+      <img src="/img/speedle/18. Github.svg" />
+    </a>
+    <a title="Discord" href="https://discord.gg/uaY2xVsbbT">
+      <img src="/img/speedle/Discord.svg" />
+    </a>
+  </nav>
+</div>
+</footer>
+    <script src="/js/kube.js" type="text/javascript">
+    </script>
+    <script src="/js/kube.legenda.js" type="text/javascript">
+    </script>
+    <script src="/js/master.js?v=language-direct-20261026" type="text/javascript">
+    </script>
+<!-- Cloudflare Web Analytics --><script type="module" src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "5dc5889c64f04fd7b026b875f1b2e27a"}'></script><!-- End Cloudflare Web Analytics -->
+</body>
+
+</html>

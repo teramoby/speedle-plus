@@ -60,6 +60,39 @@ printf &amp;#39;{}\n&amp;#39; &amp;gt; docs-policies.json 终端一启动 PMS，
     </item>
     
     <item>
+      <title>版本</title>
+      <link>https://speedle.io/zh/docs/versions/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://speedle.io/zh/docs/versions/</guid>
+      <description>Speedle+ 发布版本 已发布版本及发行说明以 GitHub Releases 为准。v1.6.0 是当前嵌入式 Go 示例固定使用的版本。为确保模块依赖可复现，应指定已发布版本；安装方式见嵌入模式。
+Oracle Speedle 历史版本 0.1.0 是原项目首次开源的版本，包含策略管理、授权决策、命令行工具及集成示例。历史文档中的 0.2.0 规划不是当前 Speedle+ 的发布路线图。</description>
+    </item>
+    
+    <item>
+      <title>Custom Function</title>
+      <link>https://speedle.io/zh/docs/custom-function/</link>
+      <pubDate>Mon, 21 Jan 2019 10:43:02 +0800</pubDate>
+      
+      <guid>https://speedle.io/zh/docs/custom-function/</guid>
+      <description>为什么使用自定义函数？ 当内置运算或函数不能表达规则时，SPDL 条件可以调用已配置的函数。Speedle 向其 REST 端点发送 POST {&amp;quot;params&amp;quot;:[...]}，预期返回 {&amp;quot;result&amp;quot;:...} 或 {&amp;quot;error&amp;quot;:&amp;quot;...&amp;quot;}。参数顺序、类型和返回类型必须与条件一致。函数失败是评估错误，应用应拒绝访问。
+启动本地示例 示例接受 100 至 50000 之间的数值。参数类型错误或列表为空时返回 HTTP 错误。只有回环 IP 可以使用明文，其他监听地址必须提供 TLS。
+在单独终端运行：
+go run ./website/tests/examples/custom-function package main import ( &amp;#34;encoding/json&amp;#34; &amp;#34;flag&amp;#34; &amp;#34;log&amp;#34; &amp;#34;net&amp;#34; &amp;#34;net/http&amp;#34; &amp;#34;time&amp;#34; ) type request struct { Params []interface{} `json:&amp;#34;params&amp;#34;` } type response struct { Result interface{} `json:&amp;#34;result,omitempty&amp;#34;` Error string `json:&amp;#34;error,omitempty&amp;#34;` } func isValid(w http.ResponseWriter, r *http.Request) { send := func(status int, value response) { w.</description>
+    </item>
+    
+    <item>
+      <title>Authorization Runtime/Decision API</title>
+      <link>https://speedle.io/zh/docs/api/decision_api/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://speedle.io/zh/docs/api/decision_api/</guid>
+      <description>已配置 ADS 的接口参考。请求属性是带类型的数组，诊断响应属性是对象。
+请配置安全连接与端点访问控制。这是接口契约，speedle.io 不托管授权后端。
+              (function() { var url = &#34;\/swagger\/policy-check.zh.yaml&#34;; const ui = SwaggerUIBundle({ url: url, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.presets.apis ], plugins: [ SwaggerUIBundle.plugins.DownloadUrl ], validatorUrl: null, layout: &#34;BaseLayout&#34; }) window.ui = ui })();  </description>
+    </item>
+    
+    <item>
       <title>Speedle 概览：面向细粒度访问控制的授权引擎</title>
       <link>https://speedle.io/zh/docs/overview/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
@@ -103,29 +136,6 @@ MongoDB 必须以副本集或分片集群方式运行：ADS 使用 change stream
 git clone --depth 1 https://github.com/teramoby/speedle-plus.git cd speedle-plus mkdir -p bin go build -o ./bin/ ./cmd/spctl ./cmd/speedle-pms ./cmd/speedle-ads 后续命令均在这个代码目录执行。确认 27017、6733、6734 端口可用；修改端口时要同步修改命令和配置。
 2. 启动 MongoDB 命名卷保存 MongoDB 数据。--replSet 让 mongod 作为副本集 speedle-rs 的成员启动；只把数据库端口发布到宿主机的回环地址。
 docker run --name speedle-mongodb --detach \  --publish 127.</description>
-    </item>
-    
-    <item>
-      <title>Custom Function</title>
-      <link>https://speedle.io/zh/docs/custom-function/</link>
-      <pubDate>Mon, 21 Jan 2019 10:43:02 +0800</pubDate>
-      
-      <guid>https://speedle.io/zh/docs/custom-function/</guid>
-      <description>为什么使用自定义函数？ 当内置运算或函数不能表达规则时，SPDL 条件可以调用已配置的函数。Speedle 向其 REST 端点发送 POST {&amp;quot;params&amp;quot;:[...]}，预期返回 {&amp;quot;result&amp;quot;:...} 或 {&amp;quot;error&amp;quot;:&amp;quot;...&amp;quot;}。参数顺序、类型和返回类型必须与条件一致。函数失败是评估错误，应用应拒绝访问。
-启动本地示例 示例接受 100 至 50000 之间的数值。参数类型错误或列表为空时返回 HTTP 错误。只有回环 IP 可以使用明文，其他监听地址必须提供 TLS。
-在单独终端运行：
-go run ./website/tests/examples/custom-function package main import ( &amp;#34;encoding/json&amp;#34; &amp;#34;flag&amp;#34; &amp;#34;log&amp;#34; &amp;#34;net&amp;#34; &amp;#34;net/http&amp;#34; &amp;#34;time&amp;#34; ) type request struct { Params []interface{} `json:&amp;#34;params&amp;#34;` } type response struct { Result interface{} `json:&amp;#34;result,omitempty&amp;#34;` Error string `json:&amp;#34;error,omitempty&amp;#34;` } func isValid(w http.ResponseWriter, r *http.Request) { send := func(status int, value response) { w.</description>
-    </item>
-    
-    <item>
-      <title>Authorization Runtime/Decision API</title>
-      <link>https://speedle.io/zh/docs/api/decision_api/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://speedle.io/zh/docs/api/decision_api/</guid>
-      <description>已配置 ADS 的接口参考。请求属性是带类型的数组，诊断响应属性是对象。
-请配置安全连接与端点访问控制。这是接口契约，speedle.io 不托管授权后端。
-              (function() { var url = &#34;\/swagger\/policy-check.zh.yaml&#34;; const ui = SwaggerUIBundle({ url: url, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.presets.apis ], plugins: [ SwaggerUIBundle.plugins.DownloadUrl ], validatorUrl: null, layout: &#34;BaseLayout&#34; }) window.ui = ui })();  </description>
     </item>
     
     <item>
@@ -281,6 +291,19 @@ gRPC API  PMS proto：pb.PolicyManager ADS proto：pb.Evaluator  当前 proto �
     </item>
     
     <item>
+      <title>SDKs</title>
+      <link>https://speedle.io/zh/docs/sdks/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://speedle.io/zh/docs/sdks/</guid>
+      <description>Speedle SDK 同时支持 Speedle+ 和 Speedle Cloud，六个 SDK 均采用 UPL-1.0 许可证。
+Node.js 包名： @speedle/sdk
+安装：
+npm install @speedle/sdk 用法（摘自 node/v0.1.0 README）：
+import { readFileSync } from &amp;#34;node:fs&amp;#34;; import { Auth, SpeedleClient } from &amp;#34;@speedle/sdk&amp;#34;; const speedle = new SpeedleClient({ backend: &amp;#34;speedle-plus&amp;#34;, endpoint: &amp;#34;https://ads.internal:6734&amp;#34;, auth: Auth.none(), // or Auth.mutualTls({ cert, key }) with --force-client-cert  caCert: readFileSync(&amp;#34;ca.pem&amp;#34;), // extra trust anchor for a private CA  serviceName: &amp;#34;books&amp;#34;, }); const decision = await speedle.</description>
+    </item>
+    
+    <item>
       <title>Token Assertion Plugin API</title>
       <link>https://speedle.io/zh/docs/api/asserter_api/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
@@ -328,16 +351,6 @@ TLS 加密连接并认证服务端。若要强制认证客户端，必须通过 
 通过命令行参数配置日志 所有的命令行参数如下所示。level、formatter、reportcaller 配置 logrus，文件与滚动相关设置配置 lumberjack。
 --log-level string --log-formatter string --log-reportcaller bool --log-filename string --log-maxsize int --log-maxbackups int --log-maxage int --log-localtime bool --log-compress bool 上面每一个参数的详细信息包含在下面的表格中。所有的参数都收可选的。 如果所有参数都没有配置，那么日志消息默认会输出到标准错误输出（stderr），而且默认的日志级别是 info。
    配置项 描述 默认值     &amp;ndash;log-level 日志级别, 有效的日志级别包括：panic、fatal、error、warn、info、debug info   &amp;ndash;log-formatter 日志格式, 有效的日志格式包括：text、json text   &amp;ndash;log-reportcaller 用于控制是否将调用信息 (文件名, 行数和函数名)包含在日志消息中 false   &amp;ndash;log-filename 日志文件名 没有默认值。 如果没有配置，那么日志消息默认会输出到标准错误输出（stderr）   &amp;ndash;log-maxsize 每个日志文件的最大尺寸。 注意该参数只有在&amp;rdquo;&amp;ndash;log-filename&amp;rdquo;已经配置的情况下才有效 100M   &amp;ndash;log-maxbackups 历史日志文件保留的最大数量。 注意该参数只有在&amp;rdquo;&amp;ndash;log-filename&amp;rdquo;已经配置的情况下才有效 0, 保留所有历史日志文件（注意历史日志文件可能由于达到了 maxAge 设定的时间限制而被删除）   &amp;ndash;log-maxage 历史日志文件保留的最多天数。注意该参数只有在&amp;rdquo;&amp;ndash;log-filename&amp;rdquo;已经配置的情况下才有效 0, 不删除任何历史日志文件（注意历史日志文件可能由于达到了 maxbackups 的限制而被删除）   &amp;ndash;log-localtime 用于控制在生成滚动日志文件时是否使用本地时间。注意该参数只有在&amp;rdquo;&amp;ndash;log-filename&amp;rdquo;已经配置的情况下才有效 false, 使用 UTC 时间   &amp;ndash;log-compress 用于控制在生成滚动日志文件时是否需要压缩。注意该参数只有在&amp;rdquo;&amp;ndash;log-filename&amp;rdquo;已经配置的情况下才有效 false, 不压缩    下面是两个日志消息的示例，第一个使用 text 格式输出，第二个则是使用 json 格式输出，</description>
-    </item>
-    
-    <item>
-      <title>版本</title>
-      <link>https://speedle.io/zh/docs/versions/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://speedle.io/zh/docs/versions/</guid>
-      <description>Speedle+ 发布版本 已发布版本及发行说明以 GitHub Releases 为准。v1.6.0 是当前嵌入式 Go 示例固定使用的版本。为确保模块依赖可复现，应指定已发布版本；安装方式见嵌入模式。
-Oracle Speedle 历史版本 0.1.0 是原项目首次开源的版本，包含策略管理、授权决策、命令行工具及集成示例。历史文档中的 0.2.0 规划不是当前 Speedle+ 的发布路线图。</description>
     </item>
     
     <item>

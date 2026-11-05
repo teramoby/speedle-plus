@@ -124,6 +124,19 @@ TLS encrypts the connection and authenticates the server. To require authenticat
     </item>
     
     <item>
+      <title>SDKs</title>
+      <link>https://speedle.io/docs/sdks/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://speedle.io/docs/sdks/</guid>
+      <description>The Speedle SDKs work with Speedle+ and Speedle Cloud. All six SDKs are licensed under UPL-1.0.
+Node.js Package: @speedle/sdk
+Install:
+npm install @speedle/sdk Usage (from the node/v0.1.0 README):
+import { readFileSync } from &amp;#34;node:fs&amp;#34;; import { Auth, SpeedleClient } from &amp;#34;@speedle/sdk&amp;#34;; const speedle = new SpeedleClient({ backend: &amp;#34;speedle-plus&amp;#34;, endpoint: &amp;#34;https://ads.internal:6734&amp;#34;, auth: Auth.none(), // or Auth.mutualTls({ cert, key }) with --force-client-cert  caCert: readFileSync(&amp;#34;ca.pem&amp;#34;), // extra trust anchor for a private CA  serviceName: &amp;#34;books&amp;#34;, }); const decision = await speedle.</description>
+    </item>
+    
+    <item>
       <title>Versions</title>
       <link>https://speedle.io/docs/versions/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>

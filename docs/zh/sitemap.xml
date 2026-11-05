@@ -403,6 +403,20 @@
   </url>
   
   <url>
+    <loc>https://speedle.io/zh/docs/sdks/</loc>
+    <xhtml:link
+                rel="alternate"
+                hreflang="en"
+                href="https://speedle.io/docs/sdks/"
+                />
+    <xhtml:link
+                rel="alternate"
+                hreflang="zh"
+                href="https://speedle.io/zh/docs/sdks/"
+                />
+  </url>
+  
+  <url>
     <loc>https://speedle.io/zh/docs/versions/</loc>
     <xhtml:link
                 rel="alternate"
