@@ -166,3 +166,8 @@ curl --fail --silent --show-error -H 'Content-Type: application/json' \
 TLS 端点先生成新的[本地测试证书](/docs/security/)，然后运行 `go run ./website/tests/examples/custom-function --cert ./tls/server.crt --key ./tls/server.key`。注册时 `funcURL` 为 `https://localhost:23456/func/isValid`，`ca` 填写 `tls/ca.crt` 中的 **PEM 证书内容**，不是文件路径。生产证书必须覆盖实际主机。无需使用过期的硬编码证书或私钥。
 
 `resultCachable` 默认为 false；启用缓存后，`resultTTL` 表示结果缓存秒数。只有当结果在相应时间和参数组合下仍然正确时才应缓存，例如账号状态等外部数据可能在 TTL 到期前变化。定义管理见 [PMS 函数 API](/docs/api/management_api/)。浏览器 Playground 不支持调用外部自定义函数。
+
+
+## 示例：零常驻权限（ZSP）
+
+SPDL 条件与自定义函数可以支持零常驻权限（ZSP）模式：使用短期有效、范围受限的凭证，并由应用完成令牌校验与原子消费。针对自托管 Speedle 的[可运行 ZSP 示例](https://github.com/teramoby/ai.speedle.io/tree/main/samples/zsp)把自定义函数与对令牌有效期、生效时间窗口和是否已使用的策略检查组合起来。令牌的签发、校验与原子消费仍由应用负责。

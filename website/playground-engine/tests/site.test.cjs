@@ -92,12 +92,23 @@ for (const name of ['docs/index.html','docs/zh/index.html']) {
 }
 const identityTags = [/<title>[^<]*<\/title>/, /<link rel="icon"[^>]*>/,
  /<meta property="og:site_name"[^>]*>/, /<meta property="og:title"[^>]*>/,
- /<meta name="twitter:title"[^>]*>/, /\{"@type":"WebSite"[^\n]+/];
+ /<meta name="twitter:title"[^>]*>/, /\{"@type":"WebSite"[^\n]+/,
+ /\{"@type":"SoftwareSourceCode"[^\n]+/];
 // The site identity (title, icon, social and structured-data names) changed deliberately.
 const analyticsSnippet = read('website/cloudflare-web-analytics.html');
 const restoredIdentity = identityTags.reduce((html, pattern) => html.replace(pattern, original.match(pattern)[0]), home.replace(analyticsSnippet, '').replace(iconLinks, original.match(/<link rel="icon"[^>]*>/)[0]).replace(productsMenu, '').replace(familyFooter, '').replace('  <footer class="site-footer">\n', '  <footer>\n').replace(footerLockup, '<img src="/img/speedle/Speedle_logo_w.svg" alt="Speedle">'));
 const restored = restoredIdentity.replace(policyExample,originalPolicyExample).replace(originNote,'').replace('Bring Your Own Storage','Bring Your Own Store').replace('Speedle Policy Definition Language.','Secure Policy Definition Language.').replace(contactLinks,originalMailingLink).replace(sharedNavigationScript,originalNavigationScript).replace(copyright,'').replace(discordLink,oldCommunityLink).replace('  <link rel="stylesheet" href="/css/site.css">\n  <link rel="stylesheet" href="/css/navigation.css?v=header-20261106-v8">', `  <style>${originalCss}</style>`).replace('<a href="/playground/">Playground</a>','').replace(`        ${chineseLink}\n`,'').replace(brandLockup,originalBrand).replace('Fast. Simple. Access control','Fast. Simple. Access control.').replace('Authorization that stays out of your application code','Authorization that stays out of your application code.').replace('Fine-grained control without the friction','Fine-grained control without the friction.').replace('Policies humans can read','Policies humans can read.').replace('Built for the infrastructure you already run','Built for the infrastructure you already run.').replace('Help move Speedle forward','Help move Speedle forward.');
-assert.equal(restored,original,'Homepage content is unchanged except shared navigation assets/entries, community/contact links, storage heading, SPDL name, corrected SPDL example, origin note, site identity, copyright notice, analytics beacon, logo lock-up, Speedle family links, favicons and titles without trailing full stops');
+assert.equal(restored,original,'Homepage content is unchanged except shared navigation assets/entries, community/contact links, storage heading, SPDL name, corrected SPDL example, origin note, site identity, ZSP metadata, copyright notice, analytics beacon, logo lock-up, Speedle family links, favicons and titles without trailing full stops');
+// #221: the home pages carry the scoped ZSP wording in JSON-LD and the terms
+// in the keyword list, in each language.
+for (const [name, description, keywords] of [
+  ['docs/index.html', 'its SPDL conditions and custom functions can support a zero standing privileges (ZSP) pattern with short-lived, scoped credentials, together with token verification and atomic consumption in the application.', '"keywords":["authorization engine","RBAC","ABAC","policy decision service","SPDL","zero standing privileges","ZSP"]'],
+  ['docs/zh/index.html', '其 SPDL 条件与自定义函数可以支持零常驻权限（ZSP）模式，使用短期有效、范围受限的凭证，并由应用完成令牌校验与原子消费。', '"keywords":["authorization engine","RBAC","ABAC","policy decision service","SPDL","零常驻权限","ZSP"]'],
+]) {
+  const html = read(name);
+  assert.ok(html.includes(description), `ZSP description in ${name}`);
+  assert.ok(html.includes(keywords), `ZSP keywords in ${name}`);
+}
 assert.ok(home.includes(brandLockup), 'Homepage shows the Speedle | Engine lock-up (#203)');
 for (const name of ['docs/zh/index.html','docs/playground/index.html','docs/zh/playground/index.html']) assert.ok(read(name).includes('<span class="brand-divider" aria-hidden="true"></span><span class="brand-product">Engine</span></a>'), `Lock-up in ${name}`);
 assert.ok(home.includes(chineseLink), 'English homepage exposes the Chinese homepage');
