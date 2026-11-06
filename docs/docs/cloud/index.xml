@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Speedle Cloud on Speedle</title>
+    <link>https://engine.speedle.io/docs/cloud/</link>
+    <description>Recent content in Speedle Cloud on Speedle</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language>
+    
+	<atom:link href="https://engine.speedle.io/docs/cloud/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>Getting started with Speedle Cloud</title>
+      <link>https://engine.speedle.io/docs/cloud/getting-started/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/docs/cloud/getting-started/</guid>
+      <description>Speedle Cloud is coming soon. Sign-in is not open on cloud.speedle.io yet, and authenticated authorization API calls are still being rolled out. The steps below describe the planned production workflow. Screenshots will be added after production sign-in opens; no mock-up images are used.
+1. Sign in with GitHub or Google Open Speedle Cloud. When production sign-in opens, choose Sign in with GitHub or Sign in with Google. If you are creating a new account, explicitly confirm Create account.</description>
+    </item>
+    
+  </channel>
+</rss>

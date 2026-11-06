@@ -12,6 +12,7 @@ Updated 2026-11-02. This guide distinguishes current documented capabilities, da
 - [Project overview](https://engine.speedle.io/about/): What Speedle is and why the project exists.
 - [Quick start](https://engine.speedle.io/quick-start/): Run Speedle and make a first authorization decision.
 - [Documentation](https://engine.speedle.io/docs/): Concepts, deployment, APIs, and operations.
+- [Speedle Cloud](https://engine.speedle.io/docs/cloud/): Hosted authorization for developers (coming soon); the getting-started chapter covers sign-in, SPDL policies, Playground tests, API tokens, IsAllowed, beta limits and legal links.
 - [Architecture](https://engine.speedle.io/docs/architecture/): Major components and request flow.
 - [SPDL](https://engine.speedle.io/docs/spdl/): Speedle Policy Definition Language reference.
 - [Authorization decisions](https://engine.speedle.io/docs/decisions/): How policy decisions are evaluated.

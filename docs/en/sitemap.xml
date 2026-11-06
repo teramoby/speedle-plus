@@ -146,6 +146,20 @@
   </url>
   
   <url>
+    <loc>https://engine.speedle.io/docs/cloud/getting-started/</loc>
+    <xhtml:link
+                rel="alternate"
+                hreflang="zh"
+                href="https://engine.speedle.io/zh/docs/cloud/getting-started/"
+                />
+    <xhtml:link
+                rel="alternate"
+                hreflang="en"
+                href="https://engine.speedle.io/docs/cloud/getting-started/"
+                />
+  </url>
+  
+  <url>
     <loc>https://engine.speedle.io/docs/sdks/java/</loc>
     <xhtml:link
                 rel="alternate"
@@ -469,6 +483,20 @@
                 rel="alternate"
                 hreflang="en"
                 href="https://engine.speedle.io/docs/sdks/"
+                />
+  </url>
+  
+  <url>
+    <loc>https://engine.speedle.io/docs/cloud/</loc>
+    <xhtml:link
+                rel="alternate"
+                hreflang="zh"
+                href="https://engine.speedle.io/zh/docs/cloud/"
+                />
+    <xhtml:link
+                rel="alternate"
+                hreflang="en"
+                href="https://engine.speedle.io/docs/cloud/"
                 />
   </url>
   

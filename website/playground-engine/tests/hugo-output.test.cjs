@@ -37,7 +37,8 @@ for (const name of ['quick-start/index.html', 'zh/quick-start/index.html']) {
   const target = name.startsWith('zh/') ? '/zh/playground/' : '/playground/';
   assert.ok(fs.readFileSync(path.join(output, name), 'utf8').includes(`href="${target}"`), `Generated ${name} navigation`);
 }
-for (const name of ['docs/index.html', 'zh/docs/index.html', 'docs/spdl/index.html', 'zh/docs/spdl/index.html']) {
+for (const name of ['docs/index.html', 'zh/docs/index.html', 'docs/spdl/index.html', 'zh/docs/spdl/index.html',
+  'docs/cloud/index.html', 'zh/docs/cloud/index.html', 'docs/cloud/getting-started/index.html', 'zh/docs/cloud/getting-started/index.html']) {
   const html = fs.readFileSync(path.join(output, name), 'utf8');
   const zh = name.startsWith('zh/');
   const target = '/' + (zh ? name.slice(3) : 'zh/' + name).replace(/index\.html$/, '');
@@ -111,8 +112,28 @@ function checkDocsAlternates(directory) {
 }
 checkDocsAlternates(path.join(output, 'docs'));
 checkDocsAlternates(path.join(output, 'zh/docs'));
-assert.equal(docsAlternates, 80, 'Every canonical docs page and redirect alias has three hreflang alternates');
+assert.equal(docsAlternates, 84, 'Every canonical docs page and redirect alias has three hreflang alternates');
 console.log('PASS Hugo 0.48 output: editor, navigation, sitemap, footer stylesheet and matching release assets');
+
+// #219: the Cloud overview is a linked, bold sidebar group and both languages
+// carry the same six-step launch preview, limits, legal links and metadata.
+for (const locale of ['', 'zh/']) {
+  const zh = locale === 'zh/';
+  const prefix = `https://engine.speedle.io/${locale}docs/cloud/`;
+  const overview = fs.readFileSync(path.join(output, `${locale}docs/cloud/index.html`), 'utf8');
+  const guide = fs.readFileSync(path.join(output, `${locale}docs/cloud/getting-started/index.html`), 'utf8');
+  const sidebar = guide.split('<div class="sidebar">')[1];
+  assert.ok(/docs-nav-heading[^"]*"><a [^>]*>Speedle Cloud<\/a>/.test(sidebar), `Cloud is a linked bold sidebar heading in ${locale || 'en'}`);
+  assert.ok(sidebar.includes(`href="/${locale}docs/cloud/getting-started/"`), `Cloud getting-started link in ${locale || 'en'}`);
+  assert.ok(overview.includes(zh ? 'Speedle Cloud 即将上线' : 'Speedle Cloud is coming soon'), `Coming-soon overview in ${locale || 'en'}`);
+  assert.equal((guide.match(zh ? /<strong>截图待补充<\/strong>/g : /<strong>Screenshot coming soon<\/strong>/g) || []).length, 6, `Six screenshot slots in ${locale || 'en'}`);
+  assert.ok(guide.includes('POST /authz-check/v1/is-allowed') && guide.includes('spdl_&lt;canonical lowercase UUIDv7 id&gt;_&lt;43 base62 digits&gt;'), `Cloud API and token format in ${locale || 'en'}`);
+  assert.ok(guide.includes(`href="https://cloud.speedle.io/${zh ? 'zh-CN/' : ''}terms"`) && guide.includes(`href="https://cloud.speedle.io/${zh ? 'zh-CN/' : ''}privacy"`), `Localized Cloud legal links in ${locale || 'en'}`);
+  for (const route of ['', 'getting-started/']) {
+    assert.ok(fs.readFileSync(path.join(output, `${locale || 'en/'}sitemap.xml`), 'utf8').includes(`<loc>${prefix}${route}</loc>`), `Cloud sitemap entry ${prefix}${route}`);
+  }
+}
+assert.ok(fs.readFileSync(path.join(output, 'llms.txt'), 'utf8').includes('[Speedle Cloud](https://engine.speedle.io/docs/cloud/)'), 'llms.txt links the Cloud section');
 
 // Every documentation sidebar must retain its complete section tree. A shared
 // Page.Scratch value can expose an incomplete tree during parallel Hugo renders.
@@ -125,7 +146,8 @@ function checkStorageNavigation(directory, locale = '') {
       if (!html.includes('<div class="sidebar">')) continue;
       const sidebar = html.split('<div class="sidebar">')[1];
       for (const target of ['store/', 'store/mysql/', 'store/etcd/', 'store/mongodb/', 'pms/policy-mgmt/', 'api/decision_api/',
-        'sdks/', 'sdks/java/', 'sdks/python/', 'sdks/go/', 'sdks/dotnet/', 'sdks/rust/', 'sdks/node/']) {
+        'sdks/', 'sdks/java/', 'sdks/python/', 'sdks/go/', 'sdks/dotnet/', 'sdks/rust/', 'sdks/node/',
+        'cloud/', 'cloud/getting-started/']) {
         assert.ok(sidebar.includes(`href="/${locale}docs/${target}"`), `Complete sidebar ${target} in ${name}`);
       }
     }

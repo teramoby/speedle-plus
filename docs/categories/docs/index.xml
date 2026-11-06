@@ -85,6 +85,26 @@ Before running the examples Build ./bin/spctl, ./bin/speedle-pms and ./bin/speed
     </item>
     
     <item>
+      <title>Deployment</title>
+      <link>https://engine.speedle.io/docs/deployment/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/docs/deployment/</guid>
+      <description>Choose a deployment mode Use embedded mode to run the evaluator in your Go process. Use standalone PMS and ADS when applications call Speedle over REST or gRPC. The Quick Start provides a complete local policy-management and authorization walkthrough.
+Build with current Go Use Go 1.26.10 or Go 1.27.3 (or a newer patch on the same release branch) (Go 1.27.3 is recommended), Git and a shell on Linux or macOS.</description>
+    </item>
+    
+    <item>
+      <title>Getting started with Speedle Cloud</title>
+      <link>https://engine.speedle.io/docs/cloud/getting-started/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/docs/cloud/getting-started/</guid>
+      <description>Speedle Cloud is coming soon. Sign-in is not open on cloud.speedle.io yet, and authenticated authorization API calls are still being rolled out. The steps below describe the planned production workflow. Screenshots will be added after production sign-in opens; no mock-up images are used.
+1. Sign in with GitHub or Google Open Speedle Cloud. When production sign-in opens, choose Sign in with GitHub or Sign in with Google. If you are creating a new account, explicitly confirm Create account.</description>
+    </item>
+    
+    <item>
       <title>Go SDK</title>
       <link>https://engine.speedle.io/docs/sdks/go/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
@@ -257,16 +277,6 @@ The Token Assertion Plugin API uses integer errCode and an optional attribute ob
     </item>
     
     <item>
-      <title>Deployment</title>
-      <link>https://engine.speedle.io/docs/deployment/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://engine.speedle.io/docs/deployment/</guid>
-      <description>Choose a deployment mode Use embedded mode to run the evaluator in your Go process. Use standalone PMS and ADS when applications call Speedle over REST or gRPC. The Quick Start provides a complete local policy-management and authorization walkthrough.
-Build with current Go Use Go 1.26.10 or Go 1.27.3 (or a newer patch on the same release branch) (Go 1.27.3 is recommended), Git and a shell on Linux or macOS.</description>
-    </item>
-    
-    <item>
       <title>SDKs</title>
       <link>https://engine.speedle.io/docs/sdks/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
@@ -285,6 +295,16 @@ Packages All packages are version 0.1.0. Each language page shows the install co
       <guid>https://engine.speedle.io/docs/security/</guid>
       <description>Protect both API transports Speedle&amp;rsquo;s standalone PMS and ADS expose REST and gRPC. Both now use the same --insecure, --cert, --key, --client-cert and --force-client-cert transport settings. Invalid certificates or trust configuration cause startup to fail; secure mode does not fall back to plaintext.
 TLS encrypts the connection and authenticates the server. To require authenticated clients, provide a client CA with --client-cert and set --force-client-cert=true. Without that flag, a configured CA validates a client certificate only when the client supplies one.</description>
+    </item>
+    
+    <item>
+      <title>Speedle Cloud</title>
+      <link>https://engine.speedle.io/docs/cloud/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/docs/cloud/</guid>
+      <description>Speedle Cloud is a hosted access-control service for developers, built on the open-source Speedle policy engine. At launch, you will be able to create a service, write and import SPDL authorization and role policies in the console, test decisions in the Playground, and call the authorization API from your application server without operating your own authorization service.
+Speedle Cloud is coming soon. Production sign-in is not open on cloud.speedle.io yet. This section previews the planned workflow; screenshots will be added after production sign-in opens.</description>
     </item>
     
     <item>

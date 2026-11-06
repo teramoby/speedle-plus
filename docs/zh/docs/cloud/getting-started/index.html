@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+    <script>document.documentElement.classList.add('docs-js');</script>
+    <meta name="generator" content="Hugo 0.48" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Speedle Cloud 快速入门 - Speedle</title>
+<meta name="description" content="了解 Speedle Cloud 的使用流程：登录、创建服务、编写 SPDL 策略、测试授权判定、创建 API 令牌并调用 IsAllowed。">
+<meta name="generator" content="Hugo 0.48" />
+<link href="https://engine.speedle.io/index.xml" rel="alternate" type="application/rss+xml">
+<link rel="canonical" href="https://engine.speedle.io/zh/docs/cloud/getting-started/">
+
+<link rel="alternate" hreflang="en" href="https://engine.speedle.io/docs/cloud/getting-started/">
+<link rel="alternate" hreflang="zh-CN" href="https://engine.speedle.io/zh/docs/cloud/getting-started/">
+<link rel="alternate" hreflang="x-default" href="https://engine.speedle.io/docs/cloud/getting-started/">
+
+<link href="/css/docs.css" rel="stylesheet" type="text/css">
+
+
+    <link href="/css/navigation.css?v=header-20261106-v8" rel="stylesheet">
+    <script src="/js/navigation.js?v=header-20261106-v8" defer></script>
+    <script src="/js/docs.js" defer></script>
+
+</head>
+
+<body class="page-kube docs-page">
+    <header class="site-header">
+    <div class="wrap nav">
+      <a class="brand" href="/zh/#top" aria-label="Speedle Engine 首页"><img class="brand-logo" src="/img/speedle/Speedle_logo_home_bold.svg?v=4" alt=""><span class="brand-divider" aria-hidden="true"></span><span class="brand-product">Engine</span></a>
+      <button class="menu" type="button" aria-expanded="false" aria-controls="nav-links" aria-label="展开导航">☰</button>
+      <nav class="nav-links" id="nav-links" aria-label="主导航">
+        <div class="products"><button class="products-button" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="products-panel">产品<svg class="products-chevron" width="10" height="10" viewBox="0 0 10 10" aria-hidden="true" focusable="false"><path d="M2 3.5 5 6.5 8 3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button><span class="products-heading" aria-hidden="true">产品</span><div class="products-panel" id="products-panel" role="group" aria-label="产品"><a class="product-row" href="https://engine.speedle.io/zh/" aria-current="page"><img class="product-mark" src="/img/speedle/speedle-mark-engine.svg" alt="" width="20" height="20"><span class="product-text"><span class="product-name">Speedle Engine</span><span class="product-desc">开源授权引擎</span></span><svg class="product-check" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M3.5 8.5 6.5 11.5 12.5 4.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></a><a class="product-row" href="https://cloud.speedle.io/zh-CN/"><img class="product-mark" src="/img/speedle/speedle-mark-cloud.svg" alt="" width="20" height="20"><span class="product-text"><span class="product-name">Speedle Cloud <span class="product-badge">即将上线</span></span><span class="product-desc">面向开发者的托管授权服务</span></span></a><a class="product-row" href="https://ai.speedle.io/zh/"><img class="product-mark" src="/img/speedle/speedle-mark-ai.svg" alt="" width="20" height="20"><span class="product-text"><span class="product-name">Speedle AI</span><span class="product-desc">面向 AI 的访问管理</span></span></a></div></div>
+        <a href="/zh/#about">关于</a><a href="/zh/#features">功能</a><a href="/zh/#integrations">集成</a>
+        <a href="/zh/quick-start/">快速入门</a><a href="/zh/docs/">文档</a><a href="/zh/playground/">Playground</a>
+        <a href="/docs/cloud/getting-started/" lang="en" hreflang="en" aria-label="Switch to English">English</a>
+        <a class="nav-github" href="https://github.com/teramoby/speedle-plus">GitHub</a>
+      </nav>
+    </div>
+  </header>
+    <div class="container">
+        <button class="docs-nav-toggle" type="button" aria-expanded="false" aria-controls="docs-navigation" hidden>
+            <span>菜单</span>
+            <svg class="docs-nav-toggle-icon" viewBox="0 0 18 14" width="18" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M1 1h16M1 7h16M1 13h16"/></svg>
+        </button>
+        <div class="content-container"><aside class="docs-sidebar" id="docs-navigation" aria-label="文档导航">
+<div class="docs-nav-head">
+<span class="docs-nav-title">文档</span>
+<button class="docs-nav-close" type="button" aria-label="关闭菜单"><svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="m3 3 10 10M13 3 3 13"/></svg></button>
+</div>
+<div class="sidebar">
+<nav>
+<ul>
+
+
+
+<li class="docs-nav-section parent"><span class="docs-nav-heading">Speedle文档</span>
+<ul class="sub-menu">
+<li class=""><a href="/zh/docs/usecases/">使用场景</a></li>
+<li class=""><a href="/zh/docs/overview/">概览</a></li>
+<li class=""><a href="/zh/docs/spdl/">SPDL - Speedle 策略定义语言</a></li>
+<li class=""><a href="/zh/docs/architecture/">系统架构</a></li>
+<li class=""><a href="/zh/docs/deployment-embeded/">Speedle嵌入模式</a></li>
+<li class=""><a href="/zh/docs/deployment/">Speedle服务的部署方式</a></li>
+
+
+
+<li class="docs-nav-section"><span class="docs-nav-heading">Speedle策略</span>
+<ul class="">
+<li class=""><a href="/zh/docs/pms/policy-mgmt/">策略管理</a></li>
+<li class=""><a href="/zh/docs/pms/global-policy/">全局角色策略</a></li>
+<li class=""><a href="/zh/docs/pms/diagnosis/">授权诊断</a></li>
+<li class=""><a href="/zh/docs/pms/discover/">策略发现</a></li>
+</ul>
+
+</li>
+<li class=""><a href="/zh/docs/decisions/">授权查询</a></li>
+<li class=""><a href="/zh/docs/idd/">用户身份域</a></li>
+<li class=""><a href="/zh/docs/assertor/">令牌用户身份断言</a></li>
+
+
+
+<li class="docs-nav-section"><span class="docs-nav-heading docs-nav-heading-link"><a href="/zh/docs/store/">存储扩展</a></span>
+<ul class="">
+<li class=""><a href="/zh/docs/store/mysql/">MySQL 配置指南</a></li>
+<li class=""><a href="/zh/docs/store/etcd/">etcd 配置指南</a></li>
+<li class=""><a href="/zh/docs/store/mongodb/">MongoDB 配置指南</a></li>
+</ul>
+
+</li>
+
+
+
+<li class="docs-nav-section"><span class="docs-nav-heading">API</span>
+<ul class="">
+<li class=""><a href="/zh/docs/api/decision_api/">Authorization Runtime/Decision API</a></li>
+<li class=""><a href="/zh/docs/api/management_api/">Policy Management API</a></li>
+<li class=""><a href="/zh/docs/api/asserter_api/">Token Assertion Plugin API</a></li>
+</ul>
+
+</li>
+
+
+
+<li class="docs-nav-section"><span class="docs-nav-heading docs-nav-heading-link"><a href="/zh/docs/sdks/">SDK</a></span>
+<ul class="">
+<li class=""><a href="/zh/docs/sdks/java/">Java SDK</a></li>
+<li class=""><a href="/zh/docs/sdks/python/">Python SDK</a></li>
+<li class=""><a href="/zh/docs/sdks/go/">Go SDK</a></li>
+<li class=""><a href="/zh/docs/sdks/dotnet/">C#/.NET SDK</a></li>
+<li class=""><a href="/zh/docs/sdks/rust/">Rust SDK</a></li>
+<li class=""><a href="/zh/docs/sdks/node/">Node.js/TypeScript SDK</a></li>
+</ul>
+
+</li>
+
+
+
+<li class="docs-nav-section parent"><span class="docs-nav-heading docs-nav-heading-link"><a href="/zh/docs/cloud/">Speedle Cloud</a></span>
+<ul class="sub-menu">
+<li class="active"><a href="/zh/docs/cloud/getting-started/" aria-current="page">快速入门</a></li>
+</ul>
+
+</li>
+<li class=""><a href="/zh/docs/security/">安全</a></li>
+<li class=""><a href="/zh/docs/logging/">日志</a></li>
+<li class=""><a href="/zh/docs/versions/">版本</a></li>
+<li class=""><a href="/zh/docs/custom-function/">Custom Function</a></li>
+</ul>
+
+</li>
+
+
+
+
+</ul>
+</nav>
+
+
+</div>
+</aside>
+<main>
+<div id="main">
+
+  <h1>Speedle Cloud 快速入门</h1>
+  <p class="docs-lead">预览 Speedle Cloud 的使用流程，涵盖登录、SPDL 策略编写、Playground 测试和授权 API 调用。</p>
+
+
+
+
+<nav id="contents" class="docs-toc" data-docs-toc="h2" aria-label="On this page">
+  <ol></ol>
+</nav>
+
+
+
+  <div id="kube-component" class="content">
+
+<p><strong>Speedle Cloud 即将上线。</strong> cloud.speedle.io 尚未开放登录，带认证的授权 API 也仍在逐步交付。下面介绍计划中的生产环境使用流程。生产环境开放登录后会补充实际截图，本文不使用模拟界面图。</p>
+
+<h2 id="1-使用-github-或-google-登录">1. 使用 GitHub 或 Google 登录</h2>
+
+<p>打开 <a href="https://cloud.speedle.io/zh-CN/">Speedle Cloud</a>。生产环境开放登录后，选择 <strong>使用 GitHub 登录</strong> 或 <strong>使用 Google 登录</strong>。如果你要创建新账号，还需要明确点击 <strong>创建账号</strong> 进行确认。</p>
+
+<blockquote>
+<p><strong>截图待补充</strong></p>
+
+<p>此处将展示生产环境的登录页面。</p>
+</blockquote>
+
+<h2 id="2-创建服务">2. 创建服务</h2>
+
+<p>打开服务工作区，输入服务名称（例如 <code>books</code>），然后点击 <strong>创建服务</strong>。服务用于集中管理应用的授权策略和角色策略。每个免费账号可以创建一个服务。</p>
+
+<blockquote>
+<p><strong>截图待补充</strong></p>
+
+<p>此处将展示创建服务的页面。</p>
+</blockquote>
+
+<h2 id="3-编写或导入-spdl-策略">3. 编写或导入 SPDL 策略</h2>
+
+<p>在服务工作区点击 <strong>新建策略</strong>，在控制台中编写 SPDL，点击 <strong>验证策略</strong> 检查语法，再点击 <strong>保存策略</strong>。验证语法不会自动保存策略。你也可以在工作区导入已有策略，无需逐条手动输入。</p>
+
+<p>例如，下面这条授权策略允许用户 <code>alice</code> 对 <code>/books</code> 执行 <code>get</code> 操作：</p>
+
+<p><code>grant user alice get /books</code></p>
+
+<p>Speedle Cloud 支持授权策略和角色策略，不支持外部自定义函数。</p>
+
+<blockquote>
+<p><strong>截图待补充</strong></p>
+
+<p>此处将展示策略编辑器和导入控件。</p>
+</blockquote>
+
+<h2 id="4-在-playground-中测试授权判定">4. 在 Playground 中测试授权判定</h2>
+
+<p>在服务工作区找到 <strong>Playground</strong>，选择 <strong>Is allowed</strong>。在 Principals 中输入 <code>[{&quot;type&quot;:&quot;user&quot;,&quot;name&quot;:&quot;alice&quot;}]</code>，在 Resource 中输入 <code>/books</code>，在 Action 中输入 <code>get</code>，然后点击 <strong>运行测试</strong>。</p>
+
+<p>Playground 使用已保存的策略进行判定，不会包含编辑器中尚未保存的草稿。修改策略或请求后，需要重新运行测试才能刷新结果。</p>
+
+<blockquote>
+<p><strong>截图待补充</strong></p>
+
+<p>此处将展示 Playground 请求及其判定结果。</p>
+</blockquote>
+
+<h2 id="5-创建-api-令牌">5. 创建 API 令牌</h2>
+
+<p>打开 <strong>应用令牌</strong>，输入令牌名称，然后点击 <strong>创建令牌</strong>。系统可能要求你先使用 GitHub 或 Google 完成身份验证。令牌只显示一次，请及时复制并存入应用服务端的密钥存储，之后无法再次查看。</p>
+
+<p>令牌格式为 <code>spdl_&lt;canonical lowercase UUIDv7 id&gt;_&lt;43 base62 digits&gt;</code>。它是服务专属的 Bearer 凭据，用于授权检查，既不是最终用户的身份令牌，也不能用于调用管理 API。切勿将令牌放入浏览器代码、URL、源代码仓库、截图或日志。</p>
+
+<blockquote>
+<p><strong>截图待补充</strong></p>
+
+<p>此处将展示令牌创建和一次性显示的页面。</p>
+</blockquote>
+
+<h2 id="6-调用授权-api">6. 调用授权 API</h2>
+
+<p>带认证的授权调用开放后，应用服务端将向 <code>https://cloud.speedle.io/authz-check/v1/is-allowed</code> 发送 <code>POST</code> 请求，并在一个 <code>Authorization: Bearer</code> 请求头中携带签发的令牌：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-http" data-lang="http">POST /authz-check/v1/is-allowed
+Authorization: Bearer &lt;issued token&gt;
+Content-Type: application/json
+
+{&#34;subject&#34;:{&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;,&#34;name&#34;:&#34;alice&#34;}]},&#34;serviceName&#34;:&#34;books&#34;,&#34;resource&#34;:&#34;/books&#34;,&#34;action&#34;:&#34;get&#34;,&#34;attributes&#34;:[{&#34;name&#34;:&#34;level&#34;,&#34;type&#34;:&#34;numeric&#34;,&#34;value&#34;:3},{&#34;name&#34;:&#34;when&#34;,&#34;type&#34;:&#34;datetime&#34;,&#34;value&#34;:&#34;2026-11-05T03:00:00Z&#34;}]}</code></pre></div>
+<p>应用必须自行完成用户认证，并直接传入用户的 principals。Speedle Cloud 不支持令牌断言。执行受保护的操作前，必须检查响应中的 <code>allowed</code> 值；发生错误时应默认拒绝。</p>
+
+<p>如需 Java、Python、Go、.NET、Rust 或 Node.js/TypeScript 客户端库，请参阅 <a href="/zh/docs/sdks/">SDK 文档</a>。</p>
+
+<blockquote>
+<p><strong>截图待补充</strong></p>
+
+<p>此处将展示生产环境的 API 接入流程。</p>
+</blockquote>
+
+<h2 id="测试版限额">测试版限额</h2>
+
+<table>
+<thead>
+<tr>
+<th>限额</th>
+<th>测试版额度</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td>策略</td>
+<td>每个账号最多 200 条策略，授权策略和角色策略合并计算。</td>
+</tr>
+
+<tr>
+<td>API 调用</td>
+<td>每个账号每天最多 10,000 次 API 调用，管理调用和授权调用合并计算，每天 00:00 UTC 重置。</td>
+</tr>
+</tbody>
+</table>
+
+<p>免费测试版用于试用、学习和评估，不提供 SLA，不建议用于生产环境。功能和限额可能调整。</p>
+
+<h2 id="测试版条款与隐私政策">测试版条款与隐私政策</h2>
+
+<p>请阅读 Speedle Cloud 的<a href="https://cloud.speedle.io/zh-CN/terms">测试版条款</a>和<a href="https://cloud.speedle.io/zh-CN/privacy">隐私政策</a>。</p>
+</div>
+</div>
+</main>
+        </div>
+    </div>
+    <div class="docs-nav-backdrop" hidden></div>
+    <footer class="site-footer">
+    <div class="wrap footer-inner">
+      <div class="footer-brand"><div class="footer-lockup" role="img" aria-label="Speedle Engine"><img src="/img/speedle/Speedle_logo_home_bold.svg?v=4" alt=""><span class="brand-divider"></span><span class="brand-product">Engine</span></div><p>基于 Universal Permissive License v1.0 授权。</p><p>版权所有 &copy; 2019–2026。</p></div>
+      <div class="footer-family" role="navigation" aria-labelledby="footer-family-title"><svg class="sphere-sprite" width="0" height="0" aria-hidden="true" focusable="false"><symbol id="i-speedle-sphere" viewBox="22 22 114 114"><!-- Source: img/speedle/Speedle_logo_home_bold.svg, sphere group only. Colours changed only (stroke currentColor). No path edits. --><g fill="none" stroke="currentColor" stroke-linejoin="miter" stroke-miterlimit="3" stroke-linecap="butt"><polygon stroke-width="3.6" points="41.83 47.82 30.67 80.15 42.9 112.09 72.8 128.69 106.38 122.19 127.93 95.63 127.36 61.43 104.94 35.6 71.16 30.23"/><g stroke-width="2.4"><polygon points="81.97 43.92 52.19 57.23 44.03 88.8 63.62 114.87 96.22 115.81 117.28 90.9 110.94 58.91"/><polygon points="68.57 60.42 57.6 86.19 78.73 104.59 102.75 90.18 96.47 62.88"/><path d="M41.83 47.82L52.19 57.23 68.57 60.42 81.97 43.92 71.16 30.23 M30.67 80.15L44.03 88.8 42.9 112.09 M52.19 57.23L57.6 86.19 44.03 88.8 78.73 104.59 63.62 114.87 72.8 128.69 M78.73 104.59L96.22 115.81 106.38 122.19 M96.22 115.81L102.75 90.18 117.28 90.9 127.93 95.63 M117.28 90.9L127.36 61.43 110.94 58.91 104.94 35.6 81.97 43.92 M110.94 58.91L96.47 62.88 117.28 90.9"/></g></g></symbol></svg><h2 class="footer-family-title" id="footer-family-title">Speedle 产品</h2><ul><li><a href="https://engine.speedle.io/zh/" aria-current="page"><svg class="product-sphere product-engine" aria-hidden="true" focusable="false"><use href="#i-speedle-sphere"/></svg><span class="footer-family-copy"><span class="footer-family-name">Speedle Engine</span><span class="footer-family-desc">开源授权引擎</span></span></a></li><li><a href="https://cloud.speedle.io/zh-CN/"><svg class="product-sphere product-cloud" aria-hidden="true" focusable="false"><use href="#i-speedle-sphere"/></svg><span class="footer-family-copy"><span class="footer-family-name">Speedle Cloud<span class="product-badge">即将上线</span></span><span class="footer-family-desc">面向开发者的托管授权服务</span></span></a></li><li><a href="https://ai.speedle.io/zh/"><svg class="product-sphere product-ai" aria-hidden="true" focusable="false"><use href="#i-speedle-sphere"/></svg><span class="footer-family-copy"><span class="footer-family-name">Speedle AI</span><span class="footer-family-desc">面向 AI 的访问管理</span></span></a></li></ul></div>
+      <nav class="social" aria-label="社区链接">
+        <a href="mailto:contact@speedle.io" aria-label="发送邮件至 contact@speedle.io" title="contact@speedle.io"><img src="/img/speedle/28.%20Mail.svg" alt=""></a>
+        <a href="https://groups.google.com/forum/#!forum/speedle-users" aria-label="Google Groups 讨论组" title="Google Groups — speedle-users"><img src="/img/speedle/Google-Groups.svg" alt=""></a>
+        <a href="https://github.com/teramoby/speedle-plus" aria-label="GitHub"><img src="/img/speedle/18.%20Github.svg" alt=""></a>
+        <a href="https://discord.gg/uaY2xVsbbT" aria-label="Discord"><img src="/img/speedle/Discord.svg" alt=""></a>
+      </nav>
+    </div>
+  </footer>
+<!-- Cloudflare Web Analytics --><script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "a7a746c498b940e58425123082a20520"}'></script><!-- End Cloudflare Web Analytics -->
+</body>
+
+</html>
