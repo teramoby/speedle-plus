@@ -134,7 +134,8 @@ def archive_header(site, text, route):
 
     unified = re.sub(r'(<a\b(?![^>]*hreflang)[^>]*\shref=")([^"]*)"', destination, header[0])
     text = re.sub(r"<header\b[^>]*>[\s\S]*?</header>", lambda _: unified, text, count=1)
-    # The shared three-site footer has only absolute links, so snapshots reuse it as is.
+    # The shared three-site footer is reused as is; its lock-up home link is a local link
+    # that the normal link pass keeps inside the snapshot.
     footer = re.search(r'<footer class="site-footer">[\s\S]*?</footer>', source.read_text())
     if footer:
         text = re.sub(r"<footer\b[^>]*>[\s\S]*?</footer>", lambda _: footer[0], text, count=1)

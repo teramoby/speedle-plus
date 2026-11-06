@@ -39,12 +39,13 @@ pages, `中文` on English pages), including inside the mobile navigation menu.
   archived snapshots keeps its remaining files.
 
 Speedle Engine, Cloud and AI share one header and footer standard (#203): the
-`Speedle | Engine` lock-up, a `Products` menu and a "Speedle family" footer column
-linking the three sites. Those cross-site links keep the reader's language
-(#217): Chinese pages link Engine `/zh/`, Cloud `/zh-CN/` and AI `/zh/`, and
-English pages link the English roots. `localize-links.py` rewrites the Products
-menu and footer family on every page, including archived snapshots, and
-`site.test.cjs` fails if a Chinese page links another site's English root.
+`Speedle | Engine` lock-up, a `Products` menu and three footer product cards
+(header standard v16) linking the three sites. Those cross-site links keep the
+reader's language (#217): Chinese pages link Engine `/zh/`, Cloud `/zh-CN/` and
+AI `/zh/`, and English pages link the English roots. `localize-links.py`
+rewrites the Products menu and footer family on every page, including archived
+snapshots, and `site.test.cjs` fails if a Chinese page links another site's
+English root.
 The footer lives in the static homepages; `partials/footer.html` reuses it for
 Hugo pages and `localize-links.py` gives archived snapshots the same footer.
 All footer rules live only in

@@ -65,7 +65,7 @@ for (const name of ['docs/index.html', 'zh/docs/index.html', 'docs/spdl/index.ht
 }
 // #203: every page with the shared footer loads navigation.css, the stylesheet that holds the footer rules.
 const footerRules = fs.readFileSync(path.join(output, 'css/navigation.css'), 'utf8');
-assert.ok(footerRules.includes('html body footer.site-footer {') && footerRules.includes('.site-footer .footer-inner {'), 'navigation.css holds the shared footer rules');
+assert.ok(footerRules.includes('html body footer.site-footer {') && footerRules.includes('.site-footer .footer-main {'), 'navigation.css holds the shared footer rules');
 let footerPages = 0;
 (function walk(dir) {
   for (const entry of fs.readdirSync(dir, {withFileTypes: true})) {

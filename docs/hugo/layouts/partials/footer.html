@@ -1,4 +1,4 @@
-{{/* The approved homepage supplies the shared three-site footer (header standard v6). */}}
+{{/* The approved homepage supplies the shared three-site footer (header standard v16). */}}
 {{- $source := "static/index.html" -}}
 {{- if eq .Lang "zh" }}{{ $source = "static/zh/index.html" }}{{ end -}}
 {{- index (findRE `<footer class="site-footer">[\s\S]*?</footer>` (readFile $source) 1) 0 | safeHTML -}}
