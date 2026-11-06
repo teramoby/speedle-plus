@@ -60,6 +60,67 @@
   <h1>API</h1>
   <p></p>
 
+<h2 id="sdks">SDKs</h2>
+
+<p>Client libraries for the decision API <code>POST /authz-check/v1/is-allowed</code> work with a self-hosted Speedle+ ADS and with Speedle Cloud. Each page shows how to add the package and gives a complete, tested program for both.</p>
+
+<table>
+<thead>
+<tr>
+<th>Language</th>
+<th>Package</th>
+<th>Version</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td><a href="/docs/api/sdk-java/">Java</a></td>
+<td>Maven Central <code>io.speedle:speedle-sdk</code></td>
+<td>0.1.0</td>
+</tr>
+
+<tr>
+<td><a href="/docs/api/sdk-python/">Python</a></td>
+<td>PyPI <code>speedle</code></td>
+<td>0.1.0</td>
+</tr>
+
+<tr>
+<td><a href="/docs/api/sdk-go/">Go</a></td>
+<td><code>github.com/teramoby/speedle-sdk/go</code></td>
+<td>0.1.0</td>
+</tr>
+
+<tr>
+<td><a href="/docs/api/sdk-dotnet/">C#/.NET</a></td>
+<td>NuGet <code>Speedle.Sdk</code></td>
+<td>0.1.0</td>
+</tr>
+
+<tr>
+<td><a href="/docs/api/sdk-rust/">Rust</a></td>
+<td>crates.io <code>speedle</code></td>
+<td>0.1.0</td>
+</tr>
+
+<tr>
+<td><a href="/docs/api/sdk-node/">Node.js/TypeScript</a></td>
+<td>npm <code>@speedle/sdk</code></td>
+<td>0.1.0, available when published</td>
+</tr>
+</tbody>
+</table>
+
+<p>The SDKs call <code>is-allowed</code>: <code>isAllowed</code> returns the decision, and <code>check</code> also returns the reason. For the other decision operations, such as granted permissions and diagnosis, use the <a href="/docs/api/decision_api/">REST API</a>. The source and the full reference are in <a href="https://github.com/teramoby/speedle-sdk">teramoby/speedle-sdk</a>.</p>
+
+<p>Every example asks whether user <code>alice</code> may <code>get</code> and <code>delete</code> the resource <code>/docs/public</code> in the service <code>docs</code>. To get the documented answers from a local Speedle+, build it and start PMS on port 6733 and ADS on port 6734 as in the <a href="/quick-start/">Quick Start</a>, then create the service and the policy:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ create service docs
+./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ create policy -c <span style="color:#f1fa8c">&#34;grant user alice get,list /docs/public&#34;</span> --service-name<span style="color:#ff79c6">=</span>docs</code></pre></div>
+<p>The local examples connect to <code>http://localhost:6734</code> without credentials. The SDKs accept plain <code>http://</code> only for a loopback host; use HTTPS for any other ADS.</p>
+
+<p><strong>Speedle Cloud is coming soon.</strong> The Speedle Cloud examples connect to <code>https://cloud.speedle.io</code> and read the service name and its service-scoped token from the environment variables <code>SPEEDLE_SERVICE</code> and <code>SPEEDLE_TOKEN</code>. Create the same policy in that service to get the same answers. The token is a server-side secret: never ship it to browsers, mobile apps or desktop clients.</p>
+
 <h2 id="rest-apis">REST APIs</h2>
 
 <p>These are reference contracts for <strong>your configured PMS/ADS or asserter endpoint</strong>. <code>speedle.io</code> serves documentation and the browser Playground; it is not a hosted PMS/ADS service. Supply JSON with <code>Content-Type: application/json</code>, and configure <a href="/docs/security/">TLS/mTLS and caller access controls</a>.</p>
@@ -136,6 +197,12 @@
 
 <li class="parent active"><span>API</span>
 <ul class="sub-menu">
+<li class=""><a href="/docs/api/sdk-java/">Java SDK</a></li>
+<li class=""><a href="/docs/api/sdk-python/">Python SDK</a></li>
+<li class=""><a href="/docs/api/sdk-go/">Go SDK</a></li>
+<li class=""><a href="/docs/api/sdk-dotnet/">C#/.NET SDK</a></li>
+<li class=""><a href="/docs/api/sdk-rust/">Rust SDK</a></li>
+<li class=""><a href="/docs/api/sdk-node/">Node.js/TypeScript SDK</a></li>
 <li class=""><a href="/docs/api/decision_api/">Authorization Runtime/Decision API</a></li>
 <li class=""><a href="/docs/api/management_api/">Policy Management API</a></li>
 <li class=""><a href="/docs/api/asserter_api/">Token Assertion Plugin API</a></li>
