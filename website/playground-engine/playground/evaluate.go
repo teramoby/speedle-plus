@@ -1,4 +1,4 @@
-// Package playground adapts the pinned, unmodified Speedle+ parser and evaluator
+// Package playground adapts the pinned, unmodified Speedle parser and evaluator
 // to an isolated, browser-only single-service playground.
 package playground
 
@@ -99,7 +99,7 @@ func decodeStrict(data []byte, target interface{}) error {
 }
 func fail(stage, message string, line int) Result { return Result{Error: &Error{stage, message, line}} }
 
-// EvaluateJSON runs the genuine Speedle+ parser, policy cache, role resolver,
+// EvaluateJSON runs the genuine Speedle parser, policy cache, role resolver,
 // condition engine and deny-overrides combiner. Wrapper failures omit allowed.
 func EvaluateJSON(data []byte) (out Result) {
 	evaluationMu.Lock()
@@ -110,7 +110,7 @@ func EvaluateJSON(data []byte) (out Result) {
 			out = fail("evaluation", fmt.Sprintf("Engine could not evaluate input: %v", recovered), 0)
 		}
 		out.DurationMs = float64(time.Since(start).Microseconds()) / 1000
-		out.Engine = "Speedle+ · Go WebAssembly"
+		out.Engine = "Speedle · Go WebAssembly"
 		out.Revision = Revision
 	}()
 	if len(data) > MaxInputBytes {

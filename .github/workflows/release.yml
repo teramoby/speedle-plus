@@ -70,7 +70,7 @@ jobs:
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git tag -a "${VERSION}" "${COMMIT}" -m "Speedle+ ${VERSION}"
+          git tag -a "${VERSION}" "${COMMIT}" -m "Speedle ${VERSION}"
           git push origin "refs/tags/${VERSION}"
 
       - name: Publish the GitHub release
