@@ -2,21 +2,21 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>Identity Domain on Speedle</title>
-    <link>https://speedle.io/tags/identity-domain/</link>
+    <link>https://engine.speedle.io/tags/identity-domain/</link>
     <description>Recent content in Identity Domain on Speedle</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
     <lastBuildDate>Thu, 17 Jan 2019 13:20:07 +0800</lastBuildDate>
     
-	<atom:link href="https://speedle.io/tags/identity-domain/index.xml" rel="self" type="application/rss+xml" />
+	<atom:link href="https://engine.speedle.io/tags/identity-domain/index.xml" rel="self" type="application/rss+xml" />
     
     
     <item>
       <title>Identity Domain</title>
-      <link>https://speedle.io/docs/idd/</link>
+      <link>https://engine.speedle.io/docs/idd/</link>
       <pubDate>Thu, 17 Jan 2019 13:20:07 +0800</pubDate>
       
-      <guid>https://speedle.io/docs/idd/</guid>
+      <guid>https://engine.speedle.io/docs/idd/</guid>
       <description>What is an identity domain? An identity domain (idd) is an explicit namespace for a principal. Two users named user1 can belong to different domains. The string is supplied by trusted integration code or a configured token asserter; it is not proof of authentication. Speedle does not infer or validate a provider&amp;rsquo;s tenant model merely from the domain name.
 Represent domains in policies and requests grant user user1 from github read book grant user user1 from IDCS.</description>
     </item>

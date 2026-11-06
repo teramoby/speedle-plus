@@ -2,41 +2,41 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>Core on Speedle</title>
-    <link>https://speedle.io/tags/core/</link>
+    <link>https://engine.speedle.io/tags/core/</link>
     <description>Recent content in Core on Speedle</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
     <lastBuildDate>Fri, 18 Jan 2019 21:19:44 +0800</lastBuildDate>
     
-	<atom:link href="https://speedle.io/tags/core/index.xml" rel="self" type="application/rss+xml" />
+	<atom:link href="https://engine.speedle.io/tags/core/index.xml" rel="self" type="application/rss+xml" />
     
     
     <item>
       <title>API</title>
-      <link>https://speedle.io/docs/api/</link>
+      <link>https://engine.speedle.io/docs/api/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
-      <guid>https://speedle.io/docs/api/</guid>
+      <guid>https://engine.speedle.io/docs/api/</guid>
       <description>SDKs Client libraries for the decision API POST /authz-check/v1/is-allowed work with a self-hosted Speedle ADS and with Speedle Cloud. Each page shows how to add the package and gives a complete, tested program for both.
    Language Package Version     Java Maven Central io.speedle:speedle-sdk 0.1.0   Python PyPI speedle 0.1.0   Go github.com/teramoby/speedle-sdk/go 0.1.0   C#/.NET NuGet Speedle.Sdk 0.1.0   Rust crates.</description>
     </item>
     
     <item>
       <title>Authorization Decisions</title>
-      <link>https://speedle.io/docs/decisions/</link>
+      <link>https://engine.speedle.io/docs/decisions/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
-      <guid>https://speedle.io/docs/decisions/</guid>
+      <guid>https://engine.speedle.io/docs/decisions/</guid>
       <description>What is an authorization decision? Speedle evaluates a subject, action and resource within a service. The application must enforce the result. Treat an evaluation error or timeout separately from a normal Deny and fail closed. REST, gRPC and embedded Go APIs have different wire representations; use their respective contracts.
 Before running the examples Build ./bin/spctl, ./bin/speedle-pms and ./bin/speedle-ads using the quick start. Use Go 1.26.10 or Go 1.27.3 (or a newer patch on the same release branch), Bash, curl and Python 3.</description>
     </item>
     
     <item>
       <title>Authorization Runtime/Decision API</title>
-      <link>https://speedle.io/docs/api/decision_api/</link>
+      <link>https://engine.speedle.io/docs/api/decision_api/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
-      <guid>https://speedle.io/docs/api/decision_api/</guid>
+      <guid>https://engine.speedle.io/docs/api/decision_api/</guid>
       <description>Reference for your configured ADS. Request attributes are typed arrays; diagnostic attributes are objects.
 Security and endpoint configuration. This is a contract reference, not a backend hosted by speedle.io.
               (function() { var url = &#34;\/swagger\/policy-check.yaml&#34;; const ui = SwaggerUIBundle({ url: url, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.presets.apis ], plugins: [ SwaggerUIBundle.plugins.DownloadUrl ], validatorUrl: null, layout: &#34;</description>
@@ -44,30 +44,30 @@ Security and endpoint configuration. This is a contract reference, not a backend
     
     <item>
       <title>Policy Discovery</title>
-      <link>https://speedle.io/docs/pms/discover/</link>
+      <link>https://engine.speedle.io/docs/pms/discover/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
-      <guid>https://speedle.io/docs/pms/discover/</guid>
+      <guid>https://engine.speedle.io/docs/pms/discover/</guid>
       <description>What discovery does Discovery records requests and returns allowed=true with reason 5 for a successful recording operation. It does not prove that an existing policy authorized the operation. Use it only in an isolated test environment, review generated grants, and restore normal is-allowed enforcement afterwards. Assertion or storage errors must still be handled; never treat an error as an authorization grant.
 Start a reproducible local example Build the binaries using Quick Start, then run all terminals from the checkout root.</description>
     </item>
     
     <item>
       <title>Policy Management</title>
-      <link>https://speedle.io/docs/pms/policy-mgmt/</link>
+      <link>https://engine.speedle.io/docs/pms/policy-mgmt/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
-      <guid>https://speedle.io/docs/pms/policy-mgmt/</guid>
+      <guid>https://engine.speedle.io/docs/pms/policy-mgmt/</guid>
       <description>What is a Speedle policy? The Policy Management Service (PMS) manages services, authorization policies, role policies and custom functions. A policy store persists those objects using a registered storage backend.
 Services and authorization policies A service scopes its policies. An authorization policy grants or denies a principal permission to perform an action on a resource, optionally subject to a condition. Except for global role policies, policies do not automatically apply in another service.</description>
     </item>
     
     <item>
       <title>Policy Management API</title>
-      <link>https://speedle.io/docs/api/management_api/</link>
+      <link>https://engine.speedle.io/docs/api/management_api/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
-      <guid>https://speedle.io/docs/api/management_api/</guid>
+      <guid>https://engine.speedle.io/docs/api/management_api/</guid>
       <description>Reference for your configured PMS. Requests and responses are JSON; policy IDs are strings and responses are flat objects.
 Security and endpoint configuration. This is a contract reference, not a backend hosted by speedle.io.
               (function() { var url = &#34;\/swagger\/policy-manage.yaml&#34;; const ui = SwaggerUIBundle({ url: url, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.presets.apis ], plugins: [ SwaggerUIBundle.</description>
@@ -75,38 +75,38 @@ Security and endpoint configuration. This is a contract reference, not a backend
     
     <item>
       <title>SPDL - Speedle Policy Definition Language</title>
-      <link>https://speedle.io/docs/spdl/</link>
+      <link>https://engine.speedle.io/docs/spdl/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
-      <guid>https://speedle.io/docs/spdl/</guid>
+      <guid>https://engine.speedle.io/docs/spdl/</guid>
       <description>Syntax Keywords grant, deny, user, group, entity, role, from, on, if and in have special meanings in their syntax positions. Statement keywords are case-insensitive. In conditions, use in or IN; function names are case-sensitive. Principal, action and resource names are also case-sensitive. The current parser accepts keyword-like names in some name positions, so a blanket prohibition is not a validation rule. Prefer unambiguous names for review and client interoperability.</description>
     </item>
     
     <item>
       <title>Speedle Overview: Authorization Engine for Fine-Grained Access Control</title>
-      <link>https://speedle.io/docs/overview/</link>
+      <link>https://engine.speedle.io/docs/overview/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
-      <guid>https://speedle.io/docs/overview/</guid>
+      <guid>https://engine.speedle.io/docs/overview/</guid>
       <description>Speedle is an open-source authorization engine. Applications send it a question such as &amp;ldquo;may this user perform this action on this resource?&amp;rdquo;, and Speedle answers allow or deny according to centrally managed policies. This page connects common authorization terms to the Speedle components that implement them, and links to the guides that cover each one.
 The examples below use a service named library. Each policy was created through the Policy Management Service REST API and each decision was returned by the Authorization Decision Service REST API.</description>
     </item>
     
     <item>
       <title>Speedle Policy</title>
-      <link>https://speedle.io/docs/pms/</link>
+      <link>https://engine.speedle.io/docs/pms/</link>
       <pubDate>Fri, 18 Jan 2019 21:19:44 +0800</pubDate>
       
-      <guid>https://speedle.io/docs/pms/</guid>
+      <guid>https://engine.speedle.io/docs/pms/</guid>
       <description> Policy Management Global Policy Policy Discovery Policy Diagnosis  </description>
     </item>
     
     <item>
       <title>Token Assertion Plugin API</title>
-      <link>https://speedle.io/docs/api/asserter_api/</link>
+      <link>https://engine.speedle.io/docs/api/asserter_api/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
-      <guid>https://speedle.io/docs/api/asserter_api/</guid>
+      <guid>https://engine.speedle.io/docs/api/asserter_api/</guid>
       <description>Webhook reference. errCode is an integer and attributes is an object. Configure the actual endpoint in the ADS asserter configuration.
 Security and endpoint configuration. This is a contract reference, not a backend hosted by speedle.io.
               (function() { var url = &#34;\/swagger\/asserter.yaml&#34;; const ui = SwaggerUIBundle({ url: url, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.presets.apis ], plugins: [ SwaggerUIBundle.</description>

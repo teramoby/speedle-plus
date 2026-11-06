@@ -2,50 +2,50 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>Storage on Speedle</title>
-    <link>https://speedle.io/tags/storage/</link>
+    <link>https://engine.speedle.io/tags/storage/</link>
     <description>Recent content in Storage on Speedle</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
     
-	<atom:link href="https://speedle.io/tags/storage/index.xml" rel="self" type="application/rss+xml" />
+	<atom:link href="https://engine.speedle.io/tags/storage/index.xml" rel="self" type="application/rss+xml" />
     
     
     <item>
       <title>MongoDB Setup</title>
-      <link>https://speedle.io/docs/store/mongodb/</link>
+      <link>https://engine.speedle.io/docs/store/mongodb/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
-      <guid>https://speedle.io/docs/store/mongodb/</guid>
+      <guid>https://engine.speedle.io/docs/store/mongodb/</guid>
       <description>This walkthrough uses MongoDB 7.0.16 as a single-node replica set with a persistent Docker volume. PMS writes policies and ADS follows the same database through a change stream. The example listens on loopback without authentication for local development. Production authentication, TLS and replica set configuration follow the walkthrough.
 MongoDB must run as a replica set or sharded cluster. ADS watches the database with a change stream, and replacing the whole policy store runs in a transaction; a standalone mongod supports neither.</description>
     </item>
     
     <item>
       <title>MySQL Setup</title>
-      <link>https://speedle.io/docs/store/mysql/</link>
+      <link>https://engine.speedle.io/docs/store/mysql/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
-      <guid>https://speedle.io/docs/store/mysql/</guid>
+      <guid>https://engine.speedle.io/docs/store/mysql/</guid>
       <description>This guide uses MySQL 8.4 LTS and two native Speedle processes: PMS writes policies, and ADS reads the same database with a separate read-only account. The local example uses Docker and plain HTTP on loopback. For a remote deployment, use your existing MySQL server and the Security guide.
 1. Build Speedle with the MySQL backend Install Git, Bash, curl, Docker and a supported Go toolchain (Go 1.26.10 or Go 1.</description>
     </item>
     
     <item>
       <title>Pluggable Storage</title>
-      <link>https://speedle.io/docs/store/</link>
+      <link>https://engine.speedle.io/docs/store/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
-      <guid>https://speedle.io/docs/store/</guid>
+      <guid>https://engine.speedle.io/docs/store/</guid>
       <description>Built-in stores and extension contracts The standalone binaries register file, etcd, MongoDB and MySQL implementations under pkg/store. Availability does not mean identical operational guarantees; review backend authentication, persistence, transaction and watch behavior for your deployment. The configuration below illustrates property names; running etcd/MongoDB deployments is outside this local example.
 A full backend implements pms.PolicyStoreManager: service, authorization-policy, role-policy and function management, snapshot reads and watch/stop. ADS accepts the narrower PolicyStoreManagerADS read/watch interface.</description>
     </item>
     
     <item>
       <title>etcd Setup</title>
-      <link>https://speedle.io/docs/store/etcd/</link>
+      <link>https://engine.speedle.io/docs/store/etcd/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
-      <guid>https://speedle.io/docs/store/etcd/</guid>
+      <guid>https://engine.speedle.io/docs/store/etcd/</guid>
       <description>This walkthrough uses an external etcd v3.6.14 server with a persistent Docker volume. PMS writes policies and ADS watches the same key prefix. The single-node example listens on loopback and uses plain HTTP for local development. Production TLS and cluster configuration follow the walkthrough.
 1. Build Speedle Prepare Bash, Git, curl, Docker and Go 1.26.10 or Go 1.27.3. Start Docker, then build the native services:
 git clone --depth 1 https://github.</description>

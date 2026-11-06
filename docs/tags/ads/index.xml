@@ -2,20 +2,20 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>Ads on Speedle</title>
-    <link>https://speedle.io/tags/ads/</link>
+    <link>https://engine.speedle.io/tags/ads/</link>
     <description>Recent content in Ads on Speedle</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
     
-	<atom:link href="https://speedle.io/tags/ads/index.xml" rel="self" type="application/rss+xml" />
+	<atom:link href="https://engine.speedle.io/tags/ads/index.xml" rel="self" type="application/rss+xml" />
     
     
     <item>
       <title>Authorization Runtime/Decision API</title>
-      <link>https://speedle.io/docs/api/decision_api/</link>
+      <link>https://engine.speedle.io/docs/api/decision_api/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
-      <guid>https://speedle.io/docs/api/decision_api/</guid>
+      <guid>https://engine.speedle.io/docs/api/decision_api/</guid>
       <description>Reference for your configured ADS. Request attributes are typed arrays; diagnostic attributes are objects.
 Security and endpoint configuration. This is a contract reference, not a backend hosted by speedle.io.
               (function() { var url = &#34;\/swagger\/policy-check.yaml&#34;; const ui = SwaggerUIBundle({ url: url, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.presets.apis ], plugins: [ SwaggerUIBundle.plugins.DownloadUrl ], validatorUrl: null, layout: &#34;</description>

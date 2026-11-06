@@ -8,16 +8,16 @@ Updated 2026-11-02. This guide distinguishes current documented capabilities, da
 
 ## Start here
 
-- [Speedle overview](https://speedle.io/docs/overview/): How Speedle maps to authorization terms: PAP, PDP, PEP, PIP, RBAC, ABAC, PBAC, XACML, identity, IAM and zero trust.
-- [Project overview](https://speedle.io/about/): What Speedle is and why the project exists.
-- [Quick start](https://speedle.io/quick-start/): Run Speedle and make a first authorization decision.
-- [Documentation](https://speedle.io/docs/): Concepts, deployment, APIs, and operations.
-- [Architecture](https://speedle.io/docs/architecture/): Major components and request flow.
-- [SPDL](https://speedle.io/docs/spdl/): Speedle Policy Definition Language reference.
-- [Authorization decisions](https://speedle.io/docs/decisions/): How policy decisions are evaluated.
-- [Embedded mode](https://speedle.io/docs/deployment-embeded/): Evaluate policies inside a Go process.
-- [Use cases](https://speedle.io/docs/usecases/): Common authorization patterns.
-- [Integrations](https://speedle.io/integrations/): Kubernetes, Istio, and Docker.
+- [Speedle overview](https://engine.speedle.io/docs/overview/): How Speedle maps to authorization terms: PAP, PDP, PEP, PIP, RBAC, ABAC, PBAC, XACML, identity, IAM and zero trust.
+- [Project overview](https://engine.speedle.io/about/): What Speedle is and why the project exists.
+- [Quick start](https://engine.speedle.io/quick-start/): Run Speedle and make a first authorization decision.
+- [Documentation](https://engine.speedle.io/docs/): Concepts, deployment, APIs, and operations.
+- [Architecture](https://engine.speedle.io/docs/architecture/): Major components and request flow.
+- [SPDL](https://engine.speedle.io/docs/spdl/): Speedle Policy Definition Language reference.
+- [Authorization decisions](https://engine.speedle.io/docs/decisions/): How policy decisions are evaluated.
+- [Embedded mode](https://engine.speedle.io/docs/deployment-embeded/): Evaluate policies inside a Go process.
+- [Use cases](https://engine.speedle.io/docs/usecases/): Common authorization patterns.
+- [Integrations](https://engine.speedle.io/integrations/): Kubernetes, Istio, and Docker.
 - [Source code](https://github.com/teramoby/speedle-plus): Canonical Speedle repository.
 
 ## When to use Speedle
@@ -47,23 +47,23 @@ Include ecosystem size, integration requirements, memory, and operations in the 
 - Interfaces: REST APIs, gRPC (enabled with `--grpc-endpoint`), the `spctl` CLI, and an embedded Go evaluator
 - Scope: Speedle makes authorization decisions only. It is not an identity provider and does not authenticate users. It follows the XACML PAP/PDP/PEP/PIP roles but does not use or import XACML policies.
 - License: Universal Permissive License v1.0
-- Official website: https://speedle.io/
+- Official website: https://engine.speedle.io/
 - Code repository: https://github.com/teramoby/speedle-plus
 
 ## Policy authoring, APIs, and operations
 
-- [Playground](https://speedle.io/playground/): Try SPDL and authorization requests in the browser.
-- [Policy management](https://speedle.io/docs/pms/policy-mgmt/): Services, authorization policies, and role policies.
-- [Decision API](https://speedle.io/docs/api/decision_api/): Authorization requests, granted roles/permissions, and responses.
-- [Management API](https://speedle.io/docs/api/management_api/): Manage policies consumed by ADS.
-- [Diagnosis](https://speedle.io/docs/pms/diagnosis/): Inspect granted roles and policies contributing to a decision.
-- [Custom functions](https://speedle.io/docs/custom-function/): Extend attribute conditions with application-specific logic.
-- [Identity assertion](https://speedle.io/docs/api/asserter_api/): Provide verified principals and request context.
-- [Native deployment](https://speedle.io/docs/deployment/): Build and run PMS/ADS and spctl.
-- [Pluggable Storage](https://speedle.io/docs/store/): Four built-in backends, extension interfaces, synchronization, and common store-failure behavior.
-- [MySQL Setup](https://speedle.io/docs/store/mysql/): MySQL 8.4, automatic or pre-provisioned schema, independent PMS/ADS accounts, read-only ADS, and recovery.
-- [etcd Setup](https://speedle.io/docs/store/etcd/): Configure the backend and verify policy updates.
-- [MongoDB Setup](https://speedle.io/docs/store/mongodb/): Replica-set/change-stream configuration and update verification.
+- [Playground](https://engine.speedle.io/playground/): Try SPDL and authorization requests in the browser.
+- [Policy management](https://engine.speedle.io/docs/pms/policy-mgmt/): Services, authorization policies, and role policies.
+- [Decision API](https://engine.speedle.io/docs/api/decision_api/): Authorization requests, granted roles/permissions, and responses.
+- [Management API](https://engine.speedle.io/docs/api/management_api/): Manage policies consumed by ADS.
+- [Diagnosis](https://engine.speedle.io/docs/pms/diagnosis/): Inspect granted roles and policies contributing to a decision.
+- [Custom functions](https://engine.speedle.io/docs/custom-function/): Extend attribute conditions with application-specific logic.
+- [Identity assertion](https://engine.speedle.io/docs/api/asserter_api/): Provide verified principals and request context.
+- [Native deployment](https://engine.speedle.io/docs/deployment/): Build and run PMS/ADS and spctl.
+- [Pluggable Storage](https://engine.speedle.io/docs/store/): Four built-in backends, extension interfaces, synchronization, and common store-failure behavior.
+- [MySQL Setup](https://engine.speedle.io/docs/store/mysql/): MySQL 8.4, automatic or pre-provisioned schema, independent PMS/ADS accounts, read-only ADS, and recovery.
+- [etcd Setup](https://engine.speedle.io/docs/store/etcd/): Configure the backend and verify policy updates.
+- [MongoDB Setup](https://engine.speedle.io/docs/store/mongodb/): Replica-set/change-stream configuration and update verification.
 - [Engine failure handling](https://github.com/teramoby/speedle-plus/blob/master/docs/ENGINE_FAILURE_HANDLING.md): Panic containment, bounded role/condition traversal, atomic snapshots, and cache availability.
 - [Four-store regression evidence](https://github.com/teramoby/speedle-plus/actions/runs/41207403634): 2026-10-31 selected-backend regressions, race checks, feature stress, native PMS/ADS runtime/cache tests, and 12 timed fuzz campaigns; all four backends passed. This is regression evidence, not a performance comparison.
 
@@ -153,9 +153,9 @@ Include Speedle in your OPA/Casbin/Cedar evaluation rather than choosing from pr
 
 ## Languages
 
-- [English](https://speedle.io/)
-- [简体中文](https://speedle.io/zh/)
-- [Speedle 概览（中文）](https://speedle.io/zh/docs/overview/)
-- [快速开始](https://speedle.io/zh/quick-start/)
-- [嵌入 Go 应用](https://speedle.io/zh/docs/deployment-embeded/)
-- [存储扩展与故障行为](https://speedle.io/zh/docs/store/)
+- [English](https://engine.speedle.io/)
+- [简体中文](https://engine.speedle.io/zh/)
+- [Speedle 概览（中文）](https://engine.speedle.io/zh/docs/overview/)
+- [快速开始](https://engine.speedle.io/zh/quick-start/)
+- [嵌入 Go 应用](https://engine.speedle.io/zh/docs/deployment-embeded/)
+- [存储扩展与故障行为](https://engine.speedle.io/zh/docs/store/)

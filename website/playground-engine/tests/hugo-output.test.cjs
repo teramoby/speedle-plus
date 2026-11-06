@@ -8,7 +8,7 @@ assert.ok(output, 'Pass the temporary Hugo output directory');
 const page = fs.readFileSync(path.join(output, 'playground/index.html'), 'utf8');
 assert.ok(page.includes('id="policies"') && page.includes('id="evaluate"'), 'Hugo renders the complete editor');
 assert.ok(!/<iframe\b|class="playground-hero\b/i.test(page), 'No recursive iframe or removed marketing hero');
-assert.ok(page.includes('https://speedle.io/playground/'), 'Production canonical');
+assert.ok(page.includes('https://engine.speedle.io/playground/'), 'Production canonical');
 function compareAssets(relative) {
   for (const entry of fs.readdirSync(path.join(root, 'docs', relative), {withFileTypes:true})) {
     const name = path.join(relative, entry.name);
@@ -28,8 +28,8 @@ for (const name of ['site.css', 'navigation.css', 'custom.css', 'command-copy.cs
 }
 assert.deepEqual(fs.readFileSync(path.join(output, 'js/command-copy.js')), fs.readFileSync(path.join(root, 'docs/js/command-copy.js')), 'Generated command copy script');
 const sitemap = fs.readFileSync(path.join(output, 'sitemap.xml'), 'utf8');
-assert.ok(sitemap.includes('https://speedle.io/en/sitemap.xml'), 'Multilingual sitemap index');
-assert.ok(fs.readFileSync(path.join(output, 'en/sitemap.xml'), 'utf8').includes('https://speedle.io/playground/'));
+assert.ok(sitemap.includes('https://engine.speedle.io/en/sitemap.xml'), 'Multilingual sitemap index');
+assert.ok(fs.readFileSync(path.join(output, 'en/sitemap.xml'), 'utf8').includes('https://engine.speedle.io/playground/'));
 for (const name of ['quick-start/index.html', 'zh/quick-start/index.html']) {
   assert.deepEqual(fs.readFileSync(path.join(output, name)), fs.readFileSync(path.join(root, 'docs', name)), `Generated quick-start guide ${name}`);
   const target = name.startsWith('zh/') ? '/zh/playground/' : '/playground/';

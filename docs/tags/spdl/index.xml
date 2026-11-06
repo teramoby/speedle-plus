@@ -2,29 +2,29 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>Spdl on Speedle</title>
-    <link>https://speedle.io/tags/spdl/</link>
+    <link>https://engine.speedle.io/tags/spdl/</link>
     <description>Recent content in Spdl on Speedle</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
     
-	<atom:link href="https://speedle.io/tags/spdl/index.xml" rel="self" type="application/rss+xml" />
+	<atom:link href="https://engine.speedle.io/tags/spdl/index.xml" rel="self" type="application/rss+xml" />
     
     
     <item>
       <title>SPDL - Speedle Policy Definition Language</title>
-      <link>https://speedle.io/docs/spdl/</link>
+      <link>https://engine.speedle.io/docs/spdl/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
-      <guid>https://speedle.io/docs/spdl/</guid>
+      <guid>https://engine.speedle.io/docs/spdl/</guid>
       <description>Syntax Keywords grant, deny, user, group, entity, role, from, on, if and in have special meanings in their syntax positions. Statement keywords are case-insensitive. In conditions, use in or IN; function names are case-sensitive. Principal, action and resource names are also case-sensitive. The current parser accepts keyword-like names in some name positions, so a blanket prohibition is not a validation rule. Prefer unambiguous names for review and client interoperability.</description>
     </item>
     
     <item>
       <title>Speedle Overview: Authorization Engine for Fine-Grained Access Control</title>
-      <link>https://speedle.io/docs/overview/</link>
+      <link>https://engine.speedle.io/docs/overview/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
-      <guid>https://speedle.io/docs/overview/</guid>
+      <guid>https://engine.speedle.io/docs/overview/</guid>
       <description>Speedle is an open-source authorization engine. Applications send it a question such as &amp;ldquo;may this user perform this action on this resource?&amp;rdquo;, and Speedle answers allow or deny according to centrally managed policies. This page connects common authorization terms to the Speedle components that implement them, and links to the guides that cover each one.
 The examples below use a service named library. Each policy was created through the Policy Management Service REST API and each decision was returned by the Authorization Decision Service REST API.</description>
     </item>

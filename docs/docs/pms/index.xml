@@ -2,31 +2,31 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>Speedle Policy on Speedle</title>
-    <link>https://speedle.io/docs/pms/</link>
+    <link>https://engine.speedle.io/docs/pms/</link>
     <description>Recent content in Speedle Policy on Speedle</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
     <lastBuildDate>Fri, 18 Jan 2019 21:19:44 +0800</lastBuildDate>
     
-	<atom:link href="https://speedle.io/docs/pms/index.xml" rel="self" type="application/rss+xml" />
+	<atom:link href="https://engine.speedle.io/docs/pms/index.xml" rel="self" type="application/rss+xml" />
     
     
     <item>
       <title>Policy Management</title>
-      <link>https://speedle.io/docs/pms/policy-mgmt/</link>
+      <link>https://engine.speedle.io/docs/pms/policy-mgmt/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
-      <guid>https://speedle.io/docs/pms/policy-mgmt/</guid>
+      <guid>https://engine.speedle.io/docs/pms/policy-mgmt/</guid>
       <description>What is a Speedle policy? The Policy Management Service (PMS) manages services, authorization policies, role policies and custom functions. A policy store persists those objects using a registered storage backend.
 Services and authorization policies A service scopes its policies. An authorization policy grants or denies a principal permission to perform an action on a resource, optionally subject to a condition. Except for global role policies, policies do not automatically apply in another service.</description>
     </item>
     
     <item>
       <title>Global Policy</title>
-      <link>https://speedle.io/docs/pms/global-policy/</link>
+      <link>https://engine.speedle.io/docs/pms/global-policy/</link>
       <pubDate>Fri, 18 Jan 2019 21:19:44 +0800</pubDate>
       
-      <guid>https://speedle.io/docs/pms/global-policy/</guid>
+      <guid>https://engine.speedle.io/docs/pms/global-policy/</guid>
       <description>When should a role be global? Ordinary roles are scoped to a service. When several services share a role assignment, define the assignment in the specially named global service and use that role in each service&amp;rsquo;s own authorization policies.
 Only global role policies are supported. A global role assignment does not itself grant every operation; each ordinary service still defines its permissions. Global authorization policies are not supported.
 Before running the examples Build .</description>
@@ -34,10 +34,10 @@ Before running the examples Build .</description>
     
     <item>
       <title>Policy Diagnosis</title>
-      <link>https://speedle.io/docs/pms/diagnosis/</link>
+      <link>https://engine.speedle.io/docs/pms/diagnosis/</link>
       <pubDate>Fri, 18 Jan 2019 15:46:59 +0800</pubDate>
       
-      <guid>https://speedle.io/docs/pms/diagnosis/</guid>
+      <guid>https://engine.speedle.io/docs/pms/diagnosis/</guid>
       <description>What does diagnosis show? Diagnose explains an authorization evaluation: decision, reason, effective roles, attributes, and the policies examined. It accepts the same request context as IsAllowed; REST uses /authz-check/v1/diagnose, and both Go/gRPC use Diagnose.
 Diagnosis exposes policy definitions and request context. Restrict it to trusted operators using the API security controls; it is not a public debugging endpoint.
 Before running the examples Build ./bin/spctl, ./bin/speedle-pms and ./bin/speedle-ads using the quick start.</description>
@@ -45,10 +45,10 @@ Before running the examples Build ./bin/spctl, ./bin/speedle-pms and ./bin/speed
     
     <item>
       <title>Policy Discovery</title>
-      <link>https://speedle.io/docs/pms/discover/</link>
+      <link>https://engine.speedle.io/docs/pms/discover/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
-      <guid>https://speedle.io/docs/pms/discover/</guid>
+      <guid>https://engine.speedle.io/docs/pms/discover/</guid>
       <description>What discovery does Discovery records requests and returns allowed=true with reason 5 for a successful recording operation. It does not prove that an existing policy authorized the operation. Use it only in an isolated test environment, review generated grants, and restore normal is-allowed enforcement afterwards. Assertion or storage errors must still be handled; never treat an error as an authorization grant.
 Start a reproducible local example Build the binaries using Quick Start, then run all terminals from the checkout root.</description>
     </item>

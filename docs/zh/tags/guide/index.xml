@@ -2,21 +2,21 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>Guide on Speedle</title>
-    <link>https://speedle.io/zh/tags/guide/</link>
+    <link>https://engine.speedle.io/zh/tags/guide/</link>
     <description>Recent content in Guide on Speedle</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>zh-cn</language>
     <lastBuildDate>Fri, 18 Jan 2019 21:19:44 +0800</lastBuildDate>
     
-	<atom:link href="https://speedle.io/zh/tags/guide/index.xml" rel="self" type="application/rss+xml" />
+	<atom:link href="https://engine.speedle.io/zh/tags/guide/index.xml" rel="self" type="application/rss+xml" />
     
     
     <item>
       <title>API</title>
-      <link>https://speedle.io/zh/docs/api/</link>
+      <link>https://engine.speedle.io/zh/docs/api/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
-      <guid>https://speedle.io/zh/docs/api/</guid>
+      <guid>https://engine.speedle.io/zh/docs/api/</guid>
       <description>SDK 决策 API POST /authz-check/v1/is-allowed 的客户端库既可用于自托管的 Speedle ADS，也可用于 Speedle Cloud。每个页面说明如何添加软件包，并分别给出两种场景下经过实测的完整程序。
    语言 软件包 版本     Java Maven Central io.speedle:speedle-sdk 0.1.0   Python PyPI speedle 0.1.0   Go github.com/teramoby/speedle-sdk/go 0.1.0   C#/.NET NuGet Speedle.Sdk 0.1.0   Rust crates.io speedle 0.1.0   Node.js/TypeScript npm @speedle/sdk 0.1.0，发布后可用    SDK 调用的是 is-allowed：isAllowed 返回授权结果，check 还会返回原因。其他决策操作（如查询已授予的权限、诊断）请使用 REST API。源代码和完整参考见 teramoby/speedle-sdk。
 所有示例都检查服务 docs 中的用户 alice 能否对资源 /docs/public 执行 get 和 delete。要在本地 Speedle 上得到文档中的结果，先按快速入门构建 Speedle，在 6733 端口启动 PMS、在 6734 端口启动 ADS，然后创建服务和策略：</description>
@@ -24,10 +24,10 @@
     
     <item>
       <title>Authorization Runtime/Decision API</title>
-      <link>https://speedle.io/zh/docs/api/decision_api/</link>
+      <link>https://engine.speedle.io/zh/docs/api/decision_api/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
-      <guid>https://speedle.io/zh/docs/api/decision_api/</guid>
+      <guid>https://engine.speedle.io/zh/docs/api/decision_api/</guid>
       <description>已配置 ADS 的接口参考。请求属性是带类型的数组，诊断响应属性是对象。
 请配置安全连接与端点访问控制。这是接口契约，speedle.io 不托管授权后端。
               (function() { var url = &#34;\/swagger\/policy-check.zh.yaml&#34;; const ui = SwaggerUIBundle({ url: url, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.presets.apis ], plugins: [ SwaggerUIBundle.plugins.DownloadUrl ], validatorUrl: null, layout: &#34;BaseLayout&#34; }) window.ui = ui })();  </description>
@@ -35,10 +35,10 @@
     
     <item>
       <title>Policy Management API</title>
-      <link>https://speedle.io/zh/docs/api/management_api/</link>
+      <link>https://engine.speedle.io/zh/docs/api/management_api/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
-      <guid>https://speedle.io/zh/docs/api/management_api/</guid>
+      <guid>https://engine.speedle.io/zh/docs/api/management_api/</guid>
       <description>已配置 PMS 的接口参考。请求与响应使用 JSON，策略 ID 为字符串，响应为扁平对象。
 请配置安全连接与端点访问控制。这是接口契约，speedle.io 不托管授权后端。
               (function() { var url = &#34;\/swagger\/policy-manage.zh.yaml&#34;; const ui = SwaggerUIBundle({ url: url, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.presets.apis ], plugins: [ SwaggerUIBundle.plugins.DownloadUrl ], validatorUrl: null, layout: &#34;BaseLayout&#34; }) window.ui = ui })();  </description>
@@ -46,19 +46,19 @@
     
     <item>
       <title>Speedle策略</title>
-      <link>https://speedle.io/zh/docs/pms/</link>
+      <link>https://engine.speedle.io/zh/docs/pms/</link>
       <pubDate>Fri, 18 Jan 2019 21:19:44 +0800</pubDate>
       
-      <guid>https://speedle.io/zh/docs/pms/</guid>
+      <guid>https://engine.speedle.io/zh/docs/pms/</guid>
       <description> Policy Management Global Policy Policy Discovery Policy Diagnosis  </description>
     </item>
     
     <item>
       <title>Token Assertion Plugin API</title>
-      <link>https://speedle.io/zh/docs/api/asserter_api/</link>
+      <link>https://engine.speedle.io/zh/docs/api/asserter_api/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
-      <guid>https://speedle.io/zh/docs/api/asserter_api/</guid>
+      <guid>https://engine.speedle.io/zh/docs/api/asserter_api/</guid>
       <description>令牌断言 webhook 参考。errCode 为整数，attributes 为对象。实际端点由 ADS 断言配置指定。
 请配置安全连接与端点访问控制。这是接口契约，speedle.io 不托管授权后端。
               (function() { var url = &#34;\/swagger\/asserter.zh.yaml&#34;; const ui = SwaggerUIBundle({ url: url, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.presets.apis ], plugins: [ SwaggerUIBundle.plugins.DownloadUrl ], validatorUrl: null, layout: &#34;BaseLayout&#34; }) window.ui = ui })();  </description>
@@ -66,10 +66,10 @@
     
     <item>
       <title>使用场景</title>
-      <link>https://speedle.io/zh/docs/usecases/</link>
+      <link>https://engine.speedle.io/zh/docs/usecases/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
-      <guid>https://speedle.io/zh/docs/usecases/</guid>
+      <guid>https://engine.speedle.io/zh/docs/usecases/</guid>
       <description>嵌入到 GO 语言编写的应用程序 张先生是一个程序员，他用 GO 语言开发了一套应用系统，现在他希望在这套系统中增加权限控制功能。他可以在程序中直接调用 Speedle 的 GO API 轻松完成任务。
 利用 Speedle 管理应用系统的权限 H 公司正在开发一套远程医疗系统。健康数据属于个人隐私，根据合规的需要，H 公司必须提供严格的权限控制，确保每位用户只能接触到自己的数据。该系统还需定期接受第三方机构的审计。H 公司使用 Speedle 来达成一下目标：
  构建 RBAC/ABAC 兼容的授权模型 自然语言定义的授权策略，方便审计部门分析审计 详尽的审计数据，可以跟踪用户每一次访问  利用 Speedle 集中管理组织内所有信息系统 陈先生是某大型跨国公司的信息安全负责人。在过去的十年里该公司飞速发展，并购了数十家中小型公司。这给陈先生和他的团队出了个难题，被并购的公司都有自己的信息系统，实现这些信息系统的技术各不相同。有基于 JavaEE 的，有基于 NodeJS 的，有 Ruby on Rails，还有基于 CORBA 的遗留系统。这些系统的权限管理机制也不一致，有的是硬编码的权限管理模块，有的基于 JaaS，有的基于 OASIS XACML，有些策略模型是 RBAC，有些是 ABAC，有些是普通的 ACL，甚至有些是原始的黑名单白名单。陈先生和他的团队为了管理这些系统不得不学习数十种权限模型和语言，每次修改授权策略需要在数十个系统上做不同的操作。非常繁琐也容易出现错误。
@@ -79,10 +79,10 @@
     
     <item>
       <title>安全</title>
-      <link>https://speedle.io/zh/docs/security/</link>
+      <link>https://engine.speedle.io/zh/docs/security/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
-      <guid>https://speedle.io/zh/docs/security/</guid>
+      <guid>https://engine.speedle.io/zh/docs/security/</guid>
       <description>同时保护两种 API 传输 独立运行的 PMS 与 ADS 都提供 REST 和 gRPC。现在两者共同使用 --insecure、--cert、--key、--client-cert 和 --force-client-cert 配置。证书或信任配置无效时启动失败，安全模式不会降级为明文。
 TLS 加密连接并认证服务端。若要强制认证客户端，必须通过 --client-cert 提供客户端 CA，同时设置 --force-client-cert=true。只提供 CA 时，仅在客户端主动发送证书的情况下验证该证书。TLS 本身不决定谁有管理员权限，也不提供 Bearer token 校验。管理、诊断、发现接口需要认证网关或等价的访问控制。--enable-authz 参数不提供内置的端点授权策略。
 监听地址与兼容性    服务 默认 REST 地址 默认 gRPC 地址     PMS 0.0.0.0:6733 默认关闭；需设置 --grpc-endpoint   ADS 0.0.0.0:6734 默认关闭；需设置 --grpc-endpoint    REST 与 gRPC 的地址分别配置。仅设置 --endpoint 不会启用 gRPC；请显式使用 --grpc-endpoint 127.0.0.1:50001（PMS）或 127.0.0.1:50002（ADS）。127.0.0.1:0 为隔离测试选择临时端口。需要 IPv6 时显式指定 IPv6 监听地址。</description>
@@ -90,19 +90,19 @@ TLS 加密连接并认证服务端。若要强制认证客户端，必须通过 
     
     <item>
       <title>开发者指南</title>
-      <link>https://speedle.io/zh/developer/</link>
+      <link>https://engine.speedle.io/zh/developer/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
-      <guid>https://speedle.io/zh/developer/</guid>
+      <guid>https://engine.speedle.io/zh/developer/</guid>
       <description> 待完善 策略管理员 了解 SPDL 基础并建立策略模型 部署应用 使用策略发现模式 使用策略管理服务 API    应用开发者 了解 SPDL 基础 策略管理服务 API 授权决策服务 API 令牌断言 API    </description>
     </item>
     
     <item>
       <title>运维指南</title>
-      <link>https://speedle.io/zh/devops/</link>
+      <link>https://engine.speedle.io/zh/devops/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
-      <guid>https://speedle.io/zh/devops/</guid>
+      <guid>https://engine.speedle.io/zh/devops/</guid>
       <description> 待完善 策略调试？
 策略管理员 了解 SPDL 基础并建立策略模型 部署应用 使用策略发现模式 使用策略管理服务 API    应用开发者 了解 SPDL 基础 策略管理服务 API 授权决策服务 API 令牌断言 API    </description>
     </item>

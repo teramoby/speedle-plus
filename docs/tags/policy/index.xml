@@ -2,50 +2,50 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>Policy on Speedle</title>
-    <link>https://speedle.io/tags/policy/</link>
+    <link>https://engine.speedle.io/tags/policy/</link>
     <description>Recent content in Policy on Speedle</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
     
-	<atom:link href="https://speedle.io/tags/policy/index.xml" rel="self" type="application/rss+xml" />
+	<atom:link href="https://engine.speedle.io/tags/policy/index.xml" rel="self" type="application/rss+xml" />
     
     
     <item>
       <title>Authorization Decisions</title>
-      <link>https://speedle.io/docs/decisions/</link>
+      <link>https://engine.speedle.io/docs/decisions/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
-      <guid>https://speedle.io/docs/decisions/</guid>
+      <guid>https://engine.speedle.io/docs/decisions/</guid>
       <description>What is an authorization decision? Speedle evaluates a subject, action and resource within a service. The application must enforce the result. Treat an evaluation error or timeout separately from a normal Deny and fail closed. REST, gRPC and embedded Go APIs have different wire representations; use their respective contracts.
 Before running the examples Build ./bin/spctl, ./bin/speedle-pms and ./bin/speedle-ads using the quick start. Use Go 1.26.10 or Go 1.27.3 (or a newer patch on the same release branch), Bash, curl and Python 3.</description>
     </item>
     
     <item>
       <title>Policy Discovery</title>
-      <link>https://speedle.io/docs/pms/discover/</link>
+      <link>https://engine.speedle.io/docs/pms/discover/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
-      <guid>https://speedle.io/docs/pms/discover/</guid>
+      <guid>https://engine.speedle.io/docs/pms/discover/</guid>
       <description>What discovery does Discovery records requests and returns allowed=true with reason 5 for a successful recording operation. It does not prove that an existing policy authorized the operation. Use it only in an isolated test environment, review generated grants, and restore normal is-allowed enforcement afterwards. Assertion or storage errors must still be handled; never treat an error as an authorization grant.
 Start a reproducible local example Build the binaries using Quick Start, then run all terminals from the checkout root.</description>
     </item>
     
     <item>
       <title>Policy Management</title>
-      <link>https://speedle.io/docs/pms/policy-mgmt/</link>
+      <link>https://engine.speedle.io/docs/pms/policy-mgmt/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
-      <guid>https://speedle.io/docs/pms/policy-mgmt/</guid>
+      <guid>https://engine.speedle.io/docs/pms/policy-mgmt/</guid>
       <description>What is a Speedle policy? The Policy Management Service (PMS) manages services, authorization policies, role policies and custom functions. A policy store persists those objects using a registered storage backend.
 Services and authorization policies A service scopes its policies. An authorization policy grants or denies a principal permission to perform an action on a resource, optionally subject to a condition. Except for global role policies, policies do not automatically apply in another service.</description>
     </item>
     
     <item>
       <title>SPDL - Speedle Policy Definition Language</title>
-      <link>https://speedle.io/docs/spdl/</link>
+      <link>https://engine.speedle.io/docs/spdl/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
-      <guid>https://speedle.io/docs/spdl/</guid>
+      <guid>https://engine.speedle.io/docs/spdl/</guid>
       <description>Syntax Keywords grant, deny, user, group, entity, role, from, on, if and in have special meanings in their syntax positions. Statement keywords are case-insensitive. In conditions, use in or IN; function names are case-sensitive. Principal, action and resource names are also case-sensitive. The current parser accepts keyword-like names in some name positions, so a blanket prohibition is not a validation rule. Prefer unambiguous names for review and client interoperability.</description>
     </item>
     

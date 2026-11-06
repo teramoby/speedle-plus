@@ -2,7 +2,7 @@
 
 The client source is `docs/hugo/static/playground/`; its published copy is
 `docs/playground/index.html`, served at
-<https://speedle.io/playground/>. The site is static: policies, request principals,
+<https://engine.speedle.io/playground/>. The site is static: policies, request principals,
 identity domains and attributes remain in browser memory. There is no evaluation
 backend, credential, API token or persistent request storage.
 

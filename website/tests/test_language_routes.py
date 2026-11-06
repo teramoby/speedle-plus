@@ -86,7 +86,7 @@ class LanguageRoutes(unittest.TestCase):
         for path in ["/docs/", "/docs/spdl/", "/docs/store/", "/blog/"]:
             for lang in ["en", "zh"]:
                 route = prefix + ("/zh" if lang == "zh" else "") + path
-                self.write(route, f'<html lang="{lang}"><head><link rel="canonical" href="https://speedle.io{route}"></head>'
+                self.write(route, f'<html lang="{lang}"><head><link rel="canonical" href="https://engine.speedle.io{route}"></head>'
                            '<header><div class="langsel"><a href="/en/">English</a><a href="/zh/">中文</a></div></header>'
                            '<main>Original archived content.</main></html>')
         return prefix
@@ -142,7 +142,7 @@ class LanguageRoutes(unittest.TestCase):
         prefix = self.archive()
         route = prefix + "/blog/legacy/"
         body = '<main><h1>Historical policy</h1><pre>old_version()</pre></main>'
-        self.write(route, f'<html lang="en"><head><link rel="canonical" href="https://speedle.io{route}"></head>'
+        self.write(route, f'<html lang="en"><head><link rel="canonical" href="https://engine.speedle.io{route}"></head>'
                    '<header><div class="langsel"><a href="/zh/">中文</a></div></header>' + body + '</html>')
         self.process()
         translated = (self.root / prefix.lstrip("/") / "zh/blog/legacy/index.html").read_text()

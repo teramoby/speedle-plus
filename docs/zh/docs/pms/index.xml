@@ -2,21 +2,21 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>Speedle策略 on Speedle</title>
-    <link>https://speedle.io/zh/docs/pms/</link>
+    <link>https://engine.speedle.io/zh/docs/pms/</link>
     <description>Recent content in Speedle策略 on Speedle</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>zh-cn</language>
     <lastBuildDate>Fri, 18 Jan 2019 21:19:44 +0800</lastBuildDate>
     
-	<atom:link href="https://speedle.io/zh/docs/pms/index.xml" rel="self" type="application/rss+xml" />
+	<atom:link href="https://engine.speedle.io/zh/docs/pms/index.xml" rel="self" type="application/rss+xml" />
     
     
     <item>
       <title>策略管理</title>
-      <link>https://speedle.io/zh/docs/pms/policy-mgmt/</link>
+      <link>https://engine.speedle.io/zh/docs/pms/policy-mgmt/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
-      <guid>https://speedle.io/zh/docs/pms/policy-mgmt/</guid>
+      <guid>https://engine.speedle.io/zh/docs/pms/policy-mgmt/</guid>
       <description>什么是 Speedle 策略？ 策略管理服务（PMS）管理服务、授权策略、角色策略与自定义函数，由已注册的存储后端持久化这些对象。
 服务与授权策略 服务限定策略的作用范围。授权策略允许或拒绝主体对资源执行操作，并可附带条件。除全局角色策略外，一个服务的策略不会自动在另一个服务中生效。
 grant group Administrators list,watch,get expr:^c1/default/core/pods/.*$ 此正则只匹配 c1/default/core/pods/ 下的资源，不匹配 c1/default/core/podssecret 或带额外前缀的路径。expr: 使用正则表达式，不是 shell 通配符：任意字符使用 .*，需要匹配完整标识符时加 ^、$。
@@ -32,10 +32,10 @@ printf &amp;#39;{}\n&amp;#39; &amp;gt; docs-policies.</description>
     
     <item>
       <title>全局角色策略</title>
-      <link>https://speedle.io/zh/docs/pms/global-policy/</link>
+      <link>https://engine.speedle.io/zh/docs/pms/global-policy/</link>
       <pubDate>Fri, 18 Jan 2019 21:19:44 +0800</pubDate>
       
-      <guid>https://speedle.io/zh/docs/pms/global-policy/</guid>
+      <guid>https://engine.speedle.io/zh/docs/pms/global-policy/</guid>
       <description>什么时候使用全局角色？ 普通角色限定在某个服务中。当多个服务需要共享角色分配时，可以在特殊的 global 服务中定义角色策略，再在各服务自己的授权策略中引用该角色。
 当前仅支持全局角色策略。全局角色分配本身并不授予任意操作，各普通服务仍需定义自己的权限；全局授权策略尚不支持。
 运行示例前 先按快速入门编译仓库根目录下的 ./bin/spctl、./bin/speedle-pms 和 ./bin/speedle-ads，需要 Go 1.26.10 或 Go 1.27.3（也可使用同一大版本的更新补丁版本）、Bash、curl 和 Python 3。下面各终端都从仓库根目录运行。为本页使用一个新的策略文件；仅在两个服务都停止后重建该文件。
@@ -48,10 +48,10 @@ printf &amp;#39;{}\n&amp;#39; &amp;gt; docs-policies.json 终端一启动 PMS，
     
     <item>
       <title>授权诊断</title>
-      <link>https://speedle.io/zh/docs/pms/diagnosis/</link>
+      <link>https://engine.speedle.io/zh/docs/pms/diagnosis/</link>
       <pubDate>Fri, 18 Jan 2019 15:46:59 +0800</pubDate>
       
-      <guid>https://speedle.io/zh/docs/pms/diagnosis/</guid>
+      <guid>https://engine.speedle.io/zh/docs/pms/diagnosis/</guid>
       <description>授权诊断提供什么？ Diagnose 用于解释一次授权评估：决策、原因、有效角色、属性及参与评估的策略。其请求上下文与 IsAllowed 相同；REST 路径为 /authz-check/v1/diagnose，Go/gRPC 方法均名为 Diagnose。
 诊断会暴露策略定义和请求上下文，必须通过API 安全配置限制为可信运维人员访问，不能作为公开调试端点。
 运行示例前 先按快速入门编译仓库根目录下的 ./bin/spctl、./bin/speedle-pms 和 ./bin/speedle-ads，需要 Go 1.26.10 或 Go 1.27.3（也可使用同一大版本的更新补丁版本）、Bash、curl 和 Python 3。下面各终端都从仓库根目录运行。为本页使用一个新的策略文件；仅在两个服务都停止后重建该文件。
@@ -64,10 +64,10 @@ printf &amp;#39;{}\n&amp;#39; &amp;gt; docs-policies.json 终端一启动 PMS，
     
     <item>
       <title>策略发现</title>
-      <link>https://speedle.io/zh/docs/pms/discover/</link>
+      <link>https://engine.speedle.io/zh/docs/pms/discover/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
-      <guid>https://speedle.io/zh/docs/pms/discover/</guid>
+      <guid>https://engine.speedle.io/zh/docs/pms/discover/</guid>
       <description>策略发现的作用 发现模式记录请求，成功记录时返回 allowed=true、reason 5，不代表既有策略曾授权该操作。仅在隔离测试环境使用，审核生成的授权，并在结束后恢复正常的 is-allowed 检查。断言或存储错误仍需单独处理，不能把错误当作授权成功。
 启动可复现的本地示例 先按快速入门编译二进制。下面各终端均从源码根目录运行，使用新的策略文件，并先停止其他页面示例的服务。
 printf &amp;#39;{}\n&amp;#39; &amp;gt; docs-policies.json 终端一：
