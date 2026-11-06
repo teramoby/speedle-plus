@@ -17,8 +17,9 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/docs/api/</guid>
-      <description>SDKs Client libraries for the decision API POST /authz-check/v1/is-allowed work with a self-hosted Speedle ADS and with Speedle Cloud. Each page shows how to add the package and gives a complete, tested program for both.
-   Language Package Version     Java Maven Central io.speedle:speedle-sdk 0.1.0   Python PyPI speedle 0.1.0   Go github.com/teramoby/speedle-sdk/go 0.1.0   C#/.NET NuGet Speedle.Sdk 0.1.0   Rust crates.</description>
+      <description>Client libraries for Java, Python, Go, .NET, Rust and Node.js/TypeScript are in SDKs.
+REST APIs These are reference contracts for your configured PMS/ADS or asserter endpoint. speedle.io serves documentation and the browser Playground; it is not a hosted PMS/ADS service. Supply JSON with Content-Type: application/json, and configure TLS/mTLS and caller access controls.
+ Policy management API Authorization decision API Token assertion webhook  Policy and role-policy IDs are strings. PMS responses are flat objects; authorization permissions use permissions (plural).</description>
     </item>
     
     <item>
@@ -85,25 +86,25 @@ Before running the examples Build ./bin/spctl, ./bin/speedle-pms and ./bin/speed
     
     <item>
       <title>Go SDK</title>
-      <link>https://engine.speedle.io/docs/api/sdk-go/</link>
+      <link>https://engine.speedle.io/docs/sdks/go/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
-      <guid>https://engine.speedle.io/docs/api/sdk-go/</guid>
+      <guid>https://engine.speedle.io/docs/sdks/go/</guid>
       <description>The Go SDK supports the two latest Go releases and uses only the standard library. Module: github.com/teramoby/speedle-sdk/go v0.1.0, package speedle. Reference: speedle-sdk/go.
-The examples check the policy described in SDKs.
+The examples check the policy described in the SDKs overview.
 Add the dependency In a new module:
-go mod init example.com/speedle-example go get github.com/teramoby/speedle-sdk/go@v0.1.0 Call a local Speedle Start Speedle and create the example policy as described in SDKs. Save this program as main.go:
+go mod init example.com/speedle-example go get github.com/teramoby/speedle-sdk/go@v0.1.0 Call a local Speedle Start Speedle and create the example policy as described in the SDKs overview. Save this program as main.go:
 package main import ( &amp;#34;context&amp;#34; &amp;#34;fmt&amp;#34; &amp;#34;os&amp;#34; speedle &amp;#34;github.</description>
     </item>
     
     <item>
       <title>Java SDK</title>
-      <link>https://engine.speedle.io/docs/api/sdk-java/</link>
+      <link>https://engine.speedle.io/docs/sdks/java/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
-      <guid>https://engine.speedle.io/docs/api/sdk-java/</guid>
+      <guid>https://engine.speedle.io/docs/sdks/java/</guid>
       <description>The Java SDK needs Java 17 or later and has no runtime dependencies. Package: io.speedle:speedle-sdk 0.1.0 on Maven Central. Reference: speedle-sdk/java.
-The examples check the policy described in SDKs.
+The examples check the policy described in the SDKs overview.
 Add the dependency Maven, a complete pom.xml:
 &amp;lt;?xml version=&amp;#34;1.0&amp;#34; encoding=&amp;#34;UTF-8&amp;#34;?&amp;gt; &amp;lt;project xmlns=&amp;#34;http://maven.apache.org/POM/4.0.0&amp;#34; xmlns:xsi=&amp;#34;http://www.w3.org/2001/XMLSchema-instance&amp;#34; xsi:schemaLocation=&amp;#34;http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd&amp;#34;&amp;gt; &amp;lt;modelVersion&amp;gt;4.0.0&amp;lt;/modelVersion&amp;gt; &amp;lt;groupId&amp;gt;com.example&amp;lt;/groupId&amp;gt; &amp;lt;artifactId&amp;gt;speedle-example&amp;lt;/artifactId&amp;gt; &amp;lt;version&amp;gt;1.0&amp;lt;/version&amp;gt; &amp;lt;properties&amp;gt; &amp;lt;maven.compiler.release&amp;gt;17&amp;lt;/maven.compiler.release&amp;gt; &amp;lt;project.build.sourceEncoding&amp;gt;UTF-8&amp;lt;/project.build.sourceEncoding&amp;gt; &amp;lt;/properties&amp;gt; &amp;lt;dependencies&amp;gt; &amp;lt;dependency&amp;gt; &amp;lt;groupId&amp;gt;io.speedle&amp;lt;/groupId&amp;gt; &amp;lt;artifactId&amp;gt;speedle-sdk&amp;lt;/artifactId&amp;gt; &amp;lt;version&amp;gt;0.1.0&amp;lt;/version&amp;gt; &amp;lt;/dependency&amp;gt; &amp;lt;/dependencies&amp;gt; &amp;lt;/project&amp;gt; Gradle, a complete build.gradle.kts (with a settings.gradle.kts that sets rootProject.</description>
     </item>
@@ -140,14 +141,14 @@ MongoDB must run as a replica set or sharded cluster. ADS watches the database w
     
     <item>
       <title>Node.js/TypeScript SDK</title>
-      <link>https://engine.speedle.io/docs/api/sdk-node/</link>
+      <link>https://engine.speedle.io/docs/sdks/node/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
-      <guid>https://engine.speedle.io/docs/api/sdk-node/</guid>
+      <guid>https://engine.speedle.io/docs/sdks/node/</guid>
       <description>The Node.js SDK needs Node.js 22 or later, ships ESM and CommonJS builds with TypeScript types, and has no runtime dependencies. Package: @speedle/sdk 0.1.0 on npm, available when published. Reference: speedle-sdk/node.
-The examples check the policy described in SDKs.
+The examples check the policy described in the SDKs overview.
 Add the dependency In a new ES module package (available when published):
-mkdir speedle-example cd speedle-example npm init -y npm pkg set type=module npm install @speedle/sdk@0.1.0 Call a local Speedle Start Speedle and create the example policy as described in SDKs.</description>
+mkdir speedle-example cd speedle-example npm init -y npm pkg set type=module npm install @speedle/sdk@0.1.0 Call a local Speedle Start Speedle and create the example policy as described in the SDKs overview.</description>
     </item>
     
     <item>
@@ -172,15 +173,108 @@ Start a reproducible local example Build the binaries using Quick Start, then ru
     
     <item>
       <title>Python SDK</title>
-      <link>https://engine.speedle.io/docs/api/sdk-python/</link>
+      <link>https://engine.speedle.io/docs/sdks/python/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
-      <guid>https://engine.speedle.io/docs/api/sdk-python/</guid>
+      <guid>https://engine.speedle.io/docs/sdks/python/</guid>
       <description>The Python SDK needs Python 3.10 or later; its only runtime dependency is httpx. It has a sync Client and an asyncio AsyncClient with the same arguments. Package: speedle 0.1.0 on PyPI. Reference: speedle-sdk/python.
-The examples check the policy described in SDKs.
+The examples check the policy described in the SDKs overview.
 Add the dependency With pip, in a virtual environment:
-python3 -m venv .venv . .venv/bin/activate pip install speedle==0.1.0 Or with uv, in a uv project:
-uv add speedle==0.</description>
+python3 -m venv .venv . .venv/bin/activate pip install speedle==0.1.0 Or with uv, in a uv project:</description>
+    </item>
+    
+    <item>
+      <title>SPDL - Speedle Policy Definition Language</title>
+      <link>https://engine.speedle.io/docs/spdl/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/docs/spdl/</guid>
+      <description>Syntax Keywords grant, deny, user, group, entity, role, from, on, if and in have special meanings in their syntax positions. Statement keywords are case-insensitive. In conditions, use in or IN; function names are case-sensitive. Principal, action and resource names are also case-sensitive. The current parser accepts keyword-like names in some name positions, so a blanket prohibition is not a validation rule. Prefer unambiguous names for review and client interoperability.</description>
+    </item>
+    
+    <item>
+      <title>Speedle Policy</title>
+      <link>https://engine.speedle.io/docs/pms/</link>
+      <pubDate>Fri, 18 Jan 2019 21:19:44 +0800</pubDate>
+      
+      <guid>https://engine.speedle.io/docs/pms/</guid>
+      <description> Policy Management Global Policy Policy Discovery Policy Diagnosis  </description>
+    </item>
+    
+    <item>
+      <title>etcd Setup</title>
+      <link>https://engine.speedle.io/docs/store/etcd/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/docs/store/etcd/</guid>
+      <description>This walkthrough uses an external etcd v3.6.14 server with a persistent Docker volume. PMS writes policies and ADS watches the same key prefix. The single-node example listens on loopback and uses plain HTTP for local development. Production TLS and cluster configuration follow the walkthrough.
+1. Build Speedle Prepare Bash, Git, curl, Docker and Go 1.26.10 or Go 1.27.3. Start Docker, then build the native services:
+git clone --depth 1 https://github.</description>
+    </item>
+    
+    <item>
+      <title>Identity Domain</title>
+      <link>https://engine.speedle.io/docs/idd/</link>
+      <pubDate>Thu, 17 Jan 2019 13:20:07 +0800</pubDate>
+      
+      <guid>https://engine.speedle.io/docs/idd/</guid>
+      <description>What is an identity domain? An identity domain (idd) is an explicit namespace for a principal. Two users named user1 can belong to different domains. The string is supplied by trusted integration code or a configured token asserter; it is not proof of authentication. Speedle does not infer or validate a provider&amp;rsquo;s tenant model merely from the domain name.
+Represent domains in policies and requests grant user user1 from github read book grant user user1 from IDCS.</description>
+    </item>
+    
+    <item>
+      <title>C#/.NET SDK</title>
+      <link>https://engine.speedle.io/docs/sdks/dotnet/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/docs/sdks/dotnet/</guid>
+      <description>The .NET SDK targets .NET 8 or later and has no dependencies. Package: Speedle.Sdk 0.1.0 on NuGet, namespace Speedle.Sdk. Reference: speedle-sdk/dotnet.
+The examples check the policy described in the SDKs overview.
+Add the dependency In a new console project:
+dotnet new console -o SpeedleExample cd SpeedleExample dotnet add package Speedle.Sdk --version 0.1.0 Call a local Speedle Start Speedle and create the example policy as described in the SDKs overview. Replace Program.</description>
+    </item>
+    
+    <item>
+      <title>Rust SDK</title>
+      <link>https://engine.speedle.io/docs/sdks/rust/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/docs/sdks/rust/</guid>
+      <description>The Rust SDK needs Rust 1.75 or later. It is async on tokio and reqwest (rustls); the blocking feature adds the blocking client used below. Crate: speedle 0.1.0 on crates.io. Reference: speedle-sdk/rust.
+The examples check the policy described in the SDKs overview.
+Add the dependency In a new package:
+cargo new speedle-example cd speedle-example cargo add speedle@0.1.0 --features blocking Call a local Speedle Start Speedle and create the example policy as described in the SDKs overview.</description>
+    </item>
+    
+    <item>
+      <title>Token asserter</title>
+      <link>https://engine.speedle.io/docs/assertor/</link>
+      <pubDate>Mon, 21 Jan 2019 09:28:30 +0800</pubDate>
+      
+      <guid>https://engine.speedle.io/docs/assertor/</guid>
+      <description>What does a token asserter do? A configured asserter validates a token and returns explicit principals, including their identity domains. Speedle can then evaluate policies using those identities. A production implementation must validate the token&amp;rsquo;s signature or introspection result, issuer, audience, expiry and any provider-specific requirements. The webhook alone does not establish compatibility with arbitrary OAuth/OIDC tokens.
+The Token Assertion Plugin API uses integer errCode and an optional attribute object, not a typed attribute array.</description>
+    </item>
+    
+    <item>
+      <title>Deployment</title>
+      <link>https://engine.speedle.io/docs/deployment/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/docs/deployment/</guid>
+      <description>Choose a deployment mode Use embedded mode to run the evaluator in your Go process. Use standalone PMS and ADS when applications call Speedle over REST or gRPC. The Quick Start provides a complete local policy-management and authorization walkthrough.
+Build with current Go Use Go 1.26.10 or Go 1.27.3 (or a newer patch on the same release branch) (Go 1.27.3 is recommended), Git and a shell on Linux or macOS.</description>
+    </item>
+    
+    <item>
+      <title>SDKs</title>
+      <link>https://engine.speedle.io/docs/sdks/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/docs/sdks/</guid>
+      <description>The Speedle SDKs are client libraries for the decision API POST /authz-check/v1/is-allowed. They work with a self-hosted Speedle ADS and with Speedle Cloud. Each language page shows how to add the package and gives a complete, tested program for both. The source and the full reference are in teramoby/speedle-sdk.
+Packages All packages are version 0.1.0. Each language page shows the install command.
+ Java: Maven Central io.speedle:speedle-sdk, published. Python: PyPI speedle, published.</description>
     </item>
     
     <item>
@@ -245,96 +339,12 @@ Security and endpoint configuration. This is a contract reference, not a backend
     </item>
     
     <item>
-      <title>SPDL - Speedle Policy Definition Language</title>
-      <link>https://engine.speedle.io/docs/spdl/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://engine.speedle.io/docs/spdl/</guid>
-      <description>Syntax Keywords grant, deny, user, group, entity, role, from, on, if and in have special meanings in their syntax positions. Statement keywords are case-insensitive. In conditions, use in or IN; function names are case-sensitive. Principal, action and resource names are also case-sensitive. The current parser accepts keyword-like names in some name positions, so a blanket prohibition is not a validation rule. Prefer unambiguous names for review and client interoperability.</description>
-    </item>
-    
-    <item>
       <title>Speedle Documents</title>
       <link>https://engine.speedle.io/docs/</link>
       <pubDate>Thu, 17 Jan 2019 13:20:07 +0800</pubDate>
       
       <guid>https://engine.speedle.io/docs/</guid>
       <description></description>
-    </item>
-    
-    <item>
-      <title>Speedle Policy</title>
-      <link>https://engine.speedle.io/docs/pms/</link>
-      <pubDate>Fri, 18 Jan 2019 21:19:44 +0800</pubDate>
-      
-      <guid>https://engine.speedle.io/docs/pms/</guid>
-      <description> Policy Management Global Policy Policy Discovery Policy Diagnosis  </description>
-    </item>
-    
-    <item>
-      <title>etcd Setup</title>
-      <link>https://engine.speedle.io/docs/store/etcd/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://engine.speedle.io/docs/store/etcd/</guid>
-      <description>This walkthrough uses an external etcd v3.6.14 server with a persistent Docker volume. PMS writes policies and ADS watches the same key prefix. The single-node example listens on loopback and uses plain HTTP for local development. Production TLS and cluster configuration follow the walkthrough.
-1. Build Speedle Prepare Bash, Git, curl, Docker and Go 1.26.10 or Go 1.27.3. Start Docker, then build the native services:
-git clone --depth 1 https://github.</description>
-    </item>
-    
-    <item>
-      <title>Identity Domain</title>
-      <link>https://engine.speedle.io/docs/idd/</link>
-      <pubDate>Thu, 17 Jan 2019 13:20:07 +0800</pubDate>
-      
-      <guid>https://engine.speedle.io/docs/idd/</guid>
-      <description>What is an identity domain? An identity domain (idd) is an explicit namespace for a principal. Two users named user1 can belong to different domains. The string is supplied by trusted integration code or a configured token asserter; it is not proof of authentication. Speedle does not infer or validate a provider&amp;rsquo;s tenant model merely from the domain name.
-Represent domains in policies and requests grant user user1 from github read book grant user user1 from IDCS.</description>
-    </item>
-    
-    <item>
-      <title>C#/.NET SDK</title>
-      <link>https://engine.speedle.io/docs/api/sdk-dotnet/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://engine.speedle.io/docs/api/sdk-dotnet/</guid>
-      <description>The .NET SDK targets .NET 8 or later and has no dependencies. Package: Speedle.Sdk 0.1.0 on NuGet, namespace Speedle.Sdk. Reference: speedle-sdk/dotnet.
-The examples check the policy described in SDKs.
-Add the dependency In a new console project:
-dotnet new console -o SpeedleExample cd SpeedleExample dotnet add package Speedle.Sdk --version 0.1.0 Call a local Speedle Start Speedle and create the example policy as described in SDKs. Replace Program.cs with:
-using Speedle.</description>
-    </item>
-    
-    <item>
-      <title>Rust SDK</title>
-      <link>https://engine.speedle.io/docs/api/sdk-rust/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://engine.speedle.io/docs/api/sdk-rust/</guid>
-      <description>The Rust SDK needs Rust 1.75 or later. It is async on tokio and reqwest (rustls); the blocking feature adds the blocking client used below. Crate: speedle 0.1.0 on crates.io. Reference: speedle-sdk/rust.
-The examples check the policy described in SDKs.
-Add the dependency In a new package:
-cargo new speedle-example cd speedle-example cargo add speedle@0.1.0 --features blocking Call a local Speedle Start Speedle and create the example policy as described in SDKs.</description>
-    </item>
-    
-    <item>
-      <title>Token asserter</title>
-      <link>https://engine.speedle.io/docs/assertor/</link>
-      <pubDate>Mon, 21 Jan 2019 09:28:30 +0800</pubDate>
-      
-      <guid>https://engine.speedle.io/docs/assertor/</guid>
-      <description>What does a token asserter do? A configured asserter validates a token and returns explicit principals, including their identity domains. Speedle can then evaluate policies using those identities. A production implementation must validate the token&amp;rsquo;s signature or introspection result, issuer, audience, expiry and any provider-specific requirements. The webhook alone does not establish compatibility with arbitrary OAuth/OIDC tokens.
-The Token Assertion Plugin API uses integer errCode and an optional attribute object, not a typed attribute array.</description>
-    </item>
-    
-    <item>
-      <title>Deployment</title>
-      <link>https://engine.speedle.io/docs/deployment/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://engine.speedle.io/docs/deployment/</guid>
-      <description>Choose a deployment mode Use embedded mode to run the evaluator in your Go process. Use standalone PMS and ADS when applications call Speedle over REST or gRPC. The Quick Start provides a complete local policy-management and authorization walkthrough.
-Build with current Go Use Go 1.26.10 or Go 1.27.3 (or a newer patch on the same release branch) (Go 1.27.3 is recommended), Git and a shell on Linux or macOS.</description>
     </item>
     
     <item>

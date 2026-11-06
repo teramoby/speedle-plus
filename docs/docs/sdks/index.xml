@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>SDKs on Speedle</title>
+    <link>https://engine.speedle.io/docs/sdks/</link>
+    <description>Recent content in SDKs on Speedle</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language>
+    
+	<atom:link href="https://engine.speedle.io/docs/sdks/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>Java SDK</title>
+      <link>https://engine.speedle.io/docs/sdks/java/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/docs/sdks/java/</guid>
+      <description>The Java SDK needs Java 17 or later and has no runtime dependencies. Package: io.speedle:speedle-sdk 0.1.0 on Maven Central. Reference: speedle-sdk/java.
+The examples check the policy described in the SDKs overview.
+Add the dependency Maven, a complete pom.xml:
+&amp;lt;?xml version=&amp;#34;1.0&amp;#34; encoding=&amp;#34;UTF-8&amp;#34;?&amp;gt; &amp;lt;project xmlns=&amp;#34;http://maven.apache.org/POM/4.0.0&amp;#34; xmlns:xsi=&amp;#34;http://www.w3.org/2001/XMLSchema-instance&amp;#34; xsi:schemaLocation=&amp;#34;http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd&amp;#34;&amp;gt; &amp;lt;modelVersion&amp;gt;4.0.0&amp;lt;/modelVersion&amp;gt; &amp;lt;groupId&amp;gt;com.example&amp;lt;/groupId&amp;gt; &amp;lt;artifactId&amp;gt;speedle-example&amp;lt;/artifactId&amp;gt; &amp;lt;version&amp;gt;1.0&amp;lt;/version&amp;gt; &amp;lt;properties&amp;gt; &amp;lt;maven.compiler.release&amp;gt;17&amp;lt;/maven.compiler.release&amp;gt; &amp;lt;project.build.sourceEncoding&amp;gt;UTF-8&amp;lt;/project.build.sourceEncoding&amp;gt; &amp;lt;/properties&amp;gt; &amp;lt;dependencies&amp;gt; &amp;lt;dependency&amp;gt; &amp;lt;groupId&amp;gt;io.speedle&amp;lt;/groupId&amp;gt; &amp;lt;artifactId&amp;gt;speedle-sdk&amp;lt;/artifactId&amp;gt; &amp;lt;version&amp;gt;0.1.0&amp;lt;/version&amp;gt; &amp;lt;/dependency&amp;gt; &amp;lt;/dependencies&amp;gt; &amp;lt;/project&amp;gt; Gradle, a complete build.gradle.kts (with a settings.gradle.kts that sets rootProject.</description>
+    </item>
+    
+    <item>
+      <title>Python SDK</title>
+      <link>https://engine.speedle.io/docs/sdks/python/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/docs/sdks/python/</guid>
+      <description>The Python SDK needs Python 3.10 or later; its only runtime dependency is httpx. It has a sync Client and an asyncio AsyncClient with the same arguments. Package: speedle 0.1.0 on PyPI. Reference: speedle-sdk/python.
+The examples check the policy described in the SDKs overview.
+Add the dependency With pip, in a virtual environment:
+python3 -m venv .venv . .venv/bin/activate pip install speedle==0.1.0 Or with uv, in a uv project:</description>
+    </item>
+    
+    <item>
+      <title>Go SDK</title>
+      <link>https://engine.speedle.io/docs/sdks/go/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/docs/sdks/go/</guid>
+      <description>The Go SDK supports the two latest Go releases and uses only the standard library. Module: github.com/teramoby/speedle-sdk/go v0.1.0, package speedle. Reference: speedle-sdk/go.
+The examples check the policy described in the SDKs overview.
+Add the dependency In a new module:
+go mod init example.com/speedle-example go get github.com/teramoby/speedle-sdk/go@v0.1.0 Call a local Speedle Start Speedle and create the example policy as described in the SDKs overview. Save this program as main.go:
+package main import ( &amp;#34;context&amp;#34; &amp;#34;fmt&amp;#34; &amp;#34;os&amp;#34; speedle &amp;#34;github.</description>
+    </item>
+    
+    <item>
+      <title>C#/.NET SDK</title>
+      <link>https://engine.speedle.io/docs/sdks/dotnet/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/docs/sdks/dotnet/</guid>
+      <description>The .NET SDK targets .NET 8 or later and has no dependencies. Package: Speedle.Sdk 0.1.0 on NuGet, namespace Speedle.Sdk. Reference: speedle-sdk/dotnet.
+The examples check the policy described in the SDKs overview.
+Add the dependency In a new console project:
+dotnet new console -o SpeedleExample cd SpeedleExample dotnet add package Speedle.Sdk --version 0.1.0 Call a local Speedle Start Speedle and create the example policy as described in the SDKs overview. Replace Program.</description>
+    </item>
+    
+    <item>
+      <title>Rust SDK</title>
+      <link>https://engine.speedle.io/docs/sdks/rust/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/docs/sdks/rust/</guid>
+      <description>The Rust SDK needs Rust 1.75 or later. It is async on tokio and reqwest (rustls); the blocking feature adds the blocking client used below. Crate: speedle 0.1.0 on crates.io. Reference: speedle-sdk/rust.
+The examples check the policy described in the SDKs overview.
+Add the dependency In a new package:
+cargo new speedle-example cd speedle-example cargo add speedle@0.1.0 --features blocking Call a local Speedle Start Speedle and create the example policy as described in the SDKs overview.</description>
+    </item>
+    
+    <item>
+      <title>Node.js/TypeScript SDK</title>
+      <link>https://engine.speedle.io/docs/sdks/node/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/docs/sdks/node/</guid>
+      <description>The Node.js SDK needs Node.js 22 or later, ships ESM and CommonJS builds with TypeScript types, and has no runtime dependencies. Package: @speedle/sdk 0.1.0 on npm, available when published. Reference: speedle-sdk/node.
+The examples check the policy described in the SDKs overview.
+Add the dependency In a new ES module package (available when published):
+mkdir speedle-example cd speedle-example npm init -y npm pkg set type=module npm install @speedle/sdk@0.1.0 Call a local Speedle Start Speedle and create the example policy as described in the SDKs overview.</description>
+    </item>
+    
+  </channel>
+</rss>

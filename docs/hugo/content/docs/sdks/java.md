@@ -2,6 +2,7 @@
 title = "Java SDK"
 description = "Add the Speedle Java SDK and check authorization against a local Speedle or Speedle Cloud."
 weight = 10
+aliases = ["/docs/api/sdk-java/"]
 draft = false
 toc = true
 tocheading = "h2"
@@ -12,7 +13,7 @@ bref = "Add io.speedle:speedle-sdk 0.1.0 with Maven or Gradle, then call isAllow
 
 The Java SDK needs Java 17 or later and has no runtime dependencies. Package: [`io.speedle:speedle-sdk`](https://central.sonatype.com/artifact/io.speedle/speedle-sdk) 0.1.0 on Maven Central. Reference: [speedle-sdk/java](https://github.com/teramoby/speedle-sdk/tree/main/java).
 
-The examples check the policy described in [SDKs](/docs/api/#sdks).
+The examples check the policy described in the [SDKs overview](/docs/sdks/#example-policy).
 
 ## Add the dependency
 
@@ -65,7 +66,7 @@ application {
 
 ## Call a local Speedle
 
-Start Speedle and create the example policy as described in [SDKs](/docs/api/#sdks). Save this program as `src/main/java/Main.java`:
+Start Speedle and create the example policy as described in the [SDKs overview](/docs/sdks/#example-policy). Save this program as `src/main/java/Main.java`:
 
 ```java
 import io.speedle.sdk.Auth;
@@ -166,3 +167,7 @@ alice delete /docs/public: allowed=false reason=NO_APPLICABLE_POLICIES
 ```
 
 The token is a server-side secret. Never ship it to browsers, mobile apps or desktop clients.
+
+## Error handling
+
+A denied request is not an error: `isAllowed` returns `false`, and `check` returns a `Decision` with `allowed()` false and the reason, as in the `delete` call above. With the default settings, when a call cannot return a decision, the SDK throws `SpeedleException`. The examples catch it, print `Speedle error: <message>` to standard error and exit with status 1.

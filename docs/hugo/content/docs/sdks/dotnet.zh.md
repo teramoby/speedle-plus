@@ -1,22 +1,23 @@
 +++
 title = "C#/.NET SDK"
-description = "Add the Speedle .NET SDK and check authorization against a local Speedle or Speedle Cloud."
+description = "添加 Speedle .NET SDK，向本地 Speedle 或 Speedle Cloud 发起授权检查。"
 weight = 40
+aliases = ["/zh/docs/api/sdk-dotnet/"]
 draft = false
 toc = true
 tocheading = "h2"
 tags = ["api", "sdk"]
 categories = ["docs"]
-bref = "Add Speedle.Sdk 0.1.0 with dotnet add package, then call IsAllowedAsync and CheckAsync against a local Speedle or Speedle Cloud."
+bref = "用 dotnet add package 添加 Speedle.Sdk 0.1.0，再向本地 Speedle 或 Speedle Cloud 调用 IsAllowedAsync 与 CheckAsync。"
 +++
 
-The .NET SDK targets .NET 8 or later and has no dependencies. Package: [`Speedle.Sdk`](https://www.nuget.org/packages/Speedle.Sdk) 0.1.0 on NuGet, namespace `Speedle.Sdk`. Reference: [speedle-sdk/dotnet](https://github.com/teramoby/speedle-sdk/tree/main/dotnet).
+.NET SDK 面向 .NET 8 或更高版本，没有依赖。软件包：NuGet 上的 [`Speedle.Sdk`](https://www.nuget.org/packages/Speedle.Sdk) 0.1.0，命名空间 `Speedle.Sdk`。参考文档：[speedle-sdk/dotnet](https://github.com/teramoby/speedle-sdk/tree/main/dotnet)。
 
-The examples check the policy described in [SDKs](/docs/api/#sdks).
+示例检查的策略见 [SDK 概览](/docs/sdks/#示例策略)。
 
-## Add the dependency
+## 添加依赖
 
-In a new console project:
+新建控制台项目并添加软件包：
 
 ```bash
 dotnet new console -o SpeedleExample
@@ -24,9 +25,9 @@ cd SpeedleExample
 dotnet add package Speedle.Sdk --version 0.1.0
 ```
 
-## Call a local Speedle
+## 调用本地 Speedle
 
-Start Speedle and create the example policy as described in [SDKs](/docs/api/#sdks). Replace `Program.cs` with:
+按 [SDK 概览](/docs/sdks/#示例策略)中的说明启动 Speedle 并创建示例策略。将 `Program.cs` 替换为：
 
 ```csharp
 using Speedle.Sdk;
@@ -55,24 +56,24 @@ catch (SpeedleException e)
 return 0;
 ```
 
-Run it:
+运行：
 
 ```bash
 dotnet run
 ```
 
-Output:
+输出：
 
 ```text
 alice get /docs/public: allowed=True
 alice delete /docs/public: allowed=False reason=NoApplicablePolicies
 ```
 
-## Call Speedle Cloud
+## 调用 Speedle Cloud
 
-> **Speedle Cloud is coming soon.**
+> **Speedle Cloud 即将上线。**
 
-The program reads the service name from `SPEEDLE_SERVICE` and the service's token from `SPEEDLE_TOKEN`. `SPEEDLE_ENDPOINT` overrides the default endpoint `https://cloud.speedle.io`. Replace `Program.cs` with:
+程序从 `SPEEDLE_SERVICE` 读取服务名，从 `SPEEDLE_TOKEN` 读取该服务的令牌。`SPEEDLE_ENDPOINT` 可覆盖默认端点 `https://cloud.speedle.io`。将 `Program.cs` 替换为：
 
 ```csharp
 using Speedle.Sdk;
@@ -101,7 +102,7 @@ catch (SpeedleException e)
 return 0;
 ```
 
-Set the environment and run it. `read -rs` keeps the token out of your shell history and screen:
+设置环境变量后运行。`read -rs` 不会把令牌写入 shell 历史，也不会显示在屏幕上：
 
 ```bash
 export SPEEDLE_SERVICE=docs
@@ -109,11 +110,15 @@ read -rs SPEEDLE_TOKEN && export SPEEDLE_TOKEN
 dotnet run
 ```
 
-Output, when the service has the example policy:
+服务中已有示例策略时，输出为：
 
 ```text
 alice get /docs/public: allowed=True
 alice delete /docs/public: allowed=False reason=NoApplicablePolicies
 ```
 
-The token is a server-side secret. Never ship it to browsers, mobile apps or desktop clients.
+令牌是服务端密钥，切勿放进浏览器、移动应用或桌面客户端。
+
+## 错误处理
+
+请求被拒绝不是错误：`IsAllowedAsync` 返回 `false`，`CheckAsync` 返回 `Allowed` 为 false 的 `Decision` 及原因，如上文的 `delete` 调用。在默认设置下，调用无法得出授权结果时，SDK 抛出 `SpeedleException`。示例捕获该异常，向标准错误输出 `Speedle error: <消息>`，并返回退出码 1。

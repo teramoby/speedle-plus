@@ -2,6 +2,7 @@
 title = "Node.js/TypeScript SDK"
 description = "Add the Speedle Node.js/TypeScript SDK and check authorization against a local Speedle or Speedle Cloud."
 weight = 60
+aliases = ["/docs/api/sdk-node/"]
 draft = false
 toc = true
 tocheading = "h2"
@@ -12,7 +13,7 @@ bref = "Install @speedle/sdk 0.1.0 with npm when it is published, then call isAl
 
 The Node.js SDK needs Node.js 22 or later, ships ESM and CommonJS builds with TypeScript types, and has no runtime dependencies. Package: [`@speedle/sdk`](https://www.npmjs.com/package/@speedle/sdk) 0.1.0 on npm, **available when published**. Reference: [speedle-sdk/node](https://github.com/teramoby/speedle-sdk/tree/main/node).
 
-The examples check the policy described in [SDKs](/docs/api/#sdks).
+The examples check the policy described in the [SDKs overview](/docs/sdks/#example-policy).
 
 ## Add the dependency
 
@@ -28,7 +29,7 @@ npm install @speedle/sdk@0.1.0
 
 ## Call a local Speedle
 
-Start Speedle and create the example policy as described in [SDKs](/docs/api/#sdks). Save this program as `main.ts`:
+Start Speedle and create the example policy as described in the [SDKs overview](/docs/sdks/#example-policy). Save this program as `main.ts`:
 
 ```typescript
 import { Auth, Reason, SpeedleClient, SpeedleError } from "@speedle/sdk";
@@ -117,3 +118,7 @@ alice delete /docs/public: allowed=false reason=NoApplicablePolicies
 ```
 
 The token is a server-side secret. Never ship it to browsers, mobile apps or desktop clients.
+
+## Error handling
+
+A denied request is not an error: `isAllowed` resolves to `false`, and `check` resolves to a decision with `allowed` false and the reason, as in the `delete` call above. With the default settings, when a call cannot return a decision, the promise rejects with `SpeedleError`. The examples catch it, print `Speedle error: <message>` to standard error and set `process.exitCode = 1`; any other error is rethrown.

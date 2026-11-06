@@ -68,10 +68,20 @@ let footerPages = 0;
     }
   }
 })(output);
-for (const name of ['docs/api/sdk-java/index.html', 'zh/docs/api/sdk-java/index.html', 'docs/api/index.html', 'docs/spdl/index.html']) {
+for (const name of ['docs/sdks/index.html', 'zh/docs/sdks/index.html', 'docs/sdks/java/index.html', 'zh/docs/sdks/java/index.html', 'docs/api/index.html', 'docs/spdl/index.html']) {
   assert.ok(fs.readFileSync(path.join(output, name), 'utf8').includes('<footer class="site-footer">'), `Shared footer in ${name}`);
 }
 assert.ok(footerPages > 200, `Footer pages checked: ${footerPages}`);
+// #208: the SDK pages moved from /docs/api/sdk-<lang>/ to /docs/sdks/<lang>/; the old URLs redirect.
+for (const locale of ['', 'zh/']) {
+  for (const lang of ['java', 'python', 'go', 'dotnet', 'rust', 'node']) {
+    const target = `https://engine.speedle.io/${locale}docs/sdks/${lang}/`;
+    const alias = fs.readFileSync(path.join(output, `${locale}docs/api/sdk-${lang}/index.html`), 'utf8');
+    assert.ok(alias.includes(`<link rel="canonical" href="${target}"`) && alias.includes(`url=/${locale}docs/sdks/${lang}/"`), `Redirect ${locale}docs/api/sdk-${lang}/ to ${target}`);
+    const sitemap = fs.readFileSync(path.join(output, `${locale || 'en/'}sitemap.xml`), 'utf8');
+    assert.ok(sitemap.includes(`<loc>${target}</loc>`) && !sitemap.includes(`docs/api/sdk-${lang}/`), `Sitemap lists only ${target}`);
+  }
+}
 console.log('PASS Hugo 0.48 output: editor, navigation, sitemap, footer stylesheet and matching release assets');
 
 // Every documentation sidebar must retain its complete section tree. A shared
@@ -85,7 +95,7 @@ function checkStorageNavigation(directory, locale = '') {
       if (!html.includes('<div class="sidebar">')) continue;
       const sidebar = html.split('<div class="sidebar">')[1];
       for (const target of ['store/', 'store/mysql/', 'store/etcd/', 'store/mongodb/', 'pms/policy-mgmt/', 'api/decision_api/',
-        'api/sdk-java/', 'api/sdk-python/', 'api/sdk-go/', 'api/sdk-dotnet/', 'api/sdk-rust/', 'api/sdk-node/']) {
+        'sdks/', 'sdks/java/', 'sdks/python/', 'sdks/go/', 'sdks/dotnet/', 'sdks/rust/', 'sdks/node/']) {
         assert.ok(sidebar.includes(`href="/${locale}docs/${target}"`), `Complete sidebar ${target} in ${name}`);
       }
     }
