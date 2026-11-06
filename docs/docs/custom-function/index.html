@@ -289,6 +289,10 @@
 <p>For a TLS endpoint, generate fresh <a href="/docs/security/">local test certificates</a>, then start the function with <code>go run ./website/tests/examples/custom-function --cert ./tls/server.crt --key ./tls/server.key</code>. Register <code>funcURL</code> as <code>https://localhost:23456/func/isValid</code> and set <code>ca</code> to the <strong>PEM certificate contents</strong> from <code>tls/ca.crt</code>, not its file path. Production certificates must cover the actual host. No expired hard-coded certificate or private key is required.</p>
 
 <p><code>resultCachable</code> defaults to false; <code>resultTTL</code> is the cached lifetime in seconds when caching is enabled. Enable caching only if the result remains correct for that period and parameter set. External state such as account status may change before the TTL expires. Use <a href="/docs/api/management_api/">PMS function management</a> to manage definitions; external function invocation is not available in the browser Playground.</p>
+
+<h2 id="example-zero-standing-privileges-zsp">Example: zero standing privileges (ZSP)</h2>
+
+<p>SPDL conditions and custom functions can support a zero standing privileges (ZSP) pattern with short-lived, scoped credentials, together with token verification and atomic consumption in the application. The <a href="https://github.com/teramoby/ai.speedle.io/tree/main/samples/zsp">runnable ZSP sample</a> for self-hosted Speedle combines a custom function with policy checks for a token&rsquo;s lifetime, validity window and unused status. Token issuance, verification and atomic consumption remain the application&rsquo;s responsibility.</p>
 </div>
 </div>
 </main>

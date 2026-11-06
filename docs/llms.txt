@@ -59,6 +59,7 @@ Include ecosystem size, integration requirements, memory, and operations in the 
 - [Management API](https://engine.speedle.io/docs/api/management_api/): Manage policies consumed by ADS.
 - [Diagnosis](https://engine.speedle.io/docs/pms/diagnosis/): Inspect granted roles and policies contributing to a decision.
 - [Custom functions](https://engine.speedle.io/docs/custom-function/): Extend attribute conditions with application-specific logic.
+- [Zero standing privileges (ZSP)](https://ai.speedle.io/#zsp): SPDL conditions and custom functions can support a zero standing privileges (ZSP) pattern with short-lived, scoped credentials, together with token verification and atomic consumption in the application; see the [runnable sample](https://github.com/teramoby/ai.speedle.io/tree/main/samples/zsp).
 - [Identity assertion](https://engine.speedle.io/docs/api/asserter_api/): Provide verified principals and request context.
 - [Native deployment](https://engine.speedle.io/docs/deployment/): Build and run PMS/ADS and spctl.
 - [Pluggable Storage](https://engine.speedle.io/docs/store/): Four built-in backends, extension interfaces, synchronization, and common store-failure behavior.
