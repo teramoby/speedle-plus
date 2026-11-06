@@ -12,7 +12,7 @@ const playgroundChineseLink = chineseLink.replace('href="/zh/"','href="/zh/playg
 const original = execFileSync('git',['show','5cccf4c4e50a2b0ab901a9fa65acc39074ed1068:docs/index.html'],{cwd:root,encoding:'utf8'});
 const originalPolicyExample = original.match(/<pre>[\s\S]*?<\/pre>/)[0];
 const policyExample = home.match(/<pre>[\s\S]*?<\/pre>/)[0];
-assert.equal(policyExample.replace(/<[^>]+>/g,''), 'grant group employee read,borrow book\ndeny user bob borrow book if is_card_valid == false', 'Homepage shows the corrected SPDL example');
+assert.equal(policyExample.replace(/<[^>]+>/g,''), '# Employees can read and borrow books\ngrant group employee read,borrow book\n\n# Deny overrides grant: Bob cannot borrow with an invalid library card\ndeny user bob borrow book if is_card_valid == false', 'Homepage shows the corrected SPDL example');
 assert.equal(read('docs/css/site.css'),original.match(/<style>([\s\S]*?)<\/style>/)[1], 'The shared stylesheet is the actual original homepage CSS, byte for byte');
 const oldCommunityLink = original.match(/<a href="[^"]+" aria-label="Slack">[\s\S]*?<\/a>/)[0];
 const discordLink = '<a href="https://discord.gg/uaY2xVsbbT" aria-label="Discord"><img src="/img/speedle/Discord.svg" alt=""></a>';
