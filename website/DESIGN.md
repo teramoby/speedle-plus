@@ -16,12 +16,9 @@ The values below are measured from the live CSS, not invented:
   (`header-20261027`) in `teramoby/speedle-plus`.
 - **AI**: `https://ai.speedle.io/styles.css`, the reference implementation of
   the shared header and footer.
-- **Cloud**: `apps/console/src/styles/tokens.css` in
-  `teramoby/cloud.speedle.io`. The blue values are set by
-  `cloud.speedle.io#239`; until that work merges, the values in the table are
-  marked **set by cloud.speedle.io#239**. The only Cloud colours fixed here are
-  the sphere `#4da3ff` and the darkest ink `#0b2149`.
-- **Header and footer additions**: the owner-approved header standard v2–v9.
+- **Cloud**: `apps/console/src/styles/tokens.css` at `main` in
+  `teramoby/cloud.speedle.io`, merged in `cloud.speedle.io#244`.
+- **Header and footer additions**: the owner-approved header standard v2–v13.
   This file is the merged form; where an older header standard differs, this
   file wins.
 
@@ -52,23 +49,22 @@ add a colour outside the site's tokens.
 
 | Role | Engine (speedle.io) | AI (ai.speedle.io) | Cloud (cloud.speedle.io) |
 | --- | --- | --- | --- |
-| Page background | `--white` `#ffffff` | `--white` `#ffffff` | `--surface` — set by cloud.speedle.io#239 |
-| Hero background | `linear-gradient(135deg, #25134e 0%, #6636c8 62%, #814ce4 100%)` | `linear-gradient(135deg, #ffffff 0%, #f4f0fb 55%, #e9e1f8 118%)` | `--hero-background` (uses `--surface-inverse`, `--hero-mid`, `--primary`), `--hero-ring`, `--hero-disc` — set by cloud.speedle.io#239 |
-| Header background | `rgba(31, 17, 66, .92)` + `backdrop-filter: blur(18px)`; composite `#312451` over white | `rgba(255, 255, 255, .96)` + blur 18 | dark blue `--surface-inverse` — set by cloud.speedle.io#239 |
-| Footer background | `#171022` | `#f4f0fb` | darkest blue `#0b2149` |
-| Surface | `#ffffff` | `--white` `#ffffff` | `--surface` — set by cloud.speedle.io#239 |
-| Surface soft / tint | `--soft` `#f6f7fb` | `--soft` `#f7f6fa`, `--tint` `#f0ebfa`, `--tint-light` `#f4f0fb`, `--tint-strong` `#e9e1f8` | `--surface-soft`, `--surface-tint` — set by cloud.speedle.io#239 |
-| Ink | `--ink` `#172033` | `--ink` `#182034` | `--text` — set by cloud.speedle.io#239 |
-| Muted text | `--muted` `#5d667a` | `--muted` `#596276` | `--muted` — set by cloud.speedle.io#239 |
-| Primary | `--purple` `#814ce4` | `--primary` `#7546d8` | `--primary` — set by cloud.speedle.io#239 |
-| Primary strong / hover | `--purple-dark` `#5c2fc0` | `--primary-dark` `#5229ad` | `--primary-hover` — set by cloud.speedle.io#239 |
-| Accent | `--cyan` `#01e7cb` | `--accent` `#8b5cf6`, `--accent-light` `#b9a2f0` | `--accent-decorative` — set by cloud.speedle.io#239 |
-| Border | `--line` `#e5e8f1`; on dark `rgba(255, 255, 255, .1)` | `--line` `#e4e5ee`, `--line-purple` `#d8cbf0`; on ink `rgba(24, 32, 52, .1)` | `--border`, `--border-control` — set by cloud.speedle.io#239 |
-| Focus ring (light surface) | header `#01e7cb`; page controls `#5c2fc0` | `--focus` `#5229ad` | `--focus` — set by cloud.speedle.io#239 |
-| Focus ring (dark surface) | `--cyan` `#01e7cb` | `--focus` `#5229ad` (the AI header is light) | `--focus-inverse` — set by cloud.speedle.io#239 |
-| Inverse text | `#ffffff` | `#ffffff` | `--text-inverse` — set by cloud.speedle.io#239 |
+| Page background | `--white` `#ffffff` | `--white` `#ffffff` | `--surface` `#fff` |
+| Hero background | `linear-gradient(135deg, #25134e 0%, #6636c8 62%, #814ce4 100%)` | `linear-gradient(135deg, #ffffff 0%, #f4f0fb 55%, #e9e1f8 118%)` | `--hero-background` `linear-gradient(135deg, #0b2149 0%, #14469c 62%, #1f66d1 100%)`; `--hero-ring` `rgba(1, 231, 203, 0.12)`; `--hero-disc` `rgba(1, 231, 203, 0.09)` |
+| Header background | `rgba(31, 17, 66, .92)` + `backdrop-filter: blur(18px)`; composite `#312451` over white | `rgba(255, 255, 255, .96)` + blur 18 | `--surface-inverse` `#0b2149` |
+| Footer background | `#171022` | `#f4f0fb` | `--surface-inverse` `#0b2149` |
+| Surface | `#ffffff` | `--white` `#ffffff` | `--surface` `#fff` |
+| Surface soft / tint | `--soft` `#f6f7fb` | `--soft` `#f7f6fa`, `--tint` `#f0ebfa`, `--tint-light` `#f4f0fb`, `--tint-strong` `#e9e1f8` | `--surface-soft` `#f6f7fb`, `--surface-tint` `#e6eefa` |
+| Ink | `--ink` `#172033` | `--ink` `#182034` | `--text` `#172033` |
+| Muted text | `--muted` `#5d667a` | `--muted` `#596276` | `--muted` `#5d667a` |
+| Primary | `--purple` `#814ce4` | `--primary` `#7546d8` | `--primary` `#1f66d1` |
+| Primary strong / hover | `--purple-dark` `#5c2fc0` | `--primary-dark` `#5229ad` | `--primary-hover` `#1550a8` |
+| Accent | `--cyan` `#01e7cb` | `--accent` `#8b5cf6`, `--accent-light` `#b9a2f0` | `--accent-decorative` `#01e7cb`; inverse text accent `--text-accent-inverse` `#7cc4ff` |
+| Border | `--line` `#e5e8f1`; on dark `rgba(255, 255, 255, .1)` | `--line` `#e4e5ee`, `--line-purple` `#d8cbf0`; on ink `rgba(24, 32, 52, .1)` | `--border` `#e5e8f1`, `--border-control` `#777f91`; header `--header-border` `rgba(255, 255, 255, 0.1)`; footer `--footer-border` `rgba(255, 255, 255, 0.18)` |
+| Focus ring (light surface) | header `#01e7cb`; page controls `#5c2fc0` | `--focus` `#5229ad` | `--focus` `#1550a8` |
+| Focus ring (dark surface) | `--cyan` `#01e7cb` | `--focus` `#5229ad` (the AI header is light) | `--focus-inverse` `#9cc3ff` |
+| Inverse text | `#ffffff` | `#ffffff` | `--text-inverse` `#fff` |
 | Logo sphere | `#ff9a45` (original) | `#8b5cf6` | `#4da3ff` |
-| Darkest ink (favicon outline) | `#1f1142` | `#2a1660` | `#0b2149` |
 
 Engine's page CSS leaves the browser's default focus ring for page controls;
 this standard sets it to `--purple-dark` `#5c2fc0` (8.01:1 on white), while the
@@ -76,8 +72,9 @@ header keeps its measured `#01e7cb` ring.
 
 Status colours are part of the token set where the site has status UI: AI uses
 `--success` `#176342` / `--success-soft` `#edf8f1` and `--danger` `#a3243c` /
-`--danger-soft` `#fff0f2`; Cloud exposes `--success`, `--success-surface`,
-`--danger`, `--danger-surface`. Use them; do not invent new status colours.
+`--danger-soft` `#fff0f2`; Cloud uses `--success` `#176342` /
+`--success-surface` `#edf8f1` and `--danger` `#a3243c` / `--danger-surface`
+`#fff0f2`. Use them; do not invent new status colours.
 
 ### 2.2 WCAG AA contrast pairs
 
@@ -120,7 +117,7 @@ Colour rules:
 - AI `#8b5cf6` on white is 4.23:1: decorative graphics, icons and large text
   only. Normal text uses `#7546d8` or `#5229ad`.
 - Cloud `#4da3ff` on white is 2.63:1: never use it as text or as a control
-  boundary on white. It needs a dark ground, or the favicon outline below.
+  boundary on white. It needs a dark ground.
 
 ## 3. Header
 
@@ -153,7 +150,10 @@ ready. The Products menu does not change the header height.
   same on all three sites.
 - The logo links to that site's home page.
 - The first nav item is the **Products** menu (section 3.4). The site's own
-  links follow.
+  links follow. It is the header's only route to the other Speedle sites
+  (v10): no stand-alone product link (`Speedle Engine`, `Speedle Cloud`,
+  `Speedle AI` or `Speedle+`) may appear in the desktop or collapsed menu, in
+  English or Chinese.
 - The **language switch** is one text link, last before the GitHub pill
   (section 9).
 - Engine and Cloud end with the **GitHub pill**. AI has **no GitHub pill** in
@@ -167,14 +167,14 @@ ready. The Products menu does not change the header height.
 
 | Part | Engine | Cloud | AI |
 | --- | --- | --- | --- |
-| Background | `rgba(31, 17, 66, .92)` | dark blue — set by cloud.speedle.io#239 | `rgba(255, 255, 255, .96)` |
-| Links | `rgba(255, 255, 255, .82)` | white | `rgba(24, 32, 52, .82)` |
-| Hover / current | `#01e7cb` | light-blue accent — set by cloud.speedle.io#239 | `#7546d8` |
-| GitHub pill border | `rgba(255, 255, 255, .28)` | light border — set by cloud.speedle.io#239 | none (no pill) |
-| Product word | `#01e7cb` | light-blue accent — set by cloud.speedle.io#239 | `#7546d8` |
+| Background | `rgba(31, 17, 66, .92)` | `--surface-inverse` `#0b2149` | `rgba(255, 255, 255, .96)` |
+| Links | `rgba(255, 255, 255, .82)` | `--text-inverse` `#fff` | `rgba(24, 32, 52, .82)` |
+| Hover / current | `#01e7cb` | `--text-accent-inverse` `#7cc4ff` | `#7546d8` |
+| GitHub pill border | `rgba(255, 255, 255, .28)` | `rgba(255, 255, 255, .28)` | none (no pill) |
+| Product word | `#01e7cb` | `--text-accent-inverse` `#7cc4ff` | `#7546d8` |
 | Sphere | `#ff9a45` (original) | `#4da3ff` | `#8b5cf6` |
-| Bottom border | `rgba(255, 255, 255, .1)` | set by cloud.speedle.io#239 | `rgba(24, 32, 52, .1)` |
-| Focus ring | `#01e7cb` | light-blue accent — set by cloud.speedle.io#239 | `#7546d8` |
+| Bottom border | `rgba(255, 255, 255, .1)` | `--header-border` `rgba(255, 255, 255, 0.1)` | `rgba(24, 32, 52, .1)` |
+| Focus ring | `#01e7cb` | `--focus-inverse` `#9cc3ff` | `#7546d8` |
 
 ### 3.4 Products menu (primary cross-link)
 
@@ -302,8 +302,8 @@ Values follow the Engine CSS. Colours come from the site's token row.
 | Box | `inline-flex`, centred, min-height 50 px, padding 0 23 px, radius 9 px |
 | Type | 1rem, weight 750 |
 | Transition | `transform .2s, background .2s, border-color .2s`; hover `translateY(-2px)` |
-| Primary | Engine: `#1b1c2c` on `#01e7cb`. Light surfaces: white on `#7546d8`, hover `#5229ad`. Cloud: set by cloud.speedle.io#239 |
-| Secondary | Engine: white text, 1 px `rgba(255, 255, 255, .3)` border. Light surfaces: `#5229ad` text, 1 px `#d8cbf0` border, white background, hover `#5229ad` border and tint |
+| Primary | Engine: `#1b1c2c` on `#01e7cb`. AI: white on `#7546d8`, hover `#5229ad`. Cloud: `--text-inverse` `#fff` on `--primary` `#1f66d1`, hover `--primary-hover` `#1550a8` |
+| Secondary | Engine: white text, 1 px `rgba(255, 255, 255, .3)` border. AI: `#5229ad` text, 1 px `#d8cbf0` border, white background, hover `#5229ad` border and tint. Cloud: `--primary-hover` `#1550a8` text, 1 px `--border-control` `#777f91` border, `--surface` `#fff` background, hover `--primary-hover` border and `--surface-tint` `#e6eefa` |
 | Focus | 3 px focus ring, offset 4 px |
 
 ### 6.2 Cards
@@ -320,7 +320,7 @@ Values follow the Engine CSS. Colours come from the site's token row.
 | Element | Value |
 | --- | --- |
 | Eyebrow | `inline-flex`, centred, gap 9 px; uppercase; .78rem; weight 800; letter-spacing .14em; colour = the site's AA-safe accent/primary-strong (Engine `#01e7cb` on dark, AI `#5229ad`); 28 px × 2 px rule before it in `currentColor` |
-| "Coming soon" badge | 11 px, weight 600, padding 2 px × 7 px, radius 999 px; colours = primary-strong on the site's tint (AI measured: `#5229ad` text on `#f4f0fb`, `#d8cbf0` border); Cloud set by cloud.speedle.io#239 |
+| "Coming soon" badge | 11 px, weight 600, padding 2 px × 7 px, radius 999 px; colours = primary-strong on the site's tint (AI measured: `#5229ad` text on `#f4f0fb`, `#d8cbf0` border); Cloud: `--primary-hover` `#1550a8` on `--surface-tint` `#e6eefa`, `--border` `#e5e8f1` border |
 | Status dot | 10 px, accent colour, 6 px ring at .14 opacity |
 
 ### 6.4 Code blocks and SPDL
@@ -393,6 +393,9 @@ differ. It is the v6 standard.
 
 - First link column, heading **Speedle family** / **Speedle 产品**, Inter 600
   .88rem; links Inter .88rem, 8 px row gap.
+- Each product name is Inter **600**, .88rem; its one-line description is Inter
+  **400**, .88rem, muted. The sphere sits in a **20 × 20 px** box on a
+  `20px 1fr` grid with a **10 px** gap (v11).
 - The same three products, one-line descriptions and Cloud "Coming soon" badge
   as the Products menu (section 3.4). Mark the current site with
   `aria-current="page"`. Chinese pages use the Chinese labels and descriptions.
@@ -411,8 +414,9 @@ differ. It is the v6 standard.
 **Colours**
 
 - Engine: `#171022` background, `rgba(255, 255, 255, .7)` text.
-- Cloud: its darkest blue with the same alpha text (`#0b2149` is the fixed
-  darkest ink); other values set by cloud.speedle.io#239.
+- Cloud: `--surface-inverse` `#0b2149` background, `--footer-text`
+  `rgba(255, 255, 255, 0.7)` text and `--footer-border`
+  `rgba(255, 255, 255, 0.18)` borders.
 - AI: `#f4f0fb` background, `#182034` at .72 text, borders
   `rgba(24, 32, 52, .14)`.
 - AA contrast in every case.
@@ -433,23 +437,28 @@ size, social box size.
 
 - Every site's favicon is the **sphere mark only** (no wordmark), transparent
   background, same shape as the logo, ~1 px padding at 16 px.
-- Colours: Engine original sphere colours, Cloud `#4da3ff`, AI `#8b5cf6`.
-- All three favicons carry a **1 px outline in the site's darkest ink** on the
-  `<svg>` and the 16, 32 and 48 px frames inside the `.ico` (v9). The outline
-  fixes the faint 16 px sphere on light tab bars; the sphere colours are
-  unchanged. Outlines: Engine `#1f1142`, Cloud `#0b2149`, AI `#2a1660`.
-- Files at the site root, generated from the same recoloured SVG (colours and
-  outline only, no path edits):
+- Colours: Engine `#ff9a45` (original), Cloud `#4da3ff`, AI `#8b5cf6`.
+- **No dark outline** (v13; v9 is withdrawn). Remove the underlay polygon or
+  outline from `favicon.svg` and every frame inside the `.ico`. The logos in the
+  header and footer are unchanged.
+- In the favicon copies only, strengthen the sphere's own strokes in the site's
+  sphere colour: for example, outer polygon **×1.6** and inner lines **×1.8**,
+  tuned so the 16 px render has clear lines without filling in. Keep the same
+  shape and transparent background.
+- Files at the site root, generated from the same recoloured SVG (colour and
+  favicon-only stroke-width scaling, no path edits):
   - `favicon.svg`
   - `favicon.ico` (16, 32 and 48 px inside one `.ico`)
   - `apple-touch-icon.png` (180 × 180, the sphere on the site's header
-    background colour with 20 px padding; unchanged by the outline rule)
+    background colour with 20 px padding)
 - Link them in every page `<head>`, including Hugo-generated pages:
   `<link rel="icon" href="/favicon.svg" type="image/svg+xml">`,
   `<link rel="icon" href="/favicon.ico" sizes="any">`,
   `<link rel="apple-touch-icon" href="/apple-touch-icon.png">`.
 - Remove old icon links and old icon files that are no longer referenced; keep a
   provenance note in the site README.
+- Check the 16, 32 and 48 px renders on light and dark tab bars. **Rollout is
+  pending**: the v13 favicon fix merges last, after the other site PRs.
 
 ## 9. Language and bilingual pages
 
@@ -511,11 +520,12 @@ public page. It is cookieless.
   performance claims without evidence.
 - **SPDL examples must be real.** Test them with the Speedle parser and
   evaluator; use `#` comments only; never present pseudo-code as runnable.
-- **Names and cross-links** follow sections 1 and 3.4. The contextual links are
-  the only extra cross-links (one or two per site, no more):
-  - Engine home, near the hero or status bar:
-    "Prefer a hosted service? Speedle Cloud (coming soon) →" and
-    "Authorization for AI agents → Speedle AI".
+- **Names and cross-links** follow sections 1 and 3.4. The only permitted
+  contextual cross-links are:
+  - Engine home: **none** (v12). Remove "Prefer a hosted service? Speedle Cloud
+    (coming soon) →" and "Authorization for AI agents → Speedle AI", including
+    their Chinese equivalents. Engine reaches the other sites only through the
+    header Products menu and the footer Speedle family column.
   - Cloud landing: "Built on the open-source Speedle Engine →".
   - AI home: the existing Engine and Cloud links use exactly these names,
     URLs and the Cloud badge.
@@ -531,9 +541,13 @@ public page. It is cookieless.
       76; logo 152 / 128; divider 26 / 22; product word 22 / 19; nav
       15.04 px / 600; gap 30; GitHub pill 10 × 18; collapse at ≤ 1160.
 - [ ] Footer parity: min-height 190; lock-up logo 132; product word 19; text
-      .88rem; social box 44; grid `1fr auto auto`, gap 48.
-- [ ] Products menu, footer family and contextual links use the exact names,
-      URLs, descriptions and Cloud "Coming soon" badge.
+      .88rem; social box 44; grid `1fr auto auto`, gap 48. Family names are
+      600, descriptions 400 muted; sphere box 20 × 20 px, grid `20px 1fr`,
+      gap 10 px.
+- [ ] No stand-alone product links in the desktop or collapsed header; Engine
+      home has no contextual cross-links (v10/v12).
+- [ ] Products menu, footer family and permitted contextual links use the exact
+      names, URLs, descriptions and Cloud "Coming soon" badge.
 - [ ] AI has no GitHub pill in the header or collapsed menu.
 - [ ] Widths 1440, 390 and 320 px: no horizontal scroll; everything usable at
       320 px.
@@ -543,7 +557,9 @@ public page. It is cookieless.
 - [ ] English and Chinese pages match; the language link points to the same
       page; `hreflang` alternates are present.
 - [ ] Favicons: `favicon.svg`, `favicon.ico` (16/32/48), `apple-touch-icon.png`
-      (180), sphere only, site colour plus the 1 px darkest-ink outline.
+      (180), sphere only in the site colour, no underlay polygon or dark
+      outline; strengthened sphere strokes keep the 16 px render legible. The
+      v13 rollout stays pending until the favicon fix can merge last.
 - [ ] Analytics beacon on every public page with that host's token; never on
       signed-in app pages or API responses; Cloud CSP split as in section 10.
 - [ ] Claims checked; SPDL examples tested; no unsupported partner,
@@ -567,5 +583,5 @@ public page. It is cookieless.
 - **To change this standard**: open a PR to this file first, describing the
   rule and the measured values behind it. After it merges, apply it to the
   three sites in separate PRs. Until it merges, the owner-approved header
-  standard (v2–v9) remains the header reference.
+  standard (v2–v13) remains the header reference.
 - Each site repository's `AGENTS.md` points here; keep the pointer current.
