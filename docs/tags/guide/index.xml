@@ -17,8 +17,8 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://speedle.io/docs/api/</guid>
-      <description>REST APIs These are reference contracts for your configured PMS/ADS or asserter endpoint. speedle.io serves documentation and the browser Playground; it is not a hosted PMS/ADS service. Supply JSON with Content-Type: application/json, and configure TLS/mTLS and caller access controls.
- Policy management API Authorization decision API Token assertion webhook  Policy and role-policy IDs are strings. PMS responses are flat objects; authorization permissions use permissions (plural). REST decision requests use a typed attribute array, whereas diagnostic response attributes and webhook attributes are objects.</description>
+      <description>SDKs Client libraries for the decision API POST /authz-check/v1/is-allowed work with a self-hosted Speedle+ ADS and with Speedle Cloud. Each page shows how to add the package and gives a complete, tested program for both.
+   Language Package Version     Java Maven Central io.speedle:speedle-sdk 0.1.0   Python PyPI speedle 0.1.0   Go github.com/teramoby/speedle-sdk/go 0.1.0   C#/.NET NuGet Speedle.Sdk 0.1.0   Rust crates.</description>
     </item>
     
     <item>

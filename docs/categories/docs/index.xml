@@ -12,6 +12,16 @@
     
     
     <item>
+      <title>API</title>
+      <link>https://speedle.io/docs/api/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://speedle.io/docs/api/</guid>
+      <description>SDKs Client libraries for the decision API POST /authz-check/v1/is-allowed work with a self-hosted Speedle+ ADS and with Speedle Cloud. Each page shows how to add the package and gives a complete, tested program for both.
+   Language Package Version     Java Maven Central io.speedle:speedle-sdk 0.1.0   Python PyPI speedle 0.1.0   Go github.com/teramoby/speedle-sdk/go 0.1.0   C#/.NET NuGet Speedle.Sdk 0.1.0   Rust crates.</description>
+    </item>
+    
+    <item>
       <title>Policy Management</title>
       <link>https://speedle.io/docs/pms/policy-mgmt/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
@@ -74,6 +84,126 @@ Before running the examples Build ./bin/spctl, ./bin/speedle-pms and ./bin/speed
     </item>
     
     <item>
+      <title>Go SDK</title>
+      <link>https://speedle.io/docs/api/sdk-go/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://speedle.io/docs/api/sdk-go/</guid>
+      <description>The Go SDK supports the two latest Go releases and uses only the standard library. Module: github.com/teramoby/speedle-sdk/go v0.1.0, package speedle. Reference: speedle-sdk/go.
+The examples check the policy described in SDKs.
+Add the dependency In a new module:
+go mod init example.com/speedle-example go get github.com/teramoby/speedle-sdk/go@v0.1.0 Call a local Speedle+ Start Speedle+ and create the example policy as described in SDKs. Save this program as main.go:
+package main import ( &amp;#34;context&amp;#34; &amp;#34;fmt&amp;#34; &amp;#34;os&amp;#34; speedle &amp;#34;github.</description>
+    </item>
+    
+    <item>
+      <title>Java SDK</title>
+      <link>https://speedle.io/docs/api/sdk-java/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://speedle.io/docs/api/sdk-java/</guid>
+      <description>The Java SDK needs Java 17 or later and has no runtime dependencies. Package: io.speedle:speedle-sdk 0.1.0 on Maven Central. Reference: speedle-sdk/java.
+The examples check the policy described in SDKs.
+Add the dependency Maven, a complete pom.xml:
+&amp;lt;?xml version=&amp;#34;1.0&amp;#34; encoding=&amp;#34;UTF-8&amp;#34;?&amp;gt; &amp;lt;project xmlns=&amp;#34;http://maven.apache.org/POM/4.0.0&amp;#34; xmlns:xsi=&amp;#34;http://www.w3.org/2001/XMLSchema-instance&amp;#34; xsi:schemaLocation=&amp;#34;http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd&amp;#34;&amp;gt; &amp;lt;modelVersion&amp;gt;4.0.0&amp;lt;/modelVersion&amp;gt; &amp;lt;groupId&amp;gt;com.example&amp;lt;/groupId&amp;gt; &amp;lt;artifactId&amp;gt;speedle-example&amp;lt;/artifactId&amp;gt; &amp;lt;version&amp;gt;1.0&amp;lt;/version&amp;gt; &amp;lt;properties&amp;gt; &amp;lt;maven.compiler.release&amp;gt;17&amp;lt;/maven.compiler.release&amp;gt; &amp;lt;project.build.sourceEncoding&amp;gt;UTF-8&amp;lt;/project.build.sourceEncoding&amp;gt; &amp;lt;/properties&amp;gt; &amp;lt;dependencies&amp;gt; &amp;lt;dependency&amp;gt; &amp;lt;groupId&amp;gt;io.speedle&amp;lt;/groupId&amp;gt; &amp;lt;artifactId&amp;gt;speedle-sdk&amp;lt;/artifactId&amp;gt; &amp;lt;version&amp;gt;0.1.0&amp;lt;/version&amp;gt; &amp;lt;/dependency&amp;gt; &amp;lt;/dependencies&amp;gt; &amp;lt;/project&amp;gt; Gradle, a complete build.gradle.kts (with a settings.gradle.kts that sets rootProject.</description>
+    </item>
+    
+    <item>
+      <title>Logging Framework</title>
+      <link>https://speedle.io/docs/logging/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://speedle.io/docs/logging/</guid>
+      <description>Overview The following two open source projects are used to process log messages,
+1. https://github.com/sirupsen/logrus 2. https://github.com/natefinch/lumberjack Logrus is a structured logger for Go (golang), and completely API compatible with the golang standard library logger. Note that logrus doesn&amp;rsquo;t support log rotation, and it is exactly the reason why we introduce the second project lumberjack, which provides a rolling logger. Logrus communicates with lumberjack using the io.Writer interface, please refer to the following diagram,</description>
+    </item>
+    
+    <item>
+      <title>MongoDB Setup</title>
+      <link>https://speedle.io/docs/store/mongodb/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://speedle.io/docs/store/mongodb/</guid>
+      <description>This walkthrough uses MongoDB 7.0.16 as a single-node replica set with a persistent Docker volume. PMS writes policies and ADS follows the same database through a change stream. The example listens on loopback without authentication for local development. Production authentication, TLS and replica set configuration follow the walkthrough.
+MongoDB must run as a replica set or sharded cluster. ADS watches the database with a change stream, and replacing the whole policy store runs in a transaction; a standalone mongod supports neither.</description>
+    </item>
+    
+    <item>
+      <title>MySQL Setup</title>
+      <link>https://speedle.io/docs/store/mysql/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://speedle.io/docs/store/mysql/</guid>
+      <description>This guide uses MySQL 8.4 LTS and two native Speedle processes: PMS writes policies, and ADS reads the same database with a separate read-only account. The local example uses Docker and plain HTTP on loopback. For a remote deployment, use your existing MySQL server and the Security guide.
+1. Build Speedle with the MySQL backend Install Git, Bash, curl, Docker and a supported Go toolchain (Go 1.26.10 or Go 1.</description>
+    </item>
+    
+    <item>
+      <title>Node.js/TypeScript SDK</title>
+      <link>https://speedle.io/docs/api/sdk-node/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://speedle.io/docs/api/sdk-node/</guid>
+      <description>The Node.js SDK needs Node.js 22 or later, ships ESM and CommonJS builds with TypeScript types, and has no runtime dependencies. Package: @speedle/sdk 0.1.0 on npm, available when published. Reference: speedle-sdk/node.
+The examples check the policy described in SDKs.
+Add the dependency In a new ES module package (available when published):
+mkdir speedle-example cd speedle-example npm init -y npm pkg set type=module npm install @speedle/sdk@0.1.0 Call a local Speedle+ Start Speedle+ and create the example policy as described in SDKs.</description>
+    </item>
+    
+    <item>
+      <title>Pluggable Storage</title>
+      <link>https://speedle.io/docs/store/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://speedle.io/docs/store/</guid>
+      <description>Built-in stores and extension contracts The standalone binaries register file, etcd, MongoDB and MySQL implementations under pkg/store. Availability does not mean identical operational guarantees; review backend authentication, persistence, transaction and watch behavior for your deployment. The configuration below illustrates property names; running etcd/MongoDB deployments is outside this local example.
+A full backend implements pms.PolicyStoreManager: service, authorization-policy, role-policy and function management, snapshot reads and watch/stop. ADS accepts the narrower PolicyStoreManagerADS read/watch interface.</description>
+    </item>
+    
+    <item>
+      <title>Policy Discovery</title>
+      <link>https://speedle.io/docs/pms/discover/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://speedle.io/docs/pms/discover/</guid>
+      <description>What discovery does Discovery records requests and returns allowed=true with reason 5 for a successful recording operation. It does not prove that an existing policy authorized the operation. Use it only in an isolated test environment, review generated grants, and restore normal is-allowed enforcement afterwards. Assertion or storage errors must still be handled; never treat an error as an authorization grant.
+Start a reproducible local example Build the binaries using Quick Start, then run all terminals from the checkout root.</description>
+    </item>
+    
+    <item>
+      <title>Python SDK</title>
+      <link>https://speedle.io/docs/api/sdk-python/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://speedle.io/docs/api/sdk-python/</guid>
+      <description>The Python SDK needs Python 3.10 or later; its only runtime dependency is httpx. It has a sync Client and an asyncio AsyncClient with the same arguments. Package: speedle 0.1.0 on PyPI. Reference: speedle-sdk/python.
+The examples check the policy described in SDKs.
+Add the dependency With pip, in a virtual environment:
+python3 -m venv .venv . .venv/bin/activate pip install speedle==0.1.0 Or with uv, in a uv project:
+uv add speedle==0.</description>
+    </item>
+    
+    <item>
+      <title>Security</title>
+      <link>https://speedle.io/docs/security/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://speedle.io/docs/security/</guid>
+      <description>Protect both API transports Speedle&amp;rsquo;s standalone PMS and ADS expose REST and gRPC. Both now use the same --insecure, --cert, --key, --client-cert and --force-client-cert transport settings. Invalid certificates or trust configuration cause startup to fail; secure mode does not fall back to plaintext.
+TLS encrypts the connection and authenticates the server. To require authenticated clients, provide a client CA with --client-cert and set --force-client-cert=true. Without that flag, a configured CA validates a client certificate only when the client supplies one.</description>
+    </item>
+    
+    <item>
+      <title>Versions</title>
+      <link>https://speedle.io/docs/versions/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://speedle.io/docs/versions/</guid>
+      <description>Speedle+ releases Use the GitHub Releases page for published versions and release notes. v1.6.0 is the version pinned by the current embedded Go walkthrough. Use an explicit released version for reproducible module dependencies; the embedded guide explains the setup.
+Historical Oracle Speedle release Version 0.1.0 was the original open-source release, including policy management, authorization decisions, the command-line tool and integration samples. The historical 0.2.0 planning note is not the current Speedle+ release roadmap.</description>
+    </item>
+    
+    <item>
       <title>Custom Function</title>
       <link>https://speedle.io/docs/custom-function/</link>
       <pubDate>Mon, 21 Jan 2019 10:43:02 +0800</pubDate>
@@ -104,36 +234,6 @@ Security and endpoint configuration. This is a contract reference, not a backend
     </item>
     
     <item>
-      <title>MongoDB Setup</title>
-      <link>https://speedle.io/docs/store/mongodb/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://speedle.io/docs/store/mongodb/</guid>
-      <description>This walkthrough uses MongoDB 7.0.16 as a single-node replica set with a persistent Docker volume. PMS writes policies and ADS follows the same database through a change stream. The example listens on loopback without authentication for local development. Production authentication, TLS and replica set configuration follow the walkthrough.
-MongoDB must run as a replica set or sharded cluster. ADS watches the database with a change stream, and replacing the whole policy store runs in a transaction; a standalone mongod supports neither.</description>
-    </item>
-    
-    <item>
-      <title>MySQL Setup</title>
-      <link>https://speedle.io/docs/store/mysql/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://speedle.io/docs/store/mysql/</guid>
-      <description>This guide uses MySQL 8.4 LTS and two native Speedle processes: PMS writes policies, and ADS reads the same database with a separate read-only account. The local example uses Docker and plain HTTP on loopback. For a remote deployment, use your existing MySQL server and the Security guide.
-1. Build Speedle with the MySQL backend Install Git, Bash, curl, Docker and a supported Go toolchain (Go 1.26.10 or Go 1.</description>
-    </item>
-    
-    <item>
-      <title>Policy Discovery</title>
-      <link>https://speedle.io/docs/pms/discover/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://speedle.io/docs/pms/discover/</guid>
-      <description>What discovery does Discovery records requests and returns allowed=true with reason 5 for a successful recording operation. It does not prove that an existing policy authorized the operation. Use it only in an isolated test environment, review generated grants, and restore normal is-allowed enforcement afterwards. Assertion or storage errors must still be handled; never treat an error as an authorization grant.
-Start a reproducible local example Build the binaries using Quick Start, then run all terminals from the checkout root.</description>
-    </item>
-    
-    <item>
       <title>Policy Management API</title>
       <link>https://speedle.io/docs/api/management_api/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
@@ -151,6 +251,15 @@ Security and endpoint configuration. This is a contract reference, not a backend
       
       <guid>https://speedle.io/docs/spdl/</guid>
       <description>Syntax Keywords grant, deny, user, group, entity, role, from, on, if and in have special meanings in their syntax positions. Statement keywords are case-insensitive. In conditions, use in or IN; function names are case-sensitive. Principal, action and resource names are also case-sensitive. The current parser accepts keyword-like names in some name positions, so a blanket prohibition is not a validation rule. Prefer unambiguous names for review and client interoperability.</description>
+    </item>
+    
+    <item>
+      <title>Speedle Documents</title>
+      <link>https://speedle.io/docs/</link>
+      <pubDate>Thu, 17 Jan 2019 13:20:07 +0800</pubDate>
+      
+      <guid>https://speedle.io/docs/</guid>
+      <description></description>
     </item>
     
     <item>
@@ -184,6 +293,31 @@ Represent domains in policies and requests grant user user1 from github read boo
     </item>
     
     <item>
+      <title>C#/.NET SDK</title>
+      <link>https://speedle.io/docs/api/sdk-dotnet/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://speedle.io/docs/api/sdk-dotnet/</guid>
+      <description>The .NET SDK targets .NET 8 or later and has no dependencies. Package: Speedle.Sdk 0.1.0 on NuGet, namespace Speedle.Sdk. Reference: speedle-sdk/dotnet.
+The examples check the policy described in SDKs.
+Add the dependency In a new console project:
+dotnet new console -o SpeedleExample cd SpeedleExample dotnet add package Speedle.Sdk --version 0.1.0 Call a local Speedle+ Start Speedle+ and create the example policy as described in SDKs. Replace Program.cs with:
+using Speedle.</description>
+    </item>
+    
+    <item>
+      <title>Rust SDK</title>
+      <link>https://speedle.io/docs/api/sdk-rust/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://speedle.io/docs/api/sdk-rust/</guid>
+      <description>The Rust SDK needs Rust 1.75 or later. It is async on tokio and reqwest (rustls); the blocking feature adds the blocking client used below. Crate: speedle 0.1.0 on crates.io. Reference: speedle-sdk/rust.
+The examples check the policy described in SDKs.
+Add the dependency In a new package:
+cargo new speedle-example cd speedle-example cargo add speedle@0.1.0 --features blocking Call a local Speedle+ Start Speedle+ and create the example policy as described in SDKs.</description>
+    </item>
+    
+    <item>
       <title>Token asserter</title>
       <link>https://speedle.io/docs/assertor/</link>
       <pubDate>Mon, 21 Jan 2019 09:28:30 +0800</pubDate>
@@ -191,16 +325,6 @@ Represent domains in policies and requests grant user user1 from github read boo
       <guid>https://speedle.io/docs/assertor/</guid>
       <description>What does a token asserter do? A configured asserter validates a token and returns explicit principals, including their identity domains. Speedle can then evaluate policies using those identities. A production implementation must validate the token&amp;rsquo;s signature or introspection result, issuer, audience, expiry and any provider-specific requirements. The webhook alone does not establish compatibility with arbitrary OAuth/OIDC tokens.
 The Token Assertion Plugin API uses integer errCode and an optional attribute object, not a typed attribute array.</description>
-    </item>
-    
-    <item>
-      <title>API</title>
-      <link>https://speedle.io/docs/api/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://speedle.io/docs/api/</guid>
-      <description>REST APIs These are reference contracts for your configured PMS/ADS or asserter endpoint. speedle.io serves documentation and the browser Playground; it is not a hosted PMS/ADS service. Supply JSON with Content-Type: application/json, and configure TLS/mTLS and caller access controls.
- Policy management API Authorization decision API Token assertion webhook  Policy and role-policy IDs are strings. PMS responses are flat objects; authorization permissions use permissions (plural). REST decision requests use a typed attribute array, whereas diagnostic response attributes and webhook attributes are objects.</description>
     </item>
     
     <item>
@@ -214,45 +338,6 @@ Build with current Go Use Go 1.26.10 or Go 1.27.3 (or a newer patch on the same 
     </item>
     
     <item>
-      <title>Logging Framework</title>
-      <link>https://speedle.io/docs/logging/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://speedle.io/docs/logging/</guid>
-      <description>Overview The following two open source projects are used to process log messages,
-1. https://github.com/sirupsen/logrus 2. https://github.com/natefinch/lumberjack Logrus is a structured logger for Go (golang), and completely API compatible with the golang standard library logger. Note that logrus doesn&amp;rsquo;t support log rotation, and it is exactly the reason why we introduce the second project lumberjack, which provides a rolling logger. Logrus communicates with lumberjack using the io.Writer interface, please refer to the following diagram,</description>
-    </item>
-    
-    <item>
-      <title>Pluggable Storage</title>
-      <link>https://speedle.io/docs/store/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://speedle.io/docs/store/</guid>
-      <description>Built-in stores and extension contracts The standalone binaries register file, etcd, MongoDB and MySQL implementations under pkg/store. Availability does not mean identical operational guarantees; review backend authentication, persistence, transaction and watch behavior for your deployment. The configuration below illustrates property names; running etcd/MongoDB deployments is outside this local example.
-A full backend implements pms.PolicyStoreManager: service, authorization-policy, role-policy and function management, snapshot reads and watch/stop. ADS accepts the narrower PolicyStoreManagerADS read/watch interface.</description>
-    </item>
-    
-    <item>
-      <title>Security</title>
-      <link>https://speedle.io/docs/security/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://speedle.io/docs/security/</guid>
-      <description>Protect both API transports Speedle&amp;rsquo;s standalone PMS and ADS expose REST and gRPC. Both now use the same --insecure, --cert, --key, --client-cert and --force-client-cert transport settings. Invalid certificates or trust configuration cause startup to fail; secure mode does not fall back to plaintext.
-TLS encrypts the connection and authenticates the server. To require authenticated clients, provide a client CA with --client-cert and set --force-client-cert=true. Without that flag, a configured CA validates a client certificate only when the client supplies one.</description>
-    </item>
-    
-    <item>
-      <title>Speedle Documents</title>
-      <link>https://speedle.io/docs/</link>
-      <pubDate>Thu, 17 Jan 2019 13:20:07 +0800</pubDate>
-      
-      <guid>https://speedle.io/docs/</guid>
-      <description></description>
-    </item>
-    
-    <item>
       <title>Token Assertion Plugin API</title>
       <link>https://speedle.io/docs/api/asserter_api/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
@@ -261,16 +346,6 @@ TLS encrypts the connection and authenticates the server. To require authenticat
       <description>Webhook reference. errCode is an integer and attributes is an object. Configure the actual endpoint in the ADS asserter configuration.
 Security and endpoint configuration. This is a contract reference, not a backend hosted by speedle.io.
               (function() { var url = &#34;\/swagger\/asserter.yaml&#34;; const ui = SwaggerUIBundle({ url: url, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.presets.apis ], plugins: [ SwaggerUIBundle.</description>
-    </item>
-    
-    <item>
-      <title>Versions</title>
-      <link>https://speedle.io/docs/versions/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://speedle.io/docs/versions/</guid>
-      <description>Speedle+ releases Use the GitHub Releases page for published versions and release notes. v1.6.0 is the version pinned by the current embedded Go walkthrough. Use an explicit released version for reproducible module dependencies; the embedded guide explains the setup.
-Historical Oracle Speedle release Version 0.1.0 was the original open-source release, including policy management, authorization decisions, the command-line tool and integration samples. The historical 0.2.0 planning note is not the current Speedle+ release roadmap.</description>
     </item>
     
   </channel>

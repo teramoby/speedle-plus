@@ -64,7 +64,8 @@ function checkStorageNavigation(directory, locale = '') {
       const html = fs.readFileSync(name, 'utf8');
       if (!html.includes('<div class="sidebar">')) continue;
       const sidebar = html.split('<div class="sidebar">')[1];
-      for (const target of ['store/', 'store/mysql/', 'store/etcd/', 'store/mongodb/', 'pms/policy-mgmt/', 'api/decision_api/']) {
+      for (const target of ['store/', 'store/mysql/', 'store/etcd/', 'store/mongodb/', 'pms/policy-mgmt/', 'api/decision_api/',
+        'api/sdk-java/', 'api/sdk-python/', 'api/sdk-go/', 'api/sdk-dotnet/', 'api/sdk-rust/', 'api/sdk-node/']) {
         assert.ok(sidebar.includes(`href="/${locale}docs/${target}"`), `Complete sidebar ${target} in ${name}`);
       }
     }

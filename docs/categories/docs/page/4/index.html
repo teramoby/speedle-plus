@@ -94,13 +94,13 @@
       
       <li>
   <h2 class="title2">
-    <a href="/docs/spdl/" itemprop="headline">SPDL - Speedle Policy Definition Language</a>
+    <a href="/docs/pms/discover/" itemprop="headline">Policy Discovery</a>
   </h2>
   
-  <p itemprop="about">SPDL stands for Speedle Policy Definition Language, the language for writing Speedle policies and role policies.</p>
+  <p itemprop="about">Discover policies on the fly!</p>
   
   
-  <p itemprop="about">Basics of SPDL</p>
+  <p itemprop="about">Speedle can be used for authorization decisions in systems with a large number of protected resources. Before those protected resources can be accessed, the Speedle authorization decision API (is-allowed API) is called. Defining the authorization policies for those protected resources is difficult if you don&#39;t know what actions are occuring on the protected resources, or how a protected resource is expressed in an authorization decision request. Policy discovery mode can make this task much easier</p>
   
   <hr />
 </li>
@@ -108,11 +108,13 @@
       
       <li>
   <h2 class="title2">
-    <a href="/docs/pms/" itemprop="headline">Speedle Policy</a>
+    <a href="/docs/api/sdk-python/" itemprop="headline">Python SDK</a>
   </h2>
   
+  <p itemprop="about">Add the Speedle Python SDK and check authorization against a local Speedle&#43; or Speedle Cloud.</p>
   
-  <p itemprop="about">Open API Specification Docs. Use the API to model your simple and complex policies in a declarative way; get decisions, discover policies dynamically and debug policy evaluation.</p>
+  
+  <p itemprop="about">Install speedle 0.1.0 with pip or uv, then call is_allowed and check against a local Speedle&#43; or Speedle Cloud.</p>
   
   <hr />
 </li>
@@ -120,13 +122,13 @@
       
       <li>
   <h2 class="title2">
-    <a href="/docs/store/etcd/" itemprop="headline">etcd Setup</a>
+    <a href="/docs/api/sdk-node/" itemprop="headline">Node.js/TypeScript SDK</a>
   </h2>
   
-  <p itemprop="about">Set up etcd policy storage for PMS and ADS, step by step.</p>
+  <p itemprop="about">Add the Speedle Node.js/TypeScript SDK and check authorization against a local Speedle&#43; or Speedle Cloud.</p>
   
   
-  <p itemprop="about">Run an independent etcd server, connect PMS and ADS, verify live policy updates, and save a backup.</p>
+  <p itemprop="about">Install @speedle/sdk 0.1.0 with npm when it is published, then call isAllowed and check against a local Speedle&#43; or Speedle Cloud.</p>
   
   <hr />
 </li>
@@ -134,11 +136,13 @@
       
       <li>
   <h2 class="title2">
-    <a href="/docs/api/management_api/" itemprop="headline">Policy Management API</a>
+    <a href="/docs/store/" itemprop="headline">Pluggable Storage</a>
   </h2>
   
-  <p itemprop="about">Swagger documentation for the management endpoint. CRUD on services, functions, policies and role-policies. Handle your simple and complex usecases using a simple declarative way!</p>
+  <p itemprop="about">Bring your own persistence store!</p>
   
+  
+  <p itemprop="about">Speedle includes file, etcd, MongoDB and MySQL policy stores. This document describes their configuration and how to implement or register a different store.</p>
   
   <hr />
 </li>

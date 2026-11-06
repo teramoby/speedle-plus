@@ -151,6 +151,19 @@ Issue的内容请包括：
     </item>
     
     <item>
+      <title>Java SDK</title>
+      <link>https://speedle.io/zh/docs/api/sdk-java/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://speedle.io/zh/docs/api/sdk-java/</guid>
+      <description>Java SDK 需要 Java 17 或更高版本，没有运行时依赖。软件包：Maven Central 上的 io.speedle:speedle-sdk 0.1.0。参考文档：speedle-sdk/java。
+示例检查的策略见 SDK。
+添加依赖 Maven，完整的 pom.xml：
+&amp;lt;?xml version=&amp;#34;1.0&amp;#34; encoding=&amp;#34;UTF-8&amp;#34;?&amp;gt; &amp;lt;project xmlns=&amp;#34;http://maven.apache.org/POM/4.0.0&amp;#34; xmlns:xsi=&amp;#34;http://www.w3.org/2001/XMLSchema-instance&amp;#34; xsi:schemaLocation=&amp;#34;http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd&amp;#34;&amp;gt; &amp;lt;modelVersion&amp;gt;4.0.0&amp;lt;/modelVersion&amp;gt; &amp;lt;groupId&amp;gt;com.example&amp;lt;/groupId&amp;gt; &amp;lt;artifactId&amp;gt;speedle-example&amp;lt;/artifactId&amp;gt; &amp;lt;version&amp;gt;1.0&amp;lt;/version&amp;gt; &amp;lt;properties&amp;gt; &amp;lt;maven.compiler.release&amp;gt;17&amp;lt;/maven.compiler.release&amp;gt; &amp;lt;project.build.sourceEncoding&amp;gt;UTF-8&amp;lt;/project.build.sourceEncoding&amp;gt; &amp;lt;/properties&amp;gt; &amp;lt;dependencies&amp;gt; &amp;lt;dependency&amp;gt; &amp;lt;groupId&amp;gt;io.speedle&amp;lt;/groupId&amp;gt; &amp;lt;artifactId&amp;gt;speedle-sdk&amp;lt;/artifactId&amp;gt; &amp;lt;version&amp;gt;0.1.0&amp;lt;/version&amp;gt; &amp;lt;/dependency&amp;gt; &amp;lt;/dependencies&amp;gt; &amp;lt;/project&amp;gt; Gradle，完整的 build.gradle.kts（另需一个设置 rootProject.name 的 settings.gradle.kts）：
+plugins { application } repositories { mavenCentral() } dependencies { implementation(&amp;#34;io.speedle:speedle-sdk:0.1.0&amp;#34;) } application { mainClass = &amp;#34;Main&amp;#34; } 调用本地 Speedle+ 按 SDK 一节启动 Speedle+ 并创建示例策略。将以下程序保存为 src/main/java/Main.</description>
+    </item>
+    
+    <item>
       <title>MySQL 配置指南</title>
       <link>https://speedle.io/zh/docs/store/mysql/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
@@ -230,6 +243,20 @@ FooBar 链接示例 巧克力提拉米苏糕点。链接示例
     </item>
     
     <item>
+      <title>Python SDK</title>
+      <link>https://speedle.io/zh/docs/api/sdk-python/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://speedle.io/zh/docs/api/sdk-python/</guid>
+      <description>Python SDK 需要 Python 3.10 或更高版本，唯一的运行时依赖是 httpx。它提供同步的 Client 和 asyncio 的 AsyncClient，两者参数相同。软件包：PyPI 上的 speedle 0.1.0。参考文档：speedle-sdk/python。
+示例检查的策略见 SDK。
+添加依赖 使用 pip，在虚拟环境中安装：
+python3 -m venv .venv . .venv/bin/activate pip install speedle==0.1.0 或者使用 uv，在 uv 项目中添加：
+uv add speedle==0.1.0 调用本地 Speedle+ 按 SDK 一节启动 Speedle+ 并创建示例策略。将以下程序保存为 main.py：
+import sys from speedle import Auth, Client, SpeedleError try: with Client( backend=&amp;#34;speedle-plus&amp;#34;, endpoint=&amp;#34;http://localhost:6734&amp;#34;, auth=Auth.none(), service_name=&amp;#34;docs&amp;#34;, ) as speedle: allowed = speedle.is_allowed(&amp;#34;alice&amp;#34;, &amp;#34;get&amp;#34;, &amp;#34;/docs/public&amp;#34;) print(f&amp;#34;alice get /docs/public: allowed={allowed}&amp;#34;) decision = speedle.</description>
+    </item>
+    
+    <item>
       <title>etcd 配置指南</title>
       <link>https://speedle.io/zh/docs/store/etcd/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
@@ -240,6 +267,19 @@ FooBar 链接示例 巧克力提拉米苏糕点。链接示例
 git clone --depth 1 https://github.com/teramoby/speedle-plus.git cd speedle-plus mkdir -p bin go build -o ./bin/ ./cmd/spctl ./cmd/speedle-pms ./cmd/speedle-ads 后续命令均在这个代码目录执行。确认 2379、6733、6734 端口可用；修改端口时要同步修改命令和配置。
 2. 启动独立 etcd 服务 命名卷保存 etcd 数据。这里只把客户端端口发布到宿主机，单节点内部通信使用的 peer 端口保留在容器内。
 docker run --name speedle-etcd --detach \  --publish 127.0.0.1:2379:2379 \  --volume speedle-etcd-data:/etcd-data \  gcr.</description>
+    </item>
+    
+    <item>
+      <title>Go SDK</title>
+      <link>https://speedle.io/zh/docs/api/sdk-go/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://speedle.io/zh/docs/api/sdk-go/</guid>
+      <description>Go SDK 支持最新的两个 Go 版本，只使用标准库。模块：github.com/teramoby/speedle-sdk/go v0.1.0，包名 speedle。参考文档：speedle-sdk/go。
+示例检查的策略见 SDK。
+添加依赖 在新模块中执行：
+go mod init example.com/speedle-example go get github.com/teramoby/speedle-sdk/go@v0.1.0 调用本地 Speedle+ 按 SDK 一节启动 Speedle+ 并创建示例策略。将以下程序保存为 main.go：
+package main import ( &amp;#34;context&amp;#34; &amp;#34;fmt&amp;#34; &amp;#34;os&amp;#34; speedle &amp;#34;github.com/teramoby/speedle-sdk/go&amp;#34; ) func main() { client, err := speedle.NewClient(speedle.Config{ Backend: speedle.BackendSpeedlePlus, Endpoint: &amp;#34;http://localhost:6734&amp;#34;, Auth: speedle.NoAuth(), ServiceName: &amp;#34;docs&amp;#34;, }) if err != nil { fmt.Fprintln(os.Stderr, &amp;#34;Speedle error:&amp;#34;, err) os.Exit(1) } defer client.Close() ctx := context.Background() allowed, err := client.</description>
     </item>
     
     <item>
@@ -288,6 +328,32 @@ printf &amp;#39;{}\n&amp;#39; &amp;gt; docs-policies.json 终端一启动 PMS，
     </item>
     
     <item>
+      <title>C#/.NET SDK</title>
+      <link>https://speedle.io/zh/docs/api/sdk-dotnet/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://speedle.io/zh/docs/api/sdk-dotnet/</guid>
+      <description>.NET SDK 面向 .NET 8 或更高版本，没有依赖。软件包：NuGet 上的 Speedle.Sdk 0.1.0，命名空间 Speedle.Sdk。参考文档：speedle-sdk/dotnet。
+示例检查的策略见 SDK。
+添加依赖 新建控制台项目并添加软件包：
+dotnet new console -o SpeedleExample cd SpeedleExample dotnet add package Speedle.Sdk --version 0.1.0 调用本地 Speedle+ 按 SDK 一节启动 Speedle+ 并创建示例策略。将 Program.cs 替换为：
+using Speedle.Sdk; try { await using var speedle = new SpeedleClient(new SpeedleClientOptions { Backend = Backend.SpeedlePlus, Endpoint = new Uri(&amp;#34;http://localhost:6734&amp;#34;), Auth = Auth.None(), ServiceName = &amp;#34;docs&amp;#34;, }); bool allowed = await speedle.IsAllowedAsync(&amp;#34;alice&amp;#34;, &amp;#34;get&amp;#34;, &amp;#34;/docs/public&amp;#34;); Console.</description>
+    </item>
+    
+    <item>
+      <title>Rust SDK</title>
+      <link>https://speedle.io/zh/docs/api/sdk-rust/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://speedle.io/zh/docs/api/sdk-rust/</guid>
+      <description>Rust SDK 需要 Rust 1.75 或更高版本，基于 tokio 和 reqwest（rustls）实现异步调用；下面使用的阻塞客户端由 blocking 特性提供。crate：crates.io 上的 speedle 0.1.0。参考文档：speedle-sdk/rust。
+示例检查的策略见 SDK。
+添加依赖 新建包并添加依赖：
+cargo new speedle-example cd speedle-example cargo add speedle@0.1.0 --features blocking 调用本地 Speedle+ 按 SDK 一节启动 Speedle+ 并创建示例策略。将 src/main.rs 替换为：
+use speedle::blocking::Client; use speedle::{Auth, Backend}; fn main() { if let Err(e) = run() { eprintln!(&amp;#34;Speedle error: {e}&amp;#34;); std::process::exit(1); } } fn run() -&amp;gt; Result&amp;lt;(), speedle::Error&amp;gt; { let speedle = Client::builder(Backend::SpeedlePlus, &amp;#34;http://localhost:6734&amp;#34;, Auth::none(), &amp;#34;docs&amp;#34;).</description>
+    </item>
+    
+    <item>
       <title>令牌用户身份断言</title>
       <link>https://speedle.io/zh/docs/assertor/</link>
       <pubDate>Mon, 21 Jan 2019 09:28:30 +0800</pubDate>
@@ -298,6 +364,19 @@ printf &amp;#39;{}\n&amp;#39; &amp;gt; docs-policies.json 终端一启动 PMS，
 启动确定性的本地 mock 此 mock 只识别 githubtoken/github、googletoken/google、gitlabtoken/gitlab 三组输入，分别表示对应域的 user1。令牌与提供方不匹配时失败。它是测试 fixture，不验证真实令牌。 不会记录令牌值。仅绑定回环地址，生产环境必须替换为真实身份集成。
 从仓库根目录在单独终端运行：
 go run ./website/tests/examples/asserter // A deterministic mock for the token-assertion tutorial. Never use for real tokens. package main import ( &amp;#34;encoding/json&amp;#34; &amp;#34;flag&amp;#34; &amp;#34;log&amp;#34; &amp;#34;net/http&amp;#34; &amp;#34;strings&amp;#34; &amp;#34;time&amp;#34; ) type principal struct { Type string `json:&amp;#34;type&amp;#34;` Name string `json:&amp;#34;name&amp;#34;` IDD string `json:&amp;#34;idd&amp;#34;` } type response struct { Principals []principal `json:&amp;#34;principals,omitempty&amp;#34;` ErrCode int `json:&amp;#34;errCode&amp;#34;` ErrMessage string `json:&amp;#34;errMessage,omitempty&amp;#34;` } func assert(w http.</description>
+    </item>
+    
+    <item>
+      <title>Node.js/TypeScript SDK</title>
+      <link>https://speedle.io/zh/docs/api/sdk-node/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://speedle.io/zh/docs/api/sdk-node/</guid>
+      <description>Node.js SDK 需要 Node.js 22 或更高版本，同时提供 ESM 和 CommonJS 构建及 TypeScript 类型，没有运行时依赖。软件包：npm 上的 @speedle/sdk 0.1.0，发布后可用。参考文档：speedle-sdk/node。
+示例检查的策略见 SDK。
+添加依赖 新建 ES 模块包并安装（发布后可用）：
+mkdir speedle-example cd speedle-example npm init -y npm pkg set type=module npm install @speedle/sdk@0.1.0 调用本地 Speedle+ 按 SDK 一节启动 Speedle+ 并创建示例策略。将以下程序保存为 main.ts：
+import { Auth, Reason, SpeedleClient, SpeedleError } from &amp;#34;@speedle/sdk&amp;#34;; try { const speedle = new SpeedleClient({ backend: &amp;#34;speedle-plus&amp;#34;, endpoint: &amp;#34;http://localhost:6734&amp;#34;, auth: Auth.none(), serviceName: &amp;#34;docs&amp;#34;, }); try { const allowed = await speedle.</description>
     </item>
     
     <item>

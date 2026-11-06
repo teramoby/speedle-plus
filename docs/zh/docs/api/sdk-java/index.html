@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+    <meta name="generator" content="Hugo 0.48" />
+    <link rel="icon" type="image/png" sizes="1024x1024" href="https://speedle.io/images/speedle_purple.png">
+
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1"><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Java SDK - Speedle</title>
+<meta name="description" content="添加 Speedle Java SDK，向本地 Speedle&#43; 或 Speedle Cloud 发起授权检查。">
+<meta name="generator" content="Hugo 0.48" />
+<link href="https://speedle.io/index.xml" rel="alternate" type="application/rss+xml">
+<link rel="canonical" href="https://speedle.io/zh/docs/api/sdk-java/">
+<link rel="stylesheet" href="/css/theme.min.css">
+<script src="https://use.fontawesome.com/releases/v5.0.6/js/all.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+<script src="/js/functions.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jquery.easing@1.4.1/jquery.easing.min.js"></script>
+
+
+<script src="/js/jquery.backtothetop/jquery.backtothetop.min.js"></script>
+
+<script type="text/javascript" src="/js/tocbot.min.js"></script>
+<link href="/css/font.css" rel="stylesheet" type="text/css">
+    <link href="/css/kube.min.css" rel="stylesheet" type="text/css">
+    <link href="/css/kube.legenda.css" rel="stylesheet" type="text/css">
+    <link href="/css/highlight.css" rel="stylesheet" type="text/css">
+    <link href="/css/master.css" rel="stylesheet" type="text/css">
+    <link href="/css/kube.demo.css" rel="stylesheet" type="text/css">
+    <link href="/css/swagger-ui.css" rel="stylesheet" type="text/css">
+    
+    
+    <link href="/css/custom.css" rel="stylesheet" type="text/css">
+    <link href="https://fonts.googleapis.com/css?family=IBM+Plex+Sans" rel="stylesheet">
+    <link href="/css/brand.css?v=1" rel="stylesheet" type="text/css">
+    <link href="/css/navigation.css?v=header-20261027" rel="stylesheet">
+    <script src="/js/navigation.js?v=header-20261027" defer></script>
+</head>
+
+<body class="page-kube" style="background: none">
+    <header class="site-header">
+    <div class="wrap nav">
+      <a class="brand" href="/zh/#top" aria-label="Speedle 中文首页"><img src="/img/speedle/Speedle_logo_home_bold.svg?v=4" alt="Speedle"></a>
+      <button class="menu" type="button" aria-expanded="false" aria-controls="nav-links" aria-label="展开导航">☰</button>
+      <nav class="nav-links" id="nav-links" aria-label="主导航">
+        <a href="/zh/#about">关于</a><a href="/zh/#features">功能</a><a href="/zh/#integrations">集成</a>
+        <a href="/zh/quick-start/">快速入门</a><a href="/zh/docs/">文档</a><a href="/zh/playground/">Playground</a>
+        <a href="/docs/api/sdk-java/" lang="en" hreflang="en" aria-label="Switch to English">English</a>
+        <a class="nav-github" href="https://github.com/teramoby/speedle-plus">GitHub</a>
+      </nav>
+    </div>
+  </header>
+    <div class="container">
+        <div class="content-container">
+            <main>
+<div id="main">
+  
+  <h1>Java SDK</h1>
+  <p>用 Maven 或 Gradle 添加 io.speedle:speedle-sdk 0.1.0，再向本地 Speedle&#43; 或 Speedle Cloud 调用 isAllowed 与 check。</p>
+
+  
+<script type="text/javascript">
+document.addEventListener("DOMContentLoaded",
+function(){
+tocbot.init({
+tocSelector: '.js-toc',
+contentSelector: '.content',
+headingSelector: 'h2'
+})
+}
+);
+</script>
+
+
+<nav id="contents">
+    <ol class="js-toc">
+    </ol>
+</nav>
+
+
+
+
+
+
+  <br />
+  <div id="kube-component" class="content">
+    
+
+<p>Java SDK 需要 Java 17 或更高版本，没有运行时依赖。软件包：Maven Central 上的 <a href="https://central.sonatype.com/artifact/io.speedle/speedle-sdk"><code>io.speedle:speedle-sdk</code></a> 0.1.0。参考文档：<a href="https://github.com/teramoby/speedle-sdk/tree/main/java">speedle-sdk/java</a>。</p>
+
+<p>示例检查的策略见 <a href="/zh/docs/api/#sdk">SDK</a>。</p>
+
+<h2 id="添加依赖">添加依赖</h2>
+
+<p>Maven，完整的 <code>pom.xml</code>：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-xml" data-lang="xml"><span style="color:#ff79c6">&lt;?xml version=&#34;1.0&#34; encoding=&#34;UTF-8&#34;?&gt;</span>
+<span style="color:#ff79c6">&lt;project</span> <span style="color:#50fa7b">xmlns=</span><span style="color:#f1fa8c">&#34;http://maven.apache.org/POM/4.0.0&#34;</span>
+         <span style="color:#50fa7b">xmlns:xsi=</span><span style="color:#f1fa8c">&#34;http://www.w3.org/2001/XMLSchema-instance&#34;</span>
+         <span style="color:#50fa7b">xsi:schemaLocation=</span><span style="color:#f1fa8c">&#34;http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd&#34;</span><span style="color:#ff79c6">&gt;</span>
+  <span style="color:#ff79c6">&lt;modelVersion&gt;</span>4.0.0<span style="color:#ff79c6">&lt;/modelVersion&gt;</span>
+  <span style="color:#ff79c6">&lt;groupId&gt;</span>com.example<span style="color:#ff79c6">&lt;/groupId&gt;</span>
+  <span style="color:#ff79c6">&lt;artifactId&gt;</span>speedle-example<span style="color:#ff79c6">&lt;/artifactId&gt;</span>
+  <span style="color:#ff79c6">&lt;version&gt;</span>1.0<span style="color:#ff79c6">&lt;/version&gt;</span>
+
+  <span style="color:#ff79c6">&lt;properties&gt;</span>
+    <span style="color:#ff79c6">&lt;maven.compiler.release&gt;</span>17<span style="color:#ff79c6">&lt;/maven.compiler.release&gt;</span>
+    <span style="color:#ff79c6">&lt;project.build.sourceEncoding&gt;</span>UTF-8<span style="color:#ff79c6">&lt;/project.build.sourceEncoding&gt;</span>
+  <span style="color:#ff79c6">&lt;/properties&gt;</span>
+
+  <span style="color:#ff79c6">&lt;dependencies&gt;</span>
+    <span style="color:#ff79c6">&lt;dependency&gt;</span>
+      <span style="color:#ff79c6">&lt;groupId&gt;</span>io.speedle<span style="color:#ff79c6">&lt;/groupId&gt;</span>
+      <span style="color:#ff79c6">&lt;artifactId&gt;</span>speedle-sdk<span style="color:#ff79c6">&lt;/artifactId&gt;</span>
+      <span style="color:#ff79c6">&lt;version&gt;</span>0.1.0<span style="color:#ff79c6">&lt;/version&gt;</span>
+    <span style="color:#ff79c6">&lt;/dependency&gt;</span>
+  <span style="color:#ff79c6">&lt;/dependencies&gt;</span>
+<span style="color:#ff79c6">&lt;/project&gt;</span></code></pre></div>
+<p>Gradle，完整的 <code>build.gradle.kts</code>（另需一个设置 <code>rootProject.name</code> 的 <code>settings.gradle.kts</code>）：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-kotlin" data-lang="kotlin">plugins {
+    application
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation(<span style="color:#f1fa8c">&#34;io.speedle:speedle-sdk:0.1.0&#34;</span>)
+}
+
+application {
+    mainClass = <span style="color:#f1fa8c">&#34;Main&#34;</span>
+}</code></pre></div>
+<h2 id="调用本地-speedle">调用本地 Speedle+</h2>
+
+<p>按 <a href="/zh/docs/api/#sdk">SDK</a> 一节启动 Speedle+ 并创建示例策略。将以下程序保存为 <code>src/main/java/Main.java</code>：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#ff79c6">import</span> io.speedle.sdk.Auth<span style="color:#ff79c6">;</span>
+<span style="color:#ff79c6">import</span> io.speedle.sdk.Backend<span style="color:#ff79c6">;</span>
+<span style="color:#ff79c6">import</span> io.speedle.sdk.Decision<span style="color:#ff79c6">;</span>
+<span style="color:#ff79c6">import</span> io.speedle.sdk.SpeedleClient<span style="color:#ff79c6">;</span>
+<span style="color:#ff79c6">import</span> io.speedle.sdk.SpeedleException<span style="color:#ff79c6">;</span>
+<span style="color:#ff79c6">import</span> io.speedle.sdk.Subject<span style="color:#ff79c6">;</span>
+<span style="color:#ff79c6">import</span> java.net.URI<span style="color:#ff79c6">;</span>
+<span style="color:#ff79c6">import</span> java.util.List<span style="color:#ff79c6">;</span>
+
+<span style="color:#8be9fd;font-style:italic">public</span> <span style="color:#8be9fd;font-style:italic">class</span> <span style="color:#50fa7b">Main</span> <span style="color:#ff79c6">{</span>
+  <span style="color:#8be9fd;font-style:italic">public</span> <span style="color:#8be9fd;font-style:italic">static</span> <span style="color:#8be9fd">void</span> <span style="color:#50fa7b">main</span><span style="color:#ff79c6">(</span>String<span style="color:#ff79c6">[]</span> args<span style="color:#ff79c6">)</span> <span style="color:#ff79c6">{</span>
+    <span style="color:#ff79c6">try</span> <span style="color:#ff79c6">(</span>SpeedleClient speedle <span style="color:#ff79c6">=</span> SpeedleClient<span style="color:#ff79c6">.</span><span style="color:#50fa7b">builder</span><span style="color:#ff79c6">()</span>
+        <span style="color:#ff79c6">.</span><span style="color:#50fa7b">backend</span><span style="color:#ff79c6">(</span>Backend<span style="color:#ff79c6">.</span><span style="color:#50fa7b">SPEEDLE_PLUS</span><span style="color:#ff79c6">)</span>
+        <span style="color:#ff79c6">.</span><span style="color:#50fa7b">endpoint</span><span style="color:#ff79c6">(</span>URI<span style="color:#ff79c6">.</span><span style="color:#50fa7b">create</span><span style="color:#ff79c6">(</span><span style="color:#f1fa8c">&#34;http://localhost:6734&#34;</span><span style="color:#ff79c6">))</span>
+        <span style="color:#ff79c6">.</span><span style="color:#50fa7b">auth</span><span style="color:#ff79c6">(</span>Auth<span style="color:#ff79c6">.</span><span style="color:#50fa7b">none</span><span style="color:#ff79c6">())</span>
+        <span style="color:#ff79c6">.</span><span style="color:#50fa7b">serviceName</span><span style="color:#ff79c6">(</span><span style="color:#f1fa8c">&#34;docs&#34;</span><span style="color:#ff79c6">)</span>
+        <span style="color:#ff79c6">.</span><span style="color:#50fa7b">build</span><span style="color:#ff79c6">())</span> <span style="color:#ff79c6">{</span>
+      <span style="color:#8be9fd">boolean</span> allowed <span style="color:#ff79c6">=</span> speedle<span style="color:#ff79c6">.</span><span style="color:#50fa7b">isAllowed</span><span style="color:#ff79c6">(</span>Subject<span style="color:#ff79c6">.</span><span style="color:#50fa7b">user</span><span style="color:#ff79c6">(</span><span style="color:#f1fa8c">&#34;alice&#34;</span><span style="color:#ff79c6">),</span> <span style="color:#f1fa8c">&#34;get&#34;</span><span style="color:#ff79c6">,</span> <span style="color:#f1fa8c">&#34;/docs/public&#34;</span><span style="color:#ff79c6">,</span> List<span style="color:#ff79c6">.</span><span style="color:#50fa7b">of</span><span style="color:#ff79c6">());</span>
+      System<span style="color:#ff79c6">.</span><span style="color:#50fa7b">out</span><span style="color:#ff79c6">.</span><span style="color:#50fa7b">println</span><span style="color:#ff79c6">(</span><span style="color:#f1fa8c">&#34;alice get /docs/public: allowed=&#34;</span> <span style="color:#ff79c6">+</span> allowed<span style="color:#ff79c6">);</span>
+
+      Decision d <span style="color:#ff79c6">=</span> speedle<span style="color:#ff79c6">.</span><span style="color:#50fa7b">check</span><span style="color:#ff79c6">(</span>Subject<span style="color:#ff79c6">.</span><span style="color:#50fa7b">user</span><span style="color:#ff79c6">(</span><span style="color:#f1fa8c">&#34;alice&#34;</span><span style="color:#ff79c6">),</span> <span style="color:#f1fa8c">&#34;delete&#34;</span><span style="color:#ff79c6">,</span> <span style="color:#f1fa8c">&#34;/docs/public&#34;</span><span style="color:#ff79c6">,</span> List<span style="color:#ff79c6">.</span><span style="color:#50fa7b">of</span><span style="color:#ff79c6">());</span>
+      System<span style="color:#ff79c6">.</span><span style="color:#50fa7b">out</span><span style="color:#ff79c6">.</span><span style="color:#50fa7b">println</span><span style="color:#ff79c6">(</span><span style="color:#f1fa8c">&#34;alice delete /docs/public: allowed=&#34;</span> <span style="color:#ff79c6">+</span> d<span style="color:#ff79c6">.</span><span style="color:#50fa7b">allowed</span><span style="color:#ff79c6">()</span> <span style="color:#ff79c6">+</span> <span style="color:#f1fa8c">&#34; reason=&#34;</span> <span style="color:#ff79c6">+</span> d<span style="color:#ff79c6">.</span><span style="color:#50fa7b">reason</span><span style="color:#ff79c6">());</span>
+    <span style="color:#ff79c6">}</span> <span style="color:#ff79c6">catch</span> <span style="color:#ff79c6">(</span>SpeedleException e<span style="color:#ff79c6">)</span> <span style="color:#ff79c6">{</span>
+      System<span style="color:#ff79c6">.</span><span style="color:#50fa7b">err</span><span style="color:#ff79c6">.</span><span style="color:#50fa7b">println</span><span style="color:#ff79c6">(</span><span style="color:#f1fa8c">&#34;Speedle error: &#34;</span> <span style="color:#ff79c6">+</span> e<span style="color:#ff79c6">.</span><span style="color:#50fa7b">getMessage</span><span style="color:#ff79c6">());</span>
+      System<span style="color:#ff79c6">.</span><span style="color:#50fa7b">exit</span><span style="color:#ff79c6">(</span>1<span style="color:#ff79c6">);</span>
+    <span style="color:#ff79c6">}</span>
+  <span style="color:#ff79c6">}</span>
+<span style="color:#ff79c6">}</span></code></pre></div>
+<p>用 Maven 或 Gradle 运行：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">mvn -q compile exec:java -Dexec.mainClass<span style="color:#ff79c6">=</span>Main
+gradle -q run</code></pre></div>
+<p>输出：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">alice get /docs/public: allowed=true
+alice delete /docs/public: allowed=false reason=NO_APPLICABLE_POLICIES</code></pre></div>
+<h2 id="调用-speedle-cloud">调用 Speedle Cloud</h2>
+
+<blockquote>
+<p><strong>Speedle Cloud 即将上线。</strong></p>
+</blockquote>
+
+<p>程序从 <code>SPEEDLE_SERVICE</code> 读取服务名，从 <code>SPEEDLE_TOKEN</code> 读取该服务的令牌。<code>SPEEDLE_ENDPOINT</code> 可覆盖默认端点 <code>https://cloud.speedle.io</code>。将 <code>src/main/java/Main.java</code> 替换为：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#ff79c6">import</span> io.speedle.sdk.Auth<span style="color:#ff79c6">;</span>
+<span style="color:#ff79c6">import</span> io.speedle.sdk.Backend<span style="color:#ff79c6">;</span>
+<span style="color:#ff79c6">import</span> io.speedle.sdk.Decision<span style="color:#ff79c6">;</span>
+<span style="color:#ff79c6">import</span> io.speedle.sdk.SpeedleClient<span style="color:#ff79c6">;</span>
+<span style="color:#ff79c6">import</span> io.speedle.sdk.SpeedleException<span style="color:#ff79c6">;</span>
+<span style="color:#ff79c6">import</span> io.speedle.sdk.Subject<span style="color:#ff79c6">;</span>
+<span style="color:#ff79c6">import</span> java.net.URI<span style="color:#ff79c6">;</span>
+<span style="color:#ff79c6">import</span> java.util.List<span style="color:#ff79c6">;</span>
+
+<span style="color:#8be9fd;font-style:italic">public</span> <span style="color:#8be9fd;font-style:italic">class</span> <span style="color:#50fa7b">Main</span> <span style="color:#ff79c6">{</span>
+  <span style="color:#8be9fd;font-style:italic">public</span> <span style="color:#8be9fd;font-style:italic">static</span> <span style="color:#8be9fd">void</span> <span style="color:#50fa7b">main</span><span style="color:#ff79c6">(</span>String<span style="color:#ff79c6">[]</span> args<span style="color:#ff79c6">)</span> <span style="color:#ff79c6">{</span>
+    String endpoint <span style="color:#ff79c6">=</span> System<span style="color:#ff79c6">.</span><span style="color:#50fa7b">getenv</span><span style="color:#ff79c6">().</span><span style="color:#50fa7b">getOrDefault</span><span style="color:#ff79c6">(</span><span style="color:#f1fa8c">&#34;SPEEDLE_ENDPOINT&#34;</span><span style="color:#ff79c6">,</span> <span style="color:#f1fa8c">&#34;https://cloud.speedle.io&#34;</span><span style="color:#ff79c6">);</span>
+    <span style="color:#ff79c6">try</span> <span style="color:#ff79c6">(</span>SpeedleClient speedle <span style="color:#ff79c6">=</span> SpeedleClient<span style="color:#ff79c6">.</span><span style="color:#50fa7b">builder</span><span style="color:#ff79c6">()</span>
+        <span style="color:#ff79c6">.</span><span style="color:#50fa7b">backend</span><span style="color:#ff79c6">(</span>Backend<span style="color:#ff79c6">.</span><span style="color:#50fa7b">SPEEDLE_CLOUD</span><span style="color:#ff79c6">)</span>
+        <span style="color:#ff79c6">.</span><span style="color:#50fa7b">endpoint</span><span style="color:#ff79c6">(</span>URI<span style="color:#ff79c6">.</span><span style="color:#50fa7b">create</span><span style="color:#ff79c6">(</span>endpoint<span style="color:#ff79c6">))</span>
+        <span style="color:#ff79c6">.</span><span style="color:#50fa7b">auth</span><span style="color:#ff79c6">(</span>Auth<span style="color:#ff79c6">.</span><span style="color:#50fa7b">bearer</span><span style="color:#ff79c6">(</span>System<span style="color:#ff79c6">.</span><span style="color:#50fa7b">getenv</span><span style="color:#ff79c6">(</span><span style="color:#f1fa8c">&#34;SPEEDLE_TOKEN&#34;</span><span style="color:#ff79c6">)))</span>
+        <span style="color:#ff79c6">.</span><span style="color:#50fa7b">serviceName</span><span style="color:#ff79c6">(</span>System<span style="color:#ff79c6">.</span><span style="color:#50fa7b">getenv</span><span style="color:#ff79c6">(</span><span style="color:#f1fa8c">&#34;SPEEDLE_SERVICE&#34;</span><span style="color:#ff79c6">))</span>
+        <span style="color:#ff79c6">.</span><span style="color:#50fa7b">build</span><span style="color:#ff79c6">())</span> <span style="color:#ff79c6">{</span>
+      <span style="color:#8be9fd">boolean</span> allowed <span style="color:#ff79c6">=</span> speedle<span style="color:#ff79c6">.</span><span style="color:#50fa7b">isAllowed</span><span style="color:#ff79c6">(</span>Subject<span style="color:#ff79c6">.</span><span style="color:#50fa7b">user</span><span style="color:#ff79c6">(</span><span style="color:#f1fa8c">&#34;alice&#34;</span><span style="color:#ff79c6">),</span> <span style="color:#f1fa8c">&#34;get&#34;</span><span style="color:#ff79c6">,</span> <span style="color:#f1fa8c">&#34;/docs/public&#34;</span><span style="color:#ff79c6">,</span> List<span style="color:#ff79c6">.</span><span style="color:#50fa7b">of</span><span style="color:#ff79c6">());</span>
+      System<span style="color:#ff79c6">.</span><span style="color:#50fa7b">out</span><span style="color:#ff79c6">.</span><span style="color:#50fa7b">println</span><span style="color:#ff79c6">(</span><span style="color:#f1fa8c">&#34;alice get /docs/public: allowed=&#34;</span> <span style="color:#ff79c6">+</span> allowed<span style="color:#ff79c6">);</span>
+
+      Decision d <span style="color:#ff79c6">=</span> speedle<span style="color:#ff79c6">.</span><span style="color:#50fa7b">check</span><span style="color:#ff79c6">(</span>Subject<span style="color:#ff79c6">.</span><span style="color:#50fa7b">user</span><span style="color:#ff79c6">(</span><span style="color:#f1fa8c">&#34;alice&#34;</span><span style="color:#ff79c6">),</span> <span style="color:#f1fa8c">&#34;delete&#34;</span><span style="color:#ff79c6">,</span> <span style="color:#f1fa8c">&#34;/docs/public&#34;</span><span style="color:#ff79c6">,</span> List<span style="color:#ff79c6">.</span><span style="color:#50fa7b">of</span><span style="color:#ff79c6">());</span>
+      System<span style="color:#ff79c6">.</span><span style="color:#50fa7b">out</span><span style="color:#ff79c6">.</span><span style="color:#50fa7b">println</span><span style="color:#ff79c6">(</span><span style="color:#f1fa8c">&#34;alice delete /docs/public: allowed=&#34;</span> <span style="color:#ff79c6">+</span> d<span style="color:#ff79c6">.</span><span style="color:#50fa7b">allowed</span><span style="color:#ff79c6">()</span> <span style="color:#ff79c6">+</span> <span style="color:#f1fa8c">&#34; reason=&#34;</span> <span style="color:#ff79c6">+</span> d<span style="color:#ff79c6">.</span><span style="color:#50fa7b">reason</span><span style="color:#ff79c6">());</span>
+    <span style="color:#ff79c6">}</span> <span style="color:#ff79c6">catch</span> <span style="color:#ff79c6">(</span>SpeedleException e<span style="color:#ff79c6">)</span> <span style="color:#ff79c6">{</span>
+      System<span style="color:#ff79c6">.</span><span style="color:#50fa7b">err</span><span style="color:#ff79c6">.</span><span style="color:#50fa7b">println</span><span style="color:#ff79c6">(</span><span style="color:#f1fa8c">&#34;Speedle error: &#34;</span> <span style="color:#ff79c6">+</span> e<span style="color:#ff79c6">.</span><span style="color:#50fa7b">getMessage</span><span style="color:#ff79c6">());</span>
+      System<span style="color:#ff79c6">.</span><span style="color:#50fa7b">exit</span><span style="color:#ff79c6">(</span>1<span style="color:#ff79c6">);</span>
+    <span style="color:#ff79c6">}</span>
+  <span style="color:#ff79c6">}</span>
+<span style="color:#ff79c6">}</span></code></pre></div>
+<p>设置环境变量后运行。<code>read -rs</code> 不会把令牌写入 shell 历史，也不会显示在屏幕上：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#8be9fd;font-style:italic">export</span> <span style="color:#8be9fd;font-style:italic">SPEEDLE_SERVICE</span><span style="color:#ff79c6">=</span>docs
+<span style="color:#8be9fd;font-style:italic">read</span> -rs SPEEDLE_TOKEN <span style="color:#ff79c6">&amp;&amp;</span> <span style="color:#8be9fd;font-style:italic">export</span> SPEEDLE_TOKEN
+mvn -q compile exec:java -Dexec.mainClass<span style="color:#ff79c6">=</span>Main</code></pre></div>
+<p>服务中已有示例策略时，输出为：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">alice get /docs/public: allowed=true
+alice delete /docs/public: allowed=false reason=NO_APPLICABLE_POLICIES</code></pre></div>
+<p>令牌是服务端密钥，切勿放进浏览器、移动应用或桌面客户端。</p>
+
+  </div>
+</div>
+</main><div class="sidebar">
+<nav>
+<ul>
+
+
+
+<li class="parent"><span>Speedle文档</span>
+<ul class="sub-menu">
+<li class=""><a href="/zh/docs/usecases/">使用场景</a></li>
+<li class=""><a href="/zh/docs/overview/">概览</a></li>
+<li class=""><a href="/zh/docs/spdl/">SPDL - Speedle 策略定义语言</a></li>
+<li class=""><a href="/zh/docs/architecture/">系统架构</a></li>
+<li class=""><a href="/zh/docs/deployment-embeded/">Speedle嵌入模式</a></li>
+<li class=""><a href="/zh/docs/deployment/">Speedle服务的部署方式</a></li>
+
+
+
+<li class=""><span>Speedle策略</span>
+<ul class="">
+<li class=""><a href="/zh/docs/pms/policy-mgmt/">策略管理</a></li>
+<li class=""><a href="/zh/docs/pms/global-policy/">全局角色策略</a></li>
+<li class=""><a href="/zh/docs/pms/diagnosis/">授权诊断</a></li>
+<li class=""><a href="/zh/docs/pms/discover/">策略发现</a></li>
+</ul>
+  
+</li>
+<li class=""><a href="/zh/docs/decisions/">授权查询</a></li>
+<li class=""><a href="/zh/docs/idd/">用户身份域</a></li>
+<li class=""><a href="/zh/docs/assertor/">令牌用户身份断言</a></li>
+
+
+
+<li class=""><a href="/zh/docs/store/">存储扩展</a>
+<ul class="">
+<li class=""><a href="/zh/docs/store/mysql/">MySQL 配置指南</a></li>
+<li class=""><a href="/zh/docs/store/etcd/">etcd 配置指南</a></li>
+<li class=""><a href="/zh/docs/store/mongodb/">MongoDB 配置指南</a></li>
+</ul>
+  
+</li>
+
+
+
+<li class="parent"><span>API</span>
+<ul class="sub-menu">
+<li class="active"><a href="/zh/docs/api/sdk-java/">Java SDK</a></li>
+<li class=""><a href="/zh/docs/api/sdk-python/">Python SDK</a></li>
+<li class=""><a href="/zh/docs/api/sdk-go/">Go SDK</a></li>
+<li class=""><a href="/zh/docs/api/sdk-dotnet/">C#/.NET SDK</a></li>
+<li class=""><a href="/zh/docs/api/sdk-rust/">Rust SDK</a></li>
+<li class=""><a href="/zh/docs/api/sdk-node/">Node.js/TypeScript SDK</a></li>
+<li class=""><a href="/zh/docs/api/decision_api/">Authorization Runtime/Decision API</a></li>
+<li class=""><a href="/zh/docs/api/management_api/">Policy Management API</a></li>
+<li class=""><a href="/zh/docs/api/asserter_api/">Token Assertion Plugin API</a></li>
+</ul>
+  
+</li>
+<li class=""><a href="/zh/docs/security/">安全</a></li>
+<li class=""><a href="/zh/docs/logging/">日志</a></li>
+<li class=""><a href="/zh/docs/versions/">版本</a></li>
+<li class=""><a href="/zh/docs/custom-function/">Custom Function</a></li>
+</ul>
+  
+</li>
+
+
+
+
+</ul>
+</nav>
+
+
+<div class="sidebar-footer"></div>
+</div>
+</div>
+    </div>
+    <footer class="row"> <div class="col col-3">
+  Licensed under <a href="https://oss.oracle.com/licenses/upl/">UPL</a>
+</div>
+<div class="col col-6 center">
+  <div>Copyright &copy; 2019–2026. All rights reserved.</div>
+</div>
+<div class="col col-3">
+  <nav>
+    <a title="contact@speedle.io" aria-label="发送邮件至 contact@speedle.io" href="mailto:contact@speedle.io">
+      <img src="/img/speedle/28. Mail.svg" alt="" />
+    </a>
+    <a title="Google Groups — speedle-users" aria-label="Google Groups 讨论组" href="https://groups.google.com/forum/#!forum/speedle-users">
+      <img src="/img/speedle/Google-Groups.svg" alt="" />
+    </a>
+    <a title="speedle" href="https://github.com/oracle/speedle">
+      <img src="/img/speedle/18. Github.svg" />
+    </a>
+    <a title="Discord" href="https://discord.gg/uaY2xVsbbT">
+      <img src="/img/speedle/Discord.svg" />
+    </a>
+  </nav>
+</div>
+</footer>
+    <script src="/js/kube.js" type="text/javascript">
+    </script>
+    <script src="/js/kube.legenda.js" type="text/javascript">
+    </script>
+    <script src="/js/master.js?v=language-direct-20261026" type="text/javascript">
+    </script>
+<!-- Cloudflare Web Analytics --><script type="module" src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "5dc5889c64f04fd7b026b875f1b2e27a"}'></script><!-- End Cloudflare Web Analytics -->
+</body>
+
+</html>

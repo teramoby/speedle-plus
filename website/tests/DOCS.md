@@ -9,7 +9,7 @@ python3 website/tests/check_quick_start.py --toolchain go1.26.10
 python3 website/tests/check_embedded.py --toolchain go1.26.10 --candidate
 ```
 
-The current docs inventory is 52 Markdown pages (26 English/Chinese pairs). Historical snapshot directories are unchanged. No shared stylesheet, template, logo or homepage design changes are part of this repair.
+The current docs inventory is 66 Markdown pages (33 English/Chinese pairs). Historical snapshot directories are unchanged. No shared stylesheet, template, logo or homepage design changes are part of this repair.
 
 `check_docs.py` executes 134 Bash blocks against owned native PMS/ADS, mock assertion and custom-function services, including Linux/amd64 cross-compilation, Allow/Deny, diagnosis, discovery/import/enforcement, TLS/mTLS and rejected credentials. Two deployment clone/build blocks are identical to the Quick Start build sequence, which the release check executes separately. Linux uses private user/network/PID namespaces and the documented ports; macOS remaps only the owned fixture ports. All fixture processes and temporary policy/certificate files are cleaned up.
 
@@ -24,6 +24,7 @@ Container build/push and Kubernetes admission/rollout require a target registry/
 | `api/asserter_api` | Updated in both languages | Native router/schema contracts; source proto parity |
 | `api/decision_api` | Updated in both languages | Native router/schema contracts; source proto parity |
 | `api/management_api` | Updated in both languages | Native router/schema contracts; source proto parity |
+| `api/sdk-java`, `api/sdk-python`, `api/sdk-go`, `api/sdk-dotnet`, `api/sdk-rust`, `api/sdk-node` | Added in both languages | Not run by this suite. Each example was run by hand from the published package (Node.js: the packed SDK) against a local Speedle+ ADS and Speedle Cloud beta; commands and output are in the PR |
 | `architecture` | Reviewed; retained | Source review; no obsolete build/API example found |
 | `assertor` | Updated in both languages | Paired native commands and API results |
 | `custom-function` | Updated in both languages | Paired native commands and API results |
