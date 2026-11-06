@@ -154,12 +154,11 @@ ready. The Products menu does not change the header height.
   (v10): no stand-alone product link (`Speedle Engine`, `Speedle Cloud`,
   `Speedle AI` or `Speedle+`) may appear in the desktop or collapsed menu, in
   English or Chinese.
-- The **language switch** is one text link, last before the GitHub pill
-  (section 9).
-- Engine and Cloud end with the **GitHub pill**. AI has **no GitHub pill** in
-  the header or the collapsed menu (v7); its last item is the language link, or
-  the last nav link while AI has no Chinese pages. The footer keeps the GitHub
-  icon on all three sites.
+- The **language switch** is one text link, last before the GitHub pill on
+  Engine and last overall on Cloud and AI (section 9).
+- Only Engine ends with the **GitHub pill**. Cloud and AI have **no GitHub
+  pill** in the header or the collapsed menu (v7); for them the language switch
+  is the last nav item. The footer keeps the GitHub icon on all three sites.
 - Focus is always visible: `outline: 2px solid <site header accent>;
   outline-offset: 4px`.
 
@@ -170,7 +169,7 @@ ready. The Products menu does not change the header height.
 | Background | `rgba(31, 17, 66, .92)` | `--surface-inverse` `#0b2149` | `rgba(255, 255, 255, .96)` |
 | Links | `rgba(255, 255, 255, .82)` | `--text-inverse` `#fff` | `rgba(24, 32, 52, .82)` |
 | Hover / current | `#01e7cb` | `--text-accent-inverse` `#7cc4ff` | `#7546d8` |
-| GitHub pill border | `rgba(255, 255, 255, .28)` | `rgba(255, 255, 255, .28)` | none (no pill) |
+| GitHub pill border | `rgba(255, 255, 255, .28)` | none (no pill) | none (no pill) |
 | Product word | `#01e7cb` | `--text-accent-inverse` `#7cc4ff` | `#7546d8` |
 | Sphere | `#ff9a45` (original) | `#4da3ff` | `#8b5cf6` |
 | Bottom border | `rgba(255, 255, 255, .1)` | `--header-border` `rgba(255, 255, 255, 0.1)` | `rgba(24, 32, 52, .1)` |
@@ -466,7 +465,8 @@ size, social box size.
   `/` and `/zh/` on Engine and AI; Cloud keeps its existing `/zh-CN/…` routes.
   No cookie, browser storage or language-detection redirect.
 - The header has **one** text link to the other language, the last nav item
-  before the GitHub pill (or the last item on AI, which has no pill). Same
+  before the GitHub pill (or the last item on Cloud and AI, which have no
+  pill). Same
   font, size, weight and colour as the other nav links; no flag, icon,
   dropdown or two-link toggle.
 - The link shows the *other* language, written in that language:
@@ -515,6 +515,12 @@ public page. It is cookieless.
 
 ## 11. Content rules
 
+- **Titles never end with a full stop.** In English and Chinese, no title-like
+  element ends with `.` or `。`: headings h1–h6, the hero title, card and
+  section titles, eyebrow and kicker labels, button and nav labels, `<title>`
+  and `og:title`. Punctuation inside a title stays ("Policy first. Risk signals
+  second. Veto intact"). Body text, captions, list items that are full
+  sentences and meta descriptions keep their punctuation.
 - **Only claim what has shipped.** Use "Coming soon" or "available at launch"
   for anything that is not live. Do not state partner, availability or
   performance claims without evidence.
@@ -548,7 +554,8 @@ public page. It is cookieless.
       home has no contextual cross-links (v10/v12).
 - [ ] Products menu, footer family and permitted contextual links use the exact
       names, URLs, descriptions and Cloud "Coming soon" badge.
-- [ ] AI has no GitHub pill in the header or collapsed menu.
+- [ ] Only Engine has a GitHub pill in the header or collapsed menu; Cloud and
+      AI have none.
 - [ ] Widths 1440, 390 and 320 px: no horizontal scroll; everything usable at
       320 px.
 - [ ] WCAG AA (axe): 0 violations; text 4.5:1; large text 3:1; UI and focus
