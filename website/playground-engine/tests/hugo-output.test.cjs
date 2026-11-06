@@ -55,6 +55,10 @@ for (const name of ['docs/index.html', 'zh/docs/index.html', 'docs/spdl/index.ht
   assert.ok(html.includes('/css/navigation.css?v=header-20261106-v8') && html.includes('/js/navigation.js?v=header-20261106-v8'), `Shared versioned navigation assets in ${name}`);
   assert.ok(html.includes('/css/docs.css') && html.includes('/js/docs.js'), `Documentation assets in ${name}`);
   assert.ok(!/theme\.min|kube\.min|kube\.legenda|master\.css|kube\.demo|custom\.css|spdl-title|fonts\.googleapis|fontawesome|jquery|tocbot|\/js\/kube|\/js\/master/.test(html), `No legacy docs stack in ${name}`);
+  assert.ok(html.includes('class="docs-nav-heading') && html.includes('docs-nav-close') && html.includes('docs-nav-backdrop'), `Modern sidebar markup in ${name}`);
+  assert.ok(html.includes('aria-current="page"'), `Current page marked in the sidebar in ${name}`);
+  assert.ok(new RegExp(`<button class="docs-nav-toggle"[^>]*>[\\s\\S]*?<span>${zh ? '菜单' : 'Menu'}</span>`).test(html), `Menu drawer button in ${name}`);
+  if (!zh) assert.ok(/docs-nav-heading[^"]*"><a [^>]*>SDKs<\/a>/.test(html), `SDKs is a bold group heading like API in ${name}`);
   const afterFooter = html.split('</footer>')[1];
   assert.ok(afterFooter && !afterFooter.includes('/js/'), `No layout script after the footer in ${name}`);
 }

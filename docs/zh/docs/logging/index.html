@@ -2,6 +2,7 @@
 <html lang="zh">
 
 <head>
+    <script>document.documentElement.classList.add('docs-js');</script>
     <meta name="generator" content="Hugo 0.48" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="/favicon.ico" sizes="any">
@@ -45,17 +46,21 @@
   </header>
     <div class="container">
         <button class="docs-nav-toggle" type="button" aria-expanded="false" aria-controls="docs-navigation" hidden>
-            <span>文档目录</span>
-            <svg viewBox="0 0 10 6" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="m1 1 4 4 4-4"/></svg>
+            <span>菜单</span>
+            <svg class="docs-nav-toggle-icon" viewBox="0 0 18 14" width="18" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M1 1h16M1 7h16M1 13h16"/></svg>
         </button>
         <div class="content-container"><aside class="docs-sidebar" id="docs-navigation" aria-label="文档导航">
+<div class="docs-nav-head">
+<span class="docs-nav-title">文档</span>
+<button class="docs-nav-close" type="button" aria-label="关闭菜单"><svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="m3 3 10 10M13 3 3 13"/></svg></button>
+</div>
 <div class="sidebar">
 <nav>
 <ul>
 
 
 
-<li class="parent"><span>Speedle文档</span>
+<li class="docs-nav-section parent"><span class="docs-nav-heading">Speedle文档</span>
 <ul class="sub-menu">
 <li class=""><a href="/zh/docs/usecases/">使用场景</a></li>
 <li class=""><a href="/zh/docs/overview/">概览</a></li>
@@ -66,7 +71,7 @@
 
 
 
-<li class=""><span>Speedle策略</span>
+<li class="docs-nav-section"><span class="docs-nav-heading">Speedle策略</span>
 <ul class="">
 <li class=""><a href="/zh/docs/pms/policy-mgmt/">策略管理</a></li>
 <li class=""><a href="/zh/docs/pms/global-policy/">全局角色策略</a></li>
@@ -81,7 +86,7 @@
 
 
 
-<li class=""><a href="/zh/docs/store/">存储扩展</a>
+<li class="docs-nav-section"><span class="docs-nav-heading docs-nav-heading-link"><a href="/zh/docs/store/">存储扩展</a></span>
 <ul class="">
 <li class=""><a href="/zh/docs/store/mysql/">MySQL 配置指南</a></li>
 <li class=""><a href="/zh/docs/store/etcd/">etcd 配置指南</a></li>
@@ -92,7 +97,7 @@
 
 
 
-<li class=""><span>API</span>
+<li class="docs-nav-section"><span class="docs-nav-heading">API</span>
 <ul class="">
 <li class=""><a href="/zh/docs/api/decision_api/">Authorization Runtime/Decision API</a></li>
 <li class=""><a href="/zh/docs/api/management_api/">Policy Management API</a></li>
@@ -103,7 +108,7 @@
 
 
 
-<li class=""><a href="/zh/docs/sdks/">SDK</a>
+<li class="docs-nav-section"><span class="docs-nav-heading docs-nav-heading-link"><a href="/zh/docs/sdks/">SDK</a></span>
 <ul class="">
 <li class=""><a href="/zh/docs/sdks/java/">Java SDK</a></li>
 <li class=""><a href="/zh/docs/sdks/python/">Python SDK</a></li>
@@ -115,7 +120,7 @@
 
 </li>
 <li class=""><a href="/zh/docs/security/">安全</a></li>
-<li class="active"><a href="/zh/docs/logging/">日志</a></li>
+<li class="active"><a href="/zh/docs/logging/" aria-current="page">日志</a></li>
 <li class=""><a href="/zh/docs/versions/">版本</a></li>
 <li class=""><a href="/zh/docs/custom-function/">Custom Function</a></li>
 </ul>
@@ -313,6 +318,7 @@ ocean&#34;,&#34;size&#34;:10,&#34;time&#34;:&#34;2014-03-10 19:57:38.562264131 -
 </main>
         </div>
     </div>
+    <div class="docs-nav-backdrop" hidden></div>
     <footer class="site-footer">
     <div class="wrap footer-inner">
       <div class="footer-brand"><div class="footer-lockup" role="img" aria-label="Speedle Engine"><img src="/img/speedle/Speedle_logo_home_bold.svg?v=4" alt=""><span class="brand-divider"></span><span class="brand-product">Engine</span></div><p>基于 Universal Permissive License v1.0 授权。</p><p>版权所有 &copy; 2019–2026。</p></div>

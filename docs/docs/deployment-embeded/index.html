@@ -2,6 +2,7 @@
 <html lang="en">
 
 <head>
+    <script>document.documentElement.classList.add('docs-js');</script>
     <meta name="generator" content="Hugo 0.48" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="/favicon.ico" sizes="any">
@@ -45,27 +46,31 @@
   </header>
     <div class="container">
         <button class="docs-nav-toggle" type="button" aria-expanded="false" aria-controls="docs-navigation" hidden>
-            <span>Documentation</span>
-            <svg viewBox="0 0 10 6" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="m1 1 4 4 4-4"/></svg>
+            <span>Menu</span>
+            <svg class="docs-nav-toggle-icon" viewBox="0 0 18 14" width="18" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M1 1h16M1 7h16M1 13h16"/></svg>
         </button>
         <div class="content-container"><aside class="docs-sidebar" id="docs-navigation" aria-label="Documentation navigation">
+<div class="docs-nav-head">
+<span class="docs-nav-title">Documentation</span>
+<button class="docs-nav-close" type="button" aria-label="Close menu"><svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="m3 3 10 10M13 3 3 13"/></svg></button>
+</div>
 <div class="sidebar">
 <nav>
 <ul>
 
 
 
-<li class="parent"><span>Speedle Documents</span>
+<li class="docs-nav-section parent"><span class="docs-nav-heading">Speedle Documents</span>
 <ul class="sub-menu">
 <li class=""><a href="/docs/usecases/">Usecases</a></li>
 <li class=""><a href="/docs/overview/">Overview</a></li>
 <li class=""><a href="/docs/spdl/">SPDL - Speedle Policy Definition Language</a></li>
 <li class=""><a href="/docs/architecture/">Architecture</a></li>
-<li class="active"><a href="/docs/deployment-embeded/">Speedle embedded mode</a></li>
+<li class="active"><a href="/docs/deployment-embeded/" aria-current="page">Speedle embedded mode</a></li>
 
 
 
-<li class=""><span>Speedle Policy</span>
+<li class="docs-nav-section"><span class="docs-nav-heading">Speedle Policy</span>
 <ul class="">
 <li class=""><a href="/docs/pms/policy-mgmt/">Policy Management</a></li>
 <li class=""><a href="/docs/pms/global-policy/">Global Policy</a></li>
@@ -81,7 +86,7 @@
 
 
 
-<li class=""><a href="/docs/store/">Pluggable Storage</a>
+<li class="docs-nav-section"><span class="docs-nav-heading docs-nav-heading-link"><a href="/docs/store/">Pluggable Storage</a></span>
 <ul class="">
 <li class=""><a href="/docs/store/mysql/">MySQL Setup</a></li>
 <li class=""><a href="/docs/store/etcd/">etcd Setup</a></li>
@@ -92,7 +97,7 @@
 
 
 
-<li class=""><span>API</span>
+<li class="docs-nav-section"><span class="docs-nav-heading">API</span>
 <ul class="">
 <li class=""><a href="/docs/api/decision_api/">Authorization Runtime/Decision API</a></li>
 <li class=""><a href="/docs/api/management_api/">Policy Management API</a></li>
@@ -103,7 +108,7 @@
 
 
 
-<li class=""><a href="/docs/sdks/">SDKs</a>
+<li class="docs-nav-section"><span class="docs-nav-heading docs-nav-heading-link"><a href="/docs/sdks/">SDKs</a></span>
 <ul class="">
 <li class=""><a href="/docs/sdks/java/">Java SDK</a></li>
 <li class=""><a href="/docs/sdks/python/">Python SDK</a></li>
@@ -250,6 +255,7 @@ bob allowed=false</code></pre></div>
 </main>
         </div>
     </div>
+    <div class="docs-nav-backdrop" hidden></div>
     <footer class="site-footer">
     <div class="wrap footer-inner">
       <div class="footer-brand"><div class="footer-lockup" role="img" aria-label="Speedle Engine"><img src="/img/speedle/Speedle_logo_home_bold.svg?v=4" alt=""><span class="brand-divider"></span><span class="brand-product">Engine</span></div><p>Licensed under the Universal Permissive License v1.0.</p><p>Copyright &copy; 2019–2026. All rights reserved.</p></div>

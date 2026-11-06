@@ -2,6 +2,7 @@
 <html lang="{{ .Page.Language | default "en" }}">
 
 <head>
+    <script>document.documentElement.classList.add('docs-js');</script>
     {{ .Hugo.Generator }}
     {{ partial "favicon" . }}
     <meta charset="utf-8">
@@ -29,14 +30,15 @@
     </header>
     <div class="container">
         <button class="docs-nav-toggle" type="button" aria-expanded="false" aria-controls="docs-navigation" hidden>
-            <span>{{ if eq .Lang "zh" }}文档目录{{ else }}Documentation{{ end }}</span>
-            <svg viewBox="0 0 10 6" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="m1 1 4 4 4-4"/></svg>
+            <span>{{ if eq .Lang "zh" }}菜单{{ else }}Menu{{ end }}</span>
+            <svg class="docs-nav-toggle-icon" viewBox="0 0 18 14" width="18" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M1 1h16M1 7h16M1 13h16"/></svg>
         </button>
         <div class="content-container{{ if .Params.singlelinetitle }} single-line-title{{ end }}">
             {{- partial "sidebar.html" . -}}
             <main>{{ block "main" . }}{{ end }}</main>
         </div>
     </div>
+    <div class="docs-nav-backdrop" hidden></div>
     {{ partial "footer" . }}
 </body>
 
