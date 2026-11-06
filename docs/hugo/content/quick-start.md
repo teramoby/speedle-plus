@@ -1,6 +1,6 @@
 +++
 title = "Quick Start"
-description = "Build Speedle+ with a current Go toolchain and verify policy management, direct grants, role grants and denials."
+description = "Build Speedle with a current Go toolchain and verify policy management, direct grants, role grants and denials."
 weight = 10
 draft = false
 toc = false
@@ -8,7 +8,7 @@ copycommands = true
 customcss = true
 customcssfile = "command-copy.css"
 tocheading = "h2"
-bref = "Build Speedle+ from source, create policies with SPDL and spctl, and test authorization decisions using the REST API. This guide uses a local file store."
+bref = "Build Speedle from source, create policies with SPDL and spctl, and test authorization decisions using the REST API. This guide uses a local file store."
 icon = "9. Getting Started.svg"
 +++
 
@@ -20,7 +20,7 @@ Continue below when you are ready to build and run Speedle locally.
 
 ## Prerequisites
 
-Use Linux or macOS with Bash, Git, curl and **Go 1.26.10 or Go 1.27.3** (or a newer patch on the same release branch). Speedle+ supports patched Go 1.26 and Go 1.27 releases; this guide is verified with **Go 1.26.10 and Go 1.27.3**. Go 1.27.3 is the recommended stable release for this walkthrough.
+Use Linux or macOS with Bash, Git, curl and **Go 1.26.10 or Go 1.27.3** (or a newer patch on the same release branch). Speedle supports patched Go 1.26 and Go 1.27 releases; this guide is verified with **Go 1.26.10 and Go 1.27.3**. Go 1.27.3 is the recommended stable release for this walkthrough.
 
 Install Go using the [official installation instructions](https://go.dev/doc/install), then check the installed version:
 

@@ -46,7 +46,7 @@ Issue的内容请包括：
 
 ## 代码贡献
 
-对 Speedle+ 的贡献依据 Universal Permissive License 1.0 (UPL-1.0) 提交。请为您的提交添加签名（sign-off），以证明您有权依据 Developer Certificate of Origin (DCO) 1.1 提交您的贡献。请在您的 Pull Request 中保留现有的版权和许可证声明，并标明任何第三方材料。
+对 Speedle 的贡献依据 Universal Permissive License 1.0 (UPL-1.0) 提交。请为您的提交添加签名（sign-off），以证明您有权依据 Developer Certificate of Origin (DCO) 1.1 提交您的贡献。请在您的 Pull Request 中保留现有的版权和许可证声明，并标明任何第三方材料。
 
 如果您想为Speedle贡献代码，请完成如下流程：
 

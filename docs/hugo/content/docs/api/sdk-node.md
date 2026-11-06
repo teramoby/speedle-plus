@@ -1,13 +1,13 @@
 +++
 title = "Node.js/TypeScript SDK"
-description = "Add the Speedle Node.js/TypeScript SDK and check authorization against a local Speedle+ or Speedle Cloud."
+description = "Add the Speedle Node.js/TypeScript SDK and check authorization against a local Speedle or Speedle Cloud."
 weight = 60
 draft = false
 toc = true
 tocheading = "h2"
 tags = ["api", "sdk"]
 categories = ["docs"]
-bref = "Install @speedle/sdk 0.1.0 with npm when it is published, then call isAllowed and check against a local Speedle+ or Speedle Cloud."
+bref = "Install @speedle/sdk 0.1.0 with npm when it is published, then call isAllowed and check against a local Speedle or Speedle Cloud."
 +++
 
 The Node.js SDK needs Node.js 22 or later, ships ESM and CommonJS builds with TypeScript types, and has no runtime dependencies. Package: [`@speedle/sdk`](https://www.npmjs.com/package/@speedle/sdk) 0.1.0 on npm, **available when published**. Reference: [speedle-sdk/node](https://github.com/teramoby/speedle-sdk/tree/main/node).
@@ -26,9 +26,9 @@ npm pkg set type=module
 npm install @speedle/sdk@0.1.0
 ```
 
-## Call a local Speedle+
+## Call a local Speedle
 
-Start Speedle+ and create the example policy as described in [SDKs](/docs/api/#sdks). Save this program as `main.ts`:
+Start Speedle and create the example policy as described in [SDKs](/docs/api/#sdks). Save this program as `main.ts`:
 
 ```typescript
 import { Auth, Reason, SpeedleClient, SpeedleError } from "@speedle/sdk";

@@ -1,13 +1,13 @@
 +++
 title = "Java SDK"
-description = "添加 Speedle Java SDK，向本地 Speedle+ 或 Speedle Cloud 发起授权检查。"
+description = "添加 Speedle Java SDK，向本地 Speedle 或 Speedle Cloud 发起授权检查。"
 weight = 10
 draft = false
 toc = true
 tocheading = "h2"
 tags = ["api", "sdk"]
 categories = ["docs"]
-bref = "用 Maven 或 Gradle 添加 io.speedle:speedle-sdk 0.1.0，再向本地 Speedle+ 或 Speedle Cloud 调用 isAllowed 与 check。"
+bref = "用 Maven 或 Gradle 添加 io.speedle:speedle-sdk 0.1.0，再向本地 Speedle 或 Speedle Cloud 调用 isAllowed 与 check。"
 +++
 
 Java SDK 需要 Java 17 或更高版本，没有运行时依赖。软件包：Maven Central 上的 [`io.speedle:speedle-sdk`](https://central.sonatype.com/artifact/io.speedle/speedle-sdk) 0.1.0。参考文档：[speedle-sdk/java](https://github.com/teramoby/speedle-sdk/tree/main/java)。
@@ -63,9 +63,9 @@ application {
 }
 ```
 
-## 调用本地 Speedle+
+## 调用本地 Speedle
 
-按 [SDK](/docs/api/#sdk) 一节启动 Speedle+ 并创建示例策略。将以下程序保存为 `src/main/java/Main.java`：
+按 [SDK](/docs/api/#sdk) 一节启动 Speedle 并创建示例策略。将以下程序保存为 `src/main/java/Main.java`：
 
 ```java
 import io.speedle.sdk.Auth;

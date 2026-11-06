@@ -44,7 +44,7 @@ uv add speedle==0.</description>
       <description>The Go SDK supports the two latest Go releases and uses only the standard library. Module: github.com/teramoby/speedle-sdk/go v0.1.0, package speedle. Reference: speedle-sdk/go.
 The examples check the policy described in SDKs.
 Add the dependency In a new module:
-go mod init example.com/speedle-example go get github.com/teramoby/speedle-sdk/go@v0.1.0 Call a local Speedle+ Start Speedle+ and create the example policy as described in SDKs. Save this program as main.go:
+go mod init example.com/speedle-example go get github.com/teramoby/speedle-sdk/go@v0.1.0 Call a local Speedle Start Speedle and create the example policy as described in SDKs. Save this program as main.go:
 package main import ( &amp;#34;context&amp;#34; &amp;#34;fmt&amp;#34; &amp;#34;os&amp;#34; speedle &amp;#34;github.</description>
     </item>
     
@@ -57,7 +57,7 @@ package main import ( &amp;#34;context&amp;#34; &amp;#34;fmt&amp;#34; &amp;#34;o
       <description>The .NET SDK targets .NET 8 or later and has no dependencies. Package: Speedle.Sdk 0.1.0 on NuGet, namespace Speedle.Sdk. Reference: speedle-sdk/dotnet.
 The examples check the policy described in SDKs.
 Add the dependency In a new console project:
-dotnet new console -o SpeedleExample cd SpeedleExample dotnet add package Speedle.Sdk --version 0.1.0 Call a local Speedle+ Start Speedle+ and create the example policy as described in SDKs. Replace Program.cs with:
+dotnet new console -o SpeedleExample cd SpeedleExample dotnet add package Speedle.Sdk --version 0.1.0 Call a local Speedle Start Speedle and create the example policy as described in SDKs. Replace Program.cs with:
 using Speedle.</description>
     </item>
     
@@ -70,7 +70,7 @@ using Speedle.</description>
       <description>The Rust SDK needs Rust 1.75 or later. It is async on tokio and reqwest (rustls); the blocking feature adds the blocking client used below. Crate: speedle 0.1.0 on crates.io. Reference: speedle-sdk/rust.
 The examples check the policy described in SDKs.
 Add the dependency In a new package:
-cargo new speedle-example cd speedle-example cargo add speedle@0.1.0 --features blocking Call a local Speedle+ Start Speedle+ and create the example policy as described in SDKs.</description>
+cargo new speedle-example cd speedle-example cargo add speedle@0.1.0 --features blocking Call a local Speedle Start Speedle and create the example policy as described in SDKs.</description>
     </item>
     
     <item>
@@ -82,7 +82,7 @@ cargo new speedle-example cd speedle-example cargo add speedle@0.1.0 --features 
       <description>The Node.js SDK needs Node.js 22 or later, ships ESM and CommonJS builds with TypeScript types, and has no runtime dependencies. Package: @speedle/sdk 0.1.0 on npm, available when published. Reference: speedle-sdk/node.
 The examples check the policy described in SDKs.
 Add the dependency In a new ES module package (available when published):
-mkdir speedle-example cd speedle-example npm init -y npm pkg set type=module npm install @speedle/sdk@0.1.0 Call a local Speedle+ Start Speedle+ and create the example policy as described in SDKs.</description>
+mkdir speedle-example cd speedle-example npm init -y npm pkg set type=module npm install @speedle/sdk@0.1.0 Call a local Speedle Start Speedle and create the example policy as described in SDKs.</description>
     </item>
     
     <item>

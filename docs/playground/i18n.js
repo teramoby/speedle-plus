@@ -1,6 +1,6 @@
 /** Display text only; policy/request values and genuine engine diagnostics stay unchanged. */
 const messages = {
-  "Playground | Speedle+ Authorization Engine": "策略实验室 | Speedle+ 权限控制引擎",
+  "Playground | Speedle Authorization Engine": "策略实验室 | Speedle 权限控制引擎",
   "About": "关于",
   "Features": "功能",
   "Integrations": "集成",
@@ -59,7 +59,7 @@ const messages = {
   "Browser sandbox": "浏览器沙箱",
   "One service · up to 500 statements · 256 KiB total input · 5-second evaluation deadline.": "单个服务 · 最多 500 条语句 · 输入总量 256 KiB · 评估时限 5 秒。",
   "External custom functions and token assertion are not supported. Enter test identities under Subject.": "不支持外部自定义函数和令牌断言。请在“主体”下填写测试身份。",
-  "Powered by Speedle+ · Go + WebAssembly ·": "由 Speedle+ 驱动 · Go + WebAssembly ·",
+  "Powered by Speedle · Go + WebAssembly ·": "由 Speedle 驱动 · Go + WebAssembly ·",
   "Engine & license notices": "引擎和许可证声明",
   "Source & build instructions": "源码和构建说明",
   "This playground requires JavaScript and WebAssembly.": "策略实验室需要浏览器支持 JavaScript 和 WebAssembly。",

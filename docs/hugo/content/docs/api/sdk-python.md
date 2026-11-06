@@ -1,13 +1,13 @@
 +++
 title = "Python SDK"
-description = "Add the Speedle Python SDK and check authorization against a local Speedle+ or Speedle Cloud."
+description = "Add the Speedle Python SDK and check authorization against a local Speedle or Speedle Cloud."
 weight = 20
 draft = false
 toc = true
 tocheading = "h2"
 tags = ["api", "sdk"]
 categories = ["docs"]
-bref = "Install speedle 0.1.0 with pip or uv, then call is_allowed and check against a local Speedle+ or Speedle Cloud."
+bref = "Install speedle 0.1.0 with pip or uv, then call is_allowed and check against a local Speedle or Speedle Cloud."
 +++
 
 The Python SDK needs Python 3.10 or later; its only runtime dependency is `httpx`. It has a sync `Client` and an asyncio `AsyncClient` with the same arguments. Package: [`speedle`](https://pypi.org/project/speedle/) 0.1.0 on PyPI. Reference: [speedle-sdk/python](https://github.com/teramoby/speedle-sdk/tree/main/python).
@@ -30,9 +30,9 @@ Or with uv, in a uv project:
 uv add speedle==0.1.0
 ```
 
-## Call a local Speedle+
+## Call a local Speedle
 
-Start Speedle+ and create the example policy as described in [SDKs](/docs/api/#sdks). Save this program as `main.py`:
+Start Speedle and create the example policy as described in [SDKs](/docs/api/#sdks). Save this program as `main.py`:
 
 ```python
 import sys

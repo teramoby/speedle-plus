@@ -1,13 +1,13 @@
 +++
 title = "Node.js/TypeScript SDK"
-description = "添加 Speedle Node.js/TypeScript SDK，向本地 Speedle+ 或 Speedle Cloud 发起授权检查。"
+description = "添加 Speedle Node.js/TypeScript SDK，向本地 Speedle 或 Speedle Cloud 发起授权检查。"
 weight = 60
 draft = false
 toc = true
 tocheading = "h2"
 tags = ["api", "sdk"]
 categories = ["docs"]
-bref = "@speedle/sdk 0.1.0 发布后用 npm 安装，再向本地 Speedle+ 或 Speedle Cloud 调用 isAllowed 与 check。"
+bref = "@speedle/sdk 0.1.0 发布后用 npm 安装，再向本地 Speedle 或 Speedle Cloud 调用 isAllowed 与 check。"
 +++
 
 Node.js SDK 需要 Node.js 22 或更高版本，同时提供 ESM 和 CommonJS 构建及 TypeScript 类型，没有运行时依赖。软件包：npm 上的 [`@speedle/sdk`](https://www.npmjs.com/package/@speedle/sdk) 0.1.0，**发布后可用**。参考文档：[speedle-sdk/node](https://github.com/teramoby/speedle-sdk/tree/main/node)。
@@ -26,9 +26,9 @@ npm pkg set type=module
 npm install @speedle/sdk@0.1.0
 ```
 
-## 调用本地 Speedle+
+## 调用本地 Speedle
 
-按 [SDK](/docs/api/#sdk) 一节启动 Speedle+ 并创建示例策略。将以下程序保存为 `main.ts`：
+按 [SDK](/docs/api/#sdk) 一节启动 Speedle 并创建示例策略。将以下程序保存为 `main.ts`：
 
 ```typescript
 import { Auth, Reason, SpeedleClient, SpeedleError } from "@speedle/sdk";

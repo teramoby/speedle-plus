@@ -145,7 +145,7 @@ FooBar 链接示例 巧克力提拉米苏糕点。链接示例
  在the project at Github上加一颗星星 将Speedle推荐给您的朋友，同学，同事 如果不介意的话，您可以告诉我们您是怎么使用Speedle的，我们将把您的公司或组织加入到我们用户列表里 您可以撰写一些文章来分享使用心得，如果需要技术上的支持，请和我们联系  讨论和用户社区 您可以在通过如下途径参加Speedle相关讨论：
  欢迎加入 Speedle Discord 社区，交流使用经验、提问或参与讨论。 如果无法访问 Discord，可以加入QQ群。群号：643201591  Issues 如果您发现Speedle的bug，或者希望Speedle实现一些新功能，请在GitHub issue 创建一个Issue。
 Issue的内容请包括：
- Speedle的版本 问题的详细描述 最好有可重现的环境和步骤 写清楚期望的行为  代码贡献 对 Speedle+ 的贡献依据 Universal Permissive License 1.0 (UPL-1.0) 提交。请为您的提交添加签名（sign-off），以证明您有权依据 Developer Certificate of Origin (DCO) 1.1 提交您的贡献。请在您的 Pull Request 中保留现有的版权和许可证声明，并标明任何第三方材料。
+ Speedle的版本 问题的详细描述 最好有可重现的环境和步骤 写清楚期望的行为  代码贡献 对 Speedle 的贡献依据 Universal Permissive License 1.0 (UPL-1.0) 提交。请为您的提交添加签名（sign-off），以证明您有权依据 Developer Certificate of Origin (DCO) 1.1 提交您的贡献。请在您的 Pull Request 中保留现有的版权和许可证声明，并标明任何第三方材料。
 如果您想为Speedle贡献代码，请完成如下流程：
  使用 git commit -s 为每次提交添加签名（参见 DCO 和 UPL-1.0 LICENSE） Fork Speedle代码库 改动代码，保证您的代码通过所有测试 创建一个Pull Request 查看您的pipeline结果，如果有问题请修正 我们会审阅您的改动，如果大家没有异议，就merge这个PR  行为准则 请参阅 Golden Rule 和 Contributor Covenant Code of Conduct。</description>
     </item>
@@ -160,7 +160,7 @@ Issue的内容请包括：
 示例检查的策略见 SDK。
 添加依赖 Maven，完整的 pom.xml：
 &amp;lt;?xml version=&amp;#34;1.0&amp;#34; encoding=&amp;#34;UTF-8&amp;#34;?&amp;gt; &amp;lt;project xmlns=&amp;#34;http://maven.apache.org/POM/4.0.0&amp;#34; xmlns:xsi=&amp;#34;http://www.w3.org/2001/XMLSchema-instance&amp;#34; xsi:schemaLocation=&amp;#34;http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd&amp;#34;&amp;gt; &amp;lt;modelVersion&amp;gt;4.0.0&amp;lt;/modelVersion&amp;gt; &amp;lt;groupId&amp;gt;com.example&amp;lt;/groupId&amp;gt; &amp;lt;artifactId&amp;gt;speedle-example&amp;lt;/artifactId&amp;gt; &amp;lt;version&amp;gt;1.0&amp;lt;/version&amp;gt; &amp;lt;properties&amp;gt; &amp;lt;maven.compiler.release&amp;gt;17&amp;lt;/maven.compiler.release&amp;gt; &amp;lt;project.build.sourceEncoding&amp;gt;UTF-8&amp;lt;/project.build.sourceEncoding&amp;gt; &amp;lt;/properties&amp;gt; &amp;lt;dependencies&amp;gt; &amp;lt;dependency&amp;gt; &amp;lt;groupId&amp;gt;io.speedle&amp;lt;/groupId&amp;gt; &amp;lt;artifactId&amp;gt;speedle-sdk&amp;lt;/artifactId&amp;gt; &amp;lt;version&amp;gt;0.1.0&amp;lt;/version&amp;gt; &amp;lt;/dependency&amp;gt; &amp;lt;/dependencies&amp;gt; &amp;lt;/project&amp;gt; Gradle，完整的 build.gradle.kts（另需一个设置 rootProject.name 的 settings.gradle.kts）：
-plugins { application } repositories { mavenCentral() } dependencies { implementation(&amp;#34;io.speedle:speedle-sdk:0.1.0&amp;#34;) } application { mainClass = &amp;#34;Main&amp;#34; } 调用本地 Speedle+ 按 SDK 一节启动 Speedle+ 并创建示例策略。将以下程序保存为 src/main/java/Main.</description>
+plugins { application } repositories { mavenCentral() } dependencies { implementation(&amp;#34;io.speedle:speedle-sdk:0.1.0&amp;#34;) } application { mainClass = &amp;#34;Main&amp;#34; } 调用本地 Speedle 按 SDK 一节启动 Speedle 并创建示例策略。将以下程序保存为 src/main/java/Main.</description>
     </item>
     
     <item>
@@ -184,7 +184,7 @@ docker run --name speedle-mysql --detach \  --publish 127.0.0.1:3306:3306 \  --v
       <guid>https://speedle.io/zh/quick-start/</guid>
       <description>先在 Playground 中试用 无需安装，即可先体验 Speedle 的基本功能。 打开 Playground 策略实验室，编辑 SPDL 策略、设置用户、资源和动作，即可在浏览器中查看真实的 Allow/Deny（允许／拒绝）授权结果，无需安装 Go 或启动服务。
 准备在本机编译和运行 Speedle 时，再继续下面的步骤。
-准备环境 准备 Linux 或 macOS、Bash、Git、curl，以及 Go 1.26.10 或 Go 1.27.3（也可使用同一大版本的更新补丁版本）。Speedle+ 支持 Go 1.26 和 Go 1.27 的安全补丁版本；本教程已在 Go 1.26.10 和 Go 1.27.3 上验证，推荐使用稳定版 Go 1.27.3 完成本教程。
+准备环境 准备 Linux 或 macOS、Bash、Git、curl，以及 Go 1.26.10 或 Go 1.27.3（也可使用同一大版本的更新补丁版本）。Speedle 支持 Go 1.26 和 Go 1.27 的安全补丁版本；本教程已在 Go 1.26.10 和 Go 1.27.3 上验证，推荐使用稳定版 Go 1.27.3 完成本教程。
 按照 Go 官方安装说明安装，然后检查版本：
 go version Go 会自动配置 GOROOT 和默认的 GOPATH，无需手动指定。下面将程序编译到源码目录下的 bin 目录。
 第一步：下载源码并编译 git clone --depth 1 https://github.com/teramoby/speedle-plus.git cd speedle-plus mkdir -p bin go build -o .</description>
@@ -210,7 +210,7 @@ go version Go 会自动配置 GOROOT 和默认的 GOPATH，无需手动指定。
       <guid>https://speedle.io/zh/docs/deployment-embeded/</guid>
       <description>什么是 Speedle 嵌入模式 嵌入模式将 Speedle 策略决策引擎运行在你的 Go 应用进程中，通过 evaluator 直接决策，无需启动 PMS 或 ADS 服务。应用负责认证用户，并为每次决策提供主体、资源和操作。
 编写代码前，可以先用 Playground 体验基本策略功能。如果希望以独立服务运行 Speedle，请参阅快速入门。
-前提条件 使用 Linux 或 macOS、命令行 shell，以及 Go 1.26.10 或 Go 1.27.3（也可使用同一大版本的更新补丁版本），安全补丁版本要求与快速入门一致。本例使用 Go modules 和已发布的 Speedle+ v1.6.0，推荐使用 Go 1.27.3；示例已在 Go 1.26.10 和 Go 1.27.3 下验证。
+前提条件 使用 Linux 或 macOS、命令行 shell，以及 Go 1.26.10 或 Go 1.27.3（也可使用同一大版本的更新补丁版本），安全补丁版本要求与快速入门一致。本例使用 Go modules 和已发布的 Speedle v1.6.0，推荐使用 Go 1.27.3；示例已在 Go 1.26.10 和 Go 1.27.3 下验证。
 按照 Go 官方安装说明安装 Go，然后检查版本：
 go version Go 会自动配置 GOROOT 和默认 GOPATH，无需手工设置。
 创建应用模块 在 Speedle 源码目录之外，选择一个有写入权限的目录，从新目录开始本例：
@@ -252,7 +252,7 @@ FooBar 链接示例 巧克力提拉米苏糕点。链接示例
 示例检查的策略见 SDK。
 添加依赖 使用 pip，在虚拟环境中安装：
 python3 -m venv .venv . .venv/bin/activate pip install speedle==0.1.0 或者使用 uv，在 uv 项目中添加：
-uv add speedle==0.1.0 调用本地 Speedle+ 按 SDK 一节启动 Speedle+ 并创建示例策略。将以下程序保存为 main.py：
+uv add speedle==0.1.0 调用本地 Speedle 按 SDK 一节启动 Speedle 并创建示例策略。将以下程序保存为 main.py：
 import sys from speedle import Auth, Client, SpeedleError try: with Client( backend=&amp;#34;speedle-plus&amp;#34;, endpoint=&amp;#34;http://localhost:6734&amp;#34;, auth=Auth.none(), service_name=&amp;#34;docs&amp;#34;, ) as speedle: allowed = speedle.is_allowed(&amp;#34;alice&amp;#34;, &amp;#34;get&amp;#34;, &amp;#34;/docs/public&amp;#34;) print(f&amp;#34;alice get /docs/public: allowed={allowed}&amp;#34;) decision = speedle.</description>
     </item>
     
@@ -278,7 +278,7 @@ docker run --name speedle-etcd --detach \  --publish 127.0.0.1:2379:2379 \  --vo
       <description>Go SDK 支持最新的两个 Go 版本，只使用标准库。模块：github.com/teramoby/speedle-sdk/go v0.1.0，包名 speedle。参考文档：speedle-sdk/go。
 示例检查的策略见 SDK。
 添加依赖 在新模块中执行：
-go mod init example.com/speedle-example go get github.com/teramoby/speedle-sdk/go@v0.1.0 调用本地 Speedle+ 按 SDK 一节启动 Speedle+ 并创建示例策略。将以下程序保存为 main.go：
+go mod init example.com/speedle-example go get github.com/teramoby/speedle-sdk/go@v0.1.0 调用本地 Speedle 按 SDK 一节启动 Speedle 并创建示例策略。将以下程序保存为 main.go：
 package main import ( &amp;#34;context&amp;#34; &amp;#34;fmt&amp;#34; &amp;#34;os&amp;#34; speedle &amp;#34;github.com/teramoby/speedle-sdk/go&amp;#34; ) func main() { client, err := speedle.NewClient(speedle.Config{ Backend: speedle.BackendSpeedlePlus, Endpoint: &amp;#34;http://localhost:6734&amp;#34;, Auth: speedle.NoAuth(), ServiceName: &amp;#34;docs&amp;#34;, }) if err != nil { fmt.Fprintln(os.Stderr, &amp;#34;Speedle error:&amp;#34;, err) os.Exit(1) } defer client.Close() ctx := context.Background() allowed, err := client.</description>
     </item>
     
@@ -336,7 +336,7 @@ printf &amp;#39;{}\n&amp;#39; &amp;gt; docs-policies.json 终端一启动 PMS，
       <description>.NET SDK 面向 .NET 8 或更高版本，没有依赖。软件包：NuGet 上的 Speedle.Sdk 0.1.0，命名空间 Speedle.Sdk。参考文档：speedle-sdk/dotnet。
 示例检查的策略见 SDK。
 添加依赖 新建控制台项目并添加软件包：
-dotnet new console -o SpeedleExample cd SpeedleExample dotnet add package Speedle.Sdk --version 0.1.0 调用本地 Speedle+ 按 SDK 一节启动 Speedle+ 并创建示例策略。将 Program.cs 替换为：
+dotnet new console -o SpeedleExample cd SpeedleExample dotnet add package Speedle.Sdk --version 0.1.0 调用本地 Speedle 按 SDK 一节启动 Speedle 并创建示例策略。将 Program.cs 替换为：
 using Speedle.Sdk; try { await using var speedle = new SpeedleClient(new SpeedleClientOptions { Backend = Backend.SpeedlePlus, Endpoint = new Uri(&amp;#34;http://localhost:6734&amp;#34;), Auth = Auth.None(), ServiceName = &amp;#34;docs&amp;#34;, }); bool allowed = await speedle.IsAllowedAsync(&amp;#34;alice&amp;#34;, &amp;#34;get&amp;#34;, &amp;#34;/docs/public&amp;#34;); Console.</description>
     </item>
     
@@ -349,7 +349,7 @@ using Speedle.Sdk; try { await using var speedle = new SpeedleClient(new Speedle
       <description>Rust SDK 需要 Rust 1.75 或更高版本，基于 tokio 和 reqwest（rustls）实现异步调用；下面使用的阻塞客户端由 blocking 特性提供。crate：crates.io 上的 speedle 0.1.0。参考文档：speedle-sdk/rust。
 示例检查的策略见 SDK。
 添加依赖 新建包并添加依赖：
-cargo new speedle-example cd speedle-example cargo add speedle@0.1.0 --features blocking 调用本地 Speedle+ 按 SDK 一节启动 Speedle+ 并创建示例策略。将 src/main.rs 替换为：
+cargo new speedle-example cd speedle-example cargo add speedle@0.1.0 --features blocking 调用本地 Speedle 按 SDK 一节启动 Speedle 并创建示例策略。将 src/main.rs 替换为：
 use speedle::blocking::Client; use speedle::{Auth, Backend}; fn main() { if let Err(e) = run() { eprintln!(&amp;#34;Speedle error: {e}&amp;#34;); std::process::exit(1); } } fn run() -&amp;gt; Result&amp;lt;(), speedle::Error&amp;gt; { let speedle = Client::builder(Backend::SpeedlePlus, &amp;#34;http://localhost:6734&amp;#34;, Auth::none(), &amp;#34;docs&amp;#34;).</description>
     </item>
     
@@ -375,7 +375,7 @@ go run ./website/tests/examples/asserter // A deterministic mock for the token-a
       <description>Node.js SDK 需要 Node.js 22 或更高版本，同时提供 ESM 和 CommonJS 构建及 TypeScript 类型，没有运行时依赖。软件包：npm 上的 @speedle/sdk 0.1.0，发布后可用。参考文档：speedle-sdk/node。
 示例检查的策略见 SDK。
 添加依赖 新建 ES 模块包并安装（发布后可用）：
-mkdir speedle-example cd speedle-example npm init -y npm pkg set type=module npm install @speedle/sdk@0.1.0 调用本地 Speedle+ 按 SDK 一节启动 Speedle+ 并创建示例策略。将以下程序保存为 main.ts：
+mkdir speedle-example cd speedle-example npm init -y npm pkg set type=module npm install @speedle/sdk@0.1.0 调用本地 Speedle 按 SDK 一节启动 Speedle 并创建示例策略。将以下程序保存为 main.ts：
 import { Auth, Reason, SpeedleClient, SpeedleError } from &amp;#34;@speedle/sdk&amp;#34;; try { const speedle = new SpeedleClient({ backend: &amp;#34;speedle-plus&amp;#34;, endpoint: &amp;#34;http://localhost:6734&amp;#34;, auth: Auth.none(), serviceName: &amp;#34;docs&amp;#34;, }); try { const allowed = await speedle.</description>
     </item>
     
@@ -439,8 +439,8 @@ TLS 加密连接并认证服务端。若要强制认证客户端，必须通过 
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://speedle.io/zh/docs/versions/</guid>
-      <description>Speedle+ 发布版本 已发布版本及发行说明以 GitHub Releases 为准。v1.6.0 是当前嵌入式 Go 示例固定使用的版本。为确保模块依赖可复现，应指定已发布版本；安装方式见嵌入模式。
-Oracle Speedle 历史版本 0.1.0 是原项目首次开源的版本，包含策略管理、授权决策、命令行工具及集成示例。历史文档中的 0.2.0 规划不是当前 Speedle+ 的发布路线图。</description>
+      <description>Speedle 发布版本 已发布版本及发行说明以 GitHub Releases 为准。v1.6.0 是当前嵌入式 Go 示例固定使用的版本。为确保模块依赖可复现，应指定已发布版本；安装方式见嵌入模式。
+Oracle Speedle 历史版本 0.1.0 是原项目首次开源的版本，包含策略管理、授权决策、命令行工具及集成示例。历史文档中的 0.2.0 规划不是当前 Speedle 的发布路线图。</description>
     </item>
     
     <item>

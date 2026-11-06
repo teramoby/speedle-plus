@@ -1,4 +1,4 @@
-/** Actual Speedle+ engine, isolated in a terminable worker. No JS eval or mock fallback.
+/** Actual Speedle engine, isolated in a terminable worker. No JS eval or mock fallback.
  * await initEngine() -> metadata
  * await evaluate({policies: string, request: object}) ->
  *   {ok:true,allowed:boolean,reason,reasonCode,policies,rolePolicies,roles,statements,durationMs,...}

@@ -1,13 +1,13 @@
 +++
 title = "Python SDK"
-description = "添加 Speedle Python SDK，向本地 Speedle+ 或 Speedle Cloud 发起授权检查。"
+description = "添加 Speedle Python SDK，向本地 Speedle 或 Speedle Cloud 发起授权检查。"
 weight = 20
 draft = false
 toc = true
 tocheading = "h2"
 tags = ["api", "sdk"]
 categories = ["docs"]
-bref = "用 pip 或 uv 安装 speedle 0.1.0，再向本地 Speedle+ 或 Speedle Cloud 调用 is_allowed 与 check。"
+bref = "用 pip 或 uv 安装 speedle 0.1.0，再向本地 Speedle 或 Speedle Cloud 调用 is_allowed 与 check。"
 +++
 
 Python SDK 需要 Python 3.10 或更高版本，唯一的运行时依赖是 `httpx`。它提供同步的 `Client` 和 asyncio 的 `AsyncClient`，两者参数相同。软件包：PyPI 上的 [`speedle`](https://pypi.org/project/speedle/) 0.1.0。参考文档：[speedle-sdk/python](https://github.com/teramoby/speedle-sdk/tree/main/python)。
@@ -30,9 +30,9 @@ pip install speedle==0.1.0
 uv add speedle==0.1.0
 ```
 
-## 调用本地 Speedle+
+## 调用本地 Speedle
 
-按 [SDK](/docs/api/#sdk) 一节启动 Speedle+ 并创建示例策略。将以下程序保存为 `main.py`：
+按 [SDK](/docs/api/#sdk) 一节启动 Speedle 并创建示例策略。将以下程序保存为 `main.py`：
 
 ```python
 import sys

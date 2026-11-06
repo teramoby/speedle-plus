@@ -1,13 +1,13 @@
 +++
 title = "Go SDK"
-description = "Add the Speedle Go SDK and check authorization against a local Speedle+ or Speedle Cloud."
+description = "Add the Speedle Go SDK and check authorization against a local Speedle or Speedle Cloud."
 weight = 30
 draft = false
 toc = true
 tocheading = "h2"
 tags = ["api", "sdk"]
 categories = ["docs"]
-bref = "Add github.com/teramoby/speedle-sdk/go v0.1.0 with go get, then call IsAllowed and Check against a local Speedle+ or Speedle Cloud."
+bref = "Add github.com/teramoby/speedle-sdk/go v0.1.0 with go get, then call IsAllowed and Check against a local Speedle or Speedle Cloud."
 +++
 
 The Go SDK supports the two latest Go releases and uses only the standard library. Module: [`github.com/teramoby/speedle-sdk/go`](https://pkg.go.dev/github.com/teramoby/speedle-sdk/go) v0.1.0, package `speedle`. Reference: [speedle-sdk/go](https://github.com/teramoby/speedle-sdk/tree/main/go).
@@ -23,9 +23,9 @@ go mod init example.com/speedle-example
 go get github.com/teramoby/speedle-sdk/go@v0.1.0
 ```
 
-## Call a local Speedle+
+## Call a local Speedle
 
-Start Speedle+ and create the example policy as described in [SDKs](/docs/api/#sdks). Save this program as `main.go`:
+Start Speedle and create the example policy as described in [SDKs](/docs/api/#sdks). Save this program as `main.go`:
 
 ```go
 package main

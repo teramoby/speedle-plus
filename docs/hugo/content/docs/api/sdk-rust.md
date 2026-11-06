@@ -1,13 +1,13 @@
 +++
 title = "Rust SDK"
-description = "Add the Speedle Rust SDK and check authorization against a local Speedle+ or Speedle Cloud."
+description = "Add the Speedle Rust SDK and check authorization against a local Speedle or Speedle Cloud."
 weight = 50
 draft = false
 toc = true
 tocheading = "h2"
 tags = ["api", "sdk"]
 categories = ["docs"]
-bref = "Add the speedle 0.1.0 crate with cargo add, then call is_allowed and check against a local Speedle+ or Speedle Cloud."
+bref = "Add the speedle 0.1.0 crate with cargo add, then call is_allowed and check against a local Speedle or Speedle Cloud."
 +++
 
 The Rust SDK needs Rust 1.75 or later. It is async on `tokio` and `reqwest` (rustls); the `blocking` feature adds the blocking client used below. Crate: [`speedle`](https://crates.io/crates/speedle) 0.1.0 on crates.io. Reference: [speedle-sdk/rust](https://github.com/teramoby/speedle-sdk/tree/main/rust).
@@ -24,9 +24,9 @@ cd speedle-example
 cargo add speedle@0.1.0 --features blocking
 ```
 
-## Call a local Speedle+
+## Call a local Speedle
 
-Start Speedle+ and create the example policy as described in [SDKs](/docs/api/#sdks). Replace `src/main.rs` with:
+Start Speedle and create the example policy as described in [SDKs](/docs/api/#sdks). Replace `src/main.rs` with:
 
 ```rust
 use speedle::blocking::Client;

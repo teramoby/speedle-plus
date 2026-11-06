@@ -9,7 +9,16 @@ const home = read('docs/index.html');
 const page = read('docs/playground/index.html');
 const chineseLink = '<a href="/zh/" lang="zh-CN" hreflang="zh-CN" aria-label="切换到中文">中文</a>';
 const playgroundChineseLink = chineseLink.replace('href="/zh/"','href="/zh/playground/"');
-const original = execFileSync('git',['show','5cccf4c4e50a2b0ab901a9fa65acc39074ed1068:docs/index.html'],{cwd:root,encoding:'utf8'});
+// #198 renamed the product "Speedle+" to "Speedle" (owner decision on legal advice); apply that rename to the reference homepage.
+const renameProduct = html => html
+  .replace('"name":"Speedle+","alternateName":"Speedle",','"name":"Speedle",')
+  .replace('The original Speedle project continues as <strong>Speedle+</strong>, maintained by its founding members.','The original Speedle project continues here, maintained by its founding members.')
+  .replace('Speedle+ carries the project forward under the Universal Permissive License.','Speedle continues to move forward under the Universal Permissive License.')
+  .replace(/Speedle\+/g,'Speedle');
+const original = renameProduct(execFileSync('git',['show','5cccf4c4e50a2b0ab901a9fa65acc39074ed1068:docs/index.html'],{cwd:root,encoding:'utf8'}));
+for (const name of ['docs/index.html','docs/zh/index.html','docs/playground/index.html','docs/zh/playground/index.html']) {
+  assert.ok(!/Speedle\+|Speedle&#43;|Speedle Plus/i.test(read(name)), `${name} uses the product name Speedle (#198)`);
+}
 const originalPolicyExample = original.match(/<pre>[\s\S]*?<\/pre>/)[0];
 const policyExample = home.match(/<pre>[\s\S]*?<\/pre>/)[0];
 assert.equal(policyExample.replace(/<[^>]+>/g,''), '# Employees can read and borrow books\ngrant group employee read,borrow book\n\n# Deny overrides grant: Bob cannot borrow with an invalid library card\ndeny user bob borrow book if is_card_valid == false', 'Homepage shows the corrected SPDL example');
