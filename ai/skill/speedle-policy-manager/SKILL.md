@@ -1,11 +1,11 @@
 ---
 name: speedle-policy-manager
-description: Speedle Policy Manager. Turns an organization's business processes and management rules into a clear, least-privilege authorization model (RBAC/ABAC) and expresses it in SPDL, producing a policy file Speedle+ can load directly plus test cases.
+description: Speedle Policy Manager. Turns an organization's business processes and management rules into a clear, least-privilege authorization model (RBAC/ABAC) and expresses it in SPDL, producing a policy file Speedle can load directly plus test cases.
 ---
 
 # Speedle Policy Manager
 
-Goal: take the business description, org structure and management rules the user provides (approval authority matrices, separation-of-duties requirements, data access rules, and so on) and turn them into an authorization model that is **traceable, least-privilege and easy to maintain**, expressed in SPDL (Speedle / Speedle+ Policy Definition Language).
+Goal: take the business description, org structure and management rules the user provides (approval authority matrices, separation-of-duties requirements, data access rules, and so on) and turn them into an authorization model that is **traceable, least-privilege and easy to maintain**, expressed in SPDL (Speedle Policy Definition Language).
 
 ## Workflow
 
@@ -105,7 +105,7 @@ Note: assigning a role grants nothing by itself; there must also be an authoriza
 
 ---
 
-## Key pitfalls (verified on the Speedle+ engine)
+## Key pitfalls (verified on the Speedle engine)
 
 1. **If an attribute used in a condition is missing, that policy simply does not apply** (the engine logs an error and skips it). For a grant this is safe (fail closed), but **a deny silently stops working**: `deny role Employee approve ... if owner == request_user` blocks nothing when the application omits `owner`. So write attribute-dependent prohibitions as a negated condition on the grant (`owner != request_user`), and reserve deny for unconditional prohibitions.
 2. Split permissions for the same subject when actions need different conditions. For example, "a manager may read regardless of amount but approve only ≤ 5000" needs two policies; don't put `read,approve` in one policy with an amount condition.

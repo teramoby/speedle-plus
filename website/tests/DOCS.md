@@ -24,7 +24,7 @@ Container build/push and Kubernetes admission/rollout require a target registry/
 | `api/asserter_api` | Updated in both languages | Native router/schema contracts; source proto parity |
 | `api/decision_api` | Updated in both languages | Native router/schema contracts; source proto parity |
 | `api/management_api` | Updated in both languages | Native router/schema contracts; source proto parity |
-| `api/sdk-java`, `api/sdk-python`, `api/sdk-go`, `api/sdk-dotnet`, `api/sdk-rust`, `api/sdk-node` | Added in both languages | Not run by this suite. Each example was run by hand from the published package (Node.js: the packed SDK) against a local Speedle+ ADS and Speedle Cloud beta; commands and output are in the PR |
+| `api/sdk-java`, `api/sdk-python`, `api/sdk-go`, `api/sdk-dotnet`, `api/sdk-rust`, `api/sdk-node` | Added in both languages | Not run by this suite. Each example was run by hand from the published package (Node.js: the packed SDK) against a local self-hosted Speedle ADS and Speedle Cloud beta; commands and output are in the PR |
 | `architecture` | Reviewed; retained | Source review; no obsolete build/API example found |
 | `assertor` | Updated in both languages | Paired native commands and API results |
 | `custom-function` | Updated in both languages | Paired native commands and API results |

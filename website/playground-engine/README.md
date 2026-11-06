@@ -6,7 +6,7 @@ The client source is `docs/hugo/static/playground/`; its published copy is
 identity domains and attributes remain in browser memory. There is no evaluation
 backend, credential, API token or persistent request storage.
 
-The production `docs/playground/speedle.wasm` compiles the **actual Speedle+ Go
+The production `docs/playground/speedle.wasm` compiles the **actual Speedle Go
 parser and evaluation library**, not a JavaScript decision implementation.
 `docs/playground/engine.js` and `engine-worker.js` provide transport and worker
 lifecycle only. The adapter here calls `pkg/pdl.ParsePolicy/ParseRolePolicy`,
@@ -24,7 +24,7 @@ website/playground-engine/build.sh
 GO_BIN=/path/to/go website/playground-engine/build.sh
 ```
 
-`go.mod` replaces the Speedle+ dependency with this repository's root. The
+`go.mod` replaces the Speedle dependency with this repository's root. The
 underlying engine source (`api/`, `pkg/`, `3rdparty/`, `go.mod`, `go.sum`) is pinned
 to commit `dd628a6df3f2ce46126896c1322cb6ef21f75449`. The script extracts those
 paths from the pinned Git commit into a temporary build tree, then copies the
@@ -123,7 +123,7 @@ not a fabricated evaluation trace; upstream may short-circuit or mark additional
 applicable policies ignored.
 
 The adapter adds editor validation for trailing SPDL text, malformed input,
-condition errors and nonboolean conditions; the underlying Speedle+ source is
+condition errors and nonboolean conditions; the underlying Speedle source is
 unchanged. One statement per line; blank lines and full-line `#` / `//` comments
 are skipped. User/group/entity principals are caller-provided test identities,
 not authenticated users. Roles are derived by role policies. Typed attributes

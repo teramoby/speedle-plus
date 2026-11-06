@@ -181,7 +181,7 @@ def summarize(kind, packages, failures, checks, run_url, commit_url="", performa
     total = {k: sum(c[k] for c in packages.values()) for k in ("pass", "fail", "skip")}
     failed_checks = [c for c in checks if not c["passed"]]
     ok = not failures and not failed_checks
-    lines = [f"# Speedle+ {KINDS[kind]['title']} test report: {'PASSED' if ok else 'FAILED'}", ""]
+    lines = [f"# Speedle {KINDS[kind]['title']} test report: {'PASSED' if ok else 'FAILED'}", ""]
     if commit_url:
         lines += [f"Commit: {commit_url}", ""]
     if run_url:
@@ -213,7 +213,7 @@ def summarize(kind, packages, failures, checks, run_url, commit_url="", performa
 def ark_analyze(summary, api_key, model, url=ARK_URL, timeout=300, language="Chinese"):
     """Return the model's analysis, or None when Ark is unavailable."""
     prompt = (
-        "You are the test-results analyst for Speedle+, an open-source Go authorization "
+        "You are the test-results analyst for Speedle, an open-source Go authorization "
         "engine (PMS policy management, ADS decisions, SPDL policies, file/etcd/MongoDB stores). "
         f"Analyze the test report below for the maintainers. Write in {language}, plain "
         "text. Start with a one-line overall verdict. For each failure, give the likely cause "
@@ -316,7 +316,7 @@ def feishu_card(kind, ok, packages, failed, analysis, run_url, issues_url, skips
     return {
         "header": {"template": "green" if ok else "red",
                    "title": {"tag": "plain_text",
-                             "content": f"Speedle+ {KINDS[kind]['title']} 测试：{'通过' if ok else '失败'}"}},
+                             "content": f"Speedle {KINDS[kind]['title']} 测试：{'通过' if ok else '失败'}"}},
         "elements": [{"tag": "markdown", "content": "\n".join(lines)}],
     }
 
@@ -488,7 +488,7 @@ def main(argv=None, env=os.environ):
         Path(args.summary_file).write_text(report)
 
     if policy["mail"]:
-        subject = f"[Speedle+ {policy['title']}] {'PASSED' if ok else 'FAILED'}"
+        subject = f"[Speedle {policy['title']}] {'PASSED' if ok else 'FAILED'}"
         try:
             send_mail(subject, report, env)
         except (smtplib.SMTPException, OSError) as error:
