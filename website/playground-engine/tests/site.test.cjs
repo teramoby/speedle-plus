@@ -96,8 +96,8 @@ const identityTags = [/<title>[^<]*<\/title>/, /<link rel="icon"[^>]*>/,
 // The site identity (title, icon, social and structured-data names) changed deliberately.
 const analyticsSnippet = read('website/cloudflare-web-analytics.html');
 const restoredIdentity = identityTags.reduce((html, pattern) => html.replace(pattern, original.match(pattern)[0]), home.replace(analyticsSnippet, '').replace(iconLinks, original.match(/<link rel="icon"[^>]*>/)[0]).replace(productsMenu, '').replace(familyFooter, '').replace('  <footer class="site-footer">\n', '  <footer>\n').replace(footerLockup, '<img src="/img/speedle/Speedle_logo_w.svg" alt="Speedle">'));
-const restored = restoredIdentity.replace(policyExample,originalPolicyExample).replace(originNote,'').replace('Bring Your Own Storage','Bring Your Own Store').replace('Speedle Policy Definition Language.','Secure Policy Definition Language.').replace(contactLinks,originalMailingLink).replace(sharedNavigationScript,originalNavigationScript).replace(copyright,'').replace(discordLink,oldCommunityLink).replace('  <link rel="stylesheet" href="/css/site.css">\n  <link rel="stylesheet" href="/css/navigation.css?v=header-20261106-v8">', `  <style>${originalCss}</style>`).replace('<a href="/playground/">Playground</a>','').replace(`        ${chineseLink}\n`,'').replace(brandLockup,originalBrand);
-assert.equal(restored,original,'Homepage content is unchanged except shared navigation assets/entries, community/contact links, storage heading, SPDL name, corrected SPDL example, origin note, site identity, copyright notice, analytics beacon, logo lock-up, Speedle family links and favicons');
+const restored = restoredIdentity.replace(policyExample,originalPolicyExample).replace(originNote,'').replace('Bring Your Own Storage','Bring Your Own Store').replace('Speedle Policy Definition Language.','Secure Policy Definition Language.').replace(contactLinks,originalMailingLink).replace(sharedNavigationScript,originalNavigationScript).replace(copyright,'').replace(discordLink,oldCommunityLink).replace('  <link rel="stylesheet" href="/css/site.css">\n  <link rel="stylesheet" href="/css/navigation.css?v=header-20261106-v8">', `  <style>${originalCss}</style>`).replace('<a href="/playground/">Playground</a>','').replace(`        ${chineseLink}\n`,'').replace(brandLockup,originalBrand).replace('Fast. Simple. Access control','Fast. Simple. Access control.').replace('Authorization that stays out of your application code','Authorization that stays out of your application code.').replace('Fine-grained control without the friction','Fine-grained control without the friction.').replace('Policies humans can read','Policies humans can read.').replace('Built for the infrastructure you already run','Built for the infrastructure you already run.').replace('Help move Speedle forward','Help move Speedle forward.');
+assert.equal(restored,original,'Homepage content is unchanged except shared navigation assets/entries, community/contact links, storage heading, SPDL name, corrected SPDL example, origin note, site identity, copyright notice, analytics beacon, logo lock-up, Speedle family links, favicons and titles without trailing full stops');
 assert.ok(home.includes(brandLockup), 'Homepage shows the Speedle | Engine lock-up (#203)');
 for (const name of ['docs/zh/index.html','docs/playground/index.html','docs/zh/playground/index.html']) assert.ok(read(name).includes('<span class="brand-divider" aria-hidden="true"></span><span class="brand-product">Engine</span></a>'), `Lock-up in ${name}`);
 assert.ok(home.includes(chineseLink), 'English homepage exposes the Chinese homepage');
@@ -148,4 +148,21 @@ for(const name of ['app.js','request-model.js','engine.js','engine-worker.js']) 
 }
 assert.ok(!fs.existsSync(path.join(root,'docs/playground/.openai')),'No private hosting configuration');
 assert.ok(read('docs/playground/engine-worker.js').includes("fetch(new URL('./speedle.wasm', import.meta.url))"),'WASM URL is module-relative');
+// #218: title-like headings never end with a full stop (DESIGN.md content rule).
+function assertNoTrailingFullStop(file) {
+ const html = fs.readFileSync(file, 'utf8');
+ for (const [, level, inner] of html.matchAll(/<h([1-4])\b[^>]*>([\s\S]*?)<\/h\1>/g)) {
+  const text = inner.replace(/<[^>]+>/g, '').trim();
+  assert.ok(!/[.。]$/.test(text), `No trailing full stop in h${level} of ${path.relative(root, file)}: ${text}`);
+ }
+}
+function checkDocsHeadings(directory) {
+ for (const entry of fs.readdirSync(directory, {withFileTypes: true})) {
+  const file = path.join(directory, entry.name);
+  if (entry.isDirectory()) checkDocsHeadings(file);
+  else if (entry.name === 'index.html') assertNoTrailingFullStop(file);
+ }
+}
+for (const name of ['docs/index.html', 'docs/zh/index.html']) assertNoTrailingFullStop(path.join(root, name));
+for (const name of ['docs/docs', 'docs/zh/docs']) checkDocsHeadings(path.join(root, name));
 console.log('PASS static site integration: original CSS/homepage, official footer, navigation, URLs/assets, canonical, English labels, no private hosting or persistent request storage');
