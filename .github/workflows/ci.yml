@@ -1,4 +1,4 @@
-name: Speedle Plus CI
+name: Speedle CI
 
 on:
   # Pull requests are checked by their pull_request run; pushes are checked on

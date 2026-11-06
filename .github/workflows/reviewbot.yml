@@ -421,7 +421,7 @@ jobs:
                 continue;
               }
               if (run.conclusion !== "success") {
-                core.setFailed(`Speedle Plus CI did not pass: ${run.conclusion}`);
+                core.setFailed(`Speedle CI did not pass: ${run.conclusion}`);
                 return;
               }
 
@@ -448,4 +448,4 @@ jobs:
               }
               return;
             }
-            core.setFailed("Timed out waiting for the required Speedle Plus CI checks.");
+            core.setFailed("Timed out waiting for the required Speedle CI checks.");
