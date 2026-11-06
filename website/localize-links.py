@@ -12,6 +12,9 @@ from urllib.parse import unquote, urljoin, urlsplit, urlunsplit
 ORIGIN = "https://engine.speedle.io"
 # speedle.io redirects to engine.speedle.io, so links to either host are same-site.
 HOSTS = {"engine.speedle.io", "speedle.io"}
+# The Products menu and the footer family link the three sites; each keeps the reader's language.
+FAMILY_ZH_ROOT = {"engine.speedle.io": "/zh/", "cloud.speedle.io": "/zh-CN/", "ai.speedle.io": "/zh/"}
+LANGUAGE_PREFIXES = ("/zh-CN", "/zh", "/en")
 OWN_ORIGIN = re.compile(r"^https?://(?:engine\.)?speedle\.io(?=/)", re.I)
 NAVIGATION_VERSION = "language-direct-20261026"
 PREVIEW = re.compile(r"^/[0-9a-f]{32}(?=/)")
@@ -61,6 +64,19 @@ def counterpart(path, lang):
     path = logical(path)
     neutral = path[3:] if path.startswith("/zh/") else path
     return prefix + ("/zh" + neutral if lang == "zh" else neutral)
+
+
+def family_destination(url, lang):
+    """Keep Products-menu and footer-family links in the reader's language."""
+    path = url.path or "/"
+    for prefix in LANGUAGE_PREFIXES:
+        if path == prefix or path.startswith(prefix + "/"):
+            path = path[len(prefix):] or "/"
+            break
+    if lang == "zh":
+        root = FAMILY_ZH_ROOT[url.netloc]
+        path = root if path == "/" else root[:-1] + path
+    return urlunsplit((url.scheme, url.netloc, path, url.query, url.fragment))
 
 
 def direct_language_navigation(text, route):
@@ -239,12 +255,16 @@ class Links(HTMLParser):
         raw = self.get_starttag_text()
         changes = {}
         in_languages = any("langsel" in scope for _, scope in self.stack)
-        # The Products menu and footer family link the three sites by absolute URL; keep them as written.
+        # The Products menu and footer family link the three sites by absolute URL:
+        # localize them to the reader's language instead of resolving them as local links.
         cross_site = any(name in scope for _, scope in self.stack for name in ("products-panel", "footer-family"))
-        if tag == "a" and attrs.get("href") and not (cross_site and urlsplit(attrs["href"].strip()).netloc):
+        if tag == "a" and attrs.get("href"):
             href = attrs["href"].strip()
             url = urlsplit(urljoin(ORIGIN + self.base_route, href))
-            if url.netloc in HOSTS and url.scheme in {"http", "https"}:
+            if cross_site and urlsplit(href).netloc:
+                if url.netloc in FAMILY_ZH_ROOT and url.scheme in {"http", "https"}:
+                    changes["href"] = family_destination(url, self.lang)
+            elif url.netloc in HOSTS and url.scheme in {"http", "https"}:
                 switch = attrs.get("hreflang", "").lower().split("-")[0]
                 if in_languages and not switch:
                     switch = "zh" if logical(url.path).startswith("/zh/") else "en"

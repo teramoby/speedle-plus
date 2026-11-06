@@ -45,13 +45,45 @@ const productsMenu = /<div class="products">[\s\S]*?<\/div><\/div>\n\s*/;
 const familyFooter = /      <div class="footer-family"[\s\S]*?<\/ul><\/div>\n/;
 const footerLockup = '<div class="footer-lockup" role="img" aria-label="Speedle Engine"><img src="/img/speedle/Speedle_logo_home_bold.svg?v=4" alt=""><span class="brand-divider"></span><span class="brand-product">Engine</span></div>';
 const iconLinks = /<link rel="icon" href="(?:https:\/\/speedle\.io)?\/favicon\.svg" type="image\/svg\+xml">\n\s*<link rel="icon" href="(?:https:\/\/speedle\.io)?\/favicon\.ico" sizes="any">\n\s*<link rel="apple-touch-icon" href="(?:https:\/\/speedle\.io)?\/apple-touch-icon\.png">/;
+// #217: links between the three sites keep the reader's language.
+const crossSiteRoots = zh => zh
+  ? ['https://engine.speedle.io/zh/','https://cloud.speedle.io/zh-CN/','https://ai.speedle.io/zh/']
+  : ['https://engine.speedle.io/','https://cloud.speedle.io/','https://ai.speedle.io/'];
 for (const name of ['docs/index.html','docs/zh/index.html','docs/playground/index.html','docs/zh/playground/index.html']) {
   const html = read(name);
+  const roots = crossSiteRoots(name.includes('/zh/'));
   assert.ok(iconLinks.test(html) && !html.includes('speedle_purple.png'), `Sphere favicons in ${name}`);
   const menu = html.match(productsMenu)?.[0] || '';
-  assert.ok(menu.includes('aria-haspopup="true"') && menu.includes('aria-current="page"') && ['https://engine.speedle.io/','https://cloud.speedle.io/','https://ai.speedle.io/'].every(url => menu.includes(`href="${url}`)), `Products menu in ${name}`);
+  assert.ok(menu.includes('aria-haspopup="true"') && menu.includes('aria-current="page"') && roots.every(url => menu.includes(`href="${url}"`)), `Products menu in ${name}`);
+  const family = html.match(familyFooter)?.[0] || '';
+  assert.ok(roots.every(url => family.includes(`href="${url}"`)), `Footer family language in ${name}`);
   assert.ok(familyFooter.test(html) && html.includes(footerLockup) && html.includes('<footer class="site-footer">'), `Shared footer in ${name}`);
 }
+let chinesePages = 0;
+(function walk(dir) {
+  for (const entry of fs.readdirSync(dir, {withFileTypes: true})) {
+    const file = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      if (file !== path.join(root, 'docs', 'hugo')) walk(file);
+      continue;
+    }
+    if (!entry.name.endsWith('.html')) continue;
+    const route = '/' + path.relative(path.join(root, 'docs'), file).split(path.sep).join('/');
+    const zh = /^(?:\/[0-9a-f]{32})?\/zh\//.test(route);
+    const html = fs.readFileSync(file, 'utf8');
+    const blocks = [html.match(/<div class="products-panel"[\s\S]*?<\/div>/)?.[0], html.match(/<div class="footer-family"[\s\S]*?<\/div>/)?.[0]].filter(Boolean);
+    if (!blocks.length) continue;
+    if (zh) chinesePages++;
+    for (const block of blocks) {
+      for (const [, href] of block.matchAll(/<a\b[^>]*\bhref="(https:\/\/(?:engine|cloud|ai)\.speedle\.io\/[^"]*)"/g)) {
+        const pathname = new URL(href).pathname;
+        if (zh) assert.ok(/^\/(?:zh|zh-CN)\//.test(pathname), `Chinese page ${route} links the English root ${href}`);
+        else assert.ok(!/^\/(?:zh|zh-CN)\//.test(pathname), `English page ${route} links the Chinese root ${href}`);
+      }
+    }
+  }
+})(path.join(root, 'docs'));
+assert.ok(chinesePages > 100, `Chinese pages scanned for cross-site language: ${chinesePages}`);
 for (const name of ['docs/index.html','docs/zh/index.html']) assert.ok(!read(name).includes('hero-family'), `No contextual cross-links on the Engine home page in ${name} (v12)`);
 const originNote = /        <p class="license origin-note"><em>.*<\/em><\/p>\n/;
 for (const name of ['docs/index.html','docs/zh/index.html']) {
