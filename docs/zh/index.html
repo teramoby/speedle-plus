@@ -248,13 +248,8 @@
         </div>
         <div class="code" aria-label="SPDL 授权策略示例">
           <div class="code-bar"><span class="dots"><i></i><i></i><i></i></span><span>library.spdl</span></div>
-          <pre><span class="cm">// 员工可以阅读图书</span>
-<span class="kw">grant</span> <span class="str">read</span> on <span class="str">book</span>
-  <span class="kw">if</span> principal <span class="kw">in</span> group:<span class="str">employee</span>;
-
-<span class="cm">// 显式拒绝始终优先</span>
-<span class="kw">deny</span> <span class="str">delete</span> on <span class="str">book</span>
-  <span class="kw">if</span> principal == user:<span class="str">bob</span>;</pre>
+          <pre><span class="kw">grant</span> <span class="kw">group</span> <span class="str">employee</span> <span class="str">read,borrow</span> <span class="str">book</span>
+<span class="kw">deny</span> <span class="kw">user</span> <span class="str">bob</span> <span class="str">borrow</span> <span class="str">book</span> <span class="kw">if</span> <span class="str">is_card_valid</span> == <span class="str">false</span></pre>
         </div>
       </div>
     </section>
