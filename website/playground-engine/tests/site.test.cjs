@@ -70,7 +70,7 @@ assert.ok(page.includes('<a href="/playground/" aria-current="page">Playground</
 assert.ok(page.includes('<link rel="stylesheet" href="/css/site.css">'));
 assert.equal(page.match(/  <footer>[\s\S]*?<\/footer>/)[0],home.match(/  <footer>[\s\S]*?<\/footer>/)[0], 'Official footer is reused unchanged');
 assert.ok(page.includes('href="https://speedle.io/playground/"'));
-assert.equal(read('docs/CNAME').trim(),'speedle.io');
+assert.equal(read('docs/CNAME').trim(),'engine.speedle.io');
 assert.ok(read('docs/sitemap.xml').includes('https://speedle.io/en/sitemap.xml'));
 assert.ok(read('docs/sitemap.xml').includes('https://speedle.io/zh/sitemap.xml'));
 assert.ok(read('docs/en/sitemap.xml').includes('https://speedle.io/playground/'));
