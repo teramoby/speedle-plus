@@ -64,7 +64,7 @@ document.querySelectorAll('header.site-header').forEach(function(header) {
       if (event.relatedTarget && !products.contains(event.relatedTarget)) setProducts(false);
     });
   }
-  window.matchMedia('(max-width: 1050px)').addEventListener('change', function() { setOpen(false); setProducts(false); });
+  window.matchMedia('(max-width: 1160px)').addEventListener('change', function() { setOpen(false); setProducts(false); });
   // Collapse links only after their controller has initialized successfully.
   header.classList.add('navigation-ready');
 });

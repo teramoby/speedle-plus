@@ -21,7 +21,7 @@ function compareAssets(relative) {
 compareAssets('playground');
 for (const name of ['index.html','zh/index.html','playground/index.html','zh/playground/index.html']) {
   const html = fs.readFileSync(path.join(output, name), 'utf8');
-  assert.ok(html.includes('/css/navigation.css?v=header-20261106') && html.includes('/js/navigation.js?v=header-20261106'), `Shared navigation assets in ${name}`);
+  assert.ok(html.includes('/css/navigation.css?v=header-20261106-v8') && html.includes('/js/navigation.js?v=header-20261106-v8'), `Shared navigation assets in ${name}`);
 }
 for (const name of ['site.css', 'navigation.css', 'custom.css', 'command-copy.css']) {
   assert.deepEqual(fs.readFileSync(path.join(output, 'css', name)), fs.readFileSync(path.join(root, 'docs/css', name)));
@@ -50,7 +50,7 @@ for (const name of ['docs/index.html', 'zh/docs/index.html', 'docs/spdl/index.ht
   const homeNavigation = homepage.match(/<nav class="nav-links"[^>]*>[\s\S]*?<\/nav>/)[0];
   assert.deepEqual(labels(navigation), labels(homeNavigation), `Homepage navigation order/labels in ${name}`);
   assert.ok(navigation.includes(`href="/${zh ? 'zh/' : ''}#features"`), `Features returns to localized homepage from ${name}`);
-  assert.ok(html.includes('/css/navigation.css?v=header-20261106') && html.includes('/js/navigation.js?v=header-20261106'), `Shared versioned navigation assets in ${name}`);
+  assert.ok(html.includes('/css/navigation.css?v=header-20261106-v8') && html.includes('/js/navigation.js?v=header-20261106-v8'), `Shared versioned navigation assets in ${name}`);
 }
 console.log('PASS Hugo 0.48 output: editor, navigation, sitemap and matching release assets');
 
