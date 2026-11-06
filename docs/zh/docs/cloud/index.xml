@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Speedle Cloud on Speedle</title>
+    <link>https://engine.speedle.io/zh/docs/cloud/</link>
+    <description>Recent content in Speedle Cloud on Speedle</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh-cn</language>
+    
+	<atom:link href="https://engine.speedle.io/zh/docs/cloud/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>Speedle Cloud 快速入门</title>
+      <link>https://engine.speedle.io/zh/docs/cloud/getting-started/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/zh/docs/cloud/getting-started/</guid>
+      <description>Speedle Cloud 即将上线。 cloud.speedle.io 尚未开放登录，带认证的授权 API 也仍在逐步交付。下面介绍计划中的生产环境使用流程。生产环境开放登录后会补充实际截图，本文不使用模拟界面图。
+1. 使用 GitHub 或 Google 登录 打开 Speedle Cloud。生产环境开放登录后，选择 使用 GitHub 登录 或 使用 Google 登录。如果你要创建新账号，还需要明确点击 创建账号 进行确认。
+ 截图待补充
+此处将展示生产环境的登录页面。
+ 2. 创建服务 打开服务工作区，输入服务名称（例如 books），然后点击 创建服务。服务用于集中管理应用的授权策略和角色策略。每个免费账号可以创建一个服务。
+ 截图待补充
+此处将展示创建服务的页面。
+ 3. 编写或导入 SPDL 策略 在服务工作区点击 新建策略，在控制台中编写 SPDL，点击 验证策略 检查语法，再点击 保存策略。验证语法不会自动保存策略。你也可以在工作区导入已有策略，无需逐条手动输入。
+例如，下面这条授权策略允许用户 alice 对 /books 执行 get 操作：
+grant user alice get /books
+Speedle Cloud 支持授权策略和角色策略，不支持外部自定义函数。
+ 截图待补充
+此处将展示策略编辑器和导入控件。
+ 4. 在 Playground 中测试授权判定 在服务工作区找到 Playground，选择 Is allowed。在 Principals 中输入 [{&amp;quot;type&amp;quot;:&amp;quot;user&amp;quot;,&amp;quot;name&amp;quot;:&amp;quot;alice&amp;quot;}]，在 Resource 中输入 /books，在 Action 中输入 get，然后点击 运行测试。</description>
+    </item>
+    
+  </channel>
+</rss>
