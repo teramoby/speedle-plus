@@ -1310,22 +1310,6 @@ func (p *PolicyEvalImpl) applyStoreChange(e pms.StoreChangeEvent) (err error) {
 	return nil
 }
 
-func (p *PolicyEvalImpl) cleanExpiredFunctionResultPeriodically() {
-	ticker := time.NewTicker(30 * time.Minute)
-	p.cleanupStop = make(chan struct{})
-	go func() {
-		defer ticker.Stop()
-		for {
-			select {
-			case <-ticker.C:
-				p.CleanExpiredFunctionResult()
-			case <-p.cleanupStop:
-				return
-			}
-		}
-	}()
-}
-
 // Close releases evaluator resources, including a closable backing store.
 // NewWithStore callers should close the evaluator only when they also intend
 // to close the supplied store. StopWatch alone leaves the store usable.

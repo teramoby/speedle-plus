@@ -8,6 +8,7 @@ import (
 	"crypto/x509"
 	"encoding/json"
 	"fmt"
+	"github.com/teramoby/speedle-plus/pkg/assertion/config"
 	"io"
 	"net/http"
 	"os"
@@ -44,13 +45,7 @@ type TokenAsserter interface {
 }
 
 // AsserterConfig asserter webhook client configuration
-type AsserterConfig struct {
-	Endpoint    string `json:"endpoint"`
-	CACert      string `json:"caCert"`
-	ClientCert  string `json:"clientCert"`
-	ClientKey   string `json:"clientKey"`
-	HTTPTimeout int    `json:"httpTimeout"`
-}
+type AsserterConfig = config.AsserterConfig
 
 // WebHookAsserter implements asserter client interface
 type WebHookAsserter struct {
