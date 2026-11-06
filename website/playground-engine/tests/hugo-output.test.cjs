@@ -71,6 +71,10 @@ function checkStorageNavigation(directory, locale = '') {
     }
   }
 }
+for (const name of ['docs/index.html', 'zh/docs/index.html', 'quick-start/index.html', 'zh/blog/index.html']) {
+  const html = fs.readFileSync(path.join(output, name), 'utf8');
+  assert.ok(html.includes('<footer class="site-footer">') && html.includes('class="footer-family"') && !html.includes('<footer class="row">'), `Shared homepage footer in ${name}`);
+}
 checkStorageNavigation(path.join(output, 'docs'));
 checkStorageNavigation(path.join(output, 'zh/docs'), 'zh/');
 console.log('PASS complete bilingual documentation sidebars with nested MySQL, etcd and MongoDB guides');

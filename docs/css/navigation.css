@@ -38,11 +38,12 @@ body.page-kube > header.site-header:lang(zh) {
   justify-content: space-between;
 }
 .site-header a { text-decoration: none; }
-/* Shared three-site lock-up: Speedle mark + wordmark | product word (#203). */
+/* Shared three-site lock-up: Speedle mark + wordmark | product word (#203, header standard v2). */
 .site-header .brand {
-  display: flex;
+  display: inline-flex;
   flex: 0 0 auto;
   align-items: center;
+  gap: 14px;
   width: auto;
   margin: 0;
   padding: 0;
@@ -52,17 +53,17 @@ body.page-kube > header.site-header:lang(zh) {
 }
 .site-header .brand img {
   display: block;
-  width: auto;
+  width: 152px;
   max-width: none;
-  height: 32px;
+  height: auto;
   margin: 0;
 }
 .site-header .brand-divider {
   display: block;
   flex: 0 0 1px;
   width: 1px;
-  height: 20px;
-  margin: 0 12px;
+  height: 26px;
+  margin: 0;
   background: currentColor;
   opacity: .4;
 }
@@ -71,16 +72,11 @@ body.page-kube > header.site-header:lang(zh) {
   margin: 0;
   color: #01e7cb;
   font-family: inherit;
-  font-size: 18px;
+  font-size: 22px;
   font-weight: 600;
   letter-spacing: 0;
   line-height: 1;
   white-space: nowrap;
-}
-@media (max-width: 720px) {
-  .site-header .brand img { height: 28px; }
-  .site-header .brand-divider { height: 18px; }
-  .site-header .brand-product { font-size: 16px; }
 }
 .site-header .nav-links {
   display: flex;
@@ -131,6 +127,10 @@ body.page-kube > header.site-header:lang(zh) {
   vertical-align: baseline;
   cursor: pointer;
 }
+/* Just above the collapse point the English nav plus the Products menu is wider than the container. */
+@media (min-width: 1051px) and (max-width: 1160px) {
+  .site-header .nav-links { gap: 16px; }
+}
 @media (max-width: 1050px) {
   .site-header .wrap.nav {
     height: auto;
@@ -161,4 +161,157 @@ body.page-kube > header.site-header:lang(zh) {
 }
 @media (max-width: 700px) {
   .site-header .wrap.nav { width: min(100% - 28px, 1160px); }
+  .site-header .brand img { width: 128px; }
+  .site-header .brand-divider { height: 22px; }
+  .site-header .brand-product { font-size: 19px; }
 }
+/* Speedle family cross-links shared by the three sites (header standard v3). */
+.site-header .products { position: relative; }
+.site-header .products-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  color: inherit;
+  background: none;
+  border: 0;
+  font: inherit;
+  white-space: nowrap;
+  cursor: pointer;
+  appearance: none;
+}
+.site-header .products-button:hover,
+.site-header .products-button:focus-visible,
+.site-header .products-button[aria-expanded="true"] { color: #01e7cb; }
+.site-header .products-button:focus-visible { outline: 2px solid #01e7cb; outline-offset: 4px; }
+.site-header .products-chevron { display: block; flex: 0 0 10px; transition: transform .2s; }
+.site-header .products-button[aria-expanded="true"] .products-chevron { transform: rotate(180deg); }
+.site-header .products-heading { display: none; }
+.site-header .products-panel {
+  display: none;
+  position: absolute;
+  top: calc(100% + 14px);
+  left: 0;
+  z-index: 30;
+  width: 340px;
+  padding: 10px;
+  background: #25134e;
+  border: 1px solid rgba(255,255,255,.14);
+  border-radius: 14px;
+  box-shadow: 0 20px 60px rgba(0,0,0,.35);
+}
+.site-header .products.open .products-panel { display: block; }
+.site-header .nav-links a.product-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  color: #fff;
+  white-space: normal;
+}
+.site-header .nav-links a.product-row:hover,
+.site-header .nav-links a.product-row:focus-visible { color: #fff; background: rgba(255,255,255,.08); }
+.site-header .nav-links a.product-row:focus-visible { outline-offset: 0; }
+.site-header .nav-links a.product-row[aria-current="page"] { color: #fff; }
+.site-header .product-mark { display: block; flex: 0 0 20px; width: 20px; height: 20px; margin: 0; }
+.site-header .product-text { display: flex; flex: 1 1 auto; flex-direction: column; min-width: 0; }
+.site-header .product-name { font-size: 15px; font-weight: 600; line-height: 1.4; }
+.site-header .product-desc { color: rgba(255,255,255,.72); font-size: 13px; font-weight: 400; line-height: 1.4; }
+.site-header .product-check { display: block; flex: 0 0 16px; color: #01e7cb; }
+.site-header .product-badge,
+.site-footer .product-badge,
+.hero-family .product-badge {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 7px;
+  color: #01e7cb;
+  border: 1px solid rgba(1,231,203,.5);
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.4;
+  vertical-align: 1px;
+  white-space: nowrap;
+}
+@media (max-width: 1050px) {
+  .site-header .products { width: 100%; }
+  .site-header .products-button { display: none; }
+  .site-header .products-heading { display: block; color: rgba(255,255,255,.72); }
+  .site-header .products-panel,
+  .site-header .products.open .products-panel {
+    display: block;
+    position: static;
+    width: auto;
+    margin: 8px 0 0 -12px;
+    padding: 0;
+    background: transparent;
+    border: 0;
+    box-shadow: none;
+  }
+}
+/* Shared three-site footer (header standard v6): brand lock-up, Speedle family, social row. */
+footer.site-footer,
+body.page-kube > footer.site-footer {
+  display: block;
+  width: auto;
+  min-height: 0;
+  margin: 104px 0 0;
+  padding: 0;
+  color: rgba(255,255,255,.7);
+  background: #171022;
+  border: 0;
+  font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 16px;
+  line-height: 1.65;
+  text-align: left;
+}
+footer.site-footer:lang(zh) {
+  font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+}
+.site-footer, .site-footer * { box-sizing: border-box; }
+.site-footer .footer-inner {
+  width: min(1160px, calc(100% - 40px));
+  min-height: 190px;
+  margin: 0 auto;
+  padding: 0;
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 48px;
+  align-items: center;
+}
+.site-footer .footer-lockup {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0 0 16px;
+  color: #fff;
+  line-height: 1;
+}
+.site-footer .footer-lockup img { display: block; width: 132px; max-width: none; height: auto; margin: 0; }
+.site-footer .footer-lockup .brand-divider { display: block; flex: 0 0 1px; width: 1px; height: 22px; background: currentColor; opacity: .4; }
+.site-footer .footer-lockup .brand-product { display: block; color: #01e7cb; font-size: 19px; font-weight: 600; letter-spacing: 0; line-height: 1; white-space: nowrap; }
+.site-footer .footer-brand p { margin: 0; font-size: .88rem; line-height: 1.65; }
+.site-footer .footer-family { font-size: .88rem; line-height: 1.65; }
+.site-footer .footer-family-title { margin: 0 0 8px; padding: 0; color: #fff; font-family: inherit; font-size: .88rem; font-weight: 600; line-height: 1.65; letter-spacing: 0; text-transform: none; }
+.site-footer .footer-family ul { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.site-footer .footer-family li { margin: 0; padding: 0; line-height: 1.4; }
+html .site-footer .footer-family li > a { color: #fff; font-size: .88rem; font-weight: 600; text-decoration: none; }
+html .site-footer .footer-family li > a:hover,
+html .site-footer .footer-family li > a:focus-visible { color: #01e7cb; }
+.site-footer .footer-family-desc { display: block; color: rgba(255,255,255,.7); font-size: .88rem; }
+html .site-footer .social { display: flex; justify-content: flex-start; gap: 12px; margin: 0; padding: 0; }
+html .site-footer .social a { width: 44px; height: 44px; margin: 0; padding: 0; display: grid; place-items: center; border: 1px solid rgba(255,255,255,.18); border-radius: 10px; }
+html .site-footer .social img { width: 24px; height: 24px; margin: 0; }
+.site-footer a:focus-visible { outline: 2px solid #01e7cb; outline-offset: 4px; }
+@media (max-width: 900px) {
+  .site-footer .footer-inner { grid-template-columns: 1fr; padding: 48px 0; }
+}
+@media (max-width: 700px) {
+  .site-footer .footer-inner { width: min(100% - 28px, 1160px); }
+}
+/* Contextual family links on the Engine homepage hero. */
+.hero-family { display: flex; flex-wrap: wrap; gap: 8px 24px; margin: 22px 0 0; font-size: .94rem; font-weight: 600; }
+.hero-family a { color: rgba(255,255,255,.86); text-decoration: none; }
+.hero-family a:hover, .hero-family a:focus-visible { color: #01e7cb; }

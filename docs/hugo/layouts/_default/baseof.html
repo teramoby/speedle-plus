@@ -78,7 +78,7 @@
 
     <header class="site-header">{{ block "header" . }}{{ end }}</header>
     <main>{{ block "main" . }}{{ end }}</main>
-    <footer class="row">{{ block "footer" . }}{{ end }}</footer>
+    {{ block "footer" . }}{{ end }}
 
     <script src="{{ "/js/kube.js" | relURL }}" type="text/javascript">
     </script>
