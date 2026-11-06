@@ -10,6 +10,9 @@ const page = read('docs/playground/index.html');
 const chineseLink = '<a href="/zh/" lang="zh-CN" hreflang="zh-CN" aria-label="切换到中文">中文</a>';
 const playgroundChineseLink = chineseLink.replace('href="/zh/"','href="/zh/playground/"');
 const original = execFileSync('git',['show','5cccf4c4e50a2b0ab901a9fa65acc39074ed1068:docs/index.html'],{cwd:root,encoding:'utf8'});
+const originalPolicyExample = original.match(/<pre>[\s\S]*?<\/pre>/)[0];
+const policyExample = home.match(/<pre>[\s\S]*?<\/pre>/)[0];
+assert.equal(policyExample.replace(/<[^>]+>/g,''), 'grant group employee read,borrow book\ndeny user bob borrow book if is_card_valid == false', 'Homepage shows the corrected SPDL example');
 assert.equal(read('docs/css/site.css'),original.match(/<style>([\s\S]*?)<\/style>/)[1], 'The shared stylesheet is the actual original homepage CSS, byte for byte');
 const oldCommunityLink = original.match(/<a href="[^"]+" aria-label="Slack">[\s\S]*?<\/a>/)[0];
 const discordLink = '<a href="https://discord.gg/uaY2xVsbbT" aria-label="Discord"><img src="/img/speedle/Discord.svg" alt=""></a>';
@@ -29,8 +32,8 @@ const identityTags = [/<title>[^<]*<\/title>/, /<link rel="icon"[^>]*>/,
 // The site identity (title, icon, social and structured-data names) changed deliberately.
 const analyticsSnippet = read('website/cloudflare-web-analytics.html');
 const restoredIdentity = identityTags.reduce((html, pattern) => html.replace(pattern, original.match(pattern)[0]), home.replace(analyticsSnippet, ''));
-const restored = restoredIdentity.replace(originNote,'').replace('Bring Your Own Storage','Bring Your Own Store').replace('Speedle Policy Definition Language.','Secure Policy Definition Language.').replace(contactLinks,originalMailingLink).replace(sharedNavigationScript,originalNavigationScript).replace(copyright,'').replace(discordLink,oldCommunityLink).replace('  <link rel="stylesheet" href="/css/site.css">\n  <link rel="stylesheet" href="/css/navigation.css?v=header-20261027">', `  <style>${read('docs/css/site.css')}</style>`).replace('<a href="/playground/">Playground</a>','').replace(`        ${chineseLink}\n`,'');
-assert.equal(restored,original,'Homepage content is unchanged except shared navigation assets/entries, community/contact links, storage heading, SPDL name, origin note, site identity, copyright notice and analytics beacon');
+const restored = restoredIdentity.replace(policyExample,originalPolicyExample).replace(originNote,'').replace('Bring Your Own Storage','Bring Your Own Store').replace('Speedle Policy Definition Language.','Secure Policy Definition Language.').replace(contactLinks,originalMailingLink).replace(sharedNavigationScript,originalNavigationScript).replace(copyright,'').replace(discordLink,oldCommunityLink).replace('  <link rel="stylesheet" href="/css/site.css">\n  <link rel="stylesheet" href="/css/navigation.css?v=header-20261027">', `  <style>${read('docs/css/site.css')}</style>`).replace('<a href="/playground/">Playground</a>','').replace(`        ${chineseLink}\n`,'');
+assert.equal(restored,original,'Homepage content is unchanged except shared navigation assets/entries, community/contact links, storage heading, SPDL name, corrected SPDL example, origin note, site identity, copyright notice and analytics beacon');
 assert.ok(home.includes(chineseLink), 'English homepage exposes the Chinese homepage');
 assert.ok(page.includes(playgroundChineseLink), 'Playground switches to its Chinese counterpart');
 assert.ok(read('docs/zh/index.html').includes('href="/" lang="en" hreflang="en"'), 'Chinese homepage links back to English');
