@@ -34,7 +34,7 @@ linking the three sites. The footer lives in the static homepages;
 archived snapshots the same footer. The sphere marks
 `static/img/speedle/speedle-mark-{engine,cloud,ai}.svg` and `static/favicon.svg`
 are the sphere group of `img/speedle/Speedle_logo_home_bold.svg` with colours
-changed only (Engine original `#ff9a45`, Cloud `#2f80ed`, AI `#8b5cf6`);
+changed only (Engine original `#ff9a45`, Cloud `#4da3ff`, AI `#8b5cf6`);
 `favicon.svg` adds a 1 px `#1f1142` outline for light tab bars.
 `favicon.ico` (16, 32, 48 px PNG entries) and `apple-touch-icon.png` (180 px,
 sphere on `#2f2350` with 20 px padding) are rendered from those SVGs; they replace

@@ -12,7 +12,7 @@ from urllib.parse import unquote, urljoin, urlsplit, urlunsplit
 ORIGIN = "https://speedle.io"
 NAVIGATION_VERSION = "language-direct-20261026"
 PREVIEW = re.compile(r"^/[0-9a-f]{32}(?=/)")
-HEADER_VERSION = "header-20261106"
+HEADER_VERSION = "header-20261106-v8"
 HEADER_ASSETS = (f'<link href="/css/navigation.css?v={HEADER_VERSION}" rel="stylesheet">\n'
                  f'<script src="/js/navigation.js?v={HEADER_VERSION}" defer></script>\n')
 WEB_ANALYTICS = (Path(__file__).resolve().parent / "cloudflare-web-analytics.html").read_text()

@@ -69,7 +69,7 @@ const server = http.createServer((req,res)=>{
     for(const width of [1440,1024,768,390,320]) {
       await page.setViewportSize({width,height:1100});
       assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),`No horizontal page overflow at ${width}px`);
-      if(width<=1050) {
+      if(width<=1160) {
         await page.locator('.menu').click();
         assert.equal(await page.locator('.menu').getAttribute('aria-expanded'),'true');
         await page.locator('.nav-links a[href="/playground/"]').click();

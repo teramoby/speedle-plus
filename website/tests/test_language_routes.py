@@ -118,7 +118,7 @@ class LanguageRoutes(unittest.TestCase):
         self.assertIn('<a href="/zh/#about">About</a>', text)
         self.assertIn(f'<a href="{prefix}/zh/docs/store/">文档</a>', text)
         self.assertIn(f'<a href="{prefix}/docs/spdl/" lang="en" hreflang="en">English</a>', text)
-        self.assertIn('/js/navigation.js?v=header-20261106', text)
+        self.assertIn('/js/navigation.js?v=header-20261106-v8', text)
         self.assertIn('Original archived content.', text)
         self.assertNotIn('langsel', text)
         english = (self.root / prefix.lstrip("/") / "index.html").read_text()
