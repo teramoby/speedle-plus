@@ -173,6 +173,34 @@ class LanguageRoutes(unittest.TestCase):
         self.process(check=True)
         self.assertEqual(before, {p: p.read_bytes() for p in self.root.rglob("*.html")})
 
+    def test_cross_site_family_links_keep_the_page_language(self):
+        menu = ('<div class="products-panel" id="products-panel">'
+                '<a href="https://engine.speedle.io/">Engine</a>'
+                '<a href="https://cloud.speedle.io/">Cloud</a>'
+                '<a href="https://ai.speedle.io/">AI</a>'
+                '<a href="https://cloud.speedle.io/pricing/">Cloud pricing</a></div>')
+        footer = ('<div class="footer-family"><a href="https://engine.speedle.io/">E</a>'
+                  '<a href="https://cloud.speedle.io/">C</a><a href="https://ai.speedle.io/">A</a></div>')
+        content = '<a href="https://cloud.speedle.io/">Content link stays as written</a>'
+        self.write('/zh/docs/spdl/', '<html><nav class="nav-links">'
+                   '<a href="/docs/spdl/" hreflang="en">English</a></nav>' + menu + footer + content + '</html>')
+        self.write('/docs/spdl/', '<html><nav class="nav-links">'
+                   '<a href="/zh/docs/spdl/" hreflang="zh-CN">中文</a></nav>'
+                   '<div class="products-panel" id="products-panel"><a href="https://engine.speedle.io/zh/">Engine</a>'
+                   '<a href="https://cloud.speedle.io/zh-CN/">Cloud</a><a href="https://ai.speedle.io/zh/">AI</a></div></html>')
+        self.process()
+        chinese = (self.root / 'zh/docs/spdl/index.html').read_text()
+        for url in ['https://engine.speedle.io/zh/', 'https://cloud.speedle.io/zh-CN/', 'https://ai.speedle.io/zh/']:
+            self.assertIn(f'href="{url}"', chinese)
+        self.assertIn('href="https://cloud.speedle.io/zh-CN/pricing/"', chinese)
+        self.assertIn(content, chinese)
+        english = (self.root / 'docs/spdl/index.html').read_text()
+        for url in ['https://engine.speedle.io/', 'https://cloud.speedle.io/', 'https://ai.speedle.io/']:
+            self.assertIn(f'href="{url}"', english)
+        self.assertNotIn('/zh-CN/', english)
+        self.assertNotIn('https://engine.speedle.io/zh/', english)
+        self.process(check=True)
+
     def test_unknown_internal_page_is_reported_without_guessing_a_destination(self):
         self.write("/docs/spdl/", '<html><nav class="nav-links"><a href="/zh/" hreflang="zh">中文</a></nav><a href="/missing/">Missing</a></html>')
         with self.assertRaisesRegex(SystemExit, "broken local link /missing/"):
