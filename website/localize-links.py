@@ -9,17 +9,23 @@ import re
 from urllib.parse import unquote, urljoin, urlsplit, urlunsplit
 
 
-ORIGIN = "https://speedle.io"
+ORIGIN = "https://engine.speedle.io"
+# speedle.io redirects to engine.speedle.io, so links to either host are same-site.
+HOSTS = {"engine.speedle.io", "speedle.io"}
+OWN_ORIGIN = re.compile(r"^https?://(?:engine\.)?speedle\.io(?=/)", re.I)
 NAVIGATION_VERSION = "language-direct-20261026"
 PREVIEW = re.compile(r"^/[0-9a-f]{32}(?=/)")
 HEADER_VERSION = "header-20261106-v8"
 HEADER_ASSETS = (f'<link href="/css/navigation.css?v={HEADER_VERSION}" rel="stylesheet">\n'
                  f'<script src="/js/navigation.js?v={HEADER_VERSION}" defer></script>\n')
 WEB_ANALYTICS = (Path(__file__).resolve().parent / "cloudflare-web-analytics.html").read_text()
+BEACON = re.compile(r"<!-- Cloudflare Web Analytics -->[\s\S]*?<!-- End Cloudflare Web Analytics -->")
 
 
 def web_analytics(text):
-    """Install the manual Cloudflare beacon once on each rendered page."""
+    """Install the manual Cloudflare beacon once on each rendered page, replacing an older snippet."""
+    if BEACON.search(text):
+        return BEACON.sub(lambda _: WEB_ANALYTICS.strip(), text, count=1)
     if "data-cf-beacon=" in text:
         return text
     return re.sub(r"(?im)^([ \t]*)(</body>)",
@@ -173,7 +179,7 @@ class Site:
             if not page or not page[2]:
                 return None
             target = urlsplit(urljoin(ORIGIN + path, page[2]))
-            if target.netloc != "speedle.io":
+            if target.netloc not in HOSTS:
                 return None
             path = (snapshot(target.path) or prefix) + logical(target.path)
         return None
@@ -233,10 +239,12 @@ class Links(HTMLParser):
         raw = self.get_starttag_text()
         changes = {}
         in_languages = any("langsel" in scope for _, scope in self.stack)
-        if tag == "a" and attrs.get("href"):
+        # The Products menu and footer family link the three sites by absolute URL; keep them as written.
+        cross_site = any(name in scope for _, scope in self.stack for name in ("products-panel", "footer-family"))
+        if tag == "a" and attrs.get("href") and not (cross_site and urlsplit(attrs["href"].strip()).netloc):
             href = attrs["href"].strip()
             url = urlsplit(urljoin(ORIGIN + self.base_route, href))
-            if url.netloc == "speedle.io" and url.scheme in {"http", "https"}:
+            if url.netloc in HOSTS and url.scheme in {"http", "https"}:
                 switch = attrs.get("hreflang", "").lower().split("-")[0]
                 if in_languages and not switch:
                     switch = "zh" if logical(url.path).startswith("/zh/") else "en"
@@ -261,17 +269,17 @@ class Links(HTMLParser):
                             self.errors.append(f"{self.route}: missing localized destination {target}")
                         else:
                             changes["href"] = urlunsplit(("", "", target, url.query, url.fragment))
-                    elif href.startswith(ORIGIN + "/") and (self.site.root / unquote(url.path.lstrip("/"))).is_file():
+                    elif OWN_ORIGIN.match(href) and (self.site.root / unquote(url.path.lstrip("/"))).is_file():
                         changes["href"] = urlunsplit(("", "", url.path, url.query, url.fragment))
                     elif not (self.site.root / unquote(url.path.lstrip("/"))).is_file():
                         self.errors.append(f"{self.route}: broken local link {href}")
         # Normalize Hugo's same-origin resource URLs without changing metadata.
         resource = "src" if tag in {"img", "script", "source", "iframe"} else "href" if tag == "link" and attrs.get("rel") in {"stylesheet", "icon", "apple-touch-icon"} else None
-        if resource and attrs.get(resource, "").startswith(ORIGIN + "/"):
-            changes[resource] = attrs[resource][len(ORIGIN):]
+        if resource and OWN_ORIGIN.match(attrs.get(resource, "")):
+            changes[resource] = OWN_ORIGIN.sub("", attrs[resource], count=1)
         if tag == "script" and attrs.get("src"):
             script = urlsplit(urljoin(ORIGIN + self.base_route, attrs["src"]))
-            if script.netloc == "speedle.io" and script.path.endswith("/js/master.js"):
+            if script.netloc in HOSTS and script.path.endswith("/js/master.js"):
                 changes["src"] = script.path + "?v=" + NAVIGATION_VERSION
         if tag == "meta" and attrs.get("http-equiv", "").lower() == "refresh":
             destination = self.site.resolve(urlsplit(urljoin(ORIGIN + self.base_route, Metadata(raw).redirect or "")).path, self.prefix)

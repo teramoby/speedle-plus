@@ -14,7 +14,9 @@ const renameProduct = html => html
   .replace('"name":"Speedle+","alternateName":"Speedle",','"name":"Speedle",')
   .replace('The original Speedle project continues as <strong>Speedle+</strong>, maintained by its founding members.','The original Speedle project continues here, maintained by its founding members.')
   .replace('Speedle+ carries the project forward under the Universal Permissive License.','Speedle continues to move forward under the Universal Permissive License.')
-  .replace(/Speedle\+/g,'Speedle');
+  .replace(/Speedle\+/g,'Speedle')
+  // #204 moved the site's own canonical URLs to engine.speedle.io.
+  .replace(/https:\/\/speedle\.io\//g,'https://engine.speedle.io/');
 const original = renameProduct(execFileSync('git',['show','5cccf4c4e50a2b0ab901a9fa65acc39074ed1068:docs/index.html'],{cwd:root,encoding:'utf8'}));
 for (const name of ['docs/index.html','docs/zh/index.html','docs/playground/index.html','docs/zh/playground/index.html']) {
   assert.ok(!/Speedle\+|Speedle&#43;|Speedle Plus/i.test(read(name)), `${name} uses the product name Speedle (#198)`);
@@ -92,12 +94,12 @@ for (const name of ['css/site.css','css/navigation.css','css/custom.css','js/mas
 assert.ok(page.includes('<a href="/playground/" aria-current="page">Playground</a>'));
 assert.ok(page.includes('<link rel="stylesheet" href="/css/site.css">'));
 assert.equal(page.match(/  <footer class="site-footer">[\s\S]*?<\/footer>/)[0],home.match(/  <footer class="site-footer">[\s\S]*?<\/footer>/)[0], 'Official footer is reused unchanged');
-assert.ok(page.includes('href="https://speedle.io/playground/"'));
+assert.ok(page.includes('href="https://engine.speedle.io/playground/"'));
 assert.equal(read('docs/CNAME').trim(),'engine.speedle.io');
-assert.ok(read('docs/sitemap.xml').includes('https://speedle.io/en/sitemap.xml'));
-assert.ok(read('docs/sitemap.xml').includes('https://speedle.io/zh/sitemap.xml'));
-assert.ok(read('docs/en/sitemap.xml').includes('https://speedle.io/playground/'));
-assert.ok(read('docs/zh/sitemap.xml').includes('https://speedle.io/zh/playground/'));
+assert.ok(read('docs/sitemap.xml').includes('https://engine.speedle.io/en/sitemap.xml'));
+assert.ok(read('docs/sitemap.xml').includes('https://engine.speedle.io/zh/sitemap.xml'));
+assert.ok(read('docs/en/sitemap.xml').includes('https://engine.speedle.io/playground/'));
+assert.ok(read('docs/zh/sitemap.xml').includes('https://engine.speedle.io/zh/playground/'));
 assert.ok(!/[\u4e00-\u9fff]/.test(page.replace(playgroundChineseLink,'')),'English page has no untranslated labels except the Chinese language switch');
 for(const source of [page,home]) {
  for(const [,url] of source.matchAll(/(?:src|href)="([^"]+)"/g)) {

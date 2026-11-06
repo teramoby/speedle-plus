@@ -2,20 +2,20 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>Pms on Speedle</title>
-    <link>https://speedle.io/zh/tags/pms/</link>
+    <link>https://engine.speedle.io/zh/tags/pms/</link>
     <description>Recent content in Pms on Speedle</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>zh-cn</language>
     
-	<atom:link href="https://speedle.io/zh/tags/pms/index.xml" rel="self" type="application/rss+xml" />
+	<atom:link href="https://engine.speedle.io/zh/tags/pms/index.xml" rel="self" type="application/rss+xml" />
     
     
     <item>
       <title>Policy Management API</title>
-      <link>https://speedle.io/zh/docs/api/management_api/</link>
+      <link>https://engine.speedle.io/zh/docs/api/management_api/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
-      <guid>https://speedle.io/zh/docs/api/management_api/</guid>
+      <guid>https://engine.speedle.io/zh/docs/api/management_api/</guid>
       <description>已配置 PMS 的接口参考。请求与响应使用 JSON，策略 ID 为字符串，响应为扁平对象。
 请配置安全连接与端点访问控制。这是接口契约，speedle.io 不托管授权后端。
               (function() { var url = &#34;\/swagger\/policy-manage.zh.yaml&#34;; const ui = SwaggerUIBundle({ url: url, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.presets.apis ], plugins: [ SwaggerUIBundle.plugins.DownloadUrl ], validatorUrl: null, layout: &#34;BaseLayout&#34; }) window.ui = ui })();  </description>
@@ -23,10 +23,10 @@
     
     <item>
       <title>策略管理</title>
-      <link>https://speedle.io/zh/docs/pms/policy-mgmt/</link>
+      <link>https://engine.speedle.io/zh/docs/pms/policy-mgmt/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
-      <guid>https://speedle.io/zh/docs/pms/policy-mgmt/</guid>
+      <guid>https://engine.speedle.io/zh/docs/pms/policy-mgmt/</guid>
       <description>什么是 Speedle 策略？ 策略管理服务（PMS）管理服务、授权策略、角色策略与自定义函数，由已注册的存储后端持久化这些对象。
 服务与授权策略 服务限定策略的作用范围。授权策略允许或拒绝主体对资源执行操作，并可附带条件。除全局角色策略外，一个服务的策略不会自动在另一个服务中生效。
 grant group Administrators list,watch,get expr:^c1/default/core/pods/.*$ 此正则只匹配 c1/default/core/pods/ 下的资源，不匹配 c1/default/core/podssecret 或带额外前缀的路径。expr: 使用正则表达式，不是 shell 通配符：任意字符使用 .*，需要匹配完整标识符时加 ^、$。

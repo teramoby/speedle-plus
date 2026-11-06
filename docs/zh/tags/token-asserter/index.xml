@@ -2,21 +2,21 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>Token Asserter on Speedle</title>
-    <link>https://speedle.io/zh/tags/token-asserter/</link>
+    <link>https://engine.speedle.io/zh/tags/token-asserter/</link>
     <description>Recent content in Token Asserter on Speedle</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>zh-cn</language>
     <lastBuildDate>Mon, 21 Jan 2019 09:28:30 +0800</lastBuildDate>
     
-	<atom:link href="https://speedle.io/zh/tags/token-asserter/index.xml" rel="self" type="application/rss+xml" />
+	<atom:link href="https://engine.speedle.io/zh/tags/token-asserter/index.xml" rel="self" type="application/rss+xml" />
     
     
     <item>
       <title>令牌用户身份断言</title>
-      <link>https://speedle.io/zh/docs/assertor/</link>
+      <link>https://engine.speedle.io/zh/docs/assertor/</link>
       <pubDate>Mon, 21 Jan 2019 09:28:30 +0800</pubDate>
       
-      <guid>https://speedle.io/zh/docs/assertor/</guid>
+      <guid>https://engine.speedle.io/zh/docs/assertor/</guid>
       <description>令牌断言服务负责什么？ 已配置的断言服务验证令牌，并返回显式主体及其身份域，再由 Speedle 使用这些身份评估策略。生产实现必须验证签名或 introspection 结果、签发者、受众、有效期及身份提供方要求。仅有 webhook 接口并不意味着自动兼容任意 OAuth/OIDC 令牌。
 令牌断言 API中的 errCode 为整数，可选的属性是对象，不是带类型的属性数组。asserterWebhookConfig.endpoint 是完整 URL，下面的示例使用 /v1/assert。
 启动确定性的本地 mock 此 mock 只识别 githubtoken/github、googletoken/google、gitlabtoken/gitlab 三组输入，分别表示对应域的 user1。令牌与提供方不匹配时失败。它是测试 fixture，不验证真实令牌。 不会记录令牌值。仅绑定回环地址，生产环境必须替换为真实身份集成。

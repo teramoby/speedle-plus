@@ -2,21 +2,21 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>Core on Speedle</title>
-    <link>https://speedle.io/zh/tags/core/</link>
+    <link>https://engine.speedle.io/zh/tags/core/</link>
     <description>Recent content in Core on Speedle</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>zh-cn</language>
     <lastBuildDate>Fri, 18 Jan 2019 21:19:44 +0800</lastBuildDate>
     
-	<atom:link href="https://speedle.io/zh/tags/core/index.xml" rel="self" type="application/rss+xml" />
+	<atom:link href="https://engine.speedle.io/zh/tags/core/index.xml" rel="self" type="application/rss+xml" />
     
     
     <item>
       <title>API</title>
-      <link>https://speedle.io/zh/docs/api/</link>
+      <link>https://engine.speedle.io/zh/docs/api/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
-      <guid>https://speedle.io/zh/docs/api/</guid>
+      <guid>https://engine.speedle.io/zh/docs/api/</guid>
       <description>SDK 决策 API POST /authz-check/v1/is-allowed 的客户端库既可用于自托管的 Speedle ADS，也可用于 Speedle Cloud。每个页面说明如何添加软件包，并分别给出两种场景下经过实测的完整程序。
    语言 软件包 版本     Java Maven Central io.speedle:speedle-sdk 0.1.0   Python PyPI speedle 0.1.0   Go github.com/teramoby/speedle-sdk/go 0.1.0   C#/.NET NuGet Speedle.Sdk 0.1.0   Rust crates.io speedle 0.1.0   Node.js/TypeScript npm @speedle/sdk 0.1.0，发布后可用    SDK 调用的是 is-allowed：isAllowed 返回授权结果，check 还会返回原因。其他决策操作（如查询已授予的权限、诊断）请使用 REST API。源代码和完整参考见 teramoby/speedle-sdk。
 所有示例都检查服务 docs 中的用户 alice 能否对资源 /docs/public 执行 get 和 delete。要在本地 Speedle 上得到文档中的结果，先按快速入门构建 Speedle，在 6733 端口启动 PMS、在 6734 端口启动 ADS，然后创建服务和策略：</description>
@@ -24,10 +24,10 @@
     
     <item>
       <title>Authorization Runtime/Decision API</title>
-      <link>https://speedle.io/zh/docs/api/decision_api/</link>
+      <link>https://engine.speedle.io/zh/docs/api/decision_api/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
-      <guid>https://speedle.io/zh/docs/api/decision_api/</guid>
+      <guid>https://engine.speedle.io/zh/docs/api/decision_api/</guid>
       <description>已配置 ADS 的接口参考。请求属性是带类型的数组，诊断响应属性是对象。
 请配置安全连接与端点访问控制。这是接口契约，speedle.io 不托管授权后端。
               (function() { var url = &#34;\/swagger\/policy-check.zh.yaml&#34;; const ui = SwaggerUIBundle({ url: url, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.presets.apis ], plugins: [ SwaggerUIBundle.plugins.DownloadUrl ], validatorUrl: null, layout: &#34;BaseLayout&#34; }) window.ui = ui })();  </description>
@@ -35,10 +35,10 @@
     
     <item>
       <title>Policy Management API</title>
-      <link>https://speedle.io/zh/docs/api/management_api/</link>
+      <link>https://engine.speedle.io/zh/docs/api/management_api/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
-      <guid>https://speedle.io/zh/docs/api/management_api/</guid>
+      <guid>https://engine.speedle.io/zh/docs/api/management_api/</guid>
       <description>已配置 PMS 的接口参考。请求与响应使用 JSON，策略 ID 为字符串，响应为扁平对象。
 请配置安全连接与端点访问控制。这是接口契约，speedle.io 不托管授权后端。
               (function() { var url = &#34;\/swagger\/policy-manage.zh.yaml&#34;; const ui = SwaggerUIBundle({ url: url, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.presets.apis ], plugins: [ SwaggerUIBundle.plugins.DownloadUrl ], validatorUrl: null, layout: &#34;BaseLayout&#34; }) window.ui = ui })();  </description>
@@ -46,10 +46,10 @@
     
     <item>
       <title>SPDL - Speedle 策略定义语言</title>
-      <link>https://speedle.io/zh/docs/spdl/</link>
+      <link>https://engine.speedle.io/zh/docs/spdl/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
-      <guid>https://speedle.io/zh/docs/spdl/</guid>
+      <guid>https://engine.speedle.io/zh/docs/spdl/</guid>
       <description>基本的策略定义语言 保留关键字 grant、deny、user、group、entity、role、from、on、if、in 在各自语法位置有特定含义，策略语句的关键字大小写不敏感；条件成员运算使用 in 或 IN，函数名区分大小写。主体、操作和资源名称也区分大小写。当前解析器在部分名称位置可接受类似关键字的名称，不能把“所有位置都禁止关键字”当作验证规则。为便于审查与客户端互通，建议避免这类名称。
 命名规范 推荐使用简明、稳定的标识符；名称包含空格或分隔符时使用解析器支持的单引号或双引号形式，并测试实际输入。不应把历史 Java 正则字符类当作当前 Go 解析器的严格校验。资源前缀 expr: 表示 Go 正则表达式，不是 shell 通配符。条件的属性与函数名称另见下文。
 语法  POLICY = EFFECT SUBJECT ACTION RESOURCE [if CONDITION] EFFECT = grant | deny SUBJECT = AND_PRINCIPALS (, AND_PRINCIPALS)* AND_PRINCIPALS = PRINCIPAL | \( PRINCIPAL_LIST \) PRINCIPAL_LIST = PRINCIPAL (, PRINCIPAL)* PRINCIPAL = PRINCIPAL_TYPE PRINCIPAL_NAME [PRINCIPAL_IDD] PRINCIPAL_TYPE = user|group|entity|role PRINCIPAL_IDD = from IDD_IDENTIFIER IDD_IDENTIFIER = NAME ACTION = (ACTION_IDENTIFIER)(, ACTION_IDENTIFIER)* RESOURCE = RESOURCE_IDENTIFIER PRINCIPAL_NAME = NAME ACTION_IDENTIFIER = NAME RESOURCE_IDENTIFIER = NAME   ROLE_POLICY = EFFECT SUBJECT ROLE (on RESOURCE)?</description>
@@ -57,10 +57,10 @@
     
     <item>
       <title>Speedle 概览：面向细粒度访问控制的授权引擎</title>
-      <link>https://speedle.io/zh/docs/overview/</link>
+      <link>https://engine.speedle.io/zh/docs/overview/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
-      <guid>https://speedle.io/zh/docs/overview/</guid>
+      <guid>https://engine.speedle.io/zh/docs/overview/</guid>
       <description>Speedle 是一个开源的授权引擎（authorization engine）。应用向它提出“这个用户能否对这个资源执行这个操作”这样的问题，Speedle 根据集中管理的策略回答允许或拒绝。本页把常见的授权术语和 Speedle 中实现它们的组件对应起来，并链接到相应的文档。
 下面的示例使用名为 library 的服务。每条策略都通过策略管理服务的 REST API 创建，每个决策都由授权决策服务的 REST API 返回。reason 代码的含义见授权查询。
 授权引擎（Authorization engine） 授权引擎根据策略评估访问请求并返回决策，使授权逻辑独立于应用代码。Speedle 由策略管理服务（PMS）、策略存储和授权决策服务（ADS）组成。ADS 可以作为独立服务运行，也可以嵌入 Go 应用。
@@ -73,19 +73,19 @@ curl --header &amp;#39;Content-Type: application/json&amp;#39; --data &amp;#39;{
     
     <item>
       <title>Speedle策略</title>
-      <link>https://speedle.io/zh/docs/pms/</link>
+      <link>https://engine.speedle.io/zh/docs/pms/</link>
       <pubDate>Fri, 18 Jan 2019 21:19:44 +0800</pubDate>
       
-      <guid>https://speedle.io/zh/docs/pms/</guid>
+      <guid>https://engine.speedle.io/zh/docs/pms/</guid>
       <description> Policy Management Global Policy Policy Discovery Policy Diagnosis  </description>
     </item>
     
     <item>
       <title>Token Assertion Plugin API</title>
-      <link>https://speedle.io/zh/docs/api/asserter_api/</link>
+      <link>https://engine.speedle.io/zh/docs/api/asserter_api/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
-      <guid>https://speedle.io/zh/docs/api/asserter_api/</guid>
+      <guid>https://engine.speedle.io/zh/docs/api/asserter_api/</guid>
       <description>令牌断言 webhook 参考。errCode 为整数，attributes 为对象。实际端点由 ADS 断言配置指定。
 请配置安全连接与端点访问控制。这是接口契约，speedle.io 不托管授权后端。
               (function() { var url = &#34;\/swagger\/asserter.zh.yaml&#34;; const ui = SwaggerUIBundle({ url: url, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.presets.apis ], plugins: [ SwaggerUIBundle.plugins.DownloadUrl ], validatorUrl: null, layout: &#34;BaseLayout&#34; }) window.ui = ui })();  </description>
@@ -93,10 +93,10 @@ curl --header &amp;#39;Content-Type: application/json&amp;#39; --data &amp;#39;{
     
     <item>
       <title>授权查询</title>
-      <link>https://speedle.io/zh/docs/decisions/</link>
+      <link>https://engine.speedle.io/zh/docs/decisions/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
-      <guid>https://speedle.io/zh/docs/decisions/</guid>
+      <guid>https://engine.speedle.io/zh/docs/decisions/</guid>
       <description>什么是授权决策？ Speedle 在指定服务内评估主体、操作与资源，由应用执行结果。应区分评估错误、超时与正常的 Deny，并在出错时拒绝访问。REST、gRPC、嵌入式 Go 的数据表示不同，应分别遵循各自的 API 契约。
 运行示例前 先按快速入门编译仓库根目录下的 ./bin/spctl、./bin/speedle-pms 和 ./bin/speedle-ads，需要 Go 1.26.10 或 Go 1.27.3（也可使用同一大版本的更新补丁版本）、Bash、curl 和 Python 3。下面各终端都从仓库根目录运行。为本页使用一个新的策略文件；仅在两个服务都停止后重建该文件。
 初始化空策略文件：
@@ -109,10 +109,10 @@ printf &amp;#39;{}\n&amp;#39; &amp;gt; docs-policies.json 终端一启动 PMS，
     
     <item>
       <title>策略发现</title>
-      <link>https://speedle.io/zh/docs/pms/discover/</link>
+      <link>https://engine.speedle.io/zh/docs/pms/discover/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
-      <guid>https://speedle.io/zh/docs/pms/discover/</guid>
+      <guid>https://engine.speedle.io/zh/docs/pms/discover/</guid>
       <description>策略发现的作用 发现模式记录请求，成功记录时返回 allowed=true、reason 5，不代表既有策略曾授权该操作。仅在隔离测试环境使用，审核生成的授权，并在结束后恢复正常的 is-allowed 检查。断言或存储错误仍需单独处理，不能把错误当作授权成功。
 启动可复现的本地示例 先按快速入门编译二进制。下面各终端均从源码根目录运行，使用新的策略文件，并先停止其他页面示例的服务。
 printf &amp;#39;{}\n&amp;#39; &amp;gt; docs-policies.json 终端一：
@@ -125,10 +125,10 @@ curl --fail --silent --show-error -H &amp;#39;Content-Type: application/json&amp
     
     <item>
       <title>策略管理</title>
-      <link>https://speedle.io/zh/docs/pms/policy-mgmt/</link>
+      <link>https://engine.speedle.io/zh/docs/pms/policy-mgmt/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
-      <guid>https://speedle.io/zh/docs/pms/policy-mgmt/</guid>
+      <guid>https://engine.speedle.io/zh/docs/pms/policy-mgmt/</guid>
       <description>什么是 Speedle 策略？ 策略管理服务（PMS）管理服务、授权策略、角色策略与自定义函数，由已注册的存储后端持久化这些对象。
 服务与授权策略 服务限定策略的作用范围。授权策略允许或拒绝主体对资源执行操作，并可附带条件。除全局角色策略外，一个服务的策略不会自动在另一个服务中生效。
 grant group Administrators list,watch,get expr:^c1/default/core/pods/.*$ 此正则只匹配 c1/default/core/pods/ 下的资源，不匹配 c1/default/core/podssecret 或带额外前缀的路径。expr: 使用正则表达式，不是 shell 通配符：任意字符使用 .*，需要匹配完整标识符时加 ^、$。

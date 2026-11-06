@@ -2,21 +2,21 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>Discovery on Speedle</title>
-    <link>https://speedle.io/zh/tags/discovery/</link>
+    <link>https://engine.speedle.io/zh/tags/discovery/</link>
     <description>Recent content in Discovery on Speedle</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>zh-cn</language>
     <lastBuildDate>Thu, 02 Mar 2017 21:56:55 +0100</lastBuildDate>
     
-	<atom:link href="https://speedle.io/zh/tags/discovery/index.xml" rel="self" type="application/rss+xml" />
+	<atom:link href="https://engine.speedle.io/zh/tags/discovery/index.xml" rel="self" type="application/rss+xml" />
     
     
     <item>
       <title>策略发现</title>
-      <link>https://speedle.io/zh/docs/pms/discover/</link>
+      <link>https://engine.speedle.io/zh/docs/pms/discover/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
-      <guid>https://speedle.io/zh/docs/pms/discover/</guid>
+      <guid>https://engine.speedle.io/zh/docs/pms/discover/</guid>
       <description>策略发现的作用 发现模式记录请求，成功记录时返回 allowed=true、reason 5，不代表既有策略曾授权该操作。仅在隔离测试环境使用，审核生成的授权，并在结束后恢复正常的 is-allowed 检查。断言或存储错误仍需单独处理，不能把错误当作授权成功。
 启动可复现的本地示例 先按快速入门编译二进制。下面各终端均从源码根目录运行，使用新的策略文件，并先停止其他页面示例的服务。
 printf &amp;#39;{}\n&amp;#39; &amp;gt; docs-policies.json 终端一：
@@ -29,10 +29,10 @@ curl --fail --silent --show-error -H &amp;#39;Content-Type: application/json&amp
     
     <item>
       <title>实时策略发现</title>
-      <link>https://speedle.io/zh/blog/discovery/</link>
+      <link>https://engine.speedle.io/zh/blog/discovery/</link>
       <pubDate>Thu, 02 Mar 2017 21:56:55 +0100</pubDate>
       
-      <guid>https://speedle.io/zh/blog/discovery/</guid>
+      <guid>https://engine.speedle.io/zh/blog/discovery/</guid>
       <description> 是什么，为什么？ 一些思考：
 FooBar 链接示例 巧克力提拉米苏糕点。链接示例
 示例占位文字 苹果派、巧克力蛋糕、果冻糖霜和糖果。姜饼、糕点、水果蛋糕、松饼、巧克力棒和芝士蛋糕。糖渍李子、棒棒糖、糖果、柠檬糖和软糖。

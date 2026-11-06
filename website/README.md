@@ -44,9 +44,15 @@ sphere on `#2f2350` with 20 px padding) are rendered from those SVGs; they repla
 
 Cloudflare Web Analytics uses manual JS installation. The public beacon snippet
 is in `website/cloudflare-web-analytics.html`; `localize-links.py` adds it once to
-every rendered page, including archived snapshots, and skips redirect pages.
+every rendered page, including archived snapshots, replaces an older copy of the
+snippet (for example after a token change), and skips redirect pages. The token
+is the engine.speedle.io site token.
 The four static homepage/Playground HTML sources carry the same snippet.
 The site continues to publish through GitHub Pages with the existing DNS setup.
+Its canonical host is `https://engine.speedle.io` (Hugo `baseURL`, canonical,
+hreflang, Open Graph, sitemap, `robots.txt`, `llms.txt` and JSON-LD URLs);
+`speedle.io` redirects there, so `localize-links.py` treats links to either host
+as same-site. Products menu and footer family links stay absolute.
 
 The merge-gating test job executes the English and Chinese Quick Start and
 embedded deployment guides directly from `docs/hugo/content/` on every run.

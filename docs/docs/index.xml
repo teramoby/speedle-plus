@@ -2,50 +2,50 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>Speedle Documents on Speedle</title>
-    <link>https://speedle.io/docs/</link>
+    <link>https://engine.speedle.io/docs/</link>
     <description>Recent content in Speedle Documents on Speedle</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
     <lastBuildDate>Thu, 17 Jan 2019 13:20:07 +0800</lastBuildDate>
     
-	<atom:link href="https://speedle.io/docs/index.xml" rel="self" type="application/rss+xml" />
+	<atom:link href="https://engine.speedle.io/docs/index.xml" rel="self" type="application/rss+xml" />
     
     
     <item>
       <title>Usecases</title>
-      <link>https://speedle.io/docs/usecases/</link>
+      <link>https://engine.speedle.io/docs/usecases/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
-      <guid>https://speedle.io/docs/usecases/</guid>
+      <guid>https://engine.speedle.io/docs/usecases/</guid>
       <description>Application specific policies Alex Chan is a developer who is implementing a simple application with golang. His application requires Authorization and he doesn’t want to re-invent the wheel. Alex can use an open source choice like Speedle for Authorization.
 Centalized policy enforcement and management Jin Chen is a security manager of multinational company. His team monitor dozens of internal systems. Different systems use different authorization mechanisms, different policy languages. They are eager to find a solution to manage all these systems efficiently.</description>
     </item>
     
     <item>
       <title>Speedle Overview: Authorization Engine for Fine-Grained Access Control</title>
-      <link>https://speedle.io/docs/overview/</link>
+      <link>https://engine.speedle.io/docs/overview/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
-      <guid>https://speedle.io/docs/overview/</guid>
+      <guid>https://engine.speedle.io/docs/overview/</guid>
       <description>Speedle is an open-source authorization engine. Applications send it a question such as &amp;ldquo;may this user perform this action on this resource?&amp;rdquo;, and Speedle answers allow or deny according to centrally managed policies. This page connects common authorization terms to the Speedle components that implement them, and links to the guides that cover each one.
 The examples below use a service named library. Each policy was created through the Policy Management Service REST API and each decision was returned by the Authorization Decision Service REST API.</description>
     </item>
     
     <item>
       <title>SPDL - Speedle Policy Definition Language</title>
-      <link>https://speedle.io/docs/spdl/</link>
+      <link>https://engine.speedle.io/docs/spdl/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
-      <guid>https://speedle.io/docs/spdl/</guid>
+      <guid>https://engine.speedle.io/docs/spdl/</guid>
       <description>Syntax Keywords grant, deny, user, group, entity, role, from, on, if and in have special meanings in their syntax positions. Statement keywords are case-insensitive. In conditions, use in or IN; function names are case-sensitive. Principal, action and resource names are also case-sensitive. The current parser accepts keyword-like names in some name positions, so a blanket prohibition is not a validation rule. Prefer unambiguous names for review and client interoperability.</description>
     </item>
     
     <item>
       <title>Architecture</title>
-      <link>https://speedle.io/docs/architecture/</link>
+      <link>https://engine.speedle.io/docs/architecture/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
-      <guid>https://speedle.io/docs/architecture/</guid>
+      <guid>https://engine.speedle.io/docs/architecture/</guid>
       <description>Modules Speedle is an authorization engine comprised of these components:
  Policy Management Service (PMS) API - Manages the authorization and role policies, and the objects from which they are created.
  Policy repository - Stores all the policy artifacts. The policy repository can be a json file, or a persistent store such as a database or etcd.
@@ -54,10 +54,10 @@ The examples below use a service named library. Each policy was created through 
     
     <item>
       <title>Speedle embedded mode</title>
-      <link>https://speedle.io/docs/deployment-embeded/</link>
+      <link>https://engine.speedle.io/docs/deployment-embeded/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
-      <guid>https://speedle.io/docs/deployment-embeded/</guid>
+      <guid>https://engine.speedle.io/docs/deployment-embeded/</guid>
       <description>What is embedded mode? Embedded mode runs the Speedle policy decision engine inside your Go application. Call the evaluator directly without starting PMS or ADS servers. Your application authenticates users and supplies the subject, resource and action for each decision.
 To try basic policies before writing code, open the Playground. To run Speedle as standalone services, follow Quick Start.
 Prerequisites Use Linux or macOS with a shell and Go 1.</description>
@@ -65,80 +65,80 @@ Prerequisites Use Linux or macOS with a shell and Go 1.</description>
     
     <item>
       <title>Authorization Decisions</title>
-      <link>https://speedle.io/docs/decisions/</link>
+      <link>https://engine.speedle.io/docs/decisions/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
-      <guid>https://speedle.io/docs/decisions/</guid>
+      <guid>https://engine.speedle.io/docs/decisions/</guid>
       <description>What is an authorization decision? Speedle evaluates a subject, action and resource within a service. The application must enforce the result. Treat an evaluation error or timeout separately from a normal Deny and fail closed. REST, gRPC and embedded Go APIs have different wire representations; use their respective contracts.
 Before running the examples Build ./bin/spctl, ./bin/speedle-pms and ./bin/speedle-ads using the quick start. Use Go 1.26.10 or Go 1.27.3 (or a newer patch on the same release branch), Bash, curl and Python 3.</description>
     </item>
     
     <item>
       <title>Identity Domain</title>
-      <link>https://speedle.io/docs/idd/</link>
+      <link>https://engine.speedle.io/docs/idd/</link>
       <pubDate>Thu, 17 Jan 2019 13:20:07 +0800</pubDate>
       
-      <guid>https://speedle.io/docs/idd/</guid>
+      <guid>https://engine.speedle.io/docs/idd/</guid>
       <description>What is an identity domain? An identity domain (idd) is an explicit namespace for a principal. Two users named user1 can belong to different domains. The string is supplied by trusted integration code or a configured token asserter; it is not proof of authentication. Speedle does not infer or validate a provider&amp;rsquo;s tenant model merely from the domain name.
 Represent domains in policies and requests grant user user1 from github read book grant user user1 from IDCS.</description>
     </item>
     
     <item>
       <title>Token asserter</title>
-      <link>https://speedle.io/docs/assertor/</link>
+      <link>https://engine.speedle.io/docs/assertor/</link>
       <pubDate>Mon, 21 Jan 2019 09:28:30 +0800</pubDate>
       
-      <guid>https://speedle.io/docs/assertor/</guid>
+      <guid>https://engine.speedle.io/docs/assertor/</guid>
       <description>What does a token asserter do? A configured asserter validates a token and returns explicit principals, including their identity domains. Speedle can then evaluate policies using those identities. A production implementation must validate the token&amp;rsquo;s signature or introspection result, issuer, audience, expiry and any provider-specific requirements. The webhook alone does not establish compatibility with arbitrary OAuth/OIDC tokens.
 The Token Assertion Plugin API uses integer errCode and an optional attribute object, not a typed attribute array.</description>
     </item>
     
     <item>
       <title>Deployment</title>
-      <link>https://speedle.io/docs/deployment/</link>
+      <link>https://engine.speedle.io/docs/deployment/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
-      <guid>https://speedle.io/docs/deployment/</guid>
+      <guid>https://engine.speedle.io/docs/deployment/</guid>
       <description>Choose a deployment mode Use embedded mode to run the evaluator in your Go process. Use standalone PMS and ADS when applications call Speedle over REST or gRPC. The Quick Start provides a complete local policy-management and authorization walkthrough.
 Build with current Go Use Go 1.26.10 or Go 1.27.3 (or a newer patch on the same release branch) (Go 1.27.3 is recommended), Git and a shell on Linux or macOS.</description>
     </item>
     
     <item>
       <title>Security</title>
-      <link>https://speedle.io/docs/security/</link>
+      <link>https://engine.speedle.io/docs/security/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
-      <guid>https://speedle.io/docs/security/</guid>
+      <guid>https://engine.speedle.io/docs/security/</guid>
       <description>Protect both API transports Speedle&amp;rsquo;s standalone PMS and ADS expose REST and gRPC. Both now use the same --insecure, --cert, --key, --client-cert and --force-client-cert transport settings. Invalid certificates or trust configuration cause startup to fail; secure mode does not fall back to plaintext.
 TLS encrypts the connection and authenticates the server. To require authenticated clients, provide a client CA with --client-cert and set --force-client-cert=true. Without that flag, a configured CA validates a client certificate only when the client supplies one.</description>
     </item>
     
     <item>
       <title>Logging Framework</title>
-      <link>https://speedle.io/docs/logging/</link>
+      <link>https://engine.speedle.io/docs/logging/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
-      <guid>https://speedle.io/docs/logging/</guid>
+      <guid>https://engine.speedle.io/docs/logging/</guid>
       <description>Overview The following two open source projects are used to process log messages,
 1. https://github.com/sirupsen/logrus 2. https://github.com/natefinch/lumberjack Logrus is a structured logger for Go (golang), and completely API compatible with the golang standard library logger. Note that logrus doesn&amp;rsquo;t support log rotation, and it is exactly the reason why we introduce the second project lumberjack, which provides a rolling logger. Logrus communicates with lumberjack using the io.Writer interface, please refer to the following diagram,</description>
     </item>
     
     <item>
       <title>Versions</title>
-      <link>https://speedle.io/docs/versions/</link>
+      <link>https://engine.speedle.io/docs/versions/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
-      <guid>https://speedle.io/docs/versions/</guid>
+      <guid>https://engine.speedle.io/docs/versions/</guid>
       <description>Speedle releases Use the GitHub Releases page for published versions and release notes. v1.6.0 is the version pinned by the current embedded Go walkthrough. Use an explicit released version for reproducible module dependencies; the embedded guide explains the setup.
 Historical Oracle Speedle release Version 0.1.0 was the original open-source release, including policy management, authorization decisions, the command-line tool and integration samples. The historical 0.2.0 planning note is not the current Speedle release roadmap.</description>
     </item>
     
     <item>
       <title>Custom Function</title>
-      <link>https://speedle.io/docs/custom-function/</link>
+      <link>https://engine.speedle.io/docs/custom-function/</link>
       <pubDate>Mon, 21 Jan 2019 10:43:02 +0800</pubDate>
       
-      <guid>https://speedle.io/docs/custom-function/</guid>
+      <guid>https://engine.speedle.io/docs/custom-function/</guid>
       <description>Why use a custom function? SPDL conditions can call a configured function when built-in operators or functions do not express the required rule. Speedle calls its REST endpoint with POST {&amp;quot;params&amp;quot;:[...]} and expects {&amp;quot;result&amp;quot;:...} or {&amp;quot;error&amp;quot;:&amp;quot;...&amp;quot;}. Parameter order/types and the result type must match the condition. Function failures are evaluation errors; applications must fail closed.
 Start the local example This example accepts numeric values from 100 to 50000. Wrong parameter types or an empty parameter list return an HTTP error.</description>
     </item>
