@@ -2,6 +2,7 @@
 title = "Java SDK"
 description = "添加 Speedle Java SDK，向本地 Speedle 或 Speedle Cloud 发起授权检查。"
 weight = 10
+aliases = ["/zh/docs/api/sdk-java/"]
 draft = false
 toc = true
 tocheading = "h2"
@@ -12,7 +13,7 @@ bref = "用 Maven 或 Gradle 添加 io.speedle:speedle-sdk 0.1.0，再向本地 
 
 Java SDK 需要 Java 17 或更高版本，没有运行时依赖。软件包：Maven Central 上的 [`io.speedle:speedle-sdk`](https://central.sonatype.com/artifact/io.speedle/speedle-sdk) 0.1.0。参考文档：[speedle-sdk/java](https://github.com/teramoby/speedle-sdk/tree/main/java)。
 
-示例检查的策略见 [SDK](/docs/api/#sdk)。
+示例检查的策略见 [SDK 概览](/docs/sdks/#示例策略)。
 
 ## 添加依赖
 
@@ -65,7 +66,7 @@ application {
 
 ## 调用本地 Speedle
 
-按 [SDK](/docs/api/#sdk) 一节启动 Speedle 并创建示例策略。将以下程序保存为 `src/main/java/Main.java`：
+按 [SDK 概览](/docs/sdks/#示例策略)中的说明启动 Speedle 并创建示例策略。将以下程序保存为 `src/main/java/Main.java`：
 
 ```java
 import io.speedle.sdk.Auth;
@@ -166,3 +167,7 @@ alice delete /docs/public: allowed=false reason=NO_APPLICABLE_POLICIES
 ```
 
 令牌是服务端密钥，切勿放进浏览器、移动应用或桌面客户端。
+
+## 错误处理
+
+请求被拒绝不是错误：`isAllowed` 返回 `false`，`check` 返回 `allowed()` 为 false 的 `Decision` 及原因，如上文的 `delete` 调用。在默认设置下，调用无法得出授权结果时，SDK 抛出 `SpeedleException`。示例捕获该异常，向标准错误输出 `Speedle error: <消息>`，并以状态码 1 退出。
