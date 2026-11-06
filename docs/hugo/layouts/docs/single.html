@@ -1,15 +1,18 @@
 {{ define "main" }}
 <div id="main"{{ if .Params.singlelinetitle }} class="single-line-title"{{ end }}>
-  {{if .Params.icon }}
-  <image class="top-right-icon" src="/img/speedle/{{.Params.icon}}"></image>
-  {{ end }}
+{{if .Params.icon }}
+  <img class="top-right-icon" src="/img/speedle/{{.Params.icon}}" alt="">
+{{ end }}
   <h1>{{.Title }}</h1>
-  <p>{{.Params.bref}}</p>
+  <p class="docs-lead">{{.Params.bref}}</p>
 
-  {{ partial "toc" .}}
-  <br />
+{{ partial "docs-toc" .}}
   <div id="kube-component" class="content">
-    {{.Content | safeHTML}}
+    {{- $content := .Content | safeHTML -}}
+    {{- /* These diagrams repeat the adjacent grammar; empty alt adds no new content. */ -}}
+    {{- $content = replace $content `<img src="/img/speedle/spdl-syntax.png"/>` `<img src="/img/speedle/spdl-syntax.png" alt=""/>` -}}
+    {{- $content = replace $content `<img src="/img/speedle/spdl-syntax-full.png"/>` `<img src="/img/speedle/spdl-syntax-full.png" alt=""/>` -}}
+    {{- $content | safeHTML -}}
   </div>
 </div>
 {{ end }}

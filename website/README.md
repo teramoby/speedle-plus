@@ -26,6 +26,12 @@ pages, `中文` on English pages), including inside the mobile navigation menu.
   `localize-links.py` gives archived snapshots the same header: its links stay in
   the snapshot where it has the page (and anchor), and otherwise lead to the
   current site.
+  Documentation uses `css/docs.css` and `js/docs.js`: the Engine container,
+  colours, type scale and spacing, a responsive sidebar, and heading-based TOCs
+  without Kube, jQuery, tocbot or webfont requests. `partials/hreflang.html`
+  adds the same EN/ZH/x-default alternates as the homepage, including docs
+  redirect aliases. Swagger CSS and its local bundle load only on API reference
+  pages; existing heading IDs and legacy TOC anchor hooks remain unchanged.
 
 Speedle Engine, Cloud and AI share one header and footer standard (#203): the
 `Speedle | Engine` lock-up, a `Products` menu and a "Speedle family" footer column

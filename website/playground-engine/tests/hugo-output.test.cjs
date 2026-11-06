@@ -23,10 +23,12 @@ for (const name of ['index.html','zh/index.html','playground/index.html','zh/pla
   const html = fs.readFileSync(path.join(output, name), 'utf8');
   assert.ok(html.includes('/css/navigation.css?v=header-20261106-v8') && html.includes('/js/navigation.js?v=header-20261106-v8'), `Shared navigation assets in ${name}`);
 }
-for (const name of ['site.css', 'navigation.css', 'custom.css', 'command-copy.css']) {
+for (const name of ['site.css', 'navigation.css', 'custom.css', 'docs.css', 'command-copy.css']) {
   assert.deepEqual(fs.readFileSync(path.join(output, 'css', name)), fs.readFileSync(path.join(root, 'docs/css', name)));
 }
-assert.deepEqual(fs.readFileSync(path.join(output, 'js/command-copy.js')), fs.readFileSync(path.join(root, 'docs/js/command-copy.js')), 'Generated command copy script');
+for (const name of ['command-copy.js', 'docs.js']) {
+  assert.deepEqual(fs.readFileSync(path.join(output, 'js', name)), fs.readFileSync(path.join(root, 'docs/js', name)), `Generated ${name}`);
+}
 const sitemap = fs.readFileSync(path.join(output, 'sitemap.xml'), 'utf8');
 assert.ok(sitemap.includes('https://engine.speedle.io/en/sitemap.xml'), 'Multilingual sitemap index');
 assert.ok(fs.readFileSync(path.join(output, 'en/sitemap.xml'), 'utf8').includes('https://engine.speedle.io/playground/'));
@@ -51,6 +53,10 @@ for (const name of ['docs/index.html', 'zh/docs/index.html', 'docs/spdl/index.ht
   assert.deepEqual(labels(navigation), labels(homeNavigation), `Homepage navigation order/labels in ${name}`);
   assert.ok(navigation.includes(`href="/${zh ? 'zh/' : ''}#features"`), `Features returns to localized homepage from ${name}`);
   assert.ok(html.includes('/css/navigation.css?v=header-20261106-v8') && html.includes('/js/navigation.js?v=header-20261106-v8'), `Shared versioned navigation assets in ${name}`);
+  assert.ok(html.includes('/css/docs.css') && html.includes('/js/docs.js'), `Documentation assets in ${name}`);
+  assert.ok(!/theme\.min|kube\.min|kube\.legenda|master\.css|kube\.demo|custom\.css|spdl-title|fonts\.googleapis|fontawesome|jquery|tocbot|\/js\/kube|\/js\/master/.test(html), `No legacy docs stack in ${name}`);
+  const afterFooter = html.split('</footer>')[1];
+  assert.ok(afterFooter && !afterFooter.includes('/js/'), `No layout script after the footer in ${name}`);
 }
 // #203: every page with the shared footer loads navigation.css, the stylesheet that holds the footer rules.
 const footerRules = fs.readFileSync(path.join(output, 'css/navigation.css'), 'utf8');
@@ -82,6 +88,26 @@ for (const locale of ['', 'zh/']) {
     assert.ok(sitemap.includes(`<loc>${target}</loc>`) && !sitemap.includes(`docs/api/sdk-${lang}/`), `Sitemap lists only ${target}`);
   }
 }
+let docsAlternates = 0;
+function checkDocsAlternates(directory) {
+  for (const entry of fs.readdirSync(directory, {withFileTypes: true})) {
+    const file = path.join(directory, entry.name);
+    if (entry.isDirectory()) { checkDocsAlternates(file); continue; }
+    if (entry.name !== 'index.html') continue;
+    const html = fs.readFileSync(file, 'utf8');
+    const canonical = html.match(/<link rel="canonical" href="([^"]+)"\/?>/)?.[1];
+    assert.ok(canonical, `Docs canonical in ${file}`);
+    const english = canonical.replace('/zh/docs/', '/docs/');
+    const chinese = english.replace('/docs/', '/zh/docs/');
+    for (const [language, target] of [['en', english], ['zh-CN', chinese], ['x-default', english]]) {
+      assert.ok(html.includes(`<link rel="alternate" hreflang="${language}" href="${target}">`), `${language} alternate in ${file}`);
+    }
+    docsAlternates++;
+  }
+}
+checkDocsAlternates(path.join(output, 'docs'));
+checkDocsAlternates(path.join(output, 'zh/docs'));
+assert.equal(docsAlternates, 80, 'Every canonical docs page and redirect alias has three hreflang alternates');
 console.log('PASS Hugo 0.48 output: editor, navigation, sitemap, footer stylesheet and matching release assets');
 
 // Every documentation sidebar must retain its complete section tree. A shared
