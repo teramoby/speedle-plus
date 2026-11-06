@@ -12,7 +12,7 @@ from urllib.parse import unquote, urljoin, urlsplit, urlunsplit
 ORIGIN = "https://speedle.io"
 NAVIGATION_VERSION = "language-direct-20261026"
 PREVIEW = re.compile(r"^/[0-9a-f]{32}(?=/)")
-HEADER_VERSION = "header-20261027"
+HEADER_VERSION = "header-20261106"
 HEADER_ASSETS = (f'<link href="/css/navigation.css?v={HEADER_VERSION}" rel="stylesheet">\n'
                  f'<script src="/js/navigation.js?v={HEADER_VERSION}" defer></script>\n')
 WEB_ANALYTICS = (Path(__file__).resolve().parent / "cloudflare-web-analytics.html").read_text()
@@ -112,6 +112,10 @@ def archive_header(site, text, route):
 
     unified = re.sub(r'(<a\b(?![^>]*hreflang)[^>]*\shref=")([^"]*)"', destination, header[0])
     text = re.sub(r"<header\b[^>]*>[\s\S]*?</header>", lambda _: unified, text, count=1)
+    # The shared three-site footer has only absolute links, so snapshots reuse it as is.
+    footer = re.search(r'<footer class="site-footer">[\s\S]*?</footer>', source.read_text())
+    if footer:
+        text = re.sub(r"<footer\b[^>]*>[\s\S]*?</footer>", lambda _: footer[0], text, count=1)
     # Earlier snapshots carry their own copies of the navigation stylesheet and menu script.
     text = re.sub(r'[ \t]*<link rel="stylesheet" href="' + re.escape(prefix) + r'/css/navigation\.css">\n?', "", text)
     text = re.sub(r"[ \t]*<script>\s*const button = document\.querySelector\('\.menu'\);[\s\S]*?</script>\n?", "", text)
@@ -262,7 +266,7 @@ class Links(HTMLParser):
                     elif not (self.site.root / unquote(url.path.lstrip("/"))).is_file():
                         self.errors.append(f"{self.route}: broken local link {href}")
         # Normalize Hugo's same-origin resource URLs without changing metadata.
-        resource = "src" if tag in {"img", "script", "source", "iframe"} else "href" if tag == "link" and attrs.get("rel") == "stylesheet" else None
+        resource = "src" if tag in {"img", "script", "source", "iframe"} else "href" if tag == "link" and attrs.get("rel") in {"stylesheet", "icon", "apple-touch-icon"} else None
         if resource and attrs.get(resource, "").startswith(ORIGIN + "/"):
             changes[resource] = attrs[resource][len(ORIGIN):]
         if tag == "script" and attrs.get("src"):

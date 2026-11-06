@@ -27,6 +27,19 @@ pages, `中文` on English pages), including inside the mobile navigation menu.
   the snapshot where it has the page (and anchor), and otherwise lead to the
   current site.
 
+Speedle Engine, Cloud and AI share one header and footer standard (#203): the
+`Speedle | Engine` lock-up, a `Products` menu and a "Speedle family" footer column
+linking the three sites. The footer lives in the static homepages;
+`partials/footer.html` reuses it for Hugo pages and `localize-links.py` gives
+archived snapshots the same footer. The sphere marks
+`static/img/speedle/speedle-mark-{engine,cloud,ai}.svg` and `static/favicon.svg`
+are the sphere group of `img/speedle/Speedle_logo_home_bold.svg` with colours
+changed only (Engine original `#ff9a45`, Cloud `#2f80ed`, AI `#8b5cf6`);
+`favicon.svg` adds a 1 px `#1f1142` outline for light tab bars.
+`favicon.ico` (16, 32, 48 px PNG entries) and `apple-touch-icon.png` (180 px,
+sphere on `#2f2350` with 20 px padding) are rendered from those SVGs; they replace
+`images/speedle_purple.png` and `images/speedle_black.png`.
+
 Cloudflare Web Analytics uses manual JS installation. The public beacon snippet
 is in `website/cloudflare-web-analytics.html`; `localize-links.py` adds it once to
 every rendered page, including archived snapshots, and skips redirect pages.

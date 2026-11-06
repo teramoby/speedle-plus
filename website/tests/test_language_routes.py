@@ -108,8 +108,9 @@ class LanguageRoutes(unittest.TestCase):
             self.write(home, '<html><head></head><body><header class="site-header"><a class="brand" href="#top">Speedle</a>'
                        f'<nav class="nav-links"><a href="#about">About</a><a href="{home}docs/store/">{label}</a>'
                        f'<a href="{home}docs/spdl/">SPDL</a><a href="{home}">Home</a></nav></header>'
-                       '<main id="top"><section id="about"></section></main></body></html>')
-        self.write(prefix + "/", '<html><head></head><body><header>Old</header><main id="top">Archived home.</main></body></html>')
+                       '<main id="top"><section id="about"></section></main>'
+                       '<footer class="site-footer"><p>Shared footer</p></footer></body></html>')
+        self.write(prefix + "/", '<html><head></head><body><header>Old</header><main id="top">Archived home.</main><footer class="row">Old footer</footer></body></html>')
         self.write(prefix + "/zh/", '<html><head></head><body><header id="about">Old</header><main id="top"></main></body></html>')
         self.process()
         text = (self.root / prefix.lstrip("/") / "zh/docs/spdl/index.html").read_text()
@@ -117,12 +118,14 @@ class LanguageRoutes(unittest.TestCase):
         self.assertIn('<a href="/zh/#about">About</a>', text)
         self.assertIn(f'<a href="{prefix}/zh/docs/store/">文档</a>', text)
         self.assertIn(f'<a href="{prefix}/docs/spdl/" lang="en" hreflang="en">English</a>', text)
-        self.assertIn('/js/navigation.js?v=header-20261027', text)
+        self.assertIn('/js/navigation.js?v=header-20261106', text)
         self.assertIn('Original archived content.', text)
         self.assertNotIn('langsel', text)
         english = (self.root / prefix.lstrip("/") / "index.html").read_text()
         self.assertIn('<a href="/#about">About</a>', english)
         self.assertIn('Archived home.', english)
+        self.assertIn('<footer class="site-footer"><p>Shared footer</p></footer>', english)
+        self.assertNotIn('Old footer', english)
         self.process(check=True)
 
     def test_archived_pagination_redirect_retains_the_snapshot(self):

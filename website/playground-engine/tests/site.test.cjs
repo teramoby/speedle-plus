@@ -29,7 +29,24 @@ const originalMailingLink = '<a href="https://groups.google.com/forum/#!forum/sp
 const contactLinks = '<a href="mailto:contact@speedle.io" aria-label="Email contact@speedle.io" title="contact@speedle.io"><img src="/img/speedle/28.%20Mail.svg" alt=""></a>\n        <a href="https://groups.google.com/forum/#!forum/speedle-users" aria-label="Google Groups" title="Google Groups — speedle-users"><img src="/img/speedle/Google-Groups.svg" alt=""></a>';
 const copyright = '<p>Copyright &copy; 2019–2026. All rights reserved.</p>';
 const originalNavigationScript = original.match(/  <script>[\s\S]*?<\/script>/)[0];
-const sharedNavigationScript = '  <script src="/js/navigation.js?v=header-20261027" defer></script>';
+const sharedNavigationScript = '  <script src="/js/navigation.js?v=header-20261106" defer></script>';
+// #203 three-site lock-up: Speedle mark + wordmark | Engine.
+const brandLockup = '<a class="brand" href="#top" aria-label="Speedle Engine home"><img class="brand-logo" src="/img/speedle/Speedle_logo_home_bold.svg?v=4" alt=""><span class="brand-divider" aria-hidden="true"></span><span class="brand-product">Engine</span></a>';
+const originalBrand = original.match(/<a class="brand"[^\n]*?<\/a>/)[0];
+// Header standard v3/v4: Speedle family menu, footer column, hero links and sphere favicons.
+const productsMenu = /<div class="products">[\s\S]*?<\/div><\/div>\n\s*/;
+const familyFooter = /      <div class="footer-family"[\s\S]*?<\/ul><\/div>\n/;
+const heroFamily = /\n\s*<p class="hero-family">.*<\/p>/;
+const footerLockup = '<div class="footer-lockup" role="img" aria-label="Speedle Engine"><img src="/img/speedle/Speedle_logo_home_bold.svg?v=4" alt=""><span class="brand-divider"></span><span class="brand-product">Engine</span></div>';
+const iconLinks = /<link rel="icon" href="(?:https:\/\/speedle\.io)?\/favicon\.svg" type="image\/svg\+xml">\n\s*<link rel="icon" href="(?:https:\/\/speedle\.io)?\/favicon\.ico" sizes="any">\n\s*<link rel="apple-touch-icon" href="(?:https:\/\/speedle\.io)?\/apple-touch-icon\.png">/;
+for (const name of ['docs/index.html','docs/zh/index.html','docs/playground/index.html','docs/zh/playground/index.html']) {
+  const html = read(name);
+  assert.ok(iconLinks.test(html) && !html.includes('speedle_purple.png'), `Sphere favicons in ${name}`);
+  const menu = html.match(productsMenu)?.[0] || '';
+  assert.ok(menu.includes('aria-haspopup="true"') && menu.includes('aria-current="page"') && ['https://engine.speedle.io/','https://cloud.speedle.io/','https://ai.speedle.io/'].every(url => menu.includes(`href="${url}`)), `Products menu in ${name}`);
+  assert.ok(familyFooter.test(html) && html.includes(footerLockup) && html.includes('<footer class="site-footer">'), `Shared footer in ${name}`);
+}
+for (const name of ['docs/index.html','docs/zh/index.html']) assert.ok(heroFamily.test(read(name)), `Hero family links in ${name}`);
 const originNote = /        <p class="license origin-note"><em>.*<\/em><\/p>\n/;
 for (const name of ['docs/index.html','docs/zh/index.html']) {
   const note = read(name).match(originNote)?.[0];
@@ -40,9 +57,11 @@ const identityTags = [/<title>[^<]*<\/title>/, /<link rel="icon"[^>]*>/,
  /<meta name="twitter:title"[^>]*>/, /\{"@type":"WebSite"[^\n]+/];
 // The site identity (title, icon, social and structured-data names) changed deliberately.
 const analyticsSnippet = read('website/cloudflare-web-analytics.html');
-const restoredIdentity = identityTags.reduce((html, pattern) => html.replace(pattern, original.match(pattern)[0]), home.replace(analyticsSnippet, ''));
-const restored = restoredIdentity.replace(policyExample,originalPolicyExample).replace(originNote,'').replace('Bring Your Own Storage','Bring Your Own Store').replace('Speedle Policy Definition Language.','Secure Policy Definition Language.').replace(contactLinks,originalMailingLink).replace(sharedNavigationScript,originalNavigationScript).replace(copyright,'').replace(discordLink,oldCommunityLink).replace('  <link rel="stylesheet" href="/css/site.css">\n  <link rel="stylesheet" href="/css/navigation.css?v=header-20261027">', `  <style>${read('docs/css/site.css')}</style>`).replace('<a href="/playground/">Playground</a>','').replace(`        ${chineseLink}\n`,'');
-assert.equal(restored,original,'Homepage content is unchanged except shared navigation assets/entries, community/contact links, storage heading, SPDL name, corrected SPDL example, origin note, site identity, copyright notice and analytics beacon');
+const restoredIdentity = identityTags.reduce((html, pattern) => html.replace(pattern, original.match(pattern)[0]), home.replace(analyticsSnippet, '').replace(iconLinks, original.match(/<link rel="icon"[^>]*>/)[0]).replace(productsMenu, '').replace(familyFooter, '').replace(heroFamily, '').replace('  <footer class="site-footer">\n', '  <footer>\n').replace(footerLockup, '<img src="/img/speedle/Speedle_logo_w.svg" alt="Speedle">'));
+const restored = restoredIdentity.replace(policyExample,originalPolicyExample).replace(originNote,'').replace('Bring Your Own Storage','Bring Your Own Store').replace('Speedle Policy Definition Language.','Secure Policy Definition Language.').replace(contactLinks,originalMailingLink).replace(sharedNavigationScript,originalNavigationScript).replace(copyright,'').replace(discordLink,oldCommunityLink).replace('  <link rel="stylesheet" href="/css/site.css">\n  <link rel="stylesheet" href="/css/navigation.css?v=header-20261106">', `  <style>${read('docs/css/site.css')}</style>`).replace('<a href="/playground/">Playground</a>','').replace(`        ${chineseLink}\n`,'').replace(brandLockup,originalBrand);
+assert.equal(restored,original,'Homepage content is unchanged except shared navigation assets/entries, community/contact links, storage heading, SPDL name, corrected SPDL example, origin note, site identity, copyright notice, analytics beacon, logo lock-up, Speedle family links and favicons');
+assert.ok(home.includes(brandLockup), 'Homepage shows the Speedle | Engine lock-up (#203)');
+for (const name of ['docs/zh/index.html','docs/playground/index.html','docs/zh/playground/index.html']) assert.ok(read(name).includes('<span class="brand-divider" aria-hidden="true"></span><span class="brand-product">Engine</span></a>'), `Lock-up in ${name}`);
 assert.ok(home.includes(chineseLink), 'English homepage exposes the Chinese homepage');
 assert.ok(page.includes(playgroundChineseLink), 'Playground switches to its Chinese counterpart');
 assert.ok(read('docs/zh/index.html').includes('href="/" lang="en" hreflang="en"'), 'Chinese homepage links back to English');
@@ -68,7 +87,7 @@ for (const name of ['css/site.css','css/navigation.css','css/custom.css','js/mas
 }
 assert.ok(page.includes('<a href="/playground/" aria-current="page">Playground</a>'));
 assert.ok(page.includes('<link rel="stylesheet" href="/css/site.css">'));
-assert.equal(page.match(/  <footer>[\s\S]*?<\/footer>/)[0],home.match(/  <footer>[\s\S]*?<\/footer>/)[0], 'Official footer is reused unchanged');
+assert.equal(page.match(/  <footer class="site-footer">[\s\S]*?<\/footer>/)[0],home.match(/  <footer class="site-footer">[\s\S]*?<\/footer>/)[0], 'Official footer is reused unchanged');
 assert.ok(page.includes('href="https://speedle.io/playground/"'));
 assert.equal(read('docs/CNAME').trim(),'engine.speedle.io');
 assert.ok(read('docs/sitemap.xml').includes('https://speedle.io/en/sitemap.xml'));

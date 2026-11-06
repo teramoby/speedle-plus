@@ -18,7 +18,9 @@
   <meta name="twitter:title" content="Speedle Authorization Engine | 开源授权引擎">
   <meta name="twitter:description" content="面向云原生与传统应用的集中式 RBAC 和 ABAC 权限控制。">
   <title>Speedle Authorization Engine | 开源授权引擎</title>
-  <link rel="icon" type="image/png" sizes="1024x1024" href="https://speedle.io/images/speedle_purple.png">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="/favicon.ico" sizes="any">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
   <style>
     :root {
       --purple: #814ce4;
@@ -142,7 +144,7 @@
       .footer-inner { padding: 48px 0; grid-template-columns: 1fr; }
     }
   </style>
-  <link rel="stylesheet" href="/css/navigation.css?v=header-20261027">
+  <link rel="stylesheet" href="/css/navigation.css?v=header-20261106">
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
@@ -156,9 +158,10 @@
 <body>
   <header class="site-header">
     <div class="wrap nav">
-      <a class="brand" href="#top" aria-label="Speedle 中文首页"><img src="/img/speedle/Speedle_logo_home_bold.svg?v=4" alt="Speedle"></a>
+      <a class="brand" href="#top" aria-label="Speedle Engine 首页"><img class="brand-logo" src="/img/speedle/Speedle_logo_home_bold.svg?v=4" alt=""><span class="brand-divider" aria-hidden="true"></span><span class="brand-product">Engine</span></a>
       <button class="menu" type="button" aria-expanded="false" aria-controls="nav-links" aria-label="展开导航">☰</button>
       <nav class="nav-links" id="nav-links" aria-label="主导航">
+        <div class="products"><button class="products-button" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="products-panel">产品<svg class="products-chevron" width="10" height="10" viewBox="0 0 10 10" aria-hidden="true" focusable="false"><path d="M2 3.5 5 6.5 8 3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button><span class="products-heading" aria-hidden="true">产品</span><div class="products-panel" id="products-panel" role="group" aria-label="产品"><a class="product-row" href="https://engine.speedle.io/zh/" aria-current="page"><img class="product-mark" src="/img/speedle/speedle-mark-engine.svg" alt="" width="20" height="20"><span class="product-text"><span class="product-name">Speedle Engine</span><span class="product-desc">开源授权引擎</span></span><svg class="product-check" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M3.5 8.5 6.5 11.5 12.5 4.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></a><a class="product-row" href="https://cloud.speedle.io/"><img class="product-mark" src="/img/speedle/speedle-mark-cloud.svg" alt="" width="20" height="20"><span class="product-text"><span class="product-name">Speedle Cloud <span class="product-badge">即将上线</span></span><span class="product-desc">面向开发者的托管授权服务</span></span></a><a class="product-row" href="https://ai.speedle.io/"><img class="product-mark" src="/img/speedle/speedle-mark-ai.svg" alt="" width="20" height="20"><span class="product-text"><span class="product-name">Speedle AI</span><span class="product-desc">面向 AI 的访问管理</span></span></a></div></div>
         <a href="#about">关于</a><a href="#features">功能</a><a href="#integrations">集成</a>
         <a href="/zh/quick-start/">快速入门</a><a href="/zh/docs/">文档</a><a href="/zh/playground/">Playground</a>
         <a href="/" lang="en" hreflang="en" aria-label="Switch to English">English</a>
@@ -178,6 +181,7 @@
             <a class="button button-primary" href="/zh/quick-start/">快速入门</a>
             <a class="button button-secondary" href="https://github.com/teramoby/speedle-plus">在 GitHub 上查看</a>
           </div>
+          <p class="hero-family"><a href="https://cloud.speedle.io/">更想用托管服务？Speedle Cloud <span class="product-badge">即将上线</span> →</a><a href="https://ai.speedle.io/">面向 AI 智能体的授权 → Speedle AI</a></p>
         </div>
         <div class="hero-art" aria-hidden="true">
           <img class="hero-mark" src="/img/speedle/Speedle_logo_about.svg" alt="">
@@ -279,9 +283,10 @@
     </section>
   </main>
 
-  <footer>
+  <footer class="site-footer">
     <div class="wrap footer-inner">
-      <div class="footer-brand"><img src="/img/speedle/Speedle_logo_w.svg" alt="Speedle"><p>采用 Universal Permissive License v1.0 许可证。</p><p>Copyright &copy; 2019–2026. All rights reserved.</p></div>
+      <div class="footer-brand"><div class="footer-lockup" role="img" aria-label="Speedle Engine"><img src="/img/speedle/Speedle_logo_home_bold.svg?v=4" alt=""><span class="brand-divider"></span><span class="brand-product">Engine</span></div><p>基于 Universal Permissive License v1.0 授权。</p><p>版权所有 &copy; 2019–2026。</p></div>
+      <div class="footer-family" role="navigation" aria-labelledby="footer-family-title"><h2 class="footer-family-title" id="footer-family-title">Speedle 产品</h2><ul><li><a href="https://engine.speedle.io/zh/" aria-current="page">Speedle Engine</a><span class="footer-family-desc">开源授权引擎</span></li><li><a href="https://cloud.speedle.io/">Speedle Cloud</a> <span class="product-badge">即将上线</span><span class="footer-family-desc">面向开发者的托管授权服务</span></li><li><a href="https://ai.speedle.io/">Speedle AI</a><span class="footer-family-desc">面向 AI 的访问管理</span></li></ul></div>
       <nav class="social" aria-label="社区链接">
         <a href="mailto:contact@speedle.io" aria-label="发送邮件至 contact@speedle.io" title="contact@speedle.io"><img src="/img/speedle/28.%20Mail.svg" alt=""></a>
         <a href="https://groups.google.com/forum/#!forum/speedle-users" aria-label="Google Groups 讨论组" title="Google Groups — speedle-users"><img src="/img/speedle/Google-Groups.svg" alt=""></a>
@@ -290,7 +295,7 @@
       </nav>
     </div>
   </footer>
-  <script src="/js/navigation.js?v=header-20261027" defer></script>
+  <script src="/js/navigation.js?v=header-20261106" defer></script>
 <!-- Cloudflare Web Analytics --><script type="module" src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "5dc5889c64f04fd7b026b875f1b2e27a"}'></script><!-- End Cloudflare Web Analytics -->
 </body>
 </html>

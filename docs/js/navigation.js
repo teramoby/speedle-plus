@@ -20,7 +20,51 @@ document.querySelectorAll('header.site-header').forEach(function(header) {
       button.focus();
     }
   });
-  window.matchMedia('(max-width: 1050px)').addEventListener('change', function() { setOpen(false); });
+  // Speedle family "Products" menu: click/Enter/Space toggle, Esc and outside click close, arrows move.
+  var products = header.querySelector('.products');
+  var productsButton = products && products.querySelector('.products-button');
+  var productRows = products ? Array.prototype.slice.call(products.querySelectorAll('.product-row')) : [];
+  function setProducts(open, focusButton) {
+    if (!productsButton) return;
+    products.classList.toggle('open', open);
+    productsButton.setAttribute('aria-expanded', String(open));
+    if (!open && focusButton) productsButton.focus();
+  }
+  if (productsButton) {
+    productsButton.addEventListener('click', function() {
+      setProducts(productsButton.getAttribute('aria-expanded') !== 'true');
+    });
+    productsButton.addEventListener('keydown', function(event) {
+      if (event.key === 'ArrowDown' && productRows.length) {
+        event.preventDefault();
+        event.stopPropagation();
+        setProducts(true);
+        productRows[0].focus();
+      }
+    });
+    products.addEventListener('keydown', function(event) {
+      var index = productRows.indexOf(document.activeElement);
+      if (event.key === 'Escape' && productsButton.getAttribute('aria-expanded') === 'true') {
+        event.preventDefault();
+        event.stopPropagation();
+        setProducts(false, true);
+      } else if (index >= 0 && (event.key === 'ArrowDown' || event.key === 'ArrowUp')) {
+        event.preventDefault();
+        var next = (index + (event.key === 'ArrowDown' ? 1 : productRows.length - 1)) % productRows.length;
+        productRows[next].focus();
+      } else if (index >= 0 && (event.key === 'Home' || event.key === 'End')) {
+        event.preventDefault();
+        productRows[event.key === 'Home' ? 0 : productRows.length - 1].focus();
+      }
+    });
+    document.addEventListener('click', function(event) {
+      if (!products.contains(event.target)) setProducts(false);
+    });
+    products.addEventListener('focusout', function(event) {
+      if (event.relatedTarget && !products.contains(event.relatedTarget)) setProducts(false);
+    });
+  }
+  window.matchMedia('(max-width: 1050px)').addEventListener('change', function() { setOpen(false); setProducts(false); });
   // Collapse links only after their controller has initialized successfully.
   header.classList.add('navigation-ready');
 });
