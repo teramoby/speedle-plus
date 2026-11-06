@@ -38,20 +38,49 @@ body.page-kube > header.site-header:lang(zh) {
   justify-content: space-between;
 }
 .site-header a { text-decoration: none; }
+/* Shared three-site lock-up: Speedle mark + wordmark | product word (#203). */
 .site-header .brand {
-  display: block;
-  flex: 0 0 152px;
-  width: 152px;
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  width: auto;
   margin: 0;
   padding: 0;
   border: 0;
+  color: #fff;
+  line-height: 1;
 }
 .site-header .brand img {
   display: block;
-  width: 152px;
-  max-width: 100%;
-  height: auto;
+  width: auto;
+  max-width: none;
+  height: 32px;
   margin: 0;
+}
+.site-header .brand-divider {
+  display: block;
+  flex: 0 0 1px;
+  width: 1px;
+  height: 20px;
+  margin: 0 12px;
+  background: currentColor;
+  opacity: .4;
+}
+.site-header .brand-product {
+  display: block;
+  margin: 0;
+  color: #01e7cb;
+  font-family: inherit;
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: 0;
+  line-height: 1;
+  white-space: nowrap;
+}
+@media (max-width: 720px) {
+  .site-header .brand img { height: 28px; }
+  .site-header .brand-divider { height: 18px; }
+  .site-header .brand-product { font-size: 16px; }
 }
 .site-header .nav-links {
   display: flex;

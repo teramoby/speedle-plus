@@ -29,7 +29,10 @@ const originalMailingLink = '<a href="https://groups.google.com/forum/#!forum/sp
 const contactLinks = '<a href="mailto:contact@speedle.io" aria-label="Email contact@speedle.io" title="contact@speedle.io"><img src="/img/speedle/28.%20Mail.svg" alt=""></a>\n        <a href="https://groups.google.com/forum/#!forum/speedle-users" aria-label="Google Groups" title="Google Groups — speedle-users"><img src="/img/speedle/Google-Groups.svg" alt=""></a>';
 const copyright = '<p>Copyright &copy; 2019–2026. All rights reserved.</p>';
 const originalNavigationScript = original.match(/  <script>[\s\S]*?<\/script>/)[0];
-const sharedNavigationScript = '  <script src="/js/navigation.js?v=header-20261027" defer></script>';
+const sharedNavigationScript = '  <script src="/js/navigation.js?v=header-20261106" defer></script>';
+// #203 three-site lock-up: Speedle mark + wordmark | Engine.
+const brandLockup = '<a class="brand" href="#top" aria-label="Speedle Engine home"><img class="brand-logo" src="/img/speedle/Speedle_logo_home_bold.svg?v=4" alt=""><span class="brand-divider" aria-hidden="true"></span><span class="brand-product">Engine</span></a>';
+const originalBrand = original.match(/<a class="brand"[^\n]*?<\/a>/)[0];
 const originNote = /        <p class="license origin-note"><em>.*<\/em><\/p>\n/;
 for (const name of ['docs/index.html','docs/zh/index.html']) {
   const note = read(name).match(originNote)?.[0];
@@ -41,8 +44,10 @@ const identityTags = [/<title>[^<]*<\/title>/, /<link rel="icon"[^>]*>/,
 // The site identity (title, icon, social and structured-data names) changed deliberately.
 const analyticsSnippet = read('website/cloudflare-web-analytics.html');
 const restoredIdentity = identityTags.reduce((html, pattern) => html.replace(pattern, original.match(pattern)[0]), home.replace(analyticsSnippet, ''));
-const restored = restoredIdentity.replace(policyExample,originalPolicyExample).replace(originNote,'').replace('Bring Your Own Storage','Bring Your Own Store').replace('Speedle Policy Definition Language.','Secure Policy Definition Language.').replace(contactLinks,originalMailingLink).replace(sharedNavigationScript,originalNavigationScript).replace(copyright,'').replace(discordLink,oldCommunityLink).replace('  <link rel="stylesheet" href="/css/site.css">\n  <link rel="stylesheet" href="/css/navigation.css?v=header-20261027">', `  <style>${read('docs/css/site.css')}</style>`).replace('<a href="/playground/">Playground</a>','').replace(`        ${chineseLink}\n`,'');
-assert.equal(restored,original,'Homepage content is unchanged except shared navigation assets/entries, community/contact links, storage heading, SPDL name, corrected SPDL example, origin note, site identity, copyright notice and analytics beacon');
+const restored = restoredIdentity.replace(policyExample,originalPolicyExample).replace(originNote,'').replace('Bring Your Own Storage','Bring Your Own Store').replace('Speedle Policy Definition Language.','Secure Policy Definition Language.').replace(contactLinks,originalMailingLink).replace(sharedNavigationScript,originalNavigationScript).replace(copyright,'').replace(discordLink,oldCommunityLink).replace('  <link rel="stylesheet" href="/css/site.css">\n  <link rel="stylesheet" href="/css/navigation.css?v=header-20261106">', `  <style>${read('docs/css/site.css')}</style>`).replace('<a href="/playground/">Playground</a>','').replace(`        ${chineseLink}\n`,'').replace(brandLockup,originalBrand);
+assert.equal(restored,original,'Homepage content is unchanged except shared navigation assets/entries, community/contact links, storage heading, SPDL name, corrected SPDL example, origin note, site identity, copyright notice, analytics beacon and logo lock-up');
+assert.ok(home.includes(brandLockup), 'Homepage shows the Speedle | Engine lock-up (#203)');
+for (const name of ['docs/zh/index.html','docs/playground/index.html','docs/zh/playground/index.html']) assert.ok(read(name).includes('<span class="brand-divider" aria-hidden="true"></span><span class="brand-product">Engine</span></a>'), `Lock-up in ${name}`);
 assert.ok(home.includes(chineseLink), 'English homepage exposes the Chinese homepage');
 assert.ok(page.includes(playgroundChineseLink), 'Playground switches to its Chinese counterpart');
 assert.ok(read('docs/zh/index.html').includes('href="/" lang="en" hreflang="en"'), 'Chinese homepage links back to English');
