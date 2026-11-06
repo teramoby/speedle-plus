@@ -31,7 +31,9 @@ Speedle Engine, Cloud and AI share one header and footer standard (#203): the
 `Speedle | Engine` lock-up, a `Products` menu and a "Speedle family" footer column
 linking the three sites. The footer lives in the static homepages;
 `partials/footer.html` reuses it for Hugo pages and `localize-links.py` gives
-archived snapshots the same footer. The sphere marks
+archived snapshots the same footer. All footer rules live only in
+`css/navigation.css`, which every page loads, under `html body footer.site-footer`
+so the docs theme styles cannot override them. The sphere marks
 `static/img/speedle/speedle-mark-{engine,cloud,ai}.svg` and `static/favicon.svg`
 are the sphere group of `img/speedle/Speedle_logo_home_bold.svg` with colours
 changed only (Engine original `#ff9a45`, Cloud `#4da3ff`, AI `#8b5cf6`);
