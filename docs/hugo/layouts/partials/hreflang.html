@@ -1,0 +1,8 @@
+{{- $english := . -}}
+{{- range .AllTranslations -}}
+  {{- if eq .Lang "en" }}{{ $english = . }}{{ end -}}
+{{- end -}}
+{{- range .AllTranslations }}
+<link rel="alternate" hreflang="{{ if eq .Lang "zh" }}zh-CN{{ else }}en{{ end }}" href="{{ .Permalink }}">
+{{- end }}
+<link rel="alternate" hreflang="x-default" href="{{ $english.Permalink }}">

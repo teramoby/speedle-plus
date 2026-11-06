@@ -1,6 +1,9 @@
+<aside class="docs-sidebar" id="docs-navigation" aria-label="{{ if eq .Lang "zh" }}文档导航{{ else }}Documentation navigation{{ end }}">
+<div class="docs-nav-head">
+<span class="docs-nav-title">{{ if eq .Lang "zh" }}文档{{ else }}Documentation{{ end }}</span>
+<button class="docs-nav-close" type="button" aria-label="{{ if eq .Lang "zh" }}关闭菜单{{ else }}Close menu{{ end }}"><svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="m3 3 10 10M13 3 3 13"/></svg></button>
+</div>
 <div class="sidebar">
 {{- partial "menu.html" . -}}
-<div class="sidebar-footer">
-{{- partial "sidebar-footer.html" . -}}
 </div>
-</div>
+</aside>
