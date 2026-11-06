@@ -32,7 +32,9 @@ Any contributions are welcomed and appreciated, including but not limited to
 - Submit a PR/code change    
 
 
-One must sign [Oracle Contributor Agreement (OCA)](http://www.oracle.com/technetwork/community/oca-486395.html) in order to contribute code the Speedle Project   
+Contributions to Speedle+ are made under the Universal Permissive License 1.0 (UPL-1.0). Please sign off your commits to certify that you have the right to submit your contribution under the Developer Certificate of Origin (DCO) 1.1. Retain existing copyright and license notices and identify any third-party material in your pull request.
+
+Sign off each commit with `git commit -s` (see [DCO](https://github.com/teramoby/speedle-plus/blob/master/DCO) and [UPL-1.0 LICENSE](https://github.com/teramoby/speedle-plus/blob/master/LICENSE)).
 
 # User Community
 
