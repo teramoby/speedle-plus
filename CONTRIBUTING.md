@@ -31,13 +31,18 @@ If you report a bug, please include:
 
 We welcome code contributions.
 
+Contributions to Speedle+ are made under the Universal Permissive License 1.0 (UPL-1.0). Please sign off your commits to certify that you have the right to submit your contribution under the Developer Certificate of Origin (DCO) 1.1. Retain existing copyright and license notices and identify any third-party material in your pull request.
+
+Sign off each commit with `git commit -s` (see [DCO](DCO) and [UPL-1.0 LICENSE](LICENSE)), which adds a `Signed-off-by: Your Name <you@example.com>` trailer using your Git `user.name` and `user.email`. To add a sign-off to existing commits, run `git commit --amend -s` for the most recent commit or `git rebase --signoff origin/master` for a branch of commits.
+
 The process:
 
-1. Fork the repo
-2. Fix an issue or create an issue and fix it
-3. Create a Pull Request that fixes the issue
-4. Watch your PR for pipeline results. If there are failures then fix them.
-5. We will review your PR and merge as appropriate.
+1. Sign off each commit with `git commit -s` (see [DCO](DCO) and [UPL-1.0 LICENSE](LICENSE))
+2. Fork the repo
+3. Fix an issue or create an issue and fix it
+4. Create a Pull Request that fixes the issue
+5. Watch your PR for pipeline results. If there are failures then fix them.
+6. We will review your PR and merge as appropriate.
 
 Pull requests also receive an automated static ReviewBot review. Collaborators
 with write permission can request `@reviewbot review`, `@reviewbot recheck` or
