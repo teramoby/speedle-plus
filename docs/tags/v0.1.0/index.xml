@@ -17,7 +17,7 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://speedle.io/docs/api/</guid>
-      <description>SDKs Client libraries for the decision API POST /authz-check/v1/is-allowed work with a self-hosted Speedle+ ADS and with Speedle Cloud. Each page shows how to add the package and gives a complete, tested program for both.
+      <description>SDKs Client libraries for the decision API POST /authz-check/v1/is-allowed work with a self-hosted Speedle ADS and with Speedle Cloud. Each page shows how to add the package and gives a complete, tested program for both.
    Language Package Version     Java Maven Central io.speedle:speedle-sdk 0.1.0   Python PyPI speedle 0.1.0   Go github.com/teramoby/speedle-sdk/go 0.1.0   C#/.NET NuGet Speedle.Sdk 0.1.0   Rust crates.</description>
     </item>
     

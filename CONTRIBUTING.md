@@ -1,10 +1,10 @@
-# Contributing to Speedle+ Project
+# Contributing to the Speedle Project
 
 We welcome your contributions! There are multiple ways to contribute.
 
 ## Promotion
 
-If you like Speedle+ project, please let your colleagues/friends know the project. You may consider to _star_ [the project at Github](https://github.com/teramoby/SpeedlePlus). So that more people can find the project.
+If you like the Speedle project, please let your colleagues/friends know the project. You may consider to _star_ [the project at Github](https://github.com/teramoby/SpeedlePlus). So that more people can find the project.
 
 And sharing us your success story with Speedle would be greatly appreciated if you don't mind.
 
@@ -21,7 +21,7 @@ If you hit a bug or have an enhancement request then file a [GitHub issue](https
 
 If you report a bug, please include:
 
-1. Version of SpeedlePlus
+1. Version of Speedle
 2. Issue Description
 3. Reproducible Environment and Steps
 4. Expected behavior
@@ -31,7 +31,7 @@ If you report a bug, please include:
 
 We welcome code contributions.
 
-Contributions to Speedle+ are made under the Universal Permissive License 1.0 (UPL-1.0). Please sign off your commits to certify that you have the right to submit your contribution under the Developer Certificate of Origin (DCO) 1.1. Retain existing copyright and license notices and identify any third-party material in your pull request.
+Contributions to Speedle are made under the Universal Permissive License 1.0 (UPL-1.0). Please sign off your commits to certify that you have the right to submit your contribution under the Developer Certificate of Origin (DCO) 1.1. Retain existing copyright and license notices and identify any third-party material in your pull request.
 
 Sign off each commit with `git commit -s` (see [DCO](DCO) and [UPL-1.0 LICENSE](LICENSE)), which adds a `Signed-off-by: Your Name <you@example.com>` trailer using your Git `user.name` and `user.email`. To add a sign-off to existing commits, run `git commit --amend -s` for the most recent commit or `git rebase --signoff origin/master` for a branch of commits.
 

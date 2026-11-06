@@ -1,13 +1,13 @@
 +++
 title = "Go SDK"
-description = "添加 Speedle Go SDK，向本地 Speedle+ 或 Speedle Cloud 发起授权检查。"
+description = "添加 Speedle Go SDK，向本地 Speedle 或 Speedle Cloud 发起授权检查。"
 weight = 30
 draft = false
 toc = true
 tocheading = "h2"
 tags = ["api", "sdk"]
 categories = ["docs"]
-bref = "用 go get 添加 github.com/teramoby/speedle-sdk/go v0.1.0，再向本地 Speedle+ 或 Speedle Cloud 调用 IsAllowed 与 Check。"
+bref = "用 go get 添加 github.com/teramoby/speedle-sdk/go v0.1.0，再向本地 Speedle 或 Speedle Cloud 调用 IsAllowed 与 Check。"
 +++
 
 Go SDK 支持最新的两个 Go 版本，只使用标准库。模块：[`github.com/teramoby/speedle-sdk/go`](https://pkg.go.dev/github.com/teramoby/speedle-sdk/go) v0.1.0，包名 `speedle`。参考文档：[speedle-sdk/go](https://github.com/teramoby/speedle-sdk/tree/main/go)。
@@ -23,9 +23,9 @@ go mod init example.com/speedle-example
 go get github.com/teramoby/speedle-sdk/go@v0.1.0
 ```
 
-## 调用本地 Speedle+
+## 调用本地 Speedle
 
-按 [SDK](/docs/api/#sdk) 一节启动 Speedle+ 并创建示例策略。将以下程序保存为 `main.go`：
+按 [SDK](/docs/api/#sdk) 一节启动 Speedle 并创建示例策略。将以下程序保存为 `main.go`：
 
 ```go
 package main

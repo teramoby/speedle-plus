@@ -1,13 +1,13 @@
 +++
 title = "C#/.NET SDK"
-description = "添加 Speedle .NET SDK，向本地 Speedle+ 或 Speedle Cloud 发起授权检查。"
+description = "添加 Speedle .NET SDK，向本地 Speedle 或 Speedle Cloud 发起授权检查。"
 weight = 40
 draft = false
 toc = true
 tocheading = "h2"
 tags = ["api", "sdk"]
 categories = ["docs"]
-bref = "用 dotnet add package 添加 Speedle.Sdk 0.1.0，再向本地 Speedle+ 或 Speedle Cloud 调用 IsAllowedAsync 与 CheckAsync。"
+bref = "用 dotnet add package 添加 Speedle.Sdk 0.1.0，再向本地 Speedle 或 Speedle Cloud 调用 IsAllowedAsync 与 CheckAsync。"
 +++
 
 .NET SDK 面向 .NET 8 或更高版本，没有依赖。软件包：NuGet 上的 [`Speedle.Sdk`](https://www.nuget.org/packages/Speedle.Sdk) 0.1.0，命名空间 `Speedle.Sdk`。参考文档：[speedle-sdk/dotnet](https://github.com/teramoby/speedle-sdk/tree/main/dotnet)。
@@ -24,9 +24,9 @@ cd SpeedleExample
 dotnet add package Speedle.Sdk --version 0.1.0
 ```
 
-## 调用本地 Speedle+
+## 调用本地 Speedle
 
-按 [SDK](/docs/api/#sdk) 一节启动 Speedle+ 并创建示例策略。将 `Program.cs` 替换为：
+按 [SDK](/docs/api/#sdk) 一节启动 Speedle 并创建示例策略。将 `Program.cs` 替换为：
 
 ```csharp
 using Speedle.Sdk;

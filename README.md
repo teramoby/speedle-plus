@@ -20,13 +20,13 @@
 <a href="README.zh-cn.md">中文版</a>
 </p>
 
-# Speedle+
+# Speedle
 
-Speedle+ is an open-source authorization engine written in Go. Applications ask it whether a subject may perform an action on a resource, and it answers allow or deny in milliseconds from centrally managed policies, so authorization logic stays out of application code. It supports role-based (RBAC) and attribute-based (ABAC) access control; deny policies override grants, and anything not granted is denied.
+Speedle is an open-source authorization engine written in Go. Applications ask it whether a subject may perform an action on a resource, and it answers allow or deny in milliseconds from centrally managed policies, so authorization logic stays out of application code. It supports role-based (RBAC) and attribute-based (ABAC) access control; deny policies override grants, and anything not granted is denied.
 
-Speedle+ consists of the Speedle Policy Definition Language (SPDL), the Policy Management Service (PMS, the policy administration point), the Authorization Decision Service (ADS, the policy decision point, which can also be embedded in Go applications), the `spctl` command-line tool, and integration samples for Docker, Kubernetes and Istio. See the [overview](https://speedle.io/docs/overview/) for how these map to common authorization terms.
+Speedle consists of the Speedle Policy Definition Language (SPDL), the Policy Management Service (PMS, the policy administration point), the Authorization Decision Service (ADS, the policy decision point, which can also be embedded in Go applications), the `spctl` command-line tool, and integration samples for Docker, Kubernetes and Istio. See the [overview](https://speedle.io/docs/overview/) for how these map to common authorization terms.
 
-Speedle+ is based on Speedle open source project which is hosted at https://github.com/oracle/speedle under UPL.
+This project is based on the original Speedle open source project, which is hosted at https://github.com/oracle/speedle under UPL.
 
 ## Who are we
 
@@ -40,7 +40,7 @@ Latest documentations are available at <https://speedle.io/docs>.
 
 See Getting Started at <https://speedle.io/quick-start/>.
 
-Try the [Playground](https://speedle.io/playground/) to write SPDL policies and test authorization decisions directly in your browser, without installing Speedle+.
+Try the [Playground](https://speedle.io/playground/) to write SPDL policies and test authorization decisions directly in your browser, without installing Speedle.
 
 ## Embed in a Go application
 
@@ -123,7 +123,7 @@ This installs `spctl`, `speedle-pms` and `speedle-ads` into `$(go env GOPATH)/bi
 
 ### Prerequisites
 
--   Go 1.26.10 or Go 1.27.3 (or a newer patch on the same release branch) <https://go.dev/doc/install>. Speedle+ supports patched Go 1.26 and Go 1.27 releases. Go sets `GOROOT` and `GOPATH` itself.
+-   Go 1.26.10 or Go 1.27.3 (or a newer patch on the same release branch) <https://go.dev/doc/install>. Speedle supports patched Go 1.26 and Go 1.27 releases. Go sets `GOROOT` and `GOPATH` itself.
 
 ### Steps
 

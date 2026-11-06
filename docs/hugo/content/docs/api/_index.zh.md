@@ -13,7 +13,7 @@ bref = "Open API Specification Docs. Use the API to model your simple and comple
 
 ## SDK
 
-决策 API `POST /authz-check/v1/is-allowed` 的客户端库既可用于自托管的 Speedle+ ADS，也可用于 Speedle Cloud。每个页面说明如何添加软件包，并分别给出两种场景下经过实测的完整程序。
+决策 API `POST /authz-check/v1/is-allowed` 的客户端库既可用于自托管的 Speedle ADS，也可用于 Speedle Cloud。每个页面说明如何添加软件包，并分别给出两种场景下经过实测的完整程序。
 
 | 语言 | 软件包 | 版本 |
 | --- | --- | --- |
@@ -26,7 +26,7 @@ bref = "Open API Specification Docs. Use the API to model your simple and comple
 
 SDK 调用的是 `is-allowed`：`isAllowed` 返回授权结果，`check` 还会返回原因。其他决策操作（如查询已授予的权限、诊断）请使用 [REST API](/docs/api/decision_api/)。源代码和完整参考见 [teramoby/speedle-sdk](https://github.com/teramoby/speedle-sdk)。
 
-所有示例都检查服务 `docs` 中的用户 `alice` 能否对资源 `/docs/public` 执行 `get` 和 `delete`。要在本地 Speedle+ 上得到文档中的结果，先按[快速入门](/quick-start/)构建 Speedle+，在 6733 端口启动 PMS、在 6734 端口启动 ADS，然后创建服务和策略：
+所有示例都检查服务 `docs` 中的用户 `alice` 能否对资源 `/docs/public` 执行 `get` 和 `delete`。要在本地 Speedle 上得到文档中的结果，先按[快速入门](/quick-start/)构建 Speedle，在 6733 端口启动 PMS、在 6734 端口启动 ADS，然后创建服务和策略：
 
 ```bash
 ./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ create service docs

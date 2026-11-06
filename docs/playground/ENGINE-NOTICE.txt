@@ -1,6 +1,6 @@
 SPEEDLE PLAYGROUND ENGINE
 
-This playground compiles the actual, unmodified Speedle+ Go parser and evaluation
+This playground compiles the actual, unmodified Speedle Go parser and evaluation
 library to WebAssembly. It is not a JavaScript reimplementation or production
 policy enforcement point.
 
@@ -21,7 +21,7 @@ BOUNDARIES
 - One SPDL statement per line; blank lines and full-line # or // comments ignored.
 - Policies, role policies, deny overrides, principal AND/OR, identity domains,
   built-in roles, resource regular expressions, conditions and the six standard
-  built-in functions run through Speedle+ itself.
+  built-in functions run through Speedle itself.
 - The wrapper accepts REST-style typed attributes [{name,type,value}].
 - No remote custom functions, token assertion, persistent stores, discovery,
   multiple services/global role-store configuration or external ADS connection.

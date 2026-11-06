@@ -4,16 +4,16 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#25134e">
-  <meta name="description" content="Try real Speedle+ authorization in your browser. Write SPDL policies, fill out a request and evaluate RBAC and ABAC decisions locally with WebAssembly.">
+  <meta name="description" content="Try real Speedle authorization in your browser. Write SPDL policies, fill out a request and evaluate RBAC and ABAC decisions locally with WebAssembly.">
   <link rel="canonical" href="https://speedle.io/zh/playground/">
   <link rel="alternate" hreflang="en" href="https://speedle.io/playground/">
   <link rel="alternate" hreflang="zh-CN" href="https://speedle.io/zh/playground/">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Speedle Authorization Engine">
-  <meta property="og:title" content="Speedle+ Playground">
-  <meta property="og:description" content="Write policies. Test requests. Evaluate real Speedle+ authorization locally in your browser.">
+  <meta property="og:title" content="Speedle Playground">
+  <meta property="og:description" content="Write policies. Test requests. Evaluate real Speedle authorization locally in your browser.">
   <meta property="og:url" content="https://speedle.io/zh/playground/">
-  <title>策略实验室 | Speedle+ 权限控制引擎</title>
+  <title>策略实验室 | Speedle 权限控制引擎</title>
   <link rel="icon" type="image/png" sizes="1024x1024" href="https://speedle.io/images/speedle_purple.png">
   <link rel="stylesheet" href="/css/site.css">
   <link rel="stylesheet" href="/css/navigation.css?v=header-20261027">
@@ -88,7 +88,7 @@
     <details class="quick-reference"><summary><span><svg class="icon"><use href="#i-book"/></svg>刚开始使用 SPDL？<span class="reference-teaser">一分钟快速参考</span></span><span class="expand-indicator">+</span></summary><div class="reference-grid"><div><h3>编写策略</h3><code>grant user alice read book</code><p>依次填写授权效果、身份类型、身份、操作和资源。每行是一条语句； <code>deny</code> 明确拒绝访问。</p></div><div><h3>添加条件</h3><code>grant user alice read book if clearance &gt;= 3</code><p>添加属性并选择类型；可使用多个值组成数组。加载“条件表达式”示例即可尝试。</p></div><div><h3>查看结果</h3><p><strong class="allow-text">true</strong> — 请求被允许。<br><strong class="deny-text">false</strong> — 明确拒绝访问，或没有匹配的授权策略。<br>输入与执行错误会单独显示，不会作为 false 授权结果。</p><a href="/zh/docs/spdl/" target="_blank" rel="noopener noreferrer">完整 SPDL 文档 ↗</a></div></div></details>
     <p class="sandbox-note"><strong>浏览器沙箱</strong> 单个服务 · 最多 500 条语句 · 输入总量 256 KiB · 评估时限 5 秒。<span>不支持外部自定义函数和令牌断言。请在“主体”下填写测试身份。</span></p>
 
-    <p class="engine-credit">由 Speedle+ 驱动 · Go + WebAssembly · <a href="/playground/ENGINE-NOTICE.txt">引擎和许可证声明</a> · <a href="https://github.com/teramoby/speedle-plus/tree/master/website/playground-engine">源码和构建说明</a></p>
+    <p class="engine-credit">由 Speedle 驱动 · Go + WebAssembly · <a href="/playground/ENGINE-NOTICE.txt">引擎和许可证声明</a> · <a href="https://github.com/teramoby/speedle-plus/tree/master/website/playground-engine">源码和构建说明</a></p>
     </div>
   </main>
   <footer>

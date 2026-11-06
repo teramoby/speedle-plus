@@ -37,7 +37,7 @@ Please include:
 
 ## Code
 
-Contributions to Speedle+ are made under the Universal Permissive License 1.0 (UPL-1.0). Please sign off your commits to certify that you have the right to submit your contribution under the Developer Certificate of Origin (DCO) 1.1. Retain existing copyright and license notices and identify any third-party material in your pull request.
+Contributions to Speedle are made under the Universal Permissive License 1.0 (UPL-1.0). Please sign off your commits to certify that you have the right to submit your contribution under the Developer Certificate of Origin (DCO) 1.1. Retain existing copyright and license notices and identify any third-party material in your pull request.
 
 Go through the process below to contribute the codes:
 

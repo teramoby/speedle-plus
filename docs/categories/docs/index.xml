@@ -17,7 +17,7 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://speedle.io/docs/api/</guid>
-      <description>SDKs Client libraries for the decision API POST /authz-check/v1/is-allowed work with a self-hosted Speedle+ ADS and with Speedle Cloud. Each page shows how to add the package and gives a complete, tested program for both.
+      <description>SDKs Client libraries for the decision API POST /authz-check/v1/is-allowed work with a self-hosted Speedle ADS and with Speedle Cloud. Each page shows how to add the package and gives a complete, tested program for both.
    Language Package Version     Java Maven Central io.speedle:speedle-sdk 0.1.0   Python PyPI speedle 0.1.0   Go github.com/teramoby/speedle-sdk/go 0.1.0   C#/.NET NuGet Speedle.Sdk 0.1.0   Rust crates.</description>
     </item>
     
@@ -92,7 +92,7 @@ Before running the examples Build ./bin/spctl, ./bin/speedle-pms and ./bin/speed
       <description>The Go SDK supports the two latest Go releases and uses only the standard library. Module: github.com/teramoby/speedle-sdk/go v0.1.0, package speedle. Reference: speedle-sdk/go.
 The examples check the policy described in SDKs.
 Add the dependency In a new module:
-go mod init example.com/speedle-example go get github.com/teramoby/speedle-sdk/go@v0.1.0 Call a local Speedle+ Start Speedle+ and create the example policy as described in SDKs. Save this program as main.go:
+go mod init example.com/speedle-example go get github.com/teramoby/speedle-sdk/go@v0.1.0 Call a local Speedle Start Speedle and create the example policy as described in SDKs. Save this program as main.go:
 package main import ( &amp;#34;context&amp;#34; &amp;#34;fmt&amp;#34; &amp;#34;os&amp;#34; speedle &amp;#34;github.</description>
     </item>
     
@@ -147,7 +147,7 @@ MongoDB must run as a replica set or sharded cluster. ADS watches the database w
       <description>The Node.js SDK needs Node.js 22 or later, ships ESM and CommonJS builds with TypeScript types, and has no runtime dependencies. Package: @speedle/sdk 0.1.0 on npm, available when published. Reference: speedle-sdk/node.
 The examples check the policy described in SDKs.
 Add the dependency In a new ES module package (available when published):
-mkdir speedle-example cd speedle-example npm init -y npm pkg set type=module npm install @speedle/sdk@0.1.0 Call a local Speedle+ Start Speedle+ and create the example policy as described in SDKs.</description>
+mkdir speedle-example cd speedle-example npm init -y npm pkg set type=module npm install @speedle/sdk@0.1.0 Call a local Speedle Start Speedle and create the example policy as described in SDKs.</description>
     </item>
     
     <item>
@@ -199,8 +199,8 @@ TLS encrypts the connection and authenticates the server. To require authenticat
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://speedle.io/docs/versions/</guid>
-      <description>Speedle+ releases Use the GitHub Releases page for published versions and release notes. v1.6.0 is the version pinned by the current embedded Go walkthrough. Use an explicit released version for reproducible module dependencies; the embedded guide explains the setup.
-Historical Oracle Speedle release Version 0.1.0 was the original open-source release, including policy management, authorization decisions, the command-line tool and integration samples. The historical 0.2.0 planning note is not the current Speedle+ release roadmap.</description>
+      <description>Speedle releases Use the GitHub Releases page for published versions and release notes. v1.6.0 is the version pinned by the current embedded Go walkthrough. Use an explicit released version for reproducible module dependencies; the embedded guide explains the setup.
+Historical Oracle Speedle release Version 0.1.0 was the original open-source release, including policy management, authorization decisions, the command-line tool and integration samples. The historical 0.2.0 planning note is not the current Speedle release roadmap.</description>
     </item>
     
     <item>
@@ -301,7 +301,7 @@ Represent domains in policies and requests grant user user1 from github read boo
       <description>The .NET SDK targets .NET 8 or later and has no dependencies. Package: Speedle.Sdk 0.1.0 on NuGet, namespace Speedle.Sdk. Reference: speedle-sdk/dotnet.
 The examples check the policy described in SDKs.
 Add the dependency In a new console project:
-dotnet new console -o SpeedleExample cd SpeedleExample dotnet add package Speedle.Sdk --version 0.1.0 Call a local Speedle+ Start Speedle+ and create the example policy as described in SDKs. Replace Program.cs with:
+dotnet new console -o SpeedleExample cd SpeedleExample dotnet add package Speedle.Sdk --version 0.1.0 Call a local Speedle Start Speedle and create the example policy as described in SDKs. Replace Program.cs with:
 using Speedle.</description>
     </item>
     
@@ -314,7 +314,7 @@ using Speedle.</description>
       <description>The Rust SDK needs Rust 1.75 or later. It is async on tokio and reqwest (rustls); the blocking feature adds the blocking client used below. Crate: speedle 0.1.0 on crates.io. Reference: speedle-sdk/rust.
 The examples check the policy described in SDKs.
 Add the dependency In a new package:
-cargo new speedle-example cd speedle-example cargo add speedle@0.1.0 --features blocking Call a local Speedle+ Start Speedle+ and create the example policy as described in SDKs.</description>
+cargo new speedle-example cd speedle-example cargo add speedle@0.1.0 --features blocking Call a local Speedle Start Speedle and create the example policy as described in SDKs.</description>
     </item>
     
     <item>

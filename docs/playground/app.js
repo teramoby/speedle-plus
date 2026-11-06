@@ -111,7 +111,7 @@ async function loadEngine() {
   try {
     engine = await import('./engine.js');
     const metadata = await engine.initEngine(); ready=true;
-    $('engine-status').title = `${metadata.engine || 'Speedle+'} · ${metadata.revision?.slice(0,7) || ''} · ${metadata.runtime || 'WebAssembly'}`;
+    $('engine-status').title = `${metadata.engine || 'Speedle'} · ${metadata.revision?.slice(0,7) || ''} · ${metadata.runtime || 'WebAssembly'}`;
     if(engineErrorVisible) resetResult();
     $('engine-text').textContent=t('WebAssembly · Ready'); $('engine-status').firstElementChild.className='status-dot';
   } catch(error) {
@@ -143,7 +143,7 @@ async function evaluate() {
     const codeReasons={0:reasons.GRANT_POLICY_FOUND,1:reasons.DENY_POLICY_FOUND,2:reasons.SERVICE_NOT_FOUND,3:reasons.NO_APPLICABLE_POLICIES};
     $('result-description').textContent=reasons[result.reason] || codeReasons[result.reasonCode] || (result.allowed?t('This request is allowed.'):t('This request is not allowed.'));
     $('result-type').textContent=result.allowed?t('ACCESS GRANTED'):t('ACCESS DENIED');
-    $('result-meta').textContent=`Speedle+ · ${typeof result.durationMs==='number'?`${result.durationMs.toFixed(2)} ms`:t('Evaluation complete')}`;
+    $('result-meta').textContent=`Speedle · ${typeof result.durationMs==='number'?`${result.durationMs.toFixed(2)} ms`:t('Evaluation complete')}`;
     showRaw(result);
   } catch(error) {
     ready=false;

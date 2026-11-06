@@ -17,9 +17,9 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://speedle.io/zh/docs/api/</guid>
-      <description>SDK 决策 API POST /authz-check/v1/is-allowed 的客户端库既可用于自托管的 Speedle+ ADS，也可用于 Speedle Cloud。每个页面说明如何添加软件包，并分别给出两种场景下经过实测的完整程序。
+      <description>SDK 决策 API POST /authz-check/v1/is-allowed 的客户端库既可用于自托管的 Speedle ADS，也可用于 Speedle Cloud。每个页面说明如何添加软件包，并分别给出两种场景下经过实测的完整程序。
    语言 软件包 版本     Java Maven Central io.speedle:speedle-sdk 0.1.0   Python PyPI speedle 0.1.0   Go github.com/teramoby/speedle-sdk/go 0.1.0   C#/.NET NuGet Speedle.Sdk 0.1.0   Rust crates.io speedle 0.1.0   Node.js/TypeScript npm @speedle/sdk 0.1.0，发布后可用    SDK 调用的是 is-allowed：isAllowed 返回授权结果，check 还会返回原因。其他决策操作（如查询已授予的权限、诊断）请使用 REST API。源代码和完整参考见 teramoby/speedle-sdk。
-所有示例都检查服务 docs 中的用户 alice 能否对资源 /docs/public 执行 get 和 delete。要在本地 Speedle+ 上得到文档中的结果，先按快速入门构建 Speedle+，在 6733 端口启动 PMS、在 6734 端口启动 ADS，然后创建服务和策略：</description>
+所有示例都检查服务 docs 中的用户 alice 能否对资源 /docs/public 执行 get 和 delete。要在本地 Speedle 上得到文档中的结果，先按快速入门构建 Speedle，在 6733 端口启动 PMS、在 6734 端口启动 ADS，然后创建服务和策略：</description>
     </item>
     
     <item>

@@ -1,13 +1,13 @@
 +++
 title = "Java SDK"
-description = "Add the Speedle Java SDK and check authorization against a local Speedle+ or Speedle Cloud."
+description = "Add the Speedle Java SDK and check authorization against a local Speedle or Speedle Cloud."
 weight = 10
 draft = false
 toc = true
 tocheading = "h2"
 tags = ["api", "sdk"]
 categories = ["docs"]
-bref = "Add io.speedle:speedle-sdk 0.1.0 with Maven or Gradle, then call isAllowed and check against a local Speedle+ or Speedle Cloud."
+bref = "Add io.speedle:speedle-sdk 0.1.0 with Maven or Gradle, then call isAllowed and check against a local Speedle or Speedle Cloud."
 +++
 
 The Java SDK needs Java 17 or later and has no runtime dependencies. Package: [`io.speedle:speedle-sdk`](https://central.sonatype.com/artifact/io.speedle/speedle-sdk) 0.1.0 on Maven Central. Reference: [speedle-sdk/java](https://github.com/teramoby/speedle-sdk/tree/main/java).
@@ -63,9 +63,9 @@ application {
 }
 ```
 
-## Call a local Speedle+
+## Call a local Speedle
 
-Start Speedle+ and create the example policy as described in [SDKs](/docs/api/#sdks). Save this program as `src/main/java/Main.java`:
+Start Speedle and create the example policy as described in [SDKs](/docs/api/#sdks). Save this program as `src/main/java/Main.java`:
 
 ```java
 import io.speedle.sdk.Auth;

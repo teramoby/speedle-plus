@@ -62,7 +62,7 @@
 
 <h2 id="sdks">SDKs</h2>
 
-<p>Client libraries for the decision API <code>POST /authz-check/v1/is-allowed</code> work with a self-hosted Speedle+ ADS and with Speedle Cloud. Each page shows how to add the package and gives a complete, tested program for both.</p>
+<p>Client libraries for the decision API <code>POST /authz-check/v1/is-allowed</code> work with a self-hosted Speedle ADS and with Speedle Cloud. Each page shows how to add the package and gives a complete, tested program for both.</p>
 
 <table>
 <thead>
@@ -114,7 +114,7 @@
 
 <p>The SDKs call <code>is-allowed</code>: <code>isAllowed</code> returns the decision, and <code>check</code> also returns the reason. For the other decision operations, such as granted permissions and diagnosis, use the <a href="/docs/api/decision_api/">REST API</a>. The source and the full reference are in <a href="https://github.com/teramoby/speedle-sdk">teramoby/speedle-sdk</a>.</p>
 
-<p>Every example asks whether user <code>alice</code> may <code>get</code> and <code>delete</code> the resource <code>/docs/public</code> in the service <code>docs</code>. To get the documented answers from a local Speedle+, build it and start PMS on port 6733 and ADS on port 6734 as in the <a href="/quick-start/">Quick Start</a>, then create the service and the policy:</p>
+<p>Every example asks whether user <code>alice</code> may <code>get</code> and <code>delete</code> the resource <code>/docs/public</code> in the service <code>docs</code>. To get the documented answers from a local Speedle, build it and start PMS on port 6733 and ADS on port 6734 as in the <a href="/quick-start/">Quick Start</a>, then create the service and the policy:</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ create service docs
 ./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ create policy -c <span style="color:#f1fa8c">&#34;grant user alice get,list /docs/public&#34;</span> --service-name<span style="color:#ff79c6">=</span>docs</code></pre></div>
 <p>The local examples connect to <code>http://localhost:6734</code> without credentials. The SDKs accept plain <code>http://</code> only for a loopback host; use HTTPS for any other ADS.</p>

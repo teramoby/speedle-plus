@@ -13,7 +13,7 @@ bref = "Open API Specification Docs. Use the API to model your simple and comple
 
 ## SDKs
 
-Client libraries for the decision API `POST /authz-check/v1/is-allowed` work with a self-hosted Speedle+ ADS and with Speedle Cloud. Each page shows how to add the package and gives a complete, tested program for both.
+Client libraries for the decision API `POST /authz-check/v1/is-allowed` work with a self-hosted Speedle ADS and with Speedle Cloud. Each page shows how to add the package and gives a complete, tested program for both.
 
 | Language | Package | Version |
 | --- | --- | --- |
@@ -26,7 +26,7 @@ Client libraries for the decision API `POST /authz-check/v1/is-allowed` work wit
 
 The SDKs call `is-allowed`: `isAllowed` returns the decision, and `check` also returns the reason. For the other decision operations, such as granted permissions and diagnosis, use the [REST API](/docs/api/decision_api/). The source and the full reference are in [teramoby/speedle-sdk](https://github.com/teramoby/speedle-sdk).
 
-Every example asks whether user `alice` may `get` and `delete` the resource `/docs/public` in the service `docs`. To get the documented answers from a local Speedle+, build it and start PMS on port 6733 and ADS on port 6734 as in the [Quick Start](/quick-start/), then create the service and the policy:
+Every example asks whether user `alice` may `get` and `delete` the resource `/docs/public` in the service `docs`. To get the documented answers from a local Speedle, build it and start PMS on port 6733 and ADS on port 6734 as in the [Quick Start](/quick-start/), then create the service and the policy:
 
 ```bash
 ./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ create service docs

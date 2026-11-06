@@ -62,7 +62,7 @@
 
 <h2 id="sdk">SDK</h2>
 
-<p>决策 API <code>POST /authz-check/v1/is-allowed</code> 的客户端库既可用于自托管的 Speedle+ ADS，也可用于 Speedle Cloud。每个页面说明如何添加软件包，并分别给出两种场景下经过实测的完整程序。</p>
+<p>决策 API <code>POST /authz-check/v1/is-allowed</code> 的客户端库既可用于自托管的 Speedle ADS，也可用于 Speedle Cloud。每个页面说明如何添加软件包，并分别给出两种场景下经过实测的完整程序。</p>
 
 <table>
 <thead>
@@ -114,7 +114,7 @@
 
 <p>SDK 调用的是 <code>is-allowed</code>：<code>isAllowed</code> 返回授权结果，<code>check</code> 还会返回原因。其他决策操作（如查询已授予的权限、诊断）请使用 <a href="/zh/docs/api/decision_api/">REST API</a>。源代码和完整参考见 <a href="https://github.com/teramoby/speedle-sdk">teramoby/speedle-sdk</a>。</p>
 
-<p>所有示例都检查服务 <code>docs</code> 中的用户 <code>alice</code> 能否对资源 <code>/docs/public</code> 执行 <code>get</code> 和 <code>delete</code>。要在本地 Speedle+ 上得到文档中的结果，先按<a href="/zh/quick-start/">快速入门</a>构建 Speedle+，在 6733 端口启动 PMS、在 6734 端口启动 ADS，然后创建服务和策略：</p>
+<p>所有示例都检查服务 <code>docs</code> 中的用户 <code>alice</code> 能否对资源 <code>/docs/public</code> 执行 <code>get</code> 和 <code>delete</code>。要在本地 Speedle 上得到文档中的结果，先按<a href="/zh/quick-start/">快速入门</a>构建 Speedle，在 6733 端口启动 PMS、在 6734 端口启动 ADS，然后创建服务和策略：</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ create service docs
 ./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ create policy -c <span style="color:#f1fa8c">&#34;grant user alice get,list /docs/public&#34;</span> --service-name<span style="color:#ff79c6">=</span>docs</code></pre></div>
 <p>本地示例以无凭据方式连接 <code>http://localhost:6734</code>。SDK 只对回环地址接受明文 <code>http://</code>；连接其他 ADS 时请使用 HTTPS。</p>
