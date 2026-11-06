@@ -2,6 +2,7 @@
 title = "Node.js/TypeScript SDK"
 description = "添加 Speedle Node.js/TypeScript SDK，向本地 Speedle 或 Speedle Cloud 发起授权检查。"
 weight = 60
+aliases = ["/zh/docs/api/sdk-node/"]
 draft = false
 toc = true
 tocheading = "h2"
@@ -12,7 +13,7 @@ bref = "@speedle/sdk 0.1.0 发布后用 npm 安装，再向本地 Speedle 或 Sp
 
 Node.js SDK 需要 Node.js 22 或更高版本，同时提供 ESM 和 CommonJS 构建及 TypeScript 类型，没有运行时依赖。软件包：npm 上的 [`@speedle/sdk`](https://www.npmjs.com/package/@speedle/sdk) 0.1.0，**发布后可用**。参考文档：[speedle-sdk/node](https://github.com/teramoby/speedle-sdk/tree/main/node)。
 
-示例检查的策略见 [SDK](/docs/api/#sdk)。
+示例检查的策略见 [SDK 概览](/docs/sdks/#示例策略)。
 
 ## 添加依赖
 
@@ -28,7 +29,7 @@ npm install @speedle/sdk@0.1.0
 
 ## 调用本地 Speedle
 
-按 [SDK](/docs/api/#sdk) 一节启动 Speedle 并创建示例策略。将以下程序保存为 `main.ts`：
+按 [SDK 概览](/docs/sdks/#示例策略)中的说明启动 Speedle 并创建示例策略。将以下程序保存为 `main.ts`：
 
 ```typescript
 import { Auth, Reason, SpeedleClient, SpeedleError } from "@speedle/sdk";
@@ -117,3 +118,7 @@ alice delete /docs/public: allowed=false reason=NoApplicablePolicies
 ```
 
 令牌是服务端密钥，切勿放进浏览器、移动应用或桌面客户端。
+
+## 错误处理
+
+请求被拒绝不是错误：`isAllowed` 解析为 `false`，`check` 解析为 `allowed` 为 false 的结果及原因，如上文的 `delete` 调用。在默认设置下，调用无法得出授权结果时，Promise 以 `SpeedleError` 拒绝。示例捕获该错误，向标准错误输出 `Speedle error: <消息>`，并设置 `process.exitCode = 1`；其他错误会重新抛出。

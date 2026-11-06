@@ -1,31 +1,32 @@
 +++
 title = "Go SDK"
-description = "添加 Speedle Go SDK，向本地 Speedle 或 Speedle Cloud 发起授权检查。"
+description = "Add the Speedle Go SDK and check authorization against a local Speedle or Speedle Cloud."
 weight = 30
+aliases = ["/docs/api/sdk-go/"]
 draft = false
 toc = true
 tocheading = "h2"
 tags = ["api", "sdk"]
 categories = ["docs"]
-bref = "用 go get 添加 github.com/teramoby/speedle-sdk/go v0.1.0，再向本地 Speedle 或 Speedle Cloud 调用 IsAllowed 与 Check。"
+bref = "Add github.com/teramoby/speedle-sdk/go v0.1.0 with go get, then call IsAllowed and Check against a local Speedle or Speedle Cloud."
 +++
 
-Go SDK 支持最新的两个 Go 版本，只使用标准库。模块：[`github.com/teramoby/speedle-sdk/go`](https://pkg.go.dev/github.com/teramoby/speedle-sdk/go) v0.1.0，包名 `speedle`。参考文档：[speedle-sdk/go](https://github.com/teramoby/speedle-sdk/tree/main/go)。
+The Go SDK supports the two latest Go releases and uses only the standard library. Module: [`github.com/teramoby/speedle-sdk/go`](https://pkg.go.dev/github.com/teramoby/speedle-sdk/go) v0.1.0, package `speedle`. Reference: [speedle-sdk/go](https://github.com/teramoby/speedle-sdk/tree/main/go).
 
-示例检查的策略见 [SDK](/docs/api/#sdk)。
+The examples check the policy described in the [SDKs overview](/docs/sdks/#example-policy).
 
-## 添加依赖
+## Add the dependency
 
-在新模块中执行：
+In a new module:
 
 ```bash
 go mod init example.com/speedle-example
 go get github.com/teramoby/speedle-sdk/go@v0.1.0
 ```
 
-## 调用本地 Speedle
+## Call a local Speedle
 
-按 [SDK](/docs/api/#sdk) 一节启动 Speedle 并创建示例策略。将以下程序保存为 `main.go`：
+Start Speedle and create the example policy as described in the [SDKs overview](/docs/sdks/#example-policy). Save this program as `main.go`:
 
 ```go
 package main
@@ -68,24 +69,24 @@ func main() {
 }
 ```
 
-运行：
+Run it:
 
 ```bash
 go run .
 ```
 
-输出：
+Output:
 
 ```text
 alice get /docs/public: allowed=true
 alice delete /docs/public: allowed=false reason=NO_APPLICABLE_POLICIES
 ```
 
-## 调用 Speedle Cloud
+## Call Speedle Cloud
 
-> **Speedle Cloud 即将上线。**
+> **Speedle Cloud is coming soon.**
 
-程序从 `SPEEDLE_SERVICE` 读取服务名，从 `SPEEDLE_TOKEN` 读取该服务的令牌。`SPEEDLE_ENDPOINT` 可覆盖默认端点 `https://cloud.speedle.io`。将 `main.go` 替换为：
+The program reads the service name from `SPEEDLE_SERVICE` and the service's token from `SPEEDLE_TOKEN`. `SPEEDLE_ENDPOINT` overrides the default endpoint `https://cloud.speedle.io`. Replace `main.go` with:
 
 ```go
 package main
@@ -132,7 +133,7 @@ func main() {
 }
 ```
 
-设置环境变量后运行。`read -rs` 不会把令牌写入 shell 历史，也不会显示在屏幕上：
+Set the environment and run it. `read -rs` keeps the token out of your shell history and screen:
 
 ```bash
 export SPEEDLE_SERVICE=docs
@@ -140,11 +141,15 @@ read -rs SPEEDLE_TOKEN && export SPEEDLE_TOKEN
 go run .
 ```
 
-服务中已有示例策略时，输出为：
+Output, when the service has the example policy:
 
 ```text
 alice get /docs/public: allowed=true
 alice delete /docs/public: allowed=false reason=NO_APPLICABLE_POLICIES
 ```
 
-令牌是服务端密钥，切勿放进浏览器、移动应用或桌面客户端。
+The token is a server-side secret. Never ship it to browsers, mobile apps or desktop clients.
+
+## Error handling
+
+A denied request is not an error: `IsAllowed` returns `false`, and `Check` returns a decision with `Allowed` false and the reason, as in the `delete` call above. With the default settings, when a call cannot return a decision, it returns a non-nil `error` (`NewClient` does the same for an invalid configuration). The examples print `Speedle error: <message>` to standard error and exit with status 1.

@@ -2,6 +2,7 @@
 title = "Python SDK"
 description = "Add the Speedle Python SDK and check authorization against a local Speedle or Speedle Cloud."
 weight = 20
+aliases = ["/docs/api/sdk-python/"]
 draft = false
 toc = true
 tocheading = "h2"
@@ -12,7 +13,7 @@ bref = "Install speedle 0.1.0 with pip or uv, then call is_allowed and check aga
 
 The Python SDK needs Python 3.10 or later; its only runtime dependency is `httpx`. It has a sync `Client` and an asyncio `AsyncClient` with the same arguments. Package: [`speedle`](https://pypi.org/project/speedle/) 0.1.0 on PyPI. Reference: [speedle-sdk/python](https://github.com/teramoby/speedle-sdk/tree/main/python).
 
-The examples check the policy described in [SDKs](/docs/api/#sdks).
+The examples check the policy described in the [SDKs overview](/docs/sdks/#example-policy).
 
 ## Add the dependency
 
@@ -32,7 +33,7 @@ uv add speedle==0.1.0
 
 ## Call a local Speedle
 
-Start Speedle and create the example policy as described in [SDKs](/docs/api/#sdks). Save this program as `main.py`:
+Start Speedle and create the example policy as described in the [SDKs overview](/docs/sdks/#example-policy). Save this program as `main.py`:
 
 ```python
 import sys
@@ -114,3 +115,7 @@ alice delete /docs/public: allowed=False reason=<Reason.NO_APPLICABLE_POLICIES: 
 ```
 
 The token is a server-side secret. Never ship it to browsers, mobile apps or desktop clients.
+
+## Error handling
+
+A denied request is not an error: `is_allowed` returns `False`, and `check` returns a decision with `allowed` false and the reason, as in the `delete` call above. With the default settings, when a call cannot return a decision, the SDK raises `SpeedleError`. The examples catch it, print `Speedle error: <message>` to standard error and exit with status 1.

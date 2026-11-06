@@ -146,16 +146,16 @@
   </url>
   
   <url>
-    <loc>https://engine.speedle.io/docs/api/sdk-java/</loc>
+    <loc>https://engine.speedle.io/docs/sdks/java/</loc>
     <xhtml:link
                 rel="alternate"
                 hreflang="zh"
-                href="https://engine.speedle.io/zh/docs/api/sdk-java/"
+                href="https://engine.speedle.io/zh/docs/sdks/java/"
                 />
     <xhtml:link
                 rel="alternate"
                 hreflang="en"
-                href="https://engine.speedle.io/docs/api/sdk-java/"
+                href="https://engine.speedle.io/docs/sdks/java/"
                 />
   </url>
   
@@ -217,16 +217,16 @@
   </url>
   
   <url>
-    <loc>https://engine.speedle.io/docs/api/sdk-python/</loc>
+    <loc>https://engine.speedle.io/docs/sdks/python/</loc>
     <xhtml:link
                 rel="alternate"
                 hreflang="zh"
-                href="https://engine.speedle.io/zh/docs/api/sdk-python/"
+                href="https://engine.speedle.io/zh/docs/sdks/python/"
                 />
     <xhtml:link
                 rel="alternate"
                 hreflang="en"
-                href="https://engine.speedle.io/docs/api/sdk-python/"
+                href="https://engine.speedle.io/docs/sdks/python/"
                 />
   </url>
   
@@ -274,16 +274,16 @@
   </url>
   
   <url>
-    <loc>https://engine.speedle.io/docs/api/sdk-go/</loc>
+    <loc>https://engine.speedle.io/docs/sdks/go/</loc>
     <xhtml:link
                 rel="alternate"
                 hreflang="zh"
-                href="https://engine.speedle.io/zh/docs/api/sdk-go/"
+                href="https://engine.speedle.io/zh/docs/sdks/go/"
                 />
     <xhtml:link
                 rel="alternate"
                 hreflang="en"
-                href="https://engine.speedle.io/docs/api/sdk-go/"
+                href="https://engine.speedle.io/docs/sdks/go/"
                 />
   </url>
   
@@ -317,30 +317,30 @@
   </url>
   
   <url>
-    <loc>https://engine.speedle.io/docs/api/sdk-dotnet/</loc>
+    <loc>https://engine.speedle.io/docs/sdks/dotnet/</loc>
     <xhtml:link
                 rel="alternate"
                 hreflang="zh"
-                href="https://engine.speedle.io/zh/docs/api/sdk-dotnet/"
+                href="https://engine.speedle.io/zh/docs/sdks/dotnet/"
                 />
     <xhtml:link
                 rel="alternate"
                 hreflang="en"
-                href="https://engine.speedle.io/docs/api/sdk-dotnet/"
+                href="https://engine.speedle.io/docs/sdks/dotnet/"
                 />
   </url>
   
   <url>
-    <loc>https://engine.speedle.io/docs/api/sdk-rust/</loc>
+    <loc>https://engine.speedle.io/docs/sdks/rust/</loc>
     <xhtml:link
                 rel="alternate"
                 hreflang="zh"
-                href="https://engine.speedle.io/zh/docs/api/sdk-rust/"
+                href="https://engine.speedle.io/zh/docs/sdks/rust/"
                 />
     <xhtml:link
                 rel="alternate"
                 hreflang="en"
-                href="https://engine.speedle.io/docs/api/sdk-rust/"
+                href="https://engine.speedle.io/docs/sdks/rust/"
                 />
   </url>
   
@@ -374,16 +374,16 @@
   </url>
   
   <url>
-    <loc>https://engine.speedle.io/docs/api/sdk-node/</loc>
+    <loc>https://engine.speedle.io/docs/sdks/node/</loc>
     <xhtml:link
                 rel="alternate"
                 hreflang="zh"
-                href="https://engine.speedle.io/zh/docs/api/sdk-node/"
+                href="https://engine.speedle.io/zh/docs/sdks/node/"
                 />
     <xhtml:link
                 rel="alternate"
                 hreflang="en"
-                href="https://engine.speedle.io/docs/api/sdk-node/"
+                href="https://engine.speedle.io/docs/sdks/node/"
                 />
   </url>
   
@@ -455,6 +455,20 @@
                 rel="alternate"
                 hreflang="en"
                 href="https://engine.speedle.io/integrations/istio/"
+                />
+  </url>
+  
+  <url>
+    <loc>https://engine.speedle.io/docs/sdks/</loc>
+    <xhtml:link
+                rel="alternate"
+                hreflang="zh"
+                href="https://engine.speedle.io/zh/docs/sdks/"
+                />
+    <xhtml:link
+                rel="alternate"
+                hreflang="en"
+                href="https://engine.speedle.io/docs/sdks/"
                 />
   </url>
   
