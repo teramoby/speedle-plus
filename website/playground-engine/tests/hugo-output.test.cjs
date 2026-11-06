@@ -52,7 +52,27 @@ for (const name of ['docs/index.html', 'zh/docs/index.html', 'docs/spdl/index.ht
   assert.ok(navigation.includes(`href="/${zh ? 'zh/' : ''}#features"`), `Features returns to localized homepage from ${name}`);
   assert.ok(html.includes('/css/navigation.css?v=header-20261106-v8') && html.includes('/js/navigation.js?v=header-20261106-v8'), `Shared versioned navigation assets in ${name}`);
 }
-console.log('PASS Hugo 0.48 output: editor, navigation, sitemap and matching release assets');
+// #203: every page with the shared footer loads navigation.css, the stylesheet that holds the footer rules.
+const footerRules = fs.readFileSync(path.join(output, 'css/navigation.css'), 'utf8');
+assert.ok(footerRules.includes('html body footer.site-footer {') && footerRules.includes('.site-footer .footer-inner {'), 'navigation.css holds the shared footer rules');
+let footerPages = 0;
+(function walk(dir) {
+  for (const entry of fs.readdirSync(dir, {withFileTypes: true})) {
+    const file = path.join(dir, entry.name);
+    if (entry.isDirectory()) walk(file);
+    else if (entry.name.endsWith('.html')) {
+      const html = fs.readFileSync(file, 'utf8');
+      if (!html.includes('<footer class="site-footer">')) continue;
+      footerPages++;
+      assert.ok(html.includes('/css/navigation.css?v=header-20261106-v8'), `Footer stylesheet linked in ${path.relative(output, file)}`);
+    }
+  }
+})(output);
+for (const name of ['docs/api/sdk-java/index.html', 'zh/docs/api/sdk-java/index.html', 'docs/api/index.html', 'docs/spdl/index.html']) {
+  assert.ok(fs.readFileSync(path.join(output, name), 'utf8').includes('<footer class="site-footer">'), `Shared footer in ${name}`);
+}
+assert.ok(footerPages > 200, `Footer pages checked: ${footerPages}`);
+console.log('PASS Hugo 0.48 output: editor, navigation, sitemap, footer stylesheet and matching release assets');
 
 // Every documentation sidebar must retain its complete section tree. A shared
 // Page.Scratch value can expose an incomplete tree during parallel Hugo renders.
