@@ -217,8 +217,7 @@ body.page-kube > header.site-header:lang(zh) {
 .site-header .product-desc { color: rgba(255,255,255,.72); font-size: 13px; font-weight: 400; line-height: 1.4; }
 .site-header .product-check { display: block; flex: 0 0 16px; color: #01e7cb; }
 .site-header .product-badge,
-.site-footer .product-badge,
-.hero-family .product-badge {
+.site-footer .product-badge {
   display: inline-block;
   margin-left: 6px;
   padding: 1px 7px;
@@ -316,7 +315,3 @@ html .site-footer .social img { width: 24px; height: 24px; margin: 0; }
 @media (max-width: 700px) {
   .site-footer .footer-inner { width: min(100% - 28px, 1160px); }
 }
-/* Contextual family links on the Engine homepage hero. */
-.hero-family { display: flex; flex-wrap: wrap; gap: 8px 24px; margin: 22px 0 0; font-size: .94rem; font-weight: 600; }
-.hero-family a { color: rgba(255,255,255,.86); text-decoration: none; }
-.hero-family a:hover, .hero-family a:focus-visible { color: #01e7cb; }
