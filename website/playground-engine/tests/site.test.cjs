@@ -140,7 +140,7 @@ assert.ok(home.includes(chineseLink), 'English homepage exposes the Chinese home
 assert.ok(page.includes(playgroundChineseLink), 'Playground switches to its Chinese counterpart');
 assert.ok(read('docs/zh/index.html').includes('href="/" lang="en" hreflang="en"'), 'Chinese homepage links back to English');
 assert.ok(home.includes('<a href="/playground/">Playground</a>'));
-assert.ok(read('docs/zh/index.html').includes('<a href="/zh/playground/">Playground</a>'));
+assert.ok(read('docs/zh/index.html').includes('<a href="/zh/playground/">策略实验室</a>'));
 function compareSource(relative) {
  const source = path.join(root, 'docs/hugo/static', relative);
  const published = path.join(root, 'docs', relative);
@@ -270,4 +270,16 @@ for (const [name,prefix] of [['docs/index.html','/'],['docs/zh/index.html','/zh/
  assert.ok(section.includes('class="eyebrow"') && section.includes(`href="${prefix}contribute/"`), `Community banner structure in ${name} (#244)`);
  assert.ok(!section.includes('<img '), `Community banner has no image column in ${name} (#244)`);
 }
+// #245: the Playground result stays in view after Evaluate, and its copy and
+// labels follow the content rules in either language.
+const playgroundPages = [['EN', page], ['ZH', read('docs/zh/playground/index.html')]];
+for (const [language, html] of playgroundPages) {
+ const idleTitle = html.match(/<div class="result-label" id="result-label">([^<]*)<\/div>/)?.[1];
+ assert.ok(idleTitle && !/[.。]$/.test(idleTitle), `Idle result title has no trailing full stop in ${language}`);
+ assert.ok(html.includes('<link rel="alternate" hreflang="x-default" href="https://engine.speedle.io/playground/">'), `x-default alternate in the ${language} Playground`);
+}
+const chinesePlayground = playgroundPages[1][1];
+assert.ok(chinesePlayground.includes('<a href="/zh/playground/" aria-current="page">策略实验室</a>'), 'Chinese Playground navigation label matches the page name');
+assert.ok(chinesePlayground.includes('<meta name="description" content="在浏览器中使用真实 Speedle 引擎编写 SPDL 策略并测试授权请求。">'), 'Chinese Playground meta description is translated');
+assert.ok(chinesePlayground.includes('<meta property="og:title" content="策略实验室 | Speedle 权限控制引擎">') && chinesePlayground.includes('<meta property="og:description" content="在浏览器中使用真实 Speedle 引擎编写 SPDL 策略并测试授权请求。">'), 'Chinese Playground social metadata is translated');
 console.log(`PASS static site integration: original CSS/homepage, official footer, navigation, URLs/assets, canonical, English labels, no private hosting or persistent request storage, ${assetRefs} local assets in ${assetPages} published pages, WCAG AA home-page palette`);
