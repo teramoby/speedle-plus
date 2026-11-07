@@ -183,32 +183,32 @@ go build -o ./bin/ ./cmd/spctl ./cmd/speedle-pms ./cmd/speedle-ads</code></pre><
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./bin/speedle-ads --store-type file --filestore-loc ./docs-policies.json --endpoint <span style="color:#bd93f9">127</span>.0.0.1:6734 --insecure<span style="color:#ff79c6">=</span>true</code></pre></div>
 <p>Use a fresh policy file; PMS creates it if absent. Follow <a href="/quick-start/">Quick Start</a> for creation and Allow/Deny requests, then stop both services with Ctrl+C. gRPC is disabled unless explicitly enabled with <code>--grpc-endpoint</code>. Plain HTTP is for this loopback example; see <a href="/docs/security/">Security</a> for TLS and client authentication.</p>
 
-<h2 id="build-container-images">Build container images</h2>
+<h2 id="release-binaries-and-container-images">Release binaries and container images</h2>
 
-<p>For an optional Linux/amd64 container deployment, first build static Linux binaries from the checkout root:</p>
+<p>Each release published by the release workflow attaches prebuilt <code>spctl</code>, <code>speedle-pms</code> and <code>speedle-ads</code> binaries for macOS and Linux on amd64 and arm64, named <code>&lt;command&gt;_&lt;os&gt;_&lt;arch&gt;</code>, plus a <code>checksums.txt</code> file. Download them from the <a href="https://github.com/teramoby/speedle-plus/releases">Releases page</a> and verify each downloaded file against its SHA-256 checksum before running it.</p>
 
-<!-- deployment-check: linux-build -->
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">mkdir -p ./bin/linux-amd64
-<span style="color:#8be9fd;font-style:italic">CGO_ENABLED</span><span style="color:#ff79c6">=</span><span style="color:#bd93f9">0</span> <span style="color:#8be9fd;font-style:italic">GOOS</span><span style="color:#ff79c6">=</span>linux <span style="color:#8be9fd;font-style:italic">GOARCH</span><span style="color:#ff79c6">=</span>amd64 go build -o ./bin/linux-amd64/ ./cmd/speedle-pms ./cmd/speedle-ads</code></pre></div>
-<p>Save this as <code>bin/linux-amd64/Dockerfile.pms</code>. Create <code>Dockerfile.ads</code> alongside it by replacing both occurrences of <code>speedle-pms</code> with <code>speedle-ads</code>. The binaries run directly without the historical image entrypoint scripts:</p>
+<p>The release workflow also publishes two multi-architecture container images for Linux amd64 and arm64:</p>
 
-<!-- deployment-template: image -->
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-dockerfile" data-lang="dockerfile"><span style="color:#ff79c6">FROM</span><span style="color:#f1fa8c"> scratch</span>
-COPY speedle-pms /speedle-pms
-USER <span style="color:#bd93f9">65532</span>:65532
-<span style="color:#ff79c6">ENTRYPOINT</span><span style="color:#f1fa8c"> [&#34;/speedle-pms&#34;]</span></code></pre></div>
-<p>Use a current Docker Engine with BuildKit and a registry you can push to. Set <code>PMS_IMAGE</code> and <code>ADS_IMAGE</code> to your own complete image names/tags, authenticate to that registry, then build and publish:</p>
+<ul>
+<li><code>ghcr.io/teramoby/speedle-pms</code></li>
+<li><code>ghcr.io/teramoby/speedle-ads</code></li>
+</ul>
 
-<!-- deployment-template: image-build -->
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker build --platform linux/amd64 -f ./bin/linux-amd64/Dockerfile.pms -t <span style="color:#f1fa8c">&#34;</span><span style="color:#8be9fd;font-style:italic">$PMS_IMAGE</span><span style="color:#f1fa8c">&#34;</span> ./bin/linux-amd64
-docker build --platform linux/amd64 -f ./bin/linux-amd64/Dockerfile.ads -t <span style="color:#f1fa8c">&#34;</span><span style="color:#8be9fd;font-style:italic">$ADS_IMAGE</span><span style="color:#f1fa8c">&#34;</span> ./bin/linux-amd64
-docker push <span style="color:#f1fa8c">&#34;</span><span style="color:#8be9fd;font-style:italic">$PMS_IMAGE</span><span style="color:#f1fa8c">&#34;</span>
-docker push <span style="color:#f1fa8c">&#34;</span><span style="color:#8be9fd;font-style:italic">$ADS_IMAGE</span><span style="color:#f1fa8c">&#34;</span></code></pre></div>
-<p>These images target Linux/amd64 nodes. Build an architecture matching your nodes if different. Provide CA files explicitly for TLS endpoints when using this minimal image.</p>
+<p>Pull the release you deploy; <code>latest</code> follows the newest release:</p>
+
+<!-- deployment-template: image-pull -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker pull ghcr.io/teramoby/speedle-pms:latest
+docker pull ghcr.io/teramoby/speedle-ads:latest</code></pre></div>
+<p>Both images run the service as UID 65532 and include a writable <code>/data</code> directory for the file store. Pass the server flags after the image name, and run each command in its own terminal:</p>
+
+<!-- deployment-template: image-run -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker run --rm -p <span style="color:#bd93f9">6733</span>:6733 -v speedle-policies:/data ghcr.io/teramoby/speedle-pms:latest --store-type file --filestore-loc /data/policies.json --endpoint <span style="color:#bd93f9">0</span>.0.0.0:6733 --insecure<span style="color:#ff79c6">=</span><span style="color:#8be9fd;font-style:italic">true</span>
+docker run --rm -p <span style="color:#bd93f9">6734</span>:6734 -v speedle-policies:/data ghcr.io/teramoby/speedle-ads:latest --store-type file --filestore-loc /data/policies.json --endpoint <span style="color:#bd93f9">0</span>.0.0.0:6734 --insecure<span style="color:#ff79c6">=</span>true</code></pre></div>
+<p>The images do not include CA certificates; provide the CA file for TLS endpoints. <code>--insecure=true</code> is for this local example only; see <a href="/docs/security/">Security</a>.</p>
 
 <h2 id="kubernetes-development-example">Kubernetes development example</h2>
 
-<p>Use a current Kubernetes cluster and compatible <code>kubectl</code>. Save the following as <code>speedle-dev.yaml</code>. It uses <code>apps/v1</code>, one pod with PMS/ADS sharing one file, a non-root application UID and an internal ClusterIP service. This is an isolated development example: <code>emptyDir</code> policies are lost when the pod is replaced, and HTTP endpoints need cluster access controls. Use a private-registry pull secret if required by your registry.</p>
+<p>Use a current Kubernetes cluster and compatible <code>kubectl</code>. Save the following as <code>speedle-dev.yaml</code>. It uses <code>apps/v1</code>, one pod with PMS/ADS sharing one file, a non-root application UID and an internal ClusterIP service. This is an isolated development example: <code>emptyDir</code> policies are lost when the pod is replaced, and HTTP endpoints need cluster access controls. The manifest uses the published images; pin the release tag you deploy, and add an image pull secret if your cluster requires one.</p>
 
 <!-- deployment-template: kubernetes -->
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">apiVersion: apps/v1
@@ -236,7 +236,7 @@ spec:
               mountPath: /data
       containers:
         - name: pms
-          image: registry.example.com/speedle-pms:demo
+          image: ghcr.io/teramoby/speedle-pms:latest
           args: [<span style="color:#f1fa8c">&#34;--store-type&#34;</span>, <span style="color:#f1fa8c">&#34;file&#34;</span>, <span style="color:#f1fa8c">&#34;--filestore-loc&#34;</span>, <span style="color:#f1fa8c">&#34;/data/policies.json&#34;</span>, <span style="color:#f1fa8c">&#34;--endpoint&#34;</span>, <span style="color:#f1fa8c">&#34;0.0.0.0:6733&#34;</span>, <span style="color:#f1fa8c">&#34;--insecure=true&#34;</span>]
           ports:
             - containerPort: <span style="color:#bd93f9">6733</span>
@@ -247,7 +247,7 @@ spec:
             - name: policies
               mountPath: /data
         - name: ads
-          image: registry.example.com/speedle-ads:demo
+          image: ghcr.io/teramoby/speedle-ads:latest
           args: [<span style="color:#f1fa8c">&#34;--store-type&#34;</span>, <span style="color:#f1fa8c">&#34;file&#34;</span>, <span style="color:#f1fa8c">&#34;--filestore-loc&#34;</span>, <span style="color:#f1fa8c">&#34;/data/policies.json&#34;</span>, <span style="color:#f1fa8c">&#34;--endpoint&#34;</span>, <span style="color:#f1fa8c">&#34;0.0.0.0:6734&#34;</span>, <span style="color:#f1fa8c">&#34;--insecure=true&#34;</span>]
           ports:
             - containerPort: <span style="color:#bd93f9">6734</span>
@@ -276,7 +276,7 @@ spec:
     - name: ads
       port: <span style="color:#bd93f9">6734</span>
       targetPort: <span style="color:#bd93f9">6734</span></code></pre></div>
-<p>Keep <code>PMS_IMAGE</code> and <code>ADS_IMAGE</code> set to the images you published. Substitute them locally before applying; keep port-forward running while using Quick Start clients:</p>
+<p>Set <code>PMS_IMAGE</code> and <code>ADS_IMAGE</code> to the exact images you deploy, for example the release tag or <code>latest</code>. Substitute them locally before applying; keep port-forward running while using Quick Start clients:</p>
 
 <!-- deployment-template: apply -->
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">kubectl <span style="color:#8be9fd;font-style:italic">set</span> image --local -f speedle-dev.yaml <span style="color:#8be9fd;font-style:italic">pms</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;</span><span style="color:#8be9fd;font-style:italic">$PMS_IMAGE</span><span style="color:#f1fa8c">&#34;</span> <span style="color:#8be9fd;font-style:italic">ads</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;</span><span style="color:#8be9fd;font-style:italic">$ADS_IMAGE</span><span style="color:#f1fa8c">&#34;</span> -o yaml | kubectl apply -f -
@@ -284,9 +284,9 @@ kubectl rollout status deployment/speedle-dev
 kubectl port-forward service/speedle-dev <span style="color:#bd93f9">6733</span>:6733 <span style="color:#bd93f9">6734</span>:6734</code></pre></div>
 <h2 id="production-deployments">Production deployments</h2>
 
-<p>Use durable policy storage, protect management and decision endpoints, and configure TLS/mTLS for clients and the policy backend. <a href="/docs/store/">Pluggable Storage</a> documents the current store configuration; <a href="/docs/security/">Security</a> covers current transport flags. Size and operate the etcd deployment using the current etcd documentation, not the retired etcd-operator example.</p>
+<p>Use durable policy storage, pin container image tags to the release version you deploy, protect management and decision endpoints, and configure TLS/mTLS for clients and the policy backend. <a href="/docs/store/">Pluggable Storage</a> documents the current store configuration; <a href="/docs/security/">Security</a> covers current transport flags. Size and operate the etcd deployment using the current etcd documentation, not the retired etcd-operator example.</p>
 
-<p>The repository contains historical Helm/Kubernetes examples. The old Helm 2 <code>helm install -n ...</code>, <code>stable/etcd-operator</code>, <code>apps/v1beta2</code>, and <code>r.authz.fun</code> image instructions are not the deployment flow above. Container build/push, cluster admission, registry access, storage and rollout depend on your environment; validate them in your target cluster before production use.</p>
+<p>The repository contains historical Helm/Kubernetes examples. The old Helm 2 <code>helm install -n ...</code>, <code>stable/etcd-operator</code>, <code>apps/v1beta2</code>, and <code>r.authz.fun</code> image instructions are not the deployment flow above. Container pulls, cluster admission, registry access, storage and rollout depend on your environment; validate them in your target cluster before production use.</p>
 </div>
 </div>
 </main>

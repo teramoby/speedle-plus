@@ -168,11 +168,12 @@ docker run --name speedle-mysql --detach \  --publish 127.0.0.1:3306:3306 \  --v
       
       <guid>https://engine.speedle.io/zh/quick-start/</guid>
       <description>先在 Playground 中试用 无需安装，即可先体验 Speedle 的基本功能。 打开 Playground 策略实验室，编辑 SPDL 策略、设置用户、资源和动作，即可在浏览器中查看真实的 Allow/Deny（允许／拒绝）授权结果，无需安装 Go 或启动服务。
-准备在本机编译和运行 Speedle 时，再继续下面的步骤。
+准备在本机安装和运行 Speedle 时，再继续下面的步骤。
 准备环境 准备 Linux 或 macOS、Bash、Git、curl，以及 Go 1.26.10 或 Go 1.27.3（也可使用同一大版本的更新补丁版本）。Speedle 支持 Go 1.26 和 Go 1.27 的安全补丁版本；本教程已在 Go 1.26.10 和 Go 1.27.3 上验证，推荐使用稳定版 Go 1.27.3 完成本教程。
 按照 Go 官方安装说明安装，然后检查版本：
-go version Go 会自动配置 GOROOT 和默认的 GOPATH，无需手动指定。下面将程序编译到源码目录下的 bin 目录。
-第一步：下载源码并编译 git clone --depth 1 https://github.com/teramoby/speedle-plus.git cd speedle-plus mkdir -p bin go build -o .</description>
+go version Go 会自动配置 GOROOT 和默认的 GOPATH，无需手动指定。下面的两种方式都会把三个可执行程序放到 bin 目录。
+安装 Speedle 两种方式任选一种：方式 A 安装最新发布版本，方式 B 编译当前源码。后续命令都使用 ./bin/...，两种方式通用。
+方式 A：安装最新发布版本 GOBIN=&amp;#34;$PWD/bin&amp;#34; go install github.com/teramoby/speedle-plus/cmd/...@v1.6.0 ls bin GOBIN 把可执行程序放到当前目录的 bin 中；不设置时，Go 会把它们写入 $(go env GOPATH)/bin。v1.</description>
     </item>
     
     <item>

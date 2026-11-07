@@ -183,32 +183,32 @@ go build -o ./bin/ ./cmd/spctl ./cmd/speedle-pms ./cmd/speedle-ads</code></pre><
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./bin/speedle-ads --store-type file --filestore-loc ./docs-policies.json --endpoint <span style="color:#bd93f9">127</span>.0.0.1:6734 --insecure<span style="color:#ff79c6">=</span>true</code></pre></div>
 <p>使用新的策略文件；文件不存在时 PMS 会创建它。创建策略和验证 Allow/Deny 的完整请求见<a href="/zh/quick-start/">快速入门</a>，结束后用 Ctrl+C 停止两个服务。默认关闭 gRPC，只有设置 <code>--grpc-endpoint</code> 才启用。此处明文 HTTP 仅用于本机示例，TLS 和客户端认证见<a href="/zh/docs/security/">安全配置</a>。</p>
 
-<h2 id="构建容器映像">构建容器映像</h2>
+<h2 id="发布二进制与容器映像">发布二进制与容器映像</h2>
 
-<p>如果需要部署到 Linux/amd64 容器，在源码根目录先构建静态 Linux 二进制：</p>
+<p>发布流程生成的每个发布版本都会附带适用于 macOS 和 Linux（amd64、arm64）的 <code>spctl</code>、<code>speedle-pms</code> 和 <code>speedle-ads</code> 预编译二进制，文件名格式为 <code>&lt;命令&gt;_&lt;系统&gt;_&lt;架构&gt;</code>，并附带 <code>checksums.txt</code>。请从 <a href="https://github.com/teramoby/speedle-plus/releases">Releases 页面</a>下载，运行前先用 SHA-256 校验和核对每个文件。</p>
 
-<!-- deployment-check: linux-build -->
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">mkdir -p ./bin/linux-amd64
-<span style="color:#8be9fd;font-style:italic">CGO_ENABLED</span><span style="color:#ff79c6">=</span><span style="color:#bd93f9">0</span> <span style="color:#8be9fd;font-style:italic">GOOS</span><span style="color:#ff79c6">=</span>linux <span style="color:#8be9fd;font-style:italic">GOARCH</span><span style="color:#ff79c6">=</span>amd64 go build -o ./bin/linux-amd64/ ./cmd/speedle-pms ./cmd/speedle-ads</code></pre></div>
-<p>将下面内容保存为 <code>bin/linux-amd64/Dockerfile.pms</code>，再将其中两处 <code>speedle-pms</code> 替换成 <code>speedle-ads</code>，另存为同目录下的 <code>Dockerfile.ads</code>。映像直接运行二进制，不依赖历史映像的入口脚本：</p>
+<p>发布流程还会发布两个面向 Linux amd64 和 arm64 的多架构容器映像：</p>
 
-<!-- deployment-template: image -->
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-dockerfile" data-lang="dockerfile"><span style="color:#ff79c6">FROM</span><span style="color:#f1fa8c"> scratch</span>
-COPY speedle-pms /speedle-pms
-USER <span style="color:#bd93f9">65532</span>:65532
-<span style="color:#ff79c6">ENTRYPOINT</span><span style="color:#f1fa8c"> [&#34;/speedle-pms&#34;]</span></code></pre></div>
-<p>准备支持 BuildKit 的当前 Docker Engine 和可推送的映像仓库。将 <code>PMS_IMAGE</code>、<code>ADS_IMAGE</code> 设置为自己的完整映像名称与标签，登录该仓库，然后构建并推送：</p>
+<ul>
+<li><code>ghcr.io/teramoby/speedle-pms</code></li>
+<li><code>ghcr.io/teramoby/speedle-ads</code></li>
+</ul>
 
-<!-- deployment-template: image-build -->
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker build --platform linux/amd64 -f ./bin/linux-amd64/Dockerfile.pms -t <span style="color:#f1fa8c">&#34;</span><span style="color:#8be9fd;font-style:italic">$PMS_IMAGE</span><span style="color:#f1fa8c">&#34;</span> ./bin/linux-amd64
-docker build --platform linux/amd64 -f ./bin/linux-amd64/Dockerfile.ads -t <span style="color:#f1fa8c">&#34;</span><span style="color:#8be9fd;font-style:italic">$ADS_IMAGE</span><span style="color:#f1fa8c">&#34;</span> ./bin/linux-amd64
-docker push <span style="color:#f1fa8c">&#34;</span><span style="color:#8be9fd;font-style:italic">$PMS_IMAGE</span><span style="color:#f1fa8c">&#34;</span>
-docker push <span style="color:#f1fa8c">&#34;</span><span style="color:#8be9fd;font-style:italic">$ADS_IMAGE</span><span style="color:#f1fa8c">&#34;</span></code></pre></div>
-<p>这些映像面向 Linux/amd64 节点；如果节点架构不同，应构建对应架构。使用此最小映像连接 TLS 端点时，需要明确提供 CA 文件。</p>
+<p>请拉取要部署的发布版本；<code>latest</code> 跟随最新发布版本：</p>
+
+<!-- deployment-template: image-pull -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker pull ghcr.io/teramoby/speedle-pms:latest
+docker pull ghcr.io/teramoby/speedle-ads:latest</code></pre></div>
+<p>两个映像都以 UID 65532 运行服务，并包含可写的 <code>/data</code> 目录用于文件存储。在映像名之后传入服务参数，每条命令各用一个终端运行：</p>
+
+<!-- deployment-template: image-run -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker run --rm -p <span style="color:#bd93f9">6733</span>:6733 -v speedle-policies:/data ghcr.io/teramoby/speedle-pms:latest --store-type file --filestore-loc /data/policies.json --endpoint <span style="color:#bd93f9">0</span>.0.0.0:6733 --insecure<span style="color:#ff79c6">=</span><span style="color:#8be9fd;font-style:italic">true</span>
+docker run --rm -p <span style="color:#bd93f9">6734</span>:6734 -v speedle-policies:/data ghcr.io/teramoby/speedle-ads:latest --store-type file --filestore-loc /data/policies.json --endpoint <span style="color:#bd93f9">0</span>.0.0.0:6734 --insecure<span style="color:#ff79c6">=</span>true</code></pre></div>
+<p>映像不包含 CA 证书；连接 TLS 端点时需要提供 CA 文件。<code>--insecure=true</code> 仅用于本机示例，详见<a href="/zh/docs/security/">安全配置</a>。</p>
 
 <h2 id="kubernetes-开发示例">Kubernetes 开发示例</h2>
 
-<p>使用当前 Kubernetes 集群和兼容的 <code>kubectl</code>。将以下内容保存为 <code>speedle-dev.yaml</code>。它使用 <code>apps/v1</code>，在同一 Pod 内让 PMS/ADS 共享文件，以非 root 用户运行应用，并通过内部 ClusterIP 服务访问。这是隔离开发环境示例：Pod 被替换后 <code>emptyDir</code> 中的策略会丢失，HTTP 端点需要集群访问控制。私有映像仓库需要时应配置 imagePullSecrets。</p>
+<p>使用当前 Kubernetes 集群和兼容的 <code>kubectl</code>。将以下内容保存为 <code>speedle-dev.yaml</code>。它使用 <code>apps/v1</code>，在同一 Pod 内让 PMS/ADS 共享文件，以非 root 用户运行应用，并通过内部 ClusterIP 服务访问。这是隔离开发环境示例：Pod 被替换后 <code>emptyDir</code> 中的策略会丢失，HTTP 端点需要集群访问控制。清单使用已发布的映像；请固定要部署的发布标签，集群需要时配置 imagePullSecrets。</p>
 
 <!-- deployment-template: kubernetes -->
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">apiVersion: apps/v1
@@ -236,7 +236,7 @@ spec:
               mountPath: /data
       containers:
         - name: pms
-          image: registry.example.com/speedle-pms:demo
+          image: ghcr.io/teramoby/speedle-pms:latest
           args: [<span style="color:#f1fa8c">&#34;--store-type&#34;</span>, <span style="color:#f1fa8c">&#34;file&#34;</span>, <span style="color:#f1fa8c">&#34;--filestore-loc&#34;</span>, <span style="color:#f1fa8c">&#34;/data/policies.json&#34;</span>, <span style="color:#f1fa8c">&#34;--endpoint&#34;</span>, <span style="color:#f1fa8c">&#34;0.0.0.0:6733&#34;</span>, <span style="color:#f1fa8c">&#34;--insecure=true&#34;</span>]
           ports:
             - containerPort: <span style="color:#bd93f9">6733</span>
@@ -247,7 +247,7 @@ spec:
             - name: policies
               mountPath: /data
         - name: ads
-          image: registry.example.com/speedle-ads:demo
+          image: ghcr.io/teramoby/speedle-ads:latest
           args: [<span style="color:#f1fa8c">&#34;--store-type&#34;</span>, <span style="color:#f1fa8c">&#34;file&#34;</span>, <span style="color:#f1fa8c">&#34;--filestore-loc&#34;</span>, <span style="color:#f1fa8c">&#34;/data/policies.json&#34;</span>, <span style="color:#f1fa8c">&#34;--endpoint&#34;</span>, <span style="color:#f1fa8c">&#34;0.0.0.0:6734&#34;</span>, <span style="color:#f1fa8c">&#34;--insecure=true&#34;</span>]
           ports:
             - containerPort: <span style="color:#bd93f9">6734</span>
@@ -276,7 +276,7 @@ spec:
     - name: ads
       port: <span style="color:#bd93f9">6734</span>
       targetPort: <span style="color:#bd93f9">6734</span></code></pre></div>
-<p>保持 <code>PMS_IMAGE</code>、<code>ADS_IMAGE</code> 指向刚才推送的映像。先在本地替换清单中的映像，再应用；使用快速入门客户端时保持端口转发运行：</p>
+<p>将 <code>PMS_IMAGE</code>、<code>ADS_IMAGE</code> 设置为实际部署的完整映像，例如发布标签或 <code>latest</code>。先在本地替换清单中的映像，再应用；使用快速入门客户端时保持端口转发运行：</p>
 
 <!-- deployment-template: apply -->
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">kubectl <span style="color:#8be9fd;font-style:italic">set</span> image --local -f speedle-dev.yaml <span style="color:#8be9fd;font-style:italic">pms</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;</span><span style="color:#8be9fd;font-style:italic">$PMS_IMAGE</span><span style="color:#f1fa8c">&#34;</span> <span style="color:#8be9fd;font-style:italic">ads</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;</span><span style="color:#8be9fd;font-style:italic">$ADS_IMAGE</span><span style="color:#f1fa8c">&#34;</span> -o yaml | kubectl apply -f -
@@ -284,9 +284,9 @@ kubectl rollout status deployment/speedle-dev
 kubectl port-forward service/speedle-dev <span style="color:#bd93f9">6733</span>:6733 <span style="color:#bd93f9">6734</span>:6734</code></pre></div>
 <h2 id="生产部署">生产部署</h2>
 
-<p>生产环境应使用持久化策略存储，保护管理与决策端点，并为客户端和策略后端配置 TLS/mTLS。当前存储配置见<a href="/zh/docs/store/">可插拔存储</a>，传输参数见<a href="/zh/docs/security/">安全配置</a>。请按当前 etcd 文档部署和运维 etcd，不要继续使用已停止维护的 etcd-operator 示例。</p>
+<p>生产环境应使用持久化策略存储，将容器映像标签固定到要部署的发布版本，保护管理与决策端点，并为客户端和策略后端配置 TLS/mTLS。当前存储配置见<a href="/zh/docs/store/">可插拔存储</a>，传输参数见<a href="/zh/docs/security/">安全配置</a>。请按当前 etcd 文档部署和运维 etcd，不要继续使用已停止维护的 etcd-operator 示例。</p>
 
-<p>仓库中保留了历史 Helm/Kubernetes 示例。旧的 Helm 2 <code>helm install -n ...</code>、<code>stable/etcd-operator</code>、<code>apps/v1beta2</code> 和 <code>r.authz.fun</code> 映像说明均不是本页的新部署流程。容器构建推送、集群准入、仓库访问、存储与 rollout 依赖具体环境，应在目标集群中验证后再用于生产。</p>
+<p>仓库中保留了历史 Helm/Kubernetes 示例。旧的 Helm 2 <code>helm install -n ...</code>、<code>stable/etcd-operator</code>、<code>apps/v1beta2</code> 和 <code>r.authz.fun</code> 映像说明均不是本页的新部署流程。容器拉取、集群准入、仓库访问、存储与 rollout 依赖具体环境，应在目标集群中验证后再用于生产。</p>
 </div>
 </div>
 </main>
