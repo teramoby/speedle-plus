@@ -7,8 +7,9 @@ name: Release
 # Retrying: re-dispatch with the same version and commit after a failure. An
 # existing tag must already point at the same commit, image tags are
 # overwritten, and release assets are replaced, so a failed run resumes
-# without moving a tag or re-creating a release. Container images are
-# published last; if that step fails, re-dispatching completes the release.
+# without moving a tag or re-creating a release. The images are built without
+# pushing before the tag, and published last; if the push fails, re-dispatching
+# completes the release.
 on:
   workflow_dispatch:
     inputs:
@@ -129,6 +130,22 @@ jobs:
           for arch in amd64 arm64; do
             cp "dist/speedle-pms_linux_${arch}" "${CONTAINER_CONTEXT}/speedle-pms-linux-${arch}"
             cp "dist/speedle-ads_linux_${arch}" "${CONTAINER_CONTEXT}/speedle-ads-linux-${arch}"
+          done
+
+      # Build both images without pushing before the immutable tag is created,
+      # so a bad Dockerfile or TARGETARCH mapping cannot leave a published
+      # release without images.
+      - name: Verify the container images build
+        run: |
+          set -euo pipefail
+          docker buildx create --name speedle-smoke --driver docker-container --use
+          docker buildx inspect --bootstrap
+          for command in speedle-pms speedle-ads; do
+            suffix=${command#speedle-}
+            docker buildx build \
+              --platform linux/amd64,linux/arm64 \
+              --file "deployment/container/Dockerfile.${suffix}" \
+              --output type=cacheonly "${CONTAINER_CONTEXT}"
           done
 
       # Idempotent for re-runs: the validation above only lets an existing tag
