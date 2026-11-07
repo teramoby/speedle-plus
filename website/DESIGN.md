@@ -87,8 +87,10 @@ measured:
 | Engine | `#172033` | `#ffffff` | 16.27:1 | body text |
 | Engine | `#5d667a` | `#ffffff` | 5.76:1 | muted text |
 | Engine | `#5d667a` | `#f6f7fb` | 5.38:1 | muted text on soft |
-| Engine | `#5c2fc0` | `#ffffff` | 8.01:1 | text links |
+| Engine | `#5c2fc0` | `#ffffff` | 8.01:1 | text links and light-ground eyebrows |
+| Engine | `#5c2fc0` | `#f6f7fb` | 7.48:1 | eyebrows on soft |
 | Engine | `#01e7cb` | `#25134e` | 10.37:1 | accent text on dark |
+| Engine | `#8f85a6` | `#100b1e` | 5.58:1 | SPDL comments |
 | Engine | `#d7d4dd` (white at .82) | `#312451` | 10.23:1 | header nav links |
 | Engine | `#ffffff` | `#6636c8` | 7.18:1 | hero text at the 62% stop |
 | Engine | `#ffffff` | `#814ce4` | 5.14:1 | hero text at the light end |
@@ -110,7 +112,8 @@ measured:
 Colour rules:
 
 - Engine cyan is for dark grounds. `#01e7cb` on `#814ce4` is 3.25:1 (large text
-  only) and on white it fails. Never use cyan as body text on white.
+  only) and on white it fails. Never use cyan as body text or as an eyebrow on
+  a light surface; light-ground eyebrows use `--purple-dark` `#5c2fc0`.
 - Engine hero body copy at `rgba(255, 255, 255, .78)` is 4.62:1 over `#6636c8`
   but 3.78:1 over `#814ce4`. Keep body copy in the dark part of the gradient
   (0–62%) or use solid white.
@@ -262,7 +265,7 @@ weight or letter-spacing per site.
 | Status bar | min-height 78 px; ≤ 700 px padding 18 px 0, column, gap 9 px |
 | Section head | flex, `align-items: end`, `justify-content: space-between`, gap 40 px, margin-bottom 44 px; ≤ 900 px column, gap 16 px |
 | Footer | see section 7 |
-| Card grids | about 2 columns gap 26 px; features 12 columns gap 18 px (cards span 4, then 3); integrations 3 columns gap 20 px; policy `.8fr 1.2fr` gap 68 px; contribute `.8fr 1.2fr` gap 50 px, padding 62 px |
+| Card grids | about 2 columns gap 26 px; features 12 columns gap 18 px (cards span 4, then 3); integrations 3 columns gap 20 px; policy `.8fr 1.2fr` gap 68 px; contribute `minmax(0, 1fr) auto` gap 48 px, padding 62 px |
 
 Radii: 22 px default (`--radius`); 18 px feature and integration cards; 16 px
 code blocks; 14 px Products panel; 10 px social boxes and menu rows; 9 px
@@ -317,12 +320,13 @@ Values follow the Engine CSS. Colours come from the site's token row.
 | Feature and integration cards | radius 18 px; padding 30 px; min-height 300 px (feature), 220 px (integration) |
 | Hover | `translateY(-5px)`; border = the site's primary at .35 (Engine `rgba(129, 76, 228, .35)`); shadow = `var(--shadow)` (Engine `0 20px 60px rgba(40, 27, 83, .12)`); transition .25 s |
 | Dark card | `--ink` background, white text, body `rgba(255, 255, 255, .72)`, strong text in the accent colour |
+| Contribute banner | `--soft` background, 1 px `--line` border, radius 22 px, padding 62 px; copy on the left (eyebrow, h2, muted paragraph) and the primary action on the right; no illustration; one column at ≤ 900 px |
 
 ### 6.3 Eyebrows and badges
 
 | Element | Value |
 | --- | --- |
-| Eyebrow | `inline-flex`, centred, gap 9 px; uppercase; .78rem; weight 800; letter-spacing .14em; colour = the site's AA-safe accent/primary-strong (Engine `#01e7cb` on dark, AI `#5229ad`); 28 px × 2 px rule before it in `currentColor` |
+| Eyebrow | `inline-flex`, centred, gap 9 px; uppercase; .78rem; weight 800; letter-spacing .14em; colour = the site's AA-safe accent: Engine `#5c2fc0` on light surfaces and `#01e7cb` on dark grounds, AI `#5229ad`; 28 px × 2 px rule before it in `currentColor` |
 | "Coming soon" badge | 11 px, weight 600, padding 2 px × 7 px, radius 999 px; colours = primary-strong on the site's tint (AI measured: `#5229ad` text on `#f4f0fb`, `#d8cbf0` border); Cloud: `--primary-hover` `#1550a8` on `--surface-tint` `#e6eefa`, `--border` `#e5e8f1` border |
 | Status dot | 10 px, accent colour, 6 px ring at .14 opacity |
 
@@ -333,7 +337,7 @@ Values follow the Engine CSS. Colours come from the site's token row.
 | Container | `#100b1e` background; 1 px `rgba(255, 255, 255, .13)` border; radius 16 px; shadow `0 30px 80px rgba(0, 0, 0, .25)`; overflow hidden |
 | Bar | padding 13 px × 18 px; bottom border 1 px `rgba(255, 255, 255, .1)`; colour `rgba(255, 255, 255, .55)`; font 600 .78rem/1 `ui-monospace`; dots 9 px, gap 7 px, `#684e8e` |
 | Body | padding 26 px; colour `#ece8f8`; font 500 .9rem/1.8 `ui-monospace, SFMono-Regular, Menlo, monospace`; `overflow: auto` |
-| SPDL classes | `.kw` `#01e7cb`; `.str` `#d3afff`; `.cm` `#74698c` |
+| SPDL classes | `.kw` `#01e7cb`; `.str` `#d3afff`; `.cm` `#8f85a6` (5.58:1 on `#100b1e`) |
 | SPDL comments | `#` only; no `//` or `/* */` |
 
 ### 6.5 Status bar

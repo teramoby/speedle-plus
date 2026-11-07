@@ -80,6 +80,8 @@ normal development environment and run:
 CHROMIUM_PATH=/path/to/chromium node website/playground-engine/browser-smoke.cjs
 # Full form UI, site navigation, 320–1440 px layouts and browser-only transport:
 CHROMIUM_PATH=/path/to/chromium node website/playground-engine/site-smoke.cjs
+# Home-page contrast with axe (also needs axe-core):
+CHROMIUM_PATH=/path/to/chromium node website/playground-engine/a11y-smoke.cjs
 ```
 
 Both browser smoke scripts passed in real Chrome during the 2026-10-26 review,
