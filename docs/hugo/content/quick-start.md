@@ -169,7 +169,7 @@ Create a grant that applies only when the request carries a `clearance` attribut
 ./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ create policy -c "grant user user1 get res3 if clearance >= 3" --service-name=mysvc
 ```
 
-The policy enforcement point (PEP) supplies request attributes, and a condition is evaluated only against the attributes in the request. A request that omits `clearance` does not match this grant.
+The policy enforcement point (PEP) supplies request attributes, and a condition is evaluated only against the attributes in the request. The `clearance` values below demonstrate the request format only: a real PEP must obtain attribute values from trusted sources, such as authenticated token claims or a trusted store, and never from the request being authorized. A request that omits `clearance` does not match this grant.
 
 With `clearance` set to 4, the request is allowed:
 

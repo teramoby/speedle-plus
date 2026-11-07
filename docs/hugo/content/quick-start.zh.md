@@ -152,7 +152,7 @@ curl --fail --silent --show-error --header 'Content-Type: application/json' --da
 ./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ create policy -c "grant user ZhangSan borrow ebook if clearance >= 3" --service-name=library
 ```
 
-PEP（策略执行点）负责传入请求属性，条件只根据请求中的属性求值；请求不带 `clearance` 时，该条件不匹配。
+PEP（策略执行点）负责传入请求属性，条件只根据请求中的属性求值。下文的 `clearance` 值仅用于演示请求格式：真实的 PEP 必须从可信来源获取属性值，例如已认证的令牌声明或可信存储，绝不能取自正在被授权的请求本身。请求不带 `clearance` 时，该条件不匹配。
 
 `clearance` 为 4 时允许：
 
