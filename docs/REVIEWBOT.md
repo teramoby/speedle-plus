@@ -65,27 +65,45 @@ reveal credentials, change repository settings, approve or merge PRs.
 
 ## Configuration and data
 
-- Secret: `ARK_API_KEY`, an Ark Agent Plan key.
-- Optional variable: `ARK_REVIEW_MODEL`, default `kimi-k3`.
-- Endpoint: `https://ark.cn-beijing.volces.com/api/plan/v3/responses`.
+- Optional provider switch variable: `REVIEWBOT_PROVIDER` (`ark` by default when
+  unset, or `deepseek`). Switching between providers is a repository-variable
+  change and requires no code changes; unknown values fail closed.
+- `ark` provider (default):
+  - Secret: `ARK_API_KEY`, an Ark Agent Plan key.
+  - Optional variable: `ARK_REVIEW_MODEL`, default `kimi-k3`.
+  - Endpoint: `https://ark.cn-beijing.volces.com/api/plan/v3/responses`
+    (`max_output_tokens` `8192`).
+- `deepseek` provider:
+  - Secret: `DEEPSEEK_API_KEY`.
+  - Optional variable: `DEEPSEEK_REVIEW_MODEL`, default `deepseek-flash`
+    (supported API models: `deepseek-flash` and `deepseek-v4-pro`, each with a
+    1M-token context length and 384K-token maximum output).
+  - Endpoint: `https://api.deepseek.com/chat/completions` (OpenAI-compatible,
+    non-streaming, `max_tokens` `65536`). Trusted prompts and base policy are
+    sent in the `system` message, and pull-request metadata, diff and any
+    untrusted command context are sent in the `user` message. Review text is
+    read from `choices[0].message.content`, ignoring any `reasoning_content`.
 - Authentication for GitHub reads/reviews: the job-scoped `GITHUB_TOKEN`; no PAT
   or GitHub App installation is needed.
 
-This matches Pavu's single configured model. The old automatic secondary-model
+This matches Pavu's single configured model per run. The old automatic secondary-model
 fallback is replaced by an explicit, bounded retry policy: an incomplete response
-caused by the output-token limit retries once with unified diff context reduced
+caused by the output-token limit (`max_output_tokens` on Ark or
+`finish_reason: "length"` on DeepSeek) retries once with unified diff context reduced
 from 80 to 3. Both requests share a 600-second HTTP budget. Other incomplete,
 failed, malformed or empty responses fail without publishing partial review text.
 Input is limited to 750,000 bytes plus the truncation notice; output is limited
-to 8192 tokens and the GitHub message-length limit. Reduced or truncated context
-is recorded as a validation gap.
+to 8192 tokens on Ark, 65,536 tokens on DeepSeek (within its 1M context and 384K
+output limits), and the GitHub message-length limit. Reduced or truncated context
+is recorded as a validation gap, and the published footer records the active
+model ID.
 
-With a key configured, the trusted prompts, repository policy if present, commit
-metadata and static diff are sent to Ark. Commands also include their text,
+With the selected provider's secret configured, the trusted prompts, repository policy if present, commit
+metadata and static diff are sent to that provider (`ark` or `deepseek`). Commands also include their text,
 comment URL/code context, and bounded bot history for recheck. There is no
 connection to Speedle runtime requests or production policy stores. Provider-side
 retention follows the account's data controls and terms. Do not put credentials
-in source, fixtures or comments. Without a key, automatic analysis emits a
+in source, fixtures or comments. Without the active provider's key, automatic analysis emits a
 notice, sends no code and publishes no Review. Remove the secret or disable the
 two workflows to stop model calls.
 
@@ -141,6 +159,7 @@ node --test scripts/tests/test_reviewbot_commands.cjs
 node --test scripts/tests/test_reviewbot_automerge.cjs
 node --test scripts/tests/test_runner_routing.cjs
 actionlint .github/workflows/reviewbot*.yml
+zizmor .github/workflows/reviewbot*.yml
 git diff --check
 ```
 
@@ -151,7 +170,7 @@ mocks, testing permissions, replies, history, deduplication and merge gates. No
 credentials, real model requests, GitHub comments or merges are used by fixtures.
 
 The `ReviewBot` workflow also has `workflow_dispatch` to run the regression suites on a
-reviewed branch without receiving the Ark key or publishing a Review:
+reviewed branch without receiving model API keys or publishing a Review:
 
 ```sh
 gh workflow run reviewbot.yml --ref <reviewed-branch>

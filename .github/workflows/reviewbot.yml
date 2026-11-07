@@ -21,6 +21,9 @@ jobs:
     timeout-minutes: 5
     steps:
       - name: Verify runner identity and tools
+        shell: bash
+        env:
+          REVIEWBOT_PROVIDER: ${{ vars.REVIEWBOT_PROVIDER || 'ark' }}
         run: |
           set -euo pipefail
           case "${RUNNER_NAME}/${RUNNER_OS}/${RUNNER_ARCH}" in
@@ -33,9 +36,22 @@ jobs:
           curl --version | head -n 1
           jq --version
           python3 --version
-          code=$(curl --silent --show-error --connect-timeout 15 --max-time 30 --output /dev/null --write-out '%{http_code}' https://ark.cn-beijing.volces.com/api/plan/v3/responses)
-          [[ "${code}" =~ ^[234][0-9][0-9]$ ]]
-          echo "Ark HTTPS reachable without credentials (HTTP ${code})."
+          case "${REVIEWBOT_PROVIDER:-ark}" in
+            ark)
+              code=$(curl --silent --show-error --connect-timeout 15 --max-time 30 --output /dev/null --write-out '%{http_code}' https://ark.cn-beijing.volces.com/api/plan/v3/responses)
+              [[ "${code}" =~ ^[234][0-9][0-9]$ ]]
+              echo "Ark HTTPS reachable without credentials (HTTP ${code})."
+              ;;
+            deepseek)
+              code=$(curl --silent --show-error --connect-timeout 15 --max-time 30 --output /dev/null --write-out '%{http_code}' https://api.deepseek.com/chat/completions)
+              [[ "${code}" =~ ^[234][0-9][0-9]$ ]]
+              echo "DeepSeek HTTPS reachable without credentials (HTTP ${code})."
+              ;;
+            *)
+              echo 'ReviewBot reason_code=invalid_provider' >&2
+              exit 1
+              ;;
+          esac
 
       - name: Check out fixture validation revision
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -82,10 +98,22 @@ jobs:
     steps:
       - name: Check ReviewBot configuration
         id: configuration
+        shell: bash
         env:
-          REVIEWBOT_API_KEY: ${{ secrets.ARK_API_KEY }}
+          REVIEWBOT_PROVIDER: ${{ vars.REVIEWBOT_PROVIDER || 'ark' }}
+          ARK_API_KEY: ${{ secrets.ARK_API_KEY }}
+          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
         run: |
-          if [[ -n "${REVIEWBOT_API_KEY}" ]]; then
+          set -euo pipefail
+          case "${REVIEWBOT_PROVIDER:-ark}" in
+            ark) api_key="${ARK_API_KEY}" ;;
+            deepseek) api_key="${DEEPSEEK_API_KEY}" ;;
+            *)
+              echo 'ReviewBot reason_code=invalid_provider' >&2
+              exit 1
+              ;;
+          esac
+          if [[ -n "${api_key}" ]]; then
             echo "enabled=true" >> "${GITHUB_OUTPUT}"
           else
             echo "enabled=false" >> "${GITHUB_OUTPUT}"
@@ -93,7 +121,16 @@ jobs:
 
       - name: Report disabled ReviewBot
         if: steps.configuration.outputs.enabled != 'true'
-        run: echo "::notice::ReviewBot is disabled until the ARK_API_KEY repository secret is configured."
+        shell: bash
+        env:
+          REVIEWBOT_PROVIDER: ${{ vars.REVIEWBOT_PROVIDER || 'ark' }}
+        run: |
+          set -euo pipefail
+          case "${REVIEWBOT_PROVIDER:-ark}" in
+            deepseek) secret_name=DEEPSEEK_API_KEY ;;
+            *) secret_name=ARK_API_KEY ;;
+          esac
+          echo "::notice::ReviewBot is disabled until the ${secret_name} repository secret is configured."
 
       - name: Check for an existing review of this commit
         id: existing_review
@@ -102,6 +139,7 @@ jobs:
         env:
           REVIEWED_COMMIT: ${{ github.event.pull_request.head.sha }}
           REVIEWED_BASE: ${{ github.event.pull_request.base.sha }}
+          REVIEWBOT_PROVIDER: ${{ vars.REVIEWBOT_PROVIDER || 'ark' }}
         with:
           github-token: ${{ github.token }}
           script: |
@@ -127,7 +165,8 @@ jobs:
             core.setOutput("safe_to_merge", cachedSafe ? "true" : "false");
             core.setOutput("should_review", exists ? "false" : "true");
             if (exists) {
-              core.notice(`ReviewBot already reviewed ${commit}; skipping Ark analysis.`);
+              const provider = process.env.REVIEWBOT_PROVIDER === "deepseek" ? "DeepSeek" : "Ark";
+              core.notice(`ReviewBot already reviewed ${commit}; skipping ${provider} analysis.`);
             }
 
       - name: Check out pull request head ref for static diff
@@ -162,40 +201,71 @@ jobs:
             rm -f -- "${path}"
           done < <(git ls-files -z -- '*.gitattributes')
 
-      - name: Run ReviewBot with Ark
+      - name: Run ReviewBot
         id: review
         if: steps.configuration.outputs.enabled == 'true' && steps.existing_review.outputs.should_review == 'true'
         shell: bash
         env:
+          REVIEWBOT_PROVIDER: ${{ vars.REVIEWBOT_PROVIDER || 'ark' }}
           ARK_API_KEY: ${{ secrets.ARK_API_KEY }}
           ARK_MODEL: ${{ vars.ARK_REVIEW_MODEL || 'kimi-k3' }}
+          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+          DEEPSEEK_MODEL: ${{ vars.DEEPSEEK_REVIEW_MODEL || 'deepseek-flash' }}
           TRUSTED_SHA: ${{ github.workflow_sha }}
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
           set -euo pipefail
 
+          system_input="${RUNNER_TEMP}/reviewbot-system.txt"
+          user_input="${RUNNER_TEMP}/reviewbot-user.txt"
           review_input="${RUNNER_TEMP}/reviewbot-input.txt"
           request_body="${RUNNER_TEMP}/reviewbot-request.json"
           response_body="${RUNNER_TEMP}/reviewbot-response.json"
           merge_base=$(git merge-base "${BASE_SHA}" "${HEAD_SHA}")
 
+          {
+            git show "${BASE_SHA}:.github/codex/prompts/reviewbot.md"
+            printf '\n\n## Trusted policy from the base revision\n\n'
+            git show "${BASE_SHA}:AGENTS.md" || printf 'No AGENTS.md exists at the base revision.\n'
+          } > "${system_input}"
+
           build_review_input() {
             {
-              git show "${BASE_SHA}:.github/codex/prompts/reviewbot.md"
-              printf '\n\n## Trusted policy from the base revision\n\n'
-              git show "${BASE_SHA}:AGENTS.md" || printf 'No AGENTS.md exists at the base revision.\n'
-              printf '\n\n## Pull request metadata\n\n'
+              printf '## Pull request metadata\n\n'
+              # shellcheck disable=SC2016
               printf 'Base commit: `%s`\nHead commit: `%s`\nMerge base: `%s`\n\n' "${BASE_SHA}" "${HEAD_SHA}" "${merge_base}"
               git diff --stat "${merge_base}" "${HEAD_SHA}"
               printf '\n\n## Unified diff\n\n```diff\n'
               git diff --no-ext-diff --find-renames --find-copies --unified="${1}" "${merge_base}" "${HEAD_SHA}"
               printf '\n```\n'
+            } > "${user_input}"
+            {
+              cat "${system_input}"
+              printf '\n\n'
+              cat "${user_input}"
             } > "${review_input}"
           }
           build_review_input 80
 
           input_limit=750000
+          provider="${REVIEWBOT_PROVIDER:-ark}"
+          case "${provider}" in
+            ark)
+              api_url='https://ark.cn-beijing.volces.com/api/plan/v3/responses'
+              api_key="${ARK_API_KEY}"
+              request_model="${ARK_MODEL:-kimi-k3}"
+              ;;
+            deepseek)
+              api_url='https://api.deepseek.com/chat/completions'
+              api_key="${DEEPSEEK_API_KEY}"
+              request_model="${DEEPSEEK_MODEL:-deepseek-flash}"
+              ;;
+            *)
+              echo 'ReviewBot reason_code=invalid_provider' >&2
+              exit 1
+              ;;
+          esac
           # Execute only the helper from the immutable trusted workflow revision,
           # never its potentially modified copy in the PR head worktree.
           response_parser="${RUNNER_TEMP}/reviewbot-response.py"
@@ -207,17 +277,45 @@ jobs:
             input_size=$(wc -c < "${review_input}")
             if (( input_size > input_limit )); then
               input_truncated=true
-              limited_input="${RUNNER_TEMP}/reviewbot-input-limited.txt"
-              head -c "${input_limit}" "${review_input}" > "${limited_input}"
-              printf '\n\n[Review input truncated at %s bytes. Report this as a validation gap.]\n' "${input_limit}" >> "${limited_input}"
-              mv "${limited_input}" "${review_input}"
+              if [[ "${provider}" == "deepseek" ]]; then
+                system_size=$(wc -c < "${system_input}")
+                if (( system_size >= input_limit )); then
+                  limited_system="${RUNNER_TEMP}/reviewbot-system-limited.txt"
+                  head -c "${input_limit}" "${system_input}" > "${limited_system}"
+                  mv "${limited_system}" "${system_input}"
+                  user_limit=0
+                else
+                  user_limit=$((input_limit - system_size - 2))
+                  if (( user_limit < 0 )); then
+                    user_limit=0
+                  fi
+                fi
+                limited_input="${RUNNER_TEMP}/reviewbot-user-limited.txt"
+                head -c "${user_limit}" "${user_input}" > "${limited_input}"
+                printf '\n\n[Review input truncated at %s bytes. Report this as a validation gap.]\n' "${input_limit}" >> "${limited_input}"
+                mv "${limited_input}" "${user_input}"
+              else
+                limited_input="${RUNNER_TEMP}/reviewbot-input-limited.txt"
+                head -c "${input_limit}" "${review_input}" > "${limited_input}"
+                printf '\n\n[Review input truncated at %s bytes. Report this as a validation gap.]\n' "${input_limit}" >> "${limited_input}"
+                mv "${limited_input}" "${review_input}"
+              fi
             fi
 
-            jq -n \
-              --arg model "${ARK_MODEL}" \
-              --rawfile input "${review_input}" \
-              '{model: $model, input: $input, max_output_tokens: 8192, reasoning: {effort: "medium"}}' \
-              > "${request_body}"
+            if [[ "${provider}" == "deepseek" ]]; then
+              jq -n \
+                --arg model "${request_model}" \
+                --rawfile system "${system_input}" \
+                --rawfile user "${user_input}" \
+                '{model: $model, messages: [{role: "system", content: $system}, {role: "user", content: $user}], max_tokens: 65536, stream: false}' \
+                > "${request_body}"
+            else
+              jq -n \
+                --arg model "${request_model}" \
+                --rawfile input "${review_input}" \
+                '{model: $model, input: $input, max_output_tokens: 8192, reasoning: {effort: "medium"}}' \
+                > "${request_body}"
+            fi
 
             # Both attempts share the original 600-second HTTP time budget.
             request_timeout=$((request_deadline - SECONDS))
@@ -232,8 +330,8 @@ jobs:
               --max-time "${request_timeout}" \
               --output "${response_body}" \
               --write-out '%{http_code}' \
-              'https://ark.cn-beijing.volces.com/api/plan/v3/responses' \
-              -H "Authorization: Bearer ${ARK_API_KEY}" \
+              "${api_url}" \
+              -H "Authorization: Bearer ${api_key}" \
               -H 'Content-Type: application/json' \
               --data-binary "@${request_body}")
 
@@ -246,7 +344,7 @@ jobs:
               exit 1
             fi
 
-            if python3 "${response_parser}" "${response_body}" "${review_result}" "${ARK_MODEL}"; then
+            if python3 "${response_parser}" "${response_body}" "${review_result}" "${request_model}" "${provider}"; then
               break
             else
               response_status=$?

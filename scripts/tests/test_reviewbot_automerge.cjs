@@ -59,7 +59,7 @@ test('checkout uses persistent PR head ref with a captured immutable SHA guard',
   assert.match(workflow,/ref: refs\/pull\/\$\{\{ github\.event\.pull_request\.number \}\}\/head/);
   const verify=workflow.slice(workflow.indexOf('      - name: Verify captured pull request head'));
   assert.match(verify,/HEAD_SHA: \$\{\{ github\.event\.pull_request\.head\.sha \}\}/);
-  assert.ok(workflow.indexOf('      - name: Verify captured pull request head')<workflow.indexOf('      - name: Run ReviewBot with Ark'));
+  assert.ok(workflow.indexOf('      - name: Verify captured pull request head')<workflow.indexOf('      - name: Run ReviewBot'));
 });
 test('captured-head shell accepts the exact event head SHA',()=>assert.equal(runCapturedHeadFixture(true).status,0));
 test('captured-head shell rejects a PR ref that advanced before checkout',()=>{
@@ -286,3 +286,32 @@ test('actionable verdict cannot authorize auto-merge',()=>assert.equal(safeToMer
 test('contradictory markers cannot authorize auto-merge',()=>assert.equal(safeToMerge({message:safeMarker+'\n'+actionableMarker}),'safe_to_merge=false'));
 test('missing verdict cannot authorize auto-merge',()=>assert.equal(safeToMerge({message:'No actionable findings.'}),'safe_to_merge=false'));
 test('inexact verdict marker cannot authorize auto-merge',()=>assert.equal(safeToMerge({message:'Quoted: '+safeMarker}),'safe_to_merge=false'));
+
+const configScript=shellFor('Check ReviewBot configuration');
+const disabledScript=shellFor('Report disabled ReviewBot');
+function checkConfig(env={}) {
+  const directory=fs.mkdtempSync(path.join(os.tmpdir(),'reviewbot-config-'));
+  const output=path.join(directory,'output');
+  try {
+    const clean={...process.env,ARK_API_KEY:'',DEEPSEEK_API_KEY:'',GITHUB_OUTPUT:output};
+    delete clean.REVIEWBOT_PROVIDER;
+    const result=spawnSync('bash',['-c',configScript],{encoding:'utf8',env:{...clean,...env}});
+    return {status:result.status,stderr:result.stderr,output:fs.existsSync(output)?fs.readFileSync(output,'utf8').trim():''};
+  } finally {fs.rmSync(directory,{recursive:true,force:true});}
+}
+test('configuration switch defaults to ark, selects deepseek secret, and rejects unknown providers',async()=>{
+  assert.equal(checkConfig({ARK_API_KEY:'fixture-ark'}).output,'enabled=true');
+  assert.equal(checkConfig({DEEPSEEK_API_KEY:'fixture-ds'}).output,'enabled=false');
+  assert.equal(checkConfig({REVIEWBOT_PROVIDER:'deepseek',DEEPSEEK_API_KEY:'fixture-ds'}).output,'enabled=true');
+  assert.equal(checkConfig({REVIEWBOT_PROVIDER:'deepseek',ARK_API_KEY:'fixture-ark'}).output,'enabled=false');
+  const invalid=checkConfig({REVIEWBOT_PROVIDER:'other',ARK_API_KEY:'fixture-ark'});
+  assert.notEqual(invalid.status,0);assert.match(invalid.stderr,/reason_code=invalid_provider/);
+  const arkNotice=spawnSync('bash',['-c',disabledScript],{encoding:'utf8',env:{...process.env,REVIEWBOT_PROVIDER:'ark'}});
+  assert.match(arkNotice.stdout,/ARK_API_KEY repository secret/);
+  const dsNotice=spawnSync('bash',['-c',disabledScript],{encoding:'utf8',env:{...process.env,REVIEWBOT_PROVIDER:'deepseek'}});
+  assert.match(dsNotice.stdout,/DEEPSEEK_API_KEY repository secret/);
+  const published=await executeReview(publishScript,[],{MODEL_ID_B64:Buffer.from('deepseek-flash').toString('base64')});
+  assert.match(published.created[0].body,/_Model ID: `deepseek-flash`_/);
+  const dup=await executeReview(duplicateScript,[review()],{REVIEWBOT_PROVIDER:'deepseek'});
+  assert.match(dup.notices[0],/skipping DeepSeek analysis/);
+});

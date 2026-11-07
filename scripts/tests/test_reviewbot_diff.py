@@ -1,5 +1,5 @@
 # Adapted from Pavu a7b458e; modified for Speedle. Apache-2.0; see .github/codex/PAVU-LICENSE.txt.
-"""Exercise the workflows' actual prompt construction without calling Ark."""
+"""Exercise the workflows' actual prompt construction without calling model APIs."""
 
 import base64
 import os
@@ -11,8 +11,8 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[2]
 WORKFLOWS = (
-    ("reviewbot.yml", "Run ReviewBot with Ark", "reviewbot-input.txt"),
-    ("reviewbot-command.yml", "Run comment command with Ark", "reviewbot-command-input.txt"),
+    ("reviewbot.yml", "Run ReviewBot", "reviewbot-input.txt"),
+    ("reviewbot-command.yml", "Run comment command", "reviewbot-command-input.txt"),
 )
 
 
@@ -100,7 +100,19 @@ class ReviewBotDiffTests(unittest.TestCase):
             cwd=self.repo, env=env, check=check, capture_output=True, text=True,
         )
         path = output / filename
-        return result, path.read_text() if path.exists() else ""
+        prefix = filename.removesuffix("-input.txt")
+        system_path = output / f"{prefix}-system.txt"
+        user_path = output / f"{prefix}-user.txt"
+        prompt = path.read_text() if path.exists() else ""
+        if prompt:
+            system_text = system_path.read_text()
+            user_text = user_path.read_text()
+            self.assertEqual(f"{system_text}\n\n{user_text}", prompt)
+            self.assertIn("## Trusted policy from the base revision", system_text)
+            self.assertNotIn("diff --git", system_text)
+            self.assertNotIn("Review the synthetic feature change.", system_text)
+            self.assertIn("diff --git a/feature.txt b/feature.txt", user_text)
+        return result, prompt
 
     def assert_feature_only(self, prompt):
         stat = prompt.split("## Unified diff" if "## Unified diff" in prompt
