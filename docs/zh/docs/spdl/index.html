@@ -212,6 +212,8 @@ RESOURCE_IDENTIFIER = NAME
 
 <p>Policy 和 role policy 都支持 Condition。只有 condition 满足了， policy 或 role policy 才会生效。</p>
 
+<p>PEP 必须传入策略用到的所有自定义属性（<code>request_user</code>、<code>request_time</code> 等内置属性由 ADS 自动提供）；请求里缺少的属性，相关条件不匹配。</p>
+
 <p>这一小节主要介绍什么是 condition， 以及如何构建 condition。</p>
 
 <h3 id="2-condition">2. Condition</h3>
