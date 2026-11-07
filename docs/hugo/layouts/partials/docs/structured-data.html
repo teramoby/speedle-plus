@@ -1,6 +1,10 @@
 {{- $chinese := eq .Lang "zh" -}}
 {{- $language := cond $chinese "zh-CN" "en" -}}
+{{- $image := cond $chinese "/img/social/engine-zh.png" "/img/social/engine-en.png" | absURL -}}
+{{- $organization := dict "@type" "Organization" "name" "Speedle" "url" "https://engine.speedle.io/" -}}
 {{- $description := .Description | default .Site.Params.description -}}
+{{- $published := .Date -}}
+{{- if or (not $published) $published.IsZero }}{{ $published = .Lastmod }}{{ end -}}
 {{- $trail := newScratch -}}
 {{- $trail.Add "pages" (slice .) -}}
 {{- $node := . -}}
@@ -32,9 +36,11 @@
 {{- $article.SetInMap "data" "isPartOf" (dict "@id" "https://engine.speedle.io/#website") -}}
 {{- $article.SetInMap "data" "about" (dict "@id" "https://engine.speedle.io/#software") -}}
 {{- $article.SetInMap "data" "mainEntityOfPage" (dict "@type" "WebPage" "@id" .Permalink) -}}
-{{- $article.SetInMap "data" "publisher" (dict "@type" "Organization" "name" "Speedle" "url" "https://engine.speedle.io/") -}}
-{{- if and .Date (not .Date.IsZero) -}}
-  {{- $article.SetInMap "data" "datePublished" (.Date.Format "2006-01-02T15:04:05Z07:00") -}}
+{{- $article.SetInMap "data" "image" $image -}}
+{{- $article.SetInMap "data" "author" $organization -}}
+{{- $article.SetInMap "data" "publisher" (dict "@type" "Organization" "name" "Speedle" "url" "https://engine.speedle.io/" "logo" (dict "@type" "ImageObject" "url" "https://engine.speedle.io/apple-touch-icon.png" "width" 180 "height" 180)) -}}
+{{- if and $published (not $published.IsZero) -}}
+  {{- $article.SetInMap "data" "datePublished" ($published.Format "2006-01-02T15:04:05Z07:00") -}}
 {{- end -}}
 {{- if and .Lastmod (not .Lastmod.IsZero) -}}
   {{- $article.SetInMap "data" "dateModified" (.Lastmod.Format "2006-01-02T15:04:05Z07:00") -}}

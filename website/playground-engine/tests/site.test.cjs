@@ -341,6 +341,8 @@ function checkDocsStructuredData(directory, zh) {
   const article = graph.find(node => node['@type'] === 'TechArticle' || node['@type'] === 'WebPage');
   assert.ok(article && article.inLanguage === (zh ? 'zh-CN' : 'en'), `Article node and language in ${canonical}`);
   assert.ok(article['@id'].endsWith(article['@type'] === 'TechArticle' ? '#article' : '#webpage'), `Article id in ${canonical}`);
+  assert.ok(article.image === `https://engine.speedle.io/img/social/engine-${zh ? 'zh' : 'en'}.png` && article.author?.name === 'Speedle', `Article image and author in ${canonical}`);
+  assert.ok(article.datePublished && article.publisher?.logo?.width === 180, `Article dates and publisher logo in ${canonical}`);
   const breadcrumb = graph.find(node => node['@type'] === 'BreadcrumbList');
   assert.ok(breadcrumb && breadcrumb.itemListElement.length >= 2, `BreadcrumbList in ${canonical}`);
   assert.equal(breadcrumb.itemListElement[0].name, zh ? '首页' : 'Home', `Breadcrumb starts at the home page in ${canonical}`);
