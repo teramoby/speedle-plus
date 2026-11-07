@@ -53,6 +53,12 @@ body.docs-page > .container {
 #main,
 #kube-component.content { min-width: 0; }
 .content-container > main { width: 100%; }
+/* Stand-alone content pages use the docs reading measure without the sidebar. */
+.content-container.docs-article {
+  grid-template-columns: minmax(0, 1fr);
+  max-width: 852px;
+  margin: 0 auto;
+}
 
 /* Documentation navigation: a fully expanded left rail in normal page flow. */
 .docs-nav-toggle {
@@ -221,6 +227,29 @@ body.docs-page > .container {
 #main li { margin: 7px 0; }
 #main li > ul,
 #main li > ol { margin: 7px 0 0; }
+/* Taxonomy listings keep their existing content in the docs reading style. */
+#main #posts {
+  margin: 40px 0 0;
+  padding: 0;
+  list-style: none;
+}
+#main #posts > li {
+  margin: 0;
+  padding: 26px 0;
+  border-bottom: 1px solid var(--line);
+}
+#main #posts > li:first-child { padding-top: 0; }
+#main #posts > li:last-child { border-bottom: 0; }
+#main #posts > li > h2 { margin: 0 0 10px; }
+#main #posts > li > h2 a { color: var(--ink); text-decoration: none; }
+#main #posts > li > h2 a:hover {
+  color: var(--purple-dark);
+  text-decoration: underline;
+  text-decoration-color: rgba(92, 47, 192, .35);
+  text-underline-offset: 3px;
+}
+#main #posts > li > p { margin: 0 0 8px; }
+#main #posts hr { display: none; }
 #main strong { font-weight: 700; }
 #main p,
 #main li,
@@ -359,7 +388,13 @@ body.docs-page > .container {
   border-radius: var(--radius-control);
   font-weight: 750;
   text-decoration: none;
+  transition: transform .2s, background .2s, border-color .2s;
 }
+#main .button.primary {
+  color: #1b1c2c;
+  background: var(--cyan);
+}
+#main .button.primary:hover { transform: translateY(-2px); }
 
 .docs-page pre:focus-visible { outline: 3px solid var(--cyan); outline-offset: -4px; }
 .docs-page a:focus-visible,

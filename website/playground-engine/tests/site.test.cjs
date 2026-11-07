@@ -151,7 +151,7 @@ compareSource('zh/playground');
 for (const name of ['index.html','zh/index.html']) {
  assert.equal(read('docs/hugo/static/'+name), read('docs/'+name), `Authoritative homepage ${name}`);
 }
-for (const name of ['css/site.css','css/navigation.css','css/custom.css','css/docs.css','js/master.js','js/navigation.js','js/docs.js','img/speedle/Discord.svg','img/speedle/Discord-color.svg','img/speedle/Google-Groups.svg','img/speedle/Google-Groups-NOTICE.txt','img/speedle/Material-Icons-LICENSE.txt']) {
+for (const name of ['css/site.css','css/navigation.css','css/docs.css','js/navigation.js','js/docs.js','img/speedle/Discord.svg','img/speedle/Discord-color.svg','img/speedle/Google-Groups.svg','img/speedle/Google-Groups-NOTICE.txt','img/speedle/Material-Icons-LICENSE.txt']) {
  assert.equal(read('docs/hugo/static/'+name), read('docs/'+name), `Source/published ${name}`);
 }
 assert.ok(page.includes('<a href="/playground/" aria-current="page">Playground</a>'));
