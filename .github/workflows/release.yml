@@ -1,7 +1,8 @@
 name: Release
 
-# Run by hand from the Actions tab (or the API) to tag a master commit and
-# publish a GitHub release. Only users with write access can dispatch it.
+# Run by hand from the Actions tab (or the API) to tag a master commit, build
+# the release binaries and container images, and publish a GitHub release.
+# Only users with write access can dispatch it.
 on:
   workflow_dispatch:
     inputs:
@@ -16,16 +17,21 @@ on:
 
 permissions:
   contents: write
+  packages: write
 
 concurrency:
   group: release
   cancel-in-progress: false
 
+env:
+  REGISTRY: ghcr.io
+  CONTAINER_CONTEXT: container-context
+
 jobs:
   release:
     name: release
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 30
     steps:
       - name: Validate inputs
         env:
@@ -62,6 +68,52 @@ jobs:
             exit 1
           fi
 
+      - name: Check out the release commit
+        env:
+          COMMIT: ${{ inputs.commit }}
+        run: |
+          set -euo pipefail
+          git checkout --detach "${COMMIT}"
+
+      - name: Setup Go
+        uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      # macOS and Linux, amd64 and arm64, for the three public commands. The
+      # binaries are static where the target allows it and are never installed
+      # into a shared GOBIN.
+      - name: Build release binaries
+        run: |
+          set -euo pipefail
+          rm -rf dist
+          mkdir -p dist
+          for target in darwin/amd64 darwin/arm64 linux/amd64 linux/arm64; do
+            goos=${target%/*}
+            goarch=${target#*/}
+            for command in spctl speedle-pms speedle-ads; do
+              CGO_ENABLED=0 GOOS="${goos}" GOARCH="${goarch}" go build -trimpath -o "dist/${command}_${goos}_${goarch}" "./cmd/${command}"
+            done
+          done
+
+      - name: Write checksums
+        run: |
+          set -euo pipefail
+          (cd dist && sha256sum spctl_* speedle-ads_* speedle-pms_* > checksums.txt)
+          cat dist/checksums.txt
+
+      - name: Prepare the container build context
+        run: |
+          set -euo pipefail
+          rm -rf "${CONTAINER_CONTEXT}"
+          mkdir -p "${CONTAINER_CONTEXT}/data"
+          : > "${CONTAINER_CONTEXT}/data/.keep"
+          for arch in amd64 arm64; do
+            cp "dist/speedle-pms_linux_${arch}" "${CONTAINER_CONTEXT}/speedle-pms-linux-${arch}"
+            cp "dist/speedle-ads_linux_${arch}" "${CONTAINER_CONTEXT}/speedle-ads-linux-${arch}"
+          done
+
       - name: Create and push the tag
         env:
           VERSION: ${{ inputs.version }}
@@ -77,4 +129,29 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           VERSION: ${{ inputs.version }}
-        run: gh release create "${VERSION}" --repo "${GITHUB_REPOSITORY}" --verify-tag --title "${VERSION}" --generate-notes
+        run: |
+          set -euo pipefail
+          gh release create "${VERSION}" --repo "${GITHUB_REPOSITORY}" --verify-tag --title "${VERSION}" --generate-notes \
+            dist/spctl_* dist/speedle-pms_* dist/speedle-ads_* dist/checksums.txt
+
+      # One multi-architecture image per service, tagged with the release and
+      # latest. The Dockerfiles copy the matching Linux binary for TARGETARCH.
+      - name: Publish container images
+        env:
+          VERSION: ${{ inputs.version }}
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          owner="${GITHUB_REPOSITORY_OWNER,,}"
+          echo "${GITHUB_TOKEN}" | docker login ghcr.io --username "${GITHUB_ACTOR}" --password-stdin
+          docker buildx create --name speedle-release --driver docker-container --use
+          docker buildx inspect --bootstrap
+          for command in speedle-pms speedle-ads; do
+            suffix=${command#speedle-}
+            docker buildx build \
+              --platform linux/amd64,linux/arm64 \
+              --file "deployment/container/Dockerfile.${suffix}" \
+              --tag "${REGISTRY}/${owner}/${command}:${VERSION}" \
+              --tag "${REGISTRY}/${owner}/${command}:latest" \
+              --push "${CONTAINER_CONTEXT}"
+          done

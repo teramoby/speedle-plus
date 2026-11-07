@@ -41,41 +41,36 @@ go build -o ./bin/ ./cmd/spctl ./cmd/speedle-pms ./cmd/speedle-ads
 
 使用新的策略文件；文件不存在时 PMS 会创建它。创建策略和验证 Allow/Deny 的完整请求见[快速入门](../../quick-start/)，结束后用 Ctrl+C 停止两个服务。默认关闭 gRPC，只有设置 `--grpc-endpoint` 才启用。此处明文 HTTP 仅用于本机示例，TLS 和客户端认证见[安全配置](../security/)。
 
-## 构建容器映像
+## 发布二进制与容器映像
 
-如果需要部署到 Linux/amd64 容器，在源码根目录先构建静态 Linux 二进制：
+发布流程生成的每个发布版本都会附带适用于 macOS 和 Linux（amd64、arm64）的 `spctl`、`speedle-pms` 和 `speedle-ads` 预编译二进制，文件名格式为 `<命令>_<系统>_<架构>`，并附带 `checksums.txt`。请从 [Releases 页面](https://github.com/teramoby/speedle-plus/releases)下载，运行前先用 SHA-256 校验和核对每个文件。
 
-<!-- deployment-check: linux-build -->
+发布流程还会发布两个面向 Linux amd64 和 arm64 的多架构容器映像：
+
+- `ghcr.io/teramoby/speedle-pms`
+- `ghcr.io/teramoby/speedle-ads`
+
+请拉取要部署的发布版本；`latest` 跟随最新发布版本：
+
+<!-- deployment-template: image-pull -->
 ```bash
-mkdir -p ./bin/linux-amd64
-CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o ./bin/linux-amd64/ ./cmd/speedle-pms ./cmd/speedle-ads
+docker pull ghcr.io/teramoby/speedle-pms:latest
+docker pull ghcr.io/teramoby/speedle-ads:latest
 ```
 
-将下面内容保存为 `bin/linux-amd64/Dockerfile.pms`，再将其中两处 `speedle-pms` 替换成 `speedle-ads`，另存为同目录下的 `Dockerfile.ads`。映像直接运行二进制，不依赖历史映像的入口脚本：
+两个映像都以 UID 65532 运行服务，并包含可写的 `/data` 目录用于文件存储。在映像名之后传入服务参数，每条命令各用一个终端运行：
 
-<!-- deployment-template: image -->
-```dockerfile
-FROM scratch
-COPY speedle-pms /speedle-pms
-USER 65532:65532
-ENTRYPOINT ["/speedle-pms"]
-```
-
-准备支持 BuildKit 的当前 Docker Engine 和可推送的映像仓库。将 `PMS_IMAGE`、`ADS_IMAGE` 设置为自己的完整映像名称与标签，登录该仓库，然后构建并推送：
-
-<!-- deployment-template: image-build -->
+<!-- deployment-template: image-run -->
 ```bash
-docker build --platform linux/amd64 -f ./bin/linux-amd64/Dockerfile.pms -t "$PMS_IMAGE" ./bin/linux-amd64
-docker build --platform linux/amd64 -f ./bin/linux-amd64/Dockerfile.ads -t "$ADS_IMAGE" ./bin/linux-amd64
-docker push "$PMS_IMAGE"
-docker push "$ADS_IMAGE"
+docker run --rm -p 6733:6733 -v speedle-policies:/data ghcr.io/teramoby/speedle-pms:latest --store-type file --filestore-loc /data/policies.json --endpoint 0.0.0.0:6733 --insecure=true
+docker run --rm -p 6734:6734 -v speedle-policies:/data ghcr.io/teramoby/speedle-ads:latest --store-type file --filestore-loc /data/policies.json --endpoint 0.0.0.0:6734 --insecure=true
 ```
 
-这些映像面向 Linux/amd64 节点；如果节点架构不同，应构建对应架构。使用此最小映像连接 TLS 端点时，需要明确提供 CA 文件。
+映像不包含 CA 证书；连接 TLS 端点时需要提供 CA 文件。`--insecure=true` 仅用于本机示例，详见[安全配置](../security/)。
 
 ## Kubernetes 开发示例
 
-使用当前 Kubernetes 集群和兼容的 `kubectl`。将以下内容保存为 `speedle-dev.yaml`。它使用 `apps/v1`，在同一 Pod 内让 PMS/ADS 共享文件，以非 root 用户运行应用，并通过内部 ClusterIP 服务访问。这是隔离开发环境示例：Pod 被替换后 `emptyDir` 中的策略会丢失，HTTP 端点需要集群访问控制。私有映像仓库需要时应配置 imagePullSecrets。
+使用当前 Kubernetes 集群和兼容的 `kubectl`。将以下内容保存为 `speedle-dev.yaml`。它使用 `apps/v1`，在同一 Pod 内让 PMS/ADS 共享文件，以非 root 用户运行应用，并通过内部 ClusterIP 服务访问。这是隔离开发环境示例：Pod 被替换后 `emptyDir` 中的策略会丢失，HTTP 端点需要集群访问控制。清单使用已发布的映像；请固定要部署的发布标签，集群需要时配置 imagePullSecrets。
 
 <!-- deployment-template: kubernetes -->
 ```yaml
@@ -104,7 +99,7 @@ spec:
               mountPath: /data
       containers:
         - name: pms
-          image: registry.example.com/speedle-pms:demo
+          image: ghcr.io/teramoby/speedle-pms:latest
           args: ["--store-type", "file", "--filestore-loc", "/data/policies.json", "--endpoint", "0.0.0.0:6733", "--insecure=true"]
           ports:
             - containerPort: 6733
@@ -115,7 +110,7 @@ spec:
             - name: policies
               mountPath: /data
         - name: ads
-          image: registry.example.com/speedle-ads:demo
+          image: ghcr.io/teramoby/speedle-ads:latest
           args: ["--store-type", "file", "--filestore-loc", "/data/policies.json", "--endpoint", "0.0.0.0:6734", "--insecure=true"]
           ports:
             - containerPort: 6734
@@ -146,7 +141,7 @@ spec:
       targetPort: 6734
 ```
 
-保持 `PMS_IMAGE`、`ADS_IMAGE` 指向刚才推送的映像。先在本地替换清单中的映像，再应用；使用快速入门客户端时保持端口转发运行：
+将 `PMS_IMAGE`、`ADS_IMAGE` 设置为实际部署的完整映像，例如发布标签或 `latest`。先在本地替换清单中的映像，再应用；使用快速入门客户端时保持端口转发运行：
 
 <!-- deployment-template: apply -->
 ```bash
@@ -157,6 +152,6 @@ kubectl port-forward service/speedle-dev 6733:6733 6734:6734
 
 ## 生产部署
 
-生产环境应使用持久化策略存储，保护管理与决策端点，并为客户端和策略后端配置 TLS/mTLS。当前存储配置见[可插拔存储](../store/)，传输参数见[安全配置](../security/)。请按当前 etcd 文档部署和运维 etcd，不要继续使用已停止维护的 etcd-operator 示例。
+生产环境应使用持久化策略存储，将容器映像标签固定到要部署的发布版本，保护管理与决策端点，并为客户端和策略后端配置 TLS/mTLS。当前存储配置见[可插拔存储](../store/)，传输参数见[安全配置](../security/)。请按当前 etcd 文档部署和运维 etcd，不要继续使用已停止维护的 etcd-operator 示例。
 
-仓库中保留了历史 Helm/Kubernetes 示例。旧的 Helm 2 `helm install -n ...`、`stable/etcd-operator`、`apps/v1beta2` 和 `r.authz.fun` 映像说明均不是本页的新部署流程。容器构建推送、集群准入、仓库访问、存储与 rollout 依赖具体环境，应在目标集群中验证后再用于生产。
+仓库中保留了历史 Helm/Kubernetes 示例。旧的 Helm 2 `helm install -n ...`、`stable/etcd-operator`、`apps/v1beta2` 和 `r.authz.fun` 映像说明均不是本页的新部署流程。容器拉取、集群准入、仓库访问、存储与 rollout 依赖具体环境，应在目标集群中验证后再用于生产。

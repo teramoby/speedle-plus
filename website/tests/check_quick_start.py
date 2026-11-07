@@ -26,7 +26,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 PATTERN = r"<!-- quick-start: ([a-z-]+) -->\s*```bash\n(.*?)\n```"
-REQUIRED = {"version", "build", "pms", "service", "policies", "list", "ads", "allow-direct", "deny"}
+REQUIRED = {"version", "install", "build", "pms", "service", "policies", "list", "ads", "allow-direct", "deny"}
 
 
 def blocks(path):
@@ -36,10 +36,12 @@ def blocks(path):
     assert len(names) == len(set(names)), (path, "duplicate step")
     assert len(pairs) == len(re.findall(r"^```bash$", text, re.M)), (path, "untested shell block")
     assert REQUIRED <= set(names), (path, "missing steps", REQUIRED - set(names))
-    assert set(names) <= REQUIRED | {"roles", "allow-role"}, (path, "unknown step")
+    assert set(names) <= REQUIRED | {"roles", "allow-role", "abac-policy", "abac-allow", "abac-deny"}, (path, "unknown step")
+    assert names.index("install") < names.index("build"), path
     assert names.index("pms") < names.index("service") < names.index("ads") < names.index("allow-direct"), path
+    assert names.index("deny") < names.index("abac-policy") < names.index("abac-allow") < names.index("abac-deny"), path
     for _, command in pairs:
-        assert not re.search(r"^\$ |…|\.\.\.", command, re.M), (path, "non-executable example")
+        assert not re.search(r"^\$ |…|(?:^|\s)\.\.\.(?:\s|$)", command, re.M), (path, "non-executable example")
     return pairs
 
 
@@ -118,6 +120,14 @@ def verify(locale, toolchain, env):
         if toolchain:
             assert f"go version {toolchain} " in version, version
         print(f"{locale}: {version}; runner={os.environ.get('RUNNER_NAME', 'local')}", flush=True)
+        install = dict(steps)["install"]
+        assert install.startswith('GOBIN="$PWD/bin" go install github.com/teramoby/speedle-plus/cmd/...@v'), source
+        install_work = work / "install"
+        install_work.mkdir()
+        run(install, install_work, env, timeout=600)
+        for binary in ("spctl", "speedle-pms", "speedle-ads"):
+            assert os.access(install_work / "bin" / binary, os.X_OK), binary
+        print(f"{locale}: PASS documented go install route", flush=True)
         build = dict(steps)["build"].splitlines()
         assert build[:2] == ["git clone --depth 1 https://github.com/teramoby/speedle-plus.git", "cd speedle-plus"], source
         run("\n".join(build[:2]), work, env, timeout=180)
@@ -157,7 +167,7 @@ def exercise(locale, steps, checkout, env, isolated=False):
     with (contextlib.nullcontext() if isolated else server_lock()), contextlib.ExitStack() as resources:
         try:
             for name, command in steps:
-                if name in {"version", "build"}:
+                if name in {"version", "install", "build"}:
                     continue
                 command = local(command)
                 if name in {"pms", "ads"}:
@@ -176,9 +186,11 @@ def exercise(locale, steps, checkout, env, isolated=False):
                         service = next(item for item in services if item["name"] == expected_service)
                         assert len(service.get("policies", [])) == (1 if locale == "zh" else 2), service
                         assert len(service.get("rolePolicies", [])) == (0 if locale == "zh" else 1), service
-                    elif name.startswith("allow-") or name == "deny":
+                    elif name in {"allow-direct", "allow-role", "abac-allow", "deny", "abac-deny"}:
                         result = json.loads(output)
-                        assert result.get("allowed") is (name != "deny"), (name, result)
+                        allowed = name in {"allow-direct", "allow-role", "abac-allow"}
+                        assert result.get("allowed") is allowed, (name, result)
+                        assert result.get("reason") == (0 if allowed else 3), (name, result)
                         decisions[name] = result["allowed"]
                 assert all(process.poll() is None for process in processes), "service stopped during tutorial"
                 print(f"{locale}: PASS {name}", flush=True)

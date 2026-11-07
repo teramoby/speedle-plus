@@ -42,41 +42,36 @@ Keep PMS running; start ADS in another terminal in the same checkout:
 
 Use a fresh policy file; PMS creates it if absent. Follow [Quick Start](../../quick-start/) for creation and Allow/Deny requests, then stop both services with Ctrl+C. gRPC is disabled unless explicitly enabled with `--grpc-endpoint`. Plain HTTP is for this loopback example; see [Security](../security/) for TLS and client authentication.
 
-## Build container images
+## Release binaries and container images
 
-For an optional Linux/amd64 container deployment, first build static Linux binaries from the checkout root:
+Each release published by the release workflow attaches prebuilt `spctl`, `speedle-pms` and `speedle-ads` binaries for macOS and Linux on amd64 and arm64, named `<command>_<os>_<arch>`, plus a `checksums.txt` file. Download them from the [Releases page](https://github.com/teramoby/speedle-plus/releases) and verify each downloaded file against its SHA-256 checksum before running it.
 
-<!-- deployment-check: linux-build -->
+The release workflow also publishes two multi-architecture container images for Linux amd64 and arm64:
+
+- `ghcr.io/teramoby/speedle-pms`
+- `ghcr.io/teramoby/speedle-ads`
+
+Pull the release you deploy; `latest` follows the newest release:
+
+<!-- deployment-template: image-pull -->
 ```bash
-mkdir -p ./bin/linux-amd64
-CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o ./bin/linux-amd64/ ./cmd/speedle-pms ./cmd/speedle-ads
+docker pull ghcr.io/teramoby/speedle-pms:latest
+docker pull ghcr.io/teramoby/speedle-ads:latest
 ```
 
-Save this as `bin/linux-amd64/Dockerfile.pms`. Create `Dockerfile.ads` alongside it by replacing both occurrences of `speedle-pms` with `speedle-ads`. The binaries run directly without the historical image entrypoint scripts:
+Both images run the service as UID 65532 and include a writable `/data` directory for the file store. Pass the server flags after the image name, and run each command in its own terminal:
 
-<!-- deployment-template: image -->
-```dockerfile
-FROM scratch
-COPY speedle-pms /speedle-pms
-USER 65532:65532
-ENTRYPOINT ["/speedle-pms"]
-```
-
-Use a current Docker Engine with BuildKit and a registry you can push to. Set `PMS_IMAGE` and `ADS_IMAGE` to your own complete image names/tags, authenticate to that registry, then build and publish:
-
-<!-- deployment-template: image-build -->
+<!-- deployment-template: image-run -->
 ```bash
-docker build --platform linux/amd64 -f ./bin/linux-amd64/Dockerfile.pms -t "$PMS_IMAGE" ./bin/linux-amd64
-docker build --platform linux/amd64 -f ./bin/linux-amd64/Dockerfile.ads -t "$ADS_IMAGE" ./bin/linux-amd64
-docker push "$PMS_IMAGE"
-docker push "$ADS_IMAGE"
+docker run --rm -p 6733:6733 -v speedle-policies:/data ghcr.io/teramoby/speedle-pms:latest --store-type file --filestore-loc /data/policies.json --endpoint 0.0.0.0:6733 --insecure=true
+docker run --rm -p 6734:6734 -v speedle-policies:/data ghcr.io/teramoby/speedle-ads:latest --store-type file --filestore-loc /data/policies.json --endpoint 0.0.0.0:6734 --insecure=true
 ```
 
-These images target Linux/amd64 nodes. Build an architecture matching your nodes if different. Provide CA files explicitly for TLS endpoints when using this minimal image.
+The images do not include CA certificates; provide the CA file for TLS endpoints. `--insecure=true` is for this local example only; see [Security](../security/).
 
 ## Kubernetes development example
 
-Use a current Kubernetes cluster and compatible `kubectl`. Save the following as `speedle-dev.yaml`. It uses `apps/v1`, one pod with PMS/ADS sharing one file, a non-root application UID and an internal ClusterIP service. This is an isolated development example: `emptyDir` policies are lost when the pod is replaced, and HTTP endpoints need cluster access controls. Use a private-registry pull secret if required by your registry.
+Use a current Kubernetes cluster and compatible `kubectl`. Save the following as `speedle-dev.yaml`. It uses `apps/v1`, one pod with PMS/ADS sharing one file, a non-root application UID and an internal ClusterIP service. This is an isolated development example: `emptyDir` policies are lost when the pod is replaced, and HTTP endpoints need cluster access controls. The manifest uses the published images; pin the release tag you deploy, and add an image pull secret if your cluster requires one.
 
 <!-- deployment-template: kubernetes -->
 ```yaml
@@ -105,7 +100,7 @@ spec:
               mountPath: /data
       containers:
         - name: pms
-          image: registry.example.com/speedle-pms:demo
+          image: ghcr.io/teramoby/speedle-pms:latest
           args: ["--store-type", "file", "--filestore-loc", "/data/policies.json", "--endpoint", "0.0.0.0:6733", "--insecure=true"]
           ports:
             - containerPort: 6733
@@ -116,7 +111,7 @@ spec:
             - name: policies
               mountPath: /data
         - name: ads
-          image: registry.example.com/speedle-ads:demo
+          image: ghcr.io/teramoby/speedle-ads:latest
           args: ["--store-type", "file", "--filestore-loc", "/data/policies.json", "--endpoint", "0.0.0.0:6734", "--insecure=true"]
           ports:
             - containerPort: 6734
@@ -147,7 +142,7 @@ spec:
       targetPort: 6734
 ```
 
-Keep `PMS_IMAGE` and `ADS_IMAGE` set to the images you published. Substitute them locally before applying; keep port-forward running while using Quick Start clients:
+Set `PMS_IMAGE` and `ADS_IMAGE` to the exact images you deploy, for example the release tag or `latest`. Substitute them locally before applying; keep port-forward running while using Quick Start clients:
 
 <!-- deployment-template: apply -->
 ```bash
@@ -158,6 +153,6 @@ kubectl port-forward service/speedle-dev 6733:6733 6734:6734
 
 ## Production deployments
 
-Use durable policy storage, protect management and decision endpoints, and configure TLS/mTLS for clients and the policy backend. [Pluggable Storage](../store/) documents the current store configuration; [Security](../security/) covers current transport flags. Size and operate the etcd deployment using the current etcd documentation, not the retired etcd-operator example.
+Use durable policy storage, pin container image tags to the release version you deploy, protect management and decision endpoints, and configure TLS/mTLS for clients and the policy backend. [Pluggable Storage](../store/) documents the current store configuration; [Security](../security/) covers current transport flags. Size and operate the etcd deployment using the current etcd documentation, not the retired etcd-operator example.
 
-The repository contains historical Helm/Kubernetes examples. The old Helm 2 `helm install -n ...`, `stable/etcd-operator`, `apps/v1beta2`, and `r.authz.fun` image instructions are not the deployment flow above. Container build/push, cluster admission, registry access, storage and rollout depend on your environment; validate them in your target cluster before production use.
+The repository contains historical Helm/Kubernetes examples. The old Helm 2 `helm install -n ...`, `stable/etcd-operator`, `apps/v1beta2`, and `r.authz.fun` image instructions are not the deployment flow above. Container pulls, cluster admission, registry access, storage and rollout depend on your environment; validate them in your target cluster before production use.
