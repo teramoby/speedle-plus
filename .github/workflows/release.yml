@@ -132,21 +132,40 @@ jobs:
             cp "dist/speedle-ads_linux_${arch}" "${CONTAINER_CONTEXT}/speedle-ads-linux-${arch}"
           done
 
-      # Build both images without pushing before the immutable tag is created,
-      # so a bad Dockerfile or TARGETARCH mapping cannot leave a published
-      # release without images.
-      - name: Verify the container images build
+      # Build and start both images before the immutable tag is created, so a
+      # bad Dockerfile, TARGETARCH mapping or runtime permission problem cannot
+      # leave a published release without working images.
+      - name: Verify the container images build and start
         run: |
           set -euo pipefail
           docker buildx create --name speedle-smoke --driver docker-container --use
           docker buildx inspect --bootstrap
+          trap 'docker stop speedle-smoke-pms speedle-smoke-ads >/dev/null 2>&1 || true; docker volume rm speedle-smoke >/dev/null 2>&1 || true' EXIT
           for command in speedle-pms speedle-ads; do
             suffix=${command#speedle-}
             docker buildx build \
               --platform linux/amd64,linux/arm64 \
               --file "deployment/container/Dockerfile.${suffix}" \
               --output type=cacheonly "${CONTAINER_CONTEXT}"
+            docker buildx build \
+              --platform linux/amd64 --load \
+              --file "deployment/container/Dockerfile.${suffix}" \
+              --tag "${command}:smoke" "${CONTAINER_CONTEXT}"
           done
+          docker volume rm speedle-smoke >/dev/null 2>&1 || true
+          docker volume create speedle-smoke >/dev/null
+          docker run --rm -d --name speedle-smoke-pms -p 127.0.0.1:6733:6733 -v speedle-smoke:/data \
+            speedle-pms:smoke --store-type file --filestore-loc /data/policies.json --endpoint 0.0.0.0:6733 --insecure=true
+          curl --fail --silent --show-error --retry 30 --retry-connrefused --retry-delay 1 \
+            http://127.0.0.1:6733/policy-mgmt/v1/service >/dev/null
+          docker stop speedle-smoke-pms >/dev/null
+          docker run --rm -d --name speedle-smoke-ads -p 127.0.0.1:6734:6734 -v speedle-smoke:/data \
+            speedle-ads:smoke --store-type file --filestore-loc /data/policies.json --endpoint 0.0.0.0:6734 --insecure=true
+          # ADS has no GET handler; any HTTP status means it is serving.
+          status=$(curl --silent --output /dev/null --write-out '%{http_code}' --retry 30 --retry-connrefused --retry-delay 1 \
+            http://127.0.0.1:6734/authz-check/v1/is-allowed || true)
+          [[ "${status}" != "000" ]] || { echo "ADS did not serve HTTP on 127.0.0.1:6734." >&2; exit 1; }
+          docker stop speedle-smoke-ads >/dev/null
 
       # Idempotent for re-runs: the validation above only lets an existing tag
       # through when it already points at the requested commit.
