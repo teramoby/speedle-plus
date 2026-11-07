@@ -44,7 +44,7 @@ Use a fresh policy file; PMS creates it if absent. Follow [Quick Start](../../qu
 
 ## Release binaries and container images
 
-Each release published by the release workflow attaches prebuilt `spctl`, `speedle-pms` and `speedle-ads` binaries for macOS and Linux on amd64 and arm64, named `<command>_<os>_<arch>`, plus a `checksums.txt` file. Download them from the [Releases page](https://github.com/teramoby/speedle-plus/releases) and verify each downloaded file against its SHA-256 checksum before running it.
+Each release published by the release workflow attaches prebuilt `spctl`, `speedle-pms` and `speedle-ads` binaries for macOS and Linux on amd64 and arm64, named `<command>_<os>_<arch>`, plus a `checksums.txt` file. Download them from the [Releases page](https://github.com/teramoby/speedle-plus/releases) and verify each downloaded file against its SHA-256 checksum before running it. Binaries and container images are produced by the release workflow, so they are available starting with the first release created after the workflow was added.
 
 The release workflow also publishes two multi-architecture container images for Linux amd64 and arm64:
 
@@ -75,7 +75,7 @@ The images do not include CA certificates; provide the CA file for TLS endpoints
 
 ## Kubernetes development example
 
-Use a current Kubernetes cluster and compatible `kubectl`. Save the following as `speedle-dev.yaml`. It uses `apps/v1`, one pod with PMS/ADS sharing one file, a non-root application UID and an internal ClusterIP service. This is an isolated development example: `emptyDir` policies are lost when the pod is replaced, and HTTP endpoints need cluster access controls. The manifest pins `v1.6.0`; change the tag or use a digest for the release you deploy, and add an image pull secret if your cluster requires one.
+Use a current Kubernetes cluster and compatible `kubectl`. Save the following as `speedle-dev.yaml`. It uses `apps/v1`, one pod with PMS/ADS sharing one file, a non-root application UID and an internal ClusterIP service. This is an isolated development example: `emptyDir` policies are lost when the pod is replaced, and HTTP endpoints need cluster access controls. The manifest uses a `<release-tag>` placeholder; replace it with the release tag or digest you deploy, and add an image pull secret if your cluster requires one.
 
 <!-- deployment-template: kubernetes -->
 ```yaml
@@ -104,7 +104,7 @@ spec:
               mountPath: /data
       containers:
         - name: pms
-          image: ghcr.io/teramoby/speedle-pms:v1.6.0
+          image: ghcr.io/teramoby/speedle-pms:<release-tag>
           args: ["--store-type", "file", "--filestore-loc", "/data/policies.json", "--endpoint", "0.0.0.0:6733", "--insecure=true"]
           ports:
             - containerPort: 6733
@@ -115,7 +115,7 @@ spec:
             - name: policies
               mountPath: /data
         - name: ads
-          image: ghcr.io/teramoby/speedle-ads:v1.6.0
+          image: ghcr.io/teramoby/speedle-ads:<release-tag>
           args: ["--store-type", "file", "--filestore-loc", "/data/policies.json", "--endpoint", "0.0.0.0:6734", "--insecure=true"]
           ports:
             - containerPort: 6734
