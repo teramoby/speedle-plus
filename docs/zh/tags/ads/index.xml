@@ -18,7 +18,7 @@
       <guid>https://engine.speedle.io/zh/docs/api/decision_api/</guid>
       <description>已配置 ADS 的接口参考。请求属性是带类型的数组，诊断响应属性是对象。
 请配置安全连接与端点访问控制。这是接口契约，speedle.io 不托管授权后端。
-              (function() { var url = &#34;\/swagger\/policy-check.zh.yaml&#34;; const ui = SwaggerUIBundle({ url: url, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.presets.apis ], plugins: [ SwaggerUIBundle.plugins.DownloadUrl ], validatorUrl: null, layout: &#34;BaseLayout&#34; }) window.ui = ui })();  </description>
+              document.addEventListener(&#39;DOMContentLoaded&#39;, function() { var url = &#34;\/swagger\/policy-check.zh.yaml&#34;; const ui = SwaggerUIBundle({ url: url, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.presets.apis ], plugins: [ SwaggerUIBundle.plugins.DownloadUrl ], validatorUrl: null, layout: &#34;BaseLayout&#34; }) window.ui = ui });  </description>
     </item>
     
   </channel>

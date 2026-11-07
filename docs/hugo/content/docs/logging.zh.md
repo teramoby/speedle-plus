@@ -22,7 +22,7 @@ Speedle 使用了下面两个开源项目来处理日志,
 
 Logrus 是一个针对 go 语言的结构化的日志处理器，它与 go 语言标准的 logger 库完全 API 兼容。因为 logrus 不支持对日志循环滚动处理（rotation），所以我们引入了另外一个开源项目 lumberjack。Logrus 与 lumberjack 之间通过 io.Writer 接口交互，如下图所示,
 
-![Speedle Logging](/img/speedle/logger.jpg)
+<img src="/img/speedle/logger.jpg" alt="Speedle Logging" width="370" height="230" loading="lazy">
 
 ## 日志配置
 

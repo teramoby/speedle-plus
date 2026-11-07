@@ -56,6 +56,7 @@ body.page-kube > header.site-header:lang(zh) {
   width: 152px;
   max-width: none;
   height: auto;
+  aspect-ratio: 304 / 104;
   margin: 0;
 }
 .site-header .brand-divider {
@@ -140,11 +141,16 @@ body.page-kube > header.site-header:lang(zh) {
     gap: 18px;
     background: #25134e;
   }
+  /* Collapse before first paint when scripts are known to run (#247); keep the
+     controller-ready selectors for archived snapshots that do not set the class. */
+  html.navigation-js .site-header .wrap.nav,
   .site-header.navigation-ready .wrap.nav {
     height: 76px;
     flex-wrap: nowrap;
   }
+  html.navigation-js .site-header .menu,
   .site-header.navigation-ready .menu { display: block; }
+  html.navigation-js .site-header .nav-links,
   .site-header.navigation-ready .nav-links {
     display: none;
     position: absolute;
@@ -153,6 +159,7 @@ body.page-kube > header.site-header:lang(zh) {
     max-height: calc(100dvh - 76px);
     overflow-y: auto;
   }
+  html.navigation-js .site-header .nav-links.open,
   .site-header.navigation-ready .nav-links.open { display: flex; }
 }
 @media (max-width: 700px) {
@@ -306,7 +313,7 @@ html body footer.site-footer :where(a) { color: inherit; }
   line-height: 1;
   vertical-align: top;
 }
-.site-footer .footer-lockup img { display: block; width: 132px; max-width: none; height: auto; margin: 0; }
+.site-footer .footer-lockup img { display: block; width: 132px; max-width: none; height: auto; aspect-ratio: 304 / 104; margin: 0; }
 .site-footer .footer-lockup .footer-divider { display: block; flex: none; width: 1px; height: 22px; background: currentColor; opacity: .4; }
 .site-footer .footer-lockup .footer-product { display: block; color: #01e7cb; font-size: 19px; font-weight: 600; letter-spacing: 0; line-height: 1; white-space: nowrap; }
 .site-footer .footer-tagline { margin: 12px 0 0; color: rgba(255,255,255,.7); font-size: 15px; line-height: 24px; }

@@ -6,7 +6,7 @@
     <description>Recent content in 文档 on Speedle</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>zh-cn</language>
-    <lastBuildDate>Sun, 08 Nov 2026 04:50:04 +0800</lastBuildDate>
+    <lastBuildDate>Sun, 08 Nov 2026 05:25:30 +0800</lastBuildDate>
     
 	<atom:link href="https://engine.speedle.io/zh/docs/index.xml" rel="self" type="application/rss+xml" />
     
@@ -46,7 +46,8 @@ curl --header &amp;#39;Content-Type: application/json&amp;#39; --data &amp;#39;{
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/zh/docs/spdl/</guid>
-      <description>基本的策略定义语言 保留关键字 grant、deny、user、group、entity、role、from、on、if、in 在各自语法位置有特定含义，策略语句的关键字大小写不敏感；条件成员运算使用 in 或 IN，函数名区分大小写。主体、操作和资源名称也区分大小写。当前解析器在部分名称位置可接受类似关键字的名称，不能把“所有位置都禁止关键字”当作验证规则。为便于审查与客户端互通，建议避免这类名称。
+      <description>基本的策略定义语言 
+保留关键字 grant、deny、user、group、entity、role、from、on、if、in 在各自语法位置有特定含义，策略语句的关键字大小写不敏感；条件成员运算使用 in 或 IN，函数名区分大小写。主体、操作和资源名称也区分大小写。当前解析器在部分名称位置可接受类似关键字的名称，不能把“所有位置都禁止关键字”当作验证规则。为便于审查与客户端互通，建议避免这类名称。
 命名规范 推荐使用简明、稳定的标识符；名称包含空格或分隔符时使用解析器支持的单引号或双引号形式，并测试实际输入。不应把历史 Java 正则字符类当作当前 Go 解析器的严格校验。资源前缀 expr: 表示 Go 正则表达式，不是 shell 通配符。条件的属性与函数名称另见下文。
 语法  POLICY = EFFECT SUBJECT ACTION RESOURCE [if CONDITION] EFFECT = grant | deny SUBJECT = AND_PRINCIPALS (, AND_PRINCIPALS)* AND_PRINCIPALS = PRINCIPAL | \( PRINCIPAL_LIST \) PRINCIPAL_LIST = PRINCIPAL (, PRINCIPAL)* PRINCIPAL = PRINCIPAL_TYPE PRINCIPAL_NAME [PRINCIPAL_IDD] PRINCIPAL_TYPE = user|group|entity|role PRINCIPAL_IDD = from IDD_IDENTIFIER IDD_IDENTIFIER = NAME ACTION = (ACTION_IDENTIFIER)(, ACTION_IDENTIFIER)* RESOURCE = RESOURCE_IDENTIFIER PRINCIPAL_NAME = NAME ACTION_IDENTIFIER = NAME RESOURCE_IDENTIFIER = NAME   ROLE_POLICY = EFFECT SUBJECT ROLE (on RESOURCE)?</description>
     </item>

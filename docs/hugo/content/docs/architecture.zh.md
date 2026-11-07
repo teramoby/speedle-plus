@@ -21,7 +21,7 @@ Speedle is an authorization engine comprised of these components:
 
 This diagram shows the interaction between these components.
 
-<img src="/img/speedle/spdlarch.jpg" />
+<img src="/img/speedle/spdlarch.jpg" width="524" height="241" loading="lazy" />
 
 (1) Users create/manage policies through the Policy Management Service API.  
 (2) The Policy Management Service persists the policies in the policy repository.  

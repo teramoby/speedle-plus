@@ -263,7 +263,9 @@ body.docs-page > .container {
 #main a:hover { text-decoration-color: currentColor; }
 #main img { max-width: 100%; height: auto; }
 #kube-component.content > img,
-#kube-component.content > p > img { display: block; margin: 30px auto; }
+#kube-component.content > p > img,
+#kube-component.content > picture > img,
+#kube-component.content > p > picture > img { display: block; margin: 30px auto; }
 
 /* Table of contents, generated from the existing Hugo heading IDs. */
 .docs-toc {
@@ -405,7 +407,9 @@ body.docs-page > .container {
 
 @media (max-width: 900px) {
   .content-container { grid-template-columns: minmax(0, 1fr); gap: 30px; }
-  .docs-nav-toggle:not([hidden]) { display: flex; }
+  /* The button is rendered before first paint so its space is reserved; without
+     scripts it stays hidden and the full sidebar keeps working (#247). */
+  html.docs-js .docs-nav-toggle { display: flex; }
   /* Phones: the sidebar becomes a "Menu" button that opens a drawer. */
   html.docs-js .docs-sidebar {
     position: fixed;

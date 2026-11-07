@@ -6,7 +6,7 @@
     <description>Recent content in Documentation on Speedle</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
-    <lastBuildDate>Sun, 08 Nov 2026 04:50:04 +0800</lastBuildDate>
+    <lastBuildDate>Sun, 08 Nov 2026 05:25:30 +0800</lastBuildDate>
     
 	<atom:link href="https://engine.speedle.io/docs/index.xml" rel="self" type="application/rss+xml" />
     
@@ -37,7 +37,8 @@ The examples below use a service named library. Each policy was created through 
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/docs/spdl/</guid>
-      <description>Syntax Keywords grant, deny, user, group, entity, role, from, on, if and in have special meanings in their syntax positions. Statement keywords are case-insensitive. In conditions, use in or IN; function names are case-sensitive. Principal, action and resource names are also case-sensitive. The current parser accepts keyword-like names in some name positions, so a blanket prohibition is not a validation rule. Prefer unambiguous names for review and client interoperability.</description>
+      <description>Syntax 
+Keywords grant, deny, user, group, entity, role, from, on, if and in have special meanings in their syntax positions. Statement keywords are case-insensitive. In conditions, use in or IN; function names are case-sensitive. Principal, action and resource names are also case-sensitive. The current parser accepts keyword-like names in some name positions, so a blanket prohibition is not a validation rule. Prefer unambiguous names for review and client interoperability.</description>
     </item>
     
     <item>

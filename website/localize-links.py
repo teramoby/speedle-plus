@@ -19,7 +19,11 @@ OWN_ORIGIN = re.compile(r"^https?://(?:engine\.)?speedle\.io(?=/)", re.I)
 NAVIGATION_VERSION = "language-direct-20261026"
 PREVIEW = re.compile(r"^/[0-9a-f]{32}(?=/)")
 HEADER_VERSION = "header-20261106-v8"
-HEADER_ASSETS = (f'<link href="/css/navigation.css?v={HEADER_VERSION}" rel="stylesheet">\n'
+# Collapse the mobile menu before first paint so short pages do not shift (#247);
+# without scripts the links stay in normal flow and remain usable.
+PREPAINT_SCRIPT = "<script>document.documentElement.classList.add('navigation-js');</script>\n"
+HEADER_ASSETS = (PREPAINT_SCRIPT +
+                 f'<link href="/css/navigation.css?v={HEADER_VERSION}" rel="stylesheet">\n'
                  f'<script src="/js/navigation.js?v={HEADER_VERSION}" defer></script>\n')
 WEB_ANALYTICS = (Path(__file__).resolve().parent / "cloudflare-web-analytics.html").read_text()
 BEACON = re.compile(r"<!-- Cloudflare Web Analytics -->[\s\S]*?<!-- End Cloudflare Web Analytics -->")
@@ -146,6 +150,10 @@ def archive_header(site, text, route):
         end = text.lower().find("</head>")
         if end >= 0:
             text = text[:end] + HEADER_ASSETS + text[end:]
+    elif "navigation-js" not in text:
+        end = text.lower().find("</head>")
+        if end >= 0:
+            text = text[:end] + PREPAINT_SCRIPT + text[end:]
     return text
 
 
@@ -298,6 +306,10 @@ class Links(HTMLParser):
         resource = "src" if tag in {"img", "script", "source", "iframe"} else "href" if tag == "link" and attrs.get("rel") in {"stylesheet", "icon", "apple-touch-icon"} else None
         if resource and OWN_ORIGIN.match(attrs.get(resource, "")):
             changes[resource] = OWN_ORIGIN.sub("", attrs[resource], count=1)
+        if tag in {"img", "source"} and attrs.get("srcset"):
+            normalized = OWN_ORIGIN.sub("", attrs["srcset"])
+            if normalized != attrs["srcset"]:
+                changes["srcset"] = normalized
         if tag == "script" and attrs.get("src"):
             script = urlsplit(urljoin(ORIGIN + self.base_route, attrs["src"]))
             if script.netloc in HOSTS and script.path.endswith("/js/master.js"):

@@ -15,13 +15,13 @@ bref = "Basics of policy management"
 
 策略管理服务（PMS）管理服务、授权策略、角色策略与自定义函数，由已注册的[存储后端](/docs/store/)持久化这些对象。
 
-<img src="/img/speedle/policystore.png"/>
+<img src="/img/speedle/policystore.png" width="1942" height="540" loading="lazy"/>
 
 ## 服务与授权策略
 
 服务限定策略的作用范围。授权策略允许或拒绝主体对资源执行操作，并可附带条件。除[全局角色策略](/docs/pms/global-policy/)外，一个服务的策略不会自动在另一个服务中生效。
 
-<img src="/img/speedle/authzpolicy.png"/>
+<img src="/img/speedle/authzpolicy.png" width="1770" height="444" loading="lazy"/>
 
 ```text
 grant group Administrators list,watch,get expr:^c1/default/core/pods/.*$
@@ -31,7 +31,7 @@ grant group Administrators list,watch,get expr:^c1/default/core/pods/.*$
 
 ## 角色策略
 
-<img src="/img/speedle/rolepolicy.png"/>
+<img src="/img/speedle/rolepolicy.png" width="1598" height="436" loading="lazy"/>
 
 ```text
 grant user alan manager on res1
@@ -44,11 +44,11 @@ grant role manager update res1
 
 主体可以是用户、组、实体或角色。实体表示服务等非人身份，集成代码必须从可信来源获取这些身份。
 
-<img src="/img/speedle/principal.png"/>
+<img src="/img/speedle/principal.png" width="1769" height="505" loading="lazy"/>
 
 AND 主体组要求组内所有身份均匹配，多组之间为 OR。以下例子要求两个角色都有效：
 
-<img src="/img/speedle/andprincipal.png"/>
+<img src="/img/speedle/andprincipal.png" width="1584" height="349" loading="lazy"/>
 
 ```text
 grant (role designer, role dba) update db_design_doc
@@ -56,7 +56,7 @@ grant (role designer, role dba) update db_design_doc
 
 资源是被保护的对象，操作是应用定义的动作。条件是由可信属性、常量、运算符与受支持函数构成的布尔表达式。
 
-<img src="/img/speedle/resource.png"/>
+<img src="/img/speedle/resource.png" width="1732" height="349" loading="lazy"/>
 
 语法见 [SPDL](/docs/spdl/)，完整决策示例见 [RBAC](/docs/overview/) 与 [ABAC](/docs/overview/)。
 
