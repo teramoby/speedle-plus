@@ -185,7 +185,7 @@ go build -o ./bin/ ./cmd/spctl ./cmd/speedle-pms ./cmd/speedle-ads</code></pre><
 
 <h2 id="release-binaries-and-container-images">Release binaries and container images</h2>
 
-<p>Each release published by the release workflow attaches prebuilt <code>spctl</code>, <code>speedle-pms</code> and <code>speedle-ads</code> binaries for macOS and Linux on amd64 and arm64, named <code>&lt;command&gt;_&lt;os&gt;_&lt;arch&gt;</code>, plus a <code>checksums.txt</code> file. Download them from the <a href="https://github.com/teramoby/speedle-plus/releases">Releases page</a> and verify each downloaded file against its SHA-256 checksum before running it.</p>
+<p>Each release published by the release workflow attaches prebuilt <code>spctl</code>, <code>speedle-pms</code> and <code>speedle-ads</code> binaries for macOS and Linux on amd64 and arm64, named <code>&lt;command&gt;_&lt;os&gt;_&lt;arch&gt;</code>, plus a <code>checksums.txt</code> file. Download them from the <a href="https://github.com/teramoby/speedle-plus/releases">Releases page</a> and verify each downloaded file against its SHA-256 checksum before running it. Binaries and container images are produced by the release workflow, so they are available starting with the first release created after the workflow was added.</p>
 
 <p>The release workflow also publishes two multi-architecture container images for Linux amd64 and arm64:</p>
 
@@ -212,7 +212,7 @@ docker run --rm -p <span style="color:#bd93f9">127</span>.0.0.1:6734:6734 -v spe
 
 <h2 id="kubernetes-development-example">Kubernetes development example</h2>
 
-<p>Use a current Kubernetes cluster and compatible <code>kubectl</code>. Save the following as <code>speedle-dev.yaml</code>. It uses <code>apps/v1</code>, one pod with PMS/ADS sharing one file, a non-root application UID and an internal ClusterIP service. This is an isolated development example: <code>emptyDir</code> policies are lost when the pod is replaced, and HTTP endpoints need cluster access controls. The manifest pins <code>v1.6.0</code>; change the tag or use a digest for the release you deploy, and add an image pull secret if your cluster requires one.</p>
+<p>Use a current Kubernetes cluster and compatible <code>kubectl</code>. Save the following as <code>speedle-dev.yaml</code>. It uses <code>apps/v1</code>, one pod with PMS/ADS sharing one file, a non-root application UID and an internal ClusterIP service. This is an isolated development example: <code>emptyDir</code> policies are lost when the pod is replaced, and HTTP endpoints need cluster access controls. The manifest uses a <code>&lt;release-tag&gt;</code> placeholder; replace it with the release tag or digest you deploy, and add an image pull secret if your cluster requires one.</p>
 
 <!-- deployment-template: kubernetes -->
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">apiVersion: apps/v1
@@ -240,27 +240,27 @@ spec:
               mountPath: /data
       containers:
         - name: pms
-          image: ghcr.io/teramoby/speedle-pms:v1.<span style="color:#bd93f9">6.0</span>
-          args: [<span style="color:#f1fa8c">&#34;--store-type&#34;</span>, <span style="color:#f1fa8c">&#34;file&#34;</span>, <span style="color:#f1fa8c">&#34;--filestore-loc&#34;</span>, <span style="color:#f1fa8c">&#34;/data/policies.json&#34;</span>, <span style="color:#f1fa8c">&#34;--endpoint&#34;</span>, <span style="color:#f1fa8c">&#34;0.0.0.0:6733&#34;</span>, <span style="color:#f1fa8c">&#34;--insecure=true&#34;</span>]
-          ports:
-            - containerPort: <span style="color:#bd93f9">6733</span>
-          readinessProbe:
-            tcpSocket:
-              port: <span style="color:#bd93f9">6733</span>
-          volumeMounts:
-            - name: policies
-              mountPath: /data
+          image: ghcr.io/teramoby/speedle-pms:&lt;release-tag<span style="color:#f1fa8c">&gt;
+</span><span style="color:#f1fa8c">          args: [&#34;--store-type&#34;, &#34;file&#34;, &#34;--filestore-loc&#34;, &#34;/data/policies.json&#34;, &#34;--endpoint&#34;, &#34;0.0.0.0:6733&#34;, &#34;--insecure=true&#34;]
+</span><span style="color:#f1fa8c">          ports:
+</span><span style="color:#f1fa8c">            - containerPort: 6733
+</span><span style="color:#f1fa8c">          readinessProbe:
+</span><span style="color:#f1fa8c">            tcpSocket:
+</span><span style="color:#f1fa8c">              port: 6733
+</span><span style="color:#f1fa8c">          volumeMounts:
+</span><span style="color:#f1fa8c">            - name: policies
+</span><span style="color:#f1fa8c">              mountPath: /data</span>
         - name: ads
-          image: ghcr.io/teramoby/speedle-ads:v1.<span style="color:#bd93f9">6.0</span>
-          args: [<span style="color:#f1fa8c">&#34;--store-type&#34;</span>, <span style="color:#f1fa8c">&#34;file&#34;</span>, <span style="color:#f1fa8c">&#34;--filestore-loc&#34;</span>, <span style="color:#f1fa8c">&#34;/data/policies.json&#34;</span>, <span style="color:#f1fa8c">&#34;--endpoint&#34;</span>, <span style="color:#f1fa8c">&#34;0.0.0.0:6734&#34;</span>, <span style="color:#f1fa8c">&#34;--insecure=true&#34;</span>]
-          ports:
-            - containerPort: <span style="color:#bd93f9">6734</span>
-          readinessProbe:
-            tcpSocket:
-              port: <span style="color:#bd93f9">6734</span>
-          volumeMounts:
-            - name: policies
-              mountPath: /data
+          image: ghcr.io/teramoby/speedle-ads:&lt;release-tag<span style="color:#f1fa8c">&gt;
+</span><span style="color:#f1fa8c">          args: [&#34;--store-type&#34;, &#34;file&#34;, &#34;--filestore-loc&#34;, &#34;/data/policies.json&#34;, &#34;--endpoint&#34;, &#34;0.0.0.0:6734&#34;, &#34;--insecure=true&#34;]
+</span><span style="color:#f1fa8c">          ports:
+</span><span style="color:#f1fa8c">            - containerPort: 6734
+</span><span style="color:#f1fa8c">          readinessProbe:
+</span><span style="color:#f1fa8c">            tcpSocket:
+</span><span style="color:#f1fa8c">              port: 6734
+</span><span style="color:#f1fa8c">          volumeMounts:
+</span><span style="color:#f1fa8c">            - name: policies
+</span><span style="color:#f1fa8c">              mountPath: /data</span>
       volumes:
         - name: policies
           emptyDir: {}
