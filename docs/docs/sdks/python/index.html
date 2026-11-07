@@ -149,7 +149,7 @@
 <div id="main">
 
   <h1>Python SDK</h1>
-  <p class="docs-lead">Install speedle 0.1.0 with pip or uv, then call is_allowed and check against a local Speedle or Speedle Cloud.</p>
+  <p class="docs-lead">Install speedle 0.2.0 with pip or uv, then call is_allowed and check against a local Speedle or Speedle Cloud.</p>
 
 
 
@@ -162,7 +162,7 @@
 
   <div id="kube-component" class="content">
 
-<p>The Python SDK needs Python 3.10 or later; its only runtime dependency is <code>httpx</code>. It has a sync <code>Client</code> and an asyncio <code>AsyncClient</code> with the same arguments. Package: <a href="https://pypi.org/project/speedle/"><code>speedle</code></a> 0.1.0 on PyPI. Reference: <a href="https://github.com/teramoby/speedle-sdk/tree/main/python">speedle-sdk/python</a>.</p>
+<p>The Python SDK needs Python 3.10 or later; its only runtime dependency is <code>httpx</code>. It has a sync <code>Client</code> and an asyncio <code>AsyncClient</code> with the same arguments. Package: <a href="https://pypi.org/project/speedle/"><code>speedle</code></a> 0.2.0 on PyPI. Reference: <a href="https://github.com/teramoby/speedle-sdk/tree/main/python">speedle-sdk/python</a>.</p>
 
 <p>The examples check the policy described in the <a href="/docs/sdks/#example-policy">SDKs overview</a>.</p>
 
@@ -171,9 +171,9 @@
 <p>With pip, in a virtual environment:</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">python3 -m venv .venv
 . .venv/bin/activate
-pip install <span style="color:#8be9fd;font-style:italic">speedle</span><span style="color:#ff79c6">==</span><span style="color:#bd93f9">0</span>.1.0</code></pre></div>
+pip install <span style="color:#8be9fd;font-style:italic">speedle</span><span style="color:#ff79c6">==</span><span style="color:#bd93f9">0</span>.2.0</code></pre></div>
 <p>Or with uv, in a uv project:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">uv add <span style="color:#8be9fd;font-style:italic">speedle</span><span style="color:#ff79c6">==</span><span style="color:#bd93f9">0</span>.1.0</code></pre></div>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">uv add <span style="color:#8be9fd;font-style:italic">speedle</span><span style="color:#ff79c6">==</span><span style="color:#bd93f9">0</span>.2.0</code></pre></div>
 <h2 id="call-a-local-speedle">Call a local Speedle</h2>
 
 <p>Start Speedle and create the example policy as described in the <a href="/docs/sdks/#example-policy">SDKs overview</a>. Save this program as <code>main.py</code>:</p>
@@ -183,7 +183,7 @@ pip install <span style="color:#8be9fd;font-style:italic">speedle</span><span st
 
 <span style="color:#ff79c6">try</span>:
     <span style="color:#ff79c6">with</span> Client(
-        backend<span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;speedle-plus&#34;</span>,
+        backend<span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;speedle&#34;</span>,
         endpoint<span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;http://localhost:6734&#34;</span>,
         auth<span style="color:#ff79c6">=</span>Auth<span style="color:#ff79c6">.</span>none(),
         service_name<span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;docs&#34;</span>,

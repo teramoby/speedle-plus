@@ -8,10 +8,10 @@ toc = true
 tocheading = "h2"
 tags = ["api", "sdk"]
 categories = ["docs"]
-bref = "Add Speedle.Sdk 0.1.0 with dotnet add package, then call IsAllowedAsync and CheckAsync against a local Speedle or Speedle Cloud."
+bref = "Add Speedle.Sdk 0.2.0 with dotnet add package, then call IsAllowedAsync and CheckAsync against a local Speedle or Speedle Cloud."
 +++
 
-The .NET SDK targets .NET 8 or later and has no dependencies. Package: [`Speedle.Sdk`](https://www.nuget.org/packages/Speedle.Sdk) 0.1.0 on NuGet, namespace `Speedle.Sdk`. Reference: [speedle-sdk/dotnet](https://github.com/teramoby/speedle-sdk/tree/main/dotnet).
+The .NET SDK targets .NET 8 or later and has no dependencies. Package: [`Speedle.Sdk`](https://www.nuget.org/packages/Speedle.Sdk) 0.2.0 on NuGet, namespace `Speedle.Sdk`. Reference: [speedle-sdk/dotnet](https://github.com/teramoby/speedle-sdk/tree/main/dotnet).
 
 The examples check the policy described in the [SDKs overview](/docs/sdks/#example-policy).
 
@@ -22,7 +22,7 @@ In a new console project:
 ```bash
 dotnet new console -o SpeedleExample
 cd SpeedleExample
-dotnet add package Speedle.Sdk --version 0.1.0
+dotnet add package Speedle.Sdk --version 0.2.0
 ```
 
 ## Call a local Speedle
@@ -36,7 +36,7 @@ try
 {
     await using var speedle = new SpeedleClient(new SpeedleClientOptions
     {
-        Backend = Backend.SpeedlePlus,
+        Backend = Backend.Speedle,
         Endpoint = new Uri("http://localhost:6734"),
         Auth = Auth.None(),
         ServiceName = "docs",

@@ -8,10 +8,10 @@ toc = true
 tocheading = "h2"
 tags = ["api", "sdk"]
 categories = ["docs"]
-bref = "用 pip 或 uv 安装 speedle 0.1.0，再向本地 Speedle 或 Speedle Cloud 调用 is_allowed 与 check。"
+bref = "用 pip 或 uv 安装 speedle 0.2.0，再向本地 Speedle 或 Speedle Cloud 调用 is_allowed 与 check。"
 +++
 
-Python SDK 需要 Python 3.10 或更高版本，唯一的运行时依赖是 `httpx`。它提供同步的 `Client` 和 asyncio 的 `AsyncClient`，两者参数相同。软件包：PyPI 上的 [`speedle`](https://pypi.org/project/speedle/) 0.1.0。参考文档：[speedle-sdk/python](https://github.com/teramoby/speedle-sdk/tree/main/python)。
+Python SDK 需要 Python 3.10 或更高版本，唯一的运行时依赖是 `httpx`。它提供同步的 `Client` 和 asyncio 的 `AsyncClient`，两者参数相同。软件包：PyPI 上的 [`speedle`](https://pypi.org/project/speedle/) 0.2.0。参考文档：[speedle-sdk/python](https://github.com/teramoby/speedle-sdk/tree/main/python)。
 
 示例检查的策略见 [SDK 概览](/docs/sdks/#示例策略)。
 
@@ -22,13 +22,13 @@ Python SDK 需要 Python 3.10 或更高版本，唯一的运行时依赖是 `htt
 ```bash
 python3 -m venv .venv
 . .venv/bin/activate
-pip install speedle==0.1.0
+pip install speedle==0.2.0
 ```
 
 或者使用 uv，在 uv 项目中添加：
 
 ```bash
-uv add speedle==0.1.0
+uv add speedle==0.2.0
 ```
 
 ## 调用本地 Speedle
@@ -42,7 +42,7 @@ from speedle import Auth, Client, SpeedleError
 
 try:
     with Client(
-        backend="speedle-plus",
+        backend="speedle",
         endpoint="http://localhost:6734",
         auth=Auth.none(),
         service_name="docs",
