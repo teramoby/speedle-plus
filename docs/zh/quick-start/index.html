@@ -23,7 +23,7 @@
   <meta property="og:title" content="Speedle 快速入门" />
 <meta property="og:description" content="使用 go install 或源码编译安装 Speedle，验证策略管理、直接授权以及带条件（ABAC）的允许与拒绝结果。" />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://engine.speedle.io/zh/quick-start/" /><meta property="article:modified_time" content="2026-11-08T01:11:09&#43;08:00"/>
+<meta property="og:url" content="https://engine.speedle.io/zh/quick-start/" /><meta property="article:modified_time" content="2026-11-08T01:52:53&#43;08:00"/>
   
 
 
@@ -138,7 +138,7 @@
 <!-- quick-start: install -->
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#8be9fd;font-style:italic">GOBIN</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;</span><span style="color:#8be9fd;font-style:italic">$PWD</span><span style="color:#f1fa8c">/bin&#34;</span> go install github.com/teramoby/speedle-plus/cmd/...@v1.6.0
 ls bin</code></pre></div>
-<p><code>GOBIN</code> 把可执行程序放到当前目录的 <code>bin</code> 中；不设置时，Go 会把它们写入 <code>$(go env GOPATH)/bin</code>。<code>v1.6.0</code> 是当前最新的发布标签；<code>go install</code> 使用该标签的源码编译，并通过 Go 校验和数据库验证。</p>
+<p><code>GOBIN</code> 把可执行程序放到当前目录的 <code>bin</code> 中；不设置时，Go 会把它们写入 <code>$(go env GOPATH)/bin</code>。<code>v1.6.0</code> 是撰写本文时的最新发布标签；<code>go install</code> 使用该标签的源码编译，并通过 Go 校验和数据库验证。</p>
 
 <h3 id="方式-b-下载源码并编译">方式 B：下载源码并编译</h3>
 
