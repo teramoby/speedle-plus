@@ -54,7 +54,7 @@ body.docs-page > .container {
 #kube-component.content { min-width: 0; }
 .content-container > main { width: 100%; }
 
-/* Documentation navigation: a modern, sticky left rail without a box. */
+/* Documentation navigation: a fully expanded left rail in normal page flow. */
 .docs-nav-toggle {
   width: 100%;
   min-height: 50px;
@@ -75,18 +75,12 @@ body.docs-page > .container {
 .docs-nav-toggle-icon { width: 18px; height: 14px; }
 .docs-sidebar {
   align-self: start;
-  position: sticky;
-  top: 96px;
-  max-height: calc(100vh - 120px);
+  position: static;
+  max-height: none;
   margin: 0;
   padding: 0 10px 28px 0;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  scrollbar-width: thin;
-  scrollbar-color: #d7d9e2 transparent;
+  overflow-y: visible;
 }
-.docs-sidebar::-webkit-scrollbar { width: 8px; }
-.docs-sidebar::-webkit-scrollbar-thumb { background: #d7d9e2; border-radius: 999px; }
 .docs-nav-head { display: none; }
 .docs-nav-title {
   color: var(--ink);
@@ -154,6 +148,13 @@ body.docs-page > .container {
   border-radius: var(--radius-control);
   overflow-wrap: anywhere;
 }
+/* The documentation root is depth -1: its direct children stay at the base level. */
+.sidebar li[data-docs-depth="1"] > a,
+.sidebar li[data-docs-depth="1"] > .docs-nav-heading { padding-left: 28px; }
+.sidebar li[data-docs-depth="2"] > a,
+.sidebar li[data-docs-depth="2"] > .docs-nav-heading { padding-left: 44px; }
+.sidebar li[data-docs-depth="3"] > a,
+.sidebar li[data-docs-depth="3"] > .docs-nav-heading { padding-left: 60px; }
 .sidebar li > a:hover {
   color: var(--ink);
   background: var(--soft);
