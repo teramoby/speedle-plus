@@ -61,6 +61,8 @@ docker pull ghcr.io/teramoby/speedle-pms:latest
 docker pull ghcr.io/teramoby/speedle-ads:latest
 ```
 
+To pin an image by digest, read the released digest with `docker buildx imagetools inspect ghcr.io/teramoby/speedle-pms:<tag>`.
+
 Both images run the service as UID 65532 and include a writable `/data` directory for the file store. Pass the server flags after the image name, and run each command in its own terminal:
 
 <!-- deployment-template: image-run -->
@@ -75,7 +77,7 @@ The images do not include CA certificates; provide the CA file for TLS endpoints
 
 ## Kubernetes development example
 
-Use a current Kubernetes cluster and compatible `kubectl`. Save the following as `speedle-dev.yaml`. It uses `apps/v1`, one pod with PMS/ADS sharing one file, a non-root application UID and an internal ClusterIP service. This is an isolated development example: `emptyDir` policies are lost when the pod is replaced, and HTTP endpoints need cluster access controls. The manifest uses a `<release-tag>` placeholder; replace it with the release tag or digest you deploy, and add an image pull secret if your cluster requires one.
+Use a current Kubernetes cluster and compatible `kubectl`. Save the following as `speedle-dev.yaml`. It uses `apps/v1`, one pod with PMS/ADS sharing one file, a non-root application UID and an internal ClusterIP service. This is an isolated development example: `emptyDir` policies are lost when the pod is replaced, and HTTP endpoints need cluster access controls. The manifest uses a `<release-tag>` placeholder; replace it with the release tag you deploy, or a digest for immutable pinning, and add an image pull secret if your cluster requires one.
 
 <!-- deployment-template: kubernetes -->
 ```yaml
@@ -157,6 +159,6 @@ kubectl port-forward service/speedle-dev 6733:6733 6734:6734
 
 ## Production deployments
 
-Use durable policy storage, pin container image tags or digests to the release version you deploy, protect management and decision endpoints, and configure TLS/mTLS for clients and the policy backend. [Pluggable Storage](../store/) documents the current store configuration; [Security](../security/) covers current transport flags. Size and operate the etcd deployment using the current etcd documentation, not the retired etcd-operator example.
+Use durable policy storage, pin container image digests to the release version you deploy (a release retry can republish a version tag), protect management and decision endpoints, and configure TLS/mTLS for clients and the policy backend. [Pluggable Storage](../store/) documents the current store configuration; [Security](../security/) covers current transport flags. Size and operate the etcd deployment using the current etcd documentation, not the retired etcd-operator example.
 
 The repository contains historical Helm/Kubernetes examples. The old Helm 2 `helm install -n ...`, `stable/etcd-operator`, `apps/v1beta2`, and `r.authz.fun` image instructions are not the deployment flow above. Container pulls, cluster admission, registry access, storage and rollout depend on your environment; validate them in your target cluster before production use.
