@@ -43,7 +43,7 @@ GOBIN="$PWD/bin" go install github.com/teramoby/speedle-plus/cmd/...@v1.6.0
 ls bin
 ```
 
-`GOBIN` keeps the executables in this directory's `bin` folder; without it, Go writes them to `$(go env GOPATH)/bin`. `v1.6.0` is the latest release tag; `go install` builds it from the tagged source and verifies it against the Go checksum database.
+`GOBIN` keeps the executables in this directory's `bin` folder; without it, Go writes them to `$(go env GOPATH)/bin`. `v1.6.0` is the latest release tag at the time of writing; `go install` builds it from the tagged source and verifies it against the Go checksum database.
 
 ### Route B: clone and build
 
