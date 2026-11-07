@@ -1,0 +1,25 @@
+{{- $page := .page -}}
+{{- $title := .title -}}
+{{- $description := .description -}}
+{{- $chinese := eq $page.Lang "zh" -}}
+{{- $image := cond $chinese "/img/social/engine-zh.png" "/img/social/engine-en.png" -}}
+{{- $alt := cond $chinese "Speedle Engine — 快速、简单的权限控制" "Speedle Engine — Fast. Simple. Access control" -}}
+<meta property="og:type" content="{{ if and $page.IsPage (eq $page.Section "docs") }}article{{ else }}website{{ end }}">
+<meta property="og:site_name" content="Speedle Engine">
+<meta property="og:title" content="{{ $title }}">
+{{- with $description }}
+<meta property="og:description" content="{{ . }}">
+{{- end }}
+<meta property="og:url" content="{{ $page.Permalink }}">
+<meta property="og:image" content="{{ $image | absURL }}">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:alt" content="{{ $alt }}">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="{{ $title }}">
+{{- with $description }}
+<meta name="twitter:description" content="{{ . }}">
+{{- end }}
+<meta name="twitter:image" content="{{ $image | absURL }}">
+<meta name="twitter:image:alt" content="{{ $alt }}">

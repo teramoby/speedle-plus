@@ -25,28 +25,6 @@ gRPC API  PMS proto：pb.PolicyManager ADS proto：pb.Evaluator  当前 proto �
     </item>
     
     <item>
-      <title>Authorization Runtime/Decision API</title>
-      <link>https://engine.speedle.io/zh/docs/api/decision_api/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://engine.speedle.io/zh/docs/api/decision_api/</guid>
-      <description>已配置 ADS 的接口参考。请求属性是带类型的数组，诊断响应属性是对象。
-请配置安全连接与端点访问控制。这是接口契约，speedle.io 不托管授权后端。
-              (function() { var url = &#34;\/swagger\/policy-check.zh.yaml&#34;; const ui = SwaggerUIBundle({ url: url, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.presets.apis ], plugins: [ SwaggerUIBundle.plugins.DownloadUrl ], validatorUrl: null, layout: &#34;BaseLayout&#34; }) window.ui = ui })();  </description>
-    </item>
-    
-    <item>
-      <title>Policy Management API</title>
-      <link>https://engine.speedle.io/zh/docs/api/management_api/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://engine.speedle.io/zh/docs/api/management_api/</guid>
-      <description>已配置 PMS 的接口参考。请求与响应使用 JSON，策略 ID 为字符串，响应为扁平对象。
-请配置安全连接与端点访问控制。这是接口契约，speedle.io 不托管授权后端。
-              (function() { var url = &#34;\/swagger\/policy-manage.zh.yaml&#34;; const ui = SwaggerUIBundle({ url: url, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.presets.apis ], plugins: [ SwaggerUIBundle.plugins.DownloadUrl ], validatorUrl: null, layout: &#34;BaseLayout&#34; }) window.ui = ui })();  </description>
-    </item>
-    
-    <item>
       <title>SPDL - Speedle 策略定义语言</title>
       <link>https://engine.speedle.io/zh/docs/spdl/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
@@ -83,7 +61,7 @@ curl --header &amp;#39;Content-Type: application/json&amp;#39; --data &amp;#39;{
     </item>
     
     <item>
-      <title>Token Assertion Plugin API</title>
+      <title>令牌断言插件 API</title>
       <link>https://engine.speedle.io/zh/docs/api/asserter_api/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
@@ -107,6 +85,17 @@ printf &amp;#39;{}\n&amp;#39; &amp;gt; docs-policies.json 终端一启动 PMS，
 ./bin/speedle-ads --store-type file --filestore-loc ./docs-policies.json --endpoint 127.0.0.1:6734 --grpc-endpoint 127.0.0.1:0 --insecure=true 在第三个终端运行后续命令。PMS/ADS 共享同一个文件，策略更新通过 watch 异步到达 ADS；先查询确认已更新，再依赖新策略做决策。--insecure=true 仅用于回环地址上的本地示例，生产连接见安全配置。示例显式指定 PMS 地址，不修改 ~/.spctlconfig。完成后在两个服务终端按 Ctrl-C。
 创建可重复的测试策略 测试文件给 Alan 分配 role1、role2；其中 role1 可以下载 /books/HarryPotter。
 ./bin/spctl --pms-endpoint http://127.</description>
+    </item>
+    
+    <item>
+      <title>授权运行时/决策 API</title>
+      <link>https://engine.speedle.io/zh/docs/api/decision_api/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/zh/docs/api/decision_api/</guid>
+      <description>已配置 ADS 的接口参考。请求属性是带类型的数组，诊断响应属性是对象。
+请配置安全连接与端点访问控制。这是接口契约，speedle.io 不托管授权后端。
+              (function() { var url = &#34;\/swagger\/policy-check.zh.yaml&#34;; const ui = SwaggerUIBundle({ url: url, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.presets.apis ], plugins: [ SwaggerUIBundle.plugins.DownloadUrl ], validatorUrl: null, layout: &#34;BaseLayout&#34; }) window.ui = ui })();  </description>
     </item>
     
     <item>
@@ -142,6 +131,17 @@ grant (role designer, role dba) update db_design_doc 资源是被保护的对象
 运行示例前 先按快速入门编译仓库根目录下的 ./bin/spctl、./bin/speedle-pms 和 ./bin/speedle-ads，需要 Go 1.26.10 或 Go 1.27.3（也可使用同一大版本的更新补丁版本）、Bash、curl 和 Python 3。下面各终端都从仓库根目录运行。为本页使用一个新的策略文件；仅在两个服务都停止后重建该文件。
 初始化空策略文件：
 printf &amp;#39;{}\n&amp;#39; &amp;gt; docs-policies.</description>
+    </item>
+    
+    <item>
+      <title>策略管理 API</title>
+      <link>https://engine.speedle.io/zh/docs/api/management_api/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/zh/docs/api/management_api/</guid>
+      <description>已配置 PMS 的接口参考。请求与响应使用 JSON，策略 ID 为字符串，响应为扁平对象。
+请配置安全连接与端点访问控制。这是接口契约，speedle.io 不托管授权后端。
+              (function() { var url = &#34;\/swagger\/policy-manage.zh.yaml&#34;; const ui = SwaggerUIBundle({ url: url, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.presets.apis ], plugins: [ SwaggerUIBundle.plugins.DownloadUrl ], validatorUrl: null, layout: &#34;BaseLayout&#34; }) window.ui = ui })();  </description>
     </item>
     
   </channel>

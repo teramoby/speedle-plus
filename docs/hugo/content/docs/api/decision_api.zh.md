@@ -1,5 +1,5 @@
 +++
-title = "Authorization Runtime/Decision API"
+title = "授权运行时/决策 API"
 description = "Swagger documentation for the runtime endpoint. Get decisions and granted roles and permissions; Discover policies dynamically; Debug your policy evaluation"
 tags = ["v0.1.0", "api", "guide", "core", "ads"]
 categories = ["docs"]

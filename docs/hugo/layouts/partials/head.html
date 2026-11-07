@@ -1,14 +1,18 @@
-{{- if eq .Title "" }}
-<title>{{ .Site.Title }}</title>
-{{- else }}
-<title>{{ .Title }} - {{ .Site.Title }}</title>
-{{- end }}
-{{- if ne .Description "" }}
-<meta name="description" content="{{ .Description }}">
-{{- else if isset .Site.Params "description" }}
-<meta name="description" content="{{ .Site.Params.description }}">
+{{- $description := .Description -}}
+{{- if and (not $description) .IsPage }}{{ $description = .Summary | plainify | truncate 200 }}{{ end -}}
+{{- if not $description }}{{ $description = .Site.Params.description }}{{ end -}}
+{{- $title := "Speedle Engine" -}}
+{{- if .IsHome -}}
+  {{- if eq .Lang "zh" -}}{{- $title = "Speedle Engine — 快速、简单的权限控制" -}}{{- else -}}{{- $title = "Speedle Engine — Fast. Simple. Access control" -}}{{- end -}}
+{{- else if .Title -}}
+  {{- $title = printf "%s · Speedle Engine" .Title -}}
+{{- end -}}
+<title>{{ $title }}</title>
+{{- with $description }}
+<meta name="description" content="{{ . }}">
 {{- end }}
 {{ .Hugo.Generator }}
 <link href="{{ .Site.BaseURL }}index.xml" rel="alternate" type="application/rss+xml">
 <link rel="canonical" href="{{ .Permalink }}">
 {{ partial "hreflang" . }}
+{{- partial "social.html" (dict "page" . "title" $title "description" $description) }}

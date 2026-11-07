@@ -119,23 +119,6 @@ curl --fail --silent --show-error -H &amp;#39;Content-Type: application/json&amp
     </item>
     
     <item>
-      <title>Contribution and Community</title>
-      <link>https://engine.speedle.io/zh/contribute/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://engine.speedle.io/zh/contribute/</guid>
-      <description>欢迎加入Speedle社区！您可以通过很多方式参与Speedle项目。
-使用 使用Speedle是您对这个项目的最大支持。我们希望Speedle可以作为信息系统权限控制的首选，我们也在朝这个目标努力。
-推广 您可以通过如下方式帮忙推广Speedle开源项目：
- 在the project at Github上加一颗星星 将Speedle推荐给您的朋友，同学，同事 如果不介意的话，您可以告诉我们您是怎么使用Speedle的，我们将把您的公司或组织加入到我们用户列表里 您可以撰写一些文章来分享使用心得，如果需要技术上的支持，请和我们联系  讨论和用户社区 您可以在通过如下途径参加Speedle相关讨论：
- 欢迎加入 Speedle Discord 社区，交流使用经验、提问或参与讨论。 如果无法访问 Discord，可以加入QQ群。群号：643201591  Issues 如果您发现Speedle的bug，或者希望Speedle实现一些新功能，请在GitHub issue 创建一个Issue。
-Issue的内容请包括：
- Speedle的版本 问题的详细描述 最好有可重现的环境和步骤 写清楚期望的行为  代码贡献 对 Speedle 的贡献依据 Universal Permissive License 1.0 (UPL-1.0) 提交。请为您的提交添加签名（sign-off），以证明您有权依据 Developer Certificate of Origin (DCO) 1.1 提交您的贡献。请在您的 Pull Request 中保留现有的版权和许可证声明，并标明任何第三方材料。
-如果您想为Speedle贡献代码，请完成如下流程：
- 使用 git commit -s 为每次提交添加签名（参见 DCO 和 UPL-1.0 LICENSE） Fork Speedle代码库 改动代码，保证您的代码通过所有测试 创建一个Pull Request 查看您的pipeline结果，如果有问题请修正 我们会审阅您的改动，如果大家没有异议，就merge这个PR  行为准则 请参阅 Golden Rule 和 Contributor Covenant Code of Conduct。</description>
-    </item>
-    
-    <item>
       <title>Java SDK</title>
       <link>https://engine.speedle.io/zh/docs/sdks/java/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
@@ -208,6 +191,23 @@ Speedle Cloud 支持授权策略和角色策略，不支持外部自定义函数
  Policy Management Service (PMS) API - Manages the authorization and role policies, and the objects from which they are created.
  Policy repository - Stores all the policy artifacts. The policy repository can be a json file, or a persistent store such as a database or etcd.
  Authorization Decision Service (ADS) API - Evaluates the authorization requests against the applicable policies and returns GRANT/DENY decisions.</description>
+    </item>
+    
+    <item>
+      <title>贡献与社区</title>
+      <link>https://engine.speedle.io/zh/contribute/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/zh/contribute/</guid>
+      <description>欢迎加入Speedle社区！您可以通过很多方式参与Speedle项目。
+使用 使用Speedle是您对这个项目的最大支持。我们希望Speedle可以作为信息系统权限控制的首选，我们也在朝这个目标努力。
+推广 您可以通过如下方式帮忙推广Speedle开源项目：
+ 在the project at Github上加一颗星星 将Speedle推荐给您的朋友，同学，同事 如果不介意的话，您可以告诉我们您是怎么使用Speedle的，我们将把您的公司或组织加入到我们用户列表里 您可以撰写一些文章来分享使用心得，如果需要技术上的支持，请和我们联系  讨论和用户社区 您可以在通过如下途径参加Speedle相关讨论：
+ 欢迎加入 Speedle Discord 社区，交流使用经验、提问或参与讨论。 如果无法访问 Discord，可以加入QQ群。群号：643201591  Issues 如果您发现Speedle的bug，或者希望Speedle实现一些新功能，请在GitHub issue 创建一个Issue。
+Issue的内容请包括：
+ Speedle的版本 问题的详细描述 最好有可重现的环境和步骤 写清楚期望的行为  代码贡献 对 Speedle 的贡献依据 Universal Permissive License 1.0 (UPL-1.0) 提交。请为您的提交添加签名（sign-off），以证明您有权依据 Developer Certificate of Origin (DCO) 1.1 提交您的贡献。请在您的 Pull Request 中保留现有的版权和许可证声明，并标明任何第三方材料。
+如果您想为Speedle贡献代码，请完成如下流程：
+ 使用 git commit -s 为每次提交添加签名（参见 DCO 和 UPL-1.0 LICENSE） Fork Speedle代码库 改动代码，保证您的代码通过所有测试 创建一个Pull Request 查看您的pipeline结果，如果有问题请修正 我们会审阅您的改动，如果大家没有异议，就merge这个PR  行为准则 请参阅 Golden Rule 和 Contributor Covenant Code of Conduct。</description>
     </item>
     
     <item>
@@ -411,7 +411,7 @@ Oracle Speedle 历史版本 0.1.0 是原项目首次开源的版本，包含策�
     </item>
     
     <item>
-      <title>Custom Function</title>
+      <title>自定义函数</title>
       <link>https://engine.speedle.io/zh/docs/custom-function/</link>
       <pubDate>Mon, 21 Jan 2019 10:43:02 +0800</pubDate>
       
@@ -423,29 +423,7 @@ go run ./website/tests/examples/custom-function package main import ( &amp;#34;e
     </item>
     
     <item>
-      <title>Authorization Runtime/Decision API</title>
-      <link>https://engine.speedle.io/zh/docs/api/decision_api/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://engine.speedle.io/zh/docs/api/decision_api/</guid>
-      <description>已配置 ADS 的接口参考。请求属性是带类型的数组，诊断响应属性是对象。
-请配置安全连接与端点访问控制。这是接口契约，speedle.io 不托管授权后端。
-              (function() { var url = &#34;\/swagger\/policy-check.zh.yaml&#34;; const ui = SwaggerUIBundle({ url: url, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.presets.apis ], plugins: [ SwaggerUIBundle.plugins.DownloadUrl ], validatorUrl: null, layout: &#34;BaseLayout&#34; }) window.ui = ui })();  </description>
-    </item>
-    
-    <item>
-      <title>Policy Management API</title>
-      <link>https://engine.speedle.io/zh/docs/api/management_api/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://engine.speedle.io/zh/docs/api/management_api/</guid>
-      <description>已配置 PMS 的接口参考。请求与响应使用 JSON，策略 ID 为字符串，响应为扁平对象。
-请配置安全连接与端点访问控制。这是接口契约，speedle.io 不托管授权后端。
-              (function() { var url = &#34;\/swagger\/policy-manage.zh.yaml&#34;; const ui = SwaggerUIBundle({ url: url, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.presets.apis ], plugins: [ SwaggerUIBundle.plugins.DownloadUrl ], validatorUrl: null, layout: &#34;BaseLayout&#34; }) window.ui = ui })();  </description>
-    </item>
-    
-    <item>
-      <title>Token Assertion Plugin API</title>
+      <title>令牌断言插件 API</title>
       <link>https://engine.speedle.io/zh/docs/api/asserter_api/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
@@ -465,6 +443,17 @@ go run ./website/tests/examples/custom-function package main import ( &amp;#34;e
 Speedle 由开发 Oracle Entitlements Server（OES）的同一团队打造，其设计建立在该团队在 OES、BEA ALES/WLES、CrossLogix 等前序授权产品上 30 年产品迭代的经验之上。
 Speedle 开源版本包括：
  SPDL（Speedle Policy Definition Language，Speedle 策略定义语言） 策略管理服务（Policy Management Service） 授权决策服务（Authorization Decision Service） 策略发现与调试接口（Policy Discovery and Debug endpoints） 命令行工具（spctl） 集成示例  Speedle 采用 Universal Permissive License v1.0 许可证，用户可以自由地把 Speedle 集成到自己的系统中。</description>
+    </item>
+    
+    <item>
+      <title>授权运行时/决策 API</title>
+      <link>https://engine.speedle.io/zh/docs/api/decision_api/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/zh/docs/api/decision_api/</guid>
+      <description>已配置 ADS 的接口参考。请求属性是带类型的数组，诊断响应属性是对象。
+请配置安全连接与端点访问控制。这是接口契约，speedle.io 不托管授权后端。
+              (function() { var url = &#34;\/swagger\/policy-check.zh.yaml&#34;; const ui = SwaggerUIBundle({ url: url, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.presets.apis ], plugins: [ SwaggerUIBundle.plugins.DownloadUrl ], validatorUrl: null, layout: &#34;BaseLayout&#34; }) window.ui = ui })();  </description>
     </item>
     
     <item>
@@ -493,6 +482,17 @@ Speedle 与 OPA、Kubernetes RBAC、Istio RBAC 有什么区别？ Speedle、OPA�
       
       <guid>https://engine.speedle.io/zh/playground/</guid>
       <description></description>
+    </item>
+    
+    <item>
+      <title>策略管理 API</title>
+      <link>https://engine.speedle.io/zh/docs/api/management_api/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/zh/docs/api/management_api/</guid>
+      <description>已配置 PMS 的接口参考。请求与响应使用 JSON，策略 ID 为字符串，响应为扁平对象。
+请配置安全连接与端点访问控制。这是接口契约，speedle.io 不托管授权后端。
+              (function() { var url = &#34;\/swagger\/policy-manage.zh.yaml&#34;; const ui = SwaggerUIBundle({ url: url, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.presets.apis ], plugins: [ SwaggerUIBundle.plugins.DownloadUrl ], validatorUrl: null, layout: &#34;BaseLayout&#34; }) window.ui = ui })();  </description>
     </item>
     
   </channel>

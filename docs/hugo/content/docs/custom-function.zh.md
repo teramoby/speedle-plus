@@ -1,5 +1,5 @@
 +++
-title = "Custom Function"
+title = "自定义函数"
 description = "Write policy condition with your own functions"
 date = 2019-01-21T10:43:02+08:00
 weight = 600

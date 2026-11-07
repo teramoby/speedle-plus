@@ -60,6 +60,13 @@ changed only (Engine original `#ff9a45`, Cloud `#4da3ff`, AI `#8b5cf6`);
 sphere on `#2f2350` with 20 px padding) are rendered from those SVGs; they replace
 `images/speedle_purple.png` and `images/speedle_black.png`.
 
+`static/img/social/engine-en.png` and `engine-zh.png` are the 1200 × 630 Open
+Graph/Twitter share images: the `Speedle | Engine` lock-up and the home-page
+headline on the Engine hero gradient. Every rendered content page declares the
+image for its language, with `twitter:card=summary_large_image`; the docs pages
+also carry `TechArticle`/`WebPage` and `BreadcrumbList` JSON-LD. `site.test.cjs`
+checks the image files, the metadata and the title/lang pattern on every page.
+
 Cloudflare Web Analytics uses manual JS installation. The public beacon snippet
 is in `website/cloudflare-web-analytics.html`; `localize-links.py` adds it once to
 every rendered page, including archived snapshots, replaces an older copy of the

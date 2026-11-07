@@ -339,6 +339,15 @@ Security and endpoint configuration. This is a contract reference, not a backend
     </item>
     
     <item>
+      <title>Documentation</title>
+      <link>https://engine.speedle.io/docs/</link>
+      <pubDate>Sun, 08 Nov 2026 04:50:04 +0800</pubDate>
+      
+      <guid>https://engine.speedle.io/docs/</guid>
+      <description></description>
+    </item>
+    
+    <item>
       <title>Integrations</title>
       <link>https://engine.speedle.io/integrations/</link>
       <pubDate>Sat, 07 Nov 2026 19:56:43 +0800</pubDate>
@@ -357,15 +366,6 @@ REST and gRPC APIs Manage services, policies and roles through the Policy Manage
       <description>Reference for your configured PMS. Requests and responses are JSON; policy IDs are strings and responses are flat objects.
 Security and endpoint configuration. This is a contract reference, not a backend hosted by speedle.io.
               (function() { var url = &#34;\/swagger\/policy-manage.yaml&#34;; const ui = SwaggerUIBundle({ url: url, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.presets.apis ], plugins: [ SwaggerUIBundle.</description>
-    </item>
-    
-    <item>
-      <title>Speedle Documents</title>
-      <link>https://engine.speedle.io/docs/</link>
-      <pubDate>Sat, 07 Nov 2026 20:11:37 +0800</pubDate>
-      
-      <guid>https://engine.speedle.io/docs/</guid>
-      <description></description>
     </item>
     
     <item>

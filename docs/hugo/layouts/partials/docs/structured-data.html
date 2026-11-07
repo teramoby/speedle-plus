@@ -1,0 +1,49 @@
+{{- $chinese := eq .Lang "zh" -}}
+{{- $language := cond $chinese "zh-CN" "en" -}}
+{{- $base := .Site.BaseURL -}}
+{{- $image := cond $chinese "/img/social/engine-zh.png" "/img/social/engine-en.png" | absURL -}}
+{{- $organization := dict "@type" "Organization" "name" "Speedle" "url" $base -}}
+{{- $description := .Description | default .Site.Params.description -}}
+{{- $trail := newScratch -}}
+{{- $trail.Add "pages" (slice .) -}}
+{{- $node := . -}}
+{{- range seq 0 7 -}}
+  {{- with $node.Parent -}}
+    {{- $trail.Add "pages" (slice .) -}}
+    {{- $node = . -}}
+  {{- end -}}
+{{- end -}}
+{{- $pages := $trail.Get "pages" -}}
+{{- $length := len $pages -}}
+{{- $items := newScratch -}}
+{{- range $i := seq 0 (sub $length 1) -}}
+  {{- $crumb := index $pages (sub (sub $length 1) $i) -}}
+  {{- $name := $crumb.Title -}}
+  {{- if eq $crumb.Kind "home" -}}
+    {{- $name = cond $chinese "首页" "Home" -}}
+  {{- end -}}
+  {{- $items.Add "list" (slice (dict "@type" "ListItem" "position" (add $i 1) "name" $name "item" $crumb.Permalink)) -}}
+{{- end -}}
+{{- $article := newScratch -}}
+{{- $article.SetInMap "data" "@context" "https://schema.org" -}}
+{{- $article.SetInMap "data" "@type" (cond .IsPage "TechArticle" "WebPage") -}}
+{{- $article.SetInMap "data" "@id" (printf "%s#%s" .Permalink (cond .IsPage "article" "webpage")) -}}
+{{- $article.SetInMap "data" "url" .Permalink -}}
+{{- $article.SetInMap "data" "headline" .Title -}}
+{{- $article.SetInMap "data" "name" .Title -}}
+{{- with $description }}{{ $article.SetInMap "data" "description" . }}{{ end -}}
+{{- $article.SetInMap "data" "inLanguage" $language -}}
+{{- $article.SetInMap "data" "isPartOf" (dict "@id" (printf "%s#website" $base)) -}}
+{{- $article.SetInMap "data" "about" (dict "@id" (printf "%s#software" $base)) -}}
+{{- $article.SetInMap "data" "mainEntityOfPage" (dict "@type" "WebPage" "@id" .Permalink) -}}
+{{- $article.SetInMap "data" "image" $image -}}
+{{- $article.SetInMap "data" "author" $organization -}}
+{{- $article.SetInMap "data" "publisher" (dict "@type" "Organization" "name" "Speedle" "url" $base "logo" (dict "@type" "ImageObject" "url" (printf "%sapple-touch-icon.png" $base) "width" 180 "height" 180)) -}}
+{{- if and .IsPage .Params.date -}}
+  {{- $article.SetInMap "data" "datePublished" (.Date.Format "2006-01-02T15:04:05Z07:00") -}}
+{{- end -}}
+{{- if and .Lastmod (not .Lastmod.IsZero) -}}
+  {{- $article.SetInMap "data" "dateModified" (.Lastmod.Format "2006-01-02T15:04:05Z07:00") -}}
+{{- end -}}
+{{- $breadcrumbs := dict "@context" "https://schema.org" "@type" "BreadcrumbList" "@id" (printf "%s#breadcrumb" .Permalink) "itemListElement" ($items.Get "list") -}}
+{{- printf "<script type=\"application/ld+json\">%s</script>\n<script type=\"application/ld+json\">%s</script>" ($article.Get "data" | jsonify) ($breadcrumbs | jsonify) | safeHTML -}}
