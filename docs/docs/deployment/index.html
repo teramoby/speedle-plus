@@ -185,7 +185,7 @@ go build -o ./bin/ ./cmd/spctl ./cmd/speedle-pms ./cmd/speedle-ads</code></pre><
 
 <h2 id="release-binaries-and-container-images">Release binaries and container images</h2>
 
-<p>Each release published by the release workflow attaches prebuilt <code>spctl</code>, <code>speedle-pms</code> and <code>speedle-ads</code> binaries for macOS and Linux on amd64 and arm64, named <code>&lt;command&gt;_&lt;os&gt;_&lt;arch&gt;</code>, plus a <code>checksums.txt</code> file. Download them from the <a href="https://github.com/teramoby/speedle-plus/releases">Releases page</a> and verify each downloaded file against its SHA-256 checksum before running it. Binaries and container images are produced by the release workflow, so they are available starting with the first release created after the workflow was added.</p>
+<p>Each release published by the release workflow attaches prebuilt <code>spctl</code>, <code>speedle-pms</code> and <code>speedle-ads</code> binaries for macOS and Linux on amd64 and arm64, named <code>&lt;command&gt;_&lt;os&gt;_&lt;arch&gt;</code>, plus a <code>checksums.txt</code> file. Download them from the <a href="https://github.com/teramoby/speedle-plus/releases">Releases page</a> and verify each downloaded file against its SHA-256 checksum before running it; the checksum file is attached to the same release, so it detects incomplete or corrupted downloads rather than authenticating the release. Binaries and container images are produced by the release workflow, so they are available starting with the first release created after the workflow was added.</p>
 
 <p>The release workflow also publishes two multi-architecture container images for Linux amd64 and arm64:</p>
 
