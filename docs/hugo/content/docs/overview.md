@@ -44,7 +44,7 @@ With the RBAC policies below, the response is `{"allowed":true,"reason":0}`. See
 
 ## PEP: Policy Enforcement Point
 
-The PEP intercepts an access attempt, asks the PDP for a decision and enforces it. Speedle does not ship a general-purpose PEP; the PEP is the application or gateway that calls the ADS. The [Docker, Kubernetes and Istio integrations](../../integrations/) are sample PEPs.
+The PEP intercepts an access attempt, asks the PDP for a decision and enforces it. Speedle does not ship a general-purpose PEP; the PEP is the application or gateway that calls the ADS through its REST or gRPC API, or that embeds the evaluator in Go. See [Integrations](../../integrations/) for the supported interfaces.
 
 ## PIP: Policy Information Point
 
@@ -106,4 +106,4 @@ SPDL stands for Speedle Policy Definition Language. It is the language used to w
 
 ## Integrations
 
-Speedle provides integration samples for [Docker](../../integrations/docker/) (a Docker authorization plugin), [Kubernetes](../../integrations/kubernetes/) (an authorization webhook) and [Istio](../../integrations/istio/) (a Mixer adapter). Other applications call the ADS through REST or gRPC, or embed the evaluator in Go; see [Deployment](../deployment/).
+Other applications call the ADS through its [REST or gRPC APIs](../api/), or embed the evaluator in Go; see [Deployment](../deployment/). The [Integrations](../../integrations/) page lists the APIs, SDKs, embedded mode and policy stores that ship today.

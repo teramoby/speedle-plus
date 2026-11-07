@@ -154,7 +154,7 @@
       <button class="menu" type="button" aria-expanded="false" aria-controls="nav-links" aria-label="展开导航">☰</button>
       <nav class="nav-links" id="nav-links" aria-label="主导航">
         <div class="products"><button class="products-button" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="products-panel">产品<svg class="products-chevron" width="10" height="10" viewBox="0 0 10 10" aria-hidden="true" focusable="false"><path d="M2 3.5 5 6.5 8 3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button><span class="products-heading" aria-hidden="true">产品</span><div class="products-panel" id="products-panel" role="group" aria-label="产品"><a class="product-row" href="https://engine.speedle.io/zh/" aria-current="page"><img class="product-mark" src="/img/speedle/speedle-mark-engine.svg" alt="" width="20" height="20"><span class="product-text"><span class="product-name">Speedle Engine</span><span class="product-desc">开源授权引擎</span></span><svg class="product-check" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M3.5 8.5 6.5 11.5 12.5 4.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></a><a class="product-row" href="https://cloud.speedle.io/zh-CN/"><img class="product-mark" src="/img/speedle/speedle-mark-cloud.svg" alt="" width="20" height="20"><span class="product-text"><span class="product-name">Speedle Cloud <span class="product-badge">即将上线</span></span><span class="product-desc">面向开发者的托管授权服务</span></span></a><a class="product-row" href="https://ai.speedle.io/zh/"><img class="product-mark" src="/img/speedle/speedle-mark-ai.svg" alt="" width="20" height="20"><span class="product-text"><span class="product-name">Speedle AI</span><span class="product-desc">面向 AI 的访问管理</span></span></a></div></div>
-        <a href="#about">关于</a><a href="#features">功能</a><a href="#integrations">集成</a>
+        <a href="#about">关于</a><a href="#features">功能</a>
         <a href="/zh/quick-start/">快速入门</a><a href="/zh/docs/">文档</a><a href="/zh/playground/">Playground</a>
         <a href="/" lang="en" hreflang="en" aria-label="Switch to English">English</a>
         <a class="nav-github" href="https://github.com/teramoby/speedle-plus">GitHub</a>
@@ -223,7 +223,7 @@
         </div>
         <div class="feature-grid">
           <article class="feature-card"><img class="feature-icon" src="/img/speedle/1.%20Simple%20Policy%20Definition%20Language.svg" alt=""><h3>简洁的策略语言</h3><p>使用易读的 Speedle 策略定义语言（SPDL）表达授权规则。</p><a href="/zh/docs/spdl/">了解更多</a></article>
-          <article class="feature-card"><img class="feature-icon" src="/img/speedle/2.%20Cloud%20Native.svg" alt=""><h3>云原生</h3><p>支持跨云运行，通过可插拔接口对接现代基础设施。</p><a href="/zh/categories/cloudnative/">了解更多</a></article>
+          <article class="feature-card"><img class="feature-icon" src="/img/speedle/2.%20Cloud%20Native.svg" alt=""><h3>云原生</h3><p>支持跨云运行，通过可插拔接口对接现代基础设施。</p><a href="/zh/docs/deployment/">了解更多</a></article>
           <article class="feature-card"><img class="feature-icon" src="/img/speedle/3.%20Policy%20Discovery.svg" alt=""><h3>实时策略发现</h3><p>观察运行时交互，将真实访问模式转化为可执行的授权策略。</p><a href="/zh/docs/pms/">了解更多</a></article>
           <article class="feature-card"><img class="feature-icon" src="/img/speedle/4.%20RBAC-ABAC.svg" alt=""><h3>RBAC / ABAC</h3><p>结合角色与属性，实现精确的访问控制。</p><a href="/zh/tags/policy/">了解更多</a></article>
           <article class="feature-card"><img class="feature-icon" src="/img/speedle/5.%20Centralized%20Policy%20Management.svg" alt=""><h3>集中式管理</h3><p>在同一处管理不同服务的授权策略。</p><a href="/zh/docs/pms/">了解更多</a></article>
@@ -248,20 +248,6 @@
 
 <span class="cm"># 拒绝优先：Bob 的借书卡无效时不能借书</span>
 <span class="kw">deny</span> <span class="kw">user</span> <span class="str">bob</span> <span class="str">borrow</span> <span class="str">book</span> <span class="kw">if</span> <span class="str">is_card_valid</span> == <span class="str">false</span></pre>
-        </div>
-      </div>
-    </section>
-
-    <section id="integrations">
-      <div class="wrap">
-        <div class="section-head">
-          <div><span class="eyebrow">集成</span><h2>融入你正在使用的基础设施</h2></div>
-          <a class="text-link" href="/zh/integrations/">查看全部集成</a>
-        </div>
-        <div class="integrations-grid">
-          <a class="integration" href="/zh/integrations/kubernetes/" aria-label="Kubernetes 集成"><img src="/img/speedle/22.%20Kubernetes.svg" alt="Kubernetes"></a>
-          <a class="integration" href="/zh/integrations/istio/" aria-label="Istio 集成"><img src="/img/speedle/23.%20Istio.svg" alt="Istio"></a>
-          <a class="integration" href="/zh/integrations/docker/" aria-label="Docker 集成"><img src="/img/speedle/24.%20Docker.svg" alt="Docker"></a>
         </div>
       </div>
     </section>
