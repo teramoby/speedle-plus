@@ -212,7 +212,7 @@ RESOURCE_IDENTIFIER = NAME
 
 <p>Condition is supported in both policy and role policy definitions. The policy or role policy can take effect <em>only</em> when the condition is met.</p>
 
-<p>The policy enforcement point (PEP) must supply every attribute your policies reference; a condition on an attribute missing from the request does not match.</p>
+<p>The policy enforcement point (PEP) must supply every custom attribute your policies reference (built-in attributes such as <code>request_user</code> and <code>request_time</code> are provided by ADS); a condition on an attribute missing from the request does not match.</p>
 
 <p>This document focuses on what a condition is, and how to write a condition.</p>
 
