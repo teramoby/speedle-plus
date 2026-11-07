@@ -1,0 +1,24 @@
+{
+  "id": "chatcmpl-fixture-length",
+  "object": "chat.completion",
+  "created": 1793084842,
+  "model": "deepseek-flash",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "reasoning_content": "PRIVATE_REASONING",
+        "content": ""
+      },
+      "logprobs": null,
+      "finish_reason": "length"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 100,
+    "completion_tokens": 65536,
+    "total_tokens": 65636,
+    "completion_tokens_details": {"reasoning_tokens": 65536}
+  }
+}
