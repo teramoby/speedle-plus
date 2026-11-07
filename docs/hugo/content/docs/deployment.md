@@ -63,9 +63,11 @@ Both images run the service as UID 65532 and include a writable `/data` director
 
 <!-- deployment-template: image-run -->
 ```bash
-docker run --rm -p 6733:6733 -v speedle-policies:/data ghcr.io/teramoby/speedle-pms:latest --store-type file --filestore-loc /data/policies.json --endpoint 0.0.0.0:6733 --insecure=true
-docker run --rm -p 6734:6734 -v speedle-policies:/data ghcr.io/teramoby/speedle-ads:latest --store-type file --filestore-loc /data/policies.json --endpoint 0.0.0.0:6734 --insecure=true
+docker run --rm -p 127.0.0.1:6733:6733 -v speedle-policies:/data ghcr.io/teramoby/speedle-pms:latest --store-type file --filestore-loc /data/policies.json --endpoint 0.0.0.0:6733 --insecure=true
+docker run --rm -p 127.0.0.1:6734:6734 -v speedle-policies:/data ghcr.io/teramoby/speedle-ads:latest --store-type file --filestore-loc /data/policies.json --endpoint 0.0.0.0:6734 --insecure=true
 ```
+
+PMS has no built-in caller authentication; the `127.0.0.1` binding keeps the unauthenticated management API on this machine. Never publish these ports on a host interface or expose them to an untrusted network.
 
 The images do not include CA certificates; provide the CA file for TLS endpoints. `--insecure=true` is for this local example only; see [Security](../security/).
 

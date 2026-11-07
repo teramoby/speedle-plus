@@ -62,9 +62,11 @@ docker pull ghcr.io/teramoby/speedle-ads:latest
 
 <!-- deployment-template: image-run -->
 ```bash
-docker run --rm -p 6733:6733 -v speedle-policies:/data ghcr.io/teramoby/speedle-pms:latest --store-type file --filestore-loc /data/policies.json --endpoint 0.0.0.0:6733 --insecure=true
-docker run --rm -p 6734:6734 -v speedle-policies:/data ghcr.io/teramoby/speedle-ads:latest --store-type file --filestore-loc /data/policies.json --endpoint 0.0.0.0:6734 --insecure=true
+docker run --rm -p 127.0.0.1:6733:6733 -v speedle-policies:/data ghcr.io/teramoby/speedle-pms:latest --store-type file --filestore-loc /data/policies.json --endpoint 0.0.0.0:6733 --insecure=true
+docker run --rm -p 127.0.0.1:6734:6734 -v speedle-policies:/data ghcr.io/teramoby/speedle-ads:latest --store-type file --filestore-loc /data/policies.json --endpoint 0.0.0.0:6734 --insecure=true
 ```
+
+PMS 没有内置的调用方身份认证；`127.0.0.1` 绑定把未认证的管理 API 限制在本机。请勿将这些端口发布到主机网络接口，也不要暴露给不受信任的网络。
 
 映像不包含 CA 证书；连接 TLS 端点时需要提供 CA 文件。`--insecure=true` 仅用于本机示例，详见[安全配置](../security/)。
 
