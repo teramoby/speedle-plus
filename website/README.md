@@ -133,6 +133,5 @@ python3 website/tests/test_language_routes.py
 The existing protected Go CI build job runs the Playground release gate, both
 language form suites, route tests, a complete published-link audit, and a temporary
 build with the checksum-pinned official Hugo 0.48 binary. Existing homepage/CSS
-and source/output invariants remain checked. The language-navigation release
-query on the legacy script and Playground entry module refreshes previously
-cached browser code when this feature is deployed.
+and source/output invariants remain checked. The release query on the Playground
+entry module refreshes previously cached browser code when that module changes.

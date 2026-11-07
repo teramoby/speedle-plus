@@ -37,6 +37,19 @@ const server = http.createServer((req,res)=>{
       const result=JSON.parse(await page.locator('#result-json').textContent());
       assert.equal(result.allowed,want==='true',sample); assert.equal(result.ok,true,sample);
     }
+    // #245: after Evaluate the result card is in the viewport at common desktop and phone sizes.
+    for(const [width,height] of [[1440,900],[390,844],[320,568]]) {
+      await page.setViewportSize({width,height});
+      await page.evaluate(()=>scrollTo(0,0));
+      await page.locator('#reset-button').click();
+      await page.locator('#evaluate').click();
+      await page.waitForFunction(()=>document.getElementById('result-card').classList.contains('allowed'));
+      let visible=true;
+      try { await page.waitForFunction(()=>{const box=document.getElementById('result-card').getBoundingClientRect();return box.top>=0&&box.bottom<=innerHeight+1},{},{timeout:5000}); }
+      catch { visible=false; }
+      assert.ok(visible,`Result card visible without scrolling after Evaluate at ${width}x${height}`);
+    }
+    await page.setViewportSize({width:1440,height:1100});
     await page.locator('#policies').fill('grant user alice read book trailing');
     await page.locator('#evaluate').click();
     await page.waitForFunction(()=>document.getElementById('result-card').classList.contains('error'));
@@ -81,7 +94,9 @@ const server = http.createServer((req,res)=>{
       }
     }
     assert.deepEqual(errors,[],'No browser exceptions');
-    assert.ok(requests.every(r=>r.url.startsWith(origin+'/')&&r.method==='GET'),'Only same-origin static GET requests; no policy/request uploads');
+    // The only permitted cross-origin traffic is the cookieless Cloudflare Web Analytics beacon.
+    const analyticsBeacon = /^https:\/\/(?:static\.)?cloudflareinsights\.com\/(?:beacon\.min\.js|cdn-cgi\/rum)$/;
+    assert.ok(requests.every(r=>analyticsBeacon.test(r.url) || (r.url.startsWith(origin+'/')&&r.method==='GET')),'Only same-origin static GET requests plus the analytics beacon; no policy/request uploads');
     console.log('PASS browser: top navigation, actual WASM samples and errors, validation, principals, typed attributes, array controls, reset, mobile menus, 320–1440px overflow, browser-only requests');
   } finally {if(browser)await browser.close();await new Promise(resolve=>server.close(resolve));}
 })().catch(e=>{console.error(e);process.exitCode=1;});

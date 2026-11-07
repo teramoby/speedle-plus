@@ -36,7 +36,7 @@ function renderEditor(editor) {
   editor.highlight.innerHTML = highlight(editor.input.value, editor.language);
   const lines = editor.input.value.split('\n').length;
   editor.gutter.textContent = Array.from({length:lines}, (_, n) => n + 1).join('\n');
-  editor.count.textContent = t(`${lines} lines`);
+  editor.count.textContent = t(lines === 1 ? '1 line' : `${lines} lines`);
   syncScroll(editor);
 }
 function syncScroll(editor) {
@@ -44,11 +44,14 @@ function syncScroll(editor) {
   editor.highlight.scrollLeft = editor.input.scrollLeft;
   editor.gutter.scrollTop = editor.input.scrollTop;
 }
+// Evaluation runs below the editors, so on short viewports the result would
+// otherwise stay out of view. nearest leaves an already visible card alone.
+function revealResult() { $('result-card').scrollIntoView({ block: 'nearest' }); }
 function icon(id) { $('result-symbol').replaceChildren(); const svg = document.createElementNS('http://www.w3.org/2000/svg','svg'); svg.setAttribute('class','icon'); const use=document.createElementNS('http://www.w3.org/2000/svg','use'); use.setAttribute('href',`#i-${id}`); svg.append(use); $('result-symbol').append(svg); }
 function resetResult(edited = false) {
   engineErrorVisible = false;
   $('result-card').className = 'result-card idle'; icon('terminal');
-  $('result-label').textContent = edited ? t('Inputs updated. Evaluate again to see the result.') : t('Ready to test your policies.');
+  $('result-label').textContent = edited ? t('Inputs updated. Evaluate again to see the result.') : t('Ready to test your policies');
   $('result-description').textContent = t('Select Evaluate to check whether this request is allowed.');
   $('result-type').textContent = t('BOOLEAN OUTPUT');
   $('result-meta').textContent = edited ? t('Run again') : t('Not run yet');
@@ -131,12 +134,13 @@ async function evaluate() {
   const request=converted.request;
   busy=true; updateButton();
   $('result-card').className='result-card pending';icon('terminal');$('result-label').textContent=t('Evaluating…');$('result-description').textContent=t('Evaluating these policies and this request with Speedle.');$('result-meta').textContent=t('RUNNING');
+  revealResult();
   try {
     await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
     const result=await engine.evaluate({policies,request});
     if(version!==inputVersion) return;
-    if(result.ok===false || result.error) {showError(result.error || {message:t('Speedle did not return a valid result.')}, result);return;}
-    if(typeof result.allowed!=='boolean') {showError({stage:'evaluation',message:t('The engine did not return a valid boolean authorization result.')},result);return;}
+    if(result.ok===false || result.error) {showError(result.error || {message:t('Speedle did not return a valid result.')}, result);revealResult();return;}
+    if(typeof result.allowed!=='boolean') {showError({stage:'evaluation',message:t('The engine did not return a valid boolean authorization result.')},result);revealResult();return;}
     $('result-card').className=`result-card ${result.allowed?'allowed':'denied'}`;
     icon(result.allowed?'check':'close');$('result-label').textContent=String(result.allowed);
     const reasons={GRANT_POLICY_FOUND:t('A grant policy matched. This request is allowed.'),DENY_POLICY_FOUND:t('An explicit deny policy matched. This request is denied.'),NO_APPLICABLE_POLICIES:t('No applicable grant policy. This request is denied by default.'),SERVICE_NOT_FOUND:t('Service not found. This request is denied.')};
@@ -145,10 +149,11 @@ async function evaluate() {
     $('result-type').textContent=result.allowed?t('ACCESS GRANTED'):t('ACCESS DENIED');
     $('result-meta').textContent=`Speedle · ${typeof result.durationMs==='number'?`${result.durationMs.toFixed(2)} ms`:t('Evaluation complete')}`;
     showRaw(result);
+    revealResult();
   } catch(error) {
     ready=false;
     $('engine-text').textContent=t('Reload required'); $('engine-status').firstElementChild.className='status-dot error'; $('retry-engine').hidden=false;
-    if(version===inputVersion)showError({stage:'engine',message:error.message || String(error)});
+    if(version===inputVersion){showError({stage:'engine',message:error.message || String(error)});revealResult();}
   }
   finally {busy=false;updateButton();}
 }
