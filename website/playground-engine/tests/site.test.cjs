@@ -27,9 +27,11 @@ assert.equal(policyExample.replace(/<[^>]+>/g,''), '# Employees can read and bor
 const originalCss = original.match(/<style>([\s\S]*?)<\/style>/)[1];
 // #203: the footer rules moved to navigation.css, the one stylesheet every page (homepages, Playground, Hugo docs, archive) loads.
 const footerRule = /^ *(?:footer|\.footer-inner|\.footer-brand (?:img|p)|\.social(?: a| img)?) \{[^\n]*\n/gm;
-// #241 added the Get started block; its marked rules are the only addition to the shared stylesheet.
+// #241 added the Get started block and #244 the accessibility/banner block;
+// their marked rules are the only additions to the shared stylesheet.
 const getStartedCss = /\n    \/\* Get started block \(issue #241\): start\.[\s\S]*?    \/\* Get started block \(issue #241\): end\. \*\/\n/;
-assert.equal(read('docs/css/site.css').replace(getStartedCss,''),originalCss.replace(footerRule,''), 'The shared stylesheet is the actual original homepage CSS, byte for byte, minus the footer rules and the approved Get started block');
+const accessibilityCss = /\n    \/\* Accessibility contrast and the community banner \(issue #244\): start\.[\s\S]*?    \/\* Accessibility contrast and the community banner \(issue #244\): end\. \*\/\n/;
+assert.equal(read('docs/css/site.css').replace(getStartedCss,'').replace(accessibilityCss,''),originalCss.replace(footerRule,''), 'The shared stylesheet is the actual original homepage CSS, byte for byte, minus the footer rules, the approved Get started block and the approved accessibility/banner block');
 for (const name of ['docs/css/site.css','docs/zh/index.html','docs/172c4fea633285df5f8950cdef354c38/index.html']) assert.ok(!/(?:^|[\s,}])(?:footer|\.footer-[a-z-]+|\.social)(?:[ .:>,][^{\n]*)?\{/m.test(read(name).replace(/<footer[\s\S]*?<\/footer>/g,'')), `No duplicate footer rules in ${name}`);
 assert.ok(read('docs/css/navigation.css').includes('html body footer.site-footer {'), 'navigation.css holds the shared footer rules');
 const oldCommunityLink = original.match(/<a href="[^"]+" aria-label="Slack">[\s\S]*?<\/a>/)[0];
@@ -101,15 +103,18 @@ const analyticsSnippet = read('website/cloudflare-web-analytics.html');
 // #241 added the Get started block (Playground, SDKs, run locally) to both home pages.
 const getStartedSection = /    <section class="getstarted" id="get-started">[\s\S]*?<\/section>\n\n/;
 const originalFooter = original.match(/  <footer>[\s\S]*?<\/footer>\n/)[0];
+// #244 reworked the community banner: flat soft panel, copy left, action right.
+const originalContribute = original.match(/    <section class="contribute">[\s\S]*?<\/section>\n/)[0];
+const contributeSection = /    <section class="contribute">[\s\S]*?<\/section>\n/;
 const restoredIdentity = identityTags.reduce((html, pattern) => html.replace(pattern, original.match(pattern)[0]), home.replace(analyticsSnippet, '').replace(iconLinks, original.match(/<link rel="icon"[^>]*>/)[0]).replace(productsMenu, '').replace(/  <footer class="site-footer">[\s\S]*?<\/footer>\n/, originalFooter));
-const restored = restoredIdentity.replace(policyExample,originalPolicyExample).replace(originNote,'').replace('<a href="/docs/pms/policy-mgmt/">Learn more</a>','<a href="/docs/pms/">Learn more</a>').replace('Bring Your Own Storage','Bring Your Own Store').replace('Works with any identity provider: your application verifies identity and passes users, groups and attributes to Speedle for a decision.','Connect GitHub, Okta or your own identity provider.').replace('Speedle Policy Definition Language.','Secure Policy Definition Language.').replace(contactLinks,originalMailingLink).replace(sharedNavigationScript,originalNavigationScript).replace(copyright,'').replace(discordLink,oldCommunityLink).replace('  <link rel="stylesheet" href="/css/site.css">\n  <link rel="stylesheet" href="/css/navigation.css?v=header-20261106-v8">', `  <style>${originalCss}</style>`).replace('<a href="/playground/">Playground</a>','').replace(`        ${chineseLink}\n`,'').replace(brandLockup,originalBrand).replace(getStartedSection,'').replace('Fast. Simple. Access control','Fast. Simple. Access control.').replace('Authorization that stays out of your application code','Authorization that stays out of your application code.').replace('Fine-grained control without the friction','Fine-grained control without the friction.').replace('Policies humans can read','Policies humans can read.').replace('Built for the infrastructure you already run','Built for the infrastructure you already run.').replace('Help move Speedle forward','Help move Speedle forward.');
+const restored = restoredIdentity.replace(policyExample,originalPolicyExample).replace(originNote,'').replace('<a href="/docs/pms/policy-mgmt/">Learn more</a>','<a href="/docs/pms/">Learn more</a>').replace('Bring Your Own Storage','Bring Your Own Store').replace('Works with any identity provider: your application verifies identity and passes users, groups and attributes to Speedle for a decision.','Connect GitHub, Okta or your own identity provider.').replace('Speedle Policy Definition Language.','Secure Policy Definition Language.').replace(contactLinks,originalMailingLink).replace(sharedNavigationScript,originalNavigationScript).replace(copyright,'').replace(discordLink,oldCommunityLink).replace('  <link rel="stylesheet" href="/css/site.css">\n  <link rel="stylesheet" href="/css/navigation.css?v=header-20261106-v8">', `  <style>${originalCss}</style>`).replace('<a href="/playground/">Playground</a>','').replace(`        ${chineseLink}\n`,'').replace(brandLockup,originalBrand).replace(getStartedSection,'').replace(contributeSection,originalContribute).replace('Fast. Simple. Access control','Fast. Simple. Access control.').replace('Authorization that stays out of your application code','Authorization that stays out of your application code.').replace('Fine-grained control without the friction','Fine-grained control without the friction.').replace('Policies humans can read','Policies humans can read.').replace('Built for the infrastructure you already run','Built for the infrastructure you already run.');
 // #236: the owner removed the home-page Integrations section; integrations live in the docs only.
 // #237: the Cloud Native card now points at the architecture page.
 const originalWithoutIntegrations = original
   .replace(/    <section id="integrations">[\s\S]*?<\/section>\n\n/, '')
   .replace('<a href="#integrations">Integrations</a>', '')
   .replace('<a href="/categories/cloudnative/">Learn more</a>', '<a href="/docs/architecture/">Learn more</a>');
-assert.equal(restored,originalWithoutIntegrations,'Homepage content is unchanged except shared navigation assets/entries, community/contact links, storage heading, SPDL name, corrected SPDL example, home feature-card links, the identity-card claim, origin note, site identity, ZSP metadata, copyright notice, analytics beacon, logo lock-up, Speedle family links, favicons, titles without trailing full stops, the removed Integrations section, the Cloud Native card target and the added Get started block');
+assert.equal(restored,originalWithoutIntegrations,'Homepage content is unchanged except shared navigation assets/entries, community/contact links, storage heading, SPDL name, corrected SPDL example, home feature-card links, the identity-card claim, origin note, site identity, ZSP metadata, copyright notice, analytics beacon, logo lock-up, Speedle family links, favicons, titles without trailing full stops, the removed Integrations section, the Cloud Native card target, the added Get started block and the reworked community banner');
 // #241: each Get started card reaches Playground, the six language SDK pages and Quick Start,
 // and every local link keeps the page language.
 for (const [name, prefix] of [['docs/index.html','/'],['docs/zh/index.html','/zh/']]) {
@@ -235,4 +240,34 @@ let assetRefs = 0;
 })(docsRoot);
 assert.ok(assetPages > 250, `Published pages checked for local assets: ${assetPages}`);
 assert.ok(assetRefs > 2000, `Local subresource references resolved: ${assetRefs}`);
-console.log(`PASS static site integration: original CSS/homepage, official footer, navigation, URLs/assets, canonical, English labels, no private hosting or persistent request storage, ${assetRefs} local assets in ${assetPages} published pages`);
+// #244: keep the home-page palette AA-safe. a11y-smoke.cjs runs axe in a real
+// browser; this guard makes the measured design colours fail the Node-only CI
+// gate too if a token regresses.
+const relativeLuminance = hex => {
+ const channels = hex.replace('#','').match(/../g).map(value => parseInt(value,16)/255)
+  .map(value => value <= 0.03928 ? value/12.92 : ((value+0.055)/1.055)**2.4);
+ return 0.2126*channels[0] + 0.7152*channels[1] + 0.0722*channels[2];
+};
+const contrastRatio = (foreground,background) => {
+ const [lighter,darker] = [relativeLuminance(foreground),relativeLuminance(background)].sort((a,b)=>b-a);
+ return (lighter+0.05)/(darker+0.05);
+};
+for (const [foreground,background,use] of [
+ ['#5c2fc0','#ffffff','eyebrow on white'],
+ ['#5c2fc0','#f6f7fb','eyebrow on soft'],
+ ['#8f85a6','#100b1e','SPDL comment on the code background'],
+ ['#5d667a','#f6f7fb','muted text on soft'],
+ ['#1b1c2c','#01e7cb','primary button label'],
+]) {
+ const ratio = contrastRatio(foreground,background);
+ assert.ok(ratio >= 4.5, `WCAG AA contrast for ${use}: ${ratio.toFixed(2)}:1`);
+}
+const homeStyles = read('docs/css/site.css');
+assert.ok(homeStyles.includes('.eyebrow { color: var(--purple-dark); }') && homeStyles.includes('.hero .eyebrow, .policy .eyebrow { color: var(--cyan); }'), 'Eyebrows use #5c2fc0 on light surfaces and cyan on dark grounds (#244)');
+assert.ok(homeStyles.includes('.cm { color: #8f85a6; }'), 'SPDL comments use the AA-safe #8f85a6 (#244)');
+for (const [name,prefix] of [['docs/index.html','/'],['docs/zh/index.html','/zh/']]) {
+ const section = read(name).match(contributeSection)?.[0] || '';
+ assert.ok(section.includes('class="eyebrow"') && section.includes(`href="${prefix}contribute/"`), `Community banner structure in ${name} (#244)`);
+ assert.ok(!section.includes('<img '), `Community banner has no image column in ${name} (#244)`);
+}
+console.log(`PASS static site integration: original CSS/homepage, official footer, navigation, URLs/assets, canonical, English labels, no private hosting or persistent request storage, ${assetRefs} local assets in ${assetPages} published pages, WCAG AA home-page palette`);

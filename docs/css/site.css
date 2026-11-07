@@ -140,3 +140,20 @@
       .sdk-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     }
     /* Get started block (issue #241): end. */
+
+    /* Accessibility contrast and the community banner (issue #244): start.
+       The rules above are the approved original homepage stylesheet; this block
+       overrides only the values that failed WCAG AA and the banner layout. */
+    .eyebrow { color: var(--purple-dark); }
+    .hero .eyebrow, .policy .eyebrow { color: var(--cyan); }
+    .cm { color: #8f85a6; }
+    .contribute-card { grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 32px 48px; color: var(--ink); background: var(--soft); border: 1px solid var(--line); border-radius: 22px; }
+    .contribute-card::after { display: none; }
+    .contribute-card h2 { margin: 12px 0 14px; }
+    .contribute-card p { max-width: 620px; margin: 0; color: var(--muted); }
+    .contribute-card .button { justify-self: end; }
+    @media (max-width: 900px) {
+      .contribute-card { grid-template-columns: 1fr; align-items: start; }
+      .contribute-card .button { justify-self: start; }
+    }
+    /* Accessibility contrast and the community banner (issue #244): end. */
