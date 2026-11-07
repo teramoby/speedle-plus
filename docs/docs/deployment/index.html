@@ -201,6 +201,8 @@ go build -o ./bin/ ./cmd/spctl ./cmd/speedle-pms ./cmd/speedle-ads</code></pre><
 <!-- deployment-template: image-pull -->
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker pull ghcr.io/teramoby/speedle-pms:latest
 docker pull ghcr.io/teramoby/speedle-ads:latest</code></pre></div>
+<p>To pin an image by digest, read the released digest with <code>docker buildx imagetools inspect ghcr.io/teramoby/speedle-pms:&lt;tag&gt;</code>.</p>
+
 <p>Both images run the service as UID 65532 and include a writable <code>/data</code> directory for the file store. Pass the server flags after the image name, and run each command in its own terminal:</p>
 
 <!-- deployment-template: image-run -->
@@ -212,7 +214,7 @@ docker run --rm -p <span style="color:#bd93f9">127</span>.0.0.1:6734:6734 -v spe
 
 <h2 id="kubernetes-development-example">Kubernetes development example</h2>
 
-<p>Use a current Kubernetes cluster and compatible <code>kubectl</code>. Save the following as <code>speedle-dev.yaml</code>. It uses <code>apps/v1</code>, one pod with PMS/ADS sharing one file, a non-root application UID and an internal ClusterIP service. This is an isolated development example: <code>emptyDir</code> policies are lost when the pod is replaced, and HTTP endpoints need cluster access controls. The manifest uses a <code>&lt;release-tag&gt;</code> placeholder; replace it with the release tag or digest you deploy, and add an image pull secret if your cluster requires one.</p>
+<p>Use a current Kubernetes cluster and compatible <code>kubectl</code>. Save the following as <code>speedle-dev.yaml</code>. It uses <code>apps/v1</code>, one pod with PMS/ADS sharing one file, a non-root application UID and an internal ClusterIP service. This is an isolated development example: <code>emptyDir</code> policies are lost when the pod is replaced, and HTTP endpoints need cluster access controls. The manifest uses a <code>&lt;release-tag&gt;</code> placeholder; replace it with the release tag you deploy, or a digest for immutable pinning, and add an image pull secret if your cluster requires one.</p>
 
 <!-- deployment-template: kubernetes -->
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">apiVersion: apps/v1
@@ -288,7 +290,7 @@ kubectl rollout status deployment/speedle-dev
 kubectl port-forward service/speedle-dev <span style="color:#bd93f9">6733</span>:6733 <span style="color:#bd93f9">6734</span>:6734</code></pre></div>
 <h2 id="production-deployments">Production deployments</h2>
 
-<p>Use durable policy storage, pin container image tags or digests to the release version you deploy, protect management and decision endpoints, and configure TLS/mTLS for clients and the policy backend. <a href="/docs/store/">Pluggable Storage</a> documents the current store configuration; <a href="/docs/security/">Security</a> covers current transport flags. Size and operate the etcd deployment using the current etcd documentation, not the retired etcd-operator example.</p>
+<p>Use durable policy storage, pin container image digests to the release version you deploy (a release retry can republish a version tag), protect management and decision endpoints, and configure TLS/mTLS for clients and the policy backend. <a href="/docs/store/">Pluggable Storage</a> documents the current store configuration; <a href="/docs/security/">Security</a> covers current transport flags. Size and operate the etcd deployment using the current etcd documentation, not the retired etcd-operator example.</p>
 
 <p>The repository contains historical Helm/Kubernetes examples. The old Helm 2 <code>helm install -n ...</code>, <code>stable/etcd-operator</code>, <code>apps/v1beta2</code>, and <code>r.authz.fun</code> image instructions are not the deployment flow above. Container pulls, cluster admission, registry access, storage and rollout depend on your environment; validate them in your target cluster before production use.</p>
 </div>
