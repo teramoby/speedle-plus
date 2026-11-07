@@ -26,6 +26,7 @@
   {{- $items.Add "list" (slice (dict "@type" "ListItem" "position" (add $i 1) "name" $name "item" $crumb.Permalink)) -}}
 {{- end -}}
 {{- $article := newScratch -}}
+{{- $article.SetInMap "data" "@context" "https://schema.org" -}}
 {{- $article.SetInMap "data" "@type" (cond .IsPage "TechArticle" "WebPage") -}}
 {{- $article.SetInMap "data" "@id" (printf "%s#%s" .Permalink (cond .IsPage "article" "webpage")) -}}
 {{- $article.SetInMap "data" "url" .Permalink -}}
@@ -45,6 +46,5 @@
 {{- if and .Lastmod (not .Lastmod.IsZero) -}}
   {{- $article.SetInMap "data" "dateModified" (.Lastmod.Format "2006-01-02T15:04:05Z07:00") -}}
 {{- end -}}
-{{- $breadcrumbs := dict "@type" "BreadcrumbList" "@id" (printf "%s#breadcrumb" .Permalink) "itemListElement" ($items.Get "list") -}}
-{{- $graph := dict "@context" "https://schema.org" "@graph" (slice ($article.Get "data") $breadcrumbs) -}}
-{{- printf "<script type=\"application/ld+json\">%s</script>" ($graph | jsonify) | safeHTML -}}
+{{- $breadcrumbs := dict "@context" "https://schema.org" "@type" "BreadcrumbList" "@id" (printf "%s#breadcrumb" .Permalink) "itemListElement" ($items.Get "list") -}}
+{{- printf "<script type=\"application/ld+json\">%s</script>\n<script type=\"application/ld+json\">%s</script>" ($article.Get "data" | jsonify) ($breadcrumbs | jsonify) | safeHTML -}}
