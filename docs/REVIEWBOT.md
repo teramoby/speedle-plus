@@ -19,11 +19,13 @@ while retaining code examples, verdict markers, commit metadata and model IDs.
 The workflow reads its instructions from the trusted base revision, checks out
 GitHub's persistent PR head ref (including fork PRs), and verifies that checkout
 equals the event's captured immutable head before constructing a merge-base diff. It does not
-execute, build or test PR code. Human- and bot-authored same-repository PRs run
+execute, build or test PR code. By default, human- and bot-authored same-repository PRs run
 on any self-hosted Speedle runner via `speedle-runner` (`charming-speedle`,
-`charming-speedle-2` and `fiona-speedle`); fork PRs and unknown author types use GitHub-hosted
-`ubuntu-24.04`. The regression dispatch and authorized comment-command analysis
-and publication use the self-hosted pool. Public comment authorization and the
+`charming-speedle-2` and `fiona-speedle`), while `REVIEWBOT_RUNS_ON` can override the
+runner labels of only the two model-calling jobs (`Analyze pull request` and
+`Analyze ReviewBot command`). Fork PRs and unknown author types always use GitHub-hosted
+`ubuntu-24.04`. Review publication, regression dispatch and comment-command
+publication continue to use the `speedle-runner` pool, and public comment authorization and the
 unprivileged inline pointer workflow remain hosted.
 See [runner configuration](RUNNERS.md).
 
@@ -83,6 +85,17 @@ reveal credentials, change repository settings, approve or merge PRs.
     sent in the `system` message, and pull-request metadata, diff and any
     untrusted command context are sent in the `user` message. Review text is
     read from `choices[0].message.content`, ignoring any `reasoning_content`.
+- Optional runner variable: `REVIEWBOT_RUNS_ON`, a JSON label array parsed with
+  `fromJSON(vars.REVIEWBOT_RUNS_ON || '["self-hosted","speedle-runner"]')`. It
+  applies only to the two model-calling jobs (`Analyze pull request` in
+  `reviewbot.yml` for human- and bot-authored same-repository PRs, and `Analyze
+  ReviewBot command` in `reviewbot-command.yml`); fork PRs and unknown author
+  types remain on `ubuntu-24.04`, and every other job keeps its existing
+  `runs-on` configuration. Any runner selected through `REVIEWBOT_RUNS_ON` must
+  provide a GitHub Actions runner supporting Node 24-based actions (`2.327.1` or
+  newer), `bash`, `git`, `curl`, `jq`, `python3` (standard library only),
+  standard POSIX/GNU coreutils, and outbound HTTPS to GitHub and the active
+  provider endpoint.
 - Authentication for GitHub reads/reviews: the job-scoped `GITHUB_TOKEN`; no PAT
   or GitHub App installation is needed.
 
