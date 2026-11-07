@@ -150,6 +150,7 @@ go test $(go list ./pkg/... ./cmd/... ./api/... | grep -v -e adsgrpc -e pmsgrpc 
 
 -   Discord：加入 [Speedle 社区](https://discord.gg/uaY2xVsbbT)
 -   QQ 群：643201591
+-   安全：请按 [SECURITY.md](SECURITY.md) 私下报告
 
 ## 参与
 
