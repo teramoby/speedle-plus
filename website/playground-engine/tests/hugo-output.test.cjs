@@ -86,7 +86,7 @@ let footerPages = 0;
 for (const name of ['docs/sdks/index.html', 'zh/docs/sdks/index.html', 'docs/sdks/java/index.html', 'zh/docs/sdks/java/index.html', 'docs/api/index.html', 'docs/spdl/index.html']) {
   assert.ok(fs.readFileSync(path.join(output, name), 'utf8').includes('<footer class="site-footer">'), `Shared footer in ${name}`);
 }
-assert.ok(footerPages > 200, `Footer pages checked: ${footerPages}`);
+assert.ok(footerPages > 190, `Footer pages checked: ${footerPages}`);
 // #208: the SDK pages moved from /docs/api/sdk-<lang>/ to /docs/sdks/<lang>/; the old URLs redirect.
 for (const locale of ['', 'zh/']) {
   for (const lang of ['java', 'python', 'go', 'dotnet', 'rust', 'node']) {
@@ -161,7 +161,7 @@ function checkStorageNavigation(directory, locale = '') {
     }
   }
 }
-for (const name of ['docs/index.html', 'zh/docs/index.html', 'quick-start/index.html', 'zh/blog/index.html']) {
+for (const name of ['docs/index.html', 'zh/docs/index.html', 'quick-start/index.html', 'zh/about/index.html']) {
   const html = fs.readFileSync(path.join(output, name), 'utf8');
   assert.ok(html.includes('<footer class="site-footer">') && html.includes('class="footer-family"') && !html.includes('<footer class="row">'), `Shared homepage footer in ${name}`);
 }

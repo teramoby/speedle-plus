@@ -6,7 +6,7 @@
     <description>Recent content in Simplifying Complexity on Speedle</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
-    <lastBuildDate>Fri, 18 Jan 2019 21:19:44 +0800</lastBuildDate>
+    <lastBuildDate>Wed, 27 May 2020 07:48:20 +0800</lastBuildDate>
     
 	<atom:link href="https://engine.speedle.io/index.xml" rel="self" type="application/rss+xml" />
     
@@ -80,15 +80,6 @@ Start a reproducible local example Build the binaries using Quick Start, then ru
       
       <guid>https://engine.speedle.io/docs/spdl/</guid>
       <description>Syntax Keywords grant, deny, user, group, entity, role, from, on, if and in have special meanings in their syntax positions. Statement keywords are case-insensitive. In conditions, use in or IN; function names are case-sensitive. Principal, action and resource names are also case-sensitive. The current parser accepts keyword-like names in some name positions, so a blanket prohibition is not a validation rule. Prefer unambiguous names for review and client interoperability.</description>
-    </item>
-    
-    <item>
-      <title>Why Speedle?</title>
-      <link>https://engine.speedle.io/blog/what-is-speedle/</link>
-      <pubDate>Thu, 02 Mar 2017 21:56:55 +0100</pubDate>
-      
-      <guid>https://engine.speedle.io/blog/what-is-speedle/</guid>
-      <description>What and Why? Thoughts: Authz is not a new concept. Been using it in software since the dawn of time. Various systems have sprung up with their own little authz solutions. k8s, istio, various IAMs. One may have been using something else for their on premise applications. As folks move to hybrid models / workloads / cloud vendors - how does one keep track of the policies and manage identity as it flows across - these various systems.</description>
     </item>
     
     <item>
@@ -168,18 +159,6 @@ Prerequisites Use Linux or macOS with Bash, Git, curl and Go 1.26.10 or Go 1.</d
       <description>What is embedded mode? Embedded mode runs the Speedle policy decision engine inside your Go application. Call the evaluator directly without starting PMS or ADS servers. Your application authenticates users and supplies the subject, resource and action for each decision.
 To try basic policies before writing code, open the Playground. To run Speedle as standalone services, follow Quick Start.
 Prerequisites Use Linux or macOS with a shell and Go 1.</description>
-    </item>
-    
-    <item>
-      <title>Policy Discovery on the fly!</title>
-      <link>https://engine.speedle.io/blog/discovery/</link>
-      <pubDate>Thu, 02 Mar 2017 21:56:55 +0100</pubDate>
-      
-      <guid>https://engine.speedle.io/blog/discovery/</guid>
-      <description> What and Why? Thoughts:
-FooBar a link Chocolate tiramisu pastry a link
-Lorem Epsum Apple pie chocolate cake jelly-o icing bonbon. Gingerbread pastry fruitcake muffin chocolate bar cheesecake. Sugar plum bonbon bonbon lemon drops gummies.
-   RGB WMYN     Red Cyan   Green Magenta   Yellow Black    </description>
     </item>
     
     <item>
@@ -363,34 +342,6 @@ Speedle was built by the team behind Oracle Entitlements Server (OES).</descript
       <description>Reference for your configured ADS. Request attributes are typed arrays; diagnostic attributes are objects.
 Security and endpoint configuration. This is a contract reference, not a backend hosted by speedle.io.
               (function() { var url = &#34;\/swagger\/policy-check.yaml&#34;; const ui = SwaggerUIBundle({ url: url, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.presets.apis ], plugins: [ SwaggerUIBundle.plugins.DownloadUrl ], validatorUrl: null, layout: &#34;</description>
-    </item>
-    
-    <item>
-      <title>Choose your track</title>
-      <link>https://engine.speedle.io/tour/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://engine.speedle.io/tour/</guid>
-      <description>Developer Path&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;DevOps Path  </description>
-    </item>
-    
-    <item>
-      <title>Developer Track</title>
-      <link>https://engine.speedle.io/developer/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://engine.speedle.io/developer/</guid>
-      <description> TBD Policy Administrator Understand the basics of SPDL to model policies Deploy your Application Leverage Policy Discovery Mode Use the Policy Management Service API    Application Developer Understand the basics of SPDL Policy Management Service API Authorization Decision Service API Token Assertion API    </description>
-    </item>
-    
-    <item>
-      <title>Operator Track</title>
-      <link>https://engine.speedle.io/devops/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://engine.speedle.io/devops/</guid>
-      <description> TBD Policy Debug?
-Policy Administrator Understand the basics of SPDL to model policies Deploy your Application Leverage Policy Discovery Mode Use the Policy Management Service API    Application Developer Understand the basics of SPDL Policy Management Service API Authorization Decision Service API Token Assertion API    </description>
     </item>
     
     <item>

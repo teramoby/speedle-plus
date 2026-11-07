@@ -6,7 +6,6 @@
     <description>Recent content in Discovery on Speedle</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
-    <lastBuildDate>Thu, 02 Mar 2017 21:56:55 +0100</lastBuildDate>
     
 	<atom:link href="https://engine.speedle.io/tags/discovery/index.xml" rel="self" type="application/rss+xml" />
     
@@ -19,18 +18,6 @@
       <guid>https://engine.speedle.io/docs/pms/discover/</guid>
       <description>What discovery does Discovery records requests and returns allowed=true with reason 5 for a successful recording operation. It does not prove that an existing policy authorized the operation. Use it only in an isolated test environment, review generated grants, and restore normal is-allowed enforcement afterwards. Assertion or storage errors must still be handled; never treat an error as an authorization grant.
 Start a reproducible local example Build the binaries using Quick Start, then run all terminals from the checkout root.</description>
-    </item>
-    
-    <item>
-      <title>Policy Discovery on the fly!</title>
-      <link>https://engine.speedle.io/blog/discovery/</link>
-      <pubDate>Thu, 02 Mar 2017 21:56:55 +0100</pubDate>
-      
-      <guid>https://engine.speedle.io/blog/discovery/</guid>
-      <description> What and Why? Thoughts:
-FooBar a link Chocolate tiramisu pastry a link
-Lorem Epsum Apple pie chocolate cake jelly-o icing bonbon. Gingerbread pastry fruitcake muffin chocolate bar cheesecake. Sugar plum bonbon bonbon lemon drops gummies.
-   RGB WMYN     Red Cyan   Green Magenta   Yellow Black    </description>
     </item>
     
   </channel>

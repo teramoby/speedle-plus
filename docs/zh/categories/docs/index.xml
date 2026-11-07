@@ -147,7 +147,7 @@ go run ./website/tests/examples/asserter // A deterministic mock for the token-a
     <item>
       <title>API</title>
       <link>https://engine.speedle.io/zh/docs/api/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <pubDate>Fri, 06 Nov 2026 18:12:13 +0800</pubDate>
       
       <guid>https://engine.speedle.io/zh/docs/api/</guid>
       <description>Java、Python、Go、.NET、Rust 和 Node.js/TypeScript 的客户端库见 SDK。
@@ -200,7 +200,7 @@ import sys from speedle import Auth, Client, SpeedleError try: with Client( back
     <item>
       <title>SDK</title>
       <link>https://engine.speedle.io/zh/docs/sdks/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <pubDate>Sat, 07 Nov 2026 19:43:15 +0800</pubDate>
       
       <guid>https://engine.speedle.io/zh/docs/sdks/</guid>
       <description>Speedle SDK 是决策 API POST /authz-check/v1/is-allowed 的客户端库，既可用于自托管的 Speedle ADS，也可用于 Speedle Cloud。每个语言页面说明如何添加软件包，并分别给出两种场景下经过实测的完整程序。源代码和完整参考见 teramoby/speedle-sdk。
@@ -222,7 +222,7 @@ import sys from speedle import Auth, Client, SpeedleError try: with Client( back
     <item>
       <title>Speedle Cloud</title>
       <link>https://engine.speedle.io/zh/docs/cloud/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <pubDate>Sat, 07 Nov 2026 00:06:57 +0800</pubDate>
       
       <guid>https://engine.speedle.io/zh/docs/cloud/</guid>
       <description>Speedle Cloud 是基于开源 Speedle 策略引擎的托管访问控制服务，面向开发者。上线后，你可以在控制台创建服务、编写和导入 SPDL 授权策略与角色策略、在 Playground 中测试授权判定，再从应用服务端调用授权 API，无需自行部署和运维授权服务。
@@ -268,7 +268,7 @@ git clone --depth 1 https://github.com/teramoby/speedle-plus.git cd speedle-plus
     <item>
       <title>Speedle策略</title>
       <link>https://engine.speedle.io/zh/docs/pms/</link>
-      <pubDate>Fri, 18 Jan 2019 21:19:44 +0800</pubDate>
+      <pubDate>Wed, 28 Oct 2026 13:16:58 +0000</pubDate>
       
       <guid>https://engine.speedle.io/zh/docs/pms/</guid>
       <description> Policy Management Global Policy Policy Discovery Policy Diagnosis  </description>
@@ -290,7 +290,7 @@ docker run --name speedle-etcd --detach \  --publish 127.0.0.1:2379:2379 \  --vo
     <item>
       <title>存储扩展</title>
       <link>https://engine.speedle.io/zh/docs/store/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <pubDate>Sat, 31 Oct 2026 22:36:36 +0800</pubDate>
       
       <guid>https://engine.speedle.io/zh/docs/store/</guid>
       <description>内置存储与扩展接口 独立服务在 pkg/store 下注册 file、etcd、MongoDB、MySQL 实现。可用不代表具有相同的运维保证，部署前应分别审查后端认证、持久化、事务与 watch 行为。下方配置说明属性名称，本地示例不涉及启动 etcd/MongoDB 集群。
@@ -446,7 +446,7 @@ go run ./website/tests/examples/custom-function package main import ( &amp;#34;e
     <item>
       <title>Speedle文档</title>
       <link>https://engine.speedle.io/zh/docs/</link>
-      <pubDate>Thu, 17 Jan 2019 13:20:07 +0800</pubDate>
+      <pubDate>Sat, 07 Nov 2026 19:52:24 +0800</pubDate>
       
       <guid>https://engine.speedle.io/zh/docs/</guid>
       <description></description>
@@ -466,7 +466,7 @@ go run ./website/tests/examples/custom-function package main import ( &amp;#34;e
     <item>
       <title>集成</title>
       <link>https://engine.speedle.io/zh/integrations/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <pubDate>Sat, 07 Nov 2026 19:56:43 +0800</pubDate>
       
       <guid>https://engine.speedle.io/zh/integrations/</guid>
       <description>Speedle 负责做出授权决策。应用、网关或平台中的策略执行点（PEP）会针对每次访问向 Speedle 询问决策，并执行返回的结果。以下接口都是当前支持的接入方式。

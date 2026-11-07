@@ -4,6 +4,8 @@ title = "Speedle"
 theme = "kube"
 canonifyURLs = "true"
 disableHugoGeneratorInject = true
+# Sitemap lastmod comes from the last git commit that touched each page.
+enableGitInfo = true
 description = "Speedle is an open-source authorization engine for centralized RBAC and ABAC policy decisions across cloud-native and legacy applications."
 Paginate = 4
 pygmentsCodefences = true

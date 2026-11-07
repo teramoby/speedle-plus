@@ -6,7 +6,7 @@
     <description>Recent content in Core on Speedle</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
-    <lastBuildDate>Fri, 18 Jan 2019 21:19:44 +0800</lastBuildDate>
+    <lastBuildDate>Fri, 06 Nov 2026 18:12:13 +0800</lastBuildDate>
     
 	<atom:link href="https://engine.speedle.io/tags/core/index.xml" rel="self" type="application/rss+xml" />
     
@@ -14,7 +14,7 @@
     <item>
       <title>API</title>
       <link>https://engine.speedle.io/docs/api/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <pubDate>Fri, 06 Nov 2026 18:12:13 +0800</pubDate>
       
       <guid>https://engine.speedle.io/docs/api/</guid>
       <description>Client libraries for Java, Python, Go, .NET, Rust and Node.js/TypeScript are in SDKs.
@@ -96,7 +96,7 @@ The examples below use a service named library. Each policy was created through 
     <item>
       <title>Speedle Policy</title>
       <link>https://engine.speedle.io/docs/pms/</link>
-      <pubDate>Fri, 18 Jan 2019 21:19:44 +0800</pubDate>
+      <pubDate>Wed, 28 Oct 2026 13:16:58 +0000</pubDate>
       
       <guid>https://engine.speedle.io/docs/pms/</guid>
       <description> Policy Management Global Policy Policy Discovery Policy Diagnosis  </description>
