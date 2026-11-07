@@ -44,7 +44,7 @@ Use a fresh policy file; PMS creates it if absent. Follow [Quick Start](../../qu
 
 ## Release binaries and container images
 
-Each release published by the release workflow attaches prebuilt `spctl`, `speedle-pms` and `speedle-ads` binaries for macOS and Linux on amd64 and arm64, named `<command>_<os>_<arch>`, plus a `checksums.txt` file. Download them from the [Releases page](https://github.com/teramoby/speedle-plus/releases) and verify each downloaded file against its SHA-256 checksum before running it. Binaries and container images are produced by the release workflow, so they are available starting with the first release created after the workflow was added.
+Each release published by the release workflow attaches prebuilt `spctl`, `speedle-pms` and `speedle-ads` binaries for macOS and Linux on amd64 and arm64, named `<command>_<os>_<arch>`, plus a `checksums.txt` file. Download them from the [Releases page](https://github.com/teramoby/speedle-plus/releases) and verify each downloaded file against its SHA-256 checksum before running it; the checksum file is attached to the same release, so it detects incomplete or corrupted downloads rather than authenticating the release. Binaries and container images are produced by the release workflow, so they are available starting with the first release created after the workflow was added.
 
 The release workflow also publishes two multi-architecture container images for Linux amd64 and arm64:
 

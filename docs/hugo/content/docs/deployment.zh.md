@@ -43,7 +43,7 @@ go build -o ./bin/ ./cmd/spctl ./cmd/speedle-pms ./cmd/speedle-ads
 
 ## 发布二进制与容器映像
 
-发布流程生成的每个发布版本都会附带适用于 macOS 和 Linux（amd64、arm64）的 `spctl`、`speedle-pms` 和 `speedle-ads` 预编译二进制，文件名格式为 `<命令>_<系统>_<架构>`，并附带 `checksums.txt`。请从 [Releases 页面](https://github.com/teramoby/speedle-plus/releases)下载，运行前先用 SHA-256 校验和核对每个文件。二进制和容器映像都由发布流程生成，因此从该流程加入后的第一个发布版本开始提供。
+发布流程生成的每个发布版本都会附带适用于 macOS 和 Linux（amd64、arm64）的 `spctl`、`speedle-pms` 和 `speedle-ads` 预编译二进制，文件名格式为 `<命令>_<系统>_<架构>`，并附带 `checksums.txt`。请从 [Releases 页面](https://github.com/teramoby/speedle-plus/releases)下载，运行前先用 SHA-256 校验和核对每个文件；校验和文件与二进制位于同一发布版本中，只能用于发现下载不完整或文件损坏，不能用来验证发布内容未被篡改。二进制和容器映像都由发布流程生成，因此从该流程加入后的第一个发布版本开始提供。
 
 发布流程还会发布两个面向 Linux amd64 和 arm64 的多架构容器映像：
 
