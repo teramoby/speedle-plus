@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <script>document.documentElement.classList.add('navigation-js');</script>
+  <script>document.documentElement.classList.add('navigation-js');addEventListener('DOMContentLoaded',function(){if(!document.querySelector('header.site-header.navigation-ready'))document.documentElement.classList.remove('navigation-js')});</script>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="Speedle is an open-source authorization engine for centralized RBAC and ABAC policy decisions across cloud-native and legacy applications.">

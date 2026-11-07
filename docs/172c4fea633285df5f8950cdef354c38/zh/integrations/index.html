@@ -71,7 +71,7 @@
     <link href="/css/brand.css?v=1" rel="stylesheet" type="text/css">
 <link href="/css/navigation.css?v=header-20261106-v8" rel="stylesheet">
 <script src="/js/navigation.js?v=header-20261106-v8" defer></script>
-<script>document.documentElement.classList.add('navigation-js');</script>
+<script>document.documentElement.classList.add('navigation-js');addEventListener('DOMContentLoaded',function(){if(!document.querySelector('header.site-header.navigation-ready'))document.documentElement.classList.remove('navigation-js')});</script>
 </head>
 
 

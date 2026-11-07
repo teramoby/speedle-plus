@@ -110,7 +110,7 @@ const originalContribute = original.match(/    <section class="contribute">[\s\S
 const contributeSection = /    <section class="contribute">[\s\S]*?<\/section>\n/;
 // #247 added explicit image dimensions and the pre-paint navigation-js marker.
 const imageSizing = html => html
-  .replace("  <script>document.documentElement.classList.add('navigation-js');</script>\n", '')
+  .replace("  <script>document.documentElement.classList.add('navigation-js');addEventListener('DOMContentLoaded',function(){if(!document.querySelector('header.site-header.navigation-ready'))document.documentElement.classList.remove('navigation-js')});</script>\n", '')
   .replace(' width="330" height="339" fetchpriority="high"', '')
   .replace(/<img src="\/img\/speedle\/Tick\.svg" width="22" height="22"/g, '<img src="/img/speedle/Tick.svg"')
   .replace(/(<img class="feature-icon" src="[^"]+") width="\d+" height="\d+"/g, '$1');

@@ -21,7 +21,10 @@ PREVIEW = re.compile(r"^/[0-9a-f]{32}(?=/)")
 HEADER_VERSION = "header-20261106-v8"
 # Collapse the mobile menu before first paint so short pages do not shift (#247);
 # without scripts the links stay in normal flow and remain usable.
-PREPAINT_SCRIPT = "<script>document.documentElement.classList.add('navigation-js');</script>\n"
+PREPAINT_SCRIPT = ("<script>document.documentElement.classList.add('navigation-js');"
+                   "addEventListener('DOMContentLoaded',function(){"
+                   "if(!document.querySelector('header.site-header.navigation-ready'))"
+                   "document.documentElement.classList.remove('navigation-js')});</script>\n")
 HEADER_ASSETS = (PREPAINT_SCRIPT +
                  f'<link href="/css/navigation.css?v={HEADER_VERSION}" rel="stylesheet">\n'
                  f'<script src="/js/navigation.js?v={HEADER_VERSION}" defer></script>\n')

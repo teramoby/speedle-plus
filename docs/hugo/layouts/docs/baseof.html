@@ -2,7 +2,7 @@
 <html lang="{{ if eq .Lang "zh" }}zh-CN{{ else }}en{{ end }}">
 
 <head>
-    <script>document.documentElement.classList.add('docs-js', 'navigation-js');</script>
+    <script>document.documentElement.classList.add('docs-js','navigation-js');addEventListener('DOMContentLoaded',function(){if(!document.querySelector('header.site-header.navigation-ready'))document.documentElement.classList.remove('navigation-js')});</script>
     {{ .Hugo.Generator }}
     {{ partial "favicon" . }}
     <meta charset="utf-8">
