@@ -151,7 +151,9 @@ def verify_install_route(env):
             assert os.access(path, os.X_OK), binary
             usage = help_text(path, work, env)
             for flag in flags:
-                assert flag in usage, (binary, flag, usage)
+                # Accept one or two leading dashes: pflag prints --flag, while
+                # the standard flag package prints -flag.
+                assert re.search(rf"(?<![\w-])-{{1,2}}{re.escape(flag.lstrip('-'))}(?![\w-])", usage), (binary, flag, usage)
         print(f"PASS documented go install route ({module}@{version}); installed binaries accept the documented flags", flush=True)
         # One documented walkthrough with the installed release binaries: --help
         # alone does not prove the guide works with either route.
