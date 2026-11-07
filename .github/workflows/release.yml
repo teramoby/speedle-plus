@@ -73,9 +73,11 @@ jobs:
           # proxy caches tags, so an existing tag is only allowed to stay when
           # it already points at the requested commit.
           if git ls-remote --exit-code --tags origin "refs/tags/${VERSION}" >/dev/null; then
-            direct=$(git ls-remote origin "refs/tags/${VERSION}" | awk '{ print $1 }')
-            peeled=$(git ls-remote origin "refs/tags/${VERSION}^{}" | awk '{ print $1 }')
-            tagged=${peeled:-${direct}}
+            # Annotated tags point at a tag object. Fetch the tag and let
+            # rev-list resolve it to the commit, independent of how ls-remote
+            # renders peeled refs.
+            git fetch --force --quiet origin "refs/tags/${VERSION}:refs/tags/${VERSION}"
+            tagged=$(git rev-list -n 1 "refs/tags/${VERSION}")
             [[ "${tagged}" == "${COMMIT}" ]] || {
               echo "Tag ${VERSION} already exists at ${tagged}, not ${COMMIT}; it is never moved." >&2
               exit 1
@@ -138,9 +140,10 @@ jobs:
         run: |
           set -euo pipefail
           if git ls-remote --exit-code --tags origin "refs/tags/${VERSION}" >/dev/null; then
-            direct=$(git ls-remote origin "refs/tags/${VERSION}" | awk '{ print $1 }')
-            peeled=$(git ls-remote origin "refs/tags/${VERSION}^{}" | awk '{ print $1 }')
-            tagged=${peeled:-${direct}}
+            # Re-resolve the tag now: it may have appeared or changed since the
+            # validation step above.
+            git fetch --force --quiet origin "refs/tags/${VERSION}:refs/tags/${VERSION}"
+            tagged=$(git rev-list -n 1 "refs/tags/${VERSION}")
             [[ "${tagged}" == "${COMMIT}" ]] || {
               echo "Tag ${VERSION} now points at ${tagged}, not ${COMMIT}; refusing to publish." >&2
               exit 1
