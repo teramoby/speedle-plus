@@ -113,3 +113,30 @@
       .contribute-card { padding: 34px 26px; }
     }
   
+    /* Get started block (issue #241): start. The only addition to this homepage stylesheet. */
+    .getstarted .eyebrow { color: var(--purple-dark); }
+    .getstarted-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
+    .getstarted-card { display: flex; flex-direction: column; min-height: 220px; padding: 30px; border: 1px solid var(--line); border-radius: 18px; background: #fff; transition: transform .25s, box-shadow .25s, border-color .25s; }
+    .getstarted-card:hover { transform: translateY(-5px); border-color: rgba(129,76,228,.35); box-shadow: var(--shadow); }
+    .getstarted-card h3 { margin: 0 0 10px; font-size: 1.3rem; }
+    .getstarted-card p { margin: 0 0 22px; color: var(--muted); }
+    .getstarted-card .card-action { align-self: flex-start; margin-top: auto; }
+    .sdk-sprite { position: absolute; width: 0; height: 0; overflow: hidden; }
+    .sdk-grid { margin: auto 0 0; padding: 0; list-style: none; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+    .sdk-grid a { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 7px; padding: 12px; border: 1px solid var(--line); border-radius: 10px; color: var(--muted); font-size: .88rem; font-weight: 600; line-height: 1.2; text-align: center; transition: border-color .2s, color .2s; }
+    .sdk-grid a:hover, .sdk-grid a:focus-visible { border-color: var(--purple); color: var(--purple-dark); }
+    .sdk-icon { width: 28px; height: 28px; }
+    .getstarted a:focus-visible { outline: 3px solid var(--purple-dark); outline-offset: 4px; }
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      .button, .feature-card, .getstarted-card, .sdk-grid a { transition: none; }
+      .button:hover, .feature-card:hover, .getstarted-card:hover { transform: none; }
+    }
+    @media (max-width: 900px) {
+      .getstarted-grid { grid-template-columns: 1fr; }
+      .getstarted-card { min-height: auto; }
+    }
+    @media (max-width: 560px) {
+      .sdk-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    /* Get started block (issue #241): end. */
