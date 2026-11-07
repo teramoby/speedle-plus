@@ -326,6 +326,11 @@ const homes = {'/': 'Speedle Engine — Fast. Simple. Access control', '/zh/': '
  }
 })(docsRoot);
 assert.ok(identityPages > 190, `Pages checked for title and social metadata: ${identityPages}`);
+// #246: pages without an explicit description still unfurl with their summary.
+for (const name of ['docs/about/index.html','docs/zh/about/index.html']) {
+ const html = read(name);
+ assert.ok(contentOf(html, /<meta name="description" content="([^"]+)">/) && contentOf(html, /<meta property="og:description" content="([^"]+)">/) && contentOf(html, /<meta name="twitter:description" content="([^"]+)">/), `Summary fallback description in ${name}`);
+}
 let structuredDocs = 0;
 function checkDocsStructuredData(directory, zh) {
  for (const entry of fs.readdirSync(directory, {withFileTypes: true})) {
