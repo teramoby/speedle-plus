@@ -1,11 +1,14 @@
 #!/usr/bin/env python3
 """Execute the actual English/Chinese quick-start shell blocks against native services.
 
-A public shallow clone verifies the download step; CI then checks out the captured
-candidate revision before compiling. Linux runs the native services and clients
-in unprivileged user/network/PID namespaces, using the exact documented ports
-without conflicting with existing services. On macOS, alternate REST ports and a
-shared lock isolate fixture services; occupied gRPC ports are rejected.
+The documented `go install` route runs once into a temporary GOBIN, its module
+path and version pattern are checked against the checkout, and the installed
+binaries must accept the flags used by the guide. A public shallow clone verifies
+the download step; CI then checks out the captured candidate revision before
+compiling. Linux runs the native services and clients in unprivileged
+user/network/PID namespaces, using the exact documented ports without
+conflicting with existing services. On macOS, alternate REST ports and a shared
+lock isolate fixture services; occupied gRPC ports are rejected.
 """
 import argparse
 import contextlib
@@ -27,6 +30,14 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 PATTERN = r"<!-- quick-start: ([a-z-]+) -->\s*```bash\n(.*?)\n```"
 REQUIRED = {"version", "install", "build", "pms", "service", "policies", "list", "ads", "allow-direct", "deny"}
+# The documented install route: module path and full semantic version tag.
+INSTALL = re.compile(r'GOBIN="\$PWD/bin" go install (github\.com/teramoby/speedle-plus)/cmd/\.\.\.@(v[0-9]+\.[0-9]+\.[0-9]+)\nls bin\n?')
+# Flags the guide passes to the installed release binaries.
+INSTALLED_FLAGS = {
+    "spctl": ("--pms-endpoint",),
+    "speedle-pms": ("--store-type", "--filestore-loc", "--endpoint", "--insecure", "--grpc-endpoint"),
+    "speedle-ads": ("--store-type", "--filestore-loc", "--endpoint", "--insecure", "--grpc-endpoint"),
+}
 
 
 def blocks(path):
@@ -51,6 +62,14 @@ def run(command, cwd, env, timeout=60):
     if result.returncode:
         raise RuntimeError(f"Command failed ({result.returncode}): {command}\n{result.stdout}\n{result.stderr}")
     return result.stdout
+
+
+def help_text(path, cwd, env):
+    # The flag package writes usage to stderr, so combine both streams.
+    result = subprocess.run([str(path), "--help"], cwd=cwd, env=env, text=True, capture_output=True, timeout=60)
+    if result.returncode:
+        raise RuntimeError(f"{path} --help failed ({result.returncode}):\n{result.stdout}\n{result.stderr}")
+    return result.stdout + result.stderr
 
 
 @contextlib.contextmanager
@@ -111,6 +130,29 @@ def stop(process):
     assert process.returncode == 0, ("service exit", process.returncode)
 
 
+def verify_install_route(env):
+    """Run the documented go install route once, not once per locale."""
+    english = dict(blocks(ROOT / "docs/hugo/content/quick-start.md"))["install"]
+    chinese = dict(blocks(ROOT / "docs/hugo/content/quick-start.zh.md"))["install"]
+    assert english == chinese, "install command drift between English and Chinese"
+    match = INSTALL.fullmatch(english)
+    assert match, english
+    module, version = match.groups()
+    # Offline: the checkout must be the module the guide installs.
+    assert run(["go", "list", "-m"], ROOT, env).strip() == module, module
+    with tempfile.TemporaryDirectory(prefix="speedle-go-install-") as temporary:
+        work = Path(temporary)
+        # GOBIN is this temporary bin directory, never the shared GOPATH/bin.
+        run(english, work, env, timeout=600)
+        for binary, flags in INSTALLED_FLAGS.items():
+            path = work / "bin" / binary
+            assert os.access(path, os.X_OK), binary
+            usage = help_text(path, work, env)
+            for flag in flags:
+                assert flag in usage, (binary, flag, usage)
+    print(f"PASS documented go install route ({module}@{version}); installed binaries accept the documented flags", flush=True)
+
+
 def verify(locale, toolchain, env):
     source = ROOT / "docs/hugo/content" / ("quick-start.zh.md" if locale == "zh" else "quick-start.md")
     steps = blocks(source)
@@ -120,14 +162,6 @@ def verify(locale, toolchain, env):
         if toolchain:
             assert f"go version {toolchain} " in version, version
         print(f"{locale}: {version}; runner={os.environ.get('RUNNER_NAME', 'local')}", flush=True)
-        install = dict(steps)["install"]
-        assert install.startswith('GOBIN="$PWD/bin" go install github.com/teramoby/speedle-plus/cmd/...@v'), source
-        install_work = work / "install"
-        install_work.mkdir()
-        run(install, install_work, env, timeout=600)
-        for binary in ("spctl", "speedle-pms", "speedle-ads"):
-            assert os.access(install_work / "bin" / binary, os.X_OK), binary
-        print(f"{locale}: PASS documented go install route", flush=True)
         build = dict(steps)["build"].splitlines()
         assert build[:2] == ["git clone --depth 1 https://github.com/teramoby/speedle-plus.git", "cd speedle-plus"], source
         run("\n".join(build[:2]), work, env, timeout=180)
@@ -236,6 +270,7 @@ def main():
         args.report.write_text(json.dumps(result) + "\n")
         print(f"{args.locale}: PASS exact documented REST/gRPC ports in isolated Linux namespaces", flush=True)
         return
+    verify_install_route(env)
     results = [verify(locale, args.toolchain, env) for locale in ("en", "zh")]
     if args.report:
         args.report.write_text(json.dumps(results, indent=2) + "\n")

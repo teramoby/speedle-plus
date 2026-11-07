@@ -83,10 +83,12 @@ document blocks as executable inputs. The same global gate runs
 `tests/check_docs.py` for the remaining bilingual executable API/deployment guides.
 The gate uses its current Go toolchain; nightly Quick Start checks additionally
 cover Go 1.26.10 and 1.27.3.
-The Quick Start check runs the documented `go install` route against the pinned
-release tag, performs a public shallow clone, checks out the captured CI
-revision, builds the three executables, creates and lists policies, and checks
-direct, role and conditional (ABAC) grants and denials. On Linux the documented service and client commands run in
+The Quick Start check runs the documented `go install` route once against the
+pinned release tag, checks the documented module path offline with `go list -m`
+and that the installed binaries accept the flags the guide uses, performs a
+public shallow clone, checks out the captured CI revision, builds the three
+executables, creates and lists policies, and checks direct, role and conditional
+(ABAC) grants and denials. On Linux the documented service and client commands run in
 unprivileged user/network/PID namespaces with a private loopback interface, so
 existing host services are untouched; this needs util-linux and iproute2. The
 checks run through `scripts/ci/run-go-tests.sh gate` on the test runner for every
