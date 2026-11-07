@@ -51,6 +51,8 @@ The release workflow also publishes two multi-architecture container images for 
 - `ghcr.io/teramoby/speedle-pms`
 - `ghcr.io/teramoby/speedle-ads`
 
+Anonymous pulls require the packages to be public; if a package is private, authenticate first with `docker login ghcr.io`.
+
 Pull the release you deploy; `latest` follows the newest release:
 
 <!-- deployment-template: image-pull -->
@@ -73,7 +75,7 @@ The images do not include CA certificates; provide the CA file for TLS endpoints
 
 ## Kubernetes development example
 
-Use a current Kubernetes cluster and compatible `kubectl`. Save the following as `speedle-dev.yaml`. It uses `apps/v1`, one pod with PMS/ADS sharing one file, a non-root application UID and an internal ClusterIP service. This is an isolated development example: `emptyDir` policies are lost when the pod is replaced, and HTTP endpoints need cluster access controls. The manifest uses the published images; pin the release tag you deploy, and add an image pull secret if your cluster requires one.
+Use a current Kubernetes cluster and compatible `kubectl`. Save the following as `speedle-dev.yaml`. It uses `apps/v1`, one pod with PMS/ADS sharing one file, a non-root application UID and an internal ClusterIP service. This is an isolated development example: `emptyDir` policies are lost when the pod is replaced, and HTTP endpoints need cluster access controls. The manifest pins `v1.6.0`; change the tag or use a digest for the release you deploy, and add an image pull secret if your cluster requires one.
 
 <!-- deployment-template: kubernetes -->
 ```yaml
@@ -102,7 +104,7 @@ spec:
               mountPath: /data
       containers:
         - name: pms
-          image: ghcr.io/teramoby/speedle-pms:latest
+          image: ghcr.io/teramoby/speedle-pms:v1.6.0
           args: ["--store-type", "file", "--filestore-loc", "/data/policies.json", "--endpoint", "0.0.0.0:6733", "--insecure=true"]
           ports:
             - containerPort: 6733
@@ -113,7 +115,7 @@ spec:
             - name: policies
               mountPath: /data
         - name: ads
-          image: ghcr.io/teramoby/speedle-ads:latest
+          image: ghcr.io/teramoby/speedle-ads:v1.6.0
           args: ["--store-type", "file", "--filestore-loc", "/data/policies.json", "--endpoint", "0.0.0.0:6734", "--insecure=true"]
           ports:
             - containerPort: 6734
@@ -144,7 +146,7 @@ spec:
       targetPort: 6734
 ```
 
-Set `PMS_IMAGE` and `ADS_IMAGE` to the exact images you deploy, for example the release tag or `latest`. Substitute them locally before applying; keep port-forward running while using Quick Start clients:
+Set `PMS_IMAGE` and `ADS_IMAGE` to the exact images you deploy, for example a release tag or a digest. Substitute them locally before applying; keep port-forward running while using Quick Start clients:
 
 <!-- deployment-template: apply -->
 ```bash
@@ -155,6 +157,6 @@ kubectl port-forward service/speedle-dev 6733:6733 6734:6734
 
 ## Production deployments
 
-Use durable policy storage, pin container image tags to the release version you deploy, protect management and decision endpoints, and configure TLS/mTLS for clients and the policy backend. [Pluggable Storage](../store/) documents the current store configuration; [Security](../security/) covers current transport flags. Size and operate the etcd deployment using the current etcd documentation, not the retired etcd-operator example.
+Use durable policy storage, pin container image tags or digests to the release version you deploy, protect management and decision endpoints, and configure TLS/mTLS for clients and the policy backend. [Pluggable Storage](../store/) documents the current store configuration; [Security](../security/) covers current transport flags. Size and operate the etcd deployment using the current etcd documentation, not the retired etcd-operator example.
 
 The repository contains historical Helm/Kubernetes examples. The old Helm 2 `helm install -n ...`, `stable/etcd-operator`, `apps/v1beta2`, and `r.authz.fun` image instructions are not the deployment flow above. Container pulls, cluster admission, registry access, storage and rollout depend on your environment; validate them in your target cluster before production use.

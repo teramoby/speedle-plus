@@ -50,6 +50,8 @@ go build -o ./bin/ ./cmd/spctl ./cmd/speedle-pms ./cmd/speedle-ads
 - `ghcr.io/teramoby/speedle-pms`
 - `ghcr.io/teramoby/speedle-ads`
 
+匿名拉取要求 GHCR 软件包为公开；如果软件包是私有的，请先执行 `docker login ghcr.io` 登录。
+
 请拉取要部署的发布版本；`latest` 跟随最新发布版本：
 
 <!-- deployment-template: image-pull -->
@@ -72,7 +74,7 @@ PMS 没有内置的调用方身份认证；`127.0.0.1` 绑定把未认证的管�
 
 ## Kubernetes 开发示例
 
-使用当前 Kubernetes 集群和兼容的 `kubectl`。将以下内容保存为 `speedle-dev.yaml`。它使用 `apps/v1`，在同一 Pod 内让 PMS/ADS 共享文件，以非 root 用户运行应用，并通过内部 ClusterIP 服务访问。这是隔离开发环境示例：Pod 被替换后 `emptyDir` 中的策略会丢失，HTTP 端点需要集群访问控制。清单使用已发布的映像；请固定要部署的发布标签，集群需要时配置 imagePullSecrets。
+使用当前 Kubernetes 集群和兼容的 `kubectl`。将以下内容保存为 `speedle-dev.yaml`。它使用 `apps/v1`，在同一 Pod 内让 PMS/ADS 共享文件，以非 root 用户运行应用，并通过内部 ClusterIP 服务访问。这是隔离开发环境示例：Pod 被替换后 `emptyDir` 中的策略会丢失，HTTP 端点需要集群访问控制。清单固定使用 `v1.6.0`；部署其他发布版本时请修改标签或使用摘要（digest），集群需要时配置 imagePullSecrets。
 
 <!-- deployment-template: kubernetes -->
 ```yaml
@@ -101,7 +103,7 @@ spec:
               mountPath: /data
       containers:
         - name: pms
-          image: ghcr.io/teramoby/speedle-pms:latest
+          image: ghcr.io/teramoby/speedle-pms:v1.6.0
           args: ["--store-type", "file", "--filestore-loc", "/data/policies.json", "--endpoint", "0.0.0.0:6733", "--insecure=true"]
           ports:
             - containerPort: 6733
@@ -112,7 +114,7 @@ spec:
             - name: policies
               mountPath: /data
         - name: ads
-          image: ghcr.io/teramoby/speedle-ads:latest
+          image: ghcr.io/teramoby/speedle-ads:v1.6.0
           args: ["--store-type", "file", "--filestore-loc", "/data/policies.json", "--endpoint", "0.0.0.0:6734", "--insecure=true"]
           ports:
             - containerPort: 6734
@@ -143,7 +145,7 @@ spec:
       targetPort: 6734
 ```
 
-将 `PMS_IMAGE`、`ADS_IMAGE` 设置为实际部署的完整映像，例如发布标签或 `latest`。先在本地替换清单中的映像，再应用；使用快速入门客户端时保持端口转发运行：
+将 `PMS_IMAGE`、`ADS_IMAGE` 设置为实际部署的完整映像，例如发布标签或摘要（digest）。先在本地替换清单中的映像，再应用；使用快速入门客户端时保持端口转发运行：
 
 <!-- deployment-template: apply -->
 ```bash
@@ -154,6 +156,6 @@ kubectl port-forward service/speedle-dev 6733:6733 6734:6734
 
 ## 生产部署
 
-生产环境应使用持久化策略存储，将容器映像标签固定到要部署的发布版本，保护管理与决策端点，并为客户端和策略后端配置 TLS/mTLS。当前存储配置见[可插拔存储](../store/)，传输参数见[安全配置](../security/)。请按当前 etcd 文档部署和运维 etcd，不要继续使用已停止维护的 etcd-operator 示例。
+生产环境应使用持久化策略存储，将容器映像标签或摘要（digest）固定到要部署的发布版本，保护管理与决策端点，并为客户端和策略后端配置 TLS/mTLS。当前存储配置见[可插拔存储](../store/)，传输参数见[安全配置](../security/)。请按当前 etcd 文档部署和运维 etcd，不要继续使用已停止维护的 etcd-operator 示例。
 
 仓库中保留了历史 Helm/Kubernetes 示例。旧的 Helm 2 `helm install -n ...`、`stable/etcd-operator`、`apps/v1beta2` 和 `r.authz.fun` 映像说明均不是本页的新部署流程。容器拉取、集群准入、仓库访问、存储与 rollout 依赖具体环境，应在目标集群中验证后再用于生产。
