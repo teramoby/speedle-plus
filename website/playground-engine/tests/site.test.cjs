@@ -42,8 +42,8 @@ const brandLockup = '<a class="brand" href="#top" aria-label="Speedle Engine hom
 const originalBrand = original.match(/<a class="brand"[^\n]*?<\/a>/)[0];
 // Header standard v3/v4: Speedle family menu, footer column, sphere favicons (v12: no hero cross-links).
 const productsMenu = /<div class="products">[\s\S]*?<\/div><\/div>\n\s*/;
-const familyFooter = /      <div class="footer-family"[\s\S]*?<\/ul><\/div>\n/;
-const footerLockup = '<div class="footer-lockup" role="img" aria-label="Speedle Engine"><img src="/img/speedle/Speedle_logo_home_bold.svg?v=4" alt=""><span class="brand-divider"></span><span class="brand-product">Engine</span></div>';
+const familyFooter = /      <nav class="footer-family"[^>]*>[\s\S]*?<\/ul>\s*<\/nav>\n/;
+const footerLockup = /<a class="footer-lockup" href="\/(?:zh\/)?" aria-label="Speedle Engine (?:home|首页)"><img src="\/img\/speedle\/Speedle_logo_home_bold\.svg\?v=4" width="132" height="45" alt="Speedle"><span class="footer-divider" aria-hidden="true"><\/span><span class="footer-product">Engine<\/span><\/a>/;
 const iconLinks = /<link rel="icon" href="(?:https:\/\/speedle\.io)?\/favicon\.svg" type="image\/svg\+xml">\n\s*<link rel="icon" href="(?:https:\/\/speedle\.io)?\/favicon\.ico" sizes="any">\n\s*<link rel="apple-touch-icon" href="(?:https:\/\/speedle\.io)?\/apple-touch-icon\.png">/;
 // #217: links between the three sites keep the reader's language.
 const crossSiteRoots = zh => zh
@@ -57,7 +57,7 @@ for (const name of ['docs/index.html','docs/zh/index.html','docs/playground/inde
   assert.ok(menu.includes('aria-haspopup="true"') && menu.includes('aria-current="page"') && roots.every(url => menu.includes(`href="${url}"`)), `Products menu in ${name}`);
   const family = html.match(familyFooter)?.[0] || '';
   assert.ok(roots.every(url => family.includes(`href="${url}"`)), `Footer family language in ${name}`);
-  assert.ok(familyFooter.test(html) && html.includes(footerLockup) && html.includes('<footer class="site-footer">'), `Shared footer in ${name}`);
+  assert.ok(familyFooter.test(html) && footerLockup.test(html) && html.includes('<footer class="site-footer">'), `Shared footer in ${name}`);
 }
 let chinesePages = 0;
 (function walk(dir) {
@@ -71,7 +71,7 @@ let chinesePages = 0;
     const route = '/' + path.relative(path.join(root, 'docs'), file).split(path.sep).join('/');
     const zh = /^(?:\/[0-9a-f]{32})?\/zh\//.test(route);
     const html = fs.readFileSync(file, 'utf8');
-    const blocks = [html.match(/<div class="products-panel"[\s\S]*?<\/div>/)?.[0], html.match(/<div class="footer-family"[\s\S]*?<\/div>/)?.[0]].filter(Boolean);
+    const blocks = [html.match(/<div class="products-panel"[\s\S]*?<\/div>/)?.[0], html.match(/<nav class="footer-family"[\s\S]*?<\/nav>/)?.[0]].filter(Boolean);
     if (!blocks.length) continue;
     if (zh) chinesePages++;
     for (const block of blocks) {
@@ -96,7 +96,8 @@ const identityTags = [/<title>[^<]*<\/title>/, /<link rel="icon"[^>]*>/,
  /\{"@type":"SoftwareSourceCode"[^\n]+/];
 // The site identity (title, icon, social and structured-data names) changed deliberately.
 const analyticsSnippet = read('website/cloudflare-web-analytics.html');
-const restoredIdentity = identityTags.reduce((html, pattern) => html.replace(pattern, original.match(pattern)[0]), home.replace(analyticsSnippet, '').replace(iconLinks, original.match(/<link rel="icon"[^>]*>/)[0]).replace(productsMenu, '').replace(familyFooter, '').replace('  <footer class="site-footer">\n', '  <footer>\n').replace(footerLockup, '<img src="/img/speedle/Speedle_logo_w.svg" alt="Speedle">'));
+const originalFooter = original.match(/  <footer>[\s\S]*?<\/footer>\n/)[0];
+const restoredIdentity = identityTags.reduce((html, pattern) => html.replace(pattern, original.match(pattern)[0]), home.replace(analyticsSnippet, '').replace(iconLinks, original.match(/<link rel="icon"[^>]*>/)[0]).replace(productsMenu, '').replace(/  <footer class="site-footer">[\s\S]*?<\/footer>\n/, originalFooter));
 const restored = restoredIdentity.replace(policyExample,originalPolicyExample).replace(originNote,'').replace('Bring Your Own Storage','Bring Your Own Store').replace('Speedle Policy Definition Language.','Secure Policy Definition Language.').replace(contactLinks,originalMailingLink).replace(sharedNavigationScript,originalNavigationScript).replace(copyright,'').replace(discordLink,oldCommunityLink).replace('  <link rel="stylesheet" href="/css/site.css">\n  <link rel="stylesheet" href="/css/navigation.css?v=header-20261106-v8">', `  <style>${originalCss}</style>`).replace('<a href="/playground/">Playground</a>','').replace(`        ${chineseLink}\n`,'').replace(brandLockup,originalBrand).replace('Fast. Simple. Access control','Fast. Simple. Access control.').replace('Authorization that stays out of your application code','Authorization that stays out of your application code.').replace('Fine-grained control without the friction','Fine-grained control without the friction.').replace('Policies humans can read','Policies humans can read.').replace('Built for the infrastructure you already run','Built for the infrastructure you already run.').replace('Help move Speedle forward','Help move Speedle forward.');
 assert.equal(restored,original,'Homepage content is unchanged except shared navigation assets/entries, community/contact links, storage heading, SPDL name, corrected SPDL example, origin note, site identity, ZSP metadata, copyright notice, analytics beacon, logo lock-up, Speedle family links, favicons and titles without trailing full stops');
 // #221: the home pages carry the scoped ZSP wording in JSON-LD and the terms

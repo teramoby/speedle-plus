@@ -246,7 +246,7 @@ body.page-kube > header.site-header:lang(zh) {
     box-shadow: none;
   }
 }
-/* Shared three-site footer (header standard v6): brand lock-up, Speedle family, social row.
+/* Shared three-site footer (header standard v16): brand block, three product cards, legal bar.
    The only source of the footer rules; every page loads this file. The `html body` prefix and
    the reset below keep the docs theme (master.css, theme.min.css, custom.css) from overriding it. */
 html body footer.site-footer {
@@ -286,52 +286,93 @@ html body footer.site-footer :where(div, p, nav, h2, ul, li, a, span, img, svg) 
 }
 html body footer.site-footer :where(ul, li) { list-style: none; }
 html body footer.site-footer :where(a) { color: inherit; }
-.site-footer .footer-inner {
+/* Footer v16: 12-column grid, 24 px gutters, 8 px rhythm. */
+.site-footer .footer-main {
   width: min(1160px, calc(100% - 40px));
-  min-height: 190px;
   margin: 0 auto;
-  padding: 0;
   display: grid;
-  grid-template-columns: 1fr auto auto;
-  gap: 48px;
-  align-items: center;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 32px 24px;
+  align-items: start;
+  padding: 56px 0 40px;
 }
+.site-footer .footer-brand { grid-column: 1 / 5; min-width: 0; }
 .site-footer .footer-lockup {
   display: inline-flex;
   align-items: center;
-  gap: 12px;
-  margin: 0 0 16px;
+  gap: 14px;
+  height: 45px;
   color: #fff;
   line-height: 1;
+  vertical-align: top;
 }
 .site-footer .footer-lockup img { display: block; width: 132px; max-width: none; height: auto; margin: 0; }
-.site-footer .footer-lockup .brand-divider { display: block; flex: 0 0 1px; width: 1px; height: 22px; background: currentColor; opacity: .4; }
-.site-footer .footer-lockup .brand-product { display: block; color: #01e7cb; font-size: 19px; font-weight: 600; letter-spacing: 0; line-height: 1; white-space: nowrap; }
-.site-footer .footer-brand p { margin: 0; font-size: .88rem; line-height: 1.65; }
-.site-footer .footer-family { font-size: .88rem; line-height: 1.65; }
-.site-footer .footer-family-title { margin: 0 0 8px; padding: 0; color: #fff; font-family: inherit; font-size: .88rem; font-weight: 600; line-height: 1.65; letter-spacing: 0; text-transform: none; }
-.site-footer .footer-family ul { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
-.site-footer .footer-family li { margin: 0; padding: 0; line-height: 1.4; }
-/* Sphere before each product name: same geometry as the ai.speedle.io footer (header standard v8). */
+.site-footer .footer-lockup .footer-divider { display: block; flex: none; width: 1px; height: 22px; background: currentColor; opacity: .4; }
+.site-footer .footer-lockup .footer-product { display: block; color: #01e7cb; font-size: 19px; font-weight: 600; letter-spacing: 0; line-height: 1; white-space: nowrap; }
+.site-footer .footer-tagline { margin: 12px 0 0; color: rgba(255,255,255,.7); font-size: 15px; line-height: 24px; }
+html .site-footer .social { display: flex; gap: 8px; margin: 24px 0 0; padding: 0; }
+html .site-footer .social a { display: grid; width: 36px; height: 36px; margin: 0; padding: 0; place-items: center; border: 1px solid rgba(255,255,255,.18); border-radius: 10px; transition: border-color .2s; }
+html .site-footer .social a:hover { border-color: #01e7cb; }
+html .site-footer .social img { width: 20px; height: 20px; margin: 0; }
+.site-footer .footer-family { grid-column: 6 / 13; min-width: 0; font-size: .88rem; line-height: 1.65; }
+.site-footer .footer-family ul { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin: 0; padding: 0; list-style: none; }
+.site-footer .footer-family li { display: flex; min-width: 0; margin: 0; padding: 0; }
+html .site-footer .footer-card {
+  position: relative;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid rgba(255,255,255,.18);
+  border-radius: 12px;
+  color: #fff;
+  background: transparent;
+  font-size: .88rem;
+  line-height: 1.65;
+  text-decoration: none;
+  transition: border-color .2s;
+}
+html .site-footer .footer-card:hover { border-color: #01e7cb; }
+.site-footer .footer-card .product-sphere { width: 28px; height: 28px; margin-bottom: 12px; }
+.site-footer .footer-card-name { display: block; color: #fff; font-size: 15px; font-weight: 600; line-height: 24px; white-space: nowrap; }
+.site-footer .footer-card-description { display: block; color: rgba(255,255,255,.7); font-size: 14px; font-weight: 400; line-height: 20px; }
+/* Status sits in the card's top-right corner, centred on the 28 px sphere row. */
+.site-footer .footer-card .product-badge { position: absolute; top: 19px; right: 16px; margin-left: 0; }
+.site-footer .footer-card-check { position: absolute; top: 22px; right: 16px; color: #01e7cb; }
+html .site-footer .footer-card[aria-current="page"] { border-color: #01e7cb; background: rgba(1,231,203,.12); }
+.site-footer .footer-card[aria-current="page"] .footer-card-name { color: #01e7cb; }
+.site-footer .footer-bar {
+  width: min(1160px, calc(100% - 40px));
+  margin: 0 auto;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 8px 24px;
+  padding: 20px 0;
+  border-top: 1px solid rgba(255,255,255,.18);
+  color: rgba(255,255,255,.7);
+  font-size: 13px;
+  line-height: 20px;
+}
+.site-footer .footer-legal { margin: 0; }
+/* Product sphere colours; the v16 cards enlarge the sphere to 28 px. */
 .site-footer .sphere-sprite { position: absolute; width: 0; height: 0; overflow: hidden; }
-html .site-footer .footer-family li > a { display: grid; grid-template-columns: 20px minmax(0, 1fr); align-items: center; gap: 10px; color: #fff; font-size: .88rem; text-decoration: none; }
-html .site-footer .footer-family li > a:hover .footer-family-name,
-html .site-footer .footer-family li > a:focus-visible .footer-family-name { color: #01e7cb; }
 .site-footer .product-sphere { display: block; width: 20px; height: 20px; flex: none; }
 .site-footer .product-engine { color: #ff9a45; }
 .site-footer .product-cloud { color: #4da3ff; }
 .site-footer .product-ai { color: #8b5cf6; }
-.site-footer .footer-family-copy { min-width: 0; }
-.site-footer .footer-family-name { display: flex; align-items: center; gap: 8px; font-size: .88rem; font-weight: 600; line-height: 1.65; white-space: nowrap; }
-.site-footer .footer-family-name .product-badge { margin-left: 0; }
-.site-footer .footer-family-desc { display: block; color: rgba(255,255,255,.7); font-size: .88rem; font-weight: 400; line-height: 1.65; }
-html .site-footer .social { display: flex; justify-content: flex-start; gap: 12px; margin: 0; padding: 0; }
-html .site-footer .social a { width: 44px; height: 44px; margin: 0; padding: 0; display: grid; place-items: center; border: 1px solid rgba(255,255,255,.18); border-radius: 10px; }
-html .site-footer .social img { width: 24px; height: 24px; margin: 0; }
 .site-footer a:focus-visible { outline: 2px solid #01e7cb; outline-offset: 4px; }
-@media (max-width: 900px) {
-  .site-footer .footer-inner { grid-template-columns: 1fr; padding: 48px 0; }
+@media (max-width: 1024px) {
+  .site-footer .footer-brand, .site-footer .footer-family { grid-column: 1 / -1; }
+}
+@media (max-width: 720px) {
+  .site-footer .footer-main { padding: 48px 0 32px; }
+  .site-footer .footer-family ul { grid-template-columns: 1fr; }
+  .site-footer .footer-bar { flex-direction: column; }
+  .site-footer .footer-legal span { display: block; }
+  .site-footer .footer-legal .footer-sep { display: none; }
 }
 @media (max-width: 700px) {
-  .site-footer .footer-inner { width: min(100% - 28px, 1160px); }
+  .site-footer .footer-main, .site-footer .footer-bar { width: min(100% - 28px, 1160px); }
 }

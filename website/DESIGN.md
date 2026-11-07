@@ -18,7 +18,7 @@ The values below are measured from the live CSS, not invented:
   the shared header and footer.
 - **Cloud**: `apps/console/src/styles/tokens.css` at `main` in
   `teramoby/cloud.speedle.io`, merged in `cloud.speedle.io#244`.
-- **Header and footer additions**: the owner-approved header standard v2–v13.
+- **Header and footer additions**: the owner-approved header standard v2–v16.
   This file is the merged form; where an older header standard differs, this
   file wins.
 
@@ -239,7 +239,10 @@ Every value must match within **± 1 px**. Put the table in the PR body.
 | Eyebrow | .78rem = 12.48 px, uppercase | 1.65 (inherited) | .14em | 800 |
 | Body | 1rem = 16 px | 1.65 | 0 | 400 |
 | Lead (hero copy) | 1.18rem = 18.88 px | 1.65 | 0 | 400 |
-| Small (footer, captions) | .88rem = 14.08 px | 1.65 | 0 | 400 |
+| Small (captions) | .88rem = 14.08 px | 1.65 | 0 | 400 |
+| Footer tagline / card name | 15 px | 24 px | 0 | 400 / 600 |
+| Footer card description | 14 px | 20 px | 0 | 400 |
+| Footer legal bar | 13 px | 20 px | 0 | 400 |
 | Code | .9rem = 14.4 px, `ui-monospace, SFMono-Regular, Menlo, monospace` | 1.8 | 0 | 500 |
 | Nav link | 15.04 px | 1.65 | 0 | 600 |
 | Button | 1rem | 1.65 | 0 | 750 |
@@ -276,7 +279,7 @@ new one-off value.
 | 12–16 px | 12, 13, 14, 16 | inline gaps, lock-up, list gaps |
 | 18–24 px | 18, 20, 22, 24 | card and integration grids, mobile menu |
 | 26–34 px | 26, 28, 30, 34 | two-column grids, card padding, action margins |
-| 40–50 px | 40, 42, 44, 48, 50 | section head, card padding, footer gap |
+| 40–50 px | 40, 42, 44, 48, 50 | section head, card padding |
 | 60–76 px | 60, 62, 68, 72, 76 | large card padding, hero gap, header height |
 | 96–104 px | 96, 100, 104 | hero and section vertical rhythm |
 
@@ -285,8 +288,9 @@ new one-off value.
 | Width | Behaviour |
 | --- | --- |
 | ≤ 1160 px | header nav collapses to the menu; Products becomes an inline group; the 30 px nav gap applies only while the desktop nav shows (v8) |
-| ≤ 900 px | hero, policy, about and contribute grids become one column; section head stacks; feature cards span 6; footer becomes one column |
-| ≤ 720 px (AI/Playground) / ≤ 700 px (Engine home) | mobile container gutters; brand 128 / 22 / 19; h1 3.25rem; section padding 76 px; menu button and dropdown; status stacks; feature cards full width; footer padding 48 px 0. Keep the site's existing value; do not mix 720 and 700 on one page |
+| ≤ 1024 px | footer brand block and cards each span all 12 columns; the cards stay in one row below the brand |
+| ≤ 900 px | hero, policy, about and contribute grids become one column; section head stacks; feature cards span 6 |
+| ≤ 720 px (AI/Playground) / ≤ 700 px (Engine home) | mobile container gutters; brand 128 / 22 / 19; h1 3.25rem; section padding 76 px; menu button and dropdown; status stacks; feature cards full width; footer cards stack in one column and the main tier padding is 48 px 0 32 px. Keep the site's existing value; do not mix 720 and 700 on one page |
 | ≤ 620 / 560 px | component-level stacking measured in the Playground CSS |
 | QA widths | 1440 px desktop, 390 px and 320 px phones |
 
@@ -346,9 +350,10 @@ Values follow the Engine CSS. Colours come from the site's token row.
 
 | Icon | Size |
 | --- | --- |
-| Footer social icon | 24 px inside a 44 px box |
-| Product sphere in menus and footer | 20 px |
-| Check in a menu row | 15 px |
+| Footer social icon | 20 px inside a 36 px box |
+| Product sphere in menus | 20 px |
+| Product sphere in footer cards | 28 px |
+| Check in a menu row or footer card | 15 px |
 | Check list | 22 px |
 | Feature icon | 78 px |
 | Hero art | `min(330px, 78%)` |
@@ -369,56 +374,74 @@ Use inline SVG or the shared sprite; icons inherit `currentColor`; no emoji.
 ## 7. Footer
 
 The footer is identical on all three sites, English and Chinese; only colours
-differ. It is the v6 standard.
+differ. It is the v16 standard: a 12-column main tier with the brand block on
+the left and three product cards on the right, then a hairline legal bar.
 
-- `<footer>`: `margin-top: 104px`; inner container = the header container
-  width; `display: grid; grid-template-columns: 1fr auto auto; gap: 48px;
-  align-items: center; min-height: 190px`.
-- At ≤ 900 px: one column, `padding: 48px 0`, order brand → family → social.
+### 7.1 Layout
 
-**Brand block**
+- `<footer>`: `margin-top: 104px`; the main tier and the legal bar share the
+  header container width (1160 px; side gutters 20 px, ≤ 700 px 14 px).
+- **Main tier** `.footer-main`: `display: grid; grid-template-columns:
+  repeat(12, minmax(0, 1fr)); gap: 32px 24px; align-items: start;
+  padding: 56px 0 40px`.
+  - Columns 1–4 `.footer-brand`: the footer lock-up, then a one-line tagline in
+    Inter 400 **15 px / 24 px** muted 12 px below it, then the social row 24 px
+    below the tagline.
+  - Columns 6–12 `.footer-family`: three equal cards in a
+    `repeat(3, minmax(0, 1fr))` grid with a 16 px gap, top-aligned with the
+    lock-up.
+- **Footer lock-up** = the header lock-up at footer scale: logo image width
+  **132 px**, divider 1 × 22 px, product word Inter 600 **19 px**; it is a link
+  to that language's home page.
+- **Cards** `.footer-card`: 12 px radius, 16 px padding, 1 px border in the
+  site's border token, a 28 px sphere with a 12 px bottom margin, the name
+  Inter 600 **15 px / 24 px**, the description Inter 400 **14 px / 20 px**
+  muted. Cards in a row are the same height; the tagline and the card names
+  share the y = 113 px baseline at 1440 px.
+  - The current site's card: accent tint background, accent border, the accent
+    check mark (15 px) in its top-right corner and `aria-current="page"`; its
+    name uses the accent colour.
+  - Cloud carries the "Coming soon" / "即将上线" badge (11 px / 600), placed in
+    the card's top-right corner so the name and description stay on the shared
+    baseline.
+  - The other cards take the accent border on hover.
+- **No heading** above the products.
+- **Bottom bar** `.footer-bar`: 1 px hairline, `padding: 20px 0`, Inter 400
+  **13 px / 20 px** muted. Left: the license, then the copyright on the same
+  line separated by `" · "`; the wording is byte-identical to the approved
+  text (section 7.3). Right: the existing legal links where the site has them
+  (Cloud: privacy · terms).
+- ≤ 1024 px: the brand block and the cards each span all 12 columns; the cards
+  stay in one row below the brand (32 px row gap).
+- ≤ 720 px: the cards stack in one full-width column, the bottom bar stacks,
+  and the license and copyright each get their own line (the " · " separator
+  is hidden). The main tier padding is 48 px 0 32 px.
 
-- Footer lock-up = the header lock-up at footer scale: logo image width
-  **132 px**, divider 1 × 22 px, product word Inter 600 **19 px**;
-  `margin-bottom: 16px`.
-- Lines: Inter .88rem (14.08 px), line-height 1.65, margin 0.
-  1. Engine and AI: "Licensed under the Universal Permissive License v1.0." /
-     "基于 Universal Permissive License v1.0 授权。" Cloud: "Privacy · Terms"
-     links to its existing legal pages; keep these links in this slot.
-  2. All: "Copyright © 2019–2026. All rights reserved." /
-     "版权所有 © 2019–2026。" (exactly this wording).
-
-**Speedle family column**
-
-- First link column, heading **Speedle family** / **Speedle 产品**, Inter 600
-  .88rem; links Inter .88rem, 8 px row gap.
-- Each product name is Inter **600**, .88rem; its one-line description is Inter
-  **400**, .88rem, muted. The sphere sits in a **20 × 20 px** box on a
-  `20px 1fr` grid with a **10 px** gap (v11).
-- The same three products, one-line descriptions and Cloud "Coming soon" badge
-  as the Products menu (section 3.4). Mark the current site with
-  `aria-current="page"`. Chinese pages use the Chinese labels and descriptions.
-- No other link columns: site navigation belongs in the header.
-
-**Social row**
+### 7.2 Social row
 
 - Exactly speedle.io's four, in this order:
   1. Email — `mailto:contact@speedle.io`
   2. Google Groups — <https://groups.google.com/forum/#!forum/speedle-users>
   3. GitHub — <https://github.com/teramoby/speedle-plus>
   4. Discord — <https://discord.gg/uaY2xVsbbT>
-- Each is a 44 px × 44 px box, 1 px border, radius 10 px, 24 px icon, gap 12 px;
+- Each is a 36 px × 36 px box, 1 px border, radius 10 px, 20 px icon, gap 8 px;
   the same SVG icons, recoloured only; `aria-label`s as on speedle.io.
 
-**Colours**
+### 7.3 Colours
 
-- Engine: `#171022` background, `rgba(255, 255, 255, .7)` text.
-- Cloud: `--surface-inverse` `#0b2149` background, `--footer-text`
-  `rgba(255, 255, 255, 0.7)` text and `--footer-border`
-  `rgba(255, 255, 255, 0.18)` borders.
-- AI: `#f4f0fb` background, `#182034` at .72 text, borders
-  `rgba(24, 32, 52, .14)`.
-- AA contrast in every case.
+| Site | Footer | Text | Border | Accent / current card |
+| --- | --- | --- | --- | --- |
+| Engine | `#171022` | `rgba(255, 255, 255, .7)` | `rgba(255, 255, 255, .18)` | `--cyan` `#01e7cb`; tint `rgba(1, 231, 203, .12)` |
+| AI | `#f4f0fb` | `#182034` at .72 | `rgba(24, 32, 52, .14)` | `--primary` `#7546d8`; tint `--tint-strong` `#e9e1f8`, name `--primary-dark` `#5229ad` |
+| Cloud | `--surface-inverse` `#0b2149` | `--footer-text` `rgba(255, 255, 255, 0.7)` | `--footer-border` `rgba(255, 255, 255, 0.18)` | `--text-accent-inverse` `#7cc4ff`; tint `rgba(124, 196, 255, .12)` |
+
+- AA contrast in every case: Engine footer text white at .7 on `#171022` is
+  8.99:1 and the cyan accent is 11.8:1; AI footer text is 6.04:1 on `#f4f0fb`.
+- The legal text is byte-identical to the approved wording:
+  1. Engine and AI: "Licensed under the Universal Permissive License v1.0." /
+     "基于 Universal Permissive License v1.0 授权。"
+  2. All: "Copyright © 2019–2026. All rights reserved." /
+     "版权所有 © 2019–2026。"
 
 Add the footer to the parity table: footer height, lock-up logo width, text
 size, social box size.
@@ -483,8 +506,8 @@ size, social box size.
 - In the collapsed menu (≤ 1160 px) the link keeps the same position in the
   list.
 - Chinese pages use the Chinese labels throughout the header and footer
-  (Products → 产品, Speedle family → Speedle 产品) and the Chinese descriptions
-  in the Products panel.
+  (Products → 产品) and the Chinese descriptions in the Products panel and
+  footer cards.
 - Cloud replaces its two-link "中文 / English" toggle with this single link.
   AI gets the link when its Chinese pages exist.
 
@@ -531,7 +554,7 @@ public page. It is cookieless.
   - Engine home: **none** (v12). Remove "Prefer a hosted service? Speedle Cloud
     (coming soon) →" and "Authorization for AI agents → Speedle AI", including
     their Chinese equivalents. Engine reaches the other sites only through the
-    header Products menu and the footer Speedle family column.
+    header Products menu and the footer product cards.
   - Cloud landing: "Built on the open-source Speedle Engine →".
   - AI home: the existing Engine and Cloud links use exactly these names,
     URLs and the Cloud badge.
@@ -546,13 +569,14 @@ public page. It is cookieless.
 - [ ] Header parity at 1440 px and 390 px, every value within ± 1 px: header
       76; logo 152 / 128; divider 26 / 22; product word 22 / 19; nav
       15.04 px / 600; gap 30; GitHub pill 10 × 18; collapse at ≤ 1160.
-- [ ] Footer parity: min-height 190; lock-up logo 132; product word 19; text
-      .88rem; social box 44; grid `1fr auto auto`, gap 48. Family names are
-      600, descriptions 400 muted; sphere box 20 × 20 px, grid `20px 1fr`,
-      gap 10 px.
+- [ ] Footer parity (v16): 12 columns with 24 px gutters, padding 56 px 0
+      40 px; lock-up logo 132; product word 19; tagline 15 / 24; social box
+      36 with a 20 px icon and an 8 px gap; card gap 16, radius 12, padding
+      16, sphere 28; names 15 / 24 600, descriptions 14 / 20 400 muted;
+      legal bar 13 / 20 with a 20 px padding; breakpoints at 1024 and 720 px.
 - [ ] No stand-alone product links in the desktop or collapsed header; Engine
       home has no contextual cross-links (v10/v12).
-- [ ] Products menu, footer family and permitted contextual links use the exact
+- [ ] Products menu, footer cards and permitted contextual links use the exact
       names, URLs, descriptions and Cloud "Coming soon" badge.
 - [ ] Only Engine has a GitHub pill in the header or collapsed menu; Cloud and
       AI have none.
