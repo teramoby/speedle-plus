@@ -277,6 +277,8 @@
   <span style="color:#ff79c6">&#34;value&#34;</span>: <span style="color:#bd93f9">4</span>
 }</code></pre></div>
 <p>嵌入式 Go 使用 <code>map[string]interface{}</code>。诊断响应的属性也是对象，不能与请求属性数组混淆。属性类型与条件见 <a href="/zh/docs/spdl/">SPDL</a>，过程明细见<a href="/zh/docs/pms/diagnosis/">授权诊断</a>，令牌校验见<a href="/zh/docs/assertor/">令牌断言</a>。</p>
+
+<p>策略执行点（PEP）必须提供策略引用的所有属性；如果条件引用的属性不在请求中，该条件不匹配。</p>
 </div>
 </div>
 </main>

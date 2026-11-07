@@ -62,6 +62,8 @@ RESOURCE_IDENTIFIER = NAME
 
 Policy 和 role policy 都支持 Condition。只有 condition 满足了， policy 或 role policy 才会生效。
 
+策略执行点（PEP）必须提供策略引用的所有属性；如果条件引用的属性不在请求中，该条件不匹配。
+
 这一小节主要介绍什么是 condition， 以及如何构建 condition。
 
 ### 2. Condition
