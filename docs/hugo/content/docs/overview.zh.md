@@ -44,7 +44,7 @@ curl --header 'Content-Type: application/json' --data '{"subject":{"principals":
 
 ## PEP：策略执行点（Policy Enforcement Point）
 
-PEP 拦截访问请求，向 PDP 询问决策并执行。Speedle 不提供通用的 PEP；PEP 是调用 ADS 的应用或网关。[Docker、Kubernetes 和 Istio 集成](../../integrations/)就是 PEP 的示例。
+PEP 拦截访问请求，向 PDP 询问决策并执行。Speedle 不提供通用的 PEP；PEP 是调用 ADS 的应用或网关：它可以经由 REST 或 gRPC API 询问 ADS，也可以在 Go 中嵌入求值器。支持的接入方式参见[集成](../../integrations/)。
 
 ## PIP：策略信息点（Policy Information Point）
 
@@ -106,4 +106,4 @@ SPDL 的全称是 Speedle Policy Definition Language（Speedle 策略定义语�
 
 ## 集成（Integrations）
 
-Speedle 提供 [Docker](../../integrations/docker/)（Docker 授权插件）、[Kubernetes](../../integrations/kubernetes/)（授权 webhook）和 [Istio](../../integrations/istio/)（Mixer 适配器）的集成示例。其他应用可以通过 REST 或 gRPC 调用 ADS，或在 Go 中嵌入求值器，参见[部署](../deployment/)。
+其他应用可以通过 [REST 或 gRPC API](../api/) 调用 ADS，或在 Go 中嵌入求值器，参见[部署](../deployment/)。当前提供的 API、SDK、嵌入模式和策略存储参见[集成](../../integrations/)。

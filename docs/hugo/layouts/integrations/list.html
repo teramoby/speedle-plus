@@ -11,7 +11,13 @@
     {{if .Params.bref }}
     <p>{{.Params.bref}}</p>
     {{ end }}
+    {{ with .Content }}
+    <div id="kube-component" class="content">
+      {{ . }}
+    </div>
+    {{ end }}
     <br />
+    {{ if .Data.Pages }}
     <div id="components">
       <div class="row gutters">
         {{ range.Data.Pages.ByWeight }}
@@ -27,6 +33,7 @@
         {{ end }}
       </div>
     </div>
+    {{ end }}
   </div>
 </div>
 {{ end }}

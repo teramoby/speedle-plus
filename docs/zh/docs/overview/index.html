@@ -37,7 +37,7 @@
       <button class="menu" type="button" aria-expanded="false" aria-controls="nav-links" aria-label="展开导航">☰</button>
       <nav class="nav-links" id="nav-links" aria-label="主导航">
         <div class="products"><button class="products-button" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="products-panel">产品<svg class="products-chevron" width="10" height="10" viewBox="0 0 10 10" aria-hidden="true" focusable="false"><path d="M2 3.5 5 6.5 8 3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button><span class="products-heading" aria-hidden="true">产品</span><div class="products-panel" id="products-panel" role="group" aria-label="产品"><a class="product-row" href="https://engine.speedle.io/zh/" aria-current="page"><img class="product-mark" src="/img/speedle/speedle-mark-engine.svg" alt="" width="20" height="20"><span class="product-text"><span class="product-name">Speedle Engine</span><span class="product-desc">开源授权引擎</span></span><svg class="product-check" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M3.5 8.5 6.5 11.5 12.5 4.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></a><a class="product-row" href="https://cloud.speedle.io/zh-CN/"><img class="product-mark" src="/img/speedle/speedle-mark-cloud.svg" alt="" width="20" height="20"><span class="product-text"><span class="product-name">Speedle Cloud <span class="product-badge">即将上线</span></span><span class="product-desc">面向开发者的托管授权服务</span></span></a><a class="product-row" href="https://ai.speedle.io/zh/"><img class="product-mark" src="/img/speedle/speedle-mark-ai.svg" alt="" width="20" height="20"><span class="product-text"><span class="product-name">Speedle AI</span><span class="product-desc">面向 AI 的访问管理</span></span></a></div></div>
-        <a href="/zh/#about">关于</a><a href="/zh/#features">功能</a><a href="/zh/#integrations">集成</a>
+        <a href="/zh/#about">关于</a><a href="/zh/#features">功能</a>
         <a href="/zh/quick-start/">快速入门</a><a href="/zh/docs/">文档</a><a href="/zh/playground/">Playground</a>
         <a href="/docs/overview/" lang="en" hreflang="en" aria-label="Switch to English">English</a>
         <a class="nav-github" href="https://github.com/teramoby/speedle-plus">GitHub</a>
@@ -188,7 +188,7 @@
 
 <h2 id="pep-策略执行点-policy-enforcement-point">PEP：策略执行点（Policy Enforcement Point）</h2>
 
-<p>PEP 拦截访问请求，向 PDP 询问决策并执行。Speedle 不提供通用的 PEP；PEP 是调用 ADS 的应用或网关。<a href="/zh/integrations/">Docker、Kubernetes 和 Istio 集成</a>就是 PEP 的示例。</p>
+<p>PEP 拦截访问请求，向 PDP 询问决策并执行。Speedle 不提供通用的 PEP；PEP 是调用 ADS 的应用或网关：它可以经由 REST 或 gRPC API 询问 ADS，也可以在 Go 中嵌入求值器。支持的接入方式参见<a href="/zh/integrations/">集成</a>。</p>
 
 <h2 id="pip-策略信息点-policy-information-point">PIP：策略信息点（Policy Information Point）</h2>
 
@@ -234,7 +234,7 @@ deny user carol delete journal</code></pre></div>
 
 <h2 id="集成-integrations">集成（Integrations）</h2>
 
-<p>Speedle 提供 <a href="/zh/integrations/docker/">Docker</a>（Docker 授权插件）、<a href="/zh/integrations/kubernetes/">Kubernetes</a>（授权 webhook）和 <a href="/zh/integrations/istio/">Istio</a>（Mixer 适配器）的集成示例。其他应用可以通过 REST 或 gRPC 调用 ADS，或在 Go 中嵌入求值器，参见<a href="/zh/docs/deployment/">部署</a>。</p>
+<p>其他应用可以通过 <a href="/zh/docs/api/">REST 或 gRPC API</a> 调用 ADS，或在 Go 中嵌入求值器，参见<a href="/zh/docs/deployment/">部署</a>。当前提供的 API、SDK、嵌入模式和策略存储参见<a href="/zh/integrations/">集成</a>。</p>
 </div>
 </div>
 </main>

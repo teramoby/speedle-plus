@@ -75,15 +75,6 @@
     </item>
     
     <item>
-      <title>Docker</title>
-      <link>https://engine.speedle.io/zh/tags/docker/</link>
-      <pubDate>Mon, 10 Apr 2017 16:41:54 +0100</pubDate>
-      
-      <guid>https://engine.speedle.io/zh/tags/docker/</guid>
-      <description></description>
-    </item>
-    
-    <item>
       <title>Etcd</title>
       <link>https://engine.speedle.io/zh/tags/etcd/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
@@ -125,33 +116,6 @@
       <pubDate>Thu, 17 Jan 2019 13:20:07 +0800</pubDate>
       
       <guid>https://engine.speedle.io/zh/tags/identity-domain/</guid>
-      <description></description>
-    </item>
-    
-    <item>
-      <title>Istio</title>
-      <link>https://engine.speedle.io/zh/tags/istio/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://engine.speedle.io/zh/tags/istio/</guid>
-      <description></description>
-    </item>
-    
-    <item>
-      <title>K8s</title>
-      <link>https://engine.speedle.io/zh/tags/k8s/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://engine.speedle.io/zh/tags/k8s/</guid>
-      <description></description>
-    </item>
-    
-    <item>
-      <title>Kubernetes</title>
-      <link>https://engine.speedle.io/zh/tags/kubernetes/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://engine.speedle.io/zh/tags/kubernetes/</guid>
       <description></description>
     </item>
     
@@ -305,15 +269,6 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/zh/tags/versions/</guid>
-      <description></description>
-    </item>
-    
-    <item>
-      <title>Webhook</title>
-      <link>https://engine.speedle.io/zh/tags/webhook/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://engine.speedle.io/zh/tags/webhook/</guid>
       <description></description>
     </item>
     

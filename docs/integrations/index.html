@@ -8,7 +8,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Integrations - Speedle</title>
   
-  <meta name="description" content="Integrate Speedle with your existing systems."> 
+  <meta name="description" content="Connect Speedle with your applications and infrastructure."> 
   
   
   
@@ -21,10 +21,10 @@
 
 
   <meta property="og:title" content="Integrations" />
-<meta property="og:description" content="Integrate Speedle with your existing systems." />
+<meta property="og:description" content="Connect Speedle with your applications and infrastructure." />
 <meta property="og:type" content="website" />
 <meta property="og:url" content="https://engine.speedle.io/integrations/" />
-<meta property="og:updated_time" content="2026-10-28T14:21:03&#43;00:00"/>
+<meta property="og:updated_time" content="2026-11-07T19:56:43&#43;08:00"/>
   
 
 
@@ -80,7 +80,7 @@
       <button class="menu" type="button" aria-expanded="false" aria-controls="nav-links" aria-label="Open navigation">☰</button>
       <nav class="nav-links" id="nav-links" aria-label="Main navigation">
         <div class="products"><button class="products-button" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="products-panel">Products<svg class="products-chevron" width="10" height="10" viewBox="0 0 10 10" aria-hidden="true" focusable="false"><path d="M2 3.5 5 6.5 8 3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button><span class="products-heading" aria-hidden="true">Products</span><div class="products-panel" id="products-panel" role="group" aria-label="Products"><a class="product-row" href="https://engine.speedle.io/" aria-current="page"><img class="product-mark" src="/img/speedle/speedle-mark-engine.svg" alt="" width="20" height="20"><span class="product-text"><span class="product-name">Speedle Engine</span><span class="product-desc">Open-source authorization engine</span></span><svg class="product-check" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M3.5 8.5 6.5 11.5 12.5 4.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></a><a class="product-row" href="https://cloud.speedle.io/"><img class="product-mark" src="/img/speedle/speedle-mark-cloud.svg" alt="" width="20" height="20"><span class="product-text"><span class="product-name">Speedle Cloud <span class="product-badge">Coming soon</span></span><span class="product-desc">Hosted authorization for developers</span></span></a><a class="product-row" href="https://ai.speedle.io/"><img class="product-mark" src="/img/speedle/speedle-mark-ai.svg" alt="" width="20" height="20"><span class="product-text"><span class="product-name">Speedle AI</span><span class="product-desc">Access management for AI</span></span></a></div></div>
-        <a href="/#about">About</a><a href="/#features">Features</a><a href="/#integrations">Integrations</a>
+        <a href="/#about">About</a><a href="/#features">Features</a>
         <a href="/quick-start/">Getting started</a><a href="/docs/">Docs</a><a href="/playground/">Playground</a>
         <a href="/zh/integrations/" lang="zh-CN" hreflang="zh-CN" aria-label="切换到中文">中文</a>
         <a class="nav-github" href="https://github.com/teramoby/speedle-plus">GitHub</a>
@@ -93,45 +93,46 @@
     <image class="top-right-icon" src="https://engine.speedle.io/img/speedle/10.Integrations.svg" />
     <h1>Integrations</h1>
     
-    <p class="subtitle">Integrate Speedle with your existing systems.</p>
+    <p class="subtitle">Connect Speedle with your applications and infrastructure.</p>
     
+    
+    
+    <div id="kube-component" class="content">
+      
+
+<p>Speedle makes authorization decisions. A policy enforcement point (PEP) in your application, gateway or platform calls Speedle for each decision and enforces the result. The interfaces below are supported today.</p>
+
+<h2 id="rest-and-grpc-apis">REST and gRPC APIs</h2>
+
+<p>Manage services, policies and roles through the Policy Management Service (PMS), and request runtime decisions from the Authorization Decision Service (ADS). Both expose REST APIs; start either server with <code>--grpc-endpoint</code> to enable its gRPC API.</p>
+
+<ul>
+<li><a href="/docs/api/management_api/">Policy management API</a></li>
+<li><a href="/docs/api/decision_api/">Authorization decision API</a></li>
+<li><a href="/docs/api/asserter_api/">Token assertion webhook</a></li>
+<li><a href="/docs/api/">API overview, including the PMS and ADS protos</a></li>
+</ul>
+
+<h2 id="embedded-go">Embedded Go</h2>
+
+<p>Run the evaluator inside a Go application, without a separate PMS or ADS process. The <a href="/docs/deployment-embeded/">embedded mode guide</a> builds a complete example with Go modules.</p>
+
+<h2 id="sdks">SDKs</h2>
+
+<p>Client SDKs are available for Java, Go, Python, Node.js/TypeScript, Rust and C#/.NET. See <a href="/docs/sdks/">SDKs</a>.</p>
+
+<h2 id="policy-stores">Policy stores</h2>
+
+<p>Use the built-in file, etcd, MySQL or MongoDB store, or implement the store interfaces for another backend. See <a href="/docs/store/">Pluggable storage</a>.</p>
+
+<h2 id="previous-guides">Previous guides</h2>
+
+<p>The previous Istio, Kubernetes and Docker sample guides are no longer published. Use the interfaces above for new integrations.</p>
+
+    </div>
     
     <br />
-    <div id="components">
-      <div class="row gutters">
-        
-        
-        <div class="col col-4 center">
-          <img class="svg" src="/img/speedle/24.%20Docker.svg" />
-          <h4>
-            <a href="/integrations/docker/">Docker</a>
-          </h4>
-          <p>Integrate with Docker Auth</p>
-        </div>
-        
-        
-        
-        <div class="col col-4 center">
-          <img class="svg" src="/img/speedle/22.%20Kubernetes.svg" />
-          <h4>
-            <a href="/integrations/kubernetes/">Kubernetes</a>
-          </h4>
-          <p>Up and running with Kubernetes authorization webhook</p>
-        </div>
-        
-        
-        
-        <div class="col col-4 center">
-          <img class="svg" src="/img/speedle/23.%20Istio.svg" />
-          <h4>
-            <a href="/integrations/istio/">Istio</a>
-          </h4>
-          <p>Integrate with Istio Speedle adapter for policy decisions in the service mesh</p>
-        </div>
-        
-        
-      </div>
-    </div>
+    
   </div>
 </div>
 </main>

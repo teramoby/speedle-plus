@@ -8,7 +8,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>集成 - Speedle</title>
   
-  <meta name="description" content="将Speedle跟您的既存系统进行集成。"> 
+  <meta name="description" content="将 Speedle 接入你的应用与基础设施。"> 
   
   
   
@@ -21,10 +21,10 @@
 
 
   <meta property="og:title" content="集成" />
-<meta property="og:description" content="将Speedle跟您的既存系统进行集成。" />
+<meta property="og:description" content="将 Speedle 接入你的应用与基础设施。" />
 <meta property="og:type" content="website" />
 <meta property="og:url" content="https://engine.speedle.io/zh/integrations/" />
-<meta property="og:updated_time" content="2026-10-28T14:21:03&#43;00:00"/>
+<meta property="og:updated_time" content="2026-11-07T19:56:43&#43;08:00"/>
   
 
 
@@ -80,7 +80,7 @@
       <button class="menu" type="button" aria-expanded="false" aria-controls="nav-links" aria-label="展开导航">☰</button>
       <nav class="nav-links" id="nav-links" aria-label="主导航">
         <div class="products"><button class="products-button" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="products-panel">产品<svg class="products-chevron" width="10" height="10" viewBox="0 0 10 10" aria-hidden="true" focusable="false"><path d="M2 3.5 5 6.5 8 3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button><span class="products-heading" aria-hidden="true">产品</span><div class="products-panel" id="products-panel" role="group" aria-label="产品"><a class="product-row" href="https://engine.speedle.io/zh/" aria-current="page"><img class="product-mark" src="/img/speedle/speedle-mark-engine.svg" alt="" width="20" height="20"><span class="product-text"><span class="product-name">Speedle Engine</span><span class="product-desc">开源授权引擎</span></span><svg class="product-check" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M3.5 8.5 6.5 11.5 12.5 4.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></a><a class="product-row" href="https://cloud.speedle.io/zh-CN/"><img class="product-mark" src="/img/speedle/speedle-mark-cloud.svg" alt="" width="20" height="20"><span class="product-text"><span class="product-name">Speedle Cloud <span class="product-badge">即将上线</span></span><span class="product-desc">面向开发者的托管授权服务</span></span></a><a class="product-row" href="https://ai.speedle.io/zh/"><img class="product-mark" src="/img/speedle/speedle-mark-ai.svg" alt="" width="20" height="20"><span class="product-text"><span class="product-name">Speedle AI</span><span class="product-desc">面向 AI 的访问管理</span></span></a></div></div>
-        <a href="/zh/#about">关于</a><a href="/zh/#features">功能</a><a href="/zh/#integrations">集成</a>
+        <a href="/zh/#about">关于</a><a href="/zh/#features">功能</a>
         <a href="/zh/quick-start/">快速入门</a><a href="/zh/docs/">文档</a><a href="/zh/playground/">Playground</a>
         <a href="/integrations/" lang="en" hreflang="en" aria-label="Switch to English">English</a>
         <a class="nav-github" href="https://github.com/teramoby/speedle-plus">GitHub</a>
@@ -93,45 +93,46 @@
     <image class="top-right-icon" src="https://engine.speedle.io/img/speedle/10.Integrations.svg" />
     <h1>集成</h1>
     
-    <p class="subtitle">将Speedle跟您的既存系统进行集成。</p>
+    <p class="subtitle">将 Speedle 接入你的应用与基础设施。</p>
     
+    
+    
+    <div id="kube-component" class="content">
+      
+
+<p>Speedle 负责做出授权决策。应用、网关或平台中的策略执行点（PEP）会针对每次访问向 Speedle 询问决策，并执行返回的结果。以下接口都是当前支持的接入方式。</p>
+
+<h2 id="rest-与-grpc-api">REST 与 gRPC API</h2>
+
+<p>在策略管理服务（PMS）中管理服务、策略和角色，向授权决策服务（ADS）请求运行时决策。两者都提供 REST API；启动任一服务时加上 <code>--grpc-endpoint</code> 即可启用对应的 gRPC API。</p>
+
+<ul>
+<li><a href="/zh/docs/api/management_api/">策略管理 API</a></li>
+<li><a href="/zh/docs/api/decision_api/">授权决策 API</a></li>
+<li><a href="/zh/docs/api/asserter_api/">令牌断言 webhook</a></li>
+<li><a href="/zh/docs/api/">API 概览，包括 PMS 和 ADS 的 proto</a></li>
+</ul>
+
+<h2 id="嵌入式-go">嵌入式 Go</h2>
+
+<p>在 Go 应用中直接运行求值器，不需要单独的 PMS 或 ADS 进程。<a href="/zh/docs/deployment-embeded/">嵌入式模式指南</a>使用 Go modules 构建了一个完整示例。</p>
+
+<h2 id="sdk">SDK</h2>
+
+<p>提供 Java、Go、Python、Node.js/TypeScript、Rust 和 C#/.NET 客户端 SDK。参见 <a href="/zh/docs/sdks/">SDK</a>。</p>
+
+<h2 id="策略存储">策略存储</h2>
+
+<p>可以使用内置的文件、etcd、MySQL 或 MongoDB 存储，也可以实现存储接口接入其他后端。参见<a href="/zh/docs/store/">存储扩展</a>。</p>
+
+<h2 id="此前的指南">此前的指南</h2>
+
+<p>此前的 Istio、Kubernetes 和 Docker 示例指南已不再发布。新的集成请使用上面的接口。</p>
+
+    </div>
     
     <br />
-    <div id="components">
-      <div class="row gutters">
-        
-        
-        <div class="col col-4 center">
-          <img class="svg" src="/img/speedle/24.%20Docker.svg" />
-          <h4>
-            <a href="/zh/integrations/docker/">Docker</a>
-          </h4>
-          <p>Integrate with Docker Auth</p>
-        </div>
-        
-        
-        
-        <div class="col col-4 center">
-          <img class="svg" src="/img/speedle/22.%20Kubernetes.svg" />
-          <h4>
-            <a href="/zh/integrations/kubernetes/">Kubernetes</a>
-          </h4>
-          <p>Up and running with Kubernetes authorization webhook</p>
-        </div>
-        
-        
-        
-        <div class="col col-4 center">
-          <img class="svg" src="/img/speedle/23.%20Istio.svg" />
-          <h4>
-            <a href="/zh/integrations/istio/">Istio</a>
-          </h4>
-          <p>Integrate with Istio Speedle adapter for policy decisions in the service mesh</p>
-        </div>
-        
-        
-      </div>
-    </div>
+    
   </div>
 </div>
 </main>

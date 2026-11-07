@@ -341,10 +341,11 @@ Security and endpoint configuration. This is a contract reference, not a backend
     <item>
       <title>Integrations</title>
       <link>https://engine.speedle.io/integrations/</link>
-      <pubDate>Wed, 28 Oct 2026 14:21:03 +0000</pubDate>
+      <pubDate>Sat, 07 Nov 2026 19:56:43 +0800</pubDate>
       
       <guid>https://engine.speedle.io/integrations/</guid>
-      <description></description>
+      <description>Speedle makes authorization decisions. A policy enforcement point (PEP) in your application, gateway or platform calls Speedle for each decision and enforces the result. The interfaces below are supported today.
+REST and gRPC APIs Manage services, policies and roles through the Policy Management Service (PMS), and request runtime decisions from the Authorization Decision Service (ADS). Both expose REST APIs; start either server with --grpc-endpoint to enable its gRPC API.</description>
     </item>
     
     <item>
@@ -361,7 +362,7 @@ Security and endpoint configuration. This is a contract reference, not a backend
     <item>
       <title>Speedle Documents</title>
       <link>https://engine.speedle.io/docs/</link>
-      <pubDate>Wed, 28 Oct 2026 13:16:58 +0000</pubDate>
+      <pubDate>Sat, 07 Nov 2026 19:52:24 +0800</pubDate>
       
       <guid>https://engine.speedle.io/docs/</guid>
       <description></description>
