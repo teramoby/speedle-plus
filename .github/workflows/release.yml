@@ -73,7 +73,9 @@ jobs:
           # proxy caches tags, so an existing tag is only allowed to stay when
           # it already points at the requested commit.
           if git ls-remote --exit-code --tags origin "refs/tags/${VERSION}" >/dev/null; then
-            tagged=$(git ls-remote origin "refs/tags/${VERSION}" "refs/tags/${VERSION}^{}" | awk '{ print $1 }' | tail -n 1)
+            direct=$(git ls-remote origin "refs/tags/${VERSION}" | awk '{ print $1 }')
+            peeled=$(git ls-remote origin "refs/tags/${VERSION}^{}" | awk '{ print $1 }')
+            tagged=${peeled:-${direct}}
             [[ "${tagged}" == "${COMMIT}" ]] || {
               echo "Tag ${VERSION} already exists at ${tagged}, not ${COMMIT}; it is never moved." >&2
               exit 1
@@ -168,6 +170,13 @@ jobs:
         run: |
           set -euo pipefail
           if git ls-remote --exit-code --tags origin "refs/tags/${VERSION}" >/dev/null; then
+            direct=$(git ls-remote origin "refs/tags/${VERSION}" | awk '{ print $1 }')
+            peeled=$(git ls-remote origin "refs/tags/${VERSION}^{}" | awk '{ print $1 }')
+            tagged=${peeled:-${direct}}
+            [[ "${tagged}" == "${COMMIT}" ]] || {
+              echo "Tag ${VERSION} now points at ${tagged}, not ${COMMIT}; refusing to publish." >&2
+              exit 1
+            }
             echo "Tag ${VERSION} already exists at ${COMMIT}; no tag created."
           else
             git config user.name "github-actions[bot]"
