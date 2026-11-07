@@ -146,7 +146,7 @@ Add the dependency Maven, a complete pom.xml:
       
       <guid>https://engine.speedle.io/quick-start/</guid>
       <description>Try Speedle in the Playground first You can try Speedle&amp;rsquo;s basic features before installing anything. Open the Playground to edit SPDL policies, set a user, resource and action, and see real Allow/Deny decisions entirely in your browser. No Go installation or running server is required.
-Continue below when you are ready to build and run Speedle locally.
+Continue below when you are ready to install and run Speedle locally.
 Prerequisites Use Linux or macOS with Bash, Git, curl and Go 1.26.10 or Go 1.</description>
     </item>
     

@@ -11,11 +11,11 @@ python3 website/tests/check_embedded.py --toolchain go1.26.10 --candidate
 
 The current docs inventory is 66 Markdown pages (33 English/Chinese pairs). Historical snapshot directories are unchanged. No shared stylesheet, template, logo or homepage design changes are part of this repair.
 
-`check_docs.py` executes 134 Bash blocks against owned native PMS/ADS, mock assertion and custom-function services, including Linux/amd64 cross-compilation, Allow/Deny, diagnosis, discovery/import/enforcement, TLS/mTLS and rejected credentials. Two deployment clone/build blocks are identical to the Quick Start build sequence, which the release check executes separately. Linux uses private user/network/PID namespaces and the documented ports; macOS remaps only the owned fixture ports. All fixture processes and temporary policy/certificate files are cleaned up.
+`check_docs.py` executes 132 Bash blocks against owned native PMS/ADS, mock assertion and custom-function services, including Allow/Deny, diagnosis, discovery/import/enforcement, TLS/mTLS and rejected credentials. Two deployment clone/build blocks are identical to the Quick Start build sequence, which the release check executes separately. Linux uses private user/network/PID namespaces and the documented ports; macOS remaps only the owned fixture ports. All fixture processes and temporary policy/certificate files are cleaned up.
 
 Go contract tests check the published OpenAPI methods against native routers/responses, bilingual schema parity, webhook JSON, SPDL conditions, overview RBAC/ABAC/PBAC/IDD examples, and the inline Kubernetes manifest against current `apps/v1` and core `v1` types. Public proto files are checked byte-for-byte against the current server source.
 
-Container build/push and Kubernetes admission/rollout require a target registry/cluster and are **not executed by this suite**. Environment-dependent Bash templates receive syntax checks, and manifests receive typed structural checks. These are not claims of cluster acceptance.
+Container image pulls and Kubernetes admission/rollout require a target registry/cluster and are **not executed by this suite**. Environment-dependent Bash templates receive syntax checks, and manifests receive typed structural checks. These are not claims of cluster acceptance.
 
 | Page pair | Review/result | Verification |
 | --- | --- | --- |
@@ -31,7 +31,7 @@ Container build/push and Kubernetes admission/rollout require a target registry/
 | `custom-function` | Updated in both languages | Paired native commands and API results |
 | `decisions` | Updated in both languages | Paired native commands and API results |
 | `deployment-embeded` | Reviewed; retained | Public-module and candidate-library walkthrough checks |
-| `deployment` | Updated in both languages | Shared Quick Start build, cross-build, native services, typed manifest; cluster rollout excluded |
+| `deployment` | Updated in both languages | Shared Quick Start build, native services, typed manifest; image pulls and cluster rollout excluded |
 | `idd` | Updated in both languages | Paired native commands and API results |
 | `logging` | Updated in both languages | JSON syntax and current logging/config source review |
 | `overview` | Reviewed; retained | Extracted policy evaluation tests |

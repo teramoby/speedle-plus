@@ -1,7 +1,15 @@
 name: Release
 
-# Run by hand from the Actions tab (or the API) to tag a master commit and
-# publish a GitHub release. Only users with write access can dispatch it.
+# Run by hand from the Actions tab (or the API) to tag a master commit, build
+# the release binaries and container images, and publish a GitHub release.
+# Only users with write access can dispatch it.
+#
+# Retrying: re-dispatch with the same version and commit after a failure. An
+# existing tag must already point at the same commit, image tags are
+# overwritten, and release assets are replaced, so a failed run resumes
+# without moving a tag or re-creating a release. The images are built without
+# pushing before the tag, and published last; if the push fails, re-dispatching
+# completes the release.
 on:
   workflow_dispatch:
     inputs:
@@ -16,16 +24,21 @@ on:
 
 permissions:
   contents: write
+  packages: write
 
 concurrency:
   group: release
   cancel-in-progress: false
 
+env:
+  REGISTRY: ghcr.io
+  CONTAINER_CONTEXT: container-context
+
 jobs:
   release:
     name: release
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 30
     steps:
       - name: Validate inputs
         env:
@@ -57,24 +70,173 @@ jobs:
             *) expected="github.com/teramoby/speedle-plus/${major}" ;;
           esac
           [[ "${module}" == "${expected}" ]] || { echo "go.mod at ${COMMIT} declares ${module}; ${VERSION} needs ${expected}." >&2; exit 1; }
+          # A re-run may find the tag from an earlier attempt. The Go module
+          # proxy caches tags, so an existing tag is only allowed to stay when
+          # it already points at the requested commit.
           if git ls-remote --exit-code --tags origin "refs/tags/${VERSION}" >/dev/null; then
-            echo "Tag ${VERSION} already exists; the Go module proxy caches tags, so it is never moved." >&2
-            exit 1
+            # Annotated tags point at a tag object. Fetch the tag and let
+            # rev-list resolve it to the commit, independent of how ls-remote
+            # renders peeled refs.
+            git fetch --force --quiet origin "refs/tags/${VERSION}:refs/tags/${VERSION}"
+            tagged=$(git rev-list -n 1 "refs/tags/${VERSION}")
+            [[ "${tagged}" == "${COMMIT}" ]] || {
+              echo "Tag ${VERSION} already exists at ${tagged}, not ${COMMIT}; it is never moved." >&2
+              exit 1
+            }
+            echo "Tag ${VERSION} already points at ${COMMIT}; this is a re-run."
           fi
 
+      - name: Check out the release commit
+        env:
+          COMMIT: ${{ inputs.commit }}
+        run: |
+          set -euo pipefail
+          git checkout --detach "${COMMIT}"
+
+      - name: Setup Go
+        uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      # macOS and Linux, amd64 and arm64, for the three public commands. The
+      # binaries are static where the target allows it and are never installed
+      # into a shared GOBIN.
+      - name: Build release binaries
+        run: |
+          set -euo pipefail
+          rm -rf dist
+          mkdir -p dist
+          for target in darwin/amd64 darwin/arm64 linux/amd64 linux/arm64; do
+            goos=${target%/*}
+            goarch=${target#*/}
+            for command in spctl speedle-pms speedle-ads; do
+              CGO_ENABLED=0 GOOS="${goos}" GOARCH="${goarch}" go build -trimpath -o "dist/${command}_${goos}_${goarch}" "./cmd/${command}"
+            done
+          done
+
+      - name: Write checksums
+        run: |
+          set -euo pipefail
+          (cd dist && sha256sum spctl_* speedle-ads_* speedle-pms_* > checksums.txt)
+          cat dist/checksums.txt
+
+      - name: Prepare the container build context
+        run: |
+          set -euo pipefail
+          rm -rf "${CONTAINER_CONTEXT}"
+          mkdir -p "${CONTAINER_CONTEXT}/data"
+          : > "${CONTAINER_CONTEXT}/data/.keep"
+          for arch in amd64 arm64; do
+            cp "dist/speedle-pms_linux_${arch}" "${CONTAINER_CONTEXT}/speedle-pms-linux-${arch}"
+            cp "dist/speedle-ads_linux_${arch}" "${CONTAINER_CONTEXT}/speedle-ads-linux-${arch}"
+          done
+
+      # Build and start both images before the immutable tag is created, so a
+      # bad Dockerfile, TARGETARCH mapping or runtime permission problem cannot
+      # leave a published release without working images.
+      - name: Verify the container images build and start
+        run: |
+          set -euo pipefail
+          docker buildx create --name speedle-smoke --driver docker-container --use
+          docker buildx inspect --bootstrap
+          trap 'docker stop speedle-smoke-pms speedle-smoke-ads >/dev/null 2>&1 || true; docker volume rm speedle-smoke >/dev/null 2>&1 || true' EXIT
+          for command in speedle-pms speedle-ads; do
+            suffix=${command#speedle-}
+            docker buildx build \
+              --platform linux/amd64,linux/arm64 \
+              --file "deployment/container/Dockerfile.${suffix}" \
+              --output type=cacheonly "${CONTAINER_CONTEXT}"
+            docker buildx build \
+              --platform linux/amd64 --load \
+              --file "deployment/container/Dockerfile.${suffix}" \
+              --tag "${command}:smoke" "${CONTAINER_CONTEXT}"
+          done
+          docker volume rm speedle-smoke >/dev/null 2>&1 || true
+          docker volume create speedle-smoke >/dev/null
+          docker run --rm -d --name speedle-smoke-pms -p 127.0.0.1:6733:6733 -v speedle-smoke:/data \
+            speedle-pms:smoke --store-type file --filestore-loc /data/policies.json --endpoint 0.0.0.0:6733 --insecure=true
+          curl --fail --silent --show-error --retry 30 --retry-connrefused --retry-delay 1 \
+            http://127.0.0.1:6733/policy-mgmt/v1/service >/dev/null
+          docker stop speedle-smoke-pms >/dev/null
+          docker run --rm -d --name speedle-smoke-ads -p 127.0.0.1:6734:6734 -v speedle-smoke:/data \
+            speedle-ads:smoke --store-type file --filestore-loc /data/policies.json --endpoint 0.0.0.0:6734 --insecure=true
+          # ADS has no GET handler; any HTTP status means it is serving.
+          status=$(curl --silent --output /dev/null --write-out '%{http_code}' --retry 30 --retry-connrefused --retry-delay 1 \
+            http://127.0.0.1:6734/authz-check/v1/is-allowed || true)
+          [[ "${status}" != "000" ]] || { echo "ADS did not serve HTTP on 127.0.0.1:6734." >&2; exit 1; }
+          docker stop speedle-smoke-ads >/dev/null
+
+      # Idempotent for re-runs: the validation above only lets an existing tag
+      # through when it already points at the requested commit.
       - name: Create and push the tag
         env:
           VERSION: ${{ inputs.version }}
           COMMIT: ${{ inputs.commit }}
         run: |
           set -euo pipefail
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git tag -a "${VERSION}" "${COMMIT}" -m "Speedle ${VERSION}"
-          git push origin "refs/tags/${VERSION}"
+          if git ls-remote --exit-code --tags origin "refs/tags/${VERSION}" >/dev/null; then
+            # Re-resolve the tag now: it may have appeared or changed since the
+            # validation step above.
+            git fetch --force --quiet origin "refs/tags/${VERSION}:refs/tags/${VERSION}"
+            tagged=$(git rev-list -n 1 "refs/tags/${VERSION}")
+            [[ "${tagged}" == "${COMMIT}" ]] || {
+              echo "Tag ${VERSION} now points at ${tagged}, not ${COMMIT}; refusing to publish." >&2
+              exit 1
+            }
+            echo "Tag ${VERSION} already exists at ${COMMIT}; no tag created."
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git tag -a "${VERSION}" "${COMMIT}" -m "Speedle ${VERSION}"
+            git push origin "refs/tags/${VERSION}"
+          fi
 
+      # Re-runs replace the assets of an existing release instead of failing.
       - name: Publish the GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
           VERSION: ${{ inputs.version }}
-        run: gh release create "${VERSION}" --repo "${GITHUB_REPOSITORY}" --verify-tag --title "${VERSION}" --generate-notes
+        run: |
+          set -euo pipefail
+          assets=(dist/spctl_* dist/speedle-pms_* dist/speedle-ads_* dist/checksums.txt)
+          if gh release view "${VERSION}" --repo "${GITHUB_REPOSITORY}" >/dev/null 2>&1; then
+            gh release upload "${VERSION}" --repo "${GITHUB_REPOSITORY}" --clobber "${assets[@]}"
+          else
+            gh release create "${VERSION}" --repo "${GITHUB_REPOSITORY}" --verify-tag --title "${VERSION}" --generate-notes \
+              "${assets[@]}"
+          fi
+
+      # One multi-architecture image per service. The Dockerfiles copy the
+      # matching Linux binary for TARGETARCH. Images are published last, after
+      # the immutable tag: a version image can then never exist without its git
+      # tag or be overwritten from a different commit. If this step fails, the
+      # idempotent tag and release steps above let a re-dispatch finish the
+      # release without moving or re-creating anything. `latest` moves only
+      # when this version is the highest full semantic version released so far,
+      # so a maintenance release on an older line cannot downgrade it.
+      - name: Publish container images
+        env:
+          VERSION: ${{ inputs.version }}
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          owner="${GITHUB_REPOSITORY_OWNER,,}"
+          newest=$(git tag --list 'v*' | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -n 1 || true)
+          echo "${GITHUB_TOKEN}" | docker login ghcr.io --username "${GITHUB_ACTOR}" --password-stdin
+          docker buildx create --name speedle-release --driver docker-container --use
+          docker buildx inspect --bootstrap
+          for command in speedle-pms speedle-ads; do
+            suffix=${command#speedle-}
+            tag_args=(--tag "${REGISTRY}/${owner}/${command}:${VERSION}")
+            if [[ -z "${newest}" || "${VERSION}" == "$(printf '%s\n%s\n' "${VERSION}" "${newest}" | sort -V | tail -n 1)" ]]; then
+              tag_args+=(--tag "${REGISTRY}/${owner}/${command}:latest")
+            else
+              echo "${VERSION} is older than the newest release ${newest}; publishing only the version tag."
+            fi
+            docker buildx build \
+              --platform linux/amd64,linux/arm64 \
+              --file "deployment/container/Dockerfile.${suffix}" \
+              "${tag_args[@]}" \
+              --push "${CONTAINER_CONTEXT}"
+          done

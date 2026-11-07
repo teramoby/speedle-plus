@@ -1,11 +1,15 @@
 #!/usr/bin/env python3
 """Execute the actual English/Chinese quick-start shell blocks against native services.
 
-A public shallow clone verifies the download step; CI then checks out the captured
-candidate revision before compiling. Linux runs the native services and clients
-in unprivileged user/network/PID namespaces, using the exact documented ports
-without conflicting with existing services. On macOS, alternate REST ports and a
-shared lock isolate fixture services; occupied gRPC ports are rejected.
+The documented `go install` route runs once into a temporary GOBIN, its module
+path and version pattern are checked against the checkout, the installed
+binaries must accept the flags used by the guide, and one documented walkthrough
+runs with those installed binaries. A public shallow clone verifies the download
+step; CI then checks out the captured candidate revision before compiling. Linux
+runs the native services and clients in unprivileged user/network/PID
+namespaces, using the exact documented ports without conflicting with existing
+services. On macOS, alternate REST ports and a shared lock isolate fixture
+services; occupied gRPC ports are rejected.
 """
 import argparse
 import contextlib
@@ -26,7 +30,15 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 PATTERN = r"<!-- quick-start: ([a-z-]+) -->\s*```bash\n(.*?)\n```"
-REQUIRED = {"version", "build", "pms", "service", "policies", "list", "ads", "allow-direct", "deny"}
+REQUIRED = {"version", "install", "build", "pms", "service", "policies", "list", "ads", "allow-direct", "deny"}
+# The documented install route: module path and full semantic version tag.
+INSTALL = re.compile(r'GOBIN="\$PWD/bin" go install (github\.com/teramoby/speedle-plus)/cmd/\.\.\.@(v[0-9]+\.[0-9]+\.[0-9]+)\nls bin\n?')
+# Flags the guide passes to the installed release binaries.
+INSTALLED_FLAGS = {
+    "spctl": ("--pms-endpoint",),
+    "speedle-pms": ("--store-type", "--filestore-loc", "--endpoint", "--insecure", "--grpc-endpoint"),
+    "speedle-ads": ("--store-type", "--filestore-loc", "--endpoint", "--insecure", "--grpc-endpoint"),
+}
 
 
 def blocks(path):
@@ -36,10 +48,12 @@ def blocks(path):
     assert len(names) == len(set(names)), (path, "duplicate step")
     assert len(pairs) == len(re.findall(r"^```bash$", text, re.M)), (path, "untested shell block")
     assert REQUIRED <= set(names), (path, "missing steps", REQUIRED - set(names))
-    assert set(names) <= REQUIRED | {"roles", "allow-role"}, (path, "unknown step")
+    assert set(names) <= REQUIRED | {"roles", "allow-role", "abac-policy", "abac-allow", "abac-deny"}, (path, "unknown step")
+    assert names.index("install") < names.index("build"), path
     assert names.index("pms") < names.index("service") < names.index("ads") < names.index("allow-direct"), path
+    assert names.index("deny") < names.index("abac-policy") < names.index("abac-allow") < names.index("abac-deny"), path
     for _, command in pairs:
-        assert not re.search(r"^\$ |…|\.\.\.", command, re.M), (path, "non-executable example")
+        assert not re.search(r"^\$ |…|(?:^|\s)\.\.\.(?:\s|$)", command, re.M), (path, "non-executable example")
     return pairs
 
 
@@ -49,6 +63,14 @@ def run(command, cwd, env, timeout=60):
     if result.returncode:
         raise RuntimeError(f"Command failed ({result.returncode}): {command}\n{result.stdout}\n{result.stderr}")
     return result.stdout
+
+
+def help_text(path, cwd, env):
+    # The flag package writes usage to stderr, so combine both streams.
+    result = subprocess.run([str(path), "--help"], cwd=cwd, env=env, text=True, capture_output=True, timeout=60)
+    if result.returncode:
+        raise RuntimeError(f"{path} --help failed ({result.returncode}):\n{result.stdout}\n{result.stderr}")
+    return result.stdout + result.stderr
 
 
 @contextlib.contextmanager
@@ -109,6 +131,40 @@ def stop(process):
     assert process.returncode == 0, ("service exit", process.returncode)
 
 
+def verify_install_route(env):
+    """Run the documented go install route once, not once per locale."""
+    english_steps = blocks(ROOT / "docs/hugo/content/quick-start.md")
+    chinese_steps = blocks(ROOT / "docs/hugo/content/quick-start.zh.md")
+    english = dict(english_steps)["install"]
+    assert english == dict(chinese_steps)["install"], "install command drift between English and Chinese"
+    match = INSTALL.fullmatch(english)
+    assert match, english
+    module, version = match.groups()
+    # Offline: the checkout must be the module the guide installs.
+    assert run(["go", "list", "-m"], ROOT, env).strip() == module, module
+    with tempfile.TemporaryDirectory(prefix="speedle-go-install-") as temporary:
+        work = Path(temporary)
+        # GOBIN is this temporary bin directory, never the shared GOPATH/bin.
+        run(english, work, env, timeout=600)
+        for binary, flags in INSTALLED_FLAGS.items():
+            path = work / "bin" / binary
+            assert os.access(path, os.X_OK), binary
+            usage = help_text(path, work, env)
+            for flag in flags:
+                # Accept one or two leading dashes: pflag prints --flag, while
+                # the standard flag package prints -flag.
+                assert re.search(rf"(?<![\w-])-{{1,2}}{re.escape(flag.lstrip('-'))}(?![\w-])", usage), (binary, flag, usage)
+        print(f"PASS documented go install route ({module}@{version}); installed binaries accept the documented flags", flush=True)
+        # One documented walkthrough with the installed release binaries: --help
+        # alone does not prove the guide works with either route.
+        route_a = work / "route-a"
+        (route_a / "bin").mkdir(parents=True)
+        for binary in INSTALLED_FLAGS:
+            shutil.copy2(work / "bin" / binary, route_a / "bin" / binary)
+        exercise("en", english_steps, route_a, env)
+        print(f"PASS documented walkthrough with installed {module}@{version} binaries", flush=True)
+
+
 def verify(locale, toolchain, env):
     source = ROOT / "docs/hugo/content" / ("quick-start.zh.md" if locale == "zh" else "quick-start.md")
     steps = blocks(source)
@@ -157,7 +213,7 @@ def exercise(locale, steps, checkout, env, isolated=False):
     with (contextlib.nullcontext() if isolated else server_lock()), contextlib.ExitStack() as resources:
         try:
             for name, command in steps:
-                if name in {"version", "build"}:
+                if name in {"version", "install", "build"}:
                     continue
                 command = local(command)
                 if name in {"pms", "ads"}:
@@ -176,9 +232,11 @@ def exercise(locale, steps, checkout, env, isolated=False):
                         service = next(item for item in services if item["name"] == expected_service)
                         assert len(service.get("policies", [])) == (1 if locale == "zh" else 2), service
                         assert len(service.get("rolePolicies", [])) == (0 if locale == "zh" else 1), service
-                    elif name.startswith("allow-") or name == "deny":
+                    elif name in {"allow-direct", "allow-role", "abac-allow", "deny", "abac-deny"}:
                         result = json.loads(output)
-                        assert result.get("allowed") is (name != "deny"), (name, result)
+                        allowed = name in {"allow-direct", "allow-role", "abac-allow"}
+                        assert result.get("allowed") is allowed, (name, result)
+                        assert result.get("reason") == (0 if allowed else 3), (name, result)
                         decisions[name] = result["allowed"]
                 assert all(process.poll() is None for process in processes), "service stopped during tutorial"
                 print(f"{locale}: PASS {name}", flush=True)
@@ -224,6 +282,7 @@ def main():
         args.report.write_text(json.dumps(result) + "\n")
         print(f"{args.locale}: PASS exact documented REST/gRPC ports in isolated Linux namespaces", flush=True)
         return
+    verify_install_route(env)
     results = [verify(locale, args.toolchain, env) for locale in ("en", "zh")]
     if args.report:
         args.report.write_text(json.dumps(results, indent=2) + "\n")
