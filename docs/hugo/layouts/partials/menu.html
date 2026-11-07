@@ -3,11 +3,11 @@
 <ul>
 {{- if eq .Site.Params.ordersectionsby "title" -}}
   {{- range .Site.Home.Sections.ByTitle -}}
-{{template "menu" dict "sect" . "currentnode" $currentNode}}
+{{template "menu" dict "sect" . "currentnode" $currentNode "depth" -1}}
   {{- end -}}
 {{- else -}}
   {{- range .Site.Home.Sections.ByWeight -}}
-{{template "menu" dict "sect" . "currentnode" $currentNode}}
+{{template "menu" dict "sect" . "currentnode" $currentNode "depth" -1}}
   {{- end -}}
 {{- end}}
 </ul>
@@ -15,6 +15,7 @@
 
 {{define "menu"}}
 {{- $currentNode := .currentnode -}}
+{{- $depth := .depth -}}
 
 {{ with .sect }}
 {{ if .IsSection }}
@@ -25,9 +26,9 @@
 
 {{- $numberOfPages := (add (len .Pages) (len .Sections)) -}}
 {{if ne $numberOfPages 0}}
-<li class="docs-nav-section{{ if .IsAncestor $currentNode }} parent{{ end }}{{ if eq .UniqueID $currentNode.UniqueID }} active{{ end }}{{ if .Params.alwaysopen }} parent{{ end }}"><span class="docs-nav-heading{{ if .Params.linksection }} docs-nav-heading-link{{ end }}">{{ if .Params.linksection }}<a href="{{ .URL }}"{{ if eq .UniqueID $currentNode.UniqueID }} aria-current="page"{{ end }}>{{ safeHTML .Params.Pre }}{{ .Title }}{{ safeHTML .Params.Post }}</a>{{ else }}{{ safeHTML .Params.Pre }}{{ .Title }}{{ safeHTML .Params.Post }}{{ end }}</span>
+<li data-docs-depth="{{ $depth }}" class="docs-nav-section{{ if .IsAncestor $currentNode }} parent{{ end }}{{ if eq .UniqueID $currentNode.UniqueID }} active{{ end }}{{ if .Params.alwaysopen }} parent{{ end }}"><span class="docs-nav-heading{{ if .Params.linksection }} docs-nav-heading-link{{ end }}">{{ if .Params.linksection }}<a href="{{ .URL }}"{{ if eq .UniqueID $currentNode.UniqueID }} aria-current="page"{{ end }}>{{ safeHTML .Params.Pre }}{{ .Title }}{{ safeHTML .Params.Post }}</a>{{ else }}{{ safeHTML .Params.Pre }}{{ .Title }}{{ safeHTML .Params.Post }}{{ end }}</span>
 {{- else -}}
-<li class="{{ if .IsAncestor $currentNode }}parent{{ end }}{{ if eq .UniqueID $currentNode.UniqueID }} active{{ end }}{{ if .Params.alwaysopen }} parent{{ end }}"><a href="{{ .URL }}">{{ safeHTML .Params.Pre }}{{ .Title }}{{ safeHTML .Params.Post }}</a>
+<li data-docs-depth="{{ $depth }}" class="{{ if .IsAncestor $currentNode }}parent{{ end }}{{ if eq .UniqueID $currentNode.UniqueID }} active{{ end }}{{ if .Params.alwaysopen }} parent{{ end }}"><a href="{{ .URL }}">{{ safeHTML .Params.Pre }}{{ .Title }}{{ safeHTML .Params.Post }}</a>
 {{- end -}}
 
 {{if ne $numberOfPages 0}}
@@ -37,14 +38,14 @@
       {{- range $pages.ByTitle -}}
         {{- if and .Params.hidden (not $.showhidden) -}}
         {{- else -}}
-{{template "menu" dict "sect" . "currentnode" $currentNode}}
+{{template "menu" dict "sect" . "currentnode" $currentNode "depth" (add $depth 1)}}
         {{- end -}}
       {{- end -}}
     {{- else -}}
       {{- range $pages.ByWeight -}}
         {{- if and .Params.hidden (not $.showhidden) -}}
         {{- else -}}
-{{template "menu" dict "sect" . "currentnode" $currentNode}}
+{{template "menu" dict "sect" . "currentnode" $currentNode "depth" (add $depth 1)}}
         {{- end -}}
       {{- end -}}
     {{- end}}
@@ -55,7 +56,7 @@
 {{- end -}}
 {{- else -}}
   {{- if not .Params.Hidden -}}
-<li class="{{ if eq .UniqueID $currentNode.UniqueID }}active{{ end }}"><a href="{{ .URL }}"{{ if eq .UniqueID $currentNode.UniqueID }} aria-current="page"{{ end }}>{{ safeHTML .Params.Pre }}{{ .LinkTitle }}{{ safeHTML .Params.Post }}</a></li>
+<li data-docs-depth="{{ $depth }}" class="{{ if eq .UniqueID $currentNode.UniqueID }}active{{ end }}"><a href="{{ .URL }}"{{ if eq .UniqueID $currentNode.UniqueID }} aria-current="page"{{ end }}>{{ safeHTML .Params.Pre }}{{ .LinkTitle }}{{ safeHTML .Params.Post }}</a></li>
   {{- end -}}
 {{ end -}}
 {{ end -}}

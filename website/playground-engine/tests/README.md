@@ -22,3 +22,20 @@ node website/playground-engine/tests/site.test.cjs
 These tests do **not** replace real-browser rendering, mobile native-control,
 assistive-technology or module-worker integration QA. See the parent README for
 native/WASM adapter tests and the optional Chromium module-worker smoke test.
+
+## Documentation sidebar browser regression
+
+With Playwright and Chromium installed, run this from the repository root:
+
+```sh
+node website/playground-engine/docs-sidebar-smoke.cjs
+# Or check a temporary Hugo output directory:
+node website/playground-engine/docs-sidebar-smoke.cjs /tmp/speedle-site
+```
+
+`CHROMIUM_PATH` can select an installed Chrome/Chromium binary. The test derives
+menu depth from the bilingual content tree, visits every generated EN/ZH docs
+page at 1440 and 1024 px, page-scrolls to every sidebar link, rejects limited
+inner overflow, checks indentation at every depth, and verifies that the footer
+follows the taller column. It also opens representative short-index, SDK and
+Cloud drawers in both languages at 390 px and scrolls to every expanded link.

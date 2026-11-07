@@ -26,6 +26,10 @@ for (const name of ['index.html','zh/index.html','playground/index.html','zh/pla
 for (const name of ['site.css', 'navigation.css', 'custom.css', 'docs.css', 'command-copy.css']) {
   assert.deepEqual(fs.readFileSync(path.join(output, 'css', name)), fs.readFileSync(path.join(root, 'docs/css', name)));
 }
+const docsStyles = fs.readFileSync(path.join(output, 'css/docs.css'), 'utf8');
+const sidebarRules = docsStyles.match(/\.docs-sidebar\s*\{[^}]*\}/)?.[0] || '';
+assert.ok(sidebarRules.includes('position: static') && sidebarRules.includes('max-height: none') && sidebarRules.includes('overflow-y: visible'), 'Desktop sidebar stays fully expanded in normal page flow');
+assert.ok(docsStyles.includes('.sidebar li[data-docs-depth="1"] > a'), 'Child links receive depth-based indentation');
 for (const name of ['command-copy.js', 'docs.js']) {
   assert.deepEqual(fs.readFileSync(path.join(output, 'js', name)), fs.readFileSync(path.join(root, 'docs/js', name)), `Generated ${name}`);
 }
@@ -149,6 +153,10 @@ function checkStorageNavigation(directory, locale = '') {
         'sdks/', 'sdks/java/', 'sdks/python/', 'sdks/go/', 'sdks/dotnet/', 'sdks/rust/', 'sdks/node/',
         'cloud/', 'cloud/getting-started/']) {
         assert.ok(sidebar.includes(`href="/${locale}docs/${target}"`), `Complete sidebar ${target} in ${name}`);
+      }
+      for (const [depth, target] of [[0, 'security/'], [1, 'pms/policy-mgmt/'], [1, 'store/mysql/'],
+        [1, 'api/decision_api/'], [1, 'sdks/java/'], [1, 'cloud/getting-started/']]) {
+        assert.ok(new RegExp(`<li data-docs-depth="${depth}"[^>]*><a href="/${locale}docs/${target}"`).test(sidebar), `Menu depth ${depth} for ${target} in ${name}`);
       }
     }
   }
