@@ -1,5 +1,8 @@
 <p align="center">
-    <img src="/docs/images/sp_logo.png" height="50%" width="50%" class="center"/>
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/images/speedle-engine-lockup-dark.svg">
+    <img src="docs/images/speedle-engine-lockup-light.svg" alt="Speedle | Engine" height="52">
+  </picture>
 </p>
 <p align="center">
     <a href="https://discord.gg/uaY2xVsbbT">
@@ -24,7 +27,7 @@
 
 Speedle is an open-source authorization engine written in Go. Applications ask it whether a subject may perform an action on a resource, and it answers allow or deny in milliseconds from centrally managed policies, so authorization logic stays out of application code. It supports role-based (RBAC) and attribute-based (ABAC) access control; deny policies override grants, and anything not granted is denied.
 
-Speedle consists of the Speedle Policy Definition Language (SPDL), the Policy Management Service (PMS, the policy administration point), the Authorization Decision Service (ADS, the policy decision point, which can also be embedded in Go applications), the `spctl` command-line tool, and integration samples for Docker, Kubernetes and Istio. See the [overview](https://speedle.io/docs/overview/) for how these map to common authorization terms.
+Speedle consists of the Speedle Policy Definition Language (SPDL), the Policy Management Service (PMS, the policy administration point), the Authorization Decision Service (ADS, the policy decision point, which can also be embedded in Go applications), the `spctl` command-line tool, and integration samples for Docker, Kubernetes and Istio. See the [overview](https://engine.speedle.io/docs/overview/) for how these map to common authorization terms.
 
 This project is based on the original Speedle open source project, which is hosted at https://github.com/oracle/speedle under UPL.
 
@@ -34,13 +37,13 @@ We are the founding members of Speedle project. Now we are not Oracle employees 
 
 ## Documentation
 
-Latest documentations are available at <https://speedle.io/docs>.
+Latest documentations are available at <https://engine.speedle.io/docs/>.
 
 ## Get Started
 
-See Getting Started at <https://speedle.io/quick-start/>.
+See Getting Started at <https://engine.speedle.io/quick-start/>.
 
-Try the [Playground](https://speedle.io/playground/) to write SPDL policies and test authorization decisions directly in your browser, without installing Speedle.
+Try the [Playground](https://engine.speedle.io/playground/) to write SPDL policies and test authorization decisions directly in your browser, without installing Speedle.
 
 ## Embed in a Go application
 
@@ -107,7 +110,7 @@ alice true GRANT_POLICY_FOUND <nil>
 bob false NO_APPLICABLE_POLICIES <nil>
 ```
 
-See [Embedded mode](https://speedle.io/docs/deployment-embeded/) for details.
+See [Embedded mode](https://engine.speedle.io/docs/deployment-embeded/) for details.
 
 ## Install
 

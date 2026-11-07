@@ -8,7 +8,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>支持 - Speedle</title>
   
-  <meta name="description" content="Seek answers and ask questions to the Speedle community."> 
+  <meta name="description" content="关于 Speedle 的常见问题解答"> 
   
   
   
@@ -21,9 +21,9 @@
 
 
   <meta property="og:title" content="支持" />
-<meta property="og:description" content="Seek answers and ask questions to the Speedle community." />
+<meta property="og:description" content="关于 Speedle 的常见问题解答" />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://engine.speedle.io/zh/support/" /><meta property="article:modified_time" content="2026-10-28T13:53:47&#43;00:00"/>
+<meta property="og:url" content="https://engine.speedle.io/zh/support/" /><meta property="article:modified_time" content="2026-11-07T20:42:46&#43;08:00"/>
   
 
 
@@ -95,7 +95,7 @@
     <h1>支持</h1>
 
     
-    <p class="subtitle">Seek answers and ask questions to the Speedle community.</p>
+    <p class="subtitle">关于 Speedle 的常见问题解答</p>
     
     
     
@@ -107,48 +107,46 @@
     <div id="kube-component" class="content">
       
 
-<h2 id="faqs">FAQs</h2>
+<h2 id="常见问题">常见问题</h2>
 
-<h3 id="speedle-looks-awesome-who-is-it-for">Speedle looks awesome! Who is it for?</h3>
+<h3 id="speedle-适合谁使用">Speedle 适合谁使用？</h3>
 
-<p>Speedle is an open source project for access management. You can embed it in your system as long as access control is required, such that you don&rsquo;t have to hard code authorization policies in your code.</p>
+<p>Speedle 是一个开源授权引擎，适合需要在应用中实现访问控制的团队。你可以把它嵌入系统，也可以作为独立服务运行，让授权策略集中管理，而不是写死在应用代码里。</p>
 
-<h3 id="does-the-world-need-one-more-policy-engine">Does the world need one more policy engine?</h3>
+<h3 id="为什么还需要另一个策略引擎">为什么还需要另一个策略引擎？</h3>
 
-<p>Well, please spend 15 minutes on <a href="/zh/quick-start/">Quick Start</a> steps. Then you will have the answer. Why not give a try? :-)</p>
+<p><a href="/zh/quick-start/">快速入门</a>用大约 15 分钟走完整个流程，是了解 Speedle 策略模型和授权决策方式、并与其他方案比较的最快途径。</p>
 
-<h3 id="how-do-i-contribute">How do I contribute?</h3>
+<h3 id="如何参与贡献">如何参与贡献？</h3>
 
-<p>Please refer to <a href="/zh/contribute/#code">contribution guide</a></p>
+<p>请参阅<a href="/zh/contribute/#代码贡献">贡献指南</a>。</p>
 
-<h3 id="what-does-the-future-hold-for-speedle-what-s-the-plan">What does the future hold for Speedle? What’s the plan?</h3>
+<h3 id="speedle-的发展计划是什么">Speedle 的发展计划是什么？</h3>
 
-<p>We will maintain Speedle as an open source project, fix bugs, add more features&hellip;</p>
+<p>Speedle 以开源项目的形式持续维护，工作包括修复缺陷、更新文档，以及根据社区需要增加功能。</p>
 
-<h3 id="how-is-it-different-from-opa-kubernetes-rbac-istio-rbac">How is it different from OPA, Kubernetes RBAC, Istio RBAC?</h3>
+<h3 id="speedle-与-opa-kubernetes-rbac-istio-rbac-有什么区别">Speedle 与 OPA、Kubernetes RBAC、Istio RBAC 有什么区别？</h3>
 
-<p>Long story short: They all target to authorization/access control. Kubernetes RBAC and Istio RBAC focus on the authorization issues in Kubernetes/Istio system respectively, while Speedle and OPA are general purpose authorization solution. There are also a few other general purpose authorization solutions, like Casbin and Ladon. You may try them out yourself and see</p>
+<p>Speedle、OPA、Kubernetes RBAC 和 Istio RBAC 都提供授权或访问控制能力。Kubernetes RBAC 和 Istio RBAC 分别解决 Kubernetes 和 Istio 内部的授权问题；Speedle 和 OPA 是通用授权方案，Casbin 和 Ladon 也是常见的通用选择。比较时可以考虑：</p>
 
 <ol>
-<li>Is the product user-friendly? These products all offer policy definition language. Try to create a policy and pick up the one you like</li>
-<li>Is the product fast enough? i.e. how long does it take to evaluate an authorization request?</li>
-<li>Is the product is scalable enough?</li>
-<li>Is the supported policy model flexible enough?</li>
+<li>策略语言是否易用？这些产品都提供策略定义语言，可以各写一条策略进行对比。</li>
+<li>单次授权决策需要多长时间？</li>
+<li>扩展性如何？</li>
+<li>支持的策略模型是否足够灵活？</li>
 </ol>
 
-<p>Please tell us your choice.</p>
+<h3 id="为什么-speedle-不内置认证机制">为什么 Speedle 不内置认证机制？</h3>
 
-<h3 id="why-does-speedle-have-no-built-in-auth-mechanisms">Why does Speedle have no built-in auth mechanisms?</h3>
+<p>Speedle 专注于授权，不提供认证功能。</p>
 
-<p>Speedle focuses on authorization field. It doesn&rsquo;t cover authentication functionality.</p>
+<h3 id="如何接入自己的后端存储">如何接入自己的后端存储？</h3>
 
-<h3 id="how-do-i-plug-in-my-own-backend-store">How do I plug in my own backend store?</h3>
+<p>请参阅<a href="/zh/docs/store/">可插拔存储</a>。</p>
 
-<p>Please refer to <a href="/zh/docs/store/">Pluggable Storage</a></p>
+<h3 id="如何接入自己的令牌断言服务">如何接入自己的令牌断言服务？</h3>
 
-<h3 id="how-do-i-plug-in-my-own-token-assertor">How do I plug in my own token assertor?</h3>
-
-<p>Plase refer to <a href="/zh/docs/assertor/">token assertor</a></p>
+<p>请参阅<a href="/zh/docs/assertor/">令牌断言服务</a>。</p>
 
 <div class="row" style="padding-top: 50px">
     <div class="col col-2"></div>

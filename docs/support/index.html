@@ -8,7 +8,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Support - Speedle</title>
   
-  <meta name="description" content="Seek answers and ask questions to the Speedle community."> 
+  <meta name="description" content="Answers to common questions about Speedle"> 
   
   
   
@@ -21,9 +21,9 @@
 
 
   <meta property="og:title" content="Support" />
-<meta property="og:description" content="Seek answers and ask questions to the Speedle community." />
+<meta property="og:description" content="Answers to common questions about Speedle" />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://engine.speedle.io/support/" /><meta property="article:modified_time" content="2026-10-28T13:53:47&#43;00:00"/>
+<meta property="og:url" content="https://engine.speedle.io/support/" /><meta property="article:modified_time" content="2026-11-07T20:42:46&#43;08:00"/>
   
 
 
@@ -95,7 +95,7 @@
     <h1>Support</h1>
 
     
-    <p class="subtitle">Seek answers and ask questions to the Speedle community.</p>
+    <p class="subtitle">Answers to common questions about Speedle</p>
     
     
     
@@ -109,46 +109,44 @@
 
 <h2 id="faqs">FAQs</h2>
 
-<h3 id="speedle-looks-awesome-who-is-it-for">Speedle looks awesome! Who is it for?</h3>
+<h3 id="who-is-speedle-for">Who is Speedle for?</h3>
 
-<p>Speedle is an open source project for access management. You can embed it in your system as long as access control is required, such that you don&rsquo;t have to hard code authorization policies in your code.</p>
+<p>Speedle is an open-source authorization engine for applications that need access control. You can embed it in your system or run it as a service, so authorization policies stay centrally managed instead of being hard-coded in application code.</p>
 
-<h3 id="does-the-world-need-one-more-policy-engine">Does the world need one more policy engine?</h3>
+<h3 id="why-another-policy-engine">Why another policy engine?</h3>
 
-<p>Well, please spend 15 minutes on <a href="/quick-start/">Quick Start</a> steps. Then you will have the answer. Why not give a try? :-)</p>
+<p>The <a href="/quick-start/">Quick Start</a> walks through the full workflow in about 15 minutes. It is the quickest way to compare Speedle&rsquo;s policy model and decision flow with the alternatives.</p>
 
 <h3 id="how-do-i-contribute">How do I contribute?</h3>
 
-<p>Please refer to <a href="/contribute/#code">contribution guide</a></p>
+<p>See the <a href="/contribute/#code">contribution guide</a>.</p>
 
-<h3 id="what-does-the-future-hold-for-speedle-what-s-the-plan">What does the future hold for Speedle? What’s the plan?</h3>
+<h3 id="what-is-the-plan-for-speedle">What is the plan for Speedle?</h3>
 
-<p>We will maintain Speedle as an open source project, fix bugs, add more features&hellip;</p>
+<p>Speedle is maintained as an open-source project. Work covers bug fixes, documentation and new features as the community needs them.</p>
 
 <h3 id="how-is-it-different-from-opa-kubernetes-rbac-istio-rbac">How is it different from OPA, Kubernetes RBAC, Istio RBAC?</h3>
 
-<p>Long story short: They all target to authorization/access control. Kubernetes RBAC and Istio RBAC focus on the authorization issues in Kubernetes/Istio system respectively, while Speedle and OPA are general purpose authorization solution. There are also a few other general purpose authorization solutions, like Casbin and Ladon. You may try them out yourself and see</p>
+<p>Speedle, OPA, Kubernetes RBAC and Istio RBAC all provide authorization or access control. Kubernetes RBAC and Istio RBAC address authorization inside Kubernetes and Istio respectively; Speedle and OPA are general-purpose authorization solutions. Casbin and Ladon are other general-purpose options. When comparing them, consider:</p>
 
 <ol>
-<li>Is the product user-friendly? These products all offer policy definition language. Try to create a policy and pick up the one you like</li>
-<li>Is the product fast enough? i.e. how long does it take to evaluate an authorization request?</li>
-<li>Is the product is scalable enough?</li>
+<li>Is the policy language usable? Each product provides one, so create a policy in each and compare.</li>
+<li>How long does one authorization decision take?</li>
+<li>How well does it scale?</li>
 <li>Is the supported policy model flexible enough?</li>
 </ol>
 
-<p>Please tell us your choice.</p>
+<h3 id="why-does-speedle-have-no-built-in-authentication-mechanisms">Why does Speedle have no built-in authentication mechanisms?</h3>
 
-<h3 id="why-does-speedle-have-no-built-in-auth-mechanisms">Why does Speedle have no built-in auth mechanisms?</h3>
-
-<p>Speedle focuses on authorization field. It doesn&rsquo;t cover authentication functionality.</p>
+<p>Speedle focuses on authorization. It does not provide authentication.</p>
 
 <h3 id="how-do-i-plug-in-my-own-backend-store">How do I plug in my own backend store?</h3>
 
-<p>Please refer to <a href="/docs/store/">Pluggable Storage</a></p>
+<p>See <a href="/docs/store/">Pluggable Storage</a>.</p>
 
 <h3 id="how-do-i-plug-in-my-own-token-assertor">How do I plug in my own token assertor?</h3>
 
-<p>Plase refer to <a href="/docs/assertor/">token assertor</a></p>
+<p>See <a href="/docs/assertor/">token assertor</a>.</p>
 
 <div class="row" style="padding-top: 50px">
     <div class="col col-2"></div>

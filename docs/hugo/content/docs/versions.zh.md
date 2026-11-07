@@ -1,6 +1,6 @@
 +++
 title = "版本"
-description = "What's New? Speedle versions and changelog! "
+description = "Speedle 发布版本与语义化版本规范"
 weight = 400
 draft = false
 toc = true
@@ -8,7 +8,7 @@ tocheading = "h2"
 tocsidebar = false
 tags = ["releases", "versions"]
 categories = ["docs"]
-bref = ""
+bref = "发布版本 — Speedle 遵循语义化版本规范"
 +++
 
 ## Speedle 发布版本

@@ -1,5 +1,8 @@
 <p align="center">
-    <img src="/docs/images/sp_logo.png" height="50%" width="50%" class="center"/>
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/images/speedle-engine-lockup-dark.svg">
+    <img src="docs/images/speedle-engine-lockup-light.svg" alt="Speedle | Engine" height="52">
+  </picture>
 </p>
 <p align="center">
     <a href="https://discord.gg/uaY2xVsbbT">
@@ -24,7 +27,7 @@
 
 Speedle 是一个用 Go 编写的开源授权引擎。应用向它询问某个主体能否对某个资源执行某个操作，它根据集中管理的策略在数毫秒内给出允许或拒绝，让授权逻辑独立于应用代码。它支持基于角色（RBAC）和基于属性（ABAC）的访问控制；拒绝策略优先于授权策略，没有授权的一律拒绝。用户可以在 Speedle 里管理百万规模级的授权策略。
 
-Speedle 包括 Speedle 策略定义语言（Speedle Policy Definition Language，SPDL）、策略管理服务（PMS，即策略管理点 PAP）、授权决策服务（ADS，即策略决策点 PDP，也可以嵌入 Go 应用）、命令行工具 `spctl`，以及 Docker、Kubernetes、Istio 的集成示例。这些组件和常见授权术语的对应关系见[概览](https://speedle.io/zh/docs/overview/)。
+Speedle 包括 Speedle 策略定义语言（Speedle Policy Definition Language，SPDL）、策略管理服务（PMS，即策略管理点 PAP）、授权决策服务（ADS，即策略决策点 PDP，也可以嵌入 Go 应用）、命令行工具 `spctl`，以及 Docker、Kubernetes、Istio 的集成示例。这些组件和常见授权术语的对应关系见[概览](https://engine.speedle.io/zh/docs/overview/)。
 
 本项目基于原 Speedle 项目<https://github.com/oracle/speedle>，两个项目都遵守UPL协议。
 
@@ -34,15 +37,15 @@ Speedle 包括 Speedle 策略定义语言（Speedle Policy Definition Language�
 
 ## 文档
 
-请参阅 <https://speedle.io/zh/docs/usecases/>。
+请参阅 <https://engine.speedle.io/zh/docs/usecases/>。
 
 ## Get Started
 
-请参阅 <https://speedle.io/quick-start/>。   
+请参阅 <https://engine.speedle.io/zh/quick-start/>。
 
-也可以打开 [Playground（在线策略实验室）](https://speedle.io/zh/playground/)，直接在浏览器中编写 SPDL 策略并测试授权结果，无需安装 Speedle。
+也可以打开 [Playground（在线策略实验室）](https://engine.speedle.io/zh/playground/)，直接在浏览器中编写 SPDL 策略并测试授权结果，无需安装 Speedle。
 
-更详细的内容可以查阅[这里](https://github.com/teramoby/speedle-plus/tree/master/docs/%E4%B8%AD%E6%96%87%E8%B5%84%E6%96%99)。
+更详细的内容可以查阅[中文文档](https://engine.speedle.io/zh/docs/)。
 
 ## 嵌入 Go 应用
 
@@ -109,7 +112,7 @@ alice true GRANT_POLICY_FOUND <nil>
 bob false NO_APPLICABLE_POLICIES <nil>
 ```
 
-详见[嵌入模式](https://speedle.io/zh/docs/deployment-embeded/)。
+详见[嵌入模式](https://engine.speedle.io/zh/docs/deployment-embeded/)。
 
 ## 安装
 

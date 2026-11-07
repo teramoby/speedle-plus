@@ -1,6 +1,6 @@
 +++
 title = "Versions"
-description = "What's New? Speedle versions and changelog! "
+description = "Speedle release history and semantic versioning"
 weight = 400
 draft = false
 toc = true
@@ -8,7 +8,7 @@ tocheading = "h2"
 tocsidebar = false
 tags = ["releases", "versions"]
 categories = ["docs"]
-bref = "Releases - Speedle follows sematic versioning."
+bref = "Releases — Speedle follows semantic versioning"
 +++
 
 ## Speedle releases

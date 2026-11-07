@@ -29,9 +29,6 @@ defaultContentLanguageInSubdir = false
 [Params]
   RSSLink = "/index.xml"
   author = "Speedle" # add your company name
-  github = "speedle" # add your github profile name
-  twitter = "oracle" # add your twitter profile
-  email = "rohit.koul@oracle.com"
   [[Params.languages]]
     name = "English"
     url = "/en"

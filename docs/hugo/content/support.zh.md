@@ -1,53 +1,51 @@
 +++
 draft= false
 title = "支持"
-description = "Seek answers and ask questions to the Speedle community."
+description = "关于 Speedle 的常见问题解答"
 toc = false
 tocheading = "h2"
 tocsidebar = false
 icon = "8. Community.svg"
 +++
 
-## FAQs
+## 常见问题
 
-### Speedle looks awesome! Who is it for?
+### Speedle 适合谁使用？
 
-Speedle is an open source project for access management. You can embed it in your system as long as access control is required, such that you don't have to hard code authorization policies in your code.
+Speedle 是一个开源授权引擎，适合需要在应用中实现访问控制的团队。你可以把它嵌入系统，也可以作为独立服务运行，让授权策略集中管理，而不是写死在应用代码里。
 
-### Does the world need one more policy engine?
+### 为什么还需要另一个策略引擎？
 
-Well, please spend 15 minutes on [Quick Start](/quick-start) steps. Then you will have the answer. Why not give a try? :-)
+[快速入门](/zh/quick-start/)用大约 15 分钟走完整个流程，是了解 Speedle 策略模型和授权决策方式、并与其他方案比较的最快途径。
 
-### How do I contribute?
+### 如何参与贡献？
 
-Please refer to [contribution guide](/contribute/#code)
+请参阅[贡献指南](/zh/contribute/#代码贡献)。
 
-### What does the future hold for Speedle? What’s the plan?
+### Speedle 的发展计划是什么？
 
-We will maintain Speedle as an open source project, fix bugs, add more features...
+Speedle 以开源项目的形式持续维护，工作包括修复缺陷、更新文档，以及根据社区需要增加功能。
 
-### How is it different from OPA, Kubernetes RBAC, Istio RBAC?
+### Speedle 与 OPA、Kubernetes RBAC、Istio RBAC 有什么区别？
 
-Long story short: They all target to authorization/access control. Kubernetes RBAC and Istio RBAC focus on the authorization issues in Kubernetes/Istio system respectively, while Speedle and OPA are general purpose authorization solution. There are also a few other general purpose authorization solutions, like Casbin and Ladon. You may try them out yourself and see
+Speedle、OPA、Kubernetes RBAC 和 Istio RBAC 都提供授权或访问控制能力。Kubernetes RBAC 和 Istio RBAC 分别解决 Kubernetes 和 Istio 内部的授权问题；Speedle 和 OPA 是通用授权方案，Casbin 和 Ladon 也是常见的通用选择。比较时可以考虑：
 
-1. Is the product user-friendly? These products all offer policy definition language. Try to create a policy and pick up the one you like
-2. Is the product fast enough? i.e. how long does it take to evaluate an authorization request?
-3. Is the product is scalable enough?
-4. Is the supported policy model flexible enough?
+1. 策略语言是否易用？这些产品都提供策略定义语言，可以各写一条策略进行对比。
+2. 单次授权决策需要多长时间？
+3. 扩展性如何？
+4. 支持的策略模型是否足够灵活？
 
-Please tell us your choice.
+### 为什么 Speedle 不内置认证机制？
 
-### Why does Speedle have no built-in auth mechanisms?
+Speedle 专注于授权，不提供认证功能。
 
-Speedle focuses on authorization field. It doesn't cover authentication functionality.
+### 如何接入自己的后端存储？
 
-### How do I plug in my own backend store?
+请参阅[可插拔存储](/zh/docs/store/)。
 
-Please refer to [Pluggable Storage](/docs/store/)
+### 如何接入自己的令牌断言服务？
 
-### How do I plug in my own token assertor?
-
-Plase refer to [token assertor](/docs/assertor)
+请参阅[令牌断言服务](/zh/docs/assertor/)。
 
 <div class="row" style="padding-top: 50px">
     <div class="col col-2"></div>
