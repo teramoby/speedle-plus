@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="{{ .Page.Language | default "en" }}">
+<html lang="{{ if eq .Lang "zh" }}zh-CN{{ else }}en{{ end }}">
 
 <head>
     <script>document.documentElement.classList.add('docs-js');</script>
@@ -9,6 +9,7 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     {{- partial "head.html" . -}}
+    {{- partial "docs/structured-data.html" . -}}
     <link href="{{ "/css/docs.css" | relURL }}" rel="stylesheet" type="text/css">
 {{ if eq .Params.customcssfile "swagger-custom.css" }}
     <link href="{{ "/css/swagger-ui.css" | relURL }}" rel="stylesheet" type="text/css">

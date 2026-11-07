@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="{{ .Page.Language | default "en" }}">
+<html lang="{{ if eq .Lang "zh" }}zh-CN{{ else }}en{{ end }}">
 
 <head>
   <meta charset="utf-8">
@@ -15,8 +15,6 @@
   {{ end }}
 
   {{ partial "meta/name-author" . }}
-  {{ template "_internal/opengraph.html" . }}
-  {{ partial "meta/ogimage" . }}
 
   {{ partial "favicon" . }}
   <link href="{{ "/css/docs.css" | relURL }}" rel="stylesheet" type="text/css">

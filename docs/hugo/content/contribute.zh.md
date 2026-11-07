@@ -1,5 +1,5 @@
 +++
-title = "Contribution and Community"
+title = "贡献与社区"
 description = "Join Speedle Community!"
 weight = 10
 draft = false

@@ -96,9 +96,11 @@ for (const name of ['docs/index.html','docs/zh/index.html']) {
 }
 const identityTags = [/<title>[^<]*<\/title>/, /<link rel="icon"[^>]*>/,
  /<meta property="og:site_name"[^>]*>/, /<meta property="og:title"[^>]*>/,
- /<meta name="twitter:title"[^>]*>/, /\{"@type":"WebSite"[^\n]+/,
+ /<meta name="twitter:card"[^>]*>/, /<meta name="twitter:title"[^>]*>/, /\{"@type":"WebSite"[^\n]+/,
  /\{"@type":"SoftwareSourceCode"[^\n]+/];
 // The site identity (title, icon, social and structured-data names) changed deliberately.
+// #246 adds the share image on every page; the 2017 reference homepage predates it.
+const shareImageTags = /^  <meta (?:property="og:image(?::width|:height|:type|:alt)?"|name="twitter:image(?::alt)?")[^\n]*>\n/gm;
 const analyticsSnippet = read('website/cloudflare-web-analytics.html');
 // #241 added the Get started block (Playground, SDKs, run locally) to both home pages.
 const getStartedSection = /    <section class="getstarted" id="get-started">[\s\S]*?<\/section>\n\n/;
@@ -106,8 +108,8 @@ const originalFooter = original.match(/  <footer>[\s\S]*?<\/footer>\n/)[0];
 // #244 reworked the community banner: flat soft panel, copy left, action right.
 const originalContribute = original.match(/    <section class="contribute">[\s\S]*?<\/section>\n/)[0];
 const contributeSection = /    <section class="contribute">[\s\S]*?<\/section>\n/;
-const restoredIdentity = identityTags.reduce((html, pattern) => html.replace(pattern, original.match(pattern)[0]), home.replace(analyticsSnippet, '').replace(iconLinks, original.match(/<link rel="icon"[^>]*>/)[0]).replace(productsMenu, '').replace(/  <footer class="site-footer">[\s\S]*?<\/footer>\n/, originalFooter));
-const restored = restoredIdentity.replace(policyExample,originalPolicyExample).replace(originNote,'').replace('<a href="/docs/pms/policy-mgmt/">Learn more</a>','<a href="/docs/pms/">Learn more</a>').replace('Bring Your Own Storage','Bring Your Own Store').replace('Works with any identity provider: your application verifies identity and passes users, groups and attributes to Speedle for a decision.','Connect GitHub, Okta or your own identity provider.').replace('Speedle Policy Definition Language.','Secure Policy Definition Language.').replace(contactLinks,originalMailingLink).replace(sharedNavigationScript,originalNavigationScript).replace(copyright,'').replace(discordLink,oldCommunityLink).replace('  <link rel="stylesheet" href="/css/site.css">\n  <link rel="stylesheet" href="/css/navigation.css?v=header-20261106-v8">', `  <style>${originalCss}</style>`).replace('<a href="/playground/">Playground</a>','').replace(`        ${chineseLink}\n`,'').replace(brandLockup,originalBrand).replace(getStartedSection,'').replace(contributeSection,originalContribute).replace('Fast. Simple. Access control','Fast. Simple. Access control.').replace('Authorization that stays out of your application code','Authorization that stays out of your application code.').replace('Fine-grained control without the friction','Fine-grained control without the friction.').replace('Policies humans can read','Policies humans can read.').replace('Built for the infrastructure you already run','Built for the infrastructure you already run.');
+const restoredIdentity = identityTags.reduce((html, pattern) => html.replace(pattern, original.match(pattern)[0]), home.replace(shareImageTags, '').replace(analyticsSnippet, '').replace(iconLinks, original.match(/<link rel="icon"[^>]*>/)[0]).replace(productsMenu, '').replace(/  <footer class="site-footer">[\s\S]*?<\/footer>\n/, originalFooter));
+const restored = restoredIdentity.replace(policyExample,originalPolicyExample).replace(originNote,'').replace('<a href="/docs/pms/policy-mgmt/">Learn more</a>','<a href="/docs/pms/">Learn more</a>').replace('Bring Your Own Storage','Bring Your Own Store').replace('Works with any identity provider: your application verifies identity and passes users, groups and attributes to Speedle for a decision.','Connect GitHub, Okta or your own identity provider.').replace('Speedle Policy Definition Language.','Secure Policy Definition Language.').replace(contactLinks,originalMailingLink).replace(sharedNavigationScript,originalNavigationScript).replace(copyright,'').replace(discordLink,oldCommunityLink).replace('  <link rel="stylesheet" href="/css/site.css">\n  <link rel="stylesheet" href="/css/navigation.css?v=header-20261106-v8">', `  <style>${originalCss}</style>`).replace('<a href="/playground/">Playground</a>','').replace(`        ${chineseLink}\n`,'').replace(brandLockup,originalBrand).replace(getStartedSection,'').replace(contributeSection,originalContribute).replace('<h1>Fast. Simple. Access control</h1>','<h1>Fast. Simple. Access control.</h1>').replace('Authorization that stays out of your application code','Authorization that stays out of your application code.').replace('Fine-grained control without the friction','Fine-grained control without the friction.').replace('Policies humans can read','Policies humans can read.').replace('Built for the infrastructure you already run','Built for the infrastructure you already run.');
 // #236: the owner removed the home-page Integrations section; integrations live in the docs only.
 // #237: the Cloud Native card now points at the architecture page.
 const originalWithoutIntegrations = original
@@ -281,5 +283,73 @@ for (const [language, html] of playgroundPages) {
 const chinesePlayground = playgroundPages[1][1];
 assert.ok(chinesePlayground.includes('<a href="/zh/playground/" aria-current="page">策略实验室</a>'), 'Chinese Playground navigation label matches the page name');
 assert.ok(chinesePlayground.includes('<meta name="description" content="在浏览器中使用真实 Speedle 引擎编写 SPDL 策略并测试授权请求。">'), 'Chinese Playground meta description is translated');
-assert.ok(chinesePlayground.includes('<meta property="og:title" content="策略实验室 | Speedle 权限控制引擎">') && chinesePlayground.includes('<meta property="og:description" content="在浏览器中使用真实 Speedle 引擎编写 SPDL 策略并测试授权请求。">'), 'Chinese Playground social metadata is translated');
-console.log(`PASS static site integration: original CSS/homepage, official footer, navigation, URLs/assets, canonical, English labels, no private hosting or persistent request storage, ${assetRefs} local assets in ${assetPages} published pages, WCAG AA home-page palette`);
+assert.ok(chinesePlayground.includes('<meta property="og:title" content="策略实验室 · Speedle Engine">') && chinesePlayground.includes('<meta property="og:description" content="在浏览器中使用真实 Speedle 引擎编写 SPDL 策略并测试授权请求。">'), 'Chinese Playground social metadata is translated');
+// #246: a 1200x630 share image per language, TechArticle/BreadcrumbList on the
+// docs pages, one title pattern per page and one lang value per language.
+const pngDimensions = file => {
+ const png = fs.readFileSync(file);
+ assert.equal(png.subarray(0,8).toString('hex'), '89504e470d0a1a0a', `${file} is a PNG`);
+ return [png.readUInt32BE(16), png.readUInt32BE(20)];
+};
+for (const name of ['engine-en.png','engine-zh.png']) {
+ assert.deepEqual(pngDimensions(path.join(docsRoot, 'img/social', name)), [1200,630], `Share image ${name} is 1200x630`);
+}
+const titleOf = html => html.match(/<title>([\s\S]*?)<\/title>/)?.[1];
+const contentOf = (html, pattern) => html.match(pattern)?.[1];
+let identityPages = 0;
+const homes = {'/': 'Speedle Engine — Fast. Simple. Access control', '/zh/': 'Speedle Engine — 快速、简单的权限控制'};
+(function checkPageIdentity(directory) {
+ for (const entry of fs.readdirSync(directory, {withFileTypes: true})) {
+  const file = path.join(directory, entry.name);
+  if (entry.isDirectory()) {
+   if (file !== path.join(docsRoot, 'hugo')) checkPageIdentity(file);
+   continue;
+  }
+  if (!entry.name.endsWith('.html')) continue;
+  const route = '/' + path.relative(docsRoot, file).split(path.sep).join('/').replace(/index\.html$/, '');
+  if (/^\/[0-9a-f]{32}\//.test(route)) continue; // the 2017 archive keeps its own metadata
+  const html = fs.readFileSync(file, 'utf8');
+  const zh = route === '/zh/' || route.startsWith('/zh/');
+  assert.ok(html.includes(`<html lang="${zh ? 'zh-CN' : 'en'}">`), `One lang value per language: ${route}`);
+  if (/http-equiv="refresh"/i.test(html)) continue;
+  identityPages++;
+  const title = titleOf(html);
+  assert.ok(title, `Page title in ${route}`);
+  assert.ok(!/[.。]$/.test(title), `No trailing full stop in the title of ${route}`);
+  assert.equal(contentOf(html, /<meta property="og:title" content="([^"]*)">/), title, `og:title follows title in ${route}`);
+  const image = `https://engine.speedle.io/img/social/engine-${zh ? 'zh' : 'en'}.png`;
+  for (const tag of [`<meta property="og:image" content="${image}">`, `<meta name="twitter:image" content="${image}">`,
+   '<meta name="twitter:card" content="summary_large_image">']) assert.ok(html.includes(tag), `${tag} in ${route}`);
+  assert.ok(contentOf(html, /<meta property="og:image:alt" content="([^"]*)">/) && contentOf(html, /<meta name="twitter:image:alt" content="([^"]*)">/), `Share image alt text in ${route}`);
+  if (route in homes) assert.equal(title, homes[route], `Home title follows the naming pattern in ${route}`);
+  else assert.ok(title.endsWith(' · Speedle Engine'), `Inner title follows "<Page> · Speedle Engine" in ${route}: ${title}`);
+ }
+})(docsRoot);
+assert.ok(identityPages > 190, `Pages checked for title and social metadata: ${identityPages}`);
+let structuredDocs = 0;
+function checkDocsStructuredData(directory, zh) {
+ for (const entry of fs.readdirSync(directory, {withFileTypes: true})) {
+  const file = path.join(directory, entry.name);
+  if (entry.isDirectory()) { checkDocsStructuredData(file, zh); continue; }
+  if (entry.name !== 'index.html') continue;
+  const html = fs.readFileSync(file, 'utf8');
+  if (/http-equiv="refresh"/i.test(html)) continue;
+  const canonical = contentOf(html, /<link rel="canonical" href="([^"]+)">/);
+  const script = contentOf(html, /<script type="application\/ld\+json">([\s\S]*?)<\/script>/);
+  assert.ok(canonical && script, `Docs canonical and JSON-LD in ${path.relative(docsRoot, file)}`);
+  const graph = JSON.parse(script)['@graph'];
+  const article = graph.find(node => node['@type'] === 'TechArticle' || node['@type'] === 'WebPage');
+  assert.ok(article && article.inLanguage === (zh ? 'zh-CN' : 'en'), `Article node and language in ${canonical}`);
+  assert.ok(article['@id'].endsWith(article['@type'] === 'TechArticle' ? '#article' : '#webpage'), `Article id in ${canonical}`);
+  const breadcrumb = graph.find(node => node['@type'] === 'BreadcrumbList');
+  assert.ok(breadcrumb && breadcrumb.itemListElement.length >= 2, `BreadcrumbList in ${canonical}`);
+  assert.equal(breadcrumb.itemListElement[0].name, zh ? '首页' : 'Home', `Breadcrumb starts at the home page in ${canonical}`);
+  assert.deepEqual(breadcrumb.itemListElement.map(item => item.position), breadcrumb.itemListElement.map((_, index) => index + 1), `Breadcrumb positions in ${canonical}`);
+  assert.equal(breadcrumb.itemListElement.at(-1).item, canonical, `Breadcrumb ends at the page in ${canonical}`);
+  structuredDocs++;
+ }
+}
+checkDocsStructuredData(path.join(docsRoot, 'docs'), false);
+checkDocsStructuredData(path.join(docsRoot, 'zh/docs'), true);
+assert.ok(structuredDocs > 60, `Docs pages with structured data: ${structuredDocs}`);
+console.log(`PASS static site integration: original CSS/homepage, official footer, navigation, URLs/assets, canonical, English labels, no private hosting or persistent request storage, ${assetRefs} local assets in ${assetPages} published pages, WCAG AA home-page palette, ${identityPages} pages with one title pattern and lang, ${structuredDocs} docs pages with structured data`);

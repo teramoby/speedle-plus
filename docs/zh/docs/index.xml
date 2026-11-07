@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes" ?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-    <title>Speedle文档 on Speedle</title>
+    <title>文档 on Speedle</title>
     <link>https://engine.speedle.io/zh/docs/</link>
-    <description>Recent content in Speedle文档 on Speedle</description>
+    <description>Recent content in 文档 on Speedle</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>zh-cn</language>
     <lastBuildDate>Sat, 07 Nov 2026 20:11:37 +0800</lastBuildDate>
@@ -171,7 +171,7 @@ Oracle Speedle 历史版本 0.1.0 是原项目首次开源的版本，包含策�
     </item>
     
     <item>
-      <title>Custom Function</title>
+      <title>自定义函数</title>
       <link>https://engine.speedle.io/zh/docs/custom-function/</link>
       <pubDate>Mon, 21 Jan 2019 10:43:02 +0800</pubDate>
       

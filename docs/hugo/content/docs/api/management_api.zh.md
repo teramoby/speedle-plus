@@ -1,5 +1,5 @@
 +++
-title = "Policy Management API"
+title = "策略管理 API"
 description = "Swagger documentation for the management endpoint. CRUD on services, functions, policies and role-policies. Handle your simple and complex usecases using a simple declarative way!"
 tags = ["v0.1.0", "api", "guide", "core", "pms"]
 categories = ["docs"]
