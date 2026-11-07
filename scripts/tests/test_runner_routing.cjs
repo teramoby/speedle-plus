@@ -44,19 +44,20 @@ function github(eventName, headRepo = canonical, overrides = {}) {
     ...overrides,
   };
 }
-function evaluate(expression, context) {
+function evaluate(expression, context, vars = {}) {
   // Evaluate the actual workflow predicate, not a duplicate routing function.
   // This intentionally accepts only its current string/boolean comparison,
   // boolean operator and fromJSON subset; other expression syntax fails closed.
   const lookup = name => {
-    let item = context;
-    for (const part of name.split('.').slice(1)) {
+    const parts = name.split('.');
+    let item = parts[0] === 'vars' ? vars : context;
+    for (const part of parts.slice(1)) {
       if (item == null || typeof item !== 'object' || !Object.hasOwn(item, part)) return '';
       item = item[part];
     }
     return item ?? '';
   };
-  const tokens = /\s+|'(?:[^']|'')*'|github(?:\.[A-Za-z_][\w-]*)+|fromJSON|true|false|null|==|!=|&&|\|\||[(),!]/gy;
+  const tokens = /\s+|'(?:[^']|'')*'|(?:github|vars)(?:\.[A-Za-z_][\w-]*)+|fromJSON|true|false|null|==|!=|&&|\|\||[(),!]/gy;
   let translated = '', position = 0;
   while (position < expression.length) {
     tokens.lastIndex = position;
@@ -65,15 +66,15 @@ function evaluate(expression, context) {
     const token = found[0]; position = tokens.lastIndex;
     if (/^\s+$/.test(token)) translated += token;
     else if (token.startsWith("'")) translated += JSON.stringify(token.slice(1, -1).replaceAll("''", "'"));
-    else if (token.startsWith('github.')) translated += `lookup(${JSON.stringify(token)})`;
+    else if (token.startsWith('github.') || token.startsWith('vars.')) translated += `lookup(${JSON.stringify(token)})`;
     else translated += token;
   }
   const output = vm.runInNewContext(translated, {lookup, fromJSON: JSON.parse}, {timeout: 100});
   return JSON.parse(JSON.stringify(output));
 }
-function route(block, context = github('workflow_dispatch')) {
+function route(block, context = github('workflow_dispatch'), vars = {}) {
   const raw = value(block, 'runs-on');
-  if (raw.startsWith('${{') && raw.endsWith('}}')) return evaluate(raw.slice(3, -2).trim(), context);
+  if (raw.startsWith('${{') && raw.endsWith('}}')) return evaluate(raw.slice(3, -2).trim(), context, vars);
   if (raw.startsWith('[')) return JSON.parse(raw);
   return raw.replace(/^['"]|['"]$/g, '');
 }
@@ -126,6 +127,54 @@ test('same-repository human and bot authors use Speedle; forks and unknown autho
   }
   for (const eventName of ['push', 'workflow_dispatch', 'issue_comment', 'unknown']) {
     assert.equal(evaluate(value(job.review.review, 'if'), github(eventName)), false);
+  }
+});
+test('REVIEWBOT_RUNS_ON overrides only the two model-calling ReviewBot jobs and keeps forks hosted', () => {
+  const customLabels = ['self-hosted', 'Linux', 'X64', 'reviewbot'];
+  const customVars = {REVIEWBOT_RUNS_ON: JSON.stringify(customLabels)};
+  const emptyVars = {REVIEWBOT_RUNS_ON: ''};
+  const invalidVars = {REVIEWBOT_RUNS_ON: 'not-json'};
+  const human = github('pull_request_target');
+  const bot = github('pull_request_target'); bot.event.pull_request.user = {login: 'dependabot[bot]', type: 'Bot'};
+  const otherBot = github('pull_request_target'); otherBot.event.pull_request.user = {login: 'automation[bot]', type: 'Bot'};
+  const unknownAuthor = github('pull_request_target'); delete unknownAuthor.event.pull_request.user;
+  const forkBot = github('pull_request_target', 'outsider/speedle-plus'); forkBot.event.pull_request.user.type = 'Bot';
+
+  for (const author of [human, bot, otherBot]) {
+    assert.deepEqual(route(job.review.review, author, customVars), customLabels);
+    assert.deepEqual(route(job.review.review, author, emptyVars), labels);
+    assert.deepEqual(route(job.review.publish, author, customVars), labels);
+  }
+  assert.deepEqual(route(job.commands.analyze, github('issue_comment'), customVars), customLabels);
+  assert.deepEqual(route(job.commands.analyze, github('issue_comment'), emptyVars), labels);
+  assert.throws(() => route(job.review.review, human, invalidVars), SyntaxError);
+  assert.throws(() => route(job.commands.analyze, github('issue_comment'), invalidVars), SyntaxError);
+
+  for (const context of [forkBot, unknownAuthor, github('pull_request_target', 'outsider/speedle-plus'),
+    github('pull_request_target', undefined, {event: {pull_request: {user: {type: 'User'}}}}),
+    github('pull_request_target', 'outsider/speedle-plus', {repository: 'outsider/speedle-plus'})]) {
+    assert.equal(route(job.review.review, context, customVars), 'ubuntu-24.04', JSON.stringify(context));
+    assert.equal(route(job.review.review, context, invalidVars), 'ubuntu-24.04', JSON.stringify(context));
+  }
+
+  assert.deepEqual(route(job.review['diff-regression'], github('workflow_dispatch'), customVars), labels);
+  assert.deepEqual(route(job.review['automerge-dependabot'], human, customVars), controlLabels);
+  assert.equal(route(job.commands.prepare, github('issue_comment'), customVars), 'ubuntu-24.04');
+  assert.deepEqual(route(job.commands.publish, github('issue_comment'), customVars), labels);
+  assert.equal(route(job.inline.route, github('pull_request_review_comment'), customVars), 'ubuntu-24.04');
+
+  for (const [name, block] of [
+    ['review.diff-regression', job.review['diff-regression']],
+    ['review.publish', job.review.publish],
+    ['review.automerge-dependabot', job.review['automerge-dependabot']],
+    ['commands.prepare', job.commands.prepare],
+    ['commands.publish', job.commands.publish],
+    ['inline.route', job.inline.route],
+  ]) {
+    assert.doesNotMatch(block, /REVIEWBOT_RUNS_ON/, `${name} must not depend on REVIEWBOT_RUNS_ON`);
+  }
+  for (const [name, block] of [['review.review', job.review.review], ['commands.analyze', job.commands.analyze]]) {
+    assert.doesNotMatch(block, /RUNNER_NAME|charming-speedle|fiona-speedle|\/tmp\/speedle-plus-/, `${name} must stay host-neutral`);
   }
 });
 test('inline pointer stays hosted and secret-bearing command receiver keeps default-branch triggers', () => {
