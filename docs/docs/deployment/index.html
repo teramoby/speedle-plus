@@ -202,8 +202,10 @@ docker pull ghcr.io/teramoby/speedle-ads:latest</code></pre></div>
 <p>Both images run the service as UID 65532 and include a writable <code>/data</code> directory for the file store. Pass the server flags after the image name, and run each command in its own terminal:</p>
 
 <!-- deployment-template: image-run -->
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker run --rm -p <span style="color:#bd93f9">6733</span>:6733 -v speedle-policies:/data ghcr.io/teramoby/speedle-pms:latest --store-type file --filestore-loc /data/policies.json --endpoint <span style="color:#bd93f9">0</span>.0.0.0:6733 --insecure<span style="color:#ff79c6">=</span><span style="color:#8be9fd;font-style:italic">true</span>
-docker run --rm -p <span style="color:#bd93f9">6734</span>:6734 -v speedle-policies:/data ghcr.io/teramoby/speedle-ads:latest --store-type file --filestore-loc /data/policies.json --endpoint <span style="color:#bd93f9">0</span>.0.0.0:6734 --insecure<span style="color:#ff79c6">=</span>true</code></pre></div>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker run --rm -p <span style="color:#bd93f9">127</span>.0.0.1:6733:6733 -v speedle-policies:/data ghcr.io/teramoby/speedle-pms:latest --store-type file --filestore-loc /data/policies.json --endpoint <span style="color:#bd93f9">0</span>.0.0.0:6733 --insecure<span style="color:#ff79c6">=</span><span style="color:#8be9fd;font-style:italic">true</span>
+docker run --rm -p <span style="color:#bd93f9">127</span>.0.0.1:6734:6734 -v speedle-policies:/data ghcr.io/teramoby/speedle-ads:latest --store-type file --filestore-loc /data/policies.json --endpoint <span style="color:#bd93f9">0</span>.0.0.0:6734 --insecure<span style="color:#ff79c6">=</span>true</code></pre></div>
+<p>PMS has no built-in caller authentication; the <code>127.0.0.1</code> binding keeps the unauthenticated management API on this machine. Never publish these ports on a host interface or expose them to an untrusted network.</p>
+
 <p>The images do not include CA certificates; provide the CA file for TLS endpoints. <code>--insecure=true</code> is for this local example only; see <a href="/docs/security/">Security</a>.</p>
 
 <h2 id="kubernetes-development-example">Kubernetes development example</h2>

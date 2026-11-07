@@ -202,8 +202,10 @@ docker pull ghcr.io/teramoby/speedle-ads:latest</code></pre></div>
 <p>两个映像都以 UID 65532 运行服务，并包含可写的 <code>/data</code> 目录用于文件存储。在映像名之后传入服务参数，每条命令各用一个终端运行：</p>
 
 <!-- deployment-template: image-run -->
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker run --rm -p <span style="color:#bd93f9">6733</span>:6733 -v speedle-policies:/data ghcr.io/teramoby/speedle-pms:latest --store-type file --filestore-loc /data/policies.json --endpoint <span style="color:#bd93f9">0</span>.0.0.0:6733 --insecure<span style="color:#ff79c6">=</span><span style="color:#8be9fd;font-style:italic">true</span>
-docker run --rm -p <span style="color:#bd93f9">6734</span>:6734 -v speedle-policies:/data ghcr.io/teramoby/speedle-ads:latest --store-type file --filestore-loc /data/policies.json --endpoint <span style="color:#bd93f9">0</span>.0.0.0:6734 --insecure<span style="color:#ff79c6">=</span>true</code></pre></div>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker run --rm -p <span style="color:#bd93f9">127</span>.0.0.1:6733:6733 -v speedle-policies:/data ghcr.io/teramoby/speedle-pms:latest --store-type file --filestore-loc /data/policies.json --endpoint <span style="color:#bd93f9">0</span>.0.0.0:6733 --insecure<span style="color:#ff79c6">=</span><span style="color:#8be9fd;font-style:italic">true</span>
+docker run --rm -p <span style="color:#bd93f9">127</span>.0.0.1:6734:6734 -v speedle-policies:/data ghcr.io/teramoby/speedle-ads:latest --store-type file --filestore-loc /data/policies.json --endpoint <span style="color:#bd93f9">0</span>.0.0.0:6734 --insecure<span style="color:#ff79c6">=</span>true</code></pre></div>
+<p>PMS 没有内置的调用方身份认证；<code>127.0.0.1</code> 绑定把未认证的管理 API 限制在本机。请勿将这些端口发布到主机网络接口，也不要暴露给不受信任的网络。</p>
+
 <p>映像不包含 CA 证书；连接 TLS 端点时需要提供 CA 文件。<code>--insecure=true</code> 仅用于本机示例，详见<a href="/zh/docs/security/">安全配置</a>。</p>
 
 <h2 id="kubernetes-开发示例">Kubernetes 开发示例</h2>
