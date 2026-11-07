@@ -8,10 +8,10 @@ toc = true
 tocheading = "h2"
 tags = ["api", "sdk"]
 categories = ["docs"]
-bref = "用 go get 添加 github.com/teramoby/speedle-sdk/go v0.1.0，再向本地 Speedle 或 Speedle Cloud 调用 IsAllowed 与 Check。"
+bref = "用 go get 添加 github.com/teramoby/speedle-sdk/go v0.2.0，再向本地 Speedle 或 Speedle Cloud 调用 IsAllowed 与 Check。"
 +++
 
-Go SDK 支持最新的两个 Go 版本，只使用标准库。模块：[`github.com/teramoby/speedle-sdk/go`](https://pkg.go.dev/github.com/teramoby/speedle-sdk/go) v0.1.0，包名 `speedle`。参考文档：[speedle-sdk/go](https://github.com/teramoby/speedle-sdk/tree/main/go)。
+Go SDK 支持最新的两个 Go 版本，只使用标准库。模块：[`github.com/teramoby/speedle-sdk/go`](https://pkg.go.dev/github.com/teramoby/speedle-sdk/go) v0.2.0，包名 `speedle`。参考文档：[speedle-sdk/go](https://github.com/teramoby/speedle-sdk/tree/main/go)。
 
 示例检查的策略见 [SDK 概览](/docs/sdks/#示例策略)。
 
@@ -21,7 +21,7 @@ Go SDK 支持最新的两个 Go 版本，只使用标准库。模块：[`github.
 
 ```bash
 go mod init example.com/speedle-example
-go get github.com/teramoby/speedle-sdk/go@v0.1.0
+go get github.com/teramoby/speedle-sdk/go@v0.2.0
 ```
 
 ## 调用本地 Speedle
@@ -41,7 +41,7 @@ import (
 
 func main() {
 	client, err := speedle.NewClient(speedle.Config{
-		Backend:     speedle.BackendSpeedlePlus,
+		Backend:     speedle.BackendSpeedle,
 		Endpoint:    "http://localhost:6734",
 		Auth:        speedle.NoAuth(),
 		ServiceName: "docs",

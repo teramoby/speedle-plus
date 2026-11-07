@@ -8,10 +8,10 @@ toc = true
 tocheading = "h2"
 tags = ["api", "sdk"]
 categories = ["docs"]
-bref = "用 Maven 或 Gradle 添加 io.speedle:speedle-sdk 0.1.0，再向本地 Speedle 或 Speedle Cloud 调用 isAllowed 与 check。"
+bref = "用 Maven 或 Gradle 添加 io.speedle:speedle-sdk 0.2.0，再向本地 Speedle 或 Speedle Cloud 调用 isAllowed 与 check。"
 +++
 
-Java SDK 需要 Java 17 或更高版本，没有运行时依赖。软件包：Maven Central 上的 [`io.speedle:speedle-sdk`](https://central.sonatype.com/artifact/io.speedle/speedle-sdk) 0.1.0。参考文档：[speedle-sdk/java](https://github.com/teramoby/speedle-sdk/tree/main/java)。
+Java SDK 需要 Java 17 或更高版本，没有运行时依赖。软件包：Maven Central 上的 [`io.speedle:speedle-sdk`](https://central.sonatype.com/artifact/io.speedle/speedle-sdk) 0.2.0。参考文档：[speedle-sdk/java](https://github.com/teramoby/speedle-sdk/tree/main/java)。
 
 示例检查的策略见 [SDK 概览](/docs/sdks/#示例策略)。
 
@@ -38,7 +38,7 @@ Maven，完整的 `pom.xml`：
     <dependency>
       <groupId>io.speedle</groupId>
       <artifactId>speedle-sdk</artifactId>
-      <version>0.1.0</version>
+      <version>0.2.0</version>
     </dependency>
   </dependencies>
 </project>
@@ -56,7 +56,7 @@ repositories {
 }
 
 dependencies {
-    implementation("io.speedle:speedle-sdk:0.1.0")
+    implementation("io.speedle:speedle-sdk:0.2.0")
 }
 
 application {
@@ -81,7 +81,7 @@ import java.util.List;
 public class Main {
   public static void main(String[] args) {
     try (SpeedleClient speedle = SpeedleClient.builder()
-        .backend(Backend.SPEEDLE_PLUS)
+        .backend(Backend.SPEEDLE)
         .endpoint(URI.create("http://localhost:6734"))
         .auth(Auth.none())
         .serviceName("docs")

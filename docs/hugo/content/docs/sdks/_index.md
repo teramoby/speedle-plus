@@ -15,7 +15,7 @@ The Speedle SDKs are client libraries for the decision API `POST /authz-check/v1
 
 ## Packages
 
-All packages are version 0.1.0. Each language page shows the install command.
+All packages are version 0.2.0. Each language page shows the install command.
 
 - [Java](/docs/sdks/java/): Maven Central `io.speedle:speedle-sdk`, published.
 - [Python](/docs/sdks/python/): PyPI `speedle`, published.

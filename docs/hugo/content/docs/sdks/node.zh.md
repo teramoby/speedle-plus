@@ -8,10 +8,10 @@ toc = true
 tocheading = "h2"
 tags = ["api", "sdk"]
 categories = ["docs"]
-bref = "@speedle/sdk 0.1.0 发布后用 npm 安装，再向本地 Speedle 或 Speedle Cloud 调用 isAllowed 与 check。"
+bref = "@speedle/sdk 0.2.0 发布后用 npm 安装，再向本地 Speedle 或 Speedle Cloud 调用 isAllowed 与 check。"
 +++
 
-Node.js SDK 需要 Node.js 22 或更高版本，同时提供 ESM 和 CommonJS 构建及 TypeScript 类型，没有运行时依赖。软件包：npm 上的 [`@speedle/sdk`](https://www.npmjs.com/package/@speedle/sdk) 0.1.0，**发布后可用**。参考文档：[speedle-sdk/node](https://github.com/teramoby/speedle-sdk/tree/main/node)。
+Node.js SDK 需要 Node.js 22 或更高版本，同时提供 ESM 和 CommonJS 构建及 TypeScript 类型，没有运行时依赖。软件包：npm 上的 [`@speedle/sdk`](https://www.npmjs.com/package/@speedle/sdk) 0.2.0，**发布后可用**。参考文档：[speedle-sdk/node](https://github.com/teramoby/speedle-sdk/tree/main/node)。
 
 示例检查的策略见 [SDK 概览](/docs/sdks/#示例策略)。
 
@@ -24,7 +24,7 @@ mkdir speedle-example
 cd speedle-example
 npm init -y
 npm pkg set type=module
-npm install @speedle/sdk@0.1.0
+npm install @speedle/sdk@0.2.0
 ```
 
 ## 调用本地 Speedle
@@ -36,7 +36,7 @@ import { Auth, Reason, SpeedleClient, SpeedleError } from "@speedle/sdk";
 
 try {
   const speedle = new SpeedleClient({
-    backend: "speedle-plus",
+    backend: "speedle",
     endpoint: "http://localhost:6734",
     auth: Auth.none(),
     serviceName: "docs",

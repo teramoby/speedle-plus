@@ -149,7 +149,7 @@
 <div id="main">
 
   <h1>Python SDK</h1>
-  <p class="docs-lead">用 pip 或 uv 安装 speedle 0.1.0，再向本地 Speedle 或 Speedle Cloud 调用 is_allowed 与 check。</p>
+  <p class="docs-lead">用 pip 或 uv 安装 speedle 0.2.0，再向本地 Speedle 或 Speedle Cloud 调用 is_allowed 与 check。</p>
 
 
 
@@ -162,7 +162,7 @@
 
   <div id="kube-component" class="content">
 
-<p>Python SDK 需要 Python 3.10 或更高版本，唯一的运行时依赖是 <code>httpx</code>。它提供同步的 <code>Client</code> 和 asyncio 的 <code>AsyncClient</code>，两者参数相同。软件包：PyPI 上的 <a href="https://pypi.org/project/speedle/"><code>speedle</code></a> 0.1.0。参考文档：<a href="https://github.com/teramoby/speedle-sdk/tree/main/python">speedle-sdk/python</a>。</p>
+<p>Python SDK 需要 Python 3.10 或更高版本，唯一的运行时依赖是 <code>httpx</code>。它提供同步的 <code>Client</code> 和 asyncio 的 <code>AsyncClient</code>，两者参数相同。软件包：PyPI 上的 <a href="https://pypi.org/project/speedle/"><code>speedle</code></a> 0.2.0。参考文档：<a href="https://github.com/teramoby/speedle-sdk/tree/main/python">speedle-sdk/python</a>。</p>
 
 <p>示例检查的策略见 <a href="/zh/docs/sdks/#示例策略">SDK 概览</a>。</p>
 
@@ -171,9 +171,9 @@
 <p>使用 pip，在虚拟环境中安装：</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">python3 -m venv .venv
 . .venv/bin/activate
-pip install <span style="color:#8be9fd;font-style:italic">speedle</span><span style="color:#ff79c6">==</span><span style="color:#bd93f9">0</span>.1.0</code></pre></div>
+pip install <span style="color:#8be9fd;font-style:italic">speedle</span><span style="color:#ff79c6">==</span><span style="color:#bd93f9">0</span>.2.0</code></pre></div>
 <p>或者使用 uv，在 uv 项目中添加：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">uv add <span style="color:#8be9fd;font-style:italic">speedle</span><span style="color:#ff79c6">==</span><span style="color:#bd93f9">0</span>.1.0</code></pre></div>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">uv add <span style="color:#8be9fd;font-style:italic">speedle</span><span style="color:#ff79c6">==</span><span style="color:#bd93f9">0</span>.2.0</code></pre></div>
 <h2 id="调用本地-speedle">调用本地 Speedle</h2>
 
 <p>按 <a href="/zh/docs/sdks/#示例策略">SDK 概览</a>中的说明启动 Speedle 并创建示例策略。将以下程序保存为 <code>main.py</code>：</p>
@@ -183,7 +183,7 @@ pip install <span style="color:#8be9fd;font-style:italic">speedle</span><span st
 
 <span style="color:#ff79c6">try</span>:
     <span style="color:#ff79c6">with</span> Client(
-        backend<span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;speedle-plus&#34;</span>,
+        backend<span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;speedle&#34;</span>,
         endpoint<span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;http://localhost:6734&#34;</span>,
         auth<span style="color:#ff79c6">=</span>Auth<span style="color:#ff79c6">.</span>none(),
         service_name<span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;docs&#34;</span>,
