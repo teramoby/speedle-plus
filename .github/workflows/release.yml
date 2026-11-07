@@ -3,6 +3,12 @@ name: Release
 # Run by hand from the Actions tab (or the API) to tag a master commit, build
 # the release binaries and container images, and publish a GitHub release.
 # Only users with write access can dispatch it.
+#
+# Retrying: re-dispatch with the same version and commit after a failure. The
+# container images are published before the immutable tag and release; an
+# existing tag must already point at the same commit, image tags are
+# overwritten, and release assets are replaced, so a failed run resumes
+# without moving a tag or re-creating a release.
 on:
   workflow_dispatch:
     inputs:
@@ -63,9 +69,16 @@ jobs:
             *) expected="github.com/teramoby/speedle-plus/${major}" ;;
           esac
           [[ "${module}" == "${expected}" ]] || { echo "go.mod at ${COMMIT} declares ${module}; ${VERSION} needs ${expected}." >&2; exit 1; }
+          # A re-run may find the tag from an earlier attempt. The Go module
+          # proxy caches tags, so an existing tag is only allowed to stay when
+          # it already points at the requested commit.
           if git ls-remote --exit-code --tags origin "refs/tags/${VERSION}" >/dev/null; then
-            echo "Tag ${VERSION} already exists; the Go module proxy caches tags, so it is never moved." >&2
-            exit 1
+            tagged=$(git ls-remote origin "refs/tags/${VERSION}" "refs/tags/${VERSION}^{}" | awk '{ print $1 }' | tail -n 1)
+            [[ "${tagged}" == "${COMMIT}" ]] || {
+              echo "Tag ${VERSION} already exists at ${tagged}, not ${COMMIT}; it is never moved." >&2
+              exit 1
+            }
+            echo "Tag ${VERSION} already points at ${COMMIT}; this is a re-run."
           fi
 
       - name: Check out the release commit
@@ -114,28 +127,12 @@ jobs:
             cp "dist/speedle-ads_linux_${arch}" "${CONTAINER_CONTEXT}/speedle-ads-linux-${arch}"
           done
 
-      - name: Create and push the tag
-        env:
-          VERSION: ${{ inputs.version }}
-          COMMIT: ${{ inputs.commit }}
-        run: |
-          set -euo pipefail
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git tag -a "${VERSION}" "${COMMIT}" -m "Speedle ${VERSION}"
-          git push origin "refs/tags/${VERSION}"
-
-      - name: Publish the GitHub release
-        env:
-          GH_TOKEN: ${{ github.token }}
-          VERSION: ${{ inputs.version }}
-        run: |
-          set -euo pipefail
-          gh release create "${VERSION}" --repo "${GITHUB_REPOSITORY}" --verify-tag --title "${VERSION}" --generate-notes \
-            dist/spctl_* dist/speedle-pms_* dist/speedle-ads_* dist/checksums.txt
-
-      # One multi-architecture image per service, tagged with the release and
-      # latest. The Dockerfiles copy the matching Linux binary for TARGETARCH.
+      # One multi-architecture image per service. The Dockerfiles copy the
+      # matching Linux binary for TARGETARCH. Images are published before the
+      # tag and release so a registry failure leaves no irreversible state and
+      # the run can be dispatched again with the same inputs. `latest` moves
+      # only when this version is the highest full semantic version released so
+      # far, so a maintenance release on an older line cannot downgrade it.
       - name: Publish container images
         env:
           VERSION: ${{ inputs.version }}
@@ -143,15 +140,53 @@ jobs:
         run: |
           set -euo pipefail
           owner="${GITHUB_REPOSITORY_OWNER,,}"
+          newest=$(git tag --list 'v*' | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -n 1 || true)
           echo "${GITHUB_TOKEN}" | docker login ghcr.io --username "${GITHUB_ACTOR}" --password-stdin
           docker buildx create --name speedle-release --driver docker-container --use
           docker buildx inspect --bootstrap
           for command in speedle-pms speedle-ads; do
             suffix=${command#speedle-}
+            tag_args=(--tag "${REGISTRY}/${owner}/${command}:${VERSION}")
+            if [[ -z "${newest}" || "${VERSION}" == "$(printf '%s\n%s\n' "${VERSION}" "${newest}" | sort -V | tail -n 1)" ]]; then
+              tag_args+=(--tag "${REGISTRY}/${owner}/${command}:latest")
+            else
+              echo "${VERSION} is older than the newest release ${newest}; publishing only the version tag."
+            fi
             docker buildx build \
               --platform linux/amd64,linux/arm64 \
               --file "deployment/container/Dockerfile.${suffix}" \
-              --tag "${REGISTRY}/${owner}/${command}:${VERSION}" \
-              --tag "${REGISTRY}/${owner}/${command}:latest" \
+              "${tag_args[@]}" \
               --push "${CONTAINER_CONTEXT}"
           done
+
+      # Idempotent for re-runs: the validation above only lets an existing tag
+      # through when it already points at the requested commit.
+      - name: Create and push the tag
+        env:
+          VERSION: ${{ inputs.version }}
+          COMMIT: ${{ inputs.commit }}
+        run: |
+          set -euo pipefail
+          if git ls-remote --exit-code --tags origin "refs/tags/${VERSION}" >/dev/null; then
+            echo "Tag ${VERSION} already exists at ${COMMIT}; no tag created."
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git tag -a "${VERSION}" "${COMMIT}" -m "Speedle ${VERSION}"
+            git push origin "refs/tags/${VERSION}"
+          fi
+
+      # Re-runs replace the assets of an existing release instead of failing.
+      - name: Publish the GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          assets=(dist/spctl_* dist/speedle-pms_* dist/speedle-ads_* dist/checksums.txt)
+          if gh release view "${VERSION}" --repo "${GITHUB_REPOSITORY}" >/dev/null 2>&1; then
+            gh release upload "${VERSION}" --repo "${GITHUB_REPOSITORY}" --clobber "${assets[@]}"
+          else
+            gh release create "${VERSION}" --repo "${GITHUB_REPOSITORY}" --verify-tag --title "${VERSION}" --generate-notes \
+              "${assets[@]}"
+          fi
