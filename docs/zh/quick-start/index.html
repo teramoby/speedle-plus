@@ -23,7 +23,7 @@
   <meta property="og:title" content="Speedle 快速入门" />
 <meta property="og:description" content="使用 go install 或源码编译安装 Speedle，验证策略管理、直接授权以及带条件（ABAC）的允许与拒绝结果。" />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://engine.speedle.io/zh/quick-start/" /><meta property="article:modified_time" content="2026-11-07T21:55:30&#43;08:00"/>
+<meta property="og:url" content="https://engine.speedle.io/zh/quick-start/" /><meta property="article:modified_time" content="2026-11-08T01:11:09&#43;08:00"/>
   
 
 
@@ -218,7 +218,7 @@ ls bin</code></pre></div>
 
 <!-- quick-start: abac-policy -->
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ create policy -c <span style="color:#f1fa8c">&#34;grant user ZhangSan borrow ebook if clearance &gt;= 3&#34;</span> --service-name<span style="color:#ff79c6">=</span>library</code></pre></div>
-<p>PEP（策略执行点）负责传入请求属性，条件只根据请求中的属性求值；请求不带 <code>clearance</code> 时，该条件不匹配。</p>
+<p>PEP（策略执行点）负责传入请求属性，条件只根据请求中的属性求值。下文的 <code>clearance</code> 值仅用于演示请求格式：真实的 PEP 必须从可信来源获取属性值，例如已认证的令牌声明或可信存储，绝不能取自正在被授权的请求本身。请求不带 <code>clearance</code> 时，该条件不匹配。</p>
 
 <p><code>clearance</code> 为 4 时允许：</p>
 

@@ -194,6 +194,8 @@ go build -o ./bin/ ./cmd/spctl ./cmd/speedle-pms ./cmd/speedle-ads</code></pre><
 <li><code>ghcr.io/teramoby/speedle-ads</code></li>
 </ul>
 
+<p>匿名拉取要求 GHCR 软件包为公开；如果软件包是私有的，请先执行 <code>docker login ghcr.io</code> 登录。</p>
+
 <p>请拉取要部署的发布版本；<code>latest</code> 跟随最新发布版本：</p>
 
 <!-- deployment-template: image-pull -->
@@ -210,7 +212,7 @@ docker run --rm -p <span style="color:#bd93f9">127</span>.0.0.1:6734:6734 -v spe
 
 <h2 id="kubernetes-开发示例">Kubernetes 开发示例</h2>
 
-<p>使用当前 Kubernetes 集群和兼容的 <code>kubectl</code>。将以下内容保存为 <code>speedle-dev.yaml</code>。它使用 <code>apps/v1</code>，在同一 Pod 内让 PMS/ADS 共享文件，以非 root 用户运行应用，并通过内部 ClusterIP 服务访问。这是隔离开发环境示例：Pod 被替换后 <code>emptyDir</code> 中的策略会丢失，HTTP 端点需要集群访问控制。清单使用已发布的映像；请固定要部署的发布标签，集群需要时配置 imagePullSecrets。</p>
+<p>使用当前 Kubernetes 集群和兼容的 <code>kubectl</code>。将以下内容保存为 <code>speedle-dev.yaml</code>。它使用 <code>apps/v1</code>，在同一 Pod 内让 PMS/ADS 共享文件，以非 root 用户运行应用，并通过内部 ClusterIP 服务访问。这是隔离开发环境示例：Pod 被替换后 <code>emptyDir</code> 中的策略会丢失，HTTP 端点需要集群访问控制。清单固定使用 <code>v1.6.0</code>；部署其他发布版本时请修改标签或使用摘要（digest），集群需要时配置 imagePullSecrets。</p>
 
 <!-- deployment-template: kubernetes -->
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">apiVersion: apps/v1
@@ -238,7 +240,7 @@ spec:
               mountPath: /data
       containers:
         - name: pms
-          image: ghcr.io/teramoby/speedle-pms:latest
+          image: ghcr.io/teramoby/speedle-pms:v1.<span style="color:#bd93f9">6.0</span>
           args: [<span style="color:#f1fa8c">&#34;--store-type&#34;</span>, <span style="color:#f1fa8c">&#34;file&#34;</span>, <span style="color:#f1fa8c">&#34;--filestore-loc&#34;</span>, <span style="color:#f1fa8c">&#34;/data/policies.json&#34;</span>, <span style="color:#f1fa8c">&#34;--endpoint&#34;</span>, <span style="color:#f1fa8c">&#34;0.0.0.0:6733&#34;</span>, <span style="color:#f1fa8c">&#34;--insecure=true&#34;</span>]
           ports:
             - containerPort: <span style="color:#bd93f9">6733</span>
@@ -249,7 +251,7 @@ spec:
             - name: policies
               mountPath: /data
         - name: ads
-          image: ghcr.io/teramoby/speedle-ads:latest
+          image: ghcr.io/teramoby/speedle-ads:v1.<span style="color:#bd93f9">6.0</span>
           args: [<span style="color:#f1fa8c">&#34;--store-type&#34;</span>, <span style="color:#f1fa8c">&#34;file&#34;</span>, <span style="color:#f1fa8c">&#34;--filestore-loc&#34;</span>, <span style="color:#f1fa8c">&#34;/data/policies.json&#34;</span>, <span style="color:#f1fa8c">&#34;--endpoint&#34;</span>, <span style="color:#f1fa8c">&#34;0.0.0.0:6734&#34;</span>, <span style="color:#f1fa8c">&#34;--insecure=true&#34;</span>]
           ports:
             - containerPort: <span style="color:#bd93f9">6734</span>
@@ -278,7 +280,7 @@ spec:
     - name: ads
       port: <span style="color:#bd93f9">6734</span>
       targetPort: <span style="color:#bd93f9">6734</span></code></pre></div>
-<p>将 <code>PMS_IMAGE</code>、<code>ADS_IMAGE</code> 设置为实际部署的完整映像，例如发布标签或 <code>latest</code>。先在本地替换清单中的映像，再应用；使用快速入门客户端时保持端口转发运行：</p>
+<p>将 <code>PMS_IMAGE</code>、<code>ADS_IMAGE</code> 设置为实际部署的完整映像，例如发布标签或摘要（digest）。先在本地替换清单中的映像，再应用；使用快速入门客户端时保持端口转发运行：</p>
 
 <!-- deployment-template: apply -->
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">kubectl <span style="color:#8be9fd;font-style:italic">set</span> image --local -f speedle-dev.yaml <span style="color:#8be9fd;font-style:italic">pms</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;</span><span style="color:#8be9fd;font-style:italic">$PMS_IMAGE</span><span style="color:#f1fa8c">&#34;</span> <span style="color:#8be9fd;font-style:italic">ads</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;</span><span style="color:#8be9fd;font-style:italic">$ADS_IMAGE</span><span style="color:#f1fa8c">&#34;</span> -o yaml | kubectl apply -f -
@@ -286,7 +288,7 @@ kubectl rollout status deployment/speedle-dev
 kubectl port-forward service/speedle-dev <span style="color:#bd93f9">6733</span>:6733 <span style="color:#bd93f9">6734</span>:6734</code></pre></div>
 <h2 id="生产部署">生产部署</h2>
 
-<p>生产环境应使用持久化策略存储，将容器映像标签固定到要部署的发布版本，保护管理与决策端点，并为客户端和策略后端配置 TLS/mTLS。当前存储配置见<a href="/zh/docs/store/">可插拔存储</a>，传输参数见<a href="/zh/docs/security/">安全配置</a>。请按当前 etcd 文档部署和运维 etcd，不要继续使用已停止维护的 etcd-operator 示例。</p>
+<p>生产环境应使用持久化策略存储，将容器映像标签或摘要（digest）固定到要部署的发布版本，保护管理与决策端点，并为客户端和策略后端配置 TLS/mTLS。当前存储配置见<a href="/zh/docs/store/">可插拔存储</a>，传输参数见<a href="/zh/docs/security/">安全配置</a>。请按当前 etcd 文档部署和运维 etcd，不要继续使用已停止维护的 etcd-operator 示例。</p>
 
 <p>仓库中保留了历史 Helm/Kubernetes 示例。旧的 Helm 2 <code>helm install -n ...</code>、<code>stable/etcd-operator</code>、<code>apps/v1beta2</code> 和 <code>r.authz.fun</code> 映像说明均不是本页的新部署流程。容器拉取、集群准入、仓库访问、存储与 rollout 依赖具体环境，应在目标集群中验证后再用于生产。</p>
 </div>

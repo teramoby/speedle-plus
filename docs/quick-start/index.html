@@ -23,7 +23,7 @@
   <meta property="og:title" content="Quick Start" />
 <meta property="og:description" content="Install Speedle with go install or from source, then verify policy management, direct grants, role grants, conditional (ABAC) decisions and denials." />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://engine.speedle.io/quick-start/" /><meta property="article:modified_time" content="2026-11-07T21:55:30&#43;08:00"/>
+<meta property="og:url" content="https://engine.speedle.io/quick-start/" /><meta property="article:modified_time" content="2026-11-08T01:11:09&#43;08:00"/>
   
 
 
@@ -229,7 +229,7 @@ ls bin</code></pre></div>
 
 <!-- quick-start: abac-policy -->
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ create policy -c <span style="color:#f1fa8c">&#34;grant user user1 get res3 if clearance &gt;= 3&#34;</span> --service-name<span style="color:#ff79c6">=</span>mysvc</code></pre></div>
-<p>The policy enforcement point (PEP) supplies request attributes, and a condition is evaluated only against the attributes in the request. A request that omits <code>clearance</code> does not match this grant.</p>
+<p>The policy enforcement point (PEP) supplies request attributes, and a condition is evaluated only against the attributes in the request. The <code>clearance</code> values below demonstrate the request format only: a real PEP must obtain attribute values from trusted sources, such as authenticated token claims or a trusted store, and never from the request being authorized. A request that omits <code>clearance</code> does not match this grant.</p>
 
 <p>With <code>clearance</code> set to 4, the request is allowed:</p>
 
