@@ -8,10 +8,10 @@ toc = true
 tocheading = "h2"
 tags = ["api", "sdk"]
 categories = ["docs"]
-bref = "Add io.speedle:speedle-sdk 0.1.0 with Maven or Gradle, then call isAllowed and check against a local Speedle or Speedle Cloud."
+bref = "Add io.speedle:speedle-sdk 0.2.0 with Maven or Gradle, then call isAllowed and check against a local Speedle or Speedle Cloud."
 +++
 
-The Java SDK needs Java 17 or later and has no runtime dependencies. Package: [`io.speedle:speedle-sdk`](https://central.sonatype.com/artifact/io.speedle/speedle-sdk) 0.1.0 on Maven Central. Reference: [speedle-sdk/java](https://github.com/teramoby/speedle-sdk/tree/main/java).
+The Java SDK needs Java 17 or later and has no runtime dependencies. Package: [`io.speedle:speedle-sdk`](https://central.sonatype.com/artifact/io.speedle/speedle-sdk) 0.2.0 on Maven Central. Reference: [speedle-sdk/java](https://github.com/teramoby/speedle-sdk/tree/main/java).
 
 The examples check the policy described in the [SDKs overview](/docs/sdks/#example-policy).
 
@@ -38,7 +38,7 @@ Maven, a complete `pom.xml`:
     <dependency>
       <groupId>io.speedle</groupId>
       <artifactId>speedle-sdk</artifactId>
-      <version>0.1.0</version>
+      <version>0.2.0</version>
     </dependency>
   </dependencies>
 </project>
@@ -56,7 +56,7 @@ repositories {
 }
 
 dependencies {
-    implementation("io.speedle:speedle-sdk:0.1.0")
+    implementation("io.speedle:speedle-sdk:0.2.0")
 }
 
 application {
@@ -81,7 +81,7 @@ import java.util.List;
 public class Main {
   public static void main(String[] args) {
     try (SpeedleClient speedle = SpeedleClient.builder()
-        .backend(Backend.SPEEDLE_PLUS)
+        .backend(Backend.SPEEDLE)
         .endpoint(URI.create("http://localhost:6734"))
         .auth(Auth.none())
         .serviceName("docs")

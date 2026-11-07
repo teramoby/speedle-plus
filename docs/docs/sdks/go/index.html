@@ -149,7 +149,7 @@
 <div id="main">
 
   <h1>Go SDK</h1>
-  <p class="docs-lead">Add github.com/teramoby/speedle-sdk/go v0.1.0 with go get, then call IsAllowed and Check against a local Speedle or Speedle Cloud.</p>
+  <p class="docs-lead">Add github.com/teramoby/speedle-sdk/go v0.2.0 with go get, then call IsAllowed and Check against a local Speedle or Speedle Cloud.</p>
 
 
 
@@ -162,7 +162,7 @@
 
   <div id="kube-component" class="content">
 
-<p>The Go SDK supports the two latest Go releases and uses only the standard library. Module: <a href="https://pkg.go.dev/github.com/teramoby/speedle-sdk/go"><code>github.com/teramoby/speedle-sdk/go</code></a> v0.1.0, package <code>speedle</code>. Reference: <a href="https://github.com/teramoby/speedle-sdk/tree/main/go">speedle-sdk/go</a>.</p>
+<p>The Go SDK supports the two latest Go releases and uses only the standard library. Module: <a href="https://pkg.go.dev/github.com/teramoby/speedle-sdk/go"><code>github.com/teramoby/speedle-sdk/go</code></a> v0.2.0, package <code>speedle</code>. Reference: <a href="https://github.com/teramoby/speedle-sdk/tree/main/go">speedle-sdk/go</a>.</p>
 
 <p>The examples check the policy described in the <a href="/docs/sdks/#example-policy">SDKs overview</a>.</p>
 
@@ -170,7 +170,7 @@
 
 <p>In a new module:</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">go mod init example.com/speedle-example
-go get github.com/teramoby/speedle-sdk/go@v0.1.0</code></pre></div>
+go get github.com/teramoby/speedle-sdk/go@v0.2.0</code></pre></div>
 <h2 id="call-a-local-speedle">Call a local Speedle</h2>
 
 <p>Start Speedle and create the example policy as described in the <a href="/docs/sdks/#example-policy">SDKs overview</a>. Save this program as <code>main.go</code>:</p>
@@ -186,7 +186,7 @@ go get github.com/teramoby/speedle-sdk/go@v0.1.0</code></pre></div>
 
 <span style="color:#8be9fd;font-style:italic">func</span> main() {
 	client, err <span style="color:#ff79c6">:=</span> speedle.NewClient(speedle.Config{
-		Backend:     speedle.BackendSpeedlePlus,
+		Backend:     speedle.BackendSpeedle,
 		Endpoint:    <span style="color:#f1fa8c">&#34;http://localhost:6734&#34;</span>,
 		Auth:        speedle.NoAuth(),
 		ServiceName: <span style="color:#f1fa8c">&#34;docs&#34;</span>,

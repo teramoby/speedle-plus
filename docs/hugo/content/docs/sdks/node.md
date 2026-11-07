@@ -8,10 +8,10 @@ toc = true
 tocheading = "h2"
 tags = ["api", "sdk"]
 categories = ["docs"]
-bref = "Install @speedle/sdk 0.1.0 with npm when it is published, then call isAllowed and check against a local Speedle or Speedle Cloud."
+bref = "Install @speedle/sdk 0.2.0 with npm when it is published, then call isAllowed and check against a local Speedle or Speedle Cloud."
 +++
 
-The Node.js SDK needs Node.js 22 or later, ships ESM and CommonJS builds with TypeScript types, and has no runtime dependencies. Package: [`@speedle/sdk`](https://www.npmjs.com/package/@speedle/sdk) 0.1.0 on npm, **available when published**. Reference: [speedle-sdk/node](https://github.com/teramoby/speedle-sdk/tree/main/node).
+The Node.js SDK needs Node.js 22 or later, ships ESM and CommonJS builds with TypeScript types, and has no runtime dependencies. Package: [`@speedle/sdk`](https://www.npmjs.com/package/@speedle/sdk) 0.2.0 on npm, **available when published**. Reference: [speedle-sdk/node](https://github.com/teramoby/speedle-sdk/tree/main/node).
 
 The examples check the policy described in the [SDKs overview](/docs/sdks/#example-policy).
 
@@ -24,7 +24,7 @@ mkdir speedle-example
 cd speedle-example
 npm init -y
 npm pkg set type=module
-npm install @speedle/sdk@0.1.0
+npm install @speedle/sdk@0.2.0
 ```
 
 ## Call a local Speedle
@@ -36,7 +36,7 @@ import { Auth, Reason, SpeedleClient, SpeedleError } from "@speedle/sdk";
 
 try {
   const speedle = new SpeedleClient({
-    backend: "speedle-plus",
+    backend: "speedle",
     endpoint: "http://localhost:6734",
     auth: Auth.none(),
     serviceName: "docs",

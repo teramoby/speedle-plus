@@ -8,10 +8,10 @@ toc = true
 tocheading = "h2"
 tags = ["api", "sdk"]
 categories = ["docs"]
-bref = "用 cargo add 添加 speedle 0.1.0，再向本地 Speedle 或 Speedle Cloud 调用 is_allowed 与 check。"
+bref = "用 cargo add 添加 speedle 0.2.0，再向本地 Speedle 或 Speedle Cloud 调用 is_allowed 与 check。"
 +++
 
-Rust SDK 需要 Rust 1.75 或更高版本，基于 `tokio` 和 `reqwest`（rustls）实现异步调用；下面使用的阻塞客户端由 `blocking` 特性提供。crate：crates.io 上的 [`speedle`](https://crates.io/crates/speedle) 0.1.0。参考文档：[speedle-sdk/rust](https://github.com/teramoby/speedle-sdk/tree/main/rust)。
+Rust SDK 需要 Rust 1.75 或更高版本，基于 `tokio` 和 `reqwest`（rustls）实现异步调用；下面使用的阻塞客户端由 `blocking` 特性提供。crate：crates.io 上的 [`speedle`](https://crates.io/crates/speedle) 0.2.0。参考文档：[speedle-sdk/rust](https://github.com/teramoby/speedle-sdk/tree/main/rust)。
 
 示例检查的策略见 [SDK 概览](/docs/sdks/#示例策略)。
 
@@ -22,7 +22,7 @@ Rust SDK 需要 Rust 1.75 或更高版本，基于 `tokio` 和 `reqwest`（rustl
 ```bash
 cargo new speedle-example
 cd speedle-example
-cargo add speedle@0.1.0 --features blocking
+cargo add speedle@0.2.0 --features blocking
 ```
 
 ## 调用本地 Speedle
@@ -41,7 +41,7 @@ fn main() {
 }
 
 fn run() -> Result<(), speedle::Error> {
-    let speedle = Client::builder(Backend::SpeedlePlus, "http://localhost:6734", Auth::none(), "docs").build()?;
+    let speedle = Client::builder(Backend::Speedle, "http://localhost:6734", Auth::none(), "docs").build()?;
 
     let allowed = speedle.is_allowed(&"alice".into(), "get", "/docs/public", &[])?;
     println!("alice get /docs/public: allowed={allowed}");

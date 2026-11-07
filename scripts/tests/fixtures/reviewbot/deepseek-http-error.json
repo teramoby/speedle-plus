@@ -1,0 +1,8 @@
+{
+  "error": {
+    "message": "PRIVATE_ERROR",
+    "type": "authentication_error",
+    "param": null,
+    "code": "invalid_request_error"
+  }
+}

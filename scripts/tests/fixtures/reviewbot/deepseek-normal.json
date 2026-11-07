@@ -1,0 +1,27 @@
+{
+  "id": "chatcmpl-fixture-normal",
+  "object": "chat.completion",
+  "created": 1793084842,
+  "model": "deepseek-flash",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "reasoning_content": "PRIVATE_REASONING",
+        "content": "Fixture review: no actionable findings."
+      },
+      "logprobs": null,
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 100,
+    "completion_tokens": 225,
+    "total_tokens": 325,
+    "prompt_tokens_details": {"cached_tokens": 0},
+    "prompt_cache_hit_tokens": 0,
+    "prompt_cache_miss_tokens": 100,
+    "completion_tokens_details": {"reasoning_tokens": 200}
+  }
+}

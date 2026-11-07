@@ -149,7 +149,7 @@
 <div id="main">
 
   <h1>C#/.NET SDK</h1>
-  <p class="docs-lead">用 dotnet add package 添加 Speedle.Sdk 0.1.0，再向本地 Speedle 或 Speedle Cloud 调用 IsAllowedAsync 与 CheckAsync。</p>
+  <p class="docs-lead">用 dotnet add package 添加 Speedle.Sdk 0.2.0，再向本地 Speedle 或 Speedle Cloud 调用 IsAllowedAsync 与 CheckAsync。</p>
 
 
 
@@ -162,7 +162,7 @@
 
   <div id="kube-component" class="content">
 
-<p>.NET SDK 面向 .NET 8 或更高版本，没有依赖。软件包：NuGet 上的 <a href="https://www.nuget.org/packages/Speedle.Sdk"><code>Speedle.Sdk</code></a> 0.1.0，命名空间 <code>Speedle.Sdk</code>。参考文档：<a href="https://github.com/teramoby/speedle-sdk/tree/main/dotnet">speedle-sdk/dotnet</a>。</p>
+<p>.NET SDK 面向 .NET 8 或更高版本，没有依赖。软件包：NuGet 上的 <a href="https://www.nuget.org/packages/Speedle.Sdk"><code>Speedle.Sdk</code></a> 0.2.0，命名空间 <code>Speedle.Sdk</code>。参考文档：<a href="https://github.com/teramoby/speedle-sdk/tree/main/dotnet">speedle-sdk/dotnet</a>。</p>
 
 <p>示例检查的策略见 <a href="/zh/docs/sdks/#示例策略">SDK 概览</a>。</p>
 
@@ -171,7 +171,7 @@
 <p>新建控制台项目并添加软件包：</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">dotnet new console -o SpeedleExample
 <span style="color:#8be9fd;font-style:italic">cd</span> SpeedleExample
-dotnet add package Speedle.Sdk --version <span style="color:#bd93f9">0</span>.1.0</code></pre></div>
+dotnet add package Speedle.Sdk --version <span style="color:#bd93f9">0</span>.2.0</code></pre></div>
 <h2 id="调用本地-speedle">调用本地 Speedle</h2>
 
 <p>按 <a href="/zh/docs/sdks/#示例策略">SDK 概览</a>中的说明启动 Speedle 并创建示例策略。将 <code>Program.cs</code> 替换为：</p>
@@ -181,7 +181,7 @@ dotnet add package Speedle.Sdk --version <span style="color:#bd93f9">0</span>.1.
 {
     <span style="color:#ff79c6">await</span> <span style="color:#ff79c6">using</span> var speedle = <span style="color:#ff79c6">new</span> SpeedleClient(<span style="color:#ff79c6">new</span> SpeedleClientOptions
     {
-        Backend = Backend.SpeedlePlus,
+        Backend = Backend.Speedle,
         Endpoint = <span style="color:#ff79c6">new</span> Uri(<span style="color:#f1fa8c">&#34;http://localhost:6734&#34;</span>),
         Auth = Auth.None(),
         ServiceName = <span style="color:#f1fa8c">&#34;docs&#34;</span>,

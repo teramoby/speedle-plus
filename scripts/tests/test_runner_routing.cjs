@@ -241,7 +241,8 @@ test('fixture job installs pinned Node 22 before running Node regression suites'
   assert.match(preflight, /\*\) echo 'Unexpected runner.' >&2; exit 1 ;;/);
   for (const tool of ['git', 'curl', 'jq', 'python3']) assert.ok(preflight.includes(tool));
   assert.ok(preflight.includes('https://ark.cn-beijing.volces.com/api/plan/v3/responses'));
-  assert.doesNotMatch(preflight, /Authorization|ARK_API_KEY|--data|--request\s+POST/);
+  assert.ok(preflight.includes('https://api.deepseek.com/chat/completions'));
+  assert.doesNotMatch(preflight, /Authorization|ARK_API_KEY|DEEPSEEK_API_KEY|--data|--request\s+POST/);
 });
 
 test('Fiona trial runs the complete nightly script with host isolation and separate artifacts', () => {

@@ -149,7 +149,7 @@
 <div id="main">
 
   <h1>Node.js/TypeScript SDK</h1>
-  <p class="docs-lead">@speedle/sdk 0.1.0 发布后用 npm 安装，再向本地 Speedle 或 Speedle Cloud 调用 isAllowed 与 check。</p>
+  <p class="docs-lead">@speedle/sdk 0.2.0 发布后用 npm 安装，再向本地 Speedle 或 Speedle Cloud 调用 isAllowed 与 check。</p>
 
 
 
@@ -162,7 +162,7 @@
 
   <div id="kube-component" class="content">
 
-<p>Node.js SDK 需要 Node.js 22 或更高版本，同时提供 ESM 和 CommonJS 构建及 TypeScript 类型，没有运行时依赖。软件包：npm 上的 <a href="https://www.npmjs.com/package/@speedle/sdk"><code>@speedle/sdk</code></a> 0.1.0，<strong>发布后可用</strong>。参考文档：<a href="https://github.com/teramoby/speedle-sdk/tree/main/node">speedle-sdk/node</a>。</p>
+<p>Node.js SDK 需要 Node.js 22 或更高版本，同时提供 ESM 和 CommonJS 构建及 TypeScript 类型，没有运行时依赖。软件包：npm 上的 <a href="https://www.npmjs.com/package/@speedle/sdk"><code>@speedle/sdk</code></a> 0.2.0，<strong>发布后可用</strong>。参考文档：<a href="https://github.com/teramoby/speedle-sdk/tree/main/node">speedle-sdk/node</a>。</p>
 
 <p>示例检查的策略见 <a href="/zh/docs/sdks/#示例策略">SDK 概览</a>。</p>
 
@@ -173,7 +173,7 @@
 <span style="color:#8be9fd;font-style:italic">cd</span> speedle-example
 npm init -y
 npm pkg <span style="color:#8be9fd;font-style:italic">set</span> <span style="color:#8be9fd;font-style:italic">type</span><span style="color:#ff79c6">=</span>module
-npm install @speedle/sdk@0.1.0</code></pre></div>
+npm install @speedle/sdk@0.2.0</code></pre></div>
 <h2 id="调用本地-speedle">调用本地 Speedle</h2>
 
 <p>按 <a href="/zh/docs/sdks/#示例策略">SDK 概览</a>中的说明启动 Speedle 并创建示例策略。将以下程序保存为 <code>main.ts</code>：</p>
@@ -181,7 +181,7 @@ npm install @speedle/sdk@0.1.0</code></pre></div>
 
 <span style="color:#ff79c6">try</span> {
   <span style="color:#ff79c6">const</span> speedle <span style="color:#ff79c6">=</span> <span style="color:#ff79c6">new</span> SpeedleClient({
-    backend<span style="color:#ff79c6">:</span> <span style="color:#f1fa8c">&#34;speedle-plus&#34;</span>,
+    backend<span style="color:#ff79c6">:</span> <span style="color:#f1fa8c">&#34;speedle&#34;</span>,
     endpoint<span style="color:#ff79c6">:</span> <span style="color:#f1fa8c">&#34;http://localhost:6734&#34;</span>,
     auth: <span style="color:#8be9fd">Auth.none</span>(),
     serviceName<span style="color:#ff79c6">:</span> <span style="color:#f1fa8c">&#34;docs&#34;</span>,

@@ -15,7 +15,7 @@ Speedle SDK 是决策 API `POST /authz-check/v1/is-allowed` 的客户端库，�
 
 ## 软件包
 
-所有软件包的版本均为 0.1.0，安装命令见各语言页面。
+所有软件包的版本均为 0.2.0，安装命令见各语言页面。
 
 - [Java](/docs/sdks/java/)：Maven Central `io.speedle:speedle-sdk`，已发布。
 - [Python](/docs/sdks/python/)：PyPI `speedle`，已发布。

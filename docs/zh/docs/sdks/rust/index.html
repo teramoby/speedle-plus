@@ -149,7 +149,7 @@
 <div id="main">
 
   <h1>Rust SDK</h1>
-  <p class="docs-lead">用 cargo add 添加 speedle 0.1.0，再向本地 Speedle 或 Speedle Cloud 调用 is_allowed 与 check。</p>
+  <p class="docs-lead">用 cargo add 添加 speedle 0.2.0，再向本地 Speedle 或 Speedle Cloud 调用 is_allowed 与 check。</p>
 
 
 
@@ -162,7 +162,7 @@
 
   <div id="kube-component" class="content">
 
-<p>Rust SDK 需要 Rust 1.75 或更高版本，基于 <code>tokio</code> 和 <code>reqwest</code>（rustls）实现异步调用；下面使用的阻塞客户端由 <code>blocking</code> 特性提供。crate：crates.io 上的 <a href="https://crates.io/crates/speedle"><code>speedle</code></a> 0.1.0。参考文档：<a href="https://github.com/teramoby/speedle-sdk/tree/main/rust">speedle-sdk/rust</a>。</p>
+<p>Rust SDK 需要 Rust 1.75 或更高版本，基于 <code>tokio</code> 和 <code>reqwest</code>（rustls）实现异步调用；下面使用的阻塞客户端由 <code>blocking</code> 特性提供。crate：crates.io 上的 <a href="https://crates.io/crates/speedle"><code>speedle</code></a> 0.2.0。参考文档：<a href="https://github.com/teramoby/speedle-sdk/tree/main/rust">speedle-sdk/rust</a>。</p>
 
 <p>示例检查的策略见 <a href="/zh/docs/sdks/#示例策略">SDK 概览</a>。</p>
 
@@ -171,7 +171,7 @@
 <p>新建包并添加依赖：</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">cargo new speedle-example
 <span style="color:#8be9fd;font-style:italic">cd</span> speedle-example
-cargo add speedle@0.1.0 --features blocking</code></pre></div>
+cargo add speedle@0.2.0 --features blocking</code></pre></div>
 <h2 id="调用本地-speedle">调用本地 Speedle</h2>
 
 <p>按 <a href="/zh/docs/sdks/#示例策略">SDK 概览</a>中的说明启动 Speedle 并创建示例策略。将 <code>src/main.rs</code> 替换为：</p>
@@ -186,7 +186,7 @@ cargo add speedle@0.1.0 --features blocking</code></pre></div>
 }
 
 <span style="color:#ff79c6">fn</span> <span style="color:#50fa7b">run</span>() -&gt; <span style="color:#8be9fd;font-style:italic">Result</span><span style="color:#ff79c6">&lt;</span>(), speedle::Error<span style="color:#ff79c6">&gt;</span> {
-    <span style="color:#8be9fd;font-style:italic">let</span> speedle <span style="color:#ff79c6">=</span> Client::builder(Backend::SpeedlePlus, <span style="color:#f1fa8c">&#34;http://localhost:6734&#34;</span>, Auth::none(), <span style="color:#f1fa8c">&#34;docs&#34;</span>).build()<span style="color:#ff79c6">?</span>;
+    <span style="color:#8be9fd;font-style:italic">let</span> speedle <span style="color:#ff79c6">=</span> Client::builder(Backend::Speedle, <span style="color:#f1fa8c">&#34;http://localhost:6734&#34;</span>, Auth::none(), <span style="color:#f1fa8c">&#34;docs&#34;</span>).build()<span style="color:#ff79c6">?</span>;
 
     <span style="color:#8be9fd;font-style:italic">let</span> allowed <span style="color:#ff79c6">=</span> speedle.is_allowed(<span style="color:#ff79c6">&amp;</span><span style="color:#f1fa8c">&#34;alice&#34;</span>.into(), <span style="color:#f1fa8c">&#34;get&#34;</span>, <span style="color:#f1fa8c">&#34;/docs/public&#34;</span>, <span style="color:#ff79c6">&amp;</span>[])<span style="color:#ff79c6">?</span>;
     println<span style="color:#ff79c6">!</span>(<span style="color:#f1fa8c">&#34;alice get /docs/public: allowed={allowed}&#34;</span>);
