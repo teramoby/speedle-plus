@@ -2,13 +2,14 @@
 """Execute the actual English/Chinese quick-start shell blocks against native services.
 
 The documented `go install` route runs once into a temporary GOBIN, its module
-path and version pattern are checked against the checkout, and the installed
-binaries must accept the flags used by the guide. A public shallow clone verifies
-the download step; CI then checks out the captured candidate revision before
-compiling. Linux runs the native services and clients in unprivileged
-user/network/PID namespaces, using the exact documented ports without
-conflicting with existing services. On macOS, alternate REST ports and a shared
-lock isolate fixture services; occupied gRPC ports are rejected.
+path and version pattern are checked against the checkout, the installed
+binaries must accept the flags used by the guide, and one documented walkthrough
+runs with those installed binaries. A public shallow clone verifies the download
+step; CI then checks out the captured candidate revision before compiling. Linux
+runs the native services and clients in unprivileged user/network/PID
+namespaces, using the exact documented ports without conflicting with existing
+services. On macOS, alternate REST ports and a shared lock isolate fixture
+services; occupied gRPC ports are rejected.
 """
 import argparse
 import contextlib
@@ -132,9 +133,10 @@ def stop(process):
 
 def verify_install_route(env):
     """Run the documented go install route once, not once per locale."""
-    english = dict(blocks(ROOT / "docs/hugo/content/quick-start.md"))["install"]
-    chinese = dict(blocks(ROOT / "docs/hugo/content/quick-start.zh.md"))["install"]
-    assert english == chinese, "install command drift between English and Chinese"
+    english_steps = blocks(ROOT / "docs/hugo/content/quick-start.md")
+    chinese_steps = blocks(ROOT / "docs/hugo/content/quick-start.zh.md")
+    english = dict(english_steps)["install"]
+    assert english == dict(chinese_steps)["install"], "install command drift between English and Chinese"
     match = INSTALL.fullmatch(english)
     assert match, english
     module, version = match.groups()
@@ -150,7 +152,15 @@ def verify_install_route(env):
             usage = help_text(path, work, env)
             for flag in flags:
                 assert flag in usage, (binary, flag, usage)
-    print(f"PASS documented go install route ({module}@{version}); installed binaries accept the documented flags", flush=True)
+        print(f"PASS documented go install route ({module}@{version}); installed binaries accept the documented flags", flush=True)
+        # One documented walkthrough with the installed release binaries: --help
+        # alone does not prove the guide works with either route.
+        route_a = work / "route-a"
+        (route_a / "bin").mkdir(parents=True)
+        for binary in INSTALLED_FLAGS:
+            shutil.copy2(work / "bin" / binary, route_a / "bin" / binary)
+        exercise("en", english_steps, route_a, env)
+        print(f"PASS documented walkthrough with installed {module}@{version} binaries", flush=True)
 
 
 def verify(locale, toolchain, env):
