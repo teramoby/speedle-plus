@@ -317,6 +317,15 @@ const homes = {'/': 'Speedle Engine — Fast. Simple. Access control', '/zh/': '
   assert.ok(title, `Page title in ${route}`);
   assert.ok(!/[.。]$/.test(title), `No trailing full stop in the title of ${route}`);
   assert.equal(contentOf(html, /<meta property="og:title" content="([^"]*)">/), title, `og:title follows title in ${route}`);
+  const canonical = contentOf(html, /<link rel="canonical" href="([^"]+)">/);
+  assert.ok(canonical, `Canonical in ${route}`);
+  assert.equal(contentOf(html, /<meta property="og:url" content="([^"]+)">/), canonical, `og:url follows canonical in ${route}`);
+  const target = new URL(canonical);
+  const enPath = zh ? (target.pathname.replace(/^\/zh/, '') || '/') : target.pathname;
+  const zhPath = zh ? target.pathname : '/zh' + (target.pathname === '/' ? '/' : target.pathname);
+  for (const [language, href] of [['en', target.origin + enPath], ['zh-CN', target.origin + zhPath], ['x-default', target.origin + enPath]]) {
+   assert.ok(html.includes(`<link rel="alternate" hreflang="${language}" href="${href}">`), `hreflang ${language} in ${route}`);
+  }
   const image = `https://engine.speedle.io/img/social/engine-${zh ? 'zh' : 'en'}.png`;
   for (const tag of [`<meta property="og:image" content="${image}">`, `<meta name="twitter:image" content="${image}">`,
    '<meta name="twitter:card" content="summary_large_image">']) assert.ok(html.includes(tag), `${tag} in ${route}`);
@@ -347,7 +356,8 @@ function checkDocsStructuredData(directory, zh) {
   assert.ok(article && article.inLanguage === (zh ? 'zh-CN' : 'en'), `Article node and language in ${canonical}`);
   assert.ok(article['@id'].endsWith(article['@type'] === 'TechArticle' ? '#article' : '#webpage'), `Article id in ${canonical}`);
   assert.ok(article.image === `https://engine.speedle.io/img/social/engine-${zh ? 'zh' : 'en'}.png` && article.author?.name === 'Speedle', `Article image and author in ${canonical}`);
-  assert.ok(article.datePublished && article.publisher?.logo?.width === 180, `Article dates and publisher logo in ${canonical}`);
+  assert.ok(article.dateModified && article.publisher?.logo?.width === 180, `Article modification date and publisher logo in ${canonical}`);
+  if (article.datePublished) assert.ok(Date.parse(article.datePublished) <= Date.parse(article.dateModified), `datePublished is not after dateModified in ${canonical}`);
   const breadcrumb = nodes.find(node => node['@type'] === 'BreadcrumbList');
   assert.ok(breadcrumb && breadcrumb.itemListElement.length >= 2, `BreadcrumbList in ${canonical}`);
   assert.equal(breadcrumb.itemListElement[0].name, zh ? '首页' : 'Home', `Breadcrumb starts at the home page in ${canonical}`);
