@@ -2,6 +2,8 @@
 # binary for each target architecture and data/.keep, so the unprivileged user
 # owns a writable directory for the file store.
 FROM scratch
+# Link the GHCR package to this repository so its permissions are manageable.
+LABEL org.opencontainers.image.source="https://github.com/teramoby/speedle-plus"
 ARG TARGETARCH
 COPY --chown=65532:65532 data/ /data/
 COPY speedle-pms-linux-${TARGETARCH} /speedle-pms
