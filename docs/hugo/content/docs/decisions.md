@@ -124,3 +124,5 @@ REST request attributes are typed objects in an array. For example, an attribute
 ```
 
 Embedded Go attributes are `map[string]interface{}`; diagnostic response attributes are also an object, not that request array. See [SPDL](/docs/spdl/) for types and conditions, [diagnosis](/docs/pms/diagnosis/) for evaluation detail, and [token assertion](/docs/assertor/) for configured token validation.
+
+The policy enforcement point (PEP) must supply every custom attribute your policies reference (built-in attributes such as `request_user` and `request_time` are provided by ADS); a condition on an attribute missing from the request does not match.

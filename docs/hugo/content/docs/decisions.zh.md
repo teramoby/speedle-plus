@@ -124,3 +124,5 @@ REST 请求属性是带类型的对象数组。例如，其中一个属性对象
 ```
 
 嵌入式 Go 使用 `map[string]interface{}`。诊断响应的属性也是对象，不能与请求属性数组混淆。属性类型与条件见 [SPDL](/docs/spdl/)，过程明细见[授权诊断](/docs/pms/diagnosis/)，令牌校验见[令牌断言](/docs/assertor/)。
+
+PEP 必须传入策略用到的所有自定义属性（`request_user`、`request_time` 等内置属性由 ADS 自动提供）；请求里缺少的属性，相关条件不匹配。
