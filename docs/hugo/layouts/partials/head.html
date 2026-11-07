@@ -1,5 +1,5 @@
 {{- $description := .Description -}}
-{{- if not $description }}{{ $description = .Summary | plainify | truncate 200 }}{{ end -}}
+{{- if and (not $description) .IsPage }}{{ $description = .Summary | plainify | truncate 200 }}{{ end -}}
 {{- if not $description }}{{ $description = .Site.Params.description }}{{ end -}}
 {{- $title := "Speedle Engine" -}}
 {{- if .IsHome -}}
