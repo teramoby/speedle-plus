@@ -6,6 +6,7 @@
     <description>Recent content in Pluggable on Speedle</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>zh-cn</language>
+    <lastBuildDate>Sat, 31 Oct 2026 22:36:36 +0800</lastBuildDate>
     
 	<atom:link href="https://engine.speedle.io/zh/tags/pluggable/index.xml" rel="self" type="application/rss+xml" />
     
@@ -24,7 +25,7 @@
     <item>
       <title>存储扩展</title>
       <link>https://engine.speedle.io/zh/docs/store/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <pubDate>Sat, 31 Oct 2026 22:36:36 +0800</pubDate>
       
       <guid>https://engine.speedle.io/zh/docs/store/</guid>
       <description>内置存储与扩展接口 独立服务在 pkg/store 下注册 file、etcd、MongoDB、MySQL 实现。可用不代表具有相同的运维保证，部署前应分别审查后端认证、持久化、事务与 watch 行为。下方配置说明属性名称，本地示例不涉及启动 etcd/MongoDB 集群。

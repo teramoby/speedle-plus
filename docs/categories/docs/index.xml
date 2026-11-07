@@ -6,7 +6,7 @@
     <description>Recent content in Docs on Speedle</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
-    <lastBuildDate>Fri, 18 Jan 2019 21:19:44 +0800</lastBuildDate>
+    <lastBuildDate>Fri, 06 Nov 2026 18:12:13 +0800</lastBuildDate>
     
 	<atom:link href="https://engine.speedle.io/categories/docs/index.xml" rel="self" type="application/rss+xml" />
     
@@ -14,7 +14,7 @@
     <item>
       <title>API</title>
       <link>https://engine.speedle.io/docs/api/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <pubDate>Fri, 06 Nov 2026 18:12:13 +0800</pubDate>
       
       <guid>https://engine.speedle.io/docs/api/</guid>
       <description>Client libraries for Java, Python, Go, .NET, Rust and Node.js/TypeScript are in SDKs.
@@ -174,7 +174,7 @@ mkdir speedle-example cd speedle-example npm init -y npm pkg set type=module npm
     <item>
       <title>Pluggable Storage</title>
       <link>https://engine.speedle.io/docs/store/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <pubDate>Sat, 31 Oct 2026 22:36:36 +0800</pubDate>
       
       <guid>https://engine.speedle.io/docs/store/</guid>
       <description>Built-in stores and extension contracts The standalone binaries register file, etcd, MongoDB and MySQL implementations under pkg/store. Availability does not mean identical operational guarantees; review backend authentication, persistence, transaction and watch behavior for your deployment. The configuration below illustrates property names; running etcd/MongoDB deployments is outside this local example.
@@ -215,7 +215,7 @@ python3 -m venv .venv . .venv/bin/activate pip install speedle==0.2.0 Or with uv
     <item>
       <title>Speedle Policy</title>
       <link>https://engine.speedle.io/docs/pms/</link>
-      <pubDate>Fri, 18 Jan 2019 21:19:44 +0800</pubDate>
+      <pubDate>Wed, 28 Oct 2026 13:16:58 +0000</pubDate>
       
       <guid>https://engine.speedle.io/docs/pms/</guid>
       <description> Policy Management Global Policy Policy Discovery Policy Diagnosis  </description>
@@ -279,7 +279,7 @@ The Token Assertion Plugin API uses integer errCode and an optional attribute ob
     <item>
       <title>SDKs</title>
       <link>https://engine.speedle.io/docs/sdks/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <pubDate>Sat, 07 Nov 2026 19:43:15 +0800</pubDate>
       
       <guid>https://engine.speedle.io/docs/sdks/</guid>
       <description>The Speedle SDKs are client libraries for the decision API POST /authz-check/v1/is-allowed. They work with a self-hosted Speedle ADS and with Speedle Cloud. Each language page shows how to add the package and gives a complete, tested program for both. The source and the full reference are in teramoby/speedle-sdk.
@@ -300,7 +300,7 @@ TLS encrypts the connection and authenticates the server. To require authenticat
     <item>
       <title>Speedle Cloud</title>
       <link>https://engine.speedle.io/docs/cloud/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <pubDate>Sat, 07 Nov 2026 00:06:57 +0800</pubDate>
       
       <guid>https://engine.speedle.io/docs/cloud/</guid>
       <description>Speedle Cloud is a hosted access-control service for developers, built on the open-source Speedle policy engine. At launch, you will be able to create a service, write and import SPDL authorization and role policies in the console, test decisions in the Playground, and call the authorization API from your application server without operating your own authorization service.
@@ -341,7 +341,7 @@ Security and endpoint configuration. This is a contract reference, not a backend
     <item>
       <title>Integrations</title>
       <link>https://engine.speedle.io/integrations/</link>
-      <pubDate>Mon, 10 Apr 2017 16:41:54 +0100</pubDate>
+      <pubDate>Wed, 28 Oct 2026 14:21:03 +0000</pubDate>
       
       <guid>https://engine.speedle.io/integrations/</guid>
       <description></description>
@@ -361,7 +361,7 @@ Security and endpoint configuration. This is a contract reference, not a backend
     <item>
       <title>Speedle Documents</title>
       <link>https://engine.speedle.io/docs/</link>
-      <pubDate>Thu, 17 Jan 2019 13:20:07 +0800</pubDate>
+      <pubDate>Wed, 28 Oct 2026 13:16:58 +0000</pubDate>
       
       <guid>https://engine.speedle.io/docs/</guid>
       <description></description>

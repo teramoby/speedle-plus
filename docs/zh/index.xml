@@ -6,7 +6,7 @@
     <description>Recent content in Speedle 强大易用的权限控制引擎 on Speedle</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>zh-cn</language>
-    <lastBuildDate>Fri, 18 Jan 2019 21:19:44 +0800</lastBuildDate>
+    <lastBuildDate>Wed, 27 May 2020 07:48:20 +0800</lastBuildDate>
     
 	<atom:link href="https://engine.speedle.io/zh/index.xml" rel="self" type="application/rss+xml" />
     
@@ -116,21 +116,6 @@ curl --fail --silent --show-error -H &amp;#39;Content-Type: application/json&amp
       <description>基本的策略定义语言 保留关键字 grant、deny、user、group、entity、role、from、on、if、in 在各自语法位置有特定含义，策略语句的关键字大小写不敏感；条件成员运算使用 in 或 IN，函数名区分大小写。主体、操作和资源名称也区分大小写。当前解析器在部分名称位置可接受类似关键字的名称，不能把“所有位置都禁止关键字”当作验证规则。为便于审查与客户端互通，建议避免这类名称。
 命名规范 推荐使用简明、稳定的标识符；名称包含空格或分隔符时使用解析器支持的单引号或双引号形式，并测试实际输入。不应把历史 Java 正则字符类当作当前 Go 解析器的严格校验。资源前缀 expr: 表示 Go 正则表达式，不是 shell 通配符。条件的属性与函数名称另见下文。
 语法  POLICY = EFFECT SUBJECT ACTION RESOURCE [if CONDITION] EFFECT = grant | deny SUBJECT = AND_PRINCIPALS (, AND_PRINCIPALS)* AND_PRINCIPALS = PRINCIPAL | \( PRINCIPAL_LIST \) PRINCIPAL_LIST = PRINCIPAL (, PRINCIPAL)* PRINCIPAL = PRINCIPAL_TYPE PRINCIPAL_NAME [PRINCIPAL_IDD] PRINCIPAL_TYPE = user|group|entity|role PRINCIPAL_IDD = from IDD_IDENTIFIER IDD_IDENTIFIER = NAME ACTION = (ACTION_IDENTIFIER)(, ACTION_IDENTIFIER)* RESOURCE = RESOURCE_IDENTIFIER PRINCIPAL_NAME = NAME ACTION_IDENTIFIER = NAME RESOURCE_IDENTIFIER = NAME   ROLE_POLICY = EFFECT SUBJECT ROLE (on RESOURCE)?</description>
-    </item>
-    
-    <item>
-      <title>为什么选择 Speedle？</title>
-      <link>https://engine.speedle.io/zh/blog/what-is-speedle/</link>
-      <pubDate>Thu, 02 Mar 2017 21:56:55 +0100</pubDate>
-      
-      <guid>https://engine.speedle.io/zh/blog/what-is-speedle/</guid>
-      <description> 是什么，为什么？ 一些思考： 授权并不是新概念，软件一直在使用它。不同系统陆续形成了各自的授权方案，例如 Kubernetes、Istio 和各种 IAM 系统；本地应用可能还在使用其他方案。当应用逐渐采用混合部署、跨环境工作负载或不同云厂商时，如何跟踪和管理分散在这些系统中的策略与身份？Speedle 通过多种集成方式提供集中管理，还可以根据服务间的交互实时发现相关策略，并快速执行决策。
-早期内容 有三个问题想请你考虑。
- 你的系统需要授权吗？如果不需要，就不需要 Speedle。 如果需要，你是否希望自己设计策略模型并实现全部授权功能？如果更愿意自己实现一套授权方案，就不需要 Speedle。 如果你希望采用现有产品，可以比较下面几个选择。我们不会只告诉你 Speedle 具备灵活的策略模型、易用的策略语言、高效可扩展的决策引擎和活跃社区，而是希望你亲自评估并选择适合自己的方案。
- Ladon：项目地址 Casbin：项目地址 OPA：项目地址 Speedle：项目地址   如果你发现其他优秀方案，请告诉我们，我们很乐意把它加入列表。
-FooBar 链接示例 巧克力提拉米苏糕点。链接示例
-示例占位文字 苹果派、巧克力蛋糕、果冻糖霜和糖果。姜饼、糕点、水果蛋糕、松饼、巧克力棒和芝士蛋糕。糖渍李子、棒棒糖、糖果、柠檬糖和软糖。
-   RGB WMYN     红色 青色   绿色 品红色   黄色 黑色    </description>
     </item>
     
     <item>
@@ -250,18 +235,6 @@ mkdir speedle-embedded-demo cd speedle-embedded-demo go mod init example.com/spe
 git clone --depth 1 https://github.com/teramoby/speedle-plus.git cd speedle-plus mkdir -p bin go build -o ./bin/ ./cmd/spctl ./cmd/speedle-pms ./cmd/speedle-ads 生成的可执行文件为 bin/spctl、bin/speedle-pms 和 bin/speedle-ads。从源码根目录运行下面的本地示例，两个服务共享同一策略文件：
 ./bin/speedle-pms --store-type file --filestore-loc ./docs-policies.json --endpoint 127.0.0.1:6733 --insecure=true 保持 PMS 运行，在同一源码目录的另一个终端启动 ADS：
 ./bin/speedle-ads --store-type file --filestore-loc .</description>
-    </item>
-    
-    <item>
-      <title>实时策略发现</title>
-      <link>https://engine.speedle.io/zh/blog/discovery/</link>
-      <pubDate>Thu, 02 Mar 2017 21:56:55 +0100</pubDate>
-      
-      <guid>https://engine.speedle.io/zh/blog/discovery/</guid>
-      <description> 是什么，为什么？ 一些思考：
-FooBar 链接示例 巧克力提拉米苏糕点。链接示例
-示例占位文字 苹果派、巧克力蛋糕、果冻糖霜和糖果。姜饼、糕点、水果蛋糕、松饼、巧克力棒和芝士蛋糕。糖渍李子、棒棒糖、糖果、柠檬糖和软糖。
-   RGB WMYN     红色 青色   绿色 品红色   黄色 黑色    </description>
     </item>
     
     <item>
@@ -523,15 +496,6 @@ Speedle 开源版本包括：
     </item>
     
     <item>
-      <title>开发者指南</title>
-      <link>https://engine.speedle.io/zh/developer/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://engine.speedle.io/zh/developer/</guid>
-      <description> 待完善 策略管理员 了解 SPDL 基础并建立策略模型 部署应用 使用策略发现模式 使用策略管理服务 API    应用开发者 了解 SPDL 基础 策略管理服务 API 授权决策服务 API 令牌断言 API    </description>
-    </item>
-    
-    <item>
       <title>支持</title>
       <link>https://engine.speedle.io/zh/support/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
@@ -548,25 +512,6 @@ Does the world need one more policy engine? Well, please spend 15 minutes on Qui
       
       <guid>https://engine.speedle.io/zh/playground/</guid>
       <description></description>
-    </item>
-    
-    <item>
-      <title>运维指南</title>
-      <link>https://engine.speedle.io/zh/devops/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://engine.speedle.io/zh/devops/</guid>
-      <description> 待完善 策略调试？
-策略管理员 了解 SPDL 基础并建立策略模型 部署应用 使用策略发现模式 使用策略管理服务 API    应用开发者 了解 SPDL 基础 策略管理服务 API 授权决策服务 API 令牌断言 API    </description>
-    </item>
-    
-    <item>
-      <title>选择学习路线</title>
-      <link>https://engine.speedle.io/zh/tour/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://engine.speedle.io/zh/tour/</guid>
-      <description>开发者路线&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;运维路线  </description>
     </item>
     
   </channel>

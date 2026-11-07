@@ -6,6 +6,7 @@
     <description>Recent content in Sdk on Speedle</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>zh-cn</language>
+    <lastBuildDate>Sat, 07 Nov 2026 19:43:15 +0800</lastBuildDate>
     
 	<atom:link href="https://engine.speedle.io/zh/tags/sdk/index.xml" rel="self" type="application/rss+xml" />
     
@@ -92,7 +93,7 @@ use speedle::blocking::Client; use speedle::{Auth, Backend}; fn main() { if let 
     <item>
       <title>SDK</title>
       <link>https://engine.speedle.io/zh/docs/sdks/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <pubDate>Sat, 07 Nov 2026 19:43:15 +0800</pubDate>
       
       <guid>https://engine.speedle.io/zh/docs/sdks/</guid>
       <description>Speedle SDK 是决策 API POST /authz-check/v1/is-allowed 的客户端库，既可用于自托管的 Speedle ADS，也可用于 Speedle Cloud。每个语言页面说明如何添加软件包，并分别给出两种场景下经过实测的完整程序。源代码和完整参考见 teramoby/speedle-sdk。

@@ -6,7 +6,6 @@
     <description>Recent content in Discovery on Speedle</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>zh-cn</language>
-    <lastBuildDate>Thu, 02 Mar 2017 21:56:55 +0100</lastBuildDate>
     
 	<atom:link href="https://engine.speedle.io/zh/tags/discovery/index.xml" rel="self" type="application/rss+xml" />
     
@@ -25,18 +24,6 @@ printf &amp;#39;{}\n&amp;#39; &amp;gt; docs-policies.json 终端一：
 curl --fail --silent --show-error -H &amp;#39;Content-Type: application/json&amp;#39; \  -d &amp;#39;{&amp;#34;subject&amp;#34;:{&amp;#34;principals&amp;#34;:[{&amp;#34;type&amp;#34;:&amp;#34;user&amp;#34;,&amp;#34;name&amp;#34;:&amp;#34;alice&amp;#34;}]},&amp;#34;serviceName&amp;#34;:&amp;#34;observed&amp;#34;,&amp;#34;resource&amp;#34;:&amp;#34;book&amp;#34;,&amp;#34;action&amp;#34;:&amp;#34;read&amp;#34;}&amp;#39; \  http://127.0.0.1:6734/authz-check/v1/discover 检查记录的请求，再生成待审核的服务定义：
 ./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ discover request --service-name observed ./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ discover policy --service-name observed &amp;gt; discovered-service.json 审核 discovered-service.json 中的角色、身份域和资源。本例尚不存在名为 observed 的策略服务，因此可以直接导入；已有同名服务时应合并和审核其策略，而不是直接重复创建。
 ./bin/spctl --pms-endpoint http://127.</description>
-    </item>
-    
-    <item>
-      <title>实时策略发现</title>
-      <link>https://engine.speedle.io/zh/blog/discovery/</link>
-      <pubDate>Thu, 02 Mar 2017 21:56:55 +0100</pubDate>
-      
-      <guid>https://engine.speedle.io/zh/blog/discovery/</guid>
-      <description> 是什么，为什么？ 一些思考：
-FooBar 链接示例 巧克力提拉米苏糕点。链接示例
-示例占位文字 苹果派、巧克力蛋糕、果冻糖霜和糖果。姜饼、糕点、水果蛋糕、松饼、巧克力棒和芝士蛋糕。糖渍李子、棒棒糖、糖果、柠檬糖和软糖。
-   RGB WMYN     红色 青色   绿色 品红色   黄色 黑色    </description>
     </item>
     
   </channel>

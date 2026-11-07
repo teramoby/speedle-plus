@@ -6,7 +6,7 @@
     <description>Recent content in Guide on Speedle</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
-    <lastBuildDate>Fri, 18 Jan 2019 21:19:44 +0800</lastBuildDate>
+    <lastBuildDate>Fri, 06 Nov 2026 18:12:13 +0800</lastBuildDate>
     
 	<atom:link href="https://engine.speedle.io/tags/guide/index.xml" rel="self" type="application/rss+xml" />
     
@@ -14,7 +14,7 @@
     <item>
       <title>API</title>
       <link>https://engine.speedle.io/docs/api/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <pubDate>Fri, 06 Nov 2026 18:12:13 +0800</pubDate>
       
       <guid>https://engine.speedle.io/docs/api/</guid>
       <description>Client libraries for Java, Python, Go, .NET, Rust and Node.js/TypeScript are in SDKs.
@@ -31,25 +31,6 @@ REST APIs These are reference contracts for your configured PMS/ADS or asserter 
       <description>Reference for your configured ADS. Request attributes are typed arrays; diagnostic attributes are objects.
 Security and endpoint configuration. This is a contract reference, not a backend hosted by speedle.io.
               (function() { var url = &#34;\/swagger\/policy-check.yaml&#34;; const ui = SwaggerUIBundle({ url: url, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.presets.apis ], plugins: [ SwaggerUIBundle.plugins.DownloadUrl ], validatorUrl: null, layout: &#34;</description>
-    </item>
-    
-    <item>
-      <title>Developer Track</title>
-      <link>https://engine.speedle.io/developer/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://engine.speedle.io/developer/</guid>
-      <description> TBD Policy Administrator Understand the basics of SPDL to model policies Deploy your Application Leverage Policy Discovery Mode Use the Policy Management Service API    Application Developer Understand the basics of SPDL Policy Management Service API Authorization Decision Service API Token Assertion API    </description>
-    </item>
-    
-    <item>
-      <title>Operator Track</title>
-      <link>https://engine.speedle.io/devops/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://engine.speedle.io/devops/</guid>
-      <description> TBD Policy Debug?
-Policy Administrator Understand the basics of SPDL to model policies Deploy your Application Leverage Policy Discovery Mode Use the Policy Management Service API    Application Developer Understand the basics of SPDL Policy Management Service API Authorization Decision Service API Token Assertion API    </description>
     </item>
     
     <item>
@@ -76,7 +57,7 @@ TLS encrypts the connection and authenticates the server. To require authenticat
     <item>
       <title>Speedle Policy</title>
       <link>https://engine.speedle.io/docs/pms/</link>
-      <pubDate>Fri, 18 Jan 2019 21:19:44 +0800</pubDate>
+      <pubDate>Wed, 28 Oct 2026 13:16:58 +0000</pubDate>
       
       <guid>https://engine.speedle.io/docs/pms/</guid>
       <description> Policy Management Global Policy Policy Discovery Policy Diagnosis  </description>

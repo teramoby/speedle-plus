@@ -4,6 +4,7 @@
   
   <url>
     <loc>https://engine.speedle.io/docs/pms/policy-mgmt/</loc>
+    <lastmod>2026-10-29T11:53:01+08:00</lastmod>
     <xhtml:link
                 rel="alternate"
                 hreflang="zh"
@@ -18,6 +19,7 @@
   
   <url>
     <loc>https://engine.speedle.io/docs/usecases/</loc>
+    <lastmod>2026-10-28T13:16:58+00:00</lastmod>
     <xhtml:link
                 rel="alternate"
                 hreflang="zh"
@@ -32,7 +34,7 @@
   
   <url>
     <loc>https://engine.speedle.io/docs/pms/global-policy/</loc>
-    <lastmod>2019-01-18T21:19:44+08:00</lastmod>
+    <lastmod>2026-10-29T11:53:01+08:00</lastmod>
     <xhtml:link
                 rel="alternate"
                 hreflang="zh"
@@ -47,6 +49,7 @@
   
   <url>
     <loc>https://engine.speedle.io/docs/overview/</loc>
+    <lastmod>2026-10-28T15:24:15+00:00</lastmod>
     <xhtml:link
                 rel="alternate"
                 hreflang="zh"
@@ -61,7 +64,7 @@
   
   <url>
     <loc>https://engine.speedle.io/docs/pms/diagnosis/</loc>
-    <lastmod>2019-01-18T15:46:59+08:00</lastmod>
+    <lastmod>2026-10-29T11:53:01+08:00</lastmod>
     <xhtml:link
                 rel="alternate"
                 hreflang="zh"
@@ -76,6 +79,7 @@
   
   <url>
     <loc>https://engine.speedle.io/docs/pms/discover/</loc>
+    <lastmod>2026-10-29T11:32:30+08:00</lastmod>
     <xhtml:link
                 rel="alternate"
                 hreflang="zh"
@@ -90,6 +94,7 @@
   
   <url>
     <loc>https://engine.speedle.io/docs/spdl/</loc>
+    <lastmod>2026-11-07T18:29:56+08:00</lastmod>
     <xhtml:link
                 rel="alternate"
                 hreflang="zh"
@@ -103,22 +108,8 @@
   </url>
   
   <url>
-    <loc>https://engine.speedle.io/blog/what-is-speedle/</loc>
-    <lastmod>2017-03-02T21:56:55+01:00</lastmod>
-    <xhtml:link
-                rel="alternate"
-                hreflang="zh"
-                href="https://engine.speedle.io/zh/blog/what-is-speedle/"
-                />
-    <xhtml:link
-                rel="alternate"
-                hreflang="en"
-                href="https://engine.speedle.io/blog/what-is-speedle/"
-                />
-  </url>
-  
-  <url>
     <loc>https://engine.speedle.io/docs/architecture/</loc>
+    <lastmod>2026-10-28T13:16:58+00:00</lastmod>
     <xhtml:link
                 rel="alternate"
                 hreflang="zh"
@@ -133,6 +124,7 @@
   
   <url>
     <loc>https://engine.speedle.io/contribute/</loc>
+    <lastmod>2026-11-06T12:19:39+08:00</lastmod>
     <xhtml:link
                 rel="alternate"
                 hreflang="zh"
@@ -147,6 +139,7 @@
   
   <url>
     <loc>https://engine.speedle.io/docs/cloud/getting-started/</loc>
+    <lastmod>2026-11-07T00:06:57+08:00</lastmod>
     <xhtml:link
                 rel="alternate"
                 hreflang="zh"
@@ -161,6 +154,7 @@
   
   <url>
     <loc>https://engine.speedle.io/docs/sdks/java/</loc>
+    <lastmod>2026-11-07T19:43:15+08:00</lastmod>
     <xhtml:link
                 rel="alternate"
                 hreflang="zh"
@@ -175,6 +169,7 @@
   
   <url>
     <loc>https://engine.speedle.io/docs/store/mysql/</loc>
+    <lastmod>2026-10-31T22:36:36+08:00</lastmod>
     <xhtml:link
                 rel="alternate"
                 hreflang="zh"
@@ -189,6 +184,7 @@
   
   <url>
     <loc>https://engine.speedle.io/quick-start/</loc>
+    <lastmod>2026-11-06T12:19:39+08:00</lastmod>
     <xhtml:link
                 rel="alternate"
                 hreflang="zh"
@@ -203,6 +199,7 @@
   
   <url>
     <loc>https://engine.speedle.io/docs/deployment-embeded/</loc>
+    <lastmod>2026-11-06T12:19:39+08:00</lastmod>
     <xhtml:link
                 rel="alternate"
                 hreflang="zh"
@@ -216,22 +213,8 @@
   </url>
   
   <url>
-    <loc>https://engine.speedle.io/blog/discovery/</loc>
-    <lastmod>2017-03-02T21:56:55+01:00</lastmod>
-    <xhtml:link
-                rel="alternate"
-                hreflang="zh"
-                href="https://engine.speedle.io/zh/blog/discovery/"
-                />
-    <xhtml:link
-                rel="alternate"
-                hreflang="en"
-                href="https://engine.speedle.io/blog/discovery/"
-                />
-  </url>
-  
-  <url>
     <loc>https://engine.speedle.io/docs/sdks/python/</loc>
+    <lastmod>2026-11-07T19:43:15+08:00</lastmod>
     <xhtml:link
                 rel="alternate"
                 hreflang="zh"
@@ -246,7 +229,7 @@
   
   <url>
     <loc>https://engine.speedle.io/docs/pms/</loc>
-    <lastmod>2019-01-18T21:19:44+08:00</lastmod>
+    <lastmod>2026-10-28T13:16:58+00:00</lastmod>
     <xhtml:link
                 rel="alternate"
                 hreflang="zh"
@@ -261,6 +244,7 @@
   
   <url>
     <loc>https://engine.speedle.io/docs/store/etcd/</loc>
+    <lastmod>2026-10-31T22:36:36+08:00</lastmod>
     <xhtml:link
                 rel="alternate"
                 hreflang="zh"
@@ -275,6 +259,7 @@
   
   <url>
     <loc>https://engine.speedle.io/docs/decisions/</loc>
+    <lastmod>2026-11-07T18:29:56+08:00</lastmod>
     <xhtml:link
                 rel="alternate"
                 hreflang="zh"
@@ -289,6 +274,7 @@
   
   <url>
     <loc>https://engine.speedle.io/docs/sdks/go/</loc>
+    <lastmod>2026-11-07T19:43:15+08:00</lastmod>
     <xhtml:link
                 rel="alternate"
                 hreflang="zh"
@@ -303,6 +289,7 @@
   
   <url>
     <loc>https://engine.speedle.io/docs/store/mongodb/</loc>
+    <lastmod>2026-10-31T22:36:36+08:00</lastmod>
     <xhtml:link
                 rel="alternate"
                 hreflang="zh"
@@ -317,7 +304,7 @@
   
   <url>
     <loc>https://engine.speedle.io/docs/idd/</loc>
-    <lastmod>2019-01-17T13:20:07+08:00</lastmod>
+    <lastmod>2026-10-29T11:53:01+08:00</lastmod>
     <xhtml:link
                 rel="alternate"
                 hreflang="zh"
@@ -332,6 +319,7 @@
   
   <url>
     <loc>https://engine.speedle.io/docs/sdks/dotnet/</loc>
+    <lastmod>2026-11-07T19:43:15+08:00</lastmod>
     <xhtml:link
                 rel="alternate"
                 hreflang="zh"
@@ -346,6 +334,7 @@
   
   <url>
     <loc>https://engine.speedle.io/docs/sdks/rust/</loc>
+    <lastmod>2026-11-07T19:43:15+08:00</lastmod>
     <xhtml:link
                 rel="alternate"
                 hreflang="zh"
@@ -360,7 +349,7 @@
   
   <url>
     <loc>https://engine.speedle.io/docs/assertor/</loc>
-    <lastmod>2019-01-21T09:28:30+08:00</lastmod>
+    <lastmod>2026-10-29T11:53:01+08:00</lastmod>
     <xhtml:link
                 rel="alternate"
                 hreflang="zh"
@@ -375,6 +364,7 @@
   
   <url>
     <loc>https://engine.speedle.io/docs/deployment/</loc>
+    <lastmod>2026-10-29T11:53:01+08:00</lastmod>
     <xhtml:link
                 rel="alternate"
                 hreflang="zh"
@@ -389,6 +379,7 @@
   
   <url>
     <loc>https://engine.speedle.io/docs/sdks/node/</loc>
+    <lastmod>2026-11-07T19:43:15+08:00</lastmod>
     <xhtml:link
                 rel="alternate"
                 hreflang="zh"
@@ -403,7 +394,7 @@
   
   <url>
     <loc>https://engine.speedle.io/integrations/docker/</loc>
-    <lastmod>2017-04-10T16:41:54+01:00</lastmod>
+    <lastmod>2026-10-07T16:08:45+08:00</lastmod>
     <xhtml:link
                 rel="alternate"
                 hreflang="zh"
@@ -418,6 +409,7 @@
   
   <url>
     <loc>https://engine.speedle.io/docs/store/</loc>
+    <lastmod>2026-10-31T22:36:36+08:00</lastmod>
     <xhtml:link
                 rel="alternate"
                 hreflang="zh"
@@ -432,6 +424,7 @@
   
   <url>
     <loc>https://engine.speedle.io/integrations/kubernetes/</loc>
+    <lastmod>2020-06-07T18:39:43+08:00</lastmod>
     <xhtml:link
                 rel="alternate"
                 hreflang="zh"
@@ -446,6 +439,7 @@
   
   <url>
     <loc>https://engine.speedle.io/docs/api/</loc>
+    <lastmod>2026-11-06T18:12:13+08:00</lastmod>
     <xhtml:link
                 rel="alternate"
                 hreflang="zh"
@@ -460,6 +454,7 @@
   
   <url>
     <loc>https://engine.speedle.io/integrations/istio/</loc>
+    <lastmod>2020-06-07T18:39:43+08:00</lastmod>
     <xhtml:link
                 rel="alternate"
                 hreflang="zh"
@@ -474,6 +469,7 @@
   
   <url>
     <loc>https://engine.speedle.io/docs/sdks/</loc>
+    <lastmod>2026-11-07T19:43:15+08:00</lastmod>
     <xhtml:link
                 rel="alternate"
                 hreflang="zh"
@@ -488,6 +484,7 @@
   
   <url>
     <loc>https://engine.speedle.io/docs/cloud/</loc>
+    <lastmod>2026-11-07T00:06:57+08:00</lastmod>
     <xhtml:link
                 rel="alternate"
                 hreflang="zh"
@@ -502,6 +499,7 @@
   
   <url>
     <loc>https://engine.speedle.io/docs/security/</loc>
+    <lastmod>2026-10-29T11:53:01+08:00</lastmod>
     <xhtml:link
                 rel="alternate"
                 hreflang="zh"
@@ -516,6 +514,7 @@
   
   <url>
     <loc>https://engine.speedle.io/docs/logging/</loc>
+    <lastmod>2026-10-29T11:32:30+08:00</lastmod>
     <xhtml:link
                 rel="alternate"
                 hreflang="zh"
@@ -530,6 +529,7 @@
   
   <url>
     <loc>https://engine.speedle.io/docs/versions/</loc>
+    <lastmod>2026-11-06T12:19:39+08:00</lastmod>
     <xhtml:link
                 rel="alternate"
                 hreflang="zh"
@@ -544,7 +544,7 @@
   
   <url>
     <loc>https://engine.speedle.io/docs/custom-function/</loc>
-    <lastmod>2019-01-21T10:43:02+08:00</lastmod>
+    <lastmod>2026-11-07T01:07:23+08:00</lastmod>
     <xhtml:link
                 rel="alternate"
                 hreflang="zh"
@@ -558,23 +558,8 @@
   </url>
   
   <url>
-    <loc>https://engine.speedle.io/tags/2018/</loc>
-    <lastmod>2017-03-02T21:56:55+01:00</lastmod>
-    <priority>0</priority>
-    <xhtml:link
-                rel="alternate"
-                hreflang="zh"
-                href="https://engine.speedle.io/zh/tags/2018/"
-                />
-    <xhtml:link
-                rel="alternate"
-                hreflang="en"
-                href="https://engine.speedle.io/tags/2018/"
-                />
-  </url>
-  
-  <url>
     <loc>https://engine.speedle.io/about/</loc>
+    <lastmod>2026-10-28T15:32:57+00:00</lastmod>
     <xhtml:link
                 rel="alternate"
                 hreflang="zh"
@@ -588,53 +573,8 @@
   </url>
   
   <url>
-    <loc>https://engine.speedle.io/tags/ads/</loc>
-    <priority>0</priority>
-    <xhtml:link
-                rel="alternate"
-                hreflang="zh"
-                href="https://engine.speedle.io/zh/tags/ads/"
-                />
-    <xhtml:link
-                rel="alternate"
-                hreflang="en"
-                href="https://engine.speedle.io/tags/ads/"
-                />
-  </url>
-  
-  <url>
-    <loc>https://engine.speedle.io/tags/api/</loc>
-    <lastmod>2019-01-18T21:19:44+08:00</lastmod>
-    <priority>0</priority>
-    <xhtml:link
-                rel="alternate"
-                hreflang="zh"
-                href="https://engine.speedle.io/zh/tags/api/"
-                />
-    <xhtml:link
-                rel="alternate"
-                hreflang="en"
-                href="https://engine.speedle.io/tags/api/"
-                />
-  </url>
-  
-  <url>
-    <loc>https://engine.speedle.io/tags/asserter/</loc>
-    <priority>0</priority>
-    <xhtml:link
-                rel="alternate"
-                hreflang="zh"
-                href="https://engine.speedle.io/zh/tags/asserter/"
-                />
-    <xhtml:link
-                rel="alternate"
-                hreflang="en"
-                href="https://engine.speedle.io/tags/asserter/"
-                />
-  </url>
-  
-  <url>
     <loc>https://engine.speedle.io/docs/api/decision_api/</loc>
+    <lastmod>2026-10-29T11:32:30+08:00</lastmod>
     <xhtml:link
                 rel="alternate"
                 hreflang="zh"
@@ -648,303 +588,8 @@
   </url>
   
   <url>
-    <loc>https://engine.speedle.io/categories/blog/</loc>
-    <lastmod>2017-03-02T21:56:55+01:00</lastmod>
-    <priority>0</priority>
-    <xhtml:link
-                rel="alternate"
-                hreflang="zh"
-                href="https://engine.speedle.io/zh/categories/blog/"
-                />
-    <xhtml:link
-                rel="alternate"
-                hreflang="en"
-                href="https://engine.speedle.io/categories/blog/"
-                />
-  </url>
-  
-  <url>
-    <loc>https://engine.speedle.io/blog/</loc>
-    <lastmod>2017-03-02T21:56:55+01:00</lastmod>
-    <priority>0</priority>
-    <xhtml:link
-                rel="alternate"
-                hreflang="zh"
-                href="https://engine.speedle.io/zh/blog/"
-                />
-    <xhtml:link
-                rel="alternate"
-                hreflang="en"
-                href="https://engine.speedle.io/blog/"
-                />
-  </url>
-  
-  <url>
-    <loc>https://engine.speedle.io/categories/</loc>
-    <lastmod>2017-03-02T21:56:55+01:00</lastmod>
-    <priority>0</priority>
-    <xhtml:link
-                rel="alternate"
-                hreflang="zh"
-                href="https://engine.speedle.io/zh/categories/"
-                />
-    <xhtml:link
-                rel="alternate"
-                hreflang="en"
-                href="https://engine.speedle.io/categories/"
-                />
-  </url>
-  
-  <url>
-    <loc>https://engine.speedle.io/tour/</loc>
-    <xhtml:link
-                rel="alternate"
-                hreflang="zh"
-                href="https://engine.speedle.io/zh/tour/"
-                />
-    <xhtml:link
-                rel="alternate"
-                hreflang="en"
-                href="https://engine.speedle.io/tour/"
-                />
-  </url>
-  
-  <url>
-    <loc>https://engine.speedle.io/categories/cloudnative/</loc>
-    <lastmod>2017-04-10T16:41:54+01:00</lastmod>
-    <priority>0</priority>
-    <xhtml:link
-                rel="alternate"
-                hreflang="zh"
-                href="https://engine.speedle.io/zh/categories/cloudnative/"
-                />
-    <xhtml:link
-                rel="alternate"
-                hreflang="en"
-                href="https://engine.speedle.io/categories/cloudnative/"
-                />
-  </url>
-  
-  <url>
-    <loc>https://engine.speedle.io/tags/community/</loc>
-    <priority>0</priority>
-    <xhtml:link
-                rel="alternate"
-                hreflang="zh"
-                href="https://engine.speedle.io/zh/tags/community/"
-                />
-    <xhtml:link
-                rel="alternate"
-                hreflang="en"
-                href="https://engine.speedle.io/tags/community/"
-                />
-  </url>
-  
-  <url>
-    <loc>https://engine.speedle.io/tags/contribution/</loc>
-    <priority>0</priority>
-    <xhtml:link
-                rel="alternate"
-                hreflang="zh"
-                href="https://engine.speedle.io/zh/tags/contribution/"
-                />
-    <xhtml:link
-                rel="alternate"
-                hreflang="en"
-                href="https://engine.speedle.io/tags/contribution/"
-                />
-  </url>
-  
-  <url>
-    <loc>https://engine.speedle.io/tags/core/</loc>
-    <lastmod>2019-01-18T21:19:44+08:00</lastmod>
-    <priority>0</priority>
-    <xhtml:link
-                rel="alternate"
-                hreflang="zh"
-                href="https://engine.speedle.io/zh/tags/core/"
-                />
-    <xhtml:link
-                rel="alternate"
-                hreflang="en"
-                href="https://engine.speedle.io/tags/core/"
-                />
-  </url>
-  
-  <url>
-    <loc>https://engine.speedle.io/tags/developer/</loc>
-    <priority>0</priority>
-    <xhtml:link
-                rel="alternate"
-                hreflang="zh"
-                href="https://engine.speedle.io/zh/tags/developer/"
-                />
-    <xhtml:link
-                rel="alternate"
-                hreflang="en"
-                href="https://engine.speedle.io/tags/developer/"
-                />
-  </url>
-  
-  <url>
-    <loc>https://engine.speedle.io/developer/</loc>
-    <xhtml:link
-                rel="alternate"
-                hreflang="zh"
-                href="https://engine.speedle.io/zh/developer/"
-                />
-    <xhtml:link
-                rel="alternate"
-                hreflang="en"
-                href="https://engine.speedle.io/developer/"
-                />
-  </url>
-  
-  <url>
-    <loc>https://engine.speedle.io/tags/discovery/</loc>
-    <lastmod>2017-03-02T21:56:55+01:00</lastmod>
-    <priority>0</priority>
-    <xhtml:link
-                rel="alternate"
-                hreflang="zh"
-                href="https://engine.speedle.io/zh/tags/discovery/"
-                />
-    <xhtml:link
-                rel="alternate"
-                hreflang="en"
-                href="https://engine.speedle.io/tags/discovery/"
-                />
-  </url>
-  
-  <url>
-    <loc>https://engine.speedle.io/tags/docker/</loc>
-    <lastmod>2017-04-10T16:41:54+01:00</lastmod>
-    <priority>0</priority>
-    <xhtml:link
-                rel="alternate"
-                hreflang="zh"
-                href="https://engine.speedle.io/zh/tags/docker/"
-                />
-    <xhtml:link
-                rel="alternate"
-                hreflang="en"
-                href="https://engine.speedle.io/tags/docker/"
-                />
-  </url>
-  
-  <url>
-    <loc>https://engine.speedle.io/categories/docs/</loc>
-    <lastmod>2019-01-18T21:19:44+08:00</lastmod>
-    <priority>0</priority>
-    <xhtml:link
-                rel="alternate"
-                hreflang="zh"
-                href="https://engine.speedle.io/zh/categories/docs/"
-                />
-    <xhtml:link
-                rel="alternate"
-                hreflang="en"
-                href="https://engine.speedle.io/categories/docs/"
-                />
-  </url>
-  
-  <url>
-    <loc>https://engine.speedle.io/tags/etcd/</loc>
-    <priority>0</priority>
-    <xhtml:link
-                rel="alternate"
-                hreflang="zh"
-                href="https://engine.speedle.io/zh/tags/etcd/"
-                />
-    <xhtml:link
-                rel="alternate"
-                hreflang="en"
-                href="https://engine.speedle.io/tags/etcd/"
-                />
-  </url>
-  
-  <url>
-    <loc>https://engine.speedle.io/tags/guide/</loc>
-    <lastmod>2019-01-18T21:19:44+08:00</lastmod>
-    <priority>0</priority>
-    <xhtml:link
-                rel="alternate"
-                hreflang="zh"
-                href="https://engine.speedle.io/zh/tags/guide/"
-                />
-    <xhtml:link
-                rel="alternate"
-                hreflang="en"
-                href="https://engine.speedle.io/tags/guide/"
-                />
-  </url>
-  
-  <url>
-    <loc>https://engine.speedle.io/tags/https/</loc>
-    <priority>0</priority>
-    <xhtml:link
-                rel="alternate"
-                hreflang="zh"
-                href="https://engine.speedle.io/zh/tags/https/"
-                />
-    <xhtml:link
-                rel="alternate"
-                hreflang="en"
-                href="https://engine.speedle.io/tags/https/"
-                />
-  </url>
-  
-  <url>
-    <loc>https://engine.speedle.io/tags/identity/</loc>
-    <lastmod>2019-01-17T13:20:07+08:00</lastmod>
-    <priority>0</priority>
-    <xhtml:link
-                rel="alternate"
-                hreflang="zh"
-                href="https://engine.speedle.io/zh/tags/identity/"
-                />
-    <xhtml:link
-                rel="alternate"
-                hreflang="en"
-                href="https://engine.speedle.io/tags/identity/"
-                />
-  </url>
-  
-  <url>
-    <loc>https://engine.speedle.io/tags/identity-domain/</loc>
-    <lastmod>2019-01-17T13:20:07+08:00</lastmod>
-    <priority>0</priority>
-    <xhtml:link
-                rel="alternate"
-                hreflang="zh"
-                href="https://engine.speedle.io/zh/tags/identity-domain/"
-                />
-    <xhtml:link
-                rel="alternate"
-                hreflang="en"
-                href="https://engine.speedle.io/tags/identity-domain/"
-                />
-  </url>
-  
-  <url>
-    <loc>https://engine.speedle.io/categories/integration/</loc>
-    <lastmod>2017-04-10T16:41:54+01:00</lastmod>
-    <priority>0</priority>
-    <xhtml:link
-                rel="alternate"
-                hreflang="zh"
-                href="https://engine.speedle.io/zh/categories/integration/"
-                />
-    <xhtml:link
-                rel="alternate"
-                hreflang="en"
-                href="https://engine.speedle.io/categories/integration/"
-                />
-  </url>
-  
-  <url>
     <loc>https://engine.speedle.io/integrations/</loc>
-    <lastmod>2017-04-10T16:41:54+01:00</lastmod>
+    <lastmod>2026-10-28T14:21:03+00:00</lastmod>
     <xhtml:link
                 rel="alternate"
                 hreflang="zh"
@@ -958,141 +603,8 @@
   </url>
   
   <url>
-    <loc>https://engine.speedle.io/tags/istio/</loc>
-    <priority>0</priority>
-    <xhtml:link
-                rel="alternate"
-                hreflang="zh"
-                href="https://engine.speedle.io/zh/tags/istio/"
-                />
-    <xhtml:link
-                rel="alternate"
-                hreflang="en"
-                href="https://engine.speedle.io/tags/istio/"
-                />
-  </url>
-  
-  <url>
-    <loc>https://engine.speedle.io/tags/k8s/</loc>
-    <priority>0</priority>
-    <xhtml:link
-                rel="alternate"
-                hreflang="zh"
-                href="https://engine.speedle.io/zh/tags/k8s/"
-                />
-    <xhtml:link
-                rel="alternate"
-                hreflang="en"
-                href="https://engine.speedle.io/tags/k8s/"
-                />
-  </url>
-  
-  <url>
-    <loc>https://engine.speedle.io/tags/kubernetes/</loc>
-    <priority>0</priority>
-    <xhtml:link
-                rel="alternate"
-                hreflang="zh"
-                href="https://engine.speedle.io/zh/tags/kubernetes/"
-                />
-    <xhtml:link
-                rel="alternate"
-                hreflang="en"
-                href="https://engine.speedle.io/tags/kubernetes/"
-                />
-  </url>
-  
-  <url>
-    <loc>https://engine.speedle.io/tags/logging/</loc>
-    <priority>0</priority>
-    <xhtml:link
-                rel="alternate"
-                hreflang="zh"
-                href="https://engine.speedle.io/zh/tags/logging/"
-                />
-    <xhtml:link
-                rel="alternate"
-                hreflang="en"
-                href="https://engine.speedle.io/tags/logging/"
-                />
-  </url>
-  
-  <url>
-    <loc>https://engine.speedle.io/tags/mongodb/</loc>
-    <priority>0</priority>
-    <xhtml:link
-                rel="alternate"
-                hreflang="zh"
-                href="https://engine.speedle.io/zh/tags/mongodb/"
-                />
-    <xhtml:link
-                rel="alternate"
-                hreflang="en"
-                href="https://engine.speedle.io/tags/mongodb/"
-                />
-  </url>
-  
-  <url>
-    <loc>https://engine.speedle.io/tags/mysql/</loc>
-    <priority>0</priority>
-    <xhtml:link
-                rel="alternate"
-                hreflang="zh"
-                href="https://engine.speedle.io/zh/tags/mysql/"
-                />
-    <xhtml:link
-                rel="alternate"
-                hreflang="en"
-                href="https://engine.speedle.io/tags/mysql/"
-                />
-  </url>
-  
-  <url>
-    <loc>https://engine.speedle.io/tags/operator/</loc>
-    <priority>0</priority>
-    <xhtml:link
-                rel="alternate"
-                hreflang="zh"
-                href="https://engine.speedle.io/zh/tags/operator/"
-                />
-    <xhtml:link
-                rel="alternate"
-                hreflang="en"
-                href="https://engine.speedle.io/tags/operator/"
-                />
-  </url>
-  
-  <url>
-    <loc>https://engine.speedle.io/devops/</loc>
-    <xhtml:link
-                rel="alternate"
-                hreflang="zh"
-                href="https://engine.speedle.io/zh/devops/"
-                />
-    <xhtml:link
-                rel="alternate"
-                hreflang="en"
-                href="https://engine.speedle.io/devops/"
-                />
-  </url>
-  
-  <url>
-    <loc>https://engine.speedle.io/tags/pdp/</loc>
-    <priority>0</priority>
-    <xhtml:link
-                rel="alternate"
-                hreflang="zh"
-                href="https://engine.speedle.io/zh/tags/pdp/"
-                />
-    <xhtml:link
-                rel="alternate"
-                hreflang="en"
-                href="https://engine.speedle.io/tags/pdp/"
-                />
-  </url>
-  
-  <url>
     <loc>https://engine.speedle.io/playground/</loc>
+    <lastmod>2026-11-06T12:19:39+08:00</lastmod>
     <xhtml:link
                 rel="alternate"
                 hreflang="zh"
@@ -1106,52 +618,8 @@
   </url>
   
   <url>
-    <loc>https://engine.speedle.io/tags/pluggable/</loc>
-    <priority>0</priority>
-    <xhtml:link
-                rel="alternate"
-                hreflang="zh"
-                href="https://engine.speedle.io/zh/tags/pluggable/"
-                />
-    <xhtml:link
-                rel="alternate"
-                hreflang="en"
-                href="https://engine.speedle.io/tags/pluggable/"
-                />
-  </url>
-  
-  <url>
-    <loc>https://engine.speedle.io/tags/pms/</loc>
-    <priority>0</priority>
-    <xhtml:link
-                rel="alternate"
-                hreflang="zh"
-                href="https://engine.speedle.io/zh/tags/pms/"
-                />
-    <xhtml:link
-                rel="alternate"
-                hreflang="en"
-                href="https://engine.speedle.io/tags/pms/"
-                />
-  </url>
-  
-  <url>
-    <loc>https://engine.speedle.io/tags/policy/</loc>
-    <priority>0</priority>
-    <xhtml:link
-                rel="alternate"
-                hreflang="zh"
-                href="https://engine.speedle.io/zh/tags/policy/"
-                />
-    <xhtml:link
-                rel="alternate"
-                hreflang="en"
-                href="https://engine.speedle.io/tags/policy/"
-                />
-  </url>
-  
-  <url>
     <loc>https://engine.speedle.io/docs/api/management_api/</loc>
+    <lastmod>2026-10-29T11:32:30+08:00</lastmod>
     <xhtml:link
                 rel="alternate"
                 hreflang="zh"
@@ -1165,53 +633,8 @@
   </url>
   
   <url>
-    <loc>https://engine.speedle.io/tags/releases/</loc>
-    <priority>0</priority>
-    <xhtml:link
-                rel="alternate"
-                hreflang="zh"
-                href="https://engine.speedle.io/zh/tags/releases/"
-                />
-    <xhtml:link
-                rel="alternate"
-                hreflang="en"
-                href="https://engine.speedle.io/tags/releases/"
-                />
-  </url>
-  
-  <url>
-    <loc>https://engine.speedle.io/tags/sdk/</loc>
-    <priority>0</priority>
-    <xhtml:link
-                rel="alternate"
-                hreflang="zh"
-                href="https://engine.speedle.io/zh/tags/sdk/"
-                />
-    <xhtml:link
-                rel="alternate"
-                hreflang="en"
-                href="https://engine.speedle.io/tags/sdk/"
-                />
-  </url>
-  
-  <url>
-    <loc>https://engine.speedle.io/tags/security/</loc>
-    <priority>0</priority>
-    <xhtml:link
-                rel="alternate"
-                hreflang="zh"
-                href="https://engine.speedle.io/zh/tags/security/"
-                />
-    <xhtml:link
-                rel="alternate"
-                hreflang="en"
-                href="https://engine.speedle.io/tags/security/"
-                />
-  </url>
-  
-  <url>
     <loc>https://engine.speedle.io/</loc>
-    <lastmod>2019-01-18T21:19:44+08:00</lastmod>
+    <lastmod>2020-05-27T07:48:20+08:00</lastmod>
     <xhtml:link
                 rel="alternate"
                 hreflang="zh"
@@ -1225,39 +648,8 @@
   </url>
   
   <url>
-    <loc>https://engine.speedle.io/tags/spdl/</loc>
-    <priority>0</priority>
-    <xhtml:link
-                rel="alternate"
-                hreflang="zh"
-                href="https://engine.speedle.io/zh/tags/spdl/"
-                />
-    <xhtml:link
-                rel="alternate"
-                hreflang="en"
-                href="https://engine.speedle.io/tags/spdl/"
-                />
-  </url>
-  
-  <url>
-    <loc>https://engine.speedle.io/tags/speedle/</loc>
-    <lastmod>2017-03-02T21:56:55+01:00</lastmod>
-    <priority>0</priority>
-    <xhtml:link
-                rel="alternate"
-                hreflang="zh"
-                href="https://engine.speedle.io/zh/tags/speedle/"
-                />
-    <xhtml:link
-                rel="alternate"
-                hreflang="en"
-                href="https://engine.speedle.io/tags/speedle/"
-                />
-  </url>
-  
-  <url>
     <loc>https://engine.speedle.io/docs/</loc>
-    <lastmod>2019-01-17T13:20:07+08:00</lastmod>
+    <lastmod>2026-10-28T13:16:58+00:00</lastmod>
     <xhtml:link
                 rel="alternate"
                 hreflang="zh"
@@ -1271,22 +663,8 @@
   </url>
   
   <url>
-    <loc>https://engine.speedle.io/tags/storage/</loc>
-    <priority>0</priority>
-    <xhtml:link
-                rel="alternate"
-                hreflang="zh"
-                href="https://engine.speedle.io/zh/tags/storage/"
-                />
-    <xhtml:link
-                rel="alternate"
-                hreflang="en"
-                href="https://engine.speedle.io/tags/storage/"
-                />
-  </url>
-  
-  <url>
     <loc>https://engine.speedle.io/support/</loc>
+    <lastmod>2026-10-28T13:53:47+00:00</lastmod>
     <xhtml:link
                 rel="alternate"
                 hreflang="zh"
@@ -1300,54 +678,8 @@
   </url>
   
   <url>
-    <loc>https://engine.speedle.io/tags/</loc>
-    <lastmod>2017-03-02T21:56:55+01:00</lastmod>
-    <priority>0</priority>
-    <xhtml:link
-                rel="alternate"
-                hreflang="zh"
-                href="https://engine.speedle.io/zh/tags/"
-                />
-    <xhtml:link
-                rel="alternate"
-                hreflang="en"
-                href="https://engine.speedle.io/tags/"
-                />
-  </url>
-  
-  <url>
-    <loc>https://engine.speedle.io/tags/tls/</loc>
-    <priority>0</priority>
-    <xhtml:link
-                rel="alternate"
-                hreflang="zh"
-                href="https://engine.speedle.io/zh/tags/tls/"
-                />
-    <xhtml:link
-                rel="alternate"
-                hreflang="en"
-                href="https://engine.speedle.io/tags/tls/"
-                />
-  </url>
-  
-  <url>
-    <loc>https://engine.speedle.io/tags/token-asserter/</loc>
-    <lastmod>2019-01-21T09:28:30+08:00</lastmod>
-    <priority>0</priority>
-    <xhtml:link
-                rel="alternate"
-                hreflang="zh"
-                href="https://engine.speedle.io/zh/tags/token-asserter/"
-                />
-    <xhtml:link
-                rel="alternate"
-                hreflang="en"
-                href="https://engine.speedle.io/tags/token-asserter/"
-                />
-  </url>
-  
-  <url>
     <loc>https://engine.speedle.io/docs/api/asserter_api/</loc>
+    <lastmod>2026-10-29T11:32:30+08:00</lastmod>
     <xhtml:link
                 rel="alternate"
                 hreflang="zh"
@@ -1357,113 +689,6 @@
                 rel="alternate"
                 hreflang="en"
                 href="https://engine.speedle.io/docs/api/asserter_api/"
-                />
-  </url>
-  
-  <url>
-    <loc>https://engine.speedle.io/categories/tour/</loc>
-    <priority>0</priority>
-    <xhtml:link
-                rel="alternate"
-                hreflang="zh"
-                href="https://engine.speedle.io/zh/categories/tour/"
-                />
-    <xhtml:link
-                rel="alternate"
-                hreflang="en"
-                href="https://engine.speedle.io/categories/tour/"
-                />
-  </url>
-  
-  <url>
-    <loc>https://engine.speedle.io/tags/usecase/</loc>
-    <priority>0</priority>
-    <xhtml:link
-                rel="alternate"
-                hreflang="zh"
-                href="https://engine.speedle.io/zh/tags/usecase/"
-                />
-    <xhtml:link
-                rel="alternate"
-                hreflang="en"
-                href="https://engine.speedle.io/tags/usecase/"
-                />
-  </url>
-  
-  <url>
-    <loc>https://engine.speedle.io/tags/v0.1.0/</loc>
-    <lastmod>2019-01-18T21:19:44+08:00</lastmod>
-    <priority>0</priority>
-    <xhtml:link
-                rel="alternate"
-                hreflang="zh"
-                href="https://engine.speedle.io/zh/tags/v0.1.0/"
-                />
-    <xhtml:link
-                rel="alternate"
-                hreflang="en"
-                href="https://engine.speedle.io/tags/v0.1.0/"
-                />
-  </url>
-  
-  <url>
-    <loc>https://engine.speedle.io/versions/</loc>
-    <priority>0</priority>
-    <xhtml:link
-                rel="alternate"
-                hreflang="zh"
-                href="https://engine.speedle.io/zh/versions/"
-                />
-    <xhtml:link
-                rel="alternate"
-                hreflang="en"
-                href="https://engine.speedle.io/versions/"
-                />
-  </url>
-  
-  <url>
-    <loc>https://engine.speedle.io/tags/versions/</loc>
-    <priority>0</priority>
-    <xhtml:link
-                rel="alternate"
-                hreflang="zh"
-                href="https://engine.speedle.io/zh/tags/versions/"
-                />
-    <xhtml:link
-                rel="alternate"
-                hreflang="en"
-                href="https://engine.speedle.io/tags/versions/"
-                />
-  </url>
-  
-  <url>
-    <loc>https://engine.speedle.io/tags/webhook/</loc>
-    <priority>0</priority>
-    <xhtml:link
-                rel="alternate"
-                hreflang="zh"
-                href="https://engine.speedle.io/zh/tags/webhook/"
-                />
-    <xhtml:link
-                rel="alternate"
-                hreflang="en"
-                href="https://engine.speedle.io/tags/webhook/"
-                />
-  </url>
-  
-  <url>
-    <loc>https://engine.speedle.io/tags/why/</loc>
-    <lastmod>2017-03-02T21:56:55+01:00</lastmod>
-    <priority>0</priority>
-    <xhtml:link
-                rel="alternate"
-                hreflang="zh"
-                href="https://engine.speedle.io/zh/tags/why/"
-                />
-    <xhtml:link
-                rel="alternate"
-                hreflang="en"
-                href="https://engine.speedle.io/tags/why/"
                 />
   </url>
   
