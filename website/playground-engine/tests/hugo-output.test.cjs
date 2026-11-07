@@ -23,7 +23,7 @@ for (const name of ['index.html','zh/index.html','playground/index.html','zh/pla
   const html = fs.readFileSync(path.join(output, name), 'utf8');
   assert.ok(html.includes('/css/navigation.css?v=header-20261106-v8') && html.includes('/js/navigation.js?v=header-20261106-v8'), `Shared navigation assets in ${name}`);
 }
-for (const name of ['site.css', 'navigation.css', 'custom.css', 'docs.css', 'command-copy.css']) {
+for (const name of ['site.css', 'navigation.css', 'docs.css', 'command-copy.css']) {
   assert.deepEqual(fs.readFileSync(path.join(output, 'css', name)), fs.readFileSync(path.join(root, 'docs/css', name)));
 }
 const docsStyles = fs.readFileSync(path.join(output, 'css/docs.css'), 'utf8');
@@ -66,6 +66,18 @@ for (const name of ['docs/index.html', 'zh/docs/index.html', 'docs/spdl/index.ht
   if (!zh) assert.ok(/docs-nav-heading[^"]*"><a [^>]*>SDKs<\/a>/.test(html), `SDKs is a bold group heading like API in ${name}`);
   const afterFooter = html.split('</footer>')[1];
   assert.ok(afterFooter && !afterFooter.includes('/js/'), `No layout script after the footer in ${name}`);
+}
+// #243: the remaining legacy-theme pages use the docs styles and load no Kube stack.
+for (const name of ['quick-start/index.html', 'zh/quick-start/index.html', 'about/index.html', 'zh/about/index.html',
+  'contribute/index.html', 'zh/contribute/index.html', 'support/index.html', 'zh/support/index.html',
+  'integrations/index.html', 'zh/integrations/index.html', 'versions/index.html', 'zh/versions/index.html',
+  'tags/index.html', 'zh/tags/index.html', 'categories/index.html', 'zh/categories/index.html',
+  'tags/api/index.html', 'zh/tags/api/index.html', 'categories/docs/page/2/index.html']) {
+  const html = fs.readFileSync(path.join(output, name), 'utf8');
+  assert.ok(html.includes('/css/docs.css'), `Docs styles in ${name}`);
+  assert.ok(!/theme\.min|kube\.min|kube\.legenda|master\.css|kube\.demo|custom\.css|spdl-title|fonts\.googleapis|fontawesome|jquery|tocbot|\/js\/kube|\/js\/master/.test(html), `No legacy stack in ${name}`);
+  assert.ok(html.includes('<body class="page-kube docs-page">'), `Docs body in ${name}`);
+  assert.ok(html.includes('class="content-container docs-article"'), `Stand-alone docs container in ${name}`);
 }
 // #203: every page with the shared footer loads navigation.css, the stylesheet that holds the footer rules.
 const footerRules = fs.readFileSync(path.join(output, 'css/navigation.css'), 'utf8');

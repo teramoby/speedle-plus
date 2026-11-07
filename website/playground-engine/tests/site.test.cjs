@@ -151,7 +151,7 @@ compareSource('zh/playground');
 for (const name of ['index.html','zh/index.html']) {
  assert.equal(read('docs/hugo/static/'+name), read('docs/'+name), `Authoritative homepage ${name}`);
 }
-for (const name of ['css/site.css','css/navigation.css','css/custom.css','css/docs.css','js/master.js','js/navigation.js','js/docs.js','img/speedle/Discord.svg','img/speedle/Discord-color.svg','img/speedle/Google-Groups.svg','img/speedle/Google-Groups-NOTICE.txt','img/speedle/Material-Icons-LICENSE.txt']) {
+for (const name of ['css/site.css','css/navigation.css','css/docs.css','js/navigation.js','js/docs.js','img/speedle/Discord.svg','img/speedle/Discord-color.svg','img/speedle/Google-Groups.svg','img/speedle/Google-Groups-NOTICE.txt','img/speedle/Material-Icons-LICENSE.txt']) {
  assert.equal(read('docs/hugo/static/'+name), read('docs/'+name), `Source/published ${name}`);
 }
 assert.ok(page.includes('<a href="/playground/" aria-current="page">Playground</a>'));
@@ -196,4 +196,43 @@ function checkDocsHeadings(directory) {
 }
 for (const name of ['docs/index.html', 'docs/zh/index.html']) assertNoTrailingFullStop(path.join(root, name));
 for (const name of ['docs/docs', 'docs/zh/docs']) checkDocsHeadings(path.join(root, name));
-console.log('PASS static site integration: original CSS/homepage, official footer, navigation, URLs/assets, canonical, English labels, no private hosting or persistent request storage');
+// #243: every local stylesheet, script and image in the published tree must
+// resolve to a file, so a regeneration cannot leave pages pointing at deleted
+// assets. The archived snapshot at /172c4fea…/ is self-contained; it is checked
+// too, and a directory reference counts only when it serves an index.html.
+const docsRoot = path.join(root, 'docs');
+const subresources = [
+ [/<link\b[^>]*?\bhref="([^"]*)"/gi, '<link href>'],
+ [/<script\b[^>]*?\bsrc="([^"]*)"/gi, '<script src>'],
+ [/<img\b[^>]*?\bsrc="([^"]*)"/gi, '<img src>'],
+];
+let assetPages = 0;
+let assetRefs = 0;
+(function checkLocalAssets(directory) {
+ for (const entry of fs.readdirSync(directory, {withFileTypes: true})) {
+  const file = path.join(directory, entry.name);
+  if (entry.isDirectory()) {
+   if (file !== path.join(docsRoot, 'hugo')) checkLocalAssets(file);
+   continue;
+  }
+  if (!entry.name.endsWith('.html')) continue;
+  assetPages++;
+  const html = fs.readFileSync(file, 'utf8');
+  for (const [pattern, label] of subresources) {
+   for (const [, raw] of html.matchAll(pattern)) {
+    const url = raw.trim();
+    if (!url || /^(?:[a-z][a-z0-9+.-]*:|\/\/|#)/i.test(url)) continue;
+    const pathname = decodeURIComponent(url.split(/[?#]/)[0]);
+    const target = pathname.startsWith('/')
+     ? path.join(docsRoot, pathname.slice(1))
+     : path.resolve(path.dirname(file), pathname);
+    assert.ok(target === docsRoot || target.startsWith(docsRoot + path.sep), `Local ${label} escapes docs/: ${url} in ${path.relative(docsRoot, file)}`);
+    assert.ok(fs.existsSync(target) && (fs.statSync(target).isFile() || fs.existsSync(path.join(target, 'index.html'))), `Missing local ${label} ${url} in ${path.relative(docsRoot, file)}`);
+    assetRefs++;
+   }
+  }
+ }
+})(docsRoot);
+assert.ok(assetPages > 250, `Published pages checked for local assets: ${assetPages}`);
+assert.ok(assetRefs > 2000, `Local subresource references resolved: ${assetRefs}`);
+console.log(`PASS static site integration: original CSS/homepage, official footer, navigation, URLs/assets, canonical, English labels, no private hosting or persistent request storage, ${assetRefs} local assets in ${assetPages} published pages`);

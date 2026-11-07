@@ -2,7 +2,7 @@
 {{- range .AllTranslations -}}
   {{- if eq .Lang "en" }}{{ $english = . }}{{ end -}}
 {{- end -}}
-{{- range .AllTranslations }}
+{{- range sort .AllTranslations "Lang" }}
 <link rel="alternate" hreflang="{{ if eq .Lang "zh" }}zh-CN{{ else }}en{{ end }}" href="{{ .Permalink }}">
 {{- end }}
 <link rel="alternate" hreflang="x-default" href="{{ $english.Permalink }}">

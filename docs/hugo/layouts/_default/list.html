@@ -1,20 +1,12 @@
-{{ define "title"}} {{ .Title}} {{end}}
-{{ define "header"}} {{ partial "header" .}} {{end}}
-
 {{ define "main" }}
 <div id="main">
-  <div class="features">
-    <h1>Voice of {{.Site.Params.author }} Developers</h1>
-    <p>Our vision, news and ideas, and whatever feels important.<br> <a href="https://discord.gg/uaY2xVsbbT">{{ if eq .Lang "zh" }}加入 Discord 社区{{ else }}Join us on Discord{{ end }}</a></p>
+  <h1>Voice of {{ .Site.Params.author }} Developers</h1>
+  <p>Our vision, news and ideas, and whatever feels important.<br> <a href="https://discord.gg/uaY2xVsbbT">{{ if eq .Lang "zh" }}加入 Discord 社区{{ else }}Join us on Discord{{ end }}</a></p>
 
-    <ul id="posts">
-      {{ range .Paginator.Pages.ByWeight }}
-      {{ partial "page-summary" . }}
-      {{ end }}
-    </ul>
-  </div>
+  <ul id="posts">
+    {{ range .Paginator.Pages.ByWeight }}
+    {{ partial "page-summary" . }}
+    {{ end }}
+  </ul>
 </div>
-{{ end }}
-{{ define "footer" }}
-{{ partial "footer" . }}
 {{ end }}

@@ -1,40 +1,9 @@
-{{ define "title"}} {{ .Title}} {{end}}
-{{ define "header"}} {{ partial "header" .}} {{end}}
-{{ define "main"}}
+{{ define "main" }}
 <div id="main">
-  <div class="features">
-    <image class="top-right-icon" src="/img/speedle/10.Integrations.svg" />
-    <h1>{{ .Title }}</h1>
-    {{if .Params.description }}
-    <p class="subtitle">{{.Params.description}}</p>
-    {{ end }}
-    {{if .Params.bref }}
-    <p>{{.Params.bref}}</p>
-    {{ end }}
-    {{ with .Content }}
-    <div id="kube-component" class="content">
-      {{ . }}
-    </div>
-    {{ end }}
-    <br />
-    {{ if .Data.Pages }}
-    <div id="components">
-      <div class="row gutters">
-        {{ range.Data.Pages.ByWeight }}
-        {{ if gt .Params.weight 0 }}
-        <div class="col col-4 center">
-          <img class="svg" src="/img/speedle/{{.Params.iconurl}}" />
-          <h4>
-            <a href=" {{ .Permalink }}">{{ .Title }}</a>
-          </h4>
-          <p>{{ .Params.description }}</p>
-        </div>
-        {{ end }}
-        {{ end }}
-      </div>
-    </div>
-    {{ end }}
-  </div>
+  <img class="top-right-icon" src="/img/speedle/10.Integrations.svg" alt="">
+  <h1>{{ .Title }}</h1>
+  {{ with .Params.description }}<p class="docs-lead">{{ . }}</p>{{ end }}
+  {{ with .Params.bref }}<p>{{ . }}</p>{{ end }}
+  {{ with .Content }}<div id="kube-component" class="content">{{ . }}</div>{{ end }}
 </div>
 {{ end }}
-{{ define "footer"}} {{ partial "footer" .}} {{ end }}
