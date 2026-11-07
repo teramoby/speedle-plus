@@ -27,8 +27,9 @@ pages, `中文` on English pages), including inside the mobile navigation menu.
   the snapshot where it has the page (and anchor), and otherwise lead to the
   current site.
   Documentation uses `css/docs.css` and `js/docs.js`: the Engine container,
-  colours, type scale and spacing, a sticky left navigation with bold section
-  headings and an accent pill for the current page (a `Menu` drawer on phones),
+  colours, type scale and spacing, a fully expanded left navigation in normal
+  page flow with depth-indented links, bold section headings and an accent pill
+  for the current page (a fully expanded, scrollable `Menu` drawer on phones),
   and heading-based TOCs without Kube, jQuery, tocbot or webfont requests.
   `partials/hreflang.html` adds the same EN/ZH/x-default alternates as the
   homepage, including docs redirect aliases. Swagger CSS and its local bundle
