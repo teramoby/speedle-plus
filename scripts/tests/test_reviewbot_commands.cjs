@@ -316,11 +316,16 @@ test('explain publishes in the originating issue or root review-comment thread',
   assert.equal(reply.comment_id, 100); assert.equal(reply.pull_number, 7); assert.equal(line.calls.reviews.length, 0);
 });
 test('failed or disabled analysis emits generic status without model text, ID or completion reaction', async () => {
-  for (const env of [{ANALYZE_RESULT: 'failure'}, {REVIEWBOT_ENABLED: 'false'}]) {
+  for (const env of [{ANALYZE_RESULT: 'failure'}, {REVIEWBOT_ENABLED: 'false'}, {REVIEWBOT_ENABLED: 'false', REVIEWBOT_PROVIDER: 'deepseek'}]) {
     const h = harness({env: {...env, REVIEWBOT_MESSAGE: 'PRIVATE_MODEL_OUTPUT'}}); await h.run('publish');
     const output = published(h); assert.equal(output.length, 1);
     assert.doesNotMatch(output[0].body, /PRIVATE_MODEL_OUTPUT|Model ID:/); assert.deepEqual(reactions(h), []);
+    if (env.REVIEWBOT_ENABLED === 'false') {
+      assert.match(output[0].body, env.REVIEWBOT_PROVIDER === 'deepseek' ? /DeepSeek credential/ : /Ark credential/);
+    }
   }
+  const ds = harness({env: {MODEL_ID_B64: encode('deepseek-flash')}}); await ds.run('publish');
+  assert.match(ds.calls.reviews[0].body, /Model ID: `deepseek-flash`/);
 });
 test('publish is idempotent for bot markers and cannot be suppressed by a human forged marker', async () => {
   const done = harness({history: {reviews: [{user: bot, body: `${marker}\nPrior response`}]}}); await done.run('publish');
