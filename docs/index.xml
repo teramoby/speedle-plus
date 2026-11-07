@@ -370,8 +370,8 @@ Security and endpoint configuration. This is a contract reference, not a backend
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/support/</guid>
-      <description>FAQs Speedle looks awesome! Who is it for? Speedle is an open source project for access management. You can embed it in your system as long as access control is required, such that you don&amp;rsquo;t have to hard code authorization policies in your code.
-Does the world need one more policy engine? Well, please spend 15 minutes on Quick Start steps. Then you will have the answer. Why not give a try?</description>
+      <description>FAQs Who is Speedle for? Speedle is an open-source authorization engine for applications that need access control. You can embed it in your system or run it as a service, so authorization policies stay centrally managed instead of being hard-coded in application code.
+Why another policy engine? The Quick Start walks through the full workflow in about 15 minutes. It is the quickest way to compare Speedle&amp;rsquo;s policy model and decision flow with the alternatives.</description>
     </item>
     
     <item>

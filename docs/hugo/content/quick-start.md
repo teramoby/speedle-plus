@@ -146,4 +146,4 @@ The response contains `"allowed":false`.
 
 When finished, press **Ctrl+C** in the PMS and ADS terminals. The policy file remains in the checkout; use a fresh file for another run of the creation commands.
 
-For TLS configuration, see [Message security](../docs/security/#message-security-tls). For other deployment types, see [Deployment](../docs/deployment/).
+For TLS configuration, see [Message security](../docs/security/#protect-both-api-transports). For other deployment types, see [Deployment](../docs/deployment/).

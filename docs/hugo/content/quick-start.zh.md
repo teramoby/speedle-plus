@@ -127,4 +127,4 @@ curl --fail --silent --show-error --header 'Content-Type: application/json' --da
 
 使用结束后，在 PMS 和 ADS 的终端分别按 **Ctrl+C** 停止服务。策略文件会保留在源码目录中；再次执行创建命令时，请使用新的策略文件。
 
-下一步可阅读 [SPDL 语言](../docs/spdl/)、[TLS 配置](../docs/security/#message-security-tls)和[部署指南](../docs/deployment/)，了解 ACL、RBAC、ABAC 及其他部署方式。
+下一步可阅读 [SPDL 语言](../docs/spdl/)、[TLS 配置](../docs/security/#同时保护两种-api-传输)和[部署指南](../docs/deployment/)，了解 ACL、RBAC、ABAC 及其他部署方式。

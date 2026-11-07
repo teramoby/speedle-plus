@@ -4,20 +4,20 @@ We welcome your contributions! There are multiple ways to contribute.
 
 ## Promotion
 
-If you like the Speedle project, please let your colleagues/friends know the project. You may consider to _star_ [the project at Github](https://github.com/teramoby/SpeedlePlus). So that more people can find the project.
+If you like the Speedle project, please let your colleagues/friends know the project. You may consider to _star_ [the project at GitHub](https://github.com/teramoby/speedle-plus). So that more people can find the project.
 
 And sharing us your success story with Speedle would be greatly appreciated if you don't mind.
 
 
 ## Discussion
 
-Join us at [speedle-users](https://groups.google.com/forum/#!forum/speedle-users) and/or [speedle-developers](https://groups.google.com/forum/#!forum/speedle-developers) groups.
+Join the [speedle-users](https://groups.google.com/forum/#!forum/speedle-users) and [speedle-developers](https://groups.google.com/forum/#!forum/speedle-developers) Google Groups.
 
-Join the [Speedle Discord community](https://discord.gg/uaY2xVsbbT).
+Join the [Speedle Discord community](https://discord.gg/uaY2xVsbbT). You can also reach the maintainers at [contact@speedle.io](mailto:contact@speedle.io).
 
 ## Issues
 
-If you hit a bug or have an enhancement request then file a [GitHub issue](https://github.com/teramoby/SpeedlePlus/issues).
+If you hit a bug or have an enhancement request then file a [GitHub issue](https://github.com/teramoby/speedle-plus/issues).
 
 If you report a bug, please include:
 
@@ -26,6 +26,9 @@ If you report a bug, please include:
 3. Reproducible Environment and Steps
 4. Expected behavior
 
+## Security
+
+Do not report security vulnerabilities in a public issue. Report them privately as described in [SECURITY.md](SECURITY.md).
 
 ## Code
 
