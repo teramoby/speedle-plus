@@ -1,7 +1,8 @@
 {{- $chinese := eq .Lang "zh" -}}
 {{- $language := cond $chinese "zh-CN" "en" -}}
+{{- $base := .Site.BaseURL -}}
 {{- $image := cond $chinese "/img/social/engine-zh.png" "/img/social/engine-en.png" | absURL -}}
-{{- $organization := dict "@type" "Organization" "name" "Speedle" "url" "https://engine.speedle.io/" -}}
+{{- $organization := dict "@type" "Organization" "name" "Speedle" "url" $base -}}
 {{- $description := .Description | default .Site.Params.description -}}
 {{- $published := .Date -}}
 {{- if or (not $published) $published.IsZero }}{{ $published = .Lastmod }}{{ end -}}
@@ -34,12 +35,12 @@
 {{- $article.SetInMap "data" "name" .Title -}}
 {{- with $description }}{{ $article.SetInMap "data" "description" . }}{{ end -}}
 {{- $article.SetInMap "data" "inLanguage" $language -}}
-{{- $article.SetInMap "data" "isPartOf" (dict "@id" "https://engine.speedle.io/#website") -}}
-{{- $article.SetInMap "data" "about" (dict "@id" "https://engine.speedle.io/#software") -}}
+{{- $article.SetInMap "data" "isPartOf" (dict "@id" (printf "%s#website" $base)) -}}
+{{- $article.SetInMap "data" "about" (dict "@id" (printf "%s#software" $base)) -}}
 {{- $article.SetInMap "data" "mainEntityOfPage" (dict "@type" "WebPage" "@id" .Permalink) -}}
 {{- $article.SetInMap "data" "image" $image -}}
 {{- $article.SetInMap "data" "author" $organization -}}
-{{- $article.SetInMap "data" "publisher" (dict "@type" "Organization" "name" "Speedle" "url" "https://engine.speedle.io/" "logo" (dict "@type" "ImageObject" "url" "https://engine.speedle.io/apple-touch-icon.png" "width" 180 "height" 180)) -}}
+{{- $article.SetInMap "data" "publisher" (dict "@type" "Organization" "name" "Speedle" "url" $base "logo" (dict "@type" "ImageObject" "url" (printf "%sapple-touch-icon.png" $base) "width" 180 "height" 180)) -}}
 {{- if and $published (not $published.IsZero) -}}
   {{- $article.SetInMap "data" "datePublished" ($published.Format "2006-01-02T15:04:05Z07:00") -}}
 {{- end -}}
