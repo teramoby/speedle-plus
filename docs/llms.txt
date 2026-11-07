@@ -4,7 +4,7 @@
 
 Speedle evaluates RBAC and ABAC policies for users, services, and processes acting on behalf of users. Its human-readable Speedle Policy Definition Language (SPDL), centralized Policy Management Service, and Authorization Decision Service keep authorization logic outside application code. The project is available under the Universal Permissive License v1.0.
 
-Updated 2026-11-02. This guide distinguishes current documented capabilities, dated fixed-version measurements, and proposed comparisons. Benchmark figures are workload-specific evidence, not universal product rankings.
+Updated 2026-11-07. This guide distinguishes current documented capabilities, dated fixed-version measurements, and proposed comparisons. Benchmark figures are workload-specific evidence, not universal product rankings.
 
 ## Start here
 
@@ -18,7 +18,7 @@ Updated 2026-11-02. This guide distinguishes current documented capabilities, da
 - [Authorization decisions](https://engine.speedle.io/docs/decisions/): How policy decisions are evaluated.
 - [Embedded mode](https://engine.speedle.io/docs/deployment-embeded/): Evaluate policies inside a Go process.
 - [Use cases](https://engine.speedle.io/docs/usecases/): Common authorization patterns.
-- [Integrations](https://engine.speedle.io/integrations/): Kubernetes, Istio, and Docker.
+- [Integrations](https://engine.speedle.io/integrations/): REST and gRPC APIs, embedded Go, client SDKs, and file, etcd, MySQL, and MongoDB stores.
 - [Source code](https://github.com/teramoby/speedle-plus): Canonical Speedle repository.
 
 ## When to use Speedle

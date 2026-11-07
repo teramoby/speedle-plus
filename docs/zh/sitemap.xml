@@ -402,21 +402,6 @@
   </url>
   
   <url>
-    <loc>https://engine.speedle.io/zh/integrations/docker/</loc>
-    <lastmod>2017-04-10T16:41:54+01:00</lastmod>
-    <xhtml:link
-                rel="alternate"
-                hreflang="en"
-                href="https://engine.speedle.io/integrations/docker/"
-                />
-    <xhtml:link
-                rel="alternate"
-                hreflang="zh"
-                href="https://engine.speedle.io/zh/integrations/docker/"
-                />
-  </url>
-  
-  <url>
     <loc>https://engine.speedle.io/zh/docs/store/</loc>
     <xhtml:link
                 rel="alternate"
@@ -431,20 +416,6 @@
   </url>
   
   <url>
-    <loc>https://engine.speedle.io/zh/integrations/kubernetes/</loc>
-    <xhtml:link
-                rel="alternate"
-                hreflang="en"
-                href="https://engine.speedle.io/integrations/kubernetes/"
-                />
-    <xhtml:link
-                rel="alternate"
-                hreflang="zh"
-                href="https://engine.speedle.io/zh/integrations/kubernetes/"
-                />
-  </url>
-  
-  <url>
     <loc>https://engine.speedle.io/zh/docs/api/</loc>
     <xhtml:link
                 rel="alternate"
@@ -455,20 +426,6 @@
                 rel="alternate"
                 hreflang="zh"
                 href="https://engine.speedle.io/zh/docs/api/"
-                />
-  </url>
-  
-  <url>
-    <loc>https://engine.speedle.io/zh/integrations/istio/</loc>
-    <xhtml:link
-                rel="alternate"
-                hreflang="en"
-                href="https://engine.speedle.io/integrations/istio/"
-                />
-    <xhtml:link
-                rel="alternate"
-                hreflang="zh"
-                href="https://engine.speedle.io/zh/integrations/istio/"
                 />
   </url>
   
@@ -682,22 +639,6 @@
   </url>
   
   <url>
-    <loc>https://engine.speedle.io/zh/categories/cloudnative/</loc>
-    <lastmod>2017-04-10T16:41:54+01:00</lastmod>
-    <priority>0</priority>
-    <xhtml:link
-                rel="alternate"
-                hreflang="en"
-                href="https://engine.speedle.io/categories/cloudnative/"
-                />
-    <xhtml:link
-                rel="alternate"
-                hreflang="zh"
-                href="https://engine.speedle.io/zh/categories/cloudnative/"
-                />
-  </url>
-  
-  <url>
     <loc>https://engine.speedle.io/zh/tags/community/</loc>
     <priority>0</priority>
     <xhtml:link
@@ -771,22 +712,6 @@
                 rel="alternate"
                 hreflang="zh"
                 href="https://engine.speedle.io/zh/tags/discovery/"
-                />
-  </url>
-  
-  <url>
-    <loc>https://engine.speedle.io/zh/tags/docker/</loc>
-    <lastmod>2017-04-10T16:41:54+01:00</lastmod>
-    <priority>0</priority>
-    <xhtml:link
-                rel="alternate"
-                hreflang="en"
-                href="https://engine.speedle.io/tags/docker/"
-                />
-    <xhtml:link
-                rel="alternate"
-                hreflang="zh"
-                href="https://engine.speedle.io/zh/tags/docker/"
                 />
   </url>
   
@@ -881,67 +806,6 @@
                 rel="alternate"
                 hreflang="zh"
                 href="https://engine.speedle.io/zh/tags/identity-domain/"
-                />
-  </url>
-  
-  <url>
-    <loc>https://engine.speedle.io/zh/categories/integration/</loc>
-    <lastmod>2017-04-10T16:41:54+01:00</lastmod>
-    <priority>0</priority>
-    <xhtml:link
-                rel="alternate"
-                hreflang="en"
-                href="https://engine.speedle.io/categories/integration/"
-                />
-    <xhtml:link
-                rel="alternate"
-                hreflang="zh"
-                href="https://engine.speedle.io/zh/categories/integration/"
-                />
-  </url>
-  
-  <url>
-    <loc>https://engine.speedle.io/zh/tags/istio/</loc>
-    <priority>0</priority>
-    <xhtml:link
-                rel="alternate"
-                hreflang="en"
-                href="https://engine.speedle.io/tags/istio/"
-                />
-    <xhtml:link
-                rel="alternate"
-                hreflang="zh"
-                href="https://engine.speedle.io/zh/tags/istio/"
-                />
-  </url>
-  
-  <url>
-    <loc>https://engine.speedle.io/zh/tags/k8s/</loc>
-    <priority>0</priority>
-    <xhtml:link
-                rel="alternate"
-                hreflang="en"
-                href="https://engine.speedle.io/tags/k8s/"
-                />
-    <xhtml:link
-                rel="alternate"
-                hreflang="zh"
-                href="https://engine.speedle.io/zh/tags/k8s/"
-                />
-  </url>
-  
-  <url>
-    <loc>https://engine.speedle.io/zh/tags/kubernetes/</loc>
-    <priority>0</priority>
-    <xhtml:link
-                rel="alternate"
-                hreflang="en"
-                href="https://engine.speedle.io/tags/kubernetes/"
-                />
-    <xhtml:link
-                rel="alternate"
-                hreflang="zh"
-                href="https://engine.speedle.io/zh/tags/kubernetes/"
                 />
   </url>
   
@@ -1308,21 +1172,6 @@
   </url>
   
   <url>
-    <loc>https://engine.speedle.io/zh/tags/versions/</loc>
-    <priority>0</priority>
-    <xhtml:link
-                rel="alternate"
-                hreflang="en"
-                href="https://engine.speedle.io/tags/versions/"
-                />
-    <xhtml:link
-                rel="alternate"
-                hreflang="zh"
-                href="https://engine.speedle.io/zh/tags/versions/"
-                />
-  </url>
-  
-  <url>
     <loc>https://engine.speedle.io/zh/versions/</loc>
     <priority>0</priority>
     <xhtml:link
@@ -1338,17 +1187,17 @@
   </url>
   
   <url>
-    <loc>https://engine.speedle.io/zh/tags/webhook/</loc>
+    <loc>https://engine.speedle.io/zh/tags/versions/</loc>
     <priority>0</priority>
     <xhtml:link
                 rel="alternate"
                 hreflang="en"
-                href="https://engine.speedle.io/tags/webhook/"
+                href="https://engine.speedle.io/tags/versions/"
                 />
     <xhtml:link
                 rel="alternate"
                 hreflang="zh"
-                href="https://engine.speedle.io/zh/tags/webhook/"
+                href="https://engine.speedle.io/zh/tags/versions/"
                 />
   </url>
   
@@ -1454,7 +1303,6 @@
   
   <url>
     <loc>https://engine.speedle.io/zh/integrations/</loc>
-    <lastmod>2017-04-10T16:41:54+01:00</lastmod>
     <xhtml:link
                 rel="alternate"
                 hreflang="en"

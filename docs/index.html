@@ -40,7 +40,7 @@
       <button class="menu" type="button" aria-expanded="false" aria-controls="nav-links" aria-label="Open navigation">☰</button>
       <nav class="nav-links" id="nav-links" aria-label="Main navigation">
         <div class="products"><button class="products-button" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="products-panel">Products<svg class="products-chevron" width="10" height="10" viewBox="0 0 10 10" aria-hidden="true" focusable="false"><path d="M2 3.5 5 6.5 8 3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button><span class="products-heading" aria-hidden="true">Products</span><div class="products-panel" id="products-panel" role="group" aria-label="Products"><a class="product-row" href="https://engine.speedle.io/" aria-current="page"><img class="product-mark" src="/img/speedle/speedle-mark-engine.svg" alt="" width="20" height="20"><span class="product-text"><span class="product-name">Speedle Engine</span><span class="product-desc">Open-source authorization engine</span></span><svg class="product-check" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M3.5 8.5 6.5 11.5 12.5 4.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></a><a class="product-row" href="https://cloud.speedle.io/"><img class="product-mark" src="/img/speedle/speedle-mark-cloud.svg" alt="" width="20" height="20"><span class="product-text"><span class="product-name">Speedle Cloud <span class="product-badge">Coming soon</span></span><span class="product-desc">Hosted authorization for developers</span></span></a><a class="product-row" href="https://ai.speedle.io/"><img class="product-mark" src="/img/speedle/speedle-mark-ai.svg" alt="" width="20" height="20"><span class="product-text"><span class="product-name">Speedle AI</span><span class="product-desc">Access management for AI</span></span></a></div></div>
-        <a href="#about">About</a><a href="#features">Features</a><a href="#integrations">Integrations</a>
+        <a href="#about">About</a><a href="#features">Features</a>
         <a href="/quick-start/">Getting started</a><a href="/docs/">Docs</a><a href="/playground/">Playground</a>
         <a href="/zh/" lang="zh-CN" hreflang="zh-CN" aria-label="切换到中文">中文</a>
         <a class="nav-github" href="https://github.com/teramoby/speedle-plus">GitHub</a>
@@ -109,7 +109,7 @@
         </div>
         <div class="feature-grid">
           <article class="feature-card"><img class="feature-icon" src="/img/speedle/1.%20Simple%20Policy%20Definition%20Language.svg" alt=""><h3>Simple Policy Language</h3><p>Express authorization intent in the human-readable Speedle Policy Definition Language.</p><a href="/docs/spdl/">Learn more</a></article>
-          <article class="feature-card"><img class="feature-icon" src="/img/speedle/2.%20Cloud%20Native.svg" alt=""><h3>Cloud Native</h3><p>Run across clouds and connect to modern infrastructure through pluggable interfaces.</p><a href="/categories/cloudnative/">Learn more</a></article>
+          <article class="feature-card"><img class="feature-icon" src="/img/speedle/2.%20Cloud%20Native.svg" alt=""><h3>Cloud Native</h3><p>Run across clouds and connect to modern infrastructure through pluggable interfaces.</p><a href="/docs/deployment/">Learn more</a></article>
           <article class="feature-card"><img class="feature-icon" src="/img/speedle/3.%20Policy%20Discovery.svg" alt=""><h3>Real-time Policy Discovery</h3><p>Observe runtime interactions and turn real access patterns into enforceable policies.</p><a href="/docs/pms/">Learn more</a></article>
           <article class="feature-card"><img class="feature-icon" src="/img/speedle/4.%20RBAC-ABAC.svg" alt=""><h3>RBAC / ABAC</h3><p>Combine roles and attributes for precise access decisions.</p><a href="/tags/policy/">Learn more</a></article>
           <article class="feature-card"><img class="feature-icon" src="/img/speedle/5.%20Centralized%20Policy%20Management.svg" alt=""><h3>Centralized Management</h3><p>Manage policy for disparate services from one place.</p><a href="/docs/pms/">Learn more</a></article>
@@ -134,20 +134,6 @@
 
 <span class="cm"># Deny overrides grant: Bob cannot borrow with an invalid library card</span>
 <span class="kw">deny</span> <span class="kw">user</span> <span class="str">bob</span> <span class="str">borrow</span> <span class="str">book</span> <span class="kw">if</span> <span class="str">is_card_valid</span> == <span class="str">false</span></pre>
-        </div>
-      </div>
-    </section>
-
-    <section id="integrations">
-      <div class="wrap">
-        <div class="section-head">
-          <div><span class="eyebrow">Integrations</span><h2>Built for the infrastructure you already run</h2></div>
-          <a class="text-link" href="/integrations/">View all integrations</a>
-        </div>
-        <div class="integrations-grid">
-          <a class="integration" href="/integrations/kubernetes/" aria-label="Kubernetes integration"><img src="/img/speedle/22.%20Kubernetes.svg" alt="Kubernetes"></a>
-          <a class="integration" href="/integrations/istio/" aria-label="Istio integration"><img src="/img/speedle/23.%20Istio.svg" alt="Istio"></a>
-          <a class="integration" href="/integrations/docker/" aria-label="Docker integration"><img src="/img/speedle/24.%20Docker.svg" alt="Docker"></a>
         </div>
       </div>
     </section>

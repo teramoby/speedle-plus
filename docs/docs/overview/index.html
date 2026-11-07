@@ -37,7 +37,7 @@
       <button class="menu" type="button" aria-expanded="false" aria-controls="nav-links" aria-label="Open navigation">☰</button>
       <nav class="nav-links" id="nav-links" aria-label="Main navigation">
         <div class="products"><button class="products-button" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="products-panel">Products<svg class="products-chevron" width="10" height="10" viewBox="0 0 10 10" aria-hidden="true" focusable="false"><path d="M2 3.5 5 6.5 8 3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button><span class="products-heading" aria-hidden="true">Products</span><div class="products-panel" id="products-panel" role="group" aria-label="Products"><a class="product-row" href="https://engine.speedle.io/" aria-current="page"><img class="product-mark" src="/img/speedle/speedle-mark-engine.svg" alt="" width="20" height="20"><span class="product-text"><span class="product-name">Speedle Engine</span><span class="product-desc">Open-source authorization engine</span></span><svg class="product-check" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M3.5 8.5 6.5 11.5 12.5 4.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></a><a class="product-row" href="https://cloud.speedle.io/"><img class="product-mark" src="/img/speedle/speedle-mark-cloud.svg" alt="" width="20" height="20"><span class="product-text"><span class="product-name">Speedle Cloud <span class="product-badge">Coming soon</span></span><span class="product-desc">Hosted authorization for developers</span></span></a><a class="product-row" href="https://ai.speedle.io/"><img class="product-mark" src="/img/speedle/speedle-mark-ai.svg" alt="" width="20" height="20"><span class="product-text"><span class="product-name">Speedle AI</span><span class="product-desc">Access management for AI</span></span></a></div></div>
-        <a href="/#about">About</a><a href="/#features">Features</a><a href="/#integrations">Integrations</a>
+        <a href="/#about">About</a><a href="/#features">Features</a>
         <a href="/quick-start/">Getting started</a><a href="/docs/">Docs</a><a href="/playground/">Playground</a>
         <a href="/zh/docs/overview/" lang="zh-CN" hreflang="zh-CN" aria-label="切换到中文">中文</a>
         <a class="nav-github" href="https://github.com/teramoby/speedle-plus">GitHub</a>
@@ -190,7 +190,7 @@
 
 <h2 id="pep-policy-enforcement-point">PEP: Policy Enforcement Point</h2>
 
-<p>The PEP intercepts an access attempt, asks the PDP for a decision and enforces it. Speedle does not ship a general-purpose PEP; the PEP is the application or gateway that calls the ADS. The <a href="/integrations/">Docker, Kubernetes and Istio integrations</a> are sample PEPs.</p>
+<p>The PEP intercepts an access attempt, asks the PDP for a decision and enforces it. Speedle does not ship a general-purpose PEP; the PEP is the application or gateway that calls the ADS through its REST or gRPC API, or that embeds the evaluator in Go. See <a href="/integrations/">Integrations</a> for the supported interfaces.</p>
 
 <h2 id="pip-policy-information-point">PIP: Policy Information Point</h2>
 
@@ -236,7 +236,7 @@ deny user carol delete journal</code></pre></div>
 
 <h2 id="integrations">Integrations</h2>
 
-<p>Speedle provides integration samples for <a href="/integrations/docker/">Docker</a> (a Docker authorization plugin), <a href="/integrations/kubernetes/">Kubernetes</a> (an authorization webhook) and <a href="/integrations/istio/">Istio</a> (a Mixer adapter). Other applications call the ADS through REST or gRPC, or embed the evaluator in Go; see <a href="/docs/deployment/">Deployment</a>.</p>
+<p>Other applications call the ADS through its <a href="/docs/api/">REST or gRPC APIs</a>, or embed the evaluator in Go; see <a href="/docs/deployment/">Deployment</a>. The <a href="/integrations/">Integrations</a> page lists the APIs, SDKs, embedded mode and policy stores that ship today.</p>
 </div>
 </div>
 </main>

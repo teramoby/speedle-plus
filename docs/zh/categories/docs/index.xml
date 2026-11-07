@@ -466,10 +466,15 @@ go run ./website/tests/examples/custom-function package main import ( &amp;#34;e
     <item>
       <title>集成</title>
       <link>https://engine.speedle.io/zh/integrations/</link>
-      <pubDate>Mon, 10 Apr 2017 16:41:54 +0100</pubDate>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/zh/integrations/</guid>
-      <description></description>
+      <description>Speedle 负责做出授权决策。应用、网关或平台中的策略执行点（PEP）会针对每次访问向 Speedle 询问决策，并执行返回的结果。以下接口都是当前支持的接入方式。
+REST 与 gRPC API 在策略管理服务（PMS）中管理服务、策略和角色，向授权决策服务（ADS）请求运行时决策。两者都提供 REST API；启动任一服务时加上 --grpc-endpoint 即可启用对应的 gRPC API。
+ 策略管理 API 授权决策 API 令牌断言 webhook API 概览，包括 PMS 和 ADS 的 proto  嵌入式 Go 在 Go 应用中直接运行求值器，不需要单独的 PMS 或 ADS 进程。嵌入式模式指南使用 Go modules 构建了一个完整示例。
+SDK 提供 Java、Go、Python、Node.js/TypeScript、Rust 和 C#/.NET 客户端 SDK。参见 SDK。
+策略存储 可以使用内置的文件、etcd、MySQL 或 MongoDB 存储，也可以实现存储接口接入其他后端。参见存储扩展。
+此前的指南 此前的 Istio、Kubernetes 和 Docker 示例指南已不再发布。新的集成请使用上面的接口。</description>
     </item>
     
   </channel>
