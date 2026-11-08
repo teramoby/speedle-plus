@@ -126,7 +126,7 @@ ls bin</code></pre></div>
 </ul>
 
 <blockquote>
-<p><strong>macOS:</strong> <code>/usr/sbin/spctl</code> is Apple&rsquo;s Gatekeeper tool and may be selected when you run a bare <code>spctl</code> command. Call Speedle&rsquo;s CLI by its full path, or use <code>./spctl</code> from the directory containing it; this guide uses <code>./bin/spctl</code>. Run <code>command -v spctl</code> to check which executable your shell selects.</p>
+<p><strong>macOS:</strong> <code>/usr/sbin/spctl</code> is Apple&rsquo;s Gatekeeper tool and may be selected when you run a bare <code>spctl</code> command. Call Speedle&rsquo;s CLI by its full path, or use <code>./spctl</code> from the directory containing it; this guide uses <code>./bin/spctl</code>. Run <code>command -v spctl</code> to check which executable your shell selects. Release downloads also provide the same CLI as <code>speedle-spctl_&lt;os&gt;_&lt;arch&gt;</code>, a name that does not collide with Apple&rsquo;s tool.</p>
 </blockquote>
 
 <p>Modern Go uses <code>go build</code> or <code>go install</code> to build executables; <code>go get</code> manages module dependencies.</p>

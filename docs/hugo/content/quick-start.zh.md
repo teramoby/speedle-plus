@@ -66,7 +66,7 @@ spctl  speedle-ads  speedle-pms
 - `speedle-pms`：授权策略管理服务（PMS）。
 - `speedle-ads`：授权决策服务（ADS）。
 
-> **macOS：** `/usr/sbin/spctl` 是 Apple 的 Gatekeeper 工具，直接运行 `spctl` 时可能会选中它。请使用 Speedle CLI 的完整路径，或在其所在目录中用 `./spctl` 调用；本指南统一使用 `./bin/spctl`。运行 `command -v spctl` 可查看 shell 实际选择的可执行程序。
+> **macOS：** `/usr/sbin/spctl` 是 Apple 的 Gatekeeper 工具，直接运行 `spctl` 时可能会选中它。请使用 Speedle CLI 的完整路径，或在其所在目录中用 `./spctl` 调用；本指南统一使用 `./bin/spctl`。运行 `command -v spctl` 可查看 shell 实际选择的可执行程序。发布版本也会以 `speedle-spctl_<os>_<arch>` 的名称提供同一个 CLI，该名称不会与 Apple 的工具冲突。
 
 新版 Go 使用 `go build` 或 `go install` 构建可执行程序；`go get` 用于管理模块依赖。
 

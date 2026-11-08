@@ -71,7 +71,7 @@ grant (role designer, role dba) update db_design_doc
 printf '{}\n' > docs-policies.json
 ```
 
-> **macOS：** `/usr/sbin/spctl` 是 Apple 的 Gatekeeper 工具，直接运行 `spctl` 时可能会选中它。请使用 Speedle CLI 的完整路径，或在其所在目录中用 `./spctl` 调用；下面的示例统一使用 `./bin/spctl`。运行 `command -v spctl` 可查看 shell 实际选择的可执行程序。
+> **macOS：** `/usr/sbin/spctl` 是 Apple 的 Gatekeeper 工具，直接运行 `spctl` 时可能会选中它。请使用 Speedle CLI 的完整路径，或在其所在目录中用 `./spctl` 调用；下面的示例统一使用 `./bin/spctl`。运行 `command -v spctl` 可查看 shell 实际选择的可执行程序。发布版本也会以 `speedle-spctl_<os>_<arch>` 的名称提供同一个 CLI，该名称不会与 Apple 的工具冲突。
 
 终端一启动 PMS，并保持运行：
 
