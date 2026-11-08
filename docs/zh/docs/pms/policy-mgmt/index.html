@@ -20,7 +20,7 @@
 <link rel="alternate" hreflang="zh-CN" href="https://engine.speedle.io/zh/docs/pms/policy-mgmt/">
 <link rel="alternate" hreflang="x-default" href="https://engine.speedle.io/docs/pms/policy-mgmt/">
 <meta property="og:type" content="article">
-<meta property="article:modified_time" content="2026-11-08T20:55:55&#43;08:00">
+<meta property="article:modified_time" content="2026-11-09T00:26:53&#43;08:00">
 <meta property="og:site_name" content="Speedle Engine">
 <meta property="og:title" content="策略管理 · Speedle Engine">
 <meta property="og:description" content="管理服务、授权策略、角色策略和自定义函数的完整生命周期。">
@@ -36,7 +36,7 @@
 <meta name="twitter:image" content="https://engine.speedle.io/img/social/engine-zh.png">
 <meta name="twitter:image:alt" content="Speedle Engine — 快速、简单的权限控制">
 
-<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/zh/docs/pms/policy-mgmt/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-08T20:55:55+08:00","description":"管理服务、授权策略、角色策略和自定义函数的完整生命周期。","headline":"策略管理","image":"https://engine.speedle.io/img/social/engine-zh.png","inLanguage":"zh-CN","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/zh/docs/pms/policy-mgmt/","@type":"WebPage"},"name":"策略管理","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/zh/docs/pms/policy-mgmt/"}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/zh/docs/pms/policy-mgmt/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-09T00:26:53+08:00","description":"管理服务、授权策略、角色策略和自定义函数的完整生命周期。","headline":"策略管理","image":"https://engine.speedle.io/img/social/engine-zh.png","inLanguage":"zh-CN","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/zh/docs/pms/policy-mgmt/","@type":"WebPage"},"name":"策略管理","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/zh/docs/pms/policy-mgmt/"}</script>
 <script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/zh/docs/pms/policy-mgmt/#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://engine.speedle.io/zh/","name":"首页","position":1},{"@type":"ListItem","item":"https://engine.speedle.io/zh/docs/","name":"文档","position":2},{"@type":"ListItem","item":"https://engine.speedle.io/zh/docs/pms/","name":"Speedle 策略","position":3},{"@type":"ListItem","item":"https://engine.speedle.io/zh/docs/pms/policy-mgmt/","name":"策略管理","position":4}]}</script><link href="/css/docs.css" rel="stylesheet" type="text/css">
 
 
@@ -262,7 +262,7 @@ grant role manager update res1</code></pre></div>
 <p>请根据命令选择具有相应 scope 的 API 令牌。<code>pms:read</code> 用于 <code>get</code> 和 <code>discover</code> 查询，<code>pms:write</code> 用于 <code>create</code>、<code>delete</code> 和发现记录重置。只有 ADS scope 的令牌不能管理策略，服务端会返回 <code>403 insufficient_scope</code>。</p>
 
 <p>通过全局命令行参数指定端点和令牌：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./bin/spctl --pms-endpoint https://cloud.speedle.io/policy-mgmt/v1 --token <span style="color:#f1fa8c">&#39;&lt;api-token&gt;&#39;</span> get service --all</code></pre></div>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">./bin/spctl --pms-endpoint https://cloud.speedle.io/policy-mgmt/v1 --token &#39;&lt;api-token&gt;&#39; get service --all</code></pre></div>
 <p>如需保存配置，请使用 <code>~/.speedle</code>。文件每行包含一个 <code>名称=值</code> 配置项，名称与命令行参数一致：</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ini" data-lang="ini"><span style="color:#50fa7b">pms-endpoint</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">https://cloud.speedle.io/policy-mgmt/v1</span>
 <span style="color:#50fa7b">token</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&lt;api-token&gt;</span></code></pre></div>

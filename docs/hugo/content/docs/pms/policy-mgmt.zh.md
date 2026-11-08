@@ -123,7 +123,7 @@ https://cloud.speedle.io/policy-mgmt/v1
 
 通过全局命令行参数指定端点和令牌：
 
-```bash
+```text
 ./bin/spctl --pms-endpoint https://cloud.speedle.io/policy-mgmt/v1 --token '<api-token>' get service --all
 ```
 

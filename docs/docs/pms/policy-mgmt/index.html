@@ -20,7 +20,7 @@
 <link rel="alternate" hreflang="zh-CN" href="https://engine.speedle.io/zh/docs/pms/policy-mgmt/">
 <link rel="alternate" hreflang="x-default" href="https://engine.speedle.io/docs/pms/policy-mgmt/">
 <meta property="og:type" content="article">
-<meta property="article:modified_time" content="2026-11-08T20:55:55&#43;08:00">
+<meta property="article:modified_time" content="2026-11-09T00:26:53&#43;08:00">
 <meta property="og:site_name" content="Speedle Engine">
 <meta property="og:title" content="Policy Management · Speedle Engine">
 <meta property="og:description" content="Manage policy lifecycle ">
@@ -36,7 +36,7 @@
 <meta name="twitter:image" content="https://engine.speedle.io/img/social/engine-en.png">
 <meta name="twitter:image:alt" content="Speedle Engine — Fast. Simple. Access control">
 
-<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/docs/pms/policy-mgmt/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-08T20:55:55+08:00","description":"Manage policy lifecycle ","headline":"Policy Management","image":"https://engine.speedle.io/img/social/engine-en.png","inLanguage":"en","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/docs/pms/policy-mgmt/","@type":"WebPage"},"name":"Policy Management","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/docs/pms/policy-mgmt/"}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/docs/pms/policy-mgmt/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-09T00:26:53+08:00","description":"Manage policy lifecycle ","headline":"Policy Management","image":"https://engine.speedle.io/img/social/engine-en.png","inLanguage":"en","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/docs/pms/policy-mgmt/","@type":"WebPage"},"name":"Policy Management","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/docs/pms/policy-mgmt/"}</script>
 <script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/docs/pms/policy-mgmt/#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://engine.speedle.io/","name":"Home","position":1},{"@type":"ListItem","item":"https://engine.speedle.io/docs/","name":"Documentation","position":2},{"@type":"ListItem","item":"https://engine.speedle.io/docs/pms/","name":"Speedle Policy","position":3},{"@type":"ListItem","item":"https://engine.speedle.io/docs/pms/policy-mgmt/","name":"Policy Management","position":4}]}</script><link href="/css/docs.css" rel="stylesheet" type="text/css">
 
 
@@ -262,7 +262,7 @@ grant role manager update res1</code></pre></div>
 <p>Choose an API token with the scopes required by your commands. <code>pms:read</code> covers <code>get</code> and <code>discover</code> reads; <code>pms:write</code> covers <code>create</code>, <code>delete</code> and discovery resets. A token that only has ADS scopes cannot manage policies and is rejected with <code>403 insufficient_scope</code>.</p>
 
 <p>Pass the endpoint and token as global flags:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./bin/spctl --pms-endpoint https://cloud.speedle.io/policy-mgmt/v1 --token <span style="color:#f1fa8c">&#39;&lt;api-token&gt;&#39;</span> get service --all</code></pre></div>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">./bin/spctl --pms-endpoint https://cloud.speedle.io/policy-mgmt/v1 --token &#39;&lt;api-token&gt;&#39; get service --all</code></pre></div>
 <p>For a saved configuration, use <code>~/.speedle</code>. Its format is one <code>name=value</code> pair per line, with the same flag names as the command line:</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ini" data-lang="ini"><span style="color:#50fa7b">pms-endpoint</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">https://cloud.speedle.io/policy-mgmt/v1</span>
 <span style="color:#50fa7b">token</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&lt;api-token&gt;</span></code></pre></div>
