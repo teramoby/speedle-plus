@@ -46,7 +46,7 @@ Speedle Cloud 支持授权策略和角色策略，不支持外部自定义函数
 
 在服务工作区找到 **Playground**，选择 **Is allowed**。在 Principals 中输入 `[{"type":"user","name":"alice"}]`，在 Resource 中输入 `/books`，在 Action 中输入 `get`，然后点击 **运行测试**。
 
-Playground 使用已保存的策略进行判定，不会包含编辑器中尚未保存的草稿。修改策略或请求后，需要重新运行测试才能刷新结果。
+Playground 只用已保存的策略判定，不包含编辑器中尚未保存的草稿。修改策略或请求后，需要重新运行测试才能刷新结果。
 
 > **截图待补充**
 >
@@ -64,7 +64,7 @@ Playground 使用已保存的策略进行判定，不会包含编辑器中尚未
 
 ## 6. 调用授权 API
 
-带认证的授权调用开放后，应用服务端将向 `https://cloud.speedle.io/authz-check/v1/is-allowed` 发送 `POST` 请求，并在一个 `Authorization: Bearer` 请求头中携带签发的令牌：
+授权 API 的认证调用开放后，应用服务端将向 `https://cloud.speedle.io/authz-check/v1/is-allowed` 发送 `POST` 请求，并通过一个 `Authorization: Bearer` 请求头携带签发的令牌：
 
 ```http
 POST /authz-check/v1/is-allowed

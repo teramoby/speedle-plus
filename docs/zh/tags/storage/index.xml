@@ -6,7 +6,7 @@
     <description>Recent content in Storage on Speedle</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>zh-cn</language>
-    <lastBuildDate>Sat, 31 Oct 2026 22:36:36 +0800</lastBuildDate>
+    <lastBuildDate>Sun, 08 Nov 2026 10:01:40 +0800</lastBuildDate>
     
 	<atom:link href="https://engine.speedle.io/zh/tags/storage/index.xml" rel="self" type="application/rss+xml" />
     
@@ -54,13 +54,13 @@ docker run --name speedle-etcd --detach \  --publish 127.0.0.1:2379:2379 \  --vo
     <item>
       <title>存储扩展</title>
       <link>https://engine.speedle.io/zh/docs/store/</link>
-      <pubDate>Sat, 31 Oct 2026 22:36:36 +0800</pubDate>
+      <pubDate>Sun, 08 Nov 2026 10:01:40 +0800</pubDate>
       
       <guid>https://engine.speedle.io/zh/docs/store/</guid>
       <description>内置存储与扩展接口 独立服务在 pkg/store 下注册 file、etcd、MongoDB、MySQL 实现。可用不代表具有相同的运维保证，部署前应分别审查后端认证、持久化、事务与 watch 行为。下方配置说明属性名称，本地示例不涉及启动 etcd/MongoDB 集群。
 完整后端实现 pms.PolicyStoreManager：服务、授权策略、角色策略、函数管理，以及快照读取与 watch/stop。ADS 接受较窄的只读/watch 接口 PolicyStoreManagerADS。实现新后端时应以实际接口为准，不能照搬历史文档中不完整的方法列表。
 逐步部署教程：MySQL 配置指南、etcd 配置指南与 MongoDB 配置指南。
-存储故障与缓存授权 file、etcd、MySQL、MongoDB 使用相同的 ADS 故障策略。 storeFailureGracePeriod 默认是 &amp;quot;0s&amp;quot;：检测到存储故障后，授权返回 allowed:false 和求值错误。ADS 保持运行并持续重试；连接恢复后，还必须成功 加载完整策略快照，才能恢复授权。启用 watch 时，还必须先重新建立故障的订阅； watch 未恢复时，成功读取数据不会重置故障或宽限期的截止时间。文件被删除时会持续重试，不再退出 ADS。
+存储故障与缓存授权 file、etcd、MySQL、MongoDB 使用相同的 ADS 故障策略。 storeFailureGracePeriod 默认是 &amp;quot;0s&amp;quot;：检测到存储故障后，授权返回 allowed:false 和求值错误。ADS 保持运行并持续重试；连接恢复后，还必须成功 加载完整策略快照，才能恢复授权。启用 watch 时，还必须先重新建立故障的订阅； watch 未恢复时，成功读取数据不会重置故障或宽限期的截止时间。策略文件删除后仍会持续重试，ADS 不再退出。
 如果部署方明确接受撤权延迟，可在 ADS JSON 配置的顶层设置有限时长，例如 &amp;quot;storeFailureGracePeriod&amp;quot;: &amp;quot;5s&amp;quot;。对应参数为 --store-failure-grace-period=5s，环境变量为 SPDL_STORE_FAILURE_GRACE_PERIOD，继续遵循“显式参数 → 环境变量 → 配置文件 → 默认值”。 重试失败不会延长宽限期。宽限期内按最后一份完整快照授权，因此撤权要等同步恢复 才能生效。缓存部分更新失败和授权计算 panic 不适用宽限期，仍然立即拒绝。
 内置存储约每秒执行一次轻量健康检查，单次检查超时为一秒；watch 可能更早报告 故障，正在执行的存储读取也受各自后端超时限制。故障检测和正常策略传播均为异步， 不提供瞬时撤权保证。设置 enableWatch:false 时，请求仍检查存储健康，普通策略 变更需要显式刷新；故障恢复时，即使关闭 watch，也必须加载完整快照。首次加载 失败时没有可用缓存，不适用宽限期。自定义存储可以实现 pms.StoreHealthChecker 并发送 pms.STORE_UNAVAILABLE 事件，接入相同故障策略。</description>
     </item>

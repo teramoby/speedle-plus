@@ -13,7 +13,7 @@ bref = "用 go get 添加 github.com/teramoby/speedle-sdk/go v0.2.0，再向本�
 
 Go SDK 支持最新的两个 Go 版本，只使用标准库。模块：[`github.com/teramoby/speedle-sdk/go`](https://pkg.go.dev/github.com/teramoby/speedle-sdk/go) v0.2.0，包名 `speedle`。参考文档：[speedle-sdk/go](https://github.com/teramoby/speedle-sdk/tree/main/go)。
 
-示例检查的策略见 [SDK 概览](/docs/sdks/#示例策略)。
+示例使用的策略见 [SDK 概览](/docs/sdks/#示例策略)。
 
 ## 添加依赖
 
@@ -152,4 +152,4 @@ alice delete /docs/public: allowed=false reason=NO_APPLICABLE_POLICIES
 
 ## 错误处理
 
-请求被拒绝不是错误：`IsAllowed` 返回 `false`，`Check` 返回 `Allowed` 为 false 的结果及原因，如上文的 `delete` 调用。在默认设置下，调用无法得出授权结果时，调用返回非 nil 的 `error`（配置无效时 `NewClient` 也是如此）。示例向标准错误输出 `Speedle error: <消息>`，并以状态码 1 退出。
+授权请求返回 Deny 并不代表调用出错：`IsAllowed` 返回 `false`，`Check` 返回 `Allowed` 为 false 的结果及原因，如上文的 `delete` 调用。在默认设置下，调用无法得出授权结果时，调用返回非 nil 的 `error`（配置无效时 `NewClient` 也是如此）。示例向标准错误输出 `Speedle error: <消息>`，并以状态码 1 退出。

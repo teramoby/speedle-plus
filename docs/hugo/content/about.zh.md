@@ -3,13 +3,13 @@ title = "关于 Speedle"
 icon = "Speedle_logo_about.svg"
 +++
 
-Speedle 是一个开源的细粒度访问控制引擎，用于满足云原生应用的授权需求。Speedle 提供策略驱动的访问控制，把授权决策从应用中剥离出来，交给策略引擎处理。策略引擎可以针对已登录的用户，或代表用户执行操作的进程，评估 RBAC/ABAC 策略。Speedle 包含 SPDL，即 Speedle Policy Definition Language（Speedle 策略定义语言）。
+Speedle 是开源的细粒度访问控制引擎，为云原生应用处理授权。应用把授权决策交给 Speedle，由它根据 RBAC/ABAC 策略判断已登录用户，或代表用户执行操作的进程，能否访问指定资源。Speedle 自带的策略语言叫 SPDL（Speedle Policy Definition Language，Speedle 策略定义语言）。
 
 Speedle 由开发 Oracle Entitlements Server（OES）的同一团队打造，其设计建立在该团队在 OES、BEA ALES/WLES、CrossLogix 等前序授权产品上多年产品迭代的经验之上。
 
 <p class="license origin-note"><em>本项目源自开源项目 <a href="https://github.com/oracle/speedle" style="text-decoration:underline"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false" style="fill:currentColor;vertical-align:-0.12em;margin-right:4px"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>Oracle Speedle</a>，主要维护者正是原 Oracle Speedle 的开发者。我们虽已离开 Oracle，仍在持续维护这个项目，供大家自由使用。项目许可证保持 UPL 1.0 不变。如有任何问题，欢迎联系 <a href="mailto:contact@speedle.io" style="text-decoration:underline">contact@speedle.io</a>。</em></p>
 
-Speedle 开源版本包括：
+Speedle 开源版包含：
 
 - SPDL（Speedle Policy Definition Language，Speedle 策略定义语言）
 - 策略管理服务（Policy Management Service）

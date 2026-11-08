@@ -386,6 +386,15 @@ const homes = {'/': 'Speedle Engine — Fast. Simple. Access control', '/zh/': '
   const title = titleOf(html);
   assert.ok(title, `Page title in ${route}`);
   assert.ok(!/[.。]$/.test(title), `No trailing full stop in the title of ${route}`);
+  if (zh) {
+   const pageTitle = title.replace(/ · Speedle Engine$/, '');
+   // Product names, protocol names and version numbers stay as they are; everything else is localized.
+   const technicalTitle = new Set(['API', 'SDK', 'PMS', 'PDP', 'SPDL', 'TLS', 'MySQL', 'MongoDB', 'v0.1.0', 'Speedle Cloud',
+    'C#/.NET SDK', 'Go SDK', 'Java SDK', 'Node.js/TypeScript SDK', 'Python SDK', 'Rust SDK']).has(pageTitle);
+   assert.ok(/[一-鿿]/.test(pageTitle) || technicalTitle, `Chinese page has a localized title in ${route}: ${pageTitle}`);
+   const description = contentOf(html, /<meta name="description" content="([^"]*)">/);
+   if (description) assert.ok(/[一-鿿]/.test(description), `Chinese page has a localized meta description in ${route}`);
+  }
   assert.equal(contentOf(html, /<meta property="og:title" content="([^"]*)">/), title, `og:title follows title in ${route}`);
   const canonical = contentOf(html, /<link rel="canonical" href="([^"]+)">/);
   assert.ok(canonical, `Canonical in ${route}`);

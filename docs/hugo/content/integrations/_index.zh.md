@@ -6,7 +6,7 @@ description = "将 Speedle 接入你的应用与基础设施。"
 aliases = ["/zh/integrations/istio/", "/zh/integrations/kubernetes/", "/zh/integrations/docker/"]
 +++
 
-Speedle 负责做出授权决策。应用、网关或平台中的策略执行点（PEP）会针对每次访问向 Speedle 询问决策，并执行返回的结果。以下接口都是当前支持的接入方式。
+Speedle 负责授权决策。应用、网关或平台中的策略执行点（PEP）在每次访问时向 Speedle 请求决策，并执行返回的结果。下面是目前支持的接入方式。
 
 ## REST 与 gRPC API
 

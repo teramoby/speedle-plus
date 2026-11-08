@@ -11,7 +11,7 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
     <meta name="viewport" content="width=device-width, initial-scale=1"><title>系统架构 · Speedle Engine</title>
-<meta name="description" content="Speedle building blocks">
+<meta name="description" content="了解 Speedle 的策略管理服务、策略存储和授权决策服务，以及各组件如何协作。">
 <meta name="generator" content="Hugo 0.48" />
 <link href="https://engine.speedle.io/index.xml" rel="alternate" type="application/rss+xml">
 <link rel="canonical" href="https://engine.speedle.io/zh/docs/architecture/">
@@ -22,7 +22,7 @@
 <meta property="og:type" content="article">
 <meta property="og:site_name" content="Speedle Engine">
 <meta property="og:title" content="系统架构 · Speedle Engine">
-<meta property="og:description" content="Speedle building blocks">
+<meta property="og:description" content="了解 Speedle 的策略管理服务、策略存储和授权决策服务，以及各组件如何协作。">
 <meta property="og:url" content="https://engine.speedle.io/zh/docs/architecture/">
 <meta property="og:image" content="https://engine.speedle.io/img/social/engine-zh.png">
 <meta property="og:image:width" content="1200">
@@ -31,11 +31,11 @@
 <meta property="og:image:alt" content="Speedle Engine — 快速、简单的权限控制">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="系统架构 · Speedle Engine">
-<meta name="twitter:description" content="Speedle building blocks">
+<meta name="twitter:description" content="了解 Speedle 的策略管理服务、策略存储和授权决策服务，以及各组件如何协作。">
 <meta name="twitter:image" content="https://engine.speedle.io/img/social/engine-zh.png">
 <meta name="twitter:image:alt" content="Speedle Engine — 快速、简单的权限控制">
 
-<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/zh/docs/architecture/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-08T08:33:54+08:00","description":"Speedle building blocks","headline":"系统架构","image":"https://engine.speedle.io/img/social/engine-zh.png","inLanguage":"zh-CN","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/zh/docs/architecture/","@type":"WebPage"},"name":"系统架构","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/zh/docs/architecture/"}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/zh/docs/architecture/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-08T10:01:40+08:00","description":"了解 Speedle 的策略管理服务、策略存储和授权决策服务，以及各组件如何协作。","headline":"系统架构","image":"https://engine.speedle.io/img/social/engine-zh.png","inLanguage":"zh-CN","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/zh/docs/architecture/","@type":"WebPage"},"name":"系统架构","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/zh/docs/architecture/"}</script>
 <script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/zh/docs/architecture/#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://engine.speedle.io/zh/","name":"首页","position":1},{"@type":"ListItem","item":"https://engine.speedle.io/zh/docs/","name":"文档","position":2},{"@type":"ListItem","item":"https://engine.speedle.io/zh/docs/architecture/","name":"系统架构","position":3}]}</script><link href="/css/docs.css" rel="stylesheet" type="text/css">
 
 
@@ -75,18 +75,20 @@
 
 
 
+
+
 <li data-docs-depth="-1" class="docs-nav-section parent"><span class="docs-nav-heading">文档</span>
 <ul class="sub-menu">
 <li data-docs-depth="0" class=""><a href="/zh/docs/usecases/">使用场景</a></li>
 <li data-docs-depth="0" class=""><a href="/zh/docs/overview/">概览</a></li>
-<li data-docs-depth="0" class=""><a href="/zh/docs/spdl/">SPDL - Speedle 策略定义语言</a></li>
+<li data-docs-depth="0" class=""><a href="/zh/docs/spdl/">SPDL：Speedle 策略定义语言</a></li>
 <li data-docs-depth="0" class="active"><a href="/zh/docs/architecture/" aria-current="page">系统架构</a></li>
-<li data-docs-depth="0" class=""><a href="/zh/docs/deployment-embeded/">Speedle嵌入模式</a></li>
-<li data-docs-depth="0" class=""><a href="/zh/docs/deployment/">Speedle服务的部署方式</a></li>
+<li data-docs-depth="0" class=""><a href="/zh/docs/deployment-embeded/">Speedle 嵌入模式</a></li>
+<li data-docs-depth="0" class=""><a href="/zh/docs/deployment/">部署 Speedle</a></li>
 
 
 
-<li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading">Speedle策略</span>
+<li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading">Speedle 策略</span>
 <ul class="">
 <li data-docs-depth="1" class=""><a href="/zh/docs/pms/policy-mgmt/">策略管理</a></li>
 <li data-docs-depth="1" class=""><a href="/zh/docs/pms/global-policy/">全局角色策略</a></li>
@@ -95,9 +97,9 @@
 </ul>
 
 </li>
-<li data-docs-depth="0" class=""><a href="/zh/docs/decisions/">授权查询</a></li>
+<li data-docs-depth="0" class=""><a href="/zh/docs/decisions/">授权决策</a></li>
 <li data-docs-depth="0" class=""><a href="/zh/docs/idd/">用户身份域</a></li>
-<li data-docs-depth="0" class=""><a href="/zh/docs/assertor/">令牌用户身份断言</a></li>
+<li data-docs-depth="0" class=""><a href="/zh/docs/assertor/">令牌断言</a></li>
 
 
 
@@ -114,8 +116,8 @@
 
 <li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading">API</span>
 <ul class="">
-<li data-docs-depth="1" class=""><a href="/zh/docs/api/asserter_api/">令牌断言插件 API</a></li>
-<li data-docs-depth="1" class=""><a href="/zh/docs/api/decision_api/">授权运行时/决策 API</a></li>
+<li data-docs-depth="1" class=""><a href="/zh/docs/api/asserter_api/">令牌断言 API</a></li>
+<li data-docs-depth="1" class=""><a href="/zh/docs/api/decision_api/">授权决策 API</a></li>
 <li data-docs-depth="1" class=""><a href="/zh/docs/api/management_api/">策略管理 API</a></li>
 </ul>
 
@@ -150,8 +152,6 @@
 </ul>
 
 </li>
-
-
 </ul>
 </nav>
 
@@ -162,34 +162,38 @@
 <div id="main">
 
   <h1>系统架构</h1>
-  <p class="docs-lead">Speedle architecture</p>
+  <p class="docs-lead">Speedle 架构与组件协作流程</p>
 
 
 
   <div id="kube-component" class="content">
 
-<h2 id="modules">Modules</h2>
+<p><a id="modules"></a></p>
 
-<p>Speedle is an authorization engine comprised of these components:</p>
+<h2 id="核心组件">核心组件</h2>
+
+<p>Speedle 授权引擎由以下组件组成：</p>
 
 <ul>
-<li><p>Policy Management Service (PMS) API - Manages the authorization and role policies, and the objects from which they are created.</p></li>
+<li><p><strong>策略管理服务（PMS）API</strong>：管理授权策略、角色策略及其依赖的对象。</p></li>
 
-<li><p>Policy repository - Stores all the policy artifacts. The policy repository can be a json file, or a persistent store such as a database or etcd.</p></li>
+<li><p><strong>策略存储</strong>：保存所有策略数据，可以使用 JSON 文件，也可以使用数据库或 etcd 等持久化存储。</p></li>
 
-<li><p>Authorization Decision Service (ADS) API - Evaluates the authorization requests against the applicable policies and returns GRANT/DENY decisions.</p></li>
+<li><p><strong>授权决策服务（ADS）API</strong>：根据适用的策略评估授权请求，返回 GRANT 或 DENY。</p></li>
 </ul>
 
-<p>This diagram shows the interaction between these components.</p>
+<p>下图展示了这些组件如何协作。</p>
 
 <p><img src="/img/speedle/spdlarch.jpg" width="524" height="241" loading="lazy" /></p>
 
-<p>(1) Users create/manage policies through the Policy Management Service API.<br />
-(2) The Policy Management Service persists the policies in the policy repository.<br />
-(3) The policies are provisioned from the policy repository to the Authorization Decision Service API.<br />
-(4) Users systems invoke the Authorization Decision Service API for authorization checks.</p>
+<ol>
+<li>用户通过策略管理服务 API 创建和管理策略。<br /></li>
+<li>策略管理服务把策略写入策略存储。<br /></li>
+<li>策略从存储同步到授权决策服务。<br /></li>
+<li>用户系统调用授权决策服务 API，检查请求是否允许访问。</li>
+</ol>
 
-<p>If you are familiar with the XACML model, the Policy Management Service (PMS) serves as the Policy Administration Point (PAP), and the Authorization Decision Service (ADS) serves as the Policy Decision Point (PDP).</p>
+<p>熟悉 XACML 的话，可以把策略管理服务（PMS）看作策略管理点（PAP），把授权决策服务（ADS）看作策略决策点（PDP）。</p>
 </div>
 </div>
 </main>

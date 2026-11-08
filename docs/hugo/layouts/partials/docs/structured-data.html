@@ -18,7 +18,7 @@
 {{- $items := newScratch -}}
 {{- range $i := seq 0 (sub $length 1) -}}
   {{- $crumb := index $pages (sub (sub $length 1) $i) -}}
-  {{- $name := $crumb.Title -}}
+  {{- $name := partial "localized-title.html" $crumb -}}
   {{- if eq $crumb.Kind "home" -}}
     {{- $name = cond $chinese "首页" "Home" -}}
   {{- end -}}
@@ -29,8 +29,8 @@
 {{- $article.SetInMap "data" "@type" (cond .IsPage "TechArticle" "WebPage") -}}
 {{- $article.SetInMap "data" "@id" (printf "%s#%s" .Permalink (cond .IsPage "article" "webpage")) -}}
 {{- $article.SetInMap "data" "url" .Permalink -}}
-{{- $article.SetInMap "data" "headline" .Title -}}
-{{- $article.SetInMap "data" "name" .Title -}}
+{{- $article.SetInMap "data" "headline" (partial "localized-title.html" .) -}}
+{{- $article.SetInMap "data" "name" (partial "localized-title.html" .) -}}
 {{- with $description }}{{ $article.SetInMap "data" "description" . }}{{ end -}}
 {{- $article.SetInMap "data" "inLanguage" $language -}}
 {{- $article.SetInMap "data" "isPartOf" (dict "@id" (printf "%s#website" $base)) -}}

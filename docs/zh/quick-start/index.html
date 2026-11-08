@@ -178,7 +178,7 @@ ls bin</code></pre></div>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl --fail --silent --show-error --header <span style="color:#f1fa8c">&#39;Content-Type: application/json&#39;</span> --data <span style="color:#f1fa8c">&#39;{&#34;subject&#34;:{&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;,&#34;name&#34;:&#34;LiSi&#34;}]},&#34;serviceName&#34;:&#34;library&#34;,&#34;resource&#34;:&#34;book&#34;,&#34;action&#34;:&#34;borrow&#34;}&#39;</span> http://127.0.0.1:6734/authz-check/v1/is-allowed</code></pre></div>
 <p>响应中应包含 <code>&quot;allowed&quot;:false</code>。</p>
 
-<p><code>reason</code> 字段说明决策原因：<code>0</code>（<code>GRANT_POLICY_FOUND</code>）表示找到授权策略；<code>3</code>（<code>NO_APPLICABLE_POLICIES</code>）表示没有适用的策略，Speedle 默认拒绝。完整原因码见<a href="/zh/docs/decisions/">授权查询</a>。</p>
+<p><code>reason</code> 字段说明决策原因：<code>0</code>（<code>GRANT_POLICY_FOUND</code>）表示找到授权策略；<code>3</code>（<code>NO_APPLICABLE_POLICIES</code>）表示没有适用的策略，Speedle 默认拒绝。完整原因码见<a href="/zh/docs/decisions/">授权决策</a>。</p>
 
 <h2 id="第五步-添加带条件-abac-的策略">第五步：添加带条件（ABAC）的策略</h2>
 
@@ -186,7 +186,7 @@ ls bin</code></pre></div>
 
 <!-- quick-start: abac-policy -->
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ create policy -c <span style="color:#f1fa8c">&#34;grant user ZhangSan borrow ebook if clearance &gt;= 3&#34;</span> --service-name<span style="color:#ff79c6">=</span>library</code></pre></div>
-<p>PEP（策略执行点）负责传入请求属性，条件只根据请求中的属性求值。下文的 <code>clearance</code> 值仅用于演示请求格式：真实的 PEP 必须从可信来源获取属性值，例如已认证的令牌声明或可信存储，绝不能取自正在被授权的请求本身。请求不带 <code>clearance</code> 时，该条件不匹配。</p>
+<p>PEP（策略执行点）负责传入请求属性，条件只根据请求中的属性求值。下文的 <code>clearance</code> 值仅用于演示请求格式：真实的 PEP 必须从可信来源获取属性值，例如已认证的令牌声明或可信存储，不能直接信任客户端在待授权请求中自行填写的值。请求不带 <code>clearance</code> 时，该条件不匹配。</p>
 
 <p><code>clearance</code> 为 4 时允许：</p>
 
@@ -194,7 +194,7 @@ ls bin</code></pre></div>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl --fail --silent --show-error --header <span style="color:#f1fa8c">&#39;Content-Type: application/json&#39;</span> --data <span style="color:#f1fa8c">&#39;{&#34;subject&#34;:{&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;,&#34;name&#34;:&#34;ZhangSan&#34;}]},&#34;serviceName&#34;:&#34;library&#34;,&#34;resource&#34;:&#34;ebook&#34;,&#34;action&#34;:&#34;borrow&#34;,&#34;attributes&#34;:[{&#34;name&#34;:&#34;clearance&#34;,&#34;type&#34;:&#34;numeric&#34;,&#34;value&#34;:4}]}&#39;</span> http://127.0.0.1:6734/authz-check/v1/is-allowed</code></pre></div>
 <p>响应中应包含 <code>&quot;allowed&quot;:true</code> 和 <code>&quot;reason&quot;:0</code>。</p>
 
-<p><code>clearance</code> 为 2 时条件不匹配，没有适用的策略，请求被拒绝：</p>
+<p><code>clearance</code> 为 2 时条件不匹配，没有适用的策略，请求返回 Deny：</p>
 
 <!-- quick-start: abac-deny -->
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl --fail --silent --show-error --header <span style="color:#f1fa8c">&#39;Content-Type: application/json&#39;</span> --data <span style="color:#f1fa8c">&#39;{&#34;subject&#34;:{&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;,&#34;name&#34;:&#34;ZhangSan&#34;}]},&#34;serviceName&#34;:&#34;library&#34;,&#34;resource&#34;:&#34;ebook&#34;,&#34;action&#34;:&#34;borrow&#34;,&#34;attributes&#34;:[{&#34;name&#34;:&#34;clearance&#34;,&#34;type&#34;:&#34;numeric&#34;,&#34;value&#34;:2}]}&#39;</span> http://127.0.0.1:6734/authz-check/v1/is-allowed</code></pre></div>

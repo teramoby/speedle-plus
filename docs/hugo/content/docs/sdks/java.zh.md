@@ -13,7 +13,7 @@ bref = "用 Maven 或 Gradle 添加 io.speedle:speedle-sdk 0.2.0，再向本地 
 
 Java SDK 需要 Java 17 或更高版本，没有运行时依赖。软件包：Maven Central 上的 [`io.speedle:speedle-sdk`](https://central.sonatype.com/artifact/io.speedle/speedle-sdk) 0.2.0。参考文档：[speedle-sdk/java](https://github.com/teramoby/speedle-sdk/tree/main/java)。
 
-示例检查的策略见 [SDK 概览](/docs/sdks/#示例策略)。
+示例使用的策略见 [SDK 概览](/docs/sdks/#示例策略)。
 
 ## 添加依赖
 
@@ -170,4 +170,4 @@ alice delete /docs/public: allowed=false reason=NO_APPLICABLE_POLICIES
 
 ## 错误处理
 
-请求被拒绝不是错误：`isAllowed` 返回 `false`，`check` 返回 `allowed()` 为 false 的 `Decision` 及原因，如上文的 `delete` 调用。在默认设置下，调用无法得出授权结果时，SDK 抛出 `SpeedleException`。示例捕获该异常，向标准错误输出 `Speedle error: <消息>`，并以状态码 1 退出。
+授权请求返回 Deny 并不代表调用出错：`isAllowed` 返回 `false`，`check` 返回 `allowed()` 为 false 的 `Decision` 及原因，如上文的 `delete` 调用。在默认设置下，调用无法得出授权结果时，SDK 抛出 `SpeedleException`。示例捕获该异常，向标准错误输出 `Speedle error: <消息>`，并以状态码 1 退出。

@@ -1,6 +1,6 @@
 +++
-title = "授权查询"
-description = "Get authorization decisions for your service interactions"
+title = "授权决策"
+description = "获取服务访问请求的授权决策，并查询已授予的角色和权限。"
 weight = 30
 draft = false
 toc = true
@@ -55,7 +55,7 @@ printf '{}\n' > docs-policies.json
 
 ## 获取授权决策
 
-Alan 的请求允许；Bob 没有适用的允许策略，请求被拒绝。
+Alan 的请求返回 Allow；Bob 没有适用的允许策略，因此返回 Deny。
 
 <!-- docs-check: decision-allow -->
 ```bash

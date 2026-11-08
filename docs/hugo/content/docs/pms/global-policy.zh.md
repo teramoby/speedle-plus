@@ -1,6 +1,6 @@
 +++
 title = "全局角色策略"
-description = "Policies take effect globally"
+description = "在多个服务之间共享角色分配，同时把操作权限留在各服务中管理。"
 date = 2019-01-18T21:19:44+08:00
 weight = 2
 draft = false
@@ -60,7 +60,7 @@ printf '{}\n' > docs-policies.json
 
 ## 验证结果
 
-Emma 通过 `AdminRole` 获得允许，Bob 被拒绝。
+Emma 通过 `AdminRole` 获得授权，请求返回 Allow；Bob 的请求返回 Deny。
 
 <!-- docs-check: global-allow -->
 ```bash

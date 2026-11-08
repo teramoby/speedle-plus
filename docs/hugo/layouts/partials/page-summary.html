@@ -1,6 +1,6 @@
 <li>
   <h2 class="title2">
-    <a href="{{ .Permalink }}" itemprop="headline">{{ .Title }}</a>
+    <a href="{{ .Permalink }}" itemprop="headline">{{ partial "localized-title.html" . }}</a>
   </h2>
   {{ if .Description }}
   <p itemprop="about">{{ .Description }}</p>

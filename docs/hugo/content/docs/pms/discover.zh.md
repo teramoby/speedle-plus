@@ -1,6 +1,6 @@
 +++
 title = "策略发现"
-description = "Discover policies on the fly!"
+description = "在隔离测试环境中记录访问请求，生成并审核授权策略。"
 weight = 4
 draft = false
 toc = true
@@ -67,7 +67,7 @@ curl --fail --silent --show-error -H 'Content-Type: application/json' \
 
 ## 恢复并验证正常权限检查
 
-重新调用 `is-allowed`。ADS 加载策略更新后，alice 应被允许，bob 仍应被拒绝：
+重新调用 `is-allowed`。ADS 加载策略更新后，alice 应返回 Allow，bob 仍应返回 Deny：
 
 <!-- docs-check: discover-allow -->
 ```bash

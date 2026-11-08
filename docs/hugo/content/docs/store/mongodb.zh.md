@@ -127,7 +127,7 @@ PMS 返回服务及生成的策略 ID，策略此时已写入 MongoDB。
 ./bin/speedle-ads --config-file mongodb-demo/config.json --endpoint 127.0.0.1:6734 --insecure=true
 ```
 
-等待启动完成，然后在终端 B 执行以下检查。Alice 应被允许：
+等待启动完成，然后在终端 B 执行以下检查。Alice 的请求应返回 Allow：
 
 <!-- mongodb-step: allow -->
 ```bash
@@ -219,7 +219,7 @@ db.createUser({user: "speedle-ads", pwd: passwordPrompt(), roles: [{role: "read"
 }
 ```
 
-CA 路径位于 PMS/ADS 主机上。URI 中的凭据需要进行百分号编码，包含凭据的配置文件应仅允许服务账号读取；也可以通过 `SPDL_MONGOSTORE_URI` 传入 URI。[MongoDB 连接字符串](https://www.mongodb.com/docs/manual/reference/connection-string/)的所有选项都会原样传给 Go 驱动，包括客户端证书（`tlsCertificateKeyFile`）和其他认证机制。连接 MongoDB 的 TLS 与 Speedle REST/gRPC 监听端的 TLS 分别配置。
+CA 路径位于 PMS/ADS 主机上。URI 中的凭据要做百分号编码，包含凭据的配置文件应仅允许服务账号读取；也可以通过 `SPDL_MONGOSTORE_URI` 传入 URI。[MongoDB 连接字符串](https://www.mongodb.com/docs/manual/reference/connection-string/)的所有选项都会原样传给 Go 驱动，包括客户端证书（`tlsCertificateKeyFile`）和其他认证机制。连接 MongoDB 的 TLS 与 Speedle REST/gRPC 监听端的 TLS 分别配置。
 
 副本集开启访问控制后，成员之间也需要通过 key file 或 X.509 证书认证。详见官方[使用 keyfile 认证部署副本集](https://www.mongodb.com/docs/manual/tutorial/deploy-replica-set-with-keyfile-access-control/)和[配置 TLS](https://www.mongodb.com/docs/manual/tutorial/configure-ssl/)。
 

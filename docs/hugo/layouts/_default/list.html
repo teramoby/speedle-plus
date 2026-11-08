@@ -1,7 +1,7 @@
 {{ define "main" }}
 <div id="main">
-  <h1>Voice of {{ .Site.Params.author }} Developers</h1>
-  <p>Our vision, news and ideas, and whatever feels important.<br> <a href="https://discord.gg/uaY2xVsbbT">{{ if eq .Lang "zh" }}加入 Discord 社区{{ else }}Join us on Discord{{ end }}</a></p>
+  <h1>{{ if eq .Lang "zh" }}{{ partial "localized-title.html" . }}{{ else }}Voice of {{ .Site.Params.author }} Developers{{ end }}</h1>
+  <p>{{ if eq .Lang "zh" }}浏览 Speedle 的项目动态、技术文章和文档。{{ else }}Our vision, news and ideas, and whatever feels important.{{ end }}<br> <a href="https://discord.gg/uaY2xVsbbT">{{ if eq .Lang "zh" }}加入 Discord 社区{{ else }}Join us on Discord{{ end }}</a></p>
 
   <ul id="posts">
     {{ range .Paginator.Pages.ByWeight }}

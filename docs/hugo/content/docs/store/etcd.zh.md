@@ -118,7 +118,7 @@ PMS 返回服务及生成的策略 ID。此时策略已写入 etcd，无需建 S
 ./bin/speedle-ads --config-file etcd-demo/config.json --endpoint 127.0.0.1:6734 --insecure=true
 ```
 
-等待启动完成，然后在终端 B 中检查授权。Alice 应被允许：
+等待启动完成，然后在终端 B 中检查授权。Alice 的请求应返回 Allow：
 
 <!-- etcd-step: allow -->
 ```bash
