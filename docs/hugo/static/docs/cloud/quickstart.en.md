@@ -197,10 +197,14 @@ POST /authz-check/v1/is-allowed
 Authorization: Bearer <issued token>
 Content-Type: application/json
 
-{"subject":{"principals":[{"type":"user","name":"alice"}]},"serviceName":"books","resource":"/books","action":"get","attributes":[{"name":"level","type":"numeric","value":3},{"name":"when","type":"datetime","value":"2026-11-05T03:00:00Z"}]}
+{"subject":{"principals":[{"type":"user","name":"alice","idd":"corp"}]},"serviceName":"books","resource":"/books","action":"get","attributes":[{"name":"level","type":"numeric","value":3},{"name":"when","type":"datetime","value":"2026-11-05T03:00:00Z"}]}
 ```
 
 The body is the Speedle REST request, with the same fields and types as a self-hosted Speedle ADS. `attributes` is an array of `{name, type, value}` items. The supported attribute types are `string`, `numeric`, `bool`, and `datetime` in RFC 3339 format.
+
+`idd` is the principal's identity domain: the namespace your application authenticated the caller in, such as an identity provider or a tenant. Set it on the server from trusted authentication data, never from a value the browser supplies.
+
+A policy such as `grant user alice from corp get /books` matches that domain only. A policy without `from` matches the name in every domain, so the getting-started policy accepts the request above. A principal without `idd` matches every domain as well, which makes two different users who share a name indistinguishable when the application accepts more than one identity source. Multi-tenant integrations must send `idd` in every request.
 
 `serviceName` is required in every request and is never defaulted. Send the name of the token's own service. An omitted or empty name receives Speedle's `SERVICE_NOT_FOUND` response; a different name returns `403 {"error":"service_mismatch"}`.
 
@@ -225,7 +229,7 @@ The session Playground evaluates current D1 policy data. Authenticated ADS uses 
 Node.js 22 can call ADS without an SDK:
 
 ```js
-export async function canReadBooks(authenticatedUserName) {
+export async function canReadBooks(authenticatedUserName, authenticatedUserIdd) {
   const apiToken = process.env.SPEEDLE_ADS_TOKEN;
   if (!apiToken) throw new Error("Speedle credential is not configured");
   const response = await fetch("https://cloud.speedle.io/authz-check/v1/is-allowed", {
@@ -237,7 +241,11 @@ export async function canReadBooks(authenticatedUserName) {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      subject: { principals: [{ type: "user", name: authenticatedUserName }] },
+      subject: {
+        principals: [
+          { type: "user", name: authenticatedUserName, idd: authenticatedUserIdd },
+        ],
+      },
       serviceName: "books",
       resource: "/books",
       action: "get",
@@ -256,7 +264,7 @@ export async function canReadBooks(authenticatedUserName) {
 }
 ```
 
-Inject `SPEEDLE_ADS_TOKEN` from a server-side secret store; never hard-code it. Pass a principal derived from the authenticated user. The caller must fail closed on exceptions and must not turn failures into permission grants.
+Inject `SPEEDLE_ADS_TOKEN` from a server-side secret store; never hard-code it. Pass the principal name and identity domain that your server derived from the authenticated user. The caller must fail closed on exceptions and must not turn failures into permission grants.
 
 This minimal example has no retry loop. Production handling should distinguish the documented errors, respect `Retry-After`, and use bounded retries. Setting `redirect: "error"` prevents fetch from following a redirect with the credential; retain that behavior when adapting the example.
 

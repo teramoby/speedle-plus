@@ -23,10 +23,14 @@ POST /authz-check/v1/is-allowed
 Authorization: Bearer <issued token>
 Content-Type: application/json
 
-{"subject":{"principals":[{"type":"user","name":"alice"}]},"serviceName":"books","resource":"/books","action":"get","attributes":[{"name":"level","type":"numeric","value":3},{"name":"when","type":"datetime","value":"2026-11-05T03:00:00Z"}]}
+{"subject":{"principals":[{"type":"user","name":"alice","idd":"corp"}]},"serviceName":"books","resource":"/books","action":"get","attributes":[{"name":"level","type":"numeric","value":3},{"name":"when","type":"datetime","value":"2026-11-05T03:00:00Z"}]}
 ```
 
 请求正文就是 Speedle REST 请求，字段和类型与自托管 Speedle ADS 相同。`attributes` 是由 `{name, type, value}` 组成的数组。属性类型支持 `string`、`numeric`、`bool` 和采用 RFC 3339 格式的 `datetime`。
+
+`idd` 是主体所属的身份域，也就是应用在哪个命名空间里完成对调用方的认证，例如某个身份提供方或某个租户。它必须由服务端根据可信的认证结果填写，不能取自浏览器提交的值。
+
+写成 `grant user alice from corp get /books` 的策略只匹配该身份域；不带 `from` 的策略匹配任意身份域中的同名主体，所以上面的请求能被快速入门中的策略放行。主体不带 `idd` 时同样匹配任意身份域，一旦应用接受多个身份来源，两个同名用户就无法区分。多租户接入必须在每个请求中发送 `idd`。
 
 每个请求都必须填写 `serviceName`，系统不会自动取默认值。请填写令牌所属 service 的名称。名称缺失或为空时，会得到 Speedle 的 `SERVICE_NOT_FOUND` 响应；名称不一致时，返回 `403 {"error":"service_mismatch"}`。
 
@@ -51,7 +55,7 @@ Speedle Cloud 不校验 subject token。与没有 token asserter 的自托管 Sp
 Node.js 22 无需 SDK 即可调用 ADS：
 
 ```js
-export async function canReadBooks(authenticatedUserName) {
+export async function canReadBooks(authenticatedUserName, authenticatedUserIdd) {
   const apiToken = process.env.SPEEDLE_ADS_TOKEN;
   if (!apiToken) throw new Error("Speedle credential is not configured");
   const response = await fetch("https://cloud.speedle.io/authz-check/v1/is-allowed", {
@@ -63,7 +67,11 @@ export async function canReadBooks(authenticatedUserName) {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      subject: { principals: [{ type: "user", name: authenticatedUserName }] },
+      subject: {
+        principals: [
+          { type: "user", name: authenticatedUserName, idd: authenticatedUserIdd },
+        ],
+      },
       serviceName: "books",
       resource: "/books",
       action: "get",
@@ -82,7 +90,7 @@ export async function canReadBooks(authenticatedUserName) {
 }
 ```
 
-通过服务端的秘密存储注入 `SPEEDLE_ADS_TOKEN`，切勿将值写入代码。传入的 principal 必须来自已认证用户。调用方遇到异常时必须拒绝执行受保护操作，不能把失败转换为允许。
+通过服务端的秘密存储注入 `SPEEDLE_ADS_TOKEN`，切勿将值写入代码。传入的主体名称和身份域必须由服务端根据已认证用户得出。调用方遇到异常时必须拒绝执行受保护操作，不能把失败转换为允许。
 
 这个最小示例没有重试循环。生产应用应区分文档列出的错误，遵守 `Retry-After`，并使用有界重试。示例中的 `redirect: "error"` 防止 fetch 携带凭据跟随重定向；改写示例时应保留这一行为。
 
