@@ -12,6 +12,16 @@ categories = ["docs"]
 bref = ""
 +++
 
+SPDL 是编写 Speedle 策略和角色策略的语言。本文介绍语法、命名规则和示例。
+<!--more-->
+
+<aside class="docs-callout" aria-labelledby="spdl-callout-title">
+  <p class="docs-callout-eyebrow">Speedle 策略建模技能 · 开源技能</p>
+  <p class="docs-callout-title" id="spdl-callout-title">用 AI 编写 SPDL</p>
+  <p>开源的 Speedle 策略建模技能可以把需求和制度文档变成 SPDL 模型，同时生成允许和拒绝的测试用例，并用 <code>spctl check</code> 校验。</p>
+  <p class="docs-callout-actions"><a class="button primary" href="https://ai.speedle.io/zh/#policy-modeler">试用策略建模技能</a> <a class="button secondary" href="https://github.com/teramoby/ai.speedle.io/tree/main/skills/speedle-policy-modeler">在 GitHub 上查看源码</a></p>
+</aside>
+
 ## 基本的策略定义语言
 
 <picture><source srcset="/img/speedle/spdl-syntax.webp" type="image/webp"><img src="/img/speedle/spdl-syntax.png" alt="基本策略定义语法" width="2222" height="971" fetchpriority="high"></picture>

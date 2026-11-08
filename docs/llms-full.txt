@@ -125,6 +125,8 @@ spctl  speedle-ads  speedle-pms
 - `speedle-pms`: the Policy Management Service (PMS).
 - `speedle-ads`: the Authorization Decision Service (ADS).
 
+> **macOS:** `/usr/sbin/spctl` is Apple's Gatekeeper tool and may be selected when you run a bare `spctl` command. Call Speedle's CLI by its full path, or use `./spctl` from the directory containing it; this guide uses `./bin/spctl`. Run `command -v spctl` to check which executable your shell selects. If the release you download includes a `speedle-spctl_<os>_<arch>` asset, it is the same CLI under a name that does not collide with Apple's tool.
+
 Modern Go uses `go build` or `go install` to build executables; `go get` manages module dependencies.
 
 ### Run Speedle
@@ -380,6 +382,16 @@ If you are familiar with the XACML model, the Policy Management Service (PMS) se
 ## SPDL - Speedle Policy Definition Language
 
 Source: https://engine.speedle.io/docs/spdl/
+
+SPDL is the language for writing Speedle policies and role policies. This page covers the syntax, naming rules and examples.
+
+
+<aside class="docs-callout" aria-labelledby="spdl-callout-title">
+  <p class="docs-callout-eyebrow">Speedle policy modeler · Open source skill</p>
+  <p class="docs-callout-title" id="spdl-callout-title">Write SPDL with AI</p>
+  <p>The open-source Speedle policy modeler skill turns your requirements and policy documents into an SPDL model with allow and deny test cases, validated with <code>spctl check</code>.</p>
+  <p class="docs-callout-actions"><a class="button primary" href="https://ai.speedle.io/#policy-modeler">Try the policy modeler skill</a> <a class="button secondary" href="https://github.com/teramoby/ai.speedle.io/tree/main/skills/speedle-policy-modeler">Source on GitHub</a></p>
+</aside>
 
 ### Syntax
 
@@ -1060,6 +1072,8 @@ Initialize an empty policy file:
 ```bash
 printf '{}\n' > docs-policies.json
 ```
+
+> **macOS:** `/usr/sbin/spctl` is Apple's Gatekeeper tool and may be selected when you run a bare `spctl` command. Call Speedle's CLI by its full path, or use `./spctl` from the directory containing it; the examples below use `./bin/spctl`. Run `command -v spctl` to check which executable your shell selects. If the release you download includes a `speedle-spctl_<os>_<arch>` asset, it is the same CLI under a name that does not collide with Apple's tool.
 
 In terminal one, start PMS and leave it running:
 

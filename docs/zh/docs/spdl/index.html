@@ -20,7 +20,7 @@
 <link rel="alternate" hreflang="zh-CN" href="https://engine.speedle.io/zh/docs/spdl/">
 <link rel="alternate" hreflang="x-default" href="https://engine.speedle.io/docs/spdl/">
 <meta property="og:type" content="article">
-<meta property="article:modified_time" content="2026-11-08T17:01:14&#43;08:00">
+<meta property="article:modified_time" content="2026-11-08T20:01:50&#43;08:00">
 <meta property="og:site_name" content="Speedle Engine">
 <meta property="og:title" content="SPDL：Speedle 策略定义语言 · Speedle Engine">
 <meta property="og:description" content="SPDL 的全称是 Speedle Policy Definition Language（Speedle 策略定义语言），用于编写 Speedle 策略和角色策略。">
@@ -36,7 +36,7 @@
 <meta name="twitter:image" content="https://engine.speedle.io/img/social/engine-zh.png">
 <meta name="twitter:image:alt" content="Speedle Engine — 快速、简单的权限控制">
 
-<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/zh/docs/spdl/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-08T17:01:14+08:00","description":"SPDL 的全称是 Speedle Policy Definition Language（Speedle 策略定义语言），用于编写 Speedle 策略和角色策略。","headline":"SPDL：Speedle 策略定义语言","image":"https://engine.speedle.io/img/social/engine-zh.png","inLanguage":"zh-CN","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/zh/docs/spdl/","@type":"WebPage"},"name":"SPDL：Speedle 策略定义语言","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/zh/docs/spdl/"}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/zh/docs/spdl/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-08T20:01:50+08:00","description":"SPDL 的全称是 Speedle Policy Definition Language（Speedle 策略定义语言），用于编写 Speedle 策略和角色策略。","headline":"SPDL：Speedle 策略定义语言","image":"https://engine.speedle.io/img/social/engine-zh.png","inLanguage":"zh-CN","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/zh/docs/spdl/","@type":"WebPage"},"name":"SPDL：Speedle 策略定义语言","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/zh/docs/spdl/"}</script>
 <script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/zh/docs/spdl/#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://engine.speedle.io/zh/","name":"首页","position":1},{"@type":"ListItem","item":"https://engine.speedle.io/zh/docs/","name":"文档","position":2},{"@type":"ListItem","item":"https://engine.speedle.io/zh/docs/spdl/","name":"SPDL：Speedle 策略定义语言","position":3}]}</script><link href="/css/docs.css" rel="stylesheet" type="text/css">
 
 
@@ -177,7 +177,15 @@
 
 
 
-  <div id="kube-component" class="content">
+  <div id="kube-component" class="content"><p>SPDL 是编写 Speedle 策略和角色策略的语言。本文介绍语法、命名规则和示例。
+</p>
+
+<aside class="docs-callout" aria-labelledby="spdl-callout-title">
+  <p class="docs-callout-eyebrow">Speedle 策略建模技能 · 开源技能</p>
+  <p class="docs-callout-title" id="spdl-callout-title">用 AI 编写 SPDL</p>
+  <p>开源的 Speedle 策略建模技能可以把需求和制度文档变成 SPDL 模型，同时生成允许和拒绝的测试用例，并用 <code>spctl check</code> 校验。</p>
+  <p class="docs-callout-actions"><a class="button primary" href="https://ai.speedle.io/zh/#policy-modeler">试用策略建模技能</a> <a class="button secondary" href="https://github.com/teramoby/ai.speedle.io/tree/main/skills/speedle-policy-modeler">在 GitHub 上查看源码</a></p>
+</aside>
 
 <h2 id="基本的策略定义语言">基本的策略定义语言</h2>
 
@@ -664,8 +672,7 @@ Function: FunctionName &#39;(&#39; Argument [,Argument]* &#39;)&#39;</pre></div>
 <p><picture><source srcset="/img/speedle/spdl-syntax-full.webp" type="image/webp"><img src="/img/speedle/spdl-syntax-full.png" alt="完整策略定义语法" width="1771" height="2281" loading="lazy"></picture></p>
 
 <p><br/>
-<br/></p>
-</div>
+<br/></p></div>
 </div>
 </main>
         </div>

@@ -20,7 +20,7 @@
 <link rel="alternate" hreflang="zh-CN" href="https://engine.speedle.io/zh/docs/pms/policy-mgmt/">
 <link rel="alternate" hreflang="x-default" href="https://engine.speedle.io/docs/pms/policy-mgmt/">
 <meta property="og:type" content="article">
-<meta property="article:modified_time" content="2026-11-08T11:21:16&#43;08:00">
+<meta property="article:modified_time" content="2026-11-08T20:55:55&#43;08:00">
 <meta property="og:site_name" content="Speedle Engine">
 <meta property="og:title" content="策略管理 · Speedle Engine">
 <meta property="og:description" content="管理服务、授权策略、角色策略和自定义函数的完整生命周期。">
@@ -36,7 +36,7 @@
 <meta name="twitter:image" content="https://engine.speedle.io/img/social/engine-zh.png">
 <meta name="twitter:image:alt" content="Speedle Engine — 快速、简单的权限控制">
 
-<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/zh/docs/pms/policy-mgmt/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-08T11:21:16+08:00","description":"管理服务、授权策略、角色策略和自定义函数的完整生命周期。","headline":"策略管理","image":"https://engine.speedle.io/img/social/engine-zh.png","inLanguage":"zh-CN","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/zh/docs/pms/policy-mgmt/","@type":"WebPage"},"name":"策略管理","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/zh/docs/pms/policy-mgmt/"}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/zh/docs/pms/policy-mgmt/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-08T20:55:55+08:00","description":"管理服务、授权策略、角色策略和自定义函数的完整生命周期。","headline":"策略管理","image":"https://engine.speedle.io/img/social/engine-zh.png","inLanguage":"zh-CN","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/zh/docs/pms/policy-mgmt/","@type":"WebPage"},"name":"策略管理","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/zh/docs/pms/policy-mgmt/"}</script>
 <script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/zh/docs/pms/policy-mgmt/#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://engine.speedle.io/zh/","name":"首页","position":1},{"@type":"ListItem","item":"https://engine.speedle.io/zh/docs/","name":"文档","position":2},{"@type":"ListItem","item":"https://engine.speedle.io/zh/docs/pms/","name":"Speedle 策略","position":3},{"@type":"ListItem","item":"https://engine.speedle.io/zh/docs/pms/policy-mgmt/","name":"策略管理","position":4}]}</script><link href="/css/docs.css" rel="stylesheet" type="text/css">
 
 
@@ -224,6 +224,10 @@ grant role manager update res1</code></pre></div>
 
 <!-- docs-check: setup -->
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#8be9fd;font-style:italic">printf</span> <span style="color:#f1fa8c">&#39;{}\n&#39;</span> &gt; docs-policies.json</code></pre></div>
+<blockquote>
+<p><strong>macOS：</strong> <code>/usr/sbin/spctl</code> 是 Apple 的 Gatekeeper 工具，直接运行 <code>spctl</code> 时可能会选中它。请使用 Speedle CLI 的完整路径，或在其所在目录中用 <code>./spctl</code> 调用；下面的示例统一使用 <code>./bin/spctl</code>。运行 <code>command -v spctl</code> 可查看 shell 实际选择的可执行程序。如果下载的发布版本包含 <code>speedle-spctl_&lt;os&gt;_&lt;arch&gt;</code> 文件，它就是同一个 CLI，只是名称不会与 Apple 的工具冲突。</p>
+</blockquote>
+
 <p>终端一启动 PMS，并保持运行：</p>
 
 <!-- docs-check: pms -->

@@ -296,6 +296,59 @@ body.docs-page > .container {
 .docs-toc a { color: var(--muted); font-weight: 600; text-decoration: none; }
 .docs-toc a:hover { color: var(--purple-dark); }
 
+/* Page call-out: shared card surface, eyebrow and buttons from the site standard. */
+#main .docs-callout {
+  margin: 0 0 40px;
+  padding: 30px;
+  background: var(--soft);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+}
+#main .docs-callout .docs-callout-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  margin: 0 0 10px;
+  color: var(--purple-dark);
+  font-size: .78rem;
+  font-weight: 800;
+  line-height: 1.65;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+}
+#main .docs-callout .docs-callout-eyebrow::before {
+  content: "";
+  width: 28px;
+  height: 2px;
+  flex: 0 0 auto;
+  background: currentColor;
+}
+#main .docs-callout .docs-callout-title {
+  margin: 0 0 10px;
+  color: var(--ink);
+  font-size: 1.16rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+#main .docs-callout p { margin: 0 0 18px; color: var(--muted); }
+#main .docs-callout p:last-child { margin-bottom: 0; }
+#main .docs-callout code { background: var(--white); }
+#main .docs-callout .docs-callout-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 20px 0 0;
+}
+#main .docs-callout .button.secondary {
+  color: var(--purple-dark);
+  background: var(--white);
+  border: 1px solid rgba(129, 76, 228, .35);
+}
+#main .docs-callout .button.secondary:hover {
+  transform: translateY(-2px);
+  border-color: var(--purple);
+}
+
 /* Code uses the home page's dark frame and the existing Hugo dracula token spans. */
 #main code {
   padding: 2px 7px;
@@ -457,7 +510,8 @@ body.docs-page > .container {
   #main th,
   #main td { padding: 10px 8px; }
   .docs-toc,
-  #main blockquote { padding: 24px; }
+  #main blockquote,
+  #main .docs-callout { padding: 24px; }
 }
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }

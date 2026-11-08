@@ -71,6 +71,8 @@ Initialize an empty policy file:
 printf '{}\n' > docs-policies.json
 ```
 
+> **macOS:** `/usr/sbin/spctl` is Apple's Gatekeeper tool and may be selected when you run a bare `spctl` command. Call Speedle's CLI by its full path, or use `./spctl` from the directory containing it; the examples below use `./bin/spctl`. Run `command -v spctl` to check which executable your shell selects. If the release you download includes a `speedle-spctl_<os>_<arch>` asset, it is the same CLI under a name that does not collide with Apple's tool.
+
 In terminal one, start PMS and leave it running:
 
 <!-- docs-check: pms -->
