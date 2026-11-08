@@ -9,7 +9,7 @@ const home = read('docs/index.html');
 const page = read('docs/playground/index.html');
 const chineseLink = '<a href="/zh/" lang="zh-CN" hreflang="zh-CN" aria-label="切换到中文">中文</a>';
 const playgroundChineseLink = chineseLink.replace('href="/zh/"','href="/zh/playground/"');
-// #198 renamed the product "Speedle+" to "Speedle" (owner decision on legal advice); apply that rename to the reference homepage.
+// #198 renamed the product "Speedle+" to "Speedle" (on legal advice); apply that rename to the reference homepage.
 const renameProduct = html => html
   .replace('"name":"Speedle+","alternateName":"Speedle",','"name":"Speedle",')
   .replace('The original Speedle project continues as <strong>Speedle+</strong>, maintained by its founding members.','The original Speedle project continues here, maintained by its founding members.')
