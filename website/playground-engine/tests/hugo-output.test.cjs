@@ -82,6 +82,7 @@ for (const name of ['quick-start/index.html', 'zh/quick-start/index.html', 'abou
 // #203: every page with the shared footer loads navigation.css, the stylesheet that holds the footer rules.
 const footerRules = fs.readFileSync(path.join(output, 'css/navigation.css'), 'utf8');
 assert.ok(footerRules.includes('html body footer.site-footer {') && footerRules.includes('.site-footer .footer-main {'), 'navigation.css holds the shared footer rules');
+assert.ok(/^\.site-footer \.footer-legal span \{ display: block; \}$/m.test(footerRules), 'License and copyright stack at every viewport width');
 let footerPages = 0;
 (function walk(dir) {
   for (const entry of fs.readdirSync(dir, {withFileTypes: true})) {

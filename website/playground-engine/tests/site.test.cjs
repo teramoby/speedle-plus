@@ -33,7 +33,9 @@ const getStartedCss = /\n    \/\* Get started block \(issue #241\): start\.[\s\S
 const accessibilityCss = /\n    \/\* Accessibility contrast and the community banner \(issue #244\): start\.[\s\S]*?    \/\* Accessibility contrast and the community banner \(issue #244\): end\. \*\/\n/;
 assert.equal(read('docs/css/site.css').replace(getStartedCss,'').replace(accessibilityCss,''),originalCss.replace(footerRule,''), 'The shared stylesheet is the actual original homepage CSS, byte for byte, minus the footer rules, the approved Get started block and the approved accessibility/banner block');
 for (const name of ['docs/css/site.css','docs/zh/index.html','docs/172c4fea633285df5f8950cdef354c38/index.html']) assert.ok(!/(?:^|[\s,}])(?:footer|\.footer-[a-z-]+|\.social)(?:[ .:>,][^{\n]*)?\{/m.test(read(name).replace(/<footer[\s\S]*?<\/footer>/g,'')), `No duplicate footer rules in ${name}`);
-assert.ok(read('docs/css/navigation.css').includes('html body footer.site-footer {'), 'navigation.css holds the shared footer rules');
+const navigationCss = read('docs/css/navigation.css');
+assert.ok(navigationCss.includes('html body footer.site-footer {'), 'navigation.css holds the shared footer rules');
+assert.ok(/^\.site-footer \.footer-legal span \{ display: block; \}$/m.test(navigationCss), 'License and copyright stack at every viewport width');
 const oldCommunityLink = original.match(/<a href="[^"]+" aria-label="Slack">[\s\S]*?<\/a>/)[0];
 const discordLink = '<a href="https://discord.gg/uaY2xVsbbT" aria-label="Discord"><img src="/img/speedle/Discord.svg" alt=""></a>';
 const originalMailingLink = '<a href="https://groups.google.com/forum/#!forum/speedle-users" aria-label="Mailing list"><img src="/img/speedle/28.%20Mail.svg" alt=""></a>';
