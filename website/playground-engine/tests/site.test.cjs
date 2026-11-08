@@ -248,11 +248,30 @@ let assetRefs = 0;
 })(docsRoot);
 assert.ok(assetPages > 250, `Published pages checked for local assets: ${assetPages}`);
 assert.ok(assetRefs > 2000, `Local subresource references resolved: ${assetRefs}`);
-// #244: keep the home-page palette AA-safe. a11y-smoke.cjs runs axe in a real
-// browser; this guard makes the measured design colours fail the Node-only CI
-// gate too if a token regresses.
+// #244/#262: keep the home-page palette AA-safe by reading the shipped CSS,
+// including its tokens and shorthand hex, rather than testing copied literals.
+const homeStyles = read('docs/css/site.css');
+const normalizeHex = value => {
+ assert.ok(value, 'Missing CSS colour');
+ const hex = value.replace('#','');
+ assert.ok(/^(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(hex), `Unsupported CSS colour ${value}`);
+ return '#' + (hex.length === 3 ? [...hex].map(channel => channel + channel).join('') : hex).toLowerCase();
+};
+const rootTokens = homeStyles.match(/:root\s*\{([^}]*)\}/)?.[1] || '';
+const tokens = new Map([...rootTokens.matchAll(/--([\w-]+)\s*:\s*(#[0-9a-fA-F]{3,6})\s*;/g)].map(match => [match[1],normalizeHex(match[2])]));
+const token = name => {
+ assert.ok(tokens.has(name), `CSS token --${name} is defined in :root`);
+ return tokens.get(name);
+};
+const escapeRegExp = value => value.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+const declaration = (selector,property = 'color') => {
+ const pattern = new RegExp(`(?:^|[}\\n])\\s*${escapeRegExp(selector)}\\s*\\{[^}]*?\\b${property}:\\s*(#[0-9a-fA-F]{3,6})\\s*;`,'g');
+ const matches = [...homeStyles.matchAll(pattern)];
+ assert.ok(matches.length, `${selector} declares ${property} as a hex colour`);
+ return normalizeHex(matches.at(-1)[1]);
+};
 const relativeLuminance = hex => {
- const channels = hex.replace('#','').match(/../g).map(value => parseInt(value,16)/255)
+ const channels = normalizeHex(hex).replace('#','').match(/../g).map(value => parseInt(value,16)/255)
   .map(value => value <= 0.03928 ? value/12.92 : ((value+0.055)/1.055)**2.4);
  return 0.2126*channels[0] + 0.7152*channels[1] + 0.0722*channels[2];
 };
@@ -261,18 +280,18 @@ const contrastRatio = (foreground,background) => {
  return (lighter+0.05)/(darker+0.05);
 };
 for (const [foreground,background,use] of [
- ['#5c2fc0','#ffffff','eyebrow on white'],
- ['#5c2fc0','#f6f7fb','eyebrow on soft'],
- ['#8f85a6','#100b1e','SPDL comment on the code background'],
- ['#5d667a','#f6f7fb','muted text on soft'],
- ['#1b1c2c','#01e7cb','primary button label'],
+ [token('purple-dark'),token('white'),'eyebrow on white'],
+ [token('purple-dark'),token('soft'),'eyebrow on soft'],
+ [declaration('.cm'),declaration('.code','background'),'SPDL comment on the code background'],
+ [token('muted'),token('soft'),'muted text on soft'],
+ [declaration('.button-primary'),token('cyan'),'primary button label'],
 ]) {
  const ratio = contrastRatio(foreground,background);
  assert.ok(ratio >= 4.5, `WCAG AA contrast for ${use}: ${ratio.toFixed(2)}:1`);
 }
-const homeStyles = read('docs/css/site.css');
-assert.ok(homeStyles.includes('.eyebrow { color: var(--purple-dark); }') && homeStyles.includes('.hero .eyebrow, .policy .eyebrow { color: var(--cyan); }'), 'Eyebrows use #5c2fc0 on light surfaces and cyan on dark grounds (#244)');
-assert.ok(homeStyles.includes('.cm { color: #8f85a6; }'), 'SPDL comments use the AA-safe #8f85a6 (#244)');
+const contrastBlock = homeStyles.match(accessibilityCss)?.[0] || '';
+assert.ok(homeStyles.includes('.eyebrow { display: inline-flex; align-items: center; gap: 9px; color: var(--cyan);') && contrastBlock.includes('.section-head .eyebrow, .contribute-card .eyebrow { color: var(--purple-dark); }'), 'Light-section eyebrow overrides stay scoped and dark grounds keep the cyan default (#262)');
+assert.ok(!/(?:^|\n)\s*\.eyebrow\s*\{\s*color:\s*var\(--purple-dark\)/.test(contrastBlock), 'No global light-surface eyebrow override (#262)');
 for (const [name,prefix] of [['docs/index.html','/'],['docs/zh/index.html','/zh/']]) {
  const section = read(name).match(contributeSection)?.[0] || '';
  assert.ok(section.includes('class="eyebrow"') && section.includes(`href="${prefix}contribute/"`), `Community banner structure in ${name} (#244)`);
@@ -376,6 +395,29 @@ assert.ok(identityPages > 190, `Pages checked for title and social metadata: ${i
 for (const name of ['docs/about/index.html','docs/zh/about/index.html']) {
  const html = read(name);
  assert.ok(contentOf(html, /<meta name="description" content="([^"]+)">/) && contentOf(html, /<meta property="og:description" content="([^"]+)">/) && contentOf(html, /<meta name="twitter:description" content="([^"]+)">/), `Summary fallback description in ${name}`);
+}
+// #262: all regular pages, not only /docs/, retain Hugo's Open Graph article
+// typing and whichever publication/modification timestamps their content has.
+for (const pageName of ['about','contribute','quick-start','support']) {
+ for (const locale of ['', 'zh/']) {
+  const name = `docs/${locale}${pageName}/index.html`;
+  const html = read(name);
+  assert.equal(contentOf(html, /<meta property="og:type" content="([^"]+)">/), 'article', `Article type on non-docs page ${name}`);
+  const modified = contentOf(html, /<meta property="article:modified_time" content="([^"]+)">/);
+  assert.ok(modified && !Number.isNaN(Date.parse(modified.replace(/&#43;/g,'+'))), `Valid article modification timestamp in ${name}`);
+ }
+}
+for (const name of ['docs/docs/assertor/index.html','docs/zh/docs/assertor/index.html']) {
+ const html = read(name);
+ for (const property of ['article:published_time','article:modified_time']) {
+  const timestamp = contentOf(html, new RegExp(`<meta property="${property}" content="([^"]+)">`));
+  assert.ok(timestamp && !Number.isNaN(Date.parse(timestamp.replace(/&#43;/g,'+'))), `Valid ${property} in ${name}`);
+ }
+}
+for (const name of ['docs/integrations/index.html','docs/zh/integrations/index.html','docs/docs/index.html','docs/zh/docs/index.html']) {
+ const html = read(name);
+ assert.equal(contentOf(html, /<meta property="og:type" content="([^"]+)">/), 'website', `Section/list page remains a website in ${name}`);
+ assert.ok(!html.includes('property="article:published_time"') && !html.includes('property="article:modified_time"'), `No article timestamps on list page ${name}`);
 }
 let structuredDocs = 0;
 function checkDocsStructuredData(directory, zh) {

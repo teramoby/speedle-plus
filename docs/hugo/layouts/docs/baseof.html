@@ -15,8 +15,10 @@
     <link href="{{ "/css/swagger-ui.css" | relURL }}" rel="stylesheet" type="text/css">
 {{ end }}
 {{ if and (isset .Params "customcss") .Params.customcss }}
-{{ if (isset .Params "customcssfile") }}
+{{ if .Params.customcssfile }}
     <link href="{{ printf "/css/%s" $.Params.customcssfile | relURL }}" rel="stylesheet" type="text/css">
+{{ else }}
+{{ errorf "customcss is true but customcssfile is missing on %s" .Path }}
 {{ end }}
 {{ end }}
     <link href="{{ "/css/navigation.css?v=header-20261106-v8" | relURL }}" rel="stylesheet">

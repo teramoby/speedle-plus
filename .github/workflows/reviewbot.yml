@@ -79,8 +79,8 @@ jobs:
       - name: Verify runner routing and shared-host port guards
         run: node --test scripts/tests/test_runner_routing.cjs
 
-      - name: Verify protected Go CI worker and shared service isolation
-        run: node --test scripts/tests/test_go_ci_worker.cjs
+      - name: Verify protected CI worker and release publishing guards
+        run: node --test scripts/tests/test_go_ci_worker.cjs scripts/tests/test_release_workflow.cjs
 
   review:
     name: Analyze pull request

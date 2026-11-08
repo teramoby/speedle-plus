@@ -139,6 +139,21 @@ test('task validation permits only exact enum values and treats shell metacharac
     assert.doesNotMatch(script('Validate CI task'), /\$\{\{/);
   } finally {fs.rmSync(directory, {recursive: true, force: true});}
 });
+test('build installs the locked browser and makes the axe contrast gate mandatory', () => {
+  const install = step('Install browser contrast dependencies');
+  assert.match(install, /npm --prefix website\/playground-engine ci/);
+  assert.match(install, /node_modules\/\.bin\/playwright install --with-deps chromium/);
+  assert.match(install, /if: inputs\.mode == 'build'/);
+  assert.ok(source.indexOf('Install browser contrast dependencies') < source.indexOf('Verify Playground release'));
+  const verify = fs.readFileSync(path.resolve(__dirname, '../../website/playground-engine/verify.sh'), 'utf8');
+  assert.match(verify, /^node website\/playground-engine\/a11y-smoke\.cjs$/m);
+  assert.doesNotMatch(verify, /SKIP browser axe contrast|require\.resolve\('playwright'\)/);
+  const manifest = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../../website/playground-engine/package-lock.json'), 'utf8'));
+  assert.deepEqual(manifest.packages[''].devDependencies, {'axe-core': '4.14.0', 'playwright': '1.65.0'});
+  for (const name of ['axe-core', 'playwright', 'playwright-core']) {
+    assert.ok(manifest.packages[`node_modules/${name}`].integrity, `${name} is integrity pinned`);
+  }
+});
 function testEnvironment(mode) {
   const block = step('Run Go tests').split('        env:\n')[1]?.split('        run:', 1)[0];
   assert.ok(block, 'Missing sanitized test environment');

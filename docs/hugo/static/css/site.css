@@ -144,8 +144,7 @@
     /* Accessibility contrast and the community banner (issue #244): start.
        The rules above are the approved original homepage stylesheet; this block
        overrides only the values that failed WCAG AA and the banner layout. */
-    .eyebrow { color: var(--purple-dark); }
-    .hero .eyebrow, .policy .eyebrow { color: var(--cyan); }
+    .section-head .eyebrow, .contribute-card .eyebrow { color: var(--purple-dark); }
     .cm { color: #8f85a6; }
     .contribute-card { grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 32px 48px; color: var(--ink); background: var(--soft); border: 1px solid var(--line); border-radius: 22px; }
     .contribute-card::after { display: none; }

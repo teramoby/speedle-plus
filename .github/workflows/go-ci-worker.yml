@@ -163,6 +163,13 @@ jobs:
           node-version: '22'
           package-manager-cache: false
 
+      - name: Install browser contrast dependencies
+        if: inputs.mode == 'build' && hashFiles('website/playground-engine/go.mod') != ''
+        run: |
+          set -euo pipefail
+          npm --prefix website/playground-engine ci
+          website/playground-engine/node_modules/.bin/playwright install --with-deps chromium
+
       - name: Verify Playground release
         if: inputs.mode == 'build' && hashFiles('website/playground-engine/go.mod') != ''
         run: website/playground-engine/verify.sh

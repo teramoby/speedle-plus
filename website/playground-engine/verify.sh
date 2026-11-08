@@ -6,13 +6,9 @@ node website/playground-engine/tests/form-model.test.cjs
 node website/playground-engine/tests/form-dom.test.cjs
 PLAYGROUND_LOCALE=zh node website/playground-engine/tests/form-dom.test.cjs
 node website/playground-engine/tests/site.test.cjs
-# The axe contrast check needs Playwright and axe-core, which CI does not install;
-# every developer environment that has them runs it here.
-if node -e "require.resolve('playwright');require.resolve('axe-core')" 2>/dev/null; then
-  node website/playground-engine/a11y-smoke.cjs
-else
-  echo 'SKIP browser axe contrast check: install playwright and axe-core to run it'
-fi
+# CI installs the pinned Playwright/axe-core packages and Chromium before this
+# script. The rendered contrast gate is required, never silently skipped.
+node website/playground-engine/a11y-smoke.cjs
 node --check docs/hugo/static/js/command-copy.js
 python3 website/tests/test_language_routes.py
 python3 website/localize-links.py docs --check

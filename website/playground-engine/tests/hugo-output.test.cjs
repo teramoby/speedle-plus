@@ -41,8 +41,23 @@ assert.ok(sitemap.includes('https://engine.speedle.io/en/sitemap.xml'), 'Multili
 assert.ok(fs.readFileSync(path.join(output, 'en/sitemap.xml'), 'utf8').includes('https://engine.speedle.io/playground/'));
 for (const name of ['quick-start/index.html', 'zh/quick-start/index.html']) {
   assert.deepEqual(fs.readFileSync(path.join(output, name)), fs.readFileSync(path.join(root, 'docs', name)), `Generated quick-start guide ${name}`);
+  const html = fs.readFileSync(path.join(output, name), 'utf8');
   const target = name.startsWith('zh/') ? '/zh/playground/' : '/playground/';
-  assert.ok(fs.readFileSync(path.join(output, name), 'utf8').includes(`href="${target}"`), `Generated ${name} navigation`);
+  assert.ok(html.includes(`href="${target}"`), `Generated ${name} navigation`);
+  assert.ok(html.includes('/css/command-copy.css'), `Named custom stylesheet in ${name}`);
+}
+// #262: customcss without a filename is a build error, never a silent fallback.
+for (const name of ['_default/baseof.html', 'docs/baseof.html']) {
+  const template = fs.readFileSync(path.join(root, 'docs/hugo/layouts', name), 'utf8');
+  assert.ok(/\{\{\s*else\s*\}\}\s*\{\{\s*errorf "customcss is true but customcssfile is missing on %s" \.Path\s*\}\}/.test(template), `Missing customcssfile fails the build in ${name}`);
+}
+for (const name of ['about/index.html', 'zh/about/index.html', 'contribute/index.html', 'zh/contribute/index.html',
+  'support/index.html', 'zh/support/index.html', 'docs/assertor/index.html', 'zh/docs/assertor/index.html']) {
+  assert.deepEqual(fs.readFileSync(path.join(output, name)), fs.readFileSync(path.join(root, 'docs', name)), `Generated article metadata ${name}`);
+}
+for (const locale of ['', 'zh/']) {
+  const html = fs.readFileSync(path.join(output, `${locale}docs/api/management_api/index.html`), 'utf8');
+  assert.ok(html.includes('/css/swagger-ui.css') && html.includes('/css/swagger-custom.css'), `Swagger styles in ${locale || 'en'}`);
 }
 for (const name of ['docs/index.html', 'zh/docs/index.html', 'docs/spdl/index.html', 'zh/docs/spdl/index.html',
   'docs/cloud/index.html', 'zh/docs/cloud/index.html', 'docs/cloud/getting-started/index.html', 'zh/docs/cloud/getting-started/index.html']) {
