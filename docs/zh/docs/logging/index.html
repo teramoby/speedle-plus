@@ -175,6 +175,8 @@
 
   <div id="kube-component" class="content">
 
+<p><a id="概述"></a></p>
+
 <h2 id="日志组件">日志组件</h2>
 
 <p>Speedle 使用以下两个开源项目处理日志：</p>
@@ -291,6 +293,8 @@ ocean&#34;,&#34;size&#34;:10,&#34;time&#34;:&#34;2014-03-10 19:57:38.562264131 -
         }
     }
 }</code></pre></div>
+<p><a id="配置日志的最佳实践"></a></p>
+
 <h2 id="容器日志建议">容器日志建议</h2>
 
 <p>Speedle 在 Docker 容器中运行时，建议用 Docker 的 <code>json-file</code> 日志驱动管理文件大小和滚动，不再使用 lumberjack。此时 logrus 只负责日志级别和格式。</p>
@@ -305,6 +309,8 @@ ocean&#34;,&#34;size&#34;:10,&#34;time&#34;:&#34;2014-03-10 19:57:38.562264131 -
 }</pre></div>
 <p>多数场景使用默认的 info 级别和 text 格式即可。需要 JSON 等格式时，再调整 logrus 配置。</p>
 
+<p><a id="如何增加新的日志消息"></a></p>
+
 <h2 id="在代码中添加日志">在代码中添加日志</h2>
 
 <p>先在 <code>*.go</code> 源文件中导入 logrus：</p>
@@ -318,6 +324,8 @@ ocean&#34;,&#34;size&#34;:10,&#34;time&#34;:&#34;2014-03-10 19:57:38.562264131 -
   log.Warning(<span style="color:#f1fa8c">&#34;This is a warning log entry again&#34;</span>)
   log.Error(<span style="color:#f1fa8c">&#34;This is a error log entry&#34;</span>)</code></pre></div>
 <p>完整示例见 <a href="https://github.com/teramoby/speedle-plus/blob/master/pkg/logging/demo/demo.go">speedle/logging/demo/demo.go</a>。</p>
+
+<p><a id="与第三方日志系统集成"></a></p>
 
 <h2 id="接入第三方日志系统">接入第三方日志系统</h2>
 

@@ -11,6 +11,7 @@ categories = ["docs"]
 bref = ""
 +++
 
+<a id="概述"></a>
 ## 日志组件
 
 Speedle 使用以下两个开源项目处理日志：
@@ -93,6 +94,7 @@ ocean","size":10,"time":"2014-03-10 19:57:38.562264131 -0400 EDT"}
 }
 ```
 
+<a id="配置日志的最佳实践"></a>
 ## 容器日志建议
 
 Speedle 在 Docker 容器中运行时，建议用 Docker 的 `json-file` 日志驱动管理文件大小和滚动，不再使用 lumberjack。此时 logrus 只负责日志级别和格式。
@@ -111,6 +113,7 @@ Docker 的日志配置位于 `/etc/docker/daemon.json`。具体用法见 [Docker
 
 多数场景使用默认的 info 级别和 text 格式即可。需要 JSON 等格式时，再调整 logrus 配置。
 
+<a id="如何增加新的日志消息"></a>
 ## 在代码中添加日志
 
 先在 `*.go` 源文件中导入 logrus：
@@ -133,6 +136,7 @@ import (
 
 完整示例见 [speedle/logging/demo/demo.go](https://github.com/teramoby/speedle-plus/blob/master/pkg/logging/demo/demo.go)。
 
+<a id="与第三方日志系统集成"></a>
 ## 接入第三方日志系统
 
 Speedle 日志可以交给 fluentd、filebeat 等系统收集，只需让采集器监控 Speedle 生成的日志文件。下面的示例用 fluentd 的 `in_tail` 插件收集 Docker 容器日志；Speedle 在容器中运行时，其日志也会由这套配置采集。

@@ -18,8 +18,10 @@
       
       <guid>https://engine.speedle.io/zh/docs/usecases/</guid>
       <description>嵌入 Go 应用 张先生用 Go 开发了一套应用，想加上权限控制。他可以把 Speedle 嵌入应用进程，直接调用 Go API 评估授权请求，无需另起服务。
+
 集中管理应用权限 H 公司正在开发一套远程医疗系统。健康数据属于个人隐私，系统必须严格控制权限，确保每位用户只能访问自己的数据，还要定期接受第三方审计。H 公司可以用 Speedle：
- 建立兼容 RBAC/ABAC 的授权模型 用易读的 SPDL 编写策略，方便审计人员理解和复核 结合应用审计日志，追踪用户的访问记录  统一管理多个信息系统 陈先生负责一家大型跨国公司的信息安全。公司过去十年并购了数十家中小型企业，每家被并购公司都有自己的信息系统：JavaEE、Node.js、Ruby on Rails，还有基于 CORBA 的遗留系统。
+ 建立兼容 RBAC/ABAC 的授权模型 用易读的 SPDL 编写策略，方便审计人员理解和复核 结合应用审计日志，追踪用户的访问记录  
+统一管理多个信息系统 陈先生负责一家大型跨国公司的信息安全。公司过去十年并购了数十家中小型企业，每家被并购公司都有自己的信息系统：JavaEE、Node.js、Ruby on Rails，还有基于 CORBA 的遗留系统。
 这些系统的权限机制各不相同。有的把权限写死在代码里，有的使用 JAAS 或 OASIS XACML；策略模型也有 RBAC、ABAC、ACL、黑名单和白名单之分。每次调整权限，陈先生和团队都要登录多个系统，用不同方式修改配置，既繁琐，也容易出错。
 Speedle 可以把这些授权决策集中到一套服务中：
  用 SPDL 表达 RBAC、ABAC 等授权模型。 通过 REST、gRPC 或 Go API 接入不同技术栈。 集中管理各系统的策略，减少重复配置和不一致。  Speedle 可以管理百万量级的策略，单个实例每秒能处理 3 万到 4 万次授权请求；需要更高吞吐时，增加实例即可横向扩展。
@@ -209,8 +211,10 @@ Speedle Cloud 支持授权策略和角色策略，不支持外部自定义函数
       <guid>https://engine.speedle.io/zh/contribute/</guid>
       <description>欢迎加入 Speedle 社区。无论使用、推广还是贡献代码，都是在为项目出力。
 推广 如果喜欢 Speedle，欢迎到 GitHub 项目页点一颗星，把它推荐给朋友或同事，也可以分享你的使用经验。
+
 讨论与社区 加入 Speedle Discord 社区，提问、交流想法或讨论代码贡献。
 也可以加入 speedle-users 和 speedle-developers 邮件列表。访问 Discord 有困难时，可以加入 QQ 群：643201591。
+
 问题反馈 发现缺陷或有功能建议，请提交 GitHub issue，并尽量提供：
  Speedle 版本 问题描述 可复现问题的环境和步骤 预期行为  代码贡献 对 Speedle 的贡献依据 Universal Permissive License 1.0 (UPL-1.0) 提交。请为您的提交添加签名（sign-off），以证明您有权依据 Developer Certificate of Origin (DCO) 1.1 提交您的贡献。请在您的 Pull Request 中保留现有的版权和许可证声明，并标明任何第三方材料。
 贡献代码请按以下步骤操作：

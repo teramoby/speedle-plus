@@ -9,6 +9,7 @@ tocsidebar = false
 bref = "Speedle 架构与组件协作流程"
 +++
 
+<a id="modules"></a>
 ## 核心组件
 
 Speedle 授权引擎由以下组件组成：

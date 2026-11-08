@@ -9,18 +9,21 @@ tags = ["community", "contribution"]
 icon = "11. Contribute.svg"
 +++
 
+<a id="使用"></a>
 欢迎加入 Speedle 社区。无论使用、推广还是贡献代码，都是在为项目出力。
 
 ## 推广
 
 如果喜欢 Speedle，欢迎到 [GitHub 项目页](https://github.com/teramoby/speedle-plus)点一颗星，把它推荐给朋友或同事，也可以分享你的使用经验。
 
+<a id="讨论和用户社区"></a>
 ## 讨论与社区
 
 加入 [Speedle Discord 社区](https://discord.gg/uaY2xVsbbT)，提问、交流想法或讨论代码贡献。
 
 也可以加入 [speedle-users](https://groups.google.com/forum/#!forum/speedle-users) 和 [speedle-developers](https://groups.google.com/forum/#!forum/speedle-developers) 邮件列表。访问 Discord 有困难时，可以加入 QQ 群：643201591。
 
+<a id="issues"></a>
 ## 问题反馈
 
 发现缺陷或有功能建议，请提交 [GitHub issue](https://github.com/teramoby/speedle-plus/issues)，并尽量提供：
