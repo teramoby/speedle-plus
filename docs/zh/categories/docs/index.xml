@@ -249,9 +249,8 @@ Speedle Cloud 即将上线。 Cloud 页眉显示 Coming soon（即将上线） �
 删除账号需要完成最近的供应商认证，并输入 DELETE。随后会永久删除账号所属 service、策略、令牌和身份，并结束所有会话。删除前请先从服务工作区导出需要保留的策略。
 创建 service 和策略 新账号打开服务工作区，在服务名称中输入 books，然后选择 创建服务。每个账号只有一个 service。如果账号已有 service 或策略，请先核对并使用合适的现有配置，不要为了运行示例而覆盖或删除已有数据。
 选择 新建策略，在策略名称中输入 read-books，并在 SPDL 编辑器中输入以下授权策略：
-grant user alice get /books 选择 验证策略，确认控制台显示 识别为：授权策略，再选择 保存策略。验证会识别策略类型并检查语法，但不会保存草稿；保存需要单独手动操作。你也可以在工作区导入已有策略，无需逐条手动输入。
-Speedle Cloud 支持授权策略和角色策略，不支持外部自定义函数。策略列表按两种类型分组并显示数量。角色分配使用以下形式：
- 全局角色：grant user alice editor 限定资源的角色：grant user alice editor on /books  grant user alice role editor 同时符合两类语法，会被拒绝。角色分配请省略可选的 role 前缀；授权策略请写成 grant (user alice) role editor。编辑会保留已存储的策略类型；如需改变类型，请删除原策略后新建。</description>
+grant user alice get /books 这条授权没有 from 子句，会匹配任意身份域中名为 alice 的用户。如果应用接受多个身份来源，请写成 grant user alice from &amp;lt;身份域&amp;gt; get /books，把授权限制在单个身份域内；规则和请求中对应的字段见身份域。
+选择 验证策略，确认控制台显示 识别为：授权策略，再选择 保存策略。验证会识别策略类型并检查语法，但不会保存草稿；保存需要单独手动操作。你也可以在工作区导入已有策略，无需逐条手动输入。</description>
     </item>
     
     <item>

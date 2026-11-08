@@ -20,7 +20,7 @@
 <link rel="alternate" hreflang="zh-CN" href="https://engine.speedle.io/zh/docs/cloud/getting-started/">
 <link rel="alternate" hreflang="x-default" href="https://engine.speedle.io/docs/cloud/getting-started/">
 <meta property="og:type" content="article">
-<meta property="article:modified_time" content="2026-11-08T15:04:18&#43;08:00">
+<meta property="article:modified_time" content="2026-11-08T15:37:31&#43;08:00">
 <meta property="og:site_name" content="Speedle Engine">
 <meta property="og:title" content="Speedle Cloud 快速入门 · Speedle Engine">
 <meta property="og:description" content="了解 Speedle Cloud 的登录与账号管理、service 与 SPDL 策略管理、会话 API 请求和 Playground 测试。">
@@ -36,7 +36,7 @@
 <meta name="twitter:image" content="https://engine.speedle.io/img/social/engine-zh.png">
 <meta name="twitter:image:alt" content="Speedle Engine — 快速、简单的权限控制">
 
-<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/zh/docs/cloud/getting-started/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-08T15:04:18+08:00","description":"了解 Speedle Cloud 的登录与账号管理、service 与 SPDL 策略管理、会话 API 请求和 Playground 测试。","headline":"Speedle Cloud 快速入门","image":"https://engine.speedle.io/img/social/engine-zh.png","inLanguage":"zh-CN","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/zh/docs/cloud/getting-started/","@type":"WebPage"},"name":"Speedle Cloud 快速入门","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/zh/docs/cloud/getting-started/"}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/zh/docs/cloud/getting-started/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-08T15:37:31+08:00","description":"了解 Speedle Cloud 的登录与账号管理、service 与 SPDL 策略管理、会话 API 请求和 Playground 测试。","headline":"Speedle Cloud 快速入门","image":"https://engine.speedle.io/img/social/engine-zh.png","inLanguage":"zh-CN","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/zh/docs/cloud/getting-started/","@type":"WebPage"},"name":"Speedle Cloud 快速入门","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/zh/docs/cloud/getting-started/"}</script>
 <script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/zh/docs/cloud/getting-started/#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://engine.speedle.io/zh/","name":"首页","position":1},{"@type":"ListItem","item":"https://engine.speedle.io/zh/docs/","name":"文档","position":2},{"@type":"ListItem","item":"https://engine.speedle.io/zh/docs/cloud/","name":"Speedle Cloud","position":3},{"@type":"ListItem","item":"https://engine.speedle.io/zh/docs/cloud/getting-started/","name":"Speedle Cloud 快速入门","position":4}]}</script><link href="/css/docs.css" rel="stylesheet" type="text/css">
 
 
@@ -199,6 +199,8 @@
 
 <p>选择 <strong>新建策略</strong>，在策略名称中输入 <code>read-books</code>，并在 SPDL 编辑器中输入以下授权策略：</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">grant user alice get /books</code></pre></div>
+<p>这条授权没有 <code>from</code> 子句，会匹配任意身份域中名为 <code>alice</code> 的用户。如果应用接受多个身份来源，请写成 <code>grant user alice from &lt;身份域&gt; get /books</code>，把授权限制在单个身份域内；规则和请求中对应的字段见<a href="/zh/docs/idd/">身份域</a>。</p>
+
 <p>选择 <strong>验证策略</strong>，确认控制台显示 <strong>识别为：授权策略</strong>，再选择 <strong>保存策略</strong>。验证会识别策略类型并检查语法，但不会保存草稿；保存需要单独手动操作。你也可以在工作区导入已有策略，无需逐条手动输入。</p>
 
 <p>Speedle Cloud 支持授权策略和角色策略，不支持外部自定义函数。策略列表按两种类型分组并显示数量。角色分配使用以下形式：</p>
