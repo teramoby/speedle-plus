@@ -29,6 +29,14 @@ type testPKI struct {
 
 func newTestPKI(t *testing.T) *testPKI {
 	t.Helper()
+	return newTestPKIForHosts(t, nil, []net.IP{net.ParseIP("127.0.0.1")})
+}
+
+// newTestPKIForHosts issues the same test hierarchy with a server certificate
+// for the given names. A proxy test uses it so the source URL host is not a
+// loopback address that the environment proxy function would bypass.
+func newTestPKIForHosts(t *testing.T, dnsNames []string, addresses []net.IP) *testPKI {
+	t.Helper()
 	now := time.Now()
 	caPublic, caPrivate, err := ed25519.GenerateKey(rand.Reader)
 	if err != nil {
@@ -87,7 +95,7 @@ func newTestPKI(t *testing.T) *testPKI {
 		return certificate, certificatePEM, keyPEM
 	}
 
-	serverCertificate, _, _ := issue(2, x509.ExtKeyUsageServerAuth, nil, []net.IP{net.ParseIP("127.0.0.1")})
+	serverCertificate, _, _ := issue(2, x509.ExtKeyUsageServerAuth, dnsNames, addresses)
 	_, clientCertPEM, clientKeyPEM := issue(3, x509.ExtKeyUsageClientAuth, nil, nil)
 	return &testPKI{
 		caPEM:             caPEM,
