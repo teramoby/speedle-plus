@@ -33,5 +33,13 @@
 // authorization fail closed. Stale or syncing services do not fail the health
 // check; the request gate routes them to the fallback or rejects them.
 //
+// # Request gate
+//
+// The store implements adsync.RequestGate for the REST and gRPC entry points:
+// it reports the instance and per-service state, and ForwardFallback sends one
+// authorization request to Cloud with the same instance credential the sync
+// client uses. FallbackWhileSyncing (default true) turns that path off. An
+// authentication failure from Cloud stops the instance as revoked.
+//
 // The package never logs policy content or credentials.
 package policysource

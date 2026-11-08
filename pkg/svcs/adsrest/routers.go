@@ -26,8 +26,27 @@ func initRouters(evaluator eval.InternalEvaluator) (*routes, error) {
 	if err != nil {
 		return nil, err
 	}
+	return initRoutersForService(restService), nil
+}
 
+// initRoutersForService builds the route table around one service. Tests use
+// it to supply a gate without a real policy source.
+func initRoutersForService(restService *RESTService) *routes {
 	return &routes{
+		route{
+			"Healthz",
+			"GET",
+			"/healthz",
+			restService.Healthz,
+		},
+
+		route{
+			"Readyz",
+			"GET",
+			"/readyz",
+			restService.Readyz,
+		},
+
 		route{
 			"GetAllGrantedPermissions",
 			"POST",
@@ -62,7 +81,7 @@ func initRouters(evaluator eval.InternalEvaluator) (*routes, error) {
 			svcs.PolicyAtzPath + "discover",
 			restService.Discover,
 		},
-	}, nil
+	}
 }
 
 func NewRouter(evaluator eval.InternalEvaluator) (*mux.Router, error) {

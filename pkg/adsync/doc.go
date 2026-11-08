@@ -12,8 +12,14 @@
 //
 // Machine owns the liveness and per-service sync state described in step E2.
 // It is driven by confirmed acks and sync results and does not talk to the
-// network itself; the notification channel and the request gate are later
-// steps, and pkg/store/policysource builds the read-only store on top of
-// Syncer and Machine. The package never parses SPDL and never logs policy
-// content or credentials.
+// network itself; the notification channel is a later step, and
+// pkg/store/policysource builds the read-only store on top of Syncer and
+// Machine.
+//
+// Client also carries the fallback path of the request gate: while a service
+// is syncing, ForwardFallback evaluates one authorization request on Speedle
+// Cloud with the instance credential and returns Cloud's response unchanged.
+// It retries only a connection that was never established, so a request that
+// may have reached Cloud is not repeated, and it never logs policy content or
+// credentials.
 package adsync

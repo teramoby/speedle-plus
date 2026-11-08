@@ -63,6 +63,7 @@ func TestBuilderRejectsInvalidConfiguration(t *testing.T) {
 		"heartbeat out of range":     with(HeartbeatIntervalKey, "1s"),
 		"stop before stale":          with(StopAfterKey, "10s"),
 		"client cert without key":    with(ClientCertFileKey, "/tmp/cert.pem"),
+		"fallback is not a boolean":  with(FallbackWhileSyncingKey, "perhaps"),
 	}
 	for name, properties := range cases {
 		t.Run(name, func(t *testing.T) {
@@ -113,6 +114,37 @@ func TestBuilderCreatesTheRegisteredStore(t *testing.T) {
 		if params[flag] != key {
 			t.Fatalf("flag %q maps to %q, want %q", flag, params[flag], key)
 		}
+	}
+}
+
+func TestFallbackWhileSyncingProperty(t *testing.T) {
+	fixture := newTestFixture(t, booksService())
+
+	enabled, err := store.NewStore(StoreType, fixture.storeProperties())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !enabled.(*Store).FallbackAvailable() {
+		t.Fatal("the fallback is enabled by default")
+	}
+
+	properties := fixture.storeProperties()
+	properties[FallbackWhileSyncingKey] = "false"
+	disabled, err := store.NewStore(StoreType, properties)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if disabled.(*Store).FallbackAvailable() {
+		t.Fatal("FallbackWhileSyncing=false did not disable the fallback")
+	}
+
+	properties[FallbackWhileSyncingKey] = true
+	fromBool, err := store.NewStore(StoreType, properties)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !fromBool.(*Store).FallbackAvailable() {
+		t.Fatal("a boolean property value was not accepted")
 	}
 }
 
