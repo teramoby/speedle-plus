@@ -78,9 +78,15 @@ is the engine.speedle.io site token.
 The four static homepage/Playground HTML sources carry the same snippet.
 The site continues to publish through GitHub Pages with the existing DNS setup.
 Its canonical host is `https://engine.speedle.io` (Hugo `baseURL`, canonical,
-hreflang, Open Graph, sitemap, `robots.txt`, `llms.txt` and JSON-LD URLs);
+hreflang, Open Graph, sitemap, `robots.txt`, generated `llms.txt` and
+`llms-full.txt`, and JSON-LD URLs);
 `speedle.io` redirects there, so `localize-links.py` treats links to either host
 as same-site. Products menu and footer family links stay absolute.
+Section and taxonomy feeds use `docs/hugo/layouts/_default/rss.xml`. Hugo 0.48
+dates a list page from the first child that has a date, which can describe a
+category as older than the pages it lists; the project template reports the
+newest date in the feed instead, and `hugo-output.test.cjs` fails if any feed is
+older than an item it publishes.
 
 The merge-gating test job executes the English and Chinese Quick Start and
 embedded deployment guides directly from `docs/hugo/content/` on every run.
@@ -141,6 +147,29 @@ Commit source and generated output together. Pages continues to publish
 python3 website/localize-links.py docs
 python3 website/localize-links.py docs --check
 python3 website/tests/test_language_routes.py
+python3 website/generate-llms.py --check docs
+python3 website/tests/check_llms.py docs
+```
+
+`website/generate-llms.py` builds `llms.txt` (an llmstxt.org index of annotated
+links) and `llms-full.txt` (the complete English documentation as Markdown) from
+`docs/hugo/content`. Page titles, descriptions, routes and bodies come from the
+content, so they cannot drift; the blockquote definition is the first paragraph
+of `about.md`, and every published page must be listed in `FULL_PAGES` or
+`EXCLUDED_FROM_FULL`. `build-site.sh` generates both files into the Hugo output
+after the postprocessor; `verify.sh` requires the committed `docs/` copies to
+exist, be tracked by Git, and match a fresh generator run.
+`tests/check_llms.py --external` additionally requires every curated external
+link in `llms.txt` to answer 200 without a redirect
+(`--external-full` extends that to the code references inside `llms-full.txt`);
+the offline check runs in CI. The
+production `robots.txt` explicitly allows the major AI crawlers as well as `*`.
+There are no test-stage host rules in this repository.
+
+To regenerate the committed copies:
+
+```sh
+python3 website/generate-llms.py --output docs
 ```
 
 The existing protected Go CI build job runs the Playground release gate, both

@@ -20,7 +20,7 @@
 <link rel="alternate" hreflang="zh-CN" href="https://engine.speedle.io/zh/docs/decisions/">
 <link rel="alternate" hreflang="x-default" href="https://engine.speedle.io/docs/decisions/">
 <meta property="og:type" content="article">
-<meta property="article:modified_time" content="2026-11-07T18:29:56&#43;08:00">
+<meta property="article:modified_time" content="2026-11-08T19:23:52&#43;08:00">
 <meta property="og:site_name" content="Speedle Engine">
 <meta property="og:title" content="Authorization Decisions · Speedle Engine">
 <meta property="og:description" content="Get authorization decisions for your service interactions">
@@ -36,7 +36,7 @@
 <meta name="twitter:image" content="https://engine.speedle.io/img/social/engine-en.png">
 <meta name="twitter:image:alt" content="Speedle Engine — Fast. Simple. Access control">
 
-<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/docs/decisions/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-07T18:29:56+08:00","description":"Get authorization decisions for your service interactions","headline":"Authorization Decisions","image":"https://engine.speedle.io/img/social/engine-en.png","inLanguage":"en","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/docs/decisions/","@type":"WebPage"},"name":"Authorization Decisions","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/docs/decisions/"}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/docs/decisions/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-08T19:23:52+08:00","description":"Get authorization decisions for your service interactions","headline":"Authorization Decisions","image":"https://engine.speedle.io/img/social/engine-en.png","inLanguage":"en","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/docs/decisions/","@type":"WebPage"},"name":"Authorization Decisions","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/docs/decisions/"}</script>
 <script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/docs/decisions/#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://engine.speedle.io/","name":"Home","position":1},{"@type":"ListItem","item":"https://engine.speedle.io/docs/","name":"Documentation","position":2},{"@type":"ListItem","item":"https://engine.speedle.io/docs/decisions/","name":"Authorization Decisions","position":3}]}</script><link href="/css/docs.css" rel="stylesheet" type="text/css">
 
 
@@ -141,6 +141,9 @@
 <li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading docs-nav-heading-link"><a href="/docs/cloud/">Speedle Cloud</a></span>
 <ul class="">
 <li data-docs-depth="1" class=""><a href="/docs/cloud/getting-started/">Getting started</a></li>
+<li data-docs-depth="1" class=""><a href="/docs/cloud/tokens/">Application tokens</a></li>
+<li data-docs-depth="1" class=""><a href="/docs/cloud/authorization-api/">Authorization API</a></li>
+<li data-docs-depth="1" class=""><a href="/docs/cloud/limits-and-errors/">Limits and errors</a></li>
 </ul>
 
 </li>
@@ -292,7 +295,7 @@
 }</code></pre></div>
 <p>Embedded Go attributes are <code>map[string]interface{}</code>; diagnostic response attributes are also an object, not that request array. See <a href="/docs/spdl/">SPDL</a> for types and conditions, <a href="/docs/pms/diagnosis/">diagnosis</a> for evaluation detail, and <a href="/docs/assertor/">token assertion</a> for configured token validation.</p>
 
-<p>The policy enforcement point (PEP) must supply every custom attribute your policies reference (built-in attributes such as <code>request_user</code> and <code>request_time</code> are provided by ADS); a condition on an attribute missing from the request does not match.</p>
+<p>The policy enforcement point (PEP) must supply every custom attribute your policies reference (built-in attributes such as <code>request_user</code> and <code>request_time</code> are provided by ADS). The PEP is the caller&rsquo;s trusted application or service, not the end user, and it is responsible for the attribute values it sends; never forward untrusted end-user input under a built-in attribute name. A condition on an attribute missing from the request does not match, so a conditional deny does not apply when its attribute is absent. Ensure the PEP supplies every attribute your deny conditions use, and test those requests.</p>
 </div>
 </div>
 </main>

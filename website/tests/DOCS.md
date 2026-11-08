@@ -9,7 +9,7 @@ python3 website/tests/check_quick_start.py --toolchain go1.26.10
 python3 website/tests/check_embedded.py --toolchain go1.26.10 --candidate
 ```
 
-The current docs inventory is 66 Markdown pages (33 English/Chinese pairs). Historical snapshot directories are unchanged. No shared stylesheet, template, logo or homepage design changes are part of this repair.
+The current docs inventory is 78 Markdown pages (39 English/Chinese pairs). Historical snapshot directories are unchanged. No shared stylesheet, template, logo or homepage design changes are part of this repair.
 
 `check_docs.py` executes 132 Bash blocks against owned native PMS/ADS, mock assertion and custom-function services, including Allow/Deny, diagnosis, discovery/import/enforcement, TLS/mTLS and rejected credentials. Two deployment clone/build blocks are identical to the Quick Start build sequence, which the release check executes separately. Linux uses private user/network/PID namespaces and the documented ports; macOS remaps only the owned fixture ports. All fixture processes and temporary policy/certificate files are cleaned up.
 
@@ -26,6 +26,7 @@ Container image pulls and Kubernetes admission/rollout require a target registry
 | `api/management_api` | Updated in both languages | Native router/schema contracts; source proto parity |
 | `sdks/java`, `sdks/python`, `sdks/go`, `sdks/dotnet`, `sdks/rust`, `sdks/node` | Added in both languages (moved from `api/sdk-*` in #208) | Not run by this suite. Each example was run by hand from the published package (Node.js: the packed SDK) against a local self-hosted Speedle ADS and Speedle Cloud beta; commands and output are in the PR |
 | `sdks/_index` | Added in both languages | Example policy text and `spctl` commands moved unchanged from the `api/_index` SDKs section |
+| `cloud/_index`, `cloud/getting-started`, `cloud/tokens`, `cloud/authorization-api`, `cloud/limits-and-errors` | Expanded into the bilingual Cloud documentation hub; added offline Markdown downloads | SPDL parser/evaluator checks, published IsAllowed request checks in both languages, generated-output/link checks, Node.js syntax check; no live Cloud calls |
 | `architecture` | Reviewed; retained | Source review; no obsolete build/API example found |
 | `assertor` | Updated in both languages | Paired native commands and API results |
 | `custom-function` | Updated in both languages | Paired native commands and API results |

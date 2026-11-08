@@ -94,7 +94,7 @@
   
   <url>
     <loc>https://engine.speedle.io/zh/docs/spdl/</loc>
-    <lastmod>2026-11-08T11:21:16+08:00</lastmod>
+    <lastmod>2026-11-08T19:23:52+08:00</lastmod>
     <xhtml:link
                 rel="alternate"
                 hreflang="en"
@@ -109,7 +109,7 @@
   
   <url>
     <loc>https://engine.speedle.io/zh/docs/sdks/java/</loc>
-    <lastmod>2026-11-08T11:21:16+08:00</lastmod>
+    <lastmod>2026-11-08T19:23:52+08:00</lastmod>
     <xhtml:link
                 rel="alternate"
                 hreflang="en"
@@ -154,7 +154,7 @@
   
   <url>
     <loc>https://engine.speedle.io/zh/docs/cloud/getting-started/</loc>
-    <lastmod>2026-11-08T11:21:16+08:00</lastmod>
+    <lastmod>2026-11-08T17:11:18+08:00</lastmod>
     <xhtml:link
                 rel="alternate"
                 hreflang="en"
@@ -228,6 +228,21 @@
   </url>
   
   <url>
+    <loc>https://engine.speedle.io/zh/docs/cloud/tokens/</loc>
+    <lastmod>2026-11-08T17:11:18+08:00</lastmod>
+    <xhtml:link
+                rel="alternate"
+                hreflang="en"
+                href="https://engine.speedle.io/docs/cloud/tokens/"
+                />
+    <xhtml:link
+                rel="alternate"
+                hreflang="zh"
+                href="https://engine.speedle.io/zh/docs/cloud/tokens/"
+                />
+  </url>
+  
+  <url>
     <loc>https://engine.speedle.io/zh/docs/sdks/python/</loc>
     <lastmod>2026-11-08T11:21:16+08:00</lastmod>
     <xhtml:link
@@ -273,6 +288,21 @@
   </url>
   
   <url>
+    <loc>https://engine.speedle.io/zh/docs/cloud/authorization-api/</loc>
+    <lastmod>2026-11-08T17:11:18+08:00</lastmod>
+    <xhtml:link
+                rel="alternate"
+                hreflang="en"
+                href="https://engine.speedle.io/docs/cloud/authorization-api/"
+                />
+    <xhtml:link
+                rel="alternate"
+                hreflang="zh"
+                href="https://engine.speedle.io/zh/docs/cloud/authorization-api/"
+                />
+  </url>
+  
+  <url>
     <loc>https://engine.speedle.io/zh/docs/sdks/go/</loc>
     <lastmod>2026-11-08T11:21:16+08:00</lastmod>
     <xhtml:link
@@ -304,7 +334,7 @@
   
   <url>
     <loc>https://engine.speedle.io/zh/docs/decisions/</loc>
-    <lastmod>2026-11-08T11:21:16+08:00</lastmod>
+    <lastmod>2026-11-08T19:23:52+08:00</lastmod>
     <xhtml:link
                 rel="alternate"
                 hreflang="en"
@@ -314,6 +344,21 @@
                 rel="alternate"
                 hreflang="zh"
                 href="https://engine.speedle.io/zh/docs/decisions/"
+                />
+  </url>
+  
+  <url>
+    <loc>https://engine.speedle.io/zh/docs/cloud/limits-and-errors/</loc>
+    <lastmod>2026-11-08T17:11:18+08:00</lastmod>
+    <xhtml:link
+                rel="alternate"
+                hreflang="en"
+                href="https://engine.speedle.io/docs/cloud/limits-and-errors/"
+                />
+    <xhtml:link
+                rel="alternate"
+                hreflang="zh"
+                href="https://engine.speedle.io/zh/docs/cloud/limits-and-errors/"
                 />
   </url>
   
@@ -439,7 +484,7 @@
   
   <url>
     <loc>https://engine.speedle.io/zh/docs/cloud/</loc>
-    <lastmod>2026-11-08T11:21:16+08:00</lastmod>
+    <lastmod>2026-11-08T17:11:18+08:00</lastmod>
     <xhtml:link
                 rel="alternate"
                 hreflang="en"
@@ -544,7 +589,7 @@
   
   <url>
     <loc>https://engine.speedle.io/zh/about/</loc>
-    <lastmod>2026-11-08T11:21:16+08:00</lastmod>
+    <lastmod>2026-11-08T19:23:52+08:00</lastmod>
     <xhtml:link
                 rel="alternate"
                 hreflang="en"

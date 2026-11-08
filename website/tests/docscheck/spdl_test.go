@@ -9,9 +9,112 @@ import (
 	"testing"
 
 	"github.com/teramoby/speedle-plus/3rdparty/github.com/Knetic/govaluate"
+	"github.com/teramoby/speedle-plus/api/ads"
+	"github.com/teramoby/speedle-plus/pkg/eval"
 	"github.com/teramoby/speedle-plus/pkg/eval/function"
 	"github.com/teramoby/speedle-plus/pkg/pdl"
 )
+
+func TestSPDLExamplesInTheReferenceParse(t *testing.T) {
+	policies := []string{
+		"grant group staff read,delete journal",
+		"deny user carol delete journal",
+		"grant user bob read report if department == 'finance'",
+	}
+	for _, statement := range policies {
+		if _, _, err := pdl.ParsePolicy(statement, ""); err != nil {
+			t.Errorf("documented policy %q: %v", statement, err)
+		}
+	}
+	if _, _, err := pdl.ParseRolePolicy("grant role manager employee", ""); err != nil {
+		t.Errorf("documented role policy %q: %v", "grant role manager employee", err)
+	}
+}
+
+// The examples under "Examples" state decisions, not only syntax. Evaluate
+// them through ADS so a regression in role inheritance, deny precedence or
+// condition matching fails this check instead of silently contradicting the
+// published reference (and llms-full.txt).
+func TestSPDLExamplesDecideAsDocumented(t *testing.T) {
+	examples := []string{
+		"grant role manager employee",
+		"grant group staff read,delete journal\ndeny user carol delete journal",
+		"grant user bob read report if department == 'finance'",
+	}
+	for _, locale := range []string{"", ".zh"} {
+		data, err := os.ReadFile(filepath.Join(root(), "docs/hugo/content/docs", "spdl"+locale+".md"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		found := regexp.MustCompile("(?s)```text\\n(.*?)\\n```").FindAllStringSubmatch(string(data), -1)
+		if len(found) != len(examples) {
+			t.Fatalf("%s: expected %d documented SPDL examples, got %d", locale, len(examples), len(found))
+		}
+		for i := range found {
+			if found[i][1] != examples[i] {
+				t.Fatalf("%s: example %d is %q, want %q", locale, i, found[i][1], examples[i])
+			}
+		}
+	}
+
+	// The examples are statements, not a service fixture. Supply the role
+	// assignments and role policies the prose assumes, then assert every
+	// outcome the reference claims.
+	fixture := strings.Join([]string{
+		"[service.library]",
+		"[policy]",
+		examples[1],
+		examples[2],
+		"grant role employee read journal",
+		"grant role manager update journal",
+		"[rolepolicy]",
+		examples[0],
+		"grant user alice manager",
+		"grant user erin employee",
+	}, "\n") + "\n"
+	location := filepath.Join(t.TempDir(), "policies.spdl")
+	if err := os.WriteFile(location, []byte(fixture), 0600); err != nil {
+		t.Fatal(err)
+	}
+	evaluator, err := eval.NewFromFile(location, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	check := func(user, group, resource, action string, attributes map[string]interface{}, want bool) {
+		t.Helper()
+		principals := []*ads.Principal{{Type: ads.PRINCIPAL_TYPE_USER, Name: user}}
+		if group != "" {
+			principals = append(principals, &ads.Principal{Type: ads.PRINCIPAL_TYPE_GROUP, Name: group})
+		}
+		got, _, err := evaluator.IsAllowed(ads.RequestContext{
+			Subject:     &ads.Subject{Principals: principals},
+			ServiceName: "library",
+			Resource:    resource,
+			Action:      action,
+			Attributes:  attributes,
+		})
+		if err != nil || got != want {
+			t.Fatalf("%s in %s %s %s: got=%v err=%v want=%v", user, group, action, resource, got, err, want)
+		}
+	}
+
+	// Role inheritance: manager holds the employee role and its permissions.
+	check("alice", "", "journal", "read", nil, true)
+	check("alice", "", "journal", "update", nil, true)
+	check("erin", "", "journal", "read", nil, true)
+	check("erin", "", "journal", "update", nil, false)
+	check("bob", "", "journal", "read", nil, false)
+
+	// Deny over grant: carol is staff but the deny wins for delete only.
+	check("carol", "staff", "journal", "delete", nil, false)
+	check("dave", "staff", "journal", "delete", nil, true)
+	check("carol", "staff", "journal", "read", nil, true)
+
+	// Condition: only department == 'finance' applies.
+	check("bob", "", "report", "read", map[string]interface{}{"department": "finance"}, true)
+	check("bob", "", "report", "read", map[string]interface{}{"department": "sales"}, false)
+	check("bob", "", "report", "read", nil, false)
+}
 
 func TestConditionsExtractedFromBothSPDLReferences(t *testing.T) {
 	examples := map[string]map[string]interface{}{

@@ -6,7 +6,7 @@
     <description>Recent content in Speedle Cloud on Speedle</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
-    <lastBuildDate>Sat, 07 Nov 2026 00:06:57 +0800</lastBuildDate>
+    <lastBuildDate>Sun, 08 Nov 2026 17:11:18 +0800</lastBuildDate>
     
 	<atom:link href="https://engine.speedle.io/docs/cloud/index.xml" rel="self" type="application/rss+xml" />
     
@@ -17,8 +17,38 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/docs/cloud/getting-started/</guid>
-      <description>Speedle Cloud is coming soon. Sign-in is not open on cloud.speedle.io yet, and authenticated authorization API calls are still being rolled out. The steps below describe the planned production workflow. Screenshots will be added after production sign-in opens; no mock-up images are used.
-1. Sign in with GitHub or Google Open Speedle Cloud. When production sign-in opens, choose Sign in with GitHub or Sign in with Google. If you are creating a new account, explicitly confirm Create account.</description>
+      <description>Speedle Cloud is coming soon. Production sign-in is not open on cloud.speedle.io yet, and the Cloud header shows Coming soon. When sign-in is closed, the sign-in page says that it opens soon. This guide describes the published workflow rather than a currently open production console; screenshots will be added after production sign-in opens.
+Production origin Use https://cloud.speedle.io for account sessions, management requests and application tokens. Accounts, resources and tokens belong to that origin.</description>
+    </item>
+    
+    <item>
+      <title>Speedle Cloud application tokens</title>
+      <link>https://engine.speedle.io/docs/cloud/tokens/</link>
+      <pubDate>Sun, 08 Nov 2026 00:00:00 +0800</pubDate>
+      
+      <guid>https://engine.speedle.io/docs/cloud/tokens/</guid>
+      <description>Application tokens authenticate an application to Speedle Cloud ADS for the token&amp;rsquo;s own service. They do not identify an end user and cannot authorize management API requests. The token console becomes available when account sign-in opens; while authenticated ADS is pending, issuing a token does not enable server-side authorization calls.
+Issue a token For an account that already owns a service, open Application tokens. Enter a token name of 1–128 characters and choose Create token.</description>
+    </item>
+    
+    <item>
+      <title>Speedle Cloud authorization API preview</title>
+      <link>https://engine.speedle.io/docs/cloud/authorization-api/</link>
+      <pubDate>Sun, 08 Nov 2026 00:00:00 +0800</pubDate>
+      
+      <guid>https://engine.speedle.io/docs/cloud/authorization-api/</guid>
+      <description>Authenticated ADS is pending. The requests and examples on this page describe the published contract for a future release; they were not executed against a live Cloud environment. Issuing an application token does not enable these calls. Use the approved stage URL explicitly, and verify that authenticated ADS is available in that stage before integrating.
+Call IsAllowed from your server Send the issued token in one Authorization: Bearer header and make a POST request:</description>
+    </item>
+    
+    <item>
+      <title>Speedle Cloud limits and errors</title>
+      <link>https://engine.speedle.io/docs/cloud/limits-and-errors/</link>
+      <pubDate>Sun, 08 Nov 2026 00:00:00 +0800</pubDate>
+      
+      <guid>https://engine.speedle.io/docs/cloud/limits-and-errors/</guid>
+      <description>The ADS errors and headers below describe the authenticated ADS contract, whose runtime is not yet available. The management contract already defines account limits, session and CSRF checks, and token-management errors for use when account access is available. Downloading a schema does not enable a pending endpoint.
+Limits    Limit Meaning     10,000 calls per day Account-wide matched PMS and ADS handler calls per UTC day, across sessions, tokens and services; resets at 00:00 UTC.</description>
     </item>
     
   </channel>

@@ -20,7 +20,7 @@
 <link rel="alternate" hreflang="zh-CN" href="https://engine.speedle.io/zh/docs/spdl/">
 <link rel="alternate" hreflang="x-default" href="https://engine.speedle.io/docs/spdl/">
 <meta property="og:type" content="article">
-<meta property="article:modified_time" content="2026-11-08T11:21:16&#43;08:00">
+<meta property="article:modified_time" content="2026-11-08T19:23:52&#43;08:00">
 <meta property="og:site_name" content="Speedle Engine">
 <meta property="og:title" content="SPDL：Speedle 策略定义语言 · Speedle Engine">
 <meta property="og:description" content="SPDL 的全称是 Speedle Policy Definition Language（Speedle 策略定义语言），用于编写 Speedle 策略和角色策略。">
@@ -36,7 +36,7 @@
 <meta name="twitter:image" content="https://engine.speedle.io/img/social/engine-zh.png">
 <meta name="twitter:image:alt" content="Speedle Engine — 快速、简单的权限控制">
 
-<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/zh/docs/spdl/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-08T11:21:16+08:00","description":"SPDL 的全称是 Speedle Policy Definition Language（Speedle 策略定义语言），用于编写 Speedle 策略和角色策略。","headline":"SPDL：Speedle 策略定义语言","image":"https://engine.speedle.io/img/social/engine-zh.png","inLanguage":"zh-CN","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/zh/docs/spdl/","@type":"WebPage"},"name":"SPDL：Speedle 策略定义语言","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/zh/docs/spdl/"}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/zh/docs/spdl/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-08T19:23:52+08:00","description":"SPDL 的全称是 Speedle Policy Definition Language（Speedle 策略定义语言），用于编写 Speedle 策略和角色策略。","headline":"SPDL：Speedle 策略定义语言","image":"https://engine.speedle.io/img/social/engine-zh.png","inLanguage":"zh-CN","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/zh/docs/spdl/","@type":"WebPage"},"name":"SPDL：Speedle 策略定义语言","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/zh/docs/spdl/"}</script>
 <script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/zh/docs/spdl/#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://engine.speedle.io/zh/","name":"首页","position":1},{"@type":"ListItem","item":"https://engine.speedle.io/zh/docs/","name":"文档","position":2},{"@type":"ListItem","item":"https://engine.speedle.io/zh/docs/spdl/","name":"SPDL：Speedle 策略定义语言","position":3}]}</script><link href="/css/docs.css" rel="stylesheet" type="text/css">
 
 
@@ -143,6 +143,9 @@
 <li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading docs-nav-heading-link"><a href="/zh/docs/cloud/">Speedle Cloud</a></span>
 <ul class="">
 <li data-docs-depth="1" class=""><a href="/zh/docs/cloud/getting-started/">快速入门</a></li>
+<li data-docs-depth="1" class=""><a href="/zh/docs/cloud/tokens/">应用令牌</a></li>
+<li data-docs-depth="1" class=""><a href="/zh/docs/cloud/authorization-api/">授权 API</a></li>
+<li data-docs-depth="1" class=""><a href="/zh/docs/cloud/limits-and-errors/">限额与错误</a></li>
 </ul>
 
 </li>
@@ -227,13 +230,26 @@ SUBJECT_IDENTIFIER = NAME
 RESOURCE_IDENTIFIER = NAME
 </pre>
 
+<h2 id="示例">示例</h2>
+
+<p>角色继承：角色策略的主体可以是另一个角色，因此 <code>manager</code> 同时拥有授予 <code>employee</code> 的所有角色。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">grant role manager employee</code></pre></div>
+<p>拒绝优先于授权：适用的拒绝策略会覆盖授权策略。下例中 <code>carol</code> 属于 <code>staff</code>，但对 <code>journal</code> 的 <code>delete</code> 仍被拒绝。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">grant group staff read,delete journal
+deny user carol delete journal</code></pre></div>
+<p>条件：只有条件成立时策略才生效。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">grant user bob read report if department == &#39;finance&#39;</code></pre></div>
+<p>以上是 SPDL 语句示例，不是完整的服务配置；服务、资源范围角色和完整的决策示例见<a href="/zh/docs/pms/policy-mgmt/">策略管理</a>。</p>
+
 <h2 id="条件-condition">条件（Condition）</h2>
 
 <h3 id="1-概述">1. 概述</h3>
 
 <p>授权策略和角色策略都支持条件。只有条件成立，策略才会生效。</p>
 
-<p>PEP 必须传入策略用到的所有自定义属性（<code>request_user</code>、<code>request_time</code> 等内置属性由 ADS 自动提供）；请求里缺少的属性，相关条件不匹配。</p>
+<p>PEP 必须传入策略用到的所有自定义属性；<code>request_user</code>、<code>request_time</code> 等内置属性由 ADS 自动提供。PEP 传入的属性来自调用方的可信应用或服务，而不是终端用户，PEP 对自己传入的值负责。PEP 传入的属性优先于同名内置属性；不要将不可信的终端用户输入作为 <code>request_user</code>、<code>request_time</code> 或其他内置属性名传入。</p>
+
+<p>条件引用的属性在请求中缺失时，该条件不匹配。因此条件式 <code>deny</code> 在该属性缺失时不生效。请确保 PEP 始终传入拒绝条件用到的属性，并测试这些请求。</p>
 
 <p>本节介绍条件的组成和写法。</p>
 
@@ -296,9 +312,9 @@ RESOURCE_IDENTIFIER = NAME
 
 <h4 id="2-2-属性-attributes">2.2 属性(Attributes)</h4>
 
-<p>属性相当于条件中的变量，分为内置属性和用户属性。
+<p>属性相当于条件中的变量，其值在求值时确定，来自 ADS 运行时或 PEP。
 内置属性由 Speedle 预定义，授权决策服务（ADS）在评估时为其赋值。
-用户属性的值由调用方随授权请求传入。</p>
+用户属性的值由 PEP（调用方的可信应用或服务）随授权请求传入，而不是来自终端用户。PEP 对自己传入的值负责。PEP 传入的属性优先于同名内置属性，因此 PEP 不得将不可信的终端用户输入以内置属性名传入。</p>
 
 <h5 id="2-2-1-内置属性-built-in-attributes">2.2.1 内置属性(Built-in Attributes)</h5>
 
@@ -395,7 +411,7 @@ RESOURCE_IDENTIFIER = NAME
 
 <h6 id="2-2-2-2-属性值-value">2.2.2.2 属性值(value)</h6>
 
-<p>条件引用用户属性时，调用方必须把属性值随授权请求一并发给 ADS。</p>
+<p>条件引用用户属性时，调用方必须把属性值随授权请求一并发给 ADS。请求中缺少条件引用的属性时，该条件不匹配，条件式 <code>deny</code> 也不会生效。请确保 PEP 始终传入拒绝条件用到的属性，并测试这些请求。</p>
 
 <ul>
 <li><p>通过 Go API 传入属性值<br />
