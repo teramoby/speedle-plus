@@ -34,6 +34,8 @@ Choose **New policy**, enter `read-books` as the policy name, and put this autho
 grant user alice get /books
 ```
 
+Because this grant has no `from` clause, it matches a user named `alice` in every identity domain. If your application accepts more than one identity source, write `grant user alice from <identity-domain> get /books` so the grant stays inside one domain; see [identity domain](/docs/idd/) for the rule and the matching request field.
+
 Choose **Validate policy** and check that the console reports **Detected: authorization policy**, then choose **Save policy**. Validation detects the policy type and checks syntax; it does not save the draft. Saving is a separate, manual action. You can also import existing policies in the workspace instead of entering them one by one.
 
 Speedle Cloud supports authorization policies and role policies; custom external functions are not supported. The policy list groups the two types and shows their counts. Role assignments use these forms:

@@ -50,6 +50,8 @@ Choose **New policy**, enter `read-books` as the policy name, and put this autho
 grant user alice get /books
 ```
 
+Because this grant has no `from` clause, it matches a user named `alice` in every identity domain. If your application accepts more than one identity source, write `grant user alice from <identity-domain> get /books` so the grant stays inside one domain; see [identity domain](https://engine.speedle.io/docs/idd/) for the rule and the matching request field.
+
 Choose **Validate policy** and check that the console reports **Detected: authorization policy**, then choose **Save policy**. Validation detects the policy type and checks syntax; it does not save the draft. Saving is a separate, manual action. You can also import existing policies in the workspace instead of entering them one by one.
 
 Speedle Cloud supports authorization policies and role policies; custom external functions are not supported. The policy list groups the two types and shows their counts. Role assignments use these forms:
@@ -220,7 +222,7 @@ A policy denial also returns HTTP 200, with `allowed` set to `false`. Your appli
 
 The application establishes the caller's principals through its own user authentication. The API token identifies the application and service, not the end user. Do not trust a principal name supplied by an unauthenticated browser.
 
-Speedle Cloud does not validate subject tokens. Like self-hosted Speedle without a token asserter, it accepts and ignores `subject.token` and `tokenType`; decisions use the principals only.
+Speedle Cloud does not validate subject tokens. Like self-hosted Speedle without a token asserter, it accepts `subject.token` and `tokenType` and discards them without validation, so a non-empty token field is never evidence that authentication happened; decisions use the principals only. Do not forward an end-user token and treat the call as asserted.
 
 The session Playground evaluates current D1 policy data. Authenticated ADS uses published snapshots, with propagation of approximately 60 seconds. A successful Playground test does not prove that every ADS location has the new snapshot. ADS has no public Diagnose endpoint.
 
@@ -230,6 +232,9 @@ Node.js 22 can call ADS without an SDK:
 
 ```js
 export async function canReadBooks(authenticatedUserName, authenticatedUserIdd) {
+  if (!authenticatedUserName || !authenticatedUserIdd) {
+    throw new Error("principal name and identity domain are required");
+  }
   const apiToken = process.env.SPEEDLE_ADS_TOKEN;
   if (!apiToken) throw new Error("Speedle credential is not configured");
   const response = await fetch("https://cloud.speedle.io/authz-check/v1/is-allowed", {
@@ -264,7 +269,7 @@ export async function canReadBooks(authenticatedUserName, authenticatedUserIdd) 
 }
 ```
 
-Inject `SPEEDLE_ADS_TOKEN` from a server-side secret store; never hard-code it. Pass the principal name and identity domain that your server derived from the authenticated user. The caller must fail closed on exceptions and must not turn failures into permission grants.
+Inject `SPEEDLE_ADS_TOKEN` from a server-side secret store; never hard-code it. Pass the principal name and identity domain that your server derived from the authenticated user. The example rejects an empty name or domain before building the body, because `JSON.stringify` would otherwise drop `idd` and send a domain-less principal. Leave `idd` out only for a service with a single identity source, where a name cannot collide across domains. The caller must fail closed on exceptions and must not turn failures into permission grants.
 
 This minimal example has no retry loop. Production handling should distinguish the documented errors, respect `Retry-After`, and use bounded retries. Setting `redirect: "error"` prevents fetch from following a redirect with the credential; retain that behavior when adapting the example.
 

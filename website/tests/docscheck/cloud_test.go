@@ -24,6 +24,15 @@ func TestCloudSPDLExamples(t *testing.T) {
 		if !strings.Contains(text, "```text\n"+authorization+"\n```") {
 			t.Fatalf("%s: missing authorization example", locale)
 		}
+		// The first policy a reader copies has no from clause, so the page must
+		// say how to keep the grant inside one identity domain.
+		domainGuidance := "from <identity-domain> get /books"
+		if locale == ".zh" {
+			domainGuidance = "from <身份域> get /books"
+		}
+		if !strings.Contains(text, domainGuidance) {
+			t.Errorf("%s: missing identity-domain guidance beside the example policy", locale)
+		}
 
 		location := filepath.Join(t.TempDir(), "policies.spdl")
 		configuration := "[service.books]\n[policy]\n" + authorization + "\n"
@@ -141,8 +150,13 @@ func TestCloudAuthorizationExamplesCarryIdentityDomain(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if !strings.Contains(string(text), "idd: authenticatedUserIdd") {
-			t.Errorf("%s: the Node.js example omits idd", locale)
+		for _, required := range []string{
+			"idd: authenticatedUserIdd",
+			"principal name and identity domain are required",
+		} {
+			if !strings.Contains(string(text), required) {
+				t.Errorf("%s: the Node.js example omits %q", locale, required)
+			}
 		}
 
 		var published adsrest.JsonContext

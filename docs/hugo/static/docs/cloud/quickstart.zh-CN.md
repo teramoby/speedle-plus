@@ -50,6 +50,8 @@ Speedle Cloud 是基于开源 Speedle 策略引擎的托管访问控制服务，
 grant user alice get /books
 ```
 
+这条授权没有 `from` 子句，会匹配任意身份域中名为 `alice` 的用户。如果应用接受多个身份来源，请写成 `grant user alice from <身份域> get /books`，把授权限制在单个身份域内；规则和请求中对应的字段见[身份域](https://engine.speedle.io/zh/docs/idd/)。
+
 选择 **验证策略**，确认控制台显示 **识别为：授权策略**，再选择 **保存策略**。验证会识别策略类型并检查语法，但不会保存草稿；保存需要单独手动操作。你也可以在工作区导入已有策略，无需逐条手动输入。
 
 Speedle Cloud 支持授权策略和角色策略，不支持外部自定义函数。策略列表按两种类型分组并显示数量。角色分配使用以下形式：
@@ -220,7 +222,7 @@ Content-Type: application/json
 
 应用通过自身的用户认证确定调用方的 principals。API 令牌识别的是应用和 service，不是最终用户身份。不要相信匿名浏览器自行提交的 principal 名称。
 
-Speedle Cloud 不校验 subject token。与没有 token asserter 的自托管 Speedle 一样，它接受并忽略 `subject.token` 和 `tokenType`，判定只使用 principals。
+Speedle Cloud 不校验 subject token。与没有 token asserter 的自托管 Speedle 一样，它接受 `subject.token` 和 `tokenType`，但不做校验就丢弃，因此非空的 token 字段永远不能作为已经通过认证的证据，判定只使用 principals。不要把最终用户的令牌转发过来，并把它当成已完成断言。
 
 会话 Playground 使用当前 D1 策略数据，带认证的 ADS 使用发布后的快照，传播约需 60 秒。Playground 测试成功并不表示所有 ADS 节点都已拿到新快照。ADS 不提供公开 Diagnose 接口。
 
@@ -230,6 +232,9 @@ Node.js 22 无需 SDK 即可调用 ADS：
 
 ```js
 export async function canReadBooks(authenticatedUserName, authenticatedUserIdd) {
+  if (!authenticatedUserName || !authenticatedUserIdd) {
+    throw new Error("principal name and identity domain are required");
+  }
   const apiToken = process.env.SPEEDLE_ADS_TOKEN;
   if (!apiToken) throw new Error("Speedle credential is not configured");
   const response = await fetch("https://cloud.speedle.io/authz-check/v1/is-allowed", {
@@ -264,7 +269,7 @@ export async function canReadBooks(authenticatedUserName, authenticatedUserIdd) 
 }
 ```
 
-通过服务端的秘密存储注入 `SPEEDLE_ADS_TOKEN`，切勿将值写入代码。传入的主体名称和身份域必须由服务端根据已认证用户得出。调用方遇到异常时必须拒绝执行受保护操作，不能把失败转换为允许。
+通过服务端的秘密存储注入 `SPEEDLE_ADS_TOKEN`，切勿将值写入代码。传入的主体名称和身份域必须由服务端根据已认证用户得出。示例在组装请求正文之前就拒绝空的主体名称或身份域，否则 `JSON.stringify` 会丢掉 `idd`，发出不带身份域的主体。只有在 service 仅有一个身份来源、名称不可能跨域重复时，才可以省略 `idd`。调用方遇到异常时必须拒绝执行受保护操作，不能把失败转换为允许。
 
 这个最小示例没有重试循环。生产应用应区分文档列出的错误，遵守 `Retry-After`，并使用有界重试。示例中的 `redirect: "error"` 防止 fetch 携带凭据跟随重定向；改写示例时应保留这一行为。
 
