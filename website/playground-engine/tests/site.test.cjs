@@ -39,6 +39,9 @@ const discordLink = '<a href="https://discord.gg/uaY2xVsbbT" aria-label="Discord
 const originalMailingLink = '<a href="https://groups.google.com/forum/#!forum/speedle-users" aria-label="Mailing list"><img src="/img/speedle/28.%20Mail.svg" alt=""></a>';
 const contactLinks = '<a href="mailto:contact@speedle.io" aria-label="Email contact@speedle.io" title="contact@speedle.io"><img src="/img/speedle/28.%20Mail.svg" alt=""></a>\n        <a href="https://groups.google.com/forum/#!forum/speedle-users" aria-label="Google Groups" title="Google Groups — speedle-users"><img src="/img/speedle/Google-Groups.svg" alt=""></a>';
 const copyright = '<p>Copyright &copy; 2019–2026. All rights reserved.</p>';
+const footerLegal = zh => zh
+  ? '<p class="footer-legal"><span>基于 Universal Permissive License v1.0 授权。</span><span>版权所有 &copy; 2019–2026 The Speedle Authors。</span></p>'
+  : '<p class="footer-legal"><span>Licensed under the Universal Permissive License v1.0.</span><span>Copyright &copy; 2019–2026 The Speedle Authors. All rights reserved.</span></p>';
 const originalNavigationScript = original.match(/  <script>[\s\S]*?<\/script>/)[0];
 const sharedNavigationScript = '  <script src="/js/navigation.js?v=header-20261106-v8" defer></script>';
 // #203 three-site lock-up: Speedle mark + wordmark | Engine.
@@ -75,6 +78,10 @@ let chinesePages = 0;
     const route = '/' + path.relative(path.join(root, 'docs'), file).split(path.sep).join('/');
     const zh = /^(?:\/[0-9a-f]{32})?\/zh\//.test(route);
     const html = fs.readFileSync(file, 'utf8');
+    if (html.includes('<footer class="site-footer">')) {
+      assert.ok(html.includes(footerLegal(zh)), `Separate license and approved copyright lines in ${route}`);
+      assert.ok(!html.includes('footer-sep'), `No legal-line joiner in ${route}`);
+    }
     const blocks = [html.match(/<div class="products-panel"[\s\S]*?<\/div>/)?.[0], html.match(/<nav class="footer-family"[\s\S]*?<\/nav>/)?.[0]].filter(Boolean);
     if (!blocks.length) continue;
     if (zh) chinesePages++;

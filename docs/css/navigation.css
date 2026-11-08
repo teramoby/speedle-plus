@@ -363,6 +363,7 @@ html .site-footer .footer-card[aria-current="page"] { border-color: #01e7cb; bac
   line-height: 20px;
 }
 .site-footer .footer-legal { margin: 0; }
+.site-footer .footer-legal span { display: block; }
 /* Product sphere colours; the v16 cards enlarge the sphere to 28 px. */
 .site-footer .sphere-sprite { position: absolute; width: 0; height: 0; overflow: hidden; }
 .site-footer .product-sphere { display: block; width: 20px; height: 20px; flex: none; }
@@ -377,8 +378,6 @@ html .site-footer .footer-card[aria-current="page"] { border-color: #01e7cb; bac
   .site-footer .footer-main { padding: 48px 0 32px; }
   .site-footer .footer-family ul { grid-template-columns: 1fr; }
   .site-footer .footer-bar { flex-direction: column; }
-  .site-footer .footer-legal span { display: block; }
-  .site-footer .footer-legal .footer-sep { display: none; }
 }
 @media (max-width: 700px) {
   .site-footer .footer-main, .site-footer .footer-bar { width: min(100% - 28px, 1160px); }
