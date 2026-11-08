@@ -199,7 +199,15 @@ for (const locale of ['', 'zh/']) {
     assert.ok(fs.readFileSync(path.join(output, `${locale || 'en/'}sitemap.xml`), 'utf8').includes(`<loc>${prefix}${route}</loc>`), `Cloud sitemap entry ${prefix}${route}`);
   }
 }
-assert.ok(fs.readFileSync(path.join(output, 'llms.txt'), 'utf8').includes('[Speedle Cloud](https://engine.speedle.io/docs/cloud/)'), 'llms.txt links the Cloud section');
+const llms = fs.readFileSync(path.join(output, 'llms.txt'), 'utf8');
+const llmsFull = fs.readFileSync(path.join(output, 'llms-full.txt'), 'utf8');
+assert.ok(llms.includes('[Speedle Cloud](https://engine.speedle.io/docs/cloud/)'), 'llms.txt links the Cloud section');
+assert.ok(llms.includes('https://ai.speedle.io/llms.txt') && llms.includes('https://cloud.speedle.io/llms.txt'), 'llms.txt links the other sites\' llms.txt');
+assert.ok(llmsFull.includes('grant role manager employee') && llmsFull.includes('ROLE_POLICY ='),
+  'llms-full.txt contains the SPDL grammar and role-inheritance example');
+for (const name of ['llms.txt', 'llms-full.txt']) {
+  assert.deepEqual(fs.readFileSync(path.join(output, name)), fs.readFileSync(path.join(root, 'docs', name)), `Generated ${name} matches the published copy`);
+}
 
 // Every documentation sidebar must retain its complete section tree. A shared
 // Page.Scratch value can expose an incomplete tree during parallel Hugo renders.

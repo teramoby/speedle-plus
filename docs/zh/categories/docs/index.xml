@@ -6,7 +6,7 @@
     <description>Recent content in Docs on Speedle</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>zh-cn</language>
-    <lastBuildDate>Sun, 08 Nov 2026 15:04:18 +0800</lastBuildDate>
+    <lastBuildDate>Sun, 08 Nov 2026 17:11:18 +0800</lastBuildDate>
     
 	<atom:link href="https://engine.speedle.io/zh/categories/docs/index.xml" rel="self" type="application/rss+xml" />
     
@@ -227,7 +227,7 @@ import { Auth, Reason, SpeedleClient, SpeedleError } from &amp;#34;@speedle/sdk&
     <item>
       <title>Speedle Cloud</title>
       <link>https://engine.speedle.io/zh/docs/cloud/</link>
-      <pubDate>Sun, 08 Nov 2026 15:04:18 +0800</pubDate>
+      <pubDate>Sun, 08 Nov 2026 17:11:18 +0800</pubDate>
       
       <guid>https://engine.speedle.io/zh/docs/cloud/</guid>
       <description>Speedle Cloud 是基于开源 Speedle 策略引擎的托管访问控制服务，面向开发者。你可以用它管理 SPDL 授权策略与角色策略、在 Playground 中测试授权判定，再从应用服务端调用授权 API，无需自行部署和运维授权服务。

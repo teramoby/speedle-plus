@@ -295,7 +295,7 @@
 }</code></pre></div>
 <p>Embedded Go attributes are <code>map[string]interface{}</code>; diagnostic response attributes are also an object, not that request array. See <a href="/docs/spdl/">SPDL</a> for types and conditions, <a href="/docs/pms/diagnosis/">diagnosis</a> for evaluation detail, and <a href="/docs/assertor/">token assertion</a> for configured token validation.</p>
 
-<p>The policy enforcement point (PEP) must supply every custom attribute your policies reference (built-in attributes such as <code>request_user</code> and <code>request_time</code> are provided by ADS); a condition on an attribute missing from the request does not match.</p>
+<p>The policy enforcement point (PEP) must supply every custom attribute your policies reference (built-in attributes such as <code>request_user</code> and <code>request_time</code> are provided by ADS). The PEP is the caller&rsquo;s trusted application or service, not the end user, and it is responsible for the attribute values it sends; never forward untrusted end-user input under a built-in attribute name. A condition on an attribute missing from the request does not match, so a conditional deny does not apply when its attribute is absent. Ensure the PEP supplies every attribute your deny conditions use, and test those requests.</p>
 </div>
 </div>
 </main>

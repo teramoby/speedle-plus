@@ -56,13 +56,38 @@ SUBJECT_IDENTIFIER = NAME
 RESOURCE_IDENTIFIER = NAME
 </pre>
 
+## Examples
+
+Role inheritance: the subject of a role policy can be another role, so `manager` also holds every role assigned to `employee`.
+
+```text
+grant role manager employee
+```
+
+Deny over grant: an applicable deny wins over a grant. Here `carol` is in `staff` and is still denied `delete` on `journal`.
+
+```text
+grant group staff read,delete journal
+deny user carol delete journal
+```
+
+A condition: the policy applies only when the condition is true.
+
+```text
+grant user bob read report if department == 'finance'
+```
+
+These are SPDL statements, not a complete service fixture; see [Policy Management](../pms/policy-mgmt/) for services, resource-scoped roles and complete decision examples.
+
 ## Condition
 
 ### 1. Overview
 
 Condition is supported in both policy and role policy definitions. The policy or role policy can take effect _only_ when the condition is met.
 
-The policy enforcement point (PEP) must supply every custom attribute your policies reference (built-in attributes such as `request_user` and `request_time` are provided by ADS); a condition on an attribute missing from the request does not match.
+The policy enforcement point (PEP) must supply every custom attribute your policies reference; built-in attributes such as `request_user` and `request_time` are provided by ADS. Attributes supplied by the PEP come from the caller's trusted application or service, not from end users, and the PEP is responsible for the values it sends. Attributes supplied by the PEP take precedence over built-in attributes with the same name; in particular, never forward untrusted end-user input as `request_user`, `request_time` or any other built-in attribute name.
+
+A condition that references an attribute missing from the request does not match. A conditional `deny` therefore does not apply when its attribute is absent. Make sure the PEP always supplies the attributes your deny conditions use, and test those requests.
 
 This document focuses on what a condition is, and how to write a condition.
 
@@ -131,9 +156,9 @@ Most comparators are self explanatory, here is the annotation for `"=~"`:
 
 #### 2.2 Attributes
 
-An attribute in a condition represents a variable. The attribute value is determined at runtime, obtained from either the Authorization Decision Service (ADS) runtime or the customer.
+An attribute in a condition represents a variable. The attribute value is determined at runtime, obtained from either the Authorization Decision Service (ADS) runtime or the PEP.
 Built-in attributes are those values that are populated by the ADS runtime.
-Customer attributes are those values that are provided by the customer when asking the ADS for authorization decisions.
+Customer attributes are those values that are provided by the PEP — the caller's trusted application or service — when asking ADS for authorization decisions, not by end users. The PEP is responsible for the values it sends. Attributes supplied by the PEP take precedence over built-in attributes with the same name, so a PEP must not forward untrusted end-user input under a built-in attribute name.
 
 ##### 2.2.1 Built-in Attributes
 
@@ -228,7 +253,7 @@ For portable condition references, prefer `[A-Za-z][A-Za-z0-9_]*` and avoid buil
 
 ###### 2.2.2.2 value
 
-When customer attributes are used in a condition, the customer needs to pass the customer attribute values when requesting an isAllowed result.
+When customer attributes are used in a condition, the customer needs to pass the customer attribute values when requesting an isAllowed result. If the request does not carry an attribute that a condition references, the condition does not match; a conditional `deny` does not apply in that case. Ensure the PEP supplies every attribute your deny conditions use, and test those requests.
 
 - Passing attribute values in Golang API  
    Adhere to these rules when passing customer attribute values to a Golang API:

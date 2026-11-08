@@ -295,7 +295,7 @@
 }</code></pre></div>
 <p>嵌入式 Go 使用 <code>map[string]interface{}</code>。诊断响应的属性也是对象，不能与请求属性数组混淆。属性类型与条件见 <a href="/zh/docs/spdl/">SPDL</a>，过程明细见<a href="/zh/docs/pms/diagnosis/">授权诊断</a>，令牌校验见<a href="/zh/docs/assertor/">令牌断言</a>。</p>
 
-<p>PEP 必须传入策略用到的所有自定义属性（<code>request_user</code>、<code>request_time</code> 等内置属性由 ADS 自动提供）；请求里缺少的属性，相关条件不匹配。</p>
+<p>PEP 必须传入策略用到的所有自定义属性（<code>request_user</code>、<code>request_time</code> 等内置属性由 ADS 自动提供）。PEP 是调用方的可信应用或服务，而不是终端用户，需要对自己传入的属性值负责；不要将不可信的终端用户输入以内置属性名传入。请求中缺少某属性时，引用该属性的条件不匹配，条件式拒绝在该属性缺失时也不会生效。请确保 PEP 始终传入拒绝条件用到的属性，并测试这些请求。</p>
 </div>
 </div>
 </main>
