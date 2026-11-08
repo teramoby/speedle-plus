@@ -59,8 +59,9 @@ for (const locale of ['', 'zh/']) {
   const html = fs.readFileSync(path.join(output, `${locale}docs/api/management_api/index.html`), 'utf8');
   assert.ok(html.includes('/css/swagger-ui.css') && html.includes('/css/swagger-custom.css'), `Swagger styles in ${locale || 'en'}`);
 }
+const cloudRoutes = ['', 'getting-started/', 'tokens/', 'authorization-api/', 'limits-and-errors/'];
 for (const name of ['docs/index.html', 'zh/docs/index.html', 'docs/spdl/index.html', 'zh/docs/spdl/index.html',
-  'docs/cloud/index.html', 'zh/docs/cloud/index.html', 'docs/cloud/getting-started/index.html', 'zh/docs/cloud/getting-started/index.html']) {
+  ...cloudRoutes.flatMap(route => [`docs/cloud/${route}index.html`, `zh/docs/cloud/${route}index.html`])]) {
   const html = fs.readFileSync(path.join(output, name), 'utf8');
   const zh = name.startsWith('zh/');
   const target = '/' + (zh ? name.slice(3) : 'zh/' + name).replace(/index\.html$/, '');
@@ -155,24 +156,46 @@ function checkDocsAlternates(directory) {
 }
 checkDocsAlternates(path.join(output, 'docs'));
 checkDocsAlternates(path.join(output, 'zh/docs'));
-assert.equal(docsAlternates, 84, 'Every canonical docs page and redirect alias has three hreflang alternates');
+assert.equal(docsAlternates, 90, 'Every canonical docs page and redirect alias has three hreflang alternates');
 console.log('PASS Hugo 0.48 output: editor, navigation, sitemap, footer stylesheet and matching release assets');
 
-// #219: the Cloud overview is a linked, bold sidebar group and both languages
-// carry the same six-step launch preview, limits, legal links and metadata.
+// #278: the Cloud section is the complete bilingual documentation hub.
 for (const locale of ['', 'zh/']) {
   const zh = locale === 'zh/';
   const prefix = `https://engine.speedle.io/${locale}docs/cloud/`;
-  const overview = fs.readFileSync(path.join(output, `${locale}docs/cloud/index.html`), 'utf8');
-  const guide = fs.readFileSync(path.join(output, `${locale}docs/cloud/getting-started/index.html`), 'utf8');
+  const read = route => fs.readFileSync(path.join(output, `${locale}docs/cloud/${route}index.html`), 'utf8');
+  const overview = read('');
+  const guide = read('getting-started/');
+  const tokens = read('tokens/');
+  const api = read('authorization-api/');
+  const limits = read('limits-and-errors/');
   const sidebar = guide.split('<div class="sidebar">')[1];
   assert.ok(/docs-nav-heading[^"]*"><a [^>]*>Speedle Cloud<\/a>/.test(sidebar), `Cloud is a linked bold sidebar heading in ${locale || 'en'}`);
-  assert.ok(sidebar.includes(`href="/${locale}docs/cloud/getting-started/"`), `Cloud getting-started link in ${locale || 'en'}`);
+  for (const route of cloudRoutes.slice(1)) {
+    assert.ok(sidebar.includes(`href="/${locale}docs/cloud/${route}"`), `Cloud ${route} link in ${locale || 'en'}`);
+  }
   assert.ok(overview.includes(zh ? 'Speedle Cloud 即将上线' : 'Speedle Cloud is coming soon'), `Coming-soon overview in ${locale || 'en'}`);
-  assert.equal((guide.match(zh ? /<strong>截图待补充<\/strong>/g : /<strong>Screenshot coming soon<\/strong>/g) || []).length, 6, `Six screenshot slots in ${locale || 'en'}`);
-  assert.ok(guide.includes('POST /authz-check/v1/is-allowed') && guide.includes('spdl_&lt;canonical lowercase UUIDv7 id&gt;_&lt;43 base62 digits&gt;'), `Cloud API and token format in ${locale || 'en'}`);
-  assert.ok(guide.includes(`href="https://cloud.speedle.io/${zh ? 'zh-CN/' : ''}terms"`) && guide.includes(`href="https://cloud.speedle.io/${zh ? 'zh-CN/' : ''}privacy"`), `Localized Cloud legal links in ${locale || 'en'}`);
-  for (const route of ['', 'getting-started/']) {
+  assert.ok(overview.includes('Coming soon') && guide.includes(zh ? '生产环境尚未开放登录' : 'Production sign-in is not open'), `Cloud badge and closed sign-in in ${locale || 'en'}`);
+  assert.ok(guide.includes(zh ? '使用 GitHub 或 Google 登录（即将开放）' : 'Sign in with GitHub or Google (opens soon)'), `Provider sign-in step in ${locale || 'en'}`);
+  assert.ok(guide.includes('allGrantedPermissions') && guide.includes('POST /api/service/test'), `All session Playground operations in ${locale || 'en'}`);
+  assert.ok(guide.includes('grant user alice editor on /books') && guide.includes('grant (user alice) role editor'), `Role-policy examples in ${locale || 'en'}`);
+  assert.ok(guide.includes('Sign out everywhere') || guide.includes('在所有设备上退出'), `Account session management in ${locale || 'en'}`);
+  assert.ok(tokens.includes('spdl_&lt;canonical uppercase ULID id&gt;_&lt;43 base62 digits&gt;'), `Current token format in ${locale || 'en'}`);
+  assert.ok(!tokens.includes('UUIDv7'), `Obsolete token format removed in ${locale || 'en'}`);
+  assert.ok(tokens.includes('reauth_required') && tokens.includes('DELETE /api/tokens/') && tokens.includes('nextCursor'), `Token creation, revocation and pagination in ${locale || 'en'}`);
+  assert.ok(api.includes('POST /authz-check/v1/is-allowed') && api.includes('service_mismatch') && api.includes('subject.token'), `ADS preview contract in ${locale || 'en'}`);
+  assert.ok(api.includes('AbortSignal.timeout') && api.includes('SPEEDLE_ADS_TOKEN'), `Node.js ADS example in ${locale || 'en'}`);
+  assert.ok(limits.includes('X-Quota-Daily-Remaining') && limits.includes('daily_quota_exceeded') && limits.includes('snapshot_unavailable'), `Cloud limits and errors in ${locale || 'en'}`);
+  const download = zh ? 'quickstart.zh-CN.md' : 'quickstart.en.md';
+  assert.ok(overview.includes(`href="/docs/cloud/${download}"`), `Localized Markdown download in ${locale || 'en'}`);
+  assert.ok(overview.includes('https://cloud.speedle.io/openapi.yaml') && overview.includes('https://cloud.speedle.io/openapi.json') && overview.includes('https://cloud.speedle.io/build.json'), `Cloud schema and build downloads in ${locale || 'en'}`);
+  assert.ok(overview.includes(`href="https://cloud.speedle.io/${zh ? 'zh-CN/' : ''}terms"`) && overview.includes(`href="https://cloud.speedle.io/${zh ? 'zh-CN/' : ''}privacy"`), `Localized Cloud legal links in ${locale || 'en'}`);
+  const markdown = fs.readFileSync(path.join(output, 'docs/cloud', download), 'utf8');
+  assert.deepEqual(markdown, fs.readFileSync(path.join(root, 'docs/hugo/static/docs/cloud', download), 'utf8'), `Generated ${download}`);
+  for (const phrase of ['getting-started', 'tokens', 'authorization-api', 'limits-and-errors']) {
+    assert.ok(markdown.includes(`https://engine.speedle.io/${locale}docs/cloud/${phrase}`), `Offline Markdown links ${phrase} in ${locale || 'en'}`);
+  }
+  for (const route of cloudRoutes) {
     assert.ok(fs.readFileSync(path.join(output, `${locale || 'en/'}sitemap.xml`), 'utf8').includes(`<loc>${prefix}${route}</loc>`), `Cloud sitemap entry ${prefix}${route}`);
   }
 }
@@ -190,7 +213,7 @@ function checkStorageNavigation(directory, locale = '') {
       const sidebar = html.split('<div class="sidebar">')[1];
       for (const target of ['store/', 'store/mysql/', 'store/etcd/', 'store/mongodb/', 'pms/policy-mgmt/', 'api/decision_api/',
         'sdks/', 'sdks/java/', 'sdks/python/', 'sdks/go/', 'sdks/dotnet/', 'sdks/rust/', 'sdks/node/',
-        'cloud/', 'cloud/getting-started/']) {
+        'cloud/', 'cloud/getting-started/', 'cloud/tokens/', 'cloud/authorization-api/', 'cloud/limits-and-errors/']) {
         assert.ok(sidebar.includes(`href="/${locale}docs/${target}"`), `Complete sidebar ${target} in ${name}`);
       }
       for (const [depth, target] of [[0, 'security/'], [1, 'pms/policy-mgmt/'], [1, 'store/mysql/'],
@@ -207,3 +230,47 @@ for (const name of ['docs/index.html', 'zh/docs/index.html', 'quick-start/index.
 checkStorageNavigation(path.join(output, 'docs'));
 checkStorageNavigation(path.join(output, 'zh/docs'), 'zh/');
 console.log('PASS complete bilingual documentation sidebars with nested MySQL, etcd and MongoDB guides');
+
+// #281 review: Hugo 0.48 dates a list page from the first child page that has a
+// date, so a category feed could report January 2019 while listing November 2026
+// pages. The project RSS template now derives both feed dates from the newest
+// dated page, so no feed may claim to be older than what it lists.
+const undated = 'Mon, 01 Jan 0001 00:00:00 +0000';
+const feedDates = xml => [...xml.matchAll(/<pubDate>([^<]+)<\/pubDate>/g)]
+  .map(match => match[1]).filter(date => date !== undated).map(date => Date.parse(date));
+const newest = dates => dates.reduce((max, date) => Math.max(max, date), -Infinity);
+let feedCount = 0;
+function checkFeedDates(directory) {
+  for (const entry of fs.readdirSync(directory, {withFileTypes: true})) {
+    const file = path.join(directory, entry.name);
+    if (entry.isDirectory()) { checkFeedDates(file); continue; }
+    if (entry.name !== 'index.xml') continue;
+    feedCount++;
+    const xml = fs.readFileSync(file, 'utf8');
+    const items = feedDates(xml);
+    if (items.length === 0) continue;
+    const build = xml.match(/<lastBuildDate>([^<]+)<\/lastBuildDate>/)?.[1];
+    assert.ok(build, `lastBuildDate in ${path.relative(output, file)}`);
+    assert.ok(Date.parse(build) >= newest(items), `Newest item is not after lastBuildDate in ${path.relative(output, file)}`);
+  }
+}
+checkFeedDates(output);
+assert.ok(feedCount > 60, `Feeds checked: ${feedCount}`);
+// The taxonomy feeds list a term whose own date is stale for the same reason.
+for (const plural of ['categories', 'tags', 'versions']) {
+  const list = path.join(output, plural, 'index.xml');
+  if (!fs.existsSync(list)) continue;
+  const xml = fs.readFileSync(list, 'utf8');
+  for (const [, link, pubDate] of xml.matchAll(/<link>([^<]+)<\/link>\s*<pubDate>([^<]+)<\/pubDate>/g)) {
+    if (pubDate === undated) continue;
+    const feed = path.join(output, new URL(link).pathname, 'index.xml');
+    if (!fs.existsSync(feed)) continue;
+    const items = feedDates(fs.readFileSync(feed, 'utf8'));
+    if (items.length === 0) continue;
+    assert.ok(Date.parse(pubDate) >= newest(items), `Term ${link} is older than its newest item`);
+  }
+}
+const docsCategory = fs.readFileSync(path.join(output, 'categories/docs/index.xml'), 'utf8');
+assert.ok(Date.parse(docsCategory.match(/<lastBuildDate>([^<]+)<\/lastBuildDate>/)[1]) > Date.parse('Mon, 01 Jan 2020 00:00:00 +0000'),
+  'Docs category feed is not dated before 2020');
+console.log('PASS every feed is dated from its newest page');

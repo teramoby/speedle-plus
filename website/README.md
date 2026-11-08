@@ -81,6 +81,11 @@ Its canonical host is `https://engine.speedle.io` (Hugo `baseURL`, canonical,
 hreflang, Open Graph, sitemap, `robots.txt`, `llms.txt` and JSON-LD URLs);
 `speedle.io` redirects there, so `localize-links.py` treats links to either host
 as same-site. Products menu and footer family links stay absolute.
+Section and taxonomy feeds use `docs/hugo/layouts/_default/rss.xml`. Hugo 0.48
+dates a list page from the first child that has a date, which can describe a
+category as older than the pages it lists; the project template reports the
+newest date in the feed instead, and `hugo-output.test.cjs` fails if any feed is
+older than an item it publishes.
 
 The merge-gating test job executes the English and Chinese Quick Start and
 embedded deployment guides directly from `docs/hugo/content/` on every run.

@@ -4,7 +4,7 @@
 
 Speedle evaluates RBAC and ABAC policies for users, services, and processes acting on behalf of users. Its human-readable Speedle Policy Definition Language (SPDL), centralized Policy Management Service, and Authorization Decision Service keep authorization logic outside application code. The project is available under the Universal Permissive License v1.0.
 
-Updated 2026-11-07. This guide distinguishes current documented capabilities, dated fixed-version measurements, and proposed comparisons. Benchmark figures are workload-specific evidence, not universal product rankings.
+Updated 2026-11-08. This guide distinguishes current documented capabilities, dated fixed-version measurements, and proposed comparisons. Benchmark figures are workload-specific evidence, not universal product rankings.
 
 ## Start here
 
@@ -12,7 +12,7 @@ Updated 2026-11-07. This guide distinguishes current documented capabilities, da
 - [Project overview](https://engine.speedle.io/about/): What Speedle is and why the project exists.
 - [Quick start](https://engine.speedle.io/quick-start/): Run Speedle and make a first authorization decision.
 - [Documentation](https://engine.speedle.io/docs/): Concepts, deployment, APIs, and operations.
-- [Speedle Cloud](https://engine.speedle.io/docs/cloud/): Hosted authorization for developers (coming soon); the getting-started chapter covers sign-in, SPDL policies, Playground tests, API tokens, IsAllowed, beta limits and legal links.
+- [Speedle Cloud](https://engine.speedle.io/docs/cloud/): Complete hosted-authorization documentation (coming soon): sign-in and account management, SPDL policies, all four session Playground operations, application-token rotation and revocation, the authenticated ADS preview, limits, errors, OpenAPI schemas and bilingual Markdown downloads.
 - [Architecture](https://engine.speedle.io/docs/architecture/): Major components and request flow.
 - [SPDL](https://engine.speedle.io/docs/spdl/): Speedle Policy Definition Language reference.
 - [Authorization decisions](https://engine.speedle.io/docs/decisions/): How policy decisions are evaluated.
