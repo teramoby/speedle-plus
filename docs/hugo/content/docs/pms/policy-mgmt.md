@@ -111,6 +111,36 @@ role_policy_id=$(./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1
 ```
 
 
+## Speedle Cloud
+
+Speedle Cloud sign-in opens soon. When API tokens become available, `spctl` can manage Cloud services and policies through the same commands used with a self-hosted PMS. Use the management endpoint:
+
+```text
+https://cloud.speedle.io/policy-mgmt/v1
+```
+
+Choose an API token with the scopes required by your commands. `pms:read` covers `get` and `discover` reads; `pms:write` covers `create`, `delete` and discovery resets. A token that only has ADS scopes cannot manage policies and is rejected with `403 insufficient_scope`.
+
+Pass the endpoint and token as global flags:
+
+```bash
+./bin/spctl --pms-endpoint https://cloud.speedle.io/policy-mgmt/v1 --token '<api-token>' get service --all
+```
+
+For a saved configuration, use `~/.speedle`. Its format is one `name=value` pair per line, with the same flag names as the command line:
+
+```ini
+pms-endpoint=https://cloud.speedle.io/policy-mgmt/v1
+token=<api-token>
+```
+
+Keep this file private. `spctl config token '<api-token>'` creates or updates `~/.speedle` with mode `0600` without displaying the token. Other settings set through `spctl config` continue to use the existing `~/.spctlconfig` file. Settings in `~/.speedle` override the same settings in `~/.spctlconfig`, and explicit command-line flags override both files. `spctl config --list` masks a configured token as `********`.
+
+The token is sent as an `Authorization: Bearer` credential only over HTTPS. Plain HTTP is allowed with a token only for a loopback host such as `127.0.0.1`, `::1` or `localhost`; `spctl` rejects remote HTTP endpoints and HTTPS-to-HTTP downgrade redirects before sending the credential. Tokens are not included in normal command output or error messages.
+
+Cloud errors produce a non-zero exit status. Check the token after a `401`, and its scopes after a `403 insufficient_scope`. A `404` identifies a missing resource, while `409 service_exists` and `409 policy_exists` identify duplicates. For `429`, honor the returned `Retry-After` value and use bounded backoff. Daily or policy quota errors require waiting for the reset or reducing usage; do not retry them in a tight loop.
+
+
 ## Other interfaces
 
 The [PMS REST API](/docs/api/management_api/) uses JSON and returns flat policy objects with string IDs. Go applications can call the [PMS interfaces](https://github.com/teramoby/speedle-plus/tree/master/api/pms) directly; gRPC clients use the [published PMS proto](/protobuf/pms.proto). Apply [transport and caller access controls](/docs/security/) to administrative operations.

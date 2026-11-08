@@ -75,7 +75,7 @@ func getCommandFunc(cmd *cobra.Command, args []string) {
 	switch strings.ToLower(args[0]) {
 	case "service":
 		if all {
-			res, err = cli.Get([]string{"service"}, nil, "")
+			res, err = cli.Get([]string{"service"}, nil, globalFlags.Token)
 			if err == nil {
 				services := []pms.Service{}
 				if json.Unmarshal(res, &services) == nil {
@@ -88,7 +88,7 @@ func getCommandFunc(cmd *cobra.Command, args []string) {
 			}
 			for _, name := range args[1:] {
 				service := pms.Service{}
-				res, err = cli.Get([]string{"service", name}, nil, "")
+				res, err = cli.Get([]string{"service", name}, nil, globalFlags.Token)
 				if err != nil {
 					break
 				}
@@ -110,7 +110,7 @@ func getCommandFunc(cmd *cobra.Command, args []string) {
 			kind = "role-policy"
 		}
 		if all {
-			res, err = cli.Get([]string{"service", serviceName, kind}, nil, "")
+			res, err = cli.Get([]string{"service", serviceName, kind}, nil, globalFlags.Token)
 
 			if err == nil {
 				var policies interface{}
@@ -135,7 +135,7 @@ func getCommandFunc(cmd *cobra.Command, args []string) {
 				} else {
 					policy = pms.RolePolicy{}
 				}
-				res, err = cli.Get([]string{"service", serviceName, kind, name}, nil, "")
+				res, err = cli.Get([]string{"service", serviceName, kind, name}, nil, globalFlags.Token)
 
 				if err != nil {
 					break
@@ -149,7 +149,7 @@ func getCommandFunc(cmd *cobra.Command, args []string) {
 		}
 	case "function":
 		if all {
-			res, err = cli.Get([]string{"function"}, nil, "")
+			res, err = cli.Get([]string{"function"}, nil, globalFlags.Token)
 			if err == nil {
 				functions := []pms.Function{}
 				if json.Unmarshal(res, &functions) == nil {
@@ -162,7 +162,7 @@ func getCommandFunc(cmd *cobra.Command, args []string) {
 			}
 			for _, name := range args[1:] {
 				function := pms.Function{}
-				res, err = cli.Get([]string{"function", name}, nil, "")
+				res, err = cli.Get([]string{"function", name}, nil, globalFlags.Token)
 				if err != nil {
 					break
 				}

@@ -255,6 +255,23 @@ grant role manager update res1</code></pre></div>
 ./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ delete policy <span style="color:#f1fa8c">&#34;</span><span style="color:#8be9fd;font-style:italic">$policy_id</span><span style="color:#f1fa8c">&#34;</span> --service-name <span style="color:#8be9fd;font-style:italic">test</span>
 ./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ delete rolepolicy <span style="color:#f1fa8c">&#34;</span><span style="color:#8be9fd;font-style:italic">$role_policy_id</span><span style="color:#f1fa8c">&#34;</span> --service-name <span style="color:#8be9fd;font-style:italic">test</span>
 ./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ delete service test</code></pre></div>
+<h2 id="speedle-cloud">Speedle Cloud</h2>
+
+<p>Speedle Cloud 登录即将开放。API 令牌开放后，<code>spctl</code> 可以通过与自托管 PMS 相同的命令管理 Cloud 中的 service 和策略。管理端点为：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">https://cloud.speedle.io/policy-mgmt/v1</code></pre></div>
+<p>请根据命令选择具有相应 scope 的 API 令牌。<code>pms:read</code> 用于 <code>get</code> 和 <code>discover</code> 查询，<code>pms:write</code> 用于 <code>create</code>、<code>delete</code> 和发现记录重置。只有 ADS scope 的令牌不能管理策略，服务端会返回 <code>403 insufficient_scope</code>。</p>
+
+<p>通过全局命令行参数指定端点和令牌：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./bin/spctl --pms-endpoint https://cloud.speedle.io/policy-mgmt/v1 --token <span style="color:#f1fa8c">&#39;&lt;api-token&gt;&#39;</span> get service --all</code></pre></div>
+<p>如需保存配置，请使用 <code>~/.speedle</code>。文件每行包含一个 <code>名称=值</code> 配置项，名称与命令行参数一致：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ini" data-lang="ini"><span style="color:#50fa7b">pms-endpoint</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">https://cloud.speedle.io/policy-mgmt/v1</span>
+<span style="color:#50fa7b">token</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&lt;api-token&gt;</span></code></pre></div>
+<p>请妥善限制此文件的访问权限。<code>spctl config token '&lt;api-token&gt;'</code> 会以 <code>0600</code> 权限创建或更新 <code>~/.speedle</code>，且不会显示令牌。通过 <code>spctl config</code> 设置的其他配置仍写入已有的 <code>~/.spctlconfig</code>。<code>~/.speedle</code> 中的配置优先于 <code>~/.spctlconfig</code> 中的同名配置，显式命令行参数又优先于这两个文件。<code>spctl config --list</code> 会把已配置的令牌显示为 <code>********</code>。</p>
+
+<p>令牌仅通过 HTTPS 以 <code>Authorization: Bearer</code> 凭据发送。只有 <code>127.0.0.1</code>、<code>::1</code> 或 <code>localhost</code> 等回环主机可以在携带令牌时使用纯 HTTP；对于远程 HTTP 端点以及从 HTTPS 降级到 HTTP 的重定向，<code>spctl</code> 会在发送凭据前拒绝请求。正常命令输出和错误信息不会包含令牌。</p>
+
+<p>Cloud 返回错误时，命令以非零状态退出。遇到 <code>401</code> 请检查令牌，遇到 <code>403 insufficient_scope</code> 请检查 scope。<code>404</code> 表示资源不存在，<code>409 service_exists</code> 和 <code>409 policy_exists</code> 表示资源重复。遇到 <code>429</code> 时，请遵循响应中的 <code>Retry-After</code>，并采用有界退避。每日额度或策略额度错误需要等待额度重置或减少用量，不要紧密循环重试。</p>
+
 <h2 id="其他管理接口">其他管理接口</h2>
 
 <p><a href="/zh/docs/api/management_api/">PMS REST API</a>使用 JSON，返回包含字符串 ID 的扁平策略对象。Go 应用可直接使用 <a href="https://github.com/teramoby/speedle-plus/tree/master/api/pms">PMS 接口</a>，gRPC 客户端使用<a href="/protobuf/pms.proto">公开的 PMS proto</a>。管理操作必须配置<a href="/zh/docs/security/">传输安全与调用方访问控制</a>。</p>

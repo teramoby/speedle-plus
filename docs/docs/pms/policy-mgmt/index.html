@@ -255,6 +255,23 @@ grant role manager update res1</code></pre></div>
 ./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ delete policy <span style="color:#f1fa8c">&#34;</span><span style="color:#8be9fd;font-style:italic">$policy_id</span><span style="color:#f1fa8c">&#34;</span> --service-name <span style="color:#8be9fd;font-style:italic">test</span>
 ./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ delete rolepolicy <span style="color:#f1fa8c">&#34;</span><span style="color:#8be9fd;font-style:italic">$role_policy_id</span><span style="color:#f1fa8c">&#34;</span> --service-name <span style="color:#8be9fd;font-style:italic">test</span>
 ./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ delete service test</code></pre></div>
+<h2 id="speedle-cloud">Speedle Cloud</h2>
+
+<p>Speedle Cloud sign-in opens soon. When API tokens become available, <code>spctl</code> can manage Cloud services and policies through the same commands used with a self-hosted PMS. Use the management endpoint:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">https://cloud.speedle.io/policy-mgmt/v1</code></pre></div>
+<p>Choose an API token with the scopes required by your commands. <code>pms:read</code> covers <code>get</code> and <code>discover</code> reads; <code>pms:write</code> covers <code>create</code>, <code>delete</code> and discovery resets. A token that only has ADS scopes cannot manage policies and is rejected with <code>403 insufficient_scope</code>.</p>
+
+<p>Pass the endpoint and token as global flags:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./bin/spctl --pms-endpoint https://cloud.speedle.io/policy-mgmt/v1 --token <span style="color:#f1fa8c">&#39;&lt;api-token&gt;&#39;</span> get service --all</code></pre></div>
+<p>For a saved configuration, use <code>~/.speedle</code>. Its format is one <code>name=value</code> pair per line, with the same flag names as the command line:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ini" data-lang="ini"><span style="color:#50fa7b">pms-endpoint</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">https://cloud.speedle.io/policy-mgmt/v1</span>
+<span style="color:#50fa7b">token</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&lt;api-token&gt;</span></code></pre></div>
+<p>Keep this file private. <code>spctl config token '&lt;api-token&gt;'</code> creates or updates <code>~/.speedle</code> with mode <code>0600</code> without displaying the token. Other settings set through <code>spctl config</code> continue to use the existing <code>~/.spctlconfig</code> file. Settings in <code>~/.speedle</code> override the same settings in <code>~/.spctlconfig</code>, and explicit command-line flags override both files. <code>spctl config --list</code> masks a configured token as <code>********</code>.</p>
+
+<p>The token is sent as an <code>Authorization: Bearer</code> credential only over HTTPS. Plain HTTP is allowed with a token only for a loopback host such as <code>127.0.0.1</code>, <code>::1</code> or <code>localhost</code>; <code>spctl</code> rejects remote HTTP endpoints and HTTPS-to-HTTP downgrade redirects before sending the credential. Tokens are not included in normal command output or error messages.</p>
+
+<p>Cloud errors produce a non-zero exit status. Check the token after a <code>401</code>, and its scopes after a <code>403 insufficient_scope</code>. A <code>404</code> identifies a missing resource, while <code>409 service_exists</code> and <code>409 policy_exists</code> identify duplicates. For <code>429</code>, honor the returned <code>Retry-After</code> value and use bounded backoff. Daily or policy quota errors require waiting for the reset or reducing usage; do not retry them in a tight loop.</p>
+
 <h2 id="other-interfaces">Other interfaces</h2>
 
 <p>The <a href="/docs/api/management_api/">PMS REST API</a> uses JSON and returns flat policy objects with string IDs. Go applications can call the <a href="https://github.com/teramoby/speedle-plus/tree/master/api/pms">PMS interfaces</a> directly; gRPC clients use the <a href="/protobuf/pms.proto">published PMS proto</a>. Apply <a href="/docs/security/">transport and caller access controls</a> to administrative operations.</p>

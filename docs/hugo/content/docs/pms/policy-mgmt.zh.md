@@ -111,6 +111,36 @@ role_policy_id=$(./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1
 ```
 
 
+## Speedle Cloud
+
+Speedle Cloud 登录即将开放。API 令牌开放后，`spctl` 可以通过与自托管 PMS 相同的命令管理 Cloud 中的 service 和策略。管理端点为：
+
+```text
+https://cloud.speedle.io/policy-mgmt/v1
+```
+
+请根据命令选择具有相应 scope 的 API 令牌。`pms:read` 用于 `get` 和 `discover` 查询，`pms:write` 用于 `create`、`delete` 和发现记录重置。只有 ADS scope 的令牌不能管理策略，服务端会返回 `403 insufficient_scope`。
+
+通过全局命令行参数指定端点和令牌：
+
+```bash
+./bin/spctl --pms-endpoint https://cloud.speedle.io/policy-mgmt/v1 --token '<api-token>' get service --all
+```
+
+如需保存配置，请使用 `~/.speedle`。文件每行包含一个 `名称=值` 配置项，名称与命令行参数一致：
+
+```ini
+pms-endpoint=https://cloud.speedle.io/policy-mgmt/v1
+token=<api-token>
+```
+
+请妥善限制此文件的访问权限。`spctl config token '<api-token>'` 会以 `0600` 权限创建或更新 `~/.speedle`，且不会显示令牌。通过 `spctl config` 设置的其他配置仍写入已有的 `~/.spctlconfig`。`~/.speedle` 中的配置优先于 `~/.spctlconfig` 中的同名配置，显式命令行参数又优先于这两个文件。`spctl config --list` 会把已配置的令牌显示为 `********`。
+
+令牌仅通过 HTTPS 以 `Authorization: Bearer` 凭据发送。只有 `127.0.0.1`、`::1` 或 `localhost` 等回环主机可以在携带令牌时使用纯 HTTP；对于远程 HTTP 端点以及从 HTTPS 降级到 HTTP 的重定向，`spctl` 会在发送凭据前拒绝请求。正常命令输出和错误信息不会包含令牌。
+
+Cloud 返回错误时，命令以非零状态退出。遇到 `401` 请检查令牌，遇到 `403 insufficient_scope` 请检查 scope。`404` 表示资源不存在，`409 service_exists` 和 `409 policy_exists` 表示资源重复。遇到 `429` 时，请遵循响应中的 `Retry-After`，并采用有界退避。每日额度或策略额度错误需要等待额度重置或减少用量，不要紧密循环重试。
+
+
 ## 其他管理接口
 
 [PMS REST API](/docs/api/management_api/)使用 JSON，返回包含字符串 ID 的扁平策略对象。Go 应用可直接使用 [PMS 接口](https://github.com/teramoby/speedle-plus/tree/master/api/pms)，gRPC 客户端使用[公开的 PMS proto](/protobuf/pms.proto)。管理操作必须配置[传输安全与调用方访问控制](/docs/security/)。

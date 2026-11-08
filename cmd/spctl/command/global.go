@@ -18,6 +18,7 @@ import (
 
 var globalFlags struct {
 	PMSEndpoint        string
+	Token              string
 	Timeout            time.Duration
 	CertFile           string
 	KeyFile            string
@@ -26,7 +27,8 @@ var globalFlags struct {
 }
 
 const (
-	configFile = ".spctlconfig"
+	configFile      = ".spctlconfig"
+	cloudConfigFile = ".speedle"
 )
 
 func httpClient() (*http.Client, error) {
@@ -83,41 +85,71 @@ func httpClient() (*http.Client, error) {
 	}, nil
 }
 
+// readConfigFile reads the legacy settings first and the Cloud settings second.
+// Command-line flags are applied later by Cobra and therefore take precedence
+// over both files.
 func readConfigFile() (map[string]string, error) {
+	flags, err := readConfig(configFile)
+	if err != nil {
+		return flags, err
+	}
+	cloudFlags, err := readConfig(cloudConfigFile)
+	if err != nil {
+		return flags, err
+	}
+	for name, value := range cloudFlags {
+		flags[name] = value
+	}
+	return flags, nil
+}
+
+func readConfig(name string) (map[string]string, error) {
 	flags := make(map[string]string)
 	// $HOME, so a different home (as in the tests) keeps its own settings.
 	home, err := os.UserHomeDir()
 	if err != nil {
 		return flags, err
 	}
-	cfg := path.Join(home, configFile)
-	if _, err = os.Stat(cfg); !os.IsNotExist(err) {
-		f, err := os.Open(cfg)
-		if err != nil {
-			return flags, err
-		}
-		defer f.Close()
-		scanner := bufio.NewScanner(f)
-		for scanner.Scan() {
-			kv := strings.Split(scanner.Text(), "=")
-			if len(kv) == 2 {
-				k := strings.Trim(kv[0], " ")
-				v := strings.Trim(kv[1], " ")
-				flags[k] = v
-			}
+	f, err := os.Open(path.Join(home, name))
+	if os.IsNotExist(err) {
+		return flags, nil
+	}
+	if err != nil {
+		return flags, err
+	}
+	defer f.Close()
+	scanner := bufio.NewScanner(f)
+	for scanner.Scan() {
+		kv := strings.SplitN(scanner.Text(), "=", 2)
+		if len(kv) == 2 {
+			k := strings.TrimSpace(kv[0])
+			v := strings.TrimSpace(kv[1])
+			flags[k] = v
 		}
 	}
-	return flags, nil
+	return flags, scanner.Err()
 }
 
 func writeConfigFile(flags map[string]string) error {
+	return writeConfig(configFile, flags)
+}
+
+func writeCloudConfigFile(flags map[string]string) error {
+	return writeConfig(cloudConfigFile, flags)
+}
+
+func writeConfig(name string, flags map[string]string) error {
 	home, err := os.UserHomeDir()
 	if err != nil {
 		return err
 	}
-	cfg := path.Join(home, configFile)
+	cfg := path.Join(home, name)
 	f, err := os.OpenFile(cfg, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
 	if err != nil {
+		return err
+	}
+	if err := f.Chmod(0600); err != nil {
+		f.Close()
 		return err
 	}
 	defer f.Close()
