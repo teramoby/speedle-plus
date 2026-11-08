@@ -174,7 +174,7 @@ go version Go 会自动配置 GOROOT 和默认的 GOPATH，无需手动指定。
 生产环境 账号会话、管理请求和应用令牌使用 https://cloud.speedle.io。账号、资源和令牌归属于该 origin。本文示例仅用于说明，本次未向线上环境执行。请确认所选环境已经部署，并确认准备使用的登录供应商在该环境可用。
 使用 GitHub 或 Google 登录（即将开放） 即使登录尚未开放，登录页仍会显示 使用 GitHub 登录 和 使用 Google 登录 两个选项。生产环境开放登录后，请选择当前可用的供应商。新身份的已验证邮箱未被占用时，需要主动确认 创建账号。邮箱已被占用时，先用控制台提示的已关联供应商登录，再到 账号设置 连接第二个身份；系统不会自动合并账号。
 账号设置可以查看已连接身份，并连接或断开当前可用的供应商；至少保留一个已连接身份。退出登录 位于页眉语言切换旁，账号菜单提供 在所有设备上退出。退出成功后返回登录页，并清空工作区和一次性令牌展示。审计日志展示账号活动。
-删除账号要求最近的供应商认证，并输入 DELETE。随后会永久删除账号所属 service、策略、令牌和身份，并结束所有会话。删除前请先从服务工作区导出需要保留的策略。
+删除账号需要完成最近的供应商认证，并输入 DELETE。随后会永久删除账号所属 service、策略、令牌和身份，并结束所有会话。删除前请先从服务工作区导出需要保留的策略。
 创建 service 和策略 新账号打开服务工作区，在服务名称中输入 books，然后选择 创建服务。每个账号只有一个 service。如果账号已有 service 或策略，请先核对并使用合适的现有配置，不要为了运行示例而覆盖或删除已有数据。
 选择 新建策略，在策略名称中输入 read-books，并在 SPDL 编辑器中输入以下授权策略：
 grant user alice get /books 选择 验证策略，确认控制台显示 识别为：授权策略，再选择 保存策略。验证会识别策略类型并检查语法，但不会保存草稿；保存需要单独手动操作。你也可以在工作区导入已有策略，无需逐条手动输入。
@@ -255,10 +255,10 @@ git clone --depth 1 https://github.com/teramoby/speedle-plus.git cd speedle-plus
 签发令牌 账号已有 service 时，打开应用令牌，输入 1–128 个字符的令牌名称，然后选择 创建令牌。如果要求验证，请选择当前可用的已关联供应商。从供应商页面返回后，重新输入名称并再次选择 创建令牌；返回页面不会自动签发令牌。
 控制台会发送以下会话请求：
 POST /api/tokens Origin: https://cloud.speedle.io X-SC-CSRF: 1 Content-Type: application/json {&amp;#34;name&amp;#34;:&amp;#34;books-app&amp;#34;} 示例使用生产环境 origin。客户端沿用原有的安全 cookie 处理方式携带会话，因此这段内容不是可单独执行的匿名请求。
-创建令牌要求在最近 10 分钟内完成正常供应商认证，包括登录或重新认证。服务端依据持久化会话和自己的时钟检查。恰好 10 分钟仍有效；认证时间缺失、在未来或已经过期时，返回 403 {&amp;quot;error&amp;quot;:&amp;quot;reauth_required&amp;quot;}。普通账号操作不会刷新认证时间。
+创建令牌要求在最近 10 分钟内完成正常供应商认证，包括登录或重新认证。服务端会依据持久化的会话和服务端时钟判断。恰好 10 分钟仍有效；认证时间戳缺失、位于未来或已经过期时，返回 403 {&amp;quot;error&amp;quot;:&amp;quot;reauth_required&amp;quot;}。普通操作不会刷新最近认证时间。
 请求只接受 name。service ID、scope、过期时间和认证证明均不是客户端可提交的参数。
 保护一次性秘密值 创建成功时返回 201，响应包含令牌元数据和仅返回一次的 token 字段，格式如下：
-spdl_&amp;lt;canonical uppercase ULID id&amp;gt;_&amp;lt;43 base62 digits&amp;gt; 上面只是格式说明，不是可用凭据。令牌前缀中的 ID 与返回的令牌 ID 相同。请立即将签发值存入应用服务端的秘密管理设施。
+spdl_&amp;lt;canonical uppercase ULID id&amp;gt;_&amp;lt;43 base62 digits&amp;gt; 上面只是格式说明，不是可用凭据。令牌前缀中的 ID 与返回的令牌 ID 相同。请立即将签发的值存入应用服务端的秘密存储。
 不要把令牌嵌入前端代码或持久化到浏览器存储，也不要放入 URL、源代码、截图、issue、遥测或日志。正常管理客户端可以短暂持有并展示新签发值，供一次性披露和用户主动复制；不得自动复制、下载、存储或记录秘密值。
 令牌列表只返回元数据，之后无法再次取回明文。v1 令牌没有内置过期时间。每个 service 最多同时保留两个有效令牌，已撤销的历史记录不占用这两个名额。
 查看令牌元数据 GET /api/tokens 按 ID 降序返回有效及已撤销令牌的元数据分页。默认每页 25 条，limit 为 1–100。cursor 是不包含边界项的令牌 ID；跟随 nextCursor 直至 null。接口永不返回秘密值。</description>
@@ -297,10 +297,10 @@ docker run --name speedle-etcd --detach \  --publish 127.0.0.1:2379:2379 \  --vo
       <pubDate>Sun, 08 Nov 2026 00:00:00 +0800</pubDate>
       
       <guid>https://engine.speedle.io/zh/docs/cloud/authorization-api/</guid>
-      <description>带认证的 ADS 尚未提供。 本页请求和示例描述后续版本的已发布合约，本次未向 Cloud 线上环境执行。签发应用令牌并不会启用这些调用。请明确使用获准环境的 URL，并在接入前确认该环境已经提供带认证的 ADS。
+      <description>带认证的 ADS 尚未提供。 本页的请求和示例描述后续版本的已发布合约，并未在 Cloud 线上环境执行。签发应用令牌并不会启用这些调用。请明确使用获准环境的 URL，并在接入前确认该环境已经提供带认证的 ADS。
 从应用服务端调用 IsAllowed 将签发的令牌放入一个 Authorization: Bearer 请求头，并发送 POST 请求：
 POST /authz-check/v1/is-allowed Authorization: Bearer &amp;lt;issued token&amp;gt; Content-Type: application/json {&amp;#34;subject&amp;#34;:{&amp;#34;principals&amp;#34;:[{&amp;#34;type&amp;#34;:&amp;#34;user&amp;#34;,&amp;#34;name&amp;#34;:&amp;#34;alice&amp;#34;}]},&amp;#34;serviceName&amp;#34;:&amp;#34;books&amp;#34;,&amp;#34;resource&amp;#34;:&amp;#34;/books&amp;#34;,&amp;#34;action&amp;#34;:&amp;#34;get&amp;#34;,&amp;#34;attributes&amp;#34;:[{&amp;#34;name&amp;#34;:&amp;#34;level&amp;#34;,&amp;#34;type&amp;#34;:&amp;#34;numeric&amp;#34;,&amp;#34;value&amp;#34;:3},{&amp;#34;name&amp;#34;:&amp;#34;when&amp;#34;,&amp;#34;type&amp;#34;:&amp;#34;datetime&amp;#34;,&amp;#34;value&amp;#34;:&amp;#34;2026-11-05T03:00:00Z&amp;#34;}]} 请求正文就是 Speedle REST 请求，字段和类型与自托管 Speedle ADS 相同。attributes 是由 {name, type, value} 组成的数组。属性类型支持 string、numeric、bool 和采用 RFC 3339 格式的 datetime。
-每个请求都必须填写 serviceName，系统不会自动取默认值。请填写令牌所属 service 的名称。名称缺失或为空时，得到与 Speedle 相同的 SERVICE_NOT_FOUND 结果；名称不一致时，返回 403 {&amp;quot;error&amp;quot;:&amp;quot;service_mismatch&amp;quot;}。
+每个请求都必须填写 serviceName，系统不会自动取默认值。请填写令牌所属 service 的名称。名称缺失或为空时，会得到 Speedle 的 SERVICE_NOT_FOUND 响应；名称不一致时，返回 403 {&amp;quot;error&amp;quot;:&amp;quot;service_mismatch&amp;quot;}。
 快速入门中的策略会允许上述示例请求：
 {&amp;#34;allowed&amp;#34;:true,&amp;#34;reason&amp;#34;:0} 理解判定结果和调用方身份 策略拒绝同样返回 HTTP 200，但 allowed 为 false。应用必须检查 allowed，再执行受保护的操作；遇到异常或无效响应时应默认拒绝。
 应用通过自身的用户认证确定调用方的 principals。API 令牌识别的是应用和 service，不是最终用户身份。不要相信匿名浏览器自行提交的 principal 名称。</description>
