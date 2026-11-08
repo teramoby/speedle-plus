@@ -125,6 +125,10 @@ ls bin</code></pre></div>
 <li><code>speedle-ads</code>: the Authorization Decision Service (ADS).</li>
 </ul>
 
+<blockquote>
+<p><strong>macOS:</strong> <code>/usr/sbin/spctl</code> is Apple&rsquo;s Gatekeeper tool and may be selected when you run a bare <code>spctl</code> command. Call Speedle&rsquo;s CLI by its full path, or use <code>./spctl</code> from the directory containing it; this guide uses <code>./bin/spctl</code>. Run <code>command -v spctl</code> to check which executable your shell selects.</p>
+</blockquote>
+
 <p>Modern Go uses <code>go build</code> or <code>go install</code> to build executables; <code>go get</code> manages module dependencies.</p>
 
 <h2 id="run-speedle">Run Speedle</h2>

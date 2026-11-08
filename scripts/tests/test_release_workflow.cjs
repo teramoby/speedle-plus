@@ -56,6 +56,31 @@ process.exit(0);
   }
 }
 
+function runBuild() {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'speedle-release-build-'));
+  try {
+    const go = path.join(directory, 'go');
+    fs.writeFileSync(go, `#!${process.execPath}
+const fs=require('node:fs');const path=require('node:path');const args=process.argv.slice(2);
+const output=args[args.indexOf('-o')+1];
+fs.mkdirSync(path.dirname(output),{recursive:true});
+fs.writeFileSync(output,JSON.stringify({args,goos:process.env.GOOS,goarch:process.env.GOARCH,cgo:process.env.CGO_ENABLED}));
+`);
+    fs.chmodSync(go, 0o755);
+    const result = spawnSync('bash', ['-c', script('Build release binaries')], {
+      cwd: directory, encoding: 'utf8',
+      env: {...process.env, PATH: `${directory}${path.delimiter}${process.env.PATH}`},
+    });
+    const dist = path.join(directory, 'dist');
+    const artifacts = fs.existsSync(dist)
+      ? Object.fromEntries(fs.readdirSync(dist).map(name => [name, fs.readFileSync(path.join(dist, name), 'utf8')]))
+      : {};
+    return {result, artifacts};
+  } finally {
+    fs.rmSync(directory, {recursive: true, force: true});
+  }
+}
+
 const master = 'a'.repeat(40);
 const older = 'b'.repeat(40);
 function imageTags(build) {
@@ -101,8 +126,30 @@ test('the first release can create latest and an unresolved master blocks publis
   assert.equal(unresolved.builds.length, 0);
 });
 
+test('every macOS and Linux release keeps spctl and adds an identical speedle-spctl alias', () => {
+  const {result, artifacts} = runBuild();
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(Object.keys(artifacts).length, 16);
+  for (const target of ['darwin_amd64', 'darwin_arm64', 'linux_amd64', 'linux_arm64']) {
+    const original = `spctl_${target}`;
+    const alias = `speedle-spctl_${target}`;
+    assert.ok(artifacts[original], `Missing ${original}`);
+    assert.equal(artifacts[alias], artifacts[original], `${alias} must be a copy of ${original}`);
+    const build = JSON.parse(artifacts[original]);
+    assert.equal(build.goos, target.split('_')[0]);
+    assert.equal(build.goarch, target.split('_')[1]);
+    assert.equal(build.cgo, '0');
+    assert.ok(build.args.includes('./cmd/spctl'));
+  }
+});
+
+test('release checksums and uploaded assets include both spctl names', () => {
+  assert.match(script('Write checksums'), /sha256sum spctl_\* speedle-spctl_\* speedle-ads_\* speedle-pms_\*/);
+  assert.match(script('Publish the GitHub release'), /assets=\(dist\/spctl_\* dist\/speedle-spctl_\* dist\/speedle-pms_\* dist\/speedle-ads_\* dist\/checksums\.txt\)/);
+});
+
 test('changed release shell blocks parse before any publishing or container operation', () => {
-  for (const name of ['Verify the container images build and start', 'Publish container images']) {
+  for (const name of ['Build release binaries', 'Write checksums', 'Verify the container images build and start', 'Publish the GitHub release', 'Publish container images']) {
     const result = spawnSync('bash', ['-n'], {input: script(name), encoding: 'utf8'});
     assert.equal(result.status, 0, `${name}: ${result.stderr}`);
   }

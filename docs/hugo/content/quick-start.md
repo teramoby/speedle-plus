@@ -66,6 +66,8 @@ spctl  speedle-ads  speedle-pms
 - `speedle-pms`: the Policy Management Service (PMS).
 - `speedle-ads`: the Authorization Decision Service (ADS).
 
+> **macOS:** `/usr/sbin/spctl` is Apple's Gatekeeper tool and may be selected when you run a bare `spctl` command. Call Speedle's CLI by its full path, or use `./spctl` from the directory containing it; this guide uses `./bin/spctl`. Run `command -v spctl` to check which executable your shell selects.
+
 Modern Go uses `go build` or `go install` to build executables; `go get` manages module dependencies.
 
 ## Run Speedle

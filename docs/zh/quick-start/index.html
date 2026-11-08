@@ -125,6 +125,10 @@ ls bin</code></pre></div>
 <li><code>speedle-ads</code>：授权决策服务（ADS）。</li>
 </ul>
 
+<blockquote>
+<p><strong>macOS：</strong> <code>/usr/sbin/spctl</code> 是 Apple 的 Gatekeeper 工具，直接运行 <code>spctl</code> 时可能会选中它。请使用 Speedle CLI 的完整路径，或在其所在目录中用 <code>./spctl</code> 调用；本指南统一使用 <code>./bin/spctl</code>。运行 <code>command -v spctl</code> 可查看 shell 实际选择的可执行程序。</p>
+</blockquote>
+
 <p>新版 Go 使用 <code>go build</code> 或 <code>go install</code> 构建可执行程序；<code>go get</code> 用于管理模块依赖。</p>
 
 <h2 id="运行-speedle">运行 Speedle</h2>

@@ -6,7 +6,7 @@
     <description>Recent content in Docs on Speedle</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>zh-cn</language>
-    <lastBuildDate>Sun, 08 Nov 2026 15:04:18 +0800</lastBuildDate>
+    <lastBuildDate>Sun, 08 Nov 2026 17:11:18 +0800</lastBuildDate>
     
 	<atom:link href="https://engine.speedle.io/zh/categories/docs/index.xml" rel="self" type="application/rss+xml" />
     
@@ -43,8 +43,7 @@ AND 主体组要求组内所有身份均匹配，多组之间为 OR。以下例�
 grant (role designer, role dba) update db_design_doc 资源指需要保护的对象，操作是应用定义的动作。条件是由可信属性、常量、运算符和受支持函数构成的布尔表达式。
 语法见 SPDL，完整决策示例见 RBAC 与 ABAC。
 运行示例前 先按快速入门编译仓库根目录下的 ./bin/spctl、./bin/speedle-pms 和 ./bin/speedle-ads，需要 Go 1.26.10 或 Go 1.27.3（也可使用同一大版本的更新补丁版本）、Bash、curl 和 Python 3。下面各终端都从仓库根目录运行。为本页使用一个新的策略文件；仅在两个服务都停止后重建该文件。
-初始化空策略文件：
-printf &amp;#39;{}\n&amp;#39; &amp;gt; docs-policies.</description>
+ macOS： /usr/sbin/spctl 是 Apple 的 Gatekeeper 工具，直接运行 spctl 时可能会选中它。请使用 Speedle CLI 的完整路径，或在其所在目录中用 .</description>
     </item>
     
     <item>
@@ -227,7 +226,7 @@ import { Auth, Reason, SpeedleClient, SpeedleError } from &amp;#34;@speedle/sdk&
     <item>
       <title>Speedle Cloud</title>
       <link>https://engine.speedle.io/zh/docs/cloud/</link>
-      <pubDate>Sun, 08 Nov 2026 15:04:18 +0800</pubDate>
+      <pubDate>Sun, 08 Nov 2026 17:11:18 +0800</pubDate>
       
       <guid>https://engine.speedle.io/zh/docs/cloud/</guid>
       <description>Speedle Cloud 是基于开源 Speedle 策略引擎的托管访问控制服务，面向开发者。你可以用它管理 SPDL 授权策略与角色策略、在 Playground 中测试授权判定，再从应用服务端调用授权 API，无需自行部署和运维授权服务。

@@ -113,12 +113,13 @@ jobs:
             for command in spctl speedle-pms speedle-ads; do
               CGO_ENABLED=0 GOOS="${goos}" GOARCH="${goarch}" go build -trimpath -o "dist/${command}_${goos}_${goarch}" "./cmd/${command}"
             done
+            cp "dist/spctl_${goos}_${goarch}" "dist/speedle-spctl_${goos}_${goarch}"
           done
 
       - name: Write checksums
         run: |
           set -euo pipefail
-          (cd dist && sha256sum spctl_* speedle-ads_* speedle-pms_* > checksums.txt)
+          (cd dist && sha256sum spctl_* speedle-spctl_* speedle-ads_* speedle-pms_* > checksums.txt)
           cat dist/checksums.txt
 
       - name: Prepare the container build context
@@ -208,7 +209,7 @@ jobs:
           VERSION: ${{ inputs.version }}
         run: |
           set -euo pipefail
-          assets=(dist/spctl_* dist/speedle-pms_* dist/speedle-ads_* dist/checksums.txt)
+          assets=(dist/spctl_* dist/speedle-spctl_* dist/speedle-pms_* dist/speedle-ads_* dist/checksums.txt)
           if gh release view "${VERSION}" --repo "${GITHUB_REPOSITORY}" >/dev/null 2>&1; then
             gh release upload "${VERSION}" --repo "${GITHUB_REPOSITORY}" --clobber "${assets[@]}"
           else

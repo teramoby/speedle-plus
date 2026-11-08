@@ -64,6 +64,8 @@ grant (role designer, role dba) update db_design_doc
 
 先按[快速入门](/quick-start/)编译仓库根目录下的 `./bin/spctl`、`./bin/speedle-pms` 和 `./bin/speedle-ads`，需要 Go 1.26.10 或 Go 1.27.3（也可使用同一大版本的更新补丁版本）、Bash、curl 和 Python 3。下面各终端都从仓库根目录运行。为本页使用一个新的策略文件；仅在两个服务都停止后重建该文件。
 
+> **macOS：** `/usr/sbin/spctl` 是 Apple 的 Gatekeeper 工具，直接运行 `spctl` 时可能会选中它。请使用 Speedle CLI 的完整路径，或在其所在目录中用 `./spctl` 调用；下面的示例统一使用 `./bin/spctl`。运行 `command -v spctl` 可查看 shell 实际选择的可执行程序。
+
 初始化空策略文件：
 
 <!-- docs-check: setup -->
