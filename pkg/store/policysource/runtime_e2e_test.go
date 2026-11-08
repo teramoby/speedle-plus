@@ -1,0 +1,217 @@
+// Licensed under the Universal Permissive License (UPL) Version 1.0.
+
+package policysource
+
+import (
+	"crypto/ed25519"
+	"crypto/sha256"
+	"encoding/base64"
+	"encoding/hex"
+	"encoding/json"
+	"io"
+	"net/http"
+	"net/http/httptest"
+	"os"
+	"path/filepath"
+	"strings"
+	"testing"
+	"time"
+
+	"github.com/gorilla/websocket"
+	"github.com/teramoby/speedle-plus/pkg/adsync"
+	"github.com/teramoby/speedle-plus/pkg/cfg"
+	"github.com/teramoby/speedle-plus/pkg/eval"
+	speedlestore "github.com/teramoby/speedle-plus/pkg/store"
+	"github.com/teramoby/speedle-plus/pkg/svcs"
+	"github.com/teramoby/speedle-plus/pkg/svcs/adsrest"
+)
+
+// TestE2EProductionRuntimeSyncsAndServesDownstream uses the registered store
+// builder, evaluator and REST router. No test-owned channel, reconciliation or
+// mirror loop is involved: the production store runtime must do all three.
+func TestE2EProductionRuntimeSyncsAndServesDownstream(t *testing.T) {
+	cloud := newE2ECloud(t)
+	source := cloud.source()
+	fallback := cloud.fallbackSource(e2eInstanceA, 201)
+	credentialFile := writeRuntimeCredential(t, "source-credential", source.Credential)
+	fallbackCredentialFile := writeRuntimeCredential(t, "fallback-credential", fallback.Credential)
+
+	keyDocument, err := json.Marshal(adsync.PublicKeyFile{Keys: []adsync.PublicKeyEntry{{
+		KeyID:     cloud.signer.keyID,
+		PublicKey: base64.StdEncoding.EncodeToString(cloud.signer.private.Public().(ed25519.PublicKey)),
+	}}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	keyFile := filepath.Join(t.TempDir(), "policy-keys.json")
+	if err := os.WriteFile(keyFile, keyDocument, 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	_, downstreamToken := e2eDownstreamCredential("B", e2eInstanceB, 2)
+	digest := sha256.Sum256([]byte(downstreamToken))
+	downstreamFile := filepath.Join(t.TempDir(), "downstream-credentials")
+	writeDownstreamCredentials(t, downstreamFile, "B:"+hex.EncodeToString(digest[:])+":*")
+
+	manager, err := speedlestore.NewStore(StoreType, map[string]interface{}{
+		PolicySourceURLKey:       source.URL,
+		CredentialFileKey:        credentialFile,
+		PublicKeysKey:            keyFile,
+		CAFileKey:                source.CAFile,
+		CloudFallbackURLKey:      fallback.URL,
+		CloudCredentialFileKey:   fallbackCredentialFile,
+		TransportKey:             string(adsync.TransportWebSocket),
+		HeartbeatIntervalKey:     "15s",
+		StaleAfterKey:            "30s",
+		StopAfterKey:             "60s",
+		ServeDownstreamKey:       true,
+		DownstreamCredentialsKey: downstreamFile,
+		MaxDownstreamKey:         50,
+		MaxConnectionsKey:        2,
+	})
+	if err != nil {
+		t.Fatalf("build registered policy-source store: %v", err)
+	}
+	ads := manager.(*Store)
+	engine, err := eval.NewWithStore(&cfg.Config{EnableWatch: true}, ads)
+	if err != nil {
+		t.Fatalf("build evaluator: %v", err)
+	}
+	evaluator := engine.(*eval.PolicyEvalImpl)
+	t.Cleanup(func() { _ = evaluator.Close() })
+	router, err := adsrest.NewRouter(evaluator)
+	if err != nil {
+		t.Fatalf("build router: %v", err)
+	}
+	server := httptest.NewTLSServer(router)
+	t.Cleanup(server.Close)
+	client := server.Client()
+
+	get := func(path, token string) (int, []byte) {
+		t.Helper()
+		request, err := http.NewRequest(http.MethodGet, server.URL+path, nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if token != "" {
+			request.Header.Set("Authorization", "Bearer "+token)
+		}
+		response, err := client.Do(request)
+		if err != nil {
+			t.Fatalf("GET %s: %v", path, err)
+		}
+		defer response.Body.Close()
+		body, err := io.ReadAll(io.LimitReader(response.Body, 6<<20))
+		if err != nil {
+			t.Fatal(err)
+		}
+		return response.StatusCode, body
+	}
+
+	e2eWaitAllInSync(t, &e2eAgent{store: ads}, "books", "orders")
+	e2eWaitFor(t, "the production downstream mirror to serve both services", func() bool {
+		status, body := get(adsync.APIPrefix+"/services", downstreamToken)
+		if status != http.StatusOK {
+			return false
+		}
+		var services adsync.ServicesResponse
+		return json.Unmarshal(body, &services) == nil && len(services.Services) == 2
+	})
+
+	// A Cloud ack advances the head and triggers the production reconciliation
+	// loop. The local evaluator and downstream mirror must both reach revision 2.
+	cloud.publish(e2eServiceBooks, e2eUpsertAuthz("p-books-dave-read", "grant user dave read /books/1"))
+	cloud.pushAck()
+	dave := e2eCheck{Service: "books", Resource: "/books/1", Action: "read", Principals: e2eUser("dave")}
+	e2eWaitFor(t, "the production evaluator and downstream mirror to install revision 2", func() bool {
+		status, _ := ads.Status("books")
+		if status.Service.State != adsync.SyncStateInSync || status.Service.Revision != 2 {
+			return false
+		}
+		request, err := http.NewRequest(http.MethodPost, server.URL+svcs.PolicyAtzPath+"is-allowed", strings.NewReader(string(dave.body(t))))
+		if err != nil {
+			return false
+		}
+		request.Header.Set("Content-Type", "application/json")
+		response, err := client.Do(request)
+		if err != nil {
+			return false
+		}
+		body, readErr := io.ReadAll(io.LimitReader(response.Body, 1<<20))
+		response.Body.Close()
+		if readErr != nil || response.StatusCode != http.StatusOK || !e2eDecodeResponse(t, body).Allowed {
+			return false
+		}
+		statusCode, servicesBody := get(adsync.APIPrefix+"/services", downstreamToken)
+		if statusCode != http.StatusOK {
+			return false
+		}
+		var services adsync.ServicesResponse
+		if json.Unmarshal(servicesBody, &services) != nil {
+			return false
+		}
+		for _, service := range services.Services {
+			if service.ID == e2eServiceBooks {
+				return service.Revision == 2
+			}
+		}
+		return false
+	})
+
+	// Open a real downstream channel through the mounted production route.
+	dialer := *websocket.DefaultDialer
+	dialer.TLSClientConfig = client.Transport.(*http.Transport).TLSClientConfig
+	channelURL := "wss" + strings.TrimPrefix(server.URL, "https") + adsync.APIPrefix + "/channel"
+	conn, _, err := dialer.Dial(channelURL, http.Header{"Authorization": []string{"Bearer " + downstreamToken}})
+	if err != nil {
+		t.Fatalf("dial production downstream channel: %v", err)
+	}
+	defer conn.Close()
+	if err := conn.WriteJSON(map[string]interface{}{
+		"type": "hello", "instanceId": e2eInstanceB, "services": []interface{}{},
+		"chain": []string{e2eInstanceA, e2eInstanceB}, "agentVersion": "e2e-production",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if err := conn.SetReadDeadline(time.Now().Add(3 * time.Second)); err != nil {
+		t.Fatal(err)
+	}
+	var initialAck struct {
+		Type string `json:"type"`
+	}
+	if err := conn.ReadJSON(&initialAck); err != nil || initialAck.Type != "ack" {
+		t.Fatalf("initial downstream ack = %+v, %v", initialAck, err)
+	}
+
+	// Removing the grant and reloading must close the already-established
+	// channel as well as rejecting new HTTP requests.
+	replacementToken := e2eCredential(e2eInstanceC, 3)
+	replacementDigest := sha256.Sum256([]byte(replacementToken))
+	writeDownstreamCredentials(t, downstreamFile, "C:"+hex.EncodeToString(replacementDigest[:])+":*")
+	if err := ads.ReloadDownstreamCredentials(); err != nil {
+		t.Fatalf("reload downstream credentials: %v", err)
+	}
+	_ = conn.SetReadDeadline(time.Now().Add(3 * time.Second))
+	if _, _, err := conn.ReadMessage(); !websocket.IsCloseError(err, websocket.CloseTryAgainLater) {
+		t.Fatalf("established channel survived credential removal: %v", err)
+	}
+	if status, _ := get(adsync.APIPrefix+"/services", downstreamToken); status != http.StatusUnauthorized {
+		t.Fatalf("removed downstream credential HTTP status = %d", status)
+	}
+}
+
+func writeRuntimeCredential(t *testing.T, name, credential string) string {
+	t.Helper()
+	path := filepath.Join(t.TempDir(), name)
+	if err := os.WriteFile(path, []byte(credential+"\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	return path
+}
+
+func writeDownstreamCredentials(t *testing.T, path string, lines ...string) {
+	t.Helper()
+	if err := os.WriteFile(path, []byte(strings.Join(lines, "\n")+"\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+}

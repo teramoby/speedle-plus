@@ -308,8 +308,8 @@ func (r *ChangesResponse) validatePage(serviceID, sourceID, epoch string, since 
 	if r.To > r.Head {
 		return fmt.Errorf("%w: changes page ends after the head", ErrProtocol)
 	}
-	if r.NextSince != r.To+1 {
-		return fmt.Errorf("%w: nextSince %d does not follow to %d", ErrProtocol, r.NextSince, r.To)
+	if r.NextSince != r.To {
+		return fmt.Errorf("%w: nextSince %d does not equal the last returned revision %d", ErrProtocol, r.NextSince, r.To)
 	}
 	if r.HeadStateHash.IsZero() {
 		return fmt.Errorf("%w: changes page has no headStateHash", ErrProtocol)

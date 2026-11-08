@@ -89,6 +89,34 @@ func TestChannelChainValidationLongPoll(t *testing.T) {
 	}
 }
 
+func TestChannelRejectsNonCanonicalQuery(t *testing.T) {
+	signer := newTestSigner(t)
+	mirror, _, _ := newPopulatedMirror(t, signer)
+	token := testToken(testDownstreamID, 1)
+	server := newTestServer(t, mirror, signer.publicKeys(t), nil, testCredential{
+		downstreamID: testDownstreamID,
+		token:        token,
+	})
+	for _, path := range []string{
+		adsync.APIPrefix + "/services?unknown=1",
+		adsync.APIPrefix + "/services/" + testServiceID1 + "/state?x=1&x=2",
+		adsync.APIPrefix + "/services/" + testServiceID1 + "/snapshot?unknown=1",
+		adsync.APIPrefix + "/channel?unknown=1",
+	} {
+		response, body := server.get(path, token, nil)
+		if response.StatusCode != http.StatusBadRequest {
+			t.Errorf("GET %s: status %d body %s", path, response.StatusCode, body)
+		}
+	}
+	for _, query := range []string{"wait=01", "wait=1&wait=2", "wait=", "unknown=1"} {
+		path := adsync.APIPrefix + "/channel/poll?" + query
+		response, body := server.post(path, token, heartbeatFrame([]string{testProxyID, testDownstreamID}))
+		if response.StatusCode != http.StatusBadRequest {
+			t.Errorf("POST %s: status %d body %s", path, response.StatusCode, body)
+		}
+	}
+}
+
 func TestChannelWebSocketHelloAndHeartbeat(t *testing.T) {
 	signer := newTestSigner(t)
 	mirror, books, _ := newPopulatedMirror(t, signer)
@@ -247,6 +275,86 @@ func TestChannelWebSocketAuthentication(t *testing.T) {
 		if response == nil || response.StatusCode != http.StatusUnauthorized {
 			t.Errorf("status = %v", response)
 		}
+	}
+}
+
+func TestCredentialReloadClosesChannelsWhoseGrantsChanged(t *testing.T) {
+	for _, testCase := range []struct {
+		name   string
+		subset string
+	}{
+		{name: "removed", subset: ""},
+		{name: "narrowed", subset: testServiceID1},
+	} {
+		t.Run(testCase.name, func(t *testing.T) {
+			signer := newTestSigner(t)
+			mirror, _, _ := newPopulatedMirror(t, signer)
+			token := testToken(testDownstreamID, 1)
+			server := newTestServer(t, mirror, signer.publicKeys(t), nil, testCredential{
+				downstreamID: testDownstreamID,
+				token:        token,
+			})
+			conn, _, err := server.dial(token)
+			if err != nil {
+				t.Fatalf("dial: %v", err)
+			}
+			defer conn.Close()
+			writeJSONFrame(t, conn, helloMessage{
+				Type:         "hello",
+				InstanceID:   testDownstreamID,
+				Services:     []helloService{},
+				Chain:        []string{testProxyID, testDownstreamID},
+				AgentVersion: "test",
+			})
+			if kind, _ := readChannelFrame(t, conn); kind != "ack" {
+				t.Fatal("channel did not receive its initial ack")
+			}
+
+			line := testDownstreamB + ":" + hashToken(testToken(testDownstreamB, 2)) + ":*"
+			if testCase.subset != "" {
+				line = testDownstreamID + ":" + hashToken(token) + ":" + testCase.subset
+			}
+			server.writeCredentialFile(line)
+			if err := server.server.ReloadCredentials(); err != nil {
+				t.Fatalf("ReloadCredentials: %v", err)
+			}
+			code, reason := readClose(t, conn)
+			if code != websocket.CloseTryAgainLater || reason != "credentials_reloaded" {
+				t.Fatalf("close = %d %q", code, reason)
+			}
+
+			if testCase.name == "removed" {
+				response, _ := server.get(adsync.APIPrefix+"/services", token, nil)
+				if response.StatusCode != http.StatusUnauthorized {
+					t.Fatalf("removed token HTTP status = %d", response.StatusCode)
+				}
+				return
+			}
+			response, _ := server.get(adsync.APIPrefix+"/services/"+testServiceID2+"/snapshot", token, nil)
+			if response.StatusCode != http.StatusNotFound {
+				t.Fatalf("narrowed service status = %d", response.StatusCode)
+			}
+			reconnected, _, err := server.dial(token)
+			if err != nil {
+				t.Fatalf("reconnect with narrowed grant: %v", err)
+			}
+			defer reconnected.Close()
+			writeJSONFrame(t, reconnected, helloMessage{
+				Type:         "hello",
+				InstanceID:   testDownstreamID,
+				Services:     []helloService{},
+				Chain:        []string{testProxyID, testDownstreamID},
+				AgentVersion: "test",
+			})
+			kind, payload := readChannelFrame(t, reconnected)
+			if kind != "ack" {
+				t.Fatalf("reconnected frame = %q", kind)
+			}
+			ack := decodeBody[ackMessage](t, payload)
+			if len(ack.Services) != 1 || ack.Services[0].ID != testServiceID1 {
+				t.Fatalf("reconnected service set = %+v", ack.Services)
+			}
+		})
 	}
 }
 
@@ -455,6 +563,38 @@ func TestHubFanoutLimit(t *testing.T) {
 		t.Errorf("downstreams after reconnect = %d", got)
 	}
 	hub.Unsubscribe(second)
+}
+
+func TestHubPerCredentialConnectionLimit(t *testing.T) {
+	hub, err := NewHub(50, time.Millisecond, 2)
+	if err != nil {
+		t.Fatalf("new hub: %v", err)
+	}
+	defer hub.Close()
+	first, err := hub.Subscribe("edge-1", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	second, err := hub.Subscribe("edge-1", nil)
+	if err != nil {
+		t.Fatalf("second connection: %v", err)
+	}
+	if _, err := hub.Subscribe("edge-1", nil); !errors.Is(err, ErrFanoutLimit) {
+		t.Fatalf("third connection for one credential: %v, want ErrFanoutLimit", err)
+	}
+	if err := hub.Allow("edge-1"); !errors.Is(err, ErrFanoutLimit) {
+		t.Fatalf("Allow above the per-credential bound: %v", err)
+	}
+	if _, err := hub.Subscribe("edge-2", nil); err != nil {
+		t.Fatalf("another credential was not independently admitted: %v", err)
+	}
+	hub.Unsubscribe(first)
+	replacement, err := hub.Subscribe("edge-1", nil)
+	if err != nil {
+		t.Fatalf("a released connection slot was not reusable: %v", err)
+	}
+	hub.Unsubscribe(second)
+	hub.Unsubscribe(replacement)
 }
 
 func TestServerFanoutLimit(t *testing.T) {

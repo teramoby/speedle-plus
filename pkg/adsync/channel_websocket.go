@@ -60,6 +60,11 @@ func (c *Channel) runWebSocket(ctx context.Context) wsOutcome {
 		}
 	}
 	defer conn.Close()
+	// ReadMessage has no context. Closing the socket on cancellation is what
+	// lets a production store's Close join the channel immediately instead of
+	// waiting for the next heartbeat or read deadline.
+	stopOnCancel := context.AfterFunc(ctx, func() { _ = conn.Close() })
+	defer stopOnCancel()
 
 	conn.SetReadLimit(maxChannelFrameBytes)
 	extendDeadline := func() {

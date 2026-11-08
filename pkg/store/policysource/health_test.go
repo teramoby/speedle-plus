@@ -4,6 +4,7 @@ package policysource
 
 import (
 	"context"
+	"errors"
 	"strings"
 	"sync"
 	"testing"
@@ -66,11 +67,12 @@ func TestCheckHealthFollowsLiveness(t *testing.T) {
 		t.Fatalf("stopped store health: %v", err)
 	}
 
-	// A sync confirms a fresh ack and re-verifies the local copy, so the
-	// instance recovers.
+	// Recovery needs a confirmed channel ack and an evaluator-installed copy,
+	// not a discovery data pull by itself.
 	if err := store.Sync(nil); err != nil {
 		t.Fatal(err)
 	}
+	confirmStoreGeneration(t, store)
 	if err := store.CheckHealth(ctx); err != nil {
 		t.Fatalf("the instance did not recover: %v", err)
 	}
@@ -117,8 +119,59 @@ func TestUnreachableSourceStartsEmptyAndFailsClosed(t *testing.T) {
 	if policyStore := mustRead(t, store); len(policyStore.Services) != 1 {
 		t.Fatalf("services after recovery: %+v", policyStore.Services)
 	}
+	confirmStoreGeneration(t, store)
 	if err := store.CheckHealth(ctx); err != nil {
 		t.Fatalf("the instance did not recover: %v", err)
+	}
+}
+
+func TestDiscoveryDataPullsDoNotConfirmLiveness(t *testing.T) {
+	fixture := newTestFixture(t, booksService())
+	clock := newTestClock()
+	options := fixture.options
+	options.Clock = clock
+	store, err := Open(nil, options)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !store.Instance().LastConfirmedAckAt.IsZero() {
+		t.Fatal("bootstrap discovery confirmed a heartbeat")
+	}
+	if status, _ := store.Status("books"); status.Service.State != adsync.SyncStateSyncing {
+		t.Fatalf("bootstrap service = %s without a channel ack", status.Service.State)
+	}
+	clock.Advance(61 * time.Second)
+	if err := store.Sync(nil); err != nil {
+		t.Fatal(err)
+	}
+	if got := store.Instance().Liveness; got != adsync.LivenessStale {
+		t.Fatalf("successful /services pull revived liveness to %s", got)
+	}
+	confirmStoreGeneration(t, store)
+	if got := store.Instance().Liveness; got != adsync.LivenessLive {
+		t.Fatalf("confirming channel ack did not revive liveness: %s", got)
+	}
+	if status, _ := store.Status("books"); status.Service.State != adsync.SyncStateInSync {
+		t.Fatalf("installed and confirmed service = %s", status.Service.State)
+	}
+}
+
+func TestFinalIntegrityFailureStopsInstance(t *testing.T) {
+	fixture := newTestFixture(t, booksService())
+	store := fixture.open(nil)
+	fixture.source.publishService("books", func(snapshot *adsync.Snapshot) {
+		snapshot.Policies = []adsync.Policy{policy("p-new", "new", "grant user carol read books")}
+	})
+	fixture.source.mutate(func(source *testSource) { source.corruptSnapshotHash = true })
+	if err := store.Sync(nil); !errors.Is(err, adsync.ErrIntegrity) {
+		t.Fatalf("Sync error = %v, want final ErrIntegrity", err)
+	}
+	instance := store.Instance()
+	if instance.Liveness != adsync.LivenessStopped || instance.Reason != adsync.ReasonIntegrityFailure {
+		t.Fatalf("instance after final integrity failure = %+v", instance)
+	}
+	if err := store.CheckHealth(context.Background()); err == nil || !strings.Contains(err.Error(), string(adsync.ReasonIntegrityFailure)) {
+		t.Fatalf("health after integrity failure = %v", err)
 	}
 }
 

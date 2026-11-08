@@ -166,6 +166,10 @@ func formatChannelDuration(duration time.Duration) string {
 // HTTP error there; chain problems can only be seen after the hello frame and
 // close the connection with a policy-violation code.
 func (s *Server) handleChannel(w http.ResponseWriter, r *http.Request, credential *Credential) {
+	if _, ok := strictQuery(r.URL.RawQuery); !ok {
+		writeError(w, http.StatusBadRequest, "invalid_request", "")
+		return
+	}
 	if err := s.hub.Allow(credential.DownstreamID); err != nil {
 		writeHubError(w, err)
 		return
@@ -175,7 +179,7 @@ func (s *Server) handleChannel(w http.ResponseWriter, r *http.Request, credentia
 		// The upgrader already wrote the HTTP error.
 		return
 	}
-	if !s.track(conn) {
+	if !s.track(conn, credential) {
 		closeWithReason(conn, websocket.CloseGoingAway, "server shutting down")
 		_ = conn.Close()
 		return
@@ -341,7 +345,20 @@ func (s *Server) handlePoll(w http.ResponseWriter, r *http.Request, credential *
 		writeHubError(w, err)
 		return
 	}
-	wait, ok := parsePollWait(r.URL.Query().Get("wait"))
+	query, ok := strictQuery(r.URL.RawQuery, "wait")
+	if !ok {
+		writeError(w, http.StatusBadRequest, "invalid_request", "")
+		return
+	}
+	waitText := ""
+	if query.Has("wait") {
+		waitText = query.Get("wait")
+		if waitText == "" {
+			writeError(w, http.StatusBadRequest, "invalid_request", "")
+			return
+		}
+	}
+	wait, ok := parsePollWait(waitText)
 	if !ok {
 		writeError(w, http.StatusBadRequest, "invalid_request", "")
 		return
@@ -382,6 +399,10 @@ func (s *Server) handlePoll(w http.ResponseWriter, r *http.Request, credential *
 			return
 		}
 	}
+	if !s.credentials.Current(credential) {
+		writeError(w, http.StatusUnauthorized, "unauthorized", "")
+		return
+	}
 	writeJSON(w, http.StatusOK, s.ack(credential))
 }
 
@@ -390,7 +411,7 @@ func parsePollWait(text string) (time.Duration, bool) {
 		return defaultPollWait, true
 	}
 	seconds, err := strconv.Atoi(text)
-	if err != nil || seconds < 0 || time.Duration(seconds)*time.Second > maxPollWait {
+	if err != nil || seconds < 0 || time.Duration(seconds)*time.Second > maxPollWait || strconv.Itoa(seconds) != text {
 		return 0, false
 	}
 	return time.Duration(seconds) * time.Second, true

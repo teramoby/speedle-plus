@@ -356,15 +356,34 @@ func (m *Machine) Ack(ack Ack) error {
 	defer m.mu.Unlock()
 	now := m.clock.Now()
 	m.advanceLocked(now)
-	m.applyThresholdsLocked(ack)
+	if err := m.applyThresholdsLocked(ack); err != nil {
+		return err
+	}
 	m.lastConfirmedAckAt = now
 	if m.stopped {
 		m.ackSinceStop = true
 	}
-	m.applySetLocked(ack.Services)
+	m.applySetLocked(ack.Services, true)
 	if m.stopped {
 		m.tryRecoverLocked(now)
 	}
+	return nil
+}
+
+// Discover applies the authoritative service set and heads returned by the
+// discovery endpoint. A data pull is not a confirmed heartbeat: it neither
+// refreshes liveness nor confirms a head. Only a channel ack can do that.
+func (m *Machine) Discover(services []Service) error {
+	if services == nil {
+		return nil
+	}
+	if err := validateAck(Ack{Services: services}); err != nil {
+		return err
+	}
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.advanceLocked(m.clock.Now())
+	m.applySetLocked(services, false)
 	return nil
 }
 
@@ -587,37 +606,48 @@ func validateAck(ack Ack) error {
 	return nil
 }
 
-func (m *Machine) applyThresholdsLocked(ack Ack) {
+func (m *Machine) applyThresholdsLocked(ack Ack) error {
+	cloudHeartbeat, cloudStale, cloudStop := m.cloudHeartbeat, m.cloudStale, m.cloudStop
 	if ack.HeartbeatInterval >= minHeartbeatInterval && ack.HeartbeatInterval <= maxHeartbeatInterval {
-		m.cloudHeartbeat = ack.HeartbeatInterval
+		cloudHeartbeat = ack.HeartbeatInterval
 	}
 	if ack.StaleAfter > 0 && ack.StaleAfter <= maxStopAfter {
-		m.cloudStale = ack.StaleAfter
+		cloudStale = ack.StaleAfter
 	}
 	if ack.StopAfter >= minStopAfter && ack.StopAfter <= maxStopAfter {
-		m.cloudStop = ack.StopAfter
+		cloudStop = ack.StopAfter
 	}
+	thresholds := m.effectiveThresholds(cloudHeartbeat, cloudStale, cloudStop)
+	if thresholds.StaleAfter <= thresholds.HeartbeatInterval || thresholds.StopAfter <= thresholds.StaleAfter {
+		return fmt.Errorf("%w: source thresholds produce an impossible heartbeat cadence", ErrProtocol)
+	}
+	m.cloudHeartbeat, m.cloudStale, m.cloudStop = cloudHeartbeat, cloudStale, cloudStop
+	return nil
 }
 
 func (m *Machine) effectiveThresholdsLocked() Thresholds {
+	return m.effectiveThresholds(m.cloudHeartbeat, m.cloudStale, m.cloudStop)
+}
+
+func (m *Machine) effectiveThresholds(cloudHeartbeat, cloudStale, cloudStop time.Duration) Thresholds {
 	thresholds := Thresholds{
 		HeartbeatInterval: m.localHeartbeat,
 		StaleAfter:        m.localStale,
 		StopAfter:         m.localStop,
 	}
-	if m.cloudHeartbeat != 0 {
-		thresholds.HeartbeatInterval = m.cloudHeartbeat
+	if cloudHeartbeat != 0 && cloudHeartbeat < thresholds.HeartbeatInterval {
+		thresholds.HeartbeatInterval = cloudHeartbeat
 	}
-	if m.cloudStale != 0 && m.cloudStale < thresholds.StaleAfter {
-		thresholds.StaleAfter = m.cloudStale
+	if cloudStale != 0 && cloudStale < thresholds.StaleAfter {
+		thresholds.StaleAfter = cloudStale
 	}
-	if m.cloudStop != 0 && m.cloudStop < thresholds.StopAfter {
-		thresholds.StopAfter = m.cloudStop
+	if cloudStop != 0 && cloudStop < thresholds.StopAfter {
+		thresholds.StopAfter = cloudStop
 	}
 	return thresholds
 }
 
-func (m *Machine) applySetLocked(services []Service) {
+func (m *Machine) applySetLocked(services []Service, confirmed bool) {
 	m.setKnown = true
 	for _, record := range m.records {
 		record.setMember = false
@@ -629,7 +659,7 @@ func (m *Machine) applySetLocked(services []Service) {
 		}
 		record.setMember = true
 		record.name = service.Name
-		record.updateHead(service.Epoch, service.Revision, service.HeadStateHash, true)
+		record.updateHead(service.Epoch, service.Revision, service.HeadStateHash, confirmed)
 	}
 	for _, record := range m.records {
 		m.recomputeRecordLocked(record)

@@ -14,6 +14,10 @@ const (
 	DefaultMaxDownstream = 50
 	// MaxDownstreamLimit is the protocol's upper bound for that number.
 	MaxDownstreamLimit = 100
+	// DefaultMaxConnectionsPerDownstream bounds simultaneous WebSockets and
+	// held long polls from one credential. Two permits a reconnect to overlap
+	// the previous connection's cleanup without allowing unbounded fan-out.
+	DefaultMaxConnectionsPerDownstream = 2
 	// DefaultCoalesceWindow is how long the hub collects head advances before
 	// it broadcasts. One service produces at most one notification per window,
 	// carrying the latest head.
@@ -35,12 +39,13 @@ type Notify struct {
 // coalesces per service over a short window, so a burst of revisions produces
 // one notification with the latest head instead of one per revision.
 //
-// The hub counts distinct downstream ids, not connections: a downstream that
-// reconnects keeps its slot, and a long-poll request and a WebSocket from the
-// same downstream count once.
+// The hub tracks distinct downstream ids for the instance limit and active
+// registrations for the global and per-credential connection limits. A
+// long-poll waiter and a WebSocket therefore each occupy a connection slot.
 type Hub struct {
-	maxDownstream int
-	window        time.Duration
+	maxDownstream               int
+	maxConnectionsPerDownstream int
+	window                      time.Duration
 
 	mu          sync.Mutex
 	subscribers map[*Subscriber]struct{}
@@ -60,13 +65,24 @@ type Subscriber struct {
 }
 
 // NewHub creates a hub. maxDownstream zero uses DefaultMaxDownstream and is
-// capped at MaxDownstreamLimit. window zero uses DefaultCoalesceWindow.
-func NewHub(maxDownstream int, window time.Duration) (*Hub, error) {
+// capped at MaxDownstreamLimit. window zero uses DefaultCoalesceWindow. The
+// optional per-downstream bound defaults to two active channels and waiters.
+func NewHub(maxDownstream int, window time.Duration, perDownstream ...int) (*Hub, error) {
 	if maxDownstream == 0 {
 		maxDownstream = DefaultMaxDownstream
 	}
 	if maxDownstream < 1 || maxDownstream > MaxDownstreamLimit {
 		return nil, fmt.Errorf("%w: MaxDownstream must be between 1 and %d", ErrConfig, MaxDownstreamLimit)
+	}
+	if len(perDownstream) > 1 {
+		return nil, fmt.Errorf("%w: NewHub accepts at most one per-downstream connection bound", ErrConfig)
+	}
+	maxConnections := DefaultMaxConnectionsPerDownstream
+	if len(perDownstream) == 1 && perDownstream[0] != 0 {
+		maxConnections = perDownstream[0]
+	}
+	if maxConnections < 1 || maxConnections > 16 {
+		return nil, fmt.Errorf("%w: per-downstream connection bound must be between 1 and 16", ErrConfig)
 	}
 	if window == 0 {
 		window = DefaultCoalesceWindow
@@ -75,11 +91,12 @@ func NewHub(maxDownstream int, window time.Duration) (*Hub, error) {
 		return nil, fmt.Errorf("%w: CoalesceWindow must not be negative", ErrConfig)
 	}
 	return &Hub{
-		maxDownstream: maxDownstream,
-		window:        window,
-		subscribers:   make(map[*Subscriber]struct{}),
-		counts:        make(map[string]int),
-		pending:       make(map[string]uint64),
+		maxDownstream:               maxDownstream,
+		maxConnectionsPerDownstream: maxConnections,
+		window:                      window,
+		subscribers:                 make(map[*Subscriber]struct{}),
+		counts:                      make(map[string]int),
+		pending:                     make(map[string]uint64),
 	}, nil
 }
 
@@ -99,10 +116,13 @@ func (h *Hub) allowLocked(downstreamID string) error {
 	if downstreamID == "" {
 		return fmt.Errorf("%w: downstream id is required", ErrConfig)
 	}
-	if h.counts[downstreamID] > 0 {
-		return nil
+	if h.counts[downstreamID] >= h.maxConnectionsPerDownstream {
+		return fmt.Errorf("%w: downstream %q has %d active connections", ErrFanoutLimit, downstreamID, h.counts[downstreamID])
 	}
-	if len(h.counts) >= h.maxDownstream {
+	if len(h.subscribers) >= h.maxDownstream*h.maxConnectionsPerDownstream {
+		return fmt.Errorf("%w: %d active connections", ErrFanoutLimit, len(h.subscribers))
+	}
+	if h.counts[downstreamID] == 0 && len(h.counts) >= h.maxDownstream {
 		return fmt.Errorf("%w: %d downstreams", ErrFanoutLimit, len(h.counts))
 	}
 	return nil

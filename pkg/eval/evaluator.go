@@ -5,6 +5,7 @@ package eval
 
 import (
 	"io"
+	"net/http"
 	"sort"
 	"strconv"
 	"strings"
@@ -90,8 +91,23 @@ func (p *PolicyEvalImpl) deleteService(serviceName string) {
 	p.RuntimePolicyStore.deleteService(serviceName)
 }
 
+type reloadReadingStore interface {
+	ReadPolicyStoreForReload() (*pms.PolicyStore, func(), error)
+}
+
+// readPolicyStoreForReload lets a distributing store bind its state transition
+// to the exact generation the evaluator installs. Other stores keep their
+// existing read path and have no acknowledgment to make.
+func readPolicyStoreForReload(store pms.PolicyStoreManagerADS) (*pms.PolicyStore, func(), error) {
+	if reader, ok := store.(reloadReadingStore); ok {
+		return reader.ReadPolicyStoreForReload()
+	}
+	snapshot, err := store.ReadPolicyStore()
+	return snapshot, nil, err
+}
+
 func (p *PolicyEvalImpl) fullReloadRuntimeCache() error {
-	ps, err := p.Store.ReadPolicyStore()
+	ps, acknowledge, err := readPolicyStoreForReload(p.Store)
 	if err != nil {
 		p.storeUnavailableLocked()
 		log.Errorf("Fail to full reload runtime cache, err:%v", err)
@@ -99,6 +115,9 @@ func (p *PolicyEvalImpl) fullReloadRuntimeCache() error {
 	}
 	p.RuntimePolicyStore.reloadPolicyStore(ps)
 	p.storeAvailableLocked()
+	if acknowledge != nil {
+		acknowledge()
+	}
 	return nil
 }
 
@@ -161,6 +180,33 @@ func (p *PolicyEvalImpl) DistributionGate() adsync.RequestGate {
 	}
 	gate, _ := p.Store.(adsync.RequestGate)
 	return gate
+}
+
+// DistributionDownstreamHandler returns the optional policy-source protocol
+// handler of the backing store. Other stores return nil and keep the original
+// route table unchanged.
+func (p *PolicyEvalImpl) DistributionDownstreamHandler() http.Handler {
+	if p.Store == nil {
+		return nil
+	}
+	provider, ok := p.Store.(interface{ DownstreamHandler() http.Handler })
+	if !ok {
+		return nil
+	}
+	return provider.DownstreamHandler()
+}
+
+// ReloadDownstreamCredentials reloads proxy credentials when supported by the
+// backing store. Non-distributing stores have nothing to reload.
+func (p *PolicyEvalImpl) ReloadDownstreamCredentials() error {
+	if p.Store == nil {
+		return nil
+	}
+	provider, ok := p.Store.(interface{ ReloadDownstreamCredentials() error })
+	if !ok {
+		return nil
+	}
+	return provider.ReloadDownstreamCredentials()
 }
 
 func (p *PolicyEvalImpl) AssertToken(ctx *adsapi.RequestContext) (err error) {

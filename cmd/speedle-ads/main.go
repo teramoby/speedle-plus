@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"syscall"
 
 	adsapi "github.com/teramoby/speedle-plus/api/ads"
 	"github.com/teramoby/speedle-plus/pkg/assertion"
@@ -59,6 +60,42 @@ func main() {
 	}
 }
 
+// startDownstreamCredentialReload installs SIGHUP reload only for an ADS that
+// actually serves downstream policy. Every other store keeps its original
+// signal and startup behaviour.
+func startDownstreamCredentialReload(evaluator eval.InternalEvaluator) func() {
+	provider, hasDownstream := evaluator.(interface{ DistributionDownstreamHandler() http.Handler })
+	reloader, canReload := evaluator.(interface{ ReloadDownstreamCredentials() error })
+	if !hasDownstream || !canReload || provider.DistributionDownstreamHandler() == nil {
+		return func() {}
+	}
+
+	reloadSignals := make(chan os.Signal, 1)
+	signal.Notify(reloadSignals, syscall.SIGHUP)
+	reloadStop := make(chan struct{})
+	reloadStopped := make(chan struct{})
+	go func() {
+		defer close(reloadStopped)
+		for {
+			select {
+			case <-reloadStop:
+				return
+			case <-reloadSignals:
+				if err := reloader.ReloadDownstreamCredentials(); err != nil {
+					log.Warnf("Could not reload downstream credentials: %v", err)
+				} else {
+					log.Info("Downstream credentials reloaded")
+				}
+			}
+		}
+	}()
+	return func() {
+		signal.Stop(reloadSignals)
+		close(reloadStop)
+		<-reloadStopped
+	}
+}
+
 // run starts the servers and serves until one of them fails or stop
 // receives a signal.
 func run(params *flags.Parameters, conf *cfg.Config, stop <-chan os.Signal) error {
@@ -89,6 +126,9 @@ func run(params *flags.Parameters, conf *cfg.Config, stop <-chan os.Signal) erro
 	if closer, ok := evaluator.(io.Closer); ok {
 		defer closer.Close()
 	}
+
+	stopCredentialReload := startDownstreamCredentialReload(evaluator)
+	defer stopCredentialReload()
 
 	httpServer, err := newHTTPServer(params, evaluator)
 	if err != nil {

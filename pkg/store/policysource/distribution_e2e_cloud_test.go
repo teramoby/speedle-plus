@@ -342,21 +342,22 @@ type e2eCloud struct {
 	credential string
 	client     *http.Client
 
-	mu              sync.Mutex
-	services        map[string]*e2eService
-	order           []string
-	servicesVersion int64
-	disconnected    bool
-	revoked         bool
-	commands        []e2eWireCommand
-	commandResults  map[string]string
-	commandSeq      int
-	conns           map[*e2eChannelConn]struct{}
-	requests        []e2eRequest
-	fallbackCalls   int
-	generation      int64
-	evaluator       adsapi.PolicyEvaluator
-	evaluatorGen    int64
+	mu                  sync.Mutex
+	fallbackCredentials map[string]struct{}
+	services            map[string]*e2eService
+	order               []string
+	servicesVersion     int64
+	disconnected        bool
+	revoked             bool
+	commands            []e2eWireCommand
+	commandResults      map[string]string
+	commandSeq          int
+	conns               map[*e2eChannelConn]struct{}
+	requests            []e2eRequest
+	fallbackCalls       int
+	generation          int64
+	evaluator           adsapi.PolicyEvaluator
+	evaluatorGen        int64
 
 	upgrader websocket.Upgrader
 	closeOne sync.Once
@@ -393,13 +394,16 @@ func newE2ECloud(t *testing.T) *e2eCloud {
 	t.Helper()
 	signer, keys := e2eLoadSigner(t)
 	cloud := &e2eCloud{
-		t:               t,
-		signer:          signer,
-		keys:            keys,
-		credential:      e2eCredential(e2eInstanceA, 1),
-		services:        make(map[string]*e2eService),
-		commandResults:  make(map[string]string),
-		conns:           make(map[*e2eChannelConn]struct{}),
+		t:              t,
+		signer:         signer,
+		keys:           keys,
+		credential:     e2eCredential(e2eInstanceA, 1),
+		services:       make(map[string]*e2eService),
+		commandResults: make(map[string]string),
+		conns:          make(map[*e2eChannelConn]struct{}),
+		fallbackCredentials: map[string]struct{}{
+			e2eCredential(e2eInstanceA, 1): {},
+		},
 		servicesVersion: 1,
 		upgrader: websocket.Upgrader{
 			ReadBufferSize:  4096,
@@ -441,6 +445,22 @@ func (f *e2eCloud) source() e2eSource {
 	return e2eSource{
 		URL:        f.server.URL,
 		Credential: f.credential,
+		CAFile:     f.caFile,
+		Keys:       f.keys,
+	}
+}
+
+// fallbackSource returns a Cloud-only credential that is valid for fallback
+// authorization, never for policy synchronization. A downstream proxy token is
+// deliberately not accepted here.
+func (f *e2eCloud) fallbackSource(instanceID string, number int) e2eSource {
+	credential := e2eCredential(instanceID, number)
+	f.mu.Lock()
+	f.fallbackCredentials[credential] = struct{}{}
+	f.mu.Unlock()
+	return e2eSource{
+		URL:        f.server.URL,
+		Credential: credential,
 		CAFile:     f.caFile,
 		Keys:       f.keys,
 	}
@@ -820,13 +840,23 @@ func (f *e2eCloud) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		e2eWriteCloudError(w, http.StatusServiceUnavailable, "source_unavailable", "")
 		return
 	}
-	if r.Header.Get("Authorization") != "Bearer "+credential {
+	authorization := r.Header.Get("Authorization")
+	isFallback := r.Method == http.MethodPost && strings.HasPrefix(r.URL.Path, adsync.AuthzCheckAPIPrefix)
+	if isFallback {
+		f.mu.Lock()
+		_, allowed := f.fallbackCredentials[strings.TrimPrefix(authorization, "Bearer ")]
+		f.mu.Unlock()
+		if !allowed {
+			e2eWriteCloudError(w, http.StatusUnauthorized, "unauthorized", "")
+			return
+		}
+	} else if authorization != "Bearer "+credential {
 		e2eWriteCloudError(w, http.StatusUnauthorized, "unauthorized", "")
 		return
 	}
 
 	switch {
-	case r.Method == http.MethodPost && strings.HasPrefix(r.URL.Path, adsync.AuthzCheckAPIPrefix):
+	case isFallback:
 		f.serveFallback(w, r)
 	case r.Method == http.MethodGet && r.URL.Path == adsync.APIPrefix+"/services":
 		f.serveServices(w)
@@ -952,7 +982,7 @@ func (f *e2eCloud) serveChanges(w http.ResponseWriter, r *http.Request, serviceI
 		Head:          service.Revision,
 		HeadStateHash: service.StateHash,
 		Commits:       commits,
-		NextSince:     to + 1,
+		NextSince:     to,
 	}
 	hold := service.Hold
 	f.mu.Unlock()

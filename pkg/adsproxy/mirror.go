@@ -186,9 +186,26 @@ func (m *Mirror) AddObserver(observer func(HeadEvent)) func() {
 // is ignored, so a late delivery cannot roll the proxy back. A snapshot for a
 // different sourceId or epoch replaces the copy and starts a new log, which is
 // how a source change reaches downstream instances.
-func (m *Mirror) ApplySnapshot(response *adsync.SnapshotResponse) error {
+//
+// Callers synchronizing a discovered service pass that service as expected.
+// The snapshot must then match both its id and epoch; sourceId is always bound
+// to the requested service id, never to a different service's signed dataset.
+func (m *Mirror) ApplySnapshot(response *adsync.SnapshotResponse, expected ...adsync.Service) error {
 	if response == nil {
 		return fmt.Errorf("%w: nil snapshot", ErrConfig)
+	}
+	if len(expected) > 1 {
+		return fmt.Errorf("%w: ApplySnapshot accepts at most one expected service", ErrConfig)
+	}
+	if response.SourceID != response.ServiceID {
+		return fmt.Errorf("%w: snapshot source %q does not match service %q", adsync.ErrProtocol, response.SourceID, response.ServiceID)
+	}
+	if len(expected) == 1 {
+		service := expected[0]
+		if response.ServiceID != service.ID || response.SourceID != service.ID || response.Epoch != service.Epoch {
+			return fmt.Errorf("%w: snapshot identity %q/%q/%q does not match requested service %q epoch %q",
+				adsync.ErrProtocol, response.ServiceID, response.SourceID, response.Epoch, service.ID, service.Epoch)
+		}
 	}
 	copied := cloneSnapshotResponse(*response)
 	if err := m.verifySnapshot(&copied); err != nil {
@@ -537,7 +554,7 @@ func (m *Mirror) Changes(serviceID string, since uint64, limit int) (adsync.Chan
 		Head:          service.revision,
 		HeadStateHash: service.stateHash,
 		Commits:       commits,
-		NextSince:     to + 1,
+		NextSince:     to,
 	}, nil
 }
 

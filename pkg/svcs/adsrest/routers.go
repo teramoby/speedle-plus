@@ -6,6 +6,7 @@ package adsrest
 import (
 	"net/http"
 
+	"github.com/teramoby/speedle-plus/pkg/adsync"
 	"github.com/teramoby/speedle-plus/pkg/eval"
 	"github.com/teramoby/speedle-plus/pkg/svcs"
 
@@ -98,6 +99,12 @@ func NewRouter(evaluator eval.InternalEvaluator) (*mux.Router, error) {
 			Path(route.Pattern).
 			Name(route.Name).
 			Handler(handler)
+	}
+	if provider, ok := evaluator.(interface{ DistributionDownstreamHandler() http.Handler }); ok {
+		if downstream := provider.DistributionDownstreamHandler(); downstream != nil {
+			router.Path(adsync.APIPrefix).Handler(downstream)
+			router.PathPrefix(adsync.APIPrefix + "/").Handler(downstream)
+		}
 	}
 
 	return router, nil

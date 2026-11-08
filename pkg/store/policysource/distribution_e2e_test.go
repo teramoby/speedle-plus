@@ -147,11 +147,13 @@ func e2eAgentA(t *testing.T, cloud *e2eCloud, clock *testClock) *e2eAgent {
 	t.Helper()
 	credentialB, _ := e2eDownstreamCredential("B", e2eInstanceB, 2)
 	return newE2EAgent(t, e2eAgentOptions{
-		InstanceID: e2eInstanceA,
-		Source:     cloud.source(),
-		Clock:      clock,
-		Chain:      []string{e2eInstanceA},
-		Downstream: []adsproxy.Credential{credentialB},
+		InstanceID:     e2eInstanceA,
+		Source:         cloud.source(),
+		Fallback:       cloud.fallbackSource(e2eInstanceA, 101),
+		FallbackClient: cloud.client,
+		Clock:          clock,
+		Chain:          []string{e2eInstanceA},
+		Downstream:     []adsproxy.Credential{credentialB},
 	})
 }
 
@@ -165,9 +167,11 @@ func e2eAgentB(t *testing.T, cloud *e2eCloud, upstream *e2eAgent, tokenB string,
 			CAFile:     upstream.caFile,
 			Keys:       cloud.keys,
 		},
-		Clock:    clock,
-		CacheDir: cacheDir,
-		Chain:    []string{e2eInstanceA, e2eInstanceB},
+		Fallback:       cloud.fallbackSource(e2eInstanceB, 102),
+		FallbackClient: cloud.client,
+		Clock:          clock,
+		CacheDir:       cacheDir,
+		Chain:          []string{e2eInstanceA, e2eInstanceB},
 	})
 }
 
@@ -179,11 +183,13 @@ func TestE2EChainFirstSync(t *testing.T) {
 	clockA := newTestClock()
 	credentialB, tokenB := e2eDownstreamCredential("B", e2eInstanceB, 2)
 	a := newE2EAgent(t, e2eAgentOptions{
-		InstanceID: e2eInstanceA,
-		Source:     cloud.source(),
-		Clock:      clockA,
-		Chain:      []string{e2eInstanceA},
-		Downstream: []adsproxy.Credential{credentialB},
+		InstanceID:     e2eInstanceA,
+		Source:         cloud.source(),
+		Fallback:       cloud.fallbackSource(e2eInstanceA, 101),
+		FallbackClient: cloud.client,
+		Clock:          clockA,
+		Chain:          []string{e2eInstanceA},
+		Downstream:     []adsproxy.Credential{credentialB},
 	})
 	credentialC, tokenC := e2eDownstreamCredential("C", e2eInstanceC, 3)
 	clockB := newTestClock()
@@ -195,9 +201,11 @@ func TestE2EChainFirstSync(t *testing.T) {
 			CAFile:     a.caFile,
 			Keys:       cloud.keys,
 		},
-		Clock:      clockB,
-		Chain:      []string{e2eInstanceA, e2eInstanceB},
-		Downstream: []adsproxy.Credential{credentialC},
+		Fallback:       cloud.fallbackSource(e2eInstanceB, 102),
+		FallbackClient: cloud.client,
+		Clock:          clockB,
+		Chain:          []string{e2eInstanceA, e2eInstanceB},
+		Downstream:     []adsproxy.Credential{credentialC},
 	})
 	clockC := newTestClock()
 	c := newE2EAgent(t, e2eAgentOptions{
@@ -208,8 +216,10 @@ func TestE2EChainFirstSync(t *testing.T) {
 			CAFile:     b.caFile,
 			Keys:       cloud.keys,
 		},
-		Clock: clockC,
-		Chain: []string{e2eInstanceA, e2eInstanceB, e2eInstanceC},
+		Fallback:       cloud.fallbackSource(e2eInstanceC, 103),
+		FallbackClient: cloud.client,
+		Clock:          clockC,
+		Chain:          []string{e2eInstanceA, e2eInstanceB, e2eInstanceC},
 	})
 
 	for _, agent := range []*e2eAgent{a, b, c} {

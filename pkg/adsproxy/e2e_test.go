@@ -112,17 +112,17 @@ func TestDownstreamChangesPagesVerify(t *testing.T) {
 	if err != nil {
 		t.Fatalf("first page: %v", err)
 	}
-	if first.From != 2 || first.To != 2 || first.Head != 4 || first.NextSince != 3 {
+	if first.From != 2 || first.To != 2 || first.Head != 4 || first.NextSince != 2 {
 		t.Errorf("first page = %+v", first)
 	}
 	if len(first.Commits) != 1 || first.Commits[0].Signature != service.commits[0].Signature {
 		t.Error("first page commit signature changed in transit")
 	}
-	second, err := client.Changes(ctx, testServiceID1, service.ID, service.Epoch, first.To, first.Commits[0].Hash, 100)
+	second, err := client.Changes(ctx, testServiceID1, service.ID, service.Epoch, first.NextSince, first.Commits[0].Hash, 100)
 	if err != nil {
 		t.Fatalf("second page: %v", err)
 	}
-	if second.From != 3 || second.To != 4 || second.NextSince != 5 {
+	if second.From != 3 || second.To != 4 || second.NextSince != 4 {
 		t.Errorf("second page = %+v", second)
 	}
 	if second.HeadStateHash != service.StateHash {

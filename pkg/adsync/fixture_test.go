@@ -184,6 +184,7 @@ type fixtureSource struct {
 	corruptCommitSignature   bool
 	corruptHeadStateHash     bool
 	corruptDiscoveryHash     bool
+	snapshotOverride         *SnapshotResponse
 }
 
 func newFixtureSource(credential string, signer *fixtureSigner, services ...*fixtureService) *fixtureSource {
@@ -277,6 +278,12 @@ func (f *fixtureSource) serveSnapshot(w http.ResponseWriter, r *http.Request) {
 	service, found := f.services[r.PathValue("id")]
 	if !found {
 		writeFixtureError(w, http.StatusNotFound, "service_not_found", "")
+		return
+	}
+	if f.snapshotOverride != nil {
+		response := *f.snapshotOverride
+		response.Snapshot = cloneSnapshot(f.snapshotOverride.Snapshot)
+		writeFixtureJSON(w, http.StatusOK, response)
 		return
 	}
 	etag := `"` + service.ID + "-" + service.Epoch + "-" +
@@ -373,7 +380,7 @@ func (f *fixtureSource) serveChanges(w http.ResponseWriter, r *http.Request) {
 		Head:          service.Revision,
 		HeadStateHash: headStateHash,
 		Commits:       commits,
-		NextSince:     to + 1,
+		NextSince:     to,
 	})
 }
 

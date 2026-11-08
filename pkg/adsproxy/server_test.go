@@ -5,6 +5,7 @@ package adsproxy
 import (
 	"encoding/json"
 	"net/http"
+	"strconv"
 	"sync/atomic"
 	"testing"
 
@@ -163,6 +164,14 @@ func TestSnapshotETag(t *testing.T) {
 	if response.StatusCode != http.StatusOK {
 		t.Errorf("stale If-None-Match: status %d", response.StatusCode)
 	}
+
+	// A wildcard is not an exact identity tuple and must not suppress a new
+	// snapshot, even though generic HTTP caching often gives it that meaning.
+	header.Set("If-None-Match", "*")
+	response, _ = server.get(path, token, header)
+	if response.StatusCode != http.StatusOK {
+		t.Errorf("wildcard If-None-Match: status %d, want 200", response.StatusCode)
+	}
 }
 
 func TestStateEndpoint(t *testing.T) {
@@ -211,26 +220,30 @@ func TestChangesPaging(t *testing.T) {
 		t.Fatalf("page one: status %d body %s", response.StatusCode, body)
 	}
 	page := decodeBody[adsync.ChangesResponse](t, body)
-	if page.From != 2 || page.To != 3 || page.Head != 4 || page.NextSince != 4 {
+	if page.From != 2 || page.To != 3 || page.Head != 4 || page.NextSince != 3 {
 		t.Errorf("page one = from %d to %d head %d next %d", page.From, page.To, page.Head, page.NextSince)
 	}
 	if len(page.Commits) != 2 {
 		t.Fatalf("page one commits = %d", len(page.Commits))
 	}
 
-	response, body = server.get(path+"?since=3&limit=2", token, nil)
+	response, body = server.get(path+"?since="+strconv.FormatUint(page.NextSince, 10)+"&limit=2", token, nil)
 	if response.StatusCode != http.StatusOK {
 		t.Fatalf("page two: status %d body %s", response.StatusCode, body)
 	}
 	page = decodeBody[adsync.ChangesResponse](t, body)
-	if page.From != 4 || page.To != 4 || page.Head != 4 || page.NextSince != 5 {
+	if page.From != 4 || page.To != 4 || page.Head != 4 || page.NextSince != 4 {
 		t.Errorf("page two = from %d to %d head %d next %d", page.From, page.To, page.Head, page.NextSince)
 	}
 	if page.HeadStateHash != books.StateHash {
 		t.Error("head state hash does not match the source")
 	}
 
-	for _, query := range []string{"", "?since=abc", "?since=+1", "?since=1&limit=0", "?since=1&limit=101"} {
+	for _, query := range []string{
+		"", "?since=abc", "?since=+1", "?since=1&limit=0", "?since=1&limit=101",
+		"?since=1&since=2", "?since=1&limit=2&limit=3", "?since=1&unknown=1",
+		"?since=01", "?since=1&limit=01", "?since=1&limit=",
+	} {
 		response, body := server.get(path+query, token, nil)
 		if response.StatusCode != http.StatusBadRequest {
 			t.Errorf("%q: status %d body %s", query, response.StatusCode, body)
@@ -411,8 +424,8 @@ func TestIfNoneMatch(t *testing.T) {
 	if !ifNoneMatch(`"other", `+etag, etag) {
 		t.Error("list match not detected")
 	}
-	if !ifNoneMatch("*", etag) {
-		t.Error("wildcard not detected")
+	if ifNoneMatch("*", etag) {
+		t.Error("wildcard matched without an exact identity tuple")
 	}
 	if ifNoneMatch(`"a-b-1-sha256:y"`, etag) {
 		t.Error("different tag matched")

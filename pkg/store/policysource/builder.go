@@ -35,24 +35,40 @@ const (
 	StaleAfterKey            = "StaleAfter"
 	StopAfterKey             = "StopAfter"
 	FallbackWhileSyncingKey  = "FallbackWhileSyncing"
+	CloudFallbackURLKey      = "CloudFallbackURL"
+	CloudCredentialFileKey   = "CloudCredentialFile"
+	TransportKey             = "Transport"
+	ServeDownstreamKey       = "ServeDownstream"
+	DownstreamCredentialsKey = "DownstreamCredentialsFile"
+	MaxDownstreamKey         = "MaxDownstream"
+	MaxChainDepthKey         = "MaxChainDepth"
+	MaxConnectionsKey        = "MaxConnectionsPerDownstream"
 	DefaultServicesSelection = "*"
 
 	// Command line flag names. Each flag feeds the property key above through
 	// the shared GetStoreParams mechanism.
-	PolicySourceURLFlag      = "policy-source-url"
-	CredentialFileFlag       = "policy-source-credential-file"
-	ServicesFlag             = "policy-source-services"
-	PublicKeysFlag           = "policy-source-public-keys"
-	CacheDirFlag             = "policy-source-cache-dir"
-	RequestTimeoutFlag       = "policy-source-request-timeout"
-	CAFileFlag               = "policy-source-ca"
-	ClientCertFileFlag       = "policy-source-client-cert"
-	ClientKeyFileFlag        = "policy-source-client-key"
-	HeartbeatIntervalFlag    = "policy-source-heartbeat-interval"
-	StaleAfterFlag           = "policy-source-stale-after"
-	StopAfterFlag            = "policy-source-stop-after"
-	FallbackWhileSyncingFlag = "policy-source-fallback-while-syncing"
-	defaultBootstrapWindow   = time.Minute
+	PolicySourceURLFlag       = "policy-source-url"
+	CredentialFileFlag        = "policy-source-credential-file"
+	ServicesFlag              = "policy-source-services"
+	PublicKeysFlag            = "policy-source-public-keys"
+	CacheDirFlag              = "policy-source-cache-dir"
+	RequestTimeoutFlag        = "policy-source-request-timeout"
+	CAFileFlag                = "policy-source-ca"
+	ClientCertFileFlag        = "policy-source-client-cert"
+	ClientKeyFileFlag         = "policy-source-client-key"
+	HeartbeatIntervalFlag     = "policy-source-heartbeat-interval"
+	StaleAfterFlag            = "policy-source-stale-after"
+	StopAfterFlag             = "policy-source-stop-after"
+	FallbackWhileSyncingFlag  = "policy-source-fallback-while-syncing"
+	CloudFallbackURLFlag      = "policy-source-cloud-fallback-url"
+	CloudCredentialFileFlag   = "policy-source-cloud-credential-file"
+	TransportFlag             = "policy-source-transport"
+	ServeDownstreamFlag       = "policy-source-serve-downstream"
+	DownstreamCredentialsFlag = "policy-source-downstream-credentials-file"
+	MaxDownstreamFlag         = "policy-source-max-downstream"
+	MaxChainDepthFlag         = "policy-source-max-chain-depth"
+	MaxConnectionsFlag        = "policy-source-max-connections-per-downstream"
+	defaultBootstrapWindow    = time.Minute
 )
 
 // Options configures a Store. The builder derives it from store properties;
@@ -95,6 +111,35 @@ type Options struct {
 	// service to Cloud. The zero value keeps the fallback enabled, which is
 	// the default.
 	DisableFallback bool
+	// FallbackURL and FallbackCredential are the distinct Speedle Cloud
+	// fallback destination and instance credential. Both are required for a
+	// usable fallback; neither is ever inferred from a proxy policy source.
+	FallbackURL        string
+	FallbackCredential string
+	// FallbackHTTPClient optionally supplies Cloud's transport independently
+	// of the policy-source transport, primarily for private test roots.
+	FallbackHTTPClient *http.Client
+
+	// StartRuntime installs the owned channel and reconciliation loops when the
+	// evaluator subscribes to Watch. The registered store builder sets it;
+	// low-level in-process tests may leave it false and drive Sync themselves.
+	StartRuntime bool
+	// InstanceID defaults to the id embedded in Credential. AgentVersion
+	// defaults to speedle-ads. Chain defaults to just InstanceID.
+	InstanceID   string
+	AgentVersion string
+	Chain        []string
+	Transport    adsync.Transport
+	// ReconcilePeriod is the fallback retry cadence. Channel notifications and
+	// acks trigger immediate passes; zero uses a one-minute safety cadence.
+	ReconcilePeriod time.Duration
+
+	// ServeDownstream enables the proxy protocol from verified mirror copies.
+	ServeDownstream             bool
+	DownstreamCredentialsFile   string
+	MaxDownstream               int
+	MaxConnectionsPerDownstream int
+	MaxChainDepth               int
 }
 
 // Builder creates policy-source stores.
@@ -103,19 +148,27 @@ type Builder struct{}
 // GetStoreParams maps flag names to store property keys.
 func (Builder) GetStoreParams() map[string]string {
 	return map[string]string{
-		PolicySourceURLFlag:      PolicySourceURLKey,
-		CredentialFileFlag:       CredentialFileKey,
-		ServicesFlag:             ServicesKey,
-		PublicKeysFlag:           PublicKeysKey,
-		CacheDirFlag:             CacheDirKey,
-		RequestTimeoutFlag:       RequestTimeoutKey,
-		CAFileFlag:               CAFileKey,
-		ClientCertFileFlag:       ClientCertFileKey,
-		ClientKeyFileFlag:        ClientKeyFileKey,
-		HeartbeatIntervalFlag:    HeartbeatIntervalKey,
-		StaleAfterFlag:           StaleAfterKey,
-		StopAfterFlag:            StopAfterKey,
-		FallbackWhileSyncingFlag: FallbackWhileSyncingKey,
+		PolicySourceURLFlag:       PolicySourceURLKey,
+		CredentialFileFlag:        CredentialFileKey,
+		ServicesFlag:              ServicesKey,
+		PublicKeysFlag:            PublicKeysKey,
+		CacheDirFlag:              CacheDirKey,
+		RequestTimeoutFlag:        RequestTimeoutKey,
+		CAFileFlag:                CAFileKey,
+		ClientCertFileFlag:        ClientCertFileKey,
+		ClientKeyFileFlag:         ClientKeyFileKey,
+		HeartbeatIntervalFlag:     HeartbeatIntervalKey,
+		StaleAfterFlag:            StaleAfterKey,
+		StopAfterFlag:             StopAfterKey,
+		FallbackWhileSyncingFlag:  FallbackWhileSyncingKey,
+		CloudFallbackURLFlag:      CloudFallbackURLKey,
+		CloudCredentialFileFlag:   CloudCredentialFileKey,
+		TransportFlag:             TransportKey,
+		ServeDownstreamFlag:       ServeDownstreamKey,
+		DownstreamCredentialsFlag: DownstreamCredentialsKey,
+		MaxDownstreamFlag:         MaxDownstreamKey,
+		MaxChainDepthFlag:         MaxChainDepthKey,
+		MaxConnectionsFlag:        MaxConnectionsKey,
 	}
 }
 
@@ -127,6 +180,10 @@ func (Builder) NewStore(config map[string]interface{}) (pms.PolicyStoreManager, 
 	if err != nil {
 		return nil, err
 	}
+	// The registered store is the production entry point. Its evaluator watch
+	// starts the owned notification and reconciliation runtime; low-level Open
+	// callers remain free to drive synchronization explicitly.
+	options.StartRuntime = true
 	return Open(context.Background(), options)
 }
 
@@ -177,6 +234,8 @@ func optionsFromConfig(config map[string]interface{}) (Options, error) {
 		{CAFileKey, &options.CAFile},
 		{ClientCertFileKey, &options.ClientCertFile},
 		{ClientKeyFileKey, &options.ClientKeyFile},
+		{CloudFallbackURLKey, &options.FallbackURL},
+		{DownstreamCredentialsKey, &options.DownstreamCredentialsFile},
 	} {
 		value, _, err := stringProperty(config, property.key)
 		if err != nil {
@@ -206,6 +265,55 @@ func optionsFromConfig(config map[string]interface{}) (Options, error) {
 		return options, err
 	}
 	options.DisableFallback = set && !fallbackEnabled
+
+	transport, _, err := stringProperty(config, TransportKey)
+	if err != nil {
+		return options, err
+	}
+	options.Transport = adsync.Transport(transport)
+	switch options.Transport {
+	case "", adsync.TransportAuto, adsync.TransportWebSocket, adsync.TransportLongPoll:
+	default:
+		return options, errors.Errorf(errors.ConfigError, "unknown policy source Transport %q", transport)
+	}
+
+	cloudCredentialPath, _, err := stringProperty(config, CloudCredentialFileKey)
+	if err != nil {
+		return options, err
+	}
+	if (options.FallbackURL == "") != (cloudCredentialPath == "") {
+		return options, errors.New(errors.ConfigError, "CloudFallbackURL and CloudCredentialFile must be configured together")
+	}
+	if cloudCredentialPath != "" {
+		cloudCredential, err := adsync.ReadCredentialFile(cloudCredentialPath)
+		if err != nil {
+			return options, errors.Wrap(err, errors.ConfigError, "invalid Cloud fallback credential file")
+		}
+		options.FallbackCredential = cloudCredential
+	}
+
+	serveDownstream, _, err := boolProperty(config, ServeDownstreamKey)
+	if err != nil {
+		return options, err
+	}
+	options.ServeDownstream = serveDownstream
+	if options.ServeDownstream && options.DownstreamCredentialsFile == "" {
+		return options, errors.New(errors.ConfigError, "DownstreamCredentialsFile is required when ServeDownstream is true")
+	}
+	for _, property := range []struct {
+		key    string
+		target *int
+	}{
+		{MaxDownstreamKey, &options.MaxDownstream},
+		{MaxChainDepthKey, &options.MaxChainDepth},
+		{MaxConnectionsKey, &options.MaxConnectionsPerDownstream},
+	} {
+		value, err := intProperty(config, property.key)
+		if err != nil {
+			return options, err
+		}
+		*property.target = value
+	}
 
 	return options, nil
 }
@@ -337,6 +445,36 @@ func boolProperty(config map[string]interface{}, key string) (bool, bool, error)
 	}
 }
 
+func intProperty(config map[string]interface{}, key string) (int, error) {
+	value, exists := config[key]
+	if !exists || value == nil {
+		return 0, nil
+	}
+	switch typed := value.(type) {
+	case int:
+		return typed, nil
+	case int64:
+		return int(typed), nil
+	case float64:
+		converted := int(typed)
+		if float64(converted) != typed {
+			return 0, errors.Errorf(errors.ConfigError, "configure item %s must be an integer", key)
+		}
+		return converted, nil
+	case string:
+		if strings.TrimSpace(typed) == "" {
+			return 0, nil
+		}
+		parsed, err := strconv.Atoi(strings.TrimSpace(typed))
+		if err != nil {
+			return 0, errors.Errorf(errors.ConfigError, "configure item %s must be an integer", key)
+		}
+		return parsed, nil
+	default:
+		return 0, errors.Errorf(errors.ConfigError, "configure item %s must be an integer, got %T", key, value)
+	}
+}
+
 func durationProperty(config map[string]interface{}, key string) (time.Duration, error) {
 	text, set, err := stringProperty(config, key)
 	if err != nil || !set || strings.TrimSpace(text) == "" {
@@ -368,6 +506,14 @@ func init() {
 	pflag.String(StaleAfterFlag, "", "Store config: warning threshold before an instance is stale, for example 60s.")
 	pflag.String(StopAfterFlag, "", "Store config: threshold after which an instance stops serving, for example 120s.")
 	pflag.String(FallbackWhileSyncingFlag, "true", "Store config: route authorization requests for a syncing service to Speedle Cloud.")
+	pflag.String(CloudFallbackURLFlag, "", "Store config: distinct Speedle Cloud base URL used only for authorization fallback.")
+	pflag.String(CloudCredentialFileFlag, "", "Store config: file holding the Cloud instance credential used only for fallback (0600).")
+	pflag.String(TransportFlag, "auto", "Store config: notification transport: auto, websocket or longpoll.")
+	pflag.String(ServeDownstreamFlag, "false", "Store config: serve the policy-source protocol to downstream ADS instances.")
+	pflag.String(DownstreamCredentialsFlag, "", "Store config: downstream credential file (0600), reloaded on SIGHUP.")
+	pflag.String(MaxDownstreamFlag, "", "Store config: maximum distinct downstream instances.")
+	pflag.String(MaxChainDepthFlag, "", "Store config: maximum proxy chain depth.")
+	pflag.String(MaxConnectionsFlag, "", "Store config: maximum active channels and held polls per downstream credential.")
 
 	store.Register(StoreType, Builder{})
 }

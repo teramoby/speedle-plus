@@ -175,6 +175,31 @@ func TestOnlyConfirmedAcksExtendLiveness(t *testing.T) {
 	}
 }
 
+func TestDiscoveryDoesNotConfirmHeartbeatOrHead(t *testing.T) {
+	machine, clock := newTestMachine(t)
+	books := testAckService(testServiceID1, "books", 5)
+	if err := machine.Discover([]Service{books}); err != nil {
+		t.Fatalf("Discover: %v", err)
+	}
+	mustApply(t, machine, testServiceState(testServiceID1, "books", 5))
+	requireServiceState(t, machine, "books", SyncStateSyncing, SyncReasonCatchUp)
+	if !machine.Instance().LastConfirmedAckAt.IsZero() {
+		t.Fatal("a discovery data pull confirmed a heartbeat")
+	}
+
+	clock.Advance(61 * time.Second)
+	requireLiveness(t, machine, LivenessStale)
+	if err := machine.Discover([]Service{books}); err != nil {
+		t.Fatalf("second Discover: %v", err)
+	}
+	requireLiveness(t, machine, LivenessStale)
+	requireServiceState(t, machine, "books", SyncStateSyncing, SyncReasonCatchUp)
+
+	mustAck(t, machine, ackWith(books))
+	requireLiveness(t, machine, LivenessLive)
+	requireServiceState(t, machine, "books", SyncStateInSync, "")
+}
+
 func TestSeveralServicesInDifferentStates(t *testing.T) {
 	machine, _ := newTestMachine(t)
 	books := testAckService(testServiceID1, "books", 5)
@@ -519,7 +544,7 @@ func TestCloudThresholdsCanOnlyTighten(t *testing.T) {
 	})
 	t.Run("warning tightened", func(t *testing.T) {
 		machine, clock := newTestMachine(t)
-		mustAck(t, machine, Ack{Services: []Service{}, StaleAfter: 30 * time.Second})
+		mustAck(t, machine, Ack{Services: []Service{}, HeartbeatInterval: 15 * time.Second, StaleAfter: 30 * time.Second})
 		if got := machine.Thresholds().StaleAfter; got != 30*time.Second {
 			t.Fatalf("stale threshold = %s, want 30s", got)
 		}
@@ -531,6 +556,19 @@ func TestCloudThresholdsCanOnlyTighten(t *testing.T) {
 		mustAck(t, machine, Ack{Services: []Service{}, HeartbeatInterval: 15 * time.Second})
 		if got := machine.Thresholds().HeartbeatInterval; got != 15*time.Second {
 			t.Fatalf("heartbeat interval = %s, want 15s", got)
+		}
+	})
+	t.Run("heartbeat cannot be loosened", func(t *testing.T) {
+		machine, _ := newTestMachine(t)
+		mustAck(t, machine, Ack{
+			Services:          []Service{},
+			HeartbeatInterval: 5 * time.Minute,
+			StaleAfter:        time.Minute,
+			StopAfter:         2 * time.Minute,
+		})
+		thresholds := machine.Thresholds()
+		if thresholds.HeartbeatInterval != 30*time.Second || thresholds.StaleAfter != time.Minute || thresholds.StopAfter != 2*time.Minute {
+			t.Fatalf("thresholds = %+v, want local 30s/60s/120s", thresholds)
 		}
 	})
 	t.Run("out of range values are ignored", func(t *testing.T) {

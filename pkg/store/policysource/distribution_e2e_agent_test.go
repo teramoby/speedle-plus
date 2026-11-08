@@ -42,11 +42,13 @@ const (
 
 // e2eAgentOptions configures one in-process ADS instance.
 type e2eAgentOptions struct {
-	InstanceID string
-	Source     e2eSource
-	Clock      *testClock
-	CacheDir   string
-	Chain      []string
+	InstanceID     string
+	Source         e2eSource
+	Fallback       e2eSource
+	FallbackClient *http.Client
+	Clock          *testClock
+	CacheDir       string
+	Chain          []string
 	// Downstream enables the proxy role with the given credentials.
 	Downstream      []adsproxy.Credential
 	DisableFallback bool
@@ -125,7 +127,10 @@ func newE2EAgent(t *testing.T, options e2eAgentOptions) *e2eAgent {
 			InitialBackoff: time.Millisecond,
 			MaxBackoff:     10 * time.Millisecond,
 		},
-		DisableFallback: options.DisableFallback,
+		DisableFallback:    options.DisableFallback,
+		FallbackURL:        options.Fallback.URL,
+		FallbackCredential: options.Fallback.Credential,
+		FallbackHTTPClient: options.FallbackClient,
 	})
 	if err != nil {
 		t.Fatalf("open policy source store for %s: %v", options.InstanceID, err)
@@ -376,10 +381,10 @@ func (a *e2eAgent) syncMirror(ctx context.Context) {
 			// Up to date.
 		case sameIdentity && info.Revision < service.Revision:
 			if err := a.catchUpMirror(ctx, service, info); err != nil {
-				a.loadMirrorSnapshot(ctx, service.ID)
+				a.loadMirrorSnapshot(ctx, service)
 			}
 		default:
-			a.loadMirrorSnapshot(ctx, service.ID)
+			a.loadMirrorSnapshot(ctx, service)
 		}
 	}
 	a.mu.Lock()
@@ -409,17 +414,17 @@ func (a *e2eAgent) catchUpMirror(ctx context.Context, service adsync.Service, in
 		if page.To >= page.Head || len(page.Commits) == 0 {
 			return nil
 		}
-		since = page.To
+		since = page.NextSince
 		anchor = page.Commits[len(page.Commits)-1].Hash
 	}
 }
 
-func (a *e2eAgent) loadMirrorSnapshot(ctx context.Context, serviceID string) {
-	snapshot, _, err := a.store.client.Snapshot(ctx, serviceID, "")
+func (a *e2eAgent) loadMirrorSnapshot(ctx context.Context, service adsync.Service) {
+	snapshot, _, err := a.store.client.Snapshot(ctx, service.ID, "")
 	if err != nil {
 		return
 	}
-	_ = a.mirror.ApplySnapshot(snapshot)
+	_ = a.mirror.ApplySnapshot(snapshot, service)
 }
 
 // --- Commands ---

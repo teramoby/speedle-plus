@@ -197,6 +197,13 @@ func (s *Syncer) loadSnapshot(ctx context.Context, service Service) (*ServiceSta
 		}
 		return nil, err
 	}
+	if response.SourceID != service.ID || response.Epoch != service.Epoch {
+		return nil, fmt.Errorf("%w: snapshot identity %q/%q does not match requested service %q epoch %q",
+			ErrProtocol, response.SourceID, response.Epoch, service.ID, service.Epoch)
+	}
+	if response.Revision == service.Revision && response.StateHash != service.HeadStateHash {
+		return nil, fmt.Errorf("%w: snapshot hash does not match the discovered head at revision %d", ErrIntegrity, service.Revision)
+	}
 	state := &ServiceState{
 		ServiceID:  response.ServiceID,
 		SourceID:   response.SourceID,
@@ -209,6 +216,12 @@ func (s *Syncer) loadSnapshot(ctx context.Context, service Service) (*ServiceSta
 	}
 	if err := s.store(state); err != nil {
 		return nil, err
+	}
+	if state.Revision < service.Revision {
+		// A proxy may legitimately anchor its signed snapshot behind its
+		// advertised head. Reach that head through signed commits in this same
+		// pass instead of waiting for another notification.
+		return s.catchUp(ctx, state, service)
 	}
 	return state.clone(), nil
 }
@@ -259,9 +272,13 @@ func (s *Syncer) catchUp(ctx context.Context, local *ServiceState, service Servi
 			working.StateHash = page.HeadStateHash
 			break
 		}
-		if page.NextSince != revision+1 {
-			return nil, fmt.Errorf("%w: next page does not follow revision %d", ErrProtocol, revision)
+		if page.NextSince != revision {
+			return nil, fmt.Errorf("%w: nextSince %d does not resume at the last applied revision %d", ErrProtocol, page.NextSince, revision)
 		}
+		// The continuation is the last revision returned by the server. The
+		// next request uses that exclusive cursor verbatim; never synthesize a
+		// cursor from the page bounds.
+		revision = page.NextSince
 	}
 
 	// A verified copy at any revision is a valid result. When the source head

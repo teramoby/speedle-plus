@@ -80,7 +80,13 @@ func (g *Gate) Route(serviceName string) Route {
 		return Route{Kind: RouteUnavailable, Reason: StoppedReason(instance)}
 	}
 	status, known := g.source.Status(serviceName)
-	if !known || status.Service.State == adsync.SyncStateRemoved {
+	if !known {
+		return Route{Kind: RouteLocal}
+	}
+	if status.Service.State == adsync.SyncStateRemoved {
+		if removals, ok := g.source.(interface{ RemovalInstalled(string) bool }); ok && !removals.RemovalInstalled(serviceName) {
+			return Route{Kind: RouteUnavailable, Reason: adsync.ReasonSourceGone}
+		}
 		return Route{Kind: RouteLocal}
 	}
 	switch status.Service.State {

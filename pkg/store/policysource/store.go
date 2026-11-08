@@ -30,6 +30,7 @@ type Store struct {
 	client    *adsync.Client
 	machine   *adsync.Machine
 	selection []string
+	options   Options
 
 	// fallback is true when authorization requests for a syncing service may
 	// be forwarded to Cloud. The client carries the instance credential and
@@ -39,14 +40,23 @@ type Store struct {
 	// syncMu serializes synchronization passes.
 	syncMu sync.Mutex
 
-	// mu guards copies and the published assembly.
-	mu        sync.RWMutex
-	copies    map[string]*serviceCopy
-	snapshot  *pms.PolicyStore
-	published string
+	// mu guards copies and the published assembly. pendingRemoved records the
+	// names of removed services until the evaluator has installed the assembly
+	// that no longer contains them.
+	mu               sync.RWMutex
+	copies           map[string]*serviceCopy
+	snapshot         *pms.PolicyStore
+	published        string
+	publishedCopies  map[string]*serviceCopy
+	publishedRemoved map[string]string
+	pendingRemoved   map[string]string
 
 	watchMu sync.Mutex
 	events  pms.StorageChangeChannel
+
+	runtimeMu sync.Mutex
+	runtime   *distributionRuntime
+	closeOnce sync.Once
 }
 
 // serviceCopy is one verified service, parsed and ready to publish.
@@ -54,6 +64,7 @@ type serviceCopy struct {
 	service   *pms.Service
 	revision  uint64
 	stateHash adsync.Hash
+	state     *adsync.ServiceState
 }
 
 var (
@@ -82,15 +93,18 @@ func Open(ctx context.Context, options Options) (*Store, error) {
 	}
 
 	client, err := adsync.NewClient(adsync.Config{
-		BaseURL:        options.PolicySourceURL,
-		Credential:     options.Credential,
-		PublicKeys:     options.PublicKeys,
-		HTTPClient:     options.HTTPClient,
-		CAFile:         options.CAFile,
-		ClientCertFile: options.ClientCertFile,
-		ClientKeyFile:  options.ClientKeyFile,
-		RequestTimeout: options.RequestTimeout,
-		Retry:          options.Retry,
+		BaseURL:            options.PolicySourceURL,
+		Credential:         options.Credential,
+		FallbackBaseURL:    options.FallbackURL,
+		FallbackCredential: options.FallbackCredential,
+		FallbackHTTPClient: options.FallbackHTTPClient,
+		PublicKeys:         options.PublicKeys,
+		HTTPClient:         options.HTTPClient,
+		CAFile:             options.CAFile,
+		ClientCertFile:     options.ClientCertFile,
+		ClientKeyFile:      options.ClientKeyFile,
+		RequestTimeout:     options.RequestTimeout,
+		Retry:              options.Retry,
 	})
 	if err != nil {
 		return nil, errors.Wrap(err, errors.ConfigError, "invalid policy source client configuration")
@@ -110,12 +124,14 @@ func Open(ctx context.Context, options Options) (*Store, error) {
 	}
 
 	store := &Store{
-		syncer:    syncer,
-		client:    client,
-		machine:   machine,
-		selection: selection,
-		fallback:  !options.DisableFallback,
-		copies:    make(map[string]*serviceCopy),
+		syncer:         syncer,
+		client:         client,
+		machine:        machine,
+		selection:      selection,
+		options:        options,
+		fallback:       !options.DisableFallback,
+		copies:         make(map[string]*serviceCopy),
+		pendingRemoved: make(map[string]string),
 	}
 
 	bootstrapCtx, cancel := context.WithTimeout(ctx, defaultBootstrapWindow)
@@ -138,11 +154,11 @@ func (s *Store) Type() string { return StoreType }
 // events: the published assembly is switched only through them.
 func (s *Store) RequireWatch() bool { return true }
 
-// Sync performs one synchronization pass: it discovers the visible services,
-// records the confirmed ack, brings every selected service to a verified
-// revision, drops services that are no longer visible, and publishes the
-// resulting assembly. A pass that changed any service emits one FULL_RELOAD
-// event.
+// Sync performs one synchronization pass: it discovers the visible services
+// and advertised heads without confirming a heartbeat, brings every selected
+// service to a verified revision, drops services that are no longer visible,
+// and publishes the resulting assembly. A pass that changed any service emits
+// one FULL_RELOAD event.
 //
 // Sync is safe for concurrent use; passes are serialized. The notification
 // channel can call it whenever a revision is announced and after a confirmed
@@ -166,10 +182,10 @@ func (s *Store) Sync(ctx context.Context) error {
 		s.machine.Stop(adsync.ReasonConfigError)
 		return err
 	}
-	// The ack's service list is authoritative. Only the selected services are
-	// recorded: a service this instance deliberately does not serve is not
-	// tracked, so it is never routed or reported.
-	if err := s.machine.Ack(adsync.Ack{Services: selected}); err != nil {
+	// Discovery updates the authoritative set and advertised heads, but a data
+	// pull is not a confirmed heartbeat. Only the notification channel's ack
+	// refreshes liveness or confirms a head as eligible for in_sync.
+	if err := s.machine.Discover(selected); err != nil {
 		return err
 	}
 
@@ -182,7 +198,7 @@ func (s *Store) Sync(ctx context.Context) error {
 			if stderrors.Is(err, adsync.ErrServiceNotFound) || stderrors.Is(err, adsync.ErrSourceGone) {
 				// The source no longer serves the service. The state machine
 				// removes it; the local copy must go too.
-				s.dropCopy(service.ID)
+				s.removeCopy(service.ID)
 			}
 		}
 	}
@@ -193,6 +209,7 @@ func (s *Store) Sync(ctx context.Context) error {
 		}
 	}
 	s.publish()
+	s.syncMirror(ctx, selected)
 	return joinErrors(errs)
 }
 
@@ -204,6 +221,11 @@ func (s *Store) syncService(ctx context.Context, service adsync.Service) error {
 	state, err := s.syncer.Sync(ctx, service)
 	if err != nil {
 		s.machine.SyncFailed(service.ID, err)
+		if stderrors.Is(err, adsync.ErrIntegrity) {
+			// Syncer already retried through a signed snapshot. A final
+			// integrity failure stops the whole instance, not just this service.
+			s.machine.Stop(adsync.ReasonIntegrityFailure)
+		}
 		return fmt.Errorf("service %q: %w", service.Name, err)
 	}
 	compiled, err := compileService(state)
@@ -212,10 +234,10 @@ func (s *Store) syncService(ctx context.Context, service adsync.Service) error {
 	}
 	s.mu.Lock()
 	s.copies[service.ID] = compiled
+	delete(s.pendingRemoved, service.ID)
 	s.mu.Unlock()
-	if err := s.machine.Applied(state); err != nil {
-		return fmt.Errorf("service %q: %w", service.Name, err)
-	}
+	// A parsed copy is not yet visible to the evaluator. Applied is deferred
+	// until the exact published generation has completed its FULL_RELOAD.
 	return nil
 }
 
@@ -251,10 +273,22 @@ func (s *Store) selectServices(discovered []adsync.Service) ([]adsync.Service, e
 	return matched, nil
 }
 
-// dropCopy deletes the copy of one service.
+// dropCopy deletes one local copy while the service remains tracked, for
+// example during a forced resync.
 func (s *Store) dropCopy(serviceID string) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	delete(s.copies, serviceID)
+}
+
+// removeCopy deletes a removed service and keeps its request path unavailable
+// until the evaluator acknowledges the assembly without that service.
+func (s *Store) removeCopy(serviceID string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if copied := s.copies[serviceID]; copied != nil {
+		s.pendingRemoved[serviceID] = copied.service.Name
+	}
 	delete(s.copies, serviceID)
 }
 
@@ -268,6 +302,7 @@ func (s *Store) dropUnselected(selected map[string]struct{}) []string {
 		if _, keep := selected[serviceID]; keep {
 			continue
 		}
+		s.pendingRemoved[serviceID] = s.copies[serviceID].service.Name
 		delete(s.copies, serviceID)
 		removed = append(removed, serviceID)
 	}
@@ -287,6 +322,14 @@ func (s *Store) publish() {
 	}
 	s.snapshot = assembleStore(s.copies)
 	s.published = fingerprint
+	s.publishedCopies = make(map[string]*serviceCopy, len(s.copies))
+	for serviceID, copied := range s.copies {
+		s.publishedCopies[serviceID] = copied
+	}
+	s.publishedRemoved = make(map[string]string, len(s.pendingRemoved))
+	for serviceID, name := range s.pendingRemoved {
+		s.publishedRemoved[serviceID] = name
+	}
 	s.mu.Unlock()
 	s.notifyReload()
 }
@@ -320,7 +363,7 @@ func compileService(state *adsync.ServiceState) (*serviceCopy, error) {
 	sort.Slice(service.RolePolicies, func(left, right int) bool {
 		return service.RolePolicies[left].ID < service.RolePolicies[right].ID
 	})
-	return &serviceCopy{service: service, revision: state.Revision, stateHash: state.StateHash}, nil
+	return &serviceCopy{service: service, revision: state.Revision, stateHash: state.StateHash, state: state}, nil
 }
 
 func assembleStore(copies map[string]*serviceCopy) *pms.PolicyStore {
@@ -385,6 +428,61 @@ func (s *Store) ReadPolicyStore() (*pms.PolicyStore, error) {
 	snapshot := s.snapshot
 	s.mu.RUnlock()
 	return clonePolicyStore(snapshot), nil
+}
+
+// ReadPolicyStoreForReload returns the assembly and an acknowledgment bound to
+// its exact generation. The evaluator calls acknowledge only after installing
+// that assembly. A stale acknowledgment does nothing when a newer generation
+// has since been published.
+func (s *Store) ReadPolicyStoreForReload() (*pms.PolicyStore, func(), error) {
+	s.mu.RLock()
+	fingerprint := s.published
+	snapshot := clonePolicyStore(s.snapshot)
+	copies := s.publishedCopies
+	removed := s.publishedRemoved
+	s.mu.RUnlock()
+	var once sync.Once
+	return snapshot, func() {
+		once.Do(func() { s.acknowledgeReload(fingerprint, copies, removed) })
+	}, nil
+}
+
+func (s *Store) acknowledgeReload(fingerprint string, copies map[string]*serviceCopy, removed map[string]string) {
+	s.mu.Lock()
+	if fingerprint != s.published {
+		s.mu.Unlock()
+		return
+	}
+	states := make([]*adsync.ServiceState, 0, len(copies))
+	for _, copied := range copies {
+		states = append(states, copied.state)
+	}
+	for serviceID, name := range removed {
+		if s.pendingRemoved[serviceID] == name {
+			delete(s.pendingRemoved, serviceID)
+		}
+	}
+	s.mu.Unlock()
+
+	for _, state := range states {
+		if err := s.machine.Applied(state); err != nil {
+			log.Errorf("policy-source store could not record installed service %q: %v", state.ServiceID, err)
+		}
+	}
+}
+
+// RemovalInstalled reports whether a removed service name has disappeared from
+// the evaluator. Until then the request gate must fail closed instead of
+// evaluating the old, still-installed service.
+func (s *Store) RemovalInstalled(serviceName string) bool {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	for _, removedName := range s.pendingRemoved {
+		if removedName == serviceName {
+			return false
+		}
+	}
+	return true
 }
 
 // GetService returns one service by name.

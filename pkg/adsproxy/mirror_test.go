@@ -73,7 +73,7 @@ func TestMirrorServesSignedSnapshotAndChanges(t *testing.T) {
 	if err != nil {
 		t.Fatalf("changes: %v", err)
 	}
-	if page.From != 2 || page.To != 3 || page.Head != 3 || page.NextSince != 4 {
+	if page.From != 2 || page.To != 3 || page.Head != 3 || page.NextSince != 3 {
 		t.Errorf("page bounds = from %d to %d head %d next %d", page.From, page.To, page.Head, page.NextSince)
 	}
 	if len(page.Commits) != 2 {
@@ -151,6 +151,25 @@ func TestMirrorRejectsBadSnapshot(t *testing.T) {
 	wrongKey := service.snapshotResponse(t, otherSigner)
 	if err := mirror.ApplySnapshot(wrongKey); !errors.Is(err, adsync.ErrIntegrity) {
 		t.Errorf("signature from an unknown key: %v, want ErrIntegrity", err)
+	}
+}
+
+func TestMirrorSnapshotMustMatchRequestedIdentity(t *testing.T) {
+	signer := newTestSigner(t)
+	mirror := newTestMirror(t, signer.publicKeys(t), nil)
+	service := newFixtureService(testServiceID1, "books")
+	response := service.snapshotResponse(t, signer)
+	response.SourceID = testServiceID2
+	response.Epoch = testServiceID2
+	// Sign the mismatched tuple correctly: identity binding, not signature
+	// verification, must reject this snapshot for the requested service.
+	response.Signature = signer.sign(adsync.SnapshotSignedBytes(
+		response.SourceID, response.Epoch, response.Revision, response.StateHash, response.CommitHash))
+	if err := mirror.ApplySnapshot(response, service.service()); !errors.Is(err, adsync.ErrProtocol) {
+		t.Fatalf("ApplySnapshot error = %v, want ErrProtocol", err)
+	}
+	if _, availability := mirror.Lookup(service.ID); availability != ServiceUnknown {
+		t.Fatalf("mismatched snapshot left service availability %v", availability)
 	}
 }
 

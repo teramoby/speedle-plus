@@ -502,6 +502,7 @@ func TestInvalidSPDLKeepsPreviousCopy(t *testing.T) {
 		t.Fatal(err)
 	}
 	waitForReload(t, events)
+	confirmStoreGeneration(t, store)
 	books = serviceNamed(t, mustRead(t, store), "books")
 	if len(books.Policies) != 1 || books.Policies[0].ID != "p-fixed" {
 		t.Fatalf("books after recovery %+v", books.Policies)

@@ -168,7 +168,7 @@ func (s *fixtureService) changesPage(since uint64, limit int) adsync.ChangesResp
 		Head:          s.Revision,
 		HeadStateHash: s.StateHash,
 		Commits:       commits,
-		NextSince:     to + 1,
+		NextSince:     to,
 	}
 }
 
