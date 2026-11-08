@@ -220,14 +220,14 @@ grant role manager update res1</code></pre></div>
 
 <p>先按<a href="/zh/quick-start/">快速入门</a>编译仓库根目录下的 <code>./bin/spctl</code>、<code>./bin/speedle-pms</code> 和 <code>./bin/speedle-ads</code>，需要 Go 1.26.10 或 Go 1.27.3（也可使用同一大版本的更新补丁版本）、Bash、curl 和 Python 3。下面各终端都从仓库根目录运行。为本页使用一个新的策略文件；仅在两个服务都停止后重建该文件。</p>
 
-<blockquote>
-<p><strong>macOS：</strong> <code>/usr/sbin/spctl</code> 是 Apple 的 Gatekeeper 工具，直接运行 <code>spctl</code> 时可能会选中它。请使用 Speedle CLI 的完整路径，或在其所在目录中用 <code>./spctl</code> 调用；下面的示例统一使用 <code>./bin/spctl</code>。运行 <code>command -v spctl</code> 可查看 shell 实际选择的可执行程序。</p>
-</blockquote>
-
 <p>初始化空策略文件：</p>
 
 <!-- docs-check: setup -->
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#8be9fd;font-style:italic">printf</span> <span style="color:#f1fa8c">&#39;{}\n&#39;</span> &gt; docs-policies.json</code></pre></div>
+<blockquote>
+<p><strong>macOS：</strong> <code>/usr/sbin/spctl</code> 是 Apple 的 Gatekeeper 工具，直接运行 <code>spctl</code> 时可能会选中它。请使用 Speedle CLI 的完整路径，或在其所在目录中用 <code>./spctl</code> 调用；下面的示例统一使用 <code>./bin/spctl</code>。运行 <code>command -v spctl</code> 可查看 shell 实际选择的可执行程序。</p>
+</blockquote>
+
 <p>终端一启动 PMS，并保持运行：</p>
 
 <!-- docs-check: pms -->

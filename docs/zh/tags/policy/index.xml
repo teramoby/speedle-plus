@@ -66,7 +66,8 @@ AND 主体组要求组内所有身份均匹配，多组之间为 OR。以下例�
 grant (role designer, role dba) update db_design_doc 资源指需要保护的对象，操作是应用定义的动作。条件是由可信属性、常量、运算符和受支持函数构成的布尔表达式。
 语法见 SPDL，完整决策示例见 RBAC 与 ABAC。
 运行示例前 先按快速入门编译仓库根目录下的 ./bin/spctl、./bin/speedle-pms 和 ./bin/speedle-ads，需要 Go 1.26.10 或 Go 1.27.3（也可使用同一大版本的更新补丁版本）、Bash、curl 和 Python 3。下面各终端都从仓库根目录运行。为本页使用一个新的策略文件；仅在两个服务都停止后重建该文件。
- macOS： /usr/sbin/spctl 是 Apple 的 Gatekeeper 工具，直接运行 spctl 时可能会选中它。请使用 Speedle CLI 的完整路径，或在其所在目录中用 .</description>
+初始化空策略文件：
+printf &amp;#39;{}\n&amp;#39; &amp;gt; docs-policies.</description>
     </item>
     
   </channel>

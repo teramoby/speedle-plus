@@ -64,14 +64,14 @@ See [SPDL](/docs/spdl/) for grammar and [RBAC](/docs/overview/)/[ABAC](/docs/ove
 
 Build `./bin/spctl`, `./bin/speedle-pms` and `./bin/speedle-ads` using the [quick start](/quick-start/). Use Go 1.26.10 or Go 1.27.3 (or a newer patch on the same release branch), Bash, curl and Python 3. Run each terminal from the repository root. Use a fresh policy file for this page; reset it only after stopping both services.
 
-> **macOS:** `/usr/sbin/spctl` is Apple's Gatekeeper tool and may be selected when you run a bare `spctl` command. Call Speedle's CLI by its full path, or use `./spctl` from the directory containing it; the examples below use `./bin/spctl`. Run `command -v spctl` to check which executable your shell selects.
-
 Initialize an empty policy file:
 
 <!-- docs-check: setup -->
 ```bash
 printf '{}\n' > docs-policies.json
 ```
+
+> **macOS:** `/usr/sbin/spctl` is Apple's Gatekeeper tool and may be selected when you run a bare `spctl` command. Call Speedle's CLI by its full path, or use `./spctl` from the directory containing it; the examples below use `./bin/spctl`. Run `command -v spctl` to check which executable your shell selects.
 
 In terminal one, start PMS and leave it running:
 
