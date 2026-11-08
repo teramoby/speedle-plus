@@ -11,8 +11,9 @@ const vm = require('node:vm');
 const source = fs.readFileSync(path.resolve(__dirname, '../../.github/workflows/go-ci-worker.yml'), 'utf8');
 const pool = ['self-hosted', 'Linux', 'X64', 'speedle-linux'];
 const anyRunner = ['self-hosted', 'speedle-runner'];
-// Every task but build may run on any Speedle runner; build needs the Linux pool.
-const routeFor = mode => mode === 'build' ? pool : anyRunner;
+const fiona = ['self-hosted', 'fiona-speedle'];
+// Build needs the Linux pool and weekly uses fiona to reduce benchmark noise.
+const routeFor = mode => mode === 'build' ? pool : mode === 'weekly' ? fiona : anyRunner;
 const repository = 'teramoby/speedle-plus';
 function step(name) {
   const parts = source.split(`      - name: ${name}\n`);
@@ -75,7 +76,7 @@ test('worker owns runner selection and exposes only the mode input, never a call
   assert.match(step('Setup Go'), /go-version: '1\.26'/);
   assert.doesNotMatch(source, /secrets:|secrets\.inherit|\$\{\{\s*inputs\.(?:ref|sha|runner|store_type)/);
 });
-test('trusted events send every task but build to any Speedle runner, and build to Linux', () => {
+test('trusted events send weekly to fiona, build to Linux and other tasks to any Speedle runner', () => {
   const push = context('push'), dispatch = context('workflow_dispatch');
   push.event = {sender: {type: 'User'}}; dispatch.event = {sender: {type: 'User'}};
   const merged = context('push'); merged.ref = 'refs/heads/master'; merged.event = {sender: {type: 'Bot'}};
@@ -117,7 +118,7 @@ test('identity check accepts the three Speedle runners for the tasks each may ru
         encoding: 'utf8', env: {...process.env, RUNNER_NAME, RUNNER_OS, RUNNER_ARCH, CI_TASK},
       });
       const host = `${RUNNER_NAME}/${RUNNER_OS}/${RUNNER_ARCH}`;
-      const allowed = ['charming-speedle/Linux/X64', 'charming-speedle-2/Linux/X64'].includes(host) ||
+      const allowed = (['charming-speedle/Linux/X64', 'charming-speedle-2/Linux/X64'].includes(host) && CI_TASK !== 'weekly') ||
         (host === 'fiona-speedle/macOS/ARM64' && CI_TASK !== 'build');
       assert.equal(result.status === 0, allowed, `${host}/${CI_TASK}: ${result.stderr}`);
     }
