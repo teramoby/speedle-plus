@@ -31,10 +31,10 @@ For a new account, open the [Service workspace](https://cloud.speedle.io/service
 Choose **New policy**, enter `read-books` as the policy name, and put this authorization policy in the SPDL editor:
 
 ```text
-grant user alice get /books
+grant user alice from corp get /books
 ```
 
-Because this grant has no `from` clause, it matches a user named `alice` in every identity domain. If your application accepts more than one identity source, write `grant user alice from <identity-domain> get /books` so the grant stays inside one domain; see [identity domain](/docs/idd/) for the rule and the matching request field.
+`from corp` keeps this grant inside the `corp` identity domain. Replace `corp` with the domain your application derives from trusted authentication data, and send the same value as the principal's `idd` in each request, as the Playground examples below do. A grant without `from` matches a user named `alice` in every domain; omit the clause only for a service with a single identity source, where names cannot collide across domains. See [identity domain](/docs/idd/) for the rule and the matching request field.
 
 Choose **Validate policy** and check that the console reports **Detected: authorization policy**, then choose **Save policy**. Validation detects the policy type and checks syntax; it does not save the draft. Saving is a separate, manual action. You can also import existing policies in the workspace instead of entering them one by one.
 
@@ -61,7 +61,7 @@ The equivalent requests for the service and policy example are:
 | Add an authorization policy | `POST /api/service/policies` with the body below | 201 |
 
 ```json
-{"name":"read-books","spdl":"grant user alice get /books"}
+{"name":"read-books","spdl":"grant user alice from corp get /books"}
 ```
 
 Paste only the `spdl` value into the editor when using the console. The JSON body is for the management API.
@@ -74,7 +74,7 @@ The session Playground evaluates current account-owned D1 data. The future authe
 
 ## Test saved policies in the Playground
 
-In the Service workspace, scroll to **Playground** and select **Is allowed**. Enter `[{"type":"user","name":"alice"}]` in **Principals (JSON)**, `/books` in **Resource**, `get` in **Action**, and `[]` in **Attributes (JSON)**, then choose **Run test**.
+In the Service workspace, scroll to **Playground** and select **Is allowed**. Enter `[{"type":"user","name":"alice","idd":"corp"}]` in **Principals (JSON)**, `/books` in **Resource**, `get` in **Action**, and `[]` in **Attributes (JSON)**, then choose **Run test**.
 
 The other operations are **Diagnose**, **All granted roles**, and **All granted permissions**. Playground runs use saved policies, not an unsaved editor draft. Changing the input, operation or language does not automatically send a request. Run the test again after changing inputs or saved policies. The console marks the earlier result as stale and keeps it visible if a later request fails.
 
@@ -88,7 +88,7 @@ Origin: https://cloud.speedle.io
 X-SC-CSRF: 1
 Content-Type: application/json
 
-{"op":"isAllowed","request":{"subject":{"principals":[{"type":"user","name":"alice"}]},"serviceName":"books","resource":"/books","action":"get","attributes":[{"name":"level","type":"numeric","value":3}]}}
+{"op":"isAllowed","request":{"subject":{"principals":[{"type":"user","name":"alice","idd":"corp"}]},"serviceName":"books","resource":"/books","action":"get","attributes":[{"name":"level","type":"numeric","value":3}]}}
 ```
 
 | `request.op` | Success body | Published console and session API contract |

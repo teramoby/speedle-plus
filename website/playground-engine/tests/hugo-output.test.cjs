@@ -179,6 +179,7 @@ for (const locale of ['', 'zh/']) {
   assert.ok(guide.includes(zh ? '使用 GitHub 或 Google 登录（即将开放）' : 'Sign in with GitHub or Google (opens soon)'), `Provider sign-in step in ${locale || 'en'}`);
   assert.ok(guide.includes('allGrantedPermissions') && guide.includes('POST /api/service/test'), `All session Playground operations in ${locale || 'en'}`);
   assert.ok(guide.includes('grant user alice editor on /books') && guide.includes('grant (user alice) role editor'), `Role-policy examples in ${locale || 'en'}`);
+  assert.ok(guide.includes('grant user alice from corp get /books'), `Domain-scoped getting-started policy in ${locale || 'en'}`);
   assert.ok(guide.includes('Sign out everywhere') || guide.includes('在所有设备上退出'), `Account session management in ${locale || 'en'}`);
   assert.ok(tokens.includes('spdl_&lt;canonical uppercase ULID id&gt;_&lt;43 base62 digits&gt;'), `Current token format in ${locale || 'en'}`);
   assert.ok(!tokens.includes('UUIDv7'), `Obsolete token format removed in ${locale || 'en'}`);

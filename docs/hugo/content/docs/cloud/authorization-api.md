@@ -30,7 +30,7 @@ The body is the Speedle REST request, with the same fields and types as a self-h
 
 `idd` is the principal's identity domain: the namespace your application authenticated the caller in, such as an identity provider or a tenant. Set it on the server from trusted authentication data, never from a value the browser supplies.
 
-A policy such as `grant user alice from corp get /books` matches that domain only. A policy without `from` matches the name in every domain, so the getting-started policy accepts the request above. A principal without `idd` matches every domain as well, which makes two different users who share a name indistinguishable when the application accepts more than one identity source. Multi-tenant integrations must send `idd` in every request.
+The getting-started policy, `grant user alice from corp get /books`, matches the request above only in the `corp` domain. A policy without `from` matches the name in every domain. A principal without `idd` matches every domain as well, which makes two different users who share a name indistinguishable when the application accepts more than one identity source. Multi-tenant integrations must send `idd` in every request.
 
 `serviceName` is required in every request and is never defaulted. Send the name of the token's own service. An omitted or empty name receives Speedle's `SERVICE_NOT_FOUND` response; a different name returns `403 {"error":"service_mismatch"}`.
 

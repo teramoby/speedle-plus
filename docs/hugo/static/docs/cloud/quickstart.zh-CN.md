@@ -47,10 +47,10 @@ Speedle Cloud 是基于开源 Speedle 策略引擎的托管访问控制服务，
 选择 **新建策略**，在策略名称中输入 `read-books`，并在 SPDL 编辑器中输入以下授权策略：
 
 ```text
-grant user alice get /books
+grant user alice from corp get /books
 ```
 
-这条授权没有 `from` 子句，会匹配任意身份域中名为 `alice` 的用户。如果应用接受多个身份来源，请写成 `grant user alice from <身份域> get /books`，把授权限制在单个身份域内；规则和请求中对应的字段见[身份域](https://engine.speedle.io/zh/docs/idd/)。
+`from corp` 将这条授权限制在 `corp` 身份域内。请将 `corp` 替换为应用根据可信认证结果得出的身份域，并在每个请求中把相同的值作为主体的 `idd` 发送，如下面的 Playground 示例所示。不带 `from` 的授权会匹配任意身份域中名为 `alice` 的用户；只有 service 只有一个身份来源、名称不可能跨域重复时，才可以省略该子句。规则和请求中对应的字段见[身份域](https://engine.speedle.io/zh/docs/idd/)。
 
 选择 **验证策略**，确认控制台显示 **识别为：授权策略**，再选择 **保存策略**。验证会识别策略类型并检查语法，但不会保存草稿；保存需要单独手动操作。你也可以在工作区导入已有策略，无需逐条手动输入。
 
@@ -77,7 +77,7 @@ Speedle Cloud 支持授权策略和角色策略，不支持外部自定义函数
 | 添加授权策略 | `POST /api/service/policies`，正文如下 | 201 |
 
 ```json
-{"name":"read-books","spdl":"grant user alice get /books"}
+{"name":"read-books","spdl":"grant user alice from corp get /books"}
 ```
 
 使用控制台时，只把 `spdl` 的值粘贴到编辑器中；这段 JSON 正文用于管理 API。
@@ -90,7 +90,7 @@ Speedle Cloud 支持授权策略和角色策略，不支持外部自定义函数
 
 ### 在 Playground 中测试已保存策略
 
-在服务工作区找到 **Playground**，选择 **是否允许**。在 **主体（JSON）** 中输入 `[{"type":"user","name":"alice"}]`，在 **资源** 中输入 `/books`，在 **动作** 中输入 `get`，在 **属性（JSON）** 中输入 `[]`，然后选择 **运行测试**。
+在服务工作区找到 **Playground**，选择 **是否允许**。在 **主体（JSON）** 中输入 `[{"type":"user","name":"alice","idd":"corp"}]`，在 **资源** 中输入 `/books`，在 **动作** 中输入 `get`，在 **属性（JSON）** 中输入 `[]`，然后选择 **运行测试**。
 
 其他操作包括 **诊断**、**全部已授予角色** 和 **全部已授予权限**。Playground 只使用已保存的策略，不包含编辑器中的未保存草稿。修改输入、操作或语言不会自动发起请求。输入或已保存策略变化后，请再次运行；页面会把上次结果标记为已过期，并在后续请求失败时保留此前结果。
 
@@ -104,7 +104,7 @@ Origin: https://cloud.speedle.io
 X-SC-CSRF: 1
 Content-Type: application/json
 
-{"op":"isAllowed","request":{"subject":{"principals":[{"type":"user","name":"alice"}]},"serviceName":"books","resource":"/books","action":"get","attributes":[{"name":"level","type":"numeric","value":3}]}}
+{"op":"isAllowed","request":{"subject":{"principals":[{"type":"user","name":"alice","idd":"corp"}]},"serviceName":"books","resource":"/books","action":"get","attributes":[{"name":"level","type":"numeric","value":3}]}}
 ```
 
 | `request.op` | 成功正文 | 已发布的控制台与会话 API 合约 |
@@ -206,7 +206,7 @@ Content-Type: application/json
 
 `idd` 是主体所属的身份域，也就是应用在哪个命名空间里完成对调用方的认证，例如某个身份提供方或某个租户。它必须由服务端根据可信的认证结果填写，不能取自浏览器提交的值。
 
-写成 `grant user alice from corp get /books` 的策略只匹配该身份域；不带 `from` 的策略匹配任意身份域中的同名主体，所以上面的请求能被快速入门中的策略放行。主体不带 `idd` 时同样匹配任意身份域，一旦应用接受多个身份来源，两个同名用户就无法区分。多租户接入必须在每个请求中发送 `idd`。
+快速入门中的策略 `grant user alice from corp get /books` 只在 `corp` 身份域中匹配上述请求。不带 `from` 的策略匹配任意身份域中的同名主体。主体不带 `idd` 时同样匹配任意身份域，一旦应用接受多个身份来源，两个同名用户就无法区分。多租户接入必须在每个请求中发送 `idd`。
 
 每个请求都必须填写 `serviceName`，系统不会自动取默认值。请填写令牌所属 service 的名称。名称缺失或为空时，会得到 Speedle 的 `SERVICE_NOT_FOUND` 响应；名称不一致时，返回 `403 {"error":"service_mismatch"}`。
 
