@@ -139,6 +139,13 @@ jobs:
       - name: Verify the container images build and start
         run: |
           set -euo pipefail
+          host_arch=$(go env GOHOSTARCH)
+          case "${host_arch}" in
+            amd64|arm64) ;;
+            *) echo "Unsupported release smoke host architecture: ${host_arch}" >&2; exit 1 ;;
+          esac
+          spctl="dist/spctl_linux_${host_arch}"
+          [[ -x "${spctl}" ]] || { echo "Missing host spctl binary: ${spctl}" >&2; exit 1; }
           docker buildx create --name speedle-smoke --driver docker-container --use
           docker buildx inspect --bootstrap
           trap 'docker stop speedle-smoke-pms speedle-smoke-ads >/dev/null 2>&1 || true; docker volume rm speedle-smoke >/dev/null 2>&1 || true' EXIT
@@ -149,7 +156,7 @@ jobs:
               --file "deployment/container/Dockerfile.${suffix}" \
               --output type=cacheonly "${CONTAINER_CONTEXT}"
             docker buildx build \
-              --platform linux/amd64 --load \
+              --platform "linux/${host_arch}" --load \
               --file "deployment/container/Dockerfile.${suffix}" \
               --tag "${command}:smoke" "${CONTAINER_CONTEXT}"
           done
@@ -162,10 +169,10 @@ jobs:
           # Write through PMS, then read the same volume through both the API and
           # ADS. Starting an empty file store alone does not catch volume or
           # permission failures, and ADS proves the persisted policy is usable.
-          dist/spctl_linux_amd64 --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ create service smoke
-          dist/spctl_linux_amd64 --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ create policy \
+          "${spctl}" --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ create service smoke
+          "${spctl}" --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ create policy \
             -c "grant user smoke-user read smoke-resource" --service-name=smoke
-          dist/spctl_linux_amd64 --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ get service --all | \
+          "${spctl}" --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ get service --all | \
             python3 -c 'import json, sys; services = json.load(sys.stdin); assert any(s.get("name") == "smoke" and len(s.get("policies", [])) == 1 for s in services), services'
           docker stop speedle-smoke-pms >/dev/null
           docker run --rm -d --name speedle-smoke-ads -p 127.0.0.1:6734:6734 -v speedle-smoke:/data \

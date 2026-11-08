@@ -157,12 +157,70 @@ test('changed release shell blocks parse before any publishing or container oper
 
 test('container smoke writes a policy through PMS and requires ADS to allow it from the shared volume', () => {
   const smoke = step('Verify the container images build and start');
-  assert.match(smoke, /dist\/spctl_linux_amd64 --pms-endpoint/);
-  assert.doesNotMatch(smoke, /dist\/spctl --pms-endpoint/);
+  assert.match(smoke, /host_arch=\$\(go env GOHOSTARCH\)/);
+  assert.match(smoke, /spctl="dist\/spctl_linux_\$\{host_arch\}"/);
+  assert.equal([...smoke.matchAll(/"\$\{spctl\}" --pms-endpoint/g)].length, 3);
+  assert.doesNotMatch(smoke, /dist\/spctl_linux_(?:amd64|arm64) --pms-endpoint/);
   assert.match(smoke, /create service smoke/);
   assert.match(smoke, /create policy[\s\S]*grant user smoke-user read smoke-resource/);
   assert.match(smoke, /get service --all/);
   assert.match(smoke, /speedle-smoke-ads[\s\S]*-v speedle-smoke:\/data/);
   assert.match(smoke, /authz-check\/v1\/is-allowed/);
   assert.match(smoke, /result\.get\("allowed"\) is True and result\.get\("reason"\) == 0/);
+});
+
+function runSmoke(hostArch) {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'speedle-release-smoke-'));
+  try {
+    const calls = path.join(directory, 'calls.jsonl');
+    const stub = tool => `#!${process.execPath}
+const fs=require('node:fs');const a=process.argv.slice(2);const tool=${JSON.stringify(tool)};
+fs.appendFileSync(process.env.FIXTURE_CALLS,JSON.stringify({tool,args:a})+'\\n');
+if(tool==='go'&&a.join(' ')==='env GOHOSTARCH'){console.log(process.env.FIXTURE_HOST_ARCH);process.exit(0)}
+if(tool==='go')process.exit(2);
+if(tool==='curl')console.log('{"allowed":true,"reason":0}');
+process.exit(0);
+`;
+    for (const tool of ['go', 'docker', 'curl']) {
+      const file = path.join(directory, tool);
+      fs.writeFileSync(file, stub(tool)); fs.chmodSync(file, 0o755);
+    }
+    fs.mkdirSync(path.join(directory, 'dist'));
+    for (const arch of ['amd64', 'arm64']) {
+      const file = path.join(directory, 'dist', `spctl_linux_${arch}`);
+      fs.writeFileSync(file, `#!${process.execPath}
+const fs=require('node:fs');const a=process.argv.slice(2);
+fs.appendFileSync(process.env.FIXTURE_CALLS,JSON.stringify({tool:'spctl',arch:${JSON.stringify(arch)},args:a})+'\\n');
+if(a.includes('get'))console.log('[{"name":"smoke","policies":[{}]}]');
+`);
+      fs.chmodSync(file, 0o755);
+    }
+    const result = spawnSync('bash', ['-c', script('Verify the container images build and start')], {
+      cwd: directory, encoding: 'utf8', env: {
+        ...process.env, PATH: `${directory}${path.delimiter}${process.env.PATH}`,
+        FIXTURE_CALLS: calls, FIXTURE_HOST_ARCH: hostArch, CONTAINER_CONTEXT: 'container-context',
+      },
+    });
+    const records = fs.existsSync(calls) ? fs.readFileSync(calls, 'utf8').trim().split('\n').filter(Boolean).map(line => JSON.parse(line)) : [];
+    return {result, records};
+  } finally {
+    fs.rmSync(directory, {recursive: true, force: true});
+  }
+}
+
+test('container smoke selects the host spctl binary and native container image on both release architectures', () => {
+  for (const arch of ['amd64', 'arm64']) {
+    const {result, records} = runSmoke(arch);
+    assert.equal(result.status, 0, `${arch}: ${result.stderr}`);
+    const spctl = records.filter(record => record.tool === 'spctl');
+    assert.equal(spctl.length, 3, arch);
+    assert.ok(spctl.every(record => record.arch === arch), JSON.stringify(spctl));
+    const loads = records.filter(record => record.tool === 'docker' && record.args[0] === 'buildx' && record.args[1] === 'build' && record.args.includes('--load'));
+    assert.equal(loads.length, 2, arch);
+    for (const load of loads) assert.equal(load.args[load.args.indexOf('--platform') + 1], `linux/${arch}`);
+  }
+  const unsupported = runSmoke('s390x');
+  assert.notEqual(unsupported.result.status, 0);
+  assert.match(unsupported.result.stderr, /Unsupported release smoke host architecture: s390x/);
+  assert.ok(!unsupported.records.some(record => record.tool === 'docker' || record.tool === 'spctl'));
 });

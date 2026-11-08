@@ -139,7 +139,14 @@ test('task validation permits only exact enum values and treats shell metacharac
     assert.doesNotMatch(script('Validate CI task'), /\$\{\{/);
   } finally {fs.rmSync(directory, {recursive: true, force: true});}
 });
-test('build installs the locked browser and makes the axe contrast gate mandatory', () => {
+test('build caches the locked browser and makes the axe contrast gate mandatory', () => {
+  const cache = step('Cache Playwright browsers');
+  assert.match(cache, /if: inputs\.mode == 'build'/);
+  assert.match(cache, /uses: actions\/cache@[a-f0-9]{40} # v6\.1\.0/);
+  assert.match(cache, /path: ~\/\.cache\/ms-playwright/);
+  assert.match(cache, /key: \$\{\{ runner\.os \}\}-\$\{\{ runner\.arch \}\}-playwright-\$\{\{ hashFiles\('website\/playground-engine\/package-lock\.json'\) \}\}/);
+  assert.doesNotMatch(cache, /restore-keys/);
+  assert.ok(source.indexOf('Cache Playwright browsers') < source.indexOf('Install browser contrast dependencies'));
   const install = step('Install browser contrast dependencies');
   assert.match(install, /npm --prefix website\/playground-engine ci --ignore-scripts/);
   assert.match(install, /node_modules\/\.bin\/playwright install chromium/);

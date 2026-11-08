@@ -64,9 +64,13 @@ GOOS=js GOARCH=wasm go test -mod=readonly \
 ```
 
 The protected Go CI build worker runs `website/playground-engine/verify.sh` on
-pushes and pull requests. It installs the locked Playwright/axe-core packages
-and Chromium first, so the axe contrast check is a required merge gate rather
-than an environment-dependent skip. Dispatch the existing Speedle CI workflow
+pushes and pull requests. It restores an OS/architecture-specific Chromium cache
+keyed by `package-lock.json`, then installs the locked Playwright/axe-core
+packages and any missing browser revision. A cache miss downloads the exact
+browser required by the pinned Playwright version; a cache hit needs no browser
+download or preinstalled host browser. The axe contrast check is therefore a
+required merge gate rather than an environment-dependent skip. Dispatch the
+existing Speedle CI workflow
 for a manual release check on the same self-hosted pool. Verification includes
 the original Hugo 0.48 generator in temporary output, the complete adapter/form
 suites, source versus published assets, rendered English/Chinese home-page
