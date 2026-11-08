@@ -6,7 +6,7 @@
     <description>Recent content in Docs on Speedle</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
-    <lastBuildDate>Sun, 08 Nov 2026 15:04:18 +0800</lastBuildDate>
+    <lastBuildDate>Sun, 08 Nov 2026 17:11:18 +0800</lastBuildDate>
     
 	<atom:link href="https://engine.speedle.io/categories/docs/index.xml" rel="self" type="application/rss+xml" />
     
@@ -331,7 +331,7 @@ TLS encrypts the connection and authenticates the server. To require authenticat
     <item>
       <title>Speedle Cloud</title>
       <link>https://engine.speedle.io/docs/cloud/</link>
-      <pubDate>Sun, 08 Nov 2026 15:04:18 +0800</pubDate>
+      <pubDate>Sun, 08 Nov 2026 17:11:18 +0800</pubDate>
       
       <guid>https://engine.speedle.io/docs/cloud/</guid>
       <description>Speedle Cloud is a hosted access-control service for developers, built on the open-source Speedle policy engine. It is designed to let you manage SPDL authorization and role policies, test decisions in a Playground, and call an authorization API from your application server without operating your own authorization service.
