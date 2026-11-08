@@ -230,3 +230,47 @@ for (const name of ['docs/index.html', 'zh/docs/index.html', 'quick-start/index.
 checkStorageNavigation(path.join(output, 'docs'));
 checkStorageNavigation(path.join(output, 'zh/docs'), 'zh/');
 console.log('PASS complete bilingual documentation sidebars with nested MySQL, etcd and MongoDB guides');
+
+// #281 review: Hugo 0.48 dates a list page from the first child page that has a
+// date, so a category feed could report January 2019 while listing November 2026
+// pages. The project RSS template now derives both feed dates from the newest
+// dated page, so no feed may claim to be older than what it lists.
+const undated = 'Mon, 01 Jan 0001 00:00:00 +0000';
+const feedDates = xml => [...xml.matchAll(/<pubDate>([^<]+)<\/pubDate>/g)]
+  .map(match => match[1]).filter(date => date !== undated).map(date => Date.parse(date));
+const newest = dates => dates.reduce((max, date) => Math.max(max, date), -Infinity);
+let feedCount = 0;
+function checkFeedDates(directory) {
+  for (const entry of fs.readdirSync(directory, {withFileTypes: true})) {
+    const file = path.join(directory, entry.name);
+    if (entry.isDirectory()) { checkFeedDates(file); continue; }
+    if (entry.name !== 'index.xml') continue;
+    feedCount++;
+    const xml = fs.readFileSync(file, 'utf8');
+    const items = feedDates(xml);
+    if (items.length === 0) continue;
+    const build = xml.match(/<lastBuildDate>([^<]+)<\/lastBuildDate>/)?.[1];
+    assert.ok(build, `lastBuildDate in ${path.relative(output, file)}`);
+    assert.ok(Date.parse(build) >= newest(items), `Newest item is not after lastBuildDate in ${path.relative(output, file)}`);
+  }
+}
+checkFeedDates(output);
+assert.ok(feedCount > 60, `Feeds checked: ${feedCount}`);
+// The taxonomy feeds list a term whose own date is stale for the same reason.
+for (const plural of ['categories', 'tags', 'versions']) {
+  const list = path.join(output, plural, 'index.xml');
+  if (!fs.existsSync(list)) continue;
+  const xml = fs.readFileSync(list, 'utf8');
+  for (const [, link, pubDate] of xml.matchAll(/<link>([^<]+)<\/link>\s*<pubDate>([^<]+)<\/pubDate>/g)) {
+    if (pubDate === undated) continue;
+    const feed = path.join(output, new URL(link).pathname, 'index.xml');
+    if (!fs.existsSync(feed)) continue;
+    const items = feedDates(fs.readFileSync(feed, 'utf8'));
+    if (items.length === 0) continue;
+    assert.ok(Date.parse(pubDate) >= newest(items), `Term ${link} is older than its newest item`);
+  }
+}
+const docsCategory = fs.readFileSync(path.join(output, 'categories/docs/index.xml'), 'utf8');
+assert.ok(Date.parse(docsCategory.match(/<lastBuildDate>([^<]+)<\/lastBuildDate>/)[1]) > Date.parse('Mon, 01 Jan 2020 00:00:00 +0000'),
+  'Docs category feed is not dated before 2020');
+console.log('PASS every feed is dated from its newest page');
