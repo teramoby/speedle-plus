@@ -18,7 +18,7 @@ The values below are measured from the live CSS, not invented:
   the shared header and footer.
 - **Cloud**: `apps/console/src/styles/tokens.css` at `main` in
   `teramoby/cloud.speedle.io`, merged in `cloud.speedle.io#244`.
-- **Header and footer additions**: the owner-approved header standard v2–v16.
+- **Header and footer additions**: the header standard v2–v16.
   This file is the merged form; where an older header standard differs, this
   file wins.
 
@@ -622,12 +622,12 @@ public page. It is cookieless.
 
 ## 13. Process and change control
 
-- Website PRs merge on green CI after coordinator review (owner rule).
+- Website PRs merge on green CI after coordinator review.
 - Legal text changes need the owner's verbatim approval before merge.
 - Do not add CI steps or artifacts that capture or upload screenshots or other
   evidence; put the commands and results in the PR description.
 - **To change this standard**: open a PR to this file first, describing the
   rule and the measured values behind it. After it merges, apply it to the
-  three sites in separate PRs. Until it merges, the owner-approved header
-  standard (v2–v13) remains the header reference.
+  three sites in separate PRs. Until it merges, the header standard (v2–v13)
+  remains the header reference.
 - Each site repository's `AGENTS.md` points here; keep the pointer current.
