@@ -10,12 +10,8 @@ node website/playground-engine/tests/site.test.cjs
 # build installs the pinned Playwright/axe-core packages first; install them
 # here too so the gate also runs when an older caller workflow is in effect.
 if ! node -e "require.resolve('playwright',{paths:['website/playground-engine']});require.resolve('axe-core',{paths:['website/playground-engine']})" 2>/dev/null; then
-  npm --prefix website/playground-engine ci
-  if sudo -n true >/dev/null 2>&1; then
-    website/playground-engine/node_modules/.bin/playwright install --with-deps chromium
-  else
-    website/playground-engine/node_modules/.bin/playwright install chromium
-  fi
+  npm --prefix website/playground-engine ci --ignore-scripts
+  website/playground-engine/node_modules/.bin/playwright install chromium
 fi
 node website/playground-engine/a11y-smoke.cjs
 node --check docs/hugo/static/js/command-copy.js
