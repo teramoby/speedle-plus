@@ -25,8 +25,9 @@ native/WASM adapter tests and the optional Chromium module-worker smoke test.
 
 ## Home-page axe contrast check
 
-The protected CI build installs the locked dependencies and Chromium, then runs
-this check unconditionally through `verify.sh`. To run it locally, use:
+The protected CI build restores a lockfile-keyed Chromium cache, installs the
+locked dependencies and any missing browser revision, then runs this check
+unconditionally through `verify.sh`. To run it locally, use:
 
 ```sh
 npm --prefix website/playground-engine ci

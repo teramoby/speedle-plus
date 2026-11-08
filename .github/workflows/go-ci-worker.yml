@@ -163,6 +163,15 @@ jobs:
           node-version: '22'
           package-manager-cache: false
 
+      # Playwright's browser revision follows the integrity-pinned lockfile.
+      # Cache the binaries explicitly instead of relying on persistent host state.
+      - name: Cache Playwright browsers
+        if: inputs.mode == 'build' && hashFiles('website/playground-engine/go.mod') != ''
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-${{ runner.arch }}-playwright-${{ hashFiles('website/playground-engine/package-lock.json') }}
+
       - name: Install browser contrast dependencies
         if: inputs.mode == 'build' && hashFiles('website/playground-engine/go.mod') != ''
         run: |
