@@ -39,6 +39,17 @@ except for colours.
   site's Chinese route and keep the same host.
 - Mark the current site in the Products menu and the footer with
   `aria-current="page"`.
+- **Page titles** use the same pattern on all three sites, in English and
+  Chinese. Here `<Product>` is only the product word `Engine`, `Cloud` or `AI`,
+  not the full product name:
+  - Home page: `Speedle <Product> — <one-line description>`, giving
+    `Speedle Engine — <one-line description>`,
+    `Speedle Cloud — <one-line description>` or
+    `Speedle AI — <one-line description>`.
+  - Every other page: `<Page name> · Speedle <Product>`.
+  - Chinese pages localize the one-line description and page name; the product
+    names remain **Speedle Engine**, **Speedle Cloud** and **Speedle AI**.
+  - `og:title` is identical to `<title>`. Neither ends with a full stop.
 
 ## 2. Colour
 

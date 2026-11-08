@@ -324,6 +324,37 @@ const pngDimensions = file => {
 for (const name of ['engine-en.png','engine-zh.png']) {
  assert.deepEqual(pngDimensions(path.join(docsRoot, 'img/social', name)), [1200,630], `Share image ${name} is 1200x630`);
 }
+// #269: shared v13 sphere favicon — 115-unit viewBox, #ff9a45 only, no dark
+// outline, outer polygon x2.0 (7.2) and inner lines x2.2 (5.28), matching the
+// header mark's paths, plus 16/32/48 PNG ICO frames and 180x180 apple-touch-icon.
+for (const name of ['favicon.svg','favicon.ico','apple-touch-icon.png']) {
+ assert.deepEqual(fs.readFileSync(path.join(root, 'docs/hugo/static', name)), fs.readFileSync(path.join(docsRoot, name)), `Source/published ${name}`);
+}
+const faviconSvg = read('docs/favicon.svg');
+const headerLogoSvg = read('docs/img/speedle/Speedle_logo_home_bold.svg');
+assert.ok(faviconSvg.includes('viewBox="21.8 22 115 115"'), 'Favicon uses the shared 115-unit sphere viewBox');
+assert.deepEqual([...faviconSvg.matchAll(/\bstroke="(#[0-9a-fA-F]+)"/g)].map(m => m[1].toLowerCase()), ['#ff9a45'], 'Favicon strokes use only Engine orange (#ff9a45) with no dark outline');
+assert.ok(!/<circle\b|#1f1142/i.test(faviconSvg), 'Favicon has no v9 outline ring or dark underlay');
+assert.deepEqual([...faviconSvg.matchAll(/\bstroke-width="([^"]+)"/g)].map(m => m[1]), ['7.2', '5.28'], 'Favicon scales outer polygon x2.0 and inner lines x2.2');
+const sphereGeometry = svg => [...svg.matchAll(/<(polygon|path)\b(?![^>]*\bclass="cls-2")[^>]*\b(?:points|d)="([^"]+)"/g)].map(m => `${m[1]}:${m[2]}`);
+assert.deepEqual(sphereGeometry(faviconSvg), sphereGeometry(headerLogoSvg), 'Favicon sphere geometry matches the header mark without path edits');
+const faviconIco = fs.readFileSync(path.join(docsRoot, 'favicon.ico'));
+assert.equal(faviconIco.readUInt16LE(0), 0);
+assert.equal(faviconIco.readUInt16LE(2), 1);
+assert.equal(faviconIco.readUInt16LE(4), 3, 'favicon.ico packs 3 frames');
+for (const [index, size] of [16, 32, 48].entries()) {
+ const entry = 6 + index * 16;
+ const frameLength = faviconIco.readUInt32LE(entry + 8);
+ const frameOffset = faviconIco.readUInt32LE(entry + 12);
+ const frame = faviconIco.subarray(frameOffset, frameOffset + frameLength);
+ assert.equal(faviconIco[entry], size, `ICO entry width ${size}`);
+ assert.equal(faviconIco[entry + 1], size, `ICO entry height ${size}`);
+ assert.equal(faviconIco.readUInt16LE(entry + 6), 32, `ICO entry 32bpp at ${size}`);
+ assert.equal(frame.subarray(0, 8).toString('hex'), '89504e470d0a1a0a', `PNG payload at ${size}`);
+ assert.deepEqual([frame.readUInt32BE(16), frame.readUInt32BE(20), frame[24], frame[25]], [size, size, 8, 6], `RGBA PNG IHDR at ${size}`);
+}
+assert.deepEqual(pngDimensions(path.join(docsRoot, 'apple-touch-icon.png')), [180, 180], 'apple-touch-icon.png is 180x180');
+assert.ok(!fs.existsSync(path.join(docsRoot, 'public/speedle/docs/img/favicon.ico')), 'Stale unreferenced mkdocs favicon removed');
 const titleOf = html => html.match(/<title>([\s\S]*?)<\/title>/)?.[1];
 const contentOf = (html, pattern) => html.match(pattern)?.[1];
 let identityPages = 0;
