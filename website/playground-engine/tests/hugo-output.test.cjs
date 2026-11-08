@@ -26,6 +26,9 @@ for (const name of ['index.html','zh/index.html','playground/index.html','zh/pla
 for (const name of ['site.css', 'navigation.css', 'docs.css', 'command-copy.css']) {
   assert.deepEqual(fs.readFileSync(path.join(output, 'css', name)), fs.readFileSync(path.join(root, 'docs/css', name)));
 }
+for (const name of ['favicon.svg', 'favicon.ico', 'apple-touch-icon.png']) {
+  assert.deepEqual(fs.readFileSync(path.join(output, name)), fs.readFileSync(path.join(root, 'docs', name)), `Generated ${name}`);
+}
 const docsStyles = fs.readFileSync(path.join(output, 'css/docs.css'), 'utf8');
 const sidebarRules = docsStyles.match(/\.docs-sidebar\s*\{[^}]*\}/)?.[0] || '';
 assert.ok(sidebarRules.includes('position: static') && sidebarRules.includes('max-height: none') && sidebarRules.includes('overflow-y: visible'), 'Desktop sidebar stays fully expanded in normal page flow');
