@@ -14,6 +14,8 @@ import (
 	"path"
 	"strings"
 	"time"
+
+	"github.com/spf13/pflag"
 )
 
 var globalFlags struct {
@@ -30,6 +32,25 @@ const (
 	configFile      = ".spctlconfig"
 	cloudConfigFile = ".speedle"
 )
+
+func environmentFlagName(name string) string {
+	return "SPCTL_" + strings.ToUpper(strings.ReplaceAll(name, "-", "_"))
+}
+
+// applyEnvironmentConfig overlays SPCTL_* variables on file settings. Cobra
+// applies explicit command-line flags afterwards, so they take precedence.
+func applyEnvironmentConfig(flags *pflag.FlagSet) {
+	flags.VisitAll(func(f *pflag.Flag) {
+		name := environmentFlagName(f.Name)
+		value, present := os.LookupEnv(name)
+		if !present {
+			return
+		}
+		if err := flags.Set(f.Name, value); err != nil {
+			fmt.Fprintf(os.Stderr, "Ignoring invalid %s setting: %v\n", name, err)
+		}
+	})
+}
 
 func httpClient() (*http.Client, error) {
 	var tr *http.Transport
@@ -50,6 +71,9 @@ func httpClient() (*http.Client, error) {
 	}
 
 	// PMSEndpoint is https, setup tls
+	if globalFlags.Token != "" && globalFlags.InsecureSkipVerify {
+		return nil, fmt.Errorf("refusing to send an API token with --skipverify; use --cacert to trust the server certificate")
+	}
 	tlsConfig := &tls.Config{}
 	tlsConfig.InsecureSkipVerify = globalFlags.InsecureSkipVerify
 	if globalFlags.CAFile != "" {
@@ -86,8 +110,8 @@ func httpClient() (*http.Client, error) {
 }
 
 // readConfigFile reads the legacy settings first and the Cloud settings second.
-// Command-line flags are applied later by Cobra and therefore take precedence
-// over both files.
+// Environment variables are applied next, and command-line flags are applied
+// last by Cobra: flag > environment > Cloud file > legacy file.
 func readConfigFile() (map[string]string, error) {
 	flags, err := readConfig(configFile)
 	if err != nil {
@@ -110,7 +134,8 @@ func readConfig(name string) (map[string]string, error) {
 	if err != nil {
 		return flags, err
 	}
-	f, err := os.Open(path.Join(home, name))
+	cfg := path.Join(home, name)
+	f, err := os.Open(cfg)
 	if os.IsNotExist(err) {
 		return flags, nil
 	}
@@ -127,7 +152,19 @@ func readConfig(name string) (map[string]string, error) {
 			flags[k] = v
 		}
 	}
-	return flags, scanner.Err()
+	if err := scanner.Err(); err != nil {
+		return flags, err
+	}
+	if name == cloudConfigFile && flags["token"] != "" {
+		info, err := f.Stat()
+		if err != nil {
+			return flags, err
+		}
+		if info.Mode().Perm()&0077 != 0 {
+			fmt.Fprintf(os.Stderr, "warning: %s contains an API token and has mode %04o; restrict it with chmod 0600 %q\n", cfg, info.Mode().Perm(), cfg)
+		}
+	}
+	return flags, nil
 }
 
 func writeConfigFile(flags map[string]string) error {
