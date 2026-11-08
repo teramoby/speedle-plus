@@ -14,6 +14,7 @@ import (
 
 	"github.com/teramoby/speedle-plus/3rdparty/github.com/Knetic/govaluate"
 	adsapi "github.com/teramoby/speedle-plus/api/ads"
+	"github.com/teramoby/speedle-plus/pkg/adsync"
 	"github.com/teramoby/speedle-plus/pkg/errors"
 	"github.com/teramoby/speedle-plus/pkg/eval/function"
 	"github.com/teramoby/speedle-plus/pkg/subjectutils"
@@ -148,6 +149,18 @@ func (p *PolicyEvalImpl) CleanExpiredFunctionResult() {
 
 func (p *PolicyEvalImpl) SetAsserterFunc(f func(ctx *adsapi.RequestContext) error) {
 	p.AsserterFunc = f
+}
+
+// DistributionGate returns the request gate supplied by the backing store, or
+// nil when the store does not distribute policy. The REST and gRPC entry points
+// use it to route a request by the synchronization state of its service before
+// the evaluator runs.
+func (p *PolicyEvalImpl) DistributionGate() adsync.RequestGate {
+	if p.Store == nil {
+		return nil
+	}
+	gate, _ := p.Store.(adsync.RequestGate)
+	return gate
 }
 
 func (p *PolicyEvalImpl) AssertToken(ctx *adsapi.RequestContext) (err error) {

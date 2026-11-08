@@ -8,6 +8,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"encoding/pem"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -137,6 +138,13 @@ type testSource struct {
 	requests int
 	paths    []string
 	failAll  bool
+
+	// Fallback endpoint behaviour.
+	fallbackCalls  int
+	fallbackPaths  []string
+	fallbackBodies [][]byte
+	fallbackStatus int
+	fallbackBody   string
 }
 
 func newTestSource(signer *testSigner, services ...*testService) *testSource {
@@ -159,6 +167,8 @@ func (f *testSource) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	switch {
+	case r.Method == http.MethodPost && strings.HasPrefix(r.URL.Path, adsync.AuthzCheckAPIPrefix):
+		f.serveFallback(w, r)
 	case r.Method == http.MethodGet && r.URL.Path == adsync.APIPrefix+"/services":
 		f.serveServices(w)
 	case r.Method == http.MethodGet && strings.HasPrefix(r.URL.Path, adsync.APIPrefix+"/services/"):
@@ -174,6 +184,28 @@ func (f *testSource) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	default:
 		writeJSONError(w, http.StatusNotFound, "not_found", "")
 	}
+}
+
+// serveFallback answers a forwarded authorization request with the configured
+// status and body.
+func (f *testSource) serveFallback(w http.ResponseWriter, r *http.Request) {
+	body, _ := io.ReadAll(r.Body)
+	f.mu.Lock()
+	f.fallbackCalls++
+	f.fallbackPaths = append(f.fallbackPaths, r.URL.Path)
+	f.fallbackBodies = append(f.fallbackBodies, body)
+	status := f.fallbackStatus
+	responseBody := f.fallbackBody
+	f.mu.Unlock()
+	if status == 0 {
+		status = http.StatusOK
+	}
+	if responseBody == "" {
+		responseBody = `{"allowed":true,"reason":0}`
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	_, _ = w.Write([]byte(responseBody))
 }
 
 func (f *testSource) serveServices(w http.ResponseWriter) {
@@ -274,6 +306,16 @@ func (f *testSource) requestCount() int {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	return f.requests
+}
+
+func (f *testSource) fallbackRequest() (string, []byte, int) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	if f.fallbackCalls == 0 {
+		return "", nil, 0
+	}
+	index := f.fallbackCalls - 1
+	return f.fallbackPaths[index], f.fallbackBodies[index], f.fallbackCalls
 }
 
 func (f *testSource) requestsForSuffix(suffix string) int {

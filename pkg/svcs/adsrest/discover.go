@@ -6,14 +6,27 @@ package adsrest
 import (
 	"net/http"
 
+	"github.com/teramoby/speedle-plus/pkg/adsync"
 	"github.com/teramoby/speedle-plus/pkg/httputils"
 	"github.com/teramoby/speedle-plus/pkg/logging"
+	"github.com/teramoby/speedle-plus/pkg/svcs/adsgate"
 )
 
 func (e *RESTService) Discover(w http.ResponseWriter, r *http.Request) {
 	jsonRequest, err := DecodeJSONContext(r)
 	if err != nil {
 		httputils.HandleError(w, err)
+		return
+	}
+
+	switch route := e.route(jsonRequest.ServiceName); route.Kind {
+	case adsgate.RouteUnavailable:
+		writeUnavailable(w, route.Reason)
+		return
+	case adsgate.RouteFallback:
+		// Cloud exposes no discover endpoint, so a syncing service cannot
+		// answer this request through the fallback.
+		writeUnavailable(w, adsync.ReasonFallbackUnavailable)
 		return
 	}
 

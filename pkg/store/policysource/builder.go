@@ -5,6 +5,7 @@ package policysource
 import (
 	"context"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -33,23 +34,25 @@ const (
 	HeartbeatIntervalKey     = "HeartbeatInterval"
 	StaleAfterKey            = "StaleAfter"
 	StopAfterKey             = "StopAfter"
+	FallbackWhileSyncingKey  = "FallbackWhileSyncing"
 	DefaultServicesSelection = "*"
 
 	// Command line flag names. Each flag feeds the property key above through
 	// the shared GetStoreParams mechanism.
-	PolicySourceURLFlag    = "policy-source-url"
-	CredentialFileFlag     = "policy-source-credential-file"
-	ServicesFlag           = "policy-source-services"
-	PublicKeysFlag         = "policy-source-public-keys"
-	CacheDirFlag           = "policy-source-cache-dir"
-	RequestTimeoutFlag     = "policy-source-request-timeout"
-	CAFileFlag             = "policy-source-ca"
-	ClientCertFileFlag     = "policy-source-client-cert"
-	ClientKeyFileFlag      = "policy-source-client-key"
-	HeartbeatIntervalFlag  = "policy-source-heartbeat-interval"
-	StaleAfterFlag         = "policy-source-stale-after"
-	StopAfterFlag          = "policy-source-stop-after"
-	defaultBootstrapWindow = time.Minute
+	PolicySourceURLFlag      = "policy-source-url"
+	CredentialFileFlag       = "policy-source-credential-file"
+	ServicesFlag             = "policy-source-services"
+	PublicKeysFlag           = "policy-source-public-keys"
+	CacheDirFlag             = "policy-source-cache-dir"
+	RequestTimeoutFlag       = "policy-source-request-timeout"
+	CAFileFlag               = "policy-source-ca"
+	ClientCertFileFlag       = "policy-source-client-cert"
+	ClientKeyFileFlag        = "policy-source-client-key"
+	HeartbeatIntervalFlag    = "policy-source-heartbeat-interval"
+	StaleAfterFlag           = "policy-source-stale-after"
+	StopAfterFlag            = "policy-source-stop-after"
+	FallbackWhileSyncingFlag = "policy-source-fallback-while-syncing"
+	defaultBootstrapWindow   = time.Minute
 )
 
 // Options configures a Store. The builder derives it from store properties;
@@ -88,6 +91,10 @@ type Options struct {
 	Clock adsync.Clock
 	// Retry controls retries of idempotent data requests.
 	Retry adsync.RetryPolicy
+	// DisableFallback turns off routing authorization requests for a syncing
+	// service to Cloud. The zero value keeps the fallback enabled, which is
+	// the default.
+	DisableFallback bool
 }
 
 // Builder creates policy-source stores.
@@ -96,18 +103,19 @@ type Builder struct{}
 // GetStoreParams maps flag names to store property keys.
 func (Builder) GetStoreParams() map[string]string {
 	return map[string]string{
-		PolicySourceURLFlag:   PolicySourceURLKey,
-		CredentialFileFlag:    CredentialFileKey,
-		ServicesFlag:          ServicesKey,
-		PublicKeysFlag:        PublicKeysKey,
-		CacheDirFlag:          CacheDirKey,
-		RequestTimeoutFlag:    RequestTimeoutKey,
-		CAFileFlag:            CAFileKey,
-		ClientCertFileFlag:    ClientCertFileKey,
-		ClientKeyFileFlag:     ClientKeyFileKey,
-		HeartbeatIntervalFlag: HeartbeatIntervalKey,
-		StaleAfterFlag:        StaleAfterKey,
-		StopAfterFlag:         StopAfterKey,
+		PolicySourceURLFlag:      PolicySourceURLKey,
+		CredentialFileFlag:       CredentialFileKey,
+		ServicesFlag:             ServicesKey,
+		PublicKeysFlag:           PublicKeysKey,
+		CacheDirFlag:             CacheDirKey,
+		RequestTimeoutFlag:       RequestTimeoutKey,
+		CAFileFlag:               CAFileKey,
+		ClientCertFileFlag:       ClientCertFileKey,
+		ClientKeyFileFlag:        ClientKeyFileKey,
+		HeartbeatIntervalFlag:    HeartbeatIntervalKey,
+		StaleAfterFlag:           StaleAfterKey,
+		StopAfterFlag:            StopAfterKey,
+		FallbackWhileSyncingFlag: FallbackWhileSyncingKey,
 	}
 }
 
@@ -192,6 +200,12 @@ func optionsFromConfig(config map[string]interface{}) (Options, error) {
 		}
 		*property.target = value
 	}
+
+	fallbackEnabled, set, err := boolProperty(config, FallbackWhileSyncingKey)
+	if err != nil {
+		return options, err
+	}
+	options.DisableFallback = set && !fallbackEnabled
 
 	return options, nil
 }
@@ -298,6 +312,31 @@ func stringProperty(config map[string]interface{}, key string) (string, bool, er
 	return text, true, nil
 }
 
+// boolProperty reads a boolean store property. Values arrive as strings from
+// the flags layer and as booleans from a JSON configuration file.
+func boolProperty(config map[string]interface{}, key string) (bool, bool, error) {
+	value, exists := config[key]
+	if !exists || value == nil {
+		return false, false, nil
+	}
+	switch typed := value.(type) {
+	case bool:
+		return typed, true, nil
+	case string:
+		text := strings.TrimSpace(typed)
+		if text == "" {
+			return false, false, nil
+		}
+		parsed, err := strconv.ParseBool(text)
+		if err != nil {
+			return false, false, errors.Errorf(errors.ConfigError, "configure item %s is not a boolean", key)
+		}
+		return parsed, true, nil
+	default:
+		return false, false, errors.Errorf(errors.ConfigError, "configure item %s must be a boolean, got %T", key, value)
+	}
+}
+
 func durationProperty(config map[string]interface{}, key string) (time.Duration, error) {
 	text, set, err := stringProperty(config, key)
 	if err != nil || !set || strings.TrimSpace(text) == "" {
@@ -328,6 +367,7 @@ func init() {
 	pflag.String(HeartbeatIntervalFlag, "", "Store config: heartbeat interval, for example 30s.")
 	pflag.String(StaleAfterFlag, "", "Store config: warning threshold before an instance is stale, for example 60s.")
 	pflag.String(StopAfterFlag, "", "Store config: threshold after which an instance stops serving, for example 120s.")
+	pflag.String(FallbackWhileSyncingFlag, "true", "Store config: route authorization requests for a syncing service to Speedle Cloud.")
 
 	store.Register(StoreType, Builder{})
 }

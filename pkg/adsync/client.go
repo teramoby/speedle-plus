@@ -14,6 +14,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -158,8 +159,13 @@ type Client struct {
 	dialer          *websocket.Dialer
 	requestTimeout  time.Duration
 	snapshotTimeout time.Duration
+	fallbackTimeout time.Duration
 	retry           RetryPolicy
 	userAgent       string
+
+	// fallbackMu guards the reachability hint used by the request gate.
+	fallbackMu        sync.Mutex
+	fallbackReachable bool
 }
 
 // NewClient validates the configuration and builds the HTTP transport.
@@ -226,15 +232,17 @@ func NewClient(config Config) (*Client, error) {
 		userAgent = defaultUserAgent
 	}
 	return &Client{
-		base:            base,
-		credential:      config.Credential,
-		keys:            config.PublicKeys,
-		http:            httpClient,
-		dialer:          dialer,
-		requestTimeout:  requestTimeout,
-		snapshotTimeout: snapshotTimeout,
-		retry:           retry,
-		userAgent:       userAgent,
+		base:              base,
+		credential:        config.Credential,
+		keys:              config.PublicKeys,
+		http:              httpClient,
+		dialer:            dialer,
+		requestTimeout:    requestTimeout,
+		snapshotTimeout:   snapshotTimeout,
+		fallbackTimeout:   DefaultFallbackTimeout,
+		retry:             retry,
+		userAgent:         userAgent,
+		fallbackReachable: true,
 	}, nil
 }
 
