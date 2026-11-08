@@ -85,6 +85,7 @@ for (const name of ['quick-start/index.html', 'zh/quick-start/index.html', 'abou
 // #203: every page with the shared footer loads navigation.css, the stylesheet that holds the footer rules.
 const footerRules = fs.readFileSync(path.join(output, 'css/navigation.css'), 'utf8');
 assert.ok(footerRules.includes('html body footer.site-footer {') && footerRules.includes('.site-footer .footer-main {'), 'navigation.css holds the shared footer rules');
+assert.ok(/^\.site-footer \.footer-legal span \{ display: block; \}$/m.test(footerRules), 'License and copyright stack at every viewport width');
 let footerPages = 0;
 (function walk(dir) {
   for (const entry of fs.readdirSync(dir, {withFileTypes: true})) {
@@ -95,6 +96,13 @@ let footerPages = 0;
       if (!html.includes('<footer class="site-footer">')) continue;
       footerPages++;
       assert.ok(html.includes('/css/navigation.css?v=header-20261106-v8'), `Footer stylesheet linked in ${path.relative(output, file)}`);
+      const relative = path.relative(output, file);
+      const zh = relative.split(path.sep).includes('zh');
+      const legal = zh
+        ? '<p class="footer-legal"><span>基于 Universal Permissive License v1.0 授权。</span><span>版权所有 &copy; 2019–2026 The Speedle Authors。</span></p>'
+        : '<p class="footer-legal"><span>Licensed under the Universal Permissive License v1.0.</span><span>Copyright &copy; 2019–2026 The Speedle Authors. All rights reserved.</span></p>';
+      assert.ok(html.includes(legal), `Separate license and approved copyright lines in ${relative}`);
+      assert.ok(!html.includes('footer-sep'), `No legal-line joiner in ${relative}`);
     }
   }
 })(output);
