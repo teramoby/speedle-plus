@@ -25,9 +25,12 @@ native/WASM adapter tests and the optional Chromium module-worker smoke test.
 
 ## Home-page axe contrast check
 
-With Playwright and axe-core installed, run this from the repository root:
+The protected CI build installs the locked dependencies and Chromium, then runs
+this check unconditionally through `verify.sh`. To run it locally, use:
 
 ```sh
+npm --prefix website/playground-engine ci
+website/playground-engine/node_modules/.bin/playwright install chromium
 node website/playground-engine/a11y-smoke.cjs
 ```
 

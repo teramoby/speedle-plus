@@ -158,13 +158,22 @@ jobs:
             speedle-pms:smoke --store-type file --filestore-loc /data/policies.json --endpoint 0.0.0.0:6733 --insecure=true
           curl --fail --silent --show-error --retry 30 --retry-connrefused --retry-delay 1 \
             http://127.0.0.1:6733/policy-mgmt/v1/service >/dev/null
+          # Write through PMS, then read the same volume through both the API and
+          # ADS. Starting an empty file store alone does not catch volume or
+          # permission failures, and ADS proves the persisted policy is usable.
+          dist/spctl_linux_amd64 --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ create service smoke
+          dist/spctl_linux_amd64 --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ create policy \
+            -c "grant user smoke-user read smoke-resource" --service-name=smoke
+          dist/spctl_linux_amd64 --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ get service --all | \
+            python3 -c 'import json, sys; services = json.load(sys.stdin); assert any(s.get("name") == "smoke" and len(s.get("policies", [])) == 1 for s in services), services'
           docker stop speedle-smoke-pms >/dev/null
           docker run --rm -d --name speedle-smoke-ads -p 127.0.0.1:6734:6734 -v speedle-smoke:/data \
             speedle-ads:smoke --store-type file --filestore-loc /data/policies.json --endpoint 0.0.0.0:6734 --insecure=true
-          # ADS has no GET handler; any HTTP status means it is serving.
-          status=$(curl --silent --output /dev/null --write-out '%{http_code}' --retry 30 --retry-connrefused --retry-delay 1 \
-            http://127.0.0.1:6734/authz-check/v1/is-allowed || true)
-          [[ "${status}" != "000" ]] || { echo "ADS did not serve HTTP on 127.0.0.1:6734." >&2; exit 1; }
+          decision=$(curl --fail --silent --show-error --retry 30 --retry-connrefused --retry-delay 1 \
+            --header 'Content-Type: application/json' \
+            --data '{"subject":{"principals":[{"type":"user","name":"smoke-user"}]},"serviceName":"smoke","resource":"smoke-resource","action":"read"}' \
+            http://127.0.0.1:6734/authz-check/v1/is-allowed)
+          python3 -c 'import json, sys; result = json.load(sys.stdin); assert result.get("allowed") is True and result.get("reason") == 0, result' <<< "${decision}"
           docker stop speedle-smoke-ads >/dev/null
 
       # Idempotent for re-runs: the validation above only lets an existing tag
@@ -213,15 +222,19 @@ jobs:
       # tag or be overwritten from a different commit. If this step fails, the
       # idempotent tag and release steps above let a re-dispatch finish the
       # release without moving or re-creating anything. `latest` moves only
-      # when this version is the highest full semantic version released so far,
-      # so a maintenance release on an older line cannot downgrade it.
+      # when this version is the highest full semantic version released so far
+      # and the requested commit is still the newest commit on master, so a
+      # maintenance release or a release from an older master cannot downgrade it.
       - name: Publish container images
         env:
           VERSION: ${{ inputs.version }}
+          COMMIT: ${{ inputs.commit }}
           GITHUB_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           owner="${GITHUB_REPOSITORY_OWNER,,}"
+          master=$(git ls-remote origin refs/heads/master | awk 'NR == 1 { print $1 }')
+          [[ "${master}" =~ ^[0-9a-f]{40}$ ]] || { echo "Could not resolve the newest commit on master." >&2; exit 1; }
           newest=$(git tag --list 'v*' | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -n 1 || true)
           echo "${GITHUB_TOKEN}" | docker login ghcr.io --username "${GITHUB_ACTOR}" --password-stdin
           docker buildx create --name speedle-release --driver docker-container --use
@@ -229,10 +242,10 @@ jobs:
           for command in speedle-pms speedle-ads; do
             suffix=${command#speedle-}
             tag_args=(--tag "${REGISTRY}/${owner}/${command}:${VERSION}")
-            if [[ -z "${newest}" || "${VERSION}" == "$(printf '%s\n%s\n' "${VERSION}" "${newest}" | sort -V | tail -n 1)" ]]; then
+            if [[ "${COMMIT}" == "${master}" && ( -z "${newest}" || "${VERSION}" == "${newest}" ) ]]; then
               tag_args+=(--tag "${REGISTRY}/${owner}/${command}:latest")
             else
-              echo "${VERSION} is older than the newest release ${newest}; publishing only the version tag."
+              echo "${VERSION} at ${COMMIT} is not the highest release (${newest}) on the newest master commit (${master}); publishing only the version tag."
             fi
             docker buildx build \
               --platform linux/amd64,linux/arm64 \

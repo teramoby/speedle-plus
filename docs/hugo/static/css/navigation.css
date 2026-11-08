@@ -364,6 +364,18 @@ html .site-footer .footer-card[aria-current="page"] { border-color: #01e7cb; bac
 }
 .site-footer .footer-legal { margin: 0; }
 .site-footer .footer-legal span { display: block; }
+/* The two legal sentences stack; keep their separator in the text and accessibility tree. */
+.site-footer .footer-legal .footer-legal-sep {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
 /* Product sphere colours; the v16 cards enlarge the sphere to 28 px. */
 .site-footer .sphere-sprite { position: absolute; width: 0; height: 0; overflow: hidden; }
 .site-footer .product-sphere { display: block; width: 20px; height: 20px; flex: none; }

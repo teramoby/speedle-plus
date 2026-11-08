@@ -64,19 +64,24 @@ GOOS=js GOARCH=wasm go test -mod=readonly \
 ```
 
 The protected Go CI build worker runs `website/playground-engine/verify.sh` on
-pushes and pull requests. Dispatch the existing Speedle CI workflow for a
-manual release check on the same self-hosted pool. Verification includes the original Hugo 0.48
-generator in temporary output, the complete adapter/form suites, source versus
-published assets, and deterministic rebuild checks. The Linux Hugo archive is
-SHA-256 pinned; no host tools or published pages are overwritten by that check.
-No test failures are ignored.
+pushes and pull requests. It installs the locked Playwright/axe-core packages
+and Chromium first, so the axe contrast check is a required merge gate rather
+than an environment-dependent skip. Dispatch the existing Speedle CI workflow
+for a manual release check on the same self-hosted pool. Verification includes
+the original Hugo 0.48 generator in temporary output, the complete adapter/form
+suites, source versus published assets, rendered English/Chinese home-page
+contrast, and deterministic rebuild checks. The Linux Hugo archive is SHA-256
+pinned; no host tools or published pages are overwritten by that check. No test
+failures are ignored.
 The DOM shim does **not** prove browser layout, assistive-technology support,
 native form control behavior or module-worker integration.
 
-For an optional real Chromium worker smoke test, install Playwright in your
-normal development environment and run:
+For an optional real Chromium worker smoke test, install the pinned browser
+dependencies in your normal development environment and run:
 
 ```sh
+npm --prefix website/playground-engine ci
+website/playground-engine/node_modules/.bin/playwright install chromium
 CHROMIUM_PATH=/path/to/chromium node website/playground-engine/browser-smoke.cjs
 # Full form UI, site navigation, 320–1440 px layouts and browser-only transport:
 CHROMIUM_PATH=/path/to/chromium node website/playground-engine/site-smoke.cjs

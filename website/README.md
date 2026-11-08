@@ -94,8 +94,11 @@ document blocks as executable inputs. The same global gate runs
 The gate uses its current Go toolchain; nightly Quick Start checks additionally
 cover Go 1.26.10 and 1.27.3.
 The Quick Start check runs the documented `go install` route once against the
-pinned release tag, checks the documented module path offline with `go list -m`
-and that the installed binaries accept the flags the guide uses, runs one
+pinned release tag, checks the documented module path offline with `go list -m`,
+requires the highest full semantic tag returned by public `git ls-remote --tags`
+to be that same tag (so a new release, including a new major, fails the check
+until both guides are updated), checks that the installed binaries accept the
+flags the guide uses, runs one
 documented walkthrough with those installed binaries, performs a public shallow
 clone, checks out the captured CI revision, builds the three executables, creates
 and lists policies, and checks direct, role and conditional (ABAC) grants and

@@ -2,7 +2,8 @@
 """Execute the actual English/Chinese quick-start shell blocks against native services.
 
 The documented `go install` route runs once into a temporary GOBIN, its module
-path and version pattern are checked against the checkout, the installed
+path and version pattern are checked against the checkout, and its pinned version
+must match the highest full semantic tag on the public remote. The installed
 binaries must accept the flags used by the guide, and one documented walkthrough
 runs with those installed binaries. A public shallow clone verifies the download
 step; CI then checks out the captured candidate revision before compiling. Linux
@@ -131,6 +132,24 @@ def stop(process):
     assert process.returncode == 0, ("service exit", process.returncode)
 
 
+def check_latest_install_version(module, version, env):
+    """Fail when the version pinned in both guides is not the highest release tag."""
+    repository = "https://" + "/".join(module.split("/")[:3]) + ".git"
+    listing = run(["git", "ls-remote", "--tags", repository, "refs/tags/v*"], ROOT, env, timeout=120)
+    tags = {
+        match.group(1)
+        for line in listing.splitlines()
+        if (match := re.search(r"refs/tags/(v[0-9]+\.[0-9]+\.[0-9]+)(?:\^\{\})?$", line))
+    }
+    assert tags, f"No full semantic version tags found for {module}"
+    latest_version = max(tags, key=lambda tag: tuple(int(part) for part in tag[1:].split(".")))
+    assert version == latest_version, (
+        f"Quick Start install route pins stale {module}@{version}; "
+        f"the highest release tag is {latest_version}. Update both language guides."
+    )
+    print(f"PASS Quick Start install pin {module}@{version} is the latest release", flush=True)
+
+
 def verify_install_route(env):
     """Run the documented go install route once, not once per locale."""
     english_steps = blocks(ROOT / "docs/hugo/content/quick-start.md")
@@ -142,6 +161,7 @@ def verify_install_route(env):
     module, version = match.groups()
     # Offline: the checkout must be the module the guide installs.
     assert run(["go", "list", "-m"], ROOT, env).strip() == module, module
+    check_latest_install_version(module, version, env)
     with tempfile.TemporaryDirectory(prefix="speedle-go-install-") as temporary:
         work = Path(temporary)
         # GOBIN is this temporary bin directory, never the shared GOPATH/bin.
