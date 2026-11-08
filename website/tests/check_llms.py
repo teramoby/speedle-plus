@@ -110,7 +110,18 @@ def check_links(name, text, root, external):
     return failures, internal, len(remote)
 
 
+class _NoRedirectHandler(urllib.request.HTTPRedirectHandler):
+    """Fail on 3xx: every external link must answer 200 directly."""
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        return None
+
+
 def check_remote(urls):
+    # urllib follows redirects by default and would report a moved link as a
+    # pass. This opener turns every 3xx into the HTTPError reported below.
+    opener = urllib.request.build_opener(_NoRedirectHandler)
+
     def fetch(parts):
         scheme, netloc, path, query = parts
         url = f"{scheme}://{netloc}{path}"
@@ -125,7 +136,7 @@ def check_remote(urls):
                 },
             )
             try:
-                with urllib.request.urlopen(request, timeout=30) as response:
+                with opener.open(request, timeout=30) as response:
                     if response.status != 200:
                         return f"external link {url} returned {response.status}"
                     response.read(1)

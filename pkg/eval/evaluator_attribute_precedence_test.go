@@ -24,7 +24,7 @@ func TestRequestAttributesOverrideBuiltIns(t *testing.T) {
 		{ID: "request-groups", Effect: pms.Grant, Condition: "'staff' in request_groups",
 			Permissions: []*pms.Permission{{Resource: "team-files", Actions: []string{"read"}}}},
 		// True only when the PEP-supplied request_time replaces "now".
-		{ID: "request-time", Effect: pms.Grant, Condition: "request_time < '2000-01-01 00:00:00'",
+		{ID: "request-time", Effect: pms.Grant, Condition: "request_time < '2000-01-01T00:00:00Z'",
 			Permissions: []*pms.Permission{{Resource: "archive", Actions: []string{"read"}}}},
 	}
 	e := featureEvaluator(t, &pms.PolicyStore{Services: []*pms.Service{{Name: "app", Policies: policies}}})
