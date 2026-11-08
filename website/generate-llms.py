@@ -405,6 +405,9 @@ def render_full(pages, definition):
     missing = [key for key in FULL_PAGES if key not in pages["en"]]
     if missing:
         raise ContentError(f"llms-full.txt lists missing pages: {', '.join(missing)}")
+    drafts = [key for key in FULL_PAGES if pages["en"][key]["draft"]]
+    if drafts:
+        raise ContentError(f"llms-full.txt lists draft pages: {', '.join(drafts)}")
     discovered = {
         key for key, page in pages["en"].items()
         if not page["draft"] and key not in EXCLUDED_FROM_FULL
