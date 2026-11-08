@@ -177,7 +177,15 @@
 
 
 
-  <div id="kube-component" class="content">
+  <div id="kube-component" class="content"><p>SPDL is the language for writing Speedle policies and role policies. This page covers the syntax, naming rules and examples.
+</p>
+
+<aside class="docs-callout" aria-labelledby="spdl-callout-title">
+  <p class="docs-callout-eyebrow">Speedle policy modeler · Open source skill</p>
+  <p class="docs-callout-title" id="spdl-callout-title">Write SPDL with AI</p>
+  <p>The open-source Speedle policy modeler skill turns your requirements and policy documents into an SPDL model with allow and deny test cases, validated with <code>spctl check</code>.</p>
+  <p class="docs-callout-actions"><a class="button primary" href="https://ai.speedle.io/#policy-modeler">Try the policy modeler skill</a> <a class="button secondary" href="https://github.com/teramoby/ai.speedle.io/tree/main/skills/speedle-policy-modeler">Source on GitHub</a></p>
+</aside>
 
 <h2 id="syntax">Syntax</h2>
 
@@ -223,13 +231,26 @@ SUBJECT_IDENTIFIER = NAME
 RESOURCE_IDENTIFIER = NAME
 </pre>
 
+<h2 id="examples">Examples</h2>
+
+<p>Role inheritance: the subject of a role policy can be another role, so <code>manager</code> also holds every role assigned to <code>employee</code>.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">grant role manager employee</code></pre></div>
+<p>Deny over grant: an applicable deny wins over a grant. Here <code>carol</code> is in <code>staff</code> and is still denied <code>delete</code> on <code>journal</code>.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">grant group staff read,delete journal
+deny user carol delete journal</code></pre></div>
+<p>A condition: the policy applies only when the condition is true.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">grant user bob read report if department == &#39;finance&#39;</code></pre></div>
+<p>These are SPDL statements, not a complete service fixture; see <a href="/docs/pms/policy-mgmt/">Policy Management</a> for services, resource-scoped roles and complete decision examples.</p>
+
 <h2 id="condition">Condition</h2>
 
 <h3 id="1-overview">1. Overview</h3>
 
 <p>Condition is supported in both policy and role policy definitions. The policy or role policy can take effect <em>only</em> when the condition is met.</p>
 
-<p>The policy enforcement point (PEP) must supply every custom attribute your policies reference (built-in attributes such as <code>request_user</code> and <code>request_time</code> are provided by ADS); a condition on an attribute missing from the request does not match.</p>
+<p>The policy enforcement point (PEP) must supply every custom attribute your policies reference; built-in attributes such as <code>request_user</code> and <code>request_time</code> are provided by ADS. Attributes supplied by the PEP come from the caller&rsquo;s trusted application or service, not from end users, and the PEP is responsible for the values it sends. Attributes supplied by the PEP take precedence over built-in attributes with the same name; in particular, never forward untrusted end-user input as <code>request_user</code>, <code>request_time</code> or any other built-in attribute name.</p>
+
+<p>A condition that references an attribute missing from the request does not match. A conditional <code>deny</code> therefore does not apply when its attribute is absent. Make sure the PEP always supplies the attributes your deny conditions use, and test those requests.</p>
 
 <p>This document focuses on what a condition is, and how to write a condition.</p>
 
@@ -300,9 +321,9 @@ The data types and the corresponding supported operators and comparators are lis
 
 <h4 id="2-2-attributes">2.2 Attributes</h4>
 
-<p>An attribute in a condition represents a variable. The attribute value is determined at runtime, obtained from either the Authorization Decision Service (ADS) runtime or the customer.
+<p>An attribute in a condition represents a variable. The attribute value is determined at runtime, obtained from either the Authorization Decision Service (ADS) runtime or the PEP.
 Built-in attributes are those values that are populated by the ADS runtime.
-Customer attributes are those values that are provided by the customer when asking the ADS for authorization decisions.</p>
+Customer attributes are those values that are provided by the PEP — the caller&rsquo;s trusted application or service — when asking ADS for authorization decisions, not by end users. The PEP is responsible for the values it sends. Attributes supplied by the PEP take precedence over built-in attributes with the same name, so a PEP must not forward untrusted end-user input under a built-in attribute name.</p>
 
 <h5 id="2-2-1-built-in-attributes">2.2.1 Built-in Attributes</h5>
 
@@ -397,7 +418,7 @@ Customer attributes are those values that are provided by the customer when aski
 
 <h6 id="2-2-2-2-value">2.2.2.2 value</h6>
 
-<p>When customer attributes are used in a condition, the customer needs to pass the customer attribute values when requesting an isAllowed result.</p>
+<p>When customer attributes are used in a condition, the customer needs to pass the customer attribute values when requesting an isAllowed result. If the request does not carry an attribute that a condition references, the condition does not match; a conditional <code>deny</code> does not apply in that case. Ensure the PEP supplies every attribute your deny conditions use, and test those requests.</p>
 
 <ul>
 <li><p>Passing attribute values in Golang API<br />
@@ -645,8 +666,7 @@ Function: FunctionName &#39;(&#39; Argument [,Argument]* &#39;)&#39;</pre></div>
 <p><picture><source srcset="/img/speedle/spdl-syntax-full.webp" type="image/webp"><img src="/img/speedle/spdl-syntax-full.png" alt="Complete policy definition syntax" width="1771" height="2281" loading="lazy"></picture></p>
 
 <p><br/>
-<br/></p>
-</div>
+<br/></p></div>
 </div>
 </main>
         </div>

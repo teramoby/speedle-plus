@@ -12,6 +12,16 @@ categories = ["docs"]
 bref = ""
 +++
 
+SPDL 是编写 Speedle 策略和角色策略的语言。本文介绍语法、命名规则和示例。
+<!--more-->
+
+<aside class="docs-callout" aria-labelledby="spdl-callout-title">
+  <p class="docs-callout-eyebrow">Speedle 策略建模技能 · 开源技能</p>
+  <p class="docs-callout-title" id="spdl-callout-title">用 AI 编写 SPDL</p>
+  <p>开源的 Speedle 策略建模技能可以把需求和制度文档变成 SPDL 模型，同时生成允许和拒绝的测试用例，并用 <code>spctl check</code> 校验。</p>
+  <p class="docs-callout-actions"><a class="button primary" href="https://ai.speedle.io/zh/#policy-modeler">试用策略建模技能</a> <a class="button secondary" href="https://github.com/teramoby/ai.speedle.io/tree/main/skills/speedle-policy-modeler">在 GitHub 上查看源码</a></p>
+</aside>
+
 ## 基本的策略定义语言
 
 <picture><source srcset="/img/speedle/spdl-syntax.webp" type="image/webp"><img src="/img/speedle/spdl-syntax.png" alt="基本策略定义语法" width="2222" height="971" fetchpriority="high"></picture>
@@ -56,13 +66,38 @@ SUBJECT_IDENTIFIER = NAME
 RESOURCE_IDENTIFIER = NAME
 </pre>
 
+## 示例
+
+角色继承：角色策略的主体可以是另一个角色，因此 `manager` 同时拥有授予 `employee` 的所有角色。
+
+```text
+grant role manager employee
+```
+
+拒绝优先于授权：适用的拒绝策略会覆盖授权策略。下例中 `carol` 属于 `staff`，但对 `journal` 的 `delete` 仍被拒绝。
+
+```text
+grant group staff read,delete journal
+deny user carol delete journal
+```
+
+条件：只有条件成立时策略才生效。
+
+```text
+grant user bob read report if department == 'finance'
+```
+
+以上是 SPDL 语句示例，不是完整的服务配置；服务、资源范围角色和完整的决策示例见[策略管理](../pms/policy-mgmt/)。
+
 ## 条件（Condition）
 
 ### 1. 概述
 
 授权策略和角色策略都支持条件。只有条件成立，策略才会生效。
 
-PEP 必须传入策略用到的所有自定义属性（`request_user`、`request_time` 等内置属性由 ADS 自动提供）；请求里缺少的属性，相关条件不匹配。
+PEP 必须传入策略用到的所有自定义属性；`request_user`、`request_time` 等内置属性由 ADS 自动提供。PEP 传入的属性来自调用方的可信应用或服务，而不是终端用户，PEP 对自己传入的值负责。PEP 传入的属性优先于同名内置属性；不要将不可信的终端用户输入作为 `request_user`、`request_time` 或其他内置属性名传入。
+
+条件引用的属性在请求中缺失时，该条件不匹配。因此条件式 `deny` 在该属性缺失时不生效。请确保 PEP 始终传入拒绝条件用到的属性，并测试这些请求。
 
 本节介绍条件的组成和写法。
 
@@ -124,9 +159,9 @@ PEP 必须传入策略用到的所有自定义属性（`request_user`、`request
 
 #### 2.2 属性(Attributes)
 
-属性相当于条件中的变量，分为内置属性和用户属性。
+属性相当于条件中的变量，其值在求值时确定，来自 ADS 运行时或 PEP。
 内置属性由 Speedle 预定义，授权决策服务（ADS）在评估时为其赋值。
-用户属性的值由调用方随授权请求传入。
+用户属性的值由 PEP（调用方的可信应用或服务）随授权请求传入，而不是来自终端用户。PEP 对自己传入的值负责。PEP 传入的属性优先于同名内置属性，因此 PEP 不得将不可信的终端用户输入以内置属性名传入。
 
 ##### 2.2.1 内置属性(Built-in Attributes)
 
@@ -222,7 +257,7 @@ Speedle 预定义了以下内置属性：
 
 ###### 2.2.2.2 属性值(value)
 
-条件引用用户属性时，调用方必须把属性值随授权请求一并发给 ADS。
+条件引用用户属性时，调用方必须把属性值随授权请求一并发给 ADS。请求中缺少条件引用的属性时，该条件不匹配，条件式 `deny` 也不会生效。请确保 PEP 始终传入拒绝条件用到的属性，并测试这些请求。
 
 - 通过 Go API 传入属性值  
   遵循以下规则：
