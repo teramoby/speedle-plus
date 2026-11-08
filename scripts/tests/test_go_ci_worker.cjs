@@ -146,8 +146,12 @@ test('build installs the locked browser and makes the axe contrast gate mandator
   assert.match(install, /if: inputs\.mode == 'build'/);
   assert.ok(source.indexOf('Install browser contrast dependencies') < source.indexOf('Verify Playground release'));
   const verify = fs.readFileSync(path.resolve(__dirname, '../../website/playground-engine/verify.sh'), 'utf8');
+  assert.match(verify, /^if ! node -e "require\.resolve\('playwright',\{paths:\['website\/playground-engine'\]\}\);require\.resolve\('axe-core',\{paths:\['website\/playground-engine'\]\}\)" 2>\/dev\/null; then$/m);
+  assert.match(verify, /npm --prefix website\/playground-engine ci/);
+  assert.match(verify, /node_modules\/\.bin\/playwright install --with-deps chromium/);
+  assert.match(verify, /node_modules\/\.bin\/playwright install chromium/);
   assert.match(verify, /^node website\/playground-engine\/a11y-smoke\.cjs$/m);
-  assert.doesNotMatch(verify, /SKIP browser axe contrast|require\.resolve\('playwright'\)/);
+  assert.doesNotMatch(verify, /SKIP browser axe contrast/);
   const manifest = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../../website/playground-engine/package-lock.json'), 'utf8'));
   assert.deepEqual(manifest.packages[''].devDependencies, {'axe-core': '4.14.0', 'playwright': '1.65.0'});
   for (const name of ['axe-core', 'playwright', 'playwright-core']) {
