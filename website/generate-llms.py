@@ -472,7 +472,11 @@ def main():
     failed = False
     for name, expected in outputs.items():
         path = target / name
-        actual = path.read_text(encoding="utf-8") if path.exists() else ""
+        if not path.exists():
+            failed = True
+            print(f"generate-llms: {path} is missing; rerun the generator", file=sys.stderr)
+            continue
+        actual = path.read_text(encoding="utf-8")
         if actual == expected:
             continue
         failed = True

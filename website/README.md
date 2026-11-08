@@ -157,9 +157,10 @@ links) and `llms-full.txt` (the complete English documentation as Markdown) from
 content, so they cannot drift; the blockquote definition is the first paragraph
 of `about.md`, and every published page must be listed in `FULL_PAGES` or
 `EXCLUDED_FROM_FULL`. `build-site.sh` generates both files into the Hugo output
-after the postprocessor, and `verify.sh` fails when the committed `docs/` copies
-are stale. `tests/check_llms.py --external` additionally requires every curated
-external link in `llms.txt` to answer 200 without a redirect
+after the postprocessor; `verify.sh` requires the committed `docs/` copies to
+exist, be tracked by Git, and match a fresh generator run.
+`tests/check_llms.py --external` additionally requires every curated external
+link in `llms.txt` to answer 200 without a redirect
 (`--external-full` extends that to the code references inside `llms-full.txt`);
 the offline check runs in CI. The
 production `robots.txt` explicitly allows the major AI crawlers as well as `*`.
