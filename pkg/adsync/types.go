@@ -50,7 +50,9 @@ type Signature struct {
 	Value string `json:"value"`
 }
 
-// Service is one entry of the discovery response.
+// Service is one service as reported by the source, either by a discovery
+// response or as one entry of a confirming ack. Revision is the source's head
+// for the service.
 type Service struct {
 	ID            string `json:"id"`
 	Name          string `json:"name"`
