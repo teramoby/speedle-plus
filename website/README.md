@@ -53,12 +53,15 @@ All footer rules live only in
 `css/navigation.css`, which every page loads, under `html body footer.site-footer`
 so the docs theme styles cannot override them. The sphere marks
 `static/img/speedle/speedle-mark-{engine,cloud,ai}.svg` and `static/favicon.svg`
-are the sphere group of `img/speedle/Speedle_logo_home_bold.svg` with colours
-changed only (Engine original `#ff9a45`, Cloud `#4da3ff`, AI `#8b5cf6`);
-`favicon.svg` adds a 1 px `#1f1142` outline for light tab bars.
-`favicon.ico` (16, 32, 48 px PNG entries) and `apple-touch-icon.png` (180 px,
-sphere on `#2f2350` with 20 px padding) are rendered from those SVGs; they replace
-`images/speedle_purple.png` and `images/speedle_black.png`.
+are the sphere group of `img/speedle/Speedle_logo_home_bold.svg` without path
+edits (Engine original `#ff9a45`, Cloud `#4da3ff`, AI `#8b5cf6`). `favicon.svg`
+uses the shared v13 favicon treatment on a transparent background in the
+115-unit sphere box (`viewBox="21.8 22 115 115"`): no dark outline, and the
+sphere's own strokes scaled up (`outer polygon ×2.0`, `inner lines ×2.2`) so the
+16 px render stays legible. `favicon.ico` (16, 32, 48 px PNG entries) and
+`apple-touch-icon.png` (180 px, sphere on `#2f2350` with 20 px padding) are
+rendered from those SVGs; they replace `images/speedle_purple.png` and
+`images/speedle_black.png`.
 
 `static/img/social/engine-en.png` and `engine-zh.png` are the 1200 × 630 Open
 Graph/Twitter share images: the `Speedle | Engine` lock-up and the home-page
