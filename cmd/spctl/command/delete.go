@@ -63,13 +63,13 @@ func deleteCommandFunc(cmd *cobra.Command, args []string) {
 	switch strings.ToLower(args[0]) {
 	case "service":
 		if all {
-			err = cli.Delete([]string{"service"}, "")
+			err = cli.Delete([]string{"service"}, globalFlags.Token)
 		} else {
 			if len(args[1:]) == 0 {
 				printHelpAndExit(cmd)
 			}
 			for _, name := range args[1:] {
-				err = cli.Delete([]string{"service", name}, "")
+				err = cli.Delete([]string{"service", name}, globalFlags.Token)
 				if err != nil {
 					break
 				}
@@ -86,13 +86,13 @@ func deleteCommandFunc(cmd *cobra.Command, args []string) {
 			kind = "role-policy"
 		}
 		if all {
-			err = cli.Delete([]string{"service", serviceName, kind}, "")
+			err = cli.Delete([]string{"service", serviceName, kind}, globalFlags.Token)
 		} else {
 			if len(args[1:]) == 0 {
 				printHelpAndExit(cmd)
 			}
 			for _, name := range args[1:] {
-				err = cli.Delete([]string{"service", serviceName, kind, name}, "")
+				err = cli.Delete([]string{"service", serviceName, kind, name}, globalFlags.Token)
 				if err != nil {
 					break
 				}
@@ -100,13 +100,13 @@ func deleteCommandFunc(cmd *cobra.Command, args []string) {
 		}
 	case "function":
 		if all {
-			err = cli.Delete([]string{"function"}, "")
+			err = cli.Delete([]string{"function"}, globalFlags.Token)
 		} else {
 			if len(args[1:]) == 0 {
 				printHelpAndExit(cmd)
 			}
 			for _, name := range args[1:] {
-				err = cli.Delete([]string{"function", name}, "")
+				err = cli.Delete([]string{"function", name}, globalFlags.Token)
 				if err != nil {
 					break
 				}

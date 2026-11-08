@@ -42,22 +42,45 @@ func configCommandFunc(cmd *cobra.Command, args []string) {
 			if f.Hidden {
 				return
 			}
-			fmt.Printf("%v = %v\n", f.Name, f.Value)
+			value := f.Value.String()
+			if f.Name == "token" && value != "" {
+				value = "********"
+			}
+			fmt.Printf("%v = %v\n", f.Name, value)
 		})
 	} else {
-		flags, err := readConfigFile()
-		if err != nil {
-			fmt.Printf("Failed to set config, %v\n", err)
-		}
-		for i := 0; i+1 < len(args); i += 2 {
-			name := args[i]
-			val := args[i+1]
-			flags[name] = val
-		}
-		err = writeConfigFile(flags)
+		flags, err := readConfig(configFile)
 		if err != nil {
 			fmt.Printf("Failed to set config, %v\n", err)
 			os.Exit(1)
+		}
+		cloudFlags, err := readConfig(cloudConfigFile)
+		if err != nil {
+			fmt.Printf("Failed to set config, %v\n", err)
+			os.Exit(1)
+		}
+		cloudChanged := false
+		for i := 0; i+1 < len(args); i += 2 {
+			name := args[i]
+			val := args[i+1]
+			if name == "token" {
+				cloudFlags[name] = val
+				cloudChanged = true
+			} else {
+				flags[name] = val
+			}
+		}
+		// Keep writing existing settings to ~/.spctlconfig. API tokens and any
+		// other Cloud settings in ~/.speedle stay in that separate file.
+		if err = writeConfigFile(flags); err != nil {
+			fmt.Printf("Failed to set config, %v\n", err)
+			os.Exit(1)
+		}
+		if cloudChanged {
+			if err = writeCloudConfigFile(cloudFlags); err != nil {
+				fmt.Printf("Failed to set config, %v\n", err)
+				os.Exit(1)
+			}
 		}
 	}
 }
