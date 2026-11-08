@@ -240,7 +240,9 @@ deny user carol delete journal</code></pre></div>
 
 <p>Condition is supported in both policy and role policy definitions. The policy or role policy can take effect <em>only</em> when the condition is met.</p>
 
-<p>The policy enforcement point (PEP) must supply every custom attribute your policies reference (built-in attributes such as <code>request_user</code> and <code>request_time</code> are provided by ADS); a condition on an attribute missing from the request does not match. Attributes supplied by the PEP take precedence over built-in attributes with the same name; the PEP is responsible for supplying trusted values.</p>
+<p>The policy enforcement point (PEP) must supply every custom attribute your policies reference; built-in attributes such as <code>request_user</code> and <code>request_time</code> are provided by ADS. Attributes supplied by the PEP come from the caller&rsquo;s trusted application or service, not from end users, and the PEP is responsible for the values it sends. Attributes supplied by the PEP take precedence over built-in attributes with the same name; in particular, never forward untrusted end-user input as <code>request_user</code>, <code>request_time</code> or any other built-in attribute name.</p>
+
+<p>A condition that references an attribute missing from the request does not match. A conditional <code>deny</code> therefore does not apply when its attribute is absent. Make sure the PEP always supplies the attributes your deny conditions use, and test those requests.</p>
 
 <p>This document focuses on what a condition is, and how to write a condition.</p>
 
@@ -311,9 +313,9 @@ The data types and the corresponding supported operators and comparators are lis
 
 <h4 id="2-2-attributes">2.2 Attributes</h4>
 
-<p>An attribute in a condition represents a variable. The attribute value is determined at runtime, obtained from either the Authorization Decision Service (ADS) runtime or the customer.
+<p>An attribute in a condition represents a variable. The attribute value is determined at runtime, obtained from either the Authorization Decision Service (ADS) runtime or the PEP.
 Built-in attributes are those values that are populated by the ADS runtime.
-Customer attributes are those values that are provided by the customer when asking the ADS for authorization decisions.</p>
+Customer attributes are those values that are provided by the PEP — the caller&rsquo;s trusted application or service — when asking ADS for authorization decisions, not by end users. The PEP is responsible for the values it sends. Attributes supplied by the PEP take precedence over built-in attributes with the same name, so a PEP must not forward untrusted end-user input under a built-in attribute name.</p>
 
 <h5 id="2-2-1-built-in-attributes">2.2.1 Built-in Attributes</h5>
 
@@ -408,7 +410,7 @@ Customer attributes are those values that are provided by the customer when aski
 
 <h6 id="2-2-2-2-value">2.2.2.2 value</h6>
 
-<p>When customer attributes are used in a condition, the customer needs to pass the customer attribute values when requesting an isAllowed result.</p>
+<p>When customer attributes are used in a condition, the customer needs to pass the customer attribute values when requesting an isAllowed result. If the request does not carry an attribute that a condition references, the condition does not match; a conditional <code>deny</code> does not apply in that case. Ensure the PEP supplies every attribute your deny conditions use, and test those requests.</p>
 
 <ul>
 <li><p>Passing attribute values in Golang API<br />
