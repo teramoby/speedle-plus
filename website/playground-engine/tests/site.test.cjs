@@ -90,9 +90,32 @@ let chinesePages = 0;
 assert.ok(chinesePages > 100, `Chinese pages scanned for cross-site language: ${chinesePages}`);
 for (const name of ['docs/index.html','docs/zh/index.html']) assert.ok(!read(name).includes('hero-family'), `No contextual cross-links on the Engine home page in ${name} (v12)`);
 const originNote = /        <p class="license origin-note"><em>.*<\/em><\/p>\n/;
-for (const name of ['docs/index.html','docs/zh/index.html']) {
+// #250: the home status bar shows the current release and links the release
+// notes; the full project origin text lives on /about/, and the home About
+// block keeps one sentence linking there.
+const statusBar = /    <div class="status">\n      <div class="wrap status-inner">\n        <div class="status-copy"><span class="status-dot"><\/span><span>.*<\/span><\/div>\n        <a class="text-link" href="[^"]+">.*<\/a>\n      <\/div>\n    <\/div>\n/;
+for (const [name, release, link] of [
+  ['docs/index.html', '<span>v1.6.0 · Go 1.26/1.27 · six SDKs · Playground runs in your browser</span>', '<a class="text-link" href="https://github.com/teramoby/speedle-plus/releases/tag/v1.6.0">Release notes</a>'],
+  ['docs/zh/index.html', '<span>v1.6.0 · Go 1.26/1.27 · 六种 SDK · Playground 在浏览器中运行</span>', '<a class="text-link" href="https://github.com/teramoby/speedle-plus/releases/tag/v1.6.0">发行说明</a>'],
+]) {
+  const bar = read(name).match(statusBar)?.[0];
+  assert.ok(bar && bar.includes(release) && bar.includes(link), `Release status bar in ${name}`);
+}
+const fullOrigin = {
+  'docs/index.html': 'Its principal maintainers are the original developers of Oracle Speedle',
+  'docs/zh/index.html': '主要维护者正是原 Oracle Speedle 的开发者',
+};
+for (const [name, about] of [['docs/index.html', '/about/'], ['docs/zh/index.html', '/zh/about/']]) {
   const note = read(name).match(originNote)?.[0];
-  assert.ok(note && note.includes('href="https://github.com/oracle/speedle" style="text-decoration:underline"><svg') && note.includes('href="mailto:contact@speedle.io" style="text-decoration:underline"'), `Origin note links in ${name}`);
+  assert.ok(note && note.includes(`href="${about}" style="text-decoration:underline"`), `Home origin sentence links to ${about} in ${name}`);
+  assert.ok(!read(name).includes(fullOrigin[name]), `Full project origin text is not repeated in ${name}`);
+}
+for (const [name, sentence, absent] of [
+  ['docs/about/index.html', 'Its principal maintainers are the original developers of Oracle Speedle', '30 years'],
+  ['docs/zh/about/index.html', '主要维护者正是原 Oracle Speedle 的开发者', '30 年'],
+]) {
+  const html = read(name);
+  assert.ok(html.includes(sentence) && !html.includes(absent) && html.includes('href="https://github.com/oracle/speedle"') && html.includes('href="mailto:contact@speedle.io"'), `Full project origin text on ${name}`);
 }
 const identityTags = [/<title>[^<]*<\/title>/, /<link rel="icon"[^>]*>/,
  /<meta property="og:site_name"[^>]*>/, /<meta property="og:title"[^>]*>/,
@@ -115,14 +138,15 @@ const imageSizing = html => html
   .replace(/<img src="\/img\/speedle\/Tick\.svg" width="22" height="22"/g, '<img src="/img/speedle/Tick.svg"')
   .replace(/(<img class="feature-icon" src="[^"]+") width="\d+" height="\d+"/g, '$1');
 const restoredIdentity = identityTags.reduce((html, pattern) => html.replace(pattern, original.match(pattern)[0]), imageSizing(home).replace(shareImageTags, '').replace(analyticsSnippet, '').replace(iconLinks, original.match(/<link rel="icon"[^>]*>/)[0]).replace(productsMenu, '').replace(/  <footer class="site-footer">[\s\S]*?<\/footer>\n/, originalFooter));
-const restored = restoredIdentity.replace(policyExample,originalPolicyExample).replace(originNote,'').replace('<a href="/docs/pms/policy-mgmt/">Learn more</a>','<a href="/docs/pms/">Learn more</a>').replace('Bring Your Own Storage','Bring Your Own Store').replace('Works with any identity provider: your application verifies identity and passes users, groups and attributes to Speedle for a decision.','Connect GitHub, Okta or your own identity provider.').replace('Speedle Policy Definition Language.','Secure Policy Definition Language.').replace(contactLinks,originalMailingLink).replace(sharedNavigationScript,originalNavigationScript).replace(copyright,'').replace(discordLink,oldCommunityLink).replace('  <link rel="stylesheet" href="/css/site.css">\n  <link rel="stylesheet" href="/css/navigation.css?v=header-20261106-v8">', `  <style>${originalCss}</style>`).replace('<a href="/playground/">Playground</a>','').replace(`        ${chineseLink}\n`,'').replace(brandLockup,originalBrand).replace(getStartedSection,'').replace(contributeSection,originalContribute).replace('<h1>Fast. Simple. Access control</h1>','<h1>Fast. Simple. Access control.</h1>').replace('Authorization that stays out of your application code','Authorization that stays out of your application code.').replace('Fine-grained control without the friction','Fine-grained control without the friction.').replace('Policies humans can read','Policies humans can read.').replace('Built for the infrastructure you already run','Built for the infrastructure you already run.');
+const restored = restoredIdentity.replace(policyExample,originalPolicyExample).replace(originNote,'').replace(statusBar,'').replace('<a href="/docs/pms/policy-mgmt/">Learn more</a>','<a href="/docs/pms/">Learn more</a>').replace('Bring Your Own Storage','Bring Your Own Store').replace('Works with any identity provider: your application verifies identity and passes users, groups and attributes to Speedle for a decision.','Connect GitHub, Okta or your own identity provider.').replace('Speedle Policy Definition Language.','Secure Policy Definition Language.').replace(contactLinks,originalMailingLink).replace(sharedNavigationScript,originalNavigationScript).replace(copyright,'').replace(discordLink,oldCommunityLink).replace('  <link rel="stylesheet" href="/css/site.css">\n  <link rel="stylesheet" href="/css/navigation.css?v=header-20261106-v8">', `  <style>${originalCss}</style>`).replace('<a href="/playground/">Playground</a>','').replace(`        ${chineseLink}\n`,'').replace(brandLockup,originalBrand).replace(getStartedSection,'').replace(contributeSection,originalContribute).replace('<h1>Fast. Simple. Access control</h1>','<h1>Fast. Simple. Access control.</h1>').replace('Authorization that stays out of your application code','Authorization that stays out of your application code.').replace('Fine-grained control without the friction','Fine-grained control without the friction.').replace('Policies humans can read','Policies humans can read.').replace('Built for the infrastructure you already run','Built for the infrastructure you already run.');
 // #236: the owner removed the home-page Integrations section; integrations live in the docs only.
 // #237: the Cloud Native card now points at the architecture page.
 const originalWithoutIntegrations = original
   .replace(/    <section id="integrations">[\s\S]*?<\/section>\n\n/, '')
   .replace('<a href="#integrations">Integrations</a>', '')
-  .replace('<a href="/categories/cloudnative/">Learn more</a>', '<a href="/docs/architecture/">Learn more</a>');
-assert.equal(restored,originalWithoutIntegrations,'Homepage content is unchanged except shared navigation assets/entries, community/contact links, storage heading, SPDL name, corrected SPDL example, home feature-card links, the identity-card claim, origin note, site identity, ZSP metadata, copyright notice, analytics beacon, logo lock-up, Speedle family links, favicons, titles without trailing full stops, the removed Integrations section, the Cloud Native card target, the added Get started block and the reworked community banner');
+  .replace('<a href="/categories/cloudnative/">Learn more</a>', '<a href="/docs/architecture/">Learn more</a>')
+  .replace(statusBar,'');
+assert.equal(restored,originalWithoutIntegrations,'Homepage content is unchanged except shared navigation assets/entries, community/contact links, storage heading, SPDL name, corrected SPDL example, home feature-card links, the identity-card claim, origin note, release status bar, site identity, ZSP metadata, copyright notice, analytics beacon, logo lock-up, Speedle family links, favicons, titles without trailing full stops, the removed Integrations section, the Cloud Native card target, the added Get started block and the reworked community banner');
 // #241: each Get started card reaches Playground, the six language SDK pages and Quick Start,
 // and every local link keeps the page language.
 for (const [name, prefix] of [['docs/index.html','/'],['docs/zh/index.html','/zh/']]) {
