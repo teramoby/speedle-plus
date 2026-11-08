@@ -6,7 +6,7 @@
     <description>Recent content in Speedle：强大易用的权限控制引擎 on Speedle</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>zh-cn</language>
-    <lastBuildDate>Wed, 27 May 2020 07:48:20 +0800</lastBuildDate>
+    <lastBuildDate>Sun, 08 Nov 2026 10:01:40 +0800</lastBuildDate>
     
 	<atom:link href="https://engine.speedle.io/zh/index.xml" rel="self" type="application/rss+xml" />
     
@@ -447,9 +447,10 @@ go run ./website/tests/examples/custom-function package main import ( &amp;#34;e
       
       <guid>https://engine.speedle.io/zh/about/</guid>
       <description>Speedle 是开源的细粒度访问控制引擎，为云原生应用处理授权。应用把授权决策交给 Speedle，由它根据 RBAC/ABAC 策略判断已登录用户，或代表用户执行操作的进程，能否访问指定资源。Speedle 自带的策略语言叫 SPDL（Speedle Policy Definition Language，Speedle 策略定义语言）。
-Speedle 由 Oracle Entitlements Server（OES）原班团队开发，设计上沿用了团队在 OES、BEA ALES/WLES、CrossLogix 等授权产品中积累的 30 年经验。
+Speedle 由开发 Oracle Entitlements Server（OES）的同一团队打造，其设计建立在该团队在 OES、BEA ALES/WLES、CrossLogix 等前序授权产品上多年产品迭代的经验之上。
+本项目源自开源项目 Oracle Speedle，主要维护者正是原 Oracle Speedle 的开发者。我们虽已离开 Oracle，仍在持续维护这个项目，供大家自由使用。项目许可证保持 UPL 1.0 不变。如有任何问题，欢迎联系 contact@speedle.io。
 Speedle 开源版包含：
- SPDL（Speedle Policy Definition Language，Speedle 策略定义语言） 策略管理服务（Policy Management Service） 授权决策服务（Authorization Decision Service） 策略发现与诊断接口（Policy Discovery and Diagnosis endpoints） 命令行工具（spctl） 集成示例  Speedle 采用 Universal Permissive License v1.0 许可证，用户可以自由地把 Speedle 集成到自己的系统中。</description>
+ SPDL（Speedle Policy Definition Language，Speedle 策略定义语言） 策略管理服务（Policy Management Service） 授权决策服务（Authorization Decision Service） 策略发现与调试接口（Policy Discovery and Debug endpoints） 命令行工具（spctl） 集成示例  Speedle 采用 Universal Permissive License v1.0 许可证，用户可以自由地把 Speedle 集成到自己的系统中。</description>
     </item>
     
     <item>
