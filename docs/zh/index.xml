@@ -177,8 +177,7 @@ go version Go 会自动配置 GOROOT 和默认的 GOPATH，无需手动指定。
 删除账号需要完成最近的供应商认证，并输入 DELETE。随后会永久删除账号所属 service、策略、令牌和身份，并结束所有会话。删除前请先从服务工作区导出需要保留的策略。
 创建 service 和策略 新账号打开服务工作区，在服务名称中输入 books，然后选择 创建服务。每个账号只有一个 service。如果账号已有 service 或策略，请先核对并使用合适的现有配置，不要为了运行示例而覆盖或删除已有数据。
 选择 新建策略，在策略名称中输入 read-books，并在 SPDL 编辑器中输入以下授权策略：
-grant user alice get /books 这条授权没有 from 子句，会匹配任意身份域中名为 alice 的用户。如果应用接受多个身份来源，请写成 grant user alice from &amp;lt;身份域&amp;gt; get /books，把授权限制在单个身份域内；规则和请求中对应的字段见身份域。
-选择 验证策略，确认控制台显示 识别为：授权策略，再选择 保存策略。验证会识别策略类型并检查语法，但不会保存草稿；保存需要单独手动操作。你也可以在工作区导入已有策略，无需逐条手动输入。</description>
+grant user alice from corp get /books from corp 将这条授权限制在 corp 身份域内。请将 corp 替换为应用根据可信认证结果得出的身份域，并在每个请求中把相同的值作为主体的 idd 发送，如下面的 Playground 示例所示。不带 from 的授权会匹配任意身份域中名为 alice 的用户；只有 service 只有一个身份来源、名称不可能跨域重复时，才可以省略该子句。规则和请求中对应的字段见身份域。</description>
     </item>
     
     <item>
@@ -300,7 +299,7 @@ docker run --name speedle-etcd --detach \  --publish 127.0.0.1:2379:2379 \  --vo
 从应用服务端调用 IsAllowed 将签发的令牌放入一个 Authorization: Bearer 请求头，并发送 POST 请求：
 POST /authz-check/v1/is-allowed Authorization: Bearer &amp;lt;issued token&amp;gt; Content-Type: application/json {&amp;#34;subject&amp;#34;:{&amp;#34;principals&amp;#34;:[{&amp;#34;type&amp;#34;:&amp;#34;user&amp;#34;,&amp;#34;name&amp;#34;:&amp;#34;alice&amp;#34;,&amp;#34;idd&amp;#34;:&amp;#34;corp&amp;#34;}]},&amp;#34;serviceName&amp;#34;:&amp;#34;books&amp;#34;,&amp;#34;resource&amp;#34;:&amp;#34;/books&amp;#34;,&amp;#34;action&amp;#34;:&amp;#34;get&amp;#34;,&amp;#34;attributes&amp;#34;:[{&amp;#34;name&amp;#34;:&amp;#34;level&amp;#34;,&amp;#34;type&amp;#34;:&amp;#34;numeric&amp;#34;,&amp;#34;value&amp;#34;:3},{&amp;#34;name&amp;#34;:&amp;#34;when&amp;#34;,&amp;#34;type&amp;#34;:&amp;#34;datetime&amp;#34;,&amp;#34;value&amp;#34;:&amp;#34;2026-11-05T03:00:00Z&amp;#34;}]} 请求正文就是 Speedle REST 请求，字段和类型与自托管 Speedle ADS 相同。attributes 是由 {name, type, value} 组成的数组。属性类型支持 string、numeric、bool 和采用 RFC 3339 格式的 datetime。
 idd 是主体所属的身份域，也就是应用在哪个命名空间里完成对调用方的认证，例如某个身份提供方或某个租户。它必须由服务端根据可信的认证结果填写，不能取自浏览器提交的值。
-写成 grant user alice from corp get /books 的策略只匹配该身份域；不带 from 的策略匹配任意身份域中的同名主体，所以上面的请求能被快速入门中的策略放行。主体不带 idd 时同样匹配任意身份域，一旦应用接受多个身份来源，两个同名用户就无法区分。多租户接入必须在每个请求中发送 idd。
+快速入门中的策略 grant user alice from corp get /books 只在 corp 身份域中匹配上述请求。不带 from 的策略匹配任意身份域中的同名主体。主体不带 idd 时同样匹配任意身份域，一旦应用接受多个身份来源，两个同名用户就无法区分。多租户接入必须在每个请求中发送 idd。
 每个请求都必须填写 serviceName，系统不会自动取默认值。请填写令牌所属 service 的名称。名称缺失或为空时，会得到 Speedle 的 SERVICE_NOT_FOUND 响应；名称不一致时，返回 403 {&amp;quot;error&amp;quot;:&amp;quot;service_mismatch&amp;quot;}。</description>
     </item>
     

@@ -194,7 +194,7 @@ Content-Type: application/json
 
 <p><code>idd</code> 是主体所属的身份域，也就是应用在哪个命名空间里完成对调用方的认证，例如某个身份提供方或某个租户。它必须由服务端根据可信的认证结果填写，不能取自浏览器提交的值。</p>
 
-<p>写成 <code>grant user alice from corp get /books</code> 的策略只匹配该身份域；不带 <code>from</code> 的策略匹配任意身份域中的同名主体，所以上面的请求能被快速入门中的策略放行。主体不带 <code>idd</code> 时同样匹配任意身份域，一旦应用接受多个身份来源，两个同名用户就无法区分。多租户接入必须在每个请求中发送 <code>idd</code>。</p>
+<p>快速入门中的策略 <code>grant user alice from corp get /books</code> 只在 <code>corp</code> 身份域中匹配上述请求。不带 <code>from</code> 的策略匹配任意身份域中的同名主体。主体不带 <code>idd</code> 时同样匹配任意身份域，一旦应用接受多个身份来源，两个同名用户就无法区分。多租户接入必须在每个请求中发送 <code>idd</code>。</p>
 
 <p>每个请求都必须填写 <code>serviceName</code>，系统不会自动取默认值。请填写令牌所属 service 的名称。名称缺失或为空时，会得到 Speedle 的 <code>SERVICE_NOT_FOUND</code> 响应；名称不一致时，返回 <code>403 {&quot;error&quot;:&quot;service_mismatch&quot;}</code>。</p>
 

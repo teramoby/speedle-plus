@@ -198,8 +198,8 @@
 <p>新账号打开<a href="https://cloud.speedle.io/zh-CN/service">服务工作区</a>，在服务名称中输入 <code>books</code>，然后选择 <strong>创建服务</strong>。每个账号只有一个 service。如果账号已有 service 或策略，请先核对并使用合适的现有配置，不要为了运行示例而覆盖或删除已有数据。</p>
 
 <p>选择 <strong>新建策略</strong>，在策略名称中输入 <code>read-books</code>，并在 SPDL 编辑器中输入以下授权策略：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">grant user alice get /books</code></pre></div>
-<p>这条授权没有 <code>from</code> 子句，会匹配任意身份域中名为 <code>alice</code> 的用户。如果应用接受多个身份来源，请写成 <code>grant user alice from &lt;身份域&gt; get /books</code>，把授权限制在单个身份域内；规则和请求中对应的字段见<a href="/zh/docs/idd/">身份域</a>。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">grant user alice from corp get /books</code></pre></div>
+<p><code>from corp</code> 将这条授权限制在 <code>corp</code> 身份域内。请将 <code>corp</code> 替换为应用根据可信认证结果得出的身份域，并在每个请求中把相同的值作为主体的 <code>idd</code> 发送，如下面的 Playground 示例所示。不带 <code>from</code> 的授权会匹配任意身份域中名为 <code>alice</code> 的用户；只有 service 只有一个身份来源、名称不可能跨域重复时，才可以省略该子句。规则和请求中对应的字段见<a href="/zh/docs/idd/">身份域</a>。</p>
 
 <p>选择 <strong>验证策略</strong>，确认控制台显示 <strong>识别为：授权策略</strong>，再选择 <strong>保存策略</strong>。验证会识别策略类型并检查语法，但不会保存草稿；保存需要单独手动操作。你也可以在工作区导入已有策略，无需逐条手动输入。</p>
 
@@ -245,7 +245,7 @@
 </tr>
 </tbody>
 </table>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">{<span style="color:#ff79c6">&#34;name&#34;</span>:<span style="color:#f1fa8c">&#34;read-books&#34;</span>,<span style="color:#ff79c6">&#34;spdl&#34;</span>:<span style="color:#f1fa8c">&#34;grant user alice get /books&#34;</span>}</code></pre></div>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">{<span style="color:#ff79c6">&#34;name&#34;</span>:<span style="color:#f1fa8c">&#34;read-books&#34;</span>,<span style="color:#ff79c6">&#34;spdl&#34;</span>:<span style="color:#f1fa8c">&#34;grant user alice from corp get /books&#34;</span>}</code></pre></div>
 <p>使用控制台时，只把 <code>spdl</code> 的值粘贴到编辑器中；这段 JSON 正文用于管理 API。</p>
 
 <h2 id="验证和导出策略">验证和导出策略</h2>
@@ -256,7 +256,7 @@
 
 <h2 id="在-playground-中测试已保存策略">在 Playground 中测试已保存策略</h2>
 
-<p>在服务工作区找到 <strong>Playground</strong>，选择 <strong>是否允许</strong>。在 <strong>主体（JSON）</strong> 中输入 <code>[{&quot;type&quot;:&quot;user&quot;,&quot;name&quot;:&quot;alice&quot;}]</code>，在 <strong>资源</strong> 中输入 <code>/books</code>，在 <strong>动作</strong> 中输入 <code>get</code>，在 <strong>属性（JSON）</strong> 中输入 <code>[]</code>，然后选择 <strong>运行测试</strong>。</p>
+<p>在服务工作区找到 <strong>Playground</strong>，选择 <strong>是否允许</strong>。在 <strong>主体（JSON）</strong> 中输入 <code>[{&quot;type&quot;:&quot;user&quot;,&quot;name&quot;:&quot;alice&quot;,&quot;idd&quot;:&quot;corp&quot;}]</code>，在 <strong>资源</strong> 中输入 <code>/books</code>，在 <strong>动作</strong> 中输入 <code>get</code>，在 <strong>属性（JSON）</strong> 中输入 <code>[]</code>，然后选择 <strong>运行测试</strong>。</p>
 
 <p>其他操作包括 <strong>诊断</strong>、<strong>全部已授予角色</strong> 和 <strong>全部已授予权限</strong>。Playground 只使用已保存的策略，不包含编辑器中的未保存草稿。修改输入、操作或语言不会自动发起请求。输入或已保存策略变化后，请再次运行；页面会把上次结果标记为已过期，并在后续请求失败时保留此前结果。</p>
 
@@ -268,7 +268,7 @@ Origin: https://cloud.speedle.io
 X-SC-CSRF: 1
 Content-Type: application/json
 
-{&#34;op&#34;:&#34;isAllowed&#34;,&#34;request&#34;:{&#34;subject&#34;:{&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;,&#34;name&#34;:&#34;alice&#34;}]},&#34;serviceName&#34;:&#34;books&#34;,&#34;resource&#34;:&#34;/books&#34;,&#34;action&#34;:&#34;get&#34;,&#34;attributes&#34;:[{&#34;name&#34;:&#34;level&#34;,&#34;type&#34;:&#34;numeric&#34;,&#34;value&#34;:3}]}}</code></pre></div>
+{&#34;op&#34;:&#34;isAllowed&#34;,&#34;request&#34;:{&#34;subject&#34;:{&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;,&#34;name&#34;:&#34;alice&#34;,&#34;idd&#34;:&#34;corp&#34;}]},&#34;serviceName&#34;:&#34;books&#34;,&#34;resource&#34;:&#34;/books&#34;,&#34;action&#34;:&#34;get&#34;,&#34;attributes&#34;:[{&#34;name&#34;:&#34;level&#34;,&#34;type&#34;:&#34;numeric&#34;,&#34;value&#34;:3}]}}</code></pre></div>
 <table>
 <thead>
 <tr>

@@ -20,18 +20,35 @@ func TestCloudSPDLExamples(t *testing.T) {
 			t.Fatal(err)
 		}
 		text := string(data)
-		const authorization = "grant user alice get /books"
+		const authorization = "grant user alice from corp get /books"
 		if !strings.Contains(text, "```text\n"+authorization+"\n```") {
 			t.Fatalf("%s: missing authorization example", locale)
 		}
-		// The first policy a reader copies has no from clause, so the page must
-		// say how to keep the grant inside one identity domain.
-		domainGuidance := "from <identity-domain> get /books"
+		// The first policy a reader copies has an explicit identity domain, and
+		// the page explains what omitting the from clause means.
+		domainGuidance := "A grant without `from` matches"
 		if locale == ".zh" {
-			domainGuidance = "from <身份域> get /books"
+			domainGuidance = "不带 `from` 的授权会匹配"
 		}
 		if !strings.Contains(text, domainGuidance) {
 			t.Errorf("%s: missing identity-domain guidance beside the example policy", locale)
+		}
+		const principal = `{"type":"user","name":"alice","idd":"corp"}`
+		if !strings.Contains(text, principal) {
+			t.Errorf("%s: Playground example does not send the policy's identity domain", locale)
+		}
+		downloadLanguage := "en"
+		if locale == ".zh" {
+			downloadLanguage = "zh-CN"
+		}
+		download, err := os.ReadFile(filepath.Join(root(), "docs/hugo/static/docs/cloud/quickstart."+downloadLanguage+".md"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, required := range []string{"```text\n" + authorization + "\n```", domainGuidance, principal} {
+			if !strings.Contains(string(download), required) {
+				t.Errorf("%s: offline getting-started guide omits %q", locale, required)
+			}
 		}
 
 		location := filepath.Join(t.TempDir(), "policies.spdl")
@@ -45,24 +62,26 @@ func TestCloudSPDLExamples(t *testing.T) {
 		}
 		for _, check := range []struct {
 			user     string
+			idd      string
 			resource string
 			action   string
 			want     bool
 		}{
-			{user: "alice", resource: "/books", action: "get", want: true},
-			{user: "bob", resource: "/books", action: "get", want: false},
-			{user: "alice", resource: "/books", action: "write", want: false},
-			{user: "alice", resource: "/other", action: "get", want: false},
+			{user: "alice", idd: "corp", resource: "/books", action: "get", want: true},
+			{user: "alice", idd: "other", resource: "/books", action: "get", want: false},
+			{user: "bob", idd: "corp", resource: "/books", action: "get", want: false},
+			{user: "alice", idd: "corp", resource: "/books", action: "write", want: false},
+			{user: "alice", idd: "corp", resource: "/other", action: "get", want: false},
 		} {
 			got, _, err := evaluator.IsAllowed(ads.RequestContext{
-				Subject:     &ads.Subject{Principals: []*ads.Principal{{Type: "user", Name: check.user}}},
+				Subject:     &ads.Subject{Principals: []*ads.Principal{{Type: "user", Name: check.user, IDD: check.idd}}},
 				ServiceName: "books",
 				Resource:    check.resource,
 				Action:      check.action,
 				Attributes:  map[string]interface{}{"level": 3},
 			})
 			if err != nil || got != check.want {
-				t.Fatalf("%s: %s %s %s: got=%v err=%v want=%v", locale, check.user, check.action, check.resource, got, err, check.want)
+				t.Fatalf("%s: %s from %s %s %s: got=%v err=%v want=%v", locale, check.user, check.idd, check.action, check.resource, got, err, check.want)
 			}
 		}
 
@@ -133,7 +152,7 @@ func isAllowedExample(t *testing.T, path string) string {
 // IsAllowed examples send the identity domain the page documents. Without
 // idd, a principal named alice matches every tenant that reuses that name.
 func TestCloudAuthorizationExamplesCarryIdentityDomain(t *testing.T) {
-	const documentedPolicy = "grant user alice get /books"
+	const documentedPolicy = "grant user alice from corp get /books"
 	for _, locale := range []string{"", ".zh"} {
 		downloadLanguage := "en"
 		if locale != "" {

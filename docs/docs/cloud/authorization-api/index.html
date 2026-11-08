@@ -194,7 +194,7 @@ Content-Type: application/json
 
 <p><code>idd</code> is the principal&rsquo;s identity domain: the namespace your application authenticated the caller in, such as an identity provider or a tenant. Set it on the server from trusted authentication data, never from a value the browser supplies.</p>
 
-<p>A policy such as <code>grant user alice from corp get /books</code> matches that domain only. A policy without <code>from</code> matches the name in every domain, so the getting-started policy accepts the request above. A principal without <code>idd</code> matches every domain as well, which makes two different users who share a name indistinguishable when the application accepts more than one identity source. Multi-tenant integrations must send <code>idd</code> in every request.</p>
+<p>The getting-started policy, <code>grant user alice from corp get /books</code>, matches the request above only in the <code>corp</code> domain. A policy without <code>from</code> matches the name in every domain. A principal without <code>idd</code> matches every domain as well, which makes two different users who share a name indistinguishable when the application accepts more than one identity source. Multi-tenant integrations must send <code>idd</code> in every request.</p>
 
 <p><code>serviceName</code> is required in every request and is never defaulted. Send the name of the token&rsquo;s own service. An omitted or empty name receives Speedle&rsquo;s <code>SERVICE_NOT_FOUND</code> response; a different name returns <code>403 {&quot;error&quot;:&quot;service_mismatch&quot;}</code>.</p>
 
