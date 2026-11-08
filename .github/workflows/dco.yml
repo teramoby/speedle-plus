@@ -1,0 +1,60 @@
+name: DCO
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: dco-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  signoff:
+    name: DCO sign-off
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the pull request commits
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Check every commit for a Signed-off-by line
+        shell: bash
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "${BASE_SHA}" ] || [ -z "${HEAD_SHA}" ]; then
+            echo "::error::The pull request base or head SHA is missing."
+            exit 1
+          fi
+
+          commits=$(git rev-list --reverse "${BASE_SHA}..${HEAD_SHA}")
+          if [ -z "${commits}" ]; then
+            echo "No commits to check in ${BASE_SHA}..${HEAD_SHA}."
+            exit 0
+          fi
+
+          failed=0
+          while IFS= read -r sha; do
+            if git log -1 --format=%B "${sha}" | grep -qE '^Signed-off-by: .+ <[^<>]+>$'; then
+              continue
+            fi
+            failed=1
+            echo "::error::Commit ${sha} has no Signed-off-by line."
+            git log -1 --format='  %h %s' "${sha}"
+          done <<< "${commits}"
+
+          if [ "${failed}" -ne 0 ]; then
+            echo "Every commit in the pull request must carry a Signed-off-by line."
+            echo "Add one with: git commit --amend --signoff, or git rebase --signoff origin/master"
+            exit 1
+          fi
+
+          echo "Every commit in ${BASE_SHA}..${HEAD_SHA} has a Signed-off-by line."
