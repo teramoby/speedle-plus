@@ -1,6 +1,6 @@
 +++
 title = "授权诊断"
-description = "Authorization policy diagnosis"
+description = "诊断授权评估，查看决策原因、有效角色、请求属性和策略匹配过程。"
 date = 2019-01-18T15:46:59+08:00
 weight = 3
 draft = false

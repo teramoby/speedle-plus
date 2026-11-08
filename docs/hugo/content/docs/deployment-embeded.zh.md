@@ -1,5 +1,5 @@
 +++
-title = "Speedle嵌入模式"
+title = "Speedle 嵌入模式"
 description = "使用 Go modules 将 Speedle 嵌入 Go 应用，并验证允许与拒绝的授权结果。"
 weight = 12
 draft = false
@@ -127,4 +127,4 @@ alice allowed=true
 bob allowed=false
 ```
 
-`alice` 匹配授权策略；`bob` 没有匹配的授权策略，因此被拒绝。本例无需启动网络服务或数据库。
+`alice` 匹配授权策略；`bob` 没有匹配的授权策略，因此返回 Deny。本例无需启动网络服务或数据库。

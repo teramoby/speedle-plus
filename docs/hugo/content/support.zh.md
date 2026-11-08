@@ -12,11 +12,11 @@ icon = "8. Community.svg"
 
 ### Speedle 适合谁使用？
 
-Speedle 是一个开源授权引擎，适合需要在应用中实现访问控制的团队。你可以把它嵌入系统，也可以作为独立服务运行，让授权策略集中管理，而不是写死在应用代码里。
+Speedle 是开源授权引擎，适合需要在应用中实现访问控制的团队。你可以把它嵌入 Go 应用，也可以作为独立服务运行，集中管理策略，不再把授权规则写死在业务代码里。
 
 ### 为什么还需要另一个策略引擎？
 
-[快速入门](/zh/quick-start/)用大约 15 分钟走完整个流程，是了解 Speedle 策略模型和授权决策方式、并与其他方案比较的最快途径。
+[快速入门](/zh/quick-start/)带你完整走一遍策略创建和授权决策流程，可以用来了解 Speedle 的策略模型，并与其他方案比较。
 
 ### 如何参与贡献？
 
@@ -24,35 +24,35 @@ Speedle 是一个开源授权引擎，适合需要在应用中实现访问控制
 
 ### Speedle 的发展计划是什么？
 
-Speedle 以开源项目的形式持续维护，工作包括修复缺陷、更新文档，以及根据社区需要增加功能。
+Speedle 以开源项目的形式持续维护，包括修复缺陷、更新文档，以及根据社区需要增加功能。
 
 ### Speedle 与 OPA、Kubernetes RBAC、Istio RBAC 有什么区别？
 
-Speedle、OPA、Kubernetes RBAC 和 Istio RBAC 都提供授权或访问控制能力。Kubernetes RBAC 和 Istio RBAC 分别解决 Kubernetes 和 Istio 内部的授权问题；Speedle 和 OPA 是通用授权方案，Casbin 和 Ladon 也是常见的通用选择。比较时可以考虑：
+Speedle、OPA、Kubernetes RBAC 和 Istio RBAC 都提供授权或访问控制能力。Kubernetes RBAC 和 Istio RBAC 分别处理 Kubernetes 和 Istio 内部的授权；Speedle 和 OPA 是通用授权方案，Casbin 和 Ladon 也是常见选择。比较时可以考虑：
 
-1. 策略语言是否易用？这些产品都提供策略定义语言，可以各写一条策略进行对比。
+1. 策略语言是否易用？可以分别写一条策略比较。
 2. 单次授权决策需要多长时间？
 3. 扩展性如何？
-4. 支持的策略模型是否足够灵活？
+4. 支持的策略模型能否满足业务需要？
 
 ### 为什么 Speedle 不内置认证机制？
 
-Speedle 专注于授权，不提供认证功能。
+Speedle 专注于授权。用户认证由应用或身份提供方完成，Speedle 根据已认证的主体和策略做出决策。
 
 ### 如何接入自己的后端存储？
 
-请参阅[可插拔存储](/zh/docs/store/)。
+请参阅[存储扩展](/zh/docs/store/)。
 
 ### 如何接入自己的令牌断言服务？
 
-请参阅[令牌断言服务](/zh/docs/assertor/)。
+请参阅[令牌断言](/zh/docs/assertor/)。
 
 <div class="row" style="padding-top: 50px">
     <div class="col col-2"></div>
     <div class="col col-8 center" style="font-size: 25px">
     <div>
         <p>还没找到需要的答案？</p>
-        <p>加入 Speedle Discord 社区，向社区提问和交流。</p>
+        <p>加入 Speedle Discord 社区，提问并与其他用户交流。</p>
         <p>
           <a class="button primary started" style="font-size:18px" href="https://discord.gg/uaY2xVsbbT">
             <span>加入 Discord →</span>

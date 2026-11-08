@@ -13,7 +13,7 @@ bref = "用 cargo add 添加 speedle 0.2.0，再向本地 Speedle 或 Speedle Cl
 
 Rust SDK 需要 Rust 1.75 或更高版本，基于 `tokio` 和 `reqwest`（rustls）实现异步调用；下面使用的阻塞客户端由 `blocking` 特性提供。crate：crates.io 上的 [`speedle`](https://crates.io/crates/speedle) 0.2.0。参考文档：[speedle-sdk/rust](https://github.com/teramoby/speedle-sdk/tree/main/rust)。
 
-示例检查的策略见 [SDK 概览](/docs/sdks/#示例策略)。
+示例使用的策略见 [SDK 概览](/docs/sdks/#示例策略)。
 
 ## 添加依赖
 
@@ -118,4 +118,4 @@ alice delete /docs/public: allowed=false reason=NoApplicablePolicies
 
 ## 错误处理
 
-请求被拒绝不是错误：`is_allowed` 返回 `false`，`check` 返回 `allowed` 为 false 的结果及原因，如上文的 `delete` 调用。在默认设置下，调用无法得出授权结果时，调用返回 `Err(speedle::Error)`。示例用 `?` 把错误交给 `main`，向标准错误输出 `Speedle error: <消息>`，并以状态码 1 退出。
+授权请求返回 Deny 并不代表调用出错：`is_allowed` 返回 `false`，`check` 返回 `allowed` 为 false 的结果及原因，如上文的 `delete` 调用。在默认设置下，调用无法得出授权结果时，调用返回 `Err(speedle::Error)`。示例用 `?` 把错误交给 `main`，向标准错误输出 `Speedle error: <消息>`，并以状态码 1 退出。

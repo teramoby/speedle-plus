@@ -13,7 +13,7 @@ bref = "用 dotnet add package 添加 Speedle.Sdk 0.2.0，再向本地 Speedle �
 
 .NET SDK 面向 .NET 8 或更高版本，没有依赖。软件包：NuGet 上的 [`Speedle.Sdk`](https://www.nuget.org/packages/Speedle.Sdk) 0.2.0，命名空间 `Speedle.Sdk`。参考文档：[speedle-sdk/dotnet](https://github.com/teramoby/speedle-sdk/tree/main/dotnet)。
 
-示例检查的策略见 [SDK 概览](/docs/sdks/#示例策略)。
+示例使用的策略见 [SDK 概览](/docs/sdks/#示例策略)。
 
 ## 添加依赖
 
@@ -121,4 +121,4 @@ alice delete /docs/public: allowed=False reason=NoApplicablePolicies
 
 ## 错误处理
 
-请求被拒绝不是错误：`IsAllowedAsync` 返回 `false`，`CheckAsync` 返回 `Allowed` 为 false 的 `Decision` 及原因，如上文的 `delete` 调用。在默认设置下，调用无法得出授权结果时，SDK 抛出 `SpeedleException`。示例捕获该异常，向标准错误输出 `Speedle error: <消息>`，并返回退出码 1。
+授权请求返回 Deny 并不代表调用出错：`IsAllowedAsync` 返回 `false`，`CheckAsync` 返回 `Allowed` 为 false 的 `Decision` 及原因，如上文的 `delete` 调用。在默认设置下，调用无法得出授权结果时，SDK 抛出 `SpeedleException`。示例捕获该异常，向标准错误输出 `Speedle error: <消息>`，并返回退出码 1。

@@ -79,14 +79,14 @@
 <ul class="sub-menu">
 <li data-docs-depth="0" class=""><a href="/zh/docs/usecases/">使用场景</a></li>
 <li data-docs-depth="0" class=""><a href="/zh/docs/overview/">概览</a></li>
-<li data-docs-depth="0" class=""><a href="/zh/docs/spdl/">SPDL - Speedle 策略定义语言</a></li>
+<li data-docs-depth="0" class=""><a href="/zh/docs/spdl/">SPDL：Speedle 策略定义语言</a></li>
 <li data-docs-depth="0" class=""><a href="/zh/docs/architecture/">系统架构</a></li>
-<li data-docs-depth="0" class=""><a href="/zh/docs/deployment-embeded/">Speedle嵌入模式</a></li>
-<li data-docs-depth="0" class=""><a href="/zh/docs/deployment/">Speedle服务的部署方式</a></li>
+<li data-docs-depth="0" class=""><a href="/zh/docs/deployment-embeded/">Speedle 嵌入模式</a></li>
+<li data-docs-depth="0" class=""><a href="/zh/docs/deployment/">部署 Speedle</a></li>
 
 
 
-<li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading">Speedle策略</span>
+<li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading">Speedle 策略</span>
 <ul class="">
 <li data-docs-depth="1" class=""><a href="/zh/docs/pms/policy-mgmt/">策略管理</a></li>
 <li data-docs-depth="1" class=""><a href="/zh/docs/pms/global-policy/">全局角色策略</a></li>
@@ -95,9 +95,9 @@
 </ul>
 
 </li>
-<li data-docs-depth="0" class=""><a href="/zh/docs/decisions/">授权查询</a></li>
+<li data-docs-depth="0" class=""><a href="/zh/docs/decisions/">授权决策</a></li>
 <li data-docs-depth="0" class=""><a href="/zh/docs/idd/">用户身份域</a></li>
-<li data-docs-depth="0" class=""><a href="/zh/docs/assertor/">令牌用户身份断言</a></li>
+<li data-docs-depth="0" class=""><a href="/zh/docs/assertor/">令牌断言</a></li>
 
 
 
@@ -114,8 +114,8 @@
 
 <li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading">API</span>
 <ul class="">
-<li data-docs-depth="1" class=""><a href="/zh/docs/api/asserter_api/">令牌断言插件 API</a></li>
-<li data-docs-depth="1" class=""><a href="/zh/docs/api/decision_api/">授权运行时/决策 API</a></li>
+<li data-docs-depth="1" class=""><a href="/zh/docs/api/asserter_api/">令牌断言 API</a></li>
+<li data-docs-depth="1" class=""><a href="/zh/docs/api/decision_api/">授权决策 API</a></li>
 <li data-docs-depth="1" class=""><a href="/zh/docs/api/management_api/">策略管理 API</a></li>
 </ul>
 
@@ -167,7 +167,7 @@
 
 
 
-<nav id="contents" class="docs-toc" data-docs-toc="h2" aria-label="On this page">
+<nav id="contents" class="docs-toc" data-docs-toc="h2" aria-label="本页目录">
   <ol></ol>
 </nav>
 
@@ -177,7 +177,7 @@
 
 <p>Python SDK 需要 Python 3.10 或更高版本，唯一的运行时依赖是 <code>httpx</code>。它提供同步的 <code>Client</code> 和 asyncio 的 <code>AsyncClient</code>，两者参数相同。软件包：PyPI 上的 <a href="https://pypi.org/project/speedle/"><code>speedle</code></a> 0.2.0。参考文档：<a href="https://github.com/teramoby/speedle-sdk/tree/main/python">speedle-sdk/python</a>。</p>
 
-<p>示例检查的策略见 <a href="/zh/docs/sdks/#示例策略">SDK 概览</a>。</p>
+<p>示例使用的策略见 <a href="/zh/docs/sdks/#示例策略">SDK 概览</a>。</p>
 
 <h2 id="添加依赖">添加依赖</h2>
 
@@ -252,7 +252,7 @@ alice delete /docs/public: allowed=False reason=&lt;Reason.NO_APPLICABLE_POLICIE
 
 <h2 id="错误处理">错误处理</h2>
 
-<p>请求被拒绝不是错误：<code>is_allowed</code> 返回 <code>False</code>，<code>check</code> 返回 <code>allowed</code> 为 false 的结果及原因，如上文的 <code>delete</code> 调用。在默认设置下，调用无法得出授权结果时，SDK 抛出 <code>SpeedleError</code>。示例捕获该异常，向标准错误输出 <code>Speedle error: &lt;消息&gt;</code>，并以状态码 1 退出。</p>
+<p>授权请求返回 Deny 并不代表调用出错：<code>is_allowed</code> 返回 <code>False</code>，<code>check</code> 返回 <code>allowed</code> 为 false 的结果及原因，如上文的 <code>delete</code> 调用。在默认设置下，调用无法得出授权结果时，SDK 抛出 <code>SpeedleError</code>。示例捕获该异常，向标准错误输出 <code>Speedle error: &lt;消息&gt;</code>，并以状态码 1 退出。</p>
 </div>
 </div>
 </main>

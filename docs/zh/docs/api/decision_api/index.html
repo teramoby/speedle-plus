@@ -10,8 +10,8 @@
 
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
-    <meta name="viewport" content="width=device-width, initial-scale=1"><title>授权运行时/决策 API · Speedle Engine</title>
-<meta name="description" content="Swagger documentation for the runtime endpoint. Get decisions and granted roles and permissions; Discover policies dynamically; Debug your policy evaluation">
+    <meta name="viewport" content="width=device-width, initial-scale=1"><title>授权决策 API · Speedle Engine</title>
+<meta name="description" content="授权决策 API 参考：检查访问权限、查询已授予的角色和权限、发现策略并诊断评估过程。">
 <meta name="generator" content="Hugo 0.48" />
 <link href="https://engine.speedle.io/index.xml" rel="alternate" type="application/rss+xml">
 <link rel="canonical" href="https://engine.speedle.io/zh/docs/api/decision_api/">
@@ -21,8 +21,8 @@
 <link rel="alternate" hreflang="x-default" href="https://engine.speedle.io/docs/api/decision_api/">
 <meta property="og:type" content="article">
 <meta property="og:site_name" content="Speedle Engine">
-<meta property="og:title" content="授权运行时/决策 API · Speedle Engine">
-<meta property="og:description" content="Swagger documentation for the runtime endpoint. Get decisions and granted roles and permissions; Discover policies dynamically; Debug your policy evaluation">
+<meta property="og:title" content="授权决策 API · Speedle Engine">
+<meta property="og:description" content="授权决策 API 参考：检查访问权限、查询已授予的角色和权限、发现策略并诊断评估过程。">
 <meta property="og:url" content="https://engine.speedle.io/zh/docs/api/decision_api/">
 <meta property="og:image" content="https://engine.speedle.io/img/social/engine-zh.png">
 <meta property="og:image:width" content="1200">
@@ -30,13 +30,13 @@
 <meta property="og:image:type" content="image/png">
 <meta property="og:image:alt" content="Speedle Engine — 快速、简单的权限控制">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="授权运行时/决策 API · Speedle Engine">
-<meta name="twitter:description" content="Swagger documentation for the runtime endpoint. Get decisions and granted roles and permissions; Discover policies dynamically; Debug your policy evaluation">
+<meta name="twitter:title" content="授权决策 API · Speedle Engine">
+<meta name="twitter:description" content="授权决策 API 参考：检查访问权限、查询已授予的角色和权限、发现策略并诊断评估过程。">
 <meta name="twitter:image" content="https://engine.speedle.io/img/social/engine-zh.png">
 <meta name="twitter:image:alt" content="Speedle Engine — 快速、简单的权限控制">
 
-<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/zh/docs/api/decision_api/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-08T05:25:30+08:00","description":"Swagger documentation for the runtime endpoint. Get decisions and granted roles and permissions; Discover policies dynamically; Debug your policy evaluation","headline":"授权运行时/决策 API","image":"https://engine.speedle.io/img/social/engine-zh.png","inLanguage":"zh-CN","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/zh/docs/api/decision_api/","@type":"WebPage"},"name":"授权运行时/决策 API","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/zh/docs/api/decision_api/"}</script>
-<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/zh/docs/api/decision_api/#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://engine.speedle.io/zh/","name":"首页","position":1},{"@type":"ListItem","item":"https://engine.speedle.io/zh/docs/","name":"文档","position":2},{"@type":"ListItem","item":"https://engine.speedle.io/zh/docs/api/","name":"API","position":3},{"@type":"ListItem","item":"https://engine.speedle.io/zh/docs/api/decision_api/","name":"授权运行时/决策 API","position":4}]}</script><link href="/css/docs.css" rel="stylesheet" type="text/css">
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/zh/docs/api/decision_api/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-08T05:25:30+08:00","description":"授权决策 API 参考：检查访问权限、查询已授予的角色和权限、发现策略并诊断评估过程。","headline":"授权决策 API","image":"https://engine.speedle.io/img/social/engine-zh.png","inLanguage":"zh-CN","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/zh/docs/api/decision_api/","@type":"WebPage"},"name":"授权决策 API","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/zh/docs/api/decision_api/"}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/zh/docs/api/decision_api/#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://engine.speedle.io/zh/","name":"首页","position":1},{"@type":"ListItem","item":"https://engine.speedle.io/zh/docs/","name":"文档","position":2},{"@type":"ListItem","item":"https://engine.speedle.io/zh/docs/api/","name":"API","position":3},{"@type":"ListItem","item":"https://engine.speedle.io/zh/docs/api/decision_api/","name":"授权决策 API","position":4}]}</script><link href="/css/docs.css" rel="stylesheet" type="text/css">
 
     <link href="/css/swagger-ui.css" rel="stylesheet" type="text/css">
 
@@ -85,14 +85,14 @@
 <ul class="sub-menu">
 <li data-docs-depth="0" class=""><a href="/zh/docs/usecases/">使用场景</a></li>
 <li data-docs-depth="0" class=""><a href="/zh/docs/overview/">概览</a></li>
-<li data-docs-depth="0" class=""><a href="/zh/docs/spdl/">SPDL - Speedle 策略定义语言</a></li>
+<li data-docs-depth="0" class=""><a href="/zh/docs/spdl/">SPDL：Speedle 策略定义语言</a></li>
 <li data-docs-depth="0" class=""><a href="/zh/docs/architecture/">系统架构</a></li>
-<li data-docs-depth="0" class=""><a href="/zh/docs/deployment-embeded/">Speedle嵌入模式</a></li>
-<li data-docs-depth="0" class=""><a href="/zh/docs/deployment/">Speedle服务的部署方式</a></li>
+<li data-docs-depth="0" class=""><a href="/zh/docs/deployment-embeded/">Speedle 嵌入模式</a></li>
+<li data-docs-depth="0" class=""><a href="/zh/docs/deployment/">部署 Speedle</a></li>
 
 
 
-<li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading">Speedle策略</span>
+<li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading">Speedle 策略</span>
 <ul class="">
 <li data-docs-depth="1" class=""><a href="/zh/docs/pms/policy-mgmt/">策略管理</a></li>
 <li data-docs-depth="1" class=""><a href="/zh/docs/pms/global-policy/">全局角色策略</a></li>
@@ -101,9 +101,9 @@
 </ul>
 
 </li>
-<li data-docs-depth="0" class=""><a href="/zh/docs/decisions/">授权查询</a></li>
+<li data-docs-depth="0" class=""><a href="/zh/docs/decisions/">授权决策</a></li>
 <li data-docs-depth="0" class=""><a href="/zh/docs/idd/">用户身份域</a></li>
-<li data-docs-depth="0" class=""><a href="/zh/docs/assertor/">令牌用户身份断言</a></li>
+<li data-docs-depth="0" class=""><a href="/zh/docs/assertor/">令牌断言</a></li>
 
 
 
@@ -120,8 +120,8 @@
 
 <li data-docs-depth="0" class="docs-nav-section parent"><span class="docs-nav-heading">API</span>
 <ul class="sub-menu">
-<li data-docs-depth="1" class=""><a href="/zh/docs/api/asserter_api/">令牌断言插件 API</a></li>
-<li data-docs-depth="1" class="active"><a href="/zh/docs/api/decision_api/" aria-current="page">授权运行时/决策 API</a></li>
+<li data-docs-depth="1" class=""><a href="/zh/docs/api/asserter_api/">令牌断言 API</a></li>
+<li data-docs-depth="1" class="active"><a href="/zh/docs/api/decision_api/" aria-current="page">授权决策 API</a></li>
 <li data-docs-depth="1" class=""><a href="/zh/docs/api/management_api/">策略管理 API</a></li>
 </ul>
 
@@ -167,14 +167,14 @@
 <main>
 <div id="main">
 
-  <h1>授权运行时/决策 API</h1>
+  <h1>授权决策 API</h1>
   <p class="docs-lead"></p>
 
 
 
   <div id="kube-component" class="content"><p>已配置 ADS 的接口参考。请求属性是带类型的数组，诊断响应属性是对象。</p>
 
-<p>请配置<a href="/zh/docs/security/">安全连接与端点访问控制</a>。这是接口契约，speedle.io 不托管授权后端。</p>
+<p>请配置<a href="/zh/docs/security/">安全连接与端点访问控制</a>。本文只说明接口约定，speedle.io 不提供托管授权后端。</p>
 
 <div id="swagger-ui"></div>
  <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" style="position:absolute;width:0;height:0">

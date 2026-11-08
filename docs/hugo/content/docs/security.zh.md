@@ -1,6 +1,6 @@
 +++
 title = "安全"
-description = "Secure your Speedle instances"
+description = "为 Speedle 的 REST 和 gRPC 端点配置 TLS、双向 TLS 和访问控制。"
 weight = 310
 draft = false
 toc = true

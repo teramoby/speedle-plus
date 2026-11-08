@@ -1,6 +1,6 @@
 +++
 title = "贡献与社区"
-description = "Join Speedle Community!"
+description = "加入 Speedle 社区：参与讨论、反馈问题、贡献代码。"
 weight = 10
 draft = false
 tocheading = "h2"
@@ -9,54 +9,40 @@ tags = ["community", "contribution"]
 icon = "11. Contribute.svg"
 +++
 
-欢迎加入Speedle社区！您可以通过很多方式参与Speedle项目。
-
-## 使用
-
-使用Speedle是您对这个项目的最大支持。我们希望Speedle可以作为信息系统权限控制的首选，我们也在朝这个目标努力。
+欢迎加入 Speedle 社区。无论使用、推广还是贡献代码，都是在为项目出力。
 
 ## 推广
 
+如果喜欢 Speedle，欢迎到 [GitHub 项目页](https://github.com/teramoby/speedle-plus)点一颗星，把它推荐给朋友或同事，也可以分享你的使用经验。
 
-您可以通过如下方式帮忙推广Speedle开源项目：   
+## 讨论与社区
 
-1. 在[the project at Github](https://github.com/teramoby/speedle-plus)上加一颗星星
-2. 将Speedle推荐给您的朋友，同学，同事
-3. 如果不介意的话，您可以告诉我们您是怎么使用Speedle的，我们将把您的公司或组织加入到我们用户列表里
-4. 您可以撰写一些文章来分享使用心得，如果需要技术上的支持，请和我们联系
+加入 [Speedle Discord 社区](https://discord.gg/uaY2xVsbbT)，提问、交流想法或讨论代码贡献。
 
-## 讨论和用户社区
+也可以加入 [speedle-users](https://groups.google.com/forum/#!forum/speedle-users) 和 [speedle-developers](https://groups.google.com/forum/#!forum/speedle-developers) 邮件列表。访问 Discord 有困难时，可以加入 QQ 群：643201591。
 
-您可以在通过如下途径参加Speedle相关讨论：
+## 问题反馈
 
-0. 欢迎加入 [Speedle Discord 社区](https://discord.gg/uaY2xVsbbT)，交流使用经验、提问或参与讨论。
-1. 如果无法访问 Discord，可以加入QQ群。群号：643201591
+发现缺陷或有功能建议，请提交 [GitHub issue](https://github.com/teramoby/speedle-plus/issues)，并尽量提供：
 
-
-## Issues
-
-如果您发现Speedle的bug，或者希望Speedle实现一些新功能，请在[GitHub issue](https://github.com/teramoby/speedle-plus/issues) 创建一个Issue。
-
-Issue的内容请包括：
-
-0. Speedle的版本
-1. 问题的详细描述
-1. 最好有可重现的环境和步骤
-1. 写清楚期望的行为
+1. Speedle 版本
+2. 问题描述
+3. 可复现问题的环境和步骤
+4. 预期行为
 
 ## 代码贡献
 
 对 Speedle 的贡献依据 Universal Permissive License 1.0 (UPL-1.0) 提交。请为您的提交添加签名（sign-off），以证明您有权依据 Developer Certificate of Origin (DCO) 1.1 提交您的贡献。请在您的 Pull Request 中保留现有的版权和许可证声明，并标明任何第三方材料。
 
-如果您想为Speedle贡献代码，请完成如下流程：
+贡献代码请按以下步骤操作：
 
-0. 使用 `git commit -s` 为每次提交添加签名（参见 [DCO](https://github.com/teramoby/speedle-plus/blob/master/DCO) 和 [UPL-1.0 LICENSE](https://github.com/teramoby/speedle-plus/blob/master/LICENSE)）
-1. Fork Speedle代码库
-1. 改动代码，保证您的代码通过所有测试
-1. 创建一个Pull Request
-1. 查看您的pipeline结果，如果有问题请修正
-1. 我们会审阅您的改动，如果大家没有异议，就merge这个PR
+1. 用 `git commit -s` 为每次提交添加签名（参见 [DCO](https://github.com/teramoby/speedle-plus/blob/master/DCO) 和 [UPL-1.0 LICENSE](https://github.com/teramoby/speedle-plus/blob/master/LICENSE)）
+2. Fork Speedle 代码库
+3. 修复已有 issue，或先创建 issue 再修复
+4. 提交修复该 issue 的 Pull Request
+5. 查看 CI 结果，修复失败项
+6. 等待项目维护者审阅并合并 PR
 
 ## 行为准则
 
-请参阅 [Golden Rule](https://en.wikipedia.org/wiki/Golden_Rule) 和 [Contributor Covenant Code of Conduct](https://www.contributor-covenant.org/version/1/4/code-of-conduct.html)。
+请遵守 [Golden Rule](https://en.wikipedia.org/wiki/Golden_Rule)，具体规范见 [Contributor Covenant Code of Conduct](https://www.contributor-covenant.org/version/1/4/code-of-conduct.html)。

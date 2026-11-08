@@ -6,7 +6,8 @@
   <meta charset="utf-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
   <meta name="viewport" content="width=device-width, initial-scale=1"><title>关于 Speedle · Speedle Engine</title>
-<meta name="description" content="Speedle 是一个开源的细粒度访问控制引擎，用于满足云原生应用的授权需求。Speedle 提供策略驱动的访问控制，把授权决策从应用中剥离出来，交给策略引擎处理。策略引擎可以针对已登录的用户，或代表用户执行操作的进程，评估 RBAC/ABAC 策略。Speedle 包含 SPDL，即 Speedle Policy Definition Language（Speedle 策略定义语言）。 …">
+<meta name="description" content="Speedle 是开源的细粒度访问控制引擎，为云原生应用处理授权。应用把授权决策交给 Speedle，由它根据 RBAC/ABAC 策略判断已登录用户，或代表用户执行操作的进程，能否访问指定资源。Speedle 自带的策略语言叫 SPDL（Speedle Policy Definition Language，Speedle 策略定义语言）。
+Speedle 由 Oracle …">
 <meta name="generator" content="Hugo 0.48" />
 <link href="https://engine.speedle.io/index.xml" rel="alternate" type="application/rss+xml">
 <link rel="canonical" href="https://engine.speedle.io/zh/about/">
@@ -17,7 +18,8 @@
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Speedle Engine">
 <meta property="og:title" content="关于 Speedle · Speedle Engine">
-<meta property="og:description" content="Speedle 是一个开源的细粒度访问控制引擎，用于满足云原生应用的授权需求。Speedle 提供策略驱动的访问控制，把授权决策从应用中剥离出来，交给策略引擎处理。策略引擎可以针对已登录的用户，或代表用户执行操作的进程，评估 RBAC/ABAC 策略。Speedle 包含 SPDL，即 Speedle Policy Definition Language（Speedle 策略定义语言）。 …">
+<meta property="og:description" content="Speedle 是开源的细粒度访问控制引擎，为云原生应用处理授权。应用把授权决策交给 Speedle，由它根据 RBAC/ABAC 策略判断已登录用户，或代表用户执行操作的进程，能否访问指定资源。Speedle 自带的策略语言叫 SPDL（Speedle Policy Definition Language，Speedle 策略定义语言）。
+Speedle 由 Oracle …">
 <meta property="og:url" content="https://engine.speedle.io/zh/about/">
 <meta property="og:image" content="https://engine.speedle.io/img/social/engine-zh.png">
 <meta property="og:image:width" content="1200">
@@ -26,7 +28,8 @@
 <meta property="og:image:alt" content="Speedle Engine — 快速、简单的权限控制">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="关于 Speedle · Speedle Engine">
-<meta name="twitter:description" content="Speedle 是一个开源的细粒度访问控制引擎，用于满足云原生应用的授权需求。Speedle 提供策略驱动的访问控制，把授权决策从应用中剥离出来，交给策略引擎处理。策略引擎可以针对已登录的用户，或代表用户执行操作的进程，评估 RBAC/ABAC 策略。Speedle 包含 SPDL，即 Speedle Policy Definition Language（Speedle 策略定义语言）。 …">
+<meta name="twitter:description" content="Speedle 是开源的细粒度访问控制引擎，为云原生应用处理授权。应用把授权决策交给 Speedle，由它根据 RBAC/ABAC 策略判断已登录用户，或代表用户执行操作的进程，能否访问指定资源。Speedle 自带的策略语言叫 SPDL（Speedle Policy Definition Language，Speedle 策略定义语言）。
+Speedle 由 Oracle …">
 <meta name="twitter:image" content="https://engine.speedle.io/img/social/engine-zh.png">
 <meta name="twitter:image:alt" content="Speedle Engine — 快速、简单的权限控制">
 
@@ -75,17 +78,17 @@
   <h1>关于 Speedle</h1>
   
   
-  <div id="kube-component" class="content"><p>Speedle 是一个开源的细粒度访问控制引擎，用于满足云原生应用的授权需求。Speedle 提供策略驱动的访问控制，把授权决策从应用中剥离出来，交给策略引擎处理。策略引擎可以针对已登录的用户，或代表用户执行操作的进程，评估 RBAC/ABAC 策略。Speedle 包含 SPDL，即 Speedle Policy Definition Language（Speedle 策略定义语言）。</p>
+  <div id="kube-component" class="content"><p>Speedle 是开源的细粒度访问控制引擎，为云原生应用处理授权。应用把授权决策交给 Speedle，由它根据 RBAC/ABAC 策略判断已登录用户，或代表用户执行操作的进程，能否访问指定资源。Speedle 自带的策略语言叫 SPDL（Speedle Policy Definition Language，Speedle 策略定义语言）。</p>
 
-<p>Speedle 由开发 Oracle Entitlements Server（OES）的同一团队打造，其设计建立在该团队在 OES、BEA ALES/WLES、CrossLogix 等前序授权产品上 30 年产品迭代的经验之上。</p>
+<p>Speedle 由 Oracle Entitlements Server（OES）原班团队开发，设计上沿用了团队在 OES、BEA ALES/WLES、CrossLogix 等授权产品中积累的 30 年经验。</p>
 
-<p>Speedle 开源版本包括：</p>
+<p>Speedle 开源版包含：</p>
 
 <ul>
 <li>SPDL（Speedle Policy Definition Language，Speedle 策略定义语言）</li>
 <li>策略管理服务（Policy Management Service）</li>
 <li>授权决策服务（Authorization Decision Service）</li>
-<li>策略发现与调试接口（Policy Discovery and Debug endpoints）</li>
+<li>策略发现与诊断接口（Policy Discovery and Diagnosis endpoints）</li>
 <li>命令行工具（spctl）</li>
 <li>集成示例</li>
 </ul>

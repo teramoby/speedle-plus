@@ -1,6 +1,6 @@
 +++
 title = "用户身份域"
-description = "Speedle supports user identities from multiple identity domains"
+description = "使用身份域区分不同身份提供方或租户中的同名主体。"
 date = 2019-01-17T13:20:07+08:00
 weight = 40
 draft = false

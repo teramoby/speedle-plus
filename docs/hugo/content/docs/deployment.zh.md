@@ -1,6 +1,6 @@
 +++
-title = "Speedle服务的部署方式"
-description = "Recommended deployment topology for Speedle"
+title = "部署 Speedle"
+description = "选择合适的 Speedle 部署方式：嵌入 Go 应用，或独立运行 PMS 和 ADS。"
 weight = 14
 draft = false
 toc = true
@@ -43,7 +43,7 @@ go build -o ./bin/ ./cmd/spctl ./cmd/speedle-pms ./cmd/speedle-ads
 
 ## 发布二进制与容器映像
 
-发布流程生成的每个发布版本都会附带适用于 macOS 和 Linux（amd64、arm64）的 `spctl`、`speedle-pms` 和 `speedle-ads` 预编译二进制，文件名格式为 `<命令>_<系统>_<架构>`，并附带 `checksums.txt`。请从 [Releases 页面](https://github.com/teramoby/speedle-plus/releases)下载，运行前先用 SHA-256 校验和核对每个文件；校验和文件与二进制位于同一发布版本中，只能用于发现下载不完整或文件损坏，不能用来验证发布内容未被篡改。二进制和容器映像都由发布流程生成，因此从该流程加入后的第一个发布版本开始提供。
+发布流程生成的每个发布版本都会附带适用于 macOS 和 Linux（amd64、arm64）的 `spctl`、`speedle-pms` 和 `speedle-ads` 预编译二进制，文件名格式为 `<命令>_<系统>_<架构>`，并附带 `checksums.txt`。请从 [Releases 页面](https://github.com/teramoby/speedle-plus/releases)下载，运行前先用 SHA-256 校验和核对每个文件；校验和文件与二进制位于同一发布版本中，只能用于发现下载不完整或文件损坏，不能验证发布内容是否遭到篡改。二进制和容器映像都由发布流程生成，因此从该流程加入后的第一个发布版本开始提供。
 
 发布流程还会发布两个面向 Linux amd64 和 arm64 的多架构容器映像：
 
@@ -76,7 +76,7 @@ PMS 没有内置的调用方身份认证；`127.0.0.1` 绑定把未认证的管�
 
 ## Kubernetes 开发示例
 
-使用当前 Kubernetes 集群和兼容的 `kubectl`。将以下内容保存为 `speedle-dev.yaml`。它使用 `apps/v1`，在同一 Pod 内让 PMS/ADS 共享文件，以非 root 用户运行应用，并通过内部 ClusterIP 服务访问。这是隔离开发环境示例：Pod 被替换后 `emptyDir` 中的策略会丢失，HTTP 端点需要集群访问控制。清单中的映像使用 `<release-tag>` 占位符；部署时请替换为要使用的发布标签，或使用摘要（digest）实现不可变固定；集群需要时配置 imagePullSecrets。
+使用当前 Kubernetes 集群和兼容的 `kubectl`。将以下内容保存为 `speedle-dev.yaml`。它使用 `apps/v1`，在同一 Pod 内让 PMS/ADS 共享文件，以非 root 用户运行应用，并通过内部 ClusterIP 服务访问。这是隔离开发环境示例：Pod 替换后，`emptyDir` 中的策略会丢失，HTTP 端点需要集群访问控制。清单中的映像使用 `<release-tag>` 占位符；部署时请替换为要使用的发布标签，或使用摘要（digest）实现不可变固定；集群需要时配置 imagePullSecrets。
 
 <!-- deployment-template: kubernetes -->
 ```yaml

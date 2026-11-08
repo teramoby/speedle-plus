@@ -5,7 +5,8 @@
 {{- if .IsHome -}}
   {{- if eq .Lang "zh" -}}{{- $title = "Speedle Engine — 快速、简单的权限控制" -}}{{- else -}}{{- $title = "Speedle Engine — Fast. Simple. Access control" -}}{{- end -}}
 {{- else if .Title -}}
-  {{- $title = printf "%s · Speedle Engine" .Title -}}
+  {{- $pageTitle := partial "localized-title.html" . -}}
+  {{- $title = printf "%s · Speedle Engine" $pageTitle -}}
 {{- end -}}
 <title>{{ $title }}</title>
 {{- with $description }}

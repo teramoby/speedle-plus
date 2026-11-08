@@ -13,7 +13,7 @@ bref = "@speedle/sdk 0.2.0 发布后用 npm 安装，再向本地 Speedle 或 Sp
 
 Node.js SDK 需要 Node.js 22 或更高版本，同时提供 ESM 和 CommonJS 构建及 TypeScript 类型，没有运行时依赖。软件包：npm 上的 `@speedle/sdk` 0.2.0，**发布后可用**。参考文档：[speedle-sdk/node](https://github.com/teramoby/speedle-sdk/tree/main/node)。
 
-示例检查的策略见 [SDK 概览](/docs/sdks/#示例策略)。
+示例使用的策略见 [SDK 概览](/docs/sdks/#示例策略)。
 
 ## 添加依赖
 
@@ -121,4 +121,4 @@ alice delete /docs/public: allowed=false reason=NoApplicablePolicies
 
 ## 错误处理
 
-请求被拒绝不是错误：`isAllowed` 解析为 `false`，`check` 解析为 `allowed` 为 false 的结果及原因，如上文的 `delete` 调用。在默认设置下，调用无法得出授权结果时，Promise 以 `SpeedleError` 拒绝。示例捕获该错误，向标准错误输出 `Speedle error: <消息>`，并设置 `process.exitCode = 1`；其他错误会重新抛出。
+授权请求返回 Deny 并不代表调用出错：`isAllowed` 解析为 `false`，`check` 解析为 `allowed` 为 false 的结果及原因，如上文的 `delete` 调用。在默认设置下，调用无法得出授权结果时，Promise 以 `SpeedleError` 拒绝。示例捕获该错误，向标准错误输出 `Speedle error: <消息>`，并设置 `process.exitCode = 1`；其他错误会重新抛出。

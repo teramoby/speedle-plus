@@ -1,6 +1,6 @@
 +++
 title = "日志"
-description = "Speedle logging"
+description = "配置 Speedle 的日志级别、格式、文件滚动和第三方日志收集。"
 weight = 320
 draft = false
 toc = true
@@ -11,26 +11,26 @@ categories = ["docs"]
 bref = ""
 +++
 
-## 概述
+## 日志组件
 
-Speedle 使用了下面两个开源项目来处理日志,
+Speedle 使用以下两个开源项目处理日志：
 
 ```
 1. https://github.com/sirupsen/logrus
 2. https://github.com/natefinch/lumberjack
 ```
 
-Logrus 是一个针对 go 语言的结构化的日志处理器，它与 go 语言标准的 logger 库完全 API 兼容。因为 logrus 不支持对日志循环滚动处理（rotation），所以我们引入了另外一个开源项目 lumberjack。Logrus 与 lumberjack 之间通过 io.Writer 接口交互，如下图所示,
+Logrus 是 Go 结构化日志库，API 与 Go 标准库的 logger 兼容。Logrus 本身不负责日志滚动，Speedle 用 lumberjack 补足这部分能力。两者通过 `io.Writer` 接口连接：
 
-<img src="/img/speedle/logger.jpg" alt="Speedle Logging" width="370" height="230" loading="lazy">
+<img src="/img/speedle/logger.jpg" alt="Speedle 日志组件" width="370" height="230" loading="lazy">
 
 ## 日志配置
 
-可以通过两种方式对 Speedle 的日志模块进行配置，即命令行参数或者配置文件。
+可以通过命令行参数或配置文件设置 Speedle 日志。
 
 ### 通过命令行参数配置日志
 
-所有的命令行参数如下所示。level、formatter、reportcaller 配置 logrus，文件与滚动相关设置配置 lumberjack。
+可用参数如下。`level`、`formatter`、`reportcaller` 由 logrus 使用，文件和滚动设置由 lumberjack 使用。
 
 ```
 --log-level string
@@ -44,21 +44,21 @@ Logrus 是一个针对 go 语言的结构化的日志处理器，它与 go 语�
 --log-compress bool
 ```
 
-上面每一个参数的详细信息包含在下面的表格中。所有的参数都收可选的。 如果所有参数都没有配置，那么日志消息默认会输出到标准错误输出（stderr），而且默认的日志级别是 info。
+所有参数都可省略。未配置文件日志时，日志默认输出到标准错误（stderr），默认级别为 info。
 
-| 配置项             | 描述                                                                                                 | 默认值                                                                                  |
-| ------------------ | ---------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
-| --log-level        | 日志级别, 有效的日志级别包括：panic、fatal、error、warn、info、debug                                 | info                                                                                    |
-| --log-formatter    | 日志格式, 有效的日志格式包括：text、json                                                             | text                                                                                    |
-| --log-reportcaller | 用于控制是否将调用信息 (文件名, 行数和函数名)包含在日志消息中                                        | false                                                                                   |
-| --log-filename     | 日志文件名                                                                                           | 没有默认值。 如果没有配置，那么日志消息默认会输出到标准错误输出（stderr）               |
-| --log-maxsize      | 每个日志文件的最大尺寸。 注意该参数只有在"--log-filename"已经配置的情况下才有效                      | 100M                                                                                    |
-| --log-maxbackups   | 历史日志文件保留的最大数量。 注意该参数只有在"--log-filename"已经配置的情况下才有效                  | 0, 保留所有历史日志文件（注意历史日志文件可能由于达到了 maxAge 设定的时间限制而被删除） |
-| --log-maxage       | 历史日志文件保留的最多天数。注意该参数只有在"--log-filename"已经配置的情况下才有效                   | 0, 不删除任何历史日志文件（注意历史日志文件可能由于达到了 maxbackups 的限制而被删除）   |
-| --log-localtime    | 用于控制在生成滚动日志文件时是否使用本地时间。注意该参数只有在"--log-filename"已经配置的情况下才有效 | false, 使用 UTC 时间                                                                    |
-| --log-compress     | 用于控制在生成滚动日志文件时是否需要压缩。注意该参数只有在"--log-filename"已经配置的情况下才有效     | false, 不压缩                                                                           |
+| 配置项 | 说明 | 默认值 |
+| --- | --- | --- |
+| --log-level | 日志级别：panic、fatal、error、warn、info、debug | info |
+| --log-formatter | 日志格式：text、json | text |
+| --log-reportcaller | 是否在日志中包含调用信息（文件名、行号和函数名） | false |
+| --log-filename | 日志文件路径。未设置时输出到标准错误（stderr） | 空 |
+| --log-maxsize | 单个日志文件的最大尺寸，仅在设置 `--log-filename` 后生效 | 100M |
+| --log-maxbackups | 最多保留多少个历史日志文件，仅在设置 `--log-filename` 后生效 | 0，保留全部文件；达到 maxAge 上限的文件仍会删除 |
+| --log-maxage | 历史日志文件最多保留多少天，仅在设置 `--log-filename` 后生效 | 0，不按天数删除；达到 maxBackups 上限的文件仍会删除 |
+| --log-localtime | 滚动日志文件名是否使用本地时间，仅在设置 `--log-filename` 后生效 | false，使用 UTC |
+| --log-compress | 是否压缩滚动后的历史日志，仅在设置 `--log-filename` 后生效 | false，不压缩 |
 
-下面是两个日志消息的示例，第一个使用 text 格式输出，第二个则是使用 json 格式输出，
+以下分别是 text 和 json 格式的日志示例：
 
 ```
 # text
@@ -73,7 +73,7 @@ ocean","size":10,"time":"2014-03-10 19:57:38.562264131 -0400 EDT"}
 
 ### 通过配置文件配置日志
 
-下面就是一个配置文件的例子，每一项的含义与对应的命令行参数完全一样。同样，所有配置项都是可选的。
+配置示例如下。各项含义与同名命令行参数一致，全部可以省略。
 
 ```json
 {
@@ -93,11 +93,11 @@ ocean","size":10,"time":"2014-03-10 19:57:38.562264131 -0400 EDT"}
 }
 ```
 
-## 配置日志的最佳实践
+## 容器日志建议
 
-如果 Speedle 以 docker 容器的方式运行，那么推荐使用 docker 的日志驱动 json-file 来配置日志文件的大小以及滚动等，而不是使用 natefinch/lumberjack。这种情况下，仅仅需要用 sirupsen/logrus 来配置日志的级别以及格式。
+Speedle 在 Docker 容器中运行时，建议用 Docker 的 `json-file` 日志驱动管理文件大小和滚动，不再使用 lumberjack。此时 logrus 只负责日志级别和格式。
 
-Docker 的所有配置信息，包括日志配置，都包含在配置文件/etc/docker/daemon.json 中。关于如何配置 docker 的日志驱动 json-file，具体请参考[docker json-file](https://docs.docker.com/config/containers/logging/json-file/)。下面是 json-file 的一个配置示例,
+Docker 的日志配置位于 `/etc/docker/daemon.json`。具体用法见 [Docker json-file 文档](https://docs.docker.com/config/containers/logging/json-file/)，配置示例如下：
 
 ```
 {
@@ -109,11 +109,11 @@ Docker 的所有配置信息，包括日志配置，都包含在配置文件/etc
 }
 ```
 
-其实在大多数情况下，用户也不需要配置 sirupsen/logrus，因为默认的日志级别（info）和默认格式的日志格式（text）基本满足大多数的需求。通常在用户希望改变日志格式的时候才需要配置 logrus，例如改成 json 格式。
+多数场景使用默认的 info 级别和 text 格式即可。需要 JSON 等格式时，再调整 logrus 配置。
 
-## 如何增加新的日志消息
+## 在代码中添加日志
 
-首先确保在\*.go 源文件中导入了 logrus 的 package，
+先在 `*.go` 源文件中导入 logrus：
 
 ```go
 import (
@@ -121,7 +121,7 @@ import (
 )
 ```
 
-然后就可以增加任何你希望的日志消息。例如：
+然后添加需要的日志，例如：
 
 ```go
   log.Debug("This is a debug log entry")
@@ -131,11 +131,11 @@ import (
   log.Error("This is a error log entry")
 ```
 
-具体请参考[speedle/logging/demo/demo.go](https://github.com/teramoby/speedle-plus/blob/master/pkg/logging/demo/demo.go).
+完整示例见 [speedle/logging/demo/demo.go](https://github.com/teramoby/speedle-plus/blob/master/pkg/logging/demo/demo.go)。
 
-## 与第三方日志系统集成
+## 接入第三方日志系统
 
-Speedle 的日志可以很容易地与第三方日志系统集成，例如 fluentd、filebeat。用户所需要做的就是配置 fluentd 或 filebeat 去监控 Speedle 生成的日志文件。下面的例子就是配置 fluentd 的 in_tail 插件来收集 docker 容器的日志，如果 Speedle 作为 docker 容器运行的话，那么产生的日志自然也会被收集。
+Speedle 日志可以交给 fluentd、filebeat 等系统收集，只需让采集器监控 Speedle 生成的日志文件。下面的示例用 fluentd 的 `in_tail` 插件收集 Docker 容器日志；Speedle 在容器中运行时，其日志也会由这套配置采集。
 
 ```
     <source>
@@ -152,4 +152,4 @@ Speedle 的日志可以很容易地与第三方日志系统集成，例如 fluen
     </source>
 ```
 
-请参考[fluentd](https://www.fluentd.org/)和[filebeat](https://www.elastic.co/products/beats/filebeat)来获得更多信息。
+更多配置见 [fluentd](https://www.fluentd.org/) 和 [filebeat](https://www.elastic.co/products/beats/filebeat) 文档。

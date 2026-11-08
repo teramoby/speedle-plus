@@ -11,7 +11,7 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
     <meta name="viewport" content="width=device-width, initial-scale=1"><title>全局角色策略 · Speedle Engine</title>
-<meta name="description" content="Policies take effect globally">
+<meta name="description" content="在多个服务之间共享角色分配，同时把操作权限留在各服务中管理。">
 <meta name="generator" content="Hugo 0.48" />
 <link href="https://engine.speedle.io/index.xml" rel="alternate" type="application/rss+xml">
 <link rel="canonical" href="https://engine.speedle.io/zh/docs/pms/global-policy/">
@@ -22,7 +22,7 @@
 <meta property="og:type" content="article">
 <meta property="og:site_name" content="Speedle Engine">
 <meta property="og:title" content="全局角色策略 · Speedle Engine">
-<meta property="og:description" content="Policies take effect globally">
+<meta property="og:description" content="在多个服务之间共享角色分配，同时把操作权限留在各服务中管理。">
 <meta property="og:url" content="https://engine.speedle.io/zh/docs/pms/global-policy/">
 <meta property="og:image" content="https://engine.speedle.io/img/social/engine-zh.png">
 <meta property="og:image:width" content="1200">
@@ -31,12 +31,12 @@
 <meta property="og:image:alt" content="Speedle Engine — 快速、简单的权限控制">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="全局角色策略 · Speedle Engine">
-<meta name="twitter:description" content="Policies take effect globally">
+<meta name="twitter:description" content="在多个服务之间共享角色分配，同时把操作权限留在各服务中管理。">
 <meta name="twitter:image" content="https://engine.speedle.io/img/social/engine-zh.png">
 <meta name="twitter:image:alt" content="Speedle Engine — 快速、简单的权限控制">
 
-<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/zh/docs/pms/global-policy/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-10-29T11:53:01+08:00","datePublished":"2019-01-18T21:19:44+08:00","description":"Policies take effect globally","headline":"全局角色策略","image":"https://engine.speedle.io/img/social/engine-zh.png","inLanguage":"zh-CN","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/zh/docs/pms/global-policy/","@type":"WebPage"},"name":"全局角色策略","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/zh/docs/pms/global-policy/"}</script>
-<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/zh/docs/pms/global-policy/#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://engine.speedle.io/zh/","name":"首页","position":1},{"@type":"ListItem","item":"https://engine.speedle.io/zh/docs/","name":"文档","position":2},{"@type":"ListItem","item":"https://engine.speedle.io/zh/docs/pms/","name":"Speedle策略","position":3},{"@type":"ListItem","item":"https://engine.speedle.io/zh/docs/pms/global-policy/","name":"全局角色策略","position":4}]}</script><link href="/css/docs.css" rel="stylesheet" type="text/css">
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/zh/docs/pms/global-policy/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-10-29T11:53:01+08:00","datePublished":"2019-01-18T21:19:44+08:00","description":"在多个服务之间共享角色分配，同时把操作权限留在各服务中管理。","headline":"全局角色策略","image":"https://engine.speedle.io/img/social/engine-zh.png","inLanguage":"zh-CN","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/zh/docs/pms/global-policy/","@type":"WebPage"},"name":"全局角色策略","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/zh/docs/pms/global-policy/"}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/zh/docs/pms/global-policy/#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://engine.speedle.io/zh/","name":"首页","position":1},{"@type":"ListItem","item":"https://engine.speedle.io/zh/docs/","name":"文档","position":2},{"@type":"ListItem","item":"https://engine.speedle.io/zh/docs/pms/","name":"Speedle 策略","position":3},{"@type":"ListItem","item":"https://engine.speedle.io/zh/docs/pms/global-policy/","name":"全局角色策略","position":4}]}</script><link href="/css/docs.css" rel="stylesheet" type="text/css">
 
 
     <link href="/css/navigation.css?v=header-20261106-v8" rel="stylesheet">
@@ -79,14 +79,14 @@
 <ul class="sub-menu">
 <li data-docs-depth="0" class=""><a href="/zh/docs/usecases/">使用场景</a></li>
 <li data-docs-depth="0" class=""><a href="/zh/docs/overview/">概览</a></li>
-<li data-docs-depth="0" class=""><a href="/zh/docs/spdl/">SPDL - Speedle 策略定义语言</a></li>
+<li data-docs-depth="0" class=""><a href="/zh/docs/spdl/">SPDL：Speedle 策略定义语言</a></li>
 <li data-docs-depth="0" class=""><a href="/zh/docs/architecture/">系统架构</a></li>
-<li data-docs-depth="0" class=""><a href="/zh/docs/deployment-embeded/">Speedle嵌入模式</a></li>
-<li data-docs-depth="0" class=""><a href="/zh/docs/deployment/">Speedle服务的部署方式</a></li>
+<li data-docs-depth="0" class=""><a href="/zh/docs/deployment-embeded/">Speedle 嵌入模式</a></li>
+<li data-docs-depth="0" class=""><a href="/zh/docs/deployment/">部署 Speedle</a></li>
 
 
 
-<li data-docs-depth="0" class="docs-nav-section parent"><span class="docs-nav-heading">Speedle策略</span>
+<li data-docs-depth="0" class="docs-nav-section parent"><span class="docs-nav-heading">Speedle 策略</span>
 <ul class="sub-menu">
 <li data-docs-depth="1" class=""><a href="/zh/docs/pms/policy-mgmt/">策略管理</a></li>
 <li data-docs-depth="1" class="active"><a href="/zh/docs/pms/global-policy/" aria-current="page">全局角色策略</a></li>
@@ -95,9 +95,9 @@
 </ul>
 
 </li>
-<li data-docs-depth="0" class=""><a href="/zh/docs/decisions/">授权查询</a></li>
+<li data-docs-depth="0" class=""><a href="/zh/docs/decisions/">授权决策</a></li>
 <li data-docs-depth="0" class=""><a href="/zh/docs/idd/">用户身份域</a></li>
-<li data-docs-depth="0" class=""><a href="/zh/docs/assertor/">令牌用户身份断言</a></li>
+<li data-docs-depth="0" class=""><a href="/zh/docs/assertor/">令牌断言</a></li>
 
 
 
@@ -114,8 +114,8 @@
 
 <li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading">API</span>
 <ul class="">
-<li data-docs-depth="1" class=""><a href="/zh/docs/api/asserter_api/">令牌断言插件 API</a></li>
-<li data-docs-depth="1" class=""><a href="/zh/docs/api/decision_api/">授权运行时/决策 API</a></li>
+<li data-docs-depth="1" class=""><a href="/zh/docs/api/asserter_api/">令牌断言 API</a></li>
+<li data-docs-depth="1" class=""><a href="/zh/docs/api/decision_api/">授权决策 API</a></li>
 <li data-docs-depth="1" class=""><a href="/zh/docs/api/management_api/">策略管理 API</a></li>
 </ul>
 
@@ -167,7 +167,7 @@
 
 
 
-<nav id="contents" class="docs-toc" data-docs-toc="h2" aria-label="On this page">
+<nav id="contents" class="docs-toc" data-docs-toc="h2" aria-label="本页目录">
   <ol></ol>
 </nav>
 
@@ -210,7 +210,7 @@
 
 <h2 id="验证结果">验证结果</h2>
 
-<p>Emma 通过 <code>AdminRole</code> 获得允许，Bob 被拒绝。</p>
+<p>Emma 通过 <code>AdminRole</code> 获得授权，请求返回 Allow；Bob 的请求返回 Deny。</p>
 
 <!-- docs-check: global-allow -->
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl --fail --silent --show-error -H <span style="color:#f1fa8c">&#39;Content-Type: application/json&#39;</span> <span style="color:#f1fa8c">\
