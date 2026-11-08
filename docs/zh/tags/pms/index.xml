@@ -22,7 +22,7 @@ grant group Administrators list,watch,get expr:^c1/default/core/pods/.*$ 此正�
 角色策略 grant user alan manager on res1 grant role manager update res1 第一行把指定资源上的角色分配给 Alan，第二行才为该角色授予操作权限。仅分配角色不会自动产生权限。适用的显式拒绝优先于允许。
 主体与条件 主体可以是用户、组、实体或角色。实体表示服务等非人身份，集成代码必须从可信来源获取这些身份。
 AND 主体组要求组内所有身份均匹配，多组之间为 OR。以下例子要求两个角色都有效：
-grant (role designer, role dba) update db_design_doc 资源是被保护的对象，操作是应用定义的动作。条件是由可信属性、常量、运算符与受支持函数构成的布尔表达式。
+grant (role designer, role dba) update db_design_doc 资源指需要保护的对象，操作是应用定义的动作。条件是由可信属性、常量、运算符和受支持函数构成的布尔表达式。
 语法见 SPDL，完整决策示例见 RBAC 与 ABAC。
 运行示例前 先按快速入门编译仓库根目录下的 ./bin/spctl、./bin/speedle-pms 和 ./bin/speedle-ads，需要 Go 1.26.10 或 Go 1.27.3（也可使用同一大版本的更新补丁版本）、Bash、curl 和 Python 3。下面各终端都从仓库根目录运行。为本页使用一个新的策略文件；仅在两个服务都停止后重建该文件。
 初始化空策略文件：
@@ -36,7 +36,7 @@ printf &amp;#39;{}\n&amp;#39; &amp;gt; docs-policies.</description>
       
       <guid>https://engine.speedle.io/zh/docs/api/management_api/</guid>
       <description>已配置 PMS 的接口参考。请求与响应使用 JSON，策略 ID 为字符串，响应为扁平对象。
-请配置安全连接与端点访问控制。这是接口契约，speedle.io 不托管授权后端。
+请配置安全连接与端点访问控制。本文只说明接口约定，speedle.io 不提供托管授权后端。
               document.addEventListener(&#39;DOMContentLoaded&#39;, function() { var url = &#34;\/swagger\/policy-manage.zh.yaml&#34;; const ui = SwaggerUIBundle({ url: url, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.presets.apis ], plugins: [ SwaggerUIBundle.plugins.DownloadUrl ], validatorUrl: null, layout: &#34;BaseLayout&#34; }) window.ui = ui });  </description>
     </item>
     

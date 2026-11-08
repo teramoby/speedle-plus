@@ -1,6 +1,6 @@
 +++
 title = "API"
-description = "Open API Specification Docs"
+description = "Speedle REST、gRPC 与嵌入式 Go API 参考。"
 weight = 300
 draft = false
 toc = false
@@ -8,7 +8,7 @@ tocheading = "h4"
 tocsidebar = false
 tags = ["v0.1.0", "api", "guide", "core"]
 categories = ["docs"]
-bref = "Open API Specification Docs. Use the API to model your simple and complex policies in a declarative way; get decisions, discover policies dynamically and debug policy evaluation."
+bref = "通过声明式 API 管理简单或复杂的策略，获取授权决策、发现策略并诊断评估过程。"
 +++
 
 Java、Python、Go、.NET、Rust 和 Node.js/TypeScript 的客户端库见 [SDK](/docs/sdks/)。
@@ -28,7 +28,7 @@ Java、Python、Go、.NET、Rust 和 Node.js/TypeScript 的客户端库见 [SDK]
 - [PMS proto](/protobuf/pms.proto)：`pb.PolicyManager`
 - [ADS proto](/protobuf/ads.proto)：`pb.Evaluator`
 
-当前 proto 必须与生成客户端配套使用。PMS 的服务名为 `pb.PolicyManager`，ADS 为 `pb.Evaluator`。这两份历史协议重用了消息名，应分别生成和加载，不要合并进同一 descriptor set。默认不启用 gRPC；需通过 `--grpc-endpoint` 显式开启，其 TLS 配置与 REST 相同。
+客户端必须使用当前 proto 生成。PMS 的服务名为 `pb.PolicyManager`，ADS 为 `pb.Evaluator`。这两份历史协议重用了消息名，应分别生成和加载，不要合并进同一 descriptor set。默认不启用 gRPC；需通过 `--grpc-endpoint` 显式开启，其 TLS 配置与 REST 相同。
 
 历史 gRPC 的 `ContextRequest.attributes` 是字符串 map，不是 REST 的带类型属性数组，也不提供同样的数值、布尔、日期类型。条件需要这些类型时，应使用 REST 或嵌入式 Go，除非你的 gRPC 适配层明确实现了相应转换。
 

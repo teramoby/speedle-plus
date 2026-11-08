@@ -12,9 +12,9 @@ categories = ["docs"]
 bref = "Speedle 在授权与访问控制术语中的位置"
 +++
 
-Speedle 是一个开源的授权引擎（authorization engine）。应用向它提出“这个用户能否对这个资源执行这个操作”这样的问题，Speedle 根据集中管理的策略回答允许或拒绝。本页把常见的授权术语和 Speedle 中实现它们的组件对应起来，并链接到相应的文档。
+Speedle 是开源授权引擎。应用向它询问“这个用户能否对这个资源执行这个操作”，Speedle 根据集中管理的策略返回允许或拒绝。本页介绍常见的授权术语，以及它们在 Speedle 中对应的组件，并链接到相关文档。
 
-下面的示例使用名为 `library` 的服务。每条策略都通过策略管理服务的 REST API 创建，每个决策都由授权决策服务的 REST API 返回。reason 代码的含义见[授权查询](../decisions/)。
+下面的示例使用名为 `library` 的服务。每条策略都通过策略管理服务的 REST API 创建，每个决策都由授权决策服务的 REST API 返回。reason 代码的含义见[授权决策](../decisions/)。
 
 ## 授权引擎（Authorization engine）
 
@@ -63,7 +63,7 @@ grant role librarian read,update book
 grant user alice librarian
 ```
 
-`alice` 可以 update `book`（reason 0，找到授权策略）；没有角色的 `bob` 被拒绝（reason 3，没有适用的策略）。角色也可以只在某一个资源上分配，参见[策略管理](../pms/policy-mgmt/)和[全局角色策略](../pms/global-policy/)。
+`alice` 可以 update `book`（reason 0，找到授权策略）；没有角色的 `bob` 返回 Deny（reason 3，没有适用的策略）。角色也可以只在某一个资源上分配，参见[策略管理](../pms/policy-mgmt/)和[全局角色策略](../pms/global-policy/)。
 
 ## ABAC：基于属性的访问控制（Attribute-based access control）
 
@@ -84,7 +84,7 @@ grant group staff read,delete journal
 deny user carol delete journal
 ```
 
-`carol` 属于 `staff` 组，但对 `journal` 的 `delete` 被拒绝（reason 1，找到拒绝策略）；同属 `staff` 的 `erin` 被允许（reason 0）。
+`carol` 属于 `staff` 组，但对 `journal` 的 `delete` 返回 Deny（reason 1，找到拒绝策略）；同属 `staff` 的 `erin` 返回 Allow（reason 0）。
 
 ## 身份与 IAM（Identity and IAM）
 
@@ -94,7 +94,7 @@ deny user carol delete journal
 grant user dave from github read code
 ```
 
-来自 `github` 身份域的 `dave` 可以 read `code`（reason 0）；来自 `corp` 或不带身份域的 `dave` 被拒绝（reason 3）。
+来自 `github` 身份域的 `dave` 可以 read `code`（reason 0）；来自 `corp` 或不带身份域的 `dave` 返回 Deny（reason 3）。
 
 ## 零信任（Zero trust）
 

@@ -84,23 +84,23 @@
           <div class="editor-heading"><div class="editor-heading-left"><span class="step">02</span><div><h2 id="request-heading">授权请求</h2><p>填写请求，无需编写 JSON</p></div></div><span class="language-tag">表单</span></div>
           <form id="request-form" class="request-form" novalidate>
             <div class="request-basics">
-              <div class="form-field" data-field-wrapper="resource"><label for="resource">资源 <span>必填</span></label><input id="resource" data-field="resource" name="resource" placeholder="e.g. book or /api/orders" autocomplete="off" maxlength="10000" required><small class="field-error" hidden></small></div>
-              <div class="form-field" data-field-wrapper="action"><label for="action">操作 <span>必填</span></label><input id="action" data-field="action" name="action" placeholder="e.g. read or write" autocomplete="off" maxlength="1000" required><small class="field-error" hidden></small></div>
+              <div class="form-field" data-field-wrapper="resource"><label for="resource">资源 <span>必填</span></label><input id="resource" data-field="resource" name="resource" placeholder="例如 book 或 /api/orders" autocomplete="off" maxlength="10000" required><small class="field-error" hidden></small></div>
+              <div class="form-field" data-field-wrapper="action"><label for="action">操作 <span>必填</span></label><input id="action" data-field="action" name="action" placeholder="例如 read 或 write" autocomplete="off" maxlength="1000" required><small class="field-error" hidden></small></div>
               <div class="form-field service-field" data-field-wrapper="serviceName"><label for="service-name">服务 <span>策略命名空间</span></label><input id="service-name" data-field="serviceName" name="serviceName" placeholder="playground" autocomplete="off" maxlength="1000"><small class="field-error" hidden></small></div>
             </div>
             <fieldset class="form-section"><legend><strong>主体</strong><span>身份</span></legend><button type="button" class="add-button section-add" id="add-principal">+ 添加身份</button><div id="principal-list"></div><p class="form-hint">支持用户、组和实体。角色由 SPDL 角色策略推导。</p></fieldset>
-            <fieldset class="form-section attributes-section"><legend><strong>属性</strong><span>可选</span></legend><button type="button" class="add-button section-add" id="add-attribute">+ 添加属性</button><div id="attribute-list"></div><p class="form-hint">为条件提供指定类型的属性值；启用多个值可创建数组。</p></fieldset>
+            <fieldset class="form-section attributes-section"><legend><strong>属性</strong><span>可选</span></legend><button type="button" class="add-button section-add" id="add-attribute">+ 添加属性</button><div id="attribute-list"></div><p class="form-hint">为条件添加带类型的属性值；需要数组时开启“多个值”。</p></fieldset>
           </form>
         </section>
       </div>
-      <div class="runbar"><span class="privacy-note"><svg class="icon"><use href="#i-lock"/></svg>输入仅保留在当前浏览器内存中，不会上传或保存。</span><div class="run-actions"><span class="shortcut"><kbd id="shortcut-key">Ctrl</kbd> + <kbd>Enter</kbd></span><button class="button button-primary evaluate-button" id="evaluate" disabled><svg class="icon"><use href="#i-arrow"/></svg><span id="evaluate-label">正在加载引擎</span></button></div></div>
+      <div class="runbar"><span class="privacy-note"><svg class="icon"><use href="#i-lock"/></svg>输入只保存在当前浏览器内存里，不上传，也不持久保存。</span><div class="run-actions"><span class="shortcut"><kbd id="shortcut-key">Ctrl</kbd> + <kbd>Enter</kbd></span><button class="button button-primary evaluate-button" id="evaluate" disabled><svg class="icon"><use href="#i-arrow"/></svg><span id="evaluate-label">正在加载引擎</span></button></div></div>
     </section>
     <section class="result-section" aria-labelledby="result-heading">
       <div class="result-heading"><h2 id="result-heading"><span class="step">03</span>授权结果</h2><span class="result-meta" id="result-meta">尚未运行</span></div>
-      <div class="result-card idle" id="result-card" role="status" aria-live="polite" aria-atomic="true"><div class="result-symbol" id="result-symbol"><svg class="icon"><use href="#i-terminal"/></svg></div><div class="result-body"><div class="result-label" id="result-label">可以开始测试策略了</div><p id="result-description">点击“执行评估”，检查当前请求是否被允许。</p></div><div class="result-type" id="result-type">布尔值输出</div></div>
+      <div class="result-card idle" id="result-card" role="status" aria-live="polite" aria-atomic="true"><div class="result-symbol" id="result-symbol"><svg class="icon"><use href="#i-terminal"/></svg></div><div class="result-body"><div class="result-label" id="result-label">开始测试策略</div><p id="result-description">点击“执行评估”，查看是否允许当前请求。</p></div><div class="result-type" id="result-type">布尔值输出</div></div>
       <details class="result-details" id="result-details" hidden><summary>查看引擎响应 <span class="details-hint">JSON</span></summary><pre id="result-json"></pre></details>
     </section>
-    <details class="quick-reference"><summary><span><svg class="icon"><use href="#i-book"/></svg>刚开始使用 SPDL？<span class="reference-teaser">一分钟快速参考</span></span><span class="expand-indicator">+</span></summary><div class="reference-grid"><div><h3>编写策略</h3><code>grant user alice read book</code><p>依次填写授权效果、身份类型、身份、操作和资源。每行是一条语句； <code>deny</code> 明确拒绝访问。</p></div><div><h3>添加条件</h3><code>grant user alice read book if clearance &gt;= 3</code><p>添加属性并选择类型；可使用多个值组成数组。加载“条件表达式”示例即可尝试。</p></div><div><h3>查看结果</h3><p><strong class="allow-text">true</strong> — 请求被允许。<br><strong class="deny-text">false</strong> — 明确拒绝访问，或没有匹配的授权策略。<br>输入与执行错误会单独显示，不会作为 false 授权结果。</p><a href="/zh/docs/spdl/" target="_blank" rel="noopener noreferrer">完整 SPDL 文档 ↗</a></div></div></details>
+    <details class="quick-reference"><summary><span><svg class="icon"><use href="#i-book"/></svg>刚开始使用 SPDL？<span class="reference-teaser">一分钟快速参考</span></span><span class="expand-indicator">+</span></summary><div class="reference-grid"><div><h3>编写策略</h3><code>grant user alice read book</code><p>依次填写允许或拒绝、身份类型、身份、操作和资源。每行是一条语句； <code>deny</code> 明确拒绝访问。</p></div><div><h3>添加条件</h3><code>grant user alice read book if clearance &gt;= 3</code><p>添加属性并选择类型，需要数组时添加多个值。加载“条件表达式”示例即可尝试。</p></div><div><h3>查看结果</h3><p><strong class="allow-text">true</strong> — 允许当前请求。<br><strong class="deny-text">false</strong> — 命中拒绝策略，或没有匹配的授权策略。<br>输入或执行出错时会单独提示，不会把错误当成 false 结果。</p><a href="/zh/docs/spdl/" target="_blank" rel="noopener noreferrer">完整 SPDL 文档 ↗</a></div></div></details>
     <p class="sandbox-note"><strong>浏览器沙箱</strong> 单个服务 · 最多 500 条语句 · 输入总量 256 KiB · 评估时限 5 秒。<span>不支持外部自定义函数和令牌断言。请在“主体”下填写测试身份。</span></p>
 
     <p class="engine-credit">由 Speedle 驱动 · Go + WebAssembly · <a href="/playground/ENGINE-NOTICE.txt">引擎和许可证声明</a> · <a href="https://github.com/teramoby/speedle-plus/tree/master/website/playground-engine">源码和构建说明</a></p>
@@ -127,7 +127,7 @@
       </nav>
     </div>
     <div class="wrap footer-bar">
-      <p class="footer-legal"><span>基于 Universal Permissive License v1.0 授权。</span><span class="footer-sep" aria-hidden="true"> · </span><span>版权所有 &copy; 2019–2026。</span></p>
+      <p class="footer-legal"><span>基于 Universal Permissive License v1.0 授权。</span><span>版权所有 &copy; 2019–2026 The Speedle Authors。</span></p>
     </div>
   </footer>
   <div id="toast" class="toast" role="status" hidden></div>

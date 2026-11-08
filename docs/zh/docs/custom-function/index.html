@@ -11,7 +11,7 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
     <meta name="viewport" content="width=device-width, initial-scale=1"><title>自定义函数 · Speedle Engine</title>
-<meta name="description" content="Write policy condition with your own functions">
+<meta name="description" content="在 SPDL 条件中调用自定义函数，扩展授权规则的计算能力。">
 <meta name="generator" content="Hugo 0.48" />
 <link href="https://engine.speedle.io/index.xml" rel="alternate" type="application/rss+xml">
 <link rel="canonical" href="https://engine.speedle.io/zh/docs/custom-function/">
@@ -24,7 +24,7 @@
 <meta property="article:modified_time" content="2026-11-08T05:25:30&#43;08:00">
 <meta property="og:site_name" content="Speedle Engine">
 <meta property="og:title" content="自定义函数 · Speedle Engine">
-<meta property="og:description" content="Write policy condition with your own functions">
+<meta property="og:description" content="在 SPDL 条件中调用自定义函数，扩展授权规则的计算能力。">
 <meta property="og:url" content="https://engine.speedle.io/zh/docs/custom-function/">
 <meta property="og:image" content="https://engine.speedle.io/img/social/engine-zh.png">
 <meta property="og:image:width" content="1200">
@@ -33,11 +33,11 @@
 <meta property="og:image:alt" content="Speedle Engine — 快速、简单的权限控制">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="自定义函数 · Speedle Engine">
-<meta name="twitter:description" content="Write policy condition with your own functions">
+<meta name="twitter:description" content="在 SPDL 条件中调用自定义函数，扩展授权规则的计算能力。">
 <meta name="twitter:image" content="https://engine.speedle.io/img/social/engine-zh.png">
 <meta name="twitter:image:alt" content="Speedle Engine — 快速、简单的权限控制">
 
-<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/zh/docs/custom-function/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-08T05:25:30+08:00","datePublished":"2019-01-21T10:43:02+08:00","description":"Write policy condition with your own functions","headline":"自定义函数","image":"https://engine.speedle.io/img/social/engine-zh.png","inLanguage":"zh-CN","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/zh/docs/custom-function/","@type":"WebPage"},"name":"自定义函数","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/zh/docs/custom-function/"}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/zh/docs/custom-function/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-08T10:01:40+08:00","datePublished":"2019-01-21T10:43:02+08:00","description":"在 SPDL 条件中调用自定义函数，扩展授权规则的计算能力。","headline":"自定义函数","image":"https://engine.speedle.io/img/social/engine-zh.png","inLanguage":"zh-CN","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/zh/docs/custom-function/","@type":"WebPage"},"name":"自定义函数","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/zh/docs/custom-function/"}</script>
 <script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/zh/docs/custom-function/#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://engine.speedle.io/zh/","name":"首页","position":1},{"@type":"ListItem","item":"https://engine.speedle.io/zh/docs/","name":"文档","position":2},{"@type":"ListItem","item":"https://engine.speedle.io/zh/docs/custom-function/","name":"自定义函数","position":3}]}</script><link href="/css/docs.css" rel="stylesheet" type="text/css">
 
 
@@ -77,18 +77,20 @@
 
 
 
+
+
 <li data-docs-depth="-1" class="docs-nav-section parent"><span class="docs-nav-heading">文档</span>
 <ul class="sub-menu">
 <li data-docs-depth="0" class=""><a href="/zh/docs/usecases/">使用场景</a></li>
 <li data-docs-depth="0" class=""><a href="/zh/docs/overview/">概览</a></li>
-<li data-docs-depth="0" class=""><a href="/zh/docs/spdl/">SPDL - Speedle 策略定义语言</a></li>
+<li data-docs-depth="0" class=""><a href="/zh/docs/spdl/">SPDL：Speedle 策略定义语言</a></li>
 <li data-docs-depth="0" class=""><a href="/zh/docs/architecture/">系统架构</a></li>
-<li data-docs-depth="0" class=""><a href="/zh/docs/deployment-embeded/">Speedle嵌入模式</a></li>
-<li data-docs-depth="0" class=""><a href="/zh/docs/deployment/">Speedle服务的部署方式</a></li>
+<li data-docs-depth="0" class=""><a href="/zh/docs/deployment-embeded/">Speedle 嵌入模式</a></li>
+<li data-docs-depth="0" class=""><a href="/zh/docs/deployment/">部署 Speedle</a></li>
 
 
 
-<li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading">Speedle策略</span>
+<li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading">Speedle 策略</span>
 <ul class="">
 <li data-docs-depth="1" class=""><a href="/zh/docs/pms/policy-mgmt/">策略管理</a></li>
 <li data-docs-depth="1" class=""><a href="/zh/docs/pms/global-policy/">全局角色策略</a></li>
@@ -97,9 +99,9 @@
 </ul>
 
 </li>
-<li data-docs-depth="0" class=""><a href="/zh/docs/decisions/">授权查询</a></li>
+<li data-docs-depth="0" class=""><a href="/zh/docs/decisions/">授权决策</a></li>
 <li data-docs-depth="0" class=""><a href="/zh/docs/idd/">用户身份域</a></li>
-<li data-docs-depth="0" class=""><a href="/zh/docs/assertor/">令牌用户身份断言</a></li>
+<li data-docs-depth="0" class=""><a href="/zh/docs/assertor/">令牌断言</a></li>
 
 
 
@@ -116,8 +118,8 @@
 
 <li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading">API</span>
 <ul class="">
-<li data-docs-depth="1" class=""><a href="/zh/docs/api/asserter_api/">令牌断言插件 API</a></li>
-<li data-docs-depth="1" class=""><a href="/zh/docs/api/decision_api/">授权运行时/决策 API</a></li>
+<li data-docs-depth="1" class=""><a href="/zh/docs/api/asserter_api/">令牌断言 API</a></li>
+<li data-docs-depth="1" class=""><a href="/zh/docs/api/decision_api/">授权决策 API</a></li>
 <li data-docs-depth="1" class=""><a href="/zh/docs/api/management_api/">策略管理 API</a></li>
 </ul>
 
@@ -152,8 +154,6 @@
 </ul>
 
 </li>
-
-
 </ul>
 </nav>
 
@@ -169,7 +169,7 @@
 
 
 
-<nav id="contents" class="docs-toc" data-docs-toc="h2" aria-label="On this page">
+<nav id="contents" class="docs-toc" data-docs-toc="h2" aria-label="本页目录">
   <ol></ol>
 </nav>
 
@@ -307,7 +307,7 @@
 
 <h2 id="示例-零常驻权限-zsp">示例：零常驻权限（ZSP）</h2>
 
-<p>SPDL 条件与自定义函数可以支持零常驻权限（ZSP）模式：使用短期有效、范围受限的凭证，并由应用完成令牌校验与原子消费。针对自托管 Speedle 的<a href="https://github.com/teramoby/ai.speedle.io/tree/main/samples/zsp">可运行 ZSP 示例</a>把自定义函数与对令牌有效期、生效时间窗口和是否已使用的策略检查组合起来。令牌的签发、校验与原子消费仍由应用负责。</p>
+<p>SPDL 条件和自定义函数可以用来实现零常驻权限（ZSP）：凭证短期有效、权限范围受限，应用负责校验并原子消费令牌。自托管 Speedle 的<a href="https://github.com/teramoby/ai.speedle.io/tree/main/samples/zsp">可运行 ZSP 示例</a>用自定义函数检查令牌是否过期、是否处于生效窗口，以及是否已经使用。令牌仍由应用签发、校验和原子消费。</p>
 </div>
 </div>
 </main>
@@ -335,7 +335,7 @@
       </nav>
     </div>
     <div class="wrap footer-bar">
-      <p class="footer-legal"><span>基于 Universal Permissive License v1.0 授权。</span><span class="footer-sep" aria-hidden="true"> · </span><span>版权所有 &copy; 2019–2026。</span></p>
+      <p class="footer-legal"><span>基于 Universal Permissive License v1.0 授权。</span><span>版权所有 &copy; 2019–2026 The Speedle Authors。</span></p>
     </div>
   </footer>
 <!-- Cloudflare Web Analytics --><script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "a7a746c498b940e58425123082a20520"}'></script><!-- End Cloudflare Web Analytics -->

@@ -1,6 +1,6 @@
 +++
 title = "自定义函数"
-description = "Write policy condition with your own functions"
+description = "在 SPDL 条件中调用自定义函数，扩展授权规则的计算能力。"
 date = 2019-01-21T10:43:02+08:00
 weight = 600
 draft = false
@@ -170,4 +170,4 @@ TLS 端点先生成新的[本地测试证书](/docs/security/)，然后运行 `g
 
 ## 示例：零常驻权限（ZSP）
 
-SPDL 条件与自定义函数可以支持零常驻权限（ZSP）模式：使用短期有效、范围受限的凭证，并由应用完成令牌校验与原子消费。针对自托管 Speedle 的[可运行 ZSP 示例](https://github.com/teramoby/ai.speedle.io/tree/main/samples/zsp)把自定义函数与对令牌有效期、生效时间窗口和是否已使用的策略检查组合起来。令牌的签发、校验与原子消费仍由应用负责。
+SPDL 条件和自定义函数可以用来实现零常驻权限（ZSP）：凭证短期有效、权限范围受限，应用负责校验并原子消费令牌。自托管 Speedle 的[可运行 ZSP 示例](https://github.com/teramoby/ai.speedle.io/tree/main/samples/zsp)用自定义函数检查令牌是否过期、是否处于生效窗口，以及是否已经使用。令牌仍由应用签发、校验和原子消费。

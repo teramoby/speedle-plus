@@ -10,8 +10,8 @@
 
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
-    <meta name="viewport" content="width=device-width, initial-scale=1"><title>Speedle服务的部署方式 · Speedle Engine</title>
-<meta name="description" content="Recommended deployment topology for Speedle">
+    <meta name="viewport" content="width=device-width, initial-scale=1"><title>部署 Speedle · Speedle Engine</title>
+<meta name="description" content="选择合适的 Speedle 部署方式：嵌入 Go 应用，或独立运行 PMS 和 ADS。">
 <meta name="generator" content="Hugo 0.48" />
 <link href="https://engine.speedle.io/index.xml" rel="alternate" type="application/rss+xml">
 <link rel="canonical" href="https://engine.speedle.io/zh/docs/deployment/">
@@ -22,8 +22,8 @@
 <meta property="og:type" content="article">
 <meta property="article:modified_time" content="2026-11-08T02:15:03&#43;08:00">
 <meta property="og:site_name" content="Speedle Engine">
-<meta property="og:title" content="Speedle服务的部署方式 · Speedle Engine">
-<meta property="og:description" content="Recommended deployment topology for Speedle">
+<meta property="og:title" content="部署 Speedle · Speedle Engine">
+<meta property="og:description" content="选择合适的 Speedle 部署方式：嵌入 Go 应用，或独立运行 PMS 和 ADS。">
 <meta property="og:url" content="https://engine.speedle.io/zh/docs/deployment/">
 <meta property="og:image" content="https://engine.speedle.io/img/social/engine-zh.png">
 <meta property="og:image:width" content="1200">
@@ -31,13 +31,13 @@
 <meta property="og:image:type" content="image/png">
 <meta property="og:image:alt" content="Speedle Engine — 快速、简单的权限控制">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Speedle服务的部署方式 · Speedle Engine">
-<meta name="twitter:description" content="Recommended deployment topology for Speedle">
+<meta name="twitter:title" content="部署 Speedle · Speedle Engine">
+<meta name="twitter:description" content="选择合适的 Speedle 部署方式：嵌入 Go 应用，或独立运行 PMS 和 ADS。">
 <meta name="twitter:image" content="https://engine.speedle.io/img/social/engine-zh.png">
 <meta name="twitter:image:alt" content="Speedle Engine — 快速、简单的权限控制">
 
-<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/zh/docs/deployment/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-08T02:15:03+08:00","description":"Recommended deployment topology for Speedle","headline":"Speedle服务的部署方式","image":"https://engine.speedle.io/img/social/engine-zh.png","inLanguage":"zh-CN","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/zh/docs/deployment/","@type":"WebPage"},"name":"Speedle服务的部署方式","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/zh/docs/deployment/"}</script>
-<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/zh/docs/deployment/#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://engine.speedle.io/zh/","name":"首页","position":1},{"@type":"ListItem","item":"https://engine.speedle.io/zh/docs/","name":"文档","position":2},{"@type":"ListItem","item":"https://engine.speedle.io/zh/docs/deployment/","name":"Speedle服务的部署方式","position":3}]}</script><link href="/css/docs.css" rel="stylesheet" type="text/css">
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/zh/docs/deployment/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-08T10:01:40+08:00","description":"选择合适的 Speedle 部署方式：嵌入 Go 应用，或独立运行 PMS 和 ADS。","headline":"部署 Speedle","image":"https://engine.speedle.io/img/social/engine-zh.png","inLanguage":"zh-CN","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/zh/docs/deployment/","@type":"WebPage"},"name":"部署 Speedle","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/zh/docs/deployment/"}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/zh/docs/deployment/#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://engine.speedle.io/zh/","name":"首页","position":1},{"@type":"ListItem","item":"https://engine.speedle.io/zh/docs/","name":"文档","position":2},{"@type":"ListItem","item":"https://engine.speedle.io/zh/docs/deployment/","name":"部署 Speedle","position":3}]}</script><link href="/css/docs.css" rel="stylesheet" type="text/css">
 
 
     <link href="/css/navigation.css?v=header-20261106-v8" rel="stylesheet">
@@ -76,18 +76,20 @@
 
 
 
+
+
 <li data-docs-depth="-1" class="docs-nav-section parent"><span class="docs-nav-heading">文档</span>
 <ul class="sub-menu">
 <li data-docs-depth="0" class=""><a href="/zh/docs/usecases/">使用场景</a></li>
 <li data-docs-depth="0" class=""><a href="/zh/docs/overview/">概览</a></li>
-<li data-docs-depth="0" class=""><a href="/zh/docs/spdl/">SPDL - Speedle 策略定义语言</a></li>
+<li data-docs-depth="0" class=""><a href="/zh/docs/spdl/">SPDL：Speedle 策略定义语言</a></li>
 <li data-docs-depth="0" class=""><a href="/zh/docs/architecture/">系统架构</a></li>
-<li data-docs-depth="0" class=""><a href="/zh/docs/deployment-embeded/">Speedle嵌入模式</a></li>
-<li data-docs-depth="0" class="active"><a href="/zh/docs/deployment/" aria-current="page">Speedle服务的部署方式</a></li>
+<li data-docs-depth="0" class=""><a href="/zh/docs/deployment-embeded/">Speedle 嵌入模式</a></li>
+<li data-docs-depth="0" class="active"><a href="/zh/docs/deployment/" aria-current="page">部署 Speedle</a></li>
 
 
 
-<li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading">Speedle策略</span>
+<li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading">Speedle 策略</span>
 <ul class="">
 <li data-docs-depth="1" class=""><a href="/zh/docs/pms/policy-mgmt/">策略管理</a></li>
 <li data-docs-depth="1" class=""><a href="/zh/docs/pms/global-policy/">全局角色策略</a></li>
@@ -96,9 +98,9 @@
 </ul>
 
 </li>
-<li data-docs-depth="0" class=""><a href="/zh/docs/decisions/">授权查询</a></li>
+<li data-docs-depth="0" class=""><a href="/zh/docs/decisions/">授权决策</a></li>
 <li data-docs-depth="0" class=""><a href="/zh/docs/idd/">用户身份域</a></li>
-<li data-docs-depth="0" class=""><a href="/zh/docs/assertor/">令牌用户身份断言</a></li>
+<li data-docs-depth="0" class=""><a href="/zh/docs/assertor/">令牌断言</a></li>
 
 
 
@@ -115,8 +117,8 @@
 
 <li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading">API</span>
 <ul class="">
-<li data-docs-depth="1" class=""><a href="/zh/docs/api/asserter_api/">令牌断言插件 API</a></li>
-<li data-docs-depth="1" class=""><a href="/zh/docs/api/decision_api/">授权运行时/决策 API</a></li>
+<li data-docs-depth="1" class=""><a href="/zh/docs/api/asserter_api/">令牌断言 API</a></li>
+<li data-docs-depth="1" class=""><a href="/zh/docs/api/decision_api/">授权决策 API</a></li>
 <li data-docs-depth="1" class=""><a href="/zh/docs/api/management_api/">策略管理 API</a></li>
 </ul>
 
@@ -151,8 +153,6 @@
 </ul>
 
 </li>
-
-
 </ul>
 </nav>
 
@@ -162,13 +162,13 @@
 <main>
 <div id="main">
 
-  <h1>Speedle服务的部署方式</h1>
+  <h1>部署 Speedle</h1>
   <p class="docs-lead"></p>
 
 
 
 
-<nav id="contents" class="docs-toc" data-docs-toc="h2" aria-label="On this page">
+<nav id="contents" class="docs-toc" data-docs-toc="h2" aria-label="本页目录">
   <ol></ol>
 </nav>
 
@@ -201,7 +201,7 @@ go build -o ./bin/ ./cmd/spctl ./cmd/speedle-pms ./cmd/speedle-ads</code></pre><
 
 <h2 id="发布二进制与容器映像">发布二进制与容器映像</h2>
 
-<p>发布流程生成的每个发布版本都会附带适用于 macOS 和 Linux（amd64、arm64）的 <code>spctl</code>、<code>speedle-pms</code> 和 <code>speedle-ads</code> 预编译二进制，文件名格式为 <code>&lt;命令&gt;_&lt;系统&gt;_&lt;架构&gt;</code>，并附带 <code>checksums.txt</code>。请从 <a href="https://github.com/teramoby/speedle-plus/releases">Releases 页面</a>下载，运行前先用 SHA-256 校验和核对每个文件；校验和文件与二进制位于同一发布版本中，只能用于发现下载不完整或文件损坏，不能用来验证发布内容未被篡改。二进制和容器映像都由发布流程生成，因此从该流程加入后的第一个发布版本开始提供。</p>
+<p>发布流程生成的每个发布版本都会附带适用于 macOS 和 Linux（amd64、arm64）的 <code>spctl</code>、<code>speedle-pms</code> 和 <code>speedle-ads</code> 预编译二进制，文件名格式为 <code>&lt;命令&gt;_&lt;系统&gt;_&lt;架构&gt;</code>，并附带 <code>checksums.txt</code>。请从 <a href="https://github.com/teramoby/speedle-plus/releases">Releases 页面</a>下载，运行前先用 SHA-256 校验和核对每个文件；校验和文件与二进制位于同一发布版本中，只能用于发现下载不完整或文件损坏，不能验证发布内容是否遭到篡改。二进制和容器映像都由发布流程生成，因此从该流程加入后的第一个发布版本开始提供。</p>
 
 <p>发布流程还会发布两个面向 Linux amd64 和 arm64 的多架构容器映像：</p>
 
@@ -230,7 +230,7 @@ docker run --rm -p <span style="color:#bd93f9">127</span>.0.0.1:6734:6734 -v spe
 
 <h2 id="kubernetes-开发示例">Kubernetes 开发示例</h2>
 
-<p>使用当前 Kubernetes 集群和兼容的 <code>kubectl</code>。将以下内容保存为 <code>speedle-dev.yaml</code>。它使用 <code>apps/v1</code>，在同一 Pod 内让 PMS/ADS 共享文件，以非 root 用户运行应用，并通过内部 ClusterIP 服务访问。这是隔离开发环境示例：Pod 被替换后 <code>emptyDir</code> 中的策略会丢失，HTTP 端点需要集群访问控制。清单中的映像使用 <code>&lt;release-tag&gt;</code> 占位符；部署时请替换为要使用的发布标签，或使用摘要（digest）实现不可变固定；集群需要时配置 imagePullSecrets。</p>
+<p>使用当前 Kubernetes 集群和兼容的 <code>kubectl</code>。将以下内容保存为 <code>speedle-dev.yaml</code>。它使用 <code>apps/v1</code>，在同一 Pod 内让 PMS/ADS 共享文件，以非 root 用户运行应用，并通过内部 ClusterIP 服务访问。这是隔离开发环境示例：Pod 替换后，<code>emptyDir</code> 中的策略会丢失，HTTP 端点需要集群访问控制。清单中的映像使用 <code>&lt;release-tag&gt;</code> 占位符；部署时请替换为要使用的发布标签，或使用摘要（digest）实现不可变固定；集群需要时配置 imagePullSecrets。</p>
 
 <!-- deployment-template: kubernetes -->
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">apiVersion: apps/v1
@@ -336,7 +336,7 @@ kubectl port-forward service/speedle-dev <span style="color:#bd93f9">6733</span>
       </nav>
     </div>
     <div class="wrap footer-bar">
-      <p class="footer-legal"><span>基于 Universal Permissive License v1.0 授权。</span><span class="footer-sep" aria-hidden="true"> · </span><span>版权所有 &copy; 2019–2026。</span></p>
+      <p class="footer-legal"><span>基于 Universal Permissive License v1.0 授权。</span><span>版权所有 &copy; 2019–2026 The Speedle Authors。</span></p>
     </div>
   </footer>
 <!-- Cloudflare Web Analytics --><script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "a7a746c498b940e58425123082a20520"}'></script><!-- End Cloudflare Web Analytics -->

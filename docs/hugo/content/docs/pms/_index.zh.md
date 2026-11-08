@@ -1,13 +1,14 @@
 +++
-title = "Speedle策略"
+title = "Speedle 策略"
+description = "管理授权策略和全局角色策略，发现访问模式，诊断授权评估。"
 weight = 20
 draft = false
 tags = ["v0.1.0", "api", "guide", "core"]
 categories = ["docs"]
-bref = "Open API Specification Docs. Use the API to model your simple and complex policies in a declarative way; get decisions, discover policies dynamically and debug policy evaluation."
+bref = "创建和管理策略，发现访问模式，诊断授权评估。"
 +++
 
--   [Policy Management](./policy-mgmt/)
--   [Global Policy](./global-policy/)
--   [Policy Discovery](./discover/)
--   [Policy Diagnosis](./diagnosis/)
+- [策略管理](./policy-mgmt/)
+- [全局角色策略](./global-policy/)
+- [策略发现](./discover/)
+- [授权诊断](./diagnosis/)

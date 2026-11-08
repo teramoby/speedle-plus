@@ -36,7 +36,7 @@
 <meta name="twitter:image" content="https://engine.speedle.io/img/social/engine-zh.png">
 <meta name="twitter:image:alt" content="Speedle Engine — 快速、简单的权限控制">
 
-<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/zh/docs/overview/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-07T19:56:43+08:00","description":"Speedle 与常见授权术语的对应关系：PAP、PDP、PEP、PIP、RBAC、ABAC、PBAC、XACML、零信任、身份与 IAM。","headline":"Speedle 概览：面向细粒度访问控制的授权引擎","image":"https://engine.speedle.io/img/social/engine-zh.png","inLanguage":"zh-CN","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/zh/docs/overview/","@type":"WebPage"},"name":"Speedle 概览：面向细粒度访问控制的授权引擎","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/zh/docs/overview/"}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/zh/docs/overview/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-08T10:01:40+08:00","description":"Speedle 与常见授权术语的对应关系：PAP、PDP、PEP、PIP、RBAC、ABAC、PBAC、XACML、零信任、身份与 IAM。","headline":"Speedle 概览：面向细粒度访问控制的授权引擎","image":"https://engine.speedle.io/img/social/engine-zh.png","inLanguage":"zh-CN","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/zh/docs/overview/","@type":"WebPage"},"name":"Speedle 概览：面向细粒度访问控制的授权引擎","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/zh/docs/overview/"}</script>
 <script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/zh/docs/overview/#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://engine.speedle.io/zh/","name":"首页","position":1},{"@type":"ListItem","item":"https://engine.speedle.io/zh/docs/","name":"文档","position":2},{"@type":"ListItem","item":"https://engine.speedle.io/zh/docs/overview/","name":"Speedle 概览：面向细粒度访问控制的授权引擎","position":3}]}</script><link href="/css/docs.css" rel="stylesheet" type="text/css">
 
 
@@ -76,18 +76,20 @@
 
 
 
+
+
 <li data-docs-depth="-1" class="docs-nav-section parent"><span class="docs-nav-heading">文档</span>
 <ul class="sub-menu">
 <li data-docs-depth="0" class=""><a href="/zh/docs/usecases/">使用场景</a></li>
 <li data-docs-depth="0" class="active"><a href="/zh/docs/overview/" aria-current="page">概览</a></li>
-<li data-docs-depth="0" class=""><a href="/zh/docs/spdl/">SPDL - Speedle 策略定义语言</a></li>
+<li data-docs-depth="0" class=""><a href="/zh/docs/spdl/">SPDL：Speedle 策略定义语言</a></li>
 <li data-docs-depth="0" class=""><a href="/zh/docs/architecture/">系统架构</a></li>
-<li data-docs-depth="0" class=""><a href="/zh/docs/deployment-embeded/">Speedle嵌入模式</a></li>
-<li data-docs-depth="0" class=""><a href="/zh/docs/deployment/">Speedle服务的部署方式</a></li>
+<li data-docs-depth="0" class=""><a href="/zh/docs/deployment-embeded/">Speedle 嵌入模式</a></li>
+<li data-docs-depth="0" class=""><a href="/zh/docs/deployment/">部署 Speedle</a></li>
 
 
 
-<li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading">Speedle策略</span>
+<li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading">Speedle 策略</span>
 <ul class="">
 <li data-docs-depth="1" class=""><a href="/zh/docs/pms/policy-mgmt/">策略管理</a></li>
 <li data-docs-depth="1" class=""><a href="/zh/docs/pms/global-policy/">全局角色策略</a></li>
@@ -96,9 +98,9 @@
 </ul>
 
 </li>
-<li data-docs-depth="0" class=""><a href="/zh/docs/decisions/">授权查询</a></li>
+<li data-docs-depth="0" class=""><a href="/zh/docs/decisions/">授权决策</a></li>
 <li data-docs-depth="0" class=""><a href="/zh/docs/idd/">用户身份域</a></li>
-<li data-docs-depth="0" class=""><a href="/zh/docs/assertor/">令牌用户身份断言</a></li>
+<li data-docs-depth="0" class=""><a href="/zh/docs/assertor/">令牌断言</a></li>
 
 
 
@@ -115,8 +117,8 @@
 
 <li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading">API</span>
 <ul class="">
-<li data-docs-depth="1" class=""><a href="/zh/docs/api/asserter_api/">令牌断言插件 API</a></li>
-<li data-docs-depth="1" class=""><a href="/zh/docs/api/decision_api/">授权运行时/决策 API</a></li>
+<li data-docs-depth="1" class=""><a href="/zh/docs/api/asserter_api/">令牌断言 API</a></li>
+<li data-docs-depth="1" class=""><a href="/zh/docs/api/decision_api/">授权决策 API</a></li>
 <li data-docs-depth="1" class=""><a href="/zh/docs/api/management_api/">策略管理 API</a></li>
 </ul>
 
@@ -151,8 +153,6 @@
 </ul>
 
 </li>
-
-
 </ul>
 </nav>
 
@@ -168,7 +168,7 @@
 
 
 
-<nav id="contents" class="docs-toc" data-docs-toc="h2" aria-label="On this page">
+<nav id="contents" class="docs-toc" data-docs-toc="h2" aria-label="本页目录">
   <ol></ol>
 </nav>
 
@@ -176,9 +176,9 @@
 
   <div id="kube-component" class="content">
 
-<p>Speedle 是一个开源的授权引擎（authorization engine）。应用向它提出“这个用户能否对这个资源执行这个操作”这样的问题，Speedle 根据集中管理的策略回答允许或拒绝。本页把常见的授权术语和 Speedle 中实现它们的组件对应起来，并链接到相应的文档。</p>
+<p>Speedle 是开源授权引擎。应用向它询问“这个用户能否对这个资源执行这个操作”，Speedle 根据集中管理的策略返回允许或拒绝。本页介绍常见的授权术语，以及它们在 Speedle 中对应的组件，并链接到相关文档。</p>
 
-<p>下面的示例使用名为 <code>library</code> 的服务。每条策略都通过策略管理服务的 REST API 创建，每个决策都由授权决策服务的 REST API 返回。reason 代码的含义见<a href="/zh/docs/decisions/">授权查询</a>。</p>
+<p>下面的示例使用名为 <code>library</code> 的服务。每条策略都通过策略管理服务的 REST API 创建，每个决策都由授权决策服务的 REST API 返回。reason 代码的含义见<a href="/zh/docs/decisions/">授权决策</a>。</p>
 
 <h2 id="授权引擎-authorization-engine">授权引擎（Authorization engine）</h2>
 
@@ -219,7 +219,7 @@
 <p>在 RBAC 中，权限授予角色，角色再分配给用户或组。Speedle 用策略把权限授予角色，用角色策略分配角色：</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">grant role librarian read,update book
 grant user alice librarian</code></pre></div>
-<p><code>alice</code> 可以 update <code>book</code>（reason 0，找到授权策略）；没有角色的 <code>bob</code> 被拒绝（reason 3，没有适用的策略）。角色也可以只在某一个资源上分配，参见<a href="/zh/docs/pms/policy-mgmt/">策略管理</a>和<a href="/zh/docs/pms/global-policy/">全局角色策略</a>。</p>
+<p><code>alice</code> 可以 update <code>book</code>（reason 0，找到授权策略）；没有角色的 <code>bob</code> 返回 Deny（reason 3，没有适用的策略）。角色也可以只在某一个资源上分配，参见<a href="/zh/docs/pms/policy-mgmt/">策略管理</a>和<a href="/zh/docs/pms/global-policy/">全局角色策略</a>。</p>
 
 <h2 id="abac-基于属性的访问控制-attribute-based-access-control">ABAC：基于属性的访问控制（Attribute-based access control）</h2>
 
@@ -232,13 +232,13 @@ grant user alice librarian</code></pre></div>
 <p>PBAC 通过集中定义的策略管理访问，而不是把权限写死在各个应用里。Speedle 的所有策略都保存在 PMS 中，并按两条固定规则评估：拒绝优先于授权；没有适用的授权策略时默认拒绝。</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">grant group staff read,delete journal
 deny user carol delete journal</code></pre></div>
-<p><code>carol</code> 属于 <code>staff</code> 组，但对 <code>journal</code> 的 <code>delete</code> 被拒绝（reason 1，找到拒绝策略）；同属 <code>staff</code> 的 <code>erin</code> 被允许（reason 0）。</p>
+<p><code>carol</code> 属于 <code>staff</code> 组，但对 <code>journal</code> 的 <code>delete</code> 返回 Deny（reason 1，找到拒绝策略）；同属 <code>staff</code> 的 <code>erin</code> 返回 Allow（reason 0）。</p>
 
 <h2 id="身份与-iam-identity-and-iam">身份与 IAM（Identity and IAM）</h2>
 
 <p>身份与访问管理（IAM）既包括证明用户是谁，也包括决定用户能做什么。Speedle 不是身份提供者（IdP），不负责认证用户。它使用身份：主体可以限定在某个<a href="/zh/docs/idd/">身份域</a>中，身份令牌可以由<a href="/zh/docs/assertor/">令牌断言器</a>解析。</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">grant user dave from github read code</code></pre></div>
-<p>来自 <code>github</code> 身份域的 <code>dave</code> 可以 read <code>code</code>（reason 0）；来自 <code>corp</code> 或不带身份域的 <code>dave</code> 被拒绝（reason 3）。</p>
+<p>来自 <code>github</code> 身份域的 <code>dave</code> 可以 read <code>code</code>（reason 0）；来自 <code>corp</code> 或不带身份域的 <code>dave</code> 返回 Deny（reason 3）。</p>
 
 <h2 id="零信任-zero-trust">零信任（Zero trust）</h2>
 
@@ -278,7 +278,7 @@ deny user carol delete journal</code></pre></div>
       </nav>
     </div>
     <div class="wrap footer-bar">
-      <p class="footer-legal"><span>基于 Universal Permissive License v1.0 授权。</span><span class="footer-sep" aria-hidden="true"> · </span><span>版权所有 &copy; 2019–2026。</span></p>
+      <p class="footer-legal"><span>基于 Universal Permissive License v1.0 授权。</span><span>版权所有 &copy; 2019–2026 The Speedle Authors。</span></p>
     </div>
   </footer>
 <!-- Cloudflare Web Analytics --><script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "a7a746c498b940e58425123082a20520"}'></script><!-- End Cloudflare Web Analytics -->

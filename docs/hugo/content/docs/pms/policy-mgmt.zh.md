@@ -1,6 +1,6 @@
 +++
 title = "策略管理"
-description = "Manage policy lifecycle "
+description = "管理服务、授权策略、角色策略和自定义函数的完整生命周期。"
 weight = 1
 draft = false
 toc = true
@@ -8,7 +8,7 @@ tocheading = "h2"
 tocsidebar = false
 tags = ["pms", "policy", "core"]
 categories = ["docs"]
-bref = "Basics of policy management"
+bref = "策略管理基础"
 +++
 
 ## 什么是 Speedle 策略？
@@ -54,7 +54,7 @@ AND 主体组要求组内所有身份均匹配，多组之间为 OR。以下例�
 grant (role designer, role dba) update db_design_doc
 ```
 
-资源是被保护的对象，操作是应用定义的动作。条件是由可信属性、常量、运算符与受支持函数构成的布尔表达式。
+资源指需要保护的对象，操作是应用定义的动作。条件是由可信属性、常量、运算符和受支持函数构成的布尔表达式。
 
 <img src="/img/speedle/resource.png" width="1732" height="349" loading="lazy"/>
 

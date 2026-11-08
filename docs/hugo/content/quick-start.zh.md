@@ -141,7 +141,7 @@ curl --fail --silent --show-error --header 'Content-Type: application/json' --da
 
 响应中应包含 `"allowed":false`。
 
-`reason` 字段说明决策原因：`0`（`GRANT_POLICY_FOUND`）表示找到授权策略；`3`（`NO_APPLICABLE_POLICIES`）表示没有适用的策略，Speedle 默认拒绝。完整原因码见[授权查询](../docs/decisions/)。
+`reason` 字段说明决策原因：`0`（`GRANT_POLICY_FOUND`）表示找到授权策略；`3`（`NO_APPLICABLE_POLICIES`）表示没有适用的策略，Speedle 默认拒绝。完整原因码见[授权决策](../docs/decisions/)。
 
 ## 第五步：添加带条件（ABAC）的策略
 
@@ -152,7 +152,7 @@ curl --fail --silent --show-error --header 'Content-Type: application/json' --da
 ./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ create policy -c "grant user ZhangSan borrow ebook if clearance >= 3" --service-name=library
 ```
 
-PEP（策略执行点）负责传入请求属性，条件只根据请求中的属性求值。下文的 `clearance` 值仅用于演示请求格式：真实的 PEP 必须从可信来源获取属性值，例如已认证的令牌声明或可信存储，绝不能取自正在被授权的请求本身。请求不带 `clearance` 时，该条件不匹配。
+PEP（策略执行点）负责传入请求属性，条件只根据请求中的属性求值。下文的 `clearance` 值仅用于演示请求格式：真实的 PEP 必须从可信来源获取属性值，例如已认证的令牌声明或可信存储，不能直接信任客户端在待授权请求中自行填写的值。请求不带 `clearance` 时，该条件不匹配。
 
 `clearance` 为 4 时允许：
 
@@ -163,7 +163,7 @@ curl --fail --silent --show-error --header 'Content-Type: application/json' --da
 
 响应中应包含 `"allowed":true` 和 `"reason":0`。
 
-`clearance` 为 2 时条件不匹配，没有适用的策略，请求被拒绝：
+`clearance` 为 2 时条件不匹配，没有适用的策略，请求返回 Deny：
 
 <!-- quick-start: abac-deny -->
 ```bash

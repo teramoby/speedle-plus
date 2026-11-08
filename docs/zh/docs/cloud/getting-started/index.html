@@ -36,7 +36,7 @@
 <meta name="twitter:image" content="https://engine.speedle.io/img/social/engine-zh.png">
 <meta name="twitter:image:alt" content="Speedle Engine — 快速、简单的权限控制">
 
-<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/zh/docs/cloud/getting-started/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-07T00:06:57+08:00","description":"了解 Speedle Cloud 的使用流程：登录、创建服务、编写 SPDL 策略、测试授权判定、创建 API 令牌并调用 IsAllowed。","headline":"Speedle Cloud 快速入门","image":"https://engine.speedle.io/img/social/engine-zh.png","inLanguage":"zh-CN","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/zh/docs/cloud/getting-started/","@type":"WebPage"},"name":"Speedle Cloud 快速入门","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/zh/docs/cloud/getting-started/"}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/zh/docs/cloud/getting-started/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-08T10:01:40+08:00","description":"了解 Speedle Cloud 的使用流程：登录、创建服务、编写 SPDL 策略、测试授权判定、创建 API 令牌并调用 IsAllowed。","headline":"Speedle Cloud 快速入门","image":"https://engine.speedle.io/img/social/engine-zh.png","inLanguage":"zh-CN","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/zh/docs/cloud/getting-started/","@type":"WebPage"},"name":"Speedle Cloud 快速入门","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/zh/docs/cloud/getting-started/"}</script>
 <script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/zh/docs/cloud/getting-started/#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://engine.speedle.io/zh/","name":"首页","position":1},{"@type":"ListItem","item":"https://engine.speedle.io/zh/docs/","name":"文档","position":2},{"@type":"ListItem","item":"https://engine.speedle.io/zh/docs/cloud/","name":"Speedle Cloud","position":3},{"@type":"ListItem","item":"https://engine.speedle.io/zh/docs/cloud/getting-started/","name":"Speedle Cloud 快速入门","position":4}]}</script><link href="/css/docs.css" rel="stylesheet" type="text/css">
 
 
@@ -76,18 +76,20 @@
 
 
 
+
+
 <li data-docs-depth="-1" class="docs-nav-section parent"><span class="docs-nav-heading">文档</span>
 <ul class="sub-menu">
 <li data-docs-depth="0" class=""><a href="/zh/docs/usecases/">使用场景</a></li>
 <li data-docs-depth="0" class=""><a href="/zh/docs/overview/">概览</a></li>
-<li data-docs-depth="0" class=""><a href="/zh/docs/spdl/">SPDL - Speedle 策略定义语言</a></li>
+<li data-docs-depth="0" class=""><a href="/zh/docs/spdl/">SPDL：Speedle 策略定义语言</a></li>
 <li data-docs-depth="0" class=""><a href="/zh/docs/architecture/">系统架构</a></li>
-<li data-docs-depth="0" class=""><a href="/zh/docs/deployment-embeded/">Speedle嵌入模式</a></li>
-<li data-docs-depth="0" class=""><a href="/zh/docs/deployment/">Speedle服务的部署方式</a></li>
+<li data-docs-depth="0" class=""><a href="/zh/docs/deployment-embeded/">Speedle 嵌入模式</a></li>
+<li data-docs-depth="0" class=""><a href="/zh/docs/deployment/">部署 Speedle</a></li>
 
 
 
-<li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading">Speedle策略</span>
+<li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading">Speedle 策略</span>
 <ul class="">
 <li data-docs-depth="1" class=""><a href="/zh/docs/pms/policy-mgmt/">策略管理</a></li>
 <li data-docs-depth="1" class=""><a href="/zh/docs/pms/global-policy/">全局角色策略</a></li>
@@ -96,9 +98,9 @@
 </ul>
 
 </li>
-<li data-docs-depth="0" class=""><a href="/zh/docs/decisions/">授权查询</a></li>
+<li data-docs-depth="0" class=""><a href="/zh/docs/decisions/">授权决策</a></li>
 <li data-docs-depth="0" class=""><a href="/zh/docs/idd/">用户身份域</a></li>
-<li data-docs-depth="0" class=""><a href="/zh/docs/assertor/">令牌用户身份断言</a></li>
+<li data-docs-depth="0" class=""><a href="/zh/docs/assertor/">令牌断言</a></li>
 
 
 
@@ -115,8 +117,8 @@
 
 <li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading">API</span>
 <ul class="">
-<li data-docs-depth="1" class=""><a href="/zh/docs/api/asserter_api/">令牌断言插件 API</a></li>
-<li data-docs-depth="1" class=""><a href="/zh/docs/api/decision_api/">授权运行时/决策 API</a></li>
+<li data-docs-depth="1" class=""><a href="/zh/docs/api/asserter_api/">令牌断言 API</a></li>
+<li data-docs-depth="1" class=""><a href="/zh/docs/api/decision_api/">授权决策 API</a></li>
 <li data-docs-depth="1" class=""><a href="/zh/docs/api/management_api/">策略管理 API</a></li>
 </ul>
 
@@ -151,8 +153,6 @@
 </ul>
 
 </li>
-
-
 </ul>
 </nav>
 
@@ -168,7 +168,7 @@
 
 
 
-<nav id="contents" class="docs-toc" data-docs-toc="h2" aria-label="On this page">
+<nav id="contents" class="docs-toc" data-docs-toc="h2" aria-label="本页目录">
   <ol></ol>
 </nav>
 
@@ -218,7 +218,7 @@
 
 <p>在服务工作区找到 <strong>Playground</strong>，选择 <strong>Is allowed</strong>。在 Principals 中输入 <code>[{&quot;type&quot;:&quot;user&quot;,&quot;name&quot;:&quot;alice&quot;}]</code>，在 Resource 中输入 <code>/books</code>，在 Action 中输入 <code>get</code>，然后点击 <strong>运行测试</strong>。</p>
 
-<p>Playground 使用已保存的策略进行判定，不会包含编辑器中尚未保存的草稿。修改策略或请求后，需要重新运行测试才能刷新结果。</p>
+<p>Playground 只用已保存的策略判定，不包含编辑器中尚未保存的草稿。修改策略或请求后，需要重新运行测试才能刷新结果。</p>
 
 <blockquote>
 <p><strong>截图待补充</strong></p>
@@ -240,7 +240,7 @@
 
 <h2 id="6-调用授权-api">6. 调用授权 API</h2>
 
-<p>带认证的授权调用开放后，应用服务端将向 <code>https://cloud.speedle.io/authz-check/v1/is-allowed</code> 发送 <code>POST</code> 请求，并在一个 <code>Authorization: Bearer</code> 请求头中携带签发的令牌：</p>
+<p>授权 API 的认证调用开放后，应用服务端将向 <code>https://cloud.speedle.io/authz-check/v1/is-allowed</code> 发送 <code>POST</code> 请求，并通过一个 <code>Authorization: Bearer</code> 请求头携带签发的令牌：</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-http" data-lang="http">POST /authz-check/v1/is-allowed
 Authorization: Bearer &lt;issued token&gt;
 Content-Type: application/json
@@ -311,7 +311,7 @@ Content-Type: application/json
       </nav>
     </div>
     <div class="wrap footer-bar">
-      <p class="footer-legal"><span>基于 Universal Permissive License v1.0 授权。</span><span class="footer-sep" aria-hidden="true"> · </span><span>版权所有 &copy; 2019–2026。</span></p>
+      <p class="footer-legal"><span>基于 Universal Permissive License v1.0 授权。</span><span>版权所有 &copy; 2019–2026 The Speedle Authors。</span></p>
     </div>
   </footer>
 <!-- Cloudflare Web Analytics --><script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "a7a746c498b940e58425123082a20520"}'></script><!-- End Cloudflare Web Analytics -->

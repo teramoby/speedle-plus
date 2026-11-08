@@ -1,6 +1,6 @@
 +++
 title = "Speedle Cloud"
-description = "Speedle Cloud 是面向开发者的托管授权服务。通过入门指南了解登录、SPDL 策略、Playground 测试和授权 API 调用的完整流程。"
+description = "Speedle Cloud 是面向开发者的托管授权服务。入门指南介绍登录、编写 SPDL、在 Playground 测试和调用授权 API 的流程。"
 weight = 306
 draft = false
 toc = false

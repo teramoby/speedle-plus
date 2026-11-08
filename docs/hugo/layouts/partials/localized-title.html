@@ -1,0 +1,6 @@
+{{- $title := .Title -}}
+{{- if eq .Lang "zh" -}}
+  {{- $translations := dict "Ads" "授权决策服务（ADS）" "Api" "API" "Asserter" "令牌断言" "Blog" "博客" "Categories" "分类" "Cloudnative" "云原生" "Community" "社区" "Contribution" "代码贡献" "Core" "核心功能" "Discovery" "策略发现" "Docs" "文档" "Etcd" "etcd 策略存储" "Guide" "指南" "Https" "HTTPS 安全连接" "Identity" "身份" "Identity Domain" "身份域" "Integration" "集成" "Logging" "日志" "Mongodb" "MongoDB" "Mysql" "MySQL" "Pdp" "PDP" "Pluggable" "可插拔扩展" "Pms" "PMS" "Policy" "策略" "Releases" "发布版本" "Sdk" "SDK" "Security" "安全" "Spdl" "SPDL" "Storage" "存储" "Tags" "标签" "Tls" "TLS" "Token Asserter" "令牌断言" "Usecase" "使用场景" "V0.1.0" "v0.1.0" "Versions" "版本" -}}
+  {{- $title = index $translations .Title | default $title -}}
+{{- end -}}
+{{- $title -}}
