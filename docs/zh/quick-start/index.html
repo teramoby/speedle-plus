@@ -15,7 +15,7 @@
 <link rel="alternate" hreflang="zh-CN" href="https://engine.speedle.io/zh/quick-start/">
 <link rel="alternate" hreflang="x-default" href="https://engine.speedle.io/quick-start/">
 <meta property="og:type" content="article">
-<meta property="article:modified_time" content="2026-11-08T11:21:16&#43;08:00">
+<meta property="article:modified_time" content="2026-11-08T20:23:01&#43;08:00">
 <meta property="og:site_name" content="Speedle Engine">
 <meta property="og:title" content="Speedle 快速入门 · Speedle Engine">
 <meta property="og:description" content="使用 go install 或源码编译安装 Speedle，验证策略管理、直接授权以及带条件（ABAC）的允许与拒绝结果。">
@@ -124,6 +124,10 @@ ls bin</code></pre></div>
 <li><code>speedle-pms</code>：授权策略管理服务（PMS）。</li>
 <li><code>speedle-ads</code>：授权决策服务（ADS）。</li>
 </ul>
+
+<blockquote>
+<p><strong>macOS：</strong> <code>/usr/sbin/spctl</code> 是 Apple 的 Gatekeeper 工具，直接运行 <code>spctl</code> 时可能会选中它。请使用 Speedle CLI 的完整路径，或在其所在目录中用 <code>./spctl</code> 调用；本指南统一使用 <code>./bin/spctl</code>。运行 <code>command -v spctl</code> 可查看 shell 实际选择的可执行程序。如果下载的发布版本包含 <code>speedle-spctl_&lt;os&gt;_&lt;arch&gt;</code> 文件，它就是同一个 CLI，只是名称不会与 Apple 的工具冲突。</p>
+</blockquote>
 
 <p>新版 Go 使用 <code>go build</code> 或 <code>go install</code> 构建可执行程序；<code>go get</code> 用于管理模块依赖。</p>
 
