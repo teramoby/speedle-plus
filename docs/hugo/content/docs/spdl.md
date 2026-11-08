@@ -12,6 +12,13 @@ categories = ["docs"]
 bref = "Basics of SPDL"
 +++
 
+<aside class="docs-callout" aria-labelledby="spdl-callout-title">
+  <p class="docs-callout-eyebrow">Speedle policy modeler · Open source skill</p>
+  <p class="docs-callout-title" id="spdl-callout-title">Write SPDL with AI</p>
+  <p>The open-source Speedle policy modeler skill turns your requirements and policy documents into an SPDL model with allow and deny test cases, validated with <code>spctl check</code>.</p>
+  <p class="docs-callout-actions"><a class="button primary" href="https://ai.speedle.io/#policy-modeler">Try the policy modeler skill</a> <a class="button secondary" href="https://github.com/teramoby/ai.speedle.io/tree/main/skills/speedle-policy-modeler">Source on GitHub</a></p>
+</aside>
+
 ## Syntax
 
 <picture><source srcset="/img/speedle/spdl-syntax.webp" type="image/webp"><img src="/img/speedle/spdl-syntax.png" alt="Basic policy definition syntax" width="2222" height="971" fetchpriority="high"></picture>

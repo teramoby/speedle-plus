@@ -209,8 +209,12 @@ python3 -m venv .venv . .venv/bin/activate pip install speedle==0.2.0 Or with uv
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/docs/spdl/</guid>
-      <description>Syntax 
-Keywords grant, deny, user, group, entity, role, from, on, if and in have special meanings in their syntax positions. Statement keywords are case-insensitive. In conditions, use in or IN; function names are case-sensitive. Principal, action and resource names are also case-sensitive. The current parser accepts keyword-like names in some name positions, so a blanket prohibition is not a validation rule. Prefer unambiguous names for review and client interoperability.</description>
+      <description>Speedle policy modeler · Open source skill
+Write SPDL with AI
+The open-source Speedle policy modeler skill turns your requirements and policy documents into an SPDL model with allow and deny test cases, validated with spctl check.
+Try the policy modeler skill Source on GitHub
+ Syntax 
+Keywords grant, deny, user, group, entity, role, from, on, if and in have special meanings in their syntax positions. Statement keywords are case-insensitive.</description>
     </item>
     
     <item>
