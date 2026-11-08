@@ -53,10 +53,6 @@ func applyEnvironmentConfig(flags *pflag.FlagSet) {
 }
 
 func httpClient() (*http.Client, error) {
-	if globalFlags.Token != "" && globalFlags.InsecureSkipVerify {
-		return nil, fmt.Errorf("refusing to send an API token with --skipverify; use --cacert to trust the server certificate")
-	}
-
 	var tr *http.Transport
 	proxy := os.Getenv("http_proxy")
 	if proxy == "" {
@@ -75,6 +71,9 @@ func httpClient() (*http.Client, error) {
 	}
 
 	// PMSEndpoint is https, setup tls
+	if globalFlags.Token != "" && globalFlags.InsecureSkipVerify {
+		return nil, fmt.Errorf("refusing to send an API token with --skipverify; use --cacert to trust the server certificate")
+	}
 	tlsConfig := &tls.Config{}
 	tlsConfig.InsecureSkipVerify = globalFlags.InsecureSkipVerify
 	if globalFlags.CAFile != "" {

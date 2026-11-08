@@ -123,6 +123,7 @@ https://cloud.speedle.io/policy-mgmt/v1
 
 通过全局命令行参数指定端点，并从 `SPCTL_TOKEN` 环境变量读取令牌。在交互式 shell 中，以下方式可避免将 secret 写入命令参数和 shell 历史：
 
+<!-- deployment-template: cloud-token-environment -->
 ```bash
 read -rsp 'API token: ' SPCTL_TOKEN; echo
 export SPCTL_TOKEN
@@ -141,6 +142,7 @@ token=<api-token>
 
 以下方式可在不把令牌写入命令参数的情况下创建或更新此文件：
 
+<!-- deployment-template: cloud-token-config -->
 ```bash
 read -rsp 'API token: ' SPCTL_TOKEN; echo
 printf '%s\n' "$SPCTL_TOKEN" | ./bin/spctl config token --stdin
@@ -151,7 +153,7 @@ unset SPCTL_TOKEN
 
 显式命令行参数优先于环境变量，环境变量优先于两个配置文件。在配置文件中，`~/.speedle` 优先于 `~/.spctlconfig`。通过 `spctl config` 设置非令牌配置时，新值写入 `~/.spctlconfig`，同时删除 `~/.speedle` 中会覆盖新值的同名配置。
 
-令牌仅在启用证书验证的 HTTPS 连接中以 `Authorization: Bearer` 凭据发送。只有 `127.0.0.1`、`::1` 或 `localhost` 等回环主机可以在携带令牌时使用纯 HTTP；对于远程 HTTP 端点以及从 HTTPS 降级到 HTTP 的重定向，`spctl` 会在发送凭据前拒绝请求。`spctl` 也拒绝在 `--skipverify=true` 时发送令牌；对于私有或自签名证书颁发机构，请使用 `--cacert` 配置信任。正常命令输出和错误信息不会包含令牌。
+令牌仅在启用证书验证的 HTTPS 连接中以 `Authorization: Bearer` 凭据发送。只有 `127.0.0.1`、`::1` 或 `localhost` 等回环主机可以在携带令牌时使用纯 HTTP；对于远程 HTTP 端点以及从 HTTPS 降级到 HTTP 的重定向，`spctl` 会在发送凭据前拒绝请求。对于 HTTPS 端点，`spctl` 也拒绝在 `--skipverify=true` 时发送令牌；对于私有或自签名证书颁发机构，请使用 `--cacert` 配置信任。正常命令输出和错误信息不会包含令牌。
 
 Cloud 返回错误时，命令以非零状态退出。遇到 `401` 请检查令牌，遇到 `403 insufficient_scope` 请检查 scope。`404` 表示资源不存在，`409 service_exists` 和 `409 policy_exists` 表示资源重复。遇到 `429` 时，请遵循响应中的 `Retry-After`，并采用有界退避。每日额度或策略额度错误需要等待额度重置或减少用量，不要紧密循环重试。
 

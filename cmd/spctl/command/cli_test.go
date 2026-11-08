@@ -412,6 +412,77 @@ func TestCLITokenInputAndEnvironment(t *testing.T) {
 	}
 }
 
+func TestCLILoopbackTokenWithSkipVerify(t *testing.T) {
+	c := newCLI(t)
+	var authorization string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		authorization = r.Header.Get("Authorization")
+		w.Write([]byte(`[]`))
+	}))
+	defer server.Close()
+	endpoint := server.URL + svcs.PolicyMgmtPath
+
+	tests := []struct {
+		name string
+		env  []string
+		args []string
+	}{
+		{"flag", nil, []string{"--skipverify", "--token", "loopback-secret", "get", "service", "--all"}},
+		{"environment", []string{"SPCTL_SKIPVERIFY=true", "SPCTL_TOKEN=loopback-secret"}, []string{"get", "service", "--all"}},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			authorization = ""
+			out, code := c.runAtWithOptions(endpoint, "", tc.env, tc.args...)
+			if code != 0 || authorization != "Bearer loopback-secret" || strings.Contains(out, "loopback-secret") {
+				t.Fatalf("loopback HTTP with skipverify: exit %d, Authorization %q\n%s", code, authorization, out)
+			}
+		})
+	}
+}
+
+func TestCLIRejectsMultilineTokens(t *testing.T) {
+	c := newCLI(t)
+	legacyPath := filepath.Join(c.home, ".spctlconfig")
+	cloudPath := filepath.Join(c.home, ".speedle")
+	legacyBefore := []byte("timeout=7s\n")
+	cloudBefore := []byte("token=original-secret\npms-endpoint=https://cloud.example/policy-mgmt/v1\n")
+	if err := os.WriteFile(legacyPath, legacyBefore, 0600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(cloudPath, cloudBefore, 0600); err != nil {
+		t.Fatal(err)
+	}
+
+	tests := []struct {
+		name  string
+		stdin string
+		args  []string
+	}{
+		{"stdin LF", "replacement-secret\npms-endpoint=https://other.example/policy-mgmt/v1\n", []string{"config", "token", "--stdin"}},
+		{"stdin CR", "replacement-secret\rpms-endpoint=https://other.example/policy-mgmt/v1", []string{"config", "token", "--stdin"}},
+		{"argument LF", "", []string{"config", "token", "replacement-secret\npms-endpoint=https://other.example/policy-mgmt/v1"}},
+		{"argument CR", "", []string{"config", "token", "replacement-secret\rpms-endpoint=https://other.example/policy-mgmt/v1"}},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			out, code := c.runAtWithOptions("", tc.stdin, nil, tc.args...)
+			if code != 1 || !strings.Contains(out, "API token must be a single line") || strings.Contains(out, "replacement-secret") {
+				t.Fatalf("multiline token: exit %d\n%s", code, out)
+			}
+			for path, before := range map[string][]byte{legacyPath: legacyBefore, cloudPath: cloudBefore} {
+				after, err := os.ReadFile(path)
+				if err != nil {
+					t.Fatal(err)
+				}
+				if !bytes.Equal(after, before) {
+					t.Fatalf("%s changed after rejected token: %q", path, after)
+				}
+			}
+		})
+	}
+}
+
 func TestCLICloudConfig(t *testing.T) {
 	c := newCLI(t)
 	const token = "config-secret"

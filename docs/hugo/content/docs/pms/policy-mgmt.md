@@ -123,6 +123,7 @@ Choose an API token with the scopes required by your commands. `pms:read` covers
 
 Pass the endpoint as a global flag and read the token from `SPCTL_TOKEN`. In an interactive shell, this keeps the secret out of command arguments and shell history:
 
+<!-- deployment-template: cloud-token-environment -->
 ```bash
 read -rsp 'API token: ' SPCTL_TOKEN; echo
 export SPCTL_TOKEN
@@ -141,6 +142,7 @@ token=<api-token>
 
 Create or update this file without putting the token in command arguments:
 
+<!-- deployment-template: cloud-token-config -->
 ```bash
 read -rsp 'API token: ' SPCTL_TOKEN; echo
 printf '%s\n' "$SPCTL_TOKEN" | ./bin/spctl config token --stdin
@@ -151,7 +153,7 @@ unset SPCTL_TOKEN
 
 Explicit command-line flags override environment variables, which override both configuration files. Within the files, `~/.speedle` overrides `~/.spctlconfig`. Setting a non-token key with `spctl config` writes it to `~/.spctlconfig` and removes any shadowing copy from `~/.speedle`.
 
-The token is sent as an `Authorization: Bearer` credential only over HTTPS with certificate verification enabled. Plain HTTP is allowed with a token only for a loopback host such as `127.0.0.1`, `::1` or `localhost`; `spctl` rejects remote HTTP endpoints and HTTPS-to-HTTP downgrade redirects before sending the credential. It also refuses to send a token with `--skipverify=true`; use `--cacert` to trust a private or self-signed certificate authority instead. Tokens are not included in normal command output or error messages.
+The token is sent as an `Authorization: Bearer` credential only over HTTPS with certificate verification enabled. Plain HTTP is allowed with a token only for a loopback host such as `127.0.0.1`, `::1` or `localhost`; `spctl` rejects remote HTTP endpoints and HTTPS-to-HTTP downgrade redirects before sending the credential. For HTTPS endpoints, it also refuses to send a token with `--skipverify=true`; use `--cacert` to trust a private or self-signed certificate authority instead. Tokens are not included in normal command output or error messages.
 
 Cloud errors produce a non-zero exit status. Check the token after a `401`, and its scopes after a `403 insufficient_scope`. A `404` identifies a missing resource, while `409 service_exists` and `409 policy_exists` identify duplicates. For `429`, honor the returned `Retry-After` value and use bounded backoff. Daily or policy quota errors require waiting for the reset or reducing usage; do not retry them in a tight loop.
 

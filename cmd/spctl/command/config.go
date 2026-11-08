@@ -100,6 +100,10 @@ func configCommandFunc(cmd *cobra.Command, args []string) {
 			name := args[i]
 			val := args[i+1]
 			if name == "token" {
+				if strings.ContainsAny(val, "\r\n") {
+					fmt.Println("Failed to set config, API token must be a single line")
+					os.Exit(1)
+				}
 				cloudFlags[name] = val
 				delete(flags, name)
 				cloudChanged = true
