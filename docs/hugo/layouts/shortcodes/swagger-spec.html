@@ -31,9 +31,9 @@
     </symbol>
   </defs>
  </svg>
-<script src="/js/swagger-js/swagger-ui-bundle.js"> </script>
+<script src="/js/swagger-js/swagger-ui-bundle.js" defer></script>
 <script>
-(function() {
+document.addEventListener('DOMContentLoaded', function() {
   var url = "{{ .Get "url" }}";
   const ui = SwaggerUIBundle({
     url: url,
@@ -50,5 +50,5 @@
   })
 
   window.ui = ui
-})();
+});
 </script>

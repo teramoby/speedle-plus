@@ -42,12 +42,12 @@ const copyright = '<p>Copyright &copy; 2019–2026. All rights reserved.</p>';
 const originalNavigationScript = original.match(/  <script>[\s\S]*?<\/script>/)[0];
 const sharedNavigationScript = '  <script src="/js/navigation.js?v=header-20261106-v8" defer></script>';
 // #203 three-site lock-up: Speedle mark + wordmark | Engine.
-const brandLockup = '<a class="brand" href="#top" aria-label="Speedle Engine home"><img class="brand-logo" src="/img/speedle/Speedle_logo_home_bold.svg?v=4" alt=""><span class="brand-divider" aria-hidden="true"></span><span class="brand-product">Engine</span></a>';
+const brandLockup = '<a class="brand" href="#top" aria-label="Speedle Engine home"><img class="brand-logo" src="/img/speedle/Speedle_logo_home_bold.svg?v=4" width="304" height="104" alt=""><span class="brand-divider" aria-hidden="true"></span><span class="brand-product">Engine</span></a>';
 const originalBrand = original.match(/<a class="brand"[^\n]*?<\/a>/)[0];
 // Header standard v3/v4: Speedle family menu, footer column, sphere favicons (v12: no hero cross-links).
 const productsMenu = /<div class="products">[\s\S]*?<\/div><\/div>\n\s*/;
 const familyFooter = /      <nav class="footer-family"[^>]*>[\s\S]*?<\/ul>\s*<\/nav>\n/;
-const footerLockup = /<a class="footer-lockup" href="\/(?:zh\/)?" aria-label="Speedle Engine (?:home|首页)"><img src="\/img\/speedle\/Speedle_logo_home_bold\.svg\?v=4" width="132" height="45" alt="Speedle"><span class="footer-divider" aria-hidden="true"><\/span><span class="footer-product">Engine<\/span><\/a>/;
+const footerLockup = /<a class="footer-lockup" href="\/(?:zh\/)?" aria-label="Speedle Engine (?:home|首页)"><img src="\/img\/speedle\/Speedle_logo_home_bold\.svg\?v=4" width="304" height="104" alt="Speedle"><span class="footer-divider" aria-hidden="true"><\/span><span class="footer-product">Engine<\/span><\/a>/;
 const iconLinks = /<link rel="icon" href="(?:https:\/\/speedle\.io)?\/favicon\.svg" type="image\/svg\+xml">\n\s*<link rel="icon" href="(?:https:\/\/speedle\.io)?\/favicon\.ico" sizes="any">\n\s*<link rel="apple-touch-icon" href="(?:https:\/\/speedle\.io)?\/apple-touch-icon\.png">/;
 // #217: links between the three sites keep the reader's language.
 const crossSiteRoots = zh => zh
@@ -108,7 +108,13 @@ const originalFooter = original.match(/  <footer>[\s\S]*?<\/footer>\n/)[0];
 // #244 reworked the community banner: flat soft panel, copy left, action right.
 const originalContribute = original.match(/    <section class="contribute">[\s\S]*?<\/section>\n/)[0];
 const contributeSection = /    <section class="contribute">[\s\S]*?<\/section>\n/;
-const restoredIdentity = identityTags.reduce((html, pattern) => html.replace(pattern, original.match(pattern)[0]), home.replace(shareImageTags, '').replace(analyticsSnippet, '').replace(iconLinks, original.match(/<link rel="icon"[^>]*>/)[0]).replace(productsMenu, '').replace(/  <footer class="site-footer">[\s\S]*?<\/footer>\n/, originalFooter));
+// #247 added explicit image dimensions and the pre-paint navigation-js marker.
+const imageSizing = html => html
+  .replace("  <script>document.documentElement.classList.add('navigation-js');addEventListener('DOMContentLoaded',function(){if(!document.querySelector('header.site-header.navigation-ready'))document.documentElement.classList.remove('navigation-js')});</script>\n", '')
+  .replace(' width="330" height="339" fetchpriority="high"', '')
+  .replace(/<img src="\/img\/speedle\/Tick\.svg" width="22" height="22"/g, '<img src="/img/speedle/Tick.svg"')
+  .replace(/(<img class="feature-icon" src="[^"]+") width="\d+" height="\d+"/g, '$1');
+const restoredIdentity = identityTags.reduce((html, pattern) => html.replace(pattern, original.match(pattern)[0]), imageSizing(home).replace(shareImageTags, '').replace(analyticsSnippet, '').replace(iconLinks, original.match(/<link rel="icon"[^>]*>/)[0]).replace(productsMenu, '').replace(/  <footer class="site-footer">[\s\S]*?<\/footer>\n/, originalFooter));
 const restored = restoredIdentity.replace(policyExample,originalPolicyExample).replace(originNote,'').replace('<a href="/docs/pms/policy-mgmt/">Learn more</a>','<a href="/docs/pms/">Learn more</a>').replace('Bring Your Own Storage','Bring Your Own Store').replace('Works with any identity provider: your application verifies identity and passes users, groups and attributes to Speedle for a decision.','Connect GitHub, Okta or your own identity provider.').replace('Speedle Policy Definition Language.','Secure Policy Definition Language.').replace(contactLinks,originalMailingLink).replace(sharedNavigationScript,originalNavigationScript).replace(copyright,'').replace(discordLink,oldCommunityLink).replace('  <link rel="stylesheet" href="/css/site.css">\n  <link rel="stylesheet" href="/css/navigation.css?v=header-20261106-v8">', `  <style>${originalCss}</style>`).replace('<a href="/playground/">Playground</a>','').replace(`        ${chineseLink}\n`,'').replace(brandLockup,originalBrand).replace(getStartedSection,'').replace(contributeSection,originalContribute).replace('<h1>Fast. Simple. Access control</h1>','<h1>Fast. Simple. Access control.</h1>').replace('Authorization that stays out of your application code','Authorization that stays out of your application code.').replace('Fine-grained control without the friction','Fine-grained control without the friction.').replace('Policies humans can read','Policies humans can read.').replace('Built for the infrastructure you already run','Built for the infrastructure you already run.');
 // #236: the owner removed the home-page Integrations section; integrations live in the docs only.
 // #237: the Cloud Native card now points at the architecture page.

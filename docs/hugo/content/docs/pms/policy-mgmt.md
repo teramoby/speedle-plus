@@ -15,13 +15,13 @@ bref = "Basics of policy management"
 
 The Policy Management Service (PMS) manages services, authorization policies, role policies and custom functions. A policy store persists those objects using a registered [storage backend](/docs/store/).
 
-<img src="/img/speedle/policystore.png"/>
+<img src="/img/speedle/policystore.png" width="1942" height="540" loading="lazy"/>
 
 ## Services and authorization policies
 
 A service scopes its policies. An authorization policy grants or denies a principal permission to perform an action on a resource, optionally subject to a condition. Except for [global role policies](/docs/pms/global-policy/), policies do not automatically apply in another service.
 
-<img src="/img/speedle/authzpolicy.png"/>
+<img src="/img/speedle/authzpolicy.png" width="1770" height="444" loading="lazy"/>
 
 ```text
 grant group Administrators list,watch,get expr:^c1/default/core/pods/.*$
@@ -31,7 +31,7 @@ This regular expression matches resources under `c1/default/core/pods/`. It does
 
 ## Role policies
 
-<img src="/img/speedle/rolepolicy.png"/>
+<img src="/img/speedle/rolepolicy.png" width="1598" height="436" loading="lazy"/>
 
 ```text
 grant user alan manager on res1
@@ -44,11 +44,11 @@ The first statement assigns Alan a resource-scoped role; the second grants that 
 
 A principal may be a user, group, entity or role. An entity represents a non-human identity, such as a service. Integrations must derive these identities from trusted sources.
 
-<img src="/img/speedle/principal.png"/>
+<img src="/img/speedle/principal.png" width="1769" height="505" loading="lazy"/>
 
 An AND group requires every listed principal; separate groups are alternatives. For example, both roles below must apply:
 
-<img src="/img/speedle/andprincipal.png"/>
+<img src="/img/speedle/andprincipal.png" width="1584" height="349" loading="lazy"/>
 
 ```text
 grant (role designer, role dba) update db_design_doc
@@ -56,7 +56,7 @@ grant (role designer, role dba) update db_design_doc
 
 A resource names the protected object; an action names an application operation. A condition is a Boolean expression evaluated from trusted attributes, constants, operators and supported functions.
 
-<img src="/img/speedle/resource.png"/>
+<img src="/img/speedle/resource.png" width="1732" height="349" loading="lazy"/>
 
 See [SPDL](/docs/spdl/) for grammar and [RBAC](/docs/overview/)/[ABAC](/docs/overview/) for complete decision examples.
 

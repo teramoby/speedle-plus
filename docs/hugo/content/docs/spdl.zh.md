@@ -14,7 +14,7 @@ bref = ""
 
 ## 基本的策略定义语言
 
-![基本策略定义语法](/img/speedle/spdl-syntax.png)
+<picture><source srcset="/img/speedle/spdl-syntax.webp" type="image/webp"><img src="/img/speedle/spdl-syntax.png" alt="基本策略定义语法" width="2222" height="971" fetchpriority="high"></picture>
 
 ### 保留关键字
 
@@ -461,7 +461,7 @@ Function: FunctionName '(' Argument [,Argument]* ')'
 
 ### 完整策略定义语法
 
-![完整策略定义语法](/img/speedle/spdl-syntax-full.png)
+<picture><source srcset="/img/speedle/spdl-syntax-full.webp" type="image/webp"><img src="/img/speedle/spdl-syntax-full.png" alt="完整策略定义语法" width="1771" height="2281" loading="lazy"></picture>
 
 <br/>
 <br/>

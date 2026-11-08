@@ -22,7 +22,7 @@ The following two open source projects are used to process log messages,
 
 Logrus is a structured logger for Go (golang), and completely API compatible with the golang standard library logger. Note that logrus doesn't support log rotation, and it is exactly the reason why we introduce the second project lumberjack, which provides a rolling logger. Logrus communicates with lumberjack using the io.Writer interface, please refer to the following diagram,
 
-![Speedle Logging](/img/speedle/logger.jpg)
+<img src="/img/speedle/logger.jpg" alt="Speedle Logging" width="370" height="230" loading="lazy">
 
 ## Logging Configuration
 

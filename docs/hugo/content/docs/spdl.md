@@ -14,7 +14,7 @@ bref = "Basics of SPDL"
 
 ## Syntax
 
-<img src="/img/speedle/spdl-syntax.png"/>
+<picture><source srcset="/img/speedle/spdl-syntax.webp" type="image/webp"><img src="/img/speedle/spdl-syntax.png" alt="Basic policy definition syntax" width="2222" height="971" fetchpriority="high"></picture>
 
 ### Keywords
 
@@ -469,7 +469,7 @@ Function: FunctionName '(' Argument [,Argument]* ')'
 
 ### Full Syntax of SPDL
 
-<img src="/img/speedle/spdl-syntax-full.png"/>
+<picture><source srcset="/img/speedle/spdl-syntax-full.webp" type="image/webp"><img src="/img/speedle/spdl-syntax-full.png" alt="Complete policy definition syntax" width="1771" height="2281" loading="lazy"></picture>
 
 <br/>
 <br/>
