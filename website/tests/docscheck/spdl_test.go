@@ -13,6 +13,22 @@ import (
 	"github.com/teramoby/speedle-plus/pkg/pdl"
 )
 
+func TestSPDLExamplesInTheReferenceParse(t *testing.T) {
+	policies := []string{
+		"grant group staff read,delete journal",
+		"deny user carol delete journal",
+		"grant user bob read report if department == 'finance'",
+	}
+	for _, statement := range policies {
+		if _, _, err := pdl.ParsePolicy(statement, ""); err != nil {
+			t.Errorf("documented policy %q: %v", statement, err)
+		}
+	}
+	if _, _, err := pdl.ParseRolePolicy("grant role manager employee", ""); err != nil {
+		t.Errorf("documented role policy %q: %v", "grant role manager employee", err)
+	}
+}
+
 func TestConditionsExtractedFromBothSPDLReferences(t *testing.T) {
 	examples := map[string]map[string]interface{}{
 		"a=='abc'": {"a": "abc"}, "a!='abc'": {"a": "xyz"}, "a>='abc'": {"a": "abc"}, "a+b=='ab'": {"a": "a", "b": "b"}, "a=~'^get.*'": {"a": "getBook"},

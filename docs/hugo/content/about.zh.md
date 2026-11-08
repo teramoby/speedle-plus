@@ -3,7 +3,7 @@ title = "关于 Speedle"
 icon = "Speedle_logo_about.svg"
 +++
 
-Speedle 是开源的细粒度访问控制引擎，为云原生应用处理授权。应用把授权决策交给 Speedle，由它根据 RBAC/ABAC 策略判断已登录用户，或代表用户执行操作的进程，能否访问指定资源。Speedle 自带的策略语言叫 SPDL（Speedle Policy Definition Language，Speedle 策略定义语言）。
+Speedle 是一个采用 SPDL 策略语言的开源（UPL-1.0）授权引擎。它由 ADS（授权决策）与 PMS（策略管理）、六种语言的 SDK、Speedle Cloud（托管服务）以及 Speedle AI（面向 AI 智能体并以 AI 辅助的授权、一个 MCP 服务器和 policy-modeler 技能）组成。
 
 Speedle 由开发 Oracle Entitlements Server（OES）的同一团队打造，其设计建立在该团队在 OES、BEA ALES/WLES、CrossLogix 等前序授权产品上多年产品迭代的经验之上。
 

@@ -17,6 +17,8 @@ node website/playground-engine/a11y-smoke.cjs
 node --check docs/hugo/static/js/command-copy.js
 python3 website/tests/test_language_routes.py
 python3 website/localize-links.py docs --check
+python3 website/generate-llms.py --check docs
+python3 website/tests/check_llms.py docs
 # Executable documentation checks run in the global test gate.
 # This job verifies the browser engine and generated site.
 website/playground-engine/verify-hugo.sh

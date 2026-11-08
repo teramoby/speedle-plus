@@ -220,13 +220,24 @@ SUBJECT_IDENTIFIER = NAME
 RESOURCE_IDENTIFIER = NAME
 </pre>
 
+<h2 id="示例">示例</h2>
+
+<p>角色继承：角色策略的主体可以是另一个角色，因此 <code>manager</code> 同时拥有授予 <code>employee</code> 的所有角色。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">grant role manager employee</code></pre></div>
+<p>拒绝优先于授权：适用的拒绝策略会覆盖授权策略。下例中 <code>carol</code> 属于 <code>staff</code>，但对 <code>journal</code> 的 <code>delete</code> 仍被拒绝。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">grant group staff read,delete journal
+deny user carol delete journal</code></pre></div>
+<p>条件：只有条件成立时策略才生效。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">grant user bob read report if department == &#39;finance&#39;</code></pre></div>
+<p>以上是 SPDL 语句示例，不是完整的服务配置；服务、资源范围角色和完整的决策示例见<a href="/zh/docs/pms/policy-mgmt/">策略管理</a>。</p>
+
 <h2 id="条件-condition">条件（Condition）</h2>
 
 <h3 id="1-概述">1. 概述</h3>
 
 <p>授权策略和角色策略都支持条件。只有条件成立，策略才会生效。</p>
 
-<p>PEP 必须传入策略用到的所有自定义属性（<code>request_user</code>、<code>request_time</code> 等内置属性由 ADS 自动提供）；请求里缺少的属性，相关条件不匹配。</p>
+<p>PEP 必须传入策略用到的所有自定义属性（<code>request_user</code>、<code>request_time</code> 等内置属性由 ADS 自动提供）；请求里缺少的属性，相关条件不匹配。PEP 传入的同名属性优先于内置属性，PEP 负责提供可信的属性值。</p>
 
 <p>本节介绍条件的组成和写法。</p>
 

@@ -56,13 +56,36 @@ SUBJECT_IDENTIFIER = NAME
 RESOURCE_IDENTIFIER = NAME
 </pre>
 
+## 示例
+
+角色继承：角色策略的主体可以是另一个角色，因此 `manager` 同时拥有授予 `employee` 的所有角色。
+
+```text
+grant role manager employee
+```
+
+拒绝优先于授权：适用的拒绝策略会覆盖授权策略。下例中 `carol` 属于 `staff`，但对 `journal` 的 `delete` 仍被拒绝。
+
+```text
+grant group staff read,delete journal
+deny user carol delete journal
+```
+
+条件：只有条件成立时策略才生效。
+
+```text
+grant user bob read report if department == 'finance'
+```
+
+以上是 SPDL 语句示例，不是完整的服务配置；服务、资源范围角色和完整的决策示例见[策略管理](../pms/policy-mgmt/)。
+
 ## 条件（Condition）
 
 ### 1. 概述
 
 授权策略和角色策略都支持条件。只有条件成立，策略才会生效。
 
-PEP 必须传入策略用到的所有自定义属性（`request_user`、`request_time` 等内置属性由 ADS 自动提供）；请求里缺少的属性，相关条件不匹配。
+PEP 必须传入策略用到的所有自定义属性（`request_user`、`request_time` 等内置属性由 ADS 自动提供）；请求里缺少的属性，相关条件不匹配。PEP 传入的同名属性优先于内置属性，PEP 负责提供可信的属性值。
 
 本节介绍条件的组成和写法。
 

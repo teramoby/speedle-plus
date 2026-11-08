@@ -220,13 +220,24 @@ SUBJECT_IDENTIFIER = NAME
 RESOURCE_IDENTIFIER = NAME
 </pre>
 
+<h2 id="examples">Examples</h2>
+
+<p>Role inheritance: the subject of a role policy can be another role, so <code>manager</code> also holds every role assigned to <code>employee</code>.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">grant role manager employee</code></pre></div>
+<p>Deny over grant: an applicable deny wins over a grant. Here <code>carol</code> is in <code>staff</code> and is still denied <code>delete</code> on <code>journal</code>.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">grant group staff read,delete journal
+deny user carol delete journal</code></pre></div>
+<p>A condition: the policy applies only when the condition is true.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">grant user bob read report if department == &#39;finance&#39;</code></pre></div>
+<p>These are SPDL statements, not a complete service fixture; see <a href="/docs/pms/policy-mgmt/">Policy Management</a> for services, resource-scoped roles and complete decision examples.</p>
+
 <h2 id="condition">Condition</h2>
 
 <h3 id="1-overview">1. Overview</h3>
 
 <p>Condition is supported in both policy and role policy definitions. The policy or role policy can take effect <em>only</em> when the condition is met.</p>
 
-<p>The policy enforcement point (PEP) must supply every custom attribute your policies reference (built-in attributes such as <code>request_user</code> and <code>request_time</code> are provided by ADS); a condition on an attribute missing from the request does not match.</p>
+<p>The policy enforcement point (PEP) must supply every custom attribute your policies reference (built-in attributes such as <code>request_user</code> and <code>request_time</code> are provided by ADS); a condition on an attribute missing from the request does not match. Attributes supplied by the PEP take precedence over built-in attributes with the same name; the PEP is responsible for supplying trusted values.</p>
 
 <p>This document focuses on what a condition is, and how to write a condition.</p>
 

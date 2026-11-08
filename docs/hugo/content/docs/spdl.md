@@ -56,13 +56,36 @@ SUBJECT_IDENTIFIER = NAME
 RESOURCE_IDENTIFIER = NAME
 </pre>
 
+## Examples
+
+Role inheritance: the subject of a role policy can be another role, so `manager` also holds every role assigned to `employee`.
+
+```text
+grant role manager employee
+```
+
+Deny over grant: an applicable deny wins over a grant. Here `carol` is in `staff` and is still denied `delete` on `journal`.
+
+```text
+grant group staff read,delete journal
+deny user carol delete journal
+```
+
+A condition: the policy applies only when the condition is true.
+
+```text
+grant user bob read report if department == 'finance'
+```
+
+These are SPDL statements, not a complete service fixture; see [Policy Management](../pms/policy-mgmt/) for services, resource-scoped roles and complete decision examples.
+
 ## Condition
 
 ### 1. Overview
 
 Condition is supported in both policy and role policy definitions. The policy or role policy can take effect _only_ when the condition is met.
 
-The policy enforcement point (PEP) must supply every custom attribute your policies reference (built-in attributes such as `request_user` and `request_time` are provided by ADS); a condition on an attribute missing from the request does not match.
+The policy enforcement point (PEP) must supply every custom attribute your policies reference (built-in attributes such as `request_user` and `request_time` are provided by ADS); a condition on an attribute missing from the request does not match. Attributes supplied by the PEP take precedence over built-in attributes with the same name; the PEP is responsible for supplying trusted values.
 
 This document focuses on what a condition is, and how to write a condition.
 
