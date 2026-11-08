@@ -101,6 +101,7 @@ for (const name of ['quick-start/index.html', 'zh/quick-start/index.html', 'abou
 const footerRules = fs.readFileSync(path.join(output, 'css/navigation.css'), 'utf8');
 assert.ok(footerRules.includes('html body footer.site-footer {') && footerRules.includes('.site-footer .footer-main {'), 'navigation.css holds the shared footer rules');
 assert.ok(/^\.site-footer \.footer-legal span \{ display: block; \}$/m.test(footerRules), 'License and copyright stack at every viewport width');
+assert.ok(footerRules.includes('.site-footer .footer-legal .footer-legal-sep {\n  position: absolute;\n  width: 1px;\n  height: 1px;'), 'Footer legal separator is visually hidden but stays in the text and accessibility tree');
 let footerPages = 0;
 (function walk(dir) {
   for (const entry of fs.readdirSync(dir, {withFileTypes: true})) {
@@ -114,8 +115,8 @@ let footerPages = 0;
       const relative = path.relative(output, file);
       const zh = relative.split(path.sep).includes('zh');
       const legal = zh
-        ? '<p class="footer-legal"><span>基于 Universal Permissive License v1.0 授权。</span><span>版权所有 &copy; 2019–2026 The Speedle Authors。</span></p>'
-        : '<p class="footer-legal"><span>Licensed under the Universal Permissive License v1.0.</span><span>Copyright &copy; 2019–2026 The Speedle Authors. All rights reserved.</span></p>';
+        ? '<p class="footer-legal"><span>基于 Universal Permissive License v1.0 授权。</span><span class="footer-legal-sep"> · </span><span>版权所有 &copy; 2019–2026 The Speedle Authors。</span></p>'
+        : '<p class="footer-legal"><span>Licensed under the Universal Permissive License v1.0.</span><span class="footer-legal-sep"> · </span><span>Copyright &copy; 2019–2026 The Speedle Authors. All rights reserved.</span></p>';
       assert.ok(html.includes(legal), `Separate license and approved copyright lines in ${relative}`);
       assert.ok(!html.includes('footer-sep'), `No legal-line joiner in ${relative}`);
     }
