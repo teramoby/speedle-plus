@@ -77,18 +77,6 @@
     
     <li>
   <h2 class="title2">
-    <a href="/zh/docs/pms/discover/" itemprop="headline">策略发现</a>
-  </h2>
-  
-  <p itemprop="about">在隔离测试环境中记录访问请求，生成并审核授权策略。</p>
-  
-  
-  <hr />
-</li>
-
-    
-    <li>
-  <h2 class="title2">
     <a href="/zh/docs/deployment/" itemprop="headline">部署 Speedle</a>
   </h2>
   
@@ -101,11 +89,13 @@
     
     <li>
   <h2 class="title2">
-    <a href="/zh/docs/decisions/" itemprop="headline">授权决策</a>
+    <a href="/zh/docs/pms/" itemprop="headline">Speedle 策略</a>
   </h2>
   
-  <p itemprop="about">获取服务访问请求的授权决策，并查询已授予的角色和权限。</p>
+  <p itemprop="about">管理授权策略和全局角色策略，发现访问模式，诊断授权评估。</p>
   
+  
+  <p itemprop="about">创建和管理策略，发现访问模式，诊断授权评估。</p>
   
   <hr />
 </li>
@@ -113,11 +103,27 @@
     
     <li>
   <h2 class="title2">
-    <a href="/zh/docs/idd/" itemprop="headline">用户身份域</a>
+    <a href="/zh/docs/cloud/tokens/" itemprop="headline">Speedle Cloud 应用令牌</a>
   </h2>
   
-  <p itemprop="about">使用身份域区分不同身份提供方或租户中的同名主体。</p>
+  <p itemprop="about">签发、保护、查看、轮换和撤销 Speedle Cloud 应用令牌，了解最近认证和一次性展示规则。</p>
   
+  
+  <p itemprop="about">管理 service 专属的 Bearer 凭据，避免泄露仅展示一次的秘密值。</p>
+  
+  <hr />
+</li>
+
+    
+    <li>
+  <h2 class="title2">
+    <a href="/zh/docs/sdks/python/" itemprop="headline">Python SDK</a>
+  </h2>
+  
+  <p itemprop="about">添加 Speedle Python SDK，向本地 Speedle 或 Speedle Cloud 发起授权检查。</p>
+  
+  
+  <p itemprop="about">用 pip 或 uv 安装 speedle 0.2.0，再向本地 Speedle 或 Speedle Cloud 调用 is_allowed 与 check。</p>
   
   <hr />
 </li>

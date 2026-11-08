@@ -53,6 +53,9 @@ FULL_PAGES = [
     "docs/sdks/node",
     "docs/cloud/_index",
     "docs/cloud/getting-started",
+    "docs/cloud/tokens",
+    "docs/cloud/authorization-api",
+    "docs/cloud/limits-and-errors",
     "docs/deployment",
     "docs/deployment-embeded",
     "docs/store/_index",
@@ -98,8 +101,11 @@ ANNOTATIONS = {
     "docs/sdks/dotnet": "NuGet `Speedle.Sdk` 0.2.0, published.",
     "docs/sdks/rust": "crates.io `speedle` 0.2.0, published.",
     "docs/sdks/node": "npm `@speedle/sdk` 0.2.0, not published yet.",
-    "docs/cloud/_index": "Hosted authorization for developers. Sign-in on cloud.speedle.io opens soon.",
-    "docs/cloud/getting-started": "The planned Cloud workflow: sign-in, a service, SPDL policies, Playground tests, API tokens and IsAllowed calls.",
+    "docs/cloud/_index": "Hosted authorization for developers: sign-in and account management, SPDL policies, application tokens, the authorization API preview, limits, errors and downloads. Sign-in on cloud.speedle.io opens soon.",
+    "docs/cloud/getting-started": "The console workflow: sign-in and account settings, a service, SPDL policies, session management requests, Playground tests and policy export.",
+    "docs/cloud/tokens": "Issue, protect, list, rotate and revoke service-scoped Bearer tokens, with one-time secret disclosure and recent authentication.",
+    "docs/cloud/authorization-api": "The published ADS IsAllowed request and response preview, with caller identity, a Node.js 22 example, policy snapshots and transport constraints.",
+    "docs/cloud/limits-and-errors": "Account quotas, request limits, flat JSON errors, rate and quota headers, daily accounting and retry guidance.",
     "docs/versions": "Release history and semantic versioning.",
 }
 
@@ -125,7 +131,7 @@ ZH_LINKS = [
     ("中文文档", "https://engine.speedle.io/zh/docs/", "概念、策略管理、部署、API 与 SDK 的中文文档。"),
     ("SPDL 中文参考", "https://engine.speedle.io/zh/docs/spdl/", "SPDL 策略与角色策略语法、条件、属性与函数。"),
     ("中文快速开始", "https://engine.speedle.io/zh/quick-start/", "安装 Speedle 并做出第一个授权决策。"),
-    ("Speedle Cloud 中文文档", "https://engine.speedle.io/zh/docs/cloud/", "Speedle Cloud 托管授权的规划工作流。"),
+    ("Speedle Cloud 中文文档", "https://engine.speedle.io/zh/docs/cloud/", "Speedle Cloud 托管授权文档：账号与策略管理、应用令牌、授权 API、限制与错误。"),
     ("SDK 中文文档", "https://engine.speedle.io/zh/docs/sdks/", "六种语言 SDK 的中文文档。"),
 ]
 
@@ -301,6 +307,9 @@ def render_llms(pages, definition):
         section("Speedle Cloud", [
             item("docs/cloud/_index"),
             item("docs/cloud/getting-started"),
+            item("docs/cloud/tokens"),
+            item("docs/cloud/authorization-api"),
+            item("docs/cloud/limits-and-errors"),
             fixed("cloud", "cloud.speedle.io"),
         ]),
         section("Speedle AI", [

@@ -1,96 +1,103 @@
 +++
 title = "Getting started with Speedle Cloud"
 linkTitle = "Getting started"
-description = "Follow the planned Speedle Cloud workflow: sign in, create a service, write SPDL policies, test decisions, create an API token and call IsAllowed."
+description = "Prepare for Speedle Cloud: sign-in and account management, service and SPDL policy management, session API requests and Playground tests."
 weight = 10
 draft = false
 toc = true
 tocheading = "h2"
 categories = ["docs"]
-bref = "A preview of the Speedle Cloud workflow, from sign-in and SPDL policies to authorization checks."
+bref = "The published Speedle Cloud console workflow, from sign-in and account settings to saved policies and Playground decisions."
 +++
 
-**Speedle Cloud is coming soon.** Sign-in is not open on cloud.speedle.io yet, and authenticated authorization API calls are still being rolled out. The steps below describe the planned production workflow. Screenshots will be added after production sign-in opens; no mock-up images are used.
+**Speedle Cloud is coming soon.** Production sign-in is not open on cloud.speedle.io yet, and the Cloud header shows **Coming soon**. When sign-in is closed, the sign-in page says that it opens soon. This guide describes the published workflow rather than a currently open production console; screenshots will be added after production sign-in opens.
 
-## 1. Sign in with GitHub or Google
+## Production origin
 
-Open [Speedle Cloud](https://cloud.speedle.io/). When production sign-in opens, choose **Sign in with GitHub** or **Sign in with Google**. If you are creating a new account, explicitly confirm **Create account**.
+Use `https://cloud.speedle.io` for account sessions, management requests and application tokens. Accounts, resources and tokens belong to that origin. The examples in this section are illustrative and were not executed against a live environment. Confirm that your chosen stage is deployed and that the identity provider you intend to use is available there.
 
-> **Screenshot coming soon**
->
-> The production sign-in screen will be added here.
+## Sign in with GitHub or Google (opens soon)
 
-## 2. Create a service
+The sign-in page shows **Sign in with GitHub** and **Sign in with Google** even while sign-in is disabled. When production sign-in opens, choose an available provider. A new identity whose verified email address is unused requires an explicit **Create account** confirmation. If the email address is already in use, sign in with the linked provider identified by the console, then connect the second identity in **Account settings**. Accounts are not merged automatically.
 
-Open the Service workspace, enter a service name such as `books`, and choose **Create service**. The service groups your application's authorization and role policies. Each free account has one service.
+Account settings let you inspect connected identities and connect or disconnect an available provider; keep at least one connected identity. **Sign out** is in the header beside the language switch, and the Account menu offers **Sign out everywhere**. Successful sign-out returns to the sign-in page and clears the workspace and any one-time token display. The audit log shows account activity.
 
-> **Screenshot coming soon**
->
-> The service creation screen will be added here.
+Deleting an account requires recent provider authentication and typing `DELETE`. It permanently removes the account's services, policies, tokens and identities and ends its sessions. Export any policies you need from the Service workspace before deletion.
 
-## 3. Write or import SPDL policies
+## Create a service and a policy
 
-In the Service workspace, choose **New policy**. Write SPDL in the console, choose **Validate policy** to check the syntax, and then choose **Save policy**. Validation does not save the policy. You can also import existing policies in the workspace instead of entering them one by one.
+For a new account, open the [Service workspace](https://cloud.speedle.io/service), enter `books` as the service name, and choose **Create service**. Each account has one service. If the account already has a service or policies, inspect them and use an appropriate existing configuration; do not overwrite or delete existing data to make this example work.
 
-For example, this authorization policy allows user `alice` to perform `get` on `/books`:
+Choose **New policy**, enter `read-books` as the policy name, and put this authorization policy in the SPDL editor:
 
-`grant user alice get /books`
-
-Speedle Cloud supports authorization policies and role policies. Custom external functions are not supported.
-
-> **Screenshot coming soon**
->
-> The policy editor and import controls will be added here.
-
-## 4. Try decisions in the Playground
-
-In the Service workspace, scroll to **Playground** and select **Is allowed**. Enter `[{"type":"user","name":"alice"}]` for Principals, `/books` for Resource, and `get` for Action, then choose **Run test**.
-
-The Playground evaluates saved policies; an unsaved editor draft is not included. After changing a policy or request, run the test again to refresh the result.
-
-> **Screenshot coming soon**
->
-> A Playground request and its decision will be added here.
-
-## 5. Create an API token
-
-Open **Application tokens**, enter a token name, and choose **Create token**. Recent GitHub or Google authentication may be required. Copy the token when it is shown once and store it in your application's server-side secret store; it cannot be retrieved again later.
-
-The token format is `spdl_<canonical lowercase UUIDv7 id>_<43 base62 digits>`. It is a service-scoped Bearer credential for authorization checks, not an end-user identity token or a credential for the management API. Never expose it in browser code, URLs, source control, screenshots or logs.
-
-> **Screenshot coming soon**
->
-> The token creation and one-time disclosure screens will be added here.
-
-## 6. Call the authorization API
-
-When authenticated authorization calls are available, your application server will send a `POST` request to `https://cloud.speedle.io/authz-check/v1/is-allowed` with the issued token in a single `Authorization: Bearer` header:
-
-```http
-POST /authz-check/v1/is-allowed
-Authorization: Bearer <issued token>
-Content-Type: application/json
-
-{"subject":{"principals":[{"type":"user","name":"alice"}]},"serviceName":"books","resource":"/books","action":"get","attributes":[{"name":"level","type":"numeric","value":3},{"name":"when","type":"datetime","value":"2026-11-05T03:00:00Z"}]}
+```text
+grant user alice get /books
 ```
 
-Your application must authenticate its users and supply their principals directly. Token assertion is not supported. Check the `allowed` value in the response before performing the protected action, and fail closed on errors.
+Because this grant has no `from` clause, it matches a user named `alice` in every identity domain. If your application accepts more than one identity source, write `grant user alice from <identity-domain> get /books` so the grant stays inside one domain; see [identity domain](/docs/idd/) for the rule and the matching request field.
 
-For client libraries in Java, Python, Go, .NET, Rust and Node.js/TypeScript, see the [SDKs section](/docs/sdks/).
+Choose **Validate policy** and check that the console reports **Detected: authorization policy**, then choose **Save policy**. Validation detects the policy type and checks syntax; it does not save the draft. Saving is a separate, manual action. You can also import existing policies in the workspace instead of entering them one by one.
 
-> **Screenshot coming soon**
->
-> The production API integration flow will be added here.
+Speedle Cloud supports authorization policies and role policies; custom external functions are not supported. The policy list groups the two types and shows their counts. Role assignments use these forms:
 
-## Beta limits
+- Global role: `grant user alice editor`
+- Resource-scoped role: `grant user alice editor on /books`
 
-| Limit | Beta allowance |
-| --- | --- |
-| Policies | Up to 200 policies per account, including authorization and role policies combined. |
-| API calls | Up to 10,000 API calls per day per account, including management and authorization calls combined. Usage resets at 00:00 UTC. |
+The ambiguous statement `grant user alice role editor` is rejected. Omit the optional `role` prefix for a role assignment, or write `grant (user alice) role editor` for an authorization policy. Editing retains the stored policy type. To change the type, delete the policy and create a new one.
 
-The free Beta is for trials, learning and evaluation. There is no SLA, and the Beta is not recommended for production. Features and limits may change.
+If the console reports a conflict or an uncertain response, keep your draft and refresh the saved data before choosing another mutation. Changing language preserves drafts. Monaco's built-in menus keep the language selected when the editor first loaded and change after a page reload.
 
-## Beta terms and privacy
+Service deletion requires you to type the service name, complete recent provider authentication, and confirm again after verification.
 
-Read the [Beta terms](https://cloud.speedle.io/terms) and [Privacy policy](https://cloud.speedle.io/privacy) on Speedle Cloud.
+## Send management session requests
+
+The Policy Management Service (PMS) uses the account session. Let a supported same-origin client manage its secure session cookie; do not extract cookies or use a test-provider bootstrap. Mutating requests require the exact stage `Origin`, `X-SC-CSRF: 1`, and a JSON content type. An ADS Bearer token cannot authorize PMS. Clients must not send account or service ownership selectors, or authentication timestamps.
+
+The equivalent requests for the service and policy example are:
+
+| Action | Session request | Success |
+| --- | --- | --- |
+| Create the account's service | `POST /api/service` with `{"name":"books"}` | 201 |
+| Add an authorization policy | `POST /api/service/policies` with the body below | 201 |
+
+```json
+{"name":"read-books","spdl":"grant user alice get /books"}
+```
+
+Paste only the `spdl` value into the editor when using the console. The JSON body is for the management API.
+
+## Validate and export policies
+
+Validate SPDL with `POST /api/service/validate` and a `{spdl}` body to detect its type. The legacy `{kind: "authz", spdl}` form still selects the authorization parser. **Download SPDL** and **Download JSON** call `GET /api/service/export?format=spdl` and `GET /api/service/export?format=json`, respectively.
+
+The session Playground evaluates current account-owned D1 data. The future authenticated ADS release evaluates published policy snapshots, whose propagation takes approximately 60 seconds. A successful Playground result therefore does not prove that every ADS location has received the new snapshot.
+
+## Test saved policies in the Playground
+
+In the Service workspace, scroll to **Playground** and select **Is allowed**. Enter `[{"type":"user","name":"alice"}]` in **Principals (JSON)**, `/books` in **Resource**, `get` in **Action**, and `[]` in **Attributes (JSON)**, then choose **Run test**.
+
+The other operations are **Diagnose**, **All granted roles**, and **All granted permissions**. Playground runs use saved policies, not an unsaved editor draft. Changing the input, operation or language does not automatically send a request. Run the test again after changing inputs or saved policies. The console marks the earlier result as stale and keeps it visible if a later request fails.
+
+## Use the session Playground API
+
+`POST /api/service/test` implements all four operations with the same Origin/CSRF rules and daily account quota as other management requests. It reads a consistent snapshot of the current account's D1 policies. It does not publish or save policies and does not accept an account or service ID. The displayed revision is the workspace revision known when the request was submitted, not proof of the server-side snapshot revision that was evaluated.
+
+```http
+POST /api/service/test
+Origin: https://cloud.speedle.io
+X-SC-CSRF: 1
+Content-Type: application/json
+
+{"op":"isAllowed","request":{"subject":{"principals":[{"type":"user","name":"alice"}]},"serviceName":"books","resource":"/books","action":"get","attributes":[{"name":"level","type":"numeric","value":3}]}}
+```
+
+| `request.op` | Success body | Published console and session API contract |
+| --- | --- | --- |
+| `isAllowed` | Speedle IsAllowedResponse: `allowed`, `reason`, optional `errorMessage` | Included |
+| `diagnose` | Speedle EvaluationDebugResponse: reason name, `requestContext`, `attributes`, `policies` | Included |
+| `allGrantedRoles` | `string[]`; `[]` when none | Included |
+| `allGrantedPermissions` | `{resource, actions}[]`; `[]` when none | Included |
+
+Success bodies are the plain upstream values, without an `op` or `result` envelope. Both all-granted results may be `null` or an empty array; neither shape grants authorization. ADS has no public Diagnose endpoint.
+
+Next, read about [application tokens](/docs/cloud/tokens/), the [authorization API preview](/docs/cloud/authorization-api/), and [limits and errors](/docs/cloud/limits-and-errors/).
