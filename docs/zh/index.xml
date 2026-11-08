@@ -170,20 +170,16 @@ go version Go 会自动配置 GOROOT 和默认的 GOPATH，无需手动指定。
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/zh/docs/cloud/getting-started/</guid>
-      <description>Speedle Cloud 即将上线。 cloud.speedle.io 尚未开放登录，带认证的授权 API 也仍在逐步交付。下面介绍计划中的生产环境使用流程。生产环境开放登录后会补充实际截图，本文不使用模拟界面图。
-1. 使用 GitHub 或 Google 登录 打开 Speedle Cloud。生产环境开放登录后，选择 使用 GitHub 登录 或 使用 Google 登录。如果你要创建新账号，还需要明确点击 创建账号 进行确认。
- 截图待补充
-此处将展示生产环境的登录页面。
- 2. 创建服务 打开服务工作区，输入服务名称（例如 books），然后点击 创建服务。服务用于集中管理应用的授权策略和角色策略。每个免费账号可以创建一个服务。
- 截图待补充
-此处将展示创建服务的页面。
- 3. 编写或导入 SPDL 策略 在服务工作区点击 新建策略，在控制台中编写 SPDL，点击 验证策略 检查语法，再点击 保存策略。验证语法不会自动保存策略。你也可以在工作区导入已有策略，无需逐条手动输入。
-例如，下面这条授权策略允许用户 alice 对 /books 执行 get 操作：
-grant user alice get /books
-Speedle Cloud 支持授权策略和角色策略，不支持外部自定义函数。
- 截图待补充
-此处将展示策略编辑器和导入控件。
- 4. 在 Playground 中测试授权判定 在服务工作区找到 Playground，选择 Is allowed。在 Principals 中输入 [{&amp;quot;type&amp;quot;:&amp;quot;user&amp;quot;,&amp;quot;name&amp;quot;:&amp;quot;alice&amp;quot;}]，在 Resource 中输入 /books，在 Action 中输入 get，然后点击 运行测试。</description>
+      <description>Speedle Cloud 即将上线。 cloud.speedle.io 的生产环境尚未开放登录，Cloud 页眉显示 Coming soon（即将上线） 徽章。登录关闭时，登录页会提示即将开放。本文介绍已发布的使用流程，不代表生产控制台目前已经开放；生产环境开放登录后会补充实际截图。
+生产环境 账号会话、管理请求和应用令牌使用 https://cloud.speedle.io。账号、资源和令牌归属于该 origin。本文示例仅用于说明，本次未向线上环境执行。请确认所选环境已经部署，并确认准备使用的登录供应商在该环境可用。
+使用 GitHub 或 Google 登录（即将开放） 即使登录尚未开放，登录页仍会显示 使用 GitHub 登录 和 使用 Google 登录 两个选项。生产环境开放登录后，请选择当前可用的供应商。新身份的已验证邮箱未被占用时，需要主动确认 创建账号。邮箱已被占用时，先用控制台提示的已关联供应商登录，再到 账号设置 连接第二个身份；系统不会自动合并账号。
+账号设置可以查看已连接身份，并连接或断开当前可用的供应商；至少保留一个已连接身份。退出登录 位于页眉语言切换旁，账号菜单提供 在所有设备上退出。退出成功后返回登录页，并清空工作区和一次性令牌展示。审计日志展示账号活动。
+删除账号要求最近的供应商认证，并输入 DELETE。随后会永久删除账号所属 service、策略、令牌和身份，并结束所有会话。删除前请先从服务工作区导出需要保留的策略。
+创建 service 和策略 新账号打开服务工作区，在服务名称中输入 books，然后选择 创建服务。每个账号只有一个 service。如果账号已有 service 或策略，请先核对并使用合适的现有配置，不要为了运行示例而覆盖或删除已有数据。
+选择 新建策略，在策略名称中输入 read-books，并在 SPDL 编辑器中输入以下授权策略：
+grant user alice get /books 选择 验证策略，确认控制台显示 识别为：授权策略，再选择 保存策略。验证会识别策略类型并检查语法，但不会保存草稿；保存需要单独手动操作。你也可以在工作区导入已有策略，无需逐条手动输入。
+Speedle Cloud 支持授权策略和角色策略，不支持外部自定义函数。策略列表按两种类型分组并显示数量。角色分配使用以下形式：
+ 全局角色：grant user alice editor 限定资源的角色：grant user alice editor on /books  grant user alice role editor 同时符合两类语法，会被拒绝。角色分配请省略可选的 role 前缀；授权策略请写成 grant (user alice) role editor。编辑会保留已存储的策略类型；如需改变类型，请删除原策略后新建。</description>
     </item>
     
     <item>
@@ -250,6 +246,25 @@ git clone --depth 1 https://github.com/teramoby/speedle-plus.git cd speedle-plus
     </item>
     
     <item>
+      <title>Speedle Cloud 应用令牌</title>
+      <link>https://engine.speedle.io/zh/docs/cloud/tokens/</link>
+      <pubDate>Sun, 08 Nov 2026 00:00:00 +0800</pubDate>
+      
+      <guid>https://engine.speedle.io/zh/docs/cloud/tokens/</guid>
+      <description>应用令牌用于向 Speedle Cloud ADS 认证应用，并且只能访问令牌所属的 service。令牌不代表最终用户身份，也不能用于管理 API 认证。令牌控制台随账号登录开放；带认证的 ADS 尚未提供时，签发令牌不会启用服务端授权调用。
+签发令牌 账号已有 service 时，打开应用令牌，输入 1–128 个字符的令牌名称，然后选择 创建令牌。如果要求验证，请选择当前可用的已关联供应商。从供应商页面返回后，重新输入名称并再次选择 创建令牌；返回页面不会自动签发令牌。
+控制台会发送以下会话请求：
+POST /api/tokens Origin: https://cloud.speedle.io X-SC-CSRF: 1 Content-Type: application/json {&amp;#34;name&amp;#34;:&amp;#34;books-app&amp;#34;} 示例使用生产环境 origin。客户端沿用原有的安全 cookie 处理方式携带会话，因此这段内容不是可单独执行的匿名请求。
+创建令牌要求在最近 10 分钟内完成正常供应商认证，包括登录或重新认证。服务端依据持久化会话和自己的时钟检查。恰好 10 分钟仍有效；认证时间缺失、在未来或已经过期时，返回 403 {&amp;quot;error&amp;quot;:&amp;quot;reauth_required&amp;quot;}。普通账号操作不会刷新认证时间。
+请求只接受 name。service ID、scope、过期时间和认证证明均不是客户端可提交的参数。
+保护一次性秘密值 创建成功时返回 201，响应包含令牌元数据和仅返回一次的 token 字段，格式如下：
+spdl_&amp;lt;canonical uppercase ULID id&amp;gt;_&amp;lt;43 base62 digits&amp;gt; 上面只是格式说明，不是可用凭据。令牌前缀中的 ID 与返回的令牌 ID 相同。请立即将签发值存入应用服务端的秘密管理设施。
+不要把令牌嵌入前端代码或持久化到浏览器存储，也不要放入 URL、源代码、截图、issue、遥测或日志。正常管理客户端可以短暂持有并展示新签发值，供一次性披露和用户主动复制；不得自动复制、下载、存储或记录秘密值。
+令牌列表只返回元数据，之后无法再次取回明文。v1 令牌没有内置过期时间。每个 service 最多同时保留两个有效令牌，已撤销的历史记录不占用这两个名额。
+查看令牌元数据 GET /api/tokens 按 ID 降序返回有效及已撤销令牌的元数据分页。默认每页 25 条，limit 为 1–100。cursor 是不包含边界项的令牌 ID；跟随 nextCursor 直至 null。接口永不返回秘密值。</description>
+    </item>
+    
+    <item>
       <title>Python SDK</title>
       <link>https://engine.speedle.io/zh/docs/sdks/python/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
@@ -274,6 +289,21 @@ import sys from speedle import Auth, Client, SpeedleError try: with Client( back
 git clone --depth 1 https://github.com/teramoby/speedle-plus.git cd speedle-plus mkdir -p bin go build -o ./bin/ ./cmd/spctl ./cmd/speedle-pms ./cmd/speedle-ads 后续命令均在这个代码目录执行。确认 2379、6733、6734 端口可用；修改端口时要同步修改命令和配置。
 2. 启动独立 etcd 服务 命名卷保存 etcd 数据。这里只把客户端端口发布到宿主机，单节点内部通信使用的 peer 端口保留在容器内。
 docker run --name speedle-etcd --detach \  --publish 127.0.0.1:2379:2379 \  --volume speedle-etcd-data:/etcd-data \  gcr.</description>
+    </item>
+    
+    <item>
+      <title>Speedle Cloud 授权 API 预览</title>
+      <link>https://engine.speedle.io/zh/docs/cloud/authorization-api/</link>
+      <pubDate>Sun, 08 Nov 2026 00:00:00 +0800</pubDate>
+      
+      <guid>https://engine.speedle.io/zh/docs/cloud/authorization-api/</guid>
+      <description>带认证的 ADS 尚未提供。 本页请求和示例描述后续版本的已发布合约，本次未向 Cloud 线上环境执行。签发应用令牌并不会启用这些调用。请明确使用获准环境的 URL，并在接入前确认该环境已经提供带认证的 ADS。
+从应用服务端调用 IsAllowed 将签发的令牌放入一个 Authorization: Bearer 请求头，并发送 POST 请求：
+POST /authz-check/v1/is-allowed Authorization: Bearer &amp;lt;issued token&amp;gt; Content-Type: application/json {&amp;#34;subject&amp;#34;:{&amp;#34;principals&amp;#34;:[{&amp;#34;type&amp;#34;:&amp;#34;user&amp;#34;,&amp;#34;name&amp;#34;:&amp;#34;alice&amp;#34;}]},&amp;#34;serviceName&amp;#34;:&amp;#34;books&amp;#34;,&amp;#34;resource&amp;#34;:&amp;#34;/books&amp;#34;,&amp;#34;action&amp;#34;:&amp;#34;get&amp;#34;,&amp;#34;attributes&amp;#34;:[{&amp;#34;name&amp;#34;:&amp;#34;level&amp;#34;,&amp;#34;type&amp;#34;:&amp;#34;numeric&amp;#34;,&amp;#34;value&amp;#34;:3},{&amp;#34;name&amp;#34;:&amp;#34;when&amp;#34;,&amp;#34;type&amp;#34;:&amp;#34;datetime&amp;#34;,&amp;#34;value&amp;#34;:&amp;#34;2026-11-05T03:00:00Z&amp;#34;}]} 请求正文就是 Speedle REST 请求，字段和类型与自托管 Speedle ADS 相同。attributes 是由 {name, type, value} 组成的数组。属性类型支持 string、numeric、bool 和采用 RFC 3339 格式的 datetime。
+每个请求都必须填写 serviceName，系统不会自动取默认值。请填写令牌所属 service 的名称。名称缺失或为空时，得到与 Speedle 相同的 SERVICE_NOT_FOUND 结果；名称不一致时，返回 403 {&amp;quot;error&amp;quot;:&amp;quot;service_mismatch&amp;quot;}。
+快速入门中的策略会允许上述示例请求：
+{&amp;#34;allowed&amp;#34;:true,&amp;#34;reason&amp;#34;:0} 理解判定结果和调用方身份 策略拒绝同样返回 HTTP 200，但 allowed 为 false。应用必须检查 allowed，再执行受保护的操作；遇到异常或无效响应时应默认拒绝。
+应用通过自身的用户认证确定调用方的 principals。API 令牌识别的是应用和 service，不是最终用户身份。不要相信匿名浏览器自行提交的 principal 名称。</description>
     </item>
     
     <item>
@@ -317,6 +347,16 @@ printf &amp;#39;{}\n&amp;#39; &amp;gt; docs-policies.json 终端一启动 PMS，
 ./bin/speedle-ads --store-type file --filestore-loc ./docs-policies.json --endpoint 127.0.0.1:6734 --grpc-endpoint 127.0.0.1:0 --insecure=true 在第三个终端运行后续命令。PMS/ADS 共享同一个文件，策略更新通过 watch 异步到达 ADS；先查询确认已更新，再依赖新策略做决策。--insecure=true 仅用于回环地址上的本地示例，生产连接见安全配置。示例显式指定 PMS 地址，不修改 ~/.spctlconfig。完成后在两个服务终端按 Ctrl-C。
 创建可重复的测试策略 测试文件给 Alan 分配 role1、role2；其中 role1 可以下载 /books/HarryPotter。
 ./bin/spctl --pms-endpoint http://127.</description>
+    </item>
+    
+    <item>
+      <title>Speedle Cloud 限额与错误</title>
+      <link>https://engine.speedle.io/zh/docs/cloud/limits-and-errors/</link>
+      <pubDate>Sun, 08 Nov 2026 00:00:00 +0800</pubDate>
+      
+      <guid>https://engine.speedle.io/zh/docs/cloud/limits-and-errors/</guid>
+      <description>以下 ADS 错误与响应头描述带认证的 ADS 合约，其运行时尚未提供。管理合约已经定义账号限额、会话与 CSRF 检查及令牌管理错误，供账号访问开放后使用。下载规范本身不会启用尚未提供的接口。
+限额    限额 含义     每日 10,000 次 同一账号每 UTC 日进入已匹配 PMS 和 ADS handler 的合计次数，由所有会话、令牌和 service 共用；00:00 UTC 重置。   200 条策略 每个账号的授权策略和角色策略合计。   每条 SPDL 4 KiB 完整策略最多 4,096 个 UTF-8 字节，不是 4,096 个字符。   2 个有效令牌 每个 service；已撤销的历史记录不占此名额。   每令牌每分钟 600 次 每个节点的近似突发限制，与严格的账号每日总额分开。   请求正文 64 KiB 解析前的全局上限。可选输入 attributes 仍受 50 个属性、规范化 UTF-8 JSON 16,384 字节的限制。    每个账号只有一个 service。令牌名称为 1–128 个字符。凭据生命周期规则见应用令牌。</description>
     </item>
     
     <item>

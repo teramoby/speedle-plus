@@ -11,7 +11,7 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
     <meta name="viewport" content="width=device-width, initial-scale=1"><title>Getting started with Speedle Cloud · Speedle Engine</title>
-<meta name="description" content="Follow the planned Speedle Cloud workflow: sign in, create a service, write SPDL policies, test decisions, create an API token and call IsAllowed.">
+<meta name="description" content="Prepare for Speedle Cloud: sign-in and account management, service and SPDL policy management, session API requests and Playground tests.">
 <meta name="generator" content="Hugo 0.48" />
 <link href="https://engine.speedle.io/index.xml" rel="alternate" type="application/rss+xml">
 <link rel="canonical" href="https://engine.speedle.io/docs/cloud/getting-started/">
@@ -23,7 +23,7 @@
 <meta property="article:modified_time" content="2026-11-07T00:06:57&#43;08:00">
 <meta property="og:site_name" content="Speedle Engine">
 <meta property="og:title" content="Getting started with Speedle Cloud · Speedle Engine">
-<meta property="og:description" content="Follow the planned Speedle Cloud workflow: sign in, create a service, write SPDL policies, test decisions, create an API token and call IsAllowed.">
+<meta property="og:description" content="Prepare for Speedle Cloud: sign-in and account management, service and SPDL policy management, session API requests and Playground tests.">
 <meta property="og:url" content="https://engine.speedle.io/docs/cloud/getting-started/">
 <meta property="og:image" content="https://engine.speedle.io/img/social/engine-en.png">
 <meta property="og:image:width" content="1200">
@@ -32,11 +32,11 @@
 <meta property="og:image:alt" content="Speedle Engine — Fast. Simple. Access control">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Getting started with Speedle Cloud · Speedle Engine">
-<meta name="twitter:description" content="Follow the planned Speedle Cloud workflow: sign in, create a service, write SPDL policies, test decisions, create an API token and call IsAllowed.">
+<meta name="twitter:description" content="Prepare for Speedle Cloud: sign-in and account management, service and SPDL policy management, session API requests and Playground tests.">
 <meta name="twitter:image" content="https://engine.speedle.io/img/social/engine-en.png">
 <meta name="twitter:image:alt" content="Speedle Engine — Fast. Simple. Access control">
 
-<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/docs/cloud/getting-started/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-07T00:06:57+08:00","description":"Follow the planned Speedle Cloud workflow: sign in, create a service, write SPDL policies, test decisions, create an API token and call IsAllowed.","headline":"Getting started with Speedle Cloud","image":"https://engine.speedle.io/img/social/engine-en.png","inLanguage":"en","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/docs/cloud/getting-started/","@type":"WebPage"},"name":"Getting started with Speedle Cloud","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/docs/cloud/getting-started/"}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/docs/cloud/getting-started/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-07T00:06:57+08:00","description":"Prepare for Speedle Cloud: sign-in and account management, service and SPDL policy management, session API requests and Playground tests.","headline":"Getting started with Speedle Cloud","image":"https://engine.speedle.io/img/social/engine-en.png","inLanguage":"en","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/docs/cloud/getting-started/","@type":"WebPage"},"name":"Getting started with Speedle Cloud","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/docs/cloud/getting-started/"}</script>
 <script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/docs/cloud/getting-started/#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://engine.speedle.io/","name":"Home","position":1},{"@type":"ListItem","item":"https://engine.speedle.io/docs/","name":"Documentation","position":2},{"@type":"ListItem","item":"https://engine.speedle.io/docs/cloud/","name":"Speedle Cloud","position":3},{"@type":"ListItem","item":"https://engine.speedle.io/docs/cloud/getting-started/","name":"Getting started with Speedle Cloud","position":4}]}</script><link href="/css/docs.css" rel="stylesheet" type="text/css">
 
 
@@ -141,6 +141,9 @@
 <li data-docs-depth="0" class="docs-nav-section parent"><span class="docs-nav-heading docs-nav-heading-link"><a href="/docs/cloud/">Speedle Cloud</a></span>
 <ul class="sub-menu">
 <li data-docs-depth="1" class="active"><a href="/docs/cloud/getting-started/" aria-current="page">Getting started</a></li>
+<li data-docs-depth="1" class=""><a href="/docs/cloud/tokens/">Application tokens</a></li>
+<li data-docs-depth="1" class=""><a href="/docs/cloud/authorization-api/">Authorization API</a></li>
+<li data-docs-depth="1" class=""><a href="/docs/cloud/limits-and-errors/">Limits and errors</a></li>
 </ul>
 
 </li>
@@ -163,7 +166,7 @@
 <div id="main">
 
   <h1>Getting started with Speedle Cloud</h1>
-  <p class="docs-lead">A preview of the Speedle Cloud workflow, from sign-in and SPDL policies to authorization checks.</p>
+  <p class="docs-lead">The published Speedle Cloud console workflow, from sign-in and account settings to saved policies and Playground decisions.</p>
 
 
 
@@ -176,114 +179,133 @@
 
   <div id="kube-component" class="content">
 
-<p><strong>Speedle Cloud is coming soon.</strong> Sign-in is not open on cloud.speedle.io yet, and authenticated authorization API calls are still being rolled out. The steps below describe the planned production workflow. Screenshots will be added after production sign-in opens; no mock-up images are used.</p>
+<p><strong>Speedle Cloud is coming soon.</strong> Production sign-in is not open on cloud.speedle.io yet, and the Cloud header shows <strong>Coming soon</strong>. When sign-in is closed, the sign-in page says that it opens soon. This guide describes the published workflow rather than a currently open production console; screenshots will be added after production sign-in opens.</p>
 
-<h2 id="1-sign-in-with-github-or-google">1. Sign in with GitHub or Google</h2>
+<h2 id="production-origin">Production origin</h2>
 
-<p>Open <a href="https://cloud.speedle.io/">Speedle Cloud</a>. When production sign-in opens, choose <strong>Sign in with GitHub</strong> or <strong>Sign in with Google</strong>. If you are creating a new account, explicitly confirm <strong>Create account</strong>.</p>
+<p>Use <code>https://cloud.speedle.io</code> for account sessions, management requests and application tokens. Accounts, resources and tokens belong to that origin. The examples in this section are illustrative and were not executed against a live environment. Confirm that your chosen stage is deployed and that the identity provider you intend to use is available there.</p>
 
-<blockquote>
-<p><strong>Screenshot coming soon</strong></p>
+<h2 id="sign-in-with-github-or-google-opens-soon">Sign in with GitHub or Google (opens soon)</h2>
 
-<p>The production sign-in screen will be added here.</p>
-</blockquote>
+<p>The sign-in page shows <strong>Sign in with GitHub</strong> and <strong>Sign in with Google</strong> even while sign-in is disabled. When production sign-in opens, choose an available provider. A new identity whose verified email address is unused requires an explicit <strong>Create account</strong> confirmation. If the email address is already in use, sign in with the linked provider identified by the console, then connect the second identity in <strong>Account settings</strong>. Accounts are not merged automatically.</p>
 
-<h2 id="2-create-a-service">2. Create a service</h2>
+<p>Account settings let you inspect connected identities and connect or disconnect an available provider; keep at least one connected identity. <strong>Sign out</strong> is in the header beside the language switch, and the Account menu offers <strong>Sign out everywhere</strong>. Successful sign-out returns to the sign-in page and clears the workspace and any one-time token display. The audit log shows account activity.</p>
 
-<p>Open the Service workspace, enter a service name such as <code>books</code>, and choose <strong>Create service</strong>. The service groups your application&rsquo;s authorization and role policies. Each free account has one service.</p>
+<p>Deleting an account requires recent provider authentication and typing <code>DELETE</code>. It permanently removes the account&rsquo;s services, policies, tokens and identities and ends its sessions. Export any policies you need from the Service workspace before deletion.</p>
 
-<blockquote>
-<p><strong>Screenshot coming soon</strong></p>
+<h2 id="create-a-service-and-a-policy">Create a service and a policy</h2>
 
-<p>The service creation screen will be added here.</p>
-</blockquote>
+<p>For a new account, open the <a href="https://cloud.speedle.io/service">Service workspace</a>, enter <code>books</code> as the service name, and choose <strong>Create service</strong>. Each account has one service. If the account already has a service or policies, inspect them and use an appropriate existing configuration; do not overwrite or delete existing data to make this example work.</p>
 
-<h2 id="3-write-or-import-spdl-policies">3. Write or import SPDL policies</h2>
+<p>Choose <strong>New policy</strong>, enter <code>read-books</code> as the policy name, and put this authorization policy in the SPDL editor:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">grant user alice get /books</code></pre></div>
+<p>Choose <strong>Validate policy</strong> and check that the console reports <strong>Detected: authorization policy</strong>, then choose <strong>Save policy</strong>. Validation detects the policy type and checks syntax; it does not save the draft. Saving is a separate, manual action. You can also import existing policies in the workspace instead of entering them one by one.</p>
 
-<p>In the Service workspace, choose <strong>New policy</strong>. Write SPDL in the console, choose <strong>Validate policy</strong> to check the syntax, and then choose <strong>Save policy</strong>. Validation does not save the policy. You can also import existing policies in the workspace instead of entering them one by one.</p>
+<p>Speedle Cloud supports authorization policies and role policies; custom external functions are not supported. The policy list groups the two types and shows their counts. Role assignments use these forms:</p>
 
-<p>For example, this authorization policy allows user <code>alice</code> to perform <code>get</code> on <code>/books</code>:</p>
+<ul>
+<li>Global role: <code>grant user alice editor</code></li>
+<li>Resource-scoped role: <code>grant user alice editor on /books</code></li>
+</ul>
 
-<p><code>grant user alice get /books</code></p>
+<p>The ambiguous statement <code>grant user alice role editor</code> is rejected. Omit the optional <code>role</code> prefix for a role assignment, or write <code>grant (user alice) role editor</code> for an authorization policy. Editing retains the stored policy type. To change the type, delete the policy and create a new one.</p>
 
-<p>Speedle Cloud supports authorization policies and role policies. Custom external functions are not supported.</p>
+<p>If the console reports a conflict or an uncertain response, keep your draft and refresh the saved data before choosing another mutation. Changing language preserves drafts. Monaco&rsquo;s built-in menus keep the language selected when the editor first loaded and change after a page reload.</p>
 
-<blockquote>
-<p><strong>Screenshot coming soon</strong></p>
+<p>Service deletion requires you to type the service name, complete recent provider authentication, and confirm again after verification.</p>
 
-<p>The policy editor and import controls will be added here.</p>
-</blockquote>
+<h2 id="send-management-session-requests">Send management session requests</h2>
 
-<h2 id="4-try-decisions-in-the-playground">4. Try decisions in the Playground</h2>
+<p>The Policy Management Service (PMS) uses the account session. Let a supported same-origin client manage its secure session cookie; do not extract cookies or use a test-provider bootstrap. Mutating requests require the exact stage <code>Origin</code>, <code>X-SC-CSRF: 1</code>, and a JSON content type. An ADS Bearer token cannot authorize PMS. Clients must not send account or service ownership selectors, or authentication timestamps.</p>
 
-<p>In the Service workspace, scroll to <strong>Playground</strong> and select <strong>Is allowed</strong>. Enter <code>[{&quot;type&quot;:&quot;user&quot;,&quot;name&quot;:&quot;alice&quot;}]</code> for Principals, <code>/books</code> for Resource, and <code>get</code> for Action, then choose <strong>Run test</strong>.</p>
-
-<p>The Playground evaluates saved policies; an unsaved editor draft is not included. After changing a policy or request, run the test again to refresh the result.</p>
-
-<blockquote>
-<p><strong>Screenshot coming soon</strong></p>
-
-<p>A Playground request and its decision will be added here.</p>
-</blockquote>
-
-<h2 id="5-create-an-api-token">5. Create an API token</h2>
-
-<p>Open <strong>Application tokens</strong>, enter a token name, and choose <strong>Create token</strong>. Recent GitHub or Google authentication may be required. Copy the token when it is shown once and store it in your application&rsquo;s server-side secret store; it cannot be retrieved again later.</p>
-
-<p>The token format is <code>spdl_&lt;canonical lowercase UUIDv7 id&gt;_&lt;43 base62 digits&gt;</code>. It is a service-scoped Bearer credential for authorization checks, not an end-user identity token or a credential for the management API. Never expose it in browser code, URLs, source control, screenshots or logs.</p>
-
-<blockquote>
-<p><strong>Screenshot coming soon</strong></p>
-
-<p>The token creation and one-time disclosure screens will be added here.</p>
-</blockquote>
-
-<h2 id="6-call-the-authorization-api">6. Call the authorization API</h2>
-
-<p>When authenticated authorization calls are available, your application server will send a <code>POST</code> request to <code>https://cloud.speedle.io/authz-check/v1/is-allowed</code> with the issued token in a single <code>Authorization: Bearer</code> header:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-http" data-lang="http">POST /authz-check/v1/is-allowed
-Authorization: Bearer &lt;issued token&gt;
-Content-Type: application/json
-
-{&#34;subject&#34;:{&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;,&#34;name&#34;:&#34;alice&#34;}]},&#34;serviceName&#34;:&#34;books&#34;,&#34;resource&#34;:&#34;/books&#34;,&#34;action&#34;:&#34;get&#34;,&#34;attributes&#34;:[{&#34;name&#34;:&#34;level&#34;,&#34;type&#34;:&#34;numeric&#34;,&#34;value&#34;:3},{&#34;name&#34;:&#34;when&#34;,&#34;type&#34;:&#34;datetime&#34;,&#34;value&#34;:&#34;2026-11-05T03:00:00Z&#34;}]}</code></pre></div>
-<p>Your application must authenticate its users and supply their principals directly. Token assertion is not supported. Check the <code>allowed</code> value in the response before performing the protected action, and fail closed on errors.</p>
-
-<p>For client libraries in Java, Python, Go, .NET, Rust and Node.js/TypeScript, see the <a href="/docs/sdks/">SDKs section</a>.</p>
-
-<blockquote>
-<p><strong>Screenshot coming soon</strong></p>
-
-<p>The production API integration flow will be added here.</p>
-</blockquote>
-
-<h2 id="beta-limits">Beta limits</h2>
+<p>The equivalent requests for the service and policy example are:</p>
 
 <table>
 <thead>
 <tr>
-<th>Limit</th>
-<th>Beta allowance</th>
+<th>Action</th>
+<th>Session request</th>
+<th>Success</th>
 </tr>
 </thead>
 
 <tbody>
 <tr>
-<td>Policies</td>
-<td>Up to 200 policies per account, including authorization and role policies combined.</td>
+<td>Create the account&rsquo;s service</td>
+<td><code>POST /api/service</code> with <code>{&quot;name&quot;:&quot;books&quot;}</code></td>
+<td>201</td>
 </tr>
 
 <tr>
-<td>API calls</td>
-<td>Up to 10,000 API calls per day per account, including management and authorization calls combined. Usage resets at 00:00 UTC.</td>
+<td>Add an authorization policy</td>
+<td><code>POST /api/service/policies</code> with the body below</td>
+<td>201</td>
+</tr>
+</tbody>
+</table>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">{<span style="color:#ff79c6">&#34;name&#34;</span>:<span style="color:#f1fa8c">&#34;read-books&#34;</span>,<span style="color:#ff79c6">&#34;spdl&#34;</span>:<span style="color:#f1fa8c">&#34;grant user alice get /books&#34;</span>}</code></pre></div>
+<p>Paste only the <code>spdl</code> value into the editor when using the console. The JSON body is for the management API.</p>
+
+<h2 id="validate-and-export-policies">Validate and export policies</h2>
+
+<p>Validate SPDL with <code>POST /api/service/validate</code> and a <code>{spdl}</code> body to detect its type. The legacy <code>{kind: &quot;authz&quot;, spdl}</code> form still selects the authorization parser. <strong>Download SPDL</strong> and <strong>Download JSON</strong> call <code>GET /api/service/export?format=spdl</code> and <code>GET /api/service/export?format=json</code>, respectively.</p>
+
+<p>The session Playground evaluates current account-owned D1 data. The future authenticated ADS release evaluates published policy snapshots, whose propagation takes approximately 60 seconds. A successful Playground result therefore does not prove that every ADS location has received the new snapshot.</p>
+
+<h2 id="test-saved-policies-in-the-playground">Test saved policies in the Playground</h2>
+
+<p>In the Service workspace, scroll to <strong>Playground</strong> and select <strong>Is allowed</strong>. Enter <code>[{&quot;type&quot;:&quot;user&quot;,&quot;name&quot;:&quot;alice&quot;}]</code> in <strong>Principals (JSON)</strong>, <code>/books</code> in <strong>Resource</strong>, <code>get</code> in <strong>Action</strong>, and <code>[]</code> in <strong>Attributes (JSON)</strong>, then choose <strong>Run test</strong>.</p>
+
+<p>The other operations are <strong>Diagnose</strong>, <strong>All granted roles</strong>, and <strong>All granted permissions</strong>. Playground runs use saved policies, not an unsaved editor draft. Changing the input, operation or language does not automatically send a request. Run the test again after changing inputs or saved policies. The console marks the earlier result as stale and keeps it visible if a later request fails.</p>
+
+<h2 id="use-the-session-playground-api">Use the session Playground API</h2>
+
+<p><code>POST /api/service/test</code> implements all four operations with the same Origin/CSRF rules and daily account quota as other management requests. It reads a consistent snapshot of the current account&rsquo;s D1 policies. It does not publish or save policies and does not accept an account or service ID. The displayed revision is the workspace revision known when the request was submitted, not proof of the server-side snapshot revision that was evaluated.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-http" data-lang="http">POST /api/service/test
+Origin: https://cloud.speedle.io
+X-SC-CSRF: 1
+Content-Type: application/json
+
+{&#34;op&#34;:&#34;isAllowed&#34;,&#34;request&#34;:{&#34;subject&#34;:{&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;,&#34;name&#34;:&#34;alice&#34;}]},&#34;serviceName&#34;:&#34;books&#34;,&#34;resource&#34;:&#34;/books&#34;,&#34;action&#34;:&#34;get&#34;,&#34;attributes&#34;:[{&#34;name&#34;:&#34;level&#34;,&#34;type&#34;:&#34;numeric&#34;,&#34;value&#34;:3}]}}</code></pre></div>
+<table>
+<thead>
+<tr>
+<th><code>request.op</code></th>
+<th>Success body</th>
+<th>Published console and session API contract</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td><code>isAllowed</code></td>
+<td>Speedle IsAllowedResponse: <code>allowed</code>, <code>reason</code>, optional <code>errorMessage</code></td>
+<td>Included</td>
+</tr>
+
+<tr>
+<td><code>diagnose</code></td>
+<td>Speedle EvaluationDebugResponse: reason name, <code>requestContext</code>, <code>attributes</code>, <code>policies</code></td>
+<td>Included</td>
+</tr>
+
+<tr>
+<td><code>allGrantedRoles</code></td>
+<td><code>string[]</code>; <code>[]</code> when none</td>
+<td>Included</td>
+</tr>
+
+<tr>
+<td><code>allGrantedPermissions</code></td>
+<td><code>{resource, actions}[]</code>; <code>[]</code> when none</td>
+<td>Included</td>
 </tr>
 </tbody>
 </table>
 
-<p>The free Beta is for trials, learning and evaluation. There is no SLA, and the Beta is not recommended for production. Features and limits may change.</p>
+<p>Success bodies are the plain upstream values, without an <code>op</code> or <code>result</code> envelope. Both all-granted results may be <code>null</code> or an empty array; neither shape grants authorization. ADS has no public Diagnose endpoint.</p>
 
-<h2 id="beta-terms-and-privacy">Beta terms and privacy</h2>
-
-<p>Read the <a href="https://cloud.speedle.io/terms">Beta terms</a> and <a href="https://cloud.speedle.io/privacy">Privacy policy</a> on Speedle Cloud.</p>
+<p>Next, read about <a href="/docs/cloud/tokens/">application tokens</a>, the <a href="/docs/cloud/authorization-api/">authorization API preview</a>, and <a href="/docs/cloud/limits-and-errors/">limits and errors</a>.</p>
 </div>
 </div>
 </main>

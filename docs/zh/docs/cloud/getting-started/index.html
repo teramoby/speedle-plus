@@ -11,7 +11,7 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
     <meta name="viewport" content="width=device-width, initial-scale=1"><title>Speedle Cloud 快速入门 · Speedle Engine</title>
-<meta name="description" content="了解 Speedle Cloud 的使用流程：登录、创建服务、编写 SPDL 策略、测试授权判定、创建 API 令牌并调用 IsAllowed。">
+<meta name="description" content="了解 Speedle Cloud 的登录与账号管理、service 与 SPDL 策略管理、会话 API 请求和 Playground 测试。">
 <meta name="generator" content="Hugo 0.48" />
 <link href="https://engine.speedle.io/index.xml" rel="alternate" type="application/rss+xml">
 <link rel="canonical" href="https://engine.speedle.io/zh/docs/cloud/getting-started/">
@@ -23,7 +23,7 @@
 <meta property="article:modified_time" content="2026-11-08T11:21:16&#43;08:00">
 <meta property="og:site_name" content="Speedle Engine">
 <meta property="og:title" content="Speedle Cloud 快速入门 · Speedle Engine">
-<meta property="og:description" content="了解 Speedle Cloud 的使用流程：登录、创建服务、编写 SPDL 策略、测试授权判定、创建 API 令牌并调用 IsAllowed。">
+<meta property="og:description" content="了解 Speedle Cloud 的登录与账号管理、service 与 SPDL 策略管理、会话 API 请求和 Playground 测试。">
 <meta property="og:url" content="https://engine.speedle.io/zh/docs/cloud/getting-started/">
 <meta property="og:image" content="https://engine.speedle.io/img/social/engine-zh.png">
 <meta property="og:image:width" content="1200">
@@ -32,11 +32,11 @@
 <meta property="og:image:alt" content="Speedle Engine — 快速、简单的权限控制">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Speedle Cloud 快速入门 · Speedle Engine">
-<meta name="twitter:description" content="了解 Speedle Cloud 的使用流程：登录、创建服务、编写 SPDL 策略、测试授权判定、创建 API 令牌并调用 IsAllowed。">
+<meta name="twitter:description" content="了解 Speedle Cloud 的登录与账号管理、service 与 SPDL 策略管理、会话 API 请求和 Playground 测试。">
 <meta name="twitter:image" content="https://engine.speedle.io/img/social/engine-zh.png">
 <meta name="twitter:image:alt" content="Speedle Engine — 快速、简单的权限控制">
 
-<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/zh/docs/cloud/getting-started/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-08T11:21:16+08:00","description":"了解 Speedle Cloud 的使用流程：登录、创建服务、编写 SPDL 策略、测试授权判定、创建 API 令牌并调用 IsAllowed。","headline":"Speedle Cloud 快速入门","image":"https://engine.speedle.io/img/social/engine-zh.png","inLanguage":"zh-CN","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/zh/docs/cloud/getting-started/","@type":"WebPage"},"name":"Speedle Cloud 快速入门","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/zh/docs/cloud/getting-started/"}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/zh/docs/cloud/getting-started/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-08T11:21:16+08:00","description":"了解 Speedle Cloud 的登录与账号管理、service 与 SPDL 策略管理、会话 API 请求和 Playground 测试。","headline":"Speedle Cloud 快速入门","image":"https://engine.speedle.io/img/social/engine-zh.png","inLanguage":"zh-CN","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/zh/docs/cloud/getting-started/","@type":"WebPage"},"name":"Speedle Cloud 快速入门","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/zh/docs/cloud/getting-started/"}</script>
 <script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/zh/docs/cloud/getting-started/#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://engine.speedle.io/zh/","name":"首页","position":1},{"@type":"ListItem","item":"https://engine.speedle.io/zh/docs/","name":"文档","position":2},{"@type":"ListItem","item":"https://engine.speedle.io/zh/docs/cloud/","name":"Speedle Cloud","position":3},{"@type":"ListItem","item":"https://engine.speedle.io/zh/docs/cloud/getting-started/","name":"Speedle Cloud 快速入门","position":4}]}</script><link href="/css/docs.css" rel="stylesheet" type="text/css">
 
 
@@ -143,6 +143,9 @@
 <li data-docs-depth="0" class="docs-nav-section parent"><span class="docs-nav-heading docs-nav-heading-link"><a href="/zh/docs/cloud/">Speedle Cloud</a></span>
 <ul class="sub-menu">
 <li data-docs-depth="1" class="active"><a href="/zh/docs/cloud/getting-started/" aria-current="page">快速入门</a></li>
+<li data-docs-depth="1" class=""><a href="/zh/docs/cloud/tokens/">应用令牌</a></li>
+<li data-docs-depth="1" class=""><a href="/zh/docs/cloud/authorization-api/">授权 API</a></li>
+<li data-docs-depth="1" class=""><a href="/zh/docs/cloud/limits-and-errors/">限额与错误</a></li>
 </ul>
 
 </li>
@@ -163,7 +166,7 @@
 <div id="main">
 
   <h1>Speedle Cloud 快速入门</h1>
-  <p class="docs-lead">预览 Speedle Cloud 的使用流程，涵盖登录、SPDL 策略编写、Playground 测试和授权 API 调用。</p>
+  <p class="docs-lead">已发布的 Speedle Cloud 控制台流程，涵盖登录、账号设置、已保存策略和 Playground 判定。</p>
 
 
 
@@ -176,114 +179,133 @@
 
   <div id="kube-component" class="content">
 
-<p><strong>Speedle Cloud 即将上线。</strong> cloud.speedle.io 尚未开放登录，带认证的授权 API 也仍在逐步交付。下面介绍计划中的生产环境使用流程。生产环境开放登录后会补充实际截图，本文不使用模拟界面图。</p>
+<p><strong>Speedle Cloud 即将上线。</strong> cloud.speedle.io 的生产环境尚未开放登录，Cloud 页眉显示 <strong>Coming soon（即将上线）</strong> 徽章。登录关闭时，登录页会提示即将开放。本文介绍已发布的使用流程，不代表生产控制台目前已经开放；生产环境开放登录后会补充实际截图。</p>
 
-<h2 id="1-使用-github-或-google-登录">1. 使用 GitHub 或 Google 登录</h2>
+<h2 id="生产环境">生产环境</h2>
 
-<p>打开 <a href="https://cloud.speedle.io/zh-CN/">Speedle Cloud</a>。生产环境开放登录后，选择 <strong>使用 GitHub 登录</strong> 或 <strong>使用 Google 登录</strong>。如果你要创建新账号，还需要明确点击 <strong>创建账号</strong> 进行确认。</p>
+<p>账号会话、管理请求和应用令牌使用 <code>https://cloud.speedle.io</code>。账号、资源和令牌归属于该 origin。本文示例仅用于说明，本次未向线上环境执行。请确认所选环境已经部署，并确认准备使用的登录供应商在该环境可用。</p>
 
-<blockquote>
-<p><strong>截图待补充</strong></p>
+<h2 id="使用-github-或-google-登录-即将开放">使用 GitHub 或 Google 登录（即将开放）</h2>
 
-<p>此处将展示生产环境的登录页面。</p>
-</blockquote>
+<p>即使登录尚未开放，登录页仍会显示 <strong>使用 GitHub 登录</strong> 和 <strong>使用 Google 登录</strong> 两个选项。生产环境开放登录后，请选择当前可用的供应商。新身份的已验证邮箱未被占用时，需要主动确认 <strong>创建账号</strong>。邮箱已被占用时，先用控制台提示的已关联供应商登录，再到 <strong>账号设置</strong> 连接第二个身份；系统不会自动合并账号。</p>
 
-<h2 id="2-创建服务">2. 创建服务</h2>
+<p>账号设置可以查看已连接身份，并连接或断开当前可用的供应商；至少保留一个已连接身份。<strong>退出登录</strong> 位于页眉语言切换旁，账号菜单提供 <strong>在所有设备上退出</strong>。退出成功后返回登录页，并清空工作区和一次性令牌展示。审计日志展示账号活动。</p>
 
-<p>打开服务工作区，输入服务名称（例如 <code>books</code>），然后点击 <strong>创建服务</strong>。服务用于集中管理应用的授权策略和角色策略。每个免费账号可以创建一个服务。</p>
+<p>删除账号要求最近的供应商认证，并输入 <code>DELETE</code>。随后会永久删除账号所属 service、策略、令牌和身份，并结束所有会话。删除前请先从服务工作区导出需要保留的策略。</p>
 
-<blockquote>
-<p><strong>截图待补充</strong></p>
+<h2 id="创建-service-和策略">创建 service 和策略</h2>
 
-<p>此处将展示创建服务的页面。</p>
-</blockquote>
+<p>新账号打开<a href="https://cloud.speedle.io/zh-CN/service">服务工作区</a>，在服务名称中输入 <code>books</code>，然后选择 <strong>创建服务</strong>。每个账号只有一个 service。如果账号已有 service 或策略，请先核对并使用合适的现有配置，不要为了运行示例而覆盖或删除已有数据。</p>
 
-<h2 id="3-编写或导入-spdl-策略">3. 编写或导入 SPDL 策略</h2>
+<p>选择 <strong>新建策略</strong>，在策略名称中输入 <code>read-books</code>，并在 SPDL 编辑器中输入以下授权策略：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">grant user alice get /books</code></pre></div>
+<p>选择 <strong>验证策略</strong>，确认控制台显示 <strong>识别为：授权策略</strong>，再选择 <strong>保存策略</strong>。验证会识别策略类型并检查语法，但不会保存草稿；保存需要单独手动操作。你也可以在工作区导入已有策略，无需逐条手动输入。</p>
 
-<p>在服务工作区点击 <strong>新建策略</strong>，在控制台中编写 SPDL，点击 <strong>验证策略</strong> 检查语法，再点击 <strong>保存策略</strong>。验证语法不会自动保存策略。你也可以在工作区导入已有策略，无需逐条手动输入。</p>
+<p>Speedle Cloud 支持授权策略和角色策略，不支持外部自定义函数。策略列表按两种类型分组并显示数量。角色分配使用以下形式：</p>
 
-<p>例如，下面这条授权策略允许用户 <code>alice</code> 对 <code>/books</code> 执行 <code>get</code> 操作：</p>
+<ul>
+<li>全局角色：<code>grant user alice editor</code></li>
+<li>限定资源的角色：<code>grant user alice editor on /books</code></li>
+</ul>
 
-<p><code>grant user alice get /books</code></p>
+<p><code>grant user alice role editor</code> 同时符合两类语法，会被拒绝。角色分配请省略可选的 <code>role</code> 前缀；授权策略请写成 <code>grant (user alice) role editor</code>。编辑会保留已存储的策略类型；如需改变类型，请删除原策略后新建。</p>
 
-<p>Speedle Cloud 支持授权策略和角色策略，不支持外部自定义函数。</p>
+<p>遇到冲突或响应结果不明确时，请保留草稿，先刷新已保存数据，再决定是否执行另一项修改。切换语言会保留草稿。Monaco 内置菜单沿用编辑器首次加载时的语言，重新加载页面后才跟随新选择。</p>
 
-<blockquote>
-<p><strong>截图待补充</strong></p>
+<p>删除 service 时，需要输入服务名称、完成最近的供应商认证，并在验证后再次确认。</p>
 
-<p>此处将展示策略编辑器和导入控件。</p>
-</blockquote>
+<h2 id="发送管理会话请求">发送管理会话请求</h2>
 
-<h2 id="4-在-playground-中测试授权判定">4. 在 Playground 中测试授权判定</h2>
+<p>策略管理服务（PMS）使用账号会话。请让受支持的同源客户端管理安全的会话 cookie，不要导出浏览器 cookie，也不要通过测试供应商初始化账号。修改请求必须携带与当前环境完全一致的 <code>Origin</code>、<code>X-SC-CSRF: 1</code> 和 JSON 内容类型。ADS Bearer 令牌不能用于 PMS 认证。客户端不得提交账号或 service 归属选择参数，也不得提交认证时间戳。</p>
 
-<p>在服务工作区找到 <strong>Playground</strong>，选择 <strong>Is allowed</strong>。在 Principals 中输入 <code>[{&quot;type&quot;:&quot;user&quot;,&quot;name&quot;:&quot;alice&quot;}]</code>，在 Resource 中输入 <code>/books</code>，在 Action 中输入 <code>get</code>，然后点击 <strong>运行测试</strong>。</p>
-
-<p>Playground 只用已保存的策略判定，不包含编辑器中尚未保存的草稿。修改策略或请求后，需要重新运行测试才能刷新结果。</p>
-
-<blockquote>
-<p><strong>截图待补充</strong></p>
-
-<p>此处将展示 Playground 请求及其判定结果。</p>
-</blockquote>
-
-<h2 id="5-创建-api-令牌">5. 创建 API 令牌</h2>
-
-<p>打开 <strong>应用令牌</strong>，输入令牌名称，然后点击 <strong>创建令牌</strong>。系统可能要求你先使用 GitHub 或 Google 完成身份验证。令牌只显示一次，请及时复制并存入应用服务端的密钥存储，之后无法再次查看。</p>
-
-<p>令牌格式为 <code>spdl_&lt;canonical lowercase UUIDv7 id&gt;_&lt;43 base62 digits&gt;</code>。它是服务专属的 Bearer 凭据，用于授权检查，既不是最终用户的身份令牌，也不能用于调用管理 API。切勿将令牌放入浏览器代码、URL、源代码仓库、截图或日志。</p>
-
-<blockquote>
-<p><strong>截图待补充</strong></p>
-
-<p>此处将展示令牌创建和一次性显示的页面。</p>
-</blockquote>
-
-<h2 id="6-调用授权-api">6. 调用授权 API</h2>
-
-<p>授权 API 的认证调用开放后，应用服务端将向 <code>https://cloud.speedle.io/authz-check/v1/is-allowed</code> 发送 <code>POST</code> 请求，并通过一个 <code>Authorization: Bearer</code> 请求头携带签发的令牌：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-http" data-lang="http">POST /authz-check/v1/is-allowed
-Authorization: Bearer &lt;issued token&gt;
-Content-Type: application/json
-
-{&#34;subject&#34;:{&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;,&#34;name&#34;:&#34;alice&#34;}]},&#34;serviceName&#34;:&#34;books&#34;,&#34;resource&#34;:&#34;/books&#34;,&#34;action&#34;:&#34;get&#34;,&#34;attributes&#34;:[{&#34;name&#34;:&#34;level&#34;,&#34;type&#34;:&#34;numeric&#34;,&#34;value&#34;:3},{&#34;name&#34;:&#34;when&#34;,&#34;type&#34;:&#34;datetime&#34;,&#34;value&#34;:&#34;2026-11-05T03:00:00Z&#34;}]}</code></pre></div>
-<p>应用必须自行完成用户认证，并直接传入用户的 principals。Speedle Cloud 不支持令牌断言。执行受保护的操作前，必须检查响应中的 <code>allowed</code> 值；发生错误时应默认拒绝。</p>
-
-<p>如需 Java、Python、Go、.NET、Rust 或 Node.js/TypeScript 客户端库，请参阅 <a href="/zh/docs/sdks/">SDK 文档</a>。</p>
-
-<blockquote>
-<p><strong>截图待补充</strong></p>
-
-<p>此处将展示生产环境的 API 接入流程。</p>
-</blockquote>
-
-<h2 id="测试版限额">测试版限额</h2>
+<p>上述 service 和策略示例等价于以下请求：</p>
 
 <table>
 <thead>
 <tr>
-<th>限额</th>
-<th>测试版额度</th>
+<th>操作</th>
+<th>会话请求</th>
+<th>成功状态</th>
 </tr>
 </thead>
 
 <tbody>
 <tr>
-<td>策略</td>
-<td>每个账号最多 200 条策略，授权策略和角色策略合并计算。</td>
+<td>创建账号的 service</td>
+<td><code>POST /api/service</code>，正文为 <code>{&quot;name&quot;:&quot;books&quot;}</code></td>
+<td>201</td>
 </tr>
 
 <tr>
-<td>API 调用</td>
-<td>每个账号每天最多 10,000 次 API 调用，管理调用和授权调用合并计算，每天 00:00 UTC 重置。</td>
+<td>添加授权策略</td>
+<td><code>POST /api/service/policies</code>，正文如下</td>
+<td>201</td>
+</tr>
+</tbody>
+</table>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">{<span style="color:#ff79c6">&#34;name&#34;</span>:<span style="color:#f1fa8c">&#34;read-books&#34;</span>,<span style="color:#ff79c6">&#34;spdl&#34;</span>:<span style="color:#f1fa8c">&#34;grant user alice get /books&#34;</span>}</code></pre></div>
+<p>使用控制台时，只把 <code>spdl</code> 的值粘贴到编辑器中；这段 JSON 正文用于管理 API。</p>
+
+<h2 id="验证和导出策略">验证和导出策略</h2>
+
+<p>使用 <code>POST /api/service/validate</code> 和 <code>{spdl}</code> 正文校验 SPDL 并识别类型。旧的 <code>{kind: &quot;authz&quot;, spdl}</code> 形式仍指定授权策略解析器。<strong>下载 SPDL</strong> 和 <strong>下载 JSON</strong> 分别调用 <code>GET /api/service/export?format=spdl</code> 和 <code>GET /api/service/export?format=json</code>。</p>
+
+<p>会话 Playground 使用当前账号在 D1 中的最新数据。后续带认证的 ADS 版本使用发布后的策略快照，传播约需 60 秒。因此，Playground 测试成功并不表示所有 ADS 节点都已拿到新快照。</p>
+
+<h2 id="在-playground-中测试已保存策略">在 Playground 中测试已保存策略</h2>
+
+<p>在服务工作区找到 <strong>Playground</strong>，选择 <strong>是否允许</strong>。在 <strong>主体（JSON）</strong> 中输入 <code>[{&quot;type&quot;:&quot;user&quot;,&quot;name&quot;:&quot;alice&quot;}]</code>，在 <strong>资源</strong> 中输入 <code>/books</code>，在 <strong>动作</strong> 中输入 <code>get</code>，在 <strong>属性（JSON）</strong> 中输入 <code>[]</code>，然后选择 <strong>运行测试</strong>。</p>
+
+<p>其他操作包括 <strong>诊断</strong>、<strong>全部已授予角色</strong> 和 <strong>全部已授予权限</strong>。Playground 只使用已保存的策略，不包含编辑器中的未保存草稿。修改输入、操作或语言不会自动发起请求。输入或已保存策略变化后，请再次运行；页面会把上次结果标记为已过期，并在后续请求失败时保留此前结果。</p>
+
+<h2 id="使用会话-playground-api">使用会话 Playground API</h2>
+
+<p><code>POST /api/service/test</code> 实现全部四种操作，与其他管理请求使用相同的 Origin/CSRF 规则和账号每日额度。它读取当前账号 D1 策略的一致快照，不发布或保存策略，也不接受账号或 service ID。页面展示的是提交请求时工作区已知的 revision，不能证明服务端实际求值的快照版本。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-http" data-lang="http">POST /api/service/test
+Origin: https://cloud.speedle.io
+X-SC-CSRF: 1
+Content-Type: application/json
+
+{&#34;op&#34;:&#34;isAllowed&#34;,&#34;request&#34;:{&#34;subject&#34;:{&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;,&#34;name&#34;:&#34;alice&#34;}]},&#34;serviceName&#34;:&#34;books&#34;,&#34;resource&#34;:&#34;/books&#34;,&#34;action&#34;:&#34;get&#34;,&#34;attributes&#34;:[{&#34;name&#34;:&#34;level&#34;,&#34;type&#34;:&#34;numeric&#34;,&#34;value&#34;:3}]}}</code></pre></div>
+<table>
+<thead>
+<tr>
+<th><code>request.op</code></th>
+<th>成功正文</th>
+<th>已发布的控制台与会话 API 合约</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td><code>isAllowed</code></td>
+<td>Speedle IsAllowedResponse：<code>allowed</code>、<code>reason</code> 和可选的 <code>errorMessage</code></td>
+<td>已包含</td>
+</tr>
+
+<tr>
+<td><code>diagnose</code></td>
+<td>Speedle EvaluationDebugResponse：reason 名称、<code>requestContext</code>、<code>attributes</code>、<code>policies</code></td>
+<td>已包含</td>
+</tr>
+
+<tr>
+<td><code>allGrantedRoles</code></td>
+<td><code>string[]</code>；无结果时为 <code>[]</code></td>
+<td>已包含</td>
+</tr>
+
+<tr>
+<td><code>allGrantedPermissions</code></td>
+<td><code>{resource, actions}[]</code>；无结果时为 <code>[]</code></td>
+<td>已包含</td>
 </tr>
 </tbody>
 </table>
 
-<p>免费测试版用于试用、学习和评估，不提供 SLA，不建议用于生产环境。功能和限额可能调整。</p>
+<p>成功正文保持上游原始形状，不增加 <code>op</code> 或 <code>result</code> 包裹。两种 all-granted 结果均可能为 <code>null</code> 或空数组；这两种形状都不代表授权允许。ADS 不提供公开 Diagnose 接口。</p>
 
-<h2 id="测试版条款与隐私政策">测试版条款与隐私政策</h2>
-
-<p>请阅读 Speedle Cloud 的<a href="https://cloud.speedle.io/zh-CN/terms">测试版条款</a>和<a href="https://cloud.speedle.io/zh-CN/privacy">隐私政策</a>。</p>
+<p>接下来请阅读<a href="/zh/docs/cloud/tokens/">应用令牌</a>、<a href="/zh/docs/cloud/authorization-api/">授权 API 预览</a>和<a href="/zh/docs/cloud/limits-and-errors/">限额与错误</a>。</p>
 </div>
 </div>
 </main>
