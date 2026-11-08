@@ -201,8 +201,8 @@ ready. The Products menu does not change the header height.
   - **Speedle Cloud** — "Hosted authorization for developers" / "面向开发者的托管授权服务" —
     <https://cloud.speedle.io/> — badge **"Coming soon" / "即将上线"**
     (small pill, 11 px, weight 600)
-  - **Speedle AI** — "Access management for AI" / "面向 AI 的访问管理" —
-    <https://ai.speedle.io/>
+  - **Speedle AI** — "AI for access control, access control for AI" /
+    "用 AI 做权限，为 AI 管权限" — <https://ai.speedle.io/>
 - Sphere colours in the menu: Engine `#ff9a45` (original orange), Cloud
   `#4da3ff`, AI `#8b5cf6`.
 - The current site's row shows a check mark and `aria-current="page"`.
