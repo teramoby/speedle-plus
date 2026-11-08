@@ -519,6 +519,15 @@ func (k *Parameters) ParseFlags(defaultEndpoint string, printVersionInfoFun func
 								f.Value.Set(strconv.Itoa(value.(int)))
 							case string:
 								f.Value.Set(value.(string))
+							case []string:
+								joinStringValues(f, x)
+							case []interface{}:
+								values, stringsOnly := stringSlice(x)
+								if !stringsOnly {
+									log.Warnf("Unsupported type %T for parameter %q", x, f.Name)
+									break
+								}
+								joinStringValues(f, values)
 							default:
 								log.Warnf("Unsupported type %T for parameter %q", x, f.Name)
 							}
@@ -536,6 +545,30 @@ func (k *Parameters) ParseFlags(defaultEndpoint string, printVersionInfoFun func
 // FlagToEnv converts flag string to upper-case environment variable key string.
 func FlagToEnv(name string) string {
 	return EnvVarPrefix + "_" + strings.ToUpper(strings.Replace(name, "-", "_", -1))
+}
+
+// joinStringValues feeds a JSON string array from the config file to a string
+// flag as a comma-separated list. Flags that take another type keep their
+// value and report the unsupported list.
+func joinStringValues(f *pflag.Flag, values []string) {
+	if f.Value.Type() != "string" {
+		log.Warnf("Unsupported list value for parameter %q", f.Name)
+		return
+	}
+	f.Value.Set(strings.Join(values, ","))
+}
+
+// stringSlice converts a JSON array whose items are all strings.
+func stringSlice(values []interface{}) ([]string, bool) {
+	result := make([]string, 0, len(values))
+	for _, value := range values {
+		text, ok := value.(string)
+		if !ok {
+			return nil, false
+		}
+		result = append(result, text)
+	}
+	return result, true
 }
 
 func (k *Parameters) ValidateFlags() {

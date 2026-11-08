@@ -489,3 +489,33 @@ func TestListenAndServe(t *testing.T) {
 		}
 	}
 }
+
+func TestConfigStringListsJoinIntoStringStoreFlags(t *testing.T) {
+	oldArgs, oldFlags := os.Args, pflag.CommandLine
+	defer func() { os.Args, pflag.CommandLine = oldArgs, oldFlags }()
+	pflag.CommandLine = pflag.NewFlagSet("store-list", pflag.ContinueOnError)
+	pflag.CommandLine.SetOutput(io.Discard)
+	pflag.String("store-list", "*", "")
+	pflag.String("store-bad-list", "", "")
+	config := writeFile(t, "config.json",
+		`{"storeConfig":{"storeType":"policy-source","storeProps":{"Services":["books","orders"],"Bad":["books",7]}}}`)
+	os.Args = []string{"speedle", "--config-file", config}
+	storeParams := map[string]string{"store-list": "Services", "store-bad-list": "Bad"}
+	params := &Parameters{}
+	if code := run(t, func() { params.ParseFlags("0.0.0.0:1", func() {}, storeParams) }); code != -1 {
+		t.Fatalf("exit %d", code)
+	}
+	if got := pflag.Lookup("store-list").Value.String(); got != "books,orders" {
+		t.Fatalf("string list = %q", got)
+	}
+	if got := pflag.Lookup("store-bad-list").Value.String(); got != "" {
+		t.Fatalf("a list with a non-string item was used: %q", got)
+	}
+	configuration, err := params.Param2Config(storeParams)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := configuration.StoreConfig.StoreProps["Services"]; got != "books,orders" {
+		t.Fatalf("store property = %v", got)
+	}
+}

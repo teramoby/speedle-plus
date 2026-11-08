@@ -21,6 +21,13 @@ type StoreBuilder interface {
 	GetStoreParams() map[string]string
 }
 
+// WatchRequirement is implemented by stores whose published data changes only
+// through their change events. The evaluator must subscribe to them: a store
+// that requires watching never refreshes the evaluator's cache otherwise.
+type WatchRequirement interface {
+	RequireWatch() bool
+}
+
 // Register makes a type of store available by the provided name.
 // If Register is called twice with the same name or if storeBuilder is nil,
 // it panics.

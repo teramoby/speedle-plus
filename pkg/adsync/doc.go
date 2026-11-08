@@ -12,7 +12,8 @@
 //
 // Machine owns the liveness and per-service sync state described in step E2.
 // It is driven by confirmed acks and sync results and does not talk to the
-// network itself; the notification channel, the policy-source store and the
-// request gate are later steps. The package never parses SPDL and never logs
-// policy content or credentials.
+// network itself; the notification channel and the request gate are later
+// steps, and pkg/store/policysource builds the read-only store on top of
+// Syncer and Machine. The package never parses SPDL and never logs policy
+// content or credentials.
 package adsync
