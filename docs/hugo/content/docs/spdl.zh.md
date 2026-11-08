@@ -12,6 +12,9 @@ categories = ["docs"]
 bref = ""
 +++
 
+SPDL 是编写 Speedle 策略和角色策略的语言。本文介绍语法、命名规则和示例。
+<!--more-->
+
 <aside class="docs-callout" aria-labelledby="spdl-callout-title">
   <p class="docs-callout-eyebrow">Speedle 策略建模技能 · 开源技能</p>
   <p class="docs-callout-title" id="spdl-callout-title">用 AI 编写 SPDL</p>

@@ -12,6 +12,9 @@ categories = ["docs"]
 bref = "Basics of SPDL"
 +++
 
+SPDL is the language for writing Speedle policies and role policies. This page covers the syntax, naming rules and examples.
+<!--more-->
+
 <aside class="docs-callout" aria-labelledby="spdl-callout-title">
   <p class="docs-callout-eyebrow">Speedle policy modeler · Open source skill</p>
   <p class="docs-callout-title" id="spdl-callout-title">Write SPDL with AI</p>

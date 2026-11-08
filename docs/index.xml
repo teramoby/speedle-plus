@@ -79,12 +79,7 @@ Start a reproducible local example Build the binaries using Quick Start, then ru
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/docs/spdl/</guid>
-      <description>Speedle policy modeler · Open source skill
-Write SPDL with AI
-The open-source Speedle policy modeler skill turns your requirements and policy documents into an SPDL model with allow and deny test cases, validated with spctl check.
-Try the policy modeler skill Source on GitHub
- Syntax 
-Keywords grant, deny, user, group, entity, role, from, on, if and in have special meanings in their syntax positions. Statement keywords are case-insensitive.</description>
+      <description>SPDL is the language for writing Speedle policies and role policies. This page covers the syntax, naming rules and examples. </description>
     </item>
     
     <item>
