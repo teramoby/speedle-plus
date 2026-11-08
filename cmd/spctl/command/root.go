@@ -33,12 +33,12 @@ func printHelpAndExit(cmd *cobra.Command) {
 
 func init() {
 	rootCmd.PersistentFlags().StringVar(&globalFlags.PMSEndpoint, "pms-endpoint", flags.DefaultPolicyManagmentConnectEndpoint, "speedle policy managemnet service endpoint")
-	rootCmd.PersistentFlags().StringVar(&globalFlags.Token, "token", "", "API token for bearer authentication (sent only over HTTPS, except to loopback hosts)")
+	rootCmd.PersistentFlags().StringVar(&globalFlags.Token, "token", "", "API token for bearer authentication (prefer SPCTL_TOKEN; requires verified HTTPS except for loopback HTTP)")
 	rootCmd.PersistentFlags().DurationVar(&globalFlags.Timeout, "timeout", 5000000000, "timeout for running command")
 	rootCmd.PersistentFlags().StringVar(&globalFlags.CertFile, "cert", "", "identify secure client using this TLS certificate file")
 	rootCmd.PersistentFlags().StringVar(&globalFlags.KeyFile, "key", "", "identify secure client using this TLS key file")
 	rootCmd.PersistentFlags().StringVar(&globalFlags.CAFile, "cacert", "", "verify certificates of TLS-enabled secure servers using this CA bundle")
-	rootCmd.PersistentFlags().BoolVar(&globalFlags.InsecureSkipVerify, "skipverify", false, "control whether a client verifies the server's certificate chain and host name or not")
+	rootCmd.PersistentFlags().BoolVar(&globalFlags.InsecureSkipVerify, "skipverify", false, "skip TLS certificate verification (not allowed with an API token)")
 
 	// The file store registers --filestore-loc on the global flag set for
 	// the servers; spctl only uses the store to read PDL files and ignores it.
@@ -48,6 +48,7 @@ func init() {
 	for name, val := range args {
 		rootCmd.PersistentFlags().Set(name, val)
 	}
+	applyEnvironmentConfig(rootCmd.PersistentFlags())
 
 	rootCmd.AddCommand(
 		newGetCommand(),

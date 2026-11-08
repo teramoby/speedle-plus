@@ -55,11 +55,26 @@ func (c *cli) run(args ...string) (string, int) {
 
 func (c *cli) runAt(endpoint string, args ...string) (string, int) {
 	c.t.Helper()
+	return c.runAtWithOptions(endpoint, "", nil, args...)
+}
+
+func (c *cli) runAtWithOptions(endpoint, stdin string, env []string, args ...string) (string, int) {
+	c.t.Helper()
 	if endpoint != "" {
 		args = append([]string{"--pms-endpoint", endpoint, "--timeout", "5s"}, args...)
 	}
 	cmd := exec.Command(os.Getenv(testutil.SP_APP_NAME), args...)
-	cmd.Env = append(os.Environ(), "HOME="+c.home)
+	for _, value := range os.Environ() {
+		if strings.HasPrefix(value, "HOME=") || strings.HasPrefix(value, "SPCTL_") {
+			continue
+		}
+		cmd.Env = append(cmd.Env, value)
+	}
+	cmd.Env = append(cmd.Env, "HOME="+c.home)
+	cmd.Env = append(cmd.Env, env...)
+	if stdin != "" {
+		cmd.Stdin = strings.NewReader(stdin)
+	}
 	var out bytes.Buffer
 	cmd.Stdout, cmd.Stderr = &out, &out
 	err := cmd.Run()
@@ -297,6 +312,106 @@ func TestCLIConfig(t *testing.T) {
 	c.expect(1, []string{"Failed to set config"}, "config", "timeout", "1s")
 }
 
+func TestCLIConfigSourcePrecedence(t *testing.T) {
+	c := newCLI(t)
+	legacyPath := filepath.Join(c.home, ".spctlconfig")
+	cloudPath := filepath.Join(c.home, ".speedle")
+	if err := os.WriteFile(legacyPath, []byte("pms-endpoint=https://legacy.example/policy-mgmt/v1\ntimeout=7s\n"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(cloudPath, []byte("pms-endpoint=https://cloud.example/policy-mgmt/v1\ntoken=file-secret\n"), 0600); err != nil {
+		t.Fatal(err)
+	}
+
+	const savedEndpoint = "https://saved.example/policy-mgmt/v1"
+	if out, code := c.runAt("", "config", "pms-endpoint", savedEndpoint); code != 0 {
+		t.Fatalf("config endpoint with duplicate keys: exit %d\n%s", code, out)
+	}
+	legacy, err := os.ReadFile(legacyPath)
+	if err != nil || !strings.Contains(string(legacy), "pms-endpoint="+savedEndpoint) {
+		t.Fatalf("legacy config %q, %v", legacy, err)
+	}
+	cloud, err := os.ReadFile(cloudPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(cloud), "pms-endpoint=") || !strings.Contains(string(cloud), "token=file-secret") {
+		t.Fatalf("Cloud config still shadows the saved endpoint: %q", cloud)
+	}
+
+	out, code := c.runAt("", "config", "--list")
+	if code != 0 || !strings.Contains(out, "pms-endpoint = "+savedEndpoint) {
+		t.Fatalf("saved file precedence: exit %d\n%s", code, out)
+	}
+	const envEndpoint = "https://environment.example/policy-mgmt/v1"
+	env := []string{"SPCTL_PMS_ENDPOINT=" + envEndpoint}
+	out, code = c.runAtWithOptions("", "", env, "config", "--list")
+	if code != 0 || !strings.Contains(out, "pms-endpoint = "+envEndpoint) || strings.Contains(out, savedEndpoint) {
+		t.Fatalf("environment precedence: exit %d\n%s", code, out)
+	}
+	const flagEndpoint = "https://flag.example/policy-mgmt/v1"
+	out, code = c.runAtWithOptions("", "", env, "--pms-endpoint", flagEndpoint, "config", "--list")
+	if code != 0 || !strings.Contains(out, "pms-endpoint = "+flagEndpoint) || strings.Contains(out, envEndpoint) {
+		t.Fatalf("flag precedence: exit %d\n%s", code, out)
+	}
+}
+
+func TestCLITokenInputAndEnvironment(t *testing.T) {
+	c := newCLI(t)
+	const fileToken = "stdin-secret=="
+	out, code := c.runAtWithOptions("", fileToken+"\n", nil, "config", "token", "--stdin")
+	if code != 0 || strings.Contains(out, fileToken) {
+		t.Fatalf("config token --stdin: exit %d\n%s", code, out)
+	}
+	cloudPath := filepath.Join(c.home, ".speedle")
+	saved, err := os.ReadFile(cloudPath)
+	if err != nil || !strings.Contains(string(saved), "token="+fileToken) {
+		t.Fatalf("stdin token was not saved: %v", err)
+	}
+
+	var authorization string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		authorization = r.Header.Get("Authorization")
+		w.Write([]byte(`[]`))
+	}))
+	defer server.Close()
+	endpoint := server.URL + svcs.PolicyMgmtPath
+	if out, code := c.runAt(endpoint, "get", "service", "--all"); code != 0 {
+		t.Fatalf("file token: exit %d\n%s", code, out)
+	}
+	if authorization != "Bearer "+fileToken {
+		t.Fatalf("file token Authorization = %q", authorization)
+	}
+
+	const envToken = "environment-secret"
+	env := []string{"SPCTL_TOKEN=" + envToken}
+	out, code = c.runAtWithOptions(endpoint, "", env, "get", "service", "--all")
+	if code != 0 || strings.Contains(out, envToken) {
+		t.Fatalf("environment token: exit %d\n%s", code, out)
+	}
+	if authorization != "Bearer "+envToken {
+		t.Fatalf("environment token Authorization = %q", authorization)
+	}
+
+	const flagToken = "flag-secret"
+	out, code = c.runAtWithOptions(endpoint, "", env, "--token", flagToken, "get", "service", "--all")
+	if code != 0 || strings.Contains(out, flagToken) {
+		t.Fatalf("flag token: exit %d\n%s", code, out)
+	}
+	if authorization != "Bearer "+flagToken {
+		t.Fatalf("flag token Authorization = %q", authorization)
+	}
+
+	if err := os.Chmod(cloudPath, 0644); err != nil {
+		t.Fatal(err)
+	}
+	out, code = c.runAt("", "config", "--list")
+	if code != 0 || !strings.Contains(out, "warning:") || !strings.Contains(out, "chmod 0600") ||
+		!strings.Contains(out, "token = ********") || strings.Contains(out, fileToken) {
+		t.Fatalf("loose Cloud config permissions: exit %d\n%s", code, out)
+	}
+}
+
 func TestCLICloudConfig(t *testing.T) {
 	c := newCLI(t)
 	const token = "config-secret"
@@ -512,6 +627,13 @@ func TestCLIHTTPSClient(t *testing.T) {
 	}
 	if out, code := c.runAt(endpoint, "get", "service", "--all", "--skipverify"); code != 0 {
 		t.Errorf("--skipverify: exit %d\n%s", code, out)
+	}
+	const unverifiedToken = "unverified-secret"
+	authorization = ""
+	out, code := c.runAt(endpoint, "get", "service", "--all", "--skipverify", "--token", unverifiedToken)
+	if code != 1 || !strings.Contains(out, "refusing to send an API token with --skipverify") ||
+		strings.Contains(out, unverifiedToken) || authorization != "" {
+		t.Errorf("--skipverify with a token: exit %d, Authorization %q\n%s", code, authorization, out)
 	}
 	if _, code := c.runAt(endpoint, "get", "service", "--all"); code != 1 {
 		t.Errorf("an untrusted server must fail, exit %d", code)
