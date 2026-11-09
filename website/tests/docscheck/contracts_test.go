@@ -35,9 +35,12 @@ type operation struct {
 	Responses map[string]response `yaml:"responses"`
 }
 type spec struct {
-	BasePath    string                          `yaml:"basePath"`
-	Paths       map[string]map[string]operation `yaml:"paths"`
-	Definitions map[string]schema               `yaml:"definitions"`
+	BasePath string                          `yaml:"basePath"`
+	Paths    map[string]map[string]operation `yaml:"paths"`
+	// AdditionalPaths documents routes served outside BasePath, such as the
+	// process health endpoints.
+	AdditionalPaths map[string]map[string]operation `yaml:"x-additional-paths"`
+	Definitions     map[string]schema               `yaml:"definitions"`
 }
 
 func root() string {
@@ -156,6 +159,11 @@ func compareRoutes(t *testing.T, s spec, router *mux.Router) {
 			documented[strings.ToUpper(method)+" "+s.BasePath+path] = true
 		}
 	}
+	for path, ops := range s.AdditionalPaths {
+		for method := range ops {
+			documented[strings.ToUpper(method)+" "+path] = true
+		}
+	}
 	if !reflect.DeepEqual(actual, documented) {
 		t.Fatalf("route drift: actual=%v documented=%v", actual, documented)
 	}
@@ -205,6 +213,41 @@ func call(t *testing.T, server *httptest.Server, s spec, method, path, template 
 	object, _ := value.(map[string]interface{})
 	return object
 }
+// callAdditional validates one route documented outside the spec's base path.
+func callAdditional(t *testing.T, server *httptest.Server, s spec, method, path string, status int) map[string]interface{} {
+	t.Helper()
+	req, err := http.NewRequest(method, server.URL+path, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	res, err := server.Client().Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer res.Body.Close()
+	raw, err := io.ReadAll(res.Body)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if res.StatusCode != status {
+		t.Fatalf("%s %s: status=%d want=%d body=%s", method, path, res.StatusCode, status, raw)
+	}
+	op := s.AdditionalPaths[path][strings.ToLower(method)]
+	contract, ok := op.Responses[fmt.Sprint(status)]
+	if !ok {
+		t.Fatalf("undocumented status %d for %s %s", status, method, path)
+	}
+	var value interface{}
+	if err := json.Unmarshal(raw, &value); err != nil {
+		t.Fatal(err)
+	}
+	if err := validate(contract.Schema, value, s.Definitions, method+" "+path); err != nil {
+		t.Fatalf("%v\nresponse=%s", err, raw)
+	}
+	object, _ := value.(map[string]interface{})
+	return object
+}
+
 func TestPublishedContractsAgainstNativeServices(t *testing.T) {
 	for _, locale := range []string{"", ".zh"} {
 		t.Run(locale, func(t *testing.T) {
@@ -248,6 +291,14 @@ func TestPublishedContractsAgainstNativeServices(t *testing.T) {
 			defer pms.Close()
 			ads := httptest.NewServer(aRouter)
 			defer ads.Close()
+			health := callAdditional(t, ads, ad, "GET", "/healthz", 200)
+			if health["status"] != "ok" {
+				t.Fatalf("healthz body = %v", health)
+			}
+			readiness := callAdditional(t, ads, ad, "GET", "/readyz", 200)
+			if ready, _ := readiness["ready"].(bool); !ready {
+				t.Fatalf("readyz body = %v", readiness)
+			}
 			request := map[string]interface{}{"subject": map[string]interface{}{"principals": []interface{}{map[string]interface{}{"type": "user", "name": "Alan"}}}, "serviceName": "onlineBookStore", "resource": "/books/HarryPotter", "action": "download", "attributes": []interface{}{map[string]interface{}{"name": "clearance", "type": "numeric", "value": 4}}}
 			for _, path := range []string{"/is-allowed", "/all-granted-roles", "/all-granted-permissions", "/diagnose", "/discover"} {
 				call(t, ads, ad, "POST", path, path, request, 200)

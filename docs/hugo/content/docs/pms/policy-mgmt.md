@@ -111,6 +111,53 @@ role_policy_id=$(./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1
 ```
 
 
+## Speedle Cloud
+
+Speedle Cloud sign-in opens soon. When API tokens become available, `spctl` can manage Cloud services and policies through the same commands used with a self-hosted PMS. Use the management endpoint:
+
+```text
+https://cloud.speedle.io/policy-mgmt/v1
+```
+
+Choose an API token with the scopes required by your commands. `pms:read` covers `get` and `discover` reads; `pms:write` covers `create`, `delete` and discovery resets. A token that only has ADS scopes cannot manage policies and is rejected with `403 insufficient_scope`.
+
+Pass the endpoint as a global flag and read the token from `SPCTL_TOKEN`. In an interactive shell, this keeps the secret out of command arguments and shell history:
+
+<!-- deployment-template: cloud-token-environment -->
+```bash
+read -rsp 'API token: ' SPCTL_TOKEN; echo
+export SPCTL_TOKEN
+./bin/spctl --pms-endpoint https://cloud.speedle.io/policy-mgmt/v1 get service --all
+unset SPCTL_TOKEN
+```
+
+The `--token` flag remains available for compatibility, but the environment variable avoids exposing the token through command arguments. Every global flag also has an environment variable: prefix `SPCTL_`, uppercase the flag name and replace hyphens with underscores. For example, `SPCTL_PMS_ENDPOINT` sets `pms-endpoint` and `SPCTL_SKIPVERIFY` sets `skipverify`.
+
+For a saved configuration, use `~/.speedle`. Its format is one `name=value` pair per line, with the same flag names as the command line:
+
+```ini
+pms-endpoint=https://cloud.speedle.io/policy-mgmt/v1
+token=<api-token>
+```
+
+Create or update this file without putting the token in command arguments:
+
+<!-- deployment-template: cloud-token-config -->
+```bash
+read -rsp 'API token: ' SPCTL_TOKEN; echo
+printf '%s\n' "$SPCTL_TOKEN" | ./bin/spctl config token --stdin
+unset SPCTL_TOKEN
+```
+
+`spctl config token --stdin` writes `~/.speedle` with mode `0600`. When editing the file manually, create it with `install -m 600 /dev/null ~/.speedle` or run `chmod 0600 ~/.speedle` afterwards. `spctl` warns on standard error if it reads a token from a file whose permissions allow group or other access. `spctl config --list` masks a configured token as `********`.
+
+Explicit command-line flags override environment variables, which override both configuration files. Within the files, `~/.speedle` overrides `~/.spctlconfig`. Setting a non-token key with `spctl config` writes it to `~/.spctlconfig` and removes any shadowing copy from `~/.speedle`.
+
+The token is sent as an `Authorization: Bearer` credential only over HTTPS with certificate verification enabled. Plain HTTP is allowed with a token only for a loopback host such as `127.0.0.1`, `::1` or `localhost`; `spctl` rejects remote HTTP endpoints and HTTPS-to-HTTP downgrade redirects before sending the credential. For HTTPS endpoints, it also refuses to send a token with `--skipverify=true`; use `--cacert` to trust a private or self-signed certificate authority instead. Tokens are not included in normal command output or error messages.
+
+Cloud errors produce a non-zero exit status. Check the token after a `401`, and its scopes after a `403 insufficient_scope`. A `404` identifies a missing resource, while `409 service_exists` and `409 policy_exists` identify duplicates. For `429`, honor the returned `Retry-After` value and use bounded backoff. Daily or policy quota errors require waiting for the reset or reducing usage; do not retry them in a tight loop.
+
+
 ## Other interfaces
 
 The [PMS REST API](/docs/api/management_api/) uses JSON and returns flat policy objects with string IDs. Go applications can call the [PMS interfaces](https://github.com/teramoby/speedle-plus/tree/master/api/pms) directly; gRPC clients use the [published PMS proto](/protobuf/pms.proto). Apply [transport and caller access controls](/docs/security/) to administrative operations.

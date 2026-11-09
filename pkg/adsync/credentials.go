@@ -4,6 +4,7 @@ package adsync
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"regexp"
 	"runtime"
@@ -14,6 +15,8 @@ import (
 // credential in container deployments. A credential is never read from a URL,
 // command line, log or policy content.
 const CredentialEnv = "SPEEDLE_ADS_CREDENTIAL"
+
+const maxCredentialFileBytes = 8 * 1024
 
 // instanceCredentialPattern is the wire format from the shared contract:
 // adsi_<canonical uppercase ULID instanceId>_<43 base62 digits>.
@@ -32,7 +35,12 @@ func ValidateCredential(value string) error {
 // The file may contain the credential on one line, or a JSON object with a
 // "credential" field.
 func ReadCredentialFile(path string) (string, error) {
-	info, err := os.Stat(path)
+	file, err := os.Open(path)
+	if err != nil {
+		return "", fmt.Errorf("adsync: read credential file: %w", err)
+	}
+	defer file.Close()
+	info, err := file.Stat()
 	if err != nil {
 		return "", fmt.Errorf("adsync: read credential file: %w", err)
 	}
@@ -42,11 +50,11 @@ func ReadCredentialFile(path string) (string, error) {
 	if runtime.GOOS != "windows" && info.Mode().Perm()&0o077 != 0 {
 		return "", fmt.Errorf("adsync: credential file must be readable and writable only by its owner")
 	}
-	data, err := os.ReadFile(path)
+	data, err := io.ReadAll(io.LimitReader(file, maxCredentialFileBytes+1))
 	if err != nil {
 		return "", fmt.Errorf("adsync: read credential file: %w", err)
 	}
-	if len(data) > 8*1024 {
+	if len(data) > maxCredentialFileBytes {
 		return "", fmt.Errorf("adsync: credential file is too large")
 	}
 	trimmed := strings.TrimSpace(string(data))

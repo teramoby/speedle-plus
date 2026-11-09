@@ -10,6 +10,7 @@ import (
 	"net/url"
 	"strings"
 	"testing"
+	"time"
 )
 
 // newClient serves every request with the status and body given for its
@@ -26,6 +27,9 @@ func newClient(t *testing.T, responses map[string]struct {
 		if !ok {
 			w.WriteHeader(http.StatusNotFound)
 			return
+		}
+		if response.status == http.StatusTooManyRequests {
+			w.Header().Set("Retry-After", "60")
 		}
 		w.WriteHeader(response.status)
 		io.WriteString(w, response.body)
@@ -48,6 +52,27 @@ var responses = map[string]response{
 	"/policy-mgmt/v1/bad":          {http.StatusBadRequest, `{"error":"no name"}`},
 	"/policy-mgmt/v1/badplain":     {http.StatusBadRequest, `oops`},
 	"/policy-mgmt/v1/conflict":     {http.StatusConflict, ""},
+	"/policy-mgmt/v1/cloudauth":    {http.StatusUnauthorized, `{"error":"unauthorized"}`},
+	"/policy-mgmt/v1/scope":        {http.StatusForbidden, `{"error":"insufficient_scope"}`},
+	"/policy-mgmt/v1/cloudmissing": {http.StatusNotFound, `{"error":"not_found"}`},
+	"/policy-mgmt/v1/servicedupe":  {http.StatusConflict, `{"error":"service_exists"}`},
+	"/policy-mgmt/v1/policydupe":   {http.StatusConflict, `{"error":"policy_exists"}`},
+	"/policy-mgmt/v1/ratelimited":  {http.StatusTooManyRequests, `{"error":"rate_limited"}`},
+	"/policy-mgmt/v1/dailyquota":   {http.StatusTooManyRequests, `{"error":"daily_quota_exceeded"}`},
+	"/policy-mgmt/v1/policyquota":  {http.StatusForbidden, `{"error":"policy_quota_exceeded"}`},
+	"/policy-mgmt/v1/quotaoffline": {http.StatusServiceUnavailable, `{"error":"quota_unavailable"}`},
+}
+
+var cloudErrorCases = map[string]string{
+	"cloudauth":    "authentication failed (401 Unauthorized): check the API token and endpoint",
+	"scope":        "authorization failed (403 Forbidden): the API token needs pms:read for reads or pms:write for writes",
+	"cloudmissing": "requested resource not found (404 Not Found)",
+	"servicedupe":  "service already exists (409 Conflict)",
+	"policydupe":   "policy already exists (409 Conflict)",
+	"ratelimited":  "request rate limited (429 Too Many Requests): retry later with bounded backoff; Retry-After: 60",
+	"dailyquota":   "daily quota exceeded (429 Too Many Requests): retry after the quota resets; Retry-After: 60",
+	"policyquota":  "quota exceeded (403 Forbidden): reduce policy usage before retrying",
+	"quotaoffline": "quota service unavailable (503 Service Unavailable): retry later with bounded backoff",
 }
 
 func TestGet(t *testing.T) {
@@ -59,6 +84,12 @@ func TestGet(t *testing.T) {
 	if last.URL.Query().Get("filter") != "name eq a" || last.Header.Get("Authorization") != "Bearer tok" {
 		t.Fatalf("request %v %v", last.URL, last.Header)
 	}
+	if _, err := c.Get([]string{"ok"}, nil, ""); err != nil {
+		t.Fatal(err)
+	}
+	if got := last.Header.Get("Authorization"); got != "" {
+		t.Fatalf("Authorization header without a token = %q", got)
+	}
 	cases := map[string]string{
 		"missing":      "missing not found",
 		"unauthorized": "401 Unauthorized",
@@ -69,6 +100,11 @@ func TestGet(t *testing.T) {
 	}
 	for path, want := range cases {
 		if _, err := c.Get([]string{path}, nil, ""); err == nil || err.Error() != want {
+			t.Errorf("Get %s: %v, want %q", path, err, want)
+		}
+	}
+	for path, want := range cloudErrorCases {
+		if _, err := c.Get([]string{path}, nil, "tok"); err == nil || err.Error() != want {
 			t.Errorf("Get %s: %v, want %q", path, err, want)
 		}
 	}
@@ -96,6 +132,11 @@ func TestPost(t *testing.T) {
 			t.Errorf("Post %s: %v, want %q", path, err, want)
 		}
 	}
+	for path, want := range cloudErrorCases {
+		if _, err := c.Post([]string{path}, nil, "tok"); err == nil || err.Error() != want {
+			t.Errorf("Post %s: %v, want %q", path, err, want)
+		}
+	}
 }
 
 func TestDelete(t *testing.T) {
@@ -115,6 +156,11 @@ func TestDelete(t *testing.T) {
 	}
 	for path, want := range cases {
 		if err := c.Delete([]string{path}, ""); err == nil || err.Error() != want {
+			t.Errorf("Delete %s: %v, want %q", path, err, want)
+		}
+	}
+	for path, want := range cloudErrorCases {
+		if err := c.Delete([]string{path}, "tok"); err == nil || err.Error() != want {
 			t.Errorf("Delete %s: %v, want %q", path, err, want)
 		}
 	}
@@ -161,5 +207,72 @@ func TestGetURL(t *testing.T) {
 	u, err := getURL("https://pms:6733/policy-mgmt/v1/", []string{"service", "", "app"})
 	if err != nil || u.String() != "https://pms:6733/policy-mgmt/v1/service/app" {
 		t.Fatalf("getURL = %v, %v", u, err)
+	}
+}
+
+func TestValidateTokenTransport(t *testing.T) {
+	cases := []struct {
+		endpoint string
+		token    string
+		allowed  bool
+	}{
+		{"https://pms.example.com/policy-mgmt/v1", "tok", true},
+		{"http://localhost:6733/policy-mgmt/v1", "tok", true},
+		{"http://LOCALHOST.:6733/policy-mgmt/v1", "tok", true},
+		{"http://127.0.0.1:6733/policy-mgmt/v1", "tok", true},
+		{"http://[::1]:6733/policy-mgmt/v1", "tok", true},
+		{"http://192.0.2.1/policy-mgmt/v1", "tok", false},
+		{"http://pms.example.com/policy-mgmt/v1", "tok", false},
+		{"ftp://127.0.0.1/policy-mgmt/v1", "tok", false},
+		{"http://192.0.2.1/policy-mgmt/v1", "", true},
+	}
+	for _, tc := range cases {
+		u, err := url.Parse(tc.endpoint)
+		if err != nil {
+			t.Fatal(err)
+		}
+		err = validateTokenTransport(u, tc.token)
+		if (err == nil) != tc.allowed {
+			t.Errorf("validateTokenTransport(%q, token set %t) = %v, allowed %t", tc.endpoint, tc.token != "", err, tc.allowed)
+		}
+	}
+}
+
+type roundTripFunc func(*http.Request) (*http.Response, error)
+
+func (f roundTripFunc) RoundTrip(req *http.Request) (*http.Response, error) {
+	return f(req)
+}
+
+func TestRemoteHTTPTokenIsRefusedBeforeRequest(t *testing.T) {
+	calls := 0
+	httpClient := &http.Client{Transport: roundTripFunc(func(req *http.Request) (*http.Response, error) {
+		calls++
+		return nil, io.ErrUnexpectedEOF
+	})}
+	c := &Client{PMSEndpoint: "http://192.0.2.1/policy-mgmt/v1", HTTPClient: httpClient}
+	if _, err := c.Get([]string{"service"}, nil, "secret"); err == nil || !strings.Contains(err.Error(), "non-loopback") {
+		t.Fatalf("Get error = %v", err)
+	}
+	if calls != 0 {
+		t.Fatalf("remote HTTP request was attempted %d times", calls)
+	}
+}
+
+func TestTokenRedirectDowngradeIsRefused(t *testing.T) {
+	server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Location", "http://192.0.2.1/policy-mgmt/v1/service")
+		w.WriteHeader(http.StatusFound)
+	}))
+	defer server.Close()
+	httpClient := server.Client()
+	httpClient.Timeout = time.Second
+	c := &Client{PMSEndpoint: server.URL + "/policy-mgmt/v1", HTTPClient: httpClient}
+	_, err := c.Get([]string{"service"}, nil, "secret")
+	if err == nil || !strings.Contains(err.Error(), "insecure HTTP") {
+		t.Fatalf("redirect error = %v", err)
+	}
+	if strings.Contains(err.Error(), "secret") {
+		t.Fatal("redirect error exposed the token")
 	}
 }

@@ -23,6 +23,10 @@ const (
 
 	// DefaultFallbackTimeout bounds one forwarded authorization request.
 	DefaultFallbackTimeout = 3 * time.Second
+	// DefaultFallbackRetryBackoff suppresses requests briefly after a
+	// transport, rate-limit or 5xx failure. It bounds the outage observation;
+	// it never latches fallback off permanently.
+	DefaultFallbackRetryBackoff = time.Second
 
 	// maxFallbackResponseBytes bounds a forwarded response. Authorization
 	// responses are much smaller; the limit only guards against a hostile or
@@ -58,9 +62,10 @@ type FallbackResponse struct {
 	Body       []byte
 }
 
-// FallbackForwarder forwards an authorization request to Speedle Cloud with the
-// instance credential. It is implemented by the policy-source store and used
-// by the REST and gRPC request gates.
+// FallbackForwarder forwards an authorization request to the configured
+// Speedle Cloud destination with the configured Cloud credential. It is
+// implemented by the policy-source store and used by the REST and gRPC request
+// gates.
 type FallbackForwarder interface {
 	ForwardFallback(ctx context.Context, operation FallbackOperation, body []byte) (*FallbackResponse, error)
 	FallbackAvailable() bool
@@ -139,15 +144,15 @@ func newFallbackStatusError(status int, body []byte) error {
 	return e
 }
 
-// ForwardFallback evaluates one authorization request on Cloud with the
-// instance credential. The request body is sent unchanged and the credential
-// never appears in a URL or a log message.
+// ForwardFallback evaluates one authorization request on the configured Cloud
+// destination with the Cloud credential. The request body is sent unchanged and
+// the credential never appears in a URL or a log message.
 //
 // A request is retried at most once, and only when the connection could not be
 // established, so a request that may have reached Cloud is never repeated.
 // HTTP 429 and 5xx responses are not retried.
 func (c *Client) ForwardFallback(ctx context.Context, operation FallbackOperation, body []byte) (*FallbackResponse, error) {
-	if c.credential == "" {
+	if c.fallbackBase == nil || c.fallbackCredential == "" || c.fallbackHTTP == nil {
 		return nil, ErrFallbackUnavailable
 	}
 	if !operation.Valid() {
@@ -178,19 +183,19 @@ func (c *Client) forwardOnce(ctx context.Context, operation FallbackOperation, b
 	requestCtx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
-	target := *c.base
-	target.Path = c.base.Path + AuthzCheckAPIPrefix + string(operation)
+	target := *c.fallbackBase
+	target.Path = c.fallbackBase.Path + AuthzCheckAPIPrefix + string(operation)
 	request, err := http.NewRequestWithContext(requestCtx, http.MethodPost, target.String(), bytes.NewReader(body))
 	if err != nil {
 		return nil, fmt.Errorf("adsync: build fallback request: %w", err)
 	}
-	request.Header.Set("Authorization", "Bearer "+c.credential)
+	request.Header.Set("Authorization", "Bearer "+c.fallbackCredential)
 	request.Header.Set("Content-Type", "application/json")
 	request.Header.Set("Accept", "application/json")
 	request.Header.Set("Accept-Encoding", "identity")
 	request.Header.Set("User-Agent", c.userAgent)
 
-	response, err := c.http.Do(request)
+	response, err := c.fallbackHTTP.Do(request)
 	if err != nil {
 		if ctx.Err() != nil {
 			return nil, ctx.Err()
@@ -222,35 +227,33 @@ func (c *Client) forwardOnce(ctx context.Context, operation FallbackOperation, b
 	}, nil
 }
 
-// recordFallbackOutcome remembers whether Cloud answered. Readiness uses it to
-// tell a configured fallback from a reachable one.
+// recordFallbackOutcome remembers a bounded retry delay after a transport,
+// rate-limit, authentication or 5xx failure. Other HTTP answers clear the
+// delay. A later request is always allowed once the delay expires, so one
+// transient error cannot disable fallback forever.
 func (c *Client) recordFallbackOutcome(err error) {
-	reachable := true
-	if err != nil {
-		switch {
-		case errors.Is(err, ErrUnavailable),
-			errors.Is(err, ErrRateLimited),
-			errors.Is(err, ErrUnauthorized),
-			errors.Is(err, ErrForbidden):
-			reachable = false
-		}
-	}
+	retryLater := err != nil && (errors.Is(err, ErrUnavailable) || errors.Is(err, ErrRateLimited) ||
+		errors.Is(err, ErrUnauthorized) || errors.Is(err, ErrForbidden))
 	c.fallbackMu.Lock()
-	c.fallbackReachable = reachable
+	if retryLater {
+		c.fallbackRetryAt = c.now().Add(c.fallbackBackoff)
+	} else {
+		c.fallbackRetryAt = time.Time{}
+	}
 	c.fallbackMu.Unlock()
 }
 
-// FallbackAvailable reports whether a forwarded request has a usable path to
-// Cloud. It is optimistic before the first attempt: a configured credential is
-// assumed reachable until an attempt proves otherwise, and any answer from
-// Cloud (including a refusal) restores the optimistic state.
+// FallbackAvailable reports whether fallback is configured and not inside its
+// short retry delay. Configuration and transient reachability are deliberately
+// separate: an expired delay permits the next request, which can then restore
+// readiness after a successful response.
 func (c *Client) FallbackAvailable() bool {
-	if c.credential == "" {
+	if c.fallbackBase == nil || c.fallbackCredential == "" || c.fallbackHTTP == nil {
 		return false
 	}
 	c.fallbackMu.Lock()
 	defer c.fallbackMu.Unlock()
-	return c.fallbackReachable
+	return c.fallbackRetryAt.IsZero() || !c.now().Before(c.fallbackRetryAt)
 }
 
 // isConnectionEstablishmentFailure reports whether the request failed before

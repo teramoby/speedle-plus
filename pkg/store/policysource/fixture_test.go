@@ -380,11 +380,13 @@ func newTestFixture(t *testing.T, services ...*testService) *testFixture {
 		server: server,
 		caFile: caFile,
 		options: Options{
-			PolicySourceURL: server.URL,
-			Credential:      testCredential,
-			PublicKeys:      signer.keySet(t),
-			HTTPClient:      server.Client(),
-			RequestTimeout:  2 * time.Second,
+			PolicySourceURL:    server.URL,
+			Credential:         testCredential,
+			FallbackURL:        server.URL,
+			FallbackCredential: testCredential,
+			PublicKeys:         signer.keySet(t),
+			HTTPClient:         server.Client(),
+			RequestTimeout:     2 * time.Second,
 			Retry: adsync.RetryPolicy{
 				MaxAttempts:    1,
 				InitialBackoff: time.Millisecond,
@@ -416,10 +418,12 @@ func (f *testFixture) storeProperties() map[string]interface{} {
 		f.t.Fatal(err)
 	}
 	return map[string]interface{}{
-		PolicySourceURLKey: f.server.URL,
-		CredentialFileKey:  credentialFile,
-		PublicKeysKey:      f.signer.writeKeysFile(f.t),
-		CAFileKey:          f.caFile,
+		PolicySourceURLKey:     f.server.URL,
+		CredentialFileKey:      credentialFile,
+		CloudFallbackURLKey:    f.server.URL,
+		CloudCredentialFileKey: credentialFile,
+		PublicKeysKey:          f.signer.writeKeysFile(f.t),
+		CAFileKey:              f.caFile,
 	}
 }
 

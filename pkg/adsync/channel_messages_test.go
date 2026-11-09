@@ -156,6 +156,125 @@ func TestDecodeServerMessageRejects(t *testing.T) {
 				return []byte(`{"type":"notify","serviceId":"not-a-service","head":1}`)
 			},
 		},
+		{
+			name: "notify with an out-of-range head",
+			payload: func() []byte {
+				return []byte(`{"type":"notify","serviceId":"` + testServiceID1 + `","head":9007199254740992}`)
+			},
+		},
+		{
+			name: "notify with an unknown field",
+			payload: func() []byte {
+				return []byte(`{"type":"notify","serviceId":"` + testServiceID1 + `","head":1,"surprise":true}`)
+			},
+		},
+		{
+			name: "malformed json",
+			payload: func() []byte {
+				return []byte(`{`)
+			},
+		},
+		{
+			name: "zero services version",
+			payload: func() []byte {
+				ack := validChannelAck()
+				ack.ServicesVersion = 0
+				payload, _ := json.Marshal(ack)
+				return payload
+			},
+		},
+		{
+			name: "too many services",
+			payload: func() []byte {
+				ack := validChannelAck()
+				for index := 0; index < maxServicesPerSource; index++ {
+					ack.Services = append(ack.Services, ack.Services[0])
+				}
+				payload, _ := json.Marshal(ack)
+				return payload
+			},
+		},
+		{
+			name: "server time out of range",
+			payload: func() []byte {
+				ack := validChannelAck()
+				ack.ServerTime = maxSafeInteger + 1
+				payload, _ := json.Marshal(ack)
+				return payload
+			},
+		},
+		{
+			name: "command with an invalid id",
+			payload: func() []byte {
+				ack := validChannelAck()
+				ack.Commands = []channelCommand{{
+					ID:        "not-a-ulid",
+					Action:    "resync",
+					ExpiresAt: time.Now().Add(time.Minute).UnixMilli(),
+				}}
+				payload, _ := json.Marshal(ack)
+				return payload
+			},
+		},
+		{
+			name: "command with a negative expiry",
+			payload: func() []byte {
+				ack := validChannelAck()
+				ack.Commands = []channelCommand{{
+					ID:        "01HF7YAT000000000000000301",
+					Action:    "resync",
+					ExpiresAt: -1,
+				}}
+				payload, _ := json.Marshal(ack)
+				return payload
+			},
+		},
+		{
+			name: "resync with params",
+			payload: func() []byte {
+				ack := validChannelAck()
+				ack.Commands = []channelCommand{{
+					ID:        "01HF7YAT000000000000000301",
+					Action:    "resync",
+					Params:    &channelCommandParams{URL: "https://proxy.example"},
+					ExpiresAt: time.Now().Add(time.Minute).UnixMilli(),
+				}}
+				payload, _ := json.Marshal(ack)
+				return payload
+			},
+		},
+		{
+			name: "set source naming a service",
+			payload: func() []byte {
+				ack := validChannelAck()
+				ack.Commands = []channelCommand{{
+					ID:        "01HF7YAT000000000000000301",
+					Action:    commandActionSetSource,
+					ServiceID: testServiceID1,
+					Params: &channelCommandParams{
+						URL:               "https://proxy.example",
+						CredentialProfile: "upstream",
+					},
+					ExpiresAt: time.Now().Add(time.Minute).UnixMilli(),
+				}}
+				payload, _ := json.Marshal(ack)
+				return payload
+			},
+		},
+		{
+			name: "set source without a credential profile",
+			payload: func() []byte {
+				ack := validChannelAck()
+				ack.Commands = []channelCommand{{
+					ID:        "01HF7YAT000000000000000301",
+					Action:    commandActionSetSource,
+					Params:    &channelCommandParams{URL: "https://proxy.example"},
+					ExpiresAt: time.Now().Add(time.Minute).UnixMilli(),
+				}}
+				payload, _ := json.Marshal(ack)
+				return payload
+			},
+		},
 	}
 	for _, testCase := range cases {
 		t.Run(testCase.name, func(t *testing.T) {

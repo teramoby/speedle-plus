@@ -14,7 +14,6 @@ import (
 
 	"github.com/teramoby/speedle-plus/3rdparty/github.com/Knetic/govaluate"
 	adsapi "github.com/teramoby/speedle-plus/api/ads"
-	"github.com/teramoby/speedle-plus/pkg/adsync"
 	"github.com/teramoby/speedle-plus/pkg/errors"
 	"github.com/teramoby/speedle-plus/pkg/eval/function"
 	"github.com/teramoby/speedle-plus/pkg/subjectutils"
@@ -97,7 +96,10 @@ func (p *PolicyEvalImpl) fullReloadRuntimeCache() error {
 		log.Errorf("Fail to full reload runtime cache, err:%v", err)
 		return err
 	}
-	p.RuntimePolicyStore.reloadPolicyStore(ps)
+	if err := p.RuntimePolicyStore.reloadPolicyStore(ps); err != nil {
+		p.cacheFailed.Store(true)
+		return err
+	}
 	p.storeAvailableLocked()
 	return nil
 }
@@ -114,16 +116,38 @@ func (p *PolicyEvalImpl) Refresh() (err error) {
 	return p.fullReloadRuntimeCache()
 }
 
+// Store-event paths propagate mutation errors. The exported Add* methods keep
+// their legacy no-result signatures; every rejection is logged and fails the cache.
+func (p *PolicyEvalImpl) handleCacheMutation(err error) error {
+	if err != nil {
+		p.cacheFailed.Store(true)
+		log.Errorf("Rejected runtime cache mutation: %v", err)
+	}
+	return err
+}
+
+func (p *PolicyEvalImpl) addServiceInRuntimeCache(service *pms.Service) error {
+	return p.handleCacheMutation(p.RuntimePolicyStore.addService(service))
+}
+
 func (p *PolicyEvalImpl) AddServiceInRuntimeCache(service *pms.Service) {
-	p.RuntimePolicyStore.addService(service)
+	_ = p.addServiceInRuntimeCache(service)
+}
+
+func (p *PolicyEvalImpl) addPolicyInRuntimeCache(serviceName string, policy *pms.Policy) error {
+	return p.handleCacheMutation(p.RuntimePolicyStore.addPolicy(serviceName, policy))
 }
 
 func (p *PolicyEvalImpl) AddPolicyInRuntimeCache(serviceName string, policy *pms.Policy) {
-	p.RuntimePolicyStore.addPolicy(serviceName, policy)
+	_ = p.addPolicyInRuntimeCache(serviceName, policy)
+}
+
+func (p *PolicyEvalImpl) addRolePolicyInRuntimeCache(serviceName string, rolepolicy *pms.RolePolicy) error {
+	return p.handleCacheMutation(p.RuntimePolicyStore.addRolePolicy(serviceName, rolepolicy))
 }
 
 func (p *PolicyEvalImpl) AddRolePolicyInRuntimeCache(serviceName string, rolepolicy *pms.RolePolicy) {
-	p.RuntimePolicyStore.addRolePolicy(serviceName, rolepolicy)
+	_ = p.addRolePolicyInRuntimeCache(serviceName, rolepolicy)
 }
 
 func (p *PolicyEvalImpl) DeletePolicyInRuntimeCache(serviceName string, policyID string) {
@@ -137,8 +161,12 @@ func (p *PolicyEvalImpl) DeleteFunctionInRuntimeCache(funcName string) {
 	p.RuntimePolicyStore.deleteFunction(funcName)
 }
 
+func (p *PolicyEvalImpl) addFunctionInRuntimeCache(cf *pms.Function) error {
+	return p.handleCacheMutation(p.RuntimePolicyStore.addFunction(cf))
+}
+
 func (p *PolicyEvalImpl) AddFunctionInRuntimeCache(cf *pms.Function) {
-	p.RuntimePolicyStore.addFunction(cf)
+	_ = p.addFunctionInRuntimeCache(cf)
 }
 
 func (p *PolicyEvalImpl) CleanExpiredFunctionResult() {
@@ -151,16 +179,19 @@ func (p *PolicyEvalImpl) SetAsserterFunc(f func(ctx *adsapi.RequestContext) erro
 	p.AsserterFunc = f
 }
 
-// DistributionGate returns the request gate supplied by the backing store, or
-// nil when the store does not distribute policy. The REST and gRPC entry points
-// use it to route a request by the synchronization state of its service before
-// the evaluator runs.
-func (p *PolicyEvalImpl) DistributionGate() adsync.RequestGate {
+// DistributionStore returns the backing store so the REST and gRPC entry
+// points can assert the distribution interface themselves and route a request
+// by the synchronization state of its service before the evaluator runs.
+//
+// The assertion lives in the entry points on purpose: the distribution
+// implementation links the HTTP/TLS sync transports, and the offline js/wasm
+// evaluator must not depend on them. A store without distribution support is
+// rejected there and the surface keeps its existing behaviour.
+func (p *PolicyEvalImpl) DistributionStore() any {
 	if p.Store == nil {
 		return nil
 	}
-	gate, _ := p.Store.(adsync.RequestGate)
-	return gate
+	return p.Store
 }
 
 func (p *PolicyEvalImpl) AssertToken(ctx *adsapi.RequestContext) (err error) {
@@ -1096,7 +1127,9 @@ func (p *PolicyEvalImpl) syncRuntimeCache(dataSet []interface{}) error {
 				if err != nil {
 					return err
 				}
-				p.AddServiceInRuntimeCache(service)
+				if err := p.addServiceInRuntimeCache(service); err != nil {
+					return err
+				}
 			}
 		}
 
@@ -1130,7 +1163,9 @@ func (p *PolicyEvalImpl) syncRuntimeCache(dataSet []interface{}) error {
 			if err != nil {
 				return err
 			} else {
-				p.AddPolicyInRuntimeCache(serviceName, policy)
+				if err := p.addPolicyInRuntimeCache(serviceName, policy); err != nil {
+					return err
+				}
 			}
 		}
 		for _, id := range removed {
@@ -1155,7 +1190,9 @@ func (p *PolicyEvalImpl) syncRuntimeCache(dataSet []interface{}) error {
 			if err != nil {
 				return err
 			} else {
-				p.AddRolePolicyInRuntimeCache(serviceName, policy)
+				if err := p.addRolePolicyInRuntimeCache(serviceName, policy); err != nil {
+					return err
+				}
 			}
 		}
 		for _, id := range removed {
@@ -1178,7 +1215,9 @@ func (p *PolicyEvalImpl) syncRuntimeCache(dataSet []interface{}) error {
 			if err != nil {
 				return err
 			} else {
-				p.AddFunctionInRuntimeCache(function)
+				if err := p.addFunctionInRuntimeCache(function); err != nil {
+					return err
+				}
 			}
 		}
 		for _, name := range removed {
@@ -1267,7 +1306,9 @@ func (p *PolicyEvalImpl) applyStoreChange(e pms.StoreChangeEvent) (err error) {
 		p.storeUnavailableLocked()
 	case pms.SERVICE_ADD: ///Event content: StoreUpdateData{ParentID:serviceName, Data:*service}
 		serviceGot := e.Content.(*pms.Service)
-		p.AddServiceInRuntimeCache(serviceGot)
+		if err := p.addServiceInRuntimeCache(serviceGot); err != nil {
+			return err
+		}
 	case pms.SERVICE_DELETE: //Event content:[]StoreUpdateData{ParentID:serviceName, Data:servieName}
 		services := e.Content.([]string)
 		for _, s := range services {
@@ -1277,7 +1318,9 @@ func (p *PolicyEvalImpl) applyStoreChange(e pms.StoreChangeEvent) (err error) {
 		data := e.Content.([]pms.StoreUpdateData)
 		for _, s := range data {
 			policy := s.Data.(*pms.Policy)
-			p.AddPolicyInRuntimeCache(s.ServiceName, policy)
+			if err := p.addPolicyInRuntimeCache(s.ServiceName, policy); err != nil {
+				return err
+			}
 		}
 	case pms.POLICY_DELETE: // Event content:[]StoreUpdateData{ParentID:serviceName, Data:*pms.Policy}
 		data := e.Content.([]pms.StoreUpdateData)
@@ -1289,7 +1332,9 @@ func (p *PolicyEvalImpl) applyStoreChange(e pms.StoreChangeEvent) (err error) {
 		data := e.Content.([]pms.StoreUpdateData)
 		for _, s := range data {
 			rolepolicy := s.Data.(*pms.RolePolicy)
-			p.AddRolePolicyInRuntimeCache(s.ServiceName, rolepolicy)
+			if err := p.addRolePolicyInRuntimeCache(s.ServiceName, rolepolicy); err != nil {
+				return err
+			}
 		}
 	case pms.ROLEPOLICY_DELETE: //Event content:[]StoreUpdateData{ParentID:serviceName, Data:*pms.RolePolicy}
 		data := e.Content.([]pms.StoreUpdateData)
@@ -1306,7 +1351,9 @@ func (p *PolicyEvalImpl) applyStoreChange(e pms.StoreChangeEvent) (err error) {
 		}
 	case pms.FUNCTION_ADD:
 		f := e.Content.(*pms.Function)
-		p.AddFunctionInRuntimeCache(f)
+		if err := p.addFunctionInRuntimeCache(f); err != nil {
+			return err
+		}
 	case pms.FUNCTION_DELETE:
 		fs := e.Content.([]string)
 		for _, f := range fs {
@@ -1314,29 +1361,16 @@ func (p *PolicyEvalImpl) applyStoreChange(e pms.StoreChangeEvent) (err error) {
 		}
 	case pms.FULL_RELOAD:
 		if snapshot, ok := e.Content.(*pms.PolicyStore); ok && snapshot != nil {
-			p.RuntimePolicyStore.reloadPolicyStore(snapshot)
+			if err := p.RuntimePolicyStore.reloadPolicyStore(snapshot); err != nil {
+				p.cacheFailed.Store(true)
+				return err
+			}
 			p.storeAvailableLocked()
 		} else {
 			return p.fullReloadRuntimeCache()
 		}
 	}
 	return nil
-}
-
-func (p *PolicyEvalImpl) cleanExpiredFunctionResultPeriodically() {
-	ticker := time.NewTicker(30 * time.Minute)
-	p.cleanupStop = make(chan struct{})
-	go func() {
-		defer ticker.Stop()
-		for {
-			select {
-			case <-ticker.C:
-				p.CleanExpiredFunctionResult()
-			case <-p.cleanupStop:
-				return
-			}
-		}
-	}()
 }
 
 // Close releases evaluator resources, including a closable backing store.

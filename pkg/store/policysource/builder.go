@@ -35,6 +35,8 @@ const (
 	StaleAfterKey            = "StaleAfter"
 	StopAfterKey             = "StopAfter"
 	FallbackWhileSyncingKey  = "FallbackWhileSyncing"
+	CloudFallbackURLKey      = "CloudFallbackURL"
+	CloudCredentialFileKey   = "CloudCredentialFile"
 	DefaultServicesSelection = "*"
 
 	// Command line flag names. Each flag feeds the property key above through
@@ -52,6 +54,8 @@ const (
 	StaleAfterFlag           = "policy-source-stale-after"
 	StopAfterFlag            = "policy-source-stop-after"
 	FallbackWhileSyncingFlag = "policy-source-fallback-while-syncing"
+	CloudFallbackURLFlag     = "policy-source-cloud-fallback-url"
+	CloudCredentialFileFlag  = "policy-source-cloud-credential-file"
 	defaultBootstrapWindow   = time.Minute
 )
 
@@ -95,6 +99,14 @@ type Options struct {
 	// service to Cloud. The zero value keeps the fallback enabled, which is
 	// the default.
 	DisableFallback bool
+	// FallbackURL and FallbackCredential are the distinct Speedle Cloud
+	// fallback destination and instance credential. Both are required for a
+	// usable fallback; neither is ever inferred from a proxy policy source.
+	FallbackURL        string
+	FallbackCredential string
+	// FallbackHTTPClient optionally supplies Cloud's transport independently
+	// of the policy-source transport, primarily for private test roots.
+	FallbackHTTPClient *http.Client
 }
 
 // Builder creates policy-source stores.
@@ -116,6 +128,8 @@ func (Builder) GetStoreParams() map[string]string {
 		StaleAfterFlag:           StaleAfterKey,
 		StopAfterFlag:            StopAfterKey,
 		FallbackWhileSyncingFlag: FallbackWhileSyncingKey,
+		CloudFallbackURLFlag:     CloudFallbackURLKey,
+		CloudCredentialFileFlag:  CloudCredentialFileKey,
 	}
 }
 
@@ -177,6 +191,7 @@ func optionsFromConfig(config map[string]interface{}) (Options, error) {
 		{CAFileKey, &options.CAFile},
 		{ClientCertFileKey, &options.ClientCertFile},
 		{ClientKeyFileKey, &options.ClientKeyFile},
+		{CloudFallbackURLKey, &options.FallbackURL},
 	} {
 		value, _, err := stringProperty(config, property.key)
 		if err != nil {
@@ -206,6 +221,21 @@ func optionsFromConfig(config map[string]interface{}) (Options, error) {
 		return options, err
 	}
 	options.DisableFallback = set && !fallbackEnabled
+
+	cloudCredentialPath, _, err := stringProperty(config, CloudCredentialFileKey)
+	if err != nil {
+		return options, err
+	}
+	if (options.FallbackURL == "") != (cloudCredentialPath == "") {
+		return options, errors.New(errors.ConfigError, "CloudFallbackURL and CloudCredentialFile must be configured together")
+	}
+	if cloudCredentialPath != "" {
+		cloudCredential, err := adsync.ReadCredentialFile(cloudCredentialPath)
+		if err != nil {
+			return options, errors.Wrap(err, errors.ConfigError, "invalid Cloud fallback credential file")
+		}
+		options.FallbackCredential = cloudCredential
+	}
 
 	return options, nil
 }
@@ -368,6 +398,8 @@ func init() {
 	pflag.String(StaleAfterFlag, "", "Store config: warning threshold before an instance is stale, for example 60s.")
 	pflag.String(StopAfterFlag, "", "Store config: threshold after which an instance stops serving, for example 120s.")
 	pflag.String(FallbackWhileSyncingFlag, "true", "Store config: route authorization requests for a syncing service to Speedle Cloud.")
+	pflag.String(CloudFallbackURLFlag, "", "Store config: distinct Speedle Cloud base URL used only for authorization fallback.")
+	pflag.String(CloudCredentialFileFlag, "", "Store config: file holding the Cloud instance credential used only for fallback (0600).")
 
 	store.Register(StoreType, Builder{})
 }

@@ -3,19 +3,24 @@
 package adsgrpc
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
+	log "github.com/sirupsen/logrus"
 	adsapi "github.com/teramoby/speedle-plus/api/ads"
 	"github.com/teramoby/speedle-plus/pkg/adsync"
 	"github.com/teramoby/speedle-plus/pkg/cfg"
 	"github.com/teramoby/speedle-plus/pkg/eval"
+	"github.com/teramoby/speedle-plus/pkg/logging"
 	"github.com/teramoby/speedle-plus/pkg/svcs"
+	"github.com/teramoby/speedle-plus/pkg/svcs/adsgate"
 	"github.com/teramoby/speedle-plus/pkg/svcs/adsgrpc/pb"
 	"github.com/teramoby/speedle-plus/testutil/adsyncfake"
 	"github.com/teramoby/speedle-plus/testutil/storetest"
@@ -318,5 +323,105 @@ func TestGRPCRemovedAndUnknownServicesUseTheLocalPath(t *testing.T) {
 				t.Fatalf("%d requests were forwarded", len(forwarded))
 			}
 		})
+	}
+}
+
+// captureAuditLog redirects the shared audit logger to a JSON buffer for one
+// test.
+func captureAuditLog(t *testing.T) *bytes.Buffer {
+	t.Helper()
+	logger := logging.AuditLog()
+	out, formatter, level := logger.Out, logger.Formatter, logger.Level
+	var buffer bytes.Buffer
+	logger.Out = &buffer
+	logger.Formatter = &log.JSONFormatter{}
+	logger.Level = log.DebugLevel
+	t.Cleanup(func() {
+		logger.Out, logger.Formatter, logger.Level = out, formatter, level
+	})
+	return &buffer
+}
+
+func lastAuditEntry(t *testing.T, out *bytes.Buffer) map[string]interface{} {
+	t.Helper()
+	lines := strings.Split(strings.TrimSpace(out.String()), "\n")
+	if len(lines) == 0 || lines[len(lines)-1] == "" {
+		t.Fatal("no audit entry was written")
+	}
+	var entry map[string]interface{}
+	if err := json.Unmarshal([]byte(lines[len(lines)-1]), &entry); err != nil {
+		t.Fatalf("audit entry %q: %v", lines[len(lines)-1], err)
+	}
+	return entry
+}
+
+func TestGRPCFallbackDecisionsAreAudited(t *testing.T) {
+	out := captureAuditLog(t)
+	service, source := newGatedService(t)
+
+	cases := []struct {
+		name      string
+		operation adsync.FallbackOperation
+		cloudBody string
+		call      func(*pb.ContextRequest) error
+		resultKey string
+	}{
+		{"is-allowed", adsync.FallbackIsAllowed, `{"allowed":true,"reason":2}`,
+			func(in *pb.ContextRequest) error { _, err := service.IsAllowed(context.Background(), in); return err }, "allowed"},
+		{"roles", adsync.FallbackAllGrantedRoles, `["admin"]`,
+			func(in *pb.ContextRequest) error {
+				_, err := service.GetAllGrantedRoles(context.Background(), in)
+				return err
+			}, "roles"},
+		{"permissions", adsync.FallbackAllGrantedPermissions, `[{"resource":"res1","actions":["read"]}]`,
+			func(in *pb.ContextRequest) error {
+				_, err := service.GetAllPermissions(context.Background(), in)
+				return err
+			}, "permissions"},
+	}
+	for _, testCase := range cases {
+		t.Run(testCase.name, func(t *testing.T) {
+			source.SetFallbackResponse(http.StatusOK, nil, []byte(testCase.cloudBody))
+			if err := testCase.call(gateRequest("orders", "alice")); err != nil {
+				t.Fatalf("call: %v", err)
+			}
+
+			entry := lastAuditEntry(t, out)
+			auditName := "[gRPC]" + adsgate.FallbackAuditOperation(testCase.operation)
+			if entry["msg"] != "[AUDIT]"+auditName || entry["level"] != "info" || entry["response"] != "succeeded" {
+				t.Fatalf("audit entry = %v", entry)
+			}
+			requestFields, _ := entry["requestValue"].(map[string]interface{})
+			if requestFields["serviceName"] != "orders" || requestFields["operation"] != string(testCase.operation) ||
+				requestFields["decisionSource"] != svcs.DecisionSourceCloudFallback {
+				t.Fatalf("audit context = %v", entry)
+			}
+			responseFields, _ := entry["responseValue"].(map[string]interface{})
+			if _, found := responseFields[testCase.resultKey]; !found {
+				t.Fatalf("audit result %q missing from %v", testCase.resultKey, entry)
+			}
+		})
+	}
+}
+
+func TestGRPCFallbackFailuresAreAudited(t *testing.T) {
+	out := captureAuditLog(t)
+	service, source := newGatedService(t)
+	source.SetFallbackError(adsync.ErrUnavailable)
+
+	if _, err := service.IsAllowed(context.Background(), gateRequest("orders", "alice")); status.Code(err) != codes.Unavailable {
+		t.Fatalf("error = %v", err)
+	}
+
+	entry := lastAuditEntry(t, out)
+	if entry["msg"] != "[AUDIT][gRPC]IsAllowed" || entry["level"] != "error" || entry["response"] != "failed" {
+		t.Fatalf("audit entry = %v", entry)
+	}
+	requestFields, _ := entry["requestValue"].(map[string]interface{})
+	if requestFields["serviceName"] != "orders" || requestFields["decisionSource"] != svcs.DecisionSourceCloudFallback {
+		t.Fatalf("audit context = %v", entry)
+	}
+	if reason, _ := entry["reason"].(string); reason == "" {
+		t.Fatalf("audit reason = %v", entry["reason"])
 	}
 }

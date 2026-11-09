@@ -179,5 +179,5 @@ func WithGate(inner eval.InternalEvaluator, source adsync.RequestGate) *Evaluato
 	return &Evaluator{InternalEvaluator: inner, source: source}
 }
 
-// DistributionGate implements the optional interface the entry points use.
-func (e *Evaluator) DistributionGate() adsync.RequestGate { return e.source }
+// DistributionStore implements the optional interface the entry points use.
+func (e *Evaluator) DistributionStore() any { return e.source }

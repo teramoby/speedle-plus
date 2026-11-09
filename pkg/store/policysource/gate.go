@@ -21,9 +21,9 @@ func (s *Store) Services() []adsync.ServiceStatus {
 	return s.machine.Services()
 }
 
-// FallbackAvailable reports whether a syncing service has a usable path to
-// Cloud. It is false when the fallback is disabled, when no credential is
-// configured, and after an attempt showed that Cloud cannot be reached.
+// FallbackAvailable reports whether a syncing service has a configured Cloud
+// fallback outside its bounded retry delay. It is false when fallback is
+// disabled or no distinct Cloud destination and credential are configured.
 func (s *Store) FallbackAvailable() bool {
 	if s == nil || !s.fallback || s.client == nil {
 		return false
@@ -31,8 +31,8 @@ func (s *Store) FallbackAvailable() bool {
 	return s.client.FallbackAvailable()
 }
 
-// ForwardFallback sends one authorization request to Cloud with the instance
-// credential. The body is forwarded unchanged.
+// ForwardFallback sends one authorization request to the configured Cloud
+// fallback with the Cloud credential. The body is forwarded unchanged.
 //
 // An authentication failure means the credential is no longer valid, so the
 // instance stops as revoked and never serves a local decision again. Every

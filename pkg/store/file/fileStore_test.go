@@ -8,9 +8,7 @@ import (
 	"log"
 	"os"
 	"strconv"
-	"sync"
 	"testing"
-	"time"
 
 	"github.com/teramoby/speedle-plus/api/pms"
 	"github.com/teramoby/speedle-plus/pkg/store"
@@ -438,18 +436,13 @@ func TestWatch(t *testing.T) {
 	if err != nil {
 		t.Fatal("fail to new file store:", err)
 	}
-	//defer store.StopWatch()
-	if err != nil {
-		t.Fatal("fail to new file store:", err)
-	}
 
 	ch, err := store.Watch()
 	if err != nil {
 		t.Fatal("fail to watch:", err)
 	}
-	time.Sleep(2 * time.Second)
+	defer store.StopWatch()
 
-	//add new app
 	rolePolicy1 := pms.RolePolicy{Name: "rp1", Effect: "grant", Roles: []string{"role1"}, Principals: []string{"user:Alice"}}
 	rolePolicy2 := pms.RolePolicy{Name: "rp2", Effect: "grant", Roles: []string{"role2"}, Principals: []string{"user:Bill"}}
 	service := pms.Service{
@@ -457,33 +450,16 @@ func TestWatch(t *testing.T) {
 		Type:         pms.TypeApplication,
 		RolePolicies: []*pms.RolePolicy{&rolePolicy1, &rolePolicy2},
 	}
-	err = store.CreateService(&service)
-	if err != nil {
+	if err := store.CreateService(&service); err != nil {
 		t.Fatal("fail to write application:", err)
 	}
+	// Atomic replacement can produce duplicate notifications and a transient
+	// unavailability event. Require recovery and a reload for each mutation,
+	// rather than a fixed number and order of low-level notifications.
+	expectReload(t, ch, "create service")
 
-	var wg sync.WaitGroup
-
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		i := 0
-		for e := range ch {
-			i = i + 1
-			t.Logf("Receive one event, type is %d\n", e.Type)
-			if e.Type != pms.FULL_RELOAD {
-				t.Errorf("expected event type: %d, received event type :%d\n", pms.FULL_RELOAD, e.Type)
-			}
-		}
-		if i < 2 {
-			t.Errorf("Not receive enough event")
-		}
-	}()
-
-	//delete app
-	store.DeleteService("app1_new")
-
-	time.Sleep(2 * time.Second)
-	store.StopWatch()
-	wg.Wait()
+	if err := store.DeleteService("app1_new"); err != nil {
+		t.Fatal("fail to delete application:", err)
+	}
+	expectReload(t, ch, "delete service")
 }

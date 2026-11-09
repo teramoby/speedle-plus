@@ -229,6 +229,34 @@ func TestReadyReportsServiceDetails(t *testing.T) {
 	}
 }
 
+func TestPublicReadinessReportsAggregatesOnly(t *testing.T) {
+	source := adsyncfake.New()
+	source.SetInstance(adsync.InstanceStatus{
+		Liveness:           adsync.LivenessLive,
+		LastConfirmedAckAt: time.Date(2026, 11, 8, 12, 0, 0, 0, time.UTC),
+	})
+	source.SetService(adsync.ServiceStatus{Name: "books", State: adsync.SyncStateInSync})
+	source.SetService(adsync.ServiceStatus{Name: "orders", State: adsync.SyncStateSyncing})
+	source.SetService(adsync.ServiceStatus{Name: "legacy", State: adsync.SyncStateRemoved})
+
+	public := New(source).Ready().Public()
+	if !public.Ready || public.Liveness != adsync.LivenessLive {
+		t.Fatalf("public readiness = %+v", public)
+	}
+	if public.ServicesTotal != 2 || public.ServicesUsable != 2 {
+		t.Fatalf("public readiness counts = %+v", public)
+	}
+	if public.LastConfirmedAckAt != "2026-11-08T12:00:00Z" {
+		t.Fatalf("lastConfirmedAckAt = %q", public.LastConfirmedAckAt)
+	}
+
+	source.SetFallbackAvailable(false)
+	public = New(source).Ready().Public()
+	if public.Ready || public.ServicesUsable != 1 {
+		t.Fatalf("public readiness without fallback = %+v", public)
+	}
+}
+
 func TestUnavailableReason(t *testing.T) {
 	cases := map[error]adsync.Reason{
 		adsync.ErrFallbackQuotaExhausted:   adsync.ReasonQuotaExhausted,
