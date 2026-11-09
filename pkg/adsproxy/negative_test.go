@@ -13,6 +13,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -1779,5 +1780,97 @@ func TestCredentialFileReadIsBounded(t *testing.T) {
 	}
 	if _, err := LoadCredentialFile(path); !errors.Is(err, ErrCredentialFile) {
 		t.Errorf("oversized file: %v, want ErrCredentialFile", err)
+	}
+}
+
+type blockingResponseWriter struct {
+	header  http.Header
+	started chan struct{}
+	release chan struct{}
+	once    sync.Once
+	status  int
+	body    bytes.Buffer
+}
+
+func (w *blockingResponseWriter) Header() http.Header { return w.header }
+
+func (w *blockingResponseWriter) WriteHeader(status int) {
+	w.once.Do(func() {
+		w.status = status
+		close(w.started)
+		<-w.release
+	})
+}
+
+func (w *blockingResponseWriter) Write(payload []byte) (int, error) {
+	return w.body.Write(payload)
+}
+
+func TestHeldPollPinsItsGrantAcrossTheAck(t *testing.T) {
+	signer := newTestSigner(t)
+	mirror, _, _ := newPopulatedMirror(t, signer)
+	token := testToken(testDownstreamID, 1)
+	server := newTestServer(t, mirror, signer.publicKeys(t), nil, testCredential{
+		downstreamID: testDownstreamID,
+		token:        token,
+	})
+	request := httptest.NewRequest(http.MethodPost,
+		adsync.APIPrefix+"/channel/poll?wait=0",
+		bytes.NewReader(heartbeatFrame([]string{testProxyID, testDownstreamID})))
+	request.Header.Set("Authorization", "Bearer "+token)
+	writer := &blockingResponseWriter{
+		header:  http.Header{},
+		started: make(chan struct{}),
+		release: make(chan struct{}),
+	}
+	finished := make(chan struct{})
+	go func() {
+		defer close(finished)
+		server.server.ServeHTTP(writer, request)
+	}()
+	select {
+	case <-writer.started:
+	case <-time.After(5 * time.Second):
+		t.Fatal("the poll response never started")
+	}
+
+	// The ack is being written while its grant is pinned, so a reload cannot
+	// complete between the revalidation and the response.
+	server.writeCredentialFile(testDownstreamID + ":" + hashToken(token) + ":" + testServiceID1)
+	reloaded := make(chan error, 1)
+	go func() { reloaded <- server.server.ReloadCredentials() }()
+	select {
+	case err := <-reloaded:
+		t.Fatalf("reload completed while the ack was pinned: %v", err)
+	case <-time.After(50 * time.Millisecond):
+	}
+
+	close(writer.release)
+	select {
+	case <-finished:
+	case <-time.After(5 * time.Second):
+		t.Fatal("the poll did not finish")
+	}
+	select {
+	case err := <-reloaded:
+		if err != nil {
+			t.Fatalf("reload after the ack: %v", err)
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("the reload did not complete")
+	}
+	if writer.status != http.StatusOK {
+		t.Errorf("status = %d", writer.status)
+	}
+
+	// The narrowed grant is in force for the next request.
+	response, body := server.post(adsync.APIPrefix+"/channel/poll?wait=0", token,
+		heartbeatFrame([]string{testProxyID, testDownstreamID}))
+	if response.StatusCode != http.StatusOK {
+		t.Fatalf("poll after reload: status %d body %s", response.StatusCode, body)
+	}
+	ack := decodeBody[ackMessage](t, body)
+	if len(ack.Services) != 1 || ack.Services[0].ID != testServiceID1 {
+		t.Errorf("narrowed ack services = %+v", ack.Services)
 	}
 }

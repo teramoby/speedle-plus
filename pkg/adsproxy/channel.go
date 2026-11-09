@@ -421,12 +421,15 @@ func (s *Server) handlePoll(w http.ResponseWriter, r *http.Request, credential *
 		writeError(w, http.StatusServiceUnavailable, "distribution_paused", "")
 		return
 	}
-	// A reload may have replaced the grant while the request was held. The ack
-	// would otherwise reveal the new service set to a revoked or narrowed one.
-	if !s.credentials.Current(credential) {
+	// A reload may have replaced the grant while the request was held. Pin the
+	// grant across the check and the response, so a reload cannot complete
+	// between them and the ack cannot reveal the new service set to a revoked
+	// or narrowed credential.
+	if !s.credentials.BeginRequest(credential) {
 		writeError(w, http.StatusUnauthorized, "unauthorized", "")
 		return
 	}
+	defer s.credentials.EndRequest()
 	// A poll that was already held must not answer successfully after Close.
 	if s.isClosed() {
 		writeError(w, http.StatusServiceUnavailable, "source_unavailable", "")
