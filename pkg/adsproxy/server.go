@@ -92,6 +92,7 @@ type Server struct {
 	mirror      *Mirror
 	credentials *CredentialSet
 	hub         *Hub
+	ownsHub     bool
 
 	heartbeat time.Duration
 	stale     time.Duration
@@ -107,6 +108,7 @@ type Server struct {
 	sessions  map[*websocket.Conn]struct{}
 	closeOnce sync.Once
 	closed    bool
+	done      chan struct{}
 }
 
 // NewServer validates the configuration and wires the mirror's head events into
@@ -163,6 +165,7 @@ func NewServer(config Config) (*Server, error) {
 	}
 
 	hub := config.Hub
+	ownsHub := hub == nil
 	if hub == nil {
 		hub, err = NewHub(config.MaxDownstream, config.CoalesceWindow, config.MaxConnectionsPerDownstream)
 		if err != nil {
@@ -180,6 +183,7 @@ func NewServer(config Config) (*Server, error) {
 		mirror:      config.Mirror,
 		credentials: credentials,
 		hub:         hub,
+		ownsHub:     ownsHub,
 		heartbeat:   heartbeat,
 		stale:       stale,
 		stop:        stop,
@@ -187,6 +191,7 @@ func NewServer(config Config) (*Server, error) {
 		now:         now,
 		paused:      config.Paused,
 		sessions:    make(map[*websocket.Conn]struct{}),
+		done:        make(chan struct{}),
 	}
 	server.upgrader = websocket.Upgrader{
 		ReadBufferSize:  4096,
@@ -219,8 +224,8 @@ func (s *Server) DownstreamCount() int { return s.hub.Downstreams() }
 // ReloadCredentials re-reads the credential file and swaps the new set in
 // atomically. A failed reload keeps the previous credentials and channels in
 // force. Every established channel is then closed so removed credentials and
-// changed service subsets take effect immediately; clients resynchronize with
-// their current grants when they reconnect.
+// changed service subsets take effect immediately; clients reconnect and
+// resynchronize with their current grants.
 func (s *Server) ReloadCredentials() error {
 	if err := s.credentials.Reload(); err != nil {
 		return err
@@ -253,6 +258,9 @@ func (s *Server) Close() {
 		for conn := range s.sessions {
 			connections = append(connections, conn)
 		}
+		if s.done != nil {
+			close(s.done)
+		}
 		s.mu.Unlock()
 		for _, conn := range connections {
 			_ = conn.Close()
@@ -261,8 +269,19 @@ func (s *Server) Close() {
 			s.removeWatch()
 			s.removeWatch = nil
 		}
-		s.hub.Close()
+		// A hub supplied through Config is shared with its owner; only a hub
+		// this server created may be closed here.
+		if s.ownsHub {
+			s.hub.Close()
+		}
 	})
+}
+
+// isClosed reports whether Close has run.
+func (s *Server) isClosed() bool {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.closed
 }
 
 // track registers an upgraded channel connection so Close and credential
@@ -309,6 +328,11 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			writeError(w, http.StatusMethodNotAllowed, "method_not_allowed", "")
 			return
 		}
+		if !s.credentials.BeginRequest(credential) {
+			writeError(w, http.StatusUnauthorized, "unauthorized", "")
+			return
+		}
+		defer s.credentials.EndRequest()
 		s.handleServices(w, r, credential)
 	case rest == "/channel":
 		if r.Method != http.MethodGet {
@@ -323,6 +347,11 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 		s.handlePoll(w, r, credential)
 	case strings.HasPrefix(rest, "/services/"):
+		if !s.credentials.BeginRequest(credential) {
+			writeError(w, http.StatusUnauthorized, "unauthorized", "")
+			return
+		}
+		defer s.credentials.EndRequest()
 		s.handleService(w, r, credential, strings.TrimPrefix(rest, "/services/"))
 	default:
 		writeError(w, http.StatusNotFound, "not_found", "")
@@ -365,7 +394,7 @@ func (s *Server) handleServices(w http.ResponseWriter, r *http.Request, credenti
 		writeError(w, http.StatusBadRequest, "invalid_request", "")
 		return
 	}
-	services := s.mirror.Services()
+	services, version := s.mirror.ServicesVersion()
 	visible := make([]adsync.Service, 0, len(services))
 	for _, service := range services {
 		if !credential.Allows(service.ID) {
@@ -377,7 +406,7 @@ func (s *Server) handleServices(w http.ResponseWriter, r *http.Request, credenti
 		}
 	}
 	writeJSON(w, http.StatusOK, adsync.ServicesResponse{
-		ServicesVersion: s.mirror.Version(),
+		ServicesVersion: version,
 		Services:        visible,
 	})
 }
@@ -530,7 +559,8 @@ func bearerToken(value string) (string, bool) {
 
 func snapshotETag(response adsync.SnapshotResponse) string {
 	return `"` + response.SourceID + "-" + response.Epoch + "-" +
-		strconv.FormatUint(response.Revision, 10) + "-" + response.StateHash.String() + `"`
+		strconv.FormatUint(response.Revision, 10) + "-" + response.StateHash.String() + "-" +
+		response.CommitHash.String() + `"`
 }
 
 // strictQuery parses a request query against an explicit allowed-key set.
@@ -554,8 +584,8 @@ func strictQuery(raw string, allowedKeys ...string) (url.Values, bool) {
 }
 
 // ifNoneMatch reports whether the request's If-None-Match header contains the
-// exact current entity tag. The wildcard is deliberately not accepted: C1
-// permits 304 only for an exact (sourceId, epoch, revision, stateHash) match.
+// exact current entity tag. The wildcard is deliberately not accepted: a 304 is
+// permitted only for an exact snapshot identity tuple.
 func ifNoneMatch(header, etag string) bool {
 	if strings.TrimSpace(header) == "" {
 		return false

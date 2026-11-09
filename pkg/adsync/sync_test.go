@@ -431,6 +431,21 @@ func TestApplyChangesServiceDeleteIsSourceGone(t *testing.T) {
 	}
 }
 
+func TestApplyChangesExportedAppliesTheSameChanges(t *testing.T) {
+	snapshot := Snapshot{Name: "books", Policies: []Policy{}, RolePolicies: []Policy{}}
+	if err := ApplyChanges(&snapshot, []Change{
+		{Op: "upsert", Kind: "service", ID: testServiceID1, Name: stringPointer("books-v2")},
+	}); err != nil {
+		t.Fatalf("ApplyChanges: %v", err)
+	}
+	if snapshot.Name != "books-v2" {
+		t.Errorf("name = %q, want books-v2", snapshot.Name)
+	}
+	if err := ApplyChanges(&snapshot, []Change{{Op: "delete", Kind: "service", ID: testServiceID1}}); !errors.Is(err, ErrSourceGone) {
+		t.Errorf("ApplyChanges delete error = %v, want ErrSourceGone", err)
+	}
+}
+
 func TestServiceStateCloneIsIndependent(t *testing.T) {
 	state := &ServiceState{
 		ServiceID: testServiceID1,

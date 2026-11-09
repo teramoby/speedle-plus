@@ -241,6 +241,7 @@ type testServerOptions struct {
 	coalesceWindow time.Duration
 	hub            *Hub
 	maxDownstream  int
+	maxConnections int
 	maxChainDepth  int
 	paused         func() bool
 }
@@ -267,15 +268,16 @@ func newTestServer(t *testing.T, mirror *Mirror, keys *adsync.PublicKeySet, opti
 	}
 
 	server, err := NewServer(Config{
-		InstanceID:     testProxyID,
-		Chain:          options.chain,
-		Mirror:         mirror,
-		CredentialFile: credentialFile,
-		MaxDownstream:  options.maxDownstream,
-		MaxChainDepth:  options.maxChainDepth,
-		CoalesceWindow: options.coalesceWindow,
-		Hub:            options.hub,
-		Paused:         options.paused,
+		InstanceID:                  testProxyID,
+		Chain:                       options.chain,
+		Mirror:                      mirror,
+		CredentialFile:              credentialFile,
+		MaxDownstream:               options.maxDownstream,
+		MaxConnectionsPerDownstream: options.maxConnections,
+		MaxChainDepth:               options.maxChainDepth,
+		CoalesceWindow:              options.coalesceWindow,
+		Hub:                         options.hub,
+		Paused:                      options.paused,
 	})
 	if err != nil {
 		t.Fatalf("new server: %v", err)

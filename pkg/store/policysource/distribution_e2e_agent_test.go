@@ -42,13 +42,12 @@ const (
 
 // e2eAgentOptions configures one in-process ADS instance.
 type e2eAgentOptions struct {
-	InstanceID     string
-	Source         e2eSource
-	Fallback       e2eSource
-	FallbackClient *http.Client
-	Clock          *testClock
-	CacheDir       string
-	Chain          []string
+	InstanceID string
+	Source     e2eSource
+	Fallback   *e2eSource
+	Clock      *testClock
+	CacheDir   string
+	Chain      []string
 	// Downstream enables the proxy role with the given credentials.
 	Downstream      []adsproxy.Credential
 	DisableFallback bool
@@ -110,6 +109,11 @@ func newE2EAgent(t *testing.T, options e2eAgentOptions) *e2eAgent {
 		t.Fatal("a complete source configuration is required")
 	}
 
+	var fallbackURL, fallbackCredential string
+	if options.Fallback != nil {
+		fallbackURL = options.Fallback.URL
+		fallbackCredential = options.Fallback.Credential
+	}
 	store, err := Open(context.Background(), Options{
 		PolicySourceURL:   options.Source.URL,
 		Credential:        options.Source.Credential,
@@ -128,9 +132,8 @@ func newE2EAgent(t *testing.T, options e2eAgentOptions) *e2eAgent {
 			MaxBackoff:     10 * time.Millisecond,
 		},
 		DisableFallback:    options.DisableFallback,
-		FallbackURL:        options.Fallback.URL,
-		FallbackCredential: options.Fallback.Credential,
-		FallbackHTTPClient: options.FallbackClient,
+		FallbackURL:        fallbackURL,
+		FallbackCredential: fallbackCredential,
 	})
 	if err != nil {
 		t.Fatalf("open policy source store for %s: %v", options.InstanceID, err)

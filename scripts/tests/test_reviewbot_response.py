@@ -28,6 +28,51 @@ DEEPSEEK_MALFORMED = (FIXTURES / "deepseek-malformed.json").read_text()
 format_markdown = runpy.run_path(str(ROOT / HELPER))["format_markdown"]
 
 
+def sse(*events, done=False, terminated=True):
+    """Serialize events as a server-sent event body, as the providers stream it."""
+    body = ": keep-alive\n\n"
+    for event in events:
+        name = event.get("type") if isinstance(event, dict) else None
+        if name:
+            body += f"event: {name}\n"
+        body += "data: " + json.dumps(event) + "\n\n"
+    if done:
+        body += "data: [DONE]\n\n"
+    return body if terminated else body.rstrip("\n")
+
+
+def ark_stream(response, terminal="response.completed"):
+    text = "".join(part.get("text", "") for item in response.get("output", [])
+                   if item.get("type") == "message" for part in item.get("content", []))
+    started = {"id": "resp-fixture", "status": "in_progress", "model": response.get("model"),
+               "output": []}
+    events = [{"type": "response.created", "response": started},
+              {"type": "response.reasoning_summary_text.delta", "delta": "PRIVATE_REASONING"}]
+    events += [{"type": "response.output_text.delta", "delta": text[i:i + 7]}
+               for i in range(0, len(text), 7)]
+    if terminal:
+        events.append({"type": terminal, "response": response})
+    return events
+
+
+def deepseek_stream(content, finish_reason="stop", usage=None, model="deepseek-flash"):
+    base = {"id": "chatcmpl-fixture", "object": "chat.completion.chunk", "created": 1, "model": model}
+    chunks = [{**base, "choices": [{"index": 0, "delta": {"role": "assistant", "content": ""},
+                                    "finish_reason": None}]},
+              {**base, "choices": [{"index": 0, "delta": {"reasoning_content": "PRIVATE_REASONING",
+                                                          "content": None},
+                                    "finish_reason": None}]}]
+    chunks += [{**base, "choices": [{"index": 0, "delta": {"content": content[i:i + 5]},
+                                     "finish_reason": None}]}
+               for i in range(0, len(content), 5)]
+    if finish_reason is not None:
+        chunks.append({**base, "choices": [{"index": 0, "delta": {"content": ""},
+                                            "finish_reason": finish_reason}]})
+    if usage is not None:
+        chunks.append({**base, "choices": [], "usage": usage})
+    return chunks
+
+
 class ReviewBotResponseTests(unittest.TestCase):
     def test_report_markdown_preserves_inner_code_and_machine_markers(self):
         report = ("## ReviewBot review\n\n**Verdict:** Comment only\n\n"
@@ -65,7 +110,7 @@ class ReviewBotResponseTests(unittest.TestCase):
 
     def run_workflow(self, workflow, step, responses, *, http_code="200", mode="review",
                      long_input=False, provider=None, deepseek_model="fixture-deepseek-model",
-                     curl_exit=0):
+                     curl_exit=0, budget=None):
         temp = tempfile.TemporaryDirectory()
         self.addCleanup(temp.cleanup)
         root = Path(temp.name)
@@ -129,20 +174,33 @@ if "Authorization: Bearer fixture-not-a-secret" in headers:
     auth_kind = "ark"
 elif "Authorization: Bearer fixture-deepseek-not-a-secret" in headers:
     auth_kind = "deepseek"
-(root / f"auth-{index}.txt").write_text(auth_kind + "|" + str("Content-Type: application/json" in headers))
-curl_exit = int(os.environ.get("FIXTURE_CURL_EXIT", "0"))
-if curl_exit:
-    sys.stderr.write(f"curl: ({curl_exit}) synthetic transport error\\n")
-    sys.exit(curl_exit)
+(root / f"auth-{index}.txt").write_text(auth_kind + "|" + str(
+    "Content-Type: application/json" in headers and "Accept: text/event-stream" in headers))
 responses = json.loads(pathlib.Path(os.environ["FIXTURE_RESPONSES"]).read_text())
 if index >= len(responses):
     sys.exit("TOO_MANY_REQUESTS")
 response = responses[index]
+curl_exit = int(os.environ.get("FIXTURE_CURL_EXIT", "0"))
+if isinstance(response, dict) and "fixture_curl_exit" in response:
+    curl_exit = response["fixture_curl_exit"]
+if curl_exit:
+    # A transport error can leave a partial body behind; it must never publish.
+    pathlib.Path(args[args.index("--output") + 1]).write_text("data: PRIVATE_PROMPT partial")
+    sys.stdout.write("200")
+    sys.stderr.write(f"curl: ({curl_exit}) synthetic transport error\\n")
+    sys.exit(curl_exit)
 pathlib.Path(args[args.index("--output") + 1]).write_text(
     response if isinstance(response, str) else json.dumps(response))
 sys.stdout.write(os.environ["FIXTURE_HTTP_CODE"])
 ''')
         curl.chmod(0o755)
+        sleep = stub / "sleep"
+        sleep.write_text(f"#!{sys.executable}\n" + '''
+import os, pathlib, sys
+with open(pathlib.Path(os.environ["RUNNER_TEMP"]) / "sleeps.txt", "a") as log:
+    log.write(sys.argv[1] + "\\n")
+''')
+        sleep.chmod(0o755)
         output = root / "github-output"
         encode = lambda text: base64.b64encode(text.encode()).decode()
         env = {
@@ -163,8 +221,15 @@ sys.stdout.write(os.environ["FIXTURE_HTTP_CODE"])
             env["REVIEWBOT_PROVIDER"] = provider
         if deepseek_model is not None:
             env["DEEPSEEK_MODEL"] = deepseek_model
-        result = subprocess.run(["bash", "-c", workflow_script(workflow, step)],
+        script = workflow_script(workflow, step)
+        if budget is not None:
+            self.assertEqual(script.count("request_deadline=$((SECONDS + 600))"), 1)
+            script = script.replace("request_deadline=$((SECONDS + 600))",
+                                    f"request_deadline=$((SECONDS + {budget}))")
+        result = subprocess.run(["bash", "-c", script],
                                 cwd=repo, env=env, capture_output=True, text=True)
+        sleeps_path = runtime / "sleeps.txt"
+        self.sleeps = sleeps_path.read_text().split() if sleeps_path.exists() else []
         requests = [json.loads(path.read_text()) for path in sorted(runtime.glob("request-*.json"))]
         urls = [path.read_text() for path in sorted(runtime.glob("url-*.txt"))]
         auths = [path.read_text() for path in sorted(runtime.glob("auth-*.txt"))]
@@ -174,8 +239,9 @@ sys.stdout.write(os.environ["FIXTURE_HTTP_CODE"])
         for timeout in timeouts:
             self.assertGreater(timeout, 0)
             self.assertLessEqual(timeout, 600)
-        if len(timeouts) == 2:
-            self.assertLessEqual(timeouts[1], timeouts[0])
+        self.assertEqual(timeouts, sorted(timeouts, reverse=True))
+        for request in requests:
+            self.assertIs(request["stream"], True)
         if provider == "deepseek":
             for url in urls:
                 self.assertEqual(url, "https://api.deepseek.com/chat/completions")
@@ -316,7 +382,8 @@ sys.stdout.write(os.environ["FIXTURE_HTTP_CODE"])
                 self.assertEqual(req["model"], "deepseek-flash")
                 self.assertEqual(req["max_tokens"], 65536)
                 self.assertLessEqual(req["max_tokens"], 393216)
-                self.assertIs(req["stream"], False)
+                self.assertIs(req["stream"], True)
+                self.assertEqual(req["stream_options"], {"include_usage": True})
                 self.assertEqual([m["role"] for m in req["messages"]], ["system", "user"])
                 self.assertIn("TRUSTED_POLICY", req["messages"][0]["content"])
                 self.assertIn("TRUSTED_REPOSITORY_POLICY", req["messages"][0]["content"])
@@ -419,13 +486,17 @@ sys.stdout.write(os.environ["FIXTURE_HTTP_CODE"])
                     self.assertEqual(output, "")
                     self.assertIn(f"ReviewBot reason_code=http_error HTTP {code}", result.stderr)
             for provider in ("ark", "deepseek"):
-                for curl_exit in (7, 28):
+                for curl_exit in (7, 28, 56):
                     with self.subTest(workflow=workflow, provider=provider, curl_exit=curl_exit):
                         result, requests, output = self.run_workflow(
-                            workflow, step, [DEEPSEEK_NORMAL], provider=provider, curl_exit=curl_exit)
+                            workflow, step, [DEEPSEEK_NORMAL] * 3, provider=provider,
+                            curl_exit=curl_exit)
                         self.assertEqual(result.returncode, curl_exit)
-                        self.assertEqual(len(requests), 1)
+                        self.assertEqual(len(requests), 3)
+                        self.assertEqual(self.sleeps, ["5", "15"])
                         self.assertEqual(output, "")
+                        self.assertIn(f"reason_code=retry_exhausted transport curl_exit={curl_exit} sends=3",
+                                      result.stderr)
 
     def test_deepseek_malformed_unusable_truncation_and_invalid_provider(self):
         unsafe = "PRIVATE_PROMPT\n::error::PRIVATE_ERROR"
@@ -486,6 +557,148 @@ sys.stdout.write(os.environ["FIXTURE_HTTP_CODE"])
                 self.assertEqual(len(requests), 0)
                 self.assertEqual(output, "")
                 self.assertIn("reason_code=invalid_provider", result.stderr)
+
+    def test_ark_event_stream_matches_plain_json(self):
+        for workflow, step, _ in WORKFLOWS:
+            with self.subTest(workflow=workflow):
+                result, requests, output = self.run_workflow(
+                    workflow, step, [sse(*ark_stream(NORMAL))])
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertEqual(len(requests), 1)
+                _, _, plain = self.run_workflow(workflow, step, [NORMAL])
+                message = re.compile(r"final_message<<([^\n]+)\n([\s\S]*?)\n\1\n")
+                self.assertEqual(message.search(output)[2], message.search(plain)[2])
+                self.assertIn("Fixture review: no actionable findings.", output)
+                self.assertIn("model_id_b64=" + base64.b64encode(b"fixture-model").decode(), output)
+
+            failed = {**NORMAL, "status": "failed", "error": {"message": "PRIVATE_ERROR"}}
+            filtered = {**LENGTH, "incomplete_details": {"reason": "content_filter"}}
+            for events, reason in (
+                    (ark_stream(NORMAL, terminal=None), "incomplete_stream"),
+                    (ark_stream(failed, terminal="response.failed"), "unsuccessful_response"),
+                    (ark_stream(filtered, terminal="response.incomplete"), "incomplete_response"),
+                    ([{"type": "error", "message": "PRIVATE_ERROR"}], "unsuccessful_response")):
+                with self.subTest(workflow=workflow, reason=reason):
+                    result, requests, output = self.run_workflow(workflow, step, [sse(*events)])
+                    self.assertNotEqual(result.returncode, 0)
+                    self.assertEqual(len(requests), 1)
+                    self.assertEqual(output, "")
+                    self.assertIn(f'"reason_code":"{reason}"', result.stderr)
+
+            with self.subTest(workflow=workflow, unterminated=True):
+                # A final event without its blank-line terminator is not dispatched.
+                body = sse(*ark_stream(NORMAL), terminated=False)
+                result, requests, output = self.run_workflow(workflow, step, [body])
+                self.assertNotEqual(result.returncode, 0)
+                self.assertEqual(output, "")
+                self.assertIn('"reason_code":"incomplete_stream"', result.stderr)
+
+            with self.subTest(workflow=workflow, first_terminal_wins=True):
+                events = ark_stream(NORMAL) + [{"type": "response.failed", "response": failed}]
+                result, _, output = self.run_workflow(workflow, step, [sse(*events)])
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertIn("Fixture review: no actionable findings.", output)
+
+            with self.subTest(workflow=workflow, length=True):
+                streamed_length = sse(*ark_stream(LENGTH, terminal="response.incomplete"))
+                result, requests, output = self.run_workflow(
+                    workflow, step, [streamed_length, sse(*ark_stream(NORMAL))])
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertEqual(len(requests), 2)
+                self.assertIn('"reason_code":"output_token_limit"', result.stderr)
+                self.assertIn("unified=3", output)
+
+    def test_deepseek_event_stream_joins_content_and_requires_finish_reason(self):
+        usage = DEEPSEEK_NORMAL["usage"]
+        content = "Fixture review: no actionable findings."
+        for workflow, step, _ in WORKFLOWS:
+            with self.subTest(workflow=workflow):
+                result, requests, output = self.run_workflow(
+                    workflow, step, [sse(*deepseek_stream(content, usage=usage), done=True)],
+                    provider="deepseek")
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertEqual(len(requests), 1)
+                match = re.search(r"final_message<<([^\n]+)\n([\s\S]*?)\n\1\n", output)
+                self.assertIsNotNone(match)
+                self.assertEqual(match[2], content)
+                self.assertIn("model_id_b64=" + base64.b64encode(b"deepseek-flash").decode(), output)
+
+            for body, reason in (
+                    (sse(*deepseek_stream(content, finish_reason=None), done=True), "incomplete_stream"),
+                    (sse(*deepseek_stream(content, finish_reason=None)), "incomplete_stream"),
+                    (sse(*deepseek_stream(content), terminated=False), "incomplete_stream"),
+                    (sse(*deepseek_stream(content, finish_reason="content_filter"), done=True),
+                     "incomplete_response"),
+                    (sse(*deepseek_stream(" \n", usage=usage), done=True), "empty_output"),
+                    (sse({"error": {"message": "PRIVATE_ERROR"}}), "unsuccessful_response"),
+                    ("data: {PRIVATE_INVALID_JSON\n\n", "malformed_json")):
+                with self.subTest(workflow=workflow, reason=reason, body=body[-40:]):
+                    result, requests, output = self.run_workflow(
+                        workflow, step, [body], provider="deepseek")
+                    self.assertNotEqual(result.returncode, 0)
+                    self.assertEqual(len(requests), 1)
+                    self.assertEqual(output, "")
+                    self.assertIn(f'"reason_code":"{reason}"', result.stderr)
+
+            with self.subTest(workflow=workflow, length=True):
+                length_usage = DEEPSEEK_LENGTH["usage"]
+                result, requests, output = self.run_workflow(
+                    workflow, step,
+                    [sse(*deepseek_stream("PARTIAL", finish_reason="length", usage=length_usage), done=True),
+                     sse(*deepseek_stream(content, usage=usage), done=True)],
+                    provider="deepseek")
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertEqual(len(requests), 2)
+                self.assertIn('"finish_reason":"length"', result.stderr)
+                self.assertIn('"reasoning_tokens":65536', result.stderr)
+                self.assertNotIn("PARTIAL", output)
+
+    def test_transport_errors_resend_same_model_with_backoff(self):
+        for workflow, step, _ in WORKFLOWS:
+            for provider, ok in (("ark", sse(*ark_stream(NORMAL))),
+                                 ("deepseek", sse(*deepseek_stream("Fixture review: no actionable findings."),
+                                                  done=True))):
+                for failures, sleeps in ((1, ["5"]), (2, ["5", "15"])):
+                    with self.subTest(workflow=workflow, provider=provider, failures=failures):
+                        responses = [{"fixture_curl_exit": 56}] * failures + [ok]
+                        result, requests, output = self.run_workflow(
+                            workflow, step, responses, provider=provider)
+                        self.assertEqual(result.returncode, 0, result.stderr)
+                        self.assertEqual(len(requests), failures + 1)
+                        self.assertEqual(self.sleeps, sleeps)
+                        self.assertTrue(all(request == requests[0] for request in requests))
+                        self.assertIn("Fixture review: no actionable findings.", output)
+                        self.assertNotIn("retry_exhausted", result.stderr)
+                        if workflow == "reviewbot.yml":
+                            self.assertIn("safe_to_merge=", output)
+
+                with self.subTest(workflow=workflow, provider=provider, low_budget=True):
+                    result, requests, output = self.run_workflow(
+                        workflow, step, [{"fixture_curl_exit": 56}, ok], provider=provider, budget=34)
+                    self.assertEqual(result.returncode, 56)
+                    self.assertEqual(len(requests), 1)
+                    self.assertEqual(self.sleeps, [])
+                    self.assertEqual(output, "")
+                    self.assertIn("reason_code=request_timeout transport curl_exit=56 sends=1",
+                                  result.stderr)
+
+            with self.subTest(workflow=workflow, transport_then_length=True):
+                # Transport resends do not consume the single output-token retry.
+                responses = [{"fixture_curl_exit": 56}, LENGTH, {"fixture_curl_exit": 56}, NORMAL]
+                result, requests, output = self.run_workflow(workflow, step, responses)
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertEqual(len(requests), 4)
+                self.assertEqual(self.sleeps, ["5", "5"])
+                self.assertIn("unified=3", output)
+
+            with self.subTest(workflow=workflow, http_error_after_transport=True):
+                result, requests, output = self.run_workflow(
+                    workflow, step, [{"fixture_curl_exit": 56}, DEEPSEEK_HTTP_ERROR],
+                    http_code="503", provider="deepseek")
+                self.assertNotEqual(result.returncode, 0)
+                self.assertEqual(len(requests), 2)
+                self.assertEqual(output, "")
+                self.assertIn("reason_code=http_error HTTP 503", result.stderr)
 
 
 if __name__ == "__main__":
