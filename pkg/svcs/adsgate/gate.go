@@ -54,13 +54,12 @@ func New(source adsync.RequestGate) *Gate {
 // Of returns the gate of the store behind the evaluator, or nil when the
 // evaluator does not distribute policy.
 func Of(evaluator eval.InternalEvaluator) *Gate {
-	provider, ok := evaluator.(interface {
-		DistributionGate() adsync.RequestGate
-	})
+	provider, ok := evaluator.(interface{ DistributionStore() any })
 	if !ok {
 		return nil
 	}
-	return New(provider.DistributionGate())
+	source, _ := provider.DistributionStore().(adsync.RequestGate)
+	return New(source)
 }
 
 // Enabled reports whether the gate has a distribution state to consult.
