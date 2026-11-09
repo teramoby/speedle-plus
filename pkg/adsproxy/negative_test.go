@@ -1874,3 +1874,98 @@ func TestHeldPollPinsItsGrantAcrossTheAck(t *testing.T) {
 		t.Errorf("narrowed ack services = %+v", ack.Services)
 	}
 }
+
+func TestChannelAckRefusesAReplacedGrant(t *testing.T) {
+	signer := newTestSigner(t)
+	mirror, _, _ := newPopulatedMirror(t, signer)
+	token := testToken(testDownstreamID, 1)
+	server := newTestServer(t, mirror, signer.publicKeys(t), nil, testCredential{
+		downstreamID: testDownstreamID,
+		token:        token,
+	})
+
+	upgrader := websocket.Upgrader{CheckOrigin: func(*http.Request) bool { return true }}
+	serverConns := make(chan *websocket.Conn, 1)
+	wsServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		conn, err := upgrader.Upgrade(w, r, nil)
+		if err != nil {
+			return
+		}
+		serverConns <- conn
+	}))
+	defer wsServer.Close()
+	client, _, err := websocket.DefaultDialer.Dial("ws"+strings.TrimPrefix(wsServer.URL, "http"), nil)
+	if err != nil {
+		t.Fatalf("dial: %v", err)
+	}
+	defer client.Close()
+	serverConn := <-serverConns
+	defer serverConn.Close()
+
+	credential, ok := server.server.Credentials().Authenticate(token)
+	if !ok {
+		t.Fatal("token did not authenticate")
+	}
+	if err := server.server.writeChannelAck(serverConn, credential); err != nil {
+		t.Fatalf("ack with a current grant: %v", err)
+	}
+	if kind, _ := readChannelFrame(t, client); kind != "ack" {
+		t.Fatalf("frame = %q", kind)
+	}
+
+	// Narrow the grant. The old pointer can no longer write an ack, and no
+	// frame reaches the wire.
+	server.writeCredentialFile(testDownstreamID + ":" + hashToken(token) + ":" + testServiceID1)
+	if err := server.server.ReloadCredentials(); err != nil {
+		t.Fatalf("reload: %v", err)
+	}
+	if err := server.server.writeChannelAck(serverConn, credential); err == nil {
+		t.Fatal("a replaced grant wrote an ack")
+	}
+	_ = client.SetReadDeadline(time.Now().Add(100 * time.Millisecond))
+	if _, _, err := client.ReadMessage(); err == nil {
+		t.Error("an ack reached the wire with a replaced grant")
+	}
+}
+
+func TestMirrorBoundsIdentityChurn(t *testing.T) {
+	signer := newTestSigner(t)
+	mirror := newTestMirror(t, signer.publicKeys(t), nil)
+	current := newFixtureServiceWithEpoch(testServiceID1, fmt.Sprintf("01HF7YAT%018d", 7000), "books")
+	current.publish(t, signer, upsertAuthz(testServiceID1+"A1", "read", "grant read"))
+	if err := mirror.ApplySnapshot(snapshotAt(t, current, signer)); err != nil {
+		t.Fatalf("first identity: %v", err)
+	}
+	for index := 1; index <= maxRetiredIdentities; index++ {
+		next := newFixtureServiceWithEpoch(testServiceID1, fmt.Sprintf("01HF7YAT%018d", 7000+index), "books")
+		next.publish(t, signer, upsertAuthz(testServiceID1+"A1", "read", "grant read"))
+		if err := mirror.ApplySnapshot(snapshotAt(t, next, signer)); err != nil {
+			t.Fatalf("identity %d: %v", index, err)
+		}
+		current = next
+	}
+
+	// One more identity replacement is refused, and the copy stops being
+	// advertised rather than keeping replay state without bound.
+	excess := newFixtureServiceWithEpoch(testServiceID1, fmt.Sprintf("01HF7YAT%018d", 7000+maxRetiredIdentities+1), "books")
+	excess.publish(t, signer, upsertAuthz(testServiceID1+"A1", "read", "grant read"))
+	if err := mirror.ApplySnapshot(snapshotAt(t, excess, signer)); !errors.Is(err, ErrIdentityChurn) {
+		t.Fatalf("identity churn: %v, want ErrIdentityChurn", err)
+	}
+	if services := mirror.Services(); len(services) != 0 {
+		t.Errorf("service under identity churn is advertised: %+v", services)
+	}
+	if _, availability := mirror.Lookup(testServiceID1); availability != ServiceNeedsSnapshot {
+		t.Errorf("availability = %v, want ServiceNeedsSnapshot", availability)
+	}
+
+	// The current identity can still be refreshed.
+	current.publish(t, signer, upsertAuthz(testServiceID1+"A2", "read", "grant read"))
+	if err := mirror.ApplySnapshot(snapshotAt(t, current, signer)); err != nil {
+		t.Fatalf("refresh current identity: %v", err)
+	}
+	services := mirror.Services()
+	if len(services) != 1 || services[0].Epoch != current.Epoch {
+		t.Errorf("current identity did not revive the service: %+v", services)
+	}
+}

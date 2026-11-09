@@ -24,6 +24,11 @@ const (
 	DefaultMaxLogBytes = 16 << 20
 	// MaxServices is the protocol bound on the services one instance serves.
 	MaxServices = 10
+	// maxRetiredIdentities bounds the source identities one service copy
+	// keeps replay protection for. Once a copy has moved away from this many
+	// identities, it refuses further identity replacement and stops being
+	// advertised rather than accumulating replay state without limit.
+	maxRetiredIdentities = 64
 	// maxTombstones bounds the removed-service tombstones kept next to the
 	// active services. A tombstone answers source_gone and is the deletion
 	// guard against a delayed snapshot reviving a removed service, so it is
@@ -302,6 +307,18 @@ func (m *Mirror) applySnapshot(response *adsync.SnapshotResponse) (HeadEvent, bo
 	}
 
 	if identityChanged {
+		if len(existing.retired) >= maxRetiredIdentities {
+			// Fail safe: stop advertising rather than keep unbounded replay
+			// state. The current identity can still be refreshed; only another
+			// identity replacement is refused.
+			if !existing.overflow {
+				existing.overflow = true
+				if availableBefore {
+					m.version++
+				}
+			}
+			return HeadEvent{}, false, fmt.Errorf("%w: %q", ErrIdentityChurn, response.ServiceID)
+		}
 		existing.retireIdentity(existing.sourceID, existing.epoch)
 	}
 	existing.name = response.Snapshot.Name
