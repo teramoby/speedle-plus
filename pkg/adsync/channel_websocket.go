@@ -180,11 +180,15 @@ readLoop:
 
 // writeWebSocket is the connection's only writer: heartbeats, protocol pings
 // and command results all go through it. An ack can change the effective
-// cadence, so a cadence signal resets both timers instead of waiting for the
-// previous, possibly longer, interval to expire.
+// cadence, so a cadence signal resets a timer whose interval actually changed,
+// instead of waiting for the previous, possibly longer, interval to expire.
+// Acks that leave the cadence alone do not postpone a heartbeat: a source may
+// send them more often than the heartbeat interval.
 func (c *Channel) writeWebSocket(ctx context.Context, conn *websocket.Conn, results <-chan channelCommandResult, cadence <-chan struct{}) {
-	heartbeat := time.NewTimer(c.heartbeatInterval())
-	ping := time.NewTimer(c.pingInterval())
+	heartbeatInterval := c.heartbeatInterval()
+	pingInterval := c.pingInterval()
+	heartbeat := time.NewTimer(heartbeatInterval)
+	ping := time.NewTimer(pingInterval)
 	defer heartbeat.Stop()
 	defer ping.Stop()
 
@@ -196,8 +200,14 @@ func (c *Channel) writeWebSocket(ctx context.Context, conn *websocket.Conn, resu
 			_ = conn.Close()
 			return
 		case <-cadence:
-			resetTimer(heartbeat, c.heartbeatInterval())
-			resetTimer(ping, c.pingInterval())
+			if next := c.heartbeatInterval(); next != heartbeatInterval {
+				heartbeatInterval = next
+				resetTimer(heartbeat, heartbeatInterval)
+			}
+			if next := c.pingInterval(); next != pingInterval {
+				pingInterval = next
+				resetTimer(ping, pingInterval)
+			}
 		case result := <-results:
 			if err := c.writeChannelJSON(conn, result); err != nil {
 				_ = conn.Close()
@@ -208,13 +218,15 @@ func (c *Channel) writeWebSocket(ctx context.Context, conn *websocket.Conn, resu
 				_ = conn.Close()
 				return
 			}
-			resetTimer(heartbeat, c.heartbeatInterval())
+			heartbeatInterval = c.heartbeatInterval()
+			resetTimer(heartbeat, heartbeatInterval)
 		case <-ping.C:
 			if err := conn.WriteControl(websocket.PingMessage, nil, time.Now().Add(c.writeTimeout())); err != nil {
 				_ = conn.Close()
 				return
 			}
-			resetTimer(ping, c.pingInterval())
+			pingInterval = c.pingInterval()
+			resetTimer(ping, pingInterval)
 		}
 	}
 }

@@ -1672,6 +1672,30 @@ func TestChannelAppliesShortenedHeartbeatAfterAck(t *testing.T) {
 	}
 }
 
+func TestChannelUnsolicitedAcksDoNotSuppressHeartbeats(t *testing.T) {
+	books := newFixtureService(testServiceID1, "books")
+	source := newChannelSource(t, books)
+	// Acks arrive faster than the heartbeat interval and leave the cadence
+	// unchanged, so they must not keep postponing the heartbeat.
+	source.configure(func(f *channelSource) { f.ackInterval = 40 * time.Millisecond })
+	server := startChannelFixture(t, source)
+	client := newChannelClient(t, server)
+
+	machine := newChannelMachine(t)
+	if err := machine.Applied(source.serviceState(books.ID)); err != nil {
+		t.Fatalf("Applied: %v", err)
+	}
+	channel := newTestChannel(t, client, machine, ChannelOptions{Transport: TransportWebSocket})
+	channel.heartbeatOverride = 200 * time.Millisecond
+	runChannel(t, channel)
+	requireInSync(t, machine, "books")
+
+	waitFor(t, 3*time.Second, "heartbeats at the configured cadence", func() bool {
+		_, _, _, _, _, heartbeats := source.stats()
+		return len(heartbeats) >= 2
+	})
+}
+
 func TestChannelPollCanceledContext(t *testing.T) {
 	books := newFixtureService(testServiceID1, "books")
 	source := newChannelSource(t, books)
