@@ -1465,3 +1465,98 @@ func TestServerPerCredentialConnectionLimit(t *testing.T) {
 	}
 	response.Body.Close()
 }
+
+func TestChannelReservesASlotBeforeHello(t *testing.T) {
+	signer := newTestSigner(t)
+	mirror, _, _ := newPopulatedMirror(t, signer)
+	token := testToken(testDownstreamID, 1)
+	server := newTestServer(t, mirror, signer.publicKeys(t), &testServerOptions{
+		maxConnections: 1,
+	}, testCredential{
+		downstreamID: testDownstreamID,
+		token:        token,
+	})
+	first, _, err := server.dial(token)
+	if err != nil {
+		t.Fatalf("first connection: %v", err)
+	}
+	defer first.Close()
+
+	// The first connection holds its slot before sending hello. A second one
+	// must be refused at the HTTP upgrade instead of waiting for its hello.
+	_, response, err := server.dial(token)
+	if err == nil {
+		t.Fatal("a second pre-hello connection was accepted")
+	}
+	if response == nil || response.StatusCode != http.StatusServiceUnavailable {
+		t.Fatalf("second connection response = %v, want 503", response)
+	}
+	response.Body.Close()
+
+	// The first connection can still complete its hello and receive the ack.
+	writeJSONFrame(t, first, helloMessage{
+		Type:         "hello",
+		InstanceID:   testDownstreamID,
+		Services:     []helloService{},
+		Chain:        []string{testProxyID, testDownstreamID},
+		AgentVersion: "test",
+	})
+	if kind, _ := readChannelFrame(t, first); kind != "ack" {
+		t.Fatalf("frame = %q", kind)
+	}
+
+	// Closing it releases the slot for a new connection.
+	_ = first.Close()
+	waitFor(t, 5*time.Second, "the reserved slot to be released", func() bool {
+		conn, _, err := server.dial(token)
+		if err != nil {
+			return false
+		}
+		_ = conn.Close()
+		return true
+	})
+}
+
+func TestMirrorKeepsTombstonesAtTheBound(t *testing.T) {
+	signer := newTestSigner(t)
+	mirror := newTestMirror(t, signer.publicKeys(t), nil)
+	var (
+		firstID       string
+		firstSnapshot *adsync.SnapshotResponse
+	)
+	for index := 0; index < maxTombstones; index++ {
+		id := fmt.Sprintf("01HF7YAT%018d", 2000+index)
+		service := newFixtureService(id, "books")
+		snapshot := snapshotAt(t, service, signer)
+		if index == 0 {
+			firstID, firstSnapshot = id, snapshot
+		}
+		if err := mirror.ApplySnapshot(snapshot); err != nil {
+			t.Fatalf("service %d: %v", index, err)
+		}
+		mirror.RemoveService(id)
+	}
+	for index := 0; index < MaxServices; index++ {
+		id := fmt.Sprintf("01HF7YAT%018d", 4000+index)
+		service := newFixtureService(id, "books")
+		if err := mirror.ApplySnapshot(snapshotAt(t, service, signer)); err != nil {
+			t.Fatalf("active service %d: %v", index, err)
+		}
+	}
+	// Freeing an active slot alone is not enough: the tombstone store is full,
+	// and losing a tombstone would let its delayed snapshot resurrect deleted
+	// policy. The new service is refused instead.
+	mirror.RemoveService(fmt.Sprintf("01HF7YAT%018d", 4000))
+	extra := newFixtureService(fmt.Sprintf("01HF7YAT%018d", 5000), "extra")
+	if err := mirror.ApplySnapshot(snapshotAt(t, extra, signer)); !errors.Is(err, ErrTooManyServices) {
+		t.Errorf("new service with a full tombstone store: %v, want ErrTooManyServices", err)
+	}
+
+	// The oldest tombstone still guards its pre-removal snapshot.
+	if err := mirror.ApplySnapshot(firstSnapshot); err != nil {
+		t.Fatalf("delayed snapshot: %v", err)
+	}
+	if _, availability := mirror.Lookup(firstID); availability != ServiceRemoved {
+		t.Errorf("availability of the oldest tombstone = %v, want ServiceRemoved", availability)
+	}
+}

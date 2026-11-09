@@ -50,6 +50,7 @@ type Hub struct {
 	mu          sync.Mutex
 	subscribers map[*Subscriber]struct{}
 	counts      map[string]int
+	active      int
 	pending     map[string]uint64
 	timer       *time.Timer
 	closed      bool
@@ -100,16 +101,53 @@ func NewHub(maxDownstream int, window time.Duration, perDownstream ...int) (*Hub
 	}, nil
 }
 
-// Allow reports whether the downstream may register, without registering it.
-// A server uses it before accepting a channel so the limit can be reported as
-// an HTTP 503 instead of a WebSocket close.
+// Allow reports whether one more connection could be admitted for the
+// downstream, without reserving it. A caller that then accepts a connection
+// must use Acquire instead; Allow is only an advisory check.
 func (h *Hub) Allow(downstreamID string) error {
 	h.mu.Lock()
 	defer h.mu.Unlock()
-	return h.allowLocked(downstreamID)
+	return h.checkLocked(downstreamID)
 }
 
-func (h *Hub) allowLocked(downstreamID string) error {
+// Acquire reserves one connection slot for a downstream. A WebSocket reserves
+// before its upgrade, so a connection that never sends hello still counts
+// against the limits. SubscribeReserved turns the reservation into a
+// subscription, which takes over the slot; every failure path must Release it.
+func (h *Hub) Acquire(downstreamID string) error {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	if err := h.checkLocked(downstreamID); err != nil {
+		return err
+	}
+	h.counts[downstreamID]++
+	h.active++
+	return nil
+}
+
+// Release frees a reservation that never became a subscription. It must not be
+// called after SubscribeReserved succeeded for the same reservation.
+func (h *Hub) Release(downstreamID string) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	h.releaseLocked(downstreamID)
+}
+
+func (h *Hub) releaseLocked(downstreamID string) {
+	if h.counts[downstreamID] <= 0 {
+		return
+	}
+	if h.counts[downstreamID] == 1 {
+		delete(h.counts, downstreamID)
+	} else {
+		h.counts[downstreamID]--
+	}
+	if h.active > 0 {
+		h.active--
+	}
+}
+
+func (h *Hub) checkLocked(downstreamID string) error {
 	if h.closed {
 		return fmt.Errorf("%w: hub is closed", ErrConfig)
 	}
@@ -120,8 +158,8 @@ func (h *Hub) allowLocked(downstreamID string) error {
 		return fmt.Errorf("%w: downstream %q has %d active connections",
 			ErrFanoutLimit, downstreamID, h.counts[downstreamID])
 	}
-	if len(h.subscribers) >= h.maxDownstream*h.maxConnectionsPerDownstream {
-		return fmt.Errorf("%w: %d active connections", ErrFanoutLimit, len(h.subscribers))
+	if h.active >= h.maxDownstream*h.maxConnectionsPerDownstream {
+		return fmt.Errorf("%w: %d active connections", ErrFanoutLimit, h.active)
 	}
 	if h.counts[downstreamID] == 0 && len(h.counts) >= h.maxDownstream {
 		return fmt.Errorf("%w: %d downstreams", ErrFanoutLimit, len(h.counts))
@@ -134,17 +172,37 @@ func (h *Hub) allowLocked(downstreamID string) error {
 func (h *Hub) Subscribe(downstreamID string, allowed func(string) bool) (*Subscriber, error) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
-	if err := h.allowLocked(downstreamID); err != nil {
+	if err := h.checkLocked(downstreamID); err != nil {
 		return nil, err
 	}
+	h.counts[downstreamID]++
+	h.active++
+	return h.subscribeLocked(downstreamID, allowed), nil
+}
+
+// SubscribeReserved registers a subscriber for a slot acquired by Acquire. The
+// subscription takes over the reservation: Unsubscribe releases it, and Release
+// must not be called for it afterwards.
+func (h *Hub) SubscribeReserved(downstreamID string, allowed func(string) bool) (*Subscriber, error) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	if h.closed {
+		return nil, fmt.Errorf("%w: hub is closed", ErrConfig)
+	}
+	if h.counts[downstreamID] <= 0 {
+		return nil, fmt.Errorf("%w: no reservation for %q", ErrConfig, downstreamID)
+	}
+	return h.subscribeLocked(downstreamID, allowed), nil
+}
+
+func (h *Hub) subscribeLocked(downstreamID string, allowed func(string) bool) *Subscriber {
 	subscriber := &Subscriber{
 		downstreamID: downstreamID,
 		allowed:      allowed,
 		notify:       make(chan Notify, subscriberQueue),
 	}
 	h.subscribers[subscriber] = struct{}{}
-	h.counts[downstreamID]++
-	return subscriber, nil
+	return subscriber
 }
 
 // Unsubscribe removes a subscriber. It is safe to call more than once.
@@ -156,10 +214,7 @@ func (h *Hub) Unsubscribe(subscriber *Subscriber) {
 		h.mu.Lock()
 		if _, found := h.subscribers[subscriber]; found {
 			delete(h.subscribers, subscriber)
-			h.counts[subscriber.downstreamID]--
-			if h.counts[subscriber.downstreamID] <= 0 {
-				delete(h.counts, subscriber.downstreamID)
-			}
+			h.releaseLocked(subscriber.downstreamID)
 		}
 		h.mu.Unlock()
 		// The notification channel is intentionally not closed: flush may have

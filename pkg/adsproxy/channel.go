@@ -169,10 +169,19 @@ func formatChannelDuration(duration time.Duration) string {
 // HTTP error there; chain problems can only be seen after the hello frame and
 // close the connection with a policy-violation code.
 func (s *Server) handleChannel(w http.ResponseWriter, r *http.Request, credential *Credential) {
-	if err := s.hub.Allow(credential.DownstreamID); err != nil {
+	// Reserve the connection slot before the upgrade: a WebSocket that never
+	// sends its hello frame still holds a socket, so it must count against the
+	// fan-out limits. The reservation moves to the subscription below.
+	if err := s.hub.Acquire(credential.DownstreamID); err != nil {
 		writeHubError(w, err)
 		return
 	}
+	reserved := true
+	defer func() {
+		if reserved {
+			s.hub.Release(credential.DownstreamID)
+		}
+	}()
 	conn, err := s.upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		// The upgrader already wrote the HTTP error.
@@ -206,11 +215,12 @@ func (s *Server) handleChannel(w http.ResponseWriter, r *http.Request, credentia
 		return
 	}
 
-	subscriber, err := s.hub.Subscribe(credential.DownstreamID, credential.Allows)
+	subscriber, err := s.hub.SubscribeReserved(credential.DownstreamID, credential.Allows)
 	if err != nil {
 		closeWithReason(conn, websocket.CloseTryAgainLater, "fanout_limit")
 		return
 	}
+	reserved = false
 	defer s.hub.Unsubscribe(subscriber)
 
 	readTimeout := heartbeatFrameSlack * s.heartbeat
@@ -341,10 +351,18 @@ func writeChannelJSON(conn *websocket.Conn, value any) error {
 // the downstream without a full round trip, and it is answered immediately
 // when a notification is available.
 func (s *Server) handlePoll(w http.ResponseWriter, r *http.Request, credential *Credential) {
-	if err := s.hub.Allow(credential.DownstreamID); err != nil {
+	// A poll holds its connection slot from admission to the answer, including
+	// while it waits.
+	if err := s.hub.Acquire(credential.DownstreamID); err != nil {
 		writeHubError(w, err)
 		return
 	}
+	reserved := true
+	defer func() {
+		if reserved {
+			s.hub.Release(credential.DownstreamID)
+		}
+	}()
 	wait, ok := parsePollWait(r.URL.Query().Get("wait"))
 	if !ok {
 		writeError(w, http.StatusBadRequest, "invalid_request", "")
@@ -369,11 +387,12 @@ func (s *Server) handlePoll(w http.ResponseWriter, r *http.Request, credential *
 		return
 	}
 
-	subscriber, err := s.hub.Subscribe(credential.DownstreamID, credential.Allows)
+	subscriber, err := s.hub.SubscribeReserved(credential.DownstreamID, credential.Allows)
 	if err != nil {
 		writeHubError(w, err)
 		return
 	}
+	reserved = false
 	defer s.hub.Unsubscribe(subscriber)
 
 	if wait > 0 {

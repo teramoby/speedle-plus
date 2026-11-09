@@ -25,10 +25,11 @@ const (
 	// MaxServices is the protocol bound on the services one instance serves.
 	MaxServices = 10
 	// maxTombstones bounds the removed-service tombstones kept next to the
-	// active services. A tombstone answers source_gone and blocks a delayed
-	// snapshot from reviving a deliberately removed service; the oldest one is
-	// evicted when the map would otherwise keep growing as services churn.
-	maxTombstones = MaxServices
+	// active services. A tombstone answers source_gone and is the deletion
+	// guard against a delayed snapshot reviving a removed service, so it is
+	// never evicted: once the combined store is full, a new service is refused
+	// (fail closed) instead of forgetting that guard.
+	maxTombstones = 1024
 	// maxRetiredIdentities bounds the source identities one service copy
 	// remembers, so identity churn cannot grow its state without limit.
 	maxRetiredIdentities = 8
@@ -113,12 +114,11 @@ type Mirror struct {
 	maxLogCommits int
 	maxLogBytes   int64
 
-	mu          sync.RWMutex
-	services    map[string]*serviceCopy
-	version     int64
-	observers   map[uint64]func(HeadEvent)
-	nextID      uint64
-	nextRemoval uint64
+	mu        sync.RWMutex
+	services  map[string]*serviceCopy
+	version   int64
+	observers map[uint64]func(HeadEvent)
+	nextID    uint64
 }
 
 // serviceCopy is one verified service: the signed snapshot it is anchored to,
@@ -145,8 +145,6 @@ type serviceCopy struct {
 	// snapshot at or below it belongs to the state that was removed and cannot
 	// revive the service; only newer source state can.
 	tombstoneRevision uint64
-	// removedSeq orders tombstones for eviction once maxTombstones is reached.
-	removedSeq uint64
 	// retired holds the source identities this copy has moved away from. A
 	// late snapshot from a retired identity belongs to policy the source
 	// already replaced, and revisions of different identities cannot be
@@ -316,7 +314,6 @@ func (m *Mirror) applySnapshot(response *adsync.SnapshotResponse) (HeadEvent, bo
 	existing.overflow = false
 	existing.removed = false
 	existing.tombstoneRevision = 0
-	existing.removedSeq = 0
 
 	// A snapshot can make a service visible again (revival after removal or
 	// overflow) or remove it from the advertised set. Downstreams compare the
@@ -431,8 +428,6 @@ func (m *Mirror) applyChanges(page *adsync.ChangesResponse) (HeadEvent, bool, er
 				service.logBytes = 0
 				service.overflow = false
 				service.tombstoneRevision = commit.Revision
-				m.nextRemoval++
-				service.removedSeq = m.nextRemoval
 				if availableBefore {
 					m.version++
 				}
@@ -509,14 +504,13 @@ func (m *Mirror) RemoveService(serviceID string) {
 	service.log = nil
 	service.logBytes = 0
 	service.overflow = false
-	m.nextRemoval++
-	service.removedSeq = m.nextRemoval
 	m.version++
 }
 
 // reserveServiceLocked makes room for one new service. Removed services are
-// tombstones, not active copies, so they no longer count against MaxServices.
-// Once there are more tombstones than the bound, the oldest is evicted.
+// tombstones, not active copies, so they do not count against MaxServices. A
+// tombstone is a deletion guard and is never evicted; if the combined store is
+// full, the new service is refused instead.
 func (m *Mirror) reserveServiceLocked() error {
 	active := 0
 	for _, service := range m.services {
@@ -527,22 +521,9 @@ func (m *Mirror) reserveServiceLocked() error {
 	if active >= MaxServices {
 		return fmt.Errorf("%w: %d services", ErrTooManyServices, active)
 	}
-	if len(m.services) < MaxServices+maxTombstones {
-		return nil
+	if len(m.services) >= MaxServices+maxTombstones {
+		return fmt.Errorf("%w: %d services and tombstones", ErrTooManyServices, len(m.services))
 	}
-	var oldest *serviceCopy
-	for _, service := range m.services {
-		if !service.removed {
-			continue
-		}
-		if oldest == nil || service.removedSeq < oldest.removedSeq {
-			oldest = service
-		}
-	}
-	if oldest == nil {
-		return fmt.Errorf("%w: %d services", ErrTooManyServices, active)
-	}
-	delete(m.services, oldest.id)
 	return nil
 }
 
