@@ -21,6 +21,15 @@ import (
 
 // Native evaluators retain the existing custom-function behavior.
 func validatePolicyStoreCustomFunctions(_ *pms.PolicyStore) error { return nil }
+func validateServiceCustomFunctions(_ *pms.Service, _ map[string]struct{}) error {
+	return nil
+}
+func validateConditionCustomFunctions(_, _, _, _ string, _ map[string]struct{}) error {
+	return nil
+}
+func validateFunctionAdditionCustomFunctions(_ *RuntimePolicyStore, _ *pms.Function) error {
+	return nil
+}
 
 func (frc *FuncResultCache) generateCustomerExpressionFunction(cfdUrl *string, cf *pms.Function) (govaluate.ExpressionFunction, error) {
 	return func(arguments ...interface{}) (interface{}, error) {

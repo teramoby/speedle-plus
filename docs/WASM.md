@@ -6,7 +6,9 @@
 
 Custom functions are unsupported on js/wasm. Direct, delegated and expression calls return `custom_function_unsupported`; expression calls do so before argument serialization or cache lookup.
 
-Evaluator construction and snapshot reloads validate every authorization-policy and role-policy condition before loading it. If any condition calls a custom function, the entire snapshot is rejected with `custom_function_unsupported`. This includes calls in short-circuited branches and applies equally to GRANT and DENY policies. A rejected initial load returns no evaluator. A rejected reload does not activate the snapshot and suspends authorization until a valid snapshot loads successfully.
+Evaluator construction and snapshot reloads validate every authorization-policy and role-policy condition before loading it. If any condition calls a custom function, the entire snapshot is rejected with `custom_function_unsupported`. This includes calls in short-circuited branches and applies equally to GRANT and DENY policies. A rejected initial load returns no evaluator.
+
+Incremental service, policy, role-policy and custom-function additions use the same validation. Adding a function also checks existing conditions that the function could resolve. A rejected mutation is not activated. A rejected reload or mutation suspends authorization until a valid snapshot loads successfully.
 
 Policies without custom-function calls load and evaluate normally. Unused custom-function definitions are allowed, and built-in functions remain available. Native evaluation behavior, including its handling of condition-evaluation errors, is unchanged.
 

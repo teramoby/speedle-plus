@@ -7,8 +7,10 @@
 // construction and snapshot reloads validate every authorization and role
 // policy condition before loading it. A condition that calls a custom function
 // rejects the entire snapshot with custom_function_unsupported, including a
-// call in a short-circuited branch. A rejected reload suspends authorization
-// until a valid snapshot loads. Policies without custom-function calls load
+// call in a short-circuited branch. Incremental service, policy, role-policy
+// and custom-function additions are validated as well. A rejected reload or
+// mutation suspends authorization until a valid snapshot loads. Policies
+// without custom-function calls load
 // and evaluate normally; unused custom-function definitions are permitted.
 // Native evaluation behavior is unchanged.
 //

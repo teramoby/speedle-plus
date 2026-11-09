@@ -13,8 +13,8 @@ import (
 )
 
 // CallCustomerFunction returns custom_function_unsupported on js/wasm.
-// Evaluator construction and snapshot reloads reject policies that would call
-// this stub, so condition evaluation cannot mistake the error for a non-match.
+// Evaluator construction, snapshot reloads and incremental cache mutations
+// reject policies that would call this stub before activating them.
 func CallCustomerFunction(_ *pms.Function, _ *ext.CustomerFunctionRequest) (interface{}, error) {
 	return nil, errors.New(errors.EvalEngineError, "custom_function_unsupported: custom functions are unavailable in js/wasm")
 }
@@ -27,25 +27,65 @@ func CallCustomerFunctionViaDelegator(_ string, cf *pms.Function, request *ext.C
 // validatePolicyStoreCustomFunctions rejects a snapshot before any of its
 // conditions can be evaluated without the custom functions they reference.
 func validatePolicyStoreCustomFunctions(ps *pms.PolicyStore) error {
-	customFunctions := make(map[string]struct{}, len(ps.Functions))
-	for _, function := range ps.Functions {
-		if function != nil {
-			customFunctions[function.Name] = struct{}{}
+	customFunctions := getCustomFunctionNames(ps.Functions)
+	for _, service := range ps.Services {
+		if err := validateServiceCustomFunctions(service, customFunctions); err != nil {
+			return err
 		}
 	}
+	return nil
+}
+
+func validateServiceCustomFunctions(service *pms.Service, customFunctions map[string]struct{}) error {
 	if len(customFunctions) == 0 {
 		return nil
 	}
-	for _, service := range ps.Services {
-		for _, policy := range service.Policies {
-			if name := calledCustomFunction(policy.Condition, customFunctions); name != "" {
-				return errors.Errorf(errors.EvalEngineError, "custom_function_unsupported: policy %q in service %q calls custom function %q on js/wasm", policy.ID, service.Name, name)
-			}
+	for _, policy := range service.Policies {
+		if err := validateConditionCustomFunctions("policy", service.Name, policy.ID, policy.Condition, customFunctions); err != nil {
+			return err
 		}
-		for _, policy := range service.RolePolicies {
-			if name := calledCustomFunction(policy.Condition, customFunctions); name != "" {
-				return errors.Errorf(errors.EvalEngineError, "custom_function_unsupported: role policy %q in service %q calls custom function %q on js/wasm", policy.ID, service.Name, name)
+	}
+	for _, policy := range service.RolePolicies {
+		if err := validateConditionCustomFunctions("role policy", service.Name, policy.ID, policy.Condition, customFunctions); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func validateConditionCustomFunctions(policyKind, serviceName, policyID, expression string, customFunctions map[string]struct{}) error {
+	if name := calledCustomFunction(expression, customFunctions); name != "" {
+		return errors.Errorf(errors.EvalEngineError, "custom_function_unsupported: %s %q in service %q calls custom function %q on js/wasm", policyKind, policyID, serviceName, name)
+	}
+	return nil
+}
+
+// Adding a function can resolve a previously unknown function in an existing
+// condition. Validate the prospective function set before registering it.
+func validateFunctionAdditionCustomFunctions(rtps *RuntimePolicyStore, function *pms.Function) error {
+	customFunctions := make(map[string]struct{}, len(rtps.customFunctionNames)+1)
+	for name := range rtps.customFunctionNames {
+		customFunctions[name] = struct{}{}
+	}
+	customFunctions[function.Name] = struct{}{}
+	for _, service := range rtps.RuntimeServices {
+		err := func() error {
+			service.RLock()
+			defer service.RUnlock()
+			for _, policy := range service.PoliciesCache.PolicyMap {
+				if err := validateConditionCustomFunctions("policy", service.Name, policy.ID, policy.Condition, customFunctions); err != nil {
+					return err
+				}
 			}
+			for _, policy := range service.RolePoliciesCache.PolicyMap {
+				if err := validateConditionCustomFunctions("role policy", service.Name, policy.ID, policy.Condition, customFunctions); err != nil {
+					return err
+				}
+			}
+			return nil
+		}()
+		if err != nil {
+			return err
 		}
 	}
 	return nil

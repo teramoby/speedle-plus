@@ -238,3 +238,97 @@ func TestWasmRejectsCustomFunctionSnapshotOnRefresh(t *testing.T) {
 		t.Fatalf("valid snapshot did not restore authorization: allowed=%v err=%v", allowed, err)
 	}
 }
+
+func TestWasmIncrementalCustomFunctionMutationsFailClosed(t *testing.T) {
+	remote := &pms.Function{Name: "remote", FuncURL: "https://example.invalid"}
+	validWithRemote := func() *pms.PolicyStore {
+		return testSnapshot([]*pms.Function{remote}, []*pms.Policy{testPolicy("grant", pms.Grant, "")})
+	}
+	rolePolicy := func() *pms.RolePolicy {
+		return &pms.RolePolicy{
+			ID: "role-deny", Effect: pms.Deny, Roles: []string{"reader"},
+			Principals: []string{"user:alice"}, Condition: "remote()",
+		}
+	}
+	tests := []struct {
+		name     string
+		snapshot *pms.PolicyStore
+		mutate   func(*eval.PolicyEvalImpl)
+		rejected func(*eval.PolicyEvalImpl) bool
+	}{
+		{
+			name:     "POLICY_ADD conditional DENY",
+			snapshot: validWithRemote(),
+			mutate: func(engine *eval.PolicyEvalImpl) {
+				engine.AddPolicyInRuntimeCache("app", testPolicy("deny", pms.Deny, "remote()"))
+			},
+			rejected: func(engine *eval.PolicyEvalImpl) bool {
+				_, loaded := engine.RuntimePolicyStore.RuntimeServices["app"].PoliciesCache.PolicyMap["deny"]
+				return !loaded
+			},
+		},
+		{
+			name:     "ROLEPOLICY_ADD conditional DENY",
+			snapshot: validWithRemote(),
+			mutate: func(engine *eval.PolicyEvalImpl) {
+				engine.AddRolePolicyInRuntimeCache("app", rolePolicy())
+			},
+			rejected: func(engine *eval.PolicyEvalImpl) bool {
+				_, loaded := engine.RuntimePolicyStore.RuntimeServices["app"].RolePoliciesCache.PolicyMap["role-deny"]
+				return !loaded
+			},
+		},
+		{
+			name:     "SERVICE_ADD conditional DENY",
+			snapshot: validWithRemote(),
+			mutate: func(engine *eval.PolicyEvalImpl) {
+				engine.AddServiceInRuntimeCache(&pms.Service{
+					Name: "other", Policies: []*pms.Policy{testPolicy("deny", pms.Deny, "remote()")},
+				})
+			},
+			rejected: func(engine *eval.PolicyEvalImpl) bool {
+				return engine.RuntimePolicyStore.RuntimeServices["other"] == nil
+			},
+		},
+		{
+			name: "FUNCTION_ADD resolves existing conditional DENY",
+			snapshot: testSnapshot(nil, []*pms.Policy{
+				testPolicy("grant", pms.Grant, ""),
+				testPolicy("deny", pms.Deny, "remote()"),
+			}),
+			mutate: func(engine *eval.PolicyEvalImpl) {
+				engine.AddFunctionInRuntimeCache(remote)
+			},
+			rejected: func(engine *eval.PolicyEvalImpl) bool {
+				_, loaded := engine.RuntimePolicyStore.Functions["remote"]
+				return !loaded
+			},
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			// The legacy exported mutation methods and their corresponding store
+			// events share error-returning cache mutation helpers.
+			engine := newWasmEvaluatorFromStore(t, &snapshotStore{snapshot: tc.snapshot})
+			tc.mutate(engine)
+			if !tc.rejected(engine) {
+				t.Fatal("unsupported mutation was activated")
+			}
+			if allowed, _, err := engine.IsAllowed(aliceRequest()); allowed || err == nil {
+				t.Fatalf("rejected mutation left authorization available: allowed=%v err=%v", allowed, err)
+			}
+		})
+	}
+}
+
+func TestWasmIncrementalBuiltinPolicyMutationLoads(t *testing.T) {
+	snapshot := testSnapshot(
+		[]*pms.Function{{Name: "remote", FuncURL: "https://example.invalid"}},
+		nil,
+	)
+	engine := newWasmEvaluatorFromStore(t, &snapshotStore{snapshot: snapshot})
+	engine.AddPolicyInRuntimeCache("app", testPolicy("builtin", pms.Grant, "Sqrt(64) == 8"))
+	if allowed, _, err := engine.IsAllowed(aliceRequest()); !allowed || err != nil {
+		t.Fatalf("valid incremental policy was rejected: allowed=%v err=%v", allowed, err)
+	}
+}
