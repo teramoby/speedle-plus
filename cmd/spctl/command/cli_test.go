@@ -20,6 +20,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -30,11 +31,30 @@ import (
 )
 
 // cli runs the fixture spctl with its own home directory, so a user's
-// ~/.spctlconfig neither affects nor receives the test settings.
+// ~/.spctlconfig and ~/.speedle neither affect nor receive the test settings.
 type cli struct {
 	t        *testing.T
 	home     string
 	endpoint string
+}
+
+// authorizationCapture synchronizes request observations made by httptest
+// handler goroutines with assertions in the test goroutine.
+type authorizationCapture struct {
+	mu    sync.RWMutex
+	value string
+}
+
+func (c *authorizationCapture) set(value string) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.value = value
+}
+
+func (c *authorizationCapture) get() string {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	return c.value
 }
 
 func newCLI(t *testing.T) *cli {
@@ -55,11 +75,26 @@ func (c *cli) run(args ...string) (string, int) {
 
 func (c *cli) runAt(endpoint string, args ...string) (string, int) {
 	c.t.Helper()
+	return c.runAtWithOptions(endpoint, "", nil, args...)
+}
+
+func (c *cli) runAtWithOptions(endpoint, stdin string, env []string, args ...string) (string, int) {
+	c.t.Helper()
 	if endpoint != "" {
 		args = append([]string{"--pms-endpoint", endpoint, "--timeout", "5s"}, args...)
 	}
 	cmd := exec.Command(os.Getenv(testutil.SP_APP_NAME), args...)
-	cmd.Env = append(os.Environ(), "HOME="+c.home)
+	for _, value := range os.Environ() {
+		if strings.HasPrefix(value, "HOME=") || strings.HasPrefix(value, "SPCTL_") {
+			continue
+		}
+		cmd.Env = append(cmd.Env, value)
+	}
+	cmd.Env = append(cmd.Env, "HOME="+c.home)
+	cmd.Env = append(cmd.Env, env...)
+	if stdin != "" {
+		cmd.Stdin = strings.NewReader(stdin)
+	}
 	var out bytes.Buffer
 	cmd.Stdout, cmd.Stderr = &out, &out
 	err := cmd.Run()
@@ -208,6 +243,7 @@ func fakeDiscoverPMS(t *testing.T) string {
 	request := &ads.RequestContext{ServiceName: "svc", Resource: "r", Action: "a",
 		Subject: &ads.Subject{Principals: []*ads.Principal{{Type: "user", Name: "alice"}}}}
 	calls := 0
+	var callsMu sync.Mutex
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch {
 		case strings.HasSuffix(r.URL.Path, "/fail"):
@@ -215,8 +251,11 @@ func fakeDiscoverPMS(t *testing.T) string {
 		case strings.Contains(r.URL.Path, "discover-policy"):
 			json.NewEncoder(w).Encode(pmsrest.GetDiscoverPoliciesResponse{Revision: 1})
 		case r.URL.Query().Get("revision") != "":
+			callsMu.Lock()
 			calls++
-			if calls > 1 {
+			call := calls
+			callsMu.Unlock()
+			if call > 1 {
 				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
@@ -297,6 +336,358 @@ func TestCLIConfig(t *testing.T) {
 	c.expect(1, []string{"Failed to set config"}, "config", "timeout", "1s")
 }
 
+func TestCLIConfigSourcePrecedence(t *testing.T) {
+	c := newCLI(t)
+	legacyPath := filepath.Join(c.home, ".spctlconfig")
+	cloudPath := filepath.Join(c.home, ".speedle")
+	if err := os.WriteFile(legacyPath, []byte("pms-endpoint=https://legacy.example/policy-mgmt/v1\ntimeout=7s\n"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(cloudPath, []byte("pms-endpoint=https://cloud.example/policy-mgmt/v1\ntoken=file-secret\n"), 0600); err != nil {
+		t.Fatal(err)
+	}
+
+	const savedEndpoint = "https://saved.example/policy-mgmt/v1"
+	if out, code := c.runAt("", "config", "pms-endpoint", savedEndpoint); code != 0 {
+		t.Fatalf("config endpoint with duplicate keys: exit %d\n%s", code, out)
+	}
+	legacy, err := os.ReadFile(legacyPath)
+	if err != nil || !strings.Contains(string(legacy), "pms-endpoint="+savedEndpoint) {
+		t.Fatalf("legacy config %q, %v", legacy, err)
+	}
+	cloud, err := os.ReadFile(cloudPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(cloud), "pms-endpoint=") || !strings.Contains(string(cloud), "token=file-secret") {
+		t.Fatalf("Cloud config still shadows the saved endpoint: %q", cloud)
+	}
+
+	out, code := c.runAt("", "config", "--list")
+	if code != 0 || !strings.Contains(out, "pms-endpoint = "+savedEndpoint) {
+		t.Fatalf("saved file precedence: exit %d\n%s", code, out)
+	}
+	const envEndpoint = "https://environment.example/policy-mgmt/v1"
+	env := []string{"SPCTL_PMS_ENDPOINT=" + envEndpoint}
+	out, code = c.runAtWithOptions("", "", env, "config", "--list")
+	if code != 0 || !strings.Contains(out, "pms-endpoint = "+envEndpoint) || strings.Contains(out, savedEndpoint) {
+		t.Fatalf("environment precedence: exit %d\n%s", code, out)
+	}
+	const flagEndpoint = "https://flag.example/policy-mgmt/v1"
+	out, code = c.runAtWithOptions("", "", env, "--pms-endpoint", flagEndpoint, "config", "--list")
+	if code != 0 || !strings.Contains(out, "pms-endpoint = "+flagEndpoint) || strings.Contains(out, envEndpoint) {
+		t.Fatalf("flag precedence: exit %d\n%s", code, out)
+	}
+}
+
+func TestCLITokenInputAndEnvironment(t *testing.T) {
+	c := newCLI(t)
+	const fileToken = "stdin-secret=="
+	out, code := c.runAtWithOptions("", fileToken+"\n", nil, "config", "token", "--stdin")
+	if code != 0 || strings.Contains(out, fileToken) {
+		t.Fatalf("config token --stdin: exit %d\n%s", code, out)
+	}
+	cloudPath := filepath.Join(c.home, ".speedle")
+	saved, err := os.ReadFile(cloudPath)
+	if err != nil || !strings.Contains(string(saved), "token="+fileToken) {
+		t.Fatalf("stdin token was not saved: %v", err)
+	}
+
+	var authorization authorizationCapture
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		authorization.set(r.Header.Get("Authorization"))
+		w.Write([]byte(`[]`))
+	}))
+	defer server.Close()
+	endpoint := server.URL + svcs.PolicyMgmtPath
+	if out, code := c.runAt(endpoint, "get", "service", "--all"); code != 0 {
+		t.Fatalf("file token: exit %d\n%s", code, out)
+	}
+	if authorization.get() != "Bearer "+fileToken {
+		t.Fatalf("file token Authorization = %q", authorization.get())
+	}
+
+	const envToken = "environment-secret"
+	env := []string{"SPCTL_TOKEN=" + envToken}
+	out, code = c.runAtWithOptions(endpoint, "", env, "get", "service", "--all")
+	if code != 0 || strings.Contains(out, envToken) {
+		t.Fatalf("environment token: exit %d\n%s", code, out)
+	}
+	if authorization.get() != "Bearer "+envToken {
+		t.Fatalf("environment token Authorization = %q", authorization.get())
+	}
+
+	const flagToken = "flag-secret"
+	out, code = c.runAtWithOptions(endpoint, "", env, "--token", flagToken, "get", "service", "--all")
+	if code != 0 || strings.Contains(out, flagToken) {
+		t.Fatalf("flag token: exit %d\n%s", code, out)
+	}
+	if authorization.get() != "Bearer "+flagToken {
+		t.Fatalf("flag token Authorization = %q", authorization.get())
+	}
+
+	if err := os.Chmod(cloudPath, 0644); err != nil {
+		t.Fatal(err)
+	}
+	out, code = c.runAt("", "config", "--list")
+	if code != 0 || !strings.Contains(out, "warning:") || !strings.Contains(out, "chmod 0600") ||
+		!strings.Contains(out, "token = ********") || strings.Contains(out, fileToken) {
+		t.Fatalf("loose Cloud config permissions: exit %d\n%s", code, out)
+	}
+}
+
+func TestCLILoopbackTokenWithSkipVerify(t *testing.T) {
+	c := newCLI(t)
+	var authorization authorizationCapture
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		authorization.set(r.Header.Get("Authorization"))
+		w.Write([]byte(`[]`))
+	}))
+	defer server.Close()
+	endpoint := server.URL + svcs.PolicyMgmtPath
+
+	tests := []struct {
+		name string
+		env  []string
+		args []string
+	}{
+		{"flag", nil, []string{"--skipverify", "--token", "loopback-secret", "get", "service", "--all"}},
+		{"environment", []string{"SPCTL_SKIPVERIFY=true", "SPCTL_TOKEN=loopback-secret"}, []string{"get", "service", "--all"}},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			authorization.set("")
+			out, code := c.runAtWithOptions(endpoint, "", tc.env, tc.args...)
+			if code != 0 || authorization.get() != "Bearer loopback-secret" || strings.Contains(out, "loopback-secret") {
+				t.Fatalf("loopback HTTP with skipverify: exit %d, Authorization %q\n%s", code, authorization.get(), out)
+			}
+		})
+	}
+}
+
+func TestCLIRejectsMultilineTokens(t *testing.T) {
+	c := newCLI(t)
+	legacyPath := filepath.Join(c.home, ".spctlconfig")
+	cloudPath := filepath.Join(c.home, ".speedle")
+	legacyBefore := []byte("timeout=7s\n")
+	cloudBefore := []byte("token=original-secret\npms-endpoint=https://cloud.example/policy-mgmt/v1\n")
+	if err := os.WriteFile(legacyPath, legacyBefore, 0600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(cloudPath, cloudBefore, 0600); err != nil {
+		t.Fatal(err)
+	}
+
+	tests := []struct {
+		name  string
+		stdin string
+		args  []string
+	}{
+		{"stdin LF", "replacement-secret\npms-endpoint=https://other.example/policy-mgmt/v1\n", []string{"config", "token", "--stdin"}},
+		{"stdin CR", "replacement-secret\rpms-endpoint=https://other.example/policy-mgmt/v1", []string{"config", "token", "--stdin"}},
+		{"argument LF", "", []string{"config", "token", "replacement-secret\npms-endpoint=https://other.example/policy-mgmt/v1"}},
+		{"argument CR", "", []string{"config", "token", "replacement-secret\rpms-endpoint=https://other.example/policy-mgmt/v1"}},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			out, code := c.runAtWithOptions("", tc.stdin, nil, tc.args...)
+			if code != 1 || !strings.Contains(out, "API token must be a single line") || strings.Contains(out, "replacement-secret") {
+				t.Fatalf("multiline token: exit %d\n%s", code, out)
+			}
+			for path, before := range map[string][]byte{legacyPath: legacyBefore, cloudPath: cloudBefore} {
+				after, err := os.ReadFile(path)
+				if err != nil {
+					t.Fatal(err)
+				}
+				if !bytes.Equal(after, before) {
+					t.Fatalf("%s changed after rejected token: %q", path, after)
+				}
+			}
+		})
+	}
+}
+
+func TestCLICloudConfig(t *testing.T) {
+	c := newCLI(t)
+	const token = "config-secret"
+	out, code := c.runAt("", "config", "token", token)
+	if code != 0 || strings.Contains(out, token) {
+		t.Fatalf("config token: exit %d\n%s", code, out)
+	}
+	cloudPath := filepath.Join(c.home, ".speedle")
+	saved, err := os.ReadFile(cloudPath)
+	if err != nil || !strings.Contains(string(saved), "token="+token) {
+		t.Fatalf("Cloud config was not written: %v", err)
+	}
+	info, err := os.Stat(cloudPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if info.Mode().Perm() != 0600 {
+		t.Fatalf("Cloud config mode = %v", info.Mode())
+	}
+	out, code = c.runAt("", "config", "--list")
+	if code != 0 || !strings.Contains(out, "token = ********") || strings.Contains(out, token) {
+		t.Fatalf("masked config: exit %d\n%s", code, out)
+	}
+
+	var authorization authorizationCapture
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		authorization.set(r.Header.Get("Authorization"))
+		w.Write([]byte(`[]`))
+	}))
+	defer server.Close()
+	if out, code := c.runAt("", "config", "pms-endpoint", server.URL+svcs.PolicyMgmtPath); code != 0 {
+		t.Fatalf("config endpoint: exit %d\n%s", code, out)
+	}
+	if out, code := c.runAt("", "get", "service", "--all"); code != 0 {
+		t.Fatalf("request with saved config: exit %d\n%s", code, out)
+	}
+	if authorization.get() != "Bearer "+token {
+		t.Fatalf("saved token Authorization = %q", authorization.get())
+	}
+
+	const flagToken = "transport-secret"
+	out, code = c.runAt("http://192.0.2.1:9/policy-mgmt/v1", "--token", flagToken, "get", "service", "--all")
+	if code != 1 || !strings.Contains(out, "https://") || strings.Contains(out, flagToken) {
+		t.Fatalf("remote HTTP token: exit %d\n%s", code, out)
+	}
+}
+
+func cloudPMSServer(t *testing.T) string {
+	t.Helper()
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		expectedToken := "read-token"
+		if r.Method != http.MethodGet {
+			expectedToken = "write-token"
+		}
+		if r.Header.Get("Authorization") != "Bearer "+expectedToken {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusForbidden)
+			json.NewEncoder(w).Encode(map[string]string{"error": "insufficient_scope"})
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		switch r.Method {
+		case http.MethodDelete:
+			w.WriteHeader(http.StatusNoContent)
+			return
+		case http.MethodPost:
+			w.WriteHeader(http.StatusCreated)
+			w.Write([]byte(`{}`))
+			return
+		}
+		switch {
+		case strings.Contains(r.URL.Path, "/discover-request"):
+			json.NewEncoder(w).Encode(pmsrest.GetDiscoverRequestsResponse{Revision: 1})
+		case strings.Contains(r.URL.Path, "/discover-policy"):
+			json.NewEncoder(w).Encode(pmsrest.GetDiscoverPoliciesResponse{Revision: 1})
+		case r.URL.Path == "/policy-mgmt/v1/service" || r.URL.Path == "/policy-mgmt/v1/function" ||
+			strings.HasSuffix(r.URL.Path, "/policy") || strings.HasSuffix(r.URL.Path, "/role-policy"):
+			w.Write([]byte(`[]`))
+		default:
+			w.Write([]byte(`{}`))
+		}
+	}))
+	t.Cleanup(server.Close)
+	return server.URL + svcs.PolicyMgmtPath
+}
+
+func TestCLICloudCommandsAndScopes(t *testing.T) {
+	c := newCLI(t)
+	endpoint := cloudPMSServer(t)
+	readCommands := [][]string{
+		{"get", "service", "--all"},
+		{"get", "service", "books"},
+		{"get", "policy", "--all", "--service-name", "books"},
+		{"get", "policy", "p1", "--service-name", "books"},
+		{"get", "rolepolicy", "--all", "--service-name", "books"},
+		{"get", "rolepolicy", "rp1", "--service-name", "books"},
+		{"get", "function", "--all"},
+		{"get", "function", "f1"},
+		{"discover", "request"},
+		{"discover", "request", "--last", "--service-name", "books"},
+		{"discover", "policy", "--service-name", "books"},
+	}
+	for _, args := range readCommands {
+		args = append([]string{"--token", "read-token"}, args...)
+		if out, code := c.runAt(endpoint, args...); code != 0 {
+			t.Errorf("read scope spctl %v: exit %d\n%s", args, code, out)
+		}
+	}
+	writeCommands := [][]string{
+		{"create", "service", "books"},
+		{"create", "policy", "p1", "--service-name", "books", "--pdl-command", "grant user alice read /books"},
+		{"create", "rolepolicy", "rp1", "--service-name", "books", "--pdl-command", "grant user alice editor"},
+		{"create", "function", "f1", "--func-url", "https://functions.example.com/f1"},
+		{"delete", "policy", "p1", "--service-name", "books"},
+		{"delete", "rolepolicy", "rp1", "--service-name", "books"},
+		{"delete", "function", "f1"},
+		{"delete", "service", "books"},
+		{"discover", "reset"},
+		{"discover", "reset", "--service-name", "books"},
+	}
+	for _, args := range writeCommands {
+		args = append([]string{"--token", "write-token"}, args...)
+		if out, code := c.runAt(endpoint, args...); code != 0 {
+			t.Errorf("write scope spctl %v: exit %d\n%s", args, code, out)
+		}
+	}
+	for _, args := range [][]string{
+		{"--token", "read-token", "create", "service", "books"},
+		{"--token", "write-token", "get", "service", "--all"},
+		{"--token", "ads-token", "get", "service", "--all"},
+	} {
+		out, code := c.runAt(endpoint, args...)
+		if code != 1 || !strings.Contains(out, "pms:read") || !strings.Contains(out, "pms:write") {
+			t.Errorf("wrong scope spctl %v: exit %d\n%s", args, code, out)
+		}
+	}
+}
+
+func TestCLICloudErrors(t *testing.T) {
+	c := newCLI(t)
+	cases := []struct {
+		name       string
+		status     int
+		cloudError string
+		retryAfter string
+		args       []string
+		want       string
+	}{
+		{"unauthorized", http.StatusUnauthorized, "unauthorized", "", []string{"get", "service", "--all"}, "check the API token"},
+		{"scope", http.StatusForbidden, "insufficient_scope", "", []string{"get", "service", "--all"}, "pms:read"},
+		{"not found", http.StatusNotFound, "not_found", "", []string{"get", "service", "missing"}, "not found"},
+		{"service exists", http.StatusConflict, "service_exists", "", []string{"create", "service", "books"}, "service already exists"},
+		{"policy exists", http.StatusConflict, "policy_exists", "", []string{"create", "policy", "p1", "--service-name", "books", "--pdl-command", "grant user alice read /books"}, "policy already exists"},
+		{"rate limited", http.StatusTooManyRequests, "rate_limited", "60", []string{"get", "service", "--all"}, "Retry-After: 60"},
+		{"daily quota", http.StatusTooManyRequests, "daily_quota_exceeded", "3600", []string{"get", "service", "--all"}, "daily quota exceeded"},
+		{"policy quota", http.StatusForbidden, "policy_quota_exceeded", "", []string{"create", "policy", "p1", "--service-name", "books", "--pdl-command", "grant user alice read /books"}, "quota exceeded"},
+		{"quota unavailable", http.StatusServiceUnavailable, "quota_unavailable", "", []string{"get", "service", "--all"}, "quota service unavailable"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Content-Type", "application/json")
+				if tc.retryAfter != "" {
+					w.Header().Set("Retry-After", tc.retryAfter)
+				}
+				w.WriteHeader(tc.status)
+				json.NewEncoder(w).Encode(map[string]string{"error": tc.cloudError})
+			}))
+			defer server.Close()
+			args := append([]string{"--token", "cloud-secret"}, tc.args...)
+			out, code := c.runAt(server.URL+svcs.PolicyMgmtPath, args...)
+			if code != 1 || !strings.Contains(out, tc.want) || strings.Contains(out, "cloud-secret") {
+				t.Errorf("exit %d, output lacks %q or exposes the token\n%s", code, tc.want, out)
+			}
+			if tc.retryAfter != "" && !strings.Contains(out, "Retry-After: "+tc.retryAfter) {
+				t.Errorf("output lacks Retry-After: %s\n%s", tc.retryAfter, out)
+			}
+		})
+	}
+}
+
 func writeTLSFiles(t *testing.T) (cert, key string) {
 	t.Helper()
 	privateKey, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
@@ -313,7 +704,9 @@ func writeTLSFiles(t *testing.T) (cert, key string) {
 
 func TestCLIHTTPSClient(t *testing.T) {
 	c := newCLI(t)
+	var authorization authorizationCapture
 	server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		authorization.set(r.Header.Get("Authorization"))
 		w.Write([]byte(`[]`))
 	}))
 	defer server.Close()
@@ -321,11 +714,21 @@ func TestCLIHTTPSClient(t *testing.T) {
 	caFile := c.file("ca.pem", string(pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: server.Certificate().Raw})))
 	cert, key := writeTLSFiles(t)
 
-	if out, code := c.runAt(endpoint, "get", "service", "--all", "--cacert", caFile, "--cert", cert, "--key", key); code != 0 {
+	if out, code := c.runAt(endpoint, "get", "service", "--all", "--cacert", caFile, "--cert", cert, "--key", key, "--token", "tls-secret"); code != 0 {
 		t.Errorf("trusted server: exit %d\n%s", code, out)
+	}
+	if authorization.get() != "Bearer tls-secret" {
+		t.Errorf("HTTPS Authorization = %q", authorization.get())
 	}
 	if out, code := c.runAt(endpoint, "get", "service", "--all", "--skipverify"); code != 0 {
 		t.Errorf("--skipverify: exit %d\n%s", code, out)
+	}
+	const unverifiedToken = "unverified-secret"
+	authorization.set("")
+	out, code := c.runAt(endpoint, "get", "service", "--all", "--skipverify", "--token", unverifiedToken)
+	if code != 1 || !strings.Contains(out, "refusing to send an API token with --skipverify") ||
+		strings.Contains(out, unverifiedToken) || authorization.get() != "" {
+		t.Errorf("--skipverify with a token: exit %d, Authorization %q\n%s", code, authorization.get(), out)
 	}
 	if _, code := c.runAt(endpoint, "get", "service", "--all"); code != 1 {
 		t.Errorf("an untrusted server must fail, exit %d", code)

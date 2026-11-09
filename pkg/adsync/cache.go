@@ -13,10 +13,7 @@ import (
 	"strings"
 )
 
-const (
-	cacheFormat   = "speedle-adsync-cache-v1"
-	maxCacheBytes = 8 << 20
-)
+const cacheFormat = "speedle-adsync-cache-v1"
 
 // Cache stores one verified service copy per file. Files are written with mode
 // 0600 through a same-directory temporary file and rename, and carry a
@@ -44,6 +41,12 @@ func NewCache(dir string, keys *PublicKeySet) (*Cache, error) {
 	}
 	if !info.IsDir() {
 		return nil, fmt.Errorf("adsync: cache path is not a directory")
+	}
+	if runtime.GOOS != "windows" && info.Mode().Perm()&0o077 != 0 {
+		return nil, fmt.Errorf("%w: cache directory must not be accessible by group or other users", ErrUnsafeCache)
+	}
+	if !cacheDirectoryOwnedByUser(info) {
+		return nil, fmt.Errorf("%w: cache directory is not owned by the current user", ErrUnsafeCache)
 	}
 	return &Cache{dir: dir, keys: keys}, nil
 }

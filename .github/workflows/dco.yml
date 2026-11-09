@@ -1,0 +1,85 @@
+name: DCO
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: dco-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  signoff:
+    name: DCO sign-off
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the pull request commits
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      # A commit passes only when it carries a Signed-off-by line whose email
+      # equals the commit author's email, compared case-insensitively. Merge
+      # commits are exempt: they have more than one parent and include the
+      # commits GitHub generates for "Update branch" and the merge button.
+      - name: Check every commit for its author's Signed-off-by line
+        shell: bash
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "${BASE_SHA}" ] || [ -z "${HEAD_SHA}" ]; then
+            echo "::error::The pull request base or head SHA is missing."
+            exit 1
+          fi
+
+          total=$(git rev-list --count "${BASE_SHA}..${HEAD_SHA}")
+          non_merge=$(git rev-list --count --no-merges "${BASE_SHA}..${HEAD_SHA}")
+          merge_count=$((total - non_merge))
+          if [ "${merge_count}" -gt 0 ]; then
+            echo "Skipping ${merge_count} merge commit(s); merge commits are exempt from the sign-off check."
+            git log --merges --format='  %h %s' "${BASE_SHA}..${HEAD_SHA}"
+          fi
+
+          commits=$(git rev-list --no-merges --reverse "${BASE_SHA}..${HEAD_SHA}")
+          if [ -z "${commits}" ]; then
+            echo "No non-merge commits to check in ${BASE_SHA}..${HEAD_SHA}."
+            exit 0
+          fi
+
+          failed=0
+          while IFS= read -r sha; do
+            subject=$(git log -1 --format=%s "${sha}")
+            author_name=$(git log -1 --format=%an "${sha}")
+            author_email=$(git log -1 --format=%ae "${sha}")
+            expected=$(printf '%s' "${author_email}" | tr '[:upper:]' '[:lower:]')
+            signoffs=$(git log -1 --format=%B "${sha}" \
+              | tr '[:upper:]' '[:lower:]' \
+              | sed -n 's/^signed-off-by:[[:space:]]*.*<\([^<>]*\)>[[:space:]]*$/\1/p')
+
+            if [ -n "${expected}" ] && printf '%s\n' "${signoffs}" | grep -qxF -- "${expected}"; then
+              continue
+            fi
+
+            failed=1
+            if [ -z "${signoffs}" ]; then
+              echo "::error::Commit ${sha} (${subject}) has no Signed-off-by line; expected Signed-off-by: ${author_name} <${author_email}>."
+            else
+              echo "::error::Commit ${sha} (${subject}) has no Signed-off-by line for its author; expected Signed-off-by: ${author_name} <${author_email}>."
+            fi
+            git log -1 --format='  %h %s' "${sha}"
+          done <<< "${commits}"
+
+          if [ "${failed}" -ne 0 ]; then
+            echo "Every non-merge commit in the pull request must carry a Signed-off-by line matching its author's email."
+            echo "Add one with: git commit --amend --signoff, or git rebase --signoff origin/master"
+            exit 1
+          fi
+
+          echo "Every non-merge commit in ${BASE_SHA}..${HEAD_SHA} carries its author's Signed-off-by line."
