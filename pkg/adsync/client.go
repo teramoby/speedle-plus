@@ -113,8 +113,18 @@ type Config struct {
 	// proxies.
 	BaseURL string
 	// Credential is the account-scoped adsi_ instance credential. It is sent
-	// only in the Authorization header.
+	// only in the Authorization header to BaseURL.
 	Credential string
+	// FallbackBaseURL and FallbackCredential configure the distinct Speedle
+	// Cloud authorization fallback. Both must be set together. The upstream
+	// policy-source URL and credential are never reused implicitly, because the
+	// source may be a proxy with a locally issued downstream credential.
+	FallbackBaseURL    string
+	FallbackCredential string
+	// FallbackHTTPClient optionally uses a separate transport for Cloud, for
+	// example when a test source and Cloud use different private roots. Nil
+	// reuses HTTPClient's transport configuration, never its destination.
+	FallbackHTTPClient *http.Client
 	// PublicKeys is the out-of-band trust anchor for snapshot and commit
 	// signatures. It is required.
 	PublicKeys *PublicKeySet
@@ -161,9 +171,15 @@ type Client struct {
 	retry           RetryPolicy
 	userAgent       string
 
-	// fallbackMu guards the reachability hint used by the request gate.
-	fallbackMu        sync.Mutex
-	fallbackReachable bool
+	fallbackBase       *url.URL
+	fallbackCredential string
+	fallbackHTTP       *http.Client
+
+	// fallbackMu guards the bounded retry hint used by the request gate.
+	fallbackMu      sync.Mutex
+	fallbackRetryAt time.Time
+	fallbackBackoff time.Duration
+	now             func() time.Time
 }
 
 // NewClient validates the configuration and builds the HTTP transport.
@@ -232,22 +248,48 @@ func NewClient(config Config) (*Client, error) {
 		httpClient = &cloned
 	}
 
+	var fallbackBase *url.URL
+	if config.FallbackBaseURL != "" {
+		fallbackBase, err = url.Parse(config.FallbackBaseURL)
+		if err != nil {
+			return nil, fmt.Errorf("adsync: parse FallbackBaseURL: %w", err)
+		}
+		if fallbackBase.Scheme != "https" || fallbackBase.Host == "" || fallbackBase.User != nil ||
+			fallbackBase.RawQuery != "" || fallbackBase.Fragment != "" {
+			return nil, fmt.Errorf("adsync: FallbackBaseURL must be an https URL without credentials, query or fragment")
+		}
+		fallbackBase.Path = strings.TrimSuffix(fallbackBase.Path, "/")
+		if err := ValidateCredential(config.FallbackCredential); err != nil {
+			return nil, fmt.Errorf("adsync: invalid fallback credential: %w", err)
+		}
+	} else if config.FallbackCredential != "" {
+		return nil, fmt.Errorf("adsync: FallbackBaseURL is required with FallbackCredential")
+	}
+	fallbackHTTP := config.FallbackHTTPClient
+	if fallbackHTTP == nil {
+		fallbackHTTP = httpClient
+	}
+
 	userAgent := config.UserAgent
 	if userAgent == "" {
 		userAgent = defaultUserAgent
 	}
 	return &Client{
-		base:              base,
-		credential:        config.Credential,
-		keys:              config.PublicKeys,
-		http:              httpClient,
-		dialer:            dialer,
-		requestTimeout:    requestTimeout,
-		snapshotTimeout:   snapshotTimeout,
-		fallbackTimeout:   DefaultFallbackTimeout,
-		retry:             retry,
-		userAgent:         userAgent,
-		fallbackReachable: true,
+		base:               base,
+		credential:         config.Credential,
+		keys:               config.PublicKeys,
+		http:               httpClient,
+		dialer:             dialer,
+		requestTimeout:     requestTimeout,
+		snapshotTimeout:    snapshotTimeout,
+		fallbackTimeout:    DefaultFallbackTimeout,
+		fallbackBackoff:    DefaultFallbackRetryBackoff,
+		retry:              retry,
+		userAgent:          userAgent,
+		fallbackBase:       fallbackBase,
+		fallbackCredential: config.FallbackCredential,
+		fallbackHTTP:       fallbackHTTP,
+		now:                time.Now,
 	}, nil
 }
 

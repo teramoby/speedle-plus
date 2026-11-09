@@ -21,9 +21,9 @@ func (s *Store) Services() []adsync.ServiceStatus {
 	return s.machine.Services()
 }
 
-// FallbackAvailable reports whether a syncing service has a usable path to
-// Cloud. It is false when the fallback is disabled, when no credential is
-// configured, and after an attempt showed that Cloud cannot be reached.
+// FallbackAvailable reports whether a syncing service has a configured Cloud
+// fallback outside its bounded retry delay. It is false when fallback is
+// disabled or no distinct Cloud destination and credential are configured.
 func (s *Store) FallbackAvailable() bool {
 	if s == nil || !s.fallback || s.client == nil {
 		return false

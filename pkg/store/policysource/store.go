@@ -82,15 +82,18 @@ func Open(ctx context.Context, options Options) (*Store, error) {
 	}
 
 	client, err := adsync.NewClient(adsync.Config{
-		BaseURL:        options.PolicySourceURL,
-		Credential:     options.Credential,
-		PublicKeys:     options.PublicKeys,
-		HTTPClient:     options.HTTPClient,
-		CAFile:         options.CAFile,
-		ClientCertFile: options.ClientCertFile,
-		ClientKeyFile:  options.ClientKeyFile,
-		RequestTimeout: options.RequestTimeout,
-		Retry:          options.Retry,
+		BaseURL:            options.PolicySourceURL,
+		Credential:         options.Credential,
+		FallbackBaseURL:    options.FallbackURL,
+		FallbackCredential: options.FallbackCredential,
+		FallbackHTTPClient: options.FallbackHTTPClient,
+		PublicKeys:         options.PublicKeys,
+		HTTPClient:         options.HTTPClient,
+		CAFile:             options.CAFile,
+		ClientCertFile:     options.ClientCertFile,
+		ClientKeyFile:      options.ClientKeyFile,
+		RequestTimeout:     options.RequestTimeout,
+		Retry:              options.Retry,
 	})
 	if err != nil {
 		return nil, errors.Wrap(err, errors.ConfigError, "invalid policy source client configuration")
