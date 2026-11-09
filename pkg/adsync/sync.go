@@ -226,10 +226,6 @@ func (s *Syncer) loadSnapshot(ctx context.Context, service Service, local *Servi
 			return nil, fmt.Errorf("%w: snapshot revision %d would roll back local revision %d",
 				ErrProtocol, response.Revision, local.Revision)
 		}
-		if response.Revision == local.Revision && response.StateHash != local.StateHash {
-			return nil, fmt.Errorf("%w: snapshot at revision %d conflicts with the local state",
-				ErrIntegrity, response.Revision)
-		}
 	}
 	state := &ServiceState{
 		ServiceID:  response.ServiceID,

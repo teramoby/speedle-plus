@@ -113,6 +113,70 @@ func TestCacheRejectsCorruption(t *testing.T) {
 	}
 }
 
+func TestCacheForgedIncrementalStateIsNotUsed(t *testing.T) {
+	service := newFixtureService(testServiceID1, "books")
+	fixture := newFixture(t, service)
+	directory := t.TempDir()
+	syncer := fixture.newSyncer(directory, nil)
+	syncFixtureService(t, syncer, "books")
+	service.publish(t, fixture.signer,
+		Change{Op: "upsert", Kind: "authz", ID: "01HF7YAT000000000000000201",
+			Name: stringPointer("read-books"), SPDL: stringPointer("grant read")})
+	syncFixtureService(t, syncer, "books")
+
+	cache, err := NewCache(directory, fixture.keys)
+	if err != nil {
+		t.Fatalf("NewCache: %v", err)
+	}
+	path := cache.path(service.ID)
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read cache: %v", err)
+	}
+	var envelope cacheEnvelope
+	if err := json.Unmarshal(data, &envelope); err != nil {
+		t.Fatalf("decode envelope: %v", err)
+	}
+	var payload cachePayload
+	if err := json.Unmarshal(envelope.Payload, &payload); err != nil {
+		t.Fatalf("decode payload: %v", err)
+	}
+	if payload.Signature != (Signature{}) {
+		t.Fatal("incremental cache unexpectedly has a snapshot signature")
+	}
+	if len(payload.Snapshot.Policies) != 1 {
+		t.Fatalf("cached policies = %d, want 1", len(payload.Snapshot.Policies))
+	}
+
+	// Recompute every unkeyed value needed to make the forged file a valid
+	// cache envelope. Its new state hash cannot equal unchanged discovery, so
+	// Sync must discard the copy and fetch the signed source snapshot.
+	payload.Snapshot.Policies[0].SPDL = "grant write"
+	payload.StateHash = StateHash(payload.Snapshot)
+	payloadBytes, err := json.Marshal(payload)
+	if err != nil {
+		t.Fatalf("encode forged payload: %v", err)
+	}
+	envelope.Payload = payloadBytes
+	envelope.Checksum = hashOf(payloadBytes)
+	encoded, err := json.Marshal(envelope)
+	if err != nil {
+		t.Fatalf("encode forged envelope: %v", err)
+	}
+	if err := os.WriteFile(path, encoded, 0o600); err != nil {
+		t.Fatalf("write forged cache: %v", err)
+	}
+
+	restarted := fixture.newSyncer(directory, nil)
+	state := syncFixtureService(t, restarted, "books")
+	if got := state.Snapshot.Policies[0].SPDL; got != "grant read" {
+		t.Errorf("restarted policy SPDL = %q, want the signed source policy", got)
+	}
+	if count := fixture.requestCount(testServiceID1 + "/snapshot"); count != 2 {
+		t.Errorf("snapshots after forged cache = %d, want 2", count)
+	}
+}
+
 func TestCacheRejectsUnsafePermissions(t *testing.T) {
 	fixture := newFixture(t, newFixtureService(testServiceID1, "books"))
 	directory := t.TempDir()
