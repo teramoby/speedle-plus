@@ -548,6 +548,7 @@ func (c *Channel) applyAck(ack *channelAck, results chan<- channelCommandResult)
 	for index := range ack.Services {
 		services[index] = ack.Services[index].service()
 	}
+	extraKnown := c.machineOnlyServices()
 	if err := c.machine.Ack(Ack{
 		Services:          services,
 		HeartbeatInterval: heartbeat,
@@ -556,7 +557,7 @@ func (c *Channel) applyAck(ack *channelAck, results chan<- channelCommandResult)
 	}); err != nil {
 		return err
 	}
-	change, advanced := c.storeServiceSet(services)
+	change, advanced := c.storeServiceSet(extraKnown, services)
 	if change != nil && c.onServiceSetChange != nil {
 		c.onServiceSetChange(*change)
 	}
@@ -569,9 +570,35 @@ func (c *Channel) applyAck(ack *channelAck, results chan<- channelCommandResult)
 	return nil
 }
 
+// machineOnlyServices returns the non-removed services the machine tracks but
+// the previous ack set does not. After a restart a cached service is recorded
+// with Applied before the first ack; if the first ack omits it, the source has
+// removed it and the change must be reported so the local copy is deleted.
+func (c *Channel) machineOnlyServices() []Service {
+	c.mu.Lock()
+	known := make(map[string]struct{}, len(c.services))
+	for _, service := range c.services {
+		known[service.ID] = struct{}{}
+	}
+	c.mu.Unlock()
+	var extra []Service
+	for _, status := range c.machine.Services() {
+		if status.State == SyncStateRemoved {
+			continue
+		}
+		if _, found := known[status.ID]; found {
+			continue
+		}
+		extra = append(extra, Service{ID: status.ID, Name: status.Name, Revision: status.Head})
+	}
+	return extra
+}
+
 // storeServiceSet records the authoritative set, reports how it changed and
-// which services advanced since the previous ack.
-func (c *Channel) storeServiceSet(services []Service) (*ServiceSetChange, []Service) {
+// which services advanced since the previous ack. extraKnown lists services the
+// machine tracked before the ack outside the previous ack set; those absent
+// from the ack count as removals.
+func (c *Channel) storeServiceSet(extraKnown, services []Service) (*ServiceSetChange, []Service) {
 	c.mu.Lock()
 	known := make(map[string]Service, len(c.services))
 	for _, service := range c.services {
@@ -592,6 +619,11 @@ func (c *Channel) storeServiceSet(services []Service) (*ServiceSetChange, []Serv
 	}
 	for id, service := range known {
 		if _, found := current[id]; !found {
+			removed = append(removed, service)
+		}
+	}
+	for _, service := range extraKnown {
+		if _, found := current[service.ID]; !found {
 			removed = append(removed, service)
 		}
 	}

@@ -37,6 +37,13 @@ type channelSource struct {
 	closeAfterAck         bool
 	commands              []channelCommand
 	pollHold              time.Duration
+	// pollStatus, pollRetryAfter and pollBody override the poll response when
+	// set, so tests can exercise failure and malformed-response handling.
+	pollStatus     int
+	pollRetryAfter string
+	pollBody       []byte
+	// failPollFrom makes every poll from that request number fail with 503.
+	failPollFrom int
 
 	upgradeAttempts int
 	connections     int
@@ -217,6 +224,12 @@ func (f *channelSource) servePoll(w http.ResponseWriter, r *http.Request) {
 	f.mu.Lock()
 	f.pollRequests++
 	hold := f.pollHold
+	status := f.pollStatus
+	if f.failPollFrom > 0 && f.pollRequests >= f.failPollFrom && status == 0 {
+		status = http.StatusServiceUnavailable
+	}
+	retryAfter := f.pollRetryAfter
+	override := append([]byte(nil), f.pollBody...)
 	f.mu.Unlock()
 
 	body, err := io.ReadAll(io.LimitReader(r.Body, maxChannelFrameBytes+1))
@@ -238,6 +251,19 @@ func (f *channelSource) servePoll(w http.ResponseWriter, r *http.Request) {
 		return
 	case <-f.stop:
 		writeFixtureError(w, http.StatusServiceUnavailable, "source_unavailable", "")
+		return
+	}
+	if status != 0 {
+		if retryAfter != "" {
+			w.Header().Set("Retry-After", retryAfter)
+		}
+		writeFixtureError(w, status, "source_unavailable", "")
+		return
+	}
+	if len(override) > 0 {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write(override)
 		return
 	}
 	writeFixtureJSON(w, http.StatusOK, f.ack())
@@ -868,6 +894,81 @@ func TestChannelServiceSetChange(t *testing.T) {
 	}
 }
 
+func TestChannelFirstAckRemovesPersistedService(t *testing.T) {
+	for _, transport := range []Transport{TransportWebSocket, TransportLongPoll} {
+		t.Run(string(transport), func(t *testing.T) {
+			books := newFixtureService(testServiceID1, "books")
+			orders := newFixtureService(testServiceID2, "orders")
+			source := newChannelSource(t, books, orders)
+			// The process restarts with orders cached locally, but the source
+			// has dropped it since the cache was written.
+			persisted := source.serviceState(orders.ID)
+			source.removeService(orders.ID)
+			server := startChannelFixture(t, source)
+			client := newChannelClient(t, server)
+
+			machine := newChannelMachine(t)
+			if err := machine.Applied(persisted); err != nil {
+				t.Fatalf("Applied: %v", err)
+			}
+			changes := make(chan ServiceSetChange, 16)
+			channel := newTestChannel(t, client, machine, ChannelOptions{
+				Transport: transport,
+				OnServiceSetChange: func(change ServiceSetChange) {
+					select {
+					case changes <- change:
+					default:
+					}
+				},
+			})
+			runChannel(t, channel)
+
+			waitFor(t, 3*time.Second, "the persisted service to be removed", func() bool {
+				status, known := machine.Status("orders")
+				return known && status.Service.State == SyncStateRemoved
+			})
+			select {
+			case change := <-changes:
+				if len(change.Removed) != 1 || change.Removed[0].ID != orders.ID {
+					t.Fatalf("first change = %+v, want orders removed", change)
+				}
+			case <-time.After(2 * time.Second):
+				t.Fatal("the removal of a persisted service was not reported")
+			}
+		})
+	}
+}
+
+func TestChannelWebSocketOnlyStopsOnUpgradeConfigError(t *testing.T) {
+	books := newFixtureService(testServiceID1, "books")
+	source := newChannelSource(t, books)
+	// The upgrade is rejected with 400, which retrying cannot fix.
+	source.configure(func(f *channelSource) { f.rejectWebSocket = true })
+	server := startChannelFixture(t, source)
+	client := newChannelClient(t, server)
+
+	machine := newChannelMachine(t)
+	channel := newTestChannel(t, client, machine, ChannelOptions{Transport: TransportWebSocket})
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	err := channel.Run(ctx)
+	if err == nil {
+		t.Fatal("Run returned nil, want a terminal error")
+	}
+	if errors.Is(err, context.DeadlineExceeded) {
+		t.Fatalf("Run retried a permanent upgrade failure: %v", err)
+	}
+	if !errors.Is(err, ErrProtocol) {
+		t.Fatalf("Run error = %v, want a protocol error", err)
+	}
+	if status := machine.Instance(); status.Liveness != LivenessStopped || status.Reason != ReasonConfigError {
+		t.Fatalf("machine = %+v, want stopped (config_error)", status)
+	}
+	if upgradeAttempts, _, _, _, _, _ := source.stats(); upgradeAttempts != 1 {
+		t.Fatalf("upgradeAttempts = %d, want 1", upgradeAttempts)
+	}
+}
+
 func TestChannelCommands(t *testing.T) {
 	books := newFixtureService(testServiceID1, "books")
 	source := newChannelSource(t, books)
@@ -1001,5 +1102,561 @@ func TestBackoffDelays(t *testing.T) {
 	backoff.Rand = func() float64 { return 0.999999 }
 	if got := backoff.delay(1); got < time.Second*1299/1000 || got > time.Second*13/10 {
 		t.Errorf("high jitter delay = %s, want about 1.3s", got)
+	}
+}
+
+func TestNewChannelValidation(t *testing.T) {
+	books := newFixtureService(testServiceID1, "books")
+	source := newChannelSource(t, books)
+	server := startChannelFixture(t, source)
+	client := newChannelClient(t, server)
+	machine := newChannelMachine(t)
+	options := func() ChannelOptions {
+		return ChannelOptions{
+			InstanceID:   testInstanceID,
+			AgentVersion: "test-1.0",
+			Machine:      machine,
+		}
+	}
+
+	if _, err := NewChannel(nil, options()); err == nil {
+		t.Error("NewChannel without a client succeeded")
+	}
+	withoutMachine := options()
+	withoutMachine.Machine = nil
+	if _, err := NewChannel(client, withoutMachine); err == nil {
+		t.Error("NewChannel without a machine succeeded")
+	}
+
+	longChain := make([]string, maxChainEntries+1)
+	for index := range longChain {
+		longChain[index] = testInstanceID
+	}
+	cases := []struct {
+		name    string
+		options ChannelOptions
+	}{
+		{"invalid instance id", func() ChannelOptions {
+			value := options()
+			value.InstanceID = "not-a-ulid"
+			return value
+		}()},
+		{"invalid credential id", func() ChannelOptions {
+			value := options()
+			value.CredentialID = "not-a-ulid"
+			return value
+		}()},
+		{"empty agent version", func() ChannelOptions {
+			value := options()
+			value.AgentVersion = ""
+			return value
+		}()},
+		{"long agent version", func() ChannelOptions {
+			value := options()
+			value.AgentVersion = strings.Repeat("a", 65)
+			return value
+		}()},
+		{"chain too long", func() ChannelOptions {
+			value := options()
+			value.Chain = longChain
+			return value
+		}()},
+		{"invalid chain entry", func() ChannelOptions {
+			value := options()
+			value.Chain = []string{"not-a-ulid"}
+			return value
+		}()},
+		{"invalid upstream instance id", func() ChannelOptions {
+			value := options()
+			value.UpstreamInstanceID = "not-a-ulid"
+			return value
+		}()},
+		{"unknown transport", func() ChannelOptions {
+			value := options()
+			value.Transport = Transport("carrier-pigeon")
+			return value
+		}()},
+		{"negative heartbeat", func() ChannelOptions {
+			value := options()
+			value.HeartbeatInterval = -time.Second
+			return value
+		}()},
+		{"negative poll wait", func() ChannelOptions {
+			value := options()
+			value.PollWait = -time.Second
+			return value
+		}()},
+		{"long poll wait", func() ChannelOptions {
+			value := options()
+			value.PollWait = maxPollWait + time.Second
+			return value
+		}()},
+		{"negative ack timeout", func() ChannelOptions {
+			value := options()
+			value.AckTimeout = -time.Second
+			return value
+		}()},
+		{"negative probe interval", func() ChannelOptions {
+			value := options()
+			value.ProbeInterval = -time.Second
+			return value
+		}()},
+		{"negative backoff initial", func() ChannelOptions {
+			value := options()
+			value.Backoff = Backoff{Initial: -time.Second}
+			return value
+		}()},
+		{"backoff max below initial", func() ChannelOptions {
+			value := options()
+			value.Backoff = Backoff{Initial: 2 * time.Second, Max: time.Second}
+			return value
+		}()},
+		{"backoff jitter out of range", func() ChannelOptions {
+			value := options()
+			value.Backoff = Backoff{Jitter: 1.5}
+			return value
+		}()},
+	}
+	for _, testCase := range cases {
+		t.Run(testCase.name, func(t *testing.T) {
+			if _, err := NewChannel(client, testCase.options); err == nil {
+				t.Fatal("NewChannel succeeded, want an error")
+			}
+		})
+	}
+	if _, err := NewChannel(client, options()); err != nil {
+		t.Fatalf("NewChannel with valid options: %v", err)
+	}
+}
+
+func TestChannelRunGuards(t *testing.T) {
+	books := newFixtureService(testServiceID1, "books")
+	source := newChannelSource(t, books)
+	server := startChannelFixture(t, source)
+	client := newChannelClient(t, server)
+	channel := newTestChannel(t, client, newChannelMachine(t), ChannelOptions{})
+
+	if err := channel.Run(nil); err == nil {
+		t.Error("Run with a nil context succeeded")
+	}
+	channel.running.Store(true)
+	if err := channel.Run(context.Background()); err == nil {
+		t.Error("Run while running succeeded")
+	}
+}
+
+func TestChannelHeartbeatReportsTopology(t *testing.T) {
+	books := newFixtureService(testServiceID1, "books")
+	orders := newFixtureService(testServiceID2, "orders")
+	source := newChannelSource(t, books, orders)
+	server := startChannelFixture(t, source)
+	client := newChannelClient(t, server)
+
+	machine := newChannelMachine(t)
+	both := []Service{
+		{ID: books.ID, Name: books.Name, Revision: books.Revision, Epoch: books.Epoch, HeadStateHash: books.StateHash},
+		{ID: orders.ID, Name: orders.Name, Revision: orders.Revision, Epoch: orders.Epoch, HeadStateHash: orders.StateHash},
+	}
+	if err := machine.Ack(Ack{Services: both}); err != nil {
+		t.Fatalf("Ack: %v", err)
+	}
+	// The second ack removes orders, so the heartbeat must skip its tombstone.
+	if err := machine.Ack(Ack{Services: both[:1]}); err != nil {
+		t.Fatalf("Ack: %v", err)
+	}
+
+	downstreams := uint64(4)
+	channel, err := NewChannel(client, ChannelOptions{
+		InstanceID:         testInstanceID,
+		AgentVersion:       "test-1.0",
+		Machine:            machine,
+		Chain:              []string{testInstanceID},
+		UpstreamInstanceID: testInstanceID,
+		DownstreamCount:    &downstreams,
+		Fallback: func() FallbackState {
+			return FallbackState{
+				Active:      true,
+				Services:    []string{testServiceID1, "not a service", testServiceID2},
+				Since:       time.Now(),
+				RoutedCalls: 7,
+			}
+		},
+	})
+	if err != nil {
+		t.Fatalf("NewChannel: %v", err)
+	}
+
+	message := channel.heartbeatMessage(TransportLongPoll)
+	if len(message.Services) != 1 || message.Services[0].ID != books.ID {
+		t.Fatalf("heartbeat services = %+v, want only books", message.Services)
+	}
+	if !message.Fallback.Active || message.Fallback.RoutedCalls != 7 {
+		t.Fatalf("fallback = %+v", message.Fallback)
+	}
+	if message.Fallback.Since == nil {
+		t.Fatal("fallback since is missing")
+	}
+	if len(message.Fallback.Services) != 2 || message.Fallback.Services[0] != testServiceID1 ||
+		message.Fallback.Services[1] != testServiceID2 {
+		t.Fatalf("fallback services = %v", message.Fallback.Services)
+	}
+	if message.UpstreamInstanceID == nil || *message.UpstreamInstanceID != testInstanceID {
+		t.Fatalf("upstream instance id = %v", message.UpstreamInstanceID)
+	}
+	if message.DownstreamCount == nil || *message.DownstreamCount != downstreams {
+		t.Fatalf("downstream count = %v", message.DownstreamCount)
+	}
+	if message.Seq != 1 || message.Liveness != string(LivenessLive) {
+		t.Fatalf("heartbeat = %+v", message)
+	}
+	if next := channel.heartbeatMessage(TransportLongPoll); next.Seq != 2 {
+		t.Fatalf("second heartbeat seq = %d, want 2", next.Seq)
+	}
+}
+
+func TestChannelPollTerminalStatus(t *testing.T) {
+	books := newFixtureService(testServiceID1, "books")
+	source := newChannelSource(t, books)
+	source.configure(func(f *channelSource) { f.pollStatus = http.StatusBadRequest })
+	server := startChannelFixture(t, source)
+	client := newChannelClient(t, server)
+	machine := newChannelMachine(t)
+	channel := newTestChannel(t, client, machine, ChannelOptions{Transport: TransportLongPoll})
+
+	err := channel.pollOnce(context.Background())
+	if !errors.Is(err, ErrProtocol) {
+		t.Fatalf("pollOnce = %v, want ErrProtocol", err)
+	}
+	if !isTerminalError(err) {
+		t.Fatalf("pollOnce error is not terminal: %v", err)
+	}
+	instance := machine.Instance()
+	if instance.Liveness != LivenessStopped || instance.Reason != ReasonConfigError {
+		t.Fatalf("instance = %+v, want stopped/config_error", instance)
+	}
+}
+
+func TestChannelPollRetryableStatus(t *testing.T) {
+	books := newFixtureService(testServiceID1, "books")
+	source := newChannelSource(t, books)
+	source.configure(func(f *channelSource) {
+		f.pollStatus = http.StatusServiceUnavailable
+		f.pollRetryAfter = "2"
+	})
+	server := startChannelFixture(t, source)
+	client := newChannelClient(t, server)
+	machine := newChannelMachine(t)
+	channel := newTestChannel(t, client, machine, ChannelOptions{Transport: TransportLongPoll})
+
+	err := channel.pollOnce(context.Background())
+	if err == nil {
+		t.Fatal("pollOnce succeeded, want a status error")
+	}
+	if isTerminalError(err) {
+		t.Fatalf("a retryable status is terminal: %v", err)
+	}
+	if got := retryAfterOf(err); got != 2*time.Second {
+		t.Fatalf("Retry-After = %s, want 2s", got)
+	}
+	if instance := machine.Instance(); instance.Liveness == LivenessStopped {
+		t.Fatalf("a retryable status stopped the instance: %+v", instance)
+	}
+}
+
+func TestChannelPollRejectsBadResponses(t *testing.T) {
+	books := newFixtureService(testServiceID1, "books")
+	source := newChannelSource(t, books)
+	server := startChannelFixture(t, source)
+	client := newChannelClient(t, server)
+	channel := newTestChannel(t, client, newChannelMachine(t), ChannelOptions{Transport: TransportLongPoll})
+
+	source.configure(func(f *channelSource) {
+		f.pollBody = []byte(`{"type":"notify","serviceId":"` + testServiceID1 + `","head":1}`)
+	})
+	if err := channel.pollOnce(context.Background()); !errors.Is(err, ErrProtocol) {
+		t.Fatalf("non-ack response = %v, want ErrProtocol", err)
+	}
+
+	source.configure(func(f *channelSource) {
+		f.pollBody = []byte(`{"type":"ack","pad":"` + strings.Repeat("x", maxChannelFrameBytes) + `"}`)
+	})
+	if err := channel.pollOnce(context.Background()); !errors.Is(err, ErrProtocol) {
+		t.Fatalf("oversized response = %v, want ErrProtocol", err)
+	}
+}
+
+func TestChannelSleepBeforeRetryHonoursRetryAfter(t *testing.T) {
+	channel := &Channel{backoff: Backoff{Initial: time.Millisecond, Max: 100 * time.Millisecond}}
+	cause := &statusError{retryAfter: 25 * time.Millisecond}
+	start := time.Now()
+	if err := channel.sleepBeforeRetry(context.Background(), 1, cause); err != nil {
+		t.Fatalf("sleepBeforeRetry: %v", err)
+	}
+	if elapsed := time.Since(start); elapsed < 20*time.Millisecond {
+		t.Fatalf("slept %s, want at least the 25ms Retry-After", elapsed)
+	}
+
+	// A Retry-After beyond the maximum delay is capped.
+	cause.retryAfter = time.Minute
+	start = time.Now()
+	if err := channel.sleepBeforeRetry(context.Background(), 1, cause); err != nil {
+		t.Fatalf("sleepBeforeRetry: %v", err)
+	}
+	if elapsed := time.Since(start); elapsed > 500*time.Millisecond || elapsed < 80*time.Millisecond {
+		t.Fatalf("slept %s, want the 100ms maximum delay", elapsed)
+	}
+}
+
+func TestChannelLongPollProbeDeadline(t *testing.T) {
+	books := newFixtureService(testServiceID1, "books")
+	source := newChannelSource(t, books)
+	server := startChannelFixture(t, source)
+	client := newChannelClient(t, server)
+	channel := newTestChannel(t, client, newChannelMachine(t), ChannelOptions{Transport: TransportLongPoll})
+
+	if err := channel.runLongPollLoop(context.Background(), time.Now()); err != nil {
+		t.Fatalf("runLongPollLoop with a due probe = %v, want nil", err)
+	}
+}
+
+func TestChannelHeartbeatCadence(t *testing.T) {
+	books := newFixtureService(testServiceID1, "books")
+	source := newChannelSource(t, books)
+	server := startChannelFixture(t, source)
+	client := newChannelClient(t, server)
+	channel := newTestChannel(t, client, newChannelMachine(t), ChannelOptions{Transport: TransportLongPoll})
+	channel.heartbeatOverride = 0
+
+	if got := channel.heartbeatInterval(); got != defaultHeartbeatInterval {
+		t.Fatalf("heartbeatInterval = %s, want %s", got, defaultHeartbeatInterval)
+	}
+	if got := channel.pingInterval(); got != defaultPingInterval {
+		t.Fatalf("pingInterval = %s, want %s", got, defaultPingInterval)
+	}
+	channel.heartbeatOverride = 5 * time.Second
+	if got := channel.pingInterval(); got != 5*time.Second {
+		t.Fatalf("pingInterval with a short heartbeat = %s, want 5s", got)
+	}
+}
+
+func TestChannelPollCanceledContext(t *testing.T) {
+	books := newFixtureService(testServiceID1, "books")
+	source := newChannelSource(t, books)
+	server := startChannelFixture(t, source)
+	client := newChannelClient(t, server)
+	channel := newTestChannel(t, client, newChannelMachine(t), ChannelOptions{Transport: TransportLongPoll})
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	if err := channel.pollOnce(ctx); !errors.Is(err, context.Canceled) {
+		t.Fatalf("pollOnce with a canceled context = %v, want context.Canceled", err)
+	}
+}
+
+func TestChannelApplyAckRejectsDuplicateNames(t *testing.T) {
+	books := newFixtureService(testServiceID1, "books")
+	source := newChannelSource(t, books)
+	server := startChannelFixture(t, source)
+	client := newChannelClient(t, server)
+	channel := newTestChannel(t, client, newChannelMachine(t), ChannelOptions{Transport: TransportLongPoll})
+
+	ack := &channelAck{
+		Type:              channelTypeAck,
+		ServicesVersion:   1,
+		ServerTime:        time.Now().UnixMilli(),
+		HeartbeatInterval: "30s",
+		StaleAfter:        "60s",
+		StopAfter:         "120s",
+		Services: []channelAckService{
+			{ID: testServiceID1, Name: "shared", Head: 1, OriginHead: 1, Epoch: testServiceID1, HeadStateHash: books.StateHash},
+			{ID: testServiceID2, Name: "shared", Head: 1, OriginHead: 1, Epoch: testServiceID2, HeadStateHash: books.StateHash},
+		},
+	}
+	if err := ack.validate(); err != nil {
+		t.Fatalf("the wire ack should be valid: %v", err)
+	}
+	if err := channel.applyAck(ack, nil); !errors.Is(err, ErrProtocol) {
+		t.Fatalf("applyAck = %v, want ErrProtocol", err)
+	}
+}
+
+func TestChannelDeliverCommands(t *testing.T) {
+	command := func(id string, expires time.Time) channelCommand {
+		return channelCommand{ID: id, Action: commandActionResync, ServiceID: testServiceID1, ExpiresAt: expires.UnixMilli()}
+	}
+	now := time.Now()
+	channel := &Channel{}
+	var delivered []Command
+	channel.onCommand = func(command Command) *CommandResult {
+		delivered = append(delivered, command)
+		return nil
+	}
+	results := make(chan channelCommandResult, 4)
+	channel.deliverCommands([]channelCommand{
+		command("01HF7YAT000000000000000301", now.Add(time.Minute)),
+		command("01HF7YAT000000000000000302", now.Add(-time.Minute)),
+	}, results)
+	if len(delivered) != 1 {
+		t.Fatalf("delivered %d commands, want 1", len(delivered))
+	}
+	select {
+	case result := <-results:
+		t.Fatalf("a nil result was sent: %+v", result)
+	default:
+	}
+
+	channel.onCommand = func(Command) *CommandResult { return &CommandResult{Status: "maybe"} }
+	channel.deliverCommands([]channelCommand{command("01HF7YAT000000000000000303", now.Add(time.Minute))}, results)
+	select {
+	case result := <-results:
+		if result.Status != commandStatusRejected || result.Result != "invalid result status" {
+			t.Fatalf("invalid status result = %+v", result)
+		}
+	default:
+		t.Fatal("an invalid command status produced no result")
+	}
+
+	channel.onCommand = func(Command) *CommandResult { return &CommandResult{} }
+	channel.deliverCommands([]channelCommand{command("01HF7YAT000000000000000304", now.Add(time.Minute))}, results)
+	select {
+	case result := <-results:
+		if result.Status != commandStatusAcked {
+			t.Fatalf("empty status result = %+v, want acked", result)
+		}
+	default:
+		t.Fatal("an empty command status produced no result")
+	}
+
+	// A transport without a result path still delivers the command.
+	channel.onCommand = func(Command) *CommandResult { return &CommandResult{} }
+	channel.deliverCommands([]channelCommand{command("01HF7YAT000000000000000305", now.Add(time.Minute))}, nil)
+}
+
+// newCustomTransportChannel returns a channel whose client uses a caller-owned
+// HTTP client, so no WebSocket dialer is built.
+func newCustomTransportChannel(t *testing.T, server *httptest.Server) *Client {
+	t.Helper()
+	client, err := NewClient(Config{
+		BaseURL:        server.URL,
+		Credential:     testCredential,
+		PublicKeys:     goldenPublicKeys(t, loadGolden(t)),
+		HTTPClient:     server.Client(),
+		RequestTimeout: 2 * time.Second,
+	})
+	if err != nil {
+		t.Fatalf("NewClient: %v", err)
+	}
+	return client
+}
+
+func TestChannelWithoutDialer(t *testing.T) {
+	books := newFixtureService(testServiceID1, "books")
+	source := newChannelSource(t, books)
+	server := startChannelFixture(t, source)
+	client := newCustomTransportChannel(t, server)
+
+	pinned := newTestChannel(t, client, newChannelMachine(t), ChannelOptions{Transport: TransportWebSocket})
+	if err := pinned.Run(context.Background()); err == nil {
+		t.Fatal("a WebSocket-only channel without a dialer started")
+	}
+
+	machine := newChannelMachine(t)
+	if err := machine.Applied(source.serviceState(books.ID)); err != nil {
+		t.Fatalf("Applied: %v", err)
+	}
+	auto := newTestChannel(t, client, machine, ChannelOptions{Transport: TransportAuto})
+	runChannel(t, auto)
+	requireInSync(t, machine, "books")
+	if got := auto.CurrentTransport(); got != TransportLongPoll {
+		t.Fatalf("CurrentTransport = %q, want longpoll", got)
+	}
+}
+
+func TestChannelAutoStopsOnRevokedUpgrade(t *testing.T) {
+	books := newFixtureService(testServiceID1, "books")
+	source := newChannelSource(t, books)
+	server := startChannelFixture(t, source)
+	client := newChannelClient(t, server)
+	client.credential = "adsi_" + testInstanceID + "_" + strings.Repeat("b", 43)
+
+	machine := newChannelMachine(t)
+	channel := newTestChannel(t, client, machine, ChannelOptions{Transport: TransportAuto})
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	if err := channel.Run(ctx); !errors.Is(err, ErrUnauthorized) {
+		t.Fatalf("Run = %v, want ErrUnauthorized", err)
+	}
+	instance := machine.Instance()
+	if instance.Liveness != LivenessStopped || instance.Reason != ReasonRevoked {
+		t.Fatalf("instance = %+v, want stopped/revoked", instance)
+	}
+}
+
+func TestChannelApplyAckRejectsInvalidDurations(t *testing.T) {
+	books := newFixtureService(testServiceID1, "books")
+	source := newChannelSource(t, books)
+	server := startChannelFixture(t, source)
+	client := newChannelClient(t, server)
+	channel := newTestChannel(t, client, newChannelMachine(t), ChannelOptions{Transport: TransportLongPoll})
+
+	valid := func() *channelAck {
+		return &channelAck{
+			Type:              channelTypeAck,
+			ServicesVersion:   1,
+			ServerTime:        time.Now().UnixMilli(),
+			HeartbeatInterval: "30s",
+			StaleAfter:        "60s",
+			StopAfter:         "120s",
+			Services: []channelAckService{{
+				ID: testServiceID1, Name: "books", Head: 1, OriginHead: 1,
+				Epoch: testServiceID1, HeadStateHash: books.StateHash,
+			}},
+		}
+	}
+	cases := []struct {
+		name   string
+		update func(*channelAck)
+	}{
+		{"heartbeat", func(ack *channelAck) { ack.HeartbeatInterval = "soon" }},
+		{"stale", func(ack *channelAck) { ack.StaleAfter = "soon" }},
+		{"stop", func(ack *channelAck) { ack.StopAfter = "soon" }},
+	}
+	for _, testCase := range cases {
+		t.Run(testCase.name, func(t *testing.T) {
+			ack := valid()
+			testCase.update(ack)
+			if err := channel.applyAck(ack, nil); !errors.Is(err, ErrProtocol) {
+				t.Fatalf("applyAck = %v, want ErrProtocol", err)
+			}
+		})
+	}
+}
+
+func TestChannelLongPollLoopRetriesAfterHealthyPoll(t *testing.T) {
+	books := newFixtureService(testServiceID1, "books")
+	source := newChannelSource(t, books)
+	// The first poll is answered, every later poll fails, so the loop has to
+	// reset its attempt counter and retry.
+	source.configure(func(f *channelSource) { f.failPollFrom = 2 })
+	server := startChannelFixture(t, source)
+	client := newChannelClient(t, server)
+	channel := newTestChannel(t, client, newChannelMachine(t), ChannelOptions{Transport: TransportLongPoll})
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	finished := make(chan error, 1)
+	go func() { finished <- channel.runLongPollLoop(ctx, time.Time{}) }()
+	waitFor(t, 3*time.Second, "a failed poll after the first ack", func() bool {
+		_, _, polls, _, _, _ := source.stats()
+		return polls >= 2
+	})
+	cancel()
+	select {
+	case err := <-finished:
+		if !errors.Is(err, context.Canceled) {
+			t.Fatalf("runLongPollLoop = %v, want context.Canceled", err)
+		}
+	case <-time.After(3 * time.Second):
+		t.Fatal("runLongPollLoop did not stop")
 	}
 }

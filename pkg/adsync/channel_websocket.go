@@ -46,7 +46,15 @@ func (c *Channel) runWebSocket(ctx context.Context) wsOutcome {
 				body, _ = io.ReadAll(io.LimitReader(response.Body, maxErrorResponseBytes))
 				_ = response.Body.Close()
 			}
-			if response.StatusCode == http.StatusUnauthorized || response.StatusCode == http.StatusForbidden {
+			// A channel pinned to WebSocket has no fallback, so a permanent
+			// HTTP rejection is terminal there exactly as it is for long
+			// polling; retrying it would loop forever. Auto mode falls back
+			// instead: the poll request then reaches the same classification.
+			if c.mode == TransportWebSocket {
+				if terminal := c.terminalStatusError(http.MethodGet, APIPrefix+"/channel", response.StatusCode, body); terminal != nil {
+					return wsOutcome{terminal: true, err: terminal}
+				}
+			} else if response.StatusCode == http.StatusUnauthorized || response.StatusCode == http.StatusForbidden {
 				c.machine.Stop(ReasonRevoked)
 				return wsOutcome{
 					terminal: true,
