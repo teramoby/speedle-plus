@@ -1343,3 +1343,125 @@ func TestServersShareAHubWithoutStealingItsLifetime(t *testing.T) {
 	}
 	hub.Unsubscribe(subscriber)
 }
+
+func TestMirrorIgnoresSnapshotsFromRetiredIdentities(t *testing.T) {
+	signer := newTestSigner(t)
+	mirror := newTestMirror(t, signer.publicKeys(t), nil)
+	retired := newFixtureServiceWithEpoch(testServiceID1, "01HF7YAT000000000000000201", "books")
+	retired.publish(t, signer, upsertAuthz(testServiceID1+"A1", "read", "grant read"))
+	retiredSnapshot := snapshotAt(t, retired, signer)
+	if err := mirror.ApplySnapshot(retiredSnapshot); err != nil {
+		t.Fatalf("apply first identity: %v", err)
+	}
+
+	current := newFixtureServiceWithEpoch(testServiceID1, "01HF7YAT000000000000000202", "books")
+	current.publish(t, signer, upsertAuthz(testServiceID1+"B1", "read", "grant read"))
+	if err := mirror.ApplySnapshot(snapshotAt(t, current, signer)); err != nil {
+		t.Fatalf("apply second identity: %v", err)
+	}
+
+	// A delayed snapshot from the identity the source moved away from carries
+	// replaced policy. Revisions of different identities cannot be compared, so
+	// the identity itself must keep it out.
+	if err := mirror.ApplySnapshot(retiredSnapshot); err != nil {
+		t.Fatalf("delayed retired snapshot: %v", err)
+	}
+	info, availability := mirror.Lookup(testServiceID1)
+	if availability != ServiceAvailable || info.Epoch != current.Epoch || info.Revision != current.Revision {
+		t.Errorf("copy rolled back to a retired identity: %+v availability %v", info, availability)
+	}
+
+	// The same holds for a removed copy: the retired identity cannot revive it,
+	// while newer state of the current identity can.
+	mirror.RemoveService(testServiceID1)
+	if err := mirror.ApplySnapshot(retiredSnapshot); err != nil {
+		t.Fatalf("retired snapshot after removal: %v", err)
+	}
+	if _, availability := mirror.Lookup(testServiceID1); availability != ServiceRemoved {
+		t.Errorf("retired identity revived a removed service: availability %v", availability)
+	}
+	current.publish(t, signer, upsertAuthz(testServiceID1+"B2", "read", "grant read"))
+	if err := mirror.ApplySnapshot(snapshotAt(t, current, signer)); err != nil {
+		t.Fatalf("revive current identity: %v", err)
+	}
+	if services := mirror.Services(); len(services) != 1 || services[0].Epoch != current.Epoch {
+		t.Errorf("current identity did not revive the service: %+v", services)
+	}
+}
+
+func TestHubPerCredentialConnectionLimit(t *testing.T) {
+	hub, err := NewHub(50, time.Millisecond, 2)
+	if err != nil {
+		t.Fatalf("new hub: %v", err)
+	}
+	defer hub.Close()
+	first, err := hub.Subscribe("edge-1", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	second, err := hub.Subscribe("edge-1", nil)
+	if err != nil {
+		t.Fatalf("second connection: %v", err)
+	}
+	if _, err := hub.Subscribe("edge-1", nil); !errors.Is(err, ErrFanoutLimit) {
+		t.Fatalf("third connection for one credential: %v, want ErrFanoutLimit", err)
+	}
+	if err := hub.Allow("edge-1"); !errors.Is(err, ErrFanoutLimit) {
+		t.Fatalf("Allow above the per-credential bound: %v", err)
+	}
+	if _, err := hub.Subscribe("edge-2", nil); err != nil {
+		t.Fatalf("another credential was not independently admitted: %v", err)
+	}
+	hub.Unsubscribe(first)
+	replacement, err := hub.Subscribe("edge-1", nil)
+	if err != nil {
+		t.Fatalf("a released connection slot was not reusable: %v", err)
+	}
+	hub.Unsubscribe(second)
+	hub.Unsubscribe(replacement)
+}
+
+func TestServerPerCredentialConnectionLimit(t *testing.T) {
+	signer := newTestSigner(t)
+	mirror, _, _ := newPopulatedMirror(t, signer)
+	token := testToken(testDownstreamID, 1)
+	server := newTestServer(t, mirror, signer.publicKeys(t), nil, testCredential{
+		downstreamID: testDownstreamID,
+		token:        token,
+	})
+	open := func() *websocket.Conn {
+		conn, _, err := server.dial(token)
+		if err != nil {
+			t.Fatalf("dial: %v", err)
+		}
+		writeJSONFrame(t, conn, helloMessage{
+			Type:         "hello",
+			InstanceID:   testDownstreamID,
+			Services:     []helloService{},
+			Chain:        []string{testProxyID, testDownstreamID},
+			AgentVersion: "test",
+		})
+		if kind, _ := readChannelFrame(t, conn); kind != "ack" {
+			conn.Close()
+			t.Fatalf("frame = %q", kind)
+		}
+		return conn
+	}
+	first := open()
+	defer first.Close()
+	second := open()
+	defer second.Close()
+
+	conn, response, err := server.dial(token)
+	if err == nil {
+		conn.Close()
+		t.Fatal("a third connection for one credential was accepted")
+	}
+	if response == nil || response.StatusCode != http.StatusServiceUnavailable {
+		t.Fatalf("third connection response = %v, want 503", response)
+	}
+	if retry := response.Header.Get("Retry-After"); retry != "30" {
+		t.Errorf("Retry-After = %q", retry)
+	}
+	response.Body.Close()
+}

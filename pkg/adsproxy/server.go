@@ -56,6 +56,9 @@ type Config struct {
 	// uses DefaultMaxDownstream; the range is 1 to MaxDownstreamLimit. It is
 	// ignored when Hub is set.
 	MaxDownstream int
+	// MaxConnectionsPerDownstream bounds active WebSockets and held long polls
+	// for each credential. Zero uses DefaultMaxConnectionsPerDownstream.
+	MaxConnectionsPerDownstream int
 	// MaxChainDepth bounds the number of proxy hops between Cloud and a leaf.
 	// Zero uses DefaultMaxChainDepth; the range is 1 to MaxChainDepthLimit.
 	MaxChainDepth int
@@ -162,7 +165,7 @@ func NewServer(config Config) (*Server, error) {
 	hub := config.Hub
 	ownsHub := hub == nil
 	if hub == nil {
-		hub, err = NewHub(config.MaxDownstream, config.CoalesceWindow)
+		hub, err = NewHub(config.MaxDownstream, config.CoalesceWindow, config.MaxConnectionsPerDownstream)
 		if err != nil {
 			return nil, err
 		}

@@ -29,6 +29,9 @@ const (
 	// snapshot from reviving a deliberately removed service; the oldest one is
 	// evicted when the map would otherwise keep growing as services churn.
 	maxTombstones = MaxServices
+	// maxRetiredIdentities bounds the source identities one service copy
+	// remembers, so identity churn cannot grow its state without limit.
+	maxRetiredIdentities = 8
 	// maxChangesPageBytes is the contract's response-page bound. A page that
 	// would exceed it is trimmed.
 	maxChangesPageBytes = 1 << 20
@@ -144,6 +147,40 @@ type serviceCopy struct {
 	tombstoneRevision uint64
 	// removedSeq orders tombstones for eviction once maxTombstones is reached.
 	removedSeq uint64
+	// retired holds the source identities this copy has moved away from. A
+	// late snapshot from a retired identity belongs to policy the source
+	// already replaced, and revisions of different identities cannot be
+	// ordered, so it is ignored rather than allowed to replace the copy.
+	retired []retiredIdentity
+}
+
+// retiredIdentity is one sourceId/epoch pair a service copy has moved away from.
+type retiredIdentity struct {
+	sourceID string
+	epoch    string
+}
+
+// identityRetired reports whether sourceID/epoch is an identity this copy has
+// moved away from.
+func (s *serviceCopy) identityRetired(sourceID, epoch string) bool {
+	for _, retired := range s.retired {
+		if retired.sourceID == sourceID && retired.epoch == epoch {
+			return true
+		}
+	}
+	return false
+}
+
+// retireIdentity records the identity the copy is leaving. The list is bounded;
+// the oldest entry is dropped first.
+func (s *serviceCopy) retireIdentity(sourceID, epoch string) {
+	if sourceID == "" || s.identityRetired(sourceID, epoch) {
+		return
+	}
+	s.retired = append(s.retired, retiredIdentity{sourceID: sourceID, epoch: epoch})
+	if len(s.retired) > maxRetiredIdentities {
+		s.retired = s.retired[1:]
+	}
 }
 
 // NewMirror creates an empty mirror.
@@ -235,6 +272,12 @@ func (m *Mirror) applySnapshot(response *adsync.SnapshotResponse) (HeadEvent, bo
 	}
 
 	identityChanged := !wasNew && (existing.sourceID != response.SourceID || existing.epoch != response.Epoch)
+	if identityChanged && existing.identityRetired(response.SourceID, response.Epoch) {
+		// The source already moved away from this identity. A delayed snapshot
+		// from it belongs to replaced policy, and its revision cannot be
+		// compared with the current identity's, so it must not replace the copy.
+		return HeadEvent{}, false, nil
+	}
 	previousRevision := existing.revision
 	previousName := existing.name
 	if existing.removed && !identityChanged && response.Revision <= existing.tombstoneRevision {
@@ -256,6 +299,9 @@ func (m *Mirror) applySnapshot(response *adsync.SnapshotResponse) (HeadEvent, bo
 		}
 	}
 
+	if identityChanged {
+		existing.retireIdentity(existing.sourceID, existing.epoch)
+	}
 	existing.name = response.Snapshot.Name
 	existing.sourceID = response.SourceID
 	existing.epoch = response.Epoch
