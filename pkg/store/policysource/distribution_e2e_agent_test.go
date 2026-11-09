@@ -44,6 +44,7 @@ const (
 type e2eAgentOptions struct {
 	InstanceID string
 	Source     e2eSource
+	Fallback   *e2eSource
 	Clock      *testClock
 	CacheDir   string
 	Chain      []string
@@ -108,6 +109,11 @@ func newE2EAgent(t *testing.T, options e2eAgentOptions) *e2eAgent {
 		t.Fatal("a complete source configuration is required")
 	}
 
+	var fallbackURL, fallbackCredential string
+	if options.Fallback != nil {
+		fallbackURL = options.Fallback.URL
+		fallbackCredential = options.Fallback.Credential
+	}
 	store, err := Open(context.Background(), Options{
 		PolicySourceURL:   options.Source.URL,
 		Credential:        options.Source.Credential,
@@ -125,7 +131,9 @@ func newE2EAgent(t *testing.T, options e2eAgentOptions) *e2eAgent {
 			InitialBackoff: time.Millisecond,
 			MaxBackoff:     10 * time.Millisecond,
 		},
-		DisableFallback: options.DisableFallback,
+		DisableFallback:    options.DisableFallback,
+		FallbackURL:        fallbackURL,
+		FallbackCredential: fallbackCredential,
 	})
 	if err != nil {
 		t.Fatalf("open policy source store for %s: %v", options.InstanceID, err)

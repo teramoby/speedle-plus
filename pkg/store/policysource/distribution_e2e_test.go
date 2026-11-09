@@ -17,6 +17,7 @@ package policysource
 import (
 	"encoding/json"
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -146,9 +147,11 @@ func e2eDownstreamCredential(downstreamID, instanceID string, number int) (adspr
 func e2eAgentA(t *testing.T, cloud *e2eCloud, clock *testClock) *e2eAgent {
 	t.Helper()
 	credentialB, _ := e2eDownstreamCredential("B", e2eInstanceB, 2)
+	source := cloud.source()
 	return newE2EAgent(t, e2eAgentOptions{
 		InstanceID: e2eInstanceA,
-		Source:     cloud.source(),
+		Source:     source,
+		Fallback:   &source,
 		Clock:      clock,
 		Chain:      []string{e2eInstanceA},
 		Downstream: []adsproxy.Credential{credentialB},
@@ -169,6 +172,15 @@ func e2eAgentB(t *testing.T, cloud *e2eCloud, upstream *e2eAgent, tokenB string,
 		CacheDir: cacheDir,
 		Chain:    []string{e2eInstanceA, e2eInstanceB},
 	})
+}
+
+func e2eCacheDir(t *testing.T) string {
+	t.Helper()
+	dir := filepath.Join(t.TempDir(), "cache")
+	if err := os.Mkdir(dir, 0o700); err != nil {
+		t.Fatalf("create private cache directory: %v", err)
+	}
+	return dir
 }
 
 // TestE2EChainFirstSync covers the first synchronization of a three-instance
@@ -437,7 +449,7 @@ func TestE2ERestartReusesTheCache(t *testing.T) {
 	cloud := newE2ECloud(t)
 	a := e2eAgentA(t, cloud, newTestClock())
 	_, tokenB := e2eDownstreamCredential("B", e2eInstanceB, 2)
-	cacheDir := t.TempDir()
+	cacheDir := e2eCacheDir(t)
 
 	b := e2eAgentB(t, cloud, a, tokenB, newTestClock(), cacheDir)
 	e2eWaitAllInSync(t, b, "books", "orders")
@@ -466,7 +478,7 @@ func TestE2ERestartReusesTheCache(t *testing.T) {
 
 	// Control: an empty cache has to download one snapshot per service.
 	before = a.proxyDataRequests()
-	fresh := e2eAgentB(t, cloud, a, tokenB, newTestClock(), t.TempDir())
+	fresh := e2eAgentB(t, cloud, a, tokenB, newTestClock(), e2eCacheDir(t))
 	e2eWaitAllInSync(t, fresh, "books", "orders")
 	if pulled := a.proxyDataRequests() - before; pulled < 2 {
 		t.Fatalf("cold start pulled %d snapshot/change pages, want at least 2", pulled)
@@ -753,11 +765,14 @@ func TestE2EServiceSetChanges(t *testing.T) {
 		}
 	}
 
-	// Adding the service back bootstraps it again.
+	// Adding the service back bootstraps it again. The source publishes newer
+	// state with its return: a proxy cannot revive a removed service from the
+	// same revision its tombstone records.
 	cloud.addService(orders)
+	head := cloud.publish(e2eServiceOrders, e2eUpsertAuthz("p-orders-carol-approve", "grant user carol approve /orders/1"))
 	cloud.pushAck()
-	e2eWaitServiceRevision(t, a, "orders", 1)
-	e2eWaitServiceRevision(t, b, "orders", 1)
+	e2eWaitServiceRevision(t, a, "orders", head)
+	e2eWaitServiceRevision(t, b, "orders", head)
 	e2eWaitDecision(t, a, carol, true)
 	e2eWaitDecision(t, b, carol, true)
 	e2eRequireAllowed(t, a, carol)
