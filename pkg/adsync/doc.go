@@ -10,7 +10,9 @@
 // verbatim from that repository and prove both implementations agree byte for
 // byte on the canonical encodings and signatures.
 //
-// The package deliberately has no liveness state machine, no notification
-// channel and no store plugin; those are later steps. It never parses SPDL and
-// never logs policy content or credentials.
+// Machine owns the liveness and per-service sync state described in step E2.
+// It is driven by confirmed acks and sync results and does not talk to the
+// network itself; the notification channel, the policy-source store and the
+// request gate are later steps. The package never parses SPDL and never logs
+// policy content or credentials.
 package adsync
