@@ -81,7 +81,7 @@ reveal credentials, change repository settings, approve or merge PRs.
     (supported API models: `deepseek-flash` and `deepseek-v4-pro`, each with a
     1M-token context length and 384K-token maximum output).
   - Endpoint: `https://api.deepseek.com/chat/completions` (OpenAI-compatible,
-    non-streaming, `max_tokens` `65536`). Trusted prompts and base policy are
+    streaming, `max_tokens` `65536`). Trusted prompts and base policy are
     sent in the `system` message, and pull-request metadata, diff and any
     untrusted command context are sent in the `user` message. Review text is
     read from `choices[0].message.content`, ignoring any `reasoning_content`.
@@ -105,6 +105,25 @@ caused by the output-token limit (`max_output_tokens` on Ark or
 `finish_reason: "length"` on DeepSeek) retries once with unified diff context reduced
 from 80 to 3. Both requests share a 600-second HTTP budget. Other incomplete,
 failed, malformed or empty responses fail without publishing partial review text.
+
+Both providers are called with `stream: true` and `Accept: text/event-stream`, so
+a long request keeps data flowing instead of sitting idle until the whole review
+is ready. The trusted response helper reassembles the event stream into the same
+response shape a non-streaming call returns and then applies the same checks; a
+plain JSON body is still accepted. On Ark the first `response.completed`,
+`response.incomplete` or `response.failed` event is the response. On DeepSeek the
+helper joins `delta.content`, drops reasoning, and treats the stream as complete
+only after a chunk carries a non-null `finish_reason` (`[DONE]` alone is not
+enough). A stream that ends without its terminal event fails with reason code
+`incomplete_stream` and publishes nothing.
+
+A transport error (non-zero `curl` exit, for example a connection reset during
+the stream) resends the same request to the same model after 5 seconds, then 15
+seconds, for at most three sends, and only while at least 30 seconds of the HTTP
+budget would remain. When the sends are used up the run fails with
+`retry_exhausted`; when too little budget remains it fails with
+`request_timeout`. HTTP errors and unusable output are never resent as transport
+errors, and transport resends do not use up the output-token retry.
 Input is limited to 750,000 bytes plus the truncation notice; output is limited
 to 8192 tokens on Ark, 65,536 tokens on DeepSeek (within its 1M context and 384K
 output limits), and the GitHub message-length limit. Reduced or truncated context
