@@ -496,33 +496,55 @@ jobs:
                 --arg model "${request_model}" \
                 --rawfile system "${system_input}" \
                 --rawfile user "${user_input}" \
-                '{model: $model, messages: [{role: "system", content: $system}, {role: "user", content: $user}], max_tokens: 65536, stream: false}' \
+                '{model: $model, messages: [{role: "system", content: $system}, {role: "user", content: $user}], max_tokens: 65536, stream: true, stream_options: {include_usage: true}}' \
                 > "${request_body}"
             else
               jq -n \
                 --arg model "${request_model}" \
                 --rawfile input "${review_input}" \
-                '{model: $model, input: $input, max_output_tokens: 8192, reasoning: {effort: "medium"}}' \
+                '{model: $model, input: $input, max_output_tokens: 8192, reasoning: {effort: "medium"}, stream: true}' \
                 > "${request_body}"
             fi
 
             # Both attempts share the original 600-second HTTP time budget.
-            request_timeout=$((request_deadline - SECONDS))
-            if (( request_timeout <= 0 )); then
-              echo 'ReviewBot reason_code=request_timeout' >&2
-              exit 1
-            fi
-            http_code=$(curl \
-              --silent \
-              --show-error \
-              --connect-timeout 20 \
-              --max-time "${request_timeout}" \
-              --output "${response_body}" \
-              --write-out '%{http_code}' \
-              "${api_url}" \
-              -H "Authorization: Bearer ${api_key}" \
-              -H 'Content-Type: application/json' \
-              --data-binary "@${request_body}")
+            # A transport error (non-zero curl exit) resends the same request to
+            # the same model after 5 s, then 15 s (at most three sends), only
+            # while at least 30 s of the budget would remain. HTTP errors and
+            # unusable output are not transport errors and are never resent.
+            for send in 1 2 3; do
+              request_timeout=$((request_deadline - SECONDS))
+              if (( request_timeout <= 0 )); then
+                echo 'ReviewBot reason_code=request_timeout' >&2
+                exit 1
+              fi
+              curl_status=0
+              http_code=$(curl \
+                --silent \
+                --show-error \
+                --connect-timeout 20 \
+                --max-time "${request_timeout}" \
+                --output "${response_body}" \
+                --write-out '%{http_code}' \
+                "${api_url}" \
+                -H "Authorization: Bearer ${api_key}" \
+                -H 'Content-Type: application/json' \
+                -H 'Accept: text/event-stream' \
+                --data-binary "@${request_body}") || curl_status=$?
+              if (( curl_status == 0 )); then
+                break
+              fi
+              if (( send == 3 )); then
+                echo "ReviewBot reason_code=retry_exhausted transport curl_exit=${curl_status} sends=${send}" >&2
+                exit "${curl_status}"
+              fi
+              backoff=$(( send == 1 ? 5 : 15 ))
+              if (( request_deadline - SECONDS - backoff < 30 )); then
+                echo "ReviewBot reason_code=request_timeout transport curl_exit=${curl_status} sends=${send}" >&2
+                exit "${curl_status}"
+              fi
+              echo "::notice::ReviewBot transport error (curl exit ${curl_status}); resending to the same model in ${backoff}s."
+              sleep "${backoff}"
+            done
 
             if [[ ! "${http_code}" =~ ^2[0-9][0-9]$ ]]; then
               if [[ "${http_code}" =~ ^[0-9][0-9][0-9]$ ]]; then
