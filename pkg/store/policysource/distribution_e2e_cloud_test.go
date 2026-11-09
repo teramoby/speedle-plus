@@ -355,11 +355,22 @@ type e2eCloud struct {
 	requests        []e2eRequest
 	fallbackCalls   int
 	generation      int64
-	evaluator       adsapi.PolicyEvaluator
-	evaluatorGen    int64
+	evaluator       *e2eEvaluatorEntry
 
 	upgrader websocket.Upgrader
 	closeOne sync.Once
+}
+
+// e2eEvaluatorEntry is the cached fallback evaluator for one generation of the
+// fixture state. Requests borrow it for the whole evaluation; a rebuild retires
+// the entry instead of closing it so an evaluator is never closed under a
+// request that is still using it. Every field is guarded by e2eCloud.mu.
+type e2eEvaluatorEntry struct {
+	evaluator  adsapi.PolicyEvaluator
+	generation int64
+	users      int
+	retired    bool
+	closed     bool
 }
 
 func e2eBooksPolicies() []adsync.Policy {
@@ -462,15 +473,36 @@ func (f *e2eCloud) close() {
 			conns = append(conns, conn)
 		}
 		f.conns = make(map[*e2eChannelConn]struct{})
-		evaluator := f.evaluator
-		f.evaluator = nil
 		f.mu.Unlock()
 		for _, conn := range conns {
 			conn.close()
 		}
-		e2eCloseEvaluator(evaluator)
+		// The server waits for outstanding requests, so every borrow is
+		// returned before the cached evaluator is closed.
 		f.server.Close()
+		f.mu.Lock()
+		entry := f.evaluator
+		f.evaluator = nil
+		if entry != nil {
+			entry.retired = true
+		}
+		closeEntry := f.closeEvaluatorLocked(entry)
+		f.mu.Unlock()
+		if closeEntry {
+			e2eCloseEvaluator(entry.evaluator)
+		}
 	})
+}
+
+// closeEvaluatorLocked marks a retired entry closed once its last borrower has
+// released it and reports whether the caller must close the evaluator. The
+// caller runs the close after unlocking.
+func (f *e2eCloud) closeEvaluatorLocked(entry *e2eEvaluatorEntry) bool {
+	if entry == nil || !entry.retired || entry.users > 0 || entry.closed {
+		return false
+	}
+	entry.closed = true
+	return true
 }
 
 func e2eCloseEvaluator(evaluator adsapi.PolicyEvaluator) {
@@ -983,11 +1015,12 @@ func (f *e2eCloud) serveFallback(w http.ResponseWriter, r *http.Request) {
 	f.fallbackCalls++
 	f.mu.Unlock()
 
-	evaluator, err := f.cloudEvaluator()
+	evaluator, release, err := f.acquireEvaluator()
 	if err != nil {
 		e2eWriteCloudError(w, http.StatusServiceUnavailable, "source_unavailable", "")
 		return
 	}
+	defer release()
 	var request adsrest.JsonContext
 	if err := json.Unmarshal(body, &request); err != nil {
 		e2eWriteCloudError(w, http.StatusBadRequest, "invalid_request", "")
@@ -1033,35 +1066,198 @@ func (f *e2eCloud) serveFallback(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// cloudEvaluator returns an evaluator over the current state, rebuilding it
-// when the state changed. The file store parses the SPDL exactly as an ADS
-// would, so the fixture is not reusing the engine's snapshot structures.
-func (f *e2eCloud) cloudEvaluator() (adsapi.PolicyEvaluator, error) {
-	f.mu.Lock()
-	if f.evaluator != nil && f.evaluatorGen == f.generation {
-		evaluator := f.evaluator
+// acquireEvaluator returns an evaluator over the current state together with a
+// release function the caller must invoke when it is done evaluating. The
+// evaluator is rebuilt when the state changed, but the replaced one stays open
+// until every request that borrowed it has released it. A rebuild rechecks the
+// generation before installing, so a build from an older state never replaces a
+// newer evaluator.
+func (f *e2eCloud) acquireEvaluator() (adsapi.PolicyEvaluator, func(), error) {
+	for {
+		f.mu.Lock()
+		if entry := f.evaluator; entry != nil && entry.generation == f.generation {
+			entry.users++
+			f.mu.Unlock()
+			return entry.evaluator, func() { f.releaseEvaluator(entry) }, nil
+		}
+		generation := f.generation
+		text := f.spdlLocked()
 		f.mu.Unlock()
-		return evaluator, nil
-	}
-	generation := f.generation
-	text := f.spdlLocked()
-	f.mu.Unlock()
 
+		evaluator, err := f.buildEvaluator(text)
+		if err != nil {
+			return nil, nil, err
+		}
+
+		f.mu.Lock()
+		if f.generation != generation {
+			// The state moved while this evaluator was being built. Discard
+			// it and build against the newer state instead of installing it.
+			f.mu.Unlock()
+			e2eCloseEvaluator(evaluator)
+			continue
+		}
+		entry := &e2eEvaluatorEntry{evaluator: evaluator, generation: generation, users: 1}
+		previous := f.evaluator
+		f.evaluator = entry
+		if previous != nil {
+			previous.retired = true
+		}
+		closePrevious := f.closeEvaluatorLocked(previous)
+		f.mu.Unlock()
+		if closePrevious {
+			e2eCloseEvaluator(previous.evaluator)
+		}
+		return evaluator, func() { f.releaseEvaluator(entry) }, nil
+	}
+}
+
+// releaseEvaluator drops one borrow and closes the evaluator once it is retired
+// and unused.
+func (f *e2eCloud) releaseEvaluator(entry *e2eEvaluatorEntry) {
+	f.mu.Lock()
+	entry.users--
+	closeEntry := f.closeEvaluatorLocked(entry)
+	f.mu.Unlock()
+	if closeEntry {
+		e2eCloseEvaluator(entry.evaluator)
+	}
+}
+
+// buildEvaluator parses the SPDL exactly as an ADS would, so the fixture does
+// not reuse the engine's snapshot structures.
+func (f *e2eCloud) buildEvaluator(text string) (adsapi.PolicyEvaluator, error) {
 	path := filepath.Join(f.t.TempDir(), "cloud.spdl")
 	if err := os.WriteFile(path, []byte(text), 0o600); err != nil {
 		return nil, err
 	}
-	evaluator, err := eval.NewFromFile(path, false)
-	if err != nil {
-		return nil, err
+	return eval.NewFromFile(path, false)
+}
+
+// e2eFallbackContext is the request the fallback evaluator answers in the
+// lifetime tests: a granted read on the books service.
+func e2eFallbackContext(t *testing.T) *adsapi.RequestContext {
+	t.Helper()
+	body := (e2eCheck{
+		Service:    "books",
+		Resource:   "/books/1",
+		Action:     "read",
+		Principals: e2eUser("alice"),
+	}).body(t)
+	var request adsrest.JsonContext
+	if err := json.Unmarshal(body, &request); err != nil {
+		t.Fatalf("decode fallback context: %v", err)
 	}
+	context, err := adsrest.ConvertJSONRequestToContext(&request)
+	if err != nil {
+		t.Fatalf("convert fallback context: %v", err)
+	}
+	return context
+}
+
+func (f *e2eCloud) evaluatorEntry() *e2eEvaluatorEntry {
 	f.mu.Lock()
-	previous := f.evaluator
-	f.evaluator = evaluator
-	f.evaluatorGen = generation
-	f.mu.Unlock()
-	e2eCloseEvaluator(previous)
-	return evaluator, nil
+	defer f.mu.Unlock()
+	return f.evaluator
+}
+
+// TestE2ECloudFallbackEvaluatorLifetime keeps a borrowed evaluator open across
+// a state change and closes the replaced one only after its last borrow ends.
+func TestE2ECloudFallbackEvaluatorLifetime(t *testing.T) {
+	cloud := newE2ECloud(t)
+	context := e2eFallbackContext(t)
+
+	first, releaseFirst, err := cloud.acquireEvaluator()
+	if err != nil {
+		t.Fatalf("acquire the first evaluator: %v", err)
+	}
+	firstEntry := cloud.evaluatorEntry()
+	if allowed, _, err := first.IsAllowed(*context); err != nil || !allowed {
+		t.Fatalf("first evaluator before the change: allowed=%v err=%v", allowed, err)
+	}
+
+	cloud.publish(e2eServiceBooks, e2eUpsertAuthz("p-books-carol-read", "grant user carol read /books/2"))
+	second, releaseSecond, err := cloud.acquireEvaluator()
+	if err != nil {
+		t.Fatalf("acquire the rebuilt evaluator: %v", err)
+	}
+	if secondEntry := cloud.evaluatorEntry(); secondEntry == firstEntry {
+		t.Fatal("the state change did not rebuild the evaluator")
+	}
+	if allowed, _, err := second.IsAllowed(*context); err != nil || !allowed {
+		t.Fatalf("rebuilt evaluator: allowed=%v err=%v", allowed, err)
+	}
+	cloud.mu.Lock()
+	closedWhileBorrowed := firstEntry.closed
+	cloud.mu.Unlock()
+	if closedWhileBorrowed {
+		t.Fatal("the replaced evaluator was closed while a request still borrowed it")
+	}
+	if allowed, _, err := first.IsAllowed(*context); err != nil || !allowed {
+		t.Fatalf("borrowed evaluator after the rebuild: allowed=%v err=%v", allowed, err)
+	}
+
+	releaseFirst()
+	cloud.mu.Lock()
+	closedAfterRelease := firstEntry.closed
+	cloud.mu.Unlock()
+	if !closedAfterRelease {
+		t.Fatal("the replaced evaluator stayed open after its last borrow was released")
+	}
+	releaseSecond()
+}
+
+// TestE2ECloudFallbackEvaluatorConcurrentRebuilds evaluates while the fixture
+// state changes, so the race detector can see any evaluator that a rebuild
+// closes or replaces under a request that is still evaluating with it.
+func TestE2ECloudFallbackEvaluatorConcurrentRebuilds(t *testing.T) {
+	cloud := newE2ECloud(t)
+
+	// One request context per worker: evaluation may annotate the subject.
+	contexts := make([]*adsapi.RequestContext, 4)
+	for worker := range contexts {
+		contexts[worker] = e2eFallbackContext(t)
+	}
+
+	stop := make(chan struct{})
+	var wg sync.WaitGroup
+	for worker := range contexts {
+		context := contexts[worker]
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for {
+				select {
+				case <-stop:
+					return
+				default:
+				}
+				evaluator, release, err := cloud.acquireEvaluator()
+				if err != nil {
+					t.Errorf("acquire evaluator: %v", err)
+					return
+				}
+				allowed, _, err := evaluator.IsAllowed(*context)
+				release()
+				if err != nil {
+					t.Errorf("evaluate with a borrowed evaluator: %v", err)
+					return
+				}
+				if !allowed {
+					t.Errorf("borrowed evaluator denied a granted request")
+					return
+				}
+			}
+		}()
+	}
+	for revision := 0; revision < 10; revision++ {
+		cloud.publish(e2eServiceBooks, e2eUpsertAuthz(
+			fmt.Sprintf("p-books-rebuild-%d", revision),
+			"grant user alice read /books/1",
+		))
+	}
+	close(stop)
+	wg.Wait()
 }
 
 func (f *e2eCloud) spdlLocked() string {
