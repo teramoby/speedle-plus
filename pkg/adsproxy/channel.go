@@ -467,9 +467,12 @@ func (s *Server) validateChain(chain []string, senderID string) error {
 			break
 		}
 	}
-	if position == len(chain)-2 && senderID == "" {
-		// A heartbeat carries no separate instance id, but the contract's
-		// inclusive chain ends with the sender, so the last entry names it.
+	if senderID == "" && len(chain) > 0 {
+		// A heartbeat carries no separate instance id. The contract's inclusive
+		// chain ends with the sender whether or not this proxy appears in it,
+		// so the last entry names the sender. Inferring it here, before the
+		// position check, keeps the ancestor test below effective for a chain
+		// that omits this proxy.
 		senderID = chain[len(chain)-1]
 	}
 	if senderID != "" {

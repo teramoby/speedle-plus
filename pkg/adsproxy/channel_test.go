@@ -616,3 +616,99 @@ func TestPollRejectsOverflowingWait(t *testing.T) {
 		}
 	}
 }
+
+func TestHeartbeatAncestorChainWithoutThisProxy(t *testing.T) {
+	signer := newTestSigner(t)
+	mirror, _, _ := newPopulatedMirror(t, signer)
+	token := testToken(testDownstreamID, 1)
+	server := newTestServer(t, mirror, signer.publicKeys(t), &testServerOptions{
+		chain: []string{testUpstreamID, testProxyID},
+	}, testCredential{
+		downstreamID: testDownstreamID,
+		token:        token,
+	})
+	path := adsync.APIPrefix + "/channel/poll?wait=0"
+
+	// The chain lists only an ancestor and omits this proxy. The last entry
+	// still names the sender, so the ancestor check must reject it: allowing it
+	// would let a cycle form if the ancestor synchronizes from this proxy.
+	response, body := server.post(path, token, heartbeatFrame([]string{testUpstreamID}))
+	if response.StatusCode != http.StatusForbidden || string(body) != `{"error":"chain_loop"}` {
+		t.Errorf("ancestor without this proxy: status %d body %s", response.StatusCode, body)
+	}
+
+	// An unrelated nonempty chain and the documented empty chain stay
+	// legitimate: this proxy has no position in them to check.
+	for _, chain := range [][]string{{testDownstreamB}, {}, {testUnknownID}} {
+		response, body := server.post(path, token, heartbeatFrame(chain))
+		if response.StatusCode != http.StatusOK {
+			t.Errorf("chain %v: status %d body %s", chain, response.StatusCode, body)
+		}
+	}
+}
+
+func TestWebSocketHeartbeatAncestorChainWithoutThisProxy(t *testing.T) {
+	signer := newTestSigner(t)
+	mirror, _, _ := newPopulatedMirror(t, signer)
+	token := testToken(testDownstreamID, 1)
+	server := newTestServer(t, mirror, signer.publicKeys(t), &testServerOptions{
+		chain: []string{testUpstreamID, testProxyID},
+	}, testCredential{
+		downstreamID: testDownstreamID,
+		token:        token,
+	})
+	conn, _, err := server.dial(token)
+	if err != nil {
+		t.Fatalf("dial: %v", err)
+	}
+	defer conn.Close()
+	writeJSONFrame(t, conn, helloMessage{
+		Type:         "hello",
+		InstanceID:   testDownstreamID,
+		Services:     []helloService{},
+		Chain:        []string{testProxyID, testDownstreamID},
+		AgentVersion: "test",
+	})
+	if kind, _ := readChannelFrame(t, conn); kind != "ack" {
+		t.Fatalf("frame = %q", kind)
+	}
+	writeJSONFrame(t, conn, heartbeatMessage{
+		Type:     "heartbeat",
+		Services: []heartbeatService{},
+		Liveness: "live",
+		Chain:    []string{testUpstreamID},
+		Fallback: fallbackMessage{Services: []string{}},
+	})
+	code, reason := readClose(t, conn)
+	if code != websocket.ClosePolicyViolation || reason != "chain_loop" {
+		t.Fatalf("close = %d %q", code, reason)
+	}
+}
+
+func TestWebSocketHelloFromAnAncestor(t *testing.T) {
+	signer := newTestSigner(t)
+	mirror, _, _ := newPopulatedMirror(t, signer)
+	token := testToken(testDownstreamID, 1)
+	server := newTestServer(t, mirror, signer.publicKeys(t), &testServerOptions{
+		chain: []string{testUpstreamID, testProxyID},
+	}, testCredential{
+		downstreamID: testDownstreamID,
+		token:        token,
+	})
+	conn, _, err := server.dial(token)
+	if err != nil {
+		t.Fatalf("dial: %v", err)
+	}
+	defer conn.Close()
+	writeJSONFrame(t, conn, helloMessage{
+		Type:         "hello",
+		InstanceID:   testUpstreamID,
+		Services:     []helloService{},
+		Chain:        []string{testUpstreamID},
+		AgentVersion: "test",
+	})
+	code, reason := readClose(t, conn)
+	if code != websocket.ClosePolicyViolation || reason != "chain_loop" {
+		t.Fatalf("close = %d %q", code, reason)
+	}
+}
