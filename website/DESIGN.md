@@ -455,8 +455,8 @@ the left and three product cards on the right, then a hairline legal bar.
 - The legal text is byte-identical to the approved wording:
   1. Engine and AI: "Licensed under the Universal Permissive License v1.0." /
      "基于 Universal Permissive License v1.0 授权。"
-  2. All: "Copyright © 2019–2026. All rights reserved." /
-     "版权所有 © 2019–2026。"
+  2. All: "Copyright © 2019–2026 The Speedle Authors. All rights reserved." /
+     "版权所有 © 2019–2026 The Speedle Authors。"
 
 Add the footer to the parity table: footer height, lock-up logo width, text
 size, social box size.
