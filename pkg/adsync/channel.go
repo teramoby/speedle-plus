@@ -59,6 +59,9 @@ type ServiceSetChange struct {
 	// Removed lists services that were known and are absent from the ack,
 	// sorted by id.
 	Removed []Service
+	// Renamed lists known services whose name changed in the ack, sorted by
+	// id. The revision and epoch are the ack's current head.
+	Renamed []Service
 }
 
 // FallbackState is the instance's fallback accounting, reported in every
@@ -617,7 +620,7 @@ func (c *Channel) storeServiceSet(extraKnown, services []Service) (*ServiceSetCh
 		known[service.ID] = service
 	}
 	current := make(map[string]Service, len(services))
-	var added, removed, advanced []Service
+	var added, removed, advanced, renamed []Service
 	for _, service := range services {
 		current[service.ID] = service
 		previous, found := known[service.ID]
@@ -627,6 +630,9 @@ func (c *Channel) storeServiceSet(extraKnown, services []Service) (*ServiceSetCh
 		}
 		if service.Revision > previous.Revision || service.Epoch != previous.Epoch {
 			advanced = append(advanced, service)
+		}
+		if service.Name != previous.Name {
+			renamed = append(renamed, service)
 		}
 	}
 	for id, service := range known {
@@ -645,10 +651,11 @@ func (c *Channel) storeServiceSet(extraKnown, services []Service) (*ServiceSetCh
 	sort.Slice(added, func(left, right int) bool { return added[left].ID < added[right].ID })
 	sort.Slice(removed, func(left, right int) bool { return removed[left].ID < removed[right].ID })
 	sort.Slice(advanced, func(left, right int) bool { return advanced[left].ID < advanced[right].ID })
-	if len(added) == 0 && len(removed) == 0 {
+	sort.Slice(renamed, func(left, right int) bool { return renamed[left].ID < renamed[right].ID })
+	if len(added) == 0 && len(removed) == 0 && len(renamed) == 0 {
 		return nil, advanced
 	}
-	return &ServiceSetChange{Added: added, Removed: removed}, advanced
+	return &ServiceSetChange{Added: added, Removed: removed, Renamed: renamed}, advanced
 }
 
 func (c *Channel) deliverCommands(commands []channelCommand, results chan<- channelCommandResult) {

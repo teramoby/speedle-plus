@@ -124,8 +124,11 @@ func (s *Store) startRuntime() error {
 		UpstreamInstanceID: upstreamInstanceID,
 		Fallback:           s.fallbackState,
 		OnNotify:           func(adsync.Notify) { s.triggerSync() },
-		OnServiceSetChange: func(adsync.ServiceSetChange) { s.triggerSync() },
-		OnCommand:          s.handleRuntimeCommand,
+		OnServiceSetChange: func(change adsync.ServiceSetChange) {
+			s.applyServiceSetChange(change)
+			s.triggerSync()
+		},
+		OnCommand: s.handleRuntimeCommand,
 	})
 	if err != nil {
 		if runtime.proxy != nil {
@@ -169,6 +172,66 @@ func (s *Store) startRuntime() error {
 	}()
 	s.triggerSync()
 	return nil
+}
+
+// applyServiceSetChange applies the authoritative removals and renames from a
+// channel ack to the local copies and the downstream mirror immediately. A
+// successful discovery would do the same, but it can fail; the ack alone
+// already proves the service is gone or renamed, so the evaluator must stop
+// serving the old copy before the next discovery attempt.
+func (s *Store) applyServiceSetChange(change adsync.ServiceSetChange) {
+	if len(change.Removed) == 0 && len(change.Renamed) == 0 {
+		return
+	}
+	changed := false
+	for _, service := range change.Removed {
+		s.removeCopy(service.ID)
+		if err := s.syncer.Forget(service.ID); err != nil {
+			log.Warnf("policy-source could not discard removed service %q: %v", service.ID, err)
+		}
+		changed = true
+	}
+	if s.renameCopies(change.Renamed) {
+		changed = true
+	}
+	if changed {
+		s.publish()
+	}
+	s.runtimeMu.Lock()
+	runtime := s.runtime
+	s.runtimeMu.Unlock()
+	if runtime == nil || runtime.mirror == nil {
+		return
+	}
+	for _, service := range change.Removed {
+		runtime.mirror.RemoveService(service.ID)
+	}
+	for _, service := range change.Renamed {
+		// The mirror serves signed snapshots, which still carry the old name.
+		// Withhold the service until a snapshot or change page verifies the new
+		// name at the advertised head.
+		runtime.mirror.MarkUnavailable(service.ID)
+	}
+}
+
+// renameCopies applies authoritative service renames to the installed copies.
+// The old name is recorded like a removal until the evaluator installs the
+// assembly carrying the new name, so the request gate cannot evaluate the
+// renamed service under its previous name in the meantime.
+func (s *Store) renameCopies(renames []adsync.Service) bool {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	changed := false
+	for _, service := range renames {
+		copied := s.copies[service.ID]
+		if copied == nil || copied.service.Name == service.Name {
+			continue
+		}
+		s.pendingRemoved[service.ID] = copied.service.Name
+		copied.service.Name = service.Name
+		changed = true
+	}
+	return changed
 }
 
 func (s *Store) reconcile(ctx context.Context) {
@@ -398,11 +461,15 @@ func (s *Store) reachMirrorHead(ctx context.Context, mirror *adsproxy.Mirror, se
 			// discovery is stale; the verified copy is not older policy.
 			return nil
 		case info.Revision == service.Revision:
-			if info.StateHash == service.HeadStateHash {
-				return nil
+			if info.StateHash != service.HeadStateHash {
+				return fmt.Errorf("%w: mirror copy of service %q at revision %d has a different state hash than the advertised head",
+					adsync.ErrIntegrity, service.ID, service.Revision)
 			}
-			return fmt.Errorf("%w: mirror copy of service %q at revision %d has a different state hash than the advertised head",
-				adsync.ErrIntegrity, service.ID, service.Revision)
+			if info.Name != service.Name {
+				return fmt.Errorf("%w: mirror copy of service %q still carries name %q, advertised name is %q",
+					adsync.ErrProtocol, service.ID, info.Name, service.Name)
+			}
+			return nil
 		}
 		if err := s.catchUpMirror(ctx, mirror, service, info); err == nil && s.mirrorReached(mirror, service) {
 			return nil
@@ -434,7 +501,7 @@ func (s *Store) reachMirrorHead(ctx context.Context, mirror *adsproxy.Mirror, se
 // advertised revision the state hash must match, so an inconsistent source
 // cannot make the runtime advertise a different policy generation.
 func mirrorMatchesHead(info adsproxy.ServiceInfo, service adsync.Service) bool {
-	if info.SourceID != service.ID || info.Epoch != service.Epoch {
+	if info.SourceID != service.ID || info.Epoch != service.Epoch || info.Name != service.Name {
 		return false
 	}
 	if info.Revision > service.Revision {

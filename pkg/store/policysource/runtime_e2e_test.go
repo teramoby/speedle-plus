@@ -470,6 +470,121 @@ func TestE2EProductionRuntimeRemovalAppliesWhileAnotherServiceIsHeld(t *testing.
 	}
 }
 
+// TestE2EProductionRuntimeRemovalAppliesWhenDiscoveryFails covers an ack that
+// removes a granting service while the following discovery request fails. The
+// ack is authoritative, so the store must apply the removal immediately: the
+// gate fails closed and the downstream mirror stops advertising the service
+// without waiting for a successful discovery.
+func TestE2EProductionRuntimeRemovalAppliesWhenDiscoveryFails(t *testing.T) {
+	cloud := newE2ECloud(t)
+	_, downstreamToken := e2eDownstreamCredential("B", e2eInstanceB, 2)
+	digest := sha256.Sum256([]byte(downstreamToken))
+	downstreamFile := filepath.Join(t.TempDir(), "downstream-credentials")
+	writeDownstreamCredentials(t, downstreamFile, "B:"+hex.EncodeToString(digest[:])+":*")
+	ads, server := startProductionADS(t, cloud, map[string]interface{}{
+		ServeDownstreamKey:       true,
+		DownstreamCredentialsKey: downstreamFile,
+	})
+	client := server.Client()
+	downstreamServices := func() []adsync.Service {
+		request, err := http.NewRequest(http.MethodGet, server.URL+adsync.APIPrefix+"/services", nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		request.Header.Set("Authorization", "Bearer "+downstreamToken)
+		response, err := client.Do(request)
+		if err != nil {
+			return nil
+		}
+		defer response.Body.Close()
+		if response.StatusCode != http.StatusOK {
+			return nil
+		}
+		var services adsync.ServicesResponse
+		if json.NewDecoder(response.Body).Decode(&services) != nil {
+			return nil
+		}
+		return services.Services
+	}
+	agent := &e2eAgent{t: t, server: server, client: client}
+	alice := e2eCheck{Service: "books", Resource: "/books/1", Action: "read", Principals: e2eUser("alice")}
+	isAllowed := func() (int, adsrest.IsAllowedResponse) {
+		t.Helper()
+		status, _, body := agent.isAllowed(alice.body(t))
+		if status != http.StatusOK {
+			return status, adsrest.IsAllowedResponse{}
+		}
+		return status, e2eDecodeResponse(t, body)
+	}
+
+	e2eWaitAllInSync(t, &e2eAgent{store: ads}, "books", "orders")
+	e2eWaitFor(t, "the downstream service set to carry both services", func() bool {
+		return len(downstreamServices()) == 2
+	})
+	if status, decision := isAllowed(); status != http.StatusOK || !decision.Allowed {
+		t.Fatalf("baseline books decision = %+v (status %d)", decision, status)
+	}
+
+	// Discovery fails, but the channel ack still removes books. The removal
+	// must not wait for the next successful discovery.
+	cloud.setServicesUnavailable(true)
+	defer cloud.setServicesUnavailable(false)
+	cloud.removeService(e2eServiceBooks)
+	cloud.pushAck()
+	e2eWaitFor(t, "the downstream service set to drop books", func() bool {
+		services := downstreamServices()
+		return len(services) == 1 && services[0].ID == e2eServiceOrders
+	})
+	status, decision := isAllowed()
+	if status == http.StatusOK && decision.Allowed {
+		t.Fatalf("the removed service was authorized from its installed copy: %+v", decision)
+	}
+	if status != http.StatusOK && status != http.StatusServiceUnavailable {
+		t.Fatalf("removed service decision = status %d %+v", status, decision)
+	}
+}
+
+// TestE2EProductionRuntimeRenameAppliesWhenDiscoveryFails covers an ack that
+// renames a service while discovery fails: the previous name must not keep
+// authorizing from the copy its rename replaced.
+func TestE2EProductionRuntimeRenameAppliesWhenDiscoveryFails(t *testing.T) {
+	cloud := newE2ECloud(t)
+	ads, server := startProductionADS(t, cloud, nil)
+	client := server.Client()
+	agent := &e2eAgent{t: t, server: server, client: client}
+	carol := e2eCheck{Service: "orders", Resource: "/orders/1", Action: "approve", Principals: e2eUser("carol")}
+	isAllowed := func() (int, adsrest.IsAllowedResponse) {
+		t.Helper()
+		status, _, body := agent.isAllowed(carol.body(t))
+		if status != http.StatusOK {
+			return status, adsrest.IsAllowedResponse{}
+		}
+		return status, e2eDecodeResponse(t, body)
+	}
+
+	e2eWaitAllInSync(t, &e2eAgent{store: ads}, "books", "orders")
+	if status, decision := isAllowed(); status != http.StatusOK || !decision.Allowed {
+		t.Fatalf("baseline orders decision = %+v (status %d)", decision, status)
+	}
+
+	cloud.setServicesUnavailable(true)
+	defer cloud.setServicesUnavailable(false)
+	newName := "orders-v2"
+	cloud.renameService(e2eServiceOrders, newName)
+	cloud.pushAck()
+	e2eWaitFor(t, "the machine to track the renamed service", func() bool {
+		status, known := ads.Status(newName)
+		return known && status.Service.ID == e2eServiceOrders
+	})
+	status, decision := isAllowed()
+	if status == http.StatusOK && decision.Allowed {
+		t.Fatalf("the previous service name was authorized from its installed copy: %+v", decision)
+	}
+	if status != http.StatusOK && status != http.StatusServiceUnavailable {
+		t.Fatalf("previous-name decision = status %d %+v", status, decision)
+	}
+}
+
 // TestE2EProductionRuntimeRejectsAConflictingAdvertisedHash covers the
 // equal-revision case: a mirror copy at the advertised revision with a
 // different state hash must not be treated as current.

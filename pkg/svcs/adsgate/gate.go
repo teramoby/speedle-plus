@@ -81,6 +81,13 @@ func (g *Gate) Route(serviceName string) Route {
 	}
 	status, known := g.source.Status(serviceName)
 	if !known {
+		// A renamed service's previous name is unknown to the machine but its
+		// old copy may still be installed in the evaluator. The store reports
+		// that name as a pending removal until the renamed assembly is
+		// installed, so the request fails closed in the meantime.
+		if removals, ok := g.source.(interface{ RemovalInstalled(string) bool }); ok && !removals.RemovalInstalled(serviceName) {
+			return Route{Kind: RouteUnavailable, Reason: adsync.ReasonSourceGone}
+		}
 		return Route{Kind: RouteLocal}
 	}
 	if status.Service.State == adsync.SyncStateRemoved {

@@ -262,6 +262,45 @@ func TestAppliedBeforeAckWaitsForConfirmation(t *testing.T) {
 	requireServiceState(t, machine, "books", SyncStateInSync, "")
 }
 
+func TestEpochChangeInvalidatesAnInFlightAttempt(t *testing.T) {
+	machine, _ := newTestMachine(t)
+	epochA := testAckService(testServiceID1, "books", 1)
+	mustAck(t, machine, ackWith(epochA))
+	mustApply(t, machine, testServiceState(testServiceID1, "books", 1))
+	requireServiceState(t, machine, "books", SyncStateInSync, "")
+
+	// A fetch starts while the service is in epoch A.
+	attempt := machine.BeginSync(testServiceID1)
+
+	// The source moves to epoch B and a delayed epoch-A ack arrives before the
+	// in-flight fetch reports back.
+	epochB := epochA
+	epochB.Epoch = testServiceID2
+	epochB.HeadStateHash = StateHash(Snapshot{Name: "books-b"})
+	mustAck(t, machine, ackWith(epochB))
+	mustAck(t, machine, ackWith(epochA))
+	requireServiceState(t, machine, "books", SyncStateSyncing, SyncReasonBootstrap)
+
+	// The epoch-A result is stale: an epoch transition invalidated the
+	// attempt, so the delayed ack cannot make the fetched copy servable.
+	if err := machine.Applied(attempt, testServiceState(testServiceID1, "books", 1)); err != nil {
+		t.Fatalf("Applied: %v", err)
+	}
+	status := requireServiceState(t, machine, "books", SyncStateSyncing, SyncReasonBootstrap)
+	if status.Revision != 0 {
+		t.Fatalf("stale epoch-A copy revision = %d, want no local copy", status.Revision)
+	}
+
+	// A confirming ack and a fetch under the new epoch complete normally.
+	mustAck(t, machine, ackWith(epochB))
+	stateB := testServiceState(testServiceID1, "books", 1)
+	stateB.Epoch = testServiceID2
+	stateB.StateHash = epochB.HeadStateHash
+	stateB.CommitHash = epochB.HeadStateHash
+	mustApply(t, machine, stateB)
+	requireServiceState(t, machine, "books", SyncStateInSync, "")
+}
+
 func TestHeadAdvanceRequiresAckConfirmation(t *testing.T) {
 	machine, _ := newTestMachine(t)
 	mustAck(t, machine, ackWith(testAckService(testServiceID1, "books", 5)))

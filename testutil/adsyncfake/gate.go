@@ -32,6 +32,10 @@ type Source struct {
 	fallbackBody      []byte
 	fallbackErr       error
 	forwarded         []Forwarded
+
+	// pendingRemovals holds service names whose old copies are still installed
+	// in the evaluator after a removal or rename.
+	pendingRemovals map[string]struct{}
 }
 
 // New returns a live instance with no services and an available fallback.
@@ -39,8 +43,30 @@ func New() *Source {
 	return &Source{
 		instance:          adsync.InstanceStatus{Liveness: adsync.LivenessLive},
 		order:             make(map[string]int),
+		pendingRemovals:   make(map[string]struct{}),
 		fallbackAvailable: true,
 	}
+}
+
+// SetRemovalPending records whether a removed or renamed service name is still
+// installed in the evaluator.
+func (s *Source) SetRemovalPending(name string, pending bool) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if pending {
+		s.pendingRemovals[name] = struct{}{}
+		return
+	}
+	delete(s.pendingRemovals, name)
+}
+
+// RemovalInstalled implements the store's removal guard: a name is installed
+// until it is recorded as pending.
+func (s *Source) RemovalInstalled(name string) bool {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	_, pending := s.pendingRemovals[name]
+	return !pending
 }
 
 // SetInstance replaces the instance status.

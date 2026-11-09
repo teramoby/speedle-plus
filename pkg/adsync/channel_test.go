@@ -417,6 +417,15 @@ func (f *channelSource) addService(service *fixtureService) {
 	f.servicesVersion++
 }
 
+func (f *channelSource) renameService(serviceID, name string) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	if service := f.services[serviceID]; service != nil && service.Name != name {
+		service.Name = name
+		f.servicesVersion++
+	}
+}
+
 func (f *channelSource) removeService(serviceID string) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
@@ -1058,6 +1067,27 @@ func TestChannelServiceSetChange(t *testing.T) {
 			if len(services) != 2 {
 				t.Fatalf("channel services = %+v, want books and reports", services)
 			}
+
+			// A rename is reported separately: the id stays, the name changes.
+			source.renameService(books.ID, "books-v2")
+			source.signal()
+			waitFor(t, 3*time.Second, "the renamed service in the machine", func() bool {
+				status, known := machine.Status("books-v2")
+				return known && status.Service.ID == books.ID
+			})
+			waitFor(t, 3*time.Second, "the rename callback", func() bool {
+				for {
+					select {
+					case change := <-changes:
+						if len(change.Renamed) == 1 && change.Renamed[0].ID == books.ID &&
+							change.Renamed[0].Name == "books-v2" {
+							return true
+						}
+					default:
+						return false
+					}
+				}
+			})
 		})
 	}
 }

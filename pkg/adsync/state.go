@@ -433,9 +433,20 @@ func (m *Machine) ObserveHead(head Head) error {
 	if record == nil || (m.setKnown && !record.setMember) || record.state == SyncStateRemoved {
 		return nil
 	}
-	record.updateHead(head.Epoch, head.Revision, head.StateHash, false)
+	m.updateRecordHeadLocked(record, head.Epoch, head.Revision, head.StateHash, false)
 	m.recomputeRecordLocked(record)
 	return nil
+}
+
+// updateRecordHeadLocked applies one head update. An epoch transition
+// invalidates every attempt that began under the previous epoch: a result
+// fetched from replaced policy must not be publishable afterwards, not even
+// when a delayed message moves the head back to the old epoch.
+func (m *Machine) updateRecordHeadLocked(record *serviceRecord, epoch string, revision uint64, stateHash Hash, confirmed bool) {
+	if record.headKnown && epoch != "" && record.epoch != "" && epoch != record.epoch {
+		m.invalidateAttemptsLocked(record)
+	}
+	record.updateHead(epoch, revision, stateHash, confirmed)
 }
 
 // BeginSync returns the attempt a caller passes to Applied for a fetch of one
@@ -749,7 +760,7 @@ func (m *Machine) applySetLocked(services []Service, confirmed bool) {
 		}
 		record.setMember = true
 		record.name = service.Name
-		record.updateHead(service.Epoch, service.Revision, service.HeadStateHash, confirmed)
+		m.updateRecordHeadLocked(record, service.Epoch, service.Revision, service.HeadStateHash, confirmed)
 	}
 	for _, record := range m.records {
 		m.recomputeRecordLocked(record)

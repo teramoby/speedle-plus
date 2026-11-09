@@ -360,6 +360,9 @@ type e2eCloud struct {
 	fallbackCalls       int
 	generation          int64
 	evaluator           *e2eEvaluatorEntry
+	// servicesUnavailable makes the discovery endpoint fail while the channel
+	// and data endpoints keep working.
+	servicesUnavailable bool
 
 	upgrader websocket.Upgrader
 	closeOne sync.Once
@@ -604,6 +607,14 @@ func (f *e2eCloud) setDataUnavailable(serviceID string, unavailable bool) {
 	}
 }
 
+// setServicesUnavailable fails the discovery endpoint only, so an ack can still
+// arrive while the following synchronization pass cannot discover the set.
+func (f *e2eCloud) setServicesUnavailable(unavailable bool) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.servicesUnavailable = unavailable
+}
+
 // publish appends one revision and returns the new head.
 func (f *e2eCloud) publish(serviceID string, changes ...adsync.Change) uint64 {
 	f.mu.Lock()
@@ -613,6 +624,22 @@ func (f *e2eCloud) publish(serviceID string, changes ...adsync.Change) uint64 {
 		f.t.Fatalf("fixture has no service %q", serviceID)
 	}
 	service.publish(f.t, f.signer, changes...)
+	f.generation++
+	return service.Revision
+}
+
+// renameService renames a service and publishes a signed service change, so the
+// ack, discovery and snapshot all carry the new name at a new revision.
+func (f *e2eCloud) renameService(serviceID, name string) uint64 {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	service := f.services[serviceID]
+	if service == nil {
+		f.t.Fatalf("fixture has no service %q", serviceID)
+	}
+	service.Name = name
+	service.publish(f.t, f.signer,
+		adsync.Change{Op: e2eChangeUpsert, Kind: e2eKindService, ID: serviceID, Name: &name})
 	f.generation++
 	return service.Revision
 }
@@ -922,6 +949,11 @@ func (f *e2eCloud) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 func (f *e2eCloud) serveServices(w http.ResponseWriter) {
 	f.mu.Lock()
+	if f.servicesUnavailable {
+		f.mu.Unlock()
+		e2eWriteCloudError(w, http.StatusServiceUnavailable, "source_unavailable", "")
+		return
+	}
 	response := adsync.ServicesResponse{ServicesVersion: f.servicesVersion}
 	for _, id := range f.order {
 		service := f.services[id]
