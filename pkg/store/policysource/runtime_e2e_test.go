@@ -31,60 +31,17 @@ import (
 // mirror loop is involved: the production store runtime must do all three.
 func TestE2EProductionRuntimeSyncsAndServesDownstream(t *testing.T) {
 	cloud := newE2ECloud(t)
-	source := cloud.source()
-	fallback := cloud.fallbackSource(e2eInstanceA, 201)
-	credentialFile := writeRuntimeCredential(t, "source-credential", source.Credential)
-	fallbackCredentialFile := writeRuntimeCredential(t, "fallback-credential", fallback.Credential)
-
-	keyDocument, err := json.Marshal(adsync.PublicKeyFile{Keys: []adsync.PublicKeyEntry{{
-		KeyID:     cloud.signer.keyID,
-		PublicKey: base64.StdEncoding.EncodeToString(cloud.signer.private.Public().(ed25519.PublicKey)),
-	}}})
-	if err != nil {
-		t.Fatal(err)
-	}
-	keyFile := filepath.Join(t.TempDir(), "policy-keys.json")
-	if err := os.WriteFile(keyFile, keyDocument, 0o644); err != nil {
-		t.Fatal(err)
-	}
-
 	_, downstreamToken := e2eDownstreamCredential("B", e2eInstanceB, 2)
 	digest := sha256.Sum256([]byte(downstreamToken))
 	downstreamFile := filepath.Join(t.TempDir(), "downstream-credentials")
 	writeDownstreamCredentials(t, downstreamFile, "B:"+hex.EncodeToString(digest[:])+":*")
 
-	manager, err := speedlestore.NewStore(StoreType, map[string]interface{}{
-		PolicySourceURLKey:       source.URL,
-		CredentialFileKey:        credentialFile,
-		PublicKeysKey:            keyFile,
-		CAFileKey:                source.CAFile,
-		CloudFallbackURLKey:      fallback.URL,
-		CloudCredentialFileKey:   fallbackCredentialFile,
-		TransportKey:             string(adsync.TransportWebSocket),
-		HeartbeatIntervalKey:     "15s",
-		StaleAfterKey:            "30s",
-		StopAfterKey:             "60s",
+	ads, server := startProductionADS(t, cloud, map[string]interface{}{
 		ServeDownstreamKey:       true,
 		DownstreamCredentialsKey: downstreamFile,
 		MaxDownstreamKey:         50,
 		MaxConnectionsKey:        2,
 	})
-	if err != nil {
-		t.Fatalf("build registered policy-source store: %v", err)
-	}
-	ads := manager.(*Store)
-	engine, err := eval.NewWithStore(&cfg.Config{EnableWatch: true}, ads)
-	if err != nil {
-		t.Fatalf("build evaluator: %v", err)
-	}
-	evaluator := engine.(*eval.PolicyEvalImpl)
-	t.Cleanup(func() { _ = evaluator.Close() })
-	router, err := adsrest.NewRouter(evaluator)
-	if err != nil {
-		t.Fatalf("build router: %v", err)
-	}
-	server := httptest.NewTLSServer(router)
-	t.Cleanup(server.Close)
 	client := server.Client()
 
 	get := func(path, token string) (int, []byte) {
@@ -198,6 +155,138 @@ func TestE2EProductionRuntimeSyncsAndServesDownstream(t *testing.T) {
 	if status, _ := get(adsync.APIPrefix+"/services", downstreamToken); status != http.StatusUnauthorized {
 		t.Fatalf("removed downstream credential HTTP status = %d", status)
 	}
+}
+
+// TestE2EProductionRuntimeSyncFailureDoesNotServeStaleDecisions keeps one
+// service from synchronizing after bootstrap. The production runtime must keep
+// trying on its own, the request gate must stop answering that service from
+// its outdated local copy, and every other service keeps evaluating locally.
+func TestE2EProductionRuntimeSyncFailureDoesNotServeStaleDecisions(t *testing.T) {
+	cloud := newE2ECloud(t)
+	ads, server := startProductionADS(t, cloud, nil)
+	client := server.Client()
+	e2eWaitAllInSync(t, &e2eAgent{store: ads}, "books", "orders")
+
+	isAllowed := func(check e2eCheck) (string, adsrest.IsAllowedResponse, bool) {
+		t.Helper()
+		request, err := http.NewRequest(http.MethodPost, server.URL+svcs.PolicyAtzPath+"is-allowed",
+			strings.NewReader(string(check.body(t))))
+		if err != nil {
+			t.Fatal(err)
+		}
+		request.Header.Set("Content-Type", "application/json")
+		response, err := client.Do(request)
+		if err != nil {
+			t.Fatalf("is-allowed: %v", err)
+		}
+		defer response.Body.Close()
+		body, err := io.ReadAll(io.LimitReader(response.Body, 1<<20))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if response.StatusCode != http.StatusOK {
+			return response.Header.Get(svcs.DecisionSourceHeader), adsrest.IsAllowedResponse{}, false
+		}
+		return response.Header.Get(svcs.DecisionSourceHeader), e2eDecodeResponse(t, body), true
+	}
+	alice := e2eCheck{Service: "books", Resource: "/books/1", Action: "read", Principals: e2eUser("alice")}
+	carol := e2eCheck{Service: "orders", Resource: "/orders/1", Action: "approve", Principals: e2eUser("carol")}
+	if source, decision, ok := isAllowed(alice); !ok || source != "" || !decision.Allowed {
+		t.Fatalf("initial local books decision = %+v (source %q, ok %v)", decision, source, ok)
+	}
+
+	// Cloud revokes alice's grant, but books can no longer be synchronized.
+	booksData := "/services/" + e2eServiceBooks + "/"
+	attemptsBefore := cloud.countRequests(booksData+"snapshot") + cloud.countRequests(booksData+"changes")
+	cloud.setDataUnavailable(e2eServiceBooks, true)
+	cloud.publish(e2eServiceBooks, adsync.Change{Op: e2eChangeDelete, Kind: e2eKindAuthz, ID: "p-books-alice-read"})
+	cloud.pushAck()
+
+	e2eWaitFor(t, "the production runtime to attempt and fail the books synchronization", func() bool {
+		attempts := cloud.countRequests(booksData+"snapshot") + cloud.countRequests(booksData+"changes")
+		status, _ := ads.Status("books")
+		return attempts > attemptsBefore && status.Service.State == adsync.SyncStateSyncing && status.Service.Revision == 1
+	})
+	// The outdated local copy still grants alice. The request must go to Cloud,
+	// which already applies the revocation.
+	source, decision, ok := isAllowed(alice)
+	if !ok || source != svcs.DecisionSourceCloudFallback || decision.Allowed {
+		t.Fatalf("books decision during the failure = %+v (source %q, ok %v), want a Cloud denial", decision, source, ok)
+	}
+	if source, decision, ok := isAllowed(carol); !ok || source != "" || !decision.Allowed {
+		t.Fatalf("orders decision during the books failure = %+v (source %q, ok %v), want local", decision, source, ok)
+	}
+
+	// Once the source recovers, a notification is enough for the runtime to
+	// finish the synchronization and evaluate books locally again.
+	cloud.setDataUnavailable(e2eServiceBooks, false)
+	cloud.notify(e2eServiceBooks, 2)
+	e2eWaitFor(t, "books to return to local evaluation at revision 2", func() bool {
+		status, _ := ads.Status("books")
+		if status.Service.State != adsync.SyncStateInSync || status.Service.Revision != 2 {
+			return false
+		}
+		source, decision, ok := isAllowed(alice)
+		return ok && source == "" && !decision.Allowed
+	})
+}
+
+// startProductionADS builds an ADS the way the shipped binary does: the
+// registered store builder, the evaluator with watching enabled and the REST
+// router. extra adds store properties to the common policy-source
+// configuration.
+func startProductionADS(t *testing.T, cloud *e2eCloud, extra map[string]interface{}) (*Store, *httptest.Server) {
+	t.Helper()
+	source := cloud.source()
+	fallback := cloud.fallbackSource(e2eInstanceA, 201)
+	credentialFile := writeRuntimeCredential(t, "source-credential", source.Credential)
+	fallbackCredentialFile := writeRuntimeCredential(t, "fallback-credential", fallback.Credential)
+
+	keyDocument, err := json.Marshal(adsync.PublicKeyFile{Keys: []adsync.PublicKeyEntry{{
+		KeyID:     cloud.signer.keyID,
+		PublicKey: base64.StdEncoding.EncodeToString(cloud.signer.private.Public().(ed25519.PublicKey)),
+	}}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	keyFile := filepath.Join(t.TempDir(), "policy-keys.json")
+	if err := os.WriteFile(keyFile, keyDocument, 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	properties := map[string]interface{}{
+		PolicySourceURLKey:     source.URL,
+		CredentialFileKey:      credentialFile,
+		PublicKeysKey:          keyFile,
+		CAFileKey:              source.CAFile,
+		CloudFallbackURLKey:    fallback.URL,
+		CloudCredentialFileKey: fallbackCredentialFile,
+		TransportKey:           string(adsync.TransportWebSocket),
+		HeartbeatIntervalKey:   "15s",
+		StaleAfterKey:          "30s",
+		StopAfterKey:           "60s",
+	}
+	for key, value := range extra {
+		properties[key] = value
+	}
+	manager, err := speedlestore.NewStore(StoreType, properties)
+	if err != nil {
+		t.Fatalf("build registered policy-source store: %v", err)
+	}
+	ads := manager.(*Store)
+	engine, err := eval.NewWithStore(&cfg.Config{EnableWatch: true}, ads)
+	if err != nil {
+		t.Fatalf("build evaluator: %v", err)
+	}
+	evaluator := engine.(*eval.PolicyEvalImpl)
+	t.Cleanup(func() { _ = evaluator.Close() })
+	router, err := adsrest.NewRouter(evaluator)
+	if err != nil {
+		t.Fatalf("build router: %v", err)
+	}
+	server := httptest.NewTLSServer(router)
+	t.Cleanup(server.Close)
+	return ads, server
 }
 
 func writeRuntimeCredential(t *testing.T, name, credential string) string {

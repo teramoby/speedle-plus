@@ -153,6 +153,9 @@ type e2eService struct {
 	Commits    []adsync.Commit
 
 	HistoryUnavailable bool
+	// DataUnavailable makes snapshot and change requests fail with 503, so
+	// synchronizing this service fails while every other service works.
+	DataUnavailable bool
 	// Hold makes snapshot and change requests wait until it is closed.
 	Hold chan struct{}
 }
@@ -553,6 +556,14 @@ func (f *e2eCloud) release(serviceID string) {
 	}
 }
 
+func (f *e2eCloud) setDataUnavailable(serviceID string, unavailable bool) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	if service := f.services[serviceID]; service != nil {
+		service.DataUnavailable = unavailable
+	}
+}
+
 func (f *e2eCloud) setHistoryUnavailable(serviceID string, unavailable bool) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
@@ -905,6 +916,11 @@ func (f *e2eCloud) serveSnapshot(w http.ResponseWriter, r *http.Request, service
 		e2eWriteCloudError(w, http.StatusNotFound, "service_not_found", "")
 		return
 	}
+	if service.DataUnavailable {
+		f.mu.Unlock()
+		e2eWriteCloudError(w, http.StatusServiceUnavailable, "source_unavailable", "")
+		return
+	}
 	signature := f.signer.sign(adsync.SnapshotSignedBytes(
 		service.ID, service.Epoch, service.Revision, service.StateHash, service.CommitHash,
 	))
@@ -947,6 +963,11 @@ func (f *e2eCloud) serveChanges(w http.ResponseWriter, r *http.Request, serviceI
 	if service == nil {
 		f.mu.Unlock()
 		e2eWriteCloudError(w, http.StatusNotFound, "service_not_found", "")
+		return
+	}
+	if service.DataUnavailable {
+		f.mu.Unlock()
+		e2eWriteCloudError(w, http.StatusServiceUnavailable, "source_unavailable", "")
 		return
 	}
 	if service.HistoryUnavailable {
