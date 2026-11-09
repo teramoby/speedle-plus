@@ -70,10 +70,20 @@ func (c *Channel) runWebSocket(ctx context.Context) wsOutcome {
 	defer conn.Close()
 
 	conn.SetReadLimit(maxChannelFrameBytes)
+	var ackedAt time.Time
+	// The first ack is bounded by an absolute deadline. Keepalive traffic must
+	// not keep a connection that never gets an ack alive, or auto mode could
+	// never observe the missing ack and fall back. Once the first ack arrives,
+	// the ordinary keepalive timeout applies.
+	firstAckDeadline := time.Now().Add(c.ackTimeout)
 	extendDeadline := func() {
-		_ = conn.SetReadDeadline(time.Now().Add(c.readTimeout()))
+		deadline := time.Now().Add(c.readTimeout())
+		if ackedAt.IsZero() && deadline.After(firstAckDeadline) {
+			deadline = firstAckDeadline
+		}
+		_ = conn.SetReadDeadline(deadline)
 	}
-	_ = conn.SetReadDeadline(time.Now().Add(c.ackTimeout))
+	_ = conn.SetReadDeadline(firstAckDeadline)
 	conn.SetPongHandler(func(string) error {
 		extendDeadline()
 		return nil
@@ -102,7 +112,6 @@ func (c *Channel) runWebSocket(ctx context.Context) wsOutcome {
 		writerDone.Wait()
 	}()
 
-	var ackedAt time.Time
 	var outcome wsOutcome
 readLoop:
 	for {
@@ -141,6 +150,9 @@ readLoop:
 			}
 			if ackedAt.IsZero() {
 				ackedAt = time.Now()
+				// That frame may have been capped at the first-ack deadline;
+				// refresh it now that keepalive timing applies.
+				extendDeadline()
 			}
 		case *channelNotify:
 			if err := c.machine.ObserveHead(Head{ID: typed.ServiceID, Revision: typed.Head}); err != nil {

@@ -34,9 +34,12 @@ type channelSource struct {
 	rejectWebSocket       bool
 	silentFirstConnection bool
 	noAck                 bool
-	closeAfterAck         bool
-	commands              []channelCommand
-	pollHold              time.Duration
+	// keepaliveWhileNoAck sends protocol pings on connections that never get
+	// an ack, so the first-ack deadline has to be absolute.
+	keepaliveWhileNoAck bool
+	closeAfterAck       bool
+	commands            []channelCommand
+	pollHold            time.Duration
 	// pollStatus, pollRetryAfter and pollBody override the poll response when
 	// set, so tests can exercise failure and malformed-response handling.
 	pollStatus     int
@@ -127,6 +130,7 @@ func (f *channelSource) serveWebSocket(w http.ResponseWriter, r *http.Request) {
 	connectionNumber := f.connections
 	silent := f.silentFirstConnection && connectionNumber == 1
 	noAck := f.noAck
+	keepalive := f.keepaliveWhileNoAck
 	closeAfterAck := f.closeAfterAck
 	f.mu.Unlock()
 
@@ -148,6 +152,20 @@ func (f *channelSource) serveWebSocket(w http.ResponseWriter, r *http.Request) {
 	f.recordHello(hello)
 
 	if noAck {
+		if keepalive {
+			ticker := time.NewTicker(10 * time.Millisecond)
+			defer ticker.Stop()
+			for {
+				select {
+				case <-ticker.C:
+					if err := conn.WriteControl(websocket.PingMessage, nil, time.Now().Add(time.Second)); err != nil {
+						return
+					}
+				case <-f.stop:
+					return
+				}
+			}
+		}
 		<-f.stop
 		return
 	}
@@ -761,6 +779,33 @@ func TestChannelAutoFallsBackWhenNoAck(t *testing.T) {
 	requireInSync(t, machine, "books")
 	if got := channel.CurrentTransport(); got != TransportLongPoll {
 		t.Fatalf("CurrentTransport = %q, want longpoll when the upgrade never acks", got)
+	}
+}
+
+func TestChannelAutoFallsBackWhenNoAckWithKeepalive(t *testing.T) {
+	books := newFixtureService(testServiceID1, "books")
+	source := newChannelSource(t, books)
+	source.configure(func(f *channelSource) {
+		f.noAck = true
+		f.keepaliveWhileNoAck = true
+	})
+	server := startChannelFixture(t, source)
+	client := newChannelClient(t, server)
+
+	machine := newChannelMachine(t)
+	if err := machine.Applied(source.serviceState(books.ID)); err != nil {
+		t.Fatalf("Applied: %v", err)
+	}
+	channel := newTestChannel(t, client, machine, ChannelOptions{Transport: TransportAuto})
+	channel.ackTimeout = 100 * time.Millisecond
+	runChannel(t, channel)
+
+	requireInSync(t, machine, "books")
+	if got := channel.CurrentTransport(); got != TransportLongPoll {
+		t.Fatalf("CurrentTransport = %q, want longpoll: keepalive traffic must not hide a missing ack", got)
+	}
+	if _, connections, polls, _, _, _ := source.stats(); connections == 0 || polls == 0 {
+		t.Fatalf("connections = %d, polls = %d, want both transports", connections, polls)
 	}
 }
 
