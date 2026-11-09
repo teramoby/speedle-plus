@@ -125,6 +125,46 @@ func TestOpenSyncWithoutRuntimeConfirmsLiveness(t *testing.T) {
 	}
 }
 
+// TestRenameGuardSurvivesAReplacementFetch covers the window between a
+// successful replacement fetch and the evaluator installing the renamed
+// assembly: the previous service name must stay unavailable until the
+// installation is acknowledged.
+func TestRenameGuardSurvivesAReplacementFetch(t *testing.T) {
+	fixture := newTestFixture(t, booksService())
+	store, err := Open(nil, fixture.options)
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+	confirmStoreGeneration(t, store)
+
+	// The channel reports an authoritative rename and the next pass fetches the
+	// replacement copy from the source.
+	if !store.renameCopies([]adsync.Service{{ID: testServiceID1, Name: "books-v2"}}) {
+		t.Fatal("the rename was not applied to the installed copy")
+	}
+	store.publish()
+	fixture.source.publishService("books", func(snapshot *adsync.Snapshot) {
+		snapshot.Name = "books-v2"
+	})
+	if err := store.Sync(nil); err != nil {
+		t.Fatalf("sync: %v", err)
+	}
+
+	// The evaluator has not installed the renamed assembly yet, so its
+	// previously installed name must not route locally.
+	if store.RemovalInstalled("books") {
+		t.Fatal("the previous name became routable before the renamed assembly was installed")
+	}
+	_, acknowledge, err := store.ReadPolicyStoreForReload()
+	if err != nil {
+		t.Fatalf("read published assembly: %v", err)
+	}
+	acknowledge()
+	if !store.RemovalInstalled("books") {
+		t.Fatal("the previous name stayed guarded after the renamed assembly was installed")
+	}
+}
+
 func TestOpenAssemblesServicesAndParsesSPDL(t *testing.T) {
 	fixture := newTestFixture(t, booksService(), ordersService())
 	store := fixture.open(nil)

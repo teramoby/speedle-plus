@@ -300,7 +300,10 @@ func (s *Store) syncService(ctx context.Context, service adsync.Service) error {
 		return nil
 	}
 	s.copies[service.ID] = compiled
-	delete(s.pendingRemoved, service.ID)
+	// A pending removal or rename entry stays until the evaluator acknowledges
+	// the assembly that replaces the old copy. Deleting it here would let the
+	// previous name route locally again while the old assembly is still
+	// installed.
 	s.mu.Unlock()
 	// A parsed copy is not yet visible to the evaluator. Applied is deferred
 	// until the exact published generation has completed its FULL_RELOAD.

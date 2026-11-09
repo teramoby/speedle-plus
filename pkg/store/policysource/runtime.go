@@ -123,7 +123,14 @@ func (s *Store) startRuntime() error {
 		Transport:          s.options.Transport,
 		UpstreamInstanceID: upstreamInstanceID,
 		Fallback:           s.fallbackState,
-		OnNotify:           func(adsync.Notify) { s.triggerSync() },
+		OnNotify: func(notify adsync.Notify) {
+			// The source announced a head this mirror has not verified yet.
+			// Withhold the copy until the next pass reaches the new head, so a
+			// failing or slow discovery cannot leave downstream instances on
+			// the previous revision.
+			s.withholdMirrorService(notify.ServiceID)
+			s.triggerSync()
+		},
 		OnServiceSetChange: func(change adsync.ServiceSetChange) {
 			s.applyServiceSetChange(change)
 			s.triggerSync()
@@ -172,6 +179,19 @@ func (s *Store) startRuntime() error {
 	}()
 	s.triggerSync()
 	return nil
+}
+
+// withholdMirrorService stops advertising a service whose head the source just
+// advanced, until a pass verifies the new head. reachMirrorHead marks it
+// available again once the advertised identity and head are confirmed.
+func (s *Store) withholdMirrorService(serviceID string) {
+	s.runtimeMu.Lock()
+	runtime := s.runtime
+	s.runtimeMu.Unlock()
+	if runtime == nil || runtime.mirror == nil {
+		return
+	}
+	runtime.mirror.MarkUnavailable(serviceID)
 }
 
 // applyServiceSetChange applies the authoritative removals and renames from a

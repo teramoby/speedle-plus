@@ -585,6 +585,98 @@ func TestE2EProductionRuntimeRenameAppliesWhenDiscoveryFails(t *testing.T) {
 	}
 }
 
+// TestE2EProductionRuntimeWithholdsOnHeadAdvanceWhenDiscoveryFails covers a
+// head notification that cannot be verified: with discovery failing, or with
+// another service's fetch held, the previous mirror copy must stop being
+// offered downstream until a pass reaches the announced head.
+func TestE2EProductionRuntimeWithholdsOnHeadAdvanceWhenDiscoveryFails(t *testing.T) {
+	cloud := newE2ECloud(t)
+	_, downstreamToken := e2eDownstreamCredential("B", e2eInstanceB, 2)
+	digest := sha256.Sum256([]byte(downstreamToken))
+	downstreamFile := filepath.Join(t.TempDir(), "downstream-credentials")
+	writeDownstreamCredentials(t, downstreamFile, "B:"+hex.EncodeToString(digest[:])+":*")
+	ads, server := startProductionADS(t, cloud, map[string]interface{}{
+		ServeDownstreamKey:       true,
+		DownstreamCredentialsKey: downstreamFile,
+	})
+	client := server.Client()
+	downstream := func(path string) (int, []byte) {
+		request, err := http.NewRequest(http.MethodGet, server.URL+path, nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		request.Header.Set("Authorization", "Bearer "+downstreamToken)
+		response, err := client.Do(request)
+		if err != nil {
+			return 0, nil
+		}
+		defer response.Body.Close()
+		body, err := io.ReadAll(io.LimitReader(response.Body, 1<<20))
+		if err != nil {
+			return 0, nil
+		}
+		return response.StatusCode, body
+	}
+	downstreamServices := func() []adsync.Service {
+		status, body := downstream(adsync.APIPrefix + "/services")
+		if status != http.StatusOK {
+			return nil
+		}
+		var services adsync.ServicesResponse
+		if json.Unmarshal(body, &services) != nil {
+			return nil
+		}
+		return services.Services
+	}
+
+	e2eWaitAllInSync(t, &e2eAgent{store: ads}, "books", "orders")
+	e2eWaitFor(t, "the downstream service set to carry both services", func() bool {
+		return len(downstreamServices()) == 2
+	})
+
+	// The source announces a books head while discovery fails. The previous
+	// copy must stop being advertised and served immediately.
+	cloud.setServicesUnavailable(true)
+	cloud.publish(e2eServiceBooks, e2eUpsertAuthz("p-books-dave-read", "grant user dave read /books/1"))
+	cloud.notify(e2eServiceBooks, 2)
+	e2eWaitFor(t, "the downstream service set to withhold books", func() bool {
+		services := downstreamServices()
+		return len(services) == 1 && services[0].ID == e2eServiceOrders
+	})
+	if status, body := downstream(adsync.APIPrefix + "/services/" + e2eServiceBooks + "/snapshot"); status != http.StatusServiceUnavailable {
+		t.Fatalf("withheld books snapshot = status %d body %s", status, body)
+	}
+	cloud.setServicesUnavailable(false)
+
+	// Discovery recovers, but another service's data request is held. Books
+	// stays withheld until the whole pass reaches the announced head.
+	cloud.publish(e2eServiceOrders, e2eUpsertAuthz("p-orders-dave-approve", "grant user dave approve /orders/1"))
+	cloud.hold(e2eServiceOrders)
+	defer cloud.release(e2eServiceOrders)
+	ordersData := "/services/" + e2eServiceOrders + "/"
+	heldBefore := cloud.countRequests(ordersData+"snapshot") + cloud.countRequests(ordersData+"changes")
+	cloud.publish(e2eServiceBooks, e2eUpsertAuthz("p-books-erin-read", "grant user erin read /books/1"))
+	cloud.notify(e2eServiceBooks, 3)
+	e2eWaitFor(t, "the held orders data request to start", func() bool {
+		return cloud.countRequests(ordersData+"snapshot")+cloud.countRequests(ordersData+"changes") > heldBefore
+	})
+	if services := downstreamServices(); len(services) == 2 {
+		t.Fatalf("books was advertised downstream while its head was still unverified: %+v", services)
+	}
+
+	// Releasing the held request lets the pass finish and books return at the
+	// announced head.
+	cloud.release(e2eServiceOrders)
+	e2eWaitFor(t, "the downstream service set to serve books at revision 3", func() bool {
+		for _, service := range downstreamServices() {
+			if service.ID == e2eServiceBooks {
+				return service.Revision == 3
+			}
+		}
+		return false
+	})
+}
+
 // TestE2EProductionRuntimeRejectsAConflictingAdvertisedHash covers the
 // equal-revision case: a mirror copy at the advertised revision with a
 // different state hash must not be treated as current.
