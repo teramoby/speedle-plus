@@ -608,7 +608,7 @@ func trimChangesPage(page *adsync.ChangesResponse) ([]byte, error) {
 	for len(page.Commits) > 1 && len(encoded) > maxChangesPageBytes {
 		page.Commits = page.Commits[:len(page.Commits)/2]
 		page.To = page.Commits[len(page.Commits)-1].Revision
-		page.NextSince = page.To
+		page.NextSince = page.To + 1
 		encoded, err = json.Marshal(page)
 		if err != nil {
 			return nil, err

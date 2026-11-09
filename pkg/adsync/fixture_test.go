@@ -392,7 +392,7 @@ func (f *fixtureSource) serveChanges(w http.ResponseWriter, r *http.Request) {
 		Head:          service.Revision,
 		HeadStateHash: headStateHash,
 		Commits:       commits,
-		NextSince:     to,
+		NextSince:     to + 1,
 	})
 }
 

@@ -311,13 +311,11 @@ func (s *Syncer) catchUp(ctx context.Context, local *ServiceState, service Servi
 			working.StateHash = page.HeadStateHash
 			break
 		}
-		if page.NextSince != revision {
-			return nil, fmt.Errorf("%w: nextSince %d does not resume at the last applied revision %d", ErrProtocol, page.NextSince, revision)
+		if page.NextSince != revision+1 {
+			return nil, fmt.Errorf("%w: next page does not follow revision %d", ErrProtocol, revision)
 		}
-		// The continuation is the last revision returned by the server. The
-		// next request uses that exclusive cursor verbatim; never synthesize a
-		// cursor from the page bounds.
-		revision = page.NextSince
+		// "since" is exclusive: the next request resumes at the last applied
+		// revision, which is also nextSince-1.
 	}
 
 	if working.Revision < service.Revision {

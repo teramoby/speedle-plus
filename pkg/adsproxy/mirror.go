@@ -144,8 +144,9 @@ type serviceCopy struct {
 	overflow bool
 	// unavailable withholds a verified copy from downstream serving after the
 	// runtime could not reach the head advertised for it. Unlike removed, the
-	// copy and its log are kept: a later snapshot or change page from the
-	// source clears the flag and makes the service servable again.
+	// copy and its log are kept: the runtime clears the flag with MarkAvailable
+	// only after it has verified the advertised identity and revision, so a
+	// multi-page catch-up stays withheld until it has completed.
 	unavailable bool
 	// tombstoneRevision is the revision that removed the service: a signed
 	// delete commit or the revision current at an administrative removal. A
@@ -356,7 +357,6 @@ func (m *Mirror) applySnapshot(response *adsync.SnapshotResponse) (HeadEvent, bo
 	existing.logBytes = 0
 	existing.overflow = false
 	existing.removed = false
-	existing.unavailable = false
 	existing.tombstoneRevision = 0
 
 	// A snapshot can make a service visible again (revival after removal or
@@ -513,10 +513,6 @@ func (m *Mirror) applyChanges(page *adsync.ChangesResponse) (HeadEvent, bool, er
 		// refreshes the snapshot.
 		service.overflow = true
 	}
-	// A page fetched from the source proves the copy is current again; the
-	// runtime only marks a service unavailable when it could not reach the
-	// advertised head.
-	service.unavailable = false
 	if previousName != service.name {
 		m.version++
 	}
@@ -559,7 +555,9 @@ func (m *Mirror) RemoveService(serviceID string) {
 // verified copy. The runtime calls it when the source advertises a head for the
 // service that the mirror cannot fetch: serving the older copy would let
 // downstream instances keep evaluating policy the source has already replaced.
-// A later snapshot or change page from the source clears the flag.
+// Snapshots and change pages applied while the flag is set stay withheld; the
+// runtime restores availability with MarkAvailable after it has verified that
+// the copy reached the advertised identity and revision.
 func (m *Mirror) MarkUnavailable(serviceID string) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -570,6 +568,23 @@ func (m *Mirror) MarkUnavailable(serviceID string) {
 	wasAvailable := m.availableLocked(service)
 	service.unavailable = true
 	if wasAvailable {
+		m.version++
+	}
+}
+
+// MarkAvailable makes a withheld copy servable again. The runtime calls it only
+// after CurrentInfo confirms the advertised identity and revision, so a copy
+// applied during a multi-page catch-up cannot be served before the catch-up
+// completed.
+func (m *Mirror) MarkAvailable(serviceID string) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	service := m.services[serviceID]
+	if service == nil || service.removed || !service.unavailable {
+		return
+	}
+	service.unavailable = false
+	if m.availableLocked(service) {
 		m.version++
 	}
 }
@@ -655,6 +670,28 @@ func (m *Mirror) Lookup(serviceID string) (ServiceInfo, ServiceAvailability) {
 	}, ServiceAvailable
 }
 
+// CurrentInfo returns the identity and revision of the verified copy, whether
+// or not the service is currently advertised. The runtime uses it to check that
+// a withheld copy reached the advertised head; downstream serving still uses
+// Lookup, which reports a withheld service as needing a snapshot.
+func (m *Mirror) CurrentInfo(serviceID string) (ServiceInfo, bool) {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+	service := m.services[serviceID]
+	if service == nil || service.removed || service.overflow || service.signed == nil {
+		return ServiceInfo{}, false
+	}
+	return ServiceInfo{
+		ID:         service.id,
+		Name:       service.name,
+		SourceID:   service.sourceID,
+		Epoch:      service.epoch,
+		Revision:   service.revision,
+		StateHash:  service.stateHash,
+		CommitHash: service.commitHash,
+	}, true
+}
+
 // Snapshot returns the signed snapshot the service is anchored to. The
 // response is the exact identity Cloud signed; the proxy never re-signs it.
 func (m *Mirror) Snapshot(serviceID string) (adsync.SnapshotResponse, bool) {
@@ -722,7 +759,7 @@ func (m *Mirror) Changes(serviceID string, since uint64, limit int) (adsync.Chan
 		Head:          service.revision,
 		HeadStateHash: service.stateHash,
 		Commits:       commits,
-		NextSince:     to,
+		NextSince:     to + 1,
 	}, nil
 }
 

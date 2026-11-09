@@ -101,7 +101,7 @@ func TestChangesPageEnvelopeValidation(t *testing.T) {
 		From:          2,
 		To:            1,
 		Head:          1,
-		NextSince:     1,
+		NextSince:     2,
 		HeadStateHash: StateHash(Snapshot{Name: "books"}),
 	}
 	cases := []struct {
@@ -114,14 +114,14 @@ func TestChangesPageEnvelopeValidation(t *testing.T) {
 		{"revision out of range", func(response *ChangesResponse) { response.From = maxSafeInteger + 1 }},
 		{"wrong start", func(response *ChangesResponse) { response.From = 3 }},
 		{"ends after head", func(response *ChangesResponse) { response.To = 2 }},
-		{"wrong next cursor", func(response *ChangesResponse) { response.NextSince = 2 }},
+		{"wrong next cursor", func(response *ChangesResponse) { response.NextSince = 3 }},
 		{"missing head hash", func(response *ChangesResponse) { response.HeadStateHash = Hash{} }},
 		{"too many commits", func(response *ChangesResponse) {
 			response.Commits = make([]Commit, maxCommitsPerPage+1)
 		}},
 		{"wrong empty end", func(response *ChangesResponse) {
 			response.To = 0
-			response.NextSince = 0
+			response.NextSince = 1
 		}},
 		{"empty page hides head", func(response *ChangesResponse) { response.Head = 2 }},
 	}

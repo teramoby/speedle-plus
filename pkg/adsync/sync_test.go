@@ -104,7 +104,7 @@ func TestSyncAppliesPagedChanges(t *testing.T) {
 	}
 	fixture.source.mu.Unlock()
 	if want := []string{"1", "3", "5"}; !reflect.DeepEqual(cursors, want) {
-		t.Fatalf("change cursors = %v, want %v (each server-provided nextSince)", cursors, want)
+		t.Fatalf("change cursors = %v, want %v (each page's last applied revision)", cursors, want)
 	}
 }
 

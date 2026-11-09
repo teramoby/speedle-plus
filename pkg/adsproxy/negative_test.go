@@ -124,7 +124,7 @@ func TestTrimChangesPage(t *testing.T) {
 			{Revision: 2, Changes: []adsync.Change{{Op: "upsert", Kind: "authz", ID: "A", SPDL: &large}}},
 			{Revision: 3, Changes: []adsync.Change{{Op: "upsert", Kind: "authz", ID: "B", SPDL: &large}}},
 		},
-		NextSince: 3,
+		NextSince: 4,
 	}
 	encoded, err := trimChangesPage(&page)
 	if err != nil {
@@ -133,7 +133,7 @@ func TestTrimChangesPage(t *testing.T) {
 	if len(encoded) > maxChangesPageBytes {
 		t.Errorf("trimmed page is %d bytes", len(encoded))
 	}
-	if len(page.Commits) != 1 || page.To != 2 || page.NextSince != 2 {
+	if len(page.Commits) != 1 || page.To != 2 || page.NextSince != 3 {
 		t.Errorf("trimmed page = commits %d to %d next %d", len(page.Commits), page.To, page.NextSince)
 	}
 

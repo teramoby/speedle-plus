@@ -5,7 +5,6 @@ package adsproxy
 import (
 	"encoding/json"
 	"net/http"
-	"strconv"
 	"sync/atomic"
 	"testing"
 
@@ -220,19 +219,19 @@ func TestChangesPaging(t *testing.T) {
 		t.Fatalf("page one: status %d body %s", response.StatusCode, body)
 	}
 	page := decodeBody[adsync.ChangesResponse](t, body)
-	if page.From != 2 || page.To != 3 || page.Head != 4 || page.NextSince != 3 {
+	if page.From != 2 || page.To != 3 || page.Head != 4 || page.NextSince != 4 {
 		t.Errorf("page one = from %d to %d head %d next %d", page.From, page.To, page.Head, page.NextSince)
 	}
 	if len(page.Commits) != 2 {
 		t.Fatalf("page one commits = %d", len(page.Commits))
 	}
 
-	response, body = server.get(path+"?since="+strconv.FormatUint(page.NextSince, 10)+"&limit=2", token, nil)
+	response, body = server.get(path+"?since=3&limit=2", token, nil)
 	if response.StatusCode != http.StatusOK {
 		t.Fatalf("page two: status %d body %s", response.StatusCode, body)
 	}
 	page = decodeBody[adsync.ChangesResponse](t, body)
-	if page.From != 4 || page.To != 4 || page.Head != 4 || page.NextSince != 4 {
+	if page.From != 4 || page.To != 4 || page.Head != 4 || page.NextSince != 5 {
 		t.Errorf("page two = from %d to %d head %d next %d", page.From, page.To, page.Head, page.NextSince)
 	}
 	if page.HeadStateHash != books.StateHash {

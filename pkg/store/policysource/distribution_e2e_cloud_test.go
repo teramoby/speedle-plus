@@ -1035,7 +1035,7 @@ func (f *e2eCloud) serveChanges(w http.ResponseWriter, r *http.Request, serviceI
 		Head:          service.Revision,
 		HeadStateHash: service.StateHash,
 		Commits:       commits,
-		NextSince:     to,
+		NextSince:     to + 1,
 	}
 	hold := service.Hold
 	f.mu.Unlock()

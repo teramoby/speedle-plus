@@ -366,7 +366,12 @@ func (s *Store) syncMirror(ctx context.Context, selected []adsync.Service, faile
 			// service is withheld until a later fetch reaches the head.
 			log.Warnf("policy-source mirror cannot serve service %q at the advertised head: %v", service.ID, err)
 			runtime.mirror.MarkUnavailable(service.ID)
+			continue
 		}
+		// The copy verifiably matches the advertised identity and head. It may
+		// have been withheld during an earlier pass; restore serving now, after
+		// the whole catch-up has completed.
+		runtime.mirror.MarkAvailable(service.ID)
 	}
 	for id := range runtime.mirrorIDs {
 		if _, found := live[id]; !found {
@@ -384,9 +389,8 @@ func (s *Store) syncMirror(ctx context.Context, selected []adsync.Service, faile
 // unavailability, so a recovered source restores downstream serving without a
 // restart.
 func (s *Store) reachMirrorHead(ctx context.Context, mirror *adsproxy.Mirror, service adsync.Service) error {
-	info, availability := mirror.Lookup(service.ID)
-	sameIdentity := availability == adsproxy.ServiceAvailable &&
-		info.SourceID == service.ID && info.Epoch == service.Epoch
+	info, current := mirror.CurrentInfo(service.ID)
+	sameIdentity := current && info.SourceID == service.ID && info.Epoch == service.Epoch
 	if sameIdentity && info.Revision >= service.Revision {
 		return nil
 	}
@@ -403,8 +407,8 @@ func (s *Store) reachMirrorHead(ctx context.Context, mirror *adsproxy.Mirror, se
 	}
 	// A lagging replica can serve a signed snapshot behind its advertised head.
 	// Resume from the snapshot and verify the missing revisions before serving.
-	info, availability = mirror.Lookup(service.ID)
-	if availability != adsproxy.ServiceAvailable {
+	info, current = mirror.CurrentInfo(service.ID)
+	if !current {
 		return fmt.Errorf("mirror holds no verified copy of service %q", service.ID)
 	}
 	if err := s.catchUpMirror(ctx, mirror, service, info); err != nil {
@@ -416,9 +420,12 @@ func (s *Store) reachMirrorHead(ctx context.Context, mirror *adsproxy.Mirror, se
 	return nil
 }
 
+// mirrorReached reports whether the verified copy matches the advertised
+// identity and has reached its head. It deliberately ignores the withheld flag:
+// the caller decides when the copy becomes servable again.
 func (s *Store) mirrorReached(mirror *adsproxy.Mirror, service adsync.Service) bool {
-	info, availability := mirror.Lookup(service.ID)
-	return availability == adsproxy.ServiceAvailable &&
+	info, current := mirror.CurrentInfo(service.ID)
+	return current &&
 		info.SourceID == service.ID && info.Epoch == service.Epoch &&
 		info.Revision >= service.Revision
 }
@@ -452,7 +459,7 @@ func (s *Store) catchUpMirror(ctx context.Context, mirror *adsproxy.Mirror, serv
 		if page.To >= page.Head || len(page.Commits) == 0 {
 			return nil
 		}
-		since = page.NextSince
+		since = page.To
 		anchor = page.Commits[len(page.Commits)-1].Hash
 	}
 	return fmt.Errorf("policy-source mirror exceeded %d change pages", maxMirrorPages)

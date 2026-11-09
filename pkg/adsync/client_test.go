@@ -143,7 +143,7 @@ func TestChangesVerifiesChain(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Changes: %v", err)
 	}
-	if page.From != 2 || page.To != 2 || page.Head != 3 || page.NextSince != 2 {
+	if page.From != 2 || page.To != 2 || page.Head != 3 || page.NextSince != 3 {
 		t.Fatalf("page envelope = from %d to %d head %d next %d", page.From, page.To, page.Head, page.NextSince)
 	}
 	if len(page.Commits) != 1 {
@@ -153,10 +153,11 @@ func TestChangesVerifiesChain(t *testing.T) {
 		t.Errorf("commit signature keyId = %q", page.Commits[0].Signature.KeyID)
 	}
 
-	// The next page resumes at the server-provided continuation. Since is
-	// exclusive, so nextSince is the last revision returned on this page.
+	// The next page resumes at the last applied revision: "since" is
+	// exclusive and the next commit is since+1. nextSince is the next revision
+	// number (to+1), not the value to send back.
 	next, err := client.Changes(ctx, service.ID, snapshot.SourceID, snapshot.Epoch,
-		page.NextSince, page.Commits[0].Hash, 100)
+		page.To, page.Commits[0].Hash, 100)
 	if err != nil {
 		t.Fatalf("second Changes: %v", err)
 	}

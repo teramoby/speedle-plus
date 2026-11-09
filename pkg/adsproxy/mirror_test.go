@@ -73,7 +73,7 @@ func TestMirrorServesSignedSnapshotAndChanges(t *testing.T) {
 	if err != nil {
 		t.Fatalf("changes: %v", err)
 	}
-	if page.From != 2 || page.To != 3 || page.Head != 3 || page.NextSince != 3 {
+	if page.From != 2 || page.To != 3 || page.Head != 3 || page.NextSince != 4 {
 		t.Errorf("page bounds = from %d to %d head %d next %d", page.From, page.To, page.Head, page.NextSince)
 	}
 	if len(page.Commits) != 2 {
@@ -170,6 +170,54 @@ func TestMirrorSnapshotMustMatchRequestedIdentity(t *testing.T) {
 	}
 	if _, availability := mirror.Lookup(service.ID); availability != ServiceUnknown {
 		t.Fatalf("mismatched snapshot left service availability %v", availability)
+	}
+}
+
+func TestMirrorWithheldCopyStaysUnavailableAcrossPartialCatchUp(t *testing.T) {
+	signer := newTestSigner(t)
+	mirror := newTestMirror(t, signer.publicKeys(t), nil)
+	service := newFixtureService(testServiceID1, "books")
+	if err := mirror.ApplySnapshot(service.snapshotResponse(t, signer)); err != nil {
+		t.Fatalf("apply snapshot: %v", err)
+	}
+	service.publish(t, signer, upsertAuthz(testServiceID1+"A1", "read", "grant read"))
+	service.publish(t, signer, upsertAuthz(testServiceID1+"A2", "write", "grant write"))
+
+	mirror.MarkUnavailable(service.ID)
+	partial := pageFor(t, service, 1, 1)
+	if partial.From != 2 || partial.To != 2 || partial.Head != 3 {
+		t.Fatalf("partial page = %+v", partial)
+	}
+	if err := mirror.ApplyChanges(partial); err != nil {
+		t.Fatalf("apply partial page: %v", err)
+	}
+
+	// A page that stops behind the head must not expose the intermediate copy,
+	// even though its commits verified.
+	if _, availability := mirror.Lookup(service.ID); availability != ServiceNeedsSnapshot {
+		t.Fatalf("availability after a partial page = %v, want ServiceNeedsSnapshot", availability)
+	}
+	if services := mirror.Services(); len(services) != 0 {
+		t.Fatalf("advertised services after a partial page = %+v", services)
+	}
+	if _, found := mirror.Snapshot(service.ID); found {
+		t.Fatal("withheld copy answered a snapshot request after a partial page")
+	}
+	if _, err := mirror.Changes(service.ID, 1, 100); !errors.Is(err, ErrSnapshotRequired) {
+		t.Fatalf("changes after a partial page = %v, want ErrSnapshotRequired", err)
+	}
+
+	// Even a completed catch-up stays withheld until the runtime restores it.
+	if err := mirror.ApplyChanges(pageFor(t, service, 2, 100)); err != nil {
+		t.Fatalf("apply final page: %v", err)
+	}
+	if _, availability := mirror.Lookup(service.ID); availability != ServiceNeedsSnapshot {
+		t.Fatal("a completed catch-up cleared the withheld flag without the runtime")
+	}
+	mirror.MarkAvailable(service.ID)
+	info, availability := mirror.Lookup(service.ID)
+	if availability != ServiceAvailable || info.Revision != 3 {
+		t.Fatalf("restored copy = %+v, availability %v", info, availability)
 	}
 }
 

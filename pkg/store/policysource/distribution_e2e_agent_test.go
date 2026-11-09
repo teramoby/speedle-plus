@@ -417,7 +417,7 @@ func (a *e2eAgent) catchUpMirror(ctx context.Context, service adsync.Service, in
 		if page.To >= page.Head || len(page.Commits) == 0 {
 			return nil
 		}
-		since = page.NextSince
+		since = page.To
 		anchor = page.Commits[len(page.Commits)-1].Hash
 	}
 }
