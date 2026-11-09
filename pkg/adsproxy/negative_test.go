@@ -1180,3 +1180,166 @@ func TestMirrorRejectsCommitThatCannotApply(t *testing.T) {
 		t.Errorf("commit without a service name: %v, want ErrProtocol", err)
 	}
 }
+
+func TestMirrorDelayedSnapshotCannotReviveASignedDelete(t *testing.T) {
+	signer := newTestSigner(t)
+	mirror := newTestMirror(t, signer.publicKeys(t), nil)
+	service := newFixtureService(testServiceID1, "books")
+	if err := mirror.ApplySnapshot(snapshotAt(t, service, signer)); err != nil {
+		t.Fatalf("apply snapshot: %v", err)
+	}
+	before := snapshotAt(t, service, signer)
+	service.publish(t, signer, deleteChange("service", testServiceID1))
+	if err := mirror.ApplyChanges(pageFor(t, service, 1, 100)); !errors.Is(err, adsync.ErrSourceGone) {
+		t.Fatalf("signed delete: %v, want ErrSourceGone", err)
+	}
+
+	// The pre-deletion snapshot was fetched before the delete reached the
+	// source. It must not bring the deleted policies back.
+	if err := mirror.ApplySnapshot(before); err != nil {
+		t.Fatalf("delayed snapshot: %v", err)
+	}
+	if _, availability := mirror.Lookup(testServiceID1); availability != ServiceRemoved {
+		t.Errorf("availability after delayed snapshot = %v, want ServiceRemoved", availability)
+	}
+	if services := mirror.Services(); len(services) != 0 {
+		t.Errorf("delayed snapshot revived the service: %+v", services)
+	}
+
+	// Newer source state does revive it: a later revision is past the delete.
+	service.publish(t, signer, upsertAuthz(testServiceID1+"A1", "read", "grant read"))
+	if err := mirror.ApplySnapshot(snapshotAt(t, service, signer)); err != nil {
+		t.Fatalf("newer snapshot: %v", err)
+	}
+	if services := mirror.Services(); len(services) != 1 || services[0].Revision != service.Revision {
+		t.Errorf("newer snapshot did not revive the service: %+v", services)
+	}
+}
+
+func TestMirrorDelayedSnapshotCannotReviveAnAdministrativeRemoval(t *testing.T) {
+	signer := newTestSigner(t)
+	mirror := newTestMirror(t, signer.publicKeys(t), nil)
+	service := newFixtureService(testServiceID1, "books")
+	if err := mirror.ApplySnapshot(snapshotAt(t, service, signer)); err != nil {
+		t.Fatalf("apply snapshot: %v", err)
+	}
+	before := snapshotAt(t, service, signer)
+	mirror.RemoveService(testServiceID1)
+	if err := mirror.ApplySnapshot(before); err != nil {
+		t.Fatalf("delayed snapshot: %v", err)
+	}
+	if _, availability := mirror.Lookup(testServiceID1); availability != ServiceRemoved {
+		t.Errorf("availability after delayed snapshot = %v, want ServiceRemoved", availability)
+	}
+
+	service.publish(t, signer, upsertAuthz(testServiceID1+"A1", "read", "grant read"))
+	if err := mirror.ApplySnapshot(snapshotAt(t, service, signer)); err != nil {
+		t.Fatalf("newer snapshot: %v", err)
+	}
+	if services := mirror.Services(); len(services) != 1 {
+		t.Errorf("newer snapshot did not revive the service: %+v", services)
+	}
+}
+
+func TestMirrorServiceChurnDoesNotExhaustCapacity(t *testing.T) {
+	signer := newTestSigner(t)
+	mirror := newTestMirror(t, signer.publicKeys(t), nil)
+	ids := make([]string, 0, MaxServices)
+	for index := 0; index < MaxServices; index++ {
+		id := fmt.Sprintf("01HF7YAT%018d", 100+index)
+		ids = append(ids, id)
+		service := newFixtureService(id, fmt.Sprintf("service-%d", index))
+		if err := mirror.ApplySnapshot(snapshotAt(t, service, signer)); err != nil {
+			t.Fatalf("service %d: %v", index, err)
+		}
+	}
+	for _, id := range ids {
+		mirror.RemoveService(id)
+	}
+	if services := mirror.Services(); len(services) != 0 {
+		t.Fatalf("removed services are advertised: %+v", services)
+	}
+
+	// Tombstones must not hold the service slots: a fresh set of ids replaces
+	// the removed ones.
+	for index := 0; index < MaxServices; index++ {
+		id := fmt.Sprintf("01HF7YAT%018d", 200+index)
+		service := newFixtureService(id, fmt.Sprintf("fresh-%d", index))
+		if err := mirror.ApplySnapshot(snapshotAt(t, service, signer)); err != nil {
+			t.Fatalf("fresh service %d: %v", index, err)
+		}
+	}
+	if services := mirror.Services(); len(services) != MaxServices {
+		t.Errorf("advertised services = %d, want %d", len(services), MaxServices)
+	}
+
+	// A removed service no longer counts, but a full active set still bounds
+	// the mirror.
+	extra := newFixtureService("01HF7YAT000000000000000999", "extra")
+	if err := mirror.ApplySnapshot(snapshotAt(t, extra, signer)); !errors.Is(err, ErrTooManyServices) {
+		t.Errorf("eleventh active service: %v, want ErrTooManyServices", err)
+	}
+}
+
+func TestChannelFirstFrameIsAckEvenWithPendingNotification(t *testing.T) {
+	signer := newTestSigner(t)
+	mirror, books, _ := newPopulatedMirror(t, signer)
+	token := testToken(testDownstreamID, 1)
+	server := newTestServer(t, mirror, signer.publicKeys(t), &testServerOptions{
+		coalesceWindow: time.Millisecond,
+	}, testCredential{
+		downstreamID: testDownstreamID,
+		token:        token,
+	})
+	conn, _, err := server.dial(token)
+	if err != nil {
+		t.Fatalf("dial: %v", err)
+	}
+	defer conn.Close()
+	writeJSONFrame(t, conn, helloMessage{
+		Type:         "hello",
+		InstanceID:   testDownstreamID,
+		Services:     []helloService{},
+		Chain:        []string{testProxyID, testDownstreamID},
+		AgentVersion: "test",
+	})
+	// A head advance lands while the channel starts. Its coalesced
+	// notification must not overtake the initial ack.
+	books.publish(t, signer, upsertAuthz(testServiceID1+"A1", "read", "grant read"))
+	if err := mirror.ApplyChanges(pageFor(t, books, 1, 100)); err != nil {
+		t.Fatalf("apply changes: %v", err)
+	}
+	kind, payload := readChannelFrame(t, conn)
+	if kind != "ack" {
+		t.Fatalf("first frame = %q, payload %s", kind, payload)
+	}
+	ack := decodeBody[ackMessage](t, payload)
+	if len(ack.Services) != 2 {
+		t.Errorf("ack services = %+v", ack.Services)
+	}
+}
+
+func TestServersShareAHubWithoutStealingItsLifetime(t *testing.T) {
+	signer := newTestSigner(t)
+	mirror, _, _ := newPopulatedMirror(t, signer)
+	token := testToken(testDownstreamID, 1)
+	hub, err := NewHub(0, time.Millisecond)
+	if err != nil {
+		t.Fatalf("new hub: %v", err)
+	}
+	credential := testCredential{downstreamID: testDownstreamID, token: token}
+	first := newTestServer(t, mirror, signer.publicKeys(t), &testServerOptions{hub: hub}, credential)
+	second := newTestServer(t, mirror, signer.publicKeys(t), &testServerOptions{hub: hub}, credential)
+
+	first.server.Close()
+	response, body := second.post(adsync.APIPrefix+"/channel/poll?wait=0", token,
+		heartbeatFrame([]string{testProxyID, testDownstreamID}))
+	if response.StatusCode != http.StatusOK {
+		t.Errorf("second server after the first closed: status %d body %s", response.StatusCode, body)
+	}
+	subscriber, err := hub.Subscribe("edge-other", nil)
+	if err != nil {
+		t.Fatalf("hub after the first server closed: %v", err)
+	}
+	hub.Unsubscribe(subscriber)
+}

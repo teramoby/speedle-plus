@@ -281,7 +281,15 @@ func TestMirrorServiceRemovalAndDelete(t *testing.T) {
 		t.Error("snapshot served for a removed service")
 	}
 
-	// A fresh snapshot revives the service.
+	// The snapshot the service was removed at cannot revive it: it may have
+	// been fetched before the delete. A snapshot past the delete can.
+	if err := mirror.ApplySnapshot(service.snapshotResponse(t, signer)); err != nil {
+		t.Fatalf("delayed revive snapshot: %v", err)
+	}
+	if _, availability := mirror.Lookup(testServiceID1); availability != ServiceRemoved {
+		t.Errorf("availability after a delayed snapshot = %v, want ServiceRemoved", availability)
+	}
+	service.publish(t, signer, upsertAuthz(testServiceID1+"A2", "read-more", "grant read"))
 	if err := mirror.ApplySnapshot(service.snapshotResponse(t, signer)); err != nil {
 		t.Fatalf("revive snapshot: %v", err)
 	}
@@ -393,6 +401,8 @@ func TestMirrorServiceSetVersionTracksVisibility(t *testing.T) {
 	if removedVersion <= revivedVersion {
 		t.Errorf("version did not advance on removal: %d -> %d", revivedVersion, removedVersion)
 	}
+	// Only a snapshot past the removal point revives a removed service.
+	service.publish(t, signer, upsertAuthz(testServiceID1+"A1", "policy", "grant read"))
 	if err := mirror.ApplySnapshot(snapshotAt(t, service, signer)); err != nil {
 		t.Fatalf("revive snapshot: %v", err)
 	}
@@ -409,8 +419,16 @@ func TestMirrorServicesVersionIsAtomic(t *testing.T) {
 	signer := newTestSigner(t)
 	mirror := newTestMirror(t, signer.publicKeys(t), nil)
 	service := newFixtureService(testServiceID1, "books")
-	snapshot := snapshotAt(t, service, signer)
-	if err := mirror.ApplySnapshot(snapshot); err != nil {
+
+	// A removal only lets a snapshot past the removal point revive the service,
+	// so prepare snapshots whose revision advances one step at a time.
+	const steps = 4000
+	snapshots := make([]*adsync.SnapshotResponse, 0, steps)
+	for index := 0; index < steps; index++ {
+		service.publish(t, signer, upsertAuthz(testServiceID1+"A1", "policy", "grant read"))
+		snapshots = append(snapshots, snapshotAt(t, service, signer))
+	}
+	if err := mirror.ApplySnapshot(snapshots[0]); err != nil {
 		t.Fatalf("apply snapshot: %v", err)
 	}
 
@@ -422,14 +440,14 @@ func TestMirrorServicesVersionIsAtomic(t *testing.T) {
 	stopped := make(chan struct{})
 	go func() {
 		defer close(stopped)
-		for {
+		for next := 1; next < len(snapshots); next++ {
 			select {
 			case <-stop:
 				return
 			default:
 			}
 			mirror.RemoveService(testServiceID1)
-			if err := mirror.ApplySnapshot(snapshot); err != nil {
+			if err := mirror.ApplySnapshot(snapshots[next]); err != nil {
 				t.Errorf("revive snapshot: %v", err)
 				return
 			}

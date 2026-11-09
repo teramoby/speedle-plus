@@ -88,6 +88,7 @@ type Server struct {
 	mirror      *Mirror
 	credentials *CredentialSet
 	hub         *Hub
+	ownsHub     bool
 
 	heartbeat time.Duration
 	stale     time.Duration
@@ -159,6 +160,7 @@ func NewServer(config Config) (*Server, error) {
 	}
 
 	hub := config.Hub
+	ownsHub := hub == nil
 	if hub == nil {
 		hub, err = NewHub(config.MaxDownstream, config.CoalesceWindow)
 		if err != nil {
@@ -176,6 +178,7 @@ func NewServer(config Config) (*Server, error) {
 		mirror:      config.Mirror,
 		credentials: credentials,
 		hub:         hub,
+		ownsHub:     ownsHub,
 		heartbeat:   heartbeat,
 		stale:       stale,
 		stop:        stop,
@@ -257,7 +260,11 @@ func (s *Server) Close() {
 			s.removeWatch()
 			s.removeWatch = nil
 		}
-		s.hub.Close()
+		// A hub supplied through Config is shared with its owner; only a hub
+		// this server created may be closed here.
+		if s.ownsHub {
+			s.hub.Close()
+		}
 	})
 }
 

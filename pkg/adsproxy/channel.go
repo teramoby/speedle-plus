@@ -233,12 +233,6 @@ func (s *Server) handleChannel(w http.ResponseWriter, r *http.Request, credentia
 		writer.Wait()
 	}()
 
-	// The first ack confirms the service set without waiting for a heartbeat.
-	select {
-	case acks <- struct{}{}:
-	default:
-	}
-
 	for {
 		if err := conn.SetReadDeadline(time.Now().Add(readTimeout)); err != nil {
 			return
@@ -292,8 +286,15 @@ func (s *Server) handleChannel(w http.ResponseWriter, r *http.Request, credentia
 	}
 }
 
-// channelWriter is the connection's only writer.
+// channelWriter is the connection's only writer. It writes the initial ack
+// before entering the loop: a downstream initializes its service state from
+// that ack, so a notification that raced ahead of it would make the client
+// reject an unknown head.
 func (s *Server) channelWriter(conn *websocket.Conn, credential *Credential, subscriber *Subscriber, acks <-chan struct{}, stop <-chan struct{}) {
+	if err := writeChannelJSON(conn, s.ack(credential)); err != nil {
+		_ = conn.Close()
+		return
+	}
 	ping := time.NewTicker(s.heartbeat)
 	defer ping.Stop()
 	for {
