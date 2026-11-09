@@ -36,6 +36,12 @@ type distributionRuntime struct {
 	proxy     *adsproxy.Server
 	mirrorIDs map[string]struct{}
 
+	// mirrorMu serializes the mirror availability decisions of a
+	// synchronization pass with the channel callbacks that invalidate a copy.
+	// A notification, removal or rename must never be overwritten by a pass
+	// that began before it.
+	mirrorMu sync.Mutex
+
 	commandMu    sync.Mutex
 	seenCommands map[string]struct{}
 	commandOrder []string
@@ -181,15 +187,37 @@ func (s *Store) startRuntime() error {
 	return nil
 }
 
-// machineHead returns the newest head the state machine observed for one
-// service, from a channel notification or an ack.
-func (s *Store) machineHead(serviceID string) (uint64, bool) {
+// machineService returns the state machine's current record for one service
+// ID. The record carries the authoritative membership, name and head.
+func (s *Store) machineService(serviceID string) (adsync.ServiceStatus, bool) {
 	for _, status := range s.machine.Services() {
 		if status.ID == serviceID {
-			return status.Head, true
+			return status, true
 		}
 	}
-	return 0, false
+	return adsync.ServiceStatus{}, false
+}
+
+// mirrorRestoreAllowed reports whether a copy a pass verified may be
+// advertised again. The service must still be an active member of the
+// authoritative set with the name discovery advertised, and a head the
+// channel already announced must not be newer than the verified revision. The
+// caller holds mirrorMu, so an invalidation callback cannot interleave between
+// this check and the restore.
+func (s *Store) mirrorRestoreAllowed(service adsync.Service) bool {
+	status, known := s.machineService(service.ID)
+	if !known || status.State == adsync.SyncStateRemoved || status.Name != service.Name {
+		return false
+	}
+	return status.Head <= service.Revision
+}
+
+// withholdMirror stops advertising one service while keeping its verified
+// copy. The caller holds no mirror lock.
+func (s *Store) withholdMirror(runtime *distributionRuntime, serviceID string) {
+	runtime.mirrorMu.Lock()
+	runtime.mirror.MarkUnavailable(serviceID)
+	runtime.mirrorMu.Unlock()
 }
 
 // withholdMirrorService stops advertising a service whose head the source just
@@ -202,7 +230,28 @@ func (s *Store) withholdMirrorService(serviceID string) {
 	if runtime == nil || runtime.mirror == nil {
 		return
 	}
-	runtime.mirror.MarkUnavailable(serviceID)
+	s.withholdMirror(runtime, serviceID)
+}
+
+// runBeforeMirrorRestore invokes the test hook installed by
+// setBeforeMirrorRestore, if any.
+func (s *Store) runBeforeMirrorRestore(serviceID string) {
+	s.mirrorHookMu.Lock()
+	hook := s.beforeMirrorRestore
+	s.mirrorHookMu.Unlock()
+	if hook != nil {
+		hook(serviceID)
+	}
+}
+
+// setBeforeMirrorRestore installs a hook that runs after a pass verified a
+// mirror copy and before the pass decides whether to restore it. Tests use it
+// to interleave a channel callback deterministically; production leaves it
+// nil.
+func (s *Store) setBeforeMirrorRestore(hook func(serviceID string)) {
+	s.mirrorHookMu.Lock()
+	s.beforeMirrorRestore = hook
+	s.mirrorHookMu.Unlock()
 }
 
 // applyServiceSetChange applies the authoritative removals and renames from a
@@ -213,6 +262,27 @@ func (s *Store) withholdMirrorService(serviceID string) {
 func (s *Store) applyServiceSetChange(change adsync.ServiceSetChange) {
 	if len(change.Removed) == 0 && len(change.Renamed) == 0 {
 		return
+	}
+	// The mirror changes come first: discarding the local copy below can block
+	// behind an in-flight fetch of the same service, and downstream instances
+	// must stop serving the removed or renamed copy without waiting for it.
+	// The mirror changes are also serialized with a pass's final restore
+	// decision, so an older pass cannot bring the copy back.
+	s.runtimeMu.Lock()
+	runtime := s.runtime
+	s.runtimeMu.Unlock()
+	if runtime != nil && runtime.mirror != nil {
+		runtime.mirrorMu.Lock()
+		for _, service := range change.Removed {
+			runtime.mirror.RemoveService(service.ID)
+		}
+		for _, service := range change.Renamed {
+			// The mirror serves signed snapshots, which still carry the old
+			// name. Withhold the service until a snapshot or change page
+			// verifies the new name at the advertised head.
+			runtime.mirror.MarkUnavailable(service.ID)
+		}
+		runtime.mirrorMu.Unlock()
 	}
 	changed := false
 	for _, service := range change.Removed {
@@ -227,21 +297,6 @@ func (s *Store) applyServiceSetChange(change adsync.ServiceSetChange) {
 	}
 	if changed {
 		s.publish()
-	}
-	s.runtimeMu.Lock()
-	runtime := s.runtime
-	s.runtimeMu.Unlock()
-	if runtime == nil || runtime.mirror == nil {
-		return
-	}
-	for _, service := range change.Removed {
-		runtime.mirror.RemoveService(service.ID)
-	}
-	for _, service := range change.Renamed {
-		// The mirror serves signed snapshots, which still carry the old name.
-		// Withhold the service until a snapshot or change page verifies the new
-		// name at the advertised head.
-		runtime.mirror.MarkUnavailable(service.ID)
 	}
 }
 
@@ -446,12 +501,34 @@ func (s *Store) syncMirror(ctx context.Context, selected []adsync.Service, faile
 	}
 	live := make(map[string]struct{}, len(selected))
 	for _, service := range selected {
+		// A channel ack can remove or rename a service while this pass is in
+		// flight. A signed snapshot from a lagging replica must not revive a
+		// service the authoritative set dropped, so check the set again before
+		// fetching and again before the copy becomes servable.
+		runtime.mirrorMu.Lock()
+		status, known := s.machineService(service.ID)
+		inactive := !known || status.State == adsync.SyncStateRemoved
+		renamed := !inactive && status.Name != service.Name
+		if inactive {
+			runtime.mirror.RemoveService(service.ID)
+		}
+		runtime.mirrorMu.Unlock()
+		if inactive {
+			continue
+		}
 		live[service.ID] = struct{}{}
+		if renamed {
+			// The discovery response is older than the authoritative rename,
+			// and the signed copy still carries the previous name. Keep it
+			// withheld until a pass verifies the new name.
+			s.withholdMirror(runtime, service.ID)
+			continue
+		}
 		if _, syncFailed := failed[service.ID]; syncFailed && s.mirrorBehind(runtime.mirror, service) {
 			// The local copy could not be verified at the advertised head. A
 			// downstream copy at an older revision is just as stale, so withhold
 			// it before the (possibly retried) mirror fetch below.
-			runtime.mirror.MarkUnavailable(service.ID)
+			s.withholdMirror(runtime, service.ID)
 		}
 		if err := s.reachMirrorHead(ctx, runtime.mirror, service); err != nil {
 			// The source advertises a head this mirror could not verify.
@@ -459,21 +536,25 @@ func (s *Store) syncMirror(ctx context.Context, selected []adsync.Service, faile
 			// evaluating policy the source has already replaced, so the
 			// service is withheld until a later fetch reaches the head.
 			log.Warnf("policy-source mirror cannot serve service %q at the advertised head: %v", service.ID, err)
-			runtime.mirror.MarkUnavailable(service.ID)
+			s.withholdMirror(runtime, service.ID)
 			continue
 		}
-		if head, known := s.machineHead(service.ID); known && head > service.Revision {
-			// The channel already announced a newer head than this discovery
-			// response. The copy matches a stale advertisement, so it stays
-			// withheld until a pass reaches the announced head.
-			runtime.mirror.MarkUnavailable(service.ID)
-			continue
-		}
+		s.runBeforeMirrorRestore(service.ID)
 		// The copy verifiably matches the advertised identity and head. It may
 		// have been withheld during an earlier pass; restore serving now, after
-		// the whole catch-up has completed.
-		runtime.mirror.MarkAvailable(service.ID)
+		// the whole catch-up has completed, unless the authoritative set or the
+		// announced head changed while the pass was in flight. The check runs
+		// under mirrorMu so a notification or ack cannot withhold the copy
+		// between the check and the restore.
+		runtime.mirrorMu.Lock()
+		if !s.mirrorRestoreAllowed(service) {
+			runtime.mirror.MarkUnavailable(service.ID)
+		} else {
+			runtime.mirror.MarkAvailable(service.ID)
+		}
+		runtime.mirrorMu.Unlock()
 	}
+	runtime.mirrorMu.Lock()
 	for id := range runtime.mirrorIDs {
 		if _, found := live[id]; !found {
 			runtime.mirror.RemoveService(id)
@@ -483,6 +564,7 @@ func (s *Store) syncMirror(ctx context.Context, selected []adsync.Service, faile
 	for id := range live {
 		runtime.mirrorIDs[id] = struct{}{}
 	}
+	runtime.mirrorMu.Unlock()
 }
 
 // reachMirrorHead brings the mirror copy of one service to the revision the

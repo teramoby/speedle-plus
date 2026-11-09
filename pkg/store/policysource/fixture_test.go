@@ -299,6 +299,27 @@ func (f *testSource) publishService(name string, mutate func(*adsync.Snapshot)) 
 	}
 }
 
+// renameService publishes a new revision under a new service name, so
+// discovery, the snapshot and later acks all carry the change together. The
+// optional mutate runs before the revision is hashed.
+func (f *testSource) renameService(name, newName string, mutate func(*adsync.Snapshot)) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	for _, service := range f.services {
+		if service.Name != name {
+			continue
+		}
+		service.Name = newName
+		service.publish(func(snapshot *adsync.Snapshot) {
+			snapshot.Name = newName
+			if mutate != nil {
+				mutate(snapshot)
+			}
+		})
+		return
+	}
+}
+
 // removeService drops one service from discovery and from the source.
 func (f *testSource) removeService(name string) {
 	f.mu.Lock()

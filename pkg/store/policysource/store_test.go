@@ -165,6 +165,64 @@ func TestRenameGuardSurvivesAReplacementFetch(t *testing.T) {
 	}
 }
 
+// TestDiscoveryRenameGuardsThePreviousName covers a rename that discovery
+// observes before the notification channel reports it. The state machine
+// forgets the old name as soon as discovery applies the new one, so the store
+// must guard the previous name itself until the evaluator installs the renamed
+// assembly.
+func TestDiscoveryRenameGuardsThePreviousName(t *testing.T) {
+	fixture := newTestFixture(t, booksService())
+	store := fixture.open(nil)
+
+	fixture.source.renameService("books", "books-v2", nil)
+	if err := store.Sync(nil); err != nil {
+		t.Fatalf("sync: %v", err)
+	}
+	if _, known := store.Status("books"); known {
+		t.Fatal("the machine still tracks the previous name after discovery")
+	}
+	if store.RemovalInstalled("books") {
+		t.Fatal("the previous name became routable before the renamed assembly was installed")
+	}
+	confirmStoreGeneration(t, store)
+	if !store.RemovalInstalled("books") {
+		t.Fatal("the previous name stayed guarded after the renamed assembly was installed")
+	}
+	renamed, found := fixture.source.service("books-v2")
+	if !found {
+		t.Fatal("the fixture lost the renamed service")
+	}
+	status, known := store.Status("books-v2")
+	if !known || status.Service.State != adsync.SyncStateInSync || status.Service.Revision != renamed.Revision {
+		t.Fatalf("renamed service = %+v, known %v, want revision %d", status.Service, known, renamed.Revision)
+	}
+}
+
+// TestDiscoveryRenameWithAFailingReplacementKeepsTheGuard covers a
+// discovery-led rename whose replacement cannot be parsed: the previous copy
+// stays installed, so the previous name must keep failing closed.
+func TestDiscoveryRenameWithAFailingReplacementKeepsTheGuard(t *testing.T) {
+	fixture := newTestFixture(t, booksService())
+	store := fixture.open(nil)
+
+	fixture.source.renameService("books", "books-v2", func(snapshot *adsync.Snapshot) {
+		snapshot.Policies = []adsync.Policy{policy("p-broken", "broken", "grant user alice")}
+	})
+	syncErr := store.Sync(nil)
+	if syncErr == nil || !strings.Contains(syncErr.Error(), ErrInvalidSPDL.Error()) {
+		t.Fatalf("sync error = %v, want the SPDL parse failure", syncErr)
+	}
+	// The old copy stays installed and published under its previous name.
+	policyStore := mustRead(t, store)
+	serviceNamed(t, policyStore, "books")
+	if store.RemovalInstalled("books") {
+		t.Fatal("the previous name was routable while the old copy was still installed")
+	}
+	if _, known := store.Status("books"); known {
+		t.Fatal("the machine still tracks the previous name after discovery")
+	}
+}
+
 func TestOpenAssemblesServicesAndParsesSPDL(t *testing.T) {
 	fixture := newTestFixture(t, booksService(), ordersService())
 	store := fixture.open(nil)

@@ -587,8 +587,9 @@ func (c *Channel) applyAck(ack *channelAck, results chan<- channelCommandResult,
 
 // machineOnlyServices returns the non-removed services the machine tracks but
 // the previous ack set does not. After a restart a cached service is recorded
-// with Applied before the first ack; if the first ack omits it, the source has
-// removed it and the change must be reported so the local copy is deleted.
+// with Applied or ApplyAttempt before the first ack; if the first ack omits
+// it, the source has removed it and the change must be reported so the local
+// copy is deleted.
 func (c *Channel) machineOnlyServices() []Service {
 	c.mu.Lock()
 	known := make(map[string]struct{}, len(c.services))

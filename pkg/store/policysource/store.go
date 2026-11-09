@@ -69,6 +69,12 @@ type Store struct {
 	// afterFetch, when set by a test, runs after a service fetch succeeds and
 	// before its result is stored. It is nil in production.
 	afterFetch func(serviceID string)
+
+	// mirrorHookMu guards beforeMirrorRestore, a test-only hook that runs in a
+	// synchronization pass after it verified a mirror copy and before it
+	// decides whether to restore it.
+	mirrorHookMu        sync.Mutex
+	beforeMirrorRestore func(serviceID string)
 }
 
 // serviceCopy is one verified service, parsed and ready to publish.
@@ -217,6 +223,12 @@ func (s *Store) Sync(ctx context.Context) error {
 		s.publish()
 	}
 
+	// Discovery can observe a rename before the channel reports it. Record the
+	// previous name as pending removal before the machine forgets it, so the
+	// request gate fails closed while the evaluator still holds the old
+	// assembly.
+	s.guardRenames(selected)
+
 	// Discovery updates the authoritative set and advertised heads, but a data
 	// pull is not a confirmed heartbeat. Only a channel ack or an explicit
 	// Confirm from a store without the owned channel can refresh liveness or
@@ -305,8 +317,9 @@ func (s *Store) syncService(ctx context.Context, service adsync.Service) error {
 	// previous name route locally again while the old assembly is still
 	// installed.
 	s.mu.Unlock()
-	// A parsed copy is not yet visible to the evaluator. Applied is deferred
-	// until the exact published generation has completed its FULL_RELOAD.
+	// A parsed copy is not yet visible to the evaluator. ApplyAttempt is
+	// deferred until the exact published generation has completed its
+	// FULL_RELOAD.
 	return nil
 }
 
@@ -359,6 +372,25 @@ func (s *Store) removeCopy(serviceID string) {
 		s.pendingRemoved[serviceID] = copied.service.Name
 	}
 	delete(s.copies, serviceID)
+}
+
+// guardRenames records the previous name of every selected service whose
+// advertised name changed, before discovery updates the state machine. The
+// request gate resolves a service by name, so the previous name must fail
+// closed until the evaluator installs the assembly that carries the new name;
+// the entry is cleared by that installation's acknowledgement.
+func (s *Store) guardRenames(selected []adsync.Service) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for _, service := range selected {
+		copied := s.copies[service.ID]
+		if copied == nil || copied.service.Name == service.Name {
+			continue
+		}
+		if _, pending := s.pendingRemoved[service.ID]; !pending {
+			s.pendingRemoved[service.ID] = copied.service.Name
+		}
+	}
 }
 
 // dropUnselected deletes the copies of services that are no longer part of the
@@ -572,7 +604,7 @@ func cloneCopies(copies map[string]*serviceCopy) map[string]*serviceCopy {
 // after a resync, removal or re-add is ignored by the state machine.
 func (s *Store) reportApplied(states []appliedCopy) {
 	for _, applied := range states {
-		if err := s.machine.Applied(applied.attempt, applied.state); err != nil {
+		if err := s.machine.ApplyAttempt(applied.attempt, applied.state); err != nil {
 			log.Errorf("policy-source store could not record installed service %q: %v", applied.state.ServiceID, err)
 		}
 	}

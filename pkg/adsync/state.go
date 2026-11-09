@@ -309,9 +309,9 @@ type serviceRecord struct {
 
 // SyncAttempt identifies one synchronization attempt for one service. A caller
 // obtains it with BeginSync before it starts fetching the service and passes it
-// to Applied with the verified result. An attempt that started before a
-// resync, a removal or a re-add of the service is stale, and Applied ignores
-// its result.
+// to ApplyAttempt with the verified result. An attempt that started before a
+// resync, a removal or a re-add of the service is stale, and ApplyAttempt
+// ignores its result.
 type SyncAttempt struct {
 	serviceID  string
 	generation uint64
@@ -449,10 +449,10 @@ func (m *Machine) updateRecordHeadLocked(record *serviceRecord, epoch string, re
 	record.updateHead(epoch, revision, stateHash, confirmed)
 }
 
-// BeginSync returns the attempt a caller passes to Applied for a fetch of one
-// service that it is about to start. Call it before the fetch, never after:
-// the attempt captures the point after which a resync or a removal makes the
-// fetched result stale.
+// BeginSync returns the attempt a caller passes to ApplyAttempt for a fetch of
+// one service that it is about to start. Call it before the fetch, never
+// after: the attempt captures the point after which a resync or a removal
+// makes the fetched result stale.
 func (m *Machine) BeginSync(serviceID string) SyncAttempt {
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -464,8 +464,8 @@ func (m *Machine) BeginSync(serviceID string) SyncAttempt {
 }
 
 // AttemptCurrent reports whether nothing has invalidated the attempt yet.
-// Applied makes the same check atomically; callers use this only to avoid
-// publishing a result that Applied would ignore.
+// ApplyAttempt makes the same check atomically; callers use this only to avoid
+// publishing a result that ApplyAttempt would ignore.
 func (m *Machine) AttemptCurrent(attempt SyncAttempt) bool {
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -483,20 +483,36 @@ func (m *Machine) attemptCurrentLocked(attempt SyncAttempt) bool {
 
 // Applied records that one service now has a verified local copy. The caller
 // reports the result of a successful Sync, including a re-verification of an
+// unchanged copy.
+//
+// Applied is ignored for a service that was removed: a sync that was already
+// in flight must not resurrect it. It does not know when the fetch began, so
+// it cannot tell a fresh copy from one fetched before a resync, a removal or a
+// re-add. A caller that begins the fetch before reporting it should use
+// ApplyAttempt with the attempt it obtained from BeginSync instead, which
+// rejects exactly those results.
+func (m *Machine) Applied(state *ServiceState) error {
+	return m.apply(state, nil)
+}
+
+// ApplyAttempt records the result of one synchronization attempt. The caller
+// reports the result of a successful Sync, including a re-verification of an
 // unchanged copy, together with the attempt it obtained from BeginSync before
 // the fetch.
 //
-// Applied ignores a stale attempt: a fetch that started before a resync, a
-// removal or a re-add of the service cannot make its result servable, even
-// when the result is byte for byte what a fresh fetch would return. It is also
-// ignored for a service that was removed: a sync that was already in flight
-// must not resurrect it.
-func (m *Machine) Applied(attempt SyncAttempt, state *ServiceState) error {
+// ApplyAttempt ignores a stale attempt: a fetch that started before a resync,
+// a removal or a re-add of the service cannot make its result servable, even
+// when the result is byte for byte what a fresh fetch would return.
+func (m *Machine) ApplyAttempt(attempt SyncAttempt, state *ServiceState) error {
+	if state != nil && attempt.serviceID != state.ServiceID {
+		return fmt.Errorf("adsync: sync attempt for service %q reports service %q", attempt.serviceID, state.ServiceID)
+	}
+	return m.apply(state, &attempt)
+}
+
+func (m *Machine) apply(state *ServiceState, attempt *SyncAttempt) error {
 	if state == nil {
 		return fmt.Errorf("adsync: nil service state")
-	}
-	if attempt.serviceID != state.ServiceID {
-		return fmt.Errorf("adsync: sync attempt for service %q reports service %q", attempt.serviceID, state.ServiceID)
 	}
 	if !validEntityID(state.ServiceID) {
 		return fmt.Errorf("%w: invalid service id %q", ErrProtocol, state.ServiceID)
@@ -509,7 +525,7 @@ func (m *Machine) Applied(attempt SyncAttempt, state *ServiceState) error {
 	defer m.mu.Unlock()
 	now := m.clock.Now()
 	m.advanceLocked(now)
-	if !m.attemptCurrentLocked(attempt) {
+	if attempt != nil && !m.attemptCurrentLocked(*attempt) {
 		return nil
 	}
 	record := m.records[state.ServiceID]
@@ -584,8 +600,8 @@ func (m *Machine) SyncFailed(serviceID string, err error) {
 //
 // Resync invalidates every attempt that began before it, so a fetch already
 // in flight when the command arrives cannot report its result as the fresh
-// copy: Applied ignores it, and only an attempt begun after Resync can bring
-// the service back to in_sync.
+// copy: ApplyAttempt ignores it, and only an attempt begun after Resync can
+// bring the service back to in_sync.
 func (m *Machine) Resync(serviceID string) {
 	m.mu.Lock()
 	defer m.mu.Unlock()

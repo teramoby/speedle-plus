@@ -756,6 +756,198 @@ func TestE2EProductionRuntimeDoesNotRestoreBelowTheAnnouncedHead(t *testing.T) {
 	})
 }
 
+// TestE2EProductionRuntimeDoesNotRestoreAfterALateNotification covers a
+// notification that arrives after a pass verified a copy but before it restores
+// serving. The pass must not re-advertise the revision the newer notification
+// superseded.
+func TestE2EProductionRuntimeDoesNotRestoreAfterALateNotification(t *testing.T) {
+	cloud := newE2ECloud(t)
+	_, downstreamToken := e2eDownstreamCredential("B", e2eInstanceB, 2)
+	digest := sha256.Sum256([]byte(downstreamToken))
+	downstreamFile := filepath.Join(t.TempDir(), "downstream-credentials")
+	writeDownstreamCredentials(t, downstreamFile, "B:"+hex.EncodeToString(digest[:])+":*")
+	ads, server := startProductionADS(t, cloud, map[string]interface{}{
+		ServeDownstreamKey:       true,
+		DownstreamCredentialsKey: downstreamFile,
+	})
+	client := server.Client()
+	downstreamServices := func() []adsync.Service {
+		request, err := http.NewRequest(http.MethodGet, server.URL+adsync.APIPrefix+"/services", nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		request.Header.Set("Authorization", "Bearer "+downstreamToken)
+		response, err := client.Do(request)
+		if err != nil {
+			return nil
+		}
+		defer response.Body.Close()
+		if response.StatusCode != http.StatusOK {
+			return nil
+		}
+		var services adsync.ServicesResponse
+		if json.NewDecoder(response.Body).Decode(&services) != nil {
+			return nil
+		}
+		return services.Services
+	}
+	servedRevision := func() uint64 {
+		for _, service := range downstreamServices() {
+			if service.ID == e2eServiceBooks {
+				return service.Revision
+			}
+		}
+		return 0
+	}
+
+	e2eWaitAllInSync(t, &e2eAgent{store: ads}, "books", "orders")
+	e2eWaitFor(t, "the downstream mirror to serve both services", func() bool {
+		return len(downstreamServices()) == 2
+	})
+
+	// Revision 2 exists but its data cannot be served, so the mirror copy is
+	// withheld at revision 1.
+	cloud.publish(e2eServiceBooks, e2eUpsertAuthz("p-books-dave-read", "grant user dave read /books/1"))
+	cloud.setDataUnavailable(e2eServiceBooks, true)
+	cloud.pushAck()
+	e2eWaitFor(t, "the downstream mirror to withhold books", func() bool {
+		services := downstreamServices()
+		return len(services) == 1 && services[0].ID == e2eServiceOrders
+	})
+
+	// The data is back. Pause the next pass right before it restores the copy.
+	cloud.setDataUnavailable(e2eServiceBooks, false)
+	paused := make(chan struct{})
+	release := make(chan struct{})
+	// Passes are serialized, so the hook itself needs no lock; only the first
+	// call pauses, later passes run through.
+	pausedOnce := false
+	ads.setBeforeMirrorRestore(func(serviceID string) {
+		if serviceID != e2eServiceBooks || pausedOnce {
+			return
+		}
+		pausedOnce = true
+		close(paused)
+		<-release
+	})
+	ads.triggerSync()
+	select {
+	case <-paused:
+	case <-time.After(5 * time.Second):
+		t.Fatal("no pass reached the mirror restore")
+	}
+
+	// A notification announces revision 3 while the pass is paused after
+	// verifying revision 2. Restoring that copy would re-advertise the revision
+	// the notification just superseded.
+	cloud.notify(e2eServiceBooks, 3)
+	e2eWaitFor(t, "the announced head to be observed", func() bool {
+		status, known := ads.Status("books")
+		return known && status.Service.Head == 3
+	})
+	close(release)
+	if err := ads.Sync(context.Background()); err != nil {
+		t.Fatalf("join the paused pass: %v", err)
+	}
+	if services := downstreamServices(); len(services) != 1 || services[0].ID != e2eServiceOrders {
+		t.Fatalf("a late notification was overwritten by an older pass: %+v", services)
+	}
+
+	// Reaching the announced head restores serving.
+	cloud.publish(e2eServiceBooks, e2eUpsertAuthz("p-books-erin-read", "grant user erin read /books/1"))
+	cloud.pushAck()
+	e2eWaitFor(t, "the downstream mirror to serve books at revision 3", func() bool {
+		return servedRevision() == 3
+	})
+}
+
+// TestE2EProductionRuntimeDoesNotReviveAServiceRemovedDuringAPass covers a
+// removal ack that arrives while a synchronization pass is fetching the
+// service. A signed snapshot from a lagging replica must not put the removed
+// service back in the downstream mirror.
+func TestE2EProductionRuntimeDoesNotReviveAServiceRemovedDuringAPass(t *testing.T) {
+	cloud := newE2ECloud(t)
+	_, downstreamToken := e2eDownstreamCredential("B", e2eInstanceB, 2)
+	digest := sha256.Sum256([]byte(downstreamToken))
+	downstreamFile := filepath.Join(t.TempDir(), "downstream-credentials")
+	writeDownstreamCredentials(t, downstreamFile, "B:"+hex.EncodeToString(digest[:])+":*")
+	ads, server := startProductionADS(t, cloud, map[string]interface{}{
+		ServeDownstreamKey:       true,
+		DownstreamCredentialsKey: downstreamFile,
+	})
+	client := server.Client()
+	downstream := func(path string) (int, []byte) {
+		request, err := http.NewRequest(http.MethodGet, server.URL+path, nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		request.Header.Set("Authorization", "Bearer "+downstreamToken)
+		response, err := client.Do(request)
+		if err != nil {
+			return 0, nil
+		}
+		defer response.Body.Close()
+		body, err := io.ReadAll(io.LimitReader(response.Body, 1<<20))
+		if err != nil {
+			return 0, nil
+		}
+		return response.StatusCode, body
+	}
+	downstreamServices := func() []adsync.Service {
+		status, body := downstream(adsync.APIPrefix + "/services")
+		if status != http.StatusOK {
+			return nil
+		}
+		var services adsync.ServicesResponse
+		if json.Unmarshal(body, &services) != nil {
+			return nil
+		}
+		return services.Services
+	}
+
+	e2eWaitAllInSync(t, &e2eAgent{store: ads}, "books", "orders")
+	e2eWaitFor(t, "the downstream mirror to serve both services", func() bool {
+		return len(downstreamServices()) == 2
+	})
+
+	// A pass starts fetching a new books revision and blocks on the source.
+	cloud.hold(e2eServiceBooks)
+	defer cloud.release(e2eServiceBooks)
+	cloud.publish(e2eServiceBooks, e2eUpsertAuthz("p-books-dave-read", "grant user dave read /books/1"))
+	booksData := "/services/" + e2eServiceBooks + "/"
+	heldBefore := cloud.countRequests(booksData+"snapshot") + cloud.countRequests(booksData+"changes")
+	ads.triggerSync()
+	e2eWaitFor(t, "the books data request to start", func() bool {
+		return cloud.countRequests(booksData+"snapshot")+cloud.countRequests(booksData+"changes") > heldBefore
+	})
+
+	// The ack removes books from the authoritative set. The lagging replica
+	// keeps serving its signed data.
+	cloud.hideService(e2eServiceBooks)
+	cloud.pushAck()
+	e2eWaitFor(t, "the machine to mark books removed", func() bool {
+		status, known := ads.Status("books")
+		return known && status.Service.State == adsync.SyncStateRemoved
+	})
+	e2eWaitFor(t, "the downstream mirror to drop books", func() bool {
+		services := downstreamServices()
+		return len(services) == 1 && services[0].ID == e2eServiceOrders
+	})
+
+	// Release the held data. The pass must not let the lagging snapshot revive
+	// the removed service downstream.
+	cloud.release(e2eServiceBooks)
+	if err := ads.Sync(context.Background()); err != nil {
+		t.Fatalf("join the held pass: %v", err)
+	}
+	if services := downstreamServices(); len(services) != 1 || services[0].ID != e2eServiceOrders {
+		t.Fatalf("a removed service was revived downstream: %+v", services)
+	}
+	if status, body := downstream(adsync.APIPrefix + "/services/" + e2eServiceBooks + "/snapshot"); status != http.StatusGone {
+		t.Fatalf("removed books snapshot = status %d body %s, want source_gone", status, body)
+	}
+}
+
 // TestE2EProductionRuntimeRejectsAConflictingAdvertisedHash covers the
 // equal-revision case: a mirror copy at the advertised revision with a
 // different state hash must not be treated as current.

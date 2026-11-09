@@ -156,6 +156,10 @@ type e2eService struct {
 	// DataUnavailable makes snapshot and change requests fail with 503, so
 	// synchronizing this service fails while every other service works.
 	DataUnavailable bool
+	// Hidden keeps the service out of discovery and every ack while its
+	// snapshot and change endpoints keep serving. It models a lagging source
+	// replica that still holds policy the authoritative set already dropped.
+	Hidden bool
 	// Hold makes snapshot and change requests wait until it is closed.
 	Hold chan struct{}
 }
@@ -680,6 +684,19 @@ func (f *e2eCloud) removeService(serviceID string) {
 	f.generation++
 }
 
+// hideService drops one service from discovery and from acks while its signed
+// data endpoints keep serving, like a lagging replica that still holds the
+// policy the authoritative set already dropped.
+func (f *e2eCloud) hideService(serviceID string) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	if service := f.services[serviceID]; service != nil {
+		service.Hidden = true
+	}
+	f.servicesVersion++
+	f.generation++
+}
+
 // service returns the fixture's service object so a test can re-add it after
 // removing it from the set. The object is owned by the fixture; callers only
 // pass it back to addService.
@@ -739,7 +756,7 @@ func (f *e2eCloud) ackLocked() []byte {
 	}
 	for _, id := range f.order {
 		service := f.services[id]
-		if service == nil {
+		if service == nil || service.Hidden {
 			continue
 		}
 		message.Services = append(message.Services, ackService{
@@ -957,7 +974,7 @@ func (f *e2eCloud) serveServices(w http.ResponseWriter) {
 	response := adsync.ServicesResponse{ServicesVersion: f.servicesVersion}
 	for _, id := range f.order {
 		service := f.services[id]
-		if service == nil {
+		if service == nil || service.Hidden {
 			continue
 		}
 		response.Services = append(response.Services, adsync.Service{
