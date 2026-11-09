@@ -15,6 +15,7 @@ import (
 type RuntimePolicyStore struct {
 	sync.RWMutex
 	Functions           map[string]govaluate.ExpressionFunction
+	customFunctionNames map[string]struct{}
 	RuntimeServices     map[string]*RuntimeService
 	FunctionResultCache *FuncResultCache
 	FuncSvcEndpoint     string //endpoint in sphinx side to call external customer function
@@ -22,7 +23,8 @@ type RuntimePolicyStore struct {
 
 func NewRuntimePolicyStore() *RuntimePolicyStore {
 	return &RuntimePolicyStore{
-		RuntimeServices: make(map[string]*RuntimeService),
+		customFunctionNames: make(map[string]struct{}),
+		RuntimeServices:     make(map[string]*RuntimeService),
 		FunctionResultCache: &FuncResultCache{
 			Results: make(map[string]FuncResult),
 		},
@@ -38,23 +40,32 @@ type RuntimeService struct {
 	Functions         map[string]govaluate.ExpressionFunction
 }
 
-func (rtps *RuntimePolicyStore) init(ps *pms.PolicyStore, funcSvcEndpoint string) {
+func (rtps *RuntimePolicyStore) init(ps *pms.PolicyStore, funcSvcEndpoint string) error {
+	if err := validatePolicyStoreCustomFunctions(ps); err != nil {
+		return err
+	}
 	if funcSvcEndpoint != "" {
 		rtps.FuncSvcEndpoint = funcSvcEndpoint
 	}
 	// No need to lock, because this is a init method, evaluator should not be ready at this point
+	rtps.customFunctionNames = getCustomFunctionNames(ps.Functions)
 	rtps.Functions = convertFunctions(ps.Functions, rtps.FunctionResultCache, &rtps.FuncSvcEndpoint)
 	for _, service := range ps.Services {
 		rtps.RuntimeServices[service.Name] = convertService(service, rtps.Functions)
 	}
+	return nil
 }
 
-func (rtps *RuntimePolicyStore) reloadPolicyStore(ps *pms.PolicyStore) {
+func (rtps *RuntimePolicyStore) reloadPolicyStore(ps *pms.PolicyStore) error {
+	if err := validatePolicyStoreCustomFunctions(ps); err != nil {
+		return err
+	}
 	// Clear all cached data first
 	fncsResultCache := FuncResultCache{
 		Results: make(map[string]FuncResult),
 	}
 	functions := convertFunctions(ps.Functions, &fncsResultCache, &rtps.FuncSvcEndpoint)
+	customFunctionNames := getCustomFunctionNames(ps.Functions)
 	services := make(map[string]*RuntimeService)
 
 	for _, service := range ps.Services {
@@ -65,16 +76,21 @@ func (rtps *RuntimePolicyStore) reloadPolicyStore(ps *pms.PolicyStore) {
 	rtps.Lock()
 	defer rtps.Unlock()
 	rtps.Functions = functions
+	rtps.customFunctionNames = customFunctionNames
 	rtps.RuntimeServices = services
 	rtps.FunctionResultCache = &fncsResultCache
+	return nil
 }
 
-func (rtps *RuntimePolicyStore) addService(service *pms.Service) {
-	rtService := rtps.convertService(service)
-
+func (rtps *RuntimePolicyStore) addService(service *pms.Service) error {
 	rtps.Lock()
 	defer rtps.Unlock()
+	if err := validateServiceCustomFunctions(service, rtps.customFunctionNames); err != nil {
+		return err
+	}
+	rtService := convertService(service, rtps.Functions)
 	rtps.RuntimeServices[service.Name] = rtService
+	return nil
 }
 
 func (rtps *RuntimePolicyStore) deleteService(serviceName string) {
@@ -135,22 +151,26 @@ func updateRolePolicyCondition(rtps *RuntimePolicyStore, serviceName string, pol
 	rtService.RolePoliciesCache.Conditions[policy.ID] = condition
 }
 
-func (rtps *RuntimePolicyStore) addPolicy(serviceName string, policy *pms.Policy) {
+func (rtps *RuntimePolicyStore) addPolicy(serviceName string, policy *pms.Policy) error {
 	rtps.RLock()
 	defer rtps.RUnlock()
 
+	if err := validateConditionCustomFunctions("policy", serviceName, policy.ID, policy.Condition, rtps.customFunctionNames); err != nil {
+		return err
+	}
 	condition, _ := compileCondition(policy.Condition, rtps.Functions)
 	rtService, ok := rtps.RuntimeServices[serviceName]
 	if !ok {
 		// Service is not found
 		log.Errorf("Unable find service %s in runtime cache.", serviceName)
-		return
+		return nil
 	}
 	rtService.Lock()
 	// Golang garantees rtService.Unlock() is executed before rtps.RUnlock()
 	defer rtService.Unlock()
 
 	rtService.PoliciesCache.AddPolicyToCache(policy, condition)
+	return nil
 }
 
 func (rtps *RuntimePolicyStore) deletePolicy(serviceName string, policyID string) {
@@ -170,22 +190,26 @@ func (rtps *RuntimePolicyStore) deletePolicy(serviceName string, policyID string
 	rtService.PoliciesCache.DeletePolicyFromCache(policyID)
 }
 
-func (rtps *RuntimePolicyStore) addRolePolicy(serviceName string, rolePolicy *pms.RolePolicy) {
+func (rtps *RuntimePolicyStore) addRolePolicy(serviceName string, rolePolicy *pms.RolePolicy) error {
 	rtps.RLock()
 	defer rtps.RUnlock()
 
+	if err := validateConditionCustomFunctions("role policy", serviceName, rolePolicy.ID, rolePolicy.Condition, rtps.customFunctionNames); err != nil {
+		return err
+	}
 	condition, _ := compileCondition(rolePolicy.Condition, rtps.Functions)
 	rtService, ok := rtps.RuntimeServices[serviceName]
 	if !ok {
 		// Service is not found
 		log.Errorf("Unable find service %s in runtime cache.", serviceName)
-		return
+		return nil
 	}
 	rtService.Lock()
 	// Golang garantees rtService.Unlock() is executed before rtps.RUnlock()
 	defer rtService.Unlock()
 
 	rtService.RolePoliciesCache.AddRolePolicyToCache(rolePolicy, condition)
+	return nil
 }
 
 func (rtps *RuntimePolicyStore) deleteRolePolicy(serviceName string, rolePolicyID string) {
@@ -205,17 +229,22 @@ func (rtps *RuntimePolicyStore) deleteRolePolicy(serviceName string, rolePolicyI
 	rtService.RolePoliciesCache.DeleteRolePolicyFromCache(rolePolicyID)
 }
 
-func (rtps *RuntimePolicyStore) addFunction(function *pms.Function) {
+func (rtps *RuntimePolicyStore) addFunction(function *pms.Function) error {
 	rtps.Lock()
 	defer rtps.Unlock()
 
+	if err := validateFunctionAdditionCustomFunctions(rtps, function); err != nil {
+		return err
+	}
 	ef, err := rtps.FunctionResultCache.generateCustomerExpressionFunction(&rtps.FuncSvcEndpoint, function)
 	if err == nil {
 		rtps.Functions[function.Name] = ef
+		rtps.customFunctionNames[function.Name] = struct{}{}
 		log.Infof("loaded customer function %q.\n", function.Name)
 	} else {
 		log.Errorf("fail to load customer function %q, err is %v. \n", function.Name, err)
 	}
+	return nil
 }
 
 func (rtps *RuntimePolicyStore) deleteFunction(name string) {
@@ -228,6 +257,7 @@ func (rtps *RuntimePolicyStore) delFunc_rtps(name string) {
 	defer rtps.Unlock()
 
 	delete(rtps.Functions, name)
+	delete(rtps.customFunctionNames, name)
 	rtps.FunctionResultCache.DeleteFromCache(name)
 }
 
@@ -245,13 +275,6 @@ func (rtps *RuntimePolicyStore) expireFunctionResultCache() {
 	defer rtps.RUnlock()
 
 	rtps.FunctionResultCache.CleanExpiredResult()
-}
-
-func (rtps *RuntimePolicyStore) convertService(service *pms.Service) *RuntimeService {
-	rtps.RLock()
-	defer rtps.RUnlock()
-	rtService := convertService(service, rtps.Functions)
-	return rtService
 }
 
 func compileCondition(condition string, functions map[string]govaluate.ExpressionFunction) (*govaluate.EvaluableExpression, error) {
@@ -289,6 +312,16 @@ func convertService(service *pms.Service,
 	}
 
 	return &rtService
+}
+
+func getCustomFunctionNames(functions []*pms.Function) map[string]struct{} {
+	names := make(map[string]struct{}, len(functions))
+	for _, function := range functions {
+		if function != nil {
+			names[function.Name] = struct{}{}
+		}
+	}
+	return names
 }
 
 func convertFunctions(functions []*pms.Function, resultCache *FuncResultCache, funcSvcEndpoint *string) map[string]govaluate.ExpressionFunction {

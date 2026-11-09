@@ -38,6 +38,8 @@ Contributions to Speedle are made under the Universal Permissive License 1.0 (UP
 
 Sign off each commit with `git commit -s` (see [DCO](DCO) and [UPL-1.0 LICENSE](LICENSE)), which adds a `Signed-off-by: Your Name <you@example.com>` trailer using your Git `user.name` and `user.email`. To add a sign-off to existing commits, run `git commit --amend -s` for the most recent commit or `git rebase --signoff origin/master` for a branch of commits.
 
+Pull-request CI checks that every non-merge commit carries a `Signed-off-by` line whose email matches the commit author's email. Merge commits, including the ones GitHub creates for "Update branch" and when merging a pull request, are exempt from the check.
+
 The process:
 
 1. Sign off each commit with `git commit -s` (see [DCO](DCO) and [UPL-1.0 LICENSE](LICENSE))

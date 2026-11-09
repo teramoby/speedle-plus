@@ -14,7 +14,8 @@ const (
 	// maxSyncPages bounds the catch-up work of one Sync call. A source moving
 	// faster than 100 commits per page for this many pages is not a useful
 	// synchronization partner; the caller retries later.
-	maxSyncPages = 1000
+	maxSyncPages    = 1000
+	syncLockStripes = 64
 )
 
 // ServiceState is a verified local copy of one service. Every value returned
@@ -58,6 +59,7 @@ type Syncer struct {
 
 	mu     sync.Mutex
 	states map[string]*ServiceState
+	locks  [syncLockStripes]sync.Mutex
 }
 
 // NewSyncer returns a Syncer. cacheDir may be empty to keep copies in memory
@@ -98,9 +100,21 @@ func (s *Syncer) State(serviceID string) (*ServiceState, bool) {
 }
 
 // Forget drops the in-memory copy and the cache file for one service. It is
-// used when the source reports the service removed.
+// used when the source reports the service removed. Forget is serialized with
+// Sync so an in-flight sync cannot recreate a forgotten service afterwards.
 func (s *Syncer) Forget(serviceID string) error {
+	lock := s.serviceLock(serviceID)
+	lock.Lock()
+	defer lock.Unlock()
 	return s.forget(serviceID)
+}
+
+// serviceLock returns the lock that serializes a service's complete sync and
+// forget operation. Fixed striping bounds memory regardless of service churn;
+// a collision only serializes two otherwise independent operations.
+func (s *Syncer) serviceLock(serviceID string) *sync.Mutex {
+	digest := hashOf([]byte(serviceID))
+	return &s.locks[int(digest[0])%len(s.locks)]
 }
 
 // SyncByName discovers the current service set and syncs the named service.
@@ -127,21 +141,30 @@ func (s *Syncer) Sync(ctx context.Context, service Service) (*ServiceState, erro
 	if err := service.validate(); err != nil {
 		return nil, err
 	}
-	local, err := s.localState(service.ID)
+	lock := s.serviceLock(service.ID)
+	lock.Lock()
+	defer lock.Unlock()
+
+	local, fromCache, err := s.localState(service.ID)
 	if err != nil {
 		return nil, err
 	}
 	if local == nil {
-		return s.loadSnapshot(ctx, service)
+		return s.loadSnapshot(ctx, service, local)
 	}
 	if local.Epoch != service.Epoch || local.Revision > service.Revision {
-		return s.loadSnapshot(ctx, service)
+		return s.loadSnapshot(ctx, service, local)
 	}
 	if local.Revision == service.Revision {
 		if local.StateHash == service.HeadStateHash {
+			if fromCache {
+				if err := s.store(local); err != nil {
+					return nil, err
+				}
+			}
 			return local, nil
 		}
-		return s.loadSnapshot(ctx, service)
+		return s.loadSnapshot(ctx, service, local)
 	}
 
 	updated, err := s.catchUp(ctx, local, service)
@@ -154,40 +177,40 @@ func (s *Syncer) Sync(ctx context.Context, service Service) (*ServiceState, erro
 		}
 		return nil, err
 	case errors.Is(err, ErrSnapshotRequired):
-		return s.loadSnapshot(ctx, service)
+		return s.loadSnapshot(ctx, service, local)
 	case errors.Is(err, ErrIntegrity), errors.Is(err, ErrProtocol):
-		return s.loadSnapshot(ctx, service)
+		return s.loadSnapshot(ctx, service, local)
 	default:
 		return nil, err
 	}
 }
 
-func (s *Syncer) localState(serviceID string) (*ServiceState, error) {
+func (s *Syncer) localState(serviceID string) (*ServiceState, bool, error) {
 	s.mu.Lock()
 	stored, found := s.states[serviceID]
 	s.mu.Unlock()
 	if found {
-		return stored.clone(), nil
+		return stored.clone(), false, nil
 	}
 	if s.cache == nil {
-		return nil, nil
+		return nil, false, nil
 	}
 	state, err := s.cache.Load(serviceID)
 	if err != nil {
 		// A corrupt or unsafe cache is a cache miss. The next successful sync
 		// atomically replaces the file.
-		return nil, nil
+		return nil, false, nil
 	}
 	if state == nil {
-		return nil, nil
+		return nil, false, nil
 	}
-	s.mu.Lock()
-	s.states[serviceID] = state
-	s.mu.Unlock()
-	return state.clone(), nil
+	// A disk cache entry is only a tentative resume position. In particular,
+	// incremental entries have no snapshot signature. Keep it out of s.states
+	// until discovery or a verified change chain confirms the resulting head.
+	return state.clone(), true, nil
 }
 
-func (s *Syncer) loadSnapshot(ctx context.Context, service Service) (*ServiceState, error) {
+func (s *Syncer) loadSnapshot(ctx context.Context, service Service, local *ServiceState) (*ServiceState, error) {
 	response, _, err := s.client.Snapshot(ctx, service.ID, "")
 	if err != nil {
 		if errors.Is(err, ErrServiceNotFound) {
@@ -196,6 +219,20 @@ func (s *Syncer) loadSnapshot(ctx context.Context, service Service) (*ServiceSta
 			}
 		}
 		return nil, err
+	}
+	if response.SourceID != service.ID || response.Epoch != service.Epoch {
+		return nil, fmt.Errorf("%w: snapshot identity %q/%q does not match requested service %q epoch %q",
+			ErrProtocol, response.SourceID, response.Epoch, service.ID, service.Epoch)
+	}
+	if response.Revision == service.Revision && response.StateHash != service.HeadStateHash {
+		return nil, fmt.Errorf("%w: snapshot hash does not match the discovered head at revision %d",
+			ErrIntegrity, service.Revision)
+	}
+	if local != nil && local.Epoch == response.Epoch {
+		if response.Revision < local.Revision {
+			return nil, fmt.Errorf("%w: snapshot revision %d would roll back local revision %d",
+				ErrProtocol, response.Revision, local.Revision)
+		}
 	}
 	state := &ServiceState{
 		ServiceID:  response.ServiceID,
@@ -206,6 +243,21 @@ func (s *Syncer) loadSnapshot(ctx context.Context, service Service) (*ServiceSta
 		CommitHash: response.CommitHash,
 		Snapshot:   cloneSnapshot(response.Snapshot),
 		signature:  response.Signature,
+	}
+	if state.Revision < service.Revision {
+		// A lagging replica may legitimately anchor its signed snapshot behind
+		// discovery. Catch up before publishing anything, and do not return a
+		// successful sync until the advertised revision has been reached.
+		caughtUp, err := s.catchUp(ctx, state, service)
+		if err != nil {
+			if errors.Is(err, ErrSourceGone) || errors.Is(err, ErrServiceNotFound) {
+				if forgetErr := s.forget(service.ID); forgetErr != nil {
+					return nil, errors.Join(err, forgetErr)
+				}
+			}
+			return nil, err
+		}
+		return caughtUp, nil
 	}
 	if err := s.store(state); err != nil {
 		return nil, err
@@ -264,9 +316,17 @@ func (s *Syncer) catchUp(ctx context.Context, local *ServiceState, service Servi
 		}
 	}
 
-	// A verified copy at any revision is a valid result. When the source head
-	// moved during catch-up this may be ahead of discovery; when a replica
-	// lags, it may be behind and the next Sync catches up.
+	if working.Revision < service.Revision {
+		return nil, fmt.Errorf("%w: source head revision %d is behind discovered revision %d",
+			ErrUnavailable, working.Revision, service.Revision)
+	}
+	if working.Revision == service.Revision && working.StateHash != service.HeadStateHash {
+		return nil, fmt.Errorf("%w: change head does not match discovery at revision %d",
+			ErrIntegrity, service.Revision)
+	}
+	// The source may have advanced beyond discovery during catch-up. Only the
+	// final verified state is published; a failed or lagging pass leaves the
+	// previous published state untouched.
 	if err := s.store(working); err != nil {
 		return nil, err
 	}
@@ -357,23 +417,25 @@ func applyPolicyChange(policies []Policy, change Change) ([]Policy, error) {
 }
 
 func (s *Syncer) store(state *ServiceState) error {
-	s.mu.Lock()
-	s.states[state.ServiceID] = state.clone()
-	s.mu.Unlock()
 	if s.cache != nil {
 		if err := s.cache.Save(state); err != nil {
 			return err
 		}
 	}
+	s.mu.Lock()
+	s.states[state.ServiceID] = state.clone()
+	s.mu.Unlock()
 	return nil
 }
 
 func (s *Syncer) forget(serviceID string) error {
+	if s.cache != nil {
+		if err := s.cache.Remove(serviceID); err != nil {
+			return err
+		}
+	}
 	s.mu.Lock()
 	delete(s.states, serviceID)
 	s.mu.Unlock()
-	if s.cache != nil {
-		return s.cache.Remove(serviceID)
-	}
 	return nil
 }
