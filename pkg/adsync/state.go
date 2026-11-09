@@ -235,6 +235,11 @@ type MachineOptions struct {
 // syncs, failures and administrative actions. It never talks to the network
 // and never evaluates policy.
 //
+// The caller delivers acks and notifications in the order the source produced
+// them. Within one epoch the machine additionally tolerates reordering; an
+// epoch change discards the superseded copy, so a delayed message from an old
+// epoch can only force a fresh verified copy before serving resumes.
+//
 // Two rules implement the hysteresis that keeps states from flapping:
 //
 //   - Leaving stale and becoming live again requires a confirming ack, which
@@ -717,6 +722,13 @@ func (r *serviceRecord) updateHead(epoch string, revision uint64, stateHash Hash
 		r.headStateHash = stateHash
 		r.headConfirmed = confirmed
 		r.verifiedSinceStop = false
+		// A copy from the previous epoch cannot be compared with the new
+		// head, so discard it. A delayed message that still carries the old
+		// epoch must not be able to make that copy servable again.
+		r.hasLocal = false
+		r.localRevision = 0
+		r.localEpoch = ""
+		r.localStateHash = Hash{}
 		return
 	}
 	switch {
@@ -860,21 +872,32 @@ func (m *Machine) instanceStatusLocked(now time.Time) InstanceStatus {
 	return status
 }
 
-// recordByNameLocked resolves the current name of a service. Service names are
-// unique per account; if two records ever share one, the lowest service ID
-// wins so the result stays deterministic.
+// recordByNameLocked resolves the current name of a service. An active service
+// always wins over a removed tombstone with the same name, so a replacement
+// service is not shadowed by its predecessor. A tombstone is returned only
+// when no active record carries the name. Duplicate active names resolve to
+// the lowest service ID so the result stays deterministic.
 func (m *Machine) recordByNameLocked(name string) *serviceRecord {
 	if name == "" {
 		return nil
 	}
-	var found *serviceRecord
+	var active, removed *serviceRecord
 	for _, record := range m.records {
 		if record.name != name {
 			continue
 		}
-		if found == nil || record.id < found.id {
-			found = record
+		if record.state == SyncStateRemoved {
+			if removed == nil || record.id < removed.id {
+				removed = record
+			}
+			continue
+		}
+		if active == nil || record.id < active.id {
+			active = record
 		}
 	}
-	return found
+	if active != nil {
+		return active
+	}
+	return removed
 }
