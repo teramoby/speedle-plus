@@ -378,23 +378,25 @@ func applyPolicyChange(policies []Policy, change Change) ([]Policy, error) {
 }
 
 func (s *Syncer) store(state *ServiceState) error {
-	s.mu.Lock()
-	s.states[state.ServiceID] = state.clone()
-	s.mu.Unlock()
 	if s.cache != nil {
 		if err := s.cache.Save(state); err != nil {
 			return err
 		}
 	}
+	s.mu.Lock()
+	s.states[state.ServiceID] = state.clone()
+	s.mu.Unlock()
 	return nil
 }
 
 func (s *Syncer) forget(serviceID string) error {
+	if s.cache != nil {
+		if err := s.cache.Remove(serviceID); err != nil {
+			return err
+		}
+	}
 	s.mu.Lock()
 	delete(s.states, serviceID)
 	s.mu.Unlock()
-	if s.cache != nil {
-		return s.cache.Remove(serviceID)
-	}
 	return nil
 }

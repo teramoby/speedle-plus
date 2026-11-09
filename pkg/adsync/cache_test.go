@@ -4,6 +4,7 @@ package adsync
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"os"
@@ -264,6 +265,93 @@ func TestCacheInputValidation(t *testing.T) {
 	}
 	if name := cacheFileName("service/with/slashes"); strings.Contains(name, "/") {
 		t.Errorf("hashed cache filename contains a slash: %q", name)
+	}
+}
+
+func TestSyncCacheWriteFailureKeepsPreviousState(t *testing.T) {
+	service := newFixtureService(testServiceID1, "books")
+	fixture := newFixture(t, service)
+	directory := t.TempDir()
+	syncer := fixture.newSyncer(directory, nil)
+	syncFixtureService(t, syncer, "books")
+	service.publish(t, fixture.signer,
+		Change{Op: "upsert", Kind: "authz", ID: "01HF7YAT000000000000000201",
+			Name: stringPointer("read-books"), SPDL: stringPointer("grant read")})
+
+	syncer.cache.dir = filepath.Join(directory, "missing", "cache")
+	defer func() { syncer.cache.dir = directory }()
+	state, err := syncer.Sync(context.Background(), discoveredService(service))
+	if err == nil {
+		t.Fatal("Sync succeeded with an unwritable cache")
+	}
+	if state != nil {
+		t.Fatalf("failed Sync returned revision %d", state.Revision)
+	}
+	current, found := syncer.State(service.ID)
+	if !found || current.Revision != 1 {
+		t.Fatalf("state after cache failure = %+v, found %v; want revision 1", current, found)
+	}
+
+	syncer.cache.dir = directory
+	updated, err := syncer.Sync(context.Background(), discoveredService(service))
+	if err != nil {
+		t.Fatalf("Sync retry: %v", err)
+	}
+	if updated.Revision != 2 {
+		t.Errorf("retry revision = %d, want 2", updated.Revision)
+	}
+	cached, err := syncer.cache.Load(service.ID)
+	if err != nil {
+		t.Fatalf("Load after retry: %v", err)
+	}
+	if cached == nil || cached.Revision != 2 {
+		t.Errorf("cache after retry = %+v, want revision 2", cached)
+	}
+	if count := fixture.requestCount("/changes"); count < 2 {
+		t.Errorf("changes requests = %d, want a retry after the persistence failure", count)
+	}
+}
+
+func TestForgetCacheFailureKeepsStateUntilRemoval(t *testing.T) {
+	service := newFixtureService(testServiceID1, "books")
+	fixture := newFixture(t, service)
+	directory := t.TempDir()
+	syncer := fixture.newSyncer(directory, nil)
+	syncFixtureService(t, syncer, "books")
+
+	path := syncer.cache.path(service.ID)
+	if err := os.Remove(path); err != nil {
+		t.Fatalf("remove cache file: %v", err)
+	}
+	if err := os.Mkdir(path, 0o700); err != nil {
+		t.Fatalf("replace cache file with directory: %v", err)
+	}
+	child := filepath.Join(path, "child")
+	if err := os.WriteFile(child, []byte("block removal"), 0o600); err != nil {
+		t.Fatalf("write cache directory child: %v", err)
+	}
+	if err := syncer.Forget(service.ID); err == nil {
+		t.Fatal("Forget succeeded despite the cache removal failure")
+	}
+	if _, found := syncer.State(service.ID); !found {
+		t.Error("Forget discarded memory before the cache removal succeeded")
+	}
+
+	if err := os.Remove(child); err != nil {
+		t.Fatalf("remove cache directory child: %v", err)
+	}
+	if err := os.Remove(path); err != nil {
+		t.Fatalf("remove cache directory: %v", err)
+	}
+	if err := syncer.Forget(service.ID); err != nil {
+		t.Fatalf("Forget retry: %v", err)
+	}
+	if _, found := syncer.State(service.ID); found {
+		t.Error("state survived successful Forget retry")
+	}
+	cached, err := syncer.cache.Load(service.ID)
+	if err != nil || cached != nil {
+		t.Errorf("cache after Forget retry = %+v, %v", cached, err)
 	}
 }
 
