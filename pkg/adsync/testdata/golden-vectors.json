@@ -1,0 +1,250 @@
+{
+  "format": "speedle-policy-source-golden-v1",
+  "purpose": "TEST ONLY. Fixed Ed25519 test key and deterministic byte-level vectors for the Speedle policy distribution contract. Never use this key for anything real.",
+  "canonicalEncoding": {
+    "domain": "speedle-policy-v1",
+    "signatureKind": {
+      "snapshot": 1,
+      "commit": 2
+    },
+    "changeOpCode": {
+      "upsert": 1,
+      "delete": 2
+    },
+    "changeKindCode": {
+      "authz": 1,
+      "role": 2,
+      "service": 3
+    },
+    "note": "Strings are UTF-8 with a big-endian u32 byte length; revisions are u64be; hashes are 32 raw bytes. stateHash sorts policies by id in UTF-8 byte order (Go's sort.Strings); commitHash keeps the change array order (seq order)."
+  },
+  "testKey": {
+    "keyId": "test-only-1",
+    "seedText": "speedle-test-key-only-32-bytes!!",
+    "privateKeySeedBase64": "c3BlZWRsZS10ZXN0LWtleS1vbmx5LTMyLWJ5dGVzISE=",
+    "publicKeyBase64": "hNWUYF5HKUDgpesi7xpCoJAJa6ckN3RJGvBDPmWOB04="
+  },
+  "stateHashVectors": [
+    {
+      "description": "ascii policies, unsorted input",
+      "snapshot": {
+        "name": "books",
+        "policies": [
+          {
+            "id": "01HF7YAT000000000000000101",
+            "name": "write-books",
+            "spdl": "grant principal \"user:bob\" to write on \"/books/*\""
+          },
+          {
+            "id": "01HF7YAT000000000000000100",
+            "name": "read-books",
+            "spdl": "grant principal \"user:alice\" to read on \"/books/*\""
+          }
+        ],
+        "rolePolicies": [
+          {
+            "id": "01HF7YAT000000000000000200",
+            "name": "reader",
+            "spdl": "grant role \"reader\" to \"group:staff\" on \"/books/*\""
+          }
+        ]
+      },
+      "canonicalBytesHex": "00000005626f6f6b73000000020000001a30314846375941543030303030303030303030303030303130300000000a726561642d626f6f6b73000000326772616e74207072696e636970616c2022757365723a616c6963652220746f2072656164206f6e20222f626f6f6b732f2a220000001a30314846375941543030303030303030303030303030303130310000000b77726974652d626f6f6b73000000316772616e74207072696e636970616c2022757365723a626f622220746f207772697465206f6e20222f626f6f6b732f2a22000000010000001a303148463759415430303030303030303030303030303032303000000006726561646572000000326772616e7420726f6c6520227265616465722220746f202267726f75703a737461666622206f6e20222f626f6f6b732f2a22",
+      "stateHash": "sha256:a17a476f7147cd7bf9107ee998df011715facd18d89666a4c7f89f2fa7bc7267"
+    },
+    {
+      "description": "unicode, emoji, control characters and U+2028/U+2029",
+      "snapshot": {
+        "name": "unicode",
+        "policies": [
+          {
+            "id": "01HF7YAT000000000000000110",
+            "name": "阅读📚\u0001  ",
+            "spdl": "grant principal \"用户:爱丽丝📚\" to read on \"/书/123\"\u0002 "
+          }
+        ],
+        "rolePolicies": []
+      },
+      "canonicalBytesHex": "00000007756e69636f6465000000010000001a303148463759415430303030303030303030303030303031313000000011e99885e8afbbf09f939a01e280a8e280a9000000406772616e74207072696e636970616c2022e794a8e688b73ae788b1e4b8bde4b89df09f939a2220746f2072656164206f6e20222fe4b9a62f3132332202e280a800000000",
+      "stateHash": "sha256:9daf2f451f72a9836e113b668737ed071eaa8a3c3d0cfb79af79491a697464ed"
+    },
+    {
+      "description": "empty policy sets",
+      "snapshot": {
+        "name": "empty",
+        "policies": [],
+        "rolePolicies": []
+      },
+      "canonicalBytesHex": "00000005656d7074790000000000000000",
+      "stateHash": "sha256:0c2b911db8ccf237f66ca43c797795219ef3f6336399e86d7dc23b77bd1a1486"
+    },
+    {
+      "description": "UTF-8 byte order for non-ASCII ids",
+      "snapshot": {
+        "name": "sort-order",
+        "policies": [
+          {
+            "id": "😀-policy",
+            "name": "emoji-id",
+            "spdl": "grant"
+          },
+          {
+            "id": "�-policy",
+            "name": "replacement-id",
+            "spdl": "grant"
+          }
+        ],
+        "rolePolicies": []
+      },
+      "canonicalBytesHex": "0000000a736f72742d6f72646572000000020000000aefbfbd2d706f6c6963790000000e7265706c6163656d656e742d6964000000056772616e740000000bf09f98802d706f6c69637900000008656d6f6a692d6964000000056772616e7400000000",
+      "stateHash": "sha256:8d7981d0e8202e3dc3f23e9d7eb49db828a3128d8351beb68fc8aff5e3d7f59b"
+    }
+  ],
+  "chainVector": {
+    "sourceId": "01HF7YAT000000000000000002",
+    "epoch": "01HF7YAT000000000000000002",
+    "initialState": {
+      "name": "unicode",
+      "policies": [
+        {
+          "id": "01HF7YAT000000000000000110",
+          "name": "阅读📚\u0001  ",
+          "spdl": "grant principal \"用户:爱丽丝📚\" to read on \"/书/123\"\u0002 "
+        }
+      ],
+      "rolePolicies": []
+    },
+    "initialStateHash": "sha256:9daf2f451f72a9836e113b668737ed071eaa8a3c3d0cfb79af79491a697464ed",
+    "initialCommitHash": "sha256:9daf2f451f72a9836e113b668737ed071eaa8a3c3d0cfb79af79491a697464ed",
+    "commits": [
+      {
+        "revision": 1,
+        "prevHash": "sha256:9daf2f451f72a9836e113b668737ed071eaa8a3c3d0cfb79af79491a697464ed",
+        "hash": "sha256:285578362005122baacfcc21d237212ea2d6856cfc5531788e4ace59e35c1b80",
+        "at": 1762500000000,
+        "changes": [
+          {
+            "op": "upsert",
+            "kind": "authz",
+            "id": "01HF7YAT000000000000000120",
+            "name": "读订单📦",
+            "spdl": "grant principal \"user:carol\" to read on \"/orders/*\" "
+          },
+          {
+            "op": "delete",
+            "kind": "role",
+            "id": "01HF7YAT000000000000000200"
+          }
+        ],
+        "canonicalBytesHex": "9daf2f451f72a9836e113b668737ed071eaa8a3c3d0cfb79af79491a697464ed0000000201010000001a30314846375941543030303030303030303030303030303132300000000de8afbbe8aea2e58d95f09f93a6000000366772616e74207072696e636970616c2022757365723a6361726f6c2220746f2072656164206f6e20222f6f72646572732f2a22e280a802020000001a3031484637594154303030303030303030303030303030323030",
+        "signedBytesHex": "73706565646c652d706f6c6963792d7631020000001a30314846375941543030303030303030303030303030303030320000001a30314846375941543030303030303030303030303030303030320000000000000001285578362005122baacfcc21d237212ea2d6856cfc5531788e4ace59e35c1b80",
+        "signature": {
+          "keyId": "test-only-1",
+          "alg": "Ed25519",
+          "value": "oZfleCFWiFwty9n8onST56r8t6EHTnZOW0L6quPX9JO+42ZRBmmCRUMJNixr8xMdjUJc96gXgfgp7oiIPVW0DA=="
+        }
+      },
+      {
+        "revision": 2,
+        "prevHash": "sha256:285578362005122baacfcc21d237212ea2d6856cfc5531788e4ace59e35c1b80",
+        "hash": "sha256:5b2e34183e31a320dd136ad5c6f483ea31bb109c43ec29b4a725471bf9cbb817",
+        "at": 1762500001000,
+        "changes": [
+          {
+            "op": "upsert",
+            "kind": "service",
+            "id": "01HF7YAT000000000000000002",
+            "name": "books-v2"
+          },
+          {
+            "op": "upsert",
+            "kind": "role",
+            "id": "01HF7YAT000000000000000201",
+            "name": "auditor",
+            "spdl": "grant role \"auditor\" to \"group:security\" on \"/books/*\""
+          }
+        ],
+        "canonicalBytesHex": "285578362005122baacfcc21d237212ea2d6856cfc5531788e4ace59e35c1b800000000201030000001a303148463759415430303030303030303030303030303030303200000008626f6f6b732d76320000000001020000001a30314846375941543030303030303030303030303030303230310000000761756469746f72000000366772616e7420726f6c65202261756469746f722220746f202267726f75703a736563757269747922206f6e20222f626f6f6b732f2a22",
+        "signedBytesHex": "73706565646c652d706f6c6963792d7631020000001a30314846375941543030303030303030303030303030303030320000001a303148463759415430303030303030303030303030303030303200000000000000025b2e34183e31a320dd136ad5c6f483ea31bb109c43ec29b4a725471bf9cbb817",
+        "signature": {
+          "keyId": "test-only-1",
+          "alg": "Ed25519",
+          "value": "3TFeoNcM6QDbcAURShqS8i8f8Qd/2UFcOgRQwSZcS5U3tIpyxSPLCdPFVyJGj8sYRMaWYcj926g2PKAL4XXEDQ=="
+        }
+      },
+      {
+        "revision": 3,
+        "prevHash": "sha256:5b2e34183e31a320dd136ad5c6f483ea31bb109c43ec29b4a725471bf9cbb817",
+        "hash": "sha256:9336bf7886d2f62b7d657898c9bf3a4c44fffbbf801ac241068a91d13330b80e",
+        "at": 1762500002000,
+        "changes": [
+          {
+            "op": "delete",
+            "kind": "authz",
+            "id": "01HF7YAT000000000000000100"
+          }
+        ],
+        "canonicalBytesHex": "5b2e34183e31a320dd136ad5c6f483ea31bb109c43ec29b4a725471bf9cbb8170000000102010000001a3031484637594154303030303030303030303030303030313030",
+        "signedBytesHex": "73706565646c652d706f6c6963792d7631020000001a30314846375941543030303030303030303030303030303030320000001a303148463759415430303030303030303030303030303030303200000000000000039336bf7886d2f62b7d657898c9bf3a4c44fffbbf801ac241068a91d13330b80e",
+        "signature": {
+          "keyId": "test-only-1",
+          "alg": "Ed25519",
+          "value": "lil2MovJ0c6OnsZU1M5SokIMgGu3QgzsIYExksxI5ctBmdwSPwVO3X02KVSRqhz+MxqaeARj6v9KL3zsOmaSCw=="
+        }
+      }
+    ],
+    "headRevision": 3,
+    "headSnapshot": {
+      "name": "books-v2",
+      "policies": [
+        {
+          "id": "01HF7YAT000000000000000110",
+          "name": "阅读📚\u0001  ",
+          "spdl": "grant principal \"用户:爱丽丝📚\" to read on \"/书/123\"\u0002 "
+        },
+        {
+          "id": "01HF7YAT000000000000000120",
+          "name": "读订单📦",
+          "spdl": "grant principal \"user:carol\" to read on \"/orders/*\" "
+        }
+      ],
+      "rolePolicies": [
+        {
+          "id": "01HF7YAT000000000000000201",
+          "name": "auditor",
+          "spdl": "grant role \"auditor\" to \"group:security\" on \"/books/*\""
+        }
+      ]
+    },
+    "headStateHash": "sha256:a50049e5f48da3d9e712a2f4d9c10f82bfcf2ed9d8d30a84948460a8c4b77cc8",
+    "headCommitHash": "sha256:9336bf7886d2f62b7d657898c9bf3a4c44fffbbf801ac241068a91d13330b80e"
+  },
+  "snapshotSignatureVectors": [
+    {
+      "sourceId": "01HF7YAT000000000000000002",
+      "epoch": "01HF7YAT000000000000000002",
+      "revision": 0,
+      "stateHash": "sha256:9daf2f451f72a9836e113b668737ed071eaa8a3c3d0cfb79af79491a697464ed",
+      "commitHash": "sha256:9daf2f451f72a9836e113b668737ed071eaa8a3c3d0cfb79af79491a697464ed",
+      "signedBytesHex": "73706565646c652d706f6c6963792d7631010000001a30314846375941543030303030303030303030303030303030320000001a303148463759415430303030303030303030303030303030303200000000000000009daf2f451f72a9836e113b668737ed071eaa8a3c3d0cfb79af79491a697464ed9daf2f451f72a9836e113b668737ed071eaa8a3c3d0cfb79af79491a697464ed",
+      "signature": {
+        "keyId": "test-only-1",
+        "alg": "Ed25519",
+        "value": "6wVZtu107RrxAPWZcJNl4ZiXDBuu9nELNxh3EsbSGWbcBFEKfLZw+PD40457I5prLmAVjLJ2/SMgUTdzswQ4DA=="
+      }
+    },
+    {
+      "sourceId": "01HF7YAT000000000000000002",
+      "epoch": "01HF7YAT000000000000000002",
+      "revision": 3,
+      "stateHash": "sha256:a50049e5f48da3d9e712a2f4d9c10f82bfcf2ed9d8d30a84948460a8c4b77cc8",
+      "commitHash": "sha256:9336bf7886d2f62b7d657898c9bf3a4c44fffbbf801ac241068a91d13330b80e",
+      "signedBytesHex": "73706565646c652d706f6c6963792d7631010000001a30314846375941543030303030303030303030303030303030320000001a30314846375941543030303030303030303030303030303030320000000000000003a50049e5f48da3d9e712a2f4d9c10f82bfcf2ed9d8d30a84948460a8c4b77cc89336bf7886d2f62b7d657898c9bf3a4c44fffbbf801ac241068a91d13330b80e",
+      "signature": {
+        "keyId": "test-only-1",
+        "alg": "Ed25519",
+        "value": "zVYDZDzX6AvIUa8aynJBiVA0Zu9UFlboO8CmMapkWZ0nKZUlDJAKN2SWUNd9jjzdUYussvifyheRDEy4S3o+Bg=="
+      }
+    }
+  ]
+}
