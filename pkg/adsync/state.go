@@ -490,6 +490,11 @@ func (m *Machine) SyncFailed(serviceID string, err error) {
 // the resync reason until a freshly verified copy arrives. The caller must
 // discard the old copy and fetch a new one, for example with Syncer.Forget
 // followed by Syncer.Sync.
+//
+// The caller must also serialize this with its synchronization passes: a
+// completion from a fetch that started before this call must not be reported
+// afterwards. The machine receives only verified copies and cannot tell how
+// old a reported fetch is.
 func (m *Machine) Resync(serviceID string) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -585,15 +590,23 @@ func validateAck(ack Ack) error {
 	if len(ack.Services) > maxServicesPerSource {
 		return fmt.Errorf("%w: %d services exceed the protocol bound", ErrProtocol, len(ack.Services))
 	}
-	seen := make(map[string]struct{}, len(ack.Services))
+	seenIDs := make(map[string]struct{}, len(ack.Services))
+	seenNames := make(map[string]struct{}, len(ack.Services))
 	for index := range ack.Services {
 		if err := ack.Services[index].validate(); err != nil {
 			return err
 		}
-		if _, duplicate := seen[ack.Services[index].ID]; duplicate {
+		if _, duplicate := seenIDs[ack.Services[index].ID]; duplicate {
 			return fmt.Errorf("%w: duplicate service id %q", ErrProtocol, ack.Services[index].ID)
 		}
-		seen[ack.Services[index].ID] = struct{}{}
+		seenIDs[ack.Services[index].ID] = struct{}{}
+		// Service names are unique per account and the request gate resolves a
+		// service by name, so an ack with two active services of one name is
+		// ambiguous.
+		if _, duplicate := seenNames[ack.Services[index].Name]; duplicate {
+			return fmt.Errorf("%w: duplicate service name %q", ErrProtocol, ack.Services[index].Name)
+		}
+		seenNames[ack.Services[index].Name] = struct{}{}
 	}
 	return nil
 }

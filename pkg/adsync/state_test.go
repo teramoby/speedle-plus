@@ -784,6 +784,14 @@ func TestAckValidation(t *testing.T) {
 		t.Fatalf("duplicate id error = %v, want ErrProtocol", err)
 	}
 
+	duplicateName := ackWith(
+		testAckService(testServiceID1, "books", 5),
+		testAckService(testServiceID2, "books", 5),
+	)
+	if err := machine.Ack(duplicateName); !errors.Is(err, ErrProtocol) {
+		t.Fatalf("duplicate name error = %v, want ErrProtocol", err)
+	}
+
 	tooMany := make([]Service, maxServicesPerSource+1)
 	for index := range tooMany {
 		id := fmt.Sprintf("%026d", index+1)
