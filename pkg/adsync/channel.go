@@ -530,8 +530,9 @@ func (c *Channel) runLongPollLoop(ctx context.Context, probeAt time.Time) error 
 }
 
 // applyAck feeds one confirming ack to the machine, reports a service-set
-// change and delivers commands.
-func (c *Channel) applyAck(ack *channelAck, results chan<- channelCommandResult) error {
+// change and delivers commands. When cadence is non-nil, a confirmed ack also
+// signals that the source may have changed the heartbeat thresholds.
+func (c *Channel) applyAck(ack *channelAck, results chan<- channelCommandResult, cadence chan<- struct{}) error {
 	heartbeat, err := parseChannelDuration(ack.HeartbeatInterval)
 	if err != nil {
 		return err
@@ -556,6 +557,14 @@ func (c *Channel) applyAck(ack *channelAck, results chan<- channelCommandResult)
 		StopAfter:         stopAfter,
 	}); err != nil {
 		return err
+	}
+	if cadence != nil {
+		select {
+		case cadence <- struct{}{}:
+		default:
+			// A signal is already pending; the writer reads the latest
+			// thresholds when it handles it.
+		}
 	}
 	change, advanced := c.storeServiceSet(extraKnown, services)
 	if change != nil && c.onServiceSetChange != nil {
@@ -679,8 +688,11 @@ func (c *Channel) deliverCommands(commands []channelCommand, results chan<- chan
 // heartbeatInterval is the current heartbeat cadence. A confirming ack can
 // tighten the machine's thresholds, so the value is read on every use.
 func (c *Channel) heartbeatInterval() time.Duration {
-	if c.heartbeatOverride > 0 {
-		return c.heartbeatOverride
+	c.mu.Lock()
+	override := c.heartbeatOverride
+	c.mu.Unlock()
+	if override > 0 {
+		return override
 	}
 	return c.machine.Thresholds().HeartbeatInterval
 }

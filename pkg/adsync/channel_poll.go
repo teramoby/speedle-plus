@@ -104,5 +104,5 @@ func (c *Channel) pollOnce(ctx context.Context) error {
 	if !ok {
 		return fmt.Errorf("%w: poll response is not an ack", ErrProtocol)
 	}
-	return c.applyAck(ack, nil)
+	return c.applyAck(ack, nil, nil)
 }

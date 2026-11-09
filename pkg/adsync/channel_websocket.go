@@ -100,11 +100,12 @@ func (c *Channel) runWebSocket(ctx context.Context) wsOutcome {
 
 	writerCtx, stopWriter := context.WithCancel(ctx)
 	results := make(chan channelCommandResult, 16)
+	cadence := make(chan struct{}, 1)
 	var writerDone sync.WaitGroup
 	writerDone.Add(1)
 	go func() {
 		defer writerDone.Done()
-		c.writeWebSocket(writerCtx, conn, results)
+		c.writeWebSocket(writerCtx, conn, results, cadence)
 	}()
 	defer func() {
 		stopWriter()
@@ -144,7 +145,7 @@ readLoop:
 		}
 		switch typed := message.(type) {
 		case *channelAck:
-			if err := c.applyAck(typed, results); err != nil {
+			if err := c.applyAck(typed, results, cadence); err != nil {
 				outcome.err = err
 				break readLoop
 			}
@@ -174,8 +175,10 @@ readLoop:
 }
 
 // writeWebSocket is the connection's only writer: heartbeats, protocol pings
-// and command results all go through it.
-func (c *Channel) writeWebSocket(ctx context.Context, conn *websocket.Conn, results <-chan channelCommandResult) {
+// and command results all go through it. An ack can change the effective
+// cadence, so a cadence signal resets both timers instead of waiting for the
+// previous, possibly longer, interval to expire.
+func (c *Channel) writeWebSocket(ctx context.Context, conn *websocket.Conn, results <-chan channelCommandResult, cadence <-chan struct{}) {
 	heartbeat := time.NewTimer(c.heartbeatInterval())
 	ping := time.NewTimer(c.pingInterval())
 	defer heartbeat.Stop()
@@ -185,6 +188,9 @@ func (c *Channel) writeWebSocket(ctx context.Context, conn *websocket.Conn, resu
 		select {
 		case <-ctx.Done():
 			return
+		case <-cadence:
+			resetTimer(heartbeat, c.heartbeatInterval())
+			resetTimer(ping, c.pingInterval())
 		case result := <-results:
 			if err := c.writeChannelJSON(conn, result); err != nil {
 				_ = conn.Close()
@@ -195,15 +201,27 @@ func (c *Channel) writeWebSocket(ctx context.Context, conn *websocket.Conn, resu
 				_ = conn.Close()
 				return
 			}
-			heartbeat.Reset(c.heartbeatInterval())
+			resetTimer(heartbeat, c.heartbeatInterval())
 		case <-ping.C:
 			if err := conn.WriteControl(websocket.PingMessage, nil, time.Now().Add(c.writeTimeout())); err != nil {
 				_ = conn.Close()
 				return
 			}
-			ping.Reset(c.pingInterval())
+			resetTimer(ping, c.pingInterval())
 		}
 	}
+}
+
+// resetTimer resets a timer to a new delay, draining a tick that already fired
+// so it cannot be observed as a spurious heartbeat or ping.
+func resetTimer(timer *time.Timer, delay time.Duration) {
+	if !timer.Stop() {
+		select {
+		case <-timer.C:
+		default:
+		}
+	}
+	timer.Reset(delay)
 }
 
 func (c *Channel) writeChannelJSON(conn *websocket.Conn, value any) error {

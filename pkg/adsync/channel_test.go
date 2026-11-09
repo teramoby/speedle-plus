@@ -38,8 +38,11 @@ type channelSource struct {
 	// an ack, so the first-ack deadline has to be absolute.
 	keepaliveWhileNoAck bool
 	closeAfterAck       bool
-	commands            []channelCommand
-	pollHold            time.Duration
+	// ackInterval makes the source push an ack on that interval, which lets a
+	// test change the effective cadence between heartbeats.
+	ackInterval time.Duration
+	commands    []channelCommand
+	pollHold    time.Duration
 	// pollStatus, pollRetryAfter and pollBody override the poll response when
 	// set, so tests can exercise failure and malformed-response handling.
 	pollStatus     int
@@ -55,6 +58,10 @@ type channelSource struct {
 	pollRequests    int
 	pings           int
 	commandResults  []channelCommandResult
+
+	// writeMu serializes data-frame writes: the read loop, the unsolicited ack
+	// ticker and notify flushes all write to the same connection.
+	writeMu sync.Mutex
 
 	notifies chan channelNotify
 	wake     chan struct{}
@@ -132,6 +139,7 @@ func (f *channelSource) serveWebSocket(w http.ResponseWriter, r *http.Request) {
 	noAck := f.noAck
 	keepalive := f.keepaliveWhileNoAck
 	closeAfterAck := f.closeAfterAck
+	ackInterval := f.ackInterval
 	f.mu.Unlock()
 
 	_ = conn.SetReadDeadline(time.Now().Add(5 * time.Second))
@@ -169,7 +177,7 @@ func (f *channelSource) serveWebSocket(w http.ResponseWriter, r *http.Request) {
 		<-f.stop
 		return
 	}
-	if err := conn.WriteJSON(f.ack()); err != nil {
+	if err := f.writeJSON(conn, f.ack()); err != nil {
 		return
 	}
 	if closeAfterAck {
@@ -181,6 +189,22 @@ func (f *channelSource) serveWebSocket(w http.ResponseWriter, r *http.Request) {
 	if silent {
 		<-f.stop
 		return
+	}
+	if ackInterval > 0 {
+		go func() {
+			ticker := time.NewTicker(ackInterval)
+			defer ticker.Stop()
+			for {
+				select {
+				case <-ticker.C:
+					if err := f.writeJSON(conn, f.ack()); err != nil {
+						return
+					}
+				case <-f.stop:
+					return
+				}
+			}
+		}()
 	}
 
 	conn.SetPingHandler(func(message string) error {
@@ -208,7 +232,7 @@ func (f *channelSource) serveWebSocket(w http.ResponseWriter, r *http.Request) {
 			if err := f.flushNotifies(conn); err != nil {
 				return
 			}
-			if err := conn.WriteJSON(f.ack()); err != nil {
+			if err := f.writeJSON(conn, f.ack()); err != nil {
 				return
 			}
 		case channelTypeCommandResult:
@@ -225,11 +249,17 @@ func (f *channelSource) serveWebSocket(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func (f *channelSource) writeJSON(conn *websocket.Conn, value any) error {
+	f.writeMu.Lock()
+	defer f.writeMu.Unlock()
+	return conn.WriteJSON(value)
+}
+
 func (f *channelSource) flushNotifies(conn *websocket.Conn) error {
 	for {
 		select {
 		case notify := <-f.notifies:
-			if err := conn.WriteJSON(notify); err != nil {
+			if err := f.writeJSON(conn, notify); err != nil {
 				return err
 			}
 		default:
@@ -1484,6 +1514,38 @@ func TestChannelHeartbeatCadence(t *testing.T) {
 	}
 }
 
+func TestChannelAppliesShortenedHeartbeatAfterAck(t *testing.T) {
+	books := newFixtureService(testServiceID1, "books")
+	source := newChannelSource(t, books)
+	// The source pushes acks, so a cadence change can be announced without
+	// waiting for a heartbeat.
+	source.configure(func(f *channelSource) { f.ackInterval = 500 * time.Millisecond })
+	server := startChannelFixture(t, source)
+	client := newChannelClient(t, server)
+
+	machine := newChannelMachine(t)
+	if err := machine.Applied(source.serviceState(books.ID)); err != nil {
+		t.Fatalf("Applied: %v", err)
+	}
+	channel := newTestChannel(t, client, machine, ChannelOptions{Transport: TransportWebSocket})
+	// Start close to the 30s default. The first ack that shortens the cadence
+	// must reset the heartbeat timer instead of waiting for it to expire.
+	channel.heartbeatOverride = 10 * time.Second
+	runChannel(t, channel)
+	requireInSync(t, machine, "books")
+
+	channel.mu.Lock()
+	channel.heartbeatOverride = 200 * time.Millisecond
+	channel.mu.Unlock()
+	waitFor(t, 3*time.Second, "a heartbeat at the shortened cadence", func() bool {
+		_, _, _, _, _, heartbeats := source.stats()
+		return len(heartbeats) > 0
+	})
+	if _, connections, _, _, _, _ := source.stats(); connections != 1 {
+		t.Fatalf("connections = %d, want 1: the first connection must adopt the new cadence", connections)
+	}
+}
+
 func TestChannelPollCanceledContext(t *testing.T) {
 	books := newFixtureService(testServiceID1, "books")
 	source := newChannelSource(t, books)
@@ -1520,7 +1582,7 @@ func TestChannelApplyAckRejectsDuplicateNames(t *testing.T) {
 	if err := ack.validate(); err != nil {
 		t.Fatalf("the wire ack should be valid: %v", err)
 	}
-	if err := channel.applyAck(ack, nil); !errors.Is(err, ErrProtocol) {
+	if err := channel.applyAck(ack, nil, nil); !errors.Is(err, ErrProtocol) {
 		t.Fatalf("applyAck = %v, want ErrProtocol", err)
 	}
 }
@@ -1670,7 +1732,7 @@ func TestChannelApplyAckRejectsInvalidDurations(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			ack := valid()
 			testCase.update(ack)
-			if err := channel.applyAck(ack, nil); !errors.Is(err, ErrProtocol) {
+			if err := channel.applyAck(ack, nil, nil); !errors.Is(err, ErrProtocol) {
 				t.Fatalf("applyAck = %v, want ErrProtocol", err)
 			}
 		})
