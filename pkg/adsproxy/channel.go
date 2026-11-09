@@ -326,15 +326,7 @@ func (s *Server) channelWriter(conn *websocket.Conn, credential *Credential, sub
 		case notification := <-subscriber.C():
 			// A reload may have replaced the grant; a notification for a
 			// service the new grant forbids must not go out.
-			if !s.credentials.Current(credential) {
-				_ = conn.Close()
-				return
-			}
-			if err := writeChannelJSON(conn, notifyMessage{
-				Type:      "notify",
-				ServiceID: notification.ServiceID,
-				Head:      notification.Head,
-			}); err != nil {
+			if err := s.writeChannelNotification(conn, credential, notification); err != nil {
 				_ = conn.Close()
 				return
 			}
@@ -356,6 +348,20 @@ func (s *Server) writeChannelAck(conn *websocket.Conn, credential *Credential) e
 	}
 	defer s.credentials.EndRequest()
 	return writeChannelJSON(conn, s.ack(credential))
+}
+
+// writeChannelNotification pins the connection's grant across the notification,
+// so a reload cannot replace it between the check and the frame write.
+func (s *Server) writeChannelNotification(conn *websocket.Conn, credential *Credential, notification Notify) error {
+	if !s.credentials.BeginRequest(credential) {
+		return fmt.Errorf("%w: credential replaced", ErrUnauthorized)
+	}
+	defer s.credentials.EndRequest()
+	return writeChannelJSON(conn, notifyMessage{
+		Type:      "notify",
+		ServiceID: notification.ServiceID,
+		Head:      notification.Head,
+	})
 }
 
 func writeChannelJSON(conn *websocket.Conn, value any) error {

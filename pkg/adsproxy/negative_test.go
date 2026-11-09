@@ -1969,3 +1969,57 @@ func TestMirrorBoundsIdentityChurn(t *testing.T) {
 		t.Errorf("current identity did not revive the service: %+v", services)
 	}
 }
+
+func TestChannelNotificationRefusesAReplacedGrant(t *testing.T) {
+	signer := newTestSigner(t)
+	mirror, _, _ := newPopulatedMirror(t, signer)
+	token := testToken(testDownstreamID, 1)
+	server := newTestServer(t, mirror, signer.publicKeys(t), nil, testCredential{
+		downstreamID: testDownstreamID,
+		token:        token,
+	})
+
+	upgrader := websocket.Upgrader{CheckOrigin: func(*http.Request) bool { return true }}
+	serverConns := make(chan *websocket.Conn, 1)
+	wsServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		conn, err := upgrader.Upgrade(w, r, nil)
+		if err != nil {
+			return
+		}
+		serverConns <- conn
+	}))
+	defer wsServer.Close()
+	client, _, err := websocket.DefaultDialer.Dial("ws"+strings.TrimPrefix(wsServer.URL, "http"), nil)
+	if err != nil {
+		t.Fatalf("dial: %v", err)
+	}
+	defer client.Close()
+	serverConn := <-serverConns
+	defer serverConn.Close()
+
+	credential, ok := server.server.Credentials().Authenticate(token)
+	if !ok {
+		t.Fatal("token did not authenticate")
+	}
+	notification := Notify{ServiceID: testServiceID2, Head: 3}
+	if err := server.server.writeChannelNotification(serverConn, credential, notification); err != nil {
+		t.Fatalf("notification with a current grant: %v", err)
+	}
+	if kind, _ := readChannelFrame(t, client); kind != "notify" {
+		t.Fatalf("frame = %q", kind)
+	}
+
+	// Narrow the grant to the other service; the old pointer can no longer
+	// forward a notification for the now-forbidden service.
+	server.writeCredentialFile(testDownstreamID + ":" + hashToken(token) + ":" + testServiceID1)
+	if err := server.server.ReloadCredentials(); err != nil {
+		t.Fatalf("reload: %v", err)
+	}
+	if err := server.server.writeChannelNotification(serverConn, credential, notification); err == nil {
+		t.Fatal("a replaced grant wrote a notification")
+	}
+	_ = client.SetReadDeadline(time.Now().Add(100 * time.Millisecond))
+	if _, _, err := client.ReadMessage(); err == nil {
+		t.Error("a notification reached the wire with a replaced grant")
+	}
+}
