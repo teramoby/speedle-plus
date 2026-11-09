@@ -327,6 +327,11 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			writeError(w, http.StatusMethodNotAllowed, "method_not_allowed", "")
 			return
 		}
+		if !s.credentials.BeginRequest(credential) {
+			writeError(w, http.StatusUnauthorized, "unauthorized", "")
+			return
+		}
+		defer s.credentials.EndRequest()
 		s.handleServices(w, credential)
 	case rest == "/channel":
 		if r.Method != http.MethodGet {
@@ -341,6 +346,11 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 		s.handlePoll(w, r, credential)
 	case strings.HasPrefix(rest, "/services/"):
+		if !s.credentials.BeginRequest(credential) {
+			writeError(w, http.StatusUnauthorized, "unauthorized", "")
+			return
+		}
+		defer s.credentials.EndRequest()
 		s.handleService(w, r, credential, strings.TrimPrefix(rest, "/services/"))
 	default:
 		writeError(w, http.StatusNotFound, "not_found", "")

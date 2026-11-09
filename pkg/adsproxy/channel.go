@@ -301,6 +301,13 @@ func (s *Server) handleChannel(w http.ResponseWriter, r *http.Request, credentia
 // that ack, so a notification that raced ahead of it would make the client
 // reject an unknown head.
 func (s *Server) channelWriter(conn *websocket.Conn, credential *Credential, subscriber *Subscriber, acks <-chan struct{}, stop <-chan struct{}) {
+	// Pause can start while the connection waits for its hello frame; the
+	// initial ack must not go out as if distribution were still active.
+	if s.distributionPaused() {
+		closeWithReason(conn, websocket.ClosePolicyViolation, "distribution_paused")
+		_ = conn.Close()
+		return
+	}
 	if err := writeChannelJSON(conn, s.ack(credential)); err != nil {
 		_ = conn.Close()
 		return
@@ -408,6 +415,11 @@ func (s *Server) handlePoll(w http.ResponseWriter, r *http.Request, credential *
 		case <-r.Context().Done():
 			return
 		}
+	}
+	// Distribution may have been paused while the request was held.
+	if s.distributionPaused() {
+		writeError(w, http.StatusServiceUnavailable, "distribution_paused", "")
+		return
 	}
 	// A reload may have replaced the grant while the request was held. The ack
 	// would otherwise reveal the new service set to a revoked or narrowed one.

@@ -13,6 +13,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -1647,5 +1648,136 @@ func TestCloseEndsHeldPolls(t *testing.T) {
 		}
 	case <-time.After(5 * time.Second):
 		t.Fatal("a held poll stayed blocked after Close")
+	}
+}
+
+func TestHeldPollAnswersDistributionPaused(t *testing.T) {
+	signer := newTestSigner(t)
+	mirror, books, _ := newPopulatedMirror(t, signer)
+	token := testToken(testDownstreamID, 1)
+	var paused atomic.Bool
+	server := newTestServer(t, mirror, signer.publicKeys(t), &testServerOptions{
+		paused: paused.Load,
+	}, testCredential{
+		downstreamID: testDownstreamID,
+		token:        token,
+	})
+	type result struct {
+		status int
+		body   []byte
+	}
+	done := make(chan result, 1)
+	go func() {
+		response, body := server.post(adsync.APIPrefix+"/channel/poll?wait=30", token,
+			heartbeatFrame([]string{testProxyID, testDownstreamID}))
+		done <- result{status: response.StatusCode, body: body}
+	}()
+	time.Sleep(50 * time.Millisecond)
+	paused.Store(true)
+	// A head advance releases the held wait, so the paused state is rechecked.
+	books.publish(t, signer, upsertAuthz(testServiceID1+"A1", "read", "grant read"))
+	if err := mirror.ApplyChanges(pageFor(t, books, 1, 100)); err != nil {
+		t.Fatalf("apply changes: %v", err)
+	}
+	select {
+	case got := <-done:
+		if got.status != http.StatusServiceUnavailable || string(got.body) != `{"error":"distribution_paused"}` {
+			t.Errorf("held poll while paused: status %d body %s", got.status, got.body)
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("held poll did not answer")
+	}
+}
+
+func TestChannelInitialAckRespectsPause(t *testing.T) {
+	signer := newTestSigner(t)
+	mirror, _, _ := newPopulatedMirror(t, signer)
+	token := testToken(testDownstreamID, 1)
+	var paused atomic.Bool
+	server := newTestServer(t, mirror, signer.publicKeys(t), &testServerOptions{
+		paused: paused.Load,
+	}, testCredential{
+		downstreamID: testDownstreamID,
+		token:        token,
+	})
+	conn, _, err := server.dial(token)
+	if err != nil {
+		t.Fatalf("dial: %v", err)
+	}
+	defer conn.Close()
+	// The pause starts while the connection waits for its hello frame. The
+	// initial ack must not go out as if distribution were active.
+	paused.Store(true)
+	writeJSONFrame(t, conn, helloMessage{
+		Type:         "hello",
+		InstanceID:   testDownstreamID,
+		Services:     []helloService{},
+		Chain:        []string{testProxyID, testDownstreamID},
+		AgentVersion: "test",
+	})
+	code, reason := readClose(t, conn)
+	if code != websocket.ClosePolicyViolation || reason != "distribution_paused" {
+		t.Fatalf("close = %d %q", code, reason)
+	}
+}
+
+func TestCredentialSetPinsRequestsAcrossReload(t *testing.T) {
+	signer := newTestSigner(t)
+	mirror, _, _ := newPopulatedMirror(t, signer)
+	token := testToken(testDownstreamID, 1)
+	server := newTestServer(t, mirror, signer.publicKeys(t), nil, testCredential{
+		downstreamID: testDownstreamID,
+		token:        token,
+	})
+	set := server.server.Credentials()
+	credential, ok := set.Authenticate(token)
+	if !ok {
+		t.Fatal("token did not authenticate")
+	}
+	if !set.BeginRequest(credential) {
+		t.Fatal("current credential was not pinned")
+	}
+	server.writeCredentialFile(testDownstreamID + ":" + hashToken(token) + ":" + testServiceID1)
+	reloaded := make(chan error, 1)
+	go func() { reloaded <- server.server.ReloadCredentials() }()
+	select {
+	case err := <-reloaded:
+		t.Fatalf("reload completed while a response was pinned: %v", err)
+	case <-time.After(50 * time.Millisecond):
+	}
+	set.EndRequest()
+	select {
+	case err := <-reloaded:
+		if err != nil {
+			t.Fatalf("reload after the pin was released: %v", err)
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("reload did not complete after the pin was released")
+	}
+	// The replaced grant cannot start a new response.
+	if set.BeginRequest(credential) {
+		set.EndRequest()
+		t.Error("a replaced grant was pinned")
+	}
+}
+
+func TestCredentialFileReadIsBounded(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "sparse")
+	file, err := os.Create(path)
+	if err != nil {
+		t.Fatalf("create: %v", err)
+	}
+	if err := file.Truncate(64 << 20); err != nil {
+		file.Close()
+		t.Fatalf("truncate: %v", err)
+	}
+	if err := file.Close(); err != nil {
+		t.Fatalf("close: %v", err)
+	}
+	if err := os.Chmod(path, 0o600); err != nil {
+		t.Fatalf("chmod: %v", err)
+	}
+	if _, err := LoadCredentialFile(path); !errors.Is(err, ErrCredentialFile) {
+		t.Errorf("oversized file: %v, want ErrCredentialFile", err)
 	}
 }
