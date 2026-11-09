@@ -27,6 +27,7 @@ func (c *Channel) runLongPoll(ctx context.Context, probeAt time.Time) (probe boo
 		if err := ctx.Err(); err != nil {
 			return false, healthy, err
 		}
+		started := time.Now()
 		if err := c.pollOnce(ctx); err != nil {
 			return false, healthy, err
 		}
@@ -34,9 +35,17 @@ func (c *Channel) runLongPoll(ctx context.Context, probeAt time.Time) (probe boo
 
 		// A conforming source holds the request up to wait, so the next poll
 		// follows immediately. Without a hold (wait=0) keep the heartbeat
-		// cadence instead of spinning.
+		// cadence instead of spinning, and a source that answers a wait-length
+		// poll immediately is throttled so it cannot turn this into a busy
+		// loop.
 		if c.pollWait < time.Second {
 			if err := sleepContext(ctx, c.heartbeatInterval()); err != nil {
+				return false, healthy, err
+			}
+			continue
+		}
+		if elapsed := time.Since(started); elapsed < minPollGap {
+			if err := sleepContext(ctx, minPollGap-elapsed); err != nil {
 				return false, healthy, err
 			}
 		}

@@ -887,6 +887,93 @@ func TestChannelHalfOpenConnectionReconnects(t *testing.T) {
 	}
 }
 
+func TestChannelRunStopsWhenCanceledWithLivePeer(t *testing.T) {
+	books := newFixtureService(testServiceID1, "books")
+	source := newChannelSource(t, books)
+	// The peer keeps sending acks, so cancellation must close the connection
+	// rather than wait for a read deadline that traffic keeps extending.
+	source.configure(func(f *channelSource) { f.ackInterval = 10 * time.Millisecond })
+	server := startChannelFixture(t, source)
+	client := newChannelClient(t, server)
+
+	machine := newChannelMachine(t)
+	if err := machine.Applied(source.serviceState(books.ID)); err != nil {
+		t.Fatalf("Applied: %v", err)
+	}
+	channel := newTestChannel(t, client, machine, ChannelOptions{Transport: TransportWebSocket})
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	finished := make(chan error, 1)
+	go func() { finished <- channel.Run(ctx) }()
+	requireInSync(t, machine, "books")
+
+	cancel()
+	select {
+	case err := <-finished:
+		if !errors.Is(err, context.Canceled) {
+			t.Fatalf("Run = %v, want context.Canceled", err)
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("Run did not stop after cancellation with a live peer")
+	}
+}
+
+func TestChannelRunStopsWhenCanceledWithSilentPeer(t *testing.T) {
+	books := newFixtureService(testServiceID1, "books")
+	source := newChannelSource(t, books)
+	// The peer acks once and then stays silent; without closing the connection
+	// on cancellation the reader waits for the long read deadline.
+	source.configure(func(f *channelSource) { f.silentFirstConnection = true })
+	server := startChannelFixture(t, source)
+	client := newChannelClient(t, server)
+
+	machine := newChannelMachine(t)
+	if err := machine.Applied(source.serviceState(books.ID)); err != nil {
+		t.Fatalf("Applied: %v", err)
+	}
+	channel := newTestChannel(t, client, machine, ChannelOptions{Transport: TransportWebSocket})
+	channel.heartbeatOverride = 10 * time.Second
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	finished := make(chan error, 1)
+	go func() { finished <- channel.Run(ctx) }()
+	requireInSync(t, machine, "books")
+
+	cancel()
+	select {
+	case err := <-finished:
+		if !errors.Is(err, context.Canceled) {
+			t.Fatalf("Run = %v, want context.Canceled", err)
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("Run did not stop after cancellation with a silent peer")
+	}
+}
+
+func TestChannelLongPollThrottlesImmediateResponses(t *testing.T) {
+	books := newFixtureService(testServiceID1, "books")
+	source := newChannelSource(t, books)
+	// The source answers wait-length polls immediately, as a nonconforming
+	// endpoint would.
+	source.configure(func(f *channelSource) { f.pollHold = 0 })
+	server := startChannelFixture(t, source)
+	client := newChannelClient(t, server)
+
+	machine := newChannelMachine(t)
+	if err := machine.Applied(source.serviceState(books.ID)); err != nil {
+		t.Fatalf("Applied: %v", err)
+	}
+	channel := newTestChannel(t, client, machine, ChannelOptions{Transport: TransportLongPoll})
+	channel.pollWait = maxPollWait
+	runChannel(t, channel)
+	requireInSync(t, machine, "books")
+
+	time.Sleep(300 * time.Millisecond)
+	if _, _, polls, _, _, _ := source.stats(); polls > 2 {
+		t.Fatalf("polls = %d in 300ms, want at most 2: immediate responses must be throttled", polls)
+	}
+}
+
 func TestChannelAutoReprobesWebSocket(t *testing.T) {
 	books := newFixtureService(testServiceID1, "books")
 	source := newChannelSource(t, books)

@@ -133,6 +133,10 @@ readLoop:
 			}
 			break
 		}
+		if err := ctx.Err(); err != nil {
+			outcome.err = err
+			break
+		}
 		extendDeadline()
 		if messageType != websocket.TextMessage {
 			outcome.err = fmt.Errorf("%w: channel sent a non-text frame", ErrProtocol)
@@ -187,6 +191,9 @@ func (c *Channel) writeWebSocket(ctx context.Context, conn *websocket.Conn, resu
 	for {
 		select {
 		case <-ctx.Done():
+			// Close the connection so the reader blocked in ReadMessage wakes
+			// up; a live peer would otherwise keep extending its deadline.
+			_ = conn.Close()
 			return
 		case <-cadence:
 			resetTimer(heartbeat, c.heartbeatInterval())

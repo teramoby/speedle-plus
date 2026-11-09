@@ -22,8 +22,11 @@ const (
 	// maxChainDepth is the number of proxies allowed between Cloud and a leaf.
 	maxChainDepth = 3
 
-	defaultPollWait      = 25 * time.Second
-	maxPollWait          = 30 * time.Second
+	defaultPollWait = 25 * time.Second
+	maxPollWait     = 30 * time.Second
+	// minPollGap is the shortest interval between the starts of two long polls
+	// when the source returns them quickly instead of holding them for wait.
+	minPollGap           = time.Second
 	defaultAckTimeout    = 10 * time.Second
 	defaultProbeInterval = 5 * time.Minute
 	defaultPingInterval  = 30 * time.Second
