@@ -27,8 +27,14 @@ var ErrInvalidSPDL = stderrors.New("policysource: invalid SPDL")
 // pms.PolicyStore.
 type Store struct {
 	syncer    *adsync.Syncer
+	client    *adsync.Client
 	machine   *adsync.Machine
 	selection []string
+
+	// fallback is true when authorization requests for a syncing service may
+	// be forwarded to Cloud. The client carries the instance credential and
+	// the transport, so no separate configuration is needed.
+	fallback bool
 
 	// syncMu serializes synchronization passes.
 	syncMu sync.Mutex
@@ -76,15 +82,18 @@ func Open(ctx context.Context, options Options) (*Store, error) {
 	}
 
 	client, err := adsync.NewClient(adsync.Config{
-		BaseURL:        options.PolicySourceURL,
-		Credential:     options.Credential,
-		PublicKeys:     options.PublicKeys,
-		HTTPClient:     options.HTTPClient,
-		CAFile:         options.CAFile,
-		ClientCertFile: options.ClientCertFile,
-		ClientKeyFile:  options.ClientKeyFile,
-		RequestTimeout: options.RequestTimeout,
-		Retry:          options.Retry,
+		BaseURL:            options.PolicySourceURL,
+		Credential:         options.Credential,
+		FallbackBaseURL:    options.FallbackURL,
+		FallbackCredential: options.FallbackCredential,
+		FallbackHTTPClient: options.FallbackHTTPClient,
+		PublicKeys:         options.PublicKeys,
+		HTTPClient:         options.HTTPClient,
+		CAFile:             options.CAFile,
+		ClientCertFile:     options.ClientCertFile,
+		ClientKeyFile:      options.ClientKeyFile,
+		RequestTimeout:     options.RequestTimeout,
+		Retry:              options.Retry,
 	})
 	if err != nil {
 		return nil, errors.Wrap(err, errors.ConfigError, "invalid policy source client configuration")
@@ -105,8 +114,10 @@ func Open(ctx context.Context, options Options) (*Store, error) {
 
 	store := &Store{
 		syncer:    syncer,
+		client:    client,
 		machine:   machine,
 		selection: selection,
+		fallback:  !options.DisableFallback,
 		copies:    make(map[string]*serviceCopy),
 	}
 

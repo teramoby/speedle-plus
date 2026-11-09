@@ -10,4 +10,11 @@ const (
 	PolicyAtzPath = "/authz-check/v1/"
 	// Header to store asserted pincipals
 	PrincipalsHeader = "Speedle-Principals"
+	// DecisionSourceHeader marks where an authorization decision was made. It
+	// is informational only; callers must not make a security decision from
+	// it.
+	DecisionSourceHeader = "X-Speedle-Decision-Source"
+	// DecisionSourceCloudFallback marks a response that Speedle Cloud produced
+	// while the local service was syncing.
+	DecisionSourceCloudFallback = "cloud-fallback"
 )

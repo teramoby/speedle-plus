@@ -85,6 +85,11 @@ definitions:
       error:
         type: string
     type: object
+  HealthResponse:
+    properties:
+      status:
+        type: string
+    type: object
   IsAllowedResponse:
     properties:
       allowed:
@@ -146,6 +151,27 @@ definitions:
     items:
       $ref: '#/definitions/AndPrincipals'
     type: array
+  PublicReadiness:
+    properties:
+      lastConfirmedAckAt:
+        type: string
+      liveness:
+        enum:
+          - live
+          - stale
+          - stopped
+        type: string
+      ready:
+        type: boolean
+      servicesTotal:
+        type: integer
+      servicesUsable:
+        type: integer
+    required:
+      - ready
+      - servicesTotal
+      - servicesUsable
+    type: object
   RolePolicyResponse:
     properties:
       condition:
@@ -366,3 +392,36 @@ schemes:
   - https
   - http
 swagger: "2.0"
+x-additional-paths:
+  /healthz:
+    get:
+      description: 进程存活检查。进程运行期间始终返回 200。
+      operationId: healthz
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: 进程存活
+          schema:
+            $ref: '#/definitions/HealthResponse'
+      summary: 进程存活检查
+      tags:
+        - health
+  /readyz:
+    get:
+      description: 授权流量就绪状态，按实例当前服务的 service 汇总。该端点无需认证，不暴露 service 标识或版本。
+      operationId: readyz
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: 实例可以响应授权请求
+          schema:
+            $ref: '#/definitions/PublicReadiness'
+        "503":
+          description: 实例当前无法响应授权请求
+          schema:
+            $ref: '#/definitions/PublicReadiness'
+      summary: 授权就绪状态
+      tags:
+        - health

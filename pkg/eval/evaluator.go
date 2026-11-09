@@ -179,6 +179,21 @@ func (p *PolicyEvalImpl) SetAsserterFunc(f func(ctx *adsapi.RequestContext) erro
 	p.AsserterFunc = f
 }
 
+// DistributionStore returns the backing store so the REST and gRPC entry
+// points can assert the distribution interface themselves and route a request
+// by the synchronization state of its service before the evaluator runs.
+//
+// The assertion lives in the entry points on purpose: the distribution
+// implementation links the HTTP/TLS sync transports, and the offline js/wasm
+// evaluator must not depend on them. A store without distribution support is
+// rejected there and the surface keeps its existing behaviour.
+func (p *PolicyEvalImpl) DistributionStore() any {
+	if p.Store == nil {
+		return nil
+	}
+	return p.Store
+}
+
 func (p *PolicyEvalImpl) AssertToken(ctx *adsapi.RequestContext) (err error) {
 	var original *adsapi.RequestContext
 	defer func() {

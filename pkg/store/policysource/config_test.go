@@ -43,26 +43,29 @@ func TestBuilderRejectsInvalidConfiguration(t *testing.T) {
 	}
 
 	cases := map[string]map[string]interface{}{
-		"missing url":                missing(PolicySourceURLKey),
-		"empty url":                  with(PolicySourceURLKey, ""),
-		"url is not a string":        with(PolicySourceURLKey, 42),
-		"url is not https":           with(PolicySourceURLKey, "http://policy.example"),
-		"missing credential":         missing(CredentialFileKey),
-		"credential file missing":    with(CredentialFileKey, filepath.Join(t.TempDir(), "absent")),
-		"credential file is public":  with(CredentialFileKey, readableCredential),
-		"credential file is a dir":   with(CredentialFileKey, notAFile),
-		"missing public keys":        missing(PublicKeysKey),
-		"public keys file is broken": with(PublicKeysKey, badKeys),
-		"services mixed with star":   with(ServicesKey, "*,books"),
-		"services has empty entry":   with(ServicesKey, "books,,orders"),
-		"services is not a list":     with(ServicesKey, map[string]interface{}{"a": 1}),
-		"services has a non-string":  with(ServicesKey, []interface{}{"books", 7}),
-		"bad request timeout":        with(RequestTimeoutKey, "soon"),
-		"negative request timeout":   with(RequestTimeoutKey, "-1s"),
-		"bad heartbeat":              with(HeartbeatIntervalKey, "30"),
-		"heartbeat out of range":     with(HeartbeatIntervalKey, "1s"),
-		"stop before stale":          with(StopAfterKey, "10s"),
-		"client cert without key":    with(ClientCertFileKey, "/tmp/cert.pem"),
+		"missing url":                     missing(PolicySourceURLKey),
+		"empty url":                       with(PolicySourceURLKey, ""),
+		"url is not a string":             with(PolicySourceURLKey, 42),
+		"url is not https":                with(PolicySourceURLKey, "http://policy.example"),
+		"missing credential":              missing(CredentialFileKey),
+		"credential file missing":         with(CredentialFileKey, filepath.Join(t.TempDir(), "absent")),
+		"credential file is public":       with(CredentialFileKey, readableCredential),
+		"credential file is a dir":        with(CredentialFileKey, notAFile),
+		"missing public keys":             missing(PublicKeysKey),
+		"public keys file is broken":      with(PublicKeysKey, badKeys),
+		"services mixed with star":        with(ServicesKey, "*,books"),
+		"services has empty entry":        with(ServicesKey, "books,,orders"),
+		"services is not a list":          with(ServicesKey, map[string]interface{}{"a": 1}),
+		"services has a non-string":       with(ServicesKey, []interface{}{"books", 7}),
+		"bad request timeout":             with(RequestTimeoutKey, "soon"),
+		"negative request timeout":        with(RequestTimeoutKey, "-1s"),
+		"bad heartbeat":                   with(HeartbeatIntervalKey, "30"),
+		"heartbeat out of range":          with(HeartbeatIntervalKey, "1s"),
+		"stop before stale":               with(StopAfterKey, "10s"),
+		"client cert without key":         with(ClientCertFileKey, "/tmp/cert.pem"),
+		"fallback is not a boolean":       with(FallbackWhileSyncingKey, "perhaps"),
+		"fallback URL without credential": missing(CloudCredentialFileKey),
+		"fallback credential without URL": missing(CloudFallbackURLKey),
 	}
 	for name, properties := range cases {
 		t.Run(name, func(t *testing.T) {
@@ -113,6 +116,37 @@ func TestBuilderCreatesTheRegisteredStore(t *testing.T) {
 		if params[flag] != key {
 			t.Fatalf("flag %q maps to %q, want %q", flag, params[flag], key)
 		}
+	}
+}
+
+func TestFallbackWhileSyncingProperty(t *testing.T) {
+	fixture := newTestFixture(t, booksService())
+
+	enabled, err := store.NewStore(StoreType, fixture.storeProperties())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !enabled.(*Store).FallbackAvailable() {
+		t.Fatal("the fallback is enabled by default")
+	}
+
+	properties := fixture.storeProperties()
+	properties[FallbackWhileSyncingKey] = "false"
+	disabled, err := store.NewStore(StoreType, properties)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if disabled.(*Store).FallbackAvailable() {
+		t.Fatal("FallbackWhileSyncing=false did not disable the fallback")
+	}
+
+	properties[FallbackWhileSyncingKey] = true
+	fromBool, err := store.NewStore(StoreType, properties)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !fromBool.(*Store).FallbackAvailable() {
+		t.Fatal("a boolean property value was not accepted")
 	}
 }
 
