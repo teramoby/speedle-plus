@@ -5,6 +5,8 @@ package adsync
 import (
 	"context"
 	"errors"
+	"fmt"
+	"sync"
 	"testing"
 	"time"
 )
@@ -58,6 +60,25 @@ func signedFixtureSnapshot(service *fixtureService, signer *fixtureSigner) *Snap
 		response.SourceID, response.Epoch, response.Revision, response.StateHash, response.CommitHash,
 	))
 	return response
+}
+
+func TestServiceLocksAreStripedAndBounded(t *testing.T) {
+	fixture := newFixture(t, newFixtureService(testServiceID1, "books"))
+	syncer := fixture.newSyncer("", nil)
+	if got := len(syncer.locks); got != syncLockStripes {
+		t.Fatalf("lock stripes = %d, want %d", got, syncLockStripes)
+	}
+	first := syncer.serviceLock("service-a")
+	if again := syncer.serviceLock("service-a"); again != first {
+		t.Fatal("same service received different locks")
+	}
+	seen := make(map[*sync.Mutex]struct{})
+	for index := 0; index < 4*syncLockStripes; index++ {
+		seen[syncer.serviceLock(fmt.Sprintf("service-%d", index))] = struct{}{}
+	}
+	if len(seen) > len(syncer.locks) {
+		t.Errorf("distinct locks = %d, exceed fixed stripe count %d", len(seen), len(syncer.locks))
+	}
 }
 
 func TestSyncRejectsSnapshotRollback(t *testing.T) {
@@ -151,7 +172,7 @@ func TestForgetWaitsForInFlightSync(t *testing.T) {
 		source.snapshotRelease = release
 	})
 	discovered := discoveredService(service)
-	discovered.HeadStateHash = flipHash(discovered.HeadStateHash)
+	discovered.Revision = 0
 	syncResult := startSync(syncer, discovered)
 	select {
 	case <-started:

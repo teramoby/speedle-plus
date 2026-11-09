@@ -355,6 +355,45 @@ func TestForgetCacheFailureKeepsStateUntilRemoval(t *testing.T) {
 	}
 }
 
+func TestCacheStateRemainsTentativeAfterRefreshFailure(t *testing.T) {
+	service := newFixtureService(testServiceID1, "books")
+	fixture := newFixture(t, service)
+	directory := t.TempDir()
+	syncer := fixture.newSyncer(directory, nil)
+	syncFixtureService(t, syncer, "books")
+	service.publish(t, fixture.signer,
+		Change{Op: "upsert", Kind: "authz", ID: "01HF7YAT000000000000000201",
+			Name: stringPointer("read-books"), SPDL: stringPointer("grant read")})
+	syncFixtureService(t, syncer, "books")
+
+	restarted := fixture.newSyncer(directory, nil)
+	service.publish(t, fixture.signer,
+		Change{Op: "upsert", Kind: "authz", ID: "01HF7YAT000000000000000202",
+			Name: stringPointer("write-books"), SPDL: stringPointer("grant write")})
+	fixture.source.configure(func(source *fixtureSource) {
+		source.failRemaining = 1
+		source.failStatus = 503
+	})
+	if _, err := restarted.Sync(context.Background(), discoveredService(service)); !errors.Is(err, ErrUnavailable) {
+		t.Fatalf("Sync refresh error = %v, want ErrUnavailable", err)
+	}
+	if _, found := restarted.State(service.ID); found {
+		t.Fatal("failed refresh published a tentative disk-cache state")
+	}
+
+	updated, err := restarted.Sync(context.Background(), discoveredService(service))
+	if err != nil {
+		t.Fatalf("Sync retry: %v", err)
+	}
+	if updated.Revision != 3 {
+		t.Errorf("retry revision = %d, want 3", updated.Revision)
+	}
+	published, found := restarted.State(service.ID)
+	if !found || published.Revision != 3 || published.StateHash != service.StateHash {
+		t.Errorf("published state after retry = %+v, found %v", published, found)
+	}
+}
+
 func TestCacheRestartResumesFromCachedRevision(t *testing.T) {
 	service := newFixtureService(testServiceID1, "books")
 	fixture := newFixture(t, service)
