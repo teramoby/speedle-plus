@@ -58,6 +58,7 @@ type Syncer struct {
 
 	mu     sync.Mutex
 	states map[string]*ServiceState
+	locks  map[string]*sync.Mutex
 }
 
 // NewSyncer returns a Syncer. cacheDir may be empty to keep copies in memory
@@ -78,6 +79,7 @@ func NewSyncer(client *Client, cacheDir string) (*Syncer, error) {
 		client: client,
 		cache:  cache,
 		states: make(map[string]*ServiceState),
+		locks:  make(map[string]*sync.Mutex),
 	}, nil
 }
 
@@ -98,9 +100,27 @@ func (s *Syncer) State(serviceID string) (*ServiceState, bool) {
 }
 
 // Forget drops the in-memory copy and the cache file for one service. It is
-// used when the source reports the service removed.
+// used when the source reports the service removed. Forget is serialized with
+// Sync so an in-flight sync cannot recreate a forgotten service afterwards.
 func (s *Syncer) Forget(serviceID string) error {
+	lock := s.serviceLock(serviceID)
+	lock.Lock()
+	defer lock.Unlock()
 	return s.forget(serviceID)
+}
+
+// serviceLock returns the lock that serializes a service's complete sync and
+// forget operation. Locks remain allocated for the Syncer's lifetime so two
+// callers can never receive different locks for the same service.
+func (s *Syncer) serviceLock(serviceID string) *sync.Mutex {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	lock := s.locks[serviceID]
+	if lock == nil {
+		lock = &sync.Mutex{}
+		s.locks[serviceID] = lock
+	}
+	return lock
 }
 
 // SyncByName discovers the current service set and syncs the named service.
@@ -127,21 +147,25 @@ func (s *Syncer) Sync(ctx context.Context, service Service) (*ServiceState, erro
 	if err := service.validate(); err != nil {
 		return nil, err
 	}
+	lock := s.serviceLock(service.ID)
+	lock.Lock()
+	defer lock.Unlock()
+
 	local, err := s.localState(service.ID)
 	if err != nil {
 		return nil, err
 	}
 	if local == nil {
-		return s.loadSnapshot(ctx, service)
+		return s.loadSnapshot(ctx, service, local)
 	}
 	if local.Epoch != service.Epoch || local.Revision > service.Revision {
-		return s.loadSnapshot(ctx, service)
+		return s.loadSnapshot(ctx, service, local)
 	}
 	if local.Revision == service.Revision {
 		if local.StateHash == service.HeadStateHash {
 			return local, nil
 		}
-		return s.loadSnapshot(ctx, service)
+		return s.loadSnapshot(ctx, service, local)
 	}
 
 	updated, err := s.catchUp(ctx, local, service)
@@ -154,9 +178,9 @@ func (s *Syncer) Sync(ctx context.Context, service Service) (*ServiceState, erro
 		}
 		return nil, err
 	case errors.Is(err, ErrSnapshotRequired):
-		return s.loadSnapshot(ctx, service)
+		return s.loadSnapshot(ctx, service, local)
 	case errors.Is(err, ErrIntegrity), errors.Is(err, ErrProtocol):
-		return s.loadSnapshot(ctx, service)
+		return s.loadSnapshot(ctx, service, local)
 	default:
 		return nil, err
 	}
@@ -187,7 +211,7 @@ func (s *Syncer) localState(serviceID string) (*ServiceState, error) {
 	return state.clone(), nil
 }
 
-func (s *Syncer) loadSnapshot(ctx context.Context, service Service) (*ServiceState, error) {
+func (s *Syncer) loadSnapshot(ctx context.Context, service Service, local *ServiceState) (*ServiceState, error) {
 	response, _, err := s.client.Snapshot(ctx, service.ID, "")
 	if err != nil {
 		if errors.Is(err, ErrServiceNotFound) {
@@ -196,6 +220,16 @@ func (s *Syncer) loadSnapshot(ctx context.Context, service Service) (*ServiceSta
 			}
 		}
 		return nil, err
+	}
+	if local != nil && local.Epoch == response.Epoch {
+		if response.Revision < local.Revision {
+			return nil, fmt.Errorf("%w: snapshot revision %d would roll back local revision %d",
+				ErrProtocol, response.Revision, local.Revision)
+		}
+		if response.Revision == local.Revision && response.StateHash != local.StateHash {
+			return nil, fmt.Errorf("%w: snapshot at revision %d conflicts with the local state",
+				ErrIntegrity, response.Revision)
+		}
 	}
 	state := &ServiceState{
 		ServiceID:  response.ServiceID,

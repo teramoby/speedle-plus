@@ -45,6 +45,12 @@ func NewCache(dir string, keys *PublicKeySet) (*Cache, error) {
 	if !info.IsDir() {
 		return nil, fmt.Errorf("adsync: cache path is not a directory")
 	}
+	if runtime.GOOS != "windows" && info.Mode().Perm()&0o077 != 0 {
+		return nil, fmt.Errorf("%w: cache directory must not be accessible by group or other users", ErrUnsafeCache)
+	}
+	if !cacheDirectoryOwnedByUser(info) {
+		return nil, fmt.Errorf("%w: cache directory is not owned by the current user", ErrUnsafeCache)
+	}
 	return &Cache{dir: dir, keys: keys}, nil
 }
 

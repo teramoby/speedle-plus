@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"testing"
 )
 
@@ -138,6 +139,67 @@ func TestCacheRejectsUnsafePermissions(t *testing.T) {
 	}
 	if runtime.GOOS != "windows" && info.Mode().Perm() != 0o600 {
 		t.Errorf("cache mode after rewrite = %o, want 0600", info.Mode().Perm())
+	}
+}
+
+func TestCacheRejectsUnsafeDirectory(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Unix directory permissions are not available on Windows")
+	}
+	fixture := newFixture(t, newFixtureService(testServiceID1, "books"))
+	directory := t.TempDir()
+	if err := os.Chmod(directory, 0o777); err != nil {
+		t.Fatalf("chmod cache directory: %v", err)
+	}
+	if _, err := NewCache(directory, fixture.keys); !errors.Is(err, ErrUnsafeCache) {
+		t.Fatalf("NewCache error = %v, want ErrUnsafeCache", err)
+	}
+}
+
+func TestCacheInputValidation(t *testing.T) {
+	fixture := newFixture(t, newFixtureService(testServiceID1, "books"))
+	if _, err := NewCache("", fixture.keys); err == nil {
+		t.Error("NewCache accepted an empty directory")
+	}
+	if _, err := NewCache(t.TempDir(), nil); err == nil {
+		t.Error("NewCache accepted nil keys")
+	}
+	file := filepath.Join(t.TempDir(), "not-a-directory")
+	if err := os.WriteFile(file, []byte("data"), 0o600); err != nil {
+		t.Fatalf("write file: %v", err)
+	}
+	if _, err := NewCache(file, fixture.keys); err == nil {
+		t.Error("NewCache accepted a regular file")
+	}
+
+	directory := filepath.Join(t.TempDir(), "nested", "cache")
+	cache, err := NewCache(directory, fixture.keys)
+	if err != nil {
+		t.Fatalf("NewCache nested directory: %v", err)
+	}
+	if runtime.GOOS != "windows" {
+		info, err := os.Stat(directory)
+		if err != nil {
+			t.Fatalf("stat cache directory: %v", err)
+		}
+		if info.Mode().Perm() != 0o700 {
+			t.Errorf("cache directory mode = %o, want 0700", info.Mode().Perm())
+		}
+	}
+	if err := cache.Save(nil); err == nil {
+		t.Error("Save accepted a nil state")
+	}
+	if err := cache.Save(&ServiceState{}); !errors.Is(err, ErrProtocol) {
+		t.Errorf("Save invalid state error = %v, want ErrProtocol", err)
+	}
+	if _, err := cache.Load("invalid"); !errors.Is(err, ErrCacheCorrupt) {
+		t.Errorf("Load invalid id error = %v, want ErrCacheCorrupt", err)
+	}
+	if err := cache.Remove("invalid"); err == nil {
+		t.Error("Remove accepted an invalid service id")
+	}
+	if name := cacheFileName("service/with/slashes"); strings.Contains(name, "/") {
+		t.Errorf("hashed cache filename contains a slash: %q", name)
 	}
 }
 
