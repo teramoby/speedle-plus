@@ -19,6 +19,9 @@ import (
 	"time"
 )
 
+// Native evaluators retain the existing custom-function behavior.
+func validatePolicyStoreCustomFunctions(_ *pms.PolicyStore) error { return nil }
+
 func (frc *FuncResultCache) generateCustomerExpressionFunction(cfdUrl *string, cf *pms.Function) (govaluate.ExpressionFunction, error) {
 	return func(arguments ...interface{}) (interface{}, error) {
 		params := []interface{}{}

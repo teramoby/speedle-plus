@@ -3,11 +3,14 @@
 // Package eval evaluates Speedle authorization policies.
 //
 // Custom functions are unsupported on js/wasm. Direct calls, delegated calls
-// and expression calls return custom_function_unsupported. As with other
-// condition-evaluation errors, a condition that calls a custom function
-// evaluates as not matching. A GRANT or DENY guarded by such a condition is
-// therefore skipped, and another matching GRANT can allow the request.
-// Policies and role policies used on js/wasm must not rely on custom functions.
+// and expression calls return custom_function_unsupported. Evaluator
+// construction and snapshot reloads validate every authorization and role
+// policy condition before loading it. A condition that calls a custom function
+// rejects the entire snapshot with custom_function_unsupported, including a
+// call in a short-circuited branch. A rejected reload suspends authorization
+// until a valid snapshot loads. Policies without custom-function calls load
+// and evaluate normally; unused custom-function definitions are permitted.
+// Native evaluation behavior is unchanged.
 //
 // The evaluator does not start periodic function-result cache cleanup on
 // js/wasm. AddToCache remains available, expired entries are removed when the

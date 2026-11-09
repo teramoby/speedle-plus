@@ -36,12 +36,8 @@ func (s *snapshotStore) ReadPolicyStore() (*pms.PolicyStore, error) {
 func (s *snapshotStore) Watch() (pms.StorageChangeChannel, error) { return nil, nil }
 func (s *snapshotStore) StopWatch()                               {}
 
-func newWasmEvaluator(t *testing.T, policies []*pms.Policy) *eval.PolicyEvalImpl {
+func newWasmEvaluatorFromStore(t *testing.T, store *snapshotStore) *eval.PolicyEvalImpl {
 	t.Helper()
-	store := &snapshotStore{snapshot: &pms.PolicyStore{
-		Functions: []*pms.Function{{Name: "remote", FuncURL: "https://example.invalid"}},
-		Services:  []*pms.Service{{Name: "app", Policies: policies}},
-	}}
 	instance, err := eval.NewWithStore(&cfg.Config{}, store)
 	if err != nil {
 		t.Fatal(err)
@@ -53,6 +49,14 @@ func newWasmEvaluator(t *testing.T, policies []*pms.Policy) *eval.PolicyEvalImpl
 		}
 	})
 	return engine
+}
+
+func newWasmEvaluator(t *testing.T, policies []*pms.Policy) *eval.PolicyEvalImpl {
+	t.Helper()
+	return newWasmEvaluatorFromStore(t, &snapshotStore{snapshot: &pms.PolicyStore{
+		Functions: []*pms.Function{{Name: "remote", FuncURL: "https://example.invalid"}},
+		Services:  []*pms.Service{{Name: "app", Policies: policies}},
+	}})
 }
 
 func requireUnsupported(t *testing.T, result interface{}, err error) {
@@ -102,41 +106,135 @@ func testPolicy(id, effect, condition string) *pms.Policy {
 	}
 }
 
-func TestWasmCustomFunctionConditionsDoNotMatch(t *testing.T) {
+func testSnapshot(functions []*pms.Function, policies []*pms.Policy) *pms.PolicyStore {
+	return &pms.PolicyStore{
+		Functions: functions,
+		Services:  []*pms.Service{{Name: "app", Policies: policies}},
+	}
+}
+
+func aliceRequest() adsapi.RequestContext {
+	return adsapi.RequestContext{
+		Subject:     &adsapi.Subject{Principals: []*adsapi.Principal{{Type: adsapi.PRINCIPAL_TYPE_USER, Name: "alice"}}},
+		ServiceName: "app",
+		Resource:    "document",
+		Action:      "read",
+	}
+}
+
+func TestWasmRejectsCustomFunctionConditionsAtLoad(t *testing.T) {
+	remote := []*pms.Function{{Name: "remote", FuncURL: "https://example.invalid"}}
 	tests := []struct {
 		name       string
-		policies   []*pms.Policy
-		wantAllow  bool
-		wantReason adsapi.Reason
+		snapshot   *pms.PolicyStore
+		policyID   string
+		policyKind string
 	}{
 		{
-			name: "conditional DENY is skipped and another GRANT applies",
-			policies: []*pms.Policy{
+			name: "conditional DENY plus GRANT cannot load",
+			snapshot: testSnapshot(remote, []*pms.Policy{
 				testPolicy("grant", pms.Grant, ""),
 				testPolicy("deny", pms.Deny, "remote()"),
-			},
-			wantAllow:  true,
-			wantReason: adsapi.GRANT_POLICY_FOUND,
+			}),
+			policyID:   "deny",
+			policyKind: "policy",
 		},
 		{
-			name:       "conditional GRANT does not match",
-			policies:   []*pms.Policy{testPolicy("grant", pms.Grant, "remote()")},
-			wantAllow:  false,
-			wantReason: adsapi.NO_APPLICABLE_POLICIES,
+			name:       "conditional GRANT cannot load",
+			snapshot:   testSnapshot(remote, []*pms.Policy{testPolicy("grant", pms.Grant, "remote()")}),
+			policyID:   "grant",
+			policyKind: "policy",
+		},
+		{
+			name: "role policy condition cannot load",
+			snapshot: &pms.PolicyStore{
+				Functions: remote,
+				Services: []*pms.Service{{
+					Name: "app",
+					RolePolicies: []*pms.RolePolicy{{
+						ID: "role-grant", Effect: pms.Grant, Roles: []string{"reader"},
+						Principals: []string{"user:alice"}, Condition: "remote()",
+					}},
+				}},
+			},
+			policyID:   "role-grant",
+			policyKind: "role policy",
+		},
+		{
+			name: "short-circuited nested call cannot load",
+			snapshot: testSnapshot(remote, []*pms.Policy{
+				testPolicy("nested", pms.Deny, "false && Sqrt(4) == 2 && remote()"),
+			}),
+			policyID:   "nested",
+			policyKind: "policy",
 		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			engine := newWasmEvaluator(t, tc.policies)
-			allowed, reason, err := engine.IsAllowed(adsapi.RequestContext{
-				Subject:     &adsapi.Subject{Principals: []*adsapi.Principal{{Type: adsapi.PRINCIPAL_TYPE_USER, Name: "alice"}}},
-				ServiceName: "app",
-				Resource:    "document",
-				Action:      "read",
-			})
-			if err != nil || allowed != tc.wantAllow || reason != tc.wantReason {
-				t.Fatalf("allowed=%v reason=%v err=%v; want allowed=%v reason=%v", allowed, reason, err, tc.wantAllow, tc.wantReason)
+			instance, err := eval.NewWithStore(&cfg.Config{}, &snapshotStore{snapshot: tc.snapshot})
+			if instance != nil {
+				t.Fatalf("evaluator loaded with a custom-function condition: %v", instance)
+			}
+			requireUnsupported(t, nil, err)
+			for _, detail := range []string{tc.policyKind, tc.policyID, "remote", "app"} {
+				if !strings.Contains(err.Error(), detail) {
+					t.Errorf("error %q does not identify %q", err, detail)
+				}
 			}
 		})
+	}
+}
+
+func TestWasmLoadsAndEvaluatesWithoutCustomFunctionCalls(t *testing.T) {
+	tests := []struct {
+		name     string
+		snapshot *pms.PolicyStore
+	}{
+		{
+			name:     "no custom functions",
+			snapshot: testSnapshot(nil, []*pms.Policy{testPolicy("grant", pms.Grant, "")}),
+		},
+		{
+			name: "unused definition and built-in condition",
+			snapshot: testSnapshot(
+				[]*pms.Function{{Name: "remote", FuncURL: "https://example.invalid"}},
+				[]*pms.Policy{testPolicy("builtin", pms.Grant, "Sqrt(64) == 8 && 'remote()' == 'remote()'")},
+			),
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			engine := newWasmEvaluatorFromStore(t, &snapshotStore{snapshot: tc.snapshot})
+			allowed, reason, err := engine.IsAllowed(aliceRequest())
+			if err != nil || !allowed || reason != adsapi.GRANT_POLICY_FOUND {
+				t.Fatalf("allowed=%v reason=%v err=%v", allowed, reason, err)
+			}
+		})
+	}
+}
+
+func TestWasmRejectsCustomFunctionSnapshotOnRefresh(t *testing.T) {
+	valid := testSnapshot(nil, []*pms.Policy{testPolicy("grant", pms.Grant, "")})
+	store := &snapshotStore{snapshot: valid}
+	engine := newWasmEvaluatorFromStore(t, store)
+
+	store.snapshot = testSnapshot(
+		[]*pms.Function{{Name: "remote", FuncURL: "https://example.invalid"}},
+		[]*pms.Policy{
+			testPolicy("grant", pms.Grant, ""),
+			testPolicy("deny", pms.Deny, "remote()"),
+		},
+	)
+	requireUnsupported(t, nil, engine.Refresh())
+	if allowed, _, err := engine.IsAllowed(aliceRequest()); allowed || err == nil {
+		t.Fatalf("rejected snapshot left authorization available: allowed=%v err=%v", allowed, err)
+	}
+
+	store.snapshot = valid
+	if err := engine.Refresh(); err != nil {
+		t.Fatalf("valid snapshot did not recover evaluator: %v", err)
+	}
+	if allowed, _, err := engine.IsAllowed(aliceRequest()); !allowed || err != nil {
+		t.Fatalf("valid snapshot did not restore authorization: allowed=%v err=%v", allowed, err)
 	}
 }

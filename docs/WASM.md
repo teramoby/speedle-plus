@@ -6,7 +6,9 @@
 
 Custom functions are unsupported on js/wasm. Direct, delegated and expression calls return `custom_function_unsupported`; expression calls do so before argument serialization or cache lookup.
 
-Condition-evaluation errors are treated as non-matches. Consequently, a policy or role policy whose condition calls a custom function does not match, regardless of whether its effect is GRANT or DENY. Another matching GRANT can still allow the request. Policies used on js/wasm must not rely on custom functions.
+Evaluator construction and snapshot reloads validate every authorization-policy and role-policy condition before loading it. If any condition calls a custom function, the entire snapshot is rejected with `custom_function_unsupported`. This includes calls in short-circuited branches and applies equally to GRANT and DENY policies. A rejected initial load returns no evaluator. A rejected reload does not activate the snapshot and suspends authorization until a valid snapshot loads successfully.
+
+Policies without custom-function calls load and evaluate normally. Unused custom-function definitions are allowed, and built-in functions remain available. Native evaluation behavior, including its handling of condition-evaluation errors, is unchanged.
 
 The evaluator does not start periodic function-result cache cleanup on js/wasm. `FuncResultCache.AddToCache` remains available to embedders. An expired entry is removed when `ReadFromCache` reads that key or when `CleanExpiredResult` is called explicitly; entries without a TTL remain until explicit deletion or cache replacement.
 

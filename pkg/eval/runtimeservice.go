@@ -38,7 +38,10 @@ type RuntimeService struct {
 	Functions         map[string]govaluate.ExpressionFunction
 }
 
-func (rtps *RuntimePolicyStore) init(ps *pms.PolicyStore, funcSvcEndpoint string) {
+func (rtps *RuntimePolicyStore) init(ps *pms.PolicyStore, funcSvcEndpoint string) error {
+	if err := validatePolicyStoreCustomFunctions(ps); err != nil {
+		return err
+	}
 	if funcSvcEndpoint != "" {
 		rtps.FuncSvcEndpoint = funcSvcEndpoint
 	}
@@ -47,9 +50,13 @@ func (rtps *RuntimePolicyStore) init(ps *pms.PolicyStore, funcSvcEndpoint string
 	for _, service := range ps.Services {
 		rtps.RuntimeServices[service.Name] = convertService(service, rtps.Functions)
 	}
+	return nil
 }
 
-func (rtps *RuntimePolicyStore) reloadPolicyStore(ps *pms.PolicyStore) {
+func (rtps *RuntimePolicyStore) reloadPolicyStore(ps *pms.PolicyStore) error {
+	if err := validatePolicyStoreCustomFunctions(ps); err != nil {
+		return err
+	}
 	// Clear all cached data first
 	fncsResultCache := FuncResultCache{
 		Results: make(map[string]FuncResult),
@@ -67,6 +74,7 @@ func (rtps *RuntimePolicyStore) reloadPolicyStore(ps *pms.PolicyStore) {
 	rtps.Functions = functions
 	rtps.RuntimeServices = services
 	rtps.FunctionResultCache = &fncsResultCache
+	return nil
 }
 
 func (rtps *RuntimePolicyStore) addService(service *pms.Service) {

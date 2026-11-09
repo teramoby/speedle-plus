@@ -96,7 +96,10 @@ func (p *PolicyEvalImpl) fullReloadRuntimeCache() error {
 		log.Errorf("Fail to full reload runtime cache, err:%v", err)
 		return err
 	}
-	p.RuntimePolicyStore.reloadPolicyStore(ps)
+	if err := p.RuntimePolicyStore.reloadPolicyStore(ps); err != nil {
+		p.cacheFailed.Store(true)
+		return err
+	}
 	p.storeAvailableLocked()
 	return nil
 }
@@ -1301,7 +1304,10 @@ func (p *PolicyEvalImpl) applyStoreChange(e pms.StoreChangeEvent) (err error) {
 		}
 	case pms.FULL_RELOAD:
 		if snapshot, ok := e.Content.(*pms.PolicyStore); ok && snapshot != nil {
-			p.RuntimePolicyStore.reloadPolicyStore(snapshot)
+			if err := p.RuntimePolicyStore.reloadPolicyStore(snapshot); err != nil {
+				p.cacheFailed.Store(true)
+				return err
+			}
 			p.storeAvailableLocked()
 		} else {
 			return p.fullReloadRuntimeCache()
