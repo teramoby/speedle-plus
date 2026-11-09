@@ -24,6 +24,14 @@ const (
 	DefaultMaxLogBytes = 16 << 20
 	// MaxServices is the protocol bound on the services one instance serves.
 	MaxServices = 10
+	// maxTombstones bounds the removed-service tombstones kept next to the
+	// active services. A tombstone answers source_gone and blocks a delayed
+	// snapshot from reviving a deliberately removed service; the oldest one is
+	// evicted when the map would otherwise keep growing as services churn.
+	maxTombstones = MaxServices
+	// maxRetiredIdentities bounds the source identities one service copy
+	// remembers, so identity churn cannot grow its state without limit.
+	maxRetiredIdentities = 8
 	// maxChangesPageBytes is the contract's response-page bound. A page that
 	// would exceed it is trimmed.
 	maxChangesPageBytes = 1 << 20
@@ -105,11 +113,12 @@ type Mirror struct {
 	maxLogCommits int
 	maxLogBytes   int64
 
-	mu        sync.RWMutex
-	services  map[string]*serviceCopy
-	version   int64
-	observers map[uint64]func(HeadEvent)
-	nextID    uint64
+	mu          sync.RWMutex
+	services    map[string]*serviceCopy
+	version     int64
+	observers   map[uint64]func(HeadEvent)
+	nextID      uint64
+	nextRemoval uint64
 }
 
 // serviceCopy is one verified service: the signed snapshot it is anchored to,
@@ -131,6 +140,47 @@ type serviceCopy struct {
 
 	removed  bool
 	overflow bool
+	// tombstoneRevision is the revision that removed the service: a signed
+	// delete commit or the revision current at an administrative removal. A
+	// snapshot at or below it belongs to the state that was removed and cannot
+	// revive the service; only newer source state can.
+	tombstoneRevision uint64
+	// removedSeq orders tombstones for eviction once maxTombstones is reached.
+	removedSeq uint64
+	// retired holds the source identities this copy has moved away from. A
+	// late snapshot from a retired identity belongs to policy the source
+	// already replaced, and revisions of different identities cannot be
+	// ordered, so it is ignored rather than allowed to replace the copy.
+	retired []retiredIdentity
+}
+
+// retiredIdentity is one sourceId/epoch pair a service copy has moved away from.
+type retiredIdentity struct {
+	sourceID string
+	epoch    string
+}
+
+// identityRetired reports whether sourceID/epoch is an identity this copy has
+// moved away from.
+func (s *serviceCopy) identityRetired(sourceID, epoch string) bool {
+	for _, retired := range s.retired {
+		if retired.sourceID == sourceID && retired.epoch == epoch {
+			return true
+		}
+	}
+	return false
+}
+
+// retireIdentity records the identity the copy is leaving. The list is bounded;
+// the oldest entry is dropped first.
+func (s *serviceCopy) retireIdentity(sourceID, epoch string) {
+	if sourceID == "" || s.identityRetired(sourceID, epoch) {
+		return
+	}
+	s.retired = append(s.retired, retiredIdentity{sourceID: sourceID, epoch: epoch})
+	if len(s.retired) > maxRetiredIdentities {
+		s.retired = s.retired[1:]
+	}
 }
 
 // NewMirror creates an empty mirror.
@@ -210,18 +260,32 @@ func (m *Mirror) applySnapshot(response *adsync.SnapshotResponse) (HeadEvent, bo
 
 	existing := m.services[response.ServiceID]
 	wasNew := existing == nil
+	availableBefore := false
 	if wasNew {
-		if len(m.services) >= MaxServices {
-			return HeadEvent{}, false, fmt.Errorf("%w: %d services", ErrTooManyServices, len(m.services))
+		if err := m.reserveServiceLocked(); err != nil {
+			return HeadEvent{}, false, err
 		}
 		existing = &serviceCopy{id: response.ServiceID}
 		m.services[response.ServiceID] = existing
-		m.version++
+	} else {
+		availableBefore = m.availableLocked(existing)
 	}
 
 	identityChanged := !wasNew && (existing.sourceID != response.SourceID || existing.epoch != response.Epoch)
+	if identityChanged && existing.identityRetired(response.SourceID, response.Epoch) {
+		// The source already moved away from this identity. A delayed snapshot
+		// from it belongs to replaced policy, and its revision cannot be
+		// compared with the current identity's, so it must not replace the copy.
+		return HeadEvent{}, false, nil
+	}
 	previousRevision := existing.revision
 	previousName := existing.name
+	if existing.removed && !identityChanged && response.Revision <= existing.tombstoneRevision {
+		// The snapshot reproduces the state the service was removed at or
+		// before. It may have been fetched before the removal, so it cannot
+		// revive the copy; only newer source state can.
+		return HeadEvent{}, false, nil
+	}
 	if !existing.removed && !identityChanged {
 		if response.Revision < existing.revision {
 			// A stale snapshot cannot roll back a verified copy.
@@ -235,6 +299,9 @@ func (m *Mirror) applySnapshot(response *adsync.SnapshotResponse) (HeadEvent, bo
 		}
 	}
 
+	if identityChanged {
+		existing.retireIdentity(existing.sourceID, existing.epoch)
+	}
 	existing.name = response.Snapshot.Name
 	existing.sourceID = response.SourceID
 	existing.epoch = response.Epoch
@@ -248,7 +315,16 @@ func (m *Mirror) applySnapshot(response *adsync.SnapshotResponse) (HeadEvent, bo
 	existing.logBytes = 0
 	existing.overflow = false
 	existing.removed = false
+	existing.tombstoneRevision = 0
+	existing.removedSeq = 0
 
+	// A snapshot can make a service visible again (revival after removal or
+	// overflow) or remove it from the advertised set. Downstreams compare the
+	// version to learn that discovery changed, so any visibility transition
+	// must advance it, in addition to identity and name changes.
+	if availableBefore != m.availableLocked(existing) {
+		m.version++
+	}
 	if identityChanged {
 		m.version++
 	}
@@ -323,6 +399,11 @@ func (m *Mirror) applyChanges(page *adsync.ChangesResponse) (HeadEvent, bool, er
 		return HeadEvent{}, false, fmt.Errorf("%w: page has no commits", adsync.ErrProtocol)
 	}
 
+	// The copy is advertised at this point; watch whether applying the page
+	// takes it out of the advertised set (a signed service delete or a log that
+	// outgrew its bound) so the service-set version reflects it.
+	availableBefore := m.availableLocked(service)
+	previousName := service.name
 	working := cloneSnapshot(service.snapshot)
 	previousHash := service.commitHash
 	for index := range page.Commits {
@@ -349,7 +430,12 @@ func (m *Mirror) applyChanges(page *adsync.ChangesResponse) (HeadEvent, bool, er
 				service.log = nil
 				service.logBytes = 0
 				service.overflow = false
-				m.version++
+				service.tombstoneRevision = commit.Revision
+				m.nextRemoval++
+				service.removedSeq = m.nextRemoval
+				if availableBefore {
+					m.version++
+				}
 				return HeadEvent{}, false, err
 			}
 			return HeadEvent{}, false, err
@@ -388,6 +474,12 @@ func (m *Mirror) applyChanges(page *adsync.ChangesResponse) (HeadEvent, bool, er
 		// refreshes the snapshot.
 		service.overflow = true
 	}
+	if previousName != service.name {
+		m.version++
+	}
+	if availableBefore != m.availableLocked(service) {
+		m.version++
+	}
 	return HeadEvent{
 		ServiceID: service.id,
 		Epoch:     service.epoch,
@@ -397,8 +489,9 @@ func (m *Mirror) applyChanges(page *adsync.ChangesResponse) (HeadEvent, bool, er
 }
 
 // RemoveService stops serving a service downstream. The tombstone keeps making
-// a data request for it report source_gone instead of an unknown service; a
-// later snapshot revives it.
+// a data request for it report source_gone instead of an unknown service. A
+// snapshot fetched before the removal point cannot revive it; only a newer one
+// from the same source and epoch can.
 func (m *Mirror) RemoveService(serviceID string) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -409,13 +502,48 @@ func (m *Mirror) RemoveService(serviceID string) {
 	service.removed = true
 	service.signed = nil
 	service.snapshot = adsync.Snapshot{}
+	service.tombstoneRevision = service.revision
 	service.revision = 0
 	service.stateHash = adsync.Hash{}
 	service.commitHash = adsync.Hash{}
 	service.log = nil
 	service.logBytes = 0
 	service.overflow = false
+	m.nextRemoval++
+	service.removedSeq = m.nextRemoval
 	m.version++
+}
+
+// reserveServiceLocked makes room for one new service. Removed services are
+// tombstones, not active copies, so they no longer count against MaxServices.
+// Once there are more tombstones than the bound, the oldest is evicted.
+func (m *Mirror) reserveServiceLocked() error {
+	active := 0
+	for _, service := range m.services {
+		if !service.removed {
+			active++
+		}
+	}
+	if active >= MaxServices {
+		return fmt.Errorf("%w: %d services", ErrTooManyServices, active)
+	}
+	if len(m.services) < MaxServices+maxTombstones {
+		return nil
+	}
+	var oldest *serviceCopy
+	for _, service := range m.services {
+		if !service.removed {
+			continue
+		}
+		if oldest == nil || service.removedSeq < oldest.removedSeq {
+			oldest = service
+		}
+	}
+	if oldest == nil {
+		return fmt.Errorf("%w: %d services", ErrTooManyServices, active)
+	}
+	delete(m.services, oldest.id)
+	return nil
 }
 
 // Services returns every service this proxy currently advertises, sorted by
@@ -423,6 +551,15 @@ func (m *Mirror) RemoveService(serviceID string) {
 // proxy cannot bring a downstream from a signed snapshot to the service's head
 // any more, so failing closed is the only correct answer.
 func (m *Mirror) Services() []adsync.Service {
+	services, _ := m.ServicesVersion()
+	return services
+}
+
+// ServicesVersion returns the advertised services together with the version of
+// the service set they were read from. Both are read under one lock: a caller
+// that records the version must never pair it with a list from a different
+// version, or it can miss an added or removed service.
+func (m *Mirror) ServicesVersion() ([]adsync.Service, int64) {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 	services := make([]adsync.Service, 0, len(m.services))
@@ -441,7 +578,7 @@ func (m *Mirror) Services() []adsync.Service {
 	sort.Slice(services, func(left, right int) bool {
 		return services[left].ID < services[right].ID
 	})
-	return services
+	return services, m.version
 }
 
 // Lookup returns the current identity of one service and whether it can be
@@ -558,8 +695,9 @@ func (m *Mirror) NeedsSnapshot() []string {
 }
 
 // Version is the service-set version reported to downstream instances. It
-// advances when a service is added, removed, renamed or re-anchored to a new
-// sourceId or epoch.
+// advances whenever the advertised set can change: a service is added, removed,
+// renamed, re-anchored to a new sourceId or epoch, hidden because its log
+// overflowed, or made visible again by a fresh snapshot.
 func (m *Mirror) Version() int64 {
 	m.mu.RLock()
 	defer m.mu.RUnlock()

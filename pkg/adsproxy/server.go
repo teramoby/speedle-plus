@@ -56,6 +56,9 @@ type Config struct {
 	// uses DefaultMaxDownstream; the range is 1 to MaxDownstreamLimit. It is
 	// ignored when Hub is set.
 	MaxDownstream int
+	// MaxConnectionsPerDownstream bounds active WebSockets and held long polls
+	// for each credential. Zero uses DefaultMaxConnectionsPerDownstream.
+	MaxConnectionsPerDownstream int
 	// MaxChainDepth bounds the number of proxy hops between Cloud and a leaf.
 	// Zero uses DefaultMaxChainDepth; the range is 1 to MaxChainDepthLimit.
 	MaxChainDepth int
@@ -88,6 +91,7 @@ type Server struct {
 	mirror      *Mirror
 	credentials *CredentialSet
 	hub         *Hub
+	ownsHub     bool
 
 	heartbeat time.Duration
 	stale     time.Duration
@@ -159,8 +163,9 @@ func NewServer(config Config) (*Server, error) {
 	}
 
 	hub := config.Hub
+	ownsHub := hub == nil
 	if hub == nil {
-		hub, err = NewHub(config.MaxDownstream, config.CoalesceWindow)
+		hub, err = NewHub(config.MaxDownstream, config.CoalesceWindow, config.MaxConnectionsPerDownstream)
 		if err != nil {
 			return nil, err
 		}
@@ -176,6 +181,7 @@ func NewServer(config Config) (*Server, error) {
 		mirror:      config.Mirror,
 		credentials: credentials,
 		hub:         hub,
+		ownsHub:     ownsHub,
 		heartbeat:   heartbeat,
 		stale:       stale,
 		stop:        stop,
@@ -213,9 +219,29 @@ func (s *Server) Credentials() *CredentialSet { return s.credentials }
 func (s *Server) DownstreamCount() int { return s.hub.Downstreams() }
 
 // ReloadCredentials re-reads the credential file and swaps the new set in
-// atomically. A failed reload keeps the previous credentials in force.
+// atomically. A failed reload keeps the previous credentials and channels in
+// force. Every established channel is then closed so removed credentials and
+// changed service subsets take effect immediately; clients reconnect and
+// resynchronize with their current grants.
 func (s *Server) ReloadCredentials() error {
-	return s.credentials.Reload()
+	if err := s.credentials.Reload(); err != nil {
+		return err
+	}
+	s.closeDownstreamChannels(websocket.CloseTryAgainLater, "credentials_reloaded")
+	return nil
+}
+
+func (s *Server) closeDownstreamChannels(code int, reason string) {
+	s.mu.Lock()
+	connections := make([]*websocket.Conn, 0, len(s.sessions))
+	for conn := range s.sessions {
+		connections = append(connections, conn)
+	}
+	s.mu.Unlock()
+	for _, conn := range connections {
+		closeWithReason(conn, code, reason)
+		_ = conn.Close()
+	}
 }
 
 // Close closes every active downstream channel, releases the mirror observer
@@ -237,15 +263,21 @@ func (s *Server) Close() {
 			s.removeWatch()
 			s.removeWatch = nil
 		}
-		s.hub.Close()
+		// A hub supplied through Config is shared with its owner; only a hub
+		// this server created may be closed here.
+		if s.ownsHub {
+			s.hub.Close()
+		}
 	})
 }
 
-// track registers an upgraded channel connection so Close can terminate it.
-func (s *Server) track(conn *websocket.Conn) bool {
+// track registers an upgraded channel connection so Close and credential
+// reloads can terminate it. The grant must still be current, closing the race
+// between bearer authentication and a concurrent reload.
+func (s *Server) track(conn *websocket.Conn, credential *Credential) bool {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	if s.closed {
+	if s.closed || !s.credentials.Current(credential) {
 		return false
 	}
 	s.sessions[conn] = struct{}{}
@@ -327,7 +359,7 @@ func (s *Server) handleService(w http.ResponseWriter, r *http.Request, credentia
 }
 
 func (s *Server) handleServices(w http.ResponseWriter, credential *Credential) {
-	services := s.mirror.Services()
+	services, version := s.mirror.ServicesVersion()
 	visible := make([]adsync.Service, 0, len(services))
 	for _, service := range services {
 		if !credential.Allows(service.ID) {
@@ -339,7 +371,7 @@ func (s *Server) handleServices(w http.ResponseWriter, credential *Credential) {
 		}
 	}
 	writeJSON(w, http.StatusOK, adsync.ServicesResponse{
-		ServicesVersion: s.mirror.Version(),
+		ServicesVersion: version,
 		Services:        visible,
 	})
 }
