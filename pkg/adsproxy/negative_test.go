@@ -13,6 +13,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -1464,4 +1466,560 @@ func TestServerPerCredentialConnectionLimit(t *testing.T) {
 		t.Errorf("Retry-After = %q", retry)
 	}
 	response.Body.Close()
+}
+
+func TestChannelReservesASlotBeforeHello(t *testing.T) {
+	signer := newTestSigner(t)
+	mirror, _, _ := newPopulatedMirror(t, signer)
+	token := testToken(testDownstreamID, 1)
+	server := newTestServer(t, mirror, signer.publicKeys(t), &testServerOptions{
+		maxConnections: 1,
+	}, testCredential{
+		downstreamID: testDownstreamID,
+		token:        token,
+	})
+	first, _, err := server.dial(token)
+	if err != nil {
+		t.Fatalf("first connection: %v", err)
+	}
+	defer first.Close()
+
+	// The first connection holds its slot before sending hello. A second one
+	// must be refused at the HTTP upgrade instead of waiting for its hello.
+	_, response, err := server.dial(token)
+	if err == nil {
+		t.Fatal("a second pre-hello connection was accepted")
+	}
+	if response == nil || response.StatusCode != http.StatusServiceUnavailable {
+		t.Fatalf("second connection response = %v, want 503", response)
+	}
+	response.Body.Close()
+
+	// The first connection can still complete its hello and receive the ack.
+	writeJSONFrame(t, first, helloMessage{
+		Type:         "hello",
+		InstanceID:   testDownstreamID,
+		Services:     []helloService{},
+		Chain:        []string{testProxyID, testDownstreamID},
+		AgentVersion: "test",
+	})
+	if kind, _ := readChannelFrame(t, first); kind != "ack" {
+		t.Fatalf("frame = %q", kind)
+	}
+
+	// Closing it releases the slot for a new connection.
+	_ = first.Close()
+	waitFor(t, 5*time.Second, "the reserved slot to be released", func() bool {
+		conn, _, err := server.dial(token)
+		if err != nil {
+			return false
+		}
+		_ = conn.Close()
+		return true
+	})
+}
+
+func TestMirrorKeepsTombstonesAtTheBound(t *testing.T) {
+	signer := newTestSigner(t)
+	mirror := newTestMirror(t, signer.publicKeys(t), nil)
+	var (
+		firstID       string
+		firstSnapshot *adsync.SnapshotResponse
+	)
+	for index := 0; index < maxTombstones; index++ {
+		id := fmt.Sprintf("01HF7YAT%018d", 2000+index)
+		service := newFixtureService(id, "books")
+		snapshot := snapshotAt(t, service, signer)
+		if index == 0 {
+			firstID, firstSnapshot = id, snapshot
+		}
+		if err := mirror.ApplySnapshot(snapshot); err != nil {
+			t.Fatalf("service %d: %v", index, err)
+		}
+		mirror.RemoveService(id)
+	}
+	for index := 0; index < MaxServices; index++ {
+		id := fmt.Sprintf("01HF7YAT%018d", 4000+index)
+		service := newFixtureService(id, "books")
+		if err := mirror.ApplySnapshot(snapshotAt(t, service, signer)); err != nil {
+			t.Fatalf("active service %d: %v", index, err)
+		}
+	}
+	// Freeing an active slot alone is not enough: the tombstone store is full,
+	// and losing a tombstone would let its delayed snapshot resurrect deleted
+	// policy. The new service is refused instead.
+	mirror.RemoveService(fmt.Sprintf("01HF7YAT%018d", 4000))
+	extra := newFixtureService(fmt.Sprintf("01HF7YAT%018d", 5000), "extra")
+	if err := mirror.ApplySnapshot(snapshotAt(t, extra, signer)); !errors.Is(err, ErrTooManyServices) {
+		t.Errorf("new service with a full tombstone store: %v, want ErrTooManyServices", err)
+	}
+
+	// The oldest tombstone still guards its pre-removal snapshot.
+	if err := mirror.ApplySnapshot(firstSnapshot); err != nil {
+		t.Fatalf("delayed snapshot: %v", err)
+	}
+	if _, availability := mirror.Lookup(firstID); availability != ServiceRemoved {
+		t.Errorf("availability of the oldest tombstone = %v, want ServiceRemoved", availability)
+	}
+}
+
+func TestMirrorRejectsReplaysFromRetiredIdentities(t *testing.T) {
+	signer := newTestSigner(t)
+	mirror := newTestMirror(t, signer.publicKeys(t), nil)
+	var first *adsync.SnapshotResponse
+	for index := 0; index < 12; index++ {
+		epoch := fmt.Sprintf("01HF7YAT%018d", 6000+index)
+		service := newFixtureServiceWithEpoch(testServiceID1, epoch, "books")
+		service.publish(t, signer, upsertAuthz(testServiceID1+"A1", "read", "grant read"))
+		snapshot := snapshotAt(t, service, signer)
+		if index == 0 {
+			first = snapshot
+		}
+		if err := mirror.ApplySnapshot(snapshot); err != nil {
+			t.Fatalf("identity %d: %v", index, err)
+		}
+	}
+	// Replay protection outlives the transition: more identity changes than any
+	// retention bound must not make the oldest snapshot acceptable again.
+	if err := mirror.ApplySnapshot(first); err != nil {
+		t.Fatalf("replayed snapshot: %v", err)
+	}
+	info, availability := mirror.Lookup(testServiceID1)
+	if availability != ServiceAvailable {
+		t.Fatalf("availability = %v", availability)
+	}
+	if info.Epoch != fmt.Sprintf("01HF7YAT%018d", 6011) {
+		t.Errorf("copy rolled back to %q", info.Epoch)
+	}
+}
+
+func TestMirrorRejectsConflictingCommitHashAtOneRevision(t *testing.T) {
+	signer := newTestSigner(t)
+	mirror := newTestMirror(t, signer.publicKeys(t), nil)
+	service := newFixtureService(testServiceID1, "books")
+	original := snapshotAt(t, service, signer)
+	if err := mirror.ApplySnapshot(original); err != nil {
+		t.Fatalf("apply snapshot: %v", err)
+	}
+
+	conflicting := snapshotAt(t, service, signer)
+	conflicting.CommitHash = adsync.StateHash(adsync.Snapshot{Name: "other history"})
+	conflicting.Signature = signer.sign(adsync.SnapshotSignedBytes(
+		conflicting.SourceID, conflicting.Epoch, conflicting.Revision,
+		conflicting.StateHash, conflicting.CommitHash))
+	if err := mirror.ApplySnapshot(conflicting); !errors.Is(err, adsync.ErrIntegrity) {
+		t.Errorf("conflicting commit hash: %v, want ErrIntegrity", err)
+	}
+	anchor, found := mirror.Snapshot(testServiceID1)
+	if !found || anchor.CommitHash != original.CommitHash {
+		t.Errorf("anchor was replaced: %+v", anchor)
+	}
+
+	// The snapshot entity tag covers the commit hash, so a downstream holding
+	// the old anchor never sees a 304 for a different history.
+	if snapshotETag(*original) == snapshotETag(*conflicting) {
+		t.Error("snapshot ETag ignores the commit hash")
+	}
+}
+
+func TestCloseEndsHeldPolls(t *testing.T) {
+	signer := newTestSigner(t)
+	mirror, _, _ := newPopulatedMirror(t, signer)
+	token := testToken(testDownstreamID, 1)
+	server := newTestServer(t, mirror, signer.publicKeys(t), nil, testCredential{
+		downstreamID: testDownstreamID,
+		token:        token,
+	})
+	type result struct {
+		status int
+		body   []byte
+	}
+	done := make(chan result, 1)
+	go func() {
+		response, body := server.post(adsync.APIPrefix+"/channel/poll?wait=30", token,
+			heartbeatFrame([]string{testProxyID, testDownstreamID}))
+		done <- result{status: response.StatusCode, body: body}
+	}()
+	time.Sleep(50 * time.Millisecond)
+	server.server.Close()
+	select {
+	case got := <-done:
+		if got.status != http.StatusServiceUnavailable {
+			t.Errorf("held poll after Close: status %d body %s", got.status, got.body)
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("a held poll stayed blocked after Close")
+	}
+}
+
+func TestHeldPollAnswersDistributionPaused(t *testing.T) {
+	signer := newTestSigner(t)
+	mirror, books, _ := newPopulatedMirror(t, signer)
+	token := testToken(testDownstreamID, 1)
+	var paused atomic.Bool
+	server := newTestServer(t, mirror, signer.publicKeys(t), &testServerOptions{
+		paused: paused.Load,
+	}, testCredential{
+		downstreamID: testDownstreamID,
+		token:        token,
+	})
+	type result struct {
+		status int
+		body   []byte
+	}
+	done := make(chan result, 1)
+	go func() {
+		response, body := server.post(adsync.APIPrefix+"/channel/poll?wait=30", token,
+			heartbeatFrame([]string{testProxyID, testDownstreamID}))
+		done <- result{status: response.StatusCode, body: body}
+	}()
+	time.Sleep(50 * time.Millisecond)
+	paused.Store(true)
+	// A head advance releases the held wait, so the paused state is rechecked.
+	books.publish(t, signer, upsertAuthz(testServiceID1+"A1", "read", "grant read"))
+	if err := mirror.ApplyChanges(pageFor(t, books, 1, 100)); err != nil {
+		t.Fatalf("apply changes: %v", err)
+	}
+	select {
+	case got := <-done:
+		if got.status != http.StatusServiceUnavailable || string(got.body) != `{"error":"distribution_paused"}` {
+			t.Errorf("held poll while paused: status %d body %s", got.status, got.body)
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("held poll did not answer")
+	}
+}
+
+func TestChannelInitialAckRespectsPause(t *testing.T) {
+	signer := newTestSigner(t)
+	mirror, _, _ := newPopulatedMirror(t, signer)
+	token := testToken(testDownstreamID, 1)
+	var paused atomic.Bool
+	server := newTestServer(t, mirror, signer.publicKeys(t), &testServerOptions{
+		paused: paused.Load,
+	}, testCredential{
+		downstreamID: testDownstreamID,
+		token:        token,
+	})
+	conn, _, err := server.dial(token)
+	if err != nil {
+		t.Fatalf("dial: %v", err)
+	}
+	defer conn.Close()
+	// The pause starts while the connection waits for its hello frame. The
+	// initial ack must not go out as if distribution were active.
+	paused.Store(true)
+	writeJSONFrame(t, conn, helloMessage{
+		Type:         "hello",
+		InstanceID:   testDownstreamID,
+		Services:     []helloService{},
+		Chain:        []string{testProxyID, testDownstreamID},
+		AgentVersion: "test",
+	})
+	code, reason := readClose(t, conn)
+	if code != websocket.ClosePolicyViolation || reason != "distribution_paused" {
+		t.Fatalf("close = %d %q", code, reason)
+	}
+}
+
+func TestCredentialSetPinsRequestsAcrossReload(t *testing.T) {
+	signer := newTestSigner(t)
+	mirror, _, _ := newPopulatedMirror(t, signer)
+	token := testToken(testDownstreamID, 1)
+	server := newTestServer(t, mirror, signer.publicKeys(t), nil, testCredential{
+		downstreamID: testDownstreamID,
+		token:        token,
+	})
+	set := server.server.Credentials()
+	credential, ok := set.Authenticate(token)
+	if !ok {
+		t.Fatal("token did not authenticate")
+	}
+	if !set.BeginRequest(credential) {
+		t.Fatal("current credential was not pinned")
+	}
+	server.writeCredentialFile(testDownstreamID + ":" + hashToken(token) + ":" + testServiceID1)
+	reloaded := make(chan error, 1)
+	go func() { reloaded <- server.server.ReloadCredentials() }()
+	select {
+	case err := <-reloaded:
+		t.Fatalf("reload completed while a response was pinned: %v", err)
+	case <-time.After(50 * time.Millisecond):
+	}
+	set.EndRequest()
+	select {
+	case err := <-reloaded:
+		if err != nil {
+			t.Fatalf("reload after the pin was released: %v", err)
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("reload did not complete after the pin was released")
+	}
+	// The replaced grant cannot start a new response.
+	if set.BeginRequest(credential) {
+		set.EndRequest()
+		t.Error("a replaced grant was pinned")
+	}
+}
+
+func TestCredentialFileReadIsBounded(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "sparse")
+	file, err := os.Create(path)
+	if err != nil {
+		t.Fatalf("create: %v", err)
+	}
+	if err := file.Truncate(64 << 20); err != nil {
+		file.Close()
+		t.Fatalf("truncate: %v", err)
+	}
+	if err := file.Close(); err != nil {
+		t.Fatalf("close: %v", err)
+	}
+	if err := os.Chmod(path, 0o600); err != nil {
+		t.Fatalf("chmod: %v", err)
+	}
+	if _, err := LoadCredentialFile(path); !errors.Is(err, ErrCredentialFile) {
+		t.Errorf("oversized file: %v, want ErrCredentialFile", err)
+	}
+}
+
+type blockingResponseWriter struct {
+	header  http.Header
+	started chan struct{}
+	release chan struct{}
+	once    sync.Once
+	status  int
+	body    bytes.Buffer
+}
+
+func (w *blockingResponseWriter) Header() http.Header { return w.header }
+
+func (w *blockingResponseWriter) WriteHeader(status int) {
+	w.once.Do(func() {
+		w.status = status
+		close(w.started)
+		<-w.release
+	})
+}
+
+func (w *blockingResponseWriter) Write(payload []byte) (int, error) {
+	return w.body.Write(payload)
+}
+
+func TestHeldPollPinsItsGrantAcrossTheAck(t *testing.T) {
+	signer := newTestSigner(t)
+	mirror, _, _ := newPopulatedMirror(t, signer)
+	token := testToken(testDownstreamID, 1)
+	server := newTestServer(t, mirror, signer.publicKeys(t), nil, testCredential{
+		downstreamID: testDownstreamID,
+		token:        token,
+	})
+	request := httptest.NewRequest(http.MethodPost,
+		adsync.APIPrefix+"/channel/poll?wait=0",
+		bytes.NewReader(heartbeatFrame([]string{testProxyID, testDownstreamID})))
+	request.Header.Set("Authorization", "Bearer "+token)
+	writer := &blockingResponseWriter{
+		header:  http.Header{},
+		started: make(chan struct{}),
+		release: make(chan struct{}),
+	}
+	finished := make(chan struct{})
+	go func() {
+		defer close(finished)
+		server.server.ServeHTTP(writer, request)
+	}()
+	select {
+	case <-writer.started:
+	case <-time.After(5 * time.Second):
+		t.Fatal("the poll response never started")
+	}
+
+	// The ack is being written while its grant is pinned, so a reload cannot
+	// complete between the revalidation and the response.
+	server.writeCredentialFile(testDownstreamID + ":" + hashToken(token) + ":" + testServiceID1)
+	reloaded := make(chan error, 1)
+	go func() { reloaded <- server.server.ReloadCredentials() }()
+	select {
+	case err := <-reloaded:
+		t.Fatalf("reload completed while the ack was pinned: %v", err)
+	case <-time.After(50 * time.Millisecond):
+	}
+
+	close(writer.release)
+	select {
+	case <-finished:
+	case <-time.After(5 * time.Second):
+		t.Fatal("the poll did not finish")
+	}
+	select {
+	case err := <-reloaded:
+		if err != nil {
+			t.Fatalf("reload after the ack: %v", err)
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("the reload did not complete")
+	}
+	if writer.status != http.StatusOK {
+		t.Errorf("status = %d", writer.status)
+	}
+
+	// The narrowed grant is in force for the next request.
+	response, body := server.post(adsync.APIPrefix+"/channel/poll?wait=0", token,
+		heartbeatFrame([]string{testProxyID, testDownstreamID}))
+	if response.StatusCode != http.StatusOK {
+		t.Fatalf("poll after reload: status %d body %s", response.StatusCode, body)
+	}
+	ack := decodeBody[ackMessage](t, body)
+	if len(ack.Services) != 1 || ack.Services[0].ID != testServiceID1 {
+		t.Errorf("narrowed ack services = %+v", ack.Services)
+	}
+}
+
+func TestChannelAckRefusesAReplacedGrant(t *testing.T) {
+	signer := newTestSigner(t)
+	mirror, _, _ := newPopulatedMirror(t, signer)
+	token := testToken(testDownstreamID, 1)
+	server := newTestServer(t, mirror, signer.publicKeys(t), nil, testCredential{
+		downstreamID: testDownstreamID,
+		token:        token,
+	})
+
+	upgrader := websocket.Upgrader{CheckOrigin: func(*http.Request) bool { return true }}
+	serverConns := make(chan *websocket.Conn, 1)
+	wsServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		conn, err := upgrader.Upgrade(w, r, nil)
+		if err != nil {
+			return
+		}
+		serverConns <- conn
+	}))
+	defer wsServer.Close()
+	client, _, err := websocket.DefaultDialer.Dial("ws"+strings.TrimPrefix(wsServer.URL, "http"), nil)
+	if err != nil {
+		t.Fatalf("dial: %v", err)
+	}
+	defer client.Close()
+	serverConn := <-serverConns
+	defer serverConn.Close()
+
+	credential, ok := server.server.Credentials().Authenticate(token)
+	if !ok {
+		t.Fatal("token did not authenticate")
+	}
+	if err := server.server.writeChannelAck(serverConn, credential); err != nil {
+		t.Fatalf("ack with a current grant: %v", err)
+	}
+	if kind, _ := readChannelFrame(t, client); kind != "ack" {
+		t.Fatalf("frame = %q", kind)
+	}
+
+	// Narrow the grant. The old pointer can no longer write an ack, and no
+	// frame reaches the wire.
+	server.writeCredentialFile(testDownstreamID + ":" + hashToken(token) + ":" + testServiceID1)
+	if err := server.server.ReloadCredentials(); err != nil {
+		t.Fatalf("reload: %v", err)
+	}
+	if err := server.server.writeChannelAck(serverConn, credential); err == nil {
+		t.Fatal("a replaced grant wrote an ack")
+	}
+	_ = client.SetReadDeadline(time.Now().Add(100 * time.Millisecond))
+	if _, _, err := client.ReadMessage(); err == nil {
+		t.Error("an ack reached the wire with a replaced grant")
+	}
+}
+
+func TestMirrorBoundsIdentityChurn(t *testing.T) {
+	signer := newTestSigner(t)
+	mirror := newTestMirror(t, signer.publicKeys(t), nil)
+	current := newFixtureServiceWithEpoch(testServiceID1, fmt.Sprintf("01HF7YAT%018d", 7000), "books")
+	current.publish(t, signer, upsertAuthz(testServiceID1+"A1", "read", "grant read"))
+	if err := mirror.ApplySnapshot(snapshotAt(t, current, signer)); err != nil {
+		t.Fatalf("first identity: %v", err)
+	}
+	for index := 1; index <= maxRetiredIdentities; index++ {
+		next := newFixtureServiceWithEpoch(testServiceID1, fmt.Sprintf("01HF7YAT%018d", 7000+index), "books")
+		next.publish(t, signer, upsertAuthz(testServiceID1+"A1", "read", "grant read"))
+		if err := mirror.ApplySnapshot(snapshotAt(t, next, signer)); err != nil {
+			t.Fatalf("identity %d: %v", index, err)
+		}
+		current = next
+	}
+
+	// One more identity replacement is refused, and the copy stops being
+	// advertised rather than keeping replay state without bound.
+	excess := newFixtureServiceWithEpoch(testServiceID1, fmt.Sprintf("01HF7YAT%018d", 7000+maxRetiredIdentities+1), "books")
+	excess.publish(t, signer, upsertAuthz(testServiceID1+"A1", "read", "grant read"))
+	if err := mirror.ApplySnapshot(snapshotAt(t, excess, signer)); !errors.Is(err, ErrIdentityChurn) {
+		t.Fatalf("identity churn: %v, want ErrIdentityChurn", err)
+	}
+	if services := mirror.Services(); len(services) != 0 {
+		t.Errorf("service under identity churn is advertised: %+v", services)
+	}
+	if _, availability := mirror.Lookup(testServiceID1); availability != ServiceNeedsSnapshot {
+		t.Errorf("availability = %v, want ServiceNeedsSnapshot", availability)
+	}
+
+	// The current identity can still be refreshed.
+	current.publish(t, signer, upsertAuthz(testServiceID1+"A2", "read", "grant read"))
+	if err := mirror.ApplySnapshot(snapshotAt(t, current, signer)); err != nil {
+		t.Fatalf("refresh current identity: %v", err)
+	}
+	services := mirror.Services()
+	if len(services) != 1 || services[0].Epoch != current.Epoch {
+		t.Errorf("current identity did not revive the service: %+v", services)
+	}
+}
+
+func TestChannelNotificationRefusesAReplacedGrant(t *testing.T) {
+	signer := newTestSigner(t)
+	mirror, _, _ := newPopulatedMirror(t, signer)
+	token := testToken(testDownstreamID, 1)
+	server := newTestServer(t, mirror, signer.publicKeys(t), nil, testCredential{
+		downstreamID: testDownstreamID,
+		token:        token,
+	})
+
+	upgrader := websocket.Upgrader{CheckOrigin: func(*http.Request) bool { return true }}
+	serverConns := make(chan *websocket.Conn, 1)
+	wsServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		conn, err := upgrader.Upgrade(w, r, nil)
+		if err != nil {
+			return
+		}
+		serverConns <- conn
+	}))
+	defer wsServer.Close()
+	client, _, err := websocket.DefaultDialer.Dial("ws"+strings.TrimPrefix(wsServer.URL, "http"), nil)
+	if err != nil {
+		t.Fatalf("dial: %v", err)
+	}
+	defer client.Close()
+	serverConn := <-serverConns
+	defer serverConn.Close()
+
+	credential, ok := server.server.Credentials().Authenticate(token)
+	if !ok {
+		t.Fatal("token did not authenticate")
+	}
+	notification := Notify{ServiceID: testServiceID2, Head: 3}
+	if err := server.server.writeChannelNotification(serverConn, credential, notification); err != nil {
+		t.Fatalf("notification with a current grant: %v", err)
+	}
+	if kind, _ := readChannelFrame(t, client); kind != "notify" {
+		t.Fatalf("frame = %q", kind)
+	}
+
+	// Narrow the grant to the other service; the old pointer can no longer
+	// forward a notification for the now-forbidden service.
+	server.writeCredentialFile(testDownstreamID + ":" + hashToken(token) + ":" + testServiceID1)
+	if err := server.server.ReloadCredentials(); err != nil {
+		t.Fatalf("reload: %v", err)
+	}
+	if err := server.server.writeChannelNotification(serverConn, credential, notification); err == nil {
+		t.Fatal("a replaced grant wrote a notification")
+	}
+	_ = client.SetReadDeadline(time.Now().Add(100 * time.Millisecond))
+	if _, _, err := client.ReadMessage(); err == nil {
+		t.Error("a notification reached the wire with a replaced grant")
+	}
 }

@@ -32,6 +32,9 @@ var (
 	// ErrTooManyServices means a snapshot would add more services than the
 	// protocol carries.
 	ErrTooManyServices = errors.New("adsproxy: too many services")
+	// ErrIdentityChurn means a service changed source identity more often than
+	// the proxy keeps replay protection for. The copy stops being advertised.
+	ErrIdentityChurn = errors.New("adsproxy: source identity churn exceeded")
 	// ErrFanoutLimit means the proxy already serves the configured number of
 	// downstream instances.
 	ErrFanoutLimit = errors.New("adsproxy: downstream limit reached")

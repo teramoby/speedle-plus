@@ -169,10 +169,19 @@ func formatChannelDuration(duration time.Duration) string {
 // HTTP error there; chain problems can only be seen after the hello frame and
 // close the connection with a policy-violation code.
 func (s *Server) handleChannel(w http.ResponseWriter, r *http.Request, credential *Credential) {
-	if err := s.hub.Allow(credential.DownstreamID); err != nil {
+	// Reserve the connection slot before the upgrade: a WebSocket that never
+	// sends its hello frame still holds a socket, so it must count against the
+	// fan-out limits. The reservation moves to the subscription below.
+	if err := s.hub.Acquire(credential.DownstreamID); err != nil {
 		writeHubError(w, err)
 		return
 	}
+	reserved := true
+	defer func() {
+		if reserved {
+			s.hub.Release(credential.DownstreamID)
+		}
+	}()
 	conn, err := s.upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		// The upgrader already wrote the HTTP error.
@@ -206,11 +215,12 @@ func (s *Server) handleChannel(w http.ResponseWriter, r *http.Request, credentia
 		return
 	}
 
-	subscriber, err := s.hub.Subscribe(credential.DownstreamID, credential.Allows)
+	subscriber, err := s.hub.SubscribeReserved(credential.DownstreamID, credential.Allows)
 	if err != nil {
 		closeWithReason(conn, websocket.CloseTryAgainLater, "fanout_limit")
 		return
 	}
+	reserved = false
 	defer s.hub.Unsubscribe(subscriber)
 
 	readTimeout := heartbeatFrameSlack * s.heartbeat
@@ -291,7 +301,14 @@ func (s *Server) handleChannel(w http.ResponseWriter, r *http.Request, credentia
 // that ack, so a notification that raced ahead of it would make the client
 // reject an unknown head.
 func (s *Server) channelWriter(conn *websocket.Conn, credential *Credential, subscriber *Subscriber, acks <-chan struct{}, stop <-chan struct{}) {
-	if err := writeChannelJSON(conn, s.ack(credential)); err != nil {
+	// Pause can start while the connection waits for its hello frame; the
+	// initial ack must not go out as if distribution were still active.
+	if s.distributionPaused() {
+		closeWithReason(conn, websocket.ClosePolicyViolation, "distribution_paused")
+		_ = conn.Close()
+		return
+	}
+	if err := s.writeChannelAck(conn, credential); err != nil {
 		_ = conn.Close()
 		return
 	}
@@ -302,16 +319,14 @@ func (s *Server) channelWriter(conn *websocket.Conn, credential *Credential, sub
 		case <-stop:
 			return
 		case <-acks:
-			if err := writeChannelJSON(conn, s.ack(credential)); err != nil {
+			if err := s.writeChannelAck(conn, credential); err != nil {
 				_ = conn.Close()
 				return
 			}
 		case notification := <-subscriber.C():
-			if err := writeChannelJSON(conn, notifyMessage{
-				Type:      "notify",
-				ServiceID: notification.ServiceID,
-				Head:      notification.Head,
-			}); err != nil {
+			// A reload may have replaced the grant; a notification for a
+			// service the new grant forbids must not go out.
+			if err := s.writeChannelNotification(conn, credential, notification); err != nil {
 				_ = conn.Close()
 				return
 			}
@@ -322,6 +337,31 @@ func (s *Server) channelWriter(conn *websocket.Conn, credential *Credential, sub
 			}
 		}
 	}
+}
+
+// writeChannelAck pins the connection's grant across the ack, so a credential
+// reload cannot replace it between validation and the frame write. It reports
+// an error when the grant is no longer current.
+func (s *Server) writeChannelAck(conn *websocket.Conn, credential *Credential) error {
+	if !s.credentials.BeginRequest(credential) {
+		return fmt.Errorf("%w: credential replaced", ErrUnauthorized)
+	}
+	defer s.credentials.EndRequest()
+	return writeChannelJSON(conn, s.ack(credential))
+}
+
+// writeChannelNotification pins the connection's grant across the notification,
+// so a reload cannot replace it between the check and the frame write.
+func (s *Server) writeChannelNotification(conn *websocket.Conn, credential *Credential, notification Notify) error {
+	if !s.credentials.BeginRequest(credential) {
+		return fmt.Errorf("%w: credential replaced", ErrUnauthorized)
+	}
+	defer s.credentials.EndRequest()
+	return writeChannelJSON(conn, notifyMessage{
+		Type:      "notify",
+		ServiceID: notification.ServiceID,
+		Head:      notification.Head,
+	})
 }
 
 func writeChannelJSON(conn *websocket.Conn, value any) error {
@@ -341,10 +381,18 @@ func writeChannelJSON(conn *websocket.Conn, value any) error {
 // the downstream without a full round trip, and it is answered immediately
 // when a notification is available.
 func (s *Server) handlePoll(w http.ResponseWriter, r *http.Request, credential *Credential) {
-	if err := s.hub.Allow(credential.DownstreamID); err != nil {
+	// A poll holds its connection slot from admission to the answer, including
+	// while it waits.
+	if err := s.hub.Acquire(credential.DownstreamID); err != nil {
 		writeHubError(w, err)
 		return
 	}
+	reserved := true
+	defer func() {
+		if reserved {
+			s.hub.Release(credential.DownstreamID)
+		}
+	}()
 	wait, ok := parsePollWait(r.URL.Query().Get("wait"))
 	if !ok {
 		writeError(w, http.StatusBadRequest, "invalid_request", "")
@@ -369,11 +417,12 @@ func (s *Server) handlePoll(w http.ResponseWriter, r *http.Request, credential *
 		return
 	}
 
-	subscriber, err := s.hub.Subscribe(credential.DownstreamID, credential.Allows)
+	subscriber, err := s.hub.SubscribeReserved(credential.DownstreamID, credential.Allows)
 	if err != nil {
 		writeHubError(w, err)
 		return
 	}
+	reserved = false
 	defer s.hub.Unsubscribe(subscriber)
 
 	if wait > 0 {
@@ -382,14 +431,31 @@ func (s *Server) handlePoll(w http.ResponseWriter, r *http.Request, credential *
 		select {
 		case <-subscriber.C():
 		case <-timer.C:
+		case <-s.done:
+			// The server is closing; do not keep the request held.
+			writeError(w, http.StatusServiceUnavailable, "source_unavailable", "")
+			return
 		case <-r.Context().Done():
 			return
 		}
 	}
-	// A reload may have replaced the grant while the request was held. The ack
-	// would otherwise reveal the new service set to a revoked or narrowed one.
-	if !s.credentials.Current(credential) {
+	// Distribution may have been paused while the request was held.
+	if s.distributionPaused() {
+		writeError(w, http.StatusServiceUnavailable, "distribution_paused", "")
+		return
+	}
+	// A reload may have replaced the grant while the request was held. Pin the
+	// grant across the check and the response, so a reload cannot complete
+	// between them and the ack cannot reveal the new service set to a revoked
+	// or narrowed credential.
+	if !s.credentials.BeginRequest(credential) {
 		writeError(w, http.StatusUnauthorized, "unauthorized", "")
+		return
+	}
+	defer s.credentials.EndRequest()
+	// A poll that was already held must not answer successfully after Close.
+	if s.isClosed() {
+		writeError(w, http.StatusServiceUnavailable, "source_unavailable", "")
 		return
 	}
 	writeJSON(w, http.StatusOK, s.ack(credential))

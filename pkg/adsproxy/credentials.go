@@ -7,6 +7,7 @@ import (
 	"crypto/subtle"
 	"encoding/hex"
 	"fmt"
+	"io"
 	"os"
 	"regexp"
 	"runtime"
@@ -81,6 +82,11 @@ func (c *Credential) ServicesList() []string {
 type CredentialSet struct {
 	path string
 
+	// gate serializes data responses with a credential replacement. A response
+	// holds the read side while it uses its grant; Reload takes the write side
+	// for the swap, so an in-flight response never observes a replaced grant.
+	gate sync.RWMutex
+
 	mu          sync.RWMutex
 	credentials []*Credential
 	byID        map[string]*Credential
@@ -97,7 +103,14 @@ func LoadCredentialFile(path string) (*CredentialSet, error) {
 	if path == "" {
 		return nil, fmt.Errorf("%w: no path", ErrCredentialFile)
 	}
-	info, err := os.Stat(path)
+	file, err := os.Open(path)
+	if err != nil {
+		return nil, fmt.Errorf("%w: %v", ErrCredentialFile, err)
+	}
+	defer file.Close()
+	// Stat the open descriptor, so the checks and the read describe the same
+	// file even if the path is replaced concurrently.
+	info, err := file.Stat()
 	if err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrCredentialFile, err)
 	}
@@ -107,7 +120,9 @@ func LoadCredentialFile(path string) (*CredentialSet, error) {
 	if runtime.GOOS != "windows" && info.Mode().Perm()&0o077 != 0 {
 		return nil, fmt.Errorf("%w: %q must be readable and writable only by its owner", ErrCredentialFile, path)
 	}
-	data, err := os.ReadFile(path)
+	// Read at most one byte past the bound: the limit must bound allocation,
+	// not reject after the whole file is already in memory.
+	data, err := io.ReadAll(io.LimitReader(file, maxCredentialFileBytes+1))
 	if err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrCredentialFile, err)
 	}
@@ -206,11 +221,36 @@ func (s *CredentialSet) Reload() error {
 	if err != nil {
 		return err
 	}
+	s.gate.Lock()
 	s.mu.Lock()
 	s.credentials = loaded.credentials
 	s.byID = loaded.byID
 	s.mu.Unlock()
+	s.gate.Unlock()
 	return nil
+}
+
+// BeginRequest pins the grant set for one data response and reports whether
+// credential is still current in it. A true result must be followed by
+// EndRequest; a reload swaps the set only when no pinned response is in
+// flight, so a response cannot emit policy under a replaced grant.
+func (s *CredentialSet) BeginRequest(credential *Credential) bool {
+	if s == nil {
+		return false
+	}
+	s.gate.RLock()
+	if !s.Current(credential) {
+		s.gate.RUnlock()
+		return false
+	}
+	return true
+}
+
+// EndRequest releases the pin taken by a successful BeginRequest.
+func (s *CredentialSet) EndRequest() {
+	if s != nil {
+		s.gate.RUnlock()
+	}
 }
 
 func parseCredentialFile(data string) ([]*Credential, map[string]*Credential, error) {
