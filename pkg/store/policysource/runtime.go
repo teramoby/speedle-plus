@@ -236,9 +236,9 @@ func (s *Store) withholdMirrorService(serviceID string) {
 // runBeforeMirrorRestore invokes the test hook installed by
 // setBeforeMirrorRestore, if any.
 func (s *Store) runBeforeMirrorRestore(serviceID string) {
-	s.mirrorHookMu.Lock()
+	s.hookMu.Lock()
 	hook := s.beforeMirrorRestore
-	s.mirrorHookMu.Unlock()
+	s.hookMu.Unlock()
 	if hook != nil {
 		hook(serviceID)
 	}
@@ -249,9 +249,30 @@ func (s *Store) runBeforeMirrorRestore(serviceID string) {
 // to interleave a channel callback deterministically; production leaves it
 // nil.
 func (s *Store) setBeforeMirrorRestore(hook func(serviceID string)) {
-	s.mirrorHookMu.Lock()
+	s.hookMu.Lock()
 	s.beforeMirrorRestore = hook
-	s.mirrorHookMu.Unlock()
+	s.hookMu.Unlock()
+}
+
+// runBeforeDiscover invokes the test hook installed by setBeforeDiscover, if
+// any.
+func (s *Store) runBeforeDiscover() {
+	s.hookMu.Lock()
+	hook := s.beforeDiscover
+	s.hookMu.Unlock()
+	if hook != nil {
+		hook()
+	}
+}
+
+// setBeforeDiscover installs a hook that runs in a pass after discovery
+// removals and rename guards were applied and before the state machine learns
+// the discovered set. Tests use it to observe that window deterministically;
+// production leaves it nil.
+func (s *Store) setBeforeDiscover(hook func()) {
+	s.hookMu.Lock()
+	s.beforeDiscover = hook
+	s.hookMu.Unlock()
 }
 
 // applyServiceSetChange applies the authoritative removals and renames from a

@@ -13,6 +13,7 @@ import (
 	"github.com/teramoby/speedle-plus/api/pms"
 	"github.com/teramoby/speedle-plus/pkg/adsync"
 	speedleerrors "github.com/teramoby/speedle-plus/pkg/errors"
+	"github.com/teramoby/speedle-plus/pkg/svcs/adsgate"
 )
 
 func mustRead(t *testing.T, store *Store) *pms.PolicyStore {
@@ -220,6 +221,68 @@ func TestDiscoveryRenameWithAFailingReplacementKeepsTheGuard(t *testing.T) {
 	}
 	if _, known := store.Status("books"); known {
 		t.Fatal("the machine still tracks the previous name after discovery")
+	}
+}
+
+// TestDiscoveryRemovalFailsClosedBeforeTheMachineLearnsIt covers the window
+// inside a pass between applying a discovery removal and updating the state
+// machine: the machine still reports the removed service in_sync, but the
+// request gate must already fail closed for it.
+func TestDiscoveryRemovalFailsClosedBeforeTheMachineLearnsIt(t *testing.T) {
+	fixture := newTestFixture(t, booksService())
+	store := fixture.open(nil)
+	gate := adsgate.New(store)
+	if route := gate.Route("books"); route.Kind != adsgate.RouteLocal {
+		t.Fatalf("route before the removal = %+v", route)
+	}
+
+	entered := make(chan struct{})
+	release := make(chan struct{})
+	var once sync.Once
+	store.setBeforeDiscover(func() {
+		once.Do(func() {
+			close(entered)
+			<-release
+		})
+	})
+	defer store.setBeforeDiscover(nil)
+
+	fixture.source.removeService("books")
+	syncDone := make(chan error, 1)
+	go func() { syncDone <- store.Sync(nil) }()
+	select {
+	case <-entered:
+	case err := <-syncDone:
+		t.Fatalf("Sync finished before discovery was applied: %v", err)
+	case <-time.After(5 * time.Second):
+		t.Fatal("timed out waiting for the discovery window")
+	}
+
+	// The pass recorded the removal, but the machine still serves the old head
+	// as in_sync. The gate must not route locally.
+	status, known := store.Status("books")
+	if !known || status.Service.State != adsync.SyncStateInSync {
+		t.Fatalf("machine state in the discovery window = %+v, known %v", status.Service, known)
+	}
+	if store.RemovalInstalled("books") {
+		t.Fatal("the removed name is not guarded in the discovery window")
+	}
+	if route := gate.Route("books"); route.Kind != adsgate.RouteUnavailable || route.Reason != adsync.ReasonSourceGone {
+		t.Fatalf("route for a discovery removal = %+v, want unavailable/source_gone", route)
+	}
+
+	close(release)
+	if err := <-syncDone; err != nil {
+		t.Fatalf("sync: %v", err)
+	}
+	// The evaluator has not acknowledged the assembly without the service yet,
+	// so the removed name stays guarded.
+	if route := gate.Route("books"); route.Kind != adsgate.RouteUnavailable {
+		t.Fatalf("route before the reload acknowledgement = %+v", route)
+	}
+	confirmStoreGeneration(t, store)
+	if route := gate.Route("books"); route.Kind != adsgate.RouteLocal {
+		t.Fatalf("route after the removal was installed = %+v", route)
 	}
 }
 

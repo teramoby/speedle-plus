@@ -70,11 +70,10 @@ type Store struct {
 	// before its result is stored. It is nil in production.
 	afterFetch func(serviceID string)
 
-	// mirrorHookMu guards beforeMirrorRestore, a test-only hook that runs in a
-	// synchronization pass after it verified a mirror copy and before it
-	// decides whether to restore it.
-	mirrorHookMu        sync.Mutex
+	// hookMu guards the test-only hooks below. Production leaves them nil.
+	hookMu              sync.Mutex
 	beforeMirrorRestore func(serviceID string)
+	beforeDiscover      func()
 }
 
 // serviceCopy is one verified service, parsed and ready to publish.
@@ -228,6 +227,7 @@ func (s *Store) Sync(ctx context.Context) error {
 	// request gate fails closed while the evaluator still holds the old
 	// assembly.
 	s.guardRenames(selected)
+	s.runBeforeDiscover()
 
 	// Discovery updates the authoritative set and advertised heads, but a data
 	// pull is not a confirmed heartbeat. Only a channel ack or an explicit
