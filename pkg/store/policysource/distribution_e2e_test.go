@@ -34,7 +34,12 @@ const e2eWaitTimeout = 5 * time.Second
 
 func e2eWaitFor(t *testing.T, what string, condition func() bool) {
 	t.Helper()
-	deadline := time.Now().Add(e2eWaitTimeout)
+	e2eWaitForWithin(t, e2eWaitTimeout, what, condition)
+}
+
+func e2eWaitForWithin(t *testing.T, timeout time.Duration, what string, condition func() bool) {
+	t.Helper()
+	deadline := time.Now().Add(timeout)
 	for time.Now().Before(deadline) {
 		if condition() {
 			return

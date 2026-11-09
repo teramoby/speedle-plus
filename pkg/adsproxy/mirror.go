@@ -142,6 +142,11 @@ type serviceCopy struct {
 
 	removed  bool
 	overflow bool
+	// unavailable withholds a verified copy from downstream serving after the
+	// runtime could not reach the head advertised for it. Unlike removed, the
+	// copy and its log are kept: a later snapshot or change page from the
+	// source clears the flag and makes the service servable again.
+	unavailable bool
 	// tombstoneRevision is the revision that removed the service: a signed
 	// delete commit or the revision current at an administrative removal. A
 	// snapshot at or below it belongs to the state that was removed and cannot
@@ -351,6 +356,7 @@ func (m *Mirror) applySnapshot(response *adsync.SnapshotResponse) (HeadEvent, bo
 	existing.logBytes = 0
 	existing.overflow = false
 	existing.removed = false
+	existing.unavailable = false
 	existing.tombstoneRevision = 0
 
 	// A snapshot can make a service visible again (revival after removal or
@@ -507,6 +513,10 @@ func (m *Mirror) applyChanges(page *adsync.ChangesResponse) (HeadEvent, bool, er
 		// refreshes the snapshot.
 		service.overflow = true
 	}
+	// A page fetched from the source proves the copy is current again; the
+	// runtime only marks a service unavailable when it could not reach the
+	// advertised head.
+	service.unavailable = false
 	if previousName != service.name {
 		m.version++
 	}
@@ -543,6 +553,25 @@ func (m *Mirror) RemoveService(serviceID string) {
 	service.logBytes = 0
 	service.overflow = false
 	m.version++
+}
+
+// MarkUnavailable stops advertising and serving one service while keeping its
+// verified copy. The runtime calls it when the source advertises a head for the
+// service that the mirror cannot fetch: serving the older copy would let
+// downstream instances keep evaluating policy the source has already replaced.
+// A later snapshot or change page from the source clears the flag.
+func (m *Mirror) MarkUnavailable(serviceID string) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	service := m.services[serviceID]
+	if service == nil || service.removed || service.unavailable {
+		return
+	}
+	wasAvailable := m.availableLocked(service)
+	service.unavailable = true
+	if wasAvailable {
+		m.version++
+	}
 }
 
 // reserveServiceLocked makes room for one new service. Removed services are
@@ -612,7 +641,7 @@ func (m *Mirror) Lookup(serviceID string) (ServiceInfo, ServiceAvailability) {
 	if service.removed {
 		return ServiceInfo{}, ServiceRemoved
 	}
-	if service.overflow || service.signed == nil {
+	if service.unavailable || service.overflow || service.signed == nil {
 		return ServiceInfo{}, ServiceNeedsSnapshot
 	}
 	return ServiceInfo{
@@ -724,7 +753,7 @@ func (m *Mirror) Version() int64 {
 }
 
 func (m *Mirror) availableLocked(service *serviceCopy) bool {
-	return !service.removed && !service.overflow && service.signed != nil
+	return !service.removed && !service.overflow && !service.unavailable && service.signed != nil
 }
 
 func (m *Mirror) notify(event HeadEvent) {

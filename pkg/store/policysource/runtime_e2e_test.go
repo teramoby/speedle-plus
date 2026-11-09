@@ -231,6 +231,182 @@ func TestE2EProductionRuntimeSyncFailureDoesNotServeStaleDecisions(t *testing.T)
 	})
 }
 
+// TestE2EProductionRuntimeWithholdsStaleDownstreamPolicies covers a source head
+// that advances while the downstream mirror cannot fetch the new state. The
+// proxy must withhold the service from its advertised set and from channel acks
+// instead of letting downstream instances keep evaluating the older copy. After
+// the source recovers the service is served again; a stopped instance stops
+// answering downstream requests and ends established channels.
+func TestE2EProductionRuntimeWithholdsStaleDownstreamPolicies(t *testing.T) {
+	cloud := newE2ECloud(t)
+	_, downstreamToken := e2eDownstreamCredential("B", e2eInstanceB, 2)
+	digest := sha256.Sum256([]byte(downstreamToken))
+	downstreamFile := filepath.Join(t.TempDir(), "downstream-credentials")
+	writeDownstreamCredentials(t, downstreamFile, "B:"+hex.EncodeToString(digest[:])+":*")
+
+	ads, server := startProductionADS(t, cloud, map[string]interface{}{
+		ServeDownstreamKey:       true,
+		DownstreamCredentialsKey: downstreamFile,
+	})
+	client := server.Client()
+	get := func(path string) (int, []byte) {
+		t.Helper()
+		request, err := http.NewRequest(http.MethodGet, server.URL+path, nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		request.Header.Set("Authorization", "Bearer "+downstreamToken)
+		response, err := client.Do(request)
+		if err != nil {
+			t.Fatalf("GET %s: %v", path, err)
+		}
+		defer response.Body.Close()
+		body, err := io.ReadAll(io.LimitReader(response.Body, 1<<20))
+		if err != nil {
+			t.Fatal(err)
+		}
+		return response.StatusCode, body
+	}
+	downstreamServices := func() []adsync.Service {
+		status, body := get(adsync.APIPrefix + "/services")
+		if status != http.StatusOK {
+			return nil
+		}
+		var response adsync.ServicesResponse
+		if json.Unmarshal(body, &response) != nil {
+			return nil
+		}
+		return response.Services
+	}
+
+	e2eWaitAllInSync(t, &e2eAgent{store: ads}, "books", "orders")
+	e2eWaitFor(t, "the downstream service set to carry both services", func() bool {
+		return len(downstreamServices()) == 2
+	})
+
+	dialer := *websocket.DefaultDialer
+	dialer.TLSClientConfig = client.Transport.(*http.Transport).TLSClientConfig
+	channelURL := "wss" + strings.TrimPrefix(server.URL, "https") + adsync.APIPrefix + "/channel"
+	conn, _, err := dialer.Dial(channelURL, http.Header{"Authorization": []string{"Bearer " + downstreamToken}})
+	if err != nil {
+		t.Fatalf("dial production downstream channel: %v", err)
+	}
+	defer conn.Close()
+	writeHello := func() {
+		t.Helper()
+		if err := conn.WriteJSON(map[string]interface{}{
+			"type": "hello", "instanceId": e2eInstanceB, "services": []interface{}{},
+			"chain": []string{e2eInstanceA, e2eInstanceB}, "agentVersion": "e2e-production",
+		}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	readAck := func() map[string]uint64 {
+		t.Helper()
+		deadline := time.Now().Add(5 * time.Second)
+		for {
+			if err := conn.SetReadDeadline(deadline); err != nil {
+				t.Fatal(err)
+			}
+			var frame struct {
+				Type     string `json:"type"`
+				Services []struct {
+					ID   string `json:"id"`
+					Head uint64 `json:"head"`
+				} `json:"services"`
+			}
+			if err := conn.ReadJSON(&frame); err != nil {
+				t.Fatalf("read channel frame: %v", err)
+			}
+			if frame.Type != "ack" {
+				continue
+			}
+			heads := make(map[string]uint64, len(frame.Services))
+			for _, service := range frame.Services {
+				heads[service.ID] = service.Head
+			}
+			return heads
+		}
+	}
+	heartbeat := func() map[string]uint64 {
+		t.Helper()
+		if err := conn.WriteJSON(map[string]interface{}{
+			"type": "heartbeat", "chain": []string{e2eInstanceA, e2eInstanceB},
+		}); err != nil {
+			t.Fatal(err)
+		}
+		return readAck()
+	}
+
+	writeHello()
+	if heads := readAck(); heads[e2eServiceBooks] != 1 || heads[e2eServiceOrders] != 1 {
+		t.Fatalf("initial downstream heads = %v", heads)
+	}
+
+	// Cloud advances the books head to revoke a grant, but books data requests
+	// fail from now on. The local store fails closed; the mirror must stop
+	// advertising and acknowledging the older copy too.
+	cloud.setDataUnavailable(e2eServiceBooks, true)
+	cloud.publish(e2eServiceBooks, adsync.Change{Op: e2eChangeDelete, Kind: e2eKindAuthz, ID: "p-books-alice-read"})
+	cloud.pushAck()
+	e2eWaitFor(t, "the runtime to fail the books synchronization", func() bool {
+		status, _ := ads.Status("books")
+		return status.Service.State == adsync.SyncStateSyncing && status.Service.Revision == 1
+	})
+	e2eWaitForWithin(t, 20*time.Second, "the downstream service set to withhold books", func() bool {
+		services := downstreamServices()
+		return len(services) == 1 && services[0].ID == e2eServiceOrders
+	})
+	if status, body := get(adsync.APIPrefix + "/services/" + e2eServiceBooks + "/snapshot"); status != http.StatusServiceUnavailable || string(body) != `{"error":"source_unavailable"}` {
+		t.Fatalf("withheld books snapshot: status %d body %s", status, body)
+	}
+	if heads := heartbeat(); heads[e2eServiceBooks] != 0 || heads[e2eServiceOrders] != 1 {
+		t.Fatalf("downstream heads while books data is unavailable = %v", heads)
+	}
+
+	// A notification that the source recovered is enough to verify the new head
+	// and serve the service downstream again.
+	cloud.setDataUnavailable(e2eServiceBooks, false)
+	cloud.notify(e2eServiceBooks, 2)
+	e2eWaitForWithin(t, 20*time.Second, "the downstream service set to serve books at revision 2", func() bool {
+		for _, service := range downstreamServices() {
+			if service.ID == e2eServiceBooks {
+				return service.Revision == 2
+			}
+		}
+		return false
+	})
+	if heads := heartbeat(); heads[e2eServiceBooks] != 2 || heads[e2eServiceOrders] != 1 {
+		t.Fatalf("downstream heads after recovery = %v", heads)
+	}
+
+	// A stopped instance must stop answering downstream data requests and end
+	// established channels at their next heartbeat.
+	stopID := cloud.sendCommand("stop", "", nil)
+	e2eWaitFor(t, "the stop command to be acknowledged", func() bool {
+		status, found := cloud.commandResult(stopID)
+		return found && status == "acked"
+	})
+	if status, body := get(adsync.APIPrefix + "/services"); status != http.StatusServiceUnavailable || string(body) != `{"error":"distribution_paused"}` {
+		t.Fatalf("stopped instance downstream services: status %d body %s", status, body)
+	}
+	if err := conn.WriteJSON(map[string]interface{}{
+		"type": "heartbeat", "chain": []string{e2eInstanceA, e2eInstanceB},
+	}); err != nil {
+		t.Fatal(err)
+	}
+	_ = conn.SetReadDeadline(time.Now().Add(5 * time.Second))
+	for {
+		if _, _, err := conn.ReadMessage(); err != nil {
+			closeErr, ok := err.(*websocket.CloseError)
+			if !ok || closeErr.Code != websocket.ClosePolicyViolation || closeErr.Text != "distribution_paused" {
+				t.Fatalf("stopped channel error = %v", err)
+			}
+			break
+		}
+	}
+}
+
 // startProductionADS builds an ADS the way the shipped binary does: the
 // registered store builder, the evaluator with watching enabled and the REST
 // router. extra adds store properties to the common policy-source

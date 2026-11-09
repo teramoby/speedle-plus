@@ -199,11 +199,13 @@ func (s *Store) Sync(ctx context.Context) error {
 	}
 
 	selectedIDs := make(map[string]struct{}, len(selected))
+	failed := make(map[string]struct{})
 	var errs []error
 	for _, service := range selected {
 		selectedIDs[service.ID] = struct{}{}
 		if err := s.syncService(ctx, service); err != nil {
 			errs = append(errs, err)
+			failed[service.ID] = struct{}{}
 			if stderrors.Is(err, adsync.ErrServiceNotFound) || stderrors.Is(err, adsync.ErrSourceGone) {
 				// The source no longer serves the service. The state machine
 				// removes it; the local copy must go too.
@@ -218,7 +220,7 @@ func (s *Store) Sync(ctx context.Context) error {
 		}
 	}
 	s.publish()
-	s.syncMirror(ctx, selected)
+	s.syncMirror(ctx, selected, failed)
 	return joinErrors(errs)
 }
 

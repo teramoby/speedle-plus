@@ -97,7 +97,12 @@ func (s *Store) startRuntime() error {
 			HeartbeatInterval:           s.options.HeartbeatInterval,
 			StaleAfter:                  s.options.StaleAfter,
 			StopAfter:                   s.options.StopAfter,
-			Paused:                      func() bool { return s.machine.Instance().Paused },
+			Paused: func() bool {
+				// A stopped instance no longer verifies the copies it
+				// distributes, so downstream distribution must stop with it.
+				instance := s.machine.Instance()
+				return instance.Paused || instance.Liveness == adsync.LivenessStopped
+			},
 		})
 		if err != nil {
 			return errors.Wrap(err, errors.ConfigError, "invalid downstream server configuration")
@@ -338,7 +343,7 @@ func (s *Store) resync(serviceID string) {
 // syncMirror feeds the downstream server from the same verified protocol
 // client and selected service set as the local store. The mirror verifies every
 // signed snapshot and commit again before making it available downstream.
-func (s *Store) syncMirror(ctx context.Context, selected []adsync.Service) {
+func (s *Store) syncMirror(ctx context.Context, selected []adsync.Service, failed map[string]struct{}) {
 	s.runtimeMu.Lock()
 	runtime := s.runtime
 	s.runtimeMu.Unlock()
@@ -348,18 +353,19 @@ func (s *Store) syncMirror(ctx context.Context, selected []adsync.Service) {
 	live := make(map[string]struct{}, len(selected))
 	for _, service := range selected {
 		live[service.ID] = struct{}{}
-		info, availability := runtime.mirror.Lookup(service.ID)
-		sameIdentity := availability == adsproxy.ServiceAvailable &&
-			info.SourceID == service.ID && info.Epoch == service.Epoch
-		switch {
-		case sameIdentity && info.Revision == service.Revision:
-			// Already at the advertised head.
-		case sameIdentity && info.Revision < service.Revision:
-			if err := s.catchUpMirror(ctx, runtime.mirror, service, info); err != nil {
-				s.loadMirrorSnapshot(ctx, runtime.mirror, service)
-			}
-		default:
-			s.loadMirrorSnapshot(ctx, runtime.mirror, service)
+		if _, syncFailed := failed[service.ID]; syncFailed && s.mirrorBehind(runtime.mirror, service) {
+			// The local copy could not be verified at the advertised head. A
+			// downstream copy at an older revision is just as stale, so withhold
+			// it before the (possibly retried) mirror fetch below.
+			runtime.mirror.MarkUnavailable(service.ID)
+		}
+		if err := s.reachMirrorHead(ctx, runtime.mirror, service); err != nil {
+			// The source advertises a head this mirror could not verify.
+			// Serving the older copy would let downstream instances keep
+			// evaluating policy the source has already replaced, so the
+			// service is withheld until a later fetch reaches the head.
+			log.Warnf("policy-source mirror cannot serve service %q at the advertised head: %v", service.ID, err)
+			runtime.mirror.MarkUnavailable(service.ID)
 		}
 	}
 	for id := range runtime.mirrorIDs {
@@ -370,6 +376,65 @@ func (s *Store) syncMirror(ctx context.Context, selected []adsync.Service) {
 	}
 	for id := range live {
 		runtime.mirrorIDs[id] = struct{}{}
+	}
+}
+
+// reachMirrorHead brings the mirror copy of one service to the revision the
+// source advertises. A successful snapshot or change page clears an earlier
+// unavailability, so a recovered source restores downstream serving without a
+// restart.
+func (s *Store) reachMirrorHead(ctx context.Context, mirror *adsproxy.Mirror, service adsync.Service) error {
+	info, availability := mirror.Lookup(service.ID)
+	sameIdentity := availability == adsproxy.ServiceAvailable &&
+		info.SourceID == service.ID && info.Epoch == service.Epoch
+	if sameIdentity && info.Revision >= service.Revision {
+		return nil
+	}
+	if sameIdentity {
+		if err := s.catchUpMirror(ctx, mirror, service, info); err == nil && s.mirrorReached(mirror, service) {
+			return nil
+		}
+	}
+	if err := s.loadMirrorSnapshot(ctx, mirror, service); err != nil {
+		return err
+	}
+	if s.mirrorReached(mirror, service) {
+		return nil
+	}
+	// A lagging replica can serve a signed snapshot behind its advertised head.
+	// Resume from the snapshot and verify the missing revisions before serving.
+	info, availability = mirror.Lookup(service.ID)
+	if availability != adsproxy.ServiceAvailable {
+		return fmt.Errorf("mirror holds no verified copy of service %q", service.ID)
+	}
+	if err := s.catchUpMirror(ctx, mirror, service, info); err != nil {
+		return err
+	}
+	if !s.mirrorReached(mirror, service) {
+		return fmt.Errorf("mirror copy of service %q is behind the advertised revision %d", service.ID, service.Revision)
+	}
+	return nil
+}
+
+func (s *Store) mirrorReached(mirror *adsproxy.Mirror, service adsync.Service) bool {
+	info, availability := mirror.Lookup(service.ID)
+	return availability == adsproxy.ServiceAvailable &&
+		info.SourceID == service.ID && info.Epoch == service.Epoch &&
+		info.Revision >= service.Revision
+}
+
+// mirrorBehind reports whether the mirror holds a copy of the service that does
+// not match the identity and head the source advertises. A service the mirror
+// never held needs no withholding: no downstream instance has seen it.
+func (s *Store) mirrorBehind(mirror *adsproxy.Mirror, service adsync.Service) bool {
+	info, availability := mirror.Lookup(service.ID)
+	switch availability {
+	case adsproxy.ServiceUnknown:
+		return false
+	case adsproxy.ServiceAvailable:
+		return info.SourceID != service.ID || info.Epoch != service.Epoch || info.Revision < service.Revision
+	default:
+		return true
 	}
 }
 
@@ -393,13 +458,10 @@ func (s *Store) catchUpMirror(ctx context.Context, mirror *adsproxy.Mirror, serv
 	return fmt.Errorf("policy-source mirror exceeded %d change pages", maxMirrorPages)
 }
 
-func (s *Store) loadMirrorSnapshot(ctx context.Context, mirror *adsproxy.Mirror, service adsync.Service) {
+func (s *Store) loadMirrorSnapshot(ctx context.Context, mirror *adsproxy.Mirror, service adsync.Service) error {
 	snapshot, _, err := s.client.Snapshot(ctx, service.ID, "")
 	if err != nil {
-		log.Warnf("policy-source mirror could not load service %q: %v", service.ID, err)
-		return
+		return err
 	}
-	if err := mirror.ApplySnapshot(snapshot, service); err != nil {
-		log.Warnf("policy-source mirror rejected service %q snapshot: %v", service.ID, err)
-	}
+	return mirror.ApplySnapshot(snapshot, service)
 }
