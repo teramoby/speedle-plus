@@ -44,8 +44,9 @@ var (
 	// ErrCacheCorrupt means a cache file failed its checksum or its content
 	// no longer matches its stored identity.
 	ErrCacheCorrupt = errors.New("adsync: cache is corrupt")
-	// ErrUnsafeCache means a cache file is not a regular 0600 file.
-	ErrUnsafeCache = errors.New("adsync: cache file permissions are unsafe")
+	// ErrUnsafeCache means a cache file is not a regular 0600 file or the
+	// cache directory is writable by another user.
+	ErrUnsafeCache = errors.New("adsync: cache permissions are unsafe")
 	// ErrNotModified is returned by Snapshot when If-None-Match matched.
 	ErrNotModified = errors.New("adsync: not modified")
 )

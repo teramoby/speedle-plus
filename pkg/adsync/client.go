@@ -17,6 +17,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/gorilla/websocket"
 	"golang.org/x/net/http/httpproxy"
 )
 
@@ -33,8 +34,6 @@ const (
 	defaultUserAgent       = "speedle-adsync"
 
 	maxServicesResponseBytes = 1 << 20
-	maxSnapshotResponseBytes = 6 << 20
-	maxChangesResponseBytes  = 1 << 20
 	maxErrorResponseBytes    = 64 << 10
 
 	changePageLimit = maxCommitsPerPage
@@ -132,6 +131,11 @@ type Config struct {
 	// Proxy overrides the proxy function. By default HTTPS_PROXY and NO_PROXY
 	// are read from the environment when the Client is created.
 	Proxy func(*http.Request) (*url.URL, error)
+	// Dialer overrides the WebSocket dialer used by Channel. When it is nil and
+	// HTTPClient is nil, the dialer is built from CAFile, ClientCertFile,
+	// ClientKeyFile and Proxy. With a custom HTTPClient and no Dialer, a
+	// Channel can only use long polling.
+	Dialer *websocket.Dialer
 
 	// RequestTimeout bounds one data request. SnapshotTimeout bounds one
 	// snapshot request because snapshots may be several megabytes.
@@ -150,6 +154,7 @@ type Client struct {
 	credential      string
 	keys            *PublicKeySet
 	http            *http.Client
+	dialer          *websocket.Dialer
 	requestTimeout  time.Duration
 	snapshotTimeout time.Duration
 	fallbackTimeout time.Duration
@@ -204,13 +209,27 @@ func NewClient(config Config) (*Client, error) {
 	}
 
 	httpClient := config.HTTPClient
+	dialer := config.Dialer
 	if httpClient == nil {
 		httpClient, err = newHTTPClient(config)
 		if err != nil {
 			return nil, err
 		}
-	} else if config.CAFile != "" || config.ClientCertFile != "" || config.ClientKeyFile != "" || config.Proxy != nil {
-		return nil, fmt.Errorf("adsync: HTTPClient cannot be combined with CAFile, client certificates or Proxy")
+		if dialer == nil {
+			dialer, err = newWebSocketDialer(config)
+			if err != nil {
+				return nil, err
+			}
+		}
+	} else {
+		if config.CAFile != "" || config.ClientCertFile != "" || config.ClientKeyFile != "" || config.Proxy != nil {
+			return nil, fmt.Errorf("adsync: HTTPClient cannot be combined with CAFile, client certificates or Proxy")
+		}
+		// Do not mutate a caller-owned client or retain its redirect policy.
+		// The policy source is a fixed endpoint and credentials must not move.
+		cloned := *httpClient
+		cloned.CheckRedirect = rejectRedirect
+		httpClient = &cloned
 	}
 
 	userAgent := config.UserAgent
@@ -222,6 +241,7 @@ func NewClient(config Config) (*Client, error) {
 		credential:        config.Credential,
 		keys:              config.PublicKeys,
 		http:              httpClient,
+		dialer:            dialer,
 		requestTimeout:    requestTimeout,
 		snapshotTimeout:   snapshotTimeout,
 		fallbackTimeout:   DefaultFallbackTimeout,
@@ -232,6 +252,47 @@ func NewClient(config Config) (*Client, error) {
 }
 
 func newHTTPClient(config Config) (*http.Client, error) {
+	tlsConfig, err := newTLSConfig(config)
+	if err != nil {
+		return nil, err
+	}
+	transport := &http.Transport{
+		Proxy:                 newProxyFunc(config),
+		TLSClientConfig:       tlsConfig,
+		ForceAttemptHTTP2:     true,
+		MaxIdleConns:          16,
+		MaxIdleConnsPerHost:   8,
+		IdleConnTimeout:       90 * time.Second,
+		TLSHandshakeTimeout:   10 * time.Second,
+		ExpectContinueTimeout: time.Second,
+	}
+	return &http.Client{
+		Transport: transport,
+		// A policy source is a fixed endpoint. Following a redirect could move
+		// the request (and its credential) somewhere else, so surface the 3xx
+		// as a protocol error instead.
+		CheckRedirect: rejectRedirect,
+	}, nil
+}
+
+// newWebSocketDialer builds the channel dialer from the same TLS and proxy
+// settings as the HTTPS transport, so both honour the same CA bundle, client
+// certificate and proxy configuration.
+func newWebSocketDialer(config Config) (*websocket.Dialer, error) {
+	tlsConfig, err := newTLSConfig(config)
+	if err != nil {
+		return nil, err
+	}
+	return &websocket.Dialer{
+		Proxy:            newProxyFunc(config),
+		TLSClientConfig:  tlsConfig,
+		HandshakeTimeout: defaultRequestTimeout,
+	}, nil
+}
+
+// newTLSConfig builds the TLS configuration shared by the HTTPS client and the
+// WebSocket dialer.
+func newTLSConfig(config Config) (*tls.Config, error) {
 	tlsConfig := &tls.Config{MinVersion: tls.VersionTLS12}
 	if config.CAFile != "" {
 		pool, err := loadCertPool(config.CAFile)
@@ -250,33 +311,23 @@ func newHTTPClient(config Config) (*http.Client, error) {
 		}
 		tlsConfig.Certificates = []tls.Certificate{certificate}
 	}
+	return tlsConfig, nil
+}
 
-	proxy := config.Proxy
-	if proxy == nil {
-		environmentProxy := httpproxy.FromEnvironment().ProxyFunc()
-		proxy = func(request *http.Request) (*url.URL, error) {
-			return environmentProxy(request.URL)
-		}
+// newProxyFunc returns the configured proxy function, or one that reads
+// HTTPS_PROXY and NO_PROXY from the environment.
+func newProxyFunc(config Config) func(*http.Request) (*url.URL, error) {
+	if config.Proxy != nil {
+		return config.Proxy
 	}
-	transport := &http.Transport{
-		Proxy:                 proxy,
-		TLSClientConfig:       tlsConfig,
-		ForceAttemptHTTP2:     true,
-		MaxIdleConns:          16,
-		MaxIdleConnsPerHost:   8,
-		IdleConnTimeout:       90 * time.Second,
-		TLSHandshakeTimeout:   10 * time.Second,
-		ExpectContinueTimeout: time.Second,
+	environmentProxy := httpproxy.FromEnvironment().ProxyFunc()
+	return func(request *http.Request) (*url.URL, error) {
+		return environmentProxy(request.URL)
 	}
-	return &http.Client{
-		Transport: transport,
-		// A policy source is a fixed endpoint. Following a redirect could move
-		// the request (and its credential) somewhere else, so surface the 3xx
-		// as a protocol error instead.
-		CheckRedirect: func(*http.Request, []*http.Request) error {
-			return http.ErrUseLastResponse
-		},
-	}, nil
+}
+
+func rejectRedirect(*http.Request, []*http.Request) error {
+	return http.ErrUseLastResponse
 }
 
 func loadCertPool(path string) (*x509.CertPool, error) {
@@ -513,19 +564,28 @@ func (p RetryPolicy) delay(attempt int, retryAfter time.Duration) time.Duration 
 		}
 		return retryAfter
 	}
-	delay := p.InitialBackoff
+	return exponentialDelay(p.InitialBackoff, p.MaxBackoff, p.Jitter, p.Rand, attempt)
+}
+
+// exponentialDelay returns the delay before the given attempt: initial doubled
+// per attempt up to max, then reduced or extended by up to jitter.
+func exponentialDelay(initial, max time.Duration, jitter float64, random func() float64, attempt int) time.Duration {
+	if attempt < 1 {
+		attempt = 1
+	}
+	delay := initial
 	for index := 1; index < attempt; index++ {
-		if delay >= p.MaxBackoff/2 {
-			delay = p.MaxBackoff
+		if delay >= max/2 {
+			delay = max
 			break
 		}
 		delay *= 2
 	}
-	if delay > p.MaxBackoff {
-		delay = p.MaxBackoff
+	if delay > max {
+		delay = max
 	}
-	if p.Jitter > 0 {
-		factor := 1 + p.Jitter*(2*p.Rand()-1)
+	if jitter > 0 && random != nil {
+		factor := 1 + jitter*(2*random()-1)
 		if factor < 0 {
 			factor = 0
 		}

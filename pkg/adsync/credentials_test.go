@@ -31,8 +31,9 @@ func TestValidateCredential(t *testing.T) {
 func TestReadCredentialFile(t *testing.T) {
 	directory := t.TempDir()
 	cases := map[string]string{
-		"plain": testCredential + "\n",
-		"json":  `{"credential":"` + testCredential + `"}`,
+		"plain":  testCredential + "\n",
+		"json":   `{"credential":"` + testCredential + `"}`,
+		"padded": testCredential + strings.Repeat(" ", maxCredentialFileBytes-len(testCredential)),
 	}
 	for name, contents := range cases {
 		t.Run(name, func(t *testing.T) {
@@ -83,6 +84,14 @@ func TestReadCredentialFileRejectsUnsafeInput(t *testing.T) {
 	}
 	if _, err := ReadCredentialFile(malformed); err == nil {
 		t.Error("ReadCredentialFile accepted a malformed credential")
+	}
+
+	oversized := filepath.Join(directory, "oversized")
+	if err := os.WriteFile(oversized, []byte(strings.Repeat("x", maxCredentialFileBytes+1)), 0o600); err != nil {
+		t.Fatalf("write oversized credential file: %v", err)
+	}
+	if _, err := ReadCredentialFile(oversized); err == nil {
+		t.Error("ReadCredentialFile accepted an oversized file")
 	}
 
 	if _, err := ReadCredentialFile(filepath.Join(directory, "missing")); err == nil {

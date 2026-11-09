@@ -5,6 +5,9 @@ package adsync
 import (
 	"context"
 	"errors"
+	"io/fs"
+	"os"
+	"path/filepath"
 	"reflect"
 	"strings"
 	"testing"
@@ -85,6 +88,70 @@ func TestSyncAppliesPagedChanges(t *testing.T) {
 	}
 	if count := fixture.requestCount("/changes"); count < 3 {
 		t.Errorf("changes pages = %d, want at least 3", count)
+	}
+}
+
+func TestSyncSnapshotBehindHeadCatchesUpImmediately(t *testing.T) {
+	service := newFixtureService(testServiceID1, "books")
+	fixture := newFixture(t, service)
+	initial := signedFixtureSnapshot(service, fixture.signer)
+	service.publish(t, fixture.signer,
+		Change{Op: "upsert", Kind: "authz", ID: "01HF7YAT000000000000000201",
+			Name: stringPointer("read-books"), SPDL: stringPointer("grant read")})
+	fixture.source.configure(func(source *fixtureSource) { source.snapshotOverride = initial })
+	syncer := fixture.newSyncer("", nil)
+
+	discovery, err := syncer.Services(context.Background())
+	if err != nil {
+		t.Fatalf("Services: %v", err)
+	}
+	state, err := syncer.Sync(context.Background(), discovery.Services[0])
+	if err != nil {
+		t.Fatalf("Sync: %v", err)
+	}
+	if state.Revision != 2 || state.StateHash != service.StateHash {
+		t.Fatalf("one pass stopped at revision %d, want advertised head 2", state.Revision)
+	}
+	if count := fixture.requestCount("/snapshot"); count != 1 {
+		t.Fatalf("snapshots = %d, want 1", count)
+	}
+	if count := fixture.requestCount("/changes"); count != 1 {
+		t.Fatalf("change pages = %d, want the immediate catch-up page", count)
+	}
+}
+
+func TestSyncSnapshotIdentityMustMatchDiscovery(t *testing.T) {
+	for _, testCase := range []struct {
+		name     string
+		sourceID string
+		epoch    string
+	}{
+		{name: "source", sourceID: testServiceID2, epoch: testServiceID1},
+		{name: "epoch", sourceID: testServiceID1, epoch: testServiceID2},
+	} {
+		t.Run(testCase.name, func(t *testing.T) {
+			service := newFixtureService(testServiceID1, "books")
+			fixture := newFixture(t, service)
+			response := signedFixtureSnapshot(service, fixture.signer)
+			response.SourceID = testCase.sourceID
+			response.Epoch = testCase.epoch
+			// The mismatched identity is validly signed, so only the requested
+			// service binding can reject it.
+			response.Signature = fixture.signer.sign(SnapshotSignedBytes(
+				response.SourceID, response.Epoch, response.Revision, response.StateHash, response.CommitHash))
+			fixture.source.configure(func(source *fixtureSource) { source.snapshotOverride = response })
+			syncer := fixture.newSyncer("", nil)
+			discovery, err := syncer.Services(context.Background())
+			if err != nil {
+				t.Fatalf("Services: %v", err)
+			}
+			if _, err := syncer.Sync(context.Background(), discovery.Services[0]); !errors.Is(err, ErrProtocol) {
+				t.Fatalf("Sync error = %v, want ErrProtocol", err)
+			}
+			if _, found := syncer.State(service.ID); found {
+				t.Fatal("a snapshot with the wrong identity was stored")
+			}
+		})
 	}
 }
 
@@ -227,6 +294,40 @@ func TestSyncSourceGoneForgetsTheService(t *testing.T) {
 	}
 }
 
+func TestSyncSnapshotCatchUpSourceGoneRemovesCachedCopy(t *testing.T) {
+	service := newFixtureService(testServiceID1, "books")
+	fixture := newFixture(t, service)
+	directory := t.TempDir()
+	syncer := fixture.newSyncer(directory, nil)
+	syncFixtureService(t, syncer, "books")
+
+	// The source re-created the service under a new epoch and advertised its
+	// head, while its snapshot still anchors the first revision of that epoch
+	// and the change log reports the source gone.
+	newEpoch := testServiceID2
+	stale := signedFixtureSnapshot(service, fixture.signer)
+	stale.Epoch = newEpoch
+	stale.Signature = fixture.signer.sign(SnapshotSignedBytes(
+		stale.SourceID, stale.Epoch, stale.Revision, stale.StateHash, stale.CommitHash))
+	fixture.source.configure(func(source *fixtureSource) {
+		source.snapshotOverride = stale
+		source.changesReason = "source_gone"
+	})
+	restarted := fixture.newSyncer(directory, nil)
+	discovered := discoveredService(service)
+	discovered.Epoch = newEpoch
+	discovered.Revision = 2
+	if _, err := restarted.Sync(context.Background(), discovered); !errors.Is(err, ErrSourceGone) {
+		t.Fatalf("Sync error = %v, want ErrSourceGone", err)
+	}
+	if _, found := restarted.State(service.ID); found {
+		t.Error("a gone service was published")
+	}
+	if _, err := os.Stat(filepath.Join(directory, cacheFileName(service.ID))); !errors.Is(err, fs.ErrNotExist) {
+		t.Errorf("cache file survived source_gone: %v", err)
+	}
+}
+
 func TestSyncSnapshotIntegrityFailure(t *testing.T) {
 	fixture := newFixture(t, newFixtureService(testServiceID1, "books"))
 	fixture.source.configure(func(source *fixtureSource) {
@@ -247,14 +348,24 @@ func TestSyncSnapshotIntegrityFailure(t *testing.T) {
 	}
 }
 
-func TestSyncDiscoveryHashMismatchReloadsSnapshot(t *testing.T) {
+func TestSyncDiscoveryHashMismatchAtHeadFailsIntegrity(t *testing.T) {
 	service := newFixtureService(testServiceID1, "books")
 	fixture := newFixture(t, service)
 	syncer := fixture.newSyncer("", nil)
-	syncFixtureService(t, syncer, "books")
+	initial := syncFixtureService(t, syncer, "books")
 
 	fixture.source.configure(func(source *fixtureSource) { source.corruptDiscoveryHash = true })
-	syncFixtureService(t, syncer, "books")
+	discovery, err := syncer.Services(context.Background())
+	if err != nil {
+		t.Fatalf("Services: %v", err)
+	}
+	if _, err := syncer.Sync(context.Background(), discovery.Services[0]); !errors.Is(err, ErrIntegrity) {
+		t.Fatalf("Sync error = %v, want ErrIntegrity", err)
+	}
+	current, found := syncer.State(service.ID)
+	if !found || current.StateHash != initial.StateHash {
+		t.Error("discovery mismatch replaced the previous verified state")
+	}
 	if count := fixture.requestCount(testServiceID1 + "/snapshot"); count != 2 {
 		t.Errorf("snapshots = %d, want 2", count)
 	}
