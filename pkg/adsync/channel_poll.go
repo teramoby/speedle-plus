@@ -89,10 +89,9 @@ func (c *Channel) pollOnce(ctx context.Context) error {
 		}
 		return fmt.Errorf("adsync: poll channel: read response: %w", err)
 	}
-	if len(body) > maxChannelFrameBytes {
-		return fmt.Errorf("%w: poll response exceeds %d bytes", ErrProtocol, maxChannelFrameBytes)
-	}
-
+	// Classify the status before enforcing the frame bound: a permanent
+	// rejection with a large error body must stop the channel, not look like a
+	// retryable protocol error.
 	if response.StatusCode != http.StatusOK {
 		bodyCopy := body
 		if terminal := c.terminalStatusError(http.MethodPost, APIPrefix+"/channel/poll", response.StatusCode, bodyCopy); terminal != nil {
@@ -103,6 +102,9 @@ func (c *Channel) pollOnce(ctx context.Context) error {
 			detailed.retryAfter = retryAfterDuration(response.Header)
 		}
 		return statusErr
+	}
+	if len(body) > maxChannelFrameBytes {
+		return fmt.Errorf("%w: poll response exceeds %d bytes", ErrProtocol, maxChannelFrameBytes)
 	}
 
 	message, err := decodeServerMessage(body)

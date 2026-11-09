@@ -305,6 +305,12 @@ func (f *channelSource) servePoll(w http.ResponseWriter, r *http.Request) {
 		if retryAfter != "" {
 			w.Header().Set("Retry-After", retryAfter)
 		}
+		if len(override) > 0 {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(status)
+			_, _ = w.Write(override)
+			return
+		}
 		writeFixtureError(w, status, "source_unavailable", "")
 		return
 	}
@@ -1495,6 +1501,39 @@ func TestChannelPollTerminalStatus(t *testing.T) {
 	instance := machine.Instance()
 	if instance.Liveness != LivenessStopped || instance.Reason != ReasonConfigError {
 		t.Fatalf("instance = %+v, want stopped/config_error", instance)
+	}
+}
+
+func TestChannelPollTerminalStatusWithLargeBody(t *testing.T) {
+	books := newFixtureService(testServiceID1, "books")
+	for _, status := range []int{http.StatusUnauthorized, http.StatusForbidden} {
+		t.Run(http.StatusText(status), func(t *testing.T) {
+			source := newChannelSource(t, books)
+			source.configure(func(f *channelSource) {
+				f.pollStatus = status
+				f.pollBody = []byte(`{"error":"denied","pad":"` + strings.Repeat("x", maxChannelFrameBytes) + `"}`)
+			})
+			server := startChannelFixture(t, source)
+			client := newChannelClient(t, server)
+			machine := newChannelMachine(t)
+			channel := newTestChannel(t, client, machine, ChannelOptions{Transport: TransportLongPoll})
+
+			err := channel.pollOnce(context.Background())
+			want := ErrUnauthorized
+			if status == http.StatusForbidden {
+				want = ErrForbidden
+			}
+			if !errors.Is(err, want) {
+				t.Fatalf("pollOnce = %v, want %v", err, want)
+			}
+			if !isTerminalError(err) {
+				t.Fatalf("pollOnce error is not terminal: %v", err)
+			}
+			instance := machine.Instance()
+			if instance.Liveness != LivenessStopped || instance.Reason != ReasonRevoked {
+				t.Fatalf("instance = %+v, want stopped/revoked", instance)
+			}
+		})
 	}
 }
 
