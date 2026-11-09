@@ -20,6 +20,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -35,6 +36,25 @@ type cli struct {
 	t        *testing.T
 	home     string
 	endpoint string
+}
+
+// authorizationCapture synchronizes request observations made by httptest
+// handler goroutines with assertions in the test goroutine.
+type authorizationCapture struct {
+	mu    sync.RWMutex
+	value string
+}
+
+func (c *authorizationCapture) set(value string) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.value = value
+}
+
+func (c *authorizationCapture) get() string {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	return c.value
 }
 
 func newCLI(t *testing.T) *cli {
@@ -223,6 +243,7 @@ func fakeDiscoverPMS(t *testing.T) string {
 	request := &ads.RequestContext{ServiceName: "svc", Resource: "r", Action: "a",
 		Subject: &ads.Subject{Principals: []*ads.Principal{{Type: "user", Name: "alice"}}}}
 	calls := 0
+	var callsMu sync.Mutex
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch {
 		case strings.HasSuffix(r.URL.Path, "/fail"):
@@ -230,8 +251,11 @@ func fakeDiscoverPMS(t *testing.T) string {
 		case strings.Contains(r.URL.Path, "discover-policy"):
 			json.NewEncoder(w).Encode(pmsrest.GetDiscoverPoliciesResponse{Revision: 1})
 		case r.URL.Query().Get("revision") != "":
+			callsMu.Lock()
 			calls++
-			if calls > 1 {
+			call := calls
+			callsMu.Unlock()
+			if call > 1 {
 				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
@@ -369,9 +393,9 @@ func TestCLITokenInputAndEnvironment(t *testing.T) {
 		t.Fatalf("stdin token was not saved: %v", err)
 	}
 
-	var authorization string
+	var authorization authorizationCapture
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		authorization = r.Header.Get("Authorization")
+		authorization.set(r.Header.Get("Authorization"))
 		w.Write([]byte(`[]`))
 	}))
 	defer server.Close()
@@ -379,8 +403,8 @@ func TestCLITokenInputAndEnvironment(t *testing.T) {
 	if out, code := c.runAt(endpoint, "get", "service", "--all"); code != 0 {
 		t.Fatalf("file token: exit %d\n%s", code, out)
 	}
-	if authorization != "Bearer "+fileToken {
-		t.Fatalf("file token Authorization = %q", authorization)
+	if authorization.get() != "Bearer "+fileToken {
+		t.Fatalf("file token Authorization = %q", authorization.get())
 	}
 
 	const envToken = "environment-secret"
@@ -389,8 +413,8 @@ func TestCLITokenInputAndEnvironment(t *testing.T) {
 	if code != 0 || strings.Contains(out, envToken) {
 		t.Fatalf("environment token: exit %d\n%s", code, out)
 	}
-	if authorization != "Bearer "+envToken {
-		t.Fatalf("environment token Authorization = %q", authorization)
+	if authorization.get() != "Bearer "+envToken {
+		t.Fatalf("environment token Authorization = %q", authorization.get())
 	}
 
 	const flagToken = "flag-secret"
@@ -398,8 +422,8 @@ func TestCLITokenInputAndEnvironment(t *testing.T) {
 	if code != 0 || strings.Contains(out, flagToken) {
 		t.Fatalf("flag token: exit %d\n%s", code, out)
 	}
-	if authorization != "Bearer "+flagToken {
-		t.Fatalf("flag token Authorization = %q", authorization)
+	if authorization.get() != "Bearer "+flagToken {
+		t.Fatalf("flag token Authorization = %q", authorization.get())
 	}
 
 	if err := os.Chmod(cloudPath, 0644); err != nil {
@@ -414,9 +438,9 @@ func TestCLITokenInputAndEnvironment(t *testing.T) {
 
 func TestCLILoopbackTokenWithSkipVerify(t *testing.T) {
 	c := newCLI(t)
-	var authorization string
+	var authorization authorizationCapture
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		authorization = r.Header.Get("Authorization")
+		authorization.set(r.Header.Get("Authorization"))
 		w.Write([]byte(`[]`))
 	}))
 	defer server.Close()
@@ -432,10 +456,10 @@ func TestCLILoopbackTokenWithSkipVerify(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			authorization = ""
+			authorization.set("")
 			out, code := c.runAtWithOptions(endpoint, "", tc.env, tc.args...)
-			if code != 0 || authorization != "Bearer loopback-secret" || strings.Contains(out, "loopback-secret") {
-				t.Fatalf("loopback HTTP with skipverify: exit %d, Authorization %q\n%s", code, authorization, out)
+			if code != 0 || authorization.get() != "Bearer loopback-secret" || strings.Contains(out, "loopback-secret") {
+				t.Fatalf("loopback HTTP with skipverify: exit %d, Authorization %q\n%s", code, authorization.get(), out)
 			}
 		})
 	}
@@ -507,9 +531,9 @@ func TestCLICloudConfig(t *testing.T) {
 		t.Fatalf("masked config: exit %d\n%s", code, out)
 	}
 
-	var authorization string
+	var authorization authorizationCapture
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		authorization = r.Header.Get("Authorization")
+		authorization.set(r.Header.Get("Authorization"))
 		w.Write([]byte(`[]`))
 	}))
 	defer server.Close()
@@ -519,8 +543,8 @@ func TestCLICloudConfig(t *testing.T) {
 	if out, code := c.runAt("", "get", "service", "--all"); code != 0 {
 		t.Fatalf("request with saved config: exit %d\n%s", code, out)
 	}
-	if authorization != "Bearer "+token {
-		t.Fatalf("saved token Authorization = %q", authorization)
+	if authorization.get() != "Bearer "+token {
+		t.Fatalf("saved token Authorization = %q", authorization.get())
 	}
 
 	const flagToken = "transport-secret"
@@ -680,9 +704,9 @@ func writeTLSFiles(t *testing.T) (cert, key string) {
 
 func TestCLIHTTPSClient(t *testing.T) {
 	c := newCLI(t)
-	var authorization string
+	var authorization authorizationCapture
 	server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		authorization = r.Header.Get("Authorization")
+		authorization.set(r.Header.Get("Authorization"))
 		w.Write([]byte(`[]`))
 	}))
 	defer server.Close()
@@ -693,18 +717,18 @@ func TestCLIHTTPSClient(t *testing.T) {
 	if out, code := c.runAt(endpoint, "get", "service", "--all", "--cacert", caFile, "--cert", cert, "--key", key, "--token", "tls-secret"); code != 0 {
 		t.Errorf("trusted server: exit %d\n%s", code, out)
 	}
-	if authorization != "Bearer tls-secret" {
-		t.Errorf("HTTPS Authorization = %q", authorization)
+	if authorization.get() != "Bearer tls-secret" {
+		t.Errorf("HTTPS Authorization = %q", authorization.get())
 	}
 	if out, code := c.runAt(endpoint, "get", "service", "--all", "--skipverify"); code != 0 {
 		t.Errorf("--skipverify: exit %d\n%s", code, out)
 	}
 	const unverifiedToken = "unverified-secret"
-	authorization = ""
+	authorization.set("")
 	out, code := c.runAt(endpoint, "get", "service", "--all", "--skipverify", "--token", unverifiedToken)
 	if code != 1 || !strings.Contains(out, "refusing to send an API token with --skipverify") ||
-		strings.Contains(out, unverifiedToken) || authorization != "" {
-		t.Errorf("--skipverify with a token: exit %d, Authorization %q\n%s", code, authorization, out)
+		strings.Contains(out, unverifiedToken) || authorization.get() != "" {
+		t.Errorf("--skipverify with a token: exit %d, Authorization %q\n%s", code, authorization.get(), out)
 	}
 	if _, code := c.runAt(endpoint, "get", "service", "--all"); code != 1 {
 		t.Errorf("an untrusted server must fail, exit %d", code)
