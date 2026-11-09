@@ -53,9 +53,9 @@ func writeGateFailure(w http.ResponseWriter, err error) {
 	writeUnavailable(w, adsgate.UnavailableReason(err))
 }
 
-// forward sends the original request body to Cloud with the instance
-// credential and writes Cloud's response. The body and status are unchanged;
-// the only addition is the decision-source marker.
+// forward sends the original request body to the configured Cloud fallback with
+// the Cloud credential and writes Cloud's response. The body and status are
+// unchanged; the only addition is the decision-source marker.
 func (e *RESTService) forward(w http.ResponseWriter, ctx context.Context, operation adsync.FallbackOperation, body []byte) {
 	response, err := e.Gate.Forward(ctx, operation, body)
 	if err != nil {

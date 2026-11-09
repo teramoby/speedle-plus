@@ -31,8 +31,8 @@ func (s *Store) FallbackAvailable() bool {
 	return s.client.FallbackAvailable()
 }
 
-// ForwardFallback sends one authorization request to Cloud with the instance
-// credential. The body is forwarded unchanged.
+// ForwardFallback sends one authorization request to the configured Cloud
+// fallback with the Cloud credential. The body is forwarded unchanged.
 //
 // An authentication failure means the credential is no longer valid, so the
 // instance stops as revoked and never serves a local decision again. Every

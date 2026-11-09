@@ -62,9 +62,10 @@ type FallbackResponse struct {
 	Body       []byte
 }
 
-// FallbackForwarder forwards an authorization request to Speedle Cloud with the
-// instance credential. It is implemented by the policy-source store and used
-// by the REST and gRPC request gates.
+// FallbackForwarder forwards an authorization request to the configured
+// Speedle Cloud destination with the configured Cloud credential. It is
+// implemented by the policy-source store and used by the REST and gRPC request
+// gates.
 type FallbackForwarder interface {
 	ForwardFallback(ctx context.Context, operation FallbackOperation, body []byte) (*FallbackResponse, error)
 	FallbackAvailable() bool
@@ -143,9 +144,9 @@ func newFallbackStatusError(status int, body []byte) error {
 	return e
 }
 
-// ForwardFallback evaluates one authorization request on Cloud with the
-// instance credential. The request body is sent unchanged and the credential
-// never appears in a URL or a log message.
+// ForwardFallback evaluates one authorization request on the configured Cloud
+// destination with the Cloud credential. The request body is sent unchanged and
+// the credential never appears in a URL or a log message.
 //
 // A request is retried at most once, and only when the connection could not be
 // established, so a request that may have reached Cloud is never repeated.

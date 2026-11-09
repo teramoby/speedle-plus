@@ -22,8 +22,8 @@ const (
 	// service the instance does not know and one that was removed, so the
 	// evaluator produces the usual SERVICE_NOT_FOUND result.
 	RouteLocal RouteKind = iota
-	// RouteFallback forwards the request to Cloud with the instance
-	// credential.
+	// RouteFallback forwards the request to the configured Cloud fallback
+	// with the Cloud credential.
 	RouteFallback
 	// RouteUnavailable fails closed with the given reason.
 	RouteUnavailable
