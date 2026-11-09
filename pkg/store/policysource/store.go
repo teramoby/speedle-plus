@@ -50,6 +50,10 @@ type Store struct {
 	publishedCopies  map[string]*serviceCopy
 	publishedRemoved map[string]string
 	pendingRemoved   map[string]string
+	// installed is the fingerprint of the assembly the evaluator most
+	// recently acknowledged; hasInstalled is false until the first one.
+	installed    string
+	hasInstalled bool
 
 	watchMu sync.Mutex
 	events  pms.StorageChangeChannel
@@ -57,6 +61,10 @@ type Store struct {
 	runtimeMu sync.Mutex
 	runtime   *distributionRuntime
 	closeOnce sync.Once
+
+	// afterFetch, when set by a test, runs after a service fetch succeeds and
+	// before its result is stored. It is nil in production.
+	afterFetch func(serviceID string)
 }
 
 // serviceCopy is one verified service, parsed and ready to publish.
@@ -65,6 +73,7 @@ type serviceCopy struct {
 	revision  uint64
 	stateHash adsync.Hash
 	state     *adsync.ServiceState
+	attempt   adsync.SyncAttempt
 }
 
 var (
@@ -217,7 +226,12 @@ func (s *Store) Sync(ctx context.Context) error {
 // in the state machine. A parse failure keeps the previously published copy
 // and leaves the service syncing, so the request gate does not serve it
 // locally.
+//
+// The attempt is taken before the fetch. A resync, removal or re-add while the
+// fetch is in flight makes it stale: its result is neither published nor
+// reported, and the next pass fetches again.
 func (s *Store) syncService(ctx context.Context, service adsync.Service) error {
+	attempt := s.machine.BeginSync(service.ID)
 	state, err := s.syncer.Sync(ctx, service)
 	if err != nil {
 		s.machine.SyncFailed(service.ID, err)
@@ -228,11 +242,21 @@ func (s *Store) syncService(ctx context.Context, service adsync.Service) error {
 		}
 		return fmt.Errorf("service %q: %w", service.Name, err)
 	}
+	if s.afterFetch != nil {
+		s.afterFetch(service.ID)
+	}
 	compiled, err := compileService(state)
 	if err != nil {
 		return fmt.Errorf("service %q: %w", service.Name, err)
 	}
+	compiled.attempt = attempt
 	s.mu.Lock()
+	// Checked under s.mu so a concurrent resync either sees this copy and
+	// drops it, or invalidates the attempt before the copy is stored.
+	if !s.machine.AttemptCurrent(attempt) {
+		s.mu.Unlock()
+		return nil
+	}
 	s.copies[service.ID] = compiled
 	delete(s.pendingRemoved, service.ID)
 	s.mu.Unlock()
@@ -317,15 +341,24 @@ func (s *Store) publish() {
 	s.mu.Lock()
 	fingerprint := fingerprintCopies(s.copies)
 	if s.snapshot != nil && fingerprint == s.published {
+		// The content is unchanged, so there is nothing to reload. The copies
+		// still carry this pass's attempts: keep them for a pending
+		// acknowledgment, and when the evaluator already serves exactly this
+		// content, report the re-verified copies now. Without this, a service
+		// whose state was reset (a stop, or a removal followed by a re-add)
+		// while its content stayed the same would never return to in_sync.
+		s.publishedCopies = cloneCopies(s.copies)
+		var states []appliedCopy
+		if s.hasInstalled && s.installed == fingerprint {
+			states = appliedCopies(s.publishedCopies)
+		}
 		s.mu.Unlock()
+		s.reportApplied(states)
 		return
 	}
 	s.snapshot = assembleStore(s.copies)
 	s.published = fingerprint
-	s.publishedCopies = make(map[string]*serviceCopy, len(s.copies))
-	for serviceID, copied := range s.copies {
-		s.publishedCopies[serviceID] = copied
-	}
+	s.publishedCopies = cloneCopies(s.copies)
 	s.publishedRemoved = make(map[string]string, len(s.pendingRemoved))
 	for serviceID, name := range s.pendingRemoved {
 		s.publishedRemoved[serviceID] = name
@@ -438,35 +471,64 @@ func (s *Store) ReadPolicyStoreForReload() (*pms.PolicyStore, func(), error) {
 	s.mu.RLock()
 	fingerprint := s.published
 	snapshot := clonePolicyStore(s.snapshot)
-	copies := s.publishedCopies
 	removed := s.publishedRemoved
 	s.mu.RUnlock()
 	var once sync.Once
 	return snapshot, func() {
-		once.Do(func() { s.acknowledgeReload(fingerprint, copies, removed) })
+		once.Do(func() { s.acknowledgeReload(fingerprint, removed) })
 	}, nil
 }
 
-func (s *Store) acknowledgeReload(fingerprint string, copies map[string]*serviceCopy, removed map[string]string) {
+func (s *Store) acknowledgeReload(fingerprint string, removed map[string]string) {
 	s.mu.Lock()
+	// The evaluator installs reloads one at a time, so the latest
+	// acknowledgment describes what it serves now, even an outdated one.
+	s.installed = fingerprint
+	s.hasInstalled = true
 	if fingerprint != s.published {
 		s.mu.Unlock()
 		return
 	}
-	states := make([]*adsync.ServiceState, 0, len(copies))
-	for _, copied := range copies {
-		states = append(states, copied.state)
-	}
+	// The published copies may have been refreshed by a later pass with the
+	// same content; their attempts are the most recent ones.
+	states := appliedCopies(s.publishedCopies)
 	for serviceID, name := range removed {
 		if s.pendingRemoved[serviceID] == name {
 			delete(s.pendingRemoved, serviceID)
 		}
 	}
 	s.mu.Unlock()
+	s.reportApplied(states)
+}
 
-	for _, state := range states {
-		if err := s.machine.Applied(state); err != nil {
-			log.Errorf("policy-source store could not record installed service %q: %v", state.ServiceID, err)
+// appliedCopy is one installed copy to report to the state machine.
+type appliedCopy struct {
+	attempt adsync.SyncAttempt
+	state   *adsync.ServiceState
+}
+
+func appliedCopies(copies map[string]*serviceCopy) []appliedCopy {
+	states := make([]appliedCopy, 0, len(copies))
+	for _, copied := range copies {
+		states = append(states, appliedCopy{attempt: copied.attempt, state: copied.state})
+	}
+	return states
+}
+
+func cloneCopies(copies map[string]*serviceCopy) map[string]*serviceCopy {
+	cloned := make(map[string]*serviceCopy, len(copies))
+	for serviceID, copied := range copies {
+		cloned[serviceID] = copied
+	}
+	return cloned
+}
+
+// reportApplied records installed copies. A copy whose attempt became stale
+// after a resync, removal or re-add is ignored by the state machine.
+func (s *Store) reportApplied(states []appliedCopy) {
+	for _, applied := range states {
+		if err := s.machine.Applied(applied.attempt, applied.state); err != nil {
+			log.Errorf("policy-source store could not record installed service %q: %v", applied.state.ServiceID, err)
 		}
 	}
 }

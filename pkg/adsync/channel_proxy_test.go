@@ -167,7 +167,7 @@ func TestChannelThroughConnectProxy(t *testing.T) {
 	}
 
 	machine := newChannelMachine(t)
-	if err := machine.Applied(source.serviceState(books.ID)); err != nil {
+	if err := machine.Applied(machine.BeginSync(books.ID), source.serviceState(books.ID)); err != nil {
 		t.Fatalf("Applied: %v", err)
 	}
 	channel := newTestChannel(t, client, machine, ChannelOptions{Transport: TransportWebSocket})
@@ -266,7 +266,7 @@ func TestChannelClientCertificate(t *testing.T) {
 		t.Fatalf("NewClient: %v", err)
 	}
 	machine := newChannelMachine(t)
-	if err := machine.Applied(source.serviceState(books.ID)); err != nil {
+	if err := machine.Applied(machine.BeginSync(books.ID), source.serviceState(books.ID)); err != nil {
 		t.Fatalf("Applied: %v", err)
 	}
 	channel := newTestChannel(t, client, machine, ChannelOptions{Transport: TransportWebSocket})

@@ -80,7 +80,7 @@ func mustAck(t *testing.T, machine *Machine, ack Ack) {
 
 func mustApply(t *testing.T, machine *Machine, state *ServiceState) {
 	t.Helper()
-	if err := machine.Applied(state); err != nil {
+	if err := machine.Applied(machine.BeginSync(state.ServiceID), state); err != nil {
 		t.Fatalf("Applied: %v", err)
 	}
 }
@@ -709,6 +709,68 @@ func TestResyncForcesOneServiceToSyncing(t *testing.T) {
 	requireServiceState(t, machine, "books", SyncStateInSync, "")
 }
 
+func TestFetchInFlightBeforeResyncCannotCompleteIt(t *testing.T) {
+	machine, _ := newTestMachine(t)
+	books := testAckService(testServiceID1, "books", 5)
+	mustAck(t, machine, ackWith(books))
+	mustApply(t, machine, testServiceState(testServiceID1, "books", 5))
+
+	// A pass starts fetching books, then the resync command arrives. The
+	// completed fetch is byte for byte what a fresh fetch would return, yet it
+	// began before the resync and must not end it.
+	inFlight := machine.BeginSync(testServiceID1)
+	machine.Resync(testServiceID1)
+	if machine.AttemptCurrent(inFlight) {
+		t.Fatal("an attempt that began before the resync is still current")
+	}
+	if err := machine.Applied(inFlight, testServiceState(testServiceID1, "books", 5)); err != nil {
+		t.Fatalf("Applied: %v", err)
+	}
+	status := requireServiceState(t, machine, "books", SyncStateSyncing, SyncReasonResync)
+	if status.Revision != 0 {
+		t.Fatalf("revision = %d, want the discarded copy to stay discarded", status.Revision)
+	}
+
+	fresh := machine.BeginSync(testServiceID1)
+	if !machine.AttemptCurrent(fresh) {
+		t.Fatal("an attempt begun after the resync is not current")
+	}
+	if err := machine.Applied(fresh, testServiceState(testServiceID1, "books", 5)); err != nil {
+		t.Fatalf("Applied: %v", err)
+	}
+	requireServiceState(t, machine, "books", SyncStateInSync, "")
+}
+
+func TestFetchInFlightBeforeRemovalCannotServeTheReaddedService(t *testing.T) {
+	machine, _ := newTestMachine(t)
+	books := testAckService(testServiceID1, "books", 5)
+	mustAck(t, machine, ackWith(books))
+	mustApply(t, machine, testServiceState(testServiceID1, "books", 5))
+
+	inFlight := machine.BeginSync(testServiceID1)
+	mustAck(t, machine, Ack{Services: []Service{}})
+	requireServiceState(t, machine, "books", SyncStateRemoved, "")
+	mustAck(t, machine, ackWith(books))
+	requireServiceState(t, machine, "books", SyncStateSyncing, SyncReasonBootstrap)
+
+	if err := machine.Applied(inFlight, testServiceState(testServiceID1, "books", 5)); err != nil {
+		t.Fatalf("Applied: %v", err)
+	}
+	requireServiceState(t, machine, "books", SyncStateSyncing, SyncReasonBootstrap)
+
+	mustApply(t, machine, testServiceState(testServiceID1, "books", 5))
+	requireServiceState(t, machine, "books", SyncStateInSync, "")
+}
+
+func TestAppliedRejectsAnAttemptForAnotherService(t *testing.T) {
+	machine, _ := newTestMachine(t)
+	mustAck(t, machine, ackWith(testAckService(testServiceID1, "books", 5)))
+	if err := machine.Applied(machine.BeginSync(testServiceID2), testServiceState(testServiceID1, "books", 5)); err == nil {
+		t.Fatal("Applied accepted an attempt that belongs to another service")
+	}
+	requireServiceState(t, machine, "books", SyncStateSyncing, SyncReasonBootstrap)
+}
+
 func TestEpochChangeRequiresASnapshot(t *testing.T) {
 	machine, _ := newTestMachine(t)
 	mustAck(t, machine, ackWith(testAckService(testServiceID1, "books", 5)))
@@ -846,10 +908,10 @@ func TestAckValidation(t *testing.T) {
 	if err := machine.ObserveHead(Head{ID: "bad", Revision: 1}); !errors.Is(err, ErrProtocol) {
 		t.Fatalf("invalid head error = %v, want ErrProtocol", err)
 	}
-	if err := machine.Applied(nil); err == nil {
+	if err := machine.Applied(machine.BeginSync(""), nil); err == nil {
 		t.Fatal("Applied(nil) must fail")
 	}
-	if err := machine.Applied(&ServiceState{ServiceID: "bad", Snapshot: Snapshot{Name: "books"}}); !errors.Is(err, ErrProtocol) {
+	if err := machine.Applied(machine.BeginSync("bad"), &ServiceState{ServiceID: "bad", Snapshot: Snapshot{Name: "books"}}); !errors.Is(err, ErrProtocol) {
 		t.Fatalf("invalid applied state error = %v, want ErrProtocol", err)
 	}
 }
@@ -922,7 +984,7 @@ func TestAppliedBeforeTheFirstAckIsBounded(t *testing.T) {
 		fmt.Sprintf("service-%d", maxServicesPerSource+1),
 		1,
 	)
-	if err := machine.Applied(extra); !errors.Is(err, ErrProtocol) {
+	if err := machine.Applied(machine.BeginSync(extra.ServiceID), extra); !errors.Is(err, ErrProtocol) {
 		t.Fatalf("Applied beyond the pre-ack bound = %v, want ErrProtocol", err)
 	}
 	if tracked := len(machine.Services()); tracked != maxServicesPerSource {
