@@ -98,7 +98,9 @@ func NewWithStore(conf *cfg.Config, s pms.PolicyStoreManagerADS) (evaluator Inte
 	}
 
 	runtimePolicyStore := NewRuntimePolicyStore()
-	runtimePolicyStore.init(ps, conf.FuncsvcEndpoint)
+	if err := runtimePolicyStore.init(ps, conf.FuncsvcEndpoint); err != nil {
+		return nil, err
+	}
 
 	p := &PolicyEvalImpl{
 		RuntimePolicyStore:      runtimePolicyStore,

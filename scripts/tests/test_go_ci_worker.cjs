@@ -190,6 +190,24 @@ test('test environment neutralizes inherited CLI names, tokens, certificates and
   assert.match(step('Upload scheduled test results'), /inputs.mode == 'regression'/);
 });
 
+test('merge gate runs real wasm regressions and rejects HTTP/TLS dependencies', () => {
+  const setup = step('Setup Node for js/wasm tests');
+  assert.match(setup, /if: inputs\.mode == 'test'/);
+  assert.match(setup, /uses: actions\/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6/);
+  assert.match(setup, /node-version: '22'/);
+  assert.match(setup, /package-manager-cache: false/);
+  const wasm = step('Run js/wasm regression tests');
+  assert.match(wasm, /if: inputs\.mode == 'test'/);
+  assert.match(wasm, /GOOS=js GOARCH=wasm/);
+  assert.match(wasm, /go test -count=1 -exec="\$\{wasm_exec\}" \.\/pkg\/eval\/wasmtest \.\/pkg\/assertion\/config/);
+  assert.match(wasm, /bash scripts\/ci\/check-wasm-dependencies\.sh/);
+  const guard = fs.readFileSync(path.resolve(__dirname, '../../scripts/ci/check-wasm-dependencies.sh'), 'utf8');
+  assert.match(guard, /go list -deps/);
+  for (const dependency of ['net/http', 'crypto/tls', 'crypto/x509', 'github.com/teramoby/speedle-plus/pkg/assertion']) {
+    assert.ok(guard.includes(dependency), dependency);
+  }
+});
+
 // Run the worker step and scripts/ci/run-go-tests.sh against stub go,
 // python3 and node that record their calls and exit with fixture statuses.
 const repoRoot = path.resolve(__dirname, '../..');
