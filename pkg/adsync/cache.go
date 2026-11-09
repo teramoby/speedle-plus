@@ -13,10 +13,7 @@ import (
 	"strings"
 )
 
-const (
-	cacheFormat   = "speedle-adsync-cache-v1"
-	maxCacheBytes = 8 << 20
-)
+const cacheFormat = "speedle-adsync-cache-v1"
 
 // Cache stores one verified service copy per file. Files are written with mode
 // 0600 through a same-directory temporary file and rename, and carry a
