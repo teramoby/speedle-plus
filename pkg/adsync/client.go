@@ -34,8 +34,6 @@ const (
 	defaultUserAgent       = "speedle-adsync"
 
 	maxServicesResponseBytes = 1 << 20
-	maxSnapshotResponseBytes = 6 << 20
-	maxChangesResponseBytes  = 1 << 20
 	maxErrorResponseBytes    = 64 << 10
 
 	changePageLimit = maxCommitsPerPage
@@ -239,8 +237,15 @@ func NewClient(config Config) (*Client, error) {
 				return nil, err
 			}
 		}
-	} else if config.CAFile != "" || config.ClientCertFile != "" || config.ClientKeyFile != "" || config.Proxy != nil {
-		return nil, fmt.Errorf("adsync: HTTPClient cannot be combined with CAFile, client certificates or Proxy")
+	} else {
+		if config.CAFile != "" || config.ClientCertFile != "" || config.ClientKeyFile != "" || config.Proxy != nil {
+			return nil, fmt.Errorf("adsync: HTTPClient cannot be combined with CAFile, client certificates or Proxy")
+		}
+		// Do not mutate a caller-owned client or retain its redirect policy.
+		// The policy source is a fixed endpoint and credentials must not move.
+		cloned := *httpClient
+		cloned.CheckRedirect = rejectRedirect
+		httpClient = &cloned
 	}
 
 	var fallbackBase *url.URL
@@ -263,6 +268,13 @@ func NewClient(config Config) (*Client, error) {
 	fallbackHTTP := config.FallbackHTTPClient
 	if fallbackHTTP == nil {
 		fallbackHTTP = httpClient
+	} else {
+		// Do not mutate a caller-owned client or retain its redirect policy: a
+		// followed redirect could move the instance credential off the
+		// configured Cloud destination.
+		cloned := *fallbackHTTP
+		cloned.CheckRedirect = rejectRedirect
+		fallbackHTTP = &cloned
 	}
 
 	userAgent := config.UserAgent
@@ -308,9 +320,7 @@ func newHTTPClient(config Config) (*http.Client, error) {
 		// A policy source is a fixed endpoint. Following a redirect could move
 		// the request (and its credential) somewhere else, so surface the 3xx
 		// as a protocol error instead.
-		CheckRedirect: func(*http.Request, []*http.Request) error {
-			return http.ErrUseLastResponse
-		},
+		CheckRedirect: rejectRedirect,
 	}, nil
 }
 
@@ -363,6 +373,10 @@ func newProxyFunc(config Config) func(*http.Request) (*url.URL, error) {
 	return func(request *http.Request) (*url.URL, error) {
 		return environmentProxy(request.URL)
 	}
+}
+
+func rejectRedirect(*http.Request, []*http.Request) error {
+	return http.ErrUseLastResponse
 }
 
 func loadCertPool(path string) (*x509.CertPool, error) {
@@ -435,9 +449,6 @@ func (c *Client) Snapshot(ctx context.Context, serviceID, ifNoneMatch string) (*
 	}
 	if response.ServiceID != serviceID {
 		return nil, false, fmt.Errorf("%w: snapshot is for service %q, want %q", ErrProtocol, response.ServiceID, serviceID)
-	}
-	if response.SourceID != serviceID {
-		return nil, false, fmt.Errorf("%w: snapshot source %q does not match requested service %q", ErrProtocol, response.SourceID, serviceID)
 	}
 	if computed := StateHash(response.Snapshot); computed != response.StateHash {
 		return nil, false, fmt.Errorf("%w: snapshot stateHash does not match its content", ErrIntegrity)

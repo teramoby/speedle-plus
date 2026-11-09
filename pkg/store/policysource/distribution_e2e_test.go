@@ -17,6 +17,7 @@ package policysource
 import (
 	"encoding/json"
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -440,6 +441,17 @@ func e2eDecodeUnavailable(t *testing.T, body []byte) struct {
 	return unavailable
 }
 
+// e2ePrivateDir returns a cache directory that only the current user can
+// access, as the policy-source cache requires.
+func e2ePrivateDir(t *testing.T) string {
+	t.Helper()
+	dir := t.TempDir()
+	if err := os.Chmod(dir, 0o700); err != nil {
+		t.Fatalf("restrict cache directory: %v", err)
+	}
+	return dir
+}
+
 // TestE2ERestartReusesTheCache restarts an instance with its on-disk copy. The
 // restart must reach in_sync without pulling a snapshot or change page, while a
 // restart with an empty cache has to download both services.
@@ -447,7 +459,7 @@ func TestE2ERestartReusesTheCache(t *testing.T) {
 	cloud := newE2ECloud(t)
 	a := e2eAgentA(t, cloud, newTestClock())
 	_, tokenB := e2eDownstreamCredential("B", e2eInstanceB, 2)
-	cacheDir := t.TempDir()
+	cacheDir := e2ePrivateDir(t)
 
 	b := e2eAgentB(t, cloud, a, tokenB, newTestClock(), cacheDir)
 	e2eWaitAllInSync(t, b, "books", "orders")
@@ -476,7 +488,7 @@ func TestE2ERestartReusesTheCache(t *testing.T) {
 
 	// Control: an empty cache has to download one snapshot per service.
 	before = a.proxyDataRequests()
-	fresh := e2eAgentB(t, cloud, a, tokenB, newTestClock(), t.TempDir())
+	fresh := e2eAgentB(t, cloud, a, tokenB, newTestClock(), e2ePrivateDir(t))
 	e2eWaitAllInSync(t, fresh, "books", "orders")
 	if pulled := a.proxyDataRequests() - before; pulled < 2 {
 		t.Fatalf("cold start pulled %d snapshot/change pages, want at least 2", pulled)

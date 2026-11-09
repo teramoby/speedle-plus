@@ -12,3 +12,9 @@ Reference for your configured ADS. Request attributes are typed arrays; diagnost
 [Security and endpoint configuration](/docs/security/). This is a contract reference, not a backend hosted by speedle.io.
 
 {{< swagger-spec url="/swagger/policy-check.yaml" >}}
+
+## Health endpoints
+
+`GET /healthz` reports process liveness and always answers `200 {"status":"ok"}` while the process runs. It does not restart a stopped instance.
+
+`GET /readyz` reports whether the instance can currently answer an authorization request: `200` when ready, `503` otherwise. The endpoint is unauthenticated and returns aggregate counts only, so it does not expose service identities, revisions, stop reasons or revocation state. A store without distribution support is always ready.

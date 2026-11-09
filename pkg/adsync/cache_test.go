@@ -4,11 +4,13 @@ package adsync
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"testing"
 )
 
@@ -112,6 +114,70 @@ func TestCacheRejectsCorruption(t *testing.T) {
 	}
 }
 
+func TestCacheForgedIncrementalStateIsNotUsed(t *testing.T) {
+	service := newFixtureService(testServiceID1, "books")
+	fixture := newFixture(t, service)
+	directory := t.TempDir()
+	syncer := fixture.newSyncer(directory, nil)
+	syncFixtureService(t, syncer, "books")
+	service.publish(t, fixture.signer,
+		Change{Op: "upsert", Kind: "authz", ID: "01HF7YAT000000000000000201",
+			Name: stringPointer("read-books"), SPDL: stringPointer("grant read")})
+	syncFixtureService(t, syncer, "books")
+
+	cache, err := NewCache(directory, fixture.keys)
+	if err != nil {
+		t.Fatalf("NewCache: %v", err)
+	}
+	path := cache.path(service.ID)
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read cache: %v", err)
+	}
+	var envelope cacheEnvelope
+	if err := json.Unmarshal(data, &envelope); err != nil {
+		t.Fatalf("decode envelope: %v", err)
+	}
+	var payload cachePayload
+	if err := json.Unmarshal(envelope.Payload, &payload); err != nil {
+		t.Fatalf("decode payload: %v", err)
+	}
+	if payload.Signature != (Signature{}) {
+		t.Fatal("incremental cache unexpectedly has a snapshot signature")
+	}
+	if len(payload.Snapshot.Policies) != 1 {
+		t.Fatalf("cached policies = %d, want 1", len(payload.Snapshot.Policies))
+	}
+
+	// Recompute every unkeyed value needed to make the forged file a valid
+	// cache envelope. Its new state hash cannot equal unchanged discovery, so
+	// Sync must discard the copy and fetch the signed source snapshot.
+	payload.Snapshot.Policies[0].SPDL = "grant write"
+	payload.StateHash = StateHash(payload.Snapshot)
+	payloadBytes, err := json.Marshal(payload)
+	if err != nil {
+		t.Fatalf("encode forged payload: %v", err)
+	}
+	envelope.Payload = payloadBytes
+	envelope.Checksum = hashOf(payloadBytes)
+	encoded, err := json.Marshal(envelope)
+	if err != nil {
+		t.Fatalf("encode forged envelope: %v", err)
+	}
+	if err := os.WriteFile(path, encoded, 0o600); err != nil {
+		t.Fatalf("write forged cache: %v", err)
+	}
+
+	restarted := fixture.newSyncer(directory, nil)
+	state := syncFixtureService(t, restarted, "books")
+	if got := state.Snapshot.Policies[0].SPDL; got != "grant read" {
+		t.Errorf("restarted policy SPDL = %q, want the signed source policy", got)
+	}
+	if count := fixture.requestCount(testServiceID1 + "/snapshot"); count != 2 {
+		t.Errorf("snapshots after forged cache = %d, want 2", count)
+	}
+}
+
 func TestCacheRejectsUnsafePermissions(t *testing.T) {
 	fixture := newFixture(t, newFixtureService(testServiceID1, "books"))
 	directory := t.TempDir()
@@ -138,6 +204,193 @@ func TestCacheRejectsUnsafePermissions(t *testing.T) {
 	}
 	if runtime.GOOS != "windows" && info.Mode().Perm() != 0o600 {
 		t.Errorf("cache mode after rewrite = %o, want 0600", info.Mode().Perm())
+	}
+}
+
+func TestCacheRejectsUnsafeDirectory(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Unix directory permissions are not available on Windows")
+	}
+	fixture := newFixture(t, newFixtureService(testServiceID1, "books"))
+	directory := t.TempDir()
+	if err := os.Chmod(directory, 0o777); err != nil {
+		t.Fatalf("chmod cache directory: %v", err)
+	}
+	if _, err := NewCache(directory, fixture.keys); !errors.Is(err, ErrUnsafeCache) {
+		t.Fatalf("NewCache error = %v, want ErrUnsafeCache", err)
+	}
+}
+
+func TestCacheInputValidation(t *testing.T) {
+	fixture := newFixture(t, newFixtureService(testServiceID1, "books"))
+	if _, err := NewCache("", fixture.keys); err == nil {
+		t.Error("NewCache accepted an empty directory")
+	}
+	if _, err := NewCache(t.TempDir(), nil); err == nil {
+		t.Error("NewCache accepted nil keys")
+	}
+	file := filepath.Join(t.TempDir(), "not-a-directory")
+	if err := os.WriteFile(file, []byte("data"), 0o600); err != nil {
+		t.Fatalf("write file: %v", err)
+	}
+	if _, err := NewCache(file, fixture.keys); err == nil {
+		t.Error("NewCache accepted a regular file")
+	}
+
+	directory := filepath.Join(t.TempDir(), "nested", "cache")
+	cache, err := NewCache(directory, fixture.keys)
+	if err != nil {
+		t.Fatalf("NewCache nested directory: %v", err)
+	}
+	if runtime.GOOS != "windows" {
+		info, err := os.Stat(directory)
+		if err != nil {
+			t.Fatalf("stat cache directory: %v", err)
+		}
+		if info.Mode().Perm() != 0o700 {
+			t.Errorf("cache directory mode = %o, want 0700", info.Mode().Perm())
+		}
+	}
+	if err := cache.Save(nil); err == nil {
+		t.Error("Save accepted a nil state")
+	}
+	if err := cache.Save(&ServiceState{}); !errors.Is(err, ErrProtocol) {
+		t.Errorf("Save invalid state error = %v, want ErrProtocol", err)
+	}
+	if _, err := cache.Load("invalid"); !errors.Is(err, ErrCacheCorrupt) {
+		t.Errorf("Load invalid id error = %v, want ErrCacheCorrupt", err)
+	}
+	if err := cache.Remove("invalid"); err == nil {
+		t.Error("Remove accepted an invalid service id")
+	}
+	if name := cacheFileName("service/with/slashes"); strings.Contains(name, "/") {
+		t.Errorf("hashed cache filename contains a slash: %q", name)
+	}
+}
+
+func TestSyncCacheWriteFailureKeepsPreviousState(t *testing.T) {
+	service := newFixtureService(testServiceID1, "books")
+	fixture := newFixture(t, service)
+	directory := t.TempDir()
+	syncer := fixture.newSyncer(directory, nil)
+	syncFixtureService(t, syncer, "books")
+	service.publish(t, fixture.signer,
+		Change{Op: "upsert", Kind: "authz", ID: "01HF7YAT000000000000000201",
+			Name: stringPointer("read-books"), SPDL: stringPointer("grant read")})
+
+	syncer.cache.dir = filepath.Join(directory, "missing", "cache")
+	defer func() { syncer.cache.dir = directory }()
+	state, err := syncer.Sync(context.Background(), discoveredService(service))
+	if err == nil {
+		t.Fatal("Sync succeeded with an unwritable cache")
+	}
+	if state != nil {
+		t.Fatalf("failed Sync returned revision %d", state.Revision)
+	}
+	current, found := syncer.State(service.ID)
+	if !found || current.Revision != 1 {
+		t.Fatalf("state after cache failure = %+v, found %v; want revision 1", current, found)
+	}
+
+	syncer.cache.dir = directory
+	updated, err := syncer.Sync(context.Background(), discoveredService(service))
+	if err != nil {
+		t.Fatalf("Sync retry: %v", err)
+	}
+	if updated.Revision != 2 {
+		t.Errorf("retry revision = %d, want 2", updated.Revision)
+	}
+	cached, err := syncer.cache.Load(service.ID)
+	if err != nil {
+		t.Fatalf("Load after retry: %v", err)
+	}
+	if cached == nil || cached.Revision != 2 {
+		t.Errorf("cache after retry = %+v, want revision 2", cached)
+	}
+	if count := fixture.requestCount("/changes"); count < 2 {
+		t.Errorf("changes requests = %d, want a retry after the persistence failure", count)
+	}
+}
+
+func TestForgetCacheFailureKeepsStateUntilRemoval(t *testing.T) {
+	service := newFixtureService(testServiceID1, "books")
+	fixture := newFixture(t, service)
+	directory := t.TempDir()
+	syncer := fixture.newSyncer(directory, nil)
+	syncFixtureService(t, syncer, "books")
+
+	path := syncer.cache.path(service.ID)
+	if err := os.Remove(path); err != nil {
+		t.Fatalf("remove cache file: %v", err)
+	}
+	if err := os.Mkdir(path, 0o700); err != nil {
+		t.Fatalf("replace cache file with directory: %v", err)
+	}
+	child := filepath.Join(path, "child")
+	if err := os.WriteFile(child, []byte("block removal"), 0o600); err != nil {
+		t.Fatalf("write cache directory child: %v", err)
+	}
+	if err := syncer.Forget(service.ID); err == nil {
+		t.Fatal("Forget succeeded despite the cache removal failure")
+	}
+	if _, found := syncer.State(service.ID); !found {
+		t.Error("Forget discarded memory before the cache removal succeeded")
+	}
+
+	if err := os.Remove(child); err != nil {
+		t.Fatalf("remove cache directory child: %v", err)
+	}
+	if err := os.Remove(path); err != nil {
+		t.Fatalf("remove cache directory: %v", err)
+	}
+	if err := syncer.Forget(service.ID); err != nil {
+		t.Fatalf("Forget retry: %v", err)
+	}
+	if _, found := syncer.State(service.ID); found {
+		t.Error("state survived successful Forget retry")
+	}
+	cached, err := syncer.cache.Load(service.ID)
+	if err != nil || cached != nil {
+		t.Errorf("cache after Forget retry = %+v, %v", cached, err)
+	}
+}
+
+func TestCacheStateRemainsTentativeAfterRefreshFailure(t *testing.T) {
+	service := newFixtureService(testServiceID1, "books")
+	fixture := newFixture(t, service)
+	directory := t.TempDir()
+	syncer := fixture.newSyncer(directory, nil)
+	syncFixtureService(t, syncer, "books")
+	service.publish(t, fixture.signer,
+		Change{Op: "upsert", Kind: "authz", ID: "01HF7YAT000000000000000201",
+			Name: stringPointer("read-books"), SPDL: stringPointer("grant read")})
+	syncFixtureService(t, syncer, "books")
+
+	restarted := fixture.newSyncer(directory, nil)
+	service.publish(t, fixture.signer,
+		Change{Op: "upsert", Kind: "authz", ID: "01HF7YAT000000000000000202",
+			Name: stringPointer("write-books"), SPDL: stringPointer("grant write")})
+	fixture.source.configure(func(source *fixtureSource) {
+		source.failRemaining = 1
+		source.failStatus = 503
+	})
+	if _, err := restarted.Sync(context.Background(), discoveredService(service)); !errors.Is(err, ErrUnavailable) {
+		t.Fatalf("Sync refresh error = %v, want ErrUnavailable", err)
+	}
+	if _, found := restarted.State(service.ID); found {
+		t.Fatal("failed refresh published a tentative disk-cache state")
+	}
+
+	updated, err := restarted.Sync(context.Background(), discoveredService(service))
+	if err != nil {
+		t.Fatalf("Sync retry: %v", err)
+	}
+	if updated.Revision != 3 {
+		t.Errorf("retry revision = %d, want 3", updated.Revision)
+	}
+	published, found := restarted.State(service.ID)
+	if !found || published.Revision != 3 || published.StateHash != service.StateHash {
+		t.Errorf("published state after retry = %+v, found %v", published, found)
 	}
 }
 

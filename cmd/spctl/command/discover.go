@@ -85,7 +85,7 @@ func discoverCommandFunc(cmd *cobra.Command, args []string) {
 			if force {
 				v := url.Values{}
 				v.Add("last", "true")
-				res, err = cli.Get([]string{"discover-request", serviceName}, v, "")
+				res, err = cli.Get([]string{"discover-request", serviceName}, v, globalFlags.Token)
 				if err == nil {
 					var revision int64
 					var response pmsrest.GetDiscoverRequestsResponse
@@ -99,7 +99,7 @@ func discoverCommandFunc(cmd *cobra.Command, args []string) {
 					for {
 						v = url.Values{}
 						v.Add("revision", strconv.FormatInt(revision, 10))
-						res, err = cli.Get([]string{"discover-request", serviceName}, v, "")
+						res, err = cli.Get([]string{"discover-request", serviceName}, v, globalFlags.Token)
 						if err == nil {
 							if json.Unmarshal(res, &response) == nil {
 								revision = response.Revision
@@ -117,7 +117,7 @@ func discoverCommandFunc(cmd *cobra.Command, args []string) {
 			} else {
 				v := url.Values{}
 				v.Add("last", "true")
-				res, err = cli.Get([]string{"discover-request", serviceName}, v, "")
+				res, err = cli.Get([]string{"discover-request", serviceName}, v, globalFlags.Token)
 				if err == nil {
 					var response pmsrest.GetDiscoverRequestsResponse
 					if json.Unmarshal(res, &response) == nil {
@@ -130,7 +130,7 @@ func discoverCommandFunc(cmd *cobra.Command, args []string) {
 			}
 		} else {
 			// spxctl discover request --all [--service-name="foo"]
-			res, err = cli.Get([]string{"discover-request", serviceName}, nil, "")
+			res, err = cli.Get([]string{"discover-request", serviceName}, nil, globalFlags.Token)
 			if err == nil {
 				var response pmsrest.GetDiscoverRequestsResponse
 				err = json.Unmarshal(res, &response)
@@ -155,7 +155,7 @@ func discoverCommandFunc(cmd *cobra.Command, args []string) {
 		if len(principalIDD) > 0 {
 			v.Add("principalIDD", principalIDD)
 		}
-		res, err = cli.Get([]string{"discover-policy", serviceName}, v, "")
+		res, err = cli.Get([]string{"discover-policy", serviceName}, v, globalFlags.Token)
 		if err == nil {
 			var response pmsrest.GetDiscoverPoliciesResponse
 			err = json.Unmarshal(res, &response)
@@ -176,12 +176,12 @@ func discoverCommandFunc(cmd *cobra.Command, args []string) {
 	case "reset":
 		if serviceName == "" {
 			// spxctl reset service --service-name="foo"
-			err = cli.Delete([]string{"discover-request"}, "")
+			err = cli.Delete([]string{"discover-request"}, globalFlags.Token)
 			if err == nil {
 				fmt.Printf("All requests are deleted.\n")
 			}
 		} else {
-			err = cli.Delete([]string{"discover-request", serviceName}, "")
+			err = cli.Delete([]string{"discover-request", serviceName}, globalFlags.Token)
 			if err == nil {
 				fmt.Printf("Requests for service(%s) are deleted.\n", serviceName)
 			}

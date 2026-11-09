@@ -331,6 +331,53 @@ func TestFallbackUsesOnlyTheConfiguredCloudDestination(t *testing.T) {
 	}
 }
 
+func TestFallbackRejectsRedirectsOnACustomClient(t *testing.T) {
+	var mu sync.Mutex
+	var redirected bool
+	var redirectedAuth string
+	target := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		mu.Lock()
+		redirected = true
+		redirectedAuth = r.Header.Get("Authorization")
+		mu.Unlock()
+		_, _ = io.WriteString(w, `{"allowed":true,"reason":0}`)
+	}))
+	defer target.Close()
+	cloud := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, target.URL+r.URL.Path, http.StatusTemporaryRedirect)
+	}))
+	defer cloud.Close()
+
+	// A caller-supplied fallback client that would follow a redirect by
+	// default must not move the instance credential to another destination.
+	custom := cloud.Client()
+	custom.CheckRedirect = nil
+	client, err := NewClient(Config{
+		BaseURL:            cloud.URL,
+		Credential:         testCredential,
+		FallbackBaseURL:    cloud.URL,
+		FallbackCredential: testCredential,
+		FallbackHTTPClient: custom,
+		PublicKeys:         goldenPublicKeys(t, loadGolden(t)),
+		HTTPClient:         cloud.Client(),
+	})
+	if err != nil {
+		t.Fatalf("NewClient: %v", err)
+	}
+
+	if _, err := client.ForwardFallback(context.Background(), FallbackIsAllowed, []byte(`{"serviceName":"books"}`)); err == nil {
+		t.Fatal("a redirect was accepted as a fallback response")
+	}
+	mu.Lock()
+	defer mu.Unlock()
+	if redirected {
+		t.Fatalf("the redirect target was reached with Authorization %q", redirectedAuth)
+	}
+	if custom.CheckRedirect != nil {
+		t.Fatal("the caller-owned fallback client was mutated")
+	}
+}
+
 func TestFallbackTransientFailurePermitsAGateRetry(t *testing.T) {
 	for _, status := range []int{http.StatusServiceUnavailable, http.StatusTooManyRequests} {
 		t.Run(http.StatusText(status), func(t *testing.T) {

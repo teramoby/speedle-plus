@@ -11,8 +11,8 @@ import (
 )
 
 // gateStore implements only the distribution view; the embedded nil interface
-// supplies the rest of pms.PolicyStoreManagerADS, which DistributionGate never
-// calls.
+// supplies the rest of pms.PolicyStoreManagerADS, which the entry points never
+// call.
 type gateStore struct {
 	pms.PolicyStoreManagerADS
 }
@@ -25,21 +25,22 @@ func (gateStore) ForwardFallback(context.Context, adsync.FallbackOperation, []by
 	return nil, adsync.ErrFallbackUnavailable
 }
 
-func TestDistributionGateComesFromTheStore(t *testing.T) {
+func TestDistributionStoreComesFromTheEvaluator(t *testing.T) {
 	evaluator := &PolicyEvalImpl{Store: gateStore{}}
-	if evaluator.DistributionGate() == nil {
+	gate, ok := evaluator.DistributionStore().(adsync.RequestGate)
+	if !ok || gate == nil {
 		t.Fatal("a distributing store did not supply a request gate")
 	}
 
 	plain := &PolicyEvalImpl{}
-	if plain.DistributionGate() != nil {
-		t.Fatal("an evaluator without a store supplied a request gate")
+	if plain.DistributionStore() != nil {
+		t.Fatal("an evaluator without a store supplied a distribution store")
 	}
 
-	// A store that cannot distribute policy has no gate, and the entry points
-	// keep their existing behaviour.
+	// A store that cannot distribute policy is still returned, and the entry
+	// points keep their existing behaviour when the assertion fails.
 	nonDistributing := &PolicyEvalImpl{Store: nilPolicyStore{}}
-	if nonDistributing.DistributionGate() != nil {
+	if _, ok := nonDistributing.DistributionStore().(adsync.RequestGate); ok {
 		t.Fatal("a non-distributing store supplied a request gate")
 	}
 }

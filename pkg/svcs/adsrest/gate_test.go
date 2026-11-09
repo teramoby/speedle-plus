@@ -3,6 +3,7 @@
 package adsrest
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -12,10 +13,12 @@ import (
 	"strings"
 	"testing"
 
+	log "github.com/sirupsen/logrus"
 	adsapi "github.com/teramoby/speedle-plus/api/ads"
 	"github.com/teramoby/speedle-plus/pkg/adsync"
 	"github.com/teramoby/speedle-plus/pkg/cfg"
 	"github.com/teramoby/speedle-plus/pkg/eval"
+	"github.com/teramoby/speedle-plus/pkg/logging"
 	"github.com/teramoby/speedle-plus/pkg/svcs"
 	"github.com/teramoby/speedle-plus/pkg/svcs/adsgate"
 	"github.com/teramoby/speedle-plus/testutil/adsyncfake"
@@ -298,12 +301,20 @@ func TestHealthAndReadiness(t *testing.T) {
 	if rec.Code != http.StatusOK {
 		t.Fatalf("readyz status = %d (%s)", rec.Code, rec.Body.String())
 	}
-	var readiness adsgate.Readiness
+	var readiness adsgate.PublicReadiness
 	if err := json.Unmarshal(rec.Body.Bytes(), &readiness); err != nil {
 		t.Fatal(err)
 	}
-	if !readiness.Ready || readiness.Liveness != adsync.LivenessLive || len(readiness.Services) != 2 {
+	if !readiness.Ready || readiness.Liveness != adsync.LivenessLive ||
+		readiness.ServicesTotal != 2 || readiness.ServicesUsable != 2 {
 		t.Fatalf("readiness = %+v", readiness)
+	}
+	// The endpoint is unauthenticated: service identities, revisions and
+	// revocation state must not appear in the body.
+	for _, leaked := range []string{"app", "orders", "revision", "head", `"usable":`, "state"} {
+		if strings.Contains(rec.Body.String(), leaked) {
+			t.Fatalf("readyz body exposes %q: %s", leaked, rec.Body.String())
+		}
 	}
 
 	source.SetInstance(adsync.InstanceStatus{Liveness: adsync.LivenessStale})
@@ -316,6 +327,17 @@ func TestHealthAndReadiness(t *testing.T) {
 	}
 	if readiness.Ready || readiness.Liveness != adsync.LivenessStale {
 		t.Fatalf("stale readiness = %+v", readiness)
+	}
+
+	// A stopped instance keeps its stop reason internal: the unauthenticated
+	// body reports only that the instance is not ready.
+	source.SetInstance(adsync.InstanceStatus{Liveness: adsync.LivenessStopped, Reason: adsync.ReasonRevoked})
+	rec = ready()
+	if rec.Code != http.StatusServiceUnavailable {
+		t.Fatalf("stopped readyz status = %d", rec.Code)
+	}
+	if body := rec.Body.String(); strings.Contains(body, "reason") || strings.Contains(body, "revoked") {
+		t.Fatalf("readyz body exposes the stop reason: %s", body)
 	}
 
 	source.SetInstance(adsync.InstanceStatus{Liveness: adsync.LivenessLive})
@@ -333,11 +355,104 @@ func TestReadyzWithoutADistributionStateIsReady(t *testing.T) {
 	if rec.Code != http.StatusOK {
 		t.Fatalf("status = %d (%s)", rec.Code, rec.Body.String())
 	}
-	var readiness adsgate.Readiness
+	var readiness adsgate.PublicReadiness
 	if err := json.Unmarshal(rec.Body.Bytes(), &readiness); err != nil {
 		t.Fatal(err)
 	}
-	if !readiness.Ready {
+	if !readiness.Ready || readiness.ServicesTotal != 0 {
 		t.Fatalf("readiness = %+v", readiness)
+	}
+}
+
+// captureAuditLog redirects the shared audit logger to a JSON buffer for one
+// test.
+func captureAuditLog(t *testing.T) *bytes.Buffer {
+	t.Helper()
+	logger := logging.AuditLog()
+	out, formatter, level := logger.Out, logger.Formatter, logger.Level
+	var buffer bytes.Buffer
+	logger.Out = &buffer
+	logger.Formatter = &log.JSONFormatter{}
+	logger.Level = log.DebugLevel
+	t.Cleanup(func() {
+		logger.Out, logger.Formatter, logger.Level = out, formatter, level
+	})
+	return &buffer
+}
+
+func lastAuditEntry(t *testing.T, out *bytes.Buffer) map[string]interface{} {
+	t.Helper()
+	lines := strings.Split(strings.TrimSpace(out.String()), "\n")
+	if len(lines) == 0 || lines[len(lines)-1] == "" {
+		t.Fatal("no audit entry was written")
+	}
+	var entry map[string]interface{}
+	if err := json.Unmarshal([]byte(lines[len(lines)-1]), &entry); err != nil {
+		t.Fatalf("audit entry %q: %v", lines[len(lines)-1], err)
+	}
+	return entry
+}
+
+func TestFallbackDecisionsAreAudited(t *testing.T) {
+	out := captureAuditLog(t)
+	router, source := newGatedRouter(t)
+
+	cases := []struct {
+		path      string
+		operation adsync.FallbackOperation
+		cloudBody string
+		auditName string
+		resultKey string
+	}{
+		{"is-allowed", adsync.FallbackIsAllowed, `{"allowed":true,"reason":2}`, "IsAllowed", "allowed"},
+		{"all-granted-roles", adsync.FallbackAllGrantedRoles, `["admin"]`, "GetAllGrantedRoles", "roles"},
+		{"all-granted-permissions", adsync.FallbackAllGrantedPermissions, `[{"resource":"res1","actions":["read"]}]`, "GetAllGrantedPermissions", "permissions"},
+	}
+	for _, testCase := range cases {
+		t.Run(testCase.auditName, func(t *testing.T) {
+			source.SetFallbackResponse(http.StatusOK, nil, []byte(testCase.cloudBody))
+			body := `{"subject":{"token":"secret-token","principals":[{"type":"user","name":"alice"}]},"serviceName":"orders","resource":"res1","action":"read"}`
+			rec := postRaw(t, router, testCase.path, body)
+			if rec.Code != http.StatusOK {
+				t.Fatalf("status = %d (%s)", rec.Code, rec.Body.String())
+			}
+
+			entry := lastAuditEntry(t, out)
+			if entry["msg"] != "[AUDIT]"+testCase.auditName || entry["level"] != "info" || entry["response"] != "succeeded" {
+				t.Fatalf("audit entry = %v", entry)
+			}
+			if entry["serviceName"] != "orders" || entry["operation"] != string(testCase.operation) ||
+				entry["decisionSource"] != svcs.DecisionSourceCloudFallback {
+				t.Fatalf("audit context = %v", entry)
+			}
+			if _, found := entry[testCase.resultKey]; !found {
+				t.Fatalf("audit result %q missing from %v", testCase.resultKey, entry)
+			}
+			if strings.Contains(out.String(), "secret-token") {
+				t.Fatal("the audit record contains the subject token")
+			}
+		})
+	}
+}
+
+func TestFallbackFailuresAreAudited(t *testing.T) {
+	out := captureAuditLog(t)
+	router, source := newGatedRouter(t)
+	source.SetFallbackError(adsync.ErrUnavailable)
+
+	rec := postRaw(t, router, "is-allowed", `{"serviceName":"orders","resource":"res1","action":"read"}`)
+	if rec.Code != http.StatusServiceUnavailable {
+		t.Fatalf("status = %d (%s)", rec.Code, rec.Body.String())
+	}
+
+	entry := lastAuditEntry(t, out)
+	if entry["msg"] != "[AUDIT]IsAllowed" || entry["level"] != "error" || entry["response"] != "failed" {
+		t.Fatalf("audit entry = %v", entry)
+	}
+	if entry["serviceName"] != "orders" || entry["decisionSource"] != svcs.DecisionSourceCloudFallback {
+		t.Fatalf("audit context = %v", entry)
+	}
+	if reason, _ := entry["reason"].(string); !strings.Contains(reason, adsync.ErrUnavailable.Error()) {
+		t.Fatalf("audit reason = %v", entry["reason"])
 	}
 }

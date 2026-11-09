@@ -100,12 +100,26 @@ func NewRouter(evaluator eval.InternalEvaluator) (*mux.Router, error) {
 			Name(route.Name).
 			Handler(handler)
 	}
-	if provider, ok := evaluator.(interface{ DistributionDownstreamHandler() http.Handler }); ok {
-		if downstream := provider.DistributionDownstreamHandler(); downstream != nil {
-			router.Path(adsync.APIPrefix).Handler(downstream)
-			router.PathPrefix(adsync.APIPrefix + "/").Handler(downstream)
-		}
+	if downstream := downstreamHandler(evaluator); downstream != nil {
+		router.Path(adsync.APIPrefix).Handler(downstream)
+		router.PathPrefix(adsync.APIPrefix + "/").Handler(downstream)
 	}
 
 	return router, nil
+}
+
+// downstreamHandler returns the policy-source protocol handler of a store that
+// serves downstream instances. Other stores return nil and keep the original
+// route table unchanged. The assertion is made here, not in pkg/eval, so the
+// offline evaluator does not link the HTTP serving code.
+func downstreamHandler(evaluator eval.InternalEvaluator) http.Handler {
+	provider, ok := evaluator.(interface{ DistributionStore() any })
+	if !ok {
+		return nil
+	}
+	server, ok := provider.DistributionStore().(interface{ DownstreamHandler() http.Handler })
+	if !ok {
+		return nil
+	}
+	return server.DownstreamHandler()
 }

@@ -20,6 +20,17 @@ const (
 	maxPolicyNameChars    = 128
 	maxSPDLBytes          = 4 * 1024
 	maxSafeInteger        = 1<<53 - 1
+
+	// A JSON string can expand each source character to a six-byte \u00XX
+	// escape. The fixed allowances cover field names, punctuation, signatures,
+	// hashes and the containing envelopes. These bounds admit every compact
+	// protocol message accepted by the validators while keeping reads finite.
+	maxJSONEncodingExpansion = 6
+	maxEncodedPolicyBytes    = maxJSONEncodingExpansion*(maxPolicyIDCharacters+maxPolicyNameChars+maxSPDLBytes) + 128
+	maxEncodedCommitBytes    = maxChangesPerCommit*maxEncodedPolicyBytes + 1024
+	maxSnapshotResponseBytes = 2*maxPoliciesPerList*maxEncodedPolicyBytes + 4096
+	maxChangesResponseBytes  = maxCommitsPerPage*maxEncodedCommitBytes + 4096
+	maxCacheBytes            = maxSnapshotResponseBytes + 4096
 )
 
 var (

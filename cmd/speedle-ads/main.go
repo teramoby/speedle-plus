@@ -64,9 +64,14 @@ func main() {
 // actually serves downstream policy. Every other store keeps its original
 // signal and startup behaviour.
 func startDownstreamCredentialReload(evaluator eval.InternalEvaluator) func() {
-	provider, hasDownstream := evaluator.(interface{ DistributionDownstreamHandler() http.Handler })
-	reloader, canReload := evaluator.(interface{ ReloadDownstreamCredentials() error })
-	if !hasDownstream || !canReload || provider.DistributionDownstreamHandler() == nil {
+	provider, ok := evaluator.(interface{ DistributionStore() any })
+	if !ok {
+		return func() {}
+	}
+	downstream := provider.DistributionStore()
+	server, hasDownstream := downstream.(interface{ DownstreamHandler() http.Handler })
+	reloader, canReload := downstream.(interface{ ReloadDownstreamCredentials() error })
+	if !hasDownstream || !canReload || server.DownstreamHandler() == nil {
 		return func() {}
 	}
 

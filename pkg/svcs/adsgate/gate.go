@@ -12,6 +12,7 @@ import (
 
 	"github.com/teramoby/speedle-plus/pkg/adsync"
 	"github.com/teramoby/speedle-plus/pkg/eval"
+	"github.com/teramoby/speedle-plus/pkg/svcs"
 )
 
 // RouteKind is how one request must be handled.
@@ -22,8 +23,8 @@ const (
 	// service the instance does not know and one that was removed, so the
 	// evaluator produces the usual SERVICE_NOT_FOUND result.
 	RouteLocal RouteKind = iota
-	// RouteFallback forwards the request to Cloud with the instance
-	// credential.
+	// RouteFallback forwards the request to the configured Cloud fallback
+	// with the Cloud credential.
 	RouteFallback
 	// RouteUnavailable fails closed with the given reason.
 	RouteUnavailable
@@ -53,13 +54,12 @@ func New(source adsync.RequestGate) *Gate {
 // Of returns the gate of the store behind the evaluator, or nil when the
 // evaluator does not distribute policy.
 func Of(evaluator eval.InternalEvaluator) *Gate {
-	provider, ok := evaluator.(interface {
-		DistributionGate() adsync.RequestGate
-	})
+	provider, ok := evaluator.(interface{ DistributionStore() any })
 	if !ok {
 		return nil
 	}
-	return New(provider.DistributionGate())
+	source, _ := provider.DistributionStore().(adsync.RequestGate)
+	return New(source)
 }
 
 // Enabled reports whether the gate has a distribution state to consult.
@@ -109,6 +109,31 @@ func (g *Gate) Forward(ctx context.Context, operation adsync.FallbackOperation, 
 	return g.source.ForwardFallback(ctx, operation, body)
 }
 
+// FallbackAuditFields describes one forwarded authorization call. It records
+// the operation, the service and the decision source, and deliberately leaves
+// out the request body, the subject token and the instance credential.
+func FallbackAuditFields(operation adsync.FallbackOperation, serviceName string) map[string]interface{} {
+	return map[string]interface{}{
+		"operation":      string(operation),
+		"serviceName":    serviceName,
+		"decisionSource": svcs.DecisionSourceCloudFallback,
+	}
+}
+
+// FallbackAuditOperation is the audit operation name of a forwarded
+// authorization call. It matches the name the local evaluation path uses for
+// the same operation, so an audit trail shows both decision sources alike.
+func FallbackAuditOperation(operation adsync.FallbackOperation) string {
+	switch operation {
+	case adsync.FallbackAllGrantedRoles:
+		return "GetAllGrantedRoles"
+	case adsync.FallbackAllGrantedPermissions:
+		return "GetAllGrantedPermissions"
+	default:
+		return "IsAllowed"
+	}
+}
+
 // StoppedReason returns the reason code of a stopped instance, defaulting to
 // the heartbeat loss that caused the transition.
 func StoppedReason(instance adsync.InstanceStatus) adsync.Reason {
@@ -145,13 +170,45 @@ type ServiceReadiness struct {
 	Usable bool `json:"usable"`
 }
 
-// Readiness is the body of the readiness response.
+// Readiness is the internal readiness view. It names services and their
+// revisions, so it is never written to an unauthenticated HTTP response; the
+// public body is PublicReadiness.
 type Readiness struct {
 	Ready              bool               `json:"ready"`
 	Liveness           adsync.Liveness    `json:"liveness,omitempty"`
 	Reason             adsync.Reason      `json:"reason,omitempty"`
 	LastConfirmedAckAt string             `json:"lastConfirmedAckAt,omitempty"`
 	Services           []ServiceReadiness `json:"services,omitempty"`
+}
+
+// PublicReadiness is the unauthenticated readiness body. It answers whether
+// the instance can currently serve authorization requests and reports only
+// aggregate counts, so an unauthenticated caller cannot enumerate tenant
+// services, their revisions or their revocation state. The internal stop
+// reason stays out of this body for the same reason.
+type PublicReadiness struct {
+	Ready              bool            `json:"ready"`
+	Liveness           adsync.Liveness `json:"liveness,omitempty"`
+	LastConfirmedAckAt string          `json:"lastConfirmedAckAt,omitempty"`
+	ServicesTotal      int             `json:"servicesTotal"`
+	ServicesUsable     int             `json:"servicesUsable"`
+}
+
+// Public reduces the detailed readiness view to the unauthenticated body.
+// Removed services are already excluded from Readiness.Services.
+func (r Readiness) Public() PublicReadiness {
+	public := PublicReadiness{
+		Ready:              r.Ready,
+		Liveness:           r.Liveness,
+		LastConfirmedAckAt: r.LastConfirmedAckAt,
+		ServicesTotal:      len(r.Services),
+	}
+	for _, service := range r.Services {
+		if service.Usable {
+			public.ServicesUsable++
+		}
+	}
+	return public
 }
 
 // Ready reports whether the instance can currently answer an authorization

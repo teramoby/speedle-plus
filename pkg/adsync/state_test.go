@@ -715,17 +715,94 @@ func TestEpochChangeRequiresASnapshot(t *testing.T) {
 	mustApply(t, machine, testServiceState(testServiceID1, "books", 5))
 	requireServiceState(t, machine, "books", SyncStateInSync, "")
 
-	// The same revision number under a new epoch is a different state.
+	// The same revision number under a new epoch is a different state, and the
+	// copy from the old epoch is discarded.
 	newEpoch := testServiceID2
 	service := testAckService(testServiceID1, "books", 1)
 	service.Epoch = newEpoch
 	mustAck(t, machine, ackWith(service))
-	requireServiceState(t, machine, "books", SyncStateSyncing, SyncReasonCatchUp)
+	requireServiceState(t, machine, "books", SyncStateSyncing, SyncReasonBootstrap)
 
 	state := testServiceState(testServiceID1, "books", 1)
 	state.Epoch = newEpoch
 	mustApply(t, machine, state)
 	requireServiceState(t, machine, "books", SyncStateInSync, "")
+}
+
+func TestDelayedOldEpochMessageCannotRestoreServing(t *testing.T) {
+	// Setup: epoch A revision 5 is confirmed, applied and served, then the
+	// source moves to epoch B.
+	setup := func(t *testing.T) (*Machine, Service) {
+		t.Helper()
+		machine, _ := newTestMachine(t)
+		mustAck(t, machine, ackWith(testAckService(testServiceID1, "books", 5)))
+		mustApply(t, machine, testServiceState(testServiceID1, "books", 5))
+		requireServiceState(t, machine, "books", SyncStateInSync, "")
+
+		moved := testAckService(testServiceID1, "books", 1)
+		moved.Epoch = testServiceID2
+		mustAck(t, machine, ackWith(moved))
+		requireServiceState(t, machine, "books", SyncStateSyncing, SyncReasonBootstrap)
+		return machine, moved
+	}
+
+	t.Run("delayed ack", func(t *testing.T) {
+		machine, _ := setup(t)
+		mustAck(t, machine, ackWith(testAckService(testServiceID1, "books", 5)))
+		status := requireServiceState(t, machine, "books", SyncStateSyncing, SyncReasonBootstrap)
+		if status.Revision != 0 || status.Head != 5 {
+			t.Fatalf("status = %+v, want no verified revision and head 5", status)
+		}
+	})
+
+	t.Run("delayed notification", func(t *testing.T) {
+		machine, moved := setup(t)
+		old := testAckService(testServiceID1, "books", 5)
+		if err := machine.ObserveHead(Head{
+			ID:        old.ID,
+			Epoch:     old.Epoch,
+			Revision:  old.Revision,
+			StateHash: old.HeadStateHash,
+		}); err != nil {
+			t.Fatalf("ObserveHead: %v", err)
+		}
+		status := requireServiceState(t, machine, "books", SyncStateSyncing, SyncReasonBootstrap)
+		if status.Revision != 0 || status.Head != 5 {
+			t.Fatalf("status = %+v, want no verified revision and head 5", status)
+		}
+
+		// The current epoch can still be confirmed and synchronized.
+		mustAck(t, machine, ackWith(moved))
+		state := testServiceState(testServiceID1, "books", 1)
+		state.Epoch = moved.Epoch
+		mustApply(t, machine, state)
+		requireServiceState(t, machine, "books", SyncStateInSync, "")
+	})
+}
+
+func TestRemovedTombstoneDoesNotShadowItsReplacement(t *testing.T) {
+	machine, _ := newTestMachine(t)
+	mustAck(t, machine, ackWith(testAckService(testServiceID1, "books", 1)))
+	mustApply(t, machine, testServiceState(testServiceID1, "books", 1))
+	requireServiceState(t, machine, "books", SyncStateInSync, "")
+
+	// Removing the service keeps a tombstone under the old name.
+	mustAck(t, machine, ackWith())
+	requireServiceState(t, machine, "books", SyncStateRemoved, "")
+
+	// A replacement with the same name has a higher service ID, so the old
+	// lookup rule would keep resolving the removed tombstone.
+	mustAck(t, machine, ackWith(testAckService(testServiceID2, "books", 1)))
+	mustApply(t, machine, testServiceState(testServiceID2, "books", 1))
+	status := requireServiceState(t, machine, "books", SyncStateInSync, "")
+	if status.ID != testServiceID2 {
+		t.Fatalf("Status(books) resolved service %q, want %q", status.ID, testServiceID2)
+	}
+
+	// With no active service left, the name still resolves to a tombstone so
+	// the caller can report the service as removed.
+	mustAck(t, machine, ackWith())
+	requireServiceState(t, machine, "books", SyncStateRemoved, "")
 }
 
 func TestAckValidation(t *testing.T) {
@@ -743,6 +820,14 @@ func TestAckValidation(t *testing.T) {
 	)
 	if err := machine.Ack(duplicate); !errors.Is(err, ErrProtocol) {
 		t.Fatalf("duplicate id error = %v, want ErrProtocol", err)
+	}
+
+	duplicateName := ackWith(
+		testAckService(testServiceID1, "books", 5),
+		testAckService(testServiceID2, "books", 5),
+	)
+	if err := machine.Ack(duplicateName); !errors.Is(err, ErrProtocol) {
+		t.Fatalf("duplicate name error = %v, want ErrProtocol", err)
 	}
 
 	tooMany := make([]Service, maxServicesPerSource+1)
@@ -821,5 +906,32 @@ func TestTrackedServicesAreBounded(t *testing.T) {
 	for index := 0; index < maxServicesPerSource; index++ {
 		number := (batches-1)*maxServicesPerSource + index + 1
 		requireServiceState(t, machine, fmt.Sprintf("service-%d", number), SyncStateSyncing, SyncReasonBootstrap)
+	}
+}
+
+func TestAppliedBeforeTheFirstAckIsBounded(t *testing.T) {
+	machine, _ := newTestMachine(t)
+	for index := 0; index < maxServicesPerSource; index++ {
+		number := index + 1
+		state := testServiceState(fmt.Sprintf("%026d", number), fmt.Sprintf("service-%d", number), 1)
+		mustApply(t, machine, state)
+	}
+
+	extra := testServiceState(
+		fmt.Sprintf("%026d", maxServicesPerSource+1),
+		fmt.Sprintf("service-%d", maxServicesPerSource+1),
+		1,
+	)
+	if err := machine.Applied(extra); !errors.Is(err, ErrProtocol) {
+		t.Fatalf("Applied beyond the pre-ack bound = %v, want ErrProtocol", err)
+	}
+	if tracked := len(machine.Services()); tracked != maxServicesPerSource {
+		t.Fatalf("tracked services = %d, want %d", tracked, maxServicesPerSource)
+	}
+
+	// The first ack establishes the authoritative set and removes the rest.
+	mustAck(t, machine, ackWith(testAckService(fmt.Sprintf("%026d", 1), "service-1", 1)))
+	if tracked := len(machine.Services()); tracked != maxServicesPerSource {
+		t.Fatalf("tracked services after ack = %d, want the bounded %d", tracked, maxServicesPerSource)
 	}
 }

@@ -19,14 +19,14 @@
 // messages for every service of the instance. Channel feeds confirming acks and
 // notifications into a Machine.
 //
-// pkg/store/policysource builds the read-only store on top of Syncer and
-// Machine, and pkg/adsproxy serves synced copies downstream.
-//
 // Client also carries the fallback path of the request gate: while a service
-// is syncing, ForwardFallback evaluates one authorization request on Speedle
-// Cloud with the instance credential and returns Cloud's response unchanged.
-// It retries only a connection that was never established, so a request that
-// may have reached Cloud is not repeated. The package never parses SPDL and
-// never logs policy content or credentials.
-
+// is syncing, ForwardFallback evaluates one authorization request on the
+// configured Speedle Cloud destination with the configured Cloud credential and
+// returns Cloud's response unchanged. It retries only a connection that was
+// never established, so a request that may have reached Cloud is not repeated,
+// and it never logs policy content or credentials.
+//
+// pkg/store/policysource builds the read-only store on top of Syncer and
+// Machine. The package never parses SPDL and never logs policy content or
+// credentials.
 package adsync

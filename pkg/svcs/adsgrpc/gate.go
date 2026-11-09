@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/teramoby/speedle-plus/pkg/adsync"
+	"github.com/teramoby/speedle-plus/pkg/logging"
 	"github.com/teramoby/speedle-plus/pkg/svcs"
 	"github.com/teramoby/speedle-plus/pkg/svcs/adsgate"
 	"github.com/teramoby/speedle-plus/pkg/svcs/adsgrpc/pb"
@@ -121,43 +122,61 @@ type cloudDecision struct {
 }
 
 func (impl *GRPCService) fallbackIsAllowed(ctx context.Context, in *pb.ContextRequest) (*pb.IsAllowedResponse, error) {
+	auditAction := "[gRPC]" + adsgate.FallbackAuditOperation(adsync.FallbackIsAllowed)
+	auditFields := adsgate.FallbackAuditFields(adsync.FallbackIsAllowed, in.GetServiceName())
 	response, err := impl.forward(ctx, adsync.FallbackIsAllowed, in)
 	if err != nil {
+		logging.WriteSimpleFailedAuditLog(auditAction, auditFields, err.Error())
 		return nil, err
 	}
 	var decision cloudDecision
 	if err := adsync.ReadFallbackResponse(response.Body, &decision); err != nil {
+		logging.WriteSimpleFailedAuditLog(auditAction, auditFields, "invalid fallback response: "+err.Error())
 		return nil, status.Error(codes.Internal, "invalid fallback response")
 	}
 	if decision.ErrorMessage != "" {
 		// The local evaluator reports an evaluation error as an error, never as
 		// a normal decision; a forwarded call must do the same.
+		logging.WriteSimpleFailedAuditLog(auditAction, auditFields, decision.ErrorMessage)
 		return nil, status.Error(codes.Internal, decision.ErrorMessage)
 	}
-	return &pb.IsAllowedResponse{
+	result := &pb.IsAllowedResponse{
 		Allowed: decision.Allowed,
 		Reason:  decision.Reason,
-	}, nil
+	}
+	logging.WriteSimpleSucceededAuditLog(auditAction, auditFields,
+		map[string]interface{}{"allowed": decision.Allowed, "reason": decision.Reason})
+	return result, nil
 }
 
 func (impl *GRPCService) fallbackAllGrantedRoles(ctx context.Context, in *pb.ContextRequest) (*pb.AllRoleResponse, error) {
+	auditAction := "[gRPC]" + adsgate.FallbackAuditOperation(adsync.FallbackAllGrantedRoles)
+	auditFields := adsgate.FallbackAuditFields(adsync.FallbackAllGrantedRoles, in.GetServiceName())
 	response, err := impl.forward(ctx, adsync.FallbackAllGrantedRoles, in)
 	if err != nil {
+		logging.WriteSimpleFailedAuditLog(auditAction, auditFields, err.Error())
 		return nil, err
 	}
 	var roles []string
 	if err := adsync.ReadFallbackResponse(response.Body, &roles); err != nil {
+		logging.WriteSimpleFailedAuditLog(auditAction, auditFields, "invalid fallback response: "+err.Error())
 		return nil, status.Error(codes.Internal, "invalid fallback response")
 	}
 	if roles == nil {
 		roles = []string{}
 	}
-	return &pb.AllRoleResponse{Roles: roles}, nil
+	result := &pb.AllRoleResponse{Roles: roles}
+	logging.WriteSimpleSucceededAuditLog(auditAction, auditFields,
+		map[string]interface{}{"roles": roles})
+	return result, nil
 }
 
 func (impl *GRPCService) fallbackAllGrantedPermissions(ctx context.Context, in *pb.ContextRequest) (*pb.AllPermissionResponse, error) {
+	auditAction := "[gRPC]" + adsgate.FallbackAuditOperation(adsync.FallbackAllGrantedPermissions)
+	auditFields := adsgate.FallbackAuditFields(adsync.FallbackAllGrantedPermissions, in.GetServiceName())
 	response, err := impl.forward(ctx, adsync.FallbackAllGrantedPermissions, in)
 	if err != nil {
+		logging.WriteSimpleFailedAuditLog(auditAction, auditFields, err.Error())
 		return nil, err
 	}
 	var permissions []struct {
@@ -165,6 +184,7 @@ func (impl *GRPCService) fallbackAllGrantedPermissions(ctx context.Context, in *
 		Actions  []string `json:"actions"`
 	}
 	if err := adsync.ReadFallbackResponse(response.Body, &permissions); err != nil {
+		logging.WriteSimpleFailedAuditLog(auditAction, auditFields, "invalid fallback response: "+err.Error())
 		return nil, status.Error(codes.Internal, "invalid fallback response")
 	}
 	ret := pb.AllPermissionResponse{
@@ -176,5 +196,7 @@ func (impl *GRPCService) fallbackAllGrantedPermissions(ctx context.Context, in *
 			Actions:  permission.Actions,
 		})
 	}
+	logging.WriteSimpleSucceededAuditLog(auditAction, auditFields,
+		map[string]interface{}{"permissions": ret.Permissions})
 	return &ret, nil
 }

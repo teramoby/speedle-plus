@@ -46,7 +46,15 @@ func (c *Channel) runWebSocket(ctx context.Context) wsOutcome {
 				body, _ = io.ReadAll(io.LimitReader(response.Body, maxErrorResponseBytes))
 				_ = response.Body.Close()
 			}
-			if response.StatusCode == http.StatusUnauthorized || response.StatusCode == http.StatusForbidden {
+			// A channel pinned to WebSocket has no fallback, so a permanent
+			// HTTP rejection is terminal there exactly as it is for long
+			// polling; retrying it would loop forever. Auto mode falls back
+			// instead: the poll request then reaches the same classification.
+			if c.mode == TransportWebSocket {
+				if terminal := c.terminalStatusError(http.MethodGet, APIPrefix+"/channel", response.StatusCode, body); terminal != nil {
+					return wsOutcome{terminal: true, err: terminal}
+				}
+			} else if response.StatusCode == http.StatusUnauthorized || response.StatusCode == http.StatusForbidden {
 				c.machine.Stop(ReasonRevoked)
 				return wsOutcome{
 					terminal: true,
@@ -67,10 +75,20 @@ func (c *Channel) runWebSocket(ctx context.Context) wsOutcome {
 	defer stopOnCancel()
 
 	conn.SetReadLimit(maxChannelFrameBytes)
+	var ackedAt time.Time
+	// The first ack is bounded by an absolute deadline. Keepalive traffic must
+	// not keep a connection that never gets an ack alive, or auto mode could
+	// never observe the missing ack and fall back. Once the first ack arrives,
+	// the ordinary keepalive timeout applies.
+	firstAckDeadline := time.Now().Add(c.ackTimeout)
 	extendDeadline := func() {
-		_ = conn.SetReadDeadline(time.Now().Add(c.readTimeout()))
+		deadline := time.Now().Add(c.readTimeout())
+		if ackedAt.IsZero() && deadline.After(firstAckDeadline) {
+			deadline = firstAckDeadline
+		}
+		_ = conn.SetReadDeadline(deadline)
 	}
-	_ = conn.SetReadDeadline(time.Now().Add(c.ackTimeout))
+	_ = conn.SetReadDeadline(firstAckDeadline)
 	conn.SetPongHandler(func(string) error {
 		extendDeadline()
 		return nil
@@ -87,11 +105,12 @@ func (c *Channel) runWebSocket(ctx context.Context) wsOutcome {
 
 	writerCtx, stopWriter := context.WithCancel(ctx)
 	results := make(chan channelCommandResult, 16)
+	cadence := make(chan struct{}, 1)
 	var writerDone sync.WaitGroup
 	writerDone.Add(1)
 	go func() {
 		defer writerDone.Done()
-		c.writeWebSocket(writerCtx, conn, results)
+		c.writeWebSocket(writerCtx, conn, results, cadence)
 	}()
 	defer func() {
 		stopWriter()
@@ -99,7 +118,6 @@ func (c *Channel) runWebSocket(ctx context.Context) wsOutcome {
 		writerDone.Wait()
 	}()
 
-	var ackedAt time.Time
 	var outcome wsOutcome
 readLoop:
 	for {
@@ -120,6 +138,10 @@ readLoop:
 			}
 			break
 		}
+		if err := ctx.Err(); err != nil {
+			outcome.err = err
+			break
+		}
 		extendDeadline()
 		if messageType != websocket.TextMessage {
 			outcome.err = fmt.Errorf("%w: channel sent a non-text frame", ErrProtocol)
@@ -132,12 +154,15 @@ readLoop:
 		}
 		switch typed := message.(type) {
 		case *channelAck:
-			if err := c.applyAck(typed, results); err != nil {
+			if err := c.applyAck(typed, results, cadence); err != nil {
 				outcome.err = err
 				break readLoop
 			}
 			if ackedAt.IsZero() {
 				ackedAt = time.Now()
+				// That frame may have been capped at the first-ack deadline;
+				// refresh it now that keepalive timing applies.
+				extendDeadline()
 			}
 		case *channelNotify:
 			if err := c.machine.ObserveHead(Head{ID: typed.ServiceID, Revision: typed.Head}); err != nil {
@@ -159,17 +184,35 @@ readLoop:
 }
 
 // writeWebSocket is the connection's only writer: heartbeats, protocol pings
-// and command results all go through it.
-func (c *Channel) writeWebSocket(ctx context.Context, conn *websocket.Conn, results <-chan channelCommandResult) {
-	heartbeat := time.NewTimer(c.heartbeatInterval())
-	ping := time.NewTimer(c.pingInterval())
+// and command results all go through it. An ack can change the effective
+// cadence, so a cadence signal resets a timer whose interval actually changed,
+// instead of waiting for the previous, possibly longer, interval to expire.
+// Acks that leave the cadence alone do not postpone a heartbeat: a source may
+// send them more often than the heartbeat interval.
+func (c *Channel) writeWebSocket(ctx context.Context, conn *websocket.Conn, results <-chan channelCommandResult, cadence <-chan struct{}) {
+	heartbeatInterval := c.heartbeatInterval()
+	pingInterval := c.pingInterval()
+	heartbeat := time.NewTimer(heartbeatInterval)
+	ping := time.NewTimer(pingInterval)
 	defer heartbeat.Stop()
 	defer ping.Stop()
 
 	for {
 		select {
 		case <-ctx.Done():
+			// Close the connection so the reader blocked in ReadMessage wakes
+			// up; a live peer would otherwise keep extending its deadline.
+			_ = conn.Close()
 			return
+		case <-cadence:
+			if next := c.heartbeatInterval(); next != heartbeatInterval {
+				heartbeatInterval = next
+				resetTimer(heartbeat, heartbeatInterval)
+			}
+			if next := c.pingInterval(); next != pingInterval {
+				pingInterval = next
+				resetTimer(ping, pingInterval)
+			}
 		case result := <-results:
 			if err := c.writeChannelJSON(conn, result); err != nil {
 				_ = conn.Close()
@@ -180,15 +223,29 @@ func (c *Channel) writeWebSocket(ctx context.Context, conn *websocket.Conn, resu
 				_ = conn.Close()
 				return
 			}
-			heartbeat.Reset(c.heartbeatInterval())
+			heartbeatInterval = c.heartbeatInterval()
+			resetTimer(heartbeat, heartbeatInterval)
 		case <-ping.C:
 			if err := conn.WriteControl(websocket.PingMessage, nil, time.Now().Add(c.writeTimeout())); err != nil {
 				_ = conn.Close()
 				return
 			}
-			ping.Reset(c.pingInterval())
+			pingInterval = c.pingInterval()
+			resetTimer(ping, pingInterval)
 		}
 	}
+}
+
+// resetTimer resets a timer to a new delay, draining a tick that already fired
+// so it cannot be observed as a spurious heartbeat or ping.
+func resetTimer(timer *time.Timer, delay time.Duration) {
+	if !timer.Stop() {
+		select {
+		case <-timer.C:
+		default:
+		}
+	}
+	timer.Reset(delay)
 }
 
 func (c *Channel) writeChannelJSON(conn *websocket.Conn, value any) error {

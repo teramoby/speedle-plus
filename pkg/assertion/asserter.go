@@ -8,6 +8,7 @@ import (
 	"crypto/x509"
 	"encoding/json"
 	"fmt"
+	"github.com/teramoby/speedle-plus/pkg/assertion/config"
 	"io"
 	"net/http"
 	"os"
@@ -43,14 +44,10 @@ type TokenAsserter interface {
 	AssertToken(token string, idpType string, allowedIDD string, requestHeaders map[string]string) (*AssertResponse, error)
 }
 
-// AsserterConfig asserter webhook client configuration
-type AsserterConfig struct {
-	Endpoint    string `json:"endpoint"`
-	CACert      string `json:"caCert"`
-	ClientCert  string `json:"clientCert"`
-	ClientKey   string `json:"clientKey"`
-	HTTPTimeout int    `json:"httpTimeout"`
-}
+// AsserterConfig preserves the original source name for the transport-free
+// config.AsserterConfig type. Reflection and gob type names use the config
+// package path; see docs/WASM.md for compatibility details.
+type AsserterConfig = config.AsserterConfig
 
 // WebHookAsserter implements asserter client interface
 type WebHookAsserter struct {

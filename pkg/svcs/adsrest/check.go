@@ -338,7 +338,7 @@ func (e *RESTService) IsAllowed(w http.ResponseWriter, r *http.Request) {
 		writeUnavailable(w, route.Reason)
 		return
 	case adsgate.RouteFallback:
-		e.forward(w, r.Context(), adsync.FallbackIsAllowed, body)
+		e.forward(w, r.Context(), adsync.FallbackIsAllowed, jsonRequest.ServiceName, body)
 		return
 	}
 
@@ -388,7 +388,7 @@ func (e *RESTService) GetAllGrantedRoles(w http.ResponseWriter, r *http.Request)
 		writeUnavailable(w, route.Reason)
 		return
 	case adsgate.RouteFallback:
-		e.forward(w, r.Context(), adsync.FallbackAllGrantedRoles, body)
+		e.forward(w, r.Context(), adsync.FallbackAllGrantedRoles, jsonRequest.ServiceName, body)
 		return
 	}
 
@@ -428,7 +428,7 @@ func (e *RESTService) GetAllGrantedPermissions(w http.ResponseWriter, r *http.Re
 		writeUnavailable(w, route.Reason)
 		return
 	case adsgate.RouteFallback:
-		e.forward(w, r.Context(), adsync.FallbackAllGrantedPermissions, body)
+		e.forward(w, r.Context(), adsync.FallbackAllGrantedPermissions, jsonRequest.ServiceName, body)
 		return
 	}
 

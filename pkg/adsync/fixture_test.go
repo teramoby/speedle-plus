@@ -179,12 +179,14 @@ type fixtureSource struct {
 
 	changesReason            string
 	dropCommitRevision       uint64
+	snapshotOverride         *SnapshotResponse
+	snapshotStarted          chan struct{}
+	snapshotRelease          chan struct{}
 	corruptSnapshotHash      bool
 	corruptSnapshotSignature bool
 	corruptCommitSignature   bool
 	corruptHeadStateHash     bool
 	corruptDiscoveryHash     bool
-	snapshotOverride         *SnapshotResponse
 }
 
 func newFixtureSource(credential string, signer *fixtureSigner, services ...*fixtureService) *fixtureSource {
@@ -274,16 +276,26 @@ func (f *fixtureSource) serveServices(w http.ResponseWriter, _ *http.Request) {
 
 func (f *fixtureSource) serveSnapshot(w http.ResponseWriter, r *http.Request) {
 	f.mu.Lock()
+	started := f.snapshotStarted
+	release := f.snapshotRelease
+	f.snapshotStarted = nil
+	f.mu.Unlock()
+	if started != nil {
+		close(started)
+	}
+	if release != nil {
+		<-release
+	}
+
+	f.mu.Lock()
 	defer f.mu.Unlock()
+	if f.snapshotOverride != nil {
+		writeFixtureJSON(w, http.StatusOK, f.snapshotOverride)
+		return
+	}
 	service, found := f.services[r.PathValue("id")]
 	if !found {
 		writeFixtureError(w, http.StatusNotFound, "service_not_found", "")
-		return
-	}
-	if f.snapshotOverride != nil {
-		response := *f.snapshotOverride
-		response.Snapshot = cloneSnapshot(f.snapshotOverride.Snapshot)
-		writeFixtureJSON(w, http.StatusOK, response)
 		return
 	}
 	etag := `"` + service.ID + "-" + service.Epoch + "-" +
@@ -499,6 +511,11 @@ func (f *fixture) newClientAt(baseURL string, mutate func(*Config)) *Client {
 
 func (f *fixture) newSyncer(cacheDir string, mutate func(*Config)) *Syncer {
 	f.t.Helper()
+	if cacheDir != "" {
+		if err := os.Chmod(cacheDir, 0o700); err != nil {
+			f.t.Fatalf("secure cache directory: %v", err)
+		}
+	}
 	client := f.newClient(mutate)
 	syncer, err := NewSyncer(client, cacheDir)
 	if err != nil {

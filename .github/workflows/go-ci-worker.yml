@@ -15,14 +15,13 @@ jobs:
     name: execute
     # The runner group accepts only this callee at refs/heads/master. Never
     # derive runner eligibility or checkout revision from caller inputs.
-    # Every task but build goes to any Speedle runner (speedle-runner: both
-    # charming instances and fiona). Build needs the Linux Hugo release, so it
-    # stays on the charming pool. The weekly benchmarks measure the baseline
-    # and the current code in the same run on whichever runner takes it, so
-    # they need no fixed machine. The host lock below keeps fixed-port tests
-    # from overlapping on the charming host.
+    # Every task but build and weekly goes to any Speedle runner
+    # (speedle-runner: both charming instances and fiona). Build needs the
+    # Linux Hugo release, so it stays on the charming pool. Weekly stays on
+    # fiona to reduce timing noise in its benchmark comparison. The host lock
+    # below keeps fixed-port tests from overlapping on the charming host.
     runs-on: >-
-      ${{ github.repository == 'teramoby/speedle-plus' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'schedule' && github.ref == 'refs/heads/master') || (github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.event.sender.type == 'User' || github.event.sender.type == 'Bot')) || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && (github.event.pull_request.user.type == 'User' || github.event.pull_request.user.type == 'Bot'))) && fromJSON(inputs.mode == 'build' && '["self-hosted","Linux","X64","speedle-linux"]' || '["self-hosted","speedle-runner"]') || 'ubuntu-latest' }}
+      ${{ github.repository == 'teramoby/speedle-plus' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'schedule' && github.ref == 'refs/heads/master') || (github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.event.sender.type == 'User' || github.event.sender.type == 'Bot')) || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && (github.event.pull_request.user.type == 'User' || github.event.pull_request.user.type == 'Bot'))) && fromJSON(inputs.mode == 'build' && '["self-hosted","Linux","X64","speedle-linux"]' || inputs.mode == 'weekly' && '["self-hosted","fiona-speedle"]' || '["self-hosted","speedle-runner"]') || 'ubuntu-latest' }}
     # test can wait on the host lock behind a nightly on the other charming runner.
     timeout-minutes: ${{ (inputs.mode == 'nightly' || inputs.mode == 'weekly' || inputs.mode == 'regression' || inputs.mode == 'test') && 150 || 30 }}
     steps:
@@ -40,7 +39,8 @@ jobs:
         run: |
           set -euo pipefail
           case "${RUNNER_NAME}/${RUNNER_OS}/${RUNNER_ARCH}" in
-            charming-speedle/Linux/X64|charming-speedle-2/Linux/X64) ;;
+            charming-speedle/Linux/X64|charming-speedle-2/Linux/X64)
+              case "${CI_TASK}" in weekly) echo "Task ${CI_TASK} runs only on fiona-speedle." >&2; exit 1 ;; esac ;;
             fiona-speedle/macOS/ARM64)
               case "${CI_TASK}" in build) echo "Task ${CI_TASK} needs a Linux runner." >&2; exit 1 ;; esac ;;
             *) echo 'Unexpected runner.' >&2; exit 1 ;;
@@ -96,7 +96,8 @@ jobs:
           ADS_ENDPOINT: http://127.0.0.1:6734
         run: |
           set -euo pipefail
-          export GOPATH="$(go env GOPATH)"
+          GOPATH="$(go env GOPATH)"
+          export GOPATH
           # The two runners share a physical host. Hold the lock across the
           # port preflight and every service lifetime, never kill foreign jobs.
           exec 9>/tmp/speedle-plus-test-services.lock
@@ -122,6 +123,23 @@ jobs:
             test) scripts/ci/run-go-tests.sh gate ;;
             *) scripts/ci/run-go-tests.sh "${CI_TASK}" ;;
           esac
+
+      - name: Setup Node for js/wasm tests
+        if: inputs.mode == 'test'
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '22'
+          package-manager-cache: false
+
+      - name: Run js/wasm regression tests
+        if: inputs.mode == 'test'
+        run: |
+          set -euo pipefail
+          wasm_exec="$(go env GOROOT)/lib/wasm/go_js_wasm_exec"
+          env -i PATH="${PATH}" HOME="${HOME}" TMPDIR="${TMPDIR:-/tmp}" \
+            GOOS=js GOARCH=wasm \
+            go test -count=1 -exec="${wasm_exec}" ./pkg/eval/wasmtest ./pkg/assertion/config
+          bash scripts/ci/check-wasm-dependencies.sh
 
       - name: Clean owned MySQL containers
         if: always() && inputs.mode == 'nightly'
