@@ -311,6 +311,13 @@ func (s *Store) syncService(ctx context.Context, service adsync.Service) error {
 		s.mu.Unlock()
 		return nil
 	}
+	// Defense in depth: a rename may have landed while the fetch was in
+	// flight. A copy that still carries the previous name must not replace
+	// the renamed one, even if its attempt was taken after the rename.
+	if status, known := s.machineService(service.ID); !known || status.Name != compiled.service.Name {
+		s.mu.Unlock()
+		return nil
+	}
 	s.copies[service.ID] = compiled
 	// A pending removal or rename entry stays until the evaluator acknowledges
 	// the assembly that replaces the old copy. Deleting it here would let the

@@ -286,6 +286,81 @@ func TestDiscoveryRemovalFailsClosedBeforeTheMachineLearnsIt(t *testing.T) {
 	}
 }
 
+// TestRenameAckInvalidatesAFetchOfThePreviousName covers a rename ack that
+// lands while a pass is already fetching the service: the fetched copy still
+// carries the previous name and must not replace the renamed one.
+func TestRenameAckInvalidatesAFetchOfThePreviousName(t *testing.T) {
+	fixture := newTestFixture(t, booksService())
+	store := fixture.open(nil)
+
+	// The next pass fetches a new revision under the previous name.
+	fixture.source.publishService("books", func(snapshot *adsync.Snapshot) {
+		snapshot.Policies = append(snapshot.Policies, policy("p-carol", "carol", "grant user carol read books"))
+	})
+	fetched := make(chan struct{})
+	resumed := make(chan struct{})
+	var once sync.Once
+	store.afterFetch = func(string) {
+		once.Do(func() {
+			close(fetched)
+			<-resumed
+		})
+	}
+
+	syncDone := make(chan error, 1)
+	go func() { syncDone <- store.Sync(nil) }()
+	select {
+	case <-fetched:
+	case err := <-syncDone:
+		t.Fatalf("Sync finished before the fetch was held: %v", err)
+	case <-time.After(5 * time.Second):
+		t.Fatal("timed out waiting for the in-flight fetch")
+	}
+
+	// A channel ack renames the service while the fetch is held. This mirrors
+	// the channel callback order: the machine learns the new name, then the
+	// store applies the rename and publishes.
+	fixture.source.renameService("books", "books-v2", nil)
+	renamed, found := fixture.source.service("books-v2")
+	if !found {
+		t.Fatal("the fixture lost the renamed service")
+	}
+	ack := adsync.Ack{Services: []adsync.Service{{
+		ID:            renamed.ID,
+		Name:          renamed.Name,
+		Epoch:         renamed.Epoch,
+		Revision:      renamed.Revision,
+		HeadStateHash: renamed.StateHash,
+	}}}
+	if err := store.machine.Ack(ack); err != nil {
+		t.Fatalf("apply rename ack: %v", err)
+	}
+	store.renameCopies(ack.Services)
+	store.publish()
+	close(resumed)
+	if err := <-syncDone; err != nil {
+		t.Fatalf("sync: %v", err)
+	}
+
+	// The evaluator installs the published assembly. The previous-name copy
+	// must not reappear.
+	_, acknowledge, err := store.ReadPolicyStoreForReload()
+	if err != nil {
+		t.Fatalf("read published assembly: %v", err)
+	}
+	acknowledge()
+	policyStore := mustRead(t, store)
+	serviceNamed(t, policyStore, "books-v2")
+	for _, service := range policyStore.Services {
+		if service.Name == "books" {
+			t.Fatalf("the previous-name copy replaced the renamed one: %+v", policyStore.Services)
+		}
+	}
+	if _, known := store.Status("books"); known {
+		t.Fatal("the machine still tracks the previous name")
+	}
+}
+
 func TestOpenAssemblesServicesAndParsesSPDL(t *testing.T) {
 	fixture := newTestFixture(t, booksService(), ordersService())
 	store := fixture.open(nil)

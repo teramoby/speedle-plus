@@ -774,6 +774,12 @@ func (m *Machine) applySetLocked(services []Service, confirmed bool) {
 			// removed may be reported for it.
 			m.invalidateAttemptsLocked(record)
 		}
+		if record.name != "" && record.name != service.Name {
+			// A rename invalidates a fetch that began under the previous
+			// name: its snapshot still carries the old name and must not
+			// replace the renamed copy.
+			m.invalidateAttemptsLocked(record)
+		}
 		record.setMember = true
 		record.name = service.Name
 		m.updateRecordHeadLocked(record, service.Epoch, service.Revision, service.HeadStateHash, confirmed)

@@ -810,6 +810,40 @@ func TestAppliedRejectsAnAttemptForAnotherService(t *testing.T) {
 	requireServiceState(t, machine, "books", SyncStateSyncing, SyncReasonBootstrap)
 }
 
+// TestRenameInvalidatesAnInFlightAttempt covers a rename that lands while a
+// fetch under the previous name is already running: the fetched copy still
+// carries the old name and must not be reported for the renamed service.
+func TestRenameInvalidatesAnInFlightAttempt(t *testing.T) {
+	machine, _ := newTestMachine(t)
+	books := testAckService(testServiceID1, "books", 5)
+	mustAck(t, machine, ackWith(books))
+	mustApply(t, machine, testServiceState(testServiceID1, "books", 5))
+	requireServiceState(t, machine, "books", SyncStateInSync, "")
+
+	// A fetch starts under the previous name.
+	inFlight := machine.BeginSync(testServiceID1)
+
+	// The ack renames the service before the fetch reports back.
+	renamed := testAckService(testServiceID1, "books-v2", 5)
+	mustAck(t, machine, ackWith(renamed))
+	if machine.AttemptCurrent(inFlight) {
+		t.Fatal("an attempt taken before the rename is still current")
+	}
+	if err := machine.ApplyAttempt(inFlight, testServiceState(testServiceID1, "books", 5)); err != nil {
+		t.Fatalf("ApplyAttempt: %v", err)
+	}
+	status, known := machine.Status("books-v2")
+	if !known {
+		t.Fatal("the renamed name is not tracked")
+	}
+	if status.Service.State == SyncStateInSync {
+		t.Fatal("the previous-name copy completed the renamed service")
+	}
+	if _, known := machine.Status("books"); known {
+		t.Fatal("the previous name is still tracked")
+	}
+}
+
 // TestAppliedWithoutAttemptKeepsThePreviousContract covers the compatibility
 // entry point: Applied reports a verified copy without an attempt, so it
 // cannot reject a fetch that began before a resync. Callers that need that
