@@ -1560,3 +1560,92 @@ func TestMirrorKeepsTombstonesAtTheBound(t *testing.T) {
 		t.Errorf("availability of the oldest tombstone = %v, want ServiceRemoved", availability)
 	}
 }
+
+func TestMirrorRejectsReplaysFromRetiredIdentities(t *testing.T) {
+	signer := newTestSigner(t)
+	mirror := newTestMirror(t, signer.publicKeys(t), nil)
+	var first *adsync.SnapshotResponse
+	for index := 0; index < 12; index++ {
+		epoch := fmt.Sprintf("01HF7YAT%018d", 6000+index)
+		service := newFixtureServiceWithEpoch(testServiceID1, epoch, "books")
+		service.publish(t, signer, upsertAuthz(testServiceID1+"A1", "read", "grant read"))
+		snapshot := snapshotAt(t, service, signer)
+		if index == 0 {
+			first = snapshot
+		}
+		if err := mirror.ApplySnapshot(snapshot); err != nil {
+			t.Fatalf("identity %d: %v", index, err)
+		}
+	}
+	// Replay protection outlives the transition: more identity changes than any
+	// retention bound must not make the oldest snapshot acceptable again.
+	if err := mirror.ApplySnapshot(first); err != nil {
+		t.Fatalf("replayed snapshot: %v", err)
+	}
+	info, availability := mirror.Lookup(testServiceID1)
+	if availability != ServiceAvailable {
+		t.Fatalf("availability = %v", availability)
+	}
+	if info.Epoch != fmt.Sprintf("01HF7YAT%018d", 6011) {
+		t.Errorf("copy rolled back to %q", info.Epoch)
+	}
+}
+
+func TestMirrorRejectsConflictingCommitHashAtOneRevision(t *testing.T) {
+	signer := newTestSigner(t)
+	mirror := newTestMirror(t, signer.publicKeys(t), nil)
+	service := newFixtureService(testServiceID1, "books")
+	original := snapshotAt(t, service, signer)
+	if err := mirror.ApplySnapshot(original); err != nil {
+		t.Fatalf("apply snapshot: %v", err)
+	}
+
+	conflicting := snapshotAt(t, service, signer)
+	conflicting.CommitHash = adsync.StateHash(adsync.Snapshot{Name: "other history"})
+	conflicting.Signature = signer.sign(adsync.SnapshotSignedBytes(
+		conflicting.SourceID, conflicting.Epoch, conflicting.Revision,
+		conflicting.StateHash, conflicting.CommitHash))
+	if err := mirror.ApplySnapshot(conflicting); !errors.Is(err, adsync.ErrIntegrity) {
+		t.Errorf("conflicting commit hash: %v, want ErrIntegrity", err)
+	}
+	anchor, found := mirror.Snapshot(testServiceID1)
+	if !found || anchor.CommitHash != original.CommitHash {
+		t.Errorf("anchor was replaced: %+v", anchor)
+	}
+
+	// The snapshot entity tag covers the commit hash, so a downstream holding
+	// the old anchor never sees a 304 for a different history.
+	if snapshotETag(*original) == snapshotETag(*conflicting) {
+		t.Error("snapshot ETag ignores the commit hash")
+	}
+}
+
+func TestCloseEndsHeldPolls(t *testing.T) {
+	signer := newTestSigner(t)
+	mirror, _, _ := newPopulatedMirror(t, signer)
+	token := testToken(testDownstreamID, 1)
+	server := newTestServer(t, mirror, signer.publicKeys(t), nil, testCredential{
+		downstreamID: testDownstreamID,
+		token:        token,
+	})
+	type result struct {
+		status int
+		body   []byte
+	}
+	done := make(chan result, 1)
+	go func() {
+		response, body := server.post(adsync.APIPrefix+"/channel/poll?wait=30", token,
+			heartbeatFrame([]string{testProxyID, testDownstreamID}))
+		done <- result{status: response.StatusCode, body: body}
+	}()
+	time.Sleep(50 * time.Millisecond)
+	server.server.Close()
+	select {
+	case got := <-done:
+		if got.status != http.StatusServiceUnavailable {
+			t.Errorf("held poll after Close: status %d body %s", got.status, got.body)
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("a held poll stayed blocked after Close")
+	}
+}

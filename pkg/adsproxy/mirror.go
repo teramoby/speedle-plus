@@ -30,9 +30,6 @@ const (
 	// never evicted: once the combined store is full, a new service is refused
 	// (fail closed) instead of forgetting that guard.
 	maxTombstones = 1024
-	// maxRetiredIdentities bounds the source identities one service copy
-	// remembers, so identity churn cannot grow its state without limit.
-	maxRetiredIdentities = 8
 	// maxChangesPageBytes is the contract's response-page bound. A page that
 	// would exceed it is trimmed.
 	maxChangesPageBytes = 1 << 20
@@ -145,11 +142,12 @@ type serviceCopy struct {
 	// snapshot at or below it belongs to the state that was removed and cannot
 	// revive the service; only newer source state can.
 	tombstoneRevision uint64
-	// retired holds the source identities this copy has moved away from. A
+	// retired holds every source identity this copy has moved away from. A
 	// late snapshot from a retired identity belongs to policy the source
 	// already replaced, and revisions of different identities cannot be
-	// ordered, so it is ignored rather than allowed to replace the copy.
-	retired []retiredIdentity
+	// ordered, so it is ignored rather than allowed to replace the copy. The
+	// set is never evicted: replay protection has to outlive the transition.
+	retired map[retiredIdentity]struct{}
 }
 
 // retiredIdentity is one sourceId/epoch pair a service copy has moved away from.
@@ -161,24 +159,20 @@ type retiredIdentity struct {
 // identityRetired reports whether sourceID/epoch is an identity this copy has
 // moved away from.
 func (s *serviceCopy) identityRetired(sourceID, epoch string) bool {
-	for _, retired := range s.retired {
-		if retired.sourceID == sourceID && retired.epoch == epoch {
-			return true
-		}
-	}
-	return false
+	_, retired := s.retired[retiredIdentity{sourceID: sourceID, epoch: epoch}]
+	return retired
 }
 
-// retireIdentity records the identity the copy is leaving. The list is bounded;
-// the oldest entry is dropped first.
+// retireIdentity records the identity the copy is leaving. Entries are never
+// dropped: a replayed snapshot from any retired identity must stay rejected.
 func (s *serviceCopy) retireIdentity(sourceID, epoch string) {
-	if sourceID == "" || s.identityRetired(sourceID, epoch) {
+	if sourceID == "" {
 		return
 	}
-	s.retired = append(s.retired, retiredIdentity{sourceID: sourceID, epoch: epoch})
-	if len(s.retired) > maxRetiredIdentities {
-		s.retired = s.retired[1:]
+	if s.retired == nil {
+		s.retired = make(map[retiredIdentity]struct{})
 	}
+	s.retired[retiredIdentity{sourceID: sourceID, epoch: epoch}] = struct{}{}
 }
 
 // NewMirror creates an empty mirror.
@@ -293,6 +287,16 @@ func (m *Mirror) applySnapshot(response *adsync.SnapshotResponse) (HeadEvent, bo
 			!existing.stateHash.IsZero() && response.StateHash != existing.stateHash {
 			return HeadEvent{}, false, fmt.Errorf(
 				"%w: snapshot %q revision %d has two different state hashes",
+				adsync.ErrIntegrity, response.ServiceID, response.Revision)
+		}
+		if response.Revision == existing.revision &&
+			!existing.commitHash.IsZero() && response.CommitHash != existing.commitHash {
+			// The change log is anchored to the commit hash. Accepting a
+			// different history at the same revision would make the next
+			// commit fail its previous-hash check while the snapshot endpoint
+			// kept answering 304 for the cached anchor.
+			return HeadEvent{}, false, fmt.Errorf(
+				"%w: snapshot %q revision %d has two different commit hashes",
 				adsync.ErrIntegrity, response.ServiceID, response.Revision)
 		}
 	}

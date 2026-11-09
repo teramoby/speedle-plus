@@ -401,6 +401,10 @@ func (s *Server) handlePoll(w http.ResponseWriter, r *http.Request, credential *
 		select {
 		case <-subscriber.C():
 		case <-timer.C:
+		case <-s.done:
+			// The server is closing; do not keep the request held.
+			writeError(w, http.StatusServiceUnavailable, "source_unavailable", "")
+			return
 		case <-r.Context().Done():
 			return
 		}
@@ -409,6 +413,11 @@ func (s *Server) handlePoll(w http.ResponseWriter, r *http.Request, credential *
 	// would otherwise reveal the new service set to a revoked or narrowed one.
 	if !s.credentials.Current(credential) {
 		writeError(w, http.StatusUnauthorized, "unauthorized", "")
+		return
+	}
+	// A poll that was already held must not answer successfully after Close.
+	if s.isClosed() {
+		writeError(w, http.StatusServiceUnavailable, "source_unavailable", "")
 		return
 	}
 	writeJSON(w, http.StatusOK, s.ack(credential))

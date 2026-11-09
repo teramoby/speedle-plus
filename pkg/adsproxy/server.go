@@ -107,6 +107,7 @@ type Server struct {
 	sessions  map[*websocket.Conn]struct{}
 	closeOnce sync.Once
 	closed    bool
+	done      chan struct{}
 }
 
 // NewServer validates the configuration and wires the mirror's head events into
@@ -189,6 +190,7 @@ func NewServer(config Config) (*Server, error) {
 		now:         now,
 		paused:      config.Paused,
 		sessions:    make(map[*websocket.Conn]struct{}),
+		done:        make(chan struct{}),
 	}
 	server.upgrader = websocket.Upgrader{
 		ReadBufferSize:  4096,
@@ -255,6 +257,9 @@ func (s *Server) Close() {
 		for conn := range s.sessions {
 			connections = append(connections, conn)
 		}
+		if s.done != nil {
+			close(s.done)
+		}
 		s.mu.Unlock()
 		for _, conn := range connections {
 			_ = conn.Close()
@@ -269,6 +274,13 @@ func (s *Server) Close() {
 			s.hub.Close()
 		}
 	})
+}
+
+// isClosed reports whether Close has run.
+func (s *Server) isClosed() bool {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.closed
 }
 
 // track registers an upgraded channel connection so Close and credential
@@ -518,11 +530,12 @@ func bearerToken(value string) (string, bool) {
 
 func snapshotETag(response adsync.SnapshotResponse) string {
 	return `"` + response.SourceID + "-" + response.Epoch + "-" +
-		strconv.FormatUint(response.Revision, 10) + "-" + response.StateHash.String() + `"`
+		strconv.FormatUint(response.Revision, 10) + "-" + response.StateHash.String() + "-" +
+		response.CommitHash.String() + `"`
 }
 
 // ifNoneMatch reports whether the request's If-None-Match header matches the
-// current entity tag. Only an exact match (or *) counts; the contract forbids
+// current entity tag. Only an exact identity tuple counts; the contract forbids
 // guessing that an older tag is close enough.
 func ifNoneMatch(header, etag string) bool {
 	if strings.TrimSpace(header) == "" {
