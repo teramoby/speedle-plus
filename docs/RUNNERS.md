@@ -9,13 +9,14 @@ the `teramoby` default group's access policy.
 `fiona-speedle` (macOS ARM64) is a third runner in the same group. All three
 carry `speedle-runner`; only the two charming instances carry `speedle-linux`.
 
-ReviewBot and Go lint, test, post-merge regression, the nightly and the weekly
-select `[self-hosted, speedle-runner]`, so any of the three may take them. Go
-build (it needs the Linux Hugo release and `sha256sum`) selects
-`[self-hosted, Linux, X64, speedle-linux]`. The weekly benchmarks
-(`scripts/ci/benchmark.py`) measure master as of May 2026 and the current code
-alternately in the same run on the same runner, so any runner gives a valid
-comparison; each report names the runner that measured it.
+ReviewBot and Go lint, test, post-merge regression and the nightly select
+`[self-hosted, speedle-runner]`, so any of the three may take them. Go build
+(it needs the Linux Hugo release and `sha256sum`) selects
+`[self-hosted, Linux, X64, speedle-linux]`. The weekly selects
+`[self-hosted, fiona-speedle]` to reduce timing noise in its benchmark check.
+The benchmarks (`scripts/ci/benchmark.py`) measure master as of May 2026 and
+the current code alternately in the same run; each report names the runner that
+measured it.
 A runner administrator must keep `speedle-runner` and `speedle-linux` exclusive
 to these named instances; adding another host would also admit it to
 credential-bearing jobs. A runner name alone is not a scheduling label. The two
@@ -37,7 +38,7 @@ The group also restricts access to these exact default-branch workflows:
 `ci.yml` calls the reusable Go worker at `@master`. Jobs are defined in that
 trusted callee, which derives runner eligibility and checkout SHA from the
 original GitHub event, not caller inputs. The validated task selects only between
-the two fixed label lists after that eligibility check. A fork editing its own workflow cannot
+the three fixed label lists after that eligibility check. A fork editing its own workflow cannot
 directly select this runner or change the trusted worker's routing policy.
 
 | Workload | Runner |
@@ -47,6 +48,7 @@ directly select this runner or change the trusted worker's routing policy.
 | Go tests for those trusted events, both file/etcd modes | Any runner via `speedle-runner`, serialized by the host test lock |
 | Go CI fork PRs, unknown actors or other events | GitHub-hosted |
 | Post-merge file-store regression (`post-merge.yml`, every push to master) | Any runner via `speedle-runner`, serialized by the host test lock; its report job is GitHub-hosted |
+| Weekly tests and benchmark comparison (`weekly.yml`) | `fiona-speedle`, serialized by the host test lock; its report job is GitHub-hosted |
 | ReviewBot human/bot same-repository PR analysis/publication | Any runner via `speedle-runner` |
 | ReviewBot fork PRs or unknown authors | GitHub-hosted |
 | Dependency auto-merge waiter | `charming-speedle-2` via `speedle-control` |
@@ -122,8 +124,8 @@ gh workflow run ci.yml --ref master
 ```
 
 Inspect each run's jobs and confirm `runner_name` is one of the three Speedle
-runners for `speedle-runner` jobs (including the nightly and the weekly) and a
-charming runner for build.
+runners for `speedle-runner` jobs (including the nightly), `fiona-speedle` for
+the weekly and a charming runner for build.
 The regression job prints its workspace and temp paths; verify both registrations
 have distinct paths. An online/idle runner listing alone does not prove checkout,
 tool setup, tests or model connectivity work. The dedicated routing regression
@@ -181,7 +183,7 @@ commands CI uses: `lint` (go vet, go mod tidy check), `test` (the merge gate,
 `run-go-tests.sh gate`), `regression` (the post-merge regression), `weekly`
 (`run-go-tests.sh weekly`) or `reviewbot`
 (ReviewBot's tool and Ark reachability checks and its fixture suites, with no
-credentials). `test`, `regression` and `weekly` hold the host test lock. lint,
-test, regression, weekly and reviewbot passed on fiona before CI routed them to
-`speedle-runner`; `build` stays on Linux because it needs the Linux Hugo release
-and `sha256sum`.
+credentials). `test`, `regression` and `weekly` hold the host test lock. Lint,
+test, regression and reviewbot run on any Speedle runner; weekly trials and the
+scheduled weekly both stay on fiona for lower-noise benchmark comparisons.
+`build` stays on Linux because it needs the Linux Hugo release and `sha256sum`.

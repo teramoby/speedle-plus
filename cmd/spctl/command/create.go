@@ -175,7 +175,7 @@ func createCommandFunc(cmd *cobra.Command, args []string) {
 
 		}
 		if err == nil {
-			res, err = cli.Post([]string{"service"}, bytes.NewBuffer(buf), "")
+			res, err = cli.Post([]string{"service"}, bytes.NewBuffer(buf), globalFlags.Token)
 		}
 
 	case "policy", "rolepolicy":
@@ -201,7 +201,7 @@ func createCommandFunc(cmd *cobra.Command, args []string) {
 				_, buf, err = pdl.ParseRolePolicy(command, name)
 			}
 			if err == nil {
-				res, err = cli.Post([]string{"service", serviceName, kind}, buf, "")
+				res, err = cli.Post([]string{"service", serviceName, kind}, buf, globalFlags.Token)
 			}
 		} else {
 			if len(args) != 1 || jsonFileName == "" {
@@ -210,7 +210,7 @@ func createCommandFunc(cmd *cobra.Command, args []string) {
 			var buf []byte
 			buf, err = os.ReadFile(jsonFileName)
 			if err == nil {
-				res, err = cli.Post([]string{"service", serviceName, kind}, bytes.NewBuffer(buf), "")
+				res, err = cli.Post([]string{"service", serviceName, kind}, bytes.NewBuffer(buf), globalFlags.Token)
 			}
 		}
 	case "function":
@@ -233,7 +233,7 @@ func createCommandFunc(cmd *cobra.Command, args []string) {
 
 		}
 		if err == nil {
-			res, err = cli.Post([]string{"function"}, bytes.NewBuffer(buf), "")
+			res, err = cli.Post([]string{"function"}, bytes.NewBuffer(buf), globalFlags.Token)
 		}
 
 	default:

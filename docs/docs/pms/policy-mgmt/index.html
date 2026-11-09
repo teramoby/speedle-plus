@@ -20,7 +20,7 @@
 <link rel="alternate" hreflang="zh-CN" href="https://engine.speedle.io/zh/docs/pms/policy-mgmt/">
 <link rel="alternate" hreflang="x-default" href="https://engine.speedle.io/docs/pms/policy-mgmt/">
 <meta property="og:type" content="article">
-<meta property="article:modified_time" content="2026-11-08T20:55:55&#43;08:00">
+<meta property="article:modified_time" content="2026-11-09T07:22:28&#43;08:00">
 <meta property="og:site_name" content="Speedle Engine">
 <meta property="og:title" content="Policy Management · Speedle Engine">
 <meta property="og:description" content="Manage policy lifecycle ">
@@ -36,7 +36,7 @@
 <meta name="twitter:image" content="https://engine.speedle.io/img/social/engine-en.png">
 <meta name="twitter:image:alt" content="Speedle Engine — Fast. Simple. Access control">
 
-<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/docs/pms/policy-mgmt/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-08T20:55:55+08:00","description":"Manage policy lifecycle ","headline":"Policy Management","image":"https://engine.speedle.io/img/social/engine-en.png","inLanguage":"en","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/docs/pms/policy-mgmt/","@type":"WebPage"},"name":"Policy Management","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/docs/pms/policy-mgmt/"}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/docs/pms/policy-mgmt/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-09T07:22:28+08:00","description":"Manage policy lifecycle ","headline":"Policy Management","image":"https://engine.speedle.io/img/social/engine-en.png","inLanguage":"en","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/docs/pms/policy-mgmt/","@type":"WebPage"},"name":"Policy Management","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/docs/pms/policy-mgmt/"}</script>
 <script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/docs/pms/policy-mgmt/#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://engine.speedle.io/","name":"Home","position":1},{"@type":"ListItem","item":"https://engine.speedle.io/docs/","name":"Documentation","position":2},{"@type":"ListItem","item":"https://engine.speedle.io/docs/pms/","name":"Speedle Policy","position":3},{"@type":"ListItem","item":"https://engine.speedle.io/docs/pms/policy-mgmt/","name":"Policy Management","position":4}]}</script><link href="/css/docs.css" rel="stylesheet" type="text/css">
 
 
@@ -255,6 +255,38 @@ grant role manager update res1</code></pre></div>
 ./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ delete policy <span style="color:#f1fa8c">&#34;</span><span style="color:#8be9fd;font-style:italic">$policy_id</span><span style="color:#f1fa8c">&#34;</span> --service-name <span style="color:#8be9fd;font-style:italic">test</span>
 ./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ delete rolepolicy <span style="color:#f1fa8c">&#34;</span><span style="color:#8be9fd;font-style:italic">$role_policy_id</span><span style="color:#f1fa8c">&#34;</span> --service-name <span style="color:#8be9fd;font-style:italic">test</span>
 ./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ delete service test</code></pre></div>
+<h2 id="speedle-cloud">Speedle Cloud</h2>
+
+<p>Speedle Cloud sign-in opens soon. When API tokens become available, <code>spctl</code> can manage Cloud services and policies through the same commands used with a self-hosted PMS. Use the management endpoint:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">https://cloud.speedle.io/policy-mgmt/v1</code></pre></div>
+<p>Choose an API token with the scopes required by your commands. <code>pms:read</code> covers <code>get</code> and <code>discover</code> reads; <code>pms:write</code> covers <code>create</code>, <code>delete</code> and discovery resets. A token that only has ADS scopes cannot manage policies and is rejected with <code>403 insufficient_scope</code>.</p>
+
+<p>Pass the endpoint as a global flag and read the token from <code>SPCTL_TOKEN</code>. In an interactive shell, this keeps the secret out of command arguments and shell history:</p>
+
+<!-- deployment-template: cloud-token-environment -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#8be9fd;font-style:italic">read</span> -rsp <span style="color:#f1fa8c">&#39;API token: &#39;</span> SPCTL_TOKEN; <span style="color:#8be9fd;font-style:italic">echo</span>
+<span style="color:#8be9fd;font-style:italic">export</span> SPCTL_TOKEN
+./bin/spctl --pms-endpoint https://cloud.speedle.io/policy-mgmt/v1 get service --all
+<span style="color:#8be9fd;font-style:italic">unset</span> SPCTL_TOKEN</code></pre></div>
+<p>The <code>--token</code> flag remains available for compatibility, but the environment variable avoids exposing the token through command arguments. Every global flag also has an environment variable: prefix <code>SPCTL_</code>, uppercase the flag name and replace hyphens with underscores. For example, <code>SPCTL_PMS_ENDPOINT</code> sets <code>pms-endpoint</code> and <code>SPCTL_SKIPVERIFY</code> sets <code>skipverify</code>.</p>
+
+<p>For a saved configuration, use <code>~/.speedle</code>. Its format is one <code>name=value</code> pair per line, with the same flag names as the command line:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ini" data-lang="ini"><span style="color:#50fa7b">pms-endpoint</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">https://cloud.speedle.io/policy-mgmt/v1</span>
+<span style="color:#50fa7b">token</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&lt;api-token&gt;</span></code></pre></div>
+<p>Create or update this file without putting the token in command arguments:</p>
+
+<!-- deployment-template: cloud-token-config -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#8be9fd;font-style:italic">read</span> -rsp <span style="color:#f1fa8c">&#39;API token: &#39;</span> SPCTL_TOKEN; <span style="color:#8be9fd;font-style:italic">echo</span>
+<span style="color:#8be9fd;font-style:italic">printf</span> <span style="color:#f1fa8c">&#39;%s\n&#39;</span> <span style="color:#f1fa8c">&#34;</span><span style="color:#8be9fd;font-style:italic">$SPCTL_TOKEN</span><span style="color:#f1fa8c">&#34;</span> | ./bin/spctl config token --stdin
+<span style="color:#8be9fd;font-style:italic">unset</span> SPCTL_TOKEN</code></pre></div>
+<p><code>spctl config token --stdin</code> writes <code>~/.speedle</code> with mode <code>0600</code>. When editing the file manually, create it with <code>install -m 600 /dev/null ~/.speedle</code> or run <code>chmod 0600 ~/.speedle</code> afterwards. <code>spctl</code> warns on standard error if it reads a token from a file whose permissions allow group or other access. <code>spctl config --list</code> masks a configured token as <code>********</code>.</p>
+
+<p>Explicit command-line flags override environment variables, which override both configuration files. Within the files, <code>~/.speedle</code> overrides <code>~/.spctlconfig</code>. Setting a non-token key with <code>spctl config</code> writes it to <code>~/.spctlconfig</code> and removes any shadowing copy from <code>~/.speedle</code>.</p>
+
+<p>The token is sent as an <code>Authorization: Bearer</code> credential only over HTTPS with certificate verification enabled. Plain HTTP is allowed with a token only for a loopback host such as <code>127.0.0.1</code>, <code>::1</code> or <code>localhost</code>; <code>spctl</code> rejects remote HTTP endpoints and HTTPS-to-HTTP downgrade redirects before sending the credential. For HTTPS endpoints, it also refuses to send a token with <code>--skipverify=true</code>; use <code>--cacert</code> to trust a private or self-signed certificate authority instead. Tokens are not included in normal command output or error messages.</p>
+
+<p>Cloud errors produce a non-zero exit status. Check the token after a <code>401</code>, and its scopes after a <code>403 insufficient_scope</code>. A <code>404</code> identifies a missing resource, while <code>409 service_exists</code> and <code>409 policy_exists</code> identify duplicates. For <code>429</code>, honor the returned <code>Retry-After</code> value and use bounded backoff. Daily or policy quota errors require waiting for the reset or reducing usage; do not retry them in a tight loop.</p>
+
 <h2 id="other-interfaces">Other interfaces</h2>
 
 <p>The <a href="/docs/api/management_api/">PMS REST API</a> uses JSON and returns flat policy objects with string IDs. Go applications can call the <a href="https://github.com/teramoby/speedle-plus/tree/master/api/pms">PMS interfaces</a> directly; gRPC clients use the <a href="/protobuf/pms.proto">published PMS proto</a>. Apply <a href="/docs/security/">transport and caller access controls</a> to administrative operations.</p>
