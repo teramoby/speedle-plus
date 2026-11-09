@@ -7,7 +7,7 @@ import (
 	"encoding/json"
 	"os"
 
-	"github.com/teramoby/speedle-plus/pkg/assertion"
+	"github.com/teramoby/speedle-plus/pkg/assertion/config"
 	"github.com/teramoby/speedle-plus/pkg/errors"
 	"github.com/teramoby/speedle-plus/pkg/logging"
 )
@@ -32,14 +32,14 @@ type ServerConfig struct {
 }
 
 type Config struct {
-	StoreConfig             *StoreConfig              `json:"storeConfig"`
-	EnableWatch             bool                      `json:"enableWatch,omitempty"`
-	StoreFailureGracePeriod string                    `json:"storeFailureGracePeriod,omitempty"`
-	AsserterWebhookConfig   *assertion.AsserterConfig `json:"asserterWebhookConfig,omitempty"`
-	FuncsvcEndpoint         string                    `json:"funcsvcEndpoint,omitempty"`
-	ServerConfig            *ServerConfig             `json:"serverConfig,omitempty"`
-	LogConfig               *logging.LogConfig        `json:"logConfig,omitempty"`
-	AuditLogConfig          *logging.LogConfig        `json:"auditLogConfig,omitempty"`
+	StoreConfig             *StoreConfig           `json:"storeConfig"`
+	EnableWatch             bool                   `json:"enableWatch,omitempty"`
+	StoreFailureGracePeriod string                 `json:"storeFailureGracePeriod,omitempty"`
+	AsserterWebhookConfig   *config.AsserterConfig `json:"asserterWebhookConfig,omitempty"`
+	FuncsvcEndpoint         string                 `json:"funcsvcEndpoint,omitempty"`
+	ServerConfig            *ServerConfig          `json:"serverConfig,omitempty"`
+	LogConfig               *logging.LogConfig     `json:"logConfig,omitempty"`
+	AuditLogConfig          *logging.LogConfig     `json:"auditLogConfig,omitempty"`
 }
 
 func ReadConfig(configFileLocation string) (*Config, error) {
