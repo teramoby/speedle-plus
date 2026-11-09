@@ -75,13 +75,23 @@ func NewWithStore(conf *cfg.Config, s pms.PolicyStoreManagerADS) (evaluator Inte
 			return nil, errors.New(errors.ConfigError, "storeFailureGracePeriod must be a finite nonnegative duration")
 		}
 	}
+	watchEnabled := conf.EnableWatch
+	if requirement, ok := s.(store.WatchRequirement); ok && requirement.RequireWatch() {
+		// Such a store publishes new data only through its change events. A
+		// grace period would extend the life of a cache that cannot be updated,
+		// so it is rejected instead of silently ignored.
+		if grace != 0 {
+			return nil, errors.New(errors.ConfigError, "storeFailureGracePeriod must be 0s for a store that requires watching")
+		}
+		watchEnabled = true
+	}
 	ps, err := s.ReadPolicyStore()
 	if err != nil {
 		return nil, err
 	}
 
 	var updateChan pms.StorageChangeChannel
-	if conf.EnableWatch {
+	if watchEnabled {
 		log.Info("Watch policy store.")
 		updateChan, err = s.Watch()
 		if err != nil {
@@ -98,7 +108,9 @@ func NewWithStore(conf *cfg.Config, s pms.PolicyStoreManagerADS) (evaluator Inte
 	}
 
 	runtimePolicyStore := NewRuntimePolicyStore()
-	runtimePolicyStore.init(ps, conf.FuncsvcEndpoint)
+	if err := runtimePolicyStore.init(ps, conf.FuncsvcEndpoint); err != nil {
+		return nil, err
+	}
 
 	p := &PolicyEvalImpl{
 		RuntimePolicyStore:      runtimePolicyStore,

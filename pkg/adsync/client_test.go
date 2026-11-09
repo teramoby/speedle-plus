@@ -11,6 +11,7 @@ import (
 	"net"
 	"net/http"
 	"strconv"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -449,6 +450,52 @@ func TestConnectProxyFromEnvironment(t *testing.T) {
 	}
 	if want := fmt.Sprintf("example.com:%d", port); lastTarget != want {
 		t.Errorf("CONNECT target = %q, want %q", lastTarget, want)
+	}
+}
+
+type roundTripFunc func(*http.Request) (*http.Response, error)
+
+func (f roundTripFunc) RoundTrip(request *http.Request) (*http.Response, error) {
+	return f(request)
+}
+
+func TestCustomHTTPClientRejectsRedirectsWithoutMutation(t *testing.T) {
+	requests := 0
+	custom := &http.Client{Transport: roundTripFunc(func(request *http.Request) (*http.Response, error) {
+		requests++
+		status := http.StatusFound
+		body := `{}`
+		header := http.Header{"Location": {"http://elsewhere.example/policy-source/v1/services"}}
+		if requests > 1 {
+			status = http.StatusOK
+			body = `{"servicesVersion":1,"services":[]}`
+			header = http.Header{}
+		}
+		return &http.Response{
+			StatusCode: status,
+			Header:     header,
+			Body:       io.NopCloser(strings.NewReader(body)),
+			Request:    request,
+		}, nil
+	})}
+	client, err := NewClient(Config{
+		BaseURL:    "https://source.example",
+		Credential: testCredential,
+		PublicKeys: goldenPublicKeys(t, loadGolden(t)),
+		HTTPClient: custom,
+		Retry:      RetryPolicy{MaxAttempts: 1},
+	})
+	if err != nil {
+		t.Fatalf("NewClient: %v", err)
+	}
+	if _, err := client.Services(context.Background()); !errors.Is(err, ErrProtocol) {
+		t.Fatalf("Services redirect error = %v, want ErrProtocol", err)
+	}
+	if requests != 1 {
+		t.Errorf("HTTP requests = %d, want 1 (redirect not followed)", requests)
+	}
+	if custom.CheckRedirect != nil {
+		t.Error("NewClient mutated the caller's HTTP client")
 	}
 }
 

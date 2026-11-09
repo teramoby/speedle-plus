@@ -19,6 +19,7 @@
 // messages for every service of the instance. Channel feeds confirming acks and
 // notifications into a Machine.
 //
-// The policy-source store and the request gate are later steps. The package
-// never parses SPDL and never logs policy content or credentials.
+// The request gate is a later step, and pkg/store/policysource builds the
+// read-only store on top of Syncer and Machine. The package never parses SPDL
+// and never logs policy content or credentials.
 package adsync

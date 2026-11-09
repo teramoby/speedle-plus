@@ -33,8 +33,6 @@ const (
 	defaultUserAgent       = "speedle-adsync"
 
 	maxServicesResponseBytes = 1 << 20
-	maxSnapshotResponseBytes = 6 << 20
-	maxChangesResponseBytes  = 1 << 20
 	maxErrorResponseBytes    = 64 << 10
 
 	changePageLimit = maxCommitsPerPage
@@ -217,8 +215,15 @@ func NewClient(config Config) (*Client, error) {
 				return nil, err
 			}
 		}
-	} else if config.CAFile != "" || config.ClientCertFile != "" || config.ClientKeyFile != "" || config.Proxy != nil {
-		return nil, fmt.Errorf("adsync: HTTPClient cannot be combined with CAFile, client certificates or Proxy")
+	} else {
+		if config.CAFile != "" || config.ClientCertFile != "" || config.ClientKeyFile != "" || config.Proxy != nil {
+			return nil, fmt.Errorf("adsync: HTTPClient cannot be combined with CAFile, client certificates or Proxy")
+		}
+		// Do not mutate a caller-owned client or retain its redirect policy.
+		// The policy source is a fixed endpoint and credentials must not move.
+		cloned := *httpClient
+		cloned.CheckRedirect = rejectRedirect
+		httpClient = &cloned
 	}
 
 	userAgent := config.UserAgent
@@ -258,9 +263,7 @@ func newHTTPClient(config Config) (*http.Client, error) {
 		// A policy source is a fixed endpoint. Following a redirect could move
 		// the request (and its credential) somewhere else, so surface the 3xx
 		// as a protocol error instead.
-		CheckRedirect: func(*http.Request, []*http.Request) error {
-			return http.ErrUseLastResponse
-		},
+		CheckRedirect: rejectRedirect,
 	}, nil
 }
 
@@ -313,6 +316,10 @@ func newProxyFunc(config Config) func(*http.Request) (*url.URL, error) {
 	return func(request *http.Request) (*url.URL, error) {
 		return environmentProxy(request.URL)
 	}
+}
+
+func rejectRedirect(*http.Request, []*http.Request) error {
+	return http.ErrUseLastResponse
 }
 
 func loadCertPool(path string) (*x509.CertPool, error) {
