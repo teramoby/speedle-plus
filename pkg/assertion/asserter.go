@@ -44,7 +44,9 @@ type TokenAsserter interface {
 	AssertToken(token string, idpType string, allowedIDD string, requestHeaders map[string]string) (*AssertResponse, error)
 }
 
-// AsserterConfig asserter webhook client configuration
+// AsserterConfig preserves the original source name for the transport-free
+// config.AsserterConfig type. Reflection and gob type names use the config
+// package path; see docs/WASM.md for compatibility details.
 type AsserterConfig = config.AsserterConfig
 
 // WebHookAsserter implements asserter client interface

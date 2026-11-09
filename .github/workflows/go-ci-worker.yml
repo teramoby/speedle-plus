@@ -96,7 +96,8 @@ jobs:
           ADS_ENDPOINT: http://127.0.0.1:6734
         run: |
           set -euo pipefail
-          export GOPATH="$(go env GOPATH)"
+          GOPATH="$(go env GOPATH)"
+          export GOPATH
           # The two runners share a physical host. Hold the lock across the
           # port preflight and every service lifetime, never kill foreign jobs.
           exec 9>/tmp/speedle-plus-test-services.lock
@@ -122,6 +123,23 @@ jobs:
             test) scripts/ci/run-go-tests.sh gate ;;
             *) scripts/ci/run-go-tests.sh "${CI_TASK}" ;;
           esac
+
+      - name: Setup Node for js/wasm tests
+        if: inputs.mode == 'test'
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '22'
+          package-manager-cache: false
+
+      - name: Run js/wasm regression tests
+        if: inputs.mode == 'test'
+        run: |
+          set -euo pipefail
+          wasm_exec="$(go env GOROOT)/lib/wasm/go_js_wasm_exec"
+          env -i PATH="${PATH}" HOME="${HOME}" TMPDIR="${TMPDIR:-/tmp}" \
+            GOOS=js GOARCH=wasm \
+            go test -count=1 -exec="${wasm_exec}" ./pkg/eval/wasmtest ./pkg/assertion/config
+          bash scripts/ci/check-wasm-dependencies.sh
 
       - name: Clean owned MySQL containers
         if: always() && inputs.mode == 'nightly'

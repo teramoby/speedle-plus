@@ -9,6 +9,7 @@ import (
 	"crypto/x509"
 	"encoding/json"
 	log "github.com/sirupsen/logrus"
+	"github.com/teramoby/speedle-plus/3rdparty/github.com/Knetic/govaluate"
 	"github.com/teramoby/speedle-plus/api/ext"
 	"github.com/teramoby/speedle-plus/api/pms"
 	"github.com/teramoby/speedle-plus/pkg/errors"
@@ -18,9 +19,32 @@ import (
 	"time"
 )
 
-type Request2Delegator struct {
-	Function *pms.Function                `json:"function"`
-	Request  *ext.CustomerFunctionRequest `json:"request"`
+func (frc *FuncResultCache) generateCustomerExpressionFunction(cfdUrl *string, cf *pms.Function) (govaluate.ExpressionFunction, error) {
+	return func(arguments ...interface{}) (interface{}, error) {
+		params := []interface{}{}
+		params = append(params, arguments...)
+		request := &ext.CustomerFunctionRequest{
+			Params: params,
+		}
+		key, keyErr := getKey(cf.Name, arguments)
+		if keyErr != nil {
+			return nil, keyErr
+		}
+		var result interface{}
+		var err error
+		if result = frc.ReadFromCache(key, cf); result != nil {
+			return result, nil
+		}
+		if *cfdUrl == "" { //no delegator configured, request goes directly to customer function service
+			result, err = CallCustomerFunction(cf, request)
+		} else { //delegator configured, send request to delegator over http, and delegator sends request to customer function service over https
+			result, err = CallCustomerFunctionViaDelegator(*cfdUrl, cf, request)
+		}
+		if err == nil {
+			frc.AddToCache(key, cf, result)
+		}
+		return result, err
+	}, nil
 }
 
 func CallCustomerFunctionViaDelegator(delegatorUrl string, cf *pms.Function, request *ext.CustomerFunctionRequest) (interface{}, error) {
