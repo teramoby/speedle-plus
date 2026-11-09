@@ -176,7 +176,9 @@
 
 
 
-  <div id="kube-component" class="content"><p>Reference for your configured ADS. Request attributes are typed arrays; diagnostic attributes are objects.</p>
+  <div id="kube-component" class="content">
+
+<p>Reference for your configured ADS. Request attributes are typed arrays; diagnostic attributes are objects.</p>
 
 <p><a href="/docs/security/">Security and endpoint configuration</a>. This is a contract reference, not a backend hosted by speedle.io.</p>
 
@@ -235,6 +237,12 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 
+
+<h2 id="health-endpoints">Health endpoints</h2>
+
+<p><code>GET /healthz</code> reports process liveness and always answers <code>200 {&quot;status&quot;:&quot;ok&quot;}</code> while the process runs. It does not restart a stopped instance.</p>
+
+<p><code>GET /readyz</code> reports whether the instance can currently answer an authorization request: <code>200</code> when ready, <code>503</code> otherwise. The endpoint is unauthenticated and returns aggregate counts only, so it does not expose service identities, revisions or revocation state. A store without distribution support is always ready.</p>
 </div>
 </div>
 </main>

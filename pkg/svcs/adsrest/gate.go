@@ -12,6 +12,7 @@ import (
 	"github.com/teramoby/speedle-plus/pkg/adsync"
 	"github.com/teramoby/speedle-plus/pkg/errors"
 	"github.com/teramoby/speedle-plus/pkg/httputils"
+	"github.com/teramoby/speedle-plus/pkg/logging"
 	"github.com/teramoby/speedle-plus/pkg/svcs"
 	"github.com/teramoby/speedle-plus/pkg/svcs/adsgate"
 )
@@ -55,14 +56,53 @@ func writeGateFailure(w http.ResponseWriter, err error) {
 
 // forward sends the original request body to the configured Cloud fallback with
 // the Cloud credential and writes Cloud's response. The body and status are
-// unchanged; the only addition is the decision-source marker.
-func (e *RESTService) forward(w http.ResponseWriter, ctx context.Context, operation adsync.FallbackOperation, body []byte) {
+// unchanged; the only addition is the decision-source marker. Both the
+// forwarded decision and a forwarding failure are written to the audit trail,
+// like the local path of the same operation.
+func (e *RESTService) forward(w http.ResponseWriter, ctx context.Context, operation adsync.FallbackOperation, serviceName string, body []byte) {
+	auditFields := adsgate.FallbackAuditFields(operation, serviceName)
 	response, err := e.Gate.Forward(ctx, operation, body)
 	if err != nil {
+		logging.WriteFailedAuditLog(adsgate.FallbackAuditOperation(operation), auditFields, err.Error())
 		writeGateFailure(w, err)
 		return
 	}
+	logging.WriteSucceededAuditLog(adsgate.FallbackAuditOperation(operation), auditFields,
+		fallbackAuditResult(operation, response))
 	copyFallbackResponse(w, response)
+}
+
+// fallbackAuditResult records what Cloud decided. The response body is parsed
+// for the audit record only; the bytes sent to the caller are unchanged.
+func fallbackAuditResult(operation adsync.FallbackOperation, response *adsync.FallbackResponse) map[string]interface{} {
+	switch operation {
+	case adsync.FallbackAllGrantedRoles:
+		var roles []string
+		if err := adsync.ReadFallbackResponse(response.Body, &roles); err != nil {
+			return nil
+		}
+		return map[string]interface{}{"roles": roles}
+	case adsync.FallbackAllGrantedPermissions:
+		var permissions []PermissionResponse
+		if err := adsync.ReadFallbackResponse(response.Body, &permissions); err != nil {
+			return nil
+		}
+		return map[string]interface{}{"permissions": permissions}
+	default:
+		var decision struct {
+			Allowed      bool   `json:"allowed"`
+			Reason       int32  `json:"reason"`
+			ErrorMessage string `json:"errorMessage"`
+		}
+		if err := adsync.ReadFallbackResponse(response.Body, &decision); err != nil {
+			return nil
+		}
+		result := map[string]interface{}{"allowed": decision.Allowed, "reason": decision.Reason}
+		if decision.ErrorMessage != "" {
+			result["errorMessage"] = decision.ErrorMessage
+		}
+		return result
+	}
 }
 
 // copyFallbackResponse copies a Cloud authorization response. Hop-by-hop

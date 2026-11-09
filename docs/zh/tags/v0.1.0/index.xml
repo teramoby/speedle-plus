@@ -61,7 +61,8 @@ gRPC API  PMS proto：pb.PolicyManager ADS proto：pb.Evaluator  客户端必须
       <guid>https://engine.speedle.io/zh/docs/api/decision_api/</guid>
       <description>已配置 ADS 的接口参考。请求属性是带类型的数组，诊断响应属性是对象。
 请配置安全连接与端点访问控制。本文只说明接口约定，speedle.io 不提供托管授权后端。
-              document.addEventListener(&#39;DOMContentLoaded&#39;, function() { var url = &#34;\/swagger\/policy-check.zh.yaml&#34;; const ui = SwaggerUIBundle({ url: url, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.presets.apis ], plugins: [ SwaggerUIBundle.plugins.DownloadUrl ], validatorUrl: null, layout: &#34;BaseLayout&#34; }) window.ui = ui });  </description>
+              document.addEventListener(&#39;DOMContentLoaded&#39;, function() { var url = &#34;\/swagger\/policy-check.zh.yaml&#34;; const ui = SwaggerUIBundle({ url: url, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.presets.apis ], plugins: [ SwaggerUIBundle.plugins.DownloadUrl ], validatorUrl: null, layout: &#34;BaseLayout&#34; }) window.ui = ui });  健康检查端点 GET /healthz 报告进程存活；进程运行期间始终返回 200 {&amp;quot;status&amp;quot;:&amp;quot;ok&amp;quot;}，不会重启已停止的实例。
+GET /readyz 报告实例当前能否响应授权请求：就绪返回 200，否则返回 503。该端点无需认证，只返回汇总计数，不暴露 service 标识、版本或撤销状态。不支持策略分发的存储始终就绪。</description>
     </item>
     
     <item>
