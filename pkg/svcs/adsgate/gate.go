@@ -79,8 +79,20 @@ func (g *Gate) Route(serviceName string) Route {
 	if instance.Liveness == adsync.LivenessStopped {
 		return Route{Kind: RouteUnavailable, Reason: StoppedReason(instance)}
 	}
+	// A pending removal means the installed assembly may still authorize a
+	// service the source already removed or renamed. This holds for every
+	// machine state, including in_sync: a pass records the discovery removal
+	// before the state machine learns it, and a renamed service's previous
+	// name stays guarded until the replacement assembly is installed. Fail
+	// closed until the evaluator acknowledges that installation.
+	if removals, ok := g.source.(interface{ RemovalInstalled(string) bool }); ok && !removals.RemovalInstalled(serviceName) {
+		return Route{Kind: RouteUnavailable, Reason: adsync.ReasonSourceGone}
+	}
 	status, known := g.source.Status(serviceName)
-	if !known || status.Service.State == adsync.SyncStateRemoved {
+	if !known {
+		return Route{Kind: RouteLocal}
+	}
+	if status.Service.State == adsync.SyncStateRemoved {
 		return Route{Kind: RouteLocal}
 	}
 	switch status.Service.State {

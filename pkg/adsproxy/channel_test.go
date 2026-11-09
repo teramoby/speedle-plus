@@ -617,6 +617,34 @@ func TestPollRejectsOverflowingWait(t *testing.T) {
 	}
 }
 
+func TestChannelRejectsNonCanonicalQuery(t *testing.T) {
+	signer := newTestSigner(t)
+	mirror, _, _ := newPopulatedMirror(t, signer)
+	token := testToken(testDownstreamID, 1)
+	server := newTestServer(t, mirror, signer.publicKeys(t), nil, testCredential{
+		downstreamID: testDownstreamID,
+		token:        token,
+	})
+	for _, path := range []string{
+		adsync.APIPrefix + "/services?unknown=1",
+		adsync.APIPrefix + "/services/" + testServiceID1 + "/state?x=1&x=2",
+		adsync.APIPrefix + "/services/" + testServiceID1 + "/snapshot?unknown=1",
+		adsync.APIPrefix + "/channel?unknown=1",
+	} {
+		response, body := server.get(path, token, nil)
+		if response.StatusCode != http.StatusBadRequest {
+			t.Errorf("GET %s: status %d body %s", path, response.StatusCode, body)
+		}
+	}
+	for _, query := range []string{"wait=01", "wait=1&wait=2", "wait=", "unknown=1"} {
+		path := adsync.APIPrefix + "/channel/poll?" + query
+		response, body := server.post(path, token, heartbeatFrame([]string{testProxyID, testDownstreamID}))
+		if response.StatusCode != http.StatusBadRequest {
+			t.Errorf("POST %s: status %d body %s", path, response.StatusCode, body)
+		}
+	}
+}
+
 func TestHeartbeatAncestorChainWithoutThisProxy(t *testing.T) {
 	signer := newTestSigner(t)
 	mirror, _, _ := newPopulatedMirror(t, signer)

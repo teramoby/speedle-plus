@@ -3,6 +3,7 @@
 package policysource
 
 import (
+	"context"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -12,6 +13,7 @@ import (
 	"github.com/teramoby/speedle-plus/api/pms"
 	"github.com/teramoby/speedle-plus/pkg/adsync"
 	speedleerrors "github.com/teramoby/speedle-plus/pkg/errors"
+	"github.com/teramoby/speedle-plus/pkg/svcs/adsgate"
 )
 
 func mustRead(t *testing.T, store *Store) *pms.PolicyStore {
@@ -83,6 +85,280 @@ func ordersService() *testService {
 		}
 	})
 	return service
+}
+
+// TestOpenSyncWithoutRuntimeConfirmsLiveness covers the low-level Open path: a
+// store that does not own the notification runtime has no channel to produce a
+// confirmed ack, so its caller-driven Sync passes are the confirmation.
+// Repeated passes must keep the instance live and its services in sync without
+// another heartbeat source.
+func TestOpenSyncWithoutRuntimeConfirmsLiveness(t *testing.T) {
+	fixture := newTestFixture(t, booksService())
+	store, err := Open(nil, fixture.options)
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+	for pass := 0; pass < 2; pass++ {
+		if err := store.Sync(context.Background()); err != nil {
+			t.Fatalf("sync pass %d: %v", pass, err)
+		}
+		if err := store.Confirm(); err != nil {
+			t.Fatalf("confirm pass %d: %v", pass, err)
+		}
+		_, acknowledge, err := store.ReadPolicyStoreForReload()
+		if err != nil {
+			t.Fatalf("read published assembly: %v", err)
+		}
+		acknowledge()
+	}
+	status, known := store.Status("books")
+	if !known {
+		t.Fatal("books is not tracked")
+	}
+	if status.Service.State != adsync.SyncStateInSync {
+		t.Fatalf("books state after caller-driven sync = %q", status.Service.State)
+	}
+	if status.Instance.Liveness != adsync.LivenessLive {
+		t.Fatalf("instance liveness = %q, want live", status.Instance.Liveness)
+	}
+	if status.Instance.LastConfirmedAckAt.IsZero() {
+		t.Fatal("caller-driven sync did not confirm liveness")
+	}
+}
+
+// TestRenameGuardSurvivesAReplacementFetch covers the window between a
+// successful replacement fetch and the evaluator installing the renamed
+// assembly: the previous service name must stay unavailable until the
+// installation is acknowledged.
+func TestRenameGuardSurvivesAReplacementFetch(t *testing.T) {
+	fixture := newTestFixture(t, booksService())
+	store, err := Open(nil, fixture.options)
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+	confirmStoreGeneration(t, store)
+
+	// The channel reports an authoritative rename and the next pass fetches the
+	// replacement copy from the source.
+	if !store.renameCopies([]adsync.Service{{ID: testServiceID1, Name: "books-v2"}}) {
+		t.Fatal("the rename was not applied to the installed copy")
+	}
+	store.publish()
+	fixture.source.publishService("books", func(snapshot *adsync.Snapshot) {
+		snapshot.Name = "books-v2"
+	})
+	if err := store.Sync(nil); err != nil {
+		t.Fatalf("sync: %v", err)
+	}
+
+	// The evaluator has not installed the renamed assembly yet, so its
+	// previously installed name must not route locally.
+	if store.RemovalInstalled("books") {
+		t.Fatal("the previous name became routable before the renamed assembly was installed")
+	}
+	_, acknowledge, err := store.ReadPolicyStoreForReload()
+	if err != nil {
+		t.Fatalf("read published assembly: %v", err)
+	}
+	acknowledge()
+	if !store.RemovalInstalled("books") {
+		t.Fatal("the previous name stayed guarded after the renamed assembly was installed")
+	}
+}
+
+// TestDiscoveryRenameGuardsThePreviousName covers a rename that discovery
+// observes before the notification channel reports it. The state machine
+// forgets the old name as soon as discovery applies the new one, so the store
+// must guard the previous name itself until the evaluator installs the renamed
+// assembly.
+func TestDiscoveryRenameGuardsThePreviousName(t *testing.T) {
+	fixture := newTestFixture(t, booksService())
+	store := fixture.open(nil)
+
+	fixture.source.renameService("books", "books-v2", nil)
+	if err := store.Sync(nil); err != nil {
+		t.Fatalf("sync: %v", err)
+	}
+	if _, known := store.Status("books"); known {
+		t.Fatal("the machine still tracks the previous name after discovery")
+	}
+	if store.RemovalInstalled("books") {
+		t.Fatal("the previous name became routable before the renamed assembly was installed")
+	}
+	confirmStoreGeneration(t, store)
+	if !store.RemovalInstalled("books") {
+		t.Fatal("the previous name stayed guarded after the renamed assembly was installed")
+	}
+	renamed, found := fixture.source.service("books-v2")
+	if !found {
+		t.Fatal("the fixture lost the renamed service")
+	}
+	status, known := store.Status("books-v2")
+	if !known || status.Service.State != adsync.SyncStateInSync || status.Service.Revision != renamed.Revision {
+		t.Fatalf("renamed service = %+v, known %v, want revision %d", status.Service, known, renamed.Revision)
+	}
+}
+
+// TestDiscoveryRenameWithAFailingReplacementKeepsTheGuard covers a
+// discovery-led rename whose replacement cannot be parsed: the previous copy
+// stays installed, so the previous name must keep failing closed.
+func TestDiscoveryRenameWithAFailingReplacementKeepsTheGuard(t *testing.T) {
+	fixture := newTestFixture(t, booksService())
+	store := fixture.open(nil)
+
+	fixture.source.renameService("books", "books-v2", func(snapshot *adsync.Snapshot) {
+		snapshot.Policies = []adsync.Policy{policy("p-broken", "broken", "grant user alice")}
+	})
+	syncErr := store.Sync(nil)
+	if syncErr == nil || !strings.Contains(syncErr.Error(), ErrInvalidSPDL.Error()) {
+		t.Fatalf("sync error = %v, want the SPDL parse failure", syncErr)
+	}
+	// The old copy stays installed and published under its previous name.
+	policyStore := mustRead(t, store)
+	serviceNamed(t, policyStore, "books")
+	if store.RemovalInstalled("books") {
+		t.Fatal("the previous name was routable while the old copy was still installed")
+	}
+	if _, known := store.Status("books"); known {
+		t.Fatal("the machine still tracks the previous name after discovery")
+	}
+}
+
+// TestDiscoveryRemovalFailsClosedBeforeTheMachineLearnsIt covers the window
+// inside a pass between applying a discovery removal and updating the state
+// machine: the machine still reports the removed service in_sync, but the
+// request gate must already fail closed for it.
+func TestDiscoveryRemovalFailsClosedBeforeTheMachineLearnsIt(t *testing.T) {
+	fixture := newTestFixture(t, booksService())
+	store := fixture.open(nil)
+	gate := adsgate.New(store)
+	if route := gate.Route("books"); route.Kind != adsgate.RouteLocal {
+		t.Fatalf("route before the removal = %+v", route)
+	}
+
+	entered := make(chan struct{})
+	release := make(chan struct{})
+	var once sync.Once
+	store.setBeforeDiscover(func() {
+		once.Do(func() {
+			close(entered)
+			<-release
+		})
+	})
+	defer store.setBeforeDiscover(nil)
+
+	fixture.source.removeService("books")
+	syncDone := make(chan error, 1)
+	go func() { syncDone <- store.Sync(nil) }()
+	select {
+	case <-entered:
+	case err := <-syncDone:
+		t.Fatalf("Sync finished before discovery was applied: %v", err)
+	case <-time.After(5 * time.Second):
+		t.Fatal("timed out waiting for the discovery window")
+	}
+
+	// The pass recorded the removal, but the machine still serves the old head
+	// as in_sync. The gate must not route locally.
+	status, known := store.Status("books")
+	if !known || status.Service.State != adsync.SyncStateInSync {
+		t.Fatalf("machine state in the discovery window = %+v, known %v", status.Service, known)
+	}
+	if store.RemovalInstalled("books") {
+		t.Fatal("the removed name is not guarded in the discovery window")
+	}
+	if route := gate.Route("books"); route.Kind != adsgate.RouteUnavailable || route.Reason != adsync.ReasonSourceGone {
+		t.Fatalf("route for a discovery removal = %+v, want unavailable/source_gone", route)
+	}
+
+	close(release)
+	if err := <-syncDone; err != nil {
+		t.Fatalf("sync: %v", err)
+	}
+	// The evaluator has not acknowledged the assembly without the service yet,
+	// so the removed name stays guarded.
+	if route := gate.Route("books"); route.Kind != adsgate.RouteUnavailable {
+		t.Fatalf("route before the reload acknowledgement = %+v", route)
+	}
+	confirmStoreGeneration(t, store)
+	if route := gate.Route("books"); route.Kind != adsgate.RouteLocal {
+		t.Fatalf("route after the removal was installed = %+v", route)
+	}
+}
+
+// TestRenameAckInvalidatesAFetchOfThePreviousName covers a rename ack that
+// lands while a pass is already fetching the service: the fetched copy still
+// carries the previous name and must not replace the renamed one.
+func TestRenameAckInvalidatesAFetchOfThePreviousName(t *testing.T) {
+	fixture := newTestFixture(t, booksService())
+	store := fixture.open(nil)
+
+	// The next pass fetches a new revision under the previous name.
+	fixture.source.publishService("books", func(snapshot *adsync.Snapshot) {
+		snapshot.Policies = append(snapshot.Policies, policy("p-carol", "carol", "grant user carol read books"))
+	})
+	fetched := make(chan struct{})
+	resumed := make(chan struct{})
+	var once sync.Once
+	store.afterFetch = func(string) {
+		once.Do(func() {
+			close(fetched)
+			<-resumed
+		})
+	}
+
+	syncDone := make(chan error, 1)
+	go func() { syncDone <- store.Sync(nil) }()
+	select {
+	case <-fetched:
+	case err := <-syncDone:
+		t.Fatalf("Sync finished before the fetch was held: %v", err)
+	case <-time.After(5 * time.Second):
+		t.Fatal("timed out waiting for the in-flight fetch")
+	}
+
+	// A channel ack renames the service while the fetch is held. This mirrors
+	// the channel callback order: the machine learns the new name, then the
+	// store applies the rename and publishes.
+	fixture.source.renameService("books", "books-v2", nil)
+	renamed, found := fixture.source.service("books-v2")
+	if !found {
+		t.Fatal("the fixture lost the renamed service")
+	}
+	ack := adsync.Ack{Services: []adsync.Service{{
+		ID:            renamed.ID,
+		Name:          renamed.Name,
+		Epoch:         renamed.Epoch,
+		Revision:      renamed.Revision,
+		HeadStateHash: renamed.StateHash,
+	}}}
+	if err := store.machine.Ack(ack); err != nil {
+		t.Fatalf("apply rename ack: %v", err)
+	}
+	store.renameCopies(ack.Services)
+	store.publish()
+	close(resumed)
+	if err := <-syncDone; err != nil {
+		t.Fatalf("sync: %v", err)
+	}
+
+	// The evaluator installs the published assembly. The previous-name copy
+	// must not reappear.
+	_, acknowledge, err := store.ReadPolicyStoreForReload()
+	if err != nil {
+		t.Fatalf("read published assembly: %v", err)
+	}
+	acknowledge()
+	policyStore := mustRead(t, store)
+	serviceNamed(t, policyStore, "books-v2")
+	for _, service := range policyStore.Services {
+		if service.Name == "books" {
+			t.Fatalf("the previous-name copy replaced the renamed one: %+v", policyStore.Services)
+		}
+	}
+	if _, known := store.Status("books"); known {
+		t.Fatal("the machine still tracks the previous name")
+	}
 }
 
 func TestOpenAssemblesServicesAndParsesSPDL(t *testing.T) {
@@ -502,6 +778,7 @@ func TestInvalidSPDLKeepsPreviousCopy(t *testing.T) {
 		t.Fatal(err)
 	}
 	waitForReload(t, events)
+	confirmStoreGeneration(t, store)
 	books = serviceNamed(t, mustRead(t, store), "books")
 	if len(books.Policies) != 1 || books.Policies[0].ID != "p-fixed" {
 		t.Fatalf("books after recovery %+v", books.Policies)

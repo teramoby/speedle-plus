@@ -3,6 +3,7 @@
 package policysource
 
 import (
+	"context"
 	"crypto/ed25519"
 	"crypto/rand"
 	"encoding/base64"
@@ -139,6 +140,9 @@ type testSource struct {
 	paths    []string
 	failAll  bool
 
+	corruptSnapshotHash bool
+	snapshotHolds       map[string]chan struct{}
+
 	// Fallback endpoint behaviour.
 	fallbackCalls  int
 	fallbackPaths  []string
@@ -226,7 +230,6 @@ func (f *testSource) serveServices(w http.ResponseWriter) {
 
 func (f *testSource) serveSnapshot(w http.ResponseWriter, r *http.Request, serviceID string) {
 	f.mu.Lock()
-	defer f.mu.Unlock()
 	var service *testService
 	for _, candidate := range f.services {
 		if candidate.ID == serviceID {
@@ -235,28 +238,46 @@ func (f *testSource) serveSnapshot(w http.ResponseWriter, r *http.Request, servi
 		}
 	}
 	if service == nil {
+		f.mu.Unlock()
 		writeJSONError(w, http.StatusNotFound, "service_not_found", "")
 		return
 	}
 	etag := `"` + service.ID + "-" + service.Epoch + "-" +
 		strconv.FormatUint(service.Revision, 10) + "-" + service.StateHash.String() + `"`
 	if r.Header.Get("If-None-Match") == etag {
+		f.mu.Unlock()
 		w.WriteHeader(http.StatusNotModified)
 		return
 	}
-	signature := f.signer.sign(adsync.SnapshotSignedBytes(
-		service.ID, service.Epoch, service.Revision, service.StateHash, service.CommitHash,
-	))
-	writeJSON(w, http.StatusOK, adsync.SnapshotResponse{
+	stateHash := service.StateHash
+	if f.corruptSnapshotHash {
+		stateHash[0] ^= 0xff
+	}
+	response := adsync.SnapshotResponse{
 		ServiceID:  service.ID,
 		SourceID:   service.ID,
 		Epoch:      service.Epoch,
 		Revision:   service.Revision,
-		StateHash:  service.StateHash,
+		StateHash:  stateHash,
 		CommitHash: service.CommitHash,
-		Signature:  signature,
-		Snapshot:   service.Snapshot,
-	})
+		Signature: f.signer.sign(adsync.SnapshotSignedBytes(
+			service.ID, service.Epoch, service.Revision, stateHash, service.CommitHash)),
+		Snapshot: adsync.Snapshot{
+			Name:         service.Snapshot.Name,
+			Policies:     append([]adsync.Policy(nil), service.Snapshot.Policies...),
+			RolePolicies: append([]adsync.Policy(nil), service.Snapshot.RolePolicies...),
+		},
+	}
+	hold := f.snapshotHolds[serviceID]
+	f.mu.Unlock()
+	if hold != nil {
+		select {
+		case <-hold:
+		case <-r.Context().Done():
+			return
+		}
+	}
+	writeJSON(w, http.StatusOK, response)
 }
 
 // mutate applies a change to the source under its lock.
@@ -278,6 +299,27 @@ func (f *testSource) publishService(name string, mutate func(*adsync.Snapshot)) 
 	}
 }
 
+// renameService publishes a new revision under a new service name, so
+// discovery, the snapshot and later acks all carry the change together. The
+// optional mutate runs before the revision is hashed.
+func (f *testSource) renameService(name, newName string, mutate func(*adsync.Snapshot)) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	for _, service := range f.services {
+		if service.Name != name {
+			continue
+		}
+		service.Name = newName
+		service.publish(func(snapshot *adsync.Snapshot) {
+			snapshot.Name = newName
+			if mutate != nil {
+				mutate(snapshot)
+			}
+		})
+		return
+	}
+}
+
 // removeService drops one service from discovery and from the source.
 func (f *testSource) removeService(name string) {
 	f.mu.Lock()
@@ -289,6 +331,24 @@ func (f *testSource) removeService(name string) {
 		}
 	}
 	f.services = kept
+}
+
+func (f *testSource) holdSnapshots(serviceID string) {
+	f.mutate(func(source *testSource) {
+		if source.snapshotHolds == nil {
+			source.snapshotHolds = make(map[string]chan struct{})
+		}
+		source.snapshotHolds[serviceID] = make(chan struct{})
+	})
+}
+
+func (f *testSource) releaseSnapshots(serviceID string) {
+	f.mutate(func(source *testSource) {
+		if hold := source.snapshotHolds[serviceID]; hold != nil {
+			close(hold)
+			delete(source.snapshotHolds, serviceID)
+		}
+	})
 }
 
 func (f *testSource) service(name string) (*testService, bool) {
@@ -406,7 +466,28 @@ func (f *testFixture) open(mutate func(*Options)) *Store {
 	if err != nil {
 		f.t.Fatalf("open policy-source store: %v", err)
 	}
+	// Most store tests start from an established, evaluator-installed copy.
+	// Simulate the channel ack and reload acknowledgement explicitly; focused
+	// lifecycle tests use Open directly to observe the unconfirmed state.
+	if _, err := opened.client.Services(context.Background()); err == nil {
+		confirmStoreGeneration(f.t, opened)
+	}
 	return opened
+}
+
+// confirmStoreGeneration simulates the two external events that make a synced
+// revision eligible for local evaluation: a confirming channel ack and the
+// evaluator's acknowledgement that it installed the published assembly.
+func confirmStoreGeneration(t *testing.T, store *Store) {
+	t.Helper()
+	if err := store.Confirm(); err != nil {
+		t.Fatalf("confirm channel ack: %v", err)
+	}
+	_, acknowledge, err := store.ReadPolicyStoreForReload()
+	if err != nil {
+		t.Fatalf("read published generation: %v", err)
+	}
+	acknowledge()
 }
 
 // storeProperties returns store properties that use the real transport, for

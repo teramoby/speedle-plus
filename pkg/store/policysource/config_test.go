@@ -66,6 +66,10 @@ func TestBuilderRejectsInvalidConfiguration(t *testing.T) {
 		"fallback is not a boolean":       with(FallbackWhileSyncingKey, "perhaps"),
 		"fallback URL without credential": missing(CloudCredentialFileKey),
 		"fallback credential without URL": missing(CloudFallbackURLKey),
+		"unknown transport":               with(TransportKey, "sse"),
+		"downstream without credentials":  with(ServeDownstreamKey, true),
+		"invalid downstream limit":        with(MaxDownstreamKey, "many"),
+		"invalid connection limit":        with(MaxConnectionsKey, 1.5),
 	}
 	for name, properties := range cases {
 		t.Run(name, func(t *testing.T) {

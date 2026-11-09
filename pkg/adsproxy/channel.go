@@ -169,6 +169,10 @@ func formatChannelDuration(duration time.Duration) string {
 // HTTP error there; chain problems can only be seen after the hello frame and
 // close the connection with a policy-violation code.
 func (s *Server) handleChannel(w http.ResponseWriter, r *http.Request, credential *Credential) {
+	if _, ok := strictQuery(r.URL.RawQuery); !ok {
+		writeError(w, http.StatusBadRequest, "invalid_request", "")
+		return
+	}
 	// Reserve the connection slot before the upgrade: a WebSocket that never
 	// sends its hello frame still holds a socket, so it must count against the
 	// fan-out limits. The reservation moves to the subscription below.
@@ -393,7 +397,20 @@ func (s *Server) handlePoll(w http.ResponseWriter, r *http.Request, credential *
 			s.hub.Release(credential.DownstreamID)
 		}
 	}()
-	wait, ok := parsePollWait(r.URL.Query().Get("wait"))
+	query, ok := strictQuery(r.URL.RawQuery, "wait")
+	if !ok {
+		writeError(w, http.StatusBadRequest, "invalid_request", "")
+		return
+	}
+	waitText := ""
+	if query.Has("wait") {
+		waitText = query.Get("wait")
+		if waitText == "" {
+			writeError(w, http.StatusBadRequest, "invalid_request", "")
+			return
+		}
+	}
+	wait, ok := parsePollWait(waitText)
 	if !ok {
 		writeError(w, http.StatusBadRequest, "invalid_request", "")
 		return

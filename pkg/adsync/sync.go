@@ -314,6 +314,8 @@ func (s *Syncer) catchUp(ctx context.Context, local *ServiceState, service Servi
 		if page.NextSince != revision+1 {
 			return nil, fmt.Errorf("%w: next page does not follow revision %d", ErrProtocol, revision)
 		}
+		// "since" is exclusive: the next request resumes at the last applied
+		// revision, which is also nextSince-1.
 	}
 
 	if working.Revision < service.Revision {

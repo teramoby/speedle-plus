@@ -273,6 +273,9 @@ type Machine struct {
 	setKnown bool
 	records  map[string]*serviceRecord
 	nextSeq  uint64
+	// attemptSeq numbers the events that invalidate a synchronization attempt
+	// already in flight: a service record is created, removed or resynced.
+	attemptSeq uint64
 }
 
 type serviceRecord struct {
@@ -299,7 +302,23 @@ type serviceRecord struct {
 	verifiedSinceStop bool
 
 	removedSeq uint64
+	// generation changes whenever a result fetched earlier must no longer be
+	// reported: on creation, removal and resync of the record.
+	generation uint64
 }
+
+// SyncAttempt identifies one synchronization attempt for one service. A caller
+// obtains it with BeginSync before it starts fetching the service and passes it
+// to ApplyAttempt with the verified result. An attempt that started before a
+// resync, a removal or a re-add of the service is stale, and ApplyAttempt
+// ignores its result.
+type SyncAttempt struct {
+	serviceID  string
+	generation uint64
+}
+
+// ServiceID returns the service the attempt belongs to.
+func (a SyncAttempt) ServiceID() string { return a.serviceID }
 
 // NewMachine returns a Machine. A nil clock uses the system clock.
 func NewMachine(options MachineOptions) (*Machine, error) {
@@ -361,15 +380,34 @@ func (m *Machine) Ack(ack Ack) error {
 	defer m.mu.Unlock()
 	now := m.clock.Now()
 	m.advanceLocked(now)
-	m.applyThresholdsLocked(ack)
+	if err := m.applyThresholdsLocked(ack); err != nil {
+		return err
+	}
 	m.lastConfirmedAckAt = now
 	if m.stopped {
 		m.ackSinceStop = true
 	}
-	m.applySetLocked(ack.Services)
+	m.applySetLocked(ack.Services, true)
 	if m.stopped {
 		m.tryRecoverLocked(now)
 	}
+	return nil
+}
+
+// Discover applies the authoritative service set and heads returned by the
+// discovery endpoint. A data pull is not a confirmed heartbeat: it neither
+// refreshes liveness nor confirms a head. Only a channel ack can do that.
+func (m *Machine) Discover(services []Service) error {
+	if services == nil {
+		return nil
+	}
+	if err := validateAck(Ack{Services: services}); err != nil {
+		return err
+	}
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.advanceLocked(m.clock.Now())
+	m.applySetLocked(services, false)
 	return nil
 }
 
@@ -395,9 +433,52 @@ func (m *Machine) ObserveHead(head Head) error {
 	if record == nil || (m.setKnown && !record.setMember) || record.state == SyncStateRemoved {
 		return nil
 	}
-	record.updateHead(head.Epoch, head.Revision, head.StateHash, false)
+	m.updateRecordHeadLocked(record, head.Epoch, head.Revision, head.StateHash, false)
 	m.recomputeRecordLocked(record)
 	return nil
+}
+
+// updateRecordHeadLocked applies one head update. An epoch transition
+// invalidates every attempt that began under the previous epoch: a result
+// fetched from replaced policy must not be publishable afterwards, not even
+// when a delayed message moves the head back to the old epoch.
+func (m *Machine) updateRecordHeadLocked(record *serviceRecord, epoch string, revision uint64, stateHash Hash, confirmed bool) {
+	if record.headKnown && epoch != "" && record.epoch != "" && epoch != record.epoch {
+		m.invalidateAttemptsLocked(record)
+	}
+	record.updateHead(epoch, revision, stateHash, confirmed)
+}
+
+// BeginSync returns the attempt a caller passes to ApplyAttempt for a fetch of
+// one service that it is about to start. Call it before the fetch, never
+// after: the attempt captures the point after which a resync or a removal
+// makes the fetched result stale.
+func (m *Machine) BeginSync(serviceID string) SyncAttempt {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	attempt := SyncAttempt{serviceID: serviceID}
+	if record := m.records[serviceID]; record != nil {
+		attempt.generation = record.generation
+	}
+	return attempt
+}
+
+// AttemptCurrent reports whether nothing has invalidated the attempt yet.
+// ApplyAttempt makes the same check atomically; callers use this only to avoid
+// publishing a result that ApplyAttempt would ignore.
+func (m *Machine) AttemptCurrent(attempt SyncAttempt) bool {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return m.attemptCurrentLocked(attempt)
+}
+
+func (m *Machine) attemptCurrentLocked(attempt SyncAttempt) bool {
+	record := m.records[attempt.serviceID]
+	if record == nil {
+		// The service was unknown when the attempt began and still is.
+		return attempt.generation == 0
+	}
+	return record.generation == attempt.generation
 }
 
 // Applied records that one service now has a verified local copy. The caller
@@ -405,8 +486,31 @@ func (m *Machine) ObserveHead(head Head) error {
 // unchanged copy.
 //
 // Applied is ignored for a service that was removed: a sync that was already
-// in flight must not resurrect it.
+// in flight must not resurrect it. It does not know when the fetch began, so
+// it cannot tell a fresh copy from one fetched before a resync, a removal or a
+// re-add. A caller that begins the fetch before reporting it should use
+// ApplyAttempt with the attempt it obtained from BeginSync instead, which
+// rejects exactly those results.
 func (m *Machine) Applied(state *ServiceState) error {
+	return m.apply(state, nil)
+}
+
+// ApplyAttempt records the result of one synchronization attempt. The caller
+// reports the result of a successful Sync, including a re-verification of an
+// unchanged copy, together with the attempt it obtained from BeginSync before
+// the fetch.
+//
+// ApplyAttempt ignores a stale attempt: a fetch that started before a resync,
+// a removal or a re-add of the service cannot make its result servable, even
+// when the result is byte for byte what a fresh fetch would return.
+func (m *Machine) ApplyAttempt(attempt SyncAttempt, state *ServiceState) error {
+	if state != nil && attempt.serviceID != state.ServiceID {
+		return fmt.Errorf("adsync: sync attempt for service %q reports service %q", attempt.serviceID, state.ServiceID)
+	}
+	return m.apply(state, &attempt)
+}
+
+func (m *Machine) apply(state *ServiceState, attempt *SyncAttempt) error {
 	if state == nil {
 		return fmt.Errorf("adsync: nil service state")
 	}
@@ -421,6 +525,9 @@ func (m *Machine) Applied(state *ServiceState) error {
 	defer m.mu.Unlock()
 	now := m.clock.Now()
 	m.advanceLocked(now)
+	if attempt != nil && !m.attemptCurrentLocked(*attempt) {
+		return nil
+	}
 	record := m.records[state.ServiceID]
 	if record == nil {
 		if m.setKnown {
@@ -491,10 +598,10 @@ func (m *Machine) SyncFailed(serviceID string, err error) {
 // discard the old copy and fetch a new one, for example with Syncer.Forget
 // followed by Syncer.Sync.
 //
-// The caller must also serialize this with its synchronization passes: a
-// completion from a fetch that started before this call must not be reported
-// afterwards. The machine receives only verified copies and cannot tell how
-// old a reported fetch is.
+// Resync invalidates every attempt that began before it, so a fetch already
+// in flight when the command arrives cannot report its result as the fresh
+// copy: ApplyAttempt ignores it, and only an attempt begun after Resync can
+// bring the service back to in_sync.
 func (m *Machine) Resync(serviceID string) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -503,6 +610,7 @@ func (m *Machine) Resync(serviceID string) {
 	if record == nil || (m.setKnown && !record.setMember) || record.state == SyncStateRemoved {
 		return
 	}
+	m.invalidateAttemptsLocked(record)
 	record.pendingResync = true
 	record.hasLocal = false
 	record.localRevision = 0
@@ -611,37 +719,48 @@ func validateAck(ack Ack) error {
 	return nil
 }
 
-func (m *Machine) applyThresholdsLocked(ack Ack) {
+func (m *Machine) applyThresholdsLocked(ack Ack) error {
+	cloudHeartbeat, cloudStale, cloudStop := m.cloudHeartbeat, m.cloudStale, m.cloudStop
 	if ack.HeartbeatInterval >= minHeartbeatInterval && ack.HeartbeatInterval <= maxHeartbeatInterval {
-		m.cloudHeartbeat = ack.HeartbeatInterval
+		cloudHeartbeat = ack.HeartbeatInterval
 	}
 	if ack.StaleAfter > 0 && ack.StaleAfter <= maxStopAfter {
-		m.cloudStale = ack.StaleAfter
+		cloudStale = ack.StaleAfter
 	}
 	if ack.StopAfter >= minStopAfter && ack.StopAfter <= maxStopAfter {
-		m.cloudStop = ack.StopAfter
+		cloudStop = ack.StopAfter
 	}
+	thresholds := m.effectiveThresholds(cloudHeartbeat, cloudStale, cloudStop)
+	if thresholds.StaleAfter <= thresholds.HeartbeatInterval || thresholds.StopAfter <= thresholds.StaleAfter {
+		return fmt.Errorf("%w: source thresholds produce an impossible heartbeat cadence", ErrProtocol)
+	}
+	m.cloudHeartbeat, m.cloudStale, m.cloudStop = cloudHeartbeat, cloudStale, cloudStop
+	return nil
 }
 
 func (m *Machine) effectiveThresholdsLocked() Thresholds {
+	return m.effectiveThresholds(m.cloudHeartbeat, m.cloudStale, m.cloudStop)
+}
+
+func (m *Machine) effectiveThresholds(cloudHeartbeat, cloudStale, cloudStop time.Duration) Thresholds {
 	thresholds := Thresholds{
 		HeartbeatInterval: m.localHeartbeat,
 		StaleAfter:        m.localStale,
 		StopAfter:         m.localStop,
 	}
-	if m.cloudHeartbeat != 0 {
-		thresholds.HeartbeatInterval = m.cloudHeartbeat
+	if cloudHeartbeat != 0 && cloudHeartbeat < thresholds.HeartbeatInterval {
+		thresholds.HeartbeatInterval = cloudHeartbeat
 	}
-	if m.cloudStale != 0 && m.cloudStale < thresholds.StaleAfter {
-		thresholds.StaleAfter = m.cloudStale
+	if cloudStale != 0 && cloudStale < thresholds.StaleAfter {
+		thresholds.StaleAfter = cloudStale
 	}
-	if m.cloudStop != 0 && m.cloudStop < thresholds.StopAfter {
-		thresholds.StopAfter = m.cloudStop
+	if cloudStop != 0 && cloudStop < thresholds.StopAfter {
+		thresholds.StopAfter = cloudStop
 	}
 	return thresholds
 }
 
-func (m *Machine) applySetLocked(services []Service) {
+func (m *Machine) applySetLocked(services []Service, confirmed bool) {
 	m.setKnown = true
 	for _, record := range m.records {
 		record.setMember = false
@@ -650,10 +769,20 @@ func (m *Machine) applySetLocked(services []Service) {
 		record := m.records[service.ID]
 		if record == nil {
 			record = m.newRecordLocked(service.ID, service.Name)
+		} else if record.state == SyncStateRemoved {
+			// A re-added service starts over: nothing fetched while it was
+			// removed may be reported for it.
+			m.invalidateAttemptsLocked(record)
+		}
+		if record.name != "" && record.name != service.Name {
+			// A rename invalidates a fetch that began under the previous
+			// name: its snapshot still carries the old name and must not
+			// replace the renamed copy.
+			m.invalidateAttemptsLocked(record)
 		}
 		record.setMember = true
 		record.name = service.Name
-		record.updateHead(service.Epoch, service.Revision, service.HeadStateHash, true)
+		m.updateRecordHeadLocked(record, service.Epoch, service.Revision, service.HeadStateHash, confirmed)
 	}
 	for _, record := range m.records {
 		m.recomputeRecordLocked(record)
@@ -663,8 +792,17 @@ func (m *Machine) applySetLocked(services []Service) {
 
 func (m *Machine) newRecordLocked(id, name string) *serviceRecord {
 	record := &serviceRecord{id: id, name: name}
+	m.invalidateAttemptsLocked(record)
 	m.records[id] = record
 	return record
+}
+
+// invalidateAttemptsLocked gives the record a generation no earlier attempt
+// carries. Generations come from one machine-wide sequence, so a record that
+// is evicted and created again never reuses one.
+func (m *Machine) invalidateAttemptsLocked(record *serviceRecord) {
+	m.attemptSeq++
+	record.generation = m.attemptSeq
 }
 
 // recomputeRecordLocked derives the service state from the local copy, the
@@ -703,6 +841,7 @@ func (m *Machine) removeRecordLocked(record *serviceRecord) {
 	if record.state != SyncStateRemoved {
 		m.nextSeq++
 		record.removedSeq = m.nextSeq
+		m.invalidateAttemptsLocked(record)
 	}
 	record.state = SyncStateRemoved
 	record.reason = ""

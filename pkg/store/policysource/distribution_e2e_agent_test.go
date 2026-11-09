@@ -384,10 +384,10 @@ func (a *e2eAgent) syncMirror(ctx context.Context) {
 			// Up to date.
 		case sameIdentity && info.Revision < service.Revision:
 			if err := a.catchUpMirror(ctx, service, info); err != nil {
-				a.loadMirrorSnapshot(ctx, service.ID)
+				a.loadMirrorSnapshot(ctx, service)
 			}
 		default:
-			a.loadMirrorSnapshot(ctx, service.ID)
+			a.loadMirrorSnapshot(ctx, service)
 		}
 	}
 	a.mu.Lock()
@@ -422,12 +422,12 @@ func (a *e2eAgent) catchUpMirror(ctx context.Context, service adsync.Service, in
 	}
 }
 
-func (a *e2eAgent) loadMirrorSnapshot(ctx context.Context, serviceID string) {
-	snapshot, _, err := a.store.client.Snapshot(ctx, serviceID, "")
+func (a *e2eAgent) loadMirrorSnapshot(ctx context.Context, service adsync.Service) {
+	snapshot, _, err := a.store.client.Snapshot(ctx, service.ID, "")
 	if err != nil {
 		return
 	}
-	_ = a.mirror.ApplySnapshot(snapshot)
+	_ = a.mirror.ApplySnapshot(snapshot, service)
 }
 
 // --- Commands ---

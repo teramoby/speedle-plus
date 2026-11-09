@@ -163,6 +163,14 @@ func TestSnapshotETag(t *testing.T) {
 	if response.StatusCode != http.StatusOK {
 		t.Errorf("stale If-None-Match: status %d", response.StatusCode)
 	}
+
+	// A wildcard is not an exact identity tuple and must not suppress a new
+	// snapshot, even though generic HTTP caching often gives it that meaning.
+	header.Set("If-None-Match", "*")
+	response, _ = server.get(path, token, header)
+	if response.StatusCode != http.StatusOK {
+		t.Errorf("wildcard If-None-Match: status %d, want 200", response.StatusCode)
+	}
 }
 
 func TestStateEndpoint(t *testing.T) {
@@ -230,7 +238,11 @@ func TestChangesPaging(t *testing.T) {
 		t.Error("head state hash does not match the source")
 	}
 
-	for _, query := range []string{"", "?since=abc", "?since=+1", "?since=1&limit=0", "?since=1&limit=101"} {
+	for _, query := range []string{
+		"", "?since=abc", "?since=+1", "?since=1&limit=0", "?since=1&limit=101",
+		"?since=1&since=2", "?since=1&limit=2&limit=3", "?since=1&unknown=1",
+		"?since=01", "?since=1&limit=01", "?since=1&limit=",
+	} {
 		response, body := server.get(path+query, token, nil)
 		if response.StatusCode != http.StatusBadRequest {
 			t.Errorf("%q: status %d body %s", query, response.StatusCode, body)
@@ -411,8 +423,8 @@ func TestIfNoneMatch(t *testing.T) {
 	if !ifNoneMatch(`"other", `+etag, etag) {
 		t.Error("list match not detected")
 	}
-	if !ifNoneMatch("*", etag) {
-		t.Error("wildcard not detected")
+	if ifNoneMatch("*", etag) {
+		t.Error("wildcard matched without an exact identity tuple")
 	}
 	if ifNoneMatch(`"a-b-1-sha256:y"`, etag) {
 		t.Error("different tag matched")

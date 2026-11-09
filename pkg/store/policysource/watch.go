@@ -12,6 +12,11 @@ func (s *Store) Watch() (pms.StorageChangeChannel, error) {
 	if s.events == nil {
 		s.events = make(pms.StorageChangeChannel, 1)
 	}
+	if err := s.startRuntime(); err != nil {
+		close(s.events)
+		s.events = nil
+		return nil, err
+	}
 	return s.events, nil
 }
 

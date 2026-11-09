@@ -80,7 +80,7 @@ func mustAck(t *testing.T, machine *Machine, ack Ack) {
 
 func mustApply(t *testing.T, machine *Machine, state *ServiceState) {
 	t.Helper()
-	if err := machine.Applied(state); err != nil {
+	if err := machine.ApplyAttempt(machine.BeginSync(state.ServiceID), state); err != nil {
 		t.Fatalf("Applied: %v", err)
 	}
 }
@@ -175,6 +175,31 @@ func TestOnlyConfirmedAcksExtendLiveness(t *testing.T) {
 	}
 }
 
+func TestDiscoveryDoesNotConfirmHeartbeatOrHead(t *testing.T) {
+	machine, clock := newTestMachine(t)
+	books := testAckService(testServiceID1, "books", 5)
+	if err := machine.Discover([]Service{books}); err != nil {
+		t.Fatalf("Discover: %v", err)
+	}
+	mustApply(t, machine, testServiceState(testServiceID1, "books", 5))
+	requireServiceState(t, machine, "books", SyncStateSyncing, SyncReasonCatchUp)
+	if !machine.Instance().LastConfirmedAckAt.IsZero() {
+		t.Fatal("a discovery data pull confirmed a heartbeat")
+	}
+
+	clock.Advance(61 * time.Second)
+	requireLiveness(t, machine, LivenessStale)
+	if err := machine.Discover([]Service{books}); err != nil {
+		t.Fatalf("second Discover: %v", err)
+	}
+	requireLiveness(t, machine, LivenessStale)
+	requireServiceState(t, machine, "books", SyncStateSyncing, SyncReasonCatchUp)
+
+	mustAck(t, machine, ackWith(books))
+	requireLiveness(t, machine, LivenessLive)
+	requireServiceState(t, machine, "books", SyncStateInSync, "")
+}
+
 func TestSeveralServicesInDifferentStates(t *testing.T) {
 	machine, _ := newTestMachine(t)
 	books := testAckService(testServiceID1, "books", 5)
@@ -234,6 +259,45 @@ func TestAppliedBeforeAckWaitsForConfirmation(t *testing.T) {
 	requireServiceState(t, machine, "books", SyncStateSyncing, SyncReasonCatchUp)
 
 	mustAck(t, machine, ackWith(testAckService(testServiceID1, "books", 5)))
+	requireServiceState(t, machine, "books", SyncStateInSync, "")
+}
+
+func TestEpochChangeInvalidatesAnInFlightAttempt(t *testing.T) {
+	machine, _ := newTestMachine(t)
+	epochA := testAckService(testServiceID1, "books", 1)
+	mustAck(t, machine, ackWith(epochA))
+	mustApply(t, machine, testServiceState(testServiceID1, "books", 1))
+	requireServiceState(t, machine, "books", SyncStateInSync, "")
+
+	// A fetch starts while the service is in epoch A.
+	attempt := machine.BeginSync(testServiceID1)
+
+	// The source moves to epoch B and a delayed epoch-A ack arrives before the
+	// in-flight fetch reports back.
+	epochB := epochA
+	epochB.Epoch = testServiceID2
+	epochB.HeadStateHash = StateHash(Snapshot{Name: "books-b"})
+	mustAck(t, machine, ackWith(epochB))
+	mustAck(t, machine, ackWith(epochA))
+	requireServiceState(t, machine, "books", SyncStateSyncing, SyncReasonBootstrap)
+
+	// The epoch-A result is stale: an epoch transition invalidated the
+	// attempt, so the delayed ack cannot make the fetched copy servable.
+	if err := machine.ApplyAttempt(attempt, testServiceState(testServiceID1, "books", 1)); err != nil {
+		t.Fatalf("Applied: %v", err)
+	}
+	status := requireServiceState(t, machine, "books", SyncStateSyncing, SyncReasonBootstrap)
+	if status.Revision != 0 {
+		t.Fatalf("stale epoch-A copy revision = %d, want no local copy", status.Revision)
+	}
+
+	// A confirming ack and a fetch under the new epoch complete normally.
+	mustAck(t, machine, ackWith(epochB))
+	stateB := testServiceState(testServiceID1, "books", 1)
+	stateB.Epoch = testServiceID2
+	stateB.StateHash = epochB.HeadStateHash
+	stateB.CommitHash = epochB.HeadStateHash
+	mustApply(t, machine, stateB)
 	requireServiceState(t, machine, "books", SyncStateInSync, "")
 }
 
@@ -519,7 +583,7 @@ func TestCloudThresholdsCanOnlyTighten(t *testing.T) {
 	})
 	t.Run("warning tightened", func(t *testing.T) {
 		machine, clock := newTestMachine(t)
-		mustAck(t, machine, Ack{Services: []Service{}, StaleAfter: 30 * time.Second})
+		mustAck(t, machine, Ack{Services: []Service{}, HeartbeatInterval: 15 * time.Second, StaleAfter: 30 * time.Second})
 		if got := machine.Thresholds().StaleAfter; got != 30*time.Second {
 			t.Fatalf("stale threshold = %s, want 30s", got)
 		}
@@ -531,6 +595,19 @@ func TestCloudThresholdsCanOnlyTighten(t *testing.T) {
 		mustAck(t, machine, Ack{Services: []Service{}, HeartbeatInterval: 15 * time.Second})
 		if got := machine.Thresholds().HeartbeatInterval; got != 15*time.Second {
 			t.Fatalf("heartbeat interval = %s, want 15s", got)
+		}
+	})
+	t.Run("heartbeat cannot be loosened", func(t *testing.T) {
+		machine, _ := newTestMachine(t)
+		mustAck(t, machine, Ack{
+			Services:          []Service{},
+			HeartbeatInterval: 5 * time.Minute,
+			StaleAfter:        time.Minute,
+			StopAfter:         2 * time.Minute,
+		})
+		thresholds := machine.Thresholds()
+		if thresholds.HeartbeatInterval != 30*time.Second || thresholds.StaleAfter != time.Minute || thresholds.StopAfter != 2*time.Minute {
+			t.Fatalf("thresholds = %+v, want local 30s/60s/120s", thresholds)
 		}
 	})
 	t.Run("out of range values are ignored", func(t *testing.T) {
@@ -671,6 +748,123 @@ func TestResyncForcesOneServiceToSyncing(t *testing.T) {
 	requireServiceState(t, machine, "books", SyncStateInSync, "")
 }
 
+func TestFetchInFlightBeforeResyncCannotCompleteIt(t *testing.T) {
+	machine, _ := newTestMachine(t)
+	books := testAckService(testServiceID1, "books", 5)
+	mustAck(t, machine, ackWith(books))
+	mustApply(t, machine, testServiceState(testServiceID1, "books", 5))
+
+	// A pass starts fetching books, then the resync command arrives. The
+	// completed fetch is byte for byte what a fresh fetch would return, yet it
+	// began before the resync and must not end it.
+	inFlight := machine.BeginSync(testServiceID1)
+	machine.Resync(testServiceID1)
+	if machine.AttemptCurrent(inFlight) {
+		t.Fatal("an attempt that began before the resync is still current")
+	}
+	if err := machine.ApplyAttempt(inFlight, testServiceState(testServiceID1, "books", 5)); err != nil {
+		t.Fatalf("Applied: %v", err)
+	}
+	status := requireServiceState(t, machine, "books", SyncStateSyncing, SyncReasonResync)
+	if status.Revision != 0 {
+		t.Fatalf("revision = %d, want the discarded copy to stay discarded", status.Revision)
+	}
+
+	fresh := machine.BeginSync(testServiceID1)
+	if !machine.AttemptCurrent(fresh) {
+		t.Fatal("an attempt begun after the resync is not current")
+	}
+	if err := machine.ApplyAttempt(fresh, testServiceState(testServiceID1, "books", 5)); err != nil {
+		t.Fatalf("Applied: %v", err)
+	}
+	requireServiceState(t, machine, "books", SyncStateInSync, "")
+}
+
+func TestFetchInFlightBeforeRemovalCannotServeTheReaddedService(t *testing.T) {
+	machine, _ := newTestMachine(t)
+	books := testAckService(testServiceID1, "books", 5)
+	mustAck(t, machine, ackWith(books))
+	mustApply(t, machine, testServiceState(testServiceID1, "books", 5))
+
+	inFlight := machine.BeginSync(testServiceID1)
+	mustAck(t, machine, Ack{Services: []Service{}})
+	requireServiceState(t, machine, "books", SyncStateRemoved, "")
+	mustAck(t, machine, ackWith(books))
+	requireServiceState(t, machine, "books", SyncStateSyncing, SyncReasonBootstrap)
+
+	if err := machine.ApplyAttempt(inFlight, testServiceState(testServiceID1, "books", 5)); err != nil {
+		t.Fatalf("Applied: %v", err)
+	}
+	requireServiceState(t, machine, "books", SyncStateSyncing, SyncReasonBootstrap)
+
+	mustApply(t, machine, testServiceState(testServiceID1, "books", 5))
+	requireServiceState(t, machine, "books", SyncStateInSync, "")
+}
+
+func TestAppliedRejectsAnAttemptForAnotherService(t *testing.T) {
+	machine, _ := newTestMachine(t)
+	mustAck(t, machine, ackWith(testAckService(testServiceID1, "books", 5)))
+	if err := machine.ApplyAttempt(machine.BeginSync(testServiceID2), testServiceState(testServiceID1, "books", 5)); err == nil {
+		t.Fatal("Applied accepted an attempt that belongs to another service")
+	}
+	requireServiceState(t, machine, "books", SyncStateSyncing, SyncReasonBootstrap)
+}
+
+// TestRenameInvalidatesAnInFlightAttempt covers a rename that lands while a
+// fetch under the previous name is already running: the fetched copy still
+// carries the old name and must not be reported for the renamed service.
+func TestRenameInvalidatesAnInFlightAttempt(t *testing.T) {
+	machine, _ := newTestMachine(t)
+	books := testAckService(testServiceID1, "books", 5)
+	mustAck(t, machine, ackWith(books))
+	mustApply(t, machine, testServiceState(testServiceID1, "books", 5))
+	requireServiceState(t, machine, "books", SyncStateInSync, "")
+
+	// A fetch starts under the previous name.
+	inFlight := machine.BeginSync(testServiceID1)
+
+	// The ack renames the service before the fetch reports back.
+	renamed := testAckService(testServiceID1, "books-v2", 5)
+	mustAck(t, machine, ackWith(renamed))
+	if machine.AttemptCurrent(inFlight) {
+		t.Fatal("an attempt taken before the rename is still current")
+	}
+	if err := machine.ApplyAttempt(inFlight, testServiceState(testServiceID1, "books", 5)); err != nil {
+		t.Fatalf("ApplyAttempt: %v", err)
+	}
+	status, known := machine.Status("books-v2")
+	if !known {
+		t.Fatal("the renamed name is not tracked")
+	}
+	if status.Service.State == SyncStateInSync {
+		t.Fatal("the previous-name copy completed the renamed service")
+	}
+	if _, known := machine.Status("books"); known {
+		t.Fatal("the previous name is still tracked")
+	}
+}
+
+// TestAppliedWithoutAttemptKeepsThePreviousContract covers the compatibility
+// entry point: Applied reports a verified copy without an attempt, so it
+// cannot reject a fetch that began before a resync. Callers that need that
+// guarantee use ApplyAttempt; both share the same state transition.
+func TestAppliedWithoutAttemptKeepsThePreviousContract(t *testing.T) {
+	machine, _ := newTestMachine(t)
+	books := testAckService(testServiceID1, "books", 5)
+	mustAck(t, machine, ackWith(books))
+	mustApply(t, machine, testServiceState(testServiceID1, "books", 5))
+	requireServiceState(t, machine, "books", SyncStateInSync, "")
+
+	// A resync discards the copy. Applied carries no attempt, so its weaker
+	// contract still records the reported copy.
+	machine.Resync(testServiceID1)
+	requireServiceState(t, machine, "books", SyncStateSyncing, SyncReasonResync)
+	if err := machine.Applied(testServiceState(testServiceID1, "books", 5)); err != nil {
+		t.Fatalf("Applied: %v", err)
+	}
+	requireServiceState(t, machine, "books", SyncStateInSync, "")
+}
+
 func TestEpochChangeRequiresASnapshot(t *testing.T) {
 	machine, _ := newTestMachine(t)
 	mustAck(t, machine, ackWith(testAckService(testServiceID1, "books", 5)))
@@ -808,10 +1002,10 @@ func TestAckValidation(t *testing.T) {
 	if err := machine.ObserveHead(Head{ID: "bad", Revision: 1}); !errors.Is(err, ErrProtocol) {
 		t.Fatalf("invalid head error = %v, want ErrProtocol", err)
 	}
-	if err := machine.Applied(nil); err == nil {
+	if err := machine.ApplyAttempt(machine.BeginSync(""), nil); err == nil {
 		t.Fatal("Applied(nil) must fail")
 	}
-	if err := machine.Applied(&ServiceState{ServiceID: "bad", Snapshot: Snapshot{Name: "books"}}); !errors.Is(err, ErrProtocol) {
+	if err := machine.ApplyAttempt(machine.BeginSync("bad"), &ServiceState{ServiceID: "bad", Snapshot: Snapshot{Name: "books"}}); !errors.Is(err, ErrProtocol) {
 		t.Fatalf("invalid applied state error = %v, want ErrProtocol", err)
 	}
 }
@@ -884,7 +1078,7 @@ func TestAppliedBeforeTheFirstAckIsBounded(t *testing.T) {
 		fmt.Sprintf("service-%d", maxServicesPerSource+1),
 		1,
 	)
-	if err := machine.Applied(extra); !errors.Is(err, ErrProtocol) {
+	if err := machine.ApplyAttempt(machine.BeginSync(extra.ServiceID), extra); !errors.Is(err, ErrProtocol) {
 		t.Fatalf("Applied beyond the pre-ack bound = %v, want ErrProtocol", err)
 	}
 	if tracked := len(machine.Services()); tracked != maxServicesPerSource {

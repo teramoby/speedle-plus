@@ -89,8 +89,23 @@ func (p *PolicyEvalImpl) deleteService(serviceName string) {
 	p.RuntimePolicyStore.deleteService(serviceName)
 }
 
+type reloadReadingStore interface {
+	ReadPolicyStoreForReload() (*pms.PolicyStore, func(), error)
+}
+
+// readPolicyStoreForReload lets a distributing store bind its state transition
+// to the exact generation the evaluator installs. Other stores keep their
+// existing read path and have no acknowledgment to make.
+func readPolicyStoreForReload(store pms.PolicyStoreManagerADS) (*pms.PolicyStore, func(), error) {
+	if reader, ok := store.(reloadReadingStore); ok {
+		return reader.ReadPolicyStoreForReload()
+	}
+	snapshot, err := store.ReadPolicyStore()
+	return snapshot, nil, err
+}
+
 func (p *PolicyEvalImpl) fullReloadRuntimeCache() error {
-	ps, err := p.Store.ReadPolicyStore()
+	ps, acknowledge, err := readPolicyStoreForReload(p.Store)
 	if err != nil {
 		p.storeUnavailableLocked()
 		log.Errorf("Fail to full reload runtime cache, err:%v", err)
@@ -101,6 +116,9 @@ func (p *PolicyEvalImpl) fullReloadRuntimeCache() error {
 		return err
 	}
 	p.storeAvailableLocked()
+	if acknowledge != nil {
+		acknowledge()
+	}
 	return nil
 }
 

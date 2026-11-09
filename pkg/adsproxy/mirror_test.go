@@ -154,6 +154,110 @@ func TestMirrorRejectsBadSnapshot(t *testing.T) {
 	}
 }
 
+func TestMirrorSnapshotMustMatchRequestedIdentity(t *testing.T) {
+	signer := newTestSigner(t)
+	mirror := newTestMirror(t, signer.publicKeys(t), nil)
+	service := newFixtureService(testServiceID1, "books")
+
+	// A signed snapshot for another service is rejected for the requested one,
+	// even though its own source-service tuple is consistent.
+	other := newFixtureService(testServiceID2, "orders")
+	response := other.snapshotResponse(t, signer)
+	response.ServiceID = other.ID
+	response.SourceID = other.ID
+	response.Epoch = other.Epoch
+	response.Signature = signer.sign(adsync.SnapshotSignedBytes(
+		response.SourceID, response.Epoch, response.Revision, response.StateHash, response.CommitHash))
+	if err := mirror.ApplySnapshot(response, service.service()); !errors.Is(err, adsync.ErrProtocol) {
+		t.Fatalf("ApplySnapshot error = %v, want ErrProtocol", err)
+	}
+	if _, availability := mirror.Lookup(service.ID); availability != ServiceUnknown {
+		t.Fatalf("mismatched snapshot left service availability %v", availability)
+	}
+
+	// A snapshot whose sourceId is not its own service id is rejected even when
+	// the caller names no expected service.
+	mismatched := service.snapshotResponse(t, signer)
+	mismatched.SourceID = testServiceID2
+	if err := mirror.ApplySnapshot(mismatched); !errors.Is(err, adsync.ErrProtocol) {
+		t.Fatalf("source/service mismatch error = %v, want ErrProtocol", err)
+	}
+
+	// An epoch mismatch for the same service id is rejected too.
+	staleEpoch := service.service()
+	staleEpoch.Epoch = testServiceID2
+	if err := mirror.ApplySnapshot(service.snapshotResponse(t, signer), staleEpoch); !errors.Is(err, adsync.ErrProtocol) {
+		t.Fatalf("epoch mismatch error = %v, want ErrProtocol", err)
+	}
+
+	// More than one expected service is a caller configuration error.
+	if err := mirror.ApplySnapshot(service.snapshotResponse(t, signer), service.service(), service.service()); !errors.Is(err, ErrConfig) {
+		t.Fatalf("two expected services error = %v, want ErrConfig", err)
+	}
+}
+
+func TestMirrorWithheldCopyStaysUnavailableAcrossPartialCatchUp(t *testing.T) {
+	signer := newTestSigner(t)
+	mirror := newTestMirror(t, signer.publicKeys(t), nil)
+	service := newFixtureService(testServiceID1, "books")
+	if err := mirror.ApplySnapshot(service.snapshotResponse(t, signer)); err != nil {
+		t.Fatalf("apply snapshot: %v", err)
+	}
+	service.publish(t, signer, upsertAuthz(testServiceID1+"A1", "read", "grant read"))
+	service.publish(t, signer, upsertAuthz(testServiceID1+"A2", "write", "grant write"))
+
+	if info, current := mirror.CurrentInfo(service.ID); !current || info.Revision != 1 {
+		t.Fatalf("CurrentInfo before withholding = %+v, %v", info, current)
+	}
+	if _, current := mirror.CurrentInfo(testUnknownID); current {
+		t.Fatal("CurrentInfo reported an unknown service")
+	}
+	mirror.MarkUnavailable(service.ID)
+	mirror.MarkUnavailable(service.ID) // already withheld: a no-op
+	mirror.MarkUnavailable(testUnknownID)
+	if info, current := mirror.CurrentInfo(service.ID); !current || info.Revision != 1 {
+		t.Fatalf("CurrentInfo after withholding = %+v, %v; the verified copy must stay readable", info, current)
+	}
+	partial := pageFor(t, service, 1, 1)
+	if partial.From != 2 || partial.To != 2 || partial.Head != 3 {
+		t.Fatalf("partial page = %+v", partial)
+	}
+	if err := mirror.ApplyChanges(partial); err != nil {
+		t.Fatalf("apply partial page: %v", err)
+	}
+
+	// A page that stops behind the head must not expose the intermediate copy,
+	// even though its commits verified.
+	if _, availability := mirror.Lookup(service.ID); availability != ServiceNeedsSnapshot {
+		t.Fatalf("availability after a partial page = %v, want ServiceNeedsSnapshot", availability)
+	}
+	if services := mirror.Services(); len(services) != 0 {
+		t.Fatalf("advertised services after a partial page = %+v", services)
+	}
+	if _, found := mirror.Snapshot(service.ID); found {
+		t.Fatal("withheld copy answered a snapshot request after a partial page")
+	}
+	if _, err := mirror.Changes(service.ID, 1, 100); !errors.Is(err, ErrSnapshotRequired) {
+		t.Fatalf("changes after a partial page = %v, want ErrSnapshotRequired", err)
+	}
+
+	// Even a completed catch-up stays withheld until the runtime restores it.
+	if err := mirror.ApplyChanges(pageFor(t, service, 2, 100)); err != nil {
+		t.Fatalf("apply final page: %v", err)
+	}
+	if _, availability := mirror.Lookup(service.ID); availability != ServiceNeedsSnapshot {
+		t.Fatal("a completed catch-up cleared the withheld flag without the runtime")
+	}
+	mirror.MarkAvailable(service.ID)
+	info, availability := mirror.Lookup(service.ID)
+	if availability != ServiceAvailable || info.Revision != 3 {
+		t.Fatalf("restored copy = %+v, availability %v", info, availability)
+	}
+	// Restoring an already-served or unknown service is a no-op.
+	mirror.MarkAvailable(service.ID)
+	mirror.MarkAvailable(testUnknownID)
+}
+
 func TestMirrorRejectsPageGap(t *testing.T) {
 	signer := newTestSigner(t)
 	mirror := newTestMirror(t, signer.publicKeys(t), nil)

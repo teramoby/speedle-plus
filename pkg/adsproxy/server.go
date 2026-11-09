@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 	"sync"
@@ -332,7 +333,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		defer s.credentials.EndRequest()
-		s.handleServices(w, credential)
+		s.handleServices(w, r, credential)
 	case rest == "/channel":
 		if r.Method != http.MethodGet {
 			writeError(w, http.StatusMethodNotAllowed, "method_not_allowed", "")
@@ -370,8 +371,16 @@ func (s *Server) handleService(w http.ResponseWriter, r *http.Request, credentia
 	}
 	switch action {
 	case "state":
+		if _, ok := strictQuery(r.URL.RawQuery); !ok {
+			writeError(w, http.StatusBadRequest, "invalid_request", "")
+			return
+		}
 		s.handleState(w, credential, serviceID)
 	case "snapshot":
+		if _, ok := strictQuery(r.URL.RawQuery); !ok {
+			writeError(w, http.StatusBadRequest, "invalid_request", "")
+			return
+		}
 		s.handleSnapshot(w, r, credential, serviceID)
 	case "changes":
 		s.handleChanges(w, r, credential, serviceID)
@@ -380,7 +389,11 @@ func (s *Server) handleService(w http.ResponseWriter, r *http.Request, credentia
 	}
 }
 
-func (s *Server) handleServices(w http.ResponseWriter, credential *Credential) {
+func (s *Server) handleServices(w http.ResponseWriter, r *http.Request, credential *Credential) {
+	if _, ok := strictQuery(r.URL.RawQuery); !ok {
+		writeError(w, http.StatusBadRequest, "invalid_request", "")
+		return
+	}
 	services, version := s.mirror.ServicesVersion()
 	visible := make([]adsync.Service, 0, len(services))
 	for _, service := range services {
@@ -444,16 +457,22 @@ func (s *Server) handleChanges(w http.ResponseWriter, r *http.Request, credentia
 	if _, ok := s.resolveService(w, credential, serviceID); !ok {
 		return
 	}
-	sinceText := r.URL.Query().Get("since")
+	query, ok := strictQuery(r.URL.RawQuery, "since", "limit")
+	if !ok {
+		writeError(w, http.StatusBadRequest, "invalid_request", "")
+		return
+	}
+	sinceText := query.Get("since")
 	since, err := strconv.ParseUint(sinceText, 10, 64)
 	if err != nil || strconv.FormatUint(since, 10) != sinceText {
 		writeError(w, http.StatusBadRequest, "invalid_request", "")
 		return
 	}
 	limit := maxCommitsPerPage
-	if limitText := r.URL.Query().Get("limit"); limitText != "" {
+	if query.Has("limit") {
+		limitText := query.Get("limit")
 		parsed, err := strconv.Atoi(limitText)
-		if err != nil || parsed < 1 || parsed > maxCommitsPerPage {
+		if err != nil || parsed < 1 || parsed > maxCommitsPerPage || strconv.Itoa(parsed) != limitText {
 			writeError(w, http.StatusBadRequest, "invalid_request", "")
 			return
 		}
@@ -544,16 +563,35 @@ func snapshotETag(response adsync.SnapshotResponse) string {
 		response.CommitHash.String() + `"`
 }
 
-// ifNoneMatch reports whether the request's If-None-Match header matches the
-// current entity tag. Only an exact identity tuple counts; the contract forbids
-// guessing that an older tag is close enough.
+// strictQuery parses a request query against an explicit allowed-key set.
+// Duplicate keys, unknown keys and malformed escapes are protocol errors;
+// selecting one value with Values.Get would hide all three.
+func strictQuery(raw string, allowedKeys ...string) (url.Values, bool) {
+	values, err := url.ParseQuery(raw)
+	if err != nil {
+		return nil, false
+	}
+	allowed := make(map[string]struct{}, len(allowedKeys))
+	for _, key := range allowedKeys {
+		allowed[key] = struct{}{}
+	}
+	for key, entries := range values {
+		if _, ok := allowed[key]; !ok || len(entries) != 1 {
+			return nil, false
+		}
+	}
+	return values, true
+}
+
+// ifNoneMatch reports whether the request's If-None-Match header contains the
+// exact current entity tag. The wildcard is deliberately not accepted: a 304 is
+// permitted only for an exact snapshot identity tuple.
 func ifNoneMatch(header, etag string) bool {
 	if strings.TrimSpace(header) == "" {
 		return false
 	}
 	for _, candidate := range strings.Split(header, ",") {
-		candidate = strings.TrimSpace(candidate)
-		if candidate == tagAny || candidate == etag {
+		if strings.TrimSpace(candidate) == etag {
 			return true
 		}
 	}
@@ -610,8 +648,6 @@ func normalizeThresholds(heartbeat, stale, stop time.Duration) (time.Duration, t
 	}
 	return heartbeat, stale, stop, nil
 }
-
-const tagAny = "*"
 
 func writeJSON(w http.ResponseWriter, status int, value any) {
 	encoded, err := json.Marshal(value)

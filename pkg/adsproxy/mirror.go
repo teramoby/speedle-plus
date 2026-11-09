@@ -142,6 +142,12 @@ type serviceCopy struct {
 
 	removed  bool
 	overflow bool
+	// unavailable withholds a verified copy from downstream serving after the
+	// runtime could not reach the head advertised for it. Unlike removed, the
+	// copy and its log are kept: the runtime clears the flag with MarkAvailable
+	// only after it has verified the advertised identity and revision, so a
+	// multi-page catch-up stays withheld until it has completed.
+	unavailable bool
 	// tombstoneRevision is the revision that removed the service: a signed
 	// delete commit or the revision current at an administrative removal. A
 	// snapshot at or below it belongs to the state that was removed and cannot
@@ -233,9 +239,26 @@ func (m *Mirror) AddObserver(observer func(HeadEvent)) func() {
 // is ignored, so a late delivery cannot roll the proxy back. A snapshot for a
 // different sourceId or epoch replaces the copy and starts a new log, which is
 // how a source change reaches downstream instances.
-func (m *Mirror) ApplySnapshot(response *adsync.SnapshotResponse) error {
+//
+// Callers synchronizing a discovered service pass that service as expected.
+// The snapshot must then match both its id and epoch; sourceId is always bound
+// to the requested service id, never to a different service's signed dataset.
+func (m *Mirror) ApplySnapshot(response *adsync.SnapshotResponse, expected ...adsync.Service) error {
 	if response == nil {
 		return fmt.Errorf("%w: nil snapshot", ErrConfig)
+	}
+	if len(expected) > 1 {
+		return fmt.Errorf("%w: ApplySnapshot accepts at most one expected service", ErrConfig)
+	}
+	if response.SourceID != response.ServiceID {
+		return fmt.Errorf("%w: snapshot source %q does not match service %q", adsync.ErrProtocol, response.SourceID, response.ServiceID)
+	}
+	if len(expected) == 1 {
+		service := expected[0]
+		if response.ServiceID != service.ID || response.SourceID != service.ID || response.Epoch != service.Epoch {
+			return fmt.Errorf("%w: snapshot identity %q/%q/%q does not match requested service %q epoch %q",
+				adsync.ErrProtocol, response.ServiceID, response.SourceID, response.Epoch, service.ID, service.Epoch)
+		}
 	}
 	copied := cloneSnapshotResponse(*response)
 	if err := m.verifySnapshot(&copied); err != nil {
@@ -528,6 +551,44 @@ func (m *Mirror) RemoveService(serviceID string) {
 	m.version++
 }
 
+// MarkUnavailable stops advertising and serving one service while keeping its
+// verified copy. The runtime calls it when the source advertises a head for the
+// service that the mirror cannot fetch: serving the older copy would let
+// downstream instances keep evaluating policy the source has already replaced.
+// Snapshots and change pages applied while the flag is set stay withheld; the
+// runtime restores availability with MarkAvailable after it has verified that
+// the copy reached the advertised identity and revision.
+func (m *Mirror) MarkUnavailable(serviceID string) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	service := m.services[serviceID]
+	if service == nil || service.removed || service.unavailable {
+		return
+	}
+	wasAvailable := m.availableLocked(service)
+	service.unavailable = true
+	if wasAvailable {
+		m.version++
+	}
+}
+
+// MarkAvailable makes a withheld copy servable again. The runtime calls it only
+// after CurrentInfo confirms the advertised identity and revision, so a copy
+// applied during a multi-page catch-up cannot be served before the catch-up
+// completed.
+func (m *Mirror) MarkAvailable(serviceID string) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	service := m.services[serviceID]
+	if service == nil || service.removed || !service.unavailable {
+		return
+	}
+	service.unavailable = false
+	if m.availableLocked(service) {
+		m.version++
+	}
+}
+
 // reserveServiceLocked makes room for one new service. Removed services are
 // tombstones, not active copies, so they do not count against MaxServices. A
 // tombstone is a deletion guard and is never evicted; if the combined store is
@@ -595,7 +656,7 @@ func (m *Mirror) Lookup(serviceID string) (ServiceInfo, ServiceAvailability) {
 	if service.removed {
 		return ServiceInfo{}, ServiceRemoved
 	}
-	if service.overflow || service.signed == nil {
+	if service.unavailable || service.overflow || service.signed == nil {
 		return ServiceInfo{}, ServiceNeedsSnapshot
 	}
 	return ServiceInfo{
@@ -607,6 +668,28 @@ func (m *Mirror) Lookup(serviceID string) (ServiceInfo, ServiceAvailability) {
 		StateHash:  service.stateHash,
 		CommitHash: service.commitHash,
 	}, ServiceAvailable
+}
+
+// CurrentInfo returns the identity and revision of the verified copy, whether
+// or not the service is currently advertised. The runtime uses it to check that
+// a withheld copy reached the advertised head; downstream serving still uses
+// Lookup, which reports a withheld service as needing a snapshot.
+func (m *Mirror) CurrentInfo(serviceID string) (ServiceInfo, bool) {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+	service := m.services[serviceID]
+	if service == nil || service.removed || service.overflow || service.signed == nil {
+		return ServiceInfo{}, false
+	}
+	return ServiceInfo{
+		ID:         service.id,
+		Name:       service.name,
+		SourceID:   service.sourceID,
+		Epoch:      service.epoch,
+		Revision:   service.revision,
+		StateHash:  service.stateHash,
+		CommitHash: service.commitHash,
+	}, true
 }
 
 // Snapshot returns the signed snapshot the service is anchored to. The
@@ -707,7 +790,7 @@ func (m *Mirror) Version() int64 {
 }
 
 func (m *Mirror) availableLocked(service *serviceCopy) bool {
-	return !service.removed && !service.overflow && service.signed != nil
+	return !service.removed && !service.overflow && !service.unavailable && service.signed != nil
 }
 
 func (m *Mirror) notify(event HeadEvent) {

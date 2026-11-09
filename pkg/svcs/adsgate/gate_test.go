@@ -56,6 +56,45 @@ func TestRoutingUsesThePerServiceState(t *testing.T) {
 	}
 }
 
+func TestUnknownServiceWithAPendingRemovalFailsClosed(t *testing.T) {
+	source := adsyncfake.New()
+	source.SetService(adsync.ServiceStatus{Name: "books-v2", State: adsync.SyncStateInSync})
+	// The old name is unknown to the machine because the service was renamed,
+	// but its copy is still installed until the new assembly is acknowledged.
+	source.SetRemovalPending("books", true)
+	gate := New(source)
+
+	if route := gate.Route("books"); route.Kind != RouteUnavailable || route.Reason != adsync.ReasonSourceGone {
+		t.Fatalf("route for the previous name = %+v", route)
+	}
+	if route := gate.Route("unknown"); route.Kind != RouteLocal {
+		t.Fatalf("route for an unknown name = %+v", route)
+	}
+	source.SetRemovalPending("books", false)
+	if route := gate.Route("books"); route.Kind != RouteLocal {
+		t.Fatalf("route after the removal installed = %+v", route)
+	}
+}
+
+// TestInSyncServiceWithAPendingRemovalFailsClosed covers the window inside a
+// synchronization pass between recording a discovery removal or rename and
+// updating the state machine: the machine still reports the old name in_sync,
+// but the installed assembly no longer matches the authoritative set.
+func TestInSyncServiceWithAPendingRemovalFailsClosed(t *testing.T) {
+	source := adsyncfake.New()
+	source.SetService(adsync.ServiceStatus{Name: "books", State: adsync.SyncStateInSync})
+	source.SetRemovalPending("books", true)
+	gate := New(source)
+
+	if route := gate.Route("books"); route.Kind != RouteUnavailable || route.Reason != adsync.ReasonSourceGone {
+		t.Fatalf("route for an in_sync service with a pending removal = %+v", route)
+	}
+	source.SetRemovalPending("books", false)
+	if route := gate.Route("books"); route.Kind != RouteLocal {
+		t.Fatalf("route after the removal was installed = %+v", route)
+	}
+}
+
 func TestSyncingWithoutFallbackIsUnavailable(t *testing.T) {
 	source := adsyncfake.New()
 	source.SetService(adsync.ServiceStatus{Name: "books", State: adsync.SyncStateSyncing})

@@ -153,6 +153,13 @@ type e2eService struct {
 	Commits    []adsync.Commit
 
 	HistoryUnavailable bool
+	// DataUnavailable makes snapshot and change requests fail with 503, so
+	// synchronizing this service fails while every other service works.
+	DataUnavailable bool
+	// Hidden keeps the service out of discovery and every ack while its
+	// snapshot and change endpoints keep serving. It models a lagging source
+	// replica that still holds policy the authoritative set already dropped.
+	Hidden bool
 	// Hold makes snapshot and change requests wait until it is closed.
 	Hold chan struct{}
 }
@@ -342,20 +349,24 @@ type e2eCloud struct {
 	credential string
 	client     *http.Client
 
-	mu              sync.Mutex
-	services        map[string]*e2eService
-	order           []string
-	servicesVersion int64
-	disconnected    bool
-	revoked         bool
-	commands        []e2eWireCommand
-	commandResults  map[string]string
-	commandSeq      int
-	conns           map[*e2eChannelConn]struct{}
-	requests        []e2eRequest
-	fallbackCalls   int
-	generation      int64
-	evaluator       *e2eEvaluatorEntry
+	mu                  sync.Mutex
+	fallbackCredentials map[string]struct{}
+	services            map[string]*e2eService
+	order               []string
+	servicesVersion     int64
+	disconnected        bool
+	revoked             bool
+	commands            []e2eWireCommand
+	commandResults      map[string]string
+	commandSeq          int
+	conns               map[*e2eChannelConn]struct{}
+	requests            []e2eRequest
+	fallbackCalls       int
+	generation          int64
+	evaluator           *e2eEvaluatorEntry
+	// servicesUnavailable makes the discovery endpoint fail while the channel
+	// and data endpoints keep working.
+	servicesUnavailable bool
 
 	upgrader websocket.Upgrader
 	closeOne sync.Once
@@ -404,13 +415,16 @@ func newE2ECloud(t *testing.T) *e2eCloud {
 	t.Helper()
 	signer, keys := e2eLoadSigner(t)
 	cloud := &e2eCloud{
-		t:               t,
-		signer:          signer,
-		keys:            keys,
-		credential:      e2eCredential(e2eInstanceA, 1),
-		services:        make(map[string]*e2eService),
-		commandResults:  make(map[string]string),
-		conns:           make(map[*e2eChannelConn]struct{}),
+		t:              t,
+		signer:         signer,
+		keys:           keys,
+		credential:     e2eCredential(e2eInstanceA, 1),
+		services:       make(map[string]*e2eService),
+		commandResults: make(map[string]string),
+		conns:          make(map[*e2eChannelConn]struct{}),
+		fallbackCredentials: map[string]struct{}{
+			e2eCredential(e2eInstanceA, 1): {},
+		},
 		servicesVersion: 1,
 		upgrader: websocket.Upgrader{
 			ReadBufferSize:  4096,
@@ -452,6 +466,22 @@ func (f *e2eCloud) source() e2eSource {
 	return e2eSource{
 		URL:        f.server.URL,
 		Credential: f.credential,
+		CAFile:     f.caFile,
+		Keys:       f.keys,
+	}
+}
+
+// fallbackSource returns a Cloud-only credential that is valid for fallback
+// authorization, never for policy synchronization. A downstream proxy token is
+// deliberately not accepted here.
+func (f *e2eCloud) fallbackSource(instanceID string, number int) e2eSource {
+	credential := e2eCredential(instanceID, number)
+	f.mu.Lock()
+	f.fallbackCredentials[credential] = struct{}{}
+	f.mu.Unlock()
+	return e2eSource{
+		URL:        f.server.URL,
+		Credential: credential,
 		CAFile:     f.caFile,
 		Keys:       f.keys,
 	}
@@ -573,6 +603,22 @@ func (f *e2eCloud) setHistoryUnavailable(serviceID string, unavailable bool) {
 	}
 }
 
+func (f *e2eCloud) setDataUnavailable(serviceID string, unavailable bool) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	if service := f.services[serviceID]; service != nil {
+		service.DataUnavailable = unavailable
+	}
+}
+
+// setServicesUnavailable fails the discovery endpoint only, so an ack can still
+// arrive while the following synchronization pass cannot discover the set.
+func (f *e2eCloud) setServicesUnavailable(unavailable bool) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.servicesUnavailable = unavailable
+}
+
 // publish appends one revision and returns the new head.
 func (f *e2eCloud) publish(serviceID string, changes ...adsync.Change) uint64 {
 	f.mu.Lock()
@@ -582,6 +628,22 @@ func (f *e2eCloud) publish(serviceID string, changes ...adsync.Change) uint64 {
 		f.t.Fatalf("fixture has no service %q", serviceID)
 	}
 	service.publish(f.t, f.signer, changes...)
+	f.generation++
+	return service.Revision
+}
+
+// renameService renames a service and publishes a signed service change, so the
+// ack, discovery and snapshot all carry the new name at a new revision.
+func (f *e2eCloud) renameService(serviceID, name string) uint64 {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	service := f.services[serviceID]
+	if service == nil {
+		f.t.Fatalf("fixture has no service %q", serviceID)
+	}
+	service.Name = name
+	service.publish(f.t, f.signer,
+		adsync.Change{Op: e2eChangeUpsert, Kind: e2eKindService, ID: serviceID, Name: &name})
 	f.generation++
 	return service.Revision
 }
@@ -618,6 +680,19 @@ func (f *e2eCloud) removeService(serviceID string) {
 		}
 	}
 	f.order = kept
+	f.servicesVersion++
+	f.generation++
+}
+
+// hideService drops one service from discovery and from acks while its signed
+// data endpoints keep serving, like a lagging replica that still holds the
+// policy the authoritative set already dropped.
+func (f *e2eCloud) hideService(serviceID string) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	if service := f.services[serviceID]; service != nil {
+		service.Hidden = true
+	}
 	f.servicesVersion++
 	f.generation++
 }
@@ -681,7 +756,7 @@ func (f *e2eCloud) ackLocked() []byte {
 	}
 	for _, id := range f.order {
 		service := f.services[id]
-		if service == nil {
+		if service == nil || service.Hidden {
 			continue
 		}
 		message.Services = append(message.Services, ackService{
@@ -852,13 +927,23 @@ func (f *e2eCloud) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		e2eWriteCloudError(w, http.StatusServiceUnavailable, "source_unavailable", "")
 		return
 	}
-	if r.Header.Get("Authorization") != "Bearer "+credential {
+	authorization := r.Header.Get("Authorization")
+	isFallback := r.Method == http.MethodPost && strings.HasPrefix(r.URL.Path, adsync.AuthzCheckAPIPrefix)
+	if isFallback {
+		f.mu.Lock()
+		_, allowed := f.fallbackCredentials[strings.TrimPrefix(authorization, "Bearer ")]
+		f.mu.Unlock()
+		if !allowed {
+			e2eWriteCloudError(w, http.StatusUnauthorized, "unauthorized", "")
+			return
+		}
+	} else if authorization != "Bearer "+credential {
 		e2eWriteCloudError(w, http.StatusUnauthorized, "unauthorized", "")
 		return
 	}
 
 	switch {
-	case r.Method == http.MethodPost && strings.HasPrefix(r.URL.Path, adsync.AuthzCheckAPIPrefix):
+	case isFallback:
 		f.serveFallback(w, r)
 	case r.Method == http.MethodGet && r.URL.Path == adsync.APIPrefix+"/services":
 		f.serveServices(w)
@@ -881,10 +966,15 @@ func (f *e2eCloud) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 func (f *e2eCloud) serveServices(w http.ResponseWriter) {
 	f.mu.Lock()
+	if f.servicesUnavailable {
+		f.mu.Unlock()
+		e2eWriteCloudError(w, http.StatusServiceUnavailable, "source_unavailable", "")
+		return
+	}
 	response := adsync.ServicesResponse{ServicesVersion: f.servicesVersion}
 	for _, id := range f.order {
 		service := f.services[id]
-		if service == nil {
+		if service == nil || service.Hidden {
 			continue
 		}
 		response.Services = append(response.Services, adsync.Service{
@@ -905,6 +995,11 @@ func (f *e2eCloud) serveSnapshot(w http.ResponseWriter, r *http.Request, service
 	if service == nil {
 		f.mu.Unlock()
 		e2eWriteCloudError(w, http.StatusNotFound, "service_not_found", "")
+		return
+	}
+	if service.DataUnavailable {
+		f.mu.Unlock()
+		e2eWriteCloudError(w, http.StatusServiceUnavailable, "source_unavailable", "")
 		return
 	}
 	signature := f.signer.sign(adsync.SnapshotSignedBytes(
@@ -949,6 +1044,11 @@ func (f *e2eCloud) serveChanges(w http.ResponseWriter, r *http.Request, serviceI
 	if service == nil {
 		f.mu.Unlock()
 		e2eWriteCloudError(w, http.StatusNotFound, "service_not_found", "")
+		return
+	}
+	if service.DataUnavailable {
+		f.mu.Unlock()
+		e2eWriteCloudError(w, http.StatusServiceUnavailable, "source_unavailable", "")
 		return
 	}
 	if service.HistoryUnavailable {

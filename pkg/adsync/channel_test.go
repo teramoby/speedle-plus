@@ -417,6 +417,15 @@ func (f *channelSource) addService(service *fixtureService) {
 	f.servicesVersion++
 }
 
+func (f *channelSource) renameService(serviceID, name string) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	if service := f.services[serviceID]; service != nil && service.Name != name {
+		service.Name = name
+		f.servicesVersion++
+	}
+}
+
 func (f *channelSource) removeService(serviceID string) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
@@ -574,7 +583,7 @@ func TestChannelWebSocketMultiService(t *testing.T) {
 
 	machine := newChannelMachine(t)
 	for _, service := range []*fixtureService{books, orders, reports} {
-		if err := machine.Applied(source.serviceState(service.ID)); err != nil {
+		if err := machine.ApplyAttempt(machine.BeginSync(service.ID), source.serviceState(service.ID)); err != nil {
 			t.Fatalf("Applied: %v", err)
 		}
 	}
@@ -681,7 +690,7 @@ func TestChannelAckHeadAdvanceNotifies(t *testing.T) {
 	client := newChannelClient(t, server)
 
 	machine := newChannelMachine(t)
-	if err := machine.Applied(source.serviceState(books.ID)); err != nil {
+	if err := machine.ApplyAttempt(machine.BeginSync(books.ID), source.serviceState(books.ID)); err != nil {
 		t.Fatalf("Applied: %v", err)
 	}
 	notifications := make(chan Notify, 64)
@@ -728,7 +737,7 @@ func TestChannelLongPollMultiService(t *testing.T) {
 
 	machine := newChannelMachine(t)
 	for _, service := range []*fixtureService{books, orders} {
-		if err := machine.Applied(source.serviceState(service.ID)); err != nil {
+		if err := machine.ApplyAttempt(machine.BeginSync(service.ID), source.serviceState(service.ID)); err != nil {
 			t.Fatalf("Applied: %v", err)
 		}
 	}
@@ -781,7 +790,7 @@ func TestChannelAutoFallsBackOnUpgradeFailure(t *testing.T) {
 	client := newChannelClient(t, server)
 
 	machine := newChannelMachine(t)
-	if err := machine.Applied(source.serviceState(books.ID)); err != nil {
+	if err := machine.ApplyAttempt(machine.BeginSync(books.ID), source.serviceState(books.ID)); err != nil {
 		t.Fatalf("Applied: %v", err)
 	}
 	channel := newTestChannel(t, client, machine, ChannelOptions{Transport: TransportAuto})
@@ -805,7 +814,7 @@ func TestChannelAutoFallsBackWhenNoAck(t *testing.T) {
 	client := newChannelClient(t, server)
 
 	machine := newChannelMachine(t)
-	if err := machine.Applied(source.serviceState(books.ID)); err != nil {
+	if err := machine.ApplyAttempt(machine.BeginSync(books.ID), source.serviceState(books.ID)); err != nil {
 		t.Fatalf("Applied: %v", err)
 	}
 	channel := newTestChannel(t, client, machine, ChannelOptions{Transport: TransportAuto})
@@ -829,7 +838,7 @@ func TestChannelAutoFallsBackWhenNoAckWithKeepalive(t *testing.T) {
 	client := newChannelClient(t, server)
 
 	machine := newChannelMachine(t)
-	if err := machine.Applied(source.serviceState(books.ID)); err != nil {
+	if err := machine.ApplyAttempt(machine.BeginSync(books.ID), source.serviceState(books.ID)); err != nil {
 		t.Fatalf("Applied: %v", err)
 	}
 	channel := newTestChannel(t, client, machine, ChannelOptions{Transport: TransportAuto})
@@ -903,7 +912,7 @@ func TestChannelRunStopsWhenCanceledWithLivePeer(t *testing.T) {
 	client := newChannelClient(t, server)
 
 	machine := newChannelMachine(t)
-	if err := machine.Applied(source.serviceState(books.ID)); err != nil {
+	if err := machine.ApplyAttempt(machine.BeginSync(books.ID), source.serviceState(books.ID)); err != nil {
 		t.Fatalf("Applied: %v", err)
 	}
 	channel := newTestChannel(t, client, machine, ChannelOptions{Transport: TransportWebSocket})
@@ -934,7 +943,7 @@ func TestChannelRunStopsWhenCanceledWithSilentPeer(t *testing.T) {
 	client := newChannelClient(t, server)
 
 	machine := newChannelMachine(t)
-	if err := machine.Applied(source.serviceState(books.ID)); err != nil {
+	if err := machine.ApplyAttempt(machine.BeginSync(books.ID), source.serviceState(books.ID)); err != nil {
 		t.Fatalf("Applied: %v", err)
 	}
 	channel := newTestChannel(t, client, machine, ChannelOptions{Transport: TransportWebSocket})
@@ -966,7 +975,7 @@ func TestChannelLongPollThrottlesImmediateResponses(t *testing.T) {
 	client := newChannelClient(t, server)
 
 	machine := newChannelMachine(t)
-	if err := machine.Applied(source.serviceState(books.ID)); err != nil {
+	if err := machine.ApplyAttempt(machine.BeginSync(books.ID), source.serviceState(books.ID)); err != nil {
 		t.Fatalf("Applied: %v", err)
 	}
 	channel := newTestChannel(t, client, machine, ChannelOptions{Transport: TransportLongPoll})
@@ -1013,7 +1022,7 @@ func TestChannelServiceSetChange(t *testing.T) {
 			client := newChannelClient(t, server)
 
 			machine := newChannelMachine(t)
-			if err := machine.Applied(source.serviceState(books.ID)); err != nil {
+			if err := machine.ApplyAttempt(machine.BeginSync(books.ID), source.serviceState(books.ID)); err != nil {
 				t.Fatalf("Applied: %v", err)
 			}
 			changes := make(chan ServiceSetChange, 16)
@@ -1058,6 +1067,27 @@ func TestChannelServiceSetChange(t *testing.T) {
 			if len(services) != 2 {
 				t.Fatalf("channel services = %+v, want books and reports", services)
 			}
+
+			// A rename is reported separately: the id stays, the name changes.
+			source.renameService(books.ID, "books-v2")
+			source.signal()
+			waitFor(t, 3*time.Second, "the renamed service in the machine", func() bool {
+				status, known := machine.Status("books-v2")
+				return known && status.Service.ID == books.ID
+			})
+			waitFor(t, 3*time.Second, "the rename callback", func() bool {
+				for {
+					select {
+					case change := <-changes:
+						if len(change.Renamed) == 1 && change.Renamed[0].ID == books.ID &&
+							change.Renamed[0].Name == "books-v2" {
+							return true
+						}
+					default:
+						return false
+					}
+				}
+			})
 		})
 	}
 }
@@ -1076,7 +1106,7 @@ func TestChannelFirstAckRemovesPersistedService(t *testing.T) {
 			client := newChannelClient(t, server)
 
 			machine := newChannelMachine(t)
-			if err := machine.Applied(persisted); err != nil {
+			if err := machine.ApplyAttempt(machine.BeginSync(persisted.ServiceID), persisted); err != nil {
 				t.Fatalf("Applied: %v", err)
 			}
 			changes := make(chan ServiceSetChange, 16)
@@ -1650,7 +1680,7 @@ func TestChannelAppliesShortenedHeartbeatAfterAck(t *testing.T) {
 	client := newChannelClient(t, server)
 
 	machine := newChannelMachine(t)
-	if err := machine.Applied(source.serviceState(books.ID)); err != nil {
+	if err := machine.ApplyAttempt(machine.BeginSync(books.ID), source.serviceState(books.ID)); err != nil {
 		t.Fatalf("Applied: %v", err)
 	}
 	channel := newTestChannel(t, client, machine, ChannelOptions{Transport: TransportWebSocket})
@@ -1682,7 +1712,7 @@ func TestChannelUnsolicitedAcksDoNotSuppressHeartbeats(t *testing.T) {
 	client := newChannelClient(t, server)
 
 	machine := newChannelMachine(t)
-	if err := machine.Applied(source.serviceState(books.ID)); err != nil {
+	if err := machine.ApplyAttempt(machine.BeginSync(books.ID), source.serviceState(books.ID)); err != nil {
 		t.Fatalf("Applied: %v", err)
 	}
 	channel := newTestChannel(t, client, machine, ChannelOptions{Transport: TransportWebSocket})
@@ -1818,7 +1848,7 @@ func TestChannelWithoutDialer(t *testing.T) {
 	}
 
 	machine := newChannelMachine(t)
-	if err := machine.Applied(source.serviceState(books.ID)); err != nil {
+	if err := machine.ApplyAttempt(machine.BeginSync(books.ID), source.serviceState(books.ID)); err != nil {
 		t.Fatalf("Applied: %v", err)
 	}
 	auto := newTestChannel(t, client, machine, ChannelOptions{Transport: TransportAuto})

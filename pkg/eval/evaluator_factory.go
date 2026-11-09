@@ -91,6 +91,7 @@ func NewWithStore(conf *cfg.Config, s pms.PolicyStoreManagerADS) (evaluator Inte
 	}
 
 	var updateChan pms.StorageChangeChannel
+	var acknowledgeReload func()
 	if watchEnabled {
 		log.Info("Watch policy store.")
 		updateChan, err = s.Watch()
@@ -101,7 +102,7 @@ func NewWithStore(conf *cfg.Config, s pms.PolicyStoreManagerADS) (evaluator Inte
 		// File/Mongo watches are installed synchronously; etcd waits for its
 		// created acknowledgement. Read again after subscribing to close the
 		// initial read/subscribe gap. Queued events invalidate this snapshot.
-		ps, err = s.ReadPolicyStore()
+		ps, acknowledgeReload, err = readPolicyStoreForReload(s)
 		if err != nil {
 			return nil, err
 		}
@@ -110,6 +111,9 @@ func NewWithStore(conf *cfg.Config, s pms.PolicyStoreManagerADS) (evaluator Inte
 	runtimePolicyStore := NewRuntimePolicyStore()
 	if err := runtimePolicyStore.init(ps, conf.FuncsvcEndpoint); err != nil {
 		return nil, err
+	}
+	if acknowledgeReload != nil {
+		acknowledgeReload()
 	}
 
 	p := &PolicyEvalImpl{

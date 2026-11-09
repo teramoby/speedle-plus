@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"io/fs"
+	"net/url"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -88,6 +89,22 @@ func TestSyncAppliesPagedChanges(t *testing.T) {
 	}
 	if count := fixture.requestCount("/changes"); count < 3 {
 		t.Errorf("changes pages = %d, want at least 3", count)
+	}
+	fixture.source.mu.Lock()
+	var cursors []string
+	for _, request := range fixture.source.requests {
+		if !strings.HasSuffix(request.Path, "/changes") {
+			continue
+		}
+		query, err := url.ParseQuery(request.Query)
+		if err != nil {
+			t.Fatalf("parse recorded query %q: %v", request.Query, err)
+		}
+		cursors = append(cursors, query.Get("since"))
+	}
+	fixture.source.mu.Unlock()
+	if want := []string{"1", "3", "5"}; !reflect.DeepEqual(cursors, want) {
+		t.Fatalf("change cursors = %v, want %v (each page's last applied revision)", cursors, want)
 	}
 }
 
