@@ -342,6 +342,15 @@ func checkServiceChangeTargets(serviceID string, changes []Change) error {
 	return nil
 }
 
+// ApplyChanges applies a commit's changes in order to snapshot. Upserts replace
+// by id, deletes of unknown ids are no-ops and a signed service delete reports
+// ErrSourceGone. Policy lists are sorted by id afterwards, which is the order
+// the canonical state hash uses. A proxy serving a synced copy uses this to
+// apply the same commits the syncer applies, so both derive the same state.
+func ApplyChanges(snapshot *Snapshot, changes []Change) error {
+	return applyChanges(snapshot, changes)
+}
+
 // applyChanges applies a commit's changes in order to a working snapshot.
 // Upserts replace by id, deletes of unknown ids are no-ops and a signed
 // service delete means the source is gone.
