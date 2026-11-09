@@ -862,3 +862,30 @@ func TestTrackedServicesAreBounded(t *testing.T) {
 		requireServiceState(t, machine, fmt.Sprintf("service-%d", number), SyncStateSyncing, SyncReasonBootstrap)
 	}
 }
+
+func TestAppliedBeforeTheFirstAckIsBounded(t *testing.T) {
+	machine, _ := newTestMachine(t)
+	for index := 0; index < maxServicesPerSource; index++ {
+		number := index + 1
+		state := testServiceState(fmt.Sprintf("%026d", number), fmt.Sprintf("service-%d", number), 1)
+		mustApply(t, machine, state)
+	}
+
+	extra := testServiceState(
+		fmt.Sprintf("%026d", maxServicesPerSource+1),
+		fmt.Sprintf("service-%d", maxServicesPerSource+1),
+		1,
+	)
+	if err := machine.Applied(extra); !errors.Is(err, ErrProtocol) {
+		t.Fatalf("Applied beyond the pre-ack bound = %v, want ErrProtocol", err)
+	}
+	if tracked := len(machine.Services()); tracked != maxServicesPerSource {
+		t.Fatalf("tracked services = %d, want %d", tracked, maxServicesPerSource)
+	}
+
+	// The first ack establishes the authoritative set and removes the rest.
+	mustAck(t, machine, ackWith(testAckService(fmt.Sprintf("%026d", 1), "service-1", 1)))
+	if tracked := len(machine.Services()); tracked != maxServicesPerSource {
+		t.Fatalf("tracked services after ack = %d, want the bounded %d", tracked, maxServicesPerSource)
+	}
+}

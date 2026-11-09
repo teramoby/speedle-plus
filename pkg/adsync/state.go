@@ -426,6 +426,12 @@ func (m *Machine) Applied(state *ServiceState) error {
 		if m.setKnown {
 			return nil
 		}
+		// Until the first authoritative ack the set is unknown, but the
+		// protocol still bounds how many services one source can serve, so a
+		// caller cannot grow the record map without bound.
+		if len(m.records) >= maxServicesPerSource {
+			return fmt.Errorf("%w: more than %d services reported before the first ack", ErrProtocol, maxServicesPerSource)
+		}
 		record = m.newRecordLocked(state.ServiceID, state.Snapshot.Name)
 	}
 	if m.setKnown && !record.setMember {
