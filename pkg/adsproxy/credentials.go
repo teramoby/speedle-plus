@@ -184,6 +184,18 @@ func (s *CredentialSet) Authenticate(token string) (*Credential, bool) {
 	return nil, false
 }
 
+// Current reports whether credential is still the exact grant installed for
+// its downstream id. A reload replaces grant pointers, so a request or channel
+// that authenticated just before the reload cannot keep the old grants.
+func (s *CredentialSet) Current(credential *Credential) bool {
+	if s == nil || credential == nil {
+		return false
+	}
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.byID[credential.DownstreamID] == credential
+}
+
 // Reload re-reads the credential file and replaces the set atomically. On
 // error the previous set stays in force.
 func (s *CredentialSet) Reload() error {

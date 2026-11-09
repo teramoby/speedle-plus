@@ -213,9 +213,29 @@ func (s *Server) Credentials() *CredentialSet { return s.credentials }
 func (s *Server) DownstreamCount() int { return s.hub.Downstreams() }
 
 // ReloadCredentials re-reads the credential file and swaps the new set in
-// atomically. A failed reload keeps the previous credentials in force.
+// atomically. A failed reload keeps the previous credentials and channels in
+// force. Every established channel is then closed so removed credentials and
+// changed service subsets take effect immediately; clients reconnect and
+// resynchronize with their current grants.
 func (s *Server) ReloadCredentials() error {
-	return s.credentials.Reload()
+	if err := s.credentials.Reload(); err != nil {
+		return err
+	}
+	s.closeDownstreamChannels(websocket.CloseTryAgainLater, "credentials_reloaded")
+	return nil
+}
+
+func (s *Server) closeDownstreamChannels(code int, reason string) {
+	s.mu.Lock()
+	connections := make([]*websocket.Conn, 0, len(s.sessions))
+	for conn := range s.sessions {
+		connections = append(connections, conn)
+	}
+	s.mu.Unlock()
+	for _, conn := range connections {
+		closeWithReason(conn, code, reason)
+		_ = conn.Close()
+	}
 }
 
 // Close closes every active downstream channel, releases the mirror observer
@@ -241,11 +261,13 @@ func (s *Server) Close() {
 	})
 }
 
-// track registers an upgraded channel connection so Close can terminate it.
-func (s *Server) track(conn *websocket.Conn) bool {
+// track registers an upgraded channel connection so Close and credential
+// reloads can terminate it. The grant must still be current, closing the race
+// between bearer authentication and a concurrent reload.
+func (s *Server) track(conn *websocket.Conn, credential *Credential) bool {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	if s.closed {
+	if s.closed || !s.credentials.Current(credential) {
 		return false
 	}
 	s.sessions[conn] = struct{}{}
@@ -327,7 +349,7 @@ func (s *Server) handleService(w http.ResponseWriter, r *http.Request, credentia
 }
 
 func (s *Server) handleServices(w http.ResponseWriter, credential *Credential) {
-	services := s.mirror.Services()
+	services, version := s.mirror.ServicesVersion()
 	visible := make([]adsync.Service, 0, len(services))
 	for _, service := range services {
 		if !credential.Allows(service.ID) {
@@ -339,7 +361,7 @@ func (s *Server) handleServices(w http.ResponseWriter, credential *Credential) {
 		}
 	}
 	writeJSON(w, http.StatusOK, adsync.ServicesResponse{
-		ServicesVersion: s.mirror.Version(),
+		ServicesVersion: version,
 		Services:        visible,
 	})
 }

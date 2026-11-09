@@ -337,3 +337,113 @@ func pageFor(t *testing.T, service *fixtureService, since uint64, limit int) *ad
 	page := service.changesPage(since, limit)
 	return &page
 }
+
+func TestMirrorServiceSetVersionTracksVisibility(t *testing.T) {
+	signer := newTestSigner(t)
+	mirror := newTestMirror(t, signer.publicKeys(t), func(options *MirrorOptions) {
+		options.MaxLogCommits = 1
+	})
+	service := newFixtureService(testServiceID1, "books")
+
+	if err := mirror.ApplySnapshot(snapshotAt(t, service, signer)); err != nil {
+		t.Fatalf("apply snapshot: %v", err)
+	}
+	advertised, version := mirror.ServicesVersion()
+	if len(advertised) != 1 {
+		t.Fatalf("initial services = %+v", advertised)
+	}
+
+	// The second commit pushes the log past its bound. The service stops being
+	// advertised, and the version must advance so a downstream notices.
+	for index := 0; index < 2; index++ {
+		service.publish(t, signer, upsertAuthz(testServiceID1+string(rune('A'+index)), "policy", "grant read"))
+		if err := mirror.ApplyChanges(pageFor(t, service, service.Revision-1, 100)); err != nil {
+			t.Fatalf("apply changes at revision %d: %v", service.Revision, err)
+		}
+	}
+	advertised, overflowVersion := mirror.ServicesVersion()
+	if len(advertised) != 0 {
+		t.Fatalf("overflowed service is advertised: %+v", advertised)
+	}
+	if overflowVersion <= version {
+		t.Errorf("version did not advance when overflow hid the service: %d -> %d", version, overflowVersion)
+	}
+
+	// A fresh signed snapshot brings the service back; the version advances
+	// again.
+	if err := mirror.ApplySnapshot(snapshotAt(t, service, signer)); err != nil {
+		t.Fatalf("refresh snapshot: %v", err)
+	}
+	advertised, revivedVersion := mirror.ServicesVersion()
+	if len(advertised) != 1 {
+		t.Fatalf("revived service is not advertised")
+	}
+	if revivedVersion <= overflowVersion {
+		t.Errorf("version did not advance when a snapshot revived the service: %d -> %d",
+			overflowVersion, revivedVersion)
+	}
+
+	// A removal hides the service and another snapshot revives it; both
+	// transitions must advance the version as well.
+	mirror.RemoveService(testServiceID1)
+	advertised, removedVersion := mirror.ServicesVersion()
+	if len(advertised) != 0 {
+		t.Fatalf("removed service is advertised: %+v", advertised)
+	}
+	if removedVersion <= revivedVersion {
+		t.Errorf("version did not advance on removal: %d -> %d", revivedVersion, removedVersion)
+	}
+	if err := mirror.ApplySnapshot(snapshotAt(t, service, signer)); err != nil {
+		t.Fatalf("revive snapshot: %v", err)
+	}
+	advertised, revivalVersion := mirror.ServicesVersion()
+	if len(advertised) != 1 {
+		t.Fatalf("revived service is not advertised")
+	}
+	if revivalVersion <= removedVersion {
+		t.Errorf("version did not advance on revival: %d -> %d", removedVersion, revivalVersion)
+	}
+}
+
+func TestMirrorServicesVersionIsAtomic(t *testing.T) {
+	signer := newTestSigner(t)
+	mirror := newTestMirror(t, signer.publicKeys(t), nil)
+	service := newFixtureService(testServiceID1, "books")
+	snapshot := snapshotAt(t, service, signer)
+	if err := mirror.ApplySnapshot(snapshot); err != nil {
+		t.Fatalf("apply snapshot: %v", err)
+	}
+
+	// Each writer step makes exactly one visibility transition, so the parity
+	// of the version says whether the service is advertised: an advertised
+	// service always comes with an even version. A list and a version taken
+	// from different moments would break the pairing.
+	stop := make(chan struct{})
+	stopped := make(chan struct{})
+	go func() {
+		defer close(stopped)
+		for {
+			select {
+			case <-stop:
+				return
+			default:
+			}
+			mirror.RemoveService(testServiceID1)
+			if err := mirror.ApplySnapshot(snapshot); err != nil {
+				t.Errorf("revive snapshot: %v", err)
+				return
+			}
+		}
+	}()
+	for index := 0; index < 2000; index++ {
+		advertised, version := mirror.ServicesVersion()
+		switch {
+		case len(advertised) == 1 && version%2 != 0:
+			t.Fatalf("advertised service with version %d, want an even version", version)
+		case len(advertised) == 0 && version%2 == 0:
+			t.Fatalf("hidden service with version %d, want an odd version", version)
+		}
+	}
+	close(stop)
+	<-stopped
+}

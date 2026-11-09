@@ -210,13 +210,15 @@ func (m *Mirror) applySnapshot(response *adsync.SnapshotResponse) (HeadEvent, bo
 
 	existing := m.services[response.ServiceID]
 	wasNew := existing == nil
+	availableBefore := false
 	if wasNew {
 		if len(m.services) >= MaxServices {
 			return HeadEvent{}, false, fmt.Errorf("%w: %d services", ErrTooManyServices, len(m.services))
 		}
 		existing = &serviceCopy{id: response.ServiceID}
 		m.services[response.ServiceID] = existing
-		m.version++
+	} else {
+		availableBefore = m.availableLocked(existing)
 	}
 
 	identityChanged := !wasNew && (existing.sourceID != response.SourceID || existing.epoch != response.Epoch)
@@ -249,6 +251,13 @@ func (m *Mirror) applySnapshot(response *adsync.SnapshotResponse) (HeadEvent, bo
 	existing.overflow = false
 	existing.removed = false
 
+	// A snapshot can make a service visible again (revival after removal or
+	// overflow) or remove it from the advertised set. Downstreams compare the
+	// version to learn that discovery changed, so any visibility transition
+	// must advance it, in addition to identity and name changes.
+	if availableBefore != m.availableLocked(existing) {
+		m.version++
+	}
 	if identityChanged {
 		m.version++
 	}
@@ -323,6 +332,11 @@ func (m *Mirror) applyChanges(page *adsync.ChangesResponse) (HeadEvent, bool, er
 		return HeadEvent{}, false, fmt.Errorf("%w: page has no commits", adsync.ErrProtocol)
 	}
 
+	// The copy is advertised at this point; watch whether applying the page
+	// takes it out of the advertised set (a signed service delete or a log that
+	// outgrew its bound) so the service-set version reflects it.
+	availableBefore := m.availableLocked(service)
+	previousName := service.name
 	working := cloneSnapshot(service.snapshot)
 	previousHash := service.commitHash
 	for index := range page.Commits {
@@ -349,7 +363,9 @@ func (m *Mirror) applyChanges(page *adsync.ChangesResponse) (HeadEvent, bool, er
 				service.log = nil
 				service.logBytes = 0
 				service.overflow = false
-				m.version++
+				if availableBefore {
+					m.version++
+				}
 				return HeadEvent{}, false, err
 			}
 			return HeadEvent{}, false, err
@@ -388,6 +404,12 @@ func (m *Mirror) applyChanges(page *adsync.ChangesResponse) (HeadEvent, bool, er
 		// refreshes the snapshot.
 		service.overflow = true
 	}
+	if previousName != service.name {
+		m.version++
+	}
+	if availableBefore != m.availableLocked(service) {
+		m.version++
+	}
 	return HeadEvent{
 		ServiceID: service.id,
 		Epoch:     service.epoch,
@@ -423,6 +445,15 @@ func (m *Mirror) RemoveService(serviceID string) {
 // proxy cannot bring a downstream from a signed snapshot to the service's head
 // any more, so failing closed is the only correct answer.
 func (m *Mirror) Services() []adsync.Service {
+	services, _ := m.ServicesVersion()
+	return services
+}
+
+// ServicesVersion returns the advertised services together with the version of
+// the service set they were read from. Both are read under one lock: a caller
+// that records the version must never pair it with a list from a different
+// version, or it can miss an added or removed service.
+func (m *Mirror) ServicesVersion() ([]adsync.Service, int64) {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 	services := make([]adsync.Service, 0, len(m.services))
@@ -441,7 +472,7 @@ func (m *Mirror) Services() []adsync.Service {
 	sort.Slice(services, func(left, right int) bool {
 		return services[left].ID < services[right].ID
 	})
-	return services
+	return services, m.version
 }
 
 // Lookup returns the current identity of one service and whether it can be
@@ -558,8 +589,9 @@ func (m *Mirror) NeedsSnapshot() []string {
 }
 
 // Version is the service-set version reported to downstream instances. It
-// advances when a service is added, removed, renamed or re-anchored to a new
-// sourceId or epoch.
+// advances whenever the advertised set can change: a service is added, removed,
+// renamed, re-anchored to a new sourceId or epoch, hidden because its log
+// overflowed, or made visible again by a fresh snapshot.
 func (m *Mirror) Version() int64 {
 	m.mu.RLock()
 	defer m.mu.RUnlock()

@@ -124,7 +124,10 @@ type notifyMessage struct {
 }
 
 func (s *Server) ack(credential *Credential) ackMessage {
-	services := s.mirror.Services()
+	// The service list and the version it belongs to must come from one read,
+	// or a downstream that records the version could skip a refresh that was
+	// already reflected in a different list.
+	services, version := s.mirror.ServicesVersion()
 	entries := make([]ackService, 0, len(services))
 	for _, service := range services {
 		if !credential.Allows(service.ID) {
@@ -144,7 +147,7 @@ func (s *Server) ack(credential *Credential) ackMessage {
 	}
 	return ackMessage{
 		Type:              "ack",
-		ServicesVersion:   s.mirror.Version(),
+		ServicesVersion:   version,
 		Services:          entries,
 		ServerTime:        s.now().UnixMilli(),
 		HeartbeatInterval: formatChannelDuration(s.heartbeat),
@@ -175,7 +178,7 @@ func (s *Server) handleChannel(w http.ResponseWriter, r *http.Request, credentia
 		// The upgrader already wrote the HTTP error.
 		return
 	}
-	if !s.track(conn) {
+	if !s.track(conn, credential) {
 		closeWithReason(conn, websocket.CloseGoingAway, "server shutting down")
 		_ = conn.Close()
 		return
@@ -382,15 +385,25 @@ func (s *Server) handlePoll(w http.ResponseWriter, r *http.Request, credential *
 			return
 		}
 	}
+	// A reload may have replaced the grant while the request was held. The ack
+	// would otherwise reveal the new service set to a revoked or narrowed one.
+	if !s.credentials.Current(credential) {
+		writeError(w, http.StatusUnauthorized, "unauthorized", "")
+		return
+	}
 	writeJSON(w, http.StatusOK, s.ack(credential))
 }
 
+// parsePollWait parses the documented 0..30 second wait. The bound is checked
+// before the duration conversion so a value near MaxInt cannot overflow into a
+// small or negative duration and slip past the range check. The decimal text
+// must be canonical so "01" and "+1" are not silently accepted as numbers.
 func parsePollWait(text string) (time.Duration, bool) {
 	if text == "" {
 		return defaultPollWait, true
 	}
 	seconds, err := strconv.Atoi(text)
-	if err != nil || seconds < 0 || time.Duration(seconds)*time.Second > maxPollWait {
+	if err != nil || seconds < 0 || seconds > int(maxPollWait/time.Second) || strconv.Itoa(seconds) != text {
 		return 0, false
 	}
 	return time.Duration(seconds) * time.Second, true

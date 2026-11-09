@@ -494,3 +494,125 @@ func TestServerFanoutLimit(t *testing.T) {
 		t.Errorf("services beyond the limit: status %d", response.StatusCode)
 	}
 }
+
+func TestCredentialReloadClosesChannelsWhoseGrantsChanged(t *testing.T) {
+	for _, testCase := range []struct {
+		name   string
+		subset string
+	}{
+		{name: "removed", subset: ""},
+		{name: "narrowed", subset: testServiceID1},
+	} {
+		t.Run(testCase.name, func(t *testing.T) {
+			signer := newTestSigner(t)
+			mirror, _, _ := newPopulatedMirror(t, signer)
+			token := testToken(testDownstreamID, 1)
+			server := newTestServer(t, mirror, signer.publicKeys(t), nil, testCredential{
+				downstreamID: testDownstreamID,
+				token:        token,
+			})
+			conn, _, err := server.dial(token)
+			if err != nil {
+				t.Fatalf("dial: %v", err)
+			}
+			defer conn.Close()
+			writeJSONFrame(t, conn, helloMessage{
+				Type:         "hello",
+				InstanceID:   testDownstreamID,
+				Services:     []helloService{},
+				Chain:        []string{testProxyID, testDownstreamID},
+				AgentVersion: "test",
+			})
+			if kind, _ := readChannelFrame(t, conn); kind != "ack" {
+				t.Fatal("channel did not receive its initial ack")
+			}
+
+			line := testDownstreamB + ":" + hashToken(testToken(testDownstreamB, 2)) + ":*"
+			if testCase.subset != "" {
+				line = testDownstreamID + ":" + hashToken(token) + ":" + testCase.subset
+			}
+			server.writeCredentialFile(line)
+			if err := server.server.ReloadCredentials(); err != nil {
+				t.Fatalf("ReloadCredentials: %v", err)
+			}
+			code, reason := readClose(t, conn)
+			if code != websocket.CloseTryAgainLater || reason != "credentials_reloaded" {
+				t.Fatalf("close = %d %q", code, reason)
+			}
+
+			if testCase.name == "removed" {
+				response, _ := server.get(adsync.APIPrefix+"/services", token, nil)
+				if response.StatusCode != http.StatusUnauthorized {
+					t.Fatalf("removed token HTTP status = %d", response.StatusCode)
+				}
+				return
+			}
+			response, _ := server.get(adsync.APIPrefix+"/services/"+testServiceID2+"/snapshot", token, nil)
+			if response.StatusCode != http.StatusNotFound {
+				t.Fatalf("narrowed service status = %d", response.StatusCode)
+			}
+			reconnected, _, err := server.dial(token)
+			if err != nil {
+				t.Fatalf("reconnect with narrowed grant: %v", err)
+			}
+			defer reconnected.Close()
+			writeJSONFrame(t, reconnected, helloMessage{
+				Type:         "hello",
+				InstanceID:   testDownstreamID,
+				Services:     []helloService{},
+				Chain:        []string{testProxyID, testDownstreamID},
+				AgentVersion: "test",
+			})
+			kind, payload := readChannelFrame(t, reconnected)
+			if kind != "ack" {
+				t.Fatalf("reconnected frame = %q", kind)
+			}
+			ack := decodeBody[ackMessage](t, payload)
+			if len(ack.Services) != 1 || ack.Services[0].ID != testServiceID1 {
+				t.Fatalf("reconnected service set = %+v", ack.Services)
+			}
+		})
+	}
+}
+
+func TestPollWaitBounds(t *testing.T) {
+	for _, testCase := range []struct {
+		text string
+		want time.Duration
+		ok   bool
+	}{
+		{text: "", want: defaultPollWait, ok: true},
+		{text: "0", want: 0, ok: true},
+		{text: "25", want: 25 * time.Second, ok: true},
+		{text: "30", want: 30 * time.Second, ok: true},
+		{text: "31", ok: false},
+		{text: "01", ok: false},
+		{text: "+5", ok: false},
+		{text: "-1", ok: false},
+		{text: "9223372036854775807", ok: false},
+		{text: "99999999999999999999999999", ok: false},
+		{text: "1.5", ok: false},
+	} {
+		got, ok := parsePollWait(testCase.text)
+		if ok != testCase.ok || got != testCase.want {
+			t.Errorf("parsePollWait(%q) = %v, %v; want %v, %v", testCase.text, got, ok, testCase.want, testCase.ok)
+		}
+	}
+}
+
+func TestPollRejectsOverflowingWait(t *testing.T) {
+	signer := newTestSigner(t)
+	mirror, _, _ := newPopulatedMirror(t, signer)
+	token := testToken(testDownstreamID, 1)
+	server := newTestServer(t, mirror, signer.publicKeys(t), nil, testCredential{
+		downstreamID: testDownstreamID,
+		token:        token,
+	})
+	for _, wait := range []string{"31", "01", "9223372036854775807", "9223372037"} {
+		path := adsync.APIPrefix + "/channel/poll?wait=" + wait
+		response, body := server.post(path, token, heartbeatFrame([]string{testProxyID, testDownstreamID}))
+		if response.StatusCode != http.StatusBadRequest {
+			t.Errorf("wait=%s: status %d body %s", wait, response.StatusCode, body)
+		}
+	}
+}
