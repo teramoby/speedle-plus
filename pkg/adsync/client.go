@@ -268,6 +268,13 @@ func NewClient(config Config) (*Client, error) {
 	fallbackHTTP := config.FallbackHTTPClient
 	if fallbackHTTP == nil {
 		fallbackHTTP = httpClient
+	} else {
+		// Do not mutate a caller-owned client or retain its redirect policy: a
+		// followed redirect could move the instance credential off the
+		// configured Cloud destination.
+		cloned := *fallbackHTTP
+		cloned.CheckRedirect = rejectRedirect
+		fallbackHTTP = &cloned
 	}
 
 	userAgent := config.UserAgent

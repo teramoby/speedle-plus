@@ -163,8 +163,6 @@ definitions:
         type: string
       ready:
         type: boolean
-      reason:
-        type: string
       servicesTotal:
         type: integer
       servicesUsable:

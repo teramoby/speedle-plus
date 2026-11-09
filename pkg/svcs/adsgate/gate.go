@@ -178,11 +178,11 @@ type Readiness struct {
 // PublicReadiness is the unauthenticated readiness body. It answers whether
 // the instance can currently serve authorization requests and reports only
 // aggregate counts, so an unauthenticated caller cannot enumerate tenant
-// services, their revisions or their revocation state.
+// services, their revisions or their revocation state. The internal stop
+// reason stays out of this body for the same reason.
 type PublicReadiness struct {
 	Ready              bool            `json:"ready"`
 	Liveness           adsync.Liveness `json:"liveness,omitempty"`
-	Reason             adsync.Reason   `json:"reason,omitempty"`
 	LastConfirmedAckAt string          `json:"lastConfirmedAckAt,omitempty"`
 	ServicesTotal      int             `json:"servicesTotal"`
 	ServicesUsable     int             `json:"servicesUsable"`
@@ -194,7 +194,6 @@ func (r Readiness) Public() PublicReadiness {
 	public := PublicReadiness{
 		Ready:              r.Ready,
 		Liveness:           r.Liveness,
-		Reason:             r.Reason,
 		LastConfirmedAckAt: r.LastConfirmedAckAt,
 		ServicesTotal:      len(r.Services),
 	}

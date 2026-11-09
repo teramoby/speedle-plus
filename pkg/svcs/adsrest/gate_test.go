@@ -329,6 +329,17 @@ func TestHealthAndReadiness(t *testing.T) {
 		t.Fatalf("stale readiness = %+v", readiness)
 	}
 
+	// A stopped instance keeps its stop reason internal: the unauthenticated
+	// body reports only that the instance is not ready.
+	source.SetInstance(adsync.InstanceStatus{Liveness: adsync.LivenessStopped, Reason: adsync.ReasonRevoked})
+	rec = ready()
+	if rec.Code != http.StatusServiceUnavailable {
+		t.Fatalf("stopped readyz status = %d", rec.Code)
+	}
+	if body := rec.Body.String(); strings.Contains(body, "reason") || strings.Contains(body, "revoked") {
+		t.Fatalf("readyz body exposes the stop reason: %s", body)
+	}
+
 	source.SetInstance(adsync.InstanceStatus{Liveness: adsync.LivenessLive})
 	source.SetFallbackAvailable(false)
 	rec = ready()
