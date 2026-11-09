@@ -459,15 +459,7 @@ func (f *testFixture) open(mutate func(*Options)) *Store {
 // evaluator's acknowledgement that it installed the published assembly.
 func confirmStoreGeneration(t *testing.T, store *Store) {
 	t.Helper()
-	discovery, err := store.client.Services(context.Background())
-	if err != nil {
-		t.Fatalf("confirm services: %v", err)
-	}
-	selected, err := store.selectServices(discovery.Services)
-	if err != nil {
-		t.Fatalf("select services: %v", err)
-	}
-	if err := store.machine.Ack(adsync.Ack{Services: selected}); err != nil {
+	if err := store.Confirm(); err != nil {
 		t.Fatalf("confirm channel ack: %v", err)
 	}
 	_, acknowledge, err := store.ReadPolicyStoreForReload()

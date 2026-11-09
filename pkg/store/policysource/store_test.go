@@ -3,6 +3,7 @@
 package policysource
 
 import (
+	"context"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -83,6 +84,45 @@ func ordersService() *testService {
 		}
 	})
 	return service
+}
+
+// TestOpenSyncWithoutRuntimeConfirmsLiveness covers the low-level Open path: a
+// store that does not own the notification runtime has no channel to produce a
+// confirmed ack, so its caller-driven Sync passes are the confirmation.
+// Repeated passes must keep the instance live and its services in sync without
+// another heartbeat source.
+func TestOpenSyncWithoutRuntimeConfirmsLiveness(t *testing.T) {
+	fixture := newTestFixture(t, booksService())
+	store, err := Open(nil, fixture.options)
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+	for pass := 0; pass < 2; pass++ {
+		if err := store.Sync(context.Background()); err != nil {
+			t.Fatalf("sync pass %d: %v", pass, err)
+		}
+		if err := store.Confirm(); err != nil {
+			t.Fatalf("confirm pass %d: %v", pass, err)
+		}
+		_, acknowledge, err := store.ReadPolicyStoreForReload()
+		if err != nil {
+			t.Fatalf("read published assembly: %v", err)
+		}
+		acknowledge()
+	}
+	status, known := store.Status("books")
+	if !known {
+		t.Fatal("books is not tracked")
+	}
+	if status.Service.State != adsync.SyncStateInSync {
+		t.Fatalf("books state after caller-driven sync = %q", status.Service.State)
+	}
+	if status.Instance.Liveness != adsync.LivenessLive {
+		t.Fatalf("instance liveness = %q, want live", status.Instance.Liveness)
+	}
+	if status.Instance.LastConfirmedAckAt.IsZero() {
+		t.Fatal("caller-driven sync did not confirm liveness")
+	}
 }
 
 func TestOpenAssemblesServicesAndParsesSPDL(t *testing.T) {

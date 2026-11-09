@@ -391,10 +391,19 @@ func (s *Store) syncMirror(ctx context.Context, selected []adsync.Service, faile
 func (s *Store) reachMirrorHead(ctx context.Context, mirror *adsproxy.Mirror, service adsync.Service) error {
 	info, current := mirror.CurrentInfo(service.ID)
 	sameIdentity := current && info.SourceID == service.ID && info.Epoch == service.Epoch
-	if sameIdentity && info.Revision >= service.Revision {
-		return nil
-	}
 	if sameIdentity {
+		switch {
+		case info.Revision > service.Revision:
+			// The mirror is ahead of the advertised head, which can only mean
+			// discovery is stale; the verified copy is not older policy.
+			return nil
+		case info.Revision == service.Revision:
+			if info.StateHash == service.HeadStateHash {
+				return nil
+			}
+			return fmt.Errorf("%w: mirror copy of service %q at revision %d has a different state hash than the advertised head",
+				adsync.ErrIntegrity, service.ID, service.Revision)
+		}
 		if err := s.catchUpMirror(ctx, mirror, service, info); err == nil && s.mirrorReached(mirror, service) {
 			return nil
 		}
@@ -420,14 +429,26 @@ func (s *Store) reachMirrorHead(ctx context.Context, mirror *adsproxy.Mirror, se
 	return nil
 }
 
+// mirrorMatchesHead reports whether the verified copy matches the advertised
+// identity and head. A copy ahead of discovery is accepted as verified; at the
+// advertised revision the state hash must match, so an inconsistent source
+// cannot make the runtime advertise a different policy generation.
+func mirrorMatchesHead(info adsproxy.ServiceInfo, service adsync.Service) bool {
+	if info.SourceID != service.ID || info.Epoch != service.Epoch {
+		return false
+	}
+	if info.Revision > service.Revision {
+		return true
+	}
+	return info.Revision == service.Revision && info.StateHash == service.HeadStateHash
+}
+
 // mirrorReached reports whether the verified copy matches the advertised
 // identity and has reached its head. It deliberately ignores the withheld flag:
 // the caller decides when the copy becomes servable again.
 func (s *Store) mirrorReached(mirror *adsproxy.Mirror, service adsync.Service) bool {
 	info, current := mirror.CurrentInfo(service.ID)
-	return current &&
-		info.SourceID == service.ID && info.Epoch == service.Epoch &&
-		info.Revision >= service.Revision
+	return current && mirrorMatchesHead(info, service)
 }
 
 // mirrorBehind reports whether the mirror holds a copy of the service that does

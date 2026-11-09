@@ -52,10 +52,11 @@ func TestEvaluatorInstallPrecedesInSync(t *testing.T) {
 		snapshot.Policies = []adsync.Policy{policy("p-dave", "dave", "grant user dave read orders")}
 	})
 
+	snapshotsBefore := fixture.source.requestsForSuffix("/services/" + testServiceID2 + "/snapshot")
 	syncDone := make(chan error, 1)
 	go func() { syncDone <- store.Sync(nil) }()
 	deadline := time.Now().Add(3 * time.Second)
-	for fixture.source.requestsForSuffix("/services/"+testServiceID2+"/snapshot") == 0 {
+	for fixture.source.requestsForSuffix("/services/"+testServiceID2+"/snapshot") <= snapshotsBefore {
 		if time.Now().After(deadline) {
 			t.Fatal("the orders snapshot was not held")
 		}

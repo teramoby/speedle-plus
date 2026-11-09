@@ -54,6 +54,10 @@ type Store struct {
 	// recently acknowledged; hasInstalled is false until the first one.
 	installed    string
 	hasInstalled bool
+	// discovered is the service set from the most recent successful discovery.
+	// Confirm replays it for a store that does not own a channel.
+	discovered      []adsync.Service
+	discoveredKnown bool
 
 	watchMu sync.Mutex
 	events  pms.StorageChangeChannel
@@ -164,10 +168,14 @@ func (s *Store) Type() string { return StoreType }
 func (s *Store) RequireWatch() bool { return true }
 
 // Sync performs one synchronization pass: it discovers the visible services
-// and advertised heads without confirming a heartbeat, brings every selected
-// service to a verified revision, drops services that are no longer visible,
-// and publishes the resulting assembly. A pass that changed any service emits
-// one FULL_RELOAD event.
+// and advertised heads, drops services that are no longer visible, brings every
+// selected service to a verified revision, and publishes the resulting
+// assembly. A pass that changed any service emits one FULL_RELOAD event.
+//
+// Discovery is data only: it does not confirm a heartbeat. The notification
+// channel's acks confirm liveness and heads. A store opened without the owned
+// notification runtime has no channel; its owner calls Confirm after a
+// successful pass.
 //
 // Sync is safe for concurrent use; passes are serialized. The notification
 // channel can call it whenever a revision is announced and after a confirmed
@@ -191,18 +199,38 @@ func (s *Store) Sync(ctx context.Context) error {
 		s.machine.Stop(adsync.ReasonConfigError)
 		return err
 	}
-	// Discovery updates the authoritative set and advertised heads, but a data
-	// pull is not a confirmed heartbeat. Only the notification channel's ack
-	// refreshes liveness or confirms a head as eligible for in_sync.
-	if err := s.machine.Discover(selected); err != nil {
-		return err
-	}
-
 	selectedIDs := make(map[string]struct{}, len(selected))
-	failed := make(map[string]struct{})
-	var errs []error
 	for _, service := range selected {
 		selectedIDs[service.ID] = struct{}{}
+	}
+	var errs []error
+	// Apply discovery removals before fetching anything: the request gate must
+	// stop evaluating a removed service as soon as the machine reports it
+	// removed, not after a possibly slow fetch of another service finishes.
+	removed := s.dropUnselected(selectedIDs)
+	for _, serviceID := range removed {
+		if err := s.syncer.Forget(serviceID); err != nil {
+			errs = append(errs, fmt.Errorf("service %q: %w", serviceID, err))
+		}
+	}
+	if len(removed) > 0 {
+		s.publish()
+	}
+
+	// Discovery updates the authoritative set and advertised heads, but a data
+	// pull is not a confirmed heartbeat. Only a channel ack or an explicit
+	// Confirm from a store without the owned channel can refresh liveness or
+	// confirm a head as eligible for in_sync.
+	if err := s.machine.Discover(selected); err != nil {
+		return joinErrors(errs)
+	}
+	s.mu.Lock()
+	s.discovered = append([]adsync.Service(nil), selected...)
+	s.discoveredKnown = true
+	s.mu.Unlock()
+
+	failed := make(map[string]struct{})
+	for _, service := range selected {
 		if err := s.syncService(ctx, service); err != nil {
 			errs = append(errs, err)
 			failed[service.ID] = struct{}{}
@@ -214,14 +242,26 @@ func (s *Store) Sync(ctx context.Context) error {
 		}
 	}
 
-	for _, serviceID := range s.dropUnselected(selectedIDs) {
-		if err := s.syncer.Forget(serviceID); err != nil {
-			errs = append(errs, fmt.Errorf("service %q: %w", serviceID, err))
-		}
-	}
 	s.publish()
 	s.syncMirror(ctx, selected, failed)
 	return joinErrors(errs)
+}
+
+// Confirm applies the service set of the most recent successful discovery as a
+// confirming channel ack. A store opened without the owned notification runtime
+// has no channel to produce acks; its owner calls Confirm after a successful
+// Sync when its own channel or synchronization loop observes the source. The
+// owned runtime receives the same confirmation from its channel and never needs
+// this method.
+func (s *Store) Confirm() error {
+	s.mu.RLock()
+	services := append([]adsync.Service{}, s.discovered...)
+	known := s.discoveredKnown
+	s.mu.RUnlock()
+	if !known {
+		return nil
+	}
+	return s.machine.Ack(adsync.Ack{Services: services})
 }
 
 // syncService brings one service to a verified revision and records the result

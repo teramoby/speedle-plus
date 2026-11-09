@@ -3,11 +3,13 @@
 package policysource
 
 import (
+	"context"
 	"crypto/ed25519"
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -18,6 +20,7 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
+	"github.com/teramoby/speedle-plus/pkg/adsproxy"
 	"github.com/teramoby/speedle-plus/pkg/adsync"
 	"github.com/teramoby/speedle-plus/pkg/cfg"
 	"github.com/teramoby/speedle-plus/pkg/eval"
@@ -404,6 +407,115 @@ func TestE2EProductionRuntimeWithholdsStaleDownstreamPolicies(t *testing.T) {
 			}
 			break
 		}
+	}
+}
+
+// TestE2EProductionRuntimeRemovalAppliesWhileAnotherServiceIsHeld covers a
+// removal that arrives while the data request for another service is still in
+// flight. The request gate must stop evaluating the removed service as soon as
+// the removal is known, not after the held fetch finishes.
+func TestE2EProductionRuntimeRemovalAppliesWhileAnotherServiceIsHeld(t *testing.T) {
+	cloud := newE2ECloud(t)
+	ads, server := startProductionADS(t, cloud, nil)
+	client := server.Client()
+	alice := e2eCheck{Service: "books", Resource: "/books/1", Action: "read", Principals: e2eUser("alice")}
+	isAllowed := func() (int, adsrest.IsAllowedResponse) {
+		t.Helper()
+		request, err := http.NewRequest(http.MethodPost, server.URL+svcs.PolicyAtzPath+"is-allowed",
+			strings.NewReader(string(alice.body(t))))
+		if err != nil {
+			t.Fatal(err)
+		}
+		request.Header.Set("Content-Type", "application/json")
+		response, err := client.Do(request)
+		if err != nil {
+			t.Fatalf("is-allowed: %v", err)
+		}
+		defer response.Body.Close()
+		body, err := io.ReadAll(io.LimitReader(response.Body, 1<<20))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if response.StatusCode != http.StatusOK {
+			return response.StatusCode, adsrest.IsAllowedResponse{}
+		}
+		return response.StatusCode, e2eDecodeResponse(t, body)
+	}
+
+	e2eWaitAllInSync(t, &e2eAgent{store: ads}, "books", "orders")
+	if status, decision := isAllowed(); status != http.StatusOK || !decision.Allowed {
+		t.Fatalf("baseline books decision = %+v (status %d)", decision, status)
+	}
+
+	ordersData := "/services/" + e2eServiceOrders + "/"
+	heldBefore := cloud.countRequests(ordersData+"snapshot") + cloud.countRequests(ordersData+"changes")
+	// Advance the orders head and hold its data so the next pass must fetch it.
+	cloud.publish(e2eServiceOrders, e2eUpsertAuthz("p-orders-dave-approve", "grant user dave approve /orders/1"))
+	cloud.hold(e2eServiceOrders)
+	defer cloud.release(e2eServiceOrders)
+	cloud.removeService(e2eServiceBooks)
+	cloud.pushAck()
+
+	// Wait until the next pass has reached the held orders data request. The
+	// books removal must already be visible to the gate at that point.
+	e2eWaitFor(t, "the held orders data request to start", func() bool {
+		return cloud.countRequests(ordersData+"snapshot")+cloud.countRequests(ordersData+"changes") > heldBefore
+	})
+	status, decision := isAllowed()
+	if status == http.StatusOK && decision.Allowed {
+		t.Fatalf("the removed service was authorized locally while another fetch was held: %+v", decision)
+	}
+	if status != http.StatusOK && status != http.StatusServiceUnavailable {
+		t.Fatalf("removed service decision = status %d %+v", status, decision)
+	}
+}
+
+// TestE2EProductionRuntimeRejectsAConflictingAdvertisedHash covers the
+// equal-revision case: a mirror copy at the advertised revision with a
+// different state hash must not be treated as current.
+func TestE2EProductionRuntimeRejectsAConflictingAdvertisedHash(t *testing.T) {
+	cloud := newE2ECloud(t)
+	ads, _ := startProductionADS(t, cloud, nil)
+	e2eWaitAllInSync(t, &e2eAgent{store: ads}, "books")
+
+	fixture := cloud.service(e2eServiceBooks)
+	mirror, err := adsproxy.NewMirror(adsproxy.MirrorOptions{PublicKeys: cloud.keys})
+	if err != nil {
+		t.Fatalf("new mirror: %v", err)
+	}
+	snapshot := adsync.SnapshotResponse{
+		ServiceID:  fixture.ID,
+		SourceID:   fixture.ID,
+		Epoch:      fixture.Epoch,
+		Revision:   fixture.Revision,
+		StateHash:  fixture.StateHash,
+		CommitHash: fixture.CommitHash,
+		Snapshot:   fixture.State,
+	}
+	snapshot.Signature = cloud.signer.sign(adsync.SnapshotSignedBytes(
+		snapshot.SourceID, snapshot.Epoch, snapshot.Revision, snapshot.StateHash, snapshot.CommitHash))
+	if err := mirror.ApplySnapshot(&snapshot); err != nil {
+		t.Fatalf("apply snapshot: %v", err)
+	}
+
+	service := adsync.Service{
+		ID: fixture.ID, Name: fixture.Name, Revision: fixture.Revision,
+		Epoch: fixture.Epoch, HeadStateHash: fixture.StateHash,
+	}
+	if err := ads.reachMirrorHead(context.Background(), mirror, service); err != nil {
+		t.Fatalf("reachMirrorHead at the verified head: %v", err)
+	}
+	if !ads.mirrorReached(mirror, service) {
+		t.Fatal("mirrorReached rejected the verified head")
+	}
+
+	conflict := service
+	conflict.HeadStateHash = adsync.StateHash(adsync.Snapshot{Name: "conflicting-head"})
+	if ads.mirrorReached(mirror, conflict) {
+		t.Fatal("mirrorReached accepted a conflicting hash at the advertised revision")
+	}
+	if err := ads.reachMirrorHead(context.Background(), mirror, conflict); !errors.Is(err, adsync.ErrIntegrity) {
+		t.Fatalf("reachMirrorHead conflicting hash = %v, want ErrIntegrity", err)
 	}
 }
 
