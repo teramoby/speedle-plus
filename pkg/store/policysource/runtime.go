@@ -181,6 +181,17 @@ func (s *Store) startRuntime() error {
 	return nil
 }
 
+// machineHead returns the newest head the state machine observed for one
+// service, from a channel notification or an ack.
+func (s *Store) machineHead(serviceID string) (uint64, bool) {
+	for _, status := range s.machine.Services() {
+		if status.ID == serviceID {
+			return status.Head, true
+		}
+	}
+	return 0, false
+}
+
 // withholdMirrorService stops advertising a service whose head the source just
 // advanced, until a pass verifies the new head. reachMirrorHead marks it
 // available again once the advertised identity and head are confirmed.
@@ -448,6 +459,13 @@ func (s *Store) syncMirror(ctx context.Context, selected []adsync.Service, faile
 			// evaluating policy the source has already replaced, so the
 			// service is withheld until a later fetch reaches the head.
 			log.Warnf("policy-source mirror cannot serve service %q at the advertised head: %v", service.ID, err)
+			runtime.mirror.MarkUnavailable(service.ID)
+			continue
+		}
+		if head, known := s.machineHead(service.ID); known && head > service.Revision {
+			// The channel already announced a newer head than this discovery
+			// response. The copy matches a stale advertisement, so it stays
+			// withheld until a pass reaches the announced head.
 			runtime.mirror.MarkUnavailable(service.ID)
 			continue
 		}

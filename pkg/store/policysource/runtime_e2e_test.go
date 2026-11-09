@@ -677,6 +677,85 @@ func TestE2EProductionRuntimeWithholdsOnHeadAdvanceWhenDiscoveryFails(t *testing
 	})
 }
 
+// TestE2EProductionRuntimeDoesNotRestoreBelowTheAnnouncedHead covers a channel
+// notification that announces a newer head than the following discovery
+// response: the copy that matches the stale response must stay withheld.
+func TestE2EProductionRuntimeDoesNotRestoreBelowTheAnnouncedHead(t *testing.T) {
+	cloud := newE2ECloud(t)
+	_, downstreamToken := e2eDownstreamCredential("B", e2eInstanceB, 2)
+	digest := sha256.Sum256([]byte(downstreamToken))
+	downstreamFile := filepath.Join(t.TempDir(), "downstream-credentials")
+	writeDownstreamCredentials(t, downstreamFile, "B:"+hex.EncodeToString(digest[:])+":*")
+	ads, server := startProductionADS(t, cloud, map[string]interface{}{
+		ServeDownstreamKey:       true,
+		DownstreamCredentialsKey: downstreamFile,
+	})
+	client := server.Client()
+	downstream := func(path string) (int, []byte) {
+		request, err := http.NewRequest(http.MethodGet, server.URL+path, nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		request.Header.Set("Authorization", "Bearer "+downstreamToken)
+		response, err := client.Do(request)
+		if err != nil {
+			return 0, nil
+		}
+		defer response.Body.Close()
+		body, err := io.ReadAll(io.LimitReader(response.Body, 1<<20))
+		if err != nil {
+			return 0, nil
+		}
+		return response.StatusCode, body
+	}
+	downstreamServices := func() []adsync.Service {
+		status, body := downstream(adsync.APIPrefix + "/services")
+		if status != http.StatusOK {
+			return nil
+		}
+		var services adsync.ServicesResponse
+		if json.Unmarshal(body, &services) != nil {
+			return nil
+		}
+		return services.Services
+	}
+
+	e2eWaitAllInSync(t, &e2eAgent{store: ads}, "books", "orders")
+	e2eWaitFor(t, "the downstream service set to carry both services", func() bool {
+		return len(downstreamServices()) == 2
+	})
+
+	// The channel announces revision 2 while discovery still advertises 1.
+	cloud.notify(e2eServiceBooks, 2)
+	e2eWaitFor(t, "the announced head to be observed", func() bool {
+		status, known := ads.Status("books")
+		return known && status.Service.Head == 2
+	})
+	// A pass that accepts the stale discovery response must not re-advertise
+	// the copy at revision 1.
+	if err := ads.Sync(context.Background()); err != nil {
+		t.Fatalf("sync against the stale discovery response: %v", err)
+	}
+	if services := downstreamServices(); len(services) != 1 || services[0].ID != e2eServiceOrders {
+		t.Fatalf("a stale discovery response re-advertised books: %+v", services)
+	}
+	if status, body := downstream(adsync.APIPrefix + "/services/" + e2eServiceBooks + "/snapshot"); status != http.StatusServiceUnavailable {
+		t.Fatalf("withheld books snapshot = status %d body %s", status, body)
+	}
+
+	// Reaching the announced head restores serving.
+	cloud.publish(e2eServiceBooks, e2eUpsertAuthz("p-books-dave-read", "grant user dave read /books/1"))
+	cloud.notify(e2eServiceBooks, 2)
+	e2eWaitFor(t, "the downstream service set to serve books at revision 2", func() bool {
+		for _, service := range downstreamServices() {
+			if service.ID == e2eServiceBooks {
+				return service.Revision == 2
+			}
+		}
+		return false
+	})
+}
+
 // TestE2EProductionRuntimeRejectsAConflictingAdvertisedHash covers the
 // equal-revision case: a mirror copy at the advertised revision with a
 // different state hash must not be treated as current.
