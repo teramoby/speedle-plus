@@ -233,7 +233,8 @@ https://engine.speedle.io is published from `docs/` by the Pages workflow
 builds the directory with `actions/jekyll-build-pages` and deploys the
 artifact. A push to `master` that changes `docs/**` or the workflow runs
 that publish. A pull request runs the build and does not deploy. The deploy
-step waits up to 30 minutes.
+step waits up to 10 minutes. `actions/deploy-pages` caps that timeout at
+600000 ms and lowers a larger value.
 
 `docs/_config.yml` selects the `jekyll-theme-cayman` theme. Static files are
 copied. Markdown with front matter is rendered. `CNAME` is not part of the
