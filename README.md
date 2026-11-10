@@ -114,6 +114,33 @@ See [Embedded mode](https://engine.speedle.io/docs/deployment/embedded/) for det
 
 ## Install
 
+With [Homebrew](https://brew.sh/) on macOS or Linux:
+
+```
+brew tap teramoby/tap
+brew trust teramoby/tap
+brew install teramoby/tap/spctl
+```
+
+Homebrew does not install or start formulas from a tap outside the official Homebrew organization until that tap is trusted.
+
+The formula is named `spctl`. On macOS the command is `speedle-spctl`, so the install does not replace Apple Gatekeeper at `/usr/sbin/spctl`. On Linux the same program is also available as `spctl`.
+
+`speedle-pms` and `speedle-ads` are installed the same way:
+
+```
+brew install teramoby/tap/speedle-pms
+brew install teramoby/tap/speedle-ads
+```
+
+Install the command-line tool and both services together:
+
+```
+brew install teramoby/tap/speedle
+```
+
+The [Homebrew](https://engine.speedle.io/docs/deployment/homebrew/) page shows how to start the services and run a demo.
+
 With Go 1.26.10 or Go 1.27.3 (or a newer patch on the same release branch):
 
 ```

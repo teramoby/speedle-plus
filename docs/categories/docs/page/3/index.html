@@ -77,13 +77,13 @@
     
     <li>
   <h2 class="title2">
-    <a href="/docs/sdks/java/" itemprop="headline">Java SDK</a>
+    <a href="/docs/pms/discover/" itemprop="headline">Policy Discovery</a>
   </h2>
   
-  <p itemprop="about">Add the Speedle Java SDK and check authorization against a local Speedle or Speedle Cloud.</p>
+  <p itemprop="about">Discover policies on the fly!</p>
   
   
-  <p itemprop="about">Add io.speedle:speedle-sdk 0.2.0 with Maven or Gradle, then call isAllowed and check against a local Speedle or Speedle Cloud.</p>
+  <p itemprop="about">Speedle can be used for authorization decisions in systems with a large number of protected resources. Before those protected resources can be accessed, the Speedle authorization decision API (is-allowed API) is called. Defining the authorization policies for those protected resources is difficult if you don&#39;t know what actions are occuring on the protected resources, or how a protected resource is expressed in an authorization decision request. Policy discovery mode can make this task much easier</p>
   
   <hr />
 </li>
@@ -91,13 +91,13 @@
     
     <li>
   <h2 class="title2">
-    <a href="/docs/sdks/rust/" itemprop="headline">Rust SDK</a>
+    <a href="/docs/spdl/" itemprop="headline">SPDL - Speedle Policy Definition Language</a>
   </h2>
   
-  <p itemprop="about">Add the Speedle Rust SDK and check authorization against a local Speedle or Speedle Cloud.</p>
+  <p itemprop="about">SPDL stands for Speedle Policy Definition Language, the language for writing Speedle policies and role policies.</p>
   
   
-  <p itemprop="about">Add the speedle 0.2.0 crate with cargo add, then call is_allowed and check against a local Speedle or Speedle Cloud.</p>
+  <p itemprop="about">Basics of SPDL</p>
   
   <hr />
 </li>
@@ -105,13 +105,13 @@
     
     <li>
   <h2 class="title2">
-    <a href="/docs/assertor/" itemprop="headline">Token asserter</a>
+    <a href="/docs/cloud/tokens/" itemprop="headline">Speedle Cloud application tokens</a>
   </h2>
   
-  <p itemprop="about">Token asserter</p>
+  <p itemprop="about">Issue, protect, list, rotate and revoke Speedle Cloud application tokens, including recent authentication and one-time disclosure rules.</p>
   
   
-  <p itemprop="about">Evaluation requests can contain an identity token that represents a user. In this case, the evaluation engine can invoke the asserter service to obtain the explicit identities of the user</p>
+  <p itemprop="about">Manage service-scoped Bearer credentials without exposing their one-time secret values.</p>
   
   <hr />
 </li>
@@ -119,13 +119,13 @@
     
     <li>
   <h2 class="title2">
-    <a href="/docs/api/" itemprop="headline">API</a>
+    <a href="/docs/deployment/docker/" itemprop="headline">Docker image</a>
   </h2>
   
-  <p itemprop="about">Open API Specification Docs</p>
+  <p itemprop="about">Run speedle-pms, speedle-ads and spctl from the published Speedle image.</p>
   
   
-  <p itemprop="about">Open API Specification Docs. Use the API to model your simple and complex policies in a declarative way; get decisions, discover policies dynamically and debug policy evaluation.</p>
+  <p itemprop="about">One image on Docker Hub and GHCR runs the policy manager, the decision service and spctl, with a shared file store.</p>
   
   <hr />
 </li>

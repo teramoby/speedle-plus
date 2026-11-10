@@ -9,7 +9,7 @@ python3 website/tests/check_quick_start.py --toolchain go1.26.10
 python3 website/tests/check_embedded.py --toolchain go1.26.10 --candidate
 ```
 
-The current docs inventory is 80 Markdown pages (40 English/Chinese pairs). Historical snapshot directories are unchanged. No shared stylesheet, template, logo or homepage design changes are part of this repair.
+The current docs inventory is 82 Markdown pages (41 English/Chinese pairs). Historical snapshot directories are unchanged. No shared stylesheet, template, logo or homepage design changes are part of this repair.
 
 `check_docs.py` executes 132 Bash blocks against owned native PMS/ADS, mock assertion and custom-function services, including Allow/Deny, diagnosis, discovery/import/enforcement, TLS/mTLS and rejected credentials. Two deployment clone/build blocks are identical to the Quick Start build sequence, which the release check executes separately. Linux uses private user/network/PID namespaces and the documented ports; macOS remaps only the owned fixture ports. All fixture processes and temporary policy/certificate files are cleaned up.
 
@@ -34,6 +34,7 @@ Container image pulls and Kubernetes admission/rollout require a target registry
 | `decisions` | Updated in both languages | Paired native commands and API results |
 | `deployment/embedded` | Moved from `deployment-embeded` in both languages | Public-module and candidate-library walkthrough checks |
 | `deployment/_index` | Section landing; content retained from `deployment` | Shared Quick Start build, native services, typed manifest; image pulls and cluster rollout excluded |
+| `deployment/homebrew` | Added in both languages | Install and local demo commands. This suite does not execute them |
 | `idd` | Updated in both languages | Paired native commands and API results |
 | `logging` | Updated in both languages | JSON syntax and current logging/config source review |
 | `overview` | Reviewed; retained | Extracted policy evaluation tests |
