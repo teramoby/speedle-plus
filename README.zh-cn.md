@@ -116,6 +116,58 @@ bob false NO_APPLICABLE_POLICIES <nil>
 
 ## 安装
 
+在 macOS 或 Linux 上可以用 [Homebrew](https://brew.sh/) 安装：
+
+```
+brew install teramoby/tap/spctl
+```
+
+Formula 的名字是 `spctl`。macOS 上的命令是 `speedle-spctl`，因此安装不会替换 Apple Gatekeeper 的 `/usr/sbin/spctl`。Linux 上同一个程序也可以用 `spctl` 调用。
+
+`speedle-pms` 和 `speedle-ads` 也用同一方式安装：
+
+```
+brew install teramoby/tap/speedle-pms
+brew install teramoby/tap/speedle-ads
+```
+
+命令行工具和两个服务可以一次装齐：
+
+```
+brew install teramoby/tap/speedle
+```
+
+### 用 Homebrew 做一次演示
+
+启动策略管理服务和授权决策服务。它们监听 `127.0.0.1`，并共用一份文件策略库。
+
+```
+brew services start speedle-pms
+brew services start speedle-ads
+```
+
+创建服务和策略。在 Linux 上可以把下面的 `speedle-spctl` 换成 `spctl`。
+
+```
+speedle-spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ create service mysvc
+speedle-spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ create policy -c "grant user user1 get,del res1" --service-name=mysvc
+```
+
+向 ADS 查询 `user1` 能否 get `res1`：
+
+```
+curl --fail --silent --show-error --header 'Content-Type: application/json' --data '{"subject":{"principals":[{"type":"user","name":"user1"}]},"serviceName":"mysvc","resource":"res1","action":"get"}' http://127.0.0.1:6734/authz-check/v1/is-allowed
+```
+
+响应里包含 `"allowed":true`。两个服务从同一份策略文件读取变更。停止服务：
+
+```
+brew services stop speedle-ads
+brew services stop speedle-pms
+```
+
+策略文件是 `$(brew --prefix)/var/speedle/policies.json`。日志在 `$(brew --prefix)/var/log/`。
+
 需要 Go 1.26.10 或 Go 1.27.3（也可使用同一大版本的更新补丁版本）：
 
 ```

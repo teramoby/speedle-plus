@@ -28,10 +28,13 @@ or create a second GitHub release.
    against one shared volume.
 3. Create the git tag and the GitHub release.
 4. Log in and push the image.
+5. Update the Homebrew tap when `HOMEBREW_TAP_TOKEN` is set.
 
 A failed image build or smoke test stops the run before a tag exists. A failed
 push leaves the tag and the GitHub release; the next dispatch of the same
-version finishes the push.
+version finishes the push. A failed Homebrew tap update leaves the tag, the
+GitHub release and the image; the next dispatch of the same version finishes
+the tap update.
 
 ## Smoke test
 
@@ -112,6 +115,45 @@ The workflow stops with an error before it creates a tag when either secret is
 missing. The token is passed to `docker login docker.io --password-stdin` in
 the login step. No other step reads the username or the token. GHCR login uses
 the workflow's `GITHUB_TOKEN`.
+
+## Homebrew
+
+`deployment/homebrew/` is the source of truth for the
+[`teramoby/homebrew-tap`](https://github.com/teramoby/homebrew-tap) repository.
+It contains formulas for `spctl`, `speedle-pms`, `speedle-ads` and `speedle`.
+`spctl`, `speedle-pms` and `speedle-ads` each install the release binary for
+the host system and check the SHA-256 sum from that release's `checksums.txt`.
+`speedle` depends on those three formulas.
+
+```sh
+brew install teramoby/tap/spctl
+brew install teramoby/tap/speedle
+```
+
+The `spctl` formula installs the `speedle-spctl` command. On Linux it also
+installs `spctl`. On macOS it does not install a command named `spctl`,
+because `/usr/sbin/spctl` is Apple Gatekeeper.
+
+`brew services start speedle-pms` listens on `127.0.0.1:6733`.
+`brew services start speedle-ads` listens on `127.0.0.1:6734`. Both use the
+file store `$(brew --prefix)/var/speedle/policies.json` and write logs under
+`$(brew --prefix)/var/log/`. A short demo is in the README under
+"Demo with Homebrew".
+
+After the image is published, the workflow rewrites the formula URLs and
+checksums from the binaries it just built. When the `release` environment
+defines `HOMEBREW_TAP_TOKEN`, the workflow pushes a `homebrew-vX.Y.Z` branch
+to `teramoby/homebrew-tap` and opens a pull request against `main`. It does
+not push `main` or `master`. It also opens a pull request on this repository
+so `deployment/homebrew/` matches that update. The token needs permission to
+push a branch and open a pull request on `teramoby/homebrew-tap`. The pull
+request on this repository uses the workflow's `GITHUB_TOKEN`. The tap token
+is read only by that publish step.
+
+When `HOMEBREW_TAP_TOKEN` is unset, the workflow logs that the Homebrew tap
+update was skipped and the release still succeeds. `brew install` reads the
+tap's `main` branch, so `teramoby/homebrew-tap` must already exist and its
+default branch must be `main` before the token is set.
 
 ## Binaries
 
