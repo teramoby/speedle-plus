@@ -138,17 +138,18 @@ for (const locale of ['', 'zh/']) {
     assert.ok(sitemap.includes(`<loc>${target}</loc>`) && !sitemap.includes(`docs/api/sdk-${lang}/`), `Sitemap lists only ${target}`);
   }
 }
-// The embedded guide spelling is corrected; the old URL keeps redirecting.
-// The Docker image page left SDKs without an alias.
+// The embedded guide spelling is corrected, and the Docker image page left SDKs.
+// Both previous URLs keep redirecting.
 for (const locale of ['', 'zh/']) {
   const embedded = `https://engine.speedle.io/${locale}docs/deployment/embedded/`;
   const alias = fs.readFileSync(path.join(output, `${locale}docs/deployment-embeded/index.html`), 'utf8');
   assert.ok(alias.includes(`<link rel="canonical" href="${embedded}"`) && alias.includes(`url=/${locale}docs/deployment/embedded/"`), `Redirect ${locale}docs/deployment-embeded/ to ${embedded}`);
   const docker = `https://engine.speedle.io/${locale}docs/deployment/docker/`;
+  const dockerAlias = fs.readFileSync(path.join(output, `${locale}docs/sdks/docker/index.html`), 'utf8');
+  assert.ok(dockerAlias.includes(`<link rel="canonical" href="${docker}"`) && dockerAlias.includes(`url=/${locale}docs/deployment/docker/"`), `Redirect ${locale}docs/sdks/docker/ to ${docker}`);
   const sitemap = fs.readFileSync(path.join(output, `${locale || 'en/'}sitemap.xml`), 'utf8');
   assert.ok(sitemap.includes(`<loc>${embedded}</loc>`) && sitemap.includes(`<loc>${docker}</loc>`), `Sitemap lists the Deployment pages in ${locale || 'en'}`);
   assert.ok(!sitemap.includes(`docs/deployment-embeded/`) && !sitemap.includes(`docs/sdks/docker/`), `Sitemap omits the old embedded and Docker URLs in ${locale || 'en'}`);
-  assert.ok(!fs.existsSync(path.join(output, `${locale}docs/sdks/docker/index.html`)), `No Docker page remains under SDKs in ${locale || 'en'}`);
   assert.ok(fs.readFileSync(path.join(output, `${locale || 'en/'}sitemap.xml`), 'utf8').includes(`<loc>https://engine.speedle.io/${locale}docs/deployment/</loc>`), `Sitemap lists the Deployment section in ${locale || 'en'}`);
 }
 let docsAlternates = 0;
@@ -170,7 +171,7 @@ function checkDocsAlternates(directory) {
 }
 checkDocsAlternates(path.join(output, 'docs'));
 checkDocsAlternates(path.join(output, 'zh/docs'));
-assert.equal(docsAlternates, 94, 'Every canonical docs page and redirect alias has three hreflang alternates');
+assert.equal(docsAlternates, 96, 'Every canonical docs page and redirect alias has three hreflang alternates');
 console.log('PASS Hugo 0.48 output: editor, navigation, sitemap, footer stylesheet and matching release assets');
 
 // #278: the Cloud section is the complete bilingual documentation hub.

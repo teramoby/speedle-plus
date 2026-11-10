@@ -2,6 +2,7 @@
 title = "Docker image"
 description = "Run speedle-pms, speedle-ads and spctl from the published Speedle image."
 weight = 20
+aliases = ["/docs/sdks/docker/"]
 draft = false
 toc = true
 tocheading = "h2"

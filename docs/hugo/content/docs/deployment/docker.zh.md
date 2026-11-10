@@ -2,6 +2,7 @@
 title = "Docker 镜像"
 description = "用已发布的 Speedle 镜像运行 speedle-pms、speedle-ads 和 spctl。"
 weight = 20
+aliases = ["/zh/docs/sdks/docker/"]
 draft = false
 toc = true
 tocheading = "h2"
