@@ -62,7 +62,10 @@ fi
 
 remote_branch=$(git -C "${workdir}/tap" ls-remote --heads origin "refs/heads/${tap_branch}")
 if [[ -n "${remote_branch}" ]]; then
-  git -C "${workdir}/tap" fetch --depth 1 origin "${tap_branch}"
+  # A depth-1 clone is single-branch. Name the remote-tracking ref here;
+  # a bare fetch of the branch name only updates FETCH_HEAD.
+  git -C "${workdir}/tap" fetch --depth 1 origin \
+    "refs/heads/${tap_branch}:refs/remotes/origin/${tap_branch}"
   git -C "${workdir}/tap" checkout --quiet -B "${tap_branch}" "origin/${tap_branch}"
 else
   git -C "${workdir}/tap" checkout --quiet -B "${tap_branch}"

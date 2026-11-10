@@ -34,7 +34,12 @@ class PublishTapRetryTest(unittest.TestCase):
             root = Path(temporary)
             self._run_case(root, open_pr=True)
 
-    def _run_case(self, root, open_pr):
+    def test_existing_tap_branch_is_fetched_into_a_single_branch_clone(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            self._run_case(root, open_pr=False, existing_tap_branch=True)
+
+    def _run_case(self, root, open_pr, existing_tap_branch=False):
         source_bare = root / "source.git"
         tap_bare = root / "tap.git"
         workspace = root / "workspace"
@@ -65,6 +70,13 @@ class PublishTapRetryTest(unittest.TestCase):
         self._git("add", "README.md", cwd=tap_seed)
         self._git("commit", "-m", "tap readme", cwd=tap_seed)
         self._git("push", "origin", "main", cwd=tap_seed)
+        if existing_tap_branch:
+            self._git("checkout", "-b", "homebrew-v1.7.0", cwd=tap_seed)
+            (tap_seed / "README.md").write_text("old tap branch\n")
+            self._git("add", "README.md", cwd=tap_seed)
+            self._git("commit", "-m", "old tap branch", cwd=tap_seed)
+            self._git("push", "origin", "homebrew-v1.7.0", cwd=tap_seed)
+            self._git("checkout", "main", cwd=tap_seed)
 
         gh = bin_dir / "gh"
         number = "7" if open_pr else ""
@@ -75,7 +87,11 @@ class PublishTapRetryTest(unittest.TestCase):
                 'printf "%s\\n" "$*" >> "$GH_LOG"',
                 'if [[ "$1" == "auth" ]]; then exit 0; fi',
                 'if [[ "$1" == "repo" && "$2" == "clone" ]]; then',
-                '  git clone "$TAP_BARE" "$4"',
+                '  if [[ "${5:-}" == "--" ]]; then',
+                '    git clone --no-local "${@:6}" "$TAP_BARE" "$4"',
+                "  else",
+                '    git clone "$TAP_BARE" "$4"',
+                "  fi",
                 "  exit 0",
                 "fi",
                 'if [[ "$1" == "pr" && "$2" == "list" ]]; then',
@@ -130,6 +146,19 @@ class PublishTapRetryTest(unittest.TestCase):
             self.assertEqual(listed.strip(), "")
             self.assertIn("deployment/homebrew already matches v1.7.0.", completed.stdout)
             self.assertNotIn("pr create", log.split("teramoby/speedle-plus")[-1])
+        if existing_tap_branch:
+            self.assertNotIn("unknown revision", combined)
+            self.assertIn("Pushed homebrew-v1.7.0", completed.stdout)
+            readme = subprocess.run(
+                ["git", "--git-dir", str(tap_bare), "show", "homebrew-v1.7.0:README.md"],
+                check=True, text=True, capture_output=True,
+            ).stdout
+            self.assertNotEqual(readme, "old tap branch\n")
+            self.assertIn("brew trust teramoby/tap", readme)
+            subprocess.run(
+                ["git", "--git-dir", str(tap_bare), "cat-file", "-e", "homebrew-v1.7.0:Formula/spctl.rb"],
+                check=True, text=True, capture_output=True,
+            )
 
     def _git(self, *args, cwd=None):
         command = ["git", *args]
