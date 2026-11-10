@@ -15,4 +15,25 @@
 		
 	</sitemap>
 	
+	<sitemap>
+	   	<loc>https://engine.speedle.io/ja/sitemap.xml</loc>
+		
+	   	<lastmod>2026-11-10T17:04:32+08:00</lastmod>
+		
+	</sitemap>
+	
+	<sitemap>
+	   	<loc>https://engine.speedle.io/ko/sitemap.xml</loc>
+		
+	   	<lastmod>2026-11-10T17:04:32+08:00</lastmod>
+		
+	</sitemap>
+	
+	<sitemap>
+	   	<loc>https://engine.speedle.io/es/sitemap.xml</loc>
+		
+	   	<lastmod>2026-11-10T17:04:32+08:00</lastmod>
+		
+	</sitemap>
+	
 </sitemapindex>

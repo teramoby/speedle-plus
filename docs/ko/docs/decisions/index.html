@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <script>document.documentElement.classList.add('docs-js','navigation-js');addEventListener('DOMContentLoaded',function(){if(!document.querySelector('header.site-header.navigation-ready'))document.documentElement.classList.remove('navigation-js')});</script>
+    <meta name="generator" content="Hugo 0.48" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1"><title>인가 결정 · Speedle Engine</title>
+<meta name="description" content="서비스 접근을 위한 인가 결정을 쿼리하고 부여된 역할 및 권한 조회">
+<meta name="generator" content="Hugo 0.48" />
+<link href="https://engine.speedle.io/index.xml" rel="alternate" type="application/rss+xml">
+<link rel="canonical" href="https://engine.speedle.io/ko/docs/decisions/">
+
+<link rel="alternate" hreflang="en" href="https://engine.speedle.io/docs/decisions/">
+<link rel="alternate" hreflang="es" href="https://engine.speedle.io/es/docs/decisions/">
+<link rel="alternate" hreflang="ja" href="https://engine.speedle.io/ja/docs/decisions/">
+<link rel="alternate" hreflang="ko" href="https://engine.speedle.io/ko/docs/decisions/">
+<link rel="alternate" hreflang="zh-CN" href="https://engine.speedle.io/zh/docs/decisions/">
+<link rel="alternate" hreflang="x-default" href="https://engine.speedle.io/docs/decisions/">
+<meta property="og:type" content="article">
+<meta property="article:modified_time" content="2026-11-08T19:23:52&#43;08:00">
+<meta property="og:site_name" content="Speedle Engine">
+<meta property="og:title" content="인가 결정 · Speedle Engine">
+<meta property="og:description" content="서비스 접근을 위한 인가 결정을 쿼리하고 부여된 역할 및 권한 조회">
+<meta property="og:url" content="https://engine.speedle.io/ko/docs/decisions/">
+<meta property="og:image" content="https://engine.speedle.io/img/social/engine-en.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:alt" content="Speedle Engine — Fast. Simple. Access control">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="인가 결정 · Speedle Engine">
+<meta name="twitter:description" content="서비스 접근을 위한 인가 결정을 쿼리하고 부여된 역할 및 권한 조회">
+<meta name="twitter:image" content="https://engine.speedle.io/img/social/engine-en.png">
+<meta name="twitter:image:alt" content="Speedle Engine — Fast. Simple. Access control">
+
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/ko/docs/decisions/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-08T19:23:52+08:00","description":"서비스 접근을 위한 인가 결정을 쿼리하고 부여된 역할 및 권한 조회","headline":"인가 결정","image":"https://engine.speedle.io/img/social/engine-en.png","inLanguage":"ko","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/ko/docs/decisions/","@type":"WebPage"},"name":"인가 결정","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/ko/docs/decisions/"}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/ko/docs/decisions/#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://engine.speedle.io/ko/","name":"홈","position":1},{"@type":"ListItem","item":"https://engine.speedle.io/ko/docs/","name":"문서","position":2},{"@type":"ListItem","item":"https://engine.speedle.io/ko/docs/decisions/","name":"인가 결정","position":3}]}</script><link href="/css/docs.css" rel="stylesheet" type="text/css">
+
+
+    <link href="/css/navigation.css?v=header-20261106-v8" rel="stylesheet">
+    <script src="/js/navigation.js?v=header-20261106-v8" defer></script>
+    <script src="/js/docs.js" defer></script>
+
+</head>
+
+<body class="page-kube docs-page">
+    <header class="site-header">
+    <div class="wrap nav">
+      <a class="brand" href="/ko/#top" aria-label="Speedle Engine 홈"><img class="brand-logo" src="/img/speedle/Speedle_logo_home_bold.svg?v=4" width="304" height="104" alt=""><span class="brand-divider" aria-hidden="true"></span><span class="brand-product">Engine</span></a>
+      <button class="menu" type="button" aria-expanded="false" aria-controls="nav-links" aria-label="내비게이션 열기">☰</button>
+      <nav class="nav-links" id="nav-links" aria-label="기본 내비게이션">
+        <div class="products"><button class="products-button" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="products-panel">제품<svg class="products-chevron" width="10" height="10" viewBox="0 0 10 10" aria-hidden="true" focusable="false"><path d="M2 3.5 5 6.5 8 3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button><span class="products-heading" aria-hidden="true">제품</span><div class="products-panel" id="products-panel" role="group" aria-label="제품"><a class="product-row" href="https://engine.speedle.io/ko/" aria-current="page"><img class="product-mark" src="/img/speedle/speedle-mark-engine.svg" alt="" width="20" height="20"><span class="product-text"><span class="product-name">Speedle Engine</span><span class="product-desc">오픈 소스 인가 엔진</span></span><svg class="product-check" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M3.5 8.5 6.5 11.5 12.5 4.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></a><a class="product-row" href="https://cloud.speedle.io/ko/"><img class="product-mark" src="/img/speedle/speedle-mark-cloud.svg" alt="" width="20" height="20"><span class="product-text"><span class="product-name">Speedle Cloud <span class="product-badge">출시 예정</span></span><span class="product-desc">개발자를 위한 호스팅형 인가 서비스</span></span></a><a class="product-row" href="https://ai.speedle.io/ko/"><img class="product-mark" src="/img/speedle/speedle-mark-ai.svg" alt="" width="20" height="20"><span class="product-text"><span class="product-name">Speedle AI</span><span class="product-desc">AI를 위한 접근 제어, AI를 통한 접근 제어</span></span></a></div></div>
+        <a href="/ko/#about">Speedle 소개</a><a href="/ko/#features">기능</a>
+        <a href="/ko/quick-start/">시작하기</a><a href="/ko/docs/">문서</a><a href="/ko/playground/">Playground</a>
+        <div class="languages"><button class="languages-button" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="languages-panel">한국어<svg class="languages-chevron" width="10" height="10" viewBox="0 0 10 10" aria-hidden="true" focusable="false"><path d="M2 3.5 5 6.5 8 3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button><span class="languages-heading" aria-hidden="true">언어</span><div class="languages-panel" id="languages-panel" role="group" aria-label="언어"><a class="language-row" href="/docs/decisions/" lang="en" hreflang="en">English</a><a class="language-row" href="/ja/docs/decisions/" lang="ja" hreflang="ja" >日本語</a><a class="language-row" href="/ko/docs/decisions/" lang="ko" hreflang="ko" aria-current="page">한국어</a><a class="language-row" href="/es/docs/decisions/" lang="es" hreflang="es">Español</a><a class="language-row" href="/zh/docs/decisions/" lang="zh-CN" hreflang="zh-CN" >中文</a></div></div>
+        <a class="nav-github" href="https://github.com/teramoby/speedle-plus">GitHub</a>
+      </nav>
+    </div>
+  </header>
+    <div class="container">
+        <button class="docs-nav-toggle" type="button" aria-expanded="false" aria-controls="docs-navigation">
+            <span>메뉴</span>
+            <svg class="docs-nav-toggle-icon" viewBox="0 0 18 14" width="18" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M1 1h16M1 7h16M1 13h16"/></svg>
+        </button>
+        <div class="content-container"><aside class="docs-sidebar" id="docs-navigation" aria-label="문서 내비게이션">
+<div class="docs-nav-head">
+<span class="docs-nav-title">문서</span>
+<button class="docs-nav-close" type="button" aria-label="메뉴 닫기"><svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="m3 3 10 10M13 3 3 13"/></svg></button>
+</div>
+<div class="sidebar">
+<nav>
+<ul>
+
+
+
+
+
+<li data-docs-depth="-1" class="docs-nav-section parent"><span class="docs-nav-heading">문서</span>
+<ul class="sub-menu">
+<li data-docs-depth="0" class=""><a href="/ko/docs/usecases/">유스케이스</a></li>
+<li data-docs-depth="0" class=""><a href="/ko/docs/overview/">개요</a></li>
+<li data-docs-depth="0" class=""><a href="/ko/docs/spdl/">SPDL: Speedle 정책 정의 언어</a></li>
+<li data-docs-depth="0" class=""><a href="/ko/docs/architecture/">아키텍처</a></li>
+
+
+
+<li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading">Speedle 정책</span>
+<ul class="">
+<li data-docs-depth="1" class=""><a href="/ko/docs/pms/policy-mgmt/">정책 관리</a></li>
+<li data-docs-depth="1" class=""><a href="/ko/docs/pms/global-policy/">글로벌 정책</a></li>
+<li data-docs-depth="1" class=""><a href="/ko/docs/pms/diagnosis/">인가 진단</a></li>
+<li data-docs-depth="1" class=""><a href="/ko/docs/pms/discover/">정책 발견</a></li>
+</ul>
+
+</li>
+<li data-docs-depth="0" class="active"><a href="/ko/docs/decisions/" aria-current="page">인가 결정</a></li>
+<li data-docs-depth="0" class=""><a href="/ko/docs/idd/">ID 도메인</a></li>
+<li data-docs-depth="0" class=""><a href="/ko/docs/assertor/">토큰 어서터</a></li>
+
+
+
+<li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading docs-nav-heading-link"><a href="/ko/docs/store/">플러그형 저장소</a></span>
+<ul class="">
+<li data-docs-depth="1" class=""><a href="/ko/docs/store/mysql/">MySQL 설정 가이드</a></li>
+<li data-docs-depth="1" class=""><a href="/ko/docs/store/etcd/">etcd 설정 가이드</a></li>
+<li data-docs-depth="1" class=""><a href="/ko/docs/store/mongodb/">MongoDB 설정 가이드</a></li>
+</ul>
+
+</li>
+
+
+
+<li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading">API</span>
+<ul class="">
+<li data-docs-depth="1" class=""><a href="/ko/docs/api/decision_api/">인가 결정 API</a></li>
+<li data-docs-depth="1" class=""><a href="/ko/docs/api/management_api/">정책 관리 API</a></li>
+<li data-docs-depth="1" class=""><a href="/ko/docs/api/asserter_api/">토큰 어설션 API</a></li>
+</ul>
+
+</li>
+
+
+
+<li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading docs-nav-heading-link"><a href="/ko/docs/deployment/">배포</a></span>
+<ul class="">
+<li data-docs-depth="1" class=""><a href="/ko/docs/deployment/embedded/">Speedle 임베디드 모드</a></li>
+<li data-docs-depth="1" class=""><a href="/ko/docs/deployment/docker/">Docker 이미지</a></li>
+<li data-docs-depth="1" class=""><a href="/ko/docs/deployment/homebrew/">Homebrew 설치</a></li>
+</ul>
+
+</li>
+
+
+
+<li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading docs-nav-heading-link"><a href="/ko/docs/sdks/">SDK</a></span>
+<ul class="">
+<li data-docs-depth="1" class=""><a href="/ko/docs/sdks/java/">Java SDK</a></li>
+<li data-docs-depth="1" class=""><a href="/ko/docs/sdks/python/">Python SDK</a></li>
+<li data-docs-depth="1" class=""><a href="/ko/docs/sdks/go/">Go SDK</a></li>
+<li data-docs-depth="1" class=""><a href="/ko/docs/sdks/dotnet/">C#/.NET SDK</a></li>
+<li data-docs-depth="1" class=""><a href="/ko/docs/sdks/rust/">Rust SDK</a></li>
+<li data-docs-depth="1" class=""><a href="/ko/docs/sdks/node/">Node.js/TypeScript SDK</a></li>
+</ul>
+
+</li>
+
+
+
+<li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading docs-nav-heading-link"><a href="/ko/docs/cloud/">Speedle Cloud</a></span>
+<ul class="">
+<li data-docs-depth="1" class=""><a href="/ko/docs/cloud/getting-started/">Speedle Cloud 빠른 시작</a></li>
+<li data-docs-depth="1" class=""><a href="/ko/docs/cloud/tokens/">Speedle Cloud 애플리케이션 토큰</a></li>
+<li data-docs-depth="1" class=""><a href="/ko/docs/cloud/authorization-api/">Speedle Cloud 인가 API 프리뷰</a></li>
+<li data-docs-depth="1" class=""><a href="/ko/docs/cloud/limits-and-errors/">Speedle Cloud 제한 및 오류</a></li>
+</ul>
+
+</li>
+<li data-docs-depth="0" class=""><a href="/ko/docs/security/">보안</a></li>
+<li data-docs-depth="0" class=""><a href="/ko/docs/logging/">로깅 프레임워크</a></li>
+<li data-docs-depth="0" class=""><a href="/ko/docs/versions/">버전</a></li>
+<li data-docs-depth="0" class=""><a href="/ko/docs/custom-function/">사용자 정의 함수</a></li>
+</ul>
+
+</li>
+</ul>
+</nav>
+
+
+</div>
+</aside>
+<main>
+<div id="main">
+
+  <h1>인가 결정</h1>
+  <p class="docs-lead">인가 결정을 쿼리합니다.</p>
+
+
+
+
+<nav id="contents" class="docs-toc" data-docs-toc="h2" aria-label="목차">
+  <ol></ol>
+</nav>
+
+
+
+  <div id="kube-component" class="content">
+
+<h2 id="인가-결정이란-무엇인가">인가 결정이란 무엇인가</h2>
+
+<p>Speedle은 지정된 서비스 내에서 주체, 작업 및 리소스를 평가하며 애플리케이션이 그 결과를 적용합니다. 평가 오류나 타임아웃은 일반적인 Deny(거부)와 구분하여 처리하고 오류 발생 시 접근을 기본적으로 차단(fail closed)해야 합니다. REST, gRPC, 임베디드 Go API는 데이터 표현 방식이 다르므로 각각의 <a href="/ko/docs/api/">API 계약</a>을 따르십시오.</p>
+
+<h2 id="예제-실행-전-준비">예제 실행 전 준비</h2>
+
+<p><a href="/ko/quick-start/">빠른 시작</a>의 설명에 따라 저장소 루트에서 <code>./bin/spctl</code>, <code>./bin/speedle-pms</code>, <code>./bin/speedle-ads</code>를 빌드합니다. Go 1.26.10 또는 Go 1.27.3(또는 동일 릴리스 브랜치의 최신 패치 버전), Bash, curl, Python 3이 필요합니다. 각 터미널은 저장소 루트 디렉터리에서 실행하십시오. 이 페이지를 위해 새 정책 파일을 사용하고 두 서비스가 모두 중지된 후에만 재설정하십시오.</p>
+
+<p>빈 정책 파일 초기화:</p>
+
+<!-- docs-check: setup -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#8be9fd;font-style:italic">printf</span> <span style="color:#f1fa8c">&#39;{}\n&#39;</span> &gt; docs-policies.json</code></pre></div>
+<p>터미널 1에서 PMS를 시작하고 실행 상태를 유지합니다:</p>
+
+<!-- docs-check: pms -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./bin/speedle-pms --store-type file --filestore-loc ./docs-policies.json --endpoint <span style="color:#bd93f9">127</span>.0.0.1:6733 --grpc-endpoint <span style="color:#bd93f9">127</span>.0.0.1:0 --insecure<span style="color:#ff79c6">=</span>true</code></pre></div>
+<p>터미널 2에서 ADS를 시작하고 실행 상태를 유지합니다:</p>
+
+<!-- docs-check: ads -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./bin/speedle-ads --store-type file --filestore-loc ./docs-policies.json --endpoint <span style="color:#bd93f9">127</span>.0.0.1:6734 --grpc-endpoint <span style="color:#bd93f9">127</span>.0.0.1:0 --insecure<span style="color:#ff79c6">=</span>true</code></pre></div>
+<p>나머지 명령은 터미널 3에서 실행합니다. PMS와 ADS는 파일을 공유하며 변경 사항은 비동기적으로 반영됩니다. 의도한 업데이트가 ADS에 도달했는지 확인한 후에 의존하십시오. <code>--insecure=true</code>는 이 루프백 예제를 위한 것입니다. 프로덕션 연결에 대해서는 <a href="/ko/docs/security/">보안</a>을 참조하십시오. 명시적인 PMS 주소를 지정하면 <code>~/.spctlconfig</code>를 수정할 필요가 없습니다. 완료되면 두 서버 터미널에서 Ctrl-C를 눌러 중지합니다.</p>
+
+<!-- docs-check: bookstore-fixture -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ create service --json-file website/tests/examples/bookstore.json</code></pre></div>
+<h2 id="인가-결정-조회">인가 결정 조회</h2>
+
+<p>Alan은 허용됩니다. Bob은 적용되는 인가가 없으므로 거부됩니다.</p>
+
+<!-- docs-check: decision-allow -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl --fail --silent --show-error -H <span style="color:#f1fa8c">&#39;Content-Type: application/json&#39;</span> <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  -d <span style="color:#f1fa8c">&#39;{&#34;subject&#34;:{&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;,&#34;name&#34;:&#34;Alan&#34;}]},&#34;serviceName&#34;:&#34;onlineBookStore&#34;,&#34;resource&#34;:&#34;/books/HarryPotter&#34;,&#34;action&#34;:&#34;download&#34;}&#39;</span> <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  http://127.0.0.1:6734/authz-check/v1/is-allowed</code></pre></div>
+<!-- docs-check: decision-deny -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl --fail --silent --show-error -H <span style="color:#f1fa8c">&#39;Content-Type: application/json&#39;</span> <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  -d <span style="color:#f1fa8c">&#39;{&#34;subject&#34;:{&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;,&#34;name&#34;:&#34;Bob&#34;}]},&#34;serviceName&#34;:&#34;onlineBookStore&#34;,&#34;resource&#34;:&#34;/books/HarryPotter&#34;,&#34;action&#34;:&#34;download&#34;}&#39;</span> <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  http://127.0.0.1:6734/authz-check/v1/is-allowed</code></pre></div>
+<p>성공적인 결정은 <code>{&quot;allowed&quot;:true,&quot;reason&quot;:0}</code> 또는 해당 거부 객체를 반환합니다. HTTP 오류는 성공적인 인가가 아닌 오류 응답을 반환합니다. 이유 코드는 다음과 같습니다:</p>
+
+<table>
+<thead>
+<tr>
+<th>코드</th>
+<th>의미</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td>0</td>
+<td>GRANT_POLICY_FOUND</td>
+</tr>
+
+<tr>
+<td>1</td>
+<td>DENY_POLICY_FOUND</td>
+</tr>
+
+<tr>
+<td>2</td>
+<td>SERVICE_NOT_FOUND</td>
+</tr>
+
+<tr>
+<td>3</td>
+<td>NO_APPLICABLE_POLICIES</td>
+</tr>
+
+<tr>
+<td>4</td>
+<td>ERROR_IN_EVALUATION</td>
+</tr>
+
+<tr>
+<td>5</td>
+<td>DISCOVER_MODE</td>
+</tr>
+
+<tr>
+<td>6</td>
+<td>REASON_NOT_AVAILABLE</td>
+</tr>
+</tbody>
+</table>
+
+<p><code>DISCOVER_MODE</code>는 프로덕션 환경의 인가 결정이 아닙니다. <code>REASON_NOT_AVAILABLE</code>은 폴백 이유 값입니다. 이러한 숫자를 HTTP 상태 코드와 혼동하지 마십시오.</p>
+
+<h2 id="부여된-역할-조회">부여된 역할 조회</h2>
+
+<!-- docs-check: decision-roles -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl --fail --silent --show-error -H <span style="color:#f1fa8c">&#39;Content-Type: application/json&#39;</span> <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  -d <span style="color:#f1fa8c">&#39;{&#34;subject&#34;:{&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;,&#34;name&#34;:&#34;Alan&#34;}]},&#34;serviceName&#34;:&#34;onlineBookStore&#34;,&#34;resource&#34;:&#34;/books/HarryPotter&#34;,&#34;action&#34;:&#34;download&#34;}&#39;</span> <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  http://127.0.0.1:6734/authz-check/v1/all-granted-roles</code></pre></div>
+<p>예상되는 역할은 <code>role1</code>과 <code>role2</code>입니다(순서는 상관없음). 리소스 범위의 역할 할당을 쿼리하는 경우 <code>resource</code>를 포함하십시오.</p>
+
+<h2 id="부여된-권한-조회">부여된 권한 조회</h2>
+
+<!-- docs-check: decision-permissions -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl --fail --silent --show-error -H <span style="color:#f1fa8c">&#39;Content-Type: application/json&#39;</span> <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  -d <span style="color:#f1fa8c">&#39;{&#34;subject&#34;:{&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;,&#34;name&#34;:&#34;Alan&#34;}]},&#34;serviceName&#34;:&#34;onlineBookStore&#34;,&#34;resource&#34;:&#34;/books/HarryPotter&#34;,&#34;action&#34;:&#34;download&#34;}&#39;</span> <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  http://127.0.0.1:6734/authz-check/v1/all-granted-permissions</code></pre></div>
+<p>예상되는 권한: 리소스 <code>/books/HarryPotter</code>, 작업 <code>download</code>. 이 API는 유효한 부여 권한을 기술합니다. 특정 작업을 적용할 때 권한 목록으로 대체하지 말고 <code>is-allowed</code>로 판정을 수행하십시오.</p>
+
+<h2 id="속성-진단-및-토큰-id">속성, 진단 및 토큰 ID</h2>
+
+<p>REST 요청 속성은 배열 내의 형식화된 객체입니다. 예를 들어 속성 항목은 다음과 같습니다:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">{
+  <span style="color:#ff79c6">&#34;name&#34;</span>: <span style="color:#f1fa8c">&#34;clearance&#34;</span>,
+  <span style="color:#ff79c6">&#34;type&#34;</span>: <span style="color:#f1fa8c">&#34;numeric&#34;</span>,
+  <span style="color:#ff79c6">&#34;value&#34;</span>: <span style="color:#bd93f9">4</span>
+}</code></pre></div>
+<p>임베디드 Go의 속성은 <code>map[string]interface{}</code>입니다. 진단 응답 속성도 객체이며 요청 배열과는 다릅니다. 타입 및 조건에 대해서는 <a href="/ko/docs/spdl/">SPDL</a>, 평가 세부 정보는 <a href="/ko/docs/pms/diagnosis/">진단</a>, 구성된 토큰 검증은 <a href="/ko/docs/assertor/">토큰 어설션</a>을 참조하십시오.</p>
+
+<p>정책 적용 지점(PEP)은 정책이 참조하는 모든 사용자 정의 속성을 제공해야 합니다(<code>request_user</code>나 <code>request_time</code>과 같은 기본 제공 속성은 ADS에서 제공함). PEP는 최종 사용자가 아닌 호출하는 신뢰할 수 있는 애플리케이션 또는 서비스이며 전달하는 속성 값에 책임을 집니다. 기본 제공 속성 이름으로 신뢰할 수 없는 최종 사용자 입력을 전달하지 마십시오. 요청에 존재하지 않는 속성의 조건은 일치하지 않으므로 속성이 존재하지 않는 경우 조건부 거부는 적용되지 않습니다. 거부 조건이 사용하는 모든 속성을 PEP가 확실히 제공하도록 하고 해당 요청을 테스트하십시오.</p>
+</div>
+</div>
+</main>
+        </div>
+    </div>
+    <div class="docs-nav-backdrop" hidden></div>
+    <footer class="site-footer">
+    <div class="wrap footer-main">
+      <div class="footer-brand">
+        <a class="footer-lockup" href="/ko/" aria-label="Speedle Engine 홈"><img src="/img/speedle/Speedle_logo_home_bold.svg?v=4" width="304" height="104" alt="Speedle"><span class="footer-divider" aria-hidden="true"></span><span class="footer-product">Engine</span></a>
+        <p class="footer-tagline">오픈 소스 인가 엔진</p>
+        <nav class="social" aria-label="커뮤니티 링크">
+          <a href="mailto:contact@speedle.io" aria-label="이메일 보내기 contact@speedle.io" title="contact@speedle.io"><img src="/img/speedle/28.%20Mail.svg" width="40" height="40" alt=""></a>
+          <a href="https://groups.google.com/forum/#!forum/speedle-users" aria-label="Google Groups" title="Google Groups — speedle-users"><img src="/img/speedle/Google-Groups.svg" width="24" height="24" alt=""></a>
+          <a href="https://github.com/teramoby/speedle-plus" aria-label="GitHub"><img src="/img/speedle/18.%20Github.svg" width="40" height="40" alt=""></a>
+          <a href="https://discord.gg/uaY2xVsbbT" aria-label="Discord"><img src="/img/speedle/Discord.svg" width="64" height="48" alt=""></a>
+        </nav>
+      </div>
+      <nav class="footer-family" aria-label="Speedle 제품"><svg class="sphere-sprite" width="0" height="0" aria-hidden="true" focusable="false"><symbol id="i-speedle-sphere" viewBox="22 22 114 114"><!-- Source: img/speedle/Speedle_logo_home_bold.svg, sphere group only. Colours changed only (stroke currentColor). No path edits. --><g fill="none" stroke="currentColor" stroke-linejoin="miter" stroke-miterlimit="3" stroke-linecap="butt"><polygon stroke-width="3.6" points="41.83 47.82 30.67 80.15 42.9 112.09 72.8 128.69 106.38 122.19 127.93 95.63 127.36 61.43 104.94 35.6 71.16 30.23"/><g stroke-width="2.4"><polygon points="81.97 43.92 52.19 57.23 44.03 88.8 63.62 114.87 96.22 115.81 117.28 90.9 110.94 58.91"/><polygon points="68.57 60.42 57.6 86.19 78.73 104.59 102.75 90.18 96.47 62.88"/><path d="M41.83 47.82L52.19 57.23 68.57 60.42 81.97 43.92 71.16 30.23 M30.67 80.15L44.03 88.8 42.9 112.09 M52.19 57.23L57.6 86.19 44.03 88.8 78.73 104.59 63.62 114.87 72.8 128.69 M78.73 104.59L96.22 115.81 106.38 122.19 M96.22 115.81L102.75 90.18 117.28 90.9 127.93 95.63 M117.28 90.9L127.36 61.43 110.94 58.91 104.94 35.6 81.97 43.92 M110.94 58.91L96.47 62.88 117.28 90.9"/></g></g></symbol></svg>
+        <ul>
+          <li><a class="footer-card" href="https://engine.speedle.io/ko/" aria-current="page"><svg class="product-sphere product-engine" aria-hidden="true" focusable="false"><use href="#i-speedle-sphere"/></svg><span class="footer-card-name">Speedle Engine</span><span class="footer-card-description">오픈 소스 인가 엔진</span><svg class="footer-card-check" width="15" height="15" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M3.5 8.5 6.5 11.5 12.5 4.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></a></li>
+          <li><a class="footer-card" href="https://cloud.speedle.io/ko/"><svg class="product-sphere product-cloud" aria-hidden="true" focusable="false"><use href="#i-speedle-sphere"/></svg><span class="footer-card-name">Speedle Cloud<span class="product-badge">출시 예정</span></span><span class="footer-card-description">개발자를 위한 호스팅형 인가 서비스</span></a></li>
+          <li><a class="footer-card" href="https://ai.speedle.io/ko/"><svg class="product-sphere product-ai" aria-hidden="true" focusable="false"><use href="#i-speedle-sphere"/></svg><span class="footer-card-name">Speedle AI</span><span class="footer-card-description">AI를 위한 접근 제어, AI를 통한 접근 제어</span></a></li>
+        </ul>
+      </nav>
+    </div>
+    <div class="wrap footer-bar">
+      <p class="footer-legal"><span>Universal Permissive License v1.0에 따라 라이선스가 부여됩니다.</span><span class="footer-legal-sep"> · </span><span>Copyright &copy; 2019–2026 The Speedle Authors. All rights reserved.</span></p>
+    </div>
+  </footer>
+<!-- Cloudflare Web Analytics --><script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "a7a746c498b940e58425123082a20520"}'></script><!-- End Cloudflare Web Analytics -->
+</body>
+
+</html>

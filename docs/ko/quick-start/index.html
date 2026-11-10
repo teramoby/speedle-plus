@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+  <script>document.documentElement.classList.add('navigation-js');addEventListener('DOMContentLoaded',function(){if(!document.querySelector('header.site-header.navigation-ready'))document.documentElement.classList.remove('navigation-js')});</script>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><title>빠른 시작 · Speedle Engine</title>
+<meta name="description" content="go install 또는 소스 코드로부터 Speedle을 설치하고, 정책 관리, 직접 인가, 역할 인가, 조건부(ABAC) 결정 및 거부를 검증합니다.">
+<meta name="generator" content="Hugo 0.48" />
+<link href="https://engine.speedle.io/index.xml" rel="alternate" type="application/rss+xml">
+<link rel="canonical" href="https://engine.speedle.io/ko/quick-start/">
+
+<link rel="alternate" hreflang="en" href="https://engine.speedle.io/quick-start/">
+<link rel="alternate" hreflang="es" href="https://engine.speedle.io/es/quick-start/">
+<link rel="alternate" hreflang="ja" href="https://engine.speedle.io/ja/quick-start/">
+<link rel="alternate" hreflang="ko" href="https://engine.speedle.io/ko/quick-start/">
+<link rel="alternate" hreflang="zh-CN" href="https://engine.speedle.io/zh/quick-start/">
+<link rel="alternate" hreflang="x-default" href="https://engine.speedle.io/quick-start/">
+<meta property="og:type" content="article">
+<meta property="article:modified_time" content="2026-11-10T17:04:32&#43;08:00">
+<meta property="og:site_name" content="Speedle Engine">
+<meta property="og:title" content="빠른 시작 · Speedle Engine">
+<meta property="og:description" content="go install 또는 소스 코드로부터 Speedle을 설치하고, 정책 관리, 직접 인가, 역할 인가, 조건부(ABAC) 결정 및 거부를 검증합니다.">
+<meta property="og:url" content="https://engine.speedle.io/ko/quick-start/">
+<meta property="og:image" content="https://engine.speedle.io/img/social/engine-en.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:alt" content="Speedle Engine — Fast. Simple. Access control">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="빠른 시작 · Speedle Engine">
+<meta name="twitter:description" content="go install 또는 소스 코드로부터 Speedle을 설치하고, 정책 관리, 직접 인가, 역할 인가, 조건부(ABAC) 결정 및 거부를 검증합니다.">
+<meta name="twitter:image" content="https://engine.speedle.io/img/social/engine-en.png">
+<meta name="twitter:image:alt" content="Speedle Engine — Fast. Simple. Access control">
+
+
+  
+  
+  
+  
+
+  
+
+  <meta name="author" content="Speedle">
+
+
+
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+
+  <link href="/css/docs.css" rel="stylesheet" type="text/css">
+  
+  
+  <link href="/css/command-copy.css" rel="stylesheet" type="text/css">
+  
+  
+  <link href="/css/navigation.css?v=header-20261106-v8" rel="stylesheet">
+  <script src="/js/navigation.js?v=header-20261106-v8" defer></script>
+  <script src="/js/command-copy.js" defer></script>
+</head>
+
+<body class="page-kube docs-page">
+  <header class="site-header">
+    <div class="wrap nav">
+      <a class="brand" href="/ko/#top" aria-label="Speedle Engine 홈"><img class="brand-logo" src="/img/speedle/Speedle_logo_home_bold.svg?v=4" width="304" height="104" alt=""><span class="brand-divider" aria-hidden="true"></span><span class="brand-product">Engine</span></a>
+      <button class="menu" type="button" aria-expanded="false" aria-controls="nav-links" aria-label="내비게이션 열기">☰</button>
+      <nav class="nav-links" id="nav-links" aria-label="기본 내비게이션">
+        <div class="products"><button class="products-button" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="products-panel">제품<svg class="products-chevron" width="10" height="10" viewBox="0 0 10 10" aria-hidden="true" focusable="false"><path d="M2 3.5 5 6.5 8 3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button><span class="products-heading" aria-hidden="true">제품</span><div class="products-panel" id="products-panel" role="group" aria-label="제품"><a class="product-row" href="https://engine.speedle.io/ko/" aria-current="page"><img class="product-mark" src="/img/speedle/speedle-mark-engine.svg" alt="" width="20" height="20"><span class="product-text"><span class="product-name">Speedle Engine</span><span class="product-desc">오픈 소스 인가 엔진</span></span><svg class="product-check" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M3.5 8.5 6.5 11.5 12.5 4.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></a><a class="product-row" href="https://cloud.speedle.io/ko/"><img class="product-mark" src="/img/speedle/speedle-mark-cloud.svg" alt="" width="20" height="20"><span class="product-text"><span class="product-name">Speedle Cloud <span class="product-badge">출시 예정</span></span><span class="product-desc">개발자를 위한 호스팅형 인가 서비스</span></span></a><a class="product-row" href="https://ai.speedle.io/ko/"><img class="product-mark" src="/img/speedle/speedle-mark-ai.svg" alt="" width="20" height="20"><span class="product-text"><span class="product-name">Speedle AI</span><span class="product-desc">AI를 위한 접근 제어, AI를 통한 접근 제어</span></span></a></div></div>
+        <a href="/ko/#about">Speedle 소개</a><a href="/ko/#features">기능</a>
+        <a href="/ko/quick-start/">시작하기</a><a href="/ko/docs/">문서</a><a href="/ko/playground/">Playground</a>
+        <div class="languages"><button class="languages-button" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="languages-panel">한국어<svg class="languages-chevron" width="10" height="10" viewBox="0 0 10 10" aria-hidden="true" focusable="false"><path d="M2 3.5 5 6.5 8 3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button><span class="languages-heading" aria-hidden="true">언어</span><div class="languages-panel" id="languages-panel" role="group" aria-label="언어"><a class="language-row" href="/quick-start/" lang="en" hreflang="en">English</a><a class="language-row" href="/ja/quick-start/" lang="ja" hreflang="ja" >日本語</a><a class="language-row" href="/ko/quick-start/" lang="ko" hreflang="ko" aria-current="page">한국어</a><a class="language-row" href="/es/quick-start/" lang="es" hreflang="es">Español</a><a class="language-row" href="/zh/quick-start/" lang="zh-CN" hreflang="zh-CN" >中文</a></div></div>
+        <a class="nav-github" href="https://github.com/teramoby/speedle-plus">GitHub</a>
+      </nav>
+    </div>
+  </header>
+  <div class="container">
+    <div class="content-container docs-article">
+      <main>
+<div id="main">
+  <img class="top-right-icon" src="/img/speedle/9.%20Getting%20Started.svg" alt="">
+  <h1>빠른 시작</h1>
+  <p class="docs-lead">go install 또는 소스 코드로부터 Speedle을 설치하고, 정책 관리, 직접 인가, 역할 인가, 조건부(ABAC) 결정 및 거부를 검증합니다.</p>
+  <p>go install 또는 소스 빌드로 Speedle을 설치하고, SPDL과 spctl로 정책을 생성하며, REST API로 인가 결정을 테스트합니다. 이 가이드는 로컬 파일 저장소를 사용합니다.</p>
+  <div id="kube-component" class="content">
+
+<h2 id="먼저-플레이그라운드에서-체험">먼저 플레이그라운드에서 체험</h2>
+
+<p><strong>별도의 설치 없이 Speedle의 기본 기능을 바로 사용해 볼 수 있습니다.</strong> <a href="/ko/playground/">플레이그라운드</a>를 열어 SPDL 정책을 편집하고 사용자, 리소스, 작업을 설정하면 브라우저 내에서 직접 실제 허용/거부(Allow/Deny) 결정을 확인할 수 있습니다. Go 설치나 서버 실행이 필요하지 않습니다.</p>
+
+<p>로컬 환경에 Speedle을 설치하고 실행할 준비가 되면 아래 단계를 진행하십시오.</p>
+
+<h2 id="사전-요구-사항">사전 요구 사항</h2>
+
+<p>Linux 또는 macOS 환경, Bash, Git, curl, 그리고 <strong>Go 1.26.10 또는 Go 1.27.3</strong>(또는 동일 릴리스 브랜치의 최신 패치 버전)을 준비합니다. Speedle은 Go 1.26 및 Go 1.27의 패치 릴리스를 지원합니다. 이 가이드는 <strong>Go 1.26.10 및 Go 1.27.3</strong>에서 검증되었습니다. 이 가이드에서는 Go 1.27.3이 권장되는 안정 버전입니다.</p>
+
+<p><a href="https://go.dev/doc/install">공식 설치 지침</a>에 따라 Go를 설치하고 버전을 확인합니다:</p>
+
+<!-- quick-start: version -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">go version</code></pre></div>
+<p>Go는 <code>GOROOT</code> 및 기본 <code>GOPATH</code>를 자동으로 구성하므로 별도의 사용자 지정 설정이 필요하지 않습니다. 아래 두 경로 중 하나를 선택하면 세 개의 실행 파일이 <code>bin</code> 디렉터리에 생성됩니다.</p>
+
+<h2 id="speedle-설치">Speedle 설치</h2>
+
+<p>다음 중 하나의 경로를 선택하십시오: 경로 A는 최신 릴리스를 설치하고 경로 B는 현재 소스 코드에서 직접 빌드합니다. 가이드의 나머지 부분에서는 <code>./bin/...</code>을 사용하며 두 경로 모두 동일하게 작동합니다.</p>
+
+<h3 id="경로-a-최신-릴리스-설치">경로 A: 최신 릴리스 설치</h3>
+
+<!-- quick-start: install -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#8be9fd;font-style:italic">GOBIN</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;</span><span style="color:#8be9fd;font-style:italic">$PWD</span><span style="color:#f1fa8c">/bin&#34;</span> go install github.com/teramoby/speedle-plus/cmd/...@v1.7.1
+ls bin</code></pre></div>
+<p><code>GOBIN</code>을 지정하면 실행 파일이 현재 디렉터리의 <code>bin</code> 폴더 내에 유지됩니다. 지정하지 않으면 Go는 <code>$(go env GOPATH)/bin</code>에 작성합니다. <code>v1.7.1</code>은 작성 시점의 최신 릴리스 태그입니다. <code>go install</code>은 태그가 지정된 소스에서 빌드하고 Go 체크섬 데이터베이스와 대조하여 검증합니다.</p>
+
+<h3 id="경로-b-클론-후-빌드">경로 B: 클론 후 빌드</h3>
+
+<!-- quick-start: build -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">git clone --depth <span style="color:#bd93f9">1</span> https://github.com/teramoby/speedle-plus.git
+<span style="color:#8be9fd;font-style:italic">cd</span> speedle-plus
+mkdir -p bin
+go build -o ./bin/ ./cmd/spctl ./cmd/speedle-pms ./cmd/speedle-ads
+ls bin</code></pre></div>
+<p>출력 디렉터리에는 다음 파일이 포함됩니다:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">spctl  speedle-ads  speedle-pms</code></pre></div>
+<ul>
+<li><code>spctl</code>: 명령줄 인터페이스</li>
+<li><code>speedle-pms</code>: 정책 관리 서비스(PMS)</li>
+<li><code>speedle-ads</code>: 인가 결정 서비스(ADS)</li>
+</ul>
+
+<blockquote>
+<p><strong>macOS:</strong> <code>/usr/sbin/spctl</code>은 Apple의 Gatekeeper 도구이며 단순히 <code>spctl</code>을 실행할 때 해당 도구가 선택될 수 있습니다. Speedle의 CLI를 호출할 때는 전체 경로를 지정하거나 파일이 포함된 디렉터리에서 <code>./spctl</code>을 사용하십시오. 이 가이드에서는 <code>./bin/spctl</code>을 사용합니다. 셸이 어떤 실행 파일을 선택하는지 확인하려면 <code>command -v spctl</code>을 실행하십시오. 다운로드한 릴리스에 <code>speedle-spctl_&lt;os&gt;_&lt;arch&gt;</code> 자산이 포함되어 있는 경우 이는 Apple의 도구와 충돌하지 않도록 명명된 동일한 CLI입니다.</p>
+</blockquote>
+
+<p>최신 Go에서는 실행 파일 빌드에 <code>go build</code> 또는 <code>go install</code>을 사용합니다. <code>go get</code>은 모듈 의존성 관리에 사용됩니다.</p>
+
+<h2 id="speedle-실행">Speedle 실행</h2>
+
+<p>로컬 개발 머신에서 이 가이드를 진행합니다. <code>--insecure=true</code>를 지정하면 REST 예제에서 일반 텍스트 HTTP가 활성화됩니다. <code>--grpc-endpoint</code>를 지정하여 시작하지 않는 한 gRPC 서버는 비활성 상태로 유지됩니다(예: PMS용으로 <code>--grpc-endpoint 127.0.0.1:50001</code>, ADS용으로 <code>--grpc-endpoint 127.0.0.1:50002</code>). gRPC는 REST와 동일한 TLS 설정을 사용합니다. 프로덕션 환경의 전송 및 인가 구성에 대해서는 <a href="/ko/docs/security/">보안</a>을 참조하십시오.</p>
+
+<h3 id="1-정책-관리-서비스-시작">1. 정책 관리 서비스 시작</h3>
+
+<p>첫 번째 터미널에서 <code>bin/</code>을 포함하는 디렉터리(경로 B의 체크아웃 디렉터리)에서 실행합니다:</p>
+
+<!-- quick-start: pms -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./bin/speedle-pms --store-type file --filestore-loc ./quick-start-policies.json --endpoint <span style="color:#bd93f9">127</span>.0.0.1:6733 --insecure<span style="color:#ff79c6">=</span>true</code></pre></div>
+<p>실행 상태를 유지합니다. PMS는 이 디렉터리에 <code>quick-start-policies.json</code>을 생성합니다. 계속 진행하기 전에 REST 서버가 시작될 때까지 대기합니다. 두 서비스 모두 동일한 파일을 사용해야 합니다.</p>
+
+<h3 id="2-spctl을-사용하여-정책-생성">2. spctl을 사용하여 정책 생성</h3>
+
+<p>동일한 디렉터리에서 두 번째 터미널을 엽니다.</p>
+
+<p>서비스 컨테이너를 생성합니다:</p>
+
+<!-- quick-start: service -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ create service mysvc</code></pre></div>
+<p><code>user1</code>에게 <code>res1</code>에 대한 get 또는 delete 권한을 부여하고, <code>role2</code>에게 <code>res2</code>에 대한 동일한 작업 권한을 부여합니다:</p>
+
+<!-- quick-start: policies -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ create policy -c <span style="color:#f1fa8c">&#34;grant user user1 get,del res1&#34;</span> --service-name<span style="color:#ff79c6">=</span>mysvc
+./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ create policy -c <span style="color:#f1fa8c">&#34;grant role role2 get,del res2&#34;</span> --service-name<span style="color:#ff79c6">=</span>mysvc</code></pre></div>
+<p><code>res2</code>에서 <code>user2</code>에게 <code>role2</code>를 할당합니다:</p>
+
+<!-- quick-start: roles -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ create rolepolicy -c <span style="color:#f1fa8c">&#34;grant user user2 role2 on res2&#34;</span> --service-name<span style="color:#ff79c6">=</span>mysvc</code></pre></div>
+<p>서비스와 해당 정책을 나열합니다:</p>
+
+<!-- quick-start: list -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ get service --all</code></pre></div>
+<p>출력에는 <code>mysvc</code>, 두 개의 인가 정책 및 하나의 역할 정책이 포함됩니다.</p>
+
+<h3 id="3-인가-결정-서비스-시작">3. 인가 결정 서비스 시작</h3>
+
+<p>동일한 디렉터리에서 세 번째 터미널을 엽니다:</p>
+
+<!-- quick-start: ads -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./bin/speedle-ads --store-type file --filestore-loc ./quick-start-policies.json --endpoint <span style="color:#bd93f9">127</span>.0.0.1:6734 --insecure<span style="color:#ff79c6">=</span>true</code></pre></div>
+<p>실행 상태를 유지하고 REST 서버가 시작될 때까지 대기합니다.</p>
+
+<h3 id="4-인가-결정-검증">4. 인가 결정 검증</h3>
+
+<p>두 번째 터미널에서 다음 요청을 실행합니다. 첫 번째 요청은 <code>user1</code>에 대한 직접 인가를 확인합니다:</p>
+
+<!-- quick-start: allow-direct -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl --fail --silent --show-error --header <span style="color:#f1fa8c">&#39;Content-Type: application/json&#39;</span> --data <span style="color:#f1fa8c">&#39;{&#34;subject&#34;:{&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;,&#34;name&#34;:&#34;user1&#34;}]},&#34;serviceName&#34;:&#34;mysvc&#34;,&#34;resource&#34;:&#34;res1&#34;,&#34;action&#34;:&#34;get&#34;}&#39;</span> http://127.0.0.1:6734/authz-check/v1/is-allowed</code></pre></div>
+<p>응답에는 <code>&quot;allowed&quot;:true</code>가 포함됩니다.</p>
+
+<p>다음 요청은 <code>user2</code>에 대한 역할 인가를 확인합니다:</p>
+
+<!-- quick-start: allow-role -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl --fail --silent --show-error --header <span style="color:#f1fa8c">&#39;Content-Type: application/json&#39;</span> --data <span style="color:#f1fa8c">&#39;{&#34;subject&#34;:{&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;,&#34;name&#34;:&#34;user2&#34;}]},&#34;serviceName&#34;:&#34;mysvc&#34;,&#34;resource&#34;:&#34;res2&#34;,&#34;action&#34;:&#34;get&#34;}&#39;</span> http://127.0.0.1:6734/authz-check/v1/is-allowed</code></pre></div>
+<p>응답에는 <code>&quot;allowed&quot;:true</code>가 포함됩니다.</p>
+
+<p>일치하는 인가가 없는 사용자는 거부됩니다:</p>
+
+<!-- quick-start: deny -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl --fail --silent --show-error --header <span style="color:#f1fa8c">&#39;Content-Type: application/json&#39;</span> --data <span style="color:#f1fa8c">&#39;{&#34;subject&#34;:{&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;,&#34;name&#34;:&#34;user3&#34;}]},&#34;serviceName&#34;:&#34;mysvc&#34;,&#34;resource&#34;:&#34;res1&#34;,&#34;action&#34;:&#34;get&#34;}&#39;</span> http://127.0.0.1:6734/authz-check/v1/is-allowed</code></pre></div>
+<p>응답에는 <code>&quot;allowed&quot;:false</code>가 포함됩니다.</p>
+
+<p><code>reason</code> 필드는 각 결정의 이유를 설명합니다. <code>0</code>(<code>GRANT_POLICY_FOUND</code>)은 인가 정책과 일치했음을 의미합니다. <code>3</code>(<code>NO_APPLICABLE_POLICIES</code>)은 적용 가능한 정책이 없었음을 의미하며 Speedle은 기본적으로 거부합니다. <a href="/ko/docs/decisions/">인가 결정</a> 페이지에 모든 이유 코드가 나열되어 있습니다.</p>
+
+<h3 id="5-조건부-abac-정책-추가">5. 조건부(ABAC) 정책 추가</h3>
+
+<p>요청에 3 이상의 <code>clearance</code> 속성이 포함된 경우에만 적용되는 인가를 생성합니다:</p>
+
+<!-- quick-start: abac-policy -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ create policy -c <span style="color:#f1fa8c">&#34;grant user user1 get res3 if clearance &gt;= 3&#34;</span> --service-name<span style="color:#ff79c6">=</span>mysvc</code></pre></div>
+<p>정책 적용 지점(PEP)이 요청 속성을 제공하며 조건은 요청 내부의 속성에 대해서만 평가됩니다. 아래의 <code>clearance</code> 값은 요청 형식을 보여주기 위한 것입니다. 실제 PEP는 인가 대상 요청이 아니라 인증된 토큰 클레임이나 신뢰할 수 있는 저장소와 같은 신뢰할 수 있는 소스에서 속성 값을 가져와야 합니다. <code>clearance</code>가 생략된 요청은 이 인가와 일치하지 않습니다.</p>
+
+<p><code>clearance</code>를 4로 설정하면 요청이 허용됩니다:</p>
+
+<!-- quick-start: abac-allow -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl --fail --silent --show-error --header <span style="color:#f1fa8c">&#39;Content-Type: application/json&#39;</span> --data <span style="color:#f1fa8c">&#39;{&#34;subject&#34;:{&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;,&#34;name&#34;:&#34;user1&#34;}]},&#34;serviceName&#34;:&#34;mysvc&#34;,&#34;resource&#34;:&#34;res3&#34;,&#34;action&#34;:&#34;get&#34;,&#34;attributes&#34;:[{&#34;name&#34;:&#34;clearance&#34;,&#34;type&#34;:&#34;numeric&#34;,&#34;value&#34;:4}]}&#39;</span> http://127.0.0.1:6734/authz-check/v1/is-allowed</code></pre></div>
+<p>응답에는 <code>&quot;allowed&quot;:true</code> 및 <code>&quot;reason&quot;:0</code>이 포함됩니다.</p>
+
+<p><code>clearance</code>를 2로 설정하면 조건이 일치하지 않으므로 적용 가능한 정책이 없어 요청이 거부됩니다:</p>
+
+<!-- quick-start: abac-deny -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl --fail --silent --show-error --header <span style="color:#f1fa8c">&#39;Content-Type: application/json&#39;</span> --data <span style="color:#f1fa8c">&#39;{&#34;subject&#34;:{&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;,&#34;name&#34;:&#34;user1&#34;}]},&#34;serviceName&#34;:&#34;mysvc&#34;,&#34;resource&#34;:&#34;res3&#34;,&#34;action&#34;:&#34;get&#34;,&#34;attributes&#34;:[{&#34;name&#34;:&#34;clearance&#34;,&#34;type&#34;:&#34;numeric&#34;,&#34;value&#34;:2}]}&#39;</span> http://127.0.0.1:6734/authz-check/v1/is-allowed</code></pre></div>
+<p>응답에는 <code>&quot;allowed&quot;:false</code> 및 <code>&quot;reason&quot;:3</code>이 포함됩니다.</p>
+
+<p>완료되면 PMS 및 ADS 터미널에서 <strong>Ctrl+C</strong>를 누릅니다. 정책 파일은 이 디렉터리에 유지됩니다. 생성 명령을 다시 실행하려면 새 파일을 사용하십시오.</p>
+
+<p>TLS 구성에 대해서는 <a href="/ko/docs/security/#두-api-전송-계층-모두-보호">통신 보안</a>을 참조하십시오. 기타 배포 유형에 대해서는 <a href="/ko/docs/deployment/">배포</a>를 참조하십시오.</p>
+</div>
+</div>
+</main>
+    </div>
+  </div>
+  <footer class="site-footer">
+    <div class="wrap footer-main">
+      <div class="footer-brand">
+        <a class="footer-lockup" href="/ko/" aria-label="Speedle Engine 홈"><img src="/img/speedle/Speedle_logo_home_bold.svg?v=4" width="304" height="104" alt="Speedle"><span class="footer-divider" aria-hidden="true"></span><span class="footer-product">Engine</span></a>
+        <p class="footer-tagline">오픈 소스 인가 엔진</p>
+        <nav class="social" aria-label="커뮤니티 링크">
+          <a href="mailto:contact@speedle.io" aria-label="이메일 보내기 contact@speedle.io" title="contact@speedle.io"><img src="/img/speedle/28.%20Mail.svg" width="40" height="40" alt=""></a>
+          <a href="https://groups.google.com/forum/#!forum/speedle-users" aria-label="Google Groups" title="Google Groups — speedle-users"><img src="/img/speedle/Google-Groups.svg" width="24" height="24" alt=""></a>
+          <a href="https://github.com/teramoby/speedle-plus" aria-label="GitHub"><img src="/img/speedle/18.%20Github.svg" width="40" height="40" alt=""></a>
+          <a href="https://discord.gg/uaY2xVsbbT" aria-label="Discord"><img src="/img/speedle/Discord.svg" width="64" height="48" alt=""></a>
+        </nav>
+      </div>
+      <nav class="footer-family" aria-label="Speedle 제품"><svg class="sphere-sprite" width="0" height="0" aria-hidden="true" focusable="false"><symbol id="i-speedle-sphere" viewBox="22 22 114 114"><!-- Source: img/speedle/Speedle_logo_home_bold.svg, sphere group only. Colours changed only (stroke currentColor). No path edits. --><g fill="none" stroke="currentColor" stroke-linejoin="miter" stroke-miterlimit="3" stroke-linecap="butt"><polygon stroke-width="3.6" points="41.83 47.82 30.67 80.15 42.9 112.09 72.8 128.69 106.38 122.19 127.93 95.63 127.36 61.43 104.94 35.6 71.16 30.23"/><g stroke-width="2.4"><polygon points="81.97 43.92 52.19 57.23 44.03 88.8 63.62 114.87 96.22 115.81 117.28 90.9 110.94 58.91"/><polygon points="68.57 60.42 57.6 86.19 78.73 104.59 102.75 90.18 96.47 62.88"/><path d="M41.83 47.82L52.19 57.23 68.57 60.42 81.97 43.92 71.16 30.23 M30.67 80.15L44.03 88.8 42.9 112.09 M52.19 57.23L57.6 86.19 44.03 88.8 78.73 104.59 63.62 114.87 72.8 128.69 M78.73 104.59L96.22 115.81 106.38 122.19 M96.22 115.81L102.75 90.18 117.28 90.9 127.93 95.63 M117.28 90.9L127.36 61.43 110.94 58.91 104.94 35.6 81.97 43.92 M110.94 58.91L96.47 62.88 117.28 90.9"/></g></g></symbol></svg>
+        <ul>
+          <li><a class="footer-card" href="https://engine.speedle.io/ko/" aria-current="page"><svg class="product-sphere product-engine" aria-hidden="true" focusable="false"><use href="#i-speedle-sphere"/></svg><span class="footer-card-name">Speedle Engine</span><span class="footer-card-description">오픈 소스 인가 엔진</span><svg class="footer-card-check" width="15" height="15" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M3.5 8.5 6.5 11.5 12.5 4.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></a></li>
+          <li><a class="footer-card" href="https://cloud.speedle.io/ko/"><svg class="product-sphere product-cloud" aria-hidden="true" focusable="false"><use href="#i-speedle-sphere"/></svg><span class="footer-card-name">Speedle Cloud<span class="product-badge">출시 예정</span></span><span class="footer-card-description">개발자를 위한 호스팅형 인가 서비스</span></a></li>
+          <li><a class="footer-card" href="https://ai.speedle.io/ko/"><svg class="product-sphere product-ai" aria-hidden="true" focusable="false"><use href="#i-speedle-sphere"/></svg><span class="footer-card-name">Speedle AI</span><span class="footer-card-description">AI를 위한 접근 제어, AI를 통한 접근 제어</span></a></li>
+        </ul>
+      </nav>
+    </div>
+    <div class="wrap footer-bar">
+      <p class="footer-legal"><span>Universal Permissive License v1.0에 따라 라이선스가 부여됩니다.</span><span class="footer-legal-sep"> · </span><span>Copyright &copy; 2019–2026 The Speedle Authors. All rights reserved.</span></p>
+    </div>
+  </footer>
+<!-- Cloudflare Web Analytics --><script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "a7a746c498b940e58425123082a20520"}'></script><!-- End Cloudflare Web Analytics -->
+</body>
+
+</html>

@@ -31,6 +31,15 @@ defaultContentLanguageInSubdir = false
 [languages.zh]
   languageCode = "zh-cn"
 
+[languages.ja]
+  languageCode = "ja-jp"
+
+[languages.ko]
+  languageCode = "ko-kr"
+
+[languages.es]
+  languageCode = "es-es"
+
 [taxonomies]
   category = "categories"
   version = "versions"
@@ -42,6 +51,15 @@ defaultContentLanguageInSubdir = false
   [[Params.languages]]
     name = "English"
     url = "/en"
+  [[Params.languages]]
+    name = "日本語"
+    url = "/ja"
+  [[Params.languages]]
+    name = "한국어"
+    url = "/ko"
+  [[Params.languages]]
+    name = "Español"
+    url = "/es"
   [[Params.languages]]
     name = "中文"
     url = "/zh"
@@ -128,3 +146,114 @@ defaultContentLanguageInSubdir = false
     name = "中文"
     url = "/en"
     weight = 1
+
+[[languages.ja.menu.main]]
+    name = "入門"
+    weight = -500
+    url = "/quick-start/"
+[[languages.ja.menu.main]]
+    name = "統合"
+    weight = -400
+    url = "/integrations/"
+[[languages.ja.menu.main]]
+    name = "Playground"
+    weight = -300
+    url = "/playground/"
+[[languages.ja.menu.main]]
+    name = "貢献"
+    weight = -200
+    url = "/contribute/"
+[[languages.ja.menu.main]]
+    name = "サポート"
+    weight = -100
+    url = "/support/"
+[[languages.ja.menu.extra]]
+    name = "ブログ"
+    weight = -600
+    url = "/blog/"
+[[languages.ja.menu.extra]]
+    name = "ドキュメント"
+    weight = -500
+    url = "/docs/usecases"
+[[languages.ja.menu.extra]]
+    name = "Github"
+    weight = -400
+    url = "https://github.com/teramoby/speedle-plus"
+[[languages.ja.menu.extra]]
+    name = "About"
+    weight = -300
+    url = "/about"
+
+[[languages.ko.menu.main]]
+    name = "시작하기"
+    weight = -500
+    url = "/quick-start/"
+[[languages.ko.menu.main]]
+    name = "연동"
+    weight = -400
+    url = "/integrations/"
+[[languages.ko.menu.main]]
+    name = "Playground"
+    weight = -300
+    url = "/playground/"
+[[languages.ko.menu.main]]
+    name = "기여"
+    weight = -200
+    url = "/contribute/"
+[[languages.ko.menu.main]]
+    name = "지원"
+    weight = -100
+    url = "/support/"
+[[languages.ko.menu.extra]]
+    name = "블로그"
+    weight = -600
+    url = "/blog/"
+[[languages.ko.menu.extra]]
+    name = "문서"
+    weight = -500
+    url = "/docs/usecases"
+[[languages.ko.menu.extra]]
+    name = "Github"
+    weight = -400
+    url = "https://github.com/teramoby/speedle-plus"
+[[languages.ko.menu.extra]]
+    name = "소개"
+    weight = -300
+    url = "/about"
+
+[[languages.es.menu.main]]
+    name = "Primeros pasos"
+    weight = -500
+    url = "/quick-start/"
+[[languages.es.menu.main]]
+    name = "Integraciones"
+    weight = -400
+    url = "/integrations/"
+[[languages.es.menu.main]]
+    name = "Playground"
+    weight = -300
+    url = "/playground/"
+[[languages.es.menu.main]]
+    name = "Contribuir"
+    weight = -200
+    url = "/contribute/"
+[[languages.es.menu.main]]
+    name = "Soporte"
+    weight = -100
+    url = "/support/"
+[[languages.es.menu.extra]]
+    name = "Blog"
+    weight = -600
+    url = "/blog/"
+[[languages.es.menu.extra]]
+    name = "Documentación"
+    weight = -500
+    url = "/docs/usecases"
+[[languages.es.menu.extra]]
+    name = "Github"
+    weight = -400
+    url = "https://github.com/teramoby/speedle-plus"
+[[languages.es.menu.extra]]
+    name = "Acerca de"
+    weight = -300
+    url = "/about"

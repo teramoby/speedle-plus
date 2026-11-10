@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Spdl on Speedle</title>
+    <link>https://engine.speedle.io/ja/tags/spdl/</link>
+    <description>Recent content in Spdl on Speedle</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>ja-jp</language>
+    
+	<atom:link href="https://engine.speedle.io/ja/tags/spdl/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>SPDL: Speedle ポリシー定義言語</title>
+      <link>https://engine.speedle.io/ja/docs/spdl/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/ja/docs/spdl/</guid>
+      <description>SPDL は Speedle ポリシーおよびロールポリシーを記述するための言語です。このページでは構文、命名規則、およびサンプルを説明します。 </description>
+    </item>
+    
+    <item>
+      <title>Speedle 概要: きめ細かなアクセス制御のための認可エンジン</title>
+      <link>https://engine.speedle.io/ja/docs/overview/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/ja/docs/overview/</guid>
+      <description>Speedle はオープンソースの認可エンジンです。アプリケーションから「このユーザーはこのリソースに対してこのアクションを実行できますか？」という問い合わせを受け取り、一元管理されたポリシーに基づいて許可（Allow）または拒否（Deny）を返します。このページでは、一般的な認可用語とそれらを実装する Speedle コンポーネントを関連付け、それぞれのガイドへのリンクを示します。
+以下の例では library という名前のサービスを使用しています。各ポリシーはポリシー管理サービス (PMS) の REST API を通じて作成され、各決定は認可決定サービス (ADS) の REST API から返されたものです。理由コードは 認可決定 に一覧表示されています。
+認可エンジン 認可エンジンはポリシーに照らしてアクセスリクエストを評価し、決定を返します。これにより、認可ロジックがアプリケーションコードの外部に分離されます。Speedle は ポリシー管理サービス (PMS)、ポリシーリポジトリ、および認可決定サービス (ADS) で構成されています。ADS はスタンドアロンサービスとして実行することも、Go アプリケーションに組み込む こともできます。
+認可とアクセス制御 認証（Authentication）は呼び出し元が誰であるかを確立し、認可（Authorization）はその呼び出し元が何を行ってよいかを決定します。アクセス制御（Access control）はそれらの決定の強制・執行です。Speedle は認可のみを処理します。すでに認証済みのサブジェクトを受け取り、決定を返し、呼び出し元のアプリケーションまたはゲートウェイがそれを適用します。認可決定 を参照してください。
+きめ細かなアクセス制御 (FGA) きめ細かなアクセス制御（Fine-grained access control）は、アプリケーション全体への大まかなアクセスを許可するのではなく、ユーザーごと、リソースごと、アクションごとにアクセスを決定し、必要に応じてリクエストコンテキストも考慮します。Speedle ポリシーでは、プリンシパル、アクション、リソースを指定し、条件を追加できます。ロールポリシーでは、特定のリソースに対してのみロールを割り当てることができます。SPDL を参照してください。
+PAP: ポリシー管理ポイント PAP（Policy Administration Point）は、ポリシーが作成および管理される場所です。Speedle ではこれが PMS に該当し、REST API、gRPC API、または spctl コマンドラインツールを通じて使用されます。ポリシー管理 を参照してください。
+PDP: ポリシー決定ポイント PDP（Policy Decision Point）は、リクエストをポリシーに照らして評価し、決定を返します。Speedle ではこれが ADS、または Speedle が Go プロセス内で実行される際の組み込み評価器に該当します。決定リクエストは以下のようになります:
+curl --header &amp;#39;Content-Type: application/json&amp;#39; --data &amp;#39;{&amp;#34;subject&amp;#34;:{&amp;#34;principals&amp;#34;:[{&amp;#34;type&amp;#34;:&amp;#34;user&amp;#34;,&amp;#34;name&amp;#34;:&amp;#34;alice&amp;#34;}]},&amp;#34;serviceName&amp;#34;:&amp;#34;library&amp;#34;,&amp;#34;resource&amp;#34;:&amp;#34;book&amp;#34;,&amp;#34;action&amp;#34;:&amp;#34;update&amp;#34;}&amp;#39; http://127.</description>
+    </item>
+    
+  </channel>
+</rss>

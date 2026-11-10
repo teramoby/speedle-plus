@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Pms on Speedle</title>
+    <link>https://engine.speedle.io/ja/tags/pms/</link>
+    <description>Recent content in Pms on Speedle</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>ja-jp</language>
+    
+	<atom:link href="https://engine.speedle.io/ja/tags/pms/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>ポリシー管理</title>
+      <link>https://engine.speedle.io/ja/docs/pms/policy-mgmt/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/ja/docs/pms/policy-mgmt/</guid>
+      <description>Speedle ポリシーとは？ ポリシー管理サービス (PMS) は、サービス、認可ポリシー、ロールポリシー、およびカスタム関数を管理します。ポリシーストアは、登録された ストレージバックエンド を使用してそれらのオブジェクトを永続化します。
+サービスと認可ポリシー サービスはそのポリシーのスコープを制限します。認可ポリシーは、プリンシパルに対してリソース上のアクションを実行する権限を付与または拒否し、オプションで条件を設定できます。グローバルロールポリシー を除き、あるサービスのポリシーが別のサービスで自動的に適用されることはありません。
+grant group Administrators list,watch,get expr:^c1/default/core/pods/.*$ この正規表現は c1/default/core/pods/ 配下のリソースに一致します。c1/default/core/podssecret や c1 の前に余計なプレフィックスがあるパスには一致しません。expr: はシェルのワイルドカードではなく正規表現を使用します。任意の文字には .* を使用し、完全な識別子に一致させる必要がある場合は ^/$ を使用します。
+ロールポリシー grant user alan manager on res1 grant role manager update res1 最初のステートメントは特定のリソース上のロールを Alan に割り当て、2 番目のステートメントはそのロールに操作権限を付与します。ロールを割り当てるだけでは権限は生成されません。該当する明示的な拒否（deny）は許可（grant）をオーバーライドします。
+プリンシパルと条件 プリンシパルには、ユーザー、グループ、エンティティ、またはロールを指定できます。エンティティはサービスなどの人間以外のアイデンティティを表します。統合コードはこれらのアイデンティティを信頼できるソースから取得する必要があります。
+AND プリンシパルグループは、リスト内のすべてのプリンシパルが一致することを要求します。個別のグループ間は OR 条件になります。たとえば、以下の例では両方のロールが適用される必要があります:
+grant (role designer, role dba) update db_design_doc リソースは保護対象のオブジェクトを指定し、アクションはアプリケーションの操作を指定します。条件は、信頼できる属性、定数、演算子、およびサポートされている関数から評価されるブール式です。
+文法については SPDL を、完全な決定例については RBAC/ABAC を参照してください。
+サンプル実行前の準備 クイックスタート の手順に従い、リポジトリルート下の ./bin/spctl、./bin/speedle-pms、./bin/speedle-ads をビルドします。Go 1.26.10 または Go 1.</description>
+    </item>
+    
+    <item>
+      <title>ポリシー管理 API</title>
+      <link>https://engine.speedle.io/ja/docs/api/management_api/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/ja/docs/api/management_api/</guid>
+      <description>構成された PMS のインターフェースリファレンス。リクエストとレスポンスは JSON を使用し、ポリシー ID は文字列、レスポンスはフラットなオブジェクトです。
+セキュリティとエンドポイント構成。本文はインターフェース仕様を説明するものであり、speedle.io はホスト型バックエンドを提供しません。
+              document.addEventListener(&#39;DOMContentLoaded&#39;, function() { var url = &#34;\/swagger\/policy-manage.yaml&#34;; const ui = SwaggerUIBundle({ url: url, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.presets.apis ], plugins: [ SwaggerUIBundle.plugins.DownloadUrl ], validatorUrl: null, layout: &#34;BaseLayout&#34; }) window.ui = ui });  </description>
+    </item>
+    
+  </channel>
+</rss>

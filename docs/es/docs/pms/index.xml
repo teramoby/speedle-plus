@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Políticas de Speedle on Speedle</title>
+    <link>https://engine.speedle.io/es/docs/pms/</link>
+    <description>Recent content in Políticas de Speedle on Speedle</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>es-es</language>
+    <lastBuildDate>Wed, 28 Oct 2026 13:16:58 +0000</lastBuildDate>
+    
+	<atom:link href="https://engine.speedle.io/es/docs/pms/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>Gestión de políticas</title>
+      <link>https://engine.speedle.io/es/docs/pms/policy-mgmt/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/es/docs/pms/policy-mgmt/</guid>
+      <description>¿Qué es una política de Speedle? El Servicio de Gestión de Políticas (PMS) administra servicios, políticas de autorización, políticas de roles y funciones personalizadas. Un almacén de políticas persiste estos objetos utilizando un backend de almacenamiento registrado.
+Servicios y políticas de autorización Un servicio delimita el alcance de sus políticas. Una política de autorización concede o deniega a una entidad principal el permiso para realizar una acción sobre un recurso, opcionalmente sujeto a una condición.</description>
+    </item>
+    
+    <item>
+      <title>Políticas globales</title>
+      <link>https://engine.speedle.io/es/docs/pms/global-policy/</link>
+      <pubDate>Fri, 18 Jan 2019 21:19:44 +0800</pubDate>
+      
+      <guid>https://engine.speedle.io/es/docs/pms/global-policy/</guid>
+      <description>¿Cuándo debe ser global un rol? Los roles ordinarios están restringidos al alcance de un servicio. Cuando varios servicios comparten una asignación de rol, defina la asignación en el servicio con el nombre especial global y utilice ese rol en las políticas de autorización de cada servicio.
+Solo se admiten políticas de roles globales. Una asignación de rol global no concede por sí misma todas las operaciones; cada servicio ordinario sigue definiendo sus propios permisos.</description>
+    </item>
+    
+    <item>
+      <title>Diagnóstico de autorización</title>
+      <link>https://engine.speedle.io/es/docs/pms/diagnosis/</link>
+      <pubDate>Fri, 18 Jan 2019 15:46:59 +0800</pubDate>
+      
+      <guid>https://engine.speedle.io/es/docs/pms/diagnosis/</guid>
+      <description>¿Qué muestra el diagnóstico? Diagnose explica una evaluación de autorización: decisión, motivo, roles efectivos, atributos y las políticas examinadas. Acepta el mismo contexto de solicitud que IsAllowed; REST utiliza /authz-check/v1/diagnose, y tanto Go como gRPC utilizan Diagnose.
+El diagnóstico expone definiciones de políticas y el contexto de la solicitud. Restrínjalo a operadores de confianza utilizando los controles de seguridad de la API; no es un endpoint de depuración público.</description>
+    </item>
+    
+    <item>
+      <title>Descubrimiento de políticas</title>
+      <link>https://engine.speedle.io/es/docs/pms/discover/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/es/docs/pms/discover/</guid>
+      <description>¿Qué hace el descubrimiento? El descubrimiento registra solicitudes y devuelve allowed=true con motivo 5 para una operación de registro exitosa. No demuestra que una política existente haya autorizado la operación. Utilícelo únicamente en un entorno de prueba aislado, revise las concesiones generadas y restablezca la aplicación normal de is-allowed posteriormente. Los errores de aserción o almacenamiento deben seguir gestionándose; nunca trate un error como una concesión de autorización.
+Iniciar un ejemplo local reproducible Compile los binarios mediante el Inicio rápido, luego ejecute todas las terminales desde la raíz del repositorio.</description>
+    </item>
+    
+  </channel>
+</rss>

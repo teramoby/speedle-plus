@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>API on Speedle</title>
+    <link>https://engine.speedle.io/es/docs/api/</link>
+    <description>Recent content in API on Speedle</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>es-es</language>
+    <lastBuildDate>Tue, 10 Nov 2026 14:45:43 +0800</lastBuildDate>
+    
+	<atom:link href="https://engine.speedle.io/es/docs/api/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>API de decisiones de autorización</title>
+      <link>https://engine.speedle.io/es/docs/api/decision_api/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/es/docs/api/decision_api/</guid>
+      <description>Referencia para su ADS configurado. Los atributos de solicitud son matrices tipadas; los atributos de diagnóstico son objetos.
+Configuración de seguridad y endpoints. Esta es una referencia de contrato, no un backend hospedado por speedle.io.
+              document.addEventListener(&#39;DOMContentLoaded&#39;, function() { var url = &#34;\/swagger\/policy-check.yaml&#34;; const ui = SwaggerUIBundle({ url: url, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.presets.apis ], plugins: [ SwaggerUIBundle.</description>
+    </item>
+    
+    <item>
+      <title>API de gestión de políticas</title>
+      <link>https://engine.speedle.io/es/docs/api/management_api/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/es/docs/api/management_api/</guid>
+      <description>Referencia para su PMS configurado. Las solicitudes y respuestas son JSON; los IDs de políticas son cadenas de texto y las respuestas son objetos planos.
+Configuración de seguridad y endpoints. Esta es una referencia de contrato, no un backend hospedado por speedle.io.
+              document.addEventListener(&#39;DOMContentLoaded&#39;, function() { var url = &#34;\/swagger\/policy-manage.yaml&#34;; const ui = SwaggerUIBundle({ url: url, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.</description>
+    </item>
+    
+    <item>
+      <title>API del complemento de aserción de tokens</title>
+      <link>https://engine.speedle.io/es/docs/api/asserter_api/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/es/docs/api/asserter_api/</guid>
+      <description>Referencia del webhook. errCode es un entero y attributes es un objeto. Configure el endpoint real en la configuración del asertor de ADS.
+Configuración de seguridad y endpoints. Esta es una referencia de contrato, no un backend hospedado por speedle.io.
+              document.addEventListener(&#39;DOMContentLoaded&#39;, function() { var url = &#34;\/swagger\/asserter.yaml&#34;; const ui = SwaggerUIBundle({ url: url, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.</description>
+    </item>
+    
+  </channel>
+</rss>

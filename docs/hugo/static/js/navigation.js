@@ -64,7 +64,51 @@ document.querySelectorAll('header.site-header').forEach(function(header) {
       if (event.relatedTarget && !products.contains(event.relatedTarget)) setProducts(false);
     });
   }
-  window.matchMedia('(max-width: 1160px)').addEventListener('change', function() { setOpen(false); setProducts(false); });
+  // Languages menu: click/Enter/Space toggle, Esc and outside click close, arrows move.
+  var languages = header.querySelector('.languages');
+  var languagesButton = languages && languages.querySelector('.languages-button');
+  var languageRows = languages ? Array.prototype.slice.call(languages.querySelectorAll('.language-row')) : [];
+  function setLanguages(open, focusButton) {
+    if (!languagesButton) return;
+    languages.classList.toggle('open', open);
+    languagesButton.setAttribute('aria-expanded', String(open));
+    if (!open && focusButton) languagesButton.focus();
+  }
+  if (languagesButton) {
+    languagesButton.addEventListener('click', function() {
+      setLanguages(languagesButton.getAttribute('aria-expanded') !== 'true');
+    });
+    languagesButton.addEventListener('keydown', function(event) {
+      if (event.key === 'ArrowDown' && languageRows.length) {
+        event.preventDefault();
+        event.stopPropagation();
+        setLanguages(true);
+        languageRows[0].focus();
+      }
+    });
+    languages.addEventListener('keydown', function(event) {
+      var index = languageRows.indexOf(document.activeElement);
+      if (event.key === 'Escape' && languagesButton.getAttribute('aria-expanded') === 'true') {
+        event.preventDefault();
+        event.stopPropagation();
+        setLanguages(false, true);
+      } else if (index >= 0 && (event.key === 'ArrowDown' || event.key === 'ArrowUp')) {
+        event.preventDefault();
+        var next = (index + (event.key === 'ArrowDown' ? 1 : languageRows.length - 1)) % languageRows.length;
+        languageRows[next].focus();
+      } else if (index >= 0 && (event.key === 'Home' || event.key === 'End')) {
+        event.preventDefault();
+        languageRows[event.key === 'Home' ? 0 : languageRows.length - 1].focus();
+      }
+    });
+    document.addEventListener('click', function(event) {
+      if (!languages.contains(event.target)) setLanguages(false);
+    });
+    languages.addEventListener('focusout', function(event) {
+      if (event.relatedTarget && !languages.contains(event.relatedTarget)) setLanguages(false);
+    });
+  }
+  window.matchMedia('(max-width: 1160px)').addEventListener('change', function() { setOpen(false); setProducts(false); setLanguages(false); });
   // Collapse links only after their controller has initialized successfully.
   header.classList.add('navigation-ready');
 });

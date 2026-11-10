@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <script>document.documentElement.classList.add('docs-js','navigation-js');addEventListener('DOMContentLoaded',function(){if(!document.querySelector('header.site-header.navigation-ready'))document.documentElement.classList.remove('navigation-js')});</script>
+    <meta name="generator" content="Hugo 0.48" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1"><title>Configuración de MongoDB · Speedle Engine</title>
+<meta name="description" content="Configure el almacenamiento de políticas en MongoDB para PMS y ADS paso a paso.">
+<meta name="generator" content="Hugo 0.48" />
+<link href="https://engine.speedle.io/index.xml" rel="alternate" type="application/rss+xml">
+<link rel="canonical" href="https://engine.speedle.io/es/docs/store/mongodb/">
+
+<link rel="alternate" hreflang="en" href="https://engine.speedle.io/docs/store/mongodb/">
+<link rel="alternate" hreflang="es" href="https://engine.speedle.io/es/docs/store/mongodb/">
+<link rel="alternate" hreflang="ja" href="https://engine.speedle.io/ja/docs/store/mongodb/">
+<link rel="alternate" hreflang="ko" href="https://engine.speedle.io/ko/docs/store/mongodb/">
+<link rel="alternate" hreflang="zh-CN" href="https://engine.speedle.io/zh/docs/store/mongodb/">
+<link rel="alternate" hreflang="x-default" href="https://engine.speedle.io/docs/store/mongodb/">
+<meta property="og:type" content="article">
+<meta property="article:modified_time" content="2026-10-31T22:36:36&#43;08:00">
+<meta property="og:site_name" content="Speedle Engine">
+<meta property="og:title" content="Configuración de MongoDB · Speedle Engine">
+<meta property="og:description" content="Configure el almacenamiento de políticas en MongoDB para PMS y ADS paso a paso.">
+<meta property="og:url" content="https://engine.speedle.io/es/docs/store/mongodb/">
+<meta property="og:image" content="https://engine.speedle.io/img/social/engine-en.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:alt" content="Speedle Engine — Fast. Simple. Access control">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Configuración de MongoDB · Speedle Engine">
+<meta name="twitter:description" content="Configure el almacenamiento de políticas en MongoDB para PMS y ADS paso a paso.">
+<meta name="twitter:image" content="https://engine.speedle.io/img/social/engine-en.png">
+<meta name="twitter:image:alt" content="Speedle Engine — Fast. Simple. Access control">
+
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/es/docs/store/mongodb/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-10-31T22:36:36+08:00","description":"Configure el almacenamiento de políticas en MongoDB para PMS y ADS paso a paso.","headline":"Configuración de MongoDB","image":"https://engine.speedle.io/img/social/engine-en.png","inLanguage":"es","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/es/docs/store/mongodb/","@type":"WebPage"},"name":"Configuración de MongoDB","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/es/docs/store/mongodb/"}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/es/docs/store/mongodb/#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://engine.speedle.io/es/","name":"Inicio","position":1},{"@type":"ListItem","item":"https://engine.speedle.io/es/docs/","name":"Documentación","position":2},{"@type":"ListItem","item":"https://engine.speedle.io/es/docs/store/","name":"Almacenamiento conectable","position":3},{"@type":"ListItem","item":"https://engine.speedle.io/es/docs/store/mongodb/","name":"Configuración de MongoDB","position":4}]}</script><link href="/css/docs.css" rel="stylesheet" type="text/css">
+
+
+    <link href="/css/navigation.css?v=header-20261106-v8" rel="stylesheet">
+    <script src="/js/navigation.js?v=header-20261106-v8" defer></script>
+    <script src="/js/docs.js" defer></script>
+
+</head>
+
+<body class="page-kube docs-page">
+    <header class="site-header">
+    <div class="wrap nav">
+      <a class="brand" href="/es/#top" aria-label="Inicio de Speedle Engine"><img class="brand-logo" src="/img/speedle/Speedle_logo_home_bold.svg?v=4" width="304" height="104" alt=""><span class="brand-divider" aria-hidden="true"></span><span class="brand-product">Engine</span></a>
+      <button class="menu" type="button" aria-expanded="false" aria-controls="nav-links" aria-label="Abrir navegación">☰</button>
+      <nav class="nav-links" id="nav-links" aria-label="Navegación principal">
+        <div class="products"><button class="products-button" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="products-panel">Productos<svg class="products-chevron" width="10" height="10" viewBox="0 0 10 10" aria-hidden="true" focusable="false"><path d="M2 3.5 5 6.5 8 3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button><span class="products-heading" aria-hidden="true">Productos</span><div class="products-panel" id="products-panel" role="group" aria-label="Productos"><a class="product-row" href="https://engine.speedle.io/es/" aria-current="page"><img class="product-mark" src="/img/speedle/speedle-mark-engine.svg" alt="" width="20" height="20"><span class="product-text"><span class="product-name">Speedle Engine</span><span class="product-desc">Motor de autorización de código abierto</span></span><svg class="product-check" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M3.5 8.5 6.5 11.5 12.5 4.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></a><a class="product-row" href="https://cloud.speedle.io/es/"><img class="product-mark" src="/img/speedle/speedle-mark-cloud.svg" alt="" width="20" height="20"><span class="product-text"><span class="product-name">Speedle Cloud <span class="product-badge">Próximamente</span></span><span class="product-desc">Autorización hospedada para desarrolladores</span></span></a><a class="product-row" href="https://ai.speedle.io/es/"><img class="product-mark" src="/img/speedle/speedle-mark-ai.svg" alt="" width="20" height="20"><span class="product-text"><span class="product-name">Speedle AI</span><span class="product-desc">IA para control de acceso, control de acceso para IA</span></span></a></div></div>
+        <a href="/es/#about">Acerca de</a><a href="/es/#features">Características</a>
+        <a href="/es/quick-start/">Comenzar</a><a href="/es/docs/">Documentación</a><a href="/es/playground/">Playground</a>
+        <div class="languages"><button class="languages-button" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="languages-panel">Español<svg class="languages-chevron" width="10" height="10" viewBox="0 0 10 10" aria-hidden="true" focusable="false"><path d="M2 3.5 5 6.5 8 3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button><span class="languages-heading" aria-hidden="true">Idiomas</span><div class="languages-panel" id="languages-panel" role="group" aria-label="Idiomas"><a class="language-row" href="/docs/store/mongodb/" lang="en" hreflang="en" >English</a><a class="language-row" href="/ja/docs/store/mongodb/" lang="ja" hreflang="ja">日本語</a><a class="language-row" href="/ko/docs/store/mongodb/" lang="ko" hreflang="ko">한국어</a><a class="language-row" href="/es/docs/store/mongodb/" lang="es" hreflang="es" aria-current="page">Español</a><a class="language-row" href="/zh/docs/store/mongodb/" lang="zh-CN" hreflang="zh-CN">中文</a></div></div>
+        <a class="nav-github" href="https://github.com/teramoby/speedle-plus">GitHub</a>
+      </nav>
+    </div>
+  </header>
+    <div class="container">
+        <button class="docs-nav-toggle" type="button" aria-expanded="false" aria-controls="docs-navigation">
+            <span>Menú</span>
+            <svg class="docs-nav-toggle-icon" viewBox="0 0 18 14" width="18" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M1 1h16M1 7h16M1 13h16"/></svg>
+        </button>
+        <div class="content-container"><aside class="docs-sidebar" id="docs-navigation" aria-label="Navegación de documentación">
+<div class="docs-nav-head">
+<span class="docs-nav-title">Documentación</span>
+<button class="docs-nav-close" type="button" aria-label="Cerrar menú"><svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="m3 3 10 10M13 3 3 13"/></svg></button>
+</div>
+<div class="sidebar">
+<nav>
+<ul>
+
+
+
+
+
+<li data-docs-depth="-1" class="docs-nav-section parent"><span class="docs-nav-heading">Documentación</span>
+<ul class="sub-menu">
+<li data-docs-depth="0" class=""><a href="/es/docs/usecases/">Casos de uso</a></li>
+<li data-docs-depth="0" class=""><a href="/es/docs/overview/">Descripción general</a></li>
+<li data-docs-depth="0" class=""><a href="/es/docs/spdl/">SPDL: Lenguaje de definición de políticas Speedle</a></li>
+<li data-docs-depth="0" class=""><a href="/es/docs/architecture/">Arquitectura</a></li>
+
+
+
+<li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading">Políticas de Speedle</span>
+<ul class="">
+<li data-docs-depth="1" class=""><a href="/es/docs/pms/policy-mgmt/">Gestión de políticas</a></li>
+<li data-docs-depth="1" class=""><a href="/es/docs/pms/global-policy/">Políticas globales</a></li>
+<li data-docs-depth="1" class=""><a href="/es/docs/pms/diagnosis/">Diagnóstico de autorización</a></li>
+<li data-docs-depth="1" class=""><a href="/es/docs/pms/discover/">Descubrimiento de políticas</a></li>
+</ul>
+
+</li>
+<li data-docs-depth="0" class=""><a href="/es/docs/decisions/">Decisiones de autorización</a></li>
+<li data-docs-depth="0" class=""><a href="/es/docs/idd/">Dominio de identidad</a></li>
+<li data-docs-depth="0" class=""><a href="/es/docs/assertor/">Asertor de tokens</a></li>
+
+
+
+<li data-docs-depth="0" class="docs-nav-section parent"><span class="docs-nav-heading docs-nav-heading-link"><a href="/es/docs/store/">Almacenamiento conectable</a></span>
+<ul class="sub-menu">
+<li data-docs-depth="1" class=""><a href="/es/docs/store/mysql/">Configuración de MySQL</a></li>
+<li data-docs-depth="1" class=""><a href="/es/docs/store/etcd/">Configuración de etcd</a></li>
+<li data-docs-depth="1" class="active"><a href="/es/docs/store/mongodb/" aria-current="page">Configuración de MongoDB</a></li>
+</ul>
+
+</li>
+
+
+
+<li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading">API</span>
+<ul class="">
+<li data-docs-depth="1" class=""><a href="/es/docs/api/decision_api/">API de decisiones de autorización</a></li>
+<li data-docs-depth="1" class=""><a href="/es/docs/api/management_api/">API de gestión de políticas</a></li>
+<li data-docs-depth="1" class=""><a href="/es/docs/api/asserter_api/">API del complemento de aserción de tokens</a></li>
+</ul>
+
+</li>
+
+
+
+<li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading docs-nav-heading-link"><a href="/es/docs/deployment/">Despliegue</a></span>
+<ul class="">
+<li data-docs-depth="1" class=""><a href="/es/docs/deployment/embedded/">Modo integrado de Speedle</a></li>
+<li data-docs-depth="1" class=""><a href="/es/docs/deployment/docker/">Imagen de Docker</a></li>
+<li data-docs-depth="1" class=""><a href="/es/docs/deployment/homebrew/">Instalación con Homebrew</a></li>
+</ul>
+
+</li>
+
+
+
+<li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading docs-nav-heading-link"><a href="/es/docs/sdks/">SDK</a></span>
+<ul class="">
+<li data-docs-depth="1" class=""><a href="/es/docs/sdks/java/">Java SDK</a></li>
+<li data-docs-depth="1" class=""><a href="/es/docs/sdks/python/">Python SDK</a></li>
+<li data-docs-depth="1" class=""><a href="/es/docs/sdks/go/">Go SDK</a></li>
+<li data-docs-depth="1" class=""><a href="/es/docs/sdks/dotnet/">C#/.NET SDK</a></li>
+<li data-docs-depth="1" class=""><a href="/es/docs/sdks/rust/">Rust SDK</a></li>
+<li data-docs-depth="1" class=""><a href="/es/docs/sdks/node/">Node.js/TypeScript SDK</a></li>
+</ul>
+
+</li>
+
+
+
+<li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading docs-nav-heading-link"><a href="/es/docs/cloud/">Speedle Cloud</a></span>
+<ul class="">
+<li data-docs-depth="1" class=""><a href="/es/docs/cloud/getting-started/">Primeros pasos</a></li>
+<li data-docs-depth="1" class=""><a href="/es/docs/cloud/tokens/">Tokens de aplicación</a></li>
+<li data-docs-depth="1" class=""><a href="/es/docs/cloud/authorization-api/">API de autorización</a></li>
+<li data-docs-depth="1" class=""><a href="/es/docs/cloud/limits-and-errors/">Límites y errores</a></li>
+</ul>
+
+</li>
+<li data-docs-depth="0" class=""><a href="/es/docs/security/">Seguridad</a></li>
+<li data-docs-depth="0" class=""><a href="/es/docs/logging/">Marco de registro</a></li>
+<li data-docs-depth="0" class=""><a href="/es/docs/versions/">Versiones</a></li>
+<li data-docs-depth="0" class=""><a href="/es/docs/custom-function/">Función personalizada</a></li>
+</ul>
+
+</li>
+</ul>
+</nav>
+
+
+</div>
+</aside>
+<main>
+<div id="main">
+
+  <h1>Configuración de MongoDB</h1>
+  <p class="docs-lead">Ejecute un conjunto de réplicas de MongoDB, conecte PMS y ADS, verifique las actualizaciones de políticas en tiempo real y guarde una copia de seguridad.</p>
+
+
+
+
+<nav id="contents" class="docs-toc" data-docs-toc="h2" aria-label="En esta página">
+  <ol></ol>
+</nav>
+
+
+
+  <div id="kube-component" class="content">
+
+<p>Esta guía paso a paso utiliza <strong>MongoDB 7.0.16</strong> como un conjunto de réplicas (replica set) de nodo único con un volumen persistente de Docker. PMS escribe políticas y ADS sigue la misma base de datos a través de un flujo de cambios (change stream). El ejemplo escucha en la interfaz de bucle invertido (loopback) sin autenticación para desarrollo local. La autenticación para producción, TLS y la configuración del conjunto de réplicas se detallan más adelante.</p>
+
+<p>MongoDB debe ejecutarse como un <strong>conjunto de réplicas o un clúster particionado (sharded cluster)</strong>. ADS observa la base de datos con un flujo de cambios y el reemplazo del almacén de políticas completo se ejecuta en una transacción; un proceso <code>mongod</code> independiente no admite ninguna de las dos cosas. Un conjunto de réplicas de nodo único es suficiente para desarrollo.</p>
+
+<h2 id="1-compilar-speedle">1. Compilar Speedle</h2>
+
+<p>Prepare Bash, Git, curl, Docker y Go 1.26.10 o Go 1.27.3. Inicie Docker y luego compile los servicios nativos:</p>
+
+<!-- mongodb-step: build -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">git clone --depth <span style="color:#bd93f9">1</span> https://github.com/teramoby/speedle-plus.git
+<span style="color:#8be9fd;font-style:italic">cd</span> speedle-plus
+mkdir -p bin
+go build -o ./bin/ ./cmd/spctl ./cmd/speedle-pms ./cmd/speedle-ads</code></pre></div>
+<p>Ejecute los comandos posteriores desde este repositorio descargado. Mantenga disponibles los puertos locales 27017, 6733 y 6734, o actualice los comandos y la configuración en consecuencia.</p>
+
+<h2 id="2-iniciar-mongodb">2. Iniciar MongoDB</h2>
+
+<p>El volumen con nombre conserva los datos de MongoDB. <code>--replSet</code> inicia <code>mongod</code> como miembro del conjunto de réplicas <code>speedle-rs</code>; solo el puerto de la base de datos se publica, en la interfaz loopback.</p>
+
+<!-- mongodb-step: database -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker run --name speedle-mongodb --detach <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  --publish <span style="color:#bd93f9">127</span>.0.0.1:27017:27017 <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  --volume speedle-mongodb-data:/data/db <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  mongo:7.0.16 <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  --replSet speedle-rs --bind_ip_all</code></pre></div>
+<p>Espere a que el servidor acepte comandos:</p>
+
+<!-- mongodb-step: ready -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#ff79c6">until</span> docker <span style="color:#8be9fd;font-style:italic">exec</span> speedle-mongodb mongosh --quiet <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  --eval <span style="color:#f1fa8c">&#39;db.adminCommand({ping: 1}).ok&#39;</span> &gt;/dev/null <span style="color:#bd93f9">2</span>&gt;&amp;<span style="color:#bd93f9">1</span>
+<span style="color:#ff79c6">do</span>
+  sleep <span style="color:#bd93f9">1</span>
+<span style="color:#ff79c6">done</span></code></pre></div>
+<p>Si ya dispone de un conjunto de réplicas de MongoDB, omita los comandos del contenedor y el paso 3, y utilice su cadena de conexión a continuación. Consulte la <a href="https://hub.docker.com/_/mongo">imagen oficial de Docker</a> para más detalles sobre el contenedor.</p>
+
+<h2 id="3-inicializar-el-conjunto-de-réplicas">3. Inicializar el conjunto de réplicas</h2>
+
+<p>Inicialice el conjunto de réplicas una sola vez, con este servidor como su único miembro, y espere hasta que se convierta en primario:</p>
+
+<!-- mongodb-step: replica-set -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker <span style="color:#8be9fd;font-style:italic">exec</span> speedle-mongodb mongosh --quiet --eval <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  <span style="color:#f1fa8c">&#39;rs.initiate({_id: &#34;speedle-rs&#34;, members: [{_id: 0, host: &#34;127.0.0.1:27017&#34;}]})&#39;</span>
+<span style="color:#ff79c6">until</span> docker <span style="color:#8be9fd;font-style:italic">exec</span> speedle-mongodb mongosh --quiet <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  --eval <span style="color:#f1fa8c">&#39;db.hello().isWritablePrimary&#39;</span> | grep -qx <span style="color:#8be9fd;font-style:italic">true</span>
+<span style="color:#ff79c6">do</span>
+  sleep <span style="color:#bd93f9">1</span>
+<span style="color:#ff79c6">done</span></code></pre></div>
+<p>La dirección de miembro <code>127.0.0.1:27017</code> es a la que se indica que se conecten los clientes, por lo que debe ser accesible desde PMS y ADS. Funciona en este caso porque el puerto se publica en la misma dirección loopback. La configuración se almacena en el volumen; no ejecute <code>rs.initiate</code> de nuevo tras un reinicio.</p>
+
+<h2 id="4-configurar-el-almacenamiento-compartido">4. Configurar el almacenamiento compartido</h2>
+
+<p>Cree un archivo de configuración para este par local de PMS/ADS:</p>
+
+<!-- mongodb-step: configuration -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">mkdir -p mongodb-demo
+cat &gt; mongodb-demo/config.json <span style="color:#f1fa8c">&lt;&lt;&#39;JSON&#39;
+</span><span style="color:#f1fa8c">{
+</span><span style="color:#f1fa8c">  &#34;storeConfig&#34;: {
+</span><span style="color:#f1fa8c">    &#34;storeType&#34;: &#34;mongodb&#34;,
+</span><span style="color:#f1fa8c">    &#34;storeProps&#34;: {
+</span><span style="color:#f1fa8c">      &#34;MongoURI&#34;: &#34;mongodb://127.0.0.1:27017/?replicaSet=speedle-rs&#34;,
+</span><span style="color:#f1fa8c">      &#34;MongoDatabase&#34;: &#34;speedle_demo&#34;
+</span><span style="color:#f1fa8c">    }
+</span><span style="color:#f1fa8c">  },
+</span><span style="color:#f1fa8c">  &#34;enableWatch&#34;: true
+</span><span style="color:#f1fa8c">}
+</span><span style="color:#f1fa8c">JSON</span></code></pre></div>
+<p>PMS y ADS deben utilizar el <strong>mismo despliegue y base de datos</strong>. Utilice una base de datos independiente para cada almacén de políticas independiente; el almacenamiento mantiene los servicios y funciones en sus colecciones <code>services</code> y <code>functions</code>. MongoDB crea la base de datos y las colecciones en la primera escritura, por lo que no se requiere inicialización de esquema. <code>enableWatch: true</code> habilita actualizaciones de ADS a través del flujo de cambios; no se requiere configurar ningún intervalo de sondeo.</p>
+
+<h2 id="5-iniciar-pms">5. Iniciar PMS</h2>
+
+<p>En la terminal A, inicie PMS y déjelo en ejecución:</p>
+
+<!-- mongodb-step: pms -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./bin/speedle-pms --config-file mongodb-demo/config.json --endpoint <span style="color:#bd93f9">127</span>.0.0.1:6733 --insecure<span style="color:#ff79c6">=</span>true</code></pre></div>
+<p>Espere a que se inicie su escucha REST. HTTP en texto plano se vincula a loopback para esta demostración; consulte <a href="/es/docs/security/">Seguridad</a> para la configuración de TLS y la autorización de API de Speedle.</p>
+
+<h2 id="6-crear-una-política">6. Crear una política</h2>
+
+<p>En la terminal B, desde el mismo directorio, conceda permiso a Alice para leer <code>book</code>:</p>
+
+<!-- mongodb-step: policy -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl -fsS -X POST http://127.0.0.1:6733/policy-mgmt/v1/service <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  -H <span style="color:#f1fa8c">&#39;Content-Type: application/json&#39;</span> <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  -d <span style="color:#f1fa8c">&#39;{&#34;name&#34;:&#34;mongodb-demo&#34;,&#34;type&#34;:&#34;application&#34;,&#34;policies&#34;:[{&#34;name&#34;:&#34;alice-read&#34;,&#34;effect&#34;:&#34;grant&#34;,&#34;principals&#34;:[[&#34;user:alice&#34;]],&#34;permissions&#34;:[{&#34;resource&#34;:&#34;book&#34;,&#34;actions&#34;:[&#34;read&#34;]}]}]}&#39;</span></code></pre></div>
+<p>PMS devuelve el servicio y el ID de política generado. La política ya se encuentra en MongoDB.</p>
+
+<h2 id="7-iniciar-ads-y-verificar-la-autorización">7. Iniciar ADS y verificar la autorización</h2>
+
+<p>En la terminal C, inicie ADS con el mismo archivo y déjelo en ejecución:</p>
+
+<!-- mongodb-step: ads -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./bin/speedle-ads --config-file mongodb-demo/config.json --endpoint <span style="color:#bd93f9">127</span>.0.0.1:6734 --insecure<span style="color:#ff79c6">=</span>true</code></pre></div>
+<p>Espere a que se complete el inicio y luego ejecute estas comprobaciones en la terminal B. Alice está autorizada:</p>
+
+<!-- mongodb-step: allow -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl -fsS -X POST http://127.0.0.1:6734/authz-check/v1/is-allowed <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  -H <span style="color:#f1fa8c">&#39;Content-Type: application/json&#39;</span> <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  -d <span style="color:#f1fa8c">&#39;{&#34;subject&#34;:{&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;,&#34;name&#34;:&#34;alice&#34;}]},&#34;serviceName&#34;:&#34;mongodb-demo&#34;,&#34;resource&#34;:&#34;book&#34;,&#34;action&#34;:&#34;read&#34;}&#39;</span></code></pre></div>
+<p>Esperado: <code>{&quot;allowed&quot;:true,&quot;reason&quot;:0}</code>. Bob no tiene ninguna concesión coincidente:</p>
+
+<!-- mongodb-step: deny -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl -fsS -X POST http://127.0.0.1:6734/authz-check/v1/is-allowed <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  -H <span style="color:#f1fa8c">&#39;Content-Type: application/json&#39;</span> <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  -d <span style="color:#f1fa8c">&#39;{&#34;subject&#34;:{&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;,&#34;name&#34;:&#34;bob&#34;}]},&#34;serviceName&#34;:&#34;mongodb-demo&#34;,&#34;resource&#34;:&#34;book&#34;,&#34;action&#34;:&#34;read&#34;}&#39;</span></code></pre></div>
+<p>Esperado: <code>{&quot;allowed&quot;:false,&quot;reason&quot;:3}</code>.</p>
+
+<h2 id="8-verificar-los-documentos-almacenados-y-las-actualizaciones-automáticas">8. Verificar los documentos almacenados y las actualizaciones automáticas</h2>
+
+<p>Inspeccione el documento del servicio; el nombre del servicio es su <code>_id</code>:</p>
+
+<!-- mongodb-step: documents -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker <span style="color:#8be9fd;font-style:italic">exec</span> speedle-mongodb mongosh speedle_demo --quiet --eval <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  <span style="color:#f1fa8c">&#39;db.services.find({}, {&#34;policies.name&#34;: 1, &#34;policies.effect&#34;: 1}).toArray()&#39;</span></code></pre></div>
+<p>La salida incluye <code>_id: 'mongodb-demo'</code> con la concesión <code>alice-read</code>. Trate los documentos como datos administrados por el backend y realice cambios de políticas a través de PMS.</p>
+
+<p>Agregue una denegación mientras ADS continúa en ejecución:</p>
+
+<!-- mongodb-step: update -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl -fsS -X POST http://127.0.0.1:6733/policy-mgmt/v1/service/mongodb-demo/policy <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  -H <span style="color:#f1fa8c">&#39;Content-Type: application/json&#39;</span> <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  -d <span style="color:#f1fa8c">&#39;{&#34;name&#34;:&#34;alice-deny&#34;,&#34;effect&#34;:&#34;deny&#34;,&#34;principals&#34;:[[&#34;user:alice&#34;]],&#34;permissions&#34;:[{&#34;resource&#34;:&#34;book&#34;,&#34;actions&#34;:[&#34;read&#34;]}]}&#39;</span></code></pre></div>
+<p>Repita la solicitud de Alice del paso 7. Tras la actualización asíncrona del flujo de cambios, debería devolver <code>{&quot;allowed&quot;:false,&quot;reason&quot;:1}</code>. Repita la solicitud si la sincronización aún está en curso. ADS no necesita reiniciarse para esta actualización ordinaria de políticas.</p>
+
+<h2 id="9-guardar-una-copia-de-seguridad-y-verificar-la-persistencia">9. Guardar una copia de seguridad y verificar la persistencia</h2>
+
+<p>Descargue la base de datos de políticas a un archivo y cópielo fuera del contenedor:</p>
+
+<!-- mongodb-step: backup -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker <span style="color:#8be9fd;font-style:italic">exec</span> speedle-mongodb mongodump --quiet <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  --db speedle_demo --archive<span style="color:#ff79c6">=</span>/tmp/speedle-demo.archive
+docker cp speedle-mongodb:/tmp/speedle-demo.archive ./mongodb-demo/speedle-demo.archive</code></pre></div>
+<p>El archivo solo contiene la base de datos <code>speedle_demo</code>. Guarde las copias de seguridad en un almacenamiento protegido independiente. Para restaurarla, detenga los emisores de políticas y ejecute <code>mongorestore --drop --archive=...</code> contra el nodo primario; consulte <a href="https://www.mongodb.com/docs/manual/tutorial/backup-and-restore-tools/">Copia de seguridad y restauración con herramientas de MongoDB</a>.</p>
+
+<p>Detenga PMS y ADS con Ctrl+C antes de esta comprobación de reinicio:</p>
+
+<!-- mongodb-step: restart -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker restart speedle-mongodb</code></pre></div>
+<p>Ejecute ambos bucles de espera de los pasos 2 y 3, omitiendo <code>rs.initiate</code>, reinicie PMS y ADS con la misma configuración y luego repita la solicitud de Alice. Todavía debería devolver <code>{&quot;allowed&quot;:false,&quot;reason&quot;:1}</code>. El volumen con nombre conserva los datos y la configuración del conjunto de réplicas tras el reinicio del contenedor.</p>
+
+<p>Tras una restauración, reinicie ADS para que lea el almacenamiento restaurado antes de emitir decisiones. Vuelva a comprobar la autorización tras la recuperación; una caché que ya estuviera en ejecución no es prueba de que contenga el conjunto de políticas restaurado.</p>
+
+<h2 id="producción-autenticación-tls-y-conjuntos-de-réplicas">Producción: autenticación, TLS y conjuntos de réplicas</h2>
+
+<p>Habilite el control de acceso, proporcione usuarios independientes para PMS y ADS y conéctese a través de TLS. PMS necesita el rol <code>readWrite</code> en la base de datos de políticas. ADS solo lee y observa, por lo que el rol integrado <code>read</code> es suficiente, y su usuario no puede modificar políticas:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-javascript" data-lang="javascript">use speedle
+db.createUser({user<span style="color:#ff79c6">:</span> <span style="color:#f1fa8c">&#34;speedle-pms&#34;</span>, pwd<span style="color:#ff79c6">:</span> passwordPrompt(), roles<span style="color:#ff79c6">:</span> [{role<span style="color:#ff79c6">:</span> <span style="color:#f1fa8c">&#34;readWrite&#34;</span>, db<span style="color:#ff79c6">:</span> <span style="color:#f1fa8c">&#34;speedle&#34;</span>}]})
+db.createUser({user<span style="color:#ff79c6">:</span> <span style="color:#f1fa8c">&#34;speedle-ads&#34;</span>, pwd<span style="color:#ff79c6">:</span> passwordPrompt(), roles<span style="color:#ff79c6">:</span> [{role<span style="color:#ff79c6">:</span> <span style="color:#f1fa8c">&#34;read&#34;</span>, db<span style="color:#ff79c6">:</span> <span style="color:#f1fa8c">&#34;speedle&#34;</span>}]})
+</code></pre></div>
+<p>Luego proporcione a cada servicio su propia cadena de conexión:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">{
+  <span style="color:#ff79c6">&#34;storeConfig&#34;</span>: {
+    <span style="color:#ff79c6">&#34;storeType&#34;</span>: <span style="color:#f1fa8c">&#34;mongodb&#34;</span>,
+    <span style="color:#ff79c6">&#34;storeProps&#34;</span>: {
+      <span style="color:#ff79c6">&#34;MongoURI&#34;</span>: <span style="color:#f1fa8c">&#34;mongodb://speedle-ads:replace-me@mongo1.example.com:27017,mongo2.example.com:27017,mongo3.example.com:27017/?replicaSet=speedle-rs&amp;authSource=speedle&amp;tls=true&amp;tlsCAFile=/etc/speedle/mongodb/ca.pem&#34;</span>,
+      <span style="color:#ff79c6">&#34;MongoDatabase&#34;</span>: <span style="color:#f1fa8c">&#34;speedle&#34;</span>
+    }
+  },
+  <span style="color:#ff79c6">&#34;enableWatch&#34;</span>: <span style="color:#ff79c6">true</span>
+}</code></pre></div>
+<p>La ruta de la CA corresponde a la máquina donde se ejecuta PMS/ADS. Las credenciales en una URI deben codificarse con porcentaje y el archivo de configuración que las contenga debe ser legible únicamente por la cuenta de servicio; también puede proporcionar la URI mediante <code>SPDL_MONGOSTORE_URI</code>. Cada opción de la <a href="https://www.mongodb.com/docs/manual/reference/connection-string/">cadena de conexión de MongoDB</a> se pasa al controlador Go sin modificaciones, incluidos los certificados de cliente (<code>tlsCertificateKeyFile</code>) y otros mecanismos de autenticación. TLS hacia MongoDB se configura por separado de TLS en los agentes de escucha REST/gRPC de Speedle.</p>
+
+<p>El control de acceso en un conjunto de réplicas también requiere autenticación entre los miembros, con un archivo de clave o certificados X.509. Consulte las guías oficiales para <a href="https://www.mongodb.com/docs/manual/tutorial/deploy-replica-set-with-keyfile-access-control/">desplegar un conjunto de réplicas autogestionado con autenticación de archivo de clave</a> y <a href="https://www.mongodb.com/docs/manual/tutorial/configure-ssl/">configurar TLS</a>.</p>
+
+<p>Para alta disponibilidad, utilice al menos tres miembros que contengan datos y enumere varios de ellos en la cadena de conexión. La demostración de un solo nodo no puede tolerar la pérdida de su único miembro. Mientras se elige un nuevo primario, las escrituras a través de PMS pueden fallar; reinténtelas tras la elección.</p>
+
+<h2 id="referencia-de-configuración-y-resolución-de-problemas">Referencia de configuración y resolución de problemas</h2>
+
+<table>
+<thead>
+<tr>
+<th>Propiedad</th>
+<th>Indicador</th>
+<th>Variable de entorno</th>
+<th>Valor predeterminado</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td><code>MongoURI</code></td>
+<td><code>--mongostore_uri</code></td>
+<td><code>SPDL_MONGOSTORE_URI</code></td>
+<td><code>mongodb://localhost:27017</code></td>
+</tr>
+
+<tr>
+<td><code>MongoDatabase</code></td>
+<td><code>--mongostore_database</code></td>
+<td><code>SPDL_MONGOSTORE_DATABASE</code></td>
+<td><code>speedleplus</code></td>
+</tr>
+</tbody>
+</table>
+
+<p>Los indicadores explícitos anulan las variables de entorno no vacías, luego los archivos de configuración y finalmente los valores predeterminados. Seleccione el backend con <code>--store-type mongodb</code> o <code>SPDL_STORE_TYPE=mongodb</code>. Para uso integrado, importe <code>pkg/store/mongodb</code> y pase estas propiedades a <code>store.NewStore</code>.</p>
+
+<p>Comportamientos importantes al operar el almacenamiento:</p>
+
+<ul>
+<li>El reemplazo del almacenamiento completo (<code>WritePolicyStore</code>) se ejecuta en una sola transacción. Conserva los IDs de políticas suministrados y genera los ausentes. En un servidor independiente falla sin modificar los datos existentes.</li>
+<li>Eliminar todos los servicios o funciones conserva las colecciones, por lo que el flujo de cambios permanece abierto y ADS elimina las entradas de la caché.</li>
+<li>Leer el almacenamiento completo lee los servicios y las funciones en una sola instantánea en un conjunto de réplicas o clúster particionado.</li>
+<li>Si el flujo de cambios finaliza, ADS lo vuelve a abrir con un retroceso (backoff) de hasta 30 segundos y luego recarga el almacenamiento completo, por lo que los cambios realizados en el intervalo no se pierden. Hasta entonces continúa sirviendo sus últimas políticas cargadas.</li>
+<li>La recopilación de solicitudes de Discover y la generación de políticas no son compatibles; están disponibles con los almacenes de archivos y etcd.</li>
+</ul>
+
+<table>
+<thead>
+<tr>
+<th>Síntoma</th>
+<th>Comprobación</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td>Tiempo de espera en la selección de servidor al iniciar</td>
+<td>Conjunto de réplicas inicializado y primario, host miembro en <code>rs.conf()</code> accesible desde PMS/ADS, host y puerto de URI, firewall.</td>
+</tr>
+
+<tr>
+<td>ADS finaliza con <code>The $changeStream stage is only supported on replica sets</code></td>
+<td>El despliegue es un <code>mongod</code> independiente; utilice un conjunto de réplicas o un clúster particionado.</td>
+</tr>
+
+<tr>
+<td>PMS escribe pero ADS no muestra el servicio</td>
+<td>Mismo despliegue de URI y mismo nombre <code>MongoDatabase</code> en ambas configuraciones.</td>
+</tr>
+
+<tr>
+<td>Los cambios no llegan a ADS</td>
+<td>Watch habilitado; errores en el flujo de cambios y de reapertura en los registros de ADS, que se repiten hasta que ADS alcanza la base de datos de nuevo.</td>
+</tr>
+
+<tr>
+<td>Fallo de autenticación</td>
+<td>Usuario, codificación de contraseña, <code>authSource</code> y el rol en la base de datos de políticas.</td>
+</tr>
+
+<tr>
+<td>Error de TLS</td>
+<td><code>tls=true</code>, ruta del archivo de CA y nombres de host del certificado.</td>
+</tr>
+</tbody>
+</table>
+
+<p>Vuelva a <a href="/es/docs/store/">Almacenamiento conectable</a> para conocer las interfaces del backend y la precedencia de configuración.</p>
+
+<p>Los fallos de almacenamiento siguen la misma política que cualquier almacenamiento integrado: ADS devuelve de forma predeterminada una denegación con error tras detectar la falta de disponibilidad, permanece en ejecución y reintenta, y se reanuda tras una recarga completa exitosa. Consulte <a href="/es/docs/store/#fallos-del-almacenamiento-y-autorización-en-caché">fallos del almacenamiento y autorización en caché</a> para el período de gracia finito opcional y su demora en la revocación.</p>
+</div>
+</div>
+</main>
+        </div>
+    </div>
+    <div class="docs-nav-backdrop" hidden></div>
+    <footer class="site-footer">
+    <div class="wrap footer-main">
+      <div class="footer-brand">
+        <a class="footer-lockup" href="/es/" aria-label="Inicio de Speedle Engine"><img src="/img/speedle/Speedle_logo_home_bold.svg?v=4" width="304" height="104" alt="Speedle"><span class="footer-divider" aria-hidden="true"></span><span class="footer-product">Engine</span></a>
+        <p class="footer-tagline">Motor de autorización de código abierto</p>
+        <nav class="social" aria-label="Enlaces comunitarios">
+          <a href="mailto:contact@speedle.io" aria-label="Email contact@speedle.io" title="contact@speedle.io"><img src="/img/speedle/28.%20Mail.svg" width="40" height="40" alt=""></a>
+          <a href="https://groups.google.com/forum/#!forum/speedle-users" aria-label="Google Groups" title="Google Groups — speedle-users"><img src="/img/speedle/Google-Groups.svg" width="24" height="24" alt=""></a>
+          <a href="https://github.com/teramoby/speedle-plus" aria-label="GitHub"><img src="/img/speedle/18.%20Github.svg" width="40" height="40" alt=""></a>
+          <a href="https://discord.gg/uaY2xVsbbT" aria-label="Discord"><img src="/img/speedle/Discord.svg" width="64" height="48" alt=""></a>
+        </nav>
+      </div>
+      <nav class="footer-family" aria-label="Productos de Speedle"><svg class="sphere-sprite" width="0" height="0" aria-hidden="true" focusable="false"><symbol id="i-speedle-sphere" viewBox="22 22 114 114"><!-- Source: img/speedle/Speedle_logo_home_bold.svg, sphere group only. Colours changed only (stroke currentColor). No path edits. --><g fill="none" stroke="currentColor" stroke-linejoin="miter" stroke-miterlimit="3" stroke-linecap="butt"><polygon stroke-width="3.6" points="41.83 47.82 30.67 80.15 42.9 112.09 72.8 128.69 106.38 122.19 127.93 95.63 127.36 61.43 104.94 35.6 71.16 30.23"/><g stroke-width="2.4"><polygon points="81.97 43.92 52.19 57.23 44.03 88.8 63.62 114.87 96.22 115.81 117.28 90.9 110.94 58.91"/><polygon points="68.57 60.42 57.6 86.19 78.73 104.59 102.75 90.18 96.47 62.88"/><path d="M41.83 47.82L52.19 57.23 68.57 60.42 81.97 43.92 71.16 30.23 M30.67 80.15L44.03 88.8 42.9 112.09 M52.19 57.23L57.6 86.19 44.03 88.8 78.73 104.59 63.62 114.87 72.8 128.69 M78.73 104.59L96.22 115.81 106.38 122.19 M96.22 115.81L102.75 90.18 117.28 90.9 127.93 95.63 M117.28 90.9L127.36 61.43 110.94 58.91 104.94 35.6 81.97 43.92 M110.94 58.91L96.47 62.88 117.28 90.9"/></g></g></symbol></svg>
+        <ul>
+          <li><a class="footer-card" href="https://engine.speedle.io/es/" aria-current="page"><svg class="product-sphere product-engine" aria-hidden="true" focusable="false"><use href="#i-speedle-sphere"/></svg><span class="footer-card-name">Speedle Engine</span><span class="footer-card-description">Motor de autorización de código abierto</span><svg class="footer-card-check" width="15" height="15" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M3.5 8.5 6.5 11.5 12.5 4.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></a></li>
+          <li><a class="footer-card" href="https://cloud.speedle.io/es/"><svg class="product-sphere product-cloud" aria-hidden="true" focusable="false"><use href="#i-speedle-sphere"/></svg><span class="footer-card-name">Speedle Cloud<span class="product-badge">Próximamente</span></span><span class="footer-card-description">Autorización hospedada para desarrolladores</span></a></li>
+          <li><a class="footer-card" href="https://ai.speedle.io/es/"><svg class="product-sphere product-ai" aria-hidden="true" focusable="false"><use href="#i-speedle-sphere"/></svg><span class="footer-card-name">Speedle AI</span><span class="footer-card-description">IA para control de acceso, control de acceso para IA</span></a></li>
+        </ul>
+      </nav>
+    </div>
+    <div class="wrap footer-bar">
+      <p class="footer-legal"><span>Con licencia Universal Permissive License v1.0.</span><span class="footer-legal-sep"> · </span><span>Copyright &copy; 2019–2026 The Speedle Authors. Todos los derechos reservados.</span></p>
+    </div>
+  </footer>
+<!-- Cloudflare Web Analytics --><script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "a7a746c498b940e58425123082a20520"}'></script><!-- End Cloudflare Web Analytics -->
+</body>
+
+</html>

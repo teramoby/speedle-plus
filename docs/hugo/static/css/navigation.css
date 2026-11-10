@@ -237,6 +237,58 @@ body.page-kube > header.site-header:lang(zh) {
   vertical-align: 1px;
   white-space: nowrap;
 }
+.site-header .languages { position: relative; }
+.site-header .languages-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  color: inherit;
+  background: none;
+  border: 0;
+  font: inherit;
+  white-space: nowrap;
+  cursor: pointer;
+  appearance: none;
+}
+.site-header .languages-button:hover,
+.site-header .languages-button:focus-visible,
+.site-header .languages-button[aria-expanded="true"] { color: #01e7cb; }
+.site-header .languages-button:focus-visible { outline: 2px solid #01e7cb; outline-offset: 4px; }
+.site-header .languages-chevron { display: block; flex: 0 0 10px; transition: transform .2s; }
+.site-header .languages-button[aria-expanded="true"] .languages-chevron { transform: rotate(180deg); }
+.site-header .languages-heading { display: none; }
+.site-header .languages-panel {
+  display: none;
+  position: absolute;
+  top: calc(100% + 14px);
+  right: 0;
+  z-index: 30;
+  min-width: 150px;
+  max-width: calc(100vw - 48px);
+  padding: 8px;
+  background: #25134e;
+  border: 1px solid rgba(255,255,255,.14);
+  border-radius: 12px;
+  box-shadow: 0 20px 60px rgba(0,0,0,.35);
+}
+.site-header .languages.open .languages-panel { display: block; }
+.site-header .nav-links a.language-row {
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  border-radius: 8px;
+  color: #fff;
+  white-space: nowrap;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+}
+.site-header .nav-links a.language-row:hover,
+.site-header .nav-links a.language-row:focus-visible { color: #01e7cb; background: rgba(255,255,255,.08); }
+.site-header .nav-links a.language-row:focus-visible { outline-offset: 0; }
+.site-header .nav-links a.language-row[aria-current="page"] { color: #01e7cb; }
 @media (max-width: 1160px) {
   .site-header .products { width: 100%; }
   .site-header .products-button { display: none; }
@@ -252,6 +304,24 @@ body.page-kube > header.site-header:lang(zh) {
     border: 0;
     box-shadow: none;
   }
+  .site-header .languages { width: 100%; }
+  .site-header .languages-button { display: none; }
+  .site-header .languages-heading { display: block; color: rgba(255,255,255,.72); }
+  .site-header .languages-panel,
+  .site-header .languages.open .languages-panel {
+    display: flex;
+    flex-direction: column;
+    position: static;
+    width: auto;
+    max-width: none;
+    margin: 8px 0 0 -12px;
+    padding: 0;
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  .site-header .language-row { padding: 6px 12px; }
 }
 /* Shared three-site footer (header standard v16): brand block, three product cards, legal bar.
    The only source of the footer rules; every page loads this file. The `html body` prefix and

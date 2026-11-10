@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <script>document.documentElement.classList.add('docs-js','navigation-js');addEventListener('DOMContentLoaded',function(){if(!document.querySelector('header.site-header.navigation-ready'))document.documentElement.classList.remove('navigation-js')});</script>
+    <meta name="generator" content="Hugo 0.48" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1"><title>보안 · Speedle Engine</title>
+<meta name="description" content="Speedle의 REST 및 gRPC 엔드포인트에 TLS, 상호 TLS 및 접근 제어 구성">
+<meta name="generator" content="Hugo 0.48" />
+<link href="https://engine.speedle.io/index.xml" rel="alternate" type="application/rss+xml">
+<link rel="canonical" href="https://engine.speedle.io/ko/docs/security/">
+
+<link rel="alternate" hreflang="en" href="https://engine.speedle.io/docs/security/">
+<link rel="alternate" hreflang="es" href="https://engine.speedle.io/es/docs/security/">
+<link rel="alternate" hreflang="ja" href="https://engine.speedle.io/ja/docs/security/">
+<link rel="alternate" hreflang="ko" href="https://engine.speedle.io/ko/docs/security/">
+<link rel="alternate" hreflang="zh-CN" href="https://engine.speedle.io/zh/docs/security/">
+<link rel="alternate" hreflang="x-default" href="https://engine.speedle.io/docs/security/">
+<meta property="og:type" content="article">
+<meta property="article:modified_time" content="2026-10-29T11:53:01&#43;08:00">
+<meta property="og:site_name" content="Speedle Engine">
+<meta property="og:title" content="보안 · Speedle Engine">
+<meta property="og:description" content="Speedle의 REST 및 gRPC 엔드포인트에 TLS, 상호 TLS 및 접근 제어 구성">
+<meta property="og:url" content="https://engine.speedle.io/ko/docs/security/">
+<meta property="og:image" content="https://engine.speedle.io/img/social/engine-en.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:alt" content="Speedle Engine — Fast. Simple. Access control">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="보안 · Speedle Engine">
+<meta name="twitter:description" content="Speedle의 REST 및 gRPC 엔드포인트에 TLS, 상호 TLS 및 접근 제어 구성">
+<meta name="twitter:image" content="https://engine.speedle.io/img/social/engine-en.png">
+<meta name="twitter:image:alt" content="Speedle Engine — Fast. Simple. Access control">
+
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/ko/docs/security/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-10-29T11:53:01+08:00","description":"Speedle의 REST 및 gRPC 엔드포인트에 TLS, 상호 TLS 및 접근 제어 구성","headline":"보안","image":"https://engine.speedle.io/img/social/engine-en.png","inLanguage":"ko","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/ko/docs/security/","@type":"WebPage"},"name":"보안","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/ko/docs/security/"}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/ko/docs/security/#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://engine.speedle.io/ko/","name":"홈","position":1},{"@type":"ListItem","item":"https://engine.speedle.io/ko/docs/","name":"문서","position":2},{"@type":"ListItem","item":"https://engine.speedle.io/ko/docs/security/","name":"보안","position":3}]}</script><link href="/css/docs.css" rel="stylesheet" type="text/css">
+
+
+    <link href="/css/navigation.css?v=header-20261106-v8" rel="stylesheet">
+    <script src="/js/navigation.js?v=header-20261106-v8" defer></script>
+    <script src="/js/docs.js" defer></script>
+
+</head>
+
+<body class="page-kube docs-page">
+    <header class="site-header">
+    <div class="wrap nav">
+      <a class="brand" href="/ko/#top" aria-label="Speedle Engine 홈"><img class="brand-logo" src="/img/speedle/Speedle_logo_home_bold.svg?v=4" width="304" height="104" alt=""><span class="brand-divider" aria-hidden="true"></span><span class="brand-product">Engine</span></a>
+      <button class="menu" type="button" aria-expanded="false" aria-controls="nav-links" aria-label="내비게이션 열기">☰</button>
+      <nav class="nav-links" id="nav-links" aria-label="기본 내비게이션">
+        <div class="products"><button class="products-button" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="products-panel">제품<svg class="products-chevron" width="10" height="10" viewBox="0 0 10 10" aria-hidden="true" focusable="false"><path d="M2 3.5 5 6.5 8 3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button><span class="products-heading" aria-hidden="true">제품</span><div class="products-panel" id="products-panel" role="group" aria-label="제품"><a class="product-row" href="https://engine.speedle.io/ko/" aria-current="page"><img class="product-mark" src="/img/speedle/speedle-mark-engine.svg" alt="" width="20" height="20"><span class="product-text"><span class="product-name">Speedle Engine</span><span class="product-desc">오픈 소스 인가 엔진</span></span><svg class="product-check" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M3.5 8.5 6.5 11.5 12.5 4.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></a><a class="product-row" href="https://cloud.speedle.io/ko/"><img class="product-mark" src="/img/speedle/speedle-mark-cloud.svg" alt="" width="20" height="20"><span class="product-text"><span class="product-name">Speedle Cloud <span class="product-badge">출시 예정</span></span><span class="product-desc">개발자를 위한 호스팅형 인가 서비스</span></span></a><a class="product-row" href="https://ai.speedle.io/ko/"><img class="product-mark" src="/img/speedle/speedle-mark-ai.svg" alt="" width="20" height="20"><span class="product-text"><span class="product-name">Speedle AI</span><span class="product-desc">AI를 위한 접근 제어, AI를 통한 접근 제어</span></span></a></div></div>
+        <a href="/ko/#about">Speedle 소개</a><a href="/ko/#features">기능</a>
+        <a href="/ko/quick-start/">시작하기</a><a href="/ko/docs/">문서</a><a href="/ko/playground/">Playground</a>
+        <div class="languages"><button class="languages-button" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="languages-panel">한국어<svg class="languages-chevron" width="10" height="10" viewBox="0 0 10 10" aria-hidden="true" focusable="false"><path d="M2 3.5 5 6.5 8 3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button><span class="languages-heading" aria-hidden="true">언어</span><div class="languages-panel" id="languages-panel" role="group" aria-label="언어"><a class="language-row" href="/docs/security/" lang="en" hreflang="en">English</a><a class="language-row" href="/ja/docs/security/" lang="ja" hreflang="ja" >日本語</a><a class="language-row" href="/ko/docs/security/" lang="ko" hreflang="ko" aria-current="page">한국어</a><a class="language-row" href="/es/docs/security/" lang="es" hreflang="es">Español</a><a class="language-row" href="/zh/docs/security/" lang="zh-CN" hreflang="zh-CN" >中文</a></div></div>
+        <a class="nav-github" href="https://github.com/teramoby/speedle-plus">GitHub</a>
+      </nav>
+    </div>
+  </header>
+    <div class="container">
+        <button class="docs-nav-toggle" type="button" aria-expanded="false" aria-controls="docs-navigation">
+            <span>메뉴</span>
+            <svg class="docs-nav-toggle-icon" viewBox="0 0 18 14" width="18" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M1 1h16M1 7h16M1 13h16"/></svg>
+        </button>
+        <div class="content-container"><aside class="docs-sidebar" id="docs-navigation" aria-label="문서 내비게이션">
+<div class="docs-nav-head">
+<span class="docs-nav-title">문서</span>
+<button class="docs-nav-close" type="button" aria-label="메뉴 닫기"><svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="m3 3 10 10M13 3 3 13"/></svg></button>
+</div>
+<div class="sidebar">
+<nav>
+<ul>
+
+
+
+
+
+<li data-docs-depth="-1" class="docs-nav-section parent"><span class="docs-nav-heading">문서</span>
+<ul class="sub-menu">
+<li data-docs-depth="0" class=""><a href="/ko/docs/usecases/">유스케이스</a></li>
+<li data-docs-depth="0" class=""><a href="/ko/docs/overview/">개요</a></li>
+<li data-docs-depth="0" class=""><a href="/ko/docs/spdl/">SPDL: Speedle 정책 정의 언어</a></li>
+<li data-docs-depth="0" class=""><a href="/ko/docs/architecture/">아키텍처</a></li>
+
+
+
+<li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading">Speedle 정책</span>
+<ul class="">
+<li data-docs-depth="1" class=""><a href="/ko/docs/pms/policy-mgmt/">정책 관리</a></li>
+<li data-docs-depth="1" class=""><a href="/ko/docs/pms/global-policy/">글로벌 정책</a></li>
+<li data-docs-depth="1" class=""><a href="/ko/docs/pms/diagnosis/">인가 진단</a></li>
+<li data-docs-depth="1" class=""><a href="/ko/docs/pms/discover/">정책 발견</a></li>
+</ul>
+
+</li>
+<li data-docs-depth="0" class=""><a href="/ko/docs/decisions/">인가 결정</a></li>
+<li data-docs-depth="0" class=""><a href="/ko/docs/idd/">ID 도메인</a></li>
+<li data-docs-depth="0" class=""><a href="/ko/docs/assertor/">토큰 어서터</a></li>
+
+
+
+<li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading docs-nav-heading-link"><a href="/ko/docs/store/">플러그형 저장소</a></span>
+<ul class="">
+<li data-docs-depth="1" class=""><a href="/ko/docs/store/mysql/">MySQL 설정 가이드</a></li>
+<li data-docs-depth="1" class=""><a href="/ko/docs/store/etcd/">etcd 설정 가이드</a></li>
+<li data-docs-depth="1" class=""><a href="/ko/docs/store/mongodb/">MongoDB 설정 가이드</a></li>
+</ul>
+
+</li>
+
+
+
+<li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading">API</span>
+<ul class="">
+<li data-docs-depth="1" class=""><a href="/ko/docs/api/decision_api/">인가 결정 API</a></li>
+<li data-docs-depth="1" class=""><a href="/ko/docs/api/management_api/">정책 관리 API</a></li>
+<li data-docs-depth="1" class=""><a href="/ko/docs/api/asserter_api/">토큰 어설션 API</a></li>
+</ul>
+
+</li>
+
+
+
+<li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading docs-nav-heading-link"><a href="/ko/docs/deployment/">배포</a></span>
+<ul class="">
+<li data-docs-depth="1" class=""><a href="/ko/docs/deployment/embedded/">Speedle 임베디드 모드</a></li>
+<li data-docs-depth="1" class=""><a href="/ko/docs/deployment/docker/">Docker 이미지</a></li>
+<li data-docs-depth="1" class=""><a href="/ko/docs/deployment/homebrew/">Homebrew 설치</a></li>
+</ul>
+
+</li>
+
+
+
+<li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading docs-nav-heading-link"><a href="/ko/docs/sdks/">SDK</a></span>
+<ul class="">
+<li data-docs-depth="1" class=""><a href="/ko/docs/sdks/java/">Java SDK</a></li>
+<li data-docs-depth="1" class=""><a href="/ko/docs/sdks/python/">Python SDK</a></li>
+<li data-docs-depth="1" class=""><a href="/ko/docs/sdks/go/">Go SDK</a></li>
+<li data-docs-depth="1" class=""><a href="/ko/docs/sdks/dotnet/">C#/.NET SDK</a></li>
+<li data-docs-depth="1" class=""><a href="/ko/docs/sdks/rust/">Rust SDK</a></li>
+<li data-docs-depth="1" class=""><a href="/ko/docs/sdks/node/">Node.js/TypeScript SDK</a></li>
+</ul>
+
+</li>
+
+
+
+<li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading docs-nav-heading-link"><a href="/ko/docs/cloud/">Speedle Cloud</a></span>
+<ul class="">
+<li data-docs-depth="1" class=""><a href="/ko/docs/cloud/getting-started/">Speedle Cloud 빠른 시작</a></li>
+<li data-docs-depth="1" class=""><a href="/ko/docs/cloud/tokens/">Speedle Cloud 애플리케이션 토큰</a></li>
+<li data-docs-depth="1" class=""><a href="/ko/docs/cloud/authorization-api/">Speedle Cloud 인가 API 프리뷰</a></li>
+<li data-docs-depth="1" class=""><a href="/ko/docs/cloud/limits-and-errors/">Speedle Cloud 제한 및 오류</a></li>
+</ul>
+
+</li>
+<li data-docs-depth="0" class="active"><a href="/ko/docs/security/" aria-current="page">보안</a></li>
+<li data-docs-depth="0" class=""><a href="/ko/docs/logging/">로깅 프레임워크</a></li>
+<li data-docs-depth="0" class=""><a href="/ko/docs/versions/">버전</a></li>
+<li data-docs-depth="0" class=""><a href="/ko/docs/custom-function/">사용자 정의 함수</a></li>
+</ul>
+
+</li>
+</ul>
+</nav>
+
+
+</div>
+</aside>
+<main>
+<div id="main">
+
+  <h1>보안</h1>
+  <p class="docs-lead"></p>
+
+
+
+
+<nav id="contents" class="docs-toc" data-docs-toc="h2" aria-label="목차">
+  <ol></ol>
+</nav>
+
+
+
+  <div id="kube-component" class="content">
+
+<h2 id="두-api-전송-계층-모두-보호">두 API 전송 계층 모두 보호</h2>
+
+<p>독립적으로 작동하는 PMS와 ADS는 <strong>REST와 gRPC</strong>를 노출합니다. 현재 두 서비스 모두 동일한 <code>--insecure</code>, <code>--cert</code>, <code>--key</code>, <code>--client-cert</code> 및 <code>--force-client-cert</code> 전송 설정을 사용합니다. 인증서나 신뢰 설정이 유효하지 않은 경우 시작 시 실패합니다. 보안 모드가 일반 텍스트로 폴백되지 않습니다.</p>
+
+<p>TLS는 연결을 암호화하고 서버를 인증합니다. 인증된 클라이언트를 요구하려면 <code>--client-cert</code>로 클라이언트 CA를 제공하고 <strong>반드시</strong> <code>--force-client-cert=true</code>를 설정해야 합니다. 해당 플래그가 없는 경우 구성된 CA는 클라이언트가 인증서를 제공한 경우에만 클라이언트 인증서를 검증합니다. TLS 자체만으로는 관리자 인가나 Bearer 토큰 검증을 제공하지 않습니다. 관리, 진단 및 발견 엔드포인트에는 인증된 게이트웨이나 이에 상응하는 접근 제어를 사용하십시오. <code>--enable-authz</code> 플래그는 기본 내장 엔드포인트 인가 정책을 제공하지 않습니다.</p>
+
+<h2 id="수신-대기-주소-및-호환성">수신 대기 주소 및 호환성</h2>
+
+<table>
+<thead>
+<tr>
+<th>서비스</th>
+<th>기본 REST 주소</th>
+<th>기본 gRPC 주소</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td>PMS</td>
+<td><code>0.0.0.0:6733</code></td>
+<td><code>--grpc-endpoint</code>가 설정될 때까지 비활성화</td>
+</tr>
+
+<tr>
+<td>ADS</td>
+<td><code>0.0.0.0:6734</code></td>
+<td><code>--grpc-endpoint</code>가 설정될 때까지 비활성화</td>
+</tr>
+</tbody>
+</table>
+
+<p>REST와 gRPC 수신 대기 주소는 개별적으로 구성됩니다. <code>--endpoint</code>만 설정한다고 해서 gRPC가 활성화되지는 않습니다. PMS용으로는 <code>--grpc-endpoint 127.0.0.1:50001</code>, ADS용으로는 <code>--grpc-endpoint 127.0.0.1:50002</code>를 명시적으로 지정하십시오. <code>127.0.0.1:0</code>은 격리 테스트를 위해 임시 포트를 요청합니다. 필요한 경우 IPv6 주소를 명시적으로 지정하십시오.</p>
+
+<p>구성 우선순위는 명령줄 인수, <code>SPDL_*</code> 환경 변수, JSON 구성, 기본값 순입니다. gRPC 재정의는 <code>--grpc-endpoint</code>, <code>SPDL_GRPC_ENDPOINT</code> 및 <code>serverConfig.grpcEndpoint</code>입니다. RPC 네임스페이스와 클라이언트 생성에 대해서는 <a href="/ko/docs/api/">현재 proto 계약</a>을 참조하십시오.</p>
+
+<h2 id="로컬-테스트용-인증서-생성">로컬 테스트용 인증서 생성</h2>
+
+<p><a href="/ko/quick-start/">빠른 시작</a>의 설명에 따라 바이너리를 빌드합니다. 저장소 루트에서 Go 1.26.10 또는 Go 1.27.3(또는 동일 릴리스 브랜치의 최신 패치 버전)을 사용하여 로컬 CA와 개별 서버/클라이언트 인증서를 생성합니다. 서버 인증서에는 <code>localhost</code>, <code>127.0.0.1</code> 및 <code>::1</code>의 SAN이 포함됩니다. 개인 키 권한은 0600입니다. 이는 <strong>24시간 유효한 데모용 인증서</strong>이며 프로덕션용 자격 증명이 아닙니다. 생성기는 기존 파일 덮어쓰기를 거부합니다. 다시 생성하려면 새 출력 디렉터리를 선택하십시오.</p>
+
+<!-- docs-check: certificates -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">go run ./website/tests/examples/certificates --out ./tls</code></pre></div>
+<p>PMS와 ADS용으로 빈 저장소 파일을 준비합니다:</p>
+
+<!-- docs-check: setup -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#8be9fd;font-style:italic">printf</span> <span style="color:#f1fa8c">&#39;{}\n&#39;</span> &gt; tls-policies.json</code></pre></div>
+<h2 id="mtls를-사용하여-pms-시작">mTLS를 사용하여 PMS 시작</h2>
+
+<p>클라이언트 인증서를 필수로 요구하는 TLS로 PMS를 시작합니다:</p>
+
+<!-- docs-check: secure-pms -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./bin/speedle-pms <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  --store-type file <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  --filestore-loc ./tls-policies.json <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  --endpoint <span style="color:#bd93f9">127</span>.0.0.1:6733 <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  --grpc-endpoint <span style="color:#bd93f9">127</span>.0.0.1:0 <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  --cert ./tls/server.crt <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  --key ./tls/server.key <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  --client-cert ./tls/ca.crt <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  --force-client-cert<span style="color:#ff79c6">=</span>true</code></pre></div>
+<h2 id="mtls를-사용하여-ads-시작">mTLS를 사용하여 ADS 시작</h2>
+
+<p>클라이언트 인증서를 필수로 요구하는 TLS로 ADS를 시작합니다:</p>
+
+<!-- docs-check: secure-ads -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./bin/speedle-ads <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  --store-type file <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  --filestore-loc ./tls-policies.json <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  --endpoint <span style="color:#bd93f9">127</span>.0.0.1:6734 <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  --grpc-endpoint <span style="color:#bd93f9">127</span>.0.0.1:0 <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  --cert ./tls/server.crt <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  --key ./tls/server.key <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  --client-cert ./tls/ca.crt <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  --force-client-cert<span style="color:#ff79c6">=</span>true</code></pre></div>
+<h2 id="spctl로-연결-테스트">spctl로 연결 테스트</h2>
+
+<p>spctl을 사용하여 서비스를 생성합니다:</p>
+
+<!-- docs-check: secure-cli -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./bin/spctl <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  --pms-endpoint https://127.0.0.1:6733/policy-mgmt/v1/ <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  --cacert ./tls/ca.crt <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  --cert ./tls/client.crt <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  --key ./tls/client.key <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  create service bookstore</code></pre></div>
+<h2 id="curl로-연결-테스트">curl로 연결 테스트</h2>
+
+<p>curl을 사용하여 인가 결정을 요청합니다:</p>
+
+<!-- docs-check: secure-curl -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl --fail --silent --show-error <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  --cacert ./tls/ca.crt <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  --cert ./tls/client.crt <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  --key ./tls/client.key <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  --header <span style="color:#f1fa8c">&#39;Content-Type: application/json&#39;</span> <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  --data <span style="color:#f1fa8c">&#39;{&#34;subject&#34;:{&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;,&#34;name&#34;:&#34;alice&#34;}]},&#34;serviceName&#34;:&#34;bookstore&#34;,&#34;resource&#34;:&#34;book&#34;,&#34;action&#34;:&#34;read&#34;}&#39;</span> <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  https://127.0.0.1:6734/authz-check/v1/is-allowed</code></pre></div></div>
+</div>
+</main>
+        </div>
+    </div>
+    <div class="docs-nav-backdrop" hidden></div>
+    <footer class="site-footer">
+    <div class="wrap footer-main">
+      <div class="footer-brand">
+        <a class="footer-lockup" href="/ko/" aria-label="Speedle Engine 홈"><img src="/img/speedle/Speedle_logo_home_bold.svg?v=4" width="304" height="104" alt="Speedle"><span class="footer-divider" aria-hidden="true"></span><span class="footer-product">Engine</span></a>
+        <p class="footer-tagline">오픈 소스 인가 엔진</p>
+        <nav class="social" aria-label="커뮤니티 링크">
+          <a href="mailto:contact@speedle.io" aria-label="이메일 보내기 contact@speedle.io" title="contact@speedle.io"><img src="/img/speedle/28.%20Mail.svg" width="40" height="40" alt=""></a>
+          <a href="https://groups.google.com/forum/#!forum/speedle-users" aria-label="Google Groups" title="Google Groups — speedle-users"><img src="/img/speedle/Google-Groups.svg" width="24" height="24" alt=""></a>
+          <a href="https://github.com/teramoby/speedle-plus" aria-label="GitHub"><img src="/img/speedle/18.%20Github.svg" width="40" height="40" alt=""></a>
+          <a href="https://discord.gg/uaY2xVsbbT" aria-label="Discord"><img src="/img/speedle/Discord.svg" width="64" height="48" alt=""></a>
+        </nav>
+      </div>
+      <nav class="footer-family" aria-label="Speedle 제품"><svg class="sphere-sprite" width="0" height="0" aria-hidden="true" focusable="false"><symbol id="i-speedle-sphere" viewBox="22 22 114 114"><!-- Source: img/speedle/Speedle_logo_home_bold.svg, sphere group only. Colours changed only (stroke currentColor). No path edits. --><g fill="none" stroke="currentColor" stroke-linejoin="miter" stroke-miterlimit="3" stroke-linecap="butt"><polygon stroke-width="3.6" points="41.83 47.82 30.67 80.15 42.9 112.09 72.8 128.69 106.38 122.19 127.93 95.63 127.36 61.43 104.94 35.6 71.16 30.23"/><g stroke-width="2.4"><polygon points="81.97 43.92 52.19 57.23 44.03 88.8 63.62 114.87 96.22 115.81 117.28 90.9 110.94 58.91"/><polygon points="68.57 60.42 57.6 86.19 78.73 104.59 102.75 90.18 96.47 62.88"/><path d="M41.83 47.82L52.19 57.23 68.57 60.42 81.97 43.92 71.16 30.23 M30.67 80.15L44.03 88.8 42.9 112.09 M52.19 57.23L57.6 86.19 44.03 88.8 78.73 104.59 63.62 114.87 72.8 128.69 M78.73 104.59L96.22 115.81 106.38 122.19 M96.22 115.81L102.75 90.18 117.28 90.9 127.93 95.63 M117.28 90.9L127.36 61.43 110.94 58.91 104.94 35.6 81.97 43.92 M110.94 58.91L96.47 62.88 117.28 90.9"/></g></g></symbol></svg>
+        <ul>
+          <li><a class="footer-card" href="https://engine.speedle.io/ko/" aria-current="page"><svg class="product-sphere product-engine" aria-hidden="true" focusable="false"><use href="#i-speedle-sphere"/></svg><span class="footer-card-name">Speedle Engine</span><span class="footer-card-description">오픈 소스 인가 엔진</span><svg class="footer-card-check" width="15" height="15" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M3.5 8.5 6.5 11.5 12.5 4.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></a></li>
+          <li><a class="footer-card" href="https://cloud.speedle.io/ko/"><svg class="product-sphere product-cloud" aria-hidden="true" focusable="false"><use href="#i-speedle-sphere"/></svg><span class="footer-card-name">Speedle Cloud<span class="product-badge">출시 예정</span></span><span class="footer-card-description">개발자를 위한 호스팅형 인가 서비스</span></a></li>
+          <li><a class="footer-card" href="https://ai.speedle.io/ko/"><svg class="product-sphere product-ai" aria-hidden="true" focusable="false"><use href="#i-speedle-sphere"/></svg><span class="footer-card-name">Speedle AI</span><span class="footer-card-description">AI를 위한 접근 제어, AI를 통한 접근 제어</span></a></li>
+        </ul>
+      </nav>
+    </div>
+    <div class="wrap footer-bar">
+      <p class="footer-legal"><span>Universal Permissive License v1.0에 따라 라이선스가 부여됩니다.</span><span class="footer-legal-sep"> · </span><span>Copyright &copy; 2019–2026 The Speedle Authors. All rights reserved.</span></p>
+    </div>
+  </footer>
+<!-- Cloudflare Web Analytics --><script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "a7a746c498b940e58425123082a20520"}'></script><!-- End Cloudflare Web Analytics -->
+</body>
+
+</html>

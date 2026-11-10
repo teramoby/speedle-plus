@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Token Asserter on Speedle</title>
+    <link>https://engine.speedle.io/ja/tags/token-asserter/</link>
+    <description>Recent content in Token Asserter on Speedle</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>ja-jp</language>
+    <lastBuildDate>Mon, 21 Jan 2019 09:28:30 +0800</lastBuildDate>
+    
+	<atom:link href="https://engine.speedle.io/ja/tags/token-asserter/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>トークンアサーター</title>
+      <link>https://engine.speedle.io/ja/docs/assertor/</link>
+      <pubDate>Mon, 21 Jan 2019 09:28:30 +0800</pubDate>
+      
+      <guid>https://engine.speedle.io/ja/docs/assertor/</guid>
+      <description>トークンアサーターの役割 設定されたアサーターはトークンを検証し、アイデンティティドメインを含む明示的なプリンシパルを返します。Speedle はそれらのアイデンティティを使用してポリシーを評価します。本番環境の実装では、トークンの署名またはイントロスペクション結果、発行者、対象者、有効期限、およびプロバイダー固有の要件を検証する必要があります。Webhook インターフェースがあること自体は、任意の OAuth/OIDC トークンとの自動互換性を意味するものではありません。
+トークンアサーション API の errCode は整数型であり、オプションの属性はオブジェクトであり、型付き属性配列ではありません。asserterWebhookConfig.endpoint は完全な URL です。以下の例では /v1/assert を使用します。
+確定的なローカルモックの実行 このモックは、githubtoken/github、googletoken/google、gitlabtoken/gitlab の 3 組の入力のみを認識し、それぞれ対応するドメインの user1 を表します。トークンとプロバイダーのペアが一致しない場合は失敗します。これはテスト用フィクスチャであり、実際のトークン検証ではありません。 トークンの値は記録されません。ループバックアドレスのみにバインドし、本番環境では実際のプロバイダー統合に置き換えてください。
+リポジトリルートから別のターミナルで起動します:
+go run ./website/tests/examples/asserter // A deterministic mock for the token-assertion tutorial. Never use for real tokens. package main import ( &amp;#34;encoding/json&amp;#34; &amp;#34;flag&amp;#34; &amp;#34;log&amp;#34; &amp;#34;net/http&amp;#34; &amp;#34;strings&amp;#34; &amp;#34;time&amp;#34; ) type principal struct { Type string `json:&amp;#34;type&amp;#34;` Name string `json:&amp;#34;name&amp;#34;` IDD string `json:&amp;#34;idd&amp;#34;` } type response struct { Principals []principal `json:&amp;#34;principals,omitempty&amp;#34;` ErrCode int `json:&amp;#34;errCode&amp;#34;` ErrMessage string `json:&amp;#34;errMessage,omitempty&amp;#34;` } func assert(w http.</description>
+    </item>
+    
+  </channel>
+</rss>

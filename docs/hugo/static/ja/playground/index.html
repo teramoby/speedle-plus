@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <script>document.documentElement.classList.add('navigation-js');addEventListener('DOMContentLoaded',function(){if(!document.querySelector('header.site-header.navigation-ready'))document.documentElement.classList.remove('navigation-js')});</script>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#25134e">
+  <meta name="description" content="ブラウザ上で本物の Speedle 認可を体験。SPDL ポリシーを記述し、リクエストを入力して、WebAssembly によりローカルで RBAC と ABAC の決定を評価します。">
+  <link rel="canonical" href="https://engine.speedle.io/ja/playground/">
+  <link rel="alternate" hreflang="en" href="https://engine.speedle.io/playground/">
+  <link rel="alternate" hreflang="zh-CN" href="https://engine.speedle.io/zh/playground/">
+  <link rel="alternate" hreflang="ja" href="https://engine.speedle.io/ja/playground/">
+  <link rel="alternate" hreflang="ko" href="https://engine.speedle.io/ko/playground/">
+  <link rel="alternate" hreflang="es" href="https://engine.speedle.io/es/playground/">
+  <link rel="alternate" hreflang="x-default" href="https://engine.speedle.io/playground/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Speedle Engine">
+  <meta property="og:title" content="Playground · Speedle Engine">
+  <meta property="og:description" content="ポリシーの記述、リクエストのテスト。ブラウザ上で本物の Speedle 認可をローカル評価。">
+  <meta property="og:url" content="https://engine.speedle.io/ja/playground/">
+  <meta property="og:image" content="https://engine.speedle.io/img/social/engine-en.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:type" content="image/png">
+  <meta property="og:image:alt" content="Speedle Engine — 高速・シンプルな認可エンジン">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Playground · Speedle Engine">
+  <meta name="twitter:description" content="ポリシーの記述、リクエストのテスト。ブラウザ上で本物の Speedle 認可をローカル評価。">
+  <meta name="twitter:image" content="https://engine.speedle.io/img/social/engine-en.png">
+  <meta name="twitter:image:alt" content="Speedle Engine — 高速・シンプルな認可エンジン">
+  <title>Playground · Speedle Engine</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="/favicon.ico" sizes="any">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <link rel="stylesheet" href="/css/site.css">
+  <link rel="stylesheet" href="/css/navigation.css?v=header-20261106-v8">
+  <link rel="stylesheet" href="/playground/playground.css">
+</head>
+<body>
+  <svg class="svg-defs" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><defs>
+    <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+    <symbol id="i-external" viewBox="0 0 24 24"><path d="M14 4h6v6M20 4l-9 9M10 4H5a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-5"/></symbol>
+    <symbol id="i-reset" viewBox="0 0 24 24"><path d="M3 10a9 9 0 1 1 2 8M3 4v6h6"/></symbol>
+    <symbol id="i-copy" viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="13" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3M12 14v3"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></symbol>
+    <symbol id="i-close" viewBox="0 0 24 24"><path d="m6 6 12 12M6 18 18 6"/></symbol>
+    <symbol id="i-terminal" viewBox="0 0 24 24"><path d="m5 7 5 5-5 5M13 17h6"/></symbol>
+    <symbol id="i-alert" viewBox="0 0 24 24"><path d="m12 3 10 18H2L12 3ZM12 9v5M12 17h.01"/></symbol>
+    <symbol id="i-book" viewBox="0 0 24 24"><path d="M12 6v15M12 6C9 3 5 3 2 4v15c4-1 7-1 10 2 3-3 6-3 10-2V4c-3-1-7-1-10 2Z"/></symbol>
+  </defs></svg>
+  <header class="site-header">
+    <div class="wrap nav">
+      <a class="brand" href="/ja/#top" aria-label="Speedle Engine ホーム"><img class="brand-logo" src="/img/speedle/Speedle_logo_home_bold.svg?v=4" width="304" height="104" alt=""><span class="brand-divider" aria-hidden="true"></span><span class="brand-product">Engine</span></a>
+      <button class="menu" type="button" aria-expanded="false" aria-controls="nav-links" aria-label="ナビゲーションを開く">☰</button>
+      <nav class="nav-links" id="nav-links" aria-label="メインナビゲーション">
+        <div class="products"><button class="products-button" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="products-panel">プロダクト<svg class="products-chevron" width="10" height="10" viewBox="0 0 10 10" aria-hidden="true" focusable="false"><path d="M2 3.5 5 6.5 8 3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button><span class="products-heading" aria-hidden="true">プロダクト</span><div class="products-panel" id="products-panel" role="group" aria-label="プロダクト"><a class="product-row" href="https://engine.speedle.io/ja/" aria-current="page"><img class="product-mark" src="/img/speedle/speedle-mark-engine.svg" alt="" width="20" height="20"><span class="product-text"><span class="product-name">Speedle Engine</span><span class="product-desc">オープンソース認可エンジン</span></span><svg class="product-check" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M3.5 8.5 6.5 11.5 12.5 4.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></a><a class="product-row" href="https://cloud.speedle.io/ja/"><img class="product-mark" src="/img/speedle/speedle-mark-cloud.svg" alt="" width="20" height="20"><span class="product-text"><span class="product-name">Speedle Cloud <span class="product-badge">まもなく公開</span></span><span class="product-desc">開発者向けホスト型認可サービス</span></span></a><a class="product-row" href="https://ai.speedle.io/ja/"><img class="product-mark" src="/img/speedle/speedle-mark-ai.svg" alt="" width="20" height="20"><span class="product-text"><span class="product-name">Speedle AI</span><span class="product-desc">AI のためのアクセス制御、アクセス制御のための AI</span></span></a></div></div>
+        <a href="/ja/#about">Speedle について</a><a href="/ja/#features">機能</a><a href="/ja/integrations/">連携</a>
+        <a href="/ja/quick-start/">クイックスタート</a><a href="/ja/docs/">ドキュメント</a><a href="/ja/playground/" aria-current="page">Playground</a>
+        <div class="languages"><button class="languages-button" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="languages-panel">日本語<svg class="languages-chevron" width="10" height="10" viewBox="0 0 10 10" aria-hidden="true" focusable="false"><path d="M2 3.5 5 6.5 8 3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button><span class="languages-heading" aria-hidden="true">言語</span><div class="languages-panel" id="languages-panel" role="group" aria-label="言語"><a class="language-row" href="/playground/" lang="en" hreflang="en" >English</a><a class="language-row" href="/ja/playground/" lang="ja" hreflang="ja" aria-current="page">日本語</a><a class="language-row" href="/ko/playground/" lang="ko" hreflang="ko">한국어</a><a class="language-row" href="/es/playground/" lang="es" hreflang="es">Español</a><a class="language-row" href="/zh/playground/" lang="zh-CN" hreflang="zh-CN">中文</a></div></div>
+        <a class="nav-github" href="https://github.com/teramoby/speedle-plus">GitHub</a>
+      </nav>
+    </div>
+  </header>
+  <main id="top">
+    <div class="wrap playground-main">
+    <section class="workspace" aria-label="Policy and request editor">
+      <div class="workspace-topline">
+        <h1 class="workspace-title"><span class="active-indicator"></span>Playground</h1>
+        <div class="workspace-actions">
+          <div class="engine-panel">
+            <div class="engine-status" id="engine-status" role="status"><span class="status-dot loading"></span><span id="engine-text">WebAssembly を読み込み中…</span></div>
+            <button id="retry-engine" class="text-button" type="button" hidden>再試行</button>
+          </div>
+          <button class="text-button" id="reset-button"><svg class="icon"><use href="#i-reset"/></svg>リセット</button>
+        </div>
+      </div>
+      <div class="examples"><span class="examples-label">サンプルから始める</span><div class="sample-list" role="group" aria-label="Load an example"><button class="sample active" data-sample="allow" aria-pressed="true"><span class="sample-dot allow"></span>基本的な認可</button><button class="sample" data-sample="deny" aria-pressed="false"><span class="sample-dot deny"></span>拒否優先</button><button class="sample" data-sample="nomatch" aria-pressed="false">一致するポリシーなし</button><button class="sample" data-sample="role" aria-pressed="false">ロールベースのアクセス制御</button><button class="sample" data-sample="condition" aria-pressed="false">条件式</button></div></div>
+      <div class="editor-grid">
+        <section class="editor-panel" aria-labelledby="policy-heading">
+          <div class="editor-heading"><div class="editor-heading-left"><span class="step">01</span><div><h2 id="policy-heading">ポリシー</h2><p>1行または複数の SPDL ステートメントを記述</p></div></div><span class="language-tag">SPDL</span></div>
+          <div class="filebar"><span class="file-label"><span class="file-dot"></span>policies.spdl</span><button class="icon-button" id="copy-policies" aria-label="ポリシーをコピー" title="ポリシーをコピー"><svg class="icon"><use href="#i-copy"/></svg></button></div>
+          <div class="code-editor" id="policy-editor"><div class="line-gutter" id="policy-lines" aria-hidden="true"></div><div class="code-area"><pre class="code-highlight" id="policy-highlight" aria-hidden="true"></pre><textarea id="policies" aria-labelledby="policy-heading" aria-describedby="policy-help" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off" wrap="off" maxlength="100000"></textarea></div></div>
+          <div class="editor-foot"><span id="policy-help"><span class="muted-hash">#</span> 1行につき1ステートメント · # コメントは独立した行に記述</span><span id="policy-count">—</span></div>
+        </section>
+        <section class="editor-panel request-panel" aria-labelledby="request-heading">
+          <div class="editor-heading"><div class="editor-heading-left"><span class="step">02</span><div><h2 id="request-heading">認可リクエスト</h2><p>リクエストを入力（JSON の記述は不要）</p></div></div><span class="language-tag">フォーム</span></div>
+          <form id="request-form" class="request-form" novalidate>
+            <div class="request-basics">
+              <div class="form-field" data-field-wrapper="resource"><label for="resource">リソース <span>必須</span></label><input id="resource" data-field="resource" name="resource" placeholder="例: book または /api/orders" autocomplete="off" maxlength="10000" required><small class="field-error" hidden></small></div>
+              <div class="form-field" data-field-wrapper="action"><label for="action">アクション <span>必須</span></label><input id="action" data-field="action" name="action" placeholder="例: read または write" autocomplete="off" maxlength="1000" required><small class="field-error" hidden></small></div>
+              <div class="form-field service-field" data-field-wrapper="serviceName"><label for="service-name">サービス <span>ポリシー名前空間</span></label><input id="service-name" data-field="serviceName" name="serviceName" placeholder="playground" autocomplete="off" maxlength="1000"><small class="field-error" hidden></small></div>
+            </div>
+            <fieldset class="form-section"><legend><strong>サブジェクト</strong><span>プリンシパル</span></legend><button type="button" class="add-button section-add" id="add-principal">+ プリンシパルを追加</button><div id="principal-list"></div><p class="form-hint">ユーザー、グループ、エンティティをサポート。ロールは SPDL ロールポリシーから導出されます。</p></fieldset>
+            <fieldset class="form-section attributes-section"><legend><strong>属性</strong><span>任意</span></legend><button type="button" class="add-button section-add" id="add-attribute">+ 属性を追加</button><div id="attribute-list"></div><p class="form-hint">条件用の型付き属性値を提供します。配列が必要な場合は「複数の値」を選択します。</p></fieldset>
+          </form>
+        </section>
+      </div>
+      <div class="runbar"><span class="privacy-note"><svg class="icon"><use href="#i-lock"/></svg>入力内容はブラウザ内でのみ保持されます。アップロードや保存は行われません。</span><div class="run-actions"><span class="shortcut"><kbd id="shortcut-key">Ctrl</kbd> + <kbd>Enter</kbd></span><button class="button button-primary evaluate-button" id="evaluate" disabled><svg class="icon"><use href="#i-arrow"/></svg><span id="evaluate-label">エンジンを読み込み中</span></button></div></div>
+    </section>
+    <section class="result-section" aria-labelledby="result-heading">
+      <div class="result-heading"><h2 id="result-heading"><span class="step">03</span>認可結果</h2><span class="result-meta" id="result-meta">未実行</span></div>
+      <div class="result-card idle" id="result-card" role="status" aria-live="polite" aria-atomic="true"><div class="result-symbol" id="result-symbol"><svg class="icon"><use href="#i-terminal"/></svg></div><div class="result-body"><div class="result-label" id="result-label">ポリシーテストの準備完了</div><p id="result-description">「評価」をクリックして、このリクエストが許可されるか確認します。</p></div><div class="result-type" id="result-type">ブール値出力</div></div>
+      <details class="result-details" id="result-details" hidden><summary>エンジンレスポンスを確認 <span class="details-hint">JSON</span></summary><pre id="result-json"></pre></details>
+    </section>
+    <details class="quick-reference"><summary><span><svg class="icon"><use href="#i-book"/></svg>SPDL は初めてですか？<span class="reference-teaser">1分クイックリファレンス</span></span><span class="expand-indicator">+</span></summary><div class="reference-grid"><div><h3>ポリシーの作成</h3><code>grant user alice read book</code><p>effect、プリンシパルの種類、プリンシパル、アクション、リソースを使います。各行が一つの文です。<code>deny</code> はアクセスを明示的に拒否します。</p></div><div><h3>条件を追加する</h3><code>grant user alice read book if clearance &gt;= 3</code><p>属性を追加して型を選びます。配列にするには複数の値を使います。試すには条件の例を読み込みます。</p></div><div><h3>結果を読む</h3><p><strong class="allow-text">true</strong> — リクエストは許可されます。<br><strong class="deny-text">false</strong> — アクセスは拒否されるか、適用される許可がありません。<br>入力エラーと実行エラーは false とは別に表示されます。</p><a href="/ja/docs/spdl/" target="_blank" rel="noopener noreferrer">SPDL の完全なドキュメント ↗</a></div></div></details>
+    <p class="sandbox-note"><strong>ブラウザサンドボックス</strong> サービス 1 つ · 文は最大 500 · 入力は合計 256 KiB · 評価の制限時間は 5 秒。<span>外部のカスタム関数とトークンアサーションには対応していません。テスト用のアイデンティティは Subject に入力します。</span></p>
+
+    <p class="engine-credit">Speedle を使用 · Go + WebAssembly · <a href="/playground/ENGINE-NOTICE.txt">エンジンとライセンスの表記</a> · <a href="https://github.com/teramoby/speedle-plus/tree/master/website/playground-engine">ソースとビルド手順</a></p>
+    </div>
+  </main>
+  <footer class="site-footer">
+    <div class="wrap footer-main">
+      <div class="footer-brand">
+        <a class="footer-lockup" href="/ja/" aria-label="Speedle Engine ホーム"><img src="/img/speedle/Speedle_logo_home_bold.svg?v=4" width="304" height="104" alt="Speedle"><span class="footer-divider" aria-hidden="true"></span><span class="footer-product">Engine</span></a>
+        <p class="footer-tagline">オープンソース認可エンジン</p>
+        <nav class="social" aria-label="コミュニティリンク">
+          <a href="mailto:contact@speedle.io" aria-label="Email contact@speedle.io" title="contact@speedle.io"><img src="/img/speedle/28.%20Mail.svg" width="40" height="40" alt=""></a>
+          <a href="https://groups.google.com/forum/#!forum/speedle-users" aria-label="Google Groups" title="Google Groups — speedle-users"><img src="/img/speedle/Google-Groups.svg" width="24" height="24" alt=""></a>
+          <a href="https://github.com/teramoby/speedle-plus" aria-label="GitHub"><img src="/img/speedle/18.%20Github.svg" width="40" height="40" alt=""></a>
+          <a href="https://discord.gg/uaY2xVsbbT" aria-label="Discord"><img src="/img/speedle/Discord.svg" width="64" height="48" alt=""></a>
+        </nav>
+      </div>
+      <nav class="footer-family" aria-label="Speedle プロダクト"><svg class="sphere-sprite" width="0" height="0" aria-hidden="true" focusable="false"><symbol id="i-speedle-sphere" viewBox="22 22 114 114"><!-- Source: img/speedle/Speedle_logo_home_bold.svg, sphere group only. Colours changed only (stroke currentColor). No path edits. --><g fill="none" stroke="currentColor" stroke-linejoin="miter" stroke-miterlimit="3" stroke-linecap="butt"><polygon stroke-width="3.6" points="41.83 47.82 30.67 80.15 42.9 112.09 72.8 128.69 106.38 122.19 127.93 95.63 127.36 61.43 104.94 35.6 71.16 30.23"/><g stroke-width="2.4"><polygon points="81.97 43.92 52.19 57.23 44.03 88.8 63.62 114.87 96.22 115.81 117.28 90.9 110.94 58.91"/><polygon points="68.57 60.42 57.6 86.19 78.73 104.59 102.75 90.18 96.47 62.88"/><path d="M41.83 47.82L52.19 57.23 68.57 60.42 81.97 43.92 71.16 30.23 M30.67 80.15L44.03 88.8 42.9 112.09 M52.19 57.23L57.6 86.19 44.03 88.8 78.73 104.59 63.62 114.87 72.8 128.69 M78.73 104.59L96.22 115.81 106.38 122.19 M96.22 115.81L102.75 90.18 117.28 90.9 127.93 95.63 M117.28 90.9L127.36 61.43 110.94 58.91 104.94 35.6 81.97 43.92 M110.94 58.91L96.47 62.88 117.28 90.9"/></g></g></symbol></svg>
+        <ul>
+          <li><a class="footer-card" href="https://engine.speedle.io/ja/" aria-current="page"><svg class="product-sphere product-engine" aria-hidden="true" focusable="false"><use href="#i-speedle-sphere"/></svg><span class="footer-card-name">Speedle Engine</span><span class="footer-card-description">オープンソース認可エンジン</span><svg class="footer-card-check" width="15" height="15" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M3.5 8.5 6.5 11.5 12.5 4.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></a></li>
+          <li><a class="footer-card" href="https://cloud.speedle.io/ja/"><svg class="product-sphere product-cloud" aria-hidden="true" focusable="false"><use href="#i-speedle-sphere"/></svg><span class="footer-card-name">Speedle Cloud<span class="product-badge">まもなく公開</span></span><span class="footer-card-description">開発者向けホスト型認可サービス</span></a></li>
+          <li><a class="footer-card" href="https://ai.speedle.io/ja/"><svg class="product-sphere product-ai" aria-hidden="true" focusable="false"><use href="#i-speedle-sphere"/></svg><span class="footer-card-name">Speedle AI</span><span class="footer-card-description">AI のためのアクセス制御、アクセス制御のための AI</span></a></li>
+        </ul>
+      </nav>
+    </div>
+    <div class="wrap footer-bar">
+      <p class="footer-legal"><span>Universal Permissive License v1.0 の下でライセンスされています。</span><span class="footer-legal-sep"> · </span><span>Copyright &copy; 2019–2026 The Speedle Authors. All rights reserved.</span></p>
+    </div>
+  </footer>
+  <div id="toast" class="toast" role="status" hidden></div>
+  <noscript><div class="noscript">この Playground には JavaScript と WebAssembly が必要です。</div></noscript>
+  <script src="/js/navigation.js?v=header-20261106-v8" defer></script>
+  <script type="module" src="/playground/app.js?v=result-20261108"></script>
+<!-- Cloudflare Web Analytics --><script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "a7a746c498b940e58425123082a20520"}'></script><!-- End Cloudflare Web Analytics -->
+</body>
+</html>

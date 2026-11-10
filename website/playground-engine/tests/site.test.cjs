@@ -42,9 +42,12 @@ const discordLink = '<a href="https://discord.gg/uaY2xVsbbT" aria-label="Discord
 const originalMailingLink = '<a href="https://groups.google.com/forum/#!forum/speedle-users" aria-label="Mailing list"><img src="/img/speedle/28.%20Mail.svg" alt=""></a>';
 const contactLinks = '<a href="mailto:contact@speedle.io" aria-label="Email contact@speedle.io" title="contact@speedle.io"><img src="/img/speedle/28.%20Mail.svg" alt=""></a>\n        <a href="https://groups.google.com/forum/#!forum/speedle-users" aria-label="Google Groups" title="Google Groups — speedle-users"><img src="/img/speedle/Google-Groups.svg" alt=""></a>';
 const copyright = '<p>Copyright &copy; 2019–2026. All rights reserved.</p>';
-const footerLegal = zh => zh
-  ? '<p class="footer-legal"><span>基于 Universal Permissive License v1.0 授权。</span><span class="footer-legal-sep"> · </span><span>版权所有 &copy; 2019–2026 The Speedle Authors。</span></p>'
-  : '<p class="footer-legal"><span>Licensed under the Universal Permissive License v1.0.</span><span class="footer-legal-sep"> · </span><span>Copyright &copy; 2019–2026 The Speedle Authors. All rights reserved.</span></p>';
+const footerLegal = lang => ({
+  zh: '<p class="footer-legal"><span>基于 Universal Permissive License v1.0 授权。</span><span class="footer-legal-sep"> · </span><span>版权所有 &copy; 2019–2026 The Speedle Authors。</span></p>',
+  ja: '<p class="footer-legal"><span>Universal Permissive License v1.0 の下でライセンスされています。</span><span class="footer-legal-sep"> · </span><span>Copyright &copy; 2019–2026 The Speedle Authors. All rights reserved.</span></p>',
+  ko: '<p class="footer-legal"><span>Universal Permissive License v1.0에 따라 라이선스가 부여됩니다.</span><span class="footer-legal-sep"> · </span><span>Copyright &copy; 2019–2026 The Speedle Authors. All rights reserved.</span></p>',
+  es: '<p class="footer-legal"><span>Con licencia Universal Permissive License v1.0.</span><span class="footer-legal-sep"> · </span><span>Copyright &copy; 2019–2026 The Speedle Authors. Todos los derechos reservados.</span></p>',
+}[lang] || '<p class="footer-legal"><span>Licensed under the Universal Permissive License v1.0.</span><span class="footer-legal-sep"> · </span><span>Copyright &copy; 2019–2026 The Speedle Authors. All rights reserved.</span></p>');
 const originalNavigationScript = original.match(/  <script>[\s\S]*?<\/script>/)[0];
 const sharedNavigationScript = '  <script src="/js/navigation.js?v=header-20261106-v8" defer></script>';
 // #203 three-site lock-up: Speedle mark + wordmark | Engine.
@@ -53,15 +56,18 @@ const originalBrand = original.match(/<a class="brand"[^\n]*?<\/a>/)[0];
 // Header standard v3/v4: Speedle family menu, footer column, sphere favicons (v12: no hero cross-links).
 const productsMenu = /<div class="products">[\s\S]*?<\/div><\/div>\n\s*/;
 const familyFooter = /      <nav class="footer-family"[^>]*>[\s\S]*?<\/ul>\s*<\/nav>\n/;
-const footerLockup = /<a class="footer-lockup" href="\/(?:zh\/)?" aria-label="Speedle Engine (?:home|首页)"><img src="\/img\/speedle\/Speedle_logo_home_bold\.svg\?v=4" width="304" height="104" alt="Speedle"><span class="footer-divider" aria-hidden="true"><\/span><span class="footer-product">Engine<\/span><\/a>/;
+const footerLockup = /<a class="footer-lockup" href="\/(?:(?:ja|ko|es|zh)\/)?" aria-label="(?:Speedle Engine (?:home|首页|ホーム|홈)|Inicio de Speedle Engine)"><img src="\/img\/speedle\/Speedle_logo_home_bold\.svg\?v=4" width="304" height="104" alt="Speedle"><span class="footer-divider" aria-hidden="true"><\/span><span class="footer-product">Engine<\/span><\/a>/;
 const iconLinks = /<link rel="icon" href="(?:https:\/\/speedle\.io)?\/favicon\.svg" type="image\/svg\+xml">\n\s*<link rel="icon" href="(?:https:\/\/speedle\.io)?\/favicon\.ico" sizes="any">\n\s*<link rel="apple-touch-icon" href="(?:https:\/\/speedle\.io)?\/apple-touch-icon\.png">/;
 // #217: links between the three sites keep the reader's language.
-const crossSiteRoots = zh => zh
-  ? ['https://engine.speedle.io/zh/','https://cloud.speedle.io/zh-CN/','https://ai.speedle.io/zh/']
-  : ['https://engine.speedle.io/','https://cloud.speedle.io/','https://ai.speedle.io/'];
-for (const name of ['docs/index.html','docs/zh/index.html','docs/playground/index.html','docs/zh/playground/index.html']) {
+const routeLanguage = route => route.match(/^(?:\/[0-9a-f]{32})?\/(zh|ja|ko|es)\//)?.[1] || 'en';
+const crossSiteRoots = lang => {
+  if (lang === 'zh') return ['https://engine.speedle.io/zh/','https://cloud.speedle.io/zh-CN/','https://ai.speedle.io/zh/'];
+  if (lang === 'ja' || lang === 'ko' || lang === 'es') return [`https://engine.speedle.io/${lang}/`,`https://cloud.speedle.io/${lang}/`,`https://ai.speedle.io/${lang}/`];
+  return ['https://engine.speedle.io/','https://cloud.speedle.io/','https://ai.speedle.io/'];
+};
+for (const name of ['', 'ja/', 'ko/', 'es/', 'zh/'].flatMap(locale => [`docs/${locale}index.html`, `docs/${locale}playground/index.html`])) {
   const html = read(name);
-  const roots = crossSiteRoots(name.includes('/zh/'));
+  const roots = crossSiteRoots(routeLanguage('/' + name.slice('docs/'.length)));
   assert.ok(iconLinks.test(html) && !html.includes('speedle_purple.png'), `Sphere favicons in ${name}`);
   const menu = html.match(productsMenu)?.[0] || '';
   assert.ok(menu.includes('aria-haspopup="true"') && menu.includes('aria-current="page"') && roots.every(url => menu.includes(`href="${url}"`)), `Products menu in ${name}`);
@@ -79,20 +85,21 @@ let chinesePages = 0;
     }
     if (!entry.name.endsWith('.html')) continue;
     const route = '/' + path.relative(path.join(root, 'docs'), file).split(path.sep).join('/');
-    const zh = /^(?:\/[0-9a-f]{32})?\/zh\//.test(route);
+    const lang = routeLanguage(route);
     const html = fs.readFileSync(file, 'utf8');
     if (html.includes('<footer class="site-footer">')) {
-      assert.ok(html.includes(footerLegal(zh)), `Separate license and approved copyright lines in ${route}`);
+      assert.ok(html.includes(footerLegal(lang)), `Separate license and approved copyright lines in ${route}`);
       assert.ok(!html.includes('footer-sep'), `No legal-line joiner in ${route}`);
     }
     const blocks = [html.match(/<div class="products-panel"[\s\S]*?<\/div>/)?.[0], html.match(/<nav class="footer-family"[\s\S]*?<\/nav>/)?.[0]].filter(Boolean);
     if (!blocks.length) continue;
-    if (zh) chinesePages++;
+    if (lang === 'zh') chinesePages++;
+    const familyPrefix = {zh: /^\/(?:zh|zh-CN)\//, ja: /^\/ja\//, ko: /^\/ko\//, es: /^\/es\//}[lang];
     for (const block of blocks) {
       for (const [, href] of block.matchAll(/<a\b[^>]*\bhref="(https:\/\/(?:engine|cloud|ai)\.speedle\.io\/[^"]*)"/g)) {
         const pathname = new URL(href).pathname;
-        if (zh) assert.ok(/^\/(?:zh|zh-CN)\//.test(pathname), `Chinese page ${route} links the English root ${href}`);
-        else assert.ok(!/^\/(?:zh|zh-CN)\//.test(pathname), `English page ${route} links the Chinese root ${href}`);
+        if (familyPrefix) assert.ok(familyPrefix.test(pathname), `${lang} page ${route} keeps its language on ${href}`);
+        else assert.ok(!/^\/(?:zh|zh-CN|ja|ko|es)\//.test(pathname), `English page ${route} links a localized root ${href}`);
       }
     }
   }
@@ -148,7 +155,7 @@ const imageSizing = html => html
   .replace(/<img src="\/img\/speedle\/Tick\.svg" width="22" height="22"/g, '<img src="/img/speedle/Tick.svg"')
   .replace(/(<img class="feature-icon" src="[^"]+") width="\d+" height="\d+"/g, '$1');
 const restoredIdentity = identityTags.reduce((html, pattern) => html.replace(pattern, original.match(pattern)[0]), imageSizing(home).replace(shareImageTags, '').replace(analyticsSnippet, '').replace(iconLinks, original.match(/<link rel="icon"[^>]*>/)[0]).replace(productsMenu, '').replace(/  <footer class="site-footer">[\s\S]*?<\/footer>\n/, originalFooter));
-const restored = restoredIdentity.replace(policyExample,originalPolicyExample).replace(originNote,'').replace(statusBar,'').replace('<a href="/docs/pms/policy-mgmt/">Learn more</a>','<a href="/docs/pms/">Learn more</a>').replace('Bring Your Own Storage','Bring Your Own Store').replace('Works with any identity provider: your application verifies identity and passes users, groups and attributes to Speedle for a decision.','Connect GitHub, Okta or your own identity provider.').replace('Speedle Policy Definition Language.','Secure Policy Definition Language.').replace(contactLinks,originalMailingLink).replace(sharedNavigationScript,originalNavigationScript).replace(copyright,'').replace(discordLink,oldCommunityLink).replace('  <link rel="stylesheet" href="/css/site.css">\n  <link rel="stylesheet" href="/css/navigation.css?v=header-20261106-v8">', `  <style>${originalCss}</style>`).replace('<a href="/playground/">Playground</a>','').replace(`        ${chineseLink}\n`,'').replace(brandLockup,originalBrand).replace(getStartedSection,'').replace(contributeSection,originalContribute).replace('<h1>Fast. Simple. Access control</h1>','<h1>Fast. Simple. Access control.</h1>').replace('Authorization that stays out of your application code','Authorization that stays out of your application code.').replace('Fine-grained control without the friction','Fine-grained control without the friction.').replace('Policies humans can read','Policies humans can read.').replace('Built for the infrastructure you already run','Built for the infrastructure you already run.');
+const restored = restoredIdentity.replace(policyExample,originalPolicyExample).replace(originNote,'').replace(statusBar,'').replace('<a href="/docs/pms/policy-mgmt/">Learn more</a>','<a href="/docs/pms/">Learn more</a>').replace('Bring Your Own Storage','Bring Your Own Store').replace('Works with any identity provider: your application verifies identity and passes users, groups and attributes to Speedle for a decision.','Connect GitHub, Okta or your own identity provider.').replace('Speedle Policy Definition Language.','Secure Policy Definition Language.').replace(contactLinks,originalMailingLink).replace(sharedNavigationScript,originalNavigationScript).replace(copyright,'').replace(discordLink,oldCommunityLink).replace('  <link rel="stylesheet" href="/css/site.css">\n  <link rel="stylesheet" href="/css/navigation.css?v=header-20261106-v8">', `  <style>${originalCss}</style>`).replace(home.match(/        <div class="languages">[\s\S]*?<\/div><\/div>\n/)[0], `        ${chineseLink}\n`).replace('  <link rel="alternate" hreflang="ja" href="https://engine.speedle.io/ja/">\n','').replace('  <link rel="alternate" hreflang="ko" href="https://engine.speedle.io/ko/">\n','').replace('  <link rel="alternate" hreflang="es" href="https://engine.speedle.io/es/">\n','').replace('"inLanguage":["en","zh-CN","ja","ko","es"]','"inLanguage":["en","zh-CN"]').replace('<a href="/playground/">Playground</a>','').replace(`        ${chineseLink}\n`,'').replace(brandLockup,originalBrand).replace(getStartedSection,'').replace(contributeSection,originalContribute).replace('<h1>Fast. Simple. Access control</h1>','<h1>Fast. Simple. Access control.</h1>').replace('Authorization that stays out of your application code','Authorization that stays out of your application code.').replace('Fine-grained control without the friction','Fine-grained control without the friction.').replace('Policies humans can read','Policies humans can read.').replace('Built for the infrastructure you already run','Built for the infrastructure you already run.');
 // #236: the owner removed the home-page Integrations section; integrations live in the docs only.
 // #237: the Cloud Native card now points at the architecture page.
 const originalWithoutIntegrations = original
@@ -178,8 +185,10 @@ for (const [name, description, keywords] of [
 }
 assert.ok(home.includes(brandLockup), 'Homepage shows the Speedle | Engine lock-up (#203)');
 for (const name of ['docs/zh/index.html','docs/playground/index.html','docs/zh/playground/index.html']) assert.ok(read(name).includes('<span class="brand-divider" aria-hidden="true"></span><span class="brand-product">Engine</span></a>'), `Lock-up in ${name}`);
-assert.ok(home.includes(chineseLink), 'English homepage exposes the Chinese homepage');
-assert.ok(page.includes(playgroundChineseLink), 'Playground switches to its Chinese counterpart');
+assert.deepEqual([...home.matchAll(/<a class="language-row"[^>]*>([^<]+)/g)].map(match => match[1]), ['English', '日本語', '한국어', 'Español', '中文'], 'Homepage language menu puts Chinese last');
+assert.ok(home.includes('<a class="language-row" href="/zh/" lang="zh-CN" hreflang="zh-CN">中文</a>'), 'English homepage exposes the Chinese homepage');
+assert.ok(page.includes('<a class="language-row" href="/zh/playground/" lang="zh-CN" hreflang="zh-CN">中文</a>'), 'Playground switches to its Chinese counterpart');
+assert.deepEqual([...page.matchAll(/<a class="language-row"[^>]*>([^<]+)/g)].map(match => match[1]), ['English', '日本語', '한국어', 'Español', '中文'], 'Playground language menu puts Chinese last');
 assert.ok(read('docs/zh/index.html').includes('href="/" lang="en" hreflang="en"'), 'Chinese homepage links back to English');
 assert.ok(home.includes('<a href="/playground/">Playground</a>'));
 assert.ok(read('docs/zh/index.html').includes('<a href="/zh/playground/">策略实验室</a>'));
@@ -193,9 +202,8 @@ function compareSource(relative) {
   else assert.deepEqual(fs.readFileSync(path.join(source,entry.name)), fs.readFileSync(path.join(published,entry.name)), `Source/published bytes: ${name}`);
  }
 }
-compareSource('playground');
-compareSource('zh/playground');
-for (const name of ['index.html','zh/index.html']) {
+for (const relative of ['playground', 'zh/playground', 'ja/playground', 'ko/playground', 'es/playground']) compareSource(relative);
+for (const name of ['index.html','zh/index.html','ja/index.html','ko/index.html','es/index.html']) {
  assert.equal(read('docs/hugo/static/'+name), read('docs/'+name), `Authoritative homepage ${name}`);
 }
 for (const name of ['css/site.css','css/navigation.css','css/docs.css','js/navigation.js','js/docs.js','img/speedle/Discord.svg','img/speedle/Discord-color.svg','img/speedle/Google-Groups.svg','img/speedle/Google-Groups-NOTICE.txt','img/speedle/Material-Icons-LICENSE.txt']) {
@@ -206,11 +214,14 @@ assert.ok(page.includes('<link rel="stylesheet" href="/css/site.css">'));
 assert.equal(page.match(/  <footer class="site-footer">[\s\S]*?<\/footer>/)[0],home.match(/  <footer class="site-footer">[\s\S]*?<\/footer>/)[0], 'Official footer is reused unchanged');
 assert.ok(page.includes('href="https://engine.speedle.io/playground/"'));
 assert.equal(read('docs/CNAME').trim(),'engine.speedle.io');
-assert.ok(read('docs/sitemap.xml').includes('https://engine.speedle.io/en/sitemap.xml'));
-assert.ok(read('docs/sitemap.xml').includes('https://engine.speedle.io/zh/sitemap.xml'));
+for (const locale of ['en', 'ja', 'ko', 'es', 'zh']) {
+  assert.ok(read('docs/sitemap.xml').includes(`https://engine.speedle.io/${locale}/sitemap.xml`), `Sitemap index lists ${locale}`);
+}
 assert.ok(read('docs/en/sitemap.xml').includes('https://engine.speedle.io/playground/'));
-assert.ok(read('docs/zh/sitemap.xml').includes('https://engine.speedle.io/zh/playground/'));
-assert.ok(!/[\u4e00-\u9fff]/.test(page.replace(playgroundChineseLink,'')),'English page has no untranslated labels except the Chinese language switch');
+for (const locale of ['ja', 'ko', 'es', 'zh']) {
+  assert.ok(read(`docs/${locale}/sitemap.xml`).includes(`https://engine.speedle.io/${locale}/playground/`), `Playground in the ${locale} sitemap`);
+}
+assert.ok(!/[\u4e00-\u9fff]/.test(page.replace(page.match(/<div class="languages">[\s\S]*?<\/div><\/div>/)[0],'')),'English page has no untranslated labels except the language switch');
 for(const source of [page,home]) {
  for(const [,url] of source.matchAll(/(?:src|href)="([^"]+)"/g)) {
   if(/^(?:https?:|mailto:|data:|#)/.test(url))continue;
@@ -241,8 +252,8 @@ function checkDocsHeadings(directory) {
   else if (entry.name === 'index.html') assertNoTrailingFullStop(file);
  }
 }
-for (const name of ['docs/index.html', 'docs/zh/index.html']) assertNoTrailingFullStop(path.join(root, name));
-for (const name of ['docs/docs', 'docs/zh/docs']) checkDocsHeadings(path.join(root, name));
+for (const name of ['docs/index.html', 'docs/ja/index.html', 'docs/ko/index.html', 'docs/es/index.html', 'docs/zh/index.html']) assertNoTrailingFullStop(path.join(root, name));
+for (const name of ['docs/docs', 'docs/ja/docs', 'docs/ko/docs', 'docs/es/docs', 'docs/zh/docs']) checkDocsHeadings(path.join(root, name));
 // #243: every local stylesheet, script and image in the published tree must
 // resolve to a file, so a regeneration cannot leave pages pointing at deleted
 // assets. The archived snapshot at /172c4fea…/ is self-contained; it is checked
@@ -387,7 +398,13 @@ assert.ok(!fs.existsSync(path.join(docsRoot, 'public/speedle/docs/img/favicon.ic
 const titleOf = html => html.match(/<title>([\s\S]*?)<\/title>/)?.[1];
 const contentOf = (html, pattern) => html.match(pattern)?.[1];
 let identityPages = 0;
-const homes = {'/': 'Speedle Engine — Fast. Simple. Access control', '/zh/': 'Speedle Engine — 快速、简单的权限控制'};
+const homes = {
+  '/': 'Speedle Engine — Fast. Simple. Access control',
+  '/ja/': 'Speedle Engine — 高速・シンプルなアクセス制御',
+  '/ko/': 'Speedle Engine — 빠르고 간단한 접근 제어',
+  '/es/': 'Speedle Engine — Control de acceso rápido y sencillo',
+  '/zh/': 'Speedle Engine — 快速、简单的权限控制',
+};
 (function checkPageIdentity(directory) {
  for (const entry of fs.readdirSync(directory, {withFileTypes: true})) {
   const file = path.join(directory, entry.name);
@@ -399,8 +416,10 @@ const homes = {'/': 'Speedle Engine — Fast. Simple. Access control', '/zh/': '
   const route = '/' + path.relative(docsRoot, file).split(path.sep).join('/').replace(/index\.html$/, '');
   if (/^\/[0-9a-f]{32}\//.test(route)) continue; // the 2017 archive keeps its own metadata
   const html = fs.readFileSync(file, 'utf8');
-  const zh = route === '/zh/' || route.startsWith('/zh/');
-  assert.ok(html.includes(`<html lang="${zh ? 'zh-CN' : 'en'}">`), `One lang value per language: ${route}`);
+  const lang = route.match(/^\/(ja|ko|es|zh)(?=\/)/)?.[1] || 'en';
+  const htmlLang = lang === 'zh' ? 'zh-CN' : lang;
+  const zh = lang === 'zh';
+  assert.ok(html.includes(`<html lang="${htmlLang}">`), `One lang value per language: ${route}`);
   if (/http-equiv="refresh"/i.test(html)) continue;
   identityPages++;
   const title = titleOf(html);
@@ -420,10 +439,15 @@ const homes = {'/': 'Speedle Engine — Fast. Simple. Access control', '/zh/': '
   assert.ok(canonical, `Canonical in ${route}`);
   assert.equal(contentOf(html, /<meta property="og:url" content="([^"]+)">/), canonical, `og:url follows canonical in ${route}`);
   const target = new URL(canonical);
-  const enPath = zh ? (target.pathname.replace(/^\/zh/, '') || '/') : target.pathname;
-  const zhPath = zh ? target.pathname : '/zh' + (target.pathname === '/' ? '/' : target.pathname);
-  for (const [language, href] of [['en', target.origin + enPath], ['zh-CN', target.origin + zhPath], ['x-default', target.origin + enPath]]) {
-   assert.ok(html.includes(`<link rel="alternate" hreflang="${language}" href="${href}">`), `hreflang ${language} in ${route}`);
+  const rest = target.pathname.replace(/^\/(?:ja|ko|es|zh)(?=\/)/, '') || '/';
+  const localizedPath = code => {
+    if (code === 'en') return rest;
+    const prefix = code === 'zh-CN' ? '/zh' : `/${code}`;
+    return rest === '/' ? `${prefix}/` : `${prefix}${rest}`;
+  };
+  for (const language of ['en', 'ja', 'ko', 'es', 'zh-CN', 'x-default']) {
+    const href = target.origin + localizedPath(language === 'x-default' ? 'en' : language);
+    assert.ok(html.includes(`<link rel="alternate" hreflang="${language}" href="${href}">`), `hreflang ${language} in ${route}`);
   }
   const image = `https://engine.speedle.io/img/social/engine-${zh ? 'zh' : 'en'}.png`;
   for (const tag of [`<meta property="og:image" content="${image}">`, `<meta name="twitter:image" content="${image}">`,
@@ -463,10 +487,10 @@ for (const name of ['docs/integrations/index.html','docs/zh/integrations/index.h
  assert.ok(!html.includes('property="article:published_time"') && !html.includes('property="article:modified_time"'), `No article timestamps on list page ${name}`);
 }
 let structuredDocs = 0;
-function checkDocsStructuredData(directory, zh) {
+function checkDocsStructuredData(directory, lang) {
  for (const entry of fs.readdirSync(directory, {withFileTypes: true})) {
   const file = path.join(directory, entry.name);
-  if (entry.isDirectory()) { checkDocsStructuredData(file, zh); continue; }
+  if (entry.isDirectory()) { checkDocsStructuredData(file, lang); continue; }
   if (entry.name !== 'index.html') continue;
   const html = fs.readFileSync(file, 'utf8');
   if (/http-equiv="refresh"/i.test(html)) continue;
@@ -475,20 +499,23 @@ function checkDocsStructuredData(directory, zh) {
   assert.ok(canonical && blocks.length >= 2, `Docs canonical and JSON-LD in ${path.relative(docsRoot, file)}`);
   const nodes = blocks.flatMap(block => block['@graph'] || [block]);
   const article = nodes.find(node => node['@type'] === 'TechArticle' || node['@type'] === 'WebPage');
-  assert.ok(article && article.inLanguage === (zh ? 'zh-CN' : 'en'), `Article node and language in ${canonical}`);
+  const inLanguage = lang === 'zh' ? 'zh-CN' : lang;
+  const homeName = {en: 'Home', zh: '首页', ja: 'ホーム', ko: '홈', es: 'Inicio'}[lang];
+  assert.ok(article && article.inLanguage === inLanguage, `Article node and language in ${canonical}`);
   assert.ok(article['@id'].endsWith(article['@type'] === 'TechArticle' ? '#article' : '#webpage'), `Article id in ${canonical}`);
-  assert.ok(article.image === `https://engine.speedle.io/img/social/engine-${zh ? 'zh' : 'en'}.png` && article.author?.name === 'Speedle', `Article image and author in ${canonical}`);
+  assert.ok(article.image === `https://engine.speedle.io/img/social/engine-${lang === 'zh' ? 'zh' : 'en'}.png` && article.author?.name === 'Speedle', `Article image and author in ${canonical}`);
   assert.ok(article.dateModified && article.publisher?.logo?.width === 180, `Article modification date and publisher logo in ${canonical}`);
   if (article.datePublished) assert.ok(Date.parse(article.datePublished) <= Date.parse(article.dateModified), `datePublished is not after dateModified in ${canonical}`);
   const breadcrumb = nodes.find(node => node['@type'] === 'BreadcrumbList');
   assert.ok(breadcrumb && breadcrumb.itemListElement.length >= 2, `BreadcrumbList in ${canonical}`);
-  assert.equal(breadcrumb.itemListElement[0].name, zh ? '首页' : 'Home', `Breadcrumb starts at the home page in ${canonical}`);
+  assert.equal(breadcrumb.itemListElement[0].name, homeName, `Breadcrumb starts at the home page in ${canonical}`);
   assert.deepEqual(breadcrumb.itemListElement.map(item => item.position), breadcrumb.itemListElement.map((_, index) => index + 1), `Breadcrumb positions in ${canonical}`);
   assert.equal(breadcrumb.itemListElement.at(-1).item, canonical, `Breadcrumb ends at the page in ${canonical}`);
   structuredDocs++;
  }
 }
-checkDocsStructuredData(path.join(docsRoot, 'docs'), false);
-checkDocsStructuredData(path.join(docsRoot, 'zh/docs'), true);
+for (const lang of ['en', 'ja', 'ko', 'es', 'zh']) {
+ checkDocsStructuredData(path.join(docsRoot, lang === 'en' ? 'docs' : `${lang}/docs`), lang);
+}
 assert.ok(structuredDocs > 60, `Docs pages with structured data: ${structuredDocs}`);
 console.log(`PASS static site integration: original CSS/homepage, official footer, navigation, URLs/assets, canonical, English labels, no private hosting or persistent request storage, ${assetRefs} local assets in ${assetPages} published pages, WCAG AA home-page palette, ${identityPages} pages with one title pattern and lang, ${structuredDocs} docs pages with structured data`);

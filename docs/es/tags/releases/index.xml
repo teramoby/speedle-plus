@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Releases on Speedle</title>
+    <link>https://engine.speedle.io/es/tags/releases/</link>
+    <description>Recent content in Releases on Speedle</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>es-es</language>
+    
+	<atom:link href="https://engine.speedle.io/es/tags/releases/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>Versiones</title>
+      <link>https://engine.speedle.io/es/docs/versions/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/es/docs/versions/</guid>
+      <description>Versiones de Speedle Consulte la página de GitHub Releases para ver las versiones publicadas y las notas de la versión.
+Versión histórica de Oracle Speedle La versión 0.1.0 fue el lanzamiento original de código abierto, que incluía gestión de políticas, decisiones de autorización, la herramienta de línea de comandos y muestras de integración.</description>
+    </item>
+    
+  </channel>
+</rss>

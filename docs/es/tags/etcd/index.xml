@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Etcd on Speedle</title>
+    <link>https://engine.speedle.io/es/tags/etcd/</link>
+    <description>Recent content in Etcd on Speedle</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>es-es</language>
+    
+	<atom:link href="https://engine.speedle.io/es/tags/etcd/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>Configuración de etcd</title>
+      <link>https://engine.speedle.io/es/docs/store/etcd/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/es/docs/store/etcd/</guid>
+      <description>Esta guía paso a paso utiliza un servidor etcd v3.6.14 externo con un volumen persistente de Docker. PMS escribe políticas y ADS observa el mismo prefijo de clave. Este ejemplo de nodo único escucha en la interfaz de bucle invertido (loopback) y utiliza HTTP en texto plano para desarrollo local. La configuración de clúster y TLS para producción se explica más adelante.
+1. Compilar Speedle Prepare Bash, Git, curl, Docker y Go 1.</description>
+    </item>
+    
+  </channel>
+</rss>

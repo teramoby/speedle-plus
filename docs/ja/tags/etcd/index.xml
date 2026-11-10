@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Etcd on Speedle</title>
+    <link>https://engine.speedle.io/ja/tags/etcd/</link>
+    <description>Recent content in Etcd on Speedle</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>ja-jp</language>
+    
+	<atom:link href="https://engine.speedle.io/ja/tags/etcd/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>etcd セットアップ</title>
+      <link>https://engine.speedle.io/ja/docs/store/etcd/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/ja/docs/store/etcd/</guid>
+      <description>このウォークスルーでは、永続的な Docker ボリュームを備えた外部の etcd v3.6.14 サーバーを使用します。PMS はポリシーを書き込み、ADS は同じキープレフィックスを監視（watch）します。シングルノードのサンプルはローカル開発用にループバックでリッスンし、平文の HTTP を使用します。本番環境の TLS とクラスター構成はウォークスルーの後に説明します。
+1. Speedle のビルド Bash、Git、curl、Docker、および Go 1.26.10 または Go 1.27.3 を準備します。Docker を起動し、ネイティブサービスをビルドします:
+git clone --depth 1 https://github.com/teramoby/speedle-plus.git cd speedle-plus mkdir -p bin go build -o ./bin/ ./cmd/spctl ./cmd/speedle-pms ./cmd/speedle-ads 後続のコマンドはこのチェックアウトから実行します。ローカルポート 2379、6733、6734 を利用可能にしておくか、コマンドと構成を同時に更新してください。
+2. 外部 etcd サーバーの起動 名前付きボリュームが etcd のデータを保持します。ホストにはクライアントポートのみが公開され、ピアポートはこのシングルノードコンテナ内に留まります。
+docker run --name speedle-etcd --detach \  --publish 127.0.0.1:2379:2379 \  --volume speedle-etcd-data:/etcd-data \  gcr.io/etcd-development/etcd:v3.6.14 \  /usr/local/bin/etcd \  --name speedle-local \  --data-dir /etcd-data \  --listen-client-urls http://0.</description>
+    </item>
+    
+  </channel>
+</rss>

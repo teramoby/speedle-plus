@@ -4,8 +4,8 @@
 {{ define "main" }}
 
 <div id="hero" class="wrap">
-  <h1>{{ if eq .Lang "zh" }}Speedle 工程博客{{ else }}{{.Site.Params.author }} Engineering{{ end }}</h1>
-    <p>{{ if eq .Lang "zh" }}项目动态、技术文章和团队随笔。{{ else }}Our vision, news and ideas, and whatever feels important.{{ end }}<br></p>
+  <h1>{{ if eq .Lang "zh" }}Speedle 工程博客{{ else if eq .Lang "ja" }}Speedle エンジニアリングブログ{{ else if eq .Lang "ko" }}Speedle 엔지니어링 블로그{{ else if eq .Lang "es" }}Blog de ingeniería de Speedle{{ else }}{{.Site.Params.author }} Engineering{{ end }}</h1>
+    <p>{{ if eq .Lang "zh" }}项目动态、技术文章和团队随笔。{{ else if eq .Lang "ja" }}プロジェクト動向、技術記事、チームエッセイ。{{ else if eq .Lang "ko" }}프로젝트 소식, 기술 기사 및 팀 에세이.{{ else if eq .Lang "es" }}Novedades del proyecto, artículos técnicos y ensayos del equipo.{{ else }}Our vision, news and ideas, and whatever feels important.{{ end }}<br></p>
 </div>
 <ul id="posts">
 

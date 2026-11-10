@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Pluggable on Speedle</title>
+    <link>https://engine.speedle.io/ja/tags/pluggable/</link>
+    <description>Recent content in Pluggable on Speedle</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>ja-jp</language>
+    <lastBuildDate>Sat, 31 Oct 2026 22:36:36 +0800</lastBuildDate>
+    
+	<atom:link href="https://engine.speedle.io/ja/tags/pluggable/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>トークンアサーション API</title>
+      <link>https://engine.speedle.io/ja/docs/api/asserter_api/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/ja/docs/api/asserter_api/</guid>
+      <description>トークンアサーション Webhook リファレンス。errCode は整数、attributes はオブジェクトです。実際のエンドポイントは ADS アサーター構成で指定されます。
+セキュリティとエンドポイント構成。本文はインターフェース仕様を説明するものであり、speedle.io はホスト型バックエンドを提供しません。
+              document.addEventListener(&#39;DOMContentLoaded&#39;, function() { var url = &#34;\/swagger\/asserter.yaml&#34;; const ui = SwaggerUIBundle({ url: url, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.presets.apis ], plugins: [ SwaggerUIBundle.plugins.DownloadUrl ], validatorUrl: null, layout: &#34;BaseLayout&#34; }) window.ui = ui });  </description>
+    </item>
+    
+    <item>
+      <title>プラグイン可能なストレージ</title>
+      <link>https://engine.speedle.io/ja/docs/store/</link>
+      <pubDate>Sat, 31 Oct 2026 22:36:36 +0800</pubDate>
+      
+      <guid>https://engine.speedle.io/ja/docs/store/</guid>
+      <description>組み込みストアと拡張コントラクト スタンドアロンバイナリは、pkg/store 配下にファイル、etcd、MongoDB、MySQL の実装を登録します。利用可能であることは同じ運用上の保証を意味するわけではありません。デプロイにあたっては、バックエンドの認証、永続化、トランザクション、および watch の動作を個別に確認してください。以下の設定例はプロパティ名を示すためのものであり、etcd/MongoDB デプロイの実行はこのローカルサンプルの対象外です。
+完全なバックエンドは pms.PolicyStoreManager を実装します（サービス、認可ポリシー、ロールポリシー、関数の管理、スナップショット読み取り、watch/stop）。ADS はより限定的な読み取り/watch インターフェースである PolicyStoreManagerADS を受け入れます。新しいバックエンドを実装する際は、過去のドキュメントの不完全なメソッドリストをコピーするのではなく、実際のインターフェースを確認してください。
+ステップバイステップのデプロイガイド: MySQL セットアップ、etcd セットアップ、MongoDB セットアップ。
+
+ストア障害とキャッシュされた認可 ファイル、etcd、MySQL、MongoDB は同じ ADS 障害ポリシーを使用します。デフォルトの storeFailureGracePeriod は &amp;quot;0s&amp;quot; です。ストアの障害が検出されると、認可は allowed:false と評価エラーを返します。ADS は実行を継続し、再試行を続けます。接続が読み取り可能になっただけでは認可は復元されず、完全なスナップショットの再読み込みが成功する必要があります。watch が有効な場合、失敗したサブスクリプションをまず再確立する必要があります。watch が壊れている間のデータ読み取り成功は、障害/猶予期間の期限をリセットしません。ファイルが削除された場合も、ADS を終了させるのではなく再試行されます。
+権限失効の遅延を明示的に許容するデプロイでは、ADS JSON 設定のトップレベルで有限の期間（例: &amp;quot;storeFailureGracePeriod&amp;quot;: &amp;quot;5s&amp;quot;）を設定できます。同等のフラグは --store-failure-grace-period=5s、環境変数は SPDL_STORE_FAILURE_GRACE_PERIOD です。通常の「フラグ → 環境変数 → 設定ファイル → デフォルト値」の優先順位が適用されます。障害が繰り返されても期限は延長されません。猶予期間内の決定は最後の完全なスナップショットを使用するため、同期が回復するまで失効は有効になりません。部分的なキャッシュ障害や評価パニックに猶予期間が適用されることはありません。
+組み込みストアには軽量なヘルスプローブがあり、1 秒のプローブタイムアウトで約 1 秒に 1 回チェックされます。watch はより早く障害を報告する場合があります。実行中のストア読み取りにもそれぞれのバックエンドタイムアウトがあります。障害検出と通常のポリシー伝播は非同期であり、即座の失効保証はありません。enableWatch:false の場合でも、リクエストはストアのヘルスをチェックします。通常のポリシー更新には明示的なリフレッシュが必要です。障害発生後のリカバリでは、そのモードであっても完全なスナップショットが読み込まれます。初期読み込みの失敗には猶予期間を使用できません。カスタムストアは pms.StoreHealthChecker を実装し、pms.STORE_UNAVAILABLE イベントを発行して同じ障害ポリシーに参加できます。
+ファイルストアの PMS 書き込みは、完全にシリアル化され同期された一時ファイルを公開し、同じディレクトリ内でアトミックなリネームを行います。したがって、独立した ADS リーダーは常に完全な古いスナップショットまたは新しいスナップショットを参照します。ライターには親ディレクトリへの書き込みアクセス権が必要です。既存のパーミッションビットおよび構成されたシンボリックリンクは保持されます。置換ファイルはライターアカウントによって作成されるため、PMS/ADS で別個のユーザーを使用する場合は、ディレクトリのグループ/ACL 継承を設定してください。コンテナはポリシーディレクトリを共有し、置換が両方のサービスから見えるようにする必要があります。直接新規作成されたポリシーファイルはパーミッション 0600 を使用します。通常のファイルストアビルダーは、以前と同様に見つからないストアを初期化します。</description>
+    </item>
+    
+  </channel>
+</rss>

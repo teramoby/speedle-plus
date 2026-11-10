@@ -24,7 +24,10 @@ def page(key, draft=False):
 
 class GeneratorGuards(unittest.TestCase):
     def full_pages(self):
-        return {"en": {key: page(key) for key in GENERATOR["FULL_PAGES"]}, "zh": {}}
+        return {
+            lang: {key: page(key) for key in GENERATOR["FULL_PAGES"]} if lang == "en" else {}
+            for lang in ("en", "zh", "ja", "ko", "es")
+        }
 
     def test_draft_page_in_full_pages_is_rejected(self):
         pages = self.full_pages()

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Security on Speedle</title>
+    <link>https://engine.speedle.io/ko/tags/security/</link>
+    <description>Recent content in Security on Speedle</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>ko-kr</language>
+    
+	<atom:link href="https://engine.speedle.io/ko/tags/security/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>보안</title>
+      <link>https://engine.speedle.io/ko/docs/security/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/ko/docs/security/</guid>
+      <description>두 API 전송 계층 모두 보호 독립적으로 작동하는 PMS와 ADS는 REST와 gRPC를 노출합니다. 현재 두 서비스 모두 동일한 --insecure, --cert, --key, --client-cert 및 --force-client-cert 전송 설정을 사용합니다. 인증서나 신뢰 설정이 유효하지 않은 경우 시작 시 실패합니다. 보안 모드가 일반 텍스트로 폴백되지 않습니다.
+TLS는 연결을 암호화하고 서버를 인증합니다. 인증된 클라이언트를 요구하려면 --client-cert로 클라이언트 CA를 제공하고 반드시 --force-client-cert=true를 설정해야 합니다. 해당 플래그가 없는 경우 구성된 CA는 클라이언트가 인증서를 제공한 경우에만 클라이언트 인증서를 검증합니다.</description>
+    </item>
+    
+  </channel>
+</rss>

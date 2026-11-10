@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Token Asserter on Speedle</title>
+    <link>https://engine.speedle.io/ko/tags/token-asserter/</link>
+    <description>Recent content in Token Asserter on Speedle</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>ko-kr</language>
+    <lastBuildDate>Mon, 21 Jan 2019 09:28:30 +0800</lastBuildDate>
+    
+	<atom:link href="https://engine.speedle.io/ko/tags/token-asserter/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>토큰 어서터</title>
+      <link>https://engine.speedle.io/ko/docs/assertor/</link>
+      <pubDate>Mon, 21 Jan 2019 09:28:30 +0800</pubDate>
+      
+      <guid>https://engine.speedle.io/ko/docs/assertor/</guid>
+      <description>토큰 어서터의 역할 구성된 어서터는 토큰을 검증하고 신원 도메인을 포함한 명시적 주체를 반환합니다. Speedle은 해당 신원을 사용하여 정책을 평가합니다. 프로덕션 구현에서는 토큰 서명 또는 인트로스펙션 결과, 발급자, 대상, 유효 기간 및 공급자별 요구 사항을 검증해야 합니다. 웹훅 인터페이스의 존재 자체가 임의의 OAuth/OIDC 토큰과의 자동 호환성을 의미하지는 않습니다.
+토큰 어서션 API의 errCode는 정수형이며, 선택적 속성은 객체이며 유형화된 속성 배열이 아닙니다. asserterWebhookConfig.endpoint는 전체 URL입니다. 아래 예제에서는 /v1/assert를 사용합니다.
+결정론적 로컬 목(Mock) 실행 이 목은 githubtoken/github, googletoken/google, gitlabtoken/gitlab의 3개 입력 조합만 인식하며, 각각 해당 도메인의 user1을 나타냅니다.</description>
+    </item>
+    
+  </channel>
+</rss>

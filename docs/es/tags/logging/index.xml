@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Logging on Speedle</title>
+    <link>https://engine.speedle.io/es/tags/logging/</link>
+    <description>Recent content in Logging on Speedle</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>es-es</language>
+    
+	<atom:link href="https://engine.speedle.io/es/tags/logging/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>Marco de registro</title>
+      <link>https://engine.speedle.io/es/docs/logging/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/es/docs/logging/</guid>
+      <description>Descripción general Se utilizan los siguientes dos proyectos de código abierto para procesar mensajes de registro:
+1. https://github.com/sirupsen/logrus 2. https://github.com/natefinch/lumberjack Logrus es un registrador estructurado para Go (golang), totalmente compatible a nivel de API con el registrador de la biblioteca estándar de Go. Tenga en cuenta que logrus no admite la rotación de registros, y esa es exactamente la razón por la que incorporamos el segundo proyecto, lumberjack, que proporciona un registrador con rotación continua.</description>
+    </item>
+    
+  </channel>
+</rss>

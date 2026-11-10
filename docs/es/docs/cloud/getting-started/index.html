@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <script>document.documentElement.classList.add('docs-js','navigation-js');addEventListener('DOMContentLoaded',function(){if(!document.querySelector('header.site-header.navigation-ready'))document.documentElement.classList.remove('navigation-js')});</script>
+    <meta name="generator" content="Hugo 0.48" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1"><title>Primeros pasos con Speedle Cloud · Speedle Engine</title>
+<meta name="description" content="Prepárese para Speedle Cloud: inicio de sesión y gestión de cuentas, administración de servicios y políticas SPDL, solicitudes de API de sesión y pruebas en el Playground.">
+<meta name="generator" content="Hugo 0.48" />
+<link href="https://engine.speedle.io/index.xml" rel="alternate" type="application/rss+xml">
+<link rel="canonical" href="https://engine.speedle.io/es/docs/cloud/getting-started/">
+
+<link rel="alternate" hreflang="en" href="https://engine.speedle.io/docs/cloud/getting-started/">
+<link rel="alternate" hreflang="es" href="https://engine.speedle.io/es/docs/cloud/getting-started/">
+<link rel="alternate" hreflang="ja" href="https://engine.speedle.io/ja/docs/cloud/getting-started/">
+<link rel="alternate" hreflang="ko" href="https://engine.speedle.io/ko/docs/cloud/getting-started/">
+<link rel="alternate" hreflang="zh-CN" href="https://engine.speedle.io/zh/docs/cloud/getting-started/">
+<link rel="alternate" hreflang="x-default" href="https://engine.speedle.io/docs/cloud/getting-started/">
+<meta property="og:type" content="article">
+<meta property="article:modified_time" content="2026-11-08T21:11:24&#43;08:00">
+<meta property="og:site_name" content="Speedle Engine">
+<meta property="og:title" content="Primeros pasos con Speedle Cloud · Speedle Engine">
+<meta property="og:description" content="Prepárese para Speedle Cloud: inicio de sesión y gestión de cuentas, administración de servicios y políticas SPDL, solicitudes de API de sesión y pruebas en el Playground.">
+<meta property="og:url" content="https://engine.speedle.io/es/docs/cloud/getting-started/">
+<meta property="og:image" content="https://engine.speedle.io/img/social/engine-en.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:alt" content="Speedle Engine — Fast. Simple. Access control">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Primeros pasos con Speedle Cloud · Speedle Engine">
+<meta name="twitter:description" content="Prepárese para Speedle Cloud: inicio de sesión y gestión de cuentas, administración de servicios y políticas SPDL, solicitudes de API de sesión y pruebas en el Playground.">
+<meta name="twitter:image" content="https://engine.speedle.io/img/social/engine-en.png">
+<meta name="twitter:image:alt" content="Speedle Engine — Fast. Simple. Access control">
+
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/es/docs/cloud/getting-started/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-08T21:11:24+08:00","description":"Prepárese para Speedle Cloud: inicio de sesión y gestión de cuentas, administración de servicios y políticas SPDL, solicitudes de API de sesión y pruebas en el Playground.","headline":"Primeros pasos con Speedle Cloud","image":"https://engine.speedle.io/img/social/engine-en.png","inLanguage":"es","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/es/docs/cloud/getting-started/","@type":"WebPage"},"name":"Primeros pasos con Speedle Cloud","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/es/docs/cloud/getting-started/"}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/es/docs/cloud/getting-started/#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://engine.speedle.io/es/","name":"Inicio","position":1},{"@type":"ListItem","item":"https://engine.speedle.io/es/docs/","name":"Documentación","position":2},{"@type":"ListItem","item":"https://engine.speedle.io/es/docs/cloud/","name":"Speedle Cloud","position":3},{"@type":"ListItem","item":"https://engine.speedle.io/es/docs/cloud/getting-started/","name":"Primeros pasos con Speedle Cloud","position":4}]}</script><link href="/css/docs.css" rel="stylesheet" type="text/css">
+
+
+    <link href="/css/navigation.css?v=header-20261106-v8" rel="stylesheet">
+    <script src="/js/navigation.js?v=header-20261106-v8" defer></script>
+    <script src="/js/docs.js" defer></script>
+
+</head>
+
+<body class="page-kube docs-page">
+    <header class="site-header">
+    <div class="wrap nav">
+      <a class="brand" href="/es/#top" aria-label="Inicio de Speedle Engine"><img class="brand-logo" src="/img/speedle/Speedle_logo_home_bold.svg?v=4" width="304" height="104" alt=""><span class="brand-divider" aria-hidden="true"></span><span class="brand-product">Engine</span></a>
+      <button class="menu" type="button" aria-expanded="false" aria-controls="nav-links" aria-label="Abrir navegación">☰</button>
+      <nav class="nav-links" id="nav-links" aria-label="Navegación principal">
+        <div class="products"><button class="products-button" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="products-panel">Productos<svg class="products-chevron" width="10" height="10" viewBox="0 0 10 10" aria-hidden="true" focusable="false"><path d="M2 3.5 5 6.5 8 3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button><span class="products-heading" aria-hidden="true">Productos</span><div class="products-panel" id="products-panel" role="group" aria-label="Productos"><a class="product-row" href="https://engine.speedle.io/es/" aria-current="page"><img class="product-mark" src="/img/speedle/speedle-mark-engine.svg" alt="" width="20" height="20"><span class="product-text"><span class="product-name">Speedle Engine</span><span class="product-desc">Motor de autorización de código abierto</span></span><svg class="product-check" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M3.5 8.5 6.5 11.5 12.5 4.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></a><a class="product-row" href="https://cloud.speedle.io/es/"><img class="product-mark" src="/img/speedle/speedle-mark-cloud.svg" alt="" width="20" height="20"><span class="product-text"><span class="product-name">Speedle Cloud <span class="product-badge">Próximamente</span></span><span class="product-desc">Autorización hospedada para desarrolladores</span></span></a><a class="product-row" href="https://ai.speedle.io/es/"><img class="product-mark" src="/img/speedle/speedle-mark-ai.svg" alt="" width="20" height="20"><span class="product-text"><span class="product-name">Speedle AI</span><span class="product-desc">IA para control de acceso, control de acceso para IA</span></span></a></div></div>
+        <a href="/es/#about">Acerca de</a><a href="/es/#features">Características</a>
+        <a href="/es/quick-start/">Comenzar</a><a href="/es/docs/">Documentación</a><a href="/es/playground/">Playground</a>
+        <div class="languages"><button class="languages-button" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="languages-panel">Español<svg class="languages-chevron" width="10" height="10" viewBox="0 0 10 10" aria-hidden="true" focusable="false"><path d="M2 3.5 5 6.5 8 3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button><span class="languages-heading" aria-hidden="true">Idiomas</span><div class="languages-panel" id="languages-panel" role="group" aria-label="Idiomas"><a class="language-row" href="/docs/cloud/getting-started/" lang="en" hreflang="en" >English</a><a class="language-row" href="/ja/docs/cloud/getting-started/" lang="ja" hreflang="ja">日本語</a><a class="language-row" href="/ko/docs/cloud/getting-started/" lang="ko" hreflang="ko">한국어</a><a class="language-row" href="/es/docs/cloud/getting-started/" lang="es" hreflang="es" aria-current="page">Español</a><a class="language-row" href="/zh/docs/cloud/getting-started/" lang="zh-CN" hreflang="zh-CN">中文</a></div></div>
+        <a class="nav-github" href="https://github.com/teramoby/speedle-plus">GitHub</a>
+      </nav>
+    </div>
+  </header>
+    <div class="container">
+        <button class="docs-nav-toggle" type="button" aria-expanded="false" aria-controls="docs-navigation">
+            <span>Menú</span>
+            <svg class="docs-nav-toggle-icon" viewBox="0 0 18 14" width="18" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M1 1h16M1 7h16M1 13h16"/></svg>
+        </button>
+        <div class="content-container"><aside class="docs-sidebar" id="docs-navigation" aria-label="Navegación de documentación">
+<div class="docs-nav-head">
+<span class="docs-nav-title">Documentación</span>
+<button class="docs-nav-close" type="button" aria-label="Cerrar menú"><svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="m3 3 10 10M13 3 3 13"/></svg></button>
+</div>
+<div class="sidebar">
+<nav>
+<ul>
+
+
+
+
+
+<li data-docs-depth="-1" class="docs-nav-section parent"><span class="docs-nav-heading">Documentación</span>
+<ul class="sub-menu">
+<li data-docs-depth="0" class=""><a href="/es/docs/usecases/">Casos de uso</a></li>
+<li data-docs-depth="0" class=""><a href="/es/docs/overview/">Descripción general</a></li>
+<li data-docs-depth="0" class=""><a href="/es/docs/spdl/">SPDL: Lenguaje de definición de políticas Speedle</a></li>
+<li data-docs-depth="0" class=""><a href="/es/docs/architecture/">Arquitectura</a></li>
+
+
+
+<li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading">Políticas de Speedle</span>
+<ul class="">
+<li data-docs-depth="1" class=""><a href="/es/docs/pms/policy-mgmt/">Gestión de políticas</a></li>
+<li data-docs-depth="1" class=""><a href="/es/docs/pms/global-policy/">Políticas globales</a></li>
+<li data-docs-depth="1" class=""><a href="/es/docs/pms/diagnosis/">Diagnóstico de autorización</a></li>
+<li data-docs-depth="1" class=""><a href="/es/docs/pms/discover/">Descubrimiento de políticas</a></li>
+</ul>
+
+</li>
+<li data-docs-depth="0" class=""><a href="/es/docs/decisions/">Decisiones de autorización</a></li>
+<li data-docs-depth="0" class=""><a href="/es/docs/idd/">Dominio de identidad</a></li>
+<li data-docs-depth="0" class=""><a href="/es/docs/assertor/">Asertor de tokens</a></li>
+
+
+
+<li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading docs-nav-heading-link"><a href="/es/docs/store/">Almacenamiento conectable</a></span>
+<ul class="">
+<li data-docs-depth="1" class=""><a href="/es/docs/store/mysql/">Configuración de MySQL</a></li>
+<li data-docs-depth="1" class=""><a href="/es/docs/store/etcd/">Configuración de etcd</a></li>
+<li data-docs-depth="1" class=""><a href="/es/docs/store/mongodb/">Configuración de MongoDB</a></li>
+</ul>
+
+</li>
+
+
+
+<li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading">API</span>
+<ul class="">
+<li data-docs-depth="1" class=""><a href="/es/docs/api/decision_api/">API de decisiones de autorización</a></li>
+<li data-docs-depth="1" class=""><a href="/es/docs/api/management_api/">API de gestión de políticas</a></li>
+<li data-docs-depth="1" class=""><a href="/es/docs/api/asserter_api/">API del complemento de aserción de tokens</a></li>
+</ul>
+
+</li>
+
+
+
+<li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading docs-nav-heading-link"><a href="/es/docs/deployment/">Despliegue</a></span>
+<ul class="">
+<li data-docs-depth="1" class=""><a href="/es/docs/deployment/embedded/">Modo integrado de Speedle</a></li>
+<li data-docs-depth="1" class=""><a href="/es/docs/deployment/docker/">Imagen de Docker</a></li>
+<li data-docs-depth="1" class=""><a href="/es/docs/deployment/homebrew/">Instalación con Homebrew</a></li>
+</ul>
+
+</li>
+
+
+
+<li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading docs-nav-heading-link"><a href="/es/docs/sdks/">SDK</a></span>
+<ul class="">
+<li data-docs-depth="1" class=""><a href="/es/docs/sdks/java/">Java SDK</a></li>
+<li data-docs-depth="1" class=""><a href="/es/docs/sdks/python/">Python SDK</a></li>
+<li data-docs-depth="1" class=""><a href="/es/docs/sdks/go/">Go SDK</a></li>
+<li data-docs-depth="1" class=""><a href="/es/docs/sdks/dotnet/">C#/.NET SDK</a></li>
+<li data-docs-depth="1" class=""><a href="/es/docs/sdks/rust/">Rust SDK</a></li>
+<li data-docs-depth="1" class=""><a href="/es/docs/sdks/node/">Node.js/TypeScript SDK</a></li>
+</ul>
+
+</li>
+
+
+
+<li data-docs-depth="0" class="docs-nav-section parent"><span class="docs-nav-heading docs-nav-heading-link"><a href="/es/docs/cloud/">Speedle Cloud</a></span>
+<ul class="sub-menu">
+<li data-docs-depth="1" class="active"><a href="/es/docs/cloud/getting-started/" aria-current="page">Primeros pasos</a></li>
+<li data-docs-depth="1" class=""><a href="/es/docs/cloud/tokens/">Tokens de aplicación</a></li>
+<li data-docs-depth="1" class=""><a href="/es/docs/cloud/authorization-api/">API de autorización</a></li>
+<li data-docs-depth="1" class=""><a href="/es/docs/cloud/limits-and-errors/">Límites y errores</a></li>
+</ul>
+
+</li>
+<li data-docs-depth="0" class=""><a href="/es/docs/security/">Seguridad</a></li>
+<li data-docs-depth="0" class=""><a href="/es/docs/logging/">Marco de registro</a></li>
+<li data-docs-depth="0" class=""><a href="/es/docs/versions/">Versiones</a></li>
+<li data-docs-depth="0" class=""><a href="/es/docs/custom-function/">Función personalizada</a></li>
+</ul>
+
+</li>
+</ul>
+</nav>
+
+
+</div>
+</aside>
+<main>
+<div id="main">
+
+  <h1>Primeros pasos con Speedle Cloud</h1>
+  <p class="docs-lead">El flujo publicado de la consola de Speedle Cloud, desde el inicio de sesión y configuración de la cuenta hasta las políticas guardadas y decisiones en el Playground.</p>
+
+
+
+
+<nav id="contents" class="docs-toc" data-docs-toc="h2" aria-label="En esta página">
+  <ol></ol>
+</nav>
+
+
+
+  <div id="kube-component" class="content">
+
+<p><strong>Speedle Cloud estará disponible próximamente.</strong> El inicio de sesión para producción aún no está habilitado en cloud.speedle.io y el encabezado de Cloud muestra <strong>Próximamente</strong>. Cuando el inicio de sesión esté cerrado, la página de inicio de sesión indicará que abrirá pronto. Esta guía describe el flujo de trabajo publicado y no una consola de producción abierta actualmente; las capturas de pantalla se agregarán tras la apertura del inicio de sesión en producción.</p>
+
+<h2 id="origen-de-producción">Origen de producción</h2>
+
+<p>Utilice <code>https://cloud.speedle.io</code> para sesiones de cuenta, solicitudes de gestión y tokens de aplicación. Las cuentas, recursos y tokens pertenecen a ese origen. Los ejemplos de esta sección son ilustrativos y no se ejecutaron en un entorno real. Confirme que su entorno seleccionado esté desplegado y que el proveedor de identidad que planea utilizar se encuentre disponible allí.</p>
+
+<h2 id="iniciar-sesión-con-github-o-google-próximamente">Iniciar sesión con GitHub o Google (próximamente)</h2>
+
+<p>La página de inicio de sesión muestra <strong>Iniciar sesión con GitHub</strong> e <strong>Iniciar sesión con Google</strong> incluso mientras el inicio de sesión esté deshabilitado. Cuando el inicio de sesión en producción esté abierto, elija un proveedor disponible. Una nueva identidad cuya dirección de correo electrónico verificada no esté en uso requiere una confirmación explícita de <strong>Crear cuenta</strong>. Si la dirección de correo electrónico ya está en uso, inicie sesión con el proveedor vinculado identificado por la consola y luego conecte la segunda identidad en <strong>Configuración de la cuenta</strong>. Las cuentas no se combinan automáticamente.</p>
+
+<p>La configuración de la cuenta le permite inspeccionar las identidades conectadas y conectar o desconectar un proveedor disponible; mantenga al menos una identidad conectada. <strong>Cerrar sesión</strong> se encuentra en el encabezado junto al selector de idiomas, y el menú de Cuenta ofrece <strong>Cerrar sesión en todas partes</strong>. Un cierre de sesión exitoso regresa a la página de inicio de sesión y limpia el espacio de trabajo y cualquier visualización única de token. El registro de auditoría muestra la actividad de la cuenta.</p>
+
+<p>Eliminar una cuenta requiere autenticación reciente del proveedor y escribir <code>DELETE</code>. Elimina de forma permanente los servicios, políticas, tokens e identidades de la cuenta, y finaliza sus sesiones. Exporte las políticas necesarias desde el espacio de trabajo del Servicio antes de la eliminación.</p>
+
+<h2 id="crear-un-servicio-y-una-política">Crear un servicio y una política</h2>
+
+<p>Para una cuenta nueva, abra el <a href="https://cloud.speedle.io/es/service">espacio de trabajo del Servicio</a>, introduzca <code>books</code> como el nombre del servicio y seleccione <strong>Crear servicio</strong>. Cada cuenta dispone de un servicio. Si la cuenta ya cuenta con un servicio o políticas, inspecciónelos y utilice una configuración existente adecuada; no sobrescriba ni elimine datos existentes para hacer funcionar este ejemplo.</p>
+
+<p>Seleccione <strong>Nueva política</strong>, introduzca <code>read-books</code> como el nombre de la política y pegue esta política de autorización en el editor SPDL:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">grant user alice from corp get /books</code></pre></div>
+<p><code>from corp</code> mantiene esta concesión dentro del dominio de identidad <code>corp</code>. Reemplace <code>corp</code> por el dominio que su aplicación derive a partir de datos de autenticación de confianza, y envíe el mismo valor como el <code>idd</code> de la entidad principal en cada solicitud, tal como hacen los ejemplos del Playground a continuación. Una concesión sin <code>from</code> coincide con un usuario llamado <code>alice</code> en todos los dominios; omita la cláusula únicamente para un servicio con una sola fuente de identidades, donde los nombres no puedan colisionar entre dominios. Consulte <a href="/es/docs/idd/">dominio de identidad</a> para conocer la regla y el campo correspondiente en la solicitud.</p>
+
+<p>Seleccione <strong>Validar política</strong> y compruebe que la consola informe <strong>Detectado: política de autorización</strong>, luego seleccione <strong>Guardar política</strong>. La validación detecta el tipo de política y comprueba la sintaxis; no guarda el borrador. Guardar es una acción manual e independiente. También puede importar políticas existentes en el espacio de trabajo en lugar de ingresarlas una por una.</p>
+
+<p>Speedle Cloud admite políticas de autorización y políticas de roles; no se admiten funciones externas personalizadas. La lista de políticas agrupa ambos tipos y muestra sus recuentos. Las asignaciones de roles utilizan estos formatos:</p>
+
+<ul>
+<li>Rol global: <code>grant user alice editor</code></li>
+<li>Rol con alcance de recurso: <code>grant user alice editor on /books</code></li>
+</ul>
+
+<p>La declaración ambigua <code>grant user alice role editor</code> se rechaza. Omita el prefijo opcional <code>role</code> para una asignación de rol, o escriba <code>grant (user alice) role editor</code> para una política de autorización. La edición conserva el tipo de política almacenado. Para modificar el tipo, elimine la política y cree una nueva.</p>
+
+<p>Si la consola informa un conflicto o una respuesta incierta, conserve su borrador y actualice los datos guardados antes de realizar otra mutación. Cambiar de idioma conserva los borradores. Los menús integrados de Monaco mantienen el idioma seleccionado cuando el editor se cargó por primera vez y cambian después de recargar la página.</p>
+
+<p>Eliminar un servicio requiere escribir el nombre del servicio, completar una autenticación reciente con el proveedor y confirmar nuevamente tras la verificación.</p>
+
+<h2 id="enviar-solicitudes-de-gestión-de-sesión">Enviar solicitudes de gestión de sesión</h2>
+
+<p>El Servicio de Gestión de Políticas (PMS) utiliza la sesión de la cuenta. Permita que un cliente compatible del mismo origen gestione su cookie de sesión segura; no extraiga cookies ni utilice inicializaciones con proveedores de prueba. Las solicitudes de mutación requieren el <code>Origin</code> exacto del entorno, <code>X-SC-CSRF: 1</code> y un tipo de contenido JSON. Un token Bearer de ADS no puede autorizar operaciones en PMS. Los clientes no deben enviar selectores de propiedad de cuenta o servicio, ni marcas de tiempo de autenticación.</p>
+
+<p>Las solicitudes equivalentes para el ejemplo de servicio y política son:</p>
+
+<table>
+<thead>
+<tr>
+<th>Acción</th>
+<th>Solicitud de sesión</th>
+<th>Éxito</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td>Crear el servicio de la cuenta</td>
+<td><code>POST /api/service</code> con <code>{&quot;name&quot;:&quot;books&quot;}</code></td>
+<td>201</td>
+</tr>
+
+<tr>
+<td>Añadir una política de autorización</td>
+<td><code>POST /api/service/policies</code> con el cuerpo a continuación</td>
+<td>201</td>
+</tr>
+</tbody>
+</table>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">{<span style="color:#ff79c6">&#34;name&#34;</span>:<span style="color:#f1fa8c">&#34;read-books&#34;</span>,<span style="color:#ff79c6">&#34;spdl&#34;</span>:<span style="color:#f1fa8c">&#34;grant user alice from corp get /books&#34;</span>}</code></pre></div>
+<p>Pegue únicamente el valor <code>spdl</code> en el editor cuando use la consola. El cuerpo JSON corresponde a la API de gestión.</p>
+
+<h2 id="validar-y-exportar-políticas">Validar y exportar políticas</h2>
+
+<p>Valide SPDL con <code>POST /api/service/validate</code> y un cuerpo <code>{spdl}</code> para detectar su tipo. El formato heredado <code>{kind: &quot;authz&quot;, spdl}</code> continúa seleccionando el analizador de autorización. <strong>Descargar SPDL</strong> y <strong>Descargar JSON</strong> invocan <code>GET /api/service/export?format=spdl</code> y <code>GET /api/service/export?format=json</code>, respectivamente.</p>
+
+<p>El Playground de sesión evalúa los datos D1 actuales que pertenecen a la cuenta. El futuro lanzamiento de ADS autenticado evaluará instantáneas de políticas publicadas, cuya propagación tarda aproximadamente 60 segundos. Por tanto, un resultado exitoso en el Playground no demuestra que todas las ubicaciones de ADS hayan recibido la nueva instantánea.</p>
+
+<h2 id="probar-políticas-guardadas-en-el-playground">Probar políticas guardadas en el Playground</h2>
+
+<p>En el espacio de trabajo del Servicio, desplácese hasta <strong>Playground</strong> y seleccione <strong>Is allowed</strong>. Introduzca <code>[{&quot;type&quot;:&quot;user&quot;,&quot;name&quot;:&quot;alice&quot;,&quot;idd&quot;:&quot;corp&quot;}]</code> en <strong>Entidades principales (JSON)</strong>, <code>/books</code> en <strong>Recurso</strong>, <code>get</code> en <strong>Acción</strong> y <code>[]</code> en <strong>Atributos (JSON)</strong>, luego seleccione <strong>Ejecutar prueba</strong>.</p>
+
+<p>Las demás operaciones son <strong>Diagnosticar</strong>, <strong>Todos los roles concedidos</strong> y <strong>Todos los permisos concedidos</strong>. Las ejecuciones del Playground utilizan las políticas guardadas, no un borrador no guardado del editor. Modificar los datos de entrada, la operación o el idioma no envía automáticamente una solicitud. Ejecute la prueba nuevamente después de cambiar las entradas o las políticas guardadas. La consola marca el resultado anterior como obsoleto y lo mantiene visible si una solicitud posterior falla.</p>
+
+<h2 id="utilizar-la-api-del-playground-de-sesión">Utilizar la API del Playground de sesión</h2>
+
+<p><code>POST /api/service/test</code> implementa las cuatro operaciones con las mismas reglas de Origin/CSRF y la misma cuota diaria de cuenta que otras solicitudes de gestión. Lee una instantánea consistente de las políticas D1 de la cuenta actual. No publica ni guarda políticas y no acepta un ID de cuenta o de servicio. La revisión mostrada es la revisión del espacio de trabajo conocida cuando se envió la solicitud, no una prueba de la revisión de la instantánea del lado del servidor que se evaluó.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-http" data-lang="http">POST /api/service/test
+Origin: https://cloud.speedle.io
+X-SC-CSRF: 1
+Content-Type: application/json
+
+{&#34;op&#34;:&#34;isAllowed&#34;,&#34;request&#34;:{&#34;subject&#34;:{&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;,&#34;name&#34;:&#34;alice&#34;,&#34;idd&#34;:&#34;corp&#34;}]},&#34;serviceName&#34;:&#34;books&#34;,&#34;resource&#34;:&#34;/books&#34;,&#34;action&#34;:&#34;get&#34;,&#34;attributes&#34;:[{&#34;name&#34;:&#34;level&#34;,&#34;type&#34;:&#34;numeric&#34;,&#34;value&#34;:3}]}}</code></pre></div>
+<table>
+<thead>
+<tr>
+<th><code>request.op</code></th>
+<th>Cuerpo exitoso</th>
+<th>Contrato publicado de la consola y la API de sesión</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td><code>isAllowed</code></td>
+<td>Speedle IsAllowedResponse: <code>allowed</code>, <code>reason</code>, <code>errorMessage</code> opcional</td>
+<td>Incluido</td>
+</tr>
+
+<tr>
+<td><code>diagnose</code></td>
+<td>Speedle EvaluationDebugResponse: nombre de razón, <code>requestContext</code>, <code>attributes</code>, <code>policies</code></td>
+<td>Incluido</td>
+</tr>
+
+<tr>
+<td><code>allGrantedRoles</code></td>
+<td><code>string[]</code>; <code>[]</code> cuando no hay ninguno</td>
+<td>Incluido</td>
+</tr>
+
+<tr>
+<td><code>allGrantedPermissions</code></td>
+<td><code>{resource, actions}[]</code>; <code>[]</code> cuando no hay ninguno</td>
+<td>Incluido</td>
+</tr>
+</tbody>
+</table>
+
+<p>Los cuerpos de respuesta exitosos son los valores sin procesar de upstream, sin una envoltura de <code>op</code> o <code>result</code>. Ambos resultados de concesiones totales pueden ser <code>null</code> o una matriz vacía; ninguna de las dos formas concede autorización. ADS no dispone de un endpoint público de Diagnose.</p>
+
+<p>A continuación, lea sobre <a href="/es/docs/cloud/tokens/">tokens de aplicación</a>, la <a href="/es/docs/cloud/authorization-api/">vista previa de la API de autorización</a> y <a href="/es/docs/cloud/limits-and-errors/">límites y errores</a>.</p>
+</div>
+</div>
+</main>
+        </div>
+    </div>
+    <div class="docs-nav-backdrop" hidden></div>
+    <footer class="site-footer">
+    <div class="wrap footer-main">
+      <div class="footer-brand">
+        <a class="footer-lockup" href="/es/" aria-label="Inicio de Speedle Engine"><img src="/img/speedle/Speedle_logo_home_bold.svg?v=4" width="304" height="104" alt="Speedle"><span class="footer-divider" aria-hidden="true"></span><span class="footer-product">Engine</span></a>
+        <p class="footer-tagline">Motor de autorización de código abierto</p>
+        <nav class="social" aria-label="Enlaces comunitarios">
+          <a href="mailto:contact@speedle.io" aria-label="Email contact@speedle.io" title="contact@speedle.io"><img src="/img/speedle/28.%20Mail.svg" width="40" height="40" alt=""></a>
+          <a href="https://groups.google.com/forum/#!forum/speedle-users" aria-label="Google Groups" title="Google Groups — speedle-users"><img src="/img/speedle/Google-Groups.svg" width="24" height="24" alt=""></a>
+          <a href="https://github.com/teramoby/speedle-plus" aria-label="GitHub"><img src="/img/speedle/18.%20Github.svg" width="40" height="40" alt=""></a>
+          <a href="https://discord.gg/uaY2xVsbbT" aria-label="Discord"><img src="/img/speedle/Discord.svg" width="64" height="48" alt=""></a>
+        </nav>
+      </div>
+      <nav class="footer-family" aria-label="Productos de Speedle"><svg class="sphere-sprite" width="0" height="0" aria-hidden="true" focusable="false"><symbol id="i-speedle-sphere" viewBox="22 22 114 114"><!-- Source: img/speedle/Speedle_logo_home_bold.svg, sphere group only. Colours changed only (stroke currentColor). No path edits. --><g fill="none" stroke="currentColor" stroke-linejoin="miter" stroke-miterlimit="3" stroke-linecap="butt"><polygon stroke-width="3.6" points="41.83 47.82 30.67 80.15 42.9 112.09 72.8 128.69 106.38 122.19 127.93 95.63 127.36 61.43 104.94 35.6 71.16 30.23"/><g stroke-width="2.4"><polygon points="81.97 43.92 52.19 57.23 44.03 88.8 63.62 114.87 96.22 115.81 117.28 90.9 110.94 58.91"/><polygon points="68.57 60.42 57.6 86.19 78.73 104.59 102.75 90.18 96.47 62.88"/><path d="M41.83 47.82L52.19 57.23 68.57 60.42 81.97 43.92 71.16 30.23 M30.67 80.15L44.03 88.8 42.9 112.09 M52.19 57.23L57.6 86.19 44.03 88.8 78.73 104.59 63.62 114.87 72.8 128.69 M78.73 104.59L96.22 115.81 106.38 122.19 M96.22 115.81L102.75 90.18 117.28 90.9 127.93 95.63 M117.28 90.9L127.36 61.43 110.94 58.91 104.94 35.6 81.97 43.92 M110.94 58.91L96.47 62.88 117.28 90.9"/></g></g></symbol></svg>
+        <ul>
+          <li><a class="footer-card" href="https://engine.speedle.io/es/" aria-current="page"><svg class="product-sphere product-engine" aria-hidden="true" focusable="false"><use href="#i-speedle-sphere"/></svg><span class="footer-card-name">Speedle Engine</span><span class="footer-card-description">Motor de autorización de código abierto</span><svg class="footer-card-check" width="15" height="15" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M3.5 8.5 6.5 11.5 12.5 4.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></a></li>
+          <li><a class="footer-card" href="https://cloud.speedle.io/es/"><svg class="product-sphere product-cloud" aria-hidden="true" focusable="false"><use href="#i-speedle-sphere"/></svg><span class="footer-card-name">Speedle Cloud<span class="product-badge">Próximamente</span></span><span class="footer-card-description">Autorización hospedada para desarrolladores</span></a></li>
+          <li><a class="footer-card" href="https://ai.speedle.io/es/"><svg class="product-sphere product-ai" aria-hidden="true" focusable="false"><use href="#i-speedle-sphere"/></svg><span class="footer-card-name">Speedle AI</span><span class="footer-card-description">IA para control de acceso, control de acceso para IA</span></a></li>
+        </ul>
+      </nav>
+    </div>
+    <div class="wrap footer-bar">
+      <p class="footer-legal"><span>Con licencia Universal Permissive License v1.0.</span><span class="footer-legal-sep"> · </span><span>Copyright &copy; 2019–2026 The Speedle Authors. Todos los derechos reservados.</span></p>
+    </div>
+  </footer>
+<!-- Cloudflare Web Analytics --><script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "a7a746c498b940e58425123082a20520"}'></script><!-- End Cloudflare Web Analytics -->
+</body>
+
+</html>

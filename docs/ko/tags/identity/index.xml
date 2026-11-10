@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Identity on Speedle</title>
+    <link>https://engine.speedle.io/ko/tags/identity/</link>
+    <description>Recent content in Identity on Speedle</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>ko-kr</language>
+    <lastBuildDate>Mon, 21 Jan 2019 09:28:30 +0800</lastBuildDate>
+    
+	<atom:link href="https://engine.speedle.io/ko/tags/identity/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>Speedle 개요: 세분화된 접근 제어를 위한 인가 엔진</title>
+      <link>https://engine.speedle.io/ko/docs/overview/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/ko/docs/overview/</guid>
+      <description>Speedle은 오픈 소스 인가 엔진입니다. 애플리케이션으로부터 &amp;ldquo;이 사용자가 이 리소스에 대해 이 작업을 수행할 수 있는가?&amp;ldquo;라는 질의를 수신하고 중앙에서 관리되는 정책에 따라 허용(Allow) 또는 거부(Deny)를 반환합니다. 이 페이지에서는 일반적인 인가 용어와 이를 구현하는 Speedle 구성 요소를 연결하고 각각의 상세 가이드 링크를 제공합니다.
+아래 예제에서는 library라는 이름의 서비스를 사용합니다. 각 정책은 정책 관리 서비스(PMS)의 REST API를 통해 생성되었으며, 각 결정은 인가 결정 서비스(ADS)의 REST API에서 반환되었습니다. 이유 코드는 인가 결정에 나열되어 있습니다.</description>
+    </item>
+    
+    <item>
+      <title>ID 도메인</title>
+      <link>https://engine.speedle.io/ko/docs/idd/</link>
+      <pubDate>Thu, 17 Jan 2019 13:20:07 +0800</pubDate>
+      
+      <guid>https://engine.speedle.io/ko/docs/idd/</guid>
+      <description>ID 도메인이란 무엇인가 ID 도메인(idd)은 주체의 명시적인 네임스페이스입니다. 동일한 이름을 가진 두 명의 user1이 서로 다른 도메인에 속할 수 있습니다. 도메인 문자열은 신뢰할 수 있는 통합 코드 또는 구성된 토큰 어서터에 의해 제공됩니다. 이것 자체가 인증의 증거는 아닙니다. Speedle은 도메인 이름만으로 공급자의 테넌트 모델을 추론하거나 검증하지 않습니다.
+정책과 요청에서의 도메인 표현 grant user user1 from github read book grant user user1 from IDCS.tenant01 read book 주체 이름 바로 뒤에 from &amp;lt;identity-domain&amp;gt;을 사용합니다.</description>
+    </item>
+    
+    <item>
+      <title>토큰 어서터</title>
+      <link>https://engine.speedle.io/ko/docs/assertor/</link>
+      <pubDate>Mon, 21 Jan 2019 09:28:30 +0800</pubDate>
+      
+      <guid>https://engine.speedle.io/ko/docs/assertor/</guid>
+      <description>토큰 어서터의 역할 구성된 어서터는 토큰을 검증하고 신원 도메인을 포함한 명시적 주체를 반환합니다. Speedle은 해당 신원을 사용하여 정책을 평가합니다. 프로덕션 구현에서는 토큰 서명 또는 인트로스펙션 결과, 발급자, 대상, 유효 기간 및 공급자별 요구 사항을 검증해야 합니다. 웹훅 인터페이스의 존재 자체가 임의의 OAuth/OIDC 토큰과의 자동 호환성을 의미하지는 않습니다.
+토큰 어서션 API의 errCode는 정수형이며, 선택적 속성은 객체이며 유형화된 속성 배열이 아닙니다. asserterWebhookConfig.endpoint는 전체 URL입니다. 아래 예제에서는 /v1/assert를 사용합니다.
+결정론적 로컬 목(Mock) 실행 이 목은 githubtoken/github, googletoken/google, gitlabtoken/gitlab의 3개 입력 조합만 인식하며, 각각 해당 도메인의 user1을 나타냅니다.</description>
+    </item>
+    
+  </channel>
+</rss>

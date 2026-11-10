@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Asserter on Speedle</title>
+    <link>https://engine.speedle.io/ko/tags/asserter/</link>
+    <description>Recent content in Asserter on Speedle</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>ko-kr</language>
+    
+	<atom:link href="https://engine.speedle.io/ko/tags/asserter/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>토큰 어설션 API</title>
+      <link>https://engine.speedle.io/ko/docs/api/asserter_api/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/ko/docs/api/asserter_api/</guid>
+      <description>토큰 어설션 웹훅 참조 사양입니다. errCode는 정수이고 attributes는 객체입니다. 실제 엔드포인트는 ADS 어서터 구성에 지정됩니다.
+보안 및 엔드포인트 구성. 이 문서는 인터페이스 사양을 설명하며 speedle.io는 호스팅형 백엔드를 제공하지 않습니다.
+              document.addEventListener(&#39;DOMContentLoaded&#39;, function() { var url = &#34;\/swagger\/asserter.yaml&#34;; const ui = SwaggerUIBundle({ url: url, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.presets.apis ], plugins: [ SwaggerUIBundle.plugins.DownloadUrl ], validatorUrl: null, layout: &#34;</description>
+    </item>
+    
+  </channel>
+</rss>

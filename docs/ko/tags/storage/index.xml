@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Storage on Speedle</title>
+    <link>https://engine.speedle.io/ko/tags/storage/</link>
+    <description>Recent content in Storage on Speedle</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>ko-kr</language>
+    <lastBuildDate>Sat, 31 Oct 2026 22:36:36 +0800</lastBuildDate>
+    
+	<atom:link href="https://engine.speedle.io/ko/tags/storage/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>MongoDB 설정 가이드</title>
+      <link>https://engine.speedle.io/ko/docs/store/mongodb/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/ko/docs/store/mongodb/</guid>
+      <description>이 가이드에서는 영구 Docker 볼륨을 사용하는 단일 노드 복제본 세트로서 MongoDB 7.0.16을 사용합니다. PMS는 정책을 작성하고 ADS는 변경 스트림(change stream)을 통해 동일한 데이터베이스를 추적합니다. 로컬 예제에서는 개발 환경을 위해 인증 없이 루프백 주소에서 수신 대기합니다. 프로덕션 환경의 인증, TLS 및 복제본 세트 구성은 가이드 후반부에서 설명합니다.
+MongoDB는 복제본 세트 또는 샤딩된 클러스터로 실행해야 합니다. ADS는 변경 스트림으로 데이터베이스를 감시하고 전체 정책 저장소 교체는 트랜잭션 내에서 실행됩니다. 독립 실행형 mongod는 두 기능 모두 지원하지 않습니다.</description>
+    </item>
+    
+    <item>
+      <title>MySQL 설정 가이드</title>
+      <link>https://engine.speedle.io/ko/docs/store/mysql/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/ko/docs/store/mysql/</guid>
+      <description>이 가이드에서는 MySQL 8.4 LTS와 두 개의 네이티브 Speedle 프로세스를 사용합니다. PMS는 정책을 작성하고 ADS는 별도의 읽기 전용 계정으로 동일한 데이터베이스를 읽습니다. 로컬 예제에서는 Docker와 루프백 주소의 일반 텍스트 HTTP를 사용합니다. 원격 배포의 경우 기존 MySQL 서버와 보안 가이드를 참조하십시오.
+1. MySQL 백엔드를 포함한 Speedle 빌드 Git, Bash, curl, Docker 및 지원되는 Go 툴체인(Go 1.26.10 또는 Go 1.27.3)을 설치합니다. Docker가 실행 중이어야 합니다. 두 바이너리에 모두 mysql 저장소가 포함되도록 최신 소스에서 빌드합니다.</description>
+    </item>
+    
+    <item>
+      <title>etcd 설정 가이드</title>
+      <link>https://engine.speedle.io/ko/docs/store/etcd/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/ko/docs/store/etcd/</guid>
+      <description>이 가이드에서는 영구 Docker 볼륨을 사용하는 외부 etcd v3.6.14 서버를 사용합니다. PMS는 정책을 작성하고 ADS는 동일한 키 접두사를 감시(watch)합니다. 단일 노드 예제는 로컬 개발을 위해 루프백 주소에서 수신 대기하고 일반 텍스트 HTTP를 사용합니다. 프로덕션 환경의 TLS 및 클러스터 구성은 가이드 후반부에서 설명합니다.
+1. Speedle 빌드 Bash, Git, curl, Docker, 그리고 Go 1.26.10 또는 Go 1.27.3을 준비합니다. Docker를 시작하고 네이티브 서비스를 빌드합니다:
+git clone --depth 1 https://github.com/teramoby/speedle-plus.git cd speedle-plus mkdir -p bin go build -o .</description>
+    </item>
+    
+    <item>
+      <title>플러그형 저장소</title>
+      <link>https://engine.speedle.io/ko/docs/store/</link>
+      <pubDate>Sat, 31 Oct 2026 22:36:36 +0800</pubDate>
+      
+      <guid>https://engine.speedle.io/ko/docs/store/</guid>
+      <description>기본 내장 저장소와 확장 계약 독립 실행형 바이너리는 pkg/store 아래에 파일, etcd, MongoDB, MySQL 구현을 등록합니다. 사용 가능하다고 해서 동일한 운영상의 보장을 의미하는 것은 아닙니다. 배포하기 전에 백엔드의 인증, 영속성, 트랜잭션 및 감시(watch) 동작을 개별적으로 검토하십시오. 아래 구성 예제는 속성 이름을 설명하기 위한 것이며, 로컬 예제에서 etcd/MongoDB 클러스터를 실행하는 것은 범위에 포함되지 않습니다.
+완전한 백엔드는 pms.PolicyStoreManager를 구현합니다(서비스, 인가 정책, 역할 정책, 함수 관리 및 스냅샷 읽기와 watch/stop). ADS는 더 제한적인 읽기/감시 인터페이스인 PolicyStoreManagerADS를 수락합니다.</description>
+    </item>
+    
+  </channel>
+</rss>

@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Core on Speedle</title>
+    <link>https://engine.speedle.io/ja/tags/core/</link>
+    <description>Recent content in Core on Speedle</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>ja-jp</language>
+    <lastBuildDate>Tue, 10 Nov 2026 14:45:43 +0800</lastBuildDate>
+    
+	<atom:link href="https://engine.speedle.io/ja/tags/core/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>API</title>
+      <link>https://engine.speedle.io/ja/docs/api/</link>
+      <pubDate>Tue, 10 Nov 2026 14:45:43 +0800</pubDate>
+      
+      <guid>https://engine.speedle.io/ja/docs/api/</guid>
+      <description>Java、Python、Go、.NET、Rust、Node.js/TypeScript 向けのクライアントライブラリは SDK にあります。
+REST API これらは 構成された PMS/ADS またはアサーターエンドポイント の参照仕様です。speedle.io はドキュメントとブラウザ Playground を配信しており、ホスト型の PMS/ADS サービスではありません。Content-Type: application/json で JSON を提供し、TLS/mTLS とアクセス制御 を構成してください。
+ ポリシー管理 API 認可決定 API トークンアサーション Webhook  ポリシーおよびロールポリシーの ID は文字列です。PMS のレスポンスはフラットなオブジェクトであり、認可権限には permissions（複数形）を使用します。REST の決定リクエストは型付き属性配列を使用しますが、診断レスポンス属性および Webhook 属性はオブジェクトです。
+gRPC API  PMS proto: pb.PolicyManager ADS proto: pb.Evaluator  現在の proto と生成されたクライアントを一緒に使用してください。PMS は pb.PolicyManager を使用し、ADS は pb.Evaluator を使用します。gRPC はサーバーが --grpc-endpoint で起動されない限り無効であり、REST と同じ TLS 設定を使用します。
+組み込み Go API  ポリシー管理インターフェース 認可決定インターフェース  完全なアプリケーションとリソースのライフサイクルの例については、組み込みモード を参照してください。</description>
+    </item>
+    
+    <item>
+      <title>SPDL: Speedle ポリシー定義言語</title>
+      <link>https://engine.speedle.io/ja/docs/spdl/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/ja/docs/spdl/</guid>
+      <description>SPDL は Speedle ポリシーおよびロールポリシーを記述するための言語です。このページでは構文、命名規則、およびサンプルを説明します。 </description>
+    </item>
+    
+    <item>
+      <title>Speedle ポリシー</title>
+      <link>https://engine.speedle.io/ja/docs/pms/</link>
+      <pubDate>Wed, 28 Oct 2026 13:16:58 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/ja/docs/pms/</guid>
+      <description> ポリシー管理 グローバルポリシー ポリシー検出 認可診断  </description>
+    </item>
+    
+    <item>
+      <title>Speedle 概要: きめ細かなアクセス制御のための認可エンジン</title>
+      <link>https://engine.speedle.io/ja/docs/overview/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/ja/docs/overview/</guid>
+      <description>Speedle はオープンソースの認可エンジンです。アプリケーションから「このユーザーはこのリソースに対してこのアクションを実行できますか？」という問い合わせを受け取り、一元管理されたポリシーに基づいて許可（Allow）または拒否（Deny）を返します。このページでは、一般的な認可用語とそれらを実装する Speedle コンポーネントを関連付け、それぞれのガイドへのリンクを示します。
+以下の例では library という名前のサービスを使用しています。各ポリシーはポリシー管理サービス (PMS) の REST API を通じて作成され、各決定は認可決定サービス (ADS) の REST API から返されたものです。理由コードは 認可決定 に一覧表示されています。
+認可エンジン 認可エンジンはポリシーに照らしてアクセスリクエストを評価し、決定を返します。これにより、認可ロジックがアプリケーションコードの外部に分離されます。Speedle は ポリシー管理サービス (PMS)、ポリシーリポジトリ、および認可決定サービス (ADS) で構成されています。ADS はスタンドアロンサービスとして実行することも、Go アプリケーションに組み込む こともできます。
+認可とアクセス制御 認証（Authentication）は呼び出し元が誰であるかを確立し、認可（Authorization）はその呼び出し元が何を行ってよいかを決定します。アクセス制御（Access control）はそれらの決定の強制・執行です。Speedle は認可のみを処理します。すでに認証済みのサブジェクトを受け取り、決定を返し、呼び出し元のアプリケーションまたはゲートウェイがそれを適用します。認可決定 を参照してください。
+きめ細かなアクセス制御 (FGA) きめ細かなアクセス制御（Fine-grained access control）は、アプリケーション全体への大まかなアクセスを許可するのではなく、ユーザーごと、リソースごと、アクションごとにアクセスを決定し、必要に応じてリクエストコンテキストも考慮します。Speedle ポリシーでは、プリンシパル、アクション、リソースを指定し、条件を追加できます。ロールポリシーでは、特定のリソースに対してのみロールを割り当てることができます。SPDL を参照してください。
+PAP: ポリシー管理ポイント PAP（Policy Administration Point）は、ポリシーが作成および管理される場所です。Speedle ではこれが PMS に該当し、REST API、gRPC API、または spctl コマンドラインツールを通じて使用されます。ポリシー管理 を参照してください。
+PDP: ポリシー決定ポイント PDP（Policy Decision Point）は、リクエストをポリシーに照らして評価し、決定を返します。Speedle ではこれが ADS、または Speedle が Go プロセス内で実行される際の組み込み評価器に該当します。決定リクエストは以下のようになります:
+curl --header &amp;#39;Content-Type: application/json&amp;#39; --data &amp;#39;{&amp;#34;subject&amp;#34;:{&amp;#34;principals&amp;#34;:[{&amp;#34;type&amp;#34;:&amp;#34;user&amp;#34;,&amp;#34;name&amp;#34;:&amp;#34;alice&amp;#34;}]},&amp;#34;serviceName&amp;#34;:&amp;#34;library&amp;#34;,&amp;#34;resource&amp;#34;:&amp;#34;book&amp;#34;,&amp;#34;action&amp;#34;:&amp;#34;update&amp;#34;}&amp;#39; http://127.</description>
+    </item>
+    
+    <item>
+      <title>トークンアサーション API</title>
+      <link>https://engine.speedle.io/ja/docs/api/asserter_api/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/ja/docs/api/asserter_api/</guid>
+      <description>トークンアサーション Webhook リファレンス。errCode は整数、attributes はオブジェクトです。実際のエンドポイントは ADS アサーター構成で指定されます。
+セキュリティとエンドポイント構成。本文はインターフェース仕様を説明するものであり、speedle.io はホスト型バックエンドを提供しません。
+              document.addEventListener(&#39;DOMContentLoaded&#39;, function() { var url = &#34;\/swagger\/asserter.yaml&#34;; const ui = SwaggerUIBundle({ url: url, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.presets.apis ], plugins: [ SwaggerUIBundle.plugins.DownloadUrl ], validatorUrl: null, layout: &#34;BaseLayout&#34; }) window.ui = ui });  </description>
+    </item>
+    
+    <item>
+      <title>ポリシー検出</title>
+      <link>https://engine.speedle.io/ja/docs/pms/discover/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/ja/docs/pms/discover/</guid>
+      <description>ポリシー検出の役割 検出モードはリクエストを記録し、記録操作が成功した場合に理由 5 で allowed=true を返します。これは既存のポリシーが操作を認可したことを証明するものではありません。分離されたテスト環境でのみ使用し、生成されたグラントを確認してから、通常の is-allowed による強制を復元してください。アサーションやストレージのエラーは引き続き適切に処理する必要があり、エラーを認可と見なしてはなりません。
+再現可能なローカルサンプルの開始 クイックスタート の手順でバイナリをビルドし、チェックアウトのルートからすべてのターミナルを実行します。開始前に新しいファイルを使用し、前のページのフィクスチャを停止してください。
+printf &amp;#39;{}\n&amp;#39; &amp;gt; docs-policies.json ターミナル 1:
+./bin/speedle-pms --store-type file --filestore-loc ./docs-policies.json --endpoint 127.0.0.1:6733 --insecure=true ターミナル 2:
+./bin/speedle-ads --store-type file --filestore-loc ./docs-policies.json --endpoint 127.0.0.1:6734 --insecure=true 両方を実行したままにします。ターミナル 3 で、1 つのリクエストを記録します:
+curl --fail --silent --show-error -H &amp;#39;Content-Type: application/json&amp;#39; \  -d &amp;#39;{&amp;#34;subject&amp;#34;:{&amp;#34;principals&amp;#34;:[{&amp;#34;type&amp;#34;:&amp;#34;user&amp;#34;,&amp;#34;name&amp;#34;:&amp;#34;alice&amp;#34;}]},&amp;#34;serviceName&amp;#34;:&amp;#34;observed&amp;#34;,&amp;#34;resource&amp;#34;:&amp;#34;book&amp;#34;,&amp;#34;action&amp;#34;:&amp;#34;read&amp;#34;}&amp;#39; \  http://127.0.0.1:6734/authz-check/v1/discover キャプチャされたリクエストを調査し、提案されるサービス定義を生成します:
+./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ discover request --service-name observed ./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ discover policy --service-name observed &amp;gt; discovered-service.</description>
+    </item>
+    
+    <item>
+      <title>ポリシー管理</title>
+      <link>https://engine.speedle.io/ja/docs/pms/policy-mgmt/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/ja/docs/pms/policy-mgmt/</guid>
+      <description>Speedle ポリシーとは？ ポリシー管理サービス (PMS) は、サービス、認可ポリシー、ロールポリシー、およびカスタム関数を管理します。ポリシーストアは、登録された ストレージバックエンド を使用してそれらのオブジェクトを永続化します。
+サービスと認可ポリシー サービスはそのポリシーのスコープを制限します。認可ポリシーは、プリンシパルに対してリソース上のアクションを実行する権限を付与または拒否し、オプションで条件を設定できます。グローバルロールポリシー を除き、あるサービスのポリシーが別のサービスで自動的に適用されることはありません。
+grant group Administrators list,watch,get expr:^c1/default/core/pods/.*$ この正規表現は c1/default/core/pods/ 配下のリソースに一致します。c1/default/core/podssecret や c1 の前に余計なプレフィックスがあるパスには一致しません。expr: はシェルのワイルドカードではなく正規表現を使用します。任意の文字には .* を使用し、完全な識別子に一致させる必要がある場合は ^/$ を使用します。
+ロールポリシー grant user alan manager on res1 grant role manager update res1 最初のステートメントは特定のリソース上のロールを Alan に割り当て、2 番目のステートメントはそのロールに操作権限を付与します。ロールを割り当てるだけでは権限は生成されません。該当する明示的な拒否（deny）は許可（grant）をオーバーライドします。
+プリンシパルと条件 プリンシパルには、ユーザー、グループ、エンティティ、またはロールを指定できます。エンティティはサービスなどの人間以外のアイデンティティを表します。統合コードはこれらのアイデンティティを信頼できるソースから取得する必要があります。
+AND プリンシパルグループは、リスト内のすべてのプリンシパルが一致することを要求します。個別のグループ間は OR 条件になります。たとえば、以下の例では両方のロールが適用される必要があります:
+grant (role designer, role dba) update db_design_doc リソースは保護対象のオブジェクトを指定し、アクションはアプリケーションの操作を指定します。条件は、信頼できる属性、定数、演算子、およびサポートされている関数から評価されるブール式です。
+文法については SPDL を、完全な決定例については RBAC/ABAC を参照してください。
+サンプル実行前の準備 クイックスタート の手順に従い、リポジトリルート下の ./bin/spctl、./bin/speedle-pms、./bin/speedle-ads をビルドします。Go 1.26.10 または Go 1.</description>
+    </item>
+    
+    <item>
+      <title>ポリシー管理 API</title>
+      <link>https://engine.speedle.io/ja/docs/api/management_api/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/ja/docs/api/management_api/</guid>
+      <description>構成された PMS のインターフェースリファレンス。リクエストとレスポンスは JSON を使用し、ポリシー ID は文字列、レスポンスはフラットなオブジェクトです。
+セキュリティとエンドポイント構成。本文はインターフェース仕様を説明するものであり、speedle.io はホスト型バックエンドを提供しません。
+              document.addEventListener(&#39;DOMContentLoaded&#39;, function() { var url = &#34;\/swagger\/policy-manage.yaml&#34;; const ui = SwaggerUIBundle({ url: url, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.presets.apis ], plugins: [ SwaggerUIBundle.plugins.DownloadUrl ], validatorUrl: null, layout: &#34;BaseLayout&#34; }) window.ui = ui });  </description>
+    </item>
+    
+    <item>
+      <title>認可決定</title>
+      <link>https://engine.speedle.io/ja/docs/decisions/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/ja/docs/decisions/</guid>
+      <description>認可決定とは？ Speedle は指定されたサービス内でサブジェクト、アクション、およびリソースを評価し、アプリケーションがその結果を適用します。評価エラーやタイムアウトは通常の Deny（拒否）とは区別して扱い、エラー時はアクセスを拒否（fail closed）してください。REST、gRPC、組み込み Go の各 API はデータ表現が異なるため、それぞれの API 契約 に従ってください。
+実行前の準備 クイックスタート に従ってリポジトリルートで ./bin/spctl、./bin/speedle-pms、./bin/speedle-ads をビルドします。Go 1.26.10 または Go 1.27.3（または同じリリースブランチの新しいパッチバージョン）、Bash、curl、Python 3 が必要です。各ターミナルはリポジトリのルートディレクトリから実行してください。このページ用には新しいポリシーファイルを使用し、両方のサービスを停止した後にのみリセットしてください。
+空のポリシーファイルを初期化します:
+printf &amp;#39;{} &amp;#39; &amp;gt; docs-policies.json ターミナル1で PMS を起動し、実行したままにします:
+./bin/speedle-pms --store-type file --filestore-loc ./docs-policies.json --endpoint 127.0.0.1:6733 --grpc-endpoint 127.0.0.1:0 --insecure=true ターミナル2で ADS を起動し、実行したままにします:
+./bin/speedle-ads --store-type file --filestore-loc ./docs-policies.json --endpoint 127.0.0.1:6734 --grpc-endpoint 127.0.0.1:0 --insecure=true 残りのコマンドはターミナル3で実行します。PMS と ADS はファイルを共有し、変更は非同期に反映されます。意図した更新が ADS に到達したことを確認してから依存してください。--insecure=true はこのループバックサンプルのためのものです。本番接続については セキュリティ を参照してください。明示的な PMS アドレスを指定することで ~/.spctlconfig の変更を回避できます。終了したら、両方のサーバーターミナルで Ctrl-C を押して停止します。</description>
+    </item>
+    
+    <item>
+      <title>認可決定 API</title>
+      <link>https://engine.speedle.io/ja/docs/api/decision_api/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/ja/docs/api/decision_api/</guid>
+      <description>構成された ADS のインターフェースリファレンス。リクエスト属性は型付き配列、診断レスポンス属性はオブジェクトです。
+セキュリティとエンドポイント構成。本文はインターフェース仕様を説明するものであり、speedle.io はホスト型バックエンドを提供しません。
+              document.addEventListener(&#39;DOMContentLoaded&#39;, function() { var url = &#34;\/swagger\/policy-check.yaml&#34;; const ui = SwaggerUIBundle({ url: url, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.presets.apis ], plugins: [ SwaggerUIBundle.plugins.DownloadUrl ], validatorUrl: null, layout: &#34;BaseLayout&#34; }) window.ui = ui });  ヘルスチェックエンドポイント GET /healthz はプロセスの稼働状態を報告します。プロセス実行中は常に 200 {&amp;quot;status&amp;quot;:&amp;quot;ok&amp;quot;} を返します。
+GET /readyz はインスタンスが認可リクエストに応答可能かどうかを報告します。準備完了の場合は 200、それ以外は 503 を返します。このエンドポイントは認証を必要とせず、集計カウントのみを返します。</description>
+    </item>
+    
+  </channel>
+</rss>

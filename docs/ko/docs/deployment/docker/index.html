@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <script>document.documentElement.classList.add('docs-js','navigation-js');addEventListener('DOMContentLoaded',function(){if(!document.querySelector('header.site-header.navigation-ready'))document.documentElement.classList.remove('navigation-js')});</script>
+    <meta name="generator" content="Hugo 0.48" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1"><title>Docker 이미지 · Speedle Engine</title>
+<meta name="description" content="공개된 Speedle 이미지로 speedle-pms, speedle-ads 및 spctl 실행">
+<meta name="generator" content="Hugo 0.48" />
+<link href="https://engine.speedle.io/index.xml" rel="alternate" type="application/rss+xml">
+<link rel="canonical" href="https://engine.speedle.io/ko/docs/deployment/docker/">
+
+<link rel="alternate" hreflang="en" href="https://engine.speedle.io/docs/deployment/docker/">
+<link rel="alternate" hreflang="es" href="https://engine.speedle.io/es/docs/deployment/docker/">
+<link rel="alternate" hreflang="ja" href="https://engine.speedle.io/ja/docs/deployment/docker/">
+<link rel="alternate" hreflang="ko" href="https://engine.speedle.io/ko/docs/deployment/docker/">
+<link rel="alternate" hreflang="zh-CN" href="https://engine.speedle.io/zh/docs/deployment/docker/">
+<link rel="alternate" hreflang="x-default" href="https://engine.speedle.io/docs/deployment/docker/">
+<meta property="og:type" content="article">
+<meta property="article:modified_time" content="2026-11-10T14:45:43&#43;08:00">
+<meta property="og:site_name" content="Speedle Engine">
+<meta property="og:title" content="Docker 이미지 · Speedle Engine">
+<meta property="og:description" content="공개된 Speedle 이미지로 speedle-pms, speedle-ads 및 spctl 실행">
+<meta property="og:url" content="https://engine.speedle.io/ko/docs/deployment/docker/">
+<meta property="og:image" content="https://engine.speedle.io/img/social/engine-en.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:alt" content="Speedle Engine — Fast. Simple. Access control">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Docker 이미지 · Speedle Engine">
+<meta name="twitter:description" content="공개된 Speedle 이미지로 speedle-pms, speedle-ads 및 spctl 실행">
+<meta name="twitter:image" content="https://engine.speedle.io/img/social/engine-en.png">
+<meta name="twitter:image:alt" content="Speedle Engine — Fast. Simple. Access control">
+
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/ko/docs/deployment/docker/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-10T14:45:43+08:00","description":"공개된 Speedle 이미지로 speedle-pms, speedle-ads 및 spctl 실행","headline":"Docker 이미지","image":"https://engine.speedle.io/img/social/engine-en.png","inLanguage":"ko","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/ko/docs/deployment/docker/","@type":"WebPage"},"name":"Docker 이미지","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/ko/docs/deployment/docker/"}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/ko/docs/deployment/docker/#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://engine.speedle.io/ko/","name":"홈","position":1},{"@type":"ListItem","item":"https://engine.speedle.io/ko/docs/","name":"문서","position":2},{"@type":"ListItem","item":"https://engine.speedle.io/ko/docs/deployment/","name":"배포","position":3},{"@type":"ListItem","item":"https://engine.speedle.io/ko/docs/deployment/docker/","name":"Docker 이미지","position":4}]}</script><link href="/css/docs.css" rel="stylesheet" type="text/css">
+
+
+    <link href="/css/navigation.css?v=header-20261106-v8" rel="stylesheet">
+    <script src="/js/navigation.js?v=header-20261106-v8" defer></script>
+    <script src="/js/docs.js" defer></script>
+
+</head>
+
+<body class="page-kube docs-page">
+    <header class="site-header">
+    <div class="wrap nav">
+      <a class="brand" href="/ko/#top" aria-label="Speedle Engine 홈"><img class="brand-logo" src="/img/speedle/Speedle_logo_home_bold.svg?v=4" width="304" height="104" alt=""><span class="brand-divider" aria-hidden="true"></span><span class="brand-product">Engine</span></a>
+      <button class="menu" type="button" aria-expanded="false" aria-controls="nav-links" aria-label="내비게이션 열기">☰</button>
+      <nav class="nav-links" id="nav-links" aria-label="기본 내비게이션">
+        <div class="products"><button class="products-button" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="products-panel">제품<svg class="products-chevron" width="10" height="10" viewBox="0 0 10 10" aria-hidden="true" focusable="false"><path d="M2 3.5 5 6.5 8 3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button><span class="products-heading" aria-hidden="true">제품</span><div class="products-panel" id="products-panel" role="group" aria-label="제품"><a class="product-row" href="https://engine.speedle.io/ko/" aria-current="page"><img class="product-mark" src="/img/speedle/speedle-mark-engine.svg" alt="" width="20" height="20"><span class="product-text"><span class="product-name">Speedle Engine</span><span class="product-desc">오픈 소스 인가 엔진</span></span><svg class="product-check" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M3.5 8.5 6.5 11.5 12.5 4.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></a><a class="product-row" href="https://cloud.speedle.io/ko/"><img class="product-mark" src="/img/speedle/speedle-mark-cloud.svg" alt="" width="20" height="20"><span class="product-text"><span class="product-name">Speedle Cloud <span class="product-badge">출시 예정</span></span><span class="product-desc">개발자를 위한 호스팅형 인가 서비스</span></span></a><a class="product-row" href="https://ai.speedle.io/ko/"><img class="product-mark" src="/img/speedle/speedle-mark-ai.svg" alt="" width="20" height="20"><span class="product-text"><span class="product-name">Speedle AI</span><span class="product-desc">AI를 위한 접근 제어, AI를 통한 접근 제어</span></span></a></div></div>
+        <a href="/ko/#about">Speedle 소개</a><a href="/ko/#features">기능</a>
+        <a href="/ko/quick-start/">시작하기</a><a href="/ko/docs/">문서</a><a href="/ko/playground/">Playground</a>
+        <div class="languages"><button class="languages-button" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="languages-panel">한국어<svg class="languages-chevron" width="10" height="10" viewBox="0 0 10 10" aria-hidden="true" focusable="false"><path d="M2 3.5 5 6.5 8 3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button><span class="languages-heading" aria-hidden="true">언어</span><div class="languages-panel" id="languages-panel" role="group" aria-label="언어"><a class="language-row" href="/docs/deployment/docker/" lang="en" hreflang="en">English</a><a class="language-row" href="/ja/docs/deployment/docker/" lang="ja" hreflang="ja" >日本語</a><a class="language-row" href="/ko/docs/deployment/docker/" lang="ko" hreflang="ko" aria-current="page">한국어</a><a class="language-row" href="/es/docs/deployment/docker/" lang="es" hreflang="es">Español</a><a class="language-row" href="/zh/docs/deployment/docker/" lang="zh-CN" hreflang="zh-CN" >中文</a></div></div>
+        <a class="nav-github" href="https://github.com/teramoby/speedle-plus">GitHub</a>
+      </nav>
+    </div>
+  </header>
+    <div class="container">
+        <button class="docs-nav-toggle" type="button" aria-expanded="false" aria-controls="docs-navigation">
+            <span>메뉴</span>
+            <svg class="docs-nav-toggle-icon" viewBox="0 0 18 14" width="18" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M1 1h16M1 7h16M1 13h16"/></svg>
+        </button>
+        <div class="content-container"><aside class="docs-sidebar" id="docs-navigation" aria-label="문서 내비게이션">
+<div class="docs-nav-head">
+<span class="docs-nav-title">문서</span>
+<button class="docs-nav-close" type="button" aria-label="메뉴 닫기"><svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="m3 3 10 10M13 3 3 13"/></svg></button>
+</div>
+<div class="sidebar">
+<nav>
+<ul>
+
+
+
+
+
+<li data-docs-depth="-1" class="docs-nav-section parent"><span class="docs-nav-heading">문서</span>
+<ul class="sub-menu">
+<li data-docs-depth="0" class=""><a href="/ko/docs/usecases/">유스케이스</a></li>
+<li data-docs-depth="0" class=""><a href="/ko/docs/overview/">개요</a></li>
+<li data-docs-depth="0" class=""><a href="/ko/docs/spdl/">SPDL: Speedle 정책 정의 언어</a></li>
+<li data-docs-depth="0" class=""><a href="/ko/docs/architecture/">아키텍처</a></li>
+
+
+
+<li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading">Speedle 정책</span>
+<ul class="">
+<li data-docs-depth="1" class=""><a href="/ko/docs/pms/policy-mgmt/">정책 관리</a></li>
+<li data-docs-depth="1" class=""><a href="/ko/docs/pms/global-policy/">글로벌 정책</a></li>
+<li data-docs-depth="1" class=""><a href="/ko/docs/pms/diagnosis/">인가 진단</a></li>
+<li data-docs-depth="1" class=""><a href="/ko/docs/pms/discover/">정책 발견</a></li>
+</ul>
+
+</li>
+<li data-docs-depth="0" class=""><a href="/ko/docs/decisions/">인가 결정</a></li>
+<li data-docs-depth="0" class=""><a href="/ko/docs/idd/">ID 도메인</a></li>
+<li data-docs-depth="0" class=""><a href="/ko/docs/assertor/">토큰 어서터</a></li>
+
+
+
+<li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading docs-nav-heading-link"><a href="/ko/docs/store/">플러그형 저장소</a></span>
+<ul class="">
+<li data-docs-depth="1" class=""><a href="/ko/docs/store/mysql/">MySQL 설정 가이드</a></li>
+<li data-docs-depth="1" class=""><a href="/ko/docs/store/etcd/">etcd 설정 가이드</a></li>
+<li data-docs-depth="1" class=""><a href="/ko/docs/store/mongodb/">MongoDB 설정 가이드</a></li>
+</ul>
+
+</li>
+
+
+
+<li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading">API</span>
+<ul class="">
+<li data-docs-depth="1" class=""><a href="/ko/docs/api/decision_api/">인가 결정 API</a></li>
+<li data-docs-depth="1" class=""><a href="/ko/docs/api/management_api/">정책 관리 API</a></li>
+<li data-docs-depth="1" class=""><a href="/ko/docs/api/asserter_api/">토큰 어설션 API</a></li>
+</ul>
+
+</li>
+
+
+
+<li data-docs-depth="0" class="docs-nav-section parent"><span class="docs-nav-heading docs-nav-heading-link"><a href="/ko/docs/deployment/">배포</a></span>
+<ul class="sub-menu">
+<li data-docs-depth="1" class=""><a href="/ko/docs/deployment/embedded/">Speedle 임베디드 모드</a></li>
+<li data-docs-depth="1" class="active"><a href="/ko/docs/deployment/docker/" aria-current="page">Docker 이미지</a></li>
+<li data-docs-depth="1" class=""><a href="/ko/docs/deployment/homebrew/">Homebrew 설치</a></li>
+</ul>
+
+</li>
+
+
+
+<li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading docs-nav-heading-link"><a href="/ko/docs/sdks/">SDK</a></span>
+<ul class="">
+<li data-docs-depth="1" class=""><a href="/ko/docs/sdks/java/">Java SDK</a></li>
+<li data-docs-depth="1" class=""><a href="/ko/docs/sdks/python/">Python SDK</a></li>
+<li data-docs-depth="1" class=""><a href="/ko/docs/sdks/go/">Go SDK</a></li>
+<li data-docs-depth="1" class=""><a href="/ko/docs/sdks/dotnet/">C#/.NET SDK</a></li>
+<li data-docs-depth="1" class=""><a href="/ko/docs/sdks/rust/">Rust SDK</a></li>
+<li data-docs-depth="1" class=""><a href="/ko/docs/sdks/node/">Node.js/TypeScript SDK</a></li>
+</ul>
+
+</li>
+
+
+
+<li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading docs-nav-heading-link"><a href="/ko/docs/cloud/">Speedle Cloud</a></span>
+<ul class="">
+<li data-docs-depth="1" class=""><a href="/ko/docs/cloud/getting-started/">Speedle Cloud 빠른 시작</a></li>
+<li data-docs-depth="1" class=""><a href="/ko/docs/cloud/tokens/">Speedle Cloud 애플리케이션 토큰</a></li>
+<li data-docs-depth="1" class=""><a href="/ko/docs/cloud/authorization-api/">Speedle Cloud 인가 API 프리뷰</a></li>
+<li data-docs-depth="1" class=""><a href="/ko/docs/cloud/limits-and-errors/">Speedle Cloud 제한 및 오류</a></li>
+</ul>
+
+</li>
+<li data-docs-depth="0" class=""><a href="/ko/docs/security/">보안</a></li>
+<li data-docs-depth="0" class=""><a href="/ko/docs/logging/">로깅 프레임워크</a></li>
+<li data-docs-depth="0" class=""><a href="/ko/docs/versions/">버전</a></li>
+<li data-docs-depth="0" class=""><a href="/ko/docs/custom-function/">사용자 정의 함수</a></li>
+</ul>
+
+</li>
+</ul>
+</nav>
+
+
+</div>
+</aside>
+<main>
+<div id="main">
+
+  <h1>Docker 이미지</h1>
+  <p class="docs-lead">Docker Hub 및 GHCR의 단일 이미지로 공유 파일 저장소를 사용하는 정책 관리 서비스, 인가 결정 서비스 및 spctl을 실행합니다.</p>
+
+
+
+
+<nav id="contents" class="docs-toc" data-docs-toc="h2" aria-label="목차">
+  <ol></ol>
+</nav>
+
+
+
+  <div id="kube-component" class="content">
+
+<p>Speedle은 <code>speedle-pms</code>, <code>speedle-ads</code>, <code>spctl</code>이 포함된 단일 이미지를 배포합니다. 이 이미지는 <code>FROM scratch</code>로 빌드되며 UID 65532로 실행되고 셸이 포함되어 있지 않습니다. 첫 번째 인수로 실행할 프로그램을 선택합니다.</p>
+
+<p>두 레지스트리 모두 동일한 이미지 인덱스를 호스팅합니다:</p>
+
+<ul>
+<li>Docker Hub: <code>docker.io/speedle/speedle</code></li>
+<li>GHCR: <code>ghcr.io/teramoby/speedle</code></li>
+</ul>
+
+<p>릴리스 1.7.0은 두 레지스트리 모두에 <code>linux/amd64</code> 및 <code>linux/arm64</code> 아키텍처용으로 <code>1.7.0</code>, <code>1.7</code>, <code>latest</code> 태그를 게시합니다.</p>
+
+<h2 id="이미지-풀">이미지 풀</h2>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker pull docker.io/speedle/speedle:1.7.0
+docker pull ghcr.io/teramoby/speedle:1.7.0</code></pre></div>
+<p><code>docker pull</code>은 인덱스 다이제스트를 출력합니다. 1.7.0의 경우 두 레지스트리 모두 다이제스트는 <code>sha256:20bd3fe8169ec3ddadf1484285e34bd68004dbb457782223dc84a2a9f1dd91c0</code>입니다.</p>
+
+<h2 id="태그-선택">태그 선택</h2>
+
+<p><code>1.7.0</code>은 이번 릴리스를 가리킵니다. 상위 1.7 패치가 게시되면 <code>1.7</code> 태그가 이동합니다. <code>master</code>의 최신 커밋에서 상위 릴리스가 게시되면 <code>latest</code> 태그가 이동합니다. 릴리스 재시도로 동일한 버전 태그가 다시 게시될 수 있으므로 태그는 불변 빌드가 아닙니다.</p>
+
+<p>인덱스 다이제스트 확인:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker buildx imagetools inspect docker.io/speedle/speedle:1.7.0 --format <span style="color:#f1fa8c">&#39;{{.Manifest.Digest}}&#39;</span></code></pre></div>
+<p>1.7.0 릴리스의 경우 두 레지스트리의 <code>1.7.0</code>, <code>1.7</code>, <code>latest</code> 모두 다음을 출력합니다:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">sha256:20bd3fe8169ec3ddadf1484285e34bd68004dbb457782223dc84a2a9f1dd91c0</code></pre></div>
+<p><code>1.7</code> 또는 <code>latest</code>를 배포하기 전에 다이제스트를 다시 확인하십시오. 특정 빌드를 고정하려면 이미지 이름 뒤에 <code>@</code>와 해당 다이제스트를 사용합니다(예: <code>docker.io/speedle/speedle@sha256:20bd3fe8169ec3ddadf1484285e34bd68004dbb457782223dc84a2a9f1dd91c0</code>).</p>
+
+<h2 id="이미지-내-명령">이미지 내 명령</h2>
+
+<p>인수 없이 실행하면 이미지는 세 개의 프로그램을 출력합니다:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker run --rm docker.io/speedle/speedle:1.7.0</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">speedle-pms
+speedle-ads
+spctl</code></pre></div>
+<p><code>docker run --rm ghcr.io/teramoby/speedle:1.7.0</code>도 동일한 내용을 출력합니다. 아래 명령은 Docker Hub 이름을 사용합니다. GHCR 복사본을 사용하려면 GHCR 이름으로 대체하십시오. 이미지에는 셸이 없으므로 <code>docker exec</code>는 절대 경로 <code>/spctl</code>, <code>/speedle-pms</code> 또는 <code>/speedle-ads</code>를 호출해야 합니다.</p>
+
+<h2 id="pms-및-ads-실행">PMS 및 ADS 실행</h2>
+
+<p>이름이 지정된 볼륨을 생성하고 정책 관리 서비스를 시작합니다. 서버는 컨테이너 내부의 <code>0.0.0.0:6733</code>에서 수신 대기합니다. <code>127.0.0.1:6733</code>으로 게시하면 인증되지 않은 관리 API가 로컬 머신에만 유지됩니다.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker volume create speedle-policies
+docker run -d --name speedle-pms <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  -p <span style="color:#bd93f9">127</span>.0.0.1:6733:6733 <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  -v speedle-policies:/data <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  docker.io/speedle/speedle:1.7.0 <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  speedle-pms --store-type file --filestore-loc /data/policies.json --endpoint <span style="color:#bd93f9">0</span>.0.0.0:6733 --insecure<span style="color:#ff79c6">=</span>true</code></pre></div>
+<p>새로 명명된 볼륨은 UID 65532가 쓸 수 있는 이미지의 <code>/data</code> 디렉터리로 채워집니다. PMS는 <code>/data/policies.json</code>이 없으면 새로 생성합니다. 이미지에는 CA 인증서가 없습니다. <code>--insecure=true</code>는 이 로컬 HTTP 예제를 위한 것입니다. TLS에 대해서는 <a href="/ko/docs/security/">보안</a>을 참조하십시오.</p>
+
+<p>Docker는 포트를 게시한 후 프로세스가 수신 대기하기 전에 연결을 리셋할 수 있습니다. 해당 리셋을 포함하여 모든 오류에 대해 재시도하십시오:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl --fail --silent --show-error --retry <span style="color:#bd93f9">30</span> --retry-all-errors --retry-delay <span style="color:#bd93f9">1</span> --connect-timeout <span style="color:#bd93f9">2</span> <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  http://127.0.0.1:6733/policy-mgmt/v1/service</code></pre></div>
+<p>첫 번째 시도는 <code>curl: (56) Recv failure: Connection reset by peer</code>를 출력할 수 있습니다. 이후 시도에서 본문이 반환됩니다. 비어 있는 저장소는 다음을 응답합니다:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">[]</code></pre></div>
+<p>동일한 볼륨에서 ADS를 시작합니다. ADS는 PMS가 작성한 파일(이후 업데이트 포함)을 읽습니다.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker run -d --name speedle-ads <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  -p <span style="color:#bd93f9">127</span>.0.0.1:6734:6734 <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  -v speedle-policies:/data <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  docker.io/speedle/speedle:1.7.0 <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  speedle-ads --store-type file --filestore-loc /data/policies.json --endpoint <span style="color:#bd93f9">0</span>.0.0.0:6734 --insecure<span style="color:#ff79c6">=</span>true</code></pre></div>
+<h2 id="헬스-및-준비-상태-확인">헬스 및 준비 상태 확인</h2>
+
+<p>PMS는 <code>/healthz</code>를 제공하지 않습니다. 위에서 본 성공적인 <code>GET /policy-mgmt/v1/service</code>는 관리 API가 요청을 수락하고 있음을 의미합니다.</p>
+
+<p>ADS는 라이브니스 및 준비 상태를 제공합니다:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl --fail --silent --show-error --retry <span style="color:#bd93f9">30</span> --retry-all-errors --retry-delay <span style="color:#bd93f9">1</span> --connect-timeout <span style="color:#bd93f9">2</span> <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  http://127.0.0.1:6734/healthz
+curl --fail --silent --show-error --retry <span style="color:#bd93f9">30</span> --retry-all-errors --retry-delay <span style="color:#bd93f9">1</span> --connect-timeout <span style="color:#bd93f9">2</span> <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  http://127.0.0.1:6734/readyz</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">{&#34;status&#34;:&#34;ok&#34;}
+{&#34;ready&#34;:true,&#34;servicesTotal&#34;:0,&#34;servicesUsable&#34;:0}</code></pre></div>
+<p>프로세스가 실행 중인 동안 <code>/healthz</code>는 <code>200 {&quot;status&quot;:&quot;ok&quot;}</code>를 응답합니다. ADS가 요청을 평가할 수 있을 때 <code>/readyz</code>는 <code>200</code>을 응답합니다. 파일 저장소에는 분산 상태가 없으므로 서비스 수는 0으로 유지됩니다. 확인해야 할 필드는 <code>ready</code>입니다. 이미지에는 셸과 <code>curl</code>이 없으므로 이러한 프로브는 호스트나 다른 컨테이너에서 실행됩니다.</p>
+
+<h2 id="정책-추가-및-확인">정책 추가 및 확인</h2>
+
+<p>이 컨테이너에서 <code>spctl</code>을 실행하여 서비스와 정책을 추가합니다. <code>--insecure=true</code> PMS는 로컬 <code>http://</code> 주소를 사용합니다:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker <span style="color:#8be9fd;font-style:italic">exec</span> speedle-pms /spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ create service docs
+docker <span style="color:#8be9fd;font-style:italic">exec</span> speedle-pms /spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ create policy -c <span style="color:#f1fa8c">&#34;grant user alice get,list /docs/public&#34;</span> --service-name<span style="color:#ff79c6">=</span>docs</code></pre></div>
+<p>게시된 포트를 통해 ADS를 직접 쿼리합니다. 사용자 <code>alice</code>에게 부여된 <code>get</code> 권한을 요청합니다:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl --fail --silent --show-error --header <span style="color:#f1fa8c">&#39;Content-Type: application/json&#39;</span> <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  --data <span style="color:#f1fa8c">&#39;{&#34;subject&#34;:{&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;,&#34;name&#34;:&#34;alice&#34;}]},&#34;serviceName&#34;:&#34;docs&#34;,&#34;resource&#34;:&#34;/docs/public&#34;,&#34;action&#34;:&#34;get&#34;}&#39;</span> <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  http://127.0.0.1:6734/authz-check/v1/is-allowed</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">{&#34;allowed&#34;:true,&#34;reason&#34;:0}</code></pre></div>
+<p><code>delete</code> 작업은 부여되지 않았으므로 정책과 일치하지 않습니다:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl --fail --silent --show-error --header <span style="color:#f1fa8c">&#39;Content-Type: application/json&#39;</span> <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  --data <span style="color:#f1fa8c">&#39;{&#34;subject&#34;:{&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;,&#34;name&#34;:&#34;alice&#34;}]},&#34;serviceName&#34;:&#34;docs&#34;,&#34;resource&#34;:&#34;/docs/public&#34;,&#34;action&#34;:&#34;delete&#34;}&#39;</span> <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  http://127.0.0.1:6734/authz-check/v1/is-allowed</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">{&#34;allowed&#34;:false,&#34;reason&#34;:3}</code></pre></div>
+<p><code>reason</code> <code>3</code>은 <code>NO_APPLICABLE_POLICIES</code>입니다. ADS가 이미 실행 중인 상태에서 PMS를 통해 작성된 정책은 다음 요청에서 바로 반영됩니다. 요청 필드에 대해서는 <a href="/ko/docs/decisions/">인가 결정</a>을 참조하십시오.</p>
+
+<h2 id="sdk에서-ads-호출">SDK에서 ADS 호출</h2>
+
+<p>SDK 문서 페이지들은 <code>http://localhost:6734</code>를 호출합니다. 위에서 게시된 포트를 사용하면 해당 주소가 바로 이 ADS입니다. 아래의 Node.js 클라이언트는 컨테이너가 게시하는 주소인 <code>http://127.0.0.1:6734</code>를 사용합니다. 먼저 예제 디렉터리를 생성한 다음 해당 디렉터리에 클라이언트를 <code>main.mjs</code>로 저장합니다:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">mkdir speedle-example
+<span style="color:#8be9fd;font-style:italic">cd</span> speedle-example</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-javascript" data-lang="javascript"><span style="color:#ff79c6">import</span> { Auth, SpeedleClient } from <span style="color:#f1fa8c">&#34;@speedle/sdk&#34;</span>;
+
+<span style="color:#ff79c6">const</span> speedle <span style="color:#ff79c6">=</span> <span style="color:#ff79c6">new</span> SpeedleClient({
+  backend<span style="color:#ff79c6">:</span> <span style="color:#f1fa8c">&#34;speedle&#34;</span>,
+  endpoint<span style="color:#ff79c6">:</span> <span style="color:#f1fa8c">&#34;http://127.0.0.1:6734&#34;</span>,
+  auth<span style="color:#ff79c6">:</span> Auth.none(),
+  serviceName<span style="color:#ff79c6">:</span> <span style="color:#f1fa8c">&#34;docs&#34;</span>,
+});
+<span style="color:#ff79c6">try</span> {
+  <span style="color:#ff79c6">const</span> allowed <span style="color:#ff79c6">=</span> <span style="color:#ff79c6">await</span> speedle.isAllowed(<span style="color:#f1fa8c">&#34;alice&#34;</span>, <span style="color:#f1fa8c">&#34;get&#34;</span>, <span style="color:#f1fa8c">&#34;/docs/public&#34;</span>);
+  console.log(<span style="color:#f1fa8c">`alice get /docs/public: allowed=</span><span style="color:#f1fa8c">${</span>allowed<span style="color:#f1fa8c">}</span><span style="color:#f1fa8c">`</span>);
+} <span style="color:#ff79c6">finally</span> {
+  <span style="color:#ff79c6">await</span> speedle.close();
+}
+</code></pre></div>
+<p><code>speedle-example</code>에 공개된 패키지를 설치하고 <code>main.mjs</code>를 실행합니다. 설치는 <a href="/ko/docs/sdks/node/">Node.js SDK</a> 페이지에 설명된 것과 동일한 버전으로 고정됩니다:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">npm init -y
+npm pkg <span style="color:#8be9fd;font-style:italic">set</span> <span style="color:#8be9fd;font-style:italic">type</span><span style="color:#ff79c6">=</span>module
+npm install @speedle/sdk@0.2.1
+node main.mjs</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">alice get /docs/public: allowed=true</code></pre></div>
+<p>다른 언어 페이지도 동일한 엔드포인트와 서비스 이름을 사용합니다. SDK는 루프백 호스트에 대해서만 일반 <code>http://</code>를 허용합니다.</p>
+
+<h2 id="compose로-두-서비스-실행">Compose로 두 서비스 실행</h2>
+
+<p>이 파일을 <code>compose.yaml</code>로 저장합니다. 이는 동일한 두 프로세스와 동일한 볼륨을 실행하는 또 다른 방법입니다. 이전 섹션의 컨테이너가 여전히 실행 중인 경우 포트 6733과 6734가 비어 있도록 먼저 중지하십시오. 해당 볼륨을 제거하면 정책 파일도 함께 제거됩니다.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">services:
+  pms:
+    image: docker.io/speedle/speedle:<span style="color:#bd93f9">1.7</span>.<span style="color:#bd93f9">0</span>
+    command:
+      - speedle-pms
+      - --store-type
+      - file
+      - --filestore-loc
+      - /data/policies.json
+      - --endpoint
+      - <span style="color:#bd93f9">0.0</span>.<span style="color:#bd93f9">0.0</span>:<span style="color:#bd93f9">6733</span>
+      - --insecure=<span style="color:#ff79c6">true</span>
+    ports:
+      - <span style="color:#bd93f9">127.0</span>.<span style="color:#bd93f9">0.1</span>:<span style="color:#bd93f9">6733</span>:<span style="color:#bd93f9">6733</span>
+    volumes:
+      - speedle-policies:/data
+  ads:
+    image: docker.io/speedle/speedle:<span style="color:#bd93f9">1.7</span>.<span style="color:#bd93f9">0</span>
+    command:
+      - speedle-ads
+      - --store-type
+      - file
+      - --filestore-loc
+      - /data/policies.json
+      - --endpoint
+      - <span style="color:#bd93f9">0.0</span>.<span style="color:#bd93f9">0.0</span>:<span style="color:#bd93f9">6734</span>
+      - --insecure=<span style="color:#ff79c6">true</span>
+    ports:
+      - <span style="color:#bd93f9">127.0</span>.<span style="color:#bd93f9">0.1</span>:<span style="color:#bd93f9">6734</span>:<span style="color:#bd93f9">6734</span>
+    volumes:
+      - speedle-policies:/data
+volumes:
+  speedle-policies:</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker compose -f compose.yaml up -d</code></pre></div>
+<p><code>up -d</code>는 PMS가 수신 대기하기 전에 반환됩니다. 리소스를 생성하기 전에 PMS 서비스 목록과 ADS의 <code>/healthz</code> 및 <code>/readyz</code>를 기다립니다. 위에서 설명한 대로 첫 번째 PMS 시도는 연결을 리셋할 수 있습니다.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl --fail --silent --show-error --retry <span style="color:#bd93f9">30</span> --retry-all-errors --retry-delay <span style="color:#bd93f9">1</span> --connect-timeout <span style="color:#bd93f9">2</span> <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  http://127.0.0.1:6733/policy-mgmt/v1/service
+curl --fail --silent --show-error --retry <span style="color:#bd93f9">30</span> --retry-all-errors --retry-delay <span style="color:#bd93f9">1</span> --connect-timeout <span style="color:#bd93f9">2</span> <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  http://127.0.0.1:6734/healthz
+curl --fail --silent --show-error --retry <span style="color:#bd93f9">30</span> --retry-all-errors --retry-delay <span style="color:#bd93f9">1</span> --connect-timeout <span style="color:#bd93f9">2</span> <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  http://127.0.0.1:6734/readyz
+docker compose -f compose.yaml <span style="color:#8be9fd;font-style:italic">exec</span> -T pms /spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ create service docs
+docker compose -f compose.yaml <span style="color:#8be9fd;font-style:italic">exec</span> -T pms /spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ create policy -c <span style="color:#f1fa8c">&#34;grant user alice get,list /docs/public&#34;</span> --service-name<span style="color:#ff79c6">=</span>docs</code></pre></div>
+<p>동일한 <code>is-allowed</code> 요청을 전송합니다. ADS는 재시작 없이 새 정책을 인식합니다.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker compose -f compose.yaml down -v</code></pre></div>
+<p><code>down -v</code>는 Compose 볼륨과 그 안에 저장된 정책을 삭제합니다.</p>
+
+<h2 id="출처-및-sbom-검증">출처 및 SBOM 검증</h2>
+
+<p>배포 빌드에는 출처(Provenance) 및 SBOM(<code>docker buildx build --provenance=mode=max --sbom=true</code>)이 포함됩니다. 인덱스 검사:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker buildx imagetools inspect docker.io/speedle/speedle:1.7.0</code></pre></div>
+<p>인덱스에는 <code>linux/amd64</code>, <code>linux/arm64</code> 및 두 개의 <code>unknown/unknown</code> 매니페스트가 나열됩니다. 이러한 unknown 플랫폼은 증명(attestation) 매니페스트입니다. 각각은 <code>vnd.docker.reference.type</code>을 <code>attestation-manifest</code>로 설정하고 <code>vnd.docker.reference.digest</code>를 해당 플랫폼 이미지로 설정합니다. <code>docker buildx imagetools inspect ghcr.io/teramoby/speedle:1.7.0</code>도 동일한 플랫폼 및 증명 다이제스트를 출력합니다.</p>
+
+<h2 id="컨테이너-중지">컨테이너 중지</h2>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker rm -f speedle-pms speedle-ads
+docker volume rm speedle-policies</code></pre></div>
+<p><code>docker volume rm</code>은 정책 파일을 삭제합니다. Compose로 프로세스를 시작한 경우 대신 <code>docker compose -f compose.yaml down -v</code>를 사용하십시오.</p>
+</div>
+</div>
+</main>
+        </div>
+    </div>
+    <div class="docs-nav-backdrop" hidden></div>
+    <footer class="site-footer">
+    <div class="wrap footer-main">
+      <div class="footer-brand">
+        <a class="footer-lockup" href="/ko/" aria-label="Speedle Engine 홈"><img src="/img/speedle/Speedle_logo_home_bold.svg?v=4" width="304" height="104" alt="Speedle"><span class="footer-divider" aria-hidden="true"></span><span class="footer-product">Engine</span></a>
+        <p class="footer-tagline">오픈 소스 인가 엔진</p>
+        <nav class="social" aria-label="커뮤니티 링크">
+          <a href="mailto:contact@speedle.io" aria-label="이메일 보내기 contact@speedle.io" title="contact@speedle.io"><img src="/img/speedle/28.%20Mail.svg" width="40" height="40" alt=""></a>
+          <a href="https://groups.google.com/forum/#!forum/speedle-users" aria-label="Google Groups" title="Google Groups — speedle-users"><img src="/img/speedle/Google-Groups.svg" width="24" height="24" alt=""></a>
+          <a href="https://github.com/teramoby/speedle-plus" aria-label="GitHub"><img src="/img/speedle/18.%20Github.svg" width="40" height="40" alt=""></a>
+          <a href="https://discord.gg/uaY2xVsbbT" aria-label="Discord"><img src="/img/speedle/Discord.svg" width="64" height="48" alt=""></a>
+        </nav>
+      </div>
+      <nav class="footer-family" aria-label="Speedle 제품"><svg class="sphere-sprite" width="0" height="0" aria-hidden="true" focusable="false"><symbol id="i-speedle-sphere" viewBox="22 22 114 114"><!-- Source: img/speedle/Speedle_logo_home_bold.svg, sphere group only. Colours changed only (stroke currentColor). No path edits. --><g fill="none" stroke="currentColor" stroke-linejoin="miter" stroke-miterlimit="3" stroke-linecap="butt"><polygon stroke-width="3.6" points="41.83 47.82 30.67 80.15 42.9 112.09 72.8 128.69 106.38 122.19 127.93 95.63 127.36 61.43 104.94 35.6 71.16 30.23"/><g stroke-width="2.4"><polygon points="81.97 43.92 52.19 57.23 44.03 88.8 63.62 114.87 96.22 115.81 117.28 90.9 110.94 58.91"/><polygon points="68.57 60.42 57.6 86.19 78.73 104.59 102.75 90.18 96.47 62.88"/><path d="M41.83 47.82L52.19 57.23 68.57 60.42 81.97 43.92 71.16 30.23 M30.67 80.15L44.03 88.8 42.9 112.09 M52.19 57.23L57.6 86.19 44.03 88.8 78.73 104.59 63.62 114.87 72.8 128.69 M78.73 104.59L96.22 115.81 106.38 122.19 M96.22 115.81L102.75 90.18 117.28 90.9 127.93 95.63 M117.28 90.9L127.36 61.43 110.94 58.91 104.94 35.6 81.97 43.92 M110.94 58.91L96.47 62.88 117.28 90.9"/></g></g></symbol></svg>
+        <ul>
+          <li><a class="footer-card" href="https://engine.speedle.io/ko/" aria-current="page"><svg class="product-sphere product-engine" aria-hidden="true" focusable="false"><use href="#i-speedle-sphere"/></svg><span class="footer-card-name">Speedle Engine</span><span class="footer-card-description">오픈 소스 인가 엔진</span><svg class="footer-card-check" width="15" height="15" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M3.5 8.5 6.5 11.5 12.5 4.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></a></li>
+          <li><a class="footer-card" href="https://cloud.speedle.io/ko/"><svg class="product-sphere product-cloud" aria-hidden="true" focusable="false"><use href="#i-speedle-sphere"/></svg><span class="footer-card-name">Speedle Cloud<span class="product-badge">출시 예정</span></span><span class="footer-card-description">개발자를 위한 호스팅형 인가 서비스</span></a></li>
+          <li><a class="footer-card" href="https://ai.speedle.io/ko/"><svg class="product-sphere product-ai" aria-hidden="true" focusable="false"><use href="#i-speedle-sphere"/></svg><span class="footer-card-name">Speedle AI</span><span class="footer-card-description">AI를 위한 접근 제어, AI를 통한 접근 제어</span></a></li>
+        </ul>
+      </nav>
+    </div>
+    <div class="wrap footer-bar">
+      <p class="footer-legal"><span>Universal Permissive License v1.0에 따라 라이선스가 부여됩니다.</span><span class="footer-legal-sep"> · </span><span>Copyright &copy; 2019–2026 The Speedle Authors. All rights reserved.</span></p>
+    </div>
+  </footer>
+<!-- Cloudflare Web Analytics --><script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "a7a746c498b940e58425123082a20520"}'></script><!-- End Cloudflare Web Analytics -->
+</body>
+
+</html>

@@ -4,7 +4,7 @@
 {{ $tocID = "contents1" }}
 <div id="offcanvas-left">
 {{ end }}
-<nav id="{{ $tocID }}" class="docs-toc" data-docs-toc="{{ .Params.tocheading | default "h2" }}" aria-label="{{ if eq .Lang "zh" }}本页目录{{ else }}On this page{{ end }}">
+<nav id="{{ $tocID }}" class="docs-toc" data-docs-toc="{{ .Params.tocheading | default "h2" }}" aria-label="{{ if eq .Lang "zh" }}本页目录{{ else if eq .Lang "ja" }}目次{{ else if eq .Lang "ko" }}목차{{ else if eq .Lang "es" }}En esta página{{ else }}On this page{{ end }}">
   <ol></ol>
 </nav>
 {{ if and (isset .Params "tocsidebar") .Params.tocsidebar }}</div>{{ end }}

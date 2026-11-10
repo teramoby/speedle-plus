@@ -3,7 +3,7 @@
 {{- if not $description }}{{ $description = .Site.Params.description }}{{ end -}}
 {{- $title := "Speedle Engine" -}}
 {{- if .IsHome -}}
-  {{- if eq .Lang "zh" -}}{{- $title = "Speedle Engine — 快速、简单的权限控制" -}}{{- else -}}{{- $title = "Speedle Engine — Fast. Simple. Access control" -}}{{- end -}}
+  {{- if eq .Lang "zh" -}}{{- $title = "Speedle Engine — 快速、简单的权限控制" -}}{{- else if eq .Lang "ja" -}}{{- $title = "Speedle Engine — 高速・シンプルな認可制御" -}}{{- else if eq .Lang "ko" -}}{{- $title = "Speedle Engine — 빠르고 간단한 인가 제어" -}}{{- else if eq .Lang "es" -}}{{- $title = "Speedle Engine — Control de acceso rápido y simple" -}}{{- else -}}{{- $title = "Speedle Engine — Fast. Simple. Access control" -}}{{- end -}}
 {{- else if .Title -}}
   {{- $pageTitle := partial "localized-title.html" . -}}
   {{- $title = printf "%s · Speedle Engine" $pageTitle -}}

@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>デプロイ on Speedle</title>
+    <link>https://engine.speedle.io/ja/docs/deployment/</link>
+    <description>Recent content in デプロイ on Speedle</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>ja-jp</language>
+    <lastBuildDate>Tue, 10 Nov 2026 14:45:43 +0800</lastBuildDate>
+    
+	<atom:link href="https://engine.speedle.io/ja/docs/deployment/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>Speedle 組み込みモード</title>
+      <link>https://engine.speedle.io/ja/docs/deployment/embedded/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/ja/docs/deployment/embedded/</guid>
+      <description>組み込みモードとは？ 組み込みモードは、Speedle ポリシー決定エンジンを Go アプリケーション内で直接実行します。PMS や ADS サーバーを起動することなく、評価エンジンを直接呼び出します。アプリケーションがユーザーを認証し、各決定のためのサブジェクト、リソース、アクションを提供します。
+コードを書く前に基本的なポリシーを試すには、Playground を開いてください。Speedle をスタンドアロンサービスとして実行するには、クイックスタート に従ってください。
+前提条件 クイックスタート と同様に、シェルと Go 1.26.10 または Go 1.27.3（または同じリリースブランチの新しいパッチバージョン）を備えた Linux または macOS を使用します。このウォークスルーでは、Go modules と公開された Speedle v1.6.0 リリースを使用します。ツールチェーンとしては Go 1.27.3 が推奨されます。この例は Go 1.26.10 および Go 1.27.3 で検証されています。
+Go 公式インストール手順 に従って Go をインストールし、バージョンを確認します:
+go version Go は GOROOT とデフォルトの GOPATH を自動的に構成するため、カスタム値は不要です。
+アプリケーションモジュールの作成 Speedle ソースチェックアウトの外部にある書き込み可能なディレクトリから始めます。このウォークスルー用に新しいディレクトリを使用します:
+mkdir speedle-embedded-demo cd speedle-embedded-demo go mod init example.com/speedle-embedded-demo go get github.com/teramoby/speedle-plus/pkg/eval@v1.6.0 既存の Go モジュールでは、そのモジュールのディレクトリから最後の go get コマンドのみを実行します。</description>
+    </item>
+    
+    <item>
+      <title>Docker イメージ</title>
+      <link>https://engine.speedle.io/ja/docs/deployment/docker/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/ja/docs/deployment/docker/</guid>
+      <description>Speedle は、speedle-pms、speedle-ads、および spctl を含む 1 つのイメージを公開しています。イメージは FROM scratch でビルドされ、UID 65532 として実行され、シェルは含まれていません。最初の引数でプログラムを選択します。
+両方のレジストリに同一のイメージインデックスがあります:
+ Docker Hub: docker.io/speedle/speedle GHCR: ghcr.io/teramoby/speedle  リリース 1.7.0 では、linux/amd64 および linux/arm64 向けに、両方のレジストリでタグ 1.7.0、1.7、および latest が公開されています。
+イメージのプル docker pull docker.io/speedle/speedle:1.7.0 docker pull ghcr.io/teramoby/speedle:1.7.0 docker pull はインデックスダイジェストを出力します。1.7.0 の場合、そのダイジェストは両方のレジストリで sha256:20bd3fe8169ec3ddadf1484285e34bd68004dbb457782223dc84a2a9f1dd91c0 です。
+タグの選択 1.7.0 はこのリリースを指定します。より新しい 1.7 パッチが公開されると 1.7 が移動します。master の最新コミットから新しいリリースが公開されると latest が移動します。リリースの再試行で同じバージョンダグが再度公開される可能性があるため、タグは不変のビルドではありません。
+インデックスダイジェストを確認するには:
+docker buildx imagetools inspect docker.io/speedle/speedle:1.7.0 --format &amp;#39;{{.Manifest.Digest}}&amp;#39; 1.7.0 リリースの場合、両方のレジストリ上の 1.7.0、1.7、および latest はすべて以下を出力します:
+sha256:20bd3fe8169ec3ddadf1484285e34bd68004dbb457782223dc84a2a9f1dd91c0 1.7 または latest をデプロイする前に、ダイジェストを再度確認してください。単一のビルドに固定するには、イメージ名に @ とそのダイジェストを組み合わせて使用します（例: docker.</description>
+    </item>
+    
+    <item>
+      <title>Homebrew でのインストール</title>
+      <link>https://engine.speedle.io/ja/docs/deployment/homebrew/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/ja/docs/deployment/homebrew/</guid>
+      <description>macOS または Linux で Homebrew を使い、Speedle のコマンドラインツールをインストールします。Homebrew は、公式組織以外の tap にある formula を信頼するまで、その formula をインストールまたは起動しません。
+brew tap teramoby/tap brew trust teramoby/tap brew install teramoby/tap/spctl Formula の名前は spctl です。macOS でのコマンドは speedle-spctl なので、このインストールは Apple Gatekeeper の /usr/sbin/spctl を置き換えません。Linux では同じプログラムを spctl としても使えます。
+ポリシー管理サービスと認可決定サービスは別の formula です。
+brew install teramoby/tap/speedle-pms brew install teramoby/tap/speedle-ads コマンドラインツールと両方のサービスをまとめてインストールします。
+brew install teramoby/tap/speedle spctl、speedle-pms、speedle-ads はそれぞれ、そのリリースの macOS または Linux バイナリをインストールし、そのリリースの checksums.txt と照合します。
+
+Homebrew でのデモ 両方のサービスを起動します。これらは 127.0.0.1 で待ち受け、1 つのファイルポリシーストアを共有します。
+brew services start speedle-pms brew services start speedle-ads speedle-pms は 127.</description>
+    </item>
+    
+  </channel>
+</rss>

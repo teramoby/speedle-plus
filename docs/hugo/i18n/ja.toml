@@ -1,0 +1,86 @@
+[GETTING_STARTED]
+other = "入門"
+
+[LEARN_MORE]
+other = "詳細を見る"
+
+[SimplePolicyLanguage]
+other = "シンプルなポリシー言語"
+
+[FEATURE_SimplePolicyLanguage]
+other = "高水準の宣言型言語 (Speedle Policy Definition Language - SPDL) を使用して、最も直感的で自然な方法でポリシーを定義します。"
+
+[CloudNative]
+other = "クラウドネイティブ"
+
+[FEATURE_CloudNative]
+other = "クラウドファースト！豊富な統合サンプルとプラガブルなインターフェースにより、あらゆるクラウドプロバイダーでアプリケーションを保護します。"
+
+[RealtimePolicyDiscovery]
+other = "リアルタイムポリシー検出"
+
+[FEATURE_RealtimePolicyDiscovery]
+other = "サービス間のリアルタイムなランタイム相互作用に基づいてポリシーを動的に検出し、攻撃者がシステムにアクセスする可能性のあるすべての方法を推測する必要をなくします。"
+
+[FEATURE_RBAC]
+other = "ロールおよび属性に基づくきめ細かなアクセス制御を使用してアプリケーションを保護します。"
+
+[CentralizedPolicyManagement]
+other = "一元的なポリシー管理"
+
+[FEATURE_CentralizedPolicyManagement]
+other = "多様な統合ポイントを活用して、ポリグロットで異種混在のシステムのポリシーを1つの中心的な場所から管理します。"
+
+[PluggableIdentity]
+other = "プラグ可能なアイデンティティ"
+
+[FEATURE_PluggableIdentity]
+other = "簡単に拡張可能！GitHub、Okta、さらには企業独自のアイデンティティプロバイダーを接続できます。"
+
+[PluggablePersistenceStore]
+other = "独自ストレージの持ち込み"
+
+[FEATURE_BYOPersistenceStore]
+other = "etcd 以外のストレージをお探しですか？永続化インターフェースを実装することで、RDBMS、NoSQL、ブロックストレージなどの既存のストレージを使用できます。"
+
+[AboutSpeedleTitle]
+other = "Speedle について"
+
+[AboutSpeedleContent]
+other = "Speedle は汎用認可エンジンです。最新のクラウドネイティブアプリケーションからレガシーアプリケーションまで、さまざまなアプリケーションのアクセス制御要件に対応するオープンソースプロジェクトです。ポリシー駆動型のきめ細かなアクセス制御をサポートし、ログインユーザーまたはユーザーを代理するプロセスに対して RBAC/ABAC ポリシーを評価できるポリシーエンジンへアクセス制御ロジックを外部化できます。"
+
+[SpeedleConsistsTitle]
+other = "Speedle の構成"
+
+[SpeedleConsistsContent1]
+other = "SPDL ポリシー定義言語"
+
+[SpeedleConsistsContent2]
+other = "ポリシー管理サービス (PMS)"
+
+[SpeedleConsistsContent3]
+other = "認可決定サービス (ADS)"
+
+[SpeedleConsistsContent4]
+other = "コマンドラインツール (spctl)"
+
+[SpeedleConsistsContent6]
+other = "Speedle は Universal Permissive License v1.0 の下でライセンス供与されています。ユーザーは自身のシステムに Speedle を自由に統合できます。"
+
+[Features]
+other = "機能"
+
+[Integrations]
+other = "統合"
+
+[ContributeToSpeedle]
+other = "Speedle への貢献"
+
+[ContributeToSpeedleContent1]
+other = "Speedle はオープンソースプロジェクトであり、プロジェクトをより良くするために貢献を歓迎しています。"
+
+[ContributeToSpeedleContent2]
+other = "Speedle をより良くする"
+
+[Contribute]
+other = "貢献"

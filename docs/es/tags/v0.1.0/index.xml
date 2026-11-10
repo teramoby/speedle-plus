@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>V0.1.0 on Speedle</title>
+    <link>https://engine.speedle.io/es/tags/v0.1.0/</link>
+    <description>Recent content in V0.1.0 on Speedle</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>es-es</language>
+    <lastBuildDate>Tue, 10 Nov 2026 14:45:43 +0800</lastBuildDate>
+    
+	<atom:link href="https://engine.speedle.io/es/tags/v0.1.0/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>API</title>
+      <link>https://engine.speedle.io/es/docs/api/</link>
+      <pubDate>Tue, 10 Nov 2026 14:45:43 +0800</pubDate>
+      
+      <guid>https://engine.speedle.io/es/docs/api/</guid>
+      <description>Las bibliotecas cliente para Java, Python, Go, .NET, Rust y Node.js/TypeScript se encuentran en SDK.
+APIs REST Estos son contratos de referencia para su punto de enlace configurado de PMS/ADS o asertor. speedle.io proporciona documentación y el Playground en el navegador; no es un servicio PMS/ADS hospedado. Envíe JSON con Content-Type: application/json y configure TLS/mTLS y control de acceso del cliente.
+ API de gestión de políticas API de decisiones de autorización Webhook de aserción de tokens  Los identificadores de políticas y políticas de roles son cadenas de texto.</description>
+    </item>
+    
+    <item>
+      <title>API de decisiones de autorización</title>
+      <link>https://engine.speedle.io/es/docs/api/decision_api/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/es/docs/api/decision_api/</guid>
+      <description>Referencia para su ADS configurado. Los atributos de solicitud son matrices tipadas; los atributos de diagnóstico son objetos.
+Configuración de seguridad y endpoints. Esta es una referencia de contrato, no un backend hospedado por speedle.io.
+              document.addEventListener(&#39;DOMContentLoaded&#39;, function() { var url = &#34;\/swagger\/policy-check.yaml&#34;; const ui = SwaggerUIBundle({ url: url, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.presets.apis ], plugins: [ SwaggerUIBundle.</description>
+    </item>
+    
+    <item>
+      <title>API de gestión de políticas</title>
+      <link>https://engine.speedle.io/es/docs/api/management_api/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/es/docs/api/management_api/</guid>
+      <description>Referencia para su PMS configurado. Las solicitudes y respuestas son JSON; los IDs de políticas son cadenas de texto y las respuestas son objetos planos.
+Configuración de seguridad y endpoints. Esta es una referencia de contrato, no un backend hospedado por speedle.io.
+              document.addEventListener(&#39;DOMContentLoaded&#39;, function() { var url = &#34;\/swagger\/policy-manage.yaml&#34;; const ui = SwaggerUIBundle({ url: url, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.</description>
+    </item>
+    
+    <item>
+      <title>API del complemento de aserción de tokens</title>
+      <link>https://engine.speedle.io/es/docs/api/asserter_api/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/es/docs/api/asserter_api/</guid>
+      <description>Referencia del webhook. errCode es un entero y attributes es un objeto. Configure el endpoint real en la configuración del asertor de ADS.
+Configuración de seguridad y endpoints. Esta es una referencia de contrato, no un backend hospedado por speedle.io.
+              document.addEventListener(&#39;DOMContentLoaded&#39;, function() { var url = &#34;\/swagger\/asserter.yaml&#34;; const ui = SwaggerUIBundle({ url: url, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.</description>
+    </item>
+    
+    <item>
+      <title>Marco de registro</title>
+      <link>https://engine.speedle.io/es/docs/logging/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/es/docs/logging/</guid>
+      <description>Descripción general Se utilizan los siguientes dos proyectos de código abierto para procesar mensajes de registro:
+1. https://github.com/sirupsen/logrus 2. https://github.com/natefinch/lumberjack Logrus es un registrador estructurado para Go (golang), totalmente compatible a nivel de API con el registrador de la biblioteca estándar de Go. Tenga en cuenta que logrus no admite la rotación de registros, y esa es exactamente la razón por la que incorporamos el segundo proyecto, lumberjack, que proporciona un registrador con rotación continua.</description>
+    </item>
+    
+    <item>
+      <title>Políticas de Speedle</title>
+      <link>https://engine.speedle.io/es/docs/pms/</link>
+      <pubDate>Wed, 28 Oct 2026 13:16:58 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/es/docs/pms/</guid>
+      <description> Gestión de políticas Políticas globales Descubrimiento de políticas Diagnóstico de autorización  </description>
+    </item>
+    
+    <item>
+      <title>SPDL: Lenguaje de definición de políticas Speedle</title>
+      <link>https://engine.speedle.io/es/docs/spdl/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/es/docs/spdl/</guid>
+      <description>SPDL es el lenguaje para escribir políticas y políticas de roles de Speedle. Esta página cubre la sintaxis, las reglas de nombres y los ejemplos. </description>
+    </item>
+    
+  </channel>
+</rss>

@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Identity on Speedle</title>
+    <link>https://engine.speedle.io/es/tags/identity/</link>
+    <description>Recent content in Identity on Speedle</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>es-es</language>
+    <lastBuildDate>Mon, 21 Jan 2019 09:28:30 +0800</lastBuildDate>
+    
+	<atom:link href="https://engine.speedle.io/es/tags/identity/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>Descripción general de Speedle: Motor de autorización para control de acceso detallado</title>
+      <link>https://engine.speedle.io/es/docs/overview/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/es/docs/overview/</guid>
+      <description>Speedle es un motor de autorización de código abierto. Las aplicaciones le envían consultas como &amp;ldquo;¿puede este usuario realizar esta acción sobre este recurso?&amp;rdquo;, y Speedle responde permitir o denegar de acuerdo con políticas gestionadas centralmente. Esta página relaciona los términos habituales de autorización con los componentes de Speedle que los implementan, y enlaza con las guías correspondientes a cada uno.
+Los ejemplos a continuación utilizan un servicio denominado library.</description>
+    </item>
+    
+    <item>
+      <title>Dominio de identidad</title>
+      <link>https://engine.speedle.io/es/docs/idd/</link>
+      <pubDate>Thu, 17 Jan 2019 13:20:07 +0800</pubDate>
+      
+      <guid>https://engine.speedle.io/es/docs/idd/</guid>
+      <description>¿Qué es un dominio de identidad? Un dominio de identidad (idd) es un espacio de nombres explícito para una entidad principal. Dos usuarios llamados user1 pueden pertenecer a dominios distintos. La cadena de texto es suministrada por código de integración de confianza o por un asertor de tokens configurado; no constituye una prueba de autenticación por sí misma. Speedle no infiere ni valida el modelo multiinquilino de un proveedor basándose únicamente en el nombre del dominio.</description>
+    </item>
+    
+    <item>
+      <title>Asertor de tokens</title>
+      <link>https://engine.speedle.io/es/docs/assertor/</link>
+      <pubDate>Mon, 21 Jan 2019 09:28:30 +0800</pubDate>
+      
+      <guid>https://engine.speedle.io/es/docs/assertor/</guid>
+      <description>¿Qué hace un asertor de tokens? Un asertor configurado valida un token y devuelve entidades principales explícitas, incluidos sus dominios de identidad. A continuación, Speedle evalúa las políticas utilizando esas identidades. Una implementación en producción debe validar la firma del token o el resultado de introspección, el emisor, la audiencia, la expiración y cualquier requisito específico del proveedor. La interfaz webhook por sí sola no establece compatibilidad automática con tokens OAuth/OIDC arbitrarios.</description>
+    </item>
+    
+  </channel>
+</rss>

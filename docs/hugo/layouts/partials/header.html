@@ -1,7 +1,7 @@
 {{/* The approved homepage supplies navigation labels, order and markup.
      The language router resolves its language link to this page after render. */}}
 {{- $source := "static/index.html" -}}
-{{- if eq .Lang "zh" }}{{ $source = "static/zh/index.html" }}{{ end -}}
+{{- if eq .Lang "zh" }}{{ $source = "static/zh/index.html" }}{{ else if eq .Lang "ja" }}{{ $source = "static/ja/index.html" }}{{ else if eq .Lang "ko" }}{{ $source = "static/ko/index.html" }}{{ else if eq .Lang "es" }}{{ $source = "static/es/index.html" }}{{ end -}}
 {{- $header := index (findRE `<header class="site-header">[\s\S]*?</header>` (readFile $source) 1) 0 -}}
 {{- $home := "/" | relLangURL -}}
 {{- $header = replace $header `href="#` (printf `href="%s#` $home) -}}

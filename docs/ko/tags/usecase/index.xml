@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Usecase on Speedle</title>
+    <link>https://engine.speedle.io/ko/tags/usecase/</link>
+    <description>Recent content in Usecase on Speedle</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>ko-kr</language>
+    
+	<atom:link href="https://engine.speedle.io/ko/tags/usecase/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>유스케이스</title>
+      <link>https://engine.speedle.io/ko/docs/usecases/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/ko/docs/usecases/</guid>
+      <description>애플리케이션 전용 정책 Alex Chan은 Go로 간단한 애플리케이션을 구현하는 개발자입니다. 인가가 필요하지만 바퀴를 다시 발명하고 싶지 않습니다. Alex는 오픈 소스인 Speedle을 활용할 수 있습니다.
+중앙 집중식 정책 적용 및 관리 Jin Chen은 다국적 기업의 보안 관리자입니다. 그의 팀은 수십 개의 내부 시스템을 모니터링합니다. 각 시스템의 인가 정책을 한곳에서 효율적으로 관리할 솔루션을 찾고 있습니다.</description>
+    </item>
+    
+  </channel>
+</rss>

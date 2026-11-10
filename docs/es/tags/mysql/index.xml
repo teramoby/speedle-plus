@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Mysql on Speedle</title>
+    <link>https://engine.speedle.io/es/tags/mysql/</link>
+    <description>Recent content in Mysql on Speedle</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>es-es</language>
+    
+	<atom:link href="https://engine.speedle.io/es/tags/mysql/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>Configuración de MySQL</title>
+      <link>https://engine.speedle.io/es/docs/store/mysql/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/es/docs/store/mysql/</guid>
+      <description>Esta guía utiliza MySQL 8.4 LTS y dos procesos nativos de Speedle: PMS escribe políticas y ADS lee la misma base de datos con una cuenta independiente de solo lectura. El ejemplo local utiliza Docker y HTTP en texto plano en la interfaz de bucle invertido (loopback). Para un despliegue remoto, utilice su servidor MySQL existente y consulte la guía de Seguridad.
+1. Compilar Speedle con el backend MySQL Instale Git, Bash, curl, Docker y una versión compatible de Go (Go 1.</description>
+    </item>
+    
+  </channel>
+</rss>

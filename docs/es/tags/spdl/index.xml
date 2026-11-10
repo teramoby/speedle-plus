@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Spdl on Speedle</title>
+    <link>https://engine.speedle.io/es/tags/spdl/</link>
+    <description>Recent content in Spdl on Speedle</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>es-es</language>
+    
+	<atom:link href="https://engine.speedle.io/es/tags/spdl/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>Descripción general de Speedle: Motor de autorización para control de acceso detallado</title>
+      <link>https://engine.speedle.io/es/docs/overview/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/es/docs/overview/</guid>
+      <description>Speedle es un motor de autorización de código abierto. Las aplicaciones le envían consultas como &amp;ldquo;¿puede este usuario realizar esta acción sobre este recurso?&amp;rdquo;, y Speedle responde permitir o denegar de acuerdo con políticas gestionadas centralmente. Esta página relaciona los términos habituales de autorización con los componentes de Speedle que los implementan, y enlaza con las guías correspondientes a cada uno.
+Los ejemplos a continuación utilizan un servicio denominado library.</description>
+    </item>
+    
+    <item>
+      <title>SPDL: Lenguaje de definición de políticas Speedle</title>
+      <link>https://engine.speedle.io/es/docs/spdl/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/es/docs/spdl/</guid>
+      <description>SPDL es el lenguaje para escribir políticas y políticas de roles de Speedle. Esta página cubre la sintaxis, las reglas de nombres y los ejemplos. </description>
+    </item>
+    
+  </channel>
+</rss>

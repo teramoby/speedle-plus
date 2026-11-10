@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>SDK on Speedle</title>
+    <link>https://engine.speedle.io/ko/docs/sdks/</link>
+    <description>Recent content in SDK on Speedle</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>ko-kr</language>
+    <lastBuildDate>Tue, 10 Nov 2026 14:45:43 +0800</lastBuildDate>
+    
+	<atom:link href="https://engine.speedle.io/ko/docs/sdks/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>Java SDK</title>
+      <link>https://engine.speedle.io/ko/docs/sdks/java/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/ko/docs/sdks/java/</guid>
+      <description>Java SDK는 Java 17 이상이 필요하며 런타임 의존성이 없습니다. 패키지: Maven Central의 io.speedle:speedle-sdk 0.2.0. 참조 문서: speedle-sdk/java.
+예제에서는 SDK 개요에서 설명한 정책을 확인합니다.
+의존성 추가 Maven의 경우 전체 pom.xml:
+&amp;lt;?xml version=&amp;#34;1.0&amp;#34; encoding=&amp;#34;UTF-8&amp;#34;?&amp;gt; &amp;lt;project xmlns=&amp;#34;http://maven.apache.org/POM/4.0.0&amp;#34; xmlns:xsi=&amp;#34;http://www.w3.org/2001/XMLSchema-instance&amp;#34; xsi:schemaLocation=&amp;#34;http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd&amp;#34;&amp;gt; &amp;lt;modelVersion&amp;gt;4.0.0&amp;lt;/modelVersion&amp;gt; &amp;lt;groupId&amp;gt;com.example&amp;lt;/groupId&amp;gt; &amp;lt;artifactId&amp;gt;speedle-example&amp;lt;/artifactId&amp;gt; &amp;lt;version&amp;gt;1.0&amp;lt;/version&amp;gt; &amp;lt;properties&amp;gt; &amp;lt;maven.compiler.release&amp;gt;17&amp;lt;/maven.compiler.release&amp;gt; &amp;lt;project.build.sourceEncoding&amp;gt;UTF-8&amp;lt;/project.build.sourceEncoding&amp;gt; &amp;lt;/properties&amp;gt; &amp;lt;dependencies&amp;gt; &amp;lt;dependency&amp;gt; &amp;lt;groupId&amp;gt;io.speedle&amp;lt;/groupId&amp;gt; &amp;lt;artifactId&amp;gt;speedle-sdk&amp;lt;/artifactId&amp;gt; &amp;lt;version&amp;gt;0.2.0&amp;lt;/version&amp;gt; &amp;lt;/dependency&amp;gt; &amp;lt;/dependencies&amp;gt; &amp;lt;/project&amp;gt; Gradle의 경우 전체 build.gradle.kts(rootProject.name을 설정하는 settings.gradle.kts 포함):
+plugins { application } repositories { mavenCentral() } dependencies { implementation(&amp;#34;io.</description>
+    </item>
+    
+    <item>
+      <title>Python SDK</title>
+      <link>https://engine.speedle.io/ko/docs/sdks/python/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/ko/docs/sdks/python/</guid>
+      <description>Python SDK는 Python 3.10 이상이 필요합니다. 런타임 의존성은 httpx뿐입니다. 동일한 인수를 사용하는 동기식 Client와 asyncio용 AsyncClient를 모두 제공합니다. 패키지: PyPI의 speedle 0.2.0. 참조 문서: speedle-sdk/python.
+예제에서는 SDK 개요에서 설명한 정책을 확인합니다.
+의존성 추가 가상 환경에서 pip를 사용하는 경우:
+python3 -m venv .venv . .venv/bin/activate pip install speedle==0.2.0 또는 uv 프로젝트에서 uv를 사용하는 경우:
+uv add speedle==0.2.0 로컬 Speedle 호출 SDK 개요의 설명에 따라 Speedle을 시작하고 예제 정책을 생성합니다. 이 프로그램을 main.</description>
+    </item>
+    
+    <item>
+      <title>Go SDK</title>
+      <link>https://engine.speedle.io/ko/docs/sdks/go/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/ko/docs/sdks/go/</guid>
+      <description>Go SDK는 최신 두 개의 Go 릴리스를 지원하며 표준 라이브러리만 사용합니다. 모듈: github.com/teramoby/speedle-sdk/go v0.2.0, 패키지 이름 speedle. 참조 문서: speedle-sdk/go.
+예제에서는 SDK 개요에서 설명한 정책을 확인합니다.
+의존성 추가 새 모듈에서 다음을 실행합니다:
+go mod init example.com/speedle-example go get github.com/teramoby/speedle-sdk/go@v0.2.0 로컬 Speedle 호출 SDK 개요의 설명에 따라 Speedle을 시작하고 예제 정책을 생성합니다. 이 프로그램을 main.go로 저장합니다:
+package main import ( &amp;#34;context&amp;#34; &amp;#34;fmt&amp;#34; &amp;#34;os&amp;#34; speedle &amp;#34;github.com/teramoby/speedle-sdk/go&amp;#34; ) func main() { client, err := speedle.</description>
+    </item>
+    
+    <item>
+      <title>C#/.NET SDK</title>
+      <link>https://engine.speedle.io/ko/docs/sdks/dotnet/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/ko/docs/sdks/dotnet/</guid>
+      <description>.NET SDK는 .NET 8 이상을 대상으로 하며 의존성이 없습니다. 패키지: NuGet의 Speedle.Sdk 0.2.0, 네임스페이스 Speedle.Sdk. 참조 문서: speedle-sdk/dotnet.
+예제에서는 SDK 개요에서 설명한 정책을 확인합니다.
+의존성 추가 새 콘솔 프로젝트를 생성하고 패키지를 추가합니다:
+dotnet new console -o SpeedleExample cd SpeedleExample dotnet add package Speedle.Sdk --version 0.2.0 로컬 Speedle 호출 SDK 개요의 설명에 따라 Speedle을 시작하고 예제 정책을 생성합니다. Program.cs를 다음과 같이 대체합니다:
+using Speedle.Sdk; try { await using var speedle = new SpeedleClient(new SpeedleClientOptions { Backend = Backend.</description>
+    </item>
+    
+    <item>
+      <title>Rust SDK</title>
+      <link>https://engine.speedle.io/ko/docs/sdks/rust/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/ko/docs/sdks/rust/</guid>
+      <description>Rust SDK는 Rust 1.75 이상이 필요합니다. tokio와 reqwest(rustls)를 기반으로 한 비동기 구성을 제공합니다. blocking 기능 플래그를 통해 아래 예제에서 사용하는 동기식 블로킹 클라이언트가 추가됩니다. 크레이트: crates.io의 speedle 0.2.0. 참조 문서: speedle-sdk/rust.
+예제에서는 SDK 개요에서 설명한 정책을 확인합니다.
+의존성 추가 새 패키지를 생성하고 의존성을 추가합니다:
+cargo new speedle-example cd speedle-example cargo add speedle@0.2.0 --features blocking 로컬 Speedle 호출 SDK 개요의 설명에 따라 Speedle을 시작하고 예제 정책을 생성합니다. src/main.rs를 다음과 같이 대체합니다:</description>
+    </item>
+    
+    <item>
+      <title>Node.js/TypeScript SDK</title>
+      <link>https://engine.speedle.io/ko/docs/sdks/node/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/ko/docs/sdks/node/</guid>
+      <description>Node.js SDK는 Node.js 22 이상이 필요하며 TypeScript 타입 정의를 포함한 ESM 및 CommonJS 빌드를 제공하고 런타임 의존성이 없습니다. 패키지: npm의 @speedle/sdk. 참조 문서: speedle-sdk/node.
+예제에서는 SDK 개요에서 설명한 정책을 확인합니다.
+의존성 추가 새 ES 모듈 패키지를 생성하고 설치합니다:
+mkdir speedle-example cd speedle-example npm init -y npm pkg set type=module npm install @speedle/sdk@0.2.1 로컬 Speedle 호출 SDK 개요의 설명에 따라 Speedle을 시작하고 예제 정책을 생성합니다. 이 프로그램을 main.ts로 저장합니다:
+import { Auth, Reason, SpeedleClient, SpeedleError } from &amp;#34;@speedle/sdk&amp;#34;; try { const speedle = new SpeedleClient({ backend: &amp;#34;speedle&amp;#34;, endpoint: &amp;#34;http://localhost:6734&amp;#34;, auth: Auth.</description>
+    </item>
+    
+  </channel>
+</rss>

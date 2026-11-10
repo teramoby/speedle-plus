@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Https on Speedle</title>
+    <link>https://engine.speedle.io/ja/tags/https/</link>
+    <description>Recent content in Https on Speedle</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>ja-jp</language>
+    
+	<atom:link href="https://engine.speedle.io/ja/tags/https/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>セキュリティ</title>
+      <link>https://engine.speedle.io/ja/docs/security/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/ja/docs/security/</guid>
+      <description>両方の API トランスポートを保護 独立して動作する PMS と ADS は REST と gRPC を公開します。現在、両者とも同じ --insecure、--cert、--key、--client-cert、および --force-client-cert トランスポート設定を使用します。証明書または信頼設定が無効な場合、起動は失敗します。セキュアモードがプレーンテキストにフォールバックすることはありません。
+TLS は接続を暗号化し、サーバーを認証します。認証されたクライアントを要求するには、--client-cert でクライアント CA を提供し、かつ --force-client-cert=true を設定します。そのフラグがない場合、構成された CA はクライアントが証明書を提供した場合にのみクライアント証明書を検証します。TLS だけでは管理者の認可や Bearer トークンの検証は提供されません。管理、診断、および検出エンドポイントには、認証済みゲートウェイまたは同等のアクセス制御を使用してください。--enable-authz フラグは、組み込みのエンドポイント認可ポリシーを提供するものではありません。
+リッスンアドレスと互換性    サービス デフォルト REST アドレス デフォルト gRPC アドレス     PMS 0.0.0.0:6733 --grpc-endpoint が設定されるまで無効   ADS 0.0.0.0:6734 --grpc-endpoint が設定されるまで無効    REST と gRPC のリッスンアドレスは個別に構成されます。--endpoint のみを設定しても gRPC は有効になりません。PMS 用には --grpc-endpoint 127.0.0.1:50001、ADS 用には --grpc-endpoint 127.</description>
+    </item>
+    
+  </channel>
+</rss>

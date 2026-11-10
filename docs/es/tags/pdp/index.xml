@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Pdp on Speedle</title>
+    <link>https://engine.speedle.io/es/tags/pdp/</link>
+    <description>Recent content in Pdp on Speedle</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>es-es</language>
+    
+	<atom:link href="https://engine.speedle.io/es/tags/pdp/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>Decisiones de autorización</title>
+      <link>https://engine.speedle.io/es/docs/decisions/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/es/docs/decisions/</guid>
+      <description>¿Qué es una decisión de autorización? Speedle evalúa un sujeto, una acción y un recurso dentro de un servicio. La aplicación debe hacer cumplir el resultado. Trate un error de evaluación o un tiempo de espera por separado de una denegación ordinaria y falle de forma restrictiva (fail closed). Las APIs REST, gRPC y Go en modo integrado tienen representaciones de red distintas; utilice sus respectivos contratos.
+Antes de ejecutar los ejemplos Compile .</description>
+    </item>
+    
+    <item>
+      <title>Descripción general de Speedle: Motor de autorización para control de acceso detallado</title>
+      <link>https://engine.speedle.io/es/docs/overview/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/es/docs/overview/</guid>
+      <description>Speedle es un motor de autorización de código abierto. Las aplicaciones le envían consultas como &amp;ldquo;¿puede este usuario realizar esta acción sobre este recurso?&amp;rdquo;, y Speedle responde permitir o denegar de acuerdo con políticas gestionadas centralmente. Esta página relaciona los términos habituales de autorización con los componentes de Speedle que los implementan, y enlaza con las guías correspondientes a cada uno.
+Los ejemplos a continuación utilizan un servicio denominado library.</description>
+    </item>
+    
+  </channel>
+</rss>

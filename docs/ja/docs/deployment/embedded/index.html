@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <script>document.documentElement.classList.add('docs-js','navigation-js');addEventListener('DOMContentLoaded',function(){if(!document.querySelector('header.site-header.navigation-ready'))document.documentElement.classList.remove('navigation-js')});</script>
+    <meta name="generator" content="Hugo 0.48" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1"><title>Speedle 組み込みモード · Speedle Engine</title>
+<meta name="description" content="Go modules を使用して Speedle を Go アプリケーションに組み込み、Allow/Deny 認可決定を検証">
+<meta name="generator" content="Hugo 0.48" />
+<link href="https://engine.speedle.io/index.xml" rel="alternate" type="application/rss+xml">
+<link rel="canonical" href="https://engine.speedle.io/ja/docs/deployment/embedded/">
+
+<link rel="alternate" hreflang="en" href="https://engine.speedle.io/docs/deployment/embedded/">
+<link rel="alternate" hreflang="es" href="https://engine.speedle.io/es/docs/deployment/embedded/">
+<link rel="alternate" hreflang="ja" href="https://engine.speedle.io/ja/docs/deployment/embedded/">
+<link rel="alternate" hreflang="ko" href="https://engine.speedle.io/ko/docs/deployment/embedded/">
+<link rel="alternate" hreflang="zh-CN" href="https://engine.speedle.io/zh/docs/deployment/embedded/">
+<link rel="alternate" hreflang="x-default" href="https://engine.speedle.io/docs/deployment/embedded/">
+<meta property="og:type" content="article">
+<meta property="article:modified_time" content="2026-11-10T14:45:43&#43;08:00">
+<meta property="og:site_name" content="Speedle Engine">
+<meta property="og:title" content="Speedle 組み込みモード · Speedle Engine">
+<meta property="og:description" content="Go modules を使用して Speedle を Go アプリケーションに組み込み、Allow/Deny 認可決定を検証">
+<meta property="og:url" content="https://engine.speedle.io/ja/docs/deployment/embedded/">
+<meta property="og:image" content="https://engine.speedle.io/img/social/engine-en.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:alt" content="Speedle Engine — Fast. Simple. Access control">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Speedle 組み込みモード · Speedle Engine">
+<meta name="twitter:description" content="Go modules を使用して Speedle を Go アプリケーションに組み込み、Allow/Deny 認可決定を検証">
+<meta name="twitter:image" content="https://engine.speedle.io/img/social/engine-en.png">
+<meta name="twitter:image:alt" content="Speedle Engine — Fast. Simple. Access control">
+
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/ja/docs/deployment/embedded/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-10T14:45:43+08:00","description":"Go modules を使用して Speedle を Go アプリケーションに組み込み、Allow/Deny 認可決定を検証","headline":"Speedle 組み込みモード","image":"https://engine.speedle.io/img/social/engine-en.png","inLanguage":"ja","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/ja/docs/deployment/embedded/","@type":"WebPage"},"name":"Speedle 組み込みモード","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/ja/docs/deployment/embedded/"}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/ja/docs/deployment/embedded/#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://engine.speedle.io/ja/","name":"ホーム","position":1},{"@type":"ListItem","item":"https://engine.speedle.io/ja/docs/","name":"ドキュメント","position":2},{"@type":"ListItem","item":"https://engine.speedle.io/ja/docs/deployment/","name":"デプロイ","position":3},{"@type":"ListItem","item":"https://engine.speedle.io/ja/docs/deployment/embedded/","name":"Speedle 組み込みモード","position":4}]}</script><link href="/css/docs.css" rel="stylesheet" type="text/css">
+
+
+    <link href="/css/navigation.css?v=header-20261106-v8" rel="stylesheet">
+    <script src="/js/navigation.js?v=header-20261106-v8" defer></script>
+    <script src="/js/docs.js" defer></script>
+
+</head>
+
+<body class="page-kube docs-page">
+    <header class="site-header">
+    <div class="wrap nav">
+      <a class="brand" href="/ja/#top" aria-label="Speedle Engine ホーム"><img class="brand-logo" src="/img/speedle/Speedle_logo_home_bold.svg?v=4" width="304" height="104" alt=""><span class="brand-divider" aria-hidden="true"></span><span class="brand-product">Engine</span></a>
+      <button class="menu" type="button" aria-expanded="false" aria-controls="nav-links" aria-label="ナビゲーションを開く">☰</button>
+      <nav class="nav-links" id="nav-links" aria-label="メインナビゲーション">
+        <div class="products"><button class="products-button" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="products-panel">プロダクト<svg class="products-chevron" width="10" height="10" viewBox="0 0 10 10" aria-hidden="true" focusable="false"><path d="M2 3.5 5 6.5 8 3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button><span class="products-heading" aria-hidden="true">プロダクト</span><div class="products-panel" id="products-panel" role="group" aria-label="プロダクト"><a class="product-row" href="https://engine.speedle.io/ja/" aria-current="page"><img class="product-mark" src="/img/speedle/speedle-mark-engine.svg" alt="" width="20" height="20"><span class="product-text"><span class="product-name">Speedle Engine</span><span class="product-desc">オープンソース認可エンジン</span></span><svg class="product-check" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M3.5 8.5 6.5 11.5 12.5 4.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></a><a class="product-row" href="https://cloud.speedle.io/ja/"><img class="product-mark" src="/img/speedle/speedle-mark-cloud.svg" alt="" width="20" height="20"><span class="product-text"><span class="product-name">Speedle Cloud <span class="product-badge">まもなく公開</span></span><span class="product-desc">開発者向けホスト型認可サービス</span></span></a><a class="product-row" href="https://ai.speedle.io/ja/"><img class="product-mark" src="/img/speedle/speedle-mark-ai.svg" alt="" width="20" height="20"><span class="product-text"><span class="product-name">Speedle AI</span><span class="product-desc">AI のためのアクセス制御、アクセス制御のための AI</span></span></a></div></div>
+        <a href="/ja/#about">Speedle について</a><a href="/ja/#features">機能</a>
+        <a href="/ja/quick-start/">クイックスタート</a><a href="/ja/docs/">ドキュメント</a><a href="/ja/playground/">Playground</a>
+        <div class="languages"><button class="languages-button" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="languages-panel">日本語<svg class="languages-chevron" width="10" height="10" viewBox="0 0 10 10" aria-hidden="true" focusable="false"><path d="M2 3.5 5 6.5 8 3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button><span class="languages-heading" aria-hidden="true">言語</span><div class="languages-panel" id="languages-panel" role="group" aria-label="言語"><a class="language-row" href="/docs/deployment/embedded/" lang="en" hreflang="en">English</a><a class="language-row" href="/ja/docs/deployment/embedded/" lang="ja" hreflang="ja" aria-current="page">日本語</a><a class="language-row" href="/ko/docs/deployment/embedded/" lang="ko" hreflang="ko">한국어</a><a class="language-row" href="/es/docs/deployment/embedded/" lang="es" hreflang="es">Español</a><a class="language-row" href="/zh/docs/deployment/embedded/" lang="zh-CN" hreflang="zh-CN" >中文</a></div></div>
+        <a class="nav-github" href="https://github.com/teramoby/speedle-plus">GitHub</a>
+      </nav>
+    </div>
+  </header>
+    <div class="container">
+        <button class="docs-nav-toggle" type="button" aria-expanded="false" aria-controls="docs-navigation">
+            <span>メニュー</span>
+            <svg class="docs-nav-toggle-icon" viewBox="0 0 18 14" width="18" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M1 1h16M1 7h16M1 13h16"/></svg>
+        </button>
+        <div class="content-container"><aside class="docs-sidebar" id="docs-navigation" aria-label="ドキュメントナビゲーション">
+<div class="docs-nav-head">
+<span class="docs-nav-title">ドキュメント</span>
+<button class="docs-nav-close" type="button" aria-label="メニューを閉じる"><svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="m3 3 10 10M13 3 3 13"/></svg></button>
+</div>
+<div class="sidebar">
+<nav>
+<ul>
+
+
+
+
+
+<li data-docs-depth="-1" class="docs-nav-section parent"><span class="docs-nav-heading">ドキュメント</span>
+<ul class="sub-menu">
+<li data-docs-depth="0" class=""><a href="/ja/docs/usecases/">ユースケース</a></li>
+<li data-docs-depth="0" class=""><a href="/ja/docs/overview/">概要</a></li>
+<li data-docs-depth="0" class=""><a href="/ja/docs/spdl/">SPDL: Speedle ポリシー定義言語</a></li>
+<li data-docs-depth="0" class=""><a href="/ja/docs/architecture/">アーキテクチャ</a></li>
+
+
+
+<li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading">Speedle ポリシー</span>
+<ul class="">
+<li data-docs-depth="1" class=""><a href="/ja/docs/pms/policy-mgmt/">ポリシー管理</a></li>
+<li data-docs-depth="1" class=""><a href="/ja/docs/pms/global-policy/">グローバルポリシー</a></li>
+<li data-docs-depth="1" class=""><a href="/ja/docs/pms/diagnosis/">認可診断</a></li>
+<li data-docs-depth="1" class=""><a href="/ja/docs/pms/discover/">ポリシー検出</a></li>
+</ul>
+
+</li>
+<li data-docs-depth="0" class=""><a href="/ja/docs/decisions/">認可決定</a></li>
+<li data-docs-depth="0" class=""><a href="/ja/docs/idd/">ID ドメイン</a></li>
+<li data-docs-depth="0" class=""><a href="/ja/docs/assertor/">トークンアサーター</a></li>
+
+
+
+<li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading docs-nav-heading-link"><a href="/ja/docs/store/">プラグイン可能なストレージ</a></span>
+<ul class="">
+<li data-docs-depth="1" class=""><a href="/ja/docs/store/mysql/">MySQL セットアップ</a></li>
+<li data-docs-depth="1" class=""><a href="/ja/docs/store/etcd/">etcd セットアップ</a></li>
+<li data-docs-depth="1" class=""><a href="/ja/docs/store/mongodb/">MongoDB セットアップ</a></li>
+</ul>
+
+</li>
+
+
+
+<li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading">API</span>
+<ul class="">
+<li data-docs-depth="1" class=""><a href="/ja/docs/api/asserter_api/">トークンアサーション API</a></li>
+<li data-docs-depth="1" class=""><a href="/ja/docs/api/management_api/">ポリシー管理 API</a></li>
+<li data-docs-depth="1" class=""><a href="/ja/docs/api/decision_api/">認可決定 API</a></li>
+</ul>
+
+</li>
+
+
+
+<li data-docs-depth="0" class="docs-nav-section parent"><span class="docs-nav-heading docs-nav-heading-link"><a href="/ja/docs/deployment/">デプロイ</a></span>
+<ul class="sub-menu">
+<li data-docs-depth="1" class="active"><a href="/ja/docs/deployment/embedded/" aria-current="page">Speedle 組み込みモード</a></li>
+<li data-docs-depth="1" class=""><a href="/ja/docs/deployment/docker/">Docker イメージ</a></li>
+<li data-docs-depth="1" class=""><a href="/ja/docs/deployment/homebrew/">Homebrew でのインストール</a></li>
+</ul>
+
+</li>
+
+
+
+<li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading docs-nav-heading-link"><a href="/ja/docs/sdks/">SDK</a></span>
+<ul class="">
+<li data-docs-depth="1" class=""><a href="/ja/docs/sdks/java/">Java SDK</a></li>
+<li data-docs-depth="1" class=""><a href="/ja/docs/sdks/python/">Python SDK</a></li>
+<li data-docs-depth="1" class=""><a href="/ja/docs/sdks/go/">Go SDK</a></li>
+<li data-docs-depth="1" class=""><a href="/ja/docs/sdks/dotnet/">C#/.NET SDK</a></li>
+<li data-docs-depth="1" class=""><a href="/ja/docs/sdks/rust/">Rust SDK</a></li>
+<li data-docs-depth="1" class=""><a href="/ja/docs/sdks/node/">Node.js/TypeScript SDK</a></li>
+</ul>
+
+</li>
+
+
+
+<li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading docs-nav-heading-link"><a href="/ja/docs/cloud/">Speedle Cloud</a></span>
+<ul class="">
+<li data-docs-depth="1" class=""><a href="/ja/docs/cloud/getting-started/">Speedle Cloud クイックスタート</a></li>
+<li data-docs-depth="1" class=""><a href="/ja/docs/cloud/tokens/">Speedle Cloud アプリケーショントークン</a></li>
+<li data-docs-depth="1" class=""><a href="/ja/docs/cloud/authorization-api/">Speedle Cloud 認可 API プレビュー</a></li>
+<li data-docs-depth="1" class=""><a href="/ja/docs/cloud/limits-and-errors/">Speedle Cloud の制限とエラー</a></li>
+</ul>
+
+</li>
+<li data-docs-depth="0" class=""><a href="/ja/docs/security/">セキュリティ</a></li>
+<li data-docs-depth="0" class=""><a href="/ja/docs/logging/">ロギングフレームワーク</a></li>
+<li data-docs-depth="0" class=""><a href="/ja/docs/versions/">バージョン</a></li>
+<li data-docs-depth="0" class=""><a href="/ja/docs/custom-function/">カスタム関数</a></li>
+</ul>
+
+</li>
+</ul>
+</nav>
+
+
+</div>
+</aside>
+<main>
+<div id="main">
+
+  <h1>Speedle 組み込みモード</h1>
+  <p class="docs-lead"></p>
+
+
+
+
+<nav id="contents" class="docs-toc" data-docs-toc="h2" aria-label="目次">
+  <ol></ol>
+</nav>
+
+
+
+  <div id="kube-component" class="content">
+
+<h2 id="組み込みモードとは">組み込みモードとは？</h2>
+
+<p>組み込みモードは、Speedle ポリシー決定エンジンを Go アプリケーション内で直接実行します。PMS や ADS サーバーを起動することなく、評価エンジンを直接呼び出します。アプリケーションがユーザーを認証し、各決定のためのサブジェクト、リソース、アクションを提供します。</p>
+
+<p>コードを書く前に基本的なポリシーを試すには、<a href="/ja/playground/">Playground</a> を開いてください。Speedle をスタンドアロンサービスとして実行するには、<a href="/ja/quick-start/">クイックスタート</a> に従ってください。</p>
+
+<h2 id="前提条件">前提条件</h2>
+
+<p><a href="/ja/quick-start/">クイックスタート</a> と同様に、シェルと <strong>Go 1.26.10 または Go 1.27.3</strong>（または同じリリースブランチの新しいパッチバージョン）を備えた Linux または macOS を使用します。このウォークスルーでは、Go modules と公開された <strong>Speedle v1.6.0</strong> リリースを使用します。ツールチェーンとしては Go 1.27.3 が推奨されます。この例は Go 1.26.10 および Go 1.27.3 で検証されています。</p>
+
+<p><a href="https://go.dev/doc/install">Go 公式インストール手順</a> に従って Go をインストールし、バージョンを確認します:</p>
+
+<!-- embedded: version -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">go version</code></pre></div>
+<p>Go は <code>GOROOT</code> とデフォルトの <code>GOPATH</code> を自動的に構成するため、カスタム値は不要です。</p>
+
+<h2 id="アプリケーションモジュールの作成">アプリケーションモジュールの作成</h2>
+
+<p>Speedle ソースチェックアウトの外部にある書き込み可能なディレクトリから始めます。このウォークスルー用に新しいディレクトリを使用します:</p>
+
+<!-- embedded: setup -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">mkdir speedle-embedded-demo
+<span style="color:#8be9fd;font-style:italic">cd</span> speedle-embedded-demo
+go mod init example.com/speedle-embedded-demo
+go get github.com/teramoby/speedle-plus/pkg/eval@v1.6.0</code></pre></div>
+<p>既存の Go モジュールでは、そのモジュールのディレクトリから最後の <code>go get</code> コマンドのみを実行します。</p>
+
+<p>ここで <code>go get</code> はバージョン管理された<strong>ライブラリ依存関係</strong>を <code>go.mod</code> と <code>go.sum</code> に追加します。プログラムのインストールは行いません。これは、スタンドアロンサービスの実行可能ファイルをビルドするために <code>git clone</code> と <code>go build</code> を使用するクイックスタートとは異なります。どちらも Go modules を使用します。<code>go.mod</code> と <code>go.sum</code> はバージョン管理下に保持してください。</p>
+
+<h2 id="ポリシーファイルの作成">ポリシーファイルの作成</h2>
+
+<p><code>speedle-embedded-demo</code> 内で、この内容を <code>policies.spdl</code> として保存します。サービス <code>mysvc</code> 内のリソース <code>res1</code> に対する <code>alice</code> の <code>get</code> 権限を付与します:</p>
+
+<!-- embedded: policies -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ini" data-lang="ini"><span style="color:#ff79c6">[service.mysvc]</span>
+<span style="color:#ff79c6">[policy]</span>
+<span style="color:#50fa7b">grant user alice get res1</span></code></pre></div>
+<p>コンストラクタ <code>eval.NewFromFile</code> は、SPDL または JSON ポリシーを含むローカルファイルを読み込みます。このウォークスルーでは SPDL を使用します。</p>
+
+<h2 id="評価エンジンの初期化と決定リクエスト">評価エンジンの初期化と決定リクエスト</h2>
+
+<p>同じディレクトリに以下の完全なプログラムを <code>main.go</code> として保存します:</p>
+
+<!-- embedded: program -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#ff79c6">package</span> main
+
+<span style="color:#ff79c6">import</span> (
+	<span style="color:#f1fa8c">&#34;fmt&#34;</span>
+	<span style="color:#f1fa8c">&#34;log&#34;</span>
+
+	<span style="color:#f1fa8c">&#34;github.com/teramoby/speedle-plus/api/ads&#34;</span>
+	<span style="color:#f1fa8c">&#34;github.com/teramoby/speedle-plus/pkg/eval&#34;</span>
+	_ <span style="color:#f1fa8c">&#34;github.com/teramoby/speedle-plus/pkg/store/file&#34;</span>
+)
+
+<span style="color:#8be9fd;font-style:italic">func</span> main() {
+	evaluator, err <span style="color:#ff79c6">:=</span> eval.NewFromFile(<span style="color:#f1fa8c">&#34;./policies.spdl&#34;</span>, <span style="color:#ff79c6">false</span>)
+	<span style="color:#ff79c6">if</span> err <span style="color:#ff79c6">!=</span> <span style="color:#ff79c6">nil</span> {
+		log.Fatal(err)
+	}
+
+	<span style="color:#ff79c6">for</span> _, user <span style="color:#ff79c6">:=</span> <span style="color:#ff79c6">range</span> []<span style="color:#8be9fd">string</span>{<span style="color:#f1fa8c">&#34;alice&#34;</span>, <span style="color:#f1fa8c">&#34;bob&#34;</span>} {
+		allowed, _, err <span style="color:#ff79c6">:=</span> evaluator.IsAllowed(ads.RequestContext{
+			Subject: <span style="color:#ff79c6">&amp;</span>ads.Subject{
+				Principals: []<span style="color:#ff79c6">*</span>ads.Principal{{Type: ads.PRINCIPAL_TYPE_USER, Name: user}},
+			},
+			ServiceName: <span style="color:#f1fa8c">&#34;mysvc&#34;</span>,
+			Resource:    <span style="color:#f1fa8c">&#34;res1&#34;</span>,
+			Action:      <span style="color:#f1fa8c">&#34;get&#34;</span>,
+		})
+		<span style="color:#ff79c6">if</span> err <span style="color:#ff79c6">!=</span> <span style="color:#ff79c6">nil</span> {
+			log.Fatal(err)
+		}
+		fmt.Printf(<span style="color:#f1fa8c">&#34;%s allowed=%t\n&#34;</span>, user, allowed)
+	}
+}</code></pre></div>
+<p>ブランクインポート <code>_ &quot;github.com/teramoby/speedle-plus/pkg/store/file&quot;</code> は、ファイルストアのドライバーを登録します。これを省略すると <code>unknown store type &quot;file&quot;</code> エラーが発生します。</p>
+
+<p><code>eval.NewFromFile(loc, isWatch)</code> は <code>ads.PolicyEvaluator</code> とエラーを返します。評価エンジンを使用する前にエラーを確認してください。<code>isWatch=false</code> の場合、ポリシーは 1 回だけ読み込まれます。<code>true</code> に設定すると、長時間実行されるアプリケーション向けにファイル監視が有効になります。</p>
+
+<p>そのインスタンスで <code>evaluator.IsAllowed(ctx)</code> を呼び出します。その <code>ads.RequestContext</code> には、サブジェクトのプリンシパル、<code>ServiceName</code>、<code>Resource</code>、<code>Action</code>、およびオプションの <code>Attributes</code> が含まれます。<code>(allowed bool, reason ads.Reason, err error)</code> が返されます。評価エラーは、正常な <code>allowed=false</code> 決定とは別に処理する必要があります。</p>
+
+<h2 id="ビルドと実行">ビルドと実行</h2>
+
+<p><code>speedle-embedded-demo</code> から依存関係を解決し、アプリケーションをビルドします:</p>
+
+<!-- embedded: build -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">go mod tidy
+go build -o ./bin/embedded-demo .</code></pre></div>
+<p><code>./policies.spdl</code> が正しく解決されるように、同じディレクトリから実行します:</p>
+
+<!-- embedded: run -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./bin/embedded-demo</code></pre></div>
+<p>認可決定の出力は次のとおりです:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">alice allowed=true
+bob allowed=false</code></pre></div>
+<p><code>alice</code> はグラントに一致します。<code>bob</code> には一致するグラントがないため拒否されます。このサンプルでは、ネットワークサービスやデータベースは必要ありません。</p>
+</div>
+</div>
+</main>
+        </div>
+    </div>
+    <div class="docs-nav-backdrop" hidden></div>
+    <footer class="site-footer">
+    <div class="wrap footer-main">
+      <div class="footer-brand">
+        <a class="footer-lockup" href="/ja/" aria-label="Speedle Engine ホーム"><img src="/img/speedle/Speedle_logo_home_bold.svg?v=4" width="304" height="104" alt="Speedle"><span class="footer-divider" aria-hidden="true"></span><span class="footer-product">Engine</span></a>
+        <p class="footer-tagline">オープンソース認可エンジン</p>
+        <nav class="social" aria-label="コミュニティリンク">
+          <a href="mailto:contact@speedle.io" aria-label="メールを送信 contact@speedle.io" title="contact@speedle.io"><img src="/img/speedle/28.%20Mail.svg" width="40" height="40" alt=""></a>
+          <a href="https://groups.google.com/forum/#!forum/speedle-users" aria-label="Google Groups" title="Google Groups — speedle-users"><img src="/img/speedle/Google-Groups.svg" width="24" height="24" alt=""></a>
+          <a href="https://github.com/teramoby/speedle-plus" aria-label="GitHub"><img src="/img/speedle/18.%20Github.svg" width="40" height="40" alt=""></a>
+          <a href="https://discord.gg/uaY2xVsbbT" aria-label="Discord"><img src="/img/speedle/Discord.svg" width="64" height="48" alt=""></a>
+        </nav>
+      </div>
+      <nav class="footer-family" aria-label="Speedle プロダクト"><svg class="sphere-sprite" width="0" height="0" aria-hidden="true" focusable="false"><symbol id="i-speedle-sphere" viewBox="22 22 114 114"><!-- Source: img/speedle/Speedle_logo_home_bold.svg, sphere group only. Colours changed only (stroke currentColor). No path edits. --><g fill="none" stroke="currentColor" stroke-linejoin="miter" stroke-miterlimit="3" stroke-linecap="butt"><polygon stroke-width="3.6" points="41.83 47.82 30.67 80.15 42.9 112.09 72.8 128.69 106.38 122.19 127.93 95.63 127.36 61.43 104.94 35.6 71.16 30.23"/><g stroke-width="2.4"><polygon points="81.97 43.92 52.19 57.23 44.03 88.8 63.62 114.87 96.22 115.81 117.28 90.9 110.94 58.91"/><polygon points="68.57 60.42 57.6 86.19 78.73 104.59 102.75 90.18 96.47 62.88"/><path d="M41.83 47.82L52.19 57.23 68.57 60.42 81.97 43.92 71.16 30.23 M30.67 80.15L44.03 88.8 42.9 112.09 M52.19 57.23L57.6 86.19 44.03 88.8 78.73 104.59 63.62 114.87 72.8 128.69 M78.73 104.59L96.22 115.81 106.38 122.19 M96.22 115.81L102.75 90.18 117.28 90.9 127.93 95.63 M117.28 90.9L127.36 61.43 110.94 58.91 104.94 35.6 81.97 43.92 M110.94 58.91L96.47 62.88 117.28 90.9"/></g></g></symbol></svg>
+        <ul>
+          <li><a class="footer-card" href="https://engine.speedle.io/ja/" aria-current="page"><svg class="product-sphere product-engine" aria-hidden="true" focusable="false"><use href="#i-speedle-sphere"/></svg><span class="footer-card-name">Speedle Engine</span><span class="footer-card-description">オープンソース認可エンジン</span><svg class="footer-card-check" width="15" height="15" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M3.5 8.5 6.5 11.5 12.5 4.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></a></li>
+          <li><a class="footer-card" href="https://cloud.speedle.io/ja/"><svg class="product-sphere product-cloud" aria-hidden="true" focusable="false"><use href="#i-speedle-sphere"/></svg><span class="footer-card-name">Speedle Cloud<span class="product-badge">まもなく公開</span></span><span class="footer-card-description">開発者向けホスト型認可サービス</span></a></li>
+          <li><a class="footer-card" href="https://ai.speedle.io/ja/"><svg class="product-sphere product-ai" aria-hidden="true" focusable="false"><use href="#i-speedle-sphere"/></svg><span class="footer-card-name">Speedle AI</span><span class="footer-card-description">AI のためのアクセス制御、アクセス制御のための AI</span></a></li>
+        </ul>
+      </nav>
+    </div>
+    <div class="wrap footer-bar">
+      <p class="footer-legal"><span>Universal Permissive License v1.0 の下でライセンスされています。</span><span class="footer-legal-sep"> · </span><span>Copyright &copy; 2019–2026 The Speedle Authors. All rights reserved.</span></p>
+    </div>
+  </footer>
+<!-- Cloudflare Web Analytics --><script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "a7a746c498b940e58425123082a20520"}'></script><!-- End Cloudflare Web Analytics -->
+</body>
+
+</html>

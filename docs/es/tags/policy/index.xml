@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Policy on Speedle</title>
+    <link>https://engine.speedle.io/es/tags/policy/</link>
+    <description>Recent content in Policy on Speedle</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>es-es</language>
+    
+	<atom:link href="https://engine.speedle.io/es/tags/policy/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>Decisiones de autorización</title>
+      <link>https://engine.speedle.io/es/docs/decisions/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/es/docs/decisions/</guid>
+      <description>¿Qué es una decisión de autorización? Speedle evalúa un sujeto, una acción y un recurso dentro de un servicio. La aplicación debe hacer cumplir el resultado. Trate un error de evaluación o un tiempo de espera por separado de una denegación ordinaria y falle de forma restrictiva (fail closed). Las APIs REST, gRPC y Go en modo integrado tienen representaciones de red distintas; utilice sus respectivos contratos.
+Antes de ejecutar los ejemplos Compile .</description>
+    </item>
+    
+    <item>
+      <title>Descubrimiento de políticas</title>
+      <link>https://engine.speedle.io/es/docs/pms/discover/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/es/docs/pms/discover/</guid>
+      <description>¿Qué hace el descubrimiento? El descubrimiento registra solicitudes y devuelve allowed=true con motivo 5 para una operación de registro exitosa. No demuestra que una política existente haya autorizado la operación. Utilícelo únicamente en un entorno de prueba aislado, revise las concesiones generadas y restablezca la aplicación normal de is-allowed posteriormente. Los errores de aserción o almacenamiento deben seguir gestionándose; nunca trate un error como una concesión de autorización.
+Iniciar un ejemplo local reproducible Compile los binarios mediante el Inicio rápido, luego ejecute todas las terminales desde la raíz del repositorio.</description>
+    </item>
+    
+    <item>
+      <title>Gestión de políticas</title>
+      <link>https://engine.speedle.io/es/docs/pms/policy-mgmt/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/es/docs/pms/policy-mgmt/</guid>
+      <description>¿Qué es una política de Speedle? El Servicio de Gestión de Políticas (PMS) administra servicios, políticas de autorización, políticas de roles y funciones personalizadas. Un almacén de políticas persiste estos objetos utilizando un backend de almacenamiento registrado.
+Servicios y políticas de autorización Un servicio delimita el alcance de sus políticas. Una política de autorización concede o deniega a una entidad principal el permiso para realizar una acción sobre un recurso, opcionalmente sujeto a una condición.</description>
+    </item>
+    
+    <item>
+      <title>SPDL: Lenguaje de definición de políticas Speedle</title>
+      <link>https://engine.speedle.io/es/docs/spdl/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/es/docs/spdl/</guid>
+      <description>SPDL es el lenguaje para escribir políticas y políticas de roles de Speedle. Esta página cubre la sintaxis, las reglas de nombres y los ejemplos. </description>
+    </item>
+    
+  </channel>
+</rss>

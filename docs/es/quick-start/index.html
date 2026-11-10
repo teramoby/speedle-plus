@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <script>document.documentElement.classList.add('navigation-js');addEventListener('DOMContentLoaded',function(){if(!document.querySelector('header.site-header.navigation-ready'))document.documentElement.classList.remove('navigation-js')});</script>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><title>Inicio rápido · Speedle Engine</title>
+<meta name="description" content="Instale Speedle con go install o desde el código fuente, luego verifique la gestión de políticas, concesiones directas, concesiones de roles, decisiones condicionales (ABAC) y denegaciones.">
+<meta name="generator" content="Hugo 0.48" />
+<link href="https://engine.speedle.io/index.xml" rel="alternate" type="application/rss+xml">
+<link rel="canonical" href="https://engine.speedle.io/es/quick-start/">
+
+<link rel="alternate" hreflang="en" href="https://engine.speedle.io/quick-start/">
+<link rel="alternate" hreflang="es" href="https://engine.speedle.io/es/quick-start/">
+<link rel="alternate" hreflang="ja" href="https://engine.speedle.io/ja/quick-start/">
+<link rel="alternate" hreflang="ko" href="https://engine.speedle.io/ko/quick-start/">
+<link rel="alternate" hreflang="zh-CN" href="https://engine.speedle.io/zh/quick-start/">
+<link rel="alternate" hreflang="x-default" href="https://engine.speedle.io/quick-start/">
+<meta property="og:type" content="article">
+<meta property="article:modified_time" content="2026-11-10T17:04:32&#43;08:00">
+<meta property="og:site_name" content="Speedle Engine">
+<meta property="og:title" content="Inicio rápido · Speedle Engine">
+<meta property="og:description" content="Instale Speedle con go install o desde el código fuente, luego verifique la gestión de políticas, concesiones directas, concesiones de roles, decisiones condicionales (ABAC) y denegaciones.">
+<meta property="og:url" content="https://engine.speedle.io/es/quick-start/">
+<meta property="og:image" content="https://engine.speedle.io/img/social/engine-en.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:alt" content="Speedle Engine — Fast. Simple. Access control">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Inicio rápido · Speedle Engine">
+<meta name="twitter:description" content="Instale Speedle con go install o desde el código fuente, luego verifique la gestión de políticas, concesiones directas, concesiones de roles, decisiones condicionales (ABAC) y denegaciones.">
+<meta name="twitter:image" content="https://engine.speedle.io/img/social/engine-en.png">
+<meta name="twitter:image:alt" content="Speedle Engine — Fast. Simple. Access control">
+
+
+  
+  
+  
+  
+
+  
+
+  <meta name="author" content="Speedle">
+
+
+
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+
+  <link href="/css/docs.css" rel="stylesheet" type="text/css">
+  
+  
+  <link href="/css/command-copy.css" rel="stylesheet" type="text/css">
+  
+  
+  <link href="/css/navigation.css?v=header-20261106-v8" rel="stylesheet">
+  <script src="/js/navigation.js?v=header-20261106-v8" defer></script>
+  <script src="/js/command-copy.js" defer></script>
+</head>
+
+<body class="page-kube docs-page">
+  <header class="site-header">
+    <div class="wrap nav">
+      <a class="brand" href="/es/#top" aria-label="Inicio de Speedle Engine"><img class="brand-logo" src="/img/speedle/Speedle_logo_home_bold.svg?v=4" width="304" height="104" alt=""><span class="brand-divider" aria-hidden="true"></span><span class="brand-product">Engine</span></a>
+      <button class="menu" type="button" aria-expanded="false" aria-controls="nav-links" aria-label="Abrir navegación">☰</button>
+      <nav class="nav-links" id="nav-links" aria-label="Navegación principal">
+        <div class="products"><button class="products-button" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="products-panel">Productos<svg class="products-chevron" width="10" height="10" viewBox="0 0 10 10" aria-hidden="true" focusable="false"><path d="M2 3.5 5 6.5 8 3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button><span class="products-heading" aria-hidden="true">Productos</span><div class="products-panel" id="products-panel" role="group" aria-label="Productos"><a class="product-row" href="https://engine.speedle.io/es/" aria-current="page"><img class="product-mark" src="/img/speedle/speedle-mark-engine.svg" alt="" width="20" height="20"><span class="product-text"><span class="product-name">Speedle Engine</span><span class="product-desc">Motor de autorización de código abierto</span></span><svg class="product-check" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M3.5 8.5 6.5 11.5 12.5 4.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></a><a class="product-row" href="https://cloud.speedle.io/es/"><img class="product-mark" src="/img/speedle/speedle-mark-cloud.svg" alt="" width="20" height="20"><span class="product-text"><span class="product-name">Speedle Cloud <span class="product-badge">Próximamente</span></span><span class="product-desc">Autorización hospedada para desarrolladores</span></span></a><a class="product-row" href="https://ai.speedle.io/es/"><img class="product-mark" src="/img/speedle/speedle-mark-ai.svg" alt="" width="20" height="20"><span class="product-text"><span class="product-name">Speedle AI</span><span class="product-desc">IA para control de acceso, control de acceso para IA</span></span></a></div></div>
+        <a href="/es/#about">Acerca de</a><a href="/es/#features">Características</a>
+        <a href="/es/quick-start/">Comenzar</a><a href="/es/docs/">Documentación</a><a href="/es/playground/">Playground</a>
+        <div class="languages"><button class="languages-button" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="languages-panel">Español<svg class="languages-chevron" width="10" height="10" viewBox="0 0 10 10" aria-hidden="true" focusable="false"><path d="M2 3.5 5 6.5 8 3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button><span class="languages-heading" aria-hidden="true">Idiomas</span><div class="languages-panel" id="languages-panel" role="group" aria-label="Idiomas"><a class="language-row" href="/quick-start/" lang="en" hreflang="en" >English</a><a class="language-row" href="/ja/quick-start/" lang="ja" hreflang="ja">日本語</a><a class="language-row" href="/ko/quick-start/" lang="ko" hreflang="ko">한국어</a><a class="language-row" href="/es/quick-start/" lang="es" hreflang="es" aria-current="page">Español</a><a class="language-row" href="/zh/quick-start/" lang="zh-CN" hreflang="zh-CN">中文</a></div></div>
+        <a class="nav-github" href="https://github.com/teramoby/speedle-plus">GitHub</a>
+      </nav>
+    </div>
+  </header>
+  <div class="container">
+    <div class="content-container docs-article">
+      <main>
+<div id="main">
+  <img class="top-right-icon" src="/img/speedle/9.%20Getting%20Started.svg" alt="">
+  <h1>Inicio rápido</h1>
+  <p class="docs-lead">Instale Speedle con go install o desde el código fuente, luego verifique la gestión de políticas, concesiones directas, concesiones de roles, decisiones condicionales (ABAC) y denegaciones.</p>
+  <p>Instale Speedle con go install o compílelo desde el código fuente, cree políticas con SPDL y spctl, y pruebe decisiones de autorización mediante la API REST. Esta guía utiliza un almacenamiento de archivos local.</p>
+  <div id="kube-component" class="content">
+
+<h2 id="pruebe-primero-speedle-en-el-playground">Pruebe primero Speedle en el Playground</h2>
+
+<p><strong>Puede probar las funciones básicas de Speedle antes de instalar nada.</strong> Abra el <a href="/es/playground/">Playground</a> para editar políticas SPDL, fijar un usuario, un recurso y una acción, y ver decisiones reales de permitir o denegar en el navegador. No hace falta instalar Go ni tener un servidor en ejecución.</p>
+
+<p>Continúe más abajo cuando esté listo para instalar y ejecutar Speedle localmente.</p>
+
+<h2 id="requisitos-previos">Requisitos previos</h2>
+
+<p>Use Linux o macOS con Bash, Git, curl y <strong>Go 1.26.10 o Go 1.27.3</strong> (o un parche más reciente de la misma rama). Speedle admite las versiones con parches de Go 1.26 y Go 1.27; esta guía está verificada con <strong>Go 1.26.10 y Go 1.27.3</strong>. Go 1.27.3 es la versión estable recomendada para este recorrido.</p>
+
+<p>Instale Go con las <a href="https://go.dev/doc/install">instrucciones oficiales de instalación</a> y compruebe la versión instalada:</p>
+
+<!-- quick-start: version -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">go version</code></pre></div>
+<p>Go configura <code>GOROOT</code> y el <code>GOPATH</code> predeterminado de forma automática. No hacen falta valores personalizados. Las dos rutas siguientes colocan los tres ejecutables en un directorio <code>bin</code>.</p>
+
+<h2 id="instalar-speedle">Instalar Speedle</h2>
+
+<p>Elija una ruta: la ruta A instala la última versión y la ruta B compila el código actual. El resto de la guía usa <code>./bin/...</code> y funciona con cualquiera de las dos.</p>
+
+<h3 id="ruta-a-instalar-la-última-versión">Ruta A: instalar la última versión</h3>
+
+<!-- quick-start: install -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#8be9fd;font-style:italic">GOBIN</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;</span><span style="color:#8be9fd;font-style:italic">$PWD</span><span style="color:#f1fa8c">/bin&#34;</span> go install github.com/teramoby/speedle-plus/cmd/...@v1.7.1
+ls bin</code></pre></div>
+<p><code>GOBIN</code> deja los ejecutables en la carpeta <code>bin</code> de este directorio; sin él, Go los escribe en <code>$(go env GOPATH)/bin</code>. <code>v1.7.1</code> es la etiqueta de la última versión en el momento de escribir esta guía; <code>go install</code> la compila a partir del código etiquetado y la verifica con la base de sumas de comprobación de Go.</p>
+
+<h3 id="ruta-b-clonar-y-compilar">Ruta B: clonar y compilar</h3>
+
+<!-- quick-start: build -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">git clone --depth <span style="color:#bd93f9">1</span> https://github.com/teramoby/speedle-plus.git
+<span style="color:#8be9fd;font-style:italic">cd</span> speedle-plus
+mkdir -p bin
+go build -o ./bin/ ./cmd/spctl ./cmd/speedle-pms ./cmd/speedle-ads
+ls bin</code></pre></div>
+<p>El directorio de salida contiene:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">spctl  speedle-ads  speedle-pms</code></pre></div>
+<ul>
+<li><code>spctl</code>: la interfaz de línea de comandos.</li>
+<li><code>speedle-pms</code>: el Servicio de Gestión de Políticas (PMS).</li>
+<li><code>speedle-ads</code>: el Servicio de Decisiones de Autorización (ADS).</li>
+</ul>
+
+<blockquote>
+<p><strong>macOS:</strong> <code>/usr/sbin/spctl</code> es la herramienta Gatekeeper de Apple y puede seleccionarse al ejecutar un <code>spctl</code> sin ruta. Invoque la CLI de Speedle por su ruta completa, o use <code>./spctl</code> desde el directorio que la contiene; esta guía usa <code>./bin/spctl</code>. Ejecute <code>command -v spctl</code> para ver qué ejecutable elige el shell. Si la versión que descarga incluye un artefacto <code>speedle-spctl_&lt;os&gt;_&lt;arch&gt;</code>, es la misma CLI con un nombre que no choca con la herramienta de Apple.</p>
+</blockquote>
+
+<p>Go actual usa <code>go build</code> o <code>go install</code> para compilar ejecutables; <code>go get</code> gestiona las dependencias del módulo.</p>
+
+<h2 id="ejecutar-speedle">Ejecutar Speedle</h2>
+
+<p>Ejecute este recorrido en una máquina de desarrollo local. <code>--insecure=true</code> habilita HTTP sin cifrar para los ejemplos REST. Los servidores gRPC están apagados salvo que los inicie con <code>--grpc-endpoint</code>, por ejemplo <code>--grpc-endpoint 127.0.0.1:50001</code> para PMS y <code>--grpc-endpoint 127.0.0.1:50002</code> para ADS; gRPC usa la misma configuración TLS que REST. Para el transporte y la autorización en producción, consulte <a href="/es/docs/security/">Seguridad</a>.</p>
+
+<h3 id="1-iniciar-el-servicio-de-gestión-de-políticas">1. Iniciar el Servicio de Gestión de Políticas</h3>
+
+<p>En la primera terminal, desde el directorio que contiene <code>bin/</code> (el clon de la ruta B):</p>
+
+<!-- quick-start: pms -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./bin/speedle-pms --store-type file --filestore-loc ./quick-start-policies.json --endpoint <span style="color:#bd93f9">127</span>.0.0.1:6733 --insecure<span style="color:#ff79c6">=</span>true</code></pre></div>
+<p>Déjelo en ejecución. PMS crea <code>quick-start-policies.json</code> en este directorio. Espere a que arranque el servidor REST antes de continuar. Ambos servicios deben usar este mismo archivo.</p>
+
+<h3 id="2-crear-políticas-con-spctl">2. Crear políticas con spctl</h3>
+
+<p>Abra una segunda terminal en el mismo directorio.</p>
+
+<p>Cree un contenedor de servicio:</p>
+
+<!-- quick-start: service -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ create service mysvc</code></pre></div>
+<p>Conceda a <code>user1</code> permiso para obtener o eliminar <code>res1</code>, y conceda a <code>role2</code> las mismas acciones sobre <code>res2</code>:</p>
+
+<!-- quick-start: policies -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ create policy -c <span style="color:#f1fa8c">&#34;grant user user1 get,del res1&#34;</span> --service-name<span style="color:#ff79c6">=</span>mysvc
+./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ create policy -c <span style="color:#f1fa8c">&#34;grant role role2 get,del res2&#34;</span> --service-name<span style="color:#ff79c6">=</span>mysvc</code></pre></div>
+<p>Asigne <code>role2</code> a <code>user2</code> sobre <code>res2</code>:</p>
+
+<!-- quick-start: roles -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ create rolepolicy -c <span style="color:#f1fa8c">&#34;grant user user2 role2 on res2&#34;</span> --service-name<span style="color:#ff79c6">=</span>mysvc</code></pre></div>
+<p>Liste el servicio y sus políticas:</p>
+
+<!-- quick-start: list -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ get service --all</code></pre></div>
+<p>La salida incluye <code>mysvc</code>, dos políticas de autorización y una política de roles.</p>
+
+<h3 id="3-iniciar-el-servicio-de-decisiones-de-autorización">3. Iniciar el Servicio de Decisiones de Autorización</h3>
+
+<p>Abra una tercera terminal en el mismo directorio:</p>
+
+<!-- quick-start: ads -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./bin/speedle-ads --store-type file --filestore-loc ./quick-start-policies.json --endpoint <span style="color:#bd93f9">127</span>.0.0.1:6734 --insecure<span style="color:#ff79c6">=</span>true</code></pre></div>
+<p>Déjelo en ejecución y espere a que arranque su servidor REST.</p>
+
+<h3 id="4-verificar-decisiones-de-autorización">4. Verificar decisiones de autorización</h3>
+
+<p>Ejecute estas solicitudes en la segunda terminal. La primera comprueba la concesión directa a <code>user1</code>:</p>
+
+<!-- quick-start: allow-direct -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl --fail --silent --show-error --header <span style="color:#f1fa8c">&#39;Content-Type: application/json&#39;</span> --data <span style="color:#f1fa8c">&#39;{&#34;subject&#34;:{&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;,&#34;name&#34;:&#34;user1&#34;}]},&#34;serviceName&#34;:&#34;mysvc&#34;,&#34;resource&#34;:&#34;res1&#34;,&#34;action&#34;:&#34;get&#34;}&#39;</span> http://127.0.0.1:6734/authz-check/v1/is-allowed</code></pre></div>
+<p>La respuesta contiene <code>&quot;allowed&quot;:true</code>.</p>
+
+<p>La siguiente solicitud comprueba la concesión de rol a <code>user2</code>:</p>
+
+<!-- quick-start: allow-role -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl --fail --silent --show-error --header <span style="color:#f1fa8c">&#39;Content-Type: application/json&#39;</span> --data <span style="color:#f1fa8c">&#39;{&#34;subject&#34;:{&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;,&#34;name&#34;:&#34;user2&#34;}]},&#34;serviceName&#34;:&#34;mysvc&#34;,&#34;resource&#34;:&#34;res2&#34;,&#34;action&#34;:&#34;get&#34;}&#39;</span> http://127.0.0.1:6734/authz-check/v1/is-allowed</code></pre></div>
+<p>La respuesta contiene <code>&quot;allowed&quot;:true</code>.</p>
+
+<p>Un usuario sin una concesión coincidente es denegado:</p>
+
+<!-- quick-start: deny -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl --fail --silent --show-error --header <span style="color:#f1fa8c">&#39;Content-Type: application/json&#39;</span> --data <span style="color:#f1fa8c">&#39;{&#34;subject&#34;:{&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;,&#34;name&#34;:&#34;user3&#34;}]},&#34;serviceName&#34;:&#34;mysvc&#34;,&#34;resource&#34;:&#34;res1&#34;,&#34;action&#34;:&#34;get&#34;}&#39;</span> http://127.0.0.1:6734/authz-check/v1/is-allowed</code></pre></div>
+<p>La respuesta contiene <code>&quot;allowed&quot;:false</code>.</p>
+
+<p>El campo <code>reason</code> explica cada decisión. <code>0</code> (<code>GRANT_POLICY_FOUND</code>) significa que coincidió una política de concesión; <code>3</code> (<code>NO_APPLICABLE_POLICIES</code>) significa que no se aplicó ninguna política, así que Speedle deniega por defecto. La página <a href="/es/docs/decisions/">Decisiones de autorización</a> enumera todos los códigos de motivo.</p>
+
+<h3 id="5-añadir-una-política-condicional-abac">5. Añadir una política condicional (ABAC)</h3>
+
+<p>Cree una concesión que solo se aplica cuando la solicitud lleva un atributo <code>clearance</code> de al menos 3:</p>
+
+<!-- quick-start: abac-policy -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ create policy -c <span style="color:#f1fa8c">&#34;grant user user1 get res3 if clearance &gt;= 3&#34;</span> --service-name<span style="color:#ff79c6">=</span>mysvc</code></pre></div>
+<p>El punto de aplicación de políticas (PEP) aporta los atributos de la solicitud, y una condición se evalúa solo con los atributos presentes en la solicitud. Los valores de <code>clearance</code> siguientes solo muestran el formato de la solicitud: un PEP real debe obtener los valores de atributos de fuentes de confianza, como las claims de un token autenticado o un almacén de confianza, y nunca de la solicitud que se está autorizando. Una solicitud que omite <code>clearance</code> no coincide con esta concesión.</p>
+
+<p>Con <code>clearance</code> igual a 4, la solicitud se permite:</p>
+
+<!-- quick-start: abac-allow -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl --fail --silent --show-error --header <span style="color:#f1fa8c">&#39;Content-Type: application/json&#39;</span> --data <span style="color:#f1fa8c">&#39;{&#34;subject&#34;:{&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;,&#34;name&#34;:&#34;user1&#34;}]},&#34;serviceName&#34;:&#34;mysvc&#34;,&#34;resource&#34;:&#34;res3&#34;,&#34;action&#34;:&#34;get&#34;,&#34;attributes&#34;:[{&#34;name&#34;:&#34;clearance&#34;,&#34;type&#34;:&#34;numeric&#34;,&#34;value&#34;:4}]}&#39;</span> http://127.0.0.1:6734/authz-check/v1/is-allowed</code></pre></div>
+<p>La respuesta contiene <code>&quot;allowed&quot;:true</code> y <code>&quot;reason&quot;:0</code>.</p>
+
+<p>Con <code>clearance</code> igual a 2, la condición no coincide, así que no se aplica ninguna política y la solicitud se deniega:</p>
+
+<!-- quick-start: abac-deny -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl --fail --silent --show-error --header <span style="color:#f1fa8c">&#39;Content-Type: application/json&#39;</span> --data <span style="color:#f1fa8c">&#39;{&#34;subject&#34;:{&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;,&#34;name&#34;:&#34;user1&#34;}]},&#34;serviceName&#34;:&#34;mysvc&#34;,&#34;resource&#34;:&#34;res3&#34;,&#34;action&#34;:&#34;get&#34;,&#34;attributes&#34;:[{&#34;name&#34;:&#34;clearance&#34;,&#34;type&#34;:&#34;numeric&#34;,&#34;value&#34;:2}]}&#39;</span> http://127.0.0.1:6734/authz-check/v1/is-allowed</code></pre></div>
+<p>La respuesta contiene <code>&quot;allowed&quot;:false</code> y <code>&quot;reason&quot;:3</code>.</p>
+
+<p>Al terminar, pulse <strong>Ctrl+C</strong> en las terminales de PMS y ADS. El archivo de políticas permanece en este directorio; use un archivo nuevo para otra ejecución de los comandos de creación.</p>
+
+<p>Para la configuración TLS, consulte <a href="/es/docs/security/#protect-both-api-transports">Seguridad de los mensajes</a>. Para otros tipos de despliegue, consulte <a href="/es/docs/deployment/">Despliegue</a>.</p>
+</div>
+</div>
+</main>
+    </div>
+  </div>
+  <footer class="site-footer">
+    <div class="wrap footer-main">
+      <div class="footer-brand">
+        <a class="footer-lockup" href="/es/" aria-label="Inicio de Speedle Engine"><img src="/img/speedle/Speedle_logo_home_bold.svg?v=4" width="304" height="104" alt="Speedle"><span class="footer-divider" aria-hidden="true"></span><span class="footer-product">Engine</span></a>
+        <p class="footer-tagline">Motor de autorización de código abierto</p>
+        <nav class="social" aria-label="Enlaces comunitarios">
+          <a href="mailto:contact@speedle.io" aria-label="Email contact@speedle.io" title="contact@speedle.io"><img src="/img/speedle/28.%20Mail.svg" width="40" height="40" alt=""></a>
+          <a href="https://groups.google.com/forum/#!forum/speedle-users" aria-label="Google Groups" title="Google Groups — speedle-users"><img src="/img/speedle/Google-Groups.svg" width="24" height="24" alt=""></a>
+          <a href="https://github.com/teramoby/speedle-plus" aria-label="GitHub"><img src="/img/speedle/18.%20Github.svg" width="40" height="40" alt=""></a>
+          <a href="https://discord.gg/uaY2xVsbbT" aria-label="Discord"><img src="/img/speedle/Discord.svg" width="64" height="48" alt=""></a>
+        </nav>
+      </div>
+      <nav class="footer-family" aria-label="Productos de Speedle"><svg class="sphere-sprite" width="0" height="0" aria-hidden="true" focusable="false"><symbol id="i-speedle-sphere" viewBox="22 22 114 114"><!-- Source: img/speedle/Speedle_logo_home_bold.svg, sphere group only. Colours changed only (stroke currentColor). No path edits. --><g fill="none" stroke="currentColor" stroke-linejoin="miter" stroke-miterlimit="3" stroke-linecap="butt"><polygon stroke-width="3.6" points="41.83 47.82 30.67 80.15 42.9 112.09 72.8 128.69 106.38 122.19 127.93 95.63 127.36 61.43 104.94 35.6 71.16 30.23"/><g stroke-width="2.4"><polygon points="81.97 43.92 52.19 57.23 44.03 88.8 63.62 114.87 96.22 115.81 117.28 90.9 110.94 58.91"/><polygon points="68.57 60.42 57.6 86.19 78.73 104.59 102.75 90.18 96.47 62.88"/><path d="M41.83 47.82L52.19 57.23 68.57 60.42 81.97 43.92 71.16 30.23 M30.67 80.15L44.03 88.8 42.9 112.09 M52.19 57.23L57.6 86.19 44.03 88.8 78.73 104.59 63.62 114.87 72.8 128.69 M78.73 104.59L96.22 115.81 106.38 122.19 M96.22 115.81L102.75 90.18 117.28 90.9 127.93 95.63 M117.28 90.9L127.36 61.43 110.94 58.91 104.94 35.6 81.97 43.92 M110.94 58.91L96.47 62.88 117.28 90.9"/></g></g></symbol></svg>
+        <ul>
+          <li><a class="footer-card" href="https://engine.speedle.io/es/" aria-current="page"><svg class="product-sphere product-engine" aria-hidden="true" focusable="false"><use href="#i-speedle-sphere"/></svg><span class="footer-card-name">Speedle Engine</span><span class="footer-card-description">Motor de autorización de código abierto</span><svg class="footer-card-check" width="15" height="15" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M3.5 8.5 6.5 11.5 12.5 4.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></a></li>
+          <li><a class="footer-card" href="https://cloud.speedle.io/es/"><svg class="product-sphere product-cloud" aria-hidden="true" focusable="false"><use href="#i-speedle-sphere"/></svg><span class="footer-card-name">Speedle Cloud<span class="product-badge">Próximamente</span></span><span class="footer-card-description">Autorización hospedada para desarrolladores</span></a></li>
+          <li><a class="footer-card" href="https://ai.speedle.io/es/"><svg class="product-sphere product-ai" aria-hidden="true" focusable="false"><use href="#i-speedle-sphere"/></svg><span class="footer-card-name">Speedle AI</span><span class="footer-card-description">IA para control de acceso, control de acceso para IA</span></a></li>
+        </ul>
+      </nav>
+    </div>
+    <div class="wrap footer-bar">
+      <p class="footer-legal"><span>Con licencia Universal Permissive License v1.0.</span><span class="footer-legal-sep"> · </span><span>Copyright &copy; 2019–2026 The Speedle Authors. Todos los derechos reservados.</span></p>
+    </div>
+  </footer>
+<!-- Cloudflare Web Analytics --><script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "a7a746c498b940e58425123082a20520"}'></script><!-- End Cloudflare Web Analytics -->
+</body>
+
+</html>

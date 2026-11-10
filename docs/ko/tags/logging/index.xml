@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Logging on Speedle</title>
+    <link>https://engine.speedle.io/ko/tags/logging/</link>
+    <description>Recent content in Logging on Speedle</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>ko-kr</language>
+    
+	<atom:link href="https://engine.speedle.io/ko/tags/logging/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>로깅 프레임워크</title>
+      <link>https://engine.speedle.io/ko/docs/logging/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/ko/docs/logging/</guid>
+      <description>개요 로그 메시지 처리를 위해 다음 두 개의 오픈 소스 프로젝트가 사용됩니다:
+1. https://github.com/sirupsen/logrus 2. https://github.com/natefinch/lumberjack Logrus는 Go(golang)용 구조화된 로거이며 golang 표준 라이브러리 로거와 완전한 API 호환성을 갖추고 있습니다. Logrus는 로그 롤링을 기본적으로 지원하지 않으므로 롤링 로거를 제공하는 두 번째 프로젝트인 lumberjack을 통합했습니다. Logrus는 io.Writer 인터페이스를 사용하여 lumberjack과 연동합니다. 아래 다이어그램을 참조하십시오.
+로깅 구성 Speedle 로깅은 명령줄 플래그와 구성 파일의 두 가지 방식으로 구성할 수 있습니다.
+명령줄 인수를 통한 로깅 구성 사용 가능한 모든 명령줄 인수는 다음과 같습니다.</description>
+    </item>
+    
+  </channel>
+</rss>

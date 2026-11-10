@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <script>document.documentElement.classList.add('docs-js','navigation-js');addEventListener('DOMContentLoaded',function(){if(!document.querySelector('header.site-header.navigation-ready'))document.documentElement.classList.remove('navigation-js')});</script>
+    <meta name="generator" content="Hugo 0.48" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1"><title>MongoDB 설정 가이드 · Speedle Engine</title>
+<meta name="description" content="PMS 및 ADS용 MongoDB 정책 저장소 구성 단계">
+<meta name="generator" content="Hugo 0.48" />
+<link href="https://engine.speedle.io/index.xml" rel="alternate" type="application/rss+xml">
+<link rel="canonical" href="https://engine.speedle.io/ko/docs/store/mongodb/">
+
+<link rel="alternate" hreflang="en" href="https://engine.speedle.io/docs/store/mongodb/">
+<link rel="alternate" hreflang="es" href="https://engine.speedle.io/es/docs/store/mongodb/">
+<link rel="alternate" hreflang="ja" href="https://engine.speedle.io/ja/docs/store/mongodb/">
+<link rel="alternate" hreflang="ko" href="https://engine.speedle.io/ko/docs/store/mongodb/">
+<link rel="alternate" hreflang="zh-CN" href="https://engine.speedle.io/zh/docs/store/mongodb/">
+<link rel="alternate" hreflang="x-default" href="https://engine.speedle.io/docs/store/mongodb/">
+<meta property="og:type" content="article">
+<meta property="article:modified_time" content="2026-10-31T22:36:36&#43;08:00">
+<meta property="og:site_name" content="Speedle Engine">
+<meta property="og:title" content="MongoDB 설정 가이드 · Speedle Engine">
+<meta property="og:description" content="PMS 및 ADS용 MongoDB 정책 저장소 구성 단계">
+<meta property="og:url" content="https://engine.speedle.io/ko/docs/store/mongodb/">
+<meta property="og:image" content="https://engine.speedle.io/img/social/engine-en.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:alt" content="Speedle Engine — Fast. Simple. Access control">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="MongoDB 설정 가이드 · Speedle Engine">
+<meta name="twitter:description" content="PMS 및 ADS용 MongoDB 정책 저장소 구성 단계">
+<meta name="twitter:image" content="https://engine.speedle.io/img/social/engine-en.png">
+<meta name="twitter:image:alt" content="Speedle Engine — Fast. Simple. Access control">
+
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/ko/docs/store/mongodb/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-10-31T22:36:36+08:00","description":"PMS 및 ADS용 MongoDB 정책 저장소 구성 단계","headline":"MongoDB 설정 가이드","image":"https://engine.speedle.io/img/social/engine-en.png","inLanguage":"ko","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/ko/docs/store/mongodb/","@type":"WebPage"},"name":"MongoDB 설정 가이드","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/ko/docs/store/mongodb/"}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/ko/docs/store/mongodb/#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://engine.speedle.io/ko/","name":"홈","position":1},{"@type":"ListItem","item":"https://engine.speedle.io/ko/docs/","name":"문서","position":2},{"@type":"ListItem","item":"https://engine.speedle.io/ko/docs/store/","name":"플러그형 저장소","position":3},{"@type":"ListItem","item":"https://engine.speedle.io/ko/docs/store/mongodb/","name":"MongoDB 설정 가이드","position":4}]}</script><link href="/css/docs.css" rel="stylesheet" type="text/css">
+
+
+    <link href="/css/navigation.css?v=header-20261106-v8" rel="stylesheet">
+    <script src="/js/navigation.js?v=header-20261106-v8" defer></script>
+    <script src="/js/docs.js" defer></script>
+
+</head>
+
+<body class="page-kube docs-page">
+    <header class="site-header">
+    <div class="wrap nav">
+      <a class="brand" href="/ko/#top" aria-label="Speedle Engine 홈"><img class="brand-logo" src="/img/speedle/Speedle_logo_home_bold.svg?v=4" width="304" height="104" alt=""><span class="brand-divider" aria-hidden="true"></span><span class="brand-product">Engine</span></a>
+      <button class="menu" type="button" aria-expanded="false" aria-controls="nav-links" aria-label="내비게이션 열기">☰</button>
+      <nav class="nav-links" id="nav-links" aria-label="기본 내비게이션">
+        <div class="products"><button class="products-button" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="products-panel">제품<svg class="products-chevron" width="10" height="10" viewBox="0 0 10 10" aria-hidden="true" focusable="false"><path d="M2 3.5 5 6.5 8 3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button><span class="products-heading" aria-hidden="true">제품</span><div class="products-panel" id="products-panel" role="group" aria-label="제품"><a class="product-row" href="https://engine.speedle.io/ko/" aria-current="page"><img class="product-mark" src="/img/speedle/speedle-mark-engine.svg" alt="" width="20" height="20"><span class="product-text"><span class="product-name">Speedle Engine</span><span class="product-desc">오픈 소스 인가 엔진</span></span><svg class="product-check" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M3.5 8.5 6.5 11.5 12.5 4.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></a><a class="product-row" href="https://cloud.speedle.io/ko/"><img class="product-mark" src="/img/speedle/speedle-mark-cloud.svg" alt="" width="20" height="20"><span class="product-text"><span class="product-name">Speedle Cloud <span class="product-badge">출시 예정</span></span><span class="product-desc">개발자를 위한 호스팅형 인가 서비스</span></span></a><a class="product-row" href="https://ai.speedle.io/ko/"><img class="product-mark" src="/img/speedle/speedle-mark-ai.svg" alt="" width="20" height="20"><span class="product-text"><span class="product-name">Speedle AI</span><span class="product-desc">AI를 위한 접근 제어, AI를 통한 접근 제어</span></span></a></div></div>
+        <a href="/ko/#about">Speedle 소개</a><a href="/ko/#features">기능</a>
+        <a href="/ko/quick-start/">시작하기</a><a href="/ko/docs/">문서</a><a href="/ko/playground/">Playground</a>
+        <div class="languages"><button class="languages-button" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="languages-panel">한국어<svg class="languages-chevron" width="10" height="10" viewBox="0 0 10 10" aria-hidden="true" focusable="false"><path d="M2 3.5 5 6.5 8 3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button><span class="languages-heading" aria-hidden="true">언어</span><div class="languages-panel" id="languages-panel" role="group" aria-label="언어"><a class="language-row" href="/docs/store/mongodb/" lang="en" hreflang="en">English</a><a class="language-row" href="/ja/docs/store/mongodb/" lang="ja" hreflang="ja" >日本語</a><a class="language-row" href="/ko/docs/store/mongodb/" lang="ko" hreflang="ko" aria-current="page">한국어</a><a class="language-row" href="/es/docs/store/mongodb/" lang="es" hreflang="es">Español</a><a class="language-row" href="/zh/docs/store/mongodb/" lang="zh-CN" hreflang="zh-CN" >中文</a></div></div>
+        <a class="nav-github" href="https://github.com/teramoby/speedle-plus">GitHub</a>
+      </nav>
+    </div>
+  </header>
+    <div class="container">
+        <button class="docs-nav-toggle" type="button" aria-expanded="false" aria-controls="docs-navigation">
+            <span>메뉴</span>
+            <svg class="docs-nav-toggle-icon" viewBox="0 0 18 14" width="18" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M1 1h16M1 7h16M1 13h16"/></svg>
+        </button>
+        <div class="content-container"><aside class="docs-sidebar" id="docs-navigation" aria-label="문서 내비게이션">
+<div class="docs-nav-head">
+<span class="docs-nav-title">문서</span>
+<button class="docs-nav-close" type="button" aria-label="메뉴 닫기"><svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="m3 3 10 10M13 3 3 13"/></svg></button>
+</div>
+<div class="sidebar">
+<nav>
+<ul>
+
+
+
+
+
+<li data-docs-depth="-1" class="docs-nav-section parent"><span class="docs-nav-heading">문서</span>
+<ul class="sub-menu">
+<li data-docs-depth="0" class=""><a href="/ko/docs/usecases/">유스케이스</a></li>
+<li data-docs-depth="0" class=""><a href="/ko/docs/overview/">개요</a></li>
+<li data-docs-depth="0" class=""><a href="/ko/docs/spdl/">SPDL: Speedle 정책 정의 언어</a></li>
+<li data-docs-depth="0" class=""><a href="/ko/docs/architecture/">아키텍처</a></li>
+
+
+
+<li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading">Speedle 정책</span>
+<ul class="">
+<li data-docs-depth="1" class=""><a href="/ko/docs/pms/policy-mgmt/">정책 관리</a></li>
+<li data-docs-depth="1" class=""><a href="/ko/docs/pms/global-policy/">글로벌 정책</a></li>
+<li data-docs-depth="1" class=""><a href="/ko/docs/pms/diagnosis/">인가 진단</a></li>
+<li data-docs-depth="1" class=""><a href="/ko/docs/pms/discover/">정책 발견</a></li>
+</ul>
+
+</li>
+<li data-docs-depth="0" class=""><a href="/ko/docs/decisions/">인가 결정</a></li>
+<li data-docs-depth="0" class=""><a href="/ko/docs/idd/">ID 도메인</a></li>
+<li data-docs-depth="0" class=""><a href="/ko/docs/assertor/">토큰 어서터</a></li>
+
+
+
+<li data-docs-depth="0" class="docs-nav-section parent"><span class="docs-nav-heading docs-nav-heading-link"><a href="/ko/docs/store/">플러그형 저장소</a></span>
+<ul class="sub-menu">
+<li data-docs-depth="1" class=""><a href="/ko/docs/store/mysql/">MySQL 설정 가이드</a></li>
+<li data-docs-depth="1" class=""><a href="/ko/docs/store/etcd/">etcd 설정 가이드</a></li>
+<li data-docs-depth="1" class="active"><a href="/ko/docs/store/mongodb/" aria-current="page">MongoDB 설정 가이드</a></li>
+</ul>
+
+</li>
+
+
+
+<li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading">API</span>
+<ul class="">
+<li data-docs-depth="1" class=""><a href="/ko/docs/api/decision_api/">인가 결정 API</a></li>
+<li data-docs-depth="1" class=""><a href="/ko/docs/api/management_api/">정책 관리 API</a></li>
+<li data-docs-depth="1" class=""><a href="/ko/docs/api/asserter_api/">토큰 어설션 API</a></li>
+</ul>
+
+</li>
+
+
+
+<li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading docs-nav-heading-link"><a href="/ko/docs/deployment/">배포</a></span>
+<ul class="">
+<li data-docs-depth="1" class=""><a href="/ko/docs/deployment/embedded/">Speedle 임베디드 모드</a></li>
+<li data-docs-depth="1" class=""><a href="/ko/docs/deployment/docker/">Docker 이미지</a></li>
+<li data-docs-depth="1" class=""><a href="/ko/docs/deployment/homebrew/">Homebrew 설치</a></li>
+</ul>
+
+</li>
+
+
+
+<li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading docs-nav-heading-link"><a href="/ko/docs/sdks/">SDK</a></span>
+<ul class="">
+<li data-docs-depth="1" class=""><a href="/ko/docs/sdks/java/">Java SDK</a></li>
+<li data-docs-depth="1" class=""><a href="/ko/docs/sdks/python/">Python SDK</a></li>
+<li data-docs-depth="1" class=""><a href="/ko/docs/sdks/go/">Go SDK</a></li>
+<li data-docs-depth="1" class=""><a href="/ko/docs/sdks/dotnet/">C#/.NET SDK</a></li>
+<li data-docs-depth="1" class=""><a href="/ko/docs/sdks/rust/">Rust SDK</a></li>
+<li data-docs-depth="1" class=""><a href="/ko/docs/sdks/node/">Node.js/TypeScript SDK</a></li>
+</ul>
+
+</li>
+
+
+
+<li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading docs-nav-heading-link"><a href="/ko/docs/cloud/">Speedle Cloud</a></span>
+<ul class="">
+<li data-docs-depth="1" class=""><a href="/ko/docs/cloud/getting-started/">Speedle Cloud 빠른 시작</a></li>
+<li data-docs-depth="1" class=""><a href="/ko/docs/cloud/tokens/">Speedle Cloud 애플리케이션 토큰</a></li>
+<li data-docs-depth="1" class=""><a href="/ko/docs/cloud/authorization-api/">Speedle Cloud 인가 API 프리뷰</a></li>
+<li data-docs-depth="1" class=""><a href="/ko/docs/cloud/limits-and-errors/">Speedle Cloud 제한 및 오류</a></li>
+</ul>
+
+</li>
+<li data-docs-depth="0" class=""><a href="/ko/docs/security/">보안</a></li>
+<li data-docs-depth="0" class=""><a href="/ko/docs/logging/">로깅 프레임워크</a></li>
+<li data-docs-depth="0" class=""><a href="/ko/docs/versions/">버전</a></li>
+<li data-docs-depth="0" class=""><a href="/ko/docs/custom-function/">사용자 정의 함수</a></li>
+</ul>
+
+</li>
+</ul>
+</nav>
+
+
+</div>
+</aside>
+<main>
+<div id="main">
+
+  <h1>MongoDB 설정 가이드</h1>
+  <p class="docs-lead">MongoDB 복제본 세트를 실행하고 PMS와 ADS를 연결하여 실시간 정책 업데이트를 확인하고 백업을 생성합니다.</p>
+
+
+
+
+<nav id="contents" class="docs-toc" data-docs-toc="h2" aria-label="목차">
+  <ol></ol>
+</nav>
+
+
+
+  <div id="kube-component" class="content">
+
+<p>이 가이드에서는 영구 Docker 볼륨을 사용하는 단일 노드 복제본 세트로서 <strong>MongoDB 7.0.16</strong>을 사용합니다. PMS는 정책을 작성하고 ADS는 변경 스트림(change stream)을 통해 동일한 데이터베이스를 추적합니다. 로컬 예제에서는 개발 환경을 위해 인증 없이 루프백 주소에서 수신 대기합니다. 프로덕션 환경의 인증, TLS 및 복제본 세트 구성은 가이드 후반부에서 설명합니다.</p>
+
+<p>MongoDB는 <strong>복제본 세트 또는 샤딩된 클러스터</strong>로 실행해야 합니다. ADS는 변경 스트림으로 데이터베이스를 감시하고 전체 정책 저장소 교체는 트랜잭션 내에서 실행됩니다. 독립 실행형 <code>mongod</code>는 두 기능 모두 지원하지 않습니다. 개발용으로는 단일 노드 복제본 세트로 충분합니다.</p>
+
+<h2 id="1-speedle-빌드">1. Speedle 빌드</h2>
+
+<p>Bash, Git, curl, Docker, 그리고 Go 1.26.10 또는 Go 1.27.3을 준비합니다. Docker를 시작하고 네이티브 서비스를 빌드합니다:</p>
+
+<!-- mongodb-step: build -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">git clone --depth <span style="color:#bd93f9">1</span> https://github.com/teramoby/speedle-plus.git
+<span style="color:#8be9fd;font-style:italic">cd</span> speedle-plus
+mkdir -p bin
+go build -o ./bin/ ./cmd/spctl ./cmd/speedle-pms ./cmd/speedle-ads</code></pre></div>
+<p>이후 명령은 이 체크아웃 디렉터리에서 실행합니다. 로컬 포트 27017, 6733, 6734를 사용할 수 있는지 확인하거나 명령과 구성을 동시에 업데이트하십시오.</p>
+
+<h2 id="2-mongodb-시작">2. MongoDB 시작</h2>
+
+<p>이름이 지정된 볼륨에 MongoDB 데이터를 보관합니다. <code>--replSet</code>은 <code>speedle-rs</code> 복제본 세트의 구성원으로 <code>mongod</code>를 시작합니다. 루프백의 데이터베이스 포트만 노출됩니다.</p>
+
+<!-- mongodb-step: database -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker run --name speedle-mongodb --detach <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  --publish <span style="color:#bd93f9">127</span>.0.0.1:27017:27017 <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  --volume speedle-mongodb-data:/data/db <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  mongo:7.0.16 <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  --replSet speedle-rs --bind_ip_all</code></pre></div>
+<p>서버가 명령을 수락할 때까지 대기합니다:</p>
+
+<!-- mongodb-step: ready -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#ff79c6">until</span> docker <span style="color:#8be9fd;font-style:italic">exec</span> speedle-mongodb mongosh --quiet <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  --eval <span style="color:#f1fa8c">&#39;db.adminCommand({ping: 1}).ok&#39;</span> &gt;/dev/null <span style="color:#bd93f9">2</span>&gt;&amp;<span style="color:#bd93f9">1</span>
+<span style="color:#ff79c6">do</span>
+  sleep <span style="color:#bd93f9">1</span>
+<span style="color:#ff79c6">done</span></code></pre></div>
+<p>이미 MongoDB 복제본 세트를 실행 중인 경우 컨테이너 명령과 3단계를 건너뛰고 아래의 연결 문자열을 사용하십시오. 컨테이너에 대한 자세한 내용은 <a href="https://hub.docker.com/_/mongo">공식 Docker 이미지</a>를 참조하십시오.</p>
+
+<h2 id="3-복제본-세트-초기화">3. 복제본 세트 초기화</h2>
+
+<p>이 서버를 유일한 구성원으로 하여 복제본 세트를 한 번 초기화하고 프라이머리가 될 때까지 대기합니다:</p>
+
+<!-- mongodb-step: replica-set -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker <span style="color:#8be9fd;font-style:italic">exec</span> speedle-mongodb mongosh --quiet --eval <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  <span style="color:#f1fa8c">&#39;rs.initiate({_id: &#34;speedle-rs&#34;, members: [{_id: 0, host: &#34;127.0.0.1:27017&#34;}]})&#39;</span>
+<span style="color:#ff79c6">until</span> docker <span style="color:#8be9fd;font-style:italic">exec</span> speedle-mongodb mongosh --quiet <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  --eval <span style="color:#f1fa8c">&#39;db.hello().isWritablePrimary&#39;</span> | grep -qx <span style="color:#8be9fd;font-style:italic">true</span>
+<span style="color:#ff79c6">do</span>
+  sleep <span style="color:#bd93f9">1</span>
+<span style="color:#ff79c6">done</span></code></pre></div>
+<p>구성원 주소 <code>127.0.0.1:27017</code>은 클라이언트에 알리는 연결 대상 주소이므로 PMS 및 ADS에서 접근 가능해야 합니다. 여기서는 포트가 동일한 루프백 주소로 노출되므로 정상적으로 작동합니다. 구성은 볼륨에 보관됩니다. 재시작 후 <code>rs.initiate</code>를 다시 실행하지 마십시오.</p>
+
+<h2 id="4-공유-저장소-구성">4. 공유 저장소 구성</h2>
+
+<p>로컬 PMS/ADS 쌍을 위한 구성 파일을 하나 생성합니다:</p>
+
+<!-- mongodb-step: configuration -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">mkdir -p mongodb-demo
+cat &gt; mongodb-demo/config.json <span style="color:#f1fa8c">&lt;&lt;&#39;JSON&#39;
+</span><span style="color:#f1fa8c">{
+</span><span style="color:#f1fa8c">  &#34;storeConfig&#34;: {
+</span><span style="color:#f1fa8c">    &#34;storeType&#34;: &#34;mongodb&#34;,
+</span><span style="color:#f1fa8c">    &#34;storeProps&#34;: {
+</span><span style="color:#f1fa8c">      &#34;MongoURI&#34;: &#34;mongodb://127.0.0.1:27017/?replicaSet=speedle-rs&#34;,
+</span><span style="color:#f1fa8c">      &#34;MongoDatabase&#34;: &#34;speedle_demo&#34;
+</span><span style="color:#f1fa8c">    }
+</span><span style="color:#f1fa8c">  },
+</span><span style="color:#f1fa8c">  &#34;enableWatch&#34;: true
+</span><span style="color:#f1fa8c">}
+</span><span style="color:#f1fa8c">JSON</span></code></pre></div>
+<p>PMS와 ADS는 <strong>동일한 배포 환경과 데이터베이스</strong>를 사용해야 합니다. 독립적인 정책 저장소마다 개별 데이터베이스를 사용합니다. 저장소는 서비스와 함수를 <code>services</code> 및 <code>functions</code> 컬렉션에 보관합니다. MongoDB는 첫 번째 쓰기 시 데이터베이스와 컬렉션을 자동으로 생성합니다.</p>
+
+<h2 id="5-pms-시작">5. PMS 시작</h2>
+
+<p>터미널 A에서 PMS를 시작하고 실행 상태를 유지합니다:</p>
+
+<!-- mongodb-step: pms -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./bin/speedle-pms --config-file mongodb-demo/config.json --endpoint <span style="color:#bd93f9">127</span>.0.0.1:6733 --insecure<span style="color:#ff79c6">=</span>true</code></pre></div>
+<p>REST 리스너가 시작될 때까지 대기합니다. 이 데모는 루프백에 일반 텍스트 HTTP를 바인딩합니다. 프로덕션 환경의 전송 보안에 대해서는 <a href="/ko/docs/security/">보안 가이드</a>를 참조하십시오.</p>
+
+<h2 id="6-정책-생성">6. 정책 생성</h2>
+
+<p>터미널 B에서 동일한 체크아웃 디렉터리로부터 Alice에게 <code>book</code>에 대한 읽기 권한을 부여합니다:</p>
+
+<!-- mongodb-step: policy -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl -fsS -X POST http://127.0.0.1:6733/policy-mgmt/v1/service <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  -H <span style="color:#f1fa8c">&#39;Content-Type: application/json&#39;</span> <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  -d <span style="color:#f1fa8c">&#39;{&#34;name&#34;:&#34;mongo-demo&#34;,&#34;type&#34;:&#34;application&#34;,&#34;policies&#34;:[{&#34;name&#34;:&#34;alice-read&#34;,&#34;effect&#34;:&#34;grant&#34;,&#34;principals&#34;:[[&#34;user:alice&#34;]],&#34;permissions&#34;:[{&#34;resource&#34;:&#34;book&#34;,&#34;actions&#34;:[&#34;read&#34;]}]}]}&#39;</span></code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">{&#34;name&#34;:&#34;mongo-demo&#34;,&#34;type&#34;:&#34;application&#34;,&#34;policies&#34;:[{&#34;id&#34;:&#34;...&#34;,&#34;name&#34;:&#34;alice-read&#34;,...}]}</code></pre></div>
+<p>MongoDB에서 문서 확인:</p>
+
+<!-- mongodb-step: documents -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker <span style="color:#8be9fd;font-style:italic">exec</span> speedle-mongodb mongosh --quiet speedle_demo <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  --eval <span style="color:#f1fa8c">&#39;db.services.find({ServiceName: &#34;mongo-demo&#34;}, {ServiceName: 1, &#34;Policies.Name&#34;: 1, _id: 0})&#39;</span></code></pre></div>
+<h2 id="7-ads-시작">7. ADS 시작</h2>
+
+<p>터미널 C에서 ADS를 시작하고 실행 상태를 유지합니다:</p>
+
+<!-- mongodb-step: ads -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./bin/speedle-ads --config-file mongodb-demo/config.json --endpoint <span style="color:#bd93f9">127</span>.0.0.1:6734 --insecure<span style="color:#ff79c6">=</span>true</code></pre></div>
+<p>ADS는 데이터베이스에서 기존 정책을 읽고 새 변경 사항에 대한 변경 스트림을 엽니다.</p>
+
+<h2 id="8-인가-확인">8. 인가 확인</h2>
+
+<p>터미널 B에서 Alice(허용)와 Bob(거부)의 권한을 확인합니다:</p>
+
+<!-- mongodb-step: allow -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl -fsS -X POST http://127.0.0.1:6734/authz-check/v1/is-allowed <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  -H <span style="color:#f1fa8c">&#39;Content-Type: application/json&#39;</span> <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  -d <span style="color:#f1fa8c">&#39;{&#34;subject&#34;:{&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;,&#34;name&#34;:&#34;alice&#34;}]},&#34;serviceName&#34;:&#34;mongo-demo&#34;,&#34;resource&#34;:&#34;book&#34;,&#34;action&#34;:&#34;read&#34;}&#39;</span></code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">{&#34;allowed&#34;:true,&#34;reason&#34;:0}</code></pre></div>
+<!-- mongodb-step: deny -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl -fsS -X POST http://127.0.0.1:6734/authz-check/v1/is-allowed <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  -H <span style="color:#f1fa8c">&#39;Content-Type: application/json&#39;</span> <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  -d <span style="color:#f1fa8c">&#39;{&#34;subject&#34;:{&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;,&#34;name&#34;:&#34;bob&#34;}]},&#34;serviceName&#34;:&#34;mongo-demo&#34;,&#34;resource&#34;:&#34;book&#34;,&#34;action&#34;:&#34;read&#34;}&#39;</span></code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">{&#34;allowed&#34;:false,&#34;reason&#34;:3}</code></pre></div>
+<h2 id="9-실시간-정책-업데이트-확인">9. 실시간 정책 업데이트 확인</h2>
+
+<p>재시작하지 않고 Bob에게 읽기 권한을 부여합니다:</p>
+
+<!-- mongodb-step: update -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl -fsS -X POST http://127.0.0.1:6733/policy-mgmt/v1/service/mongo-demo/policy <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  -H <span style="color:#f1fa8c">&#39;Content-Type: application/json&#39;</span> <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  -d <span style="color:#f1fa8c">&#39;{&#34;name&#34;:&#34;bob-read&#34;,&#34;effect&#34;:&#34;grant&#34;,&#34;principals&#34;:[[&#34;user:bob&#34;]],&#34;permissions&#34;:[{&#34;resource&#34;:&#34;book&#34;,&#34;actions&#34;:[&#34;read&#34;]}]}&#39;</span></code></pre></div>
+<p>ADS는 변경 스트림을 통해 업데이트를 수신합니다. 이제 Bob의 결정이 허용됩니다:</p>
+
+<!-- mongodb-step: verify-update -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl -fsS -X POST http://127.0.0.1:6734/authz-check/v1/is-allowed <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  -H <span style="color:#f1fa8c">&#39;Content-Type: application/json&#39;</span> <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  -d <span style="color:#f1fa8c">&#39;{&#34;subject&#34;:{&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;,&#34;name&#34;:&#34;bob&#34;}]},&#34;serviceName&#34;:&#34;mongo-demo&#34;,&#34;resource&#34;:&#34;book&#34;,&#34;action&#34;:&#34;read&#34;}&#39;</span></code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">{&#34;allowed&#34;:true,&#34;reason&#34;:0}</code></pre></div>
+<h2 id="10-영속성-및-백업-확인">10. 영속성 및 백업 확인</h2>
+
+<p>PMS와 ADS를 중지(Ctrl-C)한 다음 <code>mongodump</code>로 정책 데이터베이스를 백업합니다:</p>
+
+<!-- mongodb-step: backup -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker <span style="color:#8be9fd;font-style:italic">exec</span> speedle-mongodb mongodump <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  --db<span style="color:#ff79c6">=</span>speedle_demo --archive<span style="color:#ff79c6">=</span>/data/db/speedle_demo.archive</code></pre></div>
+<p>아카이브는 볼륨 내부에 남아 있습니다. MongoDB 컨테이너를 다시 시작해도 이전 정책은 그대로 유지됩니다.</p>
+
+<h2 id="11-정리">11. 정리</h2>
+
+<p>세 터미널의 모든 프로세스를 중지하고 데모 컨테이너 및 볼륨을 제거합니다:</p>
+
+<!-- mongodb-step: cleanup -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker rm -f speedle-mongodb
+docker volume rm speedle-mongodb-data
+rm -rf mongodb-demo</code></pre></div>
+<h2 id="프로덕션-환경-권장-사항">프로덕션 환경 권장 사항</h2>
+
+<p>프로덕션 배포 시에는 <strong>SCRAM 또는 X.509 인증과 TLS</strong>를 사용하십시오. 최소 권한 원칙을 따르십시오. PMS는 정책 데이터베이스에 대한 읽기 및 쓰기 권한이 필요하며, ADS는 <code>read</code> 및 <code>changeStream</code> 권한이 필요합니다. 연결 문자열에 사용자 이름, 비밀번호, <code>authSource</code> 및 <code>tls=true</code>를 지정하십시오. MongoDB에 대한 TLS는 Speedle의 자체 리스너 TLS와 별도로 구성됩니다.</p>
+
+<p>복제본 세트 접근 제어에는 키 파일 또는 X.509 인증서를 사용한 멤버 간 인증도 필요합니다. 공식 <a href="https://www.mongodb.com/docs/manual/tutorial/deploy-replica-set-with-keyfile-access-control/">키 파일 접근 제어를 사용한 자체 관리 복제본 세트 배포</a> 및 <a href="https://www.mongodb.com/docs/manual/tutorial/configure-ssl/">TLS 구성</a> 가이드를 참조하십시오.</p>
+
+<p>고가용성을 보장하려면 최소 3개의 데이터 보유 멤버를 사용하고 연결 문자열에 여러 멤버를 나열하십시오. 단일 노드 데모는 유일한 멤버의 장애를 견딜 수 없습니다. 새 프라이머리가 선출되는 동안 PMS를 통한 쓰기가 실패할 수 있으며 선출 후에 재시도하십시오.</p>
+
+<h2 id="구성-참조-및-문제-해결">구성 참조 및 문제 해결</h2>
+
+<table>
+<thead>
+<tr>
+<th>속성</th>
+<th>플래그</th>
+<th>환경 변수</th>
+<th>기본값</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td><code>MongoURI</code></td>
+<td><code>--mongostore_uri</code></td>
+<td><code>SPDL_MONGOSTORE_URI</code></td>
+<td><code>mongodb://localhost:27017</code></td>
+</tr>
+
+<tr>
+<td><code>MongoDatabase</code></td>
+<td><code>--mongostore_database</code></td>
+<td><code>SPDL_MONGOSTORE_DATABASE</code></td>
+<td><code>speedleplus</code></td>
+</tr>
+</tbody>
+</table>
+
+<p>명시적인 플래그는 비어 있지 않은 환경 변수를 재정의하고 그다음 구성 파일, 마지막으로 기본값 순으로 우선순위가 적용됩니다. 백엔드를 선택하려면 <code>--store-type mongodb</code> 또는 <code>SPDL_STORE_TYPE=mongodb</code>를 사용하십시오. 임베디드 용도의 경우 <code>pkg/store/mongodb</code>를 가져오고 이러한 속성을 <code>store.NewStore</code>에 전달하십시오.</p>
+
+<p>저장소 운영 시 알아두어야 할 동작:</p>
+
+<ul>
+<li>전체 저장소 교체(<code>WritePolicyStore</code>)는 단일 트랜잭션으로 실행됩니다. 지정된 정책 ID를 유지하고 누락된 ID를 생성합니다. 독립형 서버에서는 기존 데이터를 수정하지 않고 실패합니다.</li>
+<li>모든 서비스나 함수를 삭제해도 컬렉션은 보존되므로 변경 스트림이 계속 열려 있고 ADS는 캐시된 항목을 제거합니다.</li>
+<li>전체 저장소 읽기 시에는 복제본 세트 또는 샤딩된 클러스터에서 단일 스냅샷으로 서비스와 함수를 읽습니다.</li>
+<li>변경 스트림이 종료되면 ADS는 최대 30초의 백오프로 다시 열고 전체 저장소를 다시 로드하므로 그 사이에 발생한 변경 사항은 유실되지 않습니다. 그전까지는 마지막으로 로드된 정책을 계속 제공합니다.</li>
+<li>발견 요청 수집 및 정책 생성은 지원되지 않습니다. 이러한 기능은 파일 저장소 및 etcd 저장소에서 사용할 수 있습니다.</li>
+</ul>
+
+<table>
+<thead>
+<tr>
+<th>증상</th>
+<th>확인 사항</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td>시작 시 서버 선택 타임아웃</td>
+<td>복제본 세트가 초기화되었고 프라이머리인지, <code>rs.conf()</code>의 멤버 호스트가 PMS/ADS에서 접근 가능한지, URI 호스트 및 포트, 방화벽.</td>
+</tr>
+
+<tr>
+<td>ADS가 <code>The $changeStream stage is only supported on replica sets</code>로 종료됨</td>
+<td>배포 환경이 독립 실행형 <code>mongod</code>입니다. 복제본 세트 또는 샤딩된 클러스터를 사용하십시오.</td>
+</tr>
+
+<tr>
+<td>PMS는 작성하지만 ADS에 서비스가 없음</td>
+<td>두 구성 모두 동일한 URI 배포 환경 및 <code>MongoDatabase</code> 이름을 사용하는지 확인.</td>
+</tr>
+
+<tr>
+<td>변경 사항이 ADS에 반영되지 않음</td>
+<td>watch가 활성화되었는지, ADS 로그에 변경 스트림 및 재오픈 오류가 없는지 확인(ADS가 데이터베이스에 다시 도달할 때까지 반복됨).</td>
+</tr>
+
+<tr>
+<td>인증 실패(Authentication failed)</td>
+<td>사용자 이름, 비밀번호 인코딩, <code>authSource</code>, 정책 데이터베이스에 대한 역할.</td>
+</tr>
+
+<tr>
+<td>TLS 오류</td>
+<td><code>tls=true</code>, CA 파일 경로, 인증서의 호스트 이름.</td>
+</tr>
+</tbody>
+</table>
+
+<p>백엔드 인터페이스 및 구성 우선순위에 대해서는 <a href="/ko/docs/store/">플러그형 저장소</a>를 다시 참조하십시오.</p>
+
+<p>저장소 장애는 모든 기본 내장 저장소와 동일한 정책을 따릅니다. ADS는 사용 불가를 감지한 후 기본적으로 오류와 함께 거부를 반환하고 계속 실행하여 재시도하며, 완전한 재로드가 성공한 후에 재개합니다. 선택적인 유한한 유예 기간 및 취소 지연에 대해서는 <a href="/ko/docs/store/#store-failures-and-cached-authorization">저장소 장애 및 캐시된 인가</a>를 참조하십시오.</p>
+</div>
+</div>
+</main>
+        </div>
+    </div>
+    <div class="docs-nav-backdrop" hidden></div>
+    <footer class="site-footer">
+    <div class="wrap footer-main">
+      <div class="footer-brand">
+        <a class="footer-lockup" href="/ko/" aria-label="Speedle Engine 홈"><img src="/img/speedle/Speedle_logo_home_bold.svg?v=4" width="304" height="104" alt="Speedle"><span class="footer-divider" aria-hidden="true"></span><span class="footer-product">Engine</span></a>
+        <p class="footer-tagline">오픈 소스 인가 엔진</p>
+        <nav class="social" aria-label="커뮤니티 링크">
+          <a href="mailto:contact@speedle.io" aria-label="이메일 보내기 contact@speedle.io" title="contact@speedle.io"><img src="/img/speedle/28.%20Mail.svg" width="40" height="40" alt=""></a>
+          <a href="https://groups.google.com/forum/#!forum/speedle-users" aria-label="Google Groups" title="Google Groups — speedle-users"><img src="/img/speedle/Google-Groups.svg" width="24" height="24" alt=""></a>
+          <a href="https://github.com/teramoby/speedle-plus" aria-label="GitHub"><img src="/img/speedle/18.%20Github.svg" width="40" height="40" alt=""></a>
+          <a href="https://discord.gg/uaY2xVsbbT" aria-label="Discord"><img src="/img/speedle/Discord.svg" width="64" height="48" alt=""></a>
+        </nav>
+      </div>
+      <nav class="footer-family" aria-label="Speedle 제품"><svg class="sphere-sprite" width="0" height="0" aria-hidden="true" focusable="false"><symbol id="i-speedle-sphere" viewBox="22 22 114 114"><!-- Source: img/speedle/Speedle_logo_home_bold.svg, sphere group only. Colours changed only (stroke currentColor). No path edits. --><g fill="none" stroke="currentColor" stroke-linejoin="miter" stroke-miterlimit="3" stroke-linecap="butt"><polygon stroke-width="3.6" points="41.83 47.82 30.67 80.15 42.9 112.09 72.8 128.69 106.38 122.19 127.93 95.63 127.36 61.43 104.94 35.6 71.16 30.23"/><g stroke-width="2.4"><polygon points="81.97 43.92 52.19 57.23 44.03 88.8 63.62 114.87 96.22 115.81 117.28 90.9 110.94 58.91"/><polygon points="68.57 60.42 57.6 86.19 78.73 104.59 102.75 90.18 96.47 62.88"/><path d="M41.83 47.82L52.19 57.23 68.57 60.42 81.97 43.92 71.16 30.23 M30.67 80.15L44.03 88.8 42.9 112.09 M52.19 57.23L57.6 86.19 44.03 88.8 78.73 104.59 63.62 114.87 72.8 128.69 M78.73 104.59L96.22 115.81 106.38 122.19 M96.22 115.81L102.75 90.18 117.28 90.9 127.93 95.63 M117.28 90.9L127.36 61.43 110.94 58.91 104.94 35.6 81.97 43.92 M110.94 58.91L96.47 62.88 117.28 90.9"/></g></g></symbol></svg>
+        <ul>
+          <li><a class="footer-card" href="https://engine.speedle.io/ko/" aria-current="page"><svg class="product-sphere product-engine" aria-hidden="true" focusable="false"><use href="#i-speedle-sphere"/></svg><span class="footer-card-name">Speedle Engine</span><span class="footer-card-description">오픈 소스 인가 엔진</span><svg class="footer-card-check" width="15" height="15" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M3.5 8.5 6.5 11.5 12.5 4.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></a></li>
+          <li><a class="footer-card" href="https://cloud.speedle.io/ko/"><svg class="product-sphere product-cloud" aria-hidden="true" focusable="false"><use href="#i-speedle-sphere"/></svg><span class="footer-card-name">Speedle Cloud<span class="product-badge">출시 예정</span></span><span class="footer-card-description">개발자를 위한 호스팅형 인가 서비스</span></a></li>
+          <li><a class="footer-card" href="https://ai.speedle.io/ko/"><svg class="product-sphere product-ai" aria-hidden="true" focusable="false"><use href="#i-speedle-sphere"/></svg><span class="footer-card-name">Speedle AI</span><span class="footer-card-description">AI를 위한 접근 제어, AI를 통한 접근 제어</span></a></li>
+        </ul>
+      </nav>
+    </div>
+    <div class="wrap footer-bar">
+      <p class="footer-legal"><span>Universal Permissive License v1.0에 따라 라이선스가 부여됩니다.</span><span class="footer-legal-sep"> · </span><span>Copyright &copy; 2019–2026 The Speedle Authors. All rights reserved.</span></p>
+    </div>
+  </footer>
+<!-- Cloudflare Web Analytics --><script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "a7a746c498b940e58425123082a20520"}'></script><!-- End Cloudflare Web Analytics -->
+</body>
+
+</html>
