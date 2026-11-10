@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Https on Speedle</title>
+    <link>https://engine.speedle.io/es/tags/https/</link>
+    <description>Recent content in Https on Speedle</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>es-es</language>
+    
+	<atom:link href="https://engine.speedle.io/es/tags/https/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>Seguridad</title>
+      <link>https://engine.speedle.io/es/docs/security/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/es/docs/security/</guid>
+      <description>Proteger ambos transportes de API Los procesos independientes de PMS y ADS de Speedle exponen REST y gRPC. Ambos utilizan ahora los mismos parámetros de transporte: --insecure, --cert, --key, --client-cert y --force-client-cert. Certificados no válidos o una configuración de confianza incorrecta provocarán un fallo de inicio; el modo seguro nunca se degrada a texto en plano.
+TLS cifra la conexión y autentica al servidor. Para requerir clientes autenticados, proporcione una CA de cliente con --client-cert y configure --force-client-cert=true.</description>
+    </item>
+    
+  </channel>
+</rss>

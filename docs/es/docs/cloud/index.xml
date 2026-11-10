@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Speedle Cloud on Speedle</title>
+    <link>https://engine.speedle.io/es/docs/cloud/</link>
+    <description>Recent content in Speedle Cloud on Speedle</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>es-es</language>
+    <lastBuildDate>Tue, 10 Nov 2026 18:32:58 +0800</lastBuildDate>
+    
+	<atom:link href="https://engine.speedle.io/es/docs/cloud/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>Primeros pasos con Speedle Cloud</title>
+      <link>https://engine.speedle.io/es/docs/cloud/getting-started/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/es/docs/cloud/getting-started/</guid>
+      <description>Speedle Cloud estará disponible próximamente. El inicio de sesión para producción aún no está habilitado en cloud.speedle.io y el encabezado de Cloud muestra Próximamente. Cuando el inicio de sesión esté cerrado, la página de inicio de sesión indicará que abrirá pronto. Esta guía describe el flujo de trabajo publicado y no una consola de producción abierta actualmente; las capturas de pantalla se agregarán tras la apertura del inicio de sesión en producción.</description>
+    </item>
+    
+    <item>
+      <title>Tokens de aplicación de Speedle Cloud</title>
+      <link>https://engine.speedle.io/es/docs/cloud/tokens/</link>
+      <pubDate>Sun, 08 Nov 2026 00:00:00 +0800</pubDate>
+      
+      <guid>https://engine.speedle.io/es/docs/cloud/tokens/</guid>
+      <description>Los tokens de aplicación autentican una aplicación frente a Speedle Cloud ADS para el servicio propio del token. No identifican a un usuario final y no pueden autorizar solicitudes a la API de gestión. La consola de tokens estará disponible cuando se habilite el inicio de sesión en las cuentas; mientras el ADS autenticado permanezca pendiente, emitir un token no habilitará llamadas de autorización del lado del servidor.
+Emitir un token Para una cuenta que ya posee un servicio, abra Tokens de aplicación.</description>
+    </item>
+    
+    <item>
+      <title>Vista previa de la API de autorización de Speedle Cloud</title>
+      <link>https://engine.speedle.io/es/docs/cloud/authorization-api/</link>
+      <pubDate>Sun, 08 Nov 2026 00:00:00 +0800</pubDate>
+      
+      <guid>https://engine.speedle.io/es/docs/cloud/authorization-api/</guid>
+      <description>El ADS autenticado está pendiente. Las solicitudes y ejemplos en esta página describen el contrato publicado para una futura versión; no se ejecutaron contra un entorno real de Cloud. La emisión de un token de aplicación no habilita estas llamadas. Utilice explícitamente la URL del entorno aprobado y verifique que el ADS autenticado se encuentre disponible en dicho entorno antes de la integración.
+Invocar IsAllowed desde su servidor Envíe el token emitido en un encabezado Authorization: Bearer y realice una solicitud POST:</description>
+    </item>
+    
+    <item>
+      <title>Límites y errores de Speedle Cloud</title>
+      <link>https://engine.speedle.io/es/docs/cloud/limits-and-errors/</link>
+      <pubDate>Sun, 08 Nov 2026 00:00:00 +0800</pubDate>
+      
+      <guid>https://engine.speedle.io/es/docs/cloud/limits-and-errors/</guid>
+      <description>Los errores y encabezados de ADS a continuación describen el contrato de ADS autenticado, cuyo entorno de ejecución aún no se encuentra disponible. El contrato de gestión ya define límites de cuenta, comprobaciones de sesión y CSRF, y errores de gestión de tokens para su uso cuando el acceso a cuentas esté habilitado. Descargar un esquema no habilita un endpoint pendiente.
+Límites    Límite Significado     10.</description>
+    </item>
+    
+  </channel>
+</rss>

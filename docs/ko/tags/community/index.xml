@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Community on Speedle</title>
+    <link>https://engine.speedle.io/ko/tags/community/</link>
+    <description>Recent content in Community on Speedle</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>ko-kr</language>
+    
+	<atom:link href="https://engine.speedle.io/ko/tags/community/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>기여 및 커뮤니티</title>
+      <link>https://engine.speedle.io/ko/contribute/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/ko/contribute/</guid>
+      <description>Speedle 커뮤니티에 오신 것을 환영합니다. 사용, 홍보, 코드 기여 등 다양한 방식의 참여를 적극 환영합니다.
+홍보 Speedle이 마음에 드신다면 GitHub 프로젝트 페이지에서 스타를 누르고 동료나 친구에게 추천해 주세요. 성공 사례 공유도 환영합니다.
+
+토론 및 커뮤니티 Speedle Discord 커뮤니티에 참여하여 질문하고, 아이디어를 공유하며, 코드 기여에 대해 논의하세요.
+speedle-users 및 speedle-developers 메일링 리스트에도 참여하실 수 있습니다.
+
+문제 보고 버그나 기능 개선 제안이 있는 경우 GitHub issue를 등록해 주세요.</description>
+    </item>
+    
+  </channel>
+</rss>

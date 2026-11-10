@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <script>document.documentElement.classList.add('docs-js','navigation-js');addEventListener('DOMContentLoaded',function(){if(!document.querySelector('header.site-header.navigation-ready'))document.documentElement.classList.remove('navigation-js')});</script>
+    <meta name="generator" content="Hugo 0.48" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1"><title>etcd セットアップ · Speedle Engine</title>
+<meta name="description" content="PMS および ADS 向けの etcd ポリシーストアの設定手順">
+<meta name="generator" content="Hugo 0.48" />
+<link href="https://engine.speedle.io/index.xml" rel="alternate" type="application/rss+xml">
+<link rel="canonical" href="https://engine.speedle.io/ja/docs/store/etcd/">
+
+<link rel="alternate" hreflang="en" href="https://engine.speedle.io/docs/store/etcd/">
+<link rel="alternate" hreflang="es" href="https://engine.speedle.io/es/docs/store/etcd/">
+<link rel="alternate" hreflang="ja" href="https://engine.speedle.io/ja/docs/store/etcd/">
+<link rel="alternate" hreflang="ko" href="https://engine.speedle.io/ko/docs/store/etcd/">
+<link rel="alternate" hreflang="zh-CN" href="https://engine.speedle.io/zh/docs/store/etcd/">
+<link rel="alternate" hreflang="x-default" href="https://engine.speedle.io/docs/store/etcd/">
+<meta property="og:type" content="article">
+<meta property="article:modified_time" content="2026-11-10T16:57:42&#43;08:00">
+<meta property="og:site_name" content="Speedle Engine">
+<meta property="og:title" content="etcd セットアップ · Speedle Engine">
+<meta property="og:description" content="PMS および ADS 向けの etcd ポリシーストアの設定手順">
+<meta property="og:url" content="https://engine.speedle.io/ja/docs/store/etcd/">
+<meta property="og:image" content="https://engine.speedle.io/img/social/engine-en.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:alt" content="Speedle Engine — Fast. Simple. Access control">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="etcd セットアップ · Speedle Engine">
+<meta name="twitter:description" content="PMS および ADS 向けの etcd ポリシーストアの設定手順">
+<meta name="twitter:image" content="https://engine.speedle.io/img/social/engine-en.png">
+<meta name="twitter:image:alt" content="Speedle Engine — Fast. Simple. Access control">
+
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/ja/docs/store/etcd/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-10T16:57:42+08:00","description":"PMS および ADS 向けの etcd ポリシーストアの設定手順","headline":"etcd セットアップ","image":"https://engine.speedle.io/img/social/engine-en.png","inLanguage":"ja","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/ja/docs/store/etcd/","@type":"WebPage"},"name":"etcd セットアップ","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/ja/docs/store/etcd/"}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/ja/docs/store/etcd/#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://engine.speedle.io/ja/","name":"ホーム","position":1},{"@type":"ListItem","item":"https://engine.speedle.io/ja/docs/","name":"ドキュメント","position":2},{"@type":"ListItem","item":"https://engine.speedle.io/ja/docs/store/","name":"プラグイン可能なストレージ","position":3},{"@type":"ListItem","item":"https://engine.speedle.io/ja/docs/store/etcd/","name":"etcd セットアップ","position":4}]}</script><link href="/css/docs.css" rel="stylesheet" type="text/css">
+
+
+    <link href="/css/navigation.css?v=header-20261106-v8" rel="stylesheet">
+    <script src="/js/navigation.js?v=header-20261106-v8" defer></script>
+    <script src="/js/docs.js" defer></script>
+
+</head>
+
+<body class="page-kube docs-page">
+    <header class="site-header">
+    <div class="wrap nav">
+      <a class="brand" href="/ja/#top" aria-label="Speedle Engine ホーム"><img class="brand-logo" src="/img/speedle/Speedle_logo_home_bold.svg?v=4" width="304" height="104" alt=""><span class="brand-divider" aria-hidden="true"></span><span class="brand-product">Engine</span></a>
+      <button class="menu" type="button" aria-expanded="false" aria-controls="nav-links" aria-label="ナビゲーションを開く">☰</button>
+      <nav class="nav-links" id="nav-links" aria-label="メインナビゲーション">
+        <div class="products"><button class="products-button" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="products-panel">プロダクト<svg class="products-chevron" width="10" height="10" viewBox="0 0 10 10" aria-hidden="true" focusable="false"><path d="M2 3.5 5 6.5 8 3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button><span class="products-heading" aria-hidden="true">プロダクト</span><div class="products-panel" id="products-panel" role="group" aria-label="プロダクト"><a class="product-row" href="https://engine.speedle.io/ja/" aria-current="page"><img class="product-mark" src="/img/speedle/speedle-mark-engine.svg" alt="" width="20" height="20"><span class="product-text"><span class="product-name">Speedle Engine</span><span class="product-desc">オープンソース認可エンジン</span></span><svg class="product-check" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M3.5 8.5 6.5 11.5 12.5 4.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></a><a class="product-row" href="https://cloud.speedle.io/ja/"><img class="product-mark" src="/img/speedle/speedle-mark-cloud.svg" alt="" width="20" height="20"><span class="product-text"><span class="product-name">Speedle Cloud <span class="product-badge">まもなく公開</span></span><span class="product-desc">開発者向けホスト型認可サービス</span></span></a><a class="product-row" href="https://ai.speedle.io/ja/"><img class="product-mark" src="/img/speedle/speedle-mark-ai.svg" alt="" width="20" height="20"><span class="product-text"><span class="product-name">Speedle AI</span><span class="product-desc">AI のためのアクセス制御、アクセス制御のための AI</span></span></a></div></div>
+        <a href="/ja/#about">Speedle について</a><a href="/ja/#features">機能</a>
+        <a href="/ja/quick-start/">クイックスタート</a><a href="/ja/docs/">ドキュメント</a><a href="/ja/playground/">Playground</a>
+        <div class="languages"><button class="languages-button" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="languages-panel">日本語<svg class="languages-chevron" width="10" height="10" viewBox="0 0 10 10" aria-hidden="true" focusable="false"><path d="M2 3.5 5 6.5 8 3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button><span class="languages-heading" aria-hidden="true">言語</span><div class="languages-panel" id="languages-panel" role="group" aria-label="言語"><a class="language-row" href="/docs/store/etcd/" lang="en" hreflang="en">English</a><a class="language-row" href="/ja/docs/store/etcd/" lang="ja" hreflang="ja" aria-current="page">日本語</a><a class="language-row" href="/ko/docs/store/etcd/" lang="ko" hreflang="ko">한국어</a><a class="language-row" href="/es/docs/store/etcd/" lang="es" hreflang="es">Español</a><a class="language-row" href="/zh/docs/store/etcd/" lang="zh-CN" hreflang="zh-CN" >中文</a></div></div>
+        <a class="nav-github" href="https://github.com/teramoby/speedle-plus">GitHub</a>
+      </nav>
+    </div>
+  </header>
+    <div class="container">
+        <button class="docs-nav-toggle" type="button" aria-expanded="false" aria-controls="docs-navigation">
+            <span>メニュー</span>
+            <svg class="docs-nav-toggle-icon" viewBox="0 0 18 14" width="18" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M1 1h16M1 7h16M1 13h16"/></svg>
+        </button>
+        <div class="content-container"><aside class="docs-sidebar" id="docs-navigation" aria-label="ドキュメントナビゲーション">
+<div class="docs-nav-head">
+<span class="docs-nav-title">ドキュメント</span>
+<button class="docs-nav-close" type="button" aria-label="メニューを閉じる"><svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="m3 3 10 10M13 3 3 13"/></svg></button>
+</div>
+<div class="sidebar">
+<nav>
+<ul>
+
+
+
+<li data-docs-depth="-1" class="docs-nav-section parent"><span class="docs-nav-heading">ドキュメント</span>
+<ul class="sub-menu">
+<li data-docs-depth="0" class=""><a href="/ja/docs/usecases/">ユースケース</a></li>
+<li data-docs-depth="0" class=""><a href="/ja/docs/overview/">概要</a></li>
+<li data-docs-depth="0" class=""><a href="/ja/docs/spdl/">SPDL: Speedle ポリシー定義言語</a></li>
+<li data-docs-depth="0" class=""><a href="/ja/docs/architecture/">アーキテクチャ</a></li>
+
+
+
+<li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading">Speedle ポリシー</span>
+<ul class="">
+<li data-docs-depth="1" class=""><a href="/ja/docs/pms/policy-mgmt/">ポリシー管理</a></li>
+<li data-docs-depth="1" class=""><a href="/ja/docs/pms/global-policy/">グローバルポリシー</a></li>
+<li data-docs-depth="1" class=""><a href="/ja/docs/pms/diagnosis/">認可診断</a></li>
+<li data-docs-depth="1" class=""><a href="/ja/docs/pms/discover/">ポリシー検出</a></li>
+</ul>
+
+</li>
+<li data-docs-depth="0" class=""><a href="/ja/docs/decisions/">認可決定</a></li>
+<li data-docs-depth="0" class=""><a href="/ja/docs/idd/">ID ドメイン</a></li>
+<li data-docs-depth="0" class=""><a href="/ja/docs/assertor/">トークンアサーター</a></li>
+
+
+
+<li data-docs-depth="0" class="docs-nav-section parent"><span class="docs-nav-heading docs-nav-heading-link"><a href="/ja/docs/store/">プラグイン可能なストレージ</a></span>
+<ul class="sub-menu">
+<li data-docs-depth="1" class=""><a href="/ja/docs/store/mysql/">MySQL セットアップ</a></li>
+<li data-docs-depth="1" class="active"><a href="/ja/docs/store/etcd/" aria-current="page">etcd セットアップ</a></li>
+<li data-docs-depth="1" class=""><a href="/ja/docs/store/mongodb/">MongoDB セットアップ</a></li>
+</ul>
+
+</li>
+
+
+
+<li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading">API</span>
+<ul class="">
+<li data-docs-depth="1" class=""><a href="/ja/docs/api/asserter_api/">トークンアサーション API</a></li>
+<li data-docs-depth="1" class=""><a href="/ja/docs/api/management_api/">ポリシー管理 API</a></li>
+<li data-docs-depth="1" class=""><a href="/ja/docs/api/decision_api/">認可決定 API</a></li>
+</ul>
+
+</li>
+
+
+
+<li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading docs-nav-heading-link"><a href="/ja/docs/deployment/">デプロイ</a></span>
+<ul class="">
+<li data-docs-depth="1" class=""><a href="/ja/docs/deployment/embedded/">Speedle 組み込みモード</a></li>
+<li data-docs-depth="1" class=""><a href="/ja/docs/deployment/docker/">Docker イメージ</a></li>
+</ul>
+
+</li>
+
+
+
+<li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading docs-nav-heading-link"><a href="/ja/docs/sdks/">SDK</a></span>
+<ul class="">
+<li data-docs-depth="1" class=""><a href="/ja/docs/sdks/java/">Java SDK</a></li>
+<li data-docs-depth="1" class=""><a href="/ja/docs/sdks/python/">Python SDK</a></li>
+<li data-docs-depth="1" class=""><a href="/ja/docs/sdks/go/">Go SDK</a></li>
+<li data-docs-depth="1" class=""><a href="/ja/docs/sdks/dotnet/">C#/.NET SDK</a></li>
+<li data-docs-depth="1" class=""><a href="/ja/docs/sdks/rust/">Rust SDK</a></li>
+<li data-docs-depth="1" class=""><a href="/ja/docs/sdks/node/">Node.js/TypeScript SDK</a></li>
+</ul>
+
+</li>
+
+
+
+<li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading docs-nav-heading-link"><a href="/ja/docs/cloud/">Speedle Cloud</a></span>
+<ul class="">
+<li data-docs-depth="1" class=""><a href="/ja/docs/cloud/getting-started/">Speedle Cloud クイックスタート</a></li>
+<li data-docs-depth="1" class=""><a href="/ja/docs/cloud/tokens/">Speedle Cloud アプリケーショントークン</a></li>
+<li data-docs-depth="1" class=""><a href="/ja/docs/cloud/authorization-api/">Speedle Cloud 認可 API プレビュー</a></li>
+<li data-docs-depth="1" class=""><a href="/ja/docs/cloud/limits-and-errors/">Speedle Cloud の制限とエラー</a></li>
+</ul>
+
+</li>
+<li data-docs-depth="0" class=""><a href="/ja/docs/security/">セキュリティ</a></li>
+<li data-docs-depth="0" class=""><a href="/ja/docs/logging/">ロギングフレームワーク</a></li>
+<li data-docs-depth="0" class=""><a href="/ja/docs/versions/">バージョン</a></li>
+<li data-docs-depth="0" class=""><a href="/ja/docs/custom-function/">カスタム関数</a></li>
+</ul>
+
+</li>
+
+
+</ul>
+</nav>
+
+
+</div>
+</aside>
+<main>
+<div id="main">
+
+  <h1>etcd セットアップ</h1>
+  <p class="docs-lead">独立した etcd サーバーを実行し、PMS と ADS を接続してライブポリシーの更新を確認し、バックアップを保存します。</p>
+
+
+
+
+<nav id="contents" class="docs-toc" data-docs-toc="h2" aria-label="目次">
+  <ol></ol>
+</nav>
+
+
+
+  <div id="kube-component" class="content">
+
+<p>このウォークスルーでは、永続的な Docker ボリュームを備えた<strong>外部の etcd v3.6.14</strong> サーバーを使用します。PMS はポリシーを書き込み、ADS は同じキープレフィックスを監視（watch）します。シングルノードのサンプルはローカル開発用にループバックでリッスンし、平文の HTTP を使用します。本番環境の TLS とクラスター構成はウォークスルーの後に説明します。</p>
+
+<h2 id="1-speedle-のビルド">1. Speedle のビルド</h2>
+
+<p>Bash、Git、curl、Docker、および Go 1.26.10 または Go 1.27.3 を準備します。Docker を起動し、ネイティブサービスをビルドします:</p>
+
+<!-- etcd-step: build -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">git clone --depth <span style="color:#bd93f9">1</span> https://github.com/teramoby/speedle-plus.git
+<span style="color:#8be9fd;font-style:italic">cd</span> speedle-plus
+mkdir -p bin
+go build -o ./bin/ ./cmd/spctl ./cmd/speedle-pms ./cmd/speedle-ads</code></pre></div>
+<p>後続のコマンドはこのチェックアウトから実行します。ローカルポート 2379、6733、6734 を利用可能にしておくか、コマンドと構成を同時に更新してください。</p>
+
+<h2 id="2-外部-etcd-サーバーの起動">2. 外部 etcd サーバーの起動</h2>
+
+<p>名前付きボリュームが etcd のデータを保持します。ホストにはクライアントポートのみが公開され、ピアポートはこのシングルノードコンテナ内に留まります。</p>
+
+<!-- etcd-step: database -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker run --name speedle-etcd --detach <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  --publish <span style="color:#bd93f9">127</span>.0.0.1:2379:2379 <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  --volume speedle-etcd-data:/etcd-data <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  gcr.io/etcd-development/etcd:v3.6.14 <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  /usr/local/bin/etcd <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  --name speedle-local <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  --data-dir /etcd-data <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  --listen-client-urls http://0.0.0.0:2379 <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  --advertise-client-urls http://127.0.0.1:2379 <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  --listen-peer-urls http://0.0.0.0:2380 <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  --initial-advertise-peer-urls http://127.0.0.1:2380 <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  --initial-cluster speedle-local<span style="color:#ff79c6">=</span>http://127.0.0.1:2380 <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  --initial-cluster-token speedle-local-demo <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  --initial-cluster-state new</code></pre></div>
+<p>v3 API が正常（healthy）になるのを待ちます:</p>
+
+<!-- etcd-step: ready -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#ff79c6">until</span> docker <span style="color:#8be9fd;font-style:italic">exec</span> speedle-etcd /usr/local/bin/etcdctl <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  --endpoints<span style="color:#ff79c6">=</span>http://localhost:2379 endpoint health
+<span style="color:#ff79c6">do</span>
+  sleep <span style="color:#bd93f9">1</span>
+<span style="color:#ff79c6">done</span></code></pre></div>
+<p>すでに etcd を実行している場合は、コンテナコマンドをスキップし、以下のクライアントエンドポイントを使用してください。Docker ネットワークの詳細については、<a href="https://etcd.io/docs/v3.6/op-guide/container/">公式コンテナガイド</a> を参照してください。</p>
+
+<h2 id="3-共有ストアの構成">3. 共有ストアの構成</h2>
+
+<p>このローカルの PMS/ADS ペア用の設定ファイルを 1 つ作成します:</p>
+
+<!-- etcd-step: configuration -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">mkdir -p etcd-demo
+cat &gt; etcd-demo/config.json <span style="color:#f1fa8c">&lt;&lt;&#39;JSON&#39;
+</span><span style="color:#f1fa8c">{
+</span><span style="color:#f1fa8c">  &#34;storeConfig&#34;: {
+</span><span style="color:#f1fa8c">    &#34;storeType&#34;: &#34;etcd&#34;,
+</span><span style="color:#f1fa8c">    &#34;storeProps&#34;: {
+</span><span style="color:#f1fa8c">      &#34;EtcdEndpoint&#34;: &#34;http://127.0.0.1:2379&#34;,
+</span><span style="color:#f1fa8c">      &#34;EtcdKeyPrefix&#34;: &#34;/speedle_ps/&#34;,
+</span><span style="color:#f1fa8c">      &#34;IsEmbeddedEtcd&#34;: false
+</span><span style="color:#f1fa8c">    }
+</span><span style="color:#f1fa8c">  },
+</span><span style="color:#f1fa8c">  &#34;enableWatch&#34;: true
+</span><span style="color:#f1fa8c">}
+</span><span style="color:#f1fa8c">JSON</span></code></pre></div>
+<p>PMS と ADS は<strong>同じエンドポイントとキープレフィックス</strong>を使用する必要があります。<code>/speedle_ps/</code> の末尾のスラッシュを保持してください。独立したポリシーストアごとに個別のプレフィックスを使用します。<code>IsEmbeddedEtcd: false</code> は外部サーバーに接続します。<code>enableWatch: true</code> は etcd watch イベントによる ADS の更新を有効にします。ポーリング間隔は設定されません。</p>
+
+<h2 id="4-pms-の起動">4. PMS の起動</h2>
+
+<p>ターミナル A で PMS を起動し、実行したままにします:</p>
+
+<!-- etcd-step: pms -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./bin/speedle-pms --config-file etcd-demo/config.json --endpoint <span style="color:#bd93f9">127</span>.0.0.1:6733 --insecure<span style="color:#ff79c6">=</span>true</code></pre></div>
+<p>REST リスナーが起動するのを待ちます。このデモでは平文の HTTP がループバックにバインドされています。Speedle 独自の TLS および API 認可については <a href="/ja/docs/security/">セキュリティ</a> を参照してください。</p>
+
+<h2 id="5-ポリシーの作成">5. ポリシーの作成</h2>
+
+<p>ターミナル B で、同じチェックアウトから、Alice に <code>book</code> の読み取り権限を付与します:</p>
+
+<!-- etcd-step: policy -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl -fsS -X POST http://127.0.0.1:6733/policy-mgmt/v1/service <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  -H <span style="color:#f1fa8c">&#39;Content-Type: application/json&#39;</span> <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  -d <span style="color:#f1fa8c">&#39;{&#34;name&#34;:&#34;etcd-demo&#34;,&#34;type&#34;:&#34;application&#34;,&#34;policies&#34;:[{&#34;name&#34;:&#34;alice-read&#34;,&#34;effect&#34;:&#34;grant&#34;,&#34;principals&#34;:[[&#34;user:alice&#34;]],&#34;permissions&#34;:[{&#34;resource&#34;:&#34;book&#34;,&#34;actions&#34;:[&#34;read&#34;]}]}]}&#39;</span></code></pre></div>
+<p>PMS はサービスと生成されたポリシー ID を返します。ポリシーは etcd 内に保存されました。SQL スキーマや手動のキー初期化は不要です。</p>
+
+<h2 id="6-ads-の起動と認可の確認">6. ADS の起動と認可の確認</h2>
+
+<p>ターミナル C で、同じファイルを使用して ADS を起動し、実行したままにします:</p>
+
+<!-- etcd-step: ads -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./bin/speedle-ads --config-file etcd-demo/config.json --endpoint <span style="color:#bd93f9">127</span>.0.0.1:6734 --insecure<span style="color:#ff79c6">=</span>true</code></pre></div>
+<p>起動を待ってから、ターミナル B で以下のチェックを実行します。Alice は許可されます:</p>
+
+<!-- etcd-step: allow -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl -fsS -X POST http://127.0.0.1:6734/authz-check/v1/is-allowed <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  -H <span style="color:#f1fa8c">&#39;Content-Type: application/json&#39;</span> <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  -d <span style="color:#f1fa8c">&#39;{&#34;subject&#34;:{&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;,&#34;name&#34;:&#34;alice&#34;}]},&#34;serviceName&#34;:&#34;etcd-demo&#34;,&#34;resource&#34;:&#34;book&#34;,&#34;action&#34;:&#34;read&#34;}&#39;</span></code></pre></div>
+<p>期待値: <code>{&quot;allowed&quot;:true,&quot;reason&quot;:0}</code>。Bob には一致するグラントがありません:</p>
+
+<!-- etcd-step: deny -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl -fsS -X POST http://127.0.0.1:6734/authz-check/v1/is-allowed <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  -H <span style="color:#f1fa8c">&#39;Content-Type: application/json&#39;</span> <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  -d <span style="color:#f1fa8c">&#39;{&#34;subject&#34;:{&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;,&#34;name&#34;:&#34;bob&#34;}]},&#34;serviceName&#34;:&#34;etcd-demo&#34;,&#34;resource&#34;:&#34;book&#34;,&#34;action&#34;:&#34;read&#34;}&#39;</span></code></pre></div>
+<p>期待値: <code>{&quot;allowed&quot;:false,&quot;reason&quot;:3}</code>。</p>
+
+<h2 id="7-保存されたキーと自動更新の検証">7. 保存されたキーと自動更新の検証</h2>
+
+<p>このポリシーストア内のキーのみを検査します:</p>
+
+<!-- etcd-step: keys -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker <span style="color:#8be9fd;font-style:italic">exec</span> speedle-etcd /usr/local/bin/etcdctl <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  --endpoints<span style="color:#ff79c6">=</span>http://localhost:2379 get /speedle_ps/ --prefix --keys-only</code></pre></div>
+<p>出力には <code>/speedle_ps/services/</code> 配下の <code>etcd-demo</code> のキーが含まれます。キーはバックエンドが管理するデータとして扱い、ポリシーの変更は PMS を通じて行ってください。</p>
+
+<p>ADS を実行したまま、拒否（deny）を追加します:</p>
+
+<!-- etcd-step: update -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl -fsS -X POST http://127.0.0.1:6733/policy-mgmt/v1/service/etcd-demo/policy <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  -H <span style="color:#f1fa8c">&#39;Content-Type: application/json&#39;</span> <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  -d <span style="color:#f1fa8c">&#39;{&#34;name&#34;:&#34;alice-deny&#34;,&#34;effect&#34;:&#34;deny&#34;,&#34;principals&#34;:[[&#34;user:alice&#34;]],&#34;permissions&#34;:[{&#34;resource&#34;:&#34;book&#34;,&#34;actions&#34;:[&#34;read&#34;]}]}&#39;</span></code></pre></div>
+<p>ステップ 6 の Alice のリクエストを繰り返します。非同期の watch 更新後、<code>{&quot;allowed&quot;:false,&quot;reason&quot;:1}</code> が返されるはずです。同期がまだ進行中の場合はリクエストを再試行してください。この通常のポリシー更新のために ADS を再起動する必要はありません。</p>
+
+<h2 id="8-スナップショットの保存と永続化の確認">8. スナップショットの保存と永続化の確認</h2>
+
+<p>ライブスナップショットを取得し、確認して、コンテナの外部にコピーします:</p>
+
+<!-- etcd-step: snapshot -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker <span style="color:#8be9fd;font-style:italic">exec</span> speedle-etcd /usr/local/bin/etcdctl <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  --endpoints<span style="color:#ff79c6">=</span>http://localhost:2379 snapshot save /etcd-data/speedle-snapshot.db
+docker <span style="color:#8be9fd;font-style:italic">exec</span> speedle-etcd /usr/local/bin/etcdutl <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  snapshot status /etcd-data/speedle-snapshot.db --write-out<span style="color:#ff79c6">=</span>table
+docker cp speedle-etcd:/etcd-data/speedle-snapshot.db ./etcd-demo/speedle-snapshot.db</code></pre></div>
+<p>スナップショットには、他のプレフィックスを含む <strong>etcd クラスター全体のキースペース</strong>が含まれます。バックアップは独立した保護されたストレージに保存してください。リストアとメンバーシップの手順については、<a href="https://etcd.io/docs/v3.6/op-guide/recovery/">ディザスタリカバリ</a> を参照してください。</p>
+
+<p>この再起動チェックの前に、PMS と ADS を Ctrl+C で停止します:</p>
+
+<!-- etcd-step: restart -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker restart speedle-etcd</code></pre></div>
+<p>ステップ 2 のヘルスチェックを実行し、同じ構成で PMS と ADS を再起動して、Alice のリクエストを再度実行します。引き続き <code>{&quot;allowed&quot;:false,&quot;reason&quot;:1}</code> が返されるはずです。名前付きボリュームは、コンテナの再起動後もデータを保持します。</p>
+
+<p>ディザスタリカバリの場合は、ポリシーライターを停止し、etcd の説明に従って新しいデータディレクトリにスナップショットをリストアし、決定を提供する前にリストアされたストアを読み込むように ADS を再起動します。リカバリ後に認可を再確認してください。以前実行されていたキャッシュは、復元されたポリシーセットを含んでいることの証明にはなりません。</p>
+
+<h2 id="本番環境-tls-認証-およびクラスター">本番環境: TLS、認証、およびクラスター</h2>
+
+<p>信頼できるサーバー証明書、エンドポイントホスト名と一致する証明書 SAN、およびクライアント証明書検証を使用して etcd をデプロイします。その後、HTTPS とクライアント認証情報を使用するように PMS/ADS を構成します:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">{
+  <span style="color:#ff79c6">&#34;storeConfig&#34;</span>: {
+    <span style="color:#ff79c6">&#34;storeType&#34;</span>: <span style="color:#f1fa8c">&#34;etcd&#34;</span>,
+    <span style="color:#ff79c6">&#34;storeProps&#34;</span>: {
+      <span style="color:#ff79c6">&#34;EtcdEndpoint&#34;</span>: <span style="color:#f1fa8c">&#34;https://etcd.example.com:2379&#34;</span>,
+      <span style="color:#ff79c6">&#34;EtcdKeyPrefix&#34;</span>: <span style="color:#f1fa8c">&#34;/speedle_ps/&#34;</span>,
+      <span style="color:#ff79c6">&#34;IsEmbeddedEtcd&#34;</span>: <span style="color:#ff79c6">false</span>,
+      <span style="color:#ff79c6">&#34;EtcdTLSTrustedCAFile&#34;</span>: <span style="color:#f1fa8c">&#34;/etc/speedle/etcd/ca.crt&#34;</span>,
+      <span style="color:#ff79c6">&#34;EtcdTLSCertFile&#34;</span>: <span style="color:#f1fa8c">&#34;/etc/speedle/etcd/client.crt&#34;</span>,
+      <span style="color:#ff79c6">&#34;EtcdTLSKeyFile&#34;</span>: <span style="color:#f1fa8c">&#34;/etc/speedle/etcd/client.key&#34;</span>,
+      <span style="color:#ff79c6">&#34;EtcdTLSServerName&#34;</span>: <span style="color:#f1fa8c">&#34;etcd.example.com&#34;</span>,
+      <span style="color:#ff79c6">&#34;EtcdTLSInsecureSkipVerify&#34;</span>: <span style="color:#ff79c6">false</span>
+    }
+  },
+  <span style="color:#ff79c6">&#34;enableWatch&#34;</span>: <span style="color:#ff79c6">true</span>
+}</code></pre></div>
+<p>これらのパスは PMS/ADS マシン上に存在します。秘密鍵へのアクセスはサービスアカウントのみに制限してください。etcd への TLS は、Speedle の REST/gRPC リスナー上の TLS とは個別に構成されます。</p>
+
+<p>アダプターは証明書オプションを公開しており、etcd のユーザー名/パスワードプロパティは公開していません。etcd RBAC の場合は、<code>--client-cert-auth=true</code> と認証を有効にして、クライアント証明書の Common Name をユーザーアイデンティティとして使用します。PMS にはそのプレフィックスへの読み取り/書き込みアクセスを許可し、ADS には有効な機能が必要とするアクセス許可を付与します。サーバー構成とロールについては、公式の <a href="https://etcd.io/docs/v3.6/op-guide/security/">TLS</a> および <a href="https://etcd.io/docs/v3.6/op-guide/authentication/rbac/">RBAC</a> ガイドを参照してください。キープレフィックスはデータをグループ化し、アクセス制御には RBAC が必要です。</p>
+
+<p>高可用性を確保するには、公式の <a href="https://etcd.io/docs/v3.6/op-guide/container/#running-a-3-node-etcd-cluster">3 ノードクラスターの例</a> に従い、クライアントとピアのトラフィックを保護してください。シングルノードのデモは、唯一のメンバーの喪失に耐えることができません。現在の <code>EtcdEndpoint</code> プロパティは 1 つのエンドポイント文字列を受け入れます。デプロイメントに到達可能なクライアント URL を指定してください。</p>
+
+<h2 id="構成リファレンスとトラブルシューティング">構成リファレンスとトラブルシューティング</h2>
+
+<table>
+<thead>
+<tr>
+<th>プロパティ</th>
+<th>フラグ</th>
+<th>環境変数</th>
+<th>デフォルト</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td><code>EtcdEndpoint</code></td>
+<td><code>--etcdstore-endpoint</code></td>
+<td><code>SPDL_ETCDSTORE_ENDPOINT</code></td>
+<td><code>localhost:2379</code></td>
+</tr>
+
+<tr>
+<td><code>EtcdKeyPrefix</code></td>
+<td><code>--etcdstore-keyprefix</code></td>
+<td><code>SPDL_ETCDSTORE_KEYPREFIX</code></td>
+<td><code>/speedle_ps/</code></td>
+</tr>
+
+<tr>
+<td><code>IsEmbeddedEtcd</code></td>
+<td><code>--etcdstore-isembedded</code></td>
+<td><code>SPDL_ETCDSTORE_ISEMBEDDED</code></td>
+<td><code>false</code></td>
+</tr>
+
+<tr>
+<td><code>EmbeddedEtcdDataDir</code></td>
+<td><code>--etcdstore-embeddedDataDir</code></td>
+<td><code>SPDL_ETCDSTORE_EMBEDDEDDATADIR</code></td>
+<td>空（組み込みモードのみ）</td>
+</tr>
+
+<tr>
+<td><code>EtcdTLSTrustedCAFile</code></td>
+<td><code>--etcdstore-tls-ca</code></td>
+<td><code>SPDL_ETCDSTORE_TLS_CA</code></td>
+<td>空</td>
+</tr>
+
+<tr>
+<td><code>EtcdTLSCertFile</code></td>
+<td><code>--etcdstore-tls-cert</code></td>
+<td><code>SPDL_ETCDSTORE_TLS_CERT</code></td>
+<td>空</td>
+</tr>
+
+<tr>
+<td><code>EtcdTLSKeyFile</code></td>
+<td><code>--etcdstore-tls-key</code></td>
+<td><code>SPDL_ETCDSTORE_TLS_KEY</code></td>
+<td>空</td>
+</tr>
+
+<tr>
+<td><code>EtcdTLSServerName</code></td>
+<td><code>--etcdstore-tls-serverName</code></td>
+<td><code>SPDL_ETCDSTORE_TLS_SERVERNAME</code></td>
+<td>空</td>
+</tr>
+
+<tr>
+<td><code>EtcdTLSInsecureSkipVerify</code></td>
+<td><code>--etcdstore-tls-insecureSkipVerify</code></td>
+<td><code>SPDL_ETCDSTORE_TLS_INSECURESKIPVERIFY</code></td>
+<td><code>false</code></td>
+</tr>
+</tbody>
+</table>
+
+<p>明示的なフラグは空でない環境変数をオーバーライドし、次に設定ファイル、最後にデフォルト値の順で優先されます。バックエンドを選択するには <code>--store-type etcd</code> または <code>SPDL_STORE_TYPE=etcd</code> を使用します。追加の TLS オプションには <code>EtcdTLSAllowedCN</code> (<code>--etcdstore-tls-allowedCN</code>) および <code>EtcdTLSCRLFile</code> (<code>--etcdstore-tls-crlFile</code>) があります。</p>
+
+<p>組み込みモード (<code>IsEmbeddedEtcd: true</code>) はローカルの開発/テスト用であり、固定されたローカル etcd ポートを使用します。このガイドでは、データディレクトリとライフサイクルを明示的に管理できるように、etcd を PMS/ADS から独立させています。</p>
+
+<table>
+<thead>
+<tr>
+<th>症状</th>
+<th>確認事項</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td>接続が拒否される、または起動が停止する</td>
+<td>etcd エンドポイントの健全性、クライアントポート、ホスト/コンテナのアドレス、ファイアウォール。</td>
+</tr>
+
+<tr>
+<td>PMS は書き込むが ADS にサービスがない</td>
+<td>末尾のスラッシュを含め、同じエンドポイントとキープレフィックスであるか。</td>
+</tr>
+
+<tr>
+<td>変更が ADS に届かない</td>
+<td>watch が有効か、ADS ログに接続および watch エラーがないか。リカバリ後に ADS を再起動して再読み込みしてください。</td>
+</tr>
+
+<tr>
+<td>TLS ホスト名または CA エラー</td>
+<td>HTTPS エンドポイント、証明書 SAN、信頼できる CA パス、サーバー名設定。</td>
+</tr>
+
+<tr>
+<td>権限拒否（Permission denied）</td>
+<td>クライアント証明書のアイデンティティ、有効な RBAC ロール、プレフィックスのアクセス許可。</td>
+</tr>
+</tbody>
+</table>
+
+<p>バックエンドインターフェースと構成の優先順位については、<a href="/ja/docs/store/">プラグイン可能なストレージ</a> に戻って参照してください。</p>
+
+<p>ストアの障害は、すべての組み込みストアと同じポリシーに従います。ADS は利用不能を検出した後にデフォルトでエラー付きの拒否を行い、実行を継続して再試行し、完全な再読み込みが成功した後に再開します。オプションの有限の猶予期間および失効遅延については、<a href="/ja/docs/store/#store-failures-and-cached-authorization">ストア障害とキャッシュされた認可</a> を参照してください。</p>
+</div>
+</div>
+</main>
+        </div>
+    </div>
+    <div class="docs-nav-backdrop" hidden></div>
+    <footer class="site-footer">
+    <div class="wrap footer-main">
+      <div class="footer-brand">
+        <a class="footer-lockup" href="/ja/" aria-label="Speedle Engine ホーム"><img src="/img/speedle/Speedle_logo_home_bold.svg?v=4" width="304" height="104" alt="Speedle"><span class="footer-divider" aria-hidden="true"></span><span class="footer-product">Engine</span></a>
+        <p class="footer-tagline">オープンソース認可エンジン</p>
+        <nav class="social" aria-label="コミュニティリンク">
+          <a href="mailto:contact@speedle.io" aria-label="メールを送信 contact@speedle.io" title="contact@speedle.io"><img src="/img/speedle/28.%20Mail.svg" width="40" height="40" alt=""></a>
+          <a href="https://groups.google.com/forum/#!forum/speedle-users" aria-label="Google Groups" title="Google Groups — speedle-users"><img src="/img/speedle/Google-Groups.svg" width="24" height="24" alt=""></a>
+          <a href="https://github.com/teramoby/speedle-plus" aria-label="GitHub"><img src="/img/speedle/18.%20Github.svg" width="40" height="40" alt=""></a>
+          <a href="https://discord.gg/uaY2xVsbbT" aria-label="Discord"><img src="/img/speedle/Discord.svg" width="64" height="48" alt=""></a>
+        </nav>
+      </div>
+      <nav class="footer-family" aria-label="Speedle プロダクト"><svg class="sphere-sprite" width="0" height="0" aria-hidden="true" focusable="false"><symbol id="i-speedle-sphere" viewBox="22 22 114 114"><!-- Source: img/speedle/Speedle_logo_home_bold.svg, sphere group only. Colours changed only (stroke currentColor). No path edits. --><g fill="none" stroke="currentColor" stroke-linejoin="miter" stroke-miterlimit="3" stroke-linecap="butt"><polygon stroke-width="3.6" points="41.83 47.82 30.67 80.15 42.9 112.09 72.8 128.69 106.38 122.19 127.93 95.63 127.36 61.43 104.94 35.6 71.16 30.23"/><g stroke-width="2.4"><polygon points="81.97 43.92 52.19 57.23 44.03 88.8 63.62 114.87 96.22 115.81 117.28 90.9 110.94 58.91"/><polygon points="68.57 60.42 57.6 86.19 78.73 104.59 102.75 90.18 96.47 62.88"/><path d="M41.83 47.82L52.19 57.23 68.57 60.42 81.97 43.92 71.16 30.23 M30.67 80.15L44.03 88.8 42.9 112.09 M52.19 57.23L57.6 86.19 44.03 88.8 78.73 104.59 63.62 114.87 72.8 128.69 M78.73 104.59L96.22 115.81 106.38 122.19 M96.22 115.81L102.75 90.18 117.28 90.9 127.93 95.63 M117.28 90.9L127.36 61.43 110.94 58.91 104.94 35.6 81.97 43.92 M110.94 58.91L96.47 62.88 117.28 90.9"/></g></g></symbol></svg>
+        <ul>
+          <li><a class="footer-card" href="https://engine.speedle.io/ja/" aria-current="page"><svg class="product-sphere product-engine" aria-hidden="true" focusable="false"><use href="#i-speedle-sphere"/></svg><span class="footer-card-name">Speedle Engine</span><span class="footer-card-description">オープンソース認可エンジン</span><svg class="footer-card-check" width="15" height="15" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M3.5 8.5 6.5 11.5 12.5 4.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></a></li>
+          <li><a class="footer-card" href="https://cloud.speedle.io/ja/"><svg class="product-sphere product-cloud" aria-hidden="true" focusable="false"><use href="#i-speedle-sphere"/></svg><span class="footer-card-name">Speedle Cloud<span class="product-badge">まもなく公開</span></span><span class="footer-card-description">開発者向けホスト型認可サービス</span></a></li>
+          <li><a class="footer-card" href="https://ai.speedle.io/ja/"><svg class="product-sphere product-ai" aria-hidden="true" focusable="false"><use href="#i-speedle-sphere"/></svg><span class="footer-card-name">Speedle AI</span><span class="footer-card-description">AI のためのアクセス制御、アクセス制御のための AI</span></a></li>
+        </ul>
+      </nav>
+    </div>
+    <div class="wrap footer-bar">
+      <p class="footer-legal"><span>Universal Permissive License v1.0 の下でライセンスされています。</span><span class="footer-legal-sep"> · </span><span>Copyright &copy; 2019–2026 The Speedle Authors. All rights reserved.</span></p>
+    </div>
+  </footer>
+<!-- Cloudflare Web Analytics --><script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "a7a746c498b940e58425123082a20520"}'></script><!-- End Cloudflare Web Analytics -->
+</body>
+
+</html>

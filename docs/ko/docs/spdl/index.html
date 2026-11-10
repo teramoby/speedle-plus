@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <script>document.documentElement.classList.add('docs-js','navigation-js');addEventListener('DOMContentLoaded',function(){if(!document.querySelector('header.site-header.navigation-ready'))document.documentElement.classList.remove('navigation-js')});</script>
+    <meta name="generator" content="Hugo 0.48" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1"><title>SPDL: Speedle 정책 정의 언어 · Speedle Engine</title>
+<meta name="description" content="SPDL은 Speedle Policy Definition Language의 약자로, Speedle 정책 및 역할 정책을 작성하기 위한 언어입니다.">
+<meta name="generator" content="Hugo 0.48" />
+<link href="https://engine.speedle.io/index.xml" rel="alternate" type="application/rss+xml">
+<link rel="canonical" href="https://engine.speedle.io/ko/docs/spdl/">
+
+<link rel="alternate" hreflang="en" href="https://engine.speedle.io/docs/spdl/">
+<link rel="alternate" hreflang="es" href="https://engine.speedle.io/es/docs/spdl/">
+<link rel="alternate" hreflang="ja" href="https://engine.speedle.io/ja/docs/spdl/">
+<link rel="alternate" hreflang="ko" href="https://engine.speedle.io/ko/docs/spdl/">
+<link rel="alternate" hreflang="zh-CN" href="https://engine.speedle.io/zh/docs/spdl/">
+<link rel="alternate" hreflang="x-default" href="https://engine.speedle.io/docs/spdl/">
+<meta property="og:type" content="article">
+<meta property="article:modified_time" content="2026-11-10T17:19:04&#43;08:00">
+<meta property="og:site_name" content="Speedle Engine">
+<meta property="og:title" content="SPDL: Speedle 정책 정의 언어 · Speedle Engine">
+<meta property="og:description" content="SPDL은 Speedle Policy Definition Language의 약자로, Speedle 정책 및 역할 정책을 작성하기 위한 언어입니다.">
+<meta property="og:url" content="https://engine.speedle.io/ko/docs/spdl/">
+<meta property="og:image" content="https://engine.speedle.io/img/social/engine-en.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:alt" content="Speedle Engine — Fast. Simple. Access control">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="SPDL: Speedle 정책 정의 언어 · Speedle Engine">
+<meta name="twitter:description" content="SPDL은 Speedle Policy Definition Language의 약자로, Speedle 정책 및 역할 정책을 작성하기 위한 언어입니다.">
+<meta name="twitter:image" content="https://engine.speedle.io/img/social/engine-en.png">
+<meta name="twitter:image:alt" content="Speedle Engine — Fast. Simple. Access control">
+
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/ko/docs/spdl/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-10T17:19:04+08:00","description":"SPDL은 Speedle Policy Definition Language의 약자로, Speedle 정책 및 역할 정책을 작성하기 위한 언어입니다.","headline":"SPDL: Speedle 정책 정의 언어","image":"https://engine.speedle.io/img/social/engine-en.png","inLanguage":"ko","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/ko/docs/spdl/","@type":"WebPage"},"name":"SPDL: Speedle 정책 정의 언어","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/ko/docs/spdl/"}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/ko/docs/spdl/#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://engine.speedle.io/ko/","name":"홈","position":1},{"@type":"ListItem","item":"https://engine.speedle.io/ko/docs/","name":"문서","position":2},{"@type":"ListItem","item":"https://engine.speedle.io/ko/docs/spdl/","name":"SPDL: Speedle 정책 정의 언어","position":3}]}</script><link href="/css/docs.css" rel="stylesheet" type="text/css">
+
+
+    <link href="/css/navigation.css?v=header-20261106-v8" rel="stylesheet">
+    <script src="/js/navigation.js?v=header-20261106-v8" defer></script>
+    <script src="/js/docs.js" defer></script>
+
+</head>
+
+<body class="page-kube docs-page">
+    <header class="site-header">
+    <div class="wrap nav">
+      <a class="brand" href="/ko/#top" aria-label="Speedle Engine 홈"><img class="brand-logo" src="/img/speedle/Speedle_logo_home_bold.svg?v=4" width="304" height="104" alt=""><span class="brand-divider" aria-hidden="true"></span><span class="brand-product">Engine</span></a>
+      <button class="menu" type="button" aria-expanded="false" aria-controls="nav-links" aria-label="내비게이션 열기">☰</button>
+      <nav class="nav-links" id="nav-links" aria-label="기본 내비게이션">
+        <div class="products"><button class="products-button" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="products-panel">제품<svg class="products-chevron" width="10" height="10" viewBox="0 0 10 10" aria-hidden="true" focusable="false"><path d="M2 3.5 5 6.5 8 3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button><span class="products-heading" aria-hidden="true">제품</span><div class="products-panel" id="products-panel" role="group" aria-label="제품"><a class="product-row" href="https://engine.speedle.io/ko/" aria-current="page"><img class="product-mark" src="/img/speedle/speedle-mark-engine.svg" alt="" width="20" height="20"><span class="product-text"><span class="product-name">Speedle Engine</span><span class="product-desc">오픈 소스 인가 엔진</span></span><svg class="product-check" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M3.5 8.5 6.5 11.5 12.5 4.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></a><a class="product-row" href="https://cloud.speedle.io/ko/"><img class="product-mark" src="/img/speedle/speedle-mark-cloud.svg" alt="" width="20" height="20"><span class="product-text"><span class="product-name">Speedle Cloud <span class="product-badge">출시 예정</span></span><span class="product-desc">개발자를 위한 호스팅형 인가 서비스</span></span></a><a class="product-row" href="https://ai.speedle.io/ko/"><img class="product-mark" src="/img/speedle/speedle-mark-ai.svg" alt="" width="20" height="20"><span class="product-text"><span class="product-name">Speedle AI</span><span class="product-desc">AI를 위한 접근 제어, AI를 통한 접근 제어</span></span></a></div></div>
+        <a href="/ko/#about">Speedle 소개</a><a href="/ko/#features">기능</a>
+        <a href="/ko/quick-start/">시작하기</a><a href="/ko/docs/">문서</a><a href="/ko/playground/">Playground</a>
+        <div class="languages"><button class="languages-button" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="languages-panel">한국어<svg class="languages-chevron" width="10" height="10" viewBox="0 0 10 10" aria-hidden="true" focusable="false"><path d="M2 3.5 5 6.5 8 3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button><span class="languages-heading" aria-hidden="true">언어</span><div class="languages-panel" id="languages-panel" role="group" aria-label="언어"><a class="language-row" href="/docs/spdl/" lang="en" hreflang="en">English</a><a class="language-row" href="/ja/docs/spdl/" lang="ja" hreflang="ja" >日本語</a><a class="language-row" href="/ko/docs/spdl/" lang="ko" hreflang="ko" aria-current="page">한국어</a><a class="language-row" href="/es/docs/spdl/" lang="es" hreflang="es">Español</a><a class="language-row" href="/zh/docs/spdl/" lang="zh-CN" hreflang="zh-CN" >中文</a></div></div>
+        <a class="nav-github" href="https://github.com/teramoby/speedle-plus">GitHub</a>
+      </nav>
+    </div>
+  </header>
+    <div class="container">
+        <button class="docs-nav-toggle" type="button" aria-expanded="false" aria-controls="docs-navigation">
+            <span>메뉴</span>
+            <svg class="docs-nav-toggle-icon" viewBox="0 0 18 14" width="18" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M1 1h16M1 7h16M1 13h16"/></svg>
+        </button>
+        <div class="content-container single-line-title"><aside class="docs-sidebar" id="docs-navigation" aria-label="문서 내비게이션">
+<div class="docs-nav-head">
+<span class="docs-nav-title">문서</span>
+<button class="docs-nav-close" type="button" aria-label="메뉴 닫기"><svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="m3 3 10 10M13 3 3 13"/></svg></button>
+</div>
+<div class="sidebar">
+<nav>
+<ul>
+
+
+
+<li data-docs-depth="-1" class="docs-nav-section parent"><span class="docs-nav-heading">문서</span>
+<ul class="sub-menu">
+<li data-docs-depth="0" class=""><a href="/ko/docs/usecases/">유스케이스</a></li>
+<li data-docs-depth="0" class=""><a href="/ko/docs/overview/">개요</a></li>
+<li data-docs-depth="0" class="active"><a href="/ko/docs/spdl/" aria-current="page">SPDL: Speedle 정책 정의 언어</a></li>
+<li data-docs-depth="0" class=""><a href="/ko/docs/architecture/">아키텍처</a></li>
+
+
+
+<li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading">Speedle 정책</span>
+<ul class="">
+<li data-docs-depth="1" class=""><a href="/ko/docs/pms/policy-mgmt/">정책 관리</a></li>
+<li data-docs-depth="1" class=""><a href="/ko/docs/pms/global-policy/">글로벌 정책</a></li>
+<li data-docs-depth="1" class=""><a href="/ko/docs/pms/diagnosis/">인가 진단</a></li>
+<li data-docs-depth="1" class=""><a href="/ko/docs/pms/discover/">정책 발견</a></li>
+</ul>
+
+</li>
+<li data-docs-depth="0" class=""><a href="/ko/docs/decisions/">인가 결정</a></li>
+<li data-docs-depth="0" class=""><a href="/ko/docs/idd/">ID 도메인</a></li>
+<li data-docs-depth="0" class=""><a href="/ko/docs/assertor/">토큰 어서터</a></li>
+
+
+
+<li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading docs-nav-heading-link"><a href="/ko/docs/store/">플러그형 저장소</a></span>
+<ul class="">
+<li data-docs-depth="1" class=""><a href="/ko/docs/store/mysql/">MySQL 설정 가이드</a></li>
+<li data-docs-depth="1" class=""><a href="/ko/docs/store/etcd/">etcd 설정 가이드</a></li>
+<li data-docs-depth="1" class=""><a href="/ko/docs/store/mongodb/">MongoDB 설정 가이드</a></li>
+</ul>
+
+</li>
+
+
+
+<li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading">API</span>
+<ul class="">
+<li data-docs-depth="1" class=""><a href="/ko/docs/api/decision_api/">인가 결정 API</a></li>
+<li data-docs-depth="1" class=""><a href="/ko/docs/api/management_api/">정책 관리 API</a></li>
+<li data-docs-depth="1" class=""><a href="/ko/docs/api/asserter_api/">토큰 어설션 API</a></li>
+</ul>
+
+</li>
+
+
+
+<li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading docs-nav-heading-link"><a href="/ko/docs/deployment/">배포</a></span>
+<ul class="">
+<li data-docs-depth="1" class=""><a href="/ko/docs/deployment/embedded/">Speedle 임베디드 모드</a></li>
+<li data-docs-depth="1" class=""><a href="/ko/docs/deployment/docker/">Docker 이미지</a></li>
+</ul>
+
+</li>
+
+
+
+<li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading docs-nav-heading-link"><a href="/ko/docs/sdks/">SDK</a></span>
+<ul class="">
+<li data-docs-depth="1" class=""><a href="/ko/docs/sdks/java/">Java SDK</a></li>
+<li data-docs-depth="1" class=""><a href="/ko/docs/sdks/python/">Python SDK</a></li>
+<li data-docs-depth="1" class=""><a href="/ko/docs/sdks/go/">Go SDK</a></li>
+<li data-docs-depth="1" class=""><a href="/ko/docs/sdks/dotnet/">C#/.NET SDK</a></li>
+<li data-docs-depth="1" class=""><a href="/ko/docs/sdks/rust/">Rust SDK</a></li>
+<li data-docs-depth="1" class=""><a href="/ko/docs/sdks/node/">Node.js/TypeScript SDK</a></li>
+</ul>
+
+</li>
+
+
+
+<li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading docs-nav-heading-link"><a href="/ko/docs/cloud/">Speedle Cloud</a></span>
+<ul class="">
+<li data-docs-depth="1" class=""><a href="/ko/docs/cloud/getting-started/">Speedle Cloud 빠른 시작</a></li>
+<li data-docs-depth="1" class=""><a href="/ko/docs/cloud/tokens/">Speedle Cloud 애플리케이션 토큰</a></li>
+<li data-docs-depth="1" class=""><a href="/ko/docs/cloud/authorization-api/">Speedle Cloud 인가 API 프리뷰</a></li>
+<li data-docs-depth="1" class=""><a href="/ko/docs/cloud/limits-and-errors/">Speedle Cloud 제한 및 오류</a></li>
+</ul>
+
+</li>
+<li data-docs-depth="0" class=""><a href="/ko/docs/security/">보안</a></li>
+<li data-docs-depth="0" class=""><a href="/ko/docs/logging/">로깅 프레임워크</a></li>
+<li data-docs-depth="0" class=""><a href="/ko/docs/versions/">버전</a></li>
+<li data-docs-depth="0" class=""><a href="/ko/docs/custom-function/">사용자 정의 함수</a></li>
+</ul>
+
+</li>
+
+
+</ul>
+</nav>
+
+
+</div>
+</aside>
+<main>
+<div id="main" class="single-line-title">
+
+  <h1>SPDL: Speedle 정책 정의 언어</h1>
+  <p class="docs-lead">SPDL의 기초</p>
+
+
+
+
+<nav id="contents" class="docs-toc" data-docs-toc="h2" aria-label="목차">
+  <ol></ol>
+</nav>
+
+
+
+  <div id="kube-component" class="content"><p>SPDL은 Speedle 정책 및 역할 정책을 작성하기 위한 언어입니다. 이 페이지에서는 구문, 명명 규칙 및 예제를 설명합니다.
+</p>
+
+<aside class="docs-callout" aria-labelledby="spdl-callout-title">
+  <p class="docs-callout-eyebrow">Speedle 정책 모델러 · 오픈 소스 스킬</p>
+  <p class="docs-callout-title" id="spdl-callout-title">AI로 SPDL 작성</p>
+  <p>오픈 소스 Speedle 정책 모델러 스킬은 요구 사항과 정책 문서를 허용 및 거부 테스트 케이스를 포함한 SPDL 모델로 변환하고 <code>spctl check</code>로 검증합니다.</p>
+  <p class="docs-callout-actions"><a class="button primary" href="https://ai.speedle.io/ko/#policy-modeler">정책 모델러 스킬 체험하기</a> <a class="button secondary" href="https://github.com/teramoby/ai.speedle.io/tree/main/skills/speedle-policy-modeler">GitHub에서 소스 보기</a></p>
+</aside>
+
+<h2 id="구문">구문</h2>
+
+<p><picture><source srcset="/img/speedle/spdl-syntax.webp" type="image/webp"><img src="/img/speedle/spdl-syntax.png" alt="기본 정책 정의 구문" width="2222" height="971" fetchpriority="high"></picture></p>
+
+<h3 id="키워드">키워드</h3>
+
+<p><code>grant</code>, <code>deny</code>, <code>user</code>, <code>group</code>, <code>entity</code>, <code>role</code>, <code>from</code>, <code>on</code>, <code>if</code>, <code>in</code>은 각각의 구문 위치에서 특별한 의미를 가집니다. 정책 문의 키워드는 대소문자를 구분하지 않습니다. 조건 내에서는 <code>in</code> 또는 <code>IN</code>을 사용하고 함수 이름은 대소문자를 구분합니다. 주체, 작업 및 리소스 이름도 대소문자를 구분합니다. 현재 파서는 일부 이름 위치에서 키워드와 유사한 이름을 허용하지만 일률적인 금지를 검증 규칙으로 전제하지 마십시오. 검토와 클라이언트 간 상호 운용성을 높이기 위해 모호하지 않은 이름을 권장합니다.</p>
+
+<h3 id="명명-규칙">명명 규칙</h3>
+
+<p>단순하고 안정적인 식별자를 권장합니다. 공백이나 구분 기호가 포함된 이름은 파서가 지원하는 작은따옴표나 큰따옴표로 감싸고 실제 입력으로 테스트하십시오. 과거의 Java 정규식 문자 클래스는 현재 Go 파서의 엄격한 검증 규칙이 아닙니다. 리소스 접두사 <code>expr:</code>은 셸 와일드카드가 아닌 Go 정규식을 사용합니다. 조건 내의 속성 및 함수 이름에 대해서는 아래에서 설명합니다.</p>
+
+<h3 id="구문-정의">구문 정의</h3>
+
+<pre>
+POLICY = EFFECT SUBJECT ACTION RESOURCE [if CONDITION]
+EFFECT = grant | deny
+SUBJECT = AND_PRINCIPALS (, AND_PRINCIPALS)*
+AND_PRINCIPALS = PRINCIPAL | \( PRINCIPAL_LIST \)
+PRINCIPAL_LIST = PRINCIPAL (, PRINCIPAL)*
+PRINCIPAL = PRINCIPAL_TYPE PRINCIPAL_NAME [PRINCIPAL_IDD]
+PRINCIPAL_TYPE = user|group|entity|role
+PRINCIPAL_IDD = from IDD_IDENTIFIER
+IDD_IDENTIFIER = NAME
+ACTION = (ACTION_IDENTIFIER)(, ACTION_IDENTIFIER)*
+RESOURCE = RESOURCE_IDENTIFIER
+PRINCIPAL_NAME = NAME
+ACTION_IDENTIFIER = NAME
+RESOURCE_IDENTIFIER = NAME
+</pre>
+<pre>
+ROLE_POLICY = EFFECT SUBJECT ROLE (on RESOURCE)? [if CONDITION]
+EFFECT = grant | deny
+SUBJECT = PRINCIPAL (, PRINCIPAL)*
+PRINCIPAL = PRINCIPAL_TYPE PRINCIPAL_NAME [PRINCIPAL_IDD]
+PRINCIPAL_TYPE = user|group|entity|role
+PRINCIPAL_IDD = from IDD_IDENTIFIER
+IDD_IDENTIFIER = NAME
+ROLE = (role)? SUBJECT_IDENTIFIER
+RESOURCE = RESOURCE_IDENTIFIER
+SUBJECT_IDENTIFIER = NAME
+RESOURCE_IDENTIFIER = NAME
+</pre>
+
+<h2 id="예제">예제</h2>
+
+<p>역할 상속: 역할 정책의 주체는 다른 역할이 될 수 있으므로, <code>manager</code>는 <code>employee</code>에 부여된 모든 역할도 함께 보유합니다.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">grant role manager employee</code></pre></div>
+<p>거부 우선: 일치하는 거부(deny) 정책은 허용(grant) 정책보다 우선합니다. 아래 예제에서 <code>carol</code>은 <code>staff</code>에 속하지만 <code>journal</code>에 대한 <code>delete</code> 작업은 거부됩니다.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">grant group staff read,delete journal
+deny user carol delete journal</code></pre></div>
+<p>조건: 조건이 참인 경우에만 정책이 적용됩니다.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">grant user bob read report if department == &#39;finance&#39;</code></pre></div>
+<p>위의 예제는 SPDL 문장 예제이며 완전한 서비스 구성이 아닙니다. 서비스, 리소스 범위의 역할 및 완전한 결정 예제에 대해서는 <a href="/ko/docs/pms/policy-mgmt/">정책 관리</a>를 참조하십시오.</p>
+
+<p><a id="condition"></a></p>
+
+<h2 id="조건-condition">조건(Condition)</h2>
+
+<h3 id="1-개요">1. 개요</h3>
+
+<p>인가 정책 및 역할 정책 모두에서 조건을 지원합니다. 조건이 충족되는 경우에<em>만</em> 정책 또는 역할 정책이 적용됩니다.</p>
+
+<p>정책 적용 지점(PEP)은 정책에서 참조하는 모든 사용자 정의 속성을 제공해야 합니다. <code>request_user</code> 및 <code>request_time</code>과 같은 기본 제공 속성은 ADS에서 자동으로 제공합니다. PEP에서 제공하는 속성은 최종 사용자로부터 직접 가져오는 것이 아니라 호출하는 신뢰할 수 있는 애플리케이션 또는 서비스에서 제공해야 하며, PEP는 전달하는 값에 책임을 집니다. PEP에서 제공하는 속성은 동일한 이름의 기본 제공 속성보다 우선합니다. 특히 신뢰할 수 없는 최종 사용자 입력을 <code>request_user</code>, <code>request_time</code> 또는 기타 기본 제공 속성 이름으로 전달하지 마십시오.</p>
+
+<p>요청에 존재하지 않는 속성을 참조하는 조건은 일치하지 않습니다. 따라서 조건부 <code>deny</code>는 해당 속성이 존재하지 않는 경우 적용되지 않습니다. 거부 조건에서 사용하는 속성을 PEP가 항상 제공하는지 확인하고 해당 요청을 테스트하십시오.</p>
+
+<p>이 절에서는 조건의 구성과 작성 방법에 대해 설명합니다.</p>
+
+<h3 id="2-조건의-구성">2. 조건의 구성</h3>
+
+<p>조건은 속성, 함수, 상수, 연산자, 비교 연산자 또는 괄호를 사용하여 구성되며 부울 값을 반환하는 부울 식입니다.</p>
+
+<h4 id="2-1-데이터-타입">2.1 데이터 타입</h4>
+
+<p>속성 값 및 상수의 데이터 타입은 string, numeric, bool, datetime 또는 이러한 타입의 배열입니다.
+지원되는 데이터 타입과 해당 연산자 및 비교 연산자는 다음 표와 같습니다.</p>
+
+<p><table class="bordered striped">
+    <thead>
+      <tr>
+        <th>데이터 타입</th>
+        <th>연산자</th>
+        <th>비교 연산자</th>
+        <th>설명</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>string</td>
+        <td>+</td>
+        <td>== <br> != <br> =~ <br> &gt; <br> &gt;= <br> &lt; <br> &lt;= <br>
+        </td>
+        <td><code>+</code>는 문자열 연결에 사용됩니다.<br><code>=~</code>는 정규식 매칭에 사용됩니다. 표 아래의 참고 사항을 참조하십시오.</td>
+      </tr>
+      <tr>
+        <td>numeric</td>
+        <td> + <br> - <br> * <br> / <br> %</td>
+        <td>== <br> != <br>  &gt; <br> &gt;= <br> &lt; <br> &lt;= </td>
+        <td></td>
+      </tr>
+      <tr>
+        <td>bool</td>
+        <td>&amp;&amp; <br> || <br> !</td>
+        <td>== <br>!=</td>
+        <td></td>
+      </tr>
+      <tr>
+        <td>datetime</td>
+        <td></td>
+        <td>== <br> != <br> &gt; <br> &gt;= <br> &lt; <br> &lt;=</td>
+        <td></td>
+      </tr>
+      <tr>
+        <td>array</td>
+        <td></td>
+        <td>in</td>
+        <td>포함 여부를 나타내는 <code>in</code> 연산자: 왼쪽은 단일 타입(string, numeric, bool, datetime), 오른쪽은 배열이어야 합니다.</td>
+      </tr>
+    </tbody>
+    <tfoot>
+    </tfoot>
+  </table></p>
+
+<p><code>&quot;=~&quot;</code> 연산자 참고 사항:
+<code>&quot;=~&quot;</code>는 정규식 비교 연산자입니다. Go 언어의 표준 <code>regexp</code> 구문을 사용합니다. 왼쪽은 대상 문자열, 오른쪽은 정규식 패턴입니다. 대상 문자열이 오른쪽 정규식 패턴과 일치하는지 여부를 부울 값으로 반환합니다.</p>
+
+<ul>
+<li>왼쪽: string</li>
+<li>오른쪽: string</li>
+<li>반환 값: bool</li>
+</ul>
+
+<h4 id="2-2-속성">2.2 속성</h4>
+
+<p>조건 내의 속성은 변수를 나타냅니다. 속성 값은 런타임에 결정되며 인가 결정 서비스(ADS) 런타임 또는 PEP에서 가져옵니다.
+기본 제공 속성은 ADS 런타임에 의해 자동으로 설정되는 값입니다.
+사용자 정의 속성은 인가 결정을 요청할 때 최종 사용자가 아닌 호출하는 신뢰할 수 있는 애플리케이션 또는 서비스(PEP)에서 제공하는 값입니다. PEP는 전달하는 값에 책임을 집니다. PEP에서 제공하는 속성은 동일한 이름의 기본 제공 속성보다 우선하므로 PEP는 신뢰할 수 없는 최종 사용자 입력을 기본 제공 속성 이름으로 전달해서는 안 됩니다.</p>
+
+<p><a id="2-2-1-built-in-attributes"></a></p>
+
+<h5 id="2-2-1-기본-제공-속성">2.2.1 기본 제공 속성</h5>
+
+<p>기본 제공 속성은 다음과 같습니다:</p>
+
+<table class="bordered striped">
+    <thead>
+      <tr>
+        <th>기본 제공 속성 이름</th>
+        <th>데이터 타입</th>
+        <th>예제 값</th>
+        <th>정의</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>request_user</td>
+        <td>string</td>
+        <td>"Alice"</td>
+        <td>리소스에 대한 작업을 요청하는 주체(Subject)의 사용자 정보</td>
+      </tr>
+      <tr>
+        <td>request_groups</td>
+        <td>[]string</td>
+        <td>[]string{"managers"}</td>
+        <td>리소스에 대한 작업을 요청하는 주체(Subject)의 그룹 정보</td>
+      </tr>
+      <tr>
+        <td>request_entity</td>
+        <td>string</td>
+        <td>"/org1/service1"</td>
+        <td>서비스 또는 프로그램이 작업을 요청하는 주체(Subject)의 서비스 이름 또는 기타 엔티티 정보</td>
+      </tr>
+      <tr>
+        <td>request_resource</td>
+        <td>string</td>
+        <td>"commercialLoans"</td>
+        <td>주체가 작업 대상으로 하는 리소스</td>
+      </tr>
+      <tr>
+        <td>request_action</td>
+        <td>string</td>
+        <td>"issue" </td>
+        <td>주체가 리소스에 대해 수행하는 작업</td>
+      </tr>
+      <tr>
+        <td>request_time</td>
+        <td>datetime</td>
+        <td>'2019-01-02T15:04:05-07:00'</td>
+        <td>요청이 발생한 날짜 및 시간</td>
+      </tr>
+      <tr>
+        <td>request_year</td>
+        <td>int</td>
+        <td>2019</td>
+        <td>요청이 발생한 연도</td>
+      </tr>
+      <tr>
+        <td>request_month</td>
+        <td>int</td>
+        <td>1, 2, ... 12</td>
+        <td>요청이 발생한 월</td>
+      </tr>
+      <tr>
+        <td>request_day</td>
+        <td>int</td>
+        <td>1, 2, ... 31</td>
+        <td>요청이 발생한 날(일)</td>
+      </tr>
+      <tr>
+        <td>request_hour</td>
+        <td>int</td>
+        <td>0, 1, ... 23</td>
+        <td>요청이 발생한 시각(시)</td>
+      </tr>
+      <tr>
+        <td>request_weekday</td>
+        <td>string</td>
+        <td>"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"</td>
+        <td>요청이 발생한 요일</td>
+      </tr>
+    </tbody>
+    <tfoot>
+    </tfoot>
+  </table>
+
+<h5 id="2-2-2-사용자-정의-속성">2.2.2 사용자 정의 속성</h5>
+
+<h6 id="2-2-2-1-속성-이름">2.2.2.1 속성 이름</h6>
+
+<p>이식성 높은 조건 참조를 위해 <code>[A-Za-z][A-Za-z0-9_]*</code>에 부합하는 이름을 권장하며, 기본 제공 속성 이름이나 함수 이름과의 중복을 피하십시오. REST 계층은 최대 256자의 ASCII 문자, 숫자, 밑줄, 하이픈 및 마침표를 허용합니다. 하이픈이나 마침표가 포함된 표현식 참조는 연산자로 오인되지 않도록 실제로 테스트하십시오.</p>
+
+<h6 id="2-2-2-2-속성-값">2.2.2.2 속성 값</h6>
+
+<p>사용자 정의 속성이 조건에서 사용되는 경우 클라이언트는 isAllowed 결과를 요청할 때 해당 속성 값을 전달해야 합니다. 요청에 조건이 참조하는 속성이 포함되어 있지 않으면 조건이 일치하지 않습니다. 이 경우 조건부 <code>deny</code>는 적용되지 않습니다. 거부 조건이 사용하는 모든 속성을 PEP가 제공하는지 확인하고 해당 요청을 테스트하십시오.</p>
+
+<ul>
+<li><p>Go API에서 속성 값 전달
+Go API에 사용자 정의 속성 값을 전달할 때는 다음 규칙을 따르십시오:</p>
+
+<ul>
+<li>bool 속성 값에는 Go의 bool 타입을 사용합니다.</li>
+<li>string 속성 값에는 Go의 string 타입을 사용합니다.</li>
+<li>numeric 속성 값에는 Go의 float64 타입을 사용합니다.</li>
+<li>datetime 속성 값에는 해당 날짜/시간의 Unix 시간을 나타내는 Go의 float64 표현(<code>time.Time.Unix()</code> 사용)을 사용합니다.</li>
+<li>array 속성 값에는 Go의 []interface{}를 사용합니다.</li>
+</ul></li>
+
+<li><p>REST API에서 속성 값 전달
+REST API에 사용자 정의 속성 값을 전달할 때는 다음 규칙을 따르십시오:</p>
+
+<ul>
+<li>속성은 속성의 이름, 타입, 값을 포함하는 구조체입니다. 자세한 내용은 REST API를 참조하십시오.</li>
+<li>속성 타입은 &ldquo;string&rdquo;, &ldquo;numeric&rdquo;, &ldquo;bool&rdquo; 또는 &ldquo;datetime&rdquo;만 지정할 수 있습니다.</li>
+<li>속성 값은 단일 값 또는 슬라이스가 될 수 있습니다.</li>
+</ul></li>
+</ul>
+
+<h4 id="2-3-상수">2.3 상수</h4>
+
+<p>지원되는 데이터 타입:</p>
+
+<ul>
+<li>string: 작은따옴표, &lsquo;foobar&rsquo;</li>
+<li>numeric: 10, 3.1415926</li>
+<li>bool: true 또는 false</li>
+<li>datetime: 작은따옴표, RFC3339 준수. RFC3339 형식의 날짜/시간은 YYYY-MM-DDTHH:mm:SS[.sssssssss]Z(Z는 [+|-]HH:mm)입니다.</li>
+<li>array: string, numeric, bool, datetime 타입의 배열</li>
+</ul>
+
+<p>다음 표는 상수의 예제를 보여줍니다.</p>
+
+<table class="bordered striped">
+    <thead>
+      <tr>
+        <th>데이터 타입</th>
+        <th>상수 예제</th>
+        <th>상수 배열 예제</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>string</td>
+        <td>'a string'</td>
+        <td>('string1', 'string2')</td>
+      </tr>
+      <tr>
+        <td>bool</td>
+        <td>true <br> false</td>
+        <td>(true, false, true)</td>
+      </tr>
+      <tr>
+        <td>numeric / float</td>
+        <td>2.1</td>
+        <td>(1, 2, 3.1)</td>
+      </tr>
+      <tr>
+        <td>datetime</td>
+        <td>'2006-01-02T15:04:05-07:00'</td>
+        <td>('2016-01-02T15:04:05-07:00', '2019-01-02T15:04:05-07:00')</td>
+      </tr>
+    </tbody>
+    <tfoot>
+    </tfoot>
+  </table>
+
+<h4 id="2-4-함수">2.4 함수</h4>
+
+<p>기존 연산자나 비교 연산자로 요구 사항을 충족할 수 없는 경우 함수를 사용합니다.</p>
+
+<h5 id="2-4-1-기본-제공-함수">2.4.1 기본 제공 함수</h5>
+
+<p>Speedle은 다음과 같은 기본 제공 함수를 제공합니다:</p>
+
+<table class="bordered striped">
+    <thead>
+      <tr>
+        <th>기본 제공 함수 이름</th>
+        <th>기능</th>
+        <th>입력 및 데이터 타입</th>
+        <th>출력 및 데이터 타입</th>
+        <th>사용 예제</th>
+      </tr>
+    </thead>
+    <tbody>
+       <tr>
+        <td>Sqrt</td>
+        <td>숫자의 제곱근 계산</td>
+        <td>1개의 numeric 매개변수</td>
+        <td>numeric</td>
+        <td>Sqrt(x)<br>Sqrt(64)</td>
+      </tr>
+       <tr>
+        <td>Max</td>
+        <td>집합 내 최대값 조회</td>
+        <td>1개 이상의 numeric 매개변수</td>
+        <td>numeric</td>
+        <td>Max(1, 4, x)</td>
+      </tr>
+       <tr>
+        <td>Min</td>
+        <td>집합 내 최소값 조회</td>
+        <td>1개 이상의 numeric 매개변수</td>
+        <td>numeric</td>
+        <td>Min(1, 4, x)</td>
+      </tr>
+       <tr>
+        <td>Sum</td>
+        <td>집합 내 모든 수치의 합계 계산</td>
+        <td>1개 이상의 numeric 매개변수</td>
+        <td>numeric</td>
+        <td>Sum(1, 4, x)</td>
+      </tr>
+       <tr>
+        <td>Avg</td>
+        <td>집합 내 모든 수치의 평균 계산</td>
+        <td>1개 이상의 numeric 매개변수</td>
+        <td>numeric</td>
+        <td>Avg(1, 4, x)</td>
+      </tr>
+       <tr>
+        <td>IsSubSet</td>
+        <td>첫 번째 집합이 두 번째 집합의 부분 집합인지 확인</td>
+        <td>동일한 타입(string, numeric, bool 또는 datetime)의 요소를 가진 2개의 배열</td>
+        <td>bool</td>
+        <td>IsSubSet(a, ('s1', 's2', 's3'))</td>
+      </tr>
+       <tr>
+        <td>IsIntersection</td>
+        <td>두 집합에 공통 요소가 있는지 확인</td>
+        <td>동일한 타입(string, numeric, bool 또는 datetime)의 요소를 가진 2개의 배열</td>
+        <td>bool</td>
+        <td>IsIntersection(a, ('s1', 's2', 's3'))</td>
+      </tr>
+    </tbody>
+    <tfoot>
+    </tfoot>
+  </table>
+
+<h5 id="2-4-2-사용자-정의-함수">2.4.2 사용자 정의 함수</h5>
+
+<p>기본 제공 함수가 요구 사항을 충족하지 못하는 경우 사용자 정의 함수를 구현하여 Speedle에 등록할 수 있습니다. 자세한 내용은 <a href="/ko/docs/custom-function/">사용자 정의 함수</a>를 참조하십시오.</p>
+
+<h4 id="2-5-연산자-우선순위-및-결합성">2.5 연산자 우선순위 및 결합성</h4>
+
+<p>다음 표는 문서화된 표현식 구문을 우선순위가 높은 순서대로 정리한 것입니다. 비교는 논리 AND/OR보다 먼저 결합됩니다. 복잡한 조건을 명확히 하려면 괄호를 사용하십시오.</p>
+
+<table class="bordered striped"><thead><tr><th>우선순위(높은 순)</th><th>연산자 / 비교 연산자</th><th>결합성</th></tr></thead><tbody><tr><td>1</td><td>( )</td><td>해당 없음</td></tr><tr><td>2</td><td>함수 호출</td><td>해당 없음</td></tr><tr><td>3</td><td>! 및 단항 -</td><td>오른쪽에서 왼쪽</td></tr><tr><td>4</td><td>* / %</td><td>왼쪽에서 오른쪽</td></tr><tr><td>5</td><td>+ -</td><td>왼쪽에서 오른쪽</td></tr><tr><td>6</td><td>== != =~ &gt; &gt;= &lt; &lt;= in</td><td>해당 없음</td></tr><tr><td>7</td><td>&amp;&amp;</td><td>왼쪽에서 오른쪽</td></tr><tr><td>8</td><td>||</td><td>왼쪽에서 오른쪽</td></tr></tbody></table>
+
+<h4 id="2-6-조건-예제">2.6 조건 예제</h4>
+
+<table class="bordered striped">
+    <thead>
+      <tr>
+        <th>조건</th>
+        <th>설명</th>
+      </tr>
+    </thead>
+    <tbody>
+    <tr><td>a=='abc'</td><td>속성 'a'의 값이 'abc'와 같음</td></tr>
+    <tr><td>a!='abc'</td><td></td></tr>
+    <tr><td>a>='abc'</td><td></td></tr>
+    <tr><td>a+b=='ab'</td><td></td></tr>
+    <tr><td>a=~'^get.*'</td><td>속성 'a'의 값이 정규식 '^get.*'과 일치함</td></tr>
+<tr><td>a==123</td><td></td></tr>
+<tr><td>a-b>123</td><td></td></tr>
+<tr><td>a in (1, 2, 3) </td><td>속성 'a'의 값이 1, 2, 3 중 하나임</td></tr>
+<tr><td>'manager' in a </td><td>'a'는 문자열 배열 속성이며, 'manager'는 해당 배열 요소 중 하나임</td></tr>
+<tr><td>IsSubSet(e, ('s1', 's2', 's3'))</td><td>'e'는 문자열 배열/집합 속성이며, e는 ('s1', 's2', 's3')의 부분 집합임</td></tr>
+<tr><td>a in (1, 2, 3) && (b==c &#124;&#124; d==3) && IsSubSet(e, ('s1', 's2', 's3'))</td><td></td></tr>
+<tr><td>request_year==2019 && request_month==12 </td><td>request_year와 request_month는 기본 제공 속성입니다. 리소스에 접근한 연도가 2019이고 접근한 월이 12여야 함을 요구합니다</td></tr>
+ </tbody>
+    <tfoot>
+    </tfoot>
+  </table>
+
+<h3 id="조건-구문-정의">조건 구문 정의</h3>
+
+<p>조건은 유효한 부울 식이어야 합니다. 다음은 일반적인 표현식 요약입니다. 정확한 입력은 현재 파서로 검증하십시오:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4">BoolExpr: (&#39;!&#39;)BoolExpr
+          | BoolExpr (&#39;&amp;&amp;&#39;|&#39;||&#39;) BoolExpr
+		  | BoolConstant
+		  | Attribute
+		  | Function
+		  | RelationalExpr
+		  | &#39;(&#39; BoolExpr &#39;)&#39;
+
+
+RelationalExpr: NumericExpr (&#39;==&#39;|&#39;!=&#39;|&#39;&gt;&#39;|&#39;&gt;=&#39;|&#39;&lt;&#39;|&#39;&lt;=&#39;) NumericExpr
+              | StringExpr (&#39;==&#39;|&#39;!=&#39;|&#39;=~&#39;|&#39;&gt;&#39;|&#39;&gt;=&#39;|&#39;&lt;&#39;|&#39;&lt;=&#39;) StringExpr
+			  | BoolExpr (&#39;==&#39;|&#39;!=&#39;) BoolExpr
+			  | DateTimeExpr (&#39;==&#39;|&#39;!=&#39;|&#39;&gt;&#39;|&#39;&gt;=&#39;|&#39;&lt;&#39;|&#39;&lt;=&#39;) DateTimeExpr
+			  | (NumericExpr|StringExpr|BoolExpr|DateTimeExpr) (&#39;in&#39;) ArrayExpr
+
+
+NumericExpr: NumericExpr(&#39;+&#39;|&#39;-&#39;|&#39;*&#39;|&#39;/&#39;|&#39;%&#39;)NumericExpr
+           | NumericConstant
+		   | Attribute
+		   | Function
+		   | &#39;(&#39; NumericExpr &#39;)&#39;
+
+StringExpr: StringExpr(&#39;+&#39;) StringExpr
+           | StringConstant
+		   | Attribute
+		   | Function
+           | &#39;(&#39; StringExpr &#39;)&#39;
+
+DateTimeExpr: DateTimeConstant
+           | Attribute
+           | Function
+
+ArrayExpr: ArrayConstant
+         | Attribute
+         | Function
+
+ArrayConstant: &#39;(&#39;Constant [, Constant]* &#39;)&#39;
+
+Constant: NumericConstant
+         |StringConstant
+         |BoolConstant
+         |DateTimeConstant
+
+NumericConstant: any numeric float64 data
+StringConstant: single quoted string, for example, &#39;string1&#39;
+BoolConstant: true|false
+DateTimeConstant: single quoted datetime, datetime should conform to the format defined by RFC3339: YYYY-MM-DDTHH:mm:SS[.sssssssss]Z, Z is [+|-]HH:mm. For example, &#39;2016-01-02T15:04:05-07:00&#39;
+
+Attribute: attribute name should conform to  [a-zA-Z]+[a-zA-Z0-9_]*, prefer simple portable identifiers; REST attribute names are limited to 256 ASCII characters
+Function: FunctionName &#39;(&#39; Argument [,Argument]* &#39;)&#39;</pre></div>
+<h2 id="부록">부록</h2>
+
+<h3 id="spdl-전체-구문">SPDL 전체 구문</h3>
+
+<p><picture><source srcset="/img/speedle/spdl-syntax-full.webp" type="image/webp"><img src="/img/speedle/spdl-syntax-full.png" alt="전체 정책 정의 구문" width="1771" height="2281" loading="lazy"></picture></p>
+
+<p><br/>
+<br/></p></div>
+</div>
+</main>
+        </div>
+    </div>
+    <div class="docs-nav-backdrop" hidden></div>
+    <footer class="site-footer">
+    <div class="wrap footer-main">
+      <div class="footer-brand">
+        <a class="footer-lockup" href="/ko/" aria-label="Speedle Engine 홈"><img src="/img/speedle/Speedle_logo_home_bold.svg?v=4" width="304" height="104" alt="Speedle"><span class="footer-divider" aria-hidden="true"></span><span class="footer-product">Engine</span></a>
+        <p class="footer-tagline">오픈 소스 인가 엔진</p>
+        <nav class="social" aria-label="커뮤니티 링크">
+          <a href="mailto:contact@speedle.io" aria-label="이메일 보내기 contact@speedle.io" title="contact@speedle.io"><img src="/img/speedle/28.%20Mail.svg" width="40" height="40" alt=""></a>
+          <a href="https://groups.google.com/forum/#!forum/speedle-users" aria-label="Google Groups" title="Google Groups — speedle-users"><img src="/img/speedle/Google-Groups.svg" width="24" height="24" alt=""></a>
+          <a href="https://github.com/teramoby/speedle-plus" aria-label="GitHub"><img src="/img/speedle/18.%20Github.svg" width="40" height="40" alt=""></a>
+          <a href="https://discord.gg/uaY2xVsbbT" aria-label="Discord"><img src="/img/speedle/Discord.svg" width="64" height="48" alt=""></a>
+        </nav>
+      </div>
+      <nav class="footer-family" aria-label="Speedle 제품"><svg class="sphere-sprite" width="0" height="0" aria-hidden="true" focusable="false"><symbol id="i-speedle-sphere" viewBox="22 22 114 114"><!-- Source: img/speedle/Speedle_logo_home_bold.svg, sphere group only. Colours changed only (stroke currentColor). No path edits. --><g fill="none" stroke="currentColor" stroke-linejoin="miter" stroke-miterlimit="3" stroke-linecap="butt"><polygon stroke-width="3.6" points="41.83 47.82 30.67 80.15 42.9 112.09 72.8 128.69 106.38 122.19 127.93 95.63 127.36 61.43 104.94 35.6 71.16 30.23"/><g stroke-width="2.4"><polygon points="81.97 43.92 52.19 57.23 44.03 88.8 63.62 114.87 96.22 115.81 117.28 90.9 110.94 58.91"/><polygon points="68.57 60.42 57.6 86.19 78.73 104.59 102.75 90.18 96.47 62.88"/><path d="M41.83 47.82L52.19 57.23 68.57 60.42 81.97 43.92 71.16 30.23 M30.67 80.15L44.03 88.8 42.9 112.09 M52.19 57.23L57.6 86.19 44.03 88.8 78.73 104.59 63.62 114.87 72.8 128.69 M78.73 104.59L96.22 115.81 106.38 122.19 M96.22 115.81L102.75 90.18 117.28 90.9 127.93 95.63 M117.28 90.9L127.36 61.43 110.94 58.91 104.94 35.6 81.97 43.92 M110.94 58.91L96.47 62.88 117.28 90.9"/></g></g></symbol></svg>
+        <ul>
+          <li><a class="footer-card" href="https://engine.speedle.io/ko/" aria-current="page"><svg class="product-sphere product-engine" aria-hidden="true" focusable="false"><use href="#i-speedle-sphere"/></svg><span class="footer-card-name">Speedle Engine</span><span class="footer-card-description">오픈 소스 인가 엔진</span><svg class="footer-card-check" width="15" height="15" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M3.5 8.5 6.5 11.5 12.5 4.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></a></li>
+          <li><a class="footer-card" href="https://cloud.speedle.io/ko/"><svg class="product-sphere product-cloud" aria-hidden="true" focusable="false"><use href="#i-speedle-sphere"/></svg><span class="footer-card-name">Speedle Cloud<span class="product-badge">출시 예정</span></span><span class="footer-card-description">개발자를 위한 호스팅형 인가 서비스</span></a></li>
+          <li><a class="footer-card" href="https://ai.speedle.io/ko/"><svg class="product-sphere product-ai" aria-hidden="true" focusable="false"><use href="#i-speedle-sphere"/></svg><span class="footer-card-name">Speedle AI</span><span class="footer-card-description">AI를 위한 접근 제어, AI를 통한 접근 제어</span></a></li>
+        </ul>
+      </nav>
+    </div>
+    <div class="wrap footer-bar">
+      <p class="footer-legal"><span>Universal Permissive License v1.0에 따라 라이선스가 부여됩니다.</span><span class="footer-legal-sep"> · </span><span>Copyright &copy; 2019–2026 The Speedle Authors. All rights reserved.</span></p>
+    </div>
+  </footer>
+<!-- Cloudflare Web Analytics --><script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "a7a746c498b940e58425123082a20520"}'></script><!-- End Cloudflare Web Analytics -->
+</body>
+
+</html>

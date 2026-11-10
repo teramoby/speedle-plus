@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <script>document.documentElement.classList.add('docs-js','navigation-js');addEventListener('DOMContentLoaded',function(){if(!document.querySelector('header.site-header.navigation-ready'))document.documentElement.classList.remove('navigation-js')});</script>
+    <meta name="generator" content="Hugo 0.48" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1"><title>MySQL セットアップ · Speedle Engine</title>
+<meta name="description" content="PMS および ADS 向けの MySQL 8.4 ポリシーストアの設定手順">
+<meta name="generator" content="Hugo 0.48" />
+<link href="https://engine.speedle.io/index.xml" rel="alternate" type="application/rss+xml">
+<link rel="canonical" href="https://engine.speedle.io/ja/docs/store/mysql/">
+
+<link rel="alternate" hreflang="en" href="https://engine.speedle.io/docs/store/mysql/">
+<link rel="alternate" hreflang="es" href="https://engine.speedle.io/es/docs/store/mysql/">
+<link rel="alternate" hreflang="ja" href="https://engine.speedle.io/ja/docs/store/mysql/">
+<link rel="alternate" hreflang="ko" href="https://engine.speedle.io/ko/docs/store/mysql/">
+<link rel="alternate" hreflang="zh-CN" href="https://engine.speedle.io/zh/docs/store/mysql/">
+<link rel="alternate" hreflang="x-default" href="https://engine.speedle.io/docs/store/mysql/">
+<meta property="og:type" content="article">
+<meta property="article:modified_time" content="2026-11-10T16:57:42&#43;08:00">
+<meta property="og:site_name" content="Speedle Engine">
+<meta property="og:title" content="MySQL セットアップ · Speedle Engine">
+<meta property="og:description" content="PMS および ADS 向けの MySQL 8.4 ポリシーストアの設定手順">
+<meta property="og:url" content="https://engine.speedle.io/ja/docs/store/mysql/">
+<meta property="og:image" content="https://engine.speedle.io/img/social/engine-en.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:alt" content="Speedle Engine — Fast. Simple. Access control">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="MySQL セットアップ · Speedle Engine">
+<meta name="twitter:description" content="PMS および ADS 向けの MySQL 8.4 ポリシーストアの設定手順">
+<meta name="twitter:image" content="https://engine.speedle.io/img/social/engine-en.png">
+<meta name="twitter:image:alt" content="Speedle Engine — Fast. Simple. Access control">
+
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/ja/docs/store/mysql/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-10T16:57:42+08:00","description":"PMS および ADS 向けの MySQL 8.4 ポリシーストアの設定手順","headline":"MySQL セットアップ","image":"https://engine.speedle.io/img/social/engine-en.png","inLanguage":"ja","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/ja/docs/store/mysql/","@type":"WebPage"},"name":"MySQL セットアップ","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/ja/docs/store/mysql/"}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/ja/docs/store/mysql/#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://engine.speedle.io/ja/","name":"ホーム","position":1},{"@type":"ListItem","item":"https://engine.speedle.io/ja/docs/","name":"ドキュメント","position":2},{"@type":"ListItem","item":"https://engine.speedle.io/ja/docs/store/","name":"プラグイン可能なストレージ","position":3},{"@type":"ListItem","item":"https://engine.speedle.io/ja/docs/store/mysql/","name":"MySQL セットアップ","position":4}]}</script><link href="/css/docs.css" rel="stylesheet" type="text/css">
+
+
+    <link href="/css/navigation.css?v=header-20261106-v8" rel="stylesheet">
+    <script src="/js/navigation.js?v=header-20261106-v8" defer></script>
+    <script src="/js/docs.js" defer></script>
+
+</head>
+
+<body class="page-kube docs-page">
+    <header class="site-header">
+    <div class="wrap nav">
+      <a class="brand" href="/ja/#top" aria-label="Speedle Engine ホーム"><img class="brand-logo" src="/img/speedle/Speedle_logo_home_bold.svg?v=4" width="304" height="104" alt=""><span class="brand-divider" aria-hidden="true"></span><span class="brand-product">Engine</span></a>
+      <button class="menu" type="button" aria-expanded="false" aria-controls="nav-links" aria-label="ナビゲーションを開く">☰</button>
+      <nav class="nav-links" id="nav-links" aria-label="メインナビゲーション">
+        <div class="products"><button class="products-button" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="products-panel">プロダクト<svg class="products-chevron" width="10" height="10" viewBox="0 0 10 10" aria-hidden="true" focusable="false"><path d="M2 3.5 5 6.5 8 3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button><span class="products-heading" aria-hidden="true">プロダクト</span><div class="products-panel" id="products-panel" role="group" aria-label="プロダクト"><a class="product-row" href="https://engine.speedle.io/ja/" aria-current="page"><img class="product-mark" src="/img/speedle/speedle-mark-engine.svg" alt="" width="20" height="20"><span class="product-text"><span class="product-name">Speedle Engine</span><span class="product-desc">オープンソース認可エンジン</span></span><svg class="product-check" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M3.5 8.5 6.5 11.5 12.5 4.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></a><a class="product-row" href="https://cloud.speedle.io/ja/"><img class="product-mark" src="/img/speedle/speedle-mark-cloud.svg" alt="" width="20" height="20"><span class="product-text"><span class="product-name">Speedle Cloud <span class="product-badge">まもなく公開</span></span><span class="product-desc">開発者向けホスト型認可サービス</span></span></a><a class="product-row" href="https://ai.speedle.io/ja/"><img class="product-mark" src="/img/speedle/speedle-mark-ai.svg" alt="" width="20" height="20"><span class="product-text"><span class="product-name">Speedle AI</span><span class="product-desc">AI のためのアクセス制御、アクセス制御のための AI</span></span></a></div></div>
+        <a href="/ja/#about">Speedle について</a><a href="/ja/#features">機能</a>
+        <a href="/ja/quick-start/">クイックスタート</a><a href="/ja/docs/">ドキュメント</a><a href="/ja/playground/">Playground</a>
+        <div class="languages"><button class="languages-button" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="languages-panel">日本語<svg class="languages-chevron" width="10" height="10" viewBox="0 0 10 10" aria-hidden="true" focusable="false"><path d="M2 3.5 5 6.5 8 3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button><span class="languages-heading" aria-hidden="true">言語</span><div class="languages-panel" id="languages-panel" role="group" aria-label="言語"><a class="language-row" href="/docs/store/mysql/" lang="en" hreflang="en">English</a><a class="language-row" href="/ja/docs/store/mysql/" lang="ja" hreflang="ja" aria-current="page">日本語</a><a class="language-row" href="/ko/docs/store/mysql/" lang="ko" hreflang="ko">한국어</a><a class="language-row" href="/es/docs/store/mysql/" lang="es" hreflang="es">Español</a><a class="language-row" href="/zh/docs/store/mysql/" lang="zh-CN" hreflang="zh-CN" >中文</a></div></div>
+        <a class="nav-github" href="https://github.com/teramoby/speedle-plus">GitHub</a>
+      </nav>
+    </div>
+  </header>
+    <div class="container">
+        <button class="docs-nav-toggle" type="button" aria-expanded="false" aria-controls="docs-navigation">
+            <span>メニュー</span>
+            <svg class="docs-nav-toggle-icon" viewBox="0 0 18 14" width="18" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M1 1h16M1 7h16M1 13h16"/></svg>
+        </button>
+        <div class="content-container"><aside class="docs-sidebar" id="docs-navigation" aria-label="ドキュメントナビゲーション">
+<div class="docs-nav-head">
+<span class="docs-nav-title">ドキュメント</span>
+<button class="docs-nav-close" type="button" aria-label="メニューを閉じる"><svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="m3 3 10 10M13 3 3 13"/></svg></button>
+</div>
+<div class="sidebar">
+<nav>
+<ul>
+
+
+
+<li data-docs-depth="-1" class="docs-nav-section parent"><span class="docs-nav-heading">ドキュメント</span>
+<ul class="sub-menu">
+<li data-docs-depth="0" class=""><a href="/ja/docs/usecases/">ユースケース</a></li>
+<li data-docs-depth="0" class=""><a href="/ja/docs/overview/">概要</a></li>
+<li data-docs-depth="0" class=""><a href="/ja/docs/spdl/">SPDL: Speedle ポリシー定義言語</a></li>
+<li data-docs-depth="0" class=""><a href="/ja/docs/architecture/">アーキテクチャ</a></li>
+
+
+
+<li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading">Speedle ポリシー</span>
+<ul class="">
+<li data-docs-depth="1" class=""><a href="/ja/docs/pms/policy-mgmt/">ポリシー管理</a></li>
+<li data-docs-depth="1" class=""><a href="/ja/docs/pms/global-policy/">グローバルポリシー</a></li>
+<li data-docs-depth="1" class=""><a href="/ja/docs/pms/diagnosis/">認可診断</a></li>
+<li data-docs-depth="1" class=""><a href="/ja/docs/pms/discover/">ポリシー検出</a></li>
+</ul>
+
+</li>
+<li data-docs-depth="0" class=""><a href="/ja/docs/decisions/">認可決定</a></li>
+<li data-docs-depth="0" class=""><a href="/ja/docs/idd/">ID ドメイン</a></li>
+<li data-docs-depth="0" class=""><a href="/ja/docs/assertor/">トークンアサーター</a></li>
+
+
+
+<li data-docs-depth="0" class="docs-nav-section parent"><span class="docs-nav-heading docs-nav-heading-link"><a href="/ja/docs/store/">プラグイン可能なストレージ</a></span>
+<ul class="sub-menu">
+<li data-docs-depth="1" class="active"><a href="/ja/docs/store/mysql/" aria-current="page">MySQL セットアップ</a></li>
+<li data-docs-depth="1" class=""><a href="/ja/docs/store/etcd/">etcd セットアップ</a></li>
+<li data-docs-depth="1" class=""><a href="/ja/docs/store/mongodb/">MongoDB セットアップ</a></li>
+</ul>
+
+</li>
+
+
+
+<li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading">API</span>
+<ul class="">
+<li data-docs-depth="1" class=""><a href="/ja/docs/api/asserter_api/">トークンアサーション API</a></li>
+<li data-docs-depth="1" class=""><a href="/ja/docs/api/management_api/">ポリシー管理 API</a></li>
+<li data-docs-depth="1" class=""><a href="/ja/docs/api/decision_api/">認可決定 API</a></li>
+</ul>
+
+</li>
+
+
+
+<li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading docs-nav-heading-link"><a href="/ja/docs/deployment/">デプロイ</a></span>
+<ul class="">
+<li data-docs-depth="1" class=""><a href="/ja/docs/deployment/embedded/">Speedle 組み込みモード</a></li>
+<li data-docs-depth="1" class=""><a href="/ja/docs/deployment/docker/">Docker イメージ</a></li>
+</ul>
+
+</li>
+
+
+
+<li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading docs-nav-heading-link"><a href="/ja/docs/sdks/">SDK</a></span>
+<ul class="">
+<li data-docs-depth="1" class=""><a href="/ja/docs/sdks/java/">Java SDK</a></li>
+<li data-docs-depth="1" class=""><a href="/ja/docs/sdks/python/">Python SDK</a></li>
+<li data-docs-depth="1" class=""><a href="/ja/docs/sdks/go/">Go SDK</a></li>
+<li data-docs-depth="1" class=""><a href="/ja/docs/sdks/dotnet/">C#/.NET SDK</a></li>
+<li data-docs-depth="1" class=""><a href="/ja/docs/sdks/rust/">Rust SDK</a></li>
+<li data-docs-depth="1" class=""><a href="/ja/docs/sdks/node/">Node.js/TypeScript SDK</a></li>
+</ul>
+
+</li>
+
+
+
+<li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading docs-nav-heading-link"><a href="/ja/docs/cloud/">Speedle Cloud</a></span>
+<ul class="">
+<li data-docs-depth="1" class=""><a href="/ja/docs/cloud/getting-started/">Speedle Cloud クイックスタート</a></li>
+<li data-docs-depth="1" class=""><a href="/ja/docs/cloud/tokens/">Speedle Cloud アプリケーショントークン</a></li>
+<li data-docs-depth="1" class=""><a href="/ja/docs/cloud/authorization-api/">Speedle Cloud 認可 API プレビュー</a></li>
+<li data-docs-depth="1" class=""><a href="/ja/docs/cloud/limits-and-errors/">Speedle Cloud の制限とエラー</a></li>
+</ul>
+
+</li>
+<li data-docs-depth="0" class=""><a href="/ja/docs/security/">セキュリティ</a></li>
+<li data-docs-depth="0" class=""><a href="/ja/docs/logging/">ロギングフレームワーク</a></li>
+<li data-docs-depth="0" class=""><a href="/ja/docs/versions/">バージョン</a></li>
+<li data-docs-depth="0" class=""><a href="/ja/docs/custom-function/">カスタム関数</a></li>
+</ul>
+
+</li>
+
+
+</ul>
+</nav>
+
+
+</div>
+</aside>
+<main>
+<div id="main">
+
+  <h1>MySQL セットアップ</h1>
+  <p class="docs-lead">データベースを作成し、PMS と ADS を構成して、認可と自動ポリシー同期を確認します。</p>
+
+
+
+
+<nav id="contents" class="docs-toc" data-docs-toc="h2" aria-label="目次">
+  <ol></ol>
+</nav>
+
+
+
+  <div id="kube-component" class="content">
+
+<p>このガイドでは、<strong>MySQL 8.4 LTS</strong> と 2 つのネイティブ Speedle プロセスを使用します。PMS はポリシーを書き込み、ADS は個別の読み取り専用アカウントで同じデータベースを読み取ります。ローカルの例では Docker とループバック上の平文 HTTP を使用します。リモートデプロイの場合は、既存の MySQL サーバーと <a href="/ja/docs/security/">セキュリティガイド</a> を使用してください。</p>
+
+<h2 id="1-mysql-バックエンドを含む-speedle-のビルド">1. MySQL バックエンドを含む Speedle のビルド</h2>
+
+<p>Git、Bash、curl、Docker、およびサポートされている Go ツールチェーン（Go 1.26.10 または Go 1.27.3）をインストールします。Docker が実行されている必要があります。両方のバイナリに <code>mysql</code> ストアが含まれるように、最新のソースからビルドします。以前インストールされた古いリリースには含まれていない可能性があります。</p>
+
+<!-- mysql-step: build -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">git clone --depth <span style="color:#bd93f9">1</span> https://github.com/teramoby/speedle-plus.git
+<span style="color:#8be9fd;font-style:italic">cd</span> speedle-plus
+mkdir -p bin
+go build -o ./bin/ ./cmd/spctl ./cmd/speedle-pms ./cmd/speedle-ads</code></pre></div>
+<p>残りのコマンドはこの <code>speedle-plus</code> ディレクトリから実行します。ポート 3306、6733、6734 を解放しておくか、以下のすべてのコマンドおよび構成で対応するアドレスを変更してください。</p>
+
+<h2 id="2-mysql-8-4-の起動">2. MySQL 8.4 の起動</h2>
+
+<p>以下の固定パスワードは<strong>ローカルデモ用の認証情報</strong>です。デプロイ時には独自の認証情報とシークレット配信メカニズムを使用してください。名前付き Docker ボリュームは、このコンテナが停止または再作成された場合でもデータベースを保持します。</p>
+
+<!-- mysql-step: database -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker run --name speedle-mysql --detach <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  --publish <span style="color:#bd93f9">127</span>.0.0.1:3306:3306 <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  --volume speedle-mysql-data:/var/lib/mysql <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  --env <span style="color:#8be9fd;font-style:italic">MYSQL_ROOT_PASSWORD</span><span style="color:#ff79c6">=</span>SpeedleDemoRoot84 <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  mysql:8.4</code></pre></div>
+<p>初期化が完了するのを待ちます:</p>
+
+<!-- mysql-step: ready -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#ff79c6">until</span> docker <span style="color:#8be9fd;font-style:italic">exec</span> speedle-mysql mysqladmin ping <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  --host<span style="color:#ff79c6">=</span><span style="color:#bd93f9">127</span>.0.0.1 --user<span style="color:#ff79c6">=</span>root --password<span style="color:#ff79c6">=</span>SpeedleDemoRoot84 --silent
+<span style="color:#ff79c6">do</span>
+  sleep <span style="color:#bd93f9">1</span>
+<span style="color:#ff79c6">done</span></code></pre></div>
+<p>すでに MySQL 8.4 を実行している場合は、これらの Docker コマンドをスキップし、データベース管理者のクライアントを使用して次のステップの SQL を実行してください。Docker イメージは、データディレクトリが空の場合にのみ認証情報を初期化します。環境変数を変更しても、既存のボリューム内のパスワードはリセットされません。</p>
+
+<h2 id="3-データベースとサービスアカウントの作成">3. データベースとサービスアカウントの作成</h2>
+
+<p>Speedle はデフォルトでテーブルを作成しますが、<strong>データベースは作成しません</strong>。管理者を使用して <code>speedle</code> データベースと 2 つのアカウントを作成します:</p>
+
+<!-- mysql-step: accounts -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker <span style="color:#8be9fd;font-style:italic">exec</span> -i speedle-mysql mysql --user<span style="color:#ff79c6">=</span>root --password<span style="color:#ff79c6">=</span>SpeedleDemoRoot84 <span style="color:#f1fa8c">&lt;&lt;&#39;SQL&#39;
+</span><span style="color:#f1fa8c">CREATE DATABASE speedle CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_bin;
+</span><span style="color:#f1fa8c">CREATE USER &#39;speedle_pms&#39;@&#39;%&#39; IDENTIFIED BY &#39;SpeedleDemoPms84&#39;;
+</span><span style="color:#f1fa8c">CREATE USER &#39;speedle_ads&#39;@&#39;%&#39; IDENTIFIED BY &#39;SpeedleDemoAds84&#39;;
+</span><span style="color:#f1fa8c">GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, REFERENCES ON speedle.* TO &#39;speedle_pms&#39;@&#39;%&#39;;
+</span><span style="color:#f1fa8c">GRANT SELECT ON speedle.* TO &#39;speedle_ads&#39;@&#39;%&#39;;
+</span><span style="color:#f1fa8c">SQL</span></code></pre></div>
+<p>PMS には、自動スキーマ初期化のための <code>CREATE</code> と <code>REFERENCES</code>、およびポリシー管理のための <code>SELECT</code>、<code>INSERT</code>、<code>UPDATE</code>、<code>DELETE</code> が必要です。ADS には <code>SELECT</code> のみが必要であり、自動スキーマ初期化を無効にする必要があります。アカウントホストの <code>%</code> は、Docker 経由でホストからの接続を許可します。リモートデプロイの場合は、アカウントホストを実際の PMS/ADS マシンに制限してください。</p>
+
+<h2 id="4-pms-および-ads-設定ファイルの作成">4. PMS および ADS 設定ファイルの作成</h2>
+
+<p>両方の DSN は<strong>同じサーバーとデータベース</strong>を選択する必要があります。DSN はドライバーの構文 <code>user:password@tcp(host:port)/database</code> に従います。</p>
+
+<!-- mysql-step: configuration -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">mkdir -p mysql-demo
+cat &gt; mysql-demo/pms.json <span style="color:#f1fa8c">&lt;&lt;&#39;JSON&#39;
+</span><span style="color:#f1fa8c">{
+</span><span style="color:#f1fa8c">  &#34;storeConfig&#34;: {
+</span><span style="color:#f1fa8c">    &#34;storeType&#34;: &#34;mysql&#34;,
+</span><span style="color:#f1fa8c">    &#34;storeProps&#34;: {
+</span><span style="color:#f1fa8c">      &#34;MySQLDSN&#34;: &#34;speedle_pms:SpeedleDemoPms84@tcp(127.0.0.1:3306)/speedle&#34;,
+</span><span style="color:#f1fa8c">      &#34;MySQLInitSchema&#34;: true,
+</span><span style="color:#f1fa8c">      &#34;MySQLPollInterval&#34;: &#34;1s&#34;,
+</span><span style="color:#f1fa8c">      &#34;MySQLQueryTimeout&#34;: &#34;10s&#34;
+</span><span style="color:#f1fa8c">    }
+</span><span style="color:#f1fa8c">  }
+</span><span style="color:#f1fa8c">}
+</span><span style="color:#f1fa8c">JSON</span>
+cat &gt; mysql-demo/ads.json <span style="color:#f1fa8c">&lt;&lt;&#39;JSON&#39;
+</span><span style="color:#f1fa8c">{
+</span><span style="color:#f1fa8c">  &#34;storeConfig&#34;: {
+</span><span style="color:#f1fa8c">    &#34;storeType&#34;: &#34;mysql&#34;,
+</span><span style="color:#f1fa8c">    &#34;storeProps&#34;: {
+</span><span style="color:#f1fa8c">      &#34;MySQLDSN&#34;: &#34;speedle_ads:SpeedleDemoAds84@tcp(127.0.0.1:3306)/speedle&#34;,
+</span><span style="color:#f1fa8c">      &#34;MySQLInitSchema&#34;: false,
+</span><span style="color:#f1fa8c">      &#34;MySQLPollInterval&#34;: &#34;1s&#34;,
+</span><span style="color:#f1fa8c">      &#34;MySQLQueryTimeout&#34;: &#34;10s&#34;
+</span><span style="color:#f1fa8c">    }
+</span><span style="color:#f1fa8c">  },
+</span><span style="color:#f1fa8c">  &#34;enableWatch&#34;: true
+</span><span style="color:#f1fa8c">}
+</span><span style="color:#f1fa8c">JSON</span>
+chmod <span style="color:#bd93f9">600</span> mysql-demo/pms.json mysql-demo/ads.json</code></pre></div>
+<p><code>MySQLInitSchema: false</code> は、起動時に DDL を実行せずに既存のスキーマをチェックします。<code>enableWatch: true</code> は、ADS がコミットされた変更に追従できるようにします。これらの認証情報を含む設定ファイルをコミットしないでください。</p>
+
+<h2 id="5-pms-続いて-ads-の起動">5. PMS、続いて ADS の起動</h2>
+
+<p>ターミナル A で、テーブルを作成できるようにまず PMS を起動します:</p>
+
+<!-- mysql-step: pms -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./bin/speedle-pms --config-file mysql-demo/pms.json --endpoint <span style="color:#bd93f9">127</span>.0.0.1:6733 --insecure<span style="color:#ff79c6">=</span>true</code></pre></div>
+<p>PMS を実行したままにします。ターミナル B で、同じチェックアウトから初期化を確認します:</p>
+
+<!-- mysql-step: tables -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker <span style="color:#8be9fd;font-style:italic">exec</span> speedle-mysql mysql --user<span style="color:#ff79c6">=</span>speedle_ads --password<span style="color:#ff79c6">=</span>SpeedleDemoAds84 speedle -e <span style="color:#f1fa8c">&#39;SHOW TABLES;&#39;</span></code></pre></div>
+<p>5 つのテーブルが表示されるはずです:</p>
+
+<table>
+<thead>
+<tr>
+<th>テーブル</th>
+<th>内容</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td><code>speedle_services</code></td>
+<td>サービスおよびサービスメタデータ</td>
+</tr>
+
+<tr>
+<td><code>speedle_policies</code></td>
+<td>認可ポリシー</td>
+</tr>
+
+<tr>
+<td><code>speedle_role_policies</code></td>
+<td>ロールポリシー</td>
+</tr>
+
+<tr>
+<td><code>speedle_functions</code></td>
+<td>カスタム関数定義</td>
+</tr>
+
+<tr>
+<td><code>speedle_store_meta</code></td>
+<td>スキーマバージョンおよびコミットされたポリシーリビジョン</td>
+</tr>
+</tbody>
+</table>
+
+<p>次に、ターミナル B で ADS を起動し、実行したままにします:</p>
+
+<!-- mysql-step: ads -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./bin/speedle-ads --config-file mysql-demo/ads.json --endpoint <span style="color:#bd93f9">127</span>.0.0.1:6734 --insecure<span style="color:#ff79c6">=</span>true</code></pre></div>
+<p>続行する前に、各サービスの REST リスナーが起動するのを待ちます。<code>--grpc-endpoint</code> を渡さない限り、gRPC サーバーは停止したままです。</p>
+
+<h2 id="6-ポリシーの作成と認可の確認">6. ポリシーの作成と認可の確認</h2>
+
+<p>ターミナル C で、Alice に <code>book</code> の読み取り権限を付与するポリシーを持つサービスを作成します:</p>
+
+<!-- mysql-step: policy -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl -fsS -X POST http://127.0.0.1:6733/policy-mgmt/v1/service <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  -H <span style="color:#f1fa8c">&#39;Content-Type: application/json&#39;</span> <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  -d <span style="color:#f1fa8c">&#39;{&#34;name&#34;:&#34;mysql-demo&#34;,&#34;type&#34;:&#34;application&#34;,&#34;policies&#34;:[{&#34;name&#34;:&#34;alice-read&#34;,&#34;effect&#34;:&#34;grant&#34;,&#34;principals&#34;:[[&#34;user:alice&#34;]],&#34;permissions&#34;:[{&#34;resource&#34;:&#34;book&#34;,&#34;actions&#34;:[&#34;read&#34;]}]}]}&#39;</span></code></pre></div>
+<p>ADS が変更を読み込むまで、最大でポーリング間隔（デフォルトで 1 秒）にクエリ/キャッシュ再構築時間を加えた時間を見込みます。同期がまだ進行中の場合はリクエストを再試行してください:</p>
+
+<!-- mysql-step: allow -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl -fsS -X POST http://127.0.0.1:6734/authz-check/v1/is-allowed <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  -H <span style="color:#f1fa8c">&#39;Content-Type: application/json&#39;</span> <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  -d <span style="color:#f1fa8c">&#39;{&#34;subject&#34;:{&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;,&#34;name&#34;:&#34;alice&#34;}]},&#34;serviceName&#34;:&#34;mysql-demo&#34;,&#34;resource&#34;:&#34;book&#34;,&#34;action&#34;:&#34;read&#34;}&#39;</span></code></pre></div>
+<p>期待されるレスポンス: <code>{&quot;allowed&quot;:true,&quot;reason&quot;:0}</code>。Bob には一致するグラントがありません:</p>
+
+<!-- mysql-step: deny -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl -fsS -X POST http://127.0.0.1:6734/authz-check/v1/is-allowed <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  -H <span style="color:#f1fa8c">&#39;Content-Type: application/json&#39;</span> <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  -d <span style="color:#f1fa8c">&#39;{&#34;subject&#34;:{&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;,&#34;name&#34;:&#34;bob&#34;}]},&#34;serviceName&#34;:&#34;mysql-demo&#34;,&#34;resource&#34;:&#34;book&#34;,&#34;action&#34;:&#34;read&#34;}&#39;</span></code></pre></div>
+<p>期待されるレスポンス: <code>{&quot;allowed&quot;:false,&quot;reason&quot;:3}</code>。</p>
+
+<h2 id="7-自動更新と永続化の確認">7. 自動更新と永続化の確認</h2>
+
+<p>ADS を再起動することなく、PMS 経由で Alice に対する明示的な拒否を追加します:</p>
+
+<!-- mysql-step: update -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl -fsS -X POST http://127.0.0.1:6733/policy-mgmt/v1/service/mysql-demo/policy <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  -H <span style="color:#f1fa8c">&#39;Content-Type: application/json&#39;</span> <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  -d <span style="color:#f1fa8c">&#39;{&#34;name&#34;:&#34;alice-deny&#34;,&#34;effect&#34;:&#34;deny&#34;,&#34;principals&#34;:[[&#34;user:alice&#34;]],&#34;permissions&#34;:[{&#34;resource&#34;:&#34;book&#34;,&#34;actions&#34;:[&#34;read&#34;]}]}&#39;</span></code></pre></div>
+<p>同期後、ステップ 6 の Alice のリクエストを繰り返します。明示的な拒否が優先されるため、今度は <code>{&quot;allowed&quot;:false,&quot;reason&quot;:1}</code> が返されるはずです。PMS と ADS を Ctrl+C で停止し、ステップ 5 のコマンドで再起動して、同じリクエストを繰り返すことができます。保存されたポリシーと拒否設定は MySQL 内に永続化されます。</p>
+
+<p>ポリシーの変更は、データとリビジョンが同じトランザクションで進むように、PMS またはストアインターフェースを経由する必要があります。SQL で直接編集しても、ADS の再読み込みは自動的にトリガーされません。データベース停止中、ADS は実行を継続し同期を再試行しますが、障害が検出されるとデフォルトで <code>allowed:false</code> とエラーを返します。認可が再開される前に、完全なスナップショットが正常に読み込まれる必要があります。共有の <a href="/ja/docs/store/#store-failures-and-cached-authorization">ストア障害と猶予期間ポリシー</a> を参照してください。ADS の起動には依然として到達可能なデータベースが必要です。</p>
+
+<h2 id="ランタイム-ddl-権限なしでのスキーマ事前作成">ランタイム DDL 権限なしでのスキーマ事前作成</h2>
+
+<p>自動テーブル作成の代替手段として、いずれかのサービスを開始する前に、プロビジョニングアカウントを使用してリポジトリの <a href="https://github.com/teramoby/speedle-plus/blob/master/pkg/store/mysql/schema.sql">schema.sql</a> を実行します:</p>
+
+<!-- mysql-step: schema -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker <span style="color:#8be9fd;font-style:italic">exec</span> -i speedle-mysql mysql --user<span style="color:#ff79c6">=</span>root --password<span style="color:#ff79c6">=</span>SpeedleDemoRoot84 speedle &lt; pkg/store/mysql/schema.sql</code></pre></div>
+<p><strong>両方</strong>の設定ファイルで <code>MySQLInitSchema</code> を <code>false</code> に設定します。上記のデモに従った場合は、追加の初期化権限を取り消します:</p>
+
+<!-- mysql-step: revoke-ddl -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker <span style="color:#8be9fd;font-style:italic">exec</span> speedle-mysql mysql --user<span style="color:#ff79c6">=</span>root --password<span style="color:#ff79c6">=</span>SpeedleDemoRoot84 -e <span style="color:#f1fa8c">&#34;REVOKE CREATE, REFERENCES ON speedle.* FROM &#39;speedle_pms&#39;@&#39;%&#39;;&#34;</span></code></pre></div>
+<p>PMS は <code>SELECT</code>、<code>INSERT</code>、<code>UPDATE</code>、<code>DELETE</code> で実行され、ADS は読み取り専用のままになります。構成を変更した後は両方のサービスを再起動してください。スキーマ初期化は既存のテーブルを移行しません。サポートされていないスキーマバージョンは起動に失敗します。</p>
+
+<h2 id="構成リファレンスとトラブルシューティング">構成リファレンスとトラブルシューティング</h2>
+
+<table>
+<thead>
+<tr>
+<th>プロパティ</th>
+<th>フラグ</th>
+<th>環境変数</th>
+<th>デフォルト</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td><code>MySQLDSN</code></td>
+<td><code>--mysqlstore-dsn</code></td>
+<td><code>SPDL_MYSQLSTORE_DSN</code></td>
+<td>必須（データベース名を含む）</td>
+</tr>
+
+<tr>
+<td><code>MySQLInitSchema</code></td>
+<td><code>--mysqlstore-init-schema</code></td>
+<td><code>SPDL_MYSQLSTORE_INIT_SCHEMA</code></td>
+<td><code>true</code></td>
+</tr>
+
+<tr>
+<td><code>MySQLPollInterval</code></td>
+<td><code>--mysqlstore-poll-interval</code></td>
+<td><code>SPDL_MYSQLSTORE_POLL_INTERVAL</code></td>
+<td><code>1s</code></td>
+</tr>
+
+<tr>
+<td><code>MySQLQueryTimeout</code></td>
+<td><code>--mysqlstore-query-timeout</code></td>
+<td><code>SPDL_MYSQLSTORE_QUERY_TIMEOUT</code></td>
+<td><code>10s</code></td>
+</tr>
+</tbody>
+</table>
+
+<p>選択フラグは <code>--store-type mysql</code> (<code>SPDL_STORE_TYPE=mysql</code>) です。明示的なフラグは空でない環境変数をオーバーライドし、次に設定ファイル、最後にデフォルト値の順で優先されます。リモート MySQL の場合は、信頼できるサーバー証明書を持つホスト名を使用し、DSN に <code>?tls=true</code> を追加します。カスタム CA の構成は <a href="https://github.com/go-sql-driver/mysql/tree/v1.10.1#tls">ドライバー TLS ドキュメント</a> に従います。</p>
+
+<table>
+<thead>
+<tr>
+<th>症状</th>
+<th>確認事項</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td>不明な <code>mysql</code> ストアまたはフラグ</td>
+<td><code>pkg/store/mysql</code> を含むソースから両方のバイナリを再ビルドしてください。</td>
+</tr>
+
+<tr>
+<td>接続が拒否される / アクセス拒否</td>
+<td>データベースの準備状態、DSN のホスト/ポート、パスワード、および MySQL アカウントのホスト制限。</td>
+</tr>
+
+<tr>
+<td>不明なデータベース</td>
+<td>Speedle はテーブルのみを作成するため、先にデータベースを作成してください。</td>
+</tr>
+
+<tr>
+<td>テーブルがない、または DDL が拒否される</td>
+<td>PMS を先に起動するか、スキーマを事前作成してください。読み取り専用の ADS では <code>MySQLInitSchema</code> を <code>false</code> に設定する必要があります。</td>
+</tr>
+
+<tr>
+<td>ポリシーの変更が反映されない</td>
+<td>両方の DSN で同じデータベースであるか、ADS watch が有効か、ポーリング遅延、オーバーライドする <code>SPDL_*</code> 変数がないか。</td>
+</tr>
+</tbody>
+</table>
+
+<p>MySQL は検出リクエストの収集やポリシー生成をサポートしていません。トランザクション、スナップショット、およびリカバリの詳細については、<a href="/ja/docs/store/">プラグイン可能なストレージ</a> を参照してください。</p>
+</div>
+</div>
+</main>
+        </div>
+    </div>
+    <div class="docs-nav-backdrop" hidden></div>
+    <footer class="site-footer">
+    <div class="wrap footer-main">
+      <div class="footer-brand">
+        <a class="footer-lockup" href="/ja/" aria-label="Speedle Engine ホーム"><img src="/img/speedle/Speedle_logo_home_bold.svg?v=4" width="304" height="104" alt="Speedle"><span class="footer-divider" aria-hidden="true"></span><span class="footer-product">Engine</span></a>
+        <p class="footer-tagline">オープンソース認可エンジン</p>
+        <nav class="social" aria-label="コミュニティリンク">
+          <a href="mailto:contact@speedle.io" aria-label="メールを送信 contact@speedle.io" title="contact@speedle.io"><img src="/img/speedle/28.%20Mail.svg" width="40" height="40" alt=""></a>
+          <a href="https://groups.google.com/forum/#!forum/speedle-users" aria-label="Google Groups" title="Google Groups — speedle-users"><img src="/img/speedle/Google-Groups.svg" width="24" height="24" alt=""></a>
+          <a href="https://github.com/teramoby/speedle-plus" aria-label="GitHub"><img src="/img/speedle/18.%20Github.svg" width="40" height="40" alt=""></a>
+          <a href="https://discord.gg/uaY2xVsbbT" aria-label="Discord"><img src="/img/speedle/Discord.svg" width="64" height="48" alt=""></a>
+        </nav>
+      </div>
+      <nav class="footer-family" aria-label="Speedle プロダクト"><svg class="sphere-sprite" width="0" height="0" aria-hidden="true" focusable="false"><symbol id="i-speedle-sphere" viewBox="22 22 114 114"><!-- Source: img/speedle/Speedle_logo_home_bold.svg, sphere group only. Colours changed only (stroke currentColor). No path edits. --><g fill="none" stroke="currentColor" stroke-linejoin="miter" stroke-miterlimit="3" stroke-linecap="butt"><polygon stroke-width="3.6" points="41.83 47.82 30.67 80.15 42.9 112.09 72.8 128.69 106.38 122.19 127.93 95.63 127.36 61.43 104.94 35.6 71.16 30.23"/><g stroke-width="2.4"><polygon points="81.97 43.92 52.19 57.23 44.03 88.8 63.62 114.87 96.22 115.81 117.28 90.9 110.94 58.91"/><polygon points="68.57 60.42 57.6 86.19 78.73 104.59 102.75 90.18 96.47 62.88"/><path d="M41.83 47.82L52.19 57.23 68.57 60.42 81.97 43.92 71.16 30.23 M30.67 80.15L44.03 88.8 42.9 112.09 M52.19 57.23L57.6 86.19 44.03 88.8 78.73 104.59 63.62 114.87 72.8 128.69 M78.73 104.59L96.22 115.81 106.38 122.19 M96.22 115.81L102.75 90.18 117.28 90.9 127.93 95.63 M117.28 90.9L127.36 61.43 110.94 58.91 104.94 35.6 81.97 43.92 M110.94 58.91L96.47 62.88 117.28 90.9"/></g></g></symbol></svg>
+        <ul>
+          <li><a class="footer-card" href="https://engine.speedle.io/ja/" aria-current="page"><svg class="product-sphere product-engine" aria-hidden="true" focusable="false"><use href="#i-speedle-sphere"/></svg><span class="footer-card-name">Speedle Engine</span><span class="footer-card-description">オープンソース認可エンジン</span><svg class="footer-card-check" width="15" height="15" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M3.5 8.5 6.5 11.5 12.5 4.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></a></li>
+          <li><a class="footer-card" href="https://cloud.speedle.io/ja/"><svg class="product-sphere product-cloud" aria-hidden="true" focusable="false"><use href="#i-speedle-sphere"/></svg><span class="footer-card-name">Speedle Cloud<span class="product-badge">まもなく公開</span></span><span class="footer-card-description">開発者向けホスト型認可サービス</span></a></li>
+          <li><a class="footer-card" href="https://ai.speedle.io/ja/"><svg class="product-sphere product-ai" aria-hidden="true" focusable="false"><use href="#i-speedle-sphere"/></svg><span class="footer-card-name">Speedle AI</span><span class="footer-card-description">AI のためのアクセス制御、アクセス制御のための AI</span></a></li>
+        </ul>
+      </nav>
+    </div>
+    <div class="wrap footer-bar">
+      <p class="footer-legal"><span>Universal Permissive License v1.0 の下でライセンスされています。</span><span class="footer-legal-sep"> · </span><span>Copyright &copy; 2019–2026 The Speedle Authors. All rights reserved.</span></p>
+    </div>
+  </footer>
+<!-- Cloudflare Web Analytics --><script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "a7a746c498b940e58425123082a20520"}'></script><!-- End Cloudflare Web Analytics -->
+</body>
+
+</html>

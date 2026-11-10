@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Usecase on Speedle</title>
+    <link>https://engine.speedle.io/es/tags/usecase/</link>
+    <description>Recent content in Usecase on Speedle</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>es-es</language>
+    
+	<atom:link href="https://engine.speedle.io/es/tags/usecase/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>Casos de uso</title>
+      <link>https://engine.speedle.io/es/docs/usecases/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/es/docs/usecases/</guid>
+      <description>Políticas específicas de la aplicación Alex Chan es un desarrollador que está implementando una aplicación simple con Go. Su aplicación requiere autorización y no quiere reinventar la rueda. Alex puede utilizar una opción de código abierto como Speedle.
+Gestión y aplicación centralizada de políticas Jin Chen es el responsable de seguridad de una empresa multinacional. Su equipo supervisa docenas de sistemas internos. Cada sistema usa un mecanismo de autorización y un lenguaje de políticas distintos.</description>
+    </item>
+    
+  </channel>
+</rss>

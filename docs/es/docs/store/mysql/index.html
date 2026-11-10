@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <script>document.documentElement.classList.add('docs-js','navigation-js');addEventListener('DOMContentLoaded',function(){if(!document.querySelector('header.site-header.navigation-ready'))document.documentElement.classList.remove('navigation-js')});</script>
+    <meta name="generator" content="Hugo 0.48" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1"><title>Configuración de MySQL · Speedle Engine</title>
+<meta name="description" content="Configure el almacenamiento de políticas en MySQL 8.4 para PMS y ADS paso a paso.">
+<meta name="generator" content="Hugo 0.48" />
+<link href="https://engine.speedle.io/index.xml" rel="alternate" type="application/rss+xml">
+<link rel="canonical" href="https://engine.speedle.io/es/docs/store/mysql/">
+
+<link rel="alternate" hreflang="en" href="https://engine.speedle.io/docs/store/mysql/">
+<link rel="alternate" hreflang="es" href="https://engine.speedle.io/es/docs/store/mysql/">
+<link rel="alternate" hreflang="ja" href="https://engine.speedle.io/ja/docs/store/mysql/">
+<link rel="alternate" hreflang="ko" href="https://engine.speedle.io/ko/docs/store/mysql/">
+<link rel="alternate" hreflang="zh-CN" href="https://engine.speedle.io/zh/docs/store/mysql/">
+<link rel="alternate" hreflang="x-default" href="https://engine.speedle.io/docs/store/mysql/">
+<meta property="og:type" content="article">
+<meta property="article:modified_time" content="2026-11-10T18:32:58&#43;08:00">
+<meta property="og:site_name" content="Speedle Engine">
+<meta property="og:title" content="Configuración de MySQL · Speedle Engine">
+<meta property="og:description" content="Configure el almacenamiento de políticas en MySQL 8.4 para PMS y ADS paso a paso.">
+<meta property="og:url" content="https://engine.speedle.io/es/docs/store/mysql/">
+<meta property="og:image" content="https://engine.speedle.io/img/social/engine-en.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:alt" content="Speedle Engine — Fast. Simple. Access control">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Configuración de MySQL · Speedle Engine">
+<meta name="twitter:description" content="Configure el almacenamiento de políticas en MySQL 8.4 para PMS y ADS paso a paso.">
+<meta name="twitter:image" content="https://engine.speedle.io/img/social/engine-en.png">
+<meta name="twitter:image:alt" content="Speedle Engine — Fast. Simple. Access control">
+
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/es/docs/store/mysql/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-10T18:32:58+08:00","description":"Configure el almacenamiento de políticas en MySQL 8.4 para PMS y ADS paso a paso.","headline":"Configuración de MySQL","image":"https://engine.speedle.io/img/social/engine-en.png","inLanguage":"es","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/es/docs/store/mysql/","@type":"WebPage"},"name":"Configuración de MySQL","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/es/docs/store/mysql/"}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/es/docs/store/mysql/#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://engine.speedle.io/es/","name":"Inicio","position":1},{"@type":"ListItem","item":"https://engine.speedle.io/es/docs/","name":"Documentación","position":2},{"@type":"ListItem","item":"https://engine.speedle.io/es/docs/store/","name":"Almacenamiento conectable","position":3},{"@type":"ListItem","item":"https://engine.speedle.io/es/docs/store/mysql/","name":"Configuración de MySQL","position":4}]}</script><link href="/css/docs.css" rel="stylesheet" type="text/css">
+
+
+    <link href="/css/navigation.css?v=header-20261106-v8" rel="stylesheet">
+    <script src="/js/navigation.js?v=header-20261106-v8" defer></script>
+    <script src="/js/docs.js" defer></script>
+
+</head>
+
+<body class="page-kube docs-page">
+    <header class="site-header">
+    <div class="wrap nav">
+      <a class="brand" href="/es/#top" aria-label="Inicio de Speedle Engine"><img class="brand-logo" src="/img/speedle/Speedle_logo_home_bold.svg?v=4" width="304" height="104" alt=""><span class="brand-divider" aria-hidden="true"></span><span class="brand-product">Engine</span></a>
+      <button class="menu" type="button" aria-expanded="false" aria-controls="nav-links" aria-label="Abrir navegación">☰</button>
+      <nav class="nav-links" id="nav-links" aria-label="Navegación principal">
+        <div class="products"><button class="products-button" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="products-panel">Productos<svg class="products-chevron" width="10" height="10" viewBox="0 0 10 10" aria-hidden="true" focusable="false"><path d="M2 3.5 5 6.5 8 3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button><span class="products-heading" aria-hidden="true">Productos</span><div class="products-panel" id="products-panel" role="group" aria-label="Productos"><a class="product-row" href="https://engine.speedle.io/es/" aria-current="page"><img class="product-mark" src="/img/speedle/speedle-mark-engine.svg" alt="" width="20" height="20"><span class="product-text"><span class="product-name">Speedle Engine</span><span class="product-desc">Motor de autorización de código abierto</span></span><svg class="product-check" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M3.5 8.5 6.5 11.5 12.5 4.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></a><a class="product-row" href="https://cloud.speedle.io/es/"><img class="product-mark" src="/img/speedle/speedle-mark-cloud.svg" alt="" width="20" height="20"><span class="product-text"><span class="product-name">Speedle Cloud <span class="product-badge">Próximamente</span></span><span class="product-desc">Autorización hospedada para desarrolladores</span></span></a><a class="product-row" href="https://ai.speedle.io/es/"><img class="product-mark" src="/img/speedle/speedle-mark-ai.svg" alt="" width="20" height="20"><span class="product-text"><span class="product-name">Speedle AI</span><span class="product-desc">IA para control de acceso, control de acceso para IA</span></span></a></div></div>
+        <a href="/es/#about">Acerca de</a><a href="/es/#features">Características</a>
+        <a href="/es/quick-start/">Comenzar</a><a href="/es/docs/">Documentación</a><a href="/es/playground/">Playground</a>
+        <div class="languages"><button class="languages-button" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="languages-panel">Español<svg class="languages-chevron" width="10" height="10" viewBox="0 0 10 10" aria-hidden="true" focusable="false"><path d="M2 3.5 5 6.5 8 3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button><span class="languages-heading" aria-hidden="true">Idiomas</span><div class="languages-panel" id="languages-panel" role="group" aria-label="Idiomas"><a class="language-row" href="/docs/store/mysql/" lang="en" hreflang="en" >English</a><a class="language-row" href="/ja/docs/store/mysql/" lang="ja" hreflang="ja">日本語</a><a class="language-row" href="/ko/docs/store/mysql/" lang="ko" hreflang="ko">한국어</a><a class="language-row" href="/es/docs/store/mysql/" lang="es" hreflang="es" aria-current="page">Español</a><a class="language-row" href="/zh/docs/store/mysql/" lang="zh-CN" hreflang="zh-CN">中文</a></div></div>
+        <a class="nav-github" href="https://github.com/teramoby/speedle-plus">GitHub</a>
+      </nav>
+    </div>
+  </header>
+    <div class="container">
+        <button class="docs-nav-toggle" type="button" aria-expanded="false" aria-controls="docs-navigation">
+            <span>Menú</span>
+            <svg class="docs-nav-toggle-icon" viewBox="0 0 18 14" width="18" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M1 1h16M1 7h16M1 13h16"/></svg>
+        </button>
+        <div class="content-container"><aside class="docs-sidebar" id="docs-navigation" aria-label="Navegación de documentación">
+<div class="docs-nav-head">
+<span class="docs-nav-title">Documentación</span>
+<button class="docs-nav-close" type="button" aria-label="Cerrar menú"><svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="m3 3 10 10M13 3 3 13"/></svg></button>
+</div>
+<div class="sidebar">
+<nav>
+<ul>
+
+
+
+<li data-docs-depth="-1" class="docs-nav-section parent"><span class="docs-nav-heading">Documentación</span>
+<ul class="sub-menu">
+<li data-docs-depth="0" class=""><a href="/es/docs/usecases/">Casos de uso</a></li>
+<li data-docs-depth="0" class=""><a href="/es/docs/overview/">Descripción general</a></li>
+<li data-docs-depth="0" class=""><a href="/es/docs/spdl/">SPDL: Lenguaje de definición de políticas Speedle</a></li>
+<li data-docs-depth="0" class=""><a href="/es/docs/architecture/">Arquitectura</a></li>
+
+
+
+<li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading">Políticas de Speedle</span>
+<ul class="">
+<li data-docs-depth="1" class=""><a href="/es/docs/pms/policy-mgmt/">Gestión de políticas</a></li>
+<li data-docs-depth="1" class=""><a href="/es/docs/pms/global-policy/">Políticas globales</a></li>
+<li data-docs-depth="1" class=""><a href="/es/docs/pms/diagnosis/">Diagnóstico de autorización</a></li>
+<li data-docs-depth="1" class=""><a href="/es/docs/pms/discover/">Descubrimiento de políticas</a></li>
+</ul>
+
+</li>
+<li data-docs-depth="0" class=""><a href="/es/docs/decisions/">Decisiones de autorización</a></li>
+<li data-docs-depth="0" class=""><a href="/es/docs/idd/">Dominio de identidad</a></li>
+<li data-docs-depth="0" class=""><a href="/es/docs/assertor/">Asertor de tokens</a></li>
+
+
+
+<li data-docs-depth="0" class="docs-nav-section parent"><span class="docs-nav-heading docs-nav-heading-link"><a href="/es/docs/store/">Almacenamiento conectable</a></span>
+<ul class="sub-menu">
+<li data-docs-depth="1" class="active"><a href="/es/docs/store/mysql/" aria-current="page">Configuración de MySQL</a></li>
+<li data-docs-depth="1" class=""><a href="/es/docs/store/etcd/">Configuración de etcd</a></li>
+<li data-docs-depth="1" class=""><a href="/es/docs/store/mongodb/">Configuración de MongoDB</a></li>
+</ul>
+
+</li>
+
+
+
+<li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading">API</span>
+<ul class="">
+<li data-docs-depth="1" class=""><a href="/es/docs/api/decision_api/">API de decisiones de autorización</a></li>
+<li data-docs-depth="1" class=""><a href="/es/docs/api/management_api/">API de gestión de políticas</a></li>
+<li data-docs-depth="1" class=""><a href="/es/docs/api/asserter_api/">API del complemento de aserción de tokens</a></li>
+</ul>
+
+</li>
+
+
+
+<li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading docs-nav-heading-link"><a href="/es/docs/deployment/">Despliegue</a></span>
+<ul class="">
+<li data-docs-depth="1" class=""><a href="/es/docs/deployment/embedded/">Modo integrado de Speedle</a></li>
+<li data-docs-depth="1" class=""><a href="/es/docs/deployment/docker/">Imagen de Docker</a></li>
+</ul>
+
+</li>
+
+
+
+<li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading docs-nav-heading-link"><a href="/es/docs/sdks/">SDK</a></span>
+<ul class="">
+<li data-docs-depth="1" class=""><a href="/es/docs/sdks/java/">Java SDK</a></li>
+<li data-docs-depth="1" class=""><a href="/es/docs/sdks/python/">Python SDK</a></li>
+<li data-docs-depth="1" class=""><a href="/es/docs/sdks/go/">Go SDK</a></li>
+<li data-docs-depth="1" class=""><a href="/es/docs/sdks/dotnet/">C#/.NET SDK</a></li>
+<li data-docs-depth="1" class=""><a href="/es/docs/sdks/rust/">Rust SDK</a></li>
+<li data-docs-depth="1" class=""><a href="/es/docs/sdks/node/">Node.js/TypeScript SDK</a></li>
+</ul>
+
+</li>
+
+
+
+<li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading docs-nav-heading-link"><a href="/es/docs/cloud/">Speedle Cloud</a></span>
+<ul class="">
+<li data-docs-depth="1" class=""><a href="/es/docs/cloud/getting-started/">Primeros pasos</a></li>
+<li data-docs-depth="1" class=""><a href="/es/docs/cloud/tokens/">Tokens de aplicación</a></li>
+<li data-docs-depth="1" class=""><a href="/es/docs/cloud/authorization-api/">API de autorización</a></li>
+<li data-docs-depth="1" class=""><a href="/es/docs/cloud/limits-and-errors/">Límites y errores</a></li>
+</ul>
+
+</li>
+<li data-docs-depth="0" class=""><a href="/es/docs/security/">Seguridad</a></li>
+<li data-docs-depth="0" class=""><a href="/es/docs/logging/">Marco de registro</a></li>
+<li data-docs-depth="0" class=""><a href="/es/docs/versions/">Versiones</a></li>
+<li data-docs-depth="0" class=""><a href="/es/docs/custom-function/">Función personalizada</a></li>
+</ul>
+
+</li>
+
+
+</ul>
+</nav>
+
+
+</div>
+</aside>
+<main>
+<div id="main">
+
+  <h1>Configuración de MySQL</h1>
+  <p class="docs-lead">Cree una base de datos, configure PMS y ADS, luego verifique la autorización y la sincronización automática de políticas.</p>
+
+
+
+
+<nav id="contents" class="docs-toc" data-docs-toc="h2" aria-label="En esta página">
+  <ol></ol>
+</nav>
+
+
+
+  <div id="kube-component" class="content">
+
+<p>Esta guía utiliza <strong>MySQL 8.4 LTS</strong> y dos procesos nativos de Speedle: PMS escribe políticas y ADS lee la misma base de datos con una cuenta independiente de solo lectura. El ejemplo local utiliza Docker y HTTP en texto plano en la interfaz de bucle invertido (loopback). Para un despliegue remoto, utilice su servidor MySQL existente y consulte la <a href="/es/docs/security/">guía de Seguridad</a>.</p>
+
+<h2 id="1-compilar-speedle-con-el-backend-mysql">1. Compilar Speedle con el backend MySQL</h2>
+
+<p>Instale Git, Bash, curl, Docker y una versión compatible de Go (Go 1.26.10 o Go 1.27.3). Docker debe estar en ejecución. Compile desde el código fuente actual para que ambos binarios contengan el almacenamiento <code>mysql</code>; una versión anterior instalada podría no incluirlo.</p>
+
+<!-- mysql-step: build -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">git clone --depth <span style="color:#bd93f9">1</span> https://github.com/teramoby/speedle-plus.git
+<span style="color:#8be9fd;font-style:italic">cd</span> speedle-plus
+mkdir -p bin
+go build -o ./bin/ ./cmd/spctl ./cmd/speedle-pms ./cmd/speedle-ads</code></pre></div>
+<p>Ejecute los comandos restantes desde este directorio <code>speedle-plus</code>. Mantenga libres los puertos 3306, 6733 y 6734, o modifique las direcciones correspondientes en cada comando y archivo de configuración a continuación.</p>
+
+<h2 id="2-iniciar-mysql-8-4">2. Iniciar MySQL 8.4</h2>
+
+<p>Las contraseñas fijas a continuación son <strong>credenciales de demostración local</strong>. Utilice sus propias credenciales y mecanismos de gestión de secretos al desplegar. El volumen con nombre de Docker conserva la base de datos cuando este contenedor se detiene o se vuelve a crear.</p>
+
+<!-- mysql-step: database -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker run --name speedle-mysql --detach <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  --publish <span style="color:#bd93f9">127</span>.0.0.1:3306:3306 <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  --volume speedle-mysql-data:/var/lib/mysql <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  --env <span style="color:#8be9fd;font-style:italic">MYSQL_ROOT_PASSWORD</span><span style="color:#ff79c6">=</span>SpeedleDemoRoot84 <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  mysql:8.4</code></pre></div>
+<p>Espere a que finalice la inicialización:</p>
+
+<!-- mysql-step: ready -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#ff79c6">until</span> docker <span style="color:#8be9fd;font-style:italic">exec</span> speedle-mysql mysqladmin ping <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  --host<span style="color:#ff79c6">=</span><span style="color:#bd93f9">127</span>.0.0.1 --user<span style="color:#ff79c6">=</span>root --password<span style="color:#ff79c6">=</span>SpeedleDemoRoot84 --silent
+<span style="color:#ff79c6">do</span>
+  sleep <span style="color:#bd93f9">1</span>
+<span style="color:#ff79c6">done</span></code></pre></div>
+<p>Si ya dispone de MySQL 8.4, omita estos comandos de Docker y ejecute el código SQL del siguiente paso utilizando el cliente de su administrador de base de datos. La imagen de Docker inicializa credenciales únicamente cuando su directorio de datos está vacío; cambiar una variable de entorno no restablece la contraseña en un volumen existente.</p>
+
+<h2 id="3-crear-la-base-de-datos-y-las-cuentas-de-servicio">3. Crear la base de datos y las cuentas de servicio</h2>
+
+<p>Speedle crea las tablas de forma predeterminada, pero <strong>no crea la base de datos</strong>. Utilice una cuenta de administrador para crear <code>speedle</code> y dos cuentas:</p>
+
+<!-- mysql-step: accounts -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker <span style="color:#8be9fd;font-style:italic">exec</span> -i speedle-mysql mysql --user<span style="color:#ff79c6">=</span>root --password<span style="color:#ff79c6">=</span>SpeedleDemoRoot84 <span style="color:#f1fa8c">&lt;&lt;&#39;SQL&#39;
+</span><span style="color:#f1fa8c">CREATE DATABASE speedle CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_bin;
+</span><span style="color:#f1fa8c">CREATE USER &#39;speedle_pms&#39;@&#39;%&#39; IDENTIFIED BY &#39;SpeedleDemoPms84&#39;;
+</span><span style="color:#f1fa8c">CREATE USER &#39;speedle_ads&#39;@&#39;%&#39; IDENTIFIED BY &#39;SpeedleDemoAds84&#39;;
+</span><span style="color:#f1fa8c">GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, REFERENCES ON speedle.* TO &#39;speedle_pms&#39;@&#39;%&#39;;
+</span><span style="color:#f1fa8c">GRANT SELECT ON speedle.* TO &#39;speedle_ads&#39;@&#39;%&#39;;
+</span><span style="color:#f1fa8c">SQL</span></code></pre></div>
+<p>PMS necesita <code>CREATE</code> y <code>REFERENCES</code> para la inicialización automática del esquema, además de <code>SELECT</code>, <code>INSERT</code>, <code>UPDATE</code> y <code>DELETE</code> para la gestión de políticas. ADS solo necesita <code>SELECT</code> y debe tener la inicialización automática del esquema desactivada. El host de cuenta <code>%</code> permite conexiones desde el host a través de Docker; restrinja los hosts de las cuentas a las máquinas reales donde se ejecutan PMS/ADS en despliegues remotos.</p>
+
+<h2 id="4-escribir-los-archivos-de-configuración-de-pms-y-ads">4. Escribir los archivos de configuración de PMS y ADS</h2>
+
+<p>Ambos DSN deben seleccionar el <strong>mismo servidor y base de datos</strong>. Un DSN sigue la sintaxis del controlador <code>user:password@tcp(host:port)/database</code>.</p>
+
+<!-- mysql-step: configuration -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">mkdir -p mysql-demo
+cat &gt; mysql-demo/pms.json <span style="color:#f1fa8c">&lt;&lt;&#39;JSON&#39;
+</span><span style="color:#f1fa8c">{
+</span><span style="color:#f1fa8c">  &#34;storeConfig&#34;: {
+</span><span style="color:#f1fa8c">    &#34;storeType&#34;: &#34;mysql&#34;,
+</span><span style="color:#f1fa8c">    &#34;storeProps&#34;: {
+</span><span style="color:#f1fa8c">      &#34;MySQLDSN&#34;: &#34;speedle_pms:SpeedleDemoPms84@tcp(127.0.0.1:3306)/speedle&#34;,
+</span><span style="color:#f1fa8c">      &#34;MySQLInitSchema&#34;: true,
+</span><span style="color:#f1fa8c">      &#34;MySQLPollInterval&#34;: &#34;1s&#34;,
+</span><span style="color:#f1fa8c">      &#34;MySQLQueryTimeout&#34;: &#34;10s&#34;
+</span><span style="color:#f1fa8c">    }
+</span><span style="color:#f1fa8c">  }
+</span><span style="color:#f1fa8c">}
+</span><span style="color:#f1fa8c">JSON</span>
+cat &gt; mysql-demo/ads.json <span style="color:#f1fa8c">&lt;&lt;&#39;JSON&#39;
+</span><span style="color:#f1fa8c">{
+</span><span style="color:#f1fa8c">  &#34;storeConfig&#34;: {
+</span><span style="color:#f1fa8c">    &#34;storeType&#34;: &#34;mysql&#34;,
+</span><span style="color:#f1fa8c">    &#34;storeProps&#34;: {
+</span><span style="color:#f1fa8c">      &#34;MySQLDSN&#34;: &#34;speedle_ads:SpeedleDemoAds84@tcp(127.0.0.1:3306)/speedle&#34;,
+</span><span style="color:#f1fa8c">      &#34;MySQLInitSchema&#34;: false,
+</span><span style="color:#f1fa8c">      &#34;MySQLPollInterval&#34;: &#34;1s&#34;,
+</span><span style="color:#f1fa8c">      &#34;MySQLQueryTimeout&#34;: &#34;10s&#34;
+</span><span style="color:#f1fa8c">    }
+</span><span style="color:#f1fa8c">  },
+</span><span style="color:#f1fa8c">  &#34;enableWatch&#34;: true
+</span><span style="color:#f1fa8c">}
+</span><span style="color:#f1fa8c">JSON</span>
+chmod <span style="color:#bd93f9">600</span> mysql-demo/pms.json mysql-demo/ads.json</code></pre></div>
+<p><code>MySQLInitSchema: false</code> hace que el inicio verifique el esquema existente sin ejecutar comandos DDL. <code>enableWatch: true</code> permite a ADS seguir los cambios confirmados. No confirme estos archivos de configuración que contienen credenciales en el control de versiones.</p>
+
+<h2 id="5-iniciar-pms-y-luego-ads">5. Iniciar PMS y luego ADS</h2>
+
+<p>En la terminal A, inicie PMS primero para que pueda crear las tablas:</p>
+
+<!-- mysql-step: pms -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./bin/speedle-pms --config-file mysql-demo/pms.json --endpoint <span style="color:#bd93f9">127</span>.0.0.1:6733 --insecure<span style="color:#ff79c6">=</span>true</code></pre></div>
+<p>Deje PMS en ejecución. En la terminal B, desde el mismo directorio, confirme la inicialización:</p>
+
+<!-- mysql-step: tables -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker <span style="color:#8be9fd;font-style:italic">exec</span> speedle-mysql mysql --user<span style="color:#ff79c6">=</span>speedle_ads --password<span style="color:#ff79c6">=</span>SpeedleDemoAds84 speedle -e <span style="color:#f1fa8c">&#39;SHOW TABLES;&#39;</span></code></pre></div>
+<p>Debería ver cinco tablas:</p>
+
+<table>
+<thead>
+<tr>
+<th>Tabla</th>
+<th>Contenido</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td><code>speedle_services</code></td>
+<td>Servicios y metadatos de servicios</td>
+</tr>
+
+<tr>
+<td><code>speedle_policies</code></td>
+<td>Políticas de autorización</td>
+</tr>
+
+<tr>
+<td><code>speedle_role_policies</code></td>
+<td>Políticas de roles</td>
+</tr>
+
+<tr>
+<td><code>speedle_functions</code></td>
+<td>Definiciones de funciones personalizadas</td>
+</tr>
+
+<tr>
+<td><code>speedle_store_meta</code></td>
+<td>Versión del esquema y revisión confirmada de políticas</td>
+</tr>
+</tbody>
+</table>
+
+<p>Luego inicie ADS en la terminal B y déjelo en ejecución:</p>
+
+<!-- mysql-step: ads -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./bin/speedle-ads --config-file mysql-demo/ads.json --endpoint <span style="color:#bd93f9">127</span>.0.0.1:6734 --insecure<span style="color:#ff79c6">=</span>true</code></pre></div>
+<p>Espere a que se inicie el agente de escucha REST de cada servicio antes de continuar. Los servidores gRPC permanecen desactivados a menos que también pase <code>--grpc-endpoint</code>.</p>
+
+<h2 id="6-crear-una-política-y-comprobar-la-autorización">6. Crear una política y comprobar la autorización</h2>
+
+<p>En la terminal C, cree un servicio con una política que conceda a Alice permiso para leer <code>book</code>:</p>
+
+<!-- mysql-step: policy -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl -fsS -X POST http://127.0.0.1:6733/policy-mgmt/v1/service <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  -H <span style="color:#f1fa8c">&#39;Content-Type: application/json&#39;</span> <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  -d <span style="color:#f1fa8c">&#39;{&#34;name&#34;:&#34;mysql-demo&#34;,&#34;type&#34;:&#34;application&#34;,&#34;policies&#34;:[{&#34;name&#34;:&#34;alice-read&#34;,&#34;effect&#34;:&#34;grant&#34;,&#34;principals&#34;:[[&#34;user:alice&#34;]],&#34;permissions&#34;:[{&#34;resource&#34;:&#34;book&#34;,&#34;actions&#34;:[&#34;read&#34;]}]}]}&#39;</span></code></pre></div>
+<p>Espere un intervalo de sondeo (1 segundo por defecto), más el tiempo de reconstrucción de consulta/caché, para que ADS cargue el cambio. Repita la solicitud si la sincronización aún está en curso:</p>
+
+<!-- mysql-step: allow -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl -fsS -X POST http://127.0.0.1:6734/authz-check/v1/is-allowed <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  -H <span style="color:#f1fa8c">&#39;Content-Type: application/json&#39;</span> <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  -d <span style="color:#f1fa8c">&#39;{&#34;subject&#34;:{&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;,&#34;name&#34;:&#34;alice&#34;}]},&#34;serviceName&#34;:&#34;mysql-demo&#34;,&#34;resource&#34;:&#34;book&#34;,&#34;action&#34;:&#34;read&#34;}&#39;</span></code></pre></div>
+<p>Respuesta esperada: <code>{&quot;allowed&quot;:true,&quot;reason&quot;:0}</code>. Bob no tiene ninguna concesión coincidente:</p>
+
+<!-- mysql-step: deny -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl -fsS -X POST http://127.0.0.1:6734/authz-check/v1/is-allowed <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  -H <span style="color:#f1fa8c">&#39;Content-Type: application/json&#39;</span> <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  -d <span style="color:#f1fa8c">&#39;{&#34;subject&#34;:{&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;,&#34;name&#34;:&#34;bob&#34;}]},&#34;serviceName&#34;:&#34;mysql-demo&#34;,&#34;resource&#34;:&#34;book&#34;,&#34;action&#34;:&#34;read&#34;}&#39;</span></code></pre></div>
+<p>Respuesta esperada: <code>{&quot;allowed&quot;:false,&quot;reason&quot;:3}</code>.</p>
+
+<h2 id="7-verificar-actualizaciones-automáticas-y-persistencia">7. Verificar actualizaciones automáticas y persistencia</h2>
+
+<p>Agregue una denegación explícita para Alice mediante PMS, sin reiniciar ADS:</p>
+
+<!-- mysql-step: update -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl -fsS -X POST http://127.0.0.1:6733/policy-mgmt/v1/service/mysql-demo/policy <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  -H <span style="color:#f1fa8c">&#39;Content-Type: application/json&#39;</span> <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  -d <span style="color:#f1fa8c">&#39;{&#34;name&#34;:&#34;alice-deny&#34;,&#34;effect&#34;:&#34;deny&#34;,&#34;principals&#34;:[[&#34;user:alice&#34;]],&#34;permissions&#34;:[{&#34;resource&#34;:&#34;book&#34;,&#34;actions&#34;:[&#34;read&#34;]}]}&#39;</span></code></pre></div>
+<p>Tras la sincronización, repita la solicitud de Alice del paso 6. Ahora debería devolver <code>{&quot;allowed&quot;:false,&quot;reason&quot;:1}</code>: la denegación explícita tiene prioridad. Puede detener PMS y ADS con Ctrl+C, reiniciarlos con los comandos del paso 5 y repetir la misma solicitud. La política y la denegación almacenadas persisten en MySQL.</p>
+
+<p>Los cambios de políticas deben realizarse a través de PMS o de la interfaz de almacenamiento para que los datos y la revisión avancen en la misma transacción. Las modificaciones directas en SQL no activan automáticamente una recarga de ADS. Durante una interrupción de la base de datos, ADS permanece en ejecución y reintenta la sincronización, pero devuelve <code>allowed:false</code> y un error una vez detectado el fallo de forma predeterminada. Se debe cargar con éxito una instantánea completa antes de reanudar la autorización. Consulte la política compartida de <a href="/es/docs/store/#fallos-del-almacenamiento-y-autorización-en-caché">fallos del almacenamiento y período de gracia</a>. Iniciar ADS sigue requiriendo una base de datos accesible.</p>
+
+<h2 id="crear-previamente-el-esquema-sin-privilegios-ddl-en-tiempo-de-ejecución">Crear previamente el esquema sin privilegios DDL en tiempo de ejecución</h2>
+
+<p>Como alternativa a la creación automática de tablas, ejecute el script <a href="https://github.com/teramoby/speedle-plus/blob/master/pkg/store/mysql/schema.sql">schema.sql</a> del repositorio con una cuenta de aprovisionamiento antes de iniciar cualquiera de los servicios:</p>
+
+<!-- mysql-step: schema -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker <span style="color:#8be9fd;font-style:italic">exec</span> -i speedle-mysql mysql --user<span style="color:#ff79c6">=</span>root --password<span style="color:#ff79c6">=</span>SpeedleDemoRoot84 speedle &lt; pkg/store/mysql/schema.sql</code></pre></div>
+<p>Establezca <code>MySQLInitSchema</code> en <code>false</code> en <strong>ambos</strong> archivos de configuración. Si siguió la demostración anterior, revoque los privilegios adicionales de inicialización:</p>
+
+<!-- mysql-step: revoke-ddl -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker <span style="color:#8be9fd;font-style:italic">exec</span> speedle-mysql mysql --user<span style="color:#ff79c6">=</span>root --password<span style="color:#ff79c6">=</span>SpeedleDemoRoot84 -e <span style="color:#f1fa8c">&#34;REVOKE CREATE, REFERENCES ON speedle.* FROM &#39;speedle_pms&#39;@&#39;%&#39;;&#34;</span></code></pre></div>
+<p>PMS luego se ejecuta con permisos <code>SELECT</code>, <code>INSERT</code>, <code>UPDATE</code>, <code>DELETE</code>; ADS permanece en solo lectura. Reinicie ambos servicios tras cambiar su configuración. La inicialización del esquema no migra tablas existentes; las versiones de esquema no compatibles impiden el inicio.</p>
+
+<h2 id="referencia-de-configuración-y-resolución-de-problemas">Referencia de configuración y resolución de problemas</h2>
+
+<table>
+<thead>
+<tr>
+<th>Propiedad</th>
+<th>Indicador</th>
+<th>Variable de entorno</th>
+<th>Valor predeterminado</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td><code>MySQLDSN</code></td>
+<td><code>--mysqlstore-dsn</code></td>
+<td><code>SPDL_MYSQLSTORE_DSN</code></td>
+<td>Obligatorio, incluido el nombre de la base de datos</td>
+</tr>
+
+<tr>
+<td><code>MySQLInitSchema</code></td>
+<td><code>--mysqlstore-init-schema</code></td>
+<td><code>SPDL_MYSQLSTORE_INIT_SCHEMA</code></td>
+<td><code>true</code></td>
+</tr>
+
+<tr>
+<td><code>MySQLPollInterval</code></td>
+<td><code>--mysqlstore-poll-interval</code></td>
+<td><code>SPDL_MYSQLSTORE_POLL_INTERVAL</code></td>
+<td><code>1s</code></td>
+</tr>
+
+<tr>
+<td><code>MySQLQueryTimeout</code></td>
+<td><code>--mysqlstore-query-timeout</code></td>
+<td><code>SPDL_MYSQLSTORE_QUERY_TIMEOUT</code></td>
+<td><code>10s</code></td>
+</tr>
+</tbody>
+</table>
+
+<p>El indicador de selección es <code>--store-type mysql</code> (<code>SPDL_STORE_TYPE=mysql</code>). Los indicadores explícitos anulan las variables de entorno no vacías, luego los archivos de configuración y finalmente los valores predeterminados. Para MySQL remoto, utilice un nombre de host con un certificado de servidor de confianza y agregue <code>?tls=true</code> al DSN; la configuración personalizada de CA sigue la <a href="https://github.com/go-sql-driver/mysql/tree/v1.10.1#tls">documentación TLS del controlador</a>.</p>
+
+<table>
+<thead>
+<tr>
+<th>Síntoma</th>
+<th>Comprobación</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td>Almacenamiento o indicador <code>mysql</code> desconocido</td>
+<td>Recompile ambos binarios desde el código fuente que contiene <code>pkg/store/mysql</code>.</td>
+</tr>
+
+<tr>
+<td>Conexión rechazada / acceso denegado</td>
+<td>Disponibilidad de la base de datos, host/puerto del DSN, contraseña y restricciones de host de la cuenta MySQL.</td>
+</tr>
+
+<tr>
+<td>Base de datos desconocida</td>
+<td>Cree la base de datos primero; Speedle solo crea tablas.</td>
+</tr>
+
+<tr>
+<td>Faltan tablas o DDL denegado</td>
+<td>Inicie PMS primero, o cree previamente el esquema; el proceso ADS de solo lectura debe tener <code>MySQLInitSchema</code> en <code>false</code>.</td>
+</tr>
+
+<tr>
+<td>El cambio de política no es visible</td>
+<td>Misma base de datos en ambos DSN, watch habilitado en ADS, retraso de sondeo y ninguna variable <code>SPDL_*</code> anulando la configuración.</td>
+</tr>
+</tbody>
+</table>
+
+<p>MySQL no admite la recopilación de solicitudes de Discover ni la generación de políticas. Consulte <a href="/es/docs/store/">Almacenamiento conectable</a> para obtener detalles sobre transacciones, instantáneas y recuperación.</p>
+</div>
+</div>
+</main>
+        </div>
+    </div>
+    <div class="docs-nav-backdrop" hidden></div>
+    <footer class="site-footer">
+    <div class="wrap footer-main">
+      <div class="footer-brand">
+        <a class="footer-lockup" href="/es/" aria-label="Inicio de Speedle Engine"><img src="/img/speedle/Speedle_logo_home_bold.svg?v=4" width="304" height="104" alt="Speedle"><span class="footer-divider" aria-hidden="true"></span><span class="footer-product">Engine</span></a>
+        <p class="footer-tagline">Motor de autorización de código abierto</p>
+        <nav class="social" aria-label="Enlaces comunitarios">
+          <a href="mailto:contact@speedle.io" aria-label="Email contact@speedle.io" title="contact@speedle.io"><img src="/img/speedle/28.%20Mail.svg" width="40" height="40" alt=""></a>
+          <a href="https://groups.google.com/forum/#!forum/speedle-users" aria-label="Google Groups" title="Google Groups — speedle-users"><img src="/img/speedle/Google-Groups.svg" width="24" height="24" alt=""></a>
+          <a href="https://github.com/teramoby/speedle-plus" aria-label="GitHub"><img src="/img/speedle/18.%20Github.svg" width="40" height="40" alt=""></a>
+          <a href="https://discord.gg/uaY2xVsbbT" aria-label="Discord"><img src="/img/speedle/Discord.svg" width="64" height="48" alt=""></a>
+        </nav>
+      </div>
+      <nav class="footer-family" aria-label="Productos de Speedle"><svg class="sphere-sprite" width="0" height="0" aria-hidden="true" focusable="false"><symbol id="i-speedle-sphere" viewBox="22 22 114 114"><!-- Source: img/speedle/Speedle_logo_home_bold.svg, sphere group only. Colours changed only (stroke currentColor). No path edits. --><g fill="none" stroke="currentColor" stroke-linejoin="miter" stroke-miterlimit="3" stroke-linecap="butt"><polygon stroke-width="3.6" points="41.83 47.82 30.67 80.15 42.9 112.09 72.8 128.69 106.38 122.19 127.93 95.63 127.36 61.43 104.94 35.6 71.16 30.23"/><g stroke-width="2.4"><polygon points="81.97 43.92 52.19 57.23 44.03 88.8 63.62 114.87 96.22 115.81 117.28 90.9 110.94 58.91"/><polygon points="68.57 60.42 57.6 86.19 78.73 104.59 102.75 90.18 96.47 62.88"/><path d="M41.83 47.82L52.19 57.23 68.57 60.42 81.97 43.92 71.16 30.23 M30.67 80.15L44.03 88.8 42.9 112.09 M52.19 57.23L57.6 86.19 44.03 88.8 78.73 104.59 63.62 114.87 72.8 128.69 M78.73 104.59L96.22 115.81 106.38 122.19 M96.22 115.81L102.75 90.18 117.28 90.9 127.93 95.63 M117.28 90.9L127.36 61.43 110.94 58.91 104.94 35.6 81.97 43.92 M110.94 58.91L96.47 62.88 117.28 90.9"/></g></g></symbol></svg>
+        <ul>
+          <li><a class="footer-card" href="https://engine.speedle.io/es/" aria-current="page"><svg class="product-sphere product-engine" aria-hidden="true" focusable="false"><use href="#i-speedle-sphere"/></svg><span class="footer-card-name">Speedle Engine</span><span class="footer-card-description">Motor de autorización de código abierto</span><svg class="footer-card-check" width="15" height="15" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M3.5 8.5 6.5 11.5 12.5 4.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></a></li>
+          <li><a class="footer-card" href="https://cloud.speedle.io/es/"><svg class="product-sphere product-cloud" aria-hidden="true" focusable="false"><use href="#i-speedle-sphere"/></svg><span class="footer-card-name">Speedle Cloud<span class="product-badge">Próximamente</span></span><span class="footer-card-description">Autorización hospedada para desarrolladores</span></a></li>
+          <li><a class="footer-card" href="https://ai.speedle.io/es/"><svg class="product-sphere product-ai" aria-hidden="true" focusable="false"><use href="#i-speedle-sphere"/></svg><span class="footer-card-name">Speedle AI</span><span class="footer-card-description">IA para control de acceso, control de acceso para IA</span></a></li>
+        </ul>
+      </nav>
+    </div>
+    <div class="wrap footer-bar">
+      <p class="footer-legal"><span>Con licencia Universal Permissive License v1.0.</span><span class="footer-legal-sep"> · </span><span>Copyright &copy; 2019–2026 The Speedle Authors. Todos los derechos reservados.</span></p>
+    </div>
+  </footer>
+<!-- Cloudflare Web Analytics --><script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "a7a746c498b940e58425123082a20520"}'></script><!-- End Cloudflare Web Analytics -->
+</body>
+
+</html>

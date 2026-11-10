@@ -35,6 +35,7 @@ Speedle を気に入っていただけた場合は、[GitHub プロジェクト�
 3. 再現環境と手順
 4. 期待される動作
 
+<a id="code"></a>
 ## コードの貢献
 
 Speedle への貢献は Universal Permissive License 1.0 (UPL-1.0) の下で行われます。Developer Certificate of Origin (DCO) 1.1 の下で貢献を提出する権利があることを証明するために、コミットにサインオフ (`git commit -s`) を付与してください。Pull Request 内で既存の著作権およびライセンス表示を保持し、サードパーティの素材があれば明記してください。

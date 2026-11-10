@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>SDK on Speedle</title>
+    <link>https://engine.speedle.io/es/docs/sdks/</link>
+    <description>Recent content in SDK on Speedle</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>es-es</language>
+    <lastBuildDate>Tue, 10 Nov 2026 18:32:58 +0800</lastBuildDate>
+    
+	<atom:link href="https://engine.speedle.io/es/docs/sdks/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>Java SDK</title>
+      <link>https://engine.speedle.io/es/docs/sdks/java/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/es/docs/sdks/java/</guid>
+      <description>El SDK de Java requiere Java 17 o posterior y no tiene dependencias de tiempo de ejecución. Paquete: io.speedle:speedle-sdk 0.2.0 en Maven Central. Referencia: speedle-sdk/java.
+Los ejemplos comprueban la política descrita en la descripción general de los SDK.
+Añadir la dependencia Maven, un pom.xml completo:
+&amp;lt;?xml version=&amp;#34;1.0&amp;#34; encoding=&amp;#34;UTF-8&amp;#34;?&amp;gt; &amp;lt;project xmlns=&amp;#34;http://maven.apache.org/POM/4.0.0&amp;#34; xmlns:xsi=&amp;#34;http://www.w3.org/2001/XMLSchema-instance&amp;#34; xsi:schemaLocation=&amp;#34;http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd&amp;#34;&amp;gt; &amp;lt;modelVersion&amp;gt;4.0.0&amp;lt;/modelVersion&amp;gt; &amp;lt;groupId&amp;gt;com.example&amp;lt;/groupId&amp;gt; &amp;lt;artifactId&amp;gt;speedle-example&amp;lt;/artifactId&amp;gt; &amp;lt;version&amp;gt;1.0&amp;lt;/version&amp;gt; &amp;lt;properties&amp;gt; &amp;lt;maven.compiler.release&amp;gt;17&amp;lt;/maven.compiler.release&amp;gt; &amp;lt;project.build.sourceEncoding&amp;gt;UTF-8&amp;lt;/project.build.sourceEncoding&amp;gt; &amp;lt;/properties&amp;gt; &amp;lt;dependencies&amp;gt; &amp;lt;dependency&amp;gt; &amp;lt;groupId&amp;gt;io.speedle&amp;lt;/groupId&amp;gt; &amp;lt;artifactId&amp;gt;speedle-sdk&amp;lt;/artifactId&amp;gt; &amp;lt;version&amp;gt;0.2.0&amp;lt;/version&amp;gt; &amp;lt;/dependency&amp;gt; &amp;lt;/dependencies&amp;gt; &amp;lt;/project&amp;gt; Gradle, un build.</description>
+    </item>
+    
+    <item>
+      <title>Python SDK</title>
+      <link>https://engine.speedle.io/es/docs/sdks/python/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/es/docs/sdks/python/</guid>
+      <description>El SDK de Python requiere Python 3.10 o posterior; su única dependencia de tiempo de ejecución es httpx. Cuenta con un Client síncrono y un AsyncClient asíncrono con los mismos argumentos. Paquete: speedle 0.2.0 en PyPI. Referencia: speedle-sdk/python.
+Los ejemplos comprueban la política descrita en la descripción general de los SDK.
+Añadir la dependencia Con pip, en un entorno virtual:
+python3 -m venv .venv . .venv/bin/activate pip install speedle==0.2.0 O con uv, en un proyecto uv:</description>
+    </item>
+    
+    <item>
+      <title>Go SDK</title>
+      <link>https://engine.speedle.io/es/docs/sdks/go/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/es/docs/sdks/go/</guid>
+      <description>El SDK de Go es compatible con las dos versiones más recientes de Go y utiliza únicamente la biblioteca estándar. Módulo: github.com/teramoby/speedle-sdk/go v0.2.0, paquete speedle. Referencia: speedle-sdk/go.
+Los ejemplos comprueban la política descrita en la descripción general de los SDK.
+Añadir la dependencia En un módulo nuevo:
+go mod init example.com/speedle-example go get github.com/teramoby/speedle-sdk/go@v0.2.0 Llamar a un Speedle local Inicie Speedle y cree la política de ejemplo como se describe en la descripción general de los SDK.</description>
+    </item>
+    
+    <item>
+      <title>C#/.NET SDK</title>
+      <link>https://engine.speedle.io/es/docs/sdks/dotnet/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/es/docs/sdks/dotnet/</guid>
+      <description>El SDK de .NET es compatible con .NET 8 o posterior y no tiene dependencias. Paquete: Speedle.Sdk 0.2.0 en NuGet, espacio de nombres Speedle.Sdk. Referencia: speedle-sdk/dotnet.
+Los ejemplos comprueban la política descrita en la descripción general de los SDK.
+Añadir la dependencia En un nuevo proyecto de consola:
+dotnet new console -o SpeedleExample cd SpeedleExample dotnet add package Speedle.Sdk --version 0.2.0 Llamar a un Speedle local Inicie Speedle y cree la política de ejemplo como se describe en la descripción general de los SDK.</description>
+    </item>
+    
+    <item>
+      <title>Rust SDK</title>
+      <link>https://engine.speedle.io/es/docs/sdks/rust/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/es/docs/sdks/rust/</guid>
+      <description>El SDK de Rust requiere Rust 1.75 o posterior. Es asíncrono sobre tokio y reqwest (rustls); la característica blocking añade el cliente bloqueante utilizado a continuación. Crate: speedle 0.2.0 en crates.io. Referencia: speedle-sdk/rust.
+Los ejemplos comprueban la política descrita en la descripción general de los SDK.
+Añadir la dependencia En un nuevo paquete:
+cargo new speedle-example cd speedle-example cargo add speedle@0.2.0 --features blocking Llamar a un Speedle local Inicie Speedle y cree la política de ejemplo como se describe en la descripción general de los SDK.</description>
+    </item>
+    
+    <item>
+      <title>Node.js/TypeScript SDK</title>
+      <link>https://engine.speedle.io/es/docs/sdks/node/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/es/docs/sdks/node/</guid>
+      <description>El SDK de Node.js requiere Node.js 22 o posterior, incluye distribuciones ESM y CommonJS con tipos de TypeScript, y no tiene dependencias de tiempo de ejecución. Paquete: @speedle/sdk, publicado en npm. Referencia: speedle-sdk/node.
+Los ejemplos comprueban la política descrita en la descripción general de los SDK.
+Añadir la dependencia En un paquete de módulos ES nuevo:
+mkdir speedle-example cd speedle-example npm init -y npm pkg set type=module npm install @speedle/sdk@0.</description>
+    </item>
+    
+  </channel>
+</rss>

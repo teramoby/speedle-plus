@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Mysql on Speedle</title>
+    <link>https://engine.speedle.io/ko/tags/mysql/</link>
+    <description>Recent content in Mysql on Speedle</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>ko-kr</language>
+    
+	<atom:link href="https://engine.speedle.io/ko/tags/mysql/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>MySQL 설정 가이드</title>
+      <link>https://engine.speedle.io/ko/docs/store/mysql/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/ko/docs/store/mysql/</guid>
+      <description>이 가이드에서는 MySQL 8.4 LTS와 두 개의 네이티브 Speedle 프로세스를 사용합니다. PMS는 정책을 작성하고 ADS는 별도의 읽기 전용 계정으로 동일한 데이터베이스를 읽습니다. 로컬 예제에서는 Docker와 루프백 주소의 일반 텍스트 HTTP를 사용합니다. 원격 배포의 경우 기존 MySQL 서버와 보안 가이드를 참조하십시오.
+1. MySQL 백엔드를 포함한 Speedle 빌드 Git, Bash, curl, Docker 및 지원되는 Go 툴체인(Go 1.26.10 또는 Go 1.27.3)을 설치합니다. Docker가 실행 중이어야 합니다. 두 바이너리에 모두 mysql 저장소가 포함되도록 최신 소스에서 빌드합니다.</description>
+    </item>
+    
+  </channel>
+</rss>

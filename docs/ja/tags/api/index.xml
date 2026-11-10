@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Api on Speedle</title>
+    <link>https://engine.speedle.io/ja/tags/api/</link>
+    <description>Recent content in Api on Speedle</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>ja-jp</language>
+    <lastBuildDate>Tue, 10 Nov 2026 16:57:42 +0800</lastBuildDate>
+    
+	<atom:link href="https://engine.speedle.io/ja/tags/api/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>API</title>
+      <link>https://engine.speedle.io/ja/docs/api/</link>
+      <pubDate>Tue, 10 Nov 2026 16:57:42 +0800</pubDate>
+      
+      <guid>https://engine.speedle.io/ja/docs/api/</guid>
+      <description>Java、Python、Go、.NET、Rust、Node.js/TypeScript 向けのクライアントライブラリは SDK にあります。
+REST API これらは 構成された PMS/ADS またはアサーターエンドポイント の参照仕様です。speedle.io はドキュメントとブラウザ Playground を配信しており、ホスト型の PMS/ADS サービスではありません。Content-Type: application/json で JSON を提供し、TLS/mTLS とアクセス制御 を構成してください。
+ ポリシー管理 API 認可決定 API トークンアサーション Webhook  ポリシーおよびロールポリシーの ID は文字列です。PMS のレスポンスはフラットなオブジェクトであり、認可権限には permissions（複数形）を使用します。REST の決定リクエストは型付き属性配列を使用しますが、診断レスポンス属性および Webhook 属性はオブジェクトです。
+gRPC API  PMS proto: pb.PolicyManager ADS proto: pb.Evaluator  現在の proto と生成されたクライアントを一緒に使用してください。PMS は pb.PolicyManager を使用し、ADS は pb.Evaluator を使用します。gRPC はサーバーが --grpc-endpoint で起動されない限り無効であり、REST と同じ TLS 設定を使用します。
+組み込み Go API  ポリシー管理インターフェース 認可決定インターフェース  完全なアプリケーションとリソースのライフサイクルの例については、組み込みモード を参照してください。</description>
+    </item>
+    
+    <item>
+      <title>C#/.NET SDK</title>
+      <link>https://engine.speedle.io/ja/docs/sdks/dotnet/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/ja/docs/sdks/dotnet/</guid>
+      <description>.NET SDK は .NET 8 以降を対象とし、依存関係はありません。パッケージ: NuGet の Speedle.Sdk 0.2.0、名前空間 Speedle.Sdk。リファレンス: speedle-sdk/dotnet。
+サンプルでは、SDK 概要 で説明されているポリシーをチェックします。
+依存関係の追加 新しいコンソールプロジェクトを作成します:
+dotnet new console -o SpeedleExample cd SpeedleExample dotnet add package Speedle.Sdk --version 0.2.0 ローカルの Speedle の呼び出し SDK 概要 の説明に従って Speedle を起動し、サンプルポリシーを作成します。Program.cs を以下に置き換えます:
+using Speedle.Sdk; try { await using var speedle = new SpeedleClient(new SpeedleClientOptions { Backend = Backend.Speedle, Endpoint = new Uri(&amp;#34;http://localhost:6734&amp;#34;), Auth = Auth.None(), ServiceName = &amp;#34;docs&amp;#34;, }); bool allowed = await speedle.</description>
+    </item>
+    
+    <item>
+      <title>Go SDK</title>
+      <link>https://engine.speedle.io/ja/docs/sdks/go/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/ja/docs/sdks/go/</guid>
+      <description>Go SDK は最新の 2 つの Go リリースをサポートし、標準ライブラリのみを使用します。モジュール: github.com/teramoby/speedle-sdk/go v0.2.0、パッケージ名 speedle。リファレンス: speedle-sdk/go。
+サンプルでは、SDK 概要 で説明されているポリシーをチェックします。
+依存関係の追加 新しいモジュールで以下を実行します:
+go mod init example.com/speedle-example go get github.com/teramoby/speedle-sdk/go@v0.2.0 ローカルの Speedle の呼び出し SDK 概要 の説明に従って Speedle を起動し、サンプルポリシーを作成します。このプログラムを main.go として保存します:
+package main import ( &amp;#34;context&amp;#34; &amp;#34;fmt&amp;#34; &amp;#34;os&amp;#34; speedle &amp;#34;github.com/teramoby/speedle-sdk/go&amp;#34; ) func main() { client, err := speedle.NewClient(speedle.Config{ Backend: speedle.BackendSpeedle, Endpoint: &amp;#34;http://localhost:6734&amp;#34;, Auth: speedle.NoAuth(), ServiceName: &amp;#34;docs&amp;#34;, }) if err != nil { fmt.Fprintln(os.Stderr, &amp;#34;Speedle error:&amp;#34;, err) os.Exit(1) } defer client.</description>
+    </item>
+    
+    <item>
+      <title>Java SDK</title>
+      <link>https://engine.speedle.io/ja/docs/sdks/java/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/ja/docs/sdks/java/</guid>
+      <description>Java SDK は Java 17 以降が必要であり、ランタイム依存関係はありません。パッケージ: Maven Central の io.speedle:speedle-sdk 0.2.0。リファレンス: speedle-sdk/java。
+サンプルでは、SDK 概要 で説明されているポリシーをチェックします。
+依存関係の追加 Maven の場合、完全な pom.xml:
+&amp;lt;?xml version=&amp;#34;1.0&amp;#34; encoding=&amp;#34;UTF-8&amp;#34;?&amp;gt; &amp;lt;project xmlns=&amp;#34;http://maven.apache.org/POM/4.0.0&amp;#34; xmlns:xsi=&amp;#34;http://www.w3.org/2001/XMLSchema-instance&amp;#34; xsi:schemaLocation=&amp;#34;http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd&amp;#34;&amp;gt; &amp;lt;modelVersion&amp;gt;4.0.0&amp;lt;/modelVersion&amp;gt; &amp;lt;groupId&amp;gt;com.example&amp;lt;/groupId&amp;gt; &amp;lt;artifactId&amp;gt;speedle-example&amp;lt;/artifactId&amp;gt; &amp;lt;version&amp;gt;1.0&amp;lt;/version&amp;gt; &amp;lt;properties&amp;gt; &amp;lt;maven.compiler.release&amp;gt;17&amp;lt;/maven.compiler.release&amp;gt; &amp;lt;project.build.sourceEncoding&amp;gt;UTF-8&amp;lt;/project.build.sourceEncoding&amp;gt; &amp;lt;/properties&amp;gt; &amp;lt;dependencies&amp;gt; &amp;lt;dependency&amp;gt; &amp;lt;groupId&amp;gt;io.speedle&amp;lt;/groupId&amp;gt; &amp;lt;artifactId&amp;gt;speedle-sdk&amp;lt;/artifactId&amp;gt; &amp;lt;version&amp;gt;0.2.0&amp;lt;/version&amp;gt; &amp;lt;/dependency&amp;gt; &amp;lt;/dependencies&amp;gt; &amp;lt;/project&amp;gt; Gradle の場合、完全な build.gradle.kts（rootProject.name を設定する settings.gradle.kts を含む）:
+plugins { application } repositories { mavenCentral() } dependencies { implementation(&amp;#34;io.speedle:speedle-sdk:0.2.0&amp;#34;) } application { mainClass = &amp;#34;Main&amp;#34; } ローカルの Speedle の呼び出し SDK 概要 の説明に従って Speedle を起動し、サンプルポリシーを作成します。このプログラムを src/main/java/Main.</description>
+    </item>
+    
+    <item>
+      <title>Node.js/TypeScript SDK</title>
+      <link>https://engine.speedle.io/ja/docs/sdks/node/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/ja/docs/sdks/node/</guid>
+      <description>Node.js SDK は Node.js 22 以降が必要で、TypeScript の型定義を含む ESM および CommonJS ビルドを提供し、ランタイム依存関係はありません。パッケージ: npm の @speedle/sdk。リファレンス: speedle-sdk/node。
+サンプルでは、SDK 概要 で説明されているポリシーをチェックします。
+依存関係の追加 新しい ES モジュールパッケージを作成します:
+mkdir speedle-example cd speedle-example npm init -y npm pkg set type=module npm install @speedle/sdk@0.2.1 ローカルの Speedle の呼び出し SDK 概要 の説明に従って Speedle を起動し、サンプルポリシーを作成します。このプログラムを main.ts として保存します:
+import { Auth, Reason, SpeedleClient, SpeedleError } from &amp;#34;@speedle/sdk&amp;#34;; try { const speedle = new SpeedleClient({ backend: &amp;#34;speedle&amp;#34;, endpoint: &amp;#34;http://localhost:6734&amp;#34;, auth: Auth.none(), serviceName: &amp;#34;docs&amp;#34;, }); try { const allowed = await speedle.</description>
+    </item>
+    
+    <item>
+      <title>Python SDK</title>
+      <link>https://engine.speedle.io/ja/docs/sdks/python/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/ja/docs/sdks/python/</guid>
+      <description>Python SDK は Python 3.10 以降が必要です。ランタイム依存関係は httpx のみです。同じ引数を持つ同期の Client と asyncio の AsyncClient を備えています。パッケージ: PyPI の speedle 0.2.0。リファレンス: speedle-sdk/python。
+サンプルでは、SDK 概要 で説明されているポリシーをチェックします。
+依存関係の追加 仮想環境で pip を使用する場合:
+python3 -m venv .venv . .venv/bin/activate pip install speedle==0.2.0 または uv プロジェクトで uv を使用する場合:
+uv add speedle==0.2.0 ローカルの Speedle の呼び出し SDK 概要 の説明に従って Speedle を起動し、サンプルポリシーを作成します。このプログラムを main.py として保存します:
+import sys from speedle import Auth, Client, SpeedleError try: with Client( backend=&amp;#34;speedle&amp;#34;, endpoint=&amp;#34;http://localhost:6734&amp;#34;, auth=Auth.none(), service_name=&amp;#34;docs&amp;#34;, ) as speedle: allowed = speedle.</description>
+    </item>
+    
+    <item>
+      <title>Rust SDK</title>
+      <link>https://engine.speedle.io/ja/docs/sdks/rust/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/ja/docs/sdks/rust/</guid>
+      <description>Rust SDK は Rust 1.75 以降が必要です。tokio と reqwest (rustls) をベースにした非同期構成です。blocking 機能により、以下で使用するブロッキングクライアントが追加されます。クレート: crates.io の speedle 0.2.0。リファレンス: speedle-sdk/rust。
+サンプルでは、SDK 概要 で説明されているポリシーをチェックします。
+依存関係の追加 新しいパッケージを作成します:
+cargo new speedle-example cd speedle-example cargo add speedle@0.2.0 --features blocking ローカルの Speedle の呼び出し SDK 概要 の説明に従って Speedle を起動し、サンプルポリシーを作成します。src/main.rs を以下に置き換えます:
+use speedle::blocking::Client; use speedle::{Auth, Backend}; fn main() { if let Err(e) = run() { eprintln!(&amp;#34;Speedle error: {e}&amp;#34;); std::process::exit(1); } } fn run() -&amp;gt; Result&amp;lt;(), speedle::Error&amp;gt; { let speedle = Client::builder(Backend::Speedle, &amp;#34;http://localhost:6734&amp;#34;, Auth::none(), &amp;#34;docs&amp;#34;).</description>
+    </item>
+    
+    <item>
+      <title>Speedle ポリシー</title>
+      <link>https://engine.speedle.io/ja/docs/pms/</link>
+      <pubDate>Tue, 10 Nov 2026 16:57:42 +0800</pubDate>
+      
+      <guid>https://engine.speedle.io/ja/docs/pms/</guid>
+      <description> ポリシー管理 グローバルポリシー ポリシー検出 認可診断  </description>
+    </item>
+    
+    <item>
+      <title>トークンアサーション API</title>
+      <link>https://engine.speedle.io/ja/docs/api/asserter_api/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/ja/docs/api/asserter_api/</guid>
+      <description>トークンアサーション Webhook リファレンス。errCode は整数、attributes はオブジェクトです。実際のエンドポイントは ADS アサーター構成で指定されます。
+セキュリティとエンドポイント構成。本文はインターフェース仕様を説明するものであり、speedle.io はホスト型バックエンドを提供しません。
+              document.addEventListener(&#39;DOMContentLoaded&#39;, function() { var url = &#34;\/swagger\/asserter.yaml&#34;; const ui = SwaggerUIBundle({ url: url, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.presets.apis ], plugins: [ SwaggerUIBundle.plugins.DownloadUrl ], validatorUrl: null, layout: &#34;BaseLayout&#34; }) window.ui = ui });  </description>
+    </item>
+    
+    <item>
+      <title>ポリシー管理 API</title>
+      <link>https://engine.speedle.io/ja/docs/api/management_api/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/ja/docs/api/management_api/</guid>
+      <description>構成された PMS のインターフェースリファレンス。リクエストとレスポンスは JSON を使用し、ポリシー ID は文字列、レスポンスはフラットなオブジェクトです。
+セキュリティとエンドポイント構成。本文はインターフェース仕様を説明するものであり、speedle.io はホスト型バックエンドを提供しません。
+              document.addEventListener(&#39;DOMContentLoaded&#39;, function() { var url = &#34;\/swagger\/policy-manage.yaml&#34;; const ui = SwaggerUIBundle({ url: url, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.presets.apis ], plugins: [ SwaggerUIBundle.plugins.DownloadUrl ], validatorUrl: null, layout: &#34;BaseLayout&#34; }) window.ui = ui });  </description>
+    </item>
+    
+    <item>
+      <title>認可決定 API</title>
+      <link>https://engine.speedle.io/ja/docs/api/decision_api/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/ja/docs/api/decision_api/</guid>
+      <description>構成された ADS のインターフェースリファレンス。リクエスト属性は型付き配列、診断レスポンス属性はオブジェクトです。
+セキュリティとエンドポイント構成。本文はインターフェース仕様を説明するものであり、speedle.io はホスト型バックエンドを提供しません。
+              document.addEventListener(&#39;DOMContentLoaded&#39;, function() { var url = &#34;\/swagger\/policy-check.yaml&#34;; const ui = SwaggerUIBundle({ url: url, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.presets.apis ], plugins: [ SwaggerUIBundle.plugins.DownloadUrl ], validatorUrl: null, layout: &#34;BaseLayout&#34; }) window.ui = ui });  ヘルスチェックエンドポイント GET /healthz はプロセスの稼働状態を報告します。プロセス実行中は常に 200 {&amp;quot;status&amp;quot;:&amp;quot;ok&amp;quot;} を返します。
+GET /readyz はインスタンスが認可リクエストに応答可能かどうかを報告します。準備完了の場合は 200、それ以外は 503 を返します。このエンドポイントは認証を必要とせず、集計カウントのみを返します。</description>
+    </item>
+    
+  </channel>
+</rss>

@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Identity on Speedle</title>
+    <link>https://engine.speedle.io/ja/tags/identity/</link>
+    <description>Recent content in Identity on Speedle</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>ja-jp</language>
+    <lastBuildDate>Mon, 21 Jan 2019 09:28:30 +0800</lastBuildDate>
+    
+	<atom:link href="https://engine.speedle.io/ja/tags/identity/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>Speedle 概要: きめ細かなアクセス制御のための認可エンジン</title>
+      <link>https://engine.speedle.io/ja/docs/overview/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/ja/docs/overview/</guid>
+      <description>Speedle はオープンソースの認可エンジンです。アプリケーションから「このユーザーはこのリソースに対してこのアクションを実行できますか？」という問い合わせを受け取り、一元管理されたポリシーに基づいて許可（Allow）または拒否（Deny）を返します。このページでは、一般的な認可用語とそれらを実装する Speedle コンポーネントを関連付け、それぞれのガイドへのリンクを示します。
+以下の例では library という名前のサービスを使用しています。各ポリシーはポリシー管理サービス (PMS) の REST API を通じて作成され、各決定は認可決定サービス (ADS) の REST API から返されたものです。理由コードは 認可決定 に一覧表示されています。
+認可エンジン 認可エンジンはポリシーに照らしてアクセスリクエストを評価し、決定を返します。これにより、認可ロジックがアプリケーションコードの外部に分離されます。Speedle は ポリシー管理サービス (PMS)、ポリシーリポジトリ、および認可決定サービス (ADS) で構成されています。ADS はスタンドアロンサービスとして実行することも、Go アプリケーションに組み込む こともできます。
+認可とアクセス制御 認証（Authentication）は呼び出し元が誰であるかを確立し、認可（Authorization）はその呼び出し元が何を行ってよいかを決定します。アクセス制御（Access control）はそれらの決定の強制・執行です。Speedle は認可のみを処理します。すでに認証済みのサブジェクトを受け取り、決定を返し、呼び出し元のアプリケーションまたはゲートウェイがそれを適用します。認可決定 を参照してください。
+きめ細かなアクセス制御 (FGA) きめ細かなアクセス制御（Fine-grained access control）は、アプリケーション全体への大まかなアクセスを許可するのではなく、ユーザーごと、リソースごと、アクションごとにアクセスを決定し、必要に応じてリクエストコンテキストも考慮します。Speedle ポリシーでは、プリンシパル、アクション、リソースを指定し、条件を追加できます。ロールポリシーでは、特定のリソースに対してのみロールを割り当てることができます。SPDL を参照してください。
+PAP: ポリシー管理ポイント PAP（Policy Administration Point）は、ポリシーが作成および管理される場所です。Speedle ではこれが PMS に該当し、REST API、gRPC API、または spctl コマンドラインツールを通じて使用されます。ポリシー管理 を参照してください。
+PDP: ポリシー決定ポイント PDP（Policy Decision Point）は、リクエストをポリシーに照らして評価し、決定を返します。Speedle ではこれが ADS、または Speedle が Go プロセス内で実行される際の組み込み評価器に該当します。決定リクエストは以下のようになります:
+curl --header &amp;#39;Content-Type: application/json&amp;#39; --data &amp;#39;{&amp;#34;subject&amp;#34;:{&amp;#34;principals&amp;#34;:[{&amp;#34;type&amp;#34;:&amp;#34;user&amp;#34;,&amp;#34;name&amp;#34;:&amp;#34;alice&amp;#34;}]},&amp;#34;serviceName&amp;#34;:&amp;#34;library&amp;#34;,&amp;#34;resource&amp;#34;:&amp;#34;book&amp;#34;,&amp;#34;action&amp;#34;:&amp;#34;update&amp;#34;}&amp;#39; http://127.</description>
+    </item>
+    
+    <item>
+      <title>ID ドメイン</title>
+      <link>https://engine.speedle.io/ja/docs/idd/</link>
+      <pubDate>Thu, 17 Jan 2019 13:20:07 +0800</pubDate>
+      
+      <guid>https://engine.speedle.io/ja/docs/idd/</guid>
+      <description>ID ドメインとは？ ID ドメイン（idd）は、プリンシパルの明示的な名前空間です。同名の2人の user1 が異なるドメインに属することができます。ドメイン文字列は、信頼できる統合コードまたは構成済みのトークンアサーターによって提供されます。これ自体は認証の証明ではありません。Speedle はドメイン名のみからプロバイダーのテナントモデルを推論または検証することはありません。
+ポリシーとリクエストにおけるドメインの表現 grant user user1 from github read book grant user user1 from IDCS.tenant01 read book プリンシパル名の直後に from &amp;lt;identity-domain&amp;gt; を使用します。PMS JSON ポリシーでは、同じプリンシパルを idd=github:user:user1 としてエンコードします。決定リクエストでは、このプリンシパルを次のように表現します:
+{ &amp;#34;type&amp;#34;: &amp;#34;user&amp;#34;, &amp;#34;name&amp;#34;: &amp;#34;user1&amp;#34;, &amp;#34;idd&amp;#34;: &amp;#34;github&amp;#34; } ドメインが指定されていないプリンシパルは、その名前のすべてのドメインおよびドメインのないプリンシパルに一致します。
+grant user user1 read book 上記の認可は、from github、from IDCS.tenant01、または ID ドメインのない user1 に一致します。
+ローカル検証手順 mkdir -p ./tmp &amp;amp;&amp;amp; rm -f ./tmp/idd.json PMS を起動します:
+./bin/speedle-pms --store-type file --filestore-loc ./tmp/idd.json --endpoint 127.0.0.1:6733 --insecure=true ADS を起動します:</description>
+    </item>
+    
+    <item>
+      <title>トークンアサーター</title>
+      <link>https://engine.speedle.io/ja/docs/assertor/</link>
+      <pubDate>Mon, 21 Jan 2019 09:28:30 +0800</pubDate>
+      
+      <guid>https://engine.speedle.io/ja/docs/assertor/</guid>
+      <description>トークンアサーターの役割 設定されたアサーターはトークンを検証し、アイデンティティドメインを含む明示的なプリンシパルを返します。Speedle はそれらのアイデンティティを使用してポリシーを評価します。本番環境の実装では、トークンの署名またはイントロスペクション結果、発行者、対象者、有効期限、およびプロバイダー固有の要件を検証する必要があります。Webhook インターフェースがあること自体は、任意の OAuth/OIDC トークンとの自動互換性を意味するものではありません。
+トークンアサーション API の errCode は整数型であり、オプションの属性はオブジェクトであり、型付き属性配列ではありません。asserterWebhookConfig.endpoint は完全な URL です。以下の例では /v1/assert を使用します。
+確定的なローカルモックの実行 このモックは、githubtoken/github、googletoken/google、gitlabtoken/gitlab の 3 組の入力のみを認識し、それぞれ対応するドメインの user1 を表します。トークンとプロバイダーのペアが一致しない場合は失敗します。これはテスト用フィクスチャであり、実際のトークン検証ではありません。 トークンの値は記録されません。ループバックアドレスのみにバインドし、本番環境では実際のプロバイダー統合に置き換えてください。
+リポジトリルートから別のターミナルで起動します:
+go run ./website/tests/examples/asserter // A deterministic mock for the token-assertion tutorial. Never use for real tokens. package main import ( &amp;#34;encoding/json&amp;#34; &amp;#34;flag&amp;#34; &amp;#34;log&amp;#34; &amp;#34;net/http&amp;#34; &amp;#34;strings&amp;#34; &amp;#34;time&amp;#34; ) type principal struct { Type string `json:&amp;#34;type&amp;#34;` Name string `json:&amp;#34;name&amp;#34;` IDD string `json:&amp;#34;idd&amp;#34;` } type response struct { Principals []principal `json:&amp;#34;principals,omitempty&amp;#34;` ErrCode int `json:&amp;#34;errCode&amp;#34;` ErrMessage string `json:&amp;#34;errMessage,omitempty&amp;#34;` } func assert(w http.</description>
+    </item>
+    
+  </channel>
+</rss>

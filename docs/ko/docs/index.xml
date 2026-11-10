@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>문서 on Speedle</title>
+    <link>https://engine.speedle.io/ko/docs/</link>
+    <description>Recent content in 문서 on Speedle</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>ko-kr</language>
+    <lastBuildDate>Tue, 10 Nov 2026 17:19:04 +0800</lastBuildDate>
+    
+	<atom:link href="https://engine.speedle.io/ko/docs/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>유스케이스</title>
+      <link>https://engine.speedle.io/ko/docs/usecases/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/ko/docs/usecases/</guid>
+      <description>애플리케이션 전용 정책 Alex Chan은 Go로 간단한 애플리케이션을 구현하는 개발자입니다. 인가가 필요하지만 바퀴를 다시 발명하고 싶지 않습니다. Alex는 오픈 소스인 Speedle을 활용할 수 있습니다.
+중앙 집중식 정책 적용 및 관리 Jin Chen은 다국적 기업의 보안 관리자입니다. 그의 팀은 수십 개의 내부 시스템을 모니터링합니다. 각 시스템의 인가 정책을 한곳에서 효율적으로 관리할 솔루션을 찾고 있습니다.</description>
+    </item>
+    
+    <item>
+      <title>Speedle 개요: 세분화된 접근 제어를 위한 인가 엔진</title>
+      <link>https://engine.speedle.io/ko/docs/overview/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/ko/docs/overview/</guid>
+      <description>Speedle은 오픈 소스 인가 엔진입니다. 애플리케이션으로부터 &amp;ldquo;이 사용자가 이 리소스에 대해 이 작업을 수행할 수 있는가?&amp;ldquo;라는 질의를 수신하고 중앙에서 관리되는 정책에 따라 허용(Allow) 또는 거부(Deny)를 반환합니다. 이 페이지에서는 일반적인 인가 용어와 이를 구현하는 Speedle 구성 요소를 연결하고 각각의 상세 가이드 링크를 제공합니다.
+아래 예제에서는 library라는 이름의 서비스를 사용합니다. 각 정책은 정책 관리 서비스(PMS)의 REST API를 통해 생성되었으며, 각 결정은 인가 결정 서비스(ADS)의 REST API에서 반환되었습니다. 이유 코드는 인가 결정에 나열되어 있습니다.</description>
+    </item>
+    
+    <item>
+      <title>SPDL: Speedle 정책 정의 언어</title>
+      <link>https://engine.speedle.io/ko/docs/spdl/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/ko/docs/spdl/</guid>
+      <description>SPDL은 Speedle 정책 및 역할 정책을 작성하기 위한 언어입니다. 이 페이지에서는 구문, 명명 규칙 및 예제를 설명합니다. </description>
+    </item>
+    
+    <item>
+      <title>아키텍처</title>
+      <link>https://engine.speedle.io/ko/docs/architecture/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/ko/docs/architecture/</guid>
+      <description>모듈 Speedle은 다음 구성 요소로 이루어진 인가 엔진입니다:
+ 정책 관리 서비스 (PMS) API - 인가 및 역할 정책과 그 생성 대상 객체를 관리합니다. 정책 리포지토리 - 모든 정책 아티팩트를 저장합니다. JSON 파일 또는 데이터베이스, etcd 같은 영구 스토리지를 사용할 수 있습니다. 인가 결정 서비스 (ADS) API - 적용 가능한 정책에 대해 인가 요청을 평가하고 GRANT/DENY 결정을 반환합니다.  XACML 모델에 익숙하다면 정책 관리 서비스(PMS)는 PAP, 인가 결정 서비스(ADS)는 PDP 역할을 합니다.</description>
+    </item>
+    
+    <item>
+      <title>인가 결정</title>
+      <link>https://engine.speedle.io/ko/docs/decisions/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/ko/docs/decisions/</guid>
+      <description>인가 결정이란 무엇인가 Speedle은 지정된 서비스 내에서 주체, 작업 및 리소스를 평가하며 애플리케이션이 그 결과를 적용합니다. 평가 오류나 타임아웃은 일반적인 Deny(거부)와 구분하여 처리하고 오류 발생 시 접근을 기본적으로 차단(fail closed)해야 합니다. REST, gRPC, 임베디드 Go API는 데이터 표현 방식이 다르므로 각각의 API 계약을 따르십시오.
+예제 실행 전 준비 빠른 시작의 설명에 따라 저장소 루트에서 ./bin/spctl, ./bin/speedle-pms, ./bin/speedle-ads를 빌드합니다. Go 1.26.10 또는 Go 1.27.3(또는 동일 릴리스 브랜치의 최신 패치 버전), Bash, curl, Python 3이 필요합니다.</description>
+    </item>
+    
+    <item>
+      <title>ID 도메인</title>
+      <link>https://engine.speedle.io/ko/docs/idd/</link>
+      <pubDate>Thu, 17 Jan 2019 13:20:07 +0800</pubDate>
+      
+      <guid>https://engine.speedle.io/ko/docs/idd/</guid>
+      <description>ID 도메인이란 무엇인가 ID 도메인(idd)은 주체의 명시적인 네임스페이스입니다. 동일한 이름을 가진 두 명의 user1이 서로 다른 도메인에 속할 수 있습니다. 도메인 문자열은 신뢰할 수 있는 통합 코드 또는 구성된 토큰 어서터에 의해 제공됩니다. 이것 자체가 인증의 증거는 아닙니다. Speedle은 도메인 이름만으로 공급자의 테넌트 모델을 추론하거나 검증하지 않습니다.
+정책과 요청에서의 도메인 표현 grant user user1 from github read book grant user user1 from IDCS.tenant01 read book 주체 이름 바로 뒤에 from &amp;lt;identity-domain&amp;gt;을 사용합니다.</description>
+    </item>
+    
+    <item>
+      <title>토큰 어서터</title>
+      <link>https://engine.speedle.io/ko/docs/assertor/</link>
+      <pubDate>Mon, 21 Jan 2019 09:28:30 +0800</pubDate>
+      
+      <guid>https://engine.speedle.io/ko/docs/assertor/</guid>
+      <description>토큰 어서터의 역할 구성된 어서터는 토큰을 검증하고 신원 도메인을 포함한 명시적 주체를 반환합니다. Speedle은 해당 신원을 사용하여 정책을 평가합니다. 프로덕션 구현에서는 토큰 서명 또는 인트로스펙션 결과, 발급자, 대상, 유효 기간 및 공급자별 요구 사항을 검증해야 합니다. 웹훅 인터페이스의 존재 자체가 임의의 OAuth/OIDC 토큰과의 자동 호환성을 의미하지는 않습니다.
+토큰 어서션 API의 errCode는 정수형이며, 선택적 속성은 객체이며 유형화된 속성 배열이 아닙니다. asserterWebhookConfig.endpoint는 전체 URL입니다. 아래 예제에서는 /v1/assert를 사용합니다.
+결정론적 로컬 목(Mock) 실행 이 목은 githubtoken/github, googletoken/google, gitlabtoken/gitlab의 3개 입력 조합만 인식하며, 각각 해당 도메인의 user1을 나타냅니다.</description>
+    </item>
+    
+    <item>
+      <title>보안</title>
+      <link>https://engine.speedle.io/ko/docs/security/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/ko/docs/security/</guid>
+      <description>두 API 전송 계층 모두 보호 독립적으로 작동하는 PMS와 ADS는 REST와 gRPC를 노출합니다. 현재 두 서비스 모두 동일한 --insecure, --cert, --key, --client-cert 및 --force-client-cert 전송 설정을 사용합니다. 인증서나 신뢰 설정이 유효하지 않은 경우 시작 시 실패합니다. 보안 모드가 일반 텍스트로 폴백되지 않습니다.
+TLS는 연결을 암호화하고 서버를 인증합니다. 인증된 클라이언트를 요구하려면 --client-cert로 클라이언트 CA를 제공하고 반드시 --force-client-cert=true를 설정해야 합니다. 해당 플래그가 없는 경우 구성된 CA는 클라이언트가 인증서를 제공한 경우에만 클라이언트 인증서를 검증합니다.</description>
+    </item>
+    
+    <item>
+      <title>로깅 프레임워크</title>
+      <link>https://engine.speedle.io/ko/docs/logging/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/ko/docs/logging/</guid>
+      <description>개요 로그 메시지 처리를 위해 다음 두 개의 오픈 소스 프로젝트가 사용됩니다:
+1. https://github.com/sirupsen/logrus 2. https://github.com/natefinch/lumberjack Logrus는 Go(golang)용 구조화된 로거이며 golang 표준 라이브러리 로거와 완전한 API 호환성을 갖추고 있습니다. Logrus는 로그 롤링을 기본적으로 지원하지 않으므로 롤링 로거를 제공하는 두 번째 프로젝트인 lumberjack을 통합했습니다. Logrus는 io.Writer 인터페이스를 사용하여 lumberjack과 연동합니다. 아래 다이어그램을 참조하십시오.
+로깅 구성 Speedle 로깅은 명령줄 플래그와 구성 파일의 두 가지 방식으로 구성할 수 있습니다.
+명령줄 인수를 통한 로깅 구성 사용 가능한 모든 명령줄 인수는 다음과 같습니다.</description>
+    </item>
+    
+    <item>
+      <title>버전</title>
+      <link>https://engine.speedle.io/ko/docs/versions/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/ko/docs/versions/</guid>
+      <description>Speedle 릴리스 게시된 버전 및 릴리스 노트는 GitHub Releases 페이지를 참조하세요. v1.6.0은 현재 임베디드 Go 안내서에서 고정된 버전입니다.
+이전 Oracle Speedle 릴리스 버전 0.1.0은 정책 관리, 인가 결정, 명령줄 도구 및 연동 샘플을 포함한 초기 오픈 소스 릴리스였습니다.</description>
+    </item>
+    
+    <item>
+      <title>사용자 정의 함수</title>
+      <link>https://engine.speedle.io/ko/docs/custom-function/</link>
+      <pubDate>Mon, 21 Jan 2019 10:43:02 +0800</pubDate>
+      
+      <guid>https://engine.speedle.io/ko/docs/custom-function/</guid>
+      <description>사용자 정의 함수를 사용하는 이유 기본 제공 연산자나 함수로 규칙을 표현할 수 없는 경우 SPDL 조건에서 구성된 함수를 호출할 수 있습니다. Speedle은 해당 REST 엔드포인트에 POST {&amp;quot;params&amp;quot;:[...]}를 전송하고 {&amp;quot;result&amp;quot;:...} 또는 {&amp;quot;error&amp;quot;:&amp;quot;...&amp;quot;} 반환을 기대합니다. 매개변수 순서, 타입 및 반환 타입은 조건과 일치해야 합니다. 함수 오류는 평가 오류이며 애플리케이션은 기본적으로 접근을 거부(fail closed)해야 합니다.
+로컬 예제 시작 이 예제는 100에서 50000 사이의 숫자 값을 수락합니다. 매개변수 타입이 잘못되었거나 매개변수 목록이 비어 있는 경우 HTTP 오류를 반환합니다.</description>
+    </item>
+    
+  </channel>
+</rss>

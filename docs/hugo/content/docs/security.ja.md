@@ -11,6 +11,7 @@ categories = ["docs"]
 bref = ""
 +++
 
+<a id="protect-both-api-transports"></a>
 ## 両方の API トランスポートを保護
 
 独立して動作する PMS と ADS は **REST と gRPC** を公開します。現在、両者とも同じ `--insecure`、`--cert`、`--key`、`--client-cert`、および `--force-client-cert` トランスポート設定を使用します。証明書または信頼設定が無効な場合、起動は失敗します。セキュアモードがプレーンテキストにフォールバックすることはありません。

@@ -20,6 +20,7 @@ bref = "Speedle에는 파일, etcd, MongoDB, MySQL 정책 저장소가 포함되
 
 단계별 배포 가이드: [MySQL 설정 가이드](/docs/store/mysql/), [etcd 설정 가이드](/docs/store/etcd/), [MongoDB 설정 가이드](/docs/store/mongodb/).
 
+<a id="store-failures-and-cached-authorization"></a>
 ## 저장소 장애 및 캐시된 인가
 
 파일, etcd, MySQL, MongoDB는 동일한 ADS 장애 정책을 사용합니다. `storeFailureGracePeriod`의 기본값은 `"0s"`입니다. 저장소 장애가 감지되면 인가는 `allowed:false`와 평가 오류를 반환합니다. ADS는 계속 실행되며 재시도를 지속합니다. 연결이 다시 읽기 가능해지는 것만으로는 인가가 복원되지 않으며, 완전한 정책 스냅샷을 다시 로드하는 데 성공해야 합니다. 감시(watch)가 활성화된 경우 실패한 구독을 먼저 다시 설정해야 합니다. 감시가 끊어진 상태에서 데이터 읽기에 성공하더라도 장애/유예 기간의 마감 시간은 재설정되지 않습니다. 정책 파일이 삭제된 경우에도 ADS가 종료되지 않고 계속 재시도합니다.

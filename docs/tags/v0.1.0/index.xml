@@ -6,7 +6,7 @@
     <description>Recent content in V0.1.0 on Speedle</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
-    <lastBuildDate>Tue, 10 Nov 2026 13:15:15 +0800</lastBuildDate>
+    <lastBuildDate>Tue, 10 Nov 2026 14:45:43 +0800</lastBuildDate>
     
 	<atom:link href="https://engine.speedle.io/tags/v0.1.0/index.xml" rel="self" type="application/rss+xml" />
     
@@ -14,7 +14,7 @@
     <item>
       <title>API</title>
       <link>https://engine.speedle.io/docs/api/</link>
-      <pubDate>Tue, 10 Nov 2026 13:15:15 +0800</pubDate>
+      <pubDate>Tue, 10 Nov 2026 14:45:43 +0800</pubDate>
       
       <guid>https://engine.speedle.io/docs/api/</guid>
       <description>Client libraries for Java, Python, Go, .NET, Rust and Node.js/TypeScript are in SDKs.

@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>배포 on Speedle</title>
+    <link>https://engine.speedle.io/ko/docs/deployment/</link>
+    <description>Recent content in 배포 on Speedle</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>ko-kr</language>
+    <lastBuildDate>Tue, 10 Nov 2026 17:19:04 +0800</lastBuildDate>
+    
+	<atom:link href="https://engine.speedle.io/ko/docs/deployment/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>Speedle 임베디드 모드</title>
+      <link>https://engine.speedle.io/ko/docs/deployment/embedded/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/ko/docs/deployment/embedded/</guid>
+      <description>Speedle 임베디드 모드란 무엇인가 임베디드 모드는 Speedle 정책 결정 엔진을 Go 애플리케이션 프로세스 내에서 직접 실행합니다. PMS 또는 ADS 서버를 시작하지 않고 평가 엔진을 직접 호출합니다. 애플리케이션은 사용자를 인증하고 각 결정에 대해 주체, 리소스 및 작업을 제공합니다.
+코드를 작성하기 전에 기본 정책을 체험하려면 플레이그라운드를 이용하십시오. Speedle을 독립 실행형 서비스로 실행하려면 빠른 시작을 따르십시오.
+사전 요구 사항 빠른 시작과 동일하게 Linux 또는 macOS 환경과 명령줄 셸, 그리고 Go 1.26.10 또는 Go 1.</description>
+    </item>
+    
+    <item>
+      <title>Docker 이미지</title>
+      <link>https://engine.speedle.io/ko/docs/deployment/docker/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/ko/docs/deployment/docker/</guid>
+      <description>Speedle은 speedle-pms, speedle-ads, spctl이 포함된 단일 이미지를 배포합니다. 이 이미지는 FROM scratch로 빌드되며 UID 65532로 실행되고 셸이 포함되어 있지 않습니다. 첫 번째 인수로 실행할 프로그램을 선택합니다.
+두 레지스트리 모두 동일한 이미지 인덱스를 호스팅합니다:
+ Docker Hub: docker.io/speedle/speedle GHCR: ghcr.io/teramoby/speedle  릴리스 1.7.0은 두 레지스트리 모두에 linux/amd64 및 linux/arm64 아키텍처용으로 1.7.0, 1.7, latest 태그를 게시합니다.
+이미지 풀 docker pull docker.io/speedle/speedle:1.7.0 docker pull ghcr.io/teramoby/speedle:1.7.0 docker pull은 인덱스 다이제스트를 출력합니다. 1.7.0의 경우 두 레지스트리 모두 다이제스트는 sha256:20bd3fe8169ec3ddadf1484285e34bd68004dbb457782223dc84a2a9f1dd91c0입니다.</description>
+    </item>
+    
+  </channel>
+</rss>

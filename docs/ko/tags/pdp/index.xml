@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Pdp on Speedle</title>
+    <link>https://engine.speedle.io/ko/tags/pdp/</link>
+    <description>Recent content in Pdp on Speedle</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>ko-kr</language>
+    
+	<atom:link href="https://engine.speedle.io/ko/tags/pdp/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>Speedle 개요: 세분화된 접근 제어를 위한 인가 엔진</title>
+      <link>https://engine.speedle.io/ko/docs/overview/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/ko/docs/overview/</guid>
+      <description>Speedle은 오픈 소스 인가 엔진입니다. 애플리케이션으로부터 &amp;ldquo;이 사용자가 이 리소스에 대해 이 작업을 수행할 수 있는가?&amp;ldquo;라는 질의를 수신하고 중앙에서 관리되는 정책에 따라 허용(Allow) 또는 거부(Deny)를 반환합니다. 이 페이지에서는 일반적인 인가 용어와 이를 구현하는 Speedle 구성 요소를 연결하고 각각의 상세 가이드 링크를 제공합니다.
+아래 예제에서는 library라는 이름의 서비스를 사용합니다. 각 정책은 정책 관리 서비스(PMS)의 REST API를 통해 생성되었으며, 각 결정은 인가 결정 서비스(ADS)의 REST API에서 반환되었습니다. 이유 코드는 인가 결정에 나열되어 있습니다.</description>
+    </item>
+    
+    <item>
+      <title>인가 결정</title>
+      <link>https://engine.speedle.io/ko/docs/decisions/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/ko/docs/decisions/</guid>
+      <description>인가 결정이란 무엇인가 Speedle은 지정된 서비스 내에서 주체, 작업 및 리소스를 평가하며 애플리케이션이 그 결과를 적용합니다. 평가 오류나 타임아웃은 일반적인 Deny(거부)와 구분하여 처리하고 오류 발생 시 접근을 기본적으로 차단(fail closed)해야 합니다. REST, gRPC, 임베디드 Go API는 데이터 표현 방식이 다르므로 각각의 API 계약을 따르십시오.
+예제 실행 전 준비 빠른 시작의 설명에 따라 저장소 루트에서 ./bin/spctl, ./bin/speedle-pms, ./bin/speedle-ads를 빌드합니다. Go 1.26.10 또는 Go 1.27.3(또는 동일 릴리스 브랜치의 최신 패치 버전), Bash, curl, Python 3이 필요합니다.</description>
+    </item>
+    
+  </channel>
+</rss>

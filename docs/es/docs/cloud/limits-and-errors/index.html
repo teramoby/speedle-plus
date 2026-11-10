@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <script>document.documentElement.classList.add('docs-js','navigation-js');addEventListener('DOMContentLoaded',function(){if(!document.querySelector('header.site-header.navigation-ready'))document.documentElement.classList.remove('navigation-js')});</script>
+    <meta name="generator" content="Hugo 0.48" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1"><title>Límites y errores de Speedle Cloud · Speedle Engine</title>
+<meta name="description" content="Cuotas de cuenta de Speedle Cloud, límites de solicitudes, errores en formato JSON plano, encabezados de tasa y cuota, contabilidad diaria y directrices de reintento.">
+<meta name="generator" content="Hugo 0.48" />
+<link href="https://engine.speedle.io/index.xml" rel="alternate" type="application/rss+xml">
+<link rel="canonical" href="https://engine.speedle.io/es/docs/cloud/limits-and-errors/">
+
+<link rel="alternate" hreflang="en" href="https://engine.speedle.io/docs/cloud/limits-and-errors/">
+<link rel="alternate" hreflang="es" href="https://engine.speedle.io/es/docs/cloud/limits-and-errors/">
+<link rel="alternate" hreflang="ja" href="https://engine.speedle.io/ja/docs/cloud/limits-and-errors/">
+<link rel="alternate" hreflang="ko" href="https://engine.speedle.io/ko/docs/cloud/limits-and-errors/">
+<link rel="alternate" hreflang="zh-CN" href="https://engine.speedle.io/zh/docs/cloud/limits-and-errors/">
+<link rel="alternate" hreflang="x-default" href="https://engine.speedle.io/docs/cloud/limits-and-errors/">
+<meta property="og:type" content="article">
+<meta property="article:published_time" content="2026-11-08T00:00:00&#43;08:00">
+<meta property="article:modified_time" content="2026-11-10T18:32:58&#43;08:00">
+<meta property="og:site_name" content="Speedle Engine">
+<meta property="og:title" content="Límites y errores de Speedle Cloud · Speedle Engine">
+<meta property="og:description" content="Cuotas de cuenta de Speedle Cloud, límites de solicitudes, errores en formato JSON plano, encabezados de tasa y cuota, contabilidad diaria y directrices de reintento.">
+<meta property="og:url" content="https://engine.speedle.io/es/docs/cloud/limits-and-errors/">
+<meta property="og:image" content="https://engine.speedle.io/img/social/engine-en.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:alt" content="Speedle Engine — Fast. Simple. Access control">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Límites y errores de Speedle Cloud · Speedle Engine">
+<meta name="twitter:description" content="Cuotas de cuenta de Speedle Cloud, límites de solicitudes, errores en formato JSON plano, encabezados de tasa y cuota, contabilidad diaria y directrices de reintento.">
+<meta name="twitter:image" content="https://engine.speedle.io/img/social/engine-en.png">
+<meta name="twitter:image:alt" content="Speedle Engine — Fast. Simple. Access control">
+
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/es/docs/cloud/limits-and-errors/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-10T18:32:58+08:00","datePublished":"2026-11-08T00:00:00+08:00","description":"Cuotas de cuenta de Speedle Cloud, límites de solicitudes, errores en formato JSON plano, encabezados de tasa y cuota, contabilidad diaria y directrices de reintento.","headline":"Límites y errores de Speedle Cloud","image":"https://engine.speedle.io/img/social/engine-en.png","inLanguage":"es","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/es/docs/cloud/limits-and-errors/","@type":"WebPage"},"name":"Límites y errores de Speedle Cloud","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/es/docs/cloud/limits-and-errors/"}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/es/docs/cloud/limits-and-errors/#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://engine.speedle.io/es/","name":"Inicio","position":1},{"@type":"ListItem","item":"https://engine.speedle.io/es/docs/","name":"Documentación","position":2},{"@type":"ListItem","item":"https://engine.speedle.io/es/docs/cloud/","name":"Speedle Cloud","position":3},{"@type":"ListItem","item":"https://engine.speedle.io/es/docs/cloud/limits-and-errors/","name":"Límites y errores de Speedle Cloud","position":4}]}</script><link href="/css/docs.css" rel="stylesheet" type="text/css">
+
+
+    <link href="/css/navigation.css?v=header-20261106-v8" rel="stylesheet">
+    <script src="/js/navigation.js?v=header-20261106-v8" defer></script>
+    <script src="/js/docs.js" defer></script>
+
+</head>
+
+<body class="page-kube docs-page">
+    <header class="site-header">
+    <div class="wrap nav">
+      <a class="brand" href="/es/#top" aria-label="Inicio de Speedle Engine"><img class="brand-logo" src="/img/speedle/Speedle_logo_home_bold.svg?v=4" width="304" height="104" alt=""><span class="brand-divider" aria-hidden="true"></span><span class="brand-product">Engine</span></a>
+      <button class="menu" type="button" aria-expanded="false" aria-controls="nav-links" aria-label="Abrir navegación">☰</button>
+      <nav class="nav-links" id="nav-links" aria-label="Navegación principal">
+        <div class="products"><button class="products-button" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="products-panel">Productos<svg class="products-chevron" width="10" height="10" viewBox="0 0 10 10" aria-hidden="true" focusable="false"><path d="M2 3.5 5 6.5 8 3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button><span class="products-heading" aria-hidden="true">Productos</span><div class="products-panel" id="products-panel" role="group" aria-label="Productos"><a class="product-row" href="https://engine.speedle.io/es/" aria-current="page"><img class="product-mark" src="/img/speedle/speedle-mark-engine.svg" alt="" width="20" height="20"><span class="product-text"><span class="product-name">Speedle Engine</span><span class="product-desc">Motor de autorización de código abierto</span></span><svg class="product-check" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M3.5 8.5 6.5 11.5 12.5 4.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></a><a class="product-row" href="https://cloud.speedle.io/es/"><img class="product-mark" src="/img/speedle/speedle-mark-cloud.svg" alt="" width="20" height="20"><span class="product-text"><span class="product-name">Speedle Cloud <span class="product-badge">Próximamente</span></span><span class="product-desc">Autorización hospedada para desarrolladores</span></span></a><a class="product-row" href="https://ai.speedle.io/es/"><img class="product-mark" src="/img/speedle/speedle-mark-ai.svg" alt="" width="20" height="20"><span class="product-text"><span class="product-name">Speedle AI</span><span class="product-desc">IA para control de acceso, control de acceso para IA</span></span></a></div></div>
+        <a href="/es/#about">Acerca de</a><a href="/es/#features">Características</a>
+        <a href="/es/quick-start/">Comenzar</a><a href="/es/docs/">Documentación</a><a href="/es/playground/">Playground</a>
+        <div class="languages"><button class="languages-button" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="languages-panel">Español<svg class="languages-chevron" width="10" height="10" viewBox="0 0 10 10" aria-hidden="true" focusable="false"><path d="M2 3.5 5 6.5 8 3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button><span class="languages-heading" aria-hidden="true">Idiomas</span><div class="languages-panel" id="languages-panel" role="group" aria-label="Idiomas"><a class="language-row" href="/docs/cloud/limits-and-errors/" lang="en" hreflang="en" >English</a><a class="language-row" href="/ja/docs/cloud/limits-and-errors/" lang="ja" hreflang="ja">日本語</a><a class="language-row" href="/ko/docs/cloud/limits-and-errors/" lang="ko" hreflang="ko">한국어</a><a class="language-row" href="/es/docs/cloud/limits-and-errors/" lang="es" hreflang="es" aria-current="page">Español</a><a class="language-row" href="/zh/docs/cloud/limits-and-errors/" lang="zh-CN" hreflang="zh-CN">中文</a></div></div>
+        <a class="nav-github" href="https://github.com/teramoby/speedle-plus">GitHub</a>
+      </nav>
+    </div>
+  </header>
+    <div class="container">
+        <button class="docs-nav-toggle" type="button" aria-expanded="false" aria-controls="docs-navigation">
+            <span>Menú</span>
+            <svg class="docs-nav-toggle-icon" viewBox="0 0 18 14" width="18" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M1 1h16M1 7h16M1 13h16"/></svg>
+        </button>
+        <div class="content-container"><aside class="docs-sidebar" id="docs-navigation" aria-label="Navegación de documentación">
+<div class="docs-nav-head">
+<span class="docs-nav-title">Documentación</span>
+<button class="docs-nav-close" type="button" aria-label="Cerrar menú"><svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="m3 3 10 10M13 3 3 13"/></svg></button>
+</div>
+<div class="sidebar">
+<nav>
+<ul>
+
+
+
+<li data-docs-depth="-1" class="docs-nav-section parent"><span class="docs-nav-heading">Documentación</span>
+<ul class="sub-menu">
+<li data-docs-depth="0" class=""><a href="/es/docs/usecases/">Casos de uso</a></li>
+<li data-docs-depth="0" class=""><a href="/es/docs/overview/">Descripción general</a></li>
+<li data-docs-depth="0" class=""><a href="/es/docs/spdl/">SPDL: Lenguaje de definición de políticas Speedle</a></li>
+<li data-docs-depth="0" class=""><a href="/es/docs/architecture/">Arquitectura</a></li>
+
+
+
+<li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading">Políticas de Speedle</span>
+<ul class="">
+<li data-docs-depth="1" class=""><a href="/es/docs/pms/policy-mgmt/">Gestión de políticas</a></li>
+<li data-docs-depth="1" class=""><a href="/es/docs/pms/global-policy/">Políticas globales</a></li>
+<li data-docs-depth="1" class=""><a href="/es/docs/pms/diagnosis/">Diagnóstico de autorización</a></li>
+<li data-docs-depth="1" class=""><a href="/es/docs/pms/discover/">Descubrimiento de políticas</a></li>
+</ul>
+
+</li>
+<li data-docs-depth="0" class=""><a href="/es/docs/decisions/">Decisiones de autorización</a></li>
+<li data-docs-depth="0" class=""><a href="/es/docs/idd/">Dominio de identidad</a></li>
+<li data-docs-depth="0" class=""><a href="/es/docs/assertor/">Asertor de tokens</a></li>
+
+
+
+<li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading docs-nav-heading-link"><a href="/es/docs/store/">Almacenamiento conectable</a></span>
+<ul class="">
+<li data-docs-depth="1" class=""><a href="/es/docs/store/mysql/">Configuración de MySQL</a></li>
+<li data-docs-depth="1" class=""><a href="/es/docs/store/etcd/">Configuración de etcd</a></li>
+<li data-docs-depth="1" class=""><a href="/es/docs/store/mongodb/">Configuración de MongoDB</a></li>
+</ul>
+
+</li>
+
+
+
+<li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading">API</span>
+<ul class="">
+<li data-docs-depth="1" class=""><a href="/es/docs/api/decision_api/">API de decisiones de autorización</a></li>
+<li data-docs-depth="1" class=""><a href="/es/docs/api/management_api/">API de gestión de políticas</a></li>
+<li data-docs-depth="1" class=""><a href="/es/docs/api/asserter_api/">API del complemento de aserción de tokens</a></li>
+</ul>
+
+</li>
+
+
+
+<li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading docs-nav-heading-link"><a href="/es/docs/deployment/">Despliegue</a></span>
+<ul class="">
+<li data-docs-depth="1" class=""><a href="/es/docs/deployment/embedded/">Modo integrado de Speedle</a></li>
+<li data-docs-depth="1" class=""><a href="/es/docs/deployment/docker/">Imagen de Docker</a></li>
+</ul>
+
+</li>
+
+
+
+<li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading docs-nav-heading-link"><a href="/es/docs/sdks/">SDK</a></span>
+<ul class="">
+<li data-docs-depth="1" class=""><a href="/es/docs/sdks/java/">Java SDK</a></li>
+<li data-docs-depth="1" class=""><a href="/es/docs/sdks/python/">Python SDK</a></li>
+<li data-docs-depth="1" class=""><a href="/es/docs/sdks/go/">Go SDK</a></li>
+<li data-docs-depth="1" class=""><a href="/es/docs/sdks/dotnet/">C#/.NET SDK</a></li>
+<li data-docs-depth="1" class=""><a href="/es/docs/sdks/rust/">Rust SDK</a></li>
+<li data-docs-depth="1" class=""><a href="/es/docs/sdks/node/">Node.js/TypeScript SDK</a></li>
+</ul>
+
+</li>
+
+
+
+<li data-docs-depth="0" class="docs-nav-section parent"><span class="docs-nav-heading docs-nav-heading-link"><a href="/es/docs/cloud/">Speedle Cloud</a></span>
+<ul class="sub-menu">
+<li data-docs-depth="1" class=""><a href="/es/docs/cloud/getting-started/">Primeros pasos</a></li>
+<li data-docs-depth="1" class=""><a href="/es/docs/cloud/tokens/">Tokens de aplicación</a></li>
+<li data-docs-depth="1" class=""><a href="/es/docs/cloud/authorization-api/">API de autorización</a></li>
+<li data-docs-depth="1" class="active"><a href="/es/docs/cloud/limits-and-errors/" aria-current="page">Límites y errores</a></li>
+</ul>
+
+</li>
+<li data-docs-depth="0" class=""><a href="/es/docs/security/">Seguridad</a></li>
+<li data-docs-depth="0" class=""><a href="/es/docs/logging/">Marco de registro</a></li>
+<li data-docs-depth="0" class=""><a href="/es/docs/versions/">Versiones</a></li>
+<li data-docs-depth="0" class=""><a href="/es/docs/custom-function/">Función personalizada</a></li>
+</ul>
+
+</li>
+
+
+</ul>
+</nav>
+
+
+</div>
+</aside>
+<main>
+<div id="main">
+
+  <h1>Límites y errores de Speedle Cloud</h1>
+  <p class="docs-lead">Planifique en función de los límites globales de la cuenta y falle de forma restrictiva (fail closed) cuando Cloud no pueda devolver una decisión de autorización válida.</p>
+
+
+
+
+<nav id="contents" class="docs-toc" data-docs-toc="h2" aria-label="En esta página">
+  <ol></ol>
+</nav>
+
+
+
+  <div id="kube-component" class="content">
+
+<p>Los errores y encabezados de ADS a continuación describen el contrato de ADS autenticado, cuyo entorno de ejecución aún no se encuentra disponible. El contrato de gestión ya define límites de cuenta, comprobaciones de sesión y CSRF, y errores de gestión de tokens para su uso cuando el acceso a cuentas esté habilitado. Descargar un esquema no habilita un endpoint pendiente.</p>
+
+<h2 id="límites">Límites</h2>
+
+<table>
+<thead>
+<tr>
+<th>Límite</th>
+<th>Significado</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td>10.000 llamadas al día</td>
+<td>Llamadas coincidentes a controladores de PMS y ADS a nivel de cuenta por día UTC, en todas las sesiones, tokens y servicios; se reinicia a las 00:00 UTC.</td>
+</tr>
+
+<tr>
+<td>200 políticas</td>
+<td>Políticas de autorización y roles combinadas por cuenta.</td>
+</tr>
+
+<tr>
+<td>4 KiB de SPDL</td>
+<td>4.096 bytes UTF-8 por política completa, no 4.096 caracteres.</td>
+</tr>
+
+<tr>
+<td>2 tokens activos</td>
+<td>Por servicio; el historial de revocaciones no consume este límite.</td>
+</tr>
+
+<tr>
+<td>600 solicitudes por minuto por token</td>
+<td>Límite de ráfaga aproximado por ubicación, independiente del límite diario estricto de la cuenta.</td>
+</tr>
+
+<tr>
+<td>Cuerpo de solicitud de 64 KiB</td>
+<td>Límite global antes del análisis sintáctico. Los atributos entrantes opcionales también conservan su límite de 50 atributos y 16.384 bytes en JSON canónico UTF-8.</td>
+</tr>
+</tbody>
+</table>
+
+<p>Cada cuenta dispone de un servicio. Los nombres de tokens tienen entre 1 y 128 caracteres. Consulte <a href="/es/docs/cloud/tokens/">Tokens de aplicación</a> para conocer las reglas del ciclo de vida de credenciales.</p>
+
+<h2 id="contabilidad-de-cuotas-diarias">Contabilidad de cuotas diarias</h2>
+
+<p>Acceder a un controlador coincidente consume una unidad diaria, incluso en caso de denegación de política, entrada de datos de negocio no válida o error interno. Los endpoints de autenticación y de sesión no consumen estas unidades. Las solicitudes rechazadas antes de acceder al controlador por comprobaciones de autenticación, enrutamiento, CSRF, tamaño de cuerpo, límite de ráfaga o reserva de cuota tampoco las consumen.</p>
+
+<p>Las reservas asignadas que caducan o se abandonan no se vuelven a emitir, por lo que el número de llamadas utilizables puede ser inferior a 10.000. <code>GET /api/me</code> informa del uso diario reservado y de la hora de reinicio sin cobrar una unidad diaria.</p>
+
+<p>Cambiar de token no añade cuota a la cuenta. El límite diario de la cuenta y el límite aproximado de ráfaga por token y ubicación se aplican por separado.</p>
+
+<h2 id="errores-http">Errores HTTP</h2>
+
+<p>Los errores devuelven respuestas en formato JSON plano. Corrija la solicitud o credencial según corresponda; en caso contrario, falle de forma restrictiva (fail closed) y utilice un tiempo de espera exponencial limitado en lugar de un bucle de reintento infinito.</p>
+
+<table>
+<thead>
+<tr>
+<th>Estado HTTP y error</th>
+<th>Respuesta de la aplicación</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td><code>401 {&quot;error&quot;:&quot;unauthorized&quot;}</code></td>
+<td>Compruebe el entorno y la credencial. ADS incluye un desafío Bearer. Las solicitudes anónimas y las que solo usan cookies no pueden autorizar operaciones en ADS.</td>
+</tr>
+
+<tr>
+<td><code>403 {&quot;error&quot;:&quot;reauth_required&quot;}</code></td>
+<td>Autentíquese nuevamente con un proveedor vinculado antes de crear un token. La actividad ordinaria no renueva la vigencia de la autenticación.</td>
+</tr>
+
+<tr>
+<td><code>403 {&quot;error&quot;:&quot;service_mismatch&quot;}</code></td>
+<td>Corrija la entrada del servicio; nunca reintente contra los datos de otro arrendatario.</td>
+</tr>
+
+<tr>
+<td><code>400 {&quot;error&quot;:&quot;SPDL-0004 …&quot;}</code></td>
+<td>Speedle rechazó la solicitud, por ejemplo debido a que un valor de atributo tiene un tipo incorrecto. El mensaje es el de Speedle. Corrija la solicitud; no la reintente sin cambios.</td>
+</tr>
+
+<tr>
+<td><code>404</code> en revocación de token</td>
+<td>El ID del token es desconocido, no pertenece a la cuenta o ya ha sido revocado. Actualice los metadatos antes de elegir otra acción.</td>
+</tr>
+
+<tr>
+<td><code>413 {&quot;error&quot;:&quot;request_too_large&quot;}</code></td>
+<td>Reduzca el tamaño del cuerpo de la solicitud.</td>
+</tr>
+
+<tr>
+<td><code>429 {&quot;error&quot;:&quot;rate_limited&quot;}</code></td>
+<td>Respete el encabezado <code>Retry-After</code>, que es de 60 segundos para este límite de ráfaga, y aplique un retroceso limitado.</td>
+</tr>
+
+<tr>
+<td><code>429 {&quot;error&quot;:&quot;daily_quota_exceeded&quot;}</code></td>
+<td>Respete el encabezado <code>Retry-After</code> hasta la medianoche UTC siguiente. Cambiar de token no añade cuota a la cuenta.</td>
+</tr>
+
+<tr>
+<td><code>503 {&quot;error&quot;:&quot;quota_unavailable&quot;}</code> o <code>snapshot_unavailable</code></td>
+<td>Falle de forma restrictiva (fail closed) y reintente únicamente con un retroceso limitado. No recurra a evaluaciones de políticas de demostración o D1.</td>
+</tr>
+
+<tr>
+<td><code>500 {&quot;error&quot;:&quot;internal_error&quot;}</code></td>
+<td>Falle de forma restrictiva (fail closed). Conserve un ID de solicitud seguro para soporte y evite registrar credenciales.</td>
+</tr>
+</tbody>
+</table>
+
+<p>En el caso de respuestas <code>503</code>, <code>snapshot_unavailable</code> se contabiliza tras acceder al controlador, mientras que <code>quota_unavailable</code> no se contabiliza. Los rechazos tempranos omiten el encabezado de cuota diaria restante descrito a continuación.</p>
+
+<p>Una solicitud a ADS que no sea POST puede ser detenida en el borde público con una respuesta 403 de Cloudflare. Esa no es una decisión de autorización de la aplicación.</p>
+
+<h2 id="encabezados-de-tasa-y-cuota">Encabezados de tasa y cuota</h2>
+
+<p>Tras la verificación, <code>X-RateLimit-Limit</code> es 600. ADS no expone un valor exacto de <code>X-RateLimit-Remaining</code>.</p>
+
+<p>Cuando está presente tras un controlador contabilizado, <code>X-Quota-Daily-Remaining</code> estima las llamadas restantes a nivel de cuenta para el día de hoy: las llamadas no reservadas en el momento de la asignación más la reserva restante de esta instancia aislada. La estimación es conservadora en el momento de la concesión. Se almacena en caché durante un máximo de 30 segundos (duración de la reserva) y se descarta cuando esta caduca o cambia el día UTC.</p>
+
+<p>Las instancias aisladas simultáneas pueden hacer que el valor sobreestime la disponibilidad hasta en el saldo no reservado al momento de la asignación, no simplemente 32 llamadas. Las reservas no utilizadas o abandonadas pueden hacer que subestime la disponibilidad. Durante despliegues o reversiones, los asignadores heredados recurren a la reserva local restante. Este encabezado es informativo y no modifica la aplicación estricta de cuotas. Los rechazos tempranos lo omiten.</p>
+
+<p>Las respuestas coincidentes de ADS para aplicaciones también utilizan <code>Cache-Control: no-store</code>. No guarde decisiones ni credenciales en cachés compartidas.</p>
+
+<p>Vuelva a la <a href="/es/docs/cloud/authorization-api/">Vista previa de la API de autorización</a> para ver ejemplos de solicitudes y restricciones de integración.</p>
+</div>
+</div>
+</main>
+        </div>
+    </div>
+    <div class="docs-nav-backdrop" hidden></div>
+    <footer class="site-footer">
+    <div class="wrap footer-main">
+      <div class="footer-brand">
+        <a class="footer-lockup" href="/es/" aria-label="Inicio de Speedle Engine"><img src="/img/speedle/Speedle_logo_home_bold.svg?v=4" width="304" height="104" alt="Speedle"><span class="footer-divider" aria-hidden="true"></span><span class="footer-product">Engine</span></a>
+        <p class="footer-tagline">Motor de autorización de código abierto</p>
+        <nav class="social" aria-label="Enlaces comunitarios">
+          <a href="mailto:contact@speedle.io" aria-label="Email contact@speedle.io" title="contact@speedle.io"><img src="/img/speedle/28.%20Mail.svg" width="40" height="40" alt=""></a>
+          <a href="https://groups.google.com/forum/#!forum/speedle-users" aria-label="Google Groups" title="Google Groups — speedle-users"><img src="/img/speedle/Google-Groups.svg" width="24" height="24" alt=""></a>
+          <a href="https://github.com/teramoby/speedle-plus" aria-label="GitHub"><img src="/img/speedle/18.%20Github.svg" width="40" height="40" alt=""></a>
+          <a href="https://discord.gg/uaY2xVsbbT" aria-label="Discord"><img src="/img/speedle/Discord.svg" width="64" height="48" alt=""></a>
+        </nav>
+      </div>
+      <nav class="footer-family" aria-label="Productos de Speedle"><svg class="sphere-sprite" width="0" height="0" aria-hidden="true" focusable="false"><symbol id="i-speedle-sphere" viewBox="22 22 114 114"><!-- Source: img/speedle/Speedle_logo_home_bold.svg, sphere group only. Colours changed only (stroke currentColor). No path edits. --><g fill="none" stroke="currentColor" stroke-linejoin="miter" stroke-miterlimit="3" stroke-linecap="butt"><polygon stroke-width="3.6" points="41.83 47.82 30.67 80.15 42.9 112.09 72.8 128.69 106.38 122.19 127.93 95.63 127.36 61.43 104.94 35.6 71.16 30.23"/><g stroke-width="2.4"><polygon points="81.97 43.92 52.19 57.23 44.03 88.8 63.62 114.87 96.22 115.81 117.28 90.9 110.94 58.91"/><polygon points="68.57 60.42 57.6 86.19 78.73 104.59 102.75 90.18 96.47 62.88"/><path d="M41.83 47.82L52.19 57.23 68.57 60.42 81.97 43.92 71.16 30.23 M30.67 80.15L44.03 88.8 42.9 112.09 M52.19 57.23L57.6 86.19 44.03 88.8 78.73 104.59 63.62 114.87 72.8 128.69 M78.73 104.59L96.22 115.81 106.38 122.19 M96.22 115.81L102.75 90.18 117.28 90.9 127.93 95.63 M117.28 90.9L127.36 61.43 110.94 58.91 104.94 35.6 81.97 43.92 M110.94 58.91L96.47 62.88 117.28 90.9"/></g></g></symbol></svg>
+        <ul>
+          <li><a class="footer-card" href="https://engine.speedle.io/es/" aria-current="page"><svg class="product-sphere product-engine" aria-hidden="true" focusable="false"><use href="#i-speedle-sphere"/></svg><span class="footer-card-name">Speedle Engine</span><span class="footer-card-description">Motor de autorización de código abierto</span><svg class="footer-card-check" width="15" height="15" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M3.5 8.5 6.5 11.5 12.5 4.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></a></li>
+          <li><a class="footer-card" href="https://cloud.speedle.io/es/"><svg class="product-sphere product-cloud" aria-hidden="true" focusable="false"><use href="#i-speedle-sphere"/></svg><span class="footer-card-name">Speedle Cloud<span class="product-badge">Próximamente</span></span><span class="footer-card-description">Autorización hospedada para desarrolladores</span></a></li>
+          <li><a class="footer-card" href="https://ai.speedle.io/es/"><svg class="product-sphere product-ai" aria-hidden="true" focusable="false"><use href="#i-speedle-sphere"/></svg><span class="footer-card-name">Speedle AI</span><span class="footer-card-description">IA para control de acceso, control de acceso para IA</span></a></li>
+        </ul>
+      </nav>
+    </div>
+    <div class="wrap footer-bar">
+      <p class="footer-legal"><span>Con licencia Universal Permissive License v1.0.</span><span class="footer-legal-sep"> · </span><span>Copyright &copy; 2019–2026 The Speedle Authors. Todos los derechos reservados.</span></p>
+    </div>
+  </footer>
+<!-- Cloudflare Web Analytics --><script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "a7a746c498b940e58425123082a20520"}'></script><!-- End Cloudflare Web Analytics -->
+</body>
+
+</html>

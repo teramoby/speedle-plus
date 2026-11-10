@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Guide on Speedle</title>
+    <link>https://engine.speedle.io/ko/tags/guide/</link>
+    <description>Recent content in Guide on Speedle</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>ko-kr</language>
+    <lastBuildDate>Tue, 10 Nov 2026 17:19:04 +0800</lastBuildDate>
+    
+	<atom:link href="https://engine.speedle.io/ko/tags/guide/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>API</title>
+      <link>https://engine.speedle.io/ko/docs/api/</link>
+      <pubDate>Tue, 10 Nov 2026 17:19:04 +0800</pubDate>
+      
+      <guid>https://engine.speedle.io/ko/docs/api/</guid>
+      <description>Java, Python, Go, .NET, Rust, Node.js/TypeScript용 클라이언트 라이브러리는 SDK에서 제공됩니다.
+REST API 이는 구성된 PMS/ADS 또는 어서터(Asserter) 엔드포인트의 참조 사양입니다. speedle.io는 문서와 브라우저 플레이그라운드를 제공하며 호스팅형 PMS/ADS 서비스를 제공하지 않습니다. Content-Type: application/json으로 JSON을 제공하고 TLS/mTLS 및 접근 제어를 구성하십시오.
+ 정책 관리 API 인가 결정 API 토큰 어설션 웹훅  정책 및 역할 정책 ID는 문자열입니다. PMS 응답은 플랫 객체이며 인가 권한에는 permissions(복수형)를 사용합니다. REST 결정 요청은 형식화된 속성 배열을 사용하지만 진단 응답 속성 및 웹훅 속성은 객체입니다.</description>
+    </item>
+    
+    <item>
+      <title>Speedle 정책</title>
+      <link>https://engine.speedle.io/ko/docs/pms/</link>
+      <pubDate>Tue, 10 Nov 2026 17:19:04 +0800</pubDate>
+      
+      <guid>https://engine.speedle.io/ko/docs/pms/</guid>
+      <description> 정책 관리 글로벌 정책 정책 발견 인가 진단  </description>
+    </item>
+    
+    <item>
+      <title>보안</title>
+      <link>https://engine.speedle.io/ko/docs/security/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/ko/docs/security/</guid>
+      <description>두 API 전송 계층 모두 보호 독립적으로 작동하는 PMS와 ADS는 REST와 gRPC를 노출합니다. 현재 두 서비스 모두 동일한 --insecure, --cert, --key, --client-cert 및 --force-client-cert 전송 설정을 사용합니다. 인증서나 신뢰 설정이 유효하지 않은 경우 시작 시 실패합니다. 보안 모드가 일반 텍스트로 폴백되지 않습니다.
+TLS는 연결을 암호화하고 서버를 인증합니다. 인증된 클라이언트를 요구하려면 --client-cert로 클라이언트 CA를 제공하고 반드시 --force-client-cert=true를 설정해야 합니다. 해당 플래그가 없는 경우 구성된 CA는 클라이언트가 인증서를 제공한 경우에만 클라이언트 인증서를 검증합니다.</description>
+    </item>
+    
+    <item>
+      <title>유스케이스</title>
+      <link>https://engine.speedle.io/ko/docs/usecases/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/ko/docs/usecases/</guid>
+      <description>애플리케이션 전용 정책 Alex Chan은 Go로 간단한 애플리케이션을 구현하는 개발자입니다. 인가가 필요하지만 바퀴를 다시 발명하고 싶지 않습니다. Alex는 오픈 소스인 Speedle을 활용할 수 있습니다.
+중앙 집중식 정책 적용 및 관리 Jin Chen은 다국적 기업의 보안 관리자입니다. 그의 팀은 수십 개의 내부 시스템을 모니터링합니다. 각 시스템의 인가 정책을 한곳에서 효율적으로 관리할 솔루션을 찾고 있습니다.</description>
+    </item>
+    
+    <item>
+      <title>인가 결정 API</title>
+      <link>https://engine.speedle.io/ko/docs/api/decision_api/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/ko/docs/api/decision_api/</guid>
+      <description>구성된 ADS 인터페이스 참조 사양입니다. 요청 속성은 형식화된 배열이고 진단 응답 속성은 객체입니다.
+보안 및 엔드포인트 구성. 이 문서는 인터페이스 사양을 설명하며 speedle.io는 호스팅형 백엔드를 제공하지 않습니다.
+              document.addEventListener(&#39;DOMContentLoaded&#39;, function() { var url = &#34;\/swagger\/policy-check.yaml&#34;; const ui = SwaggerUIBundle({ url: url, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.presets.apis ], plugins: [ SwaggerUIBundle.plugins.DownloadUrl ], validatorUrl: null, layout: &#34;</description>
+    </item>
+    
+    <item>
+      <title>정책 관리 API</title>
+      <link>https://engine.speedle.io/ko/docs/api/management_api/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/ko/docs/api/management_api/</guid>
+      <description>구성된 PMS 인터페이스 참조 사양입니다. 요청과 응답은 JSON을 사용하고 정책 ID는 문자열이며 응답은 플랫 객체입니다.
+보안 및 엔드포인트 구성. 이 문서는 인터페이스 사양을 설명하며 speedle.io는 호스팅형 백엔드를 제공하지 않습니다.
+              document.addEventListener(&#39;DOMContentLoaded&#39;, function() { var url = &#34;\/swagger\/policy-manage.yaml&#34;; const ui = SwaggerUIBundle({ url: url, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.presets.apis ], plugins: [ SwaggerUIBundle.plugins.DownloadUrl ], validatorUrl: null, layout: &#34;</description>
+    </item>
+    
+    <item>
+      <title>토큰 어설션 API</title>
+      <link>https://engine.speedle.io/ko/docs/api/asserter_api/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/ko/docs/api/asserter_api/</guid>
+      <description>토큰 어설션 웹훅 참조 사양입니다. errCode는 정수이고 attributes는 객체입니다. 실제 엔드포인트는 ADS 어서터 구성에 지정됩니다.
+보안 및 엔드포인트 구성. 이 문서는 인터페이스 사양을 설명하며 speedle.io는 호스팅형 백엔드를 제공하지 않습니다.
+              document.addEventListener(&#39;DOMContentLoaded&#39;, function() { var url = &#34;\/swagger\/asserter.yaml&#34;; const ui = SwaggerUIBundle({ url: url, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.presets.apis ], plugins: [ SwaggerUIBundle.plugins.DownloadUrl ], validatorUrl: null, layout: &#34;</description>
+    </item>
+    
+  </channel>
+</rss>

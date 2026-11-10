@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Versions on Speedle</title>
+    <link>https://engine.speedle.io/ko/tags/versions/</link>
+    <description>Recent content in Versions on Speedle</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>ko-kr</language>
+    
+	<atom:link href="https://engine.speedle.io/ko/tags/versions/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>버전</title>
+      <link>https://engine.speedle.io/ko/docs/versions/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/ko/docs/versions/</guid>
+      <description>Speedle 릴리스 게시된 버전 및 릴리스 노트는 GitHub Releases 페이지를 참조하세요. v1.6.0은 현재 임베디드 Go 안내서에서 고정된 버전입니다.
+이전 Oracle Speedle 릴리스 버전 0.1.0은 정책 관리, 인가 결정, 명령줄 도구 및 연동 샘플을 포함한 초기 오픈 소스 릴리스였습니다.</description>
+    </item>
+    
+  </channel>
+</rss>

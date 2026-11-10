@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>連携 on Speedle</title>
+    <link>https://engine.speedle.io/ja/integrations/</link>
+    <description>Recent content in 連携 on Speedle</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>ja-jp</language>
+    <lastBuildDate>Tue, 10 Nov 2026 16:57:42 +0800</lastBuildDate>
+    
+	<atom:link href="https://engine.speedle.io/ja/integrations/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+  </channel>
+</rss>

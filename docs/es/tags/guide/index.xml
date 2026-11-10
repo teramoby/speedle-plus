@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Guide on Speedle</title>
+    <link>https://engine.speedle.io/es/tags/guide/</link>
+    <description>Recent content in Guide on Speedle</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>es-es</language>
+    <lastBuildDate>Tue, 10 Nov 2026 18:32:58 +0800</lastBuildDate>
+    
+	<atom:link href="https://engine.speedle.io/es/tags/guide/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>API</title>
+      <link>https://engine.speedle.io/es/docs/api/</link>
+      <pubDate>Tue, 10 Nov 2026 18:32:58 +0800</pubDate>
+      
+      <guid>https://engine.speedle.io/es/docs/api/</guid>
+      <description>Las bibliotecas cliente para Java, Python, Go, .NET, Rust y Node.js/TypeScript se encuentran en SDK.
+APIs REST Estos son contratos de referencia para su punto de enlace configurado de PMS/ADS o asertor. speedle.io proporciona documentación y el Playground en el navegador; no es un servicio PMS/ADS hospedado. Envíe JSON con Content-Type: application/json y configure TLS/mTLS y control de acceso del cliente.
+ API de gestión de políticas API de decisiones de autorización Webhook de aserción de tokens  Los identificadores de políticas y políticas de roles son cadenas de texto.</description>
+    </item>
+    
+    <item>
+      <title>API de decisiones de autorización</title>
+      <link>https://engine.speedle.io/es/docs/api/decision_api/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/es/docs/api/decision_api/</guid>
+      <description>Referencia para su ADS configurado. Los atributos de solicitud son matrices tipadas; los atributos de diagnóstico son objetos.
+Configuración de seguridad y endpoints. Esta es una referencia de contrato, no un backend hospedado por speedle.io.
+              document.addEventListener(&#39;DOMContentLoaded&#39;, function() { var url = &#34;\/swagger\/policy-check.yaml&#34;; const ui = SwaggerUIBundle({ url: url, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.presets.apis ], plugins: [ SwaggerUIBundle.</description>
+    </item>
+    
+    <item>
+      <title>API de gestión de políticas</title>
+      <link>https://engine.speedle.io/es/docs/api/management_api/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/es/docs/api/management_api/</guid>
+      <description>Referencia para su PMS configurado. Las solicitudes y respuestas son JSON; los IDs de políticas son cadenas de texto y las respuestas son objetos planos.
+Configuración de seguridad y endpoints. Esta es una referencia de contrato, no un backend hospedado por speedle.io.
+              document.addEventListener(&#39;DOMContentLoaded&#39;, function() { var url = &#34;\/swagger\/policy-manage.yaml&#34;; const ui = SwaggerUIBundle({ url: url, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.</description>
+    </item>
+    
+    <item>
+      <title>API del complemento de aserción de tokens</title>
+      <link>https://engine.speedle.io/es/docs/api/asserter_api/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/es/docs/api/asserter_api/</guid>
+      <description>Referencia del webhook. errCode es un entero y attributes es un objeto. Configure el endpoint real en la configuración del asertor de ADS.
+Configuración de seguridad y endpoints. Esta es una referencia de contrato, no un backend hospedado por speedle.io.
+              document.addEventListener(&#39;DOMContentLoaded&#39;, function() { var url = &#34;\/swagger\/asserter.yaml&#34;; const ui = SwaggerUIBundle({ url: url, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.</description>
+    </item>
+    
+    <item>
+      <title>Casos de uso</title>
+      <link>https://engine.speedle.io/es/docs/usecases/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/es/docs/usecases/</guid>
+      <description>Políticas específicas de la aplicación Alex Chan es un desarrollador que está implementando una aplicación simple con Go. Su aplicación requiere autorización y no quiere reinventar la rueda. Alex puede utilizar una opción de código abierto como Speedle.
+Gestión y aplicación centralizada de políticas Jin Chen es el responsable de seguridad de una empresa multinacional. Su equipo supervisa docenas de sistemas internos. Cada sistema usa un mecanismo de autorización y un lenguaje de políticas distintos.</description>
+    </item>
+    
+    <item>
+      <title>Políticas de Speedle</title>
+      <link>https://engine.speedle.io/es/docs/pms/</link>
+      <pubDate>Tue, 10 Nov 2026 18:32:58 +0800</pubDate>
+      
+      <guid>https://engine.speedle.io/es/docs/pms/</guid>
+      <description> Gestión de políticas Políticas globales Descubrimiento de políticas Diagnóstico de autorización  </description>
+    </item>
+    
+    <item>
+      <title>Seguridad</title>
+      <link>https://engine.speedle.io/es/docs/security/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/es/docs/security/</guid>
+      <description>Proteger ambos transportes de API Los procesos independientes de PMS y ADS de Speedle exponen REST y gRPC. Ambos utilizan ahora los mismos parámetros de transporte: --insecure, --cert, --key, --client-cert y --force-client-cert. Certificados no válidos o una configuración de confianza incorrecta provocarán un fallo de inicio; el modo seguro nunca se degrada a texto en plano.
+TLS cifra la conexión y autentica al servidor. Para requerir clientes autenticados, proporcione una CA de cliente con --client-cert y configure --force-client-cert=true.</description>
+    </item>
+    
+  </channel>
+</rss>

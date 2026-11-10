@@ -11,6 +11,7 @@ categories = ["docs"]
 bref = ""
 +++
 
+<a id="protect-both-api-transports"></a>
 ## Proteger ambos transportes de API
 
 Los procesos independientes de PMS y ADS de Speedle exponen **REST y gRPC**. Ambos utilizan ahora los mismos parámetros de transporte: `--insecure`, `--cert`, `--key`, `--client-cert` y `--force-client-cert`. Certificados no válidos o una configuración de confianza incorrecta provocarán un fallo de inicio; el modo seguro nunca se degrada a texto en plano.

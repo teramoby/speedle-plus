@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Discovery on Speedle</title>
+    <link>https://engine.speedle.io/ko/tags/discovery/</link>
+    <description>Recent content in Discovery on Speedle</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>ko-kr</language>
+    
+	<atom:link href="https://engine.speedle.io/ko/tags/discovery/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>정책 발견</title>
+      <link>https://engine.speedle.io/ko/docs/pms/discover/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/ko/docs/pms/discover/</guid>
+      <description>정책 발견의 역할 발견 모드는 요청을 기록하고 기록 작업이 성공하면 이유 5와 함께 allowed=true를 반환합니다. 이는 기존 정책이 해당 작업을 인가했음을 의미하지 않습니다. 격리된 테스트 환경에서만 사용하고 생성된 권한을 검토한 후 일반적인 is-allowed 강제로 복원하십시오. 어설션 또는 저장소 오류는 여전히 적절하게 처리해야 하며 오류를 인가로 간주해서는 안 됩니다.
+재현 가능한 로컬 예제 시작 빠른 시작의 설명에 따라 바이너리를 빌드하고 체크아웃 루트에서 모든 터미널을 실행합니다. 시작하기 전에 새 파일을 사용하고 이전 페이지의 픽스처를 중지하십시오.</description>
+    </item>
+    
+  </channel>
+</rss>

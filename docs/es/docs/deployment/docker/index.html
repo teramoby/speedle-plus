@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <script>document.documentElement.classList.add('docs-js','navigation-js');addEventListener('DOMContentLoaded',function(){if(!document.querySelector('header.site-header.navigation-ready'))document.documentElement.classList.remove('navigation-js')});</script>
+    <meta name="generator" content="Hugo 0.48" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1"><title>Imagen de Docker · Speedle Engine</title>
+<meta name="description" content="Ejecute speedle-pms, speedle-ads y spctl desde la imagen publicada de Speedle.">
+<meta name="generator" content="Hugo 0.48" />
+<link href="https://engine.speedle.io/index.xml" rel="alternate" type="application/rss+xml">
+<link rel="canonical" href="https://engine.speedle.io/es/docs/deployment/docker/">
+
+<link rel="alternate" hreflang="en" href="https://engine.speedle.io/docs/deployment/docker/">
+<link rel="alternate" hreflang="es" href="https://engine.speedle.io/es/docs/deployment/docker/">
+<link rel="alternate" hreflang="ja" href="https://engine.speedle.io/ja/docs/deployment/docker/">
+<link rel="alternate" hreflang="ko" href="https://engine.speedle.io/ko/docs/deployment/docker/">
+<link rel="alternate" hreflang="zh-CN" href="https://engine.speedle.io/zh/docs/deployment/docker/">
+<link rel="alternate" hreflang="x-default" href="https://engine.speedle.io/docs/deployment/docker/">
+<meta property="og:type" content="article">
+<meta property="article:modified_time" content="2026-11-10T18:32:58&#43;08:00">
+<meta property="og:site_name" content="Speedle Engine">
+<meta property="og:title" content="Imagen de Docker · Speedle Engine">
+<meta property="og:description" content="Ejecute speedle-pms, speedle-ads y spctl desde la imagen publicada de Speedle.">
+<meta property="og:url" content="https://engine.speedle.io/es/docs/deployment/docker/">
+<meta property="og:image" content="https://engine.speedle.io/img/social/engine-en.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:alt" content="Speedle Engine — Fast. Simple. Access control">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Imagen de Docker · Speedle Engine">
+<meta name="twitter:description" content="Ejecute speedle-pms, speedle-ads y spctl desde la imagen publicada de Speedle.">
+<meta name="twitter:image" content="https://engine.speedle.io/img/social/engine-en.png">
+<meta name="twitter:image:alt" content="Speedle Engine — Fast. Simple. Access control">
+
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/es/docs/deployment/docker/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-10T18:32:58+08:00","description":"Ejecute speedle-pms, speedle-ads y spctl desde la imagen publicada de Speedle.","headline":"Imagen de Docker","image":"https://engine.speedle.io/img/social/engine-en.png","inLanguage":"es","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/es/docs/deployment/docker/","@type":"WebPage"},"name":"Imagen de Docker","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/es/docs/deployment/docker/"}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/es/docs/deployment/docker/#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://engine.speedle.io/es/","name":"Inicio","position":1},{"@type":"ListItem","item":"https://engine.speedle.io/es/docs/","name":"Documentación","position":2},{"@type":"ListItem","item":"https://engine.speedle.io/es/docs/deployment/","name":"Despliegue","position":3},{"@type":"ListItem","item":"https://engine.speedle.io/es/docs/deployment/docker/","name":"Imagen de Docker","position":4}]}</script><link href="/css/docs.css" rel="stylesheet" type="text/css">
+
+
+    <link href="/css/navigation.css?v=header-20261106-v8" rel="stylesheet">
+    <script src="/js/navigation.js?v=header-20261106-v8" defer></script>
+    <script src="/js/docs.js" defer></script>
+
+</head>
+
+<body class="page-kube docs-page">
+    <header class="site-header">
+    <div class="wrap nav">
+      <a class="brand" href="/es/#top" aria-label="Inicio de Speedle Engine"><img class="brand-logo" src="/img/speedle/Speedle_logo_home_bold.svg?v=4" width="304" height="104" alt=""><span class="brand-divider" aria-hidden="true"></span><span class="brand-product">Engine</span></a>
+      <button class="menu" type="button" aria-expanded="false" aria-controls="nav-links" aria-label="Abrir navegación">☰</button>
+      <nav class="nav-links" id="nav-links" aria-label="Navegación principal">
+        <div class="products"><button class="products-button" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="products-panel">Productos<svg class="products-chevron" width="10" height="10" viewBox="0 0 10 10" aria-hidden="true" focusable="false"><path d="M2 3.5 5 6.5 8 3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button><span class="products-heading" aria-hidden="true">Productos</span><div class="products-panel" id="products-panel" role="group" aria-label="Productos"><a class="product-row" href="https://engine.speedle.io/es/" aria-current="page"><img class="product-mark" src="/img/speedle/speedle-mark-engine.svg" alt="" width="20" height="20"><span class="product-text"><span class="product-name">Speedle Engine</span><span class="product-desc">Motor de autorización de código abierto</span></span><svg class="product-check" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M3.5 8.5 6.5 11.5 12.5 4.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></a><a class="product-row" href="https://cloud.speedle.io/es/"><img class="product-mark" src="/img/speedle/speedle-mark-cloud.svg" alt="" width="20" height="20"><span class="product-text"><span class="product-name">Speedle Cloud <span class="product-badge">Próximamente</span></span><span class="product-desc">Autorización hospedada para desarrolladores</span></span></a><a class="product-row" href="https://ai.speedle.io/es/"><img class="product-mark" src="/img/speedle/speedle-mark-ai.svg" alt="" width="20" height="20"><span class="product-text"><span class="product-name">Speedle AI</span><span class="product-desc">IA para control de acceso, control de acceso para IA</span></span></a></div></div>
+        <a href="/es/#about">Acerca de</a><a href="/es/#features">Características</a>
+        <a href="/es/quick-start/">Comenzar</a><a href="/es/docs/">Documentación</a><a href="/es/playground/">Playground</a>
+        <div class="languages"><button class="languages-button" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="languages-panel">Español<svg class="languages-chevron" width="10" height="10" viewBox="0 0 10 10" aria-hidden="true" focusable="false"><path d="M2 3.5 5 6.5 8 3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button><span class="languages-heading" aria-hidden="true">Idiomas</span><div class="languages-panel" id="languages-panel" role="group" aria-label="Idiomas"><a class="language-row" href="/docs/deployment/docker/" lang="en" hreflang="en" >English</a><a class="language-row" href="/ja/docs/deployment/docker/" lang="ja" hreflang="ja">日本語</a><a class="language-row" href="/ko/docs/deployment/docker/" lang="ko" hreflang="ko">한국어</a><a class="language-row" href="/es/docs/deployment/docker/" lang="es" hreflang="es" aria-current="page">Español</a><a class="language-row" href="/zh/docs/deployment/docker/" lang="zh-CN" hreflang="zh-CN">中文</a></div></div>
+        <a class="nav-github" href="https://github.com/teramoby/speedle-plus">GitHub</a>
+      </nav>
+    </div>
+  </header>
+    <div class="container">
+        <button class="docs-nav-toggle" type="button" aria-expanded="false" aria-controls="docs-navigation">
+            <span>Menú</span>
+            <svg class="docs-nav-toggle-icon" viewBox="0 0 18 14" width="18" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M1 1h16M1 7h16M1 13h16"/></svg>
+        </button>
+        <div class="content-container"><aside class="docs-sidebar" id="docs-navigation" aria-label="Navegación de documentación">
+<div class="docs-nav-head">
+<span class="docs-nav-title">Documentación</span>
+<button class="docs-nav-close" type="button" aria-label="Cerrar menú"><svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="m3 3 10 10M13 3 3 13"/></svg></button>
+</div>
+<div class="sidebar">
+<nav>
+<ul>
+
+
+
+<li data-docs-depth="-1" class="docs-nav-section parent"><span class="docs-nav-heading">Documentación</span>
+<ul class="sub-menu">
+<li data-docs-depth="0" class=""><a href="/es/docs/usecases/">Casos de uso</a></li>
+<li data-docs-depth="0" class=""><a href="/es/docs/overview/">Descripción general</a></li>
+<li data-docs-depth="0" class=""><a href="/es/docs/spdl/">SPDL: Lenguaje de definición de políticas Speedle</a></li>
+<li data-docs-depth="0" class=""><a href="/es/docs/architecture/">Arquitectura</a></li>
+
+
+
+<li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading">Políticas de Speedle</span>
+<ul class="">
+<li data-docs-depth="1" class=""><a href="/es/docs/pms/policy-mgmt/">Gestión de políticas</a></li>
+<li data-docs-depth="1" class=""><a href="/es/docs/pms/global-policy/">Políticas globales</a></li>
+<li data-docs-depth="1" class=""><a href="/es/docs/pms/diagnosis/">Diagnóstico de autorización</a></li>
+<li data-docs-depth="1" class=""><a href="/es/docs/pms/discover/">Descubrimiento de políticas</a></li>
+</ul>
+
+</li>
+<li data-docs-depth="0" class=""><a href="/es/docs/decisions/">Decisiones de autorización</a></li>
+<li data-docs-depth="0" class=""><a href="/es/docs/idd/">Dominio de identidad</a></li>
+<li data-docs-depth="0" class=""><a href="/es/docs/assertor/">Asertor de tokens</a></li>
+
+
+
+<li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading docs-nav-heading-link"><a href="/es/docs/store/">Almacenamiento conectable</a></span>
+<ul class="">
+<li data-docs-depth="1" class=""><a href="/es/docs/store/mysql/">Configuración de MySQL</a></li>
+<li data-docs-depth="1" class=""><a href="/es/docs/store/etcd/">Configuración de etcd</a></li>
+<li data-docs-depth="1" class=""><a href="/es/docs/store/mongodb/">Configuración de MongoDB</a></li>
+</ul>
+
+</li>
+
+
+
+<li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading">API</span>
+<ul class="">
+<li data-docs-depth="1" class=""><a href="/es/docs/api/decision_api/">API de decisiones de autorización</a></li>
+<li data-docs-depth="1" class=""><a href="/es/docs/api/management_api/">API de gestión de políticas</a></li>
+<li data-docs-depth="1" class=""><a href="/es/docs/api/asserter_api/">API del complemento de aserción de tokens</a></li>
+</ul>
+
+</li>
+
+
+
+<li data-docs-depth="0" class="docs-nav-section parent"><span class="docs-nav-heading docs-nav-heading-link"><a href="/es/docs/deployment/">Despliegue</a></span>
+<ul class="sub-menu">
+<li data-docs-depth="1" class=""><a href="/es/docs/deployment/embedded/">Modo integrado de Speedle</a></li>
+<li data-docs-depth="1" class="active"><a href="/es/docs/deployment/docker/" aria-current="page">Imagen de Docker</a></li>
+</ul>
+
+</li>
+
+
+
+<li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading docs-nav-heading-link"><a href="/es/docs/sdks/">SDK</a></span>
+<ul class="">
+<li data-docs-depth="1" class=""><a href="/es/docs/sdks/java/">Java SDK</a></li>
+<li data-docs-depth="1" class=""><a href="/es/docs/sdks/python/">Python SDK</a></li>
+<li data-docs-depth="1" class=""><a href="/es/docs/sdks/go/">Go SDK</a></li>
+<li data-docs-depth="1" class=""><a href="/es/docs/sdks/dotnet/">C#/.NET SDK</a></li>
+<li data-docs-depth="1" class=""><a href="/es/docs/sdks/rust/">Rust SDK</a></li>
+<li data-docs-depth="1" class=""><a href="/es/docs/sdks/node/">Node.js/TypeScript SDK</a></li>
+</ul>
+
+</li>
+
+
+
+<li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading docs-nav-heading-link"><a href="/es/docs/cloud/">Speedle Cloud</a></span>
+<ul class="">
+<li data-docs-depth="1" class=""><a href="/es/docs/cloud/getting-started/">Primeros pasos</a></li>
+<li data-docs-depth="1" class=""><a href="/es/docs/cloud/tokens/">Tokens de aplicación</a></li>
+<li data-docs-depth="1" class=""><a href="/es/docs/cloud/authorization-api/">API de autorización</a></li>
+<li data-docs-depth="1" class=""><a href="/es/docs/cloud/limits-and-errors/">Límites y errores</a></li>
+</ul>
+
+</li>
+<li data-docs-depth="0" class=""><a href="/es/docs/security/">Seguridad</a></li>
+<li data-docs-depth="0" class=""><a href="/es/docs/logging/">Marco de registro</a></li>
+<li data-docs-depth="0" class=""><a href="/es/docs/versions/">Versiones</a></li>
+<li data-docs-depth="0" class=""><a href="/es/docs/custom-function/">Función personalizada</a></li>
+</ul>
+
+</li>
+
+
+</ul>
+</nav>
+
+
+</div>
+</aside>
+<main>
+<div id="main">
+
+  <h1>Imagen de Docker</h1>
+  <p class="docs-lead">Una única imagen en Docker Hub y GHCR ejecuta el administrador de políticas, el servicio de decisiones y spctl, con un almacén de archivos compartido.</p>
+
+
+
+
+<nav id="contents" class="docs-toc" data-docs-toc="h2" aria-label="En esta página">
+  <ol></ol>
+</nav>
+
+
+
+  <div id="kube-component" class="content">
+
+<p>Speedle publica una imagen que contiene <code>speedle-pms</code>, <code>speedle-ads</code> y <code>spctl</code>. La imagen se compila <code>FROM scratch</code>, se ejecuta como UID 65532 y no contiene ningún shell. El primer argumento selecciona el programa a ejecutar.</p>
+
+<p>El mismo índice de imágenes está disponible en ambos registros:</p>
+
+<ul>
+<li>Docker Hub: <code>docker.io/speedle/speedle</code></li>
+<li>GHCR: <code>ghcr.io/teramoby/speedle</code></li>
+</ul>
+
+<p>La versión 1.7.0 publica las etiquetas <code>1.7.0</code>, <code>1.7</code> y <code>latest</code> en ambos registros, para las arquitecturas <code>linux/amd64</code> y <code>linux/arm64</code>.</p>
+
+<h2 id="descargar-la-imagen">Descargar la imagen</h2>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker pull docker.io/speedle/speedle:1.7.0
+docker pull ghcr.io/teramoby/speedle:1.7.0</code></pre></div>
+<p><code>docker pull</code> imprime el digest del índice. Para 1.7.0 ese digest es <code>sha256:20bd3fe8169ec3ddadf1484285e34bd68004dbb457782223dc84a2a9f1dd91c0</code> en ambos registros.</p>
+
+<h2 id="elegir-una-etiqueta">Elegir una etiqueta</h2>
+
+<p><code>1.7.0</code> identifica esta versión. <code>1.7</code> se actualiza cuando se publica un parche 1.7 superior. <code>latest</code> se actualiza cuando se publica una versión superior desde el commit más reciente en <code>master</code>. Un reintento de publicación puede publicar la misma etiqueta de versión nuevamente, por lo que una etiqueta no es una compilación inmutable.</p>
+
+<p>Para leer el digest del índice:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker buildx imagetools inspect docker.io/speedle/speedle:1.7.0 --format <span style="color:#f1fa8c">&#39;{{.Manifest.Digest}}&#39;</span></code></pre></div>
+<p>Para la versión 1.7.0, <code>1.7.0</code>, <code>1.7</code> y <code>latest</code> en ambos registros imprimen:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">sha256:20bd3fe8169ec3ddadf1484285e34bd68004dbb457782223dc84a2a9f1dd91c0</code></pre></div>
+<p>Verifique el digest nuevamente antes de desplegar <code>1.7</code> o <code>latest</code>. Para fijar una compilación específica, utilice el nombre de la imagen con <code>@</code> y ese digest, por ejemplo <code>docker.io/speedle/speedle@sha256:20bd3fe8169ec3ddadf1484285e34bd68004dbb457782223dc84a2a9f1dd91c0</code>.</p>
+
+<h2 id="comandos-en-la-imagen">Comandos en la imagen</h2>
+
+<p>Sin argumentos, la imagen imprime los tres programas disponibles:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker run --rm docker.io/speedle/speedle:1.7.0</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">speedle-pms
+speedle-ads
+spctl</code></pre></div>
+<p><code>docker run --rm ghcr.io/teramoby/speedle:1.7.0</code> imprime las mismas líneas. Los comandos siguientes utilizan el nombre de Docker Hub. Sustitúyalo por el nombre de GHCR si desea utilizar esa copia. No hay shell en la imagen, por lo que <code>docker exec</code> debe llamar a <code>/spctl</code>, <code>/speedle-pms</code> o <code>/speedle-ads</code> mediante su ruta absoluta.</p>
+
+<h2 id="ejecutar-pms-y-ads">Ejecutar PMS y ADS</h2>
+
+<p>Cree un volumen con nombre e inicie el administrador de políticas. El servidor escucha en <code>0.0.0.0:6733</code> dentro del contenedor. Publicar <code>127.0.0.1:6733</code> mantiene la API de gestión no autenticada únicamente en esta máquina.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker volume create speedle-policies
+docker run -d --name speedle-pms <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  -p <span style="color:#bd93f9">127</span>.0.0.1:6733:6733 <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  -v speedle-policies:/data <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  docker.io/speedle/speedle:1.7.0 <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  speedle-pms --store-type file --filestore-loc /data/policies.json --endpoint <span style="color:#bd93f9">0</span>.0.0.0:6733 --insecure<span style="color:#ff79c6">=</span>true</code></pre></div>
+<p>El nuevo volumen con nombre se rellena a partir del directorio <code>/data</code> de la imagen, en el que el UID 65532 puede escribir. PMS crea <code>/data/policies.json</code> si no existe. La imagen no incluye certificados de CA. <code>--insecure=true</code> es para este ejemplo HTTP local. Consulte <a href="/es/docs/security/">Seguridad</a> para configurar TLS.</p>
+
+<p>Docker puede aceptar el puerto publicado y reiniciar la conexión antes de que el proceso comience a escuchar. Reintente en caso de error, incluido ese reinicio:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl --fail --silent --show-error --retry <span style="color:#bd93f9">30</span> --retry-all-errors --retry-delay <span style="color:#bd93f9">1</span> --connect-timeout <span style="color:#bd93f9">2</span> <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  http://127.0.0.1:6733/policy-mgmt/v1/service</code></pre></div>
+<p>El primer intento puede imprimir <code>curl: (56) Recv failure: Connection reset by peer</code>. Un intento posterior devolverá el cuerpo. Un almacén vacío responde:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">[]</code></pre></div>
+<p>Inicie ADS en el mismo volumen. Lee el archivo que escribe PMS, incluidas las actualizaciones posteriores.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker run -d --name speedle-ads <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  -p <span style="color:#bd93f9">127</span>.0.0.1:6734:6734 <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  -v speedle-policies:/data <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  docker.io/speedle/speedle:1.7.0 <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  speedle-ads --store-type file --filestore-loc /data/policies.json --endpoint <span style="color:#bd93f9">0</span>.0.0.0:6734 --insecure<span style="color:#ff79c6">=</span>true</code></pre></div>
+<h2 id="comprobar-estado-y-preparación">Comprobar estado y preparación</h2>
+
+<p>PMS no ofrece <code>/healthz</code>. Una respuesta exitosa de <code>GET /policy-mgmt/v1/service</code>, como se mostró anteriormente, indica que la API de gestión está aceptando solicitudes.</p>
+
+<p>ADS ofrece comprobaciones de actividad (liveness) y preparación (readiness):</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl --fail --silent --show-error --retry <span style="color:#bd93f9">30</span> --retry-all-errors --retry-delay <span style="color:#bd93f9">1</span> --connect-timeout <span style="color:#bd93f9">2</span> <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  http://127.0.0.1:6734/healthz
+curl --fail --silent --show-error --retry <span style="color:#bd93f9">30</span> --retry-all-errors --retry-delay <span style="color:#bd93f9">1</span> --connect-timeout <span style="color:#bd93f9">2</span> <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  http://127.0.0.1:6734/readyz</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">{&#34;status&#34;:&#34;ok&#34;}
+{&#34;ready&#34;:true,&#34;servicesTotal&#34;:0,&#34;servicesUsable&#34;:0}</code></pre></div>
+<p><code>/healthz</code> responde <code>200 {&quot;status&quot;:&quot;ok&quot;}</code> mientras el proceso se está ejecutando. <code>/readyz</code> responde <code>200</code> cuando ADS puede evaluar una solicitud. Un almacén de archivos no tiene estado de distribución, por lo que el recuento de servicios se mantiene en cero; el campo que debe comprobarse es <code>ready</code>. La imagen no tiene shell ni <code>curl</code>, por lo que estas comprobaciones se ejecutan desde el host o desde otro contenedor.</p>
+
+<h2 id="añadir-y-comprobar-una-política">Añadir y comprobar una política</h2>
+
+<p>Ejecute <code>spctl</code> en este contenedor para añadir un servicio y una política. El PMS con <code>--insecure=true</code> utiliza una dirección local <code>http://</code>:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker <span style="color:#8be9fd;font-style:italic">exec</span> speedle-pms /spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ create service docs
+docker <span style="color:#8be9fd;font-style:italic">exec</span> speedle-pms /spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ create policy -c <span style="color:#f1fa8c">&#34;grant user alice get,list /docs/public&#34;</span> --service-name<span style="color:#ff79c6">=</span>docs</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">service created
+{&#34;name&#34;:&#34;docs&#34;,&#34;type&#34;:&#34;application&#34;,&#34;metadata&#34;:{&#34;createtime&#34;:&#34;2026-11-10T03:30:03Z&#34;}}
+policy created
+{&#34;id&#34;:&#34;zhtbsgm54iiuwky4zgmq&#34;,&#34;name&#34;:&#34;&#34;,&#34;effect&#34;:&#34;grant&#34;,&#34;permissions&#34;:[{&#34;resource&#34;:&#34;/docs/public&#34;,&#34;actions&#34;:[&#34;get&#34;,&#34;list&#34;]}],&#34;principals&#34;:[[&#34;user:alice&#34;]],&#34;metadata&#34;:{&#34;createtime&#34;:&#34;2026-11-10T03:30:04Z&#34;}}</code></pre></div>
+<p>PMS asigna <code>createtime</code> y el <code>id</code> de la política, por lo que esos valores cambian en cada ejecución. Es el mismo servicio y la misma política que en la <a href="/es/docs/sdks/#example-policy">descripción general de los SDK</a>.</p>
+
+<p>El mismo binario <code>spctl</code> puede ejecutarse en un segundo contenedor que comparte el espacio de nombres de red de PMS:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker run --rm --network container:speedle-pms <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  docker.io/speedle/speedle:1.7.0 <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ get service --all</code></pre></div>
+<h2 id="pedir-una-decisión-a-ads">Pedir una decisión a ADS</h2>
+
+<p>Consulte a ADS a través de su puerto publicado. Solicite la acción concedida <code>get</code> para el usuario <code>alice</code>:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl --fail --silent --show-error --header <span style="color:#f1fa8c">&#39;Content-Type: application/json&#39;</span> <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  --data <span style="color:#f1fa8c">&#39;{&#34;subject&#34;:{&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;,&#34;name&#34;:&#34;alice&#34;}]},&#34;serviceName&#34;:&#34;docs&#34;,&#34;resource&#34;:&#34;/docs/public&#34;,&#34;action&#34;:&#34;get&#34;}&#39;</span> <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  http://127.0.0.1:6734/authz-check/v1/is-allowed</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">{&#34;allowed&#34;:true,&#34;reason&#34;:0}</code></pre></div>
+<p><code>reason</code> <code>0</code> es <code>GRANT_POLICY_FOUND</code>. La misma política no concede <code>delete</code>:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl --fail --silent --show-error --header <span style="color:#f1fa8c">&#39;Content-Type: application/json&#39;</span> <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  --data <span style="color:#f1fa8c">&#39;{&#34;subject&#34;:{&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;,&#34;name&#34;:&#34;alice&#34;}]},&#34;serviceName&#34;:&#34;docs&#34;,&#34;resource&#34;:&#34;/docs/public&#34;,&#34;action&#34;:&#34;delete&#34;}&#39;</span> <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  http://127.0.0.1:6734/authz-check/v1/is-allowed</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">{&#34;allowed&#34;:false,&#34;reason&#34;:3}</code></pre></div>
+<p><code>reason</code> <code>3</code> es <code>NO_APPLICABLE_POLICIES</code>. Una política escrita a través de PMS mientras ADS ya está en ejecución es visible en la siguiente solicitud. Consulte <a href="/es/docs/decisions/">Decisiones de autorización</a> para conocer los campos de solicitud.</p>
+
+<h2 id="conectar-un-sdk-a-ads">Conectar un SDK a ADS</h2>
+
+<p>Las páginas de documentación de los SDK llaman a <code>http://localhost:6734</code>. Con el puerto publicado anteriormente, esa dirección es este ADS. El cliente de Node.js siguiente utiliza <code>http://127.0.0.1:6734</code>, que es la dirección que publica el contenedor. Cree primero el directorio de ejemplo y luego guarde el cliente en ese directorio como <code>main.mjs</code>:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">mkdir speedle-example
+<span style="color:#8be9fd;font-style:italic">cd</span> speedle-example</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-javascript" data-lang="javascript"><span style="color:#ff79c6">import</span> { Auth, SpeedleClient } from <span style="color:#f1fa8c">&#34;@speedle/sdk&#34;</span>;
+
+<span style="color:#ff79c6">const</span> speedle <span style="color:#ff79c6">=</span> <span style="color:#ff79c6">new</span> SpeedleClient({
+  backend<span style="color:#ff79c6">:</span> <span style="color:#f1fa8c">&#34;speedle&#34;</span>,
+  endpoint<span style="color:#ff79c6">:</span> <span style="color:#f1fa8c">&#34;http://127.0.0.1:6734&#34;</span>,
+  auth<span style="color:#ff79c6">:</span> Auth.none(),
+  serviceName<span style="color:#ff79c6">:</span> <span style="color:#f1fa8c">&#34;docs&#34;</span>,
+});
+<span style="color:#ff79c6">try</span> {
+  <span style="color:#ff79c6">const</span> allowed <span style="color:#ff79c6">=</span> <span style="color:#ff79c6">await</span> speedle.isAllowed(<span style="color:#f1fa8c">&#34;alice&#34;</span>, <span style="color:#f1fa8c">&#34;get&#34;</span>, <span style="color:#f1fa8c">&#34;/docs/public&#34;</span>);
+  console.log(<span style="color:#f1fa8c">`alice get /docs/public: allowed=</span><span style="color:#f1fa8c">${</span>allowed<span style="color:#f1fa8c">}</span><span style="color:#f1fa8c">`</span>);
+} <span style="color:#ff79c6">finally</span> {
+  <span style="color:#ff79c6">await</span> speedle.close();
+}
+</code></pre></div>
+<p>Instale el paquete publicado en <code>speedle-example</code> y ejecute <code>main.mjs</code> allí. La instalación es la descrita en la página del <a href="/es/docs/sdks/node/">SDK de Node.js</a>, fijada a la misma versión:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">npm init -y
+npm pkg <span style="color:#8be9fd;font-style:italic">set</span> <span style="color:#8be9fd;font-style:italic">type</span><span style="color:#ff79c6">=</span>module
+npm install @speedle/sdk@0.2.1
+node main.mjs</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">alice get /docs/public: allowed=true</code></pre></div>
+<p>Las otras páginas de lenguajes toman el mismo endpoint y nombre de servicio. Los SDK solo aceptan <code>http://</code> en texto plano para hosts de bucle invertido (loopback).</p>
+
+<h2 id="ejecutar-ambos-servicios-con-compose">Ejecutar ambos servicios con Compose</h2>
+
+<p>Guarde este archivo como <code>compose.yaml</code>. Es otra forma de ejecutar los mismos dos procesos y el mismo volumen. Si los contenedores de la sección anterior siguen ejecutándose, deténgalos primero para que los puertos 6733 y 6734 queden libres. Al eliminar ese volumen también se elimina su archivo de políticas.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">services:
+  pms:
+    image: docker.io/speedle/speedle:<span style="color:#bd93f9">1.7</span>.<span style="color:#bd93f9">0</span>
+    command:
+      - speedle-pms
+      - --store-type
+      - file
+      - --filestore-loc
+      - /data/policies.json
+      - --endpoint
+      - <span style="color:#bd93f9">0.0</span>.<span style="color:#bd93f9">0.0</span>:<span style="color:#bd93f9">6733</span>
+      - --insecure=<span style="color:#ff79c6">true</span>
+    ports:
+      - <span style="color:#bd93f9">127.0</span>.<span style="color:#bd93f9">0.1</span>:<span style="color:#bd93f9">6733</span>:<span style="color:#bd93f9">6733</span>
+    volumes:
+      - speedle-policies:/data
+  ads:
+    image: docker.io/speedle/speedle:<span style="color:#bd93f9">1.7</span>.<span style="color:#bd93f9">0</span>
+    command:
+      - speedle-ads
+      - --store-type
+      - file
+      - --filestore-loc
+      - /data/policies.json
+      - --endpoint
+      - <span style="color:#bd93f9">0.0</span>.<span style="color:#bd93f9">0.0</span>:<span style="color:#bd93f9">6734</span>
+      - --insecure=<span style="color:#ff79c6">true</span>
+    ports:
+      - <span style="color:#bd93f9">127.0</span>.<span style="color:#bd93f9">0.1</span>:<span style="color:#bd93f9">6734</span>:<span style="color:#bd93f9">6734</span>
+    volumes:
+      - speedle-policies:/data
+volumes:
+  speedle-policies:</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker compose -f compose.yaml up -d</code></pre></div>
+<p><code>up -d</code> regresa antes de que PMS esté escuchando. Espere a que la lista de servicios de PMS y los endpoints <code>/healthz</code> y <code>/readyz</code> de ADS respondan antes de crear nada. Como se describió anteriormente, el primer intento de PMS puede reiniciar la conexión.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl --fail --silent --show-error --retry <span style="color:#bd93f9">30</span> --retry-all-errors --retry-delay <span style="color:#bd93f9">1</span> --connect-timeout <span style="color:#bd93f9">2</span> <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  http://127.0.0.1:6733/policy-mgmt/v1/service
+curl --fail --silent --show-error --retry <span style="color:#bd93f9">30</span> --retry-all-errors --retry-delay <span style="color:#bd93f9">1</span> --connect-timeout <span style="color:#bd93f9">2</span> <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  http://127.0.0.1:6734/healthz
+curl --fail --silent --show-error --retry <span style="color:#bd93f9">30</span> --retry-all-errors --retry-delay <span style="color:#bd93f9">1</span> --connect-timeout <span style="color:#bd93f9">2</span> <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  http://127.0.0.1:6734/readyz
+docker compose -f compose.yaml <span style="color:#8be9fd;font-style:italic">exec</span> -T pms /spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ create service docs
+docker compose -f compose.yaml <span style="color:#8be9fd;font-style:italic">exec</span> -T pms /spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ create policy -c <span style="color:#f1fa8c">&#34;grant user alice get,list /docs/public&#34;</span> --service-name<span style="color:#ff79c6">=</span>docs</code></pre></div>
+<p>Envíe la misma solicitud <code>is-allowed</code>. ADS reconoce la nueva política sin necesidad de reiniciar.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker compose -f compose.yaml down -v</code></pre></div>
+<p><code>down -v</code> elimina el volumen de Compose y las políticas almacenadas en él.</p>
+
+<h2 id="verificar-procedencia-y-sbom">Verificar procedencia y SBOM</h2>
+
+<p>La compilación de publicación adjunta la procedencia (provenance) y un SBOM (<code>docker buildx build --provenance=mode=max --sbom=true</code>). Inspeccione el índice:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker buildx imagetools inspect docker.io/speedle/speedle:1.7.0</code></pre></div>
+<p>El índice enumera <code>linux/amd64</code>, <code>linux/arm64</code> y dos manifiestos <code>unknown/unknown</code>. Esas plataformas desconocidas son los manifiestos de atestación. Cada uno establece <code>vnd.docker.reference.type</code> en <code>attestation-manifest</code> y <code>vnd.docker.reference.digest</code> en la imagen de plataforma que describe. <code>docker buildx imagetools inspect ghcr.io/teramoby/speedle:1.7.0</code> imprime los mismos digests de plataforma y atestación.</p>
+
+<h2 id="detener-los-contenedores">Detener los contenedores</h2>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker rm -f speedle-pms speedle-ads
+docker volume rm speedle-policies</code></pre></div>
+<p><code>docker volume rm</code> elimina el archivo de políticas. Utilice <code>docker compose -f compose.yaml down -v</code> si los procesos se iniciaron con Compose.</p>
+</div>
+</div>
+</main>
+        </div>
+    </div>
+    <div class="docs-nav-backdrop" hidden></div>
+    <footer class="site-footer">
+    <div class="wrap footer-main">
+      <div class="footer-brand">
+        <a class="footer-lockup" href="/es/" aria-label="Inicio de Speedle Engine"><img src="/img/speedle/Speedle_logo_home_bold.svg?v=4" width="304" height="104" alt="Speedle"><span class="footer-divider" aria-hidden="true"></span><span class="footer-product">Engine</span></a>
+        <p class="footer-tagline">Motor de autorización de código abierto</p>
+        <nav class="social" aria-label="Enlaces comunitarios">
+          <a href="mailto:contact@speedle.io" aria-label="Email contact@speedle.io" title="contact@speedle.io"><img src="/img/speedle/28.%20Mail.svg" width="40" height="40" alt=""></a>
+          <a href="https://groups.google.com/forum/#!forum/speedle-users" aria-label="Google Groups" title="Google Groups — speedle-users"><img src="/img/speedle/Google-Groups.svg" width="24" height="24" alt=""></a>
+          <a href="https://github.com/teramoby/speedle-plus" aria-label="GitHub"><img src="/img/speedle/18.%20Github.svg" width="40" height="40" alt=""></a>
+          <a href="https://discord.gg/uaY2xVsbbT" aria-label="Discord"><img src="/img/speedle/Discord.svg" width="64" height="48" alt=""></a>
+        </nav>
+      </div>
+      <nav class="footer-family" aria-label="Productos de Speedle"><svg class="sphere-sprite" width="0" height="0" aria-hidden="true" focusable="false"><symbol id="i-speedle-sphere" viewBox="22 22 114 114"><!-- Source: img/speedle/Speedle_logo_home_bold.svg, sphere group only. Colours changed only (stroke currentColor). No path edits. --><g fill="none" stroke="currentColor" stroke-linejoin="miter" stroke-miterlimit="3" stroke-linecap="butt"><polygon stroke-width="3.6" points="41.83 47.82 30.67 80.15 42.9 112.09 72.8 128.69 106.38 122.19 127.93 95.63 127.36 61.43 104.94 35.6 71.16 30.23"/><g stroke-width="2.4"><polygon points="81.97 43.92 52.19 57.23 44.03 88.8 63.62 114.87 96.22 115.81 117.28 90.9 110.94 58.91"/><polygon points="68.57 60.42 57.6 86.19 78.73 104.59 102.75 90.18 96.47 62.88"/><path d="M41.83 47.82L52.19 57.23 68.57 60.42 81.97 43.92 71.16 30.23 M30.67 80.15L44.03 88.8 42.9 112.09 M52.19 57.23L57.6 86.19 44.03 88.8 78.73 104.59 63.62 114.87 72.8 128.69 M78.73 104.59L96.22 115.81 106.38 122.19 M96.22 115.81L102.75 90.18 117.28 90.9 127.93 95.63 M117.28 90.9L127.36 61.43 110.94 58.91 104.94 35.6 81.97 43.92 M110.94 58.91L96.47 62.88 117.28 90.9"/></g></g></symbol></svg>
+        <ul>
+          <li><a class="footer-card" href="https://engine.speedle.io/es/" aria-current="page"><svg class="product-sphere product-engine" aria-hidden="true" focusable="false"><use href="#i-speedle-sphere"/></svg><span class="footer-card-name">Speedle Engine</span><span class="footer-card-description">Motor de autorización de código abierto</span><svg class="footer-card-check" width="15" height="15" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M3.5 8.5 6.5 11.5 12.5 4.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></a></li>
+          <li><a class="footer-card" href="https://cloud.speedle.io/es/"><svg class="product-sphere product-cloud" aria-hidden="true" focusable="false"><use href="#i-speedle-sphere"/></svg><span class="footer-card-name">Speedle Cloud<span class="product-badge">Próximamente</span></span><span class="footer-card-description">Autorización hospedada para desarrolladores</span></a></li>
+          <li><a class="footer-card" href="https://ai.speedle.io/es/"><svg class="product-sphere product-ai" aria-hidden="true" focusable="false"><use href="#i-speedle-sphere"/></svg><span class="footer-card-name">Speedle AI</span><span class="footer-card-description">IA para control de acceso, control de acceso para IA</span></a></li>
+        </ul>
+      </nav>
+    </div>
+    <div class="wrap footer-bar">
+      <p class="footer-legal"><span>Con licencia Universal Permissive License v1.0.</span><span class="footer-legal-sep"> · </span><span>Copyright &copy; 2019–2026 The Speedle Authors. Todos los derechos reservados.</span></p>
+    </div>
+  </footer>
+<!-- Cloudflare Web Analytics --><script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "a7a746c498b940e58425123082a20520"}'></script><!-- End Cloudflare Web Analytics -->
+</body>
+
+</html>

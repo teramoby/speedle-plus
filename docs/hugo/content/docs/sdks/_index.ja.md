@@ -37,6 +37,7 @@ Java、Python、Go、.NET、Rust はバージョン 0.2.0 です。`@speedle/sdk
 
 付与されたアクセス許可の照会、診断、ポリシー管理などのその他の操作には、REST API（[認可決定 API](/ja/docs/api/decision_api/) および [ポリシー管理 API](/ja/docs/api/management_api/)）を使用してください。
 
+<a id="example-policy"></a>
 ## ポリシー例
 
 すべてのサンプルは、サービス `docs` 内のリソース `/docs/public` に対して、ユーザー `alice` が `get` および `delete` を実行できるかどうかを確認します。ローカルの Speedle からドキュメント通りの回答を得るには、[クイックスタート](/ja/quick-start/) の手順に従ってビルドし、ポート 6733 で PMS を、ポート 6734 で ADS を起動してから、サービスとポリシーを作成します:

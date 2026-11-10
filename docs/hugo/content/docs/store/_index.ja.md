@@ -20,6 +20,7 @@ bref = "Speedle にはファイル、etcd、MongoDB、MySQL のポリシース�
 
 ステップバイステップのデプロイガイド: [MySQL セットアップ](/ja/docs/store/mysql/)、[etcd セットアップ](/ja/docs/store/etcd/)、[MongoDB セットアップ](/ja/docs/store/mongodb/)。
 
+<a id="store-failures-and-cached-authorization"></a>
 ## ストア障害とキャッシュされた認可
 
 ファイル、etcd、MySQL、MongoDB は同じ ADS 障害ポリシーを使用します。デフォルトの `storeFailureGracePeriod` は `"0s"` です。ストアの障害が検出されると、認可は `allowed:false` と評価エラーを返します。ADS は実行を継続し、再試行を続けます。接続が読み取り可能になっただけでは認可は復元されず、完全なスナップショットの再読み込みが成功する必要があります。watch が有効な場合、失敗したサブスクリプションをまず再確立する必要があります。watch が壊れている間のデータ読み取り成功は、障害/猶予期間の期限をリセットしません。ファイルが削除された場合も、ADS を終了させるのではなく再試行されます。

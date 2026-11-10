@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Identity Domain on Speedle</title>
+    <link>https://engine.speedle.io/ja/tags/identity-domain/</link>
+    <description>Recent content in Identity Domain on Speedle</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>ja-jp</language>
+    <lastBuildDate>Thu, 17 Jan 2019 13:20:07 +0800</lastBuildDate>
+    
+	<atom:link href="https://engine.speedle.io/ja/tags/identity-domain/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>ID ドメイン</title>
+      <link>https://engine.speedle.io/ja/docs/idd/</link>
+      <pubDate>Thu, 17 Jan 2019 13:20:07 +0800</pubDate>
+      
+      <guid>https://engine.speedle.io/ja/docs/idd/</guid>
+      <description>ID ドメインとは？ ID ドメイン（idd）は、プリンシパルの明示的な名前空間です。同名の2人の user1 が異なるドメインに属することができます。ドメイン文字列は、信頼できる統合コードまたは構成済みのトークンアサーターによって提供されます。これ自体は認証の証明ではありません。Speedle はドメイン名のみからプロバイダーのテナントモデルを推論または検証することはありません。
+ポリシーとリクエストにおけるドメインの表現 grant user user1 from github read book grant user user1 from IDCS.tenant01 read book プリンシパル名の直後に from &amp;lt;identity-domain&amp;gt; を使用します。PMS JSON ポリシーでは、同じプリンシパルを idd=github:user:user1 としてエンコードします。決定リクエストでは、このプリンシパルを次のように表現します:
+{ &amp;#34;type&amp;#34;: &amp;#34;user&amp;#34;, &amp;#34;name&amp;#34;: &amp;#34;user1&amp;#34;, &amp;#34;idd&amp;#34;: &amp;#34;github&amp;#34; } ドメインが指定されていないプリンシパルは、その名前のすべてのドメインおよびドメインのないプリンシパルに一致します。
+grant user user1 read book 上記の認可は、from github、from IDCS.tenant01、または ID ドメインのない user1 に一致します。
+ローカル検証手順 mkdir -p ./tmp &amp;amp;&amp;amp; rm -f ./tmp/idd.json PMS を起動します:
+./bin/speedle-pms --store-type file --filestore-loc ./tmp/idd.json --endpoint 127.0.0.1:6733 --insecure=true ADS を起動します:</description>
+    </item>
+    
+  </channel>
+</rss>

@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Ads on Speedle</title>
+    <link>https://engine.speedle.io/es/tags/ads/</link>
+    <description>Recent content in Ads on Speedle</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>es-es</language>
+    
+	<atom:link href="https://engine.speedle.io/es/tags/ads/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>API de decisiones de autorización</title>
+      <link>https://engine.speedle.io/es/docs/api/decision_api/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/es/docs/api/decision_api/</guid>
+      <description>Referencia para su ADS configurado. Los atributos de solicitud son matrices tipadas; los atributos de diagnóstico son objetos.
+Configuración de seguridad y endpoints. Esta es una referencia de contrato, no un backend hospedado por speedle.io.
+              document.addEventListener(&#39;DOMContentLoaded&#39;, function() { var url = &#34;\/swagger\/policy-check.yaml&#34;; const ui = SwaggerUIBundle({ url: url, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.presets.apis ], plugins: [ SwaggerUIBundle.</description>
+    </item>
+    
+  </channel>
+</rss>

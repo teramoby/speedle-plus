@@ -6,7 +6,7 @@
     <description>Recent content in Docs on Speedle</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
-    <lastBuildDate>Tue, 10 Nov 2026 13:15:15 +0800</lastBuildDate>
+    <lastBuildDate>Tue, 10 Nov 2026 14:45:43 +0800</lastBuildDate>
     
 	<atom:link href="https://engine.speedle.io/categories/docs/index.xml" rel="self" type="application/rss+xml" />
     
@@ -132,7 +132,7 @@ The Token Assertion Plugin API uses integer errCode and an optional attribute ob
     <item>
       <title>API</title>
       <link>https://engine.speedle.io/docs/api/</link>
-      <pubDate>Tue, 10 Nov 2026 13:15:15 +0800</pubDate>
+      <pubDate>Tue, 10 Nov 2026 14:45:43 +0800</pubDate>
       
       <guid>https://engine.speedle.io/docs/api/</guid>
       <description>Client libraries for Java, Python, Go, .NET, Rust and Node.js/TypeScript are in SDKs.
@@ -143,7 +143,7 @@ REST APIs These are reference contracts for your configured PMS/ADS or asserter 
     <item>
       <title>Deployment</title>
       <link>https://engine.speedle.io/docs/deployment/</link>
-      <pubDate>Tue, 10 Nov 2026 13:15:15 +0800</pubDate>
+      <pubDate>Tue, 10 Nov 2026 14:45:43 +0800</pubDate>
       
       <guid>https://engine.speedle.io/docs/deployment/</guid>
       <description>Speedle runs inside a Go application, from one published container image, or as standalone PMS and ADS services.
@@ -205,7 +205,7 @@ Start a reproducible local example Build the binaries using Quick Start, then ru
     <item>
       <title>SDKs</title>
       <link>https://engine.speedle.io/docs/sdks/</link>
-      <pubDate>Tue, 10 Nov 2026 13:15:15 +0800</pubDate>
+      <pubDate>Tue, 10 Nov 2026 14:45:43 +0800</pubDate>
       
       <guid>https://engine.speedle.io/docs/sdks/</guid>
       <description>The Speedle SDKs are client libraries for the decision API POST /authz-check/v1/is-allowed. They work with a self-hosted Speedle ADS and with Speedle Cloud. Each language page shows how to add the package and gives a complete, tested program for both. The source and the full reference are in teramoby/speedle-sdk. To run PMS and ADS for these examples, see Deployment and the Docker image.
@@ -306,7 +306,7 @@ Security and endpoint configuration. This is a contract reference, not a backend
     <item>
       <title>Integrations</title>
       <link>https://engine.speedle.io/integrations/</link>
-      <pubDate>Tue, 10 Nov 2026 13:15:15 +0800</pubDate>
+      <pubDate>Tue, 10 Nov 2026 14:45:43 +0800</pubDate>
       
       <guid>https://engine.speedle.io/integrations/</guid>
       <description>Speedle makes authorization decisions. A policy enforcement point (PEP) in your application, gateway or platform calls Speedle for each decision and enforces the result. The interfaces below are supported today.

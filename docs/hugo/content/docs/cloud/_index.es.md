@@ -22,6 +22,7 @@ La beta pública gratuita está pensada para pruebas, aprendizaje y evaluación.
 - [Vista previa de la API de autorización](/es/docs/cloud/authorization-api/): contrato de solicitud y respuesta de IsAllowed, ejemplo con Node.js 22, instantáneas de políticas y restricciones de integración.
 - [Límites y errores](/es/docs/cloud/limits-and-errors/): cuotas de cuenta, límites de solicitudes, respuestas de error, encabezados de tasa y cuota, y directrices de reintento.
 
+<a id="downloads"></a>
 ## Descargas
 
 - [Markdown en español](https://engine.speedle.io/docs/cloud/quickstart.es.md): los cuatro capítulos de Cloud en un único documento sin conexión.

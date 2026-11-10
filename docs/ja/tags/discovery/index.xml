@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Discovery on Speedle</title>
+    <link>https://engine.speedle.io/ja/tags/discovery/</link>
+    <description>Recent content in Discovery on Speedle</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>ja-jp</language>
+    
+	<atom:link href="https://engine.speedle.io/ja/tags/discovery/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>ポリシー検出</title>
+      <link>https://engine.speedle.io/ja/docs/pms/discover/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/ja/docs/pms/discover/</guid>
+      <description>ポリシー検出の役割 検出モードはリクエストを記録し、記録操作が成功した場合に理由 5 で allowed=true を返します。これは既存のポリシーが操作を認可したことを証明するものではありません。分離されたテスト環境でのみ使用し、生成されたグラントを確認してから、通常の is-allowed による強制を復元してください。アサーションやストレージのエラーは引き続き適切に処理する必要があり、エラーを認可と見なしてはなりません。
+再現可能なローカルサンプルの開始 クイックスタート の手順でバイナリをビルドし、チェックアウトのルートからすべてのターミナルを実行します。開始前に新しいファイルを使用し、前のページのフィクスチャを停止してください。
+printf &amp;#39;{}\n&amp;#39; &amp;gt; docs-policies.json ターミナル 1:
+./bin/speedle-pms --store-type file --filestore-loc ./docs-policies.json --endpoint 127.0.0.1:6733 --insecure=true ターミナル 2:
+./bin/speedle-ads --store-type file --filestore-loc ./docs-policies.json --endpoint 127.0.0.1:6734 --insecure=true 両方を実行したままにします。ターミナル 3 で、1 つのリクエストを記録します:
+curl --fail --silent --show-error -H &amp;#39;Content-Type: application/json&amp;#39; \  -d &amp;#39;{&amp;#34;subject&amp;#34;:{&amp;#34;principals&amp;#34;:[{&amp;#34;type&amp;#34;:&amp;#34;user&amp;#34;,&amp;#34;name&amp;#34;:&amp;#34;alice&amp;#34;}]},&amp;#34;serviceName&amp;#34;:&amp;#34;observed&amp;#34;,&amp;#34;resource&amp;#34;:&amp;#34;book&amp;#34;,&amp;#34;action&amp;#34;:&amp;#34;read&amp;#34;}&amp;#39; \  http://127.0.0.1:6734/authz-check/v1/discover キャプチャされたリクエストを調査し、提案されるサービス定義を生成します:
+./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ discover request --service-name observed ./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ discover policy --service-name observed &amp;gt; discovered-service.</description>
+    </item>
+    
+  </channel>
+</rss>

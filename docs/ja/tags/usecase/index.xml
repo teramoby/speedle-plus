@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Usecase on Speedle</title>
+    <link>https://engine.speedle.io/ja/tags/usecase/</link>
+    <description>Recent content in Usecase on Speedle</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>ja-jp</language>
+    
+	<atom:link href="https://engine.speedle.io/ja/tags/usecase/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>ユースケース</title>
+      <link>https://engine.speedle.io/ja/docs/usecases/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/ja/docs/usecases/</guid>
+      <description> アプリケーション固有のポリシー Alex Chan は Go でシンプルなアプリケーションを開発しているエンジニアです。彼のアプリケーションには認可が必要ですが、車輪の再発明は避けたいと考えています。Alex は Speedle のようなオープンソースの認可エンジンを活用できます。
+集中型ポリシー適用と管理 Jin Chen は多国籍企業のセキュリティマネージャーです。彼のチームは数十の社内システムを監視しています。システムごとに異なる認可メカニズムや異なるポリシー言語が使用されており、これらすべてのシステムを効率的に管理できるソリューションを求めています。
+ 集中型ポリシー管理 すべてのシステムに適合する柔軟なポリシーモデル OS からミドルウェア、アプリケーションまで、異なるシステムとの容易な統合 すべてのシステムをサポートするスケーラビリティ 高効率  フリート全体の認可を一元管理 TTH 社はクラウドスタートアップ企業です。顧客にクラウドネイティブ環境を提供しています。環境は Linux、Docker、Kubernetes、Istio で構成されています。セキュリティは TTH の最優先事項です。同社は包括的な認可モデルを定義し、Linux、Docker、Kubernetes、Istio のポリシーをそれぞれ異なるターミナルと異なるポリシー言語で作成しています。彼らの運用をよりシンプルにできるでしょうか？
+ 集中型ポリシー管理 Linux、Docker、Kubernetes、Istio 向けの統一された認可ポリシーモデル クラウド運用のためのスケーラビリティ 高効率 Linux、Docker、Kubernetes、Istio との容易な統合 オープンソース  </description>
+    </item>
+    
+  </channel>
+</rss>

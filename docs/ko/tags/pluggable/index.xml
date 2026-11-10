@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Pluggable on Speedle</title>
+    <link>https://engine.speedle.io/ko/tags/pluggable/</link>
+    <description>Recent content in Pluggable on Speedle</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>ko-kr</language>
+    <lastBuildDate>Tue, 10 Nov 2026 17:19:04 +0800</lastBuildDate>
+    
+	<atom:link href="https://engine.speedle.io/ko/tags/pluggable/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>토큰 어설션 API</title>
+      <link>https://engine.speedle.io/ko/docs/api/asserter_api/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/ko/docs/api/asserter_api/</guid>
+      <description>토큰 어설션 웹훅 참조 사양입니다. errCode는 정수이고 attributes는 객체입니다. 실제 엔드포인트는 ADS 어서터 구성에 지정됩니다.
+보안 및 엔드포인트 구성. 이 문서는 인터페이스 사양을 설명하며 speedle.io는 호스팅형 백엔드를 제공하지 않습니다.
+              document.addEventListener(&#39;DOMContentLoaded&#39;, function() { var url = &#34;\/swagger\/asserter.yaml&#34;; const ui = SwaggerUIBundle({ url: url, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.presets.apis ], plugins: [ SwaggerUIBundle.plugins.DownloadUrl ], validatorUrl: null, layout: &#34;</description>
+    </item>
+    
+    <item>
+      <title>플러그형 저장소</title>
+      <link>https://engine.speedle.io/ko/docs/store/</link>
+      <pubDate>Tue, 10 Nov 2026 17:19:04 +0800</pubDate>
+      
+      <guid>https://engine.speedle.io/ko/docs/store/</guid>
+      <description>기본 내장 저장소와 확장 계약 독립 실행형 바이너리는 pkg/store 아래에 파일, etcd, MongoDB, MySQL 구현을 등록합니다. 사용 가능하다고 해서 동일한 운영상의 보장을 의미하는 것은 아닙니다. 배포하기 전에 백엔드의 인증, 영속성, 트랜잭션 및 감시(watch) 동작을 개별적으로 검토하십시오. 아래 구성 예제는 속성 이름을 설명하기 위한 것이며, 로컬 예제에서 etcd/MongoDB 클러스터를 실행하는 것은 범위에 포함되지 않습니다.
+완전한 백엔드는 pms.PolicyStoreManager를 구현합니다(서비스, 인가 정책, 역할 정책, 함수 관리 및 스냅샷 읽기와 watch/stop). ADS는 더 제한적인 읽기/감시 인터페이스인 PolicyStoreManagerADS를 수락합니다.</description>
+    </item>
+    
+  </channel>
+</rss>

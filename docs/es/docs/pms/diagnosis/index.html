@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <script>document.documentElement.classList.add('docs-js','navigation-js');addEventListener('DOMContentLoaded',function(){if(!document.querySelector('header.site-header.navigation-ready'))document.documentElement.classList.remove('navigation-js')});</script>
+    <meta name="generator" content="Hugo 0.48" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1"><title>Diagnóstico de autorización · Speedle Engine</title>
+<meta name="description" content="Diagnóstico de políticas de autorización">
+<meta name="generator" content="Hugo 0.48" />
+<link href="https://engine.speedle.io/index.xml" rel="alternate" type="application/rss+xml">
+<link rel="canonical" href="https://engine.speedle.io/es/docs/pms/diagnosis/">
+
+<link rel="alternate" hreflang="en" href="https://engine.speedle.io/docs/pms/diagnosis/">
+<link rel="alternate" hreflang="es" href="https://engine.speedle.io/es/docs/pms/diagnosis/">
+<link rel="alternate" hreflang="ja" href="https://engine.speedle.io/ja/docs/pms/diagnosis/">
+<link rel="alternate" hreflang="ko" href="https://engine.speedle.io/ko/docs/pms/diagnosis/">
+<link rel="alternate" hreflang="zh-CN" href="https://engine.speedle.io/zh/docs/pms/diagnosis/">
+<link rel="alternate" hreflang="x-default" href="https://engine.speedle.io/docs/pms/diagnosis/">
+<meta property="og:type" content="article">
+<meta property="article:published_time" content="2019-01-18T15:46:59&#43;08:00">
+<meta property="article:modified_time" content="2026-11-10T18:32:58&#43;08:00">
+<meta property="og:site_name" content="Speedle Engine">
+<meta property="og:title" content="Diagnóstico de autorización · Speedle Engine">
+<meta property="og:description" content="Diagnóstico de políticas de autorización">
+<meta property="og:url" content="https://engine.speedle.io/es/docs/pms/diagnosis/">
+<meta property="og:image" content="https://engine.speedle.io/img/social/engine-en.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:alt" content="Speedle Engine — Fast. Simple. Access control">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Diagnóstico de autorización · Speedle Engine">
+<meta name="twitter:description" content="Diagnóstico de políticas de autorización">
+<meta name="twitter:image" content="https://engine.speedle.io/img/social/engine-en.png">
+<meta name="twitter:image:alt" content="Speedle Engine — Fast. Simple. Access control">
+
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/es/docs/pms/diagnosis/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-10T18:32:58+08:00","datePublished":"2019-01-18T15:46:59+08:00","description":"Diagnóstico de políticas de autorización","headline":"Diagnóstico de autorización","image":"https://engine.speedle.io/img/social/engine-en.png","inLanguage":"es","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/es/docs/pms/diagnosis/","@type":"WebPage"},"name":"Diagnóstico de autorización","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/es/docs/pms/diagnosis/"}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/es/docs/pms/diagnosis/#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://engine.speedle.io/es/","name":"Inicio","position":1},{"@type":"ListItem","item":"https://engine.speedle.io/es/docs/","name":"Documentación","position":2},{"@type":"ListItem","item":"https://engine.speedle.io/es/docs/pms/","name":"Políticas de Speedle","position":3},{"@type":"ListItem","item":"https://engine.speedle.io/es/docs/pms/diagnosis/","name":"Diagnóstico de autorización","position":4}]}</script><link href="/css/docs.css" rel="stylesheet" type="text/css">
+
+
+    <link href="/css/navigation.css?v=header-20261106-v8" rel="stylesheet">
+    <script src="/js/navigation.js?v=header-20261106-v8" defer></script>
+    <script src="/js/docs.js" defer></script>
+
+</head>
+
+<body class="page-kube docs-page">
+    <header class="site-header">
+    <div class="wrap nav">
+      <a class="brand" href="/es/#top" aria-label="Inicio de Speedle Engine"><img class="brand-logo" src="/img/speedle/Speedle_logo_home_bold.svg?v=4" width="304" height="104" alt=""><span class="brand-divider" aria-hidden="true"></span><span class="brand-product">Engine</span></a>
+      <button class="menu" type="button" aria-expanded="false" aria-controls="nav-links" aria-label="Abrir navegación">☰</button>
+      <nav class="nav-links" id="nav-links" aria-label="Navegación principal">
+        <div class="products"><button class="products-button" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="products-panel">Productos<svg class="products-chevron" width="10" height="10" viewBox="0 0 10 10" aria-hidden="true" focusable="false"><path d="M2 3.5 5 6.5 8 3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button><span class="products-heading" aria-hidden="true">Productos</span><div class="products-panel" id="products-panel" role="group" aria-label="Productos"><a class="product-row" href="https://engine.speedle.io/es/" aria-current="page"><img class="product-mark" src="/img/speedle/speedle-mark-engine.svg" alt="" width="20" height="20"><span class="product-text"><span class="product-name">Speedle Engine</span><span class="product-desc">Motor de autorización de código abierto</span></span><svg class="product-check" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M3.5 8.5 6.5 11.5 12.5 4.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></a><a class="product-row" href="https://cloud.speedle.io/es/"><img class="product-mark" src="/img/speedle/speedle-mark-cloud.svg" alt="" width="20" height="20"><span class="product-text"><span class="product-name">Speedle Cloud <span class="product-badge">Próximamente</span></span><span class="product-desc">Autorización hospedada para desarrolladores</span></span></a><a class="product-row" href="https://ai.speedle.io/es/"><img class="product-mark" src="/img/speedle/speedle-mark-ai.svg" alt="" width="20" height="20"><span class="product-text"><span class="product-name">Speedle AI</span><span class="product-desc">IA para control de acceso, control de acceso para IA</span></span></a></div></div>
+        <a href="/es/#about">Acerca de</a><a href="/es/#features">Características</a>
+        <a href="/es/quick-start/">Comenzar</a><a href="/es/docs/">Documentación</a><a href="/es/playground/">Playground</a>
+        <div class="languages"><button class="languages-button" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="languages-panel">Español<svg class="languages-chevron" width="10" height="10" viewBox="0 0 10 10" aria-hidden="true" focusable="false"><path d="M2 3.5 5 6.5 8 3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button><span class="languages-heading" aria-hidden="true">Idiomas</span><div class="languages-panel" id="languages-panel" role="group" aria-label="Idiomas"><a class="language-row" href="/docs/pms/diagnosis/" lang="en" hreflang="en" >English</a><a class="language-row" href="/ja/docs/pms/diagnosis/" lang="ja" hreflang="ja">日本語</a><a class="language-row" href="/ko/docs/pms/diagnosis/" lang="ko" hreflang="ko">한국어</a><a class="language-row" href="/es/docs/pms/diagnosis/" lang="es" hreflang="es" aria-current="page">Español</a><a class="language-row" href="/zh/docs/pms/diagnosis/" lang="zh-CN" hreflang="zh-CN">中文</a></div></div>
+        <a class="nav-github" href="https://github.com/teramoby/speedle-plus">GitHub</a>
+      </nav>
+    </div>
+  </header>
+    <div class="container">
+        <button class="docs-nav-toggle" type="button" aria-expanded="false" aria-controls="docs-navigation">
+            <span>Menú</span>
+            <svg class="docs-nav-toggle-icon" viewBox="0 0 18 14" width="18" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M1 1h16M1 7h16M1 13h16"/></svg>
+        </button>
+        <div class="content-container"><aside class="docs-sidebar" id="docs-navigation" aria-label="Navegación de documentación">
+<div class="docs-nav-head">
+<span class="docs-nav-title">Documentación</span>
+<button class="docs-nav-close" type="button" aria-label="Cerrar menú"><svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="m3 3 10 10M13 3 3 13"/></svg></button>
+</div>
+<div class="sidebar">
+<nav>
+<ul>
+
+
+
+<li data-docs-depth="-1" class="docs-nav-section parent"><span class="docs-nav-heading">Documentación</span>
+<ul class="sub-menu">
+<li data-docs-depth="0" class=""><a href="/es/docs/usecases/">Casos de uso</a></li>
+<li data-docs-depth="0" class=""><a href="/es/docs/overview/">Descripción general</a></li>
+<li data-docs-depth="0" class=""><a href="/es/docs/spdl/">SPDL: Lenguaje de definición de políticas Speedle</a></li>
+<li data-docs-depth="0" class=""><a href="/es/docs/architecture/">Arquitectura</a></li>
+
+
+
+<li data-docs-depth="0" class="docs-nav-section parent"><span class="docs-nav-heading">Políticas de Speedle</span>
+<ul class="sub-menu">
+<li data-docs-depth="1" class=""><a href="/es/docs/pms/policy-mgmt/">Gestión de políticas</a></li>
+<li data-docs-depth="1" class=""><a href="/es/docs/pms/global-policy/">Políticas globales</a></li>
+<li data-docs-depth="1" class="active"><a href="/es/docs/pms/diagnosis/" aria-current="page">Diagnóstico de autorización</a></li>
+<li data-docs-depth="1" class=""><a href="/es/docs/pms/discover/">Descubrimiento de políticas</a></li>
+</ul>
+
+</li>
+<li data-docs-depth="0" class=""><a href="/es/docs/decisions/">Decisiones de autorización</a></li>
+<li data-docs-depth="0" class=""><a href="/es/docs/idd/">Dominio de identidad</a></li>
+<li data-docs-depth="0" class=""><a href="/es/docs/assertor/">Asertor de tokens</a></li>
+
+
+
+<li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading docs-nav-heading-link"><a href="/es/docs/store/">Almacenamiento conectable</a></span>
+<ul class="">
+<li data-docs-depth="1" class=""><a href="/es/docs/store/mysql/">Configuración de MySQL</a></li>
+<li data-docs-depth="1" class=""><a href="/es/docs/store/etcd/">Configuración de etcd</a></li>
+<li data-docs-depth="1" class=""><a href="/es/docs/store/mongodb/">Configuración de MongoDB</a></li>
+</ul>
+
+</li>
+
+
+
+<li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading">API</span>
+<ul class="">
+<li data-docs-depth="1" class=""><a href="/es/docs/api/decision_api/">API de decisiones de autorización</a></li>
+<li data-docs-depth="1" class=""><a href="/es/docs/api/management_api/">API de gestión de políticas</a></li>
+<li data-docs-depth="1" class=""><a href="/es/docs/api/asserter_api/">API del complemento de aserción de tokens</a></li>
+</ul>
+
+</li>
+
+
+
+<li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading docs-nav-heading-link"><a href="/es/docs/deployment/">Despliegue</a></span>
+<ul class="">
+<li data-docs-depth="1" class=""><a href="/es/docs/deployment/embedded/">Modo integrado de Speedle</a></li>
+<li data-docs-depth="1" class=""><a href="/es/docs/deployment/docker/">Imagen de Docker</a></li>
+</ul>
+
+</li>
+
+
+
+<li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading docs-nav-heading-link"><a href="/es/docs/sdks/">SDK</a></span>
+<ul class="">
+<li data-docs-depth="1" class=""><a href="/es/docs/sdks/java/">Java SDK</a></li>
+<li data-docs-depth="1" class=""><a href="/es/docs/sdks/python/">Python SDK</a></li>
+<li data-docs-depth="1" class=""><a href="/es/docs/sdks/go/">Go SDK</a></li>
+<li data-docs-depth="1" class=""><a href="/es/docs/sdks/dotnet/">C#/.NET SDK</a></li>
+<li data-docs-depth="1" class=""><a href="/es/docs/sdks/rust/">Rust SDK</a></li>
+<li data-docs-depth="1" class=""><a href="/es/docs/sdks/node/">Node.js/TypeScript SDK</a></li>
+</ul>
+
+</li>
+
+
+
+<li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading docs-nav-heading-link"><a href="/es/docs/cloud/">Speedle Cloud</a></span>
+<ul class="">
+<li data-docs-depth="1" class=""><a href="/es/docs/cloud/getting-started/">Primeros pasos</a></li>
+<li data-docs-depth="1" class=""><a href="/es/docs/cloud/tokens/">Tokens de aplicación</a></li>
+<li data-docs-depth="1" class=""><a href="/es/docs/cloud/authorization-api/">API de autorización</a></li>
+<li data-docs-depth="1" class=""><a href="/es/docs/cloud/limits-and-errors/">Límites y errores</a></li>
+</ul>
+
+</li>
+<li data-docs-depth="0" class=""><a href="/es/docs/security/">Seguridad</a></li>
+<li data-docs-depth="0" class=""><a href="/es/docs/logging/">Marco de registro</a></li>
+<li data-docs-depth="0" class=""><a href="/es/docs/versions/">Versiones</a></li>
+<li data-docs-depth="0" class=""><a href="/es/docs/custom-function/">Función personalizada</a></li>
+</ul>
+
+</li>
+
+
+</ul>
+</nav>
+
+
+</div>
+</aside>
+<main>
+<div id="main">
+
+  <h1>Diagnóstico de autorización</h1>
+  <p class="docs-lead">Esta función se utiliza para diagnosticar el proceso de evaluación de autorización. Cuando a un usuario no se le permite operar sobre un recurso, esta función resulta útil para averiguar el motivo, es decir, cuál es la política que deniega la operación sobre el recurso.</p>
+
+
+
+
+<nav id="contents" class="docs-toc" data-docs-toc="h2" aria-label="En esta página">
+  <ol></ol>
+</nav>
+
+
+
+  <div id="kube-component" class="content">
+
+<h2 id="qué-muestra-el-diagnóstico">¿Qué muestra el diagnóstico?</h2>
+
+<p><code>Diagnose</code> explica una evaluación de autorización: decisión, motivo, roles efectivos, atributos y las políticas examinadas. Acepta el mismo contexto de solicitud que <code>IsAllowed</code>; REST utiliza <code>/authz-check/v1/diagnose</code>, y tanto Go como gRPC utilizan <code>Diagnose</code>.</p>
+
+<p>El diagnóstico expone definiciones de políticas y el contexto de la solicitud. Restrínjalo a operadores de confianza utilizando los <a href="/es/docs/security/">controles de seguridad de la API</a>; no es un endpoint de depuración público.</p>
+
+<h2 id="antes-de-ejecutar-los-ejemplos">Antes de ejecutar los ejemplos</h2>
+
+<p>Compile <code>./bin/spctl</code>, <code>./bin/speedle-pms</code> y <code>./bin/speedle-ads</code> mediante el <a href="/es/quick-start/">inicio rápido</a>. Utilice Go 1.26.10 o Go 1.27.3 (o un parche más reciente de la misma rama de lanzamiento), Bash, curl y Python 3. Ejecute cada terminal desde la raíz del repositorio. Utilice un archivo de políticas nuevo para esta página; reinícielo únicamente tras detener ambos servicios.</p>
+
+<p>Inicialice un archivo de políticas vacío:</p>
+
+<!-- docs-check: setup -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#8be9fd;font-style:italic">printf</span> <span style="color:#f1fa8c">&#39;{}\n&#39;</span> &gt; docs-policies.json</code></pre></div>
+<p>En la primera terminal, inicie PMS y déjelo en ejecución:</p>
+
+<!-- docs-check: pms -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./bin/speedle-pms --store-type file --filestore-loc ./docs-policies.json --endpoint <span style="color:#bd93f9">127</span>.0.0.1:6733 --grpc-endpoint <span style="color:#bd93f9">127</span>.0.0.1:0 --insecure<span style="color:#ff79c6">=</span>true</code></pre></div>
+<p>En la segunda terminal, inicie ADS y déjelo en ejecución:</p>
+
+<!-- docs-check: ads -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./bin/speedle-ads --store-type file --filestore-loc ./docs-policies.json --endpoint <span style="color:#bd93f9">127</span>.0.0.1:6734 --grpc-endpoint <span style="color:#bd93f9">127</span>.0.0.1:0 --insecure<span style="color:#ff79c6">=</span>true</code></pre></div>
+<p>Ejecute los comandos restantes en una tercera terminal. PMS y ADS comparten el archivo; watch propaga los cambios de forma asíncrona. Confirme que la actualización deseada ha llegado a ADS antes de depender de ella. <code>--insecure=true</code> es solo para este ejemplo en loopback; consulte <a href="/es/docs/security/">seguridad</a> para conexiones de producción. Indicar direcciones explícitas de PMS evita modificar <code>~/.spctlconfig</code>. Detenga ambas terminales de servidor con Ctrl-C al terminar.</p>
+
+<h2 id="crear-las-políticas-de-ejemplo">Crear las políticas de ejemplo</h2>
+
+<p>El <a href="https://github.com/teramoby/speedle-plus/blob/master/website/tests/examples/diagnosis.json">archivo de prueba</a> concede <code>get</code> bajo <code>^/api/v1/example/.*$</code> pero deniega explícitamente <code>/api/v1/example/res1</code> para <code>user1</code>.</p>
+
+<!-- docs-check: diagnosis-fixture -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ create service --json-file website/tests/examples/diagnosis.json</code></pre></div>
+<h2 id="comparar-decisión-y-diagnóstico">Comparar decisión y diagnóstico</h2>
+
+<!-- docs-check: diagnosis-deny -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl --fail --silent --show-error -H <span style="color:#f1fa8c">&#39;Content-Type: application/json&#39;</span> <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  -d <span style="color:#f1fa8c">&#39;{&#34;subject&#34;:{&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;,&#34;name&#34;:&#34;user1&#34;}]},&#34;serviceName&#34;:&#34;srv1&#34;,&#34;resource&#34;:&#34;/api/v1/example/res1&#34;,&#34;action&#34;:&#34;get&#34;}&#39;</span> <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  http://127.0.0.1:6734/authz-check/v1/is-allowed</code></pre></div>
+<p>Esperado: <code>allowed=false</code>, <code>reason=1</code> (denegación explícita).</p>
+
+<!-- docs-check: diagnose -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl --fail --silent --show-error -H <span style="color:#f1fa8c">&#39;Content-Type: application/json&#39;</span> <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  -d <span style="color:#f1fa8c">&#39;{&#34;subject&#34;:{&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;,&#34;name&#34;:&#34;user1&#34;}]},&#34;serviceName&#34;:&#34;srv1&#34;,&#34;resource&#34;:&#34;/api/v1/example/res1&#34;,&#34;action&#34;:&#34;get&#34;}&#39;</span> <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  http://127.0.0.1:6734/authz-check/v1/diagnose</code></pre></div>
+<p>La respuesta de diagnóstico utiliza <code>allowed</code> como un booleano, <code>reason</code> como una cadena de texto como <code>DENY_POLICY_FOUND</code> y <code>attributes</code> como un objeto. <code>request_month</code> es un mes numérico. <code>requestContext.subject.principals</code> es una matriz; las políticas de autorización contienen una matriz bidimensional <code>principals</code> que representa grupos de entidades principales OR-de-AND.</p>
+
+<table>
+<thead>
+<tr>
+<th>Campo</th>
+<th>Significado</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td><code>requestContext</code></td>
+<td>La solicitud utilizada en la evaluación; los atributos REST permanecen como una matriz tipada aquí</td>
+</tr>
+
+<tr>
+<td><code>attributes</code></td>
+<td>Atributos disponibles de la solicitud e integrados, organizados por nombre</td>
+</tr>
+
+<tr>
+<td><code>grantedRoles</code></td>
+<td>Roles efectivos, cuando están presentes</td>
+</tr>
+
+<tr>
+<td><code>rolePolicies</code>, <code>policies</code></td>
+<td>Detalles de políticas de autorización y de roles evaluadas, cuando están presentes</td>
+</tr>
+
+<tr>
+<td><code>condition</code></td>
+<td>Expresión y resultado; puede estar vacío en políticas incondicionales</td>
+</tr>
+</tbody>
+</table>
+
+<p>Los valores de estado de política son <code>takeEffect</code>, <code>conditionFailed</code> e <code>ignored</code>. <code>ignored</code> significa que el resultado final ya estaba determinado, por lo que esa política no necesitó ser evaluada. El orden puede variar; inspeccione IDs y estados en lugar de comparar una respuesta histórica textualmente. Consulte el <a href="/es/docs/api/decision_api/">esquema de decisiones</a> para el contrato de respuesta completo.</p>
+</div>
+</div>
+</main>
+        </div>
+    </div>
+    <div class="docs-nav-backdrop" hidden></div>
+    <footer class="site-footer">
+    <div class="wrap footer-main">
+      <div class="footer-brand">
+        <a class="footer-lockup" href="/es/" aria-label="Inicio de Speedle Engine"><img src="/img/speedle/Speedle_logo_home_bold.svg?v=4" width="304" height="104" alt="Speedle"><span class="footer-divider" aria-hidden="true"></span><span class="footer-product">Engine</span></a>
+        <p class="footer-tagline">Motor de autorización de código abierto</p>
+        <nav class="social" aria-label="Enlaces comunitarios">
+          <a href="mailto:contact@speedle.io" aria-label="Email contact@speedle.io" title="contact@speedle.io"><img src="/img/speedle/28.%20Mail.svg" width="40" height="40" alt=""></a>
+          <a href="https://groups.google.com/forum/#!forum/speedle-users" aria-label="Google Groups" title="Google Groups — speedle-users"><img src="/img/speedle/Google-Groups.svg" width="24" height="24" alt=""></a>
+          <a href="https://github.com/teramoby/speedle-plus" aria-label="GitHub"><img src="/img/speedle/18.%20Github.svg" width="40" height="40" alt=""></a>
+          <a href="https://discord.gg/uaY2xVsbbT" aria-label="Discord"><img src="/img/speedle/Discord.svg" width="64" height="48" alt=""></a>
+        </nav>
+      </div>
+      <nav class="footer-family" aria-label="Productos de Speedle"><svg class="sphere-sprite" width="0" height="0" aria-hidden="true" focusable="false"><symbol id="i-speedle-sphere" viewBox="22 22 114 114"><!-- Source: img/speedle/Speedle_logo_home_bold.svg, sphere group only. Colours changed only (stroke currentColor). No path edits. --><g fill="none" stroke="currentColor" stroke-linejoin="miter" stroke-miterlimit="3" stroke-linecap="butt"><polygon stroke-width="3.6" points="41.83 47.82 30.67 80.15 42.9 112.09 72.8 128.69 106.38 122.19 127.93 95.63 127.36 61.43 104.94 35.6 71.16 30.23"/><g stroke-width="2.4"><polygon points="81.97 43.92 52.19 57.23 44.03 88.8 63.62 114.87 96.22 115.81 117.28 90.9 110.94 58.91"/><polygon points="68.57 60.42 57.6 86.19 78.73 104.59 102.75 90.18 96.47 62.88"/><path d="M41.83 47.82L52.19 57.23 68.57 60.42 81.97 43.92 71.16 30.23 M30.67 80.15L44.03 88.8 42.9 112.09 M52.19 57.23L57.6 86.19 44.03 88.8 78.73 104.59 63.62 114.87 72.8 128.69 M78.73 104.59L96.22 115.81 106.38 122.19 M96.22 115.81L102.75 90.18 117.28 90.9 127.93 95.63 M117.28 90.9L127.36 61.43 110.94 58.91 104.94 35.6 81.97 43.92 M110.94 58.91L96.47 62.88 117.28 90.9"/></g></g></symbol></svg>
+        <ul>
+          <li><a class="footer-card" href="https://engine.speedle.io/es/" aria-current="page"><svg class="product-sphere product-engine" aria-hidden="true" focusable="false"><use href="#i-speedle-sphere"/></svg><span class="footer-card-name">Speedle Engine</span><span class="footer-card-description">Motor de autorización de código abierto</span><svg class="footer-card-check" width="15" height="15" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M3.5 8.5 6.5 11.5 12.5 4.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></a></li>
+          <li><a class="footer-card" href="https://cloud.speedle.io/es/"><svg class="product-sphere product-cloud" aria-hidden="true" focusable="false"><use href="#i-speedle-sphere"/></svg><span class="footer-card-name">Speedle Cloud<span class="product-badge">Próximamente</span></span><span class="footer-card-description">Autorización hospedada para desarrolladores</span></a></li>
+          <li><a class="footer-card" href="https://ai.speedle.io/es/"><svg class="product-sphere product-ai" aria-hidden="true" focusable="false"><use href="#i-speedle-sphere"/></svg><span class="footer-card-name">Speedle AI</span><span class="footer-card-description">IA para control de acceso, control de acceso para IA</span></a></li>
+        </ul>
+      </nav>
+    </div>
+    <div class="wrap footer-bar">
+      <p class="footer-legal"><span>Con licencia Universal Permissive License v1.0.</span><span class="footer-legal-sep"> · </span><span>Copyright &copy; 2019–2026 The Speedle Authors. Todos los derechos reservados.</span></p>
+    </div>
+  </footer>
+<!-- Cloudflare Web Analytics --><script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "a7a746c498b940e58425123082a20520"}'></script><!-- End Cloudflare Web Analytics -->
+</body>
+
+</html>

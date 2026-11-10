@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Identity Domain on Speedle</title>
+    <link>https://engine.speedle.io/es/tags/identity-domain/</link>
+    <description>Recent content in Identity Domain on Speedle</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>es-es</language>
+    <lastBuildDate>Thu, 17 Jan 2019 13:20:07 +0800</lastBuildDate>
+    
+	<atom:link href="https://engine.speedle.io/es/tags/identity-domain/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>Dominio de identidad</title>
+      <link>https://engine.speedle.io/es/docs/idd/</link>
+      <pubDate>Thu, 17 Jan 2019 13:20:07 +0800</pubDate>
+      
+      <guid>https://engine.speedle.io/es/docs/idd/</guid>
+      <description>¿Qué es un dominio de identidad? Un dominio de identidad (idd) es un espacio de nombres explícito para una entidad principal. Dos usuarios llamados user1 pueden pertenecer a dominios distintos. La cadena de texto es suministrada por código de integración de confianza o por un asertor de tokens configurado; no constituye una prueba de autenticación por sí misma. Speedle no infiere ni valida el modelo multiinquilino de un proveedor basándose únicamente en el nombre del dominio.</description>
+    </item>
+    
+  </channel>
+</rss>

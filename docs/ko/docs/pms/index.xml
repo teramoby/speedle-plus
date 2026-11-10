@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Speedle 정책 on Speedle</title>
+    <link>https://engine.speedle.io/ko/docs/pms/</link>
+    <description>Recent content in Speedle 정책 on Speedle</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>ko-kr</language>
+    <lastBuildDate>Tue, 10 Nov 2026 17:19:04 +0800</lastBuildDate>
+    
+	<atom:link href="https://engine.speedle.io/ko/docs/pms/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>정책 관리</title>
+      <link>https://engine.speedle.io/ko/docs/pms/policy-mgmt/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/ko/docs/pms/policy-mgmt/</guid>
+      <description>Speedle 정책이란 무엇인가 정책 관리 서비스(PMS)는 서비스, 인가 정책, 역할 정책 및 커스텀 함수를 관리합니다. 정책 저장소는 등록된 저장소 백엔드를 사용하여 이러한 객체를 영구 보존합니다.
+서비스와 인가 정책 서비스는 해당 정책의 범위를 제한합니다. 인가 정책은 주체에게 리소스에 대한 작업을 허용하거나 거부하며, 선택적으로 조건을 지정할 수 있습니다. 글로벌 역할 정책을 제외하고 특정 서비스의 정책이 다른 서비스에 자동으로 적용되지 않습니다.
+grant group Administrators list,watch,get expr:^c1/default/core/pods/.*$ 이 정규식은 c1/default/core/pods/ 하위의 리소스와 일치합니다. c1/default/core/podssecret이나 c1 앞에 추가 접두사가 있는 경로와는 일치하지 않습니다.</description>
+    </item>
+    
+    <item>
+      <title>글로벌 정책</title>
+      <link>https://engine.speedle.io/ko/docs/pms/global-policy/</link>
+      <pubDate>Fri, 18 Jan 2019 21:19:44 +0800</pubDate>
+      
+      <guid>https://engine.speedle.io/ko/docs/pms/global-policy/</guid>
+      <description>역할을 글로벌로 정의해야 하는 경우 일반적인 역할은 서비스 범위로 한정됩니다. 여러 서비스에서 역할 할당을 공유해야 하는 경우, 특별히 예약된 이름인 global 서비스에서 해당 할당을 정의하고 각 서비스 자체의 인가 정책 내에서 해당 역할을 참조합니다.
+현재 지원되는 것은 글로벌 역할 정책뿐입니다. 글로벌 역할 할당 자체가 모든 작업 권한을 부여하는 것은 아닙니다. 각 일반 서비스는 자체 권한을 정의해야 합니다. 글로벌 인가 정책은 지원되지 않습니다.
+예제 실행 전 준비 빠른 시작의 설명에 따라 저장소 루트 아래의 .</description>
+    </item>
+    
+    <item>
+      <title>인가 진단</title>
+      <link>https://engine.speedle.io/ko/docs/pms/diagnosis/</link>
+      <pubDate>Fri, 18 Jan 2019 15:46:59 +0800</pubDate>
+      
+      <guid>https://engine.speedle.io/ko/docs/pms/diagnosis/</guid>
+      <description>인가 진단의 역할 Diagnose는 인가 평가를 상세히 설명합니다. 결정 결과, 이유, 유효한 역할, 속성 및 검증된 정책이 포함됩니다. IsAllowed와 동일한 요청 컨텍스트를 수신합니다. REST에서는 /authz-check/v1/diagnose를 사용하고 Go/gRPC에서는 Diagnose를 사용합니다.
+진단 기능은 정책 정의와 요청 컨텍스트를 그대로 노출합니다. API 보안 제어를 사용하여 신뢰할 수 있는 운영자에게만 접근을 제한하십시오. 공개 디버깅 엔드포인트로 사용해서는 안 됩니다.
+예제 실행 전 준비 빠른 시작의 설명에 따라 저장소 루트 아래의 ./bin/spctl, ./bin/speedle-pms, ./bin/speedle-ads를 빌드합니다. Go 1.</description>
+    </item>
+    
+    <item>
+      <title>정책 발견</title>
+      <link>https://engine.speedle.io/ko/docs/pms/discover/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/ko/docs/pms/discover/</guid>
+      <description>정책 발견의 역할 발견 모드는 요청을 기록하고 기록 작업이 성공하면 이유 5와 함께 allowed=true를 반환합니다. 이는 기존 정책이 해당 작업을 인가했음을 의미하지 않습니다. 격리된 테스트 환경에서만 사용하고 생성된 권한을 검토한 후 일반적인 is-allowed 강제로 복원하십시오. 어설션 또는 저장소 오류는 여전히 적절하게 처리해야 하며 오류를 인가로 간주해서는 안 됩니다.
+재현 가능한 로컬 예제 시작 빠른 시작의 설명에 따라 바이너리를 빌드하고 체크아웃 루트에서 모든 터미널을 실행합니다. 시작하기 전에 새 파일을 사용하고 이전 페이지의 픽스처를 중지하십시오.</description>
+    </item>
+    
+  </channel>
+</rss>

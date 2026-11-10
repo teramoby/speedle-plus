@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Discovery on Speedle</title>
+    <link>https://engine.speedle.io/es/tags/discovery/</link>
+    <description>Recent content in Discovery on Speedle</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>es-es</language>
+    
+	<atom:link href="https://engine.speedle.io/es/tags/discovery/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>Descubrimiento de políticas</title>
+      <link>https://engine.speedle.io/es/docs/pms/discover/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/es/docs/pms/discover/</guid>
+      <description>¿Qué hace el descubrimiento? El descubrimiento registra solicitudes y devuelve allowed=true con motivo 5 para una operación de registro exitosa. No demuestra que una política existente haya autorizado la operación. Utilícelo únicamente en un entorno de prueba aislado, revise las concesiones generadas y restablezca la aplicación normal de is-allowed posteriormente. Los errores de aserción o almacenamiento deben seguir gestionándose; nunca trate un error como una concesión de autorización.
+Iniciar un ejemplo local reproducible Compile los binarios mediante el Inicio rápido, luego ejecute todas las terminales desde la raíz del repositorio.</description>
+    </item>
+    
+  </channel>
+</rss>

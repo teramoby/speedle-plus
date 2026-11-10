@@ -89,6 +89,7 @@ grant user bob read report if department == 'finance'
 
 Son sentencias SPDL, no un servicio de ejemplo completo; consulte [Gestión de políticas](../pms/policy-mgmt/) para los servicios, los roles con ámbito de recurso y ejemplos completos de decisión.
 
+<a id="condition"></a>
 ## Condición
 
 ### 1. Descripción general
@@ -170,6 +171,7 @@ Un atributo en una condición representa una variable. El valor se determina en 
 Los atributos integrados son los valores que rellena el entorno de ADS.
 Los atributos del cliente son los valores que aporta el PEP —la aplicación o el servicio de confianza del llamador— al pedir una decisión de autorización a ADS, no los usuarios finales. El PEP responde de los valores que envía. Los atributos aportados por el PEP tienen prioridad sobre los atributos integrados del mismo nombre, así que un PEP no debe reenviar entrada no confiable del usuario final con el nombre de un atributo integrado.
 
+<a id="2-2-1-built-in-attributes"></a>
 ##### 2.2.1 Atributos integrados
 
 Los atributos integrados son los siguientes:

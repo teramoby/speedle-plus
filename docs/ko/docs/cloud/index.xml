@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Speedle Cloud on Speedle</title>
+    <link>https://engine.speedle.io/ko/docs/cloud/</link>
+    <description>Recent content in Speedle Cloud on Speedle</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>ko-kr</language>
+    <lastBuildDate>Tue, 10 Nov 2026 17:19:04 +0800</lastBuildDate>
+    
+	<atom:link href="https://engine.speedle.io/ko/docs/cloud/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>Speedle Cloud 빠른 시작</title>
+      <link>https://engine.speedle.io/ko/docs/cloud/getting-started/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/ko/docs/cloud/getting-started/</guid>
+      <description>Speedle Cloud는 출시 예정입니다. cloud.speedle.io의 프로덕션 환경에서는 아직 로그인이 시작되지 않았으며 Cloud 헤더에는 Coming soon(출시 예정) 배지가 표시됩니다. 로그인이 닫혀 있는 동안 로그인 페이지에는 곧 출시될 예정이라는 안내가 표시됩니다. 본문에서는 공개된 사용 흐름을 설명하지만 현재 프로덕션 콘솔이 열려 있음을 의미하지는 않습니다.
+프로덕션 환경 계정 세션, 관리 요청 및 애플리케이션 토큰은 https://cloud.speedle.io를 사용합니다. 계정, 리소스, 토큰은 해당 오리진에 속합니다.
+GitHub 또는 Google을 통한 로그인(출시 예정) 로그인이 아직 시작되지 않았더라도 로그인 페이지에는 GitHub로 로그인과 Google로 로그인이라는 두 가지 옵션이 표시됩니다.</description>
+    </item>
+    
+    <item>
+      <title>Speedle Cloud 애플리케이션 토큰</title>
+      <link>https://engine.speedle.io/ko/docs/cloud/tokens/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/ko/docs/cloud/tokens/</guid>
+      <description>애플리케이션 토큰을 사용하면 백엔드 애플리케이션에서 Speedle Cloud의 인가 API를 인증하여 호출할 수 있습니다.
+보안 요구 사항 토큰을 생성, 교체 또는 취소하려면 콘솔에서 최근 재인증이 필요합니다. 토큰 시크릿은 생성 시 1회 한정으로 표시됩니다. 안전한 시크릿 저장소에 즉시 저장하십시오. 분실 시 다시 표시할 수 없으므로 토큰을 다시 생성해야 합니다.
+토큰 범위 토큰은 특정 계정 및 워크스페이스로 범위가 지정됩니다. 프로덕션 워크로드와 개발 워크로드에 별도의 토큰을 사용하십시오.
+토큰 교체 및 취소 정기적인 토큰 교체를 권장합니다.</description>
+    </item>
+    
+    <item>
+      <title>Speedle Cloud 인가 API 프리뷰</title>
+      <link>https://engine.speedle.io/ko/docs/cloud/authorization-api/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/ko/docs/cloud/authorization-api/</guid>
+      <description>Speedle Cloud는 빠르고 지연 시간이 짧은 접근 결정을 위한 인가 API를 제공합니다.
+요청 계약 애플리케이션은 인가 결정 서비스(ADS)에 대해 POST /authz-check/v1/is-allowed를 호출합니다.
+Node.js 22 예제 다음 Node.js 예제는 전달자(Bearer) 토큰을 사용하여 인가 요청을 보내는 방법을 보여줍니다:
+import { request } from &amp;#39;node:https&amp;#39;; export async function checkAccess(token, authenticatedUserId, authenticatedUserIdd, resource, action) { if (!authenticatedUserId || !authenticatedUserIdd) { throw new Error(&amp;#39;principal name and identity domain are required&amp;#39;); } const payload = JSON.</description>
+    </item>
+    
+    <item>
+      <title>Speedle Cloud 제한 및 오류</title>
+      <link>https://engine.speedle.io/ko/docs/cloud/limits-and-errors/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/ko/docs/cloud/limits-and-errors/</guid>
+      <description>전송 속도 제한 및 쿼터 무료 공개 베타 기간 동안 Speedle Cloud에서는 공정한 사용을 보장하기 위해 계정별 쿼터가 적용됩니다.
+오류 응답 오류 응답은 표준 HTTP 상태 코드와 JSON 오류 객체를 반환합니다:
+{ &amp;#34;error&amp;#34;: { &amp;#34;code&amp;#34;: &amp;#34;rate_limit_exceeded&amp;#34;, &amp;#34;message&amp;#34;: &amp;#34;Too many requests. Please retry later.&amp;#34; } } 재시도 지침 일시적인 네트워크 오류나 429 Too Many Requests의 경우 지수 백오프와 지터를 동반한 재시도를 구현하십시오.</description>
+    </item>
+    
+  </channel>
+</rss>

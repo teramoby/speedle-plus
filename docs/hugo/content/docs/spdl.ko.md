@@ -89,6 +89,7 @@ grant user bob read report if department == 'finance'
 
 위의 예제는 SPDL 문장 예제이며 완전한 서비스 구성이 아닙니다. 서비스, 리소스 범위의 역할 및 완전한 결정 예제에 대해서는 [정책 관리](../pms/policy-mgmt/)를 참조하십시오.
 
+<a id="condition"></a>
 ## 조건(Condition)
 
 ### 1. 개요
@@ -169,6 +170,7 @@ grant user bob read report if department == 'finance'
 기본 제공 속성은 ADS 런타임에 의해 자동으로 설정되는 값입니다.
 사용자 정의 속성은 인가 결정을 요청할 때 최종 사용자가 아닌 호출하는 신뢰할 수 있는 애플리케이션 또는 서비스(PEP)에서 제공하는 값입니다. PEP는 전달하는 값에 책임을 집니다. PEP에서 제공하는 속성은 동일한 이름의 기본 제공 속성보다 우선하므로 PEP는 신뢰할 수 없는 최종 사용자 입력을 기본 제공 속성 이름으로 전달해서는 안 됩니다.
 
+<a id="2-2-1-built-in-attributes"></a>
 ##### 2.2.1 기본 제공 속성
 
 기본 제공 속성은 다음과 같습니다:

@@ -35,6 +35,7 @@ Por favor incluya:
 3. Entorno y pasos reproducibles
 4. Comportamiento esperado
 
+<a id="code"></a>
 ## Código
 
 Las contribuciones a Speedle se realizan bajo la Universal Permissive License 1.0 (UPL-1.0). Firme sus commits (`git commit -s`) para certificar que tiene derecho a enviar su contribución según el Developer Certificate of Origin (DCO) 1.1. Conserve los avisos de derechos de autor y licencia existentes e identifique cualquier material de terceros en su Pull Request.

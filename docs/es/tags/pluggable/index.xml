@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Pluggable on Speedle</title>
+    <link>https://engine.speedle.io/es/tags/pluggable/</link>
+    <description>Recent content in Pluggable on Speedle</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>es-es</language>
+    <lastBuildDate>Tue, 10 Nov 2026 18:32:58 +0800</lastBuildDate>
+    
+	<atom:link href="https://engine.speedle.io/es/tags/pluggable/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>API del complemento de aserción de tokens</title>
+      <link>https://engine.speedle.io/es/docs/api/asserter_api/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/es/docs/api/asserter_api/</guid>
+      <description>Referencia del webhook. errCode es un entero y attributes es un objeto. Configure el endpoint real en la configuración del asertor de ADS.
+Configuración de seguridad y endpoints. Esta es una referencia de contrato, no un backend hospedado por speedle.io.
+              document.addEventListener(&#39;DOMContentLoaded&#39;, function() { var url = &#34;\/swagger\/asserter.yaml&#34;; const ui = SwaggerUIBundle({ url: url, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.</description>
+    </item>
+    
+    <item>
+      <title>Almacenamiento conectable</title>
+      <link>https://engine.speedle.io/es/docs/store/</link>
+      <pubDate>Tue, 10 Nov 2026 18:32:58 +0800</pubDate>
+      
+      <guid>https://engine.speedle.io/es/docs/store/</guid>
+      <description>Almacenes integrados y contratos de extensión Los binarios independientes registran implementaciones de archivo, etcd, MongoDB y MySQL bajo pkg/store. Su disponibilidad no implica garantías operativas idénticas; revise la autenticación del backend, persistencia, transacciones y el comportamiento de observación (watch) para su despliegue. La configuración a continuación ilustra los nombres de propiedades; la ejecución de despliegues de etcd/MongoDB queda fuera de este ejemplo local.
+Un backend completo implementa pms.PolicyStoreManager: gestión de servicios, políticas de autorización, políticas de roles y funciones, lecturas de instantáneas y watch/stop.</description>
+    </item>
+    
+  </channel>
+</rss>

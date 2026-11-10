@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Contribution on Speedle</title>
+    <link>https://engine.speedle.io/ja/tags/contribution/</link>
+    <description>Recent content in Contribution on Speedle</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>ja-jp</language>
+    
+	<atom:link href="https://engine.speedle.io/ja/tags/contribution/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>貢献とコミュニティ</title>
+      <link>https://engine.speedle.io/ja/contribute/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/ja/contribute/</guid>
+      <description>Speedle コミュニティへようこそ。利用、普及、コードの貢献など、さまざまな形での参加を心より歓迎します。
+プロモーション Speedle を気に入っていただけた場合は、GitHub プロジェクトページでスターを付け、同僚や友人に推薦してください。導入事例の共有も歓迎します。
+
+ディスカッションとコミュニティ Speedle Discord コミュニティに参加して、質問、アイデアの共有、コード貢献についての議論を行いましょう。
+speedle-users や speedle-developers メーリングリストにも参加できます。
+
+問題の報告 バグや機能改善の提案がある場合は、GitHub issue を作成してください。
+可能な限り以下を含めてください:
+ Speedle のバージョン 問題の説明 再現環境と手順 期待される動作  
+コードの貢献 Speedle への貢献は Universal Permissive License 1.0 (UPL-1.0) の下で行われます。Developer Certificate of Origin (DCO) 1.1 の下で貢献を提出する権利があることを証明するために、コミットにサインオフ (git commit -s) を付与してください。Pull Request 内で既存の著作権およびライセンス表示を保持し、サードパーティの素材があれば明記してください。
+コードを貢献する手順は以下のとおりです:
+ git commit -s で各コミットにサインオフを付与（DCO および UPL-1.0 LICENSE を参照） リポジトリをフォーク 既存の issue を修正、または issue を作成して修正 issue を修正する Pull Request を作成 CI パイプラインの結果を確認し、失敗があれば修正 プロジェクトメンテナーが PR をレビューし、適切にマージ  行動規範 Golden Rule に従い、具体的なガイドラインについては Contributor Covenant Code of Conduct を確認してください。</description>
+    </item>
+    
+  </channel>
+</rss>
