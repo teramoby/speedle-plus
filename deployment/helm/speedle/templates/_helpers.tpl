@@ -26,14 +26,17 @@ Full name, truncated for DNS labels.
 {{- end -}}
 
 {{- define "speedle.componentName" -}}
-{{- printf "%s-%s" (include "speedle.fullname" .root) .component | trunc 63 | trimSuffix "-" -}}
+{{- /* DNS labels are 63 characters. Reserve the separator and the component. */ -}}
+{{- $base := include "speedle.fullname" .root | trunc 59 | trimSuffix "-" -}}
+{{- printf "%s-%s" $base .component -}}
 {{- end -}}
 
 {{- define "speedle.policyClaim" -}}
 {{- if .Values.store.file.persistence.existingClaim -}}
 {{- .Values.store.file.persistence.existingClaim -}}
 {{- else -}}
-{{- printf "%s-policies" (include "speedle.fullname" .) | trunc 63 | trimSuffix "-" -}}
+{{- $base := include "speedle.fullname" . | trunc 54 | trimSuffix "-" -}}
+{{- printf "%s-policies" $base -}}
 {{- end -}}
 {{- end -}}
 

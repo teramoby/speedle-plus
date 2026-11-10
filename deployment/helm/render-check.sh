@@ -173,6 +173,21 @@ if grep -F 'httpGet:' "${work}/mtls.yaml" >/dev/null; then
   exit 1
 fi
 
+long=$(python3 -c 'print("a" * 63)')
+long_render=$(render --set "fullnameOverride=${long}")
+printf '%s\n' "${long_render}" > "${work}/long.yaml"
+deploy_names=()
+while IFS= read -r name; do
+  deploy_names+=("${name}")
+done < <(awk '$1 == "kind:" && $2 == "Deployment" { want = 1; next } want && $1 == "name:" { print $2; want = 0 }' "${work}/long.yaml")
+[[ "${#deploy_names[@]}" == "2" ]]
+[[ "${deploy_names[0]}" != "${deploy_names[1]}" ]]
+[[ "${deploy_names[0]}" == *-pms && "${deploy_names[1]}" == *-ads ]]
+[[ "${#deploy_names[0]}" -le 63 && "${#deploy_names[1]}" -le 63 ]]
+claim_name=$(awk '$1 == "kind:" && $2 == "PersistentVolumeClaim" { want = 1; next } want && $1 == "name:" { print $2; exit }' "${work}/long.yaml")
+[[ "${claim_name}" == *-policies ]]
+[[ "${#claim_name}" -le 63 ]]
+
 version=$(awk '/^version:/ { print $2; exit }' "${chart}/Chart.yaml")
 app=$(awk '/^appVersion:/ { gsub(/"/, "", $2); print $2; exit }' "${chart}/Chart.yaml")
 helm package "${chart}" --version "${version}" --app-version "${app}" --destination "${work}"
