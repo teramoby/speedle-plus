@@ -9,9 +9,11 @@ categories = ["docs"]
 bref = "Homebrew 安装命令行工具和两个服务，并让它们在 127.0.0.1 上共用一份策略文件。"
 +++
 
-在 macOS 或 Linux 上用 [Homebrew](https://brew.sh/) 安装 Speedle 命令行工具：
+在 macOS 或 Linux 上用 [Homebrew](https://brew.sh/) 安装 Speedle 命令行工具。Homebrew 在安装或启动官方组织以外的 tap 中的 formula 之前，需要先信任该 tap。
 
 ```bash
+brew tap teramoby/tap
+brew trust teramoby/tap
 brew install teramoby/tap/spctl
 ```
 

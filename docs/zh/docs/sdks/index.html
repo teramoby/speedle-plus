@@ -83,8 +83,6 @@
 <li data-docs-depth="0" class=""><a href="/zh/docs/overview/">概览</a></li>
 <li data-docs-depth="0" class=""><a href="/zh/docs/spdl/">SPDL：Speedle 策略定义语言</a></li>
 <li data-docs-depth="0" class=""><a href="/zh/docs/architecture/">系统架构</a></li>
-<li data-docs-depth="0" class=""><a href="/zh/docs/deployment-embeded/">Speedle 嵌入模式</a></li>
-<li data-docs-depth="0" class=""><a href="/zh/docs/deployment/">部署 Speedle</a></li>
 
 
 
@@ -97,7 +95,6 @@
 </ul>
 
 </li>
-<li data-docs-depth="0" class=""><a href="/zh/docs/deployment/homebrew/">Homebrew 安装</a></li>
 <li data-docs-depth="0" class=""><a href="/zh/docs/decisions/">授权决策</a></li>
 <li data-docs-depth="0" class=""><a href="/zh/docs/idd/">用户身份域</a></li>
 <li data-docs-depth="0" class=""><a href="/zh/docs/assertor/">令牌断言</a></li>
@@ -126,6 +123,17 @@
 
 
 
+<li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading docs-nav-heading-link"><a href="/zh/docs/deployment/">部署</a></span>
+<ul class="">
+<li data-docs-depth="1" class=""><a href="/zh/docs/deployment/embedded/">Speedle 嵌入模式</a></li>
+<li data-docs-depth="1" class=""><a href="/zh/docs/deployment/docker/">Docker 镜像</a></li>
+<li data-docs-depth="1" class=""><a href="/zh/docs/deployment/homebrew/">Homebrew 安装</a></li>
+</ul>
+
+</li>
+
+
+
 <li data-docs-depth="0" class="docs-nav-section parent active"><span class="docs-nav-heading docs-nav-heading-link"><a href="/zh/docs/sdks/" aria-current="page">SDK</a></span>
 <ul class="sub-menu">
 <li data-docs-depth="1" class=""><a href="/zh/docs/sdks/java/">Java SDK</a></li>
@@ -134,7 +142,6 @@
 <li data-docs-depth="1" class=""><a href="/zh/docs/sdks/dotnet/">C#/.NET SDK</a></li>
 <li data-docs-depth="1" class=""><a href="/zh/docs/sdks/rust/">Rust SDK</a></li>
 <li data-docs-depth="1" class=""><a href="/zh/docs/sdks/node/">Node.js/TypeScript SDK</a></li>
-<li data-docs-depth="1" class=""><a href="/zh/docs/sdks/docker/">Docker 镜像</a></li>
 </ul>
 
 </li>
@@ -167,7 +174,7 @@
   <h1>SDK</h1>
   <p></p>
 
-<p>Speedle SDK 是决策 API <code>POST /authz-check/v1/is-allowed</code> 的客户端库，既可用于自托管的 Speedle ADS，也可用于 Speedle Cloud。每个语言页面说明如何添加软件包，并分别给出两种场景下经过实测的完整程序。源代码和完整参考见 <a href="https://github.com/teramoby/speedle-sdk">teramoby/speedle-sdk</a>。</p>
+<p>Speedle SDK 是决策 API <code>POST /authz-check/v1/is-allowed</code> 的客户端库，既可用于自托管的 Speedle ADS，也可用于 Speedle Cloud。每个语言页面说明如何添加软件包，并分别给出两种场景下经过实测的完整程序。源代码和完整参考见 <a href="https://github.com/teramoby/speedle-sdk">teramoby/speedle-sdk</a>。这些示例要调用的 PMS 和 ADS，见<a href="/zh/docs/deployment/">部署</a>和<a href="/zh/docs/deployment/docker/">Docker 镜像</a>。</p>
 
 <h2 id="软件包">软件包</h2>
 
@@ -181,10 +188,6 @@
 <li><a href="/zh/docs/sdks/rust/">Rust</a>：crates.io <code>speedle</code>，已发布。</li>
 <li><a href="/zh/docs/sdks/node/">Node.js / TypeScript</a>：npm <code>@speedle/sdk</code>，已发布。</li>
 </ul>
-
-<h2 id="docker-镜像">Docker 镜像</h2>
-
-<p><a href="/zh/docs/sdks/docker/">Docker 镜像</a> 用 <code>docker.io/speedle/speedle</code> 或 <code>ghcr.io/teramoby/speedle</code> 运行 <code>speedle-pms</code>、<code>speedle-ads</code> 和 <code>spctl</code>。把 ADS 发布到 <code>127.0.0.1:6734</code>，本页的客户端指向这个端口即可。</p>
 
 <h2 id="功能">功能</h2>
 

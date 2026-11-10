@@ -37,7 +37,7 @@
 <meta name="twitter:image:alt" content="Speedle Engine — Fast. Simple. Access control">
 
 <script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/docs/deployment/homebrew/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-10T13:49:59+08:00","description":"Install speedle-spctl, speedle-pms and speedle-ads with Homebrew and run a local demo.","headline":"Homebrew","image":"https://engine.speedle.io/img/social/engine-en.png","inLanguage":"en","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/docs/deployment/homebrew/","@type":"WebPage"},"name":"Homebrew","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/docs/deployment/homebrew/"}</script>
-<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/docs/deployment/homebrew/#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://engine.speedle.io/","name":"Home","position":1},{"@type":"ListItem","item":"https://engine.speedle.io/docs/","name":"Documentation","position":2},{"@type":"ListItem","item":"https://engine.speedle.io/docs/deployment/homebrew/","name":"Homebrew","position":3}]}</script><link href="/css/docs.css" rel="stylesheet" type="text/css">
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/docs/deployment/homebrew/#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://engine.speedle.io/","name":"Home","position":1},{"@type":"ListItem","item":"https://engine.speedle.io/docs/","name":"Documentation","position":2},{"@type":"ListItem","item":"https://engine.speedle.io/docs/deployment/","name":"Deployment","position":3},{"@type":"ListItem","item":"https://engine.speedle.io/docs/deployment/homebrew/","name":"Homebrew","position":4}]}</script><link href="/css/docs.css" rel="stylesheet" type="text/css">
 
 
     <link href="/css/navigation.css?v=header-20261106-v8" rel="stylesheet">
@@ -82,7 +82,6 @@
 <li data-docs-depth="0" class=""><a href="/docs/overview/">Overview</a></li>
 <li data-docs-depth="0" class=""><a href="/docs/spdl/">SPDL - Speedle Policy Definition Language</a></li>
 <li data-docs-depth="0" class=""><a href="/docs/architecture/">Architecture</a></li>
-<li data-docs-depth="0" class=""><a href="/docs/deployment-embeded/">Speedle embedded mode</a></li>
 
 
 
@@ -96,10 +95,8 @@
 
 </li>
 <li data-docs-depth="0" class=""><a href="/docs/decisions/">Authorization Decisions</a></li>
-<li data-docs-depth="0" class="active"><a href="/docs/deployment/homebrew/" aria-current="page">Homebrew</a></li>
 <li data-docs-depth="0" class=""><a href="/docs/idd/">Identity Domain</a></li>
 <li data-docs-depth="0" class=""><a href="/docs/assertor/">Token asserter</a></li>
-<li data-docs-depth="0" class=""><a href="/docs/deployment/">Deployment</a></li>
 
 
 
@@ -125,6 +122,17 @@
 
 
 
+<li data-docs-depth="0" class="docs-nav-section parent"><span class="docs-nav-heading docs-nav-heading-link"><a href="/docs/deployment/">Deployment</a></span>
+<ul class="sub-menu">
+<li data-docs-depth="1" class=""><a href="/docs/deployment/embedded/">Speedle embedded mode</a></li>
+<li data-docs-depth="1" class=""><a href="/docs/deployment/docker/">Docker image</a></li>
+<li data-docs-depth="1" class="active"><a href="/docs/deployment/homebrew/" aria-current="page">Homebrew</a></li>
+</ul>
+
+</li>
+
+
+
 <li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading docs-nav-heading-link"><a href="/docs/sdks/">SDKs</a></span>
 <ul class="">
 <li data-docs-depth="1" class=""><a href="/docs/sdks/java/">Java SDK</a></li>
@@ -133,7 +141,6 @@
 <li data-docs-depth="1" class=""><a href="/docs/sdks/dotnet/">C#/.NET SDK</a></li>
 <li data-docs-depth="1" class=""><a href="/docs/sdks/rust/">Rust SDK</a></li>
 <li data-docs-depth="1" class=""><a href="/docs/sdks/node/">Node.js/TypeScript SDK</a></li>
-<li data-docs-depth="1" class=""><a href="/docs/sdks/docker/">Docker image</a></li>
 </ul>
 
 </li>
@@ -181,8 +188,10 @@
 
   <div id="kube-component" class="content">
 
-<p>Install the Speedle command-line tool with <a href="https://brew.sh/">Homebrew</a> on macOS or Linux:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">brew install teramoby/tap/spctl</code></pre></div>
+<p>Install the Speedle command-line tool with <a href="https://brew.sh/">Homebrew</a> on macOS or Linux. Homebrew does not install or start formulas from a tap outside the official Homebrew organization until that tap is trusted.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">brew tap teramoby/tap
+brew trust teramoby/tap
+brew install teramoby/tap/spctl</code></pre></div>
 <p>The formula is named <code>spctl</code>. On macOS the command is <code>speedle-spctl</code>, so the install does not replace Apple Gatekeeper at <code>/usr/sbin/spctl</code>. On Linux the same program is also available as <code>spctl</code>.</p>
 
 <p>The policy management service and the authorization decision service are separate formulas:</p>

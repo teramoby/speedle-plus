@@ -168,7 +168,7 @@ test('release checksums and uploaded assets include both spctl names', () => {
 });
 
 test('changed release shell blocks parse before any publishing or container operation', () => {
-  for (const name of ['Build release binaries', 'Write checksums', 'Require Docker Hub credentials', 'Keep the Homebrew tap files', 'Verify the container image builds and starts', 'Log in to container registries', 'Publish the GitHub release', 'Publish the container image', 'Check for the Homebrew tap token']) {
+  for (const name of ['Build release binaries', 'Write checksums', 'Require Docker Hub credentials', 'Keep the Homebrew tap files', 'Verify the container image builds and starts', 'Log in to container registries', 'Publish the GitHub release', 'Publish the container image', 'Publish the Helm chart', 'Check for the Homebrew tap token']) {
     const result = spawnSync('bash', ['-n'], {input: script(name), encoding: 'utf8'});
     assert.equal(result.status, 0, `${name}: ${result.stderr}`);
   }

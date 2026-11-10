@@ -17,8 +17,8 @@ PATTERN = r"<!-- embedded: ([a-z-]+) -->\s*```(bash|go|ini)\n(.*?)\n```"
 
 
 def blocks(locale):
-    name = "deployment-embeded" + (".zh" if locale == "zh" else "") + ".md"
-    source = ROOT / "docs/hugo/content/docs" / name
+    name = "embedded" + (".zh" if locale == "zh" else "") + ".md"
+    source = ROOT / "docs/hugo/content/docs/deployment" / name
     text = source.read_text()
     pairs = re.findall(PATTERN, text, re.S)
     assert [name for name, _, _ in pairs] == ["version", "setup", "policies", "program", "build", "run"], source

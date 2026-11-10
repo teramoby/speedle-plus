@@ -84,8 +84,6 @@
 <li data-docs-depth="0" class="active"><a href="/zh/docs/overview/" aria-current="page">概览</a></li>
 <li data-docs-depth="0" class=""><a href="/zh/docs/spdl/">SPDL：Speedle 策略定义语言</a></li>
 <li data-docs-depth="0" class=""><a href="/zh/docs/architecture/">系统架构</a></li>
-<li data-docs-depth="0" class=""><a href="/zh/docs/deployment-embeded/">Speedle 嵌入模式</a></li>
-<li data-docs-depth="0" class=""><a href="/zh/docs/deployment/">部署 Speedle</a></li>
 
 
 
@@ -98,7 +96,6 @@
 </ul>
 
 </li>
-<li data-docs-depth="0" class=""><a href="/zh/docs/deployment/homebrew/">Homebrew 安装</a></li>
 <li data-docs-depth="0" class=""><a href="/zh/docs/decisions/">授权决策</a></li>
 <li data-docs-depth="0" class=""><a href="/zh/docs/idd/">用户身份域</a></li>
 <li data-docs-depth="0" class=""><a href="/zh/docs/assertor/">令牌断言</a></li>
@@ -127,6 +124,17 @@
 
 
 
+<li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading docs-nav-heading-link"><a href="/zh/docs/deployment/">部署</a></span>
+<ul class="">
+<li data-docs-depth="1" class=""><a href="/zh/docs/deployment/embedded/">Speedle 嵌入模式</a></li>
+<li data-docs-depth="1" class=""><a href="/zh/docs/deployment/docker/">Docker 镜像</a></li>
+<li data-docs-depth="1" class=""><a href="/zh/docs/deployment/homebrew/">Homebrew 安装</a></li>
+</ul>
+
+</li>
+
+
+
 <li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading docs-nav-heading-link"><a href="/zh/docs/sdks/">SDK</a></span>
 <ul class="">
 <li data-docs-depth="1" class=""><a href="/zh/docs/sdks/java/">Java SDK</a></li>
@@ -135,7 +143,6 @@
 <li data-docs-depth="1" class=""><a href="/zh/docs/sdks/dotnet/">C#/.NET SDK</a></li>
 <li data-docs-depth="1" class=""><a href="/zh/docs/sdks/rust/">Rust SDK</a></li>
 <li data-docs-depth="1" class=""><a href="/zh/docs/sdks/node/">Node.js/TypeScript SDK</a></li>
-<li data-docs-depth="1" class=""><a href="/zh/docs/sdks/docker/">Docker 镜像</a></li>
 </ul>
 
 </li>
@@ -187,7 +194,7 @@
 
 <h2 id="授权引擎-authorization-engine">授权引擎（Authorization engine）</h2>
 
-<p>授权引擎根据策略评估访问请求并返回决策，使授权逻辑独立于应用代码。Speedle 由<a href="/zh/docs/architecture/">策略管理服务（PMS）、策略存储和授权决策服务（ADS）</a>组成。ADS 可以作为独立服务运行，也可以<a href="/zh/docs/deployment-embeded/">嵌入 Go 应用</a>。</p>
+<p>授权引擎根据策略评估访问请求并返回决策，使授权逻辑独立于应用代码。Speedle 由<a href="/zh/docs/architecture/">策略管理服务（PMS）、策略存储和授权决策服务（ADS）</a>组成。ADS 可以作为独立服务运行，也可以<a href="/zh/docs/deployment/embedded/">嵌入 Go 应用</a>。</p>
 
 <h2 id="授权与访问控制-authorization-and-access-control">授权与访问控制（Authorization and access control）</h2>
 

@@ -18,7 +18,7 @@ The examples below use a service named `library`. Each policy was created throug
 
 ## Authorization engine
 
-An authorization engine evaluates access requests against policies and returns a decision, so that the authorization logic lives outside application code. Speedle consists of a [Policy Management Service (PMS), a policy repository and an Authorization Decision Service (ADS)](../architecture/). The ADS can run as a standalone service or be [embedded in a Go application](../deployment-embeded/).
+An authorization engine evaluates access requests against policies and returns a decision, so that the authorization logic lives outside application code. Speedle consists of a [Policy Management Service (PMS), a policy repository and an Authorization Decision Service (ADS)](../architecture/). The ADS can run as a standalone service or be [embedded in a Go application](../deployment/embedded/).
 
 ## Authorization and access control
 

@@ -83,6 +83,7 @@ for (const name of ['docs/index.html', 'zh/docs/index.html', 'docs/spdl/index.ht
   assert.ok(html.includes('aria-current="page"'), `Current page marked in the sidebar in ${name}`);
   assert.ok(new RegExp(`<button class="docs-nav-toggle"[^>]*>[\\s\\S]*?<span>${zh ? '菜单' : 'Menu'}</span>`).test(html), `Menu drawer button in ${name}`);
   if (!zh) assert.ok(/docs-nav-heading[^"]*"><a [^>]*>SDKs<\/a>/.test(html), `SDKs is a bold group heading like API in ${name}`);
+  assert.ok(new RegExp(`docs-nav-heading[^"]*"><a [^>]*>${zh ? '部署' : 'Deployment'}</a>`).test(html), `Deployment is a bold group heading next to SDKs in ${name}`);
   const afterFooter = html.split('</footer>')[1];
   assert.ok(afterFooter && !afterFooter.includes('/js/'), `No layout script after the footer in ${name}`);
 }
@@ -137,6 +138,21 @@ for (const locale of ['', 'zh/']) {
     assert.ok(sitemap.includes(`<loc>${target}</loc>`) && !sitemap.includes(`docs/api/sdk-${lang}/`), `Sitemap lists only ${target}`);
   }
 }
+// The embedded guide spelling is corrected, and the Docker image page left SDKs.
+// Both previous URLs keep redirecting.
+for (const locale of ['', 'zh/']) {
+  const embedded = `https://engine.speedle.io/${locale}docs/deployment/embedded/`;
+  const alias = fs.readFileSync(path.join(output, `${locale}docs/deployment-embeded/index.html`), 'utf8');
+  assert.ok(alias.includes(`<link rel="canonical" href="${embedded}"`) && alias.includes(`url=/${locale}docs/deployment/embedded/"`), `Redirect ${locale}docs/deployment-embeded/ to ${embedded}`);
+  const docker = `https://engine.speedle.io/${locale}docs/deployment/docker/`;
+  const dockerAlias = fs.readFileSync(path.join(output, `${locale}docs/sdks/docker/index.html`), 'utf8');
+  assert.ok(dockerAlias.includes(`<link rel="canonical" href="${docker}"`) && dockerAlias.includes(`url=/${locale}docs/deployment/docker/"`), `Redirect ${locale}docs/sdks/docker/ to ${docker}`);
+  const sitemap = fs.readFileSync(path.join(output, `${locale || 'en/'}sitemap.xml`), 'utf8');
+  const homebrew = `https://engine.speedle.io/${locale}docs/deployment/homebrew/`;
+  assert.ok(sitemap.includes(`<loc>${embedded}</loc>`) && sitemap.includes(`<loc>${docker}</loc>`) && sitemap.includes(`<loc>${homebrew}</loc>`), `Sitemap lists the Deployment pages in ${locale || 'en'}`);
+  assert.ok(!sitemap.includes(`docs/deployment-embeded/`) && !sitemap.includes(`docs/sdks/docker/`), `Sitemap omits the old embedded and Docker URLs in ${locale || 'en'}`);
+  assert.ok(fs.readFileSync(path.join(output, `${locale || 'en/'}sitemap.xml`), 'utf8').includes(`<loc>https://engine.speedle.io/${locale}docs/deployment/</loc>`), `Sitemap lists the Deployment section in ${locale || 'en'}`);
+}
 let docsAlternates = 0;
 function checkDocsAlternates(directory) {
   for (const entry of fs.readdirSync(directory, {withFileTypes: true})) {
@@ -156,7 +172,7 @@ function checkDocsAlternates(directory) {
 }
 checkDocsAlternates(path.join(output, 'docs'));
 checkDocsAlternates(path.join(output, 'zh/docs'));
-assert.equal(docsAlternates, 94, 'Every canonical docs page and redirect alias has three hreflang alternates');
+assert.equal(docsAlternates, 98, 'Every canonical docs page and redirect alias has three hreflang alternates');
 console.log('PASS Hugo 0.48 output: editor, navigation, sitemap, footer stylesheet and matching release assets');
 
 // #278: the Cloud section is the complete bilingual documentation hub.
@@ -221,12 +237,13 @@ function checkStorageNavigation(directory, locale = '') {
       if (!html.includes('<div class="sidebar">')) continue;
       const sidebar = html.split('<div class="sidebar">')[1];
       for (const target of ['store/', 'store/mysql/', 'store/etcd/', 'store/mongodb/', 'pms/policy-mgmt/', 'api/decision_api/',
-        'sdks/', 'sdks/java/', 'sdks/python/', 'sdks/go/', 'sdks/dotnet/', 'sdks/rust/', 'sdks/node/', 'sdks/docker/',
+        'sdks/', 'sdks/java/', 'sdks/python/', 'sdks/go/', 'sdks/dotnet/', 'sdks/rust/', 'sdks/node/',
+        'deployment/', 'deployment/embedded/', 'deployment/docker/', 'deployment/homebrew/',
         'cloud/', 'cloud/getting-started/', 'cloud/tokens/', 'cloud/authorization-api/', 'cloud/limits-and-errors/']) {
         assert.ok(sidebar.includes(`href="/${locale}docs/${target}"`), `Complete sidebar ${target} in ${name}`);
       }
       for (const [depth, target] of [[0, 'security/'], [1, 'pms/policy-mgmt/'], [1, 'store/mysql/'],
-        [1, 'api/decision_api/'], [1, 'sdks/java/'], [1, 'cloud/getting-started/']]) {
+        [1, 'api/decision_api/'], [1, 'sdks/java/'], [1, 'deployment/embedded/'], [1, 'deployment/docker/'], [1, 'deployment/homebrew/'], [1, 'cloud/getting-started/']]) {
         assert.ok(new RegExp(`<li data-docs-depth="${depth}"[^>]*><a href="/${locale}docs/${target}"`).test(sidebar), `Menu depth ${depth} for ${target} in ${name}`);
       }
     }

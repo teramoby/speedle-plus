@@ -1,7 +1,8 @@
 +++
 title = "Speedle embedded mode"
 description = "Embed Speedle in a Go application using Go modules and verify Allow/Deny decisions."
-weight = 12
+weight = 10
+aliases = ["/docs/deployment-embeded/"]
 draft = false
 toc = true
 tocheading = "h2"
@@ -13,11 +14,11 @@ bref = ""
 
 Embedded mode runs the Speedle policy decision engine inside your Go application. Call the evaluator directly without starting PMS or ADS servers. Your application authenticates users and supplies the subject, resource and action for each decision.
 
-To try basic policies before writing code, open the [Playground](../../playground/). To run Speedle as standalone services, follow [Quick Start](../../quick-start/).
+To try basic policies before writing code, open the [Playground](/playground/). To run Speedle as standalone services, follow [Quick Start](/quick-start/).
 
 ## Prerequisites
 
-Use Linux or macOS with a shell and **Go 1.26.10 or Go 1.27.3** (or a newer patch on the same release branch), matching [Quick Start](../../quick-start/). This walkthrough uses Go modules and the published **Speedle v1.6.0** release. Go 1.27.3 is the recommended toolchain; the example is verified with Go 1.26.10 and Go 1.27.3.
+Use Linux or macOS with a shell and **Go 1.26.10 or Go 1.27.3** (or a newer patch on the same release branch), matching [Quick Start](/quick-start/). This walkthrough uses Go modules and the published **Speedle v1.6.0** release. Go 1.27.3 is the recommended toolchain; the example is verified with Go 1.26.10 and Go 1.27.3.
 
 Install Go using the [official installation instructions](https://go.dev/doc/install), then check your version:
 

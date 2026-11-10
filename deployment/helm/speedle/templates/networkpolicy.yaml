@@ -1,0 +1,21 @@
+{{- if .Values.networkPolicy.pms.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "speedle.componentName" (dict "root" . "component" "pms") }}
+  labels:
+    {{- include "speedle.labels" (dict "root" . "component" "pms") | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "speedle.selectorLabels" (dict "root" . "component" "pms") | nindent 6 }}
+  policyTypes:
+    - Ingress
+  {{- if .Values.networkPolicy.pms.ingress }}
+  ingress:
+    - from:
+        {{- toYaml .Values.networkPolicy.pms.ingress | nindent 8 }}
+  {{- else }}
+  ingress: []
+  {{- end }}
+{{- end }}

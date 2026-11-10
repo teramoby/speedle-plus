@@ -77,10 +77,10 @@
     
     <li>
   <h2 class="title2">
-    <a href="/zh/docs/idd/" itemprop="headline">用户身份域</a>
+    <a href="/zh/docs/pms/discover/" itemprop="headline">策略发现</a>
   </h2>
   
-  <p itemprop="about">使用身份域区分不同身份提供方或租户中的同名主体。</p>
+  <p itemprop="about">在隔离测试环境中记录访问请求，生成并审核授权策略。</p>
   
   
   <hr />
@@ -89,13 +89,13 @@
     
     <li>
   <h2 class="title2">
-    <a href="/zh/docs/sdks/dotnet/" itemprop="headline">C#/.NET SDK</a>
+    <a href="/zh/docs/cloud/getting-started/" itemprop="headline">Speedle Cloud 快速入门</a>
   </h2>
   
-  <p itemprop="about">添加 Speedle .NET SDK，向本地 Speedle 或 Speedle Cloud 发起授权检查。</p>
+  <p itemprop="about">了解 Speedle Cloud 的登录与账号管理、service 与 SPDL 策略管理、会话 API 请求和 Playground 测试。</p>
   
   
-  <p itemprop="about">用 dotnet add package 添加 Speedle.Sdk 0.2.0，再向本地 Speedle 或 Speedle Cloud 调用 IsAllowedAsync 与 CheckAsync。</p>
+  <p itemprop="about">已发布的 Speedle Cloud 控制台流程，涵盖登录、账号设置、已保存策略和 Playground 判定。</p>
   
   <hr />
 </li>
@@ -103,13 +103,13 @@
     
     <li>
   <h2 class="title2">
-    <a href="/zh/docs/sdks/rust/" itemprop="headline">Rust SDK</a>
+    <a href="/zh/docs/cloud/tokens/" itemprop="headline">Speedle Cloud 应用令牌</a>
   </h2>
   
-  <p itemprop="about">添加 Speedle Rust SDK，向本地 Speedle 或 Speedle Cloud 发起授权检查。</p>
+  <p itemprop="about">签发、保护、查看、轮换和撤销 Speedle Cloud 应用令牌，了解最近认证和一次性展示规则。</p>
   
   
-  <p itemprop="about">用 cargo add 添加 speedle 0.2.0，再向本地 Speedle 或 Speedle Cloud 调用 is_allowed 与 check。</p>
+  <p itemprop="about">管理 service 专属的 Bearer 凭据，避免泄露仅展示一次的秘密值。</p>
   
   <hr />
 </li>
@@ -117,11 +117,13 @@
     
     <li>
   <h2 class="title2">
-    <a href="/zh/docs/assertor/" itemprop="headline">令牌断言</a>
+    <a href="/zh/docs/deployment/docker/" itemprop="headline">Docker 镜像</a>
   </h2>
   
-  <p itemprop="about">验证身份令牌，为 Speedle 授权请求提供可信主体和身份域。</p>
+  <p itemprop="about">用已发布的 Speedle 镜像运行 speedle-pms、speedle-ads 和 spctl。</p>
   
+  
+  <p itemprop="about">Docker Hub 和 GHCR 上的同一个镜像运行策略管理服务、决策服务和 spctl，并共用一份文件存储。</p>
   
   <hr />
 </li>

@@ -35,7 +35,13 @@ Java, Python, Go, .NET and Rust SDKs are version 0.2.0 and published. `@speedle/
 - [C#/.NET SDK](https://engine.speedle.io/docs/sdks/dotnet/): NuGet `Speedle.Sdk` 0.2.0, published.
 - [Rust SDK](https://engine.speedle.io/docs/sdks/rust/): crates.io `speedle` 0.2.0, published.
 - [Node.js/TypeScript SDK](https://engine.speedle.io/docs/sdks/node/): npm `@speedle/sdk` 0.2.1, published. Install with `npm install @speedle/sdk@0.2.1`.
-- [Docker image](https://engine.speedle.io/docs/sdks/docker/): Run speedle-pms, speedle-ads and spctl from docker.io/speedle/speedle and ghcr.io/teramoby/speedle.
+
+## Deployment
+
+- [Deployment](https://engine.speedle.io/docs/deployment/): Embedded mode, the Docker image, Homebrew, source builds, and standalone PMS and ADS services.
+- [Speedle embedded mode](https://engine.speedle.io/docs/deployment/embedded/): Embed the evaluator in a Go application with Go modules and check Allow and Deny.
+- [Docker image](https://engine.speedle.io/docs/deployment/docker/): Run speedle-pms, speedle-ads and spctl from docker.io/speedle/speedle and ghcr.io/teramoby/speedle.
+- [Homebrew](https://engine.speedle.io/docs/deployment/homebrew/): Install speedle-spctl, speedle-pms and speedle-ads with Homebrew and run them on 127.0.0.1 with one shared policy file.
 
 ## Speedle Cloud
 
@@ -70,6 +76,7 @@ Java, Python, Go, .NET and Rust SDKs are version 0.2.0 and published. `@speedle/
 - [中文快速开始](https://engine.speedle.io/zh/quick-start/): 安装 Speedle 并做出第一个授权决策。
 - [Speedle Cloud 中文文档](https://engine.speedle.io/zh/docs/cloud/): Speedle Cloud 托管授权文档：账号与策略管理、应用令牌、授权 API、限制与错误。
 - [SDK 中文文档](https://engine.speedle.io/zh/docs/sdks/): 六种语言 SDK 的中文文档。
+- [部署中文文档](https://engine.speedle.io/zh/docs/deployment/): 嵌入模式、Docker 镜像、Homebrew，以及独立的 PMS 和 ADS。
 
 ## Other Speedle sites
 

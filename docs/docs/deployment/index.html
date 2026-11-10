@@ -11,7 +11,7 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
     <meta name="viewport" content="width=device-width, initial-scale=1"><title>Deployment · Speedle Engine</title>
-<meta name="description" content="Recommended deployment topology for Speedle">
+<meta name="description" content="Run Speedle embedded in a Go application, from the published container image, with Homebrew, or as standalone PMS and ADS services.">
 <meta name="generator" content="Hugo 0.48" />
 <link href="https://engine.speedle.io/index.xml" rel="alternate" type="application/rss+xml">
 <link rel="canonical" href="https://engine.speedle.io/docs/deployment/">
@@ -19,11 +19,10 @@
 <link rel="alternate" hreflang="en" href="https://engine.speedle.io/docs/deployment/">
 <link rel="alternate" hreflang="zh-CN" href="https://engine.speedle.io/zh/docs/deployment/">
 <link rel="alternate" hreflang="x-default" href="https://engine.speedle.io/docs/deployment/">
-<meta property="og:type" content="article">
-<meta property="article:modified_time" content="2026-11-08T02:15:03&#43;08:00">
+<meta property="og:type" content="website">
 <meta property="og:site_name" content="Speedle Engine">
 <meta property="og:title" content="Deployment · Speedle Engine">
-<meta property="og:description" content="Recommended deployment topology for Speedle">
+<meta property="og:description" content="Run Speedle embedded in a Go application, from the published container image, with Homebrew, or as standalone PMS and ADS services.">
 <meta property="og:url" content="https://engine.speedle.io/docs/deployment/">
 <meta property="og:image" content="https://engine.speedle.io/img/social/engine-en.png">
 <meta property="og:image:width" content="1200">
@@ -32,11 +31,11 @@
 <meta property="og:image:alt" content="Speedle Engine — Fast. Simple. Access control">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Deployment · Speedle Engine">
-<meta name="twitter:description" content="Recommended deployment topology for Speedle">
+<meta name="twitter:description" content="Run Speedle embedded in a Go application, from the published container image, with Homebrew, or as standalone PMS and ADS services.">
 <meta name="twitter:image" content="https://engine.speedle.io/img/social/engine-en.png">
 <meta name="twitter:image:alt" content="Speedle Engine — Fast. Simple. Access control">
 
-<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/docs/deployment/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-08T02:15:03+08:00","description":"Recommended deployment topology for Speedle","headline":"Deployment","image":"https://engine.speedle.io/img/social/engine-en.png","inLanguage":"en","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/docs/deployment/","@type":"WebPage"},"name":"Deployment","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/docs/deployment/"}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/docs/deployment/#webpage","@type":"WebPage","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-10T13:49:59+08:00","description":"Run Speedle embedded in a Go application, from the published container image, with Homebrew, or as standalone PMS and ADS services.","headline":"Deployment","image":"https://engine.speedle.io/img/social/engine-en.png","inLanguage":"en","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/docs/deployment/","@type":"WebPage"},"name":"Deployment","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/docs/deployment/"}</script>
 <script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/docs/deployment/#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://engine.speedle.io/","name":"Home","position":1},{"@type":"ListItem","item":"https://engine.speedle.io/docs/","name":"Documentation","position":2},{"@type":"ListItem","item":"https://engine.speedle.io/docs/deployment/","name":"Deployment","position":3}]}</script><link href="/css/docs.css" rel="stylesheet" type="text/css">
 
 
@@ -82,7 +81,6 @@
 <li data-docs-depth="0" class=""><a href="/docs/overview/">Overview</a></li>
 <li data-docs-depth="0" class=""><a href="/docs/spdl/">SPDL - Speedle Policy Definition Language</a></li>
 <li data-docs-depth="0" class=""><a href="/docs/architecture/">Architecture</a></li>
-<li data-docs-depth="0" class=""><a href="/docs/deployment-embeded/">Speedle embedded mode</a></li>
 
 
 
@@ -96,10 +94,8 @@
 
 </li>
 <li data-docs-depth="0" class=""><a href="/docs/decisions/">Authorization Decisions</a></li>
-<li data-docs-depth="0" class=""><a href="/docs/deployment/homebrew/">Homebrew</a></li>
 <li data-docs-depth="0" class=""><a href="/docs/idd/">Identity Domain</a></li>
 <li data-docs-depth="0" class=""><a href="/docs/assertor/">Token asserter</a></li>
-<li data-docs-depth="0" class="active"><a href="/docs/deployment/" aria-current="page">Deployment</a></li>
 
 
 
@@ -125,6 +121,17 @@
 
 
 
+<li data-docs-depth="0" class="docs-nav-section parent active"><span class="docs-nav-heading docs-nav-heading-link"><a href="/docs/deployment/" aria-current="page">Deployment</a></span>
+<ul class="sub-menu">
+<li data-docs-depth="1" class=""><a href="/docs/deployment/embedded/">Speedle embedded mode</a></li>
+<li data-docs-depth="1" class=""><a href="/docs/deployment/docker/">Docker image</a></li>
+<li data-docs-depth="1" class=""><a href="/docs/deployment/homebrew/">Homebrew</a></li>
+</ul>
+
+</li>
+
+
+
 <li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading docs-nav-heading-link"><a href="/docs/sdks/">SDKs</a></span>
 <ul class="">
 <li data-docs-depth="1" class=""><a href="/docs/sdks/java/">Java SDK</a></li>
@@ -133,7 +140,6 @@
 <li data-docs-depth="1" class=""><a href="/docs/sdks/dotnet/">C#/.NET SDK</a></li>
 <li data-docs-depth="1" class=""><a href="/docs/sdks/rust/">Rust SDK</a></li>
 <li data-docs-depth="1" class=""><a href="/docs/sdks/node/">Node.js/TypeScript SDK</a></li>
-<li data-docs-depth="1" class=""><a href="/docs/sdks/docker/">Docker image</a></li>
 </ul>
 
 </li>
@@ -164,26 +170,21 @@
 
 </div>
 </aside>
-<main>
-<div id="main">
-
+<main><div id="main">
   <h1>Deployment</h1>
-  <p class="docs-lead">Deploy Speedle in embedded mode or as a service</p>
+  <p></p>
 
+<p>Speedle runs inside a Go application, from one published container image, or as standalone PMS and ADS services.</p>
 
-
-
-<nav id="contents" class="docs-toc" data-docs-toc="h2" aria-label="On this page">
-  <ol></ol>
-</nav>
-
-
-
-  <div id="kube-component" class="content">
+<ul>
+<li><a href="/docs/deployment/embedded/">Embedded mode</a> runs the evaluator in your Go process.</li>
+<li><a href="/docs/deployment/docker/">Docker image</a> runs <code>speedle-pms</code>, <code>speedle-ads</code> and <code>spctl</code> from <code>docker.io/speedle/speedle</code> or <code>ghcr.io/teramoby/speedle</code>.</li>
+<li><a href="/docs/deployment/homebrew/">Homebrew</a> installs the command-line tool and both services and runs a local demo.</li>
+</ul>
 
 <h2 id="choose-a-deployment-mode">Choose a deployment mode</h2>
 
-<p>Use <a href="/docs/deployment-embeded/">embedded mode</a> to run the evaluator in your Go process. Use standalone PMS and ADS when applications call Speedle over REST or gRPC. The <a href="/quick-start/">Quick Start</a> provides a complete local policy-management and authorization walkthrough.</p>
+<p>Use <a href="/docs/deployment/embedded/">embedded mode</a> to run the evaluator in your Go process. Use the <a href="/docs/deployment/docker/">Docker image</a> or standalone PMS and ADS when applications call Speedle over REST or gRPC. <a href="/docs/deployment/homebrew/">Homebrew</a> installs those programs and runs a local demo. The <a href="/quick-start/">Quick Start</a> provides a complete local policy-management and authorization walkthrough.</p>
 
 <h2 id="build-with-current-go">Build with current Go</h2>
 
@@ -314,9 +315,7 @@ kubectl port-forward service/speedle-dev <span style="color:#bd93f9">6733</span>
 <p>Use durable policy storage, pin container image digests to the release version you deploy (a release retry can republish a version tag), protect management and decision endpoints, and configure TLS/mTLS for clients and the policy backend. <a href="/docs/store/">Pluggable Storage</a> documents the current store configuration; <a href="/docs/security/">Security</a> covers current transport flags. Size and operate the etcd deployment using the current etcd documentation, not the retired etcd-operator example.</p>
 
 <p>The repository contains historical Helm/Kubernetes examples. The old Helm 2 <code>helm install -n ...</code>, <code>stable/etcd-operator</code>, <code>apps/v1beta2</code>, and <code>r.authz.fun</code> image instructions are not the deployment flow above. Container pulls, cluster admission, registry access, storage and rollout depend on your environment; validate them in your target cluster before production use.</p>
-</div>
-</div>
-</main>
+</div></main>
         </div>
     </div>
     <div class="docs-nav-backdrop" hidden></div>

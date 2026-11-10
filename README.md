@@ -110,15 +110,19 @@ alice true GRANT_POLICY_FOUND <nil>
 bob false NO_APPLICABLE_POLICIES <nil>
 ```
 
-See [Embedded mode](https://engine.speedle.io/docs/deployment-embeded/) for details.
+See [Embedded mode](https://engine.speedle.io/docs/deployment/embedded/) for details.
 
 ## Install
 
 With [Homebrew](https://brew.sh/) on macOS or Linux:
 
 ```
+brew tap teramoby/tap
+brew trust teramoby/tap
 brew install teramoby/tap/spctl
 ```
+
+Homebrew does not install or start formulas from a tap outside the official Homebrew organization until that tap is trusted.
 
 The formula is named `spctl`. On macOS the command is `speedle-spctl`, so the install does not replace Apple Gatekeeper at `/usr/sbin/spctl`. On Linux the same program is also available as `spctl`.
 
@@ -145,7 +149,25 @@ go install github.com/teramoby/speedle-plus/cmd/...@latest
 
 This installs `spctl`, `speedle-pms` and `speedle-ads` into `$(go env GOPATH)/bin`, or `$GOBIN` if it is set.
 
-The same three programs are published as one container image, `docker.io/speedle/speedle` and `ghcr.io/teramoby/speedle`, with tags `1.7.0`, `1.7` and `latest`. [Run Speedle from the Docker image](https://engine.speedle.io/docs/sdks/docker/).
+The same three programs are published as one container image, `docker.io/speedle/speedle` and `ghcr.io/teramoby/speedle`, with tags `1.7.0`, `1.7` and `latest`. [Run Speedle from the Docker image](https://engine.speedle.io/docs/deployment/docker/).
+
+### Helm
+
+The chart at `deployment/helm/speedle` runs PMS and ADS from one image, `speedle/speedle`. PMS listens on port 6733 and ADS on port 6734. The default policy store is a file on a PersistentVolumeClaim. Set `store.type` to `etcd` or `mongodb` to use those stores. ADS can run more than one replica. The file store keeps a single PMS replica. The chart denies ingress to PMS from other pods until `networkPolicy.pms.ingress` lists the clients that may administer policy.
+
+From a checkout, with Helm 3:
+
+```bash
+helm install speedle deployment/helm/speedle
+```
+
+A release that contains the chart also pushes `oci://ghcr.io/teramoby/charts/speedle`. The chart version matches the image version (`vX.Y.Z` is chart version `X.Y.Z`). Helm 3.8 or newer installs an OCI chart:
+
+```bash
+helm install speedle oci://ghcr.io/teramoby/charts/speedle --version X.Y.Z
+```
+
+Replicas, resources, probes and store flags are in `deployment/helm/speedle/values.yaml`.
 
 ## Build from source
 

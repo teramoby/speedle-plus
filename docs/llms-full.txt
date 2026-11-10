@@ -31,15 +31,15 @@ This file contains the complete English documentation published at https://engin
 - [C#/.NET SDK](https://engine.speedle.io/docs/sdks/dotnet/)
 - [Rust SDK](https://engine.speedle.io/docs/sdks/rust/)
 - [Node.js/TypeScript SDK](https://engine.speedle.io/docs/sdks/node/)
-- [Docker image](https://engine.speedle.io/docs/sdks/docker/)
+- [Deployment](https://engine.speedle.io/docs/deployment/)
+- [Speedle embedded mode](https://engine.speedle.io/docs/deployment/embedded/)
+- [Docker image](https://engine.speedle.io/docs/deployment/docker/)
+- [Homebrew](https://engine.speedle.io/docs/deployment/homebrew/)
 - [Speedle Cloud](https://engine.speedle.io/docs/cloud/)
 - [Getting started with Speedle Cloud](https://engine.speedle.io/docs/cloud/getting-started/)
 - [Speedle Cloud application tokens](https://engine.speedle.io/docs/cloud/tokens/)
 - [Speedle Cloud authorization API preview](https://engine.speedle.io/docs/cloud/authorization-api/)
 - [Speedle Cloud limits and errors](https://engine.speedle.io/docs/cloud/limits-and-errors/)
-- [Deployment](https://engine.speedle.io/docs/deployment/)
-- [Homebrew](https://engine.speedle.io/docs/deployment/homebrew/)
-- [Speedle embedded mode](https://engine.speedle.io/docs/deployment-embeded/)
 - [Pluggable Storage](https://engine.speedle.io/docs/store/)
 - [MySQL Setup](https://engine.speedle.io/docs/store/mysql/)
 - [etcd Setup](https://engine.speedle.io/docs/store/etcd/)
@@ -266,7 +266,7 @@ The examples below use a service named `library`. Each policy was created throug
 
 ### Authorization engine
 
-An authorization engine evaluates access requests against policies and returns a decision, so that the authorization logic lives outside application code. Speedle consists of a [Policy Management Service (PMS), a policy repository and an Authorization Decision Service (ADS)](https://engine.speedle.io/docs/architecture/). The ADS can run as a standalone service or be [embedded in a Go application](https://engine.speedle.io/docs/deployment-embeded/).
+An authorization engine evaluates access requests against policies and returns a decision, so that the authorization logic lives outside application code. Speedle consists of a [Policy Management Service (PMS), a policy repository and an Authorization Decision Service (ADS)](https://engine.speedle.io/docs/architecture/). The ADS can run as a standalone service or be [embedded in a Go application](https://engine.speedle.io/docs/deployment/embedded/).
 
 ### Authorization and access control
 
@@ -1871,7 +1871,7 @@ The legacy gRPC `ContextRequest.attributes` map contains strings. It is not the 
 - [Policy management interfaces](https://github.com/teramoby/speedle-plus/tree/master/api/pms)
 - [Authorization decision interfaces](https://github.com/teramoby/speedle-plus/tree/master/api/ads)
 
-See [embedded mode](https://engine.speedle.io/docs/deployment-embeded/) for a complete application and resource lifecycle example.
+See [embedded mode](https://engine.speedle.io/docs/deployment/embedded/) for a complete application and resource lifecycle example.
 
 ## Authorization Runtime/Decision API
 
@@ -1913,7 +1913,7 @@ The full OpenAPI definition is published at [/swagger/asserter.yaml](https://eng
 
 Source: https://engine.speedle.io/docs/sdks/
 
-The Speedle SDKs are client libraries for the decision API `POST /authz-check/v1/is-allowed`. They work with a self-hosted Speedle ADS and with Speedle Cloud. Each language page shows how to add the package and gives a complete, tested program for both. The source and the full reference are in [teramoby/speedle-sdk](https://github.com/teramoby/speedle-sdk).
+The Speedle SDKs are client libraries for the decision API `POST /authz-check/v1/is-allowed`. They work with a self-hosted Speedle ADS and with Speedle Cloud. Each language page shows how to add the package and gives a complete, tested program for both. The source and the full reference are in [teramoby/speedle-sdk](https://github.com/teramoby/speedle-sdk). To run PMS and ADS for these examples, see [Deployment](https://engine.speedle.io/docs/deployment/) and the [Docker image](https://engine.speedle.io/docs/deployment/docker/).
 
 ### Packages
 
@@ -1925,10 +1925,6 @@ Java, Python, Go, .NET and Rust are version 0.2.0. `@speedle/sdk` is published o
 - [C#/.NET](https://engine.speedle.io/docs/sdks/dotnet/): NuGet `Speedle.Sdk`, published.
 - [Rust](https://engine.speedle.io/docs/sdks/rust/): crates.io `speedle`, published.
 - [Node.js / TypeScript](https://engine.speedle.io/docs/sdks/node/): npm `@speedle/sdk`, published.
-
-### Docker image
-
-The [Docker image](https://engine.speedle.io/docs/sdks/docker/) runs `speedle-pms`, `speedle-ads` and `spctl` from `docker.io/speedle/speedle` or `ghcr.io/teramoby/speedle`. Publish ADS on `127.0.0.1:6734` and point the clients on this page at that port.
 
 ### Features
 
@@ -2742,9 +2738,296 @@ Running `speedle-mcp` without a mode prints usage and exits with a non-zero stat
 
 A denied request is not an error: `isAllowed` resolves to `false`, and `check` resolves to a decision with `allowed` false and the reason, as in the `delete` call above. With the default settings, when a call cannot return a decision, the promise rejects with `SpeedleError`. The examples catch it, print `Speedle error: <message>` to standard error and set `process.exitCode = 1`; any other error is rethrown.
 
+## Deployment
+
+Source: https://engine.speedle.io/docs/deployment/
+
+Speedle runs inside a Go application, from one published container image, or as standalone PMS and ADS services.
+
+- [Embedded mode](https://engine.speedle.io/docs/deployment/embedded/) runs the evaluator in your Go process.
+- [Docker image](https://engine.speedle.io/docs/deployment/docker/) runs `speedle-pms`, `speedle-ads` and `spctl` from `docker.io/speedle/speedle` or `ghcr.io/teramoby/speedle`.
+- [Homebrew](https://engine.speedle.io/docs/deployment/homebrew/) installs the command-line tool and both services and runs a local demo.
+
+### Choose a deployment mode
+
+Use [embedded mode](https://engine.speedle.io/docs/deployment/embedded/) to run the evaluator in your Go process. Use the [Docker image](https://engine.speedle.io/docs/deployment/docker/) or standalone PMS and ADS when applications call Speedle over REST or gRPC. [Homebrew](https://engine.speedle.io/docs/deployment/homebrew/) installs those programs and runs a local demo. The [Quick Start](https://engine.speedle.io/quick-start/) provides a complete local policy-management and authorization walkthrough.
+
+### Build with current Go
+
+Use Go 1.26.10 or Go 1.27.3 (or a newer patch on the same release branch) (Go 1.27.3 is recommended), Git and a shell on Linux or macOS. Use Go modules; the checkout can be anywhere writable. No custom `GOROOT`, `GOPATH`, `dep` or GOPATH source layout is needed.
+
+
+```bash
+git clone --depth 1 https://github.com/teramoby/speedle-plus.git
+cd speedle-plus
+mkdir -p bin
+go build -o ./bin/ ./cmd/spctl ./cmd/speedle-pms ./cmd/speedle-ads
+```
+
+The executables are `bin/spctl`, `bin/speedle-pms` and `bin/speedle-ads`. From the checkout root, use one shared file for the local example:
+
+
+```bash
+./bin/speedle-pms --store-type file --filestore-loc ./docs-policies.json --endpoint 127.0.0.1:6733 --insecure=true
+```
+
+Keep PMS running; start ADS in another terminal in the same checkout:
+
+
+```bash
+./bin/speedle-ads --store-type file --filestore-loc ./docs-policies.json --endpoint 127.0.0.1:6734 --insecure=true
+```
+
+Use a fresh policy file; PMS creates it if absent. Follow [Quick Start](https://engine.speedle.io/quick-start/) for creation and Allow/Deny requests, then stop both services with Ctrl+C. gRPC is disabled unless explicitly enabled with `--grpc-endpoint`. Plain HTTP is for this loopback example; see [Security](https://engine.speedle.io/docs/security/) for TLS and client authentication.
+
+### Release binaries and container images
+
+Each release published by the release workflow attaches prebuilt `spctl`, `speedle-pms` and `speedle-ads` binaries for macOS and Linux on amd64 and arm64, named `<command>_<os>_<arch>`, plus a `checksums.txt` file. Download them from the [Releases page](https://github.com/teramoby/speedle-plus/releases) and verify each downloaded file against its SHA-256 checksum before running it; the checksum file is attached to the same release, so it detects incomplete or corrupted downloads rather than authenticating the release. Binaries and container images are produced by the release workflow, so they are available starting with the first release created after the workflow was added.
+
+The release workflow also publishes two multi-architecture container images for Linux amd64 and arm64:
+
+- `ghcr.io/teramoby/speedle-pms`
+- `ghcr.io/teramoby/speedle-ads`
+
+Anonymous pulls require the packages to be public; if a package is private, authenticate first with `docker login ghcr.io`.
+
+Pull the release you deploy; `latest` follows the newest release:
+
+
+```bash
+docker pull ghcr.io/teramoby/speedle-pms:latest
+docker pull ghcr.io/teramoby/speedle-ads:latest
+```
+
+To pin an image by digest, read the released digest with `docker buildx imagetools inspect ghcr.io/teramoby/speedle-pms:<tag>`.
+
+Both images run the service as UID 65532 and include a writable `/data` directory for the file store. Pass the server flags after the image name, and run each command in its own terminal:
+
+
+```bash
+docker run --rm -p 127.0.0.1:6733:6733 -v speedle-policies:/data ghcr.io/teramoby/speedle-pms:latest --store-type file --filestore-loc /data/policies.json --endpoint 0.0.0.0:6733 --insecure=true
+docker run --rm -p 127.0.0.1:6734:6734 -v speedle-policies:/data ghcr.io/teramoby/speedle-ads:latest --store-type file --filestore-loc /data/policies.json --endpoint 0.0.0.0:6734 --insecure=true
+```
+
+PMS has no built-in caller authentication; the `127.0.0.1` binding keeps the unauthenticated management API on this machine. Never publish these ports on a host interface or expose them to an untrusted network.
+
+The images do not include CA certificates; provide the CA file for TLS endpoints. `--insecure=true` is for this local example only; see [Security](https://engine.speedle.io/docs/security/).
+
+### Kubernetes development example
+
+Use a current Kubernetes cluster and compatible `kubectl`. Save the following as `speedle-dev.yaml`. It uses `apps/v1`, one pod with PMS/ADS sharing one file, a non-root application UID and an internal ClusterIP service. This is an isolated development example: `emptyDir` policies are lost when the pod is replaced, and HTTP endpoints need cluster access controls. The manifest uses a `<release-tag>` placeholder; replace it with the release tag you deploy, or a digest for immutable pinning, and add an image pull secret if your cluster requires one.
+
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: speedle-dev
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: speedle-dev
+  template:
+    metadata:
+      labels:
+        app: speedle-dev
+    spec:
+      initContainers:
+        - name: policy-file
+          image: busybox:1.37.0
+          command: ["sh", "-c", "printf '{}\n' > /data/policies.json; chown 65532:65532 /data/policies.json; chmod 600 /data/policies.json"]
+          volumeMounts:
+            - name: policies
+              mountPath: /data
+      containers:
+        - name: pms
+          image: ghcr.io/teramoby/speedle-pms:<release-tag>
+          args: ["--store-type", "file", "--filestore-loc", "/data/policies.json", "--endpoint", "0.0.0.0:6733", "--insecure=true"]
+          ports:
+            - containerPort: 6733
+          readinessProbe:
+            tcpSocket:
+              port: 6733
+          volumeMounts:
+            - name: policies
+              mountPath: /data
+        - name: ads
+          image: ghcr.io/teramoby/speedle-ads:<release-tag>
+          args: ["--store-type", "file", "--filestore-loc", "/data/policies.json", "--endpoint", "0.0.0.0:6734", "--insecure=true"]
+          ports:
+            - containerPort: 6734
+          readinessProbe:
+            tcpSocket:
+              port: 6734
+          volumeMounts:
+            - name: policies
+              mountPath: /data
+      volumes:
+        - name: policies
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: speedle-dev
+spec:
+  type: ClusterIP
+  selector:
+    app: speedle-dev
+  ports:
+    - name: pms
+      port: 6733
+      targetPort: 6733
+    - name: ads
+      port: 6734
+      targetPort: 6734
+```
+
+Set `PMS_IMAGE` and `ADS_IMAGE` to the exact images you deploy, for example a release tag or a digest. Substitute them locally before applying; keep port-forward running while using Quick Start clients:
+
+
+```bash
+kubectl set image --local -f speedle-dev.yaml pms="$PMS_IMAGE" ads="$ADS_IMAGE" -o yaml | kubectl apply -f -
+kubectl rollout status deployment/speedle-dev
+kubectl port-forward service/speedle-dev 6733:6733 6734:6734
+```
+
+### Production deployments
+
+Use durable policy storage, pin container image digests to the release version you deploy (a release retry can republish a version tag), protect management and decision endpoints, and configure TLS/mTLS for clients and the policy backend. [Pluggable Storage](https://engine.speedle.io/docs/store/) documents the current store configuration; [Security](https://engine.speedle.io/docs/security/) covers current transport flags. Size and operate the etcd deployment using the current etcd documentation, not the retired etcd-operator example.
+
+The repository contains historical Helm/Kubernetes examples. The old Helm 2 `helm install -n ...`, `stable/etcd-operator`, `apps/v1beta2`, and `r.authz.fun` image instructions are not the deployment flow above. Container pulls, cluster admission, registry access, storage and rollout depend on your environment; validate them in your target cluster before production use.
+
+## Speedle embedded mode
+
+Source: https://engine.speedle.io/docs/deployment/embedded/
+
+### What is embedded mode?
+
+Embedded mode runs the Speedle policy decision engine inside your Go application. Call the evaluator directly without starting PMS or ADS servers. Your application authenticates users and supplies the subject, resource and action for each decision.
+
+To try basic policies before writing code, open the [Playground](https://engine.speedle.io/playground/). To run Speedle as standalone services, follow [Quick Start](https://engine.speedle.io/quick-start/).
+
+### Prerequisites
+
+Use Linux or macOS with a shell and **Go 1.26.10 or Go 1.27.3** (or a newer patch on the same release branch), matching [Quick Start](https://engine.speedle.io/quick-start/). This walkthrough uses Go modules and the published **Speedle v1.6.0** release. Go 1.27.3 is the recommended toolchain; the example is verified with Go 1.26.10 and Go 1.27.3.
+
+Install Go using the [official installation instructions](https://go.dev/doc/install), then check your version:
+
+
+```bash
+go version
+```
+
+Go configures `GOROOT` and its default `GOPATH` automatically; no custom values are needed.
+
+### Create an application module
+
+Start in a writable directory outside the Speedle source checkout. Use a new directory for this walkthrough:
+
+
+```bash
+mkdir speedle-embedded-demo
+cd speedle-embedded-demo
+go mod init example.com/speedle-embedded-demo
+go get github.com/teramoby/speedle-plus/pkg/eval@v1.6.0
+```
+
+In an existing Go module, run only the final `go get` command from that module's directory.
+
+Here, `go get` adds a versioned **library dependency** to `go.mod` and `go.sum`; it does not install a program. This differs from Quick Start, which uses `git clone` and `go build` to build the standalone service executables. Both use Go modules. Keep `go.mod` and `go.sum` in version control.
+
+### Create a policy file
+
+In `speedle-embedded-demo`, save this content as `policies.spdl`. It grants `alice` permission to `get` resource `res1` in service `mysvc`:
+
+
+```ini
+[service.mysvc]
+[policy]
+grant user alice get res1
+```
+
+The `eval.NewFromFile` constructor loads a local file containing SPDL or JSON policies. This walkthrough uses SPDL.
+
+### Initialize the evaluator and request decisions
+
+Save the following complete program as `main.go` in the same directory:
+
+
+```go
+package main
+
+import (
+	"fmt"
+	"log"
+
+	"github.com/teramoby/speedle-plus/api/ads"
+	"github.com/teramoby/speedle-plus/pkg/eval"
+	_ "github.com/teramoby/speedle-plus/pkg/store/file"
+)
+
+func main() {
+	evaluator, err := eval.NewFromFile("./policies.spdl", false)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	for _, user := range []string{"alice", "bob"} {
+		allowed, _, err := evaluator.IsAllowed(ads.RequestContext{
+			Subject: &ads.Subject{
+				Principals: []*ads.Principal{{Type: ads.PRINCIPAL_TYPE_USER, Name: user}},
+			},
+			ServiceName: "mysvc",
+			Resource:    "res1",
+			Action:      "get",
+		})
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Printf("%s allowed=%t\n", user, allowed)
+	}
+}
+```
+
+The blank import `_ "github.com/teramoby/speedle-plus/pkg/store/file"` registers the file-store driver. Omitting it causes an `unknown store type "file"` error.
+
+`eval.NewFromFile(loc, isWatch)` returns an `ads.PolicyEvaluator` and an error. Check the error before using the evaluator. With `isWatch=false`, policies are loaded once; setting it to `true` enables file watching for a long-running application.
+
+Call `evaluator.IsAllowed(ctx)` on that instance. Its `ads.RequestContext` contains the subject's principals, `ServiceName`, `Resource`, `Action` and optional `Attributes`. It returns `(allowed bool, reason ads.Reason, err error)`. An evaluation error must be handled separately from a successful `allowed=false` decision.
+
+### Build and run
+
+From `speedle-embedded-demo`, resolve dependencies and build your application:
+
+
+```bash
+go mod tidy
+go build -o ./bin/embedded-demo .
+```
+
+Run it from the same directory so that `./policies.spdl` resolves correctly:
+
+
+```bash
+./bin/embedded-demo
+```
+
+The decision output is:
+
+```text
+alice allowed=true
+bob allowed=false
+```
+
+`alice` matches the grant; `bob` has no matching grant and is denied. No network services or database are needed for this example.
+
 ## Docker image
 
-Source: https://engine.speedle.io/docs/sdks/docker/
+Source: https://engine.speedle.io/docs/deployment/docker/
 
 Speedle publishes one image that contains `speedle-pms`, `speedle-ads` and `spctl`. The image is built `FROM scratch`, runs as UID 65532, and has no shell. The first argument selects the program.
 
@@ -3032,6 +3315,66 @@ docker volume rm speedle-policies
 ```
 
 `docker volume rm` deletes the policy file. Use `docker compose -f compose.yaml down -v` instead when the processes were started with Compose.
+
+## Homebrew
+
+Source: https://engine.speedle.io/docs/deployment/homebrew/
+
+Install the Speedle command-line tool with [Homebrew](https://brew.sh/) on macOS or Linux. Homebrew does not install or start formulas from a tap outside the official Homebrew organization until that tap is trusted.
+
+```bash
+brew tap teramoby/tap
+brew trust teramoby/tap
+brew install teramoby/tap/spctl
+```
+
+The formula is named `spctl`. On macOS the command is `speedle-spctl`, so the install does not replace Apple Gatekeeper at `/usr/sbin/spctl`. On Linux the same program is also available as `spctl`.
+
+The policy management service and the authorization decision service are separate formulas:
+
+```bash
+brew install teramoby/tap/speedle-pms
+brew install teramoby/tap/speedle-ads
+```
+
+Install the command-line tool and both services together:
+
+```bash
+brew install teramoby/tap/speedle
+```
+
+Each of `spctl`, `speedle-pms` and `speedle-ads` installs the macOS or Linux release binary and checks it against that release's `checksums.txt`.
+
+### Demo with Homebrew
+
+Start both services. They listen on `127.0.0.1` and share one file policy store.
+
+```bash
+brew services start speedle-pms
+brew services start speedle-ads
+```
+
+`speedle-pms` listens on `127.0.0.1:6733`. `speedle-ads` listens on `127.0.0.1:6734`. Both use `--store-type file` and the policy file `$(brew --prefix)/var/speedle/policies.json`. Logs are under `$(brew --prefix)/var/log/`. `--insecure=true` is for this loopback demo. See [Security](https://engine.speedle.io/docs/security/) for TLS.
+
+Create a service and a policy. On Linux you can use `spctl` in place of `speedle-spctl`.
+
+```bash
+speedle-spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ create service mysvc
+speedle-spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ create policy -c "grant user user1 get,del res1" --service-name=mysvc
+```
+
+Ask ADS whether `user1` may get `res1`:
+
+```bash
+curl --fail --silent --show-error --header 'Content-Type: application/json' --data '{"subject":{"principals":[{"type":"user","name":"user1"}]},"serviceName":"mysvc","resource":"res1","action":"get"}' http://127.0.0.1:6734/authz-check/v1/is-allowed
+```
+
+The response contains `"allowed":true`. The services read policy changes from the shared file. Stop them with:
+
+```bash
+brew services stop speedle-ads
+brew services stop speedle-pms
+```
 
 ## Speedle Cloud
 
@@ -3383,345 +3726,6 @@ Concurrent isolates can make the value overstate availability by up to the unres
 Matched application ADS responses also use `Cache-Control: no-store`. Do not place decisions or credentials in shared caches.
 
 Return to the [Authorization API preview](https://engine.speedle.io/docs/cloud/authorization-api/) for request examples and integration constraints.
-
-## Deployment
-
-Source: https://engine.speedle.io/docs/deployment/
-
-### Choose a deployment mode
-
-Use [embedded mode](https://engine.speedle.io/docs/deployment-embeded/) to run the evaluator in your Go process. Use standalone PMS and ADS when applications call Speedle over REST or gRPC. The [Quick Start](https://engine.speedle.io/quick-start/) provides a complete local policy-management and authorization walkthrough.
-
-### Build with current Go
-
-Use Go 1.26.10 or Go 1.27.3 (or a newer patch on the same release branch) (Go 1.27.3 is recommended), Git and a shell on Linux or macOS. Use Go modules; the checkout can be anywhere writable. No custom `GOROOT`, `GOPATH`, `dep` or GOPATH source layout is needed.
-
-
-```bash
-git clone --depth 1 https://github.com/teramoby/speedle-plus.git
-cd speedle-plus
-mkdir -p bin
-go build -o ./bin/ ./cmd/spctl ./cmd/speedle-pms ./cmd/speedle-ads
-```
-
-The executables are `bin/spctl`, `bin/speedle-pms` and `bin/speedle-ads`. From the checkout root, use one shared file for the local example:
-
-
-```bash
-./bin/speedle-pms --store-type file --filestore-loc ./docs-policies.json --endpoint 127.0.0.1:6733 --insecure=true
-```
-
-Keep PMS running; start ADS in another terminal in the same checkout:
-
-
-```bash
-./bin/speedle-ads --store-type file --filestore-loc ./docs-policies.json --endpoint 127.0.0.1:6734 --insecure=true
-```
-
-Use a fresh policy file; PMS creates it if absent. Follow [Quick Start](https://engine.speedle.io/quick-start/) for creation and Allow/Deny requests, then stop both services with Ctrl+C. gRPC is disabled unless explicitly enabled with `--grpc-endpoint`. Plain HTTP is for this loopback example; see [Security](https://engine.speedle.io/docs/security/) for TLS and client authentication.
-
-### Release binaries and container images
-
-Each release published by the release workflow attaches prebuilt `spctl`, `speedle-pms` and `speedle-ads` binaries for macOS and Linux on amd64 and arm64, named `<command>_<os>_<arch>`, plus a `checksums.txt` file. Download them from the [Releases page](https://github.com/teramoby/speedle-plus/releases) and verify each downloaded file against its SHA-256 checksum before running it; the checksum file is attached to the same release, so it detects incomplete or corrupted downloads rather than authenticating the release. Binaries and container images are produced by the release workflow, so they are available starting with the first release created after the workflow was added.
-
-The release workflow also publishes two multi-architecture container images for Linux amd64 and arm64:
-
-- `ghcr.io/teramoby/speedle-pms`
-- `ghcr.io/teramoby/speedle-ads`
-
-Anonymous pulls require the packages to be public; if a package is private, authenticate first with `docker login ghcr.io`.
-
-Pull the release you deploy; `latest` follows the newest release:
-
-
-```bash
-docker pull ghcr.io/teramoby/speedle-pms:latest
-docker pull ghcr.io/teramoby/speedle-ads:latest
-```
-
-To pin an image by digest, read the released digest with `docker buildx imagetools inspect ghcr.io/teramoby/speedle-pms:<tag>`.
-
-Both images run the service as UID 65532 and include a writable `/data` directory for the file store. Pass the server flags after the image name, and run each command in its own terminal:
-
-
-```bash
-docker run --rm -p 127.0.0.1:6733:6733 -v speedle-policies:/data ghcr.io/teramoby/speedle-pms:latest --store-type file --filestore-loc /data/policies.json --endpoint 0.0.0.0:6733 --insecure=true
-docker run --rm -p 127.0.0.1:6734:6734 -v speedle-policies:/data ghcr.io/teramoby/speedle-ads:latest --store-type file --filestore-loc /data/policies.json --endpoint 0.0.0.0:6734 --insecure=true
-```
-
-PMS has no built-in caller authentication; the `127.0.0.1` binding keeps the unauthenticated management API on this machine. Never publish these ports on a host interface or expose them to an untrusted network.
-
-The images do not include CA certificates; provide the CA file for TLS endpoints. `--insecure=true` is for this local example only; see [Security](https://engine.speedle.io/docs/security/).
-
-### Kubernetes development example
-
-Use a current Kubernetes cluster and compatible `kubectl`. Save the following as `speedle-dev.yaml`. It uses `apps/v1`, one pod with PMS/ADS sharing one file, a non-root application UID and an internal ClusterIP service. This is an isolated development example: `emptyDir` policies are lost when the pod is replaced, and HTTP endpoints need cluster access controls. The manifest uses a `<release-tag>` placeholder; replace it with the release tag you deploy, or a digest for immutable pinning, and add an image pull secret if your cluster requires one.
-
-
-```yaml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: speedle-dev
-spec:
-  replicas: 1
-  strategy:
-    type: Recreate
-  selector:
-    matchLabels:
-      app: speedle-dev
-  template:
-    metadata:
-      labels:
-        app: speedle-dev
-    spec:
-      initContainers:
-        - name: policy-file
-          image: busybox:1.37.0
-          command: ["sh", "-c", "printf '{}\n' > /data/policies.json; chown 65532:65532 /data/policies.json; chmod 600 /data/policies.json"]
-          volumeMounts:
-            - name: policies
-              mountPath: /data
-      containers:
-        - name: pms
-          image: ghcr.io/teramoby/speedle-pms:<release-tag>
-          args: ["--store-type", "file", "--filestore-loc", "/data/policies.json", "--endpoint", "0.0.0.0:6733", "--insecure=true"]
-          ports:
-            - containerPort: 6733
-          readinessProbe:
-            tcpSocket:
-              port: 6733
-          volumeMounts:
-            - name: policies
-              mountPath: /data
-        - name: ads
-          image: ghcr.io/teramoby/speedle-ads:<release-tag>
-          args: ["--store-type", "file", "--filestore-loc", "/data/policies.json", "--endpoint", "0.0.0.0:6734", "--insecure=true"]
-          ports:
-            - containerPort: 6734
-          readinessProbe:
-            tcpSocket:
-              port: 6734
-          volumeMounts:
-            - name: policies
-              mountPath: /data
-      volumes:
-        - name: policies
-          emptyDir: {}
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: speedle-dev
-spec:
-  type: ClusterIP
-  selector:
-    app: speedle-dev
-  ports:
-    - name: pms
-      port: 6733
-      targetPort: 6733
-    - name: ads
-      port: 6734
-      targetPort: 6734
-```
-
-Set `PMS_IMAGE` and `ADS_IMAGE` to the exact images you deploy, for example a release tag or a digest. Substitute them locally before applying; keep port-forward running while using Quick Start clients:
-
-
-```bash
-kubectl set image --local -f speedle-dev.yaml pms="$PMS_IMAGE" ads="$ADS_IMAGE" -o yaml | kubectl apply -f -
-kubectl rollout status deployment/speedle-dev
-kubectl port-forward service/speedle-dev 6733:6733 6734:6734
-```
-
-### Production deployments
-
-Use durable policy storage, pin container image digests to the release version you deploy (a release retry can republish a version tag), protect management and decision endpoints, and configure TLS/mTLS for clients and the policy backend. [Pluggable Storage](https://engine.speedle.io/docs/store/) documents the current store configuration; [Security](https://engine.speedle.io/docs/security/) covers current transport flags. Size and operate the etcd deployment using the current etcd documentation, not the retired etcd-operator example.
-
-The repository contains historical Helm/Kubernetes examples. The old Helm 2 `helm install -n ...`, `stable/etcd-operator`, `apps/v1beta2`, and `r.authz.fun` image instructions are not the deployment flow above. Container pulls, cluster admission, registry access, storage and rollout depend on your environment; validate them in your target cluster before production use.
-
-## Homebrew
-
-Source: https://engine.speedle.io/docs/deployment/homebrew/
-
-Install the Speedle command-line tool with [Homebrew](https://brew.sh/) on macOS or Linux:
-
-```bash
-brew install teramoby/tap/spctl
-```
-
-The formula is named `spctl`. On macOS the command is `speedle-spctl`, so the install does not replace Apple Gatekeeper at `/usr/sbin/spctl`. On Linux the same program is also available as `spctl`.
-
-The policy management service and the authorization decision service are separate formulas:
-
-```bash
-brew install teramoby/tap/speedle-pms
-brew install teramoby/tap/speedle-ads
-```
-
-Install the command-line tool and both services together:
-
-```bash
-brew install teramoby/tap/speedle
-```
-
-Each of `spctl`, `speedle-pms` and `speedle-ads` installs the macOS or Linux release binary and checks it against that release's `checksums.txt`.
-
-### Demo with Homebrew
-
-Start both services. They listen on `127.0.0.1` and share one file policy store.
-
-```bash
-brew services start speedle-pms
-brew services start speedle-ads
-```
-
-`speedle-pms` listens on `127.0.0.1:6733`. `speedle-ads` listens on `127.0.0.1:6734`. Both use `--store-type file` and the policy file `$(brew --prefix)/var/speedle/policies.json`. Logs are under `$(brew --prefix)/var/log/`. `--insecure=true` is for this loopback demo. See [Security](https://engine.speedle.io/docs/security/) for TLS.
-
-Create a service and a policy. On Linux you can use `spctl` in place of `speedle-spctl`.
-
-```bash
-speedle-spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ create service mysvc
-speedle-spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ create policy -c "grant user user1 get,del res1" --service-name=mysvc
-```
-
-Ask ADS whether `user1` may get `res1`:
-
-```bash
-curl --fail --silent --show-error --header 'Content-Type: application/json' --data '{"subject":{"principals":[{"type":"user","name":"user1"}]},"serviceName":"mysvc","resource":"res1","action":"get"}' http://127.0.0.1:6734/authz-check/v1/is-allowed
-```
-
-The response contains `"allowed":true`. The services read policy changes from the shared file. Stop them with:
-
-```bash
-brew services stop speedle-ads
-brew services stop speedle-pms
-```
-
-## Speedle embedded mode
-
-Source: https://engine.speedle.io/docs/deployment-embeded/
-
-### What is embedded mode?
-
-Embedded mode runs the Speedle policy decision engine inside your Go application. Call the evaluator directly without starting PMS or ADS servers. Your application authenticates users and supplies the subject, resource and action for each decision.
-
-To try basic policies before writing code, open the [Playground](https://engine.speedle.io/playground/). To run Speedle as standalone services, follow [Quick Start](https://engine.speedle.io/quick-start/).
-
-### Prerequisites
-
-Use Linux or macOS with a shell and **Go 1.26.10 or Go 1.27.3** (or a newer patch on the same release branch), matching [Quick Start](https://engine.speedle.io/quick-start/). This walkthrough uses Go modules and the published **Speedle v1.6.0** release. Go 1.27.3 is the recommended toolchain; the example is verified with Go 1.26.10 and Go 1.27.3.
-
-Install Go using the [official installation instructions](https://go.dev/doc/install), then check your version:
-
-
-```bash
-go version
-```
-
-Go configures `GOROOT` and its default `GOPATH` automatically; no custom values are needed.
-
-### Create an application module
-
-Start in a writable directory outside the Speedle source checkout. Use a new directory for this walkthrough:
-
-
-```bash
-mkdir speedle-embedded-demo
-cd speedle-embedded-demo
-go mod init example.com/speedle-embedded-demo
-go get github.com/teramoby/speedle-plus/pkg/eval@v1.6.0
-```
-
-In an existing Go module, run only the final `go get` command from that module's directory.
-
-Here, `go get` adds a versioned **library dependency** to `go.mod` and `go.sum`; it does not install a program. This differs from Quick Start, which uses `git clone` and `go build` to build the standalone service executables. Both use Go modules. Keep `go.mod` and `go.sum` in version control.
-
-### Create a policy file
-
-In `speedle-embedded-demo`, save this content as `policies.spdl`. It grants `alice` permission to `get` resource `res1` in service `mysvc`:
-
-
-```ini
-[service.mysvc]
-[policy]
-grant user alice get res1
-```
-
-The `eval.NewFromFile` constructor loads a local file containing SPDL or JSON policies. This walkthrough uses SPDL.
-
-### Initialize the evaluator and request decisions
-
-Save the following complete program as `main.go` in the same directory:
-
-
-```go
-package main
-
-import (
-	"fmt"
-	"log"
-
-	"github.com/teramoby/speedle-plus/api/ads"
-	"github.com/teramoby/speedle-plus/pkg/eval"
-	_ "github.com/teramoby/speedle-plus/pkg/store/file"
-)
-
-func main() {
-	evaluator, err := eval.NewFromFile("./policies.spdl", false)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	for _, user := range []string{"alice", "bob"} {
-		allowed, _, err := evaluator.IsAllowed(ads.RequestContext{
-			Subject: &ads.Subject{
-				Principals: []*ads.Principal{{Type: ads.PRINCIPAL_TYPE_USER, Name: user}},
-			},
-			ServiceName: "mysvc",
-			Resource:    "res1",
-			Action:      "get",
-		})
-		if err != nil {
-			log.Fatal(err)
-		}
-		fmt.Printf("%s allowed=%t\n", user, allowed)
-	}
-}
-```
-
-The blank import `_ "github.com/teramoby/speedle-plus/pkg/store/file"` registers the file-store driver. Omitting it causes an `unknown store type "file"` error.
-
-`eval.NewFromFile(loc, isWatch)` returns an `ads.PolicyEvaluator` and an error. Check the error before using the evaluator. With `isWatch=false`, policies are loaded once; setting it to `true` enables file watching for a long-running application.
-
-Call `evaluator.IsAllowed(ctx)` on that instance. Its `ads.RequestContext` contains the subject's principals, `ServiceName`, `Resource`, `Action` and optional `Attributes`. It returns `(allowed bool, reason ads.Reason, err error)`. An evaluation error must be handled separately from a successful `allowed=false` decision.
-
-### Build and run
-
-From `speedle-embedded-demo`, resolve dependencies and build your application:
-
-
-```bash
-go mod tidy
-go build -o ./bin/embedded-demo .
-```
-
-Run it from the same directory so that `./policies.spdl` resolves correctly:
-
-
-```bash
-./bin/embedded-demo
-```
-
-The decision output is:
-
-```text
-alice allowed=true
-bob allowed=false
-```
-
-`alice` matches the grant; `bob` has no matching grant and is denied. No network services or database are needed for this example.
 
 ## Pluggable Storage
 
@@ -4933,7 +4937,7 @@ Source: https://engine.speedle.io/docs/versions/
 
 ### Speedle releases
 
-Use the [GitHub Releases](https://github.com/teramoby/speedle-plus/releases) page for published versions and release notes. [v1.6.0](https://github.com/teramoby/speedle-plus/releases/tag/v1.6.0) is the version pinned by the current embedded Go walkthrough. Use an explicit released version for reproducible module dependencies; the [embedded guide](https://engine.speedle.io/docs/deployment-embeded/) explains the setup.
+Use the [GitHub Releases](https://github.com/teramoby/speedle-plus/releases) page for published versions and release notes. [v1.6.0](https://github.com/teramoby/speedle-plus/releases/tag/v1.6.0) is the version pinned by the current embedded Go walkthrough. Use an explicit released version for reproducible module dependencies; the [embedded guide](https://engine.speedle.io/docs/deployment/embedded/) explains the setup.
 
 ### Historical Oracle Speedle release
 
@@ -4956,7 +4960,7 @@ Manage services, policies and roles through the Policy Management Service (PMS),
 
 ### Embedded Go
 
-Run the evaluator inside a Go application, without a separate PMS or ADS process. The [embedded mode guide](https://engine.speedle.io/docs/deployment-embeded/) builds a complete example with Go modules.
+Run the evaluator inside a Go application, without a separate PMS or ADS process. The [embedded mode guide](https://engine.speedle.io/docs/deployment/embedded/) builds a complete example with Go modules.
 
 ### SDKs
 

@@ -1,0 +1,19 @@
+apiVersion: v2
+name: speedle
+description: Speedle Policy Management Service (PMS) and Authorization Decision Service (ADS)
+type: application
+version: 1.7.0
+appVersion: "1.7.0"
+kubeVersion: ">=1.25.0-0"
+home: https://github.com/teramoby/speedle-plus
+sources:
+  - https://github.com/teramoby/speedle-plus
+keywords:
+  - authorization
+  - policy
+  - speedle
+maintainers:
+  - name: speedle
+    email: contact@speedle.io
+annotations:
+  artifacthub.io/license: UPL-1.0

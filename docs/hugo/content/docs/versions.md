@@ -13,7 +13,7 @@ bref = "Releases — Speedle follows semantic versioning"
 
 ## Speedle releases
 
-Use the [GitHub Releases](https://github.com/teramoby/speedle-plus/releases) page for published versions and release notes. [v1.6.0](https://github.com/teramoby/speedle-plus/releases/tag/v1.6.0) is the version pinned by the current embedded Go walkthrough. Use an explicit released version for reproducible module dependencies; the [embedded guide](../deployment-embeded/) explains the setup.
+Use the [GitHub Releases](https://github.com/teramoby/speedle-plus/releases) page for published versions and release notes. [v1.6.0](https://github.com/teramoby/speedle-plus/releases/tag/v1.6.0) is the version pinned by the current embedded Go walkthrough. Use an explicit released version for reproducible module dependencies; the [embedded guide](../deployment/embedded/) explains the setup.
 
 ## Historical Oracle Speedle release
 

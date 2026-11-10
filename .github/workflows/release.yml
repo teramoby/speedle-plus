@@ -1,8 +1,9 @@
 name: Release
 
 # Run by hand from the Actions tab (or the API) to tag a master commit, build
-# the release binaries and one container image, and publish a GitHub release.
-# Only users with write access can dispatch it. See docs/RELEASE.md.
+# the release binaries and one container image, publish a GitHub release, and
+# push the Helm chart. Only users with write access can dispatch it. See
+# docs/RELEASE.md.
 #
 # The image is docker.io/speedle/speedle and ghcr.io/<owner>/speedle. It
 # contains speedle-pms, speedle-ads and spctl. Git tags stay vX.Y.Z. Image
@@ -22,8 +23,8 @@ name: Release
 # is published again, and release assets are replaced, so a failed run resumes
 # without moving a tag or re-creating a release. The image is built and
 # smoke-tested before the tag, and published last; if the push fails,
-# re-dispatching completes the release. A failed Homebrew tap update is
-# finished the same way.
+# re-dispatching completes the release. A failed chart push or Homebrew tap
+# update is finished the same way.
 on:
   workflow_dispatch:
     inputs:
@@ -320,6 +321,36 @@ jobs:
             --file deployment/container/Dockerfile \
             "${tag_args[@]}" \
             --push "${CONTAINER_CONTEXT}"
+
+      # Package the chart from this commit after the image exists. The chart
+      # version and appVersion are the image version. A commit that predates
+      # the chart skips this step so an older release can still be re-run.
+      # Helm v3.22.1 linux-amd64, same pin as scripts/ci/install-helm.sh.
+      - name: Publish the Helm chart
+        env:
+          VERSION: ${{ inputs.version }}
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if [[ ! -f deployment/helm/speedle/Chart.yaml ]]; then
+            echo "This commit has no deployment/helm/speedle chart. Skipping the chart publish."
+            exit 0
+          fi
+          [[ "$(uname -m)" == "x86_64" ]] || { echo "The Helm publish step expects linux-amd64." >&2; exit 1; }
+          helm_version=v3.22.1
+          helm_checksum=896cf63684a42a723d61c980369d6e588330927deb13676ca0d85006dd6da0ea
+          tmp=$(mktemp -d)
+          curl -fsSL -o "${tmp}/helm.tgz" "https://get.helm.sh/helm-${helm_version}-linux-amd64.tar.gz"
+          echo "${helm_checksum}  ${tmp}/helm.tgz" | sha256sum -c -
+          tar -C "${tmp}" -xzf "${tmp}/helm.tgz"
+          sudo install -m 755 "${tmp}/linux-amd64/helm" /usr/local/bin/helm
+          rm -rf "${tmp}"
+          owner="${GITHUB_REPOSITORY_OWNER,,}"
+          chart_version="${VERSION#v}"
+          [[ "${chart_version}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "Chart version must look like 2.0.0." >&2; exit 1; }
+          printf '%s\n' "${GITHUB_TOKEN}" | helm registry login ghcr.io --username "${GITHUB_ACTOR}" --password-stdin
+          helm package deployment/helm/speedle --version "${chart_version}" --app-version "${chart_version}" --destination dist
+          helm push "dist/speedle-${chart_version}.tgz" "oci://${REGISTRY}/${owner}/charts"
 
       # Presence only. The token value is passed to the publish step and
       # nowhere else. An unset token skips the tap and still leaves a release.

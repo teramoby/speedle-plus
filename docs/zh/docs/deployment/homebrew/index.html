@@ -37,7 +37,7 @@
 <meta name="twitter:image:alt" content="Speedle Engine — 快速、简单的权限控制">
 
 <script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/zh/docs/deployment/homebrew/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-10T14:08:42+08:00","description":"用 Homebrew 安装 speedle-spctl、speedle-pms 和 speedle-ads，并在本机跑一次演示。","headline":"Homebrew 安装","image":"https://engine.speedle.io/img/social/engine-zh.png","inLanguage":"zh-CN","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/zh/docs/deployment/homebrew/","@type":"WebPage"},"name":"Homebrew 安装","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/zh/docs/deployment/homebrew/"}</script>
-<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/zh/docs/deployment/homebrew/#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://engine.speedle.io/zh/","name":"首页","position":1},{"@type":"ListItem","item":"https://engine.speedle.io/zh/docs/","name":"文档","position":2},{"@type":"ListItem","item":"https://engine.speedle.io/zh/docs/deployment/homebrew/","name":"Homebrew 安装","position":3}]}</script><link href="/css/docs.css" rel="stylesheet" type="text/css">
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/zh/docs/deployment/homebrew/#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://engine.speedle.io/zh/","name":"首页","position":1},{"@type":"ListItem","item":"https://engine.speedle.io/zh/docs/","name":"文档","position":2},{"@type":"ListItem","item":"https://engine.speedle.io/zh/docs/deployment/","name":"部署","position":3},{"@type":"ListItem","item":"https://engine.speedle.io/zh/docs/deployment/homebrew/","name":"Homebrew 安装","position":4}]}</script><link href="/css/docs.css" rel="stylesheet" type="text/css">
 
 
     <link href="/css/navigation.css?v=header-20261106-v8" rel="stylesheet">
@@ -84,8 +84,6 @@
 <li data-docs-depth="0" class=""><a href="/zh/docs/overview/">概览</a></li>
 <li data-docs-depth="0" class=""><a href="/zh/docs/spdl/">SPDL：Speedle 策略定义语言</a></li>
 <li data-docs-depth="0" class=""><a href="/zh/docs/architecture/">系统架构</a></li>
-<li data-docs-depth="0" class=""><a href="/zh/docs/deployment-embeded/">Speedle 嵌入模式</a></li>
-<li data-docs-depth="0" class=""><a href="/zh/docs/deployment/">部署 Speedle</a></li>
 
 
 
@@ -98,7 +96,6 @@
 </ul>
 
 </li>
-<li data-docs-depth="0" class="active"><a href="/zh/docs/deployment/homebrew/" aria-current="page">Homebrew 安装</a></li>
 <li data-docs-depth="0" class=""><a href="/zh/docs/decisions/">授权决策</a></li>
 <li data-docs-depth="0" class=""><a href="/zh/docs/idd/">用户身份域</a></li>
 <li data-docs-depth="0" class=""><a href="/zh/docs/assertor/">令牌断言</a></li>
@@ -127,6 +124,17 @@
 
 
 
+<li data-docs-depth="0" class="docs-nav-section parent"><span class="docs-nav-heading docs-nav-heading-link"><a href="/zh/docs/deployment/">部署</a></span>
+<ul class="sub-menu">
+<li data-docs-depth="1" class=""><a href="/zh/docs/deployment/embedded/">Speedle 嵌入模式</a></li>
+<li data-docs-depth="1" class=""><a href="/zh/docs/deployment/docker/">Docker 镜像</a></li>
+<li data-docs-depth="1" class="active"><a href="/zh/docs/deployment/homebrew/" aria-current="page">Homebrew 安装</a></li>
+</ul>
+
+</li>
+
+
+
 <li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading docs-nav-heading-link"><a href="/zh/docs/sdks/">SDK</a></span>
 <ul class="">
 <li data-docs-depth="1" class=""><a href="/zh/docs/sdks/java/">Java SDK</a></li>
@@ -135,7 +143,6 @@
 <li data-docs-depth="1" class=""><a href="/zh/docs/sdks/dotnet/">C#/.NET SDK</a></li>
 <li data-docs-depth="1" class=""><a href="/zh/docs/sdks/rust/">Rust SDK</a></li>
 <li data-docs-depth="1" class=""><a href="/zh/docs/sdks/node/">Node.js/TypeScript SDK</a></li>
-<li data-docs-depth="1" class=""><a href="/zh/docs/sdks/docker/">Docker 镜像</a></li>
 </ul>
 
 </li>
@@ -181,8 +188,10 @@
 
   <div id="kube-component" class="content">
 
-<p>在 macOS 或 Linux 上用 <a href="https://brew.sh/">Homebrew</a> 安装 Speedle 命令行工具：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">brew install teramoby/tap/spctl</code></pre></div>
+<p>在 macOS 或 Linux 上用 <a href="https://brew.sh/">Homebrew</a> 安装 Speedle 命令行工具。Homebrew 在安装或启动官方组织以外的 tap 中的 formula 之前，需要先信任该 tap。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">brew tap teramoby/tap
+brew trust teramoby/tap
+brew install teramoby/tap/spctl</code></pre></div>
 <p>Formula 的名字是 <code>spctl</code>。macOS 上的命令是 <code>speedle-spctl</code>，因此安装不会替换 Apple Gatekeeper 的 <code>/usr/sbin/spctl</code>。Linux 上同一个程序也可以用 <code>spctl</code> 调用。</p>
 
 <p>策略管理服务和授权决策服务是单独的 formula：</p>

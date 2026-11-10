@@ -138,6 +138,20 @@
   </url>
   
   <url>
+    <loc>https://engine.speedle.io/zh/docs/deployment/embedded/</loc>
+    <xhtml:link
+                rel="alternate"
+                hreflang="en"
+                href="https://engine.speedle.io/docs/deployment/embedded/"
+                />
+    <xhtml:link
+                rel="alternate"
+                hreflang="zh"
+                href="https://engine.speedle.io/zh/docs/deployment/embedded/"
+                />
+  </url>
+  
+  <url>
     <loc>https://engine.speedle.io/zh/quick-start/</loc>
     <lastmod>2026-11-10T13:27:45+08:00</lastmod>
     <xhtml:link
@@ -198,36 +212,6 @@
   </url>
   
   <url>
-    <loc>https://engine.speedle.io/zh/docs/deployment-embeded/</loc>
-    <lastmod>2026-11-08T11:21:16+08:00</lastmod>
-    <xhtml:link
-                rel="alternate"
-                hreflang="en"
-                href="https://engine.speedle.io/docs/deployment-embeded/"
-                />
-    <xhtml:link
-                rel="alternate"
-                hreflang="zh"
-                href="https://engine.speedle.io/zh/docs/deployment-embeded/"
-                />
-  </url>
-  
-  <url>
-    <loc>https://engine.speedle.io/zh/docs/deployment/</loc>
-    <lastmod>2026-11-08T11:21:16+08:00</lastmod>
-    <xhtml:link
-                rel="alternate"
-                hreflang="en"
-                href="https://engine.speedle.io/docs/deployment/"
-                />
-    <xhtml:link
-                rel="alternate"
-                hreflang="zh"
-                href="https://engine.speedle.io/zh/docs/deployment/"
-                />
-  </url>
-  
-  <url>
     <loc>https://engine.speedle.io/zh/docs/cloud/tokens/</loc>
     <lastmod>2026-11-08T17:11:18+08:00</lastmod>
     <xhtml:link
@@ -239,6 +223,20 @@
                 rel="alternate"
                 hreflang="zh"
                 href="https://engine.speedle.io/zh/docs/cloud/tokens/"
+                />
+  </url>
+  
+  <url>
+    <loc>https://engine.speedle.io/zh/docs/deployment/docker/</loc>
+    <xhtml:link
+                rel="alternate"
+                hreflang="en"
+                href="https://engine.speedle.io/docs/deployment/docker/"
+                />
+    <xhtml:link
+                rel="alternate"
+                hreflang="zh"
+                href="https://engine.speedle.io/zh/docs/deployment/docker/"
                 />
   </url>
   
@@ -453,21 +451,6 @@
   </url>
   
   <url>
-    <loc>https://engine.speedle.io/zh/docs/sdks/docker/</loc>
-    <lastmod>2026-11-10T12:48:41+08:00</lastmod>
-    <xhtml:link
-                rel="alternate"
-                hreflang="en"
-                href="https://engine.speedle.io/docs/sdks/docker/"
-                />
-    <xhtml:link
-                rel="alternate"
-                hreflang="zh"
-                href="https://engine.speedle.io/zh/docs/sdks/docker/"
-                />
-  </url>
-  
-  <url>
     <loc>https://engine.speedle.io/zh/docs/store/</loc>
     <lastmod>2026-11-08T11:21:16+08:00</lastmod>
     <xhtml:link
@@ -494,6 +477,21 @@
                 rel="alternate"
                 hreflang="zh"
                 href="https://engine.speedle.io/zh/docs/api/"
+                />
+  </url>
+  
+  <url>
+    <loc>https://engine.speedle.io/zh/docs/deployment/</loc>
+    <lastmod>2026-11-10T14:08:42+08:00</lastmod>
+    <xhtml:link
+                rel="alternate"
+                hreflang="en"
+                href="https://engine.speedle.io/docs/deployment/"
+                />
+    <xhtml:link
+                rel="alternate"
+                hreflang="zh"
+                href="https://engine.speedle.io/zh/docs/deployment/"
                 />
   </url>
   

@@ -18,7 +18,7 @@ Speedle 是开源授权引擎。应用向它询问“这个用户能否对这个
 
 ## 授权引擎（Authorization engine）
 
-授权引擎根据策略评估访问请求并返回决策，使授权逻辑独立于应用代码。Speedle 由[策略管理服务（PMS）、策略存储和授权决策服务（ADS）](../architecture/)组成。ADS 可以作为独立服务运行，也可以[嵌入 Go 应用](../deployment-embeded/)。
+授权引擎根据策略评估访问请求并返回决策，使授权逻辑独立于应用代码。Speedle 由[策略管理服务（PMS）、策略存储和授权决策服务（ADS）](../architecture/)组成。ADS 可以作为独立服务运行，也可以[嵌入 Go 应用](../deployment/embedded/)。
 
 ## 授权与访问控制（Authorization and access control）
 

@@ -5,8 +5,12 @@ These files are the source of truth for [teramoby/homebrew-tap](https://github.c
 Install the Speedle command-line tool:
 
 ```sh
+brew tap teramoby/tap
+brew trust teramoby/tap
 brew install teramoby/tap/spctl
 ```
+
+Homebrew does not install or start formulas from a tap outside the official Homebrew organization until that tap is trusted.
 
 The formula is named `spctl`. On macOS the command is `speedle-spctl`, so the install does not replace Apple Gatekeeper at `/usr/sbin/spctl`. On Linux the same program is also available as `spctl`.
 
