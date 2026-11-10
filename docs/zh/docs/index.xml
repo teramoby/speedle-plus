@@ -99,6 +99,22 @@ git clone --depth 1 https://github.com/teramoby/speedle-plus.git cd speedle-plus
     </item>
     
     <item>
+      <title>Homebrew</title>
+      <link>https://engine.speedle.io/zh/docs/deployment/homebrew/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/zh/docs/deployment/homebrew/</guid>
+      <description>在 macOS 或 Linux 上用 Homebrew 安装 Speedle 命令行工具：
+brew install teramoby/tap/spctl Formula 的名字是 spctl。macOS 上的命令是 speedle-spctl，因此安装不会替换 Apple Gatekeeper 的 /usr/sbin/spctl。Linux 上同一个程序也可以用 spctl 调用。
+策略管理服务和授权决策服务是单独的 formula：
+brew install teramoby/tap/speedle-pms brew install teramoby/tap/speedle-ads 命令行工具和两个服务可以一次装齐：
+brew install teramoby/tap/speedle spctl、speedle-pms 和 speedle-ads 各自安装对应系统的发布二进制，并用该发布的 checksums.txt 校验。
+用 Homebrew 做一次演示 启动两个服务。它们监听 127.0.0.1，并共用一份文件策略库。
+brew services start speedle-pms brew services start speedle-ads speedle-pms 监听 127.0.0.1:6733。speedle-ads 监听 127.0.0.1:6734。两者都使用 --store-type file，策略文件是 $(brew --prefix)/var/speedle/policies.json。日志在 $(brew --prefix)/var/log/。--insecure=true 只用于这次本机回环演示。TLS 见安全配置。
+创建服务和策略。在 Linux 上可以把 speedle-spctl 换成 spctl。</description>
+    </item>
+    
+    <item>
       <title>授权决策</title>
       <link>https://engine.speedle.io/zh/docs/decisions/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>

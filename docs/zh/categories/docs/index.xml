@@ -6,7 +6,7 @@
     <description>Recent content in Docs on Speedle</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>zh-cn</language>
-    <lastBuildDate>Tue, 10 Nov 2026 11:48:00 +0800</lastBuildDate>
+    <lastBuildDate>Tue, 10 Nov 2026 12:48:41 +0800</lastBuildDate>
     
 	<atom:link href="https://engine.speedle.io/zh/categories/docs/index.xml" rel="self" type="application/rss+xml" />
     
@@ -109,6 +109,29 @@ plugins { application } repositories { mavenCentral() } dependencies { implement
     </item>
     
     <item>
+      <title>MySQL 配置指南</title>
+      <link>https://engine.speedle.io/zh/docs/store/mysql/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/zh/docs/store/mysql/</guid>
+      <description>本指南使用 MySQL 8.4 LTS，分别启动 PMS 和 ADS：PMS 写入策略，ADS 使用独立的只读账号读取同一个数据库。本地演示使用 Docker，HTTP 服务只监听本机回环地址。远程部署可使用已有的 MySQL，并参考安全配置。
+1. 编译包含 MySQL 后端的 Speedle 准备 Git、Bash、curl、已启动的 Docker，以及支持的 Go 工具链（Go 1.26.10 或 Go 1.27.3）。从当前源码编译，确保两个服务都包含 mysql 后端；已安装的旧版本可能没有该后端。
+git clone --depth 1 https://github.com/teramoby/speedle-plus.git cd speedle-plus mkdir -p bin go build -o ./bin/ ./cmd/spctl ./cmd/speedle-pms ./cmd/speedle-ads 后续命令都在这个 speedle-plus 目录执行。确认 3306、6733、6734 端口未被占用；若修改端口，需同步修改下文的命令和配置。
+2. 启动 MySQL 8.4 下列固定密码仅为本地演示凭据。部署时请使用自己的凭据与密钥交付方式。命名卷会在容器停止或重建后保留数据库。
+docker run --name speedle-mysql --detach \  --publish 127.0.0.1:3306:3306 \  --volume speedle-mysql-data:/var/lib/mysql \  --env MYSQL_ROOT_PASSWORD=SpeedleDemoRoot84 \  mysql:8.</description>
+    </item>
+    
+    <item>
+      <title>Speedle Cloud 限额与错误</title>
+      <link>https://engine.speedle.io/zh/docs/cloud/limits-and-errors/</link>
+      <pubDate>Sun, 08 Nov 2026 00:00:00 +0800</pubDate>
+      
+      <guid>https://engine.speedle.io/zh/docs/cloud/limits-and-errors/</guid>
+      <description>以下 ADS 错误与响应头描述带认证的 ADS 合约，其运行时尚未提供。管理合约已经定义账号限额、会话与 CSRF 检查及令牌管理错误，供账号访问开放后使用。下载规范本身不会启用尚未提供的接口。
+限额    限额 含义     每日 10,000 次 同一账号每 UTC 日进入已匹配 PMS 和 ADS handler 的合计次数，由所有会话、令牌和 service 共用；00:00 UTC 重置。   200 条策略 每个账号的授权策略和角色策略合计。   每条 SPDL 4 KiB 完整策略最多 4,096 个 UTF-8 字节，不是 4,096 个字符。   2 个有效令牌 每个 service；已撤销的历史记录不占此名额。   每令牌每分钟 600 次 每个节点的近似突发限制，与严格的账号每日总额分开。   请求正文 64 KiB 解析前的全局上限。可选输入 attributes 仍受 50 个属性、规范化 UTF-8 JSON 16,384 字节的限制。    每个账号只有一个 service。令牌名称为 1–128 个字符。凭据生命周期规则见应用令牌。</description>
+    </item>
+    
+    <item>
       <title>用户身份域</title>
       <link>https://engine.speedle.io/zh/docs/idd/</link>
       <pubDate>Thu, 17 Jan 2019 13:20:07 +0800</pubDate>
@@ -134,19 +157,6 @@ printf &amp;#39;{}\n&amp;#39; &amp;gt; docs-policies.json 终端一启动 PMS，
 添加依赖 新建控制台项目并添加软件包：
 dotnet new console -o SpeedleExample cd SpeedleExample dotnet add package Speedle.Sdk --version 0.2.0 调用本地 Speedle 按 SDK 概览中的说明启动 Speedle 并创建示例策略。将 Program.cs 替换为：
 using Speedle.Sdk; try { await using var speedle = new SpeedleClient(new SpeedleClientOptions { Backend = Backend.Speedle, Endpoint = new Uri(&amp;#34;http://localhost:6734&amp;#34;), Auth = Auth.None(), ServiceName = &amp;#34;docs&amp;#34;, }); bool allowed = await speedle.IsAllowedAsync(&amp;#34;alice&amp;#34;, &amp;#34;get&amp;#34;, &amp;#34;/docs/public&amp;#34;); Console.</description>
-    </item>
-    
-    <item>
-      <title>MySQL 配置指南</title>
-      <link>https://engine.speedle.io/zh/docs/store/mysql/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://engine.speedle.io/zh/docs/store/mysql/</guid>
-      <description>本指南使用 MySQL 8.4 LTS，分别启动 PMS 和 ADS：PMS 写入策略，ADS 使用独立的只读账号读取同一个数据库。本地演示使用 Docker，HTTP 服务只监听本机回环地址。远程部署可使用已有的 MySQL，并参考安全配置。
-1. 编译包含 MySQL 后端的 Speedle 准备 Git、Bash、curl、已启动的 Docker，以及支持的 Go 工具链（Go 1.26.10 或 Go 1.27.3）。从当前源码编译，确保两个服务都包含 mysql 后端；已安装的旧版本可能没有该后端。
-git clone --depth 1 https://github.com/teramoby/speedle-plus.git cd speedle-plus mkdir -p bin go build -o ./bin/ ./cmd/spctl ./cmd/speedle-pms ./cmd/speedle-ads 后续命令都在这个 speedle-plus 目录执行。确认 3306、6733、6734 端口未被占用；若修改端口，需同步修改下文的命令和配置。
-2. 启动 MySQL 8.4 下列固定密码仅为本地演示凭据。部署时请使用自己的凭据与密钥交付方式。命名卷会在容器停止或重建后保留数据库。
-docker run --name speedle-mysql --detach \  --publish 127.0.0.1:3306:3306 \  --volume speedle-mysql-data:/var/lib/mysql \  --env MYSQL_ROOT_PASSWORD=SpeedleDemoRoot84 \  mysql:8.</description>
     </item>
     
     <item>
@@ -220,7 +230,7 @@ import { Auth, Reason, SpeedleClient, SpeedleError } from &amp;#34;@speedle/sdk&
     <item>
       <title>SDK</title>
       <link>https://engine.speedle.io/zh/docs/sdks/</link>
-      <pubDate>Tue, 10 Nov 2026 11:48:00 +0800</pubDate>
+      <pubDate>Tue, 10 Nov 2026 12:48:41 +0800</pubDate>
       
       <guid>https://engine.speedle.io/zh/docs/sdks/</guid>
       <description>Speedle SDK 是决策 API POST /authz-check/v1/is-allowed 的客户端库，既可用于自托管的 Speedle ADS，也可用于 Speedle Cloud。每个语言页面说明如何添加软件包，并分别给出两种场景下经过实测的完整程序。源代码和完整参考见 teramoby/speedle-sdk。
@@ -392,6 +402,22 @@ package main import ( &amp;#34;context&amp;#34; &amp;#34;fmt&amp;#34; &amp;#34;o
     </item>
     
     <item>
+      <title>Homebrew</title>
+      <link>https://engine.speedle.io/zh/docs/deployment/homebrew/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/zh/docs/deployment/homebrew/</guid>
+      <description>在 macOS 或 Linux 上用 Homebrew 安装 Speedle 命令行工具：
+brew install teramoby/tap/spctl Formula 的名字是 spctl。macOS 上的命令是 speedle-spctl，因此安装不会替换 Apple Gatekeeper 的 /usr/sbin/spctl。Linux 上同一个程序也可以用 spctl 调用。
+策略管理服务和授权决策服务是单独的 formula：
+brew install teramoby/tap/speedle-pms brew install teramoby/tap/speedle-ads 命令行工具和两个服务可以一次装齐：
+brew install teramoby/tap/speedle spctl、speedle-pms 和 speedle-ads 各自安装对应系统的发布二进制，并用该发布的 checksums.txt 校验。
+用 Homebrew 做一次演示 启动两个服务。它们监听 127.0.0.1，并共用一份文件策略库。
+brew services start speedle-pms brew services start speedle-ads speedle-pms 监听 127.0.0.1:6733。speedle-ads 监听 127.0.0.1:6734。两者都使用 --store-type file，策略文件是 $(brew --prefix)/var/speedle/policies.json。日志在 $(brew --prefix)/var/log/。--insecure=true 只用于这次本机回环演示。TLS 见安全配置。
+创建服务和策略。在 Linux 上可以把 speedle-spctl 换成 spctl。</description>
+    </item>
+    
+    <item>
       <title>MongoDB 配置指南</title>
       <link>https://engine.speedle.io/zh/docs/store/mongodb/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
@@ -414,32 +440,6 @@ docker run --name speedle-mongodb --detach \  --publish 127.</description>
       <description>同时保护两种 API 传输 独立运行的 PMS 与 ADS 都提供 REST 和 gRPC。现在两者共同使用 --insecure、--cert、--key、--client-cert 和 --force-client-cert 配置。证书或信任配置无效时启动失败，安全模式不会降级为明文。
 TLS 加密连接并认证服务端。若要强制认证客户端，必须通过 --client-cert 提供客户端 CA，同时设置 --force-client-cert=true。只提供 CA 时，仅在客户端主动发送证书的情况下验证该证书。TLS 本身不决定谁有管理员权限，也不提供 Bearer token 校验。管理、诊断、发现接口需要认证网关或等价的访问控制。--enable-authz 参数不提供内置的端点授权策略。
 监听地址与兼容性    服务 默认 REST 地址 默认 gRPC 地址     PMS 0.0.0.0:6733 默认关闭；需设置 --grpc-endpoint   ADS 0.0.0.0:6734 默认关闭；需设置 --grpc-endpoint    REST 与 gRPC 的地址分别配置。仅设置 --endpoint 不会启用 gRPC；请显式使用 --grpc-endpoint 127.0.0.1:50001（PMS）或 127.0.0.1:50002（ADS）。127.0.0.1:0 为隔离测试选择临时端口。需要 IPv6 时显式指定 IPv6 监听地址。</description>
-    </item>
-    
-    <item>
-      <title>授权决策</title>
-      <link>https://engine.speedle.io/zh/docs/decisions/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://engine.speedle.io/zh/docs/decisions/</guid>
-      <description>什么是授权决策？ Speedle 在指定服务内评估主体、操作与资源，由应用执行结果。应区分评估错误、超时与正常的 Deny，并在出错时拒绝访问。REST、gRPC、嵌入式 Go 的数据表示不同，应分别遵循各自的 API 契约。
-运行示例前 先按快速入门编译仓库根目录下的 ./bin/spctl、./bin/speedle-pms 和 ./bin/speedle-ads，需要 Go 1.26.10 或 Go 1.27.3（也可使用同一大版本的更新补丁版本）、Bash、curl 和 Python 3。下面各终端都从仓库根目录运行。为本页使用一个新的策略文件；仅在两个服务都停止后重建该文件。
-初始化空策略文件：
-printf &amp;#39;{}\n&amp;#39; &amp;gt; docs-policies.json 终端一启动 PMS，并保持运行：
-./bin/speedle-pms --store-type file --filestore-loc ./docs-policies.json --endpoint 127.0.0.1:6733 --grpc-endpoint 127.0.0.1:0 --insecure=true 终端二启动 ADS，并保持运行：
-./bin/speedle-ads --store-type file --filestore-loc ./docs-policies.json --endpoint 127.0.0.1:6734 --grpc-endpoint 127.0.0.1:0 --insecure=true 在第三个终端运行后续命令。PMS/ADS 共享同一个文件，策略更新通过 watch 异步到达 ADS；先查询确认已更新，再依赖新策略做决策。--insecure=true 仅用于回环地址上的本地示例，生产连接见安全配置。示例显式指定 PMS 地址，不修改 ~/.spctlconfig。完成后在两个服务终端按 Ctrl-C。
-创建可重复的测试策略 测试文件给 Alan 分配 role1、role2；其中 role1 可以下载 /books/HarryPotter。
-./bin/spctl --pms-endpoint http://127.</description>
-    </item>
-    
-    <item>
-      <title>Speedle Cloud 限额与错误</title>
-      <link>https://engine.speedle.io/zh/docs/cloud/limits-and-errors/</link>
-      <pubDate>Sun, 08 Nov 2026 00:00:00 +0800</pubDate>
-      
-      <guid>https://engine.speedle.io/zh/docs/cloud/limits-and-errors/</guid>
-      <description>以下 ADS 错误与响应头描述带认证的 ADS 合约，其运行时尚未提供。管理合约已经定义账号限额、会话与 CSRF 检查及令牌管理错误，供账号访问开放后使用。下载规范本身不会启用尚未提供的接口。
-限额    限额 含义     每日 10,000 次 同一账号每 UTC 日进入已匹配 PMS 和 ADS handler 的合计次数，由所有会话、令牌和 service 共用；00:00 UTC 重置。   200 条策略 每个账号的授权策略和角色策略合计。   每条 SPDL 4 KiB 完整策略最多 4,096 个 UTF-8 字节，不是 4,096 个字符。   2 个有效令牌 每个 service；已撤销的历史记录不占此名额。   每令牌每分钟 600 次 每个节点的近似突发限制，与严格的账号每日总额分开。   请求正文 64 KiB 解析前的全局上限。可选输入 attributes 仍受 50 个属性、规范化 UTF-8 JSON 16,384 字节的限制。    每个账号只有一个 service。令牌名称为 1–128 个字符。凭据生命周期规则见应用令牌。</description>
     </item>
     
     <item>
@@ -487,6 +487,22 @@ go run ./website/tests/examples/custom-function package main import ( &amp;#34;e
       <description>令牌断言 webhook 参考。errCode 为整数，attributes 为对象。实际端点由 ADS 断言配置指定。
 请配置安全连接与端点访问控制。本文只说明接口约定，speedle.io 不提供托管授权后端。
               document.addEventListener(&#39;DOMContentLoaded&#39;, function() { var url = &#34;\/swagger\/asserter.zh.yaml&#34;; const ui = SwaggerUIBundle({ url: url, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.presets.apis ], plugins: [ SwaggerUIBundle.plugins.DownloadUrl ], validatorUrl: null, layout: &#34;BaseLayout&#34; }) window.ui = ui });  </description>
+    </item>
+    
+    <item>
+      <title>授权决策</title>
+      <link>https://engine.speedle.io/zh/docs/decisions/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/zh/docs/decisions/</guid>
+      <description>什么是授权决策？ Speedle 在指定服务内评估主体、操作与资源，由应用执行结果。应区分评估错误、超时与正常的 Deny，并在出错时拒绝访问。REST、gRPC、嵌入式 Go 的数据表示不同，应分别遵循各自的 API 契约。
+运行示例前 先按快速入门编译仓库根目录下的 ./bin/spctl、./bin/speedle-pms 和 ./bin/speedle-ads，需要 Go 1.26.10 或 Go 1.27.3（也可使用同一大版本的更新补丁版本）、Bash、curl 和 Python 3。下面各终端都从仓库根目录运行。为本页使用一个新的策略文件；仅在两个服务都停止后重建该文件。
+初始化空策略文件：
+printf &amp;#39;{}\n&amp;#39; &amp;gt; docs-policies.json 终端一启动 PMS，并保持运行：
+./bin/speedle-pms --store-type file --filestore-loc ./docs-policies.json --endpoint 127.0.0.1:6733 --grpc-endpoint 127.0.0.1:0 --insecure=true 终端二启动 ADS，并保持运行：
+./bin/speedle-ads --store-type file --filestore-loc ./docs-policies.json --endpoint 127.0.0.1:6734 --grpc-endpoint 127.0.0.1:0 --insecure=true 在第三个终端运行后续命令。PMS/ADS 共享同一个文件，策略更新通过 watch 异步到达 ADS；先查询确认已更新，再依赖新策略做决策。--insecure=true 仅用于回环地址上的本地示例，生产连接见安全配置。示例显式指定 PMS 地址，不修改 ~/.spctlconfig。完成后在两个服务终端按 Ctrl-C。
+创建可重复的测试策略 测试文件给 Alan 分配 role1、role2；其中 role1 可以下载 /books/HarryPotter。
+./bin/spctl --pms-endpoint http://127.</description>
     </item>
     
     <item>

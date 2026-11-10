@@ -228,6 +228,18 @@ package main import ( &amp;#34;context&amp;#34; &amp;#34;fmt&amp;#34; &amp;#34;o
     </item>
     
     <item>
+      <title>Homebrew</title>
+      <link>https://engine.speedle.io/docs/deployment/homebrew/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/docs/deployment/homebrew/</guid>
+      <description>Install the Speedle command-line tool with Homebrew on macOS or Linux:
+brew install teramoby/tap/spctl The formula is named spctl. On macOS the command is speedle-spctl, so the install does not replace Apple Gatekeeper at /usr/sbin/spctl. On Linux the same program is also available as spctl.
+The policy management service and the authorization decision service are separate formulas:
+brew install teramoby/tap/speedle-pms brew install teramoby/tap/speedle-ads Install the command-line tool and both services together:</description>
+    </item>
+    
+    <item>
       <title>MongoDB Setup</title>
       <link>https://engine.speedle.io/docs/store/mongodb/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>

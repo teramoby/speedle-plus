@@ -184,7 +184,7 @@
   
   <url>
     <loc>https://engine.speedle.io/quick-start/</loc>
-    <lastmod>2026-11-10T12:11:28+08:00</lastmod>
+    <lastmod>2026-11-10T13:27:45+08:00</lastmod>
     <xhtml:link
                 rel="alternate"
                 hreflang="zh"
@@ -318,6 +318,21 @@
   </url>
   
   <url>
+    <loc>https://engine.speedle.io/docs/deployment/homebrew/</loc>
+    <lastmod>2026-11-10T13:49:59+08:00</lastmod>
+    <xhtml:link
+                rel="alternate"
+                hreflang="zh"
+                href="https://engine.speedle.io/zh/docs/deployment/homebrew/"
+                />
+    <xhtml:link
+                rel="alternate"
+                hreflang="en"
+                href="https://engine.speedle.io/docs/deployment/homebrew/"
+                />
+  </url>
+  
+  <url>
     <loc>https://engine.speedle.io/docs/store/mongodb/</loc>
     <lastmod>2026-10-31T22:36:36+08:00</lastmod>
     <xhtml:link
@@ -439,7 +454,7 @@
   
   <url>
     <loc>https://engine.speedle.io/docs/sdks/docker/</loc>
-    <lastmod>2026-11-10T12:28:43+08:00</lastmod>
+    <lastmod>2026-11-10T12:48:41+08:00</lastmod>
     <xhtml:link
                 rel="alternate"
                 hreflang="zh"
@@ -484,7 +499,7 @@
   
   <url>
     <loc>https://engine.speedle.io/docs/sdks/</loc>
-    <lastmod>2026-11-10T11:48:00+08:00</lastmod>
+    <lastmod>2026-11-10T12:48:41+08:00</lastmod>
     <xhtml:link
                 rel="alternate"
                 hreflang="zh"
