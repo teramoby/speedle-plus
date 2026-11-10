@@ -161,9 +161,10 @@ jobs:
             CGO_ENABLED=0 GOOS=linux GOARCH="${arch}" go build -trimpath -o "${CONTAINER_CONTEXT}/dispatch-linux-${arch}" ./deployment/container/dispatch
           done
 
-      # Build and start the image before the immutable tag is created, so a
-      # bad Dockerfile, TARGETARCH mapping or runtime permission problem cannot
-      # leave a published release without a working image.
+      # Build the image before the immutable tag is created, then run the same
+      # smoke script as the pull-request image smoke job. A bad Dockerfile,
+      # TARGETARCH mapping or runtime permission problem stops the run before
+      # a tag exists.
       - name: Verify the container image builds and starts
         run: |
           set -euo pipefail
@@ -172,11 +173,8 @@ jobs:
             amd64|arm64) ;;
             *) echo "Unsupported release smoke host architecture: ${host_arch}" >&2; exit 1 ;;
           esac
-          spctl="dist/spctl_linux_${host_arch}"
-          [[ -x "${spctl}" ]] || { echo "Missing host spctl binary: ${spctl}" >&2; exit 1; }
           docker buildx create --name speedle-smoke --driver docker-container --use
           docker buildx inspect --bootstrap
-          trap 'docker stop speedle-smoke-pms speedle-smoke-ads >/dev/null 2>&1 || true; docker volume rm speedle-smoke >/dev/null 2>&1 || true' EXIT
           docker buildx build \
             --platform linux/amd64,linux/arm64 \
             --file deployment/container/Dockerfile \
@@ -185,29 +183,7 @@ jobs:
             --platform "linux/${host_arch}" --load \
             --file deployment/container/Dockerfile \
             --tag speedle:smoke "${CONTAINER_CONTEXT}"
-          docker volume rm speedle-smoke >/dev/null 2>&1 || true
-          docker volume create speedle-smoke >/dev/null
-          docker run --rm -d --name speedle-smoke-pms -p 127.0.0.1:6733:6733 -v speedle-smoke:/data \
-            speedle:smoke speedle-pms --store-type file --filestore-loc /data/policies.json --endpoint 0.0.0.0:6733 --insecure=true
-          curl --fail --silent --show-error --retry 30 --retry-connrefused --retry-delay 1 \
-            http://127.0.0.1:6733/policy-mgmt/v1/service >/dev/null
-          # Write through PMS, then read the same volume through both the API and
-          # ADS. Starting an empty file store alone does not catch volume or
-          # permission failures, and ADS proves the persisted policy is usable.
-          "${spctl}" --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ create service smoke
-          "${spctl}" --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ create policy \
-            -c "grant user smoke-user read smoke-resource" --service-name=smoke
-          "${spctl}" --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ get service --all | \
-            python3 -c 'import json, sys; services = json.load(sys.stdin); assert any(s.get("name") == "smoke" and len(s.get("policies", [])) == 1 for s in services), services'
-          docker stop speedle-smoke-pms >/dev/null
-          docker run --rm -d --name speedle-smoke-ads -p 127.0.0.1:6734:6734 -v speedle-smoke:/data \
-            speedle:smoke speedle-ads --store-type file --filestore-loc /data/policies.json --endpoint 0.0.0.0:6734 --insecure=true
-          decision=$(curl --fail --silent --show-error --retry 30 --retry-connrefused --retry-delay 1 \
-            --header 'Content-Type: application/json' \
-            --data '{"subject":{"principals":[{"type":"user","name":"smoke-user"}]},"serviceName":"smoke","resource":"smoke-resource","action":"read"}' \
-            http://127.0.0.1:6734/authz-check/v1/is-allowed)
-          python3 -c 'import json, sys; result = json.load(sys.stdin); assert result.get("allowed") is True and result.get("reason") == 0, result' <<< "${decision}"
-          docker stop speedle-smoke-ads >/dev/null
+          bash scripts/release-smoke.sh
 
       # Idempotent for re-runs: the validation above only lets an existing tag
       # through when it already points at the requested commit.

@@ -200,9 +200,16 @@ test('Docker Hub credentials are required before a tag and their values are read
 });
 
 test('container smoke writes a policy through PMS and requires ADS to allow it from the shared volume', () => {
-  const smoke = step('Verify the container image builds and starts');
-  assert.match(smoke, /host_arch=\$\(go env GOHOSTARCH\)/);
-  assert.match(smoke, /spctl="dist\/spctl_linux_\$\{host_arch\}"/);
+  const smoke = fs.readFileSync(path.resolve(__dirname, '../release-smoke.sh'), 'utf8');
+  const verify = script('Verify the container image builds and starts');
+  assert.match(verify, /host_arch=\$\(go env GOHOSTARCH\)/);
+  assert.match(verify, /--output type=cacheonly/);
+  assert.match(verify, /--platform linux\/amd64,linux\/arm64/);
+  const cacheOnly = verify.indexOf('--output type=cacheonly');
+  const load = verify.indexOf('--load');
+  const call = verify.indexOf('bash scripts/release-smoke.sh');
+  assert.ok(cacheOnly !== -1 && cacheOnly < load && load < call);
+  assert.match(smoke, /spctl="\$\{SPEEDLE_SMOKE_SPCTL:-dist\/spctl_linux_\$\{host_arch\}\}"/);
   assert.equal([...smoke.matchAll(/"\$\{spctl\}" --pms-endpoint/g)].length, 3);
   assert.doesNotMatch(smoke, /dist\/spctl_linux_(?:amd64|arm64) --pms-endpoint/);
   assert.match(smoke, /create service smoke/);
@@ -211,24 +218,53 @@ test('container smoke writes a policy through PMS and requires ADS to allow it f
   assert.match(smoke, /speedle-smoke-ads[\s\S]*-v speedle-smoke:\/data/);
   assert.match(smoke, /authz-check\/v1\/is-allowed/);
   assert.match(smoke, /result\.get\("allowed"\) is True and result\.get\("reason"\) == 0/);
+  assert.match(smoke, /docker ps -a/);
+  assert.match(smoke, /docker logs speedle-smoke-pms/);
+  assert.match(smoke, /docker logs speedle-smoke-ads/);
+  assert.match(smoke, /Timed out after/);
+  assert.match(smoke, /--connect-timeout 1/);
+  assert.match(smoke, /--max-time "\$\{attempt\}"/);
+  const parsed = spawnSync('bash', ['-n', path.resolve(__dirname, '../release-smoke.sh')], {encoding: 'utf8'});
+  assert.equal(parsed.status, 0, parsed.stderr);
 });
 
-function runSmoke(hostArch) {
+function runSmoke(hostArch, {curlFails = 0, readyTimeout = '30', curlBlock = false} = {}) {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'speedle-release-smoke-'));
   try {
     const calls = path.join(directory, 'calls.jsonl');
+    const curlCount = path.join(directory, 'curl-count');
     const stub = tool => `#!${process.execPath}
 const fs=require('node:fs');const a=process.argv.slice(2);const tool=${JSON.stringify(tool)};
 fs.appendFileSync(process.env.FIXTURE_CALLS,JSON.stringify({tool,args:a})+'\\n');
 if(tool==='go'&&a.join(' ')==='env GOHOSTARCH'){console.log(process.env.FIXTURE_HOST_ARCH);process.exit(0)}
 if(tool==='go')process.exit(2);
-if(tool==='curl')console.log('{"allowed":true,"reason":0}');
+if(tool==='curl'){
+  const countPath=process.env.FIXTURE_CURL_COUNT;
+  const n=fs.existsSync(countPath)?Number(fs.readFileSync(countPath,'utf8')):0;
+  fs.writeFileSync(countPath,String(n+1));
+  if(process.env.FIXTURE_CURL_BLOCK==='1'){
+    const maxAt=a.indexOf('--max-time');
+    const connectAt=a.indexOf('--connect-timeout');
+    let waitMs=30000;
+    if(maxAt!==-1&&connectAt!==-1){
+      const secs=Number(a[maxAt+1]);
+      if(Number.isFinite(secs)&&secs>0)waitMs=secs*1000;
+    }
+    Atomics.wait(new Int32Array(new SharedArrayBuffer(4)),0,0,waitMs);
+    console.error('curl: (28) Operation timed out');
+    process.exit(28);
+  }
+  if(n<Number(process.env.FIXTURE_CURL_FAILS||'0')){console.error('curl: (56) Recv failure: Connection reset by peer');process.exit(56)}
+  console.log('{"allowed":true,"reason":0}');
+}
 process.exit(0);
 `;
     for (const tool of ['go', 'docker', 'curl']) {
       const file = path.join(directory, tool);
       fs.writeFileSync(file, stub(tool)); fs.chmodSync(file, 0o755);
     }
+    fs.mkdirSync(path.join(directory, 'scripts'));
+    fs.copyFileSync(path.resolve(__dirname, '../release-smoke.sh'), path.join(directory, 'scripts', 'release-smoke.sh'));
     fs.mkdirSync(path.join(directory, 'dist'));
     for (const arch of ['amd64', 'arm64']) {
       const file = path.join(directory, 'dist', `spctl_linux_${arch}`);
@@ -240,9 +276,11 @@ if(a.includes('get'))console.log('[{"name":"smoke","policies":[{}]}]');
       fs.chmodSync(file, 0o755);
     }
     const result = spawnSync('bash', ['-c', script('Verify the container image builds and starts')], {
-      cwd: directory, encoding: 'utf8', env: {
+      cwd: directory, encoding: 'utf8', timeout: 20000, env: {
         ...process.env, PATH: `${directory}${path.delimiter}${process.env.PATH}`,
-        FIXTURE_CALLS: calls, FIXTURE_HOST_ARCH: hostArch, CONTAINER_CONTEXT: 'container-context',
+        FIXTURE_CALLS: calls, FIXTURE_HOST_ARCH: hostArch, FIXTURE_CURL_COUNT: curlCount,
+        FIXTURE_CURL_FAILS: String(curlFails), FIXTURE_CURL_BLOCK: curlBlock ? '1' : '0',
+        SMOKE_READY_TIMEOUT: String(readyTimeout), CONTAINER_CONTEXT: 'container-context',
       },
     });
     const records = fs.existsSync(calls) ? fs.readFileSync(calls, 'utf8').trim().split('\n').filter(Boolean).map(line => JSON.parse(line)) : [];
@@ -268,9 +306,47 @@ test('container smoke selects the host spctl binary and native container image o
     assert.ok(starts[0].args.includes('speedle-pms'), JSON.stringify(starts[0].args));
     assert.ok(starts[1].args.includes('speedle-ads'), JSON.stringify(starts[1].args));
     assert.ok(starts.every(record => record.args.includes('speedle:smoke') && record.args.includes('speedle-smoke:/data')));
+    assert.ok(!records.some(record => record.tool === 'docker' && record.args[0] === 'logs'));
   }
+  const retried = runSmoke('amd64', {curlFails: 1, readyTimeout: '5'});
+  assert.equal(retried.result.status, 0, retried.result.stderr);
+  const curls = retried.records.filter(record => record.tool === 'curl');
+  assert.ok(curls.length >= 3, JSON.stringify(curls));
+  const failed = runSmoke('amd64', {curlFails: 100, readyTimeout: '0'});
+  assert.notEqual(failed.result.status, 0);
+  assert.match(failed.result.stderr, /Timed out after 0s waiting for http:\/\/127\.0\.0\.1:6733\/policy-mgmt\/v1\/service/);
+  assert.match(failed.result.stderr, /Image smoke failed/);
+  const failedDocker = failed.records.filter(record => record.tool === 'docker').map(record => record.args.join(' '));
+  assert.ok(failedDocker.includes('ps -a'), failedDocker.join('\n'));
+  assert.ok(failedDocker.includes('logs speedle-smoke-pms'), failedDocker.join('\n'));
+  assert.ok(failedDocker.includes('logs speedle-smoke-ads'), failedDocker.join('\n'));
+  const blocked = runSmoke('amd64', {curlBlock: true, readyTimeout: '2'});
+  assert.equal(typeof blocked.result.status, 'number');
+  assert.notEqual(blocked.result.status, 0);
+  assert.match(blocked.result.stderr, /curl: \(28\) Operation timed out/);
+  assert.match(blocked.result.stderr, /Timed out after 2s waiting for http:\/\/127\.0\.0\.1:6733\/policy-mgmt\/v1\/service/);
+  assert.match(blocked.result.stderr, /Image smoke failed/);
+  const blockedCurl = blocked.records.filter(record => record.tool === 'curl');
+  assert.ok(blockedCurl.length >= 1 && blockedCurl.length <= 3, JSON.stringify(blockedCurl));
+  assert.ok(blockedCurl.every(record => record.args.includes('--max-time') && record.args.includes('--connect-timeout')));
   const unsupported = runSmoke('s390x');
   assert.notEqual(unsupported.result.status, 0);
   assert.match(unsupported.result.stderr, /Unsupported release smoke host architecture: s390x/);
   assert.ok(!unsupported.records.some(record => record.tool === 'docker' || record.tool === 'spctl'));
+});
+
+test('pull requests build the host image and run the shared smoke script', () => {
+  const workflow = fs.readFileSync(path.resolve(__dirname, '../../.github/workflows/image-smoke.yml'), 'utf8');
+  assert.match(workflow, /pull_request:/);
+  for (const pathFilter of ['deployment/container/**', '.github/workflows/release.yml', '.github/workflows/image-smoke.yml', 'scripts/release-smoke.sh', 'cmd/**']) {
+    assert.ok(workflow.includes(pathFilter), pathFilter);
+  }
+  assert.match(workflow, /runs-on: ubuntu-latest/);
+  assert.match(workflow, /bash scripts\/release-smoke\.sh/);
+  assert.match(workflow, /--platform "linux\/\$\{host_arch\}" --load/);
+  assert.match(workflow, /--tag speedle:smoke/);
+  assert.match(workflow, /deployment\/container\/dispatch/);
+  assert.doesNotMatch(workflow, /environment:\s*release/);
+  assert.doesNotMatch(workflow, /secrets\./);
+  assert.doesNotMatch(workflow, /--provenance/);
 });

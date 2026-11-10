@@ -33,6 +33,26 @@ A failed image build or smoke test stops the run before a tag exists. A failed
 push leaves the tag and the GitHub release; the next dispatch of the same
 version finishes the push.
 
+## Smoke test
+
+`scripts/release-smoke.sh` starts `speedle-pms` and then `speedle-ads` from
+the local image `speedle:smoke`, using one shared volume. It retries each
+request until the service answers or 30 seconds pass. Each attempt stops
+after at most 5 seconds, and sooner when less time remains, so an accepted
+connection that never answers cannot wait past the deadline. A connection
+reset is retried: the published port accepts connections before the process
+listens.
+On failure the script prints `docker ps -a` and the logs of the PMS and ADS
+containers.
+
+The Release workflow builds `linux/amd64` and `linux/arm64`, loads the image
+for the job's architecture, and runs that script before it creates a tag.
+
+A pull request that changes `deployment/container/`, `cmd/`,
+`.github/workflows/release.yml`, `.github/workflows/image-smoke.yml` or
+`scripts/release-smoke.sh` builds the image for the job's architecture and
+runs the same script.
+
 ## Container image
 
 One image contains `speedle-pms`, `speedle-ads` and `spctl`. It is built from
