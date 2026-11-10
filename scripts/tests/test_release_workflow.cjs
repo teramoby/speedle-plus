@@ -188,6 +188,7 @@ test('the Homebrew tap update is skipped when its token is unset and the token v
   assert.match(check, /skip=true/);
   assert.match(publish, /if: steps\.homebrew\.outputs\.skip != 'true'/);
   assert.match(publish, /bash "\$\{RUNNER_TEMP\}\/homebrew\/publish-tap\.sh"/);
+  assert.match(publish, /GITHUB_TOKEN: \$\{\{ github\.token \}\}/);
   assert.match(source, /pull-requests: write # open the Homebrew formula pull request/);
   const raw = /secrets\.HOMEBREW_TAP_TOKEN\s*\}\}/g;
   assert.equal([...check.matchAll(raw)].length, 0);

@@ -137,8 +137,8 @@ because `/usr/sbin/spctl` is Apple Gatekeeper.
 `brew services start speedle-pms` listens on `127.0.0.1:6733`.
 `brew services start speedle-ads` listens on `127.0.0.1:6734`. Both use the
 file store `$(brew --prefix)/var/speedle/policies.json` and write logs under
-`$(brew --prefix)/var/log/`. A short demo is in the README under
-"Demo with Homebrew".
+`$(brew --prefix)/var/log/`. The demo is on the
+[Homebrew](https://engine.speedle.io/docs/deployment/homebrew/) page.
 
 After the image is published, the workflow rewrites the formula URLs and
 checksums from the binaries it just built. When the `release` environment

@@ -340,6 +340,7 @@ jobs:
         if: steps.homebrew.outputs.skip != 'true'
         env:
           HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+          GITHUB_TOKEN: ${{ github.token }}
           VERSION: ${{ inputs.version }}
           CHECKSUMS: dist/checksums.txt
         run: bash "${RUNNER_TEMP}/homebrew/publish-tap.sh"
