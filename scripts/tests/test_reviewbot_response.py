@@ -25,7 +25,13 @@ DEEPSEEK_NORMAL = json.loads((FIXTURES / "deepseek-normal.json").read_text())
 DEEPSEEK_LENGTH = json.loads((FIXTURES / "deepseek-length.json").read_text())
 DEEPSEEK_HTTP_ERROR = (FIXTURES / "deepseek-http-error.json").read_text()
 DEEPSEEK_MALFORMED = (FIXTURES / "deepseek-malformed.json").read_text()
-format_markdown = runpy.run_path(str(ROOT / HELPER))["format_markdown"]
+_RESPONSE = runpy.run_path(str(ROOT / HELPER))
+format_markdown = _RESPONSE["format_markdown"]
+load_response = _RESPONSE["load_response"]
+extract_ark = _RESPONSE["extract_ark"]
+extract_deepseek = _RESPONSE["extract_deepseek"]
+IncompleteStream = _RESPONSE["IncompleteStream"]
+sse_lines = _RESPONSE["sse_lines"]
 
 
 def sse(*events, done=False, terminated=True):
@@ -39,6 +45,19 @@ def sse(*events, done=False, terminated=True):
     if done:
         body += "data: [DONE]\n\n"
     return body if terminated else body.rstrip("\n")
+
+
+def sse_framed(*events, sep="\n", done=False, terminated=True):
+    """Frame events with one SSE line ending, leaving non-ASCII JSON characters raw."""
+    body = ": keep-alive" + sep + sep
+    for event in events:
+        name = event.get("type") if isinstance(event, dict) else None
+        if name:
+            body += "event: " + name + sep
+        body += "data: " + json.dumps(event, ensure_ascii=False) + sep + sep
+    if done:
+        body += "data: [DONE]" + sep + sep
+    return body if terminated else body.rstrip("\r\n")
 
 
 def ark_stream(response, terminal="response.completed"):
@@ -71,6 +90,20 @@ def deepseek_stream(content, finish_reason="stop", usage=None, model="deepseek-f
     if usage is not None:
         chunks.append({**base, "choices": [], "usage": usage})
     return chunks
+
+
+def provider_stream(text, provider, sep="\n"):
+    """One terminated stream whose reassembled review text is `text`."""
+    if provider == "ark":
+        response = {
+            "status": "completed",
+            "model": "fixture-model",
+            "output": [{"type": "message", "content": [
+                {"type": "output_text", "text": text}]}],
+            "usage": {"input_tokens": 1, "output_tokens": 1, "total_tokens": 2},
+        }
+        return sse_framed(*ark_stream(response), sep=sep)
+    return sse_framed(*deepseek_stream(text), sep=sep, done=True)
 
 
 class ReviewBotResponseTests(unittest.TestCase):
@@ -652,6 +685,98 @@ with open(pathlib.Path(os.environ["RUNNER_TEMP"]) / "sleeps.txt", "a") as log:
                 self.assertIn('"finish_reason":"length"', result.stderr)
                 self.assertIn('"reasoning_tokens":65536', result.stderr)
                 self.assertNotIn("PARTIAL", output)
+
+    def published_message(self, output):
+        match = re.search(r"final_message<<([^\n]+)\n([\s\S]*?)\n\1\n", output)
+        self.assertIsNotNone(match, output)
+        return match[2]
+
+    def reassembled(self, body, provider):
+        response = load_response(body, provider)
+        extract = extract_deepseek if provider == "deepseek" else extract_ark
+        return extract(response)
+
+    def test_sse_lines_match_splitlines_on_sse_endings_only(self):
+        ordinary = (
+            "",
+            "data: {}",
+            "data: {}\n",
+            "data: {}\n\n",
+            "data: {}\r",
+            "data: {}\r\r",
+            "data: {}\r\n",
+            "data: {}\r\n\r\n",
+            ": keep-alive\n\ndata: {}\n\n",
+            "event: response.completed\r\ndata: {}\r\n\r\n",
+            "data: one\r\ndata: two\n\n",
+            "\n",
+            "\r\n",
+            "\r",
+            "\n\n",
+        )
+        for sample in ordinary:
+            with self.subTest(sample=repr(sample)):
+                self.assertEqual(sse_lines(sample), sample.splitlines())
+        for char in ("\u2028", "\u2029", "\u0085", "\v", "\f", "\x1c", "\x1d", "\x1e"):
+            sample = 'data: {"content":"a' + char + 'b"}\n\n'
+            with self.subTest(char=hex(ord(char))):
+                self.assertEqual(sse_lines(sample), ['data: {"content":"a' + char + 'b"}', ""])
+                self.assertGreater(len(sample.splitlines()), len(sse_lines(sample)))
+
+    def test_trailing_sse_line_ending_does_not_dispatch_without_a_blank_line(self):
+        payload = json.dumps({
+            "type": "response.completed",
+            "response": {
+                "status": "completed",
+                "model": "fixture-model",
+                "output": [{"type": "message", "content": [
+                    {"type": "output_text", "text": "kept review text"}]}],
+            },
+        })
+        line = "data: " + payload
+        for sep in ("\n", "\r", "\r\n"):
+            with self.subTest(sep=repr(sep), terminated=False):
+                with self.assertRaises(IncompleteStream):
+                    load_response(line + sep, "ark")
+            with self.subTest(sep=repr(sep), terminated=True):
+                self.assertEqual(self.reassembled(line + sep + sep, "ark"), (0, "kept review text"))
+
+    def test_unicode_separators_in_content_deltas_reassemble_and_sse_framing_parses(self):
+        separators = (
+            ("U+2028", "a\u2028b"),
+            ("U+2029", "a\u2029b"),
+            ("U+0085", "a\u0085b"),
+        )
+        frames = (
+            ("crlf", "\r\n", "CRLF framed review."),
+            ("cr", "\r", "CR framed review."),
+        )
+        for workflow, step, _ in WORKFLOWS:
+            for label, text in separators:
+                for provider in ("ark", "deepseek"):
+                    with self.subTest(workflow=workflow, provider=provider, separator=label):
+                        body = provider_stream(text, provider)
+                        self.assertIn(text, body)
+                        self.assertEqual(self.reassembled(body, provider), (0, text))
+                        result, requests, output = self.run_workflow(
+                            workflow, step, [body], provider=provider)
+                        self.assertEqual(result.returncode, 0, result.stderr)
+                        self.assertEqual(len(requests), 1)
+                        self.assertEqual(self.published_message(output), text)
+            for label, sep, text in frames:
+                for provider in ("ark", "deepseek"):
+                    with self.subTest(workflow=workflow, provider=provider, framing=label):
+                        body = provider_stream(text, provider, sep)
+                        if sep == "\r":
+                            self.assertNotIn("\n", body)
+                        else:
+                            self.assertNotIn("\n", body.replace("\r\n", ""))
+                        self.assertEqual(self.reassembled(body, provider), (0, text))
+                        result, requests, output = self.run_workflow(
+                            workflow, step, [body], provider=provider)
+                        self.assertEqual(result.returncode, 0, result.stderr)
+                        self.assertEqual(len(requests), 1)
+                        self.assertEqual(self.published_message(output), text)
 
     def test_transport_errors_resend_same_model_with_backoff(self):
         for workflow, step, _ in WORKFLOWS:
