@@ -20,7 +20,7 @@
 <link rel="alternate" hreflang="zh-CN" href="https://engine.speedle.io/zh/docs/sdks/node/">
 <link rel="alternate" hreflang="x-default" href="https://engine.speedle.io/docs/sdks/node/">
 <meta property="og:type" content="article">
-<meta property="article:modified_time" content="2026-11-08T11:21:16&#43;08:00">
+<meta property="article:modified_time" content="2026-11-10T08:28:25&#43;08:00">
 <meta property="og:site_name" content="Speedle Engine">
 <meta property="og:title" content="Node.js/TypeScript SDK · Speedle Engine">
 <meta property="og:description" content="添加 Speedle Node.js/TypeScript SDK，向本地 Speedle 或 Speedle Cloud 发起授权检查。">
@@ -36,7 +36,7 @@
 <meta name="twitter:image" content="https://engine.speedle.io/img/social/engine-zh.png">
 <meta name="twitter:image:alt" content="Speedle Engine — 快速、简单的权限控制">
 
-<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/zh/docs/sdks/node/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-08T11:21:16+08:00","description":"添加 Speedle Node.js/TypeScript SDK，向本地 Speedle 或 Speedle Cloud 发起授权检查。","headline":"Node.js/TypeScript SDK","image":"https://engine.speedle.io/img/social/engine-zh.png","inLanguage":"zh-CN","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/zh/docs/sdks/node/","@type":"WebPage"},"name":"Node.js/TypeScript SDK","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/zh/docs/sdks/node/"}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/zh/docs/sdks/node/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-10T08:28:25+08:00","description":"添加 Speedle Node.js/TypeScript SDK，向本地 Speedle 或 Speedle Cloud 发起授权检查。","headline":"Node.js/TypeScript SDK","image":"https://engine.speedle.io/img/social/engine-zh.png","inLanguage":"zh-CN","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/zh/docs/sdks/node/","@type":"WebPage"},"name":"Node.js/TypeScript SDK","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/zh/docs/sdks/node/"}</script>
 <script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/zh/docs/sdks/node/#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://engine.speedle.io/zh/","name":"首页","position":1},{"@type":"ListItem","item":"https://engine.speedle.io/zh/docs/","name":"文档","position":2},{"@type":"ListItem","item":"https://engine.speedle.io/zh/docs/sdks/","name":"SDK","position":3},{"@type":"ListItem","item":"https://engine.speedle.io/zh/docs/sdks/node/","name":"Node.js/TypeScript SDK","position":4}]}</script><link href="/css/docs.css" rel="stylesheet" type="text/css">
 
 
@@ -166,7 +166,7 @@
 <div id="main">
 
   <h1>Node.js/TypeScript SDK</h1>
-  <p class="docs-lead">用 npm 安装 @speedle/sdk 0.2.0，再向本地 Speedle 或 Speedle Cloud 调用 isAllowed 与 check。</p>
+  <p class="docs-lead">用 npm 安装 @speedle/sdk，再向本地 Speedle 或 Speedle Cloud 调用 isAllowed 与 check。</p>
 
 
 
@@ -179,7 +179,7 @@
 
   <div id="kube-component" class="content">
 
-<p>Node.js SDK 需要 Node.js 22 或更高版本，同时提供 ESM 和 CommonJS 构建及 TypeScript 类型，没有运行时依赖。软件包：npm 上已发布的 <a href="https://www.npmjs.com/package/@speedle/sdk"><code>@speedle/sdk</code></a> 0.2.0。参考文档：<a href="https://github.com/teramoby/speedle-sdk/tree/main/node">speedle-sdk/node</a>。</p>
+<p>Node.js SDK 需要 Node.js 22 或更高版本，同时提供 ESM 和 CommonJS 构建及 TypeScript 类型，没有运行时依赖。软件包：npm 上已发布的 <a href="https://www.npmjs.com/package/@speedle/sdk"><code>@speedle/sdk</code></a>。参考文档：<a href="https://github.com/teramoby/speedle-sdk/tree/main/node">speedle-sdk/node</a>。</p>
 
 <p>示例使用的策略见 <a href="/zh/docs/sdks/#示例策略">SDK 概览</a>。</p>
 
@@ -263,7 +263,7 @@ alice delete /docs/public: allowed=false reason=NoApplicablePolicies</code></pre
 
 <h2 id="speedle-mcp">Speedle MCP</h2>
 
-<p><a href="https://www.npmjs.com/package/@speedle/mcp"><code>@speedle/mcp</code></a> 已在 npm 发布。Speedle MCP（launch preview）是一个软件包，包含 <code>check</code> 与 <code>manage</code> 两种模式。用 npm 安装：</p>
+<p><a href="https://www.npmjs.com/package/@speedle/mcp"><code>@speedle/mcp</code></a> 已在 npm 发布。Speedle MCP（预览）是一个软件包，包含 <code>check</code> 与 <code>manage</code> 两种模式。用 npm 安装：</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">npm install @speedle/mcp</code></pre></div>
 <p>或直接运行 <code>speedle-mcp</code> 二进制：</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">npx @speedle/mcp check</code></pre></div>

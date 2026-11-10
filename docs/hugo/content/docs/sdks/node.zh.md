@@ -8,10 +8,10 @@ toc = true
 tocheading = "h2"
 tags = ["api", "sdk"]
 categories = ["docs"]
-bref = "用 npm 安装 @speedle/sdk 0.2.0，再向本地 Speedle 或 Speedle Cloud 调用 isAllowed 与 check。"
+bref = "用 npm 安装 @speedle/sdk，再向本地 Speedle 或 Speedle Cloud 调用 isAllowed 与 check。"
 +++
 
-Node.js SDK 需要 Node.js 22 或更高版本，同时提供 ESM 和 CommonJS 构建及 TypeScript 类型，没有运行时依赖。软件包：npm 上已发布的 [`@speedle/sdk`](https://www.npmjs.com/package/@speedle/sdk) 0.2.0。参考文档：[speedle-sdk/node](https://github.com/teramoby/speedle-sdk/tree/main/node)。
+Node.js SDK 需要 Node.js 22 或更高版本，同时提供 ESM 和 CommonJS 构建及 TypeScript 类型，没有运行时依赖。软件包：npm 上已发布的 [`@speedle/sdk`](https://www.npmjs.com/package/@speedle/sdk)。参考文档：[speedle-sdk/node](https://github.com/teramoby/speedle-sdk/tree/main/node)。
 
 示例使用的策略见 [SDK 概览](/docs/sdks/#示例策略)。
 
@@ -121,7 +121,7 @@ alice delete /docs/public: allowed=false reason=NoApplicablePolicies
 
 ## Speedle MCP
 
-[`@speedle/mcp`](https://www.npmjs.com/package/@speedle/mcp) 已在 npm 发布。Speedle MCP（launch preview）是一个软件包，包含 `check` 与 `manage` 两种模式。用 npm 安装：
+[`@speedle/mcp`](https://www.npmjs.com/package/@speedle/mcp) 已在 npm 发布。Speedle MCP（预览）是一个软件包，包含 `check` 与 `manage` 两种模式。用 npm 安装：
 
 ```bash
 npm install @speedle/mcp

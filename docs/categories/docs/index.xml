@@ -6,7 +6,7 @@
     <description>Recent content in Docs on Speedle</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
-    <lastBuildDate>Sun, 08 Nov 2026 17:11:18 +0800</lastBuildDate>
+    <lastBuildDate>Tue, 10 Nov 2026 08:28:25 +0800</lastBuildDate>
     
 	<atom:link href="https://engine.speedle.io/categories/docs/index.xml" rel="self" type="application/rss+xml" />
     
@@ -166,7 +166,7 @@ Add the dependency Maven, a complete pom.xml:
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/docs/sdks/node/</guid>
-      <description>The Node.js SDK needs Node.js 22 or later, ships ESM and CommonJS builds with TypeScript types, and has no runtime dependencies. Package: @speedle/sdk 0.2.0, published on npm. Reference: speedle-sdk/node.
+      <description>The Node.js SDK needs Node.js 22 or later, ships ESM and CommonJS builds with TypeScript types, and has no runtime dependencies. Package: @speedle/sdk, published on npm. Reference: speedle-sdk/node.
 The examples check the policy described in the SDKs overview.
 Add the dependency In a new ES module package:
 mkdir speedle-example cd speedle-example npm init -y npm pkg set type=module npm install @speedle/sdk Call a local Speedle Start Speedle and create the example policy as described in the SDKs overview.</description>
@@ -309,12 +309,11 @@ Represent domains in policies and requests grant user user1 from github read boo
     <item>
       <title>SDKs</title>
       <link>https://engine.speedle.io/docs/sdks/</link>
-      <pubDate>Sat, 07 Nov 2026 19:43:15 +0800</pubDate>
+      <pubDate>Tue, 10 Nov 2026 08:28:25 +0800</pubDate>
       
       <guid>https://engine.speedle.io/docs/sdks/</guid>
       <description>The Speedle SDKs are client libraries for the decision API POST /authz-check/v1/is-allowed. They work with a self-hosted Speedle ADS and with Speedle Cloud. Each language page shows how to add the package and gives a complete, tested program for both. The source and the full reference are in teramoby/speedle-sdk.
-Packages All packages are version 0.2.0. Each language page shows the install command.
- Java: Maven Central io.speedle:speedle-sdk, published. Python: PyPI speedle, published.</description>
+Packages Java, Python, Go, .NET and Rust are version 0.2.0. @speedle/sdk is published on npm. Each language page shows the install command.</description>
     </item>
     
     <item>

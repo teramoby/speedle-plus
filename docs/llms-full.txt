@@ -1915,7 +1915,7 @@ The Speedle SDKs are client libraries for the decision API `POST /authz-check/v1
 
 ### Packages
 
-All packages are version 0.2.0. Each language page shows the install command.
+Java, Python, Go, .NET and Rust are version 0.2.0. `@speedle/sdk` is published on npm. Each language page shows the install command.
 
 - [Java](https://engine.speedle.io/docs/sdks/java/): Maven Central `io.speedle:speedle-sdk`, published.
 - [Python](https://engine.speedle.io/docs/sdks/python/): PyPI `speedle`, published.
@@ -2608,7 +2608,7 @@ A denied request is not an error: `is_allowed` returns `false`, and `check` retu
 
 Source: https://engine.speedle.io/docs/sdks/node/
 
-The Node.js SDK needs Node.js 22 or later, ships ESM and CommonJS builds with TypeScript types, and has no runtime dependencies. Package: [`@speedle/sdk`](https://www.npmjs.com/package/@speedle/sdk) 0.2.0, published on npm. Reference: [speedle-sdk/node](https://github.com/teramoby/speedle-sdk/tree/main/node).
+The Node.js SDK needs Node.js 22 or later, ships ESM and CommonJS builds with TypeScript types, and has no runtime dependencies. Package: [`@speedle/sdk`](https://www.npmjs.com/package/@speedle/sdk), published on npm. Reference: [speedle-sdk/node](https://github.com/teramoby/speedle-sdk/tree/main/node).
 
 The examples check the policy described in the [SDKs overview](https://engine.speedle.io/docs/sdks/#example-policy).
 

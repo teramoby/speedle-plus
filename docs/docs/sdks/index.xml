@@ -6,7 +6,7 @@
     <description>Recent content in SDKs on Speedle</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
-    <lastBuildDate>Sat, 07 Nov 2026 19:43:15 +0800</lastBuildDate>
+    <lastBuildDate>Tue, 10 Nov 2026 08:28:25 +0800</lastBuildDate>
     
 	<atom:link href="https://engine.speedle.io/docs/sdks/index.xml" rel="self" type="application/rss+xml" />
     
@@ -78,7 +78,7 @@ cargo new speedle-example cd speedle-example cargo add speedle@0.2.0 --features 
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/docs/sdks/node/</guid>
-      <description>The Node.js SDK needs Node.js 22 or later, ships ESM and CommonJS builds with TypeScript types, and has no runtime dependencies. Package: @speedle/sdk 0.2.0, published on npm. Reference: speedle-sdk/node.
+      <description>The Node.js SDK needs Node.js 22 or later, ships ESM and CommonJS builds with TypeScript types, and has no runtime dependencies. Package: @speedle/sdk, published on npm. Reference: speedle-sdk/node.
 The examples check the policy described in the SDKs overview.
 Add the dependency In a new ES module package:
 mkdir speedle-example cd speedle-example npm init -y npm pkg set type=module npm install @speedle/sdk Call a local Speedle Start Speedle and create the example policy as described in the SDKs overview.</description>

@@ -26,7 +26,7 @@ Speedle evaluates RBAC and ABAC policies for users, services and processes actin
 
 ## SDKs
 
-All six SDKs are version 0.2.0 and published, including npm `@speedle/sdk` (`npm install @speedle/sdk`).
+Java, Python, Go, .NET and Rust SDKs are version 0.2.0 and published. `@speedle/sdk` is published on npm (`npm install @speedle/sdk`).
 
 - [SDKs](https://engine.speedle.io/docs/sdks/): Client libraries for the decision API in six languages.
 - [Java SDK](https://engine.speedle.io/docs/sdks/java/): Maven Central `io.speedle:speedle-sdk` 0.2.0, published.
@@ -34,7 +34,7 @@ All six SDKs are version 0.2.0 and published, including npm `@speedle/sdk` (`npm
 - [Go SDK](https://engine.speedle.io/docs/sdks/go/): Go module `github.com/teramoby/speedle-sdk/go` v0.2.0, published.
 - [C#/.NET SDK](https://engine.speedle.io/docs/sdks/dotnet/): NuGet `Speedle.Sdk` 0.2.0, published.
 - [Rust SDK](https://engine.speedle.io/docs/sdks/rust/): crates.io `speedle` 0.2.0, published.
-- [Node.js/TypeScript SDK](https://engine.speedle.io/docs/sdks/node/): npm `@speedle/sdk` 0.2.0, published. Install with `npm install @speedle/sdk`.
+- [Node.js/TypeScript SDK](https://engine.speedle.io/docs/sdks/node/): npm `@speedle/sdk`, published on npm. Install with `npm install @speedle/sdk`.
 
 ## Speedle Cloud
 

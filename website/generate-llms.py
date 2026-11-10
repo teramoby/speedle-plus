@@ -100,7 +100,7 @@ ANNOTATIONS = {
     "docs/sdks/go": "Go module `github.com/teramoby/speedle-sdk/go` v0.2.0, published.",
     "docs/sdks/dotnet": "NuGet `Speedle.Sdk` 0.2.0, published.",
     "docs/sdks/rust": "crates.io `speedle` 0.2.0, published.",
-    "docs/sdks/node": "npm `@speedle/sdk` 0.2.0, published. Install with `npm install @speedle/sdk`.",
+    "docs/sdks/node": "npm `@speedle/sdk`, published on npm. Install with `npm install @speedle/sdk`.",
     "docs/cloud/_index": "Hosted authorization for developers: sign-in and account management, SPDL policies, application tokens, the authorization API preview, limits, errors and downloads. Sign-in on cloud.speedle.io opens soon.",
     "docs/cloud/getting-started": "The console workflow: sign-in and account settings, a service, SPDL policies, session management requests, Playground tests and policy export.",
     "docs/cloud/tokens": "Issue, protect, list, rotate and revoke service-scoped Bearer tokens, with one-time secret disclosure and recent authentication.",
@@ -293,7 +293,7 @@ def render_llms(pages, definition):
             item("docs/api/management_api"),
         ]),
         section("SDKs", [
-            "All six SDKs are version 0.2.0 and published, including npm `@speedle/sdk` (`npm install @speedle/sdk`).",
+            "Java, Python, Go, .NET and Rust SDKs are version 0.2.0 and published. `@speedle/sdk` is published on npm (`npm install @speedle/sdk`).",
             "",
             item("docs/sdks/_index"),
             item("docs/sdks/java"),
