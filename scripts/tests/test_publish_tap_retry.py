@@ -154,7 +154,7 @@ class PublishTapRetryTest(unittest.TestCase):
         elif quick_start:
             self.assertIn("homebrew-v1.7.0", listed)
             self.assertIn("Quick Start install pin set to v1.7.0", completed.stdout)
-            self.assertIn("Quick Start modification time set to", completed.stdout)
+            self.assertNotIn("modification time set to", completed.stdout)
             self.assertNotIn("deployment/homebrew already matches", completed.stdout)
             self._assert_quick_start_pin(source_bare, "v1.7.0", quick_start)
         else:
@@ -223,10 +223,6 @@ class PublishTapRetryTest(unittest.TestCase):
                 check=True, text=True, capture_output=True,
             ).stdout
 
-        author = subprocess.run(
-            ["git", "--git-dir", str(source_bare), "log", "-1", "--format=%aI", "homebrew-v1.7.0"],
-            check=True, text=True, capture_output=True,
-        ).stdout.strip()
         message = subprocess.run(
             ["git", "--git-dir", str(source_bare), "log", "-1", "--format=%B", "homebrew-v1.7.0"],
             check=True, text=True, capture_output=True,
@@ -244,10 +240,10 @@ class PublishTapRetryTest(unittest.TestCase):
             self.assertIn(f"cmd/...@{version}", text)
             self.assertNotIn(previous, text)
         html = show("docs/quick-start/index.html")
-        self.assertIn(author.replace("+", "&#43;"), html)
+        self.assertIn("2020-01-01T00:00:00&#43;00:00", html)
         self.assertIn(f"<code>{version}</code>", html)
-        self.assertIn(author, show("docs/en/sitemap.xml"))
-        self.assertIn(author, show("docs/zh/sitemap.xml"))
+        self.assertIn("2020-01-01T00:00:00+00:00", show("docs/en/sitemap.xml"))
+        self.assertIn("2020-01-01T00:00:00+00:00", show("docs/zh/sitemap.xml"))
 
     def _write_checksums(self, homebrew):
         assets = []

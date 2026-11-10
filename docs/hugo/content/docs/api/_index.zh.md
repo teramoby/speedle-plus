@@ -9,6 +9,7 @@ tocsidebar = false
 tags = ["v0.1.0", "api", "guide", "core"]
 categories = ["docs"]
 bref = "通过声明式 API 管理简单或复杂的策略，获取授权决策、发现策略并诊断评估过程。"
+lastmod = 2026-11-10T14:45:43+08:00
 +++
 
 Java、Python、Go、.NET、Rust 和 Node.js/TypeScript 的客户端库见 [SDK](/docs/sdks/)。

@@ -1,15 +1,12 @@
 #!/usr/bin/env python3
-"""Point the Quick Start install pin at one release, then date the generated pages.
+"""Point the Quick Start install pin at one release.
 
 The English and Chinese guides install
-``github.com/teramoby/speedle-plus/cmd/...@vX.Y.Z``. The site check renders
-those pages with Hugo 0.48, which dates a page from the author time of the
-last commit that touched its Markdown. ``--stamp`` writes that time into the
-committed HTML and sitemap after the pin commit exists.
+``github.com/teramoby/speedle-plus/cmd/...@vX.Y.Z``. Generated page dates come
+from front matter, so this update does not rewrite them.
 
 Usage:
     python3 bump-quick-start-pin.py vX.Y.Z [repo]
-    python3 bump-quick-start-pin.py --stamp 2026-11-10T16:35:23+08:00 [repo]
 """
 
 import re
@@ -20,8 +17,6 @@ INSTALL = re.compile(
     r"(github\.com/teramoby/speedle-plus/cmd/\.\.\.@)(v[0-9]+\.[0-9]+\.[0-9]+)"
 )
 VERSION = re.compile(r"^v[0-9]+\.[0-9]+\.[0-9]+$")
-# Git author time, the same form Hugo prints for Lastmod.
-AUTHORED = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+-]\d{2}:\d{2}$")
 
 GUIDES = (
     "docs/hugo/content/quick-start.md",
@@ -31,10 +26,6 @@ GENERATED = (
     "docs/quick-start/index.html",
     "docs/zh/quick-start/index.html",
     "docs/zh/index.xml",
-)
-SITEMAPS = (
-    ("docs/en/sitemap.xml", "https://engine.speedle.io/quick-start/"),
-    ("docs/zh/sitemap.xml", "https://engine.speedle.io/zh/quick-start/"),
 )
 
 
@@ -88,62 +79,11 @@ def bump_tree(root, version):
     return True
 
 
-def stamp_html(text, authored):
-    """Set the article modification time Hugo writes into the page."""
-    escaped = authored.replace("+", "&#43;")
-    updated, count = re.subn(
-        r'(<meta property="article:modified_time" content=")[^"]+(">)',
-        rf"\g<1>{escaped}\g<2>",
-        text,
-        count=1,
-    )
-    if count != 1:
-        raise SystemExit("Quick Start HTML is missing article:modified_time")
-    return updated
-
-
-def stamp_sitemap(text, loc, authored):
-    """Set the lastmod of one sitemap URL."""
-    pattern = re.compile(
-        rf"(<loc>{re.escape(loc)}</loc>\s*<lastmod>)[^<]+(</lastmod>)"
-    )
-    updated, count = pattern.subn(rf"\g<1>{authored}\2", text, count=1)
-    if count != 1:
-        raise SystemExit(f"sitemap is missing {loc}")
-    return updated
-
-
-def stamp_tree(root, authored):
-    """Write one author time into the committed Quick Start pages."""
-    root = Path(root)
-    if not (root / GUIDES[0]).is_file():
-        return False
-    for rel in GENERATED[:2]:
-        path = root / rel
-        if not path.is_file():
-            raise SystemExit(f"missing generated Quick Start page {path}")
-        path.write_text(stamp_html(path.read_text(), authored))
-    for rel, loc in SITEMAPS:
-        path = root / rel
-        if not path.is_file():
-            raise SystemExit(f"missing sitemap {path}")
-        path.write_text(stamp_sitemap(path.read_text(), loc, authored))
-    return True
-
-
 def main(argv):
     args = argv[1:]
     if not args:
         print("usage: bump-quick-start-pin.py vX.Y.Z [repo]", file=sys.stderr)
         return 2
-    if args[0] == "--stamp":
-        if len(args) not in (2, 3) or not AUTHORED.fullmatch(args[1]):
-            print("usage: bump-quick-start-pin.py --stamp YYYY-MM-DDTHH:MM:SS+HH:MM [repo]", file=sys.stderr)
-            return 2
-        root = Path(args[2]) if len(args) == 3 else Path.cwd()
-        if stamp_tree(root, args[1]):
-            print(f"Quick Start modification time set to {args[1]}")
-        return 0
     if not VERSION.fullmatch(args[0]) or len(args) > 2:
         print("usage: bump-quick-start-pin.py vX.Y.Z [repo]", file=sys.stderr)
         return 2

@@ -9,6 +9,7 @@ tocsidebar = false
 tags = ["security", "guide", "tls", "https"]
 categories = ["docs"]
 bref = ""
+lastmod = 2026-11-08T11:21:16+08:00
 +++
 
 ## 同时保护两种 API 传输

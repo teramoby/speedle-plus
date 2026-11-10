@@ -10,6 +10,7 @@ tocsidebar = false
 tags = ["v0.1.0", "core", "policy", "spdl"]
 categories = ["docs"]
 bref = ""
+lastmod = 2026-11-08T20:01:50+08:00
 +++
 
 SPDL 是编写 Speedle 策略和角色策略的语言。本文介绍语法、命名规则和示例。

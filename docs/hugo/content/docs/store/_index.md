@@ -10,6 +10,7 @@ tocheading = "h2"
 tags = ["storage", "pluggable"]
 categories = ["docs"]
 bref = "Speedle includes file, etcd, MongoDB and MySQL policy stores. This document describes their configuration and how to implement or register a different store."
+lastmod = 2026-10-31T22:36:36+08:00
 +++
 
 ## Built-in stores and extension contracts

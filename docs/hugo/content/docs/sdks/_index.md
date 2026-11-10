@@ -9,6 +9,7 @@ tocheading = "h2"
 tags = ["sdk"]
 categories = ["docs"]
 bref = "Client libraries for the Speedle decision API in six languages. They work with a self-hosted Speedle ADS and with Speedle Cloud (coming soon)."
+lastmod = 2026-11-10T14:45:43+08:00
 +++
 
 The Speedle SDKs are client libraries for the decision API `POST /authz-check/v1/is-allowed`. They work with a self-hosted Speedle ADS and with Speedle Cloud. Each language page shows how to add the package and gives a complete, tested program for both. The source and the full reference are in [teramoby/speedle-sdk](https://github.com/teramoby/speedle-sdk). To run PMS and ADS for these examples, see [Deployment](/docs/deployment/) and the [Docker image](/docs/deployment/docker/).

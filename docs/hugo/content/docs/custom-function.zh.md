@@ -2,6 +2,7 @@
 title = "自定义函数"
 description = "在 SPDL 条件中调用自定义函数，扩展授权规则的计算能力。"
 date = 2019-01-21T10:43:02+08:00
+lastmod = 2026-11-08T11:21:16+08:00
 weight = 600
 draft = false
 bref = ""

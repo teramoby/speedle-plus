@@ -8,6 +8,7 @@ toc = true
 tocheading = "h2"
 categories = ["docs"]
 bref = "Docker Hub 和 GHCR 上的同一个镜像运行策略管理服务、决策服务和 spctl，并共用一份文件存储。"
+lastmod = 2026-11-10T14:45:43+08:00
 +++
 
 Speedle 发布一个镜像，其中包含 `speedle-pms`、`speedle-ads` 和 `spctl`。镜像基于 `scratch` 构建，以 UID 65532 运行，里面没有 shell。第一个参数决定启动哪个程序。

@@ -2,6 +2,7 @@
 title = "Custom Function"
 description = "Write policy condition with your own functions"
 date = 2019-01-21T10:43:02+08:00
+lastmod = 2026-11-07T01:07:23+08:00
 weight = 600
 draft = false
 bref = "When the condition in a policy or role policy is too complicated to draft using an expression and built-in functions, you can write your own functions to include in the condition instead"

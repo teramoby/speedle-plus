@@ -159,8 +159,8 @@ mkdir -p deployment/homebrew/Formula
 cp "${script_dir}/Formula/"*.rb deployment/homebrew/Formula/
 cp "${script_dir}/README.md" deployment/homebrew/README.md
 # The Quick Start guides must name this release or the next master push fails
-# the install-pin check. Hugo dates the generated pages from the author time
-# of the commit that changes the Markdown, so the stamp runs after that commit.
+# the install-pin check. Generated page dates come from front matter, so the
+# pin update leaves those dates unchanged.
 pin_status=$(python3 "${script_dir}/bump-quick-start-pin.py" "${VERSION}" .)
 if [[ -n "${pin_status}" ]]; then
   printf '%s\n' "${pin_status}"
@@ -197,15 +197,6 @@ if ! git diff --cached --quiet; then
     git commit -s -m "chore(release): update Homebrew formulas and the Quick Start pin to ${VERSION}"
   else
     git commit -s -m "chore(release): update Homebrew formulas to ${VERSION}"
-  fi
-  if [[ "${pin_status}" == *"Quick Start install pin set to ${VERSION}"* ]]; then
-    author_date=$(git log -1 --format=%aI -- docs/hugo/content/quick-start.md)
-    committer_date=$(git log -1 --format=%cI)
-    python3 "${script_dir}/bump-quick-start-pin.py" --stamp "${author_date}" .
-    git add -- docs/quick-start/index.html docs/zh/quick-start/index.html docs/en/sitemap.xml docs/zh/sitemap.xml
-    if ! git diff --cached --quiet; then
-      GIT_AUTHOR_DATE="${author_date}" GIT_COMMITTER_DATE="${committer_date}" git commit --amend --no-edit
-    fi
   fi
 fi
 

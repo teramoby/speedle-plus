@@ -39,6 +39,9 @@ for (const name of ['command-copy.js', 'docs.js']) {
 const sitemap = fs.readFileSync(path.join(output, 'sitemap.xml'), 'utf8');
 assert.ok(sitemap.includes('https://engine.speedle.io/en/sitemap.xml'), 'Multilingual sitemap index');
 assert.ok(fs.readFileSync(path.join(output, 'en/sitemap.xml'), 'utf8').includes('https://engine.speedle.io/playground/'));
+const hugoConfig = fs.readFileSync(path.join(root, 'docs/hugo/config.toml'), 'utf8');
+assert.match(hugoConfig, /enableGitInfo\s*=\s*false/, 'Generated pages do not read Git metadata');
+assert.doesNotMatch(hugoConfig, /:git|:filemodtime/i, 'Page dates do not fall back to a commit or file time');
 for (const name of ['quick-start/index.html', 'zh/quick-start/index.html']) {
   assert.deepEqual(fs.readFileSync(path.join(output, name)), fs.readFileSync(path.join(root, 'docs', name)), `Generated quick-start guide ${name}`);
   const html = fs.readFileSync(path.join(output, name), 'utf8');

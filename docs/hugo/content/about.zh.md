@@ -1,6 +1,7 @@
 +++
 title = "关于 Speedle"
 icon = "Speedle_logo_about.svg"
+lastmod = 2026-11-08T19:23:52+08:00
 +++
 
 Speedle 是一个采用 SPDL 策略语言的开源（UPL-1.0）授权引擎。它由 ADS（授权决策）与 PMS（策略管理）、六种语言的 SDK、Speedle Cloud（托管服务）以及 Speedle AI（面向 AI 智能体并以 AI 辅助的授权、一个 MCP 服务器和 policy-modeler 技能）组成。

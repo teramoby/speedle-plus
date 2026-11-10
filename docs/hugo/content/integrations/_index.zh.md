@@ -4,6 +4,7 @@ noindex = false
 categories = ["docs"]
 description = "将 Speedle 接入你的应用与基础设施。"
 aliases = ["/zh/integrations/istio/", "/zh/integrations/kubernetes/", "/zh/integrations/docker/"]
+lastmod = 2026-11-10T14:45:43+08:00
 +++
 
 Speedle 负责授权决策。应用、网关或平台中的策略执行点（PEP）在每次访问时向 Speedle 请求决策，并执行返回的结果。下面是目前支持的接入方式。

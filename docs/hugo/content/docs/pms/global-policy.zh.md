@@ -2,6 +2,7 @@
 title = "全局角色策略"
 description = "在多个服务之间共享角色分配，同时把操作权限留在各服务中管理。"
 date = 2019-01-18T21:19:44+08:00
+lastmod = 2026-11-08T11:21:16+08:00
 weight = 2
 draft = false
 bref = ""

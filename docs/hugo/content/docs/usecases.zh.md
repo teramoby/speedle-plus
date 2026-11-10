@@ -8,6 +8,7 @@ tocheading = "h2"
 tags = ["guide", "usecase"]
 categories = ["docs"]
 bref = "通过几个常见场景，了解 Speedle 的接入方式。"
+lastmod = 2026-11-08T11:21:16+08:00
 +++
 
 <a id="嵌入到-go-语言编写的应用程序"></a>
