@@ -77,13 +77,13 @@
     
     <li>
   <h2 class="title2">
-    <a href="/docs/overview/" itemprop="headline">Speedle Overview: Authorization Engine for Fine-Grained Access Control</a>
+    <a href="/docs/store/mysql/" itemprop="headline">MySQL Setup</a>
   </h2>
   
-  <p itemprop="about">How Speedle maps to common authorization terms: PAP, PDP, PEP, PIP, RBAC, ABAC, PBAC, XACML, zero trust, identity and IAM.</p>
+  <p itemprop="about">Configure MySQL 8.4 policy storage for PMS and ADS, step by step.</p>
   
   
-  <p itemprop="about">Where Speedle fits in the vocabulary of authorization and access control</p>
+  <p itemprop="about">Create a database, configure PMS and ADS, then verify authorization and automatic policy synchronization.</p>
   
   <hr />
 </li>
@@ -91,13 +91,13 @@
     
     <li>
   <h2 class="title2">
-    <a href="/docs/pms/diagnosis/" itemprop="headline">Policy Diagnosis</a>
+    <a href="/docs/sdks/rust/" itemprop="headline">Rust SDK</a>
   </h2>
   
-  <p itemprop="about">Authorization policy diagnosis</p>
+  <p itemprop="about">Add the Speedle Rust SDK and check authorization against a local Speedle or Speedle Cloud.</p>
   
   
-  <p itemprop="about">This feature is used to diagnose the evaluation process of authorization. When a user isn&#39;t allowed to operate on a resource, then this feature is useful to find out the reason, i.e., what&#39;s the policy which denies the operation on the resource.</p>
+  <p itemprop="about">Add the speedle 0.2.0 crate with cargo add, then call is_allowed and check against a local Speedle or Speedle Cloud.</p>
   
   <hr />
 </li>
@@ -105,13 +105,13 @@
     
     <li>
   <h2 class="title2">
-    <a href="/docs/cloud/getting-started/" itemprop="headline">Getting started with Speedle Cloud</a>
+    <a href="/docs/assertor/" itemprop="headline">Token asserter</a>
   </h2>
   
-  <p itemprop="about">Prepare for Speedle Cloud: sign-in and account management, service and SPDL policy management, session API requests and Playground tests.</p>
+  <p itemprop="about">Token asserter</p>
   
   
-  <p itemprop="about">The published Speedle Cloud console workflow, from sign-in and account settings to saved policies and Playground decisions.</p>
+  <p itemprop="about">Evaluation requests can contain an identity token that represents a user. In this case, the evaluation engine can invoke the asserter service to obtain the explicit identities of the user</p>
   
   <hr />
 </li>
@@ -119,11 +119,13 @@
     
     <li>
   <h2 class="title2">
-    <a href="/docs/logging/" itemprop="headline">Logging Framework</a>
+    <a href="/docs/api/" itemprop="headline">API</a>
   </h2>
   
-  <p itemprop="about">Speedle logging</p>
+  <p itemprop="about">Open API Specification Docs</p>
   
+  
+  <p itemprop="about">Open API Specification Docs. Use the API to model your simple and complex policies in a declarative way; get decisions, discover policies dynamically and debug policy evaluation.</p>
   
   <hr />
 </li>

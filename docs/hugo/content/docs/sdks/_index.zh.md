@@ -24,6 +24,10 @@ Java、Python、Go、.NET 和 Rust 的版本均为 0.2.0。`@speedle/sdk` 已在
 - [Rust](/docs/sdks/rust/)：crates.io `speedle`，已发布。
 - [Node.js / TypeScript](/docs/sdks/node/)：npm `@speedle/sdk`，已发布。
 
+## Docker 镜像
+
+[Docker 镜像](/docs/sdks/docker/) 用 `docker.io/speedle/speedle` 或 `ghcr.io/teramoby/speedle` 运行 `speedle-pms`、`speedle-ads` 和 `spctl`。把 ADS 发布到 `127.0.0.1:6734`，本页的客户端指向这个端口即可。
+
 ## 功能
 
 | 功能 | 状态 |

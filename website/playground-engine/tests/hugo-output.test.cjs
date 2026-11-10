@@ -156,7 +156,7 @@ function checkDocsAlternates(directory) {
 }
 checkDocsAlternates(path.join(output, 'docs'));
 checkDocsAlternates(path.join(output, 'zh/docs'));
-assert.equal(docsAlternates, 90, 'Every canonical docs page and redirect alias has three hreflang alternates');
+assert.equal(docsAlternates, 92, 'Every canonical docs page and redirect alias has three hreflang alternates');
 console.log('PASS Hugo 0.48 output: editor, navigation, sitemap, footer stylesheet and matching release assets');
 
 // #278: the Cloud section is the complete bilingual documentation hub.
@@ -221,7 +221,7 @@ function checkStorageNavigation(directory, locale = '') {
       if (!html.includes('<div class="sidebar">')) continue;
       const sidebar = html.split('<div class="sidebar">')[1];
       for (const target of ['store/', 'store/mysql/', 'store/etcd/', 'store/mongodb/', 'pms/policy-mgmt/', 'api/decision_api/',
-        'sdks/', 'sdks/java/', 'sdks/python/', 'sdks/go/', 'sdks/dotnet/', 'sdks/rust/', 'sdks/node/',
+        'sdks/', 'sdks/java/', 'sdks/python/', 'sdks/go/', 'sdks/dotnet/', 'sdks/rust/', 'sdks/node/', 'sdks/docker/',
         'cloud/', 'cloud/getting-started/', 'cloud/tokens/', 'cloud/authorization-api/', 'cloud/limits-and-errors/']) {
         assert.ok(sidebar.includes(`href="/${locale}docs/${target}"`), `Complete sidebar ${target} in ${name}`);
       }

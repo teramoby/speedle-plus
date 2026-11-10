@@ -147,6 +147,8 @@ go install github.com/teramoby/speedle-plus/cmd/...@latest
 
 这会把 `spctl`、`speedle-pms` 和 `speedle-ads` 安装到 `$(go env GOPATH)/bin`；如果设置了 `$GOBIN`，则安装到 `$GOBIN`。
 
+同样的三个程序也发布为一个容器镜像，仓库是 `docker.io/speedle/speedle` 和 `ghcr.io/teramoby/speedle`，标签为 `1.7.0`、`1.7` 和 `latest`。[用 Docker 镜像运行 Speedle](https://engine.speedle.io/zh/docs/sdks/docker/)。
+
 ## 从源码构建
 
 ### 前期准备
