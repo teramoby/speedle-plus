@@ -42,9 +42,6 @@ defaultContentLanguageInSubdir = false
     name = "English"
     url = "/en"
   [[Params.languages]]
-    name = "中文"
-    url = "/zh"
-  [[Params.languages]]
     name = "日本語"
     url = "/ja"
   [[Params.languages]]
@@ -53,6 +50,9 @@ defaultContentLanguageInSubdir = false
   [[Params.languages]]
     name = "Español"
     url = "/es"
+  [[Params.languages]]
+    name = "中文"
+    url = "/zh"
 
 [[menu.main]]
     name = "Getting Started"

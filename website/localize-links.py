@@ -301,6 +301,15 @@ class Links(HTMLParser):
                     switch = language(logical(url.path))
                 if switch in LANGUAGES:
                     target = counterpart(self.route, switch)
+                    # An archived snapshot only has the languages published with that
+                    # version. A switch to a later language stays on the current site.
+                    if target not in self.site.canonical and self.prefix:
+                        current = counterpart(logical(self.route), switch)
+                        home = counterpart("/", switch)
+                        if current in self.site.canonical:
+                            target = current
+                        elif home in self.site.canonical:
+                            target = home
                     if target not in self.site.canonical:
                         self.errors.append(f"{self.route}: missing translation {target}")
                     else:
@@ -395,7 +404,10 @@ def process(root, check=False):
         links = Links(site, route, archive_header(site, direct_language_navigation(text, route), route))
         errors.extend(links.errors)
         if not redirect:
-            active_languages = {language(r) for r in site.canonical}
+            # Each published snapshot keeps the languages it actually contains.
+            # Current pages require every language present on the current site.
+            prefix = snapshot(route)
+            active_languages = {language(item) for item in site.canonical if snapshot(item) == prefix}
             for other in LANGUAGES:
                 if other in active_languages and other != language(route):
                     target = counterpart(route, other)

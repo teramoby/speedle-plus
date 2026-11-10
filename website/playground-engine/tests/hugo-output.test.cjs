@@ -5,6 +5,11 @@ const path = require('node:path');
 const root = path.resolve(__dirname, '../../..');
 const output = process.argv[2];
 assert.ok(output, 'Pass the temporary Hugo output directory');
+const LOCALES = ['', 'ja/', 'ko/', 'es/', 'zh/'];
+const LANG_ORDER = [['en', 'English'], ['ja', '日本語'], ['ko', '한국어'], ['es', 'Español'], ['zh-CN', '中文']];
+const MENU_LABEL = {'': 'Menu', ja: 'メニュー', ko: '메뉴', es: 'Menú', zh: '菜单'};
+const SDK_LABEL = {'': 'SDKs', ja: 'SDK', ko: 'SDK', es: 'SDK', zh: 'SDK'};
+const DEPLOY_LABEL = {'': 'Deployment', ja: 'デプロイ', ko: '배포', es: 'Despliegue', zh: '部署'};
 const page = fs.readFileSync(path.join(output, 'playground/index.html'), 'utf8');
 assert.ok(page.includes('id="policies"') && page.includes('id="evaluate"'), 'Hugo renders the complete editor');
 assert.ok(!/<iframe\b|class="playground-hero\b/i.test(page), 'No recursive iframe or removed marketing hero');
@@ -19,7 +24,7 @@ function compareAssets(relative) {
   }
 }
 compareAssets('playground');
-for (const name of ['index.html','zh/index.html','playground/index.html','zh/playground/index.html']) {
+for (const name of LOCALES.flatMap(locale => [`${locale}index.html`, `${locale}playground/index.html`])) {
   const html = fs.readFileSync(path.join(output, name), 'utf8');
   assert.ok(html.includes('/css/navigation.css?v=header-20261106-v8') && html.includes('/js/navigation.js?v=header-20261106-v8'), `Shared navigation assets in ${name}`);
 }
@@ -37,12 +42,18 @@ for (const name of ['command-copy.js', 'docs.js']) {
   assert.deepEqual(fs.readFileSync(path.join(output, 'js', name)), fs.readFileSync(path.join(root, 'docs/js', name)), `Generated ${name}`);
 }
 const sitemap = fs.readFileSync(path.join(output, 'sitemap.xml'), 'utf8');
-assert.ok(sitemap.includes('https://engine.speedle.io/en/sitemap.xml'), 'Multilingual sitemap index');
+for (const locale of ['en', 'ja', 'ko', 'es', 'zh']) {
+  assert.ok(sitemap.includes(`https://engine.speedle.io/${locale}/sitemap.xml`), `Sitemap index lists ${locale}`);
+}
 assert.ok(fs.readFileSync(path.join(output, 'en/sitemap.xml'), 'utf8').includes('https://engine.speedle.io/playground/'));
-for (const name of ['quick-start/index.html', 'zh/quick-start/index.html']) {
+for (const locale of ['ja', 'ko', 'es', 'zh']) {
+  assert.ok(fs.readFileSync(path.join(output, `${locale}/sitemap.xml`), 'utf8').includes(`https://engine.speedle.io/${locale}/playground/`), `Playground in ${locale} sitemap`);
+}
+for (const name of LOCALES.map(locale => `${locale}quick-start/index.html`)) {
   assert.deepEqual(fs.readFileSync(path.join(output, name)), fs.readFileSync(path.join(root, 'docs', name)), `Generated quick-start guide ${name}`);
   const html = fs.readFileSync(path.join(output, name), 'utf8');
-  const target = name.startsWith('zh/') ? '/zh/playground/' : '/playground/';
+  const locale = name.match(/^(ja|ko|es|zh)\//)?.[1];
+  const target = locale ? `/${locale}/playground/` : '/playground/';
   assert.ok(html.includes(`href="${target}"`), `Generated ${name} navigation`);
   assert.ok(html.includes('/css/command-copy.css'), `Named custom stylesheet in ${name}`);
 }
@@ -51,53 +62,63 @@ for (const name of ['_default/baseof.html', 'docs/baseof.html']) {
   const template = fs.readFileSync(path.join(root, 'docs/hugo/layouts', name), 'utf8');
   assert.ok(/\{\{\s*else\s*\}\}\s*\{\{\s*errorf "customcss is true but customcssfile is missing on %s" \.Path\s*\}\}/.test(template), `Missing customcssfile fails the build in ${name}`);
 }
-for (const name of ['about/index.html', 'zh/about/index.html', 'contribute/index.html', 'zh/contribute/index.html',
-  'support/index.html', 'zh/support/index.html', 'docs/assertor/index.html', 'zh/docs/assertor/index.html']) {
-  assert.deepEqual(fs.readFileSync(path.join(output, name)), fs.readFileSync(path.join(root, 'docs', name)), `Generated article metadata ${name}`);
+for (const page of ['about/index.html', 'contribute/index.html', 'support/index.html', 'docs/assertor/index.html']) {
+  for (const locale of LOCALES) {
+    const name = `${locale}${page}`;
+    assert.deepEqual(fs.readFileSync(path.join(output, name)), fs.readFileSync(path.join(root, 'docs', name)), `Generated article metadata ${name}`);
+  }
 }
-for (const locale of ['', 'zh/']) {
+for (const locale of LOCALES) {
   const html = fs.readFileSync(path.join(output, `${locale}docs/api/management_api/index.html`), 'utf8');
   assert.ok(html.includes('/css/swagger-ui.css') && html.includes('/css/swagger-custom.css'), `Swagger styles in ${locale || 'en'}`);
 }
 const cloudRoutes = ['', 'getting-started/', 'tokens/', 'authorization-api/', 'limits-and-errors/'];
-for (const name of ['docs/index.html', 'zh/docs/index.html', 'docs/spdl/index.html', 'zh/docs/spdl/index.html',
-  ...cloudRoutes.flatMap(route => [`docs/cloud/${route}index.html`, `zh/docs/cloud/${route}index.html`])]) {
-  const html = fs.readFileSync(path.join(output, name), 'utf8');
-  const zh = name.startsWith('zh/');
-  const target = '/' + (zh ? name.slice(3) : 'zh/' + name).replace(/index\.html$/, '');
-  const navigation = html.match(/<nav class="nav-links"[^>]*>[\s\S]*?<\/nav>/)?.[0];
-  assert.ok(navigation, `Language navigation in ${name}`);
-  assert.equal((navigation.match(/hreflang=/g) || []).length, 1, `One language choice in ${name}`);
-  assert.ok(navigation.includes(`href="${target}"`) && navigation.includes(`>${zh ? 'English' : '中文'}</a>`), `Direct counterpart in ${name}`);
-  assert.ok(!navigation.includes('hide-sm'), `Same control available in mobile navigation in ${name}`);
-  assert.ok(!html.includes('langselFloatDiv') && !html.includes('langNameArrow'), `No dropdown in ${name}`);
-  const homepage = fs.readFileSync(path.join(output, zh ? 'zh/index.html' : 'index.html'), 'utf8');
-  const labels = value => [...value.matchAll(/<a\b[^>]*>([^<]+)<\/a>/g)].map(m => m[1]);
-  const homeNavigation = homepage.match(/<nav class="nav-links"[^>]*>[\s\S]*?<\/nav>/)[0];
-  assert.deepEqual(labels(navigation), labels(homeNavigation), `Homepage navigation order/labels in ${name}`);
-  assert.ok(navigation.includes(`href="/${zh ? 'zh/' : ''}#features"`), `Features returns to localized homepage from ${name}`);
-  assert.ok(html.includes('/css/navigation.css?v=header-20261106-v8') && html.includes('/js/navigation.js?v=header-20261106-v8'), `Shared versioned navigation assets in ${name}`);
-  assert.ok(html.includes('/css/docs.css') && html.includes('/js/docs.js'), `Documentation assets in ${name}`);
-  assert.ok(!/theme\.min|kube\.min|kube\.legenda|master\.css|kube\.demo|custom\.css|spdl-title|fonts\.googleapis|fontawesome|jquery|tocbot|\/js\/kube|\/js\/master/.test(html), `No legacy docs stack in ${name}`);
-  assert.ok(html.includes('class="docs-nav-heading') && html.includes('docs-nav-close') && html.includes('docs-nav-backdrop'), `Modern sidebar markup in ${name}`);
-  assert.ok(html.includes('aria-current="page"'), `Current page marked in the sidebar in ${name}`);
-  assert.ok(new RegExp(`<button class="docs-nav-toggle"[^>]*>[\\s\\S]*?<span>${zh ? '菜单' : 'Menu'}</span>`).test(html), `Menu drawer button in ${name}`);
-  if (!zh) assert.ok(/docs-nav-heading[^"]*"><a [^>]*>SDKs<\/a>/.test(html), `SDKs is a bold group heading like API in ${name}`);
-  assert.ok(new RegExp(`docs-nav-heading[^"]*"><a [^>]*>${zh ? '部署' : 'Deployment'}</a>`).test(html), `Deployment is a bold group heading next to SDKs in ${name}`);
-  const afterFooter = html.split('</footer>')[1];
-  assert.ok(afterFooter && !afterFooter.includes('/js/'), `No layout script after the footer in ${name}`);
+const navPages = ['docs/index.html', 'docs/spdl/index.html', ...cloudRoutes.map(route => `docs/cloud/${route}index.html`)];
+for (const locale of LOCALES) {
+  const lang = locale.replace(/\/$/, '');
+  for (const page of navPages) {
+    const name = `${locale}${page}`;
+    const html = fs.readFileSync(path.join(output, name), 'utf8');
+    const navigation = html.match(/<nav class="nav-links"[^>]*>[\s\S]*?<\/nav>/)?.[0];
+    assert.ok(navigation, `Language navigation in ${name}`);
+    const languageLinks = [...navigation.matchAll(/<a class="language-row"[^>]*hreflang="([^"]+)"[^>]*>([^<]+)/g)];
+    assert.deepEqual(languageLinks.map(match => [match[1], match[2]]), LANG_ORDER, `Language order in ${name}`);
+    const neutral = page.replace(/index\.html$/, '');
+    for (const [code] of LANG_ORDER) {
+      const prefix = code === 'en' ? '' : `${code === 'zh-CN' ? 'zh' : code}/`;
+      assert.ok(navigation.includes(`href="/${prefix}${neutral}"`), `Language href /${prefix}${neutral} in ${name}`);
+    }
+    assert.ok(!navigation.includes('hide-sm'), `Same control available in mobile navigation in ${name}`);
+    assert.ok(!html.includes('langselFloatDiv') && !html.includes('langNameArrow'), `No dropdown in ${name}`);
+    const homepage = fs.readFileSync(path.join(output, `${locale}index.html`), 'utf8');
+    const labels = value => [...value.matchAll(/<a\b[^>]*>([^<]+)<\/a>/g)].map(match => match[1]);
+    const homeNavigation = homepage.match(/<nav class="nav-links"[^>]*>[\s\S]*?<\/nav>/)[0];
+    assert.deepEqual(labels(navigation), labels(homeNavigation), `Homepage navigation order/labels in ${name}`);
+    assert.ok(navigation.includes(`href="/${locale}#features"`), `Features returns to localized homepage from ${name}`);
+    assert.ok(html.includes('/css/navigation.css?v=header-20261106-v8') && html.includes('/js/navigation.js?v=header-20261106-v8'), `Shared versioned navigation assets in ${name}`);
+    assert.ok(html.includes('/css/docs.css') && html.includes('/js/docs.js'), `Documentation assets in ${name}`);
+    assert.ok(!/theme\.min|kube\.min|kube\.legenda|master\.css|kube\.demo|custom\.css|spdl-title|fonts\.googleapis|fontawesome|jquery|tocbot|\/js\/kube|\/js\/master/.test(html), `No legacy docs stack in ${name}`);
+    assert.ok(html.includes('class="docs-nav-heading') && html.includes('docs-nav-close') && html.includes('docs-nav-backdrop'), `Modern sidebar markup in ${name}`);
+    assert.ok(html.includes('aria-current="page"'), `Current page marked in the sidebar in ${name}`);
+    assert.ok(new RegExp(`<button class="docs-nav-toggle"[^>]*>[\\s\\S]*?<span>${MENU_LABEL[lang]}</span>`).test(html), `Menu drawer button in ${name}`);
+    assert.ok(new RegExp(`docs-nav-heading[^"]*"><a [^>]*>${SDK_LABEL[lang]}</a>`).test(html), `SDK group heading in ${name}`);
+    assert.ok(new RegExp(`docs-nav-heading[^"]*"><a [^>]*>${DEPLOY_LABEL[lang]}</a>`).test(html), `Deployment group heading in ${name}`);
+    const afterFooter = html.split('</footer>')[1];
+    assert.ok(afterFooter && !afterFooter.includes('/js/'), `No layout script after the footer in ${name}`);
+  }
 }
 // #243: the remaining legacy-theme pages use the docs styles and load no Kube stack.
-for (const name of ['quick-start/index.html', 'zh/quick-start/index.html', 'about/index.html', 'zh/about/index.html',
-  'contribute/index.html', 'zh/contribute/index.html', 'support/index.html', 'zh/support/index.html',
-  'integrations/index.html', 'zh/integrations/index.html', 'versions/index.html', 'zh/versions/index.html',
-  'tags/index.html', 'zh/tags/index.html', 'categories/index.html', 'zh/categories/index.html',
-  'tags/api/index.html', 'zh/tags/api/index.html', 'categories/docs/page/2/index.html']) {
-  const html = fs.readFileSync(path.join(output, name), 'utf8');
-  assert.ok(html.includes('/css/docs.css'), `Docs styles in ${name}`);
-  assert.ok(!/theme\.min|kube\.min|kube\.legenda|master\.css|kube\.demo|custom\.css|spdl-title|fonts\.googleapis|fontawesome|jquery|tocbot|\/js\/kube|\/js\/master/.test(html), `No legacy stack in ${name}`);
-  assert.ok(html.includes('<body class="page-kube docs-page">'), `Docs body in ${name}`);
-  assert.ok(html.includes('class="content-container docs-article"'), `Stand-alone docs container in ${name}`);
+for (const page of ['quick-start/index.html', 'about/index.html', 'contribute/index.html', 'support/index.html',
+  'integrations/index.html', 'versions/index.html', 'tags/index.html', 'categories/index.html',
+  'tags/api/index.html', 'categories/docs/page/2/index.html']) {
+  for (const locale of LOCALES) {
+    const name = `${locale}${page}`;
+    const html = fs.readFileSync(path.join(output, name), 'utf8');
+    assert.ok(html.includes('/css/docs.css'), `Docs styles in ${name}`);
+    assert.ok(!/theme\.min|kube\.min|kube\.legenda|master\.css|kube\.demo|custom\.css|spdl-title|fonts\.googleapis|fontawesome|jquery|tocbot|\/js\/kube|\/js\/master/.test(html), `No legacy stack in ${name}`);
+    assert.ok(html.includes('<body class="page-kube docs-page">'), `Docs body in ${name}`);
+    assert.ok(html.includes('class="content-container docs-article"'), `Stand-alone docs container in ${name}`);
+  }
 }
 // #203: every page with the shared footer loads navigation.css, the stylesheet that holds the footer rules.
 const footerRules = fs.readFileSync(path.join(output, 'css/navigation.css'), 'utf8');
@@ -115,21 +136,27 @@ let footerPages = 0;
       footerPages++;
       assert.ok(html.includes('/css/navigation.css?v=header-20261106-v8'), `Footer stylesheet linked in ${path.relative(output, file)}`);
       const relative = path.relative(output, file);
-      const zh = relative.split(path.sep).includes('zh');
-      const legal = zh
-        ? '<p class="footer-legal"><span>基于 Universal Permissive License v1.0 授权。</span><span class="footer-legal-sep"> · </span><span>版权所有 &copy; 2019–2026 The Speedle Authors。</span></p>'
-        : '<p class="footer-legal"><span>Licensed under the Universal Permissive License v1.0.</span><span class="footer-legal-sep"> · </span><span>Copyright &copy; 2019–2026 The Speedle Authors. All rights reserved.</span></p>';
+      const parts = relative.split(path.sep);
+      const start = /^[0-9a-f]{32}$/.test(parts[0]) ? 1 : 0;
+      const lang = ['zh', 'ja', 'ko', 'es'].includes(parts[start]) ? parts[start] : 'en';
+      const legal = {
+        en: '<p class="footer-legal"><span>Licensed under the Universal Permissive License v1.0.</span><span class="footer-legal-sep"> · </span><span>Copyright &copy; 2019–2026 The Speedle Authors. All rights reserved.</span></p>',
+        zh: '<p class="footer-legal"><span>基于 Universal Permissive License v1.0 授权。</span><span class="footer-legal-sep"> · </span><span>版权所有 &copy; 2019–2026 The Speedle Authors。</span></p>',
+        ja: '<p class="footer-legal"><span>Universal Permissive License v1.0 の下でライセンスされています。</span><span class="footer-legal-sep"> · </span><span>Copyright &copy; 2019–2026 The Speedle Authors. All rights reserved.</span></p>',
+        ko: '<p class="footer-legal"><span>Universal Permissive License v1.0에 따라 라이선스가 부여됩니다.</span><span class="footer-legal-sep"> · </span><span>Copyright &copy; 2019–2026 The Speedle Authors. All rights reserved.</span></p>',
+        es: '<p class="footer-legal"><span>Con licencia Universal Permissive License v1.0.</span><span class="footer-legal-sep"> · </span><span>Copyright &copy; 2019–2026 The Speedle Authors. Todos los derechos reservados.</span></p>',
+      }[lang];
       assert.ok(html.includes(legal), `Separate license and approved copyright lines in ${relative}`);
       assert.ok(!html.includes('footer-sep'), `No legal-line joiner in ${relative}`);
     }
   }
 })(output);
-for (const name of ['docs/sdks/index.html', 'zh/docs/sdks/index.html', 'docs/sdks/java/index.html', 'zh/docs/sdks/java/index.html', 'docs/api/index.html', 'docs/spdl/index.html']) {
+for (const name of LOCALES.flatMap(locale => [`${locale}docs/sdks/index.html`, `${locale}docs/sdks/java/index.html`, `${locale}docs/api/index.html`, `${locale}docs/spdl/index.html`])) {
   assert.ok(fs.readFileSync(path.join(output, name), 'utf8').includes('<footer class="site-footer">'), `Shared footer in ${name}`);
 }
 assert.ok(footerPages > 190, `Footer pages checked: ${footerPages}`);
 // #208: the SDK pages moved from /docs/api/sdk-<lang>/ to /docs/sdks/<lang>/; the old URLs redirect.
-for (const locale of ['', 'zh/']) {
+for (const locale of LOCALES) {
   for (const lang of ['java', 'python', 'go', 'dotnet', 'rust', 'node']) {
     const target = `https://engine.speedle.io/${locale}docs/sdks/${lang}/`;
     const alias = fs.readFileSync(path.join(output, `${locale}docs/api/sdk-${lang}/index.html`), 'utf8');
@@ -140,7 +167,7 @@ for (const locale of ['', 'zh/']) {
 }
 // The embedded guide spelling is corrected, and the Docker image page left SDKs.
 // Both previous URLs keep redirecting.
-for (const locale of ['', 'zh/']) {
+for (const locale of LOCALES) {
   const embedded = `https://engine.speedle.io/${locale}docs/deployment/embedded/`;
   const alias = fs.readFileSync(path.join(output, `${locale}docs/deployment-embeded/index.html`), 'utf8');
   assert.ok(alias.includes(`<link rel="canonical" href="${embedded}"`) && alias.includes(`url=/${locale}docs/deployment/embedded/"`), `Redirect ${locale}docs/deployment-embeded/ to ${embedded}`);
@@ -161,22 +188,54 @@ function checkDocsAlternates(directory) {
     const html = fs.readFileSync(file, 'utf8');
     const canonical = html.match(/<link rel="canonical" href="([^"]+)"\/?>/)?.[1];
     assert.ok(canonical, `Docs canonical in ${file}`);
-    const english = canonical.replace('/zh/docs/', '/docs/');
-    const chinese = english.replace('/docs/', '/zh/docs/');
-    for (const [language, target] of [['en', english], ['zh-CN', chinese], ['x-default', english]]) {
+    const english = canonical.replace(/\/(?:zh|ja|ko|es)\/docs\//, '/docs/');
+    const alternates = [
+      ['en', english],
+      ['ja', english.replace('/docs/', '/ja/docs/')],
+      ['ko', english.replace('/docs/', '/ko/docs/')],
+      ['es', english.replace('/docs/', '/es/docs/')],
+      ['zh-CN', english.replace('/docs/', '/zh/docs/')],
+      ['x-default', english],
+    ];
+    for (const [language, target] of alternates) {
       assert.ok(html.includes(`<link rel="alternate" hreflang="${language}" href="${target}">`), `${language} alternate in ${file}`);
     }
     docsAlternates++;
   }
 }
-checkDocsAlternates(path.join(output, 'docs'));
-checkDocsAlternates(path.join(output, 'zh/docs'));
-assert.equal(docsAlternates, 96, 'Every canonical docs page and redirect alias has three hreflang alternates');
+for (const locale of LOCALES) checkDocsAlternates(path.join(output, `${locale}docs`));
+assert.equal(docsAlternates, 240, 'Every canonical docs page and redirect alias has hreflang alternates for en, ja, ko, es, zh-CN and x-default');
 console.log('PASS Hugo 0.48 output: editor, navigation, sitemap, footer stylesheet and matching release assets');
 
-// #278: the Cloud section is the complete bilingual documentation hub.
-for (const locale of ['', 'zh/']) {
-  const zh = locale === 'zh/';
+// The Cloud section is documented in every site language.
+const cloudCopy = {
+  '': {
+    soon: 'Speedle Cloud is coming soon', badge: 'Coming soon', closed: 'Production sign-in is not open',
+    signin: 'Sign in with GitHub or Google (opens soon)', signout: 'Sign out everywhere',
+    download: 'quickstart.en.md', legal: '', samples: true,
+  },
+  'zh/': {
+    soon: 'Speedle Cloud 即将上线', badge: 'Coming soon', closed: '生产环境尚未开放登录',
+    signin: '使用 GitHub 或 Google 登录（即将开放）', signout: '在所有设备上退出',
+    download: 'quickstart.zh-CN.md', legal: 'zh-CN/', samples: true,
+  },
+  'ja/': {
+    soon: 'Speedle Cloud はまもなく公開されます', badge: 'Coming soon（まもなく公開）', closed: '本番環境ではまだサインイン',
+    signin: 'GitHub または Google', signout: '',
+    download: 'quickstart.ja.md', legal: 'ja/', samples: false,
+  },
+  'ko/': {
+    soon: 'Speedle Cloud는 출시 예정입니다', badge: 'Coming soon(출시 예정)', closed: '프로덕션 환경에서는 아직 로그인',
+    signin: 'GitHub 또는 Google', signout: '',
+    download: 'quickstart.ko.md', legal: 'ko/', samples: false,
+  },
+  'es/': {
+    soon: 'Speedle Cloud estará disponible próximamente', badge: 'Próximamente', closed: 'inicio de sesión para producción aún no está habilitado',
+    signin: 'Iniciar sesión con GitHub o Google (próximamente)', signout: 'Cerrar sesión en todas partes',
+    download: 'quickstart.es.md', legal: 'es/', samples: true,
+  },
+};
+for (const [locale, copy] of Object.entries(cloudCopy)) {
   const prefix = `https://engine.speedle.io/${locale}docs/cloud/`;
   const read = route => fs.readFileSync(path.join(output, `${locale}docs/cloud/${route}index.html`), 'utf8');
   const overview = read('');
@@ -189,25 +248,26 @@ for (const locale of ['', 'zh/']) {
   for (const route of cloudRoutes.slice(1)) {
     assert.ok(sidebar.includes(`href="/${locale}docs/cloud/${route}"`), `Cloud ${route} link in ${locale || 'en'}`);
   }
-  assert.ok(overview.includes(zh ? 'Speedle Cloud 即将上线' : 'Speedle Cloud is coming soon'), `Coming-soon overview in ${locale || 'en'}`);
-  assert.ok(overview.includes('Coming soon') && guide.includes(zh ? '生产环境尚未开放登录' : 'Production sign-in is not open'), `Cloud badge and closed sign-in in ${locale || 'en'}`);
-  assert.ok(guide.includes(zh ? '使用 GitHub 或 Google 登录（即将开放）' : 'Sign in with GitHub or Google (opens soon)'), `Provider sign-in step in ${locale || 'en'}`);
-  assert.ok(guide.includes('allGrantedPermissions') && guide.includes('POST /api/service/test'), `All session Playground operations in ${locale || 'en'}`);
-  assert.ok(guide.includes('grant user alice editor on /books') && guide.includes('grant (user alice) role editor'), `Role-policy examples in ${locale || 'en'}`);
+  assert.ok(overview.includes(copy.soon) && overview.includes(copy.badge), `Coming-soon overview in ${locale || 'en'}`);
+  assert.ok(guide.includes(copy.closed) && guide.includes(copy.signin), `Closed sign-in in ${locale || 'en'}`);
+  if (copy.signout) assert.ok(guide.includes(copy.signout), `Account session management in ${locale || 'en'}`);
   assert.ok(guide.includes('grant user alice from corp get /books'), `Domain-scoped getting-started policy in ${locale || 'en'}`);
-  assert.ok(guide.includes('Sign out everywhere') || guide.includes('在所有设备上退出'), `Account session management in ${locale || 'en'}`);
-  assert.ok(tokens.includes('spdl_&lt;canonical uppercase ULID id&gt;_&lt;43 base62 digits&gt;'), `Current token format in ${locale || 'en'}`);
   assert.ok(!tokens.includes('UUIDv7'), `Obsolete token format removed in ${locale || 'en'}`);
-  assert.ok(tokens.includes('reauth_required') && tokens.includes('DELETE /api/tokens/') && tokens.includes('nextCursor'), `Token creation, revocation and pagination in ${locale || 'en'}`);
-  assert.ok(api.includes('POST /authz-check/v1/is-allowed') && api.includes('service_mismatch') && api.includes('subject.token'), `ADS preview contract in ${locale || 'en'}`);
-  assert.ok(api.includes('AbortSignal.timeout') && api.includes('SPEEDLE_ADS_TOKEN'), `Node.js ADS example in ${locale || 'en'}`);
-  assert.ok(limits.includes('X-Quota-Daily-Remaining') && limits.includes('daily_quota_exceeded') && limits.includes('snapshot_unavailable'), `Cloud limits and errors in ${locale || 'en'}`);
-  const download = zh ? 'quickstart.zh-CN.md' : 'quickstart.en.md';
-  assert.ok(overview.includes(`href="/docs/cloud/${download}"`), `Localized Markdown download in ${locale || 'en'}`);
+  assert.ok(api.includes('POST /authz-check/v1/is-allowed'), `ADS preview route in ${locale || 'en'}`);
+  if (copy.samples) {
+    assert.ok(guide.includes('allGrantedPermissions') && guide.includes('POST /api/service/test'), `All session Playground operations in ${locale || 'en'}`);
+    assert.ok(guide.includes('grant user alice editor on /books') && guide.includes('grant (user alice) role editor'), `Role-policy examples in ${locale || 'en'}`);
+    assert.ok(tokens.includes('spdl_&lt;canonical uppercase ULID id&gt;_&lt;43 base62 digits&gt;'), `Current token format in ${locale || 'en'}`);
+    assert.ok(tokens.includes('reauth_required') && tokens.includes('DELETE /api/tokens/') && tokens.includes('nextCursor'), `Token creation, revocation and pagination in ${locale || 'en'}`);
+    assert.ok(api.includes('service_mismatch') && api.includes('subject.token'), `ADS preview contract in ${locale || 'en'}`);
+    assert.ok(api.includes('AbortSignal.timeout') && api.includes('SPEEDLE_ADS_TOKEN'), `Node.js ADS example in ${locale || 'en'}`);
+    assert.ok(limits.includes('X-Quota-Daily-Remaining') && limits.includes('daily_quota_exceeded') && limits.includes('snapshot_unavailable'), `Cloud limits and errors in ${locale || 'en'}`);
+  }
+  assert.ok(overview.includes(`href="/docs/cloud/${copy.download}"`), `Localized Markdown download in ${locale || 'en'}`);
   assert.ok(overview.includes('https://cloud.speedle.io/openapi.yaml') && overview.includes('https://cloud.speedle.io/openapi.json') && overview.includes('https://cloud.speedle.io/build.json'), `Cloud schema and build downloads in ${locale || 'en'}`);
-  assert.ok(overview.includes(`href="https://cloud.speedle.io/${zh ? 'zh-CN/' : ''}terms"`) && overview.includes(`href="https://cloud.speedle.io/${zh ? 'zh-CN/' : ''}privacy"`), `Localized Cloud legal links in ${locale || 'en'}`);
-  const markdown = fs.readFileSync(path.join(output, 'docs/cloud', download), 'utf8');
-  assert.deepEqual(markdown, fs.readFileSync(path.join(root, 'docs/hugo/static/docs/cloud', download), 'utf8'), `Generated ${download}`);
+  assert.ok(overview.includes(`href="https://cloud.speedle.io/${copy.legal}terms"`) && overview.includes(`href="https://cloud.speedle.io/${copy.legal}privacy"`), `Localized Cloud legal links in ${locale || 'en'}`);
+  const markdown = fs.readFileSync(path.join(output, 'docs/cloud', copy.download), 'utf8');
+  assert.deepEqual(markdown, fs.readFileSync(path.join(root, 'docs/hugo/static/docs/cloud', copy.download), 'utf8'), `Generated ${copy.download}`);
   for (const phrase of ['getting-started', 'tokens', 'authorization-api', 'limits-and-errors']) {
     assert.ok(markdown.includes(`https://engine.speedle.io/${locale}docs/cloud/${phrase}`), `Offline Markdown links ${phrase} in ${locale || 'en'}`);
   }
@@ -248,13 +308,12 @@ function checkStorageNavigation(directory, locale = '') {
     }
   }
 }
-for (const name of ['docs/index.html', 'zh/docs/index.html', 'quick-start/index.html', 'zh/about/index.html']) {
+for (const name of LOCALES.flatMap(locale => [`${locale}docs/index.html`, `${locale}quick-start/index.html`, `${locale}about/index.html`])) {
   const html = fs.readFileSync(path.join(output, name), 'utf8');
   assert.ok(html.includes('<footer class="site-footer">') && html.includes('class="footer-family"') && !html.includes('<footer class="row">'), `Shared homepage footer in ${name}`);
 }
-checkStorageNavigation(path.join(output, 'docs'));
-checkStorageNavigation(path.join(output, 'zh/docs'), 'zh/');
-console.log('PASS complete bilingual documentation sidebars with nested MySQL, etcd and MongoDB guides');
+for (const locale of LOCALES) checkStorageNavigation(path.join(output, `${locale}docs`), locale);
+console.log('PASS documentation sidebars in en, ja, ko, es and zh with nested MySQL, etcd and MongoDB guides');
 
 // #281 review: Hugo 0.48 dates a list page from the first child page that has a
 // date, so a category feed could report January 2019 while listing November 2026

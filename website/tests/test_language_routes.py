@@ -2,7 +2,9 @@
 import contextlib
 import io
 from pathlib import Path
+import re
 import runpy
+import shutil
 import tempfile
 import unittest
 
@@ -211,6 +213,90 @@ class LanguageRoutes(unittest.TestCase):
             self.assertEqual(dest, f'https://cloud.speedle.io/{lang}/')
             dest_ai = ROUTER['family_destination'](ROUTER['urlsplit']('https://ai.speedle.io/'), lang)
             self.assertEqual(dest_ai, f'https://ai.speedle.io/{lang}/')
+
+    def test_five_language_pages_keep_links_and_menu_order(self):
+        root = Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, root)
+        labels = [("en", "English", ""), ("ja", "日本語", "ja/"), ("ko", "한국어", "ko/"),
+                  ("es", "Español", "es/"), ("zh-CN", "中文", "zh/")]
+
+        def write(route, text):
+            file = root / route.lstrip("/") / "index.html"
+            file.parent.mkdir(parents=True, exist_ok=True)
+            file.write_text(text)
+
+        for code, label, prefix in labels:
+            row = "".join(
+                f'<a class="language-row" href="/{other_prefix}docs/spdl/" hreflang="{other_code}">{other_label}</a>'
+                for other_code, other_label, other_prefix in labels
+            )
+            menu = ('<div class="products-panel" id="products-panel">'
+                    '<a href="https://engine.speedle.io/">Engine</a>'
+                    '<a href="https://cloud.speedle.io/">Cloud</a>'
+                    '<a href="https://ai.speedle.io/">AI</a></div>')
+            write(f"/{prefix}docs/spdl/", f'<html><nav class="nav-links">{row}</nav>{menu}'
+                  '<a href="/docs/store/?source=guide&amp;n=1#section">Store</a></html>')
+            write(f"/{prefix}docs/store/", f'<html><nav class="nav-links">{row}</nav><main>Store</main></html>')
+        with contextlib.redirect_stdout(io.StringIO()):
+            ROUTER["process"](root, False)
+        for code, label, prefix in labels:
+            text = (root / f"{prefix}docs/spdl/index.html").read_text()
+            self.assertEqual(
+                re.findall(r'class="language-row"[^>]*hreflang="([^"]+)"[^>]*>([^<]+)', text),
+                [(other_code, other_label) for other_code, other_label, _ in labels],
+            )
+            self.assertIn(f'href="/{prefix}docs/store/?source=guide&amp;n=1#section"', text)
+            lang = "zh" if code == "zh-CN" else code
+            if lang == "en":
+                self.assertIn('href="https://cloud.speedle.io/"', text)
+                self.assertNotIn('https://cloud.speedle.io/ja/', text)
+            elif lang == "zh":
+                self.assertIn('href="https://cloud.speedle.io/zh-CN/"', text)
+                self.assertIn('href="https://ai.speedle.io/zh/"', text)
+            else:
+                self.assertIn(f'href="https://cloud.speedle.io/{lang}/"', text)
+                self.assertIn(f'href="https://ai.speedle.io/{lang}/"', text)
+        with contextlib.redirect_stdout(io.StringIO()):
+            ROUTER["process"](root, True)
+
+    def test_archived_snapshots_do_not_require_later_languages(self):
+        root = Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, root)
+        labels = [("en", ""), ("ja", "ja/"), ("ko", "ko/"), ("es", "es/"), ("zh-CN", "zh/")]
+
+        def write(route, text):
+            file = root / route.lstrip("/") / "index.html"
+            file.parent.mkdir(parents=True, exist_ok=True)
+            file.write_text(text)
+
+        row = "".join(
+            f'<a class="language-row" href="/{prefix}" hreflang="{code}">Lang</a>'
+            for code, prefix in labels
+        )
+        header = (f'<header class="site-header"><nav class="nav-links">{row}'
+                  '<a href="/docs/spdl/">SPDL</a></nav></header>')
+        for code, prefix in labels:
+            write(f"/{prefix}", f'<html><head></head><body>{header}<main id="top"></main></body></html>')
+            write(f"/{prefix}docs/spdl/", f'<html>{header}<main>Current</main></html>')
+        prefix = "/" + "a" * 32
+        for lang in ("en", "zh"):
+            for path in ("/docs/spdl/", "/blog/"):
+                route = prefix + ("/zh" if lang == "zh" else "") + path
+                write(route, f'<html lang="{lang}"><head><link rel="canonical" href="https://engine.speedle.io{route}"></head>'
+                      '<header><div class="langsel"><a href="/en/">English</a><a href="/zh/">中文</a></div></header>'
+                      '<main>Archived</main></html>')
+        with contextlib.redirect_stdout(io.StringIO()):
+            ROUTER["process"](root, False)
+        archived = (root / prefix.lstrip("/") / "docs/spdl/index.html").read_text()
+        self.assertIn(f'href="{prefix}/zh/docs/spdl/"', archived)
+        self.assertIn('href="/ja/docs/spdl/"', archived)
+        self.assertNotIn(f'{prefix}/ja/', archived)
+        self.assertIn("Archived", archived)
+        blog = (root / prefix.lstrip("/") / "blog/index.html").read_text()
+        self.assertIn('href="/ja/"', blog)
+        self.assertNotIn(f'{prefix}/ja/', blog)
+        with contextlib.redirect_stdout(io.StringIO()):
+            ROUTER["process"](root, True)
 
     def test_unknown_internal_page_is_reported_without_guessing_a_destination(self):
         self.write("/docs/spdl/", '<html><nav class="nav-links"><a href="/zh/" hreflang="zh">中文</a></nav><a href="/missing/">Missing</a></html>')

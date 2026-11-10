@@ -140,6 +140,36 @@ ZH_LINKS = [
     ("部署中文文档", "https://engine.speedle.io/zh/docs/deployment/", "嵌入模式、Docker 镜像，以及独立的 PMS 和 ADS。"),
 ]
 
+JA_LINKS = [
+    ("日本語", "https://engine.speedle.io/ja/", "Speedle の日本語ホーム。"),
+    ("日本語ドキュメント", "https://engine.speedle.io/ja/docs/", "概念、ポリシー管理、デプロイ、API、SDK の日本語ドキュメント。"),
+    ("SPDL 日本語リファレンス", "https://engine.speedle.io/ja/docs/spdl/", "SPDL のポリシーとロールポリシーの構文、条件、属性、関数。"),
+    ("クイックスタート", "https://engine.speedle.io/ja/quick-start/", "Speedle をインストールして最初の認可判定を得る。"),
+    ("Speedle Cloud 日本語ドキュメント", "https://engine.speedle.io/ja/docs/cloud/", "Speedle Cloud のホスト型認可ドキュメント：アカウントとポリシー管理、アプリケーション token、認可 API、制限とエラー。"),
+    ("SDK 日本語ドキュメント", "https://engine.speedle.io/ja/docs/sdks/", "6 言語の SDK の日本語ドキュメント。"),
+    ("デプロイ", "https://engine.speedle.io/ja/docs/deployment/", "組み込みモード、Docker イメージ、スタンドアロンの PMS と ADS。"),
+]
+
+KO_LINKS = [
+    ("한국어", "https://engine.speedle.io/ko/", "Speedle 한국어 홈。"),
+    ("한국어 문서", "https://engine.speedle.io/ko/docs/", "개념, 정책 관리, 배포, API, SDK의 한국어 문서。"),
+    ("SPDL 한국어 참고", "https://engine.speedle.io/ko/docs/spdl/", "SPDL 정책과 역할 정책의 구문, 조건, 속성, 함수。"),
+    ("빠른 시작", "https://engine.speedle.io/ko/quick-start/", "Speedle을 설치하고 첫 인가 결정을 받습니다。"),
+    ("Speedle Cloud 한국어 문서", "https://engine.speedle.io/ko/docs/cloud/", "Speedle Cloud 호스팅 인가 문서: 계정과 정책 관리, 애플리케이션 token, 인가 API, 제한과 오류。"),
+    ("SDK 한국어 문서", "https://engine.speedle.io/ko/docs/sdks/", "여섯 언어 SDK의 한국어 문서。"),
+    ("배포", "https://engine.speedle.io/ko/docs/deployment/", "임베디드 모드, Docker 이미지, 독립 실행형 PMS와 ADS。"),
+]
+
+ES_LINKS = [
+    ("Español", "https://engine.speedle.io/es/", "Página de inicio de Speedle en español."),
+    ("Documentación en español", "https://engine.speedle.io/es/docs/", "Documentación en español de conceptos, gestión de políticas, despliegue, API y SDK."),
+    ("Referencia de SPDL en español", "https://engine.speedle.io/es/docs/spdl/", "Sintaxis de políticas y políticas de roles de SPDL, condiciones, atributos y funciones."),
+    ("Inicio rápido", "https://engine.speedle.io/es/quick-start/", "Instale Speedle y obtenga la primera decisión de autorización."),
+    ("Documentación de Speedle Cloud en español", "https://engine.speedle.io/es/docs/cloud/", "Documentación de la autorización hospedada de Speedle Cloud: cuentas, políticas, tokens de aplicación, API de autorización, límites y errores."),
+    ("Documentación de SDK en español", "https://engine.speedle.io/es/docs/sdks/", "Documentación en español de los SDK en seis lenguajes."),
+    ("Despliegue", "https://engine.speedle.io/es/docs/deployment/", "Modo embebido, imagen de Docker y PMS y ADS independientes."),
+]
+
 
 class ContentError(Exception):
     pass
@@ -349,6 +379,15 @@ def render_llms(pages, definition):
         ]),
         section("Chinese", [
             f"- [{label}]({url}): {description}" for label, url, description in ZH_LINKS
+        ]),
+        section("Japanese", [
+            f"- [{label}]({url}): {description}" for label, url, description in JA_LINKS
+        ]),
+        section("Korean", [
+            f"- [{label}]({url}): {description}" for label, url, description in KO_LINKS
+        ]),
+        section("Spanish", [
+            f"- [{label}]({url}): {description}" for label, url, description in ES_LINKS
         ]),
         section("Other Speedle sites", [
             fixed("ai_llms", "Speedle AI llms.txt"),

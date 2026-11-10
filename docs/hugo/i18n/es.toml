@@ -1,0 +1,86 @@
+[GETTING_STARTED]
+other = "Primeros pasos"
+
+[LEARN_MORE]
+other = "Más información"
+
+[SimplePolicyLanguage]
+other = "Lenguaje de políticas simple"
+
+[FEATURE_SimplePolicyLanguage]
+other = "Defina políticas en un lenguaje declarativo de alto nivel (Speedle Policy Definition Language - SPDL) de la forma más intuitiva y natural."
+
+[CloudNative]
+other = "Cloud Native"
+
+[FEATURE_CloudNative]
+other = "¡Cloud first! Con una gran variedad de ejemplos de integración e interfaces conectables, proteja sus aplicaciones en cualquier proveedor de nube."
+
+[RealtimePolicyDiscovery]
+other = "Descubrimiento de políticas en tiempo real"
+
+[FEATURE_RealtimePolicyDiscovery]
+other = "Descubra dinámicamente políticas basadas en interacciones en tiempo de ejecución en tiempo real entre sus servicios, sin tener que adivinar todas las posibles vías de acceso de atacantes a sus sistemas."
+
+[FEATURE_RBAC]
+other = "Utilice control de acceso detallado basado en roles y atributos para proteger sus aplicaciones."
+
+[CentralizedPolicyManagement]
+other = "Gestión centralizada de políticas"
+
+[FEATURE_CentralizedPolicyManagement]
+other = "Aproveche diversos puntos de integración para gestionar las políticas de sus sistemas heterogéneos y políglotas desde un único punto central."
+
+[PluggableIdentity]
+other = "Identidad conectable"
+
+[FEATURE_PluggableIdentity]
+other = "¡Fácilmente ampliable! Conecte su propio proveedor de identidad como GitHub, Okta o incluso el de su empresa."
+
+[PluggablePersistenceStore]
+other = "Traiga su propio almacenamiento persistente"
+
+[FEATURE_BYOPersistenceStore]
+other = "¿Prefiere no usar etcd? Implemente nuestra interfaz de persistencia para utilizar sus almacenes de datos existentes: RDBMS, NoSQL o almacenamiento en bloques."
+
+[AboutSpeedleTitle]
+other = "Acerca de Speedle"
+
+[AboutSpeedleContent]
+other = "Speedle es un motor de autorización de propósito general. Es un proyecto de código abierto diseñado para abordar los requisitos de control de acceso de diversas aplicaciones, desde modernas aplicaciones nativas de la nube hasta sistemas heredados. Admite un control de acceso detallado basado en políticas que ayuda a externalizar la lógica de control de acceso a un motor de políticas capaz de evaluar políticas RBAC/ABAC para un usuario autenticado o un proceso que actúa en su nombre."
+
+[SpeedleConsistsTitle]
+other = "Speedle consta de"
+
+[SpeedleConsistsContent1]
+other = "Lenguaje de definición de políticas SPDL"
+
+[SpeedleConsistsContent2]
+other = "Servicio de Gestión de Políticas (PMS)"
+
+[SpeedleConsistsContent3]
+other = "Servicio de Decisiones de Autorización (ADS)"
+
+[SpeedleConsistsContent4]
+other = "Herramienta de línea de comandos (spctl)"
+
+[SpeedleConsistsContent6]
+other = "Speedle está licenciado bajo la Universal Permissive License v1.0. Los usuarios son libres de integrar Speedle en sus propios sistemas."
+
+[Features]
+other = "Características"
+
+[Integrations]
+other = "Integraciones"
+
+[ContributeToSpeedle]
+other = "Contribuir a Speedle"
+
+[ContributeToSpeedleContent1]
+other = "Speedle es un proyecto de código abierto y animamos a todos aquellos que deseen y puedan contribuir a mejorar el proyecto."
+
+[ContributeToSpeedleContent2]
+other = "Mejorar Speedle"
+
+[Contribute]
+other = "Contribuir"
