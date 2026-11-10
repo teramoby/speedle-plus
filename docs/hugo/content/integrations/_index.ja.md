@@ -4,6 +4,7 @@ noindex = false
 categories = ["docs"]
 description = "Speedle をアプリケーションおよびインフラストラクチャに接続。"
 aliases = ["/ja/integrations/istio/", "/ja/integrations/kubernetes/", "/ja/integrations/docker/"]
+lastmod = 2026-11-10T14:45:43+08:00
 +++
 
 Speedle は認可決定を担当します。アプリケーション、ゲートウェイ、またはプラットフォーム内のポリシー施行ポイント（PEP）が決定ごとに Speedle を呼び出し、結果を適用します。現在、以下のインターフェースがサポートされています。

@@ -5,6 +5,7 @@ tags = ["v0.1.0", "api", "guide","core","asserter","pluggable"]
 categories = ["docs"]
 customcss = true
 customcssfile = "swagger-custom.css"
+lastmod = 2026-10-29T11:32:30+08:00
 +++
 
 トークンアサーション Webhook リファレンス。errCode は整数、attributes はオブジェクトです。実際のエンドポイントは ADS アサーター構成で指定されます。

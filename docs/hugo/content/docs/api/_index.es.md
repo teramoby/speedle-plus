@@ -9,6 +9,7 @@ tocsidebar = false
 tags = ["v0.1.0", "api", "guide", "core"]
 categories = ["docs"]
 bref = "Documentación de la especificación OpenAPI. Utilice la API para modelar sus políticas simples y complejas de forma declarativa; obtenga decisiones, descubra políticas dinámicamente y depure la evaluación de políticas."
+lastmod = 2026-11-10T14:45:43+08:00
 +++
 
 Las bibliotecas cliente para Java, Python, Go, .NET, Rust y Node.js/TypeScript se encuentran en [SDK](/es/docs/sdks/).

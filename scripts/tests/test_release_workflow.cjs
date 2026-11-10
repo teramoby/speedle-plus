@@ -168,10 +168,58 @@ test('release checksums and uploaded assets include both spctl names', () => {
 });
 
 test('changed release shell blocks parse before any publishing or container operation', () => {
-  for (const name of ['Build release binaries', 'Write checksums', 'Require Docker Hub credentials', 'Verify the container image builds and starts', 'Log in to container registries', 'Publish the GitHub release', 'Publish the container image']) {
+  for (const name of ['Build release binaries', 'Write checksums', 'Require Docker Hub credentials', 'Keep the Homebrew tap files', 'Verify the container image builds and starts', 'Log in to container registries', 'Publish the GitHub release', 'Publish the container image', 'Publish the Helm chart', 'Check for the Homebrew tap token']) {
     const result = spawnSync('bash', ['-n'], {input: script(name), encoding: 'utf8'});
     assert.equal(result.status, 0, `${name}: ${result.stderr}`);
   }
+});
+
+test('the Homebrew tap update is skipped when its token is unset and the token value is read only by the publish step', () => {
+  const check = step('Check for the Homebrew tap token');
+  const publish = step('Publish the Homebrew tap');
+  const keep = step('Keep the Homebrew tap files');
+  assert.ok(source.indexOf('- name: Checkout master') < source.indexOf('- name: Keep the Homebrew tap files'));
+  assert.ok(source.indexOf('- name: Keep the Homebrew tap files') < source.indexOf('- name: Check out the release commit'));
+  assert.ok(source.indexOf('- name: Publish the container image') < source.indexOf('- name: Check for the Homebrew tap token'));
+  assert.ok(source.indexOf('- name: Check for the Homebrew tap token') < source.indexOf('- name: Publish the Homebrew tap'));
+  assert.match(keep, /cp -R deployment\/homebrew\/\. "\$\{RUNNER_TEMP\}\/homebrew\/"/);
+  assert.match(check, /HOMEBREW_TAP_TOKEN_SET/);
+  assert.match(check, /Skipping the Homebrew tap update/);
+  assert.match(check, /skip=true/);
+  assert.match(publish, /if: steps\.homebrew\.outputs\.skip != 'true'/);
+  assert.match(publish, /bash "\$\{RUNNER_TEMP\}\/homebrew\/publish-tap\.sh"/);
+  assert.match(publish, /GITHUB_TOKEN: \$\{\{ github\.token \}\}/);
+  assert.match(source, /pull-requests: write # open the Homebrew formula pull request/);
+  const raw = /secrets\.HOMEBREW_TAP_TOKEN\s*\}\}/g;
+  assert.equal([...check.matchAll(raw)].length, 0);
+  assert.equal([...publish.matchAll(raw)].length, 1);
+  assert.equal([...source.replace(publish, '').matchAll(raw)].length, 0);
+  const tapScript = path.resolve(__dirname, '../../deployment/homebrew/publish-tap.sh');
+  const parsed = spawnSync('bash', ['-n', tapScript], {encoding: 'utf8'});
+  assert.equal(parsed.status, 0, parsed.stderr);
+  const skipped = spawnSync('bash', [tapScript], {
+    encoding: 'utf8',
+    env: {...process.env, HOMEBREW_TAP_TOKEN: ''},
+  });
+  assert.equal(skipped.status, 0, skipped.stderr);
+  assert.match(skipped.stdout, /HOMEBREW_TAP_TOKEN is not set\. Skipping the Homebrew tap update\./);
+  const rejected = spawnSync('bash', [tapScript], {
+    encoding: 'utf8',
+    env: {...process.env, HOMEBREW_TAP_TOKEN: 'fixture', VERSION: 'not-a-version'},
+  });
+  assert.notEqual(rejected.status, 0);
+  assert.match(rejected.stderr, /VERSION must look like v1\.2\.3\./);
+  assert.doesNotMatch(rejected.stdout + rejected.stderr, /fixture/);
+  const tapText = fs.readFileSync(tapScript, 'utf8');
+  assert.doesNotMatch(tapText, /^git( -C "[^"]+")? push origin HEAD$/m);
+  assert.match(tapText, /git -C "\$\{workdir\}\/tap" push origin "HEAD:\$\{tap_branch\}"/);
+  assert.match(tapText, /--base main/);
+  assert.match(tapText, /Refusing to push the tap default branch/);
+  assert.doesNotMatch(tapText, /git push origin HEAD\n/);
+  assert.doesNotMatch(tapText, /--force/);
+  assert.match(tapText, /git push origin --delete "\$\{source_branch\}"/);
+  assert.match(tapText, /git checkout --quiet -B "\$\{source_branch\}" origin\/master/);
+  assert.match(tapText, /git merge --quiet --no-edit origin\/master/);
 });
 
 test('Docker Hub credentials are required before a tag and their values are read only by the login step', () => {

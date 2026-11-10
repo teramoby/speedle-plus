@@ -6,7 +6,7 @@
     <description>Recent content in Guide on Speedle</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>es-es</language>
-    <lastBuildDate>Tue, 10 Nov 2026 18:32:58 +0800</lastBuildDate>
+    <lastBuildDate>Tue, 10 Nov 2026 14:45:43 +0800</lastBuildDate>
     
 	<atom:link href="https://engine.speedle.io/es/tags/guide/index.xml" rel="self" type="application/rss+xml" />
     
@@ -14,7 +14,7 @@
     <item>
       <title>API</title>
       <link>https://engine.speedle.io/es/docs/api/</link>
-      <pubDate>Tue, 10 Nov 2026 18:32:58 +0800</pubDate>
+      <pubDate>Tue, 10 Nov 2026 14:45:43 +0800</pubDate>
       
       <guid>https://engine.speedle.io/es/docs/api/</guid>
       <description>Las bibliotecas cliente para Java, Python, Go, .NET, Rust y Node.js/TypeScript se encuentran en SDK.
@@ -68,7 +68,7 @@ Gestión y aplicación centralizada de políticas Jin Chen es el responsable de 
     <item>
       <title>Políticas de Speedle</title>
       <link>https://engine.speedle.io/es/docs/pms/</link>
-      <pubDate>Tue, 10 Nov 2026 18:32:58 +0800</pubDate>
+      <pubDate>Wed, 28 Oct 2026 13:16:58 +0000</pubDate>
       
       <guid>https://engine.speedle.io/es/docs/pms/</guid>
       <description> Gestión de políticas Políticas globales Descubrimiento de políticas Diagnóstico de autorización  </description>

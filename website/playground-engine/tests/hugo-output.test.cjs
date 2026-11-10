@@ -46,6 +46,9 @@ for (const locale of ['en', 'ja', 'ko', 'es', 'zh']) {
   assert.ok(sitemap.includes(`https://engine.speedle.io/${locale}/sitemap.xml`), `Sitemap index lists ${locale}`);
 }
 assert.ok(fs.readFileSync(path.join(output, 'en/sitemap.xml'), 'utf8').includes('https://engine.speedle.io/playground/'));
+const hugoConfig = fs.readFileSync(path.join(root, 'docs/hugo/config.toml'), 'utf8');
+assert.match(hugoConfig, /enableGitInfo\s*=\s*false/, 'Generated pages do not read Git metadata');
+assert.doesNotMatch(hugoConfig, /:git|:filemodtime/i, 'Page dates do not fall back to a commit or file time');
 for (const locale of ['ja', 'ko', 'es', 'zh']) {
   assert.ok(fs.readFileSync(path.join(output, `${locale}/sitemap.xml`), 'utf8').includes(`https://engine.speedle.io/${locale}/playground/`), `Playground in ${locale} sitemap`);
 }
@@ -175,7 +178,8 @@ for (const locale of LOCALES) {
   const dockerAlias = fs.readFileSync(path.join(output, `${locale}docs/sdks/docker/index.html`), 'utf8');
   assert.ok(dockerAlias.includes(`<link rel="canonical" href="${docker}"`) && dockerAlias.includes(`url=/${locale}docs/deployment/docker/"`), `Redirect ${locale}docs/sdks/docker/ to ${docker}`);
   const sitemap = fs.readFileSync(path.join(output, `${locale || 'en/'}sitemap.xml`), 'utf8');
-  assert.ok(sitemap.includes(`<loc>${embedded}</loc>`) && sitemap.includes(`<loc>${docker}</loc>`), `Sitemap lists the Deployment pages in ${locale || 'en'}`);
+  const homebrew = `https://engine.speedle.io/${locale}docs/deployment/homebrew/`;
+  assert.ok(sitemap.includes(`<loc>${embedded}</loc>`) && sitemap.includes(`<loc>${docker}</loc>`) && sitemap.includes(`<loc>${homebrew}</loc>`), `Sitemap lists the Deployment pages in ${locale || 'en'}`);
   assert.ok(!sitemap.includes(`docs/deployment-embeded/`) && !sitemap.includes(`docs/sdks/docker/`), `Sitemap omits the old embedded and Docker URLs in ${locale || 'en'}`);
   assert.ok(fs.readFileSync(path.join(output, `${locale || 'en/'}sitemap.xml`), 'utf8').includes(`<loc>https://engine.speedle.io/${locale}docs/deployment/</loc>`), `Sitemap lists the Deployment section in ${locale || 'en'}`);
 }
@@ -204,7 +208,7 @@ function checkDocsAlternates(directory) {
   }
 }
 for (const locale of LOCALES) checkDocsAlternates(path.join(output, `${locale}docs`));
-assert.equal(docsAlternates, 240, 'Every canonical docs page and redirect alias has hreflang alternates for en, ja, ko, es, zh-CN and x-default');
+assert.equal(docsAlternates, 245, 'Every canonical docs page and redirect alias has hreflang alternates for en, ja, ko, es, zh-CN and x-default');
 console.log('PASS Hugo 0.48 output: editor, navigation, sitemap, footer stylesheet and matching release assets');
 
 // The Cloud section is documented in every site language.
@@ -297,12 +301,12 @@ function checkStorageNavigation(directory, locale = '') {
       const sidebar = html.split('<div class="sidebar">')[1];
       for (const target of ['store/', 'store/mysql/', 'store/etcd/', 'store/mongodb/', 'pms/policy-mgmt/', 'api/decision_api/',
         'sdks/', 'sdks/java/', 'sdks/python/', 'sdks/go/', 'sdks/dotnet/', 'sdks/rust/', 'sdks/node/',
-        'deployment/', 'deployment/embedded/', 'deployment/docker/',
+        'deployment/', 'deployment/embedded/', 'deployment/docker/', 'deployment/homebrew/',
         'cloud/', 'cloud/getting-started/', 'cloud/tokens/', 'cloud/authorization-api/', 'cloud/limits-and-errors/']) {
         assert.ok(sidebar.includes(`href="/${locale}docs/${target}"`), `Complete sidebar ${target} in ${name}`);
       }
       for (const [depth, target] of [[0, 'security/'], [1, 'pms/policy-mgmt/'], [1, 'store/mysql/'],
-        [1, 'api/decision_api/'], [1, 'sdks/java/'], [1, 'deployment/embedded/'], [1, 'deployment/docker/'], [1, 'cloud/getting-started/']]) {
+        [1, 'api/decision_api/'], [1, 'sdks/java/'], [1, 'deployment/embedded/'], [1, 'deployment/docker/'], [1, 'deployment/homebrew/'], [1, 'cloud/getting-started/']]) {
         assert.ok(new RegExp(`<li data-docs-depth="${depth}"[^>]*><a href="/${locale}docs/${target}"`).test(sidebar), `Menu depth ${depth} for ${target} in ${name}`);
       }
     }

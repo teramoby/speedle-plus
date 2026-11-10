@@ -80,11 +80,13 @@
     
     <li>
   <h2 class="title2">
-    <a href="/zh/docs/pms/discover/" itemprop="headline">策略发现</a>
+    <a href="/zh/docs/sdks/go/" itemprop="headline">Go SDK</a>
   </h2>
   
-  <p itemprop="about">在隔离测试环境中记录访问请求，生成并审核授权策略。</p>
+  <p itemprop="about">添加 Speedle Go SDK，向本地 Speedle 或 Speedle Cloud 发起授权检查。</p>
   
+  
+  <p itemprop="about">用 go get 添加 github.com/teramoby/speedle-sdk/go v0.2.0，再向本地 Speedle 或 Speedle Cloud 调用 IsAllowed 与 Check。</p>
   
   <hr />
 </li>
@@ -92,13 +94,13 @@
     
     <li>
   <h2 class="title2">
-    <a href="/zh/docs/cloud/getting-started/" itemprop="headline">Speedle Cloud 快速入门</a>
+    <a href="/zh/docs/deployment/homebrew/" itemprop="headline">Homebrew 安装</a>
   </h2>
   
-  <p itemprop="about">了解 Speedle Cloud 的登录与账号管理、service 与 SPDL 策略管理、会话 API 请求和 Playground 测试。</p>
+  <p itemprop="about">用 Homebrew 安装 speedle-spctl、speedle-pms 和 speedle-ads，并在本机跑一次演示。</p>
   
   
-  <p itemprop="about">已发布的 Speedle Cloud 控制台流程，涵盖登录、账号设置、已保存策略和 Playground 判定。</p>
+  <p itemprop="about">Homebrew 安装命令行工具和两个服务，并让它们在 127.0.0.1 上共用一份策略文件。</p>
   
   <hr />
 </li>
@@ -106,11 +108,13 @@
     
     <li>
   <h2 class="title2">
-    <a href="/zh/docs/store/" itemprop="headline">存储扩展</a>
+    <a href="/zh/docs/store/mongodb/" itemprop="headline">MongoDB 配置指南</a>
   </h2>
   
-  <p itemprop="about">使用文件、etcd、MySQL 或 MongoDB 存储策略，或实现接口接入自己的存储后端。</p>
+  <p itemprop="about">逐步部署 MongoDB 策略存储，配置 PMS/ADS，并验证同步和持久化。</p>
   
+  
+  <p itemprop="about">启动 MongoDB 副本集，连接 PMS 与 ADS，验证策略自动更新，并创建备份。</p>
   
   <hr />
 </li>
@@ -118,10 +122,10 @@
     
     <li>
   <h2 class="title2">
-    <a href="/zh/docs/security/" itemprop="headline">安全</a>
+    <a href="/zh/docs/decisions/" itemprop="headline">授权决策</a>
   </h2>
   
-  <p itemprop="about">为 Speedle 的 REST 和 gRPC 端点配置 TLS、双向 TLS 和访问控制。</p>
+  <p itemprop="about">获取服务访问请求的授权决策，并查询已授予的角色和权限。</p>
   
   
   <hr />

@@ -5,6 +5,7 @@ tags = ["v0.1.0", "api", "guide", "core", "ads"]
 categories = ["docs"]
 customcss = true
 customcssfile = "swagger-custom.css"
+lastmod = 2026-11-09T21:18:26+08:00
 +++
 
 구성된 ADS 인터페이스 참조 사양입니다. 요청 속성은 형식화된 배열이고 진단 응답 속성은 객체입니다.

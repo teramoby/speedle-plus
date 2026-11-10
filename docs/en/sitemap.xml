@@ -364,7 +364,7 @@
   
   <url>
     <loc>https://engine.speedle.io/quick-start/</loc>
-    <lastmod>2026-11-10T12:48:41+08:00</lastmod>
+    <lastmod>2026-11-10T17:04:32+08:00</lastmod>
     <xhtml:link
                 rel="alternate"
                 hreflang="es"
@@ -659,6 +659,36 @@
                 rel="alternate"
                 hreflang="en"
                 href="https://engine.speedle.io/docs/sdks/go/"
+                />
+  </url>
+  
+  <url>
+    <loc>https://engine.speedle.io/docs/deployment/homebrew/</loc>
+    <lastmod>2026-11-10T13:49:59+08:00</lastmod>
+    <xhtml:link
+                rel="alternate"
+                hreflang="ja"
+                href="https://engine.speedle.io/ja/docs/deployment/homebrew/"
+                />
+    <xhtml:link
+                rel="alternate"
+                hreflang="zh"
+                href="https://engine.speedle.io/zh/docs/deployment/homebrew/"
+                />
+    <xhtml:link
+                rel="alternate"
+                hreflang="ko"
+                href="https://engine.speedle.io/ko/docs/deployment/homebrew/"
+                />
+    <xhtml:link
+                rel="alternate"
+                hreflang="es"
+                href="https://engine.speedle.io/es/docs/deployment/homebrew/"
+                />
+    <xhtml:link
+                rel="alternate"
+                hreflang="en"
+                href="https://engine.speedle.io/docs/deployment/homebrew/"
                 />
   </url>
   

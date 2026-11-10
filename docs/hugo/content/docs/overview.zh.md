@@ -10,6 +10,7 @@ tocsidebar = false
 tags = ["core", "pdp", "identity", "spdl"]
 categories = ["docs"]
 bref = "Speedle 在授权与访问控制术语中的位置"
+lastmod = 2026-11-10T14:45:43+08:00
 +++
 
 Speedle 是开源授权引擎。应用向它询问“这个用户能否对这个资源执行这个操作”，Speedle 根据集中管理的策略返回允许或拒绝。本页介绍常见的授权术语，以及它们在 Speedle 中对应的组件，并链接到相关文档。

@@ -173,7 +173,7 @@ mkdir speedle-embedded-demo cd speedle-embedded-demo go mod init example.com/spe
 按照 Go 官方安装说明安装，然后检查版本：
 go version Go 会自动配置 GOROOT 和默认的 GOPATH，无需手动指定。下面的两种方式都会把三个可执行程序放到 bin 目录。
 安装 Speedle 两种方式任选一种：方式 A 安装最新发布版本，方式 B 编译当前源码。后续命令都使用 ./bin/...，两种方式通用。
-方式 A：安装最新发布版本 GOBIN=&amp;#34;$PWD/bin&amp;#34; go install github.com/teramoby/speedle-plus/cmd/...@v1.7.0 ls bin GOBIN 把可执行程序放到当前目录的 bin 中；不设置时，Go 会把它们写入 $(go env GOPATH)/bin。v1.</description>
+方式 A：安装最新发布版本 GOBIN=&amp;#34;$PWD/bin&amp;#34; go install github.com/teramoby/speedle-plus/cmd/...@v1.7.1 ls bin GOBIN 把可执行程序放到当前目录的 bin 中；不设置时，Go 会把它们写入 $(go env GOPATH)/bin。v1.</description>
     </item>
     
     <item>
@@ -314,6 +314,21 @@ idd 是主体所属的身份域，也就是应用在哪个命名空间里完成�
 添加依赖 在新模块中执行：
 go mod init example.com/speedle-example go get github.com/teramoby/speedle-sdk/go@v0.2.0 调用本地 Speedle 按 SDK 概览中的说明启动 Speedle 并创建示例策略。将以下程序保存为 main.go：
 package main import ( &amp;#34;context&amp;#34; &amp;#34;fmt&amp;#34; &amp;#34;os&amp;#34; speedle &amp;#34;github.com/teramoby/speedle-sdk/go&amp;#34; ) func main() { client, err := speedle.NewClient(speedle.Config{ Backend: speedle.BackendSpeedle, Endpoint: &amp;#34;http://localhost:6734&amp;#34;, Auth: speedle.NoAuth(), ServiceName: &amp;#34;docs&amp;#34;, }) if err != nil { fmt.Fprintln(os.Stderr, &amp;#34;Speedle error:&amp;#34;, err) os.Exit(1) } defer client.Close() ctx := context.Background() allowed, err := client.</description>
+    </item>
+    
+    <item>
+      <title>Homebrew 安装</title>
+      <link>https://engine.speedle.io/zh/docs/deployment/homebrew/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/zh/docs/deployment/homebrew/</guid>
+      <description>在 macOS 或 Linux 上用 Homebrew 安装 Speedle 命令行工具。Homebrew 在安装或启动官方组织以外的 tap 中的 formula 之前，需要先信任该 tap。
+brew tap teramoby/tap brew trust teramoby/tap brew install teramoby/tap/spctl Formula 的名字是 spctl。macOS 上的命令是 speedle-spctl，因此安装不会替换 Apple Gatekeeper 的 /usr/sbin/spctl。Linux 上同一个程序也可以用 spctl 调用。
+策略管理服务和授权决策服务是单独的 formula：
+brew install teramoby/tap/speedle-pms brew install teramoby/tap/speedle-ads 命令行工具和两个服务可以一次装齐：
+brew install teramoby/tap/speedle spctl、speedle-pms 和 speedle-ads 各自安装对应系统的发布二进制，并用该发布的 checksums.txt 校验。
+用 Homebrew 做一次演示 启动两个服务。它们监听 127.0.0.1，并共用一份文件策略库。
+brew services start speedle-pms brew services start speedle-ads speedle-pms 监听 127.</description>
     </item>
     
     <item>

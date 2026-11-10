@@ -9,6 +9,7 @@ tocheading = "h2"
 tags = ["api", "sdk"]
 categories = ["docs"]
 bref = "go get으로 github.com/teramoby/speedle-sdk/go v0.2.0을 추가하고 로컬 Speedle 또는 Speedle Cloud에 대해 IsAllowed 및 Check를 호출합니다."
+lastmod = 2026-11-07T19:43:15+08:00
 +++
 
 Go SDK는 최신 두 개의 Go 릴리스를 지원하며 표준 라이브러리만 사용합니다. 모듈: [`github.com/teramoby/speedle-sdk/go`](https://pkg.go.dev/github.com/teramoby/speedle-sdk/go) v0.2.0, 패키지 이름 `speedle`. 참조 문서: [speedle-sdk/go](https://github.com/teramoby/speedle-sdk/tree/main/go).

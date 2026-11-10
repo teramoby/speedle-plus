@@ -11,7 +11,7 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
     <meta name="viewport" content="width=device-width, initial-scale=1"><title>部署 · Speedle Engine</title>
-<meta name="description" content="在 Go 应用中嵌入 Speedle，用已发布的容器镜像运行，或独立运行 PMS 和 ADS。">
+<meta name="description" content="在 Go 应用中嵌入 Speedle，用已发布的容器镜像或 Homebrew 运行，或独立运行 PMS 和 ADS。">
 <meta name="generator" content="Hugo 0.48" />
 <link href="https://engine.speedle.io/index.xml" rel="alternate" type="application/rss+xml">
 <link rel="canonical" href="https://engine.speedle.io/zh/docs/deployment/">
@@ -25,7 +25,7 @@
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Speedle Engine">
 <meta property="og:title" content="部署 · Speedle Engine">
-<meta property="og:description" content="在 Go 应用中嵌入 Speedle，用已发布的容器镜像运行，或独立运行 PMS 和 ADS。">
+<meta property="og:description" content="在 Go 应用中嵌入 Speedle，用已发布的容器镜像或 Homebrew 运行，或独立运行 PMS 和 ADS。">
 <meta property="og:url" content="https://engine.speedle.io/zh/docs/deployment/">
 <meta property="og:image" content="https://engine.speedle.io/img/social/engine-zh.png">
 <meta property="og:image:width" content="1200">
@@ -34,11 +34,11 @@
 <meta property="og:image:alt" content="Speedle Engine — 快速、简单的权限控制">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="部署 · Speedle Engine">
-<meta name="twitter:description" content="在 Go 应用中嵌入 Speedle，用已发布的容器镜像运行，或独立运行 PMS 和 ADS。">
+<meta name="twitter:description" content="在 Go 应用中嵌入 Speedle，用已发布的容器镜像或 Homebrew 运行，或独立运行 PMS 和 ADS。">
 <meta name="twitter:image" content="https://engine.speedle.io/img/social/engine-zh.png">
 <meta name="twitter:image:alt" content="Speedle Engine — 快速、简单的权限控制">
 
-<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/zh/docs/deployment/#webpage","@type":"WebPage","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-10T14:45:43+08:00","description":"在 Go 应用中嵌入 Speedle，用已发布的容器镜像运行，或独立运行 PMS 和 ADS。","headline":"部署","image":"https://engine.speedle.io/img/social/engine-zh.png","inLanguage":"zh-CN","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/zh/docs/deployment/","@type":"WebPage"},"name":"部署","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/zh/docs/deployment/"}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/zh/docs/deployment/#webpage","@type":"WebPage","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-10T14:45:43+08:00","description":"在 Go 应用中嵌入 Speedle，用已发布的容器镜像或 Homebrew 运行，或独立运行 PMS 和 ADS。","headline":"部署","image":"https://engine.speedle.io/img/social/engine-zh.png","inLanguage":"zh-CN","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/zh/docs/deployment/","@type":"WebPage"},"name":"部署","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/zh/docs/deployment/"}</script>
 <script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/zh/docs/deployment/#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://engine.speedle.io/zh/","name":"首页","position":1},{"@type":"ListItem","item":"https://engine.speedle.io/zh/docs/","name":"文档","position":2},{"@type":"ListItem","item":"https://engine.speedle.io/zh/docs/deployment/","name":"部署","position":3}]}</script><link href="/css/docs.css" rel="stylesheet" type="text/css">
 
 
@@ -130,6 +130,7 @@
 <ul class="sub-menu">
 <li data-docs-depth="1" class=""><a href="/zh/docs/deployment/embedded/">Speedle 嵌入模式</a></li>
 <li data-docs-depth="1" class=""><a href="/zh/docs/deployment/docker/">Docker 镜像</a></li>
+<li data-docs-depth="1" class=""><a href="/zh/docs/deployment/homebrew/">Homebrew 安装</a></li>
 </ul>
 
 </li>
@@ -181,11 +182,12 @@
 <ul>
 <li><a href="/zh/docs/deployment/embedded/">嵌入模式</a> 在 Go 进程内运行决策引擎。</li>
 <li><a href="/zh/docs/deployment/docker/">Docker 镜像</a> 用 <code>docker.io/speedle/speedle</code> 或 <code>ghcr.io/teramoby/speedle</code> 运行 <code>speedle-pms</code>、<code>speedle-ads</code> 和 <code>spctl</code>。</li>
+<li><a href="/zh/docs/deployment/homebrew/">Homebrew</a> 安装命令行工具和两个服务，并在本机做一次演示。</li>
 </ul>
 
 <h2 id="选择部署方式">选择部署方式</h2>
 
-<p>通过<a href="/zh/docs/deployment/embedded/">嵌入模式</a>可以在 Go 进程内运行决策引擎。应用通过 REST 或 gRPC 调用 Speedle 时，可以使用<a href="/zh/docs/deployment/docker/">Docker 镜像</a>，也可以运行独立的 PMS 和 ADS。<a href="/zh/quick-start/">快速入门</a>提供了完整的本地策略管理和授权验证步骤。</p>
+<p>通过<a href="/zh/docs/deployment/embedded/">嵌入模式</a>可以在 Go 进程内运行决策引擎。应用通过 REST 或 gRPC 调用 Speedle 时，可以使用<a href="/zh/docs/deployment/docker/">Docker 镜像</a>，也可以运行独立的 PMS 和 ADS。<a href="/zh/docs/deployment/homebrew/">Homebrew</a> 安装这些程序并在本机做一次演示。<a href="/zh/quick-start/">快速入门</a>提供了完整的本地策略管理和授权验证步骤。</p>
 
 <h2 id="使用当前-go-版本构建">使用当前 Go 版本构建</h2>
 

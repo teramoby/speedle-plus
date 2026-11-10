@@ -10,6 +10,7 @@ tocheading = "h2"
 tags = ["storage", "pluggable"]
 categories = ["docs"]
 bref = "Speedle incluye almacenes de políticas basados en archivos, etcd, MongoDB y MySQL. Este documento describe su configuración y cómo implementar o registrar un almacenamiento diferente."
+lastmod = 2026-10-31T22:36:36+08:00
 +++
 
 ## Almacenes integrados y contratos de extensión

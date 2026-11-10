@@ -8,6 +8,7 @@ toc = true
 tocheading = "h2"
 categories = ["docs"]
 bref = "El flujo publicado de la consola de Speedle Cloud, desde el inicio de sesión y configuración de la cuenta hasta las políticas guardadas y decisiones en el Playground."
+lastmod = 2026-11-08T21:11:24+08:00
 +++
 
 **Speedle Cloud estará disponible próximamente.** El inicio de sesión para producción aún no está habilitado en cloud.speedle.io y el encabezado de Cloud muestra **Próximamente**. Cuando el inicio de sesión esté cerrado, la página de inicio de sesión indicará que abrirá pronto. Esta guía describe el flujo de trabajo publicado y no una consola de producción abierta actualmente; las capturas de pantalla se agregarán tras la apertura del inicio de sesión en producción.

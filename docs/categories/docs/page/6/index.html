@@ -80,13 +80,13 @@
     
     <li>
   <h2 class="title2">
-    <a href="/docs/cloud/tokens/" itemprop="headline">Speedle Cloud application tokens</a>
+    <a href="/docs/cloud/limits-and-errors/" itemprop="headline">Speedle Cloud limits and errors</a>
   </h2>
   
-  <p itemprop="about">Issue, protect, list, rotate and revoke Speedle Cloud application tokens, including recent authentication and one-time disclosure rules.</p>
+  <p itemprop="about">Speedle Cloud account quotas, request limits, flat JSON errors, rate and quota headers, daily accounting and retry guidance.</p>
   
   
-  <p itemprop="about">Manage service-scoped Bearer credentials without exposing their one-time secret values.</p>
+  <p itemprop="about">Plan around account-wide limits and fail closed when Cloud cannot return a valid authorization decision.</p>
   
   <hr />
 </li>
@@ -94,24 +94,10 @@
     
     <li>
   <h2 class="title2">
-    <a href="/docs/deployment/docker/" itemprop="headline">Docker image</a>
+    <a href="/docs/idd/" itemprop="headline">Identity Domain</a>
   </h2>
   
-  <p itemprop="about">Run speedle-pms, speedle-ads and spctl from the published Speedle image.</p>
-  
-  
-  <p itemprop="about">One image on Docker Hub and GHCR runs the policy manager, the decision service and spctl, with a shared file store.</p>
-  
-  <hr />
-</li>
-
-    
-    <li>
-  <h2 class="title2">
-    <a href="/docs/cloud/" itemprop="headline">Speedle Cloud</a>
-  </h2>
-  
-  <p itemprop="about">Speedle Cloud documentation: getting started, account and policy management, application tokens, the authorization API preview, limits, errors and downloads.</p>
+  <p itemprop="about">Speedle supports user identities from multiple identity domains</p>
   
   
   <hr />
@@ -120,11 +106,27 @@
     
     <li>
   <h2 class="title2">
-    <a href="/docs/security/" itemprop="headline">Security</a>
+    <a href="/docs/sdks/dotnet/" itemprop="headline">C#/.NET SDK</a>
   </h2>
   
-  <p itemprop="about">Secure your Speedle instances</p>
+  <p itemprop="about">Add the Speedle .NET SDK and check authorization against a local Speedle or Speedle Cloud.</p>
   
+  
+  <p itemprop="about">Add Speedle.Sdk 0.2.0 with dotnet add package, then call IsAllowedAsync and CheckAsync against a local Speedle or Speedle Cloud.</p>
+  
+  <hr />
+</li>
+
+    
+    <li>
+  <h2 class="title2">
+    <a href="/docs/sdks/rust/" itemprop="headline">Rust SDK</a>
+  </h2>
+  
+  <p itemprop="about">Add the Speedle Rust SDK and check authorization against a local Speedle or Speedle Cloud.</p>
+  
+  
+  <p itemprop="about">Add the speedle 0.2.0 crate with cargo add, then call is_allowed and check against a local Speedle or Speedle Cloud.</p>
   
   <hr />
 </li>

@@ -7,6 +7,7 @@ toc = false
 linksection = true
 tocheading = "h2"
 categories = ["docs"]
+lastmod = 2026-11-08T17:11:18+08:00
 +++
 
 Speedle Cloud es un servicio de control de acceso hospedado para desarrolladores, creado sobre el motor de políticas de código abierto Speedle. Está diseñado para permitirle gestionar políticas de autorización y roles en SPDL, probar decisiones en un Playground e invocar una API de autorización desde el servidor de su aplicación sin necesidad de operar su propio servicio de autorización.

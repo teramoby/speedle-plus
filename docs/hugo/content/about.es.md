@@ -1,6 +1,7 @@
 +++
 title = "Acerca de Speedle"
 icon = "Speedle_logo_about.svg"
+lastmod = 2026-11-08T19:23:52+08:00
 +++
 
 Speedle es un motor de autorización de código abierto (UPL-1.0) con el lenguaje de políticas SPDL. Consta de ADS (decisiones) y PMS (gestión de políticas), SDKs en seis lenguajes, Speedle Cloud (hospedado) y Speedle AI (autorización para y con agentes de IA, un servidor MCP y la habilidad policy-modeler).

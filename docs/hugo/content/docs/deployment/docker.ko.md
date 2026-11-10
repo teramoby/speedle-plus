@@ -8,6 +8,7 @@ toc = true
 tocheading = "h2"
 categories = ["docs"]
 bref = "Docker Hub 및 GHCR의 단일 이미지로 공유 파일 저장소를 사용하는 정책 관리 서비스, 인가 결정 서비스 및 spctl을 실행합니다."
+lastmod = 2026-11-10T14:45:43+08:00
 +++
 
 Speedle은 `speedle-pms`, `speedle-ads`, `spctl`이 포함된 단일 이미지를 배포합니다. 이 이미지는 `FROM scratch`로 빌드되며 UID 65532로 실행되고 셸이 포함되어 있지 않습니다. 첫 번째 인수로 실행할 프로그램을 선택합니다.

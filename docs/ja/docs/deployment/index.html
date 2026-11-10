@@ -11,7 +11,7 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
     <meta name="viewport" content="width=device-width, initial-scale=1"><title>デプロイ · Speedle Engine</title>
-<meta name="description" content="Go アプリケーションへの組み込み、公開されたコンテナイメージからの実行、またはスタンドアロンの PMS および ADS サービスとして Speedle を実行">
+<meta name="description" content="Go アプリケーションへの組み込み、公開されたコンテナイメージまたは Homebrew からの実行、またはスタンドアロンの PMS および ADS サービスとして Speedle を実行します。">
 <meta name="generator" content="Hugo 0.48" />
 <link href="https://engine.speedle.io/index.xml" rel="alternate" type="application/rss+xml">
 <link rel="canonical" href="https://engine.speedle.io/ja/docs/deployment/">
@@ -25,7 +25,7 @@
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Speedle Engine">
 <meta property="og:title" content="デプロイ · Speedle Engine">
-<meta property="og:description" content="Go アプリケーションへの組み込み、公開されたコンテナイメージからの実行、またはスタンドアロンの PMS および ADS サービスとして Speedle を実行">
+<meta property="og:description" content="Go アプリケーションへの組み込み、公開されたコンテナイメージまたは Homebrew からの実行、またはスタンドアロンの PMS および ADS サービスとして Speedle を実行します。">
 <meta property="og:url" content="https://engine.speedle.io/ja/docs/deployment/">
 <meta property="og:image" content="https://engine.speedle.io/img/social/engine-en.png">
 <meta property="og:image:width" content="1200">
@@ -34,11 +34,11 @@
 <meta property="og:image:alt" content="Speedle Engine — Fast. Simple. Access control">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="デプロイ · Speedle Engine">
-<meta name="twitter:description" content="Go アプリケーションへの組み込み、公開されたコンテナイメージからの実行、またはスタンドアロンの PMS および ADS サービスとして Speedle を実行">
+<meta name="twitter:description" content="Go アプリケーションへの組み込み、公開されたコンテナイメージまたは Homebrew からの実行、またはスタンドアロンの PMS および ADS サービスとして Speedle を実行します。">
 <meta name="twitter:image" content="https://engine.speedle.io/img/social/engine-en.png">
 <meta name="twitter:image:alt" content="Speedle Engine — Fast. Simple. Access control">
 
-<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/ja/docs/deployment/#webpage","@type":"WebPage","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-10T16:57:42+08:00","description":"Go アプリケーションへの組み込み、公開されたコンテナイメージからの実行、またはスタンドアロンの PMS および ADS サービスとして Speedle を実行","headline":"デプロイ","image":"https://engine.speedle.io/img/social/engine-en.png","inLanguage":"ja","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/ja/docs/deployment/","@type":"WebPage"},"name":"デプロイ","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/ja/docs/deployment/"}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/ja/docs/deployment/#webpage","@type":"WebPage","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-10T14:45:43+08:00","description":"Go アプリケーションへの組み込み、公開されたコンテナイメージまたは Homebrew からの実行、またはスタンドアロンの PMS および ADS サービスとして Speedle を実行します。","headline":"デプロイ","image":"https://engine.speedle.io/img/social/engine-en.png","inLanguage":"ja","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/ja/docs/deployment/","@type":"WebPage"},"name":"デプロイ","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/ja/docs/deployment/"}</script>
 <script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/ja/docs/deployment/#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://engine.speedle.io/ja/","name":"ホーム","position":1},{"@type":"ListItem","item":"https://engine.speedle.io/ja/docs/","name":"ドキュメント","position":2},{"@type":"ListItem","item":"https://engine.speedle.io/ja/docs/deployment/","name":"デプロイ","position":3}]}</script><link href="/css/docs.css" rel="stylesheet" type="text/css">
 
 
@@ -75,6 +75,8 @@
 <div class="sidebar">
 <nav>
 <ul>
+
+
 
 
 
@@ -128,6 +130,7 @@
 <ul class="sub-menu">
 <li data-docs-depth="1" class=""><a href="/ja/docs/deployment/embedded/">Speedle 組み込みモード</a></li>
 <li data-docs-depth="1" class=""><a href="/ja/docs/deployment/docker/">Docker イメージ</a></li>
+<li data-docs-depth="1" class=""><a href="/ja/docs/deployment/homebrew/">Homebrew でのインストール</a></li>
 </ul>
 
 </li>
@@ -164,8 +167,6 @@
 </ul>
 
 </li>
-
-
 </ul>
 </nav>
 
@@ -181,11 +182,12 @@
 <ul>
 <li><a href="/ja/docs/deployment/embedded/">組み込みモード</a> は Go プロセス内で評価エンジンを実行します。</li>
 <li><a href="/ja/docs/deployment/docker/">Docker イメージ</a> は <code>docker.io/speedle/speedle</code> または <code>ghcr.io/teramoby/speedle</code> から <code>speedle-pms</code>、<code>speedle-ads</code>、<code>spctl</code> を実行します。</li>
+<li><a href="/ja/docs/deployment/homebrew/">Homebrew</a> はコマンドラインツールと両方のサービスをインストールし、ローカルでデモを実行します。</li>
 </ul>
 
 <h2 id="デプロイモードの選択">デプロイモードの選択</h2>
 
-<p>Go プロセス内で評価エンジンを実行するには <a href="/ja/docs/deployment/embedded/">組み込みモード</a> を使用します。アプリケーションが REST または gRPC 経由で Speedle を呼び出す場合は、<a href="/ja/docs/deployment/docker/">Docker イメージ</a> またはスタンドアロンの PMS と ADS を使用します。<a href="/ja/quick-start/">クイックスタート</a> では、ローカルでのポリシー管理と認可の完全なウォークスルーを提供しています。</p>
+<p>Go プロセス内で評価エンジンを実行するには <a href="/ja/docs/deployment/embedded/">組み込みモード</a> を使用します。アプリケーションが REST または gRPC 経由で Speedle を呼び出す場合は、<a href="/ja/docs/deployment/docker/">Docker イメージ</a> またはスタンドアロンの PMS と ADS を使用します。<a href="/ja/docs/deployment/homebrew/">Homebrew</a> はこれらのプログラムをインストールし、ローカルでデモを実行します。<a href="/ja/quick-start/">クイックスタート</a> では、ローカルでのポリシー管理と認可の完全なウォークスルーを提供しています。</p>
 
 <h2 id="最新の-go-でビルド">最新の Go でビルド</h2>
 

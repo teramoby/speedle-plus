@@ -1,23 +1,25 @@
 +++
 title = "Deployment"
-description = "Run Speedle embedded in a Go application, from the published container image, or as standalone PMS and ADS services."
+description = "Run Speedle embedded in a Go application, from the published container image, with Homebrew, or as standalone PMS and ADS services."
 weight = 304
 draft = false
 toc = true
 linksection = true
 tocheading = "h2"
 categories = ["docs"]
-bref = "Embedded mode, the Docker image, source builds, and standalone PMS and ADS services."
+bref = "Embedded mode, the Docker image, Homebrew, source builds, and standalone PMS and ADS services."
+lastmod = 2026-11-10T14:45:43+08:00
 +++
 
 Speedle runs inside a Go application, from one published container image, or as standalone PMS and ADS services.
 
 - [Embedded mode](/docs/deployment/embedded/) runs the evaluator in your Go process.
 - [Docker image](/docs/deployment/docker/) runs `speedle-pms`, `speedle-ads` and `spctl` from `docker.io/speedle/speedle` or `ghcr.io/teramoby/speedle`.
+- [Homebrew](/docs/deployment/homebrew/) installs the command-line tool and both services and runs a local demo.
 
 ## Choose a deployment mode
 
-Use [embedded mode](/docs/deployment/embedded/) to run the evaluator in your Go process. Use the [Docker image](/docs/deployment/docker/) or standalone PMS and ADS when applications call Speedle over REST or gRPC. The [Quick Start](../../quick-start/) provides a complete local policy-management and authorization walkthrough.
+Use [embedded mode](/docs/deployment/embedded/) to run the evaluator in your Go process. Use the [Docker image](/docs/deployment/docker/) or standalone PMS and ADS when applications call Speedle over REST or gRPC. [Homebrew](/docs/deployment/homebrew/) installs those programs and runs a local demo. The [Quick Start](../../quick-start/) provides a complete local policy-management and authorization walkthrough.
 
 ## Build with current Go
 

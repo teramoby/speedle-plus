@@ -9,6 +9,7 @@ tocheading = "h2"
 tags = ["api", "sdk"]
 categories = ["docs"]
 bref = "Añada io.speedle:speedle-sdk 0.2.0 con Maven o Gradle, y luego llame a isAllowed y check frente a un Speedle local o Speedle Cloud."
+lastmod = 2026-11-08T19:23:52+08:00
 +++
 
 El SDK de Java requiere Java 17 o posterior y no tiene dependencias de tiempo de ejecución. Paquete: [`io.speedle:speedle-sdk`](https://repo1.maven.org/maven2/io/speedle/speedle-sdk/0.2.0/) 0.2.0 en Maven Central. Referencia: [speedle-sdk/java](https://github.com/teramoby/speedle-sdk/tree/main/java).

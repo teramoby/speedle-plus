@@ -10,6 +10,7 @@ customcssfile = "command-copy.css"
 tocheading = "h2"
 bref = "go install またはソースビルドで Speedle をインストールし、SPDL と spctl でポリシーを作成し、REST API で認可決定をテストします。このガイドではローカルファイルストアを使用します。"
 icon = "9. Getting Started.svg"
+lastmod = 2026-11-10T17:04:32+08:00
 +++
 
 ## まずは Playground で体験
@@ -39,11 +40,11 @@ Go は `GOROOT` とデフォルトの `GOPATH` を自動的に構成します。
 
 <!-- quick-start: install -->
 ```bash
-GOBIN="$PWD/bin" go install github.com/teramoby/speedle-plus/cmd/...@v1.7.0
+GOBIN="$PWD/bin" go install github.com/teramoby/speedle-plus/cmd/...@v1.7.1
 ls bin
 ```
 
-`GOBIN` により、実行可能ファイルがこのディレクトリの `bin` フォルダー内に保持されます。指定しない場合、Go は `$(go env GOPATH)/bin` に書き込みます。`v1.7.0` は執筆時点での最新リリースタグです。`go install` はタグ付けされたソースからビルドし、Go チェックサムデータベースと照合して検証します。
+`GOBIN` により、実行可能ファイルがこのディレクトリの `bin` フォルダー内に保持されます。指定しない場合、Go は `$(go env GOPATH)/bin` に書き込みます。`v1.7.1` は執筆時点での最新リリースタグです。`go install` はタグ付けされたソースからビルドし、Go チェックサムデータベースと照合して検証します。
 
 ### ルート B: クローンしてビルド
 

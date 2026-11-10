@@ -9,6 +9,7 @@ tocsidebar = false
 tags = ["pms", "policy", "core"]
 categories = ["docs"]
 bref = "정책 관리 기본 사항"
+lastmod = 2026-11-09T07:57:54+08:00
 +++
 
 ## Speedle 정책이란 무엇인가

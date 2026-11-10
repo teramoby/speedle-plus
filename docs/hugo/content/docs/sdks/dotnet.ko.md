@@ -9,6 +9,7 @@ tocheading = "h2"
 tags = ["api", "sdk"]
 categories = ["docs"]
 bref = "dotnet add package로 Speedle.Sdk 0.2.0을 추가하고 로컬 Speedle 또는 Speedle Cloud에 대해 IsAllowedAsync 및 CheckAsync를 호출합니다."
+lastmod = 2026-11-07T19:43:15+08:00
 +++
 
 .NET SDK는 .NET 8 이상을 대상으로 하며 의존성이 없습니다. 패키지: NuGet의 [`Speedle.Sdk`](https://www.nuget.org/packages/Speedle.Sdk) 0.2.0, 네임스페이스 `Speedle.Sdk`. 참조 문서: [speedle-sdk/dotnet](https://github.com/teramoby/speedle-sdk/tree/main/dotnet).

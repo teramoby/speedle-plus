@@ -5,6 +5,7 @@ tags = ["v0.1.0", "api", "guide", "core", "ads"]
 categories = ["docs"]
 customcss = true
 customcssfile = "swagger-custom.css"
+lastmod = 2026-11-09T21:18:26+08:00
 +++
 
 構成された ADS のインターフェースリファレンス。リクエスト属性は型付き配列、診断レスポンス属性はオブジェクトです。

@@ -8,6 +8,7 @@ tocheading = "h2"
 tags = ["guide", "usecase"]
 categories = ["docs"]
 bref = "Speedle のユースケース"
+lastmod = 2026-10-28T13:16:58Z
 +++
 
 ## アプリケーション固有のポリシー

@@ -80,13 +80,13 @@
     
     <li>
   <h2 class="title2">
-    <a href="/es/docs/cloud/tokens/" itemprop="headline">Tokens de aplicación de Speedle Cloud</a>
+    <a href="/es/docs/cloud/limits-and-errors/" itemprop="headline">Límites y errores de Speedle Cloud</a>
   </h2>
   
-  <p itemprop="about">Emisión, protección, listado, rotación y revocación de tokens de aplicación de Speedle Cloud, incluidas las reglas de autenticación reciente y divulgación única.</p>
+  <p itemprop="about">Cuotas de cuenta de Speedle Cloud, límites de solicitudes, errores en formato JSON plano, encabezados de tasa y cuota, contabilidad diaria y directrices de reintento.</p>
   
   
-  <p itemprop="about">Gestione credenciales Bearer con alcance de servicio sin exponer sus valores secretos únicos.</p>
+  <p itemprop="about">Planifique en función de los límites globales de la cuenta y falle de forma restrictiva (fail closed) cuando Cloud no pueda devolver una decisión de autorización válida.</p>
   
   <hr />
 </li>
@@ -94,24 +94,10 @@
     
     <li>
   <h2 class="title2">
-    <a href="/es/docs/store/etcd/" itemprop="headline">Configuración de etcd</a>
+    <a href="/es/docs/idd/" itemprop="headline">Dominio de identidad</a>
   </h2>
   
-  <p itemprop="about">Configure el almacenamiento de políticas en etcd para PMS y ADS paso a paso.</p>
-  
-  
-  <p itemprop="about">Ejecute un servidor etcd independiente, conecte PMS y ADS, verifique las actualizaciones de políticas en tiempo real y guarde una copia de seguridad.</p>
-  
-  <hr />
-</li>
-
-    
-    <li>
-  <h2 class="title2">
-    <a href="/es/docs/cloud/" itemprop="headline">Speedle Cloud</a>
-  </h2>
-  
-  <p itemprop="about">Documentación de Speedle Cloud: primeros pasos, gestión de cuentas y políticas, tokens de aplicación, vista previa de la API de autorización, límites, errores y descargas.</p>
+  <p itemprop="about">Speedle admite identidades de usuarios de múltiples dominios de identidad</p>
   
   
   <hr />
@@ -120,11 +106,27 @@
     
     <li>
   <h2 class="title2">
-    <a href="/es/docs/security/" itemprop="headline">Seguridad</a>
+    <a href="/es/docs/sdks/dotnet/" itemprop="headline">C#/.NET SDK</a>
   </h2>
   
-  <p itemprop="about">Proteja sus instancias de Speedle</p>
+  <p itemprop="about">Añada el SDK de Speedle para .NET y compruebe autorizaciones frente a un Speedle local o Speedle Cloud.</p>
   
+  
+  <p itemprop="about">Añada Speedle.Sdk 0.2.0 con dotnet add package, y luego llame a IsAllowedAsync y CheckAsync frente a un Speedle local o Speedle Cloud.</p>
+  
+  <hr />
+</li>
+
+    
+    <li>
+  <h2 class="title2">
+    <a href="/es/docs/sdks/rust/" itemprop="headline">Rust SDK</a>
+  </h2>
+  
+  <p itemprop="about">Añada el SDK de Speedle para Rust y compruebe autorizaciones frente a un Speedle local o Speedle Cloud.</p>
+  
+  
+  <p itemprop="about">Añada el crate speedle 0.2.0 con cargo add, y luego llame a is_allowed y check frente a un Speedle local o Speedle Cloud.</p>
   
   <hr />
 </li>

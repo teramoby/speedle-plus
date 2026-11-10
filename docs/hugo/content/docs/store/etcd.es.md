@@ -8,6 +8,7 @@ tocheading = "h2"
 tags = ["storage", "etcd"]
 categories = ["docs"]
 bref = "Ejecute un servidor etcd independiente, conecte PMS y ADS, verifique las actualizaciones de políticas en tiempo real y guarde una copia de seguridad."
+lastmod = 2026-10-31T22:36:36+08:00
 +++
 
 Esta guía paso a paso utiliza un servidor **etcd v3.6.14 externo** con un volumen persistente de Docker. PMS escribe políticas y ADS observa el mismo prefijo de clave. Este ejemplo de nodo único escucha en la interfaz de bucle invertido (loopback) y utiliza HTTP en texto plano para desarrollo local. La configuración de clúster y TLS para producción se explica más adelante.

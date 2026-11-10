@@ -9,6 +9,7 @@ tocsidebar = false
 tags = ["security", "guide", "tls", "https"]
 categories = ["docs"]
 bref = ""
+lastmod = 2026-10-29T11:53:01+08:00
 +++
 
 <a id="protect-both-api-transports"></a>

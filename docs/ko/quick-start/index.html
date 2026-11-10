@@ -18,7 +18,7 @@
 <link rel="alternate" hreflang="zh-CN" href="https://engine.speedle.io/zh/quick-start/">
 <link rel="alternate" hreflang="x-default" href="https://engine.speedle.io/quick-start/">
 <meta property="og:type" content="article">
-<meta property="article:modified_time" content="2026-11-10T17:19:04&#43;08:00">
+<meta property="article:modified_time" content="2026-11-10T17:04:32&#43;08:00">
 <meta property="og:site_name" content="Speedle Engine">
 <meta property="og:title" content="빠른 시작 · Speedle Engine">
 <meta property="og:description" content="go install 또는 소스 코드로부터 Speedle을 설치하고, 정책 관리, 직접 인가, 역할 인가, 조건부(ABAC) 결정 및 거부를 검증합니다.">
@@ -108,9 +108,9 @@
 <h3 id="경로-a-최신-릴리스-설치">경로 A: 최신 릴리스 설치</h3>
 
 <!-- quick-start: install -->
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#8be9fd;font-style:italic">GOBIN</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;</span><span style="color:#8be9fd;font-style:italic">$PWD</span><span style="color:#f1fa8c">/bin&#34;</span> go install github.com/teramoby/speedle-plus/cmd/...@v1.7.0
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#8be9fd;font-style:italic">GOBIN</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;</span><span style="color:#8be9fd;font-style:italic">$PWD</span><span style="color:#f1fa8c">/bin&#34;</span> go install github.com/teramoby/speedle-plus/cmd/...@v1.7.1
 ls bin</code></pre></div>
-<p><code>GOBIN</code>을 지정하면 실행 파일이 현재 디렉터리의 <code>bin</code> 폴더 내에 유지됩니다. 지정하지 않으면 Go는 <code>$(go env GOPATH)/bin</code>에 작성합니다. <code>v1.7.0</code>은 작성 시점의 최신 릴리스 태그입니다. <code>go install</code>은 태그가 지정된 소스에서 빌드하고 Go 체크섬 데이터베이스와 대조하여 검증합니다.</p>
+<p><code>GOBIN</code>을 지정하면 실행 파일이 현재 디렉터리의 <code>bin</code> 폴더 내에 유지됩니다. 지정하지 않으면 Go는 <code>$(go env GOPATH)/bin</code>에 작성합니다. <code>v1.7.1</code>은 작성 시점의 최신 릴리스 태그입니다. <code>go install</code>은 태그가 지정된 소스에서 빌드하고 Go 체크섬 데이터베이스와 대조하여 검증합니다.</p>
 
 <h3 id="경로-b-클론-후-빌드">경로 B: 클론 후 빌드</h3>
 

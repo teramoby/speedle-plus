@@ -9,6 +9,7 @@ tocsidebar = false
 tags = ["pdp", "policy", "core"]
 categories = ["docs"]
 bref = "認可決定を取得"
+lastmod = 2026-11-08T19:23:52+08:00
 +++
 
 ## 認可決定とは？

@@ -8,6 +8,7 @@ tocheading = "h2"
 tags = ["guide", "usecase"]
 categories = ["docs"]
 bref = "Speedle 유스케이스"
+lastmod = 2026-10-28T13:16:58Z
 +++
 
 ## 애플리케이션 전용 정책

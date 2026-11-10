@@ -10,6 +10,7 @@ tocsidebar = false
 tags = ["core", "pdp", "identity", "spdl"]
 categories = ["docs"]
 bref = "Dónde encaja Speedle en el vocabulario de autorización y control de acceso"
+lastmod = 2026-11-10T14:45:43+08:00
 +++
 
 Speedle es un motor de autorización de código abierto. Las aplicaciones le envían consultas como "¿puede este usuario realizar esta acción sobre este recurso?", y Speedle responde permitir o denegar de acuerdo con políticas gestionadas centralmente. Esta página relaciona los términos habituales de autorización con los componentes de Speedle que los implementan, y enlaza con las guías correspondientes a cada uno.

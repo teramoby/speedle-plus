@@ -6,6 +6,7 @@ draft = false
 tags = ["v0.1.0", "api", "guide", "core"]
 categories = ["docs"]
 bref = "정책 생성 및 관리, 액세스 패턴 발견, 인가 평가 진단"
+lastmod = 2026-10-28T13:16:58Z
 +++
 
 - [정책 관리](./policy-mgmt/)

@@ -8,6 +8,7 @@ tocheading = "h2"
 tags = ["storage", "mongodb"]
 categories = ["docs"]
 bref = "Ejecute un conjunto de réplicas de MongoDB, conecte PMS y ADS, verifique las actualizaciones de políticas en tiempo real y guarde una copia de seguridad."
+lastmod = 2026-10-31T22:36:36+08:00
 +++
 
 Esta guía paso a paso utiliza **MongoDB 7.0.16** como un conjunto de réplicas (replica set) de nodo único con un volumen persistente de Docker. PMS escribe políticas y ADS sigue la misma base de datos a través de un flujo de cambios (change stream). El ejemplo escucha en la interfaz de bucle invertido (loopback) sin autenticación para desarrollo local. La autenticación para producción, TLS y la configuración del conjunto de réplicas se detallan más adelante.

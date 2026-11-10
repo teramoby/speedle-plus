@@ -9,6 +9,7 @@ tocheading = "h2"
 tags = ["sdk"]
 categories = ["docs"]
 bref = "Speedle 인가 결정 API용 6개 언어 클라이언트 라이브러리. 자체 호스팅 Speedle ADS 및 Speedle Cloud(출시 예정)를 지원합니다."
+lastmod = 2026-11-10T14:45:43+08:00
 +++
 
 Speedle SDK는 결정 API `POST /authz-check/v1/is-allowed`의 클라이언트 라이브러리입니다. 자체 호스팅 Speedle ADS 및 Speedle Cloud 모두에서 작동합니다. 각 언어 페이지에서는 패키지 추가 방법을 설명하고 두 환경 모두에 대해 테스트를 거친 완전한 프로그램을 제공합니다. 소스 코드와 전체 참조 문서는 [teramoby/speedle-sdk](https://github.com/teramoby/speedle-sdk)에서 확인할 수 있습니다. 이 예제들에서 사용할 PMS 및 ADS 실행 방법에 대해서는 [배포](/docs/deployment/)와 [Docker 이미지](/docs/deployment/docker/)를 참조하십시오.

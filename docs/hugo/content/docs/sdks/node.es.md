@@ -9,6 +9,7 @@ tocheading = "h2"
 tags = ["api", "sdk"]
 categories = ["docs"]
 bref = "Instale @speedle/sdk con npm, y luego llame a isAllowed y check frente a un Speedle local o Speedle Cloud."
+lastmod = 2026-11-10T09:48:45+08:00
 +++
 
 El SDK de Node.js requiere Node.js 22 o posterior, incluye distribuciones ESM y CommonJS con tipos de TypeScript, y no tiene dependencias de tiempo de ejecución. Paquete: [`@speedle/sdk`](https://www.npmjs.com/package/@speedle/sdk), publicado en npm. Referencia: [speedle-sdk/node](https://github.com/teramoby/speedle-sdk/tree/main/node).

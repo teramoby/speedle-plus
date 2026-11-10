@@ -6,6 +6,7 @@ draft = false
 toc = true
 tocheading = "h2"
 categories = ["docs"]
+lastmod = 2026-11-08T21:11:24+08:00
 +++
 
 Speedle Cloud는 빠르고 지연 시간이 짧은 접근 결정을 위한 인가 API를 제공합니다.

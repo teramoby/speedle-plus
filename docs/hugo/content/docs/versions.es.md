@@ -9,6 +9,7 @@ tocsidebar = false
 tags = ["releases", "versions"]
 categories = ["docs"]
 bref = "Versiones — Speedle sigue el control de versiones semántico"
+lastmod = 2026-11-10T14:45:43+08:00
 +++
 
 ## Versiones de Speedle

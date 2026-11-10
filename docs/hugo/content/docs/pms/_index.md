@@ -5,6 +5,7 @@ draft = false
 tags = ["v0.1.0", "api", "guide", "core"]
 categories = ["docs"]
 bref = "Open API Specification Docs. Use the API to model your simple and complex policies in a declarative way; get decisions, discover policies dynamically and debug policy evaluation."
+lastmod = 2026-10-28T13:16:58Z
 +++
 
 -   [Policy Management](./policy-mgmt/)

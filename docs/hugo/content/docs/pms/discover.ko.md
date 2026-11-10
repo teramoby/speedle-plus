@@ -9,6 +9,7 @@ tocsidebar = false
 tags = ["policy", "core", "discovery"]
 categories = ["docs"]
 bref = "접근 요청을 기록하고 인가 정책을 생성하여 일반 인가 확인으로 복귀합니다."
+lastmod = 2026-10-29T11:32:30+08:00
 +++
 
 ## 정책 발견의 역할

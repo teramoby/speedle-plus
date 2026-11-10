@@ -5,6 +5,7 @@ tags = ["v0.1.0", "api", "guide","core","asserter","pluggable"]
 categories = ["docs"]
 customcss = true
 customcssfile = "swagger-custom.css"
+lastmod = 2026-11-08T11:21:16+08:00
 +++
 
 令牌断言 webhook 参考。errCode 为整数，attributes 为对象。实际端点由 ADS 断言配置指定。

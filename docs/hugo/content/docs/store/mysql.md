@@ -8,6 +8,7 @@ tocheading = "h2"
 tags = ["storage", "mysql"]
 categories = ["docs"]
 bref = "Create a database, configure PMS and ADS, then verify authorization and automatic policy synchronization."
+lastmod = 2026-10-31T22:36:36+08:00
 +++
 
 This guide uses **MySQL 8.4 LTS** and two native Speedle processes: PMS writes

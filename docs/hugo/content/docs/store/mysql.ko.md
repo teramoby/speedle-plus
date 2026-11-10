@@ -8,6 +8,7 @@ tocheading = "h2"
 tags = ["storage", "mysql"]
 categories = ["docs"]
 bref = "데이터베이스를 생성하고 PMS와 ADS를 구성하여 인가 및 자동 정책 동기화를 확인합니다."
+lastmod = 2026-10-31T22:36:36+08:00
 +++
 
 이 가이드에서는 **MySQL 8.4 LTS**와 두 개의 네이티브 Speedle 프로세스를 사용합니다. PMS는 정책을 작성하고 ADS는 별도의 읽기 전용 계정으로 동일한 데이터베이스를 읽습니다. 로컬 예제에서는 Docker와 루프백 주소의 일반 텍스트 HTTP를 사용합니다. 원격 배포의 경우 기존 MySQL 서버와 [보안 가이드](/docs/security/)를 참조하십시오.

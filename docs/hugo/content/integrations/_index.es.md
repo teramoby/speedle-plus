@@ -4,6 +4,7 @@ noindex = false
 categories = ["docs"]
 description = "Conecte Speedle con sus aplicaciones e infraestructura."
 aliases = ["/es/integrations/istio/", "/es/integrations/kubernetes/", "/es/integrations/docker/"]
+lastmod = 2026-11-10T14:45:43+08:00
 +++
 
 Speedle toma decisiones de autorización. Un punto de aplicación de políticas (PEP) en su aplicación, puerta de enlace o plataforma llama a Speedle para cada decisión y aplica el resultado. Las siguientes interfaces son compatibles actualmente.

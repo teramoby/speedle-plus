@@ -1,23 +1,25 @@
 +++
 title = "Despliegue"
-description = "Ejecute Speedle integrado en una aplicación Go, desde la imagen de contenedor publicada o como servicios independientes de PMS y ADS."
+description = "Ejecute Speedle integrado en una aplicación Go, desde la imagen de contenedor publicada, con Homebrew, o como servicios independientes de PMS y ADS."
 weight = 304
 draft = false
 toc = true
 linksection = true
 tocheading = "h2"
 categories = ["docs"]
-bref = "Modo integrado, imagen de Docker, compilación desde el código fuente y servicios independientes de PMS y ADS."
+bref = "Modo integrado, imagen de Docker, Homebrew, compilación desde el código fuente y servicios independientes de PMS y ADS."
+lastmod = 2026-11-10T14:45:43+08:00
 +++
 
 Speedle se ejecuta dentro de una aplicación Go, desde una imagen de contenedor publicada o como servicios independientes de PMS y ADS.
 
 - [Modo integrado](/es/docs/deployment/embedded/) ejecuta el evaluador en su proceso Go.
 - [Imagen de Docker](/es/docs/deployment/docker/) ejecuta `speedle-pms`, `speedle-ads` y `spctl` desde `docker.io/speedle/speedle` o `ghcr.io/teramoby/speedle`.
+- [Homebrew](/es/docs/deployment/homebrew/) instala la herramienta de línea de comandos y ambos servicios, y ejecuta una demostración local.
 
 ## Elija un modo de despliegue
 
-Utilice el [modo integrado](/es/docs/deployment/embedded/) para ejecutar el evaluador dentro de su proceso Go. Utilice la [imagen de Docker](/es/docs/deployment/docker/) o los servicios independientes de PMS y ADS cuando las aplicaciones llamen a Speedle a través de REST o gRPC. El [Inicio rápido](../../quick-start/) proporciona una guía completa paso a paso de gestión de políticas y autorización local.
+Utilice el [modo integrado](/es/docs/deployment/embedded/) para ejecutar el evaluador dentro de su proceso Go. Utilice la [imagen de Docker](/es/docs/deployment/docker/) o los servicios independientes de PMS y ADS cuando las aplicaciones llamen a Speedle a través de REST o gRPC. [Homebrew](/es/docs/deployment/homebrew/) instala esos programas y ejecuta una demostración local. El [Inicio rápido](../../quick-start/) proporciona una guía completa paso a paso de gestión de políticas y autorización local.
 
 ## Compilar con la versión actual de Go
 

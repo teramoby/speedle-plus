@@ -1,23 +1,25 @@
 +++
 title = "デプロイ"
-description = "Go アプリケーションへの組み込み、公開されたコンテナイメージからの実行、またはスタンドアロンの PMS および ADS サービスとして Speedle を実行"
+description = "Go アプリケーションへの組み込み、公開されたコンテナイメージまたは Homebrew からの実行、またはスタンドアロンの PMS および ADS サービスとして Speedle を実行します。"
 weight = 304
 draft = false
 toc = true
 linksection = true
 tocheading = "h2"
 categories = ["docs"]
-bref = "組み込みモード、Docker イメージ、ソースからのビルド、およびスタンドアロンの PMS と ADS サービス。"
+bref = "組み込みモード、Docker イメージ、Homebrew、ソースからのビルド、およびスタンドアロンの PMS と ADS サービス。"
+lastmod = 2026-11-10T14:45:43+08:00
 +++
 
 Speedle は Go アプリケーション内への組み込み、1 つの公開コンテナイメージからの実行、またはスタンドアロンの PMS および ADS サービスとして実行できます。
 
 - [組み込みモード](/ja/docs/deployment/embedded/) は Go プロセス内で評価エンジンを実行します。
 - [Docker イメージ](/ja/docs/deployment/docker/) は `docker.io/speedle/speedle` または `ghcr.io/teramoby/speedle` から `speedle-pms`、`speedle-ads`、`spctl` を実行します。
+- [Homebrew](/ja/docs/deployment/homebrew/) はコマンドラインツールと両方のサービスをインストールし、ローカルでデモを実行します。
 
 ## デプロイモードの選択
 
-Go プロセス内で評価エンジンを実行するには [組み込みモード](/ja/docs/deployment/embedded/) を使用します。アプリケーションが REST または gRPC 経由で Speedle を呼び出す場合は、[Docker イメージ](/ja/docs/deployment/docker/) またはスタンドアロンの PMS と ADS を使用します。[クイックスタート](../../quick-start/) では、ローカルでのポリシー管理と認可の完全なウォークスルーを提供しています。
+Go プロセス内で評価エンジンを実行するには [組み込みモード](/ja/docs/deployment/embedded/) を使用します。アプリケーションが REST または gRPC 経由で Speedle を呼び出す場合は、[Docker イメージ](/ja/docs/deployment/docker/) またはスタンドアロンの PMS と ADS を使用します。[Homebrew](/ja/docs/deployment/homebrew/) はこれらのプログラムをインストールし、ローカルでデモを実行します。[クイックスタート](../../quick-start/) では、ローカルでのポリシー管理と認可の完全なウォークスルーを提供しています。
 
 ## 最新の Go でビルド
 

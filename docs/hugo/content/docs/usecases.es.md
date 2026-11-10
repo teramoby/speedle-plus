@@ -8,6 +8,7 @@ tocheading = "h2"
 tags = ["guide", "usecase"]
 categories = ["docs"]
 bref = "Casos de uso para Speedle"
+lastmod = 2026-10-28T13:16:58Z
 +++
 
 ## Políticas específicas de la aplicación

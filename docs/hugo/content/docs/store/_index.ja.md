@@ -10,6 +10,7 @@ tocheading = "h2"
 tags = ["storage", "pluggable"]
 categories = ["docs"]
 bref = "Speedle にはファイル、etcd、MongoDB、MySQL のポリシーストアが含まれています。このドキュメントでは、それらの構成と、別のストアを実装または登録する方法について説明します。"
+lastmod = 2026-10-31T22:36:36+08:00
 +++
 
 ## 組み込みストアと拡張コントラクト

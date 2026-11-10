@@ -9,6 +9,7 @@ tocsidebar = false
 tags = ["v0.1.0", "api", "guide", "core"]
 categories = ["docs"]
 bref = "Open API 仕様ドキュメント。API を使用して、シンプルおよび複雑なポリシーを宣言的にモデル化し、決定を取得し、ポリシーを動的に検出し、ポリシー評価をデバッグします。"
+lastmod = 2026-11-10T14:45:43+08:00
 +++
 
 Java、Python、Go、.NET、Rust、Node.js/TypeScript 向けのクライアントライブラリは [SDK](/ja/docs/sdks/) にあります。

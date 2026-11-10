@@ -6,7 +6,7 @@
     <description>Recent content in Storage on Speedle</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>ko-kr</language>
-    <lastBuildDate>Tue, 10 Nov 2026 17:19:04 +0800</lastBuildDate>
+    <lastBuildDate>Sat, 31 Oct 2026 22:36:36 +0800</lastBuildDate>
     
 	<atom:link href="https://engine.speedle.io/ko/tags/storage/index.xml" rel="self" type="application/rss+xml" />
     
@@ -45,7 +45,7 @@ git clone --depth 1 https://github.com/teramoby/speedle-plus.git cd speedle-plus
     <item>
       <title>플러그형 저장소</title>
       <link>https://engine.speedle.io/ko/docs/store/</link>
-      <pubDate>Tue, 10 Nov 2026 17:19:04 +0800</pubDate>
+      <pubDate>Sat, 31 Oct 2026 22:36:36 +0800</pubDate>
       
       <guid>https://engine.speedle.io/ko/docs/store/</guid>
       <description>기본 내장 저장소와 확장 계약 독립 실행형 바이너리는 pkg/store 아래에 파일, etcd, MongoDB, MySQL 구현을 등록합니다. 사용 가능하다고 해서 동일한 운영상의 보장을 의미하는 것은 아닙니다. 배포하기 전에 백엔드의 인증, 영속성, 트랜잭션 및 감시(watch) 동작을 개별적으로 검토하십시오. 아래 구성 예제는 속성 이름을 설명하기 위한 것이며, 로컬 예제에서 etcd/MongoDB 클러스터를 실행하는 것은 범위에 포함되지 않습니다.

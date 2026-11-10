@@ -9,6 +9,7 @@ toc = true
 tocheading = "h2"
 tocsidebar = false
 categories = ["docs"]
+lastmod = 2026-10-29T11:53:01+08:00
 +++
 
 ## 역할을 글로벌로 정의해야 하는 경우

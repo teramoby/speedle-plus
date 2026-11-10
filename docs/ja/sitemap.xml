@@ -4,7 +4,7 @@
   
   <url>
     <loc>https://engine.speedle.io/ja/docs/pms/policy-mgmt/</loc>
-    <lastmod>2026-11-10T16:57:42+08:00</lastmod>
+    <lastmod>2026-11-09T07:57:54+08:00</lastmod>
     <xhtml:link
                 rel="alternate"
                 hreflang="es"
@@ -34,7 +34,7 @@
   
   <url>
     <loc>https://engine.speedle.io/ja/docs/usecases/</loc>
-    <lastmod>2026-11-10T16:57:42+08:00</lastmod>
+    <lastmod>2026-10-28T13:16:58+00:00</lastmod>
     <xhtml:link
                 rel="alternate"
                 hreflang="es"
@@ -64,7 +64,7 @@
   
   <url>
     <loc>https://engine.speedle.io/ja/docs/pms/global-policy/</loc>
-    <lastmod>2026-11-10T16:57:42+08:00</lastmod>
+    <lastmod>2026-10-29T11:53:01+08:00</lastmod>
     <xhtml:link
                 rel="alternate"
                 hreflang="en"
@@ -94,7 +94,7 @@
   
   <url>
     <loc>https://engine.speedle.io/ja/docs/overview/</loc>
-    <lastmod>2026-11-10T16:57:42+08:00</lastmod>
+    <lastmod>2026-11-10T14:45:43+08:00</lastmod>
     <xhtml:link
                 rel="alternate"
                 hreflang="es"
@@ -124,7 +124,7 @@
   
   <url>
     <loc>https://engine.speedle.io/ja/docs/pms/diagnosis/</loc>
-    <lastmod>2026-11-10T16:57:42+08:00</lastmod>
+    <lastmod>2026-10-29T11:53:01+08:00</lastmod>
     <xhtml:link
                 rel="alternate"
                 hreflang="es"
@@ -154,7 +154,7 @@
   
   <url>
     <loc>https://engine.speedle.io/ja/docs/pms/discover/</loc>
-    <lastmod>2026-11-10T16:57:42+08:00</lastmod>
+    <lastmod>2026-10-29T11:32:30+08:00</lastmod>
     <xhtml:link
                 rel="alternate"
                 hreflang="es"
@@ -184,7 +184,7 @@
   
   <url>
     <loc>https://engine.speedle.io/ja/docs/spdl/</loc>
-    <lastmod>2026-11-10T16:57:42+08:00</lastmod>
+    <lastmod>2026-11-08T20:01:50+08:00</lastmod>
     <xhtml:link
                 rel="alternate"
                 hreflang="en"
@@ -214,7 +214,7 @@
   
   <url>
     <loc>https://engine.speedle.io/ja/docs/sdks/java/</loc>
-    <lastmod>2026-11-10T16:57:42+08:00</lastmod>
+    <lastmod>2026-11-08T19:23:52+08:00</lastmod>
     <xhtml:link
                 rel="alternate"
                 hreflang="es"
@@ -244,7 +244,7 @@
   
   <url>
     <loc>https://engine.speedle.io/ja/docs/store/mysql/</loc>
-    <lastmod>2026-11-10T16:57:42+08:00</lastmod>
+    <lastmod>2026-10-31T22:36:36+08:00</lastmod>
     <xhtml:link
                 rel="alternate"
                 hreflang="es"
@@ -274,7 +274,7 @@
   
   <url>
     <loc>https://engine.speedle.io/ja/docs/cloud/getting-started/</loc>
-    <lastmod>2026-11-10T16:57:42+08:00</lastmod>
+    <lastmod>2026-11-08T21:11:24+08:00</lastmod>
     <xhtml:link
                 rel="alternate"
                 hreflang="en"
@@ -304,7 +304,7 @@
   
   <url>
     <loc>https://engine.speedle.io/ja/docs/deployment/embedded/</loc>
-    <lastmod>2026-11-10T16:57:42+08:00</lastmod>
+    <lastmod>2026-11-10T14:45:43+08:00</lastmod>
     <xhtml:link
                 rel="alternate"
                 hreflang="es"
@@ -334,7 +334,7 @@
   
   <url>
     <loc>https://engine.speedle.io/ja/docs/architecture/</loc>
-    <lastmod>2026-11-10T16:57:42+08:00</lastmod>
+    <lastmod>2026-11-08T08:33:54+08:00</lastmod>
     <xhtml:link
                 rel="alternate"
                 hreflang="en"
@@ -364,7 +364,7 @@
   
   <url>
     <loc>https://engine.speedle.io/ja/quick-start/</loc>
-    <lastmod>2026-11-10T16:57:42+08:00</lastmod>
+    <lastmod>2026-11-10T17:04:32+08:00</lastmod>
     <xhtml:link
                 rel="alternate"
                 hreflang="es"
@@ -394,7 +394,7 @@
   
   <url>
     <loc>https://engine.speedle.io/ja/contribute/</loc>
-    <lastmod>2026-11-10T16:57:42+08:00</lastmod>
+    <lastmod>2026-11-06T12:19:39+08:00</lastmod>
     <xhtml:link
                 rel="alternate"
                 hreflang="es"
@@ -424,7 +424,7 @@
   
   <url>
     <loc>https://engine.speedle.io/ja/docs/deployment/docker/</loc>
-    <lastmod>2026-11-10T16:57:42+08:00</lastmod>
+    <lastmod>2026-11-10T14:45:43+08:00</lastmod>
     <xhtml:link
                 rel="alternate"
                 hreflang="en"
@@ -454,7 +454,7 @@
   
   <url>
     <loc>https://engine.speedle.io/ja/docs/sdks/python/</loc>
-    <lastmod>2026-11-10T16:57:42+08:00</lastmod>
+    <lastmod>2026-11-07T19:43:15+08:00</lastmod>
     <xhtml:link
                 rel="alternate"
                 hreflang="es"
@@ -484,7 +484,7 @@
   
   <url>
     <loc>https://engine.speedle.io/ja/docs/cloud/tokens/</loc>
-    <lastmod>2026-11-10T16:57:42+08:00</lastmod>
+    <lastmod>2026-11-08T17:11:18+08:00</lastmod>
     <xhtml:link
                 rel="alternate"
                 hreflang="en"
@@ -514,7 +514,7 @@
   
   <url>
     <loc>https://engine.speedle.io/ja/docs/pms/</loc>
-    <lastmod>2026-11-10T16:57:42+08:00</lastmod>
+    <lastmod>2026-10-28T13:16:58+00:00</lastmod>
     <xhtml:link
                 rel="alternate"
                 hreflang="es"
@@ -544,7 +544,7 @@
   
   <url>
     <loc>https://engine.speedle.io/ja/docs/store/etcd/</loc>
-    <lastmod>2026-11-10T16:57:42+08:00</lastmod>
+    <lastmod>2026-10-31T22:36:36+08:00</lastmod>
     <xhtml:link
                 rel="alternate"
                 hreflang="es"
@@ -574,7 +574,7 @@
   
   <url>
     <loc>https://engine.speedle.io/ja/docs/sdks/go/</loc>
-    <lastmod>2026-11-10T16:57:42+08:00</lastmod>
+    <lastmod>2026-11-07T19:43:15+08:00</lastmod>
     <xhtml:link
                 rel="alternate"
                 hreflang="es"
@@ -603,8 +603,38 @@
   </url>
   
   <url>
+    <loc>https://engine.speedle.io/ja/docs/deployment/homebrew/</loc>
+    <lastmod>2026-11-10T13:49:59+08:00</lastmod>
+    <xhtml:link
+                rel="alternate"
+                hreflang="en"
+                href="https://engine.speedle.io/docs/deployment/homebrew/"
+                />
+    <xhtml:link
+                rel="alternate"
+                hreflang="zh"
+                href="https://engine.speedle.io/zh/docs/deployment/homebrew/"
+                />
+    <xhtml:link
+                rel="alternate"
+                hreflang="ko"
+                href="https://engine.speedle.io/ko/docs/deployment/homebrew/"
+                />
+    <xhtml:link
+                rel="alternate"
+                hreflang="es"
+                href="https://engine.speedle.io/es/docs/deployment/homebrew/"
+                />
+    <xhtml:link
+                rel="alternate"
+                hreflang="ja"
+                href="https://engine.speedle.io/ja/docs/deployment/homebrew/"
+                />
+  </url>
+  
+  <url>
     <loc>https://engine.speedle.io/ja/docs/store/mongodb/</loc>
-    <lastmod>2026-11-10T16:57:42+08:00</lastmod>
+    <lastmod>2026-10-31T22:36:36+08:00</lastmod>
     <xhtml:link
                 rel="alternate"
                 hreflang="es"
@@ -634,7 +664,7 @@
   
   <url>
     <loc>https://engine.speedle.io/ja/docs/cloud/authorization-api/</loc>
-    <lastmod>2026-11-10T16:57:42+08:00</lastmod>
+    <lastmod>2026-11-08T21:11:24+08:00</lastmod>
     <xhtml:link
                 rel="alternate"
                 hreflang="es"
@@ -664,7 +694,7 @@
   
   <url>
     <loc>https://engine.speedle.io/ja/docs/decisions/</loc>
-    <lastmod>2026-11-10T16:57:42+08:00</lastmod>
+    <lastmod>2026-11-08T19:23:52+08:00</lastmod>
     <xhtml:link
                 rel="alternate"
                 hreflang="en"
@@ -694,7 +724,7 @@
   
   <url>
     <loc>https://engine.speedle.io/ja/docs/idd/</loc>
-    <lastmod>2026-11-10T16:57:42+08:00</lastmod>
+    <lastmod>2026-10-29T11:53:01+08:00</lastmod>
     <xhtml:link
                 rel="alternate"
                 hreflang="es"
@@ -724,7 +754,7 @@
   
   <url>
     <loc>https://engine.speedle.io/ja/docs/sdks/dotnet/</loc>
-    <lastmod>2026-11-10T16:57:42+08:00</lastmod>
+    <lastmod>2026-11-07T19:43:15+08:00</lastmod>
     <xhtml:link
                 rel="alternate"
                 hreflang="es"
@@ -754,7 +784,7 @@
   
   <url>
     <loc>https://engine.speedle.io/ja/docs/cloud/limits-and-errors/</loc>
-    <lastmod>2026-11-10T16:57:42+08:00</lastmod>
+    <lastmod>2026-11-08T17:11:18+08:00</lastmod>
     <xhtml:link
                 rel="alternate"
                 hreflang="en"
@@ -784,7 +814,7 @@
   
   <url>
     <loc>https://engine.speedle.io/ja/docs/sdks/rust/</loc>
-    <lastmod>2026-11-10T16:57:42+08:00</lastmod>
+    <lastmod>2026-11-07T19:43:15+08:00</lastmod>
     <xhtml:link
                 rel="alternate"
                 hreflang="es"
@@ -814,7 +844,7 @@
   
   <url>
     <loc>https://engine.speedle.io/ja/docs/assertor/</loc>
-    <lastmod>2026-11-10T16:57:42+08:00</lastmod>
+    <lastmod>2026-10-29T11:53:01+08:00</lastmod>
     <xhtml:link
                 rel="alternate"
                 hreflang="es"
@@ -844,7 +874,7 @@
   
   <url>
     <loc>https://engine.speedle.io/ja/docs/sdks/node/</loc>
-    <lastmod>2026-11-10T16:57:42+08:00</lastmod>
+    <lastmod>2026-11-10T09:48:45+08:00</lastmod>
     <xhtml:link
                 rel="alternate"
                 hreflang="es"
@@ -874,7 +904,7 @@
   
   <url>
     <loc>https://engine.speedle.io/ja/docs/store/</loc>
-    <lastmod>2026-11-10T16:57:42+08:00</lastmod>
+    <lastmod>2026-10-31T22:36:36+08:00</lastmod>
     <xhtml:link
                 rel="alternate"
                 hreflang="es"
@@ -904,7 +934,7 @@
   
   <url>
     <loc>https://engine.speedle.io/ja/docs/api/</loc>
-    <lastmod>2026-11-10T16:57:42+08:00</lastmod>
+    <lastmod>2026-11-10T14:45:43+08:00</lastmod>
     <xhtml:link
                 rel="alternate"
                 hreflang="es"
@@ -934,7 +964,7 @@
   
   <url>
     <loc>https://engine.speedle.io/ja/docs/deployment/</loc>
-    <lastmod>2026-11-10T16:57:42+08:00</lastmod>
+    <lastmod>2026-11-10T14:45:43+08:00</lastmod>
     <xhtml:link
                 rel="alternate"
                 hreflang="en"
@@ -964,7 +994,7 @@
   
   <url>
     <loc>https://engine.speedle.io/ja/docs/sdks/</loc>
-    <lastmod>2026-11-10T16:57:42+08:00</lastmod>
+    <lastmod>2026-11-10T14:45:43+08:00</lastmod>
     <xhtml:link
                 rel="alternate"
                 hreflang="es"
@@ -994,7 +1024,7 @@
   
   <url>
     <loc>https://engine.speedle.io/ja/docs/cloud/</loc>
-    <lastmod>2026-11-10T16:57:42+08:00</lastmod>
+    <lastmod>2026-11-08T17:11:18+08:00</lastmod>
     <xhtml:link
                 rel="alternate"
                 hreflang="es"
@@ -1024,7 +1054,7 @@
   
   <url>
     <loc>https://engine.speedle.io/ja/docs/security/</loc>
-    <lastmod>2026-11-10T16:57:42+08:00</lastmod>
+    <lastmod>2026-10-29T11:53:01+08:00</lastmod>
     <xhtml:link
                 rel="alternate"
                 hreflang="en"
@@ -1054,7 +1084,7 @@
   
   <url>
     <loc>https://engine.speedle.io/ja/docs/logging/</loc>
-    <lastmod>2026-11-10T16:57:42+08:00</lastmod>
+    <lastmod>2026-11-08T08:33:54+08:00</lastmod>
     <xhtml:link
                 rel="alternate"
                 hreflang="en"
@@ -1084,7 +1114,7 @@
   
   <url>
     <loc>https://engine.speedle.io/ja/docs/versions/</loc>
-    <lastmod>2026-11-10T16:57:42+08:00</lastmod>
+    <lastmod>2026-11-10T14:45:43+08:00</lastmod>
     <xhtml:link
                 rel="alternate"
                 hreflang="es"
@@ -1114,7 +1144,7 @@
   
   <url>
     <loc>https://engine.speedle.io/ja/docs/custom-function/</loc>
-    <lastmod>2026-11-10T16:57:42+08:00</lastmod>
+    <lastmod>2026-11-07T01:07:23+08:00</lastmod>
     <xhtml:link
                 rel="alternate"
                 hreflang="en"
@@ -1144,7 +1174,7 @@
   
   <url>
     <loc>https://engine.speedle.io/ja/playground/</loc>
-    <lastmod>2026-11-10T16:57:42+08:00</lastmod>
+    <lastmod>2026-11-06T12:19:39+08:00</lastmod>
     <xhtml:link
                 rel="alternate"
                 hreflang="es"
@@ -1174,7 +1204,7 @@
   
   <url>
     <loc>https://engine.speedle.io/ja/about/</loc>
-    <lastmod>2026-11-10T16:57:42+08:00</lastmod>
+    <lastmod>2026-11-08T19:23:52+08:00</lastmod>
     <xhtml:link
                 rel="alternate"
                 hreflang="en"
@@ -1204,7 +1234,7 @@
   
   <url>
     <loc>https://engine.speedle.io/ja/</loc>
-    <lastmod>2026-11-10T16:57:42+08:00</lastmod>
+    <lastmod>2020-05-27T07:48:20+08:00</lastmod>
     <xhtml:link
                 rel="alternate"
                 hreflang="en"
@@ -1234,7 +1264,7 @@
   
   <url>
     <loc>https://engine.speedle.io/ja/support/</loc>
-    <lastmod>2026-11-10T16:57:42+08:00</lastmod>
+    <lastmod>2026-11-07T20:54:01+08:00</lastmod>
     <xhtml:link
                 rel="alternate"
                 hreflang="es"
@@ -1264,7 +1294,7 @@
   
   <url>
     <loc>https://engine.speedle.io/ja/docs/api/asserter_api/</loc>
-    <lastmod>2026-11-10T16:57:42+08:00</lastmod>
+    <lastmod>2026-10-29T11:32:30+08:00</lastmod>
     <xhtml:link
                 rel="alternate"
                 hreflang="es"
@@ -1294,7 +1324,7 @@
   
   <url>
     <loc>https://engine.speedle.io/ja/docs/</loc>
-    <lastmod>2026-11-10T16:57:42+08:00</lastmod>
+    <lastmod>2026-11-08T05:25:30+08:00</lastmod>
     <xhtml:link
                 rel="alternate"
                 hreflang="es"
@@ -1324,7 +1354,7 @@
   
   <url>
     <loc>https://engine.speedle.io/ja/docs/api/management_api/</loc>
-    <lastmod>2026-11-10T16:57:42+08:00</lastmod>
+    <lastmod>2026-10-29T11:32:30+08:00</lastmod>
     <xhtml:link
                 rel="alternate"
                 hreflang="es"
@@ -1354,7 +1384,7 @@
   
   <url>
     <loc>https://engine.speedle.io/ja/docs/api/decision_api/</loc>
-    <lastmod>2026-11-10T16:57:42+08:00</lastmod>
+    <lastmod>2026-11-09T21:18:26+08:00</lastmod>
     <xhtml:link
                 rel="alternate"
                 hreflang="es"
@@ -1384,7 +1414,7 @@
   
   <url>
     <loc>https://engine.speedle.io/ja/integrations/</loc>
-    <lastmod>2026-11-10T16:57:42+08:00</lastmod>
+    <lastmod>2026-11-10T14:45:43+08:00</lastmod>
     <xhtml:link
                 rel="alternate"
                 hreflang="es"

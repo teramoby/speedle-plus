@@ -18,8 +18,9 @@ jobs:
     # Every task but build and weekly goes to any Speedle runner
     # (speedle-runner: both charming instances and fiona). Build needs the
     # Linux Hugo release, so it stays on the charming pool. Weekly stays on
-    # fiona to reduce timing noise in its benchmark comparison. The host lock
-    # below keeps fixed-port tests from overlapping on the charming host.
+    # fiona to reduce timing noise in its benchmark comparison. The identity
+    # check also accepts donkey-speedle (Linux x64) for every task but weekly.
+    # The host lock below keeps fixed-port tests from overlapping on the charming host.
     runs-on: >-
       ${{ github.repository == 'teramoby/speedle-plus' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'schedule' && github.ref == 'refs/heads/master') || (github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.event.sender.type == 'User' || github.event.sender.type == 'Bot')) || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && (github.event.pull_request.user.type == 'User' || github.event.pull_request.user.type == 'Bot'))) && fromJSON(inputs.mode == 'build' && '["self-hosted","Linux","X64","speedle-linux"]' || inputs.mode == 'weekly' && '["self-hosted","fiona-speedle"]' || '["self-hosted","speedle-runner"]') || 'ubuntu-latest' }}
     # test can wait on the host lock behind a nightly on the other charming runner.
@@ -39,7 +40,7 @@ jobs:
         run: |
           set -euo pipefail
           case "${RUNNER_NAME}/${RUNNER_OS}/${RUNNER_ARCH}" in
-            charming-speedle/Linux/X64|charming-speedle-2/Linux/X64)
+            charming-speedle/Linux/X64|charming-speedle-2/Linux/X64|donkey-speedle/Linux/X64)
               case "${CI_TASK}" in weekly) echo "Task ${CI_TASK} runs only on fiona-speedle." >&2; exit 1 ;; esac ;;
             fiona-speedle/macOS/ARM64)
               case "${CI_TASK}" in build) echo "Task ${CI_TASK} needs a Linux runner." >&2; exit 1 ;; esac ;;

@@ -6,6 +6,7 @@ draft = false
 tags = ["v0.1.0", "api", "guide", "core"]
 categories = ["docs"]
 bref = "ポリシーの作成と管理、アクセスパターンの検出、認可評価の診断。"
+lastmod = 2026-10-28T13:16:58Z
 +++
 
 - [ポリシー管理](./policy-mgmt/)

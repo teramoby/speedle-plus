@@ -8,6 +8,7 @@ toc = true
 tocheading = "h2"
 tocsidebar = false
 bref = ""
+lastmod = 2026-11-10T14:45:43+08:00
 +++
 
 ## Speedle 임베디드 모드란 무엇인가

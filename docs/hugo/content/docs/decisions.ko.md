@@ -9,6 +9,7 @@ tocsidebar = false
 tags = ["pdp", "policy", "core"]
 categories = ["docs"]
 bref = "인가 결정을 쿼리합니다."
+lastmod = 2026-11-08T19:23:52+08:00
 +++
 
 ## 인가 결정이란 무엇인가

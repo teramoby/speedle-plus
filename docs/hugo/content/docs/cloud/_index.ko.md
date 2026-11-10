@@ -7,6 +7,7 @@ toc = false
 linksection = true
 tocheading = "h2"
 categories = ["docs"]
+lastmod = 2026-11-08T17:11:18+08:00
 +++
 
 Speedle Cloud는 오픈 소스 Speedle 정책 엔진을 기반으로 구축된 개발자용 호스팅형 접근 제어 서비스입니다. 자체 인가 서비스를 직접 운영할 필요 없이 SPDL 인가 정책 및 역할 정책을 관리하고, 플레이그라운드에서 결정을 테스트하며, 애플리케이션 서버에서 인가 API를 호출할 수 있도록 설계되었습니다.

@@ -10,6 +10,7 @@ tocheading = "h2"
 tocsidebar = false
 categories = ["docs"]
 tags = ["identity domain", "identity"]
+lastmod = 2026-10-29T11:53:01+08:00
 +++
 
 ## ID 도메인이란 무엇인가

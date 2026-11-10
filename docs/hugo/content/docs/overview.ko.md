@@ -10,6 +10,7 @@ tocsidebar = false
 tags = ["core", "pdp", "identity", "spdl"]
 categories = ["docs"]
 bref = "인가 및 접근 제어 어휘에서 Speedle의 위치"
+lastmod = 2026-11-10T14:45:43+08:00
 +++
 
 Speedle은 오픈 소스 인가 엔진입니다. 애플리케이션으로부터 "이 사용자가 이 리소스에 대해 이 작업을 수행할 수 있는가?"라는 질의를 수신하고 중앙에서 관리되는 정책에 따라 허용(Allow) 또는 거부(Deny)를 반환합니다. 이 페이지에서는 일반적인 인가 용어와 이를 구현하는 Speedle 구성 요소를 연결하고 각각의 상세 가이드 링크를 제공합니다.

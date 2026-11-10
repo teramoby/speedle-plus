@@ -6,7 +6,7 @@
     <description>Recent content in Docs on Speedle</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>es-es</language>
-    <lastBuildDate>Tue, 10 Nov 2026 18:32:58 +0800</lastBuildDate>
+    <lastBuildDate>Tue, 10 Nov 2026 14:45:43 +0800</lastBuildDate>
     
 	<atom:link href="https://engine.speedle.io/es/categories/docs/index.xml" rel="self" type="application/rss+xml" />
     
@@ -72,27 +72,6 @@ El diagnóstico expone definiciones de políticas y el contexto de la solicitud.
     </item>
     
     <item>
-      <title>Dominio de identidad</title>
-      <link>https://engine.speedle.io/es/docs/idd/</link>
-      <pubDate>Thu, 17 Jan 2019 13:20:07 +0800</pubDate>
-      
-      <guid>https://engine.speedle.io/es/docs/idd/</guid>
-      <description>¿Qué es un dominio de identidad? Un dominio de identidad (idd) es un espacio de nombres explícito para una entidad principal. Dos usuarios llamados user1 pueden pertenecer a dominios distintos. La cadena de texto es suministrada por código de integración de confianza o por un asertor de tokens configurado; no constituye una prueba de autenticación por sí misma. Speedle no infiere ni valida el modelo multiinquilino de un proveedor basándose únicamente en el nombre del dominio.</description>
-    </item>
-    
-    <item>
-      <title>C#/.NET SDK</title>
-      <link>https://engine.speedle.io/es/docs/sdks/dotnet/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://engine.speedle.io/es/docs/sdks/dotnet/</guid>
-      <description>El SDK de .NET es compatible con .NET 8 o posterior y no tiene dependencias. Paquete: Speedle.Sdk 0.2.0 en NuGet, espacio de nombres Speedle.Sdk. Referencia: speedle-sdk/dotnet.
-Los ejemplos comprueban la política descrita en la descripción general de los SDK.
-Añadir la dependencia En un nuevo proyecto de consola:
-dotnet new console -o SpeedleExample cd SpeedleExample dotnet add package Speedle.Sdk --version 0.2.0 Llamar a un Speedle local Inicie Speedle y cree la política de ejemplo como se describe en la descripción general de los SDK.</description>
-    </item>
-    
-    <item>
       <title>Descubrimiento de políticas</title>
       <link>https://engine.speedle.io/es/docs/pms/discover/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
@@ -100,58 +79,6 @@ dotnet new console -o SpeedleExample cd SpeedleExample dotnet add package Speedl
       <guid>https://engine.speedle.io/es/docs/pms/discover/</guid>
       <description>¿Qué hace el descubrimiento? El descubrimiento registra solicitudes y devuelve allowed=true con motivo 5 para una operación de registro exitosa. No demuestra que una política existente haya autorizado la operación. Utilícelo únicamente en un entorno de prueba aislado, revise las concesiones generadas y restablezca la aplicación normal de is-allowed posteriormente. Los errores de aserción o almacenamiento deben seguir gestionándose; nunca trate un error como una concesión de autorización.
 Iniciar un ejemplo local reproducible Compile los binarios mediante el Inicio rápido, luego ejecute todas las terminales desde la raíz del repositorio.</description>
-    </item>
-    
-    <item>
-      <title>Rust SDK</title>
-      <link>https://engine.speedle.io/es/docs/sdks/rust/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://engine.speedle.io/es/docs/sdks/rust/</guid>
-      <description>El SDK de Rust requiere Rust 1.75 o posterior. Es asíncrono sobre tokio y reqwest (rustls); la característica blocking añade el cliente bloqueante utilizado a continuación. Crate: speedle 0.2.0 en crates.io. Referencia: speedle-sdk/rust.
-Los ejemplos comprueban la política descrita en la descripción general de los SDK.
-Añadir la dependencia En un nuevo paquete:
-cargo new speedle-example cd speedle-example cargo add speedle@0.2.0 --features blocking Llamar a un Speedle local Inicie Speedle y cree la política de ejemplo como se describe en la descripción general de los SDK.</description>
-    </item>
-    
-    <item>
-      <title>Asertor de tokens</title>
-      <link>https://engine.speedle.io/es/docs/assertor/</link>
-      <pubDate>Mon, 21 Jan 2019 09:28:30 +0800</pubDate>
-      
-      <guid>https://engine.speedle.io/es/docs/assertor/</guid>
-      <description>¿Qué hace un asertor de tokens? Un asertor configurado valida un token y devuelve entidades principales explícitas, incluidos sus dominios de identidad. A continuación, Speedle evalúa las políticas utilizando esas identidades. Una implementación en producción debe validar la firma del token o el resultado de introspección, el emisor, la audiencia, la expiración y cualquier requisito específico del proveedor. La interfaz webhook por sí sola no establece compatibilidad automática con tokens OAuth/OIDC arbitrarios.</description>
-    </item>
-    
-    <item>
-      <title>API</title>
-      <link>https://engine.speedle.io/es/docs/api/</link>
-      <pubDate>Tue, 10 Nov 2026 18:32:58 +0800</pubDate>
-      
-      <guid>https://engine.speedle.io/es/docs/api/</guid>
-      <description>Las bibliotecas cliente para Java, Python, Go, .NET, Rust y Node.js/TypeScript se encuentran en SDK.
-APIs REST Estos son contratos de referencia para su punto de enlace configurado de PMS/ADS o asertor. speedle.io proporciona documentación y el Playground en el navegador; no es un servicio PMS/ADS hospedado. Envíe JSON con Content-Type: application/json y configure TLS/mTLS y control de acceso del cliente.
- API de gestión de políticas API de decisiones de autorización Webhook de aserción de tokens  Los identificadores de políticas y políticas de roles son cadenas de texto.</description>
-    </item>
-    
-    <item>
-      <title>Almacenamiento conectable</title>
-      <link>https://engine.speedle.io/es/docs/store/</link>
-      <pubDate>Tue, 10 Nov 2026 18:32:58 +0800</pubDate>
-      
-      <guid>https://engine.speedle.io/es/docs/store/</guid>
-      <description>Almacenes integrados y contratos de extensión Los binarios independientes registran implementaciones de archivo, etcd, MongoDB y MySQL bajo pkg/store. Su disponibilidad no implica garantías operativas idénticas; revise la autenticación del backend, persistencia, transacciones y el comportamiento de observación (watch) para su despliegue. La configuración a continuación ilustra los nombres de propiedades; la ejecución de despliegues de etcd/MongoDB queda fuera de este ejemplo local.
-Un backend completo implementa pms.PolicyStoreManager: gestión de servicios, políticas de autorización, políticas de roles y funciones, lecturas de instantáneas y watch/stop.</description>
-    </item>
-    
-    <item>
-      <title>Despliegue</title>
-      <link>https://engine.speedle.io/es/docs/deployment/</link>
-      <pubDate>Tue, 10 Nov 2026 18:32:58 +0800</pubDate>
-      
-      <guid>https://engine.speedle.io/es/docs/deployment/</guid>
-      <description>Speedle se ejecuta dentro de una aplicación Go, desde una imagen de contenedor publicada o como servicios independientes de PMS y ADS.
- Modo integrado ejecuta el evaluador en su proceso Go. Imagen de Docker ejecuta speedle-pms, speedle-ads y spctl desde docker.io/speedle/speedle o ghcr.io/teramoby/speedle.  Elija un modo de despliegue Utilice el modo integrado para ejecutar el evaluador dentro de su proceso Go. Utilice la imagen de Docker o los servicios independientes de PMS y ADS cuando las aplicaciones llamen a Speedle a través de REST o gRPC.</description>
     </item>
     
     <item>
@@ -167,43 +94,12 @@ Añadir la dependencia Maven, un pom.xml completo:
     </item>
     
     <item>
-      <title>Marco de registro</title>
-      <link>https://engine.speedle.io/es/docs/logging/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://engine.speedle.io/es/docs/logging/</guid>
-      <description>Descripción general Se utilizan los siguientes dos proyectos de código abierto para procesar mensajes de registro:
-1. https://github.com/sirupsen/logrus 2. https://github.com/natefinch/lumberjack Logrus es un registrador estructurado para Go (golang), totalmente compatible a nivel de API con el registrador de la biblioteca estándar de Go. Tenga en cuenta que logrus no admite la rotación de registros, y esa es exactamente la razón por la que incorporamos el segundo proyecto, lumberjack, que proporciona un registrador con rotación continua.</description>
-    </item>
-    
-    <item>
-      <title>Node.js/TypeScript SDK</title>
-      <link>https://engine.speedle.io/es/docs/sdks/node/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://engine.speedle.io/es/docs/sdks/node/</guid>
-      <description>El SDK de Node.js requiere Node.js 22 o posterior, incluye distribuciones ESM y CommonJS con tipos de TypeScript, y no tiene dependencias de tiempo de ejecución. Paquete: @speedle/sdk, publicado en npm. Referencia: speedle-sdk/node.
-Los ejemplos comprueban la política descrita en la descripción general de los SDK.
-Añadir la dependencia En un paquete de módulos ES nuevo:
-mkdir speedle-example cd speedle-example npm init -y npm pkg set type=module npm install @speedle/sdk@0.</description>
-    </item>
-    
-    <item>
       <title>Primeros pasos con Speedle Cloud</title>
       <link>https://engine.speedle.io/es/docs/cloud/getting-started/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/es/docs/cloud/getting-started/</guid>
       <description>Speedle Cloud estará disponible próximamente. El inicio de sesión para producción aún no está habilitado en cloud.speedle.io y el encabezado de Cloud muestra Próximamente. Cuando el inicio de sesión esté cerrado, la página de inicio de sesión indicará que abrirá pronto. Esta guía describe el flujo de trabajo publicado y no una consola de producción abierta actualmente; las capturas de pantalla se agregarán tras la apertura del inicio de sesión en producción.</description>
-    </item>
-    
-    <item>
-      <title>SDK</title>
-      <link>https://engine.speedle.io/es/docs/sdks/</link>
-      <pubDate>Tue, 10 Nov 2026 18:32:58 +0800</pubDate>
-      
-      <guid>https://engine.speedle.io/es/docs/sdks/</guid>
-      <description>Los SDK de Speedle son bibliotecas cliente para la API de decisiones POST /authz-check/v1/is-allowed. Funcionan tanto con un Speedle ADS autohospedado como con Speedle Cloud. Cada página de lenguaje muestra cómo agregar el paquete y proporciona un programa completo y probado para ambos entornos. El código fuente y la referencia completa se encuentran en teramoby/speedle-sdk. Para ejecutar PMS y ADS para estos ejemplos, consulte Despliegue y la Imagen de Docker.</description>
     </item>
     
     <item>
@@ -236,6 +132,203 @@ Emitir un token Para una cuenta que ya posee un servicio, abra Tokens de aplicac
     </item>
     
     <item>
+      <title>Imagen de Docker</title>
+      <link>https://engine.speedle.io/es/docs/deployment/docker/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/es/docs/deployment/docker/</guid>
+      <description>Speedle publica una imagen que contiene speedle-pms, speedle-ads y spctl. La imagen se compila FROM scratch, se ejecuta como UID 65532 y no contiene ningún shell. El primer argumento selecciona el programa a ejecutar.
+El mismo índice de imágenes está disponible en ambos registros:
+ Docker Hub: docker.io/speedle/speedle GHCR: ghcr.io/teramoby/speedle  La versión 1.7.0 publica las etiquetas 1.7.0, 1.7 y latest en ambos registros, para las arquitecturas linux/amd64 y linux/arm64.</description>
+    </item>
+    
+    <item>
+      <title>Políticas de Speedle</title>
+      <link>https://engine.speedle.io/es/docs/pms/</link>
+      <pubDate>Wed, 28 Oct 2026 13:16:58 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/es/docs/pms/</guid>
+      <description> Gestión de políticas Políticas globales Descubrimiento de políticas Diagnóstico de autorización  </description>
+    </item>
+    
+    <item>
+      <title>Python SDK</title>
+      <link>https://engine.speedle.io/es/docs/sdks/python/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/es/docs/sdks/python/</guid>
+      <description>El SDK de Python requiere Python 3.10 o posterior; su única dependencia de tiempo de ejecución es httpx. Cuenta con un Client síncrono y un AsyncClient asíncrono con los mismos argumentos. Paquete: speedle 0.2.0 en PyPI. Referencia: speedle-sdk/python.
+Los ejemplos comprueban la política descrita en la descripción general de los SDK.
+Añadir la dependencia Con pip, en un entorno virtual:
+python3 -m venv .venv . .venv/bin/activate pip install speedle==0.2.0 O con uv, en un proyecto uv:</description>
+    </item>
+    
+    <item>
+      <title>Vista previa de la API de autorización de Speedle Cloud</title>
+      <link>https://engine.speedle.io/es/docs/cloud/authorization-api/</link>
+      <pubDate>Sun, 08 Nov 2026 00:00:00 +0800</pubDate>
+      
+      <guid>https://engine.speedle.io/es/docs/cloud/authorization-api/</guid>
+      <description>El ADS autenticado está pendiente. Las solicitudes y ejemplos en esta página describen el contrato publicado para una futura versión; no se ejecutaron contra un entorno real de Cloud. La emisión de un token de aplicación no habilita estas llamadas. Utilice explícitamente la URL del entorno aprobado y verifique que el ADS autenticado se encuentre disponible en dicho entorno antes de la integración.
+Invocar IsAllowed desde su servidor Envíe el token emitido en un encabezado Authorization: Bearer y realice una solicitud POST:</description>
+    </item>
+    
+    <item>
+      <title>Configuración de MongoDB</title>
+      <link>https://engine.speedle.io/es/docs/store/mongodb/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/es/docs/store/mongodb/</guid>
+      <description>Esta guía paso a paso utiliza MongoDB 7.0.16 como un conjunto de réplicas (replica set) de nodo único con un volumen persistente de Docker. PMS escribe políticas y ADS sigue la misma base de datos a través de un flujo de cambios (change stream). El ejemplo escucha en la interfaz de bucle invertido (loopback) sin autenticación para desarrollo local. La autenticación para producción, TLS y la configuración del conjunto de réplicas se detallan más adelante.</description>
+    </item>
+    
+    <item>
+      <title>Decisiones de autorización</title>
+      <link>https://engine.speedle.io/es/docs/decisions/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/es/docs/decisions/</guid>
+      <description>¿Qué es una decisión de autorización? Speedle evalúa un sujeto, una acción y un recurso dentro de un servicio. La aplicación debe hacer cumplir el resultado. Trate un error de evaluación o un tiempo de espera por separado de una denegación ordinaria y falle de forma restrictiva (fail closed). Las APIs REST, gRPC y Go en modo integrado tienen representaciones de red distintas; utilice sus respectivos contratos.
+Antes de ejecutar los ejemplos Compile .</description>
+    </item>
+    
+    <item>
+      <title>Go SDK</title>
+      <link>https://engine.speedle.io/es/docs/sdks/go/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/es/docs/sdks/go/</guid>
+      <description>El SDK de Go es compatible con las dos versiones más recientes de Go y utiliza únicamente la biblioteca estándar. Módulo: github.com/teramoby/speedle-sdk/go v0.2.0, paquete speedle. Referencia: speedle-sdk/go.
+Los ejemplos comprueban la política descrita en la descripción general de los SDK.
+Añadir la dependencia En un módulo nuevo:
+go mod init example.com/speedle-example go get github.com/teramoby/speedle-sdk/go@v0.2.0 Llamar a un Speedle local Inicie Speedle y cree la política de ejemplo como se describe en la descripción general de los SDK.</description>
+    </item>
+    
+    <item>
+      <title>Instalación con Homebrew</title>
+      <link>https://engine.speedle.io/es/docs/deployment/homebrew/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/es/docs/deployment/homebrew/</guid>
+      <description>Instale la herramienta de línea de comandos de Speedle con Homebrew en macOS o Linux. Homebrew no instala ni inicia una formula de un tap fuera de la organización oficial de Homebrew hasta que ese tap sea de confianza.
+brew tap teramoby/tap brew trust teramoby/tap brew install teramoby/tap/spctl La formula se llama spctl. En macOS el comando es speedle-spctl, así que la instalación no sustituye el Gatekeeper de Apple en /usr/sbin/spctl.</description>
+    </item>
+    
+    <item>
+      <title>Límites y errores de Speedle Cloud</title>
+      <link>https://engine.speedle.io/es/docs/cloud/limits-and-errors/</link>
+      <pubDate>Sun, 08 Nov 2026 00:00:00 +0800</pubDate>
+      
+      <guid>https://engine.speedle.io/es/docs/cloud/limits-and-errors/</guid>
+      <description>Los errores y encabezados de ADS a continuación describen el contrato de ADS autenticado, cuyo entorno de ejecución aún no se encuentra disponible. El contrato de gestión ya define límites de cuenta, comprobaciones de sesión y CSRF, y errores de gestión de tokens para su uso cuando el acceso a cuentas esté habilitado. Descargar un esquema no habilita un endpoint pendiente.
+Límites    Límite Significado     10.</description>
+    </item>
+    
+    <item>
+      <title>Dominio de identidad</title>
+      <link>https://engine.speedle.io/es/docs/idd/</link>
+      <pubDate>Thu, 17 Jan 2019 13:20:07 +0800</pubDate>
+      
+      <guid>https://engine.speedle.io/es/docs/idd/</guid>
+      <description>¿Qué es un dominio de identidad? Un dominio de identidad (idd) es un espacio de nombres explícito para una entidad principal. Dos usuarios llamados user1 pueden pertenecer a dominios distintos. La cadena de texto es suministrada por código de integración de confianza o por un asertor de tokens configurado; no constituye una prueba de autenticación por sí misma. Speedle no infiere ni valida el modelo multiinquilino de un proveedor basándose únicamente en el nombre del dominio.</description>
+    </item>
+    
+    <item>
+      <title>C#/.NET SDK</title>
+      <link>https://engine.speedle.io/es/docs/sdks/dotnet/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/es/docs/sdks/dotnet/</guid>
+      <description>El SDK de .NET es compatible con .NET 8 o posterior y no tiene dependencias. Paquete: Speedle.Sdk 0.2.0 en NuGet, espacio de nombres Speedle.Sdk. Referencia: speedle-sdk/dotnet.
+Los ejemplos comprueban la política descrita en la descripción general de los SDK.
+Añadir la dependencia En un nuevo proyecto de consola:
+dotnet new console -o SpeedleExample cd SpeedleExample dotnet add package Speedle.Sdk --version 0.2.0 Llamar a un Speedle local Inicie Speedle y cree la política de ejemplo como se describe en la descripción general de los SDK.</description>
+    </item>
+    
+    <item>
+      <title>Rust SDK</title>
+      <link>https://engine.speedle.io/es/docs/sdks/rust/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/es/docs/sdks/rust/</guid>
+      <description>El SDK de Rust requiere Rust 1.75 o posterior. Es asíncrono sobre tokio y reqwest (rustls); la característica blocking añade el cliente bloqueante utilizado a continuación. Crate: speedle 0.2.0 en crates.io. Referencia: speedle-sdk/rust.
+Los ejemplos comprueban la política descrita en la descripción general de los SDK.
+Añadir la dependencia En un nuevo paquete:
+cargo new speedle-example cd speedle-example cargo add speedle@0.2.0 --features blocking Llamar a un Speedle local Inicie Speedle y cree la política de ejemplo como se describe en la descripción general de los SDK.</description>
+    </item>
+    
+    <item>
+      <title>Asertor de tokens</title>
+      <link>https://engine.speedle.io/es/docs/assertor/</link>
+      <pubDate>Mon, 21 Jan 2019 09:28:30 +0800</pubDate>
+      
+      <guid>https://engine.speedle.io/es/docs/assertor/</guid>
+      <description>¿Qué hace un asertor de tokens? Un asertor configurado valida un token y devuelve entidades principales explícitas, incluidos sus dominios de identidad. A continuación, Speedle evalúa las políticas utilizando esas identidades. Una implementación en producción debe validar la firma del token o el resultado de introspección, el emisor, la audiencia, la expiración y cualquier requisito específico del proveedor. La interfaz webhook por sí sola no establece compatibilidad automática con tokens OAuth/OIDC arbitrarios.</description>
+    </item>
+    
+    <item>
+      <title>API</title>
+      <link>https://engine.speedle.io/es/docs/api/</link>
+      <pubDate>Tue, 10 Nov 2026 14:45:43 +0800</pubDate>
+      
+      <guid>https://engine.speedle.io/es/docs/api/</guid>
+      <description>Las bibliotecas cliente para Java, Python, Go, .NET, Rust y Node.js/TypeScript se encuentran en SDK.
+APIs REST Estos son contratos de referencia para su punto de enlace configurado de PMS/ADS o asertor. speedle.io proporciona documentación y el Playground en el navegador; no es un servicio PMS/ADS hospedado. Envíe JSON con Content-Type: application/json y configure TLS/mTLS y control de acceso del cliente.
+ API de gestión de políticas API de decisiones de autorización Webhook de aserción de tokens  Los identificadores de políticas y políticas de roles son cadenas de texto.</description>
+    </item>
+    
+    <item>
+      <title>Almacenamiento conectable</title>
+      <link>https://engine.speedle.io/es/docs/store/</link>
+      <pubDate>Sat, 31 Oct 2026 22:36:36 +0800</pubDate>
+      
+      <guid>https://engine.speedle.io/es/docs/store/</guid>
+      <description>Almacenes integrados y contratos de extensión Los binarios independientes registran implementaciones de archivo, etcd, MongoDB y MySQL bajo pkg/store. Su disponibilidad no implica garantías operativas idénticas; revise la autenticación del backend, persistencia, transacciones y el comportamiento de observación (watch) para su despliegue. La configuración a continuación ilustra los nombres de propiedades; la ejecución de despliegues de etcd/MongoDB queda fuera de este ejemplo local.
+Un backend completo implementa pms.PolicyStoreManager: gestión de servicios, políticas de autorización, políticas de roles y funciones, lecturas de instantáneas y watch/stop.</description>
+    </item>
+    
+    <item>
+      <title>Despliegue</title>
+      <link>https://engine.speedle.io/es/docs/deployment/</link>
+      <pubDate>Tue, 10 Nov 2026 14:45:43 +0800</pubDate>
+      
+      <guid>https://engine.speedle.io/es/docs/deployment/</guid>
+      <description>Speedle se ejecuta dentro de una aplicación Go, desde una imagen de contenedor publicada o como servicios independientes de PMS y ADS.
+ Modo integrado ejecuta el evaluador en su proceso Go. Imagen de Docker ejecuta speedle-pms, speedle-ads y spctl desde docker.io/speedle/speedle o ghcr.io/teramoby/speedle. Homebrew instala la herramienta de línea de comandos y ambos servicios, y ejecuta una demostración local.  Elija un modo de despliegue Utilice el modo integrado para ejecutar el evaluador dentro de su proceso Go.</description>
+    </item>
+    
+    <item>
+      <title>Marco de registro</title>
+      <link>https://engine.speedle.io/es/docs/logging/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/es/docs/logging/</guid>
+      <description>Descripción general Se utilizan los siguientes dos proyectos de código abierto para procesar mensajes de registro:
+1. https://github.com/sirupsen/logrus 2. https://github.com/natefinch/lumberjack Logrus es un registrador estructurado para Go (golang), totalmente compatible a nivel de API con el registrador de la biblioteca estándar de Go. Tenga en cuenta que logrus no admite la rotación de registros, y esa es exactamente la razón por la que incorporamos el segundo proyecto, lumberjack, que proporciona un registrador con rotación continua.</description>
+    </item>
+    
+    <item>
+      <title>Node.js/TypeScript SDK</title>
+      <link>https://engine.speedle.io/es/docs/sdks/node/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/es/docs/sdks/node/</guid>
+      <description>El SDK de Node.js requiere Node.js 22 o posterior, incluye distribuciones ESM y CommonJS con tipos de TypeScript, y no tiene dependencias de tiempo de ejecución. Paquete: @speedle/sdk, publicado en npm. Referencia: speedle-sdk/node.
+Los ejemplos comprueban la política descrita en la descripción general de los SDK.
+Añadir la dependencia En un paquete de módulos ES nuevo:
+mkdir speedle-example cd speedle-example npm init -y npm pkg set type=module npm install @speedle/sdk@0.</description>
+    </item>
+    
+    <item>
+      <title>SDK</title>
+      <link>https://engine.speedle.io/es/docs/sdks/</link>
+      <pubDate>Tue, 10 Nov 2026 14:45:43 +0800</pubDate>
+      
+      <guid>https://engine.speedle.io/es/docs/sdks/</guid>
+      <description>Los SDK de Speedle son bibliotecas cliente para la API de decisiones POST /authz-check/v1/is-allowed. Funcionan tanto con un Speedle ADS autohospedado como con Speedle Cloud. Cada página de lenguaje muestra cómo agregar el paquete y proporciona un programa completo y probado para ambos entornos. El código fuente y la referencia completa se encuentran en teramoby/speedle-sdk. Para ejecutar PMS y ADS para estos ejemplos, consulte Despliegue y la Imagen de Docker.</description>
+    </item>
+    
+    <item>
       <title>Seguridad</title>
       <link>https://engine.speedle.io/es/docs/security/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
@@ -248,7 +341,7 @@ TLS cifra la conexión y autentica al servidor. Para requerir clientes autentica
     <item>
       <title>Speedle Cloud</title>
       <link>https://engine.speedle.io/es/docs/cloud/</link>
-      <pubDate>Tue, 10 Nov 2026 18:32:58 +0800</pubDate>
+      <pubDate>Sun, 08 Nov 2026 17:11:18 +0800</pubDate>
       
       <guid>https://engine.speedle.io/es/docs/cloud/</guid>
       <description>Speedle Cloud es un servicio de control de acceso hospedado para desarrolladores, creado sobre el motor de políticas de código abierto Speedle. Está diseñado para permitirle gestionar políticas de autorización y roles en SPDL, probar decisiones en un Playground e invocar una API de autorización desde el servidor de su aplicación sin necesidad de operar su propio servicio de autorización.
@@ -308,101 +401,18 @@ Configuración de seguridad y endpoints. Esta es una referencia de contrato, no 
     </item>
     
     <item>
-      <title>Imagen de Docker</title>
-      <link>https://engine.speedle.io/es/docs/deployment/docker/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://engine.speedle.io/es/docs/deployment/docker/</guid>
-      <description>Speedle publica una imagen que contiene speedle-pms, speedle-ads y spctl. La imagen se compila FROM scratch, se ejecuta como UID 65532 y no contiene ningún shell. El primer argumento selecciona el programa a ejecutar.
-El mismo índice de imágenes está disponible en ambos registros:
- Docker Hub: docker.io/speedle/speedle GHCR: ghcr.io/teramoby/speedle  La versión 1.7.0 publica las etiquetas 1.7.0, 1.7 y latest en ambos registros, para las arquitecturas linux/amd64 y linux/arm64.</description>
-    </item>
-    
-    <item>
-      <title>Políticas de Speedle</title>
-      <link>https://engine.speedle.io/es/docs/pms/</link>
-      <pubDate>Tue, 10 Nov 2026 18:32:58 +0800</pubDate>
-      
-      <guid>https://engine.speedle.io/es/docs/pms/</guid>
-      <description> Gestión de políticas Políticas globales Descubrimiento de políticas Diagnóstico de autorización  </description>
-    </item>
-    
-    <item>
-      <title>Python SDK</title>
-      <link>https://engine.speedle.io/es/docs/sdks/python/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://engine.speedle.io/es/docs/sdks/python/</guid>
-      <description>El SDK de Python requiere Python 3.10 o posterior; su única dependencia de tiempo de ejecución es httpx. Cuenta con un Client síncrono y un AsyncClient asíncrono con los mismos argumentos. Paquete: speedle 0.2.0 en PyPI. Referencia: speedle-sdk/python.
-Los ejemplos comprueban la política descrita en la descripción general de los SDK.
-Añadir la dependencia Con pip, en un entorno virtual:
-python3 -m venv .venv . .venv/bin/activate pip install speedle==0.2.0 O con uv, en un proyecto uv:</description>
-    </item>
-    
-    <item>
-      <title>Vista previa de la API de autorización de Speedle Cloud</title>
-      <link>https://engine.speedle.io/es/docs/cloud/authorization-api/</link>
-      <pubDate>Sun, 08 Nov 2026 00:00:00 +0800</pubDate>
-      
-      <guid>https://engine.speedle.io/es/docs/cloud/authorization-api/</guid>
-      <description>El ADS autenticado está pendiente. Las solicitudes y ejemplos en esta página describen el contrato publicado para una futura versión; no se ejecutaron contra un entorno real de Cloud. La emisión de un token de aplicación no habilita estas llamadas. Utilice explícitamente la URL del entorno aprobado y verifique que el ADS autenticado se encuentre disponible en dicho entorno antes de la integración.
-Invocar IsAllowed desde su servidor Envíe el token emitido en un encabezado Authorization: Bearer y realice una solicitud POST:</description>
-    </item>
-    
-    <item>
-      <title>Configuración de MongoDB</title>
-      <link>https://engine.speedle.io/es/docs/store/mongodb/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://engine.speedle.io/es/docs/store/mongodb/</guid>
-      <description>Esta guía paso a paso utiliza MongoDB 7.0.16 como un conjunto de réplicas (replica set) de nodo único con un volumen persistente de Docker. PMS escribe políticas y ADS sigue la misma base de datos a través de un flujo de cambios (change stream). El ejemplo escucha en la interfaz de bucle invertido (loopback) sin autenticación para desarrollo local. La autenticación para producción, TLS y la configuración del conjunto de réplicas se detallan más adelante.</description>
-    </item>
-    
-    <item>
-      <title>Decisiones de autorización</title>
-      <link>https://engine.speedle.io/es/docs/decisions/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://engine.speedle.io/es/docs/decisions/</guid>
-      <description>¿Qué es una decisión de autorización? Speedle evalúa un sujeto, una acción y un recurso dentro de un servicio. La aplicación debe hacer cumplir el resultado. Trate un error de evaluación o un tiempo de espera por separado de una denegación ordinaria y falle de forma restrictiva (fail closed). Las APIs REST, gRPC y Go en modo integrado tienen representaciones de red distintas; utilice sus respectivos contratos.
-Antes de ejecutar los ejemplos Compile .</description>
-    </item>
-    
-    <item>
       <title>Documentación</title>
       <link>https://engine.speedle.io/es/docs/</link>
-      <pubDate>Tue, 10 Nov 2026 18:32:58 +0800</pubDate>
+      <pubDate>Sun, 08 Nov 2026 05:25:30 +0800</pubDate>
       
       <guid>https://engine.speedle.io/es/docs/</guid>
       <description></description>
     </item>
     
     <item>
-      <title>Go SDK</title>
-      <link>https://engine.speedle.io/es/docs/sdks/go/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://engine.speedle.io/es/docs/sdks/go/</guid>
-      <description>El SDK de Go es compatible con las dos versiones más recientes de Go y utiliza únicamente la biblioteca estándar. Módulo: github.com/teramoby/speedle-sdk/go v0.2.0, paquete speedle. Referencia: speedle-sdk/go.
-Los ejemplos comprueban la política descrita en la descripción general de los SDK.
-Añadir la dependencia En un módulo nuevo:
-go mod init example.com/speedle-example go get github.com/teramoby/speedle-sdk/go@v0.2.0 Llamar a un Speedle local Inicie Speedle y cree la política de ejemplo como se describe en la descripción general de los SDK.</description>
-    </item>
-    
-    <item>
-      <title>Límites y errores de Speedle Cloud</title>
-      <link>https://engine.speedle.io/es/docs/cloud/limits-and-errors/</link>
-      <pubDate>Sun, 08 Nov 2026 00:00:00 +0800</pubDate>
-      
-      <guid>https://engine.speedle.io/es/docs/cloud/limits-and-errors/</guid>
-      <description>Los errores y encabezados de ADS a continuación describen el contrato de ADS autenticado, cuyo entorno de ejecución aún no se encuentra disponible. El contrato de gestión ya define límites de cuenta, comprobaciones de sesión y CSRF, y errores de gestión de tokens para su uso cuando el acceso a cuentas esté habilitado. Descargar un esquema no habilita un endpoint pendiente.
-Límites    Límite Significado     10.</description>
-    </item>
-    
-    <item>
       <title>Integraciones</title>
       <link>https://engine.speedle.io/es/integrations/</link>
-      <pubDate>Tue, 10 Nov 2026 18:32:58 +0800</pubDate>
+      <pubDate>Tue, 10 Nov 2026 14:45:43 +0800</pubDate>
       
       <guid>https://engine.speedle.io/es/integrations/</guid>
       <description>Speedle toma decisiones de autorización. Un punto de aplicación de políticas (PEP) en su aplicación, puerta de enlace o plataforma llama a Speedle para cada decisión y aplica el resultado. Las siguientes interfaces son compatibles actualmente.

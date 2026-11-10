@@ -18,7 +18,7 @@
 <link rel="alternate" hreflang="zh-CN" href="https://engine.speedle.io/zh/quick-start/">
 <link rel="alternate" hreflang="x-default" href="https://engine.speedle.io/quick-start/">
 <meta property="og:type" content="article">
-<meta property="article:modified_time" content="2026-11-10T16:57:42&#43;08:00">
+<meta property="article:modified_time" content="2026-11-10T17:04:32&#43;08:00">
 <meta property="og:site_name" content="Speedle Engine">
 <meta property="og:title" content="クイックスタート · Speedle Engine">
 <meta property="og:description" content="go install またはソースコードから Speedle をインストールし、ポリシー管理、直接認可、ロール認可、条件付き（ABAC）決定、拒否を検証します。">
@@ -108,9 +108,9 @@
 <h3 id="ルート-a-最新リリースのインストール">ルート A: 最新リリースのインストール</h3>
 
 <!-- quick-start: install -->
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#8be9fd;font-style:italic">GOBIN</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;</span><span style="color:#8be9fd;font-style:italic">$PWD</span><span style="color:#f1fa8c">/bin&#34;</span> go install github.com/teramoby/speedle-plus/cmd/...@v1.7.0
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#8be9fd;font-style:italic">GOBIN</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;</span><span style="color:#8be9fd;font-style:italic">$PWD</span><span style="color:#f1fa8c">/bin&#34;</span> go install github.com/teramoby/speedle-plus/cmd/...@v1.7.1
 ls bin</code></pre></div>
-<p><code>GOBIN</code> により、実行可能ファイルがこのディレクトリの <code>bin</code> フォルダー内に保持されます。指定しない場合、Go は <code>$(go env GOPATH)/bin</code> に書き込みます。<code>v1.7.0</code> は執筆時点での最新リリースタグです。<code>go install</code> はタグ付けされたソースからビルドし、Go チェックサムデータベースと照合して検証します。</p>
+<p><code>GOBIN</code> により、実行可能ファイルがこのディレクトリの <code>bin</code> フォルダー内に保持されます。指定しない場合、Go は <code>$(go env GOPATH)/bin</code> に書き込みます。<code>v1.7.1</code> は執筆時点での最新リリースタグです。<code>go install</code> はタグ付けされたソースからビルドし、Go チェックサムデータベースと照合して検証します。</p>
 
 <h3 id="ルート-b-クローンしてビルド">ルート B: クローンしてビルド</h3>
 

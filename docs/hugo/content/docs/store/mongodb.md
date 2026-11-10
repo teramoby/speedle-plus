@@ -8,6 +8,7 @@ tocheading = "h2"
 tags = ["storage", "mongodb"]
 categories = ["docs"]
 bref = "Run a MongoDB replica set, connect PMS and ADS, verify live policy updates, and save a backup."
+lastmod = 2026-10-31T22:36:36+08:00
 +++
 
 This walkthrough uses **MongoDB 7.0.16** as a single-node replica set with a persistent Docker volume. PMS writes policies and ADS follows the same database through a change stream. The example listens on loopback without authentication for local development. Production authentication, TLS and replica set configuration follow the walkthrough.

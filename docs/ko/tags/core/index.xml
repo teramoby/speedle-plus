@@ -6,7 +6,7 @@
     <description>Recent content in Core on Speedle</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>ko-kr</language>
-    <lastBuildDate>Tue, 10 Nov 2026 17:19:04 +0800</lastBuildDate>
+    <lastBuildDate>Tue, 10 Nov 2026 14:45:43 +0800</lastBuildDate>
     
 	<atom:link href="https://engine.speedle.io/ko/tags/core/index.xml" rel="self" type="application/rss+xml" />
     
@@ -14,7 +14,7 @@
     <item>
       <title>API</title>
       <link>https://engine.speedle.io/ko/docs/api/</link>
-      <pubDate>Tue, 10 Nov 2026 17:19:04 +0800</pubDate>
+      <pubDate>Tue, 10 Nov 2026 14:45:43 +0800</pubDate>
       
       <guid>https://engine.speedle.io/ko/docs/api/</guid>
       <description>Java, Python, Go, .NET, Rust, Node.js/TypeScript용 클라이언트 라이브러리는 SDK에서 제공됩니다.
@@ -44,7 +44,7 @@ REST API 이는 구성된 PMS/ADS 또는 어서터(Asserter) 엔드포인트의 
     <item>
       <title>Speedle 정책</title>
       <link>https://engine.speedle.io/ko/docs/pms/</link>
-      <pubDate>Tue, 10 Nov 2026 17:19:04 +0800</pubDate>
+      <pubDate>Wed, 28 Oct 2026 13:16:58 +0000</pubDate>
       
       <guid>https://engine.speedle.io/ko/docs/pms/</guid>
       <description> 정책 관리 글로벌 정책 정책 발견 인가 진단  </description>

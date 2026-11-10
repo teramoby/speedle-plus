@@ -9,6 +9,7 @@ tocheading = "h2"
 tags = ["api", "sdk"]
 categories = ["docs"]
 bref = "Añada el crate speedle 0.2.0 con cargo add, y luego llame a is_allowed y check frente a un Speedle local o Speedle Cloud."
+lastmod = 2026-11-07T19:43:15+08:00
 +++
 
 El SDK de Rust requiere Rust 1.75 o posterior. Es asíncrono sobre `tokio` y `reqwest` (rustls); la característica `blocking` añade el cliente bloqueante utilizado a continuación. Crate: [`speedle`](https://crates.io/crates/speedle) 0.2.0 en crates.io. Referencia: [speedle-sdk/rust](https://github.com/teramoby/speedle-sdk/tree/main/rust).

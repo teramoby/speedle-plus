@@ -9,6 +9,7 @@ tocsidebar = false
 tags = ["policy", "core", "discovery"]
 categories = ["docs"]
 bref = ""
+lastmod = 2026-11-08T11:21:16+08:00
 +++
 
 ## 策略发现的作用

@@ -6,7 +6,7 @@
     <description>Recent content in Api on Speedle</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>ja-jp</language>
-    <lastBuildDate>Tue, 10 Nov 2026 16:57:42 +0800</lastBuildDate>
+    <lastBuildDate>Tue, 10 Nov 2026 14:45:43 +0800</lastBuildDate>
     
 	<atom:link href="https://engine.speedle.io/ja/tags/api/index.xml" rel="self" type="application/rss+xml" />
     
@@ -14,7 +14,7 @@
     <item>
       <title>API</title>
       <link>https://engine.speedle.io/ja/docs/api/</link>
-      <pubDate>Tue, 10 Nov 2026 16:57:42 +0800</pubDate>
+      <pubDate>Tue, 10 Nov 2026 14:45:43 +0800</pubDate>
       
       <guid>https://engine.speedle.io/ja/docs/api/</guid>
       <description>Java、Python、Go、.NET、Rust、Node.js/TypeScript 向けのクライアントライブラリは SDK にあります。
@@ -106,7 +106,7 @@ use speedle::blocking::Client; use speedle::{Auth, Backend}; fn main() { if let 
     <item>
       <title>Speedle ポリシー</title>
       <link>https://engine.speedle.io/ja/docs/pms/</link>
-      <pubDate>Tue, 10 Nov 2026 16:57:42 +0800</pubDate>
+      <pubDate>Wed, 28 Oct 2026 13:16:58 +0000</pubDate>
       
       <guid>https://engine.speedle.io/ja/docs/pms/</guid>
       <description> ポリシー管理 グローバルポリシー ポリシー検出 認可診断  </description>

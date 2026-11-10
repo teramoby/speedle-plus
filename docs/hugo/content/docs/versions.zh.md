@@ -9,6 +9,7 @@ tocsidebar = false
 tags = ["releases", "versions"]
 categories = ["docs"]
 bref = "发布版本 — Speedle 遵循语义化版本规范"
+lastmod = 2026-11-10T14:45:43+08:00
 +++
 
 ## Speedle 发布版本

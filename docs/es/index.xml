@@ -6,7 +6,7 @@
     <description>Recent content in Speedle: Motor de autorización rápido y sencillo on Speedle</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>es-es</language>
-    <lastBuildDate>Tue, 10 Nov 2026 18:32:58 +0800</lastBuildDate>
+    <lastBuildDate>Sun, 08 Nov 2026 00:00:00 +0800</lastBuildDate>
     
 	<atom:link href="https://engine.speedle.io/es/index.xml" rel="self" type="application/rss+xml" />
     
@@ -237,6 +237,16 @@ Antes de ejecutar los ejemplos Compile .</description>
 Los ejemplos comprueban la política descrita en la descripción general de los SDK.
 Añadir la dependencia En un módulo nuevo:
 go mod init example.com/speedle-example go get github.com/teramoby/speedle-sdk/go@v0.2.0 Llamar a un Speedle local Inicie Speedle y cree la política de ejemplo como se describe en la descripción general de los SDK.</description>
+    </item>
+    
+    <item>
+      <title>Instalación con Homebrew</title>
+      <link>https://engine.speedle.io/es/docs/deployment/homebrew/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/es/docs/deployment/homebrew/</guid>
+      <description>Instale la herramienta de línea de comandos de Speedle con Homebrew en macOS o Linux. Homebrew no instala ni inicia una formula de un tap fuera de la organización oficial de Homebrew hasta que ese tap sea de confianza.
+brew tap teramoby/tap brew trust teramoby/tap brew install teramoby/tap/spctl La formula se llama spctl. En macOS el comando es speedle-spctl, así que la instalación no sustituye el Gatekeeper de Apple en /usr/sbin/spctl.</description>
     </item>
     
     <item>

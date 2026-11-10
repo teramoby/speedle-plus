@@ -8,6 +8,7 @@ tocheading = "h2"
 tags = ["storage", "mysql"]
 categories = ["docs"]
 bref = "Cree una base de datos, configure PMS y ADS, luego verifique la autorización y la sincronización automática de políticas."
+lastmod = 2026-10-31T22:36:36+08:00
 +++
 
 Esta guía utiliza **MySQL 8.4 LTS** y dos procesos nativos de Speedle: PMS escribe políticas y ADS lee la misma base de datos con una cuenta independiente de solo lectura. El ejemplo local utiliza Docker y HTTP en texto plano en la interfaz de bucle invertido (loopback). Para un despliegue remoto, utilice su servidor MySQL existente y consulte la [guía de Seguridad](/es/docs/security/).

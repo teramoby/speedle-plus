@@ -6,7 +6,7 @@
     <description>Recent content in Speedle: 빠르고 간단한 인가 엔진 on Speedle</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>ko-kr</language>
-    <lastBuildDate>Tue, 10 Nov 2026 17:19:04 +0800</lastBuildDate>
+    <lastBuildDate>Wed, 27 May 2020 07:48:20 +0800</lastBuildDate>
     
 	<atom:link href="https://engine.speedle.io/ko/index.xml" rel="self" type="application/rss+xml" />
     
@@ -223,6 +223,18 @@ git clone --depth 1 https://github.com/teramoby/speedle-plus.git cd speedle-plus
 의존성 추가 새 모듈에서 다음을 실행합니다:
 go mod init example.com/speedle-example go get github.com/teramoby/speedle-sdk/go@v0.2.0 로컬 Speedle 호출 SDK 개요의 설명에 따라 Speedle을 시작하고 예제 정책을 생성합니다. 이 프로그램을 main.go로 저장합니다:
 package main import ( &amp;#34;context&amp;#34; &amp;#34;fmt&amp;#34; &amp;#34;os&amp;#34; speedle &amp;#34;github.com/teramoby/speedle-sdk/go&amp;#34; ) func main() { client, err := speedle.</description>
+    </item>
+    
+    <item>
+      <title>Homebrew 설치</title>
+      <link>https://engine.speedle.io/ko/docs/deployment/homebrew/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/ko/docs/deployment/homebrew/</guid>
+      <description>macOS 또는 Linux에서 Homebrew로 Speedle 명령줄 도구를 설치합니다. Homebrew는 공식 조직 밖의 tap에 있는 formula를 신뢰하기 전에는 그 formula를 설치하거나 시작하지 않습니다.
+brew tap teramoby/tap brew trust teramoby/tap brew install teramoby/tap/spctl Formula 이름은 spctl입니다. macOS에서 명령은 speedle-spctl이므로, 이 설치는 Apple Gatekeeper의 /usr/sbin/spctl을 바꾸지 않습니다. Linux에서는 같은 프로그램을 spctl로도 호출할 수 있습니다.
+정책 관리 서비스와 인가 결정 서비스는 별도의 formula입니다.
+brew install teramoby/tap/speedle-pms brew install teramoby/tap/speedle-ads 명령줄 도구와 두 서비스를 함께 설치합니다.</description>
     </item>
     
     <item>

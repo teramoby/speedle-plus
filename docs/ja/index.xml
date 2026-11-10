@@ -6,7 +6,7 @@
     <description>Recent content in Speedle: 高速・シンプルな認可エンジン on Speedle</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>ja-jp</language>
-    <lastBuildDate>Tue, 10 Nov 2026 16:57:42 +0800</lastBuildDate>
+    <lastBuildDate>Wed, 27 May 2020 07:48:20 +0800</lastBuildDate>
     
 	<atom:link href="https://engine.speedle.io/ja/index.xml" rel="self" type="application/rss+xml" />
     
@@ -286,6 +286,22 @@ docker run --name speedle-etcd --detach \  --publish 127.0.0.1:2379:2379 \  --vo
 依存関係の追加 新しいモジュールで以下を実行します:
 go mod init example.com/speedle-example go get github.com/teramoby/speedle-sdk/go@v0.2.0 ローカルの Speedle の呼び出し SDK 概要 の説明に従って Speedle を起動し、サンプルポリシーを作成します。このプログラムを main.go として保存します:
 package main import ( &amp;#34;context&amp;#34; &amp;#34;fmt&amp;#34; &amp;#34;os&amp;#34; speedle &amp;#34;github.com/teramoby/speedle-sdk/go&amp;#34; ) func main() { client, err := speedle.NewClient(speedle.Config{ Backend: speedle.BackendSpeedle, Endpoint: &amp;#34;http://localhost:6734&amp;#34;, Auth: speedle.NoAuth(), ServiceName: &amp;#34;docs&amp;#34;, }) if err != nil { fmt.Fprintln(os.Stderr, &amp;#34;Speedle error:&amp;#34;, err) os.Exit(1) } defer client.</description>
+    </item>
+    
+    <item>
+      <title>Homebrew でのインストール</title>
+      <link>https://engine.speedle.io/ja/docs/deployment/homebrew/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/ja/docs/deployment/homebrew/</guid>
+      <description>macOS または Linux で Homebrew を使い、Speedle のコマンドラインツールをインストールします。Homebrew は、公式組織以外の tap にある formula を信頼するまで、その formula をインストールまたは起動しません。
+brew tap teramoby/tap brew trust teramoby/tap brew install teramoby/tap/spctl Formula の名前は spctl です。macOS でのコマンドは speedle-spctl なので、このインストールは Apple Gatekeeper の /usr/sbin/spctl を置き換えません。Linux では同じプログラムを spctl としても使えます。
+ポリシー管理サービスと認可決定サービスは別の formula です。
+brew install teramoby/tap/speedle-pms brew install teramoby/tap/speedle-ads コマンドラインツールと両方のサービスをまとめてインストールします。
+brew install teramoby/tap/speedle spctl、speedle-pms、speedle-ads はそれぞれ、そのリリースの macOS または Linux バイナリをインストールし、そのリリースの checksums.txt と照合します。
+
+Homebrew でのデモ 両方のサービスを起動します。これらは 127.0.0.1 で待ち受け、1 つのファイルポリシーストアを共有します。
+brew services start speedle-pms brew services start speedle-ads speedle-pms は 127.</description>
     </item>
     
     <item>

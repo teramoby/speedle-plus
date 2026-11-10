@@ -6,7 +6,7 @@
     <description>Recent content in Storage on Speedle</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>ja-jp</language>
-    <lastBuildDate>Tue, 10 Nov 2026 16:57:42 +0800</lastBuildDate>
+    <lastBuildDate>Sat, 31 Oct 2026 22:36:36 +0800</lastBuildDate>
     
 	<atom:link href="https://engine.speedle.io/ja/tags/storage/index.xml" rel="self" type="application/rss+xml" />
     
@@ -54,7 +54,7 @@ docker run --name speedle-etcd --detach \  --publish 127.0.0.1:2379:2379 \  --vo
     <item>
       <title>プラグイン可能なストレージ</title>
       <link>https://engine.speedle.io/ja/docs/store/</link>
-      <pubDate>Tue, 10 Nov 2026 16:57:42 +0800</pubDate>
+      <pubDate>Sat, 31 Oct 2026 22:36:36 +0800</pubDate>
       
       <guid>https://engine.speedle.io/ja/docs/store/</guid>
       <description>組み込みストアと拡張コントラクト スタンドアロンバイナリは、pkg/store 配下にファイル、etcd、MongoDB、MySQL の実装を登録します。利用可能であることは同じ運用上の保証を意味するわけではありません。デプロイにあたっては、バックエンドの認証、永続化、トランザクション、および watch の動作を個別に確認してください。以下の設定例はプロパティ名を示すためのものであり、etcd/MongoDB デプロイの実行はこのローカルサンプルの対象外です。

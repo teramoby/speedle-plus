@@ -9,6 +9,7 @@ tocheading = "h2"
 tags = ["api", "sdk"]
 categories = ["docs"]
 bref = "pip 또는 uv로 speedle 0.2.0을 설치하고 로컬 Speedle 또는 Speedle Cloud에 대해 is_allowed 및 check를 호출합니다."
+lastmod = 2026-11-07T19:43:15+08:00
 +++
 
 Python SDK는 Python 3.10 이상이 필요합니다. 런타임 의존성은 `httpx`뿐입니다. 동일한 인수를 사용하는 동기식 `Client`와 asyncio용 `AsyncClient`를 모두 제공합니다. 패키지: PyPI의 [`speedle`](https://pypi.org/project/speedle/) 0.2.0. 참조 문서: [speedle-sdk/python](https://github.com/teramoby/speedle-sdk/tree/main/python).

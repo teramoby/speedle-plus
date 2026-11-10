@@ -6,6 +6,7 @@ draft = false
 toc = true
 tocheading = "h2"
 categories = ["docs"]
+lastmod = 2026-11-08T17:11:18+08:00
 +++
 
 애플리케이션 토큰을 사용하면 백엔드 애플리케이션에서 Speedle Cloud의 인가 API를 인증하여 호출할 수 있습니다.

@@ -6,6 +6,7 @@ draft = false
 toc = true
 tocheading = "h2"
 categories = ["docs"]
+lastmod = 2026-11-08T17:11:18+08:00
 +++
 
 ### 전송 속도 제한 및 쿼터

@@ -8,6 +8,7 @@ tocheading = "h2"
 tags = ["storage", "mongodb"]
 categories = ["docs"]
 bref = "启动 MongoDB 副本集，连接 PMS 与 ADS，验证策略自动更新，并创建备份。"
+lastmod = 2026-11-08T11:21:16+08:00
 +++
 
 本指南使用 **MongoDB 7.0.16** 单节点副本集和 Docker 持久化卷。PMS 写入策略，ADS 通过 change stream 跟踪同一个数据库。本地示例只监听回环地址且不开启身份认证，用于开发环境；生产环境的身份认证、TLS 与副本集配置见后文。

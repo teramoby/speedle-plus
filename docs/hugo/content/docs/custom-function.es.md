@@ -9,6 +9,7 @@ toc = true
 tocheading = "h2"
 tocsidebar = false
 categories = ["docs"]
+lastmod = 2026-11-07T01:07:23+08:00
 +++
 
 ## ¿Por qué utilizar una función personalizada?

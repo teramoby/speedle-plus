@@ -6,7 +6,7 @@
     <description>Recent content in Pluggable on Speedle</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>es-es</language>
-    <lastBuildDate>Tue, 10 Nov 2026 18:32:58 +0800</lastBuildDate>
+    <lastBuildDate>Sat, 31 Oct 2026 22:36:36 +0800</lastBuildDate>
     
 	<atom:link href="https://engine.speedle.io/es/tags/pluggable/index.xml" rel="self" type="application/rss+xml" />
     
@@ -25,7 +25,7 @@ Configuración de seguridad y endpoints. Esta es una referencia de contrato, no 
     <item>
       <title>Almacenamiento conectable</title>
       <link>https://engine.speedle.io/es/docs/store/</link>
-      <pubDate>Tue, 10 Nov 2026 18:32:58 +0800</pubDate>
+      <pubDate>Sat, 31 Oct 2026 22:36:36 +0800</pubDate>
       
       <guid>https://engine.speedle.io/es/docs/store/</guid>
       <description>Almacenes integrados y contratos de extensión Los binarios independientes registran implementaciones de archivo, etcd, MongoDB y MySQL bajo pkg/store. Su disponibilidad no implica garantías operativas idénticas; revise la autenticación del backend, persistencia, transacciones y el comportamiento de observación (watch) para su despliegue. La configuración a continuación ilustra los nombres de propiedades; la ejecución de despliegues de etcd/MongoDB queda fuera de este ejemplo local.

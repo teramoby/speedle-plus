@@ -9,6 +9,7 @@ tocheading = "h2"
 tags = ["api", "sdk"]
 categories = ["docs"]
 bref = "pip または uv で speedle 0.2.0 をインストールし、ローカルの Speedle または Speedle Cloud に対して is_allowed と check を呼び出します。"
+lastmod = 2026-11-07T19:43:15+08:00
 +++
 
 Python SDK は Python 3.10 以降が必要です。ランタイム依存関係は `httpx` のみです。同じ引数を持つ同期の `Client` と asyncio の `AsyncClient` を備えています。パッケージ: PyPI の [`speedle`](https://pypi.org/project/speedle/) 0.2.0。リファレンス: [speedle-sdk/python](https://github.com/teramoby/speedle-sdk/tree/main/python)。

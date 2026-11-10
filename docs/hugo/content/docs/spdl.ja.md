@@ -10,6 +10,7 @@ tocsidebar = false
 tags = ["v0.1.0", "core", "policy", "spdl"]
 categories = ["docs"]
 bref = "SPDL の基礎"
+lastmod = 2026-11-08T20:01:50+08:00
 +++
 
 SPDL は Speedle ポリシーおよびロールポリシーを記述するための言語です。このページでは構文、命名規則、およびサンプルを説明します。

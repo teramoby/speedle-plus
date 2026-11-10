@@ -7,6 +7,7 @@ toc = false
 tocheading = "h2"
 tocsidebar = false
 bref = "Speedle 아키텍처"
+lastmod = 2026-11-08T08:33:54+08:00
 +++
 
 ## 모듈

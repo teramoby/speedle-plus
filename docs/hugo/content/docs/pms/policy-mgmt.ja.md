@@ -9,6 +9,7 @@ tocsidebar = false
 tags = ["pms", "policy", "core"]
 categories = ["docs"]
 bref = "ポリシー管理の基本"
+lastmod = 2026-11-09T07:57:54+08:00
 +++
 
 ## Speedle ポリシーとは？

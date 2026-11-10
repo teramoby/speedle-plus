@@ -9,6 +9,7 @@ tocsidebar = false
 tags = ["policy", "core", "discovery"]
 categories = ["docs"]
 bref = "アクセスリクエストを記録し、認可ポリシーを生成して、通常の認可チェックに戻します。"
+lastmod = 2026-10-29T11:32:30+08:00
 +++
 
 ## ポリシー検出の役割

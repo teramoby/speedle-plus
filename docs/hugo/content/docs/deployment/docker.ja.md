@@ -8,6 +8,7 @@ toc = true
 tocheading = "h2"
 categories = ["docs"]
 bref = "Docker Hub と GHCR 上の同一イメージが、共有ファイルストアを使用してポリシーマネージャー、決定サービス、spctl を実行します。"
+lastmod = 2026-11-10T14:45:43+08:00
 +++
 
 Speedle は、`speedle-pms`、`speedle-ads`、および `spctl` を含む 1 つのイメージを公開しています。イメージは `FROM scratch` でビルドされ、UID 65532 として実行され、シェルは含まれていません。最初の引数でプログラムを選択します。

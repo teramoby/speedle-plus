@@ -8,6 +8,7 @@ toc = true
 tocheading = "h2"
 tocsidebar = false
 bref = ""
+lastmod = 2026-11-10T14:45:43+08:00
 +++
 
 ## ¿Qué es el modo integrado?

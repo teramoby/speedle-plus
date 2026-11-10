@@ -10,6 +10,7 @@ tocheading = "h2"
 tags = ["storage", "pluggable"]
 categories = ["docs"]
 bref = "Speedle에는 파일, etcd, MongoDB, MySQL 정책 저장소가 포함되어 있습니다. 이 문서에서는 해당 구성과 다른 저장소를 구현하거나 등록하는 방법을 설명합니다."
+lastmod = 2026-10-31T22:36:36+08:00
 +++
 
 ## 기본 내장 저장소와 확장 계약

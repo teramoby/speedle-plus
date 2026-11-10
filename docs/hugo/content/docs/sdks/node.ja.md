@@ -9,6 +9,7 @@ tocheading = "h2"
 tags = ["api", "sdk"]
 categories = ["docs"]
 bref = "npm で @speedle/sdk をインストールし、ローカルの Speedle または Speedle Cloud に対して isAllowed と check を呼び出します。"
+lastmod = 2026-11-10T09:48:45+08:00
 +++
 
 Node.js SDK は Node.js 22 以降が必要で、TypeScript の型定義を含む ESM および CommonJS ビルドを提供し、ランタイム依存関係はありません。パッケージ: npm の [`@speedle/sdk`](https://www.npmjs.com/package/@speedle/sdk)。リファレンス: [speedle-sdk/node](https://github.com/teramoby/speedle-sdk/tree/main/node)。

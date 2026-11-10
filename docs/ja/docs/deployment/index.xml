@@ -6,7 +6,7 @@
     <description>Recent content in デプロイ on Speedle</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>ja-jp</language>
-    <lastBuildDate>Tue, 10 Nov 2026 16:57:42 +0800</lastBuildDate>
+    <lastBuildDate>Tue, 10 Nov 2026 14:45:43 +0800</lastBuildDate>
     
 	<atom:link href="https://engine.speedle.io/ja/docs/deployment/index.xml" rel="self" type="application/rss+xml" />
     
@@ -40,6 +40,22 @@ mkdir speedle-embedded-demo cd speedle-embedded-demo go mod init example.com/spe
 インデックスダイジェストを確認するには:
 docker buildx imagetools inspect docker.io/speedle/speedle:1.7.0 --format &amp;#39;{{.Manifest.Digest}}&amp;#39; 1.7.0 リリースの場合、両方のレジストリ上の 1.7.0、1.7、および latest はすべて以下を出力します:
 sha256:20bd3fe8169ec3ddadf1484285e34bd68004dbb457782223dc84a2a9f1dd91c0 1.7 または latest をデプロイする前に、ダイジェストを再度確認してください。単一のビルドに固定するには、イメージ名に @ とそのダイジェストを組み合わせて使用します（例: docker.</description>
+    </item>
+    
+    <item>
+      <title>Homebrew でのインストール</title>
+      <link>https://engine.speedle.io/ja/docs/deployment/homebrew/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/ja/docs/deployment/homebrew/</guid>
+      <description>macOS または Linux で Homebrew を使い、Speedle のコマンドラインツールをインストールします。Homebrew は、公式組織以外の tap にある formula を信頼するまで、その formula をインストールまたは起動しません。
+brew tap teramoby/tap brew trust teramoby/tap brew install teramoby/tap/spctl Formula の名前は spctl です。macOS でのコマンドは speedle-spctl なので、このインストールは Apple Gatekeeper の /usr/sbin/spctl を置き換えません。Linux では同じプログラムを spctl としても使えます。
+ポリシー管理サービスと認可決定サービスは別の formula です。
+brew install teramoby/tap/speedle-pms brew install teramoby/tap/speedle-ads コマンドラインツールと両方のサービスをまとめてインストールします。
+brew install teramoby/tap/speedle spctl、speedle-pms、speedle-ads はそれぞれ、そのリリースの macOS または Linux バイナリをインストールし、そのリリースの checksums.txt と照合します。
+
+Homebrew でのデモ 両方のサービスを起動します。これらは 127.0.0.1 で待ち受け、1 つのファイルポリシーストアを共有します。
+brew services start speedle-pms brew services start speedle-ads speedle-pms は 127.</description>
     </item>
     
   </channel>

@@ -9,6 +9,7 @@ tocsidebar = false
 tags = ["releases", "versions"]
 categories = ["docs"]
 bref = "릴리스 — Speedle은 시맨틱 버저닝을 따릅니다"
+lastmod = 2026-11-10T14:45:43+08:00
 +++
 
 ## Speedle 릴리스

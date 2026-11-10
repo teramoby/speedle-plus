@@ -6,7 +6,7 @@
     <description>Recent content in Sdk on Speedle</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>ko-kr</language>
-    <lastBuildDate>Tue, 10 Nov 2026 17:19:04 +0800</lastBuildDate>
+    <lastBuildDate>Tue, 10 Nov 2026 14:45:43 +0800</lastBuildDate>
     
 	<atom:link href="https://engine.speedle.io/ko/tags/sdk/index.xml" rel="self" type="application/rss+xml" />
     
@@ -91,7 +91,7 @@ cargo new speedle-example cd speedle-example cargo add speedle@0.2.0 --features 
     <item>
       <title>SDK</title>
       <link>https://engine.speedle.io/ko/docs/sdks/</link>
-      <pubDate>Tue, 10 Nov 2026 17:19:04 +0800</pubDate>
+      <pubDate>Tue, 10 Nov 2026 14:45:43 +0800</pubDate>
       
       <guid>https://engine.speedle.io/ko/docs/sdks/</guid>
       <description>Speedle SDK는 결정 API POST /authz-check/v1/is-allowed의 클라이언트 라이브러리입니다. 자체 호스팅 Speedle ADS 및 Speedle Cloud 모두에서 작동합니다. 각 언어 페이지에서는 패키지 추가 방법을 설명하고 두 환경 모두에 대해 테스트를 거친 완전한 프로그램을 제공합니다. 소스 코드와 전체 참조 문서는 teramoby/speedle-sdk에서 확인할 수 있습니다. 이 예제들에서 사용할 PMS 및 ADS 실행 방법에 대해서는 배포와 Docker 이미지를 참조하십시오.

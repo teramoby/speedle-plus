@@ -9,6 +9,7 @@ tocheading = "h2"
 tags = ["api", "sdk"]
 categories = ["docs"]
 bref = "cargo add で speedle 0.2.0 クレートを追加し、ローカルの Speedle または Speedle Cloud に対して is_allowed と check を呼び出します。"
+lastmod = 2026-11-07T19:43:15+08:00
 +++
 
 Rust SDK は Rust 1.75 以降が必要です。`tokio` と `reqwest` (rustls) をベースにした非同期構成です。`blocking` 機能により、以下で使用するブロッキングクライアントが追加されます。クレート: crates.io の [`speedle`](https://crates.io/crates/speedle) 0.2.0。リファレンス: [speedle-sdk/rust](https://github.com/teramoby/speedle-sdk/tree/main/rust)。

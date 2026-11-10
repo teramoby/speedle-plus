@@ -9,6 +9,7 @@ tocheading = "h2"
 tags = ["sdk"]
 categories = ["docs"]
 bref = "Bibliotecas cliente para la API de decisiones de Speedle en seis lenguajes. Compatibles con un Speedle ADS autohospedado y con Speedle Cloud (próximamente)."
+lastmod = 2026-11-10T14:45:43+08:00
 +++
 
 Los SDK de Speedle son bibliotecas cliente para la API de decisiones `POST /authz-check/v1/is-allowed`. Funcionan tanto con un Speedle ADS autohospedado como con Speedle Cloud. Cada página de lenguaje muestra cómo agregar el paquete y proporciona un programa completo y probado para ambos entornos. El código fuente y la referencia completa se encuentran en [teramoby/speedle-sdk](https://github.com/teramoby/speedle-sdk). Para ejecutar PMS y ADS para estos ejemplos, consulte [Despliegue](/es/docs/deployment/) y la [Imagen de Docker](/es/docs/deployment/docker/).

@@ -6,7 +6,7 @@
     <description>Recent content in Despliegue on Speedle</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>es-es</language>
-    <lastBuildDate>Tue, 10 Nov 2026 18:32:58 +0800</lastBuildDate>
+    <lastBuildDate>Tue, 10 Nov 2026 14:45:43 +0800</lastBuildDate>
     
 	<atom:link href="https://engine.speedle.io/es/docs/deployment/index.xml" rel="self" type="application/rss+xml" />
     
@@ -30,6 +30,16 @@ Para probar políticas básicas antes de escribir código, abra el Playground. P
       <description>Speedle publica una imagen que contiene speedle-pms, speedle-ads y spctl. La imagen se compila FROM scratch, se ejecuta como UID 65532 y no contiene ningún shell. El primer argumento selecciona el programa a ejecutar.
 El mismo índice de imágenes está disponible en ambos registros:
  Docker Hub: docker.io/speedle/speedle GHCR: ghcr.io/teramoby/speedle  La versión 1.7.0 publica las etiquetas 1.7.0, 1.7 y latest en ambos registros, para las arquitecturas linux/amd64 y linux/arm64.</description>
+    </item>
+    
+    <item>
+      <title>Instalación con Homebrew</title>
+      <link>https://engine.speedle.io/es/docs/deployment/homebrew/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/es/docs/deployment/homebrew/</guid>
+      <description>Instale la herramienta de línea de comandos de Speedle con Homebrew en macOS o Linux. Homebrew no instala ni inicia una formula de un tap fuera de la organización oficial de Homebrew hasta que ese tap sea de confianza.
+brew tap teramoby/tap brew trust teramoby/tap brew install teramoby/tap/spctl La formula se llama spctl. En macOS el comando es speedle-spctl, así que la instalación no sustituye el Gatekeeper de Apple en /usr/sbin/spctl.</description>
     </item>
     
   </channel>

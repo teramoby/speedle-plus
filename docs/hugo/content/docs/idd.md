@@ -2,6 +2,7 @@
 title = "Identity Domain"
 description = "Speedle supports user identities from multiple identity domains"
 date = 2019-01-17T13:20:07+08:00
+lastmod = 2026-10-29T11:53:01+08:00
 weight = 40
 draft = false
 bref = ""

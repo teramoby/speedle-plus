@@ -1,23 +1,25 @@
 +++
 title = "배포"
-description = "Go 애플리케이션에 Speedle 임베드, 공개 컨테이너 이미지로 실행 또는 독립 실행형 PMS 및 ADS 서비스로 실행"
+description = "Go 애플리케이션에 Speedle을 임베드하거나, 공개 컨테이너 이미지 또는 Homebrew로 실행하거나, 독립 실행형 PMS 및 ADS 서비스로 실행합니다."
 weight = 304
 draft = false
 toc = true
 linksection = true
 tocheading = "h2"
 categories = ["docs"]
-bref = "임베디드 모드, Docker 이미지, 소스 빌드 및 독립 실행형 PMS와 ADS 서비스"
+bref = "임베디드 모드, Docker 이미지, Homebrew, 소스 빌드 및 독립 실행형 PMS와 ADS 서비스."
+lastmod = 2026-11-10T14:45:43+08:00
 +++
 
 Speedle은 Go 애플리케이션 내에 임베드하거나, 공개된 컨테이너 이미지로 실행하거나, 독립 실행형 PMS 및 ADS 서비스로 실행할 수 있습니다.
 
 - [임베디드 모드](/docs/deployment/embedded/)는 Go 프로세스 내에서 평가 엔진을 실행합니다.
-- [Docker 이미지](/docs/deployment/docker/)는 `docker.io/speedle/speedle` 또는 `ghcr.io/teramoby/speedle`에서 `speedle-pms`, `speedle-ads`, `spctl`을 실행합니다.
+- [Docker 이미지](/ko/docs/deployment/docker/)는 `docker.io/speedle/speedle` 또는 `ghcr.io/teramoby/speedle`에서 `speedle-pms`, `speedle-ads`, `spctl`을 실행합니다.
+- [Homebrew](/ko/docs/deployment/homebrew/)는 명령줄 도구와 두 서비스를 설치하고 로컬에서 데모를 실행합니다.
 
 ## 배포 방식 선택
 
-Go 프로세스 내에서 평가 엔진을 실행하려면 [임베디드 모드](/docs/deployment/embedded/)를 사용합니다. 애플리케이션이 REST 또는 gRPC를 통해 Speedle을 호출하는 경우 [Docker 이미지](/docs/deployment/docker/)나 독립 실행형 PMS 및 ADS를 사용합니다. [빠른 시작](../../quick-start/)에서는 로컬 정책 관리와 인가 확인의 전체 과정을 안내합니다.
+Go 프로세스 내에서 평가 엔진을 실행하려면 [임베디드 모드](/docs/deployment/embedded/)를 사용합니다. 애플리케이션이 REST 또는 gRPC를 통해 Speedle을 호출하는 경우 [Docker 이미지](/ko/docs/deployment/docker/)나 독립 실행형 PMS 및 ADS를 사용합니다. [Homebrew](/ko/docs/deployment/homebrew/)는 이 프로그램들을 설치하고 로컬에서 데모를 실행합니다. [빠른 시작](../../quick-start/)에서는 로컬 정책 관리와 인가 확인의 전체 과정을 안내합니다.
 
 ## 최신 Go 버전으로 빌드
 

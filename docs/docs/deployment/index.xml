@@ -34,5 +34,15 @@ The same image index is on both registries:
 Pull the image docker pull docker.io/speedle/speedle:1.7.0 docker pull ghcr.</description>
     </item>
     
+    <item>
+      <title>Homebrew</title>
+      <link>https://engine.speedle.io/docs/deployment/homebrew/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/docs/deployment/homebrew/</guid>
+      <description>Install the Speedle command-line tool with Homebrew on macOS or Linux. Homebrew does not install or start formulas from a tap outside the official Homebrew organization until that tap is trusted.
+brew tap teramoby/tap brew trust teramoby/tap brew install teramoby/tap/spctl The formula is named spctl. On macOS the command is speedle-spctl, so the install does not replace Apple Gatekeeper at /usr/sbin/spctl. On Linux the same program is also available as spctl.</description>
+    </item>
+    
   </channel>
 </rss>

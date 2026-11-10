@@ -9,6 +9,7 @@ tocsidebar = false
 tags = ["policy", "core", "discovery"]
 categories = ["docs"]
 bref = "Speedle puede utilizarse para decisiones de autorización en sistemas con un gran número de recursos protegidos. Antes de acceder a dichos recursos, se invoca la API de decisiones de autorización de Speedle (API is-allowed). Definir políticas de autorización para esos recursos protegidos resulta difícil si no se sabe qué acciones ocurren o cómo se expresa un recurso protegido en una solicitud de decisión de autorización. El modo de descubrimiento de políticas puede facilitar enormemente esta tarea."
+lastmod = 2026-10-29T11:32:30+08:00
 +++
 
 ## ¿Qué hace el descubrimiento?

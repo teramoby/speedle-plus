@@ -5,6 +5,7 @@ tags = ["v0.1.0", "api", "guide", "core", "pms"]
 categories = ["docs"]
 customcss = true
 customcssfile = "swagger-custom.css"
+lastmod = 2026-10-29T11:32:30+08:00
 +++
 
 구성된 PMS 인터페이스 참조 사양입니다. 요청과 응답은 JSON을 사용하고 정책 ID는 문자열이며 응답은 플랫 객체입니다.

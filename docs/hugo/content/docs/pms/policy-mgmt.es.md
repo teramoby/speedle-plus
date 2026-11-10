@@ -9,6 +9,7 @@ tocsidebar = false
 tags = ["pms", "policy", "core"]
 categories = ["docs"]
 bref = "Conceptos básicos de la gestión de políticas"
+lastmod = 2026-11-09T07:57:54+08:00
 +++
 
 ## ¿Qué es una política de Speedle?

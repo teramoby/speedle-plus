@@ -54,6 +54,7 @@ FULL_PAGES = [
     "docs/deployment/_index",
     "docs/deployment/embedded",
     "docs/deployment/docker",
+    "docs/deployment/homebrew",
     "docs/cloud/_index",
     "docs/cloud/getting-started",
     "docs/cloud/tokens",
@@ -102,9 +103,10 @@ ANNOTATIONS = {
     "docs/sdks/dotnet": "NuGet `Speedle.Sdk` 0.2.0, published.",
     "docs/sdks/rust": "crates.io `speedle` 0.2.0, published.",
     "docs/sdks/node": "npm `@speedle/sdk` 0.2.1, published. Install with `npm install @speedle/sdk@0.2.1`.",
-    "docs/deployment/_index": "Embedded mode, the Docker image, source builds, and standalone PMS and ADS services.",
+    "docs/deployment/_index": "Embedded mode, the Docker image, Homebrew, source builds, and standalone PMS and ADS services.",
     "docs/deployment/embedded": "Embed the evaluator in a Go application with Go modules and check Allow and Deny.",
     "docs/deployment/docker": "Run speedle-pms, speedle-ads and spctl from docker.io/speedle/speedle and ghcr.io/teramoby/speedle.",
+    "docs/deployment/homebrew": "Install speedle-spctl, speedle-pms and speedle-ads with Homebrew and run them on 127.0.0.1 with one shared policy file.",
     "docs/cloud/_index": "Hosted authorization for developers: sign-in and account management, SPDL policies, application tokens, the authorization API preview, limits, errors and downloads. Sign-in on cloud.speedle.io opens soon.",
     "docs/cloud/getting-started": "The console workflow: sign-in and account settings, a service, SPDL policies, session management requests, Playground tests and policy export.",
     "docs/cloud/tokens": "Issue, protect, list, rotate and revoke service-scoped Bearer tokens, with one-time secret disclosure and recent authentication.",
@@ -137,7 +139,7 @@ ZH_LINKS = [
     ("中文快速开始", "https://engine.speedle.io/zh/quick-start/", "安装 Speedle 并做出第一个授权决策。"),
     ("Speedle Cloud 中文文档", "https://engine.speedle.io/zh/docs/cloud/", "Speedle Cloud 托管授权文档：账号与策略管理、应用令牌、授权 API、限制与错误。"),
     ("SDK 中文文档", "https://engine.speedle.io/zh/docs/sdks/", "六种语言 SDK 的中文文档。"),
-    ("部署中文文档", "https://engine.speedle.io/zh/docs/deployment/", "嵌入模式、Docker 镜像，以及独立的 PMS 和 ADS。"),
+    ("部署中文文档", "https://engine.speedle.io/zh/docs/deployment/", "嵌入模式、Docker 镜像、Homebrew，以及独立的 PMS 和 ADS。"),
 ]
 
 JA_LINKS = [
@@ -354,6 +356,7 @@ def render_llms(pages, definition):
             item("docs/deployment/_index"),
             item("docs/deployment/embedded"),
             item("docs/deployment/docker"),
+            item("docs/deployment/homebrew"),
         ]),
         section("Speedle Cloud", [
             item("docs/cloud/_index"),

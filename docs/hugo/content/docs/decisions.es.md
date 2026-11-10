@@ -9,6 +9,7 @@ tocsidebar = false
 tags = ["pdp", "policy", "core"]
 categories = ["docs"]
 bref = "Obtención de decisiones de autorización"
+lastmod = 2026-11-08T19:23:52+08:00
 +++
 
 ## ¿Qué es una decisión de autorización?

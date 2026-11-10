@@ -4,6 +4,7 @@ noindex = false
 categories = ["docs"]
 description = "Speedle을 애플리케이션 및 인프라와 연결."
 aliases = ["/ko/integrations/istio/", "/ko/integrations/kubernetes/", "/ko/integrations/docker/"]
+lastmod = 2026-11-10T14:45:43+08:00
 +++
 
 Speedle은 인가 결정을 수행합니다. 애플리케이션, 게이트웨이 또는 플랫폼의 정책 시행 지점(PEP)은 결정마다 Speedle을 호출하고 그 결과를 적용합니다. 현재 지원되는 인터페이스는 다음과 같습니다.

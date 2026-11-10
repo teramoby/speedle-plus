@@ -6,7 +6,7 @@
     <description>Recent content in 배포 on Speedle</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>ko-kr</language>
-    <lastBuildDate>Tue, 10 Nov 2026 17:19:04 +0800</lastBuildDate>
+    <lastBuildDate>Tue, 10 Nov 2026 14:45:43 +0800</lastBuildDate>
     
 	<atom:link href="https://engine.speedle.io/ko/docs/deployment/index.xml" rel="self" type="application/rss+xml" />
     
@@ -32,6 +32,18 @@
 두 레지스트리 모두 동일한 이미지 인덱스를 호스팅합니다:
  Docker Hub: docker.io/speedle/speedle GHCR: ghcr.io/teramoby/speedle  릴리스 1.7.0은 두 레지스트리 모두에 linux/amd64 및 linux/arm64 아키텍처용으로 1.7.0, 1.7, latest 태그를 게시합니다.
 이미지 풀 docker pull docker.io/speedle/speedle:1.7.0 docker pull ghcr.io/teramoby/speedle:1.7.0 docker pull은 인덱스 다이제스트를 출력합니다. 1.7.0의 경우 두 레지스트리 모두 다이제스트는 sha256:20bd3fe8169ec3ddadf1484285e34bd68004dbb457782223dc84a2a9f1dd91c0입니다.</description>
+    </item>
+    
+    <item>
+      <title>Homebrew 설치</title>
+      <link>https://engine.speedle.io/ko/docs/deployment/homebrew/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/ko/docs/deployment/homebrew/</guid>
+      <description>macOS 또는 Linux에서 Homebrew로 Speedle 명령줄 도구를 설치합니다. Homebrew는 공식 조직 밖의 tap에 있는 formula를 신뢰하기 전에는 그 formula를 설치하거나 시작하지 않습니다.
+brew tap teramoby/tap brew trust teramoby/tap brew install teramoby/tap/spctl Formula 이름은 spctl입니다. macOS에서 명령은 speedle-spctl이므로, 이 설치는 Apple Gatekeeper의 /usr/sbin/spctl을 바꾸지 않습니다. Linux에서는 같은 프로그램을 spctl로도 호출할 수 있습니다.
+정책 관리 서비스와 인가 결정 서비스는 별도의 formula입니다.
+brew install teramoby/tap/speedle-pms brew install teramoby/tap/speedle-ads 명령줄 도구와 두 서비스를 함께 설치합니다.</description>
     </item>
     
   </channel>

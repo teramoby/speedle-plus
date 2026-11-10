@@ -1,23 +1,25 @@
 +++
 title = "部署"
-description = "在 Go 应用中嵌入 Speedle，用已发布的容器镜像运行，或独立运行 PMS 和 ADS。"
+description = "在 Go 应用中嵌入 Speedle，用已发布的容器镜像或 Homebrew 运行，或独立运行 PMS 和 ADS。"
 weight = 304
 draft = false
 toc = true
 linksection = true
 tocheading = "h2"
 categories = ["docs"]
-bref = "嵌入模式、Docker 镜像、源码构建，以及独立的 PMS 和 ADS。"
+bref = "嵌入模式、Docker 镜像、Homebrew、源码构建，以及独立的 PMS 和 ADS。"
+lastmod = 2026-11-10T14:45:43+08:00
 +++
 
 Speedle 可以嵌入 Go 应用，也可以用一个已发布的容器镜像运行，或者作为独立的 PMS 和 ADS 服务运行。
 
 - [嵌入模式](/docs/deployment/embedded/) 在 Go 进程内运行决策引擎。
 - [Docker 镜像](/docs/deployment/docker/) 用 `docker.io/speedle/speedle` 或 `ghcr.io/teramoby/speedle` 运行 `speedle-pms`、`speedle-ads` 和 `spctl`。
+- [Homebrew](/docs/deployment/homebrew/) 安装命令行工具和两个服务，并在本机做一次演示。
 
 ## 选择部署方式
 
-通过[嵌入模式](/docs/deployment/embedded/)可以在 Go 进程内运行决策引擎。应用通过 REST 或 gRPC 调用 Speedle 时，可以使用[Docker 镜像](/docs/deployment/docker/)，也可以运行独立的 PMS 和 ADS。[快速入门](../../quick-start/)提供了完整的本地策略管理和授权验证步骤。
+通过[嵌入模式](/docs/deployment/embedded/)可以在 Go 进程内运行决策引擎。应用通过 REST 或 gRPC 调用 Speedle 时，可以使用[Docker 镜像](/docs/deployment/docker/)，也可以运行独立的 PMS 和 ADS。[Homebrew](/docs/deployment/homebrew/) 安装这些程序并在本机做一次演示。[快速入门](../../quick-start/)提供了完整的本地策略管理和授权验证步骤。
 
 ## 使用当前 Go 版本构建
 

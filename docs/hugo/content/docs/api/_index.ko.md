@@ -9,6 +9,7 @@ tocsidebar = false
 tags = ["v0.1.0", "api", "guide", "core"]
 categories = ["docs"]
 bref = "Open API 사양 문서. API를 사용하여 단순하거나 복잡한 정책을 선언적으로 모델링하고, 결정을 쿼리하며, 정책을 동적으로 발견하고 정책 평가를 디버깅합니다."
+lastmod = 2026-11-10T14:45:43+08:00
 +++
 
 Java, Python, Go, .NET, Rust, Node.js/TypeScript용 클라이언트 라이브러리는 [SDK](/docs/sdks/)에서 제공됩니다.

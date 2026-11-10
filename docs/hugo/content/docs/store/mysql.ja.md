@@ -8,6 +8,7 @@ tocheading = "h2"
 tags = ["storage", "mysql"]
 categories = ["docs"]
 bref = "データベースを作成し、PMS と ADS を構成して、認可と自動ポリシー同期を確認します。"
+lastmod = 2026-10-31T22:36:36+08:00
 +++
 
 このガイドでは、**MySQL 8.4 LTS** と 2 つのネイティブ Speedle プロセスを使用します。PMS はポリシーを書き込み、ADS は個別の読み取り専用アカウントで同じデータベースを読み取ります。ローカルの例では Docker とループバック上の平文 HTTP を使用します。リモートデプロイの場合は、既存の MySQL サーバーと [セキュリティガイド](/ja/docs/security/) を使用してください。

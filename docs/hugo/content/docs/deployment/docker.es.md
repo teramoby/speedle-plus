@@ -8,6 +8,7 @@ toc = true
 tocheading = "h2"
 categories = ["docs"]
 bref = "Una única imagen en Docker Hub y GHCR ejecuta el administrador de políticas, el servicio de decisiones y spctl, con un almacén de archivos compartido."
+lastmod = 2026-11-10T14:45:43+08:00
 +++
 
 Speedle publica una imagen que contiene `speedle-pms`, `speedle-ads` y `spctl`. La imagen se compila `FROM scratch`, se ejecuta como UID 65532 y no contiene ningún shell. El primer argumento selecciona el programa a ejecutar.
