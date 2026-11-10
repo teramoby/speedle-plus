@@ -105,9 +105,9 @@
 <h3 id="方式-a-安装最新发布版本">方式 A：安装最新发布版本</h3>
 
 <!-- quick-start: install -->
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#8be9fd;font-style:italic">GOBIN</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;</span><span style="color:#8be9fd;font-style:italic">$PWD</span><span style="color:#f1fa8c">/bin&#34;</span> go install github.com/teramoby/speedle-plus/cmd/...@v1.6.0
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#8be9fd;font-style:italic">GOBIN</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;</span><span style="color:#8be9fd;font-style:italic">$PWD</span><span style="color:#f1fa8c">/bin&#34;</span> go install github.com/teramoby/speedle-plus/cmd/...@v1.7.0
 ls bin</code></pre></div>
-<p><code>GOBIN</code> 把可执行程序放到当前目录的 <code>bin</code> 中；不设置时，Go 会把它们写入 <code>$(go env GOPATH)/bin</code>。<code>v1.6.0</code> 是撰写本文时的最新发布标签；<code>go install</code> 使用该标签的源码编译，并通过 Go 校验和数据库验证。</p>
+<p><code>GOBIN</code> 把可执行程序放到当前目录的 <code>bin</code> 中；不设置时，Go 会把它们写入 <code>$(go env GOPATH)/bin</code>。<code>v1.7.0</code> 是撰写本文时的最新发布标签；<code>go install</code> 使用该标签的源码编译，并通过 Go 校验和数据库验证。</p>
 
 <h3 id="方式-b-下载源码并编译">方式 B：下载源码并编译</h3>
 

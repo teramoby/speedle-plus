@@ -174,7 +174,12 @@ curl --fail --silent --show-error --header 'Content-Type: application/json' \
 
 ## Point an SDK at ADS
 
-The SDK pages call `http://localhost:6734`. With the port published above, that address is this ADS. The Node.js client below uses `http://127.0.0.1:6734`, which is the address the container publishes. Save it as `main.mjs`:
+The SDK pages call `http://localhost:6734`. With the port published above, that address is this ADS. The Node.js client below uses `http://127.0.0.1:6734`, which is the address the container publishes. Create the example directory first, then save the client in that directory as `main.mjs`:
+
+```bash
+mkdir speedle-example
+cd speedle-example
+```
 
 ```javascript
 import { Auth, SpeedleClient } from "@speedle/sdk";
@@ -193,11 +198,9 @@ try {
 }
 ```
 
-Install the published package in a new ES module and run the file. The install is the one on the [Node.js SDK](/docs/sdks/node/) page, pinned to the same version:
+Install the published package in `speedle-example` and run `main.mjs` there. The install is the one on the [Node.js SDK](/docs/sdks/node/) page, pinned to the same version:
 
 ```bash
-mkdir speedle-example
-cd speedle-example
 npm init -y
 npm pkg set type=module
 npm install @speedle/sdk@0.2.1

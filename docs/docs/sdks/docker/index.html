@@ -20,6 +20,7 @@
 <link rel="alternate" hreflang="zh-CN" href="https://engine.speedle.io/zh/docs/sdks/docker/">
 <link rel="alternate" hreflang="x-default" href="https://engine.speedle.io/docs/sdks/docker/">
 <meta property="og:type" content="article">
+<meta property="article:modified_time" content="2026-11-10T11:48:00&#43;08:00">
 <meta property="og:site_name" content="Speedle Engine">
 <meta property="og:title" content="Docker image · Speedle Engine">
 <meta property="og:description" content="Run speedle-pms, speedle-ads and spctl from the published Speedle image.">
@@ -35,7 +36,7 @@
 <meta name="twitter:image" content="https://engine.speedle.io/img/social/engine-en.png">
 <meta name="twitter:image:alt" content="Speedle Engine — Fast. Simple. Access control">
 
-<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/docs/sdks/docker/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"description":"Run speedle-pms, speedle-ads and spctl from the published Speedle image.","headline":"Docker image","image":"https://engine.speedle.io/img/social/engine-en.png","inLanguage":"en","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/docs/sdks/docker/","@type":"WebPage"},"name":"Docker image","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/docs/sdks/docker/"}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/docs/sdks/docker/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-10T11:48:00+08:00","description":"Run speedle-pms, speedle-ads and spctl from the published Speedle image.","headline":"Docker image","image":"https://engine.speedle.io/img/social/engine-en.png","inLanguage":"en","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/docs/sdks/docker/","@type":"WebPage"},"name":"Docker image","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/docs/sdks/docker/"}</script>
 <script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/docs/sdks/docker/#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://engine.speedle.io/","name":"Home","position":1},{"@type":"ListItem","item":"https://engine.speedle.io/docs/","name":"Documentation","position":2},{"@type":"ListItem","item":"https://engine.speedle.io/docs/sdks/","name":"SDKs","position":3},{"@type":"ListItem","item":"https://engine.speedle.io/docs/sdks/docker/","name":"Docker image","position":4}]}</script><link href="/css/docs.css" rel="stylesheet" type="text/css">
 
 
@@ -273,8 +274,9 @@ policy created
 
 <h2 id="point-an-sdk-at-ads">Point an SDK at ADS</h2>
 
-<p>The SDK pages call <code>http://localhost:6734</code>. With the port published above, that address is this ADS. The Node.js client below uses <code>http://127.0.0.1:6734</code>, which is the address the container publishes. Save it as <code>main.mjs</code>:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-javascript" data-lang="javascript"><span style="color:#ff79c6">import</span> { Auth, SpeedleClient } from <span style="color:#f1fa8c">&#34;@speedle/sdk&#34;</span>;
+<p>The SDK pages call <code>http://localhost:6734</code>. With the port published above, that address is this ADS. The Node.js client below uses <code>http://127.0.0.1:6734</code>, which is the address the container publishes. Create the example directory first, then save the client in that directory as <code>main.mjs</code>:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">mkdir speedle-example
+<span style="color:#8be9fd;font-style:italic">cd</span> speedle-example</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-javascript" data-lang="javascript"><span style="color:#ff79c6">import</span> { Auth, SpeedleClient } from <span style="color:#f1fa8c">&#34;@speedle/sdk&#34;</span>;
 
 <span style="color:#ff79c6">const</span> speedle <span style="color:#ff79c6">=</span> <span style="color:#ff79c6">new</span> SpeedleClient({
   backend<span style="color:#ff79c6">:</span> <span style="color:#f1fa8c">&#34;speedle&#34;</span>,
@@ -289,10 +291,8 @@ policy created
   <span style="color:#ff79c6">await</span> speedle.close();
 }
 </code></pre></div>
-<p>Install the published package in a new ES module and run the file. The install is the one on the <a href="/docs/sdks/node/">Node.js SDK</a> page, pinned to the same version:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">mkdir speedle-example
-<span style="color:#8be9fd;font-style:italic">cd</span> speedle-example
-npm init -y
+<p>Install the published package in <code>speedle-example</code> and run <code>main.mjs</code> there. The install is the one on the <a href="/docs/sdks/node/">Node.js SDK</a> page, pinned to the same version:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">npm init -y
 npm pkg <span style="color:#8be9fd;font-style:italic">set</span> <span style="color:#8be9fd;font-style:italic">type</span><span style="color:#ff79c6">=</span>module
 npm install @speedle/sdk@0.2.1
 node main.mjs</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">alice get /docs/public: allowed=true</code></pre></div>

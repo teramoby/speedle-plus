@@ -174,7 +174,12 @@ curl --fail --silent --show-error --header 'Content-Type: application/json' \
 
 ## 让 SDK 连接 ADS
 
-SDK 页面使用 `http://localhost:6734`。按上面的方式发布端口后，这个地址就是本页的 ADS。下面的 Node.js 客户端使用容器实际发布的 `http://127.0.0.1:6734`。把它存成 `main.mjs`：
+SDK 页面使用 `http://localhost:6734`。按上面的方式发布端口后，这个地址就是本页的 ADS。下面的 Node.js 客户端使用容器实际发布的 `http://127.0.0.1:6734`。先创建示例目录，再把客户端存成该目录里的 `main.mjs`：
+
+```bash
+mkdir speedle-example
+cd speedle-example
+```
 
 ```javascript
 import { Auth, SpeedleClient } from "@speedle/sdk";
@@ -193,11 +198,9 @@ try {
 }
 ```
 
-在一个新的 ES 模块包里安装已发布的包并运行。安装命令与 [Node.js SDK](/docs/sdks/node/) 页面相同，并固定同一版本：
+在 `speedle-example` 里安装已发布的包并运行 `main.mjs`。安装命令与 [Node.js SDK](/docs/sdks/node/) 页面相同，并固定同一版本：
 
 ```bash
-mkdir speedle-example
-cd speedle-example
 npm init -y
 npm pkg set type=module
 npm install @speedle/sdk@0.2.1

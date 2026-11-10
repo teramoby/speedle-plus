@@ -158,7 +158,7 @@ docker run --name speedle-mysql --detach \  --publish 127.0.0.1:3306:3306 \  --v
 按照 Go 官方安装说明安装，然后检查版本：
 go version Go 会自动配置 GOROOT 和默认的 GOPATH，无需手动指定。下面的两种方式都会把三个可执行程序放到 bin 目录。
 安装 Speedle 两种方式任选一种：方式 A 安装最新发布版本，方式 B 编译当前源码。后续命令都使用 ./bin/...，两种方式通用。
-方式 A：安装最新发布版本 GOBIN=&amp;#34;$PWD/bin&amp;#34; go install github.com/teramoby/speedle-plus/cmd/...@v1.6.0 ls bin GOBIN 把可执行程序放到当前目录的 bin 中；不设置时，Go 会把它们写入 $(go env GOPATH)/bin。v1.</description>
+方式 A：安装最新发布版本 GOBIN=&amp;#34;$PWD/bin&amp;#34; go install github.com/teramoby/speedle-plus/cmd/...@v1.7.0 ls bin GOBIN 把可执行程序放到当前目录的 bin 中；不设置时，Go 会把它们写入 $(go env GOPATH)/bin。v1.</description>
     </item>
     
     <item>
