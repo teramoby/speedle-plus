@@ -124,6 +124,8 @@ go install github.com/teramoby/speedle-plus/cmd/...@latest
 
 这会把 `spctl`、`speedle-pms` 和 `speedle-ads` 安装到 `$(go env GOPATH)/bin`；如果设置了 `$GOBIN`，则安装到 `$GOBIN`。
 
+同样的三个程序也发布为一个容器镜像，仓库是 `docker.io/speedle/speedle` 和 `ghcr.io/teramoby/speedle`，标签为 `1.7.0`、`1.7` 和 `latest`。[用 Docker 镜像运行 Speedle](https://engine.speedle.io/zh/docs/sdks/docker/)。
+
 ### Helm
 
 `deployment/helm/speedle` 用同一个镜像 `speedle/speedle` 运行 PMS 和 ADS。PMS 监听 6733，ADS 监听 6734。默认策略存储是 PersistentVolumeClaim 上的一个文件。把 `store.type` 设为 `etcd` 或 `mongodb` 即改用对应存储。ADS 可以增加副本。文件存储只运行一个 PMS 副本。chart 默认拒绝其他 Pod 访问 PMS，直到 `networkPolicy.pms.ingress` 列出可以管理策略的客户端。

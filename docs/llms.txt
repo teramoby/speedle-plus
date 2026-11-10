@@ -35,6 +35,7 @@ Java, Python, Go, .NET and Rust SDKs are version 0.2.0 and published. `@speedle/
 - [C#/.NET SDK](https://engine.speedle.io/docs/sdks/dotnet/): NuGet `Speedle.Sdk` 0.2.0, published.
 - [Rust SDK](https://engine.speedle.io/docs/sdks/rust/): crates.io `speedle` 0.2.0, published.
 - [Node.js/TypeScript SDK](https://engine.speedle.io/docs/sdks/node/): npm `@speedle/sdk` 0.2.1, published. Install with `npm install @speedle/sdk@0.2.1`.
+- [Docker image](https://engine.speedle.io/docs/sdks/docker/): Run speedle-pms, speedle-ads and spctl from docker.io/speedle/speedle and ghcr.io/teramoby/speedle.
 
 ## Speedle Cloud
 

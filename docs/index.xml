@@ -314,6 +314,18 @@ mkdir speedle-example cd speedle-example npm init -y npm pkg set type=module npm
     </item>
     
     <item>
+      <title>Docker image</title>
+      <link>https://engine.speedle.io/docs/sdks/docker/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/docs/sdks/docker/</guid>
+      <description>Speedle publishes one image that contains speedle-pms, speedle-ads and spctl. The image is built FROM scratch, runs as UID 65532, and has no shell. The first argument selects the program.
+The same image index is on both registries:
+ Docker Hub: docker.io/speedle/speedle GHCR: ghcr.io/teramoby/speedle  Release 1.7.0 publishes the tags 1.7.0, 1.7 and latest on both registries, for linux/amd64 and linux/arm64.
+Pull the image docker pull docker.io/speedle/speedle:1.7.0 docker pull ghcr.</description>
+    </item>
+    
+    <item>
       <title>Security</title>
       <link>https://engine.speedle.io/docs/security/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>

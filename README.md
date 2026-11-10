@@ -122,6 +122,8 @@ go install github.com/teramoby/speedle-plus/cmd/...@latest
 
 This installs `spctl`, `speedle-pms` and `speedle-ads` into `$(go env GOPATH)/bin`, or `$GOBIN` if it is set.
 
+The same three programs are published as one container image, `docker.io/speedle/speedle` and `ghcr.io/teramoby/speedle`, with tags `1.7.0`, `1.7` and `latest`. [Run Speedle from the Docker image](https://engine.speedle.io/docs/sdks/docker/).
+
 ### Helm
 
 The chart at `deployment/helm/speedle` runs PMS and ADS from one image, `speedle/speedle`. PMS listens on port 6733 and ADS on port 6734. The default policy store is a file on a PersistentVolumeClaim. Set `store.type` to `etcd` or `mongodb` to use those stores. ADS can run more than one replica. The file store keeps a single PMS replica. The chart denies ingress to PMS from other pods until `networkPolicy.pms.ingress` lists the clients that may administer policy.
