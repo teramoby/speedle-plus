@@ -51,6 +51,7 @@ FULL_PAGES = [
     "docs/sdks/dotnet",
     "docs/sdks/rust",
     "docs/sdks/node",
+    "docs/sdks/docker",
     "docs/cloud/_index",
     "docs/cloud/getting-started",
     "docs/cloud/tokens",
@@ -101,6 +102,7 @@ ANNOTATIONS = {
     "docs/sdks/dotnet": "NuGet `Speedle.Sdk` 0.2.0, published.",
     "docs/sdks/rust": "crates.io `speedle` 0.2.0, published.",
     "docs/sdks/node": "npm `@speedle/sdk` 0.2.1, published. Install with `npm install @speedle/sdk@0.2.1`.",
+    "docs/sdks/docker": "Run speedle-pms, speedle-ads and spctl from docker.io/speedle/speedle and ghcr.io/teramoby/speedle.",
     "docs/cloud/_index": "Hosted authorization for developers: sign-in and account management, SPDL policies, application tokens, the authorization API preview, limits, errors and downloads. Sign-in on cloud.speedle.io opens soon.",
     "docs/cloud/getting-started": "The console workflow: sign-in and account settings, a service, SPDL policies, session management requests, Playground tests and policy export.",
     "docs/cloud/tokens": "Issue, protect, list, rotate and revoke service-scoped Bearer tokens, with one-time secret disclosure and recent authentication.",
@@ -302,6 +304,7 @@ def render_llms(pages, definition):
             item("docs/sdks/dotnet"),
             item("docs/sdks/rust"),
             item("docs/sdks/node"),
+            item("docs/sdks/docker"),
         ]),
         section("Speedle Cloud", [
             item("docs/cloud/_index"),
