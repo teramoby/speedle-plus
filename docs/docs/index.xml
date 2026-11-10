@@ -53,17 +53,6 @@ The examples below use a service named library. Each policy was created through 
     </item>
     
     <item>
-      <title>Speedle embedded mode</title>
-      <link>https://engine.speedle.io/docs/deployment-embeded/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://engine.speedle.io/docs/deployment-embeded/</guid>
-      <description>What is embedded mode? Embedded mode runs the Speedle policy decision engine inside your Go application. Call the evaluator directly without starting PMS or ADS servers. Your application authenticates users and supplies the subject, resource and action for each decision.
-To try basic policies before writing code, open the Playground. To run Speedle as standalone services, follow Quick Start.
-Prerequisites Use Linux or macOS with a shell and Go 1.</description>
-    </item>
-    
-    <item>
       <title>Authorization Decisions</title>
       <link>https://engine.speedle.io/docs/decisions/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
@@ -91,16 +80,6 @@ Represent domains in policies and requests grant user user1 from github read boo
       <guid>https://engine.speedle.io/docs/assertor/</guid>
       <description>What does a token asserter do? A configured asserter validates a token and returns explicit principals, including their identity domains. Speedle can then evaluate policies using those identities. A production implementation must validate the token&amp;rsquo;s signature or introspection result, issuer, audience, expiry and any provider-specific requirements. The webhook alone does not establish compatibility with arbitrary OAuth/OIDC tokens.
 The Token Assertion Plugin API uses integer errCode and an optional attribute object, not a typed attribute array.</description>
-    </item>
-    
-    <item>
-      <title>Deployment</title>
-      <link>https://engine.speedle.io/docs/deployment/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://engine.speedle.io/docs/deployment/</guid>
-      <description>Choose a deployment mode Use embedded mode to run the evaluator in your Go process. Use standalone PMS and ADS when applications call Speedle over REST or gRPC. The Quick Start provides a complete local policy-management and authorization walkthrough.
-Build with current Go Use Go 1.26.10 or Go 1.27.3 (or a newer patch on the same release branch) (Go 1.27.3 is recommended), Git and a shell on Linux or macOS.</description>
     </item>
     
     <item>

@@ -14,17 +14,16 @@
 <meta name="description" content="用已发布的 Speedle 镜像运行 speedle-pms、speedle-ads 和 spctl。">
 <meta name="generator" content="Hugo 0.48" />
 <link href="https://engine.speedle.io/index.xml" rel="alternate" type="application/rss+xml">
-<link rel="canonical" href="https://engine.speedle.io/zh/docs/sdks/docker/">
+<link rel="canonical" href="https://engine.speedle.io/zh/docs/deployment/docker/">
 
-<link rel="alternate" hreflang="en" href="https://engine.speedle.io/docs/sdks/docker/">
-<link rel="alternate" hreflang="zh-CN" href="https://engine.speedle.io/zh/docs/sdks/docker/">
-<link rel="alternate" hreflang="x-default" href="https://engine.speedle.io/docs/sdks/docker/">
+<link rel="alternate" hreflang="en" href="https://engine.speedle.io/docs/deployment/docker/">
+<link rel="alternate" hreflang="zh-CN" href="https://engine.speedle.io/zh/docs/deployment/docker/">
+<link rel="alternate" hreflang="x-default" href="https://engine.speedle.io/docs/deployment/docker/">
 <meta property="og:type" content="article">
-<meta property="article:modified_time" content="2026-11-10T12:28:43&#43;08:00">
 <meta property="og:site_name" content="Speedle Engine">
 <meta property="og:title" content="Docker 镜像 · Speedle Engine">
 <meta property="og:description" content="用已发布的 Speedle 镜像运行 speedle-pms、speedle-ads 和 spctl。">
-<meta property="og:url" content="https://engine.speedle.io/zh/docs/sdks/docker/">
+<meta property="og:url" content="https://engine.speedle.io/zh/docs/deployment/docker/">
 <meta property="og:image" content="https://engine.speedle.io/img/social/engine-zh.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
@@ -36,8 +35,8 @@
 <meta name="twitter:image" content="https://engine.speedle.io/img/social/engine-zh.png">
 <meta name="twitter:image:alt" content="Speedle Engine — 快速、简单的权限控制">
 
-<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/zh/docs/sdks/docker/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-10T12:28:43+08:00","description":"用已发布的 Speedle 镜像运行 speedle-pms、speedle-ads 和 spctl。","headline":"Docker 镜像","image":"https://engine.speedle.io/img/social/engine-zh.png","inLanguage":"zh-CN","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/zh/docs/sdks/docker/","@type":"WebPage"},"name":"Docker 镜像","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/zh/docs/sdks/docker/"}</script>
-<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/zh/docs/sdks/docker/#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://engine.speedle.io/zh/","name":"首页","position":1},{"@type":"ListItem","item":"https://engine.speedle.io/zh/docs/","name":"文档","position":2},{"@type":"ListItem","item":"https://engine.speedle.io/zh/docs/sdks/","name":"SDK","position":3},{"@type":"ListItem","item":"https://engine.speedle.io/zh/docs/sdks/docker/","name":"Docker 镜像","position":4}]}</script><link href="/css/docs.css" rel="stylesheet" type="text/css">
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/zh/docs/deployment/docker/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"description":"用已发布的 Speedle 镜像运行 speedle-pms、speedle-ads 和 spctl。","headline":"Docker 镜像","image":"https://engine.speedle.io/img/social/engine-zh.png","inLanguage":"zh-CN","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/zh/docs/deployment/docker/","@type":"WebPage"},"name":"Docker 镜像","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/zh/docs/deployment/docker/"}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/zh/docs/deployment/docker/#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://engine.speedle.io/zh/","name":"首页","position":1},{"@type":"ListItem","item":"https://engine.speedle.io/zh/docs/","name":"文档","position":2},{"@type":"ListItem","item":"https://engine.speedle.io/zh/docs/deployment/","name":"部署","position":3},{"@type":"ListItem","item":"https://engine.speedle.io/zh/docs/deployment/docker/","name":"Docker 镜像","position":4}]}</script><link href="/css/docs.css" rel="stylesheet" type="text/css">
 
 
     <link href="/css/navigation.css?v=header-20261106-v8" rel="stylesheet">
@@ -55,7 +54,7 @@
         <div class="products"><button class="products-button" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="products-panel">产品<svg class="products-chevron" width="10" height="10" viewBox="0 0 10 10" aria-hidden="true" focusable="false"><path d="M2 3.5 5 6.5 8 3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button><span class="products-heading" aria-hidden="true">产品</span><div class="products-panel" id="products-panel" role="group" aria-label="产品"><a class="product-row" href="https://engine.speedle.io/zh/" aria-current="page"><img class="product-mark" src="/img/speedle/speedle-mark-engine.svg" alt="" width="20" height="20"><span class="product-text"><span class="product-name">Speedle Engine</span><span class="product-desc">开源授权引擎</span></span><svg class="product-check" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M3.5 8.5 6.5 11.5 12.5 4.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></a><a class="product-row" href="https://cloud.speedle.io/zh-CN/"><img class="product-mark" src="/img/speedle/speedle-mark-cloud.svg" alt="" width="20" height="20"><span class="product-text"><span class="product-name">Speedle Cloud <span class="product-badge">即将上线</span></span><span class="product-desc">面向开发者的托管授权服务</span></span></a><a class="product-row" href="https://ai.speedle.io/zh/"><img class="product-mark" src="/img/speedle/speedle-mark-ai.svg" alt="" width="20" height="20"><span class="product-text"><span class="product-name">Speedle AI</span><span class="product-desc">用 AI 做权限，为 AI 管权限</span></span></a></div></div>
         <a href="/zh/#about">关于</a><a href="/zh/#features">功能</a>
         <a href="/zh/quick-start/">快速入门</a><a href="/zh/docs/">文档</a><a href="/zh/playground/">策略实验室</a>
-        <a href="/docs/sdks/docker/" lang="en" hreflang="en" aria-label="Switch to English">English</a>
+        <a href="/docs/deployment/docker/" lang="en" hreflang="en" aria-label="Switch to English">English</a>
         <a class="nav-github" href="https://github.com/teramoby/speedle-plus">GitHub</a>
       </nav>
     </div>
@@ -84,8 +83,6 @@
 <li data-docs-depth="0" class=""><a href="/zh/docs/overview/">概览</a></li>
 <li data-docs-depth="0" class=""><a href="/zh/docs/spdl/">SPDL：Speedle 策略定义语言</a></li>
 <li data-docs-depth="0" class=""><a href="/zh/docs/architecture/">系统架构</a></li>
-<li data-docs-depth="0" class=""><a href="/zh/docs/deployment-embeded/">Speedle 嵌入模式</a></li>
-<li data-docs-depth="0" class=""><a href="/zh/docs/deployment/">部署 Speedle</a></li>
 
 
 
@@ -126,15 +123,24 @@
 
 
 
-<li data-docs-depth="0" class="docs-nav-section parent"><span class="docs-nav-heading docs-nav-heading-link"><a href="/zh/docs/sdks/">SDK</a></span>
+<li data-docs-depth="0" class="docs-nav-section parent"><span class="docs-nav-heading docs-nav-heading-link"><a href="/zh/docs/deployment/">部署</a></span>
 <ul class="sub-menu">
+<li data-docs-depth="1" class=""><a href="/zh/docs/deployment/embedded/">Speedle 嵌入模式</a></li>
+<li data-docs-depth="1" class="active"><a href="/zh/docs/deployment/docker/" aria-current="page">Docker 镜像</a></li>
+</ul>
+
+</li>
+
+
+
+<li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading docs-nav-heading-link"><a href="/zh/docs/sdks/">SDK</a></span>
+<ul class="">
 <li data-docs-depth="1" class=""><a href="/zh/docs/sdks/java/">Java SDK</a></li>
 <li data-docs-depth="1" class=""><a href="/zh/docs/sdks/python/">Python SDK</a></li>
 <li data-docs-depth="1" class=""><a href="/zh/docs/sdks/go/">Go SDK</a></li>
 <li data-docs-depth="1" class=""><a href="/zh/docs/sdks/dotnet/">C#/.NET SDK</a></li>
 <li data-docs-depth="1" class=""><a href="/zh/docs/sdks/rust/">Rust SDK</a></li>
 <li data-docs-depth="1" class=""><a href="/zh/docs/sdks/node/">Node.js/TypeScript SDK</a></li>
-<li data-docs-depth="1" class="active"><a href="/zh/docs/sdks/docker/" aria-current="page">Docker 镜像</a></li>
 </ul>
 
 </li>

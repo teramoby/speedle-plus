@@ -147,6 +147,21 @@ docker run --name speedle-mysql --detach \  --publish 127.0.0.1:3306:3306 \  --v
     </item>
     
     <item>
+      <title>Speedle 嵌入模式</title>
+      <link>https://engine.speedle.io/zh/docs/deployment/embedded/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/zh/docs/deployment/embedded/</guid>
+      <description>什么是 Speedle 嵌入模式 嵌入模式将 Speedle 策略决策引擎运行在你的 Go 应用进程中，通过 evaluator 直接决策，无需启动 PMS 或 ADS 服务。应用负责认证用户，并为每次决策提供主体、资源和操作。
+编写代码前，可以先用 Playground 体验基本策略功能。如果希望以独立服务运行 Speedle，请参阅快速入门。
+前提条件 使用 Linux 或 macOS、命令行 shell，以及 Go 1.26.10 或 Go 1.27.3（也可使用同一大版本的更新补丁版本），安全补丁版本要求与快速入门一致。本例使用 Go modules 和已发布的 Speedle v1.6.0，推荐使用 Go 1.27.3；示例已在 Go 1.26.10 和 Go 1.27.3 下验证。
+按照 Go 官方安装说明安装 Go，然后检查版本：
+go version Go 会自动配置 GOROOT 和默认 GOPATH，无需手工设置。
+创建应用模块 在 Speedle 源码目录之外，选择一个有写入权限的目录，从新目录开始本例：
+mkdir speedle-embedded-demo cd speedle-embedded-demo go mod init example.com/speedle-embedded-demo go get github.com/teramoby/speedle-plus/pkg/eval@v1.6.0 如果已有包含 go.</description>
+    </item>
+    
+    <item>
       <title>Speedle 快速入门</title>
       <link>https://engine.speedle.io/zh/quick-start/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
@@ -213,34 +228,6 @@ grant user alice from corp get /books from corp 将这条授权限制在 corp �
     </item>
     
     <item>
-      <title>Speedle 嵌入模式</title>
-      <link>https://engine.speedle.io/zh/docs/deployment-embeded/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://engine.speedle.io/zh/docs/deployment-embeded/</guid>
-      <description>什么是 Speedle 嵌入模式 嵌入模式将 Speedle 策略决策引擎运行在你的 Go 应用进程中，通过 evaluator 直接决策，无需启动 PMS 或 ADS 服务。应用负责认证用户，并为每次决策提供主体、资源和操作。
-编写代码前，可以先用 Playground 体验基本策略功能。如果希望以独立服务运行 Speedle，请参阅快速入门。
-前提条件 使用 Linux 或 macOS、命令行 shell，以及 Go 1.26.10 或 Go 1.27.3（也可使用同一大版本的更新补丁版本），安全补丁版本要求与快速入门一致。本例使用 Go modules 和已发布的 Speedle v1.6.0，推荐使用 Go 1.27.3；示例已在 Go 1.26.10 和 Go 1.27.3 下验证。
-按照 Go 官方安装说明安装 Go，然后检查版本：
-go version Go 会自动配置 GOROOT 和默认 GOPATH，无需手工设置。
-创建应用模块 在 Speedle 源码目录之外，选择一个有写入权限的目录，从新目录开始本例：
-mkdir speedle-embedded-demo cd speedle-embedded-demo go mod init example.com/speedle-embedded-demo go get github.com/teramoby/speedle-plus/pkg/eval@v1.6.0 如果已有包含 go.</description>
-    </item>
-    
-    <item>
-      <title>部署 Speedle</title>
-      <link>https://engine.speedle.io/zh/docs/deployment/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://engine.speedle.io/zh/docs/deployment/</guid>
-      <description>选择部署方式 通过嵌入模式可以在 Go 进程内运行决策引擎；如果应用通过 REST 或 gRPC 调用 Speedle，则运行独立的 PMS 和 ADS。快速入门提供了完整的本地策略管理和授权验证步骤。
-使用当前 Go 版本构建 在 Linux 或 macOS 上准备 Go 1.26.10 或 Go 1.27.3（也可使用同一大版本的更新补丁版本）（推荐 Go 1.27.3）、Git 和命令行 shell。使用 Go modules，源码可放在任意可写目录，无需手工配置 GOROOT、GOPATH、dep 或 GOPATH 源码路径。
-git clone --depth 1 https://github.com/teramoby/speedle-plus.git cd speedle-plus mkdir -p bin go build -o ./bin/ ./cmd/spctl ./cmd/speedle-pms ./cmd/speedle-ads 生成的可执行文件为 bin/spctl、bin/speedle-pms 和 bin/speedle-ads。从源码根目录运行下面的本地示例，两个服务共享同一策略文件：
-./bin/speedle-pms --store-type file --filestore-loc ./docs-policies.json --endpoint 127.0.0.1:6733 --insecure=true 保持 PMS 运行，在同一源码目录的另一个终端启动 ADS：
-./bin/speedle-ads --store-type file --filestore-loc .</description>
-    </item>
-    
-    <item>
       <title>Speedle Cloud 应用令牌</title>
       <link>https://engine.speedle.io/zh/docs/cloud/tokens/</link>
       <pubDate>Sun, 08 Nov 2026 00:00:00 +0800</pubDate>
@@ -257,6 +244,22 @@ spdl_&amp;lt;canonical uppercase ULID id&amp;gt;_&amp;lt;43 base62 digits&amp;gt
 不要把令牌嵌入前端代码或持久化到浏览器存储，也不要放入 URL、源代码、截图、issue、遥测或日志。正常管理客户端可以短暂持有并展示新签发值，供一次性披露和用户主动复制；不得自动复制、下载、存储或记录秘密值。
 令牌列表只返回元数据，之后无法再次取回明文。v1 令牌没有内置过期时间。每个 service 最多同时保留两个有效令牌，已撤销的历史记录不占用这两个名额。
 查看令牌元数据 GET /api/tokens 按 ID 降序返回有效及已撤销令牌的元数据分页。默认每页 25 条，limit 为 1–100。cursor 是不包含边界项的令牌 ID；跟随 nextCursor 直至 null。接口永不返回秘密值。</description>
+    </item>
+    
+    <item>
+      <title>Docker 镜像</title>
+      <link>https://engine.speedle.io/zh/docs/deployment/docker/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/zh/docs/deployment/docker/</guid>
+      <description>Speedle 发布一个镜像，其中包含 speedle-pms、speedle-ads 和 spctl。镜像基于 scratch 构建，以 UID 65532 运行，里面没有 shell。第一个参数决定启动哪个程序。
+两个仓库上的镜像索引相同：
+ Docker Hub：docker.io/speedle/speedle GHCR：ghcr.io/teramoby/speedle  1.7.0 在两个仓库都发布了标签 1.7.0、1.7 和 latest，架构为 linux/amd64 和 linux/arm64。
+拉取镜像 docker pull docker.io/speedle/speedle:1.7.0 docker pull ghcr.io/teramoby/speedle:1.7.0 docker pull 会打印索引摘要。1.7.0 在两个仓库上的摘要都是 sha256:20bd3fe8169ec3ddadf1484285e34bd68004dbb457782223dc84a2a9f1dd91c0。
+选择标签 1.7.0 指向这一次发布。更高的 1.7 补丁发布后，1.7 会跟着移动。从 master 最新提交发布更高版本时，latest 会跟着移动。同一次版本可以再次发布，因此标签不是不可变的构建。
+查看索引摘要：
+docker buildx imagetools inspect docker.io/speedle/speedle:1.7.0 --format &amp;#39;{{.Manifest.Digest}}&amp;#39; 1.7.0 这次发布里，两个仓库上的 1.7.0、1.7 和 latest 都打印：
+sha256:20bd3fe8169ec3ddadf1484285e34bd68004dbb457782223dc84a2a9f1dd91c0 部署 1.7 或 latest 之前请再查一次摘要。要固定在同一次构建上，把镜像名写成带 @ 和该摘要的形式，例如 docker.io/speedle/speedle@sha256:20bd3fe8169ec3ddadf1484285e34bd68004dbb457782223dc84a2a9f1dd91c0。</description>
     </item>
     
     <item>
@@ -418,22 +421,6 @@ go run ./website/tests/examples/asserter // A deterministic mock for the token-a
 添加依赖 新建 ES 模块包并安装：
 mkdir speedle-example cd speedle-example npm init -y npm pkg set type=module npm install @speedle/sdk@0.2.1 调用本地 Speedle 按 SDK 概览中的说明启动 Speedle 并创建示例策略。将以下程序保存为 main.ts：
 import { Auth, Reason, SpeedleClient, SpeedleError } from &amp;#34;@speedle/sdk&amp;#34;; try { const speedle = new SpeedleClient({ backend: &amp;#34;speedle&amp;#34;, endpoint: &amp;#34;http://localhost:6734&amp;#34;, auth: Auth.none(), serviceName: &amp;#34;docs&amp;#34;, }); try { const allowed = await speedle.</description>
-    </item>
-    
-    <item>
-      <title>Docker 镜像</title>
-      <link>https://engine.speedle.io/zh/docs/sdks/docker/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://engine.speedle.io/zh/docs/sdks/docker/</guid>
-      <description>Speedle 发布一个镜像，其中包含 speedle-pms、speedle-ads 和 spctl。镜像基于 scratch 构建，以 UID 65532 运行，里面没有 shell。第一个参数决定启动哪个程序。
-两个仓库上的镜像索引相同：
- Docker Hub：docker.io/speedle/speedle GHCR：ghcr.io/teramoby/speedle  1.7.0 在两个仓库都发布了标签 1.7.0、1.7 和 latest，架构为 linux/amd64 和 linux/arm64。
-拉取镜像 docker pull docker.io/speedle/speedle:1.7.0 docker pull ghcr.io/teramoby/speedle:1.7.0 docker pull 会打印索引摘要。1.7.0 在两个仓库上的摘要都是 sha256:20bd3fe8169ec3ddadf1484285e34bd68004dbb457782223dc84a2a9f1dd91c0。
-选择标签 1.7.0 指向这一次发布。更高的 1.7 补丁发布后，1.7 会跟着移动。从 master 最新提交发布更高版本时，latest 会跟着移动。同一次版本可以再次发布，因此标签不是不可变的构建。
-查看索引摘要：
-docker buildx imagetools inspect docker.io/speedle/speedle:1.7.0 --format &amp;#39;{{.Manifest.Digest}}&amp;#39; 1.7.0 这次发布里，两个仓库上的 1.7.0、1.7 和 latest 都打印：
-sha256:20bd3fe8169ec3ddadf1484285e34bd68004dbb457782223dc84a2a9f1dd91c0 部署 1.7 或 latest 之前请再查一次摘要。要固定在同一次构建上，把镜像名写成带 @ 和该摘要的形式，例如 docker.io/speedle/speedle@sha256:20bd3fe8169ec3ddadf1484285e34bd68004dbb457782223dc84a2a9f1dd91c0。</description>
     </item>
     
     <item>

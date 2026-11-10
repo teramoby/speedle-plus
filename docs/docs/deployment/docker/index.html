@@ -14,17 +14,16 @@
 <meta name="description" content="Run speedle-pms, speedle-ads and spctl from the published Speedle image.">
 <meta name="generator" content="Hugo 0.48" />
 <link href="https://engine.speedle.io/index.xml" rel="alternate" type="application/rss+xml">
-<link rel="canonical" href="https://engine.speedle.io/docs/sdks/docker/">
+<link rel="canonical" href="https://engine.speedle.io/docs/deployment/docker/">
 
-<link rel="alternate" hreflang="en" href="https://engine.speedle.io/docs/sdks/docker/">
-<link rel="alternate" hreflang="zh-CN" href="https://engine.speedle.io/zh/docs/sdks/docker/">
-<link rel="alternate" hreflang="x-default" href="https://engine.speedle.io/docs/sdks/docker/">
+<link rel="alternate" hreflang="en" href="https://engine.speedle.io/docs/deployment/docker/">
+<link rel="alternate" hreflang="zh-CN" href="https://engine.speedle.io/zh/docs/deployment/docker/">
+<link rel="alternate" hreflang="x-default" href="https://engine.speedle.io/docs/deployment/docker/">
 <meta property="og:type" content="article">
-<meta property="article:modified_time" content="2026-11-10T12:28:43&#43;08:00">
 <meta property="og:site_name" content="Speedle Engine">
 <meta property="og:title" content="Docker image · Speedle Engine">
 <meta property="og:description" content="Run speedle-pms, speedle-ads and spctl from the published Speedle image.">
-<meta property="og:url" content="https://engine.speedle.io/docs/sdks/docker/">
+<meta property="og:url" content="https://engine.speedle.io/docs/deployment/docker/">
 <meta property="og:image" content="https://engine.speedle.io/img/social/engine-en.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
@@ -36,8 +35,8 @@
 <meta name="twitter:image" content="https://engine.speedle.io/img/social/engine-en.png">
 <meta name="twitter:image:alt" content="Speedle Engine — Fast. Simple. Access control">
 
-<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/docs/sdks/docker/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-10T12:28:43+08:00","description":"Run speedle-pms, speedle-ads and spctl from the published Speedle image.","headline":"Docker image","image":"https://engine.speedle.io/img/social/engine-en.png","inLanguage":"en","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/docs/sdks/docker/","@type":"WebPage"},"name":"Docker image","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/docs/sdks/docker/"}</script>
-<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/docs/sdks/docker/#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://engine.speedle.io/","name":"Home","position":1},{"@type":"ListItem","item":"https://engine.speedle.io/docs/","name":"Documentation","position":2},{"@type":"ListItem","item":"https://engine.speedle.io/docs/sdks/","name":"SDKs","position":3},{"@type":"ListItem","item":"https://engine.speedle.io/docs/sdks/docker/","name":"Docker image","position":4}]}</script><link href="/css/docs.css" rel="stylesheet" type="text/css">
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/docs/deployment/docker/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"description":"Run speedle-pms, speedle-ads and spctl from the published Speedle image.","headline":"Docker image","image":"https://engine.speedle.io/img/social/engine-en.png","inLanguage":"en","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/docs/deployment/docker/","@type":"WebPage"},"name":"Docker image","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/docs/deployment/docker/"}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/docs/deployment/docker/#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://engine.speedle.io/","name":"Home","position":1},{"@type":"ListItem","item":"https://engine.speedle.io/docs/","name":"Documentation","position":2},{"@type":"ListItem","item":"https://engine.speedle.io/docs/deployment/","name":"Deployment","position":3},{"@type":"ListItem","item":"https://engine.speedle.io/docs/deployment/docker/","name":"Docker image","position":4}]}</script><link href="/css/docs.css" rel="stylesheet" type="text/css">
 
 
     <link href="/css/navigation.css?v=header-20261106-v8" rel="stylesheet">
@@ -55,7 +54,7 @@
         <div class="products"><button class="products-button" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="products-panel">Products<svg class="products-chevron" width="10" height="10" viewBox="0 0 10 10" aria-hidden="true" focusable="false"><path d="M2 3.5 5 6.5 8 3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button><span class="products-heading" aria-hidden="true">Products</span><div class="products-panel" id="products-panel" role="group" aria-label="Products"><a class="product-row" href="https://engine.speedle.io/" aria-current="page"><img class="product-mark" src="/img/speedle/speedle-mark-engine.svg" alt="" width="20" height="20"><span class="product-text"><span class="product-name">Speedle Engine</span><span class="product-desc">Open-source authorization engine</span></span><svg class="product-check" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M3.5 8.5 6.5 11.5 12.5 4.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></a><a class="product-row" href="https://cloud.speedle.io/"><img class="product-mark" src="/img/speedle/speedle-mark-cloud.svg" alt="" width="20" height="20"><span class="product-text"><span class="product-name">Speedle Cloud <span class="product-badge">Coming soon</span></span><span class="product-desc">Hosted authorization for developers</span></span></a><a class="product-row" href="https://ai.speedle.io/"><img class="product-mark" src="/img/speedle/speedle-mark-ai.svg" alt="" width="20" height="20"><span class="product-text"><span class="product-name">Speedle AI</span><span class="product-desc">AI for access control, access control for AI</span></span></a></div></div>
         <a href="/#about">About</a><a href="/#features">Features</a>
         <a href="/quick-start/">Getting started</a><a href="/docs/">Docs</a><a href="/playground/">Playground</a>
-        <a href="/zh/docs/sdks/docker/" lang="zh-CN" hreflang="zh-CN" aria-label="切换到中文">中文</a>
+        <a href="/zh/docs/deployment/docker/" lang="zh-CN" hreflang="zh-CN" aria-label="切换到中文">中文</a>
         <a class="nav-github" href="https://github.com/teramoby/speedle-plus">GitHub</a>
       </nav>
     </div>
@@ -82,7 +81,6 @@
 <li data-docs-depth="0" class=""><a href="/docs/overview/">Overview</a></li>
 <li data-docs-depth="0" class=""><a href="/docs/spdl/">SPDL - Speedle Policy Definition Language</a></li>
 <li data-docs-depth="0" class=""><a href="/docs/architecture/">Architecture</a></li>
-<li data-docs-depth="0" class=""><a href="/docs/deployment-embeded/">Speedle embedded mode</a></li>
 
 
 
@@ -98,7 +96,6 @@
 <li data-docs-depth="0" class=""><a href="/docs/decisions/">Authorization Decisions</a></li>
 <li data-docs-depth="0" class=""><a href="/docs/idd/">Identity Domain</a></li>
 <li data-docs-depth="0" class=""><a href="/docs/assertor/">Token asserter</a></li>
-<li data-docs-depth="0" class=""><a href="/docs/deployment/">Deployment</a></li>
 
 
 
@@ -124,15 +121,24 @@
 
 
 
-<li data-docs-depth="0" class="docs-nav-section parent"><span class="docs-nav-heading docs-nav-heading-link"><a href="/docs/sdks/">SDKs</a></span>
+<li data-docs-depth="0" class="docs-nav-section parent"><span class="docs-nav-heading docs-nav-heading-link"><a href="/docs/deployment/">Deployment</a></span>
 <ul class="sub-menu">
+<li data-docs-depth="1" class=""><a href="/docs/deployment/embedded/">Speedle embedded mode</a></li>
+<li data-docs-depth="1" class="active"><a href="/docs/deployment/docker/" aria-current="page">Docker image</a></li>
+</ul>
+
+</li>
+
+
+
+<li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading docs-nav-heading-link"><a href="/docs/sdks/">SDKs</a></span>
+<ul class="">
 <li data-docs-depth="1" class=""><a href="/docs/sdks/java/">Java SDK</a></li>
 <li data-docs-depth="1" class=""><a href="/docs/sdks/python/">Python SDK</a></li>
 <li data-docs-depth="1" class=""><a href="/docs/sdks/go/">Go SDK</a></li>
 <li data-docs-depth="1" class=""><a href="/docs/sdks/dotnet/">C#/.NET SDK</a></li>
 <li data-docs-depth="1" class=""><a href="/docs/sdks/rust/">Rust SDK</a></li>
 <li data-docs-depth="1" class=""><a href="/docs/sdks/node/">Node.js/TypeScript SDK</a></li>
-<li data-docs-depth="1" class="active"><a href="/docs/sdks/docker/" aria-current="page">Docker image</a></li>
 </ul>
 
 </li>

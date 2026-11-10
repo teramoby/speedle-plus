@@ -11,7 +11,7 @@ categories = ["docs"]
 bref = "Speedle 决策 API 的六种语言客户端库，既可用于自托管的 Speedle ADS，也可用于 Speedle Cloud（即将上线）。"
 +++
 
-Speedle SDK 是决策 API `POST /authz-check/v1/is-allowed` 的客户端库，既可用于自托管的 Speedle ADS，也可用于 Speedle Cloud。每个语言页面说明如何添加软件包，并分别给出两种场景下经过实测的完整程序。源代码和完整参考见 [teramoby/speedle-sdk](https://github.com/teramoby/speedle-sdk)。
+Speedle SDK 是决策 API `POST /authz-check/v1/is-allowed` 的客户端库，既可用于自托管的 Speedle ADS，也可用于 Speedle Cloud。每个语言页面说明如何添加软件包，并分别给出两种场景下经过实测的完整程序。源代码和完整参考见 [teramoby/speedle-sdk](https://github.com/teramoby/speedle-sdk)。这些示例要调用的 PMS 和 ADS，见[部署](/docs/deployment/)和[Docker 镜像](/docs/deployment/docker/)。
 
 ## 软件包
 
@@ -23,10 +23,6 @@ Java、Python、Go、.NET 和 Rust 的版本均为 0.2.0。`@speedle/sdk` 已在
 - [C#/.NET](/docs/sdks/dotnet/)：NuGet `Speedle.Sdk`，已发布。
 - [Rust](/docs/sdks/rust/)：crates.io `speedle`，已发布。
 - [Node.js / TypeScript](/docs/sdks/node/)：npm `@speedle/sdk`，已发布。
-
-## Docker 镜像
-
-[Docker 镜像](/docs/sdks/docker/) 用 `docker.io/speedle/speedle` 或 `ghcr.io/teramoby/speedle` 运行 `speedle-pms`、`speedle-ads` 和 `spctl`。把 ADS 发布到 `127.0.0.1:6734`，本页的客户端指向这个端口即可。
 
 ## 功能
 

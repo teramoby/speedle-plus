@@ -1,7 +1,8 @@
 +++
 title = "Speedle 嵌入模式"
 description = "使用 Go modules 将 Speedle 嵌入 Go 应用，并验证允许与拒绝的授权结果。"
-weight = 12
+weight = 10
+aliases = ["/zh/docs/deployment-embeded/"]
 draft = false
 toc = true
 tocheading = "h2"
@@ -13,11 +14,11 @@ bref = ""
 
 嵌入模式将 Speedle 策略决策引擎运行在你的 Go 应用进程中，通过 evaluator 直接决策，无需启动 PMS 或 ADS 服务。应用负责认证用户，并为每次决策提供主体、资源和操作。
 
-编写代码前，可以先用 [Playground](../../playground/) 体验基本策略功能。如果希望以独立服务运行 Speedle，请参阅[快速入门](../../quick-start/)。
+编写代码前，可以先用 [Playground](/playground/) 体验基本策略功能。如果希望以独立服务运行 Speedle，请参阅[快速入门](/quick-start/)。
 
 ## 前提条件
 
-使用 Linux 或 macOS、命令行 shell，以及 **Go 1.26.10 或 Go 1.27.3**（也可使用同一大版本的更新补丁版本），安全补丁版本要求与[快速入门](../../quick-start/)一致。本例使用 Go modules 和已发布的 **Speedle v1.6.0**，推荐使用 Go 1.27.3；示例已在 Go 1.26.10 和 Go 1.27.3 下验证。
+使用 Linux 或 macOS、命令行 shell，以及 **Go 1.26.10 或 Go 1.27.3**（也可使用同一大版本的更新补丁版本），安全补丁版本要求与[快速入门](/quick-start/)一致。本例使用 Go modules 和已发布的 **Speedle v1.6.0**，推荐使用 Go 1.27.3；示例已在 Go 1.26.10 和 Go 1.27.3 下验证。
 
 按照 [Go 官方安装说明](https://go.dev/doc/install)安装 Go，然后检查版本：
 

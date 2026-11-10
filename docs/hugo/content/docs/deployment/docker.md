@@ -1,11 +1,10 @@
 +++
 title = "Docker image"
 description = "Run speedle-pms, speedle-ads and spctl from the published Speedle image."
-weight = 70
+weight = 20
 draft = false
 toc = true
 tocheading = "h2"
-tags = ["sdk"]
 categories = ["docs"]
 bref = "One image on Docker Hub and GHCR runs the policy manager, the decision service and spctl, with a shared file store."
 +++

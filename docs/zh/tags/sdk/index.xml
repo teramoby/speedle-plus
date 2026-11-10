@@ -6,7 +6,7 @@
     <description>Recent content in Sdk on Speedle</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>zh-cn</language>
-    <lastBuildDate>Tue, 10 Nov 2026 11:48:00 +0800</lastBuildDate>
+    <lastBuildDate>Tue, 10 Nov 2026 12:48:41 +0800</lastBuildDate>
     
 	<atom:link href="https://engine.speedle.io/zh/tags/sdk/index.xml" rel="self" type="application/rss+xml" />
     
@@ -22,22 +22,6 @@
 添加依赖 新建控制台项目并添加软件包：
 dotnet new console -o SpeedleExample cd SpeedleExample dotnet add package Speedle.Sdk --version 0.2.0 调用本地 Speedle 按 SDK 概览中的说明启动 Speedle 并创建示例策略。将 Program.cs 替换为：
 using Speedle.Sdk; try { await using var speedle = new SpeedleClient(new SpeedleClientOptions { Backend = Backend.Speedle, Endpoint = new Uri(&amp;#34;http://localhost:6734&amp;#34;), Auth = Auth.None(), ServiceName = &amp;#34;docs&amp;#34;, }); bool allowed = await speedle.IsAllowedAsync(&amp;#34;alice&amp;#34;, &amp;#34;get&amp;#34;, &amp;#34;/docs/public&amp;#34;); Console.</description>
-    </item>
-    
-    <item>
-      <title>Docker 镜像</title>
-      <link>https://engine.speedle.io/zh/docs/sdks/docker/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://engine.speedle.io/zh/docs/sdks/docker/</guid>
-      <description>Speedle 发布一个镜像，其中包含 speedle-pms、speedle-ads 和 spctl。镜像基于 scratch 构建，以 UID 65532 运行，里面没有 shell。第一个参数决定启动哪个程序。
-两个仓库上的镜像索引相同：
- Docker Hub：docker.io/speedle/speedle GHCR：ghcr.io/teramoby/speedle  1.7.0 在两个仓库都发布了标签 1.7.0、1.7 和 latest，架构为 linux/amd64 和 linux/arm64。
-拉取镜像 docker pull docker.io/speedle/speedle:1.7.0 docker pull ghcr.io/teramoby/speedle:1.7.0 docker pull 会打印索引摘要。1.7.0 在两个仓库上的摘要都是 sha256:20bd3fe8169ec3ddadf1484285e34bd68004dbb457782223dc84a2a9f1dd91c0。
-选择标签 1.7.0 指向这一次发布。更高的 1.7 补丁发布后，1.7 会跟着移动。从 master 最新提交发布更高版本时，latest 会跟着移动。同一次版本可以再次发布，因此标签不是不可变的构建。
-查看索引摘要：
-docker buildx imagetools inspect docker.io/speedle/speedle:1.7.0 --format &amp;#39;{{.Manifest.Digest}}&amp;#39; 1.7.0 这次发布里，两个仓库上的 1.7.0、1.7 和 latest 都打印：
-sha256:20bd3fe8169ec3ddadf1484285e34bd68004dbb457782223dc84a2a9f1dd91c0 部署 1.7 或 latest 之前请再查一次摘要。要固定在同一次构建上，把镜像名写成带 @ 和该摘要的形式，例如 docker.io/speedle/speedle@sha256:20bd3fe8169ec3ddadf1484285e34bd68004dbb457782223dc84a2a9f1dd91c0。</description>
     </item>
     
     <item>
@@ -109,13 +93,12 @@ use speedle::blocking::Client; use speedle::{Auth, Backend}; fn main() { if let 
     <item>
       <title>SDK</title>
       <link>https://engine.speedle.io/zh/docs/sdks/</link>
-      <pubDate>Tue, 10 Nov 2026 11:48:00 +0800</pubDate>
+      <pubDate>Tue, 10 Nov 2026 12:48:41 +0800</pubDate>
       
       <guid>https://engine.speedle.io/zh/docs/sdks/</guid>
-      <description>Speedle SDK 是决策 API POST /authz-check/v1/is-allowed 的客户端库，既可用于自托管的 Speedle ADS，也可用于 Speedle Cloud。每个语言页面说明如何添加软件包，并分别给出两种场景下经过实测的完整程序。源代码和完整参考见 teramoby/speedle-sdk。
+      <description>Speedle SDK 是决策 API POST /authz-check/v1/is-allowed 的客户端库，既可用于自托管的 Speedle ADS，也可用于 Speedle Cloud。每个语言页面说明如何添加软件包，并分别给出两种场景下经过实测的完整程序。源代码和完整参考见 teramoby/speedle-sdk。这些示例要调用的 PMS 和 ADS，见部署和Docker 镜像。
 软件包 Java、Python、Go、.NET 和 Rust 的版本均为 0.2.0。@speedle/sdk 已在 npm 发布。安装命令见各语言页面。
- Java：Maven Central io.speedle:speedle-sdk，已发布。 Python：PyPI speedle，已发布。 Go：Go 模块 github.com/teramoby/speedle-sdk/go，已发布。 C#/.NET：NuGet Speedle.Sdk，已发布。 Rust：crates.io speedle，已发布。 Node.js / TypeScript：npm @speedle/sdk，已发布。  Docker 镜像 Docker 镜像 用 docker.io/speedle/speedle 或 ghcr.io/teramoby/speedle 运行 speedle-pms、speedle-ads 和 spctl。把 ADS 发布到 127.0.0.1:6734，本页的客户端指向这个端口即可。
-功能    功能 状态     isAllowed：返回授权结果 六个 SDK 均支持   check：返回授权结果及原因，例如没有适用的策略 六个 SDK 均支持   自托管 Speedle ADS 六个 SDK 均支持   Speedle Cloud 即将上线    方法名遵循各语言的命名习惯：Python 和 Rust 中为 is_allowed 与 check，Go 中为 IsAllowed 与 Check，.</description>
+ Java：Maven Central io.speedle:speedle-sdk，已发布。 Python：PyPI speedle，已发布。 Go：Go 模块 github.com/teramoby/speedle-sdk/go，已发布。 C#/.NET：NuGet Speedle.Sdk，已发布。 Rust：crates.io speedle，已发布。 Node.js / TypeScript：npm @speedle/sdk，已发布。  功能    功能 状态     isAllowed：返回授权结果 六个 SDK 均支持   check：返回授权结果及原因，例如没有适用的策略 六个 SDK 均支持   自托管 Speedle ADS 六个 SDK 均支持   Speedle Cloud 即将上线    方法名遵循各语言的命名习惯：Python 和 Rust 中为 is_allowed 与 check，Go 中为 IsAllowed 与 Check，.</description>
     </item>
     
   </channel>
