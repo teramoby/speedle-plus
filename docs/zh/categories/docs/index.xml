@@ -6,7 +6,7 @@
     <description>Recent content in Docs on Speedle</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>zh-cn</language>
-    <lastBuildDate>Tue, 10 Nov 2026 08:28:25 +0800</lastBuildDate>
+    <lastBuildDate>Tue, 10 Nov 2026 08:53:34 +0800</lastBuildDate>
     
 	<atom:link href="https://engine.speedle.io/zh/categories/docs/index.xml" rel="self" type="application/rss+xml" />
     
@@ -197,14 +197,15 @@ gRPC API  PMS proto：pb.PolicyManager ADS proto：pb.Evaluator  客户端必须
       <description>Node.js SDK 需要 Node.js 22 或更高版本，同时提供 ESM 和 CommonJS 构建及 TypeScript 类型，没有运行时依赖。软件包：npm 上已发布的 @speedle/sdk。参考文档：speedle-sdk/node。
 示例使用的策略见 SDK 概览。
 添加依赖 新建 ES 模块包并安装：
-mkdir speedle-example cd speedle-example npm init -y npm pkg set type=module npm install @speedle/sdk 调用本地 Speedle 按 SDK 概览中的说明启动 Speedle 并创建示例策略。将以下程序保存为 main.ts：
-import { Auth, Reason, SpeedleClient, SpeedleError } from &amp;#34;@speedle/sdk&amp;#34;; try { const speedle = new SpeedleClient({ backend: &amp;#34;speedle&amp;#34;, endpoint: &amp;#34;http://localhost:6734&amp;#34;, auth: Auth.none(), serviceName: &amp;#34;docs&amp;#34;, }); try { const allowed = await speedle.</description>
+mkdir speedle-example cd speedle-example npm init -y npm pkg set type=module npm install @speedle/sdk 该命令安装 npm 上当前已发布的 @speedle/sdk。下面的程序调用该软件包的客户端 API。
+调用本地 Speedle 按 SDK 概览中的说明启动 Speedle 并创建示例策略。将以下程序保存为 main.ts：
+import { Auth, Reason, SpeedleClient, SpeedleError } from &amp;#34;@speedle/sdk&amp;#34;; try { const speedle = new SpeedleClient({ backend: &amp;#34;speedle&amp;#34;, endpoint: &amp;#34;http://localhost:6734&amp;#34;, auth: Auth.</description>
     </item>
     
     <item>
       <title>SDK</title>
       <link>https://engine.speedle.io/zh/docs/sdks/</link>
-      <pubDate>Tue, 10 Nov 2026 08:28:25 +0800</pubDate>
+      <pubDate>Tue, 10 Nov 2026 08:53:34 +0800</pubDate>
       
       <guid>https://engine.speedle.io/zh/docs/sdks/</guid>
       <description>Speedle SDK 是决策 API POST /authz-check/v1/is-allowed 的客户端库，既可用于自托管的 Speedle ADS，也可用于 Speedle Cloud。每个语言页面说明如何添加软件包，并分别给出两种场景下经过实测的完整程序。源代码和完整参考见 teramoby/speedle-sdk。

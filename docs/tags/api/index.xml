@@ -79,7 +79,7 @@ Add the dependency Maven, a complete pom.xml:
       <description>The Node.js SDK needs Node.js 22 or later, ships ESM and CommonJS builds with TypeScript types, and has no runtime dependencies. Package: @speedle/sdk, published on npm. Reference: speedle-sdk/node.
 The examples check the policy described in the SDKs overview.
 Add the dependency In a new ES module package:
-mkdir speedle-example cd speedle-example npm init -y npm pkg set type=module npm install @speedle/sdk Call a local Speedle Start Speedle and create the example policy as described in the SDKs overview.</description>
+mkdir speedle-example cd speedle-example npm init -y npm pkg set type=module npm install @speedle/sdk The command installs the @speedle/sdk release currently published on npm.</description>
     </item>
     
     <item>

@@ -72,8 +72,9 @@ plugins { application } repositories { mavenCentral() } dependencies { implement
       <description>Node.js SDK 需要 Node.js 22 或更高版本，同时提供 ESM 和 CommonJS 构建及 TypeScript 类型，没有运行时依赖。软件包：npm 上已发布的 @speedle/sdk。参考文档：speedle-sdk/node。
 示例使用的策略见 SDK 概览。
 添加依赖 新建 ES 模块包并安装：
-mkdir speedle-example cd speedle-example npm init -y npm pkg set type=module npm install @speedle/sdk 调用本地 Speedle 按 SDK 概览中的说明启动 Speedle 并创建示例策略。将以下程序保存为 main.ts：
-import { Auth, Reason, SpeedleClient, SpeedleError } from &amp;#34;@speedle/sdk&amp;#34;; try { const speedle = new SpeedleClient({ backend: &amp;#34;speedle&amp;#34;, endpoint: &amp;#34;http://localhost:6734&amp;#34;, auth: Auth.none(), serviceName: &amp;#34;docs&amp;#34;, }); try { const allowed = await speedle.</description>
+mkdir speedle-example cd speedle-example npm init -y npm pkg set type=module npm install @speedle/sdk 该命令安装 npm 上当前已发布的 @speedle/sdk。下面的程序调用该软件包的客户端 API。
+调用本地 Speedle 按 SDK 概览中的说明启动 Speedle 并创建示例策略。将以下程序保存为 main.ts：
+import { Auth, Reason, SpeedleClient, SpeedleError } from &amp;#34;@speedle/sdk&amp;#34;; try { const speedle = new SpeedleClient({ backend: &amp;#34;speedle&amp;#34;, endpoint: &amp;#34;http://localhost:6734&amp;#34;, auth: Auth.</description>
     </item>
     
     <item>

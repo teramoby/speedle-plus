@@ -2624,6 +2624,8 @@ npm pkg set type=module
 npm install @speedle/sdk
 ```
 
+The command installs the `@speedle/sdk` release currently published on npm. The program below uses that release's client API.
+
 ### Call a local Speedle
 
 Start Speedle and create the example policy as described in the [SDKs overview](https://engine.speedle.io/docs/sdks/#example-policy). Save this program as `main.ts`:

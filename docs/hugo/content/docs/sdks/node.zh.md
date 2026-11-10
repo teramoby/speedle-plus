@@ -27,6 +27,8 @@ npm pkg set type=module
 npm install @speedle/sdk
 ```
 
+该命令安装 npm 上当前已发布的 `@speedle/sdk`。下面的程序调用该软件包的客户端 API。
+
 ## 调用本地 Speedle
 
 按 [SDK 概览](/docs/sdks/#示例策略)中的说明启动 Speedle 并创建示例策略。将以下程序保存为 `main.ts`：
