@@ -6,7 +6,7 @@
     <description>Recent content in Docs on Speedle</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>zh-cn</language>
-    <lastBuildDate>Tue, 10 Nov 2026 12:48:41 +0800</lastBuildDate>
+    <lastBuildDate>Tue, 10 Nov 2026 13:15:15 +0800</lastBuildDate>
     
 	<atom:link href="https://engine.speedle.io/zh/categories/docs/index.xml" rel="self" type="application/rss+xml" />
     
@@ -178,7 +178,7 @@ go run ./website/tests/examples/asserter // A deterministic mock for the token-a
     <item>
       <title>API</title>
       <link>https://engine.speedle.io/zh/docs/api/</link>
-      <pubDate>Sun, 08 Nov 2026 11:21:16 +0800</pubDate>
+      <pubDate>Tue, 10 Nov 2026 13:15:15 +0800</pubDate>
       
       <guid>https://engine.speedle.io/zh/docs/api/</guid>
       <description>Java、Python、Go、.NET、Rust 和 Node.js/TypeScript 的客户端库见 SDK。
@@ -204,7 +204,7 @@ import { Auth, Reason, SpeedleClient, SpeedleError } from &amp;#34;@speedle/sdk&
     <item>
       <title>SDK</title>
       <link>https://engine.speedle.io/zh/docs/sdks/</link>
-      <pubDate>Tue, 10 Nov 2026 12:48:41 +0800</pubDate>
+      <pubDate>Tue, 10 Nov 2026 13:15:15 +0800</pubDate>
       
       <guid>https://engine.speedle.io/zh/docs/sdks/</guid>
       <description>Speedle SDK 是决策 API POST /authz-check/v1/is-allowed 的客户端库，既可用于自托管的 Speedle ADS，也可用于 Speedle Cloud。每个语言页面说明如何添加软件包，并分别给出两种场景下经过实测的完整程序。源代码和完整参考见 teramoby/speedle-sdk。这些示例要调用的 PMS 和 ADS，见部署和Docker 镜像。
@@ -455,7 +455,7 @@ Oracle Speedle 历史版本 0.1.0 是原项目首次开源的版本，包含策�
     <item>
       <title>部署</title>
       <link>https://engine.speedle.io/zh/docs/deployment/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <pubDate>Tue, 10 Nov 2026 13:15:15 +0800</pubDate>
       
       <guid>https://engine.speedle.io/zh/docs/deployment/</guid>
       <description>Speedle 可以嵌入 Go 应用，也可以用一个已发布的容器镜像运行，或者作为独立的 PMS 和 ADS 服务运行。
@@ -522,7 +522,7 @@ GET /readyz 报告实例当前能否响应授权请求：就绪返回 200，否�
     <item>
       <title>集成</title>
       <link>https://engine.speedle.io/zh/integrations/</link>
-      <pubDate>Sun, 08 Nov 2026 11:21:16 +0800</pubDate>
+      <pubDate>Tue, 10 Nov 2026 13:15:15 +0800</pubDate>
       
       <guid>https://engine.speedle.io/zh/integrations/</guid>
       <description>Speedle 负责授权决策。应用、网关或平台中的策略执行点（PEP）在每次访问时向 Speedle 请求决策，并执行返回的结果。下面是目前支持的接入方式。

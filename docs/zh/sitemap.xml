@@ -49,7 +49,7 @@
   
   <url>
     <loc>https://engine.speedle.io/zh/docs/overview/</loc>
-    <lastmod>2026-11-08T11:21:16+08:00</lastmod>
+    <lastmod>2026-11-10T13:15:15+08:00</lastmod>
     <xhtml:link
                 rel="alternate"
                 hreflang="en"
@@ -139,6 +139,7 @@
   
   <url>
     <loc>https://engine.speedle.io/zh/docs/deployment/embedded/</loc>
+    <lastmod>2026-11-10T13:15:15+08:00</lastmod>
     <xhtml:link
                 rel="alternate"
                 hreflang="en"
@@ -228,6 +229,7 @@
   
   <url>
     <loc>https://engine.speedle.io/zh/docs/deployment/docker/</loc>
+    <lastmod>2026-11-10T13:15:15+08:00</lastmod>
     <xhtml:link
                 rel="alternate"
                 hreflang="en"
@@ -452,7 +454,7 @@
   
   <url>
     <loc>https://engine.speedle.io/zh/docs/api/</loc>
-    <lastmod>2026-11-08T11:21:16+08:00</lastmod>
+    <lastmod>2026-11-10T13:15:15+08:00</lastmod>
     <xhtml:link
                 rel="alternate"
                 hreflang="en"
@@ -467,6 +469,7 @@
   
   <url>
     <loc>https://engine.speedle.io/zh/docs/deployment/</loc>
+    <lastmod>2026-11-10T13:15:15+08:00</lastmod>
     <xhtml:link
                 rel="alternate"
                 hreflang="en"
@@ -481,7 +484,7 @@
   
   <url>
     <loc>https://engine.speedle.io/zh/docs/sdks/</loc>
-    <lastmod>2026-11-10T12:48:41+08:00</lastmod>
+    <lastmod>2026-11-10T13:15:15+08:00</lastmod>
     <xhtml:link
                 rel="alternate"
                 hreflang="en"
@@ -541,7 +544,7 @@
   
   <url>
     <loc>https://engine.speedle.io/zh/docs/versions/</loc>
-    <lastmod>2026-11-07T20:54:01+08:00</lastmod>
+    <lastmod>2026-11-10T13:15:15+08:00</lastmod>
     <xhtml:link
                 rel="alternate"
                 hreflang="en"
@@ -691,7 +694,7 @@
   
   <url>
     <loc>https://engine.speedle.io/zh/integrations/</loc>
-    <lastmod>2026-11-08T11:21:16+08:00</lastmod>
+    <lastmod>2026-11-10T13:15:15+08:00</lastmod>
     <xhtml:link
                 rel="alternate"
                 hreflang="en"
