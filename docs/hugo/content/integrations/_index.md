@@ -4,6 +4,7 @@ noindex = false
 categories = ["docs"]
 description = "Connect Speedle with your applications and infrastructure."
 aliases = ["/integrations/istio/", "/integrations/kubernetes/", "/integrations/docker/"]
+lastmod = 2026-11-10T14:45:43+08:00
 +++
 
 Speedle makes authorization decisions. A policy enforcement point (PEP) in your application, gateway or platform calls Speedle for each decision and enforces the result. The interfaces below are supported today.

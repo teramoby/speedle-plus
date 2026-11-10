@@ -2,6 +2,7 @@
 title = "Global Policy"
 description = "Policies take effect globally"
 date = 2019-01-18T21:19:44+08:00
+lastmod = 2026-10-29T11:53:01+08:00
 weight = 2
 draft = false
 bref = "When there are policies that are common to all services, it's tedious and difficult to manage if the same policies are created in each service. In this scenario, you can use global policies to simplify your policy management tasks"

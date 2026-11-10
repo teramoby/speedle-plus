@@ -9,6 +9,7 @@ tocheading = "h2"
 tags = ["api", "sdk"]
 categories = ["docs"]
 bref = "用 npm 安装 @speedle/sdk，再向本地 Speedle 或 Speedle Cloud 调用 isAllowed 与 check。"
+lastmod = 2026-11-10T09:48:45+08:00
 +++
 
 Node.js SDK 需要 Node.js 22 或更高版本，同时提供 ESM 和 CommonJS 构建及 TypeScript 类型，没有运行时依赖。软件包：npm 上已发布的 [`@speedle/sdk`](https://www.npmjs.com/package/@speedle/sdk)。参考文档：[speedle-sdk/node](https://github.com/teramoby/speedle-sdk/tree/main/node)。

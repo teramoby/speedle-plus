@@ -8,6 +8,7 @@ toc = true
 tocheading = "h2"
 categories = ["docs"]
 bref = "已发布的 Speedle Cloud 控制台流程，涵盖登录、账号设置、已保存策略和 Playground 判定。"
+lastmod = 2026-11-08T21:11:24+08:00
 +++
 
 **Speedle Cloud 即将上线。** cloud.speedle.io 的生产环境尚未开放登录，Cloud 页眉显示 **Coming soon（即将上线）** 徽章。登录关闭时，登录页会提示即将开放。本文介绍已发布的使用流程，不代表生产控制台目前已经开放；生产环境开放登录后会补充实际截图。

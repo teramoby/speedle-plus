@@ -8,6 +8,7 @@ linksection = true
 tocheading = "h2"
 categories = ["docs"]
 bref = "Embedded mode, the Docker image, Homebrew, source builds, and standalone PMS and ADS services."
+lastmod = 2026-11-10T14:45:43+08:00
 +++
 
 Speedle runs inside a Go application, from one published container image, or as standalone PMS and ADS services.

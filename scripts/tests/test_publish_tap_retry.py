@@ -6,6 +6,7 @@ import os
 import re
 import shutil
 import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -39,7 +40,34 @@ class PublishTapRetryTest(unittest.TestCase):
             root = Path(temporary)
             self._run_case(root, open_pr=False, existing_tap_branch=True)
 
-    def _run_case(self, root, open_pr, existing_tap_branch=False):
+    def test_release_pr_bumps_the_quick_start_pin(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            self._run_case(root, open_pr=False, quick_start="v1.6.0")
+
+    def test_stamp_writes_utc_in_the_form_hugo_prints(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            self._write_quick_start(root, "v1.6.0")
+            (root / "docs/sitemap.xml").write_text(
+                "<lastmod>2020-01-01T00:00:00+00:00</lastmod>\n"
+            )
+            completed = subprocess.run(
+                [sys.executable, str(HOMEBREW / "bump-quick-start-pin.py"),
+                 "--stamp", "2024-05-01T00:00:00Z", str(root)],
+                check=False, text=True, capture_output=True,
+            )
+            self.assertEqual(completed.returncode, 0, completed.stderr)
+            self.assertIn("2024-05-01T00:00:00+00:00", completed.stdout)
+            guide = (root / "docs/hugo/content/quick-start.md").read_text()
+            self.assertIn("lastmod = 2024-05-01T00:00:00+00:00", guide)
+            html = (root / "docs/quick-start/index.html").read_text()
+            self.assertIn("2024-05-01T00:00:00&#43;00:00", html)
+            self.assertNotIn("2024-05-01T00:00:00Z", html)
+            index = (root / "docs/sitemap.xml").read_text()
+            self.assertIn("<lastmod>2024-05-01T00:00:00+00:00</lastmod>", index)
+
+    def _run_case(self, root, open_pr, existing_tap_branch=False, quick_start=None):
         source_bare = root / "source.git"
         tap_bare = root / "tap.git"
         workspace = root / "workspace"
@@ -54,7 +82,11 @@ class PublishTapRetryTest(unittest.TestCase):
         self._git("clone", source_bare, workspace)
         homebrew_dest = workspace / "deployment" / "homebrew"
         shutil.copytree(homebrew, homebrew_dest)
+        if quick_start:
+            self._write_quick_start(workspace, quick_start)
         self._git("add", "deployment", cwd=workspace)
+        if quick_start:
+            self._git("add", "docs", cwd=workspace)
         self._git("commit", "-m", "seed", cwd=workspace)
         self._git("push", "origin", "master", cwd=workspace)
         self._git("checkout", "-b", "homebrew-v1.7.0", cwd=workspace)
@@ -142,6 +174,12 @@ class PublishTapRetryTest(unittest.TestCase):
             self.assertIn("homebrew-v1.7.0", listed)
             self.assertNotIn("push origin --delete", log)
             self.assertIn("Pull request #7 already tracks", completed.stdout)
+        elif quick_start:
+            self.assertIn("homebrew-v1.7.0", listed)
+            self.assertIn("Quick Start install pin set to v1.7.0", completed.stdout)
+            self.assertIn("Quick Start modification time set to", completed.stdout)
+            self.assertNotIn("deployment/homebrew already matches", completed.stdout)
+            self._assert_quick_start_pin(source_bare, "v1.7.0", quick_start)
         else:
             self.assertEqual(listed.strip(), "")
             self.assertIn("deployment/homebrew already matches v1.7.0.", completed.stdout)
@@ -170,6 +208,81 @@ class PublishTapRetryTest(unittest.TestCase):
             "GIT_COMMITTER_EMAIL": "test@example.com",
         })
         subprocess.run(command, cwd=cwd, env=env, check=True, text=True, capture_output=True)
+
+    def _write_quick_start(self, workspace, version):
+        pages = {
+            "docs/hugo/content/quick-start.md":
+                "lastmod = 2020-01-01T00:00:00+00:00\n"
+                'GOBIN="$PWD/bin" go install github.com/teramoby/speedle-plus/cmd/...@' + version + "\n"
+                f"`{version}` is the latest release tag at the time of writing.\n",
+            "docs/hugo/content/quick-start.zh.md":
+                "lastmod = 2020-01-01T00:00:00+00:00\n"
+                'GOBIN="$PWD/bin" go install github.com/teramoby/speedle-plus/cmd/...@' + version + "\n"
+                f"`{version}` 是撰写本文时的最新发布标签。\n",
+            "docs/quick-start/index.html":
+                '<meta property="article:modified_time" content="2020-01-01T00:00:00&#43;00:00">\n'
+                "go install github.com/teramoby/speedle-plus/cmd/...@" + version + "\n"
+                f"<code>{version}</code> is the latest release tag at the time of writing.\n",
+            "docs/zh/quick-start/index.html":
+                '<meta property="article:modified_time" content="2020-01-01T00:00:00&#43;00:00">\n'
+                "go install github.com/teramoby/speedle-plus/cmd/...@" + version + "\n"
+                f"<code>{version}</code> 是撰写本文时的最新发布标签。\n",
+            "docs/zh/index.xml":
+                "go install github.com/teramoby/speedle-plus/cmd/...@" + version + "\n",
+            "docs/en/sitemap.xml":
+                "<loc>https://engine.speedle.io/quick-start/</loc>\n"
+                "<lastmod>2020-01-01T00:00:00+00:00</lastmod>\n",
+            "docs/zh/sitemap.xml":
+                "<loc>https://engine.speedle.io/zh/quick-start/</loc>\n"
+                "<lastmod>2020-01-01T00:00:00+00:00</lastmod>\n",
+        }
+        for rel, text in pages.items():
+            path = workspace / rel
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(text)
+
+    def _assert_quick_start_pin(self, source_bare, version, previous):
+        def show(path):
+            return subprocess.run(
+                ["git", "--git-dir", str(source_bare), "show", f"homebrew-v1.7.0:{path}"],
+                check=True, text=True, capture_output=True,
+            ).stdout
+
+        author = subprocess.run(
+            ["git", "--git-dir", str(source_bare), "log", "-1", "--format=%aI", "homebrew-v1.7.0"],
+            check=True, text=True, capture_output=True,
+        ).stdout.strip()
+        if author.endswith("Z"):
+            author = author[:-1] + "+00:00"
+        message = subprocess.run(
+            ["git", "--git-dir", str(source_bare), "log", "-1", "--format=%B", "homebrew-v1.7.0"],
+            check=True, text=True, capture_output=True,
+        ).stdout
+        self.assertIn("Signed-off-by:", message)
+        self.assertIn("Quick Start pin", message)
+        for path in (
+            "docs/hugo/content/quick-start.md",
+            "docs/hugo/content/quick-start.zh.md",
+            "docs/quick-start/index.html",
+            "docs/zh/quick-start/index.html",
+            "docs/zh/index.xml",
+        ):
+            text = show(path)
+            self.assertIn(f"cmd/...@{version}", text)
+            self.assertNotIn(previous, text)
+        html = show("docs/quick-start/index.html")
+        self.assertIn(author.replace("+", "&#43;"), html)
+        self.assertNotIn("2020-01-01T00:00:00", html)
+        self.assertIn(f"<code>{version}</code>", html)
+        for guide in (
+            "docs/hugo/content/quick-start.md",
+            "docs/hugo/content/quick-start.zh.md",
+        ):
+            self.assertIn(f"lastmod = {author}", show(guide))
+            self.assertNotIn("2020-01-01T00:00:00", show(guide))
+        self.assertIn(author, show("docs/en/sitemap.xml"))
+        self.assertIn(author, show("docs/zh/sitemap.xml"))
+        self.assertNotIn("2020-01-01T00:00:00", show("docs/en/sitemap.xml"))
 
     def _write_checksums(self, homebrew):
         assets = []

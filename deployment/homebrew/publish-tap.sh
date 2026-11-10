@@ -158,9 +158,71 @@ fi
 mkdir -p deployment/homebrew/Formula
 cp "${script_dir}/Formula/"*.rb deployment/homebrew/Formula/
 cp "${script_dir}/README.md" deployment/homebrew/README.md
+# The Quick Start guides must name this release or the next master push fails
+# the install-pin check. After that commit, write its author time into
+# front matter and the generated pages. The site build reads front matter
+# and does not read Git, so a later history rewrite keeps the same pages.
+pin_status=$(python3 "${script_dir}/bump-quick-start-pin.py" "${VERSION}" .)
+if [[ -n "${pin_status}" ]]; then
+  printf '%s\n' "${pin_status}"
+fi
+if [[ "${pin_status}" == *"Quick Start install pin set to ${VERSION}"* && -f docs/llms-full.txt ]]; then
+  if [[ ! -f website/generate-llms.py ]]; then
+    echo "website/generate-llms.py is required to refresh the Quick Start pin in llms-full.txt." >&2
+    exit 1
+  fi
+  python3 website/generate-llms.py --output docs
+fi
 git add -- deployment/homebrew/Formula deployment/homebrew/README.md
+doc_paths=()
+for path in \
+  docs/hugo/content/quick-start.md \
+  docs/hugo/content/quick-start.zh.md \
+  docs/quick-start/index.html \
+  docs/zh/quick-start/index.html \
+  docs/llms.txt \
+  docs/llms-full.txt \
+  docs/zh/index.xml \
+  docs/en/sitemap.xml \
+  docs/zh/sitemap.xml \
+  docs/sitemap.xml
+do
+  if [[ -f "${path}" ]]; then
+    doc_paths+=("${path}")
+  fi
+done
+if [[ ${#doc_paths[@]} -gt 0 ]]; then
+  git add -- "${doc_paths[@]}"
+fi
 if ! git diff --cached --quiet; then
-  git commit -s -m "chore(release): update Homebrew formulas to ${VERSION}"
+  if [[ "${pin_status}" == *"Quick Start install pin set to ${VERSION}"* ]]; then
+    git commit -s -m "chore(release): update Homebrew formulas and the Quick Start pin to ${VERSION}"
+  else
+    git commit -s -m "chore(release): update Homebrew formulas to ${VERSION}"
+  fi
+  if [[ "${pin_status}" == *"Quick Start install pin set to ${VERSION}"* ]]; then
+    author_date=$(git log -1 --format=%aI)
+    committer_date=$(git log -1 --format=%cI)
+    python3 "${script_dir}/bump-quick-start-pin.py" --stamp "${author_date}" .
+    stamp_paths=()
+    for path in \
+      docs/hugo/content/quick-start.md \
+      docs/hugo/content/quick-start.zh.md \
+      docs/quick-start/index.html \
+      docs/zh/quick-start/index.html \
+      docs/en/sitemap.xml \
+      docs/zh/sitemap.xml \
+      docs/sitemap.xml
+    do
+      if [[ -f "${path}" ]]; then
+        stamp_paths+=("${path}")
+      fi
+    done
+    git add -- "${stamp_paths[@]}"
+    if ! git diff --cached --quiet; then
+      GIT_AUTHOR_DATE="${author_date}" GIT_COMMITTER_DATE="${committer_date}" git commit --amend --no-edit
+    fi
+  fi
 fi
 
 ahead=$(git rev-list --count "origin/master..HEAD")
@@ -176,6 +238,8 @@ if [[ -z "${existing}" || "${existing}" == "null" ]]; then
 Update the Homebrew formulas in \`deployment/homebrew/\` to ${VERSION}.
 
 These files are the source of truth for \`teramoby/homebrew-tap\`. The Release workflow opened a pull request with the same files on that tap.
+
+The Quick Start guides in both languages pin this release. The committed guide pages use the same version.
 EOF
   gh pr create --repo "${source_repo}" --base master --head "${source_branch}" \
     --title "chore(release): update Homebrew formulas to ${VERSION}" \

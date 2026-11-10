@@ -8,6 +8,7 @@ tocheading = "h2"
 tags = ["storage", "etcd"]
 categories = ["docs"]
 bref = "启动独立 etcd，连接 PMS 与 ADS，验证策略自动更新，并创建备份。"
+lastmod = 2026-11-08T11:21:16+08:00
 +++
 
 本指南使用**独立的 etcd v3.6.14** 和 Docker 持久化卷。PMS 写入策略，ADS 监听同一个 key prefix。本地单节点示例通过回环地址提供 HTTP 服务；生产环境的 TLS 与集群配置见后文。
