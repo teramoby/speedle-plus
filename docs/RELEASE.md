@@ -28,10 +28,13 @@ or create a second GitHub release.
    against one shared volume.
 3. Create the git tag and the GitHub release.
 4. Log in and push the image.
+5. Package the Helm chart and push it to the chart registry.
 
 A failed image build or smoke test stops the run before a tag exists. A failed
 push leaves the tag and the GitHub release; the next dispatch of the same
-version finishes the push.
+version finishes the push. A failed chart push is the same: dispatch the same
+version again and the chart is published from that commit. A commit that has
+no `deployment/helm/speedle` chart skips the chart push.
 
 ## Smoke test
 
@@ -99,6 +102,56 @@ provenance and an SBOM (`docker buildx build --provenance=mode=max --sbom=true`)
 
 The image has no CA certificates. Pass a CA file when a service calls a TLS
 endpoint.
+
+## Helm chart
+
+The chart in `deployment/helm/speedle` runs PMS and ADS from
+`speedle/speedle`. After the image push, the workflow packages that chart
+with `helm package --version X.Y.Z --app-version X.Y.Z` and pushes it to
+`oci://ghcr.io/teramoby/charts/speedle`. `X.Y.Z` is the image version. Helm
+3.22.1 publishes the package. Install it with Helm 3.8 or newer:
+
+```sh
+helm install speedle oci://ghcr.io/teramoby/charts/speedle --version X.Y.Z
+```
+
+The first release whose commit contains the chart is the first chart
+package. Re-running an older commit does not publish a chart.
+
+Pull requests that change the chart, the chart workflow or this release
+workflow run `helm lint`, `helm template` for the file, etcd and MongoDB
+stores, and an install on a throwaway kind cluster. The install waits until
+the PMS and ADS pods are ready, creates a service and a policy with `spctl`
+from the image, and checks that ADS returns `allowed: true`.
+
+### Artifact Hub
+
+Listing is a separate step from the chart push. To list
+`oci://ghcr.io/teramoby/charts/speedle`:
+
+1. Open the new `charts/speedle` package on GHCR and set its visibility to
+   public. A new GHCR package is private until that change. Helm can install
+   a private package only after `helm registry login`.
+2. In the Artifact Hub control panel, add a Helm charts repository with the
+   URL `oci://ghcr.io/teramoby/charts/speedle`.
+3. Copy the repository ID shown on that repository.
+4. Edit `deployment/helm/artifacthub-repo.yml`. Set `repositoryID` to that
+   ID. Set the owner email to the Artifact Hub account that will claim the
+   repository. The `owners` section alone is enough to claim ownership
+   before the ID is known.
+5. Push the metadata file with [oras](https://oras.land) to the tag
+   `artifacthub.io`:
+
+```sh
+oras push ghcr.io/teramoby/charts/speedle:artifacthub.io \
+  --config /dev/null:application/vnd.cncf.artifacthub.config.v1+yaml \
+  artifacthub-repo.yml:application/vnd.cncf.artifacthub.repository-metadata.layer.v1.yaml
+```
+
+Artifact Hub reads that tag when it next processes the repository. The
+account named in `owners` claims the repository from the control panel.
+This repository does not register the chart.
+
 
 ## Docker Hub credentials
 

@@ -122,6 +122,24 @@ go install github.com/teramoby/speedle-plus/cmd/...@latest
 
 This installs `spctl`, `speedle-pms` and `speedle-ads` into `$(go env GOPATH)/bin`, or `$GOBIN` if it is set.
 
+### Helm
+
+The chart at `deployment/helm/speedle` runs PMS and ADS from one image, `speedle/speedle`. PMS listens on port 6733 and ADS on port 6734. The default policy store is a file on a PersistentVolumeClaim. Set `store.type` to `etcd` or `mongodb` to use those stores. ADS can run more than one replica. The file store keeps a single PMS replica.
+
+From a checkout, with Helm 3:
+
+```bash
+helm install speedle deployment/helm/speedle
+```
+
+A release that contains the chart also pushes `oci://ghcr.io/teramoby/charts/speedle`. The chart version matches the image version (`vX.Y.Z` is chart version `X.Y.Z`). Helm 3.8 or newer installs an OCI chart:
+
+```bash
+helm install speedle oci://ghcr.io/teramoby/charts/speedle --version X.Y.Z
+```
+
+Replicas, resources, probes and store flags are in `deployment/helm/speedle/values.yaml`.
+
 ## Build from source
 
 ### Prerequisites

@@ -1,0 +1,107 @@
+name: Helm
+
+# Lint the chart, render each policy store, and install it on a throwaway
+# kind cluster. The install uses the published speedle/speedle image at the
+# chart appVersion, writes one policy with spctl from that image, and requires
+# ADS to allow the request.
+on:
+  pull_request:
+    paths:
+      - deployment/helm/**
+      - scripts/ci/install-helm.sh
+      - scripts/ci/install-kind.sh
+      - .github/workflows/helm.yml
+      - .github/workflows/release.yml
+  push:
+    branches: [master]
+    paths:
+      - deployment/helm/**
+      - scripts/ci/install-helm.sh
+      - scripts/ci/install-kind.sh
+      - .github/workflows/helm.yml
+      - .github/workflows/release.yml
+
+permissions: {}
+
+concurrency:
+  group: helm-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  chart:
+    name: chart
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install Helm
+        run: bash scripts/ci/install-helm.sh
+
+      - name: Lint and render the chart
+        run: bash deployment/helm/render-check.sh
+
+      - name: Install kind and kubectl
+        run: bash scripts/ci/install-kind.sh
+
+      # kind v0.33.0 node image for Kubernetes 1.37.0. The digest is the
+      # image published with that kind release.
+      - name: Create a kind cluster
+        run: |
+          set -euo pipefail
+          node_image=kindest/node:v1.37.0@sha256:a1ed56cfb0e7b93589bdf97c8cd566405a265939e3620fc4f5de89adff580ae5
+          pull() {
+            local image=$1
+            local attempt
+            for attempt in 1 2 3 4 5; do
+              if docker pull "${image}"; then
+                return 0
+              fi
+              echo "docker pull failed (${attempt}/5): ${image}" >&2
+              sleep 20
+            done
+            return 1
+          }
+          pull "${node_image}"
+          kind create cluster --name speedle-helm --image "${node_image}" --wait 180s
+          kubectl wait -n local-path-storage --for=condition=Available deployment/local-path-provisioner --timeout=180s
+
+      - name: Load the published image
+        run: |
+          set -euo pipefail
+          tag=$(awk '/^appVersion:/ { gsub(/"/, "", $2); print $2; exit }' deployment/helm/speedle/Chart.yaml)
+          image="speedle/speedle:${tag}"
+          pull() {
+            local image=$1
+            local attempt
+            for attempt in 1 2 3 4 5; do
+              if docker pull "${image}"; then
+                return 0
+              fi
+              echo "docker pull failed (${attempt}/5): ${image}" >&2
+              sleep 20
+            done
+            return 1
+          }
+          pull "docker.io/${image}"
+          docker tag "docker.io/${image}" "${image}"
+          kind load docker-image "${image}" --name speedle-helm
+          echo "IMAGE=${image}" >> "${GITHUB_ENV}"
+
+      - name: Install the chart and authorize
+        run: bash deployment/helm/test-install.sh
+
+      - name: Show workload logs
+        if: failure()
+        run: |
+          kubectl get pods -A || true
+          kubectl logs -n speedle -l app.kubernetes.io/instance=speedle --all-containers --tail=200 || true
+
+      - name: Delete the kind cluster
+        if: always()
+        run: kind delete cluster --name speedle-helm || true

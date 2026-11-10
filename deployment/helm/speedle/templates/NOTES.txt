@@ -1,0 +1,20 @@
+Speedle PMS listens on service {{ include "speedle.componentName" (dict "root" . "component" "pms") }} port {{ .Values.service.pmsPort }}.
+Speedle ADS listens on service {{ include "speedle.componentName" (dict "root" . "component" "ads") }} port {{ .Values.service.adsPort }}.
+
+Forward the ports from this cluster:
+
+  kubectl -n {{ .Release.Namespace }} port-forward svc/{{ include "speedle.componentName" (dict "root" . "component" "pms") }} {{ .Values.service.pmsPort }}:{{ .Values.service.pmsPort }}
+  kubectl -n {{ .Release.Namespace }} port-forward svc/{{ include "speedle.componentName" (dict "root" . "component" "ads") }} {{ .Values.service.adsPort }}:{{ .Values.service.adsPort }}
+
+The policy store is {{ .Values.store.type }}.
+{{- if eq .Values.store.type "file" }}
+PMS and ADS share one volume at {{ .Values.store.file.location }}. Keep a single PMS replica. ADS replicas run on the PMS node.
+{{- else if eq .Values.store.type "etcd" }}
+Point store.etcd.endpoint at an etcd server both services can reach. PMS and ADS must use the same endpoint and key prefix.
+{{- else if eq .Values.store.type "mongodb" }}
+Point store.mongodb.uri at a MongoDB replica set. PMS and ADS must use the same URI and database.
+{{- end }}
+{{- if not .Values.tls.enabled }}
+
+The listeners use plain HTTP. Set tls.enabled and a certificate Secret before exposing the Services beyond the cluster.
+{{- end }}

@@ -124,6 +124,24 @@ go install github.com/teramoby/speedle-plus/cmd/...@latest
 
 这会把 `spctl`、`speedle-pms` 和 `speedle-ads` 安装到 `$(go env GOPATH)/bin`；如果设置了 `$GOBIN`，则安装到 `$GOBIN`。
 
+### Helm
+
+`deployment/helm/speedle` 用同一个镜像 `speedle/speedle` 运行 PMS 和 ADS。PMS 监听 6733，ADS 监听 6734。默认策略存储是 PersistentVolumeClaim 上的一个文件。把 `store.type` 设为 `etcd` 或 `mongodb` 即改用对应存储。ADS 可以增加副本。文件存储只运行一个 PMS 副本。
+
+在检出的仓库里，使用 Helm 3：
+
+```bash
+helm install speedle deployment/helm/speedle
+```
+
+包含该 chart 的发布会同时推送到 `oci://ghcr.io/teramoby/charts/speedle`。chart 版本与镜像版本相同（`vX.Y.Z` 对应 chart 版本 `X.Y.Z`）。从 OCI 安装需要 Helm 3.8 或更新版本：
+
+```bash
+helm install speedle oci://ghcr.io/teramoby/charts/speedle --version X.Y.Z
+```
+
+副本数、资源、探针和存储参数见 `deployment/helm/speedle/values.yaml`。
+
 ## 从源码构建
 
 ### 前期准备

@@ -1,0 +1,121 @@
+{{- range $spec := list
+  (dict "component" "pms" "command" "speedle-pms" "readyPath" "/policy-mgmt/v1/service" "livePath" "")
+  (dict "component" "ads" "command" "speedle-ads" "readyPath" "/readyz" "livePath" "/healthz")
+}}
+{{- $comp := index $.Values $spec.component }}
+{{- $port := index $.Values.service (printf "%sPort" $spec.component) }}
+{{- $scheme := "HTTP" }}
+{{- if $.Values.tls.enabled }}
+{{- $scheme = "HTTPS" }}
+{{- end }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "speedle.componentName" (dict "root" $ "component" $spec.component) }}
+  labels:
+    {{- include "speedle.labels" (dict "root" $ "component" $spec.component) | nindent 4 }}
+spec:
+  replicas: {{ $comp.replicaCount }}
+  {{- if and (eq $.Values.store.type "file") (eq $spec.component "pms") }}
+  strategy:
+    type: Recreate
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "speedle.selectorLabels" (dict "root" $ "component" $spec.component) | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "speedle.selectorLabels" (dict "root" $ "component" $spec.component) | nindent 8 }}
+    spec:
+      serviceAccountName: {{ include "speedle.serviceAccountName" $ }}
+      automountServiceAccountToken: false
+      securityContext:
+        {{- toYaml $.Values.podSecurityContext | nindent 8 }}
+      {{- with $.Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- if and (eq $.Values.store.type "file") (eq $spec.component "ads") }}
+      affinity:
+        podAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchLabels:
+                  {{- include "speedle.selectorLabels" (dict "root" $ "component" "pms") | nindent 18 }}
+              topologyKey: kubernetes.io/hostname
+      {{- end }}
+      containers:
+        - name: {{ $spec.component }}
+          image: {{ include "speedle.image" $ | quote }}
+          imagePullPolicy: {{ $.Values.image.pullPolicy }}
+          securityContext:
+            {{- toYaml $.Values.containerSecurityContext | nindent 12 }}
+          args:
+            - {{ $spec.command }}
+            {{- include "speedle.storeArgs" $ | nindent 12 }}
+            - --endpoint
+            - {{ printf "0.0.0.0:%v" $port | quote }}
+            {{- include "speedle.tlsArgs" $ | nindent 12 }}
+            {{- with $comp.extraArgs }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          ports:
+            - name: http
+              containerPort: {{ $port }}
+              protocol: TCP
+          startupProbe:
+            {{- include "speedle.httpProbe" (dict "path" $spec.readyPath "scheme" $scheme "timing" $.Values.probes.startup) | nindent 12 }}
+          readinessProbe:
+            {{- include "speedle.httpProbe" (dict "path" $spec.readyPath "scheme" $scheme "timing" $.Values.probes.readiness) | nindent 12 }}
+          {{- if $spec.livePath }}
+          livenessProbe:
+            {{- include "speedle.httpProbe" (dict "path" $spec.livePath "scheme" $scheme "timing" $.Values.probes.liveness) | nindent 12 }}
+          {{- else }}
+          livenessProbe:
+            tcpSocket:
+              port: http
+            {{- include "speedle.probeTiming" $.Values.probes.liveness | nindent 12 }}
+          {{- end }}
+          resources:
+            {{- toYaml $comp.resources | nindent 12 }}
+          volumeMounts:
+            {{- if eq $.Values.store.type "file" }}
+            - name: policies
+              mountPath: {{ dir $.Values.store.file.location | quote }}
+            {{- end }}
+            {{- if and (eq $.Values.store.type "etcd") $.Values.store.etcd.tls.secretName }}
+            - name: etcd-tls
+              mountPath: /etc/speedle/etcd
+              readOnly: true
+            {{- end }}
+            {{- if $.Values.tls.enabled }}
+            - name: server-tls
+              mountPath: /etc/speedle/tls
+              readOnly: true
+            {{- end }}
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        {{- if eq $.Values.store.type "file" }}
+        - name: policies
+          persistentVolumeClaim:
+            claimName: {{ include "speedle.policyClaim" $ }}
+        {{- end }}
+        {{- if and (eq $.Values.store.type "etcd") $.Values.store.etcd.tls.secretName }}
+        - name: etcd-tls
+          secret:
+            secretName: {{ $.Values.store.etcd.tls.secretName }}
+            defaultMode: 0440
+        {{- end }}
+        {{- if $.Values.tls.enabled }}
+        - name: server-tls
+          secret:
+            secretName: {{ $.Values.tls.secretName }}
+            defaultMode: 0440
+        {{- end }}
+        - name: tmp
+          emptyDir:
+            sizeLimit: 64Mi
+{{- end }}

@@ -1,0 +1,172 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "image",
+    "serviceAccount",
+    "tls",
+    "podSecurityContext",
+    "containerSecurityContext",
+    "service",
+    "pms",
+    "ads",
+    "probes",
+    "store"
+  ],
+  "properties": {
+    "nameOverride": { "type": "string" },
+    "fullnameOverride": { "type": "string" },
+    "imagePullSecrets": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name"],
+        "additionalProperties": false,
+        "properties": { "name": { "type": "string" } }
+      }
+    },
+    "image": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["repository", "tag", "pullPolicy"],
+      "properties": {
+        "repository": { "type": "string", "minLength": 1 },
+        "tag": { "type": "string" },
+        "pullPolicy": { "type": "string", "enum": ["IfNotPresent", "Always", "Never"] }
+      }
+    },
+    "serviceAccount": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["create", "name"],
+      "properties": {
+        "create": { "type": "boolean" },
+        "name": { "type": "string" }
+      }
+    },
+    "tls": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["enabled", "secretName", "certFile", "keyFile", "clientCAFile", "forceClientCert"],
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "secretName": { "type": "string" },
+        "certFile": { "type": "string" },
+        "keyFile": { "type": "string" },
+        "clientCAFile": { "type": "string" },
+        "forceClientCert": { "type": "boolean" }
+      }
+    },
+    "podSecurityContext": { "type": "object" },
+    "containerSecurityContext": { "type": "object" },
+    "service": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "pmsPort", "adsPort"],
+      "properties": {
+        "type": { "type": "string", "enum": ["ClusterIP", "NodePort", "LoadBalancer"] },
+        "pmsPort": { "type": "integer", "minimum": 1, "maximum": 65535 },
+        "adsPort": { "type": "integer", "minimum": 1, "maximum": 65535 }
+      }
+    },
+    "pms": { "$ref": "#/definitions/workload" },
+    "ads": { "$ref": "#/definitions/workload" },
+    "probes": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["startup", "readiness", "liveness"],
+      "properties": {
+        "startup": { "$ref": "#/definitions/probe" },
+        "readiness": { "$ref": "#/definitions/probe" },
+        "liveness": { "$ref": "#/definitions/probe" }
+      }
+    },
+    "store": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "file", "etcd", "mongodb"],
+      "properties": {
+        "type": { "type": "string", "enum": ["file", "etcd", "mongodb"] },
+        "file": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["location", "persistence"],
+          "properties": {
+            "location": { "type": "string", "minLength": 1 },
+            "persistence": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["enabled", "existingClaim", "size", "storageClass", "accessMode"],
+              "properties": {
+                "enabled": { "type": "boolean" },
+                "existingClaim": { "type": "string" },
+                "size": { "type": "string", "minLength": 1 },
+                "storageClass": { "type": "string" },
+                "accessMode": {
+                  "type": "string",
+                  "enum": ["ReadWriteOnce", "ReadWriteMany", "ReadOnlyMany"]
+                }
+              }
+            }
+          }
+        },
+        "etcd": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["endpoint", "keyPrefix", "tls"],
+          "properties": {
+            "endpoint": { "type": "string" },
+            "keyPrefix": { "type": "string" },
+            "tls": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["secretName", "certFile", "keyFile", "caFile", "allowedCN", "serverName", "crlFile", "insecureSkipVerify"],
+              "properties": {
+                "secretName": { "type": "string" },
+                "certFile": { "type": "string" },
+                "keyFile": { "type": "string" },
+                "caFile": { "type": "string" },
+                "allowedCN": { "type": "string" },
+                "serverName": { "type": "string" },
+                "crlFile": { "type": "string" },
+                "insecureSkipVerify": { "type": "boolean" }
+              }
+            }
+          }
+        },
+        "mongodb": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["uri", "database"],
+          "properties": {
+            "uri": { "type": "string" },
+            "database": { "type": "string" }
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "workload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["replicaCount", "extraArgs", "resources"],
+      "properties": {
+        "replicaCount": { "type": "integer", "minimum": 1 },
+        "extraArgs": { "type": "array", "items": { "type": "string" } },
+        "resources": { "type": "object" }
+      }
+    },
+    "probe": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["periodSeconds", "timeoutSeconds", "failureThreshold"],
+      "properties": {
+        "periodSeconds": { "type": "integer", "minimum": 1 },
+        "timeoutSeconds": { "type": "integer", "minimum": 1 },
+        "failureThreshold": { "type": "integer", "minimum": 1 }
+      }
+    }
+  }
+}

@@ -1,0 +1,18 @@
+{{- range $component := list "pms" "ads" }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "speedle.componentName" (dict "root" $ "component" $component) }}
+  labels:
+    {{- include "speedle.labels" (dict "root" $ "component" $component) | nindent 4 }}
+spec:
+  type: {{ $.Values.service.type }}
+  selector:
+    {{- include "speedle.selectorLabels" (dict "root" $ "component" $component) | nindent 4 }}
+  ports:
+    - name: http
+      port: {{ index $.Values.service (printf "%sPort" $component) }}
+      targetPort: http
+      protocol: TCP
+{{- end }}
