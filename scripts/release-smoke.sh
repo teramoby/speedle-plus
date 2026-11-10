@@ -5,6 +5,8 @@
 #
 # Docker accepts connections on the published port before the process listens,
 # and that proxy resets the connection. Retry every error until the deadline.
+# Each attempt has its own limit: a connection that is accepted and then left
+# open must not wait forever, or this deadline is never reached.
 # SMOKE_READY_TIMEOUT is that deadline in seconds (default 30).
 set -euo pipefail
 
@@ -44,13 +46,26 @@ wait_ready() {
   body_file=$(mktemp)
   err_file=$(mktemp)
   while true; do
-    if curl --fail --silent --show-error "$@" "${url}" >"${body_file}" 2>"${err_file}"; then
+    remaining=$((deadline - SECONDS))
+    if [[ "${remaining}" -le 0 ]]; then
+      echo "Timed out after ${ready_timeout}s waiting for ${url}" >&2
+      rm -f "${body_file}" "${err_file}"
+      return 1
+    fi
+    # --max-time 0 disables the limit. Cap the attempt at 5s and at the
+    # seconds still left on the deadline.
+    attempt="${remaining}"
+    if [[ "${attempt}" -gt 5 ]]; then
+      attempt=5
+    fi
+    if curl --fail --silent --show-error --connect-timeout 1 --max-time "${attempt}" "$@" "${url}" >"${body_file}" 2>"${err_file}"; then
       cat "${body_file}"
       rm -f "${body_file}" "${err_file}"
       return 0
     fi
     cat "${err_file}" >&2 || true
-    if [[ "${SECONDS}" -ge "${deadline}" ]]; then
+    remaining=$((deadline - SECONDS))
+    if [[ "${remaining}" -le 0 ]]; then
       echo "Timed out after ${ready_timeout}s waiting for ${url}" >&2
       rm -f "${body_file}" "${err_file}"
       return 1

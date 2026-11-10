@@ -37,8 +37,11 @@ version finishes the push.
 
 `scripts/release-smoke.sh` starts `speedle-pms` and then `speedle-ads` from
 the local image `speedle:smoke`, using one shared volume. It retries each
-request until the service answers or 30 seconds pass. A connection reset is
-retried: the published port accepts connections before the process listens.
+request until the service answers or 30 seconds pass. Each attempt stops
+after at most 5 seconds, and sooner when less time remains, so an accepted
+connection that never answers cannot wait past the deadline. A connection
+reset is retried: the published port accepts connections before the process
+listens.
 On failure the script prints `docker ps -a` and the logs of the PMS and ADS
 containers.
 

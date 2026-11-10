@@ -222,11 +222,13 @@ test('container smoke writes a policy through PMS and requires ADS to allow it f
   assert.match(smoke, /docker logs speedle-smoke-pms/);
   assert.match(smoke, /docker logs speedle-smoke-ads/);
   assert.match(smoke, /Timed out after/);
+  assert.match(smoke, /--connect-timeout 1/);
+  assert.match(smoke, /--max-time "\$\{attempt\}"/);
   const parsed = spawnSync('bash', ['-n', path.resolve(__dirname, '../release-smoke.sh')], {encoding: 'utf8'});
   assert.equal(parsed.status, 0, parsed.stderr);
 });
 
-function runSmoke(hostArch, {curlFails = 0, readyTimeout = '30'} = {}) {
+function runSmoke(hostArch, {curlFails = 0, readyTimeout = '30', curlBlock = false} = {}) {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'speedle-release-smoke-'));
   try {
     const calls = path.join(directory, 'calls.jsonl');
@@ -240,6 +242,18 @@ if(tool==='curl'){
   const countPath=process.env.FIXTURE_CURL_COUNT;
   const n=fs.existsSync(countPath)?Number(fs.readFileSync(countPath,'utf8')):0;
   fs.writeFileSync(countPath,String(n+1));
+  if(process.env.FIXTURE_CURL_BLOCK==='1'){
+    const maxAt=a.indexOf('--max-time');
+    const connectAt=a.indexOf('--connect-timeout');
+    let waitMs=30000;
+    if(maxAt!==-1&&connectAt!==-1){
+      const secs=Number(a[maxAt+1]);
+      if(Number.isFinite(secs)&&secs>0)waitMs=secs*1000;
+    }
+    Atomics.wait(new Int32Array(new SharedArrayBuffer(4)),0,0,waitMs);
+    console.error('curl: (28) Operation timed out');
+    process.exit(28);
+  }
   if(n<Number(process.env.FIXTURE_CURL_FAILS||'0')){console.error('curl: (56) Recv failure: Connection reset by peer');process.exit(56)}
   console.log('{"allowed":true,"reason":0}');
 }
@@ -262,11 +276,11 @@ if(a.includes('get'))console.log('[{"name":"smoke","policies":[{}]}]');
       fs.chmodSync(file, 0o755);
     }
     const result = spawnSync('bash', ['-c', script('Verify the container image builds and starts')], {
-      cwd: directory, encoding: 'utf8', env: {
+      cwd: directory, encoding: 'utf8', timeout: 20000, env: {
         ...process.env, PATH: `${directory}${path.delimiter}${process.env.PATH}`,
         FIXTURE_CALLS: calls, FIXTURE_HOST_ARCH: hostArch, FIXTURE_CURL_COUNT: curlCount,
-        FIXTURE_CURL_FAILS: String(curlFails), SMOKE_READY_TIMEOUT: String(readyTimeout),
-        CONTAINER_CONTEXT: 'container-context',
+        FIXTURE_CURL_FAILS: String(curlFails), FIXTURE_CURL_BLOCK: curlBlock ? '1' : '0',
+        SMOKE_READY_TIMEOUT: String(readyTimeout), CONTAINER_CONTEXT: 'container-context',
       },
     });
     const records = fs.existsSync(calls) ? fs.readFileSync(calls, 'utf8').trim().split('\n').filter(Boolean).map(line => JSON.parse(line)) : [];
@@ -306,6 +320,15 @@ test('container smoke selects the host spctl binary and native container image o
   assert.ok(failedDocker.includes('ps -a'), failedDocker.join('\n'));
   assert.ok(failedDocker.includes('logs speedle-smoke-pms'), failedDocker.join('\n'));
   assert.ok(failedDocker.includes('logs speedle-smoke-ads'), failedDocker.join('\n'));
+  const blocked = runSmoke('amd64', {curlBlock: true, readyTimeout: '2'});
+  assert.equal(typeof blocked.result.status, 'number');
+  assert.notEqual(blocked.result.status, 0);
+  assert.match(blocked.result.stderr, /curl: \(28\) Operation timed out/);
+  assert.match(blocked.result.stderr, /Timed out after 2s waiting for http:\/\/127\.0\.0\.1:6733\/policy-mgmt\/v1\/service/);
+  assert.match(blocked.result.stderr, /Image smoke failed/);
+  const blockedCurl = blocked.records.filter(record => record.tool === 'curl');
+  assert.ok(blockedCurl.length >= 1 && blockedCurl.length <= 3, JSON.stringify(blockedCurl));
+  assert.ok(blockedCurl.every(record => record.args.includes('--max-time') && record.args.includes('--connect-timeout')));
   const unsupported = runSmoke('s390x');
   assert.notEqual(unsupported.result.status, 0);
   assert.match(unsupported.result.stderr, /Unsupported release smoke host architecture: s390x/);
