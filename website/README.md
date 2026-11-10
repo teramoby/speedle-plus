@@ -76,7 +76,7 @@ every rendered page, including archived snapshots, replaces an older copy of the
 snippet (for example after a token change), and skips redirect pages. The token
 is the engine.speedle.io site token.
 The four static homepage/Playground HTML sources carry the same snippet.
-The site continues to publish through GitHub Pages with the existing DNS setup.
+The site publishes through `.github/workflows/pages.yml`: Jekyll builds `docs/` and GitHub Pages deploys that artifact. DNS is unchanged.
 Its canonical host is `https://engine.speedle.io` (Hugo `baseURL`, canonical,
 hreflang, Open Graph, sitemap, `robots.txt`, generated `llms.txt` and
 `llms-full.txt`, and JSON-LD URLs);

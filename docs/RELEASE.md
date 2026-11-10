@@ -225,3 +225,23 @@ arm64, named `<command>_<os>_<arch>`, plus `checksums.txt`.
 `make image` builds `deployment/docker/speedle-pms` and
 `deployment/docker/speedle-ads`. Those Dockerfiles are local development
 images. The Release workflow does not publish them.
+
+## Documentation site
+
+https://engine.speedle.io is published from `docs/` by the Pages workflow
+(`.github/workflows/pages.yml`). `docs/` has no `.nojekyll`, so the workflow
+builds the directory with `actions/jekyll-build-pages` and deploys the
+artifact. A push to `master` that changes `docs/**` or the workflow runs
+that publish. A pull request runs the build and does not deploy. The deploy
+step waits up to 30 minutes.
+
+`docs/_config.yml` selects the `jekyll-theme-cayman` theme. Static files are
+copied. Markdown with front matter is rendered. `CNAME` is not part of the
+published artifact; `engine.speedle.io` stays configured for the Pages site.
+File and directory names that start with `_` or `.` are not published.
+
+Redeploy the default branch without a new docs commit:
+
+```sh
+gh workflow run pages.yml --repo teramoby/speedle-plus --ref master
+```
