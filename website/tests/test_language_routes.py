@@ -288,13 +288,17 @@ class LanguageRoutes(unittest.TestCase):
         with contextlib.redirect_stdout(io.StringIO()):
             ROUTER["process"](root, False)
         archived = (root / prefix.lstrip("/") / "docs/spdl/index.html").read_text()
+        self.assertIn(f'href="{prefix}/docs/spdl/"', archived)
         self.assertIn(f'href="{prefix}/zh/docs/spdl/"', archived)
-        self.assertIn('href="/ja/docs/spdl/"', archived)
-        self.assertNotIn(f'{prefix}/ja/', archived)
         self.assertIn("Archived", archived)
         blog = (root / prefix.lstrip("/") / "blog/index.html").read_text()
-        self.assertIn('href="/ja/"', blog)
-        self.assertNotIn(f'{prefix}/ja/', blog)
+        self.assertIn(f'href="{prefix}/blog/"', blog)
+        self.assertIn(f'href="{prefix}/zh/blog/"', blog)
+        for page in (archived, blog):
+            for lang in ("ja", "ko", "es"):
+                self.assertNotIn(f'hreflang="{lang}"', page)
+                self.assertNotIn(f'href="/{lang}/', page)
+                self.assertNotIn(f'{prefix}/{lang}/', page)
         with contextlib.redirect_stdout(io.StringIO()):
             ROUTER["process"](root, True)
 

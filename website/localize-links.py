@@ -132,7 +132,8 @@ def archive_header(site, text, route):
     """Give archived snapshots the current homepage header.
 
     Header links keep the snapshot's version where it has the page (and anchor),
-    and otherwise lead to the current site.
+    and otherwise lead to the current site. Language switches are resolved
+    afterwards: a language this snapshot did not publish is removed.
     """
     prefix = snapshot(route)
     lang = language(route)
@@ -275,6 +276,7 @@ class Links(HTMLParser):
             self.offsets.append(match.end())
         self.stack, self.edits, self.errors = [], [], []
         self.switches = set()
+        self.drop_anchor = None
         self.feed(text)
         if PREVIEW.match(route) and 'class="nav-links"' in text and '/css/navigation.css' not in text:
             end = text.lower().find('</head>')
@@ -301,16 +303,14 @@ class Links(HTMLParser):
                     switch = language(logical(url.path))
                 if switch in LANGUAGES:
                     target = counterpart(self.route, switch)
-                    # An archived snapshot only has the languages published with that
-                    # version. A switch to a later language stays on the current site.
+                    # An archived snapshot only offers the languages published with
+                    # that version. Omit a later language instead of sending the
+                    # reader to the current site without saying the version changed.
                     if target not in self.site.canonical and self.prefix:
-                        current = counterpart(logical(self.route), switch)
-                        home = counterpart("/", switch)
-                        if current in self.site.canonical:
-                            target = current
-                        elif home in self.site.canonical:
-                            target = home
-                    if target not in self.site.canonical:
+                        if self.drop_anchor is None:
+                            line, column = self.getpos()
+                            self.drop_anchor = self.offsets[line - 1] + column
+                    elif target not in self.site.canonical:
                         self.errors.append(f"{self.route}: missing translation {target}")
                     else:
                         code = "zh-CN" if switch == "zh" else switch
@@ -374,6 +374,15 @@ class Links(HTMLParser):
             self.stack.append((tag, attrs.get("id", "") + " " + attrs.get("class", "")))
 
     def handle_endtag(self, tag):
+        if tag == "a" and self.drop_anchor is not None:
+            line, column = self.getpos()
+            end_start = self.offsets[line - 1] + column
+            close = self.text.find(">", end_start)
+            if close < 0 or not self.text[end_start:close + 1].lower().startswith("</a"):
+                self.errors.append(f"{self.route}: could not remove unpublished language switch")
+            elif self.drop_anchor < close:
+                self.edits.append((self.drop_anchor, close + 1, ""))
+            self.drop_anchor = None
         opposite = "en" if self.lang == "zh" else "zh"
         if tag == "nav" and self.stack and "nav-links" in self.stack[-1][1] and opposite not in self.switches:
             target = counterpart(self.route, opposite)
