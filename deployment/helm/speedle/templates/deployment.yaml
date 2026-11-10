@@ -73,6 +73,20 @@ spec:
             - name: http
               containerPort: {{ $port }}
               protocol: TCP
+          {{- if and $.Values.tls.enabled $.Values.tls.forceClientCert }}
+          startupProbe:
+            tcpSocket:
+              port: http
+            {{- include "speedle.probeTiming" $.Values.probes.startup | nindent 12 }}
+          readinessProbe:
+            tcpSocket:
+              port: http
+            {{- include "speedle.probeTiming" $.Values.probes.readiness | nindent 12 }}
+          livenessProbe:
+            tcpSocket:
+              port: http
+            {{- include "speedle.probeTiming" $.Values.probes.liveness | nindent 12 }}
+          {{- else }}
           startupProbe:
             {{- include "speedle.httpProbe" (dict "path" $spec.readyPath "scheme" $scheme "timing" $.Values.probes.startup) | nindent 12 }}
           readinessProbe:
@@ -85,6 +99,7 @@ spec:
             tcpSocket:
               port: http
             {{- include "speedle.probeTiming" $.Values.probes.liveness | nindent 12 }}
+          {{- end }}
           {{- end }}
           resources:
             {{- toYaml $comp.resources | nindent 12 }}

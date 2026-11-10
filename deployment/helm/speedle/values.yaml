@@ -25,6 +25,8 @@ tls:
   certFile: tls.crt
   keyFile: tls.key
   clientCAFile: ""
+  # HTTP probes cannot present a client certificate, so the chart uses TCP
+  # probes while this is true.
   forceClientCert: false
 
 podSecurityContext:

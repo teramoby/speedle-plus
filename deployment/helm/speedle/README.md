@@ -30,7 +30,7 @@ With etcd or MongoDB, ADS replicas can be scheduled on any node.
 
 ## Requests
 
-The containers run as UID 65532 with a dropped capability set and a read-only root filesystem. The default Service type is ClusterIP. Listeners use plain HTTP until `tls.enabled` and a certificate Secret are set.
+The containers run as UID 65532 with a dropped capability set and a read-only root filesystem. The default Service type is ClusterIP. Listeners use plain HTTP until `tls.enabled` and a certificate Secret are set. When `tls.forceClientCert` is true, startup, readiness and liveness probes use TCP, because the kubelet cannot present a client certificate.
 
 PMS is where policies are written. The chart installs a NetworkPolicy that denies ingress to PMS from other pods. kubelet probes and `kubectl port-forward` are not pod-network ingress, so an administrator can still reach PMS with port-forward. To let a workload call PMS, add a peer to `networkPolicy.pms.ingress`. Set `networkPolicy.pms.enabled` to `false` only when every workload that can route to the PMS Service is trusted to administer policy. ADS stays reachable so decision clients can call it. The file store accepts `ReadWriteOnce` or `ReadWriteMany`.
 

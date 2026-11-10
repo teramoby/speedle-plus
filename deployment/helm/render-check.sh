@@ -149,6 +149,30 @@ if render --set store.file.persistence.accessMode=ReadOnlyMany \
 fi
 grep -E 'ReadOnlyMany|ReadWriteOnce' "${work}/rom.err" >/dev/null
 
+https=$(render --set tls.enabled=true --set tls.secretName=speedle-tls)
+printf '%s\n' "${https}" > "${work}/https.yaml"
+grep -F 'scheme: HTTPS' "${work}/https.yaml" >/dev/null
+grep -F 'httpGet:' "${work}/https.yaml" >/dev/null
+if grep -F 'force-client-cert=true' "${work}/https.yaml" >/dev/null; then
+  echo "TLS without forceClientCert rendered client-certificate enforcement" >&2
+  exit 1
+fi
+
+mtls=$(render \
+  --set tls.enabled=true \
+  --set tls.secretName=speedle-tls \
+  --set tls.clientCAFile=ca.crt \
+  --set tls.forceClientCert=true)
+printf '%s\n' "${mtls}" > "${work}/mtls.yaml"
+grep -F 'force-client-cert=true' "${work}/mtls.yaml" >/dev/null
+grep -F -- '--client-cert' "${work}/mtls.yaml" >/dev/null
+tcp=$(grep -c 'tcpSocket:' "${work}/mtls.yaml")
+[[ "${tcp}" == "6" ]]
+if grep -F 'httpGet:' "${work}/mtls.yaml" >/dev/null; then
+  echo "mutual TLS render used an HTTP probe" >&2
+  exit 1
+fi
+
 version=$(awk '/^version:/ { print $2; exit }' "${chart}/Chart.yaml")
 app=$(awk '/^appVersion:/ { gsub(/"/, "", $2); print $2; exit }' "${chart}/Chart.yaml")
 helm package "${chart}" --version "${version}" --app-version "${app}" --destination "${work}"
