@@ -109,16 +109,16 @@ test('forks, missing metadata, copied repositories and off-master schedules stay
     }
   }
 });
-test('identity check accepts the three Speedle runners for the tasks each may run', () => {
-  const runners = [['charming-speedle', 'Linux', 'X64'], ['charming-speedle-2', 'Linux', 'X64'], ['fiona-speedle', 'macOS', 'ARM64'],
-    ['fiona-speedle', 'Linux', 'X64'], ['charming-speedle', 'macOS', 'ARM64'], ['unexpected-host', 'Linux', 'X64']];
+test('identity check accepts the Speedle runners for the tasks each may run', () => {
+  const runners = [['charming-speedle', 'Linux', 'X64'], ['charming-speedle-2', 'Linux', 'X64'], ['donkey-speedle', 'Linux', 'X64'], ['fiona-speedle', 'macOS', 'ARM64'],
+    ['fiona-speedle', 'Linux', 'X64'], ['charming-speedle', 'macOS', 'ARM64'], ['donkey-speedle', 'macOS', 'ARM64'], ['unexpected-host', 'Linux', 'X64']];
   for (const [RUNNER_NAME, RUNNER_OS, RUNNER_ARCH] of runners) {
     for (const CI_TASK of allModes) {
       const result = spawnSync('bash', ['-c', script('Verify self-hosted runner identity')], {
         encoding: 'utf8', env: {...process.env, RUNNER_NAME, RUNNER_OS, RUNNER_ARCH, CI_TASK},
       });
       const host = `${RUNNER_NAME}/${RUNNER_OS}/${RUNNER_ARCH}`;
-      const allowed = (['charming-speedle/Linux/X64', 'charming-speedle-2/Linux/X64'].includes(host) && CI_TASK !== 'weekly') ||
+      const allowed = (['charming-speedle/Linux/X64', 'charming-speedle-2/Linux/X64', 'donkey-speedle/Linux/X64'].includes(host) && CI_TASK !== 'weekly') ||
         (host === 'fiona-speedle/macOS/ARM64' && CI_TASK !== 'build');
       assert.equal(result.status === 0, allowed, `${host}/${CI_TASK}: ${result.stderr}`);
     }

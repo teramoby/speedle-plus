@@ -9,8 +9,14 @@ the `teramoby` default group's access policy.
 `fiona-speedle` (macOS ARM64) is a third runner in the same group. All three
 carry `speedle-runner`; only the two charming instances carry `speedle-linux`.
 
-ReviewBot and Go lint, test, post-merge regression and the nightly select
-`[self-hosted, speedle-runner]`, so any of the three may take them. Go build
+`donkey-speedle` (Linux x64) is an additional Linux runner. The Go CI worker
+accepts it for the same tasks as `charming-speedle` and `charming-speedle-2`.
+Weekly runs stay on `fiona-speedle`.
+
+ReviewBot selects `[self-hosted, speedle-runner]`, so `charming-speedle`,
+`charming-speedle-2` and `fiona-speedle` may take it. Go lint, test, post-merge
+regression and the nightly use the same label, and the Go CI worker also
+accepts `donkey-speedle` for those tasks. Go build
 (it needs the Linux Hugo release and `sha256sum`) selects
 `[self-hosted, Linux, X64, speedle-linux]`. The weekly selects
 `[self-hosted, fiona-speedle]` to reduce timing noise in its benchmark check.
@@ -123,9 +129,10 @@ gh workflow run reviewbot.yml --ref master
 gh workflow run ci.yml --ref master
 ```
 
-Inspect each run's jobs and confirm `runner_name` is one of the three Speedle
-runners for `speedle-runner` jobs (including the nightly), `fiona-speedle` for
-the weekly and a charming runner for build.
+Inspect each run's jobs and confirm `runner_name` is an accepted Speedle
+runner for `speedle-runner` jobs (including the nightly): `charming-speedle`,
+`charming-speedle-2`, `donkey-speedle` or `fiona-speedle`. The weekly runs on
+`fiona-speedle` and build runs on a charming runner.
 The regression job prints its workspace and temp paths; verify both registrations
 have distinct paths. An online/idle runner listing alone does not prove checkout,
 tool setup, tests or model connectivity work. The dedicated routing regression
