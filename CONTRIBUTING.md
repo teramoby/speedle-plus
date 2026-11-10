@@ -61,6 +61,12 @@ MongoDB.
 See [MySQL regression tests](docs/MYSQL_TESTS.md)
 for runner selection, manual trials, fixture ownership and result artifacts.
 
+## Releases
+
+Maintainers publish a release by dispatching the Release workflow from `master`.
+Image names, tags and the Docker Hub credentials are described in
+[Releasing](docs/RELEASE.md).
+
 ## Code of Conduct
 
 Follow the [Golden Rule](https://en.wikipedia.org/wiki/Golden_Rule). If
