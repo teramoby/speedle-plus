@@ -22,7 +22,7 @@ Speedle SDK 是决策 API `POST /authz-check/v1/is-allowed` 的客户端库，�
 - [Go](/docs/sdks/go/)：Go 模块 `github.com/teramoby/speedle-sdk/go`，已发布。
 - [C#/.NET](/docs/sdks/dotnet/)：NuGet `Speedle.Sdk`，已发布。
 - [Rust](/docs/sdks/rust/)：crates.io `speedle`，已发布。
-- [Node.js / TypeScript](/docs/sdks/node/)：npm `@speedle/sdk`，尚未发布。
+- [Node.js / TypeScript](/docs/sdks/node/)：npm `@speedle/sdk`，已发布。
 
 ## 功能
 

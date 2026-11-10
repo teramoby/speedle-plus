@@ -22,7 +22,7 @@ All packages are version 0.2.0. Each language page shows the install command.
 - [Go](/docs/sdks/go/): Go module `github.com/teramoby/speedle-sdk/go`, published.
 - [C#/.NET](/docs/sdks/dotnet/): NuGet `Speedle.Sdk`, published.
 - [Rust](/docs/sdks/rust/): crates.io `speedle`, published.
-- [Node.js / TypeScript](/docs/sdks/node/): npm `@speedle/sdk`, not yet published.
+- [Node.js / TypeScript](/docs/sdks/node/): npm `@speedle/sdk`, published.
 
 ## Features
 

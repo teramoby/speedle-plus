@@ -8,23 +8,23 @@ toc = true
 tocheading = "h2"
 tags = ["api", "sdk"]
 categories = ["docs"]
-bref = "@speedle/sdk 0.2.0 发布后用 npm 安装，再向本地 Speedle 或 Speedle Cloud 调用 isAllowed 与 check。"
+bref = "用 npm 安装 @speedle/sdk 0.2.0，再向本地 Speedle 或 Speedle Cloud 调用 isAllowed 与 check。"
 +++
 
-Node.js SDK 需要 Node.js 22 或更高版本，同时提供 ESM 和 CommonJS 构建及 TypeScript 类型，没有运行时依赖。软件包：npm 上的 `@speedle/sdk` 0.2.0，**发布后可用**。参考文档：[speedle-sdk/node](https://github.com/teramoby/speedle-sdk/tree/main/node)。
+Node.js SDK 需要 Node.js 22 或更高版本，同时提供 ESM 和 CommonJS 构建及 TypeScript 类型，没有运行时依赖。软件包：npm 上已发布的 [`@speedle/sdk`](https://www.npmjs.com/package/@speedle/sdk) 0.2.0。参考文档：[speedle-sdk/node](https://github.com/teramoby/speedle-sdk/tree/main/node)。
 
 示例使用的策略见 [SDK 概览](/docs/sdks/#示例策略)。
 
 ## 添加依赖
 
-新建 ES 模块包并安装（发布后可用）：
+新建 ES 模块包并安装：
 
 ```bash
 mkdir speedle-example
 cd speedle-example
 npm init -y
 npm pkg set type=module
-npm install @speedle/sdk@0.2.0
+npm install @speedle/sdk
 ```
 
 ## 调用本地 Speedle
@@ -118,6 +118,22 @@ alice delete /docs/public: allowed=false reason=NoApplicablePolicies
 ```
 
 令牌是服务端密钥，切勿放进浏览器、移动应用或桌面客户端。
+
+## Speedle MCP
+
+[`@speedle/mcp`](https://www.npmjs.com/package/@speedle/mcp) 已在 npm 发布。Speedle MCP（launch preview）是一个软件包，包含 `check` 与 `manage` 两种模式。用 npm 安装：
+
+```bash
+npm install @speedle/mcp
+```
+
+或直接运行 `speedle-mcp` 二进制：
+
+```bash
+npx @speedle/mcp check
+```
+
+不带模式运行 `speedle-mcp` 会打印用法，并以非零状态退出。参考文档：[speedle-mcp](https://github.com/teramoby/speedle-mcp)。
 
 ## 错误处理
 

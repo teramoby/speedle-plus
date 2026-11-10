@@ -307,10 +307,10 @@ Build with current Go Use Go 1.26.10 or Go 1.27.3 (or a newer patch on the same 
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/docs/sdks/node/</guid>
-      <description>The Node.js SDK needs Node.js 22 or later, ships ESM and CommonJS builds with TypeScript types, and has no runtime dependencies. Package: @speedle/sdk 0.2.0 on npm, available when published. Reference: speedle-sdk/node.
+      <description>The Node.js SDK needs Node.js 22 or later, ships ESM and CommonJS builds with TypeScript types, and has no runtime dependencies. Package: @speedle/sdk 0.2.0, published on npm. Reference: speedle-sdk/node.
 The examples check the policy described in the SDKs overview.
-Add the dependency In a new ES module package (available when published):
-mkdir speedle-example cd speedle-example npm init -y npm pkg set type=module npm install @speedle/sdk@0.2.0 Call a local Speedle Start Speedle and create the example policy as described in the SDKs overview.</description>
+Add the dependency In a new ES module package:
+mkdir speedle-example cd speedle-example npm init -y npm pkg set type=module npm install @speedle/sdk Call a local Speedle Start Speedle and create the example policy as described in the SDKs overview.</description>
     </item>
     
     <item>
