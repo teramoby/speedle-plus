@@ -20,7 +20,7 @@
 <link rel="alternate" hreflang="zh-CN" href="https://engine.speedle.io/zh/docs/sdks/docker/">
 <link rel="alternate" hreflang="x-default" href="https://engine.speedle.io/docs/sdks/docker/">
 <meta property="og:type" content="article">
-<meta property="article:modified_time" content="2026-11-10T11:48:00&#43;08:00">
+<meta property="article:modified_time" content="2026-11-10T12:28:43&#43;08:00">
 <meta property="og:site_name" content="Speedle Engine">
 <meta property="og:title" content="Docker image · Speedle Engine">
 <meta property="og:description" content="Run speedle-pms, speedle-ads and spctl from the published Speedle image.">
@@ -36,7 +36,7 @@
 <meta name="twitter:image" content="https://engine.speedle.io/img/social/engine-en.png">
 <meta name="twitter:image:alt" content="Speedle Engine — Fast. Simple. Access control">
 
-<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/docs/sdks/docker/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-10T11:48:00+08:00","description":"Run speedle-pms, speedle-ads and spctl from the published Speedle image.","headline":"Docker image","image":"https://engine.speedle.io/img/social/engine-en.png","inLanguage":"en","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/docs/sdks/docker/","@type":"WebPage"},"name":"Docker image","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/docs/sdks/docker/"}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/docs/sdks/docker/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-10T12:28:43+08:00","description":"Run speedle-pms, speedle-ads and spctl from the published Speedle image.","headline":"Docker image","image":"https://engine.speedle.io/img/social/engine-en.png","inLanguage":"en","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/docs/sdks/docker/","@type":"WebPage"},"name":"Docker image","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/docs/sdks/docker/"}</script>
 <script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/docs/sdks/docker/#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://engine.speedle.io/","name":"Home","position":1},{"@type":"ListItem","item":"https://engine.speedle.io/docs/","name":"Documentation","position":2},{"@type":"ListItem","item":"https://engine.speedle.io/docs/sdks/","name":"SDKs","position":3},{"@type":"ListItem","item":"https://engine.speedle.io/docs/sdks/docker/","name":"Docker image","position":4}]}</script><link href="/css/docs.css" rel="stylesheet" type="text/css">
 
 
@@ -333,10 +333,17 @@ node main.mjs</code></pre></div><div class="highlight"><pre style="color:#f8f8f2
     volumes:
       - speedle-policies:/data
 volumes:
-  speedle-policies:</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker compose -f compose.yaml up -d
+  speedle-policies:</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker compose -f compose.yaml up -d</code></pre></div>
+<p><code>up -d</code> returns before PMS is listening. Wait for the PMS service list and for ADS <code>/healthz</code> and <code>/readyz</code> before creating anything. The first PMS attempt may reset the connection, as described above.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl --fail --silent --show-error --retry <span style="color:#bd93f9">30</span> --retry-all-errors --retry-delay <span style="color:#bd93f9">1</span> --connect-timeout <span style="color:#bd93f9">2</span> <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  http://127.0.0.1:6733/policy-mgmt/v1/service
+curl --fail --silent --show-error --retry <span style="color:#bd93f9">30</span> --retry-all-errors --retry-delay <span style="color:#bd93f9">1</span> --connect-timeout <span style="color:#bd93f9">2</span> <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  http://127.0.0.1:6734/healthz
+curl --fail --silent --show-error --retry <span style="color:#bd93f9">30</span> --retry-all-errors --retry-delay <span style="color:#bd93f9">1</span> --connect-timeout <span style="color:#bd93f9">2</span> <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  http://127.0.0.1:6734/readyz
 docker compose -f compose.yaml <span style="color:#8be9fd;font-style:italic">exec</span> -T pms /spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ create service docs
 docker compose -f compose.yaml <span style="color:#8be9fd;font-style:italic">exec</span> -T pms /spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ create policy -c <span style="color:#f1fa8c">&#34;grant user alice get,list /docs/public&#34;</span> --service-name<span style="color:#ff79c6">=</span>docs</code></pre></div>
-<p>Wait for the PMS service list and for ADS <code>/healthz</code> and <code>/readyz</code> with the curl commands above, then send the same <code>is-allowed</code> request. ADS sees the new policy without a restart.</p>
+<p>Send the same <code>is-allowed</code> request. ADS sees the new policy without a restart.</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker compose -f compose.yaml down -v</code></pre></div>
 <p><code>down -v</code> removes the Compose volume and the policies stored in it.</p>
 

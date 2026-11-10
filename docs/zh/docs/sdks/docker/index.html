@@ -20,7 +20,7 @@
 <link rel="alternate" hreflang="zh-CN" href="https://engine.speedle.io/zh/docs/sdks/docker/">
 <link rel="alternate" hreflang="x-default" href="https://engine.speedle.io/docs/sdks/docker/">
 <meta property="og:type" content="article">
-<meta property="article:modified_time" content="2026-11-10T11:48:00&#43;08:00">
+<meta property="article:modified_time" content="2026-11-10T12:28:43&#43;08:00">
 <meta property="og:site_name" content="Speedle Engine">
 <meta property="og:title" content="Docker 镜像 · Speedle Engine">
 <meta property="og:description" content="用已发布的 Speedle 镜像运行 speedle-pms、speedle-ads 和 spctl。">
@@ -36,7 +36,7 @@
 <meta name="twitter:image" content="https://engine.speedle.io/img/social/engine-zh.png">
 <meta name="twitter:image:alt" content="Speedle Engine — 快速、简单的权限控制">
 
-<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/zh/docs/sdks/docker/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-10T11:48:00+08:00","description":"用已发布的 Speedle 镜像运行 speedle-pms、speedle-ads 和 spctl。","headline":"Docker 镜像","image":"https://engine.speedle.io/img/social/engine-zh.png","inLanguage":"zh-CN","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/zh/docs/sdks/docker/","@type":"WebPage"},"name":"Docker 镜像","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/zh/docs/sdks/docker/"}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/zh/docs/sdks/docker/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-10T12:28:43+08:00","description":"用已发布的 Speedle 镜像运行 speedle-pms、speedle-ads 和 spctl。","headline":"Docker 镜像","image":"https://engine.speedle.io/img/social/engine-zh.png","inLanguage":"zh-CN","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/zh/docs/sdks/docker/","@type":"WebPage"},"name":"Docker 镜像","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/zh/docs/sdks/docker/"}</script>
 <script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/zh/docs/sdks/docker/#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://engine.speedle.io/zh/","name":"首页","position":1},{"@type":"ListItem","item":"https://engine.speedle.io/zh/docs/","name":"文档","position":2},{"@type":"ListItem","item":"https://engine.speedle.io/zh/docs/sdks/","name":"SDK","position":3},{"@type":"ListItem","item":"https://engine.speedle.io/zh/docs/sdks/docker/","name":"Docker 镜像","position":4}]}</script><link href="/css/docs.css" rel="stylesheet" type="text/css">
 
 
@@ -333,10 +333,17 @@ node main.mjs</code></pre></div><div class="highlight"><pre style="color:#f8f8f2
     volumes:
       - speedle-policies:/data
 volumes:
-  speedle-policies:</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker compose -f compose.yaml up -d
+  speedle-policies:</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker compose -f compose.yaml up -d</code></pre></div>
+<p><code>up -d</code> 会在 PMS 开始监听之前返回。创建服务和策略之前，先等待 PMS 的服务列表以及 ADS 的 <code>/healthz</code> 和 <code>/readyz</code>。第一次访问 PMS 时连接可能被重置，原因见上文。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl --fail --silent --show-error --retry <span style="color:#bd93f9">30</span> --retry-all-errors --retry-delay <span style="color:#bd93f9">1</span> --connect-timeout <span style="color:#bd93f9">2</span> <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  http://127.0.0.1:6733/policy-mgmt/v1/service
+curl --fail --silent --show-error --retry <span style="color:#bd93f9">30</span> --retry-all-errors --retry-delay <span style="color:#bd93f9">1</span> --connect-timeout <span style="color:#bd93f9">2</span> <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  http://127.0.0.1:6734/healthz
+curl --fail --silent --show-error --retry <span style="color:#bd93f9">30</span> --retry-all-errors --retry-delay <span style="color:#bd93f9">1</span> --connect-timeout <span style="color:#bd93f9">2</span> <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  http://127.0.0.1:6734/readyz
 docker compose -f compose.yaml <span style="color:#8be9fd;font-style:italic">exec</span> -T pms /spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ create service docs
 docker compose -f compose.yaml <span style="color:#8be9fd;font-style:italic">exec</span> -T pms /spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ create policy -c <span style="color:#f1fa8c">&#34;grant user alice get,list /docs/public&#34;</span> --service-name<span style="color:#ff79c6">=</span>docs</code></pre></div>
-<p>用上面的 curl 命令等待 PMS 的服务列表以及 ADS 的 <code>/healthz</code> 和 <code>/readyz</code>，再发送同一个 <code>is-allowed</code> 请求。ADS 不需要重启就能看到新策略。</p>
+<p>再发送同一个 <code>is-allowed</code> 请求。ADS 不需要重启就能看到新策略。</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker compose -f compose.yaml down -v</code></pre></div>
 <p><code>down -v</code> 会删除 Compose 卷以及保存在里面的策略。</p>
 

@@ -2990,11 +2990,22 @@ volumes:
 
 ```bash
 docker compose -f compose.yaml up -d
+```
+
+`up -d` returns before PMS is listening. Wait for the PMS service list and for ADS `/healthz` and `/readyz` before creating anything. The first PMS attempt may reset the connection, as described above.
+
+```bash
+curl --fail --silent --show-error --retry 30 --retry-all-errors --retry-delay 1 --connect-timeout 2 \
+  http://127.0.0.1:6733/policy-mgmt/v1/service
+curl --fail --silent --show-error --retry 30 --retry-all-errors --retry-delay 1 --connect-timeout 2 \
+  http://127.0.0.1:6734/healthz
+curl --fail --silent --show-error --retry 30 --retry-all-errors --retry-delay 1 --connect-timeout 2 \
+  http://127.0.0.1:6734/readyz
 docker compose -f compose.yaml exec -T pms /spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ create service docs
 docker compose -f compose.yaml exec -T pms /spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ create policy -c "grant user alice get,list /docs/public" --service-name=docs
 ```
 
-Wait for the PMS service list and for ADS `/healthz` and `/readyz` with the curl commands above, then send the same `is-allowed` request. ADS sees the new policy without a restart.
+Send the same `is-allowed` request. ADS sees the new policy without a restart.
 
 ```bash
 docker compose -f compose.yaml down -v
