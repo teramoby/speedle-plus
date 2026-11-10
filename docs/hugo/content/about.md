@@ -1,6 +1,7 @@
 +++
 title = "About Speedle"
 icon = "Speedle_logo_about.svg"
+lastmod = 2026-11-08T19:23:52+08:00
 +++
 
 Speedle is an open-source (UPL-1.0) authorization engine with the SPDL policy language. It consists of ADS (decisions) and PMS (policy management), SDKs in six languages, Speedle Cloud (hosted), and Speedle AI (authorization for and with AI agents, an MCP server, and the policy-modeler skill).

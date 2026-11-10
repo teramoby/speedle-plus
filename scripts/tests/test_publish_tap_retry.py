@@ -6,6 +6,7 @@ import os
 import re
 import shutil
 import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -43,6 +44,28 @@ class PublishTapRetryTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             self._run_case(root, open_pr=False, quick_start="v1.6.0")
+
+    def test_stamp_writes_utc_in_the_form_hugo_prints(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            self._write_quick_start(root, "v1.6.0")
+            (root / "docs/sitemap.xml").write_text(
+                "<lastmod>2020-01-01T00:00:00+00:00</lastmod>\n"
+            )
+            completed = subprocess.run(
+                [sys.executable, str(HOMEBREW / "bump-quick-start-pin.py"),
+                 "--stamp", "2024-05-01T00:00:00Z", str(root)],
+                check=False, text=True, capture_output=True,
+            )
+            self.assertEqual(completed.returncode, 0, completed.stderr)
+            self.assertIn("2024-05-01T00:00:00+00:00", completed.stdout)
+            guide = (root / "docs/hugo/content/quick-start.md").read_text()
+            self.assertIn("lastmod = 2024-05-01T00:00:00+00:00", guide)
+            html = (root / "docs/quick-start/index.html").read_text()
+            self.assertIn("2024-05-01T00:00:00&#43;00:00", html)
+            self.assertNotIn("2024-05-01T00:00:00Z", html)
+            index = (root / "docs/sitemap.xml").read_text()
+            self.assertIn("<lastmod>2024-05-01T00:00:00+00:00</lastmod>", index)
 
     def _run_case(self, root, open_pr, existing_tap_branch=False, quick_start=None):
         source_bare = root / "source.git"
@@ -189,9 +212,11 @@ class PublishTapRetryTest(unittest.TestCase):
     def _write_quick_start(self, workspace, version):
         pages = {
             "docs/hugo/content/quick-start.md":
+                "lastmod = 2020-01-01T00:00:00+00:00\n"
                 'GOBIN="$PWD/bin" go install github.com/teramoby/speedle-plus/cmd/...@' + version + "\n"
                 f"`{version}` is the latest release tag at the time of writing.\n",
             "docs/hugo/content/quick-start.zh.md":
+                "lastmod = 2020-01-01T00:00:00+00:00\n"
                 'GOBIN="$PWD/bin" go install github.com/teramoby/speedle-plus/cmd/...@' + version + "\n"
                 f"`{version}` 是撰写本文时的最新发布标签。\n",
             "docs/quick-start/index.html":
@@ -227,6 +252,8 @@ class PublishTapRetryTest(unittest.TestCase):
             ["git", "--git-dir", str(source_bare), "log", "-1", "--format=%aI", "homebrew-v1.7.0"],
             check=True, text=True, capture_output=True,
         ).stdout.strip()
+        if author.endswith("Z"):
+            author = author[:-1] + "+00:00"
         message = subprocess.run(
             ["git", "--git-dir", str(source_bare), "log", "-1", "--format=%B", "homebrew-v1.7.0"],
             check=True, text=True, capture_output=True,
@@ -245,9 +272,17 @@ class PublishTapRetryTest(unittest.TestCase):
             self.assertNotIn(previous, text)
         html = show("docs/quick-start/index.html")
         self.assertIn(author.replace("+", "&#43;"), html)
+        self.assertNotIn("2020-01-01T00:00:00", html)
         self.assertIn(f"<code>{version}</code>", html)
+        for guide in (
+            "docs/hugo/content/quick-start.md",
+            "docs/hugo/content/quick-start.zh.md",
+        ):
+            self.assertIn(f"lastmod = {author}", show(guide))
+            self.assertNotIn("2020-01-01T00:00:00", show(guide))
         self.assertIn(author, show("docs/en/sitemap.xml"))
         self.assertIn(author, show("docs/zh/sitemap.xml"))
+        self.assertNotIn("2020-01-01T00:00:00", show("docs/en/sitemap.xml"))
 
     def _write_checksums(self, homebrew):
         assets = []

@@ -9,6 +9,7 @@ tocheading = "h2"
 tags = ["api", "sdk"]
 categories = ["docs"]
 bref = "Install speedle 0.2.0 with pip or uv, then call is_allowed and check against a local Speedle or Speedle Cloud."
+lastmod = 2026-11-07T19:43:15+08:00
 +++
 
 The Python SDK needs Python 3.10 or later; its only runtime dependency is `httpx`. It has a sync `Client` and an asyncio `AsyncClient` with the same arguments. Package: [`speedle`](https://pypi.org/project/speedle/) 0.2.0 on PyPI. Reference: [speedle-sdk/python](https://github.com/teramoby/speedle-sdk/tree/main/python).

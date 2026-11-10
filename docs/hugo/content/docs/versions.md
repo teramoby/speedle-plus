@@ -9,6 +9,7 @@ tocsidebar = false
 tags = ["releases", "versions"]
 categories = ["docs"]
 bref = "Releases — Speedle follows semantic versioning"
+lastmod = 2026-11-10T14:45:43+08:00
 +++
 
 ## Speedle releases

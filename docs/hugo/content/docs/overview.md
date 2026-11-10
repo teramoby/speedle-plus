@@ -10,6 +10,7 @@ tocsidebar = false
 tags = ["core", "pdp", "identity", "spdl"]
 categories = ["docs"]
 bref = "Where Speedle fits in the vocabulary of authorization and access control"
+lastmod = 2026-11-10T14:45:43+08:00
 +++
 
 Speedle is an open-source authorization engine. Applications send it a question such as "may this user perform this action on this resource?", and Speedle answers allow or deny according to centrally managed policies. This page connects common authorization terms to the Speedle components that implement them, and links to the guides that cover each one.

@@ -7,6 +7,7 @@ toc = false
 linksection = true
 tocheading = "h2"
 categories = ["docs"]
+lastmod = 2026-11-08T17:11:18+08:00
 +++
 
 Speedle Cloud 是基于开源 Speedle 策略引擎的托管访问控制服务，面向开发者。你可以用它管理 SPDL 授权策略与角色策略、在 Playground 中测试授权判定，再从应用服务端调用授权 API，无需自行部署和运维授权服务。

@@ -10,6 +10,7 @@ customcssfile = "command-copy.css"
 tocheading = "h2"
 bref = "使用 go install 安装 Speedle 或从源码编译，使用 SPDL 和 spctl 创建策略，再通过 REST API 验证授权结果。本教程使用本地文件存储策略。"
 icon = "9. Getting Started.svg"
+lastmod = 2026-11-10T17:04:32+08:00
 +++
 
 ## 先在 Playground 中试用

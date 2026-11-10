@@ -5,6 +5,7 @@ tags = ["v0.1.0", "api", "guide", "core", "pms"]
 categories = ["docs"]
 customcss = true
 customcssfile = "swagger-custom.css"
+lastmod = 2026-10-29T11:32:30+08:00
 +++
 
 Reference for your configured PMS. Requests and responses are JSON; policy IDs are strings and responses are flat objects.

@@ -8,6 +8,7 @@ toc = true
 tocheading = "h2"
 categories = ["docs"]
 bref = "One image on Docker Hub and GHCR runs the policy manager, the decision service and spctl, with a shared file store."
+lastmod = 2026-11-10T14:45:43+08:00
 +++
 
 Speedle publishes one image that contains `speedle-pms`, `speedle-ads` and `spctl`. The image is built `FROM scratch`, runs as UID 65532, and has no shell. The first argument selects the program.

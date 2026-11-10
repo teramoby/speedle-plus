@@ -9,6 +9,7 @@ tocheading = "h2"
 tags = ["api", "sdk"]
 categories = ["docs"]
 bref = "Add Speedle.Sdk 0.2.0 with dotnet add package, then call IsAllowedAsync and CheckAsync against a local Speedle or Speedle Cloud."
+lastmod = 2026-11-07T19:43:15+08:00
 +++
 
 The .NET SDK targets .NET 8 or later and has no dependencies. Package: [`Speedle.Sdk`](https://www.nuget.org/packages/Speedle.Sdk) 0.2.0 on NuGet, namespace `Speedle.Sdk`. Reference: [speedle-sdk/dotnet](https://github.com/teramoby/speedle-sdk/tree/main/dotnet).

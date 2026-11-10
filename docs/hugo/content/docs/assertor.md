@@ -2,6 +2,7 @@
 title = "Token asserter"
 description = "Token asserter"
 date = 2019-01-21T09:28:30+08:00
+lastmod = 2026-10-29T11:53:01+08:00
 weight = 60
 draft = false
 bref = "Evaluation requests can contain an identity token that represents a user. In this case, the evaluation engine can invoke the asserter service to obtain the explicit identities of the user"

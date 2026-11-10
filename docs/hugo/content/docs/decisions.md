@@ -9,6 +9,7 @@ tocsidebar = false
 tags = ["pdp", "policy", "core"]
 categories = ["docs"]
 bref = "Get authorization decisions"
+lastmod = 2026-11-08T19:23:52+08:00
 +++
 
 ## What is an authorization decision?

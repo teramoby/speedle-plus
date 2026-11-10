@@ -9,6 +9,7 @@ tocheading = "h2"
 tags = ["api", "sdk"]
 categories = ["docs"]
 bref = "用 Maven 或 Gradle 添加 io.speedle:speedle-sdk 0.2.0，再向本地 Speedle 或 Speedle Cloud 调用 isAllowed 与 check。"
+lastmod = 2026-11-08T19:23:52+08:00
 +++
 
 Java SDK 需要 Java 17 或更高版本，没有运行时依赖。软件包：Maven Central 上的 [`io.speedle:speedle-sdk`](https://repo1.maven.org/maven2/io/speedle/speedle-sdk/0.2.0/) 0.2.0。参考文档：[speedle-sdk/java](https://github.com/teramoby/speedle-sdk/tree/main/java)。
