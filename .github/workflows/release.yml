@@ -15,8 +15,9 @@ name: Release
 # When HOMEBREW_TAP_TOKEN is set on that environment, the workflow pushes a
 # homebrew-vX.Y.Z branch to teramoby/homebrew-tap and opens a pull request
 # against main. It does not push main or master. It also opens a pull request
-# on this repository with the same formulas. When HOMEBREW_TAP_TOKEN is unset,
-# that step is skipped and the release still succeeds. See docs/RELEASE.md.
+# on this repository with the same formulas and the Quick Start install pin
+# for this version. When HOMEBREW_TAP_TOKEN is unset, that step is skipped
+# and the release still succeeds. See docs/RELEASE.md.
 #
 # Retrying: re-dispatch with the same version and commit after a failure. An
 # existing tag must already point at the same commit, the version image tag
