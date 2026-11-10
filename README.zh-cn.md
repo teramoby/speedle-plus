@@ -126,7 +126,7 @@ go install github.com/teramoby/speedle-plus/cmd/...@latest
 
 ### Helm
 
-`deployment/helm/speedle` 用同一个镜像 `speedle/speedle` 运行 PMS 和 ADS。PMS 监听 6733，ADS 监听 6734。默认策略存储是 PersistentVolumeClaim 上的一个文件。把 `store.type` 设为 `etcd` 或 `mongodb` 即改用对应存储。ADS 可以增加副本。文件存储只运行一个 PMS 副本。
+`deployment/helm/speedle` 用同一个镜像 `speedle/speedle` 运行 PMS 和 ADS。PMS 监听 6733，ADS 监听 6734。默认策略存储是 PersistentVolumeClaim 上的一个文件。把 `store.type` 设为 `etcd` 或 `mongodb` 即改用对应存储。ADS 可以增加副本。文件存储只运行一个 PMS 副本。chart 默认拒绝其他 Pod 访问 PMS，直到 `networkPolicy.pms.ingress` 列出可以管理策略的客户端。
 
 在检出的仓库里，使用 Helm 3：
 

@@ -80,7 +80,7 @@ jobs:
             local image=$1
             local attempt
             for attempt in 1 2 3 4 5; do
-              if docker pull "${image}"; then
+              if docker pull --platform linux/amd64 "${image}"; then
                 return 0
               fi
               echo "docker pull failed (${attempt}/5): ${image}" >&2
@@ -89,7 +89,21 @@ jobs:
             return 1
           }
           pull "docker.io/${image}"
-          docker tag "docker.io/${image}" "${image}"
+          # The published image is a multi-arch index with provenance and an
+          # SBOM. docker save leaves those attestation blobs out, and kind
+          # imports with ctr --all-platforms, which then fails looking up the
+          # missing digest. Rebuild one platform with both left off.
+          ctx=$(mktemp -d)
+          docker build \
+            --platform linux/amd64 \
+            --provenance=false \
+            --sbom=false \
+            --tag "${image}" \
+            --file - \
+            "${ctx}" <<EOF
+          FROM docker.io/${image}
+          EOF
+          rm -rf "${ctx}"
           kind load docker-image "${image}" --name speedle-helm
           echo "IMAGE=${image}" >> "${GITHUB_ENV}"
 

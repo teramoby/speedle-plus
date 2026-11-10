@@ -12,7 +12,18 @@ PMS and ADS share one volume at {{ .Values.store.file.location }}. Keep a single
 {{- else if eq .Values.store.type "etcd" }}
 Point store.etcd.endpoint at an etcd server both services can reach. PMS and ADS must use the same endpoint and key prefix.
 {{- else if eq .Values.store.type "mongodb" }}
-Point store.mongodb.uri at a MongoDB replica set. PMS and ADS must use the same URI and database.
+{{- if .Values.store.mongodb.existingSecret }}
+PMS and ADS read the MongoDB URI from secret {{ .Values.store.mongodb.existingSecret }} and use database {{ .Values.store.mongodb.database }}.
+{{- else }}
+Point store.mongodb.uri at a MongoDB replica set. The URI must not include credentials. PMS and ADS must use the same URI and database.
+{{- end }}
+{{- end }}
+{{- if .Values.networkPolicy.pms.enabled }}
+
+Other pods cannot reach PMS. Add clients under networkPolicy.pms.ingress. Set networkPolicy.pms.enabled to false only when every workload that can route to the PMS Service is trusted to administer policy.
+{{- else }}
+
+networkPolicy.pms.enabled is false. Any workload that can route to the PMS Service can administer policy.
 {{- end }}
 {{- if not .Values.tls.enabled }}
 

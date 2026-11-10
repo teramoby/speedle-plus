@@ -9,6 +9,7 @@
     "podSecurityContext",
     "containerSecurityContext",
     "service",
+    "networkPolicy",
     "pms",
     "ads",
     "probes",
@@ -70,6 +71,33 @@
         "adsPort": { "type": "integer", "minimum": 1, "maximum": 65535 }
       }
     },
+    "networkPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["pms"],
+      "properties": {
+        "pms": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["enabled", "ingress"],
+          "properties": {
+            "enabled": { "type": "boolean" },
+            "ingress": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "podSelector": { "type": "object" },
+                  "namespaceSelector": { "type": "object" },
+                  "ipBlock": { "type": "object" }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "pms": { "$ref": "#/definitions/workload" },
     "ads": { "$ref": "#/definitions/workload" },
     "probes": {
@@ -105,7 +133,7 @@
                 "storageClass": { "type": "string" },
                 "accessMode": {
                   "type": "string",
-                  "enum": ["ReadWriteOnce", "ReadWriteMany", "ReadOnlyMany"]
+                  "enum": ["ReadWriteOnce", "ReadWriteMany"]
                 }
               }
             }
@@ -138,10 +166,12 @@
         "mongodb": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["uri", "database"],
+          "required": ["uri", "database", "existingSecret", "secretKey"],
           "properties": {
             "uri": { "type": "string" },
-            "database": { "type": "string" }
+            "database": { "type": "string" },
+            "existingSecret": { "type": "string" },
+            "secretKey": { "type": "string" }
           }
         }
       }

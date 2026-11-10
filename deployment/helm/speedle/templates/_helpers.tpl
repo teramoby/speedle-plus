@@ -94,6 +94,10 @@ Flags for --store-type and the selected backend.
 {{- if not (hasPrefix "/" .Values.store.file.location) -}}
 {{- fail "store.file.location must be an absolute path on the shared volume" -}}
 {{- end -}}
+{{- $accessMode := .Values.store.file.persistence.accessMode -}}
+{{- if not (or (eq $accessMode "ReadWriteOnce") (eq $accessMode "ReadWriteMany")) -}}
+{{- fail "store.file.persistence.accessMode must be ReadWriteOnce or ReadWriteMany; PMS writes the policy file" -}}
+{{- end -}}
 - --store-type
 - file
 - --filestore-loc
@@ -143,8 +147,21 @@ Flags for --store-type and the selected backend.
 {{- else if eq .Values.store.type "mongodb" -}}
 - --store-type
 - mongodb
+{{- if .Values.store.mongodb.existingSecret }}
+{{- if not .Values.store.mongodb.secretKey }}
+{{- fail "store.mongodb.secretKey is required when store.mongodb.existingSecret is set" }}
+{{- end }}
+{{- if .Values.store.mongodb.uri }}
+{{- fail "set either store.mongodb.uri or store.mongodb.existingSecret, not both" }}
+{{- end }}
+{{- else }}
+{{- $mongoURI := required "store.mongodb.uri or store.mongodb.existingSecret is required when store.type is mongodb" .Values.store.mongodb.uri }}
+{{- if regexMatch "://[^/?#]*@" $mongoURI }}
+{{- fail "store.mongodb.uri must not include credentials; put the URI in a Secret and set store.mongodb.existingSecret" }}
+{{- end }}
 - --mongostore_uri
-- {{ required "store.mongodb.uri is required when store.type is mongodb" .Values.store.mongodb.uri | quote }}
+- {{ $mongoURI | quote }}
+{{- end }}
 - --mongostore_database
 - {{ required "store.mongodb.database is required when store.type is mongodb" .Values.store.mongodb.database | quote }}
 {{- else -}}

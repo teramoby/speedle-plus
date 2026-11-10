@@ -52,6 +52,14 @@ spec:
           imagePullPolicy: {{ $.Values.image.pullPolicy }}
           securityContext:
             {{- toYaml $.Values.containerSecurityContext | nindent 12 }}
+          {{- if and (eq $.Values.store.type "mongodb") $.Values.store.mongodb.existingSecret }}
+          env:
+            - name: SPDL_MONGOSTORE_URI
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $.Values.store.mongodb.existingSecret | quote }}
+                  key: {{ $.Values.store.mongodb.secretKey | quote }}
+          {{- end }}
           args:
             - {{ $spec.command }}
             {{- include "speedle.storeArgs" $ | nindent 12 }}

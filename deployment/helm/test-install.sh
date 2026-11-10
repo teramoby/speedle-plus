@@ -16,8 +16,11 @@ if [[ -z "${image}" ]]; then
 fi
 [[ -n "${image}" ]] || { echo "Could not determine the chart image." >&2; exit 1; }
 
+# The chart denies ingress to PMS from other pods. This client pod is the
+# policy administrator for the install, so the check opts out of that policy.
 helm upgrade --install "${release}" "${chart}" \
   --namespace "${ns}" --create-namespace \
+  --set networkPolicy.pms.enabled=false \
   --wait --timeout 5m
 
 mapfile -t pods < <(kubectl get pods -n "${ns}" -l "app.kubernetes.io/instance=${release}" -o name)

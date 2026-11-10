@@ -28,6 +28,25 @@ grep -F 'speedle-pms' "${work}/file.yaml" >/dev/null
 grep -F 'speedle-ads' "${work}/file.yaml" >/dev/null
 deps=$(grep -c 'kind: Deployment' "${work}/file.yaml")
 [[ "${deps}" == "2" ]]
+policies=$(grep -c 'kind: NetworkPolicy' "${work}/file.yaml")
+[[ "${policies}" == "1" ]]
+grep -F 'ingress: []' "${work}/file.yaml" >/dev/null
+if grep -F 'from:' "${work}/file.yaml" >/dev/null; then
+  echo "default PMS policy must deny all pod ingress" >&2
+  exit 1
+fi
+
+open=$(render --set networkPolicy.pms.enabled=false)
+printf '%s\n' "${open}" > "${work}/open.yaml"
+if grep -F 'kind: NetworkPolicy' "${work}/open.yaml" >/dev/null; then
+  echo "networkPolicy.pms.enabled=false still rendered a NetworkPolicy" >&2
+  exit 1
+fi
+
+allowed=$(render --set-json 'networkPolicy.pms.ingress=[{"namespaceSelector":{"matchLabels":{"kubernetes.io/metadata.name":"policy-admin"}}}]')
+printf '%s\n' "${allowed}" > "${work}/allowed.yaml"
+grep -F 'policy-admin' "${work}/allowed.yaml" >/dev/null
+grep -F 'namespaceSelector:' "${work}/allowed.yaml" >/dev/null
 
 claim=$(awk '/claimName:/ { print $2; exit }' "${work}/file.yaml")
 grep -F "name: ${claim}" "${work}/file.yaml" >/dev/null
@@ -86,7 +105,49 @@ if render --set store.type=mongodb >"${work}/mongo-empty.yaml" 2>"${work}/mongo-
   echo "mongodb store accepted an empty URI" >&2
   exit 1
 fi
-grep -F 'store.mongodb.uri is required' "${work}/mongo-empty.err" >/dev/null
+grep -F 'store.mongodb.uri or store.mongodb.existingSecret is required' "${work}/mongo-empty.err" >/dev/null
+
+if render --set store.type=mongodb \
+  --set store.mongodb.uri='mongodb://user:secret@mongo.example:27017/?replicaSet=rs0' \
+  >"${work}/mongo-secret.yaml" 2>"${work}/mongo-secret.err"; then
+  echo "mongodb store accepted a URI with credentials" >&2
+  exit 1
+fi
+grep -F 'must not include credentials' "${work}/mongo-secret.err" >/dev/null
+
+if render --set store.type=mongodb \
+  --set store.mongodb.uri='mongodb://mongo.example:27017/?replicaSet=rs0' \
+  --set store.mongodb.existingSecret=mongo-uri \
+  >"${work}/mongo-both.yaml" 2>"${work}/mongo-both.err"; then
+  echo "mongodb store accepted both a URI and a Secret" >&2
+  exit 1
+fi
+grep -F 'not both' "${work}/mongo-both.err" >/dev/null
+
+mongo_secret=$(render \
+  --set store.type=mongodb \
+  --set store.mongodb.existingSecret=mongo-uri \
+  --set store.mongodb.database=speedle_demo)
+printf '%s\n' "${mongo_secret}" > "${work}/mongo-secret-ref.yaml"
+grep -F 'SPDL_MONGOSTORE_URI' "${work}/mongo-secret-ref.yaml" >/dev/null
+grep -F 'secretKeyRef:' "${work}/mongo-secret-ref.yaml" >/dev/null
+grep -F 'mongo-uri' "${work}/mongo-secret-ref.yaml" >/dev/null
+grep -F 'mongostore_database' "${work}/mongo-secret-ref.yaml" >/dev/null
+if grep -F 'mongostore_uri' "${work}/mongo-secret-ref.yaml" >/dev/null; then
+  echo "credentialed MongoDB URI was passed as a flag" >&2
+  exit 1
+fi
+if grep -F 'kind: PersistentVolumeClaim' "${work}/mongo-secret-ref.yaml" >/dev/null; then
+  echo "mongodb secret render must not create a policy volume claim" >&2
+  exit 1
+fi
+
+if render --set store.file.persistence.accessMode=ReadOnlyMany \
+  >"${work}/rom.yaml" 2>"${work}/rom.err"; then
+  echo "file store accepted ReadOnlyMany" >&2
+  exit 1
+fi
+grep -E 'ReadOnlyMany|ReadWriteOnce' "${work}/rom.err" >/dev/null
 
 version=$(awk '/^version:/ { print $2; exit }' "${chart}/Chart.yaml")
 app=$(awk '/^appVersion:/ { gsub(/"/, "", $2); print $2; exit }' "${chart}/Chart.yaml")

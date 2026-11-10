@@ -124,7 +124,7 @@ This installs `spctl`, `speedle-pms` and `speedle-ads` into `$(go env GOPATH)/bi
 
 ### Helm
 
-The chart at `deployment/helm/speedle` runs PMS and ADS from one image, `speedle/speedle`. PMS listens on port 6733 and ADS on port 6734. The default policy store is a file on a PersistentVolumeClaim. Set `store.type` to `etcd` or `mongodb` to use those stores. ADS can run more than one replica. The file store keeps a single PMS replica.
+The chart at `deployment/helm/speedle` runs PMS and ADS from one image, `speedle/speedle`. PMS listens on port 6733 and ADS on port 6734. The default policy store is a file on a PersistentVolumeClaim. Set `store.type` to `etcd` or `mongodb` to use those stores. ADS can run more than one replica. The file store keeps a single PMS replica. The chart denies ingress to PMS from other pods until `networkPolicy.pms.ingress` lists the clients that may administer policy.
 
 From a checkout, with Helm 3:
 
