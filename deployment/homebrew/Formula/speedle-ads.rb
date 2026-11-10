@@ -13,23 +13,23 @@ class SpeedleAds < Formula
 
   on_macos do
     on_arm do
-      url "https://github.com/teramoby/speedle-plus/releases/download/v1.7.0/speedle-ads_darwin_arm64"
-      sha256 "ea7a21ac34e57fff3d8d33a82d6bd385b7d192618901a85c3c3979683b2f73c3"
+      url "https://github.com/teramoby/speedle-plus/releases/download/v1.7.1/speedle-ads_darwin_arm64"
+      sha256 "dfccd4696cf96c22c47f024583e72c32ccb984568fdf720dc46ab9dbebbef286"
     end
     on_intel do
-      url "https://github.com/teramoby/speedle-plus/releases/download/v1.7.0/speedle-ads_darwin_amd64"
-      sha256 "ec643bbec75dc04c008825a81bf15ed8fdee9510143ae884e0cda1e40686e9f6"
+      url "https://github.com/teramoby/speedle-plus/releases/download/v1.7.1/speedle-ads_darwin_amd64"
+      sha256 "958f92bb1d97ebcd5cc875ccb9c306ad3d061b46ceda81b84068a50ce262be90"
     end
   end
 
   on_linux do
     on_arm do
-      url "https://github.com/teramoby/speedle-plus/releases/download/v1.7.0/speedle-ads_linux_arm64"
-      sha256 "10ec840a046937bc4baeef8b6e6c518e1b87f10d47a25b5d2db58e1ba4720cae"
+      url "https://github.com/teramoby/speedle-plus/releases/download/v1.7.1/speedle-ads_linux_arm64"
+      sha256 "01a8c2df8e4ea0a07be4a02fbe73496e2654b1b6333ce3e00b41f2b0e7f3b06e"
     end
     on_intel do
-      url "https://github.com/teramoby/speedle-plus/releases/download/v1.7.0/speedle-ads_linux_amd64"
-      sha256 "5e77b552d542f36152357f2fb12145be885be8793261b528564214058f48156a"
+      url "https://github.com/teramoby/speedle-plus/releases/download/v1.7.1/speedle-ads_linux_amd64"
+      sha256 "53f35405b1e6bb8256df0b4511cbb6cf26e519b7ed290a12b1a8846fdd13ab3b"
     end
   end
 
