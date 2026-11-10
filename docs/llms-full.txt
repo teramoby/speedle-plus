@@ -1915,14 +1915,14 @@ The Speedle SDKs are client libraries for the decision API `POST /authz-check/v1
 
 ### Packages
 
-All packages are version 0.2.0. Each language page shows the install command.
+Java, Python, Go, .NET and Rust are version 0.2.0. `@speedle/sdk` is published on npm. Each language page shows the install command.
 
 - [Java](https://engine.speedle.io/docs/sdks/java/): Maven Central `io.speedle:speedle-sdk`, published.
 - [Python](https://engine.speedle.io/docs/sdks/python/): PyPI `speedle`, published.
 - [Go](https://engine.speedle.io/docs/sdks/go/): Go module `github.com/teramoby/speedle-sdk/go`, published.
 - [C#/.NET](https://engine.speedle.io/docs/sdks/dotnet/): NuGet `Speedle.Sdk`, published.
 - [Rust](https://engine.speedle.io/docs/sdks/rust/): crates.io `speedle`, published.
-- [Node.js / TypeScript](https://engine.speedle.io/docs/sdks/node/): npm `@speedle/sdk`, not yet published.
+- [Node.js / TypeScript](https://engine.speedle.io/docs/sdks/node/): npm `@speedle/sdk`, published.
 
 ### Features
 
@@ -2608,20 +2608,20 @@ A denied request is not an error: `is_allowed` returns `false`, and `check` retu
 
 Source: https://engine.speedle.io/docs/sdks/node/
 
-The Node.js SDK needs Node.js 22 or later, ships ESM and CommonJS builds with TypeScript types, and has no runtime dependencies. Package: `@speedle/sdk` 0.2.0 on npm, **available when published**. Reference: [speedle-sdk/node](https://github.com/teramoby/speedle-sdk/tree/main/node).
+The Node.js SDK needs Node.js 22 or later, ships ESM and CommonJS builds with TypeScript types, and has no runtime dependencies. Package: [`@speedle/sdk`](https://www.npmjs.com/package/@speedle/sdk), published on npm. Reference: [speedle-sdk/node](https://github.com/teramoby/speedle-sdk/tree/main/node).
 
 The examples check the policy described in the [SDKs overview](https://engine.speedle.io/docs/sdks/#example-policy).
 
 ### Add the dependency
 
-In a new ES module package (available when published):
+In a new ES module package:
 
 ```bash
 mkdir speedle-example
 cd speedle-example
 npm init -y
 npm pkg set type=module
-npm install @speedle/sdk@0.2.0
+npm install @speedle/sdk@0.2.1
 ```
 
 ### Call a local Speedle
@@ -2715,6 +2715,22 @@ alice delete /docs/public: allowed=false reason=NoApplicablePolicies
 ```
 
 The token is a server-side secret. Never ship it to browsers, mobile apps or desktop clients.
+
+### Speedle MCP
+
+[`@speedle/mcp`](https://www.npmjs.com/package/@speedle/mcp) is published on npm. Speedle MCP (launch preview) is one package with `check` and `manage` modes. Install it with npm:
+
+```bash
+npm install @speedle/mcp@0.2.1
+```
+
+Or run the `speedle-mcp` binary directly:
+
+```bash
+npx @speedle/mcp@0.2.1 check
+```
+
+Running `speedle-mcp` without a mode prints usage and exits with a non-zero status. Reference: [speedle-mcp](https://github.com/teramoby/speedle-mcp).
 
 ### Error handling
 

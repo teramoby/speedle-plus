@@ -8,23 +8,23 @@ toc = true
 tocheading = "h2"
 tags = ["api", "sdk"]
 categories = ["docs"]
-bref = "Install @speedle/sdk 0.2.0 with npm when it is published, then call isAllowed and check against a local Speedle or Speedle Cloud."
+bref = "Install @speedle/sdk with npm, then call isAllowed and check against a local Speedle or Speedle Cloud."
 +++
 
-The Node.js SDK needs Node.js 22 or later, ships ESM and CommonJS builds with TypeScript types, and has no runtime dependencies. Package: `@speedle/sdk` 0.2.0 on npm, **available when published**. Reference: [speedle-sdk/node](https://github.com/teramoby/speedle-sdk/tree/main/node).
+The Node.js SDK needs Node.js 22 or later, ships ESM and CommonJS builds with TypeScript types, and has no runtime dependencies. Package: [`@speedle/sdk`](https://www.npmjs.com/package/@speedle/sdk), published on npm. Reference: [speedle-sdk/node](https://github.com/teramoby/speedle-sdk/tree/main/node).
 
 The examples check the policy described in the [SDKs overview](/docs/sdks/#example-policy).
 
 ## Add the dependency
 
-In a new ES module package (available when published):
+In a new ES module package:
 
 ```bash
 mkdir speedle-example
 cd speedle-example
 npm init -y
 npm pkg set type=module
-npm install @speedle/sdk@0.2.0
+npm install @speedle/sdk@0.2.1
 ```
 
 ## Call a local Speedle
@@ -118,6 +118,22 @@ alice delete /docs/public: allowed=false reason=NoApplicablePolicies
 ```
 
 The token is a server-side secret. Never ship it to browsers, mobile apps or desktop clients.
+
+## Speedle MCP
+
+[`@speedle/mcp`](https://www.npmjs.com/package/@speedle/mcp) is published on npm. Speedle MCP (launch preview) is one package with `check` and `manage` modes. Install it with npm:
+
+```bash
+npm install @speedle/mcp@0.2.1
+```
+
+Or run the `speedle-mcp` binary directly:
+
+```bash
+npx @speedle/mcp@0.2.1 check
+```
+
+Running `speedle-mcp` without a mode prints usage and exits with a non-zero status. Reference: [speedle-mcp](https://github.com/teramoby/speedle-mcp).
 
 ## Error handling
 
