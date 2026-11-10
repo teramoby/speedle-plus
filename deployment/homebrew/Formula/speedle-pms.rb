@@ -38,6 +38,10 @@ class SpeedlePms < Formula
     odie "Expected one #{name} release binary, found #{binaries.inspect}" if binaries.length != 1
 
     bin.install binaries.fetch(0) => name
+    # launchd and systemd refuse a missing WorkingDirectory. Create the shared
+    # store directory here so a fresh prefix can start the service.
+    (var/"speedle").mkpath
+    (var/"log").mkpath
   end
 
   service do
@@ -58,6 +62,8 @@ class SpeedlePms < Formula
   end
 
   test do
+    assert_path_exists var/"speedle"
+    assert_path_exists var/"log"
     system bin/"speedle-pms", "--help"
   end
 end

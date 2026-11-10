@@ -156,7 +156,7 @@ function checkDocsAlternates(directory) {
 }
 checkDocsAlternates(path.join(output, 'docs'));
 checkDocsAlternates(path.join(output, 'zh/docs'));
-assert.equal(docsAlternates, 92, 'Every canonical docs page and redirect alias has three hreflang alternates');
+assert.equal(docsAlternates, 94, 'Every canonical docs page and redirect alias has three hreflang alternates');
 console.log('PASS Hugo 0.48 output: editor, navigation, sitemap, footer stylesheet and matching release assets');
 
 // #278: the Cloud section is the complete bilingual documentation hub.

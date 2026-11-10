@@ -216,6 +216,10 @@ test('the Homebrew tap update is skipped when its token is unset and the token v
   assert.match(tapText, /--base main/);
   assert.match(tapText, /Refusing to push the tap default branch/);
   assert.doesNotMatch(tapText, /git push origin HEAD\n/);
+  assert.doesNotMatch(tapText, /--force/);
+  assert.match(tapText, /git push origin --delete "\$\{source_branch\}"/);
+  assert.match(tapText, /git checkout --quiet -B "\$\{source_branch\}" origin\/master/);
+  assert.match(tapText, /git merge --quiet --no-edit origin\/master/);
 });
 
 test('Docker Hub credentials are required before a tag and their values are read only by the login step', () => {

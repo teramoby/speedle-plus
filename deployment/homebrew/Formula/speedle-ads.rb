@@ -38,6 +38,9 @@ class SpeedleAds < Formula
     odie "Expected one #{name} release binary, found #{binaries.inspect}" if binaries.length != 1
 
     bin.install binaries.fetch(0) => name
+    # The same directory PMS uses. A fresh prefix does not have it until install.
+    (var/"speedle").mkpath
+    (var/"log").mkpath
   end
 
   service do
@@ -58,6 +61,8 @@ class SpeedleAds < Formula
   end
 
   test do
+    assert_path_exists var/"speedle"
+    assert_path_exists var/"log"
     system bin/"speedle-ads", "--help"
   end
 end

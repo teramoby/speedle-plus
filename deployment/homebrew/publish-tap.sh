@@ -132,10 +132,23 @@ git config user.name "github-actions[bot]"
 git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 git fetch --quiet origin master
 source_branch="homebrew-${VERSION}"
-if git ls-remote --exit-code --heads origin "${source_branch}" >/dev/null; then
+if [[ "${source_branch}" == "main" || "${source_branch}" == "master" ]]; then
+  echo "Refusing to push the default branch ${source_branch}." >&2
+  exit 1
+fi
+# Keep a branch only while its pull request is still open. A retained branch
+# from a merged pull request is not an ancestor of master after a squash, so
+# counting commits on it would push the old history again. Delete that branch
+# and start from master. Never force-push and never delete main or master.
+open_pr=$(gh pr list --repo "${source_repo}" --head "${source_branch}" --base master --state open --json number --jq ".[0].number")
+if [[ -n "${open_pr}" && "${open_pr}" != "null" ]]; then
   git fetch --quiet origin "${source_branch}"
   git checkout --quiet -B "${source_branch}" "origin/${source_branch}"
+  git merge --quiet --no-edit origin/master
 else
+  if git ls-remote --exit-code --heads origin "${source_branch}" >/dev/null; then
+    git push origin --delete "${source_branch}"
+  fi
   git checkout --quiet -B "${source_branch}" origin/master
 fi
 

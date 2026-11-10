@@ -94,6 +94,9 @@ class HomebrewFormulaTest(unittest.TestCase):
             self.assertIn('"--insecure=true"', text)
             self.assertIn('"--store-type"', text)
             self.assertIn('"file"', text)
+            self.assertIn('(var/"speedle").mkpath', text)
+            self.assertIn('(var/"log").mkpath', text)
+            self.assertIn('assert_path_exists var/"speedle"', text)
 
         speedle = (FORMULAS / "speedle.rb").read_text()
         for dependency in ('"spctl"', '"speedle-ads"', '"speedle-pms"'):
