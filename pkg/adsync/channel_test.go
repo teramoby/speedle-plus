@@ -605,8 +605,16 @@ func TestChannelWebSocketMultiService(t *testing.T) {
 			}
 		},
 	})
+	// ApplyAttempt already marks these services in sync, so requireInSync does
+	// not wait for the channel. Services() stays empty until the first ack.
+	// The short test ack deadline can also expire before that ack on a busy
+	// machine and open a second session; this test expects exactly one.
+	channel.ackTimeout = 2 * time.Second
 	runChannel(t, channel)
 
+	waitFor(t, 3*time.Second, "the channel to ack every service", func() bool {
+		return len(channel.Services()) == 3 && channel.CurrentTransport() == TransportWebSocket
+	})
 	for _, service := range []string{"books", "orders", "reports"} {
 		requireInSync(t, machine, service)
 	}
