@@ -89,21 +89,22 @@ function imageTags(build) {
   return tags;
 }
 
-function expectedTags(version, latest) {
+function expectedTags(version, latest, minor) {
   const imageVersion = version.slice(1);
-  const minor = imageVersion.slice(0, imageVersion.lastIndexOf('.'));
+  const minorVersion = imageVersion.slice(0, imageVersion.lastIndexOf('.'));
   const names = ['docker.io/speedle/speedle', 'ghcr.io/teramoby/speedle'];
   const tags = [];
-  for (const name of names) tags.push(`${name}:${imageVersion}`, `${name}:${minor}`);
+  for (const name of names) tags.push(`${name}:${imageVersion}`);
+  if (minor) for (const name of names) tags.push(`${name}:${minorVersion}`);
   if (latest) for (const name of names) tags.push(`${name}:latest`);
   return tags;
 }
 
-function assertPublished(result, builds, version, latest) {
+function assertPublished(result, builds, version, latest, minor) {
   assert.equal(result.status, 0, result.stderr);
   assert.equal(builds.length, 1);
   const build = builds[0];
-  assert.deepEqual(imageTags(build), expectedTags(version, latest));
+  assert.deepEqual(imageTags(build), expectedTags(version, latest, minor));
   assert.ok(build.args.includes('--provenance=mode=max'));
   assert.ok(build.args.includes('--sbom=true'));
   assert.ok(build.args.includes('--push'));
@@ -113,22 +114,32 @@ function assertPublished(result, builds, version, latest) {
 
 test('latest accompanies the highest version built at the current remote master tip', () => {
   const {result, builds} = runPublish({version: 'v1.6.0', commit: master, master, tags: ['v1.5.0', 'v1.6.0']});
-  assertPublished(result, builds, 'v1.6.0', true);
+  assertPublished(result, builds, 'v1.6.0', true, true);
 });
 
 test('a higher version from an older master commit cannot move latest', () => {
   const {result, builds} = runPublish({version: 'v1.7.0', commit: older, master, tags: ['v1.6.0', 'v1.7.0']});
-  assertPublished(result, builds, 'v1.7.0', false);
+  assertPublished(result, builds, 'v1.7.0', false, true);
 });
 
 test('an older semantic version at the master tip cannot move latest', () => {
   const {result, builds} = runPublish({version: 'v1.5.1', commit: master, master, tags: ['v1.5.0', 'v1.5.1', 'v1.6.0']});
-  assertPublished(result, builds, 'v1.5.1', false);
+  assertPublished(result, builds, 'v1.5.1', false, true);
+});
+
+test('an older patch cannot move the minor tag', () => {
+  const {result, builds} = runPublish({version: 'v1.5.9', commit: master, master, tags: ['v1.5.9', 'v1.5.10']});
+  assertPublished(result, builds, 'v1.5.9', false, false);
+});
+
+test('the highest patch of an older minor still moves that minor tag', () => {
+  const {result, builds} = runPublish({version: 'v1.5.10', commit: master, master, tags: ['v1.5.9', 'v1.5.10', 'v1.6.0']});
+  assertPublished(result, builds, 'v1.5.10', false, true);
 });
 
 test('the first release can create latest and an unresolved master blocks publishing', () => {
   const first = runPublish({version: 'v1.0.0', commit: master, master, tags: []});
-  assertPublished(first.result, first.builds, 'v1.0.0', true);
+  assertPublished(first.result, first.builds, 'v1.0.0', true, true);
   const unresolved = runPublish({version: 'v1.0.0', commit: master, master: '', tags: [], validMaster: false});
   assert.notEqual(unresolved.result.status, 0);
   assert.equal(unresolved.builds.length, 0);

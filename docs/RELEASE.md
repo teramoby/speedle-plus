@@ -49,14 +49,15 @@ The git tag stays `vX.Y.Z`. Image tags have no `v`:
 
 | Git tag | Image tags |
 | --- | --- |
-| `vX.Y.Z` | `X.Y.Z` and `X.Y` on both registries |
-| highest `vX.Y.Z` on the newest `master` commit | those tags, plus `latest` on both registries |
+| `vX.Y.Z` | `X.Y.Z` on both registries |
+| highest `vX.Y.*` patch | also `X.Y` on both registries |
+| highest `vX.Y.Z` on the newest `master` commit | also `latest` on both registries |
 
+`X.Y` moves only when this version is the highest patch for that minor.
+Retrying an older patch publishes `X.Y.Z` again and leaves `X.Y` where it is.
 `latest` moves only when this version is the highest `vX.Y.Z` tag and the
 requested commit is still the newest commit on `master`. A maintenance release
-or a release from an older master commit publishes `X.Y.Z` and `X.Y` and leaves
-`latest` unchanged. `X.Y` is published for the version being dispatched, so
-dispatching an older patch moves the `X.Y` tag to that image.
+or a release from an older master commit leaves `latest` unchanged.
 
 The command selects the program. With no command, the image prints:
 
