@@ -39,11 +39,11 @@ Go 会自动配置 `GOROOT` 和默认的 `GOPATH`，无需手动指定。下面�
 
 <!-- quick-start: install -->
 ```bash
-GOBIN="$PWD/bin" go install github.com/teramoby/speedle-plus/cmd/...@v1.7.0
+GOBIN="$PWD/bin" go install github.com/teramoby/speedle-plus/cmd/...@v1.7.1
 ls bin
 ```
 
-`GOBIN` 把可执行程序放到当前目录的 `bin` 中；不设置时，Go 会把它们写入 `$(go env GOPATH)/bin`。`v1.7.0` 是撰写本文时的最新发布标签；`go install` 使用该标签的源码编译，并通过 Go 校验和数据库验证。
+`GOBIN` 把可执行程序放到当前目录的 `bin` 中；不设置时，Go 会把它们写入 `$(go env GOPATH)/bin`。`v1.7.1` 是撰写本文时的最新发布标签；`go install` 使用该标签的源码编译，并通过 Go 校验和数据库验证。
 
 ### 方式 B：下载源码并编译
 

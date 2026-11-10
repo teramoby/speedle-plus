@@ -39,11 +39,11 @@ Choose one route: route A installs the latest release, route B builds the curren
 
 <!-- quick-start: install -->
 ```bash
-GOBIN="$PWD/bin" go install github.com/teramoby/speedle-plus/cmd/...@v1.7.0
+GOBIN="$PWD/bin" go install github.com/teramoby/speedle-plus/cmd/...@v1.7.1
 ls bin
 ```
 
-`GOBIN` keeps the executables in this directory's `bin` folder; without it, Go writes them to `$(go env GOPATH)/bin`. `v1.7.0` is the latest release tag at the time of writing; `go install` builds it from the tagged source and verifies it against the Go checksum database.
+`GOBIN` keeps the executables in this directory's `bin` folder; without it, Go writes them to `$(go env GOPATH)/bin`. `v1.7.1` is the latest release tag at the time of writing; `go install` builds it from the tagged source and verifies it against the Go checksum database.
 
 ### Route B: clone and build
 
