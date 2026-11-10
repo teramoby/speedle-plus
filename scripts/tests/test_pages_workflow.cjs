@@ -71,13 +71,21 @@ test('the deploy job publishes only outside pull requests', () => {
   assert.match(deploy, /permissions:\n      pages: write\n      id-token: write\n/);
   assert.match(deploy, /environment:\n      name: github-pages\n      url: \$\{\{ steps\.deployment\.outputs\.page_url \}\}\n/);
   assert.match(deploy, /id: deployment\n/);
-  assert.match(deploy, /timeout: 1800000\n/);
+  assert.match(deploy, /# actions\/deploy-pages caps timeout at 600000 ms\n/);
+  assert.match(deploy, /timeout: 600000\n/);
+  assert.doesNotMatch(deploy, /timeout: 1800000/);
   assert.doesNotMatch(deploy, /contents:|pull-requests:|actions:|checks:|statuses:/);
 });
 
 test('docs remains a Jekyll source with the Cayman theme and a CNAME file', () => {
   assert.equal(fs.existsSync(path.join(root, 'docs/.nojekyll')), false);
   const config = fs.readFileSync(path.join(root, 'docs/_config.yml'), 'utf8');
-  assert.match(config, /^theme: jekyll-theme-cayman\n?$/);
+  assert.doesNotMatch(config, /\.nojekyll/);
+  const themes = [...config.matchAll(/^theme:\s*(\S+)\s*$/gm)].map((match) => match[1]);
+  assert.deepEqual(themes, ['jekyll-theme-cayman']);
+  const exclude = config.split(/^exclude:\s*$/m)[1];
+  assert.ok(exclude, 'docs/_config.yml must exclude the Hugo sources');
+  const entries = [...exclude.matchAll(/^  - (\S+)\s*$/gm)].map((match) => match[1]);
+  assert.deepEqual(entries, ['hugo']);
   assert.equal(fs.readFileSync(path.join(root, 'docs/CNAME'), 'utf8').trim(), 'engine.speedle.io');
 });

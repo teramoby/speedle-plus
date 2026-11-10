@@ -69,4 +69,7 @@ jobs:
         id: deployment
         uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
         with:
-          timeout: 1800000
+          # actions/deploy-pages caps timeout at 600000 ms
+          # and lowers a larger value (MAX_TIMEOUT in the action's
+          # src/internal/deployment.js).
+          timeout: 600000
