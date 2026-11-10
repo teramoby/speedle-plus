@@ -1,0 +1,86 @@
+[GETTING_STARTED]
+other = "시작하기"
+
+[LEARN_MORE]
+other = "자세히 알아보기"
+
+[SimplePolicyLanguage]
+other = "간단한 정책 언어"
+
+[FEATURE_SimplePolicyLanguage]
+other = "가장 직관적이고 자연스러운 방식으로 고수준 선언형 언어(Speedle Policy Definition Language - SPDL)를 사용하여 정책을 정의합니다."
+
+[CloudNative]
+other = "클라우드 네이티브"
+
+[FEATURE_CloudNative]
+other = "클라우드 우선! 다양한 연동 예제와 플러그형 인터페이스를 통해 모든 클라우드 공급자에서 애플리케이션을 안전하게 보호합니다."
+
+[RealtimePolicyDiscovery]
+other = "실시간 정책 발견"
+
+[FEATURE_RealtimePolicyDiscovery]
+other = "공격자가 시스템에 접근할 수 있는 모든 가능한 방법을 추측할 필요 없이 서비스 간의 실시간 런타임 상호작용을 기반으로 정책을 동적으로 발견합니다."
+
+[FEATURE_RBAC]
+other = "역할 및 속성 기반의 세분화된 접근 제어를 사용하여 애플리케이션을 보호합니다."
+
+[CentralizedPolicyManagement]
+other = "중앙 집중식 정책 관리"
+
+[FEATURE_CentralizedPolicyManagement]
+other = "다양한 연동 지점을 활용하여 다중 언어, 이기종 시스템의 정책을 하나의 중앙 위치에서 관리합니다."
+
+[PluggableIdentity]
+other = "플러그형 아이덴티티"
+
+[FEATURE_PluggableIdentity]
+other = "손쉬운 확장성! GitHub, Okta 또는 사내 자체 아이덴티티 공급자를 연결할 수 있습니다."
+
+[PluggablePersistenceStore]
+other = "자체 영속성 스토리지 연동"
+
+[FEATURE_BYOPersistenceStore]
+other = "etcd 대신 다른 스토리지를 선호하시나요? 영속성 인터페이스를 구현하여 RDBMS, NoSQL, 블록 스토리지 등 기존 스토리지를 사용할 수 있습니다."
+
+[AboutSpeedleTitle]
+other = "Speedle 소개"
+
+[AboutSpeedleContent]
+other = "Speedle은 범용 인가 엔진입니다. 최신 클라우드 네이티브 애플리케이션부터 레거시 애플리케이션에 이르기까지 다양한 애플리케이션의 접근 제어 요구 사항을 해결하는 오픈 소스 프로젝트입니다. 정책 기반의 세분화된 접근 제어를 지원하여 로그인한 사용자 또는 사용자를 대신하여 작동하는 프로세스에 대해 RBAC/ABAC 정책을 평가할 수 있는 정책 엔진으로 접근 제어 로직을 외부화할 수 있도록 돕습니다."
+
+[SpeedleConsistsTitle]
+other = "Speedle 구성 요소"
+
+[SpeedleConsistsContent1]
+other = "SPDL 정책 정의 언어"
+
+[SpeedleConsistsContent2]
+other = "정책 관리 서비스(PMS)"
+
+[SpeedleConsistsContent3]
+other = "인가 결정 서비스(ADS)"
+
+[SpeedleConsistsContent4]
+other = "명령줄 도구(spctl)"
+
+[SpeedleConsistsContent6]
+other = "Speedle은 Universal Permissive License v1.0에 따라 라이선스가 부여됩니다. 사용자는 자신의 시스템에 Speedle을 자유롭게 연동할 수 있습니다."
+
+[Features]
+other = "기능"
+
+[Integrations]
+other = "연동"
+
+[ContributeToSpeedle]
+other = "Speedle 기여하기"
+
+[ContributeToSpeedleContent1]
+other = "Speedle은 오픈 소스 프로젝트이며, 프로젝트 개선을 위한 모든 분들의 기여를 환영합니다."
+
+[ContributeToSpeedleContent2]
+other = "Speedle 개선하기"
+
+[Contribute]
+other = "기여"
