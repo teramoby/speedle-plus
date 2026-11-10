@@ -19,7 +19,7 @@ import (
 func TestDeploymentManifest(t *testing.T) {
 	var english string
 	for _, locale := range []string{"", ".zh"} {
-		data, err := os.ReadFile(filepath.Join(root(), "docs/hugo/content/docs/deployment"+locale+".md"))
+		data, err := os.ReadFile(filepath.Join(root(), "docs/hugo/content/docs/deployment", "_index"+locale+".md"))
 		if err != nil {
 			t.Fatal(err)
 		}

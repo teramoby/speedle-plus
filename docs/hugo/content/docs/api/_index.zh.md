@@ -37,4 +37,4 @@ Java、Python、Go、.NET、Rust 和 Node.js/TypeScript 的客户端库见 [SDK]
 - [策略管理接口](https://github.com/teramoby/speedle-plus/tree/master/api/pms)
 - [授权决策接口](https://github.com/teramoby/speedle-plus/tree/master/api/ads)
 
-完整应用示例见[嵌入模式](/docs/deployment-embeded/)。
+完整应用示例见[嵌入模式](/docs/deployment/embedded/)。

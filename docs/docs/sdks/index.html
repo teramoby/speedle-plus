@@ -35,7 +35,7 @@
 <meta name="twitter:image" content="https://engine.speedle.io/img/social/engine-en.png">
 <meta name="twitter:image:alt" content="Speedle Engine — Fast. Simple. Access control">
 
-<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/docs/sdks/#webpage","@type":"WebPage","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-10T11:48:00+08:00","description":"Client libraries for Speedle authorization checks in Java, Python, Go, .NET, Rust and Node.js/TypeScript.","headline":"SDKs","image":"https://engine.speedle.io/img/social/engine-en.png","inLanguage":"en","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/docs/sdks/","@type":"WebPage"},"name":"SDKs","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/docs/sdks/"}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/docs/sdks/#webpage","@type":"WebPage","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-10T13:15:15+08:00","description":"Client libraries for Speedle authorization checks in Java, Python, Go, .NET, Rust and Node.js/TypeScript.","headline":"SDKs","image":"https://engine.speedle.io/img/social/engine-en.png","inLanguage":"en","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/docs/sdks/","@type":"WebPage"},"name":"SDKs","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/docs/sdks/"}</script>
 <script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/docs/sdks/#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://engine.speedle.io/","name":"Home","position":1},{"@type":"ListItem","item":"https://engine.speedle.io/docs/","name":"Documentation","position":2},{"@type":"ListItem","item":"https://engine.speedle.io/docs/sdks/","name":"SDKs","position":3}]}</script><link href="/css/docs.css" rel="stylesheet" type="text/css">
 
 
@@ -75,13 +75,14 @@
 
 
 
+
+
 <li data-docs-depth="-1" class="docs-nav-section parent"><span class="docs-nav-heading">Documentation</span>
 <ul class="sub-menu">
 <li data-docs-depth="0" class=""><a href="/docs/usecases/">Usecases</a></li>
 <li data-docs-depth="0" class=""><a href="/docs/overview/">Overview</a></li>
 <li data-docs-depth="0" class=""><a href="/docs/spdl/">SPDL - Speedle Policy Definition Language</a></li>
 <li data-docs-depth="0" class=""><a href="/docs/architecture/">Architecture</a></li>
-<li data-docs-depth="0" class=""><a href="/docs/deployment-embeded/">Speedle embedded mode</a></li>
 
 
 
@@ -97,7 +98,6 @@
 <li data-docs-depth="0" class=""><a href="/docs/decisions/">Authorization Decisions</a></li>
 <li data-docs-depth="0" class=""><a href="/docs/idd/">Identity Domain</a></li>
 <li data-docs-depth="0" class=""><a href="/docs/assertor/">Token asserter</a></li>
-<li data-docs-depth="0" class=""><a href="/docs/deployment/">Deployment</a></li>
 
 
 
@@ -123,6 +123,16 @@
 
 
 
+<li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading docs-nav-heading-link"><a href="/docs/deployment/">Deployment</a></span>
+<ul class="">
+<li data-docs-depth="1" class=""><a href="/docs/deployment/embedded/">Speedle embedded mode</a></li>
+<li data-docs-depth="1" class=""><a href="/docs/deployment/docker/">Docker image</a></li>
+</ul>
+
+</li>
+
+
+
 <li data-docs-depth="0" class="docs-nav-section parent active"><span class="docs-nav-heading docs-nav-heading-link"><a href="/docs/sdks/" aria-current="page">SDKs</a></span>
 <ul class="sub-menu">
 <li data-docs-depth="1" class=""><a href="/docs/sdks/java/">Java SDK</a></li>
@@ -131,7 +141,6 @@
 <li data-docs-depth="1" class=""><a href="/docs/sdks/dotnet/">C#/.NET SDK</a></li>
 <li data-docs-depth="1" class=""><a href="/docs/sdks/rust/">Rust SDK</a></li>
 <li data-docs-depth="1" class=""><a href="/docs/sdks/node/">Node.js/TypeScript SDK</a></li>
-<li data-docs-depth="1" class=""><a href="/docs/sdks/docker/">Docker image</a></li>
 </ul>
 
 </li>
@@ -154,8 +163,6 @@
 </ul>
 
 </li>
-
-
 </ul>
 </nav>
 
@@ -166,7 +173,7 @@
   <h1>SDKs</h1>
   <p></p>
 
-<p>The Speedle SDKs are client libraries for the decision API <code>POST /authz-check/v1/is-allowed</code>. They work with a self-hosted Speedle ADS and with Speedle Cloud. Each language page shows how to add the package and gives a complete, tested program for both. The source and the full reference are in <a href="https://github.com/teramoby/speedle-sdk">teramoby/speedle-sdk</a>.</p>
+<p>The Speedle SDKs are client libraries for the decision API <code>POST /authz-check/v1/is-allowed</code>. They work with a self-hosted Speedle ADS and with Speedle Cloud. Each language page shows how to add the package and gives a complete, tested program for both. The source and the full reference are in <a href="https://github.com/teramoby/speedle-sdk">teramoby/speedle-sdk</a>. To run PMS and ADS for these examples, see <a href="/docs/deployment/">Deployment</a> and the <a href="/docs/deployment/docker/">Docker image</a>.</p>
 
 <h2 id="packages">Packages</h2>
 
@@ -180,10 +187,6 @@
 <li><a href="/docs/sdks/rust/">Rust</a>: crates.io <code>speedle</code>, published.</li>
 <li><a href="/docs/sdks/node/">Node.js / TypeScript</a>: npm <code>@speedle/sdk</code>, published.</li>
 </ul>
-
-<h2 id="docker-image">Docker image</h2>
-
-<p>The <a href="/docs/sdks/docker/">Docker image</a> runs <code>speedle-pms</code>, <code>speedle-ads</code> and <code>spctl</code> from <code>docker.io/speedle/speedle</code> or <code>ghcr.io/teramoby/speedle</code>. Publish ADS on <code>127.0.0.1:6734</code> and point the clients on this page at that port.</p>
 
 <h2 id="features">Features</h2>
 

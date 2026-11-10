@@ -6,7 +6,7 @@
     <description>Recent content in V0.1.0 on Speedle</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>zh-cn</language>
-    <lastBuildDate>Sun, 08 Nov 2026 11:21:16 +0800</lastBuildDate>
+    <lastBuildDate>Tue, 10 Nov 2026 13:15:15 +0800</lastBuildDate>
     
 	<atom:link href="https://engine.speedle.io/zh/tags/v0.1.0/index.xml" rel="self" type="application/rss+xml" />
     
@@ -14,7 +14,7 @@
     <item>
       <title>API</title>
       <link>https://engine.speedle.io/zh/docs/api/</link>
-      <pubDate>Sun, 08 Nov 2026 11:21:16 +0800</pubDate>
+      <pubDate>Tue, 10 Nov 2026 13:15:15 +0800</pubDate>
       
       <guid>https://engine.speedle.io/zh/docs/api/</guid>
       <description>Java、Python、Go、.NET、Rust 和 Node.js/TypeScript 的客户端库见 SDK。

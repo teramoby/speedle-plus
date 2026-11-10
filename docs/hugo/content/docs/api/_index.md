@@ -37,4 +37,4 @@ The legacy gRPC `ContextRequest.attributes` map contains strings. It is not the 
 - [Policy management interfaces](https://github.com/teramoby/speedle-plus/tree/master/api/pms)
 - [Authorization decision interfaces](https://github.com/teramoby/speedle-plus/tree/master/api/ads)
 
-See [embedded mode](/docs/deployment-embeded/) for a complete application and resource lifecycle example.
+See [embedded mode](/docs/deployment/embedded/) for a complete application and resource lifecycle example.

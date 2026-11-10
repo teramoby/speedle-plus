@@ -20,7 +20,7 @@
 <link rel="alternate" hreflang="zh-CN" href="https://engine.speedle.io/zh/docs/versions/">
 <link rel="alternate" hreflang="x-default" href="https://engine.speedle.io/docs/versions/">
 <meta property="og:type" content="article">
-<meta property="article:modified_time" content="2026-11-07T20:54:01&#43;08:00">
+<meta property="article:modified_time" content="2026-11-10T13:15:15&#43;08:00">
 <meta property="og:site_name" content="Speedle Engine">
 <meta property="og:title" content="Versions · Speedle Engine">
 <meta property="og:description" content="Speedle release history and semantic versioning">
@@ -36,7 +36,7 @@
 <meta name="twitter:image" content="https://engine.speedle.io/img/social/engine-en.png">
 <meta name="twitter:image:alt" content="Speedle Engine — Fast. Simple. Access control">
 
-<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/docs/versions/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-07T20:54:01+08:00","description":"Speedle release history and semantic versioning","headline":"Versions","image":"https://engine.speedle.io/img/social/engine-en.png","inLanguage":"en","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/docs/versions/","@type":"WebPage"},"name":"Versions","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/docs/versions/"}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/docs/versions/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-10T13:15:15+08:00","description":"Speedle release history and semantic versioning","headline":"Versions","image":"https://engine.speedle.io/img/social/engine-en.png","inLanguage":"en","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/docs/versions/","@type":"WebPage"},"name":"Versions","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/docs/versions/"}</script>
 <script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/docs/versions/#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://engine.speedle.io/","name":"Home","position":1},{"@type":"ListItem","item":"https://engine.speedle.io/docs/","name":"Documentation","position":2},{"@type":"ListItem","item":"https://engine.speedle.io/docs/versions/","name":"Versions","position":3}]}</script><link href="/css/docs.css" rel="stylesheet" type="text/css">
 
 
@@ -76,13 +76,14 @@
 
 
 
+
+
 <li data-docs-depth="-1" class="docs-nav-section parent"><span class="docs-nav-heading">Documentation</span>
 <ul class="sub-menu">
 <li data-docs-depth="0" class=""><a href="/docs/usecases/">Usecases</a></li>
 <li data-docs-depth="0" class=""><a href="/docs/overview/">Overview</a></li>
 <li data-docs-depth="0" class=""><a href="/docs/spdl/">SPDL - Speedle Policy Definition Language</a></li>
 <li data-docs-depth="0" class=""><a href="/docs/architecture/">Architecture</a></li>
-<li data-docs-depth="0" class=""><a href="/docs/deployment-embeded/">Speedle embedded mode</a></li>
 
 
 
@@ -98,7 +99,6 @@
 <li data-docs-depth="0" class=""><a href="/docs/decisions/">Authorization Decisions</a></li>
 <li data-docs-depth="0" class=""><a href="/docs/idd/">Identity Domain</a></li>
 <li data-docs-depth="0" class=""><a href="/docs/assertor/">Token asserter</a></li>
-<li data-docs-depth="0" class=""><a href="/docs/deployment/">Deployment</a></li>
 
 
 
@@ -124,6 +124,16 @@
 
 
 
+<li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading docs-nav-heading-link"><a href="/docs/deployment/">Deployment</a></span>
+<ul class="">
+<li data-docs-depth="1" class=""><a href="/docs/deployment/embedded/">Speedle embedded mode</a></li>
+<li data-docs-depth="1" class=""><a href="/docs/deployment/docker/">Docker image</a></li>
+</ul>
+
+</li>
+
+
+
 <li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading docs-nav-heading-link"><a href="/docs/sdks/">SDKs</a></span>
 <ul class="">
 <li data-docs-depth="1" class=""><a href="/docs/sdks/java/">Java SDK</a></li>
@@ -132,7 +142,6 @@
 <li data-docs-depth="1" class=""><a href="/docs/sdks/dotnet/">C#/.NET SDK</a></li>
 <li data-docs-depth="1" class=""><a href="/docs/sdks/rust/">Rust SDK</a></li>
 <li data-docs-depth="1" class=""><a href="/docs/sdks/node/">Node.js/TypeScript SDK</a></li>
-<li data-docs-depth="1" class=""><a href="/docs/sdks/docker/">Docker image</a></li>
 </ul>
 
 </li>
@@ -155,8 +164,6 @@
 </ul>
 
 </li>
-
-
 </ul>
 </nav>
 
@@ -182,7 +189,7 @@
 
 <h2 id="speedle-releases">Speedle releases</h2>
 
-<p>Use the <a href="https://github.com/teramoby/speedle-plus/releases">GitHub Releases</a> page for published versions and release notes. <a href="https://github.com/teramoby/speedle-plus/releases/tag/v1.6.0">v1.6.0</a> is the version pinned by the current embedded Go walkthrough. Use an explicit released version for reproducible module dependencies; the <a href="/docs/deployment-embeded/">embedded guide</a> explains the setup.</p>
+<p>Use the <a href="https://github.com/teramoby/speedle-plus/releases">GitHub Releases</a> page for published versions and release notes. <a href="https://github.com/teramoby/speedle-plus/releases/tag/v1.6.0">v1.6.0</a> is the version pinned by the current embedded Go walkthrough. Use an explicit released version for reproducible module dependencies; the <a href="/docs/deployment/embedded/">embedded guide</a> explains the setup.</p>
 
 <h2 id="historical-oracle-speedle-release">Historical Oracle Speedle release</h2>
 

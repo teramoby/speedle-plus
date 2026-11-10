@@ -11,7 +11,7 @@ categories = ["docs"]
 bref = "Client libraries for the Speedle decision API in six languages. They work with a self-hosted Speedle ADS and with Speedle Cloud (coming soon)."
 +++
 
-The Speedle SDKs are client libraries for the decision API `POST /authz-check/v1/is-allowed`. They work with a self-hosted Speedle ADS and with Speedle Cloud. Each language page shows how to add the package and gives a complete, tested program for both. The source and the full reference are in [teramoby/speedle-sdk](https://github.com/teramoby/speedle-sdk).
+The Speedle SDKs are client libraries for the decision API `POST /authz-check/v1/is-allowed`. They work with a self-hosted Speedle ADS and with Speedle Cloud. Each language page shows how to add the package and gives a complete, tested program for both. The source and the full reference are in [teramoby/speedle-sdk](https://github.com/teramoby/speedle-sdk). To run PMS and ADS for these examples, see [Deployment](/docs/deployment/) and the [Docker image](/docs/deployment/docker/).
 
 ## Packages
 
@@ -23,10 +23,6 @@ Java, Python, Go, .NET and Rust are version 0.2.0. `@speedle/sdk` is published o
 - [C#/.NET](/docs/sdks/dotnet/): NuGet `Speedle.Sdk`, published.
 - [Rust](/docs/sdks/rust/): crates.io `speedle`, published.
 - [Node.js / TypeScript](/docs/sdks/node/): npm `@speedle/sdk`, published.
-
-## Docker image
-
-The [Docker image](/docs/sdks/docker/) runs `speedle-pms`, `speedle-ads` and `spctl` from `docker.io/speedle/speedle` or `ghcr.io/teramoby/speedle`. Publish ADS on `127.0.0.1:6734` and point the clients on this page at that port.
 
 ## Features
 

@@ -49,7 +49,7 @@
   
   <url>
     <loc>https://engine.speedle.io/docs/overview/</loc>
-    <lastmod>2026-11-07T19:56:43+08:00</lastmod>
+    <lastmod>2026-11-10T13:15:15+08:00</lastmod>
     <xhtml:link
                 rel="alternate"
                 hreflang="zh"
@@ -198,17 +198,17 @@
   </url>
   
   <url>
-    <loc>https://engine.speedle.io/docs/deployment-embeded/</loc>
-    <lastmod>2026-11-06T12:19:39+08:00</lastmod>
+    <loc>https://engine.speedle.io/docs/deployment/embedded/</loc>
+    <lastmod>2026-11-10T13:15:15+08:00</lastmod>
     <xhtml:link
                 rel="alternate"
                 hreflang="zh"
-                href="https://engine.speedle.io/zh/docs/deployment-embeded/"
+                href="https://engine.speedle.io/zh/docs/deployment/embedded/"
                 />
     <xhtml:link
                 rel="alternate"
                 hreflang="en"
-                href="https://engine.speedle.io/docs/deployment-embeded/"
+                href="https://engine.speedle.io/docs/deployment/embedded/"
                 />
   </url>
   
@@ -224,6 +224,21 @@
                 rel="alternate"
                 hreflang="en"
                 href="https://engine.speedle.io/docs/cloud/tokens/"
+                />
+  </url>
+  
+  <url>
+    <loc>https://engine.speedle.io/docs/deployment/docker/</loc>
+    <lastmod>2026-11-10T14:06:36+08:00</lastmod>
+    <xhtml:link
+                rel="alternate"
+                hreflang="zh"
+                href="https://engine.speedle.io/zh/docs/deployment/docker/"
+                />
+    <xhtml:link
+                rel="alternate"
+                hreflang="en"
+                href="https://engine.speedle.io/docs/deployment/docker/"
                 />
   </url>
   
@@ -408,21 +423,6 @@
   </url>
   
   <url>
-    <loc>https://engine.speedle.io/docs/deployment/</loc>
-    <lastmod>2026-11-08T02:15:03+08:00</lastmod>
-    <xhtml:link
-                rel="alternate"
-                hreflang="zh"
-                href="https://engine.speedle.io/zh/docs/deployment/"
-                />
-    <xhtml:link
-                rel="alternate"
-                hreflang="en"
-                href="https://engine.speedle.io/docs/deployment/"
-                />
-  </url>
-  
-  <url>
     <loc>https://engine.speedle.io/docs/sdks/node/</loc>
     <lastmod>2026-11-10T09:48:45+08:00</lastmod>
     <xhtml:link
@@ -434,21 +434,6 @@
                 rel="alternate"
                 hreflang="en"
                 href="https://engine.speedle.io/docs/sdks/node/"
-                />
-  </url>
-  
-  <url>
-    <loc>https://engine.speedle.io/docs/sdks/docker/</loc>
-    <lastmod>2026-11-10T12:28:43+08:00</lastmod>
-    <xhtml:link
-                rel="alternate"
-                hreflang="zh"
-                href="https://engine.speedle.io/zh/docs/sdks/docker/"
-                />
-    <xhtml:link
-                rel="alternate"
-                hreflang="en"
-                href="https://engine.speedle.io/docs/sdks/docker/"
                 />
   </url>
   
@@ -469,7 +454,7 @@
   
   <url>
     <loc>https://engine.speedle.io/docs/api/</loc>
-    <lastmod>2026-11-06T18:12:13+08:00</lastmod>
+    <lastmod>2026-11-10T13:15:15+08:00</lastmod>
     <xhtml:link
                 rel="alternate"
                 hreflang="zh"
@@ -483,8 +468,23 @@
   </url>
   
   <url>
+    <loc>https://engine.speedle.io/docs/deployment/</loc>
+    <lastmod>2026-11-10T13:15:15+08:00</lastmod>
+    <xhtml:link
+                rel="alternate"
+                hreflang="zh"
+                href="https://engine.speedle.io/zh/docs/deployment/"
+                />
+    <xhtml:link
+                rel="alternate"
+                hreflang="en"
+                href="https://engine.speedle.io/docs/deployment/"
+                />
+  </url>
+  
+  <url>
     <loc>https://engine.speedle.io/docs/sdks/</loc>
-    <lastmod>2026-11-10T11:48:00+08:00</lastmod>
+    <lastmod>2026-11-10T13:15:15+08:00</lastmod>
     <xhtml:link
                 rel="alternate"
                 hreflang="zh"
@@ -544,7 +544,7 @@
   
   <url>
     <loc>https://engine.speedle.io/docs/versions/</loc>
-    <lastmod>2026-11-07T20:54:01+08:00</lastmod>
+    <lastmod>2026-11-10T13:15:15+08:00</lastmod>
     <xhtml:link
                 rel="alternate"
                 hreflang="zh"
@@ -619,7 +619,7 @@
   
   <url>
     <loc>https://engine.speedle.io/integrations/</loc>
-    <lastmod>2026-11-07T19:56:43+08:00</lastmod>
+    <lastmod>2026-11-10T13:15:15+08:00</lastmod>
     <xhtml:link
                 rel="alternate"
                 hreflang="zh"

@@ -21,7 +21,7 @@ import urllib.request
 
 ROOT=Path(__file__).resolve().parents[2]
 DOCS=ROOT/'docs/hugo/content/docs'
-PAGES=['deployment','pms/discover','store/_index','idd','decisions','pms/diagnosis','pms/policy-mgmt','pms/global-policy','assertor','custom-function','security']
+PAGES=['deployment/_index','pms/discover','store/_index','idd','decisions','pms/diagnosis','pms/policy-mgmt','pms/global-policy','assertor','custom-function','security']
 PATTERN=r'<!-- (?:docs-check|deployment-check): ([a-z0-9-]+) -->\s*```bash\n(.*?)\n```'
 CLIENT=urllib.request.build_opener(urllib.request.ProxyHandler({}))
 
@@ -136,7 +136,7 @@ def verify_page(page,locale,binaries,env,parent,isolated):
         try:
             for name,command in commands:
                 command=local(command)
-                if page=='deployment' and name=='source-build':
+                if page=='deployment/_index' and name=='source-build':
                     quick=(ROOT/'docs/hugo/content/quick-start.md').read_text()
                     build=re.search(r'<!-- quick-start: build -->\s*```bash\n(.*?)\n```',quick,re.S)[1]
                     assert build.splitlines()[:len(command.splitlines())]==command.splitlines(), 'Deployment build differs from the exercised Quick Start'
@@ -220,7 +220,7 @@ def verify_page(page,locale,binaries,env,parent,isolated):
                     else:raise AssertionError('mTLS REST accepted no client certificate')
                 assert all((work/'tls'/name).stat().st_mode&0o777==0o600 for name in ['server.key','client.key'])
             assert all(process.poll() is None for process in processes), 'Fixture exited unexpectedly'
-            verified=len(commands)-(1 if page=='deployment' else 0)
+            verified=len(commands)-(1 if page=='deployment/_index' else 0)
             print(f'{locale} {page}: PASS {verified} executed command blocks; runner={env.get("RUNNER_NAME","local")}; isolated={isolated}',flush=True)
             return verified
         except BaseException:

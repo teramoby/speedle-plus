@@ -6,7 +6,7 @@
     <description>Recent content in Sdk on Speedle</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
-    <lastBuildDate>Tue, 10 Nov 2026 11:48:00 +0800</lastBuildDate>
+    <lastBuildDate>Tue, 10 Nov 2026 13:15:15 +0800</lastBuildDate>
     
 	<atom:link href="https://engine.speedle.io/tags/sdk/index.xml" rel="self" type="application/rss+xml" />
     
@@ -21,18 +21,6 @@
 The examples check the policy described in the SDKs overview.
 Add the dependency In a new console project:
 dotnet new console -o SpeedleExample cd SpeedleExample dotnet add package Speedle.Sdk --version 0.2.0 Call a local Speedle Start Speedle and create the example policy as described in the SDKs overview. Replace Program.</description>
-    </item>
-    
-    <item>
-      <title>Docker image</title>
-      <link>https://engine.speedle.io/docs/sdks/docker/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://engine.speedle.io/docs/sdks/docker/</guid>
-      <description>Speedle publishes one image that contains speedle-pms, speedle-ads and spctl. The image is built FROM scratch, runs as UID 65532, and has no shell. The first argument selects the program.
-The same image index is on both registries:
- Docker Hub: docker.io/speedle/speedle GHCR: ghcr.io/teramoby/speedle  Release 1.7.0 publishes the tags 1.7.0, 1.7 and latest on both registries, for linux/amd64 and linux/arm64.
-Pull the image docker pull docker.io/speedle/speedle:1.7.0 docker pull ghcr.</description>
     </item>
     
     <item>
@@ -99,11 +87,11 @@ cargo new speedle-example cd speedle-example cargo add speedle@0.2.0 --features 
     <item>
       <title>SDKs</title>
       <link>https://engine.speedle.io/docs/sdks/</link>
-      <pubDate>Tue, 10 Nov 2026 11:48:00 +0800</pubDate>
+      <pubDate>Tue, 10 Nov 2026 13:15:15 +0800</pubDate>
       
       <guid>https://engine.speedle.io/docs/sdks/</guid>
-      <description>The Speedle SDKs are client libraries for the decision API POST /authz-check/v1/is-allowed. They work with a self-hosted Speedle ADS and with Speedle Cloud. Each language page shows how to add the package and gives a complete, tested program for both. The source and the full reference are in teramoby/speedle-sdk.
-Packages Java, Python, Go, .NET and Rust are version 0.2.0. @speedle/sdk is published on npm. Each language page shows the install command.</description>
+      <description>The Speedle SDKs are client libraries for the decision API POST /authz-check/v1/is-allowed. They work with a self-hosted Speedle ADS and with Speedle Cloud. Each language page shows how to add the package and gives a complete, tested program for both. The source and the full reference are in teramoby/speedle-sdk. To run PMS and ADS for these examples, see Deployment and the Docker image.
+Packages Java, Python, Go, .NET and Rust are version 0.</description>
     </item>
     
   </channel>

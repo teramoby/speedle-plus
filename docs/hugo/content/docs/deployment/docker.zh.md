@@ -1,11 +1,11 @@
 +++
 title = "Docker 镜像"
 description = "用已发布的 Speedle 镜像运行 speedle-pms、speedle-ads 和 spctl。"
-weight = 70
+weight = 20
+aliases = ["/zh/docs/sdks/docker/"]
 draft = false
 toc = true
 tocheading = "h2"
-tags = ["sdk"]
 categories = ["docs"]
 bref = "Docker Hub 和 GHCR 上的同一个镜像运行策略管理服务、决策服务和 spctl，并共用一份文件存储。"
 +++

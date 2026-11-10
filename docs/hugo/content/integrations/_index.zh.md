@@ -19,7 +19,7 @@ Speedle 负责授权决策。应用、网关或平台中的策略执行点（PEP
 
 ## 嵌入式 Go
 
-在 Go 应用中直接运行求值器，不需要单独的 PMS 或 ADS 进程。[嵌入式模式指南](/zh/docs/deployment-embeded/)使用 Go modules 构建了一个完整示例。
+在 Go 应用中直接运行求值器，不需要单独的 PMS 或 ADS 进程。[嵌入式模式指南](/zh/docs/deployment/embedded/)使用 Go modules 构建了一个完整示例。
 
 ## SDK
 

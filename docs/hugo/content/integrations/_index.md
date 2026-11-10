@@ -19,7 +19,7 @@ Manage services, policies and roles through the Policy Management Service (PMS),
 
 ## Embedded Go
 
-Run the evaluator inside a Go application, without a separate PMS or ADS process. The [embedded mode guide](/docs/deployment-embeded/) builds a complete example with Go modules.
+Run the evaluator inside a Go application, without a separate PMS or ADS process. The [embedded mode guide](/docs/deployment/embedded/) builds a complete example with Go modules.
 
 ## SDKs
 
