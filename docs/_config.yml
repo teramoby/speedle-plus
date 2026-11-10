@@ -1,1 +1,5 @@
 theme: jekyll-theme-cayman
+# hugo/ holds the Hugo sources the site is generated from; the generated
+# pages sit next to it. Do not publish the sources.
+exclude:
+  - hugo
