@@ -202,7 +202,9 @@ checksums from the binaries it just built. When the `release` environment
 defines `HOMEBREW_TAP_TOKEN`, the workflow pushes a `homebrew-vX.Y.Z` branch
 to `teramoby/homebrew-tap` and opens a pull request against `main`. It does
 not push `main` or `master`. It also opens a pull request on this repository
-so `deployment/homebrew/` matches that update. The token needs permission to
+so `deployment/homebrew/` matches that update. That pull request also points
+both Quick Start guides at this release and refreshes the committed guide
+pages, including `llms-full.txt`. The token needs permission to
 push a branch and open a pull request on `teramoby/homebrew-tap`. The pull
 request on this repository uses the workflow's `GITHUB_TOKEN`. The tap token
 is read only by that publish step.
