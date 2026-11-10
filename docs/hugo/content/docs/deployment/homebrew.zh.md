@@ -1,5 +1,5 @@
 +++
-title = "Homebrew"
+title = "Homebrew 安装"
 description = "用 Homebrew 安装 speedle-spctl、speedle-pms 和 speedle-ads，并在本机跑一次演示。"
 weight = 30
 draft = false
