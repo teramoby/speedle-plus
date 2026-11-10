@@ -1,15 +1,22 @@
 name: Release
 
 # Run by hand from the Actions tab (or the API) to tag a master commit, build
-# the release binaries and container images, and publish a GitHub release.
-# Only users with write access can dispatch it.
+# the release binaries and one container image, and publish a GitHub release.
+# Only users with write access can dispatch it. See docs/RELEASE.md.
+#
+# The image is docker.io/speedle/speedle and ghcr.io/<owner>/speedle. It
+# contains speedle-pms, speedle-ads and spctl. Git tags stay vX.Y.Z. Image
+# tags are X.Y.Z, X.Y when this is the highest patch of that minor, and
+# latest when this is the highest release on the newest master commit.
+# Docker Hub reads DOCKERHUB_USERNAME and
+# DOCKERHUB_TOKEN from the release environment.
 #
 # Retrying: re-dispatch with the same version and commit after a failure. An
-# existing tag must already point at the same commit, image tags are
-# overwritten, and release assets are replaced, so a failed run resumes
-# without moving a tag or re-creating a release. The images are built without
-# pushing before the tag, and published last; if the push fails, re-dispatching
-# completes the release.
+# existing tag must already point at the same commit, the version image tag
+# is published again, and release assets are replaced, so a failed run resumes
+# without moving a tag or re-creating a release. The image is built and
+# smoke-tested before the tag, and published last; if the push fails,
+# re-dispatching completes the release.
 on:
   workflow_dispatch:
     inputs:
@@ -22,9 +29,7 @@ on:
         required: true
         type: string
 
-permissions:
-  contents: write
-  packages: write
+permissions: {}
 
 concurrency:
   group: release
@@ -38,6 +43,10 @@ jobs:
   release:
     name: release
     runs-on: ubuntu-latest
+    environment: release
+    permissions:
+      contents: write # tag the commit and publish the GitHub release
+      packages: write # push the image to GHCR
     timeout-minutes: 30
     steps:
       - name: Validate inputs
@@ -49,11 +58,28 @@ jobs:
           [[ "${VERSION}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "Version must look like v2.0.0." >&2; exit 1; }
           [[ "${COMMIT}" =~ ^[0-9a-f]{40}$ ]] || { echo "Commit must be a full lowercase SHA." >&2; exit 1; }
 
+      # Presence only. The username and token values are passed to the shell
+      # in the Docker Hub login step, and nowhere else. This step is before
+      # the tag so a missing credential cannot leave a tag without an image.
+      - name: Require Docker Hub credentials
+        env:
+          DOCKERHUB_USERNAME_SET: ${{ secrets.DOCKERHUB_USERNAME != '' }}
+          DOCKERHUB_TOKEN_SET: ${{ secrets.DOCKERHUB_TOKEN != '' }}
+        run: |
+          set -euo pipefail
+          if [[ "${DOCKERHUB_USERNAME_SET}" != "true" || "${DOCKERHUB_TOKEN_SET}" != "true" ]]; then
+            echo "The release environment needs both DOCKERHUB_USERNAME and DOCKERHUB_TOKEN. No release tag was created." >&2
+            exit 1
+          fi
+
       - name: Checkout master
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: master
           fetch-depth: 0
+          # The publish step reads local vX.Y.Z tags to decide whether to move latest.
+          fetch-tags: true
+          persist-credentials: false
 
       - name: Check the commit, module path and tag
         env:
@@ -131,12 +157,14 @@ jobs:
           for arch in amd64 arm64; do
             cp "dist/speedle-pms_linux_${arch}" "${CONTAINER_CONTEXT}/speedle-pms-linux-${arch}"
             cp "dist/speedle-ads_linux_${arch}" "${CONTAINER_CONTEXT}/speedle-ads-linux-${arch}"
+            cp "dist/spctl_linux_${arch}" "${CONTAINER_CONTEXT}/spctl-linux-${arch}"
+            CGO_ENABLED=0 GOOS=linux GOARCH="${arch}" go build -trimpath -o "${CONTAINER_CONTEXT}/dispatch-linux-${arch}" ./deployment/container/dispatch
           done
 
-      # Build and start both images before the immutable tag is created, so a
+      # Build and start the image before the immutable tag is created, so a
       # bad Dockerfile, TARGETARCH mapping or runtime permission problem cannot
-      # leave a published release without working images.
-      - name: Verify the container images build and start
+      # leave a published release without a working image.
+      - name: Verify the container image builds and starts
         run: |
           set -euo pipefail
           host_arch=$(go env GOHOSTARCH)
@@ -149,21 +177,18 @@ jobs:
           docker buildx create --name speedle-smoke --driver docker-container --use
           docker buildx inspect --bootstrap
           trap 'docker stop speedle-smoke-pms speedle-smoke-ads >/dev/null 2>&1 || true; docker volume rm speedle-smoke >/dev/null 2>&1 || true' EXIT
-          for command in speedle-pms speedle-ads; do
-            suffix=${command#speedle-}
-            docker buildx build \
-              --platform linux/amd64,linux/arm64 \
-              --file "deployment/container/Dockerfile.${suffix}" \
-              --output type=cacheonly "${CONTAINER_CONTEXT}"
-            docker buildx build \
-              --platform "linux/${host_arch}" --load \
-              --file "deployment/container/Dockerfile.${suffix}" \
-              --tag "${command}:smoke" "${CONTAINER_CONTEXT}"
-          done
+          docker buildx build \
+            --platform linux/amd64,linux/arm64 \
+            --file deployment/container/Dockerfile \
+            --output type=cacheonly "${CONTAINER_CONTEXT}"
+          docker buildx build \
+            --platform "linux/${host_arch}" --load \
+            --file deployment/container/Dockerfile \
+            --tag speedle:smoke "${CONTAINER_CONTEXT}"
           docker volume rm speedle-smoke >/dev/null 2>&1 || true
           docker volume create speedle-smoke >/dev/null
           docker run --rm -d --name speedle-smoke-pms -p 127.0.0.1:6733:6733 -v speedle-smoke:/data \
-            speedle-pms:smoke --store-type file --filestore-loc /data/policies.json --endpoint 0.0.0.0:6733 --insecure=true
+            speedle:smoke speedle-pms --store-type file --filestore-loc /data/policies.json --endpoint 0.0.0.0:6733 --insecure=true
           curl --fail --silent --show-error --retry 30 --retry-connrefused --retry-delay 1 \
             http://127.0.0.1:6733/policy-mgmt/v1/service >/dev/null
           # Write through PMS, then read the same volume through both the API and
@@ -176,7 +201,7 @@ jobs:
             python3 -c 'import json, sys; services = json.load(sys.stdin); assert any(s.get("name") == "smoke" and len(s.get("policies", [])) == 1 for s in services), services'
           docker stop speedle-smoke-pms >/dev/null
           docker run --rm -d --name speedle-smoke-ads -p 127.0.0.1:6734:6734 -v speedle-smoke:/data \
-            speedle-ads:smoke --store-type file --filestore-loc /data/policies.json --endpoint 0.0.0.0:6734 --insecure=true
+            speedle:smoke speedle-ads --store-type file --filestore-loc /data/policies.json --endpoint 0.0.0.0:6734 --insecure=true
           decision=$(curl --fail --silent --show-error --retry 30 --retry-connrefused --retry-delay 1 \
             --header 'Content-Type: application/json' \
             --data '{"subject":{"principals":[{"type":"user","name":"smoke-user"}]},"serviceName":"smoke","resource":"smoke-resource","action":"read"}' \
@@ -190,6 +215,7 @@ jobs:
         env:
           VERSION: ${{ inputs.version }}
           COMMIT: ${{ inputs.commit }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           if git ls-remote --exit-code --tags origin "refs/tags/${VERSION}" >/dev/null; then
@@ -206,6 +232,9 @@ jobs:
             git config user.name "github-actions[bot]"
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
             git tag -a "${VERSION}" "${COMMIT}" -m "Speedle ${VERSION}"
+            # Checkout does not persist credentials. gh supplies the workflow
+            # token for this push and does not write it into the workspace.
+            gh auth setup-git
             git push origin "refs/tags/${VERSION}"
           fi
 
@@ -224,40 +253,78 @@ jobs:
               "${assets[@]}"
           fi
 
-      # One multi-architecture image per service. The Dockerfiles copy the
-      # matching Linux binary for TARGETARCH. Images are published last, after
-      # the immutable tag: a version image can then never exist without its git
-      # tag or be overwritten from a different commit. If this step fails, the
-      # idempotent tag and release steps above let a re-dispatch finish the
-      # release without moving or re-creating anything. `latest` moves only
-      # when this version is the highest full semantic version released so far
-      # and the requested commit is still the newest commit on master, so a
-      # maintenance release or a release from an older master cannot downgrade it.
-      - name: Publish container images
+      - name: Log in to container registries
         env:
-          VERSION: ${{ inputs.version }}
-          COMMIT: ${{ inputs.commit }}
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
           GITHUB_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
+          printf '%s\n' "${DOCKERHUB_TOKEN}" | docker login docker.io --username "${DOCKERHUB_USERNAME}" --password-stdin
+          printf '%s\n' "${GITHUB_TOKEN}" | docker login ghcr.io --username "${GITHUB_ACTOR}" --password-stdin
+
+      # One multi-architecture image, pushed to Docker Hub and GHCR. The
+      # Dockerfile copies the matching Linux binaries for TARGETARCH. The image
+      # is published last, after the immutable tag: a version image can then
+      # never exist without its git tag or be overwritten from a different
+      # commit. If this step fails, the idempotent tag and release steps above
+      # let a re-dispatch finish the release without moving or re-creating
+      # anything. `X.Y` moves only when this version is the highest patch of
+      # that minor, so retrying an older patch cannot replace it. `latest`
+      # moves only when this version is the highest full semantic version
+      # released so far and the requested commit is still the newest commit on
+      # master. Provenance and the SBOM are attached to the pushed image.
+      - name: Publish the container image
+        env:
+          VERSION: ${{ inputs.version }}
+          COMMIT: ${{ inputs.commit }}
+        run: |
+          set -euo pipefail
           owner="${GITHUB_REPOSITORY_OWNER,,}"
+          image_version="${VERSION#v}"
+          image_minor="${image_version%.*}"
+          [[ "${image_version}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "Image version must look like 2.0.0." >&2; exit 1; }
           master=$(git ls-remote origin refs/heads/master | awk 'NR == 1 { print $1 }')
           [[ "${master}" =~ ^[0-9a-f]{40}$ ]] || { echo "Could not resolve the newest commit on master." >&2; exit 1; }
           newest=$(git tag --list 'v*' | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -n 1 || true)
-          echo "${GITHUB_TOKEN}" | docker login ghcr.io --username "${GITHUB_ACTOR}" --password-stdin
           docker buildx create --name speedle-release --driver docker-container --use
           docker buildx inspect --bootstrap
-          for command in speedle-pms speedle-ads; do
-            suffix=${command#speedle-}
-            tag_args=(--tag "${REGISTRY}/${owner}/${command}:${VERSION}")
-            if [[ "${COMMIT}" == "${master}" && ( -z "${newest}" || "${VERSION}" == "${newest}" ) ]]; then
-              tag_args+=(--tag "${REGISTRY}/${owner}/${command}:latest")
-            else
-              echo "${VERSION} at ${COMMIT} is not the highest release (${newest}) on the newest master commit (${master}); publishing only the version tag."
+          tag_args=(
+            --tag "docker.io/speedle/speedle:${image_version}"
+            --tag "${REGISTRY}/${owner}/speedle:${image_version}"
+          )
+          # Dots in the minor are literal. An older patch must not move X.Y.
+          minor_re=$(printf '%s\n' "${image_minor}" | sed 's/\./\\./g')
+          highest_minor=$(git tag --list "v${image_minor}.*" | grep -E "^v${minor_re}\.[0-9]+$" | sort -V | tail -n 1 || true)
+          move_minor=0
+          if [[ -z "${highest_minor}" ]]; then
+            move_minor=1
+          else
+            top=$(printf '%s\n%s\n' "${highest_minor}" "${VERSION}" | sort -V | tail -n 1)
+            if [[ "${top}" == "${VERSION}" ]]; then
+              move_minor=1
             fi
-            docker buildx build \
-              --platform linux/amd64,linux/arm64 \
-              --file "deployment/container/Dockerfile.${suffix}" \
-              "${tag_args[@]}" \
-              --push "${CONTAINER_CONTEXT}"
-          done
+          fi
+          if [[ "${move_minor}" == 1 ]]; then
+            tag_args+=(
+              --tag "docker.io/speedle/speedle:${image_minor}"
+              --tag "${REGISTRY}/${owner}/speedle:${image_minor}"
+            )
+          else
+            echo "${VERSION} is not the highest ${image_minor} patch (${highest_minor}); leaving the ${image_minor} tag in place."
+          fi
+          if [[ "${COMMIT}" == "${master}" && ( -z "${newest}" || "${VERSION}" == "${newest}" ) ]]; then
+            tag_args+=(
+              --tag "docker.io/speedle/speedle:latest"
+              --tag "${REGISTRY}/${owner}/speedle:latest"
+            )
+          else
+            echo "${VERSION} at ${COMMIT} is not the highest release (${newest}) on the newest master commit (${master}); leaving latest in place."
+          fi
+          docker buildx build \
+            --platform linux/amd64,linux/arm64 \
+            --provenance=mode=max \
+            --sbom=true \
+            --file deployment/container/Dockerfile \
+            "${tag_args[@]}" \
+            --push "${CONTAINER_CONTEXT}"

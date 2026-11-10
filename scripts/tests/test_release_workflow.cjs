@@ -22,7 +22,7 @@ function script(name) {
   }
   return lines.join('\n').trimEnd();
 }
-const publish = script('Publish container images');
+const publish = script('Publish the container image');
 
 function runPublish({version, commit, master, tags, validMaster = true}) {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'speedle-release-publish-'));
@@ -89,38 +89,57 @@ function imageTags(build) {
   return tags;
 }
 
+function expectedTags(version, latest, minor) {
+  const imageVersion = version.slice(1);
+  const minorVersion = imageVersion.slice(0, imageVersion.lastIndexOf('.'));
+  const names = ['docker.io/speedle/speedle', 'ghcr.io/teramoby/speedle'];
+  const tags = [];
+  for (const name of names) tags.push(`${name}:${imageVersion}`);
+  if (minor) for (const name of names) tags.push(`${name}:${minorVersion}`);
+  if (latest) for (const name of names) tags.push(`${name}:latest`);
+  return tags;
+}
+
+function assertPublished(result, builds, version, latest, minor) {
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(builds.length, 1);
+  const build = builds[0];
+  assert.deepEqual(imageTags(build), expectedTags(version, latest, minor));
+  assert.ok(build.args.includes('--provenance=mode=max'));
+  assert.ok(build.args.includes('--sbom=true'));
+  assert.ok(build.args.includes('--push'));
+  assert.ok(build.args.includes('deployment/container/Dockerfile'));
+  assert.equal(build.args[build.args.indexOf('--platform') + 1], 'linux/amd64,linux/arm64');
+}
+
 test('latest accompanies the highest version built at the current remote master tip', () => {
   const {result, builds} = runPublish({version: 'v1.6.0', commit: master, master, tags: ['v1.5.0', 'v1.6.0']});
-  assert.equal(result.status, 0, result.stderr);
-  assert.equal(builds.length, 2);
-  for (const build of builds) {
-    const tags = imageTags(build);
-    assert.ok(tags.some(tag => tag.endsWith(':v1.6.0')));
-    assert.ok(tags.some(tag => tag.endsWith(':latest')), JSON.stringify(tags));
-  }
+  assertPublished(result, builds, 'v1.6.0', true, true);
 });
 
 test('a higher version from an older master commit cannot move latest', () => {
   const {result, builds} = runPublish({version: 'v1.7.0', commit: older, master, tags: ['v1.6.0', 'v1.7.0']});
-  assert.equal(result.status, 0, result.stderr);
-  assert.equal(builds.length, 2);
-  for (const build of builds) {
-    const tags = imageTags(build);
-    assert.ok(tags.some(tag => tag.endsWith(':v1.7.0')));
-    assert.ok(!tags.some(tag => tag.endsWith(':latest')), JSON.stringify(tags));
-  }
+  assertPublished(result, builds, 'v1.7.0', false, true);
 });
 
 test('an older semantic version at the master tip cannot move latest', () => {
   const {result, builds} = runPublish({version: 'v1.5.1', commit: master, master, tags: ['v1.5.0', 'v1.5.1', 'v1.6.0']});
-  assert.equal(result.status, 0, result.stderr);
-  for (const build of builds) assert.ok(!imageTags(build).some(tag => tag.endsWith(':latest')));
+  assertPublished(result, builds, 'v1.5.1', false, true);
+});
+
+test('an older patch cannot move the minor tag', () => {
+  const {result, builds} = runPublish({version: 'v1.5.9', commit: master, master, tags: ['v1.5.9', 'v1.5.10']});
+  assertPublished(result, builds, 'v1.5.9', false, false);
+});
+
+test('the highest patch of an older minor still moves that minor tag', () => {
+  const {result, builds} = runPublish({version: 'v1.5.10', commit: master, master, tags: ['v1.5.9', 'v1.5.10', 'v1.6.0']});
+  assertPublished(result, builds, 'v1.5.10', false, true);
 });
 
 test('the first release can create latest and an unresolved master blocks publishing', () => {
   const first = runPublish({version: 'v1.0.0', commit: master, master, tags: []});
-  assert.equal(first.result.status, 0, first.result.stderr);
-  for (const build of first.builds) assert.ok(imageTags(build).some(tag => tag.endsWith(':latest')));
+  assertPublished(first.result, first.builds, 'v1.0.0', true, true);
   const unresolved = runPublish({version: 'v1.0.0', commit: master, master: '', tags: [], validMaster: false});
   assert.notEqual(unresolved.result.status, 0);
   assert.equal(unresolved.builds.length, 0);
@@ -149,14 +168,39 @@ test('release checksums and uploaded assets include both spctl names', () => {
 });
 
 test('changed release shell blocks parse before any publishing or container operation', () => {
-  for (const name of ['Build release binaries', 'Write checksums', 'Verify the container images build and start', 'Publish the GitHub release', 'Publish container images']) {
+  for (const name of ['Build release binaries', 'Write checksums', 'Require Docker Hub credentials', 'Verify the container image builds and starts', 'Log in to container registries', 'Publish the GitHub release', 'Publish the container image']) {
     const result = spawnSync('bash', ['-n'], {input: script(name), encoding: 'utf8'});
     assert.equal(result.status, 0, `${name}: ${result.stderr}`);
   }
 });
 
+test('Docker Hub credentials are required before a tag and their values are read only by the login step', () => {
+  const requireStep = step('Require Docker Hub credentials');
+  const login = step('Log in to container registries');
+  assert.ok(source.indexOf('- name: Require Docker Hub credentials') < source.indexOf('- name: Create and push the tag'));
+  assert.ok(source.indexOf('- name: Create and push the tag') < source.indexOf('- name: Log in to container registries'));
+  assert.ok(source.indexOf('- name: Log in to container registries') < source.indexOf('- name: Publish the container image'));
+  assert.match(source, /\n    environment: release\n/);
+  assert.match(requireStep, /DOCKERHUB_USERNAME_SET/);
+  assert.match(requireStep, /DOCKERHUB_TOKEN_SET/);
+  assert.match(requireStep, /No release tag was created/);
+  assert.match(login, /docker login docker\.io --username "\$\{DOCKERHUB_USERNAME\}" --password-stdin/);
+  assert.match(login, /docker login ghcr\.io --username "\$\{GITHUB_ACTOR\}" --password-stdin/);
+  const rawSecret = /secrets\.DOCKERHUB_(?:USERNAME|TOKEN)\s*\}\}/g;
+  assert.deepEqual([...login.matchAll(rawSecret)].map(match => match[0]), [
+    'secrets.DOCKERHUB_USERNAME }}',
+    'secrets.DOCKERHUB_TOKEN }}',
+  ]);
+  assert.equal([...source.replace(login, '').matchAll(rawSecret)].length, 0);
+  assert.doesNotMatch(source, /Dockerfile\.(?:pms|ads)/);
+  const prepare = script('Prepare the container build context');
+  assert.match(prepare, /spctl-linux-/);
+  assert.match(prepare, /dispatch-linux-\$\{arch\}/);
+  assert.match(prepare, /\.\/deployment\/container\/dispatch/);
+});
+
 test('container smoke writes a policy through PMS and requires ADS to allow it from the shared volume', () => {
-  const smoke = step('Verify the container images build and start');
+  const smoke = step('Verify the container image builds and starts');
   assert.match(smoke, /host_arch=\$\(go env GOHOSTARCH\)/);
   assert.match(smoke, /spctl="dist\/spctl_linux_\$\{host_arch\}"/);
   assert.equal([...smoke.matchAll(/"\$\{spctl\}" --pms-endpoint/g)].length, 3);
@@ -195,7 +239,7 @@ if(a.includes('get'))console.log('[{"name":"smoke","policies":[{}]}]');
 `);
       fs.chmodSync(file, 0o755);
     }
-    const result = spawnSync('bash', ['-c', script('Verify the container images build and start')], {
+    const result = spawnSync('bash', ['-c', script('Verify the container image builds and starts')], {
       cwd: directory, encoding: 'utf8', env: {
         ...process.env, PATH: `${directory}${path.delimiter}${process.env.PATH}`,
         FIXTURE_CALLS: calls, FIXTURE_HOST_ARCH: hostArch, CONTAINER_CONTEXT: 'container-context',
@@ -216,8 +260,14 @@ test('container smoke selects the host spctl binary and native container image o
     assert.equal(spctl.length, 3, arch);
     assert.ok(spctl.every(record => record.arch === arch), JSON.stringify(spctl));
     const loads = records.filter(record => record.tool === 'docker' && record.args[0] === 'buildx' && record.args[1] === 'build' && record.args.includes('--load'));
-    assert.equal(loads.length, 2, arch);
-    for (const load of loads) assert.equal(load.args[load.args.indexOf('--platform') + 1], `linux/${arch}`);
+    assert.equal(loads.length, 1, arch);
+    assert.equal(loads[0].args[loads[0].args.indexOf('--platform') + 1], `linux/${arch}`);
+    assert.ok(loads[0].args.includes('speedle:smoke'));
+    const starts = records.filter(record => record.tool === 'docker' && record.args[0] === 'run' && record.args.includes('-d'));
+    assert.equal(starts.length, 2, arch);
+    assert.ok(starts[0].args.includes('speedle-pms'), JSON.stringify(starts[0].args));
+    assert.ok(starts[1].args.includes('speedle-ads'), JSON.stringify(starts[1].args));
+    assert.ok(starts.every(record => record.args.includes('speedle:smoke') && record.args.includes('speedle-smoke:/data')));
   }
   const unsupported = runSmoke('s390x');
   assert.notEqual(unsupported.result.status, 0);
