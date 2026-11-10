@@ -2621,10 +2621,8 @@ mkdir speedle-example
 cd speedle-example
 npm init -y
 npm pkg set type=module
-npm install @speedle/sdk
+npm install @speedle/sdk@0.2.1
 ```
-
-The command installs the `@speedle/sdk` release currently published on npm. The program below uses that release's client API.
 
 ### Call a local Speedle
 
@@ -2723,13 +2721,13 @@ The token is a server-side secret. Never ship it to browsers, mobile apps or des
 [`@speedle/mcp`](https://www.npmjs.com/package/@speedle/mcp) is published on npm. Speedle MCP (launch preview) is one package with `check` and `manage` modes. Install it with npm:
 
 ```bash
-npm install @speedle/mcp
+npm install @speedle/mcp@0.2.1
 ```
 
 Or run the `speedle-mcp` binary directly:
 
 ```bash
-npx @speedle/mcp check
+npx @speedle/mcp@0.2.1 check
 ```
 
 Running `speedle-mcp` without a mode prints usage and exits with a non-zero status. Reference: [speedle-mcp](https://github.com/teramoby/speedle-mcp).

@@ -24,10 +24,8 @@ mkdir speedle-example
 cd speedle-example
 npm init -y
 npm pkg set type=module
-npm install @speedle/sdk
+npm install @speedle/sdk@0.2.1
 ```
-
-该命令安装 npm 上当前已发布的 `@speedle/sdk`。下面的程序调用该软件包的客户端 API。
 
 ## 调用本地 Speedle
 
@@ -126,13 +124,13 @@ alice delete /docs/public: allowed=false reason=NoApplicablePolicies
 [`@speedle/mcp`](https://www.npmjs.com/package/@speedle/mcp) 已在 npm 发布。Speedle MCP（预览）是一个软件包，包含 `check` 与 `manage` 两种模式。用 npm 安装：
 
 ```bash
-npm install @speedle/mcp
+npm install @speedle/mcp@0.2.1
 ```
 
 或直接运行 `speedle-mcp` 二进制：
 
 ```bash
-npx @speedle/mcp check
+npx @speedle/mcp@0.2.1 check
 ```
 
 不带模式运行 `speedle-mcp` 会打印用法，并以非零状态退出。参考文档：[speedle-mcp](https://github.com/teramoby/speedle-mcp)。

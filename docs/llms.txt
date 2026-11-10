@@ -26,7 +26,7 @@ Speedle evaluates RBAC and ABAC policies for users, services and processes actin
 
 ## SDKs
 
-Java, Python, Go, .NET and Rust SDKs are version 0.2.0 and published. `@speedle/sdk` is published on npm (`npm install @speedle/sdk`).
+Java, Python, Go, .NET and Rust SDKs are version 0.2.0 and published. `@speedle/sdk` 0.2.1 is published on npm (`npm install @speedle/sdk@0.2.1`).
 
 - [SDKs](https://engine.speedle.io/docs/sdks/): Client libraries for the decision API in six languages.
 - [Java SDK](https://engine.speedle.io/docs/sdks/java/): Maven Central `io.speedle:speedle-sdk` 0.2.0, published.
@@ -34,7 +34,7 @@ Java, Python, Go, .NET and Rust SDKs are version 0.2.0 and published. `@speedle/
 - [Go SDK](https://engine.speedle.io/docs/sdks/go/): Go module `github.com/teramoby/speedle-sdk/go` v0.2.0, published.
 - [C#/.NET SDK](https://engine.speedle.io/docs/sdks/dotnet/): NuGet `Speedle.Sdk` 0.2.0, published.
 - [Rust SDK](https://engine.speedle.io/docs/sdks/rust/): crates.io `speedle` 0.2.0, published.
-- [Node.js/TypeScript SDK](https://engine.speedle.io/docs/sdks/node/): npm `@speedle/sdk`, published on npm. Install with `npm install @speedle/sdk`.
+- [Node.js/TypeScript SDK](https://engine.speedle.io/docs/sdks/node/): npm `@speedle/sdk` 0.2.1, published. Install with `npm install @speedle/sdk@0.2.1`.
 
 ## Speedle Cloud
 
@@ -49,9 +49,9 @@ Java, Python, Go, .NET and Rust SDKs are version 0.2.0 and published. `@speedle/
 
 - [Speedle AI](https://ai.speedle.io/): Authorization for and with AI agents: use AI to manage access, and control what AI can access.
 - [AI authorization patterns](https://ai.speedle.io/patterns/): SPDL patterns for data and training, model release, permission-aware RAG, delegated agents, MCP tool calls, agent-to-agent calls and zero standing privileges.
-- [Speedle MCP](https://ai.speedle.io/#mcp): Speedle MCP launch preview: `@speedle/mcp` is published on npm as one package with check and manage modes. Install with `npm install @speedle/mcp`, or run the `speedle-mcp` binary with `npx @speedle/mcp check`.
+- [Speedle MCP](https://ai.speedle.io/#mcp): Speedle MCP launch preview: `@speedle/mcp` 0.2.1 is published on npm as one package with check and manage modes. Install with `npm install @speedle/mcp@0.2.1`, or run the `speedle-mcp` binary with `npx @speedle/mcp@0.2.1 check`.
 - [Policy modeler skill](https://ai.speedle.io/#policy-modeler): The open-source policy-modeler Agent Skill turns employee handbooks and regulations into RBAC + ABAC SPDL models with tests.
-- [Speedle MCP repository](https://github.com/teramoby/speedle-mcp/): Speedle MCP server source. `@speedle/mcp` is published on npm with check and manage modes. Run the `speedle-mcp` binary with `npx @speedle/mcp check`.
+- [Speedle MCP repository](https://github.com/teramoby/speedle-mcp/): Speedle MCP server source. `@speedle/mcp` 0.2.1 is published on npm with check and manage modes. Run the `speedle-mcp` binary with `npx @speedle/mcp@0.2.1 check`.
 - [Policy modeler SKILL.md](https://raw.githubusercontent.com/teramoby/ai.speedle.io/main/skills/speedle-policy-modeler/SKILL.md): The entry point for the policy-modeler Agent Skill; its repository folder holds references, scripts, templates and English/Chinese example runs.
 
 ## Source, releases and license

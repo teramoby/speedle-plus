@@ -20,7 +20,7 @@
 <link rel="alternate" hreflang="zh-CN" href="https://engine.speedle.io/zh/docs/sdks/node/">
 <link rel="alternate" hreflang="x-default" href="https://engine.speedle.io/docs/sdks/node/">
 <meta property="og:type" content="article">
-<meta property="article:modified_time" content="2026-11-10T08:53:34&#43;08:00">
+<meta property="article:modified_time" content="2026-11-10T09:22:46&#43;08:00">
 <meta property="og:site_name" content="Speedle Engine">
 <meta property="og:title" content="Node.js/TypeScript SDK · Speedle Engine">
 <meta property="og:description" content="Add the Speedle Node.js/TypeScript SDK and check authorization against a local Speedle or Speedle Cloud.">
@@ -36,7 +36,7 @@
 <meta name="twitter:image" content="https://engine.speedle.io/img/social/engine-en.png">
 <meta name="twitter:image:alt" content="Speedle Engine — Fast. Simple. Access control">
 
-<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/docs/sdks/node/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-10T08:53:34+08:00","description":"Add the Speedle Node.js/TypeScript SDK and check authorization against a local Speedle or Speedle Cloud.","headline":"Node.js/TypeScript SDK","image":"https://engine.speedle.io/img/social/engine-en.png","inLanguage":"en","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/docs/sdks/node/","@type":"WebPage"},"name":"Node.js/TypeScript SDK","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/docs/sdks/node/"}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/docs/sdks/node/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-10T09:22:46+08:00","description":"Add the Speedle Node.js/TypeScript SDK and check authorization against a local Speedle or Speedle Cloud.","headline":"Node.js/TypeScript SDK","image":"https://engine.speedle.io/img/social/engine-en.png","inLanguage":"en","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/docs/sdks/node/","@type":"WebPage"},"name":"Node.js/TypeScript SDK","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/docs/sdks/node/"}</script>
 <script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/docs/sdks/node/#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://engine.speedle.io/","name":"Home","position":1},{"@type":"ListItem","item":"https://engine.speedle.io/docs/","name":"Documentation","position":2},{"@type":"ListItem","item":"https://engine.speedle.io/docs/sdks/","name":"SDKs","position":3},{"@type":"ListItem","item":"https://engine.speedle.io/docs/sdks/node/","name":"Node.js/TypeScript SDK","position":4}]}</script><link href="/css/docs.css" rel="stylesheet" type="text/css">
 
 
@@ -190,9 +190,7 @@
 <span style="color:#8be9fd;font-style:italic">cd</span> speedle-example
 npm init -y
 npm pkg <span style="color:#8be9fd;font-style:italic">set</span> <span style="color:#8be9fd;font-style:italic">type</span><span style="color:#ff79c6">=</span>module
-npm install @speedle/sdk</code></pre></div>
-<p>The command installs the <code>@speedle/sdk</code> release currently published on npm. The program below uses that release&rsquo;s client API.</p>
-
+npm install @speedle/sdk@0.2.1</code></pre></div>
 <h2 id="call-a-local-speedle">Call a local Speedle</h2>
 
 <p>Start Speedle and create the example policy as described in the <a href="/docs/sdks/#example-policy">SDKs overview</a>. Save this program as <code>main.ts</code>:</p>
@@ -266,9 +264,9 @@ alice delete /docs/public: allowed=false reason=NoApplicablePolicies</code></pre
 <h2 id="speedle-mcp">Speedle MCP</h2>
 
 <p><a href="https://www.npmjs.com/package/@speedle/mcp"><code>@speedle/mcp</code></a> is published on npm. Speedle MCP (launch preview) is one package with <code>check</code> and <code>manage</code> modes. Install it with npm:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">npm install @speedle/mcp</code></pre></div>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">npm install @speedle/mcp@0.2.1</code></pre></div>
 <p>Or run the <code>speedle-mcp</code> binary directly:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">npx @speedle/mcp check</code></pre></div>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">npx @speedle/mcp@0.2.1 check</code></pre></div>
 <p>Running <code>speedle-mcp</code> without a mode prints usage and exits with a non-zero status. Reference: <a href="https://github.com/teramoby/speedle-mcp">speedle-mcp</a>.</p>
 
 <h2 id="error-handling">Error handling</h2>

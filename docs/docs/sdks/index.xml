@@ -81,7 +81,7 @@ cargo new speedle-example cd speedle-example cargo add speedle@0.2.0 --features 
       <description>The Node.js SDK needs Node.js 22 or later, ships ESM and CommonJS builds with TypeScript types, and has no runtime dependencies. Package: @speedle/sdk, published on npm. Reference: speedle-sdk/node.
 The examples check the policy described in the SDKs overview.
 Add the dependency In a new ES module package:
-mkdir speedle-example cd speedle-example npm init -y npm pkg set type=module npm install @speedle/sdk The command installs the @speedle/sdk release currently published on npm.</description>
+mkdir speedle-example cd speedle-example npm init -y npm pkg set type=module npm install @speedle/sdk@0.2.1 Call a local Speedle Start Speedle and create the example policy as described in the SDKs overview.</description>
     </item>
     
   </channel>
