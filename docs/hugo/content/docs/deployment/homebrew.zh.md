@@ -41,7 +41,7 @@ brew services start speedle-pms
 brew services start speedle-ads
 ```
 
-`speedle-pms` 监听 `127.0.0.1:6733`。`speedle-ads` 监听 `127.0.0.1:6734`。两者都使用 `--store-type file`，策略文件是 `$(brew --prefix)/var/speedle/policies.json`。日志在 `$(brew --prefix)/var/log/`。`--insecure=true` 只用于这次本机回环演示。TLS 见[安全配置](../security/)。
+`speedle-pms` 监听 `127.0.0.1:6733`。`speedle-ads` 监听 `127.0.0.1:6734`。两者都使用 `--store-type file`，策略文件是 `$(brew --prefix)/var/speedle/policies.json`。日志在 `$(brew --prefix)/var/log/`。`--insecure=true` 只用于这次本机回环演示。TLS 见[安全配置](../../security/)。
 
 创建服务和策略。在 Linux 上可以把 `speedle-spctl` 换成 `spctl`。
 

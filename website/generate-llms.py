@@ -58,6 +58,7 @@ FULL_PAGES = [
     "docs/cloud/authorization-api",
     "docs/cloud/limits-and-errors",
     "docs/deployment",
+    "docs/deployment/homebrew",
     "docs/deployment-embeded",
     "docs/store/_index",
     "docs/store/mysql",

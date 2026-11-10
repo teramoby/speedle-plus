@@ -41,7 +41,7 @@ brew services start speedle-pms
 brew services start speedle-ads
 ```
 
-`speedle-pms` listens on `127.0.0.1:6733`. `speedle-ads` listens on `127.0.0.1:6734`. Both use `--store-type file` and the policy file `$(brew --prefix)/var/speedle/policies.json`. Logs are under `$(brew --prefix)/var/log/`. `--insecure=true` is for this loopback demo. See [Security](../security/) for TLS.
+`speedle-pms` listens on `127.0.0.1:6733`. `speedle-ads` listens on `127.0.0.1:6734`. Both use `--store-type file` and the policy file `$(brew --prefix)/var/speedle/policies.json`. Logs are under `$(brew --prefix)/var/log/`. `--insecure=true` is for this loopback demo. See [Security](../../security/) for TLS.
 
 Create a service and a policy. On Linux you can use `spctl` in place of `speedle-spctl`.
 
