@@ -201,6 +201,17 @@ class LanguageRoutes(unittest.TestCase):
         self.assertNotIn('https://engine.speedle.io/zh/', english)
         self.process(check=True)
 
+    def test_multilingual_counterparts_and_family_links(self):
+        for lang in ['ja', 'ko', 'es']:
+            route = f'/{lang}/docs/spdl/'
+            self.assertEqual(ROUTER['language'](route), lang)
+            self.assertEqual(ROUTER['counterpart'](route, 'en'), '/docs/spdl/')
+            self.assertEqual(ROUTER['counterpart']('/docs/spdl/', lang), route)
+            dest = ROUTER['family_destination'](ROUTER['urlsplit']('https://cloud.speedle.io/'), lang)
+            self.assertEqual(dest, f'https://cloud.speedle.io/{lang}/')
+            dest_ai = ROUTER['family_destination'](ROUTER['urlsplit']('https://ai.speedle.io/'), lang)
+            self.assertEqual(dest_ai, f'https://ai.speedle.io/{lang}/')
+
     def test_unknown_internal_page_is_reported_without_guessing_a_destination(self):
         self.write("/docs/spdl/", '<html><nav class="nav-links"><a href="/zh/" hreflang="zh">中文</a></nav><a href="/missing/">Missing</a></html>')
         with self.assertRaisesRegex(SystemExit, "broken local link /missing/"):

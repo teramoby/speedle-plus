@@ -13,8 +13,15 @@ ORIGIN = "https://engine.speedle.io"
 # speedle.io redirects to engine.speedle.io, so links to either host are same-site.
 HOSTS = {"engine.speedle.io", "speedle.io"}
 # The Products menu and the footer family link the three sites; each keeps the reader's language.
-FAMILY_ZH_ROOT = {"engine.speedle.io": "/zh/", "cloud.speedle.io": "/zh-CN/", "ai.speedle.io": "/zh/"}
-LANGUAGE_PREFIXES = ("/zh-CN", "/zh", "/en")
+FAMILY_HOSTS = {"engine.speedle.io", "cloud.speedle.io", "ai.speedle.io", "speedle.io"}
+FAMILY_ROOT = {
+    "zh": {"engine.speedle.io": "/zh/", "cloud.speedle.io": "/zh-CN/", "ai.speedle.io": "/zh/"},
+    "ja": {"engine.speedle.io": "/ja/", "cloud.speedle.io": "/ja/", "ai.speedle.io": "/ja/"},
+    "ko": {"engine.speedle.io": "/ko/", "cloud.speedle.io": "/ko/", "ai.speedle.io": "/ko/"},
+    "es": {"engine.speedle.io": "/es/", "cloud.speedle.io": "/es/", "ai.speedle.io": "/es/"},
+}
+LANGUAGE_PREFIXES = ("/zh-CN", "/zh", "/ja", "/ko", "/es", "/en")
+LANGUAGES = ("en", "zh", "ja", "ko", "es")
 OWN_ORIGIN = re.compile(r"^https?://(?:engine\.)?speedle\.io(?=/)", re.I)
 NAVIGATION_VERSION = "language-direct-20261026"
 PREVIEW = re.compile(r"^/[0-9a-f]{32}(?=/)")
@@ -54,7 +61,11 @@ def logical(path):
 
 
 def language(path):
-    return "zh" if logical(path).startswith("/zh/") else "en"
+    p = logical(path)
+    for lang in ("zh", "ja", "ko", "es"):
+        if p == f"/{lang}" or p.startswith(f"/{lang}/"):
+            return lang
+    return "en"
 
 
 def snapshot(path):
@@ -69,8 +80,16 @@ def canonical_path(path):
 def counterpart(path, lang):
     prefix = snapshot(path)
     path = logical(path)
-    neutral = path[3:] if path.startswith("/zh/") else path
-    return prefix + ("/zh" + neutral if lang == "zh" else neutral)
+    current = language(path)
+    if current != "en":
+        neutral = path[len(current) + 1 :]
+    else:
+        neutral = path
+    if not neutral.startswith("/"):
+        neutral = "/" + neutral
+    if lang == "en":
+        return prefix + neutral
+    return prefix + f"/{lang}" + (neutral if neutral != "/" else "/")
 
 
 def family_destination(url, lang):
@@ -80,8 +99,8 @@ def family_destination(url, lang):
         if path == prefix or path.startswith(prefix + "/"):
             path = path[len(prefix):] or "/"
             break
-    if lang == "zh":
-        root = FAMILY_ZH_ROOT[url.netloc]
+    if lang in FAMILY_ROOT and url.netloc in FAMILY_ROOT[lang]:
+        root = FAMILY_ROOT[lang][url.netloc]
         path = root if path == "/" else root[:-1] + path
     return urlunsplit((url.scheme, url.netloc, path, url.query, url.fragment))
 
@@ -266,7 +285,7 @@ class Links(HTMLParser):
         attrs = dict(attributes)
         raw = self.get_starttag_text()
         changes = {}
-        in_languages = any("langsel" in scope for _, scope in self.stack)
+        in_languages = any("languages" in scope or "langsel" in scope for _, scope in self.stack)
         # The Products menu and footer family link the three sites by absolute URL:
         # localize them to the reader's language instead of resolving them as local links.
         cross_site = any(name in scope for _, scope in self.stack for name in ("products-panel", "footer-family"))
@@ -274,21 +293,28 @@ class Links(HTMLParser):
             href = attrs["href"].strip()
             url = urlsplit(urljoin(ORIGIN + self.base_route, href))
             if cross_site and urlsplit(href).netloc:
-                if url.netloc in FAMILY_ZH_ROOT and url.scheme in {"http", "https"}:
+                if url.netloc in FAMILY_HOSTS and url.scheme in {"http", "https"}:
                     changes["href"] = family_destination(url, self.lang)
             elif url.netloc in HOSTS and url.scheme in {"http", "https"}:
                 switch = attrs.get("hreflang", "").lower().split("-")[0]
                 if in_languages and not switch:
-                    switch = "zh" if logical(url.path).startswith("/zh/") else "en"
-                if switch in {"en", "zh"}:
+                    switch = language(logical(url.path))
+                if switch in LANGUAGES:
                     target = counterpart(self.route, switch)
                     if target not in self.site.canonical:
                         self.errors.append(f"{self.route}: missing translation {target}")
                     else:
-                        changes.update(href=target, lang="zh-CN" if switch == "zh" else "en",
-                                       hreflang="zh-CN" if switch == "zh" else "en")
+                        code = "zh-CN" if switch == "zh" else switch
+                        changes.update(href=target, lang=code, hreflang=code)
                         if "aria-label" in attrs:
-                            changes["aria-label"] = "切换到中文" if switch == "zh" else "Switch to English"
+                            labels = {
+                                "zh": "切换到中文",
+                                "en": "Switch to English",
+                                "ja": "日本語に切り替える",
+                                "ko": "한국어로 변경",
+                                "es": "Cambiar a español",
+                            }
+                            changes["aria-label"] = labels.get(switch, "")
                         self.switches.add(switch)
                 elif self.prefix and any("site-header" in scope for _, scope in self.stack):
                     if canonical_path(url.path) not in self.site.canonical:
@@ -369,11 +395,14 @@ def process(root, check=False):
         links = Links(site, route, archive_header(site, direct_language_navigation(text, route), route))
         errors.extend(links.errors)
         if not redirect:
-            opposite = "en" if language(route) == "zh" else "zh"
-            if counterpart(route, opposite) not in site.canonical:
-                errors.append(f"{route}: no matching {opposite} page")
-            if opposite not in links.switches:
-                errors.append(f"{route}: no same-page {opposite} language switch")
+            active_languages = {language(r) for r in site.canonical}
+            for other in LANGUAGES:
+                if other in active_languages and other != language(route):
+                    target = counterpart(route, other)
+                    if target not in site.canonical:
+                        errors.append(f"{route}: no matching {other} page")
+                    if other not in links.switches:
+                        errors.append(f"{route}: no same-page {other} language switch")
         output = links.output()
         if not redirect:
             output = web_analytics(output)

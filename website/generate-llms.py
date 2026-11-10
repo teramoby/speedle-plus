@@ -174,14 +174,18 @@ def parse_front_matter(text, source):
 def page_route(relative, language):
     relative = Path(relative)
     name = relative.name
-    if name.endswith(".zh.md"):
-        stem = name[: -len(".zh.md")]
-    else:
+    stem = name
+    for lang in ("zh", "ja", "ko", "es"):
+        suffix = f".{lang}.md"
+        if name.endswith(suffix):
+            stem = name[: -len(suffix)]
+            break
+    if stem == name and name.endswith(".md"):
         stem = name[: -len(".md")]
     parent = relative.parent.as_posix()
     parts = []
-    if language == "zh":
-        parts.append("zh")
+    if language != "en":
+        parts.append(language)
     if parent not in ("", "."):
         parts.extend(part for part in parent.split("/") if part)
     if stem != "_index":
@@ -193,13 +197,21 @@ def page_route(relative, language):
 
 
 def discover():
-    pages = {"en": {}, "zh": {}}
+    pages = {lang: {} for lang in ("en", "zh", "ja", "ko", "es")}
     for source in sorted(CONTENT.rglob("*.md")):
         relative = source.relative_to(CONTENT)
         name = source.name
-        language = "zh" if name.endswith(".zh.md") else "en"
+        language = "en"
+        stem = name
+        for lang in ("zh", "ja", "ko", "es"):
+            suffix = f".{lang}.md"
+            if name.endswith(suffix):
+                stem = name[: -len(suffix)]
+                language = lang
+                break
+        if language == "en" and name.endswith(".md"):
+            stem = name[: -len(".md")]
         meta, body = parse_front_matter(source.read_text(encoding="utf-8"), source)
-        stem = name[: -len(".zh.md")] if language == "zh" else name[: -len(".md")]
         key = (relative.parent / stem).as_posix()
         pages[language][key] = {
             "key": key,
@@ -406,7 +418,7 @@ def transform_body(body, page_url, aliases):
 
 def render_full(pages, definition):
     aliases = {}
-    for language in ("en", "zh"):
+    for language in ("en", "zh", "ja", "ko", "es"):
         for page in pages[language].values():
             for alias in page["aliases"]:
                 aliases[alias] = page["route"]

@@ -1,5 +1,6 @@
 {{- $chinese := eq .Lang "zh" -}}
-{{- $language := cond $chinese "zh-CN" "en" -}}
+{{- $lang := .Lang -}}
+{{- $language := cond $chinese "zh-CN" .Lang -}}
 {{- $base := .Site.BaseURL -}}
 {{- $image := cond $chinese "/img/social/engine-zh.png" "/img/social/engine-en.png" | absURL -}}
 {{- $organization := dict "@type" "Organization" "name" "Speedle" "url" $base -}}
@@ -20,7 +21,7 @@
   {{- $crumb := index $pages (sub (sub $length 1) $i) -}}
   {{- $name := partial "localized-title.html" $crumb -}}
   {{- if eq $crumb.Kind "home" -}}
-    {{- $name = cond $chinese "首页" "Home" -}}
+    {{- $name = cond $chinese "首页" (cond (eq $lang "ja") "ホーム" (cond (eq $lang "ko") "홈" (cond (eq $lang "es") "Inicio" "Home"))) -}}
   {{- end -}}
   {{- $items.Add "list" (slice (dict "@type" "ListItem" "position" (add $i 1) "name" $name "item" $crumb.Permalink)) -}}
 {{- end -}}

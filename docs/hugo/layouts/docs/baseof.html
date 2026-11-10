@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="{{ if eq .Lang "zh" }}zh-CN{{ else }}en{{ end }}">
+<html lang="{{ if eq .Lang "zh" }}zh-CN{{ else }}{{ .Lang }}{{ end }}">
 
 <head>
     <script>document.documentElement.classList.add('docs-js','navigation-js');addEventListener('DOMContentLoaded',function(){if(!document.querySelector('header.site-header.navigation-ready'))document.documentElement.classList.remove('navigation-js')});</script>
@@ -33,7 +33,7 @@
     </header>
     <div class="container">
         <button class="docs-nav-toggle" type="button" aria-expanded="false" aria-controls="docs-navigation">
-            <span>{{ if eq .Lang "zh" }}菜单{{ else }}Menu{{ end }}</span>
+            <span>{{ if eq .Lang "zh" }}菜单{{ else if eq .Lang "ja" }}メニュー{{ else if eq .Lang "ko" }}메뉴{{ else if eq .Lang "es" }}Menú{{ else }}Menu{{ end }}</span>
             <svg class="docs-nav-toggle-icon" viewBox="0 0 18 14" width="18" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M1 1h16M1 7h16M1 13h16"/></svg>
         </button>
         <div class="content-container{{ if .Params.singlelinetitle }} single-line-title{{ end }}">

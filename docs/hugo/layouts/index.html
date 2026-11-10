@@ -1,1 +1,1 @@
-{{- if eq .Lang "zh" -}}{{ readFile "static/zh/index.html" | safeHTML }}{{- else -}}{{ readFile "static/index.html" | safeHTML }}{{- end -}}
+{{- if eq .Lang "zh" -}}{{ readFile "static/zh/index.html" | safeHTML }}{{- else if eq .Lang "ja" -}}{{ readFile "static/ja/index.html" | safeHTML }}{{- else if eq .Lang "ko" -}}{{ readFile "static/ko/index.html" | safeHTML }}{{- else if eq .Lang "es" -}}{{ readFile "static/es/index.html" | safeHTML }}{{- else -}}{{ readFile "static/index.html" | safeHTML }}{{- end -}}

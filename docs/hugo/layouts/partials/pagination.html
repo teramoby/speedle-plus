@@ -1,15 +1,15 @@
-<nav class="pagination pager align-center"{{ if eq .Lang "zh" }} aria-label="分页导航"{{ end }}>
+<nav class="pagination pager align-center" aria-label="{{ if eq .Lang "zh" }}分页导航{{ else if eq .Lang "ja" }}ページネーション{{ else if eq .Lang "ko" }}페이지 탐색{{ else if eq .Lang "es" }}Paginación{{ else }}Pagination{{ end }}">
             <hr>
     <ul>
            {{if .Paginator.HasPrev }}
-        <li class="prev"><a href="{{ .Paginator.Prev.URL }}">{{ if eq .Lang "zh" }}上一页{{ else }}Previous{{ end }}</a></li>
+        <li class="prev"><a href="{{ .Paginator.Prev.URL }}">{{ if eq .Lang "zh" }}上一页{{ else if eq .Lang "ja" }}前へ{{ else if eq .Lang "ko" }}이전{{ else if eq .Lang "es" }}Anterior{{ else }}Previous{{ end }}</a></li>
         {{ end }}
         <li>
 
-        <a href="" class="button round small outline">{{ if eq .Lang "zh" }}第 {{ .Paginator.PageNumber }} 页，共 {{ .Paginator.TotalPages }} 页{{ else }}Page {{ .Paginator.PageNumber }} of {{ .Paginator.TotalPages }}{{ end }}</a>
+        <a href="" class="button round small outline">{{ if eq .Lang "zh" }}第 {{ .Paginator.PageNumber }} 页，共 {{ .Paginator.TotalPages }} 页{{ else if eq .Lang "ja" }}{{ .Paginator.PageNumber }} / {{ .Paginator.TotalPages }} ページ{{ else if eq .Lang "ko" }}{{ .Paginator.PageNumber }} / {{ .Paginator.TotalPages }} 페이지{{ else if eq .Lang "es" }}Página {{ .Paginator.PageNumber }} de {{ .Paginator.TotalPages }}{{ else }}Page {{ .Paginator.PageNumber }} of {{ .Paginator.TotalPages }}{{ end }}</a>
         </li>
             {{ if .Paginator.HasNext }}</a>
-        <li class="next"><a href="{{ .Paginator.Next.URL }}">{{ if eq .Lang "zh" }}下一页{{ else }}Next{{ end }}</a></li>
+        <li class="next"><a href="{{ .Paginator.Next.URL }}">{{ if eq .Lang "zh" }}下一页{{ else if eq .Lang "ja" }}次へ{{ else if eq .Lang "ko" }}다음{{ else if eq .Lang "es" }}Siguiente{{ else }}Next{{ end }}</a></li>
            {{ end }}
     </ul>
 </nav>
