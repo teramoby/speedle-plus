@@ -255,11 +255,22 @@ volumes:
 
 ```bash
 docker compose -f compose.yaml up -d
+```
+
+`up -d` 会在 PMS 开始监听之前返回。创建服务和策略之前，先等待 PMS 的服务列表以及 ADS 的 `/healthz` 和 `/readyz`。第一次访问 PMS 时连接可能被重置，原因见上文。
+
+```bash
+curl --fail --silent --show-error --retry 30 --retry-all-errors --retry-delay 1 --connect-timeout 2 \
+  http://127.0.0.1:6733/policy-mgmt/v1/service
+curl --fail --silent --show-error --retry 30 --retry-all-errors --retry-delay 1 --connect-timeout 2 \
+  http://127.0.0.1:6734/healthz
+curl --fail --silent --show-error --retry 30 --retry-all-errors --retry-delay 1 --connect-timeout 2 \
+  http://127.0.0.1:6734/readyz
 docker compose -f compose.yaml exec -T pms /spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ create service docs
 docker compose -f compose.yaml exec -T pms /spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ create policy -c "grant user alice get,list /docs/public" --service-name=docs
 ```
 
-用上面的 curl 命令等待 PMS 的服务列表以及 ADS 的 `/healthz` 和 `/readyz`，再发送同一个 `is-allowed` 请求。ADS 不需要重启就能看到新策略。
+再发送同一个 `is-allowed` 请求。ADS 不需要重启就能看到新策略。
 
 ```bash
 docker compose -f compose.yaml down -v
