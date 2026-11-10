@@ -1,0 +1,72 @@
+name: Pages
+
+# Publishes https://engine.speedle.io from docs/. docs/ has no .nojekyll, so
+# this is the Jekyll build used for the branch source: actions/jekyll-build-pages
+# on ./docs. The artifact is the workspace ./_site directory, which sits
+# outside docs/ and is not part of the Jekyll source. Pull requests build
+# only. A push to master and a manual run deploy.
+on:
+  push:
+    branches: [master]
+    paths:
+      - docs/**
+      - .github/workflows/pages.yml
+  pull_request:
+    paths:
+      - docs/**
+      - .github/workflows/pages.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# One publisher at a time. An in-progress deploy is left to finish. A newer
+# queued run replaces an older queued run.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+          fetch-depth: 1
+
+      - name: Build with Jekyll
+        uses: actions/jekyll-build-pages@44a6e6beabd48582f863aeeb6cb2151cc1716697 # v1.0.13
+        with:
+          source: ./docs
+          destination: ./_site
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: ./_site
+
+  deploy:
+    name: deploy
+    needs: build
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    # Longer than the action timeout below, so a slow publish fails in the
+    # action with its own timeout instead of being killed at the job limit.
+    timeout-minutes: 40
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
+        with:
+          timeout: 1800000
