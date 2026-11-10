@@ -34,6 +34,12 @@
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
   <link rel="stylesheet" href="/css/site.css">
   <link rel="stylesheet" href="/css/navigation.css?v=header-20261106-v8">
+  <style id="hero-phrases">
+    .hero h1 { font-size: clamp(3.1rem, 5.6vw, 5.15rem); }
+    @media (max-width: 700px) {
+      .hero h1 { font-size: min(3.25rem, calc((100vw - 40px) / 7.4)); }
+    }
+  </style>
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
@@ -64,7 +70,7 @@
       <div class="wrap hero-grid">
         <div class="hero-copy">
           <span class="eyebrow">Motor de autorización de código abierto</span>
-          <h1>Rápido. Sencillo. Control de acceso</h1>
+          <h1>Rápido.<wbr> Sencillo.<br> Control de acceso</h1>
           <p>Externalice la autorización detallada con un lenguaje de políticas legible, gestión centralizada y decisiones en milisegundos en sistemas políglotas.</p>
           <div class="actions">
             <a class="button button-primary" href="/es/quick-start/">Comenzar</a>

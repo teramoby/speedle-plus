@@ -64,7 +64,7 @@
     .hero-grid { position: relative; z-index: 1; min-height: 600px; padding: 96px 0 100px; display: grid; grid-template-columns: 1.15fr .85fr; gap: 72px; align-items: center; }
     .eyebrow { display: inline-flex; align-items: center; gap: 9px; color: var(--cyan); text-transform: uppercase; letter-spacing: .14em; font-size: .78rem; font-weight: 800; }
     .eyebrow::before { content: ""; width: 28px; height: 2px; background: currentColor; }
-    h1 { margin: 20px 0 24px; font-size: clamp(3.1rem, 6vw, 5.6rem); line-height: 1.15; letter-spacing: -.02em; max-width: 760px; }
+    h1 { margin: 20px 0 24px; font-size: clamp(3.1rem, 6vw, 5.6rem); line-height: 1.15; letter-spacing: -.02em; max-width: 760px; word-break: keep-all; line-break: strict; overflow-wrap: normal; }
     .hero-copy p { max-width: 660px; margin: 0; color: rgba(255,255,255,.78); font-size: 1.18rem; }
     .actions { margin-top: 34px; display: flex; flex-wrap: wrap; gap: 14px; }
     .button { display: inline-flex; min-height: 50px; align-items: center; justify-content: center; padding: 0 23px; border-radius: 9px; font-weight: 750; transition: transform .2s, background .2s, border-color .2s; }
@@ -222,7 +222,7 @@
       <div class="wrap hero-grid">
         <div class="hero-copy">
           <span class="eyebrow">开源授权引擎</span>
-          <h1>快速、简单的<br>权限控制</h1>
+          <h1>快速、<wbr>简单的<br>权限控制</h1>
           <p>把细粒度授权交给独立引擎：策略易读、集中管理，毫秒级返回决策，支持不同语言和技术栈。</p>
           <div class="actions">
             <a class="button button-primary" href="/zh/quick-start/">快速入门</a>

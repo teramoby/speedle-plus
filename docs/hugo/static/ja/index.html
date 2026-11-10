@@ -64,7 +64,7 @@
     .hero-grid { position: relative; z-index: 1; min-height: 600px; padding: 96px 0 100px; display: grid; grid-template-columns: 1.15fr .85fr; gap: 72px; align-items: center; }
     .eyebrow { display: inline-flex; align-items: center; gap: 9px; color: var(--cyan); text-transform: uppercase; letter-spacing: .14em; font-size: .78rem; font-weight: 800; }
     .eyebrow::before { content: ""; width: 28px; height: 2px; background: currentColor; }
-    h1 { margin: 20px 0 24px; font-size: clamp(3.1rem, 6vw, 5.6rem); line-height: 1.15; letter-spacing: -.02em; max-width: 760px; }
+    h1 { margin: 20px 0 24px; font-size: clamp(3.1rem, 5vw, 4.5rem); line-height: 1.15; letter-spacing: -.02em; max-width: 760px; word-break: keep-all; line-break: strict; overflow-wrap: normal; }
     .hero-copy p { max-width: 660px; margin: 0; color: rgba(255,255,255,.78); font-size: 1.18rem; }
     .actions { margin-top: 34px; display: flex; flex-wrap: wrap; gap: 14px; }
     .button { display: inline-flex; min-height: 50px; align-items: center; justify-content: center; padding: 0 23px; border-radius: 9px; font-weight: 750; transition: transform .2s, background .2s, border-color .2s; }
@@ -138,7 +138,7 @@
       .menu { display: block; }
       .nav-links { display: none; position: absolute; inset: 76px 0 auto; padding: 24px; flex-direction: column; align-items: flex-start; gap: 18px; background: #25134e; }
       .nav-links.open { display: flex; }
-      h1 { font-size: 3.25rem; }
+      h1 { font-size: min(3.25rem, calc((100vw - 48px) / 6)); }
       section { padding: 76px 0; }
       .status-inner { padding: 18px 0; align-items: flex-start; flex-direction: column; gap: 9px; }
       .feature-card, .feature-card:nth-child(n+4) { grid-column: 1 / -1; min-height: auto; }
@@ -222,7 +222,7 @@
       <div class="wrap hero-grid">
         <div class="hero-copy">
           <span class="eyebrow">オープンソース認可エンジン</span>
-          <h1>高速・シンプルな<br>アクセス制御</h1>
+          <h1>高速・<wbr>シンプルな<br>アクセス制御</h1>
           <p>きめ細かな認可を独立したエンジンに委ねます。ポリシーは読みやすく、一元管理され、異なる言語と技術スタックに対してミリ秒単位で決定を返します。</p>
           <div class="actions">
             <a class="button button-primary" href="/ja/quick-start/">クイックスタート</a>
