@@ -159,8 +159,9 @@ mkdir -p deployment/homebrew/Formula
 cp "${script_dir}/Formula/"*.rb deployment/homebrew/Formula/
 cp "${script_dir}/README.md" deployment/homebrew/README.md
 # The Quick Start guides must name this release or the next master push fails
-# the install-pin check. Generated page dates come from front matter, so the
-# pin update leaves those dates unchanged.
+# the install-pin check. After that commit, write its author time into
+# front matter and the generated pages. The site build reads front matter
+# and does not read Git, so a later history rewrite keeps the same pages.
 pin_status=$(python3 "${script_dir}/bump-quick-start-pin.py" "${VERSION}" .)
 if [[ -n "${pin_status}" ]]; then
   printf '%s\n' "${pin_status}"
@@ -183,7 +184,8 @@ for path in \
   docs/llms-full.txt \
   docs/zh/index.xml \
   docs/en/sitemap.xml \
-  docs/zh/sitemap.xml
+  docs/zh/sitemap.xml \
+  docs/sitemap.xml
 do
   if [[ -f "${path}" ]]; then
     doc_paths+=("${path}")
@@ -197,6 +199,29 @@ if ! git diff --cached --quiet; then
     git commit -s -m "chore(release): update Homebrew formulas and the Quick Start pin to ${VERSION}"
   else
     git commit -s -m "chore(release): update Homebrew formulas to ${VERSION}"
+  fi
+  if [[ "${pin_status}" == *"Quick Start install pin set to ${VERSION}"* ]]; then
+    author_date=$(git log -1 --format=%aI)
+    committer_date=$(git log -1 --format=%cI)
+    python3 "${script_dir}/bump-quick-start-pin.py" --stamp "${author_date}" .
+    stamp_paths=()
+    for path in \
+      docs/hugo/content/quick-start.md \
+      docs/hugo/content/quick-start.zh.md \
+      docs/quick-start/index.html \
+      docs/zh/quick-start/index.html \
+      docs/en/sitemap.xml \
+      docs/zh/sitemap.xml \
+      docs/sitemap.xml
+    do
+      if [[ -f "${path}" ]]; then
+        stamp_paths+=("${path}")
+      fi
+    done
+    git add -- "${stamp_paths[@]}"
+    if ! git diff --cached --quiet; then
+      GIT_AUTHOR_DATE="${author_date}" GIT_COMMITTER_DATE="${committer_date}" git commit --amend --no-edit
+    fi
   fi
 fi
 
