@@ -1,0 +1,11 @@
+# Artifact Hub repository metadata for oci://ghcr.io/teramoby/charts/speedle.
+#
+# Do not push this file until the OCI repository has been added in the
+# Artifact Hub control panel. Then set repositoryID to the ID shown on that
+# repository, and set the owner email to the Artifact Hub account that will
+# claim it. The owners section alone is enough for the ownership claim.
+#
+# repositoryID: replace-with-the-artifact-hub-repository-id
+owners:
+  - name: speedle
+    email: contact@speedle.io

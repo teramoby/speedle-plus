@@ -1,0 +1,143 @@
+# Default values for the Speedle chart.
+# PMS and ADS run from one image. The container command selects the service.
+
+nameOverride: ""
+fullnameOverride: ""
+
+image:
+  # docker.io/speedle/speedle. An empty tag uses the chart appVersion.
+  repository: speedle/speedle
+  tag: ""
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+
+serviceAccount:
+  create: true
+  name: ""
+
+# Listeners use plain HTTP until tls is set. PMS stays closed to other pods
+# through networkPolicy. Set tls.enabled and a certificate Secret before
+# exposing the Services beyond the cluster.
+tls:
+  enabled: false
+  secretName: ""
+  certFile: tls.crt
+  keyFile: tls.key
+  clientCAFile: ""
+  # HTTP probes cannot present a client certificate, so the chart uses TCP
+  # probes while this is true.
+  forceClientCert: false
+
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 65532
+  runAsGroup: 65532
+  fsGroup: 65532
+  fsGroupChangePolicy: OnRootMismatch
+  seccompProfile:
+    type: RuntimeDefault
+
+containerSecurityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  runAsNonRoot: true
+  runAsUser: 65532
+  runAsGroup: 65532
+  capabilities:
+    drop:
+      - ALL
+
+service:
+  type: ClusterIP
+  pmsPort: 6733
+  adsPort: 6734
+
+# PMS writes policy. Deny ingress from other pods unless ingress lists the
+# clients that may call it. An empty list denies every pod. kubelet probes
+# and kubectl port-forward are not pod-network ingress. Set enabled to false
+# only when every workload that can route to the PMS Service is trusted to
+# administer policy. ADS stays open so decision clients can reach it.
+networkPolicy:
+  pms:
+    enabled: true
+    ingress: []
+
+# PMS writes policy. The file store allows one PMS pod. etcd and MongoDB
+# can run more than one. ADS reads the same store and can be scaled.
+pms:
+  replicaCount: 1
+  extraArgs: []
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+ads:
+  replicaCount: 1
+  extraArgs: []
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+probes:
+  startup:
+    periodSeconds: 2
+    timeoutSeconds: 2
+    failureThreshold: 30
+  readiness:
+    periodSeconds: 5
+    timeoutSeconds: 2
+    failureThreshold: 6
+  liveness:
+    periodSeconds: 10
+    timeoutSeconds: 2
+    failureThreshold: 3
+
+# store.type is file, etcd or mongodb.
+# file: both pods mount one PVC. ADS pods are scheduled onto the PMS node.
+# etcd flags: --etcdstore-endpoint, --etcdstore-keyprefix, and the
+#   --etcdstore-tls-* flags when store.etcd.tls is set.
+# mongodb flags: --mongostore_uri and --mongostore_database.
+#   MongoDB must be a replica set. The chart does not deploy etcd or MongoDB.
+store:
+  type: file
+  file:
+    location: /data/policies.json
+    persistence:
+      enabled: true
+      existingClaim: ""
+      size: 1Gi
+      # Empty uses the cluster default StorageClass. "-" sets an empty class.
+      storageClass: ""
+      # ReadWriteOnce or ReadWriteMany. PMS writes this volume.
+      accessMode: ReadWriteOnce
+  etcd:
+    endpoint: ""
+    keyPrefix: /speedle_ps/
+    tls:
+      secretName: ""
+      certFile: ""
+      keyFile: ""
+      caFile: ""
+      allowedCN: ""
+      serverName: ""
+      crlFile: ""
+      insecureSkipVerify: false
+  mongodb:
+    # A URI without credentials, such as mongodb://mongo:27017/?replicaSet=rs0.
+    # Userinfo is rejected. Put a credentialed URI in existingSecret.
+    uri: ""
+    database: speedleplus
+    # Secret key that holds the full URI. The chart sets SPDL_MONGOSTORE_URI
+    # from it and does not pass --mongostore_uri, so the URI is not in the
+    # Pod spec. Leave this empty when uri has no credentials.
+    existingSecret: ""
+    secretKey: uri

@@ -1,0 +1,21 @@
+{{- if and (eq .Values.store.type "file") .Values.store.file.persistence.enabled (not .Values.store.file.persistence.existingClaim) }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "speedle.policyClaim" . }}
+  labels:
+    {{- include "speedle.labels" (dict "root" . "component" "policies") | nindent 4 }}
+spec:
+  accessModes:
+    - {{ .Values.store.file.persistence.accessMode | quote }}
+  resources:
+    requests:
+      storage: {{ .Values.store.file.persistence.size | quote }}
+  {{- if .Values.store.file.persistence.storageClass }}
+  {{- if eq .Values.store.file.persistence.storageClass "-" }}
+  storageClassName: ""
+  {{- else }}
+  storageClassName: {{ .Values.store.file.persistence.storageClass | quote }}
+  {{- end }}
+  {{- end }}
+{{- end }}
