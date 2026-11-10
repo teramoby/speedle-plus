@@ -122,6 +122,8 @@ go install github.com/teramoby/speedle-plus/cmd/...@latest
 
 This installs `spctl`, `speedle-pms` and `speedle-ads` into `$(go env GOPATH)/bin`, or `$GOBIN` if it is set.
 
+The same three programs are published as one container image, `docker.io/speedle/speedle` and `ghcr.io/teramoby/speedle`, with tags `1.7.0`, `1.7` and `latest`. [Run Speedle from the Docker image](https://engine.speedle.io/docs/sdks/docker/).
+
 ## Build from source
 
 ### Prerequisites

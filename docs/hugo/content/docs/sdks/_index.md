@@ -24,6 +24,10 @@ Java, Python, Go, .NET and Rust are version 0.2.0. `@speedle/sdk` is published o
 - [Rust](/docs/sdks/rust/): crates.io `speedle`, published.
 - [Node.js / TypeScript](/docs/sdks/node/): npm `@speedle/sdk`, published.
 
+## Docker image
+
+The [Docker image](/docs/sdks/docker/) runs `speedle-pms`, `speedle-ads` and `spctl` from `docker.io/speedle/speedle` or `ghcr.io/teramoby/speedle`. Publish ADS on `127.0.0.1:6734` and point the clients on this page at that port.
+
 ## Features
 
 | Feature | Status |
