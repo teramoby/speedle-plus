@@ -34,6 +34,11 @@
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
   <link rel="stylesheet" href="/css/site.css">
   <link rel="stylesheet" href="/css/navigation.css?v=header-20261106-v8">
+  <style id="hero-phrases">
+    @media (max-width: 360px) {
+      .hero h1 { font-size: min(3.25rem, calc((100vw - 36px) / 6.2)); }
+    }
+  </style>
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
@@ -64,7 +69,7 @@
       <div class="wrap hero-grid">
         <div class="hero-copy">
           <span class="eyebrow">Open-source authorization engine</span>
-          <h1>Fast. Simple. Access control</h1>
+          <h1>Fast. Simple.<br> Access control</h1>
           <p>Externalize fine-grained authorization with a human-readable policy language, centralized management and millisecond decisions across polyglot systems.</p>
           <div class="actions">
             <a class="button button-primary" href="/quick-start/">Getting started</a>
