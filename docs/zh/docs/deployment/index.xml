@@ -6,7 +6,7 @@
     <description>Recent content in 部署 on Speedle</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>zh-cn</language>
-    <lastBuildDate>Tue, 10 Nov 2026 13:15:15 +0800</lastBuildDate>
+    <lastBuildDate>Tue, 10 Nov 2026 14:45:43 +0800</lastBuildDate>
     
 	<atom:link href="https://engine.speedle.io/zh/docs/deployment/index.xml" rel="self" type="application/rss+xml" />
     
@@ -40,6 +40,21 @@ mkdir speedle-embedded-demo cd speedle-embedded-demo go mod init example.com/spe
 查看索引摘要：
 docker buildx imagetools inspect docker.io/speedle/speedle:1.7.0 --format &amp;#39;{{.Manifest.Digest}}&amp;#39; 1.7.0 这次发布里，两个仓库上的 1.7.0、1.7 和 latest 都打印：
 sha256:20bd3fe8169ec3ddadf1484285e34bd68004dbb457782223dc84a2a9f1dd91c0 部署 1.7 或 latest 之前请再查一次摘要。要固定在同一次构建上，把镜像名写成带 @ 和该摘要的形式，例如 docker.io/speedle/speedle@sha256:20bd3fe8169ec3ddadf1484285e34bd68004dbb457782223dc84a2a9f1dd91c0。</description>
+    </item>
+    
+    <item>
+      <title>Homebrew 安装</title>
+      <link>https://engine.speedle.io/zh/docs/deployment/homebrew/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/zh/docs/deployment/homebrew/</guid>
+      <description>在 macOS 或 Linux 上用 Homebrew 安装 Speedle 命令行工具。Homebrew 在安装或启动官方组织以外的 tap 中的 formula 之前，需要先信任该 tap。
+brew tap teramoby/tap brew trust teramoby/tap brew install teramoby/tap/spctl Formula 的名字是 spctl。macOS 上的命令是 speedle-spctl，因此安装不会替换 Apple Gatekeeper 的 /usr/sbin/spctl。Linux 上同一个程序也可以用 spctl 调用。
+策略管理服务和授权决策服务是单独的 formula：
+brew install teramoby/tap/speedle-pms brew install teramoby/tap/speedle-ads 命令行工具和两个服务可以一次装齐：
+brew install teramoby/tap/speedle spctl、speedle-pms 和 speedle-ads 各自安装对应系统的发布二进制，并用该发布的 checksums.txt 校验。
+用 Homebrew 做一次演示 启动两个服务。它们监听 127.0.0.1，并共用一份文件策略库。
+brew services start speedle-pms brew services start speedle-ads speedle-pms 监听 127.</description>
     </item>
     
   </channel>

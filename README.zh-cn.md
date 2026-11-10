@@ -116,6 +116,33 @@ bob false NO_APPLICABLE_POLICIES <nil>
 
 ## 安装
 
+在 macOS 或 Linux 上可以用 [Homebrew](https://brew.sh/) 安装：
+
+```
+brew tap teramoby/tap
+brew trust teramoby/tap
+brew install teramoby/tap/spctl
+```
+
+Homebrew 在安装或启动官方组织以外的 tap 中的 formula 之前，需要先信任该 tap。
+
+Formula 的名字是 `spctl`。macOS 上的命令是 `speedle-spctl`，因此安装不会替换 Apple Gatekeeper 的 `/usr/sbin/spctl`。Linux 上同一个程序也可以用 `spctl` 调用。
+
+`speedle-pms` 和 `speedle-ads` 也用同一方式安装：
+
+```
+brew install teramoby/tap/speedle-pms
+brew install teramoby/tap/speedle-ads
+```
+
+命令行工具和两个服务可以一次装齐：
+
+```
+brew install teramoby/tap/speedle
+```
+
+启动服务和演示步骤见 [Homebrew](https://engine.speedle.io/zh/docs/deployment/homebrew/)。
+
 需要 Go 1.26.10 或 Go 1.27.3（也可使用同一大版本的更新补丁版本）：
 
 ```

@@ -6,7 +6,7 @@
     <description>Recent content in Docs on Speedle</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>zh-cn</language>
-    <lastBuildDate>Tue, 10 Nov 2026 13:15:15 +0800</lastBuildDate>
+    <lastBuildDate>Tue, 10 Nov 2026 14:45:43 +0800</lastBuildDate>
     
 	<atom:link href="https://engine.speedle.io/zh/categories/docs/index.xml" rel="self" type="application/rss+xml" />
     
@@ -109,34 +109,6 @@ plugins { application } repositories { mavenCentral() } dependencies { implement
     </item>
     
     <item>
-      <title>用户身份域</title>
-      <link>https://engine.speedle.io/zh/docs/idd/</link>
-      <pubDate>Thu, 17 Jan 2019 13:20:07 +0800</pubDate>
-      
-      <guid>https://engine.speedle.io/zh/docs/idd/</guid>
-      <description>什么是身份域？ 身份域（idd）为主体提供显式命名空间。同名的 user1 可以属于不同的域。域字符串由可信应用或已配置的令牌断言服务提供，本身不代表完成了身份认证。Speedle 不会仅根据域名称推断或验证身份提供方的租户模型。
-在策略与请求中表示身份域 grant user user1 from github read book grant user user1 from IDCS.tenant01 read book 在主体名后使用 from &amp;lt;identity-domain&amp;gt;。PMS JSON 策略中的等价编码为 idd=github:user:user1；决策请求中的主体表示为：
-{ &amp;#34;type&amp;#34;: &amp;#34;user&amp;#34;, &amp;#34;name&amp;#34;: &amp;#34;user1&amp;#34;, &amp;#34;idd&amp;#34;: &amp;#34;github&amp;#34; } 带 from github 的策略只匹配该域；省略 from 则按主体名跨域匹配。多租户应用应明确审查这一选择；域字符串不能用于验证令牌。更多内容见身份与 IAM和令牌断言。
-运行示例前 先按快速入门编译仓库根目录下的 ./bin/spctl、./bin/speedle-pms 和 ./bin/speedle-ads，需要 Go 1.26.10 或 Go 1.27.3（也可使用同一大版本的更新补丁版本）、Bash、curl 和 Python 3。下面各终端都从仓库根目录运行。为本页使用一个新的策略文件；仅在两个服务都停止后重建该文件。
-初始化空策略文件：
-printf &amp;#39;{}\n&amp;#39; &amp;gt; docs-policies.json 终端一启动 PMS，并保持运行：
-./bin/speedle-pms --store-type file --filestore-loc ./docs-policies.json --endpoint 127.0.0.1:6733 --grpc-endpoint 127.</description>
-    </item>
-    
-    <item>
-      <title>C#/.NET SDK</title>
-      <link>https://engine.speedle.io/zh/docs/sdks/dotnet/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://engine.speedle.io/zh/docs/sdks/dotnet/</guid>
-      <description>.NET SDK 面向 .NET 8 或更高版本，没有依赖。软件包：NuGet 上的 Speedle.Sdk 0.2.0，命名空间 Speedle.Sdk。参考文档：speedle-sdk/dotnet。
-示例使用的策略见 SDK 概览。
-添加依赖 新建控制台项目并添加软件包：
-dotnet new console -o SpeedleExample cd SpeedleExample dotnet add package Speedle.Sdk --version 0.2.0 调用本地 Speedle 按 SDK 概览中的说明启动 Speedle 并创建示例策略。将 Program.cs 替换为：
-using Speedle.Sdk; try { await using var speedle = new SpeedleClient(new SpeedleClientOptions { Backend = Backend.Speedle, Endpoint = new Uri(&amp;#34;http://localhost:6734&amp;#34;), Auth = Auth.None(), ServiceName = &amp;#34;docs&amp;#34;, }); bool allowed = await speedle.IsAllowedAsync(&amp;#34;alice&amp;#34;, &amp;#34;get&amp;#34;, &amp;#34;/docs/public&amp;#34;); Console.</description>
-    </item>
-    
-    <item>
       <title>MySQL 配置指南</title>
       <link>https://engine.speedle.io/zh/docs/store/mysql/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
@@ -150,87 +122,12 @@ docker run --name speedle-mysql --detach \  --publish 127.0.0.1:3306:3306 \  --v
     </item>
     
     <item>
-      <title>Rust SDK</title>
-      <link>https://engine.speedle.io/zh/docs/sdks/rust/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://engine.speedle.io/zh/docs/sdks/rust/</guid>
-      <description>Rust SDK 需要 Rust 1.75 或更高版本，基于 tokio 和 reqwest（rustls）实现异步调用；下面使用的阻塞客户端由 blocking 特性提供。crate：crates.io 上的 speedle 0.2.0。参考文档：speedle-sdk/rust。
-示例使用的策略见 SDK 概览。
-添加依赖 新建包并添加依赖：
-cargo new speedle-example cd speedle-example cargo add speedle@0.2.0 --features blocking 调用本地 Speedle 按 SDK 概览中的说明启动 Speedle 并创建示例策略。将 src/main.rs 替换为：
-use speedle::blocking::Client; use speedle::{Auth, Backend}; fn main() { if let Err(e) = run() { eprintln!(&amp;#34;Speedle error: {e}&amp;#34;); std::process::exit(1); } } fn run() -&amp;gt; Result&amp;lt;(), speedle::Error&amp;gt; { let speedle = Client::builder(Backend::Speedle, &amp;#34;http://localhost:6734&amp;#34;, Auth::none(), &amp;#34;docs&amp;#34;).</description>
-    </item>
-    
-    <item>
-      <title>令牌断言</title>
-      <link>https://engine.speedle.io/zh/docs/assertor/</link>
-      <pubDate>Mon, 21 Jan 2019 09:28:30 +0800</pubDate>
-      
-      <guid>https://engine.speedle.io/zh/docs/assertor/</guid>
-      <description>令牌断言服务负责什么？ 已配置的断言服务验证令牌，并返回显式主体及其身份域，再由 Speedle 使用这些身份评估策略。生产实现必须验证签名或 introspection 结果、签发者、受众、有效期及身份提供方要求。仅有 webhook 接口并不意味着自动兼容任意 OAuth/OIDC 令牌。
-令牌断言 API中的 errCode 为整数，可选的属性是对象，不是带类型的属性数组。asserterWebhookConfig.endpoint 是完整 URL，下面的示例使用 /v1/assert。
-启动确定性的本地 mock 此 mock 只识别 githubtoken/github、googletoken/google、gitlabtoken/gitlab 三组输入，分别表示对应域的 user1。令牌与提供方不匹配时失败。它是测试 fixture，不验证真实令牌。 不会记录令牌值。仅绑定回环地址，生产环境必须替换为真实身份集成。
-从仓库根目录在单独终端运行：
-go run ./website/tests/examples/asserter // A deterministic mock for the token-assertion tutorial. Never use for real tokens. package main import ( &amp;#34;encoding/json&amp;#34; &amp;#34;flag&amp;#34; &amp;#34;log&amp;#34; &amp;#34;net/http&amp;#34; &amp;#34;strings&amp;#34; &amp;#34;time&amp;#34; ) type principal struct { Type string `json:&amp;#34;type&amp;#34;` Name string `json:&amp;#34;name&amp;#34;` IDD string `json:&amp;#34;idd&amp;#34;` } type response struct { Principals []principal `json:&amp;#34;principals,omitempty&amp;#34;` ErrCode int `json:&amp;#34;errCode&amp;#34;` ErrMessage string `json:&amp;#34;errMessage,omitempty&amp;#34;` } func assert(w http.</description>
-    </item>
-    
-    <item>
-      <title>API</title>
-      <link>https://engine.speedle.io/zh/docs/api/</link>
-      <pubDate>Tue, 10 Nov 2026 13:15:15 +0800</pubDate>
-      
-      <guid>https://engine.speedle.io/zh/docs/api/</guid>
-      <description>Java、Python、Go、.NET、Rust 和 Node.js/TypeScript 的客户端库见 SDK。
-REST API 这些接口说明面向你配置的 PMS、ADS 或断言服务端点。speedle.io 提供文档与浏览器 Playground，不托管 PMS/ADS 后端。发送 JSON 时必须设置 Content-Type: application/json，并配置 TLS/mTLS 与调用方访问控制。
- 策略管理 API 授权决策 API 令牌断言 webhook  策略和角色策略的 ID 是字符串，PMS 返回扁平对象；授权权限字段为复数 permissions。REST 决策请求使用带类型的属性数组，诊断响应及断言 webhook 的属性则为对象。
-gRPC API  PMS proto：pb.PolicyManager ADS proto：pb.Evaluator  客户端必须使用当前 proto 生成。PMS 的服务名为 pb.PolicyManager，ADS 为 pb.Evaluator。这两份历史协议重用了消息名，应分别生成和加载，不要合并进同一 descriptor set。默认不启用 gRPC；需通过 --grpc-endpoint 显式开启，其 TLS 配置与 REST 相同。
-历史 gRPC 的 ContextRequest.attributes 是字符串 map，不是 REST 的带类型属性数组，也不提供同样的数值、布尔、日期类型。条件需要这些类型时，应使用 REST 或嵌入式 Go，除非你的 gRPC 适配层明确实现了相应转换。</description>
-    </item>
-    
-    <item>
-      <title>Node.js/TypeScript SDK</title>
-      <link>https://engine.speedle.io/zh/docs/sdks/node/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://engine.speedle.io/zh/docs/sdks/node/</guid>
-      <description>Node.js SDK 需要 Node.js 22 或更高版本，同时提供 ESM 和 CommonJS 构建及 TypeScript 类型，没有运行时依赖。软件包：npm 上已发布的 @speedle/sdk。参考文档：speedle-sdk/node。
-示例使用的策略见 SDK 概览。
-添加依赖 新建 ES 模块包并安装：
-mkdir speedle-example cd speedle-example npm init -y npm pkg set type=module npm install @speedle/sdk@0.2.1 调用本地 Speedle 按 SDK 概览中的说明启动 Speedle 并创建示例策略。将以下程序保存为 main.ts：
-import { Auth, Reason, SpeedleClient, SpeedleError } from &amp;#34;@speedle/sdk&amp;#34;; try { const speedle = new SpeedleClient({ backend: &amp;#34;speedle&amp;#34;, endpoint: &amp;#34;http://localhost:6734&amp;#34;, auth: Auth.none(), serviceName: &amp;#34;docs&amp;#34;, }); try { const allowed = await speedle.</description>
-    </item>
-    
-    <item>
-      <title>SDK</title>
-      <link>https://engine.speedle.io/zh/docs/sdks/</link>
-      <pubDate>Tue, 10 Nov 2026 13:15:15 +0800</pubDate>
-      
-      <guid>https://engine.speedle.io/zh/docs/sdks/</guid>
-      <description>Speedle SDK 是决策 API POST /authz-check/v1/is-allowed 的客户端库，既可用于自托管的 Speedle ADS，也可用于 Speedle Cloud。每个语言页面说明如何添加软件包，并分别给出两种场景下经过实测的完整程序。源代码和完整参考见 teramoby/speedle-sdk。这些示例要调用的 PMS 和 ADS，见部署和Docker 镜像。
-软件包 Java、Python、Go、.NET 和 Rust 的版本均为 0.2.0。@speedle/sdk 已在 npm 发布。安装命令见各语言页面。
- Java：Maven Central io.speedle:speedle-sdk，已发布。 Python：PyPI speedle，已发布。 Go：Go 模块 github.com/teramoby/speedle-sdk/go，已发布。 C#/.NET：NuGet Speedle.Sdk，已发布。 Rust：crates.io speedle，已发布。 Node.js / TypeScript：npm @speedle/sdk，已发布。  功能    功能 状态     isAllowed：返回授权结果 六个 SDK 均支持   check：返回授权结果及原因，例如没有适用的策略 六个 SDK 均支持   自托管 Speedle ADS 六个 SDK 均支持   Speedle Cloud 即将上线    方法名遵循各语言的命名习惯：Python 和 Rust 中为 is_allowed 与 check，Go 中为 IsAllowed 与 Check，.</description>
-    </item>
-    
-    <item>
       <title>SPDL：Speedle 策略定义语言</title>
       <link>https://engine.speedle.io/zh/docs/spdl/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/zh/docs/spdl/</guid>
       <description>SPDL 是编写 Speedle 策略和角色策略的语言。本文介绍语法、命名规则和示例。 </description>
-    </item>
-    
-    <item>
-      <title>Speedle Cloud</title>
-      <link>https://engine.speedle.io/zh/docs/cloud/</link>
-      <pubDate>Sun, 08 Nov 2026 17:11:18 +0800</pubDate>
-      
-      <guid>https://engine.speedle.io/zh/docs/cloud/</guid>
-      <description>Speedle Cloud 是基于开源 Speedle 策略引擎的托管访问控制服务，面向开发者。你可以用它管理 SPDL 授权策略与角色策略、在 Playground 中测试授权判定，再从应用服务端调用授权 API，无需自行部署和运维授权服务。
-Speedle Cloud 即将上线。 Cloud 页眉显示 Coming soon（即将上线） 徽章，cloud.speedle.io 的生产环境尚未开放登录。本文介绍的控制台流程和带认证的授权决策服务（ADS）均为已发布服务合约的预览。带认证的 ADS 尚未提供时，签发令牌并不会启用服务端授权调用。所选环境的部署情况和登录供应商可用性仍需分别确认。
-免费公开测试版用于试用、学习和评估，不提供 SLA，不建议用于生产环境，功能和限额可能调整。
-文档导航  快速入门：使用 GitHub 或 Google 登录（即将开放）、账号管理、service、SPDL 策略、会话管理请求，以及四种会话 Playground 操作。 应用令牌：最近认证要求、令牌的一次性展示、元数据分页、轮换和撤销。 授权 API 预览：IsAllowed 请求与响应合约、Node.js 22 示例、策略快照和接入限制。 限额与错误：账号额度、请求限制、错误响应、限流与额度响应头，以及重试建议。  下载  简体中文 Markdown：汇集全部四章 Cloud 文档，便于离线阅读。 OpenAPI YAML：Cloud API 的权威仓库规范。 OpenAPI JSON：由同一份 YAML 原文生成。 当前构建版本：用于识别正在提供服务的构建，不证明登录供应商或接口当前可用。  规范包含四种会话 Playground 操作和带认证的 ADS 合约。发布规范或下载指南并不会启用尚未提供的接口，也不会开放登录。Cloud 的 YAML 与生成的 JSON 随对应的封存构建一起记录版本、晋升或恢复；中英文 Markdown 下载则随这些 Engine 文档页面一起维护。</description>
     </item>
     
     <item>
@@ -247,31 +144,6 @@ Speedle Cloud 即将上线。 Cloud 页眉显示 Coming soon（即将上线） �
 创建 service 和策略 新账号打开服务工作区，在服务名称中输入 books，然后选择 创建服务。每个账号只有一个 service。如果账号已有 service 或策略，请先核对并使用合适的现有配置，不要为了运行示例而覆盖或删除已有数据。
 选择 新建策略，在策略名称中输入 read-books，并在 SPDL 编辑器中输入以下授权策略：
 grant user alice from corp get /books from corp 将这条授权限制在 corp 身份域内。请将 corp 替换为应用根据可信认证结果得出的身份域，并在每个请求中把相同的值作为主体的 idd 发送，如下面的 Playground 示例所示。不带 from 的授权会匹配任意身份域中名为 alice 的用户；只有 service 只有一个身份来源、名称不可能跨域重复时，才可以省略该子句。规则和请求中对应的字段见身份域。</description>
-    </item>
-    
-    <item>
-      <title>存储扩展</title>
-      <link>https://engine.speedle.io/zh/docs/store/</link>
-      <pubDate>Sun, 08 Nov 2026 11:21:16 +0800</pubDate>
-      
-      <guid>https://engine.speedle.io/zh/docs/store/</guid>
-      <description>内置存储与扩展接口 独立服务在 pkg/store 下注册 file、etcd、MongoDB、MySQL 实现。可用不代表具有相同的运维保证，部署前应分别审查后端认证、持久化、事务与 watch 行为。下方配置说明属性名称，本地示例不涉及启动 etcd/MongoDB 集群。
-完整后端实现 pms.PolicyStoreManager：服务、授权策略、角色策略、函数管理，以及快照读取与 watch/stop。ADS 接受较窄的只读/watch 接口 PolicyStoreManagerADS。实现新后端时应以实际接口为准，不能照搬历史文档中不完整的方法列表。
-逐步部署教程：MySQL 配置指南、etcd 配置指南与 MongoDB 配置指南。
-存储故障与缓存授权 file、etcd、MySQL、MongoDB 使用相同的 ADS 故障策略。 storeFailureGracePeriod 默认是 &amp;quot;0s&amp;quot;：检测到存储故障后，授权返回 allowed:false 和求值错误。ADS 保持运行并持续重试；连接恢复后，还必须成功 加载完整策略快照，才能恢复授权。启用 watch 时，还必须先重新建立故障的订阅； watch 未恢复时，成功读取数据不会重置故障或宽限期的截止时间。策略文件删除后仍会持续重试，ADS 不再退出。
-如果部署方明确接受撤权延迟，可在 ADS JSON 配置的顶层设置有限时长，例如 &amp;quot;storeFailureGracePeriod&amp;quot;: &amp;quot;5s&amp;quot;。对应参数为 --store-failure-grace-period=5s，环境变量为 SPDL_STORE_FAILURE_GRACE_PERIOD，继续遵循“显式参数 → 环境变量 → 配置文件 → 默认值”。 重试失败不会延长宽限期。宽限期内按最后一份完整快照授权，因此撤权要等同步恢复 才能生效。缓存部分更新失败和授权计算 panic 不适用宽限期，仍然立即拒绝。
-内置存储约每秒执行一次轻量健康检查，单次检查超时为一秒；watch 可能更早报告 故障，正在执行的存储读取也受各自后端超时限制。故障检测和正常策略传播均为异步， 不提供瞬时撤权保证。设置 enableWatch:false 时，请求仍检查存储健康，普通策略 变更需要显式刷新；故障恢复时，即使关闭 watch，也必须加载完整快照。首次加载 失败时没有可用缓存，不适用宽限期。自定义存储可以实现 pms.StoreHealthChecker 并发送 pms.STORE_UNAVAILABLE 事件，接入相同故障策略。</description>
-    </item>
-    
-    <item>
-      <title>安全</title>
-      <link>https://engine.speedle.io/zh/docs/security/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://engine.speedle.io/zh/docs/security/</guid>
-      <description>同时保护两种 API 传输 独立运行的 PMS 与 ADS 都提供 REST 和 gRPC。现在两者共同使用 --insecure、--cert、--key、--client-cert 和 --force-client-cert 配置。证书或信任配置无效时启动失败，安全模式不会降级为明文。
-TLS 加密连接并认证服务端。若要强制认证客户端，必须通过 --client-cert 提供客户端 CA，同时设置 --force-client-cert=true。只提供 CA 时，仅在客户端主动发送证书的情况下验证该证书。TLS 本身不决定谁有管理员权限，也不提供 Bearer token 校验。管理、诊断、发现接口需要认证网关或等价的访问控制。--enable-authz 参数不提供内置的端点授权策略。
-监听地址与兼容性    服务 默认 REST 地址 默认 gRPC 地址     PMS 0.0.0.0:6733 默认关闭；需设置 --grpc-endpoint   ADS 0.0.0.0:6734 默认关闭；需设置 --grpc-endpoint    REST 与 gRPC 的地址分别配置。仅设置 --endpoint 不会启用 gRPC；请显式使用 --grpc-endpoint 127.0.0.1:50001（PMS）或 127.0.0.1:50002（ADS）。127.0.0.1:0 为隔离测试选择临时端口。需要 IPv6 时显式指定 IPv6 监听地址。</description>
     </item>
     
     <item>
@@ -389,6 +261,21 @@ package main import ( &amp;#34;context&amp;#34; &amp;#34;fmt&amp;#34; &amp;#34;o
     </item>
     
     <item>
+      <title>Homebrew 安装</title>
+      <link>https://engine.speedle.io/zh/docs/deployment/homebrew/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/zh/docs/deployment/homebrew/</guid>
+      <description>在 macOS 或 Linux 上用 Homebrew 安装 Speedle 命令行工具。Homebrew 在安装或启动官方组织以外的 tap 中的 formula 之前，需要先信任该 tap。
+brew tap teramoby/tap brew trust teramoby/tap brew install teramoby/tap/spctl Formula 的名字是 spctl。macOS 上的命令是 speedle-spctl，因此安装不会替换 Apple Gatekeeper 的 /usr/sbin/spctl。Linux 上同一个程序也可以用 spctl 调用。
+策略管理服务和授权决策服务是单独的 formula：
+brew install teramoby/tap/speedle-pms brew install teramoby/tap/speedle-ads 命令行工具和两个服务可以一次装齐：
+brew install teramoby/tap/speedle spctl、speedle-pms 和 speedle-ads 各自安装对应系统的发布二进制，并用该发布的 checksums.txt 校验。
+用 Homebrew 做一次演示 启动两个服务。它们监听 127.0.0.1，并共用一份文件策略库。
+brew services start speedle-pms brew services start speedle-ads speedle-pms 监听 127.</description>
+    </item>
+    
+    <item>
       <title>MongoDB 配置指南</title>
       <link>https://engine.speedle.io/zh/docs/store/mongodb/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
@@ -429,6 +316,134 @@ printf &amp;#39;{}\n&amp;#39; &amp;gt; docs-policies.json 终端一启动 PMS，
     </item>
     
     <item>
+      <title>用户身份域</title>
+      <link>https://engine.speedle.io/zh/docs/idd/</link>
+      <pubDate>Thu, 17 Jan 2019 13:20:07 +0800</pubDate>
+      
+      <guid>https://engine.speedle.io/zh/docs/idd/</guid>
+      <description>什么是身份域？ 身份域（idd）为主体提供显式命名空间。同名的 user1 可以属于不同的域。域字符串由可信应用或已配置的令牌断言服务提供，本身不代表完成了身份认证。Speedle 不会仅根据域名称推断或验证身份提供方的租户模型。
+在策略与请求中表示身份域 grant user user1 from github read book grant user user1 from IDCS.tenant01 read book 在主体名后使用 from &amp;lt;identity-domain&amp;gt;。PMS JSON 策略中的等价编码为 idd=github:user:user1；决策请求中的主体表示为：
+{ &amp;#34;type&amp;#34;: &amp;#34;user&amp;#34;, &amp;#34;name&amp;#34;: &amp;#34;user1&amp;#34;, &amp;#34;idd&amp;#34;: &amp;#34;github&amp;#34; } 带 from github 的策略只匹配该域；省略 from 则按主体名跨域匹配。多租户应用应明确审查这一选择；域字符串不能用于验证令牌。更多内容见身份与 IAM和令牌断言。
+运行示例前 先按快速入门编译仓库根目录下的 ./bin/spctl、./bin/speedle-pms 和 ./bin/speedle-ads，需要 Go 1.26.10 或 Go 1.27.3（也可使用同一大版本的更新补丁版本）、Bash、curl 和 Python 3。下面各终端都从仓库根目录运行。为本页使用一个新的策略文件；仅在两个服务都停止后重建该文件。
+初始化空策略文件：
+printf &amp;#39;{}\n&amp;#39; &amp;gt; docs-policies.json 终端一启动 PMS，并保持运行：
+./bin/speedle-pms --store-type file --filestore-loc ./docs-policies.json --endpoint 127.0.0.1:6733 --grpc-endpoint 127.</description>
+    </item>
+    
+    <item>
+      <title>C#/.NET SDK</title>
+      <link>https://engine.speedle.io/zh/docs/sdks/dotnet/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/zh/docs/sdks/dotnet/</guid>
+      <description>.NET SDK 面向 .NET 8 或更高版本，没有依赖。软件包：NuGet 上的 Speedle.Sdk 0.2.0，命名空间 Speedle.Sdk。参考文档：speedle-sdk/dotnet。
+示例使用的策略见 SDK 概览。
+添加依赖 新建控制台项目并添加软件包：
+dotnet new console -o SpeedleExample cd SpeedleExample dotnet add package Speedle.Sdk --version 0.2.0 调用本地 Speedle 按 SDK 概览中的说明启动 Speedle 并创建示例策略。将 Program.cs 替换为：
+using Speedle.Sdk; try { await using var speedle = new SpeedleClient(new SpeedleClientOptions { Backend = Backend.Speedle, Endpoint = new Uri(&amp;#34;http://localhost:6734&amp;#34;), Auth = Auth.None(), ServiceName = &amp;#34;docs&amp;#34;, }); bool allowed = await speedle.IsAllowedAsync(&amp;#34;alice&amp;#34;, &amp;#34;get&amp;#34;, &amp;#34;/docs/public&amp;#34;); Console.</description>
+    </item>
+    
+    <item>
+      <title>Rust SDK</title>
+      <link>https://engine.speedle.io/zh/docs/sdks/rust/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/zh/docs/sdks/rust/</guid>
+      <description>Rust SDK 需要 Rust 1.75 或更高版本，基于 tokio 和 reqwest（rustls）实现异步调用；下面使用的阻塞客户端由 blocking 特性提供。crate：crates.io 上的 speedle 0.2.0。参考文档：speedle-sdk/rust。
+示例使用的策略见 SDK 概览。
+添加依赖 新建包并添加依赖：
+cargo new speedle-example cd speedle-example cargo add speedle@0.2.0 --features blocking 调用本地 Speedle 按 SDK 概览中的说明启动 Speedle 并创建示例策略。将 src/main.rs 替换为：
+use speedle::blocking::Client; use speedle::{Auth, Backend}; fn main() { if let Err(e) = run() { eprintln!(&amp;#34;Speedle error: {e}&amp;#34;); std::process::exit(1); } } fn run() -&amp;gt; Result&amp;lt;(), speedle::Error&amp;gt; { let speedle = Client::builder(Backend::Speedle, &amp;#34;http://localhost:6734&amp;#34;, Auth::none(), &amp;#34;docs&amp;#34;).</description>
+    </item>
+    
+    <item>
+      <title>令牌断言</title>
+      <link>https://engine.speedle.io/zh/docs/assertor/</link>
+      <pubDate>Mon, 21 Jan 2019 09:28:30 +0800</pubDate>
+      
+      <guid>https://engine.speedle.io/zh/docs/assertor/</guid>
+      <description>令牌断言服务负责什么？ 已配置的断言服务验证令牌，并返回显式主体及其身份域，再由 Speedle 使用这些身份评估策略。生产实现必须验证签名或 introspection 结果、签发者、受众、有效期及身份提供方要求。仅有 webhook 接口并不意味着自动兼容任意 OAuth/OIDC 令牌。
+令牌断言 API中的 errCode 为整数，可选的属性是对象，不是带类型的属性数组。asserterWebhookConfig.endpoint 是完整 URL，下面的示例使用 /v1/assert。
+启动确定性的本地 mock 此 mock 只识别 githubtoken/github、googletoken/google、gitlabtoken/gitlab 三组输入，分别表示对应域的 user1。令牌与提供方不匹配时失败。它是测试 fixture，不验证真实令牌。 不会记录令牌值。仅绑定回环地址，生产环境必须替换为真实身份集成。
+从仓库根目录在单独终端运行：
+go run ./website/tests/examples/asserter // A deterministic mock for the token-assertion tutorial. Never use for real tokens. package main import ( &amp;#34;encoding/json&amp;#34; &amp;#34;flag&amp;#34; &amp;#34;log&amp;#34; &amp;#34;net/http&amp;#34; &amp;#34;strings&amp;#34; &amp;#34;time&amp;#34; ) type principal struct { Type string `json:&amp;#34;type&amp;#34;` Name string `json:&amp;#34;name&amp;#34;` IDD string `json:&amp;#34;idd&amp;#34;` } type response struct { Principals []principal `json:&amp;#34;principals,omitempty&amp;#34;` ErrCode int `json:&amp;#34;errCode&amp;#34;` ErrMessage string `json:&amp;#34;errMessage,omitempty&amp;#34;` } func assert(w http.</description>
+    </item>
+    
+    <item>
+      <title>API</title>
+      <link>https://engine.speedle.io/zh/docs/api/</link>
+      <pubDate>Tue, 10 Nov 2026 14:45:43 +0800</pubDate>
+      
+      <guid>https://engine.speedle.io/zh/docs/api/</guid>
+      <description>Java、Python、Go、.NET、Rust 和 Node.js/TypeScript 的客户端库见 SDK。
+REST API 这些接口说明面向你配置的 PMS、ADS 或断言服务端点。speedle.io 提供文档与浏览器 Playground，不托管 PMS/ADS 后端。发送 JSON 时必须设置 Content-Type: application/json，并配置 TLS/mTLS 与调用方访问控制。
+ 策略管理 API 授权决策 API 令牌断言 webhook  策略和角色策略的 ID 是字符串，PMS 返回扁平对象；授权权限字段为复数 permissions。REST 决策请求使用带类型的属性数组，诊断响应及断言 webhook 的属性则为对象。
+gRPC API  PMS proto：pb.PolicyManager ADS proto：pb.Evaluator  客户端必须使用当前 proto 生成。PMS 的服务名为 pb.PolicyManager，ADS 为 pb.Evaluator。这两份历史协议重用了消息名，应分别生成和加载，不要合并进同一 descriptor set。默认不启用 gRPC；需通过 --grpc-endpoint 显式开启，其 TLS 配置与 REST 相同。
+历史 gRPC 的 ContextRequest.attributes 是字符串 map，不是 REST 的带类型属性数组，也不提供同样的数值、布尔、日期类型。条件需要这些类型时，应使用 REST 或嵌入式 Go，除非你的 gRPC 适配层明确实现了相应转换。</description>
+    </item>
+    
+    <item>
+      <title>Node.js/TypeScript SDK</title>
+      <link>https://engine.speedle.io/zh/docs/sdks/node/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/zh/docs/sdks/node/</guid>
+      <description>Node.js SDK 需要 Node.js 22 或更高版本，同时提供 ESM 和 CommonJS 构建及 TypeScript 类型，没有运行时依赖。软件包：npm 上已发布的 @speedle/sdk。参考文档：speedle-sdk/node。
+示例使用的策略见 SDK 概览。
+添加依赖 新建 ES 模块包并安装：
+mkdir speedle-example cd speedle-example npm init -y npm pkg set type=module npm install @speedle/sdk@0.2.1 调用本地 Speedle 按 SDK 概览中的说明启动 Speedle 并创建示例策略。将以下程序保存为 main.ts：
+import { Auth, Reason, SpeedleClient, SpeedleError } from &amp;#34;@speedle/sdk&amp;#34;; try { const speedle = new SpeedleClient({ backend: &amp;#34;speedle&amp;#34;, endpoint: &amp;#34;http://localhost:6734&amp;#34;, auth: Auth.none(), serviceName: &amp;#34;docs&amp;#34;, }); try { const allowed = await speedle.</description>
+    </item>
+    
+    <item>
+      <title>SDK</title>
+      <link>https://engine.speedle.io/zh/docs/sdks/</link>
+      <pubDate>Tue, 10 Nov 2026 14:45:43 +0800</pubDate>
+      
+      <guid>https://engine.speedle.io/zh/docs/sdks/</guid>
+      <description>Speedle SDK 是决策 API POST /authz-check/v1/is-allowed 的客户端库，既可用于自托管的 Speedle ADS，也可用于 Speedle Cloud。每个语言页面说明如何添加软件包，并分别给出两种场景下经过实测的完整程序。源代码和完整参考见 teramoby/speedle-sdk。这些示例要调用的 PMS 和 ADS，见部署和Docker 镜像。
+软件包 Java、Python、Go、.NET 和 Rust 的版本均为 0.2.0。@speedle/sdk 已在 npm 发布。安装命令见各语言页面。
+ Java：Maven Central io.speedle:speedle-sdk，已发布。 Python：PyPI speedle，已发布。 Go：Go 模块 github.com/teramoby/speedle-sdk/go，已发布。 C#/.NET：NuGet Speedle.Sdk，已发布。 Rust：crates.io speedle，已发布。 Node.js / TypeScript：npm @speedle/sdk，已发布。  功能    功能 状态     isAllowed：返回授权结果 六个 SDK 均支持   check：返回授权结果及原因，例如没有适用的策略 六个 SDK 均支持   自托管 Speedle ADS 六个 SDK 均支持   Speedle Cloud 即将上线    方法名遵循各语言的命名习惯：Python 和 Rust 中为 is_allowed 与 check，Go 中为 IsAllowed 与 Check，.</description>
+    </item>
+    
+    <item>
+      <title>Speedle Cloud</title>
+      <link>https://engine.speedle.io/zh/docs/cloud/</link>
+      <pubDate>Sun, 08 Nov 2026 17:11:18 +0800</pubDate>
+      
+      <guid>https://engine.speedle.io/zh/docs/cloud/</guid>
+      <description>Speedle Cloud 是基于开源 Speedle 策略引擎的托管访问控制服务，面向开发者。你可以用它管理 SPDL 授权策略与角色策略、在 Playground 中测试授权判定，再从应用服务端调用授权 API，无需自行部署和运维授权服务。
+Speedle Cloud 即将上线。 Cloud 页眉显示 Coming soon（即将上线） 徽章，cloud.speedle.io 的生产环境尚未开放登录。本文介绍的控制台流程和带认证的授权决策服务（ADS）均为已发布服务合约的预览。带认证的 ADS 尚未提供时，签发令牌并不会启用服务端授权调用。所选环境的部署情况和登录供应商可用性仍需分别确认。
+免费公开测试版用于试用、学习和评估，不提供 SLA，不建议用于生产环境，功能和限额可能调整。
+文档导航  快速入门：使用 GitHub 或 Google 登录（即将开放）、账号管理、service、SPDL 策略、会话管理请求，以及四种会话 Playground 操作。 应用令牌：最近认证要求、令牌的一次性展示、元数据分页、轮换和撤销。 授权 API 预览：IsAllowed 请求与响应合约、Node.js 22 示例、策略快照和接入限制。 限额与错误：账号额度、请求限制、错误响应、限流与额度响应头，以及重试建议。  下载  简体中文 Markdown：汇集全部四章 Cloud 文档，便于离线阅读。 OpenAPI YAML：Cloud API 的权威仓库规范。 OpenAPI JSON：由同一份 YAML 原文生成。 当前构建版本：用于识别正在提供服务的构建，不证明登录供应商或接口当前可用。  规范包含四种会话 Playground 操作和带认证的 ADS 合约。发布规范或下载指南并不会启用尚未提供的接口，也不会开放登录。Cloud 的 YAML 与生成的 JSON 随对应的封存构建一起记录版本、晋升或恢复；中英文 Markdown 下载则随这些 Engine 文档页面一起维护。</description>
+    </item>
+    
+    <item>
+      <title>存储扩展</title>
+      <link>https://engine.speedle.io/zh/docs/store/</link>
+      <pubDate>Sun, 08 Nov 2026 11:21:16 +0800</pubDate>
+      
+      <guid>https://engine.speedle.io/zh/docs/store/</guid>
+      <description>内置存储与扩展接口 独立服务在 pkg/store 下注册 file、etcd、MongoDB、MySQL 实现。可用不代表具有相同的运维保证，部署前应分别审查后端认证、持久化、事务与 watch 行为。下方配置说明属性名称，本地示例不涉及启动 etcd/MongoDB 集群。
+完整后端实现 pms.PolicyStoreManager：服务、授权策略、角色策略、函数管理，以及快照读取与 watch/stop。ADS 接受较窄的只读/watch 接口 PolicyStoreManagerADS。实现新后端时应以实际接口为准，不能照搬历史文档中不完整的方法列表。
+逐步部署教程：MySQL 配置指南、etcd 配置指南与 MongoDB 配置指南。
+存储故障与缓存授权 file、etcd、MySQL、MongoDB 使用相同的 ADS 故障策略。 storeFailureGracePeriod 默认是 &amp;quot;0s&amp;quot;：检测到存储故障后，授权返回 allowed:false 和求值错误。ADS 保持运行并持续重试；连接恢复后，还必须成功 加载完整策略快照，才能恢复授权。启用 watch 时，还必须先重新建立故障的订阅； watch 未恢复时，成功读取数据不会重置故障或宽限期的截止时间。策略文件删除后仍会持续重试，ADS 不再退出。
+如果部署方明确接受撤权延迟，可在 ADS JSON 配置的顶层设置有限时长，例如 &amp;quot;storeFailureGracePeriod&amp;quot;: &amp;quot;5s&amp;quot;。对应参数为 --store-failure-grace-period=5s，环境变量为 SPDL_STORE_FAILURE_GRACE_PERIOD，继续遵循“显式参数 → 环境变量 → 配置文件 → 默认值”。 重试失败不会延长宽限期。宽限期内按最后一份完整快照授权，因此撤权要等同步恢复 才能生效。缓存部分更新失败和授权计算 panic 不适用宽限期，仍然立即拒绝。
+内置存储约每秒执行一次轻量健康检查，单次检查超时为一秒；watch 可能更早报告 故障，正在执行的存储读取也受各自后端超时限制。故障检测和正常策略传播均为异步， 不提供瞬时撤权保证。设置 enableWatch:false 时，请求仍检查存储健康，普通策略 变更需要显式刷新；故障恢复时，即使关闭 watch，也必须加载完整快照。首次加载 失败时没有可用缓存，不适用宽限期。自定义存储可以实现 pms.StoreHealthChecker 并发送 pms.STORE_UNAVAILABLE 事件，接入相同故障策略。</description>
+    </item>
+    
+    <item>
+      <title>安全</title>
+      <link>https://engine.speedle.io/zh/docs/security/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/zh/docs/security/</guid>
+      <description>同时保护两种 API 传输 独立运行的 PMS 与 ADS 都提供 REST 和 gRPC。现在两者共同使用 --insecure、--cert、--key、--client-cert 和 --force-client-cert 配置。证书或信任配置无效时启动失败，安全模式不会降级为明文。
+TLS 加密连接并认证服务端。若要强制认证客户端，必须通过 --client-cert 提供客户端 CA，同时设置 --force-client-cert=true。只提供 CA 时，仅在客户端主动发送证书的情况下验证该证书。TLS 本身不决定谁有管理员权限，也不提供 Bearer token 校验。管理、诊断、发现接口需要认证网关或等价的访问控制。--enable-authz 参数不提供内置的端点授权策略。
+监听地址与兼容性    服务 默认 REST 地址 默认 gRPC 地址     PMS 0.0.0.0:6733 默认关闭；需设置 --grpc-endpoint   ADS 0.0.0.0:6734 默认关闭；需设置 --grpc-endpoint    REST 与 gRPC 的地址分别配置。仅设置 --endpoint 不会启用 gRPC；请显式使用 --grpc-endpoint 127.0.0.1:50001（PMS）或 127.0.0.1:50002（ADS）。127.0.0.1:0 为隔离测试选择临时端口。需要 IPv6 时显式指定 IPv6 监听地址。</description>
+    </item>
+    
+    <item>
       <title>日志</title>
       <link>https://engine.speedle.io/zh/docs/logging/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
@@ -455,11 +470,11 @@ Oracle Speedle 历史版本 0.1.0 是原项目首次开源的版本，包含策�
     <item>
       <title>部署</title>
       <link>https://engine.speedle.io/zh/docs/deployment/</link>
-      <pubDate>Tue, 10 Nov 2026 13:15:15 +0800</pubDate>
+      <pubDate>Tue, 10 Nov 2026 14:45:43 +0800</pubDate>
       
       <guid>https://engine.speedle.io/zh/docs/deployment/</guid>
       <description>Speedle 可以嵌入 Go 应用，也可以用一个已发布的容器镜像运行，或者作为独立的 PMS 和 ADS 服务运行。
- 嵌入模式 在 Go 进程内运行决策引擎。 Docker 镜像 用 docker.io/speedle/speedle 或 ghcr.io/teramoby/speedle 运行 speedle-pms、speedle-ads 和 spctl。  选择部署方式 通过嵌入模式可以在 Go 进程内运行决策引擎。应用通过 REST 或 gRPC 调用 Speedle 时，可以使用Docker 镜像，也可以运行独立的 PMS 和 ADS。快速入门提供了完整的本地策略管理和授权验证步骤。
+ 嵌入模式 在 Go 进程内运行决策引擎。 Docker 镜像 用 docker.io/speedle/speedle 或 ghcr.io/teramoby/speedle 运行 speedle-pms、speedle-ads 和 spctl。 Homebrew 安装命令行工具和两个服务，并在本机做一次演示。  选择部署方式 通过嵌入模式可以在 Go 进程内运行决策引擎。应用通过 REST 或 gRPC 调用 Speedle 时，可以使用Docker 镜像，也可以运行独立的 PMS 和 ADS。Homebrew 安装这些程序并在本机做一次演示。快速入门提供了完整的本地策略管理和授权验证步骤。
 使用当前 Go 版本构建 在 Linux 或 macOS 上准备 Go 1.26.10 或 Go 1.27.3（也可使用同一大版本的更新补丁版本）（推荐 Go 1.27.3）、Git 和命令行 shell。使用 Go modules，源码可放在任意可写目录，无需手工配置 GOROOT、GOPATH、dep 或 GOPATH 源码路径。
 git clone --depth 1 https://github.com/teramoby/speedle-plus.git cd speedle-plus mkdir -p bin go build -o .</description>
     </item>
@@ -522,7 +537,7 @@ GET /readyz 报告实例当前能否响应授权请求：就绪返回 200，否�
     <item>
       <title>集成</title>
       <link>https://engine.speedle.io/zh/integrations/</link>
-      <pubDate>Tue, 10 Nov 2026 13:15:15 +0800</pubDate>
+      <pubDate>Tue, 10 Nov 2026 14:45:43 +0800</pubDate>
       
       <guid>https://engine.speedle.io/zh/integrations/</guid>
       <description>Speedle 负责授权决策。应用、网关或平台中的策略执行点（PEP）在每次访问时向 Speedle 请求决策，并执行返回的结果。下面是目前支持的接入方式。

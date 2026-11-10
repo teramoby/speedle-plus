@@ -77,13 +77,13 @@
     
     <li>
   <h2 class="title2">
-    <a href="/zh/docs/pms/" itemprop="headline">Speedle 策略</a>
+    <a href="/zh/docs/cloud/limits-and-errors/" itemprop="headline">Speedle Cloud 限额与错误</a>
   </h2>
   
-  <p itemprop="about">管理授权策略和全局角色策略，发现访问模式，诊断授权评估。</p>
+  <p itemprop="about">Speedle Cloud 账号额度、请求限制、扁平 JSON 错误、限流与额度响应头、每日额度计算和重试建议。</p>
   
   
-  <p itemprop="about">创建和管理策略，发现访问模式，诊断授权评估。</p>
+  <p itemprop="about">合理规划账号级限额，并在 Cloud 无法返回有效授权判定时默认拒绝。</p>
   
   <hr />
 </li>
@@ -91,13 +91,11 @@
     
     <li>
   <h2 class="title2">
-    <a href="/zh/docs/cloud/tokens/" itemprop="headline">Speedle Cloud 应用令牌</a>
+    <a href="/zh/docs/idd/" itemprop="headline">用户身份域</a>
   </h2>
   
-  <p itemprop="about">签发、保护、查看、轮换和撤销 Speedle Cloud 应用令牌，了解最近认证和一次性展示规则。</p>
+  <p itemprop="about">使用身份域区分不同身份提供方或租户中的同名主体。</p>
   
-  
-  <p itemprop="about">管理 service 专属的 Bearer 凭据，避免泄露仅展示一次的秘密值。</p>
   
   <hr />
 </li>
@@ -105,13 +103,13 @@
     
     <li>
   <h2 class="title2">
-    <a href="/zh/docs/deployment/docker/" itemprop="headline">Docker 镜像</a>
+    <a href="/zh/docs/sdks/dotnet/" itemprop="headline">C#/.NET SDK</a>
   </h2>
   
-  <p itemprop="about">用已发布的 Speedle 镜像运行 speedle-pms、speedle-ads 和 spctl。</p>
+  <p itemprop="about">添加 Speedle .NET SDK，向本地 Speedle 或 Speedle Cloud 发起授权检查。</p>
   
   
-  <p itemprop="about">Docker Hub 和 GHCR 上的同一个镜像运行策略管理服务、决策服务和 spctl，并共用一份文件存储。</p>
+  <p itemprop="about">用 dotnet add package 添加 Speedle.Sdk 0.2.0，再向本地 Speedle 或 Speedle Cloud 调用 IsAllowedAsync 与 CheckAsync。</p>
   
   <hr />
 </li>
@@ -119,13 +117,13 @@
     
     <li>
   <h2 class="title2">
-    <a href="/zh/docs/sdks/python/" itemprop="headline">Python SDK</a>
+    <a href="/zh/docs/sdks/rust/" itemprop="headline">Rust SDK</a>
   </h2>
   
-  <p itemprop="about">添加 Speedle Python SDK，向本地 Speedle 或 Speedle Cloud 发起授权检查。</p>
+  <p itemprop="about">添加 Speedle Rust SDK，向本地 Speedle 或 Speedle Cloud 发起授权检查。</p>
   
   
-  <p itemprop="about">用 pip 或 uv 安装 speedle 0.2.0，再向本地 Speedle 或 Speedle Cloud 调用 is_allowed 与 check。</p>
+  <p itemprop="about">用 cargo add 添加 speedle 0.2.0，再向本地 Speedle 或 Speedle Cloud 调用 is_allowed 与 check。</p>
   
   <hr />
 </li>

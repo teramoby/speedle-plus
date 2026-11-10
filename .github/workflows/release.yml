@@ -12,12 +12,19 @@ name: Release
 # Docker Hub reads DOCKERHUB_USERNAME and
 # DOCKERHUB_TOKEN from the release environment.
 #
+# When HOMEBREW_TAP_TOKEN is set on that environment, the workflow pushes a
+# homebrew-vX.Y.Z branch to teramoby/homebrew-tap and opens a pull request
+# against main. It does not push main or master. It also opens a pull request
+# on this repository with the same formulas. When HOMEBREW_TAP_TOKEN is unset,
+# that step is skipped and the release still succeeds. See docs/RELEASE.md.
+#
 # Retrying: re-dispatch with the same version and commit after a failure. An
 # existing tag must already point at the same commit, the version image tag
 # is published again, and release assets are replaced, so a failed run resumes
 # without moving a tag or re-creating a release. The image is built and
 # smoke-tested before the tag, and published last; if the push fails,
-# re-dispatching completes the release.
+# re-dispatching completes the release. A failed chart push or Homebrew tap
+# update is finished the same way.
 on:
   workflow_dispatch:
     inputs:
@@ -46,8 +53,9 @@ jobs:
     runs-on: ubuntu-latest
     environment: release
     permissions:
-      contents: write # tag the commit and publish the GitHub release
+      contents: write # tag the commit, publish the GitHub release, and push the formula branch
       packages: write # push the image to GHCR
+      pull-requests: write # open the Homebrew formula pull request
     timeout-minutes: 30
     steps:
       - name: Validate inputs
@@ -81,6 +89,14 @@ jobs:
           # The publish step reads local vX.Y.Z tags to decide whether to move latest.
           fetch-tags: true
           persist-credentials: false
+
+      # The release commit checked out below may be older than these files.
+      # Keep the copies from master so the tap update still has them.
+      - name: Keep the Homebrew tap files
+        run: |
+          set -euo pipefail
+          mkdir -p "${RUNNER_TEMP}/homebrew"
+          cp -R deployment/homebrew/. "${RUNNER_TEMP}/homebrew/"
 
       - name: Check the commit, module path and tag
         env:
@@ -335,3 +351,27 @@ jobs:
           printf '%s\n' "${GITHUB_TOKEN}" | helm registry login ghcr.io --username "${GITHUB_ACTOR}" --password-stdin
           helm package deployment/helm/speedle --version "${chart_version}" --app-version "${chart_version}" --destination dist
           helm push "dist/speedle-${chart_version}.tgz" "oci://${REGISTRY}/${owner}/charts"
+
+      # Presence only. The token value is passed to the publish step and
+      # nowhere else. An unset token skips the tap and still leaves a release.
+      - name: Check for the Homebrew tap token
+        id: homebrew
+        env:
+          HOMEBREW_TAP_TOKEN_SET: ${{ secrets.HOMEBREW_TAP_TOKEN != '' }}
+        run: |
+          set -euo pipefail
+          if [[ "${HOMEBREW_TAP_TOKEN_SET}" != "true" ]]; then
+            echo "HOMEBREW_TAP_TOKEN is not set. Skipping the Homebrew tap update. The release is unchanged."
+            echo "skip=true" >> "${GITHUB_OUTPUT}"
+          else
+            echo "skip=false" >> "${GITHUB_OUTPUT}"
+          fi
+
+      - name: Publish the Homebrew tap
+        if: steps.homebrew.outputs.skip != 'true'
+        env:
+          HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+          GITHUB_TOKEN: ${{ github.token }}
+          VERSION: ${{ inputs.version }}
+          CHECKSUMS: dist/checksums.txt
+        run: bash "${RUNNER_TEMP}/homebrew/publish-tap.sh"
