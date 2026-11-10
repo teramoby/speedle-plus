@@ -8,6 +8,7 @@ tocheading = "h2"
 tags = ["storage", "etcd"]
 categories = ["docs"]
 bref = "Run an independent etcd server, connect PMS and ADS, verify live policy updates, and save a backup."
+lastmod = 2026-10-31T22:36:36+08:00
 +++
 
 This walkthrough uses an **external etcd v3.6.14** server with a persistent Docker volume. PMS writes policies and ADS watches the same key prefix. The single-node example listens on loopback and uses plain HTTP for local development. Production TLS and cluster configuration follow the walkthrough.

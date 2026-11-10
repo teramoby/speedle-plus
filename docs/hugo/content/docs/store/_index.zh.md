@@ -10,6 +10,7 @@ tocheading = "h2"
 tags = ["storage", "pluggable"]
 categories = ["docs"]
 bref = ""
+lastmod = 2026-11-08T11:21:16+08:00
 +++
 
 ## 内置存储与扩展接口

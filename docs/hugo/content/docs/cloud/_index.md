@@ -7,6 +7,7 @@ toc = false
 linksection = true
 tocheading = "h2"
 categories = ["docs"]
+lastmod = 2026-11-08T17:11:18+08:00
 +++
 
 Speedle Cloud is a hosted access-control service for developers, built on the open-source Speedle policy engine. It is designed to let you manage SPDL authorization and role policies, test decisions in a Playground, and call an authorization API from your application server without operating your own authorization service.

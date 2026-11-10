@@ -5,6 +5,7 @@ tags = ["v0.1.0", "api", "guide", "core", "ads"]
 categories = ["docs"]
 customcss = true
 customcssfile = "swagger-custom.css"
+lastmod = 2026-11-09T21:18:26+08:00
 +++
 
 已配置 ADS 的接口参考。请求属性是带类型的数组，诊断响应属性是对象。

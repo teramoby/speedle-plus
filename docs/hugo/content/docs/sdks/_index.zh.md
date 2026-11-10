@@ -9,6 +9,7 @@ tocheading = "h2"
 tags = ["sdk"]
 categories = ["docs"]
 bref = "Speedle 决策 API 的六种语言客户端库，既可用于自托管的 Speedle ADS，也可用于 Speedle Cloud（即将上线）。"
+lastmod = 2026-11-10T14:45:43+08:00
 +++
 
 Speedle SDK 是决策 API `POST /authz-check/v1/is-allowed` 的客户端库，既可用于自托管的 Speedle ADS，也可用于 Speedle Cloud。每个语言页面说明如何添加软件包，并分别给出两种场景下经过实测的完整程序。源代码和完整参考见 [teramoby/speedle-sdk](https://github.com/teramoby/speedle-sdk)。这些示例要调用的 PMS 和 ADS，见[部署](/docs/deployment/)和[Docker 镜像](/docs/deployment/docker/)。

@@ -9,6 +9,7 @@ tocsidebar = false
 tags = ["policy", "core", "discovery"]
 categories = ["docs"]
 bref = "Speedle can be used for authorization decisions in systems with a large number of protected resources. Before those protected resources can be accessed, the Speedle authorization decision API (is-allowed API) is called. Defining the authorization policies for those protected resources is difficult if you don't know what actions are occuring on the protected resources, or how a protected resource is expressed in an authorization decision request. Policy discovery mode can make this task much easier"
+lastmod = 2026-10-29T11:32:30+08:00
 +++
 
 ## What discovery does

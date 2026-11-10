@@ -7,6 +7,7 @@ toc = false
 tocheading = "h2"
 tocsidebar = false
 bref = "Speedle 架构与组件协作流程"
+lastmod = 2026-11-08T11:21:16+08:00
 +++
 
 <a id="modules"></a>

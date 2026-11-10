@@ -2,6 +2,7 @@
 title = "令牌断言"
 description = "验证身份令牌，为 Speedle 授权请求提供可信主体和身份域。"
 date = 2019-01-21T09:28:30+08:00
+lastmod = 2026-11-08T11:21:16+08:00
 weight = 60
 draft = false
 bref = ""

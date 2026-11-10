@@ -8,6 +8,7 @@ tocheading = "h2"
 tags = ["storage", "mysql"]
 categories = ["docs"]
 bref = "从建库、创建账号到配置 PMS/ADS，再验证授权、策略自动同步与持久化。"
+lastmod = 2026-10-31T22:36:36+08:00
 +++
 
 本指南使用 **MySQL 8.4 LTS**，分别启动 PMS 和 ADS：PMS 写入策略，ADS 使用独立的只读账号读取同一个数据库。本地演示使用 Docker，HTTP 服务只监听本机回环地址。远程部署可使用已有的 MySQL，并参考[安全配置](/docs/security/)。

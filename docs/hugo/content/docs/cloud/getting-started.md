@@ -8,6 +8,7 @@ toc = true
 tocheading = "h2"
 categories = ["docs"]
 bref = "The published Speedle Cloud console workflow, from sign-in and account settings to saved policies and Playground decisions."
+lastmod = 2026-11-08T21:11:24+08:00
 +++
 
 **Speedle Cloud is coming soon.** Production sign-in is not open on cloud.speedle.io yet, and the Cloud header shows **Coming soon**. When sign-in is closed, the sign-in page says that it opens soon. This guide describes the published workflow rather than a currently open production console; screenshots will be added after production sign-in opens.

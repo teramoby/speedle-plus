@@ -5,6 +5,7 @@ tags = ["v0.1.0", "api", "guide", "core", "ads"]
 categories = ["docs"]
 customcss = true
 customcssfile = "swagger-custom.css"
+lastmod = 2026-11-09T21:18:26+08:00
 +++
 
 Reference for your configured ADS. Request attributes are typed arrays; diagnostic attributes are objects.

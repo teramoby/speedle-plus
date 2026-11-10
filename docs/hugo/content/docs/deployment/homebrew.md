@@ -7,6 +7,7 @@ toc = true
 tocheading = "h2"
 categories = ["docs"]
 bref = "Homebrew installs the command-line tool and both services, then runs them on 127.0.0.1 with one shared policy file."
+lastmod = 2026-11-10T13:49:59+08:00
 +++
 
 Install the Speedle command-line tool with [Homebrew](https://brew.sh/) on macOS or Linux. Homebrew does not install or start formulas from a tap outside the official Homebrew organization until that tap is trusted.

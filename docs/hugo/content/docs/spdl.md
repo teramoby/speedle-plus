@@ -10,6 +10,7 @@ tocsidebar = false
 tags = ["v0.1.0", "core", "policy", "spdl"]
 categories = ["docs"]
 bref = "Basics of SPDL"
+lastmod = 2026-11-08T20:01:50+08:00
 +++
 
 SPDL is the language for writing Speedle policies and role policies. This page covers the syntax, naming rules and examples.

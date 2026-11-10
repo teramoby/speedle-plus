@@ -4,8 +4,10 @@ title = "Speedle"
 theme = "kube"
 canonifyURLs = "true"
 disableHugoGeneratorInject = true
-# Sitemap lastmod comes from the last git commit that touched each page.
-enableGitInfo = true
+# Dates come from front matter. A commit timestamp or file modification
+# time changes when history is rewritten, so neither can feed the generated
+# pages.
+enableGitInfo = false
 description = "Speedle is an open-source authorization engine for centralized RBAC and ABAC policy decisions across cloud-native and legacy applications."
 Paginate = 4
 pygmentsCodefences = true
@@ -14,6 +16,14 @@ pygmentsStyle = "dracula"
 
 defaultContentLanguage = "en"
 defaultContentLanguageInSubdir = false
+
+# Commit metadata and file modification time are not date sources. A lastmod
+# value does not become the publication date.
+[frontmatter]
+  date = ["date", "publishDate"]
+  lastmod = ["lastmod", "date", "publishDate"]
+  publishDate = ["publishDate", "date"]
+  expiryDate = ["expiryDate"]
 
 [languages.en]
   languageCode = "en-us"

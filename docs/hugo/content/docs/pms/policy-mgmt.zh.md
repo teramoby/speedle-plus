@@ -9,6 +9,7 @@ tocsidebar = false
 tags = ["pms", "policy", "core"]
 categories = ["docs"]
 bref = "策略管理基础"
+lastmod = 2026-11-09T07:57:54+08:00
 +++
 
 ## 什么是 Speedle 策略？

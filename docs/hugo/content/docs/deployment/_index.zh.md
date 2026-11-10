@@ -8,6 +8,7 @@ linksection = true
 tocheading = "h2"
 categories = ["docs"]
 bref = "嵌入模式、Docker 镜像、Homebrew、源码构建，以及独立的 PMS 和 ADS。"
+lastmod = 2026-11-10T14:45:43+08:00
 +++
 
 Speedle 可以嵌入 Go 应用，也可以用一个已发布的容器镜像运行，或者作为独立的 PMS 和 ADS 服务运行。

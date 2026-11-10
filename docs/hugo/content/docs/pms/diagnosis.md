@@ -2,6 +2,7 @@
 title = "Policy Diagnosis"
 description = "Authorization policy diagnosis"
 date = 2019-01-18T15:46:59+08:00
+lastmod = 2026-10-29T11:53:01+08:00
 weight = 3
 draft = false
 bref = "This feature is used to diagnose the evaluation process of authorization. When a user isn't allowed to operate on a resource, then this feature is useful to find out the reason, i.e., what's the policy which denies the operation on the resource."
