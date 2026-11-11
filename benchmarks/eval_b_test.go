@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/teramoby/speedle-plus/api/ads"
 	"github.com/teramoby/speedle-plus/pkg/eval"
@@ -157,6 +158,64 @@ func BenchmarkHuge(b *testing.B) {
 	}
 
 	runTest(b, rc, filePath, true)
+}
+
+// BenchmarkGiant measures a one-million-policy set. One user per role policy
+// keeps the fixture within a developer machine's memory while the policy and
+// role-policy counts both stay at one million. Policy-file writing and
+// evaluator loading are reported separately from steady-state evaluation.
+//
+// The fixture needs several gigabytes of memory and about 15 seconds of setup,
+// so the benchmark is opt-in: the weekly comparison runs every benchmark in
+// this package and its baseline has no million-policy case. Run it with
+// SPEEDLE_BENCH_MILLION=1 go test ./benchmarks -bench BenchmarkGiant.
+func BenchmarkGiant(b *testing.B) {
+	if os.Getenv("SPEEDLE_BENCH_MILLION") != "1" {
+		b.Skip("set SPEEDLE_BENCH_MILLION=1 to run the million-policy benchmark")
+	}
+
+	const policies = 1000000
+	const usersPerRole = 1
+
+	writeStart := time.Now()
+	filePath, err := writePolicyFile(b.Name(), policies, usersPerRole, simplePolicyWriter, simpleRolePolicyWriter)
+	if err != nil {
+		b.Fatalf("unable to write to policy file because of error %s", err)
+	}
+	defer os.Remove(filePath)
+	writeSeconds := time.Since(writeStart).Seconds()
+
+	loadStart := time.Now()
+	ev, err := eval.NewFromFile(filePath, false)
+	if err != nil {
+		b.Fatalf("Unable to initialize evaluator due to error %s.", err)
+	}
+	loadSeconds := time.Since(loadStart).Seconds()
+
+	rc := ads.RequestContext{
+		Subject: &ads.Subject{
+			Principals: []*ads.Principal{
+				{
+					Type: "user",
+					Name: "user1000000-1",
+				},
+			},
+		},
+		ServiceName: "bench",
+		Action:      "read",
+		Resource:    "/books/book1000000",
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		allowed, _, _ := ev.IsAllowed(rc)
+		if !allowed {
+			b.Fatal("wrong decision result.")
+		}
+	}
+	b.StopTimer()
+	b.ReportMetric(writeSeconds, "write-s")
+	b.ReportMetric(loadSeconds, "load-s")
 }
 
 func BenchmarkLargeExp(b *testing.B) {
