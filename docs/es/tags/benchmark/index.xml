@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Benchmark on Speedle</title>
+    <link>https://engine.speedle.io/es/tags/benchmark/</link>
+    <description>Recent content in Benchmark on Speedle</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>es-es</language>
+    
+	<atom:link href="https://engine.speedle.io/es/tags/benchmark/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>Guía de pruebas de rendimiento</title>
+      <link>https://engine.speedle.io/es/docs/performance-testing/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/es/docs/performance-testing/</guid>
+      <description>Esta guía le ayuda a comparar Speedle con otros motores de autorización en su propia máquina. No publica un informe de rendimiento. Los números dependen de su hardware, su conjunto de políticas y las versiones de los motores que fije, así que el resultado que merece confianza es el que usted mismo mida.
+La guía ofrece un escenario compartido, políticas equivalentes para cuatro motores, una lista de comprobación metodológica y un prompt que puede pegar en una herramienta de IA como Claude Code, ChatGPT Codex, DeepSeek Harness o similar.</description>
+    </item>
+    
+  </channel>
+</rss>

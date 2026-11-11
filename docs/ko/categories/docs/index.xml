@@ -90,29 +90,6 @@ package main import ( &amp;#34;context&amp;#34; &amp;#34;fmt&amp;#34; &amp;#34;o
     </item>
     
     <item>
-      <title>ID 도메인</title>
-      <link>https://engine.speedle.io/ko/docs/idd/</link>
-      <pubDate>Thu, 17 Jan 2019 13:20:07 +0800</pubDate>
-      
-      <guid>https://engine.speedle.io/ko/docs/idd/</guid>
-      <description>ID 도메인이란 무엇인가 ID 도메인(idd)은 주체의 명시적인 네임스페이스입니다. 동일한 이름을 가진 두 명의 user1이 서로 다른 도메인에 속할 수 있습니다. 도메인 문자열은 신뢰할 수 있는 통합 코드 또는 구성된 토큰 어서터에 의해 제공됩니다. 이것 자체가 인증의 증거는 아닙니다. Speedle은 도메인 이름만으로 공급자의 테넌트 모델을 추론하거나 검증하지 않습니다.
-정책과 요청에서의 도메인 표현 grant user user1 from github read book grant user user1 from IDCS.tenant01 read book 주체 이름 바로 뒤에 from &amp;lt;identity-domain&amp;gt;을 사용합니다.</description>
-    </item>
-    
-    <item>
-      <title>C#/.NET SDK</title>
-      <link>https://engine.speedle.io/ko/docs/sdks/dotnet/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://engine.speedle.io/ko/docs/sdks/dotnet/</guid>
-      <description>.NET SDK는 .NET 8 이상을 대상으로 하며 의존성이 없습니다. 패키지: NuGet의 Speedle.Sdk 0.2.0, 네임스페이스 Speedle.Sdk. 참조 문서: speedle-sdk/dotnet.
-예제에서는 SDK 개요에서 설명한 정책을 확인합니다.
-의존성 추가 새 콘솔 프로젝트를 생성하고 패키지를 추가합니다:
-dotnet new console -o SpeedleExample cd SpeedleExample dotnet add package Speedle.Sdk --version 0.2.0 로컬 Speedle 호출 SDK 개요의 설명에 따라 Speedle을 시작하고 예제 정책을 생성합니다. Program.cs를 다음과 같이 대체합니다:
-using Speedle.Sdk; try { await using var speedle = new SpeedleClient(new SpeedleClientOptions { Backend = Backend.</description>
-    </item>
-    
-    <item>
       <title>Homebrew 설치</title>
       <link>https://engine.speedle.io/ko/docs/deployment/homebrew/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
@@ -171,18 +148,6 @@ uv add speedle==0.2.0 로컬 Speedle 호출 SDK 개요의 설명에 따라 Speed
     </item>
     
     <item>
-      <title>Rust SDK</title>
-      <link>https://engine.speedle.io/ko/docs/sdks/rust/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://engine.speedle.io/ko/docs/sdks/rust/</guid>
-      <description>Rust SDK는 Rust 1.75 이상이 필요합니다. tokio와 reqwest(rustls)를 기반으로 한 비동기 구성을 제공합니다. blocking 기능 플래그를 통해 아래 예제에서 사용하는 동기식 블로킹 클라이언트가 추가됩니다. 크레이트: crates.io의 speedle 0.2.0. 참조 문서: speedle-sdk/rust.
-예제에서는 SDK 개요에서 설명한 정책을 확인합니다.
-의존성 추가 새 패키지를 생성하고 의존성을 추가합니다:
-cargo new speedle-example cd speedle-example cargo add speedle@0.2.0 --features blocking 로컬 Speedle 호출 SDK 개요의 설명에 따라 Speedle을 시작하고 예제 정책을 생성합니다. src/main.rs를 다음과 같이 대체합니다:</description>
-    </item>
-    
-    <item>
       <title>SPDL: Speedle 정책 정의 언어</title>
       <link>https://engine.speedle.io/ko/docs/spdl/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
@@ -224,6 +189,81 @@ GitHub 또는 Google을 통한 로그인(출시 예정) 로그인이 아직 시�
 요청 계약 애플리케이션은 인가 결정 서비스(ADS)에 대해 POST /authz-check/v1/is-allowed를 호출합니다.
 Node.js 22 예제 다음 Node.js 예제는 전달자(Bearer) 토큰을 사용하여 인가 요청을 보내는 방법을 보여줍니다:
 import { request } from &amp;#39;node:https&amp;#39;; export async function checkAccess(token, authenticatedUserId, authenticatedUserIdd, resource, action) { if (!authenticatedUserId || !authenticatedUserIdd) { throw new Error(&amp;#39;principal name and identity domain are required&amp;#39;); } const payload = JSON.</description>
+    </item>
+    
+    <item>
+      <title>Speedle 정책</title>
+      <link>https://engine.speedle.io/ko/docs/pms/</link>
+      <pubDate>Wed, 28 Oct 2026 13:16:58 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/ko/docs/pms/</guid>
+      <description> 정책 관리 글로벌 정책 정책 발견 인가 진단  </description>
+    </item>
+    
+    <item>
+      <title>etcd 설정 가이드</title>
+      <link>https://engine.speedle.io/ko/docs/store/etcd/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/ko/docs/store/etcd/</guid>
+      <description>이 가이드에서는 영구 Docker 볼륨을 사용하는 외부 etcd v3.6.14 서버를 사용합니다. PMS는 정책을 작성하고 ADS는 동일한 키 접두사를 감시(watch)합니다. 단일 노드 예제는 로컬 개발을 위해 루프백 주소에서 수신 대기하고 일반 텍스트 HTTP를 사용합니다. 프로덕션 환경의 TLS 및 클러스터 구성은 가이드 후반부에서 설명합니다.
+1. Speedle 빌드 Bash, Git, curl, Docker, 그리고 Go 1.26.10 또는 Go 1.27.3을 준비합니다. Docker를 시작하고 네이티브 서비스를 빌드합니다:
+git clone --depth 1 https://github.com/teramoby/speedle-plus.git cd speedle-plus mkdir -p bin go build -o .</description>
+    </item>
+    
+    <item>
+      <title>성능 테스트 가이드</title>
+      <link>https://engine.speedle.io/ko/docs/performance-testing/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/ko/docs/performance-testing/</guid>
+      <description>이 가이드는 자신의 머신에서 Speedle과 다른 인가 엔진을 비교하도록 돕습니다. 성능 보고서는 게시하지 않습니다. 수치는 하드웨어, 정책 집합, 고정한 엔진 버전에 따라 달라지므로, 신뢰할 수 있는 결과는 직접 측정한 결과뿐입니다.
+이 가이드는 공유 시나리오, 네 가지 엔진의 동등한 정책, 방법론 체크리스트, 그리고 Claude Code, ChatGPT Codex, DeepSeek Harness 같은 AI 코딩 도구에 붙여 넣을 수 있는 프롬프트를 제공합니다. 프롬프트는 도구가 스크립트를 작성하고 실행하며 원시 출력을 자신의 머신에 남기도록 요청합니다. 도구가 작성한 내용은 게시된 결과가 아니라 검토해야 할 코드로 취급하세요.</description>
+    </item>
+    
+    <item>
+      <title>인가 결정</title>
+      <link>https://engine.speedle.io/ko/docs/decisions/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/ko/docs/decisions/</guid>
+      <description>인가 결정이란 무엇인가 Speedle은 지정된 서비스 내에서 주체, 작업 및 리소스를 평가하며 애플리케이션이 그 결과를 적용합니다. 평가 오류나 타임아웃은 일반적인 Deny(거부)와 구분하여 처리하고 오류 발생 시 접근을 기본적으로 차단(fail closed)해야 합니다. REST, gRPC, 임베디드 Go API는 데이터 표현 방식이 다르므로 각각의 API 계약을 따르십시오.
+예제 실행 전 준비 빠른 시작의 설명에 따라 저장소 루트에서 ./bin/spctl, ./bin/speedle-pms, ./bin/speedle-ads를 빌드합니다. Go 1.26.10 또는 Go 1.27.3(또는 동일 릴리스 브랜치의 최신 패치 버전), Bash, curl, Python 3이 필요합니다.</description>
+    </item>
+    
+    <item>
+      <title>ID 도메인</title>
+      <link>https://engine.speedle.io/ko/docs/idd/</link>
+      <pubDate>Thu, 17 Jan 2019 13:20:07 +0800</pubDate>
+      
+      <guid>https://engine.speedle.io/ko/docs/idd/</guid>
+      <description>ID 도메인이란 무엇인가 ID 도메인(idd)은 주체의 명시적인 네임스페이스입니다. 동일한 이름을 가진 두 명의 user1이 서로 다른 도메인에 속할 수 있습니다. 도메인 문자열은 신뢰할 수 있는 통합 코드 또는 구성된 토큰 어서터에 의해 제공됩니다. 이것 자체가 인증의 증거는 아닙니다. Speedle은 도메인 이름만으로 공급자의 테넌트 모델을 추론하거나 검증하지 않습니다.
+정책과 요청에서의 도메인 표현 grant user user1 from github read book grant user user1 from IDCS.tenant01 read book 주체 이름 바로 뒤에 from &amp;lt;identity-domain&amp;gt;을 사용합니다.</description>
+    </item>
+    
+    <item>
+      <title>C#/.NET SDK</title>
+      <link>https://engine.speedle.io/ko/docs/sdks/dotnet/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/ko/docs/sdks/dotnet/</guid>
+      <description>.NET SDK는 .NET 8 이상을 대상으로 하며 의존성이 없습니다. 패키지: NuGet의 Speedle.Sdk 0.2.0, 네임스페이스 Speedle.Sdk. 참조 문서: speedle-sdk/dotnet.
+예제에서는 SDK 개요에서 설명한 정책을 확인합니다.
+의존성 추가 새 콘솔 프로젝트를 생성하고 패키지를 추가합니다:
+dotnet new console -o SpeedleExample cd SpeedleExample dotnet add package Speedle.Sdk --version 0.2.0 로컬 Speedle 호출 SDK 개요의 설명에 따라 Speedle을 시작하고 예제 정책을 생성합니다. Program.cs를 다음과 같이 대체합니다:
+using Speedle.Sdk; try { await using var speedle = new SpeedleClient(new SpeedleClientOptions { Backend = Backend.</description>
+    </item>
+    
+    <item>
+      <title>Rust SDK</title>
+      <link>https://engine.speedle.io/ko/docs/sdks/rust/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/ko/docs/sdks/rust/</guid>
+      <description>Rust SDK는 Rust 1.75 이상이 필요합니다. tokio와 reqwest(rustls)를 기반으로 한 비동기 구성을 제공합니다. blocking 기능 플래그를 통해 아래 예제에서 사용하는 동기식 블로킹 클라이언트가 추가됩니다. 크레이트: crates.io의 speedle 0.2.0. 참조 문서: speedle-sdk/rust.
+예제에서는 SDK 개요에서 설명한 정책을 확인합니다.
+의존성 추가 새 패키지를 생성하고 의존성을 추가합니다:
+cargo new speedle-example cd speedle-example cargo add speedle@0.2.0 --features blocking 로컬 Speedle 호출 SDK 개요의 설명에 따라 Speedle을 시작하고 예제 정책을 생성합니다. src/main.rs를 다음과 같이 대체합니다:</description>
     </item>
     
     <item>
@@ -293,26 +333,6 @@ Speedle Cloud는 출시 예정입니다. Cloud 헤더에는 Coming soon(출시 �
     </item>
     
     <item>
-      <title>Speedle 정책</title>
-      <link>https://engine.speedle.io/ko/docs/pms/</link>
-      <pubDate>Wed, 28 Oct 2026 13:16:58 +0000</pubDate>
-      
-      <guid>https://engine.speedle.io/ko/docs/pms/</guid>
-      <description> 정책 관리 글로벌 정책 정책 발견 인가 진단  </description>
-    </item>
-    
-    <item>
-      <title>etcd 설정 가이드</title>
-      <link>https://engine.speedle.io/ko/docs/store/etcd/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://engine.speedle.io/ko/docs/store/etcd/</guid>
-      <description>이 가이드에서는 영구 Docker 볼륨을 사용하는 외부 etcd v3.6.14 서버를 사용합니다. PMS는 정책을 작성하고 ADS는 동일한 키 접두사를 감시(watch)합니다. 단일 노드 예제는 로컬 개발을 위해 루프백 주소에서 수신 대기하고 일반 텍스트 HTTP를 사용합니다. 프로덕션 환경의 TLS 및 클러스터 구성은 가이드 후반부에서 설명합니다.
-1. Speedle 빌드 Bash, Git, curl, Docker, 그리고 Go 1.26.10 또는 Go 1.27.3을 준비합니다. Docker를 시작하고 네이티브 서비스를 빌드합니다:
-git clone --depth 1 https://github.com/teramoby/speedle-plus.git cd speedle-plus mkdir -p bin go build -o .</description>
-    </item>
-    
-    <item>
       <title>로깅 프레임워크</title>
       <link>https://engine.speedle.io/ko/docs/logging/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
@@ -352,6 +372,16 @@ git clone --depth 1 https://github.com/teramoby/speedle-plus.git cd speedle-plus
       <guid>https://engine.speedle.io/ko/docs/security/</guid>
       <description>두 API 전송 계층 모두 보호 독립적으로 작동하는 PMS와 ADS는 REST와 gRPC를 노출합니다. 현재 두 서비스 모두 동일한 --insecure, --cert, --key, --client-cert 및 --force-client-cert 전송 설정을 사용합니다. 인증서나 신뢰 설정이 유효하지 않은 경우 시작 시 실패합니다. 보안 모드가 일반 텍스트로 폴백되지 않습니다.
 TLS는 연결을 암호화하고 서버를 인증합니다. 인증된 클라이언트를 요구하려면 --client-cert로 클라이언트 CA를 제공하고 반드시 --force-client-cert=true를 설정해야 합니다. 해당 플래그가 없는 경우 구성된 CA는 클라이언트가 인증서를 제공한 경우에만 클라이언트 인증서를 검증합니다.</description>
+    </item>
+    
+    <item>
+      <title>정책 발견</title>
+      <link>https://engine.speedle.io/ko/docs/pms/discover/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/ko/docs/pms/discover/</guid>
+      <description>정책 발견의 역할 발견 모드는 요청을 기록하고 기록 작업이 성공하면 이유 5와 함께 allowed=true를 반환합니다. 이는 기존 정책이 해당 작업을 인가했음을 의미하지 않습니다. 격리된 테스트 환경에서만 사용하고 생성된 권한을 검토한 후 일반적인 is-allowed 강제로 복원하십시오. 어설션 또는 저장소 오류는 여전히 적절하게 처리해야 하며 오류를 인가로 간주해서는 안 됩니다.
+재현 가능한 로컬 예제 시작 빠른 시작의 설명에 따라 바이너리를 빌드하고 체크아웃 루트에서 모든 터미널을 실행합니다. 시작하기 전에 새 파일을 사용하고 이전 페이지의 픽스처를 중지하십시오.</description>
     </item>
     
     <item>
@@ -395,16 +425,6 @@ REST 및 gRPC API 정책 관리 서비스(PMS)를 통해 서비스, 정책 및 �
     </item>
     
     <item>
-      <title>인가 결정</title>
-      <link>https://engine.speedle.io/ko/docs/decisions/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://engine.speedle.io/ko/docs/decisions/</guid>
-      <description>인가 결정이란 무엇인가 Speedle은 지정된 서비스 내에서 주체, 작업 및 리소스를 평가하며 애플리케이션이 그 결과를 적용합니다. 평가 오류나 타임아웃은 일반적인 Deny(거부)와 구분하여 처리하고 오류 발생 시 접근을 기본적으로 차단(fail closed)해야 합니다. REST, gRPC, 임베디드 Go API는 데이터 표현 방식이 다르므로 각각의 API 계약을 따르십시오.
-예제 실행 전 준비 빠른 시작의 설명에 따라 저장소 루트에서 ./bin/spctl, ./bin/speedle-pms, ./bin/speedle-ads를 빌드합니다. Go 1.26.10 또는 Go 1.27.3(또는 동일 릴리스 브랜치의 최신 패치 버전), Bash, curl, Python 3이 필요합니다.</description>
-    </item>
-    
-    <item>
       <title>인가 결정 API</title>
       <link>https://engine.speedle.io/ko/docs/api/decision_api/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
@@ -424,16 +444,6 @@ REST 및 gRPC API 정책 관리 서비스(PMS)를 통해 서비스, 정책 및 �
       <description>구성된 PMS 인터페이스 참조 사양입니다. 요청과 응답은 JSON을 사용하고 정책 ID는 문자열이며 응답은 플랫 객체입니다.
 보안 및 엔드포인트 구성. 이 문서는 인터페이스 사양을 설명하며 speedle.io는 호스팅형 백엔드를 제공하지 않습니다.
               document.addEventListener(&#39;DOMContentLoaded&#39;, function() { var url = &#34;\/swagger\/policy-manage.yaml&#34;; const ui = SwaggerUIBundle({ url: url, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.presets.apis ], plugins: [ SwaggerUIBundle.plugins.DownloadUrl ], validatorUrl: null, layout: &#34;</description>
-    </item>
-    
-    <item>
-      <title>정책 발견</title>
-      <link>https://engine.speedle.io/ko/docs/pms/discover/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://engine.speedle.io/ko/docs/pms/discover/</guid>
-      <description>정책 발견의 역할 발견 모드는 요청을 기록하고 기록 작업이 성공하면 이유 5와 함께 allowed=true를 반환합니다. 이는 기존 정책이 해당 작업을 인가했음을 의미하지 않습니다. 격리된 테스트 환경에서만 사용하고 생성된 권한을 검토한 후 일반적인 is-allowed 강제로 복원하십시오. 어설션 또는 저장소 오류는 여전히 적절하게 처리해야 하며 오류를 인가로 간주해서는 안 됩니다.
-재현 가능한 로컬 예제 시작 빠른 시작의 설명에 따라 바이너리를 빌드하고 체크아웃 루트에서 모든 터미널을 실행합니다. 시작하기 전에 새 파일을 사용하고 이전 페이지의 픽스처를 중지하십시오.</description>
     </item>
     
     <item>

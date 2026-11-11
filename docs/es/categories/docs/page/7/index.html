@@ -80,38 +80,8 @@
     
     <li>
   <h2 class="title2">
-    <a href="/es/docs/assertor/" itemprop="headline">Asertor de tokens</a>
+    <a href="/es/docs/pms/" itemprop="headline">Políticas de Speedle</a>
   </h2>
-  
-  <p itemprop="about">Validar tokens de identidad para proporcionar entidades principales y dominios de identidad de confianza a las solicitudes de autorización de Speedle</p>
-  
-  
-  <p itemprop="about">Las solicitudes de evaluación pueden contener un token de identidad que representa a un usuario. En este caso, el motor de evaluación puede invocar el servicio de aserción para obtener las identidades explícitas del usuario</p>
-  
-  <hr />
-</li>
-
-    
-    <li>
-  <h2 class="title2">
-    <a href="/es/docs/store/" itemprop="headline">Almacenamiento conectable</a>
-  </h2>
-  
-  <p itemprop="about">¡Traiga su propio almacenamiento de persistencia!</p>
-  
-  
-  <p itemprop="about">Speedle incluye almacenes de políticas basados en archivos, etcd, MongoDB y MySQL. Este documento describe su configuración y cómo implementar o registrar un almacenamiento diferente.</p>
-  
-  <hr />
-</li>
-
-    
-    <li>
-  <h2 class="title2">
-    <a href="/es/docs/api/" itemprop="headline">API</a>
-  </h2>
-  
-  <p itemprop="about">Documentación de especificación OpenAPI de Speedle</p>
   
   
   <p itemprop="about">Documentación de la especificación OpenAPI. Utilice la API para modelar sus políticas simples y complejas de forma declarativa; obtenga decisiones, descubra políticas dinámicamente y depure la evaluación de políticas.</p>
@@ -122,13 +92,41 @@
     
     <li>
   <h2 class="title2">
-    <a href="/es/docs/deployment/" itemprop="headline">Despliegue</a>
+    <a href="/es/docs/store/etcd/" itemprop="headline">Configuración de etcd</a>
   </h2>
   
-  <p itemprop="about">Ejecute Speedle integrado en una aplicación Go, desde la imagen de contenedor publicada, con Homebrew, o como servicios independientes de PMS y ADS.</p>
+  <p itemprop="about">Configure el almacenamiento de políticas en etcd para PMS y ADS paso a paso.</p>
   
   
-  <p itemprop="about">Modo integrado, imagen de Docker, Homebrew, compilación desde el código fuente y servicios independientes de PMS y ADS.</p>
+  <p itemprop="about">Ejecute un servidor etcd independiente, conecte PMS y ADS, verifique las actualizaciones de políticas en tiempo real y guarde una copia de seguridad.</p>
+  
+  <hr />
+</li>
+
+    
+    <li>
+  <h2 class="title2">
+    <a href="/es/docs/deployment/docker/" itemprop="headline">Imagen de Docker</a>
+  </h2>
+  
+  <p itemprop="about">Ejecute speedle-pms, speedle-ads y spctl desde la imagen publicada de Speedle.</p>
+  
+  
+  <p itemprop="about">Una única imagen en Docker Hub y GHCR ejecuta el administrador de políticas, el servicio de decisiones y spctl, con un almacén de archivos compartido.</p>
+  
+  <hr />
+</li>
+
+    
+    <li>
+  <h2 class="title2">
+    <a href="/es/docs/sdks/python/" itemprop="headline">Python SDK</a>
+  </h2>
+  
+  <p itemprop="about">Añada el SDK de Speedle para Python y compruebe autorizaciones frente a un Speedle local o Speedle Cloud.</p>
+  
+  
+  <p itemprop="about">Instale speedle 0.2.0 con pip o uv, y luego llame a is_allowed y check frente a un Speedle local o Speedle Cloud.</p>
   
   <hr />
 </li>

@@ -44,6 +44,16 @@ Security and endpoint configuration. This is a contract reference, not a backend
     </item>
     
     <item>
+      <title>Performance testing guide</title>
+      <link>https://engine.speedle.io/docs/performance-testing/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/docs/performance-testing/</guid>
+      <description>This guide helps you compare Speedle with other authorization engines on your own machine. It does not publish a performance report. Numbers depend on your hardware, your policy set and the engine versions you pin, so the result worth trusting is the one you measure yourself.
+The guide provides a shared scenario, equivalent policies for four engines, a methodology checklist and a prompt you can paste into an AI coding tool such as Claude Code, ChatGPT Codex, DeepSeek Harness or a similar tool.</description>
+    </item>
+    
+    <item>
       <title>Policy Management API</title>
       <link>https://engine.speedle.io/docs/api/management_api/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>

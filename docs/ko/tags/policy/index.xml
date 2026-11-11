@@ -20,6 +20,16 @@
     </item>
     
     <item>
+      <title>성능 테스트 가이드</title>
+      <link>https://engine.speedle.io/ko/docs/performance-testing/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/ko/docs/performance-testing/</guid>
+      <description>이 가이드는 자신의 머신에서 Speedle과 다른 인가 엔진을 비교하도록 돕습니다. 성능 보고서는 게시하지 않습니다. 수치는 하드웨어, 정책 집합, 고정한 엔진 버전에 따라 달라지므로, 신뢰할 수 있는 결과는 직접 측정한 결과뿐입니다.
+이 가이드는 공유 시나리오, 네 가지 엔진의 동등한 정책, 방법론 체크리스트, 그리고 Claude Code, ChatGPT Codex, DeepSeek Harness 같은 AI 코딩 도구에 붙여 넣을 수 있는 프롬프트를 제공합니다. 프롬프트는 도구가 스크립트를 작성하고 실행하며 원시 출력을 자신의 머신에 남기도록 요청합니다. 도구가 작성한 내용은 게시된 결과가 아니라 검토해야 할 코드로 취급하세요.</description>
+    </item>
+    
+    <item>
       <title>인가 결정</title>
       <link>https://engine.speedle.io/ko/docs/decisions/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>

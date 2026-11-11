@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <script>document.documentElement.classList.add('docs-js','navigation-js');addEventListener('DOMContentLoaded',function(){if(!document.querySelector('header.site-header.navigation-ready'))document.documentElement.classList.remove('navigation-js')});</script>
+    <meta name="generator" content="Hugo 0.48" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1"><title>Guía de pruebas de rendimiento · Speedle Engine</title>
+<meta name="description" content="Ejecute una comparación justa y reproducible de motores de autorización en su propia máquina con ayuda de una herramienta de IA.">
+<meta name="generator" content="Hugo 0.48" />
+<link href="https://engine.speedle.io/index.xml" rel="alternate" type="application/rss+xml">
+<link rel="canonical" href="https://engine.speedle.io/es/docs/performance-testing/">
+
+<link rel="alternate" hreflang="en" href="https://engine.speedle.io/docs/performance-testing/">
+<link rel="alternate" hreflang="es" href="https://engine.speedle.io/es/docs/performance-testing/">
+<link rel="alternate" hreflang="ja" href="https://engine.speedle.io/ja/docs/performance-testing/">
+<link rel="alternate" hreflang="ko" href="https://engine.speedle.io/ko/docs/performance-testing/">
+<link rel="alternate" hreflang="zh-CN" href="https://engine.speedle.io/zh/docs/performance-testing/">
+<link rel="alternate" hreflang="x-default" href="https://engine.speedle.io/docs/performance-testing/">
+<meta property="og:type" content="article">
+<meta property="article:modified_time" content="2026-11-11T12:00:00&#43;08:00">
+<meta property="og:site_name" content="Speedle Engine">
+<meta property="og:title" content="Guía de pruebas de rendimiento · Speedle Engine">
+<meta property="og:description" content="Ejecute una comparación justa y reproducible de motores de autorización en su propia máquina con ayuda de una herramienta de IA.">
+<meta property="og:url" content="https://engine.speedle.io/es/docs/performance-testing/">
+<meta property="og:image" content="https://engine.speedle.io/img/social/engine-en.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:alt" content="Speedle Engine — Fast. Simple. Access control">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Guía de pruebas de rendimiento · Speedle Engine">
+<meta name="twitter:description" content="Ejecute una comparación justa y reproducible de motores de autorización en su propia máquina con ayuda de una herramienta de IA.">
+<meta name="twitter:image" content="https://engine.speedle.io/img/social/engine-en.png">
+<meta name="twitter:image:alt" content="Speedle Engine — Fast. Simple. Access control">
+
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/es/docs/performance-testing/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-11T12:00:00+08:00","description":"Ejecute una comparación justa y reproducible de motores de autorización en su propia máquina con ayuda de una herramienta de IA.","headline":"Guía de pruebas de rendimiento","image":"https://engine.speedle.io/img/social/engine-en.png","inLanguage":"es","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/es/docs/performance-testing/","@type":"WebPage"},"name":"Guía de pruebas de rendimiento","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/es/docs/performance-testing/"}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/es/docs/performance-testing/#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://engine.speedle.io/es/","name":"Inicio","position":1},{"@type":"ListItem","item":"https://engine.speedle.io/es/docs/","name":"Documentación","position":2},{"@type":"ListItem","item":"https://engine.speedle.io/es/docs/performance-testing/","name":"Guía de pruebas de rendimiento","position":3}]}</script><link href="/css/docs.css" rel="stylesheet" type="text/css">
+
+
+
+    <link href="/css/command-copy.css" rel="stylesheet" type="text/css">
+
+
+    <link href="/css/navigation.css?v=header-20261106-v8" rel="stylesheet">
+    <script src="/js/navigation.js?v=header-20261106-v8" defer></script>
+    <script src="/js/docs.js" defer></script>
+<script src="/js/command-copy.js" defer></script>
+</head>
+
+<body class="page-kube docs-page">
+    <header class="site-header">
+    <div class="wrap nav">
+      <a class="brand" href="/es/#top" aria-label="Inicio de Speedle Engine"><img class="brand-logo" src="/img/speedle/Speedle_logo_home_bold.svg?v=4" width="304" height="104" alt=""><span class="brand-divider" aria-hidden="true"></span><span class="brand-product">Engine</span></a>
+      <button class="menu" type="button" aria-expanded="false" aria-controls="nav-links" aria-label="Abrir navegación">☰</button>
+      <nav class="nav-links" id="nav-links" aria-label="Navegación principal">
+        <div class="products"><button class="products-button" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="products-panel">Productos<svg class="products-chevron" width="10" height="10" viewBox="0 0 10 10" aria-hidden="true" focusable="false"><path d="M2 3.5 5 6.5 8 3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button><span class="products-heading" aria-hidden="true">Productos</span><div class="products-panel" id="products-panel" role="group" aria-label="Productos"><a class="product-row" href="https://engine.speedle.io/es/" aria-current="page"><img class="product-mark" src="/img/speedle/speedle-mark-engine.svg" alt="" width="20" height="20"><span class="product-text"><span class="product-name">Speedle Engine</span><span class="product-desc">Motor de autorización de código abierto</span></span><svg class="product-check" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M3.5 8.5 6.5 11.5 12.5 4.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></a><a class="product-row" href="https://cloud.speedle.io/es/"><img class="product-mark" src="/img/speedle/speedle-mark-cloud.svg" alt="" width="20" height="20"><span class="product-text"><span class="product-name">Speedle Cloud <span class="product-badge">Próximamente</span></span><span class="product-desc">Autorización hospedada para desarrolladores</span></span></a><a class="product-row" href="https://ai.speedle.io/es/"><img class="product-mark" src="/img/speedle/speedle-mark-ai.svg" alt="" width="20" height="20"><span class="product-text"><span class="product-name">Speedle AI</span><span class="product-desc">IA para control de acceso, control de acceso para IA</span></span></a></div></div>
+        <a href="/es/#about">Acerca de</a><a href="/es/#features">Características</a>
+        <a href="/es/quick-start/">Comenzar</a><a href="/es/docs/">Documentación</a><a href="/es/playground/">Playground</a>
+        <div class="languages"><button class="languages-button" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="languages-panel">Español<svg class="languages-chevron" width="10" height="10" viewBox="0 0 10 10" aria-hidden="true" focusable="false"><path d="M2 3.5 5 6.5 8 3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button><span class="languages-heading" aria-hidden="true">Idiomas</span><div class="languages-panel" id="languages-panel" role="group" aria-label="Idiomas"><a class="language-row" href="/docs/performance-testing/" lang="en" hreflang="en" >English</a><a class="language-row" href="/ja/docs/performance-testing/" lang="ja" hreflang="ja">日本語</a><a class="language-row" href="/ko/docs/performance-testing/" lang="ko" hreflang="ko">한국어</a><a class="language-row" href="/es/docs/performance-testing/" lang="es" hreflang="es" aria-current="page">Español</a><a class="language-row" href="/zh/docs/performance-testing/" lang="zh-CN" hreflang="zh-CN">中文</a></div></div>
+        <a class="nav-github" href="https://github.com/teramoby/speedle-plus">GitHub</a>
+      </nav>
+    </div>
+  </header>
+    <div class="container">
+        <button class="docs-nav-toggle" type="button" aria-expanded="false" aria-controls="docs-navigation">
+            <span>Menú</span>
+            <svg class="docs-nav-toggle-icon" viewBox="0 0 18 14" width="18" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M1 1h16M1 7h16M1 13h16"/></svg>
+        </button>
+        <div class="content-container single-line-title"><aside class="docs-sidebar" id="docs-navigation" aria-label="Navegación de documentación">
+<div class="docs-nav-head">
+<span class="docs-nav-title">Documentación</span>
+<button class="docs-nav-close" type="button" aria-label="Cerrar menú"><svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="m3 3 10 10M13 3 3 13"/></svg></button>
+</div>
+<div class="sidebar">
+<nav>
+<ul>
+
+
+
+
+
+<li data-docs-depth="-1" class="docs-nav-section parent"><span class="docs-nav-heading">Documentación</span>
+<ul class="sub-menu">
+<li data-docs-depth="0" class=""><a href="/es/docs/usecases/">Casos de uso</a></li>
+<li data-docs-depth="0" class=""><a href="/es/docs/overview/">Descripción general</a></li>
+<li data-docs-depth="0" class=""><a href="/es/docs/spdl/">SPDL: Lenguaje de definición de políticas Speedle</a></li>
+<li data-docs-depth="0" class=""><a href="/es/docs/architecture/">Arquitectura</a></li>
+<li data-docs-depth="0" class="active"><a href="/es/docs/performance-testing/" aria-current="page">Guía de pruebas de rendimiento</a></li>
+
+
+
+<li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading">Políticas de Speedle</span>
+<ul class="">
+<li data-docs-depth="1" class=""><a href="/es/docs/pms/policy-mgmt/">Gestión de políticas</a></li>
+<li data-docs-depth="1" class=""><a href="/es/docs/pms/global-policy/">Políticas globales</a></li>
+<li data-docs-depth="1" class=""><a href="/es/docs/pms/diagnosis/">Diagnóstico de autorización</a></li>
+<li data-docs-depth="1" class=""><a href="/es/docs/pms/discover/">Descubrimiento de políticas</a></li>
+</ul>
+
+</li>
+<li data-docs-depth="0" class=""><a href="/es/docs/decisions/">Decisiones de autorización</a></li>
+<li data-docs-depth="0" class=""><a href="/es/docs/idd/">Dominio de identidad</a></li>
+<li data-docs-depth="0" class=""><a href="/es/docs/assertor/">Asertor de tokens</a></li>
+
+
+
+<li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading docs-nav-heading-link"><a href="/es/docs/store/">Almacenamiento conectable</a></span>
+<ul class="">
+<li data-docs-depth="1" class=""><a href="/es/docs/store/mysql/">Configuración de MySQL</a></li>
+<li data-docs-depth="1" class=""><a href="/es/docs/store/etcd/">Configuración de etcd</a></li>
+<li data-docs-depth="1" class=""><a href="/es/docs/store/mongodb/">Configuración de MongoDB</a></li>
+</ul>
+
+</li>
+
+
+
+<li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading">API</span>
+<ul class="">
+<li data-docs-depth="1" class=""><a href="/es/docs/api/decision_api/">API de decisiones de autorización</a></li>
+<li data-docs-depth="1" class=""><a href="/es/docs/api/management_api/">API de gestión de políticas</a></li>
+<li data-docs-depth="1" class=""><a href="/es/docs/api/asserter_api/">API del complemento de aserción de tokens</a></li>
+</ul>
+
+</li>
+
+
+
+<li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading docs-nav-heading-link"><a href="/es/docs/deployment/">Despliegue</a></span>
+<ul class="">
+<li data-docs-depth="1" class=""><a href="/es/docs/deployment/embedded/">Modo integrado de Speedle</a></li>
+<li data-docs-depth="1" class=""><a href="/es/docs/deployment/docker/">Imagen de Docker</a></li>
+<li data-docs-depth="1" class=""><a href="/es/docs/deployment/homebrew/">Instalación con Homebrew</a></li>
+</ul>
+
+</li>
+
+
+
+<li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading docs-nav-heading-link"><a href="/es/docs/sdks/">SDK</a></span>
+<ul class="">
+<li data-docs-depth="1" class=""><a href="/es/docs/sdks/java/">Java SDK</a></li>
+<li data-docs-depth="1" class=""><a href="/es/docs/sdks/python/">Python SDK</a></li>
+<li data-docs-depth="1" class=""><a href="/es/docs/sdks/go/">Go SDK</a></li>
+<li data-docs-depth="1" class=""><a href="/es/docs/sdks/dotnet/">C#/.NET SDK</a></li>
+<li data-docs-depth="1" class=""><a href="/es/docs/sdks/rust/">Rust SDK</a></li>
+<li data-docs-depth="1" class=""><a href="/es/docs/sdks/node/">Node.js/TypeScript SDK</a></li>
+</ul>
+
+</li>
+
+
+
+<li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading docs-nav-heading-link"><a href="/es/docs/cloud/">Speedle Cloud</a></span>
+<ul class="">
+<li data-docs-depth="1" class=""><a href="/es/docs/cloud/getting-started/">Primeros pasos</a></li>
+<li data-docs-depth="1" class=""><a href="/es/docs/cloud/tokens/">Tokens de aplicación</a></li>
+<li data-docs-depth="1" class=""><a href="/es/docs/cloud/authorization-api/">API de autorización</a></li>
+<li data-docs-depth="1" class=""><a href="/es/docs/cloud/limits-and-errors/">Límites y errores</a></li>
+</ul>
+
+</li>
+<li data-docs-depth="0" class=""><a href="/es/docs/security/">Seguridad</a></li>
+<li data-docs-depth="0" class=""><a href="/es/docs/logging/">Marco de registro</a></li>
+<li data-docs-depth="0" class=""><a href="/es/docs/versions/">Versiones</a></li>
+<li data-docs-depth="0" class=""><a href="/es/docs/custom-function/">Función personalizada</a></li>
+</ul>
+
+</li>
+</ul>
+</nav>
+
+
+</div>
+</aside>
+<main>
+<div id="main" class="single-line-title">
+
+  <h1>Guía de pruebas de rendimiento</h1>
+  <p class="docs-lead">Mida Speedle y otros motores de autorización en su propio hardware y con sus propias políticas</p>
+
+
+
+
+<nav id="contents" class="docs-toc" data-docs-toc="h2" aria-label="En esta página">
+  <ol></ol>
+</nav>
+
+
+
+  <div id="kube-component" class="content">
+
+<p>Esta guía le ayuda a comparar Speedle con otros motores de autorización en su propia máquina. No publica un informe de rendimiento. Los números dependen de su hardware, su conjunto de políticas y las versiones de los motores que fije, así que el resultado que merece confianza es el que usted mismo mida.</p>
+
+<p>La guía ofrece un escenario compartido, políticas equivalentes para cuatro motores, una lista de comprobación metodológica y un prompt que puede pegar en una herramienta de IA como Claude Code, ChatGPT Codex, DeepSeek Harness o similar. El prompt pide a la herramienta que escriba los scripts, los ejecute y deje la salida sin procesar en su máquina. Trate lo que escriba la herramienta como código que debe revisar, no como un resultado publicado.</p>
+
+<h2 id="qué-obtiene-con-esta-guía">Qué obtiene con esta guía</h2>
+
+<ul>
+<li>Reglas RBAC y ABAC equivalentes para Speedle, Open Policy Agent (OPA), Casbin y Cedar, con la decisión esperada para cada solicitud.</li>
+<li>Scripts de benchmark ejecutables, comandos exactos y versiones de motor fijadas, generados y ejecutados en un directorio temporal de su máquina.</li>
+<li>Percentiles de latencia, rendimiento, uso de memoria y escalado, con la carga de políticas medida por separado de la evaluación en estado estable.</li>
+<li>Salida sin procesar, detalles del entorno y una plantilla de resultados que permanecen en local. Esta guía no sube nada.</li>
+</ul>
+
+<p>El conjunto de motores candidatos es un punto de partida, no una clasificación. Confirme que cada versión que elija admite el escenario, registre los casos que excluya y por qué, y no presente un caso excluido como resultado de ese motor.</p>
+
+<h2 id="antes-de-empezar">Antes de empezar</h2>
+
+<ul>
+<li>Use una máquina que controle y pueda dejar inactiva durante las ejecuciones. Cierre otros procesos pesados y anote el modelo de CPU, el número de núcleos, la memoria y el sistema operativo.</li>
+<li>Instale las herramientas que necesita la comparación: Git y Go 1.26 o posterior para Speedle y los motores basados en Go, y lo que exija el inicio rápido oficial de cada uno de los demás motores. Fije todas las versiones, incluida la etiqueta de versión de Speedle.</li>
+<li>Use una herramienta de IA que pueda crear archivos y ejecutar comandos de shell en un directorio temporal. Revise sus scripts antes de ejecutarlos y conserve el directorio completo, incluida la salida sin procesar, como registro.</li>
+<li>Reserve entre 30 y 60 minutos para una primera comparación con conjuntos de políticas pequeños, y más tiempo si añade recuentos de políticas y concurrencia.</li>
+</ul>
+
+<p>Trabaje en un directorio vacío. No ejecute la comparación dentro del repositorio de Speedle; mantenga los scripts, las políticas, los registros y los resultados separados de cualquier repositorio.</p>
+
+<h2 id="el-escenario-compartido">El escenario compartido</h2>
+
+<p>La comparación usa un único conjunto de reglas de negocio:</p>
+
+<ul>
+<li>Los empleados pueden leer los documentos de su propio departamento.</li>
+<li>Los editores pueden leer y editar los documentos de su propio departamento.</li>
+<li>Bob es editor, pero tiene prohibido explícitamente editar el informe financiero del cuarto trimestre.</li>
+<li>Una solicitud a otro departamento se deniega aunque el usuario tenga el rol correspondiente.</li>
+</ul>
+
+<p>La solicitud lleva el <code>department</code> del usuario y el <code>owner_department</code> del recurso como atributos que aporta la aplicación. Todos los motores reciben las mismas solicitudes y deben producir la misma decisión.</p>
+
+<table>
+<thead>
+<tr>
+<th>Usuario</th>
+<th>Rol</th>
+<th>Acción</th>
+<th>Recurso</th>
+<th>department</th>
+<th>owner_department</th>
+<th>Esperado</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td>alice</td>
+<td>employee</td>
+<td>read</td>
+<td><code>/docs/finance/report</code></td>
+<td>finance</td>
+<td>finance</td>
+<td>Permitir</td>
+</tr>
+
+<tr>
+<td>alice</td>
+<td>employee</td>
+<td>read</td>
+<td><code>/docs/hr/salaries</code></td>
+<td>finance</td>
+<td>hr</td>
+<td>Denegar</td>
+</tr>
+
+<tr>
+<td>bob</td>
+<td>editor</td>
+<td>edit</td>
+<td><code>/docs/finance/report</code></td>
+<td>finance</td>
+<td>finance</td>
+<td>Permitir</td>
+</tr>
+
+<tr>
+<td>bob</td>
+<td>editor</td>
+<td>edit</td>
+<td><code>/docs/finance/q4</code></td>
+<td>finance</td>
+<td>finance</td>
+<td>Denegar (denegación explícita)</td>
+</tr>
+
+<tr>
+<td>carol</td>
+<td>editor</td>
+<td>edit</td>
+<td><code>/docs/finance/q4</code></td>
+<td>hr</td>
+<td>finance</td>
+<td>Denegar (condición de departamento)</td>
+</tr>
+
+<tr>
+<td>carol</td>
+<td>editor</td>
+<td>read</td>
+<td><code>/docs/hr/handbook</code></td>
+<td>hr</td>
+<td>hr</td>
+<td>Permitir</td>
+</tr>
+</tbody>
+</table>
+
+<p>Los ejemplos de esta guía se validaron con Speedle v1.6.0, OPA v1.22.3, Casbin v2.123.0 y Cedar CLI v4.14.1. Fije las versiones que instale; son ejemplos, no una afirmación de que sean las únicas versiones compatibles.</p>
+
+<h3 id="speedle-spdl">Speedle (SPDL)</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-spdl" data-lang="spdl">[service.documents]
+
+[policy]
+grant role employee read expr:/docs/.* if department == owner_department
+grant role editor read,edit expr:/docs/.* if department == owner_department
+deny user bob edit /docs/finance/q4
+
+[rolepolicy]
+grant user alice role employee
+grant user bob role editor
+grant user carol role editor</code></pre></div>
+<p>En Speedle, una denegación aplicable prevalece sobre un permiso. Una condición que hace referencia a un atributo ausente de la solicitud no coincide, así que la aplicación debe enviar <code>department</code> y <code>owner_department</code> en cada solicitud. El archivo de políticas se valida con <code>spctl check</code>; consulte <a href="/es/docs/spdl/">SPDL</a> para la gramática y <a href="/es/docs/pms/policy-mgmt/">Gestión de políticas</a> para los servicios y las políticas de rol.</p>
+
+<h3 id="opa-rego">OPA (Rego)</h3>
+
+<p>Política:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-rego" data-lang="rego"><span style="color:#ff79c6">package</span> documents
+
+<span style="color:#ff79c6">import</span> rego.v1
+
+<span style="color:#ff79c6">default</span> allow <span style="color:#ff79c6">:=</span> <span style="color:#ff79c6">false</span>
+
+allow <span style="color:#ff79c6">if</span> {
+	not denied
+	input.action <span style="color:#ff79c6">==</span> <span style="color:#f1fa8c">&#34;read&#34;</span>
+	<span style="color:#f1fa8c">&#34;employee&#34;</span> in roles
+	input.attributes.department <span style="color:#ff79c6">==</span> input.attributes.owner_department
+}
+
+allow <span style="color:#ff79c6">if</span> {
+	not denied
+	input.action in {<span style="color:#f1fa8c">&#34;read&#34;</span>, <span style="color:#f1fa8c">&#34;edit&#34;</span>}
+	<span style="color:#f1fa8c">&#34;editor&#34;</span> in roles
+	input.attributes.department <span style="color:#ff79c6">==</span> input.attributes.owner_department
+}
+
+roles contains role <span style="color:#ff79c6">if</span> {
+	some role in data.roles[input.user]
+}
+
+denied <span style="color:#ff79c6">if</span> {
+	input.user <span style="color:#ff79c6">==</span> <span style="color:#f1fa8c">&#34;bob&#34;</span>
+	input.action <span style="color:#ff79c6">==</span> <span style="color:#f1fa8c">&#34;edit&#34;</span>
+	input.resource <span style="color:#ff79c6">==</span> <span style="color:#f1fa8c">&#34;/docs/finance/q4&#34;</span>
+}</code></pre></div>
+<p>Datos (<code>data.json</code>):</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">{
+  <span style="color:#ff79c6">&#34;roles&#34;</span>: {
+    <span style="color:#ff79c6">&#34;alice&#34;</span>: [<span style="color:#f1fa8c">&#34;employee&#34;</span>],
+    <span style="color:#ff79c6">&#34;bob&#34;</span>: [<span style="color:#f1fa8c">&#34;editor&#34;</span>],
+    <span style="color:#ff79c6">&#34;carol&#34;</span>: [<span style="color:#f1fa8c">&#34;editor&#34;</span>]
+  }
+}</code></pre></div>
+<p>Rego no trae una regla integrada de prioridad de denegación, así que las políticas anteriores restan la denegación explícita de las dos reglas de permiso. Los datos de roles forman parte del documento de datos de OPA. Use la sintaxis de Rego de la versión de OPA que fije (el ejemplo usa la sintaxis Rego v1 de OPA 1.x).</p>
+
+<h3 id="casbin">Casbin</h3>
+
+<p>Modelo (<code>model.conf</code>):</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ini" data-lang="ini"><span style="color:#ff79c6">[request_definition]</span>
+<span style="color:#50fa7b">r</span> <span style="color:#ff79c6">=</span> <span style="color:#f1fa8c">sub, obj, act, dept, ownerDept</span>
+
+<span style="color:#ff79c6">[policy_definition]</span>
+<span style="color:#50fa7b">p</span> <span style="color:#ff79c6">=</span> <span style="color:#f1fa8c">sub, obj, act, eft</span>
+
+<span style="color:#ff79c6">[role_definition]</span>
+<span style="color:#50fa7b">g</span> <span style="color:#ff79c6">=</span> <span style="color:#f1fa8c">_, _</span>
+
+<span style="color:#ff79c6">[policy_effect]</span>
+<span style="color:#50fa7b">e</span> <span style="color:#ff79c6">=</span> <span style="color:#f1fa8c">some(where (p.eft == allow)) &amp;&amp; !some(where (p.eft == deny))</span>
+
+<span style="color:#ff79c6">[matchers]</span>
+<span style="color:#50fa7b">m</span> <span style="color:#ff79c6">=</span> <span style="color:#f1fa8c">(r.sub == p.sub || g(r.sub, p.sub)) &amp;&amp; keyMatch(r.obj, p.obj) &amp;&amp; regexMatch(r.act, p.act) &amp;&amp; r.dept == r.ownerDept</span></code></pre></div>
+<p>Política (<code>policy.csv</code>):</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-csv" data-lang="csv">p, employee, /docs/*, read, allow
+p, editor, /docs/*, read, allow
+p, editor, /docs/*, edit, allow
+p, bob, /docs/finance/q4, edit, deny
+g, alice, employee
+g, bob, editor
+g, carol, editor</code></pre></div>
+<p>Casbin divide el modelo, las filas de política y las asignaciones de rol en tres entradas. La comprobación ABAC de departamento vive en la expresión de coincidencia, así que también se aplica a la fila de denegación; la solicitud denegada de este escenario lleva departamentos coincidentes, lo que mantiene las decisiones esperadas. Registre cualquier cambio que haga en la expresión de coincidencia para una denegación incondicional.</p>
+
+<h3 id="cedar">Cedar</h3>
+
+<p>Esquema (<code>schema.cedar</code>):</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cedar" data-lang="cedar">entity Role;
+entity User in [Role];
+entity Folder;
+entity Document in [Folder];
+
+action &#34;read&#34; appliesTo {
+  principal: [User],
+  resource: [Document],
+  context: { department: String, ownerDepartment: String }
+};
+action &#34;edit&#34; appliesTo {
+  principal: [User],
+  resource: [Document],
+  context: { department: String, ownerDepartment: String }
+};</code></pre></div>
+<p>Política (<code>policies.cedar</code>):</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cedar" data-lang="cedar">permit (
+  principal in Role::&#34;employee&#34;,
+  action == Action::&#34;read&#34;,
+  resource in Folder::&#34;/docs&#34;
+)
+when { context.department == context.ownerDepartment };
+
+permit (
+  principal in Role::&#34;editor&#34;,
+  action in [Action::&#34;read&#34;, Action::&#34;edit&#34;],
+  resource in Folder::&#34;/docs&#34;
+)
+when { context.department == context.ownerDepartment };
+
+forbid (
+  principal == User::&#34;bob&#34;,
+  action == Action::&#34;edit&#34;,
+  resource == Document::&#34;/docs/finance/q4&#34;
+);</code></pre></div>
+<p>Entidades (<code>entities.json</code>):</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">[
+  {<span style="color:#ff79c6">&#34;uid&#34;</span>: {<span style="color:#ff79c6">&#34;type&#34;</span>: <span style="color:#f1fa8c">&#34;User&#34;</span>, <span style="color:#ff79c6">&#34;id&#34;</span>: <span style="color:#f1fa8c">&#34;alice&#34;</span>}, <span style="color:#ff79c6">&#34;attrs&#34;</span>: {}, <span style="color:#ff79c6">&#34;parents&#34;</span>: [{<span style="color:#ff79c6">&#34;type&#34;</span>: <span style="color:#f1fa8c">&#34;Role&#34;</span>, <span style="color:#ff79c6">&#34;id&#34;</span>: <span style="color:#f1fa8c">&#34;employee&#34;</span>}]},
+  {<span style="color:#ff79c6">&#34;uid&#34;</span>: {<span style="color:#ff79c6">&#34;type&#34;</span>: <span style="color:#f1fa8c">&#34;User&#34;</span>, <span style="color:#ff79c6">&#34;id&#34;</span>: <span style="color:#f1fa8c">&#34;bob&#34;</span>}, <span style="color:#ff79c6">&#34;attrs&#34;</span>: {}, <span style="color:#ff79c6">&#34;parents&#34;</span>: [{<span style="color:#ff79c6">&#34;type&#34;</span>: <span style="color:#f1fa8c">&#34;Role&#34;</span>, <span style="color:#ff79c6">&#34;id&#34;</span>: <span style="color:#f1fa8c">&#34;editor&#34;</span>}]},
+  {<span style="color:#ff79c6">&#34;uid&#34;</span>: {<span style="color:#ff79c6">&#34;type&#34;</span>: <span style="color:#f1fa8c">&#34;User&#34;</span>, <span style="color:#ff79c6">&#34;id&#34;</span>: <span style="color:#f1fa8c">&#34;carol&#34;</span>}, <span style="color:#ff79c6">&#34;attrs&#34;</span>: {}, <span style="color:#ff79c6">&#34;parents&#34;</span>: [{<span style="color:#ff79c6">&#34;type&#34;</span>: <span style="color:#f1fa8c">&#34;Role&#34;</span>, <span style="color:#ff79c6">&#34;id&#34;</span>: <span style="color:#f1fa8c">&#34;editor&#34;</span>}]},
+  {<span style="color:#ff79c6">&#34;uid&#34;</span>: {<span style="color:#ff79c6">&#34;type&#34;</span>: <span style="color:#f1fa8c">&#34;Folder&#34;</span>, <span style="color:#ff79c6">&#34;id&#34;</span>: <span style="color:#f1fa8c">&#34;/docs&#34;</span>}, <span style="color:#ff79c6">&#34;attrs&#34;</span>: {}, <span style="color:#ff79c6">&#34;parents&#34;</span>: []},
+  {<span style="color:#ff79c6">&#34;uid&#34;</span>: {<span style="color:#ff79c6">&#34;type&#34;</span>: <span style="color:#f1fa8c">&#34;Document&#34;</span>, <span style="color:#ff79c6">&#34;id&#34;</span>: <span style="color:#f1fa8c">&#34;/docs/finance/report&#34;</span>}, <span style="color:#ff79c6">&#34;attrs&#34;</span>: {}, <span style="color:#ff79c6">&#34;parents&#34;</span>: [{<span style="color:#ff79c6">&#34;type&#34;</span>: <span style="color:#f1fa8c">&#34;Folder&#34;</span>, <span style="color:#ff79c6">&#34;id&#34;</span>: <span style="color:#f1fa8c">&#34;/docs&#34;</span>}]},
+  {<span style="color:#ff79c6">&#34;uid&#34;</span>: {<span style="color:#ff79c6">&#34;type&#34;</span>: <span style="color:#f1fa8c">&#34;Document&#34;</span>, <span style="color:#ff79c6">&#34;id&#34;</span>: <span style="color:#f1fa8c">&#34;/docs/finance/q4&#34;</span>}, <span style="color:#ff79c6">&#34;attrs&#34;</span>: {}, <span style="color:#ff79c6">&#34;parents&#34;</span>: [{<span style="color:#ff79c6">&#34;type&#34;</span>: <span style="color:#f1fa8c">&#34;Folder&#34;</span>, <span style="color:#ff79c6">&#34;id&#34;</span>: <span style="color:#f1fa8c">&#34;/docs&#34;</span>}]},
+  {<span style="color:#ff79c6">&#34;uid&#34;</span>: {<span style="color:#ff79c6">&#34;type&#34;</span>: <span style="color:#f1fa8c">&#34;Document&#34;</span>, <span style="color:#ff79c6">&#34;id&#34;</span>: <span style="color:#f1fa8c">&#34;/docs/hr/salaries&#34;</span>}, <span style="color:#ff79c6">&#34;attrs&#34;</span>: {}, <span style="color:#ff79c6">&#34;parents&#34;</span>: [{<span style="color:#ff79c6">&#34;type&#34;</span>: <span style="color:#f1fa8c">&#34;Folder&#34;</span>, <span style="color:#ff79c6">&#34;id&#34;</span>: <span style="color:#f1fa8c">&#34;/docs&#34;</span>}]},
+  {<span style="color:#ff79c6">&#34;uid&#34;</span>: {<span style="color:#ff79c6">&#34;type&#34;</span>: <span style="color:#f1fa8c">&#34;Document&#34;</span>, <span style="color:#ff79c6">&#34;id&#34;</span>: <span style="color:#f1fa8c">&#34;/docs/hr/handbook&#34;</span>}, <span style="color:#ff79c6">&#34;attrs&#34;</span>: {}, <span style="color:#ff79c6">&#34;parents&#34;</span>: [{<span style="color:#ff79c6">&#34;type&#34;</span>: <span style="color:#f1fa8c">&#34;Folder&#34;</span>, <span style="color:#ff79c6">&#34;id&#34;</span>: <span style="color:#f1fa8c">&#34;/docs&#34;</span>}]}
+]</code></pre></div>
+<p>En Cedar, un forbid prevalece sobre un permit y toda solicitud empieza denegada. Los roles y la jerarquía de documentos son datos del almacén de entidades, no texto de la política, así que el esquema y las entidades forman parte de la comparación. La lista de entidades del ejemplo debe incluir todos los documentos que usa la matriz de solicitudes.</p>
+
+<h3 id="diferencias-semánticas-que-debe-registrar">Diferencias semánticas que debe registrar</h3>
+
+<p>La misma regla de negocio no siempre se traduce en los mismos conceptos. Antes de medir nada, haga que las cuatro implementaciones coincidan en las decisiones esperadas y anote:</p>
+
+<ul>
+<li>Cómo resuelve cada motor una denegación que coincide con un permiso, y si la denegación es incondicional o comparte la condición ABAC.</li>
+<li>Qué hace cada motor cuando una solicitud omite <code>department</code> u <code>owner_department</code>.</li>
+<li>Cómo se expresan los patrones de recurso (expresiones regulares <code>expr:</code> de SPDL, expresiones de coincidencia de Casbin, reglas auxiliares de OPA, jerarquía de entidades de Cedar).</li>
+<li>Qué partes son código de aplicación o configuración obligatoria fuera del texto de la política (esquema y entidades de Cedar, modelo y datos de roles de Casbin, documentos de datos de OPA, servicio y políticas de rol de Speedle).</li>
+<li>Qué caso no puede expresar un motor en la versión elegida; exclúyalo de los casos clasificados y dígalo.</li>
+</ul>
+
+<h2 id="medir-lo-correcto">Medir lo correcto</h2>
+
+<p>Use la misma máquina, los mismos datos de solicitud y los mismos tamaños de conjunto de políticas para todos los motores. Fije las versiones y conserve el conjunto de datos generado, para que una nueva ejecución mida el mismo trabajo.</p>
+
+<ul>
+<li><strong>Separe la evaluación integrada de las pruebas de servicio o API.</strong> Una llamada a función en proceso y una solicitud HTTP miden cosas distintas. Preséntelas en tablas separadas y nunca clasifique una frente a la otra.</li>
+<li><strong>Caliente y repita.</strong> Ejecute cada motor las veces necesarias para alcanzar un resultado estable, descarte las ejecuciones de calentamiento, repita la medición completa al menos tres veces e informe la variación entre ejecuciones.</li>
+<li><strong>Informe latencia y rendimiento.</strong> Incluya la latencia p50, p95 y p99 y las solicitudes por segundo cuando las herramientas del motor lo permitan. Registre los fallos y los tiempos de espera.</li>
+<li><strong>Mida la memoria.</strong> Registre la memoria residente máxima o la métrica de memoria propia del motor que pueda medir de forma consistente.</li>
+<li><strong>Varíe el número de políticas y la concurrencia.</strong> Empiece con un conjunto pequeño y aumente después el número de políticas y de llamadas concurrentes. Registre todos los puntos de datos, no solo el mejor.</li>
+<li><strong>Mida la carga de políticas y el arranque por separado.</strong> Mida cuánto tarda cada motor en analizar y cargar el conjunto de políticas antes del bucle en estado estable; no oculte ese coste en la primera solicitud.</li>
+<li><strong>Declare las cachés y la preparación.</strong> Anote los índices, las políticas compiladas, las cachés de decisiones y cualquier cálculo previo, y si estaban calientes o fríos.</li>
+<li><strong>Conserve la salida sin procesar.</strong> Guarde el comando exacto, la configuración, los archivos de política, las versiones de los motores, el entorno y la salida completa de cada ejecución.</li>
+</ul>
+
+<h2 id="ejecutar-la-comparación-con-una-herramienta-de-ia">Ejecutar la comparación con una herramienta de IA</h2>
+
+<p>Abra un directorio vacío en Claude Code, ChatGPT Codex, DeepSeek Harness o una herramienta similar que pueda escribir archivos y ejecutar comandos. Pegue el prompt siguiente tal cual. Pide a la herramienta que registre el entorno, fije las versiones, construya el escenario compartido, valide las decisiones esperadas, ejecute las mediciones y produzca una plantilla de resultados local.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">Ayúdame a ejecutar una comparación rápida de rendimiento de Speedle con OPA, Casbin y Cedar en mi propia máquina. Primero registra mi sistema operativo, mi hardware y mis límites de recursos; después selecciona y fija versiones de motor compatibles. Crea ejemplos equivalentes de RBAC y ABAC con un conjunto de datos compartido y decisiones de permitir/denegar esperadas. Explica las diferencias semánticas y excluye de las clasificaciones directas los casos no compatibles. Valida la corrección antes de medir el rendimiento.
+
+Crea scripts de benchmark ejecutables y comandos exactos de instalación y ejecución. Mantén separadas las pruebas integradas de las de servicio/API. Usa cargas de trabajo idénticas, varía el número de políticas y la concurrencia, declara las cachés y la preparación, calienta cada motor y repite las mediciones. Informa latencia, rendimiento, uso de memoria y variación entre ejecuciones cuando sea posible, con la salida sin procesar y los detalles del entorno. Informa solo los números que hayas medido realmente; etiqueta todo lo que no hayas podido ejecutar.
+
+Muestra la política equivalente y cualquier modelo, esquema o código de aplicación necesario para cada motor. Compara legibilidad, conceptos que hay que aprender, esfuerzo de autoría, validación, depuración y facilidad para cambiar una política. Explica las ventajas y desventajas y qué motor encaja en cada carga de trabajo probada sin suponer que Speedle gana.</code></pre></div>
+<p>La herramienta debe trabajar en el directorio actual y dejar allí los scripts, las políticas y la salida. Revise los scripts antes de la primera ejecución, especialmente cualquier paso de descarga o instalación. Si la herramienta no puede instalar un motor en su entorno, pídale que marque ese motor como no ejecutado en lugar de estimar un número.</p>
+
+<h2 id="revisar-el-trabajo-de-la-herramienta-de-ia">Revisar el trabajo de la herramienta de IA</h2>
+
+<ul>
+<li>Confirme que las cuatro implementaciones devuelven la decisión de la tabla para cada solicitud antes de empezar a medir. Una respuesta rápida pero incorrecta no es un resultado.</li>
+<li>Confirme que las versiones instaladas coinciden con las que informa y que se usaron la misma máquina, los mismos datos de solicitud y los mismos tamaños de conjunto de políticas para todos los motores.</li>
+<li>Confirme que la carga y el arranque se informan por separado del bucle en estado estable, y que las mediciones integradas y las de servicio/API están en tablas separadas.</li>
+<li>Confirme que existe salida sin procesar para cada número del resumen; un número sin comando ni salida detrás se trata como no medido.</li>
+<li>Lea la sección de limitaciones. Un motor que no pudo ejecutar un caso debe aparecer como no ejecutado, no clasificado.</li>
+</ul>
+
+<h2 id="plantilla-de-resultados">Plantilla de resultados</h2>
+
+<p>Pida a la herramienta que complete una tabla local como esta y consérvela junto a la salida sin procesar. No la publique como un informe de rendimiento de Speedle.</p>
+
+<table>
+<thead>
+<tr>
+<th>Motor</th>
+<th>Versión</th>
+<th>Modo</th>
+<th align="right">Políticas</th>
+<th align="right">Concurrencia</th>
+<th align="right">p50</th>
+<th align="right">p95</th>
+<th align="right">p99</th>
+<th align="right">Rendimiento</th>
+<th align="right">Memoria máxima</th>
+<th align="right">Tiempo de carga</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td>Speedle</td>
+<td></td>
+<td>integrado</td>
+<td align="right"></td>
+<td align="right"></td>
+<td align="right"></td>
+<td align="right"></td>
+<td align="right"></td>
+<td align="right"></td>
+<td align="right"></td>
+<td align="right"></td>
+</tr>
+
+<tr>
+<td>OPA</td>
+<td></td>
+<td>integrado</td>
+<td align="right"></td>
+<td align="right"></td>
+<td align="right"></td>
+<td align="right"></td>
+<td align="right"></td>
+<td align="right"></td>
+<td align="right"></td>
+<td align="right"></td>
+</tr>
+
+<tr>
+<td>Casbin</td>
+<td></td>
+<td>integrado</td>
+<td align="right"></td>
+<td align="right"></td>
+<td align="right"></td>
+<td align="right"></td>
+<td align="right"></td>
+<td align="right"></td>
+<td align="right"></td>
+<td align="right"></td>
+</tr>
+
+<tr>
+<td>Cedar</td>
+<td></td>
+<td>integrado</td>
+<td align="right"></td>
+<td align="right"></td>
+<td align="right"></td>
+<td align="right"></td>
+<td align="right"></td>
+<td align="right"></td>
+<td align="right"></td>
+<td align="right"></td>
+</tr>
+</tbody>
+</table>
+
+<p>Conserve también una tabla de ejecuciones:</p>
+
+<table>
+<thead>
+<tr>
+<th>Ejecución</th>
+<th>Motor</th>
+<th>Comando</th>
+<th>Salida sin procesar</th>
+<th>Notas</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td>1</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+
+<h2 id="comparación-de-facilidad-de-uso">Comparación de facilidad de uso</h2>
+
+<p>Las mediciones y la facilidad de uso son observaciones separadas. Compare las mismas reglas de negocio y registre cómo las expresa cada motor:</p>
+
+<ul>
+<li><strong>Speedle (SPDL).</strong> Cada regla es una sentencia, las asignaciones de rol están en una sección de políticas de rol aparte y la condición es una expresión booleana sobre atributos de la solicitud. Las políticas se pueden validar con <code>spctl check</code>.</li>
+<li><strong>OPA (Rego).</strong> Las reglas se escriben como cuerpos bajo una denegación por defecto, los datos de roles viven en un documento aparte y una denegación explícita necesita su propia regla y exclusiones en las reglas de permiso.</li>
+<li><strong>Casbin.</strong> El modelo, las filas de política y las asignaciones de rol son entradas separadas. La comprobación ABAC forma parte de la expresión de coincidencia, así que cambiar la condición implica cambiar el modelo.</li>
+<li><strong>Cedar.</strong> Un esquema declara las entidades y las acciones, las políticas son sentencias permit y forbid, y los roles y la jerarquía de recursos viven en el almacén de entidades. Forbid prevalece sobre permit.</li>
+</ul>
+
+<p>Para cada motor, registre la legibilidad (cuán directamente la regla se lee como la frase de negocio), los conceptos que tuvo que aprender, el código repetitivo y de aplicación, la validación y los mensajes de error, las pruebas y la depuración, y lo que cuesta añadir o cambiar una regla. El número de líneas de política puede dar contexto, pero no lo use como única medida de facilidad de uso.</p>
+
+<h2 id="benchmarks-solo-de-speedle">Benchmarks solo de Speedle</h2>
+
+<p>Los <a href="https://github.com/teramoby/speedle-plus/blob/master/benchmarks/README.md">benchmarks</a> del repositorio cubren una evaluación solo de Speedle, incluido un caso opcional de un millón de políticas. Ejecútelos en el checkout con <code>go test -bench .</code> y siga el README para el caso de un millón de políticas. Esas mediciones son solo de Speedle y se tomaron en hardware concreto; no las presente como una comparación actual entre motores.</p>
+
+<h2 id="informar-con-justicia">Informar con justicia</h2>
+
+<ul>
+<li>Use el mismo escenario, los mismos datos y los mismos tamaños de conjunto de políticas para todos los motores, y diga qué casos no pudo ejecutar cada uno.</li>
+<li>Informe todo el rango de sus resultados, incluidos los casos en que otro motor sea más rápido.</li>
+<li>Explique qué motor encaja en cada carga de trabajo probada, con sus limitaciones. No declare un motor más rápido de forma universal a partir de un escenario en una máquina.</li>
+<li>Conserve la salida sin procesar y los comandos exactos junto a cualquier resumen que comparta.</li>
+</ul>
+</div>
+</div>
+</main>
+        </div>
+    </div>
+    <div class="docs-nav-backdrop" hidden></div>
+    <footer class="site-footer">
+    <div class="wrap footer-main">
+      <div class="footer-brand">
+        <a class="footer-lockup" href="/es/" aria-label="Inicio de Speedle Engine"><img src="/img/speedle/Speedle_logo_home_bold.svg?v=4" width="304" height="104" alt="Speedle"><span class="footer-divider" aria-hidden="true"></span><span class="footer-product">Engine</span></a>
+        <p class="footer-tagline">Motor de autorización de código abierto</p>
+        <nav class="social" aria-label="Enlaces comunitarios">
+          <a href="mailto:contact@speedle.io" aria-label="Email contact@speedle.io" title="contact@speedle.io"><img src="/img/speedle/28.%20Mail.svg" width="40" height="40" alt=""></a>
+          <a href="https://groups.google.com/forum/#!forum/speedle-users" aria-label="Google Groups" title="Google Groups — speedle-users"><img src="/img/speedle/Google-Groups.svg" width="24" height="24" alt=""></a>
+          <a href="https://github.com/teramoby/speedle-plus" aria-label="GitHub"><img src="/img/speedle/18.%20Github.svg" width="40" height="40" alt=""></a>
+          <a href="https://discord.gg/uaY2xVsbbT" aria-label="Discord"><img src="/img/speedle/Discord.svg" width="64" height="48" alt=""></a>
+        </nav>
+      </div>
+      <nav class="footer-family" aria-label="Productos de Speedle"><svg class="sphere-sprite" width="0" height="0" aria-hidden="true" focusable="false"><symbol id="i-speedle-sphere" viewBox="22 22 114 114"><!-- Source: img/speedle/Speedle_logo_home_bold.svg, sphere group only. Colours changed only (stroke currentColor). No path edits. --><g fill="none" stroke="currentColor" stroke-linejoin="miter" stroke-miterlimit="3" stroke-linecap="butt"><polygon stroke-width="3.6" points="41.83 47.82 30.67 80.15 42.9 112.09 72.8 128.69 106.38 122.19 127.93 95.63 127.36 61.43 104.94 35.6 71.16 30.23"/><g stroke-width="2.4"><polygon points="81.97 43.92 52.19 57.23 44.03 88.8 63.62 114.87 96.22 115.81 117.28 90.9 110.94 58.91"/><polygon points="68.57 60.42 57.6 86.19 78.73 104.59 102.75 90.18 96.47 62.88"/><path d="M41.83 47.82L52.19 57.23 68.57 60.42 81.97 43.92 71.16 30.23 M30.67 80.15L44.03 88.8 42.9 112.09 M52.19 57.23L57.6 86.19 44.03 88.8 78.73 104.59 63.62 114.87 72.8 128.69 M78.73 104.59L96.22 115.81 106.38 122.19 M96.22 115.81L102.75 90.18 117.28 90.9 127.93 95.63 M117.28 90.9L127.36 61.43 110.94 58.91 104.94 35.6 81.97 43.92 M110.94 58.91L96.47 62.88 117.28 90.9"/></g></g></symbol></svg>
+        <ul>
+          <li><a class="footer-card" href="https://engine.speedle.io/es/" aria-current="page"><svg class="product-sphere product-engine" aria-hidden="true" focusable="false"><use href="#i-speedle-sphere"/></svg><span class="footer-card-name">Speedle Engine</span><span class="footer-card-description">Motor de autorización de código abierto</span><svg class="footer-card-check" width="15" height="15" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M3.5 8.5 6.5 11.5 12.5 4.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></a></li>
+          <li><a class="footer-card" href="https://cloud.speedle.io/es/"><svg class="product-sphere product-cloud" aria-hidden="true" focusable="false"><use href="#i-speedle-sphere"/></svg><span class="footer-card-name">Speedle Cloud<span class="product-badge">Próximamente</span></span><span class="footer-card-description">Autorización hospedada para desarrolladores</span></a></li>
+          <li><a class="footer-card" href="https://ai.speedle.io/es/"><svg class="product-sphere product-ai" aria-hidden="true" focusable="false"><use href="#i-speedle-sphere"/></svg><span class="footer-card-name">Speedle AI</span><span class="footer-card-description">IA para control de acceso, control de acceso para IA</span></a></li>
+        </ul>
+      </nav>
+    </div>
+    <div class="wrap footer-bar">
+      <p class="footer-legal"><span>Con licencia Universal Permissive License v1.0.</span><span class="footer-legal-sep"> · </span><span>Copyright &copy; 2019–2026 The Speedle Authors. Todos los derechos reservados.</span></p>
+    </div>
+  </footer>
+<!-- Cloudflare Web Analytics --><script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "a7a746c498b940e58425123082a20520"}'></script><!-- End Cloudflare Web Analytics -->
+</body>
+
+</html>
