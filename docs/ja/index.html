@@ -190,6 +190,11 @@
       .contribute-card .button { justify-self: start; }
     }
     /* Accessibility contrast and the community banner (issue #244): end. */
+
+    /* Performance messaging (issue #342): start. */
+    .hero-note { max-width: 660px; margin: 14px 0 0; color: #fff; font-size: .88rem; }
+    .feature-card code { padding: 1px 5px; border-radius: 4px; color: var(--ink); background: var(--soft); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .9em; }
+    /* Performance messaging (issue #342): end. */
   </style>
   <link rel="stylesheet" href="/css/navigation.css?v=header-20261106-v8">
   <script type="application/ld+json">
@@ -224,8 +229,10 @@
           <span class="eyebrow">オープンソース認可エンジン</span>
           <h1>高速・<wbr>シンプルな<br>アクセス制御</h1>
           <p>きめ細かな認可を独立したエンジンに委ねます。ポリシーは読みやすく、一元管理され、異なる言語と技術スタックに対してミリ秒単位で決定を返します。</p>
+          <p class="hero-note">ポリシーの規模が大きくなっても、性能は落ちません。</p>
           <div class="actions">
             <a class="button button-primary" href="/ja/quick-start/">クイックスタート</a>
+            <a class="button button-secondary" href="/ja/docs/performance-testing/">自分の環境で比較する</a>
             <a class="button button-secondary" href="https://github.com/teramoby/speedle-plus">GitHub で見る</a>
           </div>
         </div>
@@ -316,9 +323,9 @@
           <p>明確で読みやすいポリシー、高速な決定、一元管理、柔軟な統合。</p>
         </div>
         <div class="feature-grid">
-          <article class="feature-card"><img class="feature-icon" src="/img/speedle/1.%20Simple%20Policy%20Definition%20Language.svg" width="138" height="110" alt=""><h3>シンプルなポリシー言語</h3><p>読みやすい SPDL で誰が何を実行できるかを明確に定義。</p><a href="/ja/docs/spdl/">詳細を見る</a></article>
+          <article class="feature-card"><img class="feature-icon" src="/img/speedle/1.%20Simple%20Policy%20Definition%20Language.svg" width="138" height="110" alt=""><h3>話すようにポリシーを書く</h3><p>誰が何をできるかを、話すようにそのまま書けます：<code>grant role editor read /docs</code>。新しいプログラミング言語を学ぶ必要も、JSON を手書きする必要もありません。</p><a href="/ja/docs/spdl/">詳細を見る</a></article>
           <article class="feature-card"><img class="feature-icon" src="/img/speedle/2.%20Cloud%20Native.svg" width="152" height="100" alt=""><h3>クラウドネイティブ</h3><p>マルチクラウド環境で動作し、プラグ可能なインターフェースを通じて現代的なインフラと連携。</p><a href="/ja/docs/architecture/">詳細を見る</a></article>
-          <article class="feature-card"><img class="feature-icon" src="/img/speedle/3.%20Policy%20Discovery.svg" width="165" height="110" alt=""><h3>リアルタイムポリシー検出</h3><p>実際のアクセスを記録し、実行可能な認可ポリシーを自動生成。</p><a href="/ja/docs/pms/">詳細を見る</a></article>
+          <article class="feature-card"><img class="feature-icon" src="/img/speedle/12.%20Performance.svg" width="200" height="140" alt=""><h3>圧倒的な性能</h3><p>100 件でも 1,000,000 件でも、認可の判断はマイクロ秒単位で返ります。ポリシーが増えても Speedle は速度を保ちます。数十件を超えたあたりから急に遅くなるエンジンとは違います。</p><a href="/ja/docs/performance-testing/">自分の環境で比較する</a></article>
           <article class="feature-card"><img class="feature-icon" src="/img/speedle/4.%20RBAC-ABAC.svg" width="212" height="110" alt=""><h3>RBAC / ABAC</h3><p>ロールと属性を組み合わせて、より精密なアクセス制御を実現。</p><a href="/ja/tags/policy/">詳細を見る</a></article>
           <article class="feature-card"><img class="feature-icon" src="/img/speedle/5.%20Centralized%20Policy%20Management.svg" width="235" height="110" alt=""><h3>集中管理</h3><p>複数のサービスにまたがる認可ポリシーを1か所で一元管理。</p><a href="/ja/docs/pms/policy-mgmt/">詳細を見る</a></article>
           <article class="feature-card"><img class="feature-icon" src="/img/speedle/6.%20Pluggable%20Identity.svg" width="210" height="110" alt=""><h3>接続可能なアイデンティティ</h3><p>特定のアイデンティティプロバイダに依存しません。アプリケーションが認証したユーザー、グループ、属性を Speedle に渡し、決定を受け取ります。</p><a href="/ja/docs/assertor/">詳細を見る</a></article>

@@ -156,3 +156,8 @@
       .contribute-card .button { justify-self: start; }
     }
     /* Accessibility contrast and the community banner (issue #244): end. */
+
+    /* Performance messaging (issue #342): start. */
+    .hero-note { max-width: 660px; margin: 14px 0 0; color: #fff; font-size: .88rem; }
+    .feature-card code { padding: 1px 5px; border-radius: 4px; color: var(--ink); background: var(--soft); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .9em; }
+    /* Performance messaging (issue #342): end. */
