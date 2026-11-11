@@ -10,6 +10,8 @@
   min-width: 0;
   border-radius: 12px 0 0 12px;
 }
+/* The copyable prompt is prose: wrap it instead of scrolling sideways. */
+#main .highlight.command-copy-prompt pre { white-space: pre-wrap; overflow-wrap: anywhere; }
 #main .command-copy-button {
   position: relative;
   flex: 0 0 44px;

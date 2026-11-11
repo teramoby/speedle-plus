@@ -5,6 +5,15 @@
 go test -bench .
 ```
 
+## 百万策略用例
+`BenchmarkGiant` 测量 1,000,000 条策略和 1,000,000 条角色策略，每个角色 1 个用户。
+它在计时循环之前写入临时策略文件并加载评估器，把写入和加载时间分别以 `write-s` 和 `load-s` 报告。
+该用例需要数 GB 内存和约 15 秒的准备工作，因此不在默认或每周运行中执行，需要显式开启：
+
+```bash
+SPEEDLE_BENCH_MILLION=1 go test ./benchmarks -bench '^BenchmarkGiant$' -benchtime=2s -benchmem
+```
+
 ## 测试报告
 
 [eval_b_test.go](eval_b_test.go)用来得到策略决策的时间开销。测试平台为：

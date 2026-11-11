@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <script>document.documentElement.classList.add('docs-js','navigation-js');addEventListener('DOMContentLoaded',function(){if(!document.querySelector('header.site-header.navigation-ready'))document.documentElement.classList.remove('navigation-js')});</script>
+    <meta name="generator" content="Hugo 0.48" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1"><title>性能测试指南 · Speedle Engine</title>
+<meta name="description" content="借助 AI 编程工具，在你自己的机器上公平、可重复地对比授权引擎的性能。">
+<meta name="generator" content="Hugo 0.48" />
+<link href="https://engine.speedle.io/index.xml" rel="alternate" type="application/rss+xml">
+<link rel="canonical" href="https://engine.speedle.io/zh/docs/performance-testing/">
+
+<link rel="alternate" hreflang="en" href="https://engine.speedle.io/docs/performance-testing/">
+<link rel="alternate" hreflang="es" href="https://engine.speedle.io/es/docs/performance-testing/">
+<link rel="alternate" hreflang="ja" href="https://engine.speedle.io/ja/docs/performance-testing/">
+<link rel="alternate" hreflang="ko" href="https://engine.speedle.io/ko/docs/performance-testing/">
+<link rel="alternate" hreflang="zh-CN" href="https://engine.speedle.io/zh/docs/performance-testing/">
+<link rel="alternate" hreflang="x-default" href="https://engine.speedle.io/docs/performance-testing/">
+<meta property="og:type" content="article">
+<meta property="article:modified_time" content="2026-11-11T12:00:00&#43;08:00">
+<meta property="og:site_name" content="Speedle Engine">
+<meta property="og:title" content="性能测试指南 · Speedle Engine">
+<meta property="og:description" content="借助 AI 编程工具，在你自己的机器上公平、可重复地对比授权引擎的性能。">
+<meta property="og:url" content="https://engine.speedle.io/zh/docs/performance-testing/">
+<meta property="og:image" content="https://engine.speedle.io/img/social/engine-zh.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:alt" content="Speedle Engine — 快速、简单的权限控制">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="性能测试指南 · Speedle Engine">
+<meta name="twitter:description" content="借助 AI 编程工具，在你自己的机器上公平、可重复地对比授权引擎的性能。">
+<meta name="twitter:image" content="https://engine.speedle.io/img/social/engine-zh.png">
+<meta name="twitter:image:alt" content="Speedle Engine — 快速、简单的权限控制">
+
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/zh/docs/performance-testing/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-11T12:00:00+08:00","description":"借助 AI 编程工具，在你自己的机器上公平、可重复地对比授权引擎的性能。","headline":"性能测试指南","image":"https://engine.speedle.io/img/social/engine-zh.png","inLanguage":"zh-CN","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/zh/docs/performance-testing/","@type":"WebPage"},"name":"性能测试指南","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/zh/docs/performance-testing/"}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/zh/docs/performance-testing/#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://engine.speedle.io/zh/","name":"首页","position":1},{"@type":"ListItem","item":"https://engine.speedle.io/zh/docs/","name":"文档","position":2},{"@type":"ListItem","item":"https://engine.speedle.io/zh/docs/performance-testing/","name":"性能测试指南","position":3}]}</script><link href="/css/docs.css" rel="stylesheet" type="text/css">
+
+
+
+    <link href="/css/command-copy.css" rel="stylesheet" type="text/css">
+
+
+    <link href="/css/navigation.css?v=header-20261106-v8" rel="stylesheet">
+    <script src="/js/navigation.js?v=header-20261106-v8" defer></script>
+    <script src="/js/docs.js" defer></script>
+<script src="/js/command-copy.js" defer></script>
+</head>
+
+<body class="page-kube docs-page">
+    <header class="site-header">
+    <div class="wrap nav">
+      <a class="brand" href="/zh/#top" aria-label="Speedle Engine 首页"><img class="brand-logo" src="/img/speedle/Speedle_logo_home_bold.svg?v=4" width="304" height="104" alt=""><span class="brand-divider" aria-hidden="true"></span><span class="brand-product">Engine</span></a>
+      <button class="menu" type="button" aria-expanded="false" aria-controls="nav-links" aria-label="展开导航">☰</button>
+      <nav class="nav-links" id="nav-links" aria-label="主导航">
+        <div class="products"><button class="products-button" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="products-panel">产品<svg class="products-chevron" width="10" height="10" viewBox="0 0 10 10" aria-hidden="true" focusable="false"><path d="M2 3.5 5 6.5 8 3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button><span class="products-heading" aria-hidden="true">产品</span><div class="products-panel" id="products-panel" role="group" aria-label="产品"><a class="product-row" href="https://engine.speedle.io/zh/" aria-current="page"><img class="product-mark" src="/img/speedle/speedle-mark-engine.svg" alt="" width="20" height="20"><span class="product-text"><span class="product-name">Speedle Engine</span><span class="product-desc">开源授权引擎</span></span><svg class="product-check" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M3.5 8.5 6.5 11.5 12.5 4.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></a><a class="product-row" href="https://cloud.speedle.io/zh-CN/"><img class="product-mark" src="/img/speedle/speedle-mark-cloud.svg" alt="" width="20" height="20"><span class="product-text"><span class="product-name">Speedle Cloud <span class="product-badge">即将上线</span></span><span class="product-desc">面向开发者的托管授权服务</span></span></a><a class="product-row" href="https://ai.speedle.io/zh/"><img class="product-mark" src="/img/speedle/speedle-mark-ai.svg" alt="" width="20" height="20"><span class="product-text"><span class="product-name">Speedle AI</span><span class="product-desc">用 AI 做权限，为 AI 管权限</span></span></a></div></div>
+        <a href="/zh/#about">关于</a><a href="/zh/#features">功能</a>
+        <a href="/zh/quick-start/">快速入门</a><a href="/zh/docs/">文档</a><a href="/zh/playground/">策略实验室</a>
+        <div class="languages"><button class="languages-button" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="languages-panel">中文<svg class="languages-chevron" width="10" height="10" viewBox="0 0 10 10" aria-hidden="true" focusable="false"><path d="M2 3.5 5 6.5 8 3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button><span class="languages-heading" aria-hidden="true">语言</span><div class="languages-panel" id="languages-panel" role="group" aria-label="语言"><a class="language-row" href="/docs/performance-testing/" lang="en" hreflang="en">English</a><a class="language-row" href="/ja/docs/performance-testing/" lang="ja" hreflang="ja">日本語</a><a class="language-row" href="/ko/docs/performance-testing/" lang="ko" hreflang="ko">한국어</a><a class="language-row" href="/es/docs/performance-testing/" lang="es" hreflang="es">Español</a><a class="language-row" href="/zh/docs/performance-testing/" lang="zh-CN" hreflang="zh-CN" aria-current="page">中文</a></div></div>
+        <a class="nav-github" href="https://github.com/teramoby/speedle-plus">GitHub</a>
+      </nav>
+    </div>
+  </header>
+    <div class="container">
+        <button class="docs-nav-toggle" type="button" aria-expanded="false" aria-controls="docs-navigation">
+            <span>菜单</span>
+            <svg class="docs-nav-toggle-icon" viewBox="0 0 18 14" width="18" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M1 1h16M1 7h16M1 13h16"/></svg>
+        </button>
+        <div class="content-container single-line-title"><aside class="docs-sidebar" id="docs-navigation" aria-label="文档导航">
+<div class="docs-nav-head">
+<span class="docs-nav-title">文档</span>
+<button class="docs-nav-close" type="button" aria-label="关闭菜单"><svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="m3 3 10 10M13 3 3 13"/></svg></button>
+</div>
+<div class="sidebar">
+<nav>
+<ul>
+
+
+
+
+
+<li data-docs-depth="-1" class="docs-nav-section parent"><span class="docs-nav-heading">文档</span>
+<ul class="sub-menu">
+<li data-docs-depth="0" class=""><a href="/zh/docs/usecases/">使用场景</a></li>
+<li data-docs-depth="0" class=""><a href="/zh/docs/overview/">概览</a></li>
+<li data-docs-depth="0" class=""><a href="/zh/docs/spdl/">SPDL：Speedle 策略定义语言</a></li>
+<li data-docs-depth="0" class=""><a href="/zh/docs/architecture/">系统架构</a></li>
+<li data-docs-depth="0" class="active"><a href="/zh/docs/performance-testing/" aria-current="page">性能测试指南</a></li>
+
+
+
+<li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading">Speedle 策略</span>
+<ul class="">
+<li data-docs-depth="1" class=""><a href="/zh/docs/pms/policy-mgmt/">策略管理</a></li>
+<li data-docs-depth="1" class=""><a href="/zh/docs/pms/global-policy/">全局角色策略</a></li>
+<li data-docs-depth="1" class=""><a href="/zh/docs/pms/diagnosis/">授权诊断</a></li>
+<li data-docs-depth="1" class=""><a href="/zh/docs/pms/discover/">策略发现</a></li>
+</ul>
+
+</li>
+<li data-docs-depth="0" class=""><a href="/zh/docs/decisions/">授权决策</a></li>
+<li data-docs-depth="0" class=""><a href="/zh/docs/idd/">用户身份域</a></li>
+<li data-docs-depth="0" class=""><a href="/zh/docs/assertor/">令牌断言</a></li>
+
+
+
+<li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading docs-nav-heading-link"><a href="/zh/docs/store/">存储扩展</a></span>
+<ul class="">
+<li data-docs-depth="1" class=""><a href="/zh/docs/store/mysql/">MySQL 配置指南</a></li>
+<li data-docs-depth="1" class=""><a href="/zh/docs/store/etcd/">etcd 配置指南</a></li>
+<li data-docs-depth="1" class=""><a href="/zh/docs/store/mongodb/">MongoDB 配置指南</a></li>
+</ul>
+
+</li>
+
+
+
+<li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading">API</span>
+<ul class="">
+<li data-docs-depth="1" class=""><a href="/zh/docs/api/asserter_api/">令牌断言 API</a></li>
+<li data-docs-depth="1" class=""><a href="/zh/docs/api/decision_api/">授权决策 API</a></li>
+<li data-docs-depth="1" class=""><a href="/zh/docs/api/management_api/">策略管理 API</a></li>
+</ul>
+
+</li>
+
+
+
+<li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading docs-nav-heading-link"><a href="/zh/docs/deployment/">部署</a></span>
+<ul class="">
+<li data-docs-depth="1" class=""><a href="/zh/docs/deployment/embedded/">Speedle 嵌入模式</a></li>
+<li data-docs-depth="1" class=""><a href="/zh/docs/deployment/docker/">Docker 镜像</a></li>
+<li data-docs-depth="1" class=""><a href="/zh/docs/deployment/homebrew/">Homebrew 安装</a></li>
+</ul>
+
+</li>
+
+
+
+<li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading docs-nav-heading-link"><a href="/zh/docs/sdks/">SDK</a></span>
+<ul class="">
+<li data-docs-depth="1" class=""><a href="/zh/docs/sdks/java/">Java SDK</a></li>
+<li data-docs-depth="1" class=""><a href="/zh/docs/sdks/python/">Python SDK</a></li>
+<li data-docs-depth="1" class=""><a href="/zh/docs/sdks/go/">Go SDK</a></li>
+<li data-docs-depth="1" class=""><a href="/zh/docs/sdks/dotnet/">C#/.NET SDK</a></li>
+<li data-docs-depth="1" class=""><a href="/zh/docs/sdks/rust/">Rust SDK</a></li>
+<li data-docs-depth="1" class=""><a href="/zh/docs/sdks/node/">Node.js/TypeScript SDK</a></li>
+</ul>
+
+</li>
+
+
+
+<li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading docs-nav-heading-link"><a href="/zh/docs/cloud/">Speedle Cloud</a></span>
+<ul class="">
+<li data-docs-depth="1" class=""><a href="/zh/docs/cloud/getting-started/">快速入门</a></li>
+<li data-docs-depth="1" class=""><a href="/zh/docs/cloud/tokens/">应用令牌</a></li>
+<li data-docs-depth="1" class=""><a href="/zh/docs/cloud/authorization-api/">授权 API</a></li>
+<li data-docs-depth="1" class=""><a href="/zh/docs/cloud/limits-and-errors/">限额与错误</a></li>
+</ul>
+
+</li>
+<li data-docs-depth="0" class=""><a href="/zh/docs/security/">安全</a></li>
+<li data-docs-depth="0" class=""><a href="/zh/docs/logging/">日志</a></li>
+<li data-docs-depth="0" class=""><a href="/zh/docs/versions/">版本</a></li>
+<li data-docs-depth="0" class=""><a href="/zh/docs/custom-function/">自定义函数</a></li>
+</ul>
+
+</li>
+</ul>
+</nav>
+
+
+</div>
+</aside>
+<main>
+<div id="main" class="single-line-title">
+
+  <h1>性能测试指南</h1>
+  <p class="docs-lead">在你自己的硬件和策略集上测量 Speedle 和其他授权引擎</p>
+
+
+
+
+<nav id="contents" class="docs-toc" data-docs-toc="h2" aria-label="本页目录">
+  <ol></ol>
+</nav>
+
+
+
+  <div id="kube-component" class="content">
+
+<p>本指南帮助你在自己的机器上对比 Speedle 和其他授权引擎。本指南不发布性能报告。数字取决于你的硬件、策略集和固定的引擎版本，因此值得信任的结果是你自己测出来的。</p>
+
+<p>本指南提供一个共享场景、四种引擎的等价策略、方法清单，以及一段可以粘贴到 Claude Code、ChatGPT Codex、DeepSeek Harness 或类似 AI 编程工具中的提示词。提示词要求工具编写脚本、运行脚本，并把原始输出留在你的机器上。把工具写出的内容当作需要审查的代码，而不是已经发布的结果。</p>
+
+<h2 id="本指南提供什么">本指南提供什么</h2>
+
+<ul>
+<li>Speedle、Open Policy Agent（OPA）、Casbin 和 Cedar 的等价 RBAC 与 ABAC 规则，以及每个请求的预期决策。</li>
+<li>在你的机器上生成并运行的可执行基准脚本、准确命令和固定的引擎版本。</li>
+<li>延迟分位数、吞吐量、内存占用和规模变化，其中策略加载与稳态评估分开测量。</li>
+<li>原始输出、环境信息和结果模板，全部留在本地。本指南不会上传任何内容。</li>
+</ul>
+
+<p>候选引擎只是起点，不是排名。确认你选择的每个引擎版本支持该场景，记录你排除的用例及原因，不要把被排除的用例当作该引擎的结果。</p>
+
+<h2 id="开始之前">开始之前</h2>
+
+<ul>
+<li>使用一台你能控制、并能在一段时间内保持空闲的机器。关闭其他占用资源较多的进程，记录 CPU 型号、核数、内存和操作系统。</li>
+<li>安装对比所需的工具：Speedle 和基于 Go 的引擎需要 Git 与 Go 1.26 或更新版本，其他引擎按各自官方快速入门的要求安装。固定每个引擎的版本，包括 Speedle 的发布标签。</li>
+<li>使用一个能在临时目录中创建文件并执行 shell 命令的 AI 编程工具。运行前审查它生成的脚本，并保留整个目录（包括原始输出）作为记录。</li>
+<li>第一次用小策略集对比大约需要 30–60 分钟；增加策略数量和并发数时需要更多时间。</li>
+</ul>
+
+<p>在一个空目录中工作。不要在 Speedle 代码仓库里运行对比；把生成的脚本、策略、日志和结果与任何仓库分开保存。</p>
+
+<h2 id="共享场景">共享场景</h2>
+
+<p>对比使用同一组业务规则：</p>
+
+<ul>
+<li>员工可以读取本部门的文档。</li>
+<li>编辑可以读取和编辑本部门的文档。</li>
+<li>Bob 是编辑，但被明确禁止编辑第四季度财务报告。</li>
+<li>跨部门请求即使用户拥有对应角色也会被拒绝。</li>
+</ul>
+
+<p>请求由应用携带用户的 <code>department</code> 和资源的 <code>owner_department</code> 两个属性。所有引擎接收相同的请求，并且必须给出相同的决策。</p>
+
+<table>
+<thead>
+<tr>
+<th>用户</th>
+<th>角色</th>
+<th>操作</th>
+<th>资源</th>
+<th>department</th>
+<th>owner_department</th>
+<th>预期</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td>alice</td>
+<td>employee</td>
+<td>read</td>
+<td><code>/docs/finance/report</code></td>
+<td>finance</td>
+<td>finance</td>
+<td>允许</td>
+</tr>
+
+<tr>
+<td>alice</td>
+<td>employee</td>
+<td>read</td>
+<td><code>/docs/hr/salaries</code></td>
+<td>finance</td>
+<td>hr</td>
+<td>拒绝</td>
+</tr>
+
+<tr>
+<td>alice</td>
+<td>employee</td>
+<td>read</td>
+<td><code>/payroll/finance/report</code></td>
+<td>finance</td>
+<td>finance</td>
+<td>拒绝（资源不在 <code>/docs</code> 下）</td>
+</tr>
+
+<tr>
+<td>alice</td>
+<td>employee</td>
+<td>read</td>
+<td><code>/payroll/docs/finance/report</code></td>
+<td>finance</td>
+<td>finance</td>
+<td>拒绝（路径中间的 <code>/docs</code> 不匹配）</td>
+</tr>
+
+<tr>
+<td>alice</td>
+<td>employee</td>
+<td>readwrite</td>
+<td><code>/docs/finance/report</code></td>
+<td>finance</td>
+<td>finance</td>
+<td>拒绝（未授予该操作）</td>
+</tr>
+
+<tr>
+<td>bob</td>
+<td>editor</td>
+<td>edit</td>
+<td><code>/docs/finance/report</code></td>
+<td>finance</td>
+<td>finance</td>
+<td>允许</td>
+</tr>
+
+<tr>
+<td>bob</td>
+<td>editor</td>
+<td>edit</td>
+<td><code>/docs/finance/q4</code></td>
+<td>finance</td>
+<td>finance</td>
+<td>拒绝（显式拒绝）</td>
+</tr>
+
+<tr>
+<td>carol</td>
+<td>editor</td>
+<td>edit</td>
+<td><code>/docs/finance/q4</code></td>
+<td>hr</td>
+<td>finance</td>
+<td>拒绝（部门条件）</td>
+</tr>
+
+<tr>
+<td>carol</td>
+<td>editor</td>
+<td>read</td>
+<td><code>/docs/hr/handbook</code></td>
+<td>hr</td>
+<td>hr</td>
+<td>允许</td>
+</tr>
+</tbody>
+</table>
+
+<p>本指南的示例已在 Speedle v1.6.0、OPA v1.22.3、Casbin v2.123.0 和 Cedar CLI v4.14.1 上验证。请固定你安装的版本；这些只是示例，不代表只支持这些版本。</p>
+
+<h3 id="speedle-spdl">Speedle（SPDL）</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-spdl" data-lang="spdl">[service.documents]
+
+[policy]
+grant role employee read expr:^/docs/.* if department == owner_department
+grant role editor read,edit expr:^/docs/.* if department == owner_department
+deny user bob edit /docs/finance/q4
+
+[rolepolicy]
+grant user alice role employee
+grant user bob role editor
+grant user carol role editor</code></pre></div>
+<p>Speedle 中生效的拒绝优先于授权。条件引用的属性在请求中缺失时不匹配，因此应用必须在每个请求中发送 <code>department</code> 和 <code>owner_department</code>。策略文件用 <code>spctl check</code> 校验；语法见 <a href="/zh/docs/spdl/">SPDL</a>，服务和角色策略见<a href="/zh/docs/pms/policy-mgmt/">策略管理</a>。</p>
+
+<h3 id="opa-rego">OPA（Rego）</h3>
+
+<p>策略：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-rego" data-lang="rego"><span style="color:#ff79c6">package</span> documents
+
+<span style="color:#ff79c6">import</span> rego.v1
+
+<span style="color:#ff79c6">default</span> allow <span style="color:#ff79c6">:=</span> <span style="color:#ff79c6">false</span>
+
+allow <span style="color:#ff79c6">if</span> {
+	not denied
+	input.action <span style="color:#ff79c6">==</span> <span style="color:#f1fa8c">&#34;read&#34;</span>
+	<span style="color:#f1fa8c">&#34;employee&#34;</span> in roles
+	startswith(input.resource, <span style="color:#f1fa8c">&#34;/docs/&#34;</span>)
+	input.attributes.department <span style="color:#ff79c6">==</span> input.attributes.owner_department
+}
+
+allow <span style="color:#ff79c6">if</span> {
+	not denied
+	input.action in {<span style="color:#f1fa8c">&#34;read&#34;</span>, <span style="color:#f1fa8c">&#34;edit&#34;</span>}
+	<span style="color:#f1fa8c">&#34;editor&#34;</span> in roles
+	startswith(input.resource, <span style="color:#f1fa8c">&#34;/docs/&#34;</span>)
+	input.attributes.department <span style="color:#ff79c6">==</span> input.attributes.owner_department
+}
+
+roles contains role <span style="color:#ff79c6">if</span> {
+	some role in data.roles[input.user]
+}
+
+denied <span style="color:#ff79c6">if</span> {
+	input.user <span style="color:#ff79c6">==</span> <span style="color:#f1fa8c">&#34;bob&#34;</span>
+	input.action <span style="color:#ff79c6">==</span> <span style="color:#f1fa8c">&#34;edit&#34;</span>
+	input.resource <span style="color:#ff79c6">==</span> <span style="color:#f1fa8c">&#34;/docs/finance/q4&#34;</span>
+}</code></pre></div>
+<p>数据（<code>data.json</code>）：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">{
+  <span style="color:#ff79c6">&#34;roles&#34;</span>: {
+    <span style="color:#ff79c6">&#34;alice&#34;</span>: [<span style="color:#f1fa8c">&#34;employee&#34;</span>],
+    <span style="color:#ff79c6">&#34;bob&#34;</span>: [<span style="color:#f1fa8c">&#34;editor&#34;</span>],
+    <span style="color:#ff79c6">&#34;carol&#34;</span>: [<span style="color:#f1fa8c">&#34;editor&#34;</span>]
+  }
+}</code></pre></div>
+<p>Rego 没有内置的拒绝优先规则，因此上面的策略在两个允许规则中都减去了显式拒绝。角色数据是 OPA 数据文档的一部分。使用你所固定的 OPA 版本对应的 Rego 语法（示例使用 OPA 1.x 的 Rego v1 语法）。</p>
+
+<h3 id="casbin">Casbin</h3>
+
+<p>模型（<code>model.conf</code>）：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ini" data-lang="ini"><span style="color:#ff79c6">[request_definition]</span>
+<span style="color:#50fa7b">r</span> <span style="color:#ff79c6">=</span> <span style="color:#f1fa8c">sub, obj, act, dept, ownerDept</span>
+
+<span style="color:#ff79c6">[policy_definition]</span>
+<span style="color:#50fa7b">p</span> <span style="color:#ff79c6">=</span> <span style="color:#f1fa8c">sub, obj, act, eft</span>
+
+<span style="color:#ff79c6">[role_definition]</span>
+<span style="color:#50fa7b">g</span> <span style="color:#ff79c6">=</span> <span style="color:#f1fa8c">_, _</span>
+
+<span style="color:#ff79c6">[policy_effect]</span>
+<span style="color:#50fa7b">e</span> <span style="color:#ff79c6">=</span> <span style="color:#f1fa8c">some(where (p.eft == allow)) &amp;&amp; !some(where (p.eft == deny))</span>
+
+<span style="color:#ff79c6">[matchers]</span>
+<span style="color:#50fa7b">m</span> <span style="color:#ff79c6">=</span> <span style="color:#f1fa8c">(r.sub == p.sub || g(r.sub, p.sub)) &amp;&amp; keyMatch(r.obj, p.obj) &amp;&amp; r.act == p.act &amp;&amp; r.dept == r.ownerDept</span></code></pre></div>
+<p>策略（<code>policy.csv</code>）：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-csv" data-lang="csv">p, employee, /docs/*, read, allow
+p, editor, /docs/*, read, allow
+p, editor, /docs/*, edit, allow
+p, bob, /docs/finance/q4, edit, deny
+g, alice, employee
+g, bob, editor
+g, carol, editor</code></pre></div>
+<p>Casbin 把模型、策略和角色分配拆成三份输入。ABAC 的部门检查写在匹配表达式里，因此它也作用于拒绝行；本场景的拒绝请求带有匹配的部门属性，所以预期决策不变。如果你为了表达无条件拒绝而修改匹配表达式，请记录这一改动。</p>
+
+<h3 id="cedar">Cedar</h3>
+
+<p>Schema（<code>schema.cedar</code>）：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cedar" data-lang="cedar">entity Role;
+entity User in [Role];
+entity Folder;
+entity Document in [Folder];
+
+action &#34;read&#34; appliesTo {
+  principal: [User],
+  resource: [Document],
+  context: { department: String, ownerDepartment: String }
+};
+action &#34;edit&#34; appliesTo {
+  principal: [User],
+  resource: [Document],
+  context: { department: String, ownerDepartment: String }
+};
+action &#34;readwrite&#34; appliesTo {
+  principal: [User],
+  resource: [Document],
+  context: { department: String, ownerDepartment: String }
+};</code></pre></div>
+<p>策略（<code>policies.cedar</code>）：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cedar" data-lang="cedar">permit (
+  principal in Role::&#34;employee&#34;,
+  action == Action::&#34;read&#34;,
+  resource in Folder::&#34;/docs&#34;
+)
+when { context.department == context.ownerDepartment };
+
+permit (
+  principal in Role::&#34;editor&#34;,
+  action in [Action::&#34;read&#34;, Action::&#34;edit&#34;],
+  resource in Folder::&#34;/docs&#34;
+)
+when { context.department == context.ownerDepartment };
+
+forbid (
+  principal == User::&#34;bob&#34;,
+  action == Action::&#34;edit&#34;,
+  resource == Document::&#34;/docs/finance/q4&#34;
+);</code></pre></div>
+<p>实体数据（<code>entities.json</code>）：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">[
+  {<span style="color:#ff79c6">&#34;uid&#34;</span>: {<span style="color:#ff79c6">&#34;type&#34;</span>: <span style="color:#f1fa8c">&#34;User&#34;</span>, <span style="color:#ff79c6">&#34;id&#34;</span>: <span style="color:#f1fa8c">&#34;alice&#34;</span>}, <span style="color:#ff79c6">&#34;attrs&#34;</span>: {}, <span style="color:#ff79c6">&#34;parents&#34;</span>: [{<span style="color:#ff79c6">&#34;type&#34;</span>: <span style="color:#f1fa8c">&#34;Role&#34;</span>, <span style="color:#ff79c6">&#34;id&#34;</span>: <span style="color:#f1fa8c">&#34;employee&#34;</span>}]},
+  {<span style="color:#ff79c6">&#34;uid&#34;</span>: {<span style="color:#ff79c6">&#34;type&#34;</span>: <span style="color:#f1fa8c">&#34;User&#34;</span>, <span style="color:#ff79c6">&#34;id&#34;</span>: <span style="color:#f1fa8c">&#34;bob&#34;</span>}, <span style="color:#ff79c6">&#34;attrs&#34;</span>: {}, <span style="color:#ff79c6">&#34;parents&#34;</span>: [{<span style="color:#ff79c6">&#34;type&#34;</span>: <span style="color:#f1fa8c">&#34;Role&#34;</span>, <span style="color:#ff79c6">&#34;id&#34;</span>: <span style="color:#f1fa8c">&#34;editor&#34;</span>}]},
+  {<span style="color:#ff79c6">&#34;uid&#34;</span>: {<span style="color:#ff79c6">&#34;type&#34;</span>: <span style="color:#f1fa8c">&#34;User&#34;</span>, <span style="color:#ff79c6">&#34;id&#34;</span>: <span style="color:#f1fa8c">&#34;carol&#34;</span>}, <span style="color:#ff79c6">&#34;attrs&#34;</span>: {}, <span style="color:#ff79c6">&#34;parents&#34;</span>: [{<span style="color:#ff79c6">&#34;type&#34;</span>: <span style="color:#f1fa8c">&#34;Role&#34;</span>, <span style="color:#ff79c6">&#34;id&#34;</span>: <span style="color:#f1fa8c">&#34;editor&#34;</span>}]},
+  {<span style="color:#ff79c6">&#34;uid&#34;</span>: {<span style="color:#ff79c6">&#34;type&#34;</span>: <span style="color:#f1fa8c">&#34;Folder&#34;</span>, <span style="color:#ff79c6">&#34;id&#34;</span>: <span style="color:#f1fa8c">&#34;/docs&#34;</span>}, <span style="color:#ff79c6">&#34;attrs&#34;</span>: {}, <span style="color:#ff79c6">&#34;parents&#34;</span>: []},
+  {<span style="color:#ff79c6">&#34;uid&#34;</span>: {<span style="color:#ff79c6">&#34;type&#34;</span>: <span style="color:#f1fa8c">&#34;Document&#34;</span>, <span style="color:#ff79c6">&#34;id&#34;</span>: <span style="color:#f1fa8c">&#34;/payroll/finance/report&#34;</span>}, <span style="color:#ff79c6">&#34;attrs&#34;</span>: {}, <span style="color:#ff79c6">&#34;parents&#34;</span>: []},
+  {<span style="color:#ff79c6">&#34;uid&#34;</span>: {<span style="color:#ff79c6">&#34;type&#34;</span>: <span style="color:#f1fa8c">&#34;Document&#34;</span>, <span style="color:#ff79c6">&#34;id&#34;</span>: <span style="color:#f1fa8c">&#34;/payroll/docs/finance/report&#34;</span>}, <span style="color:#ff79c6">&#34;attrs&#34;</span>: {}, <span style="color:#ff79c6">&#34;parents&#34;</span>: []},
+  {<span style="color:#ff79c6">&#34;uid&#34;</span>: {<span style="color:#ff79c6">&#34;type&#34;</span>: <span style="color:#f1fa8c">&#34;Document&#34;</span>, <span style="color:#ff79c6">&#34;id&#34;</span>: <span style="color:#f1fa8c">&#34;/docs/finance/report&#34;</span>}, <span style="color:#ff79c6">&#34;attrs&#34;</span>: {}, <span style="color:#ff79c6">&#34;parents&#34;</span>: [{<span style="color:#ff79c6">&#34;type&#34;</span>: <span style="color:#f1fa8c">&#34;Folder&#34;</span>, <span style="color:#ff79c6">&#34;id&#34;</span>: <span style="color:#f1fa8c">&#34;/docs&#34;</span>}]},
+  {<span style="color:#ff79c6">&#34;uid&#34;</span>: {<span style="color:#ff79c6">&#34;type&#34;</span>: <span style="color:#f1fa8c">&#34;Document&#34;</span>, <span style="color:#ff79c6">&#34;id&#34;</span>: <span style="color:#f1fa8c">&#34;/docs/finance/q4&#34;</span>}, <span style="color:#ff79c6">&#34;attrs&#34;</span>: {}, <span style="color:#ff79c6">&#34;parents&#34;</span>: [{<span style="color:#ff79c6">&#34;type&#34;</span>: <span style="color:#f1fa8c">&#34;Folder&#34;</span>, <span style="color:#ff79c6">&#34;id&#34;</span>: <span style="color:#f1fa8c">&#34;/docs&#34;</span>}]},
+  {<span style="color:#ff79c6">&#34;uid&#34;</span>: {<span style="color:#ff79c6">&#34;type&#34;</span>: <span style="color:#f1fa8c">&#34;Document&#34;</span>, <span style="color:#ff79c6">&#34;id&#34;</span>: <span style="color:#f1fa8c">&#34;/docs/hr/salaries&#34;</span>}, <span style="color:#ff79c6">&#34;attrs&#34;</span>: {}, <span style="color:#ff79c6">&#34;parents&#34;</span>: [{<span style="color:#ff79c6">&#34;type&#34;</span>: <span style="color:#f1fa8c">&#34;Folder&#34;</span>, <span style="color:#ff79c6">&#34;id&#34;</span>: <span style="color:#f1fa8c">&#34;/docs&#34;</span>}]},
+  {<span style="color:#ff79c6">&#34;uid&#34;</span>: {<span style="color:#ff79c6">&#34;type&#34;</span>: <span style="color:#f1fa8c">&#34;Document&#34;</span>, <span style="color:#ff79c6">&#34;id&#34;</span>: <span style="color:#f1fa8c">&#34;/docs/hr/handbook&#34;</span>}, <span style="color:#ff79c6">&#34;attrs&#34;</span>: {}, <span style="color:#ff79c6">&#34;parents&#34;</span>: [{<span style="color:#ff79c6">&#34;type&#34;</span>: <span style="color:#f1fa8c">&#34;Folder&#34;</span>, <span style="color:#ff79c6">&#34;id&#34;</span>: <span style="color:#f1fa8c">&#34;/docs&#34;</span>}]}
+]</code></pre></div>
+<p>Cedar 中拒绝（forbid）优先于允许（permit），每个请求默认拒绝。角色和文档层级是实体存储中的数据，不是策略文本，因此 schema 和实体数据也是对比的一部分。示例实体列表必须包含请求矩阵用到的每个文档。</p>
+
+<h3 id="需要记录的语义差异">需要记录的语义差异</h3>
+
+<p>同一条业务规则并不总能映射成相同的引擎概念。在计时之前，先让四个实现给出一致的预期决策，并记录：</p>
+
+<ul>
+<li>每个引擎如何处理同时匹配允许和拒绝的请求，拒绝是无条件的，还是与 ABAC 条件共享。</li>
+<li>请求缺少 <code>department</code> 或 <code>owner_department</code> 时每个引擎的行为。</li>
+<li>资源模式如何表达（SPDL 的 <code>expr:</code> 正则表达式、Casbin 匹配表达式、OPA 辅助规则、Cedar 实体层级）。</li>
+<li>操作如何匹配：SPDL 和 Cedar 使用精确的操作名，OPA 规则使用相等比较，Casbin 使用匹配表达式（要锚定比较，避免 <code>read</code> 匹配到 <code>readwrite</code>）。</li>
+<li>哪些部分是策略文本之外必需的应用代码或配置（Cedar schema 与实体、Casbin 模型与角色数据、OPA 数据文档、Speedle 服务与角色策略）。</li>
+<li>某个引擎在你选定的版本中无法表达的用例；把它从排名用例中排除并说明原因。</li>
+</ul>
+
+<h2 id="测量正确的内容">测量正确的内容</h2>
+
+<p>每个引擎都使用同一台机器、同一份请求数据和同样的策略集规模。固定版本并保留生成的数据集，这样重跑时测量的是同样的工作。</p>
+
+<ul>
+<li><strong>把嵌入式评估与服务或 API 测试分开。</strong> 进程内函数调用和 HTTP 请求测量的不是同一件事。把它们放在不同的表里报告，不要互相排名。</li>
+<li><strong>预热并重复。</strong> 每个引擎运行足够多次以达到稳定结果，丢弃预热运行，整个测量至少重复三次，并报告运行之间的波动。</li>
+<li><strong>报告延迟和吞吐量。</strong> 在引擎工具支持时，包含 p50、p95 和 p99 延迟以及每秒请求数。记录失败和超时。</li>
+<li><strong>测量内存。</strong> 记录峰值常驻内存或引擎自身的可一致测量的内存指标。</li>
+<li><strong>改变策略数量和并发数。</strong> 从小规模开始，再增加策略集和并发调用数。记录每个数据点，不只记录最好看的。</li>
+<li><strong>把策略加载和启动单独测量。</strong> 记录每个引擎在稳态循环之前解析和加载策略集所需的时间，不要把这项成本藏在第一个请求里。</li>
+<li><strong>说明缓存和准备工作。</strong> 记录索引、编译后的策略、决策缓存和任何预计算，以及它们是热的还是冷的。</li>
+<li><strong>保留原始输出。</strong> 为每次运行保存准确的命令、配置、策略文件、引擎版本、环境和完整输出。</li>
+</ul>
+
+<h2 id="用-ai-编程工具运行对比">用 AI 编程工具运行对比</h2>
+
+<p>在 Claude Code、ChatGPT Codex、DeepSeek Harness 或类似能够写文件并执行命令的工具中打开一个空目录，原样粘贴下面的提示词。它要求工具记录环境、固定版本、构建共享场景、验证预期决策、运行测量，并在本地生成结果模板。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">帮我在自己的机器上快速对比 Speedle 与 OPA、Casbin 和 Cedar 的性能。先记录我的操作系统、硬件和资源限制，然后选择并固定受支持的引擎版本。用共享数据集和预期的允许/拒绝决策构建等价的 RBAC 和 ABAC 示例。说明语义差异，并把不支持的用例排除在直接排名之外。在测量性能之前先验证正确性。
+
+创建可运行的基准脚本和准确的安装/运行命令。把嵌入式测试与服务/API 测试分开。使用相同的工作负载，改变策略数量和并发数，说明缓存和准备工作，预热每个引擎并重复测量。在支持的情况下报告延迟、吞吐量、内存占用和运行之间的波动，并附上原始输出和环境信息。只报告你实际测量过的数字；标出你无法运行的内容。
+
+展示每个引擎的等价策略以及所需的模型、schema 或应用代码。比较可读性、需要学习的概念、编写成本、验证、调试以及修改策略的难易程度。解释权衡，以及每个引擎适合哪种测试负载，不要预设 Speedle 会赢。</code></pre></div>
+<p>工具应在当前目录中工作，并把脚本、策略和输出留在那里。第一次运行前审查脚本，尤其是任何下载或安装步骤。如果工具无法在你的环境中安装某个引擎，让它把该引擎标记为未运行，而不是估算一个数字。</p>
+
+<h2 id="检查-ai-工具的工作">检查 AI 工具的工作</h2>
+
+<ul>
+<li>在开始计时之前，确认四个实现对所有请求都返回表中列出的决策。又快又错的答案不是结果。</li>
+<li>确认它安装的版本与报告中的版本一致，并且每个引擎都使用了同一台机器、相同的请求数据和相同的策略集规模。</li>
+<li>确认加载和启动与稳态循环分开报告，嵌入式测量与服务/API 测量在不同的表里。</li>
+<li>确认摘要中的每个数字都有原始输出；没有命令和输出支撑的数字视为未测量。</li>
+<li>阅读局限性说明。无法运行某个用例的引擎必须标注出来，而不是参与排名。</li>
+</ul>
+
+<h2 id="结果模板">结果模板</h2>
+
+<p>让工具填写一份如下的本地表格，并与原始输出放在一起。不要把它作为 Speedle 的性能报告发布。</p>
+
+<table>
+<thead>
+<tr>
+<th>引擎</th>
+<th>版本</th>
+<th>模式</th>
+<th align="right">策略数</th>
+<th align="right">并发数</th>
+<th align="right">p50</th>
+<th align="right">p95</th>
+<th align="right">p99</th>
+<th align="right">吞吐量</th>
+<th align="right">峰值内存</th>
+<th align="right">策略加载时间</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td>Speedle</td>
+<td></td>
+<td>嵌入式</td>
+<td align="right"></td>
+<td align="right"></td>
+<td align="right"></td>
+<td align="right"></td>
+<td align="right"></td>
+<td align="right"></td>
+<td align="right"></td>
+<td align="right"></td>
+</tr>
+
+<tr>
+<td>OPA</td>
+<td></td>
+<td>嵌入式</td>
+<td align="right"></td>
+<td align="right"></td>
+<td align="right"></td>
+<td align="right"></td>
+<td align="right"></td>
+<td align="right"></td>
+<td align="right"></td>
+<td align="right"></td>
+</tr>
+
+<tr>
+<td>Casbin</td>
+<td></td>
+<td>嵌入式</td>
+<td align="right"></td>
+<td align="right"></td>
+<td align="right"></td>
+<td align="right"></td>
+<td align="right"></td>
+<td align="right"></td>
+<td align="right"></td>
+<td align="right"></td>
+</tr>
+
+<tr>
+<td>Cedar</td>
+<td></td>
+<td>嵌入式</td>
+<td align="right"></td>
+<td align="right"></td>
+<td align="right"></td>
+<td align="right"></td>
+<td align="right"></td>
+<td align="right"></td>
+<td align="right"></td>
+<td align="right"></td>
+</tr>
+</tbody>
+</table>
+
+<p>再保留一份运行记录：</p>
+
+<table>
+<thead>
+<tr>
+<th>运行</th>
+<th>引擎</th>
+<th>命令</th>
+<th>原始输出</th>
+<th>备注</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td>1</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+
+<h2 id="易用性对比">易用性对比</h2>
+
+<p>测量和易用性是分开的观察。使用同一组业务规则，记录每个引擎如何表达它们：</p>
+
+<ul>
+<li><strong>Speedle（SPDL）。</strong> 每条规则是一条语句，角色分配是单独的角色策略段，条件是请求属性上的布尔表达式。策略可以用 <code>spctl check</code> 检查。</li>
+<li><strong>OPA（Rego）。</strong> 规则以默认拒绝为前提写成规则体，角色数据放在单独的数据文档中，显式拒绝需要自己的规则以及在允许规则中的排除条件。</li>
+<li><strong>Casbin。</strong> 模型、策略行和角色分配是三份分开的输入。ABAC 检查是匹配表达式的一部分，因此修改条件意味着修改模型。</li>
+<li><strong>Cedar。</strong> schema 声明实体和操作，策略是 permit 和 forbid 语句，角色和资源层级放在实体存储中。forbid 优先于 permit。</li>
+</ul>
+
+<p>对每个引擎记录：可读性（规则读起来有多接近业务描述）、必须学习的概念、样板代码和应用代码、验证与错误信息、测试和调试，以及新增或修改一条规则需要做什么。策略行数可以作为参考，但不要把它当作衡量易用性的唯一标准。</p>
+
+<h2 id="speedle-专用基准测试">Speedle 专用基准测试</h2>
+
+<p>仓库中的<a href="https://github.com/teramoby/speedle-plus/blob/master/benchmarks/README.md">基准测试</a>覆盖 Speedle 自身的评估，包括一个需要显式开启的百万策略用例。在代码仓库中运行 <code>go test -bench .</code>，百万策略用例按 README 的说明运行。这些测量只针对 Speedle，且来自特定硬件；不要把它们当作当前的跨引擎对比。</p>
+
+<h2 id="公正地报告">公正地报告</h2>
+
+<ul>
+<li>每个引擎使用相同的场景、数据和策略集规模，并说明每个引擎无法运行哪些用例。</li>
+<li>报告完整的测量范围，包括其他引擎更快的用例。</li>
+<li>说明每个引擎适合哪种测试负载及其局限。不要用一台机器上的一个场景宣布某个引擎普遍最快。</li>
+<li>分享任何摘要时，保留原始输出和准确命令。</li>
+</ul>
+</div>
+</div>
+</main>
+        </div>
+    </div>
+    <div class="docs-nav-backdrop" hidden></div>
+    <footer class="site-footer">
+    <div class="wrap footer-main">
+      <div class="footer-brand">
+        <a class="footer-lockup" href="/zh/" aria-label="Speedle Engine 首页"><img src="/img/speedle/Speedle_logo_home_bold.svg?v=4" width="304" height="104" alt="Speedle"><span class="footer-divider" aria-hidden="true"></span><span class="footer-product">Engine</span></a>
+        <p class="footer-tagline">开源授权引擎</p>
+        <nav class="social" aria-label="社区链接">
+          <a href="mailto:contact@speedle.io" aria-label="发送邮件至 contact@speedle.io" title="contact@speedle.io"><img src="/img/speedle/28.%20Mail.svg" width="40" height="40" alt=""></a>
+          <a href="https://groups.google.com/forum/#!forum/speedle-users" aria-label="Google Groups 讨论组" title="Google Groups — speedle-users"><img src="/img/speedle/Google-Groups.svg" width="24" height="24" alt=""></a>
+          <a href="https://github.com/teramoby/speedle-plus" aria-label="GitHub"><img src="/img/speedle/18.%20Github.svg" width="40" height="40" alt=""></a>
+          <a href="https://discord.gg/uaY2xVsbbT" aria-label="Discord"><img src="/img/speedle/Discord.svg" width="64" height="48" alt=""></a>
+        </nav>
+      </div>
+      <nav class="footer-family" aria-label="Speedle 产品"><svg class="sphere-sprite" width="0" height="0" aria-hidden="true" focusable="false"><symbol id="i-speedle-sphere" viewBox="22 22 114 114"><!-- Source: img/speedle/Speedle_logo_home_bold.svg, sphere group only. Colours changed only (stroke currentColor). No path edits. --><g fill="none" stroke="currentColor" stroke-linejoin="miter" stroke-miterlimit="3" stroke-linecap="butt"><polygon stroke-width="3.6" points="41.83 47.82 30.67 80.15 42.9 112.09 72.8 128.69 106.38 122.19 127.93 95.63 127.36 61.43 104.94 35.6 71.16 30.23"/><g stroke-width="2.4"><polygon points="81.97 43.92 52.19 57.23 44.03 88.8 63.62 114.87 96.22 115.81 117.28 90.9 110.94 58.91"/><polygon points="68.57 60.42 57.6 86.19 78.73 104.59 102.75 90.18 96.47 62.88"/><path d="M41.83 47.82L52.19 57.23 68.57 60.42 81.97 43.92 71.16 30.23 M30.67 80.15L44.03 88.8 42.9 112.09 M52.19 57.23L57.6 86.19 44.03 88.8 78.73 104.59 63.62 114.87 72.8 128.69 M78.73 104.59L96.22 115.81 106.38 122.19 M96.22 115.81L102.75 90.18 117.28 90.9 127.93 95.63 M117.28 90.9L127.36 61.43 110.94 58.91 104.94 35.6 81.97 43.92 M110.94 58.91L96.47 62.88 117.28 90.9"/></g></g></symbol></svg>
+        <ul>
+          <li><a class="footer-card" href="https://engine.speedle.io/zh/" aria-current="page"><svg class="product-sphere product-engine" aria-hidden="true" focusable="false"><use href="#i-speedle-sphere"/></svg><span class="footer-card-name">Speedle Engine</span><span class="footer-card-description">开源授权引擎</span><svg class="footer-card-check" width="15" height="15" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M3.5 8.5 6.5 11.5 12.5 4.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></a></li>
+          <li><a class="footer-card" href="https://cloud.speedle.io/zh-CN/"><svg class="product-sphere product-cloud" aria-hidden="true" focusable="false"><use href="#i-speedle-sphere"/></svg><span class="footer-card-name">Speedle Cloud<span class="product-badge">即将上线</span></span><span class="footer-card-description">面向开发者的托管授权服务</span></a></li>
+          <li><a class="footer-card" href="https://ai.speedle.io/zh/"><svg class="product-sphere product-ai" aria-hidden="true" focusable="false"><use href="#i-speedle-sphere"/></svg><span class="footer-card-name">Speedle AI</span><span class="footer-card-description">用 AI 做权限，为 AI 管权限</span></a></li>
+        </ul>
+      </nav>
+    </div>
+    <div class="wrap footer-bar">
+      <p class="footer-legal"><span>基于 Universal Permissive License v1.0 授权。</span><span class="footer-legal-sep"> · </span><span>版权所有 &copy; 2019–2026 The Speedle Authors。</span></p>
+    </div>
+  </footer>
+<!-- Cloudflare Web Analytics --><script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "a7a746c498b940e58425123082a20520"}'></script><!-- End Cloudflare Web Analytics -->
+</body>
+
+</html>

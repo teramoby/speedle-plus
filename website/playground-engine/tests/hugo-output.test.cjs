@@ -208,7 +208,7 @@ function checkDocsAlternates(directory) {
   }
 }
 for (const locale of LOCALES) checkDocsAlternates(path.join(output, `${locale}docs`));
-assert.equal(docsAlternates, 245, 'Every canonical docs page and redirect alias has hreflang alternates for en, ja, ko, es, zh-CN and x-default');
+assert.equal(docsAlternates, 250, 'Every canonical docs page and redirect alias has hreflang alternates for en, ja, ko, es, zh-CN and x-default');
 console.log('PASS Hugo 0.48 output: editor, navigation, sitemap, footer stylesheet and matching release assets');
 
 // The Cloud section is documented in every site language.

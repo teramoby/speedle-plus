@@ -190,6 +190,11 @@
       .contribute-card .button { justify-self: start; }
     }
     /* Accessibility contrast and the community banner (issue #244): end. */
+
+    /* Performance messaging (issue #342): start. */
+    .hero-note { max-width: 660px; margin: 14px 0 0; color: #fff; font-size: .88rem; }
+    .feature-card code { padding: 1px 5px; border-radius: 4px; color: var(--ink); background: var(--soft); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .9em; }
+    /* Performance messaging (issue #342): end. */
   </style>
   <link rel="stylesheet" href="/css/navigation.css?v=header-20261106-v8">
   <script type="application/ld+json">
@@ -223,9 +228,11 @@
         <div class="hero-copy">
           <span class="eyebrow">开源授权引擎</span>
           <h1>快速、<wbr>简单的<br>权限控制</h1>
-          <p>把细粒度授权交给独立引擎：策略易读、集中管理，毫秒级返回决策，支持不同语言和技术栈。</p>
+          <p>把细粒度授权交给独立引擎：策略易读、集中管理，微秒级返回决策，支持不同语言和技术栈。</p>
+          <p class="hero-note">策略规模上来，性能不该掉下来。</p>
           <div class="actions">
             <a class="button button-primary" href="/zh/quick-start/">快速入门</a>
+            <a class="button button-secondary" href="/zh/docs/performance-testing/">自己动手对比</a>
             <a class="button button-secondary" href="https://github.com/teramoby/speedle-plus">在 GitHub 上查看</a>
           </div>
         </div>
@@ -316,9 +323,9 @@
           <p>策略清晰易读，决策快速，管理集中，接入灵活。</p>
         </div>
         <div class="feature-grid">
-          <article class="feature-card"><img class="feature-icon" src="/img/speedle/1.%20Simple%20Policy%20Definition%20Language.svg" width="138" height="110" alt=""><h3>简洁的策略语言</h3><p>用易读的 SPDL 写清谁能执行什么操作。</p><a href="/zh/docs/spdl/">了解更多</a></article>
+          <article class="feature-card"><img class="feature-icon" src="/img/speedle/1.%20Simple%20Policy%20Definition%20Language.svg" width="138" height="110" alt=""><h3>像说话一样写策略</h3><p>谁能做什么，照着说出来就是策略：<code>grant role editor read /docs</code>。不用学一门新的编程语言，也不用手搓 JSON。</p><a href="/zh/docs/spdl/">了解更多</a></article>
           <article class="feature-card"><img class="feature-icon" src="/img/speedle/2.%20Cloud%20Native.svg" width="152" height="100" alt=""><h3>云原生</h3><p>支持跨云运行，通过可插拔接口对接现代基础设施。</p><a href="/zh/docs/architecture/">了解更多</a></article>
-          <article class="feature-card"><img class="feature-icon" src="/img/speedle/3.%20Policy%20Discovery.svg" width="165" height="110" alt=""><h3>实时策略发现</h3><p>记录真实访问，再据此生成可执行的授权策略。</p><a href="/zh/docs/pms/">了解更多</a></article>
+          <article class="feature-card"><img class="feature-icon" src="/img/speedle/12.%20Performance.svg" width="200" height="140" alt=""><h3>极致性能</h3><p>100 条策略还是 100 万条，每次授权决策都在微秒级完成。策略越多越慢？那是别的引擎。</p><a href="/zh/docs/performance-testing/">自己动手对比</a></article>
           <article class="feature-card"><img class="feature-icon" src="/img/speedle/4.%20RBAC-ABAC.svg" width="212" height="110" alt=""><h3>RBAC / ABAC</h3><p>角色与属性可以一起用，权限控制更精确。</p><a href="/zh/tags/policy/">了解更多</a></article>
           <article class="feature-card"><img class="feature-icon" src="/img/speedle/5.%20Centralized%20Policy%20Management.svg" width="235" height="110" alt=""><h3>集中式管理</h3><p>在一个地方管理不同服务的授权策略。</p><a href="/zh/docs/pms/policy-mgmt/">了解更多</a></article>
           <article class="feature-card"><img class="feature-icon" src="/img/speedle/6.%20Pluggable%20Identity.svg" width="210" height="110" alt=""><h3>灵活接入身份</h3><p>不绑定身份提供方。应用完成认证后，把用户、用户组和属性交给 Speedle，由它做出授权决策。</p><a href="/zh/docs/assertor/">了解更多</a></article>

@@ -67,6 +67,21 @@ XACML モデルに詳しい方であれば、ポリシー管理サービス (PMS
     </item>
     
     <item>
+      <title>パフォーマンステストガイド</title>
+      <link>https://engine.speedle.io/ja/docs/performance-testing/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/ja/docs/performance-testing/</guid>
+      <description>このガイドは、自分のマシンで Speedle と他の認可エンジンを比較するためのものです。パフォーマンスレポートは公開しません。数値はハードウェア、ポリシーセット、固定したエンジンのバージョンによって変わるため、信頼できる結果は自分で測定した結果だけです。
+このガイドでは、共通シナリオ、4 つのエンジンの等価なポリシー、方法論のチェックリスト、そして Claude Code、ChatGPT Codex、DeepSeek Harness などの AI コーディングツールに貼り付けられるプロンプトを提供します。プロンプトは、ツールにスクリプトを書かせて実行させ、生の出力を自分のマシンに残すよう指示します。ツールが書いたものは公開された結果ではなく、レビューすべきコードとして扱ってください。
+このガイドで得られるもの  Speedle、Open Policy Agent（OPA）、Casbin、Cedar の等価な RBAC・ABAC ルールと、各リクエストの期待される判定。 自分のマシンで生成・実行する実行可能なベンチマークスクリプト、正確なコマンド、固定したエンジンのバージョン。 レイテンシのパーセンタイル、スループット、メモリ使用量、規模による変化。ポリシーの読み込みは定常状態の評価と分けて測定します。 生の出力、環境情報、結果テンプレート。すべてローカルに残ります。このガイドは何もアップロードしません。  候補のエンジンは出発点であり、ランキングではありません。選んだ各エンジンのバージョンがこのシナリオをサポートすることを確認し、除外したケースとその理由を記録し、除外したケースをそのエンジンの結果として提示しないでください。
+始める前に  自分で管理でき、実行中はアイドル状態にできるマシンを使います。負荷の高い他のプロセスを閉じ、CPU のモデル、コア数、メモリ、オペレーティングシステムを記録します。 比較に必要なツールをインストールします。Speedle と Go ベースのエンジンには Git と Go 1.26 以降が必要です。それ以外のエンジンは各公式クイックスタートの要件に従います。Speedle のリリースタグを含め、すべてのエンジンのバージョンを固定します。 一時ディレクトリにファイルを作成してシェルコマンドを実行できる AI コーディングツールを使います。実行前に生成されたスクリプトを確認し、生の出力を含むディレクトリ全体を記録として残します。 小さなポリシーセットでの最初の比較には 30〜60 分を見込みます。ポリシー数と同時実行数を増やす場合はさらに時間が必要です。  空のディレクトリで作業します。Speedle のチェックアウト内で比較を実行しないでください。生成したスクリプト、ポリシー、ログ、結果はリポジトリと分けて保存します。
+共通シナリオ 比較では次の 1 組の業務ルールを使います。
+ 従業員（employee）は自分の部署のドキュメントを読めます。 編集者（editor）は自分の部署のドキュメントを読んで編集できます。 Bob は編集者ですが、第 4 四半期の財務レポートの編集を明示的に禁止されています。 ユーザーが対応するロールを持っていても、他部署へのリクエストは拒否されます。  リクエストには、アプリケーションがユーザーの department とリソースの owner_department を属性として渡します。すべてのエンジンが同じリクエストを受け取り、同じ判定を返さなければなりません。
+   ユーザー ロール アクション リソース department owner_department 期待     alice employee read /docs/finance/report finance finance 許可   alice employee read /docs/hr/salaries finance hr 拒否   alice employee read /payroll/finance/report finance finance 拒否（/docs 外のリソース）   alice employee read /payroll/docs/finance/report finance finance 拒否（途中の /docs は一致しない）   alice employee readwrite /docs/finance/report finance finance 拒否（許可されていないアクション）   bob editor edit /docs/finance/report finance finance 許可   bob editor edit /docs/finance/q4 finance finance 拒否（明示的な拒否）   carol editor edit /docs/finance/q4 hr finance 拒否（部署の条件）   carol editor read /docs/hr/handbook hr hr 許可    このガイドの例は Speedle v1.</description>
+    </item>
+    
+    <item>
       <title>認可決定</title>
       <link>https://engine.speedle.io/ja/docs/decisions/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>

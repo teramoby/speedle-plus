@@ -423,6 +423,36 @@
   </url>
   
   <url>
+    <loc>https://engine.speedle.io/docs/performance-testing/</loc>
+    <lastmod>2026-11-11T12:00:00+08:00</lastmod>
+    <xhtml:link
+                rel="alternate"
+                hreflang="es"
+                href="https://engine.speedle.io/es/docs/performance-testing/"
+                />
+    <xhtml:link
+                rel="alternate"
+                hreflang="ja"
+                href="https://engine.speedle.io/ja/docs/performance-testing/"
+                />
+    <xhtml:link
+                rel="alternate"
+                hreflang="zh"
+                href="https://engine.speedle.io/zh/docs/performance-testing/"
+                />
+    <xhtml:link
+                rel="alternate"
+                hreflang="ko"
+                href="https://engine.speedle.io/ko/docs/performance-testing/"
+                />
+    <xhtml:link
+                rel="alternate"
+                hreflang="en"
+                href="https://engine.speedle.io/docs/performance-testing/"
+                />
+  </url>
+  
+  <url>
     <loc>https://engine.speedle.io/docs/cloud/tokens/</loc>
     <lastmod>2026-11-08T17:11:18+08:00</lastmod>
     <xhtml:link
