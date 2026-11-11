@@ -2,6 +2,7 @@
 title = "パフォーマンステストガイド"
 description = "AI コーディングツールを使って、自分のマシンで公平かつ再現可能な認可エンジンの比較を行います。"
 weight = 15
+misc = true
 draft = false
 toc = false
 singlelinetitle = true

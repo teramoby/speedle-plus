@@ -36,19 +36,29 @@
     {{- $pages := (.Pages | union .Sections) -}}
     {{- if eq .Site.Params.ordersectionsby "title" -}}
       {{- range $pages.ByTitle -}}
-        {{- if and .Params.hidden (not $.showhidden) -}}
+        {{- if or .Params.misc (and .Params.hidden (not $.showhidden)) -}}
         {{- else -}}
 {{template "menu" dict "sect" . "currentnode" $currentNode "depth" (add $depth 1)}}
         {{- end -}}
       {{- end -}}
     {{- else -}}
       {{- range $pages.ByWeight -}}
-        {{- if and .Params.hidden (not $.showhidden) -}}
+        {{- if or .Params.misc (and .Params.hidden (not $.showhidden)) -}}
         {{- else -}}
 {{template "menu" dict "sect" . "currentnode" $currentNode "depth" (add $depth 1)}}
         {{- end -}}
       {{- end -}}
     {{- end}}
+{{- $misc := where .Pages "Params.misc" true -}}
+{{- if $misc -}}
+<li data-docs-depth="{{ add $depth 1 }}" class="docs-nav-section"><span class="docs-nav-heading">{{ if eq .Lang "zh" }}其他{{ else if eq .Lang "es" }}Otros{{ else if eq .Lang "ja" }}その他{{ else if eq .Lang "ko" }}기타{{ else }}Misc{{ end }}</span>
+<ul>
+{{- range $misc.ByWeight -}}
+{{template "menu" dict "sect" . "currentnode" $currentNode "depth" (add $depth 2)}}
+{{- end -}}
+</ul>
+</li>
+{{- end}}
 </ul>
 {{end}}
 </li>

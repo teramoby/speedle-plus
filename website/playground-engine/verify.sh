@@ -15,6 +15,7 @@ if ! node -e "require.resolve('playwright',{paths:['website/playground-engine']}
   website/playground-engine/node_modules/.bin/playwright install chromium
 fi
 node website/playground-engine/a11y-smoke.cjs
+node website/playground-engine/docs-sidebar-smoke.cjs
 node --check docs/hugo/static/js/command-copy.js
 python3 website/tests/test_language_routes.py
 python3 website/tests/test_generate_llms.py

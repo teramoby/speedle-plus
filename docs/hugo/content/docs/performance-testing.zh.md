@@ -2,6 +2,7 @@
 title = "性能测试指南"
 description = "借助 AI 编程工具，在你自己的机器上公平、可重复地对比授权引擎的性能。"
 weight = 15
+misc = true
 draft = false
 toc = false
 singlelinetitle = true

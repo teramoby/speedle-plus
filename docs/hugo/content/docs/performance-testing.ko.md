@@ -2,6 +2,7 @@
 title = "성능 테스트 가이드"
 description = "AI 코딩 도구를 사용해 자신의 머신에서 공정하고 재현 가능한 인가 엔진 비교를 실행합니다."
 weight = 15
+misc = true
 draft = false
 toc = false
 singlelinetitle = true

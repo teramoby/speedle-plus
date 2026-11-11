@@ -56,4 +56,5 @@ menu depth from the bilingual content tree, visits every generated EN/ZH docs
 page at 1440 and 1024 px, page-scrolls to every sidebar link, rejects limited
 inner overflow, checks indentation at every depth, and verifies that the footer
 follows the taller column. It also opens representative short-index, SDK and
-Cloud drawers in both languages at 390 px and scrolls to every expanded link.
+Cloud and performance-guide drawers in both languages at 375 px and scrolls to every expanded link. Both widths verify that Misc is the final
+section and contains the performance guide.

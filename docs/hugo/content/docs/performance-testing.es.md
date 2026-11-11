@@ -2,6 +2,7 @@
 title = "Guía de pruebas de rendimiento"
 description = "Ejecute una comparación justa y reproducible de motores de autorización en su propia máquina con ayuda de una herramienta de IA."
 weight = 15
+misc = true
 draft = false
 toc = false
 singlelinetitle = true

@@ -2,6 +2,7 @@
 title = "Performance testing guide"
 description = "Run a fair, reproducible authorization-engine comparison on your own machine with the help of an AI coding tool."
 weight = 15
+misc = true
 draft = false
 toc = false
 singlelinetitle = true

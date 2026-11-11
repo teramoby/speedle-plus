@@ -29,6 +29,14 @@ module.exports = function checkPerformanceGuides(output) {
     assert.doesNotMatch(source, /Open Policy Agent|\bOPA\b|\bRego\b|\bCasbin\b|\bCedar\b|Claude|ChatGPT|DeepSeek/i, `No named alternatives: ${locale}`);
     const prefix = locale ? `${locale}/` : '';
     const html = fs.readFileSync(path.join(output, `${prefix}docs/performance-testing/index.html`), 'utf8');
+    const sidebar = html.match(/<aside class="docs-sidebar"[\s\S]*?<\/aside>/)?.[0];
+    assert.ok(sidebar, `Documentation sidebar: ${locale}`);
+    const misc = {'': 'Misc', zh: '其他', es: 'Otros', ja: 'その他', ko: '기타'}[locale];
+    const finalGroup = sidebar.match(/<li data-docs-depth="0" class="docs-nav-section[^>]*><span class="docs-nav-heading">([^<]+)<\/span>\s*<ul[^>]*>\s*<li data-docs-depth="1"[^>]*><a href="([^"]+)"[^>]*>([^<]+)<\/a><\/li>\s*<\/ul>\s*<\/li>\s*<\/ul>\s*<\/li>\s*<\/ul>\s*<\/nav>/);
+    assert.ok(finalGroup, `Final sidebar section contains only the nested guide: ${locale}`);
+    assert.equal(finalGroup[1], misc, `Localized Misc label: ${locale}`);
+    assert.equal(finalGroup[2], `/${prefix}docs/performance-testing/`, `Original guide URL retained: ${locale}`);
+    assert.equal((sidebar.match(/href="[^"]*docs\/performance-testing\/"/g) || []).length, 1, `Guide appears once: ${locale}`);
     const code = html.match(/<pre[^>]*><code class="language-text"[^>]*>([\s\S]*?)<\/code><\/pre>/);
     assert.ok(code, `Prompt uses the existing copy selector: ${locale}`);
     const decoded = code[1].replace(/&quot;/g, '"').replace(/&#39;|&#x27;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
