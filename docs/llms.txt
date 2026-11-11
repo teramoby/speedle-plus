@@ -11,7 +11,7 @@ Speedle evaluates RBAC and ABAC policies for users, services and processes actin
 - [About Speedle](https://engine.speedle.io/about/): What Speedle is, the project's origin, and the Universal Permissive License v1.0.
 - [Overview](https://engine.speedle.io/docs/overview/): How Speedle maps to authorization terms: PAP, PDP, PEP, PIP, RBAC, ABAC, PBAC, XACML, identity, IAM and zero trust.
 - [Architecture](https://engine.speedle.io/docs/architecture/): The PMS, the policy store, the ADS, SDKs and the request flow between them.
-- [Performance testing guide](https://engine.speedle.io/docs/performance-testing/): Run a fair, reproducible authorization-engine comparison on your own machine with an AI coding tool, using equivalent RBAC and ABAC policies for Speedle, OPA, Casbin and Cedar.
+- [Performance testing guide](https://engine.speedle.io/docs/performance-testing/): Copy a prompt for your AI coding agent to compare Speedle with open-source authorization projects you choose on your own machine.
 - [Integrations](https://engine.speedle.io/integrations/): REST and gRPC APIs, embedded Go, six client SDKs, and file, etcd, MySQL and MongoDB policy stores.
 - [Playground](https://engine.speedle.io/playground/): Edit SPDL policies and test real authorization requests in the browser; the engine runs locally in WebAssembly.
 - [llms-full.txt](https://engine.speedle.io/llms-full.txt): The full English documentation in one Markdown file, including the complete SPDL reference.

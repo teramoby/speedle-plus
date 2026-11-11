@@ -21,7 +21,9 @@ function menuConfig(zh) {
         walk(file);
         continue;
       }
-      if (!entry.name.endsWith('.md') || entry.name.endsWith('.zh.md') !== zh) continue;
+      if (!entry.name.endsWith('.md')) continue;
+      const locale = entry.name.match(/\.(zh|ja|ko|es)\.md$/)?.[1] || 'en';
+      if (locale !== (zh ? 'zh' : 'en')) continue;
       const relative = path.relative(content, file).split(path.sep).join('/');
       const section = entry.name === (zh ? '_index.zh.md' : '_index.md');
       const suffix = zh ? /\.zh\.md$/ : /\.md$/;
@@ -30,7 +32,7 @@ function menuConfig(zh) {
       const source = fs.readFileSync(file, 'utf8');
       const linked = !section || /^linksection\s*=\s*true\s*$/m.test(source);
       entries[`/${zh ? 'zh/' : ''}docs/${route ? route + '/' : ''}`] = {
-        depth: route ? route.split('/').length - 1 : -1,
+        depth: /^misc\s*=\s*true\s*$/m.test(source) ? 1 : route ? route.split('/').length - 1 : -1,
         linked,
       };
     }
@@ -126,6 +128,10 @@ async function checkDesktop(page, width, expected) {
       if (entry.linked && !seen.has(route)) failures.push(`Missing expanded menu link ${route}`);
     }
 
+    const misc = sidebar.querySelector('.sidebar nav > ul > li > ul > li:last-child');
+    const guide = misc?.querySelector(':scope > ul > li > a');
+    if (misc?.querySelector(':scope > .docs-nav-heading')?.textContent !== (document.documentElement.lang.startsWith('zh') ? '其他' : 'Misc')) failures.push('Misc is not the final section');
+    if (!guide?.pathname.endsWith('/docs/performance-testing/')) failures.push('Guide is not nested in Misc');
     const links = [...sidebar.querySelectorAll('a[href]')];
     for (const link of links) {
       if (!link.getClientRects().length) {
@@ -161,6 +167,10 @@ async function checkPhoneDrawer(page, expected) {
   const result = await page.evaluate(expected => {
     const sidebar = document.getElementById('docs-navigation');
     const failures = [];
+    const misc = sidebar.querySelector('.sidebar nav > ul > li > ul > li:last-child');
+    const guide = misc?.querySelector(':scope > ul > li > a');
+    if (misc?.querySelector(':scope > .docs-nav-heading')?.textContent !== (document.documentElement.lang.startsWith('zh') ? '其他' : 'Misc')) failures.push('Misc is not the final section');
+    if (!guide?.pathname.endsWith('/docs/performance-testing/')) failures.push('Guide is not nested in Misc');
     const links = [...sidebar.querySelectorAll('a[href]')];
     const seen = new Set(links.map(link => link.pathname));
     for (const [route, entry] of Object.entries(expected)) {
@@ -173,7 +183,7 @@ async function checkPhoneDrawer(page, expected) {
     }
     return {failures, links: links.length};
   }, expected);
-  assert.equal(result.failures.length, 0, `390px ${page.url()}\n${result.failures.slice(0, 15).join('\n')}`);
+  assert.equal(result.failures.length, 0, `375px ${page.url()}\n${result.failures.slice(0, 15).join('\n')}`);
   await page.keyboard.press('Escape');
   assert.equal(await page.locator('.docs-nav-toggle').getAttribute('aria-expanded'), 'false');
 }
@@ -197,14 +207,14 @@ async function checkPhoneDrawer(page, expected) {
           links = await checkDesktop(page, width, expected);
           checks++;
         }
-        if (['docs/', 'docs/sdks/java/', 'docs/cloud/getting-started/'].includes(route.replace(/^\/(?:zh\/)?/, ''))) {
-          await page.setViewportSize({width: 390, height: 844});
+        if (['docs/', 'docs/sdks/java/', 'docs/cloud/getting-started/', 'docs/performance-testing/'].includes(route.replace(/^\/(?:zh\/)?/, ''))) {
+          await page.setViewportSize({width: 375, height: 844});
           await checkPhoneDrawer(page, expected);
         }
       }
     }
     const pageCount = Object.values(configs).reduce((total, config) => total + Object.keys(config).length, 0);
-    console.log(`PASS docs sidebar: ${checks} desktop checks across ${pageCount} EN/ZH pages at 1440/1024px; ${links} links per menu; six expanded phone drawers at 390px`);
+    console.log(`PASS docs sidebar: ${checks} desktop checks across ${pageCount} EN/ZH pages at 1440/1024px; ${links} links per menu; eight expanded phone drawers at 375px`);
   } finally {
     if (browser) await browser.close();
     await new Promise(resolve => server.close(resolve));

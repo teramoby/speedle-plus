@@ -6,6 +6,7 @@ const {execFileSync} = require('node:child_process');
 const root = path.resolve(__dirname, '../../..');
 const read = name => fs.readFileSync(path.join(root,name),'utf8');
 const home = read('docs/index.html');
+require('./performance-guide.cjs')(path.join(root, 'docs'));
 const page = read('docs/playground/index.html');
 const chineseLink = '<a href="/zh/" lang="zh-CN" hreflang="zh-CN" aria-label="切换到中文">中文</a>';
 const playgroundChineseLink = chineseLink.replace('href="/zh/"','href="/zh/playground/"');

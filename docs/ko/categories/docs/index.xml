@@ -217,8 +217,8 @@ git clone --depth 1 https://github.com/teramoby/speedle-plus.git cd speedle-plus
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/ko/docs/performance-testing/</guid>
-      <description>이 가이드는 자신의 머신에서 Speedle과 다른 인가 엔진을 비교하도록 돕습니다. 성능 보고서는 게시하지 않습니다. 수치는 하드웨어, 정책 집합, 고정한 엔진 버전에 따라 달라지므로, 신뢰할 수 있는 결과는 직접 측정한 결과뿐입니다.
-이 가이드는 공유 시나리오, 네 가지 엔진의 동등한 정책, 방법론 체크리스트, 그리고 Claude Code, ChatGPT Codex, DeepSeek Harness 같은 AI 코딩 도구에 붙여 넣을 수 있는 프롬프트를 제공합니다. 프롬프트는 도구가 스크립트를 작성하고 실행하며 원시 출력을 자신의 머신에 남기도록 요청합니다. 도구가 작성한 내용은 게시된 결과가 아니라 검토해야 할 코드로 취급하세요.</description>
+      <description>여기서는 성능 보고서를 게시하지 않으며, 결과는 하드웨어, 정책 및 고정한 버전에 따라 달라집니다.
+먼저 Speedle과 비교할 오픈 소스 인가 프로젝트가 무엇인지 저에게 물어보세요. 정책 집합 크기와 시간 예산도 물어보고 기본값으로 정책 10, 100, 1,000개와 30분을 제안하세요. 제가 답할 때까지 다른 작업을 하지 마세요. 그런 다음 새 로컬 디렉터리에서 같은 머신을 사용해 예산 내에서 공정하게 비교하세요. 모든 엔진과 도구의 버전을 고정하세요. 동등한 RBAC 및 ABAC 정책과 예상 허용/거부 결정이 있는 공통 요청을 만들고, 시간을 측정하기 전에 모든 엔진의 결정을 검증하세요.</description>
     </item>
     
     <item>

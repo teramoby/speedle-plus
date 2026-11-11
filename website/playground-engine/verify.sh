@@ -6,6 +6,7 @@ node website/playground-engine/tests/form-model.test.cjs
 node website/playground-engine/tests/form-dom.test.cjs
 PLAYGROUND_LOCALE=zh node website/playground-engine/tests/form-dom.test.cjs
 node website/playground-engine/tests/site.test.cjs
+node --test website/playground-engine/tests/command-copy.test.cjs
 # The rendered contrast gate is required, never silently skipped. The protected
 # build installs the pinned Playwright/axe-core packages first; install them
 # here too so the gate also runs when an older caller workflow is in effect.
@@ -14,6 +15,7 @@ if ! node -e "require.resolve('playwright',{paths:['website/playground-engine']}
   website/playground-engine/node_modules/.bin/playwright install chromium
 fi
 node website/playground-engine/a11y-smoke.cjs
+node website/playground-engine/docs-sidebar-smoke.cjs
 node --check docs/hugo/static/js/command-copy.js
 python3 website/tests/test_language_routes.py
 python3 website/tests/test_generate_llms.py

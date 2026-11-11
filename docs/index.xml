@@ -167,8 +167,8 @@ Prerequisites Use Linux or macOS with a shell and Go 1.</description>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/docs/performance-testing/</guid>
-      <description>This guide helps you compare Speedle with other authorization engines on your own machine. It does not publish a performance report. Numbers depend on your hardware, your policy set and the engine versions you pin, so the result worth trusting is the one you measure yourself.
-The guide provides a shared scenario, equivalent policies for four engines, a methodology checklist and a prompt you can paste into an AI coding tool such as Claude Code, ChatGPT Codex, DeepSeek Harness or a similar tool.</description>
+      <description>We publish no performance report here; results depend on your hardware, policies and pinned versions.
+First ask me which open-source authorization projects I want to compare with Speedle. Also ask for policy-set sizes and a time budget, offering defaults of 10, 100 and 1,000 policies and 30 minutes. Wait for my answer before doing anything else. Then work in a fresh local directory and run a fair comparison on the same machine within that budget.</description>
     </item>
     
     <item>
