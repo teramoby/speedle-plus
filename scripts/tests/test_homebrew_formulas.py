@@ -1,6 +1,7 @@
 """Offline tests for the Homebrew formula updater."""
 
 import importlib.util
+import re
 import shutil
 import tempfile
 import unittest
@@ -35,7 +36,14 @@ class HomebrewFormulaTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             copy = Path(temporary) / "Formula"
             shutil.copytree(FORMULAS, copy)
-            version = "v1.7.0"
+            versions = {
+                version
+                for formula in copy.glob("*.rb")
+                for version in re.findall(
+                    r"/releases/download/(v\d+\.\d+\.\d+)/", formula.read_text())
+            }
+            self.assertEqual(len(versions), 1, f"Formula release versions differ: {versions}")
+            version = versions.pop()
             sums = checksums_for(copy)
             self.assertEqual(len(sums), 13)
             checksums_digest = sums.pop("checksums.txt")
@@ -101,7 +109,11 @@ class HomebrewFormulaTest(unittest.TestCase):
         speedle = (FORMULAS / "speedle.rb").read_text()
         for dependency in ('"spctl"', '"speedle-ads"', '"speedle-pms"'):
             self.assertIn(f"depends_on {dependency}", speedle)
-        self.assertIn("/download/v1.7.0/checksums.txt", speedle)
+        self.assertRegex(
+            speedle,
+            r'url "https://github\.com/teramoby/speedle-plus/releases/download/'
+            r'v\d+\.\d+\.\d+/checksums\.txt"',
+        )
 
 
 if __name__ == "__main__":
