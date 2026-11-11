@@ -54,6 +54,7 @@ lastmod = 2026-11-11T12:00:00+08:00
 | alice | employee | read | `/docs/finance/report` | finance | finance | 允许 |
 | alice | employee | read | `/docs/hr/salaries` | finance | hr | 拒绝 |
 | alice | employee | read | `/payroll/finance/report` | finance | finance | 拒绝（资源不在 `/docs` 下） |
+| alice | employee | read | `/payroll/docs/finance/report` | finance | finance | 拒绝（路径中间的 `/docs` 不匹配） |
 | alice | employee | readwrite | `/docs/finance/report` | finance | finance | 拒绝（未授予该操作） |
 | bob | editor | edit | `/docs/finance/report` | finance | finance | 允许 |
 | bob | editor | edit | `/docs/finance/q4` | finance | finance | 拒绝（显式拒绝） |
@@ -68,8 +69,8 @@ lastmod = 2026-11-11T12:00:00+08:00
 [service.documents]
 
 [policy]
-grant role employee read expr:/docs/.* if department == owner_department
-grant role editor read,edit expr:/docs/.* if department == owner_department
+grant role employee read expr:^/docs/.* if department == owner_department
+grant role editor read,edit expr:^/docs/.* if department == owner_department
 deny user bob edit /docs/finance/q4
 
 [rolepolicy]
@@ -227,6 +228,7 @@ forbid (
   {"uid": {"type": "User", "id": "carol"}, "attrs": {}, "parents": [{"type": "Role", "id": "editor"}]},
   {"uid": {"type": "Folder", "id": "/docs"}, "attrs": {}, "parents": []},
   {"uid": {"type": "Document", "id": "/payroll/finance/report"}, "attrs": {}, "parents": []},
+  {"uid": {"type": "Document", "id": "/payroll/docs/finance/report"}, "attrs": {}, "parents": []},
   {"uid": {"type": "Document", "id": "/docs/finance/report"}, "attrs": {}, "parents": [{"type": "Folder", "id": "/docs"}]},
   {"uid": {"type": "Document", "id": "/docs/finance/q4"}, "attrs": {}, "parents": [{"type": "Folder", "id": "/docs"}]},
   {"uid": {"type": "Document", "id": "/docs/hr/salaries"}, "attrs": {}, "parents": [{"type": "Folder", "id": "/docs"}]},

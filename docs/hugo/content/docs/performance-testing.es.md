@@ -54,6 +54,7 @@ La solicitud lleva el `department` del usuario y el `owner_department` del recur
 | alice | employee | read | `/docs/finance/report` | finance | finance | Permitir |
 | alice | employee | read | `/docs/hr/salaries` | finance | hr | Denegar |
 | alice | employee | read | `/payroll/finance/report` | finance | finance | Denegar (recurso fuera de `/docs`) |
+| alice | employee | read | `/payroll/docs/finance/report` | finance | finance | Denegar (`/docs` en medio de la ruta no coincide) |
 | alice | employee | readwrite | `/docs/finance/report` | finance | finance | Denegar (acción no concedida) |
 | bob | editor | edit | `/docs/finance/report` | finance | finance | Permitir |
 | bob | editor | edit | `/docs/finance/q4` | finance | finance | Denegar (denegación explícita) |
@@ -68,8 +69,8 @@ Los ejemplos de esta guía se validaron con Speedle v1.6.0, OPA v1.22.3, Casbin 
 [service.documents]
 
 [policy]
-grant role employee read expr:/docs/.* if department == owner_department
-grant role editor read,edit expr:/docs/.* if department == owner_department
+grant role employee read expr:^/docs/.* if department == owner_department
+grant role editor read,edit expr:^/docs/.* if department == owner_department
 deny user bob edit /docs/finance/q4
 
 [rolepolicy]
@@ -227,6 +228,7 @@ Entidades (`entities.json`):
   {"uid": {"type": "User", "id": "carol"}, "attrs": {}, "parents": [{"type": "Role", "id": "editor"}]},
   {"uid": {"type": "Folder", "id": "/docs"}, "attrs": {}, "parents": []},
   {"uid": {"type": "Document", "id": "/payroll/finance/report"}, "attrs": {}, "parents": []},
+  {"uid": {"type": "Document", "id": "/payroll/docs/finance/report"}, "attrs": {}, "parents": []},
   {"uid": {"type": "Document", "id": "/docs/finance/report"}, "attrs": {}, "parents": [{"type": "Folder", "id": "/docs"}]},
   {"uid": {"type": "Document", "id": "/docs/finance/q4"}, "attrs": {}, "parents": [{"type": "Folder", "id": "/docs"}]},
   {"uid": {"type": "Document", "id": "/docs/hr/salaries"}, "attrs": {}, "parents": [{"type": "Folder", "id": "/docs"}]},

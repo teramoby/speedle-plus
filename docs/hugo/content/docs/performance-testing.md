@@ -54,6 +54,7 @@ The request carries the user's `department` and the resource's `owner_department
 | alice | employee | read | `/docs/finance/report` | finance | finance | Allow |
 | alice | employee | read | `/docs/hr/salaries` | finance | hr | Deny |
 | alice | employee | read | `/payroll/finance/report` | finance | finance | Deny (resource outside `/docs`) |
+| alice | employee | read | `/payroll/docs/finance/report` | finance | finance | Deny (mid-path `/docs` does not match) |
 | alice | employee | readwrite | `/docs/finance/report` | finance | finance | Deny (action not granted) |
 | bob | editor | edit | `/docs/finance/report` | finance | finance | Allow |
 | bob | editor | edit | `/docs/finance/q4` | finance | finance | Deny (explicit deny) |
@@ -68,8 +69,8 @@ The examples in this guide were validated with Speedle v1.6.0, OPA v1.22.3, Casb
 [service.documents]
 
 [policy]
-grant role employee read expr:/docs/.* if department == owner_department
-grant role editor read,edit expr:/docs/.* if department == owner_department
+grant role employee read expr:^/docs/.* if department == owner_department
+grant role editor read,edit expr:^/docs/.* if department == owner_department
 deny user bob edit /docs/finance/q4
 
 [rolepolicy]
@@ -227,6 +228,7 @@ Entities (`entities.json`):
   {"uid": {"type": "User", "id": "carol"}, "attrs": {}, "parents": [{"type": "Role", "id": "editor"}]},
   {"uid": {"type": "Folder", "id": "/docs"}, "attrs": {}, "parents": []},
   {"uid": {"type": "Document", "id": "/payroll/finance/report"}, "attrs": {}, "parents": []},
+  {"uid": {"type": "Document", "id": "/payroll/docs/finance/report"}, "attrs": {}, "parents": []},
   {"uid": {"type": "Document", "id": "/docs/finance/report"}, "attrs": {}, "parents": [{"type": "Folder", "id": "/docs"}]},
   {"uid": {"type": "Document", "id": "/docs/finance/q4"}, "attrs": {}, "parents": [{"type": "Folder", "id": "/docs"}]},
   {"uid": {"type": "Document", "id": "/docs/hr/salaries"}, "attrs": {}, "parents": [{"type": "Folder", "id": "/docs"}]},

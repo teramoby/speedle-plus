@@ -282,6 +282,16 @@
 <tr>
 <td>alice</td>
 <td>employee</td>
+<td>read</td>
+<td><code>/payroll/docs/finance/report</code></td>
+<td>finance</td>
+<td>finance</td>
+<td>거부(경로 중간의 <code>/docs</code>는 일치하지 않음)</td>
+</tr>
+
+<tr>
+<td>alice</td>
+<td>employee</td>
 <td>readwrite</td>
 <td><code>/docs/finance/report</code></td>
 <td>finance</td>
@@ -337,8 +347,8 @@
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-spdl" data-lang="spdl">[service.documents]
 
 [policy]
-grant role employee read expr:/docs/.* if department == owner_department
-grant role editor read,edit expr:/docs/.* if department == owner_department
+grant role employee read expr:^/docs/.* if department == owner_department
+grant role editor read,edit expr:^/docs/.* if department == owner_department
 deny user bob edit /docs/finance/q4
 
 [rolepolicy]
@@ -468,6 +478,7 @@ forbid (
   {<span style="color:#ff79c6">&#34;uid&#34;</span>: {<span style="color:#ff79c6">&#34;type&#34;</span>: <span style="color:#f1fa8c">&#34;User&#34;</span>, <span style="color:#ff79c6">&#34;id&#34;</span>: <span style="color:#f1fa8c">&#34;carol&#34;</span>}, <span style="color:#ff79c6">&#34;attrs&#34;</span>: {}, <span style="color:#ff79c6">&#34;parents&#34;</span>: [{<span style="color:#ff79c6">&#34;type&#34;</span>: <span style="color:#f1fa8c">&#34;Role&#34;</span>, <span style="color:#ff79c6">&#34;id&#34;</span>: <span style="color:#f1fa8c">&#34;editor&#34;</span>}]},
   {<span style="color:#ff79c6">&#34;uid&#34;</span>: {<span style="color:#ff79c6">&#34;type&#34;</span>: <span style="color:#f1fa8c">&#34;Folder&#34;</span>, <span style="color:#ff79c6">&#34;id&#34;</span>: <span style="color:#f1fa8c">&#34;/docs&#34;</span>}, <span style="color:#ff79c6">&#34;attrs&#34;</span>: {}, <span style="color:#ff79c6">&#34;parents&#34;</span>: []},
   {<span style="color:#ff79c6">&#34;uid&#34;</span>: {<span style="color:#ff79c6">&#34;type&#34;</span>: <span style="color:#f1fa8c">&#34;Document&#34;</span>, <span style="color:#ff79c6">&#34;id&#34;</span>: <span style="color:#f1fa8c">&#34;/payroll/finance/report&#34;</span>}, <span style="color:#ff79c6">&#34;attrs&#34;</span>: {}, <span style="color:#ff79c6">&#34;parents&#34;</span>: []},
+  {<span style="color:#ff79c6">&#34;uid&#34;</span>: {<span style="color:#ff79c6">&#34;type&#34;</span>: <span style="color:#f1fa8c">&#34;Document&#34;</span>, <span style="color:#ff79c6">&#34;id&#34;</span>: <span style="color:#f1fa8c">&#34;/payroll/docs/finance/report&#34;</span>}, <span style="color:#ff79c6">&#34;attrs&#34;</span>: {}, <span style="color:#ff79c6">&#34;parents&#34;</span>: []},
   {<span style="color:#ff79c6">&#34;uid&#34;</span>: {<span style="color:#ff79c6">&#34;type&#34;</span>: <span style="color:#f1fa8c">&#34;Document&#34;</span>, <span style="color:#ff79c6">&#34;id&#34;</span>: <span style="color:#f1fa8c">&#34;/docs/finance/report&#34;</span>}, <span style="color:#ff79c6">&#34;attrs&#34;</span>: {}, <span style="color:#ff79c6">&#34;parents&#34;</span>: [{<span style="color:#ff79c6">&#34;type&#34;</span>: <span style="color:#f1fa8c">&#34;Folder&#34;</span>, <span style="color:#ff79c6">&#34;id&#34;</span>: <span style="color:#f1fa8c">&#34;/docs&#34;</span>}]},
   {<span style="color:#ff79c6">&#34;uid&#34;</span>: {<span style="color:#ff79c6">&#34;type&#34;</span>: <span style="color:#f1fa8c">&#34;Document&#34;</span>, <span style="color:#ff79c6">&#34;id&#34;</span>: <span style="color:#f1fa8c">&#34;/docs/finance/q4&#34;</span>}, <span style="color:#ff79c6">&#34;attrs&#34;</span>: {}, <span style="color:#ff79c6">&#34;parents&#34;</span>: [{<span style="color:#ff79c6">&#34;type&#34;</span>: <span style="color:#f1fa8c">&#34;Folder&#34;</span>, <span style="color:#ff79c6">&#34;id&#34;</span>: <span style="color:#f1fa8c">&#34;/docs&#34;</span>}]},
   {<span style="color:#ff79c6">&#34;uid&#34;</span>: {<span style="color:#ff79c6">&#34;type&#34;</span>: <span style="color:#f1fa8c">&#34;Document&#34;</span>, <span style="color:#ff79c6">&#34;id&#34;</span>: <span style="color:#f1fa8c">&#34;/docs/hr/salaries&#34;</span>}, <span style="color:#ff79c6">&#34;attrs&#34;</span>: {}, <span style="color:#ff79c6">&#34;parents&#34;</span>: [{<span style="color:#ff79c6">&#34;type&#34;</span>: <span style="color:#f1fa8c">&#34;Folder&#34;</span>, <span style="color:#ff79c6">&#34;id&#34;</span>: <span style="color:#f1fa8c">&#34;/docs&#34;</span>}]},
