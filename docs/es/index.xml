@@ -161,8 +161,8 @@ Para probar políticas básicas antes de escribir código, abra el Playground. P
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/es/docs/performance-testing/</guid>
-      <description>Esta guía le ayuda a comparar Speedle con otros motores de autorización en su propia máquina. No publica un informe de rendimiento. Los números dependen de su hardware, su conjunto de políticas y las versiones de los motores que fije, así que el resultado que merece confianza es el que usted mismo mida.
-La guía ofrece un escenario compartido, políticas equivalentes para cuatro motores, una lista de comprobación metodológica y un prompt que puede pegar en una herramienta de IA como Claude Code, ChatGPT Codex, DeepSeek Harness o similar.</description>
+      <description>Aquí no publicamos ningún informe de rendimiento; los resultados dependen de su hardware, sus políticas y las versiones fijadas.
+Primero pregúnteme qué proyectos de autorización de código abierto quiero comparar con Speedle. Pregunte también por los tamaños de los conjuntos de políticas y el tiempo disponible, proponiendo por defecto 10, 100 y 1,000 políticas y 30 minutos. Espere mi respuesta antes de hacer cualquier otra cosa. Después, trabaje en un directorio local nuevo y haga una comparación justa en la misma máquina dentro de ese tiempo.</description>
     </item>
     
     <item>

@@ -10,6 +10,7 @@ const LANG_ORDER = [['en', 'English'], ['ja', '日本語'], ['ko', '한국어'],
 const MENU_LABEL = {'': 'Menu', ja: 'メニュー', ko: '메뉴', es: 'Menú', zh: '菜单'};
 const SDK_LABEL = {'': 'SDKs', ja: 'SDK', ko: 'SDK', es: 'SDK', zh: 'SDK'};
 const DEPLOY_LABEL = {'': 'Deployment', ja: 'デプロイ', ko: '배포', es: 'Despliegue', zh: '部署'};
+require('./performance-guide.cjs')(output);
 const page = fs.readFileSync(path.join(output, 'playground/index.html'), 'utf8');
 assert.ok(page.includes('id="policies"') && page.includes('id="evaluate"'), 'Hugo renders the complete editor');
 assert.ok(!/<iframe\b|class="playground-hero\b/i.test(page), 'No recursive iframe or removed marketing hero');

@@ -89,7 +89,7 @@ ANNOTATIONS = {
     "about": "What Speedle is, the project's origin, and the Universal Permissive License v1.0.",
     "docs/overview": "How Speedle maps to authorization terms: PAP, PDP, PEP, PIP, RBAC, ABAC, PBAC, XACML, identity, IAM and zero trust.",
     "docs/architecture": "The PMS, the policy store, the ADS, SDKs and the request flow between them.",
-    "docs/performance-testing": "Run a fair, reproducible authorization-engine comparison on your own machine with an AI coding tool, using equivalent RBAC and ABAC policies for Speedle, OPA, Casbin and Cedar.",
+    "docs/performance-testing": "Copy a prompt for your AI coding agent to compare Speedle with open-source authorization projects you choose on your own machine.",
     "integrations/_index": "REST and gRPC APIs, embedded Go, six client SDKs, and file, etcd, MySQL and MongoDB policy stores.",
     "playground": "Edit SPDL policies and test real authorization requests in the browser; the engine runs locally in WebAssembly.",
     "docs/spdl": "The complete SPDL reference: policy and role-policy grammar, grant and deny, principals and AND groups, resources, conditions, attributes, built-in and custom functions.",
