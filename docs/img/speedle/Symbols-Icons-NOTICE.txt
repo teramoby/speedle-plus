@@ -5,9 +5,9 @@ Source: https://github.com/miguelsolorio/vscode-symbols
 Files: src/icons/files/java.svg, python.svg, go.svg, csharp.svg, rust.svg and
 node.svg, as published in version 0.0.21.
 
-Modifications: extracted each icon's paths into an inline SVG sprite, changed
-the fill and stroke colours to currentColor, and renamed internal mask and
-clipPath ids so they stay unique on the page. No path data was edited.
+Modifications: extracted each icon's paths into an inline SVG sprite and
+renamed internal mask and clipPath ids so they stay unique on the page. The
+icons keep their original fill and stroke colours. No path data was edited.
 
 MIT License
 
