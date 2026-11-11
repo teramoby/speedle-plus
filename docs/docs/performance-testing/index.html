@@ -270,6 +270,26 @@
 </tr>
 
 <tr>
+<td>alice</td>
+<td>employee</td>
+<td>read</td>
+<td><code>/payroll/finance/report</code></td>
+<td>finance</td>
+<td>finance</td>
+<td>Deny (resource outside <code>/docs</code>)</td>
+</tr>
+
+<tr>
+<td>alice</td>
+<td>employee</td>
+<td>readwrite</td>
+<td><code>/docs/finance/report</code></td>
+<td>finance</td>
+<td>finance</td>
+<td>Deny (action not granted)</td>
+</tr>
+
+<tr>
 <td>bob</td>
 <td>editor</td>
 <td>edit</td>
@@ -340,6 +360,7 @@ allow <span style="color:#ff79c6">if</span> {
 	not denied
 	input.action <span style="color:#ff79c6">==</span> <span style="color:#f1fa8c">&#34;read&#34;</span>
 	<span style="color:#f1fa8c">&#34;employee&#34;</span> in roles
+	startswith(input.resource, <span style="color:#f1fa8c">&#34;/docs/&#34;</span>)
 	input.attributes.department <span style="color:#ff79c6">==</span> input.attributes.owner_department
 }
 
@@ -347,6 +368,7 @@ allow <span style="color:#ff79c6">if</span> {
 	not denied
 	input.action in {<span style="color:#f1fa8c">&#34;read&#34;</span>, <span style="color:#f1fa8c">&#34;edit&#34;</span>}
 	<span style="color:#f1fa8c">&#34;editor&#34;</span> in roles
+	startswith(input.resource, <span style="color:#f1fa8c">&#34;/docs/&#34;</span>)
 	input.attributes.department <span style="color:#ff79c6">==</span> input.attributes.owner_department
 }
 
@@ -385,7 +407,7 @@ denied <span style="color:#ff79c6">if</span> {
 <span style="color:#50fa7b">e</span> <span style="color:#ff79c6">=</span> <span style="color:#f1fa8c">some(where (p.eft == allow)) &amp;&amp; !some(where (p.eft == deny))</span>
 
 <span style="color:#ff79c6">[matchers]</span>
-<span style="color:#50fa7b">m</span> <span style="color:#ff79c6">=</span> <span style="color:#f1fa8c">(r.sub == p.sub || g(r.sub, p.sub)) &amp;&amp; keyMatch(r.obj, p.obj) &amp;&amp; regexMatch(r.act, p.act) &amp;&amp; r.dept == r.ownerDept</span></code></pre></div>
+<span style="color:#50fa7b">m</span> <span style="color:#ff79c6">=</span> <span style="color:#f1fa8c">(r.sub == p.sub || g(r.sub, p.sub)) &amp;&amp; keyMatch(r.obj, p.obj) &amp;&amp; r.act == p.act &amp;&amp; r.dept == r.ownerDept</span></code></pre></div>
 <p>Policy (<code>policy.csv</code>):</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-csv" data-lang="csv">p, employee, /docs/*, read, allow
 p, editor, /docs/*, read, allow
@@ -410,6 +432,11 @@ action &#34;read&#34; appliesTo {
   context: { department: String, ownerDepartment: String }
 };
 action &#34;edit&#34; appliesTo {
+  principal: [User],
+  resource: [Document],
+  context: { department: String, ownerDepartment: String }
+};
+action &#34;readwrite&#34; appliesTo {
   principal: [User],
   resource: [Document],
   context: { department: String, ownerDepartment: String }
@@ -440,6 +467,7 @@ forbid (
   {<span style="color:#ff79c6">&#34;uid&#34;</span>: {<span style="color:#ff79c6">&#34;type&#34;</span>: <span style="color:#f1fa8c">&#34;User&#34;</span>, <span style="color:#ff79c6">&#34;id&#34;</span>: <span style="color:#f1fa8c">&#34;bob&#34;</span>}, <span style="color:#ff79c6">&#34;attrs&#34;</span>: {}, <span style="color:#ff79c6">&#34;parents&#34;</span>: [{<span style="color:#ff79c6">&#34;type&#34;</span>: <span style="color:#f1fa8c">&#34;Role&#34;</span>, <span style="color:#ff79c6">&#34;id&#34;</span>: <span style="color:#f1fa8c">&#34;editor&#34;</span>}]},
   {<span style="color:#ff79c6">&#34;uid&#34;</span>: {<span style="color:#ff79c6">&#34;type&#34;</span>: <span style="color:#f1fa8c">&#34;User&#34;</span>, <span style="color:#ff79c6">&#34;id&#34;</span>: <span style="color:#f1fa8c">&#34;carol&#34;</span>}, <span style="color:#ff79c6">&#34;attrs&#34;</span>: {}, <span style="color:#ff79c6">&#34;parents&#34;</span>: [{<span style="color:#ff79c6">&#34;type&#34;</span>: <span style="color:#f1fa8c">&#34;Role&#34;</span>, <span style="color:#ff79c6">&#34;id&#34;</span>: <span style="color:#f1fa8c">&#34;editor&#34;</span>}]},
   {<span style="color:#ff79c6">&#34;uid&#34;</span>: {<span style="color:#ff79c6">&#34;type&#34;</span>: <span style="color:#f1fa8c">&#34;Folder&#34;</span>, <span style="color:#ff79c6">&#34;id&#34;</span>: <span style="color:#f1fa8c">&#34;/docs&#34;</span>}, <span style="color:#ff79c6">&#34;attrs&#34;</span>: {}, <span style="color:#ff79c6">&#34;parents&#34;</span>: []},
+  {<span style="color:#ff79c6">&#34;uid&#34;</span>: {<span style="color:#ff79c6">&#34;type&#34;</span>: <span style="color:#f1fa8c">&#34;Document&#34;</span>, <span style="color:#ff79c6">&#34;id&#34;</span>: <span style="color:#f1fa8c">&#34;/payroll/finance/report&#34;</span>}, <span style="color:#ff79c6">&#34;attrs&#34;</span>: {}, <span style="color:#ff79c6">&#34;parents&#34;</span>: []},
   {<span style="color:#ff79c6">&#34;uid&#34;</span>: {<span style="color:#ff79c6">&#34;type&#34;</span>: <span style="color:#f1fa8c">&#34;Document&#34;</span>, <span style="color:#ff79c6">&#34;id&#34;</span>: <span style="color:#f1fa8c">&#34;/docs/finance/report&#34;</span>}, <span style="color:#ff79c6">&#34;attrs&#34;</span>: {}, <span style="color:#ff79c6">&#34;parents&#34;</span>: [{<span style="color:#ff79c6">&#34;type&#34;</span>: <span style="color:#f1fa8c">&#34;Folder&#34;</span>, <span style="color:#ff79c6">&#34;id&#34;</span>: <span style="color:#f1fa8c">&#34;/docs&#34;</span>}]},
   {<span style="color:#ff79c6">&#34;uid&#34;</span>: {<span style="color:#ff79c6">&#34;type&#34;</span>: <span style="color:#f1fa8c">&#34;Document&#34;</span>, <span style="color:#ff79c6">&#34;id&#34;</span>: <span style="color:#f1fa8c">&#34;/docs/finance/q4&#34;</span>}, <span style="color:#ff79c6">&#34;attrs&#34;</span>: {}, <span style="color:#ff79c6">&#34;parents&#34;</span>: [{<span style="color:#ff79c6">&#34;type&#34;</span>: <span style="color:#f1fa8c">&#34;Folder&#34;</span>, <span style="color:#ff79c6">&#34;id&#34;</span>: <span style="color:#f1fa8c">&#34;/docs&#34;</span>}]},
   {<span style="color:#ff79c6">&#34;uid&#34;</span>: {<span style="color:#ff79c6">&#34;type&#34;</span>: <span style="color:#f1fa8c">&#34;Document&#34;</span>, <span style="color:#ff79c6">&#34;id&#34;</span>: <span style="color:#f1fa8c">&#34;/docs/hr/salaries&#34;</span>}, <span style="color:#ff79c6">&#34;attrs&#34;</span>: {}, <span style="color:#ff79c6">&#34;parents&#34;</span>: [{<span style="color:#ff79c6">&#34;type&#34;</span>: <span style="color:#f1fa8c">&#34;Folder&#34;</span>, <span style="color:#ff79c6">&#34;id&#34;</span>: <span style="color:#f1fa8c">&#34;/docs&#34;</span>}]},
@@ -455,6 +483,7 @@ forbid (
 <li>How each engine resolves a deny that matches an allow, and whether the deny is unconditional or shares the ABAC condition.</li>
 <li>What each engine does when a request omits <code>department</code> or <code>owner_department</code>.</li>
 <li>How resource patterns are expressed (SPDL <code>expr:</code> regular expressions, Casbin matchers, OPA helper rules, Cedar entity hierarchy).</li>
+<li>How an action is matched: exact action names in SPDL and Cedar, equality in the OPA rules, and the Casbin matcher (anchor the comparison so <code>read</code> does not match <code>readwrite</code>).</li>
 <li>Which parts are required application code or configuration outside the policy text (Cedar schema and entities, Casbin model and role data, OPA data documents, Speedle service and role policies).</li>
 <li>Any case an engine cannot express in the chosen version; exclude it from the ranked cases and say so.</li>
 </ul>

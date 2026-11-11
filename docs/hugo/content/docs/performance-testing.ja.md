@@ -53,6 +53,8 @@ lastmod = 2026-11-11T12:00:00+08:00
 | --- | --- | --- | --- | --- | --- | --- |
 | alice | employee | read | `/docs/finance/report` | finance | finance | 許可 |
 | alice | employee | read | `/docs/hr/salaries` | finance | hr | 拒否 |
+| alice | employee | read | `/payroll/finance/report` | finance | finance | 拒否（`/docs` 外のリソース） |
+| alice | employee | readwrite | `/docs/finance/report` | finance | finance | 拒否（許可されていないアクション） |
 | bob | editor | edit | `/docs/finance/report` | finance | finance | 許可 |
 | bob | editor | edit | `/docs/finance/q4` | finance | finance | 拒否（明示的な拒否） |
 | carol | editor | edit | `/docs/finance/q4` | hr | finance | 拒否（部署の条件） |
@@ -93,6 +95,7 @@ allow if {
 	not denied
 	input.action == "read"
 	"employee" in roles
+	startswith(input.resource, "/docs/")
 	input.attributes.department == input.attributes.owner_department
 }
 
@@ -100,6 +103,7 @@ allow if {
 	not denied
 	input.action in {"read", "edit"}
 	"editor" in roles
+	startswith(input.resource, "/docs/")
 	input.attributes.department == input.attributes.owner_department
 }
 
@@ -146,7 +150,7 @@ g = _, _
 e = some(where (p.eft == allow)) && !some(where (p.eft == deny))
 
 [matchers]
-m = (r.sub == p.sub || g(r.sub, p.sub)) && keyMatch(r.obj, p.obj) && regexMatch(r.act, p.act) && r.dept == r.ownerDept
+m = (r.sub == p.sub || g(r.sub, p.sub)) && keyMatch(r.obj, p.obj) && r.act == p.act && r.dept == r.ownerDept
 ```
 
 ポリシー（`policy.csv`）：
@@ -179,6 +183,11 @@ action "read" appliesTo {
   context: { department: String, ownerDepartment: String }
 };
 action "edit" appliesTo {
+  principal: [User],
+  resource: [Document],
+  context: { department: String, ownerDepartment: String }
+};
+action "readwrite" appliesTo {
   principal: [User],
   resource: [Document],
   context: { department: String, ownerDepartment: String }
@@ -217,6 +226,7 @@ forbid (
   {"uid": {"type": "User", "id": "bob"}, "attrs": {}, "parents": [{"type": "Role", "id": "editor"}]},
   {"uid": {"type": "User", "id": "carol"}, "attrs": {}, "parents": [{"type": "Role", "id": "editor"}]},
   {"uid": {"type": "Folder", "id": "/docs"}, "attrs": {}, "parents": []},
+  {"uid": {"type": "Document", "id": "/payroll/finance/report"}, "attrs": {}, "parents": []},
   {"uid": {"type": "Document", "id": "/docs/finance/report"}, "attrs": {}, "parents": [{"type": "Folder", "id": "/docs"}]},
   {"uid": {"type": "Document", "id": "/docs/finance/q4"}, "attrs": {}, "parents": [{"type": "Folder", "id": "/docs"}]},
   {"uid": {"type": "Document", "id": "/docs/hr/salaries"}, "attrs": {}, "parents": [{"type": "Folder", "id": "/docs"}]},
@@ -233,6 +243,7 @@ Cedar では forbid が permit より優先され、すべてのリクエスト�
 - 許可と拒否が同時に一致したときの各エンジンの解決方法、および拒否が無条件か ABAC 条件を共有するか。
 - リクエストに `department` または `owner_department` がないときの各エンジンの動作。
 - リソースパターンの表現方法（SPDL の `expr:` 正規表現、Casbin のマッチャ、OPA の補助ルール、Cedar のエンティティ階層）。
+- アクションの一致方法：SPDL と Cedar は正確なアクション名、OPA のルールは等価比較、Casbin はマッチャ式です（`read` が `readwrite` に一致しないよう、比較を固定してください）。
 - ポリシーのテキスト以外に必要なアプリケーションコードや設定（Cedar のスキーマとエンティティ、Casbin のモデルとロールデータ、OPA のデータドキュメント、Speedle のサービスとロールポリシー）。
 - 選んだバージョンで表現できないケース。ランキング対象から除外し、その旨を明記します。
 

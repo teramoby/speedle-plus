@@ -270,6 +270,26 @@
 </tr>
 
 <tr>
+<td>alice</td>
+<td>employee</td>
+<td>read</td>
+<td><code>/payroll/finance/report</code></td>
+<td>finance</td>
+<td>finance</td>
+<td>거부(<code>/docs</code> 밖의 리소스)</td>
+</tr>
+
+<tr>
+<td>alice</td>
+<td>employee</td>
+<td>readwrite</td>
+<td><code>/docs/finance/report</code></td>
+<td>finance</td>
+<td>finance</td>
+<td>거부(허용되지 않은 작업)</td>
+</tr>
+
+<tr>
 <td>bob</td>
 <td>editor</td>
 <td>edit</td>
@@ -340,6 +360,7 @@ allow <span style="color:#ff79c6">if</span> {
 	not denied
 	input.action <span style="color:#ff79c6">==</span> <span style="color:#f1fa8c">&#34;read&#34;</span>
 	<span style="color:#f1fa8c">&#34;employee&#34;</span> in roles
+	startswith(input.resource, <span style="color:#f1fa8c">&#34;/docs/&#34;</span>)
 	input.attributes.department <span style="color:#ff79c6">==</span> input.attributes.owner_department
 }
 
@@ -347,6 +368,7 @@ allow <span style="color:#ff79c6">if</span> {
 	not denied
 	input.action in {<span style="color:#f1fa8c">&#34;read&#34;</span>, <span style="color:#f1fa8c">&#34;edit&#34;</span>}
 	<span style="color:#f1fa8c">&#34;editor&#34;</span> in roles
+	startswith(input.resource, <span style="color:#f1fa8c">&#34;/docs/&#34;</span>)
 	input.attributes.department <span style="color:#ff79c6">==</span> input.attributes.owner_department
 }
 
@@ -385,7 +407,7 @@ denied <span style="color:#ff79c6">if</span> {
 <span style="color:#50fa7b">e</span> <span style="color:#ff79c6">=</span> <span style="color:#f1fa8c">some(where (p.eft == allow)) &amp;&amp; !some(where (p.eft == deny))</span>
 
 <span style="color:#ff79c6">[matchers]</span>
-<span style="color:#50fa7b">m</span> <span style="color:#ff79c6">=</span> <span style="color:#f1fa8c">(r.sub == p.sub || g(r.sub, p.sub)) &amp;&amp; keyMatch(r.obj, p.obj) &amp;&amp; regexMatch(r.act, p.act) &amp;&amp; r.dept == r.ownerDept</span></code></pre></div>
+<span style="color:#50fa7b">m</span> <span style="color:#ff79c6">=</span> <span style="color:#f1fa8c">(r.sub == p.sub || g(r.sub, p.sub)) &amp;&amp; keyMatch(r.obj, p.obj) &amp;&amp; r.act == p.act &amp;&amp; r.dept == r.ownerDept</span></code></pre></div>
 <p>정책(<code>policy.csv</code>):</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-csv" data-lang="csv">p, employee, /docs/*, read, allow
 p, editor, /docs/*, read, allow
@@ -410,6 +432,11 @@ action &#34;read&#34; appliesTo {
   context: { department: String, ownerDepartment: String }
 };
 action &#34;edit&#34; appliesTo {
+  principal: [User],
+  resource: [Document],
+  context: { department: String, ownerDepartment: String }
+};
+action &#34;readwrite&#34; appliesTo {
   principal: [User],
   resource: [Document],
   context: { department: String, ownerDepartment: String }
@@ -440,6 +467,7 @@ forbid (
   {<span style="color:#ff79c6">&#34;uid&#34;</span>: {<span style="color:#ff79c6">&#34;type&#34;</span>: <span style="color:#f1fa8c">&#34;User&#34;</span>, <span style="color:#ff79c6">&#34;id&#34;</span>: <span style="color:#f1fa8c">&#34;bob&#34;</span>}, <span style="color:#ff79c6">&#34;attrs&#34;</span>: {}, <span style="color:#ff79c6">&#34;parents&#34;</span>: [{<span style="color:#ff79c6">&#34;type&#34;</span>: <span style="color:#f1fa8c">&#34;Role&#34;</span>, <span style="color:#ff79c6">&#34;id&#34;</span>: <span style="color:#f1fa8c">&#34;editor&#34;</span>}]},
   {<span style="color:#ff79c6">&#34;uid&#34;</span>: {<span style="color:#ff79c6">&#34;type&#34;</span>: <span style="color:#f1fa8c">&#34;User&#34;</span>, <span style="color:#ff79c6">&#34;id&#34;</span>: <span style="color:#f1fa8c">&#34;carol&#34;</span>}, <span style="color:#ff79c6">&#34;attrs&#34;</span>: {}, <span style="color:#ff79c6">&#34;parents&#34;</span>: [{<span style="color:#ff79c6">&#34;type&#34;</span>: <span style="color:#f1fa8c">&#34;Role&#34;</span>, <span style="color:#ff79c6">&#34;id&#34;</span>: <span style="color:#f1fa8c">&#34;editor&#34;</span>}]},
   {<span style="color:#ff79c6">&#34;uid&#34;</span>: {<span style="color:#ff79c6">&#34;type&#34;</span>: <span style="color:#f1fa8c">&#34;Folder&#34;</span>, <span style="color:#ff79c6">&#34;id&#34;</span>: <span style="color:#f1fa8c">&#34;/docs&#34;</span>}, <span style="color:#ff79c6">&#34;attrs&#34;</span>: {}, <span style="color:#ff79c6">&#34;parents&#34;</span>: []},
+  {<span style="color:#ff79c6">&#34;uid&#34;</span>: {<span style="color:#ff79c6">&#34;type&#34;</span>: <span style="color:#f1fa8c">&#34;Document&#34;</span>, <span style="color:#ff79c6">&#34;id&#34;</span>: <span style="color:#f1fa8c">&#34;/payroll/finance/report&#34;</span>}, <span style="color:#ff79c6">&#34;attrs&#34;</span>: {}, <span style="color:#ff79c6">&#34;parents&#34;</span>: []},
   {<span style="color:#ff79c6">&#34;uid&#34;</span>: {<span style="color:#ff79c6">&#34;type&#34;</span>: <span style="color:#f1fa8c">&#34;Document&#34;</span>, <span style="color:#ff79c6">&#34;id&#34;</span>: <span style="color:#f1fa8c">&#34;/docs/finance/report&#34;</span>}, <span style="color:#ff79c6">&#34;attrs&#34;</span>: {}, <span style="color:#ff79c6">&#34;parents&#34;</span>: [{<span style="color:#ff79c6">&#34;type&#34;</span>: <span style="color:#f1fa8c">&#34;Folder&#34;</span>, <span style="color:#ff79c6">&#34;id&#34;</span>: <span style="color:#f1fa8c">&#34;/docs&#34;</span>}]},
   {<span style="color:#ff79c6">&#34;uid&#34;</span>: {<span style="color:#ff79c6">&#34;type&#34;</span>: <span style="color:#f1fa8c">&#34;Document&#34;</span>, <span style="color:#ff79c6">&#34;id&#34;</span>: <span style="color:#f1fa8c">&#34;/docs/finance/q4&#34;</span>}, <span style="color:#ff79c6">&#34;attrs&#34;</span>: {}, <span style="color:#ff79c6">&#34;parents&#34;</span>: [{<span style="color:#ff79c6">&#34;type&#34;</span>: <span style="color:#f1fa8c">&#34;Folder&#34;</span>, <span style="color:#ff79c6">&#34;id&#34;</span>: <span style="color:#f1fa8c">&#34;/docs&#34;</span>}]},
   {<span style="color:#ff79c6">&#34;uid&#34;</span>: {<span style="color:#ff79c6">&#34;type&#34;</span>: <span style="color:#f1fa8c">&#34;Document&#34;</span>, <span style="color:#ff79c6">&#34;id&#34;</span>: <span style="color:#f1fa8c">&#34;/docs/hr/salaries&#34;</span>}, <span style="color:#ff79c6">&#34;attrs&#34;</span>: {}, <span style="color:#ff79c6">&#34;parents&#34;</span>: [{<span style="color:#ff79c6">&#34;type&#34;</span>: <span style="color:#f1fa8c">&#34;Folder&#34;</span>, <span style="color:#ff79c6">&#34;id&#34;</span>: <span style="color:#f1fa8c">&#34;/docs&#34;</span>}]},
@@ -455,6 +483,7 @@ forbid (
 <li>허용과 거부가 동시에 일치할 때 각 엔진이 해결하는 방식, 그리고 거부가 무조건인지 ABAC 조건을 공유하는지.</li>
 <li>요청에 <code>department</code> 또는 <code>owner_department</code>가 없을 때 각 엔진의 동작.</li>
 <li>리소스 패턴을 표현하는 방식(SPDL의 <code>expr:</code> 정규식, Casbin 매처, OPA 보조 규칙, Cedar 엔터티 계층).</li>
+<li>작업을 일치시키는 방식: SPDL과 Cedar는 정확한 작업 이름, OPA 규칙은 동등 비교, Casbin은 매처 식입니다(<code>read</code>가 <code>readwrite</code>에 일치하지 않도록 비교를 고정하세요).</li>
 <li>정책 텍스트 외에 필요한 애플리케이션 코드나 구성(Cedar 스키마와 엔터티, Casbin 모델과 역할 데이터, OPA 데이터 문서, Speedle 서비스와 역할 정책).</li>
 <li>선택한 버전에서 표현할 수 없는 사례. 순위 사례에서 제외하고 그 이유를 밝힙니다.</li>
 </ul>

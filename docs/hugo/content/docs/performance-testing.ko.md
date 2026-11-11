@@ -53,6 +53,8 @@ lastmod = 2026-11-11T12:00:00+08:00
 | --- | --- | --- | --- | --- | --- | --- |
 | alice | employee | read | `/docs/finance/report` | finance | finance | 허용 |
 | alice | employee | read | `/docs/hr/salaries` | finance | hr | 거부 |
+| alice | employee | read | `/payroll/finance/report` | finance | finance | 거부(`/docs` 밖의 리소스) |
+| alice | employee | readwrite | `/docs/finance/report` | finance | finance | 거부(허용되지 않은 작업) |
 | bob | editor | edit | `/docs/finance/report` | finance | finance | 허용 |
 | bob | editor | edit | `/docs/finance/q4` | finance | finance | 거부(명시적 거부) |
 | carol | editor | edit | `/docs/finance/q4` | hr | finance | 거부(부서 조건) |
@@ -93,6 +95,7 @@ allow if {
 	not denied
 	input.action == "read"
 	"employee" in roles
+	startswith(input.resource, "/docs/")
 	input.attributes.department == input.attributes.owner_department
 }
 
@@ -100,6 +103,7 @@ allow if {
 	not denied
 	input.action in {"read", "edit"}
 	"editor" in roles
+	startswith(input.resource, "/docs/")
 	input.attributes.department == input.attributes.owner_department
 }
 
@@ -146,7 +150,7 @@ g = _, _
 e = some(where (p.eft == allow)) && !some(where (p.eft == deny))
 
 [matchers]
-m = (r.sub == p.sub || g(r.sub, p.sub)) && keyMatch(r.obj, p.obj) && regexMatch(r.act, p.act) && r.dept == r.ownerDept
+m = (r.sub == p.sub || g(r.sub, p.sub)) && keyMatch(r.obj, p.obj) && r.act == p.act && r.dept == r.ownerDept
 ```
 
 정책(`policy.csv`):
@@ -179,6 +183,11 @@ action "read" appliesTo {
   context: { department: String, ownerDepartment: String }
 };
 action "edit" appliesTo {
+  principal: [User],
+  resource: [Document],
+  context: { department: String, ownerDepartment: String }
+};
+action "readwrite" appliesTo {
   principal: [User],
   resource: [Document],
   context: { department: String, ownerDepartment: String }
@@ -217,6 +226,7 @@ forbid (
   {"uid": {"type": "User", "id": "bob"}, "attrs": {}, "parents": [{"type": "Role", "id": "editor"}]},
   {"uid": {"type": "User", "id": "carol"}, "attrs": {}, "parents": [{"type": "Role", "id": "editor"}]},
   {"uid": {"type": "Folder", "id": "/docs"}, "attrs": {}, "parents": []},
+  {"uid": {"type": "Document", "id": "/payroll/finance/report"}, "attrs": {}, "parents": []},
   {"uid": {"type": "Document", "id": "/docs/finance/report"}, "attrs": {}, "parents": [{"type": "Folder", "id": "/docs"}]},
   {"uid": {"type": "Document", "id": "/docs/finance/q4"}, "attrs": {}, "parents": [{"type": "Folder", "id": "/docs"}]},
   {"uid": {"type": "Document", "id": "/docs/hr/salaries"}, "attrs": {}, "parents": [{"type": "Folder", "id": "/docs"}]},
@@ -233,6 +243,7 @@ Cedar에서는 forbid가 permit보다 우선하며 모든 요청은 기본적으
 - 허용과 거부가 동시에 일치할 때 각 엔진이 해결하는 방식, 그리고 거부가 무조건인지 ABAC 조건을 공유하는지.
 - 요청에 `department` 또는 `owner_department`가 없을 때 각 엔진의 동작.
 - 리소스 패턴을 표현하는 방식(SPDL의 `expr:` 정규식, Casbin 매처, OPA 보조 규칙, Cedar 엔터티 계층).
+- 작업을 일치시키는 방식: SPDL과 Cedar는 정확한 작업 이름, OPA 규칙은 동등 비교, Casbin은 매처 식입니다(`read`가 `readwrite`에 일치하지 않도록 비교를 고정하세요).
 - 정책 텍스트 외에 필요한 애플리케이션 코드나 구성(Cedar 스키마와 엔터티, Casbin 모델과 역할 데이터, OPA 데이터 문서, Speedle 서비스와 역할 정책).
 - 선택한 버전에서 표현할 수 없는 사례. 순위 사례에서 제외하고 그 이유를 밝힙니다.
 

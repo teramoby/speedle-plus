@@ -53,6 +53,8 @@ The request carries the user's `department` and the resource's `owner_department
 | --- | --- | --- | --- | --- | --- | --- |
 | alice | employee | read | `/docs/finance/report` | finance | finance | Allow |
 | alice | employee | read | `/docs/hr/salaries` | finance | hr | Deny |
+| alice | employee | read | `/payroll/finance/report` | finance | finance | Deny (resource outside `/docs`) |
+| alice | employee | readwrite | `/docs/finance/report` | finance | finance | Deny (action not granted) |
 | bob | editor | edit | `/docs/finance/report` | finance | finance | Allow |
 | bob | editor | edit | `/docs/finance/q4` | finance | finance | Deny (explicit deny) |
 | carol | editor | edit | `/docs/finance/q4` | hr | finance | Deny (department condition) |
@@ -93,6 +95,7 @@ allow if {
 	not denied
 	input.action == "read"
 	"employee" in roles
+	startswith(input.resource, "/docs/")
 	input.attributes.department == input.attributes.owner_department
 }
 
@@ -100,6 +103,7 @@ allow if {
 	not denied
 	input.action in {"read", "edit"}
 	"editor" in roles
+	startswith(input.resource, "/docs/")
 	input.attributes.department == input.attributes.owner_department
 }
 
@@ -146,7 +150,7 @@ g = _, _
 e = some(where (p.eft == allow)) && !some(where (p.eft == deny))
 
 [matchers]
-m = (r.sub == p.sub || g(r.sub, p.sub)) && keyMatch(r.obj, p.obj) && regexMatch(r.act, p.act) && r.dept == r.ownerDept
+m = (r.sub == p.sub || g(r.sub, p.sub)) && keyMatch(r.obj, p.obj) && r.act == p.act && r.dept == r.ownerDept
 ```
 
 Policy (`policy.csv`):
@@ -179,6 +183,11 @@ action "read" appliesTo {
   context: { department: String, ownerDepartment: String }
 };
 action "edit" appliesTo {
+  principal: [User],
+  resource: [Document],
+  context: { department: String, ownerDepartment: String }
+};
+action "readwrite" appliesTo {
   principal: [User],
   resource: [Document],
   context: { department: String, ownerDepartment: String }
@@ -217,6 +226,7 @@ Entities (`entities.json`):
   {"uid": {"type": "User", "id": "bob"}, "attrs": {}, "parents": [{"type": "Role", "id": "editor"}]},
   {"uid": {"type": "User", "id": "carol"}, "attrs": {}, "parents": [{"type": "Role", "id": "editor"}]},
   {"uid": {"type": "Folder", "id": "/docs"}, "attrs": {}, "parents": []},
+  {"uid": {"type": "Document", "id": "/payroll/finance/report"}, "attrs": {}, "parents": []},
   {"uid": {"type": "Document", "id": "/docs/finance/report"}, "attrs": {}, "parents": [{"type": "Folder", "id": "/docs"}]},
   {"uid": {"type": "Document", "id": "/docs/finance/q4"}, "attrs": {}, "parents": [{"type": "Folder", "id": "/docs"}]},
   {"uid": {"type": "Document", "id": "/docs/hr/salaries"}, "attrs": {}, "parents": [{"type": "Folder", "id": "/docs"}]},
@@ -233,6 +243,7 @@ The same business rule does not always map to the same engine concepts. Before t
 - How each engine resolves a deny that matches an allow, and whether the deny is unconditional or shares the ABAC condition.
 - What each engine does when a request omits `department` or `owner_department`.
 - How resource patterns are expressed (SPDL `expr:` regular expressions, Casbin matchers, OPA helper rules, Cedar entity hierarchy).
+- How an action is matched: exact action names in SPDL and Cedar, equality in the OPA rules, and the Casbin matcher (anchor the comparison so `read` does not match `readwrite`).
 - Which parts are required application code or configuration outside the policy text (Cedar schema and entities, Casbin model and role data, OPA data documents, Speedle service and role policies).
 - Any case an engine cannot express in the chosen version; exclude it from the ranked cases and say so.
 

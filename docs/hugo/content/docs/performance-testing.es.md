@@ -53,6 +53,8 @@ La solicitud lleva el `department` del usuario y el `owner_department` del recur
 | --- | --- | --- | --- | --- | --- | --- |
 | alice | employee | read | `/docs/finance/report` | finance | finance | Permitir |
 | alice | employee | read | `/docs/hr/salaries` | finance | hr | Denegar |
+| alice | employee | read | `/payroll/finance/report` | finance | finance | Denegar (recurso fuera de `/docs`) |
+| alice | employee | readwrite | `/docs/finance/report` | finance | finance | Denegar (acción no concedida) |
 | bob | editor | edit | `/docs/finance/report` | finance | finance | Permitir |
 | bob | editor | edit | `/docs/finance/q4` | finance | finance | Denegar (denegación explícita) |
 | carol | editor | edit | `/docs/finance/q4` | hr | finance | Denegar (condición de departamento) |
@@ -93,6 +95,7 @@ allow if {
 	not denied
 	input.action == "read"
 	"employee" in roles
+	startswith(input.resource, "/docs/")
 	input.attributes.department == input.attributes.owner_department
 }
 
@@ -100,6 +103,7 @@ allow if {
 	not denied
 	input.action in {"read", "edit"}
 	"editor" in roles
+	startswith(input.resource, "/docs/")
 	input.attributes.department == input.attributes.owner_department
 }
 
@@ -146,7 +150,7 @@ g = _, _
 e = some(where (p.eft == allow)) && !some(where (p.eft == deny))
 
 [matchers]
-m = (r.sub == p.sub || g(r.sub, p.sub)) && keyMatch(r.obj, p.obj) && regexMatch(r.act, p.act) && r.dept == r.ownerDept
+m = (r.sub == p.sub || g(r.sub, p.sub)) && keyMatch(r.obj, p.obj) && r.act == p.act && r.dept == r.ownerDept
 ```
 
 Política (`policy.csv`):
@@ -179,6 +183,11 @@ action "read" appliesTo {
   context: { department: String, ownerDepartment: String }
 };
 action "edit" appliesTo {
+  principal: [User],
+  resource: [Document],
+  context: { department: String, ownerDepartment: String }
+};
+action "readwrite" appliesTo {
   principal: [User],
   resource: [Document],
   context: { department: String, ownerDepartment: String }
@@ -217,6 +226,7 @@ Entidades (`entities.json`):
   {"uid": {"type": "User", "id": "bob"}, "attrs": {}, "parents": [{"type": "Role", "id": "editor"}]},
   {"uid": {"type": "User", "id": "carol"}, "attrs": {}, "parents": [{"type": "Role", "id": "editor"}]},
   {"uid": {"type": "Folder", "id": "/docs"}, "attrs": {}, "parents": []},
+  {"uid": {"type": "Document", "id": "/payroll/finance/report"}, "attrs": {}, "parents": []},
   {"uid": {"type": "Document", "id": "/docs/finance/report"}, "attrs": {}, "parents": [{"type": "Folder", "id": "/docs"}]},
   {"uid": {"type": "Document", "id": "/docs/finance/q4"}, "attrs": {}, "parents": [{"type": "Folder", "id": "/docs"}]},
   {"uid": {"type": "Document", "id": "/docs/hr/salaries"}, "attrs": {}, "parents": [{"type": "Folder", "id": "/docs"}]},
@@ -233,6 +243,7 @@ La misma regla de negocio no siempre se traduce en los mismos conceptos. Antes d
 - Cómo resuelve cada motor una denegación que coincide con un permiso, y si la denegación es incondicional o comparte la condición ABAC.
 - Qué hace cada motor cuando una solicitud omite `department` u `owner_department`.
 - Cómo se expresan los patrones de recurso (expresiones regulares `expr:` de SPDL, expresiones de coincidencia de Casbin, reglas auxiliares de OPA, jerarquía de entidades de Cedar).
+- Cómo se compara una acción: nombres exactos en SPDL y Cedar, igualdad en las reglas de OPA y la expresión de coincidencia de Casbin (fije la comparación para que `read` no coincida con `readwrite`).
 - Qué partes son código de aplicación o configuración obligatoria fuera del texto de la política (esquema y entidades de Cedar, modelo y datos de roles de Casbin, documentos de datos de OPA, servicio y políticas de rol de Speedle).
 - Qué caso no puede expresar un motor en la versión elegida; exclúyalo de los casos clasificados y dígalo.
 

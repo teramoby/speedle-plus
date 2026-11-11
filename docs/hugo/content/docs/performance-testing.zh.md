@@ -53,6 +53,8 @@ lastmod = 2026-11-11T12:00:00+08:00
 | --- | --- | --- | --- | --- | --- | --- |
 | alice | employee | read | `/docs/finance/report` | finance | finance | 允许 |
 | alice | employee | read | `/docs/hr/salaries` | finance | hr | 拒绝 |
+| alice | employee | read | `/payroll/finance/report` | finance | finance | 拒绝（资源不在 `/docs` 下） |
+| alice | employee | readwrite | `/docs/finance/report` | finance | finance | 拒绝（未授予该操作） |
 | bob | editor | edit | `/docs/finance/report` | finance | finance | 允许 |
 | bob | editor | edit | `/docs/finance/q4` | finance | finance | 拒绝（显式拒绝） |
 | carol | editor | edit | `/docs/finance/q4` | hr | finance | 拒绝（部门条件） |
@@ -93,6 +95,7 @@ allow if {
 	not denied
 	input.action == "read"
 	"employee" in roles
+	startswith(input.resource, "/docs/")
 	input.attributes.department == input.attributes.owner_department
 }
 
@@ -100,6 +103,7 @@ allow if {
 	not denied
 	input.action in {"read", "edit"}
 	"editor" in roles
+	startswith(input.resource, "/docs/")
 	input.attributes.department == input.attributes.owner_department
 }
 
@@ -146,7 +150,7 @@ g = _, _
 e = some(where (p.eft == allow)) && !some(where (p.eft == deny))
 
 [matchers]
-m = (r.sub == p.sub || g(r.sub, p.sub)) && keyMatch(r.obj, p.obj) && regexMatch(r.act, p.act) && r.dept == r.ownerDept
+m = (r.sub == p.sub || g(r.sub, p.sub)) && keyMatch(r.obj, p.obj) && r.act == p.act && r.dept == r.ownerDept
 ```
 
 策略（`policy.csv`）：
@@ -179,6 +183,11 @@ action "read" appliesTo {
   context: { department: String, ownerDepartment: String }
 };
 action "edit" appliesTo {
+  principal: [User],
+  resource: [Document],
+  context: { department: String, ownerDepartment: String }
+};
+action "readwrite" appliesTo {
   principal: [User],
   resource: [Document],
   context: { department: String, ownerDepartment: String }
@@ -217,6 +226,7 @@ forbid (
   {"uid": {"type": "User", "id": "bob"}, "attrs": {}, "parents": [{"type": "Role", "id": "editor"}]},
   {"uid": {"type": "User", "id": "carol"}, "attrs": {}, "parents": [{"type": "Role", "id": "editor"}]},
   {"uid": {"type": "Folder", "id": "/docs"}, "attrs": {}, "parents": []},
+  {"uid": {"type": "Document", "id": "/payroll/finance/report"}, "attrs": {}, "parents": []},
   {"uid": {"type": "Document", "id": "/docs/finance/report"}, "attrs": {}, "parents": [{"type": "Folder", "id": "/docs"}]},
   {"uid": {"type": "Document", "id": "/docs/finance/q4"}, "attrs": {}, "parents": [{"type": "Folder", "id": "/docs"}]},
   {"uid": {"type": "Document", "id": "/docs/hr/salaries"}, "attrs": {}, "parents": [{"type": "Folder", "id": "/docs"}]},
@@ -233,6 +243,7 @@ Cedar 中拒绝（forbid）优先于允许（permit），每个请求默认拒�
 - 每个引擎如何处理同时匹配允许和拒绝的请求，拒绝是无条件的，还是与 ABAC 条件共享。
 - 请求缺少 `department` 或 `owner_department` 时每个引擎的行为。
 - 资源模式如何表达（SPDL 的 `expr:` 正则表达式、Casbin 匹配表达式、OPA 辅助规则、Cedar 实体层级）。
+- 操作如何匹配：SPDL 和 Cedar 使用精确的操作名，OPA 规则使用相等比较，Casbin 使用匹配表达式（要锚定比较，避免 `read` 匹配到 `readwrite`）。
 - 哪些部分是策略文本之外必需的应用代码或配置（Cedar schema 与实体、Casbin 模型与角色数据、OPA 数据文档、Speedle 服务与角色策略）。
 - 某个引擎在你选定的版本中无法表达的用例；把它从排名用例中排除并说明原因。
 
