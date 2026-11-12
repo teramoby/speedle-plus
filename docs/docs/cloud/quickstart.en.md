@@ -16,11 +16,9 @@ Account sign-in must be available before using the console or creating API keys.
 
 ## Downloads
 
+- [API reference (Swagger)](https://engine.speedle.io/docs/cloud/api-reference/): Browse every endpoint, parameter and response example online.
 - [English Markdown](https://engine.speedle.io/docs/cloud/quickstart.en.md): The four Cloud chapters in one offline guide.
-- [OpenAPI (YAML)](https://cloud.speedle.io/openapi.public.yaml)
-- [OpenAPI (JSON)](https://cloud.speedle.io/openapi.public.json)
-
-The machine-readable form of the API reference, for code generators and API clients; downloading the schemas does not open account sign-in.
+- OpenAPI specification: [YAML](https://cloud.speedle.io/openapi.public.yaml) · [JSON](https://cloud.speedle.io/openapi.public.json), for code generators and API clients.
 
 Read the Cloud [Terms](https://cloud.speedle.io/terms) / [Privacy Policy](https://cloud.speedle.io/privacy).
 
