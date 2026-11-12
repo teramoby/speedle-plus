@@ -51,17 +51,26 @@ for ((round=1;round<=ROUNDS;round++)); do
   for kind in $DATASETS; do
     n=$N; [[ "$kind" == manyusers ]] && n=$MN
     base="$WORK/$kind/${kind}_${n}"
-    for setup in thin-casbin thin-opa thin-speedle opa-server speedle-ads; do
+    for setup in ${SETUPS:-thin-casbin thin-opa thin-cedar thin-cedar-data cedar-rs cedar-rs-data thin-speedle thin-speedle-may opa-server speedle-ads speedle-ads-may}; do
       logfile="$LOGDIR/$kind-round$round-$setup.log"
       case "$setup" in
+      thin-speedle-may)
+        srv "$BIN/authzd-may" -engine speedle -kind "$kind" -n "$n" -addr 127.0.0.1:19000 >"$logfile" 2>&1 &
+        target=thin; url=http://127.0.0.1:19000/check; health=http://127.0.0.1:19000/health ;;
       thin-*)
         srv "$BIN/authzd" -engine "${setup#thin-}" -kind "$kind" -n "$n" -addr 127.0.0.1:19000 >"$logfile" 2>&1 &
+        target=thin; url=http://127.0.0.1:19000/check; health=http://127.0.0.1:19000/health ;;
+      cedar-rs|cedar-rs-data)
+        # Cedar's Rust implementation behind the same thin API (cmd/cedar-rs).
+        v=cedar; [[ "$setup" == cedar-rs-data ]] && v=cedar_data
+        srv "$BIN/cedar-rs" serve --addr 127.0.0.1:19000 "${base}_$v.cedar" "${base}_${v}_entities.json" >"$logfile" 2>&1 &
         target=thin; url=http://127.0.0.1:19000/check; health=http://127.0.0.1:19000/health ;;
       opa-server)
         srv "$BIN/opa" run --server --addr 127.0.0.1:18181 --log-level error "${base}_opa.rego" "${base}_opa.json" >"$logfile" 2>&1 &
         target=opa; url=http://127.0.0.1:18181/v1/data/authz/allow; health=http://127.0.0.1:18181/health ;;
-      speedle-ads)
-        srv "$BIN/speedle-ads" --store-type file --filestore-loc "${base}_speedle.spdl" --endpoint 127.0.0.1:16735 --insecure=true --log-level error --auditlog-level error --enable-watch false >"$logfile" 2>&1 &
+      speedle-ads|speedle-ads-may)
+        ads="$BIN/speedle-ads"; [[ "$setup" == speedle-ads-may ]] && ads="$BIN/speedle-ads-may"
+        srv "$ads" --store-type file --filestore-loc "${base}_speedle.spdl" --endpoint 127.0.0.1:16735 --insecure=true --log-level error --auditlog-level error --enable-watch false >"$logfile" 2>&1 &
         target=speedle; url=http://127.0.0.1:16735/authz-check/v1/is-allowed; health=$url ;;
       esac
       ACTIVE_PID=$!

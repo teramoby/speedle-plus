@@ -2,10 +2,32 @@
 set -uo pipefail
 cd "$(dirname "$0")"
 BIN=${BIN:-./bin}; T="$BIN/authzbench.test"
+# The same harness built against Speedle+ as master stood in May 2026
+# (go.may.mod); it runs only the Speedle+ engine, labelled speedle-may.
+TMAY="$BIN/authzbench-may.test"; RS="$BIN/cedar-rs"
 OUT=${OUT:-results/$(hostname -s)}; mkdir -p "$OUT"
-STEPS=${STEPS:-"machine functional capabilities watchcheck loadcost bench-small bench-manyusers bench-100k-speedle bench-100k-opa bench-100k-casbin-tuned bench-100k-casbin parallel stress"}
+SPECS=${SPECS:-$OUT/../cedar-specs}
+STEPS=${STEPS:-"machine cedar-specs functional capabilities watchcheck loadcost bench-small bench-manyusers bench-100k-speedle bench-100k-opa bench-100k-casbin-tuned bench-100k-casbin bench-100k-cedar bench-100k-cedar-data parallel may-functional may-loadcost may-bench rs-functional rs-loadcost rs-bench rs-parallel stress"}
 log() { printf '[%s] %s\n' "$(date -Iseconds)" "$*" | tee -a "$OUT/run-all.log"; }
-workers() { pgrep -c '[R]unner.Worker' || true; }
+# CI jobs on this host, except the one running this script (when the run
+# itself is a CI job, its own Runner.Worker is one of our ancestors).
+workers() {
+  python3 - "$$" <<'PY'
+import os,sys,pathlib
+own=set(); pid=int(sys.argv[1])
+while pid>1:
+ own.add(pid)
+ try: s=pathlib.Path(f'/proc/{pid}/stat').read_text(); pid=int(s[s.rfind(')')+2:].split()[1])
+ except (OSError,ValueError,IndexError): break
+count=0
+for p in pathlib.Path('/proc').iterdir():
+ if not p.name.isdigit() or int(p.name) in own: continue
+ try: name=(p/'comm').read_text().strip()
+ except OSError: continue
+ if name=='Runner.Worker': count+=1
+print(count)
+PY
+}
 sample() {
   local now load count top swap
   now=$(date +%s); load=$(awk '{print $1}' /proc/loadavg); count=$(workers)
@@ -47,6 +69,8 @@ wait_idle() {
   done
 }
 bench() { "$T" -test.run '^$' -test.benchtime "${BENCHTIME:-1s}" -test.count "${COUNT:-5}" -test.timeout 0 "$@"; }
+maybench() { SPEEDLE_LABEL=speedle-may AUTHZ_ENGINES=speedle-may "$TMAY" -test.run '^$' -test.benchtime "${BENCHTIME:-1s}" -test.count "${COUNT:-5}" -test.timeout 0 "$@"; }
+rsbench() { "$RS" "$1" --benchtime "${BENCHTIME:-1s}" --count "${COUNT:-5}" "${@:2}"; }
 execute_step() {
   case "$1" in
   machine)
@@ -56,9 +80,29 @@ execute_step() {
       for p in /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor; do [[ -r "$p" ]] && echo "$p: $(cat "$p")"; done
       echo '=== turbo ==='; cat /sys/devices/system/cpu/intel_pstate/no_turbo 2>/dev/null || true
       echo '=== memory, disk, swap, affinity ==='; free -h; df -h /tmp; lsblk -o NAME,MODEL,SIZE,TYPE; taskset -pc $$; vmstat 1 3; uptime
-      echo '=== build provenance captured on shrek ==='; cat build-info.txt; sha256sum bin/*
+      echo '=== build provenance (package build job) ==='; cat "$BIN/../build-info.txt"; sha256sum "$BIN"/*
     } > "$OUT/machine.txt" 2>&1 ;;
-  functional) "$T" -test.run '^(TestScenarios|TestPolicySize|TestGeneratedManyUsers)$' -test.v > "$OUT/functional.txt" 2>&1 ;;
+  cedar-specs) rm -rf "$SPECS"; CEDAR_SPEC_DIR="$SPECS" "$T" -test.run '^TestExportCedarSpecs$' -test.v > "$OUT/cedar-specs.txt" 2>&1 ;;
+  functional) "$T" -test.run '^(TestScenarios|TestPolicySize|TestGeneratedManyUsers|TestGeneratedShapesAgree)$' -test.v > "$OUT/functional.txt" 2>&1 ;;
+  may-functional) SPEEDLE_LABEL=speedle-may "$TMAY" -test.run '^(TestScenarios|TestGeneratedManyUsers|TestGeneratedShapesAgree)$' -test.v > "$OUT/functional-may.txt" 2>&1 ;;
+  may-loadcost) SPEEDLE_LABEL=speedle-may AUTHZ_ENGINES=speedle-may LOADCOST=1 "$TMAY" -test.run '^TestLoadCost$' -test.v -test.timeout 0 > "$OUT/loadcost-may.txt" 2>&1 ;;
+  may-bench)
+    maybench -test.cpu 2 -test.bench '^BenchmarkRBAC(Mixed|Allow|Deny)$/^n=(10|100|1000|10000|100000)$/' > "$OUT/bench-may-seq.txt" 2>&1 || return $?
+    maybench -test.cpu 2 -test.bench '^Benchmark(ABAC|Wildcard|ManyUsers)$' >> "$OUT/bench-may-seq.txt" 2>&1 || return $?
+    maybench -test.cpu 1,2,4 -test.bench '^BenchmarkParallel$' > "$OUT/bench-may-par.txt" 2>&1 ;;
+  rs-functional) "$RS" check "$SPECS"/scenarios/*.json > "$OUT/functional-rs.txt" 2>&1 ;;
+  rs-loadcost)
+    : > "$OUT/loadcost-rs.txt"
+    for n in 1000 10000 100000; do
+      for v in cedar cedar_data; do
+        "$RS" loadcost --label "cedar-rs${v#cedar}" --n "$n" --users 10 "$SPECS/data/plain_${n}_$v.cedar" "$SPECS/data/plain_${n}_${v}_entities.json" >> "$OUT/loadcost-rs.txt" 2>&1 || return $?
+      done
+    done
+    sed -i 's/cedar-rs_data/cedar-rs-data/' "$OUT/loadcost-rs.txt" ;;
+  rs-bench)
+    rsbench bench --cpu 2 "$SPECS"/bench-small/*.json "$SPECS"/bench-manyusers/*.json > "$OUT/bench-rs-seq.txt" 2>&1 || return $?
+    rsbench bench --cpu 2 "$SPECS"/bench-100k/*.json > "$OUT/bench-rs-100k.txt" 2>&1 ;;
+  rs-parallel) rsbench parallel --cpu 1,2,4 "$SPECS"/parallel/*.json > "$OUT/bench-rs-par.txt" 2>&1 ;;
   capabilities) "$T" -test.run '^(TestListPermissions|TestExplain|TestRuntimeUpdate|TestErrorMessages|TestBrokenPolicyBehavior)$' -test.v > "$OUT/capabilities.txt" 2>&1 ;;
   watchcheck)
     : > "$OUT/watchcheck.txt"
@@ -68,7 +112,7 @@ execute_step() {
     done; return 0 ;;
   loadcost) LOADCOST=1 "$T" -test.run '^TestLoadCost$' -test.v -test.timeout 0 > "$OUT/loadcost.txt" 2>&1 ;;
   bench-small)
-    bench -test.cpu 2 -test.bench '^BenchmarkRBAC(Mixed|Allow|Deny)$/^n=(100|1000|10000)$/' > "$OUT/bench-seq.txt" 2>&1 || return $?
+    bench -test.cpu 2 -test.bench '^BenchmarkRBAC(Mixed|Allow|Deny)$/^n=(10|100|1000|10000)$/' > "$OUT/bench-seq.txt" 2>&1 || return $?
     bench -test.cpu 2 -test.bench '^Benchmark(ABAC|Wildcard)$' >> "$OUT/bench-seq.txt" 2>&1 ;;
   bench-manyusers) bench -test.cpu 2 -test.bench '^BenchmarkManyUsers$' > "$OUT/bench-manyusers.txt" 2>&1 ;;
   bench-100k-*) e=${1#bench-100k-}; AUTHZ_ENGINES=$e bench -test.cpu 2 -test.bench '^BenchmarkRBAC(Mixed|Allow|Deny)$/^n=100000$/' > "$OUT/bench-100k-$e.txt" 2>&1 ;;

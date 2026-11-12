@@ -6,6 +6,7 @@ import (
 	"os"
 	"runtime"
 	"sort"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -68,7 +69,12 @@ func names(es map[string]Engine) []string {
 	return ns
 }
 
-var benchSizes = []int{100, 1000, 10000, 100000}
+// Permission counts. For Cedar's one-permit-per-permission variant this is
+// also the number of policies; the sweep starts at 10 for that reason.
+var benchSizes = []int{10, 100, 1000, 10000, 100000}
+
+// Sizes for the attribute and wildcard shapes, which have no 100000 set.
+var shapeSizes = []int{10, 100, 1000, 10000}
 
 func runDecision(b *testing.B, kind string, n int, req Req, want bool, only ...string) {
 	es := engines(b, kind, n, false)
@@ -123,7 +129,7 @@ func BenchmarkRBACDeny(b *testing.B) {
 
 // BenchmarkABAC: every rule also carries an attribute condition.
 func BenchmarkABAC(b *testing.B) {
-	for _, n := range []int{1000, 10000} {
+	for _, n := range shapeSizes {
 		b.Run(fmt.Sprintf("n=%d", n), func(b *testing.B) {
 			req := Req{User: fmt.Sprintf("user%d-7", n/2), Action: "read", Resource: fmt.Sprintf("/books/book%d", n/2),
 				Attrs: map[string]any{"att1": "val1", "att2": "val2"}}
@@ -134,7 +140,7 @@ func BenchmarkABAC(b *testing.B) {
 
 // BenchmarkWildcard: every rule grants a resource prefix.
 func BenchmarkWildcard(b *testing.B) {
-	for _, n := range []int{1000, 10000} {
+	for _, n := range shapeSizes {
 		b.Run(fmt.Sprintf("n=%d", n), func(b *testing.B) {
 			req := Req{User: fmt.Sprintf("user%d-7", n/2), Action: "read", Resource: fmt.Sprintf("/books/type%d/chapter1", n/2)}
 			runDecision(b, "wildcard", n, req, true)
@@ -190,9 +196,15 @@ func TestLoadCost(t *testing.T) {
 		}{
 			{"casbin", func() (Engine, error) { return NewCasbin(g.CasbinConf, g.CasbinCSV, CasbinArgs) }},
 			{"opa", func() (Engine, error) { return NewOPA(g.OPARego, g.OPAJSON) }},
-			{"speedle", func() (Engine, error) { return NewSpeedle(g.SpeedleSPDL, false) }},
+			{"cedar", func() (Engine, error) { return NewCedar("cedar", g.CedarPolicies, g.CedarEntities) }},
+			{"cedar-data", func() (Engine, error) { return NewCedar("cedar-data", g.CedarDataPolicies, g.CedarDataEntities) }},
+			{SpeedleLabel(), func() (Engine, error) { return NewSpeedle(g.SpeedleSPDL, false) }},
 		}
+		only := os.Getenv("AUTHZ_ENGINES")
 		for _, l := range loaders {
+			if only != "" && !contains(strings.Split(only, ","), l.name) {
+				continue
+			}
 			before := heap()
 			start := time.Now()
 			e, err := l.load()

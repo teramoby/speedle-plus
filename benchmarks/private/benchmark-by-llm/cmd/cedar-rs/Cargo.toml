@@ -1,0 +1,19 @@
+[package]
+name = "cedar-rs"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+# Cedar's reference (Rust) implementation, measured with the same policies,
+# entities and requests as the Go harness. See README in this directory.
+[dependencies]
+cedar-policy = "=4.14.0"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+axum = "0.8"
+tokio = { version = "1", features = ["rt-multi-thread", "net", "macros"] }
+
+[profile.release]
+opt-level = 3
+lto = "fat"
+codegen-units = 1

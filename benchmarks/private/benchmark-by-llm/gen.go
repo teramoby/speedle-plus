@@ -28,6 +28,10 @@ type GenSet struct {
 	CasbinPlainCSV    string // abac only: rules without the per-rule condition
 	OPARego, OPAJSON  string
 	SpeedleSPDL       string
+	// Cedar: one permit per permission, and the data-driven variant (no
+	// data-driven wildcard set). See gen_cedar.go.
+	CedarPolicies, CedarEntities         string
+	CedarDataPolicies, CedarDataEntities string
 }
 
 const casbinRBAC = `[request_definition]
@@ -237,6 +241,22 @@ func GenPolicies(dir, kind string, n, users int) (GenSet, error) {
 			fmt.Fprintf(w, "GRANT %s role%d\n", strings.Join(us, ", "), i)
 		}
 	})
+	if err != nil {
+		return g, err
+	}
+
+	// ---- Cedar
+	grants := make([]cedarGrant, n)
+	for i := 1; i <= n; i++ {
+		grants[i-1] = cedarGrant{i, res(i)}
+	}
+	err = writeCedar(&g, base, grants, func(w *bufio.Writer, entity func(string, int)) {
+		for i := 1; i <= n; i++ {
+			for j := 1; j <= users; j++ {
+				entity(fmt.Sprintf("user%d-%d", i, j), i)
+			}
+		}
+	})
 	return g, err
 }
 
@@ -295,12 +315,26 @@ func LoadEngines(g GenSet, synced bool) (map[string]Engine, error) {
 		}
 		out["opa"] = o
 	}
-	if want("speedle") {
+	if want("cedar") {
+		c, err := NewCedar("cedar", g.CedarPolicies, g.CedarEntities)
+		if err != nil {
+			return nil, fmt.Errorf("cedar: %w", err)
+		}
+		out["cedar"] = c
+	}
+	if g.CedarDataPolicies != "" && want("cedar-data") {
+		c, err := NewCedar("cedar-data", g.CedarDataPolicies, g.CedarDataEntities)
+		if err != nil {
+			return nil, fmt.Errorf("cedar-data: %w", err)
+		}
+		out["cedar-data"] = c
+	}
+	if want(SpeedleLabel()) {
 		s, err := NewSpeedle(g.SpeedleSPDL, false)
 		if err != nil {
 			return nil, fmt.Errorf("speedle: %w", err)
 		}
-		out["speedle"] = s
+		out[SpeedleLabel()] = s
 	}
 	return out, nil
 }
@@ -367,6 +401,20 @@ func genManyUsers(dir string, n int) (GenSet, error) {
 		w.WriteString("[rolepolicy]\n")
 		for u := 1; u <= n; u++ {
 			fmt.Fprintf(w, "GRANT USER user%d role%d\n", u, (u-1)%10+1)
+		}
+	})
+	if err != nil {
+		return g, err
+	}
+	var grants []cedarGrant
+	for r := 1; r <= 10; r++ {
+		for k := 1; k <= 10; k++ {
+			grants = append(grants, cedarGrant{r, fmt.Sprintf("/books/book%d-%d", r, k)})
+		}
+	}
+	err = writeCedar(&g, filepath.Join(dir, fmt.Sprintf("manyusers_%d", n)), grants, func(w *bufio.Writer, entity func(string, int)) {
+		for u := 1; u <= n; u++ {
+			entity(fmt.Sprintf("user%d", u), (u-1)%10+1)
 		}
 	})
 	// Files must be distinct from plain/10, which can coexist in one process.

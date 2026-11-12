@@ -37,3 +37,47 @@ func TestGeneratedManyUsers(t *testing.T) {
 		})
 	}
 }
+
+// Every engine and variant must give the same decision on each generated
+// shape: each role's own grant, its neighbour's (denied), and for ABAC the
+// same requests without the attributes (denied).
+func TestGeneratedShapesAgree(t *testing.T) {
+	for _, kind := range []string{"plain", "abac", "wildcard"} {
+		for _, n := range []int{10, 100} {
+			g, err := GenPolicies(t.TempDir(), kind, n, 3)
+			if err != nil {
+				t.Fatal(err)
+			}
+			es, err := LoadEngines(g, false)
+			if err != nil {
+				t.Fatal(err)
+			}
+			for _, name := range names(es) {
+				for i := 1; i <= n; i++ {
+					for _, own := range []bool{true, false} {
+						book := i
+						if !own {
+							book = i%n + 1
+						}
+						res := fmt.Sprintf("/books/book%d", book)
+						if kind == "wildcard" {
+							res = fmt.Sprintf("/books/type%d/chapter1", book)
+						}
+						req := Req{User: fmt.Sprintf("user%d-%d", i, i%3+1), Action: "read", Resource: res}
+						want := own
+						if kind == "abac" {
+							req.Attrs = map[string]any{"att1": "val1", "att2": "val2"}
+							if i%2 == 0 {
+								req.Attrs = map[string]any{"att1": "val1", "att2": "other"}
+								want = false
+							}
+						}
+						if ok, err := es[name].Allowed(req); err != nil || ok != want {
+							t.Fatalf("%s/%d/%s: %+v: got %v, %v; want %v", kind, n, name, req, ok, err, want)
+						}
+					}
+				}
+			}
+		}
+	}
+}

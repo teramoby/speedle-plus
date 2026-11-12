@@ -1,0 +1,4 @@
+[
+{"uid":{"type":"User","id":"kim"},"attrs":{},"parents":[{"type":"Role","id":"staff"}]},
+{"uid":{"type":"User","id":"lee"},"attrs":{},"parents":[{"type":"Role","id":"staff"}]}
+]

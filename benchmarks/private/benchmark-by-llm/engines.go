@@ -1,13 +1,15 @@
-// Package authzbench compares Casbin, OPA and Speedle+ on the same policies.
+// Package authzbench compares Casbin, OPA, Cedar and Speedle+ on the same policies.
 package authzbench
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
 
 	"github.com/casbin/casbin/v3"
+	"github.com/cedar-policy/cedar-go"
 	"github.com/open-policy-agent/opa/v1/rego"
 	"github.com/open-policy-agent/opa/v1/storage"
 	"github.com/open-policy-agent/opa/v1/storage/inmem"
@@ -178,7 +180,17 @@ type SpeedleEngine struct {
 	Map func(Req) Req
 }
 
-func (s *SpeedleEngine) Name() string { return "speedle" }
+func (s *SpeedleEngine) Name() string { return SpeedleLabel() }
+
+// SpeedleLabel names the Speedle+ build under test. The harness is built
+// once per Speedle+ version (go.mod: current master, go.may.mod: master in
+// May 2026), and each build labels its results through SPEEDLE_LABEL.
+func SpeedleLabel() string {
+	if label := os.Getenv("SPEEDLE_LABEL"); label != "" {
+		return label
+	}
+	return "speedle"
+}
 
 func (s *SpeedleEngine) Allowed(r Req) (bool, error) { return s.Prepare(r)() }
 
@@ -214,4 +226,154 @@ func NewSpeedle(spdlPath string, watch bool) (*SpeedleEngine, error) {
 		return nil, err
 	}
 	return &SpeedleEngine{Ev: ev}, nil
+}
+
+// ---------------------------------------------------------------- Cedar
+
+// CedarRef is a Cedar entity reference.
+type CedarRef struct {
+	Type string `json:"type"`
+	ID   string `json:"id"`
+}
+
+// CedarReq is one request in Cedar's terms. It is also written as JSON for
+// the Rust harness (cmd/cedar-rs), so both Cedar implementations answer
+// exactly the same questions. Context values are strings, int64, bool or
+// CedarRef. PrincipalParents are added to the principal entity for this
+// request only: request-supplied groups, as Cedar callers pass them in the
+// entity slice of a request.
+type CedarReq struct {
+	Principal        CedarRef       `json:"principal"`
+	Action           CedarRef       `json:"action"`
+	Resource         CedarRef       `json:"resource"`
+	Context          map[string]any `json:"context"`
+	PrincipalParents []CedarRef     `json:"principal_parents,omitempty"`
+}
+
+// CedarDefault maps a request: User, Action and Resource entities named after
+// the request; the resource path and the attributes go to the context.
+func CedarDefault(r Req) CedarReq {
+	c := CedarReq{
+		Principal: CedarRef{"User", r.User},
+		Action:    CedarRef{"Action", r.Action},
+		Resource:  CedarRef{"Resource", r.Resource},
+		Context:   map[string]any{"path": r.Resource},
+	}
+	for k, v := range r.Attrs {
+		// Cedar numbers are 64-bit integers; every scenario amount is integral.
+		if f, ok := v.(float64); ok && f == float64(int64(f)) {
+			v = int64(f)
+		}
+		c.Context[k] = v
+	}
+	for _, g := range r.Groups {
+		c.PrincipalParents = append(c.PrincipalParents, CedarRef{"Group", g})
+	}
+	return c
+}
+
+func (r CedarRef) uid() cedar.EntityUID {
+	return cedar.NewEntityUID(cedar.EntityType(r.Type), cedar.String(r.ID))
+}
+
+func cedarValue(v any) (cedar.Value, error) {
+	switch x := v.(type) {
+	case string:
+		return cedar.String(x), nil
+	case int64:
+		return cedar.Long(x), nil
+	case int:
+		return cedar.Long(x), nil
+	case bool:
+		return cedar.Boolean(x), nil
+	case CedarRef:
+		return x.uid(), nil
+	}
+	return nil, fmt.Errorf("unsupported Cedar context value %T", v)
+}
+
+// cedarOverlay adds one request's principal entity to the shared entities.
+type cedarOverlay struct {
+	base  cedar.EntityGetter
+	extra cedar.Entity
+}
+
+func (o cedarOverlay) Get(uid cedar.EntityUID) (cedar.Entity, bool) {
+	if uid == o.extra.UID {
+		return o.extra, true
+	}
+	return o.base.Get(uid)
+}
+
+// CedarEngine evaluates with cedar-go, the Cedar project's Go implementation.
+type CedarEngine struct {
+	Label    string
+	Policies *cedar.PolicySet
+	Entities cedar.EntityMap
+	Map      func(Req) CedarReq
+}
+
+func (c *CedarEngine) Name() string { return c.Label }
+
+func (c *CedarEngine) Allowed(r Req) (bool, error) { return c.Prepare(r)() }
+
+// Prepare builds the native request (and any request-specific entity)
+// outside the timed decision, as for the other engines.
+func (c *CedarEngine) Prepare(r Req) func() (bool, error) {
+	m := c.Map
+	if m == nil {
+		m = CedarDefault
+	}
+	cr := m(r)
+	record := cedar.RecordMap{}
+	for k, v := range cr.Context {
+		value, err := cedarValue(v)
+		if err != nil {
+			return func() (bool, error) { return false, err }
+		}
+		record[cedar.String(k)] = value
+	}
+	req := cedar.Request{Principal: cr.Principal.uid(), Action: cr.Action.uid(), Resource: cr.Resource.uid(),
+		Context: cedar.NewRecord(record)}
+	var entities cedar.EntityGetter = c.Entities
+	if len(cr.PrincipalParents) > 0 {
+		principal, _ := c.Entities.Get(req.Principal)
+		principal.UID = req.Principal
+		parents := principal.Parents.Slice()
+		for _, p := range cr.PrincipalParents {
+			parents = append(parents, p.uid())
+		}
+		principal.Parents = cedar.NewEntityUIDSet(parents...)
+		entities = cedarOverlay{base: c.Entities, extra: principal}
+	}
+	return func() (bool, error) {
+		decision, diag := cedar.Authorize(c.Policies, entities, req)
+		if len(diag.Errors) > 0 {
+			return false, fmt.Errorf("cedar policy %s: %s", diag.Errors[0].PolicyID, diag.Errors[0].Message)
+		}
+		return bool(decision), nil
+	}
+}
+
+// NewCedar loads Cedar policies and entities (Cedar's JSON entity format).
+func NewCedar(label, policyPath, entitiesPath string) (*CedarEngine, error) {
+	src, err := os.ReadFile(policyPath)
+	if err != nil {
+		return nil, err
+	}
+	ps, err := cedar.NewPolicySetFromBytes(filepath.Base(policyPath), src)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", policyPath, err)
+	}
+	entities := cedar.EntityMap{}
+	if entitiesPath != "" {
+		b, err := os.ReadFile(entitiesPath)
+		if err != nil {
+			return nil, err
+		}
+		if err := json.Unmarshal(b, &entities); err != nil {
+			return nil, fmt.Errorf("%s: %w", entitiesPath, err)
+		}
+	}
+	return &CedarEngine{Label: label, Policies: ps, Entities: entities}, nil
 }

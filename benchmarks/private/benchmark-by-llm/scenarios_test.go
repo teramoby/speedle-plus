@@ -22,7 +22,11 @@ type Scenario struct {
 	// SpeedleMap rewrites a Req for Speedle+ when its model needs a
 	// different resource name. Nil means no rewrite.
 	SpeedleMap func(Req) Req
-	Cases      []Case
+	// CedarMap maps a Req to Cedar's request when the default (User,
+	// Action, Resource entities; path and attributes in the context) does
+	// not fit the scenario's Cedar model.
+	CedarMap func(Req) CedarReq
+	Cases    []Case
 }
 
 func amount(v float64) map[string]any { return map[string]any{"amount": v} }
@@ -58,6 +62,11 @@ var scenarios = []Scenario{
 		Dir: "s4_tenants", Title: "Multi-tenant roles",
 		CasbinArgs: func(r Req) []any { return []any{r.User, r.Tenant, r.Resource, r.Action} },
 		SpeedleMap: func(r Req) Req { r.Resource = "/" + r.Tenant + r.Resource; return r },
+		CedarMap: func(r Req) CedarReq {
+			c := CedarDefault(r)
+			c.Context["tenant"] = CedarRef{"Tenant", r.Tenant}
+			return c
+		},
 		Cases: []Case{
 			{Req{User: "gina", Tenant: "tenant1", Action: "write", Resource: "/data"}, true},
 			{Req{User: "gina", Tenant: "tenant2", Action: "write", Resource: "/data"}, false},
@@ -79,6 +88,11 @@ var scenarios = []Scenario{
 		CasbinArgs: func(r Req) []any {
 			owner, _ := r.Attrs["owner"].(string)
 			return []any{r.User, CasbinObj{Name: r.Resource, Owner: owner}, r.Action}
+		},
+		CedarMap: func(r Req) CedarReq {
+			c := CedarDefault(r)
+			c.Context["owner"] = CedarRef{"User", r.Attrs["owner"].(string)}
+			return c
 		},
 		Cases: []Case{
 			{Req{User: "ivan", Action: "edit", Resource: "/docs/doc1", Attrs: map[string]any{"owner": "ivan"}}, true},
@@ -110,6 +124,12 @@ var scenarios = []Scenario{
 			r.Resource = map[string]string{"doc:D1": "/F1/D1", "doc:D2": "/F2/D2", "doc:D3": "/F1/F1a/D3"}[r.Resource]
 			return r
 		},
+		// Cedar keeps the folder tree as entity parents, with no path encoding.
+		CedarMap: func(r Req) CedarReq {
+			c := CedarDefault(r)
+			c.Resource = CedarRef{"Document", strings.TrimPrefix(r.Resource, "doc:")}
+			return c
+		},
 		Cases: []Case{
 			{Req{User: "mia", Action: "read", Resource: "doc:D1"}, true},
 			{Req{User: "mia", Action: "read", Resource: "doc:D2"}, false},
@@ -136,6 +156,12 @@ func scenarioEngines(s Scenario) (map[string]Engine, map[string]error) {
 	} else {
 		engines["opa"] = e
 	}
+	if e, err := NewCedar("cedar", filepath.Join(dir, "cedar.cedar"), filepath.Join(dir, "cedar.entities.json")); err != nil {
+		errs["cedar"] = err
+	} else {
+		e.Map = s.CedarMap
+		engines["cedar"] = e
+	}
 	if e, err := NewSpeedle(filepath.Join(dir, "speedle.spdl"), false); err != nil {
 		errs["speedle"] = err
 	} else {
@@ -145,7 +171,7 @@ func scenarioEngines(s Scenario) (map[string]Engine, map[string]error) {
 	return engines, errs
 }
 
-var engineNames = []string{"casbin", "opa", "speedle"}
+var engineNames = []string{"casbin", "opa", "cedar", "speedle"}
 
 // TestScenarios runs every scenario on every engine and prints a pass matrix.
 func TestScenarios(t *testing.T) {
@@ -175,7 +201,7 @@ func TestScenarios(t *testing.T) {
 		}
 		rows = append(rows, row)
 	}
-	fmt.Println("\n| Scenario | Casbin | OPA | Speedle+ |\n|---|---|---|---|")
+	fmt.Println("\n| Scenario | Casbin | OPA | Cedar | " + speedleColumn() + " |\n|---|---|---|---|---|")
 	fmt.Println(strings.Join(rows, "\n"))
 }
 
@@ -200,13 +226,14 @@ func policySize(paths ...string) (lines, chars int) {
 
 // TestPolicySize prints how much policy text each engine needed per scenario.
 func TestPolicySize(t *testing.T) {
-	fmt.Println("\n| Scenario | Casbin lines (chars) | OPA lines (chars) | Speedle+ lines (chars) |\n|---|---|---|---|")
+	fmt.Println("\n| Scenario | Casbin lines (chars) | OPA lines (chars) | Cedar lines (chars) | Speedle+ lines (chars) |\n|---|---|---|---|---|")
 	tot := map[string][2]int{}
 	for _, s := range scenarios {
 		d := filepath.Join("scenarios", s.Dir)
 		files := map[string][]string{
 			"casbin":  {filepath.Join(d, "casbin.conf"), filepath.Join(d, "casbin.csv")},
 			"opa":     {filepath.Join(d, "opa.rego"), filepath.Join(d, "opa.json")},
+			"cedar":   {filepath.Join(d, "cedar.cedar"), filepath.Join(d, "cedar.entities.json")},
 			"speedle": {filepath.Join(d, "speedle.spdl")},
 		}
 		row := "| " + s.Title + " |"
@@ -232,4 +259,12 @@ func sortedKeys(m map[string]bool) []string {
 	}
 	sort.Strings(ks)
 	return ks
+}
+
+// speedleColumn heads the Speedle+ column, naming a non-default build.
+func speedleColumn() string {
+	if os.Getenv("SPEEDLE_LABEL") == "" {
+		return "Speedle+"
+	}
+	return "Speedle+ (" + SpeedleLabel() + ")"
 }
