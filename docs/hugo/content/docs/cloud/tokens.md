@@ -53,7 +53,7 @@ Every key expires at `expiresAt`, which the server computes and returns in Unix 
 
 This describes the format, not a usable key. Save the value immediately in a server-side secret store. Never put it in browser storage, frontend code, URLs, source control, screenshots or logs. Listing keys returns metadata only; a lost secret cannot be recovered.
 
-Your account can have **10 active API keys across all scopes**. Creating another returns `409 {"error":"quota_exceeded","limit":10}`. Revoke an unused key to free a slot; the limit does not reset with time. Revoked and expired keys remain listed and do not count toward the cap.
+Your account can have **10 active API keys across all scopes**. Creating another returns `409 {"error":"quota_exceeded","limit":10}`. Revoke an unused key, or let it expire, to free a slot. The cap does not reset on a schedule. Revoked and expired keys remain listed and do not count toward the cap.
 
 ## List API keys
 

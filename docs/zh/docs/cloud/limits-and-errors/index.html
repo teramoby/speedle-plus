@@ -232,7 +232,7 @@
 <tr>
 <td>所有权限范围的有效 API 密钥合计</td>
 <td>每账号 10 个</td>
-<td><code>409 quota_exceeded</code>，带 <code>limit: 10</code>；撤销不用的密钥。不会定时重置；已撤销和已到期的记录不占名额。</td>
+<td><code>409 quota_exceeded</code>，带 <code>limit: 10</code>；撤销不用的密钥，或等它到期。名额不会按固定周期重置。已撤销和已到期的记录不占名额。</td>
 </tr>
 
 <tr>

@@ -21,7 +21,7 @@ Limits apply to the whole account unless a row says otherwise. API keys are acco
 | Services per account | 100 | `409 quota_exceeded`; delete an unused service. No timed reset. |
 | Authorization and role policies combined, across all services | 200 per account | `409 quota_exceeded`; delete policies. No timed reset. |
 | Complete SPDL source for one policy | 1,024 UTF-8 bytes | `400 invalid_request` on console policy writes; shorten the source. This counts bytes, not characters. No timed reset. |
-| Active API keys, all scopes combined | 10 per account | `409 quota_exceeded` with `limit: 10`; revoke an unused key. No timed reset; revoked and expired keys do not count. |
+| Active API keys, all scopes combined | 10 per account | `409 quota_exceeded` with `limit: 10`; revoke an unused key or let it expire. The cap does not reset on a schedule. Revoked and expired keys do not count. |
 | Policy name / API key name | 128 Unicode code points / 1–128 characters after trimming | `400 invalid_request`; shorten or correct the name. No timed reset. |
 | Billable policy-management and authorization calls | 10,000 per account per UTC day | `429 daily_quota_exceeded`; resets at 00:00 UTC. Follow `Retry-After`. |
 | Short bursts of API-key requests | Approximately 600 per minute per key at each Cloud location | `429 rate_limited` with `Retry-After: 60`; wait before retrying. This is a short-term limit, not a guaranteed throughput or a separate daily allowance. |

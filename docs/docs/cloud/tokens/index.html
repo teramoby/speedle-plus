@@ -250,7 +250,7 @@ Content-Type: application/json
 
 <p>This describes the format, not a usable key. Save the value immediately in a server-side secret store. Never put it in browser storage, frontend code, URLs, source control, screenshots or logs. Listing keys returns metadata only; a lost secret cannot be recovered.</p>
 
-<p>Your account can have <strong>10 active API keys across all scopes</strong>. Creating another returns <code>409 {&quot;error&quot;:&quot;quota_exceeded&quot;,&quot;limit&quot;:10}</code>. Revoke an unused key to free a slot; the limit does not reset with time. Revoked and expired keys remain listed and do not count toward the cap.</p>
+<p>Your account can have <strong>10 active API keys across all scopes</strong>. Creating another returns <code>409 {&quot;error&quot;:&quot;quota_exceeded&quot;,&quot;limit&quot;:10}</code>. Revoke an unused key, or let it expire, to free a slot. The cap does not reset on a schedule. Revoked and expired keys remain listed and do not count toward the cap.</p>
 
 <h2 id="list-api-keys">List API keys</h2>
 

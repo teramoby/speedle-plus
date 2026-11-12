@@ -134,7 +134,7 @@ Todas las claves caducan. La respuesta incluye `expiresAt`, la caducidad calcula
 
 Es una descripción del formato, no una clave utilizable. Guárdela inmediatamente en un almacén de secretos del servidor. No la incluya en el almacenamiento del navegador, frontend, URL, control de versiones, capturas ni registros. El listado solo devuelve metadatos; un secreto perdido no se recupera.
 
-La cuenta admite **10 claves API activas entre todos los ámbitos**. Crear otra devuelve `409 {"error":"quota_exceeded","limit":10}`. Revoque una clave sin uso para liberar una plaza; el límite no se restablece con el tiempo. Las claves revocadas y caducadas siguen listadas y no cuentan para el límite.
+La cuenta admite **10 claves API activas entre todos los ámbitos**. Crear otra devuelve `409 {"error":"quota_exceeded","limit":10}`. Revoque una clave sin uso, o deje que caduque, para liberar una plaza. El límite no se restablece en un ciclo. Las claves revocadas y caducadas siguen listadas y no cuentan para el límite.
 
 ### Listar claves API
 
@@ -269,7 +269,7 @@ Salvo que se indique lo contrario, los límites se comparten en toda la cuenta. 
 | Servicios de la cuenta | 100 | `409 quota_exceeded`; eliminar un servicio sin uso. Sin restablecimiento temporal. |
 | Políticas de autorización y de roles entre todos los servicios | 200 por cuenta | `409 quota_exceeded`; eliminar políticas. Sin restablecimiento temporal. |
 | Fuente SPDL completa de una política | 1,024 bytes UTF-8 | `400 invalid_request` al escribir desde la consola; acortar la fuente. Se cuentan bytes, no caracteres. Sin restablecimiento temporal. |
-| Claves API activas entre todos los ámbitos | 10 por cuenta | `409 quota_exceeded` con `limit: 10`; revocar una clave sin uso. Sin restablecimiento temporal; las claves revocadas y caducadas no cuentan. |
+| Claves API activas entre todos los ámbitos | 10 por cuenta | `409 quota_exceeded` con `limit: 10`; revocar una clave sin uso o dejar que caduque. El límite no se restablece en un ciclo. Las claves revocadas y caducadas no cuentan. |
 | Nombre de política / nombre de clave API | 128 puntos de código Unicode / 1–128 caracteres tras recortar espacios | `400 invalid_request`; corregir el nombre. Sin restablecimiento temporal. |
 | Llamadas facturables de gestión de políticas y autorización | 10,000 por cuenta y día UTC | `429 daily_quota_exceeded`; se restablece a las 00:00 UTC. Respetar `Retry-After`. |
 | Ráfagas de solicitudes con clave API | Aproximadamente 600 por minuto por clave en cada ubicación de Cloud | `429 rate_limited` con `Retry-After: 60`; esperar antes de reintentar. No garantiza rendimiento ni añade cuota diaria. |

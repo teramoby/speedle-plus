@@ -232,7 +232,7 @@
 <tr>
 <td>Active API keys, all scopes combined</td>
 <td>10 per account</td>
-<td><code>409 quota_exceeded</code> with <code>limit: 10</code>; revoke an unused key. No timed reset; revoked and expired keys do not count.</td>
+<td><code>409 quota_exceeded</code> with <code>limit: 10</code>; revoke an unused key or let it expire. The cap does not reset on a schedule. Revoked and expired keys do not count.</td>
 </tr>
 
 <tr>

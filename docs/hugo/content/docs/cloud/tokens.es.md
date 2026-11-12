@@ -53,7 +53,7 @@ Todas las claves caducan. La respuesta incluye `expiresAt`, la caducidad calcula
 
 Es una descripción del formato, no una clave utilizable. Guárdela inmediatamente en un almacén de secretos del servidor. No la incluya en el almacenamiento del navegador, frontend, URL, control de versiones, capturas ni registros. El listado solo devuelve metadatos; un secreto perdido no se recupera.
 
-La cuenta admite **10 claves API activas entre todos los ámbitos**. Crear otra devuelve `409 {"error":"quota_exceeded","limit":10}`. Revoque una clave sin uso para liberar una plaza; el límite no se restablece con el tiempo. Las claves revocadas y caducadas siguen listadas y no cuentan para el límite.
+La cuenta admite **10 claves API activas entre todos los ámbitos**. Crear otra devuelve `409 {"error":"quota_exceeded","limit":10}`. Revoque una clave sin uso, o deje que caduque, para liberar una plaza. El límite no se restablece en un ciclo. Las claves revocadas y caducadas siguen listadas y no cuentan para el límite.
 
 ## Listar claves API
 

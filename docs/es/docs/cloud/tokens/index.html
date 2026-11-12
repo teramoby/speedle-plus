@@ -250,7 +250,7 @@ Content-Type: application/json
 
 <p>Es una descripción del formato, no una clave utilizable. Guárdela inmediatamente en un almacén de secretos del servidor. No la incluya en el almacenamiento del navegador, frontend, URL, control de versiones, capturas ni registros. El listado solo devuelve metadatos; un secreto perdido no se recupera.</p>
 
-<p>La cuenta admite <strong>10 claves API activas entre todos los ámbitos</strong>. Crear otra devuelve <code>409 {&quot;error&quot;:&quot;quota_exceeded&quot;,&quot;limit&quot;:10}</code>. Revoque una clave sin uso para liberar una plaza; el límite no se restablece con el tiempo. Las claves revocadas y caducadas siguen listadas y no cuentan para el límite.</p>
+<p>La cuenta admite <strong>10 claves API activas entre todos los ámbitos</strong>. Crear otra devuelve <code>409 {&quot;error&quot;:&quot;quota_exceeded&quot;,&quot;limit&quot;:10}</code>. Revoque una clave sin uso, o deje que caduque, para liberar una plaza. El límite no se restablece en un ciclo. Las claves revocadas y caducadas siguen listadas y no cuentan para el límite.</p>
 
 <h2 id="listar-claves-api">Listar claves API</h2>
 
