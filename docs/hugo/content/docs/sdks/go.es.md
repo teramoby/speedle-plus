@@ -87,7 +87,7 @@ alice delete /docs/public: allowed=false reason=NO_APPLICABLE_POLICIES
 
 > **Speedle Cloud estará disponible próximamente.**
 
-El programa lee el nombre del servicio desde `SPEEDLE_SERVICE` y el token del servicio desde `SPEEDLE_TOKEN`. `SPEEDLE_ENDPOINT` anula el endpoint predeterminado `https://cloud.speedle.io`. Sustituya `main.go` por:
+El programa lee el nombre del servicio desde `SPEEDLE_SERVICE` y una clave API de cuenta con ámbito `ads` desde `SPEEDLE_TOKEN`. `SPEEDLE_ENDPOINT` anula el endpoint predeterminado `https://cloud.speedle.io`. Sustituya `main.go` por:
 
 ```go
 package main
@@ -134,7 +134,7 @@ func main() {
 }
 ```
 
-Establezca las variables de entorno y ejecute. El comando `read -rs` evita que el token quede registrado en el historial del shell o se muestre en pantalla:
+Establezca las variables de entorno y ejecute. El comando `read -rs` evita que la clave API quede registrada en el historial del shell o se muestre en pantalla:
 
 ```bash
 export SPEEDLE_SERVICE=docs
@@ -149,7 +149,7 @@ alice get /docs/public: allowed=true
 alice delete /docs/public: allowed=false reason=NO_APPLICABLE_POLICIES
 ```
 
-El token es un secreto del lado del servidor. Nunca lo distribuya a navegadores, aplicaciones móviles ni clientes de escritorio.
+La clave API es un secreto del lado del servidor. Nunca lo distribuya a navegadores, aplicaciones móviles ni clientes de escritorio.
 
 ## Manejo de errores
 

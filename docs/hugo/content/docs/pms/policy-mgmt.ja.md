@@ -112,49 +112,49 @@ role_policy_id=$(./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1
 
 ## Speedle Cloud
 
-Speedle Cloud のサインインはまもなく開始されます。API トークンが利用可能になると、`spctl` はセルフホストの PMS と同じコマンドを使用して Cloud サービスとポリシーを管理できます。管理エンドポイントを使用します:
+アカウント API キーを使い、`spctl` で Cloud のサービスとポリシーを管理します。管理エンドポイントは次のとおりです。
 
 ```text
 https://cloud.speedle.io/policy-mgmt/v1
 ```
 
-コマンドに必要なスコープを持つ API トークンを選択します。`pms:read` は `get` および `discover` の読み取りに対応し、`pms:write` は `create`、`delete`、および検出のリセットに対応します。ADS スコープのみを持つトークンではポリシーを管理できず、`403 insufficient_scope` で拒否されます。
+アカウント API キーには固定スコープを 1 つ指定します。`pms:read` はサービスとポリシーの読み取り、`pms:write` はさらに作成と削除を許可します。アカウント内のサービスが対象です。`ads` キーは管理できず `403 insufficient_scope` になります。作成と失効は [API キー](/ja/docs/cloud/tokens/)を参照してください。
 
-エンドポイントをグローバルフラグとして渡し、`SPCTL_TOKEN` からトークンを読み取ります。対話型シェルでは、これによりシークレットがコマンド引数やシェル履歴に残らなくなります:
+エンドポイントをグローバルフラグとして渡し、`SPCTL_TOKEN` からAPI キーを読み取ります。対話型シェルでは、これによりシークレットがコマンド引数やシェル履歴に残らなくなります:
 
 <!-- deployment-template: cloud-token-environment -->
 ```bash
-read -rsp 'API token: ' SPCTL_TOKEN; echo
+read -rsp 'API key: ' SPCTL_TOKEN; echo
 export SPCTL_TOKEN
 ./bin/spctl --pms-endpoint https://cloud.speedle.io/policy-mgmt/v1 get service --all
 unset SPCTL_TOKEN
 ```
 
-互換性のために `--token` フラグも引き続き利用できますが、環境変数を使用するとコマンド引数によるトークンの漏洩を防ぐことができます。すべてのグローバルフラグには環境変数も用意されています。プレフィックス `SPCTL_` を付け、フラグ名を大文字にしてハイフンをアンダースコアに置き換えます。たとえば、`SPCTL_PMS_ENDPOINT` は `pms-endpoint` を設定し、`SPCTL_SKIPVERIFY` は `skipverify` を設定します。
+互換性のために `--token` フラグも引き続き利用できますが、環境変数を使用するとコマンド引数によるAPI キーの漏洩を防ぐことができます。すべてのグローバルフラグには環境変数も用意されています。プレフィックス `SPCTL_` を付け、フラグ名を大文字にしてハイフンをアンダースコアに置き換えます。たとえば、`SPCTL_PMS_ENDPOINT` は `pms-endpoint` を設定し、`SPCTL_SKIPVERIFY` は `skipverify` を設定します。
 
 設定を保存するには `~/.speedle` を使用します。形式はコマンドラインと同じフラグ名を持つ、1 行あたり 1 つの `name=value` ペアです:
 
 ```ini
 pms-endpoint=https://cloud.speedle.io/policy-mgmt/v1
-token=<api-token>
+token=<api-key>
 ```
 
-コマンド引数にトークンを含めずにこのファイルを作成または更新します:
+コマンド引数にAPI キーを含めずにこのファイルを作成または更新します:
 
 <!-- deployment-template: cloud-token-config -->
 ```bash
-read -rsp 'API token: ' SPCTL_TOKEN; echo
+read -rsp 'API key: ' SPCTL_TOKEN; echo
 printf '%s\n' "$SPCTL_TOKEN" | ./bin/spctl config token --stdin
 unset SPCTL_TOKEN
 ```
 
-`spctl config token --stdin` はパーミッション `0600` で `~/.speedle` を書き込みます。手動でファイルを編集する場合は、`install -m 600 /dev/null ~/.speedle` で作成するか、後で `chmod 0600 ~/.speedle` を実行してください。パーミッションがグループまたはその他のアクセスを許可しているファイルからトークンを読み取ると、`spctl` は標準エラー出力に警告を出力します。`spctl config --list` は設定されたトークンを `********` としてマスクします。
+`spctl config token --stdin` はパーミッション `0600` で `~/.speedle` を書き込みます。手動でファイルを編集する場合は、`install -m 600 /dev/null ~/.speedle` で作成するか、後で `chmod 0600 ~/.speedle` を実行してください。パーミッションがグループまたはその他のアクセスを許可しているファイルからAPI キーを読み取ると、`spctl` は標準エラー出力に警告を出力します。`spctl config --list` は設定されたAPI キーを `********` としてマスクします。
 
-明示的なコマンドラインフラグは環境変数をオーバーライドし、環境変数は両方の設定ファイルをオーバーライドします。ファイル間では、`~/.speedle` が `~/.spctlconfig` をオーバーライドします。`spctl config` でトークン以外のキーを設定すると、それが `~/.spctlconfig` に書き込まれ、`~/.speedle` から対応するコピーが削除されます。
+明示的なコマンドラインフラグは環境変数をオーバーライドし、環境変数は両方の設定ファイルをオーバーライドします。ファイル間では、`~/.speedle` が `~/.spctlconfig` をオーバーライドします。`spctl config` で `token` 以外の設定項目を変更すると、それが `~/.spctlconfig` に書き込まれ、`~/.speedle` から対応するコピーが削除されます。
 
-トークンは、証明書の検証が有効になっている HTTPS 経由でのみ `Authorization: Bearer` 認証情報として送信されます。トークンを使用した平文 HTTP は、`127.0.0.1`、`::1`、`localhost` などのループバックホストに対してのみ許可されます。`spctl` はリモートの HTTP エンドポイントおよび HTTPS から HTTP へのダウングレードリダイレクトに対しては認証情報を送信する前に拒否します。HTTPS エンドポイントの場合、`--skipverify=true` が指定されているとトークンの送信も拒否されます。代わりに `--cacert` を使用してプライベートまたは自己署名の認証局を信頼してください。トークンは通常のコマンド出力やエラーメッセージには含まれません。
+API キーは、証明書の検証が有効になっている HTTPS 経由でのみ `Authorization: Bearer` 認証情報として送信されます。API キーを使用した平文 HTTP は、`127.0.0.1`、`::1`、`localhost` などのループバックホストに対してのみ許可されます。`spctl` はリモートの HTTP エンドポイントおよび HTTPS から HTTP へのダウングレードリダイレクトに対しては認証情報を送信する前に拒否します。HTTPS エンドポイントの場合、`--skipverify=true` が指定されているとAPI キーの送信も拒否されます。代わりに `--cacert` を使用してプライベートまたは自己署名の認証局を信頼してください。API キーは通常のコマンド出力やエラーメッセージには含まれません。
 
-Cloud のエラーはゼロ以外の終了ステータスを生成します。`401` の後はトークンを確認し、`403 insufficient_scope` の後はそのスコープを確認してください。`404` は存在しないリソースを示し、`409 service_exists` および `409 policy_exists` は重複を示します。`429` の場合は、返された `Retry-After` の値を尊重し、有界なバックオフを使用してください。日次またはポリシーのクォータエラーの場合は、リセットを待つか使用量を減らす必要があります。短い間隔でループ再試行しないでください。
+Cloud のエラーはゼロ以外の終了ステータスを生成します。`401` の後はAPI キーを確認し、`403 insufficient_scope` の後はそのスコープを確認してください。`404` は存在しないリソースを示し、`409 service_exists` および `409 policy_exists` は重複を示します。`429` の場合は、返された `Retry-After` の値を尊重し、有界なバックオフを使用してください。`429 daily_quota_exceeded` では `Retry-After` に従い 00:00 UTC まで待ちます。サービス、ポリシー、有効キーの上限は `409 quota_exceeded` で、時間ではリセットされません。未使用項目を削除または失効させてください。[制限とエラー](/ja/docs/cloud/limits-and-errors/)を参照してください。
 
 ## その他のインターフェース
 

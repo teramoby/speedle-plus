@@ -1,69 +1,60 @@
 +++
-title = "Límites y errores de Speedle Cloud"
+title = "Speedle Cloud Límites y errores"
 linkTitle = "Límites y errores"
-description = "Cuotas de cuenta de Speedle Cloud, límites de solicitudes, errores en formato JSON plano, encabezados de tasa y cuota, contabilidad diaria y directrices de reintento."
-date = 2026-11-08T00:00:00+08:00
-lastmod = 2026-11-08T17:11:18+08:00
+description = "Límites de cuenta, códigos de error, restablecimiento y reintentos."
 weight = 40
 draft = false
 toc = true
 tocheading = "h2"
 categories = ["docs"]
-bref = "Planifique en función de los límites globales de la cuenta y falle de forma restrictiva (fail closed) cuando Cloud no pueda devolver una decisión de autorización válida."
+lastmod = 2026-11-12T00:00:00+08:00
 +++
 
-Los errores y encabezados de ADS a continuación describen el contrato de ADS autenticado, cuyo entorno de ejecución aún no se encuentra disponible. El contrato de gestión ya define límites de cuenta, comprobaciones de sesión y CSRF, y errores de gestión de tokens para su uso cuando el acceso a cuentas esté habilitado. Descargar un esquema no habilita un endpoint pendiente.
+Salvo que se indique lo contrario, los límites se comparten en toda la cuenta. Cambiar de clave API no aumenta la cuota diaria.
 
 ## Límites
 
-| Límite | Significado |
+| Qué se limita | Límite | Qué hacer al alcanzarlo |
+| --- | --- | --- |
+| Servicios de la cuenta | 100 | `409 quota_exceeded`; eliminar un servicio sin uso. Sin restablecimiento temporal. |
+| Políticas de autorización y de roles entre todos los servicios | 200 por cuenta | `409 quota_exceeded`; eliminar políticas. Sin restablecimiento temporal. |
+| Fuente SPDL completa de una política | 1,024 bytes UTF-8 | `400 invalid_request` al escribir desde la consola; acortar la fuente. Se cuentan bytes, no caracteres. Sin restablecimiento temporal. |
+| Claves API activas entre todos los ámbitos | 10 por cuenta | `409 quota_exceeded` con `limit: 10`; revocar una clave sin uso. Sin restablecimiento temporal; el historial revocado no cuenta. |
+| Nombre de política / nombre de clave API | 128 puntos de código Unicode / 1–128 caracteres tras recortar espacios | `400 invalid_request`; corregir el nombre. Sin restablecimiento temporal. |
+| Llamadas facturables de gestión de políticas y autorización | 10,000 por cuenta y día UTC | `429 daily_quota_exceeded`; se restablece a las 00:00 UTC. Respetar `Retry-After`. |
+| Ráfagas de solicitudes con clave API | Aproximadamente 600 por minuto por clave en cada ubicación de Cloud | `429 rate_limited` con `Retry-After: 60`; esperar antes de reintentar. No garantiza rendimiento ni añade cuota diaria. |
+| Cuerpo de solicitud ordinario | 65,536 bytes (64 KiB) | `413 request_too_large`; reducir el cuerpo. Sin restablecimiento temporal. |
+| Cuerpo de importación JSON atómica (solo `POST /api/service/import`) | 5,100,000 bytes | `413 request_too_large`; reducir los datos. También se aplican los límites de políticas y cuenta. Sin restablecimiento temporal. |
+| Atributos de entrada | 50 atributos; 16,384 bytes UTF-8 de JSON canónico | `400 SPDL-0004`; reducir el número o tamaño de atributos. Sin restablecimiento temporal. |
+
+Consulte [Claves API](/es/docs/cloud/tokens/) para ámbitos, creación y revocación.
+
+## Cuota diaria
+
+Las lecturas, escrituras, validación, Playground, importaciones, exportaciones y comprobaciones de autorización comparten la cuota. Las denegaciones de políticas y entradas de negocio inválidas cuentan. La autenticación, las operaciones de sesión y `GET /api/me` no cuentan. Tampoco cuentan las solicitudes rechazadas por autenticación, ámbito, enrutamiento, CSRF, tamaño, límite de ráfagas o cuota diaria.
+
+Los fallos de Cloud pueden recibir una devolución de cuota de hasta 1,000 llamadas por cuenta y día UTC; si no se confirma, siguen contando. Los errores causados por la solicitud cuentan siempre. Si falla temporalmente el contador, las llamadas de autorización pueden continuar a velocidad reducida con hasta 10,000 llamadas adicionales por cuenta y día UTC. Es una asignación separada, no garantizada, que se restablece a las 00:00 UTC junto con el límite de devoluciones. Si no se concede, se devuelve `503 quota_unavailable`.
+
+Parte de la capacidad puede quedar reservada sin usarse, por lo que el total utilizable puede ser inferior a 10,000. `GET /api/me` informa del uso y la hora de restablecimiento. No reintente continuamente ni cambie de clave para eludir los límites.
+
+## Errores y cabeceras
+
+Los errores son JSON plano, por ejemplo `{"error":"rate_limited"}`. Si no obtiene una decisión válida, deniegue el acceso.
+
+| Estado y error | Acción |
 | --- | --- |
-| 10.000 llamadas al día | Llamadas coincidentes a controladores de PMS y ADS a nivel de cuenta por día UTC, en todas las sesiones, tokens y servicios; se reinicia a las 00:00 UTC. |
-| 200 políticas | Políticas de autorización y roles combinadas por cuenta. |
-| 4 KiB de SPDL | 4.096 bytes UTF-8 por política completa, no 4.096 caracteres. |
-| 2 tokens activos | Por servicio; el historial de revocaciones no consume este límite. |
-| 600 solicitudes por minuto por token | Límite de ráfaga aproximado por ubicación, independiente del límite diario estricto de la cuenta. |
-| Cuerpo de solicitud de 64 KiB | Límite global antes del análisis sintáctico. Los atributos entrantes opcionales también conservan su límite de 50 atributos y 16.384 bytes en JSON canónico UTF-8. |
+| `400 invalid_request` o error de Speedle | Corregir la solicitud; no repetirla sin cambios. |
+| `401 unauthorized` | Comprobar la clave API o sesión. Una cookie de sesión sola no autoriza ADS. |
+| `403 reauth_required` | Autenticarse de nuevo con un proveedor vinculado antes de crear la clave. |
+| `403 insufficient_scope` | Usar una clave con el ámbito requerido. |
+| `403 management_scope_disabled` | No se emiten ámbitos de gestión con el inicio de sesión cerrado. |
+| `403 csrf_failed` | Comprobar sesión, origen y cabecera CSRF. |
+| `404 service_not_found` (ADS) / `404 not_found` (gestión) | Elegir un servicio de la cuenta. Los ID de clave desconocidos, ajenos o revocados también devuelven `404 not_found`. |
+| `409 quota_exceeded` | Liberar una plaza de servicio, política o clave API; el tiempo no restablece estos límites. |
+| `413 request_too_large` | Reducir el cuerpo. |
+| `429 rate_limited` / `429 daily_quota_exceeded` | Respetar `Retry-After` y usar espera incremental acotada; la cuota diaria se restablece a medianoche UTC. |
+| `503 quota_unavailable` / `503 snapshot_unavailable` / `500 internal_error` | Denegar el acceso y reintentar con espera acotada, respetando `Retry-After` si existe. |
 
-Cada cuenta dispone de un servicio. Los nombres de tokens tienen entre 1 y 128 caracteres. Consulte [Tokens de aplicación](/es/docs/cloud/tokens/) para conocer las reglas del ciclo de vida de credenciales.
+En solicitudes con clave verificada, `X-RateLimit-Limit` es 600. No hay un `X-RateLimit-Remaining` exacto. `X-Quota-Daily-Remaining` es una estimación de saldo de la cuenta; la concurrencia y las reservas sin uso pueden hacer que difiera del saldo utilizable. No garantiza la siguiente solicitud y se omite en rechazos tempranos.
 
-## Contabilidad de cuotas diarias
-
-Acceder a un controlador coincidente consume una unidad diaria, incluso en caso de denegación de política, entrada de datos de negocio no válida o error interno. Los endpoints de autenticación y de sesión no consumen estas unidades. Las solicitudes rechazadas antes de acceder al controlador por comprobaciones de autenticación, enrutamiento, CSRF, tamaño de cuerpo, límite de ráfaga o reserva de cuota tampoco las consumen.
-
-Las reservas asignadas que caducan o se abandonan no se vuelven a emitir, por lo que el número de llamadas utilizables puede ser inferior a 10.000. `GET /api/me` informa del uso diario reservado y de la hora de reinicio sin cobrar una unidad diaria.
-
-Cambiar de token no añade cuota a la cuenta. El límite diario de la cuenta y el límite aproximado de ráfaga por token y ubicación se aplican por separado.
-
-## Errores HTTP
-
-Los errores devuelven respuestas en formato JSON plano. Corrija la solicitud o credencial según corresponda; en caso contrario, falle de forma restrictiva (fail closed) y utilice un tiempo de espera exponencial limitado en lugar de un bucle de reintento infinito.
-
-| Estado HTTP y error | Respuesta de la aplicación |
-| --- | --- |
-| `401 {"error":"unauthorized"}` | Compruebe el entorno y la credencial. ADS incluye un desafío Bearer. Las solicitudes anónimas y las que solo usan cookies no pueden autorizar operaciones en ADS. |
-| `403 {"error":"reauth_required"}` | Autentíquese nuevamente con un proveedor vinculado antes de crear un token. La actividad ordinaria no renueva la vigencia de la autenticación. |
-| `403 {"error":"service_mismatch"}` | Corrija la entrada del servicio; nunca reintente contra los datos de otro arrendatario. |
-| `400 {"error":"SPDL-0004 …"}` | Speedle rechazó la solicitud, por ejemplo debido a que un valor de atributo tiene un tipo incorrecto. El mensaje es el de Speedle. Corrija la solicitud; no la reintente sin cambios. |
-| `404` en revocación de token | El ID del token es desconocido, no pertenece a la cuenta o ya ha sido revocado. Actualice los metadatos antes de elegir otra acción. |
-| `413 {"error":"request_too_large"}` | Reduzca el tamaño del cuerpo de la solicitud. |
-| `429 {"error":"rate_limited"}` | Respete el encabezado `Retry-After`, que es de 60 segundos para este límite de ráfaga, y aplique un retroceso limitado. |
-| `429 {"error":"daily_quota_exceeded"}` | Respete el encabezado `Retry-After` hasta la medianoche UTC siguiente. Cambiar de token no añade cuota a la cuenta. |
-| `503 {"error":"quota_unavailable"}` o `snapshot_unavailable` | Falle de forma restrictiva (fail closed) y reintente únicamente con un retroceso limitado. No recurra a evaluaciones de políticas de demostración o D1. |
-| `500 {"error":"internal_error"}` | Falle de forma restrictiva (fail closed). Conserve un ID de solicitud seguro para soporte y evite registrar credenciales. |
-
-En el caso de respuestas `503`, `snapshot_unavailable` se contabiliza tras acceder al controlador, mientras que `quota_unavailable` no se contabiliza. Los rechazos tempranos omiten el encabezado de cuota diaria restante descrito a continuación.
-
-Una solicitud a ADS que no sea POST puede ser detenida en el borde público con una respuesta 403 de Cloudflare. Esa no es una decisión de autorización de la aplicación.
-
-## Encabezados de tasa y cuota
-
-Tras la verificación, `X-RateLimit-Limit` es 600. ADS no expone un valor exacto de `X-RateLimit-Remaining`.
-
-Cuando está presente tras un controlador contabilizado, `X-Quota-Daily-Remaining` estima las llamadas restantes a nivel de cuenta para el día de hoy: las llamadas no reservadas en el momento de la asignación más la reserva restante de esta instancia aislada. La estimación es conservadora en el momento de la concesión. Se almacena en caché durante un máximo de 30 segundos (duración de la reserva) y se descarta cuando esta caduca o cambia el día UTC.
-
-Las instancias aisladas simultáneas pueden hacer que el valor sobreestime la disponibilidad hasta en el saldo no reservado al momento de la asignación, no simplemente 32 llamadas. Las reservas no utilizadas o abandonadas pueden hacer que subestime la disponibilidad. Durante despliegues o reversiones, los asignadores heredados recurren a la reserva local restante. Este encabezado es informativo y no modifica la aplicación estricta de cuotas. Los rechazos tempranos lo omiten.
-
-Las respuestas coincidentes de ADS para aplicaciones también utilizan `Cache-Control: no-store`. No guarde decisiones ni credenciales en cachés compartidas.
-
-Vuelva a la [Vista previa de la API de autorización](/es/docs/cloud/authorization-api/) para ver ejemplos de solicitudes y restricciones de integración.
+ADS usa `Cache-Control: no-store`. No guarde decisiones ni credenciales en cachés compartidas. Use POST; otros métodos pueden recibir `405 method_not_allowed` o un bloqueo previo que no sea JSON. Consulte la [API de autorización](/es/docs/cloud/authorization-api/).

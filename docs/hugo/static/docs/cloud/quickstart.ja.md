@@ -1,38 +1,45 @@
 # Speedle Cloud ドキュメント
 
-Speedle Cloud は、オープンソースの Speedle ポリシーエンジンをベースにした開発者向けのホスト型アクセス制御サービスです。SPDL 認可ポリシーおよびロールポリシーの管理、Playground での決定テスト、アプリケーションサーバーからの認可 API 呼び出しを、独自の認可サービスを運用することなく行えるよう設計されています。
+Speedle Cloud はオープンソースの Speedle エンジンによるホスト型認可サービスです。サービス、SPDL 認可・ロールポリシーを管理し、Playground で判定をテストして、サーバーから API を呼び出せます。
 
-**Speedle Cloud はまもなく公開されます。** Cloud ヘッダーには **Coming soon（まもなく公開）** バッジが表示されており、[cloud.speedle.io](https://cloud.speedle.io/ja/) での本番サインインはまだ開始されていません。ここで説明されているコンソールワークフローおよび認証付き認可決定サービス (ADS) は、公開されているサービス契約のプレビューです。認証付き ADS が保留中である間、トークンを発行してもサーバー側の認可呼び出しは有効になりません。選択したステージでのデプロイメントと ID プロバイダーの可用性を確認してください。
-
-無料パブリックベータは、試用、学習、評価を目的としています。SLA は提供されず、本番環境での使用は推奨されません。また、機能や制限は変更される場合があります。
+コンソールの利用と API キー作成にはサインインが利用可能である必要があります。無料パブリックベータは試用、学習、評価用で SLA はなく、本番利用は推奨しません。機能と制限は変更される場合があります。
 
 ## ドキュメント
 
-- [クイックスタート](https://engine.speedle.io/ja/docs/cloud/getting-started/): GitHub または Google でのサインイン（まもなく開始）、アカウント管理、サービス、SPDL ポリシー、セッション管理リクエスト、および 4 つのセッション Playground 操作。
-- [アプリケーショントークン](https://engine.speedle.io/ja/docs/cloud/tokens/): 最近の認証要件、1 回限りのトークン開示、メタデータのページネーション、ローテーション、および失効。
-- [認可 API プレビュー](https://engine.speedle.io/ja/docs/cloud/authorization-api/): IsAllowed リクエストとレスポンスの契約、Node.js 22 のサンプル、ポリシースナップショット、および統合の制約。
-- [制限とエラー](https://engine.speedle.io/ja/docs/cloud/limits-and-errors/): アカウントクォータ、リクエスト制限、エラーレスポンス、レートおよびクォータヘッダー、再試行のガイダンス。
+- [クイックスタート](https://engine.speedle.io/ja/docs/cloud/getting-started/): サインイン、アカウント、サービス、ポリシー、セッション Playground。
+- [API キー](https://engine.speedle.io/ja/docs/cloud/tokens/): アカウントの認証情報、固定スコープ、作成と失効、一度だけの表示、ページング。
+- [認可 API](https://engine.speedle.io/ja/docs/cloud/authorization-api/): IsAllowed、ユーザー ID、Node.js 22、通信の制約。
+- [制限とエラー](https://engine.speedle.io/ja/docs/cloud/limits-and-errors/): アカウント上限、サイズ、バースト、日次枠、エラーコード、リセット時刻。
 
 ## ダウンロード
 
-- [日本語 Markdown](https://engine.speedle.io/docs/cloud/quickstart.ja.md): 4 つの Cloud の章をまとめたオフラインドキュメント。
-- [OpenAPI YAML](https://cloud.speedle.io/openapi.yaml): リポジトリにチェックインされた正規の Cloud API 仕様。
-- [OpenAPI JSON](https://cloud.speedle.io/openapi.json): 同じ YAML ソースバイトから生成。
-- [提供ビルドバージョン](https://cloud.speedle.io/build.json): サービスを提供しているビルドを識別（ID プロバイダーやエンドポイントの可用性を証明するものではありません）。
+- [日本語 Markdown](https://engine.speedle.io/docs/cloud/quickstart.ja.md): Cloud の 4 章をまとめたオフラインガイド。
+- [OpenAPI YAML](https://cloud.speedle.io/openapi.yaml)
+- [OpenAPI JSON](https://cloud.speedle.io/openapi.json)
 
-仕様には 4 つのセッション Playground 操作と認証付き ADS 契約が含まれます。仕様の公開やガイドのダウンロードを行っても、保留中のエンドポイントが有効になったりサインインが開始されたりすることはありません。YAML および生成された JSON は、対応する封印された Cloud ビルドとともにバージョン管理、プロモート、復元されます。日本語、英語、中国語の Markdown ダウンロードは、これらの Engine ドキュメントページとともに保守されます。
+API 仕様はリクエストとレスポンスの契約です。ダウンロードしてもサインインは開始されません。
 
-Cloud の[利用規約](https://cloud.speedle.io/ja/terms)および[プライバシーポリシー](https://cloud.speedle.io/ja/privacy)をお読みください。
+Cloud の次の文書をご確認ください： [利用規約](https://cloud.speedle.io/ja/terms) / [プライバシーポリシー](https://cloud.speedle.io/ja/privacy).
 
 ## Speedle Cloud クイックスタート
 
 **Speedle Cloud はまもなく公開されます。** cloud.speedle.io の本番環境ではまだサインインが開始されておらず、Cloud ヘッダーには **Coming soon（まもなく公開）** バッジが表示されます。サインインが閉じられている間、サインインページには近日公開予定である旨が表示されます。本文では公開されている使用フローを説明していますが、本番コンソールが現在開かれていることを意味するものではありません。
 
-### 本番環境
+#### 本番環境
 
-アカウントセッション、管理リクエスト、およびアプリケーショントークンは `https://cloud.speedle.io` を使用します。アカウント、リソース、トークンはそのオリジンに属します。
+アカウントセッション、管理リクエスト、およびAPI キーは `https://cloud.speedle.io` を使用します。アカウント、リソース、API キーはそのオリジンに属します。
 
-### 最初の認可ポリシーの作成
+#### GitHub または Google によるサインイン（まもなく開始）
+
+サインインがまだ開始されていない場合でも、サインインページには **GitHub でサインイン** と **Google でサインイン** の 2 つのオプションが表示されます。本番環境でサインインが開始されたら、現在利用可能なプロバイダーを選択してください。新しい ID の確認済みメールアドレスがまだ使用されていない場合は、**アカウント作成** を明示的に確認する必要があります。
+
+アカウント設定では、接続されている ID を確認し、プロバイダーの接続または切断を行うことができます。少なくとも 1 つの接続済み ID を保持する必要があります。
+
+#### ワークスペースとサービス
+
+サービスはポリシーの名前空間です。デフォルトのワークスペースには、テスト用の `default` サービスが用意されています。
+
+#### 最初の認可ポリシーの作成
 
 エディターに次の SPDL ステートメントを入力します:
 
@@ -40,9 +47,11 @@ Cloud の[利用規約](https://cloud.speedle.io/ja/terms)および[プライバ
 grant user alice from corp get /books
 ```
 
-`from corp` は、この認可を `corp` ID ドメイン内に制限します。`corp` を、アプリケーションが信頼できる認証データから導出するドメインに置き換え、以下の Playground の例のように、各リクエストでプリンシパルの `idd` として同じ値を送信してください。`from` のない認可は、すべてのドメインの `alice` という名前のユーザーに一致します。ドメイン間で名前が衝突する可能性のない、単一の ID ソースを持つサービスの場合にのみ、この句を省略してください。ルールと対応するリクエストフィールドについては [ID ドメイン](/ja/docs/idd/) を参照してください。
+`from corp` は、この認可を `corp` ID ドメイン内に制限します。`corp` を、アプリケーションが信頼できる認証データから導出するドメインに置き換え、以下の Playground の例のように、各リクエストでプリンシパルの `idd` として同じ値を送信してください。`from` のない認可は、すべてのドメインの `alice` という名前のユーザーに一致します。ドメイン間で名前が衝突する可能性のない、単一の ID ソースを持つサービスの場合にのみ、この句を省略してください。ルールと対応するリクエストフィールドについては [ID ドメイン](https://engine.speedle.io/ja/docs/idd/) を参照してください。
 
-### Playground で認可決定をテスト
+**ポリシーの検証** を選択し、コンソールに **識別結果: 認可ポリシー** と報告されることを確認してから、**ポリシーを保存** を選択します。検証ではポリシータイプが検出され、構文がチェックされますが、下書きは保存されません。保存は独立した手動操作です。
+
+#### Playground で認可決定をテスト
 
 Playground を開いてポリシーをテストします。
 
@@ -52,65 +61,204 @@ Playground を開いてポリシーをテストします。
 {"type":"user","name":"alice","idd":"corp"}
 ```
 
-アクションに `get`、リソースに `/books` を入力します。
+アクションに `get`、リソースに `/books` を入力します。**評価** をクリックすると、結果は `allowed: true`（理由コード 0）となります。
 
-## Speedle Cloud アプリケーショントークン
+プリンシパルの `idd` を `other` に変更するか、リソースを `/secret` に変更すると、リクエストは拒否されます（`allowed: false`）。
 
-アプリケーショントークンを使用すると、バックエンドアプリケーションから Speedle Cloud の認可 API を認証して呼び出すことができます。
+## Speedle Cloud API キー
 
-## Speedle Cloud 認可 API プレビュー
+API キーはアカウントに属し、スコープに応じてそのアカウントのサービスにアクセスします。アプリケーションを認証するもので、エンドユーザーの認証ではありません。API キー、セッション、連携 ID の管理にはログイン済みのコンソールセッションが必要です。
 
-```javascript
-import { request } from 'node:https';
+### API キーを作成する
 
-export async function checkAccess(token, authenticatedUserId, authenticatedUserIdd, resource, action) {
-  if (!authenticatedUserId || !authenticatedUserIdd) {
-    throw new Error('principal name and identity domain are required');
+[API キー](https://cloud.speedle.io/ja/tokens) を開き、前後の空白を除いて 1–128 文字の名前とスコープを指定し、**作成**を選択します。作成には過去 10 分以内の連携プロバイダーによる認証が必要です。`403 reauth_required` の場合は再認証後、再び**作成**を選択してください。プロバイダーから戻るだけでは作成されません。
+
+各キーには作成後に変更できないスコープが 1 つあります。
+
+| スコープ | アクセス |
+| --- | --- |
+| `ads`（既定） | `/authz-check/v1/*` による認可チェックのみ。 |
+| `pms:read` | `/policy-mgmt/v1` によるアカウント内のサービス、認可ポリシー、ロールポリシーの読み取り。 |
+| `pms:write` | `/policy-mgmt/v1` によるアカウント内のサービス、認可ポリシー、ロールポリシーの読み取り、作成、削除。 |
+
+管理スコープは ADS を呼び出せず、`ads` はポリシーを管理できません。不適切なスコープは `403 insufficient_scope` です。サインインが閉じている場合の管理スコープの発行は `403 management_scope_disabled` です。
+
+コンソールはセッション認証付きのリクエストを送信します。
+
+```http
+POST /api/tokens
+Origin: https://cloud.speedle.io
+X-SC-CSRF: 1
+Content-Type: application/json
+
+{"name":"books-app","scope":"ads"}
+```
+
+入力は `name` と任意の `scope`（既定は `ads`）だけです。サービス指定、有効期限、認証証明は送信しません。セッション Cookie と CSRF ヘッダーが必要で、API キーではセッションを代替できません。
+
+### シークレットを保護する
+
+作成成功時は HTTP 201 を返します。レスポンスの `token` フィールドが API キーの値で、表示は一度だけです。
+
+```text
+spdl_<canonical uppercase ULID id>_<43 base62 digits>
+```
+
+<!-- TODO: Update API key expiry after https://github.com/teramoby/cloud.speedle.io/issues/427 merges. -->
+
+これは形式の説明であり、使用可能なキーではありません。すぐにサーバー側のシークレットストアへ保存してください。ブラウザストレージ、フロントエンド、URL、ソース管理、スクリーンショット、ログに含めないでください。一覧はメタデータのみを返し、紛失した値は復元できません。
+
+アカウント全体で、全スコープ合計 **10 個の有効な API キー**を持てます。上限を超える作成は `409 {"error":"quota_exceeded","limit":10}` です。未使用のキーを失効させて枠を空けてください。時間によるリセットはありません。失効済みのキーは一覧に残りますが上限には含まれません。
+
+### API キーを一覧表示する
+
+`GET /api/tokens` は有効および失効済みのキーを新しい順に返します。既定は 25 件で、`limit` は 1–100 です。レスポンスの `nextCursor` を次の `cursor` に指定し、`null` になるまで進みます。`lastUsedAt` はベストエフォートで通常は 1 時間に最大 1 回の更新なので、未使用の証明にはなりません。
+
+### API キーを失効させる
+
+**失効**を選び、名前と ID を確認して確定します。最近の再認証は不要です。コンソールは次を送信します。
+
+```http
+DELETE /api/tokens/<API key id>
+Origin: https://cloud.speedle.io
+X-SC-CSRF: 1
+Content-Type: application/json
+
+{}
+```
+
+最初の失効は本文なしの HTTP 204 です。不明、別アカウント、失効済みの ID は `404 not_found` です。確認済みの認証情報が最大 60 秒間有効な場合があり、すべての場所で即座に反映されるわけではありません。
+
+操作は**作成**と**失効**です。値やスコープを変更するには別のキーを作成し、呼び出し元を更新してから古いキーを失効させます。上限時にすべて使用中の場合、失効前に中断を計画してください。サービスを削除してもアカウントの API キーは失効しません。
+
+応答が失われた場合は一覧を更新してから操作してください。同じ名前でも紛失した値は復元できません。[制限とエラー](https://engine.speedle.io/ja/docs/cloud/limits-and-errors/)と[認可 API](https://engine.speedle.io/ja/docs/cloud/authorization-api/)も参照してください。
+
+## Speedle Cloud 認可 API
+
+アカウント API キーを使い、サーバーから認可を確認します。キー作成にはサインインが利用可能である必要があります。管理スコープでは ADS を呼び出せません。`ads` 以外は `403 insufficient_scope` です。
+
+### サーバーから IsAllowed を呼び出す
+
+`ads` スコープの API キーを 1 つの `Authorization: Bearer` ヘッダーに入れ、POST で送信します。
+
+```http
+POST /authz-check/v1/is-allowed
+Authorization: Bearer <API key>
+Content-Type: application/json
+
+{"subject":{"principals":[{"type":"user","name":"alice","idd":"corp"}]},"serviceName":"books","resource":"/books","action":"get","attributes":[{"name":"level","type":"numeric","value":3},{"name":"when","type":"datetime","value":"2026-11-05T03:00:00Z"}]}
+```
+
+本文は自ホストの Speedle ADS と同じ REST 形式です。`attributes` は `{name, type, value}` の配列で、型は `string`、`numeric`、`bool`、RFC 3339 の `datetime` です。
+
+`idd` はアプリケーションが認証した ID ドメインです。信頼できるサーバー側の認証情報から設定してください。`grant user alice from corp get /books` は `corp` のみで一致します。`from` のないポリシーは全ドメインの同名ユーザーに一致します。`idd` を省略した principal も全ドメインに一致するため、複数の ID ソースでは必ず送信してください。
+
+`serviceName` は必須で既定値はありません。キーのアカウント内のサービスを選びます。未指定、空、不明、別アカウントの場合は `404 {"error":"service_not_found"}` です。キーは単一サービスには結び付きません。[入門ポリシー](https://engine.speedle.io/ja/docs/cloud/getting-started/)の例では `books` を指定します。
+
+### 判定とユーザー ID
+
+成功時は `allowed` が真偽値、`reason` が数値です。ポリシーによる拒否も HTTP 200 になり、`allowed` は `false` です。保護対象の操作前に `allowed` を確認し、例外や無効な応答は拒否してください。
+
+API キーはアカウントと API スコープを認証し、エンドユーザーはアプリケーションで認証します。ブラウザから渡された principal を信用しないでください。Cloud は `subject.token` と `tokenType` を検証せず破棄します。principal のみで判定するので、これらのフィールドをユーザー認証の証拠にしないでください。
+
+Playground は現在の保存済みポリシー、ADS は公開済みスナップショットを使用します。Playground の成功はすべての ADS 拠点への反映を保証しません。公開 ADS Diagnose API はありません。
+
+### Node.js 22 の例
+
+```js
+export async function canReadBooks(authenticatedUserName, authenticatedUserIdd) {
+  if (!authenticatedUserName || !authenticatedUserIdd) {
+    throw new Error("principal name and identity domain are required");
   }
-
-  const payload = JSON.stringify({
-    subject: {
-      principals: [
-        {
-          type: 'user',
-          name: authenticatedUserId,
-          idd: authenticatedUserIdd
-        }
-      ]
+  const apiKey = process.env.SPEEDLE_API_KEY;
+  if (!apiKey) throw new Error("Speedle credential is not configured");
+  const response = await fetch("https://cloud.speedle.io/authz-check/v1/is-allowed", {
+    method: "POST",
+    redirect: "error",
+    signal: AbortSignal.timeout(10_000),
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
     },
-    serviceName: 'default',
-    resource: resource,
-    action: action
+    body: JSON.stringify({
+      subject: {
+        principals: [
+          { type: "user", name: authenticatedUserName, idd: authenticatedUserIdd },
+        ],
+      },
+      serviceName: "books",
+      resource: "/books",
+      action: "get",
+    }),
   });
-
-  return new Promise((resolve, reject) => {
-    const req = request('https://cloud.speedle.io/authz-check/v1/is-allowed', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
-        'Content-Length': Buffer.byteLength(payload)
-      }
-    }, (res) => {
-      let data = '';
-      res.on('data', chunk => data += chunk);
-      res.on('end', () => {
-        if (res.statusCode === 200) {
-          resolve(JSON.parse(data));
-        } else {
-          reject(new Error(`Authorization failed: ${res.statusCode} ${data}`));
-        }
-      });
-    });
-    req.on('error', reject);
-    req.write(payload);
-    req.end();
-  });
+  if (!response.ok) throw new Error(`Speedle HTTP ${response.status}`);
+  const result = await response.json();
+  if (
+    typeof result !== "object" || result === null || Array.isArray(result) ||
+    typeof result.allowed !== "boolean" || !Number.isInteger(result.reason) ||
+    result.reason < 0 || result.reason > 6
+  ) {
+    throw new Error("Invalid Speedle decision");
+  }
+  return result.allowed;
 }
 ```
 
-ポリシー例 `grant user alice from corp get /books` に対して、この関数を呼び出すと期待どおりの認可決定が返されます。
+`SPEEDLE_API_KEY` はサーバーのシークレットストアから設定します。ユーザー名と ID ドメインはサーバーの認証結果を渡します。空の値は送信前に拒否し、例外を許可に変換しないでください。例には再試行ループがありません。必要なら `Retry-After` に従う上限付き再試行を追加し、認証情報付きリダイレクトを防ぐ `redirect: "error"` を維持します。
 
-## Speedle Cloud の制限とエラー
+### 通信とキャッシュ
 
-一時的なネットワークエラーや `429 Too Many Requests` の場合は、指数バックオフとジッターを伴う再試行を実装してください。
+POST を使用します。他のメソッドでは `405 method_not_allowed` または早期の非 JSON のブロック応答を受ける場合があります。秘密の API キーをブラウザから直接送る CORS フローはありません。ADS は `Cache-Control: no-store` を使用し、判定とキーを共有キャッシュに保存しないでください。
+
+[SDK](https://engine.speedle.io/ja/docs/sdks/)、[制限とエラー](https://engine.speedle.io/ja/docs/cloud/limits-and-errors/)、[ダウンロード](https://engine.speedle.io/ja/docs/cloud/)も参照してください。
+
+## Speedle Cloud 制限とエラー
+
+特記がない限り、制限はアカウント全体で共有します。API キーを変更しても日次クォータは増えません。
+
+### 制限
+
+| 対象 | 上限 | 到達時の対応 |
+| --- | --- | --- |
+| アカウントのサービス | 100 | `409 quota_exceeded`。未使用のサービスを削除。時間によるリセットなし。 |
+| 全サービスの認可・ロールポリシー合計 | アカウントごとに 200 | `409 quota_exceeded`。ポリシーを削除。時間によるリセットなし。 |
+| 1 ポリシーの完全な SPDL ソース | 1,024 UTF-8 バイト | コンソールの書き込みは `400 invalid_request`。ソースを短縮。文字数ではなくバイト数。時間によるリセットなし。 |
+| 全スコープの有効な API キー | アカウントごとに 10 | `409 quota_exceeded`、`limit: 10`。未使用キーを失効。時間によるリセットなし。失効済みの履歴は対象外。 |
+| ポリシー名 / API キー名 | 128 Unicode コードポイント / 前後の空白を除いて 1–128 文字 | `400 invalid_request`。名前を修正。時間によるリセットなし。 |
+| 課金対象のポリシー管理・認可呼び出し | アカウントごとに UTC 日あたり 10,000 | `429 daily_quota_exceeded`。00:00 UTC にリセット。`Retry-After` に従う。 |
+| API キーの短時間のバースト | Cloud の各ロケーションでキーごとに毎分約 600 | `429 rate_limited`、`Retry-After: 60`。待ってから再試行。保証された処理量でも追加の日次枠でもない。 |
+| 通常のリクエスト本文 | 65,536 バイト（64 KiB） | `413 request_too_large`。本文を縮小。時間によるリセットなし。 |
+| アトミック JSON インポート本文（`POST /api/service/import` のみ） | 5,100,000 バイト | `413 request_too_large`。データを縮小。ポリシーとアカウントの上限も適用。時間によるリセットなし。 |
+| 入力属性 | 50 属性、正規化 JSON の UTF-8 で 16,384 バイト | `400 SPDL-0004`。属性を減らすか縮小。時間によるリセットなし。 |
+
+スコープ、作成、失効は [API キー](https://engine.speedle.io/ja/docs/cloud/tokens/)を参照してください。
+
+### 日次クォータ
+
+読み取り、書き込み、検証、Playground、インポート、エクスポート、認可チェックで共有します。ポリシーによる拒否や不正な業務入力も数えます。認証、セッション操作、`GET /api/me` は対象外です。認証、スコープ、ルーティング、CSRF、本文サイズ、バースト制限、日次クォータで拒否されたリクエストも対象外です。
+
+Cloud 自体の障害は、アカウントごとに UTC 日あたり最大 1,000 回までクォータを返還する場合があります。確認できない返還やリクエスト由来のエラーは課金対象のままです。カウンターが一時的に利用不能な間、認可呼び出しが低速で継続される場合があり、追加枠はアカウントごとに UTC 日あたり最大 10,000 回です。通常の枠とは別で保証されず、返還枠と同じく 00:00 UTC にリセットします。許可できなければ `503 quota_unavailable` です。
+
+予約されたまま未使用の枠があるため、実際に使える回数は 10,000 未満の場合があります。`GET /api/me` は使用量とリセット時刻を返します。連続再試行やキーの変更で上限を回避しないでください。
+
+### エラーとヘッダー
+
+エラーは `{"error":"rate_limited"}` のようなフラットな JSON です。有効な認可結果が得られなければ拒否してください。
+
+| ステータスとエラー | 対応 |
+| --- | --- |
+| `400 invalid_request` または Speedle エラー | リクエストを修正し、そのまま再試行しない。 |
+| `401 unauthorized` | API キーまたはセッションを確認。セッション Cookie だけでは ADS を呼べない。 |
+| `403 reauth_required` | キー作成前に連携プロバイダーで再認証。 |
+| `403 insufficient_scope` | 必要なスコープのキーを使用。 |
+| `403 management_scope_disabled` | サインイン停止中は管理スコープを発行できない。 |
+| `403 csrf_failed` | セッション、Origin、CSRF ヘッダーを確認。 |
+| `404 service_not_found`（ADS）/ `404 not_found`（管理） | 自分のアカウントのサービスを指定。不明、別アカウント、失効済みキー ID も `404 not_found`。 |
+| `409 quota_exceeded` | サービス、ポリシー、API キーの枠を空ける。時間ではリセットしない。 |
+| `413 request_too_large` | 本文を縮小。 |
+| `429 rate_limited` / `429 daily_quota_exceeded` | `Retry-After` と上限付きバックオフに従う。日次枠は UTC 午前 0 時にリセット。 |
+| `503 quota_unavailable` / `503 snapshot_unavailable` / `500 internal_error` | 拒否し、上限付きバックオフで再試行。`Retry-After` があれば従う。 |
+
+検証済み API キーの `X-RateLimit-Limit` は 600 です。正確な `X-RateLimit-Remaining` はありません。`X-Quota-Daily-Remaining` はアカウントの残量の推定値で、並行呼び出しや未使用の予約で実際と異なります。次のリクエストの成功を保証せず、早期拒否では省略されます。
+
+ADS は `Cache-Control: no-store` を返します。結果や認証情報を共有キャッシュに保存しないでください。POST を使用し、他のメソッドでは `405 method_not_allowed` またはそれより前の非 JSON のブロック応答に対応してください。[認可 API](https://engine.speedle.io/ja/docs/cloud/authorization-api/)を参照してください。
