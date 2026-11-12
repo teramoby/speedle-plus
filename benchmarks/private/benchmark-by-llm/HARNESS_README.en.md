@@ -51,9 +51,9 @@ The corresponding `run-all.sh` steps are `cedar-specs`, `bench-100k-cedar`, `ben
 Formal measurements ran only on charming. shrek was used for building, smoke validation, and aggregation.
 
 ```bash
-# shrek: rebuild the six-program package of the 2026-10-29 archive; no remote tests start
+# shrek: rebuild the 2026-10-29 six-program package from its archived source commit
 ./build-linux.sh
-# build host: a fresh four-engine run (Cedar and the May 2026 build); needs Go and Cargo
+# build host: a fresh four-engine run (Cedar and the May 2026 build); Linux x86-64 with Go and Cargo
 ./build-package.sh
 # charming: extract the package, wait for an idle machine, then run the full matrix
 ./run-all.sh
@@ -63,6 +63,8 @@ python3 build_report.py  # archived 2026-10-29 three-engine report only
 ```
 
 `run-all.sh` defaults include the `may-*` and `rs-*` steps, which need the second Go test binary/server set and `cedar-rs` from `build-package.sh`; a package made by `build-linux.sh` only suits rerunning the three-engine round, and `STEPS=` selects steps.
+
+`build-linux.sh` builds from the archive commit (`bca2c4e5`) rather than the working tree, because the Cedar additions and the moved `go.mod` Speedle+ pin cannot reproduce the archived binaries. `build-package.sh` requires a Linux x86-64 host because `cedar-rs` is compiled for the benchmark host rather than cross-compiled.
 
 A complete run waits for CI to be idle and retries CI-contaminated steps at most twice. `build_report.py` is tied to the archived 2026-10-29 three-engine run: it reads that run's fixed directory, engine table and expected counts (COMPLETE, 107 in-process groups with 5 repetitions each, 30 HTTP configurations with 3 rounds each) and will not replace the previous report otherwise. A four-engine run is aggregated with `summarize.py` until the report builder is extended. Parameters and detailed steps are in [TEST_PLAN.en.md](TEST_PLAN.en.md).
 

@@ -1,27 +1,19 @@
 #!/usr/bin/env bash
-# Rebuild the locked Linux package on shrek; does not start remote tests.
+# Rebuild the locked Linux package of the 2026-10-29 archive from its archived
+# source commit; does not start remote tests. The working tree has since gained
+# Cedar and a different go.mod Speedle+ pin, so it cannot reproduce the
+# archived binaries.
 set -euo pipefail
 cd "$(dirname "$0")"
 GO_BIN=${GO_BIN:-/opt/homebrew/bin/go}
 PACKAGE=${1:-dist/authz-bench-linux-20261029}
 case "$PACKAGE" in ''|/|.) echo 'Choose a package directory under dist/' >&2; exit 2;; esac
-if [[ $("$GO_BIN" version) != 'go version go1.27.2 '* ]]; then
-  echo 'This comparison pins compiler Go 1.27.2; set GO_BIN to that toolchain.' >&2; exit 2
-fi
-mkdir -p "$PACKAGE/bin"
-GOOS=linux GOARCH=amd64 CGO_ENABLED=0 "$GO_BIN" test -c -o "$PACKAGE/bin/authzbench.test" .
-GOOS=linux GOARCH=amd64 CGO_ENABLED=0 "$GO_BIN" build -o "$PACKAGE/bin/" ./cmd/authzd ./cmd/loadgen ./cmd/watchcheck
-GOOS=linux GOARCH=amd64 CGO_ENABLED=0 "$GO_BIN" build -o "$PACKAGE/bin/opa" github.com/open-policy-agent/opa
-GOOS=linux GOARCH=amd64 CGO_ENABLED=0 "$GO_BIN" build -o "$PACKAGE/bin/speedle-ads" github.com/teramoby/speedle-plus/cmd/speedle-ads
-cp -R scenarios stress.sh run-all.sh summarize.py README.md TEST_PLAN.md "$PACKAGE/"
-{
-  date -u '+%Y-%m-%dT%H:%M:%SZ'; "$GO_BIN" version
-  echo 'GOOS=linux GOARCH=amd64 CGO_ENABLED=0; local authzbench source snapshot in source.tar.gz'
-  for program in authzbench.test authzd loadgen opa speedle-ads watchcheck; do
-    "$GO_BIN" version -m "$PACKAGE/bin/$program"
-    shasum -a 256 "$PACKAGE/bin/$program"
-  done
-} > "$PACKAGE/build-info.txt"
-COPYFILE_DISABLE=1 tar --no-xattrs -czf "$PACKAGE/source.tar.gz" gen.go gen_cedar.go engines.go bench_test.go cedar_export_test.go scenarios_test.go generated_test.go capabilities_test.go broken_test.go go.mod go.sum go.may.mod go.may.sum deps.go cmd scenarios stress.sh run-all.sh summarize.py build-linux.sh build_report.py plot_results.py plot-requirements.txt
-COPYFILE_DISABLE=1 tar --no-xattrs -czf "$PACKAGE.tar.gz" -C "$(dirname "$PACKAGE")" "$(basename "$PACKAGE")"
-printf '%s\n' "$PACKAGE.tar.gz"
+# The commit that archived the 2026-10-29 evidence and its source tree.
+ARCHIVE_COMMIT=${ARCHIVE_COMMIT:-bca2c4e59df907c8cddd5836074ced4184b0f522}
+mkdir -p "$(dirname "$PACKAGE")"
+PACKAGE=$(cd "$(dirname "$PACKAGE")" && pwd)/$(basename "$PACKAGE")
+TOP=$(git rev-parse --show-toplevel 2>/dev/null) || { echo 'build-linux.sh needs a git checkout to extract the archived source.' >&2; exit 2; }
+WORK=$(mktemp -d)
+trap 'rm -rf "$WORK"' EXIT
+git -C "$TOP" archive "$ARCHIVE_COMMIT" benchmarks/private/benchmark-by-llm | tar -x -C "$WORK"
+(cd "$WORK/benchmarks/private/benchmark-by-llm" && GO_BIN="$GO_BIN" ./build-linux.sh "$PACKAGE")

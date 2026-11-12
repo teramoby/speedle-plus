@@ -3,10 +3,14 @@
 # Speedle+): the test binaries, servers and load generator, Cedar's Rust
 # harness, and two Speedle+ builds (go.mod: current master; go.may.mod:
 # master throughout May 2026, 8fb1481d, unchanged from 2026-01-16 until
-# 2026-06-24). Runs where Go and Cargo are installed (the CI package job or a
-# macOS build host); the benchmark host needs neither.
+# 2026-06-24). Runs on Linux x86-64 where Go and Cargo are installed (the CI
+# package job); the benchmark host needs neither.
 set -euo pipefail
 cd "$(dirname "$0")"
+if [[ "$(uname -s)" != Linux || "$(uname -m)" != x86_64 ]]; then
+  echo 'build-package.sh must run on Linux x86-64: cedar-rs is compiled for the benchmark host, not cross-compiled.' >&2
+  exit 2
+fi
 checksum() { if command -v sha256sum >/dev/null 2>&1; then sha256sum "$@"; else shasum -a 256 "$@"; fi; }
 PACKAGE=${1:-dist/authz-bench-linux}
 case "$PACKAGE" in ''|/|.) echo 'Choose a package directory under dist/' >&2; exit 2;; esac

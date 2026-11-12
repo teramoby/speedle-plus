@@ -49,9 +49,9 @@ cmd/cedar-rs/target/release/cedar-rs check /tmp/cedar-specs/scenarios/*.json
 正式数据只在 charming 上测；shrek 用于构建、冒烟验证和汇总。
 
 ```bash
-# shrek：重建 2026-10-29 归档那轮的六程序包，不会启动远端测试
+# shrek：从归档源码提交重建 2026-10-29 那轮的六程序包，不会启动远端测试
 ./build-linux.sh
-# 构建机：四引擎新一轮（含 Cedar 和 May 2026 构建），需要 Go 与 Cargo
+# 构建机：四引擎新一轮（含 Cedar 和 May 2026 构建），Linux x86-64，需要 Go 与 Cargo
 ./build-package.sh
 # charming：解压包后，等待机器空闲，执行完整矩阵
 ./run-all.sh
@@ -61,6 +61,8 @@ python3 build_report.py  # 仅重建 2026-10-29 三引擎归档报告
 ```
 
 `run-all.sh` 的默认步骤包含 `may-*` 和 `rs-*`，它们需要 `build-package.sh` 产出的第二套 Go 测试/服务和 `cedar-rs`；用 `build-linux.sh` 打的归档包只适合重跑三引擎那轮，可用 `STEPS=` 选择步骤。
+
+`build-linux.sh` 从归档提交（`bca2c4e5`）而非当前工作树构建，因为 Cedar 新增内容与已变化的 `go.mod` Speedle+ 版本无法复现归档二进制。`build-package.sh` 要求 Linux x86-64 构建机，因为 `cedar-rs` 按构建机编译而不是交叉编译。
 
 完整运行会等待 CI 空闲，受 CI 污染的步骤最多重跑两次。`build_report.py` 只适用于 2026-10-29 那轮三引擎归档：运行目录、引擎表与期望组数都是固定的（COMPLETE、107 组进程内基准各 5 次、30 组 HTTP 配置各 3 轮），否则不会替换旧报告；四引擎新一轮在扩展报告生成器之前用 `summarize.py` 汇总。参数与逐步说明见 [TEST_PLAN.md](TEST_PLAN.md)。
 
