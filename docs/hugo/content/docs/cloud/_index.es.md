@@ -18,7 +18,7 @@ La beta pública gratuita está pensada para pruebas, aprendizaje y evaluación.
 
 ## Documentación
 
-- [Primeros pasos](/es/docs/cloud/getting-started/): inicio de sesión con GitHub o Google (próximamente), gestión de cuentas, servicios, políticas SPDL, solicitudes de gestión de sesiones y las cuatro operaciones del Playground de sesión.
+- [Primeros pasos](/es/docs/cloud/getting-started/): inicie sesión, cree un servicio y una política en la consola, cree una clave API y compruebe la autorización desde su aplicación.
 - [Tokens de aplicación](/es/docs/cloud/tokens/): requisitos de reautenticación reciente, divulgación única del token, paginación de metadatos, rotación y revocación.
 - [Vista previa de la API de autorización](/es/docs/cloud/authorization-api/): contrato de solicitud y respuesta de IsAllowed, ejemplo con Node.js 22, instantáneas de políticas y restricciones de integración.
 - [Límites y errores](/es/docs/cloud/limits-and-errors/): cuotas de cuenta, límites de solicitudes, respuestas de error, encabezados de tasa y cuota, y directrices de reintento.
