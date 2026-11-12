@@ -246,7 +246,7 @@ Content-Type: application/json
 
 <p>作成成功時は HTTP 201 を返します。レスポンスの <code>token</code> フィールドが API キーの値で、表示は一度だけです。</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">spdl_&lt;canonical uppercase ULID id&gt;_&lt;43 base62 digits&gt;</code></pre></div>
-<p>すべてのキーには有効期限があります。レスポンスの <code>expiresAt</code> は、サーバーが計算した Unix ミリ秒の期限です。その時点以降、認可チェックとポリシー管理の呼び出しは <code>401 {&quot;error&quot;:&quot;api_key_expired&quot;}</code> を返します。新しいキーを作成してください。期限切れのキーを再送しても成功しません。期限前に失効させることもできます。有効期限が必須になる前に作られたキーにも期限があります。作成から 365 日（1 日 24 時間）後がまだ未来ならその時刻、すでに過ぎていれば必須化から 30 日（1 日 24 時間）後です。一覧のすべてのキーに <code>expiresAt</code> があります。</p>
+<p>すべてのキーには有効期限があります。レスポンスの <code>expiresAt</code> は、サーバーが計算した Unix ミリ秒の期限です。その時点以降、認可チェックとポリシー管理の呼び出しは <code>401 {&quot;error&quot;:&quot;api_key_expired&quot;}</code> を返します。新しいキーを作成してください。期限切れのキーを再送しても成功しません。期限前に失効させることもできます。有効期限が必須になる前に作られたキーにも期限があります。作成から 365 日（1 日 24 時間）後がまだ未来なら、必須化の直後でもその時刻に期限切れになります。その日がすでに過ぎていれば、必須化から 30 日（1 日 24 時間）後です。一覧のすべてのキーに <code>expiresAt</code> があります。その前に確認し、新しいキーを作成してください。</p>
 
 <p>これは形式の説明であり、使用可能なキーではありません。すぐにサーバー側のシークレットストアへ保存してください。ブラウザストレージ、フロントエンド、URL、ソース管理、スクリーンショット、ログに含めないでください。一覧はメタデータのみを返し、紛失した値は復元できません。</p>
 

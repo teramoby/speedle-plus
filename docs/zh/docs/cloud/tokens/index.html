@@ -246,7 +246,7 @@ Content-Type: application/json
 
 <p>创建成功返回 HTTP 201。响应的 <code>token</code> 字段包含 API 密钥值，只显示一次：</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">spdl_&lt;canonical uppercase ULID id&gt;_&lt;43 base62 digits&gt;</code></pre></div>
-<p>每个密钥都会到期。响应包含服务端计算的 <code>expiresAt</code>（Unix 毫秒）。到达该时刻或之后，授权检查和策略管理调用返回 <code>401 {&quot;error&quot;:&quot;api_key_expired&quot;}</code>。请创建新密钥；再次发送已到期的密钥不会成功。不再使用时可以提前撤销。在必须设置有效期之前创建的密钥现在也有到期时间。如果创建后 365 个 24 小时仍在未来，到期时间就是那时；否则是该要求生效后再过 30 个 24 小时。列表中的每个密钥都包含 <code>expiresAt</code>。</p>
+<p>每个密钥都会到期。响应包含服务端计算的 <code>expiresAt</code>（Unix 毫秒）。到达该时刻或之后，授权检查和策略管理调用返回 <code>401 {&quot;error&quot;:&quot;api_key_expired&quot;}</code>。请创建新密钥；再次发送已到期的密钥不会成功。不再使用时可以提前撤销。在必须设置有效期之前创建的密钥现在也有到期时间。如果创建后 365 个 24 小时仍在未来，密钥就在那时到期，即使距离该要求生效只有很短的时间。如果这一年已经过去，密钥在该要求生效后再过 30 个 24 小时到期。列表中的每个密钥都包含 <code>expiresAt</code>。请在到期前查看并创建新密钥。</p>
 
 <p>这只是格式说明，不能作为实际密钥使用。请立即保存到服务端的密钥存储中。不要放入浏览器存储、前端代码、URL、源码、截图或日志。列表只返回元数据，丢失的密钥值无法找回。</p>
 

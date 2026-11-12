@@ -49,7 +49,7 @@ Creation returns HTTP 201. The response's `token` field contains the API key sec
 spdl_<canonical uppercase ULID id>_<43 base62 digits>
 ```
 
-Every key expires at `expiresAt`, which the server computes and returns in Unix milliseconds. At or after that instant, authorization and policy-management calls return `401 {"error":"api_key_expired"}`. Create a replacement key. Retrying the expired key does not succeed. You can revoke a key before it expires. Keys that already existed when an expiry became required have one too. It is 365 days of 24 hours after the key was created, unless that time had already passed, in which case it is 30 days of 24 hours after the requirement took effect. Every listed key includes `expiresAt`.
+Every key expires at `expiresAt`, which the server computes and returns in Unix milliseconds. At or after that instant, authorization and policy-management calls return `401 {"error":"api_key_expired"}`. Create a replacement key. Retrying the expired key does not succeed. You can revoke a key before it expires. Keys that already existed when an expiry became required have one too. If 365 days of 24 hours after creation is still in the future, the key expires then, even when that date is only a short time after the requirement took effect. If that date has already passed, the key expires 30 days of 24 hours after the requirement took effect. Every listed key includes `expiresAt`. Read it and create a replacement before that time.
 
 This describes the format, not a usable key. Save the value immediately in a server-side secret store. Never put it in browser storage, frontend code, URLs, source control, screenshots or logs. Listing keys returns metadata only; a lost secret cannot be recovered.
 

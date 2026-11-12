@@ -2162,7 +2162,7 @@ components:
         management. pms:read/pms:write keys return 403 insufficient_scope on this API. Credential
         shape is AdsBearerToken; require a single Bearer scheme plus the exact case-sensitive
         credential. One-time disclosure on creation, HMAC-only persisted verification, and a required server-computed expiry. Positive verification caches have fixed verifiedAt/validUntil authority of at
-        most 60000 ms from the START of the authoritative D1 lookup. Cache hits, KV refills and late
+        most 60000 ms from the START of the authoritative D1 lookup, and never later than expiresAt. Cache hits, KV refills and late
         writes racing revocation never extend that deadline; expired records require fresh D1
         verification and cannot authorize on storage failure. KV failure may fall back to D1 for API
         key verification only, never for policy evaluation. Revocation invalidates existing local/KV
