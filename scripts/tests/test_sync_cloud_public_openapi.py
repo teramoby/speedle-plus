@@ -1,6 +1,7 @@
 """The vendored Cloud public OpenAPI document excludes console /api/ paths."""
 
 import importlib.util
+import re
 import tempfile
 import threading
 import unittest
@@ -9,6 +10,9 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 SCRIPT = ROOT / "scripts" / "sync-cloud-public-openapi.py"
+SOURCE_SPEC = ROOT / "docs" / "hugo" / "static" / "openapi" / "cloud-public.yaml"
+PUBLISHED_SPEC = ROOT / "docs" / "openapi" / "cloud-public.yaml"
+EXPECTED_TAGS = ["Authorization checks", "Policy management"]
 SPEC = importlib.util.spec_from_file_location("sync_cloud_public_openapi", SCRIPT)
 sync = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(sync)
@@ -43,6 +47,57 @@ class RecordingHandler(BaseHTTPRequestHandler):
         return
 
 
+def declared_tag_names(text):
+    """Return tag names from the top-level OpenAPI tags list."""
+    names = []
+    in_tags = False
+    for line in text.splitlines():
+        if not in_tags:
+            if line == "tags:":
+                in_tags = True
+            continue
+        if line and not line.startswith(" "):
+            break
+        match = re.match(r"^  - name: (.+)$", line)
+        if match:
+            names.append(match.group(1))
+    return names
+
+
+def operation_tag_groups(text):
+    """Return the operation count and each operation's tag names.
+
+    Only the paths object is scanned. A tag block is the `tags:` list
+    indented under an operation, which is how this document groups routes.
+    """
+    groups = []
+    operations = 0
+    in_paths = False
+    collecting = False
+    for line in text.splitlines():
+        if not in_paths:
+            if line == "paths:":
+                in_paths = True
+            continue
+        if line and not line.startswith(" "):
+            break
+        if re.match(r"^    (get|post|put|patch|delete|options|head):$", line):
+            operations += 1
+            collecting = False
+            continue
+        if line == "      tags:":
+            groups.append([])
+            collecting = True
+            continue
+        if collecting:
+            match = re.match(r"^        - (.+)$", line)
+            if match:
+                groups[-1].append(match.group(1))
+                continue
+            collecting = False
+    return operations, groups
+
+
 PUBLIC_PATHS = [
     "/authz-check/v1/is-allowed",
     "/authz-check/v1/all-granted-roles",
@@ -59,9 +114,19 @@ PUBLIC_PATHS = [
 class PublicOpenAPISyncTest(unittest.TestCase):
     def test_vendored_file_has_no_api_paths(self):
         text = sync.DEST.read_text(encoding="utf-8")
+        self.assertEqual(sync.DEST, SOURCE_SPEC)
+        self.assertNotEqual(sync.DEST, PUBLISHED_SPEC)
+        self.assertEqual(PUBLISHED_SPEC.read_bytes(), SOURCE_SPEC.read_bytes())
         self.assertEqual(sync.path_keys(text), PUBLIC_PATHS)
         self.assertNotIn("0.0.0-placeholder", text)
         self.assertNotIn("jsonSchemaDialect:", text)
+        self.assertEqual(declared_tag_names(text), EXPECTED_TAGS)
+        operations, groups = operation_tag_groups(text)
+        self.assertEqual(len(groups), operations)
+        self.assertTrue(groups)
+        self.assertTrue(all(groups))
+        referenced = {name for group in groups for name in group}
+        self.assertEqual(referenced, set(EXPECTED_TAGS))
         self.assertEqual(sync.main(["--check"]), 0)
 
     def test_json_schema_dialect_is_rejected_until_it_is_removed(self):
