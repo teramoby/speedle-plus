@@ -12,6 +12,8 @@ categories = ["docs"]
 bref = "使用账号 API 密钥从服务端检查授权。"
 +++
 
+**Speedle Cloud 即将上线。** cloud.speedle.io 的生产环境尚未开放登录，Cloud 页眉显示 **Coming soon（即将上线）** 徽章。登录关闭时，登录页会提示即将开放。
+
 从应用服务端使用账号 API 密钥调用授权接口。创建密钥需要账号登录功能可用。管理权限的密钥不能调用 ADS；请使用 `ads`，否则返回 `403 insufficient_scope`。
 
 ## 从应用服务端调用 IsAllowed

@@ -12,6 +12,8 @@ lastmod = 2026-11-12T00:00:00+08:00
 
 API 密钥属于账号，按权限范围访问该账号下的服务。它认证的是应用，不是最终用户。管理 API 密钥、会话和关联身份始终需要已登录的控制台会话。
 
+**Speedle Cloud 即将上线。** cloud.speedle.io 的生产环境尚未开放登录，Cloud 页眉显示 **Coming soon（即将上线）** 徽章。登录关闭时，登录页会提示即将开放。
+
 ## 创建 API 密钥
 
 打开 [API 密钥](https://cloud.speedle.io/zh-CN/tokens)，输入去除首尾空白后为 1–128 个字符的名称，选择权限范围，点击 **创建**。创建需要在最近 10 分钟内通过已关联的身份提供方认证。收到 `403 reauth_required` 时，重新认证后再次点击 **创建**；从身份提供方返回不会自动创建密钥。
@@ -47,7 +49,7 @@ Content-Type: application/json
 spdl_<canonical uppercase ULID id>_<43 base62 digits>
 ```
 
-<!-- TODO: Update API key expiry after https://github.com/teramoby/cloud.speedle.io/issues/427 merges. -->
+API 密钥在撤销前一直有效，不会自动过期。
 
 这只是格式说明，不能作为实际密钥使用。请立即保存到服务端的密钥存储中。不要放入浏览器存储、前端代码、URL、源码、截图或日志。列表只返回元数据，丢失的密钥值无法找回。
 

@@ -12,6 +12,8 @@ lastmod = 2026-11-12T00:00:00+08:00
 
 Speedle Cloud es un servicio de autorización alojado basado en el motor Speedle de código abierto. Gestione servicios y políticas SPDL de autorización y roles, pruebe decisiones en Playground y llame a la API desde su servidor.
 
+**Speedle Cloud estará disponible próximamente.** El inicio de sesión para producción aún no está habilitado en cloud.speedle.io y el encabezado de Cloud muestra **Próximamente**. Cuando el inicio de sesión esté cerrado, la página de inicio de sesión indicará que abrirá pronto.
+
 Para usar la consola o crear claves API debe estar disponible el inicio de sesión. La beta pública gratuita es para pruebas, aprendizaje y evaluación, no ofrece SLA y no se recomienda para producción. Las funciones y límites pueden cambiar.
 
 ## Documentación

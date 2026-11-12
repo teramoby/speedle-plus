@@ -2,6 +2,8 @@
 
 Speedle Cloud 是基于开源 Speedle 引擎的托管授权服务。你可以管理服务、SPDL 授权策略和角色策略，在 Playground 中测试判定，并从服务端调用 API。
 
+**Speedle Cloud 即将上线。** cloud.speedle.io 的生产环境尚未开放登录，Cloud 页眉显示 **Coming soon（即将上线）** 徽章。登录关闭时，登录页会提示即将开放。
+
 使用控制台和创建 API 密钥需要账号登录功能可用。免费公开测试版用于试用、学习和评估，不提供 SLA，不建议用于生产环境。功能和限额可能调整。
 
 ## 文档导航
@@ -119,6 +121,8 @@ Content-Type: application/json
 
 API 密钥属于账号，按权限范围访问该账号下的服务。它认证的是应用，不是最终用户。管理 API 密钥、会话和关联身份始终需要已登录的控制台会话。
 
+**Speedle Cloud 即将上线。** cloud.speedle.io 的生产环境尚未开放登录，Cloud 页眉显示 **Coming soon（即将上线）** 徽章。登录关闭时，登录页会提示即将开放。
+
 ### 创建 API 密钥
 
 打开 [API 密钥](https://cloud.speedle.io/zh-CN/tokens)，输入去除首尾空白后为 1–128 个字符的名称，选择权限范围，点击 **创建**。创建需要在最近 10 分钟内通过已关联的身份提供方认证。收到 `403 reauth_required` 时，重新认证后再次点击 **创建**；从身份提供方返回不会自动创建密钥。
@@ -154,7 +158,7 @@ Content-Type: application/json
 spdl_<canonical uppercase ULID id>_<43 base62 digits>
 ```
 
-<!-- TODO: Update API key expiry after https://github.com/teramoby/cloud.speedle.io/issues/427 merges. -->
+API 密钥在撤销前一直有效，不会自动过期。
 
 这只是格式说明，不能作为实际密钥使用。请立即保存到服务端的密钥存储中。不要放入浏览器存储、前端代码、URL、源码、截图或日志。列表只返回元数据，丢失的密钥值无法找回。
 
@@ -184,6 +188,8 @@ Content-Type: application/json
 创建或撤销的响应丢失时，先刷新列表再操作。同名记录不能找回丢失的密钥值。参见[限额与错误](https://engine.speedle.io/zh/docs/cloud/limits-and-errors/)和[授权 API](https://engine.speedle.io/zh/docs/cloud/authorization-api/)。
 
 ## Speedle Cloud 授权 API
+
+**Speedle Cloud 即将上线。** cloud.speedle.io 的生产环境尚未开放登录，Cloud 页眉显示 **Coming soon（即将上线）** 徽章。登录关闭时，登录页会提示即将开放。
 
 从应用服务端使用账号 API 密钥调用授权接口。创建密钥需要账号登录功能可用。管理权限的密钥不能调用 ADS；请使用 `ads`，否则返回 `403 insufficient_scope`。
 
@@ -279,6 +285,8 @@ ADS 请使用 POST。非 POST 请求可能被公开边缘规则拦截并返回 C
 如需 Java、Python、Go、.NET、Rust 或 Node.js/TypeScript 客户端库，请参阅 [SDK 文档](https://engine.speedle.io/zh/docs/sdks/)。失败、额度和响应头说明见[限额与错误](https://engine.speedle.io/zh/docs/cloud/limits-and-errors/)。API 规范和 Markdown 下载链接见 [Speedle Cloud 概览](https://engine.speedle.io/zh/docs/cloud/#下载)。
 
 ## Speedle Cloud 限额与错误
+
+**Speedle Cloud 即将上线。** cloud.speedle.io 的生产环境尚未开放登录，Cloud 页眉显示 **Coming soon（即将上线）** 徽章。登录关闭时，登录页会提示即将开放。
 
 除表中另有说明外，限额由整个账号共用。API 密钥属于账号；更换密钥不会增加每日额度。
 

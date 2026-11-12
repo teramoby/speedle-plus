@@ -10,6 +10,8 @@ categories = ["docs"]
 lastmod = 2026-11-12T00:00:00+08:00
 +++
 
+**Speedle Cloud is coming soon.** Production sign-in is not open on cloud.speedle.io yet, and the Cloud header shows **Coming soon**. When sign-in is closed, the sign-in page says that it opens soon.
+
 Limits apply to the whole account unless a row says otherwise. API keys are account credentials; changing keys does not increase the daily quota.
 
 ## Limits

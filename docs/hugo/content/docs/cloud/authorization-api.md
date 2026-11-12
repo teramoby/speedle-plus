@@ -12,6 +12,8 @@ categories = ["docs"]
 bref = "Server-side authorization with an account API key."
 +++
 
+**Speedle Cloud is coming soon.** Production sign-in is not open on cloud.speedle.io yet, and the Cloud header shows **Coming soon**. When sign-in is closed, the sign-in page says that it opens soon.
+
 Use an account API key for server-side authorization calls. Account sign-in must be available before you can create keys. A key with a management scope cannot call ADS; use `ads` or the response is `403 insufficient_scope`.
 
 ## Call IsAllowed from your server

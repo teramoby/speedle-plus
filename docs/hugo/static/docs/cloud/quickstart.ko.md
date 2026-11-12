@@ -2,6 +2,8 @@
 
 Speedle Cloud는 오픈 소스 Speedle 엔진 기반의 호스팅 인가 서비스입니다. 서비스, SPDL 인가 정책과 역할 정책을 관리하고 Playground에서 판정을 테스트한 뒤 서버에서 API를 호출합니다.
 
+**Speedle Cloud는 출시 예정입니다.** cloud.speedle.io의 프로덕션 환경에서는 아직 로그인이 시작되지 않았으며 Cloud 헤더에는 **Coming soon(출시 예정)** 배지가 표시됩니다. 로그인이 닫혀 있는 동안 로그인 페이지에는 곧 출시될 예정이라는 안내가 표시됩니다.
+
 콘솔 사용과 API 키 생성에는 로그인이 가능해야 합니다. 무료 공개 베타는 시험, 학습, 평가용이며 SLA가 없고 프로덕션 사용은 권장하지 않습니다. 기능과 한도는 변경될 수 있습니다.
 
 ## 문서
@@ -37,7 +39,7 @@ Cloud 문서를 확인하세요: [이용 약관](https://cloud.speedle.io/ko/ter
 
 #### 워크스페이스 및 서비스
 
-서비스는 정책의 네임스페이스입니다. 기본 워크스페이스에는 테스트용 `default` 서비스가 제공됩니다.
+서비스는 정책의 네임스페이스입니다. 새 계정에서는 [서비스 워크스페이스](https://cloud.speedle.io/service)를 열고 서비스 이름에 `books`를 입력한 뒤 **서비스 생성**을 선택합니다.
 
 #### 첫 번째 인가 정책 생성
 
@@ -68,6 +70,8 @@ grant user alice from corp get /books
 ## Speedle Cloud API 키
 
 API 키는 계정에 속하며 범위에 따라 해당 계정의 서비스에 접근합니다. 최종 사용자가 아닌 애플리케이션을 인증합니다. API 키, 세션, 연결된 신원 관리에는 로그인한 콘솔 세션이 필요합니다.
+
+**Speedle Cloud는 출시 예정입니다.** cloud.speedle.io의 프로덕션 환경에서는 아직 로그인이 시작되지 않았으며 Cloud 헤더에는 **Coming soon(출시 예정)** 배지가 표시됩니다. 로그인이 닫혀 있는 동안 로그인 페이지에는 곧 출시될 예정이라는 안내가 표시됩니다.
 
 ### API 키 생성
 
@@ -104,7 +108,7 @@ Content-Type: application/json
 spdl_<canonical uppercase ULID id>_<43 base62 digits>
 ```
 
-<!-- TODO: Update API key expiry after https://github.com/teramoby/cloud.speedle.io/issues/427 merges. -->
+API 키는 폐기할 때까지 유효하며 자동 만료는 없습니다.
 
 사용 가능한 키가 아닌 형식 설명입니다. 즉시 서버의 비밀 저장소에 보관하세요. 브라우저 저장소, 프런트엔드 코드, URL, 소스 관리, 스크린샷, 로그에 넣지 마세요. 목록에는 메타데이터만 나오며 잃어버린 값은 복구할 수 없습니다.
 
@@ -134,6 +138,8 @@ Content-Type: application/json
 응답이 유실되면 목록을 새로 조회한 뒤 조치하세요. 이름이 같아도 잃어버린 비밀 값을 복구할 수 없습니다. [제한과 오류](https://engine.speedle.io/ko/docs/cloud/limits-and-errors/) 및 [인가 API](https://engine.speedle.io/ko/docs/cloud/authorization-api/)를 참조하세요.
 
 ## Speedle Cloud 인가 API
+
+**Speedle Cloud는 출시 예정입니다.** cloud.speedle.io의 프로덕션 환경에서는 아직 로그인이 시작되지 않았으며 Cloud 헤더에는 **Coming soon(출시 예정)** 배지가 표시됩니다. 로그인이 닫혀 있는 동안 로그인 페이지에는 곧 출시될 예정이라는 안내가 표시됩니다.
 
 계정 API 키로 서버에서 인가를 확인합니다. 키를 생성하려면 로그인이 가능해야 합니다. 관리 범위는 ADS를 호출할 수 없습니다. `ads`가 아니면 `403 insufficient_scope`입니다.
 
@@ -213,6 +219,8 @@ POST를 사용하세요. 다른 메서드는 `405 method_not_allowed` 또는 그
 [SDK](https://engine.speedle.io/ko/docs/sdks/), [제한과 오류](https://engine.speedle.io/ko/docs/cloud/limits-and-errors/), [다운로드](https://engine.speedle.io/ko/docs/cloud/)를 참조하세요.
 
 ## Speedle Cloud 제한과 오류
+
+**Speedle Cloud는 출시 예정입니다.** cloud.speedle.io의 프로덕션 환경에서는 아직 로그인이 시작되지 않았으며 Cloud 헤더에는 **Coming soon(출시 예정)** 배지가 표시됩니다. 로그인이 닫혀 있는 동안 로그인 페이지에는 곧 출시될 예정이라는 안내가 표시됩니다.
 
 별도 표시가 없으면 한도는 계정 전체에서 공유합니다. API 키를 바꿔도 일일 할당량은 늘지 않습니다.
 

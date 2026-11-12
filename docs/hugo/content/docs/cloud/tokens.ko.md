@@ -12,6 +12,8 @@ lastmod = 2026-11-12T00:00:00+08:00
 
 API 키는 계정에 속하며 범위에 따라 해당 계정의 서비스에 접근합니다. 최종 사용자가 아닌 애플리케이션을 인증합니다. API 키, 세션, 연결된 신원 관리에는 로그인한 콘솔 세션이 필요합니다.
 
+**Speedle Cloud는 출시 예정입니다.** cloud.speedle.io의 프로덕션 환경에서는 아직 로그인이 시작되지 않았으며 Cloud 헤더에는 **Coming soon(출시 예정)** 배지가 표시됩니다. 로그인이 닫혀 있는 동안 로그인 페이지에는 곧 출시될 예정이라는 안내가 표시됩니다.
+
 ## API 키 생성
 
 [API 키](https://cloud.speedle.io/ko/tokens)에서 앞뒤 공백을 제외한 1–128자 이름과 범위를 지정하고 **생성**을 선택합니다. 생성하려면 최근 10분 이내에 연결된 제공자로 인증해야 합니다. `403 reauth_required`이면 다시 인증한 뒤 **생성**을 다시 선택하세요. 제공자에서 돌아오는 것만으로 생성되지 않습니다.
@@ -47,7 +49,7 @@ Content-Type: application/json
 spdl_<canonical uppercase ULID id>_<43 base62 digits>
 ```
 
-<!-- TODO: Update API key expiry after https://github.com/teramoby/cloud.speedle.io/issues/427 merges. -->
+API 키는 폐기할 때까지 유효하며 자동 만료는 없습니다.
 
 사용 가능한 키가 아닌 형식 설명입니다. 즉시 서버의 비밀 저장소에 보관하세요. 브라우저 저장소, 프런트엔드 코드, URL, 소스 관리, 스크린샷, 로그에 넣지 마세요. 목록에는 메타데이터만 나오며 잃어버린 값은 복구할 수 없습니다.
 

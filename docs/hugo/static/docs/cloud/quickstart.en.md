@@ -2,6 +2,8 @@
 
 Speedle Cloud is a hosted authorization service built on the open-source Speedle engine. Manage services, SPDL authorization and role policies, test decisions in the Playground and call the API from your server.
 
+**Speedle Cloud is coming soon.** Production sign-in is not open on cloud.speedle.io yet, and the Cloud header shows **Coming soon**. When sign-in is closed, the sign-in page says that it opens soon.
+
 Account sign-in must be available before using the console or creating API keys. The free public beta is for trials, learning and evaluation, has no SLA and is not recommended for production use. Features and limits may change.
 
 ## Documentation
@@ -119,6 +121,8 @@ Next, read about [API keys](https://engine.speedle.io/docs/cloud/tokens/), the [
 
 API keys belong to your account and can access its services according to their scope. They authenticate your application, not its end users. Managing API keys, sessions and linked identities always requires a signed-in console session.
 
+**Speedle Cloud is coming soon.** Production sign-in is not open on cloud.speedle.io yet, and the Cloud header shows **Coming soon**. When sign-in is closed, the sign-in page says that it opens soon.
+
 ### Create an API key
 
 Open [API keys](https://cloud.speedle.io/tokens), enter a name of 1–128 characters after trimming whitespace, select a scope and choose **Create**. Creating a key requires authentication with a linked provider within the last 10 minutes. If you receive `403 reauth_required`, authenticate again, then submit **Create** again; returning from the provider does not create a key automatically.
@@ -154,7 +158,7 @@ Creation returns HTTP 201. The response's `token` field contains the API key sec
 spdl_<canonical uppercase ULID id>_<43 base62 digits>
 ```
 
-<!-- TODO: Update API key expiry after https://github.com/teramoby/cloud.speedle.io/issues/427 merges. -->
+An API key stays valid until you revoke it; it has no automatic expiry.
 
 This describes the format, not a usable key. Save the value immediately in a server-side secret store. Never put it in browser storage, frontend code, URLs, source control, screenshots or logs. Listing keys returns metadata only; a lost secret cannot be recovered.
 
@@ -184,6 +188,8 @@ The available actions are **Create** and **Revoke**. To change a secret or scope
 If a creation or revocation response is lost, refresh the list before acting again. A matching name cannot recover a lost secret. See [Limits and errors](https://engine.speedle.io/docs/cloud/limits-and-errors/) and the [Authorization API](https://engine.speedle.io/docs/cloud/authorization-api/).
 
 ## Speedle Cloud authorization API
+
+**Speedle Cloud is coming soon.** Production sign-in is not open on cloud.speedle.io yet, and the Cloud header shows **Coming soon**. When sign-in is closed, the sign-in page says that it opens soon.
 
 Use an account API key for server-side authorization calls. Account sign-in must be available before you can create keys. A key with a management scope cannot call ADS; use `ads` or the response is `403 insufficient_scope`.
 
@@ -279,6 +285,8 @@ Matched application ADS responses use `Cache-Control: no-store`. Do not put deci
 For client libraries in Java, Python, Go, .NET, Rust and Node.js/TypeScript, see the [SDKs section](https://engine.speedle.io/docs/sdks/). For failures, quotas and response headers, see [Limits and errors](https://engine.speedle.io/docs/cloud/limits-and-errors/). API schemas and Markdown downloads are linked from the [Speedle Cloud overview](https://engine.speedle.io/docs/cloud/#downloads).
 
 ## Speedle Cloud Limits and errors
+
+**Speedle Cloud is coming soon.** Production sign-in is not open on cloud.speedle.io yet, and the Cloud header shows **Coming soon**. When sign-in is closed, the sign-in page says that it opens soon.
 
 Limits apply to the whole account unless a row says otherwise. API keys are account credentials; changing keys does not increase the daily quota.
 
