@@ -12,6 +12,8 @@ Casbin, OPA, and Speedle+ are compared with the same policy scenarios for functi
 | OPA | `github.com/open-policy-agent/opa` v1.21.4 | In-process library (`v1/rego`) and `opa run --server` |
 | Speedle+ | `github.com/teramoby/speedle-plus` v0.0.0-20261028230603-b27604c077ce | In-process library (`pkg/eval`) and `speedle-ads` |
 
+The table above pins the 2026-10-29 archived run; `go.mod` currently pins `v1.6.1-0.20261102051349-0722cd595f4c` (2026-11-02) and `go.may.mod` pins `v0.0.0-20260116081120-8fb1481d715e`.
+
 ## Cedar and the May 2026 Speedle+ build (added 2026-11)
 
 After the archive was written, the harness gained Cedar and a May 2026 Speedle+ build; the 2026-10-29 figures above do not include them and a fresh run on the benchmark host is needed.
@@ -19,7 +21,7 @@ After the archive was written, the harness gained Cedar and a May 2026 Speedle+ 
 - `engines.go` has two Cedar variants: `cedar` (cedar-go, one permit per permission) and `cedar-data` (one permit for the whole set, with the permissions in the entity data `resource.readers`).
 - `cmd/cedar-rs` answers exactly the same requests with Cedar's Rust reference implementation (`cedar-policy` 4.14.0). `TestExportCedarSpecs` exports the requests as JSON; `cedar-rs check` verifies them, `cedar-rs bench` / `parallel` time them, and `cedar-rs serve` exposes the same thin HTTP API as `authzd`.
 - Each of the 9 scenarios has `cedar.cedar` + `cedar.entities.json` (groups, role hierarchy, and nested folders are entity parents); the generated sets also have Cedar files, with sizes starting at 10.
-- `go.may.mod` pins the May 2026 Speedle+ build (`SPEEDLE_LABEL=speedle-may`); `build-package.sh` packages both Go test binaries and servers, `cedar-rs`, and both `speedle-ads` builds.
+- `go.may.mod` pins the Speedle+ build as it was in May 2026 (`8fb1481d`, master from 2026-01-16 until 2026-06-24; `SPEEDLE_LABEL=speedle-may`); `build-package.sh` packages both Go test binaries and servers, `cedar-rs`, and both `speedle-ads` builds.
 
 ```bash
 CEDAR_SPEC_DIR=/tmp/cedar-specs go test -run '^TestExportCedarSpecs$' -v
