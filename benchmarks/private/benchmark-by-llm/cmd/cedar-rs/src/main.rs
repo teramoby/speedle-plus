@@ -121,14 +121,16 @@ fn uid(r: &Ref) -> EntityUid {
 }
 
 fn load(policies: &str, entities: &str) -> (PolicySet, Entities, String) {
-    let src = std::fs::read_to_string(policies).unwrap_or_else(|e| fail(&format!("{policies}: {e}")));
+    let src =
+        std::fs::read_to_string(policies).unwrap_or_else(|e| fail(&format!("{policies}: {e}")));
     let ps = PolicySet::from_str(&src).unwrap_or_else(|e| fail(&format!("{policies}: {e}")));
     let json = if entities.is_empty() {
         "[]".to_string()
     } else {
         std::fs::read_to_string(entities).unwrap_or_else(|e| fail(&format!("{entities}: {e}")))
     };
-    let es = Entities::from_json_str(&json, None).unwrap_or_else(|e| fail(&format!("{entities}: {e}")));
+    let es =
+        Entities::from_json_str(&json, None).unwrap_or_else(|e| fail(&format!("{entities}: {e}")));
     (ps, es, json)
 }
 
@@ -141,7 +143,14 @@ fn fail(msg: &str) -> ! {
 /// that carries principal parents (groups), a copy with that principal.
 fn prepare(c: &Req, base: &Entities, base_json: &str) -> (Request, Option<Entities>) {
     let context = Context::from_json_value(c.context.clone(), None).expect("context");
-    let req = Request::new(uid(&c.principal), uid(&c.action), uid(&c.resource), context, None).expect("request");
+    let req = Request::new(
+        uid(&c.principal),
+        uid(&c.action),
+        uid(&c.resource),
+        context,
+        None,
+    )
+    .expect("request");
     if c.principal_parents.is_empty() {
         return (req, None);
     }
@@ -156,10 +165,17 @@ fn prepare(c: &Req, base: &Entities, base_json: &str) -> (Request, Option<Entiti
         }
     }
     let mut all: Vec<serde_json::Value> = serde_json::from_str(base_json).expect("entities");
-    all.retain(|e| e.get("uid").map(|u| EntityUid::from_json(u.clone()).ok() != Some(principal.clone())).unwrap_or(true));
+    all.retain(|e| {
+        e.get("uid")
+            .map(|u| EntityUid::from_json(u.clone()).ok() != Some(principal.clone()))
+            .unwrap_or(true)
+    });
     let entity = Entity::new(principal, HashMap::new(), parents).expect("entity");
     all.push(entity.to_json_value().expect("entity json"));
-    (req, Some(Entities::from_json_value(serde_json::Value::Array(all), None).expect("entities")))
+    (
+        req,
+        Some(Entities::from_json_value(serde_json::Value::Array(all), None).expect("entities")),
+    )
 }
 
 fn decide(auth: &Authorizer, req: &Request, ps: &PolicySet, es: &Entities) -> Result<bool, String> {
@@ -209,17 +225,28 @@ struct Loaded {
 fn load_case(path: &str) -> Loaded {
     let case = read_case(path);
     let (ps, es, json) = load(&case.policies, &case.entities);
-    let reqs = case.requests.iter().map(|r| prepare(r, &es, &json)).collect();
+    let reqs = case
+        .requests
+        .iter()
+        .map(|r| prepare(r, &es, &json))
+        .collect();
     Loaded { case, ps, es, reqs }
 }
 
 fn verify(l: &Loaded, auth: &Authorizer) {
-    let limit = if l.case.check_first == 0 { l.reqs.len() } else { l.case.check_first.min(l.reqs.len()) };
+    let limit = if l.case.check_first == 0 {
+        l.reqs.len()
+    } else {
+        l.case.check_first.min(l.reqs.len())
+    };
     for (j, (req, own)) in l.reqs.iter().take(limit).enumerate() {
         let es = own.as_ref().unwrap_or(&l.es);
         match decide(auth, req, &l.ps, es) {
             Ok(got) if got == l.case.want[j] => {}
-            other => fail(&format!("{}/{}: request {j}: got {other:?}, want {}", l.case.name, l.case.label, l.case.want[j])),
+            other => fail(&format!(
+                "{}/{}: request {j}: got {other:?}, want {}",
+                l.case.name, l.case.label, l.case.want[j]
+            )),
         }
     }
 }
@@ -315,7 +342,10 @@ fn check(paths: &[String]) {
                 Ok(got) if got == l.case.want[j] => pass += 1,
                 other => {
                     failed = true;
-                    eprintln!("{}: request {j}: got {other:?}, want {}", l.case.name, l.case.want[j]);
+                    eprintln!(
+                        "{}: request {j}: got {other:?}, want {}",
+                        l.case.name, l.case.want[j]
+                    );
                 }
             }
         }
@@ -369,9 +399,14 @@ async fn handle(
 ) -> axum::response::Response {
     use axum::response::IntoResponse;
     // The same request mapping as the Go harness (CedarDefault).
-    let context = match Context::from_pairs([("path".to_string(), RestrictedExpression::new_string(c.resource.clone()))]) {
+    let context = match Context::from_pairs([(
+        "path".to_string(),
+        RestrictedExpression::new_string(c.resource.clone()),
+    )]) {
         Ok(ctx) => ctx,
-        Err(e) => return (axum::http::StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response(),
+        Err(e) => {
+            return (axum::http::StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response()
+        }
     };
     let req = match Request::new(
         EntityUid::from_type_name_and_id(s.user.clone(), EntityId::new(&c.user)),
@@ -384,7 +419,11 @@ async fn handle(
         Err(e) => return (axum::http::StatusCode::BAD_REQUEST, e.to_string()).into_response(),
     };
     match decide(&s.auth, &req, &s.ps, &s.es) {
-        Ok(allowed) => ([(axum::http::header::CONTENT_TYPE, "application/json")], format!("{{\"allowed\":{allowed}}}")).into_response(),
+        Ok(allowed) => (
+            [(axum::http::header::CONTENT_TYPE, "application/json")],
+            format!("{{\"allowed\":{allowed}}}"),
+        )
+            .into_response(),
         Err(e) => (axum::http::StatusCode::INTERNAL_SERVER_ERROR, e).into_response(),
     }
 }
@@ -400,12 +439,24 @@ fn serve(addr: &str, policies: &str, entities: &str) {
         action: EntityTypeName::from_str("Action").unwrap(),
         resource: EntityTypeName::from_str("Resource").unwrap(),
     });
-    eprintln!("cedar-rs loaded {policies} in {:?}; listening on {addr}", start.elapsed());
+    eprintln!(
+        "cedar-rs loaded {policies} in {:?}; listening on {addr}",
+        start.elapsed()
+    );
     // Worker threads follow GOMAXPROCS, which stress.sh sets for every server.
-    let workers = std::env::var("GOMAXPROCS").ok().and_then(|v| v.parse().ok()).unwrap_or_else(|| {
-        std::thread::available_parallelism().map(|n| n.get()).unwrap_or(1)
-    });
-    let rt = tokio::runtime::Builder::new_multi_thread().worker_threads(workers).enable_all().build().expect("runtime");
+    let workers = std::env::var("GOMAXPROCS")
+        .ok()
+        .and_then(|v| v.parse().ok())
+        .unwrap_or_else(|| {
+            std::thread::available_parallelism()
+                .map(|n| n.get())
+                .unwrap_or(1)
+        });
+    let rt = tokio::runtime::Builder::new_multi_thread()
+        .worker_threads(workers)
+        .enable_all()
+        .build()
+        .expect("runtime");
     rt.block_on(async {
         let app = axum::Router::new()
             .route("/check", axum::routing::post(handle))
@@ -428,28 +479,58 @@ fn main() {
     let mut i = 1;
     while i < args.len() {
         if let Some(name) = args[i].strip_prefix("--") {
-            flags.insert(name.to_string(), args.get(i + 1).cloned().unwrap_or_default());
+            flags.insert(
+                name.to_string(),
+                args.get(i + 1).cloned().unwrap_or_default(),
+            );
             i += 2;
         } else {
             rest.push(args[i].clone());
             i += 1;
         }
     }
-    let flag = |name: &str, default: &str| flags.get(name).cloned().unwrap_or_else(|| default.to_string());
+    let flag = |name: &str, default: &str| {
+        flags
+            .get(name)
+            .cloned()
+            .unwrap_or_else(|| default.to_string())
+    };
     let benchtime = {
         let s = flag("benchtime", "1s");
-        Duration::from_secs_f64(s.trim_end_matches('s').parse().unwrap_or_else(|_| fail("benchtime is seconds, like 1s")))
+        Duration::from_secs_f64(
+            s.trim_end_matches('s')
+                .parse()
+                .unwrap_or_else(|_| fail("benchtime is seconds, like 1s")),
+        )
     };
     let count: usize = flag("count", "1").parse().expect("count");
     match args.first().map(String::as_str) {
-        Some("bench") => bench(&rest, flag("cpu", "1").parse().expect("cpu"), benchtime, count),
+        Some("bench") => bench(
+            &rest,
+            flag("cpu", "1").parse().expect("cpu"),
+            benchtime,
+            count,
+        ),
         Some("parallel") => {
-            let cpus: Vec<usize> = flag("cpu", "1").split(',').map(|c| c.parse().expect("cpu")).collect();
+            let cpus: Vec<usize> = flag("cpu", "1")
+                .split(',')
+                .map(|c| c.parse().expect("cpu"))
+                .collect();
             parallel(&rest, &cpus, benchtime, count)
         }
         Some("check") => check(&rest),
-        Some("loadcost") if rest.len() == 2 => loadcost(&flag("label", "cedar-rs"), &flag("n", "0"), &flag("users", "0"), &rest[0], &rest[1]),
-        Some("serve") if rest.len() == 2 => serve(&flag("addr", "127.0.0.1:9000"), &rest[0], &rest[1]),
-        _ => fail("usage: cedar-rs bench|parallel|check|loadcost|serve ... (see the source header)"),
+        Some("loadcost") if rest.len() == 2 => loadcost(
+            &flag("label", "cedar-rs"),
+            &flag("n", "0"),
+            &flag("users", "0"),
+            &rest[0],
+            &rest[1],
+        ),
+        Some("serve") if rest.len() == 2 => {
+            serve(&flag("addr", "127.0.0.1:9000"), &rest[0], &rest[1])
+        }
+        _ => {
+            fail("usage: cedar-rs bench|parallel|check|loadcost|serve ... (see the source header)")
+        }
     }
 }
