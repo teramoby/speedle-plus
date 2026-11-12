@@ -7,7 +7,7 @@ toc = false
 linksection = true
 tocheading = "h2"
 categories = ["docs"]
-lastmod = 2026-11-12T10:00:00+08:00
+lastmod = 2026-11-12T20:00:00+08:00
 +++
 
 Speedle Cloud is a hosted access-control service for developers, built on the open-source Speedle policy engine. It is designed to let you manage SPDL authorization and role policies, test decisions in a Playground, and call an authorization API from your application server without operating your own authorization service.
@@ -21,13 +21,13 @@ The free public beta is intended for trials, learning and evaluation. It has no 
 - [Getting started](/docs/cloud/getting-started/): Sign in with GitHub or Google (opens soon), account management, services, SPDL policies, session management requests and all four session Playground operations.
 - [Application tokens](/docs/cloud/tokens/): recent-authentication requirements, one-time token disclosure, metadata pagination, rotation and revocation.
 - [Authorization API preview](/docs/cloud/authorization-api/): the IsAllowed request and response contract, a Node.js 22 example, policy snapshots and integration constraints.
-- [API reference](/docs/cloud/api-reference/): read-only Swagger UI for the public Cloud API. Try it out is disabled, so an application token is not entered in the browser.
+- [API reference](/docs/cloud/api-reference/): authorization checks and policy management with an API key. Requests run from your server; this page is read-only.
 - [Limits and errors](/docs/cloud/limits-and-errors/): account quotas, request limits, error responses, rate and quota headers, and retry guidance.
 
 ## Downloads
 
 - [English Markdown](https://engine.speedle.io/docs/cloud/quickstart.en.md): all four Cloud chapters in one offline document.
-- [API reference](/docs/cloud/api-reference/): rendered public specification. The raw files below remain available.
+- [API reference](/docs/cloud/api-reference/): read it on this site. The raw files below remain available.
 - [OpenAPI YAML](https://cloud.speedle.io/openapi.yaml): the canonical checked-in Cloud API specification.
 - [OpenAPI JSON](https://cloud.speedle.io/openapi.json): generated from the same YAML source bytes.
 - [Serving build version](https://cloud.speedle.io/build.json): identifies the serving build; it does not certify identity-provider or endpoint availability.

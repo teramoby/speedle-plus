@@ -47,12 +47,24 @@ def path_keys(text):
     return keys
 
 
+def prepare_public_spec(text):
+    """Drop the JSON Schema dialect Swagger UI 5 refuses to render.
+
+    Swagger UI 5.34 shows a warning when jsonSchemaDialect is not the
+    OpenAPI 3.1 default, and asks for the field to be omitted. Paths and
+    component schemas stay as published.
+    """
+    return re.sub(r"(?m)^jsonSchemaDialect:\s*\S+[^\n]*\n", "", text)
+
+
 def validate_public_spec(text):
     """Reject an empty document, a non-OpenAPI file, or any /api/ path."""
     if not isinstance(text, str) or not text.strip():
         raise SpecError("public OpenAPI document is empty")
     if "\x00" in text:
         raise SpecError("public OpenAPI document is not UTF-8 text")
+    if re.search(r"(?m)^jsonSchemaDialect:\s*\S+", text):
+        raise SpecError("public OpenAPI document sets jsonSchemaDialect, which Swagger UI 5 cannot render")
     if not re.search(r"(?m)^(openapi:|swagger:)\s*\S+", text):
         raise SpecError("public OpenAPI document has no openapi or swagger version")
     keys = path_keys(text)
@@ -116,7 +128,7 @@ def main(argv=None):
             keys = validate_public_spec(text)
             print(f"ok {options.dest} ({len(keys)} paths, no /api/ paths)")
             return 0
-        text = fetch(options.url, timeout=options.timeout)
+        text = prepare_public_spec(fetch(options.url, timeout=options.timeout))
         keys = validate_public_spec(text)
         write_spec(text, options.dest)
         print(f"wrote {options.dest} ({len(keys)} paths) from {options.url}")

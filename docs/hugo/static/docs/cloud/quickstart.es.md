@@ -11,13 +11,13 @@ La beta pública gratuita está pensada para pruebas, aprendizaje y evaluación.
 - [Primeros pasos](https://engine.speedle.io/es/docs/cloud/getting-started/): inicio de sesión con GitHub o Google (próximamente), gestión de cuentas, servicios, políticas SPDL, solicitudes de gestión de sesiones y las cuatro operaciones del Playground de sesión.
 - [Tokens de aplicación](https://engine.speedle.io/es/docs/cloud/tokens/): requisitos de reautenticación reciente, divulgación única del token, paginación de metadatos, rotación y revocación.
 - [Vista previa de la API de autorización](https://engine.speedle.io/es/docs/cloud/authorization-api/): contrato de solicitud y respuesta de IsAllowed, ejemplo con Node.js 22, instantáneas de políticas y restricciones de integración.
-- [Referencia de la API](https://engine.speedle.io/es/docs/cloud/api-reference/): Swagger UI de solo lectura para la API pública de Cloud. Try it out está desactivado, de modo que no se introduce un token de aplicación en el navegador.
+- [Referencia de la API](https://engine.speedle.io/es/docs/cloud/api-reference/): comprobaciones de autorización y gestión de políticas con una API key. Las solicitudes salen de su servidor; esta página es de solo lectura.
 - [Límites y errores](https://engine.speedle.io/es/docs/cloud/limits-and-errors/): cuotas de cuenta, límites de solicitudes, respuestas de error, encabezados de tasa y cuota, y directrices de reintento.
 
 ## Descargas
 
 - [Markdown en español](https://engine.speedle.io/docs/cloud/quickstart.es.md): los cuatro capítulos de Cloud en un único documento sin conexión.
-- [Referencia de la API](https://engine.speedle.io/es/docs/cloud/api-reference/): especificación pública representada. Los archivos sin procesar de abajo siguen disponibles.
+- [Referencia de la API](https://engine.speedle.io/es/docs/cloud/api-reference/): léala en este sitio. Los archivos sin procesar de abajo siguen disponibles.
 - [OpenAPI YAML](https://cloud.speedle.io/openapi.yaml): especificación canónica de la API de Cloud registrada.
 - [OpenAPI JSON](https://cloud.speedle.io/openapi.json): generado a partir de la misma fuente YAML.
 - [Versión de compilación en servicio](https://cloud.speedle.io/build.json): identifica la compilación en servicio; no certifica la disponibilidad del proveedor de identidad o del endpoint.

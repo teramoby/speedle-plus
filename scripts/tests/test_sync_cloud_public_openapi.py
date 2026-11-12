@@ -43,9 +43,46 @@ class RecordingHandler(BaseHTTPRequestHandler):
         return
 
 
+PUBLIC_PATHS = [
+    "/authz-check/v1/is-allowed",
+    "/authz-check/v1/all-granted-roles",
+    "/authz-check/v1/all-granted-permissions",
+    "/policy-mgmt/v1/service",
+    "/policy-mgmt/v1/service/{serviceName}",
+    "/policy-mgmt/v1/service/{serviceName}/policy",
+    "/policy-mgmt/v1/service/{serviceName}/policy/{policyId}",
+    "/policy-mgmt/v1/service/{serviceName}/role-policy",
+    "/policy-mgmt/v1/service/{serviceName}/role-policy/{policyId}",
+]
+
+
 class PublicOpenAPISyncTest(unittest.TestCase):
     def test_vendored_file_has_no_api_paths(self):
+        text = sync.DEST.read_text(encoding="utf-8")
+        self.assertEqual(sync.path_keys(text), PUBLIC_PATHS)
+        self.assertNotIn("0.0.0-placeholder", text)
+        self.assertNotIn("jsonSchemaDialect:", text)
         self.assertEqual(sync.main(["--check"]), 0)
+
+    def test_json_schema_dialect_is_rejected_until_it_is_removed(self):
+        with self.assertRaisesRegex(sync.SpecError, "jsonSchemaDialect"):
+            sync.validate_public_spec(
+                "jsonSchemaDialect: https://json-schema.org/draft/2020-12/schema\n" + VALID)
+
+    def test_fetch_omits_json_schema_dialect(self):
+        published = "jsonSchemaDialect: https://json-schema.org/draft/2020-12/schema\n" + VALID
+        self.assertNotIn("jsonSchemaDialect:", sync.prepare_public_spec(published))
+        with self._server() as server, tempfile.TemporaryDirectory() as temporary:
+            dest = Path(temporary) / "cloud-public.yaml"
+            RecordingHandler.body = published.encode("utf-8")
+            url = f"http://127.0.0.1:{server.server_address[1]}/openapi.public.yaml"
+            try:
+                self.assertEqual(sync.main(["--url", url, "--dest", str(dest)]), 0)
+            finally:
+                RecordingHandler.body = VALID.encode("utf-8")
+            written = dest.read_text(encoding="utf-8")
+            self.assertNotIn("jsonSchemaDialect:", written)
+            self.assertIn("/authz-check/v1/is-allowed:", written)
 
     def test_api_path_is_rejected(self):
         text = VALID.replace("/authz-check/v1/is-allowed:", "/api/me:")

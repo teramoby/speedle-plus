@@ -11,13 +11,13 @@ Speedle Cloud は、オープンソースの Speedle ポリシーエンジンを
 - [クイックスタート](https://engine.speedle.io/ja/docs/cloud/getting-started/): GitHub または Google でのサインイン（まもなく開始）、アカウント管理、サービス、SPDL ポリシー、セッション管理リクエスト、および 4 つのセッション Playground 操作。
 - [アプリケーショントークン](https://engine.speedle.io/ja/docs/cloud/tokens/): 最近の認証要件、1 回限りのトークン開示、メタデータのページネーション、ローテーション、および失効。
 - [認可 API プレビュー](https://engine.speedle.io/ja/docs/cloud/authorization-api/): IsAllowed リクエストとレスポンスの契約、Node.js 22 のサンプル、ポリシースナップショット、および統合の制約。
-- [API リファレンス](https://engine.speedle.io/ja/docs/cloud/api-reference/): 公開 Cloud API の読み取り専用 Swagger UI。Try it out は無効なので、アプリケーション トークンをブラウザーに入力しません。
+- [API リファレンス](https://engine.speedle.io/ja/docs/cloud/api-reference/): API key による認可チェックとポリシー管理。リクエストはサーバーから送り、このページは読み取り専用です。
 - [制限とエラー](https://engine.speedle.io/ja/docs/cloud/limits-and-errors/): アカウントクォータ、リクエスト制限、エラーレスポンス、レートおよびクォータヘッダー、再試行のガイダンス。
 
 ## ダウンロード
 
 - [日本語 Markdown](https://engine.speedle.io/docs/cloud/quickstart.ja.md): 4 つの Cloud の章をまとめたオフラインドキュメント。
-- [API リファレンス](https://engine.speedle.io/ja/docs/cloud/api-reference/): レンダリングされた公開仕様。下の生ファイルも引き続き利用できます。
+- [API リファレンス](https://engine.speedle.io/ja/docs/cloud/api-reference/): このサイトで読めます。下の生ファイルも引き続き利用できます。
 - [OpenAPI YAML](https://cloud.speedle.io/openapi.yaml): リポジトリにチェックインされた正規の Cloud API 仕様。
 - [OpenAPI JSON](https://cloud.speedle.io/openapi.json): 同じ YAML ソースバイトから生成。
 - [提供ビルドバージョン](https://cloud.speedle.io/build.json): サービスを提供しているビルドを識別（ID プロバイダーやエンドポイントの可用性を証明するものではありません）。

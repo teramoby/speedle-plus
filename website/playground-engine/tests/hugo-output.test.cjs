@@ -274,8 +274,20 @@ for (const [locale, copy] of Object.entries(cloudCopy)) {
   const reference = read('api-reference/');
   assert.ok(reference.includes('supportedSubmitMethods: []'), `Try it out disabled on the Cloud reference in ${locale || 'en'}`);
   assert.ok(reference.includes('id="swagger-ui" class="swagger-readonly"'), `Authorize hidden on the Cloud reference in ${locale || 'en'}`);
-  assert.ok(reference.includes('/openapi/cloud-public.yaml'), `Vendored public spec on the Cloud reference in ${locale || 'en'}`);
+  assert.ok(reference.includes('/openapi/cloud-public.yaml'), `Public spec on the Cloud reference in ${locale || 'en'}`);
   assert.ok(reference.includes('/css/swagger-ui.css') && reference.includes('/css/swagger-custom.css'), `Swagger styles on the Cloud reference in ${locale || 'en'}`);
+  const referenceLead = {
+    '': 'authorization checks and policy management with an API key',
+    'zh/': '使用 API key 进行授权检查和策略管理',
+    'ja/': 'API key による認可チェックとポリシー管理',
+    'ko/': 'API key를 사용한 인가 확인과 정책 관리',
+    'es/': 'comprobaciones de autorización y gestión de políticas con una API key',
+  }[locale];
+  const referenceArticle = reference.split('<div id="main"')[1] || '';
+  assert.ok(referenceArticle.includes(referenceLead), `Cloud reference lead in ${locale || 'en'}`);
+  assert.ok(overview.includes(referenceLead), `Cloud index describes the reference in ${locale || 'en'}`);
+  assert.ok(!/placeholder|vendored|Swagger UI|Try it out|application token|应用令牌|アプリケーション トークン|token de aplicación|애플리케이션 토큰/.test(referenceArticle), `Reader-facing Cloud reference in ${locale || 'en'}`);
+  assert.ok(!overview.includes('Swagger UI') && !overview.includes('Try it out'), `Cloud index does not describe the reference as Swagger UI in ${locale || 'en'}`);
   const decision = fs.readFileSync(path.join(output, `${locale}docs/api/decision_api/index.html`), 'utf8');
   assert.ok(decision.includes('supportedSubmitMethods: []'), `Try it out disabled on the engine decision reference in ${locale || 'en'}`);
   assert.ok(decision.includes('id="swagger-ui" class="swagger-readonly"'), `Authorize hidden on the engine decision reference in ${locale || 'en'}`);
@@ -301,6 +313,25 @@ for (const name of ['css/swagger-ui.css', 'css/swagger-custom.css', 'js/swagger-
 assert.ok(fs.readFileSync(path.join(output, 'js/swagger-js/swagger-ui-bundle.js'), 'utf8').includes('5.34.1'), 'Vendored Swagger UI is 5.34.1');
 const swaggerCustom = fs.readFileSync(path.join(output, 'css/swagger-custom.css'), 'utf8');
 assert.ok(swaggerCustom.includes('#swagger-ui.swagger-readonly .auth-wrapper') && swaggerCustom.includes('#swagger-ui.swagger-readonly .authorization__btn'), 'Read-only Swagger UI hides Authorize and the operation lock');
+function listFiles(directory, suffix, found = []) {
+  for (const entry of fs.readdirSync(directory, {withFileTypes: true})) {
+    const file = path.join(directory, entry.name);
+    if (entry.isDirectory()) listFiles(file, suffix, found);
+    else if (entry.name.endsWith(suffix)) found.push(file);
+  }
+  return found;
+}
+const swaggerSources = listFiles(path.join(root, 'docs/hugo/content'), '.md').filter(file => fs.readFileSync(file, 'utf8').includes('tryitout="false"'));
+const swaggerPages = listFiles(output, '.html').filter(file => fs.readFileSync(file, 'utf8').includes('SwaggerUIBundle({'));
+assert.equal(swaggerPages.length, swaggerSources.length, 'Every read-only Swagger source page is published');
+for (const file of swaggerPages) {
+  const html = fs.readFileSync(file, 'utf8');
+  const rel = path.relative(output, file);
+  assert.ok(html.includes('id="swagger-ui" class="swagger-readonly"'), `${rel} hides Authorize`);
+  assert.ok(html.includes('supportedSubmitMethods: []'), `${rel} disables Try it out`);
+}
+assert.ok(swaggerCustom.includes('max-width: 100%') && swaggerCustom.includes('overflow-x: clip') && swaggerCustom.includes('overflow-wrap: anywhere'), 'Swagger UI stays inside the article width');
+assert.ok(/body\.docs-page > \.container \{[^}]*min-width: 0/.test(docsStyles), 'The docs article can shrink to the viewport');
 assert.ok(llms.includes('https://ai.speedle.io/llms.txt') && llms.includes('https://cloud.speedle.io/llms.txt'), 'llms.txt links the other sites\' llms.txt');
 assert.ok(llmsFull.includes('grant role manager employee') && llmsFull.includes('ROLE_POLICY ='),
   'llms-full.txt contains the SPDL grammar and role-inheritance example');

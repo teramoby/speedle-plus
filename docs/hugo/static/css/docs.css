@@ -38,6 +38,7 @@ body.docs-page [hidden] { display: none !important; }
 
 body.docs-page > .container {
   width: min(1160px, calc(100% - 40px));
+  min-width: 0;
   margin: 0 auto;
   padding: 104px 0 0;
   flex: 1 0 auto;
