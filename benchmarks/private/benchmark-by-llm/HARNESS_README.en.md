@@ -12,18 +12,36 @@ Casbin, OPA, and Speedle+ are compared with the same policy scenarios for functi
 | OPA | `github.com/open-policy-agent/opa` v1.21.4 | In-process library (`v1/rego`) and `opa run --server` |
 | Speedle+ | `github.com/teramoby/speedle-plus` v0.0.0-20261028230603-b27604c077ce | In-process library (`pkg/eval`) and `speedle-ads` |
 
+## Cedar and the May 2026 Speedle+ build (added 2026-11)
+
+After the archive was written, the harness gained Cedar and a May 2026 Speedle+ build; the 2026-10-29 figures above do not include them and a fresh run on the benchmark host is needed.
+
+- `engines.go` has two Cedar variants: `cedar` (cedar-go, one permit per permission) and `cedar-data` (one permit for the whole set, with the permissions in the entity data `resource.readers`).
+- `cmd/cedar-rs` answers exactly the same requests with Cedar's Rust reference implementation (`cedar-policy` 4.14.0). `TestExportCedarSpecs` exports the requests as JSON; `cedar-rs check` verifies them, `cedar-rs bench` / `parallel` time them, and `cedar-rs serve` exposes the same thin HTTP API as `authzd`.
+- Each of the 9 scenarios has `cedar.cedar` + `cedar.entities.json` (groups, role hierarchy, and nested folders are entity parents); the generated sets also have Cedar files, with sizes starting at 10.
+- `go.may.mod` pins the May 2026 Speedle+ build (`SPEEDLE_LABEL=speedle-may`); `build-package.sh` packages both Go test binaries and servers, `cedar-rs`, and both `speedle-ads` builds.
+
+```bash
+CEDAR_SPEC_DIR=/tmp/cedar-specs go test -run '^TestExportCedarSpecs$' -v
+(cd cmd/cedar-rs && cargo build --release --locked)
+cmd/cedar-rs/target/release/cedar-rs check /tmp/cedar-specs/scenarios/*.json
+```
+
+The corresponding `run-all.sh` steps are `cedar-specs`, `bench-100k-cedar`, `bench-100k-cedar-data`, `may-*`, and `rs-*`.
+
 ## Directory layout
 
-- `scenarios/sN_*/`: 9 scenarios, each with policies in three formats: `casbin.conf` + `casbin.csv`, `opa.rego` + `opa.json`, and `speedle.spdl`
-- `engines.go`: shared interface `Engine.Allowed(Req)` for the three engines
+- `scenarios/sN_*/`: 9 scenarios, each with policies in four formats: `casbin.conf` + `casbin.csv`, `opa.rego` + `opa.json`, `cedar.cedar` + `cedar.entities.json`, and `speedle.spdl`
+- `engines.go`: shared interface `Engine.Allowed(Req)` for the four engines (Casbin, OPA, Cedar, Speedle+)
 - `scenarios_test.go`: scenario cases/pass matrix (`TestScenarios`) and policy size (`TestPolicySize`)
 - `capabilities_test.go`, `broken_test.go`: permission listing, decision explanations, runtime updates, error messages, and malformed-policy behavior
-- `gen.go`: generates large policy sets in all three formats (plain: n roles, 10 users per role; manyusers: 10 roles, 100 permissions, n users)
+- `gen.go`: generates large policy sets in all four formats (plain: n roles, 10 users per role; manyusers: 10 roles, 100 permissions, n users)
 - `bench_test.go`: in-process latency/concurrency benchmarks, load time, and memory (`TestLoadCost`)
 - `cmd/authzd`: identical thin HTTP service wrapping any engine
+- `cmd/cedar-rs`: Cedar's Rust reference implementation for the same requests, printing Go benchmark lines
 - `cmd/loadgen`: closed-loop load generator reporting throughput and p50/p90/p99/p99.9
 - `cmd/watchcheck`: tests Speedle+ file watching when a temporary file is written and renamed over the original
-- `stress.sh`: HTTP load test (three thin services, `opa run --server`, and `speedle-ads`)
+- `stress.sh`: HTTP load test (thin services for each engine and variant, `opa run --server`, `speedle-ads`, `cedar-rs serve`)
 - `results/`: raw results
 
 ## Running the suite
