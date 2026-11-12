@@ -2,8 +2,9 @@
 set -uo pipefail
 cd "$(dirname "$0")"
 BIN=${BIN:-./bin}; T="$BIN/authzbench.test"
-# The same harness built against Speedle+ as master stood in May 2026
-# (go.may.mod); it runs only the Speedle+ engine, labelled speedle-may.
+# The same harness built against Speedle+ as master stood throughout May 2026
+# (go.may.mod, 8fb1481d, unchanged from 2026-01-16 until 2026-06-24); it runs
+# only the Speedle+ engine, labelled speedle-may.
 TMAY="$BIN/authzbench-may.test"; RS="$BIN/cedar-rs"
 OUT=${OUT:-results/$(hostname -s)}; mkdir -p "$OUT"
 SPECS=${SPECS:-$OUT/../cedar-specs}

@@ -2,7 +2,8 @@
 # Build the Linux x86-64 package for a four-engine run (Casbin, OPA, Cedar,
 # Speedle+): the test binaries, servers and load generator, Cedar's Rust
 # harness, and two Speedle+ builds (go.mod: current master; go.may.mod:
-# master as it stood in May 2026). Runs where Go and Cargo are installed
+# master throughout May 2026, 8fb1481d, unchanged from 2026-01-16 until
+# 2026-06-24). Runs where Go and Cargo are installed
 # (the CI package job); the benchmark host needs neither.
 set -euo pipefail
 cd "$(dirname "$0")"

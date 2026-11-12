@@ -183,8 +183,9 @@ type SpeedleEngine struct {
 func (s *SpeedleEngine) Name() string { return SpeedleLabel() }
 
 // SpeedleLabel names the Speedle+ build under test. The harness is built
-// once per Speedle+ version (go.mod: current master, go.may.mod: master in
-// May 2026), and each build labels its results through SPEEDLE_LABEL.
+// once per Speedle+ version (go.mod: current master; go.may.mod: the commit
+// that was master throughout May 2026, 8fb1481d, unchanged from 2026-01-16
+// until 2026-06-24), and each build labels its results through SPEEDLE_LABEL.
 func SpeedleLabel() string {
 	if label := os.Getenv("SPEEDLE_LABEL"); label != "" {
 		return label
