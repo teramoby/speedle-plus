@@ -220,12 +220,14 @@ const cloudCopy = {
     soon: 'Speedle Cloud is coming soon', preview: 'production sign-in and authenticated authorization checks open',
     signin: 'Sign in with GitHub or Google (opens soon)',
     download: 'quickstart.en.md', legal: '', samples: true,
+    downloadNote: 'The machine-readable form of the API reference, for code generators and API clients',
   },
   'zh/': {
     intro: '基于开源 Speedle 引擎的托管授权服务', beta: '免费公开测试版用于试用、学习和评估',
     soon: 'Speedle Cloud 即将上线', preview: '生产环境开放登录和授权 API 后的使用流程',
     signin: '使用 GitHub 或 Google 登录（即将开放）',
     download: 'quickstart.zh-CN.md', legal: 'zh-CN/', samples: true,
+    downloadNote: 'API 参考的机器可读形式，供代码生成器和 API 客户端使用',
   },
   'ja/': {
     intro: 'オープンソースの Speedle エンジンによるホスト型認可サービス',
@@ -233,6 +235,7 @@ const cloudCopy = {
     soon: 'Speedle Cloud はまもなく公開されます', preview: '本番環境のサインインと認証付き認可 API が利用可能になった際',
     signin: 'GitHub または Google',
     download: 'quickstart.ja.md', legal: 'ja/', samples: false,
+    downloadNote: 'API リファレンスの機械可読形式で、コード生成ツールや API クライアント向けです',
   },
   'ko/': {
     intro: '오픈 소스 Speedle 엔진 기반의 호스팅 인가 서비스',
@@ -240,6 +243,7 @@ const cloudCopy = {
     soon: 'Speedle Cloud는 출시 예정입니다', preview: '프로덕션 로그인과 인증된 인가 API가 제공될 때',
     signin: 'GitHub 또는 Google',
     download: 'quickstart.ko.md', legal: 'ko/', samples: false,
+    downloadNote: 'API 레퍼런스의 기계 판독 형식으로, 코드 생성기와 API 클라이언트에서 사용할 수 있습니다',
   },
   'es/': {
     intro: 'servicio de autorización alojado basado en el motor Speedle de código abierto',
@@ -247,6 +251,7 @@ const cloudCopy = {
     soon: 'Speedle Cloud estará disponible próximamente', preview: 'inicio de sesión en producción y las comprobaciones de autorización autenticadas',
     signin: 'Iniciar sesión con GitHub o Google (próximamente)',
     download: 'quickstart.es.md', legal: 'es/', samples: true,
+    downloadNote: 'La forma legible por máquina de la referencia de la API, para generadores de código y clientes de API',
   },
 };
 for (const [locale, copy] of Object.entries(cloudCopy)) {
@@ -278,7 +283,16 @@ for (const [locale, copy] of Object.entries(cloudCopy)) {
     assert.ok(limits.includes('X-Quota-Daily-Remaining') && limits.includes('daily_quota_exceeded') && limits.includes('snapshot_unavailable'), `Cloud limits and errors in ${locale || 'en'}`);
   }
   assert.ok(overview.includes(`href="/docs/cloud/${copy.download}"`), `Localized Markdown download in ${locale || 'en'}`);
-  assert.ok(overview.includes('https://cloud.speedle.io/openapi.yaml') && overview.includes('https://cloud.speedle.io/openapi.json'), `Cloud schema downloads in ${locale || 'en'}`);
+  // The download list starts at the localized Markdown link; it must carry the
+  // public OpenAPI subset, not the full contract with console-only routes, and
+  // must not repeat the API reference that the Documentation list already links.
+  const downloadsStart = overview.indexOf(`href="/docs/cloud/${copy.download}"`);
+  const downloadsList = downloadsStart < 0 ? '' : overview.slice(downloadsStart, overview.indexOf('</ul>', downloadsStart));
+  assert.ok(downloadsList.includes('https://cloud.speedle.io/openapi.public.yaml') && downloadsList.includes('https://cloud.speedle.io/openapi.public.json'), `Public Cloud schema downloads in ${locale || 'en'}`);
+  assert.ok(downloadsList.includes('>OpenAPI (YAML)</a>') && downloadsList.includes('>OpenAPI (JSON)</a>'), `OpenAPI download labels in ${locale || 'en'}`);
+  assert.ok(overview.includes(copy.downloadNote), `OpenAPI download note in ${locale || 'en'}`);
+  assert.ok(!downloadsList.includes('api-reference'), `Download list does not repeat the API reference in ${locale || 'en'}`);
+  assert.ok(!downloadsList.includes('https://cloud.speedle.io/openapi.yaml') && !downloadsList.includes('https://cloud.speedle.io/openapi.json'), `Full Cloud schema not linked in ${locale || 'en'}`);
   assert.ok(overview.includes(`href="/${locale}docs/cloud/api-reference/"`), `Cloud API reference link in ${locale || 'en'}`);
   const reference = read('api-reference/');
   assert.ok(reference.includes('supportedSubmitMethods: []'), `Try it out disabled on the Cloud reference in ${locale || 'en'}`);

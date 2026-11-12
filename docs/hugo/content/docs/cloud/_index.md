@@ -27,10 +27,9 @@ Account sign-in must be available before using the console or creating API keys.
 ## Downloads
 
 - [English Markdown](https://engine.speedle.io/docs/cloud/quickstart.en.md): The four Cloud chapters in one offline guide.
-- [API reference](/docs/cloud/api-reference/): read it on this site. The raw files below remain available.
-- [OpenAPI YAML](https://cloud.speedle.io/openapi.yaml)
-- [OpenAPI JSON](https://cloud.speedle.io/openapi.json)
+- [OpenAPI (YAML)](https://cloud.speedle.io/openapi.public.yaml)
+- [OpenAPI (JSON)](https://cloud.speedle.io/openapi.public.json)
 
-The API schemas describe the request and response contracts; downloading them does not open account sign-in.
+The machine-readable form of the API reference, for code generators and API clients; downloading the schemas does not open account sign-in.
 
 Read the Cloud [Terms](https://cloud.speedle.io/terms) / [Privacy Policy](https://cloud.speedle.io/privacy).

@@ -27,10 +27,9 @@ Para usar la consola o crear claves API debe estar disponible el inicio de sesi�
 ## Descargas
 
 - [Markdown en español](https://engine.speedle.io/docs/cloud/quickstart.es.md): Los cuatro capítulos de Cloud en una guía sin conexión.
-- [Referencia de la API](/es/docs/cloud/api-reference/): léala en este sitio. Los archivos sin procesar de abajo siguen disponibles.
-- [OpenAPI YAML](https://cloud.speedle.io/openapi.yaml)
-- [OpenAPI JSON](https://cloud.speedle.io/openapi.json)
+- [OpenAPI (YAML)](https://cloud.speedle.io/openapi.public.yaml)
+- [OpenAPI (JSON)](https://cloud.speedle.io/openapi.public.json)
 
-Los esquemas API describen los contratos de solicitud y respuesta; descargarlos no abre el inicio de sesión.
+La forma legible por máquina de la referencia de la API, para generadores de código y clientes de API; descargarla no abre el inicio de sesión.
 
 Consulte los documentos de Cloud: [Términos](https://cloud.speedle.io/es/terms) / [Política de privacidad](https://cloud.speedle.io/es/privacy).
