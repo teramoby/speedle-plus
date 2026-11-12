@@ -264,7 +264,7 @@ unset SPCTL_TOKEN
 
 API 키은 인증서 검증이 활성화된 HTTPS를 통해서만 `Authorization: Bearer` 자격 증명으로 전송됩니다. API 키을 사용한 일반 텍스트 HTTP는 `127.0.0.1`, `::1`, `localhost`와 같은 루프백 호스트에 대해서만 허용됩니다. `spctl`은 원격 HTTP 엔드포인트 및 HTTPS에서 HTTP로의 다운그레이드 리디렉션에 대해 자격 증명을 전송하기 전에 거부합니다. HTTPS 엔드포인트의 경우 `--skipverify=true`가 지정되면 API 키 전송도 거부됩니다. 대신 `--cacert`를 사용하여 사설 또는 자체 서명된 인증 기관을 신뢰하도록 설정하십시오. API 키은 일반 명령 출력이나 오류 메시지에 포함되지 않습니다.
 
-Cloud 오류는 0이 아닌 종료 코드를 생성합니다. `401` 후에는 API 키을 확인하고, `403 insufficient_scope` 후에는 범위를 확인하십시오. `404`는 존재하지 않는 리소스를 나타내며, `409 service_exists` 및 `409 policy_exists`는 중복을 나타냅니다. `429`의 경우 반환된 `Retry-After` 값을 준수하고 유계 백오프를 사용하십시오. `429 daily_quota_exceeded`이면 `Retry-After`에 따라 00:00 UTC까지 기다리세요. 서비스, 정책, 활성 키 한도는 `409 quota_exceeded`이며 시간으로 초기화되지 않습니다. 미사용 항목을 삭제하거나 폐기하세요. [제한과 오류](/ko/docs/cloud/limits-and-errors/)를 참조하세요.
+Cloud 오류는 0이 아닌 종료 코드를 생성합니다. `401` 후에는 API 키을 확인하고, `403 insufficient_scope` 후에는 범위를 확인하십시오. `404`는 존재하지 않는 리소스를 나타내며, `409 service_exists` 및 `409 policy_exists`는 중복을 나타냅니다. `429`의 경우 반환된 `Retry-After` 값을 준수하고 유계 백오프를 사용하십시오. `429 daily_quota_exceeded`이면 `Retry-After`에 따라 00:00 UTC까지 기다리세요. 서비스와 정책 한도는 `409 quota_exceeded`이며 시간으로 초기화되지 않습니다. 미사용 항목을 삭제하세요. API 키 자리는 키를 폐기하거나 만료를 기다려 확보합니다. [제한과 오류](/ko/docs/cloud/limits-and-errors/)를 참조하세요.
 
 ## 기타 인터페이스
 

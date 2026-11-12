@@ -21,7 +21,7 @@ lastmod = 2026-11-12T00:00:00+08:00
 | 계정 서비스 | 100개 | `409 quota_exceeded`. 미사용 서비스 삭제. 시간에 따른 초기화 없음. |
 | 모든 서비스의 인가 정책과 역할 정책 합계 | 계정당 200개 | `409 quota_exceeded`. 정책 삭제. 시간에 따른 초기화 없음. |
 | 정책 하나의 전체 SPDL 소스 | UTF-8 1,024바이트 | 콘솔 정책 쓰기는 `400 invalid_request`. 소스 축소. 문자 수가 아닌 바이트 수. 시간에 따른 초기화 없음. |
-| 모든 범위의 활성 API 키 합계 | 계정당 10개 | `409 quota_exceeded`, `limit: 10`. 미사용 키 폐기. 시간에 따른 초기화 없음. 폐기 이력은 제외. |
+| 모든 범위의 활성 API 키 합계 | 계정당 10개 | `409 quota_exceeded`, `limit: 10`. 미사용 키를 폐기하거나 만료를 기다립니다. 한도는 주기로 초기화되지 않습니다. 폐기 및 만료된 키는 제외. |
 | 정책 이름 / API 키 이름 | Unicode 코드 포인트 128개 / 앞뒤 공백 제외 1–128자 | `400 invalid_request`. 이름 수정. 시간에 따른 초기화 없음. |
 | 과금 대상 정책 관리 및 인가 호출 | 계정당 UTC 일일 10,000회 | `429 daily_quota_exceeded`. 00:00 UTC 초기화. `Retry-After` 준수. |
 | API 키 단기 버스트 | Cloud 위치별 키당 분당 약 600회 | `429 rate_limited`, `Retry-After: 60`. 기다린 뒤 재시도. 처리량 보장이나 추가 일일 할당량이 아님. |
@@ -29,7 +29,7 @@ lastmod = 2026-11-12T00:00:00+08:00
 | 원자적 JSON 가져오기 본문 (`POST /api/service/import`만) | 5,100,000바이트 | `413 request_too_large`. 데이터 축소. 정책과 계정 한도도 적용. 시간에 따른 초기화 없음. |
 | 입력 속성 | 50개, 정규 JSON의 UTF-8 16,384바이트 | `400 SPDL-0004`. 속성 수나 크기 축소. 시간에 따른 초기화 없음. |
 
-범위, 생성, 폐기는 [API 키](/ko/docs/cloud/tokens/)를 참조하세요.
+범위, 만료 기간, 생성, 폐기는 [API 키](/ko/docs/cloud/tokens/)를 참조하세요.
 
 ## 일일 할당량
 
@@ -47,12 +47,13 @@ Cloud 자체 장애는 계정당 UTC 일일 최대 1,000회까지 할당량을 �
 | --- | --- |
 | `400 invalid_request` 또는 Speedle 오류 | 요청 수정. 그대로 재시도하지 않음. |
 | `401 unauthorized` | API 키나 세션 확인. 세션 쿠키만으로 ADS 호출 불가. |
+| `401 api_key_expired` | API 키가 만료 시각에 도달했거나 지났습니다. 새 키를 만드세요. 이 키를 다시 시도해도 성공하지 않습니다. 만료가 필수가 되기 전에 만든 키에도 만료 시각이 있습니다. 언제 만료되는지는 API 키 페이지에 있습니다. `expiresAt`을 확인하고 그 전에 새 키를 만드세요. |
 | `403 reauth_required` | 키 생성 전 연결된 제공자로 재인증. |
 | `403 insufficient_scope` | 필요한 범위의 키 사용. |
 | `403 management_scope_disabled` | 로그인이 닫힌 동안 관리 범위 발급 불가. |
 | `403 csrf_failed` | 세션, Origin, CSRF 헤더 확인. |
 | `404 service_not_found` (ADS) / `404 not_found` (관리) | 자신의 계정에 있는 서비스 선택. 알 수 없거나 다른 계정 또는 폐기된 키 ID도 `404 not_found`. |
-| `409 quota_exceeded` | 서비스, 정책, API 키의 자리를 확보. 시간으로 초기화되지 않음. |
+| `409 quota_exceeded` | 쓰지 않는 서비스나 정책을 삭제해 자리를 확보합니다. 시간으로 이 두 한도는 초기화되지 않습니다. API 키 자리는 키를 폐기하거나 만료를 기다려 확보합니다. |
 | `413 request_too_large` | 본문 축소. |
 | `429 rate_limited` / `429 daily_quota_exceeded` | `Retry-After`와 제한된 백오프 준수. 일일 한도는 UTC 자정 초기화. |
 | `503 quota_unavailable` / `503 snapshot_unavailable` / `500 internal_error` | 거부하고 제한된 백오프로 재시도. `Retry-After`가 있으면 준수. |

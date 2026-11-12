@@ -19,7 +19,7 @@ Para usar la consola o crear claves API debe estar disponible el inicio de sesi�
 ## Documentación
 
 - [Primeros pasos](/es/docs/cloud/getting-started/): inicie sesión, cree un servicio y una política en la consola, cree una clave API y compruebe la autorización desde su aplicación.
-- [Claves API](/es/docs/cloud/tokens/): Credenciales de cuenta, ámbitos fijos, Crear y Revocar, secreto mostrado una vez y paginación.
+- [Claves API](/es/docs/cloud/tokens/): Credenciales de cuenta, ámbitos fijos, caducidad obligatoria, Crear y Revocar, secreto mostrado una vez y paginación.
 - [API de autorización](/es/docs/cloud/authorization-api/): Solicitudes IsAllowed, identidad del emisor, Node.js 22 y restricciones de transporte.
 - [Referencia de la API](/es/docs/cloud/api-reference/): comprobaciones de autorización y gestión de políticas con una API key. Las solicitudes salen de su servidor; esta página es de solo lectura.
 - [Límites y errores](/es/docs/cloud/limits-and-errors/): Límites de cuenta, tamaños, ráfagas, cuota diaria, errores y restablecimiento.

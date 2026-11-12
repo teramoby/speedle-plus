@@ -1081,17 +1081,28 @@ components:
             "SPDL-0004 unable to decode request: json: cannot unmarshal object into Go struct field
             JsonContext.attributes of type []*adsrest.JsonAttribute"
     AdsUnauthorizedError:
-      type: object
-      properties:
-        error:
-          type: string
-          enum:
-            - unauthorized
-      required:
-        - error
-      additionalProperties: false
+      anyOf:
+        - type: object
+          properties:
+            error:
+              type: string
+              enum:
+                - unauthorized
+          required:
+            - error
+          additionalProperties: false
+        - type: object
+          properties:
+            error:
+              type: string
+              enum:
+                - api_key_expired
+          required:
+            - error
+          additionalProperties: false
       examples:
         - error: unauthorized
+        - error: api_key_expired
     AdsMethodNotAllowedError:
       type: object
       properties:
@@ -2015,12 +2026,15 @@ components:
       properties:
         error:
           type: string
-          const: unauthorized
+          enum:
+            - unauthorized
+            - api_key_expired
       required:
         - error
       additionalProperties: false
       examples:
         - error: unauthorized
+        - error: api_key_expired
     PmsForbiddenError:
       type: object
       properties:
@@ -2136,7 +2150,7 @@ components:
         insufficient_scope, and management keys are rejected by /authz-check/v1. No scope manages
         the account itself (sessions, API keys, identities). Management scopes cannot be created
         while the stage has sign-in disabled (today prod). HMAC-only storage, one-time disclosure on
-        creation, revocable, no intrinsic expiry in v1. Never give manage mode to an agent governed
+        creation, revocable, with a required server-computed expiry. Never give manage mode to an agent governed
         by these policies.
     apiToken:
       type: http
@@ -2147,9 +2161,8 @@ components:
         account, selected per request by the body serviceName; never authorizes PMS or account
         management. pms:read/pms:write keys return 403 insufficient_scope on this API. Credential
         shape is AdsBearerToken; require a single Bearer scheme plus the exact case-sensitive
-        credential. One-time disclosure on creation, HMAC-only persisted verification, no intrinsic
-        expiry in v1. Positive verification caches have fixed verifiedAt/validUntil authority of at
-        most 60000 ms from the START of the authoritative D1 lookup. Cache hits, KV refills and late
+        credential. One-time disclosure on creation, HMAC-only persisted verification, and a required server-computed expiry. Positive verification caches have fixed verifiedAt/validUntil authority of at
+        most 60000 ms from the START of the authoritative D1 lookup, and never later than expiresAt. Cache hits, KV refills and late
         writes racing revocation never extend that deadline; expired records require fresh D1
         verification and cannot authorize on storage failure. KV failure may fall back to D1 for API
         key verification only, never for policy evaluation. Revocation invalidates existing local/KV
@@ -2319,7 +2332,8 @@ components:
             $ref: "#/components/schemas/AdsInvalidRequestError"
     Response33:
       description:
-        "unauthorized: missing/malformed/unknown bearer credential or wrong secret. A cookie
+        "api_key_expired: matching API key at or after expiresAt, even on cache hits. No daily
+        charge. unauthorized: missing/malformed/unknown bearer credential or wrong secret. A cookie
         session alone never authorizes ADS. Revoked API keys and deleted/inactive owners cease
         authorization within the fixed verification authority window, at most 60 seconds. No daily
         charge."
@@ -2486,7 +2500,8 @@ components:
             $ref: "#/components/schemas/PmsInvalidRequestError"
     Response42:
       description:
-        "unauthorized: missing, malformed, expired, revoked or inactive-account API key. A
+        "api_key_expired: matching API key at or after expiresAt, including cached
+        verification. unauthorized: missing, malformed, revoked or inactive-account API key. A
         session cookie never authorizes this API."
       headers:
         Cache-Control:

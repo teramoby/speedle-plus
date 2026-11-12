@@ -232,7 +232,7 @@
 <tr>
 <td>모든 범위의 활성 API 키 합계</td>
 <td>계정당 10개</td>
-<td><code>409 quota_exceeded</code>, <code>limit: 10</code>. 미사용 키 폐기. 시간에 따른 초기화 없음. 폐기 이력은 제외.</td>
+<td><code>409 quota_exceeded</code>, <code>limit: 10</code>. 미사용 키를 폐기하거나 만료를 기다립니다. 한도는 주기로 초기화되지 않습니다. 폐기 및 만료된 키는 제외.</td>
 </tr>
 
 <tr>
@@ -273,7 +273,7 @@
 </tbody>
 </table>
 
-<p>범위, 생성, 폐기는 <a href="/ko/docs/cloud/tokens/">API 키</a>를 참조하세요.</p>
+<p>범위, 만료 기간, 생성, 폐기는 <a href="/ko/docs/cloud/tokens/">API 키</a>를 참조하세요.</p>
 
 <h2 id="일일-할당량">일일 할당량</h2>
 
@@ -307,6 +307,11 @@
 </tr>
 
 <tr>
+<td><code>401 api_key_expired</code></td>
+<td>API 키가 만료 시각에 도달했거나 지났습니다. 새 키를 만드세요. 이 키를 다시 시도해도 성공하지 않습니다. 만료가 필수가 되기 전에 만든 키에도 만료 시각이 있습니다. 언제 만료되는지는 API 키 페이지에 있습니다. <code>expiresAt</code>을 확인하고 그 전에 새 키를 만드세요.</td>
+</tr>
+
+<tr>
 <td><code>403 reauth_required</code></td>
 <td>키 생성 전 연결된 제공자로 재인증.</td>
 </tr>
@@ -333,7 +338,7 @@
 
 <tr>
 <td><code>409 quota_exceeded</code></td>
-<td>서비스, 정책, API 키의 자리를 확보. 시간으로 초기화되지 않음.</td>
+<td>쓰지 않는 서비스나 정책을 삭제해 자리를 확보합니다. 시간으로 이 두 한도는 초기화되지 않습니다. API 키 자리는 키를 폐기하거나 만료를 기다려 확보합니다.</td>
 </tr>
 
 <tr>

@@ -156,7 +156,7 @@ unset SPCTL_TOKEN
 
 API 密钥仅在启用证书验证的 HTTPS 连接中以 `Authorization: Bearer` 凭据发送。只有 `127.0.0.1`、`::1` 或 `localhost` 等回环主机可以在携带API 密钥时使用纯 HTTP；对于远程 HTTP 端点以及从 HTTPS 降级到 HTTP 的重定向，`spctl` 会在发送凭据前拒绝请求。对于 HTTPS 端点，`spctl` 也拒绝在 `--skipverify=true` 时发送API 密钥；对于私有或自签名证书颁发机构，请使用 `--cacert` 配置信任。正常命令输出和错误信息不会包含API 密钥。
 
-Cloud 返回错误时，命令以非零状态退出。遇到 `401` 请检查 API 密钥，遇到 `403 insufficient_scope` 请检查 scope。`404` 表示资源不存在，`409 service_exists` 和 `409 policy_exists` 表示资源重复。遇到 `429` 时，请遵循响应中的 `Retry-After`，并采用有界退避。遇到 `429 daily_quota_exceeded`，按 `Retry-After` 等待至 00:00 UTC。服务、策略和有效密钥上限返回 `409 quota_exceeded`，不会随时间重置；请删除或撤销不用的项目。参见[限额与错误](/zh/docs/cloud/limits-and-errors/)。
+Cloud 返回错误时，命令以非零状态退出。遇到 `401` 请检查 API 密钥，遇到 `403 insufficient_scope` 请检查 scope。`404` 表示资源不存在，`409 service_exists` 和 `409 policy_exists` 表示资源重复。遇到 `429` 时，请遵循响应中的 `Retry-After`，并采用有界退避。遇到 `429 daily_quota_exceeded`，按 `Retry-After` 等待至 00:00 UTC。服务和策略上限返回 `409 quota_exceeded`，不会随时间重置；请删除不用的项目。撤销 API 密钥，或等它到期，可释放密钥名额。参见[限额与错误](/zh/docs/cloud/limits-and-errors/)。
 
 
 ## 其他管理接口

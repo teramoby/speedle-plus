@@ -232,7 +232,7 @@
 <tr>
 <td>Active API keys, all scopes combined</td>
 <td>10 per account</td>
-<td><code>409 quota_exceeded</code> with <code>limit: 10</code>; revoke an unused key. No timed reset; revoked history does not count.</td>
+<td><code>409 quota_exceeded</code> with <code>limit: 10</code>; revoke an unused key or let it expire. The cap does not reset on a schedule. Revoked and expired keys do not count.</td>
 </tr>
 
 <tr>
@@ -273,7 +273,7 @@
 </tbody>
 </table>
 
-<p>For scopes, creation and revocation, see <a href="/docs/cloud/tokens/">API keys</a>.</p>
+<p>For scopes, expiry, creation and revocation, see <a href="/docs/cloud/tokens/">API keys</a>.</p>
 
 <h2 id="daily-quota">Daily quota</h2>
 
@@ -307,6 +307,11 @@
 </tr>
 
 <tr>
+<td><code>401 api_key_expired</code></td>
+<td>The API key is at or past its expiry. Create a replacement; retrying this key will not succeed. Keys created before an expiry was required have one too. The API keys page states when; read <code>expiresAt</code> and replace the key before then.</td>
+</tr>
+
+<tr>
 <td><code>403 reauth_required</code></td>
 <td>Authenticate with a linked provider again before creating a key.</td>
 </tr>
@@ -333,7 +338,7 @@
 
 <tr>
 <td><code>409 quota_exceeded</code></td>
-<td>Free the relevant service, policy or API-key slot; time does not reset these caps.</td>
+<td>Free a service or policy slot by deleting an unused item; time does not reset those caps. Free an API-key slot by revoking the key or letting it expire.</td>
 </tr>
 
 <tr>

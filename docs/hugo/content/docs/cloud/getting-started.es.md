@@ -33,7 +33,7 @@ Seleccione **Validar política** y después **Guardar política**. La validació
 
 ## Crear una clave API
 
-Abra [Claves API](https://cloud.speedle.io/es/tokens), introduzca un nombre como `books-app`, seleccione el alcance `ads` (comprobaciones de autorización) y pulse **Crear clave API**. Si se solicita verificar su identidad, complete la verificación y vuelva a enviar el formulario. Copie el secreto: solo se muestra una vez. Las claves actuales no permiten elegir una caducidad; revoque la clave cuando ya no la necesite. Consulte [Gestión de claves API](/es/docs/cloud/tokens/).
+Abra [Claves API](https://cloud.speedle.io/es/tokens), introduzca un nombre como `books-app`, seleccione el alcance `ads` (comprobaciones de autorización), elija una caducidad (la consola usa 3 meses de forma predeterminada y muestra la hora UTC) y pulse **Crear clave API**. Si se solicita verificar su identidad, complete la verificación y vuelva a enviar el formulario. Copie el secreto: solo se muestra una vez. Todas las claves caducan, incluidas las creadas antes de que la caducidad fuera obligatoria. [Gestión de claves API](/es/docs/cloud/tokens/) indica cuándo. Lea la caducidad de la lista y cree un reemplazo antes. Revóquela antes si ya no la necesita.
 
 Guarde la clave en el almacén de secretos del servidor y proporciónela mediante la variable de entorno `SPEEDLE_API_KEY`. No la incluya en código del navegador ni en el repositorio.
 

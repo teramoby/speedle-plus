@@ -213,7 +213,7 @@
 
 <h2 id="create-an-api-key">Create an API key</h2>
 
-<p>Open <a href="https://cloud.speedle.io/tokens">API keys</a>, enter a name such as <code>books-app</code>, select the <code>ads</code> scope (authorization checks), and choose <strong>Create API key</strong>. Complete provider verification if prompted, then submit the form again. Copy the secret when it appears: it is shown only once. Current keys have no selectable expiry; revoke the key when it is no longer needed. See <a href="/docs/cloud/tokens/">API key management</a>.</p>
+<p>Open <a href="https://cloud.speedle.io/tokens">API keys</a>, enter a name such as <code>books-app</code>, select the <code>ads</code> scope (authorization checks), choose an expiry (the console defaults to 3 months and shows the UTC time), and choose <strong>Create API key</strong>. Complete provider verification if prompted, then submit the form again. Copy the secret when it appears: it is shown only once. Every key expires, including keys created before an expiry was required. <a href="/docs/cloud/tokens/">API key management</a> states when. Read the listed expiry and replace the key before then. Revoke a key earlier when it is no longer needed.</p>
 
 <p>Store the key in your server&rsquo;s secret store and provide it through the <code>SPEEDLE_API_KEY</code> environment variable. Keep it out of browser code and source control.</p>
 

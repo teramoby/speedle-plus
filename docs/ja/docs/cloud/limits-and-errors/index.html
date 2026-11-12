@@ -232,7 +232,7 @@
 <tr>
 <td>全スコープの有効な API キー</td>
 <td>アカウントごとに 10</td>
-<td><code>409 quota_exceeded</code>、<code>limit: 10</code>。未使用キーを失効。時間によるリセットなし。失効済みの履歴は対象外。</td>
+<td><code>409 quota_exceeded</code>、<code>limit: 10</code>。未使用キーを失効するか、期限切れを待つ。上限は周期では戻らない。失効済みと期限切れは対象外。</td>
 </tr>
 
 <tr>
@@ -273,7 +273,7 @@
 </tbody>
 </table>
 
-<p>スコープ、作成、失効は <a href="/ja/docs/cloud/tokens/">API キー</a>を参照してください。</p>
+<p>スコープ、有効期限、作成、失効は <a href="/ja/docs/cloud/tokens/">API キー</a>を参照してください。</p>
 
 <h2 id="日次クォータ">日次クォータ</h2>
 
@@ -307,6 +307,11 @@
 </tr>
 
 <tr>
+<td><code>401 api_key_expired</code></td>
+<td>API キーが有効期限に達したか、それを過ぎています。新しいキーを作成してください。このキーの再試行は成功しません。有効期限が必須になる前に作られたキーにも期限があります。いつ切れるかは API キーのページにあります。<code>expiresAt</code> を確認し、その前に新しいキーを作成してください。</td>
+</tr>
+
+<tr>
 <td><code>403 reauth_required</code></td>
 <td>キー作成前に連携プロバイダーで再認証。</td>
 </tr>
@@ -333,7 +338,7 @@
 
 <tr>
 <td><code>409 quota_exceeded</code></td>
-<td>サービス、ポリシー、API キーの枠を空ける。時間ではリセットしない。</td>
+<td>未使用のサービスまたはポリシーを削除して枠を空ける。時間ではこの二つの上限は戻らない。API キーの枠は、キーを失効するか期限切れを待って空ける。</td>
 </tr>
 
 <tr>

@@ -33,7 +33,7 @@ grant user alice from corp get /books
 
 ## 创建 API 密钥
 
-打开 [API 密钥](https://cloud.speedle.io/zh-CN/tokens)页面，输入名称（如 `books-app`），选择 `ads` 权限范围（授权检查），然后选择 **创建 API 密钥**。如需验证身份，请完成验证后再次提交表单。复制仅展示一次的密钥值。目前不支持选择密钥有效期，不再使用时请撤销。详见 [API 密钥管理](/zh/docs/cloud/tokens/)。
+打开 [API 密钥](https://cloud.speedle.io/zh-CN/tokens)页面，输入名称（如 `books-app`），选择 `ads` 权限范围（授权检查），选择有效期（控制台默认 3 个月，并显示 UTC 时间），然后选择 **创建 API 密钥**。如需验证身份，请完成验证后再次提交表单。复制仅展示一次的密钥值。每个密钥都会到期，包括在必须设置有效期之前创建的密钥。到期时间见 [API 密钥管理](/zh/docs/cloud/tokens/)。请查看列表中的到期时间，并在到期前创建新密钥。不再使用时请提前撤销。
 
 将密钥保存在服务端的密钥存储中，通过环境变量 `SPEEDLE_API_KEY` 提供给应用，不要写入浏览器代码或源码仓库。
 

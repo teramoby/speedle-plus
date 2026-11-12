@@ -33,7 +33,7 @@ Choose **Validate policy**, then **Save policy**. Validation checks syntax but d
 
 ## Create an API key
 
-Open [API keys](https://cloud.speedle.io/tokens), enter a name such as `books-app`, select the `ads` scope (authorization checks), and choose **Create API key**. Complete provider verification if prompted, then submit the form again. Copy the secret when it appears: it is shown only once. Current keys have no selectable expiry; revoke the key when it is no longer needed. See [API key management](/docs/cloud/tokens/).
+Open [API keys](https://cloud.speedle.io/tokens), enter a name such as `books-app`, select the `ads` scope (authorization checks), choose an expiry (the console defaults to 3 months and shows the UTC time), and choose **Create API key**. Complete provider verification if prompted, then submit the form again. Copy the secret when it appears: it is shown only once. Every key expires, including keys created before an expiry was required. [API key management](/docs/cloud/tokens/) states when. Read the listed expiry and replace the key before then. Revoke a key earlier when it is no longer needed.
 
 Store the key in your server's secret store and provide it through the `SPEEDLE_API_KEY` environment variable. Keep it out of browser code and source control.
 

@@ -9,7 +9,7 @@ Account sign-in must be available before using the console or creating API keys.
 ## Documentation
 
 - [Getting started](https://engine.speedle.io/docs/cloud/getting-started/): Sign in, create a service and policy in the console, create an API key, and check authorization from your application.
-- [API keys](https://engine.speedle.io/docs/cloud/tokens/): Account-level credentials, fixed scopes, Create and Revoke, one-time secret display and pagination.
+- [API keys](https://engine.speedle.io/docs/cloud/tokens/): Account-level credentials, fixed scopes, a required expiry, Create and Revoke, one-time secret display and pagination.
 - [Authorization API](https://engine.speedle.io/docs/cloud/authorization-api/): IsAllowed requests, caller identity, Node.js 22 and transport constraints.
 - [API reference](https://engine.speedle.io/docs/cloud/api-reference/): authorization checks and policy management with an API key. Requests run from your server; this page is read-only.
 - [Limits and errors](https://engine.speedle.io/docs/cloud/limits-and-errors/): Account caps, size limits, burst limits, daily quota, error codes and reset times.
@@ -49,7 +49,7 @@ Choose **Validate policy**, then **Save policy**. Validation checks syntax but d
 
 ### Create an API key
 
-Open [API keys](https://cloud.speedle.io/tokens), enter a name such as `books-app`, select the `ads` scope (authorization checks), and choose **Create API key**. Complete provider verification if prompted, then submit the form again. Copy the secret when it appears: it is shown only once. Current keys have no selectable expiry; revoke the key when it is no longer needed. See [API key management](https://engine.speedle.io/docs/cloud/tokens/).
+Open [API keys](https://cloud.speedle.io/tokens), enter a name such as `books-app`, select the `ads` scope (authorization checks), choose an expiry (the console defaults to 3 months and shows the UTC time), and choose **Create API key**. Complete provider verification if prompted, then submit the form again. Copy the secret when it appears: it is shown only once. Every key expires, including keys created before an expiry was required. [API key management](https://engine.speedle.io/docs/cloud/tokens/) states when. Read the listed expiry and replace the key before then. Revoke a key earlier when it is no longer needed.
 
 Store the key in your server's secret store and provide it through the `SPEEDLE_API_KEY` environment variable. Keep it out of browser code and source control.
 
@@ -97,7 +97,7 @@ API keys belong to your account and can access its services according to their s
 
 ### Create an API key
 
-Open [API keys](https://cloud.speedle.io/tokens), enter a name of 1–128 characters after trimming whitespace, select a scope and choose **Create**. Creating a key requires authentication with a linked provider within the last 10 minutes. If you receive `403 reauth_required`, authenticate again, then submit **Create** again; returning from the provider does not create a key automatically.
+Open [API keys](https://cloud.speedle.io/tokens), enter a name of 1–128 characters after trimming whitespace, select a scope and an expiry (`7d`, `30d`, `90d`, `180d` or `365d`; the console defaults to 3 months), and choose **Create**. Creating a key requires authentication with a linked provider within the last 10 minutes. If you receive `403 reauth_required`, authenticate again, then submit **Create** again; returning from the provider does not create a key automatically.
 
 Each key has one scope, fixed at creation:
 
@@ -117,10 +117,10 @@ Origin: https://cloud.speedle.io
 X-SC-CSRF: 1
 Content-Type: application/json
 
-{"name":"books-app","scope":"ads"}
+{"name":"books-app","scope":"ads","expiresIn":"90d"}
 ```
 
-The request accepts `name` and optional `scope` (default `ads`). Do not send a service selector, expiry or authentication proofs. Cookie authentication and CSRF headers are required; an API key cannot replace the session.
+The request accepts `name`, required `expiresIn` and optional `scope` (default `ads`). `expiresIn` is one of `7d`, `30d`, `90d`, `180d` or `365d` (1 week, 1 month, 3 months, 6 months or 1 year). Each day is 24 hours. In the console, **Expires after** defaults to 3 months and **Preview expiry (UTC)** shows the resulting time before you submit. There is no non-expiring key. Do not send a service selector, `expiresAt` or authentication proofs. A missing or unknown `expiresIn`, or a client-supplied `expiresAt`, returns `400 invalid_request`. A body that contains only `name` and `scope` returns that 400. The server does not supply `expiresIn`. Cookie authentication and CSRF headers are required; an API key cannot replace the session.
 
 ### Protect the secret
 
@@ -130,15 +130,15 @@ Creation returns HTTP 201. The response's `token` field contains the API key sec
 spdl_<canonical uppercase ULID id>_<43 base62 digits>
 ```
 
-An API key stays valid until you revoke it; it has no automatic expiry.
+Every key expires at `expiresAt`, which the server computes and returns in Unix milliseconds. At or after that instant, authorization and policy-management calls return `401 {"error":"api_key_expired"}`. Create a replacement key. Retrying the expired key does not succeed. You can revoke a key before it expires. Keys that already existed when an expiry became required have one too. If 365 days of 24 hours after creation is still in the future, the key expires then, even when that date is only a short time after the requirement took effect. If that date has already passed, the key expires 30 days of 24 hours after the requirement took effect. Every listed key includes `expiresAt`. Read it and create a replacement before that time.
 
 This describes the format, not a usable key. Save the value immediately in a server-side secret store. Never put it in browser storage, frontend code, URLs, source control, screenshots or logs. Listing keys returns metadata only; a lost secret cannot be recovered.
 
-Your account can have **10 active API keys across all scopes**. Creating another returns `409 {"error":"quota_exceeded","limit":10}`. Revoke an unused key to free a slot; the limit does not reset with time. Revoked keys remain listed and do not count toward the cap.
+Your account can have **10 active API keys across all scopes**. Creating another returns `409 {"error":"quota_exceeded","limit":10}`. Revoke an unused key, or let it expire, to free a slot. The cap does not reset on a schedule. Revoked and expired keys remain listed and do not count toward the cap.
 
 ### List API keys
 
-`GET /api/tokens` lists active and revoked keys, newest first. The default page size is 25; `limit` accepts 1–100. Pass the last response's `nextCursor` as `cursor` until `nextCursor` is `null`. `lastUsedAt` is best-effort, normally updated at most hourly; it does not prove that a key is unused.
+`GET /api/tokens` lists active, expired and revoked keys, newest first. The default page size is 25; `limit` accepts 1–100. Pass the last response's `nextCursor` as `cursor` until `nextCursor` is `null`. Each key includes `expiresAt` in Unix milliseconds. The console shows **Expires (UTC)**. A key that expires within 7 days is marked **Expires soon**. Expired keys appear in an **Expired** group. `lastUsedAt` is best-effort, normally updated at most hourly; it does not prove that a key is unused.
 
 ### Revoke an API key
 
@@ -155,7 +155,7 @@ Content-Type: application/json
 
 The first revocation returns an empty HTTP 204. Unknown, other-account or already-revoked IDs return `404 not_found`. Previously verified requests may continue using a key for up to 60 seconds; revocation is not instantaneous everywhere.
 
-The available actions are **Create** and **Revoke**. To change a secret or scope, create another key, update callers and revoke the old key. If all active keys are in use at the cap, plan for interruption before revoking one. Deleting a service does not revoke account API keys.
+The available actions are **Create** and **Revoke**. To change a secret, scope or expiry, create another key, update callers and revoke the old key. If all active keys are in use at the cap, plan for interruption before revoking one. Deleting a service does not revoke account API keys.
 
 If a creation or revocation response is lost, refresh the list before acting again. A matching name cannot recover a lost secret. See [Limits and errors](https://engine.speedle.io/docs/cloud/limits-and-errors/) and the [Authorization API](https://engine.speedle.io/docs/cloud/authorization-api/).
 
@@ -269,7 +269,7 @@ Limits apply to the whole account unless a row says otherwise. API keys are acco
 | Services per account | 100 | `409 quota_exceeded`; delete an unused service. No timed reset. |
 | Authorization and role policies combined, across all services | 200 per account | `409 quota_exceeded`; delete policies. No timed reset. |
 | Complete SPDL source for one policy | 1,024 UTF-8 bytes | `400 invalid_request` on console policy writes; shorten the source. This counts bytes, not characters. No timed reset. |
-| Active API keys, all scopes combined | 10 per account | `409 quota_exceeded` with `limit: 10`; revoke an unused key. No timed reset; revoked history does not count. |
+| Active API keys, all scopes combined | 10 per account | `409 quota_exceeded` with `limit: 10`; revoke an unused key or let it expire. The cap does not reset on a schedule. Revoked and expired keys do not count. |
 | Policy name / API key name | 128 Unicode code points / 1–128 characters after trimming | `400 invalid_request`; shorten or correct the name. No timed reset. |
 | Billable policy-management and authorization calls | 10,000 per account per UTC day | `429 daily_quota_exceeded`; resets at 00:00 UTC. Follow `Retry-After`. |
 | Short bursts of API-key requests | Approximately 600 per minute per key at each Cloud location | `429 rate_limited` with `Retry-After: 60`; wait before retrying. This is a short-term limit, not a guaranteed throughput or a separate daily allowance. |
@@ -277,7 +277,7 @@ Limits apply to the whole account unless a row says otherwise. API keys are acco
 | Atomic JSON import body (`POST /api/service/import` only) | 5,100,000 bytes | `413 request_too_large`; reduce the import. The policy and account limits still apply. No timed reset. |
 | Incoming attributes | 50 attributes; 16,384 UTF-8 bytes of canonical JSON | `400 SPDL-0004`; send fewer or smaller attributes. No timed reset. |
 
-For scopes, creation and revocation, see [API keys](https://engine.speedle.io/docs/cloud/tokens/).
+For scopes, expiry, creation and revocation, see [API keys](https://engine.speedle.io/docs/cloud/tokens/).
 
 ### Daily quota
 
@@ -295,12 +295,13 @@ Errors are flat JSON, for example `{"error":"rate_limited"}`. An error is not an
 | --- | --- |
 | `400 invalid_request` or a Speedle error message | Correct the request; do not retry it unchanged. |
 | `401 unauthorized` | Check the API key or signed-in session. A session cookie alone cannot authorize ADS. |
+| `401 api_key_expired` | The API key is at or past its expiry. Create a replacement; retrying this key will not succeed. Keys created before an expiry was required have one too. The API keys page states when; read `expiresAt` and replace the key before then. |
 | `403 reauth_required` | Authenticate with a linked provider again before creating a key. |
 | `403 insufficient_scope` | Use a key with the required scope. |
 | `403 management_scope_disabled` | Management-scope issuance is unavailable while sign-in is closed. |
 | `403 csrf_failed` | Use the console session with the required origin and CSRF header. |
 | `404 service_not_found` (ADS) / `404 not_found` (management) | Select an existing service in your account. Unknown, other-account or already-revoked key IDs also return `404 not_found`. |
-| `409 quota_exceeded` | Free the relevant service, policy or API-key slot; time does not reset these caps. |
+| `409 quota_exceeded` | Free a service or policy slot by deleting an unused item; time does not reset those caps. Free an API-key slot by revoking the key or letting it expire. |
 | `413 request_too_large` | Reduce the body size. |
 | `429 rate_limited` / `429 daily_quota_exceeded` | Respect `Retry-After` and use bounded backoff; the daily limit resets at UTC midnight. |
 | `503 quota_unavailable` / `503 snapshot_unavailable` / `500 internal_error` | Fail closed and retry with bounded backoff, respecting `Retry-After` when present. |

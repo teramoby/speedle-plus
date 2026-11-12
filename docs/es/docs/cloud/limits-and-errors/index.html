@@ -232,7 +232,7 @@
 <tr>
 <td>Claves API activas entre todos los ámbitos</td>
 <td>10 por cuenta</td>
-<td><code>409 quota_exceeded</code> con <code>limit: 10</code>; revocar una clave sin uso. Sin restablecimiento temporal; el historial revocado no cuenta.</td>
+<td><code>409 quota_exceeded</code> con <code>limit: 10</code>; revocar una clave sin uso o dejar que caduque. El límite no se restablece en un ciclo. Las claves revocadas y caducadas no cuentan.</td>
 </tr>
 
 <tr>
@@ -273,7 +273,7 @@
 </tbody>
 </table>
 
-<p>Consulte <a href="/es/docs/cloud/tokens/">Claves API</a> para ámbitos, creación y revocación.</p>
+<p>Consulte <a href="/es/docs/cloud/tokens/">Claves API</a> para ámbitos, caducidad, creación y revocación.</p>
 
 <h2 id="cuota-diaria">Cuota diaria</h2>
 
@@ -307,6 +307,11 @@
 </tr>
 
 <tr>
+<td><code>401 api_key_expired</code></td>
+<td>La clave API ha alcanzado o superado su caducidad. Cree un reemplazo; reintentar esta clave no tendrá éxito. Las claves creadas antes de que la caducidad fuera obligatoria también tienen una. La página de claves API indica cuándo; lea <code>expiresAt</code> y cree un reemplazo antes.</td>
+</tr>
+
+<tr>
 <td><code>403 reauth_required</code></td>
 <td>Autenticarse de nuevo con un proveedor vinculado antes de crear la clave.</td>
 </tr>
@@ -333,7 +338,7 @@
 
 <tr>
 <td><code>409 quota_exceeded</code></td>
-<td>Liberar una plaza de servicio, política o clave API; el tiempo no restablece estos límites.</td>
+<td>Libere una plaza de servicio o de política eliminando un elemento sin uso; el tiempo no restablece esos límites. Revoque una clave API sin uso, o deje que caduque, para liberar esa plaza.</td>
 </tr>
 
 <tr>

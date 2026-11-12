@@ -9,7 +9,7 @@ Para usar la consola o crear claves API debe estar disponible el inicio de sesi�
 ## Documentación
 
 - [Primeros pasos](https://engine.speedle.io/es/docs/cloud/getting-started/): inicie sesión, cree un servicio y una política en la consola, cree una clave API y compruebe la autorización desde su aplicación.
-- [Claves API](https://engine.speedle.io/es/docs/cloud/tokens/): Credenciales de cuenta, ámbitos fijos, Crear y Revocar, secreto mostrado una vez y paginación.
+- [Claves API](https://engine.speedle.io/es/docs/cloud/tokens/): Credenciales de cuenta, ámbitos fijos, caducidad obligatoria, Crear y Revocar, secreto mostrado una vez y paginación.
 - [API de autorización](https://engine.speedle.io/es/docs/cloud/authorization-api/): Solicitudes IsAllowed, identidad del emisor, Node.js 22 y restricciones de transporte.
 - [Referencia de la API](https://engine.speedle.io/es/docs/cloud/api-reference/): comprobaciones de autorización y gestión de políticas con una API key. Las solicitudes salen de su servidor; esta página es de solo lectura.
 - [Límites y errores](https://engine.speedle.io/es/docs/cloud/limits-and-errors/): Límites de cuenta, tamaños, ráfagas, cuota diaria, errores y restablecimiento.
@@ -49,7 +49,7 @@ Seleccione **Validar política** y después **Guardar política**. La validació
 
 ### Crear una clave API
 
-Abra [Claves API](https://cloud.speedle.io/es/tokens), introduzca un nombre como `books-app`, seleccione el alcance `ads` (comprobaciones de autorización) y pulse **Crear clave API**. Si se solicita verificar su identidad, complete la verificación y vuelva a enviar el formulario. Copie el secreto: solo se muestra una vez. Las claves actuales no permiten elegir una caducidad; revoque la clave cuando ya no la necesite. Consulte [Gestión de claves API](https://engine.speedle.io/es/docs/cloud/tokens/).
+Abra [Claves API](https://cloud.speedle.io/es/tokens), introduzca un nombre como `books-app`, seleccione el alcance `ads` (comprobaciones de autorización), elija una caducidad (la consola usa 3 meses de forma predeterminada y muestra la hora UTC) y pulse **Crear clave API**. Si se solicita verificar su identidad, complete la verificación y vuelva a enviar el formulario. Copie el secreto: solo se muestra una vez. Todas las claves caducan, incluidas las creadas antes de que la caducidad fuera obligatoria. [Gestión de claves API](https://engine.speedle.io/es/docs/cloud/tokens/) indica cuándo. Lea la caducidad de la lista y cree un reemplazo antes. Revóquela antes si ya no la necesita.
 
 Guarde la clave en el almacén de secretos del servidor y proporciónela mediante la variable de entorno `SPEEDLE_API_KEY`. No la incluya en código del navegador ni en el repositorio.
 
@@ -97,7 +97,7 @@ Las claves API pertenecen a la cuenta y acceden a sus servicios según su ámbit
 
 ### Crear una clave API
 
-Abra [Claves API](https://cloud.speedle.io/es/tokens), escriba un nombre de 1–128 caracteres después de quitar espacios al principio y al final, elija un ámbito y seleccione **Crear**. Se requiere autenticación con un proveedor vinculado en los últimos 10 minutos. Si recibe `403 reauth_required`, autentíquese de nuevo y vuelva a seleccionar **Crear**; regresar del proveedor no crea la clave automáticamente.
+Abra [Claves API](https://cloud.speedle.io/es/tokens), escriba un nombre de 1–128 caracteres después de quitar espacios al principio y al final, elija un ámbito y una caducidad (`7d`, `30d`, `90d`, `180d` o `365d`; la consola usa 3 meses de forma predeterminada) y seleccione **Crear**. Se requiere autenticación con un proveedor vinculado en los últimos 10 minutos. Si recibe `403 reauth_required`, autentíquese de nuevo y vuelva a seleccionar **Crear**; regresar del proveedor no crea la clave automáticamente.
 
 Cada clave tiene un ámbito fijo desde su creación:
 
@@ -117,10 +117,10 @@ Origin: https://cloud.speedle.io
 X-SC-CSRF: 1
 Content-Type: application/json
 
-{"name":"books-app","scope":"ads"}
+{"name":"books-app","scope":"ads","expiresIn":"90d"}
 ```
 
-La solicitud solo acepta `name` y `scope` opcional (por defecto `ads`). No envíe un servicio, una caducidad ni pruebas de autenticación. Se requieren la cookie de sesión y las cabeceras CSRF; una clave API no sustituye a la sesión.
+La solicitud acepta `name`, `expiresIn` obligatorio y `scope` opcional (por defecto `ads`). `expiresIn` es uno de `7d`, `30d`, `90d`, `180d` o `365d` (1 semana, 1 mes, 3 meses, 6 meses o 1 año). Cada día dura 24 horas. En la consola, **Caduca en** usa 3 meses de forma predeterminada y **Vista previa de caducidad (UTC)** muestra la hora antes de enviar. No hay claves que no caduquen. No envíe un servicio, `expiresAt` ni pruebas de autenticación. Si falta `expiresIn`, no se reconoce o el cliente envía `expiresAt`, la respuesta es `400 invalid_request`. Un cuerpo que solo envía `name` y `scope` también devuelve ese 400. El servidor no rellena `expiresIn`. Se requieren la cookie de sesión y las cabeceras CSRF; una clave API no sustituye a la sesión.
 
 ### Proteger el secreto
 
@@ -130,15 +130,15 @@ La creación devuelve HTTP 201. El campo `token` contiene el secreto de la clave
 spdl_<canonical uppercase ULID id>_<43 base62 digits>
 ```
 
-Una clave API sigue siendo válida hasta que la revoque; no caduca automáticamente.
+Todas las claves caducan. La respuesta incluye `expiresAt`, la caducidad calculada por el servidor en milisegundos Unix. A partir de ese instante, las llamadas de autorización y de gestión de políticas devuelven `401 {"error":"api_key_expired"}`. Cree una clave nueva; reenviar la clave caducada no funciona. Puede revocarla antes. Las claves que ya existían cuando la caducidad pasó a ser obligatoria también tienen una. Si 365 días de 24 horas después de la creación siguen en el futuro, la clave caduca entonces, aunque falte poco para esa fecha. Si esa fecha ya pasó, caduca 30 días de 24 horas después de que el requisito entrara en vigor. Cada clave de la lista incluye `expiresAt`. Léalo y cree un reemplazo antes de ese momento.
 
 Es una descripción del formato, no una clave utilizable. Guárdela inmediatamente en un almacén de secretos del servidor. No la incluya en el almacenamiento del navegador, frontend, URL, control de versiones, capturas ni registros. El listado solo devuelve metadatos; un secreto perdido no se recupera.
 
-La cuenta admite **10 claves API activas entre todos los ámbitos**. Crear otra devuelve `409 {"error":"quota_exceeded","limit":10}`. Revoque una clave sin uso para liberar una plaza; el límite no se restablece con el tiempo. Las claves revocadas siguen listadas y no cuentan para el límite.
+La cuenta admite **10 claves API activas entre todos los ámbitos**. Crear otra devuelve `409 {"error":"quota_exceeded","limit":10}`. Revoque una clave sin uso, o deje que caduque, para liberar una plaza. El límite no se restablece en un ciclo. Las claves revocadas y caducadas siguen listadas y no cuentan para el límite.
 
 ### Listar claves API
 
-`GET /api/tokens` devuelve claves activas y revocadas, de más reciente a más antigua. La página predeterminada tiene 25 entradas; `limit` acepta 1–100. Envíe el `nextCursor` anterior como `cursor` hasta recibir `null`. `lastUsedAt` se actualiza por mejor esfuerzo, normalmente como máximo una vez por hora; no demuestra que una clave esté sin uso.
+`GET /api/tokens` devuelve claves activas, caducadas y revocadas, de más reciente a más antigua. La página predeterminada tiene 25 entradas; `limit` acepta 1–100. Envíe el `nextCursor` anterior como `cursor` hasta recibir `null`. Cada clave incluye `expiresAt` en milisegundos Unix. La consola muestra **Caducidad (UTC)**. Una clave que caduca en un plazo de 7 días se marca **Caduca pronto**. Las claves caducadas aparecen en el grupo **Caducada**. `lastUsedAt` se actualiza por mejor esfuerzo, normalmente como máximo una vez por hora; no demuestra que una clave esté sin uso.
 
 ### Revocar una clave API
 
@@ -155,7 +155,7 @@ Content-Type: application/json
 
 La primera revocación devuelve HTTP 204 sin cuerpo. Los ID desconocidos, ajenos o ya revocados devuelven `404 not_found`. Una verificación previa puede seguir siendo válida durante un máximo de 60 segundos; la revocación no es instantánea en todas las ubicaciones.
 
-Las acciones disponibles son **Crear** y **Revocar**. Para cambiar el secreto o ámbito, cree otra clave, actualice los emisores y revoque la anterior. Si todas las claves están en uso al llegar al límite, planifique una interrupción antes de revocar una. Eliminar un servicio no revoca las claves API de la cuenta.
+Las acciones disponibles son **Crear** y **Revocar**. Para cambiar el secreto, el ámbito o la caducidad, cree otra clave, actualice los emisores y revoque la anterior. Si todas las claves están en uso al llegar al límite, planifique una interrupción antes de revocar una. Eliminar un servicio no revoca las claves API de la cuenta.
 
 Si se pierde una respuesta, actualice la lista antes de actuar. Un nombre coincidente no recupera el secreto perdido. Consulte [Límites y errores](https://engine.speedle.io/es/docs/cloud/limits-and-errors/) y la [API de autorización](https://engine.speedle.io/es/docs/cloud/authorization-api/).
 
@@ -269,7 +269,7 @@ Salvo que se indique lo contrario, los límites se comparten en toda la cuenta. 
 | Servicios de la cuenta | 100 | `409 quota_exceeded`; eliminar un servicio sin uso. Sin restablecimiento temporal. |
 | Políticas de autorización y de roles entre todos los servicios | 200 por cuenta | `409 quota_exceeded`; eliminar políticas. Sin restablecimiento temporal. |
 | Fuente SPDL completa de una política | 1,024 bytes UTF-8 | `400 invalid_request` al escribir desde la consola; acortar la fuente. Se cuentan bytes, no caracteres. Sin restablecimiento temporal. |
-| Claves API activas entre todos los ámbitos | 10 por cuenta | `409 quota_exceeded` con `limit: 10`; revocar una clave sin uso. Sin restablecimiento temporal; el historial revocado no cuenta. |
+| Claves API activas entre todos los ámbitos | 10 por cuenta | `409 quota_exceeded` con `limit: 10`; revocar una clave sin uso o dejar que caduque. El límite no se restablece en un ciclo. Las claves revocadas y caducadas no cuentan. |
 | Nombre de política / nombre de clave API | 128 puntos de código Unicode / 1–128 caracteres tras recortar espacios | `400 invalid_request`; corregir el nombre. Sin restablecimiento temporal. |
 | Llamadas facturables de gestión de políticas y autorización | 10,000 por cuenta y día UTC | `429 daily_quota_exceeded`; se restablece a las 00:00 UTC. Respetar `Retry-After`. |
 | Ráfagas de solicitudes con clave API | Aproximadamente 600 por minuto por clave en cada ubicación de Cloud | `429 rate_limited` con `Retry-After: 60`; esperar antes de reintentar. No garantiza rendimiento ni añade cuota diaria. |
@@ -277,7 +277,7 @@ Salvo que se indique lo contrario, los límites se comparten en toda la cuenta. 
 | Cuerpo de importación JSON atómica (solo `POST /api/service/import`) | 5,100,000 bytes | `413 request_too_large`; reducir los datos. También se aplican los límites de políticas y cuenta. Sin restablecimiento temporal. |
 | Atributos de entrada | 50 atributos; 16,384 bytes UTF-8 de JSON canónico | `400 SPDL-0004`; reducir el número o tamaño de atributos. Sin restablecimiento temporal. |
 
-Consulte [Claves API](https://engine.speedle.io/es/docs/cloud/tokens/) para ámbitos, creación y revocación.
+Consulte [Claves API](https://engine.speedle.io/es/docs/cloud/tokens/) para ámbitos, caducidad, creación y revocación.
 
 ### Cuota diaria
 
@@ -295,12 +295,13 @@ Los errores son JSON plano, por ejemplo `{"error":"rate_limited"}`. Si no obtien
 | --- | --- |
 | `400 invalid_request` o error de Speedle | Corregir la solicitud; no repetirla sin cambios. |
 | `401 unauthorized` | Comprobar la clave API o sesión. Una cookie de sesión sola no autoriza ADS. |
+| `401 api_key_expired` | La clave API ha alcanzado o superado su caducidad. Cree un reemplazo; reintentar esta clave no tendrá éxito. Las claves creadas antes de que la caducidad fuera obligatoria también tienen una. La página de claves API indica cuándo; lea `expiresAt` y cree un reemplazo antes. |
 | `403 reauth_required` | Autenticarse de nuevo con un proveedor vinculado antes de crear la clave. |
 | `403 insufficient_scope` | Usar una clave con el ámbito requerido. |
 | `403 management_scope_disabled` | No se emiten ámbitos de gestión con el inicio de sesión cerrado. |
 | `403 csrf_failed` | Comprobar sesión, origen y cabecera CSRF. |
 | `404 service_not_found` (ADS) / `404 not_found` (gestión) | Elegir un servicio de la cuenta. Los ID de clave desconocidos, ajenos o revocados también devuelven `404 not_found`. |
-| `409 quota_exceeded` | Liberar una plaza de servicio, política o clave API; el tiempo no restablece estos límites. |
+| `409 quota_exceeded` | Libere una plaza de servicio o de política eliminando un elemento sin uso; el tiempo no restablece esos límites. Revoque una clave API sin uso, o deje que caduque, para liberar esa plaza. |
 | `413 request_too_large` | Reducir el cuerpo. |
 | `429 rate_limited` / `429 daily_quota_exceeded` | Respetar `Retry-After` y usar espera incremental acotada; la cuota diaria se restablece a medianoche UTC. |
 | `503 quota_unavailable` / `503 snapshot_unavailable` / `500 internal_error` | Denegar el acceso y reintentar con espera acotada, respetando `Retry-After` si existe. |
