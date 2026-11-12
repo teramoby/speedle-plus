@@ -6,7 +6,7 @@
     <description>Recent content in Docs on Speedle</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>ja-jp</language>
-    <lastBuildDate>Thu, 12 Nov 2026 00:00:00 +0800</lastBuildDate>
+    <lastBuildDate>Thu, 12 Nov 2026 21:00:00 +0800</lastBuildDate>
     
 	<atom:link href="https://engine.speedle.io/ja/categories/docs/index.xml" rel="self" type="application/rss+xml" />
     
@@ -187,6 +187,48 @@ import sys from speedle import Auth, Client, SpeedleError try: with Client( back
     </item>
     
     <item>
+      <title>SPDL: Speedle ポリシー定義言語</title>
+      <link>https://engine.speedle.io/ja/docs/spdl/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/ja/docs/spdl/</guid>
+      <description>SPDL は Speedle ポリシーおよびロールポリシーを記述するための言語です。このページでは構文、命名規則、およびサンプルを説明します。 </description>
+    </item>
+    
+    <item>
+      <title>Speedle Cloud API キー</title>
+      <link>https://engine.speedle.io/ja/docs/cloud/tokens/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/ja/docs/cloud/tokens/</guid>
+      <description>API キーはアカウントに属し、スコープに応じてそのアカウントのサービスにアクセスします。アプリケーションを認証するもので、エンドユーザーの認証ではありません。API キー、セッション、連携 ID の管理にはログイン済みのコンソールセッションが必要です。
+Speedle Cloud はまもなく公開されます。 このガイドは、本番環境のサインインと認証付き認可 API が利用可能になった際の手順を説明しています。例は実際の Cloud 環境では実行していません。
+API キーを作成する API キー を開き、前後の空白を除いて 1–128 文字の名前とスコープを指定し、作成を選択します。作成には過去 10 分以内の連携プロバイダーによる認証が必要です。403 reauth_required の場合は再認証後、再び作成を選択してください。プロバイダーから戻るだけでは作成されません。
+各キーには作成後に変更できないスコープが 1 つあります。
+   スコープ アクセス     ads（既定） /authz-check/v1/* による認可チェックのみ。   pms:read /policy-mgmt/v1 によるアカウント内のサービス、認可ポリシー、ロールポリシーの読み取り。   pms:write /policy-mgmt/v1 によるアカウント内のサービス、認可ポリシー、ロールポリシーの読み取り、作成、削除。    管理スコープは ADS を呼び出せず、ads はポリシーを管理できません。不適切なスコープは 403 insufficient_scope です。サインインが閉じている場合の管理スコープの発行は 403 management_scope_disabled です。
+コンソールはセッション認証付きのリクエストを送信します。
+POST /api/tokens Origin: https://cloud.speedle.io X-SC-CSRF: 1 Content-Type: application/json {&amp;#34;name&amp;#34;:&amp;#34;books-app&amp;#34;,&amp;#34;scope&amp;#34;:&amp;#34;ads&amp;#34;} 入力は name と任意の scope（既定は ads）だけです。サービス指定、有効期限、認証証明は送信しません。セッション Cookie と CSRF ヘッダーが必要で、API キーではセッションを代替できません。</description>
+    </item>
+    
+    <item>
+      <title>Speedle Cloud クイックスタート</title>
+      <link>https://engine.speedle.io/ja/docs/cloud/getting-started/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/ja/docs/cloud/getting-started/</guid>
+      <description>Speedle Cloud はまもなく公開されます。 このガイドは、本番環境のサインインと認証付き認可 API が利用可能になった際の手順を説明しています。例は実際の Cloud 環境では実行していません。
+GitHub または Google によるサインイン（まもなく開始） ブラウザーで Cloud コンソールを開き、利用可能なプロバイダーでサインインします。未使用の確認済みメールアドレスで初めて利用する場合は、アカウント作成を確認します。メールアドレスが使用済みの場合は、コンソールに表示された連携済みプロバイダーでサインインしてください。
+サービスとポリシーを作成する サービスワークスペースを開き、books と入力してサービス作成を選択します。既存ポリシーが結果に影響しないよう、新しいサービスで試してください。既存データは上書きしないでください。
+新しいポリシーを選択し、名前を read-books にして、次の SPDL を入力します。
+grant user alice from corp get /books このポリシーは、ID ドメイン corp の alice が /books に対して get を実行することを許可します。from を省略すると、すべてのドメインの同名ユーザーに一致します。信頼できる認証データからドメインを取得し、各リクエストの idd に設定してください。ID ドメインを参照してください。
+ポリシーの検証、ポリシーを保存の順に選択します。検証は構文を確認するだけで、下書きを保存しません。保存したポリシーが認可 API に反映されるまで約 60 秒かかります。
+API キーを作成する API キーを開き、books-app などの名前を入力し、ads スコープ（認可チェック）を選択して、API キーを作成を押します。本人確認を求められた場合は、確認を完了してからフォームを再送信します。シークレットは一度しか表示されないため、その場でコピーしてください。現在、有効期限は選択できません。不要になったキーは失効させてください。API キーの管理を参照してください。
+キーをサーバーのシークレットストアに保存し、環境変数 SPEEDLE_API_KEY で渡します。ブラウザーのコードやソース管理には含めないでください。
+アプリケーションから認可を確認する 保存したポリシーに対して、アプリケーションのサーバーから次の isAllowed リクエストを送信します。このポリシーは属性を必要としないため、attributes は空です。
+curl --fail-with-body --silent --show-error --max-time 10 \  &amp;#39;https://cloud.</description>
+    </item>
+    
+    <item>
       <title>認可決定</title>
       <link>https://engine.speedle.io/ja/docs/decisions/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
@@ -198,6 +240,16 @@ import sys from speedle import Auth, Client, SpeedleError try: with Client( back
 printf &amp;#39;{} &amp;#39; &amp;gt; docs-policies.json ターミナル1で PMS を起動し、実行したままにします:
 ./bin/speedle-pms --store-type file --filestore-loc ./docs-policies.json --endpoint 127.0.0.1:6733 --grpc-endpoint 127.0.0.1:0 --insecure=true ターミナル2で ADS を起動し、実行したままにします:
 ./bin/speedle-ads --store-type file --filestore-loc ./docs-policies.json --endpoint 127.0.0.1:6734 --grpc-endpoint 127.0.0.1:0 --insecure=true 残りのコマンドはターミナル3で実行します。PMS と ADS はファイルを共有し、変更は非同期に反映されます。意図した更新が ADS に到達したことを確認してから依存してください。--insecure=true はこのループバックサンプルのためのものです。本番接続については セキュリティ を参照してください。明示的な PMS アドレスを指定することで ~/.spctlconfig の変更を回避できます。終了したら、両方のサーバーターミナルで Ctrl-C を押して停止します。</description>
+    </item>
+    
+    <item>
+      <title>API リファレンス</title>
+      <link>https://engine.speedle.io/ja/docs/cloud/api-reference/</link>
+      <pubDate>Thu, 12 Nov 2026 10:00:00 +0800</pubDate>
+      
+      <guid>https://engine.speedle.io/ja/docs/cloud/api-reference/</guid>
+      <description>認可 API プレビュー は IsAllowed 呼び出しを説明します。制限とエラー はクォータとエラー応答を列挙します。
+   document.addEventListener(&#39;DOMContentLoaded&#39;, function() { var ui = SwaggerUIBundle({ url: &#34;/openapi/cloud-public.yaml&#34;, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.presets.apis ], plugins: [ SwaggerUIBundle.plugins.DownloadUrl ], validatorUrl: null, layout: &#34;BaseLayout&#34;, supportedSubmitMethods: [] }); window.ui = ui; });  </description>
     </item>
     
     <item>
@@ -302,58 +354,16 @@ import { Auth, Reason, SpeedleClient, SpeedleError } from &amp;#34;@speedle/sdk&
     </item>
     
     <item>
-      <title>SPDL: Speedle ポリシー定義言語</title>
-      <link>https://engine.speedle.io/ja/docs/spdl/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://engine.speedle.io/ja/docs/spdl/</guid>
-      <description>SPDL は Speedle ポリシーおよびロールポリシーを記述するための言語です。このページでは構文、命名規則、およびサンプルを説明します。 </description>
-    </item>
-    
-    <item>
       <title>Speedle Cloud</title>
       <link>https://engine.speedle.io/ja/docs/cloud/</link>
-      <pubDate>Thu, 12 Nov 2026 00:00:00 +0800</pubDate>
+      <pubDate>Thu, 12 Nov 2026 21:00:00 +0800</pubDate>
       
       <guid>https://engine.speedle.io/ja/docs/cloud/</guid>
       <description>Speedle Cloud はオープンソースの Speedle エンジンによるホスト型認可サービスです。サービス、SPDL 認可・ロールポリシーを管理し、Playground で判定をテストして、サーバーから API を呼び出せます。
 Speedle Cloud はまもなく公開されます。 このガイドは、本番環境のサインインと認証付き認可 API が利用可能になった際の手順を説明しています。例は実際の Cloud 環境では実行していません。
 コンソールの利用と API キー作成にはサインインが利用可能である必要があります。無料パブリックベータは試用、学習、評価用で SLA はなく、本番利用は推奨しません。機能と制限は変更される場合があります。
-ドキュメント  クイックスタート：サインインし、コンソールでサービスとポリシー、API キーを作成して、アプリケーションから認可を確認します。 API キー: アカウントの認証情報、固定スコープ、作成と失効、一度だけの表示、ページング。 認可 API: IsAllowed、ユーザー ID、Node.js 22、通信の制約。 制限とエラー: アカウント上限、サイズ、バースト、日次枠、エラーコード、リセット時刻。  ダウンロード  日本語 Markdown: Cloud の 4 章をまとめたオフラインガイド。 OpenAPI YAML OpenAPI JSON  API 仕様はリクエストとレスポンスの契約です。ダウンロードしてもサインインは開始されません。
+ドキュメント  クイックスタート：サインインし、コンソールでサービスとポリシー、API キーを作成して、アプリケーションから認可を確認します。 API キー: アカウントの認証情報、固定スコープ、作成と失効、一度だけの表示、ページング。 認可 API: IsAllowed、ユーザー ID、Node.js 22、通信の制約。 API リファレンス: API key による認可チェックとポリシー管理。リクエストはサーバーから送り、このページは読み取り専用です。 制限とエラー: アカウント上限、サイズ、バースト、日次枠、エラーコード、リセット時刻。  ダウンロード  日本語 Markdown: Cloud の 4 章をまとめたオフラインガイド。 API リファレンス: このサイトで読めます。下の生ファイルも引き続き利用できます。 OpenAPI YAML OpenAPI JSON  API 仕様はリクエストとレスポンスの契約です。ダウンロードしてもサインインは開始されません。
 Cloud の次の文書をご確認ください： 利用規約 / プライバシーポリシー.</description>
-    </item>
-    
-    <item>
-      <title>Speedle Cloud API キー</title>
-      <link>https://engine.speedle.io/ja/docs/cloud/tokens/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://engine.speedle.io/ja/docs/cloud/tokens/</guid>
-      <description>API キーはアカウントに属し、スコープに応じてそのアカウントのサービスにアクセスします。アプリケーションを認証するもので、エンドユーザーの認証ではありません。API キー、セッション、連携 ID の管理にはログイン済みのコンソールセッションが必要です。
-Speedle Cloud はまもなく公開されます。 このガイドは、本番環境のサインインと認証付き認可 API が利用可能になった際の手順を説明しています。例は実際の Cloud 環境では実行していません。
-API キーを作成する API キー を開き、前後の空白を除いて 1–128 文字の名前とスコープを指定し、作成を選択します。作成には過去 10 分以内の連携プロバイダーによる認証が必要です。403 reauth_required の場合は再認証後、再び作成を選択してください。プロバイダーから戻るだけでは作成されません。
-各キーには作成後に変更できないスコープが 1 つあります。
-   スコープ アクセス     ads（既定） /authz-check/v1/* による認可チェックのみ。   pms:read /policy-mgmt/v1 によるアカウント内のサービス、認可ポリシー、ロールポリシーの読み取り。   pms:write /policy-mgmt/v1 によるアカウント内のサービス、認可ポリシー、ロールポリシーの読み取り、作成、削除。    管理スコープは ADS を呼び出せず、ads はポリシーを管理できません。不適切なスコープは 403 insufficient_scope です。サインインが閉じている場合の管理スコープの発行は 403 management_scope_disabled です。
-コンソールはセッション認証付きのリクエストを送信します。
-POST /api/tokens Origin: https://cloud.speedle.io X-SC-CSRF: 1 Content-Type: application/json {&amp;#34;name&amp;#34;:&amp;#34;books-app&amp;#34;,&amp;#34;scope&amp;#34;:&amp;#34;ads&amp;#34;} 入力は name と任意の scope（既定は ads）だけです。サービス指定、有効期限、認証証明は送信しません。セッション Cookie と CSRF ヘッダーが必要で、API キーではセッションを代替できません。</description>
-    </item>
-    
-    <item>
-      <title>Speedle Cloud クイックスタート</title>
-      <link>https://engine.speedle.io/ja/docs/cloud/getting-started/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://engine.speedle.io/ja/docs/cloud/getting-started/</guid>
-      <description>Speedle Cloud はまもなく公開されます。 このガイドは、本番環境のサインインと認証付き認可 API が利用可能になった際の手順を説明しています。例は実際の Cloud 環境では実行していません。
-GitHub または Google によるサインイン（まもなく開始） ブラウザーで Cloud コンソールを開き、利用可能なプロバイダーでサインインします。未使用の確認済みメールアドレスで初めて利用する場合は、アカウント作成を確認します。メールアドレスが使用済みの場合は、コンソールに表示された連携済みプロバイダーでサインインしてください。
-サービスとポリシーを作成する サービスワークスペースを開き、books と入力してサービス作成を選択します。既存ポリシーが結果に影響しないよう、新しいサービスで試してください。既存データは上書きしないでください。
-新しいポリシーを選択し、名前を read-books にして、次の SPDL を入力します。
-grant user alice from corp get /books このポリシーは、ID ドメイン corp の alice が /books に対して get を実行することを許可します。from を省略すると、すべてのドメインの同名ユーザーに一致します。信頼できる認証データからドメインを取得し、各リクエストの idd に設定してください。ID ドメインを参照してください。
-ポリシーの検証、ポリシーを保存の順に選択します。検証は構文を確認するだけで、下書きを保存しません。保存したポリシーが認可 API に反映されるまで約 60 秒かかります。
-API キーを作成する API キーを開き、books-app などの名前を入力し、ads スコープ（認可チェック）を選択して、API キーを作成を押します。本人確認を求められた場合は、確認を完了してからフォームを再送信します。シークレットは一度しか表示されないため、その場でコピーしてください。現在、有効期限は選択できません。不要になったキーは失効させてください。API キーの管理を参照してください。
-キーをサーバーのシークレットストアに保存し、環境変数 SPEEDLE_API_KEY で渡します。ブラウザーのコードやソース管理には含めないでください。
-アプリケーションから認可を確認する 保存したポリシーに対して、アプリケーションのサーバーから次の isAllowed リクエストを送信します。このポリシーは属性を必要としないため、attributes は空です。
-curl --fail-with-body --silent --show-error --max-time 10 \  &amp;#39;https://cloud.</description>
     </item>
     
     <item>
@@ -497,8 +507,8 @@ go run ./website/tests/examples/custom-function package main import ( &amp;#34;e
       
       <guid>https://engine.speedle.io/ja/docs/api/asserter_api/</guid>
       <description>トークンアサーション Webhook リファレンス。errCode は整数、attributes はオブジェクトです。実際のエンドポイントは ADS アサーター構成で指定されます。
-セキュリティとエンドポイント構成。本文はインターフェース仕様を説明するものであり、speedle.io はホスト型バックエンドを提供しません。
-              document.addEventListener(&#39;DOMContentLoaded&#39;, function() { var url = &#34;\/swagger\/asserter.yaml&#34;; const ui = SwaggerUIBundle({ url: url, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.presets.apis ], plugins: [ SwaggerUIBundle.plugins.DownloadUrl ], validatorUrl: null, layout: &#34;BaseLayout&#34; }) window.ui = ui });  </description>
+セキュリティとエンドポイント構成。本文はインターフェース仕様を説明するものであり、speedle.io はホスト型バックエンドを提供しません。Try it out は無効です。仕様にサーバーホストがないため、有効にするとリクエストはこのドキュメントサイトへ送られます。
+   document.addEventListener(&#39;DOMContentLoaded&#39;, function() { var ui = SwaggerUIBundle({ url: &#34;/swagger/asserter.yaml&#34;, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.presets.apis ], plugins: [ SwaggerUIBundle.plugins.DownloadUrl ], validatorUrl: null, layout: &#34;BaseLayout&#34;, supportedSubmitMethods: [] }); window.ui = ui; });  </description>
     </item>
     
     <item>
@@ -517,8 +527,8 @@ go run ./website/tests/examples/custom-function package main import ( &amp;#34;e
       
       <guid>https://engine.speedle.io/ja/docs/api/management_api/</guid>
       <description>構成された PMS のインターフェースリファレンス。リクエストとレスポンスは JSON を使用し、ポリシー ID は文字列、レスポンスはフラットなオブジェクトです。
-セキュリティとエンドポイント構成。本文はインターフェース仕様を説明するものであり、speedle.io はホスト型バックエンドを提供しません。
-              document.addEventListener(&#39;DOMContentLoaded&#39;, function() { var url = &#34;\/swagger\/policy-manage.yaml&#34;; const ui = SwaggerUIBundle({ url: url, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.presets.apis ], plugins: [ SwaggerUIBundle.plugins.DownloadUrl ], validatorUrl: null, layout: &#34;BaseLayout&#34; }) window.ui = ui });  </description>
+セキュリティとエンドポイント構成。本文はインターフェース仕様を説明するものであり、speedle.io はホスト型バックエンドを提供しません。Try it out は無効です。仕様にサーバーホストがないため、有効にするとリクエストはこのドキュメントサイトへ送られます。
+   document.addEventListener(&#39;DOMContentLoaded&#39;, function() { var ui = SwaggerUIBundle({ url: &#34;/swagger/policy-manage.yaml&#34;, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.presets.apis ], plugins: [ SwaggerUIBundle.plugins.DownloadUrl ], validatorUrl: null, layout: &#34;BaseLayout&#34;, supportedSubmitMethods: [] }); window.ui = ui; });  </description>
     </item>
     
     <item>
@@ -528,8 +538,8 @@ go run ./website/tests/examples/custom-function package main import ( &amp;#34;e
       
       <guid>https://engine.speedle.io/ja/docs/api/decision_api/</guid>
       <description>構成された ADS のインターフェースリファレンス。リクエスト属性は型付き配列、診断レスポンス属性はオブジェクトです。
-セキュリティとエンドポイント構成。本文はインターフェース仕様を説明するものであり、speedle.io はホスト型バックエンドを提供しません。
-              document.addEventListener(&#39;DOMContentLoaded&#39;, function() { var url = &#34;\/swagger\/policy-check.yaml&#34;; const ui = SwaggerUIBundle({ url: url, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.presets.apis ], plugins: [ SwaggerUIBundle.plugins.DownloadUrl ], validatorUrl: null, layout: &#34;BaseLayout&#34; }) window.ui = ui });  ヘルスチェックエンドポイント GET /healthz はプロセスの稼働状態を報告します。プロセス実行中は常に 200 {&amp;quot;status&amp;quot;:&amp;quot;ok&amp;quot;} を返します。
+セキュリティとエンドポイント構成。本文はインターフェース仕様を説明するものであり、speedle.io はホスト型バックエンドを提供しません。Try it out は無効です。仕様にサーバーホストがないため、有効にするとリクエストはこのドキュメントサイトへ送られます。
+   document.addEventListener(&#39;DOMContentLoaded&#39;, function() { var ui = SwaggerUIBundle({ url: &#34;/swagger/policy-check.yaml&#34;, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.presets.apis ], plugins: [ SwaggerUIBundle.plugins.DownloadUrl ], validatorUrl: null, layout: &#34;BaseLayout&#34;, supportedSubmitMethods: [] }); window.ui = ui; });  ヘルスチェックエンドポイント GET /healthz はプロセスの稼働状態を報告します。プロセス実行中は常に 200 {&amp;quot;status&amp;quot;:&amp;quot;ok&amp;quot;} を返します。
 GET /readyz はインスタンスが認可リクエストに応答可能かどうかを報告します。準備完了の場合は 200、それ以外は 503 を返します。このエンドポイントは認証を必要とせず、集計カウントのみを返します。</description>
     </item>
     

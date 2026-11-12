@@ -71,10 +71,60 @@
 #main #swagger-ui .tab { margin: 0 0 5px; padding: 0; list-style: none; }
 #main #swagger-ui .tab li { margin: 0; }
 #main #swagger-ui .btn { height: auto; min-height: 32px; line-height: 1.4; }
-#main #swagger-ui .opblock-summary-path { min-width: 0; overflow-wrap: anywhere; }
-#main #swagger-ui .model-hint { max-width: 100%; white-space: normal; overflow-wrap: anywhere; }
-@media (max-width: 600px) {
-  #main #swagger-ui .opblock-summary { flex-wrap: wrap; gap: 6px; }
-  #main #swagger-ui .opblock-summary-description { flex-basis: 100%; padding: 4px 10px; }
-  #main #swagger-ui .opblock-body { overflow-x: auto; }
+/* Keep Swagger inside the article. Its paths, server control and schema
+   tables otherwise set a min-content width wider than a phone. */
+#swagger-ui {
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: clip;
 }
+#main #swagger-ui .wrapper,
+#main #swagger-ui .information-container,
+#main #swagger-ui .info,
+#main #swagger-ui .info .title,
+#main #swagger-ui .scheme-container,
+#main #swagger-ui .scheme-container .schemes,
+#main #swagger-ui .schemes-server-container,
+#main #swagger-ui .schemes-server-container > label,
+#main #swagger-ui .opblock,
+#main #swagger-ui .opblock-tag-section,
+#main #swagger-ui .opblock-summary-path-description-wrapper,
+#main #swagger-ui .model-box,
+#main #swagger-ui section.models {
+  max-width: 100%;
+  min-width: 0;
+}
+#main #swagger-ui .info,
+#main #swagger-ui .info .title,
+#main #swagger-ui .renderedMarkdown,
+#main #swagger-ui .opblock-description-wrapper,
+#main #swagger-ui .opblock-summary-path,
+#main #swagger-ui .opblock-summary-path a,
+#main #swagger-ui .opblock-summary-path span,
+#main #swagger-ui .opblock-summary-description,
+#main #swagger-ui .opblock-tag,
+#main #swagger-ui .model,
+#main #swagger-ui .model-title,
+#main #swagger-ui .model-hint {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+#main #swagger-ui select { max-width: 100%; }
+#main #swagger-ui .opblock-summary { flex-wrap: wrap; align-items: flex-start; }
+#main #swagger-ui .opblock-summary-description { min-width: 0; }
+#main #swagger-ui .table-container,
+#main #swagger-ui .highlight-code,
+#main #swagger-ui .model-example,
+#main #swagger-ui .opblock-body {
+  max-width: 100%;
+  overflow-x: auto;
+}
+@media (max-width: 600px) {
+  #main #swagger-ui .opblock-summary { gap: 6px; }
+  #main #swagger-ui .opblock-summary-description { flex-basis: 100%; padding: 4px 10px; }
+}
+/* A read-only reference disables Try it out and hides both Authorize entry points:
+   the top .auth-wrapper and the per-operation .authorization__btn lock.
+   Swagger UI re-renders the lock when an operation expands, so the rule has to stay in CSS. */
+#swagger-ui.swagger-readonly .auth-wrapper,
+#swagger-ui.swagger-readonly .authorization__btn { display: none; }

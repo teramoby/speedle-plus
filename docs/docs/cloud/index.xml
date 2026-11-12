@@ -6,7 +6,7 @@
     <description>Recent content in Speedle Cloud on Speedle</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
-    <lastBuildDate>Thu, 12 Nov 2026 00:00:00 +0800</lastBuildDate>
+    <lastBuildDate>Thu, 12 Nov 2026 21:00:00 +0800</lastBuildDate>
     
 	<atom:link href="https://engine.speedle.io/docs/cloud/index.xml" rel="self" type="application/rss+xml" />
     
@@ -41,6 +41,16 @@ Create an API key Open API keys, enter a name of 1–128 characters after trimmi
       <description>Speedle Cloud is coming soon. This guide describes the workflow available when production sign-in and authenticated authorization checks open; the examples have not been run against a live Cloud environment.
 Use an account API key for server-side authorization calls. Account sign-in must be available before you can create keys. A key with a management scope cannot call ADS; use ads or the response is 403 insufficient_scope.
 Call IsAllowed from your server Send an account API key with the ads scope in one Authorization: Bearer header and make a POST request:</description>
+    </item>
+    
+    <item>
+      <title>API reference</title>
+      <link>https://engine.speedle.io/docs/cloud/api-reference/</link>
+      <pubDate>Thu, 12 Nov 2026 10:00:00 +0800</pubDate>
+      
+      <guid>https://engine.speedle.io/docs/cloud/api-reference/</guid>
+      <description>Authorization API preview explains the IsAllowed call. Limits and errors lists quotas and error responses.
+   document.addEventListener(&#39;DOMContentLoaded&#39;, function() { var ui = SwaggerUIBundle({ url: &#34;/openapi/cloud-public.yaml&#34;, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.presets.apis ], plugins: [ SwaggerUIBundle.plugins.DownloadUrl ], validatorUrl: null, layout: &#34;BaseLayout&#34;, supportedSubmitMethods: [] }); window.ui = ui; });  </description>
     </item>
     
     <item>

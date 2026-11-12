@@ -60,6 +60,7 @@ FULL_PAGES = [
     "docs/cloud/getting-started",
     "docs/cloud/tokens",
     "docs/cloud/authorization-api",
+    "docs/cloud/api-reference",
     "docs/cloud/limits-and-errors",
     "docs/store/_index",
     "docs/store/mysql",
@@ -113,6 +114,7 @@ ANNOTATIONS = {
     "docs/cloud/getting-started": "The console workflow: sign-in and account settings, a service, SPDL policies, session management requests, Playground tests and policy export.",
     "docs/cloud/tokens": "Create, protect, list and revoke account API keys with fixed scopes, with one-time secret disclosure and recent authentication.",
     "docs/cloud/authorization-api": "The published ADS IsAllowed request and response contract, with caller identity, a Node.js 22 example, policy snapshots and transport constraints.",
+    "docs/cloud/api-reference": "Reference for the Speedle Cloud API: authorization checks and policy management with an API key. Requests run from your server; this page is read-only.",
     "docs/cloud/limits-and-errors": "Account quotas, request limits, flat JSON errors, rate and quota headers, daily accounting and retry guidance.",
     "docs/versions": "Release history and semantic versioning.",
 }
@@ -366,6 +368,7 @@ def render_llms(pages, definition):
             item("docs/cloud/getting-started"),
             item("docs/cloud/tokens"),
             item("docs/cloud/authorization-api"),
+            item("docs/cloud/api-reference"),
             item("docs/cloud/limits-and-errors"),
             fixed("cloud", "cloud.speedle.io"),
         ]),
@@ -403,12 +406,17 @@ def render_llms(pages, definition):
     return "\n\n".join(blocks) + "\n"
 
 
+SWAGGER_SHORTCODE = re.compile(
+    r'\{\{<\s*swagger-spec\s+url="([^"]+)"(?:\s+tryitout="(?:true|false)")?\s*>\}\}'
+)
+
+
 def replace_shortcodes(text):
     def swagger(match):
         url = match.group(1)
         absolute = urljoin(ORIGIN + "/", url)
         return f"The full OpenAPI definition is published at [{url}]({absolute})."
-    return re.sub(r"\{\{<\s*swagger-spec\s+url=\"([^\"]+)\"\s*>\}\}", swagger, text)
+    return SWAGGER_SHORTCODE.sub(swagger, text)
 
 
 def resolve_target(target, base_url, aliases):

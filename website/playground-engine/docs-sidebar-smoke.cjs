@@ -76,7 +76,7 @@ const server = http.createServer((request, response) => {
     return;
   }
   if (fs.existsSync(file) && fs.statSync(file).isDirectory()) file = path.join(file, 'index.html');
-  const types = {'.html': 'text/html; charset=utf-8', '.css': 'text/css', '.js': 'text/javascript', '.svg': 'image/svg+xml'};
+  const types = {'.html': 'text/html; charset=utf-8', '.css': 'text/css', '.js': 'text/javascript', '.svg': 'image/svg+xml', '.yaml': 'text/yaml; charset=utf-8', '.yml': 'text/yaml; charset=utf-8'};
   fs.readFile(file, (error, bytes) => {
     if (error) {
       response.writeHead(404).end();
@@ -188,6 +188,29 @@ async function checkPhoneDrawer(page, expected) {
   assert.equal(await page.locator('.docs-nav-toggle').getAttribute('aria-expanded'), 'false');
 }
 
+async function checkReadOnlySwagger(page, origin) {
+  for (const route of ['/docs/cloud/api-reference/', '/docs/api/decision_api/']) {
+    await page.setViewportSize({width: 1440, height: 900});
+    await page.goto(origin + route, {waitUntil: 'domcontentloaded'});
+    await page.waitForSelector('#swagger-ui .opblock', {timeout: 20000});
+    await page.locator('#swagger-ui .opblock-summary').first().click();
+    // Playwright isVisible() follows ancestor display:none. A child's own
+    // computed display stays "inline-block" when .auth-wrapper is hidden.
+    const controls = page.locator('#swagger-ui .auth-wrapper, #swagger-ui .authorization__btn, #swagger-ui .btn.authorize');
+    const count = await controls.count();
+    if (route === '/docs/cloud/api-reference/') assert.ok(count > 0, `${route} did not render an authorize control to hide`);
+    for (let index = 0; index < count; index++) {
+      assert.equal(await controls.nth(index).isVisible(), false, `${route} shows an authorize control`);
+    }
+    const dialogs = page.locator('.dialog-ux');
+    const dialogCount = await dialogs.count();
+    for (let index = 0; index < dialogCount; index++) {
+      assert.equal(await dialogs.nth(index).isVisible(), false, `${route} opened an authorize dialog`);
+    }
+  }
+  console.log('PASS read-only Swagger UI hides Authorize and the operation lock');
+}
+
 (async () => {
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
   const origin = `http://127.0.0.1:${server.address().port}`;
@@ -215,6 +238,7 @@ async function checkPhoneDrawer(page, expected) {
     }
     const pageCount = Object.values(configs).reduce((total, config) => total + Object.keys(config).length, 0);
     console.log(`PASS docs sidebar: ${checks} desktop checks across ${pageCount} EN/ZH pages at 1440/1024px; ${links} links per menu; eight expanded phone drawers at 375px`);
+    await checkReadOnlySwagger(page, origin);
   } finally {
     if (browser) await browser.close();
     await new Promise(resolve => server.close(resolve));

@@ -5,14 +5,14 @@ tags = ["v0.1.0", "api", "guide", "core", "ads"]
 categories = ["docs"]
 customcss = true
 customcssfile = "swagger-custom.css"
-lastmod = 2026-11-09T21:18:26+08:00
+lastmod = 2026-11-12T10:00:00+08:00
 +++
 
 Referencia para su ADS configurado. Los atributos de solicitud son matrices tipadas; los atributos de diagnóstico son objetos.
 
-[Configuración de seguridad y endpoints](/es/docs/security/). Esta es una referencia de contrato, no un backend hospedado por speedle.io.
+[Configuración de seguridad y endpoints](/es/docs/security/). Esta es una referencia de contrato, no un backend hospedado por speedle.io. Try it out está desactivado: la especificación no indica un host de servidor, así que una petición se enviaría a este sitio de documentación.
 
-{{< swagger-spec url="/swagger/policy-check.yaml" >}}
+{{< swagger-spec url="/swagger/policy-check.yaml" tryitout="false" >}}
 
 ## Endpoints de comprobación de estado
 

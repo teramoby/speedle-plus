@@ -7,7 +7,7 @@ toc = false
 linksection = true
 tocheading = "h2"
 categories = ["docs"]
-lastmod = 2026-11-12T00:00:00+08:00
+lastmod = 2026-11-12T21:00:00+08:00
 +++
 
 Speedle Cloud is a hosted authorization service built on the open-source Speedle engine. Manage services, SPDL authorization and role policies, test decisions in the Playground and call the API from your server.
@@ -21,11 +21,13 @@ Account sign-in must be available before using the console or creating API keys.
 - [Getting started](/docs/cloud/getting-started/): Sign in, create a service and policy in the console, create an API key, and check authorization from your application.
 - [API keys](/docs/cloud/tokens/): Account-level credentials, fixed scopes, Create and Revoke, one-time secret display and pagination.
 - [Authorization API](/docs/cloud/authorization-api/): IsAllowed requests, caller identity, Node.js 22 and transport constraints.
+- [API reference](/docs/cloud/api-reference/): authorization checks and policy management with an API key. Requests run from your server; this page is read-only.
 - [Limits and errors](/docs/cloud/limits-and-errors/): Account caps, size limits, burst limits, daily quota, error codes and reset times.
 
 ## Downloads
 
 - [English Markdown](https://engine.speedle.io/docs/cloud/quickstart.en.md): The four Cloud chapters in one offline guide.
+- [API reference](/docs/cloud/api-reference/): read it on this site. The raw files below remain available.
 - [OpenAPI YAML](https://cloud.speedle.io/openapi.yaml)
 - [OpenAPI JSON](https://cloud.speedle.io/openapi.json)
 

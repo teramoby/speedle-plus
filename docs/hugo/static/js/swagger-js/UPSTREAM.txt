@@ -1,0 +1,7 @@
+swagger-ui-dist 5.34.1
+https://www.npmjs.com/package/swagger-ui-dist
+Apache-2.0
+
+swagger-ui-bundle.js 36eeb4d5640b9c036b1d0f854499af1cceebbdb260b790a03a18be5e8488fbf5
+swagger-ui-bundle.js.LICENSE.txt 37eb6e7e59aed57b2c1acf076574b818ea07b74265717e0bd67b59e0baf9abbb
+../css/swagger-ui.css c3cfe8248c4b0b89673600fb829924eafbac6de4bc4b2b06f5f5243483074d0a

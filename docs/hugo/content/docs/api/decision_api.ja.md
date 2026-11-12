@@ -5,14 +5,14 @@ tags = ["v0.1.0", "api", "guide", "core", "ads"]
 categories = ["docs"]
 customcss = true
 customcssfile = "swagger-custom.css"
-lastmod = 2026-11-09T21:18:26+08:00
+lastmod = 2026-11-12T10:00:00+08:00
 +++
 
 構成された ADS のインターフェースリファレンス。リクエスト属性は型付き配列、診断レスポンス属性はオブジェクトです。
 
-[セキュリティとエンドポイント構成](/ja/docs/security/)。本文はインターフェース仕様を説明するものであり、speedle.io はホスト型バックエンドを提供しません。
+[セキュリティとエンドポイント構成](/ja/docs/security/)。本文はインターフェース仕様を説明するものであり、speedle.io はホスト型バックエンドを提供しません。Try it out は無効です。仕様にサーバーホストがないため、有効にするとリクエストはこのドキュメントサイトへ送られます。
 
-{{< swagger-spec url="/swagger/policy-check.yaml" >}}
+{{< swagger-spec url="/swagger/policy-check.yaml" tryitout="false" >}}
 
 ## ヘルスチェックエンドポイント
 

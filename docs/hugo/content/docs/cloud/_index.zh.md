@@ -7,7 +7,7 @@ toc = false
 linksection = true
 tocheading = "h2"
 categories = ["docs"]
-lastmod = 2026-11-12T00:00:00+08:00
+lastmod = 2026-11-12T21:00:00+08:00
 +++
 
 Speedle Cloud 是基于开源 Speedle 引擎的托管授权服务。你可以管理服务、SPDL 授权策略和角色策略，在 Playground 中测试判定，并从服务端调用 API。
@@ -21,11 +21,13 @@ Speedle Cloud 是基于开源 Speedle 引擎的托管授权服务。你可以管
 - [快速入门](/zh/docs/cloud/getting-started/)：登录控制台，创建服务和策略，创建 API 密钥，从应用发起授权检查。
 - [API 密钥](/zh/docs/cloud/tokens/): 账号级凭据、固定权限范围、创建与撤销、一次性展示和分页。
 - [授权 API](/zh/docs/cloud/authorization-api/): IsAllowed 请求、调用方身份、Node.js 22 和传输限制。
+- [API 参考](/zh/docs/cloud/api-reference/)：使用 API key 进行授权检查和策略管理。请求从你的服务器发出；本页只读。
 - [限额与错误](/zh/docs/cloud/limits-and-errors/): 账号上限、大小限制、突发限流、每日额度、错误代码和重置时间。
 
 ## 下载
 
 - [中文 Markdown](https://engine.speedle.io/docs/cloud/quickstart.zh-CN.md): 四个 Cloud 章节合并的离线指南。
+- [API 参考](/zh/docs/cloud/api-reference/)：在本站阅读。下面仍保留原始文件。
 - [OpenAPI YAML](https://cloud.speedle.io/openapi.yaml)
 - [OpenAPI JSON](https://cloud.speedle.io/openapi.json)
 

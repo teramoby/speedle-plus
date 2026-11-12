@@ -40,6 +40,7 @@ This file contains the complete English documentation published at https://engin
 - [Getting started with Speedle Cloud](https://engine.speedle.io/docs/cloud/getting-started/)
 - [Speedle Cloud API keys](https://engine.speedle.io/docs/cloud/tokens/)
 - [Speedle Cloud authorization API](https://engine.speedle.io/docs/cloud/authorization-api/)
+- [API reference](https://engine.speedle.io/docs/cloud/api-reference/)
 - [Speedle Cloud Limits and errors](https://engine.speedle.io/docs/cloud/limits-and-errors/)
 - [Pluggable Storage](https://engine.speedle.io/docs/store/)
 - [MySQL Setup](https://engine.speedle.io/docs/store/mysql/)
@@ -1896,7 +1897,7 @@ Source: https://engine.speedle.io/docs/api/decision_api/
 
 Reference for your configured ADS. Request attributes are typed arrays; diagnostic attributes are objects.
 
-[Security and endpoint configuration](https://engine.speedle.io/docs/security/). This is a contract reference, not a backend hosted by speedle.io.
+[Security and endpoint configuration](https://engine.speedle.io/docs/security/). This is a contract reference, not a backend hosted by speedle.io. Try it out is disabled because this specification has no server host, so a request would otherwise be sent to this documentation site.
 
 The full OpenAPI definition is published at [/swagger/policy-check.yaml](https://engine.speedle.io/swagger/policy-check.yaml).
 
@@ -1912,7 +1913,7 @@ Source: https://engine.speedle.io/docs/api/management_api/
 
 Reference for your configured PMS. Requests and responses are JSON; policy IDs are strings and responses are flat objects.
 
-[Security and endpoint configuration](https://engine.speedle.io/docs/security/). This is a contract reference, not a backend hosted by speedle.io.
+[Security and endpoint configuration](https://engine.speedle.io/docs/security/). This is a contract reference, not a backend hosted by speedle.io. Try it out is disabled because this specification has no server host, so a request would otherwise be sent to this documentation site.
 
 The full OpenAPI definition is published at [/swagger/policy-manage.yaml](https://engine.speedle.io/swagger/policy-manage.yaml).
 
@@ -1922,7 +1923,7 @@ Source: https://engine.speedle.io/docs/api/asserter_api/
 
 Webhook reference. errCode is an integer and attributes is an object. Configure the actual endpoint in the ADS asserter configuration.
 
-[Security and endpoint configuration](https://engine.speedle.io/docs/security/). This is a contract reference, not a backend hosted by speedle.io.
+[Security and endpoint configuration](https://engine.speedle.io/docs/security/). This is a contract reference, not a backend hosted by speedle.io. Try it out is disabled because this specification has no server host, so a request would otherwise be sent to this documentation site.
 
 The full OpenAPI definition is published at [/swagger/asserter.yaml](https://engine.speedle.io/swagger/asserter.yaml).
 
@@ -3408,11 +3409,13 @@ Account sign-in must be available before using the console or creating API keys.
 - [Getting started](https://engine.speedle.io/docs/cloud/getting-started/): Sign in, create a service and policy in the console, create an API key, and check authorization from your application.
 - [API keys](https://engine.speedle.io/docs/cloud/tokens/): Account-level credentials, fixed scopes, Create and Revoke, one-time secret display and pagination.
 - [Authorization API](https://engine.speedle.io/docs/cloud/authorization-api/): IsAllowed requests, caller identity, Node.js 22 and transport constraints.
+- [API reference](https://engine.speedle.io/docs/cloud/api-reference/): authorization checks and policy management with an API key. Requests run from your server; this page is read-only.
 - [Limits and errors](https://engine.speedle.io/docs/cloud/limits-and-errors/): Account caps, size limits, burst limits, daily quota, error codes and reset times.
 
 ### Downloads
 
 - [English Markdown](https://engine.speedle.io/docs/cloud/quickstart.en.md): The four Cloud chapters in one offline guide.
+- [API reference](https://engine.speedle.io/docs/cloud/api-reference/): read it on this site. The raw files below remain available.
 - [OpenAPI YAML](https://cloud.speedle.io/openapi.yaml)
 - [OpenAPI JSON](https://cloud.speedle.io/openapi.json)
 
@@ -3656,6 +3659,14 @@ Use POST for ADS. A non-POST request may be stopped at the public edge with Clou
 Matched application ADS responses use `Cache-Control: no-store`. Do not put decisions or credentials in shared caches.
 
 For client libraries in Java, Python, Go, .NET, Rust and Node.js/TypeScript, see the [SDKs section](https://engine.speedle.io/docs/sdks/). For failures, quotas and response headers, see [Limits and errors](https://engine.speedle.io/docs/cloud/limits-and-errors/). API schemas and Markdown downloads are linked from the [Speedle Cloud overview](https://engine.speedle.io/docs/cloud/#downloads).
+
+## API reference
+
+Source: https://engine.speedle.io/docs/cloud/api-reference/
+
+[Authorization API preview](https://engine.speedle.io/docs/cloud/authorization-api/) explains the IsAllowed call. [Limits and errors](https://engine.speedle.io/docs/cloud/limits-and-errors/) lists quotas and error responses.
+
+The full OpenAPI definition is published at [/openapi/cloud-public.yaml](https://engine.speedle.io/openapi/cloud-public.yaml).
 
 ## Speedle Cloud Limits and errors
 

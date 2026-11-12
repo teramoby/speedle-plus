@@ -5,11 +5,11 @@ tags = ["v0.1.0", "api", "guide", "core", "pms"]
 categories = ["docs"]
 customcss = true
 customcssfile = "swagger-custom.css"
-lastmod = 2026-10-29T11:32:30+08:00
+lastmod = 2026-11-12T10:00:00+08:00
 +++
 
 構成された PMS のインターフェースリファレンス。リクエストとレスポンスは JSON を使用し、ポリシー ID は文字列、レスポンスはフラットなオブジェクトです。
 
-[セキュリティとエンドポイント構成](/ja/docs/security/)。本文はインターフェース仕様を説明するものであり、speedle.io はホスト型バックエンドを提供しません。
+[セキュリティとエンドポイント構成](/ja/docs/security/)。本文はインターフェース仕様を説明するものであり、speedle.io はホスト型バックエンドを提供しません。Try it out は無効です。仕様にサーバーホストがないため、有効にするとリクエストはこのドキュメントサイトへ送られます。
 
-{{< swagger-spec url="/swagger/policy-manage.yaml" >}}
+{{< swagger-spec url="/swagger/policy-manage.yaml" tryitout="false" >}}

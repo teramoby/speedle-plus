@@ -11,11 +11,13 @@ Speedle Cloud はオープンソースの Speedle エンジンによるホスト
 - [クイックスタート](https://engine.speedle.io/ja/docs/cloud/getting-started/)：サインインし、コンソールでサービスとポリシー、API キーを作成して、アプリケーションから認可を確認します。
 - [API キー](https://engine.speedle.io/ja/docs/cloud/tokens/): アカウントの認証情報、固定スコープ、作成と失効、一度だけの表示、ページング。
 - [認可 API](https://engine.speedle.io/ja/docs/cloud/authorization-api/): IsAllowed、ユーザー ID、Node.js 22、通信の制約。
+- [API リファレンス](https://engine.speedle.io/ja/docs/cloud/api-reference/): API key による認可チェックとポリシー管理。リクエストはサーバーから送り、このページは読み取り専用です。
 - [制限とエラー](https://engine.speedle.io/ja/docs/cloud/limits-and-errors/): アカウント上限、サイズ、バースト、日次枠、エラーコード、リセット時刻。
 
 ## ダウンロード
 
 - [日本語 Markdown](https://engine.speedle.io/docs/cloud/quickstart.ja.md): Cloud の 4 章をまとめたオフラインガイド。
+- [API リファレンス](https://engine.speedle.io/ja/docs/cloud/api-reference/): このサイトで読めます。下の生ファイルも引き続き利用できます。
 - [OpenAPI YAML](https://cloud.speedle.io/openapi.yaml)
 - [OpenAPI JSON](https://cloud.speedle.io/openapi.json)
 
