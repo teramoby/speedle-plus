@@ -155,9 +155,9 @@
 <li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading docs-nav-heading-link"><a href="/ko/docs/cloud/">Speedle Cloud</a></span>
 <ul class="">
 <li data-docs-depth="1" class=""><a href="/ko/docs/cloud/getting-started/">Speedle Cloud 빠른 시작</a></li>
-<li data-docs-depth="1" class=""><a href="/ko/docs/cloud/tokens/">Speedle Cloud 애플리케이션 토큰</a></li>
-<li data-docs-depth="1" class=""><a href="/ko/docs/cloud/authorization-api/">Speedle Cloud 인가 API 프리뷰</a></li>
-<li data-docs-depth="1" class=""><a href="/ko/docs/cloud/limits-and-errors/">Speedle Cloud 제한 및 오류</a></li>
+<li data-docs-depth="1" class=""><a href="/ko/docs/cloud/tokens/">API 키</a></li>
+<li data-docs-depth="1" class=""><a href="/ko/docs/cloud/authorization-api/">인가 API</a></li>
+<li data-docs-depth="1" class=""><a href="/ko/docs/cloud/limits-and-errors/">제한과 오류</a></li>
 </ul>
 
 </li>
@@ -317,37 +317,35 @@ grant role manager update res1</code></pre></div>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./bin/spctl --ads-endpoint http://127.0.0.1:6734/authz-check/v1/ is-allowed --role designer --role dba --action update --resource db_design_doc --service-name<span style="color:#ff79c6">=</span>s1</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">{&#34;allowed&#34;:true,&#34;reason&#34;:0}</code></pre></div>
 <h2 id="speedle-cloud에서-정책-관리">Speedle Cloud에서 정책 관리</h2>
 
-<blockquote>
-<p><strong>Speedle Cloud는 출시 예정입니다.</strong></p>
-</blockquote>
+<p>계정 API 키로 <code>spctl</code>에서 Cloud 서비스와 정책을 관리합니다.</p>
 
-<p>Speedle Cloud는 PMS 엔드포인트에서 동일한 CLI 및 REST 인터페이스를 제공합니다. Bearer 토큰 인증과 관리 권한(<code>pms:read</code>, <code>pms:write</code> 또는 둘 다)이 필요합니다. <code>pms:read</code>는 <code>get</code> 및 <code>list</code> 명령을 허용합니다. <code>pms:write</code>는 <code>create</code>, <code>delete</code> 및 발견 재설정에 해당합니다. ADS 범위만 가진 토큰은 정책을 관리할 수 없으며 <code>403 insufficient_scope</code>로 거부됩니다.</p>
+<p>계정 API 키에는 고정 범위 하나를 지정합니다. <code>pms:read</code>는 서비스와 정책 읽기를, <code>pms:write</code>는 추가로 생성과 삭제를 허용합니다. 계정 내 서비스에 적용됩니다. <code>ads</code> 키로는 관리할 수 없으며 <code>403 insufficient_scope</code>입니다. 생성과 폐기는 <a href="/ko/docs/cloud/tokens/">API 키</a>를 참조하세요.</p>
 
-<p>엔드포인트를 전역 플래그로 전달하고 <code>SPCTL_TOKEN</code>에서 토큰을 읽습니다. 대화형 셸에서 이를 사용하면 비밀 값이 명령 인수나 셸 기록에 남지 않습니다:</p>
+<p>엔드포인트를 전역 플래그로 전달하고 <code>SPCTL_TOKEN</code>에서 API 키을 읽습니다. 대화형 셸에서 이를 사용하면 비밀 값이 명령 인수나 셸 기록에 남지 않습니다:</p>
 
 <!-- deployment-template: cloud-token-environment -->
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#8be9fd;font-style:italic">read</span> -rsp <span style="color:#f1fa8c">&#39;API token: &#39;</span> SPCTL_TOKEN; <span style="color:#8be9fd;font-style:italic">echo</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#8be9fd;font-style:italic">read</span> -rsp <span style="color:#f1fa8c">&#39;API key: &#39;</span> SPCTL_TOKEN; <span style="color:#8be9fd;font-style:italic">echo</span>
 <span style="color:#8be9fd;font-style:italic">export</span> SPCTL_TOKEN
 ./bin/spctl --pms-endpoint https://cloud.speedle.io/policy-mgmt/v1 get service --all
 <span style="color:#8be9fd;font-style:italic">unset</span> SPCTL_TOKEN</code></pre></div>
-<p>호환성을 위해 <code>--token</code> 플래그도 계속 지원되지만 환경 변수를 사용하면 명령 인수를 통한 토큰 유출을 방지할 수 있습니다. 모든 전역 플래그에는 환경 변수도 제공됩니다. 접두사 <code>SPCTL_</code>을 붙이고 플래그 이름을 대문자로 변환한 뒤 하이픈을 밑줄로 대체합니다. 예를 들어 <code>SPCTL_PMS_ENDPOINT</code>는 <code>pms-endpoint</code>를 설정하고 <code>SPCTL_SKIPVERIFY</code>는 <code>skipverify</code>를 설정합니다.</p>
+<p>호환성을 위해 <code>--token</code> 플래그도 계속 지원되지만 환경 변수를 사용하면 명령 인수를 통한 API 키 유출을 방지할 수 있습니다. 모든 전역 플래그에는 환경 변수도 제공됩니다. 접두사 <code>SPCTL_</code>을 붙이고 플래그 이름을 대문자로 변환한 뒤 하이픈을 밑줄로 대체합니다. 예를 들어 <code>SPCTL_PMS_ENDPOINT</code>는 <code>pms-endpoint</code>를 설정하고 <code>SPCTL_SKIPVERIFY</code>는 <code>skipverify</code>를 설정합니다.</p>
 
 <p>구성을 저장하려면 <code>~/.speedle</code>을 사용합니다. 형식은 명령줄 플래그 이름과 동일한 한 줄당 하나의 <code>name=value</code> 쌍입니다:</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ini" data-lang="ini"><span style="color:#50fa7b">pms-endpoint</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">https://cloud.speedle.io/policy-mgmt/v1</span>
-<span style="color:#50fa7b">token</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&lt;api-token&gt;</span></code></pre></div>
-<p>명령 인수에 토큰을 포함하지 않고 이 파일을 생성하거나 업데이트합니다:</p>
+<span style="color:#50fa7b">token</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&lt;api-key&gt;</span></code></pre></div>
+<p>명령 인수에 API 키을 포함하지 않고 이 파일을 생성하거나 업데이트합니다:</p>
 
 <!-- deployment-template: cloud-token-config -->
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#8be9fd;font-style:italic">read</span> -rsp <span style="color:#f1fa8c">&#39;API token: &#39;</span> SPCTL_TOKEN; <span style="color:#8be9fd;font-style:italic">echo</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#8be9fd;font-style:italic">read</span> -rsp <span style="color:#f1fa8c">&#39;API key: &#39;</span> SPCTL_TOKEN; <span style="color:#8be9fd;font-style:italic">echo</span>
 <span style="color:#8be9fd;font-style:italic">printf</span> <span style="color:#f1fa8c">&#39;%s\n&#39;</span> <span style="color:#f1fa8c">&#34;</span><span style="color:#8be9fd;font-style:italic">$SPCTL_TOKEN</span><span style="color:#f1fa8c">&#34;</span> | ./bin/spctl config token --stdin
 <span style="color:#8be9fd;font-style:italic">unset</span> SPCTL_TOKEN</code></pre></div>
-<p><code>spctl config token --stdin</code>은 권한 <code>0600</code>으로 <code>~/.speedle</code>을 작성합니다. 파일을 수동으로 편집하는 경우 <code>install -m 600 /dev/null ~/.speedle</code>로 생성하거나 나중에 <code>chmod 0600 ~/.speedle</code>을 실행하십시오. 그룹 또는 기타 접근을 허용하는 권한을 가진 파일에서 토큰을 읽으면 <code>spctl</code>은 표준 오류로 경고를 출력합니다. <code>spctl config --list</code>는 구성된 토큰을 <code>********</code>로 마스킹합니다.</p>
+<p><code>spctl config token --stdin</code>은 권한 <code>0600</code>으로 <code>~/.speedle</code>을 작성합니다. 파일을 수동으로 편집하는 경우 <code>install -m 600 /dev/null ~/.speedle</code>로 생성하거나 나중에 <code>chmod 0600 ~/.speedle</code>을 실행하십시오. 그룹 또는 기타 접근을 허용하는 권한을 가진 파일에서 API 키을 읽으면 <code>spctl</code>은 표준 오류로 경고를 출력합니다. <code>spctl config --list</code>는 구성된 API 키을 <code>********</code>로 마스킹합니다.</p>
 
-<p>명시적인 명령줄 플래그는 환경 변수를 재정의하고, 환경 변수는 두 구성 파일을 모두 재정의합니다. 파일 간에는 <code>~/.speedle</code>이 <code>~/.spctlconfig</code>를 재정의합니다. <code>spctl config</code>로 토큰 이외의 키를 설정하면 해당 키는 <code>~/.spctlconfig</code>에 작성되고 <code>~/.speedle</code>에서 해당 복사본이 제거됩니다.</p>
+<p>명시적인 명령줄 플래그는 환경 변수를 재정의하고, 환경 변수는 두 구성 파일을 모두 재정의합니다. 파일 간에는 <code>~/.speedle</code>이 <code>~/.spctlconfig</code>를 재정의합니다. <code>spctl config</code>로 API 키 이외의 키를 설정하면 해당 키는 <code>~/.spctlconfig</code>에 작성되고 <code>~/.speedle</code>에서 해당 복사본이 제거됩니다.</p>
 
-<p>토큰은 인증서 검증이 활성화된 HTTPS를 통해서만 <code>Authorization: Bearer</code> 자격 증명으로 전송됩니다. 토큰을 사용한 일반 텍스트 HTTP는 <code>127.0.0.1</code>, <code>::1</code>, <code>localhost</code>와 같은 루프백 호스트에 대해서만 허용됩니다. <code>spctl</code>은 원격 HTTP 엔드포인트 및 HTTPS에서 HTTP로의 다운그레이드 리디렉션에 대해 자격 증명을 전송하기 전에 거부합니다. HTTPS 엔드포인트의 경우 <code>--skipverify=true</code>가 지정되면 토큰 전송도 거부됩니다. 대신 <code>--cacert</code>를 사용하여 사설 또는 자체 서명된 인증 기관을 신뢰하도록 설정하십시오. 토큰은 일반 명령 출력이나 오류 메시지에 포함되지 않습니다.</p>
+<p>API 키은 인증서 검증이 활성화된 HTTPS를 통해서만 <code>Authorization: Bearer</code> 자격 증명으로 전송됩니다. API 키을 사용한 일반 텍스트 HTTP는 <code>127.0.0.1</code>, <code>::1</code>, <code>localhost</code>와 같은 루프백 호스트에 대해서만 허용됩니다. <code>spctl</code>은 원격 HTTP 엔드포인트 및 HTTPS에서 HTTP로의 다운그레이드 리디렉션에 대해 자격 증명을 전송하기 전에 거부합니다. HTTPS 엔드포인트의 경우 <code>--skipverify=true</code>가 지정되면 API 키 전송도 거부됩니다. 대신 <code>--cacert</code>를 사용하여 사설 또는 자체 서명된 인증 기관을 신뢰하도록 설정하십시오. API 키은 일반 명령 출력이나 오류 메시지에 포함되지 않습니다.</p>
 
-<p>Cloud 오류는 0이 아닌 종료 코드를 생성합니다. <code>401</code> 후에는 토큰을 확인하고, <code>403 insufficient_scope</code> 후에는 범위를 확인하십시오. <code>404</code>는 존재하지 않는 리소스를 나타내며, <code>409 service_exists</code> 및 <code>409 policy_exists</code>는 중복을 나타냅니다. <code>429</code>의 경우 반환된 <code>Retry-After</code> 값을 준수하고 유계 백오프를 사용하십시오. 일일 또는 정책 쿼터 오류의 경우 재설정을 기다리거나 사용량을 줄여야 합니다. 짧은 간격으로 루프 재시도하지 마십시오.</p>
+<p>Cloud 오류는 0이 아닌 종료 코드를 생성합니다. <code>401</code> 후에는 API 키을 확인하고, <code>403 insufficient_scope</code> 후에는 범위를 확인하십시오. <code>404</code>는 존재하지 않는 리소스를 나타내며, <code>409 service_exists</code> 및 <code>409 policy_exists</code>는 중복을 나타냅니다. <code>429</code>의 경우 반환된 <code>Retry-After</code> 값을 준수하고 유계 백오프를 사용하십시오. <code>429 daily_quota_exceeded</code>이면 <code>Retry-After</code>에 따라 00:00 UTC까지 기다리세요. 서비스, 정책, 활성 키 한도는 <code>409 quota_exceeded</code>이며 시간으로 초기화되지 않습니다. 미사용 항목을 삭제하거나 폐기하세요. <a href="/ko/docs/cloud/limits-and-errors/">제한과 오류</a>를 참조하세요.</p>
 
 <h2 id="기타-인터페이스">기타 인터페이스</h2>
 

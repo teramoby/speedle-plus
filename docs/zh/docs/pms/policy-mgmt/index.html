@@ -155,7 +155,7 @@
 <li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading docs-nav-heading-link"><a href="/zh/docs/cloud/">Speedle Cloud</a></span>
 <ul class="">
 <li data-docs-depth="1" class=""><a href="/zh/docs/cloud/getting-started/">快速入门</a></li>
-<li data-docs-depth="1" class=""><a href="/zh/docs/cloud/tokens/">应用令牌</a></li>
+<li data-docs-depth="1" class=""><a href="/zh/docs/cloud/tokens/">API 密钥</a></li>
 <li data-docs-depth="1" class=""><a href="/zh/docs/cloud/authorization-api/">授权 API</a></li>
 <li data-docs-depth="1" class=""><a href="/zh/docs/cloud/limits-and-errors/">限额与错误</a></li>
 </ul>
@@ -272,35 +272,35 @@ grant role manager update res1</code></pre></div>
 ./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ delete service test</code></pre></div>
 <h2 id="speedle-cloud">Speedle Cloud</h2>
 
-<p>Speedle Cloud 登录即将开放。API 令牌开放后，<code>spctl</code> 可以通过与自托管 PMS 相同的命令管理 Cloud 中的 service 和策略。管理端点为：</p>
+<p>使用账号 API 密钥，通过 <code>spctl</code> 管理 Cloud 服务和策略。管理端点为：</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">https://cloud.speedle.io/policy-mgmt/v1</code></pre></div>
-<p>请根据命令选择具有相应 scope 的 API 令牌。<code>pms:read</code> 用于 <code>get</code> 和 <code>discover</code> 查询，<code>pms:write</code> 用于 <code>create</code>、<code>delete</code> 和发现记录重置。只有 ADS scope 的令牌不能管理策略，服务端会返回 <code>403 insufficient_scope</code>。</p>
+<p>账号 API 密钥只能选择一个固定权限范围。<code>pms:read</code> 可读取服务和策略；<code>pms:write</code> 还可创建和删除服务与策略。两者都适用于账号下的服务。<code>ads</code> 密钥不能管理策略，会收到 <code>403 insufficient_scope</code>。创建和撤销规则见 <a href="/zh/docs/cloud/tokens/">API 密钥</a>。</p>
 
-<p>通过全局命令行参数指定端点，并从 <code>SPCTL_TOKEN</code> 环境变量读取令牌。在交互式 shell 中，以下方式可避免将 secret 写入命令参数和 shell 历史：</p>
+<p>通过全局命令行参数指定端点，并从 <code>SPCTL_TOKEN</code> 环境变量读取API 密钥。在交互式 shell 中，以下方式可避免将 secret 写入命令参数和 shell 历史：</p>
 
 <!-- deployment-template: cloud-token-environment -->
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#8be9fd;font-style:italic">read</span> -rsp <span style="color:#f1fa8c">&#39;API token: &#39;</span> SPCTL_TOKEN; <span style="color:#8be9fd;font-style:italic">echo</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#8be9fd;font-style:italic">read</span> -rsp <span style="color:#f1fa8c">&#39;API key: &#39;</span> SPCTL_TOKEN; <span style="color:#8be9fd;font-style:italic">echo</span>
 <span style="color:#8be9fd;font-style:italic">export</span> SPCTL_TOKEN
 ./bin/spctl --pms-endpoint https://cloud.speedle.io/policy-mgmt/v1 get service --all
 <span style="color:#8be9fd;font-style:italic">unset</span> SPCTL_TOKEN</code></pre></div>
-<p><code>--token</code> 参数仍为兼容现有用法而保留，但环境变量可避免通过命令参数暴露令牌。每个全局参数都有对应的环境变量：添加 <code>SPCTL_</code> 前缀，将参数名转为大写，并把连字符替换为下划线。例如，<code>SPCTL_PMS_ENDPOINT</code> 对应 <code>pms-endpoint</code>，<code>SPCTL_SKIPVERIFY</code> 对应 <code>skipverify</code>。</p>
+<p><code>--token</code> 参数仍为兼容现有用法而保留，但环境变量可避免通过命令参数暴露API 密钥。每个全局参数都有对应的环境变量：添加 <code>SPCTL_</code> 前缀，将参数名转为大写，并把连字符替换为下划线。例如，<code>SPCTL_PMS_ENDPOINT</code> 对应 <code>pms-endpoint</code>，<code>SPCTL_SKIPVERIFY</code> 对应 <code>skipverify</code>。</p>
 
 <p>如需保存配置，请使用 <code>~/.speedle</code>。文件每行包含一个 <code>名称=值</code> 配置项，名称与命令行参数一致：</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ini" data-lang="ini"><span style="color:#50fa7b">pms-endpoint</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">https://cloud.speedle.io/policy-mgmt/v1</span>
-<span style="color:#50fa7b">token</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&lt;api-token&gt;</span></code></pre></div>
-<p>以下方式可在不把令牌写入命令参数的情况下创建或更新此文件：</p>
+<span style="color:#50fa7b">token</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&lt;api-key&gt;</span></code></pre></div>
+<p>以下方式可在不把API 密钥写入命令参数的情况下创建或更新此文件：</p>
 
 <!-- deployment-template: cloud-token-config -->
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#8be9fd;font-style:italic">read</span> -rsp <span style="color:#f1fa8c">&#39;API token: &#39;</span> SPCTL_TOKEN; <span style="color:#8be9fd;font-style:italic">echo</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#8be9fd;font-style:italic">read</span> -rsp <span style="color:#f1fa8c">&#39;API key: &#39;</span> SPCTL_TOKEN; <span style="color:#8be9fd;font-style:italic">echo</span>
 <span style="color:#8be9fd;font-style:italic">printf</span> <span style="color:#f1fa8c">&#39;%s\n&#39;</span> <span style="color:#f1fa8c">&#34;</span><span style="color:#8be9fd;font-style:italic">$SPCTL_TOKEN</span><span style="color:#f1fa8c">&#34;</span> | ./bin/spctl config token --stdin
 <span style="color:#8be9fd;font-style:italic">unset</span> SPCTL_TOKEN</code></pre></div>
-<p><code>spctl config token --stdin</code> 会以 <code>0600</code> 权限写入 <code>~/.speedle</code>。手动编辑此文件时，先用 <code>install -m 600 /dev/null ~/.speedle</code> 创建文件，或在编辑后运行 <code>chmod 0600 ~/.speedle</code>。如果 <code>spctl</code> 从允许 group 或其他用户访问的文件中读取令牌，会向标准错误输出警告。<code>spctl config --list</code> 会把已配置的令牌显示为 <code>********</code>。</p>
+<p><code>spctl config token --stdin</code> 会以 <code>0600</code> 权限写入 <code>~/.speedle</code>。手动编辑此文件时，先用 <code>install -m 600 /dev/null ~/.speedle</code> 创建文件，或在编辑后运行 <code>chmod 0600 ~/.speedle</code>。如果 <code>spctl</code> 从允许 group 或其他用户访问的文件中读取API 密钥，会向标准错误输出警告。<code>spctl config --list</code> 会把已配置的API 密钥显示为 <code>********</code>。</p>
 
-<p>显式命令行参数优先于环境变量，环境变量优先于两个配置文件。在配置文件中，<code>~/.speedle</code> 优先于 <code>~/.spctlconfig</code>。通过 <code>spctl config</code> 设置非令牌配置时，新值写入 <code>~/.spctlconfig</code>，同时删除 <code>~/.speedle</code> 中会覆盖新值的同名配置。</p>
+<p>显式命令行参数优先于环境变量，环境变量优先于两个配置文件。在配置文件中，<code>~/.speedle</code> 优先于 <code>~/.spctlconfig</code>。通过 <code>spctl config</code> 设置 <code>token</code> 以外的配置项时，新值写入 <code>~/.spctlconfig</code>，同时删除 <code>~/.speedle</code> 中会覆盖新值的同名配置。</p>
 
-<p>令牌仅在启用证书验证的 HTTPS 连接中以 <code>Authorization: Bearer</code> 凭据发送。只有 <code>127.0.0.1</code>、<code>::1</code> 或 <code>localhost</code> 等回环主机可以在携带令牌时使用纯 HTTP；对于远程 HTTP 端点以及从 HTTPS 降级到 HTTP 的重定向，<code>spctl</code> 会在发送凭据前拒绝请求。对于 HTTPS 端点，<code>spctl</code> 也拒绝在 <code>--skipverify=true</code> 时发送令牌；对于私有或自签名证书颁发机构，请使用 <code>--cacert</code> 配置信任。正常命令输出和错误信息不会包含令牌。</p>
+<p>API 密钥仅在启用证书验证的 HTTPS 连接中以 <code>Authorization: Bearer</code> 凭据发送。只有 <code>127.0.0.1</code>、<code>::1</code> 或 <code>localhost</code> 等回环主机可以在携带API 密钥时使用纯 HTTP；对于远程 HTTP 端点以及从 HTTPS 降级到 HTTP 的重定向，<code>spctl</code> 会在发送凭据前拒绝请求。对于 HTTPS 端点，<code>spctl</code> 也拒绝在 <code>--skipverify=true</code> 时发送API 密钥；对于私有或自签名证书颁发机构，请使用 <code>--cacert</code> 配置信任。正常命令输出和错误信息不会包含API 密钥。</p>
 
-<p>Cloud 返回错误时，命令以非零状态退出。遇到 <code>401</code> 请检查令牌，遇到 <code>403 insufficient_scope</code> 请检查 scope。<code>404</code> 表示资源不存在，<code>409 service_exists</code> 和 <code>409 policy_exists</code> 表示资源重复。遇到 <code>429</code> 时，请遵循响应中的 <code>Retry-After</code>，并采用有界退避。每日额度或策略额度错误需要等待额度重置或减少用量，不要紧密循环重试。</p>
+<p>Cloud 返回错误时，命令以非零状态退出。遇到 <code>401</code> 请检查 API 密钥，遇到 <code>403 insufficient_scope</code> 请检查 scope。<code>404</code> 表示资源不存在，<code>409 service_exists</code> 和 <code>409 policy_exists</code> 表示资源重复。遇到 <code>429</code> 时，请遵循响应中的 <code>Retry-After</code>，并采用有界退避。遇到 <code>429 daily_quota_exceeded</code>，按 <code>Retry-After</code> 等待至 00:00 UTC。服务、策略和有效密钥上限返回 <code>409 quota_exceeded</code>，不会随时间重置；请删除或撤销不用的项目。参见<a href="/zh/docs/cloud/limits-and-errors/">限额与错误</a>。</p>
 
 <h2 id="其他管理接口">其他管理接口</h2>
 

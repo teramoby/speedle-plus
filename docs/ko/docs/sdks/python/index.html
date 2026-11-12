@@ -155,9 +155,9 @@
 <li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading docs-nav-heading-link"><a href="/ko/docs/cloud/">Speedle Cloud</a></span>
 <ul class="">
 <li data-docs-depth="1" class=""><a href="/ko/docs/cloud/getting-started/">Speedle Cloud 빠른 시작</a></li>
-<li data-docs-depth="1" class=""><a href="/ko/docs/cloud/tokens/">Speedle Cloud 애플리케이션 토큰</a></li>
-<li data-docs-depth="1" class=""><a href="/ko/docs/cloud/authorization-api/">Speedle Cloud 인가 API 프리뷰</a></li>
-<li data-docs-depth="1" class=""><a href="/ko/docs/cloud/limits-and-errors/">Speedle Cloud 제한 및 오류</a></li>
+<li data-docs-depth="1" class=""><a href="/ko/docs/cloud/tokens/">API 키</a></li>
+<li data-docs-depth="1" class=""><a href="/ko/docs/cloud/authorization-api/">인가 API</a></li>
+<li data-docs-depth="1" class=""><a href="/ko/docs/cloud/limits-and-errors/">제한과 오류</a></li>
 </ul>
 
 </li>
@@ -239,7 +239,7 @@ alice delete /docs/public: allowed=False reason=&lt;Reason.NO_APPLICABLE_POLICIE
 <p><strong>Speedle Cloud는 출시 예정입니다.</strong></p>
 </blockquote>
 
-<p>프로그램은 <code>SPEEDLE_SERVICE</code>에서 서비스 이름을, <code>SPEEDLE_TOKEN</code>에서 서비스 토큰을 읽습니다. <code>SPEEDLE_ENDPOINT</code>는 기본 엔드포인트 <code>https://cloud.speedle.io</code>를 재정의합니다. <code>main.py</code>를 다음과 같이 대체합니다:</p>
+<p>프로그램은 <code>SPEEDLE_SERVICE</code>에서 서비스 이름을, <code>SPEEDLE_TOKEN</code>에서 <code>ads</code> 범위의 계정 API 키을 읽습니다. <code>SPEEDLE_ENDPOINT</code>는 기본 엔드포인트 <code>https://cloud.speedle.io</code>를 재정의합니다. <code>main.py</code>를 다음과 같이 대체합니다:</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#ff79c6">import</span> os
 <span style="color:#ff79c6">import</span> sys
 
@@ -260,14 +260,14 @@ alice delete /docs/public: allowed=False reason=&lt;Reason.NO_APPLICABLE_POLICIE
 <span style="color:#ff79c6">except</span> SpeedleError <span style="color:#ff79c6">as</span> e:
     <span style="color:#ff79c6">print</span>(f<span style="color:#f1fa8c">&#34;Speedle error: {e}&#34;</span>, <span style="color:#8be9fd;font-style:italic">file</span><span style="color:#ff79c6">=</span>sys<span style="color:#ff79c6">.</span>stderr)
     sys<span style="color:#ff79c6">.</span><span style="color:#8be9fd;font-style:italic">exit</span>(<span style="color:#bd93f9">1</span>)</code></pre></div>
-<p>환경 변수를 설정하고 실행합니다. <code>read -rs</code>를 사용하면 토큰이 셸 기록이나 화면에 노출되지 않습니다:</p>
+<p>환경 변수를 설정하고 실행합니다. <code>read -rs</code>를 사용하면 API 키이 셸 기록이나 화면에 노출되지 않습니다:</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#8be9fd;font-style:italic">export</span> <span style="color:#8be9fd;font-style:italic">SPEEDLE_SERVICE</span><span style="color:#ff79c6">=</span>docs
 <span style="color:#8be9fd;font-style:italic">read</span> -rs SPEEDLE_TOKEN <span style="color:#ff79c6">&amp;&amp;</span> <span style="color:#8be9fd;font-style:italic">export</span> SPEEDLE_TOKEN
 python main.py</code></pre></div>
 <p>서비스에 예제 정책이 있는 경우 출력:</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">alice get /docs/public: allowed=True
 alice delete /docs/public: allowed=False reason=&lt;Reason.NO_APPLICABLE_POLICIES: 3&gt;</code></pre></div>
-<p>토큰은 서버 측 비밀 값입니다. 브라우저, 모바일 앱 또는 데스크톱 클라이언트에 절대 배포하지 마십시오.</p>
+<p>API 키은 서버 측 비밀 값입니다. 브라우저, 모바일 앱 또는 데스크톱 클라이언트에 절대 배포하지 마십시오.</p>
 
 <h2 id="오류-처리">오류 처리</h2>
 

@@ -11,7 +11,7 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
     <meta name="viewport" content="width=device-width, initial-scale=1"><title>Speedle Cloud · Speedle Engine</title>
-<meta name="description" content="Speedle Cloud documentation: getting started, account and policy management, application tokens, the authorization API preview, limits, errors and downloads.">
+<meta name="description" content="Hosted authorization, account API keys, request limits and integration guides.">
 <meta name="generator" content="Hugo 0.48" />
 <link href="https://engine.speedle.io/index.xml" rel="alternate" type="application/rss+xml">
 <link rel="canonical" href="https://engine.speedle.io/docs/cloud/">
@@ -25,7 +25,7 @@
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Speedle Engine">
 <meta property="og:title" content="Speedle Cloud · Speedle Engine">
-<meta property="og:description" content="Speedle Cloud documentation: getting started, account and policy management, application tokens, the authorization API preview, limits, errors and downloads.">
+<meta property="og:description" content="Hosted authorization, account API keys, request limits and integration guides.">
 <meta property="og:url" content="https://engine.speedle.io/docs/cloud/">
 <meta property="og:image" content="https://engine.speedle.io/img/social/engine-en.png">
 <meta property="og:image:width" content="1200">
@@ -34,11 +34,11 @@
 <meta property="og:image:alt" content="Speedle Engine — Fast. Simple. Access control">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Speedle Cloud · Speedle Engine">
-<meta name="twitter:description" content="Speedle Cloud documentation: getting started, account and policy management, application tokens, the authorization API preview, limits, errors and downloads.">
+<meta name="twitter:description" content="Hosted authorization, account API keys, request limits and integration guides.">
 <meta name="twitter:image" content="https://engine.speedle.io/img/social/engine-en.png">
 <meta name="twitter:image:alt" content="Speedle Engine — Fast. Simple. Access control">
 
-<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/docs/cloud/#webpage","@type":"WebPage","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-08T17:11:18+08:00","description":"Speedle Cloud documentation: getting started, account and policy management, application tokens, the authorization API preview, limits, errors and downloads.","headline":"Speedle Cloud","image":"https://engine.speedle.io/img/social/engine-en.png","inLanguage":"en","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/docs/cloud/","@type":"WebPage"},"name":"Speedle Cloud","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/docs/cloud/"}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/docs/cloud/#webpage","@type":"WebPage","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-12T00:00:00+08:00","description":"Hosted authorization, account API keys, request limits and integration guides.","headline":"Speedle Cloud","image":"https://engine.speedle.io/img/social/engine-en.png","inLanguage":"en","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/docs/cloud/","@type":"WebPage"},"name":"Speedle Cloud","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/docs/cloud/"}</script>
 <script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/docs/cloud/#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://engine.speedle.io/","name":"Home","position":1},{"@type":"ListItem","item":"https://engine.speedle.io/docs/","name":"Documentation","position":2},{"@type":"ListItem","item":"https://engine.speedle.io/docs/cloud/","name":"Speedle Cloud","position":3}]}</script><link href="/css/docs.css" rel="stylesheet" type="text/css">
 
 
@@ -154,7 +154,7 @@
 <li data-docs-depth="0" class="docs-nav-section parent active"><span class="docs-nav-heading docs-nav-heading-link"><a href="/docs/cloud/" aria-current="page">Speedle Cloud</a></span>
 <ul class="sub-menu">
 <li data-docs-depth="1" class=""><a href="/docs/cloud/getting-started/">Getting started</a></li>
-<li data-docs-depth="1" class=""><a href="/docs/cloud/tokens/">Application tokens</a></li>
+<li data-docs-depth="1" class=""><a href="/docs/cloud/tokens/">API keys</a></li>
 <li data-docs-depth="1" class=""><a href="/docs/cloud/authorization-api/">Authorization API</a></li>
 <li data-docs-depth="1" class=""><a href="/docs/cloud/limits-and-errors/">Limits and errors</a></li>
 </ul>
@@ -180,33 +180,30 @@
   <h1>Speedle Cloud</h1>
   <p></p>
 
-<p>Speedle Cloud is a hosted access-control service for developers, built on the open-source Speedle policy engine. It is designed to let you manage SPDL authorization and role policies, test decisions in a Playground, and call an authorization API from your application server without operating your own authorization service.</p>
+<p>Speedle Cloud is a hosted authorization service built on the open-source Speedle engine. Manage services, SPDL authorization and role policies, test decisions in the Playground and call the API from your server.</p>
 
-<p><strong>Speedle Cloud is coming soon.</strong> The Cloud header displays a <strong>Coming soon</strong> badge, and production sign-in is not open on <a href="https://cloud.speedle.io/">cloud.speedle.io</a> yet. The console workflow and authenticated Authorization Decision Service (ADS) described here are previews of the published service contract. Issuing a token will not enable server-side authorization calls while authenticated ADS remains pending. Verify deployment and identity-provider availability in your chosen stage.</p>
-
-<p>The free public beta is intended for trials, learning and evaluation. It has no SLA, is not recommended for production use, and its features and limits may change.</p>
+<p>Account sign-in must be available before using the console or creating API keys. The free public beta is for trials, learning and evaluation, has no SLA and is not recommended for production use. Features and limits may change.</p>
 
 <h2 id="documentation">Documentation</h2>
 
 <ul>
-<li><a href="/docs/cloud/getting-started/">Getting started</a>: Sign in with GitHub or Google (opens soon), account management, services, SPDL policies, session management requests and all four session Playground operations.</li>
-<li><a href="/docs/cloud/tokens/">Application tokens</a>: recent-authentication requirements, one-time token disclosure, metadata pagination, rotation and revocation.</li>
-<li><a href="/docs/cloud/authorization-api/">Authorization API preview</a>: the IsAllowed request and response contract, a Node.js 22 example, policy snapshots and integration constraints.</li>
-<li><a href="/docs/cloud/limits-and-errors/">Limits and errors</a>: account quotas, request limits, error responses, rate and quota headers, and retry guidance.</li>
+<li><a href="/docs/cloud/getting-started/">Getting started</a>: Sign-in, accounts, services, policies and the session Playground.</li>
+<li><a href="/docs/cloud/tokens/">API keys</a>: Account-level credentials, fixed scopes, Create and Revoke, one-time secret display and pagination.</li>
+<li><a href="/docs/cloud/authorization-api/">Authorization API</a>: IsAllowed requests, caller identity, Node.js 22 and transport constraints.</li>
+<li><a href="/docs/cloud/limits-and-errors/">Limits and errors</a>: Account caps, size limits, burst limits, daily quota, error codes and reset times.</li>
 </ul>
 
 <h2 id="downloads">Downloads</h2>
 
 <ul>
-<li><a href="/docs/cloud/quickstart.en.md">English Markdown</a>: all four Cloud chapters in one offline document.</li>
-<li><a href="https://cloud.speedle.io/openapi.yaml">OpenAPI YAML</a>: the canonical checked-in Cloud API specification.</li>
-<li><a href="https://cloud.speedle.io/openapi.json">OpenAPI JSON</a>: generated from the same YAML source bytes.</li>
-<li><a href="https://cloud.speedle.io/build.json">Serving build version</a>: identifies the serving build; it does not certify identity-provider or endpoint availability.</li>
+<li><a href="/docs/cloud/quickstart.en.md">English Markdown</a>: The four Cloud chapters in one offline guide.</li>
+<li><a href="https://cloud.speedle.io/openapi.yaml">OpenAPI YAML</a></li>
+<li><a href="https://cloud.speedle.io/openapi.json">OpenAPI JSON</a></li>
 </ul>
 
-<p>The schemas include the four session Playground operations and the authenticated ADS contract. Publishing a schema or downloading a guide does not enable a pending endpoint or open sign-in. The YAML and generated JSON are versioned, promoted and restored with the corresponding sealed Cloud build. The English and Chinese Markdown downloads are maintained with these Engine documentation pages.</p>
+<p>The API schemas describe the request and response contracts; downloading them does not open account sign-in.</p>
 
-<p>Read the Cloud <a href="https://cloud.speedle.io/terms">Terms</a> and <a href="https://cloud.speedle.io/privacy">Privacy Policy</a>.</p>
+<p>Read the Cloud <a href="https://cloud.speedle.io/terms">Terms</a> / <a href="https://cloud.speedle.io/privacy">Privacy Policy</a>.</p>
 </div></main>
         </div>
     </div>

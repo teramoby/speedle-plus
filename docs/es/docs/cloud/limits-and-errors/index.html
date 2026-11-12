@@ -10,8 +10,8 @@
 
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
-    <meta name="viewport" content="width=device-width, initial-scale=1"><title>Límites y errores de Speedle Cloud · Speedle Engine</title>
-<meta name="description" content="Cuotas de cuenta de Speedle Cloud, límites de solicitudes, errores en formato JSON plano, encabezados de tasa y cuota, contabilidad diaria y directrices de reintento.">
+    <meta name="viewport" content="width=device-width, initial-scale=1"><title>Speedle Cloud Límites y errores · Speedle Engine</title>
+<meta name="description" content="Límites de cuenta, códigos de error, restablecimiento y reintentos.">
 <meta name="generator" content="Hugo 0.48" />
 <link href="https://engine.speedle.io/index.xml" rel="alternate" type="application/rss+xml">
 <link rel="canonical" href="https://engine.speedle.io/es/docs/cloud/limits-and-errors/">
@@ -23,11 +23,10 @@
 <link rel="alternate" hreflang="zh-CN" href="https://engine.speedle.io/zh/docs/cloud/limits-and-errors/">
 <link rel="alternate" hreflang="x-default" href="https://engine.speedle.io/docs/cloud/limits-and-errors/">
 <meta property="og:type" content="article">
-<meta property="article:published_time" content="2026-11-08T00:00:00&#43;08:00">
-<meta property="article:modified_time" content="2026-11-08T17:11:18&#43;08:00">
+<meta property="article:modified_time" content="2026-11-12T00:00:00&#43;08:00">
 <meta property="og:site_name" content="Speedle Engine">
-<meta property="og:title" content="Límites y errores de Speedle Cloud · Speedle Engine">
-<meta property="og:description" content="Cuotas de cuenta de Speedle Cloud, límites de solicitudes, errores en formato JSON plano, encabezados de tasa y cuota, contabilidad diaria y directrices de reintento.">
+<meta property="og:title" content="Speedle Cloud Límites y errores · Speedle Engine">
+<meta property="og:description" content="Límites de cuenta, códigos de error, restablecimiento y reintentos.">
 <meta property="og:url" content="https://engine.speedle.io/es/docs/cloud/limits-and-errors/">
 <meta property="og:image" content="https://engine.speedle.io/img/social/engine-en.png">
 <meta property="og:image:width" content="1200">
@@ -35,13 +34,13 @@
 <meta property="og:image:type" content="image/png">
 <meta property="og:image:alt" content="Speedle Engine — Fast. Simple. Access control">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Límites y errores de Speedle Cloud · Speedle Engine">
-<meta name="twitter:description" content="Cuotas de cuenta de Speedle Cloud, límites de solicitudes, errores en formato JSON plano, encabezados de tasa y cuota, contabilidad diaria y directrices de reintento.">
+<meta name="twitter:title" content="Speedle Cloud Límites y errores · Speedle Engine">
+<meta name="twitter:description" content="Límites de cuenta, códigos de error, restablecimiento y reintentos.">
 <meta name="twitter:image" content="https://engine.speedle.io/img/social/engine-en.png">
 <meta name="twitter:image:alt" content="Speedle Engine — Fast. Simple. Access control">
 
-<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/es/docs/cloud/limits-and-errors/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-08T17:11:18+08:00","datePublished":"2026-11-08T00:00:00+08:00","description":"Cuotas de cuenta de Speedle Cloud, límites de solicitudes, errores en formato JSON plano, encabezados de tasa y cuota, contabilidad diaria y directrices de reintento.","headline":"Límites y errores de Speedle Cloud","image":"https://engine.speedle.io/img/social/engine-en.png","inLanguage":"es","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/es/docs/cloud/limits-and-errors/","@type":"WebPage"},"name":"Límites y errores de Speedle Cloud","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/es/docs/cloud/limits-and-errors/"}</script>
-<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/es/docs/cloud/limits-and-errors/#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://engine.speedle.io/es/","name":"Inicio","position":1},{"@type":"ListItem","item":"https://engine.speedle.io/es/docs/","name":"Documentación","position":2},{"@type":"ListItem","item":"https://engine.speedle.io/es/docs/cloud/","name":"Speedle Cloud","position":3},{"@type":"ListItem","item":"https://engine.speedle.io/es/docs/cloud/limits-and-errors/","name":"Límites y errores de Speedle Cloud","position":4}]}</script><link href="/css/docs.css" rel="stylesheet" type="text/css">
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/es/docs/cloud/limits-and-errors/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-12T00:00:00+08:00","description":"Límites de cuenta, códigos de error, restablecimiento y reintentos.","headline":"Speedle Cloud Límites y errores","image":"https://engine.speedle.io/img/social/engine-en.png","inLanguage":"es","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/es/docs/cloud/limits-and-errors/","@type":"WebPage"},"name":"Speedle Cloud Límites y errores","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/es/docs/cloud/limits-and-errors/"}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/es/docs/cloud/limits-and-errors/#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://engine.speedle.io/es/","name":"Inicio","position":1},{"@type":"ListItem","item":"https://engine.speedle.io/es/docs/","name":"Documentación","position":2},{"@type":"ListItem","item":"https://engine.speedle.io/es/docs/cloud/","name":"Speedle Cloud","position":3},{"@type":"ListItem","item":"https://engine.speedle.io/es/docs/cloud/limits-and-errors/","name":"Speedle Cloud Límites y errores","position":4}]}</script><link href="/css/docs.css" rel="stylesheet" type="text/css">
 
 
     <link href="/css/navigation.css?v=header-20261106-v8" rel="stylesheet">
@@ -156,7 +155,7 @@
 <li data-docs-depth="0" class="docs-nav-section parent"><span class="docs-nav-heading docs-nav-heading-link"><a href="/es/docs/cloud/">Speedle Cloud</a></span>
 <ul class="sub-menu">
 <li data-docs-depth="1" class=""><a href="/es/docs/cloud/getting-started/">Primeros pasos</a></li>
-<li data-docs-depth="1" class=""><a href="/es/docs/cloud/tokens/">Tokens de aplicación</a></li>
+<li data-docs-depth="1" class=""><a href="/es/docs/cloud/tokens/">Claves API</a></li>
 <li data-docs-depth="1" class=""><a href="/es/docs/cloud/authorization-api/">API de autorización</a></li>
 <li data-docs-depth="1" class="active"><a href="/es/docs/cloud/limits-and-errors/" aria-current="page">Límites y errores</a></li>
 </ul>
@@ -181,8 +180,8 @@
 <main>
 <div id="main">
 
-  <h1>Límites y errores de Speedle Cloud</h1>
-  <p class="docs-lead">Planifique en función de los límites globales de la cuenta y falle de forma restrictiva (fail closed) cuando Cloud no pueda devolver una decisión de autorización válida.</p>
+  <h1>Speedle Cloud Límites y errores</h1>
+  <p class="docs-lead"></p>
 
 
 
@@ -195,141 +194,165 @@
 
   <div id="kube-component" class="content">
 
-<p>Los errores y encabezados de ADS a continuación describen el contrato de ADS autenticado, cuyo entorno de ejecución aún no se encuentra disponible. El contrato de gestión ya define límites de cuenta, comprobaciones de sesión y CSRF, y errores de gestión de tokens para su uso cuando el acceso a cuentas esté habilitado. Descargar un esquema no habilita un endpoint pendiente.</p>
+<p>Salvo que se indique lo contrario, los límites se comparten en toda la cuenta. Cambiar de clave API no aumenta la cuota diaria.</p>
 
 <h2 id="límites">Límites</h2>
 
 <table>
 <thead>
 <tr>
+<th>Qué se limita</th>
 <th>Límite</th>
-<th>Significado</th>
+<th>Qué hacer al alcanzarlo</th>
 </tr>
 </thead>
 
 <tbody>
 <tr>
-<td>10.000 llamadas al día</td>
-<td>Llamadas coincidentes a controladores de PMS y ADS a nivel de cuenta por día UTC, en todas las sesiones, tokens y servicios; se reinicia a las 00:00 UTC.</td>
+<td>Servicios de la cuenta</td>
+<td>100</td>
+<td><code>409 quota_exceeded</code>; eliminar un servicio sin uso. Sin restablecimiento temporal.</td>
 </tr>
 
 <tr>
-<td>200 políticas</td>
-<td>Políticas de autorización y roles combinadas por cuenta.</td>
+<td>Políticas de autorización y de roles entre todos los servicios</td>
+<td>200 por cuenta</td>
+<td><code>409 quota_exceeded</code>; eliminar políticas. Sin restablecimiento temporal.</td>
 </tr>
 
 <tr>
-<td>4 KiB de SPDL</td>
-<td>4.096 bytes UTF-8 por política completa, no 4.096 caracteres.</td>
+<td>Fuente SPDL completa de una política</td>
+<td>1,024 bytes UTF-8</td>
+<td><code>400 invalid_request</code> al escribir desde la consola; acortar la fuente. Se cuentan bytes, no caracteres. Sin restablecimiento temporal.</td>
 </tr>
 
 <tr>
-<td>2 tokens activos</td>
-<td>Por servicio; el historial de revocaciones no consume este límite.</td>
+<td>Claves API activas entre todos los ámbitos</td>
+<td>10 por cuenta</td>
+<td><code>409 quota_exceeded</code> con <code>limit: 10</code>; revocar una clave sin uso. Sin restablecimiento temporal; el historial revocado no cuenta.</td>
 </tr>
 
 <tr>
-<td>600 solicitudes por minuto por token</td>
-<td>Límite de ráfaga aproximado por ubicación, independiente del límite diario estricto de la cuenta.</td>
+<td>Nombre de política / nombre de clave API</td>
+<td>128 puntos de código Unicode / 1–128 caracteres tras recortar espacios</td>
+<td><code>400 invalid_request</code>; corregir el nombre. Sin restablecimiento temporal.</td>
 </tr>
 
 <tr>
-<td>Cuerpo de solicitud de 64 KiB</td>
-<td>Límite global antes del análisis sintáctico. Los atributos entrantes opcionales también conservan su límite de 50 atributos y 16.384 bytes en JSON canónico UTF-8.</td>
+<td>Llamadas facturables de gestión de políticas y autorización</td>
+<td>10,000 por cuenta y día UTC</td>
+<td><code>429 daily_quota_exceeded</code>; se restablece a las 00:00 UTC. Respetar <code>Retry-After</code>.</td>
+</tr>
+
+<tr>
+<td>Ráfagas de solicitudes con clave API</td>
+<td>Aproximadamente 600 por minuto por clave en cada ubicación de Cloud</td>
+<td><code>429 rate_limited</code> con <code>Retry-After: 60</code>; esperar antes de reintentar. No garantiza rendimiento ni añade cuota diaria.</td>
+</tr>
+
+<tr>
+<td>Cuerpo de solicitud ordinario</td>
+<td>65,536 bytes (64 KiB)</td>
+<td><code>413 request_too_large</code>; reducir el cuerpo. Sin restablecimiento temporal.</td>
+</tr>
+
+<tr>
+<td>Cuerpo de importación JSON atómica (solo <code>POST /api/service/import</code>)</td>
+<td>5,100,000 bytes</td>
+<td><code>413 request_too_large</code>; reducir los datos. También se aplican los límites de políticas y cuenta. Sin restablecimiento temporal.</td>
+</tr>
+
+<tr>
+<td>Atributos de entrada</td>
+<td>50 atributos; 16,384 bytes UTF-8 de JSON canónico</td>
+<td><code>400 SPDL-0004</code>; reducir el número o tamaño de atributos. Sin restablecimiento temporal.</td>
 </tr>
 </tbody>
 </table>
 
-<p>Cada cuenta dispone de un servicio. Los nombres de tokens tienen entre 1 y 128 caracteres. Consulte <a href="/es/docs/cloud/tokens/">Tokens de aplicación</a> para conocer las reglas del ciclo de vida de credenciales.</p>
+<p>Consulte <a href="/es/docs/cloud/tokens/">Claves API</a> para ámbitos, creación y revocación.</p>
 
-<h2 id="contabilidad-de-cuotas-diarias">Contabilidad de cuotas diarias</h2>
+<h2 id="cuota-diaria">Cuota diaria</h2>
 
-<p>Acceder a un controlador coincidente consume una unidad diaria, incluso en caso de denegación de política, entrada de datos de negocio no válida o error interno. Los endpoints de autenticación y de sesión no consumen estas unidades. Las solicitudes rechazadas antes de acceder al controlador por comprobaciones de autenticación, enrutamiento, CSRF, tamaño de cuerpo, límite de ráfaga o reserva de cuota tampoco las consumen.</p>
+<p>Las lecturas, escrituras, validación, Playground, importaciones, exportaciones y comprobaciones de autorización comparten la cuota. Las denegaciones de políticas y entradas de negocio inválidas cuentan. La autenticación, las operaciones de sesión y <code>GET /api/me</code> no cuentan. Tampoco cuentan las solicitudes rechazadas por autenticación, ámbito, enrutamiento, CSRF, tamaño, límite de ráfagas o cuota diaria.</p>
 
-<p>Las reservas asignadas que caducan o se abandonan no se vuelven a emitir, por lo que el número de llamadas utilizables puede ser inferior a 10.000. <code>GET /api/me</code> informa del uso diario reservado y de la hora de reinicio sin cobrar una unidad diaria.</p>
+<p>Los fallos de Cloud pueden recibir una devolución de cuota de hasta 1,000 llamadas por cuenta y día UTC; si no se confirma, siguen contando. Los errores causados por la solicitud cuentan siempre. Si falla temporalmente el contador, las llamadas de autorización pueden continuar a velocidad reducida con hasta 10,000 llamadas adicionales por cuenta y día UTC. Es una asignación separada, no garantizada, que se restablece a las 00:00 UTC junto con el límite de devoluciones. Si no se concede, se devuelve <code>503 quota_unavailable</code>.</p>
 
-<p>Cambiar de token no añade cuota a la cuenta. El límite diario de la cuenta y el límite aproximado de ráfaga por token y ubicación se aplican por separado.</p>
+<p>Parte de la capacidad puede quedar reservada sin usarse, por lo que el total utilizable puede ser inferior a 10,000. <code>GET /api/me</code> informa del uso y la hora de restablecimiento. No reintente continuamente ni cambie de clave para eludir los límites.</p>
 
-<h2 id="errores-http">Errores HTTP</h2>
+<h2 id="errores-y-cabeceras">Errores y cabeceras</h2>
 
-<p>Los errores devuelven respuestas en formato JSON plano. Corrija la solicitud o credencial según corresponda; en caso contrario, falle de forma restrictiva (fail closed) y utilice un tiempo de espera exponencial limitado en lugar de un bucle de reintento infinito.</p>
+<p>Los errores son JSON plano, por ejemplo <code>{&quot;error&quot;:&quot;rate_limited&quot;}</code>. Si no obtiene una decisión válida, deniegue el acceso.</p>
 
 <table>
 <thead>
 <tr>
-<th>Estado HTTP y error</th>
-<th>Respuesta de la aplicación</th>
+<th>Estado y error</th>
+<th>Acción</th>
 </tr>
 </thead>
 
 <tbody>
 <tr>
-<td><code>401 {&quot;error&quot;:&quot;unauthorized&quot;}</code></td>
-<td>Compruebe el entorno y la credencial. ADS incluye un desafío Bearer. Las solicitudes anónimas y las que solo usan cookies no pueden autorizar operaciones en ADS.</td>
+<td><code>400 invalid_request</code> o error de Speedle</td>
+<td>Corregir la solicitud; no repetirla sin cambios.</td>
 </tr>
 
 <tr>
-<td><code>403 {&quot;error&quot;:&quot;reauth_required&quot;}</code></td>
-<td>Autentíquese nuevamente con un proveedor vinculado antes de crear un token. La actividad ordinaria no renueva la vigencia de la autenticación.</td>
+<td><code>401 unauthorized</code></td>
+<td>Comprobar la clave API o sesión. Una cookie de sesión sola no autoriza ADS.</td>
 </tr>
 
 <tr>
-<td><code>403 {&quot;error&quot;:&quot;service_mismatch&quot;}</code></td>
-<td>Corrija la entrada del servicio; nunca reintente contra los datos de otro arrendatario.</td>
+<td><code>403 reauth_required</code></td>
+<td>Autenticarse de nuevo con un proveedor vinculado antes de crear la clave.</td>
 </tr>
 
 <tr>
-<td><code>400 {&quot;error&quot;:&quot;SPDL-0004 …&quot;}</code></td>
-<td>Speedle rechazó la solicitud, por ejemplo debido a que un valor de atributo tiene un tipo incorrecto. El mensaje es el de Speedle. Corrija la solicitud; no la reintente sin cambios.</td>
+<td><code>403 insufficient_scope</code></td>
+<td>Usar una clave con el ámbito requerido.</td>
 </tr>
 
 <tr>
-<td><code>404</code> en revocación de token</td>
-<td>El ID del token es desconocido, no pertenece a la cuenta o ya ha sido revocado. Actualice los metadatos antes de elegir otra acción.</td>
+<td><code>403 management_scope_disabled</code></td>
+<td>No se emiten ámbitos de gestión con el inicio de sesión cerrado.</td>
 </tr>
 
 <tr>
-<td><code>413 {&quot;error&quot;:&quot;request_too_large&quot;}</code></td>
-<td>Reduzca el tamaño del cuerpo de la solicitud.</td>
+<td><code>403 csrf_failed</code></td>
+<td>Comprobar sesión, origen y cabecera CSRF.</td>
 </tr>
 
 <tr>
-<td><code>429 {&quot;error&quot;:&quot;rate_limited&quot;}</code></td>
-<td>Respete el encabezado <code>Retry-After</code>, que es de 60 segundos para este límite de ráfaga, y aplique un retroceso limitado.</td>
+<td><code>404 service_not_found</code> (ADS) / <code>404 not_found</code> (gestión)</td>
+<td>Elegir un servicio de la cuenta. Los ID de clave desconocidos, ajenos o revocados también devuelven <code>404 not_found</code>.</td>
 </tr>
 
 <tr>
-<td><code>429 {&quot;error&quot;:&quot;daily_quota_exceeded&quot;}</code></td>
-<td>Respete el encabezado <code>Retry-After</code> hasta la medianoche UTC siguiente. Cambiar de token no añade cuota a la cuenta.</td>
+<td><code>409 quota_exceeded</code></td>
+<td>Liberar una plaza de servicio, política o clave API; el tiempo no restablece estos límites.</td>
 </tr>
 
 <tr>
-<td><code>503 {&quot;error&quot;:&quot;quota_unavailable&quot;}</code> o <code>snapshot_unavailable</code></td>
-<td>Falle de forma restrictiva (fail closed) y reintente únicamente con un retroceso limitado. No recurra a evaluaciones de políticas de demostración o D1.</td>
+<td><code>413 request_too_large</code></td>
+<td>Reducir el cuerpo.</td>
 </tr>
 
 <tr>
-<td><code>500 {&quot;error&quot;:&quot;internal_error&quot;}</code></td>
-<td>Falle de forma restrictiva (fail closed). Conserve un ID de solicitud seguro para soporte y evite registrar credenciales.</td>
+<td><code>429 rate_limited</code> / <code>429 daily_quota_exceeded</code></td>
+<td>Respetar <code>Retry-After</code> y usar espera incremental acotada; la cuota diaria se restablece a medianoche UTC.</td>
+</tr>
+
+<tr>
+<td><code>503 quota_unavailable</code> / <code>503 snapshot_unavailable</code> / <code>500 internal_error</code></td>
+<td>Denegar el acceso y reintentar con espera acotada, respetando <code>Retry-After</code> si existe.</td>
 </tr>
 </tbody>
 </table>
 
-<p>En el caso de respuestas <code>503</code>, <code>snapshot_unavailable</code> se contabiliza tras acceder al controlador, mientras que <code>quota_unavailable</code> no se contabiliza. Los rechazos tempranos omiten el encabezado de cuota diaria restante descrito a continuación.</p>
+<p>En solicitudes con clave verificada, <code>X-RateLimit-Limit</code> es 600. No hay un <code>X-RateLimit-Remaining</code> exacto. <code>X-Quota-Daily-Remaining</code> es una estimación de saldo de la cuenta; la concurrencia y las reservas sin uso pueden hacer que difiera del saldo utilizable. No garantiza la siguiente solicitud y se omite en rechazos tempranos.</p>
 
-<p>Una solicitud a ADS que no sea POST puede ser detenida en el borde público con una respuesta 403 de Cloudflare. Esa no es una decisión de autorización de la aplicación.</p>
-
-<h2 id="encabezados-de-tasa-y-cuota">Encabezados de tasa y cuota</h2>
-
-<p>Tras la verificación, <code>X-RateLimit-Limit</code> es 600. ADS no expone un valor exacto de <code>X-RateLimit-Remaining</code>.</p>
-
-<p>Cuando está presente tras un controlador contabilizado, <code>X-Quota-Daily-Remaining</code> estima las llamadas restantes a nivel de cuenta para el día de hoy: las llamadas no reservadas en el momento de la asignación más la reserva restante de esta instancia aislada. La estimación es conservadora en el momento de la concesión. Se almacena en caché durante un máximo de 30 segundos (duración de la reserva) y se descarta cuando esta caduca o cambia el día UTC.</p>
-
-<p>Las instancias aisladas simultáneas pueden hacer que el valor sobreestime la disponibilidad hasta en el saldo no reservado al momento de la asignación, no simplemente 32 llamadas. Las reservas no utilizadas o abandonadas pueden hacer que subestime la disponibilidad. Durante despliegues o reversiones, los asignadores heredados recurren a la reserva local restante. Este encabezado es informativo y no modifica la aplicación estricta de cuotas. Los rechazos tempranos lo omiten.</p>
-
-<p>Las respuestas coincidentes de ADS para aplicaciones también utilizan <code>Cache-Control: no-store</code>. No guarde decisiones ni credenciales en cachés compartidas.</p>
-
-<p>Vuelva a la <a href="/es/docs/cloud/authorization-api/">Vista previa de la API de autorización</a> para ver ejemplos de solicitudes y restricciones de integración.</p>
+<p>ADS usa <code>Cache-Control: no-store</code>. No guarde decisiones ni credenciales en cachés compartidas. Use POST; otros métodos pueden recibir <code>405 method_not_allowed</code> o un bloqueo previo que no sea JSON. Consulte la <a href="/es/docs/cloud/authorization-api/">API de autorización</a>.</p>
 </div>
 </div>
 </main>

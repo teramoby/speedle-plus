@@ -175,6 +175,17 @@ speedle-users 및 speedle-developers 메일링 리스트에도 참여하실 수 
     </item>
     
     <item>
+      <title>Speedle Cloud API 키</title>
+      <link>https://engine.speedle.io/ko/docs/cloud/tokens/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/ko/docs/cloud/tokens/</guid>
+      <description>API 키는 계정에 속하며 범위에 따라 해당 계정의 서비스에 접근합니다. 최종 사용자가 아닌 애플리케이션을 인증합니다. API 키, 세션, 연결된 신원 관리에는 로그인한 콘솔 세션이 필요합니다.
+API 키 생성 API 키에서 앞뒤 공백을 제외한 1–128자 이름과 범위를 지정하고 생성을 선택합니다. 생성하려면 최근 10분 이내에 연결된 제공자로 인증해야 합니다. 403 reauth_required이면 다시 인증한 뒤 생성을 다시 선택하세요. 제공자에서 돌아오는 것만으로 생성되지 않습니다.
+키마다 생성 후 변경할 수 없는 범위 하나가 있습니다.</description>
+    </item>
+    
+    <item>
       <title>Docker 이미지</title>
       <link>https://engine.speedle.io/ko/docs/deployment/docker/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
@@ -197,18 +208,6 @@ speedle-users 및 speedle-developers 메일링 리스트에도 참여하실 수 
 의존성 추가 가상 환경에서 pip를 사용하는 경우:
 python3 -m venv .venv . .venv/bin/activate pip install speedle==0.2.0 또는 uv 프로젝트에서 uv를 사용하는 경우:
 uv add speedle==0.2.0 로컬 Speedle 호출 SDK 개요의 설명에 따라 Speedle을 시작하고 예제 정책을 생성합니다. 이 프로그램을 main.</description>
-    </item>
-    
-    <item>
-      <title>Speedle Cloud 애플리케이션 토큰</title>
-      <link>https://engine.speedle.io/ko/docs/cloud/tokens/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://engine.speedle.io/ko/docs/cloud/tokens/</guid>
-      <description>애플리케이션 토큰을 사용하면 백엔드 애플리케이션에서 Speedle Cloud의 인가 API를 인증하여 호출할 수 있습니다.
-보안 요구 사항 토큰을 생성, 교체 또는 취소하려면 콘솔에서 최근 재인증이 필요합니다. 토큰 시크릿은 생성 시 1회 한정으로 표시됩니다. 안전한 시크릿 저장소에 즉시 저장하십시오. 분실 시 다시 표시할 수 없으므로 토큰을 다시 생성해야 합니다.
-토큰 범위 토큰은 특정 계정 및 워크스페이스로 범위가 지정됩니다. 프로덕션 워크로드와 개발 워크로드에 별도의 토큰을 사용하십시오.
-토큰 교체 및 취소 정기적인 토큰 교체를 권장합니다.</description>
     </item>
     
     <item>
@@ -258,15 +257,15 @@ MongoDB는 복제본 세트 또는 샤딩된 클러스터로 실행해야 합니
     </item>
     
     <item>
-      <title>Speedle Cloud 인가 API 프리뷰</title>
+      <title>Speedle Cloud 인가 API</title>
       <link>https://engine.speedle.io/ko/docs/cloud/authorization-api/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/ko/docs/cloud/authorization-api/</guid>
-      <description>Speedle Cloud는 빠르고 지연 시간이 짧은 접근 결정을 위한 인가 API를 제공합니다.
-요청 계약 애플리케이션은 인가 결정 서비스(ADS)에 대해 POST /authz-check/v1/is-allowed를 호출합니다.
-Node.js 22 예제 다음 Node.js 예제는 전달자(Bearer) 토큰을 사용하여 인가 요청을 보내는 방법을 보여줍니다:
-import { request } from &amp;#39;node:https&amp;#39;; export async function checkAccess(token, authenticatedUserId, authenticatedUserIdd, resource, action) { if (!authenticatedUserId || !authenticatedUserIdd) { throw new Error(&amp;#39;principal name and identity domain are required&amp;#39;); } const payload = JSON.</description>
+      <description>계정 API 키로 서버에서 인가를 확인합니다. 키를 생성하려면 로그인이 가능해야 합니다. 관리 범위는 ADS를 호출할 수 없습니다. ads가 아니면 403 insufficient_scope입니다.
+서버에서 IsAllowed 호출 ads 범위 API 키를 하나의 Authorization: Bearer 헤더에 넣고 POST로 보냅니다.
+POST /authz-check/v1/is-allowed Authorization: Bearer &amp;lt;API key&amp;gt; Content-Type: application/json {&amp;#34;subject&amp;#34;:{&amp;#34;principals&amp;#34;:[{&amp;#34;type&amp;#34;:&amp;#34;user&amp;#34;,&amp;#34;name&amp;#34;:&amp;#34;alice&amp;#34;,&amp;#34;idd&amp;#34;:&amp;#34;corp&amp;#34;}]},&amp;#34;serviceName&amp;#34;:&amp;#34;books&amp;#34;,&amp;#34;resource&amp;#34;:&amp;#34;/books&amp;#34;,&amp;#34;action&amp;#34;:&amp;#34;get&amp;#34;,&amp;#34;attributes&amp;#34;:[{&amp;#34;name&amp;#34;:&amp;#34;level&amp;#34;,&amp;#34;type&amp;#34;:&amp;#34;numeric&amp;#34;,&amp;#34;value&amp;#34;:3},{&amp;#34;name&amp;#34;:&amp;#34;when&amp;#34;,&amp;#34;type&amp;#34;:&amp;#34;datetime&amp;#34;,&amp;#34;value&amp;#34;:&amp;#34;2026-11-05T03:00:00Z&amp;#34;}]} 본문은 자체 호스팅 Speedle ADS와 같은 REST 형식입니다. attributes는 {name, type, value} 배열이며 string, numeric, bool, RFC 3339 datetime을 지원합니다.
+idd는 애플리케이션이 사용자를 인증한 신원 도메인입니다.</description>
     </item>
     
     <item>
@@ -303,14 +302,13 @@ using Speedle.Sdk; try { await using var speedle = new SpeedleClient(new Speedle
     </item>
     
     <item>
-      <title>Speedle Cloud 제한 및 오류</title>
+      <title>Speedle Cloud 제한과 오류</title>
       <link>https://engine.speedle.io/ko/docs/cloud/limits-and-errors/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/ko/docs/cloud/limits-and-errors/</guid>
-      <description>전송 속도 제한 및 쿼터 무료 공개 베타 기간 동안 Speedle Cloud에서는 공정한 사용을 보장하기 위해 계정별 쿼터가 적용됩니다.
-오류 응답 오류 응답은 표준 HTTP 상태 코드와 JSON 오류 객체를 반환합니다:
-{ &amp;#34;error&amp;#34;: { &amp;#34;code&amp;#34;: &amp;#34;rate_limit_exceeded&amp;#34;, &amp;#34;message&amp;#34;: &amp;#34;Too many requests. Please retry later.&amp;#34; } } 재시도 지침 일시적인 네트워크 오류나 429 Too Many Requests의 경우 지수 백오프와 지터를 동반한 재시도를 구현하십시오.</description>
+      <description>별도 표시가 없으면 한도는 계정 전체에서 공유합니다. API 키를 바꿔도 일일 할당량은 늘지 않습니다.
+제한    대상 한도 도달 시 처리     계정 서비스 100개 409 quota_exceeded. 미사용 서비스 삭제. 시간에 따른 초기화 없음.   모든 서비스의 인가 정책과 역할 정책 합계 계정당 200개 409 quota_exceeded. 정책 삭제. 시간에 따른 초기화 없음.   정책 하나의 전체 SPDL 소스 UTF-8 1,024바이트 콘솔 정책 쓰기는 400 invalid_request.</description>
     </item>
     
     <item>

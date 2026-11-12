@@ -6,7 +6,7 @@
     <description>Recent content in Speedle Cloud on Speedle</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>es-es</language>
-    <lastBuildDate>Sun, 08 Nov 2026 17:11:18 +0800</lastBuildDate>
+    <lastBuildDate>Thu, 12 Nov 2026 00:00:00 +0800</lastBuildDate>
     
 	<atom:link href="https://engine.speedle.io/es/docs/cloud/index.xml" rel="self" type="application/rss+xml" />
     
@@ -21,33 +21,34 @@
     </item>
     
     <item>
-      <title>Tokens de aplicación de Speedle Cloud</title>
+      <title>Speedle Cloud Claves API</title>
       <link>https://engine.speedle.io/es/docs/cloud/tokens/</link>
-      <pubDate>Sun, 08 Nov 2026 00:00:00 +0800</pubDate>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/es/docs/cloud/tokens/</guid>
-      <description>Los tokens de aplicación autentican una aplicación frente a Speedle Cloud ADS para el servicio propio del token. No identifican a un usuario final y no pueden autorizar solicitudes a la API de gestión. La consola de tokens estará disponible cuando se habilite el inicio de sesión en las cuentas; mientras el ADS autenticado permanezca pendiente, emitir un token no habilitará llamadas de autorización del lado del servidor.
-Emitir un token Para una cuenta que ya posee un servicio, abra Tokens de aplicación.</description>
+      <description>Las claves API pertenecen a la cuenta y acceden a sus servicios según su ámbito. Autentican la aplicación, no al usuario final. Administrar claves API, sesiones e identidades vinculadas requiere una sesión de consola iniciada.
+Crear una clave API Abra Claves API, escriba un nombre de 1–128 caracteres después de quitar espacios al principio y al final, elija un ámbito y seleccione Crear. Se requiere autenticación con un proveedor vinculado en los últimos 10 minutos.</description>
     </item>
     
     <item>
-      <title>Vista previa de la API de autorización de Speedle Cloud</title>
+      <title>API de autorización de Speedle Cloud</title>
       <link>https://engine.speedle.io/es/docs/cloud/authorization-api/</link>
       <pubDate>Sun, 08 Nov 2026 00:00:00 +0800</pubDate>
       
       <guid>https://engine.speedle.io/es/docs/cloud/authorization-api/</guid>
-      <description>El ADS autenticado está pendiente. Las solicitudes y ejemplos en esta página describen el contrato publicado para una futura versión; no se ejecutaron contra un entorno real de Cloud. La emisión de un token de aplicación no habilita estas llamadas. Utilice explícitamente la URL del entorno aprobado y verifique que el ADS autenticado se encuentre disponible en dicho entorno antes de la integración.
-Invocar IsAllowed desde su servidor Envíe el token emitido en un encabezado Authorization: Bearer y realice una solicitud POST:</description>
+      <description>Use una clave API de cuenta para llamadas de autorización desde el servidor. Para crear claves debe estar disponible el inicio de sesión. Los ámbitos de gestión no pueden llamar a ADS; use ads o recibirá 403 insufficient_scope.
+Invocar IsAllowed desde su servidor Envíe una clave API de cuenta con ámbito ads en un encabezado Authorization: Bearer y realice una solicitud POST:
+POST /authz-check/v1/is-allowed Authorization: Bearer &amp;lt;API key&amp;gt; Content-Type: application/json {&amp;#34;subject&amp;#34;:{&amp;#34;principals&amp;#34;:[{&amp;#34;type&amp;#34;:&amp;#34;user&amp;#34;,&amp;#34;name&amp;#34;:&amp;#34;alice&amp;#34;,&amp;#34;idd&amp;#34;:&amp;#34;corp&amp;#34;}]},&amp;#34;serviceName&amp;#34;:&amp;#34;books&amp;#34;,&amp;#34;resource&amp;#34;:&amp;#34;/books&amp;#34;,&amp;#34;action&amp;#34;:&amp;#34;get&amp;#34;,&amp;#34;attributes&amp;#34;:[{&amp;#34;name&amp;#34;:&amp;#34;level&amp;#34;,&amp;#34;type&amp;#34;:&amp;#34;numeric&amp;#34;,&amp;#34;value&amp;#34;:3},{&amp;#34;name&amp;#34;:&amp;#34;when&amp;#34;,&amp;#34;type&amp;#34;:&amp;#34;datetime&amp;#34;,&amp;#34;value&amp;#34;:&amp;#34;2026-11-05T03:00:00Z&amp;#34;}]} El cuerpo es la solicitud REST de Speedle, con los mismos campos y tipos que un Speedle ADS autohospedado.</description>
     </item>
     
     <item>
-      <title>Límites y errores de Speedle Cloud</title>
+      <title>Speedle Cloud Límites y errores</title>
       <link>https://engine.speedle.io/es/docs/cloud/limits-and-errors/</link>
-      <pubDate>Sun, 08 Nov 2026 00:00:00 +0800</pubDate>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/es/docs/cloud/limits-and-errors/</guid>
-      <description>Los errores y encabezados de ADS a continuación describen el contrato de ADS autenticado, cuyo entorno de ejecución aún no se encuentra disponible. El contrato de gestión ya define límites de cuenta, comprobaciones de sesión y CSRF, y errores de gestión de tokens para su uso cuando el acceso a cuentas esté habilitado. Descargar un esquema no habilita un endpoint pendiente.
-Límites    Límite Significado     10.</description>
+      <description>Salvo que se indique lo contrario, los límites se comparten en toda la cuenta. Cambiar de clave API no aumenta la cuota diaria.
+Límites    Qué se limita Límite Qué hacer al alcanzarlo     Servicios de la cuenta 100 409 quota_exceeded; eliminar un servicio sin uso. Sin restablecimiento temporal.   Políticas de autorización y de roles entre todos los servicios 200 por cuenta 409 quota_exceeded; eliminar políticas.</description>
     </item>
     
   </channel>

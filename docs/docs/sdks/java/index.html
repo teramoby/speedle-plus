@@ -155,7 +155,7 @@
 <li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading docs-nav-heading-link"><a href="/docs/cloud/">Speedle Cloud</a></span>
 <ul class="">
 <li data-docs-depth="1" class=""><a href="/docs/cloud/getting-started/">Getting started</a></li>
-<li data-docs-depth="1" class=""><a href="/docs/cloud/tokens/">Application tokens</a></li>
+<li data-docs-depth="1" class=""><a href="/docs/cloud/tokens/">API keys</a></li>
 <li data-docs-depth="1" class=""><a href="/docs/cloud/authorization-api/">Authorization API</a></li>
 <li data-docs-depth="1" class=""><a href="/docs/cloud/limits-and-errors/">Limits and errors</a></li>
 </ul>
@@ -282,7 +282,7 @@ alice delete /docs/public: allowed=false reason=NO_APPLICABLE_POLICIES</code></p
 <p><strong>Speedle Cloud is coming soon.</strong></p>
 </blockquote>
 
-<p>The program reads the service name from <code>SPEEDLE_SERVICE</code> and the service&rsquo;s token from <code>SPEEDLE_TOKEN</code>. <code>SPEEDLE_ENDPOINT</code> overrides the default endpoint <code>https://cloud.speedle.io</code>. Replace <code>src/main/java/Main.java</code> with:</p>
+<p>The program reads the service name from <code>SPEEDLE_SERVICE</code> and an account API key with the <code>ads</code> scope from <code>SPEEDLE_TOKEN</code>. <code>SPEEDLE_ENDPOINT</code> overrides the default endpoint <code>https://cloud.speedle.io</code>. Replace <code>src/main/java/Main.java</code> with:</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#ff79c6">import</span> io.speedle.sdk.Auth<span style="color:#ff79c6">;</span>
 <span style="color:#ff79c6">import</span> io.speedle.sdk.Backend<span style="color:#ff79c6">;</span>
 <span style="color:#ff79c6">import</span> io.speedle.sdk.Decision<span style="color:#ff79c6">;</span>
@@ -312,14 +312,14 @@ alice delete /docs/public: allowed=false reason=NO_APPLICABLE_POLICIES</code></p
     <span style="color:#ff79c6">}</span>
   <span style="color:#ff79c6">}</span>
 <span style="color:#ff79c6">}</span></code></pre></div>
-<p>Set the environment and run it. <code>read -rs</code> keeps the token out of your shell history and screen:</p>
+<p>Set the environment and run it. <code>read -rs</code> keeps the API key out of your shell history and screen:</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#8be9fd;font-style:italic">export</span> <span style="color:#8be9fd;font-style:italic">SPEEDLE_SERVICE</span><span style="color:#ff79c6">=</span>docs
 <span style="color:#8be9fd;font-style:italic">read</span> -rs SPEEDLE_TOKEN <span style="color:#ff79c6">&amp;&amp;</span> <span style="color:#8be9fd;font-style:italic">export</span> SPEEDLE_TOKEN
 mvn -q compile exec:java -Dexec.mainClass<span style="color:#ff79c6">=</span>Main</code></pre></div>
 <p>Output, when the service has the example policy:</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">alice get /docs/public: allowed=true
 alice delete /docs/public: allowed=false reason=NO_APPLICABLE_POLICIES</code></pre></div>
-<p>The token is a server-side secret. Never ship it to browsers, mobile apps or desktop clients.</p>
+<p>The API key is a server-side secret. Never ship it to browsers, mobile apps or desktop clients.</p>
 
 <h2 id="error-handling">Error handling</h2>
 

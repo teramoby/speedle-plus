@@ -154,7 +154,7 @@
 <li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading docs-nav-heading-link"><a href="/zh/docs/cloud/">Speedle Cloud</a></span>
 <ul class="">
 <li data-docs-depth="1" class=""><a href="/zh/docs/cloud/getting-started/">快速入门</a></li>
-<li data-docs-depth="1" class=""><a href="/zh/docs/cloud/tokens/">应用令牌</a></li>
+<li data-docs-depth="1" class=""><a href="/zh/docs/cloud/tokens/">API 密钥</a></li>
 <li data-docs-depth="1" class=""><a href="/zh/docs/cloud/authorization-api/">授权 API</a></li>
 <li data-docs-depth="1" class=""><a href="/zh/docs/cloud/limits-and-errors/">限额与错误</a></li>
 </ul>
@@ -239,7 +239,7 @@
 ./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ create policy -c <span style="color:#f1fa8c">&#34;grant user alice get,list /docs/public&#34;</span> --service-name<span style="color:#ff79c6">=</span>docs</code></pre></div>
 <p>本地示例以无凭据方式连接 <code>http://localhost:6734</code>。SDK 只对回环地址接受明文 <code>http://</code>；连接其他 ADS 时请使用 HTTPS。</p>
 
-<p><strong>Speedle Cloud 即将上线。</strong> Speedle Cloud 示例连接 <code>https://cloud.speedle.io</code>，并从环境变量 <code>SPEEDLE_SERVICE</code> 和 <code>SPEEDLE_TOKEN</code> 读取服务名及该服务专属的令牌。在该服务中创建同样的策略即可得到相同的结果。令牌是服务端密钥，切勿放进浏览器、移动应用或桌面客户端。</p>
+<p>Speedle Cloud 示例连接 <code>https://cloud.speedle.io</code>，并从环境变量 <code>SPEEDLE_SERVICE</code> 和 <code>SPEEDLE_TOKEN</code> 读取服务名及具有 <code>ads</code> 权限范围的账号 API 密钥。在该服务中创建同样的策略即可得到相同的结果。API 密钥是服务端密钥，切勿放进浏览器、移动应用或桌面客户端。</p>
 </div></main>
         </div>
     </div>
