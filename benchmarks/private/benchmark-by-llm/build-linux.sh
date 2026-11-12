@@ -22,6 +22,6 @@ cp -R scenarios stress.sh run-all.sh summarize.py README.md TEST_PLAN.md "$PACKA
     shasum -a 256 "$PACKAGE/bin/$program"
   done
 } > "$PACKAGE/build-info.txt"
-COPYFILE_DISABLE=1 tar --no-xattrs -czf "$PACKAGE/source.tar.gz" gen.go engines.go bench_test.go scenarios_test.go generated_test.go capabilities_test.go broken_test.go go.mod go.sum deps.go cmd scenarios stress.sh run-all.sh summarize.py build-linux.sh build_report.py plot_results.py plot-requirements.txt
+COPYFILE_DISABLE=1 tar --no-xattrs -czf "$PACKAGE/source.tar.gz" gen.go gen_cedar.go engines.go bench_test.go cedar_export_test.go scenarios_test.go generated_test.go capabilities_test.go broken_test.go go.mod go.sum go.may.mod go.may.sum deps.go cmd scenarios stress.sh run-all.sh summarize.py build-linux.sh build_report.py plot_results.py plot-requirements.txt
 COPYFILE_DISABLE=1 tar --no-xattrs -czf "$PACKAGE.tar.gz" -C "$(dirname "$PACKAGE")" "$(basename "$PACKAGE")"
 printf '%s\n' "$PACKAGE.tar.gz"

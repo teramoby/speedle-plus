@@ -49,14 +49,18 @@ cmd/cedar-rs/target/release/cedar-rs check /tmp/cedar-specs/scenarios/*.json
 正式数据只在 charming 上测；shrek 用于构建、冒烟验证和汇总。
 
 ```bash
-# shrek：固定 Go 1.27.2 构建静态 Linux 包，不会启动远端测试
+# shrek：重建 2026-10-29 归档那轮的六程序包，不会启动远端测试
 ./build-linux.sh
+# 构建机：四引擎新一轮（含 Cedar 和 May 2026 构建），需要 Go 与 Cargo
+./build-package.sh
 # charming：解压包后，等待机器空闲，执行完整矩阵
 ./run-all.sh
 # shrek：取回本轮结果后
-python3 summarize.py results/retest-20261029/charming
+python3 summarize.py results/<run>/charming
 python3 build_report.py
 ```
+
+`run-all.sh` 的默认步骤包含 `may-*` 和 `rs-*`，它们需要 `build-package.sh` 产出的第二套 Go 测试/服务和 `cedar-rs`；用 `build-linux.sh` 打的归档包只适合重跑三引擎那轮，可用 `STEPS=` 选择步骤。
 
 完整运行会等待 CI 空闲，受 CI 污染的步骤最多重跑两次。`build_report.py` 要求 COMPLETE、107 组进程内基准各 5 次、30 组 HTTP 配置各 3 轮，未完成时不会替换旧报告。参数与逐步说明见 [TEST_PLAN.md](TEST_PLAN.md)。
 
