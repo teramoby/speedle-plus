@@ -1,28 +1,25 @@
 # Speedle Cloud 文档
 
-Speedle Cloud 是基于开源 Speedle 策略引擎的托管访问控制服务，面向开发者。你可以用它管理 SPDL 授权策略与角色策略、在 Playground 中测试授权判定，再从应用服务端调用授权 API，无需自行部署和运维授权服务。
+Speedle Cloud 是基于开源 Speedle 引擎的托管授权服务。你可以管理服务、SPDL 授权策略和角色策略，在 Playground 中测试判定，并从服务端调用 API。
 
-**Speedle Cloud 即将上线。** Cloud 页眉显示 **Coming soon（即将上线）** 徽章，[cloud.speedle.io](https://cloud.speedle.io/zh-CN/) 的生产环境尚未开放登录。本文介绍的控制台流程和带认证的授权决策服务（ADS）均为已发布服务合约的预览。带认证的 ADS 尚未提供时，签发令牌并不会启用服务端授权调用。所选环境的部署情况和登录供应商可用性仍需分别确认。
-
-免费公开测试版用于试用、学习和评估，不提供 SLA，不建议用于生产环境，功能和限额可能调整。
+使用控制台和创建 API 密钥需要账号登录功能可用。免费公开测试版用于试用、学习和评估，不提供 SLA，不建议用于生产环境。功能和限额可能调整。
 
 ## 文档导航
 
-- [快速入门](https://engine.speedle.io/zh/docs/cloud/getting-started/)：使用 GitHub 或 Google 登录（即将开放）、账号管理、service、SPDL 策略、会话管理请求，以及四种会话 Playground 操作。
-- [应用令牌](https://engine.speedle.io/zh/docs/cloud/tokens/)：最近认证要求、令牌的一次性展示、元数据分页、轮换和撤销。
-- [授权 API 预览](https://engine.speedle.io/zh/docs/cloud/authorization-api/)：IsAllowed 请求与响应合约、Node.js 22 示例、策略快照和接入限制。
-- [限额与错误](https://engine.speedle.io/zh/docs/cloud/limits-and-errors/)：账号额度、请求限制、错误响应、限流与额度响应头，以及重试建议。
+- [快速入门](https://engine.speedle.io/zh/docs/cloud/getting-started/): 登录、账号、服务、策略和会话 Playground。
+- [API 密钥](https://engine.speedle.io/zh/docs/cloud/tokens/): 账号级凭据、固定权限范围、创建与撤销、一次性展示和分页。
+- [授权 API](https://engine.speedle.io/zh/docs/cloud/authorization-api/): IsAllowed 请求、调用方身份、Node.js 22 和传输限制。
+- [限额与错误](https://engine.speedle.io/zh/docs/cloud/limits-and-errors/): 账号上限、大小限制、突发限流、每日额度、错误代码和重置时间。
 
 ## 下载
 
-- [简体中文 Markdown](https://engine.speedle.io/docs/cloud/quickstart.zh-CN.md)：汇集全部四章 Cloud 文档，便于离线阅读。
-- [OpenAPI YAML](https://cloud.speedle.io/openapi.yaml)：Cloud API 的权威仓库规范。
-- [OpenAPI JSON](https://cloud.speedle.io/openapi.json)：由同一份 YAML 原文生成。
-- [当前构建版本](https://cloud.speedle.io/build.json)：用于识别正在提供服务的构建，不证明登录供应商或接口当前可用。
+- [中文 Markdown](https://engine.speedle.io/docs/cloud/quickstart.zh-CN.md): 四个 Cloud 章节合并的离线指南。
+- [OpenAPI YAML](https://cloud.speedle.io/openapi.yaml)
+- [OpenAPI JSON](https://cloud.speedle.io/openapi.json)
 
-规范包含四种会话 Playground 操作和带认证的 ADS 合约。发布规范或下载指南并不会启用尚未提供的接口，也不会开放登录。Cloud 的 YAML 与生成的 JSON 随对应的封存构建一起记录版本、晋升或恢复；中英文 Markdown 下载则随这些 Engine 文档页面一起维护。
+API 规范描述请求与响应合约；下载规范不会开放账号登录。
 
-请阅读 Cloud 的[服务条款](https://cloud.speedle.io/zh-CN/terms)和[隐私政策](https://cloud.speedle.io/zh-CN/privacy)。
+请阅读 Cloud 的 [服务条款](https://cloud.speedle.io/zh-CN/terms) / [隐私政策](https://cloud.speedle.io/zh-CN/privacy).
 
 ## Speedle Cloud 快速入门
 
@@ -30,19 +27,19 @@ Speedle Cloud 是基于开源 Speedle 策略引擎的托管访问控制服务，
 
 ### 生产环境
 
-账号会话、管理请求和应用令牌使用 `https://cloud.speedle.io`。账号、资源和令牌归属于该 origin。本文示例仅用于说明，本次未向线上环境执行。请确认所选环境已经部署，并确认准备使用的登录供应商在该环境可用。
+账号会话、管理请求和API 密钥使用 `https://cloud.speedle.io`。账号、资源和API 密钥归属于该 origin。本文示例仅用于说明，本次未向线上环境执行。请确认所选环境已经部署，并确认准备使用的登录供应商在该环境可用。
 
 ### 使用 GitHub 或 Google 登录（即将开放）
 
 即使登录尚未开放，登录页仍会显示 **使用 GitHub 登录** 和 **使用 Google 登录** 两个选项。生产环境开放登录后，请选择当前可用的供应商。新身份的已验证邮箱未被占用时，需要主动确认 **创建账号**。邮箱已被占用时，先用控制台提示的已关联供应商登录，再到 **账号设置** 连接第二个身份；系统不会自动合并账号。
 
-账号设置可以查看已连接身份，并连接或断开当前可用的供应商；至少保留一个已连接身份。**退出登录** 位于页眉语言切换旁，账号菜单提供 **在所有设备上退出**。退出成功后返回登录页，并清空工作区和一次性令牌展示。审计日志展示账号活动。
+账号设置可以查看已连接身份，并连接或断开当前可用的供应商；至少保留一个已连接身份。**退出登录** 位于页眉语言切换旁，账号菜单提供 **在所有设备上退出**。退出成功后返回登录页，并清空工作区和一次性API 密钥展示。审计日志展示账号活动。
 
-删除账号需要完成最近的供应商认证，并输入 `DELETE`。随后会永久删除账号所属 service、策略、令牌和身份，并结束所有会话。删除前请先从服务工作区导出需要保留的策略。
+删除账号需要完成最近的供应商认证，并输入 `DELETE`。随后会永久删除账号所属 service、策略、API 密钥和身份，并结束所有会话。删除前请先从服务工作区导出需要保留的策略。
 
 ### 创建 service 和策略
 
-新账号打开[服务工作区](https://cloud.speedle.io/zh-CN/service)，在服务名称中输入 `books`，然后选择 **创建服务**。每个账号只有一个 service。如果账号已有 service 或策略，请先核对并使用合适的现有配置，不要为了运行示例而覆盖或删除已有数据。
+新账号打开[服务工作区](https://cloud.speedle.io/zh-CN/service)，在服务名称中输入 `books`，然后选择 **创建服务**。每个账号最多可创建 100 个服务。如果账号已有 service 或策略，请先核对并使用合适的现有配置，不要为了运行示例而覆盖或删除已有数据。
 
 选择 **新建策略**，在策略名称中输入 `read-books`，并在 SPDL 编辑器中输入以下授权策略：
 
@@ -67,7 +64,7 @@ Speedle Cloud 支持授权策略和角色策略，不支持外部自定义函数
 
 ### 发送管理会话请求
 
-策略管理服务（PMS）使用账号会话。请让受支持的同源客户端管理安全的会话 cookie，不要导出浏览器 cookie，也不要通过测试供应商初始化账号。修改请求必须携带与当前环境完全一致的 `Origin`、`X-SC-CSRF: 1` 和 JSON 内容类型。ADS Bearer 令牌不能用于 PMS 认证。客户端不得提交账号或 service 归属选择参数，也不得提交认证时间戳。
+策略管理服务（PMS）使用账号会话。请让受支持的同源客户端管理安全的会话 cookie，不要导出浏览器 cookie，也不要通过测试供应商初始化账号。修改请求必须携带与当前环境完全一致的 `Origin`、`X-SC-CSRF: 1` 和 JSON 内容类型。ADS Bearer API 密钥不能用于 PMS 认证。客户端不得提交账号或 service 归属选择参数，也不得提交认证时间戳。
 
 上述 service 和策略示例等价于以下请求：
 
@@ -116,17 +113,27 @@ Content-Type: application/json
 
 成功正文保持上游原始形状，不增加 `op` 或 `result` 包裹。两种 all-granted 结果均可能为 `null` 或空数组；这两种形状都不代表授权允许。ADS 不提供公开 Diagnose 接口。
 
-接下来请阅读[应用令牌](https://engine.speedle.io/zh/docs/cloud/tokens/)、[授权 API 预览](https://engine.speedle.io/zh/docs/cloud/authorization-api/)和[限额与错误](https://engine.speedle.io/zh/docs/cloud/limits-and-errors/)。
+接下来请阅读[API 密钥](https://engine.speedle.io/zh/docs/cloud/tokens/)、[授权 API](https://engine.speedle.io/zh/docs/cloud/authorization-api/)和[限额与错误](https://engine.speedle.io/zh/docs/cloud/limits-and-errors/)。
 
-## Speedle Cloud 应用令牌
+## Speedle Cloud API 密钥
 
-应用令牌用于向 Speedle Cloud ADS 认证应用，并且只能访问令牌所属的 service。令牌不代表最终用户身份，也不能用于管理 API 认证。令牌控制台随账号登录开放；带认证的 ADS 尚未提供时，签发令牌不会启用服务端授权调用。
+API 密钥属于账号，按权限范围访问该账号下的服务。它认证的是应用，不是最终用户。管理 API 密钥、会话和关联身份始终需要已登录的控制台会话。
 
-### 签发令牌
+### 创建 API 密钥
 
-账号已有 service 时，打开[应用令牌](https://cloud.speedle.io/zh-CN/tokens)，输入 1–128 个字符的令牌名称，然后选择 **创建令牌**。如果要求验证，请选择当前可用的已关联供应商。从供应商页面返回后，重新输入名称并再次选择 **创建令牌**；返回页面不会自动签发令牌。
+打开 [API 密钥](https://cloud.speedle.io/zh-CN/tokens)，输入去除首尾空白后为 1–128 个字符的名称，选择权限范围，点击 **创建**。创建需要在最近 10 分钟内通过已关联的身份提供方认证。收到 `403 reauth_required` 时，重新认证后再次点击 **创建**；从身份提供方返回不会自动创建密钥。
 
-控制台会发送以下会话请求：
+每个密钥只有一个权限范围，创建后不可修改：
+
+| 权限范围 | 可访问的功能 |
+| --- | --- |
+| `ads`（默认） | 仅通过 `/authz-check/v1/*` 检查授权。 |
+| `pms:read` | 通过 `/policy-mgmt/v1` 读取账号下的服务、授权策略和角色策略。 |
+| `pms:write` | 通过 `/policy-mgmt/v1` 读取、创建和删除账号下的服务、授权策略和角色策略。 |
+
+管理权限的密钥不能调用 ADS；`ads` 不能管理策略。权限范围不符时返回 `403 insufficient_scope`。登录尚未开放时，申请管理权限返回 `403 management_scope_disabled`。
+
+控制台使用已登录会话发送请求：
 
 ```http
 POST /api/tokens
@@ -134,43 +141,35 @@ Origin: https://cloud.speedle.io
 X-SC-CSRF: 1
 Content-Type: application/json
 
-{"name":"books-app"}
+{"name":"books-app","scope":"ads"}
 ```
 
-示例使用生产环境 origin。客户端沿用原有的安全 cookie 处理方式携带会话，因此这段内容不是可单独执行的匿名请求。
+请求只接受 `name` 和可选的 `scope`（默认 `ads`）。不要发送服务选择、到期时间或认证证明。请求需要会话 cookie 和 CSRF 请求头；API 密钥不能代替会话。
 
-创建令牌要求在最近 10 分钟内完成正常供应商认证，包括登录或重新认证。服务端会依据持久化的会话和服务端时钟判断。恰好 10 分钟仍有效；认证时间戳缺失、位于未来或已经过期时，返回 `403 {"error":"reauth_required"}`。普通操作不会刷新最近认证时间。
+### 保护密钥值
 
-请求只接受 `name`。service ID、scope、过期时间和认证证明均不是客户端可提交的参数。
-
-### 保护一次性秘密值
-
-创建成功时返回 201，响应包含令牌元数据和仅返回一次的 `token` 字段，格式如下：
+创建成功返回 HTTP 201。响应的 `token` 字段包含 API 密钥值，只显示一次：
 
 ```text
 spdl_<canonical uppercase ULID id>_<43 base62 digits>
 ```
 
-上面只是格式说明，不是可用凭据。令牌前缀中的 ID 与返回的令牌 ID 相同。请立即将签发的值存入应用服务端的秘密存储。
+<!-- TODO: Update API key expiry after https://github.com/teramoby/cloud.speedle.io/issues/427 merges. -->
 
-不要把令牌嵌入前端代码或持久化到浏览器存储，也不要放入 URL、源代码、截图、issue、遥测或日志。正常管理客户端可以短暂持有并展示新签发值，供一次性披露和用户主动复制；不得自动复制、下载、存储或记录秘密值。
+这只是格式说明，不能作为实际密钥使用。请立即保存到服务端的密钥存储中。不要放入浏览器存储、前端代码、URL、源码、截图或日志。列表只返回元数据，丢失的密钥值无法找回。
 
-令牌列表只返回元数据，之后无法再次取回明文。v1 令牌没有内置过期时间。每个 service 最多同时保留两个有效令牌，已撤销的历史记录不占用这两个名额。
+每个账号所有权限范围合计最多 **10 个有效 API 密钥**。继续创建会返回 `409 {"error":"quota_exceeded","limit":10}`。撤销不再使用的密钥可释放名额；名额不会随时间重置。已撤销的密钥仍保留在列表中，不占有效名额。
 
-### 查看令牌元数据
+### 列出 API 密钥
 
-`GET /api/tokens` 按 ID 降序返回有效及已撤销令牌的元数据分页。默认每页 25 条，`limit` 为 1–100。cursor 是不包含边界项的令牌 ID；跟随 `nextCursor` 直至 `null`。接口永不返回秘密值。
+`GET /api/tokens` 按最新在前列出有效和已撤销的密钥。默认每页 25 条，`limit` 可设为 1–100。将上次响应的 `nextCursor` 作为 `cursor` 继续请求，直到 `nextCursor` 为 `null`。`lastUsedAt` 尽力更新，通常每小时最多一次，不能据此断定密钥已无人使用。
 
-使用 **刷新最新令牌** 和 **下一页** 查看元数据。`lastUsedAt` 尽力更新且最多每小时更新一次，不能据此证明调用方已经停止使用某个令牌。
+### 撤销 API 密钥
 
-### 轮换和撤销令牌
-
-带认证的 ADS 可用后，先通过正常的最近认证创建第二个令牌，更新所有应用和凭据引用，并确认新凭据能按预期策略工作，然后再停用旧凭据。
-
-在 **应用令牌** 页面选择旧令牌的 **撤销** 入口，核对名称与 ID，再确认 **撤销令牌**。管理会话会发送：
+选择 **撤销**，核对密钥名称和 ID 后确认。撤销无需最近重新认证。控制台发送：
 
 ```http
-DELETE /api/tokens/<old token id>
+DELETE /api/tokens/<API key id>
 Origin: https://cloud.speedle.io
 X-SC-CSRF: 1
 Content-Type: application/json
@@ -178,25 +177,23 @@ Content-Type: application/json
 {}
 ```
 
-首次撤销属于自己的有效令牌时，返回无正文的 204。未知、不属于自己或已经撤销的 ID 均返回 404。验证缓存的授权有效期有固定上限：从开始权威查询算起最长 60 秒，因此撤销不保证立即在所有位置生效。
+首次撤销返回空的 HTTP 204。ID 未知、不属于当前账号或已撤销时返回 `404 not_found`。先前已通过验证的请求仍可能在最长 60 秒内使用该密钥，因此撤销不会在所有位置立即生效。
 
-如果两个有效名额都已占用，先清点并切换所有合法调用方，再停用凭据；不要仅为腾出名额而盲目撤销仍在生产使用的令牌。
+可用操作是 **创建** 和 **撤销**。如需更换密钥值或权限范围，请创建另一个密钥，更新调用方后撤销旧密钥。达到上限且所有密钥仍在使用时，撤销前需安排调用中断。删除服务不会撤销账号的 API 密钥。
 
-如果创建或撤销响应丢失，先核对刷新后的元数据，再主动决定下一步操作。控制台不会自动重试修改请求；同名记录不能恢复或识别丢失的一次性秘密值。
+创建或撤销的响应丢失时，先刷新列表再操作。同名记录不能找回丢失的密钥值。参见[限额与错误](https://engine.speedle.io/zh/docs/cloud/limits-and-errors/)和[授权 API](https://engine.speedle.io/zh/docs/cloud/authorization-api/)。
 
-请求限额和管理错误处理见[限额与错误](https://engine.speedle.io/zh/docs/cloud/limits-and-errors/)；在授权请求中使用令牌的方法见[授权 API 预览](https://engine.speedle.io/zh/docs/cloud/authorization-api/)。
+## Speedle Cloud 授权 API
 
-## Speedle Cloud 授权 API 预览
-
-**带认证的 ADS 尚未提供。** 本页的请求和示例描述后续版本的已发布合约，并未在 Cloud 线上环境执行。签发应用令牌并不会启用这些调用。请明确使用获准环境的 URL，并在接入前确认该环境已经提供带认证的 ADS。
+从应用服务端使用账号 API 密钥调用授权接口。创建密钥需要账号登录功能可用。管理权限的密钥不能调用 ADS；请使用 `ads`，否则返回 `403 insufficient_scope`。
 
 ### 从应用服务端调用 IsAllowed
 
-将签发的令牌放入一个 `Authorization: Bearer` 请求头，并发送 POST 请求：
+将具有 `ads` 权限范围的账号 API 密钥放入一个 `Authorization: Bearer` 请求头，并发送 POST 请求：
 
 ```http
 POST /authz-check/v1/is-allowed
-Authorization: Bearer <issued token>
+Authorization: Bearer <API key>
 Content-Type: application/json
 
 {"subject":{"principals":[{"type":"user","name":"alice","idd":"corp"}]},"serviceName":"books","resource":"/books","action":"get","attributes":[{"name":"level","type":"numeric","value":3},{"name":"when","type":"datetime","value":"2026-11-05T03:00:00Z"}]}
@@ -208,7 +205,7 @@ Content-Type: application/json
 
 快速入门中的策略 `grant user alice from corp get /books` 只在 `corp` 身份域中匹配上述请求。不带 `from` 的策略匹配任意身份域中的同名主体。主体不带 `idd` 时同样匹配任意身份域，一旦应用接受多个身份来源，两个同名用户就无法区分。多租户接入必须在每个请求中发送 `idd`。
 
-每个请求都必须填写 `serviceName`，系统不会自动取默认值。请填写令牌所属 service 的名称。名称缺失或为空时，会得到 Speedle 的 `SERVICE_NOT_FOUND` 响应；名称不一致时，返回 `403 {"error":"service_mismatch"}`。
+每个请求都必须填写 `serviceName`，系统不会自动取默认值。请选择 API 密钥所属账号中的服务。服务名缺失、为空、不存在或属于其他账号时，统一返回 `404 {"error":"service_not_found"}`。账号 API 密钥不绑定单个服务。
 
 [快速入门中的策略](https://engine.speedle.io/zh/docs/cloud/getting-started/#创建-service-和策略)会允许上述示例请求：
 
@@ -220,11 +217,11 @@ Content-Type: application/json
 
 策略拒绝同样返回 HTTP 200，但 `allowed` 为 `false`。应用必须检查 `allowed`，再执行受保护的操作；遇到异常或无效响应时应默认拒绝。
 
-应用通过自身的用户认证确定调用方的 principals。API 令牌识别的是应用和 service，不是最终用户身份。不要相信匿名浏览器自行提交的 principal 名称。
+应用通过自身的用户认证确定调用方的 principals。API 密钥标识账号和允许访问的 API 范围，不是最终用户身份。不要相信匿名浏览器自行提交的 principal 名称。
 
 Speedle Cloud 不校验 subject token。与没有 token asserter 的自托管 Speedle 一样，它接受 `subject.token` 和 `tokenType`，但不做校验就丢弃，因此非空的 token 字段永远不能作为已经通过认证的证据，判定只使用 principals。不要把最终用户的令牌转发过来，并把它当成已完成断言。
 
-会话 Playground 使用当前 D1 策略数据，带认证的 ADS 使用发布后的快照，传播约需 60 秒。Playground 测试成功并不表示所有 ADS 节点都已拿到新快照。ADS 不提供公开 Diagnose 接口。
+会话 Playground 使用当前保存的策略，带认证的 ADS 使用发布后的快照。Playground 测试成功并不表示所有 ADS 节点都已拿到新快照。ADS 不提供公开 Diagnose 接口。
 
 ### Node.js 22 示例
 
@@ -235,14 +232,14 @@ export async function canReadBooks(authenticatedUserName, authenticatedUserIdd) 
   if (!authenticatedUserName || !authenticatedUserIdd) {
     throw new Error("principal name and identity domain are required");
   }
-  const apiToken = process.env.SPEEDLE_ADS_TOKEN;
-  if (!apiToken) throw new Error("Speedle credential is not configured");
+  const apiKey = process.env.SPEEDLE_API_KEY;
+  if (!apiKey) throw new Error("Speedle credential is not configured");
   const response = await fetch("https://cloud.speedle.io/authz-check/v1/is-allowed", {
     method: "POST",
     redirect: "error",
     signal: AbortSignal.timeout(10_000),
     headers: {
-      Authorization: `Bearer ${apiToken}`,
+      Authorization: `Bearer ${apiKey}`,
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
@@ -269,13 +266,13 @@ export async function canReadBooks(authenticatedUserName, authenticatedUserIdd) 
 }
 ```
 
-通过服务端的秘密存储注入 `SPEEDLE_ADS_TOKEN`，切勿将值写入代码。传入的主体名称和身份域必须由服务端根据已认证用户得出。示例在组装请求正文之前就拒绝空的主体名称或身份域，否则 `JSON.stringify` 会丢掉 `idd`，发出不带身份域的主体。只有在 service 仅有一个身份来源、名称不可能跨域重复时，才可以省略 `idd`。调用方遇到异常时必须拒绝执行受保护操作，不能把失败转换为允许。
+通过服务端的秘密存储注入 `SPEEDLE_API_KEY`，切勿将值写入代码。传入的主体名称和身份域必须由服务端根据已认证用户得出。示例在组装请求正文之前就拒绝空的主体名称或身份域，否则 `JSON.stringify` 会丢掉 `idd`，发出不带身份域的主体。只有在 service 仅有一个身份来源、名称不可能跨域重复时，才可以省略 `idd`。调用方遇到异常时必须拒绝执行受保护操作，不能把失败转换为允许。
 
 这个最小示例没有重试循环。生产应用应区分文档列出的错误，遵守 `Retry-After`，并使用有界重试。示例中的 `redirect: "error"` 防止 fetch 携带凭据跟随重定向；改写示例时应保留这一行为。
 
 ### 传输和缓存限制
 
-ADS 请使用 POST。非 POST 请求可能被公开边缘规则拦截并返回 Cloudflare 的 403，不应将其当成应用授权判定。系统不提供让浏览器携带秘密令牌直接调用 ADS 的 CORS 流程。
+ADS 请使用 POST。非 POST 请求可能被公开边缘规则拦截并返回 Cloudflare 的 403，不应将其当成应用授权判定。系统不提供让浏览器携带秘密 API 密钥直接调用 ADS 的 CORS 流程。
 
 已匹配的应用 ADS 响应使用 `Cache-Control: no-store`，不要将判定结果或凭据放入共享缓存。
 
@@ -283,58 +280,51 @@ ADS 请使用 POST。非 POST 请求可能被公开边缘规则拦截并返回 C
 
 ## Speedle Cloud 限额与错误
 
-以下 ADS 错误与响应头描述带认证的 ADS 合约，其运行时尚未提供。管理合约已经定义账号限额、会话与 CSRF 检查及令牌管理错误，供账号访问开放后使用。下载规范本身不会启用尚未提供的接口。
+除表中另有说明外，限额由整个账号共用。API 密钥属于账号；更换密钥不会增加每日额度。
 
 ### 限额
 
-| 限额 | 含义 |
+| 限制对象 | 上限 | 达到后如何处理 |
+| --- | --- | --- |
+| 每个账号的服务 | 100 个 | `409 quota_exceeded`；删除不用的服务。不会定时重置。 |
+| 所有服务的授权策略与角色策略合计 | 每账号 200 条 | `409 quota_exceeded`；删除策略。不会定时重置。 |
+| 单条策略的完整 SPDL 源文本 | 1,024 个 UTF-8 字节 | 控制台策略写入返回 `400 invalid_request`；缩短源文本。按字节计数，不是按字符计数。不会定时重置。 |
+| 所有权限范围的有效 API 密钥合计 | 每账号 10 个 | `409 quota_exceeded`，带 `limit: 10`；撤销不用的密钥。不会定时重置；已撤销历史不占名额。 |
+| 策略名称 / API 密钥名称 | 128 个 Unicode 码点 / 去除首尾空白后 1–128 个字符 | `400 invalid_request`；缩短或修正名称。不会定时重置。 |
+| 策略管理与授权调用的计费次数 | 每账号每 UTC 日 10,000 次 | `429 daily_quota_exceeded`；00:00 UTC 重置。遵守 `Retry-After`。 |
+| API 密钥请求的短时突发 | 每个 Cloud 位置、每个密钥每分钟约 600 次 | `429 rate_limited`，带 `Retry-After: 60`；等待后重试。这是短时限制，不保证吞吐量，也不是额外的每日额度。 |
+| 普通请求正文 | 65,536 字节（64 KiB） | `413 request_too_large`；缩小正文。不会定时重置。 |
+| 原子 JSON 导入正文（仅 `POST /api/service/import`） | 5,100,000 字节 | `413 request_too_large`；缩小导入内容。仍须满足单条策略和账号限额。不会定时重置。 |
+| 输入属性 | 50 个属性；规范化 JSON 的 UTF-8 长度为 16,384 字节 | `400 SPDL-0004`；减少属性或缩小属性值。不会定时重置。 |
+
+权限范围、创建和撤销规则见 [API 密钥](https://engine.speedle.io/zh/docs/cloud/tokens/)。
+
+### 每日额度
+
+读取、写入、校验、Playground 测试、导入、导出和授权检查共用每日额度。策略拒绝或业务输入无效仍计费。认证、会话操作和 `GET /api/me` 不计费。被认证、权限范围、路由、CSRF、正文大小、突发限流或每日额度检查拒绝的请求不计费。
+
+Cloud 自身故障可能退还额度，每账号每 UTC 日最多退还 1,000 次；无法确认退还时仍计费。请求本身导致的错误仍计费。额度计数暂时不可用时，授权调用可能在降速后继续执行，每账号每 UTC 日额外放行最多 10,000 次。这份额度与正常额度独立，不保证一定可用，和退还次数一样在 00:00 UTC 重置。无法放行时返回 `503 quota_unavailable`。
+
+部分每日额度可能已预留但未使用，因此实际可用次数可能少于 10,000。`GET /api/me` 返回用量和重置时间。不要持续重试或通过更换密钥绕过账号限额。
+
+### 错误与响应头
+
+错误使用扁平 JSON，例如 `{"error":"rate_limited"}`。错误不是授权通过；无法取得有效判定时应默认拒绝。
+
+| 状态与错误 | 处理方式 |
 | --- | --- |
-| 每日 10,000 次 | 同一账号每 UTC 日进入已匹配 PMS 和 ADS handler 的合计次数，由所有会话、令牌和 service 共用；00:00 UTC 重置。 |
-| 200 条策略 | 每个账号的授权策略和角色策略合计。 |
-| 每条 SPDL 4 KiB | 完整策略最多 4,096 个 UTF-8 字节，不是 4,096 个字符。 |
-| 2 个有效令牌 | 每个 service；已撤销的历史记录不占此名额。 |
-| 每令牌每分钟 600 次 | 每个节点的近似突发限制，与严格的账号每日总额分开。 |
-| 请求正文 64 KiB | 解析前的全局上限。可选输入 attributes 仍受 50 个属性、规范化 UTF-8 JSON 16,384 字节的限制。 |
+| `400 invalid_request` 或 Speedle 错误消息 | 修正请求，不要原样重试。 |
+| `401 unauthorized` | 检查 API 密钥或登录会话。仅有会话 cookie 不能调用 ADS。 |
+| `403 reauth_required` | 创建密钥前，通过已关联的身份提供方重新认证。 |
+| `403 insufficient_scope` | 使用具有所需权限范围的密钥。 |
+| `403 management_scope_disabled` | 登录关闭时不能签发管理权限的密钥。 |
+| `403 csrf_failed` | 使用控制台会话及所需的来源和 CSRF 请求头。 |
+| `404 service_not_found`（ADS）/ `404 not_found`（管理） | 选择当前账号中存在的服务。密钥 ID 未知、属于其他账号或已撤销时也返回 `404 not_found`。 |
+| `409 quota_exceeded` | 释放相应的服务、策略或 API 密钥名额；等待不会重置这些上限。 |
+| `413 request_too_large` | 缩小正文。 |
+| `429 rate_limited` / `429 daily_quota_exceeded` | 遵守 `Retry-After` 并使用有界退避；每日额度在 UTC 午夜重置。 |
+| `503 quota_unavailable` / `503 snapshot_unavailable` / `500 internal_error` | 默认拒绝，按有界退避重试；带有 `Retry-After` 时遵守它。 |
 
-每个账号只有一个 service。令牌名称为 1–128 个字符。凭据生命周期规则见[应用令牌](https://engine.speedle.io/zh/docs/cloud/tokens/)。
+API 密钥验证通过后，`X-RateLimit-Limit` 为 600，不提供精确的 `X-RateLimit-Remaining`。如果有 `X-Quota-Daily-Remaining`，它只是账号级剩余额度的估计值；并发调用和未使用的预留可能使它偏离实际可用次数。它不保证下一次请求成功，提前拒绝的响应不带此头。
 
-### 每日额度计算
-
-进入已匹配的 handler 即扣除一次每日额度，包括策略拒绝、无效业务输入和内部错误。认证与会话接口不消耗此额度。在进入 handler 前被认证、路由、CSRF、正文大小、突发限流或额度预留检查拒绝的请求，也不消耗每日额度。
-
-已过期或被放弃的预留 lease 不会重新发放，因此实际可用次数可能少于 10,000。`GET /api/me` 返回当天已预留用量和重置时间，本身不扣每日额度。
-
-更换令牌不会增加账号额度。严格的账号每日总额与近似的节点级令牌突发限额分别执行。
-
-### HTTP 错误
-
-错误使用扁平 JSON 响应。请按说明修正请求或凭据；其他情况下应默认拒绝，并采用有界退避，不要无限重试。
-
-| HTTP 状态与错误 | 应用处理方式 |
-| --- | --- |
-| `401 {"error":"unauthorized"}` | 检查环境和凭据。ADS 带 Bearer challenge。匿名请求或只带会话 cookie 的请求不能授权 ADS。 |
-| `403 {"error":"reauth_required"}` | 创建令牌前，使用已关联供应商重新认证。普通操作不会刷新认证时间。 |
-| `403 {"error":"service_mismatch"}` | 修正 service 输入，不得改用其他租户的数据重试。 |
-| `400 {"error":"SPDL-0004 …"}` | Speedle 拒绝了请求，例如属性值类型不符。error 是 Speedle 的原始消息。修正请求，不要原样重试。 |
-| 令牌撤销返回 `404` | 令牌 ID 未知、不属于自己或已经撤销。先刷新元数据，再决定下一步操作。 |
-| `413 {"error":"request_too_large"}` | 缩小请求正文。 |
-| `429 {"error":"rate_limited"}` | 遵守 `Retry-After`，此突发限制为 60 秒，并使用有界退避。 |
-| `429 {"error":"daily_quota_exceeded"}` | 按 `Retry-After` 等待至下一个 UTC 零点。更换令牌不会增加账号额度。 |
-| `503 {"error":"quota_unavailable"}` 或 `snapshot_unavailable` | 默认拒绝，仅在有界退避后重试，不得回退到 demo 或 D1 策略判定。 |
-| `500 {"error":"internal_error"}` | 默认拒绝。保留安全的 request ID 供排障，避免记录凭据。 |
-
-对于 `503` 响应，`snapshot_unavailable` 在进入 handler 后已经扣额，`quota_unavailable` 未扣额。提前拒绝的响应不带下文所述的每日剩余额度响应头。
-
-非 POST 的 ADS 请求也可能被公开边缘规则拦截并返回 Cloudflare 的 403，该响应不是应用授权判定。
-
-### 限流和额度响应头
-
-完成验证后，`X-RateLimit-Limit` 为 600。ADS 不提供精确的 `X-RateLimit-Remaining` 值。
-
-完成扣额的 handler 响应若带 `X-Quota-Daily-Remaining`，它估计账号今天剩余的调用次数：授予 lease 时的未预留余额，加上本 isolate 尚余的 lease 次数。该估计在授予时偏保守，随后最多缓存至有效的 30 秒 lease 结束，到期或 UTC 换日即作废。
-
-其他 isolate 的并发调用可能使该值高估可用次数，最多高估授予时的全部未预留余额，并非仅 32 次；未使用或被放弃的预留则可能使其低估。发布或回滚期间，旧分配器会保守回退为本地 lease 余量。此响应头仅供参考，不改变额度执行方式。提前拒绝的响应不带此头。
-
-已匹配的应用 ADS 响应还使用 `Cache-Control: no-store`，不要将判定结果或凭据放入共享缓存。
-
-请求示例和接入限制见[授权 API 预览](https://engine.speedle.io/zh/docs/cloud/authorization-api/)。
+ADS 响应使用 `Cache-Control: no-store`，不要共享缓存判定或凭据。请使用 POST；其他方法可能收到 `405 method_not_allowed`，或更早被拦截并返回非 JSON 响应。参见[授权 API](https://engine.speedle.io/zh/docs/cloud/authorization-api/)。

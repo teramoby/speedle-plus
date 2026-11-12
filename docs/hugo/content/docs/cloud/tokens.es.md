@@ -1,24 +1,32 @@
 +++
-title = "Tokens de aplicación de Speedle Cloud"
-linkTitle = "Tokens de aplicación"
-description = "Emisión, protección, listado, rotación y revocación de tokens de aplicación de Speedle Cloud, incluidas las reglas de autenticación reciente y divulgación única."
-date = 2026-11-08T00:00:00+08:00
-lastmod = 2026-11-08T17:11:18+08:00
+title = "Speedle Cloud Claves API"
+linkTitle = "Claves API"
+description = "Crear, proteger, listar y revocar claves API de cuenta con un ámbito fijo."
 weight = 20
 draft = false
 toc = true
 tocheading = "h2"
 categories = ["docs"]
-bref = "Gestione credenciales Bearer con alcance de servicio sin exponer sus valores secretos únicos."
+lastmod = 2026-11-12T00:00:00+08:00
 +++
 
-Los tokens de aplicación autentican una aplicación frente a Speedle Cloud ADS para el servicio propio del token. No identifican a un usuario final y no pueden autorizar solicitudes a la API de gestión. La consola de tokens estará disponible cuando se habilite el inicio de sesión en las cuentas; mientras el ADS autenticado permanezca pendiente, emitir un token no habilitará llamadas de autorización del lado del servidor.
+Las claves API pertenecen a la cuenta y acceden a sus servicios según su ámbito. Autentican la aplicación, no al usuario final. Administrar claves API, sesiones e identidades vinculadas requiere una sesión de consola iniciada.
 
-## Emitir un token
+## Crear una clave API
 
-Para una cuenta que ya posee un servicio, abra [Tokens de aplicación](https://cloud.speedle.io/es/tokens). Introduzca un nombre de token de 1 a 128 caracteres y seleccione **Crear token**. Si se requiere verificación, elija un proveedor vinculado disponible. Tras regresar del proveedor, introduzca el nombre y seleccione **Crear token** nuevamente; regresar no crea el token de forma automática.
+Abra [Claves API](https://cloud.speedle.io/es/tokens), escriba un nombre de 1–128 caracteres después de quitar espacios al principio y al final, elija un ámbito y seleccione **Crear**. Se requiere autenticación con un proveedor vinculado en los últimos 10 minutos. Si recibe `403 reauth_required`, autentíquese de nuevo y vuelva a seleccionar **Crear**; regresar del proveedor no crea la clave automáticamente.
 
-La consola envía esta solicitud de sesión:
+Cada clave tiene un ámbito fijo desde su creación:
+
+| Ámbito | Acceso |
+| --- | --- |
+| `ads` (predeterminado) | Solo comprobaciones de autorización mediante `/authz-check/v1/*`. |
+| `pms:read` | Leer servicios, políticas de autorización y de roles de la cuenta mediante `/policy-mgmt/v1`. |
+| `pms:write` | Leer, crear y eliminar servicios, políticas de autorización y de roles de la cuenta mediante `/policy-mgmt/v1`. |
+
+Los ámbitos de gestión no pueden llamar a ADS; `ads` no puede gestionar políticas. Un ámbito incorrecto devuelve `403 insufficient_scope`. Solicitar un ámbito de gestión con el inicio de sesión cerrado devuelve `403 management_scope_disabled`.
+
+La consola envía una solicitud autenticada por sesión:
 
 ```http
 POST /api/tokens
@@ -26,43 +34,35 @@ Origin: https://cloud.speedle.io
 X-SC-CSRF: 1
 Content-Type: application/json
 
-{"name":"books-app"}
+{"name":"books-app","scope":"ads"}
 ```
 
-Este ejemplo utiliza el origen de producción. El cliente proporciona la sesión mediante su gestión habitual de cookies seguras, por lo que no es una solicitud anónima independiente.
+La solicitud solo acepta `name` y `scope` opcional (por defecto `ads`). No envíe un servicio, una caducidad ni pruebas de autenticación. Se requieren la cookie de sesión y las cabeceras CSRF; una clave API no sustituye a la sesión.
 
-La creación requiere una autenticación normal con el proveedor (mediante inicio de sesión o reautenticación) realizada hace no más de 10 minutos. El servidor comprueba la sesión persistida frente a su propio reloj. Se permite un margen exacto de 10 minutos. Una marca de tiempo de autenticación ausente, futura o vencida devuelve `403 {"error":"reauth_required"}`. La actividad ordinaria de la cuenta no renueva la vigencia de la autenticación.
+## Proteger el secreto
 
-La solicitud solo acepta `name`. El ID del servicio, los alcances, el vencimiento y las pruebas de autenticación no son entradas proporcionadas por el cliente.
-
-## Proteger el secreto de divulgación única
-
-Una creación exitosa devuelve 201 con los metadatos del token y un campo `token` de divulgación única con este formato:
+La creación devuelve HTTP 201. El campo `token` contiene el secreto de la clave API y se muestra una sola vez:
 
 ```text
 spdl_<canonical uppercase ULID id>_<43 base62 digits>
 ```
 
-Esta es una descripción del formato, no una credencial utilizable. El ID incrustado en el token coincide con el ID de token devuelto. Almacene el valor emitido de inmediato en el almacén de secretos del lado del servidor de la aplicación.
+<!-- TODO: Update API key expiry after https://github.com/teramoby/cloud.speedle.io/issues/427 merges. -->
 
-No incruste el token en código frontend ni lo almacene en el almacenamiento del navegador. Manténgalo fuera de URLs, control de versiones, capturas de pantalla, incidencias, telemetría y registros. El cliente de gestión normal puede almacenar y mostrar un valor recién emitido de forma transitoria para su divulgación y copia única dirigida por el usuario. No debe copiar, descargar, almacenar o registrar el secreto automáticamente.
+Es una descripción del formato, no una clave utilizable. Guárdela inmediatamente en un almacén de secretos del servidor. No la incluya en el almacenamiento del navegador, frontend, URL, control de versiones, capturas ni registros. El listado solo devuelve metadatos; un secreto perdido no se recupera.
 
-El listado de tokens solo devuelve metadatos; el texto en plano no se puede recuperar con posterioridad. Los tokens no tienen un vencimiento intrínseco en v1. Se permite un máximo de dos tokens activos para un servicio, y el historial de revocaciones no consume ninguna de las dos ranuras activas.
+La cuenta admite **10 claves API activas entre todos los ámbitos**. Crear otra devuelve `409 {"error":"quota_exceeded","limit":10}`. Revoque una clave sin uso para liberar una plaza; el límite no se restablece con el tiempo. Las claves revocadas siguen listadas y no cuentan para el límite.
 
-## Listar metadatos de tokens
+## Listar claves API
 
-`GET /api/tokens` devuelve metadatos de tokens activos y revocados en páginas delimitadas, ordenadas por ID de forma descendente. El tamaño de página predeterminado es 25; `limit` puede ser de 1 a 100. El cursor es un ID de token exclusivo. Siga `nextCursor` hasta que su valor sea `null`. La respuesta nunca devuelve el secreto.
+`GET /api/tokens` devuelve claves activas y revocadas, de más reciente a más antigua. La página predeterminada tiene 25 entradas; `limit` acepta 1–100. Envíe el `nextCursor` anterior como `cursor` hasta recibir `null`. `lastUsedAt` se actualiza por mejor esfuerzo, normalmente como máximo una vez por hora; no demuestra que una clave esté sin uso.
 
-Utilice **Actualizar tokens más recientes** y **Página siguiente** para revisar los metadatos. `lastUsedAt` opera por mejor esfuerzo y se actualiza a lo sumo cada hora, por lo que no puede probar que un emisor haya dejado de usar un token.
+## Revocar una clave API
 
-## Rotar y revocar un token
-
-Una vez que el ADS autenticado esté disponible, utilice una autenticación reciente normal para crear un segundo token. Modifique cada referencia de la aplicación y de secretos a la nueva credencial, y confirme que funciona para la política prevista antes de retirar la anterior.
-
-En **Tokens de aplicación**, seleccione **Revocar** para el token antiguo, verifique su nombre e ID, y confirme **Revocar token**. La sesión de gestión envía:
+Seleccione **Revocar**, compruebe nombre e ID y confirme. La revocación no requiere reautenticación reciente. La consola envía:
 
 ```http
-DELETE /api/tokens/<old token id>
+DELETE /api/tokens/<API key id>
 Origin: https://cloud.speedle.io
 X-SC-CSRF: 1
 Content-Type: application/json
@@ -70,10 +70,8 @@ Content-Type: application/json
 {}
 ```
 
-La primera revocación de un token activo propio devuelve un estado 204 vacío. Los IDs desconocidos, no propios o ya revocados devuelven 404. La autoridad de verificación en caché tiene una vida útil máxima fija de 60 segundos desde el inicio de su búsqueda autorizada, por lo que no se garantiza que la revocación surta efecto en todas partes de inmediato.
+La primera revocación devuelve HTTP 204 sin cuerpo. Los ID desconocidos, ajenos o ya revocados devuelven `404 not_found`. Una verificación previa puede seguir siendo válida durante un máximo de 60 segundos; la revocación no es instantánea en todas las ubicaciones.
 
-Si ambas ranuras activas están ocupadas, inventaríe y migre los clientes legítimos antes de retirar una credencial. No revoque a ciegas un token de producción en funcionamiento solo para liberar una ranura.
+Las acciones disponibles son **Crear** y **Revocar**. Para cambiar el secreto o ámbito, cree otra clave, actualice los emisores y revoque la anterior. Si todas las claves están en uso al llegar al límite, planifique una interrupción antes de revocar una. Eliminar un servicio no revoca las claves API de la cuenta.
 
-Si se pierde una respuesta de creación o revocación, revise los metadatos actualizados antes de elegir explícitamente otra acción. La consola no reintenta mutaciones automáticamente. Un nombre coincidente no puede recuperar ni identificar un secreto único extraviado.
-
-Para conocer los límites de solicitudes y la gestión de errores, consulte [Límites y errores](/es/docs/cloud/limits-and-errors/). Para usar un token en una solicitud de autorización, consulte la [Vista previa de la API de autorización](/es/docs/cloud/authorization-api/).
+Si se pierde una respuesta, actualice la lista antes de actuar. Un nombre coincidente no recupera el secreto perdido. Consulte [Límites y errores](/es/docs/cloud/limits-and-errors/) y la [API de autorización](/es/docs/cloud/authorization-api/).
