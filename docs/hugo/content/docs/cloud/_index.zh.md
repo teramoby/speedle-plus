@@ -18,7 +18,7 @@ Speedle Cloud 是基于开源 Speedle 策略引擎的托管访问控制服务，
 
 ## 文档导航
 
-- [快速入门](/zh/docs/cloud/getting-started/)：使用 GitHub 或 Google 登录（即将开放）、账号管理、service、SPDL 策略、会话管理请求，以及四种会话 Playground 操作。
+- [快速入门](/zh/docs/cloud/getting-started/)：登录控制台，创建服务和策略，创建 API 密钥，从应用发起授权检查。
 - [应用令牌](/zh/docs/cloud/tokens/)：最近认证要求、令牌的一次性展示、元数据分页、轮换和撤销。
 - [授权 API 预览](/zh/docs/cloud/authorization-api/)：IsAllowed 请求与响应合约、Node.js 22 示例、策略快照和接入限制。
 - [限额与错误](/zh/docs/cloud/limits-and-errors/)：账号额度、请求限制、错误响应、限流与额度响应头，以及重试建议。
