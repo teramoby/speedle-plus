@@ -70,7 +70,7 @@ alice delete /docs/public: allowed=false reason=NoApplicablePolicies
 
 > **Speedle Cloud 即将上线。**
 
-程序从 `SPEEDLE_SERVICE` 读取服务名，从 `SPEEDLE_TOKEN` 读取该服务的令牌。`SPEEDLE_ENDPOINT` 可覆盖默认端点 `https://cloud.speedle.io`。将 `src/main.rs` 替换为：
+程序从 `SPEEDLE_SERVICE` 读取服务名，从 `SPEEDLE_TOKEN` 读取具有 `ads` 权限范围的账号 API 密钥。`SPEEDLE_ENDPOINT` 可覆盖默认端点 `https://cloud.speedle.io`。将 `src/main.rs` 替换为：
 
 ```rust
 use std::env;
@@ -100,7 +100,7 @@ fn run() -> Result<(), speedle::Error> {
 }
 ```
 
-设置环境变量后运行。`read -rs` 不会把令牌写入 shell 历史，也不会显示在屏幕上：
+设置环境变量后运行。`read -rs` 不会把API 密钥写入 shell 历史，也不会显示在屏幕上：
 
 ```bash
 export SPEEDLE_SERVICE=docs
@@ -115,7 +115,7 @@ alice get /docs/public: allowed=true
 alice delete /docs/public: allowed=false reason=NoApplicablePolicies
 ```
 
-令牌是服务端密钥，切勿放进浏览器、移动应用或桌面客户端。
+API 密钥是服务端密钥，切勿放进浏览器、移动应用或桌面客户端。
 
 ## 错误处理
 

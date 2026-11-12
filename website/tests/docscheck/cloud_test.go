@@ -112,10 +112,12 @@ func isAllowedExample(t *testing.T, path string) string {
 // idd, a principal named alice matches every tenant that reuses that name.
 func TestCloudAuthorizationExamplesCarryIdentityDomain(t *testing.T) {
 	const documentedPolicy = "grant user alice from corp get /books"
-	for _, locale := range []string{"", ".zh"} {
+	for _, locale := range []string{"", ".zh", ".ja", ".ko", ".es"} {
 		downloadLanguage := "en"
-		if locale != "" {
+		if locale == ".zh" {
 			downloadLanguage = "zh-CN"
+		} else if locale != "" {
+			downloadLanguage = strings.TrimPrefix(locale, ".")
 		}
 		page := "docs/hugo/content/docs/cloud/authorization-api" + locale + ".md"
 		download := "docs/hugo/static/docs/cloud/quickstart." + downloadLanguage + ".md"

@@ -1,35 +1,34 @@
 +++
 title = "Speedle Cloud"
-description = "Speedle Cloud ドキュメント: クイックスタート、アカウントとポリシーの管理、アプリケーショントークン、認可 API プレビュー、制限、エラー、ダウンロード。"
+description = "ホスト型認可、アカウント API キー、リクエスト制限と連携ガイド。"
 weight = 306
 draft = false
 toc = false
 linksection = true
 tocheading = "h2"
 categories = ["docs"]
-lastmod = 2026-11-08T17:11:18+08:00
+lastmod = 2026-11-12T00:00:00+08:00
 +++
 
-Speedle Cloud は、オープンソースの Speedle ポリシーエンジンをベースにした開発者向けのホスト型アクセス制御サービスです。SPDL 認可ポリシーおよびロールポリシーの管理、Playground での決定テスト、アプリケーションサーバーからの認可 API 呼び出しを、独自の認可サービスを運用することなく行えるよう設計されています。
+Speedle Cloud はオープンソースの Speedle エンジンによるホスト型認可サービスです。サービス、SPDL 認可・ロールポリシーを管理し、Playground で判定をテストして、サーバーから API を呼び出せます。
 
-**Speedle Cloud はまもなく公開されます。** Cloud ヘッダーには **Coming soon（まもなく公開）** バッジが表示されており、[cloud.speedle.io](https://cloud.speedle.io/ja/) での本番サインインはまだ開始されていません。ここで説明されているコンソールワークフローおよび認証付き認可決定サービス (ADS) は、公開されているサービス契約のプレビューです。認証付き ADS が保留中である間、トークンを発行してもサーバー側の認可呼び出しは有効になりません。選択したステージでのデプロイメントと ID プロバイダーの可用性を確認してください。
+**Speedle Cloud はまもなく公開されます。** このガイドは、本番環境のサインインと認証付き認可 API が利用可能になった際の手順を説明しています。例は実際の Cloud 環境では実行していません。
 
-無料パブリックベータは、試用、学習、評価を目的としています。SLA は提供されず、本番環境での使用は推奨されません。また、機能や制限は変更される場合があります。
+コンソールの利用と API キー作成にはサインインが利用可能である必要があります。無料パブリックベータは試用、学習、評価用で SLA はなく、本番利用は推奨しません。機能と制限は変更される場合があります。
 
 ## ドキュメント
 
 - [クイックスタート](/ja/docs/cloud/getting-started/)：サインインし、コンソールでサービスとポリシー、API キーを作成して、アプリケーションから認可を確認します。
-- [アプリケーショントークン](/ja/docs/cloud/tokens/): 最近の認証要件、1 回限りのトークン開示、メタデータのページネーション、ローテーション、および失効。
-- [認可 API プレビュー](/ja/docs/cloud/authorization-api/): IsAllowed リクエストとレスポンスの契約、Node.js 22 のサンプル、ポリシースナップショット、および統合の制約。
-- [制限とエラー](/ja/docs/cloud/limits-and-errors/): アカウントクォータ、リクエスト制限、エラーレスポンス、レートおよびクォータヘッダー、再試行のガイダンス。
+- [API キー](/ja/docs/cloud/tokens/): アカウントの認証情報、固定スコープ、作成と失効、一度だけの表示、ページング。
+- [認可 API](/ja/docs/cloud/authorization-api/): IsAllowed、ユーザー ID、Node.js 22、通信の制約。
+- [制限とエラー](/ja/docs/cloud/limits-and-errors/): アカウント上限、サイズ、バースト、日次枠、エラーコード、リセット時刻。
 
 ## ダウンロード
 
-- [日本語 Markdown](https://engine.speedle.io/docs/cloud/quickstart.ja.md): 4 つの Cloud の章をまとめたオフラインドキュメント。
-- [OpenAPI YAML](https://cloud.speedle.io/openapi.yaml): リポジトリにチェックインされた正規の Cloud API 仕様。
-- [OpenAPI JSON](https://cloud.speedle.io/openapi.json): 同じ YAML ソースバイトから生成。
-- [提供ビルドバージョン](https://cloud.speedle.io/build.json): サービスを提供しているビルドを識別（ID プロバイダーやエンドポイントの可用性を証明するものではありません）。
+- [日本語 Markdown](https://engine.speedle.io/docs/cloud/quickstart.ja.md): Cloud の 4 章をまとめたオフラインガイド。
+- [OpenAPI YAML](https://cloud.speedle.io/openapi.yaml)
+- [OpenAPI JSON](https://cloud.speedle.io/openapi.json)
 
-仕様には 4 つのセッション Playground 操作と認証付き ADS 契約が含まれます。仕様の公開やガイドのダウンロードを行っても、保留中のエンドポイントが有効になったりサインインが開始されたりすることはありません。YAML および生成された JSON は、対応する封印された Cloud ビルドとともにバージョン管理、プロモート、復元されます。日本語、英語、中国語の Markdown ダウンロードは、これらの Engine ドキュメントページとともに保守されます。
+API 仕様はリクエストとレスポンスの契約です。ダウンロードしてもサインインは開始されません。
 
-Cloud の[利用規約](https://cloud.speedle.io/ja/terms)および[プライバシーポリシー](https://cloud.speedle.io/ja/privacy)をお読みください。
+Cloud の次の文書をご確認ください： [利用規約](https://cloud.speedle.io/ja/terms) / [プライバシーポリシー](https://cloud.speedle.io/ja/privacy).

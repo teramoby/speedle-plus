@@ -10,8 +10,8 @@
 
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
-    <meta name="viewport" content="width=device-width, initial-scale=1"><title>Tokens de aplicación de Speedle Cloud · Speedle Engine</title>
-<meta name="description" content="Emisión, protección, listado, rotación y revocación de tokens de aplicación de Speedle Cloud, incluidas las reglas de autenticación reciente y divulgación única.">
+    <meta name="viewport" content="width=device-width, initial-scale=1"><title>Speedle Cloud Claves API · Speedle Engine</title>
+<meta name="description" content="Crear, proteger, listar y revocar claves API de cuenta con un ámbito fijo.">
 <meta name="generator" content="Hugo 0.48" />
 <link href="https://engine.speedle.io/index.xml" rel="alternate" type="application/rss+xml">
 <link rel="canonical" href="https://engine.speedle.io/es/docs/cloud/tokens/">
@@ -23,11 +23,10 @@
 <link rel="alternate" hreflang="zh-CN" href="https://engine.speedle.io/zh/docs/cloud/tokens/">
 <link rel="alternate" hreflang="x-default" href="https://engine.speedle.io/docs/cloud/tokens/">
 <meta property="og:type" content="article">
-<meta property="article:published_time" content="2026-11-08T00:00:00&#43;08:00">
-<meta property="article:modified_time" content="2026-11-08T17:11:18&#43;08:00">
+<meta property="article:modified_time" content="2026-11-12T00:00:00&#43;08:00">
 <meta property="og:site_name" content="Speedle Engine">
-<meta property="og:title" content="Tokens de aplicación de Speedle Cloud · Speedle Engine">
-<meta property="og:description" content="Emisión, protección, listado, rotación y revocación de tokens de aplicación de Speedle Cloud, incluidas las reglas de autenticación reciente y divulgación única.">
+<meta property="og:title" content="Speedle Cloud Claves API · Speedle Engine">
+<meta property="og:description" content="Crear, proteger, listar y revocar claves API de cuenta con un ámbito fijo.">
 <meta property="og:url" content="https://engine.speedle.io/es/docs/cloud/tokens/">
 <meta property="og:image" content="https://engine.speedle.io/img/social/engine-en.png">
 <meta property="og:image:width" content="1200">
@@ -35,13 +34,13 @@
 <meta property="og:image:type" content="image/png">
 <meta property="og:image:alt" content="Speedle Engine — Fast. Simple. Access control">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Tokens de aplicación de Speedle Cloud · Speedle Engine">
-<meta name="twitter:description" content="Emisión, protección, listado, rotación y revocación de tokens de aplicación de Speedle Cloud, incluidas las reglas de autenticación reciente y divulgación única.">
+<meta name="twitter:title" content="Speedle Cloud Claves API · Speedle Engine">
+<meta name="twitter:description" content="Crear, proteger, listar y revocar claves API de cuenta con un ámbito fijo.">
 <meta name="twitter:image" content="https://engine.speedle.io/img/social/engine-en.png">
 <meta name="twitter:image:alt" content="Speedle Engine — Fast. Simple. Access control">
 
-<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/es/docs/cloud/tokens/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-08T17:11:18+08:00","datePublished":"2026-11-08T00:00:00+08:00","description":"Emisión, protección, listado, rotación y revocación de tokens de aplicación de Speedle Cloud, incluidas las reglas de autenticación reciente y divulgación única.","headline":"Tokens de aplicación de Speedle Cloud","image":"https://engine.speedle.io/img/social/engine-en.png","inLanguage":"es","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/es/docs/cloud/tokens/","@type":"WebPage"},"name":"Tokens de aplicación de Speedle Cloud","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/es/docs/cloud/tokens/"}</script>
-<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/es/docs/cloud/tokens/#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://engine.speedle.io/es/","name":"Inicio","position":1},{"@type":"ListItem","item":"https://engine.speedle.io/es/docs/","name":"Documentación","position":2},{"@type":"ListItem","item":"https://engine.speedle.io/es/docs/cloud/","name":"Speedle Cloud","position":3},{"@type":"ListItem","item":"https://engine.speedle.io/es/docs/cloud/tokens/","name":"Tokens de aplicación de Speedle Cloud","position":4}]}</script><link href="/css/docs.css" rel="stylesheet" type="text/css">
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/es/docs/cloud/tokens/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-12T00:00:00+08:00","description":"Crear, proteger, listar y revocar claves API de cuenta con un ámbito fijo.","headline":"Speedle Cloud Claves API","image":"https://engine.speedle.io/img/social/engine-en.png","inLanguage":"es","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/es/docs/cloud/tokens/","@type":"WebPage"},"name":"Speedle Cloud Claves API","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/es/docs/cloud/tokens/"}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/es/docs/cloud/tokens/#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://engine.speedle.io/es/","name":"Inicio","position":1},{"@type":"ListItem","item":"https://engine.speedle.io/es/docs/","name":"Documentación","position":2},{"@type":"ListItem","item":"https://engine.speedle.io/es/docs/cloud/","name":"Speedle Cloud","position":3},{"@type":"ListItem","item":"https://engine.speedle.io/es/docs/cloud/tokens/","name":"Speedle Cloud Claves API","position":4}]}</script><link href="/css/docs.css" rel="stylesheet" type="text/css">
 
 
     <link href="/css/navigation.css?v=header-20261106-v8" rel="stylesheet">
@@ -156,7 +155,7 @@
 <li data-docs-depth="0" class="docs-nav-section parent"><span class="docs-nav-heading docs-nav-heading-link"><a href="/es/docs/cloud/">Speedle Cloud</a></span>
 <ul class="sub-menu">
 <li data-docs-depth="1" class=""><a href="/es/docs/cloud/getting-started/">Primeros pasos</a></li>
-<li data-docs-depth="1" class="active"><a href="/es/docs/cloud/tokens/" aria-current="page">Tokens de aplicación</a></li>
+<li data-docs-depth="1" class="active"><a href="/es/docs/cloud/tokens/" aria-current="page">Claves API</a></li>
 <li data-docs-depth="1" class=""><a href="/es/docs/cloud/authorization-api/">API de autorización</a></li>
 <li data-docs-depth="1" class=""><a href="/es/docs/cloud/limits-and-errors/">Límites y errores</a></li>
 </ul>
@@ -181,8 +180,8 @@
 <main>
 <div id="main">
 
-  <h1>Tokens de aplicación de Speedle Cloud</h1>
-  <p class="docs-lead">Gestione credenciales Bearer con alcance de servicio sin exponer sus valores secretos únicos.</p>
+  <h1>Speedle Cloud Claves API</h1>
+  <p class="docs-lead"></p>
 
 
 
@@ -195,59 +194,81 @@
 
   <div id="kube-component" class="content">
 
-<p>Los tokens de aplicación autentican una aplicación frente a Speedle Cloud ADS para el servicio propio del token. No identifican a un usuario final y no pueden autorizar solicitudes a la API de gestión. La consola de tokens estará disponible cuando se habilite el inicio de sesión en las cuentas; mientras el ADS autenticado permanezca pendiente, emitir un token no habilitará llamadas de autorización del lado del servidor.</p>
+<p>Las claves API pertenecen a la cuenta y acceden a sus servicios según su ámbito. Autentican la aplicación, no al usuario final. Administrar claves API, sesiones e identidades vinculadas requiere una sesión de consola iniciada.</p>
 
-<h2 id="emitir-un-token">Emitir un token</h2>
+<p><strong>Speedle Cloud estará disponible próximamente.</strong> Esta guía describe el flujo para cuando se habiliten el inicio de sesión en producción y las comprobaciones de autorización autenticadas; los ejemplos no se han ejecutado en un entorno Cloud real.</p>
 
-<p>Para una cuenta que ya posee un servicio, abra <a href="https://cloud.speedle.io/es/tokens">Tokens de aplicación</a>. Introduzca un nombre de token de 1 a 128 caracteres y seleccione <strong>Crear token</strong>. Si se requiere verificación, elija un proveedor vinculado disponible. Tras regresar del proveedor, introduzca el nombre y seleccione <strong>Crear token</strong> nuevamente; regresar no crea el token de forma automática.</p>
+<h2 id="crear-una-clave-api">Crear una clave API</h2>
 
-<p>La consola envía esta solicitud de sesión:</p>
+<p>Abra <a href="https://cloud.speedle.io/es/tokens">Claves API</a>, escriba un nombre de 1–128 caracteres después de quitar espacios al principio y al final, elija un ámbito y seleccione <strong>Crear</strong>. Se requiere autenticación con un proveedor vinculado en los últimos 10 minutos. Si recibe <code>403 reauth_required</code>, autentíquese de nuevo y vuelva a seleccionar <strong>Crear</strong>; regresar del proveedor no crea la clave automáticamente.</p>
+
+<p>Cada clave tiene un ámbito fijo desde su creación:</p>
+
+<table>
+<thead>
+<tr>
+<th>Ámbito</th>
+<th>Acceso</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td><code>ads</code> (predeterminado)</td>
+<td>Solo comprobaciones de autorización mediante <code>/authz-check/v1/*</code>.</td>
+</tr>
+
+<tr>
+<td><code>pms:read</code></td>
+<td>Leer servicios, políticas de autorización y de roles de la cuenta mediante <code>/policy-mgmt/v1</code>.</td>
+</tr>
+
+<tr>
+<td><code>pms:write</code></td>
+<td>Leer, crear y eliminar servicios, políticas de autorización y de roles de la cuenta mediante <code>/policy-mgmt/v1</code>.</td>
+</tr>
+</tbody>
+</table>
+
+<p>Los ámbitos de gestión no pueden llamar a ADS; <code>ads</code> no puede gestionar políticas. Un ámbito incorrecto devuelve <code>403 insufficient_scope</code>. Solicitar un ámbito de gestión con el inicio de sesión cerrado devuelve <code>403 management_scope_disabled</code>.</p>
+
+<p>La consola envía una solicitud autenticada por sesión:</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-http" data-lang="http">POST /api/tokens
 Origin: https://cloud.speedle.io
 X-SC-CSRF: 1
 Content-Type: application/json
 
-{&#34;name&#34;:&#34;books-app&#34;}</code></pre></div>
-<p>Este ejemplo utiliza el origen de producción. El cliente proporciona la sesión mediante su gestión habitual de cookies seguras, por lo que no es una solicitud anónima independiente.</p>
+{&#34;name&#34;:&#34;books-app&#34;,&#34;scope&#34;:&#34;ads&#34;}</code></pre></div>
+<p>La solicitud solo acepta <code>name</code> y <code>scope</code> opcional (por defecto <code>ads</code>). No envíe un servicio, una caducidad ni pruebas de autenticación. Se requieren la cookie de sesión y las cabeceras CSRF; una clave API no sustituye a la sesión.</p>
 
-<p>La creación requiere una autenticación normal con el proveedor (mediante inicio de sesión o reautenticación) realizada hace no más de 10 minutos. El servidor comprueba la sesión persistida frente a su propio reloj. Se permite un margen exacto de 10 minutos. Una marca de tiempo de autenticación ausente, futura o vencida devuelve <code>403 {&quot;error&quot;:&quot;reauth_required&quot;}</code>. La actividad ordinaria de la cuenta no renueva la vigencia de la autenticación.</p>
+<h2 id="proteger-el-secreto">Proteger el secreto</h2>
 
-<p>La solicitud solo acepta <code>name</code>. El ID del servicio, los alcances, el vencimiento y las pruebas de autenticación no son entradas proporcionadas por el cliente.</p>
-
-<h2 id="proteger-el-secreto-de-divulgación-única">Proteger el secreto de divulgación única</h2>
-
-<p>Una creación exitosa devuelve 201 con los metadatos del token y un campo <code>token</code> de divulgación única con este formato:</p>
+<p>La creación devuelve HTTP 201. El campo <code>token</code> contiene el secreto de la clave API y se muestra una sola vez:</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">spdl_&lt;canonical uppercase ULID id&gt;_&lt;43 base62 digits&gt;</code></pre></div>
-<p>Esta es una descripción del formato, no una credencial utilizable. El ID incrustado en el token coincide con el ID de token devuelto. Almacene el valor emitido de inmediato en el almacén de secretos del lado del servidor de la aplicación.</p>
+<p>Una clave API sigue siendo válida hasta que la revoque; no caduca automáticamente.</p>
 
-<p>No incruste el token en código frontend ni lo almacene en el almacenamiento del navegador. Manténgalo fuera de URLs, control de versiones, capturas de pantalla, incidencias, telemetría y registros. El cliente de gestión normal puede almacenar y mostrar un valor recién emitido de forma transitoria para su divulgación y copia única dirigida por el usuario. No debe copiar, descargar, almacenar o registrar el secreto automáticamente.</p>
+<p>Es una descripción del formato, no una clave utilizable. Guárdela inmediatamente en un almacén de secretos del servidor. No la incluya en el almacenamiento del navegador, frontend, URL, control de versiones, capturas ni registros. El listado solo devuelve metadatos; un secreto perdido no se recupera.</p>
 
-<p>El listado de tokens solo devuelve metadatos; el texto en plano no se puede recuperar con posterioridad. Los tokens no tienen un vencimiento intrínseco en v1. Se permite un máximo de dos tokens activos para un servicio, y el historial de revocaciones no consume ninguna de las dos ranuras activas.</p>
+<p>La cuenta admite <strong>10 claves API activas entre todos los ámbitos</strong>. Crear otra devuelve <code>409 {&quot;error&quot;:&quot;quota_exceeded&quot;,&quot;limit&quot;:10}</code>. Revoque una clave sin uso para liberar una plaza; el límite no se restablece con el tiempo. Las claves revocadas siguen listadas y no cuentan para el límite.</p>
 
-<h2 id="listar-metadatos-de-tokens">Listar metadatos de tokens</h2>
+<h2 id="listar-claves-api">Listar claves API</h2>
 
-<p><code>GET /api/tokens</code> devuelve metadatos de tokens activos y revocados en páginas delimitadas, ordenadas por ID de forma descendente. El tamaño de página predeterminado es 25; <code>limit</code> puede ser de 1 a 100. El cursor es un ID de token exclusivo. Siga <code>nextCursor</code> hasta que su valor sea <code>null</code>. La respuesta nunca devuelve el secreto.</p>
+<p><code>GET /api/tokens</code> devuelve claves activas y revocadas, de más reciente a más antigua. La página predeterminada tiene 25 entradas; <code>limit</code> acepta 1–100. Envíe el <code>nextCursor</code> anterior como <code>cursor</code> hasta recibir <code>null</code>. <code>lastUsedAt</code> se actualiza por mejor esfuerzo, normalmente como máximo una vez por hora; no demuestra que una clave esté sin uso.</p>
 
-<p>Utilice <strong>Actualizar tokens más recientes</strong> y <strong>Página siguiente</strong> para revisar los metadatos. <code>lastUsedAt</code> opera por mejor esfuerzo y se actualiza a lo sumo cada hora, por lo que no puede probar que un emisor haya dejado de usar un token.</p>
+<h2 id="revocar-una-clave-api">Revocar una clave API</h2>
 
-<h2 id="rotar-y-revocar-un-token">Rotar y revocar un token</h2>
-
-<p>Una vez que el ADS autenticado esté disponible, utilice una autenticación reciente normal para crear un segundo token. Modifique cada referencia de la aplicación y de secretos a la nueva credencial, y confirme que funciona para la política prevista antes de retirar la anterior.</p>
-
-<p>En <strong>Tokens de aplicación</strong>, seleccione <strong>Revocar</strong> para el token antiguo, verifique su nombre e ID, y confirme <strong>Revocar token</strong>. La sesión de gestión envía:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-http" data-lang="http">DELETE /api/tokens/&lt;old token id&gt;
+<p>Seleccione <strong>Revocar</strong>, compruebe nombre e ID y confirme. La revocación no requiere reautenticación reciente. La consola envía:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-http" data-lang="http">DELETE /api/tokens/&lt;API key id&gt;
 Origin: https://cloud.speedle.io
 X-SC-CSRF: 1
 Content-Type: application/json
 
 {}</code></pre></div>
-<p>La primera revocación de un token activo propio devuelve un estado 204 vacío. Los IDs desconocidos, no propios o ya revocados devuelven 404. La autoridad de verificación en caché tiene una vida útil máxima fija de 60 segundos desde el inicio de su búsqueda autorizada, por lo que no se garantiza que la revocación surta efecto en todas partes de inmediato.</p>
+<p>La primera revocación devuelve HTTP 204 sin cuerpo. Los ID desconocidos, ajenos o ya revocados devuelven <code>404 not_found</code>. Una verificación previa puede seguir siendo válida durante un máximo de 60 segundos; la revocación no es instantánea en todas las ubicaciones.</p>
 
-<p>Si ambas ranuras activas están ocupadas, inventaríe y migre los clientes legítimos antes de retirar una credencial. No revoque a ciegas un token de producción en funcionamiento solo para liberar una ranura.</p>
+<p>Las acciones disponibles son <strong>Crear</strong> y <strong>Revocar</strong>. Para cambiar el secreto o ámbito, cree otra clave, actualice los emisores y revoque la anterior. Si todas las claves están en uso al llegar al límite, planifique una interrupción antes de revocar una. Eliminar un servicio no revoca las claves API de la cuenta.</p>
 
-<p>Si se pierde una respuesta de creación o revocación, revise los metadatos actualizados antes de elegir explícitamente otra acción. La consola no reintenta mutaciones automáticamente. Un nombre coincidente no puede recuperar ni identificar un secreto único extraviado.</p>
-
-<p>Para conocer los límites de solicitudes y la gestión de errores, consulte <a href="/es/docs/cloud/limits-and-errors/">Límites y errores</a>. Para usar un token en una solicitud de autorización, consulte la <a href="/es/docs/cloud/authorization-api/">Vista previa de la API de autorización</a>.</p>
+<p>Si se pierde una respuesta, actualice la lista antes de actuar. Un nombre coincidente no recupera el secreto perdido. Consulte <a href="/es/docs/cloud/limits-and-errors/">Límites y errores</a> y la <a href="/es/docs/cloud/authorization-api/">API de autorización</a>.</p>
 </div>
 </div>
 </main>

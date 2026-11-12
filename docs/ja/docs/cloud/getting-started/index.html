@@ -11,7 +11,7 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
     <meta name="viewport" content="width=device-width, initial-scale=1"><title>Speedle Cloud クイックスタート · Speedle Engine</title>
-<meta name="description" content="GitHub または Google によるサインイン、アカウントのセットアップ、SPDL ポリシーの作成、および Cloud Playground での決定のテスト。">
+<meta name="description" content="Speedle Cloud のサインイン、SPDL ポリシーの保存、API キーによるアプリケーションからの認可チェック、Playground でのテスト。">
 <meta name="generator" content="Hugo 0.48" />
 <link href="https://engine.speedle.io/index.xml" rel="alternate" type="application/rss+xml">
 <link rel="canonical" href="https://engine.speedle.io/ja/docs/cloud/getting-started/">
@@ -23,10 +23,10 @@
 <link rel="alternate" hreflang="zh-CN" href="https://engine.speedle.io/zh/docs/cloud/getting-started/">
 <link rel="alternate" hreflang="x-default" href="https://engine.speedle.io/docs/cloud/getting-started/">
 <meta property="og:type" content="article">
-<meta property="article:modified_time" content="2026-11-08T21:11:24&#43;08:00">
+<meta property="article:modified_time" content="2026-11-12T00:00:00&#43;08:00">
 <meta property="og:site_name" content="Speedle Engine">
 <meta property="og:title" content="Speedle Cloud クイックスタート · Speedle Engine">
-<meta property="og:description" content="GitHub または Google によるサインイン、アカウントのセットアップ、SPDL ポリシーの作成、および Cloud Playground での決定のテスト。">
+<meta property="og:description" content="Speedle Cloud のサインイン、SPDL ポリシーの保存、API キーによるアプリケーションからの認可チェック、Playground でのテスト。">
 <meta property="og:url" content="https://engine.speedle.io/ja/docs/cloud/getting-started/">
 <meta property="og:image" content="https://engine.speedle.io/img/social/engine-en.png">
 <meta property="og:image:width" content="1200">
@@ -35,11 +35,11 @@
 <meta property="og:image:alt" content="Speedle Engine — Fast. Simple. Access control">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Speedle Cloud クイックスタート · Speedle Engine">
-<meta name="twitter:description" content="GitHub または Google によるサインイン、アカウントのセットアップ、SPDL ポリシーの作成、および Cloud Playground での決定のテスト。">
+<meta name="twitter:description" content="Speedle Cloud のサインイン、SPDL ポリシーの保存、API キーによるアプリケーションからの認可チェック、Playground でのテスト。">
 <meta name="twitter:image" content="https://engine.speedle.io/img/social/engine-en.png">
 <meta name="twitter:image:alt" content="Speedle Engine — Fast. Simple. Access control">
 
-<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/ja/docs/cloud/getting-started/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-08T21:11:24+08:00","description":"GitHub または Google によるサインイン、アカウントのセットアップ、SPDL ポリシーの作成、および Cloud Playground での決定のテスト。","headline":"Speedle Cloud クイックスタート","image":"https://engine.speedle.io/img/social/engine-en.png","inLanguage":"ja","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/ja/docs/cloud/getting-started/","@type":"WebPage"},"name":"Speedle Cloud クイックスタート","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/ja/docs/cloud/getting-started/"}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/ja/docs/cloud/getting-started/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-12T00:00:00+08:00","description":"Speedle Cloud のサインイン、SPDL ポリシーの保存、API キーによるアプリケーションからの認可チェック、Playground でのテスト。","headline":"Speedle Cloud クイックスタート","image":"https://engine.speedle.io/img/social/engine-en.png","inLanguage":"ja","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/ja/docs/cloud/getting-started/","@type":"WebPage"},"name":"Speedle Cloud クイックスタート","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/ja/docs/cloud/getting-started/"}</script>
 <script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/ja/docs/cloud/getting-started/#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://engine.speedle.io/ja/","name":"ホーム","position":1},{"@type":"ListItem","item":"https://engine.speedle.io/ja/docs/","name":"ドキュメント","position":2},{"@type":"ListItem","item":"https://engine.speedle.io/ja/docs/cloud/","name":"Speedle Cloud","position":3},{"@type":"ListItem","item":"https://engine.speedle.io/ja/docs/cloud/getting-started/","name":"Speedle Cloud クイックスタート","position":4}]}</script><link href="/css/docs.css" rel="stylesheet" type="text/css">
 
 
@@ -155,9 +155,9 @@
 <li data-docs-depth="0" class="docs-nav-section parent"><span class="docs-nav-heading docs-nav-heading-link"><a href="/ja/docs/cloud/">Speedle Cloud</a></span>
 <ul class="sub-menu">
 <li data-docs-depth="1" class="active"><a href="/ja/docs/cloud/getting-started/" aria-current="page">Speedle Cloud クイックスタート</a></li>
-<li data-docs-depth="1" class=""><a href="/ja/docs/cloud/tokens/">Speedle Cloud アプリケーショントークン</a></li>
-<li data-docs-depth="1" class=""><a href="/ja/docs/cloud/authorization-api/">Speedle Cloud 認可 API プレビュー</a></li>
-<li data-docs-depth="1" class=""><a href="/ja/docs/cloud/limits-and-errors/">Speedle Cloud の制限とエラー</a></li>
+<li data-docs-depth="1" class=""><a href="/ja/docs/cloud/tokens/">API キー</a></li>
+<li data-docs-depth="1" class=""><a href="/ja/docs/cloud/authorization-api/">認可 API</a></li>
+<li data-docs-depth="1" class=""><a href="/ja/docs/cloud/limits-and-errors/">制限とエラー</a></li>
 </ul>
 
 </li>
@@ -194,39 +194,51 @@
 
   <div id="kube-component" class="content">
 
-<p><strong>Speedle Cloud はまもなく公開されます。</strong> cloud.speedle.io の本番環境ではまだサインインが開始されておらず、Cloud ヘッダーには <strong>Coming soon（まもなく公開）</strong> バッジが表示されます。サインインが閉じられている間、サインインページには近日公開予定である旨が表示されます。本文では公開されている使用フローを説明していますが、本番コンソールが現在開かれていることを意味するものではありません。</p>
+<p><strong>Speedle Cloud はまもなく公開されます。</strong> このガイドは、本番環境のサインインと認証付き認可 API が利用可能になった際の手順を説明しています。例は実際の Cloud 環境では実行していません。</p>
 
-<h3 id="本番環境">本番環境</h3>
+<h2 id="github-または-google-によるサインイン-まもなく開始">GitHub または Google によるサインイン（まもなく開始）</h2>
 
-<p>アカウントセッション、管理リクエスト、およびアプリケーショントークンは <code>https://cloud.speedle.io</code> を使用します。アカウント、リソース、トークンはそのオリジンに属します。</p>
+<p>ブラウザーで <a href="https://cloud.speedle.io/ja/">Cloud コンソール</a>を開き、利用可能なプロバイダーでサインインします。未使用の確認済みメールアドレスで初めて利用する場合は、<strong>アカウント作成</strong>を確認します。メールアドレスが使用済みの場合は、コンソールに表示された連携済みプロバイダーでサインインしてください。</p>
 
-<h3 id="github-または-google-によるサインイン-まもなく開始">GitHub または Google によるサインイン（まもなく開始）</h3>
+<h2 id="サービスとポリシーを作成する">サービスとポリシーを作成する</h2>
 
-<p>サインインがまだ開始されていない場合でも、サインインページには <strong>GitHub でサインイン</strong> と <strong>Google でサインイン</strong> の 2 つのオプションが表示されます。本番環境でサインインが開始されたら、現在利用可能なプロバイダーを選択してください。新しい ID の確認済みメールアドレスがまだ使用されていない場合は、<strong>アカウント作成</strong> を明示的に確認する必要があります。</p>
+<p><a href="https://cloud.speedle.io/ja/service">サービスワークスペース</a>を開き、<code>books</code> と入力して<strong>サービス作成</strong>を選択します。既存ポリシーが結果に影響しないよう、新しいサービスで試してください。既存データは上書きしないでください。</p>
 
-<p>アカウント設定では、接続されている ID を確認し、プロバイダーの接続または切断を行うことができます。少なくとも 1 つの接続済み ID を保持する必要があります。</p>
-
-<h3 id="ワークスペースとサービス">ワークスペースとサービス</h3>
-
-<p>サービスはポリシーの名前空間です。デフォルトのワークスペースには、テスト用の <code>default</code> サービスが用意されています。</p>
-
-<h3 id="最初の認可ポリシーの作成">最初の認可ポリシーの作成</h3>
-
-<p>エディターに次の SPDL ステートメントを入力します:</p>
+<p><strong>新しいポリシー</strong>を選択し、名前を <code>read-books</code> にして、次の SPDL を入力します。</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">grant user alice from corp get /books</code></pre></div>
-<p><code>from corp</code> は、この認可を <code>corp</code> ID ドメイン内に制限します。<code>corp</code> を、アプリケーションが信頼できる認証データから導出するドメインに置き換え、以下の Playground の例のように、各リクエストでプリンシパルの <code>idd</code> として同じ値を送信してください。<code>from</code> のない認可は、すべてのドメインの <code>alice</code> という名前のユーザーに一致します。ドメイン間で名前が衝突する可能性のない、単一の ID ソースを持つサービスの場合にのみ、この句を省略してください。ルールと対応するリクエストフィールドについては <a href="/ja/docs/idd/">ID ドメイン</a> を参照してください。</p>
+<p>このポリシーは、ID ドメイン <code>corp</code> の <code>alice</code> が <code>/books</code> に対して <code>get</code> を実行することを許可します。<code>from</code> を省略すると、すべてのドメインの同名ユーザーに一致します。信頼できる認証データからドメインを取得し、各リクエストの <code>idd</code> に設定してください。<a href="/ja/docs/idd/">ID ドメイン</a>を参照してください。</p>
 
-<p><strong>ポリシーの検証</strong> を選択し、コンソールに <strong>識別結果: 認可ポリシー</strong> と報告されることを確認してから、<strong>ポリシーを保存</strong> を選択します。検証ではポリシータイプが検出され、構文がチェックされますが、下書きは保存されません。保存は独立した手動操作です。</p>
+<p><strong>ポリシーの検証</strong>、<strong>ポリシーを保存</strong>の順に選択します。検証は構文を確認するだけで、下書きを保存しません。保存したポリシーが認可 API に反映されるまで約 60 秒かかります。</p>
 
-<h3 id="playground-で認可決定をテスト">Playground で認可決定をテスト</h3>
+<h2 id="api-キーを作成する">API キーを作成する</h2>
 
-<p>Playground を開いてポリシーをテストします。</p>
+<p><a href="https://cloud.speedle.io/ja/tokens">API キー</a>を開き、<code>books-app</code> などの名前を入力し、<code>ads</code> スコープ（認可チェック）を選択して、<strong>API キーを作成</strong>を押します。本人確認を求められた場合は、確認を完了してからフォームを再送信します。シークレットは一度しか表示されないため、その場でコピーしてください。現在、有効期限は選択できません。不要になったキーは失効させてください。<a href="/ja/docs/cloud/tokens/">API キーの管理</a>を参照してください。</p>
 
-<p>リクエストのサブジェクトにプリンシパルを入力します:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">{<span style="color:#ff79c6">&#34;type&#34;</span>:<span style="color:#f1fa8c">&#34;user&#34;</span>,<span style="color:#ff79c6">&#34;name&#34;</span>:<span style="color:#f1fa8c">&#34;alice&#34;</span>,<span style="color:#ff79c6">&#34;idd&#34;</span>:<span style="color:#f1fa8c">&#34;corp&#34;</span>}</code></pre></div>
-<p>アクションに <code>get</code>、リソースに <code>/books</code> を入力します。<strong>評価</strong> をクリックすると、結果は <code>allowed: true</code>（理由コード 0）となります。</p>
+<p>キーをサーバーのシークレットストアに保存し、環境変数 <code>SPEEDLE_API_KEY</code> で渡します。ブラウザーのコードやソース管理には含めないでください。</p>
 
-<p>プリンシパルの <code>idd</code> を <code>other</code> に変更するか、リソースを <code>/secret</code> に変更すると、リクエストは拒否されます（<code>allowed: false</code>）。</p>
+<h2 id="アプリケーションから認可を確認する">アプリケーションから認可を確認する</h2>
+
+<p>保存したポリシーに対して、アプリケーションのサーバーから次の <code>isAllowed</code> リクエストを送信します。このポリシーは属性を必要としないため、<code>attributes</code> は空です。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl --fail-with-body --silent --show-error --max-time <span style="color:#bd93f9">10</span> <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  <span style="color:#f1fa8c">&#39;https://cloud.speedle.io/authz-check/v1/is-allowed&#39;</span> <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  -H <span style="color:#f1fa8c">&#34;Authorization: Bearer </span><span style="color:#8be9fd;font-style:italic">$SPEEDLE_API_KEY</span><span style="color:#f1fa8c">&#34;</span> <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  -H <span style="color:#f1fa8c">&#39;Content-Type: application/json&#39;</span> <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  --data <span style="color:#f1fa8c">&#39;{&#34;subject&#34;:{&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;,&#34;name&#34;:&#34;alice&#34;,&#34;idd&#34;:&#34;corp&#34;}]},&#34;serviceName&#34;:&#34;books&#34;,&#34;resource&#34;:&#34;/books&#34;,&#34;action&#34;:&#34;get&#34;,&#34;attributes&#34;:[]}&#39;</span></code></pre></div>
+<p>サンプルのポリシーだけが保存されている場合、期待されるレスポンスは次のとおりです。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">{<span style="color:#ff79c6">&#34;allowed&#34;</span>:<span style="color:#ff79c6">true</span>,<span style="color:#ff79c6">&#34;reason&#34;</span>:<span style="color:#bd93f9">0</span>}</code></pre></div>
+<p><code>action</code> を <code>delete</code> に変更して再送信します。このアクションを許可するポリシーがないため、期待されるレスポンスは次のとおりです。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">{<span style="color:#ff79c6">&#34;allowed&#34;</span>:<span style="color:#ff79c6">false</span>,<span style="color:#ff79c6">&#34;reason&#34;</span>:<span style="color:#bd93f9">3</span>}</code></pre></div>
+<p>どちらの判定も HTTP 200 を返します。<code>allowed</code> が <code>true</code> の場合だけ保護対象の操作を実行してください。アプリケーションは判定を適用し、エラー、不正なレスポンス、タイムアウト時にはアクセスを拒否する必要があります。</p>
+
+<p>詳細は<a href="/ja/docs/cloud/authorization-api/">認可 API</a>と <a href="/ja/docs/sdks/">SDK</a>（<a href="/ja/docs/sdks/node/">Node.js/TypeScript</a>、<a href="/ja/docs/sdks/python/">Python</a>、<a href="/ja/docs/sdks/java/">Java</a>、<a href="/ja/docs/sdks/go/">Go</a> など）を参照してください。</p>
+
+<h2 id="playground-で保存済みポリシーをテストする">Playground で保存済みポリシーをテストする</h2>
+
+<p>必要に応じてサービスの <strong>Playground</strong> を開き、<strong>Is allowed</strong> を選択します。<strong>Principals (JSON)</strong> に <code>[{&quot;type&quot;:&quot;user&quot;,&quot;name&quot;:&quot;alice&quot;,&quot;idd&quot;:&quot;corp&quot;}]</code>、<strong>Resource</strong> に <code>/books</code>、<strong>Action</strong> に <code>get</code>、<strong>Attributes (JSON)</strong> に <code>[]</code> を入力し、<strong>Run test</strong> を選択します。</p>
+
+<p><strong>Is allowed</strong> は判定結果、<strong>Diagnose</strong> はポリシーの寄与、<strong>All granted roles</strong> はサブジェクトのロール、<strong>All granted permissions</strong> は許可されたリソースとアクションを表示します。テストは保存済みポリシーを使用し、未保存の下書きは使用しません。入力やポリシーを変更したら再実行してください。アプリケーションは API キーを使用して <a href="/ja/docs/cloud/authorization-api/">ADS 認可 API</a>を呼び出します。</p>
+
+<p>次のステップ：プログラムから管理する場合は、<code>pms:write</code> スコープ（読み取りのみなら <code>pms:read</code>）のキーを別に作成し、<a href="/ja/docs/pms/policy-mgmt/#speedle-cloud">PMS API または spctl（Speedle Cloud）</a>を使用してください。前の手順で作成した <code>ads</code> キーではポリシーを管理できません。</p>
 </div>
 </div>
 </main>

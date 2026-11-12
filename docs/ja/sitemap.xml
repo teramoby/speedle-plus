@@ -274,7 +274,7 @@
   
   <url>
     <loc>https://engine.speedle.io/ja/docs/cloud/getting-started/</loc>
-    <lastmod>2026-11-08T21:11:24+08:00</lastmod>
+    <lastmod>2026-11-12T00:00:00+08:00</lastmod>
     <xhtml:link
                 rel="alternate"
                 hreflang="en"
@@ -453,6 +453,36 @@
   </url>
   
   <url>
+    <loc>https://engine.speedle.io/ja/docs/cloud/tokens/</loc>
+    <lastmod>2026-11-12T00:00:00+08:00</lastmod>
+    <xhtml:link
+                rel="alternate"
+                hreflang="en"
+                href="https://engine.speedle.io/docs/cloud/tokens/"
+                />
+    <xhtml:link
+                rel="alternate"
+                hreflang="zh"
+                href="https://engine.speedle.io/zh/docs/cloud/tokens/"
+                />
+    <xhtml:link
+                rel="alternate"
+                hreflang="ko"
+                href="https://engine.speedle.io/ko/docs/cloud/tokens/"
+                />
+    <xhtml:link
+                rel="alternate"
+                hreflang="es"
+                href="https://engine.speedle.io/es/docs/cloud/tokens/"
+                />
+    <xhtml:link
+                rel="alternate"
+                hreflang="ja"
+                href="https://engine.speedle.io/ja/docs/cloud/tokens/"
+                />
+  </url>
+  
+  <url>
     <loc>https://engine.speedle.io/ja/docs/deployment/docker/</loc>
     <lastmod>2026-11-10T14:45:43+08:00</lastmod>
     <xhtml:link
@@ -509,36 +539,6 @@
                 rel="alternate"
                 hreflang="ja"
                 href="https://engine.speedle.io/ja/docs/sdks/python/"
-                />
-  </url>
-  
-  <url>
-    <loc>https://engine.speedle.io/ja/docs/cloud/tokens/</loc>
-    <lastmod>2026-11-08T17:11:18+08:00</lastmod>
-    <xhtml:link
-                rel="alternate"
-                hreflang="en"
-                href="https://engine.speedle.io/docs/cloud/tokens/"
-                />
-    <xhtml:link
-                rel="alternate"
-                hreflang="es"
-                href="https://engine.speedle.io/es/docs/cloud/tokens/"
-                />
-    <xhtml:link
-                rel="alternate"
-                hreflang="zh"
-                href="https://engine.speedle.io/zh/docs/cloud/tokens/"
-                />
-    <xhtml:link
-                rel="alternate"
-                hreflang="ko"
-                href="https://engine.speedle.io/ko/docs/cloud/tokens/"
-                />
-    <xhtml:link
-                rel="alternate"
-                hreflang="ja"
-                href="https://engine.speedle.io/ja/docs/cloud/tokens/"
                 />
   </url>
   
@@ -694,7 +694,7 @@
   
   <url>
     <loc>https://engine.speedle.io/ja/docs/cloud/authorization-api/</loc>
-    <lastmod>2026-11-08T21:11:24+08:00</lastmod>
+    <lastmod>2026-11-12T00:00:00+08:00</lastmod>
     <xhtml:link
                 rel="alternate"
                 hreflang="es"
@@ -814,7 +814,7 @@
   
   <url>
     <loc>https://engine.speedle.io/ja/docs/cloud/limits-and-errors/</loc>
-    <lastmod>2026-11-08T17:11:18+08:00</lastmod>
+    <lastmod>2026-11-12T00:00:00+08:00</lastmod>
     <xhtml:link
                 rel="alternate"
                 hreflang="en"
@@ -1054,7 +1054,7 @@
   
   <url>
     <loc>https://engine.speedle.io/ja/docs/cloud/</loc>
-    <lastmod>2026-11-08T17:11:18+08:00</lastmod>
+    <lastmod>2026-11-12T00:00:00+08:00</lastmod>
     <xhtml:link
                 rel="alternate"
                 hreflang="es"

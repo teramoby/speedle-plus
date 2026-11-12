@@ -1,35 +1,34 @@
 +++
 title = "Speedle Cloud"
-description = "Speedle Cloud 文档中心：入门、账号与策略管理、应用令牌、授权 API 预览、限额、错误和下载。"
+description = "托管授权、账号 API 密钥、请求限额与接入指南。"
 weight = 306
 draft = false
 toc = false
 linksection = true
 tocheading = "h2"
 categories = ["docs"]
-lastmod = 2026-11-08T17:11:18+08:00
+lastmod = 2026-11-12T00:00:00+08:00
 +++
 
-Speedle Cloud 是基于开源 Speedle 策略引擎的托管访问控制服务，面向开发者。你可以用它管理 SPDL 授权策略与角色策略、在 Playground 中测试授权判定，再从应用服务端调用授权 API，无需自行部署和运维授权服务。
+Speedle Cloud 是基于开源 Speedle 引擎的托管授权服务。你可以管理服务、SPDL 授权策略和角色策略，在 Playground 中测试判定，并从服务端调用 API。
 
-**Speedle Cloud 即将上线。** Cloud 页眉显示 **Coming soon（即将上线）** 徽章，[cloud.speedle.io](https://cloud.speedle.io/zh-CN/) 的生产环境尚未开放登录。本文介绍的控制台流程和带认证的授权决策服务（ADS）均为已发布服务合约的预览。带认证的 ADS 尚未提供时，签发令牌并不会启用服务端授权调用。所选环境的部署情况和登录供应商可用性仍需分别确认。
+**Speedle Cloud 即将上线。** 本文介绍生产环境开放登录和授权 API 后的使用流程，示例尚未在线上 Cloud 环境执行。
 
-免费公开测试版用于试用、学习和评估，不提供 SLA，不建议用于生产环境，功能和限额可能调整。
+使用控制台和创建 API 密钥需要账号登录功能可用。免费公开测试版用于试用、学习和评估，不提供 SLA，不建议用于生产环境。功能和限额可能调整。
 
 ## 文档导航
 
 - [快速入门](/zh/docs/cloud/getting-started/)：登录控制台，创建服务和策略，创建 API 密钥，从应用发起授权检查。
-- [应用令牌](/zh/docs/cloud/tokens/)：最近认证要求、令牌的一次性展示、元数据分页、轮换和撤销。
-- [授权 API 预览](/zh/docs/cloud/authorization-api/)：IsAllowed 请求与响应合约、Node.js 22 示例、策略快照和接入限制。
-- [限额与错误](/zh/docs/cloud/limits-and-errors/)：账号额度、请求限制、错误响应、限流与额度响应头，以及重试建议。
+- [API 密钥](/zh/docs/cloud/tokens/): 账号级凭据、固定权限范围、创建与撤销、一次性展示和分页。
+- [授权 API](/zh/docs/cloud/authorization-api/): IsAllowed 请求、调用方身份、Node.js 22 和传输限制。
+- [限额与错误](/zh/docs/cloud/limits-and-errors/): 账号上限、大小限制、突发限流、每日额度、错误代码和重置时间。
 
 ## 下载
 
-- [简体中文 Markdown](https://engine.speedle.io/docs/cloud/quickstart.zh-CN.md)：汇集全部四章 Cloud 文档，便于离线阅读。
-- [OpenAPI YAML](https://cloud.speedle.io/openapi.yaml)：Cloud API 的权威仓库规范。
-- [OpenAPI JSON](https://cloud.speedle.io/openapi.json)：由同一份 YAML 原文生成。
-- [当前构建版本](https://cloud.speedle.io/build.json)：用于识别正在提供服务的构建，不证明登录供应商或接口当前可用。
+- [中文 Markdown](https://engine.speedle.io/docs/cloud/quickstart.zh-CN.md): 四个 Cloud 章节合并的离线指南。
+- [OpenAPI YAML](https://cloud.speedle.io/openapi.yaml)
+- [OpenAPI JSON](https://cloud.speedle.io/openapi.json)
 
-规范包含四种会话 Playground 操作和带认证的 ADS 合约。发布规范或下载指南并不会启用尚未提供的接口，也不会开放登录。Cloud 的 YAML 与生成的 JSON 随对应的封存构建一起记录版本、晋升或恢复；中英文 Markdown 下载则随这些 Engine 文档页面一起维护。
+API 规范描述请求与响应合约；下载规范不会开放账号登录。
 
-请阅读 Cloud 的[服务条款](https://cloud.speedle.io/zh-CN/terms)和[隐私政策](https://cloud.speedle.io/zh-CN/privacy)。
+请阅读 Cloud 的 [服务条款](https://cloud.speedle.io/zh-CN/terms) / [隐私政策](https://cloud.speedle.io/zh-CN/privacy).

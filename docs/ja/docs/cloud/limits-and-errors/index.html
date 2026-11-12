@@ -10,8 +10,8 @@
 
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
-    <meta name="viewport" content="width=device-width, initial-scale=1"><title>Speedle Cloud の制限とエラー · Speedle Engine</title>
-<meta name="description" content="アカウントクォータ、レート制限、エラーレスポンス構造、および再試行戦略。">
+    <meta name="viewport" content="width=device-width, initial-scale=1"><title>Speedle Cloud 制限とエラー · Speedle Engine</title>
+<meta name="description" content="アカウントの制限、エラーコード、リセット時刻、再試行の案内。">
 <meta name="generator" content="Hugo 0.48" />
 <link href="https://engine.speedle.io/index.xml" rel="alternate" type="application/rss+xml">
 <link rel="canonical" href="https://engine.speedle.io/ja/docs/cloud/limits-and-errors/">
@@ -23,10 +23,10 @@
 <link rel="alternate" hreflang="zh-CN" href="https://engine.speedle.io/zh/docs/cloud/limits-and-errors/">
 <link rel="alternate" hreflang="x-default" href="https://engine.speedle.io/docs/cloud/limits-and-errors/">
 <meta property="og:type" content="article">
-<meta property="article:modified_time" content="2026-11-08T17:11:18&#43;08:00">
+<meta property="article:modified_time" content="2026-11-12T00:00:00&#43;08:00">
 <meta property="og:site_name" content="Speedle Engine">
-<meta property="og:title" content="Speedle Cloud の制限とエラー · Speedle Engine">
-<meta property="og:description" content="アカウントクォータ、レート制限、エラーレスポンス構造、および再試行戦略。">
+<meta property="og:title" content="Speedle Cloud 制限とエラー · Speedle Engine">
+<meta property="og:description" content="アカウントの制限、エラーコード、リセット時刻、再試行の案内。">
 <meta property="og:url" content="https://engine.speedle.io/ja/docs/cloud/limits-and-errors/">
 <meta property="og:image" content="https://engine.speedle.io/img/social/engine-en.png">
 <meta property="og:image:width" content="1200">
@@ -34,13 +34,13 @@
 <meta property="og:image:type" content="image/png">
 <meta property="og:image:alt" content="Speedle Engine — Fast. Simple. Access control">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Speedle Cloud の制限とエラー · Speedle Engine">
-<meta name="twitter:description" content="アカウントクォータ、レート制限、エラーレスポンス構造、および再試行戦略。">
+<meta name="twitter:title" content="Speedle Cloud 制限とエラー · Speedle Engine">
+<meta name="twitter:description" content="アカウントの制限、エラーコード、リセット時刻、再試行の案内。">
 <meta name="twitter:image" content="https://engine.speedle.io/img/social/engine-en.png">
 <meta name="twitter:image:alt" content="Speedle Engine — Fast. Simple. Access control">
 
-<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/ja/docs/cloud/limits-and-errors/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-08T17:11:18+08:00","description":"アカウントクォータ、レート制限、エラーレスポンス構造、および再試行戦略。","headline":"Speedle Cloud の制限とエラー","image":"https://engine.speedle.io/img/social/engine-en.png","inLanguage":"ja","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/ja/docs/cloud/limits-and-errors/","@type":"WebPage"},"name":"Speedle Cloud の制限とエラー","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/ja/docs/cloud/limits-and-errors/"}</script>
-<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/ja/docs/cloud/limits-and-errors/#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://engine.speedle.io/ja/","name":"ホーム","position":1},{"@type":"ListItem","item":"https://engine.speedle.io/ja/docs/","name":"ドキュメント","position":2},{"@type":"ListItem","item":"https://engine.speedle.io/ja/docs/cloud/","name":"Speedle Cloud","position":3},{"@type":"ListItem","item":"https://engine.speedle.io/ja/docs/cloud/limits-and-errors/","name":"Speedle Cloud の制限とエラー","position":4}]}</script><link href="/css/docs.css" rel="stylesheet" type="text/css">
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/ja/docs/cloud/limits-and-errors/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-12T00:00:00+08:00","description":"アカウントの制限、エラーコード、リセット時刻、再試行の案内。","headline":"Speedle Cloud 制限とエラー","image":"https://engine.speedle.io/img/social/engine-en.png","inLanguage":"ja","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/ja/docs/cloud/limits-and-errors/","@type":"WebPage"},"name":"Speedle Cloud 制限とエラー","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/ja/docs/cloud/limits-and-errors/"}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/ja/docs/cloud/limits-and-errors/#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://engine.speedle.io/ja/","name":"ホーム","position":1},{"@type":"ListItem","item":"https://engine.speedle.io/ja/docs/","name":"ドキュメント","position":2},{"@type":"ListItem","item":"https://engine.speedle.io/ja/docs/cloud/","name":"Speedle Cloud","position":3},{"@type":"ListItem","item":"https://engine.speedle.io/ja/docs/cloud/limits-and-errors/","name":"Speedle Cloud 制限とエラー","position":4}]}</script><link href="/css/docs.css" rel="stylesheet" type="text/css">
 
 
     <link href="/css/navigation.css?v=header-20261106-v8" rel="stylesheet">
@@ -155,9 +155,9 @@
 <li data-docs-depth="0" class="docs-nav-section parent"><span class="docs-nav-heading docs-nav-heading-link"><a href="/ja/docs/cloud/">Speedle Cloud</a></span>
 <ul class="sub-menu">
 <li data-docs-depth="1" class=""><a href="/ja/docs/cloud/getting-started/">Speedle Cloud クイックスタート</a></li>
-<li data-docs-depth="1" class=""><a href="/ja/docs/cloud/tokens/">Speedle Cloud アプリケーショントークン</a></li>
-<li data-docs-depth="1" class=""><a href="/ja/docs/cloud/authorization-api/">Speedle Cloud 認可 API プレビュー</a></li>
-<li data-docs-depth="1" class="active"><a href="/ja/docs/cloud/limits-and-errors/" aria-current="page">Speedle Cloud の制限とエラー</a></li>
+<li data-docs-depth="1" class=""><a href="/ja/docs/cloud/tokens/">API キー</a></li>
+<li data-docs-depth="1" class=""><a href="/ja/docs/cloud/authorization-api/">認可 API</a></li>
+<li data-docs-depth="1" class="active"><a href="/ja/docs/cloud/limits-and-errors/" aria-current="page">制限とエラー</a></li>
 </ul>
 
 </li>
@@ -180,7 +180,7 @@
 <main>
 <div id="main">
 
-  <h1>Speedle Cloud の制限とエラー</h1>
+  <h1>Speedle Cloud 制限とエラー</h1>
   <p class="docs-lead"></p>
 
 
@@ -194,22 +194,167 @@
 
   <div id="kube-component" class="content">
 
-<h3 id="レート制限とクォータ">レート制限とクォータ</h3>
+<p><strong>Speedle Cloud はまもなく公開されます。</strong> このガイドは、本番環境のサインインと認証付き認可 API が利用可能になった際の手順を説明しています。例は実際の Cloud 環境では実行していません。</p>
 
-<p>無料パブリックベータ期間中、Speedle Cloud では公正な利用を確保するためにアカウントごとのクォータが適用されます。</p>
+<p>特記がない限り、制限はアカウント全体で共有します。API キーを変更しても日次クォータは増えません。</p>
 
-<h3 id="エラーレスポンス">エラーレスポンス</h3>
+<h2 id="制限">制限</h2>
 
-<p>エラーレスポンスは標準の HTTP ステータスコードと JSON エラーオブジェクトを返します:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">{
-  <span style="color:#ff79c6">&#34;error&#34;</span>: {
-    <span style="color:#ff79c6">&#34;code&#34;</span>: <span style="color:#f1fa8c">&#34;rate_limit_exceeded&#34;</span>,
-    <span style="color:#ff79c6">&#34;message&#34;</span>: <span style="color:#f1fa8c">&#34;Too many requests. Please retry later.&#34;</span>
-  }
-}</code></pre></div>
-<h3 id="再試行のガイダンス">再試行のガイダンス</h3>
+<table>
+<thead>
+<tr>
+<th>対象</th>
+<th>上限</th>
+<th>到達時の対応</th>
+</tr>
+</thead>
 
-<p>一時的なネットワークエラーや <code>429 Too Many Requests</code> の場合は、指数バックオフとジッターを伴う再試行を実装してください。</p>
+<tbody>
+<tr>
+<td>アカウントのサービス</td>
+<td>100</td>
+<td><code>409 quota_exceeded</code>。未使用のサービスを削除。時間によるリセットなし。</td>
+</tr>
+
+<tr>
+<td>全サービスの認可・ロールポリシー合計</td>
+<td>アカウントごとに 200</td>
+<td><code>409 quota_exceeded</code>。ポリシーを削除。時間によるリセットなし。</td>
+</tr>
+
+<tr>
+<td>1 ポリシーの完全な SPDL ソース</td>
+<td>1,024 UTF-8 バイト</td>
+<td>コンソールの書き込みは <code>400 invalid_request</code>。ソースを短縮。文字数ではなくバイト数。時間によるリセットなし。</td>
+</tr>
+
+<tr>
+<td>全スコープの有効な API キー</td>
+<td>アカウントごとに 10</td>
+<td><code>409 quota_exceeded</code>、<code>limit: 10</code>。未使用キーを失効。時間によるリセットなし。失効済みの履歴は対象外。</td>
+</tr>
+
+<tr>
+<td>ポリシー名 / API キー名</td>
+<td>128 Unicode コードポイント / 前後の空白を除いて 1–128 文字</td>
+<td><code>400 invalid_request</code>。名前を修正。時間によるリセットなし。</td>
+</tr>
+
+<tr>
+<td>課金対象のポリシー管理・認可呼び出し</td>
+<td>アカウントごとに UTC 日あたり 10,000</td>
+<td><code>429 daily_quota_exceeded</code>。00:00 UTC にリセット。<code>Retry-After</code> に従う。</td>
+</tr>
+
+<tr>
+<td>API キーの短時間のバースト</td>
+<td>Cloud の各ロケーションでキーごとに毎分約 600</td>
+<td><code>429 rate_limited</code>、<code>Retry-After: 60</code>。待ってから再試行。保証された処理量でも追加の日次枠でもない。</td>
+</tr>
+
+<tr>
+<td>通常のリクエスト本文</td>
+<td>65,536 バイト（64 KiB）</td>
+<td><code>413 request_too_large</code>。本文を縮小。時間によるリセットなし。</td>
+</tr>
+
+<tr>
+<td>アトミック JSON インポート本文（<code>POST /api/service/import</code> のみ）</td>
+<td>5,100,000 バイト</td>
+<td><code>413 request_too_large</code>。データを縮小。ポリシーとアカウントの上限も適用。時間によるリセットなし。</td>
+</tr>
+
+<tr>
+<td>入力属性</td>
+<td>50 属性、正規化 JSON の UTF-8 で 16,384 バイト</td>
+<td><code>400 SPDL-0004</code>。属性を減らすか縮小。時間によるリセットなし。</td>
+</tr>
+</tbody>
+</table>
+
+<p>スコープ、作成、失効は <a href="/ja/docs/cloud/tokens/">API キー</a>を参照してください。</p>
+
+<h2 id="日次クォータ">日次クォータ</h2>
+
+<p>読み取り、書き込み、検証、Playground、インポート、エクスポート、認可チェックで共有します。ポリシーによる拒否や不正な業務入力も数えます。認証、セッション操作、<code>GET /api/me</code> は対象外です。認証、スコープ、ルーティング、CSRF、本文サイズ、バースト制限、日次クォータで拒否されたリクエストも対象外です。</p>
+
+<p>Cloud 自体の障害は、アカウントごとに UTC 日あたり最大 1,000 回までクォータを返還する場合があります。確認できない返還やリクエスト由来のエラーは課金対象のままです。カウンターが一時的に利用不能な間、認可呼び出しが低速で継続される場合があり、追加枠はアカウントごとに UTC 日あたり最大 10,000 回です。通常の枠とは別で保証されず、返還枠と同じく 00:00 UTC にリセットします。許可できなければ <code>503 quota_unavailable</code> です。</p>
+
+<p>予約されたまま未使用の枠があるため、実際に使える回数は 10,000 未満の場合があります。<code>GET /api/me</code> は使用量とリセット時刻を返します。連続再試行やキーの変更で上限を回避しないでください。</p>
+
+<h2 id="エラーとヘッダー">エラーとヘッダー</h2>
+
+<p>エラーは <code>{&quot;error&quot;:&quot;rate_limited&quot;}</code> のようなフラットな JSON です。有効な認可結果が得られなければ拒否してください。</p>
+
+<table>
+<thead>
+<tr>
+<th>ステータスとエラー</th>
+<th>対応</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td><code>400 invalid_request</code> または Speedle エラー</td>
+<td>リクエストを修正し、そのまま再試行しない。</td>
+</tr>
+
+<tr>
+<td><code>401 unauthorized</code></td>
+<td>API キーまたはセッションを確認。セッション Cookie だけでは ADS を呼べない。</td>
+</tr>
+
+<tr>
+<td><code>403 reauth_required</code></td>
+<td>キー作成前に連携プロバイダーで再認証。</td>
+</tr>
+
+<tr>
+<td><code>403 insufficient_scope</code></td>
+<td>必要なスコープのキーを使用。</td>
+</tr>
+
+<tr>
+<td><code>403 management_scope_disabled</code></td>
+<td>サインイン停止中は管理スコープを発行できない。</td>
+</tr>
+
+<tr>
+<td><code>403 csrf_failed</code></td>
+<td>セッション、Origin、CSRF ヘッダーを確認。</td>
+</tr>
+
+<tr>
+<td><code>404 service_not_found</code>（ADS）/ <code>404 not_found</code>（管理）</td>
+<td>自分のアカウントのサービスを指定。不明、別アカウント、失効済みキー ID も <code>404 not_found</code>。</td>
+</tr>
+
+<tr>
+<td><code>409 quota_exceeded</code></td>
+<td>サービス、ポリシー、API キーの枠を空ける。時間ではリセットしない。</td>
+</tr>
+
+<tr>
+<td><code>413 request_too_large</code></td>
+<td>本文を縮小。</td>
+</tr>
+
+<tr>
+<td><code>429 rate_limited</code> / <code>429 daily_quota_exceeded</code></td>
+<td><code>Retry-After</code> と上限付きバックオフに従う。日次枠は UTC 午前 0 時にリセット。</td>
+</tr>
+
+<tr>
+<td><code>503 quota_unavailable</code> / <code>503 snapshot_unavailable</code> / <code>500 internal_error</code></td>
+<td>拒否し、上限付きバックオフで再試行。<code>Retry-After</code> があれば従う。</td>
+</tr>
+</tbody>
+</table>
+
+<p>検証済み API キーの <code>X-RateLimit-Limit</code> は 600 です。正確な <code>X-RateLimit-Remaining</code> はありません。<code>X-Quota-Daily-Remaining</code> はアカウントの残量の推定値で、並行呼び出しや未使用の予約で実際と異なります。次のリクエストの成功を保証せず、早期拒否では省略されます。</p>
+
+<p>ADS は <code>Cache-Control: no-store</code> を返します。結果や認証情報を共有キャッシュに保存しないでください。POST を使用し、他のメソッドでは <code>405 method_not_allowed</code> またはそれより前の非 JSON のブロック応答に対応してください。<a href="/ja/docs/cloud/authorization-api/">認可 API</a>を参照してください。</p>
 </div>
 </div>
 </main>

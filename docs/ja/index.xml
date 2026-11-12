@@ -143,13 +143,16 @@ docker run --name speedle-mysql --detach \  --publish 127.</description>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/ja/docs/cloud/getting-started/</guid>
-      <description>Speedle Cloud はまもなく公開されます。 cloud.speedle.io の本番環境ではまだサインインが開始されておらず、Cloud ヘッダーには Coming soon（まもなく公開） バッジが表示されます。サインインが閉じられている間、サインインページには近日公開予定である旨が表示されます。本文では公開されている使用フローを説明していますが、本番コンソールが現在開かれていることを意味するものではありません。
-本番環境 アカウントセッション、管理リクエスト、およびアプリケーショントークンは https://cloud.speedle.io を使用します。アカウント、リソース、トークンはそのオリジンに属します。
-GitHub または Google によるサインイン（まもなく開始） サインインがまだ開始されていない場合でも、サインインページには GitHub でサインイン と Google でサインイン の 2 つのオプションが表示されます。本番環境でサインインが開始されたら、現在利用可能なプロバイダーを選択してください。新しい ID の確認済みメールアドレスがまだ使用されていない場合は、アカウント作成 を明示的に確認する必要があります。
-アカウント設定では、接続されている ID を確認し、プロバイダーの接続または切断を行うことができます。少なくとも 1 つの接続済み ID を保持する必要があります。
-ワークスペースとサービス サービスはポリシーの名前空間です。デフォルトのワークスペースには、テスト用の default サービスが用意されています。
-最初の認可ポリシーの作成 エディターに次の SPDL ステートメントを入力します:
-grant user alice from corp get /books from corp は、この認可を corp ID ドメイン内に制限します。corp を、アプリケーションが信頼できる認証データから導出するドメインに置き換え、以下の Playground の例のように、各リクエストでプリンシパルの idd として同じ値を送信してください。from のない認可は、すべてのドメインの alice という名前のユーザーに一致します。ドメイン間で名前が衝突する可能性のない、単一の ID ソースを持つサービスの場合にのみ、この句を省略してください。ルールと対応するリクエストフィールドについては ID ドメイン を参照してください。</description>
+      <description>Speedle Cloud はまもなく公開されます。 このガイドは、本番環境のサインインと認証付き認可 API が利用可能になった際の手順を説明しています。例は実際の Cloud 環境では実行していません。
+GitHub または Google によるサインイン（まもなく開始） ブラウザーで Cloud コンソールを開き、利用可能なプロバイダーでサインインします。未使用の確認済みメールアドレスで初めて利用する場合は、アカウント作成を確認します。メールアドレスが使用済みの場合は、コンソールに表示された連携済みプロバイダーでサインインしてください。
+サービスとポリシーを作成する サービスワークスペースを開き、books と入力してサービス作成を選択します。既存ポリシーが結果に影響しないよう、新しいサービスで試してください。既存データは上書きしないでください。
+新しいポリシーを選択し、名前を read-books にして、次の SPDL を入力します。
+grant user alice from corp get /books このポリシーは、ID ドメイン corp の alice が /books に対して get を実行することを許可します。from を省略すると、すべてのドメインの同名ユーザーに一致します。信頼できる認証データからドメインを取得し、各リクエストの idd に設定してください。ID ドメインを参照してください。
+ポリシーの検証、ポリシーを保存の順に選択します。検証は構文を確認するだけで、下書きを保存しません。保存したポリシーが認可 API に反映されるまで約 60 秒かかります。
+API キーを作成する API キーを開き、books-app などの名前を入力し、ads スコープ（認可チェック）を選択して、API キーを作成を押します。本人確認を求められた場合は、確認を完了してからフォームを再送信します。シークレットは一度しか表示されないため、その場でコピーしてください。現在、有効期限は選択できません。不要になったキーは失効させてください。API キーの管理を参照してください。
+キーをサーバーのシークレットストアに保存し、環境変数 SPEEDLE_API_KEY で渡します。ブラウザーのコードやソース管理には含めないでください。
+アプリケーションから認可を確認する 保存したポリシーに対して、アプリケーションのサーバーから次の isAllowed リクエストを送信します。このポリシーは属性を必要としないため、attributes は空です。
+curl --fail-with-body --silent --show-error --max-time 10 \  &amp;#39;https://cloud.</description>
     </item>
     
     <item>
@@ -231,6 +234,21 @@ speedle-users や speedle-developers メーリングリストにも参加でき�
     </item>
     
     <item>
+      <title>Speedle Cloud API キー</title>
+      <link>https://engine.speedle.io/ja/docs/cloud/tokens/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/ja/docs/cloud/tokens/</guid>
+      <description>API キーはアカウントに属し、スコープに応じてそのアカウントのサービスにアクセスします。アプリケーションを認証するもので、エンドユーザーの認証ではありません。API キー、セッション、連携 ID の管理にはログイン済みのコンソールセッションが必要です。
+Speedle Cloud はまもなく公開されます。 このガイドは、本番環境のサインインと認証付き認可 API が利用可能になった際の手順を説明しています。例は実際の Cloud 環境では実行していません。
+API キーを作成する API キー を開き、前後の空白を除いて 1–128 文字の名前とスコープを指定し、作成を選択します。作成には過去 10 分以内の連携プロバイダーによる認証が必要です。403 reauth_required の場合は再認証後、再び作成を選択してください。プロバイダーから戻るだけでは作成されません。
+各キーには作成後に変更できないスコープが 1 つあります。
+   スコープ アクセス     ads（既定） /authz-check/v1/* による認可チェックのみ。   pms:read /policy-mgmt/v1 によるアカウント内のサービス、認可ポリシー、ロールポリシーの読み取り。   pms:write /policy-mgmt/v1 によるアカウント内のサービス、認可ポリシー、ロールポリシーの読み取り、作成、削除。    管理スコープは ADS を呼び出せず、ads はポリシーを管理できません。不適切なスコープは 403 insufficient_scope です。サインインが閉じている場合の管理スコープの発行は 403 management_scope_disabled です。
+コンソールはセッション認証付きのリクエストを送信します。
+POST /api/tokens Origin: https://cloud.speedle.io X-SC-CSRF: 1 Content-Type: application/json {&amp;#34;name&amp;#34;:&amp;#34;books-app&amp;#34;,&amp;#34;scope&amp;#34;:&amp;#34;ads&amp;#34;} 入力は name と任意の scope（既定は ads）だけです。サービス指定、有効期限、認証証明は送信しません。セッション Cookie と CSRF ヘッダーが必要で、API キーではセッションを代替できません。</description>
+    </item>
+    
+    <item>
       <title>Docker イメージ</title>
       <link>https://engine.speedle.io/ja/docs/deployment/docker/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
@@ -258,18 +276,6 @@ sha256:20bd3fe8169ec3ddadf1484285e34bd68004dbb457782223dc84a2a9f1dd91c0 1.7 ま�
 python3 -m venv .venv . .venv/bin/activate pip install speedle==0.2.0 または uv プロジェクトで uv を使用する場合:
 uv add speedle==0.2.0 ローカルの Speedle の呼び出し SDK 概要 の説明に従って Speedle を起動し、サンプルポリシーを作成します。このプログラムを main.py として保存します:
 import sys from speedle import Auth, Client, SpeedleError try: with Client( backend=&amp;#34;speedle&amp;#34;, endpoint=&amp;#34;http://localhost:6734&amp;#34;, auth=Auth.none(), service_name=&amp;#34;docs&amp;#34;, ) as speedle: allowed = speedle.</description>
-    </item>
-    
-    <item>
-      <title>Speedle Cloud アプリケーショントークン</title>
-      <link>https://engine.speedle.io/ja/docs/cloud/tokens/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://engine.speedle.io/ja/docs/cloud/tokens/</guid>
-      <description>アプリケーショントークンを使用すると、バックエンドアプリケーションから Speedle Cloud の認可 API を認証して呼び出すことができます。
-セキュリティ要件 トークンの作成、ローテーション、または失効を行うには、コンソールで最近の再認証が必要です。トークンシークレットは作成時に 1 回限り 表示されます。安全なシークレットストアに直ちに保存してください。紛失した場合は再表示できないため、トークンを再生成する必要があります。
-トークンのスコープ トークンは特定のアカウントおよびワークスペースにスコープされます。本番ワークロードと開発ワークロードで個別のトークンを使用してください。
-トークンのローテーションと失効 定期的なトークンのローテーションが推奨されます。新しいトークンを作成してアプリケーションに配布した後、古いトークンを失効させてダウンタイムを防ぎます。</description>
     </item>
     
     <item>
@@ -329,15 +335,16 @@ docker run --name speedle-mongodb --detach \  --publish 127.0.0.1:27017:27017 \ 
     </item>
     
     <item>
-      <title>Speedle Cloud 認可 API プレビュー</title>
+      <title>Speedle Cloud 認可 API</title>
       <link>https://engine.speedle.io/ja/docs/cloud/authorization-api/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/ja/docs/cloud/authorization-api/</guid>
-      <description>Speedle Cloud は、高速で低レイテンシのアクセス決定のための認可 API を提供します。
-リクエスト契約 アプリケーションは、認可決定サービス (ADS) に対して POST /authz-check/v1/is-allowed を呼び出します。
-Node.js 22 の例 以下の Node.js の例は、ベアラートークンを使用して認可リクエストを送信する方法を示しています:
-import { request } from &amp;#39;node:https&amp;#39;; export async function checkAccess(token, authenticatedUserId, authenticatedUserIdd, resource, action) { if (!authenticatedUserId || !authenticatedUserIdd) { throw new Error(&amp;#39;principal name and identity domain are required&amp;#39;); } const payload = JSON.stringify({ subject: { principals: [ { type: &amp;#39;user&amp;#39;, name: authenticatedUserId, idd: authenticatedUserIdd } ] }, serviceName: &amp;#39;default&amp;#39;, resource: resource, action: action }); return new Promise((resolve, reject) =&amp;gt; { const req = request(&amp;#39;https://cloud.</description>
+      <description>Speedle Cloud はまもなく公開されます。 このガイドは、本番環境のサインインと認証付き認可 API が利用可能になった際の手順を説明しています。例は実際の Cloud 環境では実行していません。
+アカウント API キーを使い、サーバーから認可を確認します。キー作成にはサインインが利用可能である必要があります。管理スコープでは ADS を呼び出せません。ads 以外は 403 insufficient_scope です。
+サーバーから IsAllowed を呼び出す ads スコープの API キーを 1 つの Authorization: Bearer ヘッダーに入れ、POST で送信します。
+POST /authz-check/v1/is-allowed Authorization: Bearer &amp;lt;API key&amp;gt; Content-Type: application/json {&amp;#34;subject&amp;#34;:{&amp;#34;principals&amp;#34;:[{&amp;#34;type&amp;#34;:&amp;#34;user&amp;#34;,&amp;#34;name&amp;#34;:&amp;#34;alice&amp;#34;,&amp;#34;idd&amp;#34;:&amp;#34;corp&amp;#34;}]},&amp;#34;serviceName&amp;#34;:&amp;#34;books&amp;#34;,&amp;#34;resource&amp;#34;:&amp;#34;/books&amp;#34;,&amp;#34;action&amp;#34;:&amp;#34;get&amp;#34;,&amp;#34;attributes&amp;#34;:[{&amp;#34;name&amp;#34;:&amp;#34;level&amp;#34;,&amp;#34;type&amp;#34;:&amp;#34;numeric&amp;#34;,&amp;#34;value&amp;#34;:3},{&amp;#34;name&amp;#34;:&amp;#34;when&amp;#34;,&amp;#34;type&amp;#34;:&amp;#34;datetime&amp;#34;,&amp;#34;value&amp;#34;:&amp;#34;2026-11-05T03:00:00Z&amp;#34;}]} 本文は自ホストの Speedle ADS と同じ REST 形式です。attributes は {name, type, value} の配列で、型は string、numeric、bool、RFC 3339 の datetime です。
+idd はアプリケーションが認証した ID ドメインです。信頼できるサーバー側の認証情報から設定してください。grant user alice from corp get /books は corp のみで一致します。from のないポリシーは全ドメインの同名ユーザーに一致します。idd を省略した principal も全ドメインに一致するため、複数の ID ソースでは必ず送信してください。</description>
     </item>
     
     <item>
@@ -382,14 +389,14 @@ using Speedle.Sdk; try { await using var speedle = new SpeedleClient(new Speedle
     </item>
     
     <item>
-      <title>Speedle Cloud の制限とエラー</title>
+      <title>Speedle Cloud 制限とエラー</title>
       <link>https://engine.speedle.io/ja/docs/cloud/limits-and-errors/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/ja/docs/cloud/limits-and-errors/</guid>
-      <description>レート制限とクォータ 無料パブリックベータ期間中、Speedle Cloud では公正な利用を確保するためにアカウントごとのクォータが適用されます。
-エラーレスポンス エラーレスポンスは標準の HTTP ステータスコードと JSON エラーオブジェクトを返します:
-{ &amp;#34;error&amp;#34;: { &amp;#34;code&amp;#34;: &amp;#34;rate_limit_exceeded&amp;#34;, &amp;#34;message&amp;#34;: &amp;#34;Too many requests. Please retry later.&amp;#34; } } 再試行のガイダンス 一時的なネットワークエラーや 429 Too Many Requests の場合は、指数バックオフとジッターを伴う再試行を実装してください。</description>
+      <description>Speedle Cloud はまもなく公開されます。 このガイドは、本番環境のサインインと認証付き認可 API が利用可能になった際の手順を説明しています。例は実際の Cloud 環境では実行していません。
+特記がない限り、制限はアカウント全体で共有します。API キーを変更しても日次クォータは増えません。
+制限    対象 上限 到達時の対応     アカウントのサービス 100 409 quota_exceeded。未使用のサービスを削除。時間によるリセットなし。   全サービスの認可・ロールポリシー合計 アカウントごとに 200 409 quota_exceeded。ポリシーを削除。時間によるリセットなし。   1 ポリシーの完全な SPDL ソース 1,024 UTF-8 バイト コンソールの書き込みは 400 invalid_request。ソースを短縮。文字数ではなくバイト数。時間によるリセットなし。   全スコープの有効な API キー アカウントごとに 10 409 quota_exceeded、limit: 10。未使用キーを失効。時間によるリセットなし。失効済みの履歴は対象外。   ポリシー名 / API キー名 128 Unicode コードポイント / 前後の空白を除いて 1–128 文字 400 invalid_request。名前を修正。時間によるリセットなし。   課金対象のポリシー管理・認可呼び出し アカウントごとに UTC 日あたり 10,000 429 daily_quota_exceeded。00:00 UTC にリセット。Retry-After に従う。   API キーの短時間のバースト Cloud の各ロケーションでキーごとに毎分約 600 429 rate_limited、Retry-After: 60。待ってから再試行。保証された処理量でも追加の日次枠でもない。   通常のリクエスト本文 65,536 バイト（64 KiB） 413 request_too_large。本文を縮小。時間によるリセットなし。   アトミック JSON インポート本文（POST /api/service/import のみ） 5,100,000 バイト 413 request_too_large。データを縮小。ポリシーとアカウントの上限も適用。時間によるリセットなし。   入力属性 50 属性、正規化 JSON の UTF-8 で 16,384 バイト 400 SPDL-0004。属性を減らすか縮小。時間によるリセットなし。    スコープ、作成、失効は API キーを参照してください。</description>
     </item>
     
     <item>

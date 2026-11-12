@@ -11,7 +11,7 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
     <meta name="viewport" content="width=device-width, initial-scale=1"><title>Speedle Cloud · Speedle Engine</title>
-<meta name="description" content="Speedle Cloud ドキュメント: クイックスタート、アカウントとポリシーの管理、アプリケーショントークン、認可 API プレビュー、制限、エラー、ダウンロード。">
+<meta name="description" content="ホスト型認可、アカウント API キー、リクエスト制限と連携ガイド。">
 <meta name="generator" content="Hugo 0.48" />
 <link href="https://engine.speedle.io/index.xml" rel="alternate" type="application/rss+xml">
 <link rel="canonical" href="https://engine.speedle.io/ja/docs/cloud/">
@@ -25,7 +25,7 @@
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Speedle Engine">
 <meta property="og:title" content="Speedle Cloud · Speedle Engine">
-<meta property="og:description" content="Speedle Cloud ドキュメント: クイックスタート、アカウントとポリシーの管理、アプリケーショントークン、認可 API プレビュー、制限、エラー、ダウンロード。">
+<meta property="og:description" content="ホスト型認可、アカウント API キー、リクエスト制限と連携ガイド。">
 <meta property="og:url" content="https://engine.speedle.io/ja/docs/cloud/">
 <meta property="og:image" content="https://engine.speedle.io/img/social/engine-en.png">
 <meta property="og:image:width" content="1200">
@@ -34,11 +34,11 @@
 <meta property="og:image:alt" content="Speedle Engine — Fast. Simple. Access control">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Speedle Cloud · Speedle Engine">
-<meta name="twitter:description" content="Speedle Cloud ドキュメント: クイックスタート、アカウントとポリシーの管理、アプリケーショントークン、認可 API プレビュー、制限、エラー、ダウンロード。">
+<meta name="twitter:description" content="ホスト型認可、アカウント API キー、リクエスト制限と連携ガイド。">
 <meta name="twitter:image" content="https://engine.speedle.io/img/social/engine-en.png">
 <meta name="twitter:image:alt" content="Speedle Engine — Fast. Simple. Access control">
 
-<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/ja/docs/cloud/#webpage","@type":"WebPage","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-08T17:11:18+08:00","description":"Speedle Cloud ドキュメント: クイックスタート、アカウントとポリシーの管理、アプリケーショントークン、認可 API プレビュー、制限、エラー、ダウンロード。","headline":"Speedle Cloud","image":"https://engine.speedle.io/img/social/engine-en.png","inLanguage":"ja","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/ja/docs/cloud/","@type":"WebPage"},"name":"Speedle Cloud","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/ja/docs/cloud/"}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/ja/docs/cloud/#webpage","@type":"WebPage","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-12T00:00:00+08:00","description":"ホスト型認可、アカウント API キー、リクエスト制限と連携ガイド。","headline":"Speedle Cloud","image":"https://engine.speedle.io/img/social/engine-en.png","inLanguage":"ja","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/ja/docs/cloud/","@type":"WebPage"},"name":"Speedle Cloud","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/ja/docs/cloud/"}</script>
 <script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/ja/docs/cloud/#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://engine.speedle.io/ja/","name":"ホーム","position":1},{"@type":"ListItem","item":"https://engine.speedle.io/ja/docs/","name":"ドキュメント","position":2},{"@type":"ListItem","item":"https://engine.speedle.io/ja/docs/cloud/","name":"Speedle Cloud","position":3}]}</script><link href="/css/docs.css" rel="stylesheet" type="text/css">
 
 
@@ -154,9 +154,9 @@
 <li data-docs-depth="0" class="docs-nav-section parent active"><span class="docs-nav-heading docs-nav-heading-link"><a href="/ja/docs/cloud/" aria-current="page">Speedle Cloud</a></span>
 <ul class="sub-menu">
 <li data-docs-depth="1" class=""><a href="/ja/docs/cloud/getting-started/">Speedle Cloud クイックスタート</a></li>
-<li data-docs-depth="1" class=""><a href="/ja/docs/cloud/tokens/">Speedle Cloud アプリケーショントークン</a></li>
-<li data-docs-depth="1" class=""><a href="/ja/docs/cloud/authorization-api/">Speedle Cloud 認可 API プレビュー</a></li>
-<li data-docs-depth="1" class=""><a href="/ja/docs/cloud/limits-and-errors/">Speedle Cloud の制限とエラー</a></li>
+<li data-docs-depth="1" class=""><a href="/ja/docs/cloud/tokens/">API キー</a></li>
+<li data-docs-depth="1" class=""><a href="/ja/docs/cloud/authorization-api/">認可 API</a></li>
+<li data-docs-depth="1" class=""><a href="/ja/docs/cloud/limits-and-errors/">制限とエラー</a></li>
 </ul>
 
 </li>
@@ -180,33 +180,32 @@
   <h1>Speedle Cloud</h1>
   <p></p>
 
-<p>Speedle Cloud は、オープンソースの Speedle ポリシーエンジンをベースにした開発者向けのホスト型アクセス制御サービスです。SPDL 認可ポリシーおよびロールポリシーの管理、Playground での決定テスト、アプリケーションサーバーからの認可 API 呼び出しを、独自の認可サービスを運用することなく行えるよう設計されています。</p>
+<p>Speedle Cloud はオープンソースの Speedle エンジンによるホスト型認可サービスです。サービス、SPDL 認可・ロールポリシーを管理し、Playground で判定をテストして、サーバーから API を呼び出せます。</p>
 
-<p><strong>Speedle Cloud はまもなく公開されます。</strong> Cloud ヘッダーには <strong>Coming soon（まもなく公開）</strong> バッジが表示されており、<a href="https://cloud.speedle.io/ja/">cloud.speedle.io</a> での本番サインインはまだ開始されていません。ここで説明されているコンソールワークフローおよび認証付き認可決定サービス (ADS) は、公開されているサービス契約のプレビューです。認証付き ADS が保留中である間、トークンを発行してもサーバー側の認可呼び出しは有効になりません。選択したステージでのデプロイメントと ID プロバイダーの可用性を確認してください。</p>
+<p><strong>Speedle Cloud はまもなく公開されます。</strong> このガイドは、本番環境のサインインと認証付き認可 API が利用可能になった際の手順を説明しています。例は実際の Cloud 環境では実行していません。</p>
 
-<p>無料パブリックベータは、試用、学習、評価を目的としています。SLA は提供されず、本番環境での使用は推奨されません。また、機能や制限は変更される場合があります。</p>
+<p>コンソールの利用と API キー作成にはサインインが利用可能である必要があります。無料パブリックベータは試用、学習、評価用で SLA はなく、本番利用は推奨しません。機能と制限は変更される場合があります。</p>
 
 <h2 id="ドキュメント">ドキュメント</h2>
 
 <ul>
-<li><a href="/ja/docs/cloud/getting-started/">クイックスタート</a>: GitHub または Google でのサインイン（まもなく開始）、アカウント管理、サービス、SPDL ポリシー、セッション管理リクエスト、および 4 つのセッション Playground 操作。</li>
-<li><a href="/ja/docs/cloud/tokens/">アプリケーショントークン</a>: 最近の認証要件、1 回限りのトークン開示、メタデータのページネーション、ローテーション、および失効。</li>
-<li><a href="/ja/docs/cloud/authorization-api/">認可 API プレビュー</a>: IsAllowed リクエストとレスポンスの契約、Node.js 22 のサンプル、ポリシースナップショット、および統合の制約。</li>
-<li><a href="/ja/docs/cloud/limits-and-errors/">制限とエラー</a>: アカウントクォータ、リクエスト制限、エラーレスポンス、レートおよびクォータヘッダー、再試行のガイダンス。</li>
+<li><a href="/ja/docs/cloud/getting-started/">クイックスタート</a>：サインインし、コンソールでサービスとポリシー、API キーを作成して、アプリケーションから認可を確認します。</li>
+<li><a href="/ja/docs/cloud/tokens/">API キー</a>: アカウントの認証情報、固定スコープ、作成と失効、一度だけの表示、ページング。</li>
+<li><a href="/ja/docs/cloud/authorization-api/">認可 API</a>: IsAllowed、ユーザー ID、Node.js 22、通信の制約。</li>
+<li><a href="/ja/docs/cloud/limits-and-errors/">制限とエラー</a>: アカウント上限、サイズ、バースト、日次枠、エラーコード、リセット時刻。</li>
 </ul>
 
 <h2 id="ダウンロード">ダウンロード</h2>
 
 <ul>
-<li><a href="/docs/cloud/quickstart.ja.md">日本語 Markdown</a>: 4 つの Cloud の章をまとめたオフラインドキュメント。</li>
-<li><a href="https://cloud.speedle.io/openapi.yaml">OpenAPI YAML</a>: リポジトリにチェックインされた正規の Cloud API 仕様。</li>
-<li><a href="https://cloud.speedle.io/openapi.json">OpenAPI JSON</a>: 同じ YAML ソースバイトから生成。</li>
-<li><a href="https://cloud.speedle.io/build.json">提供ビルドバージョン</a>: サービスを提供しているビルドを識別（ID プロバイダーやエンドポイントの可用性を証明するものではありません）。</li>
+<li><a href="/docs/cloud/quickstart.ja.md">日本語 Markdown</a>: Cloud の 4 章をまとめたオフラインガイド。</li>
+<li><a href="https://cloud.speedle.io/openapi.yaml">OpenAPI YAML</a></li>
+<li><a href="https://cloud.speedle.io/openapi.json">OpenAPI JSON</a></li>
 </ul>
 
-<p>仕様には 4 つのセッション Playground 操作と認証付き ADS 契約が含まれます。仕様の公開やガイドのダウンロードを行っても、保留中のエンドポイントが有効になったりサインインが開始されたりすることはありません。YAML および生成された JSON は、対応する封印された Cloud ビルドとともにバージョン管理、プロモート、復元されます。日本語、英語、中国語の Markdown ダウンロードは、これらの Engine ドキュメントページとともに保守されます。</p>
+<p>API 仕様はリクエストとレスポンスの契約です。ダウンロードしてもサインインは開始されません。</p>
 
-<p>Cloud の<a href="https://cloud.speedle.io/ja/terms">利用規約</a>および<a href="https://cloud.speedle.io/ja/privacy">プライバシーポリシー</a>をお読みください。</p>
+<p>Cloud の次の文書をご確認ください： <a href="https://cloud.speedle.io/ja/terms">利用規約</a> / <a href="https://cloud.speedle.io/ja/privacy">プライバシーポリシー</a>.</p>
 </div></main>
         </div>
     </div>

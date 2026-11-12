@@ -10,8 +10,8 @@
 
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
-    <meta name="viewport" content="width=device-width, initial-scale=1"><title>Speedle Cloud 제한 및 오류 · Speedle Engine</title>
-<meta name="description" content="계정 쿼터, 전송 속도 제한, 오류 응답 구조 및 재시도 전략">
+    <meta name="viewport" content="width=device-width, initial-scale=1"><title>Speedle Cloud 제한과 오류 · Speedle Engine</title>
+<meta name="description" content="계정 한도, 오류 코드, 초기화 시각과 재시도 안내.">
 <meta name="generator" content="Hugo 0.48" />
 <link href="https://engine.speedle.io/index.xml" rel="alternate" type="application/rss+xml">
 <link rel="canonical" href="https://engine.speedle.io/ko/docs/cloud/limits-and-errors/">
@@ -23,10 +23,10 @@
 <link rel="alternate" hreflang="zh-CN" href="https://engine.speedle.io/zh/docs/cloud/limits-and-errors/">
 <link rel="alternate" hreflang="x-default" href="https://engine.speedle.io/docs/cloud/limits-and-errors/">
 <meta property="og:type" content="article">
-<meta property="article:modified_time" content="2026-11-08T17:11:18&#43;08:00">
+<meta property="article:modified_time" content="2026-11-12T00:00:00&#43;08:00">
 <meta property="og:site_name" content="Speedle Engine">
-<meta property="og:title" content="Speedle Cloud 제한 및 오류 · Speedle Engine">
-<meta property="og:description" content="계정 쿼터, 전송 속도 제한, 오류 응답 구조 및 재시도 전략">
+<meta property="og:title" content="Speedle Cloud 제한과 오류 · Speedle Engine">
+<meta property="og:description" content="계정 한도, 오류 코드, 초기화 시각과 재시도 안내.">
 <meta property="og:url" content="https://engine.speedle.io/ko/docs/cloud/limits-and-errors/">
 <meta property="og:image" content="https://engine.speedle.io/img/social/engine-en.png">
 <meta property="og:image:width" content="1200">
@@ -34,13 +34,13 @@
 <meta property="og:image:type" content="image/png">
 <meta property="og:image:alt" content="Speedle Engine — Fast. Simple. Access control">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Speedle Cloud 제한 및 오류 · Speedle Engine">
-<meta name="twitter:description" content="계정 쿼터, 전송 속도 제한, 오류 응답 구조 및 재시도 전략">
+<meta name="twitter:title" content="Speedle Cloud 제한과 오류 · Speedle Engine">
+<meta name="twitter:description" content="계정 한도, 오류 코드, 초기화 시각과 재시도 안내.">
 <meta name="twitter:image" content="https://engine.speedle.io/img/social/engine-en.png">
 <meta name="twitter:image:alt" content="Speedle Engine — Fast. Simple. Access control">
 
-<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/ko/docs/cloud/limits-and-errors/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-08T17:11:18+08:00","description":"계정 쿼터, 전송 속도 제한, 오류 응답 구조 및 재시도 전략","headline":"Speedle Cloud 제한 및 오류","image":"https://engine.speedle.io/img/social/engine-en.png","inLanguage":"ko","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/ko/docs/cloud/limits-and-errors/","@type":"WebPage"},"name":"Speedle Cloud 제한 및 오류","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/ko/docs/cloud/limits-and-errors/"}</script>
-<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/ko/docs/cloud/limits-and-errors/#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://engine.speedle.io/ko/","name":"홈","position":1},{"@type":"ListItem","item":"https://engine.speedle.io/ko/docs/","name":"문서","position":2},{"@type":"ListItem","item":"https://engine.speedle.io/ko/docs/cloud/","name":"Speedle Cloud","position":3},{"@type":"ListItem","item":"https://engine.speedle.io/ko/docs/cloud/limits-and-errors/","name":"Speedle Cloud 제한 및 오류","position":4}]}</script><link href="/css/docs.css" rel="stylesheet" type="text/css">
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/ko/docs/cloud/limits-and-errors/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-12T00:00:00+08:00","description":"계정 한도, 오류 코드, 초기화 시각과 재시도 안내.","headline":"Speedle Cloud 제한과 오류","image":"https://engine.speedle.io/img/social/engine-en.png","inLanguage":"ko","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/ko/docs/cloud/limits-and-errors/","@type":"WebPage"},"name":"Speedle Cloud 제한과 오류","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/ko/docs/cloud/limits-and-errors/"}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/ko/docs/cloud/limits-and-errors/#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://engine.speedle.io/ko/","name":"홈","position":1},{"@type":"ListItem","item":"https://engine.speedle.io/ko/docs/","name":"문서","position":2},{"@type":"ListItem","item":"https://engine.speedle.io/ko/docs/cloud/","name":"Speedle Cloud","position":3},{"@type":"ListItem","item":"https://engine.speedle.io/ko/docs/cloud/limits-and-errors/","name":"Speedle Cloud 제한과 오류","position":4}]}</script><link href="/css/docs.css" rel="stylesheet" type="text/css">
 
 
     <link href="/css/navigation.css?v=header-20261106-v8" rel="stylesheet">
@@ -155,9 +155,9 @@
 <li data-docs-depth="0" class="docs-nav-section parent"><span class="docs-nav-heading docs-nav-heading-link"><a href="/ko/docs/cloud/">Speedle Cloud</a></span>
 <ul class="sub-menu">
 <li data-docs-depth="1" class=""><a href="/ko/docs/cloud/getting-started/">Speedle Cloud 빠른 시작</a></li>
-<li data-docs-depth="1" class=""><a href="/ko/docs/cloud/tokens/">Speedle Cloud 애플리케이션 토큰</a></li>
-<li data-docs-depth="1" class=""><a href="/ko/docs/cloud/authorization-api/">Speedle Cloud 인가 API 프리뷰</a></li>
-<li data-docs-depth="1" class="active"><a href="/ko/docs/cloud/limits-and-errors/" aria-current="page">Speedle Cloud 제한 및 오류</a></li>
+<li data-docs-depth="1" class=""><a href="/ko/docs/cloud/tokens/">API 키</a></li>
+<li data-docs-depth="1" class=""><a href="/ko/docs/cloud/authorization-api/">인가 API</a></li>
+<li data-docs-depth="1" class="active"><a href="/ko/docs/cloud/limits-and-errors/" aria-current="page">제한과 오류</a></li>
 </ul>
 
 </li>
@@ -180,7 +180,7 @@
 <main>
 <div id="main">
 
-  <h1>Speedle Cloud 제한 및 오류</h1>
+  <h1>Speedle Cloud 제한과 오류</h1>
   <p class="docs-lead"></p>
 
 
@@ -194,22 +194,167 @@
 
   <div id="kube-component" class="content">
 
-<h3 id="전송-속도-제한-및-쿼터">전송 속도 제한 및 쿼터</h3>
+<p><strong>Speedle Cloud는 출시 예정입니다.</strong> 이 가이드는 프로덕션 로그인과 인증된 인가 API가 제공될 때의 사용 절차를 설명합니다. 예제는 실제 Cloud 환경에서 실행하지 않았습니다.</p>
 
-<p>무료 공개 베타 기간 동안 Speedle Cloud에서는 공정한 사용을 보장하기 위해 계정별 쿼터가 적용됩니다.</p>
+<p>별도 표시가 없으면 한도는 계정 전체에서 공유합니다. API 키를 바꿔도 일일 할당량은 늘지 않습니다.</p>
 
-<h3 id="오류-응답">오류 응답</h3>
+<h2 id="제한">제한</h2>
 
-<p>오류 응답은 표준 HTTP 상태 코드와 JSON 오류 객체를 반환합니다:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">{
-  <span style="color:#ff79c6">&#34;error&#34;</span>: {
-    <span style="color:#ff79c6">&#34;code&#34;</span>: <span style="color:#f1fa8c">&#34;rate_limit_exceeded&#34;</span>,
-    <span style="color:#ff79c6">&#34;message&#34;</span>: <span style="color:#f1fa8c">&#34;Too many requests. Please retry later.&#34;</span>
-  }
-}</code></pre></div>
-<h3 id="재시도-지침">재시도 지침</h3>
+<table>
+<thead>
+<tr>
+<th>대상</th>
+<th>한도</th>
+<th>도달 시 처리</th>
+</tr>
+</thead>
 
-<p>일시적인 네트워크 오류나 <code>429 Too Many Requests</code>의 경우 지수 백오프와 지터를 동반한 재시도를 구현하십시오.</p>
+<tbody>
+<tr>
+<td>계정 서비스</td>
+<td>100개</td>
+<td><code>409 quota_exceeded</code>. 미사용 서비스 삭제. 시간에 따른 초기화 없음.</td>
+</tr>
+
+<tr>
+<td>모든 서비스의 인가 정책과 역할 정책 합계</td>
+<td>계정당 200개</td>
+<td><code>409 quota_exceeded</code>. 정책 삭제. 시간에 따른 초기화 없음.</td>
+</tr>
+
+<tr>
+<td>정책 하나의 전체 SPDL 소스</td>
+<td>UTF-8 1,024바이트</td>
+<td>콘솔 정책 쓰기는 <code>400 invalid_request</code>. 소스 축소. 문자 수가 아닌 바이트 수. 시간에 따른 초기화 없음.</td>
+</tr>
+
+<tr>
+<td>모든 범위의 활성 API 키 합계</td>
+<td>계정당 10개</td>
+<td><code>409 quota_exceeded</code>, <code>limit: 10</code>. 미사용 키 폐기. 시간에 따른 초기화 없음. 폐기 이력은 제외.</td>
+</tr>
+
+<tr>
+<td>정책 이름 / API 키 이름</td>
+<td>Unicode 코드 포인트 128개 / 앞뒤 공백 제외 1–128자</td>
+<td><code>400 invalid_request</code>. 이름 수정. 시간에 따른 초기화 없음.</td>
+</tr>
+
+<tr>
+<td>과금 대상 정책 관리 및 인가 호출</td>
+<td>계정당 UTC 일일 10,000회</td>
+<td><code>429 daily_quota_exceeded</code>. 00:00 UTC 초기화. <code>Retry-After</code> 준수.</td>
+</tr>
+
+<tr>
+<td>API 키 단기 버스트</td>
+<td>Cloud 위치별 키당 분당 약 600회</td>
+<td><code>429 rate_limited</code>, <code>Retry-After: 60</code>. 기다린 뒤 재시도. 처리량 보장이나 추가 일일 할당량이 아님.</td>
+</tr>
+
+<tr>
+<td>일반 요청 본문</td>
+<td>65,536바이트 (64 KiB)</td>
+<td><code>413 request_too_large</code>. 본문 축소. 시간에 따른 초기화 없음.</td>
+</tr>
+
+<tr>
+<td>원자적 JSON 가져오기 본문 (<code>POST /api/service/import</code>만)</td>
+<td>5,100,000바이트</td>
+<td><code>413 request_too_large</code>. 데이터 축소. 정책과 계정 한도도 적용. 시간에 따른 초기화 없음.</td>
+</tr>
+
+<tr>
+<td>입력 속성</td>
+<td>50개, 정규 JSON의 UTF-8 16,384바이트</td>
+<td><code>400 SPDL-0004</code>. 속성 수나 크기 축소. 시간에 따른 초기화 없음.</td>
+</tr>
+</tbody>
+</table>
+
+<p>범위, 생성, 폐기는 <a href="/ko/docs/cloud/tokens/">API 키</a>를 참조하세요.</p>
+
+<h2 id="일일-할당량">일일 할당량</h2>
+
+<p>읽기, 쓰기, 검증, Playground, 가져오기, 내보내기, 인가 검사가 공유합니다. 정책 거부나 잘못된 업무 입력도 계산합니다. 인증, 세션 작업, <code>GET /api/me</code>는 제외합니다. 인증, 범위, 라우팅, CSRF, 본문 크기, 버스트 한도, 일일 할당량으로 거부된 요청도 제외합니다.</p>
+
+<p>Cloud 자체 장애는 계정당 UTC 일일 최대 1,000회까지 할당량을 환급할 수 있습니다. 환급 확인에 실패하거나 요청 자체가 원인인 오류는 계속 과금됩니다. 카운터가 일시적으로 중단되면 인가 호출이 저속으로 계속될 수 있으며 계정당 UTC 일일 최대 10,000회의 추가 허용량을 사용합니다. 일반 할당량과 별개이고 보장되지 않으며 환급 한도와 함께 00:00 UTC에 초기화됩니다. 허용할 수 없으면 <code>503 quota_unavailable</code>입니다.</p>
+
+<p>예약 후 사용하지 않은 용량 때문에 실제 사용 가능 횟수는 10,000회보다 적을 수 있습니다. <code>GET /api/me</code>는 사용량과 초기화 시각을 반환합니다. 연속 재시도나 키 교체로 한도를 우회하지 마세요.</p>
+
+<h2 id="오류와-응답-헤더">오류와 응답 헤더</h2>
+
+<p>오류는 <code>{&quot;error&quot;:&quot;rate_limited&quot;}</code> 같은 평면 JSON입니다. 유효한 인가 결과를 얻지 못하면 거부하세요.</p>
+
+<table>
+<thead>
+<tr>
+<th>상태와 오류</th>
+<th>처리</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td><code>400 invalid_request</code> 또는 Speedle 오류</td>
+<td>요청 수정. 그대로 재시도하지 않음.</td>
+</tr>
+
+<tr>
+<td><code>401 unauthorized</code></td>
+<td>API 키나 세션 확인. 세션 쿠키만으로 ADS 호출 불가.</td>
+</tr>
+
+<tr>
+<td><code>403 reauth_required</code></td>
+<td>키 생성 전 연결된 제공자로 재인증.</td>
+</tr>
+
+<tr>
+<td><code>403 insufficient_scope</code></td>
+<td>필요한 범위의 키 사용.</td>
+</tr>
+
+<tr>
+<td><code>403 management_scope_disabled</code></td>
+<td>로그인이 닫힌 동안 관리 범위 발급 불가.</td>
+</tr>
+
+<tr>
+<td><code>403 csrf_failed</code></td>
+<td>세션, Origin, CSRF 헤더 확인.</td>
+</tr>
+
+<tr>
+<td><code>404 service_not_found</code> (ADS) / <code>404 not_found</code> (관리)</td>
+<td>자신의 계정에 있는 서비스 선택. 알 수 없거나 다른 계정 또는 폐기된 키 ID도 <code>404 not_found</code>.</td>
+</tr>
+
+<tr>
+<td><code>409 quota_exceeded</code></td>
+<td>서비스, 정책, API 키의 자리를 확보. 시간으로 초기화되지 않음.</td>
+</tr>
+
+<tr>
+<td><code>413 request_too_large</code></td>
+<td>본문 축소.</td>
+</tr>
+
+<tr>
+<td><code>429 rate_limited</code> / <code>429 daily_quota_exceeded</code></td>
+<td><code>Retry-After</code>와 제한된 백오프 준수. 일일 한도는 UTC 자정 초기화.</td>
+</tr>
+
+<tr>
+<td><code>503 quota_unavailable</code> / <code>503 snapshot_unavailable</code> / <code>500 internal_error</code></td>
+<td>거부하고 제한된 백오프로 재시도. <code>Retry-After</code>가 있으면 준수.</td>
+</tr>
+</tbody>
+</table>
+
+<p>검증된 API 키 요청의 <code>X-RateLimit-Limit</code>은 600입니다. 정확한 <code>X-RateLimit-Remaining</code>은 없습니다. <code>X-Quota-Daily-Remaining</code>은 계정 잔량의 추정치이며 동시 호출과 미사용 예약으로 실제와 다를 수 있습니다. 다음 요청의 성공을 보장하지 않고 조기 거부에서는 생략됩니다.</p>
+
+<p>ADS는 <code>Cache-Control: no-store</code>를 사용합니다. 판정과 자격 증명을 공유 캐시에 넣지 마세요. POST를 사용하세요. 다른 메서드는 <code>405 method_not_allowed</code> 또는 그보다 앞선 비 JSON 차단 응답을 받을 수 있습니다. <a href="/ko/docs/cloud/authorization-api/">인가 API</a>를 참조하세요.</p>
 </div>
 </div>
 </main>

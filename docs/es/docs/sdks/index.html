@@ -154,7 +154,7 @@
 <li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading docs-nav-heading-link"><a href="/es/docs/cloud/">Speedle Cloud</a></span>
 <ul class="">
 <li data-docs-depth="1" class=""><a href="/es/docs/cloud/getting-started/">Primeros pasos</a></li>
-<li data-docs-depth="1" class=""><a href="/es/docs/cloud/tokens/">Tokens de aplicación</a></li>
+<li data-docs-depth="1" class=""><a href="/es/docs/cloud/tokens/">Claves API</a></li>
 <li data-docs-depth="1" class=""><a href="/es/docs/cloud/authorization-api/">API de autorización</a></li>
 <li data-docs-depth="1" class=""><a href="/es/docs/cloud/limits-and-errors/">Límites y errores</a></li>
 </ul>
@@ -239,7 +239,7 @@
 ./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ create policy -c <span style="color:#f1fa8c">&#34;grant user alice get,list /docs/public&#34;</span> --service-name<span style="color:#ff79c6">=</span>docs</code></pre></div>
 <p>Los ejemplos locales se conectan a <code>http://localhost:6734</code> sin credenciales. Los SDK solo aceptan <code>http://</code> en texto plano para hosts de bucle invertido (loopback); utilice HTTPS para cualquier otro ADS.</p>
 
-<p><strong>Speedle Cloud estará disponible próximamente.</strong> Los ejemplos de Speedle Cloud se conectan a <code>https://cloud.speedle.io</code> y leen el nombre del servicio y su token exclusivo desde las variables de entorno <code>SPEEDLE_SERVICE</code> y <code>SPEEDLE_TOKEN</code>. Cree la misma política en ese servicio para obtener las mismas respuestas. El token es un secreto del lado del servidor: nunca lo exponga en navegadores, aplicaciones móviles ni clientes de escritorio.</p>
+<p>Los ejemplos de Speedle Cloud se conectan a <code>https://cloud.speedle.io</code> y leen el nombre del servicio y una clave API de cuenta con ámbito <code>ads</code> desde las variables de entorno <code>SPEEDLE_SERVICE</code> y <code>SPEEDLE_TOKEN</code>. Cree la misma política en ese servicio para obtener las mismas respuestas. La clave API es un secreto del lado del servidor: nunca la exponga en navegadores, aplicaciones móviles ni clientes de escritorio.</p>
 </div></main>
         </div>
     </div>

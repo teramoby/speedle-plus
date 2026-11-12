@@ -10,8 +10,8 @@
 
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
-    <meta name="viewport" content="width=device-width, initial-scale=1"><title>Speedle Cloud limits and errors · Speedle Engine</title>
-<meta name="description" content="Speedle Cloud account quotas, request limits, flat JSON errors, rate and quota headers, daily accounting and retry guidance.">
+    <meta name="viewport" content="width=device-width, initial-scale=1"><title>Speedle Cloud Limits and errors · Speedle Engine</title>
+<meta name="description" content="Account limits, error codes, reset times and retry guidance.">
 <meta name="generator" content="Hugo 0.48" />
 <link href="https://engine.speedle.io/index.xml" rel="alternate" type="application/rss+xml">
 <link rel="canonical" href="https://engine.speedle.io/docs/cloud/limits-and-errors/">
@@ -23,11 +23,10 @@
 <link rel="alternate" hreflang="zh-CN" href="https://engine.speedle.io/zh/docs/cloud/limits-and-errors/">
 <link rel="alternate" hreflang="x-default" href="https://engine.speedle.io/docs/cloud/limits-and-errors/">
 <meta property="og:type" content="article">
-<meta property="article:published_time" content="2026-11-08T00:00:00&#43;08:00">
-<meta property="article:modified_time" content="2026-11-08T17:11:18&#43;08:00">
+<meta property="article:modified_time" content="2026-11-12T00:00:00&#43;08:00">
 <meta property="og:site_name" content="Speedle Engine">
-<meta property="og:title" content="Speedle Cloud limits and errors · Speedle Engine">
-<meta property="og:description" content="Speedle Cloud account quotas, request limits, flat JSON errors, rate and quota headers, daily accounting and retry guidance.">
+<meta property="og:title" content="Speedle Cloud Limits and errors · Speedle Engine">
+<meta property="og:description" content="Account limits, error codes, reset times and retry guidance.">
 <meta property="og:url" content="https://engine.speedle.io/docs/cloud/limits-and-errors/">
 <meta property="og:image" content="https://engine.speedle.io/img/social/engine-en.png">
 <meta property="og:image:width" content="1200">
@@ -35,13 +34,13 @@
 <meta property="og:image:type" content="image/png">
 <meta property="og:image:alt" content="Speedle Engine — Fast. Simple. Access control">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Speedle Cloud limits and errors · Speedle Engine">
-<meta name="twitter:description" content="Speedle Cloud account quotas, request limits, flat JSON errors, rate and quota headers, daily accounting and retry guidance.">
+<meta name="twitter:title" content="Speedle Cloud Limits and errors · Speedle Engine">
+<meta name="twitter:description" content="Account limits, error codes, reset times and retry guidance.">
 <meta name="twitter:image" content="https://engine.speedle.io/img/social/engine-en.png">
 <meta name="twitter:image:alt" content="Speedle Engine — Fast. Simple. Access control">
 
-<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/docs/cloud/limits-and-errors/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-08T17:11:18+08:00","datePublished":"2026-11-08T00:00:00+08:00","description":"Speedle Cloud account quotas, request limits, flat JSON errors, rate and quota headers, daily accounting and retry guidance.","headline":"Speedle Cloud limits and errors","image":"https://engine.speedle.io/img/social/engine-en.png","inLanguage":"en","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/docs/cloud/limits-and-errors/","@type":"WebPage"},"name":"Speedle Cloud limits and errors","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/docs/cloud/limits-and-errors/"}</script>
-<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/docs/cloud/limits-and-errors/#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://engine.speedle.io/","name":"Home","position":1},{"@type":"ListItem","item":"https://engine.speedle.io/docs/","name":"Documentation","position":2},{"@type":"ListItem","item":"https://engine.speedle.io/docs/cloud/","name":"Speedle Cloud","position":3},{"@type":"ListItem","item":"https://engine.speedle.io/docs/cloud/limits-and-errors/","name":"Speedle Cloud limits and errors","position":4}]}</script><link href="/css/docs.css" rel="stylesheet" type="text/css">
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/docs/cloud/limits-and-errors/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-12T00:00:00+08:00","description":"Account limits, error codes, reset times and retry guidance.","headline":"Speedle Cloud Limits and errors","image":"https://engine.speedle.io/img/social/engine-en.png","inLanguage":"en","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/docs/cloud/limits-and-errors/","@type":"WebPage"},"name":"Speedle Cloud Limits and errors","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/docs/cloud/limits-and-errors/"}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/docs/cloud/limits-and-errors/#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://engine.speedle.io/","name":"Home","position":1},{"@type":"ListItem","item":"https://engine.speedle.io/docs/","name":"Documentation","position":2},{"@type":"ListItem","item":"https://engine.speedle.io/docs/cloud/","name":"Speedle Cloud","position":3},{"@type":"ListItem","item":"https://engine.speedle.io/docs/cloud/limits-and-errors/","name":"Speedle Cloud Limits and errors","position":4}]}</script><link href="/css/docs.css" rel="stylesheet" type="text/css">
 
 
     <link href="/css/navigation.css?v=header-20261106-v8" rel="stylesheet">
@@ -156,7 +155,7 @@
 <li data-docs-depth="0" class="docs-nav-section parent"><span class="docs-nav-heading docs-nav-heading-link"><a href="/docs/cloud/">Speedle Cloud</a></span>
 <ul class="sub-menu">
 <li data-docs-depth="1" class=""><a href="/docs/cloud/getting-started/">Getting started</a></li>
-<li data-docs-depth="1" class=""><a href="/docs/cloud/tokens/">Application tokens</a></li>
+<li data-docs-depth="1" class=""><a href="/docs/cloud/tokens/">API keys</a></li>
 <li data-docs-depth="1" class=""><a href="/docs/cloud/authorization-api/">Authorization API</a></li>
 <li data-docs-depth="1" class="active"><a href="/docs/cloud/limits-and-errors/" aria-current="page">Limits and errors</a></li>
 </ul>
@@ -181,8 +180,8 @@
 <main>
 <div id="main">
 
-  <h1>Speedle Cloud limits and errors</h1>
-  <p class="docs-lead">Plan around account-wide limits and fail closed when Cloud cannot return a valid authorization decision.</p>
+  <h1>Speedle Cloud Limits and errors</h1>
+  <p class="docs-lead"></p>
 
 
 
@@ -195,141 +194,167 @@
 
   <div id="kube-component" class="content">
 
-<p>The ADS errors and headers below describe the authenticated ADS contract, whose runtime is not yet available. The management contract already defines account limits, session and CSRF checks, and token-management errors for use when account access is available. Downloading a schema does not enable a pending endpoint.</p>
+<p><strong>Speedle Cloud is coming soon.</strong> This guide describes the workflow available when production sign-in and authenticated authorization checks open; the examples have not been run against a live Cloud environment.</p>
+
+<p>Limits apply to the whole account unless a row says otherwise. API keys are account credentials; changing keys does not increase the daily quota.</p>
 
 <h2 id="limits">Limits</h2>
 
 <table>
 <thead>
 <tr>
+<th>What is limited</th>
 <th>Limit</th>
-<th>Meaning</th>
+<th>When reached / how to recover</th>
 </tr>
 </thead>
 
 <tbody>
 <tr>
-<td>10,000 calls per day</td>
-<td>Account-wide matched PMS and ADS handler calls per UTC day, across sessions, tokens and services; resets at 00:00 UTC.</td>
+<td>Services per account</td>
+<td>100</td>
+<td><code>409 quota_exceeded</code>; delete an unused service. No timed reset.</td>
 </tr>
 
 <tr>
-<td>200 policies</td>
-<td>Authorization and role policies combined per account.</td>
+<td>Authorization and role policies combined, across all services</td>
+<td>200 per account</td>
+<td><code>409 quota_exceeded</code>; delete policies. No timed reset.</td>
 </tr>
 
 <tr>
-<td>4 KiB of SPDL</td>
-<td>4,096 UTF-8 bytes per complete policy, not 4,096 characters.</td>
+<td>Complete SPDL source for one policy</td>
+<td>1,024 UTF-8 bytes</td>
+<td><code>400 invalid_request</code> on console policy writes; shorten the source. This counts bytes, not characters. No timed reset.</td>
 </tr>
 
 <tr>
-<td>2 active tokens</td>
-<td>Per service; revoked history does not consume this cap.</td>
+<td>Active API keys, all scopes combined</td>
+<td>10 per account</td>
+<td><code>409 quota_exceeded</code> with <code>limit: 10</code>; revoke an unused key. No timed reset; revoked history does not count.</td>
 </tr>
 
 <tr>
-<td>600 requests per minute per token</td>
-<td>Approximate per-location burst limit, separate from the strict daily account cap.</td>
+<td>Policy name / API key name</td>
+<td>128 Unicode code points / 1–128 characters after trimming</td>
+<td><code>400 invalid_request</code>; shorten or correct the name. No timed reset.</td>
 </tr>
 
 <tr>
-<td>64 KiB request body</td>
-<td>Global bound before parsing. Optional incoming attributes also retain their 50-attribute and 16,384-byte canonical UTF-8 JSON bound.</td>
+<td>Billable policy-management and authorization calls</td>
+<td>10,000 per account per UTC day</td>
+<td><code>429 daily_quota_exceeded</code>; resets at 00:00 UTC. Follow <code>Retry-After</code>.</td>
+</tr>
+
+<tr>
+<td>Short bursts of API-key requests</td>
+<td>Approximately 600 per minute per key at each Cloud location</td>
+<td><code>429 rate_limited</code> with <code>Retry-After: 60</code>; wait before retrying. This is a short-term limit, not a guaranteed throughput or a separate daily allowance.</td>
+</tr>
+
+<tr>
+<td>Ordinary request body</td>
+<td>65,536 bytes (64 KiB)</td>
+<td><code>413 request_too_large</code>; send a smaller body. No timed reset.</td>
+</tr>
+
+<tr>
+<td>Atomic JSON import body (<code>POST /api/service/import</code> only)</td>
+<td>5,100,000 bytes</td>
+<td><code>413 request_too_large</code>; reduce the import. The policy and account limits still apply. No timed reset.</td>
+</tr>
+
+<tr>
+<td>Incoming attributes</td>
+<td>50 attributes; 16,384 UTF-8 bytes of canonical JSON</td>
+<td><code>400 SPDL-0004</code>; send fewer or smaller attributes. No timed reset.</td>
 </tr>
 </tbody>
 </table>
 
-<p>Each account has one service. Token names are 1–128 characters. See <a href="/docs/cloud/tokens/">Application tokens</a> for credential lifecycle rules.</p>
+<p>For scopes, creation and revocation, see <a href="/docs/cloud/tokens/">API keys</a>.</p>
 
-<h2 id="daily-quota-accounting">Daily quota accounting</h2>
+<h2 id="daily-quota">Daily quota</h2>
 
-<p>Entering a matched handler spends one daily unit even for a policy denial, invalid business input or internal error. Authentication and session endpoints do not spend these units. Requests rejected before handler entry by authentication, routing, CSRF, body-size, burst-limit or quota-reservation checks do not spend them either.</p>
+<p>Reads, writes, validation, Playground tests, imports, exports and authorization checks share the daily allowance. A policy denial or invalid business input still counts. Authentication, session operations and <code>GET /api/me</code> do not count. Requests rejected by authentication, scope checks, routing, CSRF, body-size checks, burst limits or the daily quota do not count.</p>
 
-<p>Reserved leases that expire or are abandoned are not reissued, so the number of usable calls can be fewer than 10,000. <code>GET /api/me</code> reports reserved daily usage and the reset time without charging a daily unit.</p>
+<p>Cloud-side failures may receive a quota refund, up to 1,000 per account per UTC day; if a refund cannot be confirmed, the call stays charged. Errors caused by the request still count. During a temporary quota-counter failure, authorization calls may continue at a reduced rate within an additional allowance of up to 10,000 calls per account per UTC day. That allowance is separate from the normal quota, is not guaranteed, and resets at 00:00 UTC along with the refund allowance. If it cannot be granted, the response is <code>503 quota_unavailable</code>.</p>
 
-<p>Switching tokens does not add account quota. The daily account cap and the approximate per-location token burst cap are enforced separately.</p>
+<p>Some daily capacity can be reserved but unused, so the usable total can be below 10,000. <code>GET /api/me</code> reports usage and the reset time. Do not retry continuously or switch keys to bypass account limits.</p>
 
-<h2 id="http-errors">HTTP errors</h2>
+<h2 id="errors-and-response-headers">Errors and response headers</h2>
 
-<p>Errors use flat JSON responses. Correct the request or credential where indicated; otherwise fail closed and use bounded backoff rather than an unbounded retry loop.</p>
+<p>Errors are flat JSON, for example <code>{&quot;error&quot;:&quot;rate_limited&quot;}</code>. An error is not an authorization grant; fail closed if a valid decision cannot be obtained.</p>
 
 <table>
 <thead>
 <tr>
-<th>HTTP status and error</th>
-<th>Application response</th>
+<th>Status and error</th>
+<th>What to do</th>
 </tr>
 </thead>
 
 <tbody>
 <tr>
-<td><code>401 {&quot;error&quot;:&quot;unauthorized&quot;}</code></td>
-<td>Check the stage and credential. ADS includes a Bearer challenge. Anonymous and cookie-only requests cannot authorize ADS.</td>
+<td><code>400 invalid_request</code> or a Speedle error message</td>
+<td>Correct the request; do not retry it unchanged.</td>
 </tr>
 
 <tr>
-<td><code>403 {&quot;error&quot;:&quot;reauth_required&quot;}</code></td>
-<td>Authenticate again with a linked provider before creating a token. Ordinary activity does not refresh authentication recency.</td>
+<td><code>401 unauthorized</code></td>
+<td>Check the API key or signed-in session. A session cookie alone cannot authorize ADS.</td>
 </tr>
 
 <tr>
-<td><code>403 {&quot;error&quot;:&quot;service_mismatch&quot;}</code></td>
-<td>Correct the service input; never retry against another tenant&rsquo;s data.</td>
+<td><code>403 reauth_required</code></td>
+<td>Authenticate with a linked provider again before creating a key.</td>
 </tr>
 
 <tr>
-<td><code>400 {&quot;error&quot;:&quot;SPDL-0004 …&quot;}</code></td>
-<td>Speedle rejected the request, for example because an attribute value has the wrong type. The message is the Speedle message. Correct the request; do not retry it unchanged.</td>
+<td><code>403 insufficient_scope</code></td>
+<td>Use a key with the required scope.</td>
 </tr>
 
 <tr>
-<td><code>404</code> for token revocation</td>
-<td>The token ID is unknown, unowned or already revoked. Refresh metadata before choosing another action.</td>
+<td><code>403 management_scope_disabled</code></td>
+<td>Management-scope issuance is unavailable while sign-in is closed.</td>
 </tr>
 
 <tr>
-<td><code>413 {&quot;error&quot;:&quot;request_too_large&quot;}</code></td>
-<td>Reduce the request body.</td>
+<td><code>403 csrf_failed</code></td>
+<td>Use the console session with the required origin and CSRF header.</td>
 </tr>
 
 <tr>
-<td><code>429 {&quot;error&quot;:&quot;rate_limited&quot;}</code></td>
-<td>Honor <code>Retry-After</code>, which is 60 seconds for this burst limit, and add bounded backoff.</td>
+<td><code>404 service_not_found</code> (ADS) / <code>404 not_found</code> (management)</td>
+<td>Select an existing service in your account. Unknown, other-account or already-revoked key IDs also return <code>404 not_found</code>.</td>
 </tr>
 
 <tr>
-<td><code>429 {&quot;error&quot;:&quot;daily_quota_exceeded&quot;}</code></td>
-<td>Honor <code>Retry-After</code> until the next UTC midnight. Switching tokens does not add account quota.</td>
+<td><code>409 quota_exceeded</code></td>
+<td>Free the relevant service, policy or API-key slot; time does not reset these caps.</td>
 </tr>
 
 <tr>
-<td><code>503 {&quot;error&quot;:&quot;quota_unavailable&quot;}</code> or <code>snapshot_unavailable</code></td>
-<td>Fail closed and retry only with bounded backoff. Do not fall back to a demo or D1 policy evaluation.</td>
+<td><code>413 request_too_large</code></td>
+<td>Reduce the body size.</td>
 </tr>
 
 <tr>
-<td><code>500 {&quot;error&quot;:&quot;internal_error&quot;}</code></td>
-<td>Fail closed. Retain a safe request ID for support and avoid logging credentials.</td>
+<td><code>429 rate_limited</code> / <code>429 daily_quota_exceeded</code></td>
+<td>Respect <code>Retry-After</code> and use bounded backoff; the daily limit resets at UTC midnight.</td>
+</tr>
+
+<tr>
+<td><code>503 quota_unavailable</code> / <code>503 snapshot_unavailable</code> / <code>500 internal_error</code></td>
+<td>Fail closed and retry with bounded backoff, respecting <code>Retry-After</code> when present.</td>
 </tr>
 </tbody>
 </table>
 
-<p>For <code>503</code> responses, <code>snapshot_unavailable</code> is charged after handler entry, while <code>quota_unavailable</code> is not charged. Early rejections omit the daily-remaining header described below.</p>
+<p>For verified API-key requests, <code>X-RateLimit-Limit</code> is 600. There is no exact <code>X-RateLimit-Remaining</code>. <code>X-Quota-Daily-Remaining</code>, when present, is an approximate account-wide balance; concurrent calls and unused reservations can make it differ from what you can actually use. It does not guarantee that the next request will succeed, and early rejections omit it.</p>
 
-<p>A non-POST ADS request may instead be stopped at the public edge with Cloudflare&rsquo;s 403 response. That is not an application authorization decision.</p>
-
-<h2 id="rate-and-quota-headers">Rate and quota headers</h2>
-
-<p>After verification, <code>X-RateLimit-Limit</code> is 600. ADS does not expose an exact <code>X-RateLimit-Remaining</code> value.</p>
-
-<p>When present after a charged handler, <code>X-Quota-Daily-Remaining</code> estimates the account-wide calls remaining today: the unreserved calls at lease grant plus this isolate&rsquo;s remaining lease. The estimate is conservative at grant time. It is cached for at most the valid 30-second lease and discarded when the lease expires or the UTC day rolls over.</p>
-
-<p>Concurrent isolates can make the value overstate availability by up to the unreserved balance at grant time, not merely 32 calls. Unused or abandoned reservations can make it understate availability. During rollout or rollback, legacy allocators fall back to the local lease remaining. This header is informational and does not change quota enforcement. Early rejections omit it.</p>
-
-<p>Matched application ADS responses also use <code>Cache-Control: no-store</code>. Do not place decisions or credentials in shared caches.</p>
-
-<p>Return to the <a href="/docs/cloud/authorization-api/">Authorization API preview</a> for request examples and integration constraints.</p>
+<p>ADS responses use <code>Cache-Control: no-store</code>. Keep decisions and credentials out of shared caches. Use POST; other methods can receive <code>405 method_not_allowed</code> or an earlier non-JSON block response. See the <a href="/docs/cloud/authorization-api/">Authorization API</a>.</p>
 </div>
 </div>
 </main>

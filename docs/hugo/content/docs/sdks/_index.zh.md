@@ -49,4 +49,4 @@ Java、Python、Go、.NET 和 Rust 的版本均为 0.2.0。`@speedle/sdk` 已在
 
 本地示例以无凭据方式连接 `http://localhost:6734`。SDK 只对回环地址接受明文 `http://`；连接其他 ADS 时请使用 HTTPS。
 
-**Speedle Cloud 即将上线。** Speedle Cloud 示例连接 `https://cloud.speedle.io`，并从环境变量 `SPEEDLE_SERVICE` 和 `SPEEDLE_TOKEN` 读取服务名及该服务专属的令牌。在该服务中创建同样的策略即可得到相同的结果。令牌是服务端密钥，切勿放进浏览器、移动应用或桌面客户端。
+Speedle Cloud 示例连接 `https://cloud.speedle.io`，并从环境变量 `SPEEDLE_SERVICE` 和 `SPEEDLE_TOKEN` 读取服务名及具有 `ads` 权限范围的账号 API 密钥。在该服务中创建同样的策略即可得到相同的结果。API 密钥是服务端密钥，切勿放进浏览器、移动应用或桌面客户端。

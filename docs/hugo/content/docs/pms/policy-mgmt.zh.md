@@ -114,49 +114,49 @@ role_policy_id=$(./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1
 
 ## Speedle Cloud
 
-Speedle Cloud 登录即将开放。API 令牌开放后，`spctl` 可以通过与自托管 PMS 相同的命令管理 Cloud 中的 service 和策略。管理端点为：
+使用账号 API 密钥，通过 `spctl` 管理 Cloud 服务和策略。管理端点为：
 
 ```text
 https://cloud.speedle.io/policy-mgmt/v1
 ```
 
-请根据命令选择具有相应 scope 的 API 令牌。`pms:read` 用于 `get` 和 `discover` 查询，`pms:write` 用于 `create`、`delete` 和发现记录重置。只有 ADS scope 的令牌不能管理策略，服务端会返回 `403 insufficient_scope`。
+账号 API 密钥只能选择一个固定权限范围。`pms:read` 可读取服务和策略；`pms:write` 还可创建和删除服务与策略。两者都适用于账号下的服务。`ads` 密钥不能管理策略，会收到 `403 insufficient_scope`。创建和撤销规则见 [API 密钥](/zh/docs/cloud/tokens/)。
 
-通过全局命令行参数指定端点，并从 `SPCTL_TOKEN` 环境变量读取令牌。在交互式 shell 中，以下方式可避免将 secret 写入命令参数和 shell 历史：
+通过全局命令行参数指定端点，并从 `SPCTL_TOKEN` 环境变量读取API 密钥。在交互式 shell 中，以下方式可避免将 secret 写入命令参数和 shell 历史：
 
 <!-- deployment-template: cloud-token-environment -->
 ```bash
-read -rsp 'API token: ' SPCTL_TOKEN; echo
+read -rsp 'API key: ' SPCTL_TOKEN; echo
 export SPCTL_TOKEN
 ./bin/spctl --pms-endpoint https://cloud.speedle.io/policy-mgmt/v1 get service --all
 unset SPCTL_TOKEN
 ```
 
-`--token` 参数仍为兼容现有用法而保留，但环境变量可避免通过命令参数暴露令牌。每个全局参数都有对应的环境变量：添加 `SPCTL_` 前缀，将参数名转为大写，并把连字符替换为下划线。例如，`SPCTL_PMS_ENDPOINT` 对应 `pms-endpoint`，`SPCTL_SKIPVERIFY` 对应 `skipverify`。
+`--token` 参数仍为兼容现有用法而保留，但环境变量可避免通过命令参数暴露API 密钥。每个全局参数都有对应的环境变量：添加 `SPCTL_` 前缀，将参数名转为大写，并把连字符替换为下划线。例如，`SPCTL_PMS_ENDPOINT` 对应 `pms-endpoint`，`SPCTL_SKIPVERIFY` 对应 `skipverify`。
 
 如需保存配置，请使用 `~/.speedle`。文件每行包含一个 `名称=值` 配置项，名称与命令行参数一致：
 
 ```ini
 pms-endpoint=https://cloud.speedle.io/policy-mgmt/v1
-token=<api-token>
+token=<api-key>
 ```
 
-以下方式可在不把令牌写入命令参数的情况下创建或更新此文件：
+以下方式可在不把API 密钥写入命令参数的情况下创建或更新此文件：
 
 <!-- deployment-template: cloud-token-config -->
 ```bash
-read -rsp 'API token: ' SPCTL_TOKEN; echo
+read -rsp 'API key: ' SPCTL_TOKEN; echo
 printf '%s\n' "$SPCTL_TOKEN" | ./bin/spctl config token --stdin
 unset SPCTL_TOKEN
 ```
 
-`spctl config token --stdin` 会以 `0600` 权限写入 `~/.speedle`。手动编辑此文件时，先用 `install -m 600 /dev/null ~/.speedle` 创建文件，或在编辑后运行 `chmod 0600 ~/.speedle`。如果 `spctl` 从允许 group 或其他用户访问的文件中读取令牌，会向标准错误输出警告。`spctl config --list` 会把已配置的令牌显示为 `********`。
+`spctl config token --stdin` 会以 `0600` 权限写入 `~/.speedle`。手动编辑此文件时，先用 `install -m 600 /dev/null ~/.speedle` 创建文件，或在编辑后运行 `chmod 0600 ~/.speedle`。如果 `spctl` 从允许 group 或其他用户访问的文件中读取API 密钥，会向标准错误输出警告。`spctl config --list` 会把已配置的API 密钥显示为 `********`。
 
-显式命令行参数优先于环境变量，环境变量优先于两个配置文件。在配置文件中，`~/.speedle` 优先于 `~/.spctlconfig`。通过 `spctl config` 设置非令牌配置时，新值写入 `~/.spctlconfig`，同时删除 `~/.speedle` 中会覆盖新值的同名配置。
+显式命令行参数优先于环境变量，环境变量优先于两个配置文件。在配置文件中，`~/.speedle` 优先于 `~/.spctlconfig`。通过 `spctl config` 设置 `token` 以外的配置项时，新值写入 `~/.spctlconfig`，同时删除 `~/.speedle` 中会覆盖新值的同名配置。
 
-令牌仅在启用证书验证的 HTTPS 连接中以 `Authorization: Bearer` 凭据发送。只有 `127.0.0.1`、`::1` 或 `localhost` 等回环主机可以在携带令牌时使用纯 HTTP；对于远程 HTTP 端点以及从 HTTPS 降级到 HTTP 的重定向，`spctl` 会在发送凭据前拒绝请求。对于 HTTPS 端点，`spctl` 也拒绝在 `--skipverify=true` 时发送令牌；对于私有或自签名证书颁发机构，请使用 `--cacert` 配置信任。正常命令输出和错误信息不会包含令牌。
+API 密钥仅在启用证书验证的 HTTPS 连接中以 `Authorization: Bearer` 凭据发送。只有 `127.0.0.1`、`::1` 或 `localhost` 等回环主机可以在携带API 密钥时使用纯 HTTP；对于远程 HTTP 端点以及从 HTTPS 降级到 HTTP 的重定向，`spctl` 会在发送凭据前拒绝请求。对于 HTTPS 端点，`spctl` 也拒绝在 `--skipverify=true` 时发送API 密钥；对于私有或自签名证书颁发机构，请使用 `--cacert` 配置信任。正常命令输出和错误信息不会包含API 密钥。
 
-Cloud 返回错误时，命令以非零状态退出。遇到 `401` 请检查令牌，遇到 `403 insufficient_scope` 请检查 scope。`404` 表示资源不存在，`409 service_exists` 和 `409 policy_exists` 表示资源重复。遇到 `429` 时，请遵循响应中的 `Retry-After`，并采用有界退避。每日额度或策略额度错误需要等待额度重置或减少用量，不要紧密循环重试。
+Cloud 返回错误时，命令以非零状态退出。遇到 `401` 请检查 API 密钥，遇到 `403 insufficient_scope` 请检查 scope。`404` 表示资源不存在，`409 service_exists` 和 `409 policy_exists` 表示资源重复。遇到 `429` 时，请遵循响应中的 `Retry-After`，并采用有界退避。遇到 `429 daily_quota_exceeded`，按 `Retry-After` 等待至 00:00 UTC。服务、策略和有效密钥上限返回 `409 quota_exceeded`，不会随时间重置；请删除或撤销不用的项目。参见[限额与错误](/zh/docs/cloud/limits-and-errors/)。
 
 
 ## 其他管理接口

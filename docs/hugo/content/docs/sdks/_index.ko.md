@@ -49,4 +49,4 @@ Java, Python, Go, .NET, Rust는 0.2.0 버전입니다. `@speedle/sdk`는 npm에 
 
 로컬 예제는 자격 증명 없이 `http://localhost:6734`에 연결합니다. SDK는 루프백 호스트에 대해서만 일반 텍스트 `http://`를 허용하며, 다른 ADS 호스트에 연결할 때는 HTTPS를 사용해야 합니다.
 
-**Speedle Cloud는 출시 예정입니다.** Speedle Cloud 예제는 `https://cloud.speedle.io`에 연결하며 환경 변수 `SPEEDLE_SERVICE` 및 `SPEEDLE_TOKEN`에서 서비스 이름과 해당 서비스 전용 토큰을 읽습니다. 해당 서비스에 동일한 정책을 생성하면 동일한 결과를 얻을 수 있습니다. 토큰은 서버 측 비밀 값이므로 브라우저, 모바일 앱 또는 데스크톱 클라이언트에 절대 노출하지 마십시오.
+Speedle Cloud 예제는 `https://cloud.speedle.io`에 연결하며 환경 변수 `SPEEDLE_SERVICE` 및 `SPEEDLE_TOKEN`에서 서비스 이름과 `ads` 범위의 계정 API 키을 읽습니다. 해당 서비스에 동일한 정책을 생성하면 동일한 결과를 얻을 수 있습니다. API 키은 서버 측 비밀 값이므로 브라우저, 모바일 앱 또는 데스크톱 클라이언트에 절대 노출하지 마십시오.

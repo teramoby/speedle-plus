@@ -49,4 +49,4 @@ Every example asks whether user `alice` may `get` and `delete` the resource `/do
 
 The local examples connect to `http://localhost:6734` without credentials. The SDKs accept plain `http://` only for a loopback host; use HTTPS for any other ADS.
 
-**Speedle Cloud is coming soon.** The Speedle Cloud examples connect to `https://cloud.speedle.io` and read the service name and its service-scoped token from the environment variables `SPEEDLE_SERVICE` and `SPEEDLE_TOKEN`. Create the same policy in that service to get the same answers. The token is a server-side secret: never ship it to browsers, mobile apps or desktop clients.
+The Speedle Cloud examples connect to `https://cloud.speedle.io` and read the service name and an account API key with the `ads` scope from the environment variables `SPEEDLE_SERVICE` and `SPEEDLE_TOKEN`. Create the same policy in that service to get the same answers. The API key is a server-side secret: never ship it to browsers, mobile apps or desktop clients.
