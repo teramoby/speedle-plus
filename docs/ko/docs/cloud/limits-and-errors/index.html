@@ -232,7 +232,7 @@
 <tr>
 <td>모든 범위의 활성 API 키 합계</td>
 <td>계정당 10개</td>
-<td><code>409 quota_exceeded</code>, <code>limit: 10</code>. 미사용 키 폐기. 시간에 따른 초기화 없음. 폐기 이력은 제외.</td>
+<td><code>409 quota_exceeded</code>, <code>limit: 10</code>. 미사용 키 폐기. 시간에 따른 초기화 없음. 폐기 및 만료된 키는 제외.</td>
 </tr>
 
 <tr>
@@ -273,7 +273,7 @@
 </tbody>
 </table>
 
-<p>범위, 생성, 폐기는 <a href="/ko/docs/cloud/tokens/">API 키</a>를 참조하세요.</p>
+<p>범위, 만료 기간, 생성, 폐기는 <a href="/ko/docs/cloud/tokens/">API 키</a>를 참조하세요.</p>
 
 <h2 id="일일-할당량">일일 할당량</h2>
 
@@ -304,6 +304,11 @@
 <tr>
 <td><code>401 unauthorized</code></td>
 <td>API 키나 세션 확인. 세션 쿠키만으로 ADS 호출 불가.</td>
+</tr>
+
+<tr>
+<td><code>401 api_key_expired</code></td>
+<td>API 키가 만료 시각에 도달했거나 지났습니다. 새 키를 만드세요. 이 키를 다시 시도해도 성공하지 않습니다.</td>
 </tr>
 
 <tr>

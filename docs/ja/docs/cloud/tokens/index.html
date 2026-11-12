@@ -11,7 +11,7 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
     <meta name="viewport" content="width=device-width, initial-scale=1"><title>Speedle Cloud API キー · Speedle Engine</title>
-<meta name="description" content="アカウント API キーの作成、保護、一覧表示、失効と固定スコープ。">
+<meta name="description" content="アカウント API キーの作成、保護、一覧表示、失効と、固定スコープおよび必須の有効期限。">
 <meta name="generator" content="Hugo 0.48" />
 <link href="https://engine.speedle.io/index.xml" rel="alternate" type="application/rss+xml">
 <link rel="canonical" href="https://engine.speedle.io/ja/docs/cloud/tokens/">
@@ -26,7 +26,7 @@
 <meta property="article:modified_time" content="2026-11-12T00:00:00&#43;08:00">
 <meta property="og:site_name" content="Speedle Engine">
 <meta property="og:title" content="Speedle Cloud API キー · Speedle Engine">
-<meta property="og:description" content="アカウント API キーの作成、保護、一覧表示、失効と固定スコープ。">
+<meta property="og:description" content="アカウント API キーの作成、保護、一覧表示、失効と、固定スコープおよび必須の有効期限。">
 <meta property="og:url" content="https://engine.speedle.io/ja/docs/cloud/tokens/">
 <meta property="og:image" content="https://engine.speedle.io/img/social/engine-en.png">
 <meta property="og:image:width" content="1200">
@@ -35,11 +35,11 @@
 <meta property="og:image:alt" content="Speedle Engine — Fast. Simple. Access control">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Speedle Cloud API キー · Speedle Engine">
-<meta name="twitter:description" content="アカウント API キーの作成、保護、一覧表示、失効と固定スコープ。">
+<meta name="twitter:description" content="アカウント API キーの作成、保護、一覧表示、失効と、固定スコープおよび必須の有効期限。">
 <meta name="twitter:image" content="https://engine.speedle.io/img/social/engine-en.png">
 <meta name="twitter:image:alt" content="Speedle Engine — Fast. Simple. Access control">
 
-<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/ja/docs/cloud/tokens/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-12T00:00:00+08:00","description":"アカウント API キーの作成、保護、一覧表示、失効と固定スコープ。","headline":"Speedle Cloud API キー","image":"https://engine.speedle.io/img/social/engine-en.png","inLanguage":"ja","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/ja/docs/cloud/tokens/","@type":"WebPage"},"name":"Speedle Cloud API キー","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/ja/docs/cloud/tokens/"}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/ja/docs/cloud/tokens/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-12T00:00:00+08:00","description":"アカウント API キーの作成、保護、一覧表示、失効と、固定スコープおよび必須の有効期限。","headline":"Speedle Cloud API キー","image":"https://engine.speedle.io/img/social/engine-en.png","inLanguage":"ja","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/ja/docs/cloud/tokens/","@type":"WebPage"},"name":"Speedle Cloud API キー","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/ja/docs/cloud/tokens/"}</script>
 <script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/ja/docs/cloud/tokens/#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://engine.speedle.io/ja/","name":"ホーム","position":1},{"@type":"ListItem","item":"https://engine.speedle.io/ja/docs/","name":"ドキュメント","position":2},{"@type":"ListItem","item":"https://engine.speedle.io/ja/docs/cloud/","name":"Speedle Cloud","position":3},{"@type":"ListItem","item":"https://engine.speedle.io/ja/docs/cloud/tokens/","name":"Speedle Cloud API キー","position":4}]}</script><link href="/css/docs.css" rel="stylesheet" type="text/css">
 
 
@@ -239,22 +239,22 @@ Origin: https://cloud.speedle.io
 X-SC-CSRF: 1
 Content-Type: application/json
 
-{&#34;name&#34;:&#34;books-app&#34;,&#34;scope&#34;:&#34;ads&#34;}</code></pre></div>
-<p>入力は <code>name</code> と任意の <code>scope</code>（既定は <code>ads</code>）だけです。サービス指定、有効期限、認証証明は送信しません。セッション Cookie と CSRF ヘッダーが必要で、API キーではセッションを代替できません。</p>
+{&#34;name&#34;:&#34;books-app&#34;,&#34;scope&#34;:&#34;ads&#34;,&#34;expiresIn&#34;:&#34;90d&#34;}</code></pre></div>
+<p>入力は <code>name</code>、必須の <code>expiresIn</code>、任意の <code>scope</code>（既定は <code>ads</code>）です。<code>expiresIn</code> は <code>7d</code>、<code>30d</code>、<code>90d</code>、<code>180d</code>、<code>365d</code> のいずれかです（1 週間、1 か月、3 か月、6 か月、1 年）。1 日は 24 時間です。コンソールの <strong>有効期間</strong> は既定で 3 か月で、送信前に <strong>有効期限のプレビュー (UTC)</strong> を表示します。無期限のキーはありません。サービス指定、<code>expiresAt</code>、認証証明は送信しません。<code>expiresIn</code> がない、認識できない、またはクライアントが <code>expiresAt</code> を送った場合は <code>400 invalid_request</code> です。セッション Cookie と CSRF ヘッダーが必要で、API キーではセッションを代替できません。</p>
 
 <h2 id="シークレットを保護する">シークレットを保護する</h2>
 
 <p>作成成功時は HTTP 201 を返します。レスポンスの <code>token</code> フィールドが API キーの値で、表示は一度だけです。</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">spdl_&lt;canonical uppercase ULID id&gt;_&lt;43 base62 digits&gt;</code></pre></div>
-<p>API キーは失効させるまで有効で、自動的な有効期限はありません。</p>
+<p>すべてのキーには有効期限があります。レスポンスの <code>expiresAt</code> は、サーバーが計算した Unix ミリ秒の期限です。その時点以降、認可チェックとポリシー管理の呼び出しは <code>401 {&quot;error&quot;:&quot;api_key_expired&quot;}</code> を返します。新しいキーを作成してください。期限切れのキーを再送しても成功しません。期限前に失効させることもできます。</p>
 
 <p>これは形式の説明であり、使用可能なキーではありません。すぐにサーバー側のシークレットストアへ保存してください。ブラウザストレージ、フロントエンド、URL、ソース管理、スクリーンショット、ログに含めないでください。一覧はメタデータのみを返し、紛失した値は復元できません。</p>
 
-<p>アカウント全体で、全スコープ合計 <strong>10 個の有効な API キー</strong>を持てます。上限を超える作成は <code>409 {&quot;error&quot;:&quot;quota_exceeded&quot;,&quot;limit&quot;:10}</code> です。未使用のキーを失効させて枠を空けてください。時間によるリセットはありません。失効済みのキーは一覧に残りますが上限には含まれません。</p>
+<p>アカウント全体で、全スコープ合計 <strong>10 個の有効な API キー</strong>を持てます。上限を超える作成は <code>409 {&quot;error&quot;:&quot;quota_exceeded&quot;,&quot;limit&quot;:10}</code> です。未使用のキーを失効させて枠を空けてください。時間によるリセットはありません。失効済みおよび期限切れのキーは一覧に残りますが上限には含まれません。</p>
 
 <h2 id="api-キーを一覧表示する">API キーを一覧表示する</h2>
 
-<p><code>GET /api/tokens</code> は有効および失効済みのキーを新しい順に返します。既定は 25 件で、<code>limit</code> は 1–100 です。レスポンスの <code>nextCursor</code> を次の <code>cursor</code> に指定し、<code>null</code> になるまで進みます。<code>lastUsedAt</code> はベストエフォートで通常は 1 時間に最大 1 回の更新なので、未使用の証明にはなりません。</p>
+<p><code>GET /api/tokens</code> は有効、期限切れ、失効済みのキーを新しい順に返します。既定は 25 件で、<code>limit</code> は 1–100 です。レスポンスの <code>nextCursor</code> を次の <code>cursor</code> に指定し、<code>null</code> になるまで進みます。各キーは Unix ミリ秒の <code>expiresAt</code> を含みます。コンソールは <strong>有効期限 (UTC)</strong> を表示します。7 日以内に期限を迎えるキーは <strong>まもなく期限切れ</strong> と表示されます。期限切れのキーは <strong>期限切れ</strong> のグループに入ります。<code>lastUsedAt</code> はベストエフォートで通常は 1 時間に最大 1 回の更新なので、未使用の証明にはなりません。</p>
 
 <h2 id="api-キーを失効させる">API キーを失効させる</h2>
 
@@ -267,7 +267,7 @@ Content-Type: application/json
 {}</code></pre></div>
 <p>最初の失効は本文なしの HTTP 204 です。不明、別アカウント、失効済みの ID は <code>404 not_found</code> です。確認済みの認証情報が最大 60 秒間有効な場合があり、すべての場所で即座に反映されるわけではありません。</p>
 
-<p>操作は<strong>作成</strong>と<strong>失効</strong>です。値やスコープを変更するには別のキーを作成し、呼び出し元を更新してから古いキーを失効させます。上限時にすべて使用中の場合、失効前に中断を計画してください。サービスを削除してもアカウントの API キーは失効しません。</p>
+<p>操作は<strong>作成</strong>と<strong>失効</strong>です。値、スコープ、有効期限を変更するには別のキーを作成し、呼び出し元を更新してから古いキーを失効させます。上限時にすべて使用中の場合、失効前に中断を計画してください。サービスを削除してもアカウントの API キーは失効しません。</p>
 
 <p>応答が失われた場合は一覧を更新してから操作してください。同じ名前でも紛失した値は復元できません。<a href="/ja/docs/cloud/limits-and-errors/">制限とエラー</a>と<a href="/ja/docs/cloud/authorization-api/">認可 API</a>も参照してください。</p>
 </div>

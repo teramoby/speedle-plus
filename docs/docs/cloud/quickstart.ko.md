@@ -9,7 +9,7 @@ Speedle Cloud는 오픈 소스 Speedle 엔진 기반의 호스팅 인가 서비�
 ## 문서
 
 - [빠른 시작](https://engine.speedle.io/ko/docs/cloud/getting-started/): 로그인한 뒤 콘솔에서 서비스와 정책, API 키를 생성하고 애플리케이션에서 인가를 확인합니다.
-- [API 키](https://engine.speedle.io/ko/docs/cloud/tokens/): 계정 자격 증명, 고정 범위, 생성과 폐기, 한 번의 비밀 표시와 페이지 조회.
+- [API 키](https://engine.speedle.io/ko/docs/cloud/tokens/): 계정 자격 증명, 고정 범위, 필수 만료 기간, 생성과 폐기, 한 번의 비밀 표시와 페이지 조회.
 - [인가 API](https://engine.speedle.io/ko/docs/cloud/authorization-api/): IsAllowed 요청, 호출자 신원, Node.js 22와 전송 제약.
 - [API 레퍼런스](https://engine.speedle.io/ko/docs/cloud/api-reference/): API key를 사용한 인가 확인과 정책 관리. 요청은 서버에서 보내며, 이 페이지는 읽기 전용입니다.
 - [제한과 오류](https://engine.speedle.io/ko/docs/cloud/limits-and-errors/): 계정 한도, 크기, 버스트, 일일 할당량, 오류 코드와 초기화 시각.
@@ -49,7 +49,7 @@ grant user alice from corp get /books
 
 ### API 키 생성
 
-[API 키](https://cloud.speedle.io/ko/tokens) 페이지를 열고 `books-app`과 같은 이름을 입력한 뒤 `ads` 범위(인가 확인)를 선택하고 **API 키 생성**을 누릅니다. 본인 인증을 요청받으면 인증을 완료한 뒤 양식을 다시 제출합니다. 비밀 값은 한 번만 표시되므로 표시될 때 복사하십시오. 현재 만료 기간은 선택할 수 없습니다. 더 이상 필요하지 않은 키는 폐기하십시오. [API 키 관리](https://engine.speedle.io/ko/docs/cloud/tokens/)를 참조하십시오.
+[API 키](https://cloud.speedle.io/ko/tokens) 페이지를 열고 `books-app`과 같은 이름을 입력한 뒤 `ads` 범위(인가 확인)를 선택하고 만료 기간을 고릅니다(콘솔 기본값은 3개월이며 UTC 시각을 표시합니다). 그런 다음 **API 키 생성**을 누릅니다. 본인 인증을 요청받으면 인증을 완료한 뒤 양식을 다시 제출합니다. 비밀 값은 한 번만 표시되므로 표시될 때 복사하십시오. 모든 키는 만료됩니다. 더 이상 필요하지 않으면 그 전에 폐기하십시오. [API 키 관리](https://engine.speedle.io/ko/docs/cloud/tokens/)를 참조하십시오.
 
 키를 서버의 비밀 저장소에 보관하고 `SPEEDLE_API_KEY` 환경 변수로 전달합니다. 브라우저 코드나 소스 저장소에 넣지 마십시오.
 
@@ -117,10 +117,10 @@ Origin: https://cloud.speedle.io
 X-SC-CSRF: 1
 Content-Type: application/json
 
-{"name":"books-app","scope":"ads"}
+{"name":"books-app","scope":"ads","expiresIn":"90d"}
 ```
 
-요청은 `name`과 선택적 `scope` (기본값 `ads`)만 받습니다. 서비스 선택, 만료일, 인증 증명은 보내지 마세요. 세션 쿠키와 CSRF 헤더가 필요하며 API 키로 세션을 대체할 수 없습니다.
+요청은 `name`, 필수 `expiresIn`, 선택적 `scope`(기본값 `ads`)를 받습니다. `expiresIn`은 `7d`, `30d`, `90d`, `180d`, `365d` 중 하나입니다(1주, 1개월, 3개월, 6개월, 1년). 하루는 24시간입니다. 콘솔의 **유효 기간**은 기본값이 3개월이며, 제출 전에 **예상 만료 시간 (UTC)**를 보여 줍니다. 만료되지 않는 키는 없습니다. 서비스 선택, `expiresAt`, 인증 증명은 보내지 마세요. `expiresIn`이 없거나 알 수 없거나 클라이언트가 `expiresAt`을 보내면 `400 invalid_request`입니다. 세션 쿠키와 CSRF 헤더가 필요하며 API 키로 세션을 대체할 수 없습니다.
 
 ### 비밀 값 보호
 
@@ -130,15 +130,15 @@ Content-Type: application/json
 spdl_<canonical uppercase ULID id>_<43 base62 digits>
 ```
 
-API 키는 폐기할 때까지 유효하며 자동 만료는 없습니다.
+모든 키는 만료됩니다. 응답의 `expiresAt`은 서버가 계산한 Unix 밀리초 시각입니다. 그 시각 이후 인가 확인과 정책 관리 호출은 `401 {"error":"api_key_expired"}`를 반환합니다. 새 키를 만드세요. 만료된 키를 다시 보내도 성공하지 않습니다. 만료 전에 폐기할 수 있습니다.
 
 사용 가능한 키가 아닌 형식 설명입니다. 즉시 서버의 비밀 저장소에 보관하세요. 브라우저 저장소, 프런트엔드 코드, URL, 소스 관리, 스크린샷, 로그에 넣지 마세요. 목록에는 메타데이터만 나오며 잃어버린 값은 복구할 수 없습니다.
 
-계정의 모든 범위를 합쳐 **활성 API 키 10개**까지 가능합니다. 추가 생성은 `409 {"error":"quota_exceeded","limit":10}`을 반환합니다. 사용하지 않는 키를 폐기하여 자리를 확보하세요. 시간이 지나도 한도는 초기화되지 않습니다. 폐기된 키는 목록에 남지만 한도에 포함되지 않습니다.
+계정의 모든 범위를 합쳐 **활성 API 키 10개**까지 가능합니다. 추가 생성은 `409 {"error":"quota_exceeded","limit":10}`을 반환합니다. 사용하지 않는 키를 폐기하여 자리를 확보하세요. 시간이 지나도 한도는 초기화되지 않습니다. 폐기된 키와 만료된 키는 목록에 남지만 한도에 포함되지 않습니다.
 
 ### API 키 목록
 
-`GET /api/tokens`는 활성 키와 폐기된 키를 최신순으로 반환합니다. 기본 페이지 크기는 25이며 `limit`은 1–100입니다. 응답의 `nextCursor`를 다음 `cursor`로 보내고 `null`까지 반복합니다. `lastUsedAt`은 최선형으로 보통 시간당 최대 한 번 갱신하므로 미사용의 증거가 아닙니다.
+`GET /api/tokens`는 활성, 만료, 폐기된 키를 최신순으로 반환합니다. 기본 페이지 크기는 25이며 `limit`은 1–100입니다. 응답의 `nextCursor`를 다음 `cursor`로 보내고 `null`까지 반복합니다. 각 키는 Unix 밀리초 `expiresAt`을 포함합니다. 콘솔은 **만료 시간 (UTC)**를 표시합니다. 7일 이내에 만료되는 키는 **곧 만료됨**으로 표시됩니다. 만료된 키는 **만료됨** 그룹에 나옵니다. `lastUsedAt`은 최선형으로 보통 시간당 최대 한 번 갱신하므로 미사용의 증거가 아닙니다.
 
 ### API 키 폐기
 
@@ -155,7 +155,7 @@ Content-Type: application/json
 
 첫 폐기는 본문 없는 HTTP 204입니다. 알 수 없거나 다른 계정의 ID, 이미 폐기된 ID는 `404 not_found`입니다. 이미 검증된 인증 정보는 최대 60초간 유효할 수 있으므로 모든 위치에 즉시 반영되지는 않습니다.
 
-지원 작업은 **생성**과 **폐기**입니다. 값이나 범위를 바꾸려면 새 키를 만들고 호출자를 변경한 다음 이전 키를 폐기하세요. 한도에 도달했고 모든 키가 사용 중이면 폐기 전에 중단을 계획하세요. 서비스를 삭제해도 계정 API 키는 폐기되지 않습니다.
+지원 작업은 **생성**과 **폐기**입니다. 값, 범위, 만료 기간을 바꾸려면 새 키를 만들고 호출자를 변경한 다음 이전 키를 폐기하세요. 한도에 도달했고 모든 키가 사용 중이면 폐기 전에 중단을 계획하세요. 서비스를 삭제해도 계정 API 키는 폐기되지 않습니다.
 
 응답이 유실되면 목록을 새로 조회한 뒤 조치하세요. 이름이 같아도 잃어버린 비밀 값을 복구할 수 없습니다. [제한과 오류](https://engine.speedle.io/ko/docs/cloud/limits-and-errors/) 및 [인가 API](https://engine.speedle.io/ko/docs/cloud/authorization-api/)를 참조하세요.
 
@@ -253,7 +253,7 @@ POST를 사용하세요. 다른 메서드는 `405 method_not_allowed` 또는 그
 | 계정 서비스 | 100개 | `409 quota_exceeded`. 미사용 서비스 삭제. 시간에 따른 초기화 없음. |
 | 모든 서비스의 인가 정책과 역할 정책 합계 | 계정당 200개 | `409 quota_exceeded`. 정책 삭제. 시간에 따른 초기화 없음. |
 | 정책 하나의 전체 SPDL 소스 | UTF-8 1,024바이트 | 콘솔 정책 쓰기는 `400 invalid_request`. 소스 축소. 문자 수가 아닌 바이트 수. 시간에 따른 초기화 없음. |
-| 모든 범위의 활성 API 키 합계 | 계정당 10개 | `409 quota_exceeded`, `limit: 10`. 미사용 키 폐기. 시간에 따른 초기화 없음. 폐기 이력은 제외. |
+| 모든 범위의 활성 API 키 합계 | 계정당 10개 | `409 quota_exceeded`, `limit: 10`. 미사용 키 폐기. 시간에 따른 초기화 없음. 폐기 및 만료된 키는 제외. |
 | 정책 이름 / API 키 이름 | Unicode 코드 포인트 128개 / 앞뒤 공백 제외 1–128자 | `400 invalid_request`. 이름 수정. 시간에 따른 초기화 없음. |
 | 과금 대상 정책 관리 및 인가 호출 | 계정당 UTC 일일 10,000회 | `429 daily_quota_exceeded`. 00:00 UTC 초기화. `Retry-After` 준수. |
 | API 키 단기 버스트 | Cloud 위치별 키당 분당 약 600회 | `429 rate_limited`, `Retry-After: 60`. 기다린 뒤 재시도. 처리량 보장이나 추가 일일 할당량이 아님. |
@@ -261,7 +261,7 @@ POST를 사용하세요. 다른 메서드는 `405 method_not_allowed` 또는 그
 | 원자적 JSON 가져오기 본문 (`POST /api/service/import`만) | 5,100,000바이트 | `413 request_too_large`. 데이터 축소. 정책과 계정 한도도 적용. 시간에 따른 초기화 없음. |
 | 입력 속성 | 50개, 정규 JSON의 UTF-8 16,384바이트 | `400 SPDL-0004`. 속성 수나 크기 축소. 시간에 따른 초기화 없음. |
 
-범위, 생성, 폐기는 [API 키](https://engine.speedle.io/ko/docs/cloud/tokens/)를 참조하세요.
+범위, 만료 기간, 생성, 폐기는 [API 키](https://engine.speedle.io/ko/docs/cloud/tokens/)를 참조하세요.
 
 ### 일일 할당량
 
@@ -279,6 +279,7 @@ Cloud 자체 장애는 계정당 UTC 일일 최대 1,000회까지 할당량을 �
 | --- | --- |
 | `400 invalid_request` 또는 Speedle 오류 | 요청 수정. 그대로 재시도하지 않음. |
 | `401 unauthorized` | API 키나 세션 확인. 세션 쿠키만으로 ADS 호출 불가. |
+| `401 api_key_expired` | API 키가 만료 시각에 도달했거나 지났습니다. 새 키를 만드세요. 이 키를 다시 시도해도 성공하지 않습니다. |
 | `403 reauth_required` | 키 생성 전 연결된 제공자로 재인증. |
 | `403 insufficient_scope` | 필요한 범위의 키 사용. |
 | `403 management_scope_disabled` | 로그인이 닫힌 동안 관리 범위 발급 불가. |

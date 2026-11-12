@@ -11,7 +11,7 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
     <meta name="viewport" content="width=device-width, initial-scale=1"><title>Speedle Cloud API keys · Speedle Engine</title>
-<meta name="description" content="Create, protect, list and revoke account API keys and choose a fixed scope.">
+<meta name="description" content="Create, protect, list and revoke account API keys and choose a fixed scope and expiry.">
 <meta name="generator" content="Hugo 0.48" />
 <link href="https://engine.speedle.io/index.xml" rel="alternate" type="application/rss+xml">
 <link rel="canonical" href="https://engine.speedle.io/docs/cloud/tokens/">
@@ -26,7 +26,7 @@
 <meta property="article:modified_time" content="2026-11-12T00:00:00&#43;08:00">
 <meta property="og:site_name" content="Speedle Engine">
 <meta property="og:title" content="Speedle Cloud API keys · Speedle Engine">
-<meta property="og:description" content="Create, protect, list and revoke account API keys and choose a fixed scope.">
+<meta property="og:description" content="Create, protect, list and revoke account API keys and choose a fixed scope and expiry.">
 <meta property="og:url" content="https://engine.speedle.io/docs/cloud/tokens/">
 <meta property="og:image" content="https://engine.speedle.io/img/social/engine-en.png">
 <meta property="og:image:width" content="1200">
@@ -35,11 +35,11 @@
 <meta property="og:image:alt" content="Speedle Engine — Fast. Simple. Access control">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Speedle Cloud API keys · Speedle Engine">
-<meta name="twitter:description" content="Create, protect, list and revoke account API keys and choose a fixed scope.">
+<meta name="twitter:description" content="Create, protect, list and revoke account API keys and choose a fixed scope and expiry.">
 <meta name="twitter:image" content="https://engine.speedle.io/img/social/engine-en.png">
 <meta name="twitter:image:alt" content="Speedle Engine — Fast. Simple. Access control">
 
-<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/docs/cloud/tokens/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-12T00:00:00+08:00","description":"Create, protect, list and revoke account API keys and choose a fixed scope.","headline":"Speedle Cloud API keys","image":"https://engine.speedle.io/img/social/engine-en.png","inLanguage":"en","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/docs/cloud/tokens/","@type":"WebPage"},"name":"Speedle Cloud API keys","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/docs/cloud/tokens/"}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/docs/cloud/tokens/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-12T00:00:00+08:00","description":"Create, protect, list and revoke account API keys and choose a fixed scope and expiry.","headline":"Speedle Cloud API keys","image":"https://engine.speedle.io/img/social/engine-en.png","inLanguage":"en","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/docs/cloud/tokens/","@type":"WebPage"},"name":"Speedle Cloud API keys","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/docs/cloud/tokens/"}</script>
 <script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/docs/cloud/tokens/#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://engine.speedle.io/","name":"Home","position":1},{"@type":"ListItem","item":"https://engine.speedle.io/docs/","name":"Documentation","position":2},{"@type":"ListItem","item":"https://engine.speedle.io/docs/cloud/","name":"Speedle Cloud","position":3},{"@type":"ListItem","item":"https://engine.speedle.io/docs/cloud/tokens/","name":"Speedle Cloud API keys","position":4}]}</script><link href="/css/docs.css" rel="stylesheet" type="text/css">
 
 
@@ -239,22 +239,22 @@ Origin: https://cloud.speedle.io
 X-SC-CSRF: 1
 Content-Type: application/json
 
-{&#34;name&#34;:&#34;books-app&#34;,&#34;scope&#34;:&#34;ads&#34;}</code></pre></div>
-<p>The request accepts <code>name</code> and optional <code>scope</code> (default <code>ads</code>). Do not send a service selector, expiry or authentication proofs. Cookie authentication and CSRF headers are required; an API key cannot replace the session.</p>
+{&#34;name&#34;:&#34;books-app&#34;,&#34;scope&#34;:&#34;ads&#34;,&#34;expiresIn&#34;:&#34;90d&#34;}</code></pre></div>
+<p>The request accepts <code>name</code>, required <code>expiresIn</code> and optional <code>scope</code> (default <code>ads</code>). <code>expiresIn</code> is one of <code>7d</code>, <code>30d</code>, <code>90d</code>, <code>180d</code> or <code>365d</code> (1 week, 1 month, 3 months, 6 months or 1 year). Each day is 24 hours. In the console, <strong>Expires after</strong> defaults to 3 months and <strong>Preview expiry (UTC)</strong> shows the resulting time before you submit. There is no non-expiring key. Do not send a service selector, <code>expiresAt</code> or authentication proofs. A missing or unknown <code>expiresIn</code>, or a client-supplied <code>expiresAt</code>, returns <code>400 invalid_request</code>. Cookie authentication and CSRF headers are required; an API key cannot replace the session.</p>
 
 <h2 id="protect-the-secret">Protect the secret</h2>
 
 <p>Creation returns HTTP 201. The response&rsquo;s <code>token</code> field contains the API key secret and is shown only once:</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">spdl_&lt;canonical uppercase ULID id&gt;_&lt;43 base62 digits&gt;</code></pre></div>
-<p>An API key stays valid until you revoke it; it has no automatic expiry.</p>
+<p>Every key expires at <code>expiresAt</code>, which the server computes and returns in Unix milliseconds. At or after that instant, authorization and policy-management calls return <code>401 {&quot;error&quot;:&quot;api_key_expired&quot;}</code>. Create a replacement key. Retrying the expired key does not succeed. You can revoke a key before it expires.</p>
 
 <p>This describes the format, not a usable key. Save the value immediately in a server-side secret store. Never put it in browser storage, frontend code, URLs, source control, screenshots or logs. Listing keys returns metadata only; a lost secret cannot be recovered.</p>
 
-<p>Your account can have <strong>10 active API keys across all scopes</strong>. Creating another returns <code>409 {&quot;error&quot;:&quot;quota_exceeded&quot;,&quot;limit&quot;:10}</code>. Revoke an unused key to free a slot; the limit does not reset with time. Revoked keys remain listed and do not count toward the cap.</p>
+<p>Your account can have <strong>10 active API keys across all scopes</strong>. Creating another returns <code>409 {&quot;error&quot;:&quot;quota_exceeded&quot;,&quot;limit&quot;:10}</code>. Revoke an unused key to free a slot; the limit does not reset with time. Revoked and expired keys remain listed and do not count toward the cap.</p>
 
 <h2 id="list-api-keys">List API keys</h2>
 
-<p><code>GET /api/tokens</code> lists active and revoked keys, newest first. The default page size is 25; <code>limit</code> accepts 1–100. Pass the last response&rsquo;s <code>nextCursor</code> as <code>cursor</code> until <code>nextCursor</code> is <code>null</code>. <code>lastUsedAt</code> is best-effort, normally updated at most hourly; it does not prove that a key is unused.</p>
+<p><code>GET /api/tokens</code> lists active, expired and revoked keys, newest first. The default page size is 25; <code>limit</code> accepts 1–100. Pass the last response&rsquo;s <code>nextCursor</code> as <code>cursor</code> until <code>nextCursor</code> is <code>null</code>. Each key includes <code>expiresAt</code> in Unix milliseconds. The console shows <strong>Expires (UTC)</strong>. A key that expires within 7 days is marked <strong>Expires soon</strong>. Expired keys appear in an <strong>Expired</strong> group. <code>lastUsedAt</code> is best-effort, normally updated at most hourly; it does not prove that a key is unused.</p>
 
 <h2 id="revoke-an-api-key">Revoke an API key</h2>
 
@@ -267,7 +267,7 @@ Content-Type: application/json
 {}</code></pre></div>
 <p>The first revocation returns an empty HTTP 204. Unknown, other-account or already-revoked IDs return <code>404 not_found</code>. Previously verified requests may continue using a key for up to 60 seconds; revocation is not instantaneous everywhere.</p>
 
-<p>The available actions are <strong>Create</strong> and <strong>Revoke</strong>. To change a secret or scope, create another key, update callers and revoke the old key. If all active keys are in use at the cap, plan for interruption before revoking one. Deleting a service does not revoke account API keys.</p>
+<p>The available actions are <strong>Create</strong> and <strong>Revoke</strong>. To change a secret, scope or expiry, create another key, update callers and revoke the old key. If all active keys are in use at the cap, plan for interruption before revoking one. Deleting a service does not revoke account API keys.</p>
 
 <p>If a creation or revocation response is lost, refresh the list before acting again. A matching name cannot recover a lost secret. See <a href="/docs/cloud/limits-and-errors/">Limits and errors</a> and the <a href="/docs/cloud/authorization-api/">Authorization API</a>.</p>
 </div>

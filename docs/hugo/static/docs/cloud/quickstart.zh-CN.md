@@ -9,7 +9,7 @@ Speedle Cloud 是基于开源 Speedle 引擎的托管授权服务。你可以管
 ## 文档导航
 
 - [快速入门](https://engine.speedle.io/zh/docs/cloud/getting-started/)：登录控制台，创建服务和策略，创建 API 密钥，从应用发起授权检查。
-- [API 密钥](https://engine.speedle.io/zh/docs/cloud/tokens/): 账号级凭据、固定权限范围、创建与撤销、一次性展示和分页。
+- [API 密钥](https://engine.speedle.io/zh/docs/cloud/tokens/): 账号级凭据、固定权限范围、必须选择有效期、创建与撤销、一次性展示和分页。
 - [授权 API](https://engine.speedle.io/zh/docs/cloud/authorization-api/): IsAllowed 请求、调用方身份、Node.js 22 和传输限制。
 - [API 参考](https://engine.speedle.io/zh/docs/cloud/api-reference/)：使用 API key 进行授权检查和策略管理。请求从你的服务器发出；本页只读。
 - [限额与错误](https://engine.speedle.io/zh/docs/cloud/limits-and-errors/): 账号上限、大小限制、突发限流、每日额度、错误代码和重置时间。
@@ -49,7 +49,7 @@ grant user alice from corp get /books
 
 ### 创建 API 密钥
 
-打开 [API 密钥](https://cloud.speedle.io/zh-CN/tokens)页面，输入名称（如 `books-app`），选择 `ads` 权限范围（授权检查），然后选择 **创建 API 密钥**。如需验证身份，请完成验证后再次提交表单。复制仅展示一次的密钥值。目前不支持选择密钥有效期，不再使用时请撤销。详见 [API 密钥管理](https://engine.speedle.io/zh/docs/cloud/tokens/)。
+打开 [API 密钥](https://cloud.speedle.io/zh-CN/tokens)页面，输入名称（如 `books-app`），选择 `ads` 权限范围（授权检查），选择有效期（控制台默认 3 个月，并显示 UTC 时间），然后选择 **创建 API 密钥**。如需验证身份，请完成验证后再次提交表单。复制仅展示一次的密钥值。每个密钥都会到期；不再使用时请提前撤销。详见 [API 密钥管理](https://engine.speedle.io/zh/docs/cloud/tokens/)。
 
 将密钥保存在服务端的密钥存储中，通过环境变量 `SPEEDLE_API_KEY` 提供给应用，不要写入浏览器代码或源码仓库。
 
@@ -117,10 +117,10 @@ Origin: https://cloud.speedle.io
 X-SC-CSRF: 1
 Content-Type: application/json
 
-{"name":"books-app","scope":"ads"}
+{"name":"books-app","scope":"ads","expiresIn":"90d"}
 ```
 
-请求只接受 `name` 和可选的 `scope`（默认 `ads`）。不要发送服务选择、到期时间或认证证明。请求需要会话 cookie 和 CSRF 请求头；API 密钥不能代替会话。
+请求接受 `name`、必填的 `expiresIn` 和可选的 `scope`（默认 `ads`）。`expiresIn` 只能是 `7d`、`30d`、`90d`、`180d` 或 `365d`，对应 1 周、1 个月、3 个月、6 个月或 1 年。一天按 24 小时计算。控制台的 **有效期** 默认是 3 个月，提交前显示 **预计到期时间（UTC）**。没有永不过期的密钥。不要发送服务选择、`expiresAt` 或认证证明。缺少或无法识别的 `expiresIn`，以及客户端自行提供的 `expiresAt`，都会返回 `400 invalid_request`。请求需要会话 cookie 和 CSRF 请求头；API 密钥不能代替会话。
 
 ### 保护密钥值
 
@@ -130,15 +130,15 @@ Content-Type: application/json
 spdl_<canonical uppercase ULID id>_<43 base62 digits>
 ```
 
-API 密钥在撤销前一直有效，不会自动过期。
+每个密钥都会到期。响应包含服务端计算的 `expiresAt`（Unix 毫秒）。到达该时刻或之后，授权检查和策略管理调用返回 `401 {"error":"api_key_expired"}`。请创建新密钥；再次发送已到期的密钥不会成功。不再使用时可以提前撤销。
 
 这只是格式说明，不能作为实际密钥使用。请立即保存到服务端的密钥存储中。不要放入浏览器存储、前端代码、URL、源码、截图或日志。列表只返回元数据，丢失的密钥值无法找回。
 
-每个账号所有权限范围合计最多 **10 个有效 API 密钥**。继续创建会返回 `409 {"error":"quota_exceeded","limit":10}`。撤销不再使用的密钥可释放名额；名额不会随时间重置。已撤销的密钥仍保留在列表中，不占有效名额。
+每个账号所有权限范围合计最多 **10 个有效 API 密钥**。继续创建会返回 `409 {"error":"quota_exceeded","limit":10}`。撤销不再使用的密钥可释放名额；名额不会随时间重置。已撤销和已到期的密钥仍保留在列表中，不占有效名额。
 
 ### 列出 API 密钥
 
-`GET /api/tokens` 按最新在前列出有效和已撤销的密钥。默认每页 25 条，`limit` 可设为 1–100。将上次响应的 `nextCursor` 作为 `cursor` 继续请求，直到 `nextCursor` 为 `null`。`lastUsedAt` 尽力更新，通常每小时最多一次，不能据此断定密钥已无人使用。
+`GET /api/tokens` 按最新在前列出有效、已到期和已撤销的密钥。默认每页 25 条，`limit` 可设为 1–100。将上次响应的 `nextCursor` 作为 `cursor` 继续请求，直到 `nextCursor` 为 `null`。每条记录都包含 Unix 毫秒 `expiresAt`。控制台显示 **到期时间（UTC）**。7 天内到期的密钥标为 **即将到期**。已到期的密钥列在 **已到期** 分组中。`lastUsedAt` 尽力更新，通常每小时最多一次，不能据此断定密钥已无人使用。
 
 ### 撤销 API 密钥
 
@@ -155,7 +155,7 @@ Content-Type: application/json
 
 首次撤销返回空的 HTTP 204。ID 未知、不属于当前账号或已撤销时返回 `404 not_found`。先前已通过验证的请求仍可能在最长 60 秒内使用该密钥，因此撤销不会在所有位置立即生效。
 
-可用操作是 **创建** 和 **撤销**。如需更换密钥值或权限范围，请创建另一个密钥，更新调用方后撤销旧密钥。达到上限且所有密钥仍在使用时，撤销前需安排调用中断。删除服务不会撤销账号的 API 密钥。
+可用操作是 **创建** 和 **撤销**。如需更换密钥值、权限范围或有效期，请创建另一个密钥，更新调用方后撤销旧密钥。达到上限且所有密钥仍在使用时，撤销前需安排调用中断。删除服务不会撤销账号的 API 密钥。
 
 创建或撤销的响应丢失时，先刷新列表再操作。同名记录不能找回丢失的密钥值。参见[限额与错误](https://engine.speedle.io/zh/docs/cloud/limits-and-errors/)和[授权 API](https://engine.speedle.io/zh/docs/cloud/authorization-api/)。
 
@@ -269,7 +269,7 @@ ADS 请使用 POST。非 POST 请求可能被公开边缘规则拦截并返回 C
 | 每个账号的服务 | 100 个 | `409 quota_exceeded`；删除不用的服务。不会定时重置。 |
 | 所有服务的授权策略与角色策略合计 | 每账号 200 条 | `409 quota_exceeded`；删除策略。不会定时重置。 |
 | 单条策略的完整 SPDL 源文本 | 1,024 个 UTF-8 字节 | 控制台策略写入返回 `400 invalid_request`；缩短源文本。按字节计数，不是按字符计数。不会定时重置。 |
-| 所有权限范围的有效 API 密钥合计 | 每账号 10 个 | `409 quota_exceeded`，带 `limit: 10`；撤销不用的密钥。不会定时重置；已撤销历史不占名额。 |
+| 所有权限范围的有效 API 密钥合计 | 每账号 10 个 | `409 quota_exceeded`，带 `limit: 10`；撤销不用的密钥。不会定时重置；已撤销和已到期的记录不占名额。 |
 | 策略名称 / API 密钥名称 | 128 个 Unicode 码点 / 去除首尾空白后 1–128 个字符 | `400 invalid_request`；缩短或修正名称。不会定时重置。 |
 | 策略管理与授权调用的计费次数 | 每账号每 UTC 日 10,000 次 | `429 daily_quota_exceeded`；00:00 UTC 重置。遵守 `Retry-After`。 |
 | API 密钥请求的短时突发 | 每个 Cloud 位置、每个密钥每分钟约 600 次 | `429 rate_limited`，带 `Retry-After: 60`；等待后重试。这是短时限制，不保证吞吐量，也不是额外的每日额度。 |
@@ -277,7 +277,7 @@ ADS 请使用 POST。非 POST 请求可能被公开边缘规则拦截并返回 C
 | 原子 JSON 导入正文（仅 `POST /api/service/import`） | 5,100,000 字节 | `413 request_too_large`；缩小导入内容。仍须满足单条策略和账号限额。不会定时重置。 |
 | 输入属性 | 50 个属性；规范化 JSON 的 UTF-8 长度为 16,384 字节 | `400 SPDL-0004`；减少属性或缩小属性值。不会定时重置。 |
 
-权限范围、创建和撤销规则见 [API 密钥](https://engine.speedle.io/zh/docs/cloud/tokens/)。
+权限范围、有效期、创建和撤销规则见 [API 密钥](https://engine.speedle.io/zh/docs/cloud/tokens/)。
 
 ### 每日额度
 
@@ -295,6 +295,7 @@ Cloud 自身故障可能退还额度，每账号每 UTC 日最多退还 1,000 �
 | --- | --- |
 | `400 invalid_request` 或 Speedle 错误消息 | 修正请求，不要原样重试。 |
 | `401 unauthorized` | 检查 API 密钥或登录会话。仅有会话 cookie 不能调用 ADS。 |
+| `401 api_key_expired` | API 密钥已到或已过到期时间。请创建新密钥；重试该密钥不会成功。 |
 | `403 reauth_required` | 创建密钥前，通过已关联的身份提供方重新认证。 |
 | `403 insufficient_scope` | 使用具有所需权限范围的密钥。 |
 | `403 management_scope_disabled` | 登录关闭时不能签发管理权限的密钥。 |

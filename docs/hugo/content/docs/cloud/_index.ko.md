@@ -19,7 +19,7 @@ Speedle Cloud는 오픈 소스 Speedle 엔진 기반의 호스팅 인가 서비�
 ## 문서
 
 - [빠른 시작](/ko/docs/cloud/getting-started/): 로그인한 뒤 콘솔에서 서비스와 정책, API 키를 생성하고 애플리케이션에서 인가를 확인합니다.
-- [API 키](/ko/docs/cloud/tokens/): 계정 자격 증명, 고정 범위, 생성과 폐기, 한 번의 비밀 표시와 페이지 조회.
+- [API 키](/ko/docs/cloud/tokens/): 계정 자격 증명, 고정 범위, 필수 만료 기간, 생성과 폐기, 한 번의 비밀 표시와 페이지 조회.
 - [인가 API](/ko/docs/cloud/authorization-api/): IsAllowed 요청, 호출자 신원, Node.js 22와 전송 제약.
 - [API 레퍼런스](/ko/docs/cloud/api-reference/): API key를 사용한 인가 확인과 정책 관리. 요청은 서버에서 보내며, 이 페이지는 읽기 전용입니다.
 - [제한과 오류](/ko/docs/cloud/limits-and-errors/): 계정 한도, 크기, 버스트, 일일 할당량, 오류 코드와 초기화 시각.

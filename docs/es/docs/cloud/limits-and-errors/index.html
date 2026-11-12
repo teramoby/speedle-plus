@@ -232,7 +232,7 @@
 <tr>
 <td>Claves API activas entre todos los ámbitos</td>
 <td>10 por cuenta</td>
-<td><code>409 quota_exceeded</code> con <code>limit: 10</code>; revocar una clave sin uso. Sin restablecimiento temporal; el historial revocado no cuenta.</td>
+<td><code>409 quota_exceeded</code> con <code>limit: 10</code>; revocar una clave sin uso. Sin restablecimiento temporal; las claves revocadas y caducadas no cuentan.</td>
 </tr>
 
 <tr>
@@ -273,7 +273,7 @@
 </tbody>
 </table>
 
-<p>Consulte <a href="/es/docs/cloud/tokens/">Claves API</a> para ámbitos, creación y revocación.</p>
+<p>Consulte <a href="/es/docs/cloud/tokens/">Claves API</a> para ámbitos, caducidad, creación y revocación.</p>
 
 <h2 id="cuota-diaria">Cuota diaria</h2>
 
@@ -304,6 +304,11 @@
 <tr>
 <td><code>401 unauthorized</code></td>
 <td>Comprobar la clave API o sesión. Una cookie de sesión sola no autoriza ADS.</td>
+</tr>
+
+<tr>
+<td><code>401 api_key_expired</code></td>
+<td>La clave API ha alcanzado o superado su caducidad. Cree un reemplazo; reintentar esta clave no tendrá éxito.</td>
 </tr>
 
 <tr>

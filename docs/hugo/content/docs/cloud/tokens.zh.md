@@ -1,7 +1,7 @@
 +++
 title = "Speedle Cloud API 密钥"
 linkTitle = "API 密钥"
-description = "创建、保护、列出和撤销账号级 API 密钥，选择固定权限范围。"
+description = "创建、保护、列出和撤销账号级 API 密钥，选择固定权限范围和有效期。"
 weight = 20
 draft = false
 toc = true
@@ -36,10 +36,10 @@ Origin: https://cloud.speedle.io
 X-SC-CSRF: 1
 Content-Type: application/json
 
-{"name":"books-app","scope":"ads"}
+{"name":"books-app","scope":"ads","expiresIn":"90d"}
 ```
 
-请求只接受 `name` 和可选的 `scope`（默认 `ads`）。不要发送服务选择、到期时间或认证证明。请求需要会话 cookie 和 CSRF 请求头；API 密钥不能代替会话。
+请求接受 `name`、必填的 `expiresIn` 和可选的 `scope`（默认 `ads`）。`expiresIn` 只能是 `7d`、`30d`、`90d`、`180d` 或 `365d`，对应 1 周、1 个月、3 个月、6 个月或 1 年。一天按 24 小时计算。控制台的 **有效期** 默认是 3 个月，提交前显示 **预计到期时间（UTC）**。没有永不过期的密钥。不要发送服务选择、`expiresAt` 或认证证明。缺少或无法识别的 `expiresIn`，以及客户端自行提供的 `expiresAt`，都会返回 `400 invalid_request`。请求需要会话 cookie 和 CSRF 请求头；API 密钥不能代替会话。
 
 ## 保护密钥值
 
@@ -49,15 +49,15 @@ Content-Type: application/json
 spdl_<canonical uppercase ULID id>_<43 base62 digits>
 ```
 
-API 密钥在撤销前一直有效，不会自动过期。
+每个密钥都会到期。响应包含服务端计算的 `expiresAt`（Unix 毫秒）。到达该时刻或之后，授权检查和策略管理调用返回 `401 {"error":"api_key_expired"}`。请创建新密钥；再次发送已到期的密钥不会成功。不再使用时可以提前撤销。
 
 这只是格式说明，不能作为实际密钥使用。请立即保存到服务端的密钥存储中。不要放入浏览器存储、前端代码、URL、源码、截图或日志。列表只返回元数据，丢失的密钥值无法找回。
 
-每个账号所有权限范围合计最多 **10 个有效 API 密钥**。继续创建会返回 `409 {"error":"quota_exceeded","limit":10}`。撤销不再使用的密钥可释放名额；名额不会随时间重置。已撤销的密钥仍保留在列表中，不占有效名额。
+每个账号所有权限范围合计最多 **10 个有效 API 密钥**。继续创建会返回 `409 {"error":"quota_exceeded","limit":10}`。撤销不再使用的密钥可释放名额；名额不会随时间重置。已撤销和已到期的密钥仍保留在列表中，不占有效名额。
 
 ## 列出 API 密钥
 
-`GET /api/tokens` 按最新在前列出有效和已撤销的密钥。默认每页 25 条，`limit` 可设为 1–100。将上次响应的 `nextCursor` 作为 `cursor` 继续请求，直到 `nextCursor` 为 `null`。`lastUsedAt` 尽力更新，通常每小时最多一次，不能据此断定密钥已无人使用。
+`GET /api/tokens` 按最新在前列出有效、已到期和已撤销的密钥。默认每页 25 条，`limit` 可设为 1–100。将上次响应的 `nextCursor` 作为 `cursor` 继续请求，直到 `nextCursor` 为 `null`。每条记录都包含 Unix 毫秒 `expiresAt`。控制台显示 **到期时间（UTC）**。7 天内到期的密钥标为 **即将到期**。已到期的密钥列在 **已到期** 分组中。`lastUsedAt` 尽力更新，通常每小时最多一次，不能据此断定密钥已无人使用。
 
 ## 撤销 API 密钥
 
@@ -74,6 +74,6 @@ Content-Type: application/json
 
 首次撤销返回空的 HTTP 204。ID 未知、不属于当前账号或已撤销时返回 `404 not_found`。先前已通过验证的请求仍可能在最长 60 秒内使用该密钥，因此撤销不会在所有位置立即生效。
 
-可用操作是 **创建** 和 **撤销**。如需更换密钥值或权限范围，请创建另一个密钥，更新调用方后撤销旧密钥。达到上限且所有密钥仍在使用时，撤销前需安排调用中断。删除服务不会撤销账号的 API 密钥。
+可用操作是 **创建** 和 **撤销**。如需更换密钥值、权限范围或有效期，请创建另一个密钥，更新调用方后撤销旧密钥。达到上限且所有密钥仍在使用时，撤销前需安排调用中断。删除服务不会撤销账号的 API 密钥。
 
 创建或撤销的响应丢失时，先刷新列表再操作。同名记录不能找回丢失的密钥值。参见[限额与错误](/zh/docs/cloud/limits-and-errors/)和[授权 API](/zh/docs/cloud/authorization-api/)。

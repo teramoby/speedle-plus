@@ -112,7 +112,7 @@ ANNOTATIONS = {
     "docs/deployment/homebrew": "Install speedle-spctl, speedle-pms and speedle-ads with Homebrew and run them on 127.0.0.1 with one shared policy file.",
     "docs/cloud/_index": "Hosted authorization for developers: sign-in and account management, SPDL policies, account API keys, the authorization API, limits, errors and downloads.",
     "docs/cloud/getting-started": "The console workflow: sign-in and account settings, a service, SPDL policies, session management requests, Playground tests and policy export.",
-    "docs/cloud/tokens": "Create, protect, list and revoke account API keys with fixed scopes, with one-time secret disclosure and recent authentication.",
+    "docs/cloud/tokens": "Create, protect, list and revoke account API keys with a required expiry and a fixed scope, with one-time secret disclosure and recent authentication.",
     "docs/cloud/authorization-api": "The published ADS IsAllowed request and response contract, with caller identity, a Node.js 22 example, policy snapshots and transport constraints.",
     "docs/cloud/api-reference": "Reference for the Speedle Cloud API: authorization checks and policy management with an API key. Requests run from your server; this page is read-only.",
     "docs/cloud/limits-and-errors": "Account quotas, request limits, flat JSON errors, rate and quota headers, daily accounting and retry guidance.",

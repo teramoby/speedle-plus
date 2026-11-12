@@ -1,7 +1,7 @@
 +++
 title = "Speedle Cloud API keys"
 linkTitle = "API keys"
-description = "Create, protect, list and revoke account API keys and choose a fixed scope."
+description = "Create, protect, list and revoke account API keys and choose a fixed scope and expiry."
 weight = 20
 draft = false
 toc = true
@@ -36,10 +36,10 @@ Origin: https://cloud.speedle.io
 X-SC-CSRF: 1
 Content-Type: application/json
 
-{"name":"books-app","scope":"ads"}
+{"name":"books-app","scope":"ads","expiresIn":"90d"}
 ```
 
-The request accepts `name` and optional `scope` (default `ads`). Do not send a service selector, expiry or authentication proofs. Cookie authentication and CSRF headers are required; an API key cannot replace the session.
+The request accepts `name`, required `expiresIn` and optional `scope` (default `ads`). `expiresIn` is one of `7d`, `30d`, `90d`, `180d` or `365d` (1 week, 1 month, 3 months, 6 months or 1 year). Each day is 24 hours. In the console, **Expires after** defaults to 3 months and **Preview expiry (UTC)** shows the resulting time before you submit. There is no non-expiring key. Do not send a service selector, `expiresAt` or authentication proofs. A missing or unknown `expiresIn`, or a client-supplied `expiresAt`, returns `400 invalid_request`. Cookie authentication and CSRF headers are required; an API key cannot replace the session.
 
 ## Protect the secret
 
@@ -49,15 +49,15 @@ Creation returns HTTP 201. The response's `token` field contains the API key sec
 spdl_<canonical uppercase ULID id>_<43 base62 digits>
 ```
 
-An API key stays valid until you revoke it; it has no automatic expiry.
+Every key expires at `expiresAt`, which the server computes and returns in Unix milliseconds. At or after that instant, authorization and policy-management calls return `401 {"error":"api_key_expired"}`. Create a replacement key. Retrying the expired key does not succeed. You can revoke a key before it expires.
 
 This describes the format, not a usable key. Save the value immediately in a server-side secret store. Never put it in browser storage, frontend code, URLs, source control, screenshots or logs. Listing keys returns metadata only; a lost secret cannot be recovered.
 
-Your account can have **10 active API keys across all scopes**. Creating another returns `409 {"error":"quota_exceeded","limit":10}`. Revoke an unused key to free a slot; the limit does not reset with time. Revoked keys remain listed and do not count toward the cap.
+Your account can have **10 active API keys across all scopes**. Creating another returns `409 {"error":"quota_exceeded","limit":10}`. Revoke an unused key to free a slot; the limit does not reset with time. Revoked and expired keys remain listed and do not count toward the cap.
 
 ## List API keys
 
-`GET /api/tokens` lists active and revoked keys, newest first. The default page size is 25; `limit` accepts 1–100. Pass the last response's `nextCursor` as `cursor` until `nextCursor` is `null`. `lastUsedAt` is best-effort, normally updated at most hourly; it does not prove that a key is unused.
+`GET /api/tokens` lists active, expired and revoked keys, newest first. The default page size is 25; `limit` accepts 1–100. Pass the last response's `nextCursor` as `cursor` until `nextCursor` is `null`. Each key includes `expiresAt` in Unix milliseconds. The console shows **Expires (UTC)**. A key that expires within 7 days is marked **Expires soon**. Expired keys appear in an **Expired** group. `lastUsedAt` is best-effort, normally updated at most hourly; it does not prove that a key is unused.
 
 ## Revoke an API key
 
@@ -74,6 +74,6 @@ Content-Type: application/json
 
 The first revocation returns an empty HTTP 204. Unknown, other-account or already-revoked IDs return `404 not_found`. Previously verified requests may continue using a key for up to 60 seconds; revocation is not instantaneous everywhere.
 
-The available actions are **Create** and **Revoke**. To change a secret or scope, create another key, update callers and revoke the old key. If all active keys are in use at the cap, plan for interruption before revoking one. Deleting a service does not revoke account API keys.
+The available actions are **Create** and **Revoke**. To change a secret, scope or expiry, create another key, update callers and revoke the old key. If all active keys are in use at the cap, plan for interruption before revoking one. Deleting a service does not revoke account API keys.
 
 If a creation or revocation response is lost, refresh the list before acting again. A matching name cannot recover a lost secret. See [Limits and errors](/docs/cloud/limits-and-errors/) and the [Authorization API](/docs/cloud/authorization-api/).

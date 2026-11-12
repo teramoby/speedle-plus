@@ -213,7 +213,7 @@
 
 <h2 id="创建-api-密钥">创建 API 密钥</h2>
 
-<p>打开 <a href="https://cloud.speedle.io/zh-CN/tokens">API 密钥</a>页面，输入名称（如 <code>books-app</code>），选择 <code>ads</code> 权限范围（授权检查），然后选择 <strong>创建 API 密钥</strong>。如需验证身份，请完成验证后再次提交表单。复制仅展示一次的密钥值。目前不支持选择密钥有效期，不再使用时请撤销。详见 <a href="/zh/docs/cloud/tokens/">API 密钥管理</a>。</p>
+<p>打开 <a href="https://cloud.speedle.io/zh-CN/tokens">API 密钥</a>页面，输入名称（如 <code>books-app</code>），选择 <code>ads</code> 权限范围（授权检查），选择有效期（控制台默认 3 个月，并显示 UTC 时间），然后选择 <strong>创建 API 密钥</strong>。如需验证身份，请完成验证后再次提交表单。复制仅展示一次的密钥值。每个密钥都会到期；不再使用时请提前撤销。详见 <a href="/zh/docs/cloud/tokens/">API 密钥管理</a>。</p>
 
 <p>将密钥保存在服务端的密钥存储中，通过环境变量 <code>SPEEDLE_API_KEY</code> 提供给应用，不要写入浏览器代码或源码仓库。</p>
 
