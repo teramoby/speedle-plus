@@ -6,7 +6,7 @@
     <description>Recent content in Speedle Cloud on Speedle</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>zh-cn</language>
-    <lastBuildDate>Sun, 08 Nov 2026 17:11:18 +0800</lastBuildDate>
+    <lastBuildDate>Thu, 12 Nov 2026 10:00:00 +0800</lastBuildDate>
     
 	<atom:link href="https://engine.speedle.io/zh/docs/cloud/index.xml" rel="self" type="application/rss+xml" />
     
@@ -58,6 +58,18 @@ POST /authz-check/v1/is-allowed Authorization: Bearer &amp;lt;issued token&amp;g
 idd 是主体所属的身份域，也就是应用在哪个命名空间里完成对调用方的认证，例如某个身份提供方或某个租户。它必须由服务端根据可信的认证结果填写，不能取自浏览器提交的值。
 快速入门中的策略 grant user alice from corp get /books 只在 corp 身份域中匹配上述请求。不带 from 的策略匹配任意身份域中的同名主体。主体不带 idd 时同样匹配任意身份域，一旦应用接受多个身份来源，两个同名用户就无法区分。多租户接入必须在每个请求中发送 idd。
 每个请求都必须填写 serviceName，系统不会自动取默认值。请填写令牌所属 service 的名称。名称缺失或为空时，会得到 Speedle 的 SERVICE_NOT_FOUND 响应；名称不一致时，返回 403 {&amp;quot;error&amp;quot;:&amp;quot;service_mismatch&amp;quot;}。</description>
+    </item>
+    
+    <item>
+      <title>API 参考</title>
+      <link>https://engine.speedle.io/zh/docs/cloud/api-reference/</link>
+      <pubDate>Thu, 12 Nov 2026 10:00:00 +0800</pubDate>
+      
+      <guid>https://engine.speedle.io/zh/docs/cloud/api-reference/</guid>
+      <description>本页展示公开的 Speedle Cloud API。各语言页面上的规范正文均为英文。试用已关闭，因此不会在浏览器中输入应用令牌。
+此处渲染的是随站点发布的公开子集。在 Speedle Cloud 发布公开 OpenAPI 文档之前，这份副本只包含授权检查路径，用作占位，并不是 Cloud 文档索引 所链接的完整入库规范。
+授权 API 预览 说明 IsAllowed 调用。限额与错误 列出额度与错误响应。
+   document.addEventListener(&#39;DOMContentLoaded&#39;, function() { var ui = SwaggerUIBundle({ url: &#34;/openapi/cloud-public.yaml&#34;, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.presets.apis ], plugins: [ SwaggerUIBundle.plugins.DownloadUrl ], validatorUrl: null, layout: &#34;BaseLayout&#34;, supportedSubmitMethods: [] }); window.ui = ui; });  </description>
     </item>
     
     <item>

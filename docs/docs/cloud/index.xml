@@ -6,7 +6,7 @@
     <description>Recent content in Speedle Cloud on Speedle</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
-    <lastBuildDate>Sun, 08 Nov 2026 17:11:18 +0800</lastBuildDate>
+    <lastBuildDate>Thu, 12 Nov 2026 10:00:00 +0800</lastBuildDate>
     
 	<atom:link href="https://engine.speedle.io/docs/cloud/index.xml" rel="self" type="application/rss+xml" />
     
@@ -39,6 +39,16 @@ Issue a token For an account that already owns a service, open Application token
       <guid>https://engine.speedle.io/docs/cloud/authorization-api/</guid>
       <description>Authenticated ADS is pending. The requests and examples on this page describe the published contract for a future release; they were not executed against a live Cloud environment. Issuing an application token does not enable these calls. Use the approved stage URL explicitly, and verify that authenticated ADS is available in that stage before integrating.
 Call IsAllowed from your server Send the issued token in one Authorization: Bearer header and make a POST request:</description>
+    </item>
+    
+    <item>
+      <title>API reference</title>
+      <link>https://engine.speedle.io/docs/cloud/api-reference/</link>
+      <pubDate>Thu, 12 Nov 2026 10:00:00 +0800</pubDate>
+      
+      <guid>https://engine.speedle.io/docs/cloud/api-reference/</guid>
+      <description>This page renders the public Speedle Cloud API. The specification text is English on every language of this site. Try it out is turned off, so an application token is not entered in the browser.
+The rendered file is the vendored public subset. This copy is a placeholder for the authorization-check path until Speedle Cloud publishes the public OpenAPI document. It is not the full checked-in specification linked from the Cloud documentation index.</description>
     </item>
     
     <item>

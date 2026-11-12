@@ -6,7 +6,7 @@
     <description>Recent content in Speedle Cloud on Speedle</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>es-es</language>
-    <lastBuildDate>Sun, 08 Nov 2026 17:11:18 +0800</lastBuildDate>
+    <lastBuildDate>Thu, 12 Nov 2026 10:00:00 +0800</lastBuildDate>
     
 	<atom:link href="https://engine.speedle.io/es/docs/cloud/index.xml" rel="self" type="application/rss+xml" />
     
@@ -38,6 +38,16 @@ Emitir un token Para una cuenta que ya posee un servicio, abra Tokens de aplicac
       <guid>https://engine.speedle.io/es/docs/cloud/authorization-api/</guid>
       <description>El ADS autenticado está pendiente. Las solicitudes y ejemplos en esta página describen el contrato publicado para una futura versión; no se ejecutaron contra un entorno real de Cloud. La emisión de un token de aplicación no habilita estas llamadas. Utilice explícitamente la URL del entorno aprobado y verifique que el ADS autenticado se encuentre disponible en dicho entorno antes de la integración.
 Invocar IsAllowed desde su servidor Envíe el token emitido en un encabezado Authorization: Bearer y realice una solicitud POST:</description>
+    </item>
+    
+    <item>
+      <title>Referencia de la API</title>
+      <link>https://engine.speedle.io/es/docs/cloud/api-reference/</link>
+      <pubDate>Thu, 12 Nov 2026 10:00:00 +0800</pubDate>
+      
+      <guid>https://engine.speedle.io/es/docs/cloud/api-reference/</guid>
+      <description>Esta página muestra la API pública de Speedle Cloud. El texto de la especificación está en inglés en todos los idiomas de este sitio. Try it out está desactivado, de modo que no se introduce un token de aplicación en el navegador.
+El archivo representado es el subconjunto público incluido en el sitio. Es un marcador de posición de la ruta de comprobación de autorización hasta que Speedle Cloud publique el documento OpenAPI público.</description>
     </item>
     
     <item>

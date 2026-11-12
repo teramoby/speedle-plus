@@ -76,7 +76,7 @@ for (const locale of LOCALES) {
   const html = fs.readFileSync(path.join(output, `${locale}docs/api/management_api/index.html`), 'utf8');
   assert.ok(html.includes('/css/swagger-ui.css') && html.includes('/css/swagger-custom.css'), `Swagger styles in ${locale || 'en'}`);
 }
-const cloudRoutes = ['', 'getting-started/', 'tokens/', 'authorization-api/', 'limits-and-errors/'];
+const cloudRoutes = ['', 'getting-started/', 'tokens/', 'authorization-api/', 'api-reference/', 'limits-and-errors/'];
 const navPages = ['docs/index.html', 'docs/spdl/index.html', ...cloudRoutes.map(route => `docs/cloud/${route}index.html`)];
 for (const locale of LOCALES) {
   const lang = locale.replace(/\/$/, '');
@@ -101,7 +101,7 @@ for (const locale of LOCALES) {
     assert.ok(navigation.includes(`href="/${locale}#features"`), `Features returns to localized homepage from ${name}`);
     assert.ok(html.includes('/css/navigation.css?v=header-20261106-v8') && html.includes('/js/navigation.js?v=header-20261106-v8'), `Shared versioned navigation assets in ${name}`);
     assert.ok(html.includes('/css/docs.css') && html.includes('/js/docs.js'), `Documentation assets in ${name}`);
-    assert.ok(!/theme\.min|kube\.min|kube\.legenda|master\.css|kube\.demo|custom\.css|spdl-title|fonts\.googleapis|fontawesome|jquery|tocbot|\/js\/kube|\/js\/master/.test(html), `No legacy docs stack in ${name}`);
+    assert.ok(!/theme\.min|kube\.min|kube\.legenda|master\.css|kube\.demo|(?:^|\/)custom\.css|spdl-title|fonts\.googleapis|fontawesome|jquery|tocbot|\/js\/kube|\/js\/master/.test(html), `No legacy docs stack in ${name}`);
     assert.ok(html.includes('class="docs-nav-heading') && html.includes('docs-nav-close') && html.includes('docs-nav-backdrop'), `Modern sidebar markup in ${name}`);
     assert.ok(html.includes('aria-current="page"'), `Current page marked in the sidebar in ${name}`);
     assert.ok(new RegExp(`<button class="docs-nav-toggle"[^>]*>[\\s\\S]*?<span>${MENU_LABEL[lang]}</span>`).test(html), `Menu drawer button in ${name}`);
@@ -119,7 +119,7 @@ for (const page of ['quick-start/index.html', 'about/index.html', 'contribute/in
     const name = `${locale}${page}`;
     const html = fs.readFileSync(path.join(output, name), 'utf8');
     assert.ok(html.includes('/css/docs.css'), `Docs styles in ${name}`);
-    assert.ok(!/theme\.min|kube\.min|kube\.legenda|master\.css|kube\.demo|custom\.css|spdl-title|fonts\.googleapis|fontawesome|jquery|tocbot|\/js\/kube|\/js\/master/.test(html), `No legacy stack in ${name}`);
+    assert.ok(!/theme\.min|kube\.min|kube\.legenda|master\.css|kube\.demo|(?:^|\/)custom\.css|spdl-title|fonts\.googleapis|fontawesome|jquery|tocbot|\/js\/kube|\/js\/master/.test(html), `No legacy stack in ${name}`);
     assert.ok(html.includes('<body class="page-kube docs-page">'), `Docs body in ${name}`);
     assert.ok(html.includes('class="content-container docs-article"'), `Stand-alone docs container in ${name}`);
   }
@@ -209,7 +209,7 @@ function checkDocsAlternates(directory) {
   }
 }
 for (const locale of LOCALES) checkDocsAlternates(path.join(output, `${locale}docs`));
-assert.equal(docsAlternates, 250, 'Every canonical docs page and redirect alias has hreflang alternates for en, ja, ko, es, zh-CN and x-default');
+assert.equal(docsAlternates, 255, 'Every canonical docs page and redirect alias has hreflang alternates for en, ja, ko, es, zh-CN and x-default');
 console.log('PASS Hugo 0.48 output: editor, navigation, sitemap, footer stylesheet and matching release assets');
 
 // The Cloud section is documented in every site language.
@@ -270,6 +270,15 @@ for (const [locale, copy] of Object.entries(cloudCopy)) {
   }
   assert.ok(overview.includes(`href="/docs/cloud/${copy.download}"`), `Localized Markdown download in ${locale || 'en'}`);
   assert.ok(overview.includes('https://cloud.speedle.io/openapi.yaml') && overview.includes('https://cloud.speedle.io/openapi.json') && overview.includes('https://cloud.speedle.io/build.json'), `Cloud schema and build downloads in ${locale || 'en'}`);
+  assert.ok(overview.includes(`href="/${locale}docs/cloud/api-reference/"`), `Cloud API reference link in ${locale || 'en'}`);
+  const reference = read('api-reference/');
+  assert.ok(reference.includes('supportedSubmitMethods: []'), `Try it out disabled on the Cloud reference in ${locale || 'en'}`);
+  assert.ok(reference.includes('id="swagger-ui" class="swagger-readonly"'), `Authorize hidden on the Cloud reference in ${locale || 'en'}`);
+  assert.ok(reference.includes('/openapi/cloud-public.yaml'), `Vendored public spec on the Cloud reference in ${locale || 'en'}`);
+  assert.ok(reference.includes('/css/swagger-ui.css') && reference.includes('/css/swagger-custom.css'), `Swagger styles on the Cloud reference in ${locale || 'en'}`);
+  const decision = fs.readFileSync(path.join(output, `${locale}docs/api/decision_api/index.html`), 'utf8');
+  assert.ok(decision.includes('supportedSubmitMethods: []'), `Try it out disabled on the engine decision reference in ${locale || 'en'}`);
+  assert.ok(decision.includes('id="swagger-ui" class="swagger-readonly"'), `Authorize hidden on the engine decision reference in ${locale || 'en'}`);
   assert.ok(overview.includes(`href="https://cloud.speedle.io/${copy.legal}terms"`) && overview.includes(`href="https://cloud.speedle.io/${copy.legal}privacy"`), `Localized Cloud legal links in ${locale || 'en'}`);
   const markdown = fs.readFileSync(path.join(output, 'docs/cloud', copy.download), 'utf8');
   assert.deepEqual(markdown, fs.readFileSync(path.join(root, 'docs/hugo/static/docs/cloud', copy.download), 'utf8'), `Generated ${copy.download}`);
@@ -283,6 +292,14 @@ for (const [locale, copy] of Object.entries(cloudCopy)) {
 const llms = fs.readFileSync(path.join(output, 'llms.txt'), 'utf8');
 const llmsFull = fs.readFileSync(path.join(output, 'llms-full.txt'), 'utf8');
 assert.ok(llms.includes('[Speedle Cloud](https://engine.speedle.io/docs/cloud/)'), 'llms.txt links the Cloud section');
+assert.ok(llms.includes('[API reference](https://engine.speedle.io/docs/cloud/api-reference/)'), 'llms.txt links the Cloud API reference');
+const docsJs = fs.readFileSync(path.join(root, 'docs/hugo/static/js/docs.js'), 'utf8');
+assert.ok(docsJs.includes('.opblock-tag-section > h3') && docsJs.includes('section.models > h4'), 'Swagger UI 5 operation groups are h3 and models stay h4');
+for (const name of ['css/swagger-ui.css', 'css/swagger-custom.css', 'js/swagger-js/swagger-ui-bundle.js', 'js/docs.js']) {
+  assert.deepEqual(fs.readFileSync(path.join(output, name)), fs.readFileSync(path.join(root, 'docs', name)), `Published Swagger asset ${name}`);
+}
+assert.ok(fs.readFileSync(path.join(output, 'js/swagger-js/swagger-ui-bundle.js'), 'utf8').includes('5.34.1'), 'Vendored Swagger UI is 5.34.1');
+assert.ok(fs.readFileSync(path.join(output, 'css/swagger-custom.css'), 'utf8').includes('#swagger-ui.swagger-readonly .auth-wrapper'), 'Read-only Swagger UI hides Authorize');
 assert.ok(llms.includes('https://ai.speedle.io/llms.txt') && llms.includes('https://cloud.speedle.io/llms.txt'), 'llms.txt links the other sites\' llms.txt');
 assert.ok(llmsFull.includes('grant role manager employee') && llmsFull.includes('ROLE_POLICY ='),
   'llms-full.txt contains the SPDL grammar and role-inheritance example');
@@ -303,11 +320,11 @@ function checkStorageNavigation(directory, locale = '') {
       for (const target of ['store/', 'store/mysql/', 'store/etcd/', 'store/mongodb/', 'pms/policy-mgmt/', 'api/decision_api/',
         'sdks/', 'sdks/java/', 'sdks/python/', 'sdks/go/', 'sdks/dotnet/', 'sdks/rust/', 'sdks/node/',
         'deployment/', 'deployment/embedded/', 'deployment/docker/', 'deployment/homebrew/',
-        'cloud/', 'cloud/getting-started/', 'cloud/tokens/', 'cloud/authorization-api/', 'cloud/limits-and-errors/']) {
+        'cloud/', 'cloud/getting-started/', 'cloud/tokens/', 'cloud/authorization-api/', 'cloud/api-reference/', 'cloud/limits-and-errors/']) {
         assert.ok(sidebar.includes(`href="/${locale}docs/${target}"`), `Complete sidebar ${target} in ${name}`);
       }
       for (const [depth, target] of [[0, 'security/'], [1, 'pms/policy-mgmt/'], [1, 'store/mysql/'],
-        [1, 'api/decision_api/'], [1, 'sdks/java/'], [1, 'deployment/embedded/'], [1, 'deployment/docker/'], [1, 'deployment/homebrew/'], [1, 'cloud/getting-started/']]) {
+        [1, 'api/decision_api/'], [1, 'sdks/java/'], [1, 'deployment/embedded/'], [1, 'deployment/docker/'], [1, 'deployment/homebrew/'], [1, 'cloud/getting-started/'], [1, 'cloud/api-reference/']]) {
         assert.ok(new RegExp(`<li data-docs-depth="${depth}"[^>]*><a href="/${locale}docs/${target}"`).test(sidebar), `Menu depth ${depth} for ${target} in ${name}`);
       }
     }

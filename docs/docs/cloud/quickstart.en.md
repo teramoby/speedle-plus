@@ -11,11 +11,13 @@ The free public beta is intended for trials, learning and evaluation. It has no 
 - [Getting started](https://engine.speedle.io/docs/cloud/getting-started/): Sign in with GitHub or Google (opens soon), account management, services, SPDL policies, session management requests and all four session Playground operations.
 - [Application tokens](https://engine.speedle.io/docs/cloud/tokens/): recent-authentication requirements, one-time token disclosure, metadata pagination, rotation and revocation.
 - [Authorization API preview](https://engine.speedle.io/docs/cloud/authorization-api/): the IsAllowed request and response contract, a Node.js 22 example, policy snapshots and integration constraints.
+- [API reference](https://engine.speedle.io/docs/cloud/api-reference/): read-only Swagger UI for the public Cloud API. Try it out is disabled, so an application token is not entered in the browser.
 - [Limits and errors](https://engine.speedle.io/docs/cloud/limits-and-errors/): account quotas, request limits, error responses, rate and quota headers, and retry guidance.
 
 ## Downloads
 
 - [English Markdown](https://engine.speedle.io/docs/cloud/quickstart.en.md): all four Cloud chapters in one offline document.
+- [API reference](https://engine.speedle.io/docs/cloud/api-reference/): rendered public specification. The raw files below remain available.
 - [OpenAPI YAML](https://cloud.speedle.io/openapi.yaml): the canonical checked-in Cloud API specification.
 - [OpenAPI JSON](https://cloud.speedle.io/openapi.json): generated from the same YAML source bytes.
 - [Serving build version](https://cloud.speedle.io/build.json): identifies the serving build; it does not certify identity-provider or endpoint availability.

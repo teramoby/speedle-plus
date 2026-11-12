@@ -6,7 +6,7 @@
     <description>Recent content in Docs on Speedle</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
-    <lastBuildDate>Tue, 10 Nov 2026 14:45:43 +0800</lastBuildDate>
+    <lastBuildDate>Thu, 12 Nov 2026 10:00:00 +0800</lastBuildDate>
     
 	<atom:link href="https://engine.speedle.io/categories/docs/index.xml" rel="self" type="application/rss+xml" />
     
@@ -116,6 +116,16 @@ First ask me which open-source authorization projects I want to compare with Spe
     </item>
     
     <item>
+      <title>API reference</title>
+      <link>https://engine.speedle.io/docs/cloud/api-reference/</link>
+      <pubDate>Thu, 12 Nov 2026 10:00:00 +0800</pubDate>
+      
+      <guid>https://engine.speedle.io/docs/cloud/api-reference/</guid>
+      <description>This page renders the public Speedle Cloud API. The specification text is English on every language of this site. Try it out is turned off, so an application token is not entered in the browser.
+The rendered file is the vendored public subset. This copy is a placeholder for the authorization-check path until Speedle Cloud publishes the public OpenAPI document. It is not the full checked-in specification linked from the Cloud documentation index.</description>
+    </item>
+    
+    <item>
       <title>Speedle Cloud limits and errors</title>
       <link>https://engine.speedle.io/docs/cloud/limits-and-errors/</link>
       <pubDate>Sun, 08 Nov 2026 00:00:00 +0800</pubDate>
@@ -210,16 +220,6 @@ REST APIs These are reference contracts for your configured PMS/ADS or asserter 
 The examples check the policy described in the SDKs overview.
 Add the dependency In a new ES module package:
 mkdir speedle-example cd speedle-example npm init -y npm pkg set type=module npm install @speedle/sdk@0.2.1 Call a local Speedle Start Speedle and create the example policy as described in the SDKs overview.</description>
-    </item>
-    
-    <item>
-      <title>Pluggable Storage</title>
-      <link>https://engine.speedle.io/docs/store/</link>
-      <pubDate>Sat, 31 Oct 2026 22:36:36 +0800</pubDate>
-      
-      <guid>https://engine.speedle.io/docs/store/</guid>
-      <description>Built-in stores and extension contracts The standalone binaries register file, etcd, MongoDB and MySQL implementations under pkg/store. Availability does not mean identical operational guarantees; review backend authentication, persistence, transaction and watch behavior for your deployment. The configuration below illustrates property names; running etcd/MongoDB deployments is outside this local example.
-A full backend implements pms.PolicyStoreManager: service, authorization-policy, role-policy and function management, snapshot reads and watch/stop. ADS accepts the narrower PolicyStoreManagerADS read/watch interface.</description>
     </item>
     
     <item>
@@ -339,6 +339,27 @@ brew tap teramoby/tap brew trust teramoby/tap brew install teramoby/tap/spctl Th
     </item>
     
     <item>
+      <title>Pluggable Storage</title>
+      <link>https://engine.speedle.io/docs/store/</link>
+      <pubDate>Sat, 31 Oct 2026 22:36:36 +0800</pubDate>
+      
+      <guid>https://engine.speedle.io/docs/store/</guid>
+      <description>Built-in stores and extension contracts The standalone binaries register file, etcd, MongoDB and MySQL implementations under pkg/store. Availability does not mean identical operational guarantees; review backend authentication, persistence, transaction and watch behavior for your deployment. The configuration below illustrates property names; running etcd/MongoDB deployments is outside this local example.
+A full backend implements pms.PolicyStoreManager: service, authorization-policy, role-policy and function management, snapshot reads and watch/stop. ADS accepts the narrower PolicyStoreManagerADS read/watch interface.</description>
+    </item>
+    
+    <item>
+      <title>Policy Management API</title>
+      <link>https://engine.speedle.io/docs/api/management_api/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/docs/api/management_api/</guid>
+      <description>Reference for your configured PMS. Requests and responses are JSON; policy IDs are strings and responses are flat objects.
+Security and endpoint configuration. This is a contract reference, not a backend hosted by speedle.io. Try it out is disabled because this specification has no server host, so a request would otherwise be sent to this documentation site.
+   document.addEventListener(&#39;DOMContentLoaded&#39;, function() { var ui = SwaggerUIBundle({ url: &#34;/swagger/policy-manage.yaml&#34;, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.</description>
+    </item>
+    
+    <item>
       <title>SDKs</title>
       <link>https://engine.speedle.io/docs/sdks/</link>
       <pubDate>Tue, 10 Nov 2026 14:45:43 +0800</pubDate>
@@ -361,7 +382,7 @@ TLS encrypts the connection and authenticates the server. To require authenticat
     <item>
       <title>Speedle Cloud</title>
       <link>https://engine.speedle.io/docs/cloud/</link>
-      <pubDate>Sun, 08 Nov 2026 17:11:18 +0800</pubDate>
+      <pubDate>Thu, 12 Nov 2026 10:00:00 +0800</pubDate>
       
       <guid>https://engine.speedle.io/docs/cloud/</guid>
       <description>Speedle Cloud is a hosted access-control service for developers, built on the open-source Speedle policy engine. It is designed to let you manage SPDL authorization and role policies, test decisions in a Playground, and call an authorization API from your application server without operating your own authorization service.
@@ -395,8 +416,8 @@ Start the local example This example accepts numeric values from 100 to 50000. W
       
       <guid>https://engine.speedle.io/docs/api/decision_api/</guid>
       <description>Reference for your configured ADS. Request attributes are typed arrays; diagnostic attributes are objects.
-Security and endpoint configuration. This is a contract reference, not a backend hosted by speedle.io.
-              document.addEventListener(&#39;DOMContentLoaded&#39;, function() { var url = &#34;\/swagger\/policy-check.yaml&#34;; const ui = SwaggerUIBundle({ url: url, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.presets.apis ], plugins: [ SwaggerUIBundle.plugins.DownloadUrl ], validatorUrl: null, layout: &#34;</description>
+Security and endpoint configuration. This is a contract reference, not a backend hosted by speedle.io. Try it out is disabled because this specification has no server host, so a request would otherwise be sent to this documentation site.
+   document.addEventListener(&#39;DOMContentLoaded&#39;, function() { var ui = SwaggerUIBundle({ url: &#34;/swagger/policy-check.yaml&#34;, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.</description>
     </item>
     
     <item>
@@ -419,25 +440,14 @@ REST and gRPC APIs Manage services, policies and roles through the Policy Manage
     </item>
     
     <item>
-      <title>Policy Management API</title>
-      <link>https://engine.speedle.io/docs/api/management_api/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://engine.speedle.io/docs/api/management_api/</guid>
-      <description>Reference for your configured PMS. Requests and responses are JSON; policy IDs are strings and responses are flat objects.
-Security and endpoint configuration. This is a contract reference, not a backend hosted by speedle.io.
-              document.addEventListener(&#39;DOMContentLoaded&#39;, function() { var url = &#34;\/swagger\/policy-manage.yaml&#34;; const ui = SwaggerUIBundle({ url: url, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.presets.apis ], plugins: [ SwaggerUIBundle.</description>
-    </item>
-    
-    <item>
       <title>Token Assertion Plugin API</title>
       <link>https://engine.speedle.io/docs/api/asserter_api/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/docs/api/asserter_api/</guid>
       <description>Webhook reference. errCode is an integer and attributes is an object. Configure the actual endpoint in the ADS asserter configuration.
-Security and endpoint configuration. This is a contract reference, not a backend hosted by speedle.io.
-              document.addEventListener(&#39;DOMContentLoaded&#39;, function() { var url = &#34;\/swagger\/asserter.yaml&#34;; const ui = SwaggerUIBundle({ url: url, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.presets.apis ], plugins: [ SwaggerUIBundle.</description>
+Security and endpoint configuration. This is a contract reference, not a backend hosted by speedle.io. Try it out is disabled because this specification has no server host, so a request would otherwise be sent to this documentation site.
+   document.addEventListener(&#39;DOMContentLoaded&#39;, function() { var ui = SwaggerUIBundle({ url: &#34;/swagger/asserter.yaml&#34;, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.</description>
     </item>
     
   </channel>

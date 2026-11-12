@@ -6,7 +6,7 @@
     <description>Recent content in Speedle: Motor de autorización rápido y sencillo on Speedle</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>es-es</language>
-    <lastBuildDate>Sun, 08 Nov 2026 00:00:00 +0800</lastBuildDate>
+    <lastBuildDate>Thu, 12 Nov 2026 10:00:00 +0800</lastBuildDate>
     
 	<atom:link href="https://engine.speedle.io/es/index.xml" rel="self" type="application/rss+xml" />
     
@@ -260,6 +260,16 @@ brew tap teramoby/tap brew trust teramoby/tap brew install teramoby/tap/spctl La
     </item>
     
     <item>
+      <title>Referencia de la API</title>
+      <link>https://engine.speedle.io/es/docs/cloud/api-reference/</link>
+      <pubDate>Thu, 12 Nov 2026 10:00:00 +0800</pubDate>
+      
+      <guid>https://engine.speedle.io/es/docs/cloud/api-reference/</guid>
+      <description>Esta página muestra la API pública de Speedle Cloud. El texto de la especificación está en inglés en todos los idiomas de este sitio. Try it out está desactivado, de modo que no se introduce un token de aplicación en el navegador.
+El archivo representado es el subconjunto público incluido en el sitio. Es un marcador de posición de la ruta de comprobación de autorización hasta que Speedle Cloud publique el documento OpenAPI público.</description>
+    </item>
+    
+    <item>
       <title>Límites y errores de Speedle Cloud</title>
       <link>https://engine.speedle.io/es/docs/cloud/limits-and-errors/</link>
       <pubDate>Sun, 08 Nov 2026 00:00:00 +0800</pubDate>
@@ -369,8 +379,8 @@ Versión histórica de Oracle Speedle La versión 0.1.0 fue el lanzamiento origi
       
       <guid>https://engine.speedle.io/es/docs/api/decision_api/</guid>
       <description>Referencia para su ADS configurado. Los atributos de solicitud son matrices tipadas; los atributos de diagnóstico son objetos.
-Configuración de seguridad y endpoints. Esta es una referencia de contrato, no un backend hospedado por speedle.io.
-              document.addEventListener(&#39;DOMContentLoaded&#39;, function() { var url = &#34;\/swagger\/policy-check.yaml&#34;; const ui = SwaggerUIBundle({ url: url, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.presets.apis ], plugins: [ SwaggerUIBundle.</description>
+Configuración de seguridad y endpoints. Esta es una referencia de contrato, no un backend hospedado por speedle.io. Try it out está desactivado: la especificación no indica un host de servidor, así que una petición se enviaría a este sitio de documentación.
+   document.addEventListener(&#39;DOMContentLoaded&#39;, function() { var ui = SwaggerUIBundle({ url: &#34;</description>
     </item>
     
     <item>
@@ -380,8 +390,8 @@ Configuración de seguridad y endpoints. Esta es una referencia de contrato, no 
       
       <guid>https://engine.speedle.io/es/docs/api/management_api/</guid>
       <description>Referencia para su PMS configurado. Las solicitudes y respuestas son JSON; los IDs de políticas son cadenas de texto y las respuestas son objetos planos.
-Configuración de seguridad y endpoints. Esta es una referencia de contrato, no un backend hospedado por speedle.io.
-              document.addEventListener(&#39;DOMContentLoaded&#39;, function() { var url = &#34;\/swagger\/policy-manage.yaml&#34;; const ui = SwaggerUIBundle({ url: url, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.</description>
+Configuración de seguridad y endpoints. Esta es una referencia de contrato, no un backend hospedado por speedle.io. Try it out está desactivado: la especificación no indica un host de servidor, así que una petición se enviaría a este sitio de documentación.
+   document.addEventListener(&#39;DOMContentLoaded&#39;, function() { var ui = SwaggerUIBundle({ url: &#34;</description>
     </item>
     
     <item>
@@ -391,8 +401,8 @@ Configuración de seguridad y endpoints. Esta es una referencia de contrato, no 
       
       <guid>https://engine.speedle.io/es/docs/api/asserter_api/</guid>
       <description>Referencia del webhook. errCode es un entero y attributes es un objeto. Configure el endpoint real en la configuración del asertor de ADS.
-Configuración de seguridad y endpoints. Esta es una referencia de contrato, no un backend hospedado por speedle.io.
-              document.addEventListener(&#39;DOMContentLoaded&#39;, function() { var url = &#34;\/swagger\/asserter.yaml&#34;; const ui = SwaggerUIBundle({ url: url, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.</description>
+Configuración de seguridad y endpoints. Esta es una referencia de contrato, no un backend hospedado por speedle.io. Try it out está desactivado: la especificación no indica un host de servidor, así que una petición se enviaría a este sitio de documentación.
+   document.addEventListener(&#39;DOMContentLoaded&#39;, function() { var ui = SwaggerUIBundle({ url: &#34;</description>
     </item>
     
     <item>

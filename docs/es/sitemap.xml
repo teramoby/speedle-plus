@@ -753,6 +753,36 @@
   </url>
   
   <url>
+    <loc>https://engine.speedle.io/es/docs/cloud/api-reference/</loc>
+    <lastmod>2026-11-12T10:00:00+08:00</lastmod>
+    <xhtml:link
+                rel="alternate"
+                hreflang="en"
+                href="https://engine.speedle.io/docs/cloud/api-reference/"
+                />
+    <xhtml:link
+                rel="alternate"
+                hreflang="ja"
+                href="https://engine.speedle.io/ja/docs/cloud/api-reference/"
+                />
+    <xhtml:link
+                rel="alternate"
+                hreflang="zh"
+                href="https://engine.speedle.io/zh/docs/cloud/api-reference/"
+                />
+    <xhtml:link
+                rel="alternate"
+                hreflang="ko"
+                href="https://engine.speedle.io/ko/docs/cloud/api-reference/"
+                />
+    <xhtml:link
+                rel="alternate"
+                hreflang="es"
+                href="https://engine.speedle.io/es/docs/cloud/api-reference/"
+                />
+  </url>
+  
+  <url>
     <loc>https://engine.speedle.io/es/docs/cloud/limits-and-errors/</loc>
     <lastmod>2026-11-08T17:11:18+08:00</lastmod>
     <xhtml:link
@@ -1054,7 +1084,7 @@
   
   <url>
     <loc>https://engine.speedle.io/es/docs/cloud/</loc>
-    <lastmod>2026-11-08T17:11:18+08:00</lastmod>
+    <lastmod>2026-11-12T10:00:00+08:00</lastmod>
     <xhtml:link
                 rel="alternate"
                 hreflang="ja"
@@ -1204,7 +1234,7 @@
   
   <url>
     <loc>https://engine.speedle.io/es/docs/api/decision_api/</loc>
-    <lastmod>2026-11-09T21:18:26+08:00</lastmod>
+    <lastmod>2026-11-12T10:00:00+08:00</lastmod>
     <xhtml:link
                 rel="alternate"
                 hreflang="en"
@@ -1234,7 +1264,7 @@
   
   <url>
     <loc>https://engine.speedle.io/es/docs/api/management_api/</loc>
-    <lastmod>2026-10-29T11:32:30+08:00</lastmod>
+    <lastmod>2026-11-12T10:00:00+08:00</lastmod>
     <xhtml:link
                 rel="alternate"
                 hreflang="en"
@@ -1264,7 +1294,7 @@
   
   <url>
     <loc>https://engine.speedle.io/es/docs/api/asserter_api/</loc>
-    <lastmod>2026-10-29T11:32:30+08:00</lastmod>
+    <lastmod>2026-11-12T10:00:00+08:00</lastmod>
     <xhtml:link
                 rel="alternate"
                 hreflang="en"

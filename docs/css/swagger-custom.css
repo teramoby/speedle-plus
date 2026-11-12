@@ -78,3 +78,5 @@
   #main #swagger-ui .opblock-summary-description { flex-basis: 100%; padding: 4px 10px; }
   #main #swagger-ui .opblock-body { overflow-x: auto; }
 }
+/* A read-only reference disables Try it out and also hides Authorize, so a token is not entered here. */
+#swagger-ui.swagger-readonly .auth-wrapper { display: none; }

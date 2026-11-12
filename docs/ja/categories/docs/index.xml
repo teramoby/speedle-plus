@@ -6,7 +6,7 @@
     <description>Recent content in Docs on Speedle</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>ja-jp</language>
-    <lastBuildDate>Tue, 10 Nov 2026 14:45:43 +0800</lastBuildDate>
+    <lastBuildDate>Thu, 12 Nov 2026 10:00:00 +0800</lastBuildDate>
     
 	<atom:link href="https://engine.speedle.io/ja/categories/docs/index.xml" rel="self" type="application/rss+xml" />
     
@@ -187,6 +187,27 @@ import sys from speedle import Auth, Client, SpeedleError try: with Client( back
     </item>
     
     <item>
+      <title>SPDL: Speedle ポリシー定義言語</title>
+      <link>https://engine.speedle.io/ja/docs/spdl/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/ja/docs/spdl/</guid>
+      <description>SPDL は Speedle ポリシーおよびロールポリシーを記述するための言語です。このページでは構文、命名規則、およびサンプルを説明します。 </description>
+    </item>
+    
+    <item>
+      <title>Speedle Cloud アプリケーショントークン</title>
+      <link>https://engine.speedle.io/ja/docs/cloud/tokens/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/ja/docs/cloud/tokens/</guid>
+      <description>アプリケーショントークンを使用すると、バックエンドアプリケーションから Speedle Cloud の認可 API を認証して呼び出すことができます。
+セキュリティ要件 トークンの作成、ローテーション、または失効を行うには、コンソールで最近の再認証が必要です。トークンシークレットは作成時に 1 回限り 表示されます。安全なシークレットストアに直ちに保存してください。紛失した場合は再表示できないため、トークンを再生成する必要があります。
+トークンのスコープ トークンは特定のアカウントおよびワークスペースにスコープされます。本番ワークロードと開発ワークロードで個別のトークンを使用してください。
+トークンのローテーションと失効 定期的なトークンのローテーションが推奨されます。新しいトークンを作成してアプリケーションに配布した後、古いトークンを失効させてダウンタイムを防ぎます。</description>
+    </item>
+    
+    <item>
       <title>認可決定</title>
       <link>https://engine.speedle.io/ja/docs/decisions/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
@@ -198,6 +219,18 @@ import sys from speedle import Auth, Client, SpeedleError try: with Client( back
 printf &amp;#39;{} &amp;#39; &amp;gt; docs-policies.json ターミナル1で PMS を起動し、実行したままにします:
 ./bin/speedle-pms --store-type file --filestore-loc ./docs-policies.json --endpoint 127.0.0.1:6733 --grpc-endpoint 127.0.0.1:0 --insecure=true ターミナル2で ADS を起動し、実行したままにします:
 ./bin/speedle-ads --store-type file --filestore-loc ./docs-policies.json --endpoint 127.0.0.1:6734 --grpc-endpoint 127.0.0.1:0 --insecure=true 残りのコマンドはターミナル3で実行します。PMS と ADS はファイルを共有し、変更は非同期に反映されます。意図した更新が ADS に到達したことを確認してから依存してください。--insecure=true はこのループバックサンプルのためのものです。本番接続については セキュリティ を参照してください。明示的な PMS アドレスを指定することで ~/.spctlconfig の変更を回避できます。終了したら、両方のサーバーターミナルで Ctrl-C を押して停止します。</description>
+    </item>
+    
+    <item>
+      <title>API リファレンス</title>
+      <link>https://engine.speedle.io/ja/docs/cloud/api-reference/</link>
+      <pubDate>Thu, 12 Nov 2026 10:00:00 +0800</pubDate>
+      
+      <guid>https://engine.speedle.io/ja/docs/cloud/api-reference/</guid>
+      <description>このページは公開されている Speedle Cloud API を表示します。仕様の本文は、このサイトのどの言語でも英語です。Try it out はオフなので、アプリケーション トークンをブラウザーに入力しません。
+表示されるファイルは同梱している公開サブセットです。Speedle Cloud が公開 OpenAPI 文書を公開するまでのプレースホルダーで、認可チェックのパスだけを含みます。Cloud ドキュメントの索引 からリンクしている、リポジトリにチェックインされた完全な仕様ではありません。
+認可 API プレビュー は IsAllowed 呼び出しを説明します。制限とエラー はクォータとエラー応答を列挙します。
+   document.addEventListener(&#39;DOMContentLoaded&#39;, function() { var ui = SwaggerUIBundle({ url: &#34;/openapi/cloud-public.yaml&#34;, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.presets.apis ], plugins: [ SwaggerUIBundle.plugins.DownloadUrl ], validatorUrl: null, layout: &#34;BaseLayout&#34;, supportedSubmitMethods: [] }); window.ui = ui; });  </description>
     </item>
     
     <item>
@@ -302,36 +335,15 @@ import { Auth, Reason, SpeedleClient, SpeedleError } from &amp;#34;@speedle/sdk&
     </item>
     
     <item>
-      <title>SPDL: Speedle ポリシー定義言語</title>
-      <link>https://engine.speedle.io/ja/docs/spdl/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://engine.speedle.io/ja/docs/spdl/</guid>
-      <description>SPDL は Speedle ポリシーおよびロールポリシーを記述するための言語です。このページでは構文、命名規則、およびサンプルを説明します。 </description>
-    </item>
-    
-    <item>
       <title>Speedle Cloud</title>
       <link>https://engine.speedle.io/ja/docs/cloud/</link>
-      <pubDate>Sun, 08 Nov 2026 17:11:18 +0800</pubDate>
+      <pubDate>Thu, 12 Nov 2026 10:00:00 +0800</pubDate>
       
       <guid>https://engine.speedle.io/ja/docs/cloud/</guid>
       <description>Speedle Cloud は、オープンソースの Speedle ポリシーエンジンをベースにした開発者向けのホスト型アクセス制御サービスです。SPDL 認可ポリシーおよびロールポリシーの管理、Playground での決定テスト、アプリケーションサーバーからの認可 API 呼び出しを、独自の認可サービスを運用することなく行えるよう設計されています。
 Speedle Cloud はまもなく公開されます。 Cloud ヘッダーには Coming soon（まもなく公開） バッジが表示されており、cloud.speedle.io での本番サインインはまだ開始されていません。ここで説明されているコンソールワークフローおよび認証付き認可決定サービス (ADS) は、公開されているサービス契約のプレビューです。認証付き ADS が保留中である間、トークンを発行してもサーバー側の認可呼び出しは有効になりません。選択したステージでのデプロイメントと ID プロバイダーの可用性を確認してください。
 無料パブリックベータは、試用、学習、評価を目的としています。SLA は提供されず、本番環境での使用は推奨されません。また、機能や制限は変更される場合があります。
-ドキュメント  クイックスタート: GitHub または Google でのサインイン（まもなく開始）、アカウント管理、サービス、SPDL ポリシー、セッション管理リクエスト、および 4 つのセッション Playground 操作。 アプリケーショントークン: 最近の認証要件、1 回限りのトークン開示、メタデータのページネーション、ローテーション、および失効。 認可 API プレビュー: IsAllowed リクエストとレスポンスの契約、Node.js 22 のサンプル、ポリシースナップショット、および統合の制約。 制限とエラー: アカウントクォータ、リクエスト制限、エラーレスポンス、レートおよびクォータヘッダー、再試行のガイダンス。  ダウンロード  日本語 Markdown: 4 つの Cloud の章をまとめたオフラインドキュメント。 OpenAPI YAML: リポジトリにチェックインされた正規の Cloud API 仕様。 OpenAPI JSON: 同じ YAML ソースバイトから生成。 提供ビルドバージョン: サービスを提供しているビルドを識別（ID プロバイダーやエンドポイントの可用性を証明するものではありません）。  仕様には 4 つのセッション Playground 操作と認証付き ADS 契約が含まれます。仕様の公開やガイドのダウンロードを行っても、保留中のエンドポイントが有効になったりサインインが開始されたりすることはありません。YAML および生成された JSON は、対応する封印された Cloud ビルドとともにバージョン管理、プロモート、復元されます。日本語、英語、中国語の Markdown ダウンロードは、これらの Engine ドキュメントページとともに保守されます。</description>
-    </item>
-    
-    <item>
-      <title>Speedle Cloud アプリケーショントークン</title>
-      <link>https://engine.speedle.io/ja/docs/cloud/tokens/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://engine.speedle.io/ja/docs/cloud/tokens/</guid>
-      <description>アプリケーショントークンを使用すると、バックエンドアプリケーションから Speedle Cloud の認可 API を認証して呼び出すことができます。
-セキュリティ要件 トークンの作成、ローテーション、または失効を行うには、コンソールで最近の再認証が必要です。トークンシークレットは作成時に 1 回限り 表示されます。安全なシークレットストアに直ちに保存してください。紛失した場合は再表示できないため、トークンを再生成する必要があります。
-トークンのスコープ トークンは特定のアカウントおよびワークスペースにスコープされます。本番ワークロードと開発ワークロードで個別のトークンを使用してください。
-トークンのローテーションと失効 定期的なトークンのローテーションが推奨されます。新しいトークンを作成してアプリケーションに配布した後、古いトークンを失効させてダウンタイムを防ぎます。</description>
+ドキュメント  クイックスタート: GitHub または Google でのサインイン（まもなく開始）、アカウント管理、サービス、SPDL ポリシー、セッション管理リクエスト、および 4 つのセッション Playground 操作。 アプリケーショントークン: 最近の認証要件、1 回限りのトークン開示、メタデータのページネーション、ローテーション、および失効。 認可 API プレビュー: IsAllowed リクエストとレスポンスの契約、Node.js 22 のサンプル、ポリシースナップショット、および統合の制約。 API リファレンス: 公開 Cloud API の読み取り専用 Swagger UI。Try it out は無効なので、アプリケーション トークンをブラウザーに入力しません。 制限とエラー: アカウントクォータ、リクエスト制限、エラーレスポンス、レートおよびクォータヘッダー、再試行のガイダンス。  ダウンロード  日本語 Markdown: 4 つの Cloud の章をまとめたオフラインドキュメント。 API リファレンス: レンダリングされた公開仕様。下の生ファイルも引き続き利用できます。 OpenAPI YAML: リポジトリにチェックインされた正規の Cloud API 仕様。 OpenAPI JSON: 同じ YAML ソースバイトから生成。 提供ビルドバージョン: サービスを提供しているビルドを識別（ID プロバイダーやエンドポイントの可用性を証明するものではありません）。  仕様には 4 つのセッション Playground 操作と認証付き ADS 契約が含まれます。仕様の公開やガイドのダウンロードを行っても、保留中のエンドポイントが有効になったりサインインが開始されたりすることはありません。YAML および生成された JSON は、対応する封印された Cloud ビルドとともにバージョン管理、プロモート、復元されます。日本語、英語、中国語の Markdown ダウンロードは、これらの Engine ドキュメントページとともに保守されます。</description>
     </item>
     
     <item>
@@ -489,8 +501,8 @@ go run ./website/tests/examples/custom-function package main import ( &amp;#34;e
       
       <guid>https://engine.speedle.io/ja/docs/api/asserter_api/</guid>
       <description>トークンアサーション Webhook リファレンス。errCode は整数、attributes はオブジェクトです。実際のエンドポイントは ADS アサーター構成で指定されます。
-セキュリティとエンドポイント構成。本文はインターフェース仕様を説明するものであり、speedle.io はホスト型バックエンドを提供しません。
-              document.addEventListener(&#39;DOMContentLoaded&#39;, function() { var url = &#34;\/swagger\/asserter.yaml&#34;; const ui = SwaggerUIBundle({ url: url, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.presets.apis ], plugins: [ SwaggerUIBundle.plugins.DownloadUrl ], validatorUrl: null, layout: &#34;BaseLayout&#34; }) window.ui = ui });  </description>
+セキュリティとエンドポイント構成。本文はインターフェース仕様を説明するものであり、speedle.io はホスト型バックエンドを提供しません。Try it out は無効です。仕様にサーバーホストがないため、有効にするとリクエストはこのドキュメントサイトへ送られます。
+   document.addEventListener(&#39;DOMContentLoaded&#39;, function() { var ui = SwaggerUIBundle({ url: &#34;/swagger/asserter.yaml&#34;, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.presets.apis ], plugins: [ SwaggerUIBundle.plugins.DownloadUrl ], validatorUrl: null, layout: &#34;BaseLayout&#34;, supportedSubmitMethods: [] }); window.ui = ui; });  </description>
     </item>
     
     <item>
@@ -509,8 +521,8 @@ go run ./website/tests/examples/custom-function package main import ( &amp;#34;e
       
       <guid>https://engine.speedle.io/ja/docs/api/management_api/</guid>
       <description>構成された PMS のインターフェースリファレンス。リクエストとレスポンスは JSON を使用し、ポリシー ID は文字列、レスポンスはフラットなオブジェクトです。
-セキュリティとエンドポイント構成。本文はインターフェース仕様を説明するものであり、speedle.io はホスト型バックエンドを提供しません。
-              document.addEventListener(&#39;DOMContentLoaded&#39;, function() { var url = &#34;\/swagger\/policy-manage.yaml&#34;; const ui = SwaggerUIBundle({ url: url, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.presets.apis ], plugins: [ SwaggerUIBundle.plugins.DownloadUrl ], validatorUrl: null, layout: &#34;BaseLayout&#34; }) window.ui = ui });  </description>
+セキュリティとエンドポイント構成。本文はインターフェース仕様を説明するものであり、speedle.io はホスト型バックエンドを提供しません。Try it out は無効です。仕様にサーバーホストがないため、有効にするとリクエストはこのドキュメントサイトへ送られます。
+   document.addEventListener(&#39;DOMContentLoaded&#39;, function() { var ui = SwaggerUIBundle({ url: &#34;/swagger/policy-manage.yaml&#34;, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.presets.apis ], plugins: [ SwaggerUIBundle.plugins.DownloadUrl ], validatorUrl: null, layout: &#34;BaseLayout&#34;, supportedSubmitMethods: [] }); window.ui = ui; });  </description>
     </item>
     
     <item>
@@ -520,8 +532,8 @@ go run ./website/tests/examples/custom-function package main import ( &amp;#34;e
       
       <guid>https://engine.speedle.io/ja/docs/api/decision_api/</guid>
       <description>構成された ADS のインターフェースリファレンス。リクエスト属性は型付き配列、診断レスポンス属性はオブジェクトです。
-セキュリティとエンドポイント構成。本文はインターフェース仕様を説明するものであり、speedle.io はホスト型バックエンドを提供しません。
-              document.addEventListener(&#39;DOMContentLoaded&#39;, function() { var url = &#34;\/swagger\/policy-check.yaml&#34;; const ui = SwaggerUIBundle({ url: url, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.presets.apis ], plugins: [ SwaggerUIBundle.plugins.DownloadUrl ], validatorUrl: null, layout: &#34;BaseLayout&#34; }) window.ui = ui });  ヘルスチェックエンドポイント GET /healthz はプロセスの稼働状態を報告します。プロセス実行中は常に 200 {&amp;quot;status&amp;quot;:&amp;quot;ok&amp;quot;} を返します。
+セキュリティとエンドポイント構成。本文はインターフェース仕様を説明するものであり、speedle.io はホスト型バックエンドを提供しません。Try it out は無効です。仕様にサーバーホストがないため、有効にするとリクエストはこのドキュメントサイトへ送られます。
+   document.addEventListener(&#39;DOMContentLoaded&#39;, function() { var ui = SwaggerUIBundle({ url: &#34;/swagger/policy-check.yaml&#34;, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.presets.apis ], plugins: [ SwaggerUIBundle.plugins.DownloadUrl ], validatorUrl: null, layout: &#34;BaseLayout&#34;, supportedSubmitMethods: [] }); window.ui = ui; });  ヘルスチェックエンドポイント GET /healthz はプロセスの稼働状態を報告します。プロセス実行中は常に 200 {&amp;quot;status&amp;quot;:&amp;quot;ok&amp;quot;} を返します。
 GET /readyz はインスタンスが認可リクエストに応答可能かどうかを報告します。準備完了の場合は 200、それ以外は 503 を返します。このエンドポイントは認証を必要とせず、集計カウントのみを返します。</description>
     </item>
     
