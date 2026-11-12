@@ -167,13 +167,13 @@ Primero pregúnteme qué proyectos de autorización de código abierto quiero co
     </item>
     
     <item>
-      <title>Tokens de aplicación de Speedle Cloud</title>
+      <title>Speedle Cloud Claves API</title>
       <link>https://engine.speedle.io/es/docs/cloud/tokens/</link>
-      <pubDate>Sun, 08 Nov 2026 00:00:00 +0800</pubDate>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/es/docs/cloud/tokens/</guid>
-      <description>Los tokens de aplicación autentican una aplicación frente a Speedle Cloud ADS para el servicio propio del token. No identifican a un usuario final y no pueden autorizar solicitudes a la API de gestión. La consola de tokens estará disponible cuando se habilite el inicio de sesión en las cuentas; mientras el ADS autenticado permanezca pendiente, emitir un token no habilitará llamadas de autorización del lado del servidor.
-Emitir un token Para una cuenta que ya posee un servicio, abra Tokens de aplicación.</description>
+      <description>Las claves API pertenecen a la cuenta y acceden a sus servicios según su ámbito. Autentican la aplicación, no al usuario final. Administrar claves API, sesiones e identidades vinculadas requiere una sesión de consola iniciada.
+Speedle Cloud estará disponible próximamente. Esta guía describe el flujo para cuando se habiliten el inicio de sesión en producción y las comprobaciones de autorización autenticadas; los ejemplos no se han ejecutado en un entorno Cloud real.</description>
     </item>
     
     <item>
@@ -210,13 +210,13 @@ python3 -m venv .venv . .venv/bin/activate pip install speedle==0.2.0 O con uv, 
     </item>
     
     <item>
-      <title>Vista previa de la API de autorización de Speedle Cloud</title>
+      <title>API de autorización de Speedle Cloud</title>
       <link>https://engine.speedle.io/es/docs/cloud/authorization-api/</link>
       <pubDate>Sun, 08 Nov 2026 00:00:00 +0800</pubDate>
       
       <guid>https://engine.speedle.io/es/docs/cloud/authorization-api/</guid>
-      <description>El ADS autenticado está pendiente. Las solicitudes y ejemplos en esta página describen el contrato publicado para una futura versión; no se ejecutaron contra un entorno real de Cloud. La emisión de un token de aplicación no habilita estas llamadas. Utilice explícitamente la URL del entorno aprobado y verifique que el ADS autenticado se encuentre disponible en dicho entorno antes de la integración.
-Invocar IsAllowed desde su servidor Envíe el token emitido en un encabezado Authorization: Bearer y realice una solicitud POST:</description>
+      <description>Speedle Cloud estará disponible próximamente. Esta guía describe el flujo para cuando se habiliten el inicio de sesión en producción y las comprobaciones de autorización autenticadas; los ejemplos no se han ejecutado en un entorno Cloud real.
+Use una clave API de cuenta para llamadas de autorización desde el servidor. Para crear claves debe estar disponible el inicio de sesión. Los ámbitos de gestión no pueden llamar a ADS; use ads o recibirá 403 insufficient_scope.</description>
     </item>
     
     <item>
@@ -271,16 +271,6 @@ brew tap teramoby/tap brew trust teramoby/tap brew install teramoby/tap/spctl La
     </item>
     
     <item>
-      <title>Límites y errores de Speedle Cloud</title>
-      <link>https://engine.speedle.io/es/docs/cloud/limits-and-errors/</link>
-      <pubDate>Sun, 08 Nov 2026 00:00:00 +0800</pubDate>
-      
-      <guid>https://engine.speedle.io/es/docs/cloud/limits-and-errors/</guid>
-      <description>Los errores y encabezados de ADS a continuación describen el contrato de ADS autenticado, cuyo entorno de ejecución aún no se encuentra disponible. El contrato de gestión ya define límites de cuenta, comprobaciones de sesión y CSRF, y errores de gestión de tokens para su uso cuando el acceso a cuentas esté habilitado. Descargar un esquema no habilita un endpoint pendiente.
-Límites    Límite Significado     10.</description>
-    </item>
-    
-    <item>
       <title>Dominio de identidad</title>
       <link>https://engine.speedle.io/es/docs/idd/</link>
       <pubDate>Thu, 17 Jan 2019 13:20:07 +0800</pubDate>
@@ -299,6 +289,17 @@ Límites    Límite Significado     10.</description>
 Los ejemplos comprueban la política descrita en la descripción general de los SDK.
 Añadir la dependencia En un nuevo proyecto de consola:
 dotnet new console -o SpeedleExample cd SpeedleExample dotnet add package Speedle.Sdk --version 0.2.0 Llamar a un Speedle local Inicie Speedle y cree la política de ejemplo como se describe en la descripción general de los SDK.</description>
+    </item>
+    
+    <item>
+      <title>Speedle Cloud Límites y errores</title>
+      <link>https://engine.speedle.io/es/docs/cloud/limits-and-errors/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/es/docs/cloud/limits-and-errors/</guid>
+      <description>Speedle Cloud estará disponible próximamente. Esta guía describe el flujo para cuando se habiliten el inicio de sesión en producción y las comprobaciones de autorización autenticadas; los ejemplos no se han ejecutado en un entorno Cloud real.
+Salvo que se indique lo contrario, los límites se comparten en toda la cuenta. Cambiar de clave API no aumenta la cuota diaria.
+Límites    Qué se limita Límite Qué hacer al alcanzarlo     Servicios de la cuenta 100 409 quota_exceeded; eliminar un servicio sin uso.</description>
     </item>
     
     <item>

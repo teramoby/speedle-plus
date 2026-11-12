@@ -155,10 +155,10 @@
 <li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading docs-nav-heading-link"><a href="/ja/docs/cloud/">Speedle Cloud</a></span>
 <ul class="">
 <li data-docs-depth="1" class=""><a href="/ja/docs/cloud/getting-started/">Speedle Cloud クイックスタート</a></li>
-<li data-docs-depth="1" class=""><a href="/ja/docs/cloud/tokens/">Speedle Cloud アプリケーショントークン</a></li>
-<li data-docs-depth="1" class=""><a href="/ja/docs/cloud/authorization-api/">Speedle Cloud 認可 API プレビュー</a></li>
+<li data-docs-depth="1" class=""><a href="/ja/docs/cloud/tokens/">API キー</a></li>
+<li data-docs-depth="1" class=""><a href="/ja/docs/cloud/authorization-api/">認可 API</a></li>
 <li data-docs-depth="1" class=""><a href="/ja/docs/cloud/api-reference/">API リファレンス</a></li>
-<li data-docs-depth="1" class=""><a href="/ja/docs/cloud/limits-and-errors/">Speedle Cloud の制限とエラー</a></li>
+<li data-docs-depth="1" class=""><a href="/ja/docs/cloud/limits-and-errors/">制限とエラー</a></li>
 </ul>
 
 </li>
@@ -243,7 +243,7 @@ alice delete /docs/public: allowed=False reason=NoApplicablePolicies</code></pre
 <p><strong>Speedle Cloud はまもなく公開されます。</strong></p>
 </blockquote>
 
-<p>プログラムは <code>SPEEDLE_SERVICE</code> からサービス名を、<code>SPEEDLE_TOKEN</code> からサービスのトークンを読み取ります。<code>SPEEDLE_ENDPOINT</code> はデフォルトのエンドポイント <code>https://cloud.speedle.io</code> を上書きします。<code>Program.cs</code> を以下に置き換えます:</p>
+<p>プログラムは <code>SPEEDLE_SERVICE</code> からサービス名を、<code>SPEEDLE_TOKEN</code> から<code>ads</code> スコープのアカウント API キーを読み取ります。<code>SPEEDLE_ENDPOINT</code> はデフォルトのエンドポイント <code>https://cloud.speedle.io</code> を上書きします。<code>Program.cs</code> を以下に置き換えます:</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-csharp" data-lang="csharp"><span style="color:#ff79c6">using</span> Speedle.Sdk;
 
 <span style="color:#ff79c6">try</span>
@@ -268,14 +268,14 @@ alice delete /docs/public: allowed=False reason=NoApplicablePolicies</code></pre
     <span style="color:#ff79c6">return</span> <span style="color:#bd93f9">1</span>;
 }
 <span style="color:#ff79c6">return</span> <span style="color:#bd93f9">0</span>;</code></pre></div>
-<p>環境変数を設定して実行します。<code>read -rs</code> を使用すると、トークンがシェルの履歴や画面に表示されません:</p>
+<p>環境変数を設定して実行します。<code>read -rs</code> を使用すると、API キーがシェルの履歴や画面に表示されません:</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#8be9fd;font-style:italic">export</span> <span style="color:#8be9fd;font-style:italic">SPEEDLE_SERVICE</span><span style="color:#ff79c6">=</span>docs
 <span style="color:#8be9fd;font-style:italic">read</span> -rs SPEEDLE_TOKEN <span style="color:#ff79c6">&amp;&amp;</span> <span style="color:#8be9fd;font-style:italic">export</span> SPEEDLE_TOKEN
 dotnet run</code></pre></div>
 <p>サービスにサンプルポリシーが存在する場合の出力:</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">alice get /docs/public: allowed=True
 alice delete /docs/public: allowed=False reason=NoApplicablePolicies</code></pre></div>
-<p>トークンはサーバー側のシークレットです。ブラウザ、モバイルアプリ、またはデスクトップクライアントには絶対に配布しないでください。</p>
+<p>API キーはサーバー側のシークレットです。ブラウザ、モバイルアプリ、またはデスクトップクライアントには絶対に配布しないでください。</p>
 
 <h2 id="エラー処理">エラー処理</h2>
 

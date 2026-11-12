@@ -154,7 +154,7 @@
 <li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading docs-nav-heading-link"><a href="/docs/cloud/">Speedle Cloud</a></span>
 <ul class="">
 <li data-docs-depth="1" class=""><a href="/docs/cloud/getting-started/">Getting started</a></li>
-<li data-docs-depth="1" class=""><a href="/docs/cloud/tokens/">Application tokens</a></li>
+<li data-docs-depth="1" class=""><a href="/docs/cloud/tokens/">API keys</a></li>
 <li data-docs-depth="1" class=""><a href="/docs/cloud/authorization-api/">Authorization API</a></li>
 <li data-docs-depth="1" class=""><a href="/docs/cloud/api-reference/">API reference</a></li>
 <li data-docs-depth="1" class=""><a href="/docs/cloud/limits-and-errors/">Limits and errors</a></li>
@@ -240,7 +240,7 @@
 ./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ create policy -c <span style="color:#f1fa8c">&#34;grant user alice get,list /docs/public&#34;</span> --service-name<span style="color:#ff79c6">=</span>docs</code></pre></div>
 <p>The local examples connect to <code>http://localhost:6734</code> without credentials. The SDKs accept plain <code>http://</code> only for a loopback host; use HTTPS for any other ADS.</p>
 
-<p><strong>Speedle Cloud is coming soon.</strong> The Speedle Cloud examples connect to <code>https://cloud.speedle.io</code> and read the service name and its service-scoped token from the environment variables <code>SPEEDLE_SERVICE</code> and <code>SPEEDLE_TOKEN</code>. Create the same policy in that service to get the same answers. The token is a server-side secret: never ship it to browsers, mobile apps or desktop clients.</p>
+<p>The Speedle Cloud examples connect to <code>https://cloud.speedle.io</code> and read the service name and an account API key with the <code>ads</code> scope from the environment variables <code>SPEEDLE_SERVICE</code> and <code>SPEEDLE_TOKEN</code>. Create the same policy in that service to get the same answers. The API key is a server-side secret: never ship it to browsers, mobile apps or desktop clients.</p>
 </div></main>
         </div>
     </div>

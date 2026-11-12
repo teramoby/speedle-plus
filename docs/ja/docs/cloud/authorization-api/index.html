@@ -10,8 +10,8 @@
 
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
-    <meta name="viewport" content="width=device-width, initial-scale=1"><title>Speedle Cloud 認可 API プレビュー · Speedle Engine</title>
-<meta name="description" content="IsAllowed リクエストおよびレスポンス契約、Node.js 22 クライアントの例、およびサービス統合の制約。">
+    <meta name="viewport" content="width=device-width, initial-scale=1"><title>Speedle Cloud 認可 API · Speedle Engine</title>
+<meta name="description" content="アカウント API キーによる IsAllowed、呼び出し元の ID と Node.js 22 の例。">
 <meta name="generator" content="Hugo 0.48" />
 <link href="https://engine.speedle.io/index.xml" rel="alternate" type="application/rss+xml">
 <link rel="canonical" href="https://engine.speedle.io/ja/docs/cloud/authorization-api/">
@@ -23,10 +23,10 @@
 <link rel="alternate" hreflang="zh-CN" href="https://engine.speedle.io/zh/docs/cloud/authorization-api/">
 <link rel="alternate" hreflang="x-default" href="https://engine.speedle.io/docs/cloud/authorization-api/">
 <meta property="og:type" content="article">
-<meta property="article:modified_time" content="2026-11-08T21:11:24&#43;08:00">
+<meta property="article:modified_time" content="2026-11-12T00:00:00&#43;08:00">
 <meta property="og:site_name" content="Speedle Engine">
-<meta property="og:title" content="Speedle Cloud 認可 API プレビュー · Speedle Engine">
-<meta property="og:description" content="IsAllowed リクエストおよびレスポンス契約、Node.js 22 クライアントの例、およびサービス統合の制約。">
+<meta property="og:title" content="Speedle Cloud 認可 API · Speedle Engine">
+<meta property="og:description" content="アカウント API キーによる IsAllowed、呼び出し元の ID と Node.js 22 の例。">
 <meta property="og:url" content="https://engine.speedle.io/ja/docs/cloud/authorization-api/">
 <meta property="og:image" content="https://engine.speedle.io/img/social/engine-en.png">
 <meta property="og:image:width" content="1200">
@@ -34,13 +34,13 @@
 <meta property="og:image:type" content="image/png">
 <meta property="og:image:alt" content="Speedle Engine — Fast. Simple. Access control">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Speedle Cloud 認可 API プレビュー · Speedle Engine">
-<meta name="twitter:description" content="IsAllowed リクエストおよびレスポンス契約、Node.js 22 クライアントの例、およびサービス統合の制約。">
+<meta name="twitter:title" content="Speedle Cloud 認可 API · Speedle Engine">
+<meta name="twitter:description" content="アカウント API キーによる IsAllowed、呼び出し元の ID と Node.js 22 の例。">
 <meta name="twitter:image" content="https://engine.speedle.io/img/social/engine-en.png">
 <meta name="twitter:image:alt" content="Speedle Engine — Fast. Simple. Access control">
 
-<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/ja/docs/cloud/authorization-api/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-08T21:11:24+08:00","description":"IsAllowed リクエストおよびレスポンス契約、Node.js 22 クライアントの例、およびサービス統合の制約。","headline":"Speedle Cloud 認可 API プレビュー","image":"https://engine.speedle.io/img/social/engine-en.png","inLanguage":"ja","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/ja/docs/cloud/authorization-api/","@type":"WebPage"},"name":"Speedle Cloud 認可 API プレビュー","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/ja/docs/cloud/authorization-api/"}</script>
-<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/ja/docs/cloud/authorization-api/#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://engine.speedle.io/ja/","name":"ホーム","position":1},{"@type":"ListItem","item":"https://engine.speedle.io/ja/docs/","name":"ドキュメント","position":2},{"@type":"ListItem","item":"https://engine.speedle.io/ja/docs/cloud/","name":"Speedle Cloud","position":3},{"@type":"ListItem","item":"https://engine.speedle.io/ja/docs/cloud/authorization-api/","name":"Speedle Cloud 認可 API プレビュー","position":4}]}</script><link href="/css/docs.css" rel="stylesheet" type="text/css">
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/ja/docs/cloud/authorization-api/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-12T00:00:00+08:00","description":"アカウント API キーによる IsAllowed、呼び出し元の ID と Node.js 22 の例。","headline":"Speedle Cloud 認可 API","image":"https://engine.speedle.io/img/social/engine-en.png","inLanguage":"ja","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/ja/docs/cloud/authorization-api/","@type":"WebPage"},"name":"Speedle Cloud 認可 API","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/ja/docs/cloud/authorization-api/"}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/ja/docs/cloud/authorization-api/#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://engine.speedle.io/ja/","name":"ホーム","position":1},{"@type":"ListItem","item":"https://engine.speedle.io/ja/docs/","name":"ドキュメント","position":2},{"@type":"ListItem","item":"https://engine.speedle.io/ja/docs/cloud/","name":"Speedle Cloud","position":3},{"@type":"ListItem","item":"https://engine.speedle.io/ja/docs/cloud/authorization-api/","name":"Speedle Cloud 認可 API","position":4}]}</script><link href="/css/docs.css" rel="stylesheet" type="text/css">
 
 
     <link href="/css/navigation.css?v=header-20261106-v8" rel="stylesheet">
@@ -155,10 +155,10 @@
 <li data-docs-depth="0" class="docs-nav-section parent"><span class="docs-nav-heading docs-nav-heading-link"><a href="/ja/docs/cloud/">Speedle Cloud</a></span>
 <ul class="sub-menu">
 <li data-docs-depth="1" class=""><a href="/ja/docs/cloud/getting-started/">Speedle Cloud クイックスタート</a></li>
-<li data-docs-depth="1" class=""><a href="/ja/docs/cloud/tokens/">Speedle Cloud アプリケーショントークン</a></li>
-<li data-docs-depth="1" class="active"><a href="/ja/docs/cloud/authorization-api/" aria-current="page">Speedle Cloud 認可 API プレビュー</a></li>
+<li data-docs-depth="1" class=""><a href="/ja/docs/cloud/tokens/">API キー</a></li>
+<li data-docs-depth="1" class="active"><a href="/ja/docs/cloud/authorization-api/" aria-current="page">認可 API</a></li>
 <li data-docs-depth="1" class=""><a href="/ja/docs/cloud/api-reference/">API リファレンス</a></li>
-<li data-docs-depth="1" class=""><a href="/ja/docs/cloud/limits-and-errors/">Speedle Cloud の制限とエラー</a></li>
+<li data-docs-depth="1" class=""><a href="/ja/docs/cloud/limits-and-errors/">制限とエラー</a></li>
 </ul>
 
 </li>
@@ -181,7 +181,7 @@
 <main>
 <div id="main">
 
-  <h1>Speedle Cloud 認可 API プレビュー</h1>
+  <h1>Speedle Cloud 認可 API</h1>
   <p class="docs-lead"></p>
 
 
@@ -195,63 +195,77 @@
 
   <div id="kube-component" class="content">
 
-<p>Speedle Cloud は、高速で低レイテンシのアクセス決定のための認可 API を提供します。</p>
+<p><strong>Speedle Cloud はまもなく公開されます。</strong> このガイドは、本番環境のサインインと認証付き認可 API が利用可能になった際の手順を説明しています。例は実際の Cloud 環境では実行していません。</p>
 
-<h3 id="リクエスト契約">リクエスト契約</h3>
+<p>アカウント API キーを使い、サーバーから認可を確認します。キー作成にはサインインが利用可能である必要があります。管理スコープでは ADS を呼び出せません。<code>ads</code> 以外は <code>403 insufficient_scope</code> です。</p>
 
-<p>アプリケーションは、認可決定サービス (ADS) に対して <code>POST /authz-check/v1/is-allowed</code> を呼び出します。</p>
+<h2 id="サーバーから-isallowed-を呼び出す">サーバーから IsAllowed を呼び出す</h2>
 
-<h3 id="node-js-22-の例">Node.js 22 の例</h3>
+<p><code>ads</code> スコープの API キーを 1 つの <code>Authorization: Bearer</code> ヘッダーに入れ、POST で送信します。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-http" data-lang="http">POST /authz-check/v1/is-allowed
+Authorization: Bearer &lt;API key&gt;
+Content-Type: application/json
 
-<p>以下の Node.js の例は、ベアラートークンを使用して認可リクエストを送信する方法を示しています:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-javascript" data-lang="javascript"><span style="color:#ff79c6">import</span> { request } from <span style="color:#f1fa8c">&#39;node:https&#39;</span>;
+{&#34;subject&#34;:{&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;,&#34;name&#34;:&#34;alice&#34;,&#34;idd&#34;:&#34;corp&#34;}]},&#34;serviceName&#34;:&#34;books&#34;,&#34;resource&#34;:&#34;/books&#34;,&#34;action&#34;:&#34;get&#34;,&#34;attributes&#34;:[{&#34;name&#34;:&#34;level&#34;,&#34;type&#34;:&#34;numeric&#34;,&#34;value&#34;:3},{&#34;name&#34;:&#34;when&#34;,&#34;type&#34;:&#34;datetime&#34;,&#34;value&#34;:&#34;2026-11-05T03:00:00Z&#34;}]}</code></pre></div>
+<p>本文は自ホストの Speedle ADS と同じ REST 形式です。<code>attributes</code> は <code>{name, type, value}</code> の配列で、型は <code>string</code>、<code>numeric</code>、<code>bool</code>、RFC 3339 の <code>datetime</code> です。</p>
 
-<span style="color:#ff79c6">export</span> <span style="color:#ff79c6">async</span> <span style="color:#8be9fd;font-style:italic">function</span> checkAccess(token, authenticatedUserId, authenticatedUserIdd, resource, action) {
-  <span style="color:#ff79c6">if</span> (<span style="color:#ff79c6">!</span>authenticatedUserId <span style="color:#ff79c6">||</span> <span style="color:#ff79c6">!</span>authenticatedUserIdd) {
-    <span style="color:#ff79c6">throw</span> <span style="color:#ff79c6">new</span> <span style="color:#8be9fd;font-style:italic">Error</span>(<span style="color:#f1fa8c">&#39;principal name and identity domain are required&#39;</span>);
+<p><code>idd</code> はアプリケーションが認証した ID ドメインです。信頼できるサーバー側の認証情報から設定してください。<code>grant user alice from corp get /books</code> は <code>corp</code> のみで一致します。<code>from</code> のないポリシーは全ドメインの同名ユーザーに一致します。<code>idd</code> を省略した principal も全ドメインに一致するため、複数の ID ソースでは必ず送信してください。</p>
+
+<p><code>serviceName</code> は必須で既定値はありません。キーのアカウント内のサービスを選びます。未指定、空、不明、別アカウントの場合は <code>404 {&quot;error&quot;:&quot;service_not_found&quot;}</code> です。キーは単一サービスには結び付きません。<a href="/ja/docs/cloud/getting-started/">入門ポリシー</a>の例では <code>books</code> を指定します。</p>
+
+<h2 id="判定とユーザー-id">判定とユーザー ID</h2>
+
+<p>成功時は <code>allowed</code> が真偽値、<code>reason</code> が数値です。ポリシーによる拒否も HTTP 200 になり、<code>allowed</code> は <code>false</code> です。保護対象の操作前に <code>allowed</code> を確認し、例外や無効な応答は拒否してください。</p>
+
+<p>API キーはアカウントと API スコープを認証し、エンドユーザーはアプリケーションで認証します。ブラウザから渡された principal を信用しないでください。Cloud は <code>subject.token</code> と <code>tokenType</code> を検証せず破棄します。principal のみで判定するので、これらのフィールドをユーザー認証の証拠にしないでください。</p>
+
+<p>Playground は現在の保存済みポリシー、ADS は公開済みスナップショットを使用します。Playground の成功はすべての ADS 拠点への反映を保証しません。公開 ADS Diagnose API はありません。</p>
+
+<h2 id="node-js-22-の例">Node.js 22 の例</h2>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-js" data-lang="js"><span style="color:#ff79c6">export</span> <span style="color:#ff79c6">async</span> <span style="color:#8be9fd;font-style:italic">function</span> canReadBooks(authenticatedUserName, authenticatedUserIdd) {
+  <span style="color:#ff79c6">if</span> (<span style="color:#ff79c6">!</span>authenticatedUserName <span style="color:#ff79c6">||</span> <span style="color:#ff79c6">!</span>authenticatedUserIdd) {
+    <span style="color:#ff79c6">throw</span> <span style="color:#ff79c6">new</span> <span style="color:#8be9fd;font-style:italic">Error</span>(<span style="color:#f1fa8c">&#34;principal name and identity domain are required&#34;</span>);
   }
-
-  <span style="color:#ff79c6">const</span> payload <span style="color:#ff79c6">=</span> JSON.stringify({
-    subject<span style="color:#ff79c6">:</span> {
-      principals<span style="color:#ff79c6">:</span> [
-        {
-          type<span style="color:#ff79c6">:</span> <span style="color:#f1fa8c">&#39;user&#39;</span>,
-          name<span style="color:#ff79c6">:</span> authenticatedUserId,
-          idd<span style="color:#ff79c6">:</span> authenticatedUserIdd
-        }
-      ]
+  <span style="color:#ff79c6">const</span> apiKey <span style="color:#ff79c6">=</span> process.env.SPEEDLE_API_KEY;
+  <span style="color:#ff79c6">if</span> (<span style="color:#ff79c6">!</span>apiKey) <span style="color:#ff79c6">throw</span> <span style="color:#ff79c6">new</span> <span style="color:#8be9fd;font-style:italic">Error</span>(<span style="color:#f1fa8c">&#34;Speedle credential is not configured&#34;</span>);
+  <span style="color:#ff79c6">const</span> response <span style="color:#ff79c6">=</span> <span style="color:#ff79c6">await</span> fetch(<span style="color:#f1fa8c">&#34;https://cloud.speedle.io/authz-check/v1/is-allowed&#34;</span>, {
+    method<span style="color:#ff79c6">:</span> <span style="color:#f1fa8c">&#34;POST&#34;</span>,
+    redirect<span style="color:#ff79c6">:</span> <span style="color:#f1fa8c">&#34;error&#34;</span>,
+    signal<span style="color:#ff79c6">:</span> AbortSignal.timeout(<span style="color:#bd93f9">10</span>_000),
+    headers<span style="color:#ff79c6">:</span> {
+      Authorization<span style="color:#ff79c6">:</span> <span style="color:#f1fa8c">`Bearer </span><span style="color:#f1fa8c">${</span>apiKey<span style="color:#f1fa8c">}</span><span style="color:#f1fa8c">`</span>,
+      <span style="color:#f1fa8c">&#34;Content-Type&#34;</span><span style="color:#ff79c6">:</span> <span style="color:#f1fa8c">&#34;application/json&#34;</span>,
     },
-    serviceName<span style="color:#ff79c6">:</span> <span style="color:#f1fa8c">&#39;default&#39;</span>,
-    resource<span style="color:#ff79c6">:</span> resource,
-    action<span style="color:#ff79c6">:</span> action
+    body<span style="color:#ff79c6">:</span> JSON.stringify({
+      subject<span style="color:#ff79c6">:</span> {
+        principals<span style="color:#ff79c6">:</span> [
+          { type<span style="color:#ff79c6">:</span> <span style="color:#f1fa8c">&#34;user&#34;</span>, name<span style="color:#ff79c6">:</span> authenticatedUserName, idd<span style="color:#ff79c6">:</span> authenticatedUserIdd },
+        ],
+      },
+      serviceName<span style="color:#ff79c6">:</span> <span style="color:#f1fa8c">&#34;books&#34;</span>,
+      resource<span style="color:#ff79c6">:</span> <span style="color:#f1fa8c">&#34;/books&#34;</span>,
+      action<span style="color:#ff79c6">:</span> <span style="color:#f1fa8c">&#34;get&#34;</span>,
+    }),
   });
-
-  <span style="color:#ff79c6">return</span> <span style="color:#ff79c6">new</span> <span style="color:#8be9fd;font-style:italic">Promise</span>((resolve, reject) =&gt; {
-    <span style="color:#ff79c6">const</span> req <span style="color:#ff79c6">=</span> request(<span style="color:#f1fa8c">&#39;https://cloud.speedle.io/authz-check/v1/is-allowed&#39;</span>, {
-      method<span style="color:#ff79c6">:</span> <span style="color:#f1fa8c">&#39;POST&#39;</span>,
-      headers<span style="color:#ff79c6">:</span> {
-        <span style="color:#f1fa8c">&#39;Authorization&#39;</span><span style="color:#ff79c6">:</span> <span style="color:#f1fa8c">`Bearer </span><span style="color:#f1fa8c">${</span>token<span style="color:#f1fa8c">}</span><span style="color:#f1fa8c">`</span>,
-        <span style="color:#f1fa8c">&#39;Content-Type&#39;</span><span style="color:#ff79c6">:</span> <span style="color:#f1fa8c">&#39;application/json&#39;</span>,
-        <span style="color:#f1fa8c">&#39;Content-Length&#39;</span><span style="color:#ff79c6">:</span> Buffer.byteLength(payload)
-      }
-    }, (res) =&gt; {
-      <span style="color:#8be9fd;font-style:italic">let</span> data <span style="color:#ff79c6">=</span> <span style="color:#f1fa8c">&#39;&#39;</span>;
-      res.on(<span style="color:#f1fa8c">&#39;data&#39;</span>, chunk =&gt; data <span style="color:#ff79c6">+=</span> chunk);
-      res.on(<span style="color:#f1fa8c">&#39;end&#39;</span>, () =&gt; {
-        <span style="color:#ff79c6">if</span> (res.statusCode <span style="color:#ff79c6">===</span> <span style="color:#bd93f9">200</span>) {
-          resolve(JSON.parse(data));
-        } <span style="color:#ff79c6">else</span> {
-          reject(<span style="color:#ff79c6">new</span> <span style="color:#8be9fd;font-style:italic">Error</span>(<span style="color:#f1fa8c">`Authorization failed: </span><span style="color:#f1fa8c">${</span>res.statusCode<span style="color:#f1fa8c">}</span><span style="color:#f1fa8c"> </span><span style="color:#f1fa8c">${</span>data<span style="color:#f1fa8c">}</span><span style="color:#f1fa8c">`</span>));
-        }
-      });
-    });
-    req.on(<span style="color:#f1fa8c">&#39;error&#39;</span>, reject);
-    req.write(payload);
-    req.end();
-  });
+  <span style="color:#ff79c6">if</span> (<span style="color:#ff79c6">!</span>response.ok) <span style="color:#ff79c6">throw</span> <span style="color:#ff79c6">new</span> <span style="color:#8be9fd;font-style:italic">Error</span>(<span style="color:#f1fa8c">`Speedle HTTP </span><span style="color:#f1fa8c">${</span>response.status<span style="color:#f1fa8c">}</span><span style="color:#f1fa8c">`</span>);
+  <span style="color:#ff79c6">const</span> result <span style="color:#ff79c6">=</span> <span style="color:#ff79c6">await</span> response.json();
+  <span style="color:#ff79c6">if</span> (
+    <span style="color:#ff79c6">typeof</span> result <span style="color:#ff79c6">!==</span> <span style="color:#f1fa8c">&#34;object&#34;</span> <span style="color:#ff79c6">||</span> result <span style="color:#ff79c6">===</span> <span style="color:#ff79c6">null</span> <span style="color:#ff79c6">||</span> <span style="color:#8be9fd;font-style:italic">Array</span>.isArray(result) <span style="color:#ff79c6">||</span>
+    <span style="color:#ff79c6">typeof</span> result.allowed <span style="color:#ff79c6">!==</span> <span style="color:#f1fa8c">&#34;boolean&#34;</span> <span style="color:#ff79c6">||</span> <span style="color:#ff79c6">!</span><span style="color:#8be9fd;font-style:italic">Number</span>.isInteger(result.reason) <span style="color:#ff79c6">||</span>
+    result.reason <span style="color:#ff79c6">&lt;</span> <span style="color:#bd93f9">0</span> <span style="color:#ff79c6">||</span> result.reason <span style="color:#ff79c6">&gt;</span> <span style="color:#bd93f9">6</span>
+  ) {
+    <span style="color:#ff79c6">throw</span> <span style="color:#ff79c6">new</span> <span style="color:#8be9fd;font-style:italic">Error</span>(<span style="color:#f1fa8c">&#34;Invalid Speedle decision&#34;</span>);
+  }
+  <span style="color:#ff79c6">return</span> result.allowed;
 }
 </code></pre></div>
-<p>ポリシー例 <code>grant user alice from corp get /books</code> に対して、この関数を呼び出すと期待どおりの認可決定が返されます。</p>
+<p><code>SPEEDLE_API_KEY</code> はサーバーのシークレットストアから設定します。ユーザー名と ID ドメインはサーバーの認証結果を渡します。空の値は送信前に拒否し、例外を許可に変換しないでください。例には再試行ループがありません。必要なら <code>Retry-After</code> に従う上限付き再試行を追加し、認証情報付きリダイレクトを防ぐ <code>redirect: &quot;error&quot;</code> を維持します。</p>
+
+<h2 id="通信とキャッシュ">通信とキャッシュ</h2>
+
+<p>POST を使用します。他のメソッドでは <code>405 method_not_allowed</code> または早期の非 JSON のブロック応答を受ける場合があります。秘密の API キーをブラウザから直接送る CORS フローはありません。ADS は <code>Cache-Control: no-store</code> を使用し、判定とキーを共有キャッシュに保存しないでください。</p>
+
+<p><a href="/ja/docs/sdks/">SDK</a>、<a href="/ja/docs/cloud/limits-and-errors/">制限とエラー</a>、<a href="/ja/docs/cloud/">ダウンロード</a>も参照してください。</p>
 </div>
 </div>
 </main>

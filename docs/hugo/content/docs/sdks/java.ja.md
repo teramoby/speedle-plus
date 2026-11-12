@@ -118,7 +118,7 @@ alice delete /docs/public: allowed=false reason=NO_APPLICABLE_POLICIES
 
 > **Speedle Cloud はまもなく公開されます。**
 
-プログラムは `SPEEDLE_SERVICE` からサービス名を、`SPEEDLE_TOKEN` からサービスのトークンを読み取ります。`SPEEDLE_ENDPOINT` はデフォルトのエンドポイント `https://cloud.speedle.io` を上書きします。`src/main/java/Main.java` を以下に置き換えます:
+プログラムは `SPEEDLE_SERVICE` からサービス名を、`SPEEDLE_TOKEN` から`ads` スコープのアカウント API キーを読み取ります。`SPEEDLE_ENDPOINT` はデフォルトのエンドポイント `https://cloud.speedle.io` を上書きします。`src/main/java/Main.java` を以下に置き換えます:
 
 ```java
 import io.speedle.sdk.Auth;
@@ -152,7 +152,7 @@ public class Main {
 }
 ```
 
-環境変数を設定して実行します。`read -rs` を使用すると、トークンがシェルの履歴や画面に表示されません:
+環境変数を設定して実行します。`read -rs` を使用すると、API キーがシェルの履歴や画面に表示されません:
 
 ```bash
 export SPEEDLE_SERVICE=docs
@@ -167,7 +167,7 @@ alice get /docs/public: allowed=true
 alice delete /docs/public: allowed=false reason=NO_APPLICABLE_POLICIES
 ```
 
-トークンはサーバー側のシークレットです。ブラウザ、モバイルアプリ、またはデスクトップクライアントには絶対に配布しないでください。
+API キーはサーバー側のシークレットです。ブラウザ、モバイルアプリ、またはデスクトップクライアントには絶対に配布しないでください。
 
 ## エラー処理
 

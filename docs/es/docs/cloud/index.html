@@ -11,7 +11,7 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
     <meta name="viewport" content="width=device-width, initial-scale=1"><title>Speedle Cloud · Speedle Engine</title>
-<meta name="description" content="Documentación de Speedle Cloud: primeros pasos, gestión de cuentas y políticas, tokens de aplicación, vista previa de la API de autorización, límites, errores y descargas.">
+<meta name="description" content="Autorización alojada, claves API de cuenta, límites y guías de integración.">
 <meta name="generator" content="Hugo 0.48" />
 <link href="https://engine.speedle.io/index.xml" rel="alternate" type="application/rss+xml">
 <link rel="canonical" href="https://engine.speedle.io/es/docs/cloud/">
@@ -25,7 +25,7 @@
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Speedle Engine">
 <meta property="og:title" content="Speedle Cloud · Speedle Engine">
-<meta property="og:description" content="Documentación de Speedle Cloud: primeros pasos, gestión de cuentas y políticas, tokens de aplicación, vista previa de la API de autorización, límites, errores y descargas.">
+<meta property="og:description" content="Autorización alojada, claves API de cuenta, límites y guías de integración.">
 <meta property="og:url" content="https://engine.speedle.io/es/docs/cloud/">
 <meta property="og:image" content="https://engine.speedle.io/img/social/engine-en.png">
 <meta property="og:image:width" content="1200">
@@ -34,11 +34,11 @@
 <meta property="og:image:alt" content="Speedle Engine — Fast. Simple. Access control">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Speedle Cloud · Speedle Engine">
-<meta name="twitter:description" content="Documentación de Speedle Cloud: primeros pasos, gestión de cuentas y políticas, tokens de aplicación, vista previa de la API de autorización, límites, errores y descargas.">
+<meta name="twitter:description" content="Autorización alojada, claves API de cuenta, límites y guías de integración.">
 <meta name="twitter:image" content="https://engine.speedle.io/img/social/engine-en.png">
 <meta name="twitter:image:alt" content="Speedle Engine — Fast. Simple. Access control">
 
-<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/es/docs/cloud/#webpage","@type":"WebPage","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-12T20:00:00+08:00","description":"Documentación de Speedle Cloud: primeros pasos, gestión de cuentas y políticas, tokens de aplicación, vista previa de la API de autorización, límites, errores y descargas.","headline":"Speedle Cloud","image":"https://engine.speedle.io/img/social/engine-en.png","inLanguage":"es","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/es/docs/cloud/","@type":"WebPage"},"name":"Speedle Cloud","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/es/docs/cloud/"}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/es/docs/cloud/#webpage","@type":"WebPage","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-12T21:00:00+08:00","description":"Autorización alojada, claves API de cuenta, límites y guías de integración.","headline":"Speedle Cloud","image":"https://engine.speedle.io/img/social/engine-en.png","inLanguage":"es","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/es/docs/cloud/","@type":"WebPage"},"name":"Speedle Cloud","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/es/docs/cloud/"}</script>
 <script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/es/docs/cloud/#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://engine.speedle.io/es/","name":"Inicio","position":1},{"@type":"ListItem","item":"https://engine.speedle.io/es/docs/","name":"Documentación","position":2},{"@type":"ListItem","item":"https://engine.speedle.io/es/docs/cloud/","name":"Speedle Cloud","position":3}]}</script><link href="/css/docs.css" rel="stylesheet" type="text/css">
 
 
@@ -154,7 +154,7 @@
 <li data-docs-depth="0" class="docs-nav-section parent active"><span class="docs-nav-heading docs-nav-heading-link"><a href="/es/docs/cloud/" aria-current="page">Speedle Cloud</a></span>
 <ul class="sub-menu">
 <li data-docs-depth="1" class=""><a href="/es/docs/cloud/getting-started/">Primeros pasos</a></li>
-<li data-docs-depth="1" class=""><a href="/es/docs/cloud/tokens/">Tokens de aplicación</a></li>
+<li data-docs-depth="1" class=""><a href="/es/docs/cloud/tokens/">Claves API</a></li>
 <li data-docs-depth="1" class=""><a href="/es/docs/cloud/authorization-api/">API de autorización</a></li>
 <li data-docs-depth="1" class=""><a href="/es/docs/cloud/api-reference/">Referencia de la API</a></li>
 <li data-docs-depth="1" class=""><a href="/es/docs/cloud/limits-and-errors/">Límites y errores</a></li>
@@ -181,37 +181,34 @@
   <h1>Speedle Cloud</h1>
   <p></p>
 
-<p>Speedle Cloud es un servicio de control de acceso hospedado para desarrolladores, creado sobre el motor de políticas de código abierto Speedle. Está diseñado para permitirle gestionar políticas de autorización y roles en SPDL, probar decisiones en un Playground e invocar una API de autorización desde el servidor de su aplicación sin necesidad de operar su propio servicio de autorización.</p>
+<p>Speedle Cloud es un servicio de autorización alojado basado en el motor Speedle de código abierto. Gestione servicios y políticas SPDL de autorización y roles, pruebe decisiones en Playground y llame a la API desde su servidor.</p>
 
-<p><strong>Speedle Cloud estará disponible próximamente.</strong> El encabezado de Cloud muestra la etiqueta <strong>Próximamente</strong> y el inicio de sesión para producción aún no está habilitado en <a href="https://cloud.speedle.io/es/">cloud.speedle.io</a>. El flujo de la consola y el Servicio de Decisiones de Autorización (ADS) autenticado descritos aquí son vistas previas del contrato de servicio publicado. La emisión de un token no habilitará llamadas de autorización del lado del servidor mientras el ADS autenticado continúe pendiente. Verifique la disponibilidad del despliegue y del proveedor de identidad en su entorno seleccionado.</p>
+<p><strong>Speedle Cloud estará disponible próximamente.</strong> Esta guía describe el flujo para cuando se habiliten el inicio de sesión en producción y las comprobaciones de autorización autenticadas; los ejemplos no se han ejecutado en un entorno Cloud real.</p>
 
-<p>La beta pública gratuita está pensada para pruebas, aprendizaje y evaluación. No incluye SLA, no está recomendada para producción y sus funcionalidades y límites están sujetos a cambios.</p>
+<p>Para usar la consola o crear claves API debe estar disponible el inicio de sesión. La beta pública gratuita es para pruebas, aprendizaje y evaluación, no ofrece SLA y no se recomienda para producción. Las funciones y límites pueden cambiar.</p>
 
 <h2 id="documentación">Documentación</h2>
 
 <ul>
 <li><a href="/es/docs/cloud/getting-started/">Primeros pasos</a>: inicie sesión, cree un servicio y una política en la consola, cree una clave API y compruebe la autorización desde su aplicación.</li>
-<li><a href="/es/docs/cloud/tokens/">Tokens de aplicación</a>: requisitos de reautenticación reciente, divulgación única del token, paginación de metadatos, rotación y revocación.</li>
-<li><a href="/es/docs/cloud/authorization-api/">Vista previa de la API de autorización</a>: contrato de solicitud y respuesta de IsAllowed, ejemplo con Node.js 22, instantáneas de políticas y restricciones de integración.</li>
+<li><a href="/es/docs/cloud/tokens/">Claves API</a>: Credenciales de cuenta, ámbitos fijos, Crear y Revocar, secreto mostrado una vez y paginación.</li>
+<li><a href="/es/docs/cloud/authorization-api/">API de autorización</a>: Solicitudes IsAllowed, identidad del emisor, Node.js 22 y restricciones de transporte.</li>
 <li><a href="/es/docs/cloud/api-reference/">Referencia de la API</a>: comprobaciones de autorización y gestión de políticas con una API key. Las solicitudes salen de su servidor; esta página es de solo lectura.</li>
-<li><a href="/es/docs/cloud/limits-and-errors/">Límites y errores</a>: cuotas de cuenta, límites de solicitudes, respuestas de error, encabezados de tasa y cuota, y directrices de reintento.</li>
+<li><a href="/es/docs/cloud/limits-and-errors/">Límites y errores</a>: Límites de cuenta, tamaños, ráfagas, cuota diaria, errores y restablecimiento.</li>
 </ul>
-
-<p><a id="downloads"></a></p>
 
 <h2 id="descargas">Descargas</h2>
 
 <ul>
-<li><a href="/docs/cloud/quickstart.es.md">Markdown en español</a>: los cuatro capítulos de Cloud en un único documento sin conexión.</li>
+<li><a href="/docs/cloud/quickstart.es.md">Markdown en español</a>: Los cuatro capítulos de Cloud en una guía sin conexión.</li>
 <li><a href="/es/docs/cloud/api-reference/">Referencia de la API</a>: léala en este sitio. Los archivos sin procesar de abajo siguen disponibles.</li>
-<li><a href="https://cloud.speedle.io/openapi.yaml">OpenAPI YAML</a>: especificación canónica de la API de Cloud registrada.</li>
-<li><a href="https://cloud.speedle.io/openapi.json">OpenAPI JSON</a>: generado a partir de la misma fuente YAML.</li>
-<li><a href="https://cloud.speedle.io/build.json">Versión de compilación en servicio</a>: identifica la compilación en servicio; no certifica la disponibilidad del proveedor de identidad o del endpoint.</li>
+<li><a href="https://cloud.speedle.io/openapi.yaml">OpenAPI YAML</a></li>
+<li><a href="https://cloud.speedle.io/openapi.json">OpenAPI JSON</a></li>
 </ul>
 
-<p>Los esquemas incluyen las cuatro operaciones del Playground de sesión y el contrato autenticado de ADS. La publicación de un esquema o la descarga de una guía no habilita un endpoint pendiente ni abre el inicio de sesión. El archivo YAML y el JSON generado se versionan, promueven y restauran junto con la compilación sellada de Cloud correspondiente. Las descargas de Markdown en español, coreano, japonés, inglés y chino se mantienen con estas páginas de documentación de Engine.</p>
+<p>Los esquemas API describen los contratos de solicitud y respuesta; descargarlos no abre el inicio de sesión.</p>
 
-<p>Consulte los <a href="https://cloud.speedle.io/es/terms">Términos</a> y la <a href="https://cloud.speedle.io/es/privacy">Política de privacidad</a> de Cloud.</p>
+<p>Consulte los documentos de Cloud: <a href="https://cloud.speedle.io/es/terms">Términos</a> / <a href="https://cloud.speedle.io/es/privacy">Política de privacidad</a>.</p>
 </div></main>
         </div>
     </div>

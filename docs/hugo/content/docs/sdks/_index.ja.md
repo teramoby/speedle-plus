@@ -50,4 +50,4 @@ Java、Python、Go、.NET、Rust はバージョン 0.2.0 です。`@speedle/sdk
 
 ローカルの例は、認証情報なしで `http://localhost:6734` に接続します。SDK はループバックホストに対してのみ平文の `http://` を受け入れます。他の ADS には HTTPS を使用してください。
 
-**Speedle Cloud はまもなく公開されます。** Speedle Cloud のサンプルは `https://cloud.speedle.io` に接続し、環境変数 `SPEEDLE_SERVICE` と `SPEEDLE_TOKEN` からサービス名とそのサービススコープのトークンを読み取ります。そのサービス内で同じポリシーを作成すると、同じ回答が得られます。トークンはサーバー側のシークレットです。ブラウザ、モバイルアプリ、またはデスクトップクライアントには絶対に配布しないでください。
+Speedle Cloud のサンプルは `https://cloud.speedle.io` に接続し、環境変数 `SPEEDLE_SERVICE` と `SPEEDLE_TOKEN` からサービス名と`ads` スコープのアカウント API キーを読み取ります。そのサービス内で同じポリシーを作成すると、同じ回答が得られます。API キーはサーバー側のシークレットです。ブラウザ、モバイルアプリ、またはデスクトップクライアントには絶対に配布しないでください。

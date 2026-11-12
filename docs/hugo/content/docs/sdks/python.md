@@ -75,7 +75,7 @@ alice delete /docs/public: allowed=False reason=<Reason.NO_APPLICABLE_POLICIES: 
 
 > **Speedle Cloud is coming soon.**
 
-The program reads the service name from `SPEEDLE_SERVICE` and the service's token from `SPEEDLE_TOKEN`. `SPEEDLE_ENDPOINT` overrides the default endpoint `https://cloud.speedle.io`. Replace `main.py` with:
+The program reads the service name from `SPEEDLE_SERVICE` and an account API key with the `ads` scope from `SPEEDLE_TOKEN`. `SPEEDLE_ENDPOINT` overrides the default endpoint `https://cloud.speedle.io`. Replace `main.py` with:
 
 ```python
 import os
@@ -100,7 +100,7 @@ except SpeedleError as e:
     sys.exit(1)
 ```
 
-Set the environment and run it. `read -rs` keeps the token out of your shell history and screen:
+Set the environment and run it. `read -rs` keeps the API key out of your shell history and screen:
 
 ```bash
 export SPEEDLE_SERVICE=docs
@@ -115,7 +115,7 @@ alice get /docs/public: allowed=True
 alice delete /docs/public: allowed=False reason=<Reason.NO_APPLICABLE_POLICIES: 3>
 ```
 
-The token is a server-side secret. Never ship it to browsers, mobile apps or desktop clients.
+The API key is a server-side secret. Never ship it to browsers, mobile apps or desktop clients.
 
 ## Error handling
 

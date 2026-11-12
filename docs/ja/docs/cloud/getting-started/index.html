@@ -155,10 +155,10 @@
 <li data-docs-depth="0" class="docs-nav-section parent"><span class="docs-nav-heading docs-nav-heading-link"><a href="/ja/docs/cloud/">Speedle Cloud</a></span>
 <ul class="sub-menu">
 <li data-docs-depth="1" class="active"><a href="/ja/docs/cloud/getting-started/" aria-current="page">Speedle Cloud クイックスタート</a></li>
-<li data-docs-depth="1" class=""><a href="/ja/docs/cloud/tokens/">Speedle Cloud アプリケーショントークン</a></li>
-<li data-docs-depth="1" class=""><a href="/ja/docs/cloud/authorization-api/">Speedle Cloud 認可 API プレビュー</a></li>
+<li data-docs-depth="1" class=""><a href="/ja/docs/cloud/tokens/">API キー</a></li>
+<li data-docs-depth="1" class=""><a href="/ja/docs/cloud/authorization-api/">認可 API</a></li>
 <li data-docs-depth="1" class=""><a href="/ja/docs/cloud/api-reference/">API リファレンス</a></li>
-<li data-docs-depth="1" class=""><a href="/ja/docs/cloud/limits-and-errors/">Speedle Cloud の制限とエラー</a></li>
+<li data-docs-depth="1" class=""><a href="/ja/docs/cloud/limits-and-errors/">制限とエラー</a></li>
 </ul>
 
 </li>
@@ -239,7 +239,7 @@
 
 <p><strong>Is allowed</strong> は判定結果、<strong>Diagnose</strong> はポリシーの寄与、<strong>All granted roles</strong> はサブジェクトのロール、<strong>All granted permissions</strong> は許可されたリソースとアクションを表示します。テストは保存済みポリシーを使用し、未保存の下書きは使用しません。入力やポリシーを変更したら再実行してください。アプリケーションは API キーを使用して <a href="/ja/docs/cloud/authorization-api/">ADS 認可 API</a>を呼び出します。</p>
 
-<p>次のステップ：プログラムから管理する場合は、<a href="/ja/docs/cloud/tokens/">API キー</a>と <a href="/ja/docs/pms/policy-mgmt/#speedle-cloud">PMS API または spctl（Speedle Cloud）</a>を参照してください。</p>
+<p>次のステップ：プログラムから管理する場合は、<code>pms:write</code> スコープ（読み取りのみなら <code>pms:read</code>）のキーを別に作成し、<a href="/ja/docs/pms/policy-mgmt/#speedle-cloud">PMS API または spctl（Speedle Cloud）</a>を使用してください。前の手順で作成した <code>ads</code> キーではポリシーを管理できません。</p>
 </div>
 </div>
 </main>

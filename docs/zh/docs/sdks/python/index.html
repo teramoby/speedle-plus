@@ -155,7 +155,7 @@
 <li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading docs-nav-heading-link"><a href="/zh/docs/cloud/">Speedle Cloud</a></span>
 <ul class="">
 <li data-docs-depth="1" class=""><a href="/zh/docs/cloud/getting-started/">快速入门</a></li>
-<li data-docs-depth="1" class=""><a href="/zh/docs/cloud/tokens/">应用令牌</a></li>
+<li data-docs-depth="1" class=""><a href="/zh/docs/cloud/tokens/">API 密钥</a></li>
 <li data-docs-depth="1" class=""><a href="/zh/docs/cloud/authorization-api/">授权 API</a></li>
 <li data-docs-depth="1" class=""><a href="/zh/docs/cloud/api-reference/">API 参考</a></li>
 <li data-docs-depth="1" class=""><a href="/zh/docs/cloud/limits-and-errors/">限额与错误</a></li>
@@ -240,7 +240,7 @@ alice delete /docs/public: allowed=False reason=&lt;Reason.NO_APPLICABLE_POLICIE
 <p><strong>Speedle Cloud 即将上线。</strong></p>
 </blockquote>
 
-<p>程序从 <code>SPEEDLE_SERVICE</code> 读取服务名，从 <code>SPEEDLE_TOKEN</code> 读取该服务的令牌。<code>SPEEDLE_ENDPOINT</code> 可覆盖默认端点 <code>https://cloud.speedle.io</code>。将 <code>main.py</code> 替换为：</p>
+<p>程序从 <code>SPEEDLE_SERVICE</code> 读取服务名，从 <code>SPEEDLE_TOKEN</code> 读取具有 <code>ads</code> 权限范围的账号 API 密钥。<code>SPEEDLE_ENDPOINT</code> 可覆盖默认端点 <code>https://cloud.speedle.io</code>。将 <code>main.py</code> 替换为：</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#ff79c6">import</span> os
 <span style="color:#ff79c6">import</span> sys
 
@@ -261,14 +261,14 @@ alice delete /docs/public: allowed=False reason=&lt;Reason.NO_APPLICABLE_POLICIE
 <span style="color:#ff79c6">except</span> SpeedleError <span style="color:#ff79c6">as</span> e:
     <span style="color:#ff79c6">print</span>(f<span style="color:#f1fa8c">&#34;Speedle error: {e}&#34;</span>, <span style="color:#8be9fd;font-style:italic">file</span><span style="color:#ff79c6">=</span>sys<span style="color:#ff79c6">.</span>stderr)
     sys<span style="color:#ff79c6">.</span><span style="color:#8be9fd;font-style:italic">exit</span>(<span style="color:#bd93f9">1</span>)</code></pre></div>
-<p>设置环境变量后运行。<code>read -rs</code> 不会把令牌写入 shell 历史，也不会显示在屏幕上：</p>
+<p>设置环境变量后运行。<code>read -rs</code> 不会把API 密钥写入 shell 历史，也不会显示在屏幕上：</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#8be9fd;font-style:italic">export</span> <span style="color:#8be9fd;font-style:italic">SPEEDLE_SERVICE</span><span style="color:#ff79c6">=</span>docs
 <span style="color:#8be9fd;font-style:italic">read</span> -rs SPEEDLE_TOKEN <span style="color:#ff79c6">&amp;&amp;</span> <span style="color:#8be9fd;font-style:italic">export</span> SPEEDLE_TOKEN
 python main.py</code></pre></div>
 <p>服务中已有示例策略时，输出为：</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">alice get /docs/public: allowed=True
 alice delete /docs/public: allowed=False reason=&lt;Reason.NO_APPLICABLE_POLICIES: 3&gt;</code></pre></div>
-<p>令牌是服务端密钥，切勿放进浏览器、移动应用或桌面客户端。</p>
+<p>API 密钥是服务端密钥，切勿放进浏览器、移动应用或桌面客户端。</p>
 
 <h2 id="错误处理">错误处理</h2>
 

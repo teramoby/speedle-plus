@@ -1,69 +1,62 @@
 +++
-title = "Speedle Cloud limits and errors"
+title = "Speedle Cloud Limits and errors"
 linkTitle = "Limits and errors"
-description = "Speedle Cloud account quotas, request limits, flat JSON errors, rate and quota headers, daily accounting and retry guidance."
-date = 2026-11-08T00:00:00+08:00
-lastmod = 2026-11-08T17:11:18+08:00
+description = "Account limits, error codes, reset times and retry guidance."
 weight = 40
 draft = false
 toc = true
 tocheading = "h2"
 categories = ["docs"]
-bref = "Plan around account-wide limits and fail closed when Cloud cannot return a valid authorization decision."
+lastmod = 2026-11-12T00:00:00+08:00
 +++
 
-The ADS errors and headers below describe the authenticated ADS contract, whose runtime is not yet available. The management contract already defines account limits, session and CSRF checks, and token-management errors for use when account access is available. Downloading a schema does not enable a pending endpoint.
+**Speedle Cloud is coming soon.** This guide describes the workflow available when production sign-in and authenticated authorization checks open; the examples have not been run against a live Cloud environment.
+
+Limits apply to the whole account unless a row says otherwise. API keys are account credentials; changing keys does not increase the daily quota.
 
 ## Limits
 
-| Limit | Meaning |
+| What is limited | Limit | When reached / how to recover |
+| --- | --- | --- |
+| Services per account | 100 | `409 quota_exceeded`; delete an unused service. No timed reset. |
+| Authorization and role policies combined, across all services | 200 per account | `409 quota_exceeded`; delete policies. No timed reset. |
+| Complete SPDL source for one policy | 1,024 UTF-8 bytes | `400 invalid_request` on console policy writes; shorten the source. This counts bytes, not characters. No timed reset. |
+| Active API keys, all scopes combined | 10 per account | `409 quota_exceeded` with `limit: 10`; revoke an unused key. No timed reset; revoked history does not count. |
+| Policy name / API key name | 128 Unicode code points / 1–128 characters after trimming | `400 invalid_request`; shorten or correct the name. No timed reset. |
+| Billable policy-management and authorization calls | 10,000 per account per UTC day | `429 daily_quota_exceeded`; resets at 00:00 UTC. Follow `Retry-After`. |
+| Short bursts of API-key requests | Approximately 600 per minute per key at each Cloud location | `429 rate_limited` with `Retry-After: 60`; wait before retrying. This is a short-term limit, not a guaranteed throughput or a separate daily allowance. |
+| Ordinary request body | 65,536 bytes (64 KiB) | `413 request_too_large`; send a smaller body. No timed reset. |
+| Atomic JSON import body (`POST /api/service/import` only) | 5,100,000 bytes | `413 request_too_large`; reduce the import. The policy and account limits still apply. No timed reset. |
+| Incoming attributes | 50 attributes; 16,384 UTF-8 bytes of canonical JSON | `400 SPDL-0004`; send fewer or smaller attributes. No timed reset. |
+
+For scopes, creation and revocation, see [API keys](/docs/cloud/tokens/).
+
+## Daily quota
+
+Reads, writes, validation, Playground tests, imports, exports and authorization checks share the daily allowance. A policy denial or invalid business input still counts. Authentication, session operations and `GET /api/me` do not count. Requests rejected by authentication, scope checks, routing, CSRF, body-size checks, burst limits or the daily quota do not count.
+
+Cloud-side failures may receive a quota refund, up to 1,000 per account per UTC day; if a refund cannot be confirmed, the call stays charged. Errors caused by the request still count. During a temporary quota-counter failure, authorization calls may continue at a reduced rate within an additional allowance of up to 10,000 calls per account per UTC day. That allowance is separate from the normal quota, is not guaranteed, and resets at 00:00 UTC along with the refund allowance. If it cannot be granted, the response is `503 quota_unavailable`.
+
+Some daily capacity can be reserved but unused, so the usable total can be below 10,000. `GET /api/me` reports usage and the reset time. Do not retry continuously or switch keys to bypass account limits.
+
+## Errors and response headers
+
+Errors are flat JSON, for example `{"error":"rate_limited"}`. An error is not an authorization grant; fail closed if a valid decision cannot be obtained.
+
+| Status and error | What to do |
 | --- | --- |
-| 10,000 calls per day | Account-wide matched PMS and ADS handler calls per UTC day, across sessions, tokens and services; resets at 00:00 UTC. |
-| 200 policies | Authorization and role policies combined per account. |
-| 4 KiB of SPDL | 4,096 UTF-8 bytes per complete policy, not 4,096 characters. |
-| 2 active tokens | Per service; revoked history does not consume this cap. |
-| 600 requests per minute per token | Approximate per-location burst limit, separate from the strict daily account cap. |
-| 64 KiB request body | Global bound before parsing. Optional incoming attributes also retain their 50-attribute and 16,384-byte canonical UTF-8 JSON bound. |
+| `400 invalid_request` or a Speedle error message | Correct the request; do not retry it unchanged. |
+| `401 unauthorized` | Check the API key or signed-in session. A session cookie alone cannot authorize ADS. |
+| `403 reauth_required` | Authenticate with a linked provider again before creating a key. |
+| `403 insufficient_scope` | Use a key with the required scope. |
+| `403 management_scope_disabled` | Management-scope issuance is unavailable while sign-in is closed. |
+| `403 csrf_failed` | Use the console session with the required origin and CSRF header. |
+| `404 service_not_found` (ADS) / `404 not_found` (management) | Select an existing service in your account. Unknown, other-account or already-revoked key IDs also return `404 not_found`. |
+| `409 quota_exceeded` | Free the relevant service, policy or API-key slot; time does not reset these caps. |
+| `413 request_too_large` | Reduce the body size. |
+| `429 rate_limited` / `429 daily_quota_exceeded` | Respect `Retry-After` and use bounded backoff; the daily limit resets at UTC midnight. |
+| `503 quota_unavailable` / `503 snapshot_unavailable` / `500 internal_error` | Fail closed and retry with bounded backoff, respecting `Retry-After` when present. |
 
-Each account has one service. Token names are 1–128 characters. See [Application tokens](/docs/cloud/tokens/) for credential lifecycle rules.
+For verified API-key requests, `X-RateLimit-Limit` is 600. There is no exact `X-RateLimit-Remaining`. `X-Quota-Daily-Remaining`, when present, is an approximate account-wide balance; concurrent calls and unused reservations can make it differ from what you can actually use. It does not guarantee that the next request will succeed, and early rejections omit it.
 
-## Daily quota accounting
-
-Entering a matched handler spends one daily unit even for a policy denial, invalid business input or internal error. Authentication and session endpoints do not spend these units. Requests rejected before handler entry by authentication, routing, CSRF, body-size, burst-limit or quota-reservation checks do not spend them either.
-
-Reserved leases that expire or are abandoned are not reissued, so the number of usable calls can be fewer than 10,000. `GET /api/me` reports reserved daily usage and the reset time without charging a daily unit.
-
-Switching tokens does not add account quota. The daily account cap and the approximate per-location token burst cap are enforced separately.
-
-## HTTP errors
-
-Errors use flat JSON responses. Correct the request or credential where indicated; otherwise fail closed and use bounded backoff rather than an unbounded retry loop.
-
-| HTTP status and error | Application response |
-| --- | --- |
-| `401 {"error":"unauthorized"}` | Check the stage and credential. ADS includes a Bearer challenge. Anonymous and cookie-only requests cannot authorize ADS. |
-| `403 {"error":"reauth_required"}` | Authenticate again with a linked provider before creating a token. Ordinary activity does not refresh authentication recency. |
-| `403 {"error":"service_mismatch"}` | Correct the service input; never retry against another tenant's data. |
-| `400 {"error":"SPDL-0004 …"}` | Speedle rejected the request, for example because an attribute value has the wrong type. The message is the Speedle message. Correct the request; do not retry it unchanged. |
-| `404` for token revocation | The token ID is unknown, unowned or already revoked. Refresh metadata before choosing another action. |
-| `413 {"error":"request_too_large"}` | Reduce the request body. |
-| `429 {"error":"rate_limited"}` | Honor `Retry-After`, which is 60 seconds for this burst limit, and add bounded backoff. |
-| `429 {"error":"daily_quota_exceeded"}` | Honor `Retry-After` until the next UTC midnight. Switching tokens does not add account quota. |
-| `503 {"error":"quota_unavailable"}` or `snapshot_unavailable` | Fail closed and retry only with bounded backoff. Do not fall back to a demo or D1 policy evaluation. |
-| `500 {"error":"internal_error"}` | Fail closed. Retain a safe request ID for support and avoid logging credentials. |
-
-For `503` responses, `snapshot_unavailable` is charged after handler entry, while `quota_unavailable` is not charged. Early rejections omit the daily-remaining header described below.
-
-A non-POST ADS request may instead be stopped at the public edge with Cloudflare's 403 response. That is not an application authorization decision.
-
-## Rate and quota headers
-
-After verification, `X-RateLimit-Limit` is 600. ADS does not expose an exact `X-RateLimit-Remaining` value.
-
-When present after a charged handler, `X-Quota-Daily-Remaining` estimates the account-wide calls remaining today: the unreserved calls at lease grant plus this isolate's remaining lease. The estimate is conservative at grant time. It is cached for at most the valid 30-second lease and discarded when the lease expires or the UTC day rolls over.
-
-Concurrent isolates can make the value overstate availability by up to the unreserved balance at grant time, not merely 32 calls. Unused or abandoned reservations can make it understate availability. During rollout or rollback, legacy allocators fall back to the local lease remaining. This header is informational and does not change quota enforcement. Early rejections omit it.
-
-Matched application ADS responses also use `Cache-Control: no-store`. Do not place decisions or credentials in shared caches.
-
-Return to the [Authorization API preview](/docs/cloud/authorization-api/) for request examples and integration constraints.
+ADS responses use `Cache-Control: no-store`. Keep decisions and credentials out of shared caches. Use POST; other methods can receive `405 method_not_allowed` or an earlier non-JSON block response. See the [Authorization API](/docs/cloud/authorization-api/).

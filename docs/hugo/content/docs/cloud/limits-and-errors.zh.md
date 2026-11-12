@@ -1,69 +1,62 @@
 +++
 title = "Speedle Cloud 限额与错误"
 linkTitle = "限额与错误"
-description = "Speedle Cloud 账号额度、请求限制、扁平 JSON 错误、限流与额度响应头、每日额度计算和重试建议。"
-date = 2026-11-08T00:00:00+08:00
-lastmod = 2026-11-08T17:11:18+08:00
+description = "账号限额、错误代码、重置时间和重试建议。"
 weight = 40
 draft = false
 toc = true
 tocheading = "h2"
 categories = ["docs"]
-bref = "合理规划账号级限额，并在 Cloud 无法返回有效授权判定时默认拒绝。"
+lastmod = 2026-11-12T00:00:00+08:00
 +++
 
-以下 ADS 错误与响应头描述带认证的 ADS 合约，其运行时尚未提供。管理合约已经定义账号限额、会话与 CSRF 检查及令牌管理错误，供账号访问开放后使用。下载规范本身不会启用尚未提供的接口。
+**Speedle Cloud 即将上线。** 本文介绍生产环境开放登录和授权 API 后的使用流程，示例尚未在线上 Cloud 环境执行。
+
+除表中另有说明外，限额由整个账号共用。API 密钥属于账号；更换密钥不会增加每日额度。
 
 ## 限额
 
-| 限额 | 含义 |
+| 限制对象 | 上限 | 达到后如何处理 |
+| --- | --- | --- |
+| 每个账号的服务 | 100 个 | `409 quota_exceeded`；删除不用的服务。不会定时重置。 |
+| 所有服务的授权策略与角色策略合计 | 每账号 200 条 | `409 quota_exceeded`；删除策略。不会定时重置。 |
+| 单条策略的完整 SPDL 源文本 | 1,024 个 UTF-8 字节 | 控制台策略写入返回 `400 invalid_request`；缩短源文本。按字节计数，不是按字符计数。不会定时重置。 |
+| 所有权限范围的有效 API 密钥合计 | 每账号 10 个 | `409 quota_exceeded`，带 `limit: 10`；撤销不用的密钥。不会定时重置；已撤销历史不占名额。 |
+| 策略名称 / API 密钥名称 | 128 个 Unicode 码点 / 去除首尾空白后 1–128 个字符 | `400 invalid_request`；缩短或修正名称。不会定时重置。 |
+| 策略管理与授权调用的计费次数 | 每账号每 UTC 日 10,000 次 | `429 daily_quota_exceeded`；00:00 UTC 重置。遵守 `Retry-After`。 |
+| API 密钥请求的短时突发 | 每个 Cloud 位置、每个密钥每分钟约 600 次 | `429 rate_limited`，带 `Retry-After: 60`；等待后重试。这是短时限制，不保证吞吐量，也不是额外的每日额度。 |
+| 普通请求正文 | 65,536 字节（64 KiB） | `413 request_too_large`；缩小正文。不会定时重置。 |
+| 原子 JSON 导入正文（仅 `POST /api/service/import`） | 5,100,000 字节 | `413 request_too_large`；缩小导入内容。仍须满足单条策略和账号限额。不会定时重置。 |
+| 输入属性 | 50 个属性；规范化 JSON 的 UTF-8 长度为 16,384 字节 | `400 SPDL-0004`；减少属性或缩小属性值。不会定时重置。 |
+
+权限范围、创建和撤销规则见 [API 密钥](/zh/docs/cloud/tokens/)。
+
+## 每日额度
+
+读取、写入、校验、Playground 测试、导入、导出和授权检查共用每日额度。策略拒绝或业务输入无效仍计费。认证、会话操作和 `GET /api/me` 不计费。被认证、权限范围、路由、CSRF、正文大小、突发限流或每日额度检查拒绝的请求不计费。
+
+Cloud 自身故障可能退还额度，每账号每 UTC 日最多退还 1,000 次；无法确认退还时仍计费。请求本身导致的错误仍计费。额度计数暂时不可用时，授权调用可能在降速后继续执行，每账号每 UTC 日额外放行最多 10,000 次。这份额度与正常额度独立，不保证一定可用，和退还次数一样在 00:00 UTC 重置。无法放行时返回 `503 quota_unavailable`。
+
+部分每日额度可能已预留但未使用，因此实际可用次数可能少于 10,000。`GET /api/me` 返回用量和重置时间。不要持续重试或通过更换密钥绕过账号限额。
+
+## 错误与响应头
+
+错误使用扁平 JSON，例如 `{"error":"rate_limited"}`。错误不是授权通过；无法取得有效判定时应默认拒绝。
+
+| 状态与错误 | 处理方式 |
 | --- | --- |
-| 每日 10,000 次 | 同一账号每 UTC 日进入已匹配 PMS 和 ADS handler 的合计次数，由所有会话、令牌和 service 共用；00:00 UTC 重置。 |
-| 200 条策略 | 每个账号的授权策略和角色策略合计。 |
-| 每条 SPDL 4 KiB | 完整策略最多 4,096 个 UTF-8 字节，不是 4,096 个字符。 |
-| 2 个有效令牌 | 每个 service；已撤销的历史记录不占此名额。 |
-| 每令牌每分钟 600 次 | 每个节点的近似突发限制，与严格的账号每日总额分开。 |
-| 请求正文 64 KiB | 解析前的全局上限。可选输入 attributes 仍受 50 个属性、规范化 UTF-8 JSON 16,384 字节的限制。 |
+| `400 invalid_request` 或 Speedle 错误消息 | 修正请求，不要原样重试。 |
+| `401 unauthorized` | 检查 API 密钥或登录会话。仅有会话 cookie 不能调用 ADS。 |
+| `403 reauth_required` | 创建密钥前，通过已关联的身份提供方重新认证。 |
+| `403 insufficient_scope` | 使用具有所需权限范围的密钥。 |
+| `403 management_scope_disabled` | 登录关闭时不能签发管理权限的密钥。 |
+| `403 csrf_failed` | 使用控制台会话及所需的来源和 CSRF 请求头。 |
+| `404 service_not_found`（ADS）/ `404 not_found`（管理） | 选择当前账号中存在的服务。密钥 ID 未知、属于其他账号或已撤销时也返回 `404 not_found`。 |
+| `409 quota_exceeded` | 释放相应的服务、策略或 API 密钥名额；等待不会重置这些上限。 |
+| `413 request_too_large` | 缩小正文。 |
+| `429 rate_limited` / `429 daily_quota_exceeded` | 遵守 `Retry-After` 并使用有界退避；每日额度在 UTC 午夜重置。 |
+| `503 quota_unavailable` / `503 snapshot_unavailable` / `500 internal_error` | 默认拒绝，按有界退避重试；带有 `Retry-After` 时遵守它。 |
 
-每个账号只有一个 service。令牌名称为 1–128 个字符。凭据生命周期规则见[应用令牌](/zh/docs/cloud/tokens/)。
+API 密钥验证通过后，`X-RateLimit-Limit` 为 600，不提供精确的 `X-RateLimit-Remaining`。如果有 `X-Quota-Daily-Remaining`，它只是账号级剩余额度的估计值；并发调用和未使用的预留可能使它偏离实际可用次数。它不保证下一次请求成功，提前拒绝的响应不带此头。
 
-## 每日额度计算
-
-进入已匹配的 handler 即扣除一次每日额度，包括策略拒绝、无效业务输入和内部错误。认证与会话接口不消耗此额度。在进入 handler 前被认证、路由、CSRF、正文大小、突发限流或额度预留检查拒绝的请求，也不消耗每日额度。
-
-已过期或被放弃的预留 lease 不会重新发放，因此实际可用次数可能少于 10,000。`GET /api/me` 返回当天已预留用量和重置时间，本身不扣每日额度。
-
-更换令牌不会增加账号额度。严格的账号每日总额与近似的节点级令牌突发限额分别执行。
-
-## HTTP 错误
-
-错误使用扁平 JSON 响应。请按说明修正请求或凭据；其他情况下应默认拒绝，并采用有界退避，不要无限重试。
-
-| HTTP 状态与错误 | 应用处理方式 |
-| --- | --- |
-| `401 {"error":"unauthorized"}` | 检查环境和凭据。ADS 带 Bearer challenge。匿名请求或只带会话 cookie 的请求不能授权 ADS。 |
-| `403 {"error":"reauth_required"}` | 创建令牌前，使用已关联供应商重新认证。普通操作不会刷新认证时间。 |
-| `403 {"error":"service_mismatch"}` | 修正 service 输入，不得改用其他租户的数据重试。 |
-| `400 {"error":"SPDL-0004 …"}` | Speedle 拒绝了请求，例如属性值类型不符。error 是 Speedle 的原始消息。修正请求，不要原样重试。 |
-| 令牌撤销返回 `404` | 令牌 ID 未知、不属于自己或已经撤销。先刷新元数据，再决定下一步操作。 |
-| `413 {"error":"request_too_large"}` | 缩小请求正文。 |
-| `429 {"error":"rate_limited"}` | 遵守 `Retry-After`，此突发限制为 60 秒，并使用有界退避。 |
-| `429 {"error":"daily_quota_exceeded"}` | 按 `Retry-After` 等待至下一个 UTC 零点。更换令牌不会增加账号额度。 |
-| `503 {"error":"quota_unavailable"}` 或 `snapshot_unavailable` | 默认拒绝，仅在有界退避后重试，不得回退到 demo 或 D1 策略判定。 |
-| `500 {"error":"internal_error"}` | 默认拒绝。保留安全的 request ID 供排障，避免记录凭据。 |
-
-对于 `503` 响应，`snapshot_unavailable` 在进入 handler 后已经扣额，`quota_unavailable` 未扣额。提前拒绝的响应不带下文所述的每日剩余额度响应头。
-
-非 POST 的 ADS 请求也可能被公开边缘规则拦截并返回 Cloudflare 的 403，该响应不是应用授权判定。
-
-## 限流和额度响应头
-
-完成验证后，`X-RateLimit-Limit` 为 600。ADS 不提供精确的 `X-RateLimit-Remaining` 值。
-
-完成扣额的 handler 响应若带 `X-Quota-Daily-Remaining`，它估计账号今天剩余的调用次数：授予 lease 时的未预留余额，加上本 isolate 尚余的 lease 次数。该估计在授予时偏保守，随后最多缓存至有效的 30 秒 lease 结束，到期或 UTC 换日即作废。
-
-其他 isolate 的并发调用可能使该值高估可用次数，最多高估授予时的全部未预留余额，并非仅 32 次；未使用或被放弃的预留则可能使其低估。发布或回滚期间，旧分配器会保守回退为本地 lease 余量。此响应头仅供参考，不改变额度执行方式。提前拒绝的响应不带此头。
-
-已匹配的应用 ADS 响应还使用 `Cache-Control: no-store`，不要将判定结果或凭据放入共享缓存。
-
-请求示例和接入限制见[授权 API 预览](/zh/docs/cloud/authorization-api/)。
+ADS 响应使用 `Cache-Control: no-store`，不要共享缓存判定或凭据。请使用 POST；其他方法可能收到 `405 method_not_allowed`，或更早被拦截并返回非 JSON 响应。参见[授权 API](/zh/docs/cloud/authorization-api/)。

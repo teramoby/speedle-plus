@@ -10,8 +10,8 @@
 
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
-    <meta name="viewport" content="width=device-width, initial-scale=1"><title>Speedle Cloud application tokens · Speedle Engine</title>
-<meta name="description" content="Issue, protect, list, rotate and revoke Speedle Cloud application tokens, including recent authentication and one-time disclosure rules.">
+    <meta name="viewport" content="width=device-width, initial-scale=1"><title>Speedle Cloud API keys · Speedle Engine</title>
+<meta name="description" content="Create, protect, list and revoke account API keys and choose a fixed scope.">
 <meta name="generator" content="Hugo 0.48" />
 <link href="https://engine.speedle.io/index.xml" rel="alternate" type="application/rss+xml">
 <link rel="canonical" href="https://engine.speedle.io/docs/cloud/tokens/">
@@ -23,11 +23,10 @@
 <link rel="alternate" hreflang="zh-CN" href="https://engine.speedle.io/zh/docs/cloud/tokens/">
 <link rel="alternate" hreflang="x-default" href="https://engine.speedle.io/docs/cloud/tokens/">
 <meta property="og:type" content="article">
-<meta property="article:published_time" content="2026-11-08T00:00:00&#43;08:00">
-<meta property="article:modified_time" content="2026-11-08T17:11:18&#43;08:00">
+<meta property="article:modified_time" content="2026-11-12T00:00:00&#43;08:00">
 <meta property="og:site_name" content="Speedle Engine">
-<meta property="og:title" content="Speedle Cloud application tokens · Speedle Engine">
-<meta property="og:description" content="Issue, protect, list, rotate and revoke Speedle Cloud application tokens, including recent authentication and one-time disclosure rules.">
+<meta property="og:title" content="Speedle Cloud API keys · Speedle Engine">
+<meta property="og:description" content="Create, protect, list and revoke account API keys and choose a fixed scope.">
 <meta property="og:url" content="https://engine.speedle.io/docs/cloud/tokens/">
 <meta property="og:image" content="https://engine.speedle.io/img/social/engine-en.png">
 <meta property="og:image:width" content="1200">
@@ -35,13 +34,13 @@
 <meta property="og:image:type" content="image/png">
 <meta property="og:image:alt" content="Speedle Engine — Fast. Simple. Access control">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Speedle Cloud application tokens · Speedle Engine">
-<meta name="twitter:description" content="Issue, protect, list, rotate and revoke Speedle Cloud application tokens, including recent authentication and one-time disclosure rules.">
+<meta name="twitter:title" content="Speedle Cloud API keys · Speedle Engine">
+<meta name="twitter:description" content="Create, protect, list and revoke account API keys and choose a fixed scope.">
 <meta name="twitter:image" content="https://engine.speedle.io/img/social/engine-en.png">
 <meta name="twitter:image:alt" content="Speedle Engine — Fast. Simple. Access control">
 
-<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/docs/cloud/tokens/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-08T17:11:18+08:00","datePublished":"2026-11-08T00:00:00+08:00","description":"Issue, protect, list, rotate and revoke Speedle Cloud application tokens, including recent authentication and one-time disclosure rules.","headline":"Speedle Cloud application tokens","image":"https://engine.speedle.io/img/social/engine-en.png","inLanguage":"en","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/docs/cloud/tokens/","@type":"WebPage"},"name":"Speedle Cloud application tokens","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/docs/cloud/tokens/"}</script>
-<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/docs/cloud/tokens/#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://engine.speedle.io/","name":"Home","position":1},{"@type":"ListItem","item":"https://engine.speedle.io/docs/","name":"Documentation","position":2},{"@type":"ListItem","item":"https://engine.speedle.io/docs/cloud/","name":"Speedle Cloud","position":3},{"@type":"ListItem","item":"https://engine.speedle.io/docs/cloud/tokens/","name":"Speedle Cloud application tokens","position":4}]}</script><link href="/css/docs.css" rel="stylesheet" type="text/css">
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/docs/cloud/tokens/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-12T00:00:00+08:00","description":"Create, protect, list and revoke account API keys and choose a fixed scope.","headline":"Speedle Cloud API keys","image":"https://engine.speedle.io/img/social/engine-en.png","inLanguage":"en","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/docs/cloud/tokens/","@type":"WebPage"},"name":"Speedle Cloud API keys","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/docs/cloud/tokens/"}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/docs/cloud/tokens/#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://engine.speedle.io/","name":"Home","position":1},{"@type":"ListItem","item":"https://engine.speedle.io/docs/","name":"Documentation","position":2},{"@type":"ListItem","item":"https://engine.speedle.io/docs/cloud/","name":"Speedle Cloud","position":3},{"@type":"ListItem","item":"https://engine.speedle.io/docs/cloud/tokens/","name":"Speedle Cloud API keys","position":4}]}</script><link href="/css/docs.css" rel="stylesheet" type="text/css">
 
 
     <link href="/css/navigation.css?v=header-20261106-v8" rel="stylesheet">
@@ -156,7 +155,7 @@
 <li data-docs-depth="0" class="docs-nav-section parent"><span class="docs-nav-heading docs-nav-heading-link"><a href="/docs/cloud/">Speedle Cloud</a></span>
 <ul class="sub-menu">
 <li data-docs-depth="1" class=""><a href="/docs/cloud/getting-started/">Getting started</a></li>
-<li data-docs-depth="1" class="active"><a href="/docs/cloud/tokens/" aria-current="page">Application tokens</a></li>
+<li data-docs-depth="1" class="active"><a href="/docs/cloud/tokens/" aria-current="page">API keys</a></li>
 <li data-docs-depth="1" class=""><a href="/docs/cloud/authorization-api/">Authorization API</a></li>
 <li data-docs-depth="1" class=""><a href="/docs/cloud/api-reference/">API reference</a></li>
 <li data-docs-depth="1" class=""><a href="/docs/cloud/limits-and-errors/">Limits and errors</a></li>
@@ -182,8 +181,8 @@
 <main>
 <div id="main">
 
-  <h1>Speedle Cloud application tokens</h1>
-  <p class="docs-lead">Manage service-scoped Bearer credentials without exposing their one-time secret values.</p>
+  <h1>Speedle Cloud API keys</h1>
+  <p class="docs-lead"></p>
 
 
 
@@ -196,59 +195,81 @@
 
   <div id="kube-component" class="content">
 
-<p>Application tokens authenticate an application to Speedle Cloud ADS for the token&rsquo;s own service. They do not identify an end user and cannot authorize management API requests. The token console becomes available when account sign-in opens; while authenticated ADS is pending, issuing a token does not enable server-side authorization calls.</p>
+<p>API keys belong to your account and can access its services according to their scope. They authenticate your application, not its end users. Managing API keys, sessions and linked identities always requires a signed-in console session.</p>
 
-<h2 id="issue-a-token">Issue a token</h2>
+<p><strong>Speedle Cloud is coming soon.</strong> This guide describes the workflow available when production sign-in and authenticated authorization checks open; the examples have not been run against a live Cloud environment.</p>
 
-<p>For an account that already owns a service, open <a href="https://cloud.speedle.io/tokens">Application tokens</a>. Enter a token name of 1–128 characters and choose <strong>Create token</strong>. If verification is required, choose an available linked provider. After returning from the provider, enter the name and choose <strong>Create token</strong> again; returning does not create a token automatically.</p>
+<h2 id="create-an-api-key">Create an API key</h2>
 
-<p>The console sends this session request:</p>
+<p>Open <a href="https://cloud.speedle.io/tokens">API keys</a>, enter a name of 1–128 characters after trimming whitespace, select a scope and choose <strong>Create</strong>. Creating a key requires authentication with a linked provider within the last 10 minutes. If you receive <code>403 reauth_required</code>, authenticate again, then submit <strong>Create</strong> again; returning from the provider does not create a key automatically.</p>
+
+<p>Each key has one scope, fixed at creation:</p>
+
+<table>
+<thead>
+<tr>
+<th>Scope</th>
+<th>Access</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td><code>ads</code> (default)</td>
+<td>Authorization checks through <code>/authz-check/v1/*</code> only.</td>
+</tr>
+
+<tr>
+<td><code>pms:read</code></td>
+<td>Read account services, policies and role policies through <code>/policy-mgmt/v1</code>.</td>
+</tr>
+
+<tr>
+<td><code>pms:write</code></td>
+<td>Read, create and delete account services, policies and role policies through <code>/policy-mgmt/v1</code>.</td>
+</tr>
+</tbody>
+</table>
+
+<p>Management scopes cannot call ADS; <code>ads</code> cannot call policy management. Using the wrong scope returns <code>403 insufficient_scope</code>. Requesting a management scope while sign-in is closed returns <code>403 management_scope_disabled</code>.</p>
+
+<p>The console sends a session-authenticated request:</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-http" data-lang="http">POST /api/tokens
 Origin: https://cloud.speedle.io
 X-SC-CSRF: 1
 Content-Type: application/json
 
-{&#34;name&#34;:&#34;books-app&#34;}</code></pre></div>
-<p>This example uses the production origin. The client supplies the session through its existing secure cookie handling, so this is not a standalone anonymous request.</p>
+{&#34;name&#34;:&#34;books-app&#34;,&#34;scope&#34;:&#34;ads&#34;}</code></pre></div>
+<p>The request accepts <code>name</code> and optional <code>scope</code> (default <code>ads</code>). Do not send a service selector, expiry or authentication proofs. Cookie authentication and CSRF headers are required; an API key cannot replace the session.</p>
 
-<p>Creation requires normal provider authentication, through sign-in or reauthentication, no more than 10 minutes ago. The server checks the persisted session against its own clock. Exactly 10 minutes is allowed. A missing, future or stale authentication timestamp returns <code>403 {&quot;error&quot;:&quot;reauth_required&quot;}</code>. Ordinary account activity does not refresh authentication recency.</p>
+<h2 id="protect-the-secret">Protect the secret</h2>
 
-<p>The request accepts only <code>name</code>. Service ID, scopes, expiry and authentication proofs are not client inputs.</p>
-
-<h2 id="protect-the-one-time-secret">Protect the one-time secret</h2>
-
-<p>A successful creation returns 201 with token metadata and a one-time <code>token</code> field in this format:</p>
+<p>Creation returns HTTP 201. The response&rsquo;s <code>token</code> field contains the API key secret and is shown only once:</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">spdl_&lt;canonical uppercase ULID id&gt;_&lt;43 base62 digits&gt;</code></pre></div>
-<p>This is a format description, not a usable credential. The ID embedded in the token equals the returned token ID. Store the issued value immediately in the application&rsquo;s server-side secret store.</p>
+<p>An API key stays valid until you revoke it; it has no automatic expiry.</p>
 
-<p>Do not embed the token in frontend code or persist it in browser storage. Keep it out of URLs, source control, screenshots, issues, telemetry and logs. The normal management client may hold and display a newly issued value transiently for one-time, user-directed disclosure and copying. It must not automatically copy, download, store or log the secret.</p>
+<p>This describes the format, not a usable key. Save the value immediately in a server-side secret store. Never put it in browser storage, frontend code, URLs, source control, screenshots or logs. Listing keys returns metadata only; a lost secret cannot be recovered.</p>
 
-<p>Token listing returns metadata only; plaintext cannot be retrieved later. Tokens have no intrinsic expiry in v1. At most two tokens may be active for a service, and revoked history does not consume either active slot.</p>
+<p>Your account can have <strong>10 active API keys across all scopes</strong>. Creating another returns <code>409 {&quot;error&quot;:&quot;quota_exceeded&quot;,&quot;limit&quot;:10}</code>. Revoke an unused key to free a slot; the limit does not reset with time. Revoked keys remain listed and do not count toward the cap.</p>
 
-<h2 id="list-token-metadata">List token metadata</h2>
+<h2 id="list-api-keys">List API keys</h2>
 
-<p><code>GET /api/tokens</code> returns active and revoked metadata in bounded pages, ordered by ID descending. The default page size is 25; <code>limit</code> may be 1–100. The cursor is an exclusive token ID. Follow <code>nextCursor</code> until it is <code>null</code>. The response never returns the secret.</p>
+<p><code>GET /api/tokens</code> lists active and revoked keys, newest first. The default page size is 25; <code>limit</code> accepts 1–100. Pass the last response&rsquo;s <code>nextCursor</code> as <code>cursor</code> until <code>nextCursor</code> is <code>null</code>. <code>lastUsedAt</code> is best-effort, normally updated at most hourly; it does not prove that a key is unused.</p>
 
-<p>Use <strong>Refresh newest tokens</strong> and <strong>Next page</strong> to review metadata. <code>lastUsedAt</code> is best-effort and updates at most hourly, so it cannot prove that a caller has stopped using a token.</p>
+<h2 id="revoke-an-api-key">Revoke an API key</h2>
 
-<h2 id="rotate-and-revoke-a-token">Rotate and revoke a token</h2>
-
-<p>Once authenticated ADS is available, use normal recent authentication to create a second token. Switch every application and secret reference to the new credential, and confirm that it works for the intended policy before retiring the old one.</p>
-
-<p>In <strong>Application tokens</strong>, choose <strong>Revoke</strong> for the old token, check its name and ID, and confirm <strong>Revoke token</strong>. The management session sends:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-http" data-lang="http">DELETE /api/tokens/&lt;old token id&gt;
+<p>Choose <strong>Revoke</strong>, check the key name and ID, and confirm. Revocation does not require recent reauthentication. The console sends:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-http" data-lang="http">DELETE /api/tokens/&lt;API key id&gt;
 Origin: https://cloud.speedle.io
 X-SC-CSRF: 1
 Content-Type: application/json
 
 {}</code></pre></div>
-<p>The first revocation of an owned active token returns an empty 204. Unknown, unowned and already-revoked IDs return 404. Cached verification authority has a fixed maximum lifetime of 60 seconds from the start of its authoritative lookup, so revocation is not guaranteed to take effect everywhere immediately.</p>
+<p>The first revocation returns an empty HTTP 204. Unknown, other-account or already-revoked IDs return <code>404 not_found</code>. Previously verified requests may continue using a key for up to 60 seconds; revocation is not instantaneous everywhere.</p>
 
-<p>If both active slots are occupied, inventory and switch legitimate callers before retiring a credential. Do not revoke a working production token blindly just to free a slot.</p>
+<p>The available actions are <strong>Create</strong> and <strong>Revoke</strong>. To change a secret or scope, create another key, update callers and revoke the old key. If all active keys are in use at the cap, plan for interruption before revoking one. Deleting a service does not revoke account API keys.</p>
 
-<p>If a creation or revocation response is lost, review refreshed metadata before explicitly choosing another action. The console does not retry mutations automatically. A matching name cannot recover or identify a lost one-time secret.</p>
-
-<p>For request limits and management error handling, see <a href="/docs/cloud/limits-and-errors/">Limits and errors</a>. For using a token in an authorization request, see the <a href="/docs/cloud/authorization-api/">Authorization API preview</a>.</p>
+<p>If a creation or revocation response is lost, refresh the list before acting again. A matching name cannot recover a lost secret. See <a href="/docs/cloud/limits-and-errors/">Limits and errors</a> and the <a href="/docs/cloud/authorization-api/">Authorization API</a>.</p>
 </div>
 </div>
 </main>

@@ -1,24 +1,34 @@
 +++
-title = "Speedle Cloud application tokens"
-linkTitle = "Application tokens"
-description = "Issue, protect, list, rotate and revoke Speedle Cloud application tokens, including recent authentication and one-time disclosure rules."
-date = 2026-11-08T00:00:00+08:00
-lastmod = 2026-11-08T17:11:18+08:00
+title = "Speedle Cloud API keys"
+linkTitle = "API keys"
+description = "Create, protect, list and revoke account API keys and choose a fixed scope."
 weight = 20
 draft = false
 toc = true
 tocheading = "h2"
 categories = ["docs"]
-bref = "Manage service-scoped Bearer credentials without exposing their one-time secret values."
+lastmod = 2026-11-12T00:00:00+08:00
 +++
 
-Application tokens authenticate an application to Speedle Cloud ADS for the token's own service. They do not identify an end user and cannot authorize management API requests. The token console becomes available when account sign-in opens; while authenticated ADS is pending, issuing a token does not enable server-side authorization calls.
+API keys belong to your account and can access its services according to their scope. They authenticate your application, not its end users. Managing API keys, sessions and linked identities always requires a signed-in console session.
 
-## Issue a token
+**Speedle Cloud is coming soon.** This guide describes the workflow available when production sign-in and authenticated authorization checks open; the examples have not been run against a live Cloud environment.
 
-For an account that already owns a service, open [Application tokens](https://cloud.speedle.io/tokens). Enter a token name of 1–128 characters and choose **Create token**. If verification is required, choose an available linked provider. After returning from the provider, enter the name and choose **Create token** again; returning does not create a token automatically.
+## Create an API key
 
-The console sends this session request:
+Open [API keys](https://cloud.speedle.io/tokens), enter a name of 1–128 characters after trimming whitespace, select a scope and choose **Create**. Creating a key requires authentication with a linked provider within the last 10 minutes. If you receive `403 reauth_required`, authenticate again, then submit **Create** again; returning from the provider does not create a key automatically.
+
+Each key has one scope, fixed at creation:
+
+| Scope | Access |
+| --- | --- |
+| `ads` (default) | Authorization checks through `/authz-check/v1/*` only. |
+| `pms:read` | Read account services, policies and role policies through `/policy-mgmt/v1`. |
+| `pms:write` | Read, create and delete account services, policies and role policies through `/policy-mgmt/v1`. |
+
+Management scopes cannot call ADS; `ads` cannot call policy management. Using the wrong scope returns `403 insufficient_scope`. Requesting a management scope while sign-in is closed returns `403 management_scope_disabled`.
+
+The console sends a session-authenticated request:
 
 ```http
 POST /api/tokens
@@ -26,43 +36,35 @@ Origin: https://cloud.speedle.io
 X-SC-CSRF: 1
 Content-Type: application/json
 
-{"name":"books-app"}
+{"name":"books-app","scope":"ads"}
 ```
 
-This example uses the production origin. The client supplies the session through its existing secure cookie handling, so this is not a standalone anonymous request.
+The request accepts `name` and optional `scope` (default `ads`). Do not send a service selector, expiry or authentication proofs. Cookie authentication and CSRF headers are required; an API key cannot replace the session.
 
-Creation requires normal provider authentication, through sign-in or reauthentication, no more than 10 minutes ago. The server checks the persisted session against its own clock. Exactly 10 minutes is allowed. A missing, future or stale authentication timestamp returns `403 {"error":"reauth_required"}`. Ordinary account activity does not refresh authentication recency.
+## Protect the secret
 
-The request accepts only `name`. Service ID, scopes, expiry and authentication proofs are not client inputs.
-
-## Protect the one-time secret
-
-A successful creation returns 201 with token metadata and a one-time `token` field in this format:
+Creation returns HTTP 201. The response's `token` field contains the API key secret and is shown only once:
 
 ```text
 spdl_<canonical uppercase ULID id>_<43 base62 digits>
 ```
 
-This is a format description, not a usable credential. The ID embedded in the token equals the returned token ID. Store the issued value immediately in the application's server-side secret store.
+An API key stays valid until you revoke it; it has no automatic expiry.
 
-Do not embed the token in frontend code or persist it in browser storage. Keep it out of URLs, source control, screenshots, issues, telemetry and logs. The normal management client may hold and display a newly issued value transiently for one-time, user-directed disclosure and copying. It must not automatically copy, download, store or log the secret.
+This describes the format, not a usable key. Save the value immediately in a server-side secret store. Never put it in browser storage, frontend code, URLs, source control, screenshots or logs. Listing keys returns metadata only; a lost secret cannot be recovered.
 
-Token listing returns metadata only; plaintext cannot be retrieved later. Tokens have no intrinsic expiry in v1. At most two tokens may be active for a service, and revoked history does not consume either active slot.
+Your account can have **10 active API keys across all scopes**. Creating another returns `409 {"error":"quota_exceeded","limit":10}`. Revoke an unused key to free a slot; the limit does not reset with time. Revoked keys remain listed and do not count toward the cap.
 
-## List token metadata
+## List API keys
 
-`GET /api/tokens` returns active and revoked metadata in bounded pages, ordered by ID descending. The default page size is 25; `limit` may be 1–100. The cursor is an exclusive token ID. Follow `nextCursor` until it is `null`. The response never returns the secret.
+`GET /api/tokens` lists active and revoked keys, newest first. The default page size is 25; `limit` accepts 1–100. Pass the last response's `nextCursor` as `cursor` until `nextCursor` is `null`. `lastUsedAt` is best-effort, normally updated at most hourly; it does not prove that a key is unused.
 
-Use **Refresh newest tokens** and **Next page** to review metadata. `lastUsedAt` is best-effort and updates at most hourly, so it cannot prove that a caller has stopped using a token.
+## Revoke an API key
 
-## Rotate and revoke a token
-
-Once authenticated ADS is available, use normal recent authentication to create a second token. Switch every application and secret reference to the new credential, and confirm that it works for the intended policy before retiring the old one.
-
-In **Application tokens**, choose **Revoke** for the old token, check its name and ID, and confirm **Revoke token**. The management session sends:
+Choose **Revoke**, check the key name and ID, and confirm. Revocation does not require recent reauthentication. The console sends:
 
 ```http
-DELETE /api/tokens/<old token id>
+DELETE /api/tokens/<API key id>
 Origin: https://cloud.speedle.io
 X-SC-CSRF: 1
 Content-Type: application/json
@@ -70,10 +72,8 @@ Content-Type: application/json
 {}
 ```
 
-The first revocation of an owned active token returns an empty 204. Unknown, unowned and already-revoked IDs return 404. Cached verification authority has a fixed maximum lifetime of 60 seconds from the start of its authoritative lookup, so revocation is not guaranteed to take effect everywhere immediately.
+The first revocation returns an empty HTTP 204. Unknown, other-account or already-revoked IDs return `404 not_found`. Previously verified requests may continue using a key for up to 60 seconds; revocation is not instantaneous everywhere.
 
-If both active slots are occupied, inventory and switch legitimate callers before retiring a credential. Do not revoke a working production token blindly just to free a slot.
+The available actions are **Create** and **Revoke**. To change a secret or scope, create another key, update callers and revoke the old key. If all active keys are in use at the cap, plan for interruption before revoking one. Deleting a service does not revoke account API keys.
 
-If a creation or revocation response is lost, review refreshed metadata before explicitly choosing another action. The console does not retry mutations automatically. A matching name cannot recover or identify a lost one-time secret.
-
-For request limits and management error handling, see [Limits and errors](/docs/cloud/limits-and-errors/). For using a token in an authorization request, see the [Authorization API preview](/docs/cloud/authorization-api/).
+If a creation or revocation response is lost, refresh the list before acting again. A matching name cannot recover a lost secret. See [Limits and errors](/docs/cloud/limits-and-errors/) and the [Authorization API](/docs/cloud/authorization-api/).

@@ -1,37 +1,36 @@
 +++
 title = "Speedle Cloud"
-description = "Speedle Cloud documentation: getting started, account and policy management, application tokens, the authorization API preview, limits, errors and downloads."
+description = "Hosted authorization, account API keys, request limits and integration guides."
 weight = 306
 draft = false
 toc = false
 linksection = true
 tocheading = "h2"
 categories = ["docs"]
-lastmod = 2026-11-12T20:00:00+08:00
+lastmod = 2026-11-12T21:00:00+08:00
 +++
 
-Speedle Cloud is a hosted access-control service for developers, built on the open-source Speedle policy engine. It is designed to let you manage SPDL authorization and role policies, test decisions in a Playground, and call an authorization API from your application server without operating your own authorization service.
+Speedle Cloud is a hosted authorization service built on the open-source Speedle engine. Manage services, SPDL authorization and role policies, test decisions in the Playground and call the API from your server.
 
-**Speedle Cloud is coming soon.** The Cloud header displays a **Coming soon** badge, and production sign-in is not open on [cloud.speedle.io](https://cloud.speedle.io/) yet. The console workflow and authenticated Authorization Decision Service (ADS) described here are previews of the published service contract. Issuing a token will not enable server-side authorization calls while authenticated ADS remains pending. Verify deployment and identity-provider availability in your chosen stage.
+**Speedle Cloud is coming soon.** This guide describes the workflow available when production sign-in and authenticated authorization checks open; the examples have not been run against a live Cloud environment.
 
-The free public beta is intended for trials, learning and evaluation. It has no SLA, is not recommended for production use, and its features and limits may change.
+Account sign-in must be available before using the console or creating API keys. The free public beta is for trials, learning and evaluation, has no SLA and is not recommended for production use. Features and limits may change.
 
 ## Documentation
 
 - [Getting started](/docs/cloud/getting-started/): Sign in, create a service and policy in the console, create an API key, and check authorization from your application.
-- [Application tokens](/docs/cloud/tokens/): recent-authentication requirements, one-time token disclosure, metadata pagination, rotation and revocation.
-- [Authorization API preview](/docs/cloud/authorization-api/): the IsAllowed request and response contract, a Node.js 22 example, policy snapshots and integration constraints.
+- [API keys](/docs/cloud/tokens/): Account-level credentials, fixed scopes, Create and Revoke, one-time secret display and pagination.
+- [Authorization API](/docs/cloud/authorization-api/): IsAllowed requests, caller identity, Node.js 22 and transport constraints.
 - [API reference](/docs/cloud/api-reference/): authorization checks and policy management with an API key. Requests run from your server; this page is read-only.
-- [Limits and errors](/docs/cloud/limits-and-errors/): account quotas, request limits, error responses, rate and quota headers, and retry guidance.
+- [Limits and errors](/docs/cloud/limits-and-errors/): Account caps, size limits, burst limits, daily quota, error codes and reset times.
 
 ## Downloads
 
-- [English Markdown](https://engine.speedle.io/docs/cloud/quickstart.en.md): all four Cloud chapters in one offline document.
+- [English Markdown](https://engine.speedle.io/docs/cloud/quickstart.en.md): The four Cloud chapters in one offline guide.
 - [API reference](/docs/cloud/api-reference/): read it on this site. The raw files below remain available.
-- [OpenAPI YAML](https://cloud.speedle.io/openapi.yaml): the canonical checked-in Cloud API specification.
-- [OpenAPI JSON](https://cloud.speedle.io/openapi.json): generated from the same YAML source bytes.
-- [Serving build version](https://cloud.speedle.io/build.json): identifies the serving build; it does not certify identity-provider or endpoint availability.
+- [OpenAPI YAML](https://cloud.speedle.io/openapi.yaml)
+- [OpenAPI JSON](https://cloud.speedle.io/openapi.json)
 
-The schemas include the four session Playground operations and the authenticated ADS contract. Publishing a schema or downloading a guide does not enable a pending endpoint or open sign-in. The YAML and generated JSON are versioned, promoted and restored with the corresponding sealed Cloud build. The English and Chinese Markdown downloads are maintained with these Engine documentation pages.
+The API schemas describe the request and response contracts; downloading them does not open account sign-in.
 
-Read the Cloud [Terms](https://cloud.speedle.io/terms) and [Privacy Policy](https://cloud.speedle.io/privacy).
+Read the Cloud [Terms](https://cloud.speedle.io/terms) / [Privacy Policy](https://cloud.speedle.io/privacy).

@@ -154,10 +154,10 @@
 <li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading docs-nav-heading-link"><a href="/ja/docs/cloud/">Speedle Cloud</a></span>
 <ul class="">
 <li data-docs-depth="1" class=""><a href="/ja/docs/cloud/getting-started/">Speedle Cloud クイックスタート</a></li>
-<li data-docs-depth="1" class=""><a href="/ja/docs/cloud/tokens/">Speedle Cloud アプリケーショントークン</a></li>
-<li data-docs-depth="1" class=""><a href="/ja/docs/cloud/authorization-api/">Speedle Cloud 認可 API プレビュー</a></li>
+<li data-docs-depth="1" class=""><a href="/ja/docs/cloud/tokens/">API キー</a></li>
+<li data-docs-depth="1" class=""><a href="/ja/docs/cloud/authorization-api/">認可 API</a></li>
 <li data-docs-depth="1" class=""><a href="/ja/docs/cloud/api-reference/">API リファレンス</a></li>
-<li data-docs-depth="1" class=""><a href="/ja/docs/cloud/limits-and-errors/">Speedle Cloud の制限とエラー</a></li>
+<li data-docs-depth="1" class=""><a href="/ja/docs/cloud/limits-and-errors/">制限とエラー</a></li>
 </ul>
 
 </li>
@@ -242,7 +242,7 @@
 ./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ create policy -c <span style="color:#f1fa8c">&#34;grant user alice get,list /docs/public&#34;</span> --service-name<span style="color:#ff79c6">=</span>docs</code></pre></div>
 <p>ローカルの例は、認証情報なしで <code>http://localhost:6734</code> に接続します。SDK はループバックホストに対してのみ平文の <code>http://</code> を受け入れます。他の ADS には HTTPS を使用してください。</p>
 
-<p><strong>Speedle Cloud はまもなく公開されます。</strong> Speedle Cloud のサンプルは <code>https://cloud.speedle.io</code> に接続し、環境変数 <code>SPEEDLE_SERVICE</code> と <code>SPEEDLE_TOKEN</code> からサービス名とそのサービススコープのトークンを読み取ります。そのサービス内で同じポリシーを作成すると、同じ回答が得られます。トークンはサーバー側のシークレットです。ブラウザ、モバイルアプリ、またはデスクトップクライアントには絶対に配布しないでください。</p>
+<p>Speedle Cloud のサンプルは <code>https://cloud.speedle.io</code> に接続し、環境変数 <code>SPEEDLE_SERVICE</code> と <code>SPEEDLE_TOKEN</code> からサービス名と<code>ads</code> スコープのアカウント API キーを読み取ります。そのサービス内で同じポリシーを作成すると、同じ回答が得られます。API キーはサーバー側のシークレットです。ブラウザ、モバイルアプリ、またはデスクトップクライアントには絶対に配布しないでください。</p>
 </div></main>
         </div>
     </div>

@@ -71,4 +71,4 @@ Optionally, open the service's **Playground** and select **Is allowed**. Enter `
 
 **Is allowed** shows the decision; **Diagnose** explains how policies contributed; **All granted roles** lists the subject's roles; **All granted permissions** lists granted resources and actions. Tests use saved policies, not an unsaved draft. Run the test again after changing inputs or policies. Applications use the [ADS authorization API](/docs/cloud/authorization-api/) with an API key.
 
-Next steps: for programmatic management, use an [API key](/docs/cloud/tokens/) with the [PMS API or spctl (Speedle Cloud)](/docs/pms/policy-mgmt/#speedle-cloud).
+Next steps: for programmatic management, create a separate key with the `pms:write` scope (or `pms:read` for reads), then use the [PMS API or spctl (Speedle Cloud)](/docs/pms/policy-mgmt/#speedle-cloud). The `ads` key from the previous step cannot manage policies.

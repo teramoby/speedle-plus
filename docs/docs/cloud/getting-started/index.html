@@ -155,7 +155,7 @@
 <li data-docs-depth="0" class="docs-nav-section parent"><span class="docs-nav-heading docs-nav-heading-link"><a href="/docs/cloud/">Speedle Cloud</a></span>
 <ul class="sub-menu">
 <li data-docs-depth="1" class="active"><a href="/docs/cloud/getting-started/" aria-current="page">Getting started</a></li>
-<li data-docs-depth="1" class=""><a href="/docs/cloud/tokens/">Application tokens</a></li>
+<li data-docs-depth="1" class=""><a href="/docs/cloud/tokens/">API keys</a></li>
 <li data-docs-depth="1" class=""><a href="/docs/cloud/authorization-api/">Authorization API</a></li>
 <li data-docs-depth="1" class=""><a href="/docs/cloud/api-reference/">API reference</a></li>
 <li data-docs-depth="1" class=""><a href="/docs/cloud/limits-and-errors/">Limits and errors</a></li>
@@ -239,7 +239,7 @@
 
 <p><strong>Is allowed</strong> shows the decision; <strong>Diagnose</strong> explains how policies contributed; <strong>All granted roles</strong> lists the subject&rsquo;s roles; <strong>All granted permissions</strong> lists granted resources and actions. Tests use saved policies, not an unsaved draft. Run the test again after changing inputs or policies. Applications use the <a href="/docs/cloud/authorization-api/">ADS authorization API</a> with an API key.</p>
 
-<p>Next steps: for programmatic management, use an <a href="/docs/cloud/tokens/">API key</a> with the <a href="/docs/pms/policy-mgmt/#speedle-cloud">PMS API or spctl (Speedle Cloud)</a>.</p>
+<p>Next steps: for programmatic management, create a separate key with the <code>pms:write</code> scope (or <code>pms:read</code> for reads), then use the <a href="/docs/pms/policy-mgmt/#speedle-cloud">PMS API or spctl (Speedle Cloud)</a>. The <code>ads</code> key from the previous step cannot manage policies.</p>
 </div>
 </div>
 </main>

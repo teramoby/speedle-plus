@@ -74,7 +74,7 @@ alice delete /docs/public: allowed=False reason=NoApplicablePolicies
 
 > **Speedle Cloud는 출시 예정입니다.**
 
-프로그램은 `SPEEDLE_SERVICE`에서 서비스 이름을, `SPEEDLE_TOKEN`에서 서비스 토큰을 읽습니다. `SPEEDLE_ENDPOINT`는 기본 엔드포인트 `https://cloud.speedle.io`를 재정의합니다. `Program.cs`를 다음과 같이 대체합니다:
+프로그램은 `SPEEDLE_SERVICE`에서 서비스 이름을, `SPEEDLE_TOKEN`에서 `ads` 범위의 계정 API 키을 읽습니다. `SPEEDLE_ENDPOINT`는 기본 엔드포인트 `https://cloud.speedle.io`를 재정의합니다. `Program.cs`를 다음과 같이 대체합니다:
 
 ```csharp
 using Speedle.Sdk;
@@ -103,7 +103,7 @@ catch (SpeedleException e)
 return 0;
 ```
 
-환경 변수를 설정하고 실행합니다. `read -rs`를 사용하면 토큰이 셸 기록이나 화면에 노출되지 않습니다:
+환경 변수를 설정하고 실행합니다. `read -rs`를 사용하면 API 키이 셸 기록이나 화면에 노출되지 않습니다:
 
 ```bash
 export SPEEDLE_SERVICE=docs
@@ -118,7 +118,7 @@ alice get /docs/public: allowed=True
 alice delete /docs/public: allowed=False reason=NoApplicablePolicies
 ```
 
-토큰은 서버 측 비밀 값입니다. 브라우저, 모바일 앱 또는 데스크톱 클라이언트에 절대 배포하지 마십시오.
+API 키은 서버 측 비밀 값입니다. 브라우저, 모바일 앱 또는 데스크톱 클라이언트에 절대 배포하지 마십시오.
 
 ## 오류 처리
 

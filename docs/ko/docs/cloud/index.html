@@ -11,7 +11,7 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
     <meta name="viewport" content="width=device-width, initial-scale=1"><title>Speedle Cloud · Speedle Engine</title>
-<meta name="description" content="Speedle Cloud 문서: 빠른 시작, 계정 및 정책 관리, 애플리케이션 토큰, 인가 API 프리뷰, 제한, 오류 및 다운로드">
+<meta name="description" content="호스팅 인가, 계정 API 키, 요청 제한과 연동 안내.">
 <meta name="generator" content="Hugo 0.48" />
 <link href="https://engine.speedle.io/index.xml" rel="alternate" type="application/rss+xml">
 <link rel="canonical" href="https://engine.speedle.io/ko/docs/cloud/">
@@ -25,7 +25,7 @@
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Speedle Engine">
 <meta property="og:title" content="Speedle Cloud · Speedle Engine">
-<meta property="og:description" content="Speedle Cloud 문서: 빠른 시작, 계정 및 정책 관리, 애플리케이션 토큰, 인가 API 프리뷰, 제한, 오류 및 다운로드">
+<meta property="og:description" content="호스팅 인가, 계정 API 키, 요청 제한과 연동 안내.">
 <meta property="og:url" content="https://engine.speedle.io/ko/docs/cloud/">
 <meta property="og:image" content="https://engine.speedle.io/img/social/engine-en.png">
 <meta property="og:image:width" content="1200">
@@ -34,11 +34,11 @@
 <meta property="og:image:alt" content="Speedle Engine — Fast. Simple. Access control">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Speedle Cloud · Speedle Engine">
-<meta name="twitter:description" content="Speedle Cloud 문서: 빠른 시작, 계정 및 정책 관리, 애플리케이션 토큰, 인가 API 프리뷰, 제한, 오류 및 다운로드">
+<meta name="twitter:description" content="호스팅 인가, 계정 API 키, 요청 제한과 연동 안내.">
 <meta name="twitter:image" content="https://engine.speedle.io/img/social/engine-en.png">
 <meta name="twitter:image:alt" content="Speedle Engine — Fast. Simple. Access control">
 
-<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/ko/docs/cloud/#webpage","@type":"WebPage","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-12T20:00:00+08:00","description":"Speedle Cloud 문서: 빠른 시작, 계정 및 정책 관리, 애플리케이션 토큰, 인가 API 프리뷰, 제한, 오류 및 다운로드","headline":"Speedle Cloud","image":"https://engine.speedle.io/img/social/engine-en.png","inLanguage":"ko","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/ko/docs/cloud/","@type":"WebPage"},"name":"Speedle Cloud","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/ko/docs/cloud/"}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/ko/docs/cloud/#webpage","@type":"WebPage","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-12T21:00:00+08:00","description":"호스팅 인가, 계정 API 키, 요청 제한과 연동 안내.","headline":"Speedle Cloud","image":"https://engine.speedle.io/img/social/engine-en.png","inLanguage":"ko","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/ko/docs/cloud/","@type":"WebPage"},"name":"Speedle Cloud","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/ko/docs/cloud/"}</script>
 <script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/ko/docs/cloud/#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://engine.speedle.io/ko/","name":"홈","position":1},{"@type":"ListItem","item":"https://engine.speedle.io/ko/docs/","name":"문서","position":2},{"@type":"ListItem","item":"https://engine.speedle.io/ko/docs/cloud/","name":"Speedle Cloud","position":3}]}</script><link href="/css/docs.css" rel="stylesheet" type="text/css">
 
 
@@ -154,10 +154,10 @@
 <li data-docs-depth="0" class="docs-nav-section parent active"><span class="docs-nav-heading docs-nav-heading-link"><a href="/ko/docs/cloud/" aria-current="page">Speedle Cloud</a></span>
 <ul class="sub-menu">
 <li data-docs-depth="1" class=""><a href="/ko/docs/cloud/getting-started/">Speedle Cloud 빠른 시작</a></li>
-<li data-docs-depth="1" class=""><a href="/ko/docs/cloud/tokens/">Speedle Cloud 애플리케이션 토큰</a></li>
-<li data-docs-depth="1" class=""><a href="/ko/docs/cloud/authorization-api/">Speedle Cloud 인가 API 프리뷰</a></li>
+<li data-docs-depth="1" class=""><a href="/ko/docs/cloud/tokens/">API 키</a></li>
+<li data-docs-depth="1" class=""><a href="/ko/docs/cloud/authorization-api/">인가 API</a></li>
 <li data-docs-depth="1" class=""><a href="/ko/docs/cloud/api-reference/">API 레퍼런스</a></li>
-<li data-docs-depth="1" class=""><a href="/ko/docs/cloud/limits-and-errors/">Speedle Cloud 제한 및 오류</a></li>
+<li data-docs-depth="1" class=""><a href="/ko/docs/cloud/limits-and-errors/">제한과 오류</a></li>
 </ul>
 
 </li>
@@ -181,35 +181,34 @@
   <h1>Speedle Cloud</h1>
   <p></p>
 
-<p>Speedle Cloud는 오픈 소스 Speedle 정책 엔진을 기반으로 구축된 개발자용 호스팅형 접근 제어 서비스입니다. 자체 인가 서비스를 직접 운영할 필요 없이 SPDL 인가 정책 및 역할 정책을 관리하고, 플레이그라운드에서 결정을 테스트하며, 애플리케이션 서버에서 인가 API를 호출할 수 있도록 설계되었습니다.</p>
+<p>Speedle Cloud는 오픈 소스 Speedle 엔진 기반의 호스팅 인가 서비스입니다. 서비스, SPDL 인가 정책과 역할 정책을 관리하고 Playground에서 판정을 테스트한 뒤 서버에서 API를 호출합니다.</p>
 
-<p><strong>Speedle Cloud는 출시 예정입니다.</strong> Cloud 헤더에는 <strong>Coming soon(출시 예정)</strong> 배지가 표시되어 있으며, <a href="https://cloud.speedle.io/ko/">cloud.speedle.io</a>에서의 프로덕션 로그인은 아직 시작되지 않았습니다. 여기에 설명된 콘솔 워크플로 및 인증된 인가 결정 서비스(ADS)는 공개된 서비스 계약의 프리뷰입니다. 인증된 ADS가 보류 중인 동안 토큰을 발급하더라도 서버 측 인가 호출이 활성화되지 않습니다. 선택한 단계에서의 배포 및 ID 공급자의 가용성을 확인하십시오.</p>
+<p><strong>Speedle Cloud는 출시 예정입니다.</strong> 이 가이드는 프로덕션 로그인과 인증된 인가 API가 제공될 때의 사용 절차를 설명합니다. 예제는 실제 Cloud 환경에서 실행하지 않았습니다.</p>
 
-<p>무료 공개 베타는 시험 사용, 학습 및 평가를 목적으로 합니다. SLA는 제공되지 않으며 프로덕션 환경에서의 사용은 권장되지 않습니다. 또한 기능과 제한 사항은 변경될 수 있습니다.</p>
+<p>콘솔 사용과 API 키 생성에는 로그인이 가능해야 합니다. 무료 공개 베타는 시험, 학습, 평가용이며 SLA가 없고 프로덕션 사용은 권장하지 않습니다. 기능과 한도는 변경될 수 있습니다.</p>
 
 <h2 id="문서">문서</h2>
 
 <ul>
 <li><a href="/ko/docs/cloud/getting-started/">빠른 시작</a>: 로그인한 뒤 콘솔에서 서비스와 정책, API 키를 생성하고 애플리케이션에서 인가를 확인합니다.</li>
-<li><a href="/ko/docs/cloud/tokens/">애플리케이션 토큰</a>: 최근 재인증 요구 사항, 1회 한정 토큰 공개, 메타데이터 페이지네이션, 교체 및 취소.</li>
-<li><a href="/ko/docs/cloud/authorization-api/">인가 API 프리뷰</a>: IsAllowed 요청 및 응답 계약, Node.js 22 클라이언트 예제, 정책 스냅샷 및 통합 제약 사항.</li>
+<li><a href="/ko/docs/cloud/tokens/">API 키</a>: 계정 자격 증명, 고정 범위, 생성과 폐기, 한 번의 비밀 표시와 페이지 조회.</li>
+<li><a href="/ko/docs/cloud/authorization-api/">인가 API</a>: IsAllowed 요청, 호출자 신원, Node.js 22와 전송 제약.</li>
 <li><a href="/ko/docs/cloud/api-reference/">API 레퍼런스</a>: API key를 사용한 인가 확인과 정책 관리. 요청은 서버에서 보내며, 이 페이지는 읽기 전용입니다.</li>
-<li><a href="/ko/docs/cloud/limits-and-errors/">제한 및 오류</a>: 계정 쿼터, 요청 제한, 오류 응답 구조, 레이트 및 쿼터 헤더, 재시도 지침.</li>
+<li><a href="/ko/docs/cloud/limits-and-errors/">제한과 오류</a>: 계정 한도, 크기, 버스트, 일일 할당량, 오류 코드와 초기화 시각.</li>
 </ul>
 
 <h2 id="다운로드">다운로드</h2>
 
 <ul>
-<li><a href="/docs/cloud/quickstart.ko.md">한국어 Markdown</a>: 4개의 Cloud 장을 모은 오프라인 문서.</li>
+<li><a href="/docs/cloud/quickstart.ko.md">한국어 Markdown</a>: Cloud 네 장을 합친 오프라인 안내.</li>
 <li><a href="/ko/docs/cloud/api-reference/">API 레퍼런스</a>: 이 사이트에서 읽습니다. 아래의 원본 파일도 그대로 둡니다.</li>
-<li><a href="https://cloud.speedle.io/openapi.yaml">OpenAPI YAML</a>: 저장소에 체크인된 정식 Cloud API 사양.</li>
-<li><a href="https://cloud.speedle.io/openapi.json">OpenAPI JSON</a>: 동일한 YAML 소스 바이트에서 생성.</li>
-<li><a href="https://cloud.speedle.io/build.json">제공 빌드 버전</a>: 서비스를 제공하는 빌드를 식별(ID 공급자나 엔드포인트의 가용성을 증명하지는 않음).</li>
+<li><a href="https://cloud.speedle.io/openapi.yaml">OpenAPI YAML</a></li>
+<li><a href="https://cloud.speedle.io/openapi.json">OpenAPI JSON</a></li>
 </ul>
 
-<p>사양에는 4가지 세션 플레이그라운드 작업과 인증된 ADS 계약이 포함됩니다. 사양 공개나 가이드 다운로드가 보류 중인 엔드포인트를 활성화하거나 로그인을 시작하지는 않습니다. YAML 및 생성된 JSON은 해당 봉인된 Cloud 빌드와 함께 버전 관리, 프로모션 및 복원됩니다. 한국어, 일본어, 영어, 중국어 Markdown 다운로드는 이 Engine 문서 페이지와 함께 유지 관리됩니다.</p>
+<p>API 명세는 요청과 응답 계약을 설명합니다. 다운로드해도 로그인이 열리지는 않습니다.</p>
 
-<p>Cloud의 <a href="https://cloud.speedle.io/ko/terms">이용약관</a> 및 <a href="https://cloud.speedle.io/ko/privacy">개인정보 처리방침</a>을 읽어보십시오.</p>
+<p>Cloud 문서를 확인하세요: <a href="https://cloud.speedle.io/ko/terms">이용 약관</a> / <a href="https://cloud.speedle.io/ko/privacy">개인정보 처리방침</a>.</p>
 </div></main>
         </div>
     </div>

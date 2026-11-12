@@ -49,4 +49,4 @@ Todos los ejemplos comprueban si el usuario `alice` puede realizar las acciones 
 
 Los ejemplos locales se conectan a `http://localhost:6734` sin credenciales. Los SDK solo aceptan `http://` en texto plano para hosts de bucle invertido (loopback); utilice HTTPS para cualquier otro ADS.
 
-**Speedle Cloud estará disponible próximamente.** Los ejemplos de Speedle Cloud se conectan a `https://cloud.speedle.io` y leen el nombre del servicio y su token exclusivo desde las variables de entorno `SPEEDLE_SERVICE` y `SPEEDLE_TOKEN`. Cree la misma política en ese servicio para obtener las mismas respuestas. El token es un secreto del lado del servidor: nunca lo exponga en navegadores, aplicaciones móviles ni clientes de escritorio.
+Los ejemplos de Speedle Cloud se conectan a `https://cloud.speedle.io` y leen el nombre del servicio y una clave API de cuenta con ámbito `ads` desde las variables de entorno `SPEEDLE_SERVICE` y `SPEEDLE_TOKEN`. Cree la misma política en ese servicio para obtener las mismas respuestas. La clave API es un secreto del lado del servidor: nunca la exponga en navegadores, aplicaciones móviles ni clientes de escritorio.

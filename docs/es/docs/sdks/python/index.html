@@ -155,7 +155,7 @@
 <li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading docs-nav-heading-link"><a href="/es/docs/cloud/">Speedle Cloud</a></span>
 <ul class="">
 <li data-docs-depth="1" class=""><a href="/es/docs/cloud/getting-started/">Primeros pasos</a></li>
-<li data-docs-depth="1" class=""><a href="/es/docs/cloud/tokens/">Tokens de aplicación</a></li>
+<li data-docs-depth="1" class=""><a href="/es/docs/cloud/tokens/">Claves API</a></li>
 <li data-docs-depth="1" class=""><a href="/es/docs/cloud/authorization-api/">API de autorización</a></li>
 <li data-docs-depth="1" class=""><a href="/es/docs/cloud/api-reference/">Referencia de la API</a></li>
 <li data-docs-depth="1" class=""><a href="/es/docs/cloud/limits-and-errors/">Límites y errores</a></li>
@@ -240,7 +240,7 @@ alice delete /docs/public: allowed=False reason=&lt;Reason.NO_APPLICABLE_POLICIE
 <p><strong>Speedle Cloud estará disponible próximamente.</strong></p>
 </blockquote>
 
-<p>El programa lee el nombre del servicio desde <code>SPEEDLE_SERVICE</code> y el token del servicio desde <code>SPEEDLE_TOKEN</code>. <code>SPEEDLE_ENDPOINT</code> anula el endpoint predeterminado <code>https://cloud.speedle.io</code>. Sustituya <code>main.py</code> por:</p>
+<p>El programa lee el nombre del servicio desde <code>SPEEDLE_SERVICE</code> y una clave API de cuenta con ámbito <code>ads</code> desde <code>SPEEDLE_TOKEN</code>. <code>SPEEDLE_ENDPOINT</code> anula el endpoint predeterminado <code>https://cloud.speedle.io</code>. Sustituya <code>main.py</code> por:</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#ff79c6">import</span> os
 <span style="color:#ff79c6">import</span> sys
 
@@ -261,14 +261,14 @@ alice delete /docs/public: allowed=False reason=&lt;Reason.NO_APPLICABLE_POLICIE
 <span style="color:#ff79c6">except</span> SpeedleError <span style="color:#ff79c6">as</span> e:
     <span style="color:#ff79c6">print</span>(f<span style="color:#f1fa8c">&#34;Speedle error: {e}&#34;</span>, <span style="color:#8be9fd;font-style:italic">file</span><span style="color:#ff79c6">=</span>sys<span style="color:#ff79c6">.</span>stderr)
     sys<span style="color:#ff79c6">.</span><span style="color:#8be9fd;font-style:italic">exit</span>(<span style="color:#bd93f9">1</span>)</code></pre></div>
-<p>Configure las variables de entorno y ejecútelo. <code>read -rs</code> evita que el token quede registrado en el historial de la terminal o en pantalla:</p>
+<p>Configure las variables de entorno y ejecútelo. <code>read -rs</code> evita que la clave API quede registrada en el historial de la terminal o en pantalla:</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#8be9fd;font-style:italic">export</span> <span style="color:#8be9fd;font-style:italic">SPEEDLE_SERVICE</span><span style="color:#ff79c6">=</span>docs
 <span style="color:#8be9fd;font-style:italic">read</span> -rs SPEEDLE_TOKEN <span style="color:#ff79c6">&amp;&amp;</span> <span style="color:#8be9fd;font-style:italic">export</span> SPEEDLE_TOKEN
 python main.py</code></pre></div>
 <p>Salida, cuando el servicio cuenta con la política de ejemplo:</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">alice get /docs/public: allowed=True
 alice delete /docs/public: allowed=False reason=&lt;Reason.NO_APPLICABLE_POLICIES: 3&gt;</code></pre></div>
-<p>El token es un secreto del lado del servidor. Nunca lo distribuya a navegadores, aplicaciones móviles o clientes de escritorio.</p>
+<p>La clave API es un secreto del lado del servidor. Nunca lo distribuya a navegadores, aplicaciones móviles o clientes de escritorio.</p>
 
 <h2 id="gestión-de-errores">Gestión de errores</h2>
 
