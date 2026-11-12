@@ -162,9 +162,9 @@ uv add speedle==0.2.0 로컬 Speedle 호출 SDK 개요의 설명에 따라 Speed
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/ko/docs/cloud/getting-started/</guid>
-      <description>Speedle Cloud는 출시 예정입니다. cloud.speedle.io의 프로덕션 환경에서는 아직 로그인이 시작되지 않았으며 Cloud 헤더에는 Coming soon(출시 예정) 배지가 표시됩니다. 로그인이 닫혀 있는 동안 로그인 페이지에는 곧 출시될 예정이라는 안내가 표시됩니다. 본문에서는 공개된 사용 흐름을 설명하지만 현재 프로덕션 콘솔이 열려 있음을 의미하지는 않습니다.
-프로덕션 환경 계정 세션, 관리 요청 및 애플리케이션 토큰은 https://cloud.speedle.io를 사용합니다. 계정, 리소스, 토큰은 해당 오리진에 속합니다.
-GitHub 또는 Google을 통한 로그인(출시 예정) 로그인이 아직 시작되지 않았더라도 로그인 페이지에는 GitHub로 로그인과 Google로 로그인이라는 두 가지 옵션이 표시됩니다.</description>
+      <description>Speedle Cloud는 출시 예정입니다. 이 가이드는 프로덕션 로그인과 인증된 인가 API가 제공될 때의 사용 절차를 설명합니다. 예제는 실제 Cloud 환경에서 실행하지 않았습니다.
+GitHub 또는 Google을 통한 로그인(출시 예정) 브라우저에서 Cloud 콘솔을 열고 사용 가능한 공급자로 로그인합니다. 아직 사용되지 않은 인증된 이메일로 처음 로그인하는 경우 계정 생성을 확인합니다. 이메일이 이미 사용 중이라면 콘솔에 표시된 연결된 공급자로 로그인하십시오.
+서비스와 정책 생성 서비스 워크스페이스를 열고 books를 입력한 뒤 서비스 생성을 선택합니다. 기존 정책이 결과에 영향을 주지 않도록 새 서비스로 예제를 실행하십시오.</description>
     </item>
     
     <item>

@@ -18,7 +18,7 @@ Speedle Cloud는 오픈 소스 Speedle 정책 엔진을 기반으로 구축된 �
 
 ## 문서
 
-- [빠른 시작](/docs/cloud/getting-started/): GitHub 또는 Google 로그인(출시 예정), 계정 관리, 서비스, SPDL 정책, 세션 관리 요청 및 4가지 세션 플레이그라운드 작업.
+- [빠른 시작](/ko/docs/cloud/getting-started/): 로그인한 뒤 콘솔에서 서비스와 정책, API 키를 생성하고 애플리케이션에서 인가를 확인합니다.
 - [애플리케이션 토큰](/docs/cloud/tokens/): 최근 재인증 요구 사항, 1회 한정 토큰 공개, 메타데이터 페이지네이션, 교체 및 취소.
 - [인가 API 프리뷰](/docs/cloud/authorization-api/): IsAllowed 요청 및 응답 계약, Node.js 22 클라이언트 예제, 정책 스냅샷 및 통합 제약 사항.
 - [API 레퍼런스](/docs/cloud/api-reference/): API key를 사용한 인가 확인과 정책 관리. 요청은 서버에서 보내며, 이 페이지는 읽기 전용입니다.

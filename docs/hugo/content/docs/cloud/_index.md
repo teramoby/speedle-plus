@@ -18,7 +18,7 @@ The free public beta is intended for trials, learning and evaluation. It has no 
 
 ## Documentation
 
-- [Getting started](/docs/cloud/getting-started/): Sign in with GitHub or Google (opens soon), account management, services, SPDL policies, session management requests and all four session Playground operations.
+- [Getting started](/docs/cloud/getting-started/): Sign in, create a service and policy in the console, create an API key, and check authorization from your application.
 - [Application tokens](/docs/cloud/tokens/): recent-authentication requirements, one-time token disclosure, metadata pagination, rotation and revocation.
 - [Authorization API preview](/docs/cloud/authorization-api/): the IsAllowed request and response contract, a Node.js 22 example, policy snapshots and integration constraints.
 - [API reference](/docs/cloud/api-reference/): authorization checks and policy management with an API key. Requests run from your server; this page is read-only.

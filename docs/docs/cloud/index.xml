@@ -17,8 +17,8 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/docs/cloud/getting-started/</guid>
-      <description>Speedle Cloud is coming soon. Production sign-in is not open on cloud.speedle.io yet, and the Cloud header shows Coming soon. When sign-in is closed, the sign-in page says that it opens soon. This guide describes the published workflow rather than a currently open production console; screenshots will be added after production sign-in opens.
-Production origin Use https://cloud.speedle.io for account sessions, management requests and application tokens. Accounts, resources and tokens belong to that origin.</description>
+      <description>Speedle Cloud is coming soon. This guide describes the workflow available when production sign-in and authenticated authorization checks open; the examples have not been run against a live Cloud environment.
+Sign in with GitHub or Google (opens soon) Open the Cloud console in your browser and sign in with an available provider. For a new identity with an unused verified email address, confirm Create account. If the email is already in use, sign in with the linked provider shown by the console.</description>
     </item>
     
     <item>

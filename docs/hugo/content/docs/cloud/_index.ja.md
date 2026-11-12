@@ -18,7 +18,7 @@ Speedle Cloud は、オープンソースの Speedle ポリシーエンジンを
 
 ## ドキュメント
 
-- [クイックスタート](/ja/docs/cloud/getting-started/): GitHub または Google でのサインイン（まもなく開始）、アカウント管理、サービス、SPDL ポリシー、セッション管理リクエスト、および 4 つのセッション Playground 操作。
+- [クイックスタート](/ja/docs/cloud/getting-started/)：サインインし、コンソールでサービスとポリシー、API キーを作成して、アプリケーションから認可を確認します。
 - [アプリケーショントークン](/ja/docs/cloud/tokens/): 最近の認証要件、1 回限りのトークン開示、メタデータのページネーション、ローテーション、および失効。
 - [認可 API プレビュー](/ja/docs/cloud/authorization-api/): IsAllowed リクエストとレスポンスの契約、Node.js 22 のサンプル、ポリシースナップショット、および統合の制約。
 - [API リファレンス](/ja/docs/cloud/api-reference/): API key による認可チェックとポリシー管理。リクエストはサーバーから送り、このページは読み取り専用です。

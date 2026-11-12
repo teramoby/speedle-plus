@@ -215,28 +215,28 @@ console.log('PASS Hugo 0.48 output: editor, navigation, sitemap, footer styleshe
 // The Cloud section is documented in every site language.
 const cloudCopy = {
   '': {
-    soon: 'Speedle Cloud is coming soon', badge: 'Coming soon', closed: 'Production sign-in is not open',
-    signin: 'Sign in with GitHub or Google (opens soon)', signout: 'Sign out everywhere',
+    soon: 'Speedle Cloud is coming soon', badge: 'Coming soon', preview: 'production sign-in and authenticated authorization checks open',
+    signin: 'Sign in with GitHub or Google (opens soon)',
     download: 'quickstart.en.md', legal: '', samples: true,
   },
   'zh/': {
-    soon: 'Speedle Cloud 即将上线', badge: 'Coming soon', closed: '生产环境尚未开放登录',
-    signin: '使用 GitHub 或 Google 登录（即将开放）', signout: '在所有设备上退出',
+    soon: 'Speedle Cloud 即将上线', badge: 'Coming soon', preview: '生产环境开放登录和授权 API 后的使用流程',
+    signin: '使用 GitHub 或 Google 登录（即将开放）',
     download: 'quickstart.zh-CN.md', legal: 'zh-CN/', samples: true,
   },
   'ja/': {
-    soon: 'Speedle Cloud はまもなく公開されます', badge: 'Coming soon（まもなく公開）', closed: '本番環境ではまだサインイン',
-    signin: 'GitHub または Google', signout: '',
+    soon: 'Speedle Cloud はまもなく公開されます', badge: 'Coming soon（まもなく公開）', preview: '本番環境のサインインと認証付き認可 API が利用可能になった際',
+    signin: 'GitHub または Google',
     download: 'quickstart.ja.md', legal: 'ja/', samples: false,
   },
   'ko/': {
-    soon: 'Speedle Cloud는 출시 예정입니다', badge: 'Coming soon(출시 예정)', closed: '프로덕션 환경에서는 아직 로그인',
-    signin: 'GitHub 또는 Google', signout: '',
+    soon: 'Speedle Cloud는 출시 예정입니다', badge: 'Coming soon(출시 예정)', preview: '프로덕션 로그인과 인증된 인가 API가 제공될 때',
+    signin: 'GitHub 또는 Google',
     download: 'quickstart.ko.md', legal: 'ko/', samples: false,
   },
   'es/': {
-    soon: 'Speedle Cloud estará disponible próximamente', badge: 'Próximamente', closed: 'inicio de sesión para producción aún no está habilitado',
-    signin: 'Iniciar sesión con GitHub o Google (próximamente)', signout: 'Cerrar sesión en todas partes',
+    soon: 'Speedle Cloud estará disponible próximamente', badge: 'Próximamente', preview: 'inicio de sesión en producción y las comprobaciones de autorización autenticadas',
+    signin: 'Iniciar sesión con GitHub o Google (próximamente)',
     download: 'quickstart.es.md', legal: 'es/', samples: true,
   },
 };
@@ -254,14 +254,13 @@ for (const [locale, copy] of Object.entries(cloudCopy)) {
     assert.ok(sidebar.includes(`href="/${locale}docs/cloud/${route}"`), `Cloud ${route} link in ${locale || 'en'}`);
   }
   assert.ok(overview.includes(copy.soon) && overview.includes(copy.badge), `Coming-soon overview in ${locale || 'en'}`);
-  assert.ok(guide.includes(copy.closed) && guide.includes(copy.signin), `Closed sign-in in ${locale || 'en'}`);
-  if (copy.signout) assert.ok(guide.includes(copy.signout), `Account session management in ${locale || 'en'}`);
+  assert.ok(guide.includes(copy.preview) && guide.includes(copy.signin), `Preview sign-in notice in ${locale || 'en'}`);
   assert.ok(guide.includes('grant user alice from corp get /books'), `Domain-scoped getting-started policy in ${locale || 'en'}`);
+  const quickStart = ['SPEEDLE_API_KEY', 'books-app', 'read-books', 'cloud.speedle.io/authz-check/v1/is-allowed', 'HTTP 200'];
+  assert.ok(quickStart.every(marker => guide.includes(marker)), `API-key quick start in ${locale || 'en'}`);
   assert.ok(!tokens.includes('UUIDv7'), `Obsolete token format removed in ${locale || 'en'}`);
   assert.ok(api.includes('POST /authz-check/v1/is-allowed'), `ADS preview route in ${locale || 'en'}`);
   if (copy.samples) {
-    assert.ok(guide.includes('allGrantedPermissions') && guide.includes('POST /api/service/test'), `All session Playground operations in ${locale || 'en'}`);
-    assert.ok(guide.includes('grant user alice editor on /books') && guide.includes('grant (user alice) role editor'), `Role-policy examples in ${locale || 'en'}`);
     assert.ok(tokens.includes('spdl_&lt;canonical uppercase ULID id&gt;_&lt;43 base62 digits&gt;'), `Current token format in ${locale || 'en'}`);
     assert.ok(tokens.includes('reauth_required') && tokens.includes('DELETE /api/tokens/') && tokens.includes('nextCursor'), `Token creation, revocation and pagination in ${locale || 'en'}`);
     assert.ok(api.includes('service_mismatch') && api.includes('subject.token'), `ADS preview contract in ${locale || 'en'}`);
@@ -332,6 +331,8 @@ for (const file of swaggerPages) {
 }
 assert.ok(swaggerCustom.includes('max-width: 100%') && swaggerCustom.includes('overflow-x: clip') && swaggerCustom.includes('overflow-wrap: anywhere'), 'Swagger UI stays inside the article width');
 assert.ok(/body\.docs-page > \.container \{[^}]*min-width: 0/.test(docsStyles), 'The docs article can shrink to the viewport');
+assert.ok(docsStyles.includes('width: min(1160px, calc(100vw - 28px))'), 'Narrow docs pages size from the viewport');
+assert.ok(/body\.docs-page \{[^}]*overflow-x: clip/.test(docsStyles), 'Docs pages do not scroll horizontally');
 assert.ok(llms.includes('https://ai.speedle.io/llms.txt') && llms.includes('https://cloud.speedle.io/llms.txt'), 'llms.txt links the other sites\' llms.txt');
 assert.ok(llmsFull.includes('grant role manager employee') && llmsFull.includes('ROLE_POLICY ='),
   'llms-full.txt contains the SPDL grammar and role-inheritance example');

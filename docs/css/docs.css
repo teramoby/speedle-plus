@@ -18,6 +18,8 @@ html { scroll-behavior: smooth; scroll-padding-top: 100px; }
 body.docs-page {
   margin: 0;
   padding: 0;
+  overflow-x: clip;
+  max-width: 100%;
   color: var(--ink);
   background: var(--white);
   font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -37,7 +39,8 @@ body.docs-page:lang(zh) {
 body.docs-page [hidden] { display: none !important; }
 
 body.docs-page > .container {
-  width: min(1160px, calc(100% - 40px));
+  width: min(1160px, calc(100vw - 40px));
+  max-width: calc(100vw - 40px);
   min-width: 0;
   margin: 0 auto;
   padding: 104px 0 0;
@@ -506,7 +509,7 @@ body.docs-page > .container {
   body.docs-nav-open { overflow: hidden; }
 }
 @media (max-width: 700px) {
-  body.docs-page > .container { width: min(100% - 28px, 1160px); padding-top: 76px; }
+  body.docs-page > .container { width: min(1160px, calc(100vw - 28px)); max-width: calc(100vw - 28px); padding-top: 76px; }
   #main .top-right-icon { float: none; width: 92px; height: 92px; margin: 0 0 24px; }
   #main th,
   #main td { padding: 10px 8px; }

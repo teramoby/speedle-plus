@@ -8,7 +8,7 @@ Speedle Cloud は、オープンソースの Speedle ポリシーエンジンを
 
 ## ドキュメント
 
-- [クイックスタート](https://engine.speedle.io/ja/docs/cloud/getting-started/): GitHub または Google でのサインイン（まもなく開始）、アカウント管理、サービス、SPDL ポリシー、セッション管理リクエスト、および 4 つのセッション Playground 操作。
+- [クイックスタート](https://engine.speedle.io/ja/docs/cloud/getting-started/)：サインインし、コンソールでサービスとポリシー、API キーを作成して、アプリケーションから認可を確認します。
 - [アプリケーショントークン](https://engine.speedle.io/ja/docs/cloud/tokens/): 最近の認証要件、1 回限りのトークン開示、メタデータのページネーション、ローテーション、および失効。
 - [認可 API プレビュー](https://engine.speedle.io/ja/docs/cloud/authorization-api/): IsAllowed リクエストとレスポンスの契約、Node.js 22 のサンプル、ポリシースナップショット、および統合の制約。
 - [API リファレンス](https://engine.speedle.io/ja/docs/cloud/api-reference/): API key による認可チェックとポリシー管理。リクエストはサーバーから送り、このページは読み取り専用です。
@@ -16,7 +16,7 @@ Speedle Cloud は、オープンソースの Speedle ポリシーエンジンを
 
 ## ダウンロード
 
-- [日本語 Markdown](https://engine.speedle.io/docs/cloud/quickstart.ja.md): 4 つの Cloud の章をまとめたオフラインドキュメント。
+- [日本語 Markdown](https://engine.speedle.io/docs/cloud/quickstart.ja.md): Cloud の各章をまとめたオフラインドキュメント。
 - [API リファレンス](https://engine.speedle.io/ja/docs/cloud/api-reference/): このサイトで読めます。下の生ファイルも引き続き利用できます。
 - [OpenAPI YAML](https://cloud.speedle.io/openapi.yaml): リポジトリにチェックインされた正規の Cloud API 仕様。
 - [OpenAPI JSON](https://cloud.speedle.io/openapi.json): 同じ YAML ソースバイトから生成。
@@ -28,39 +28,79 @@ Cloud の[利用規約](https://cloud.speedle.io/ja/terms)および[プライバ
 
 ## Speedle Cloud クイックスタート
 
-**Speedle Cloud はまもなく公開されます。** cloud.speedle.io の本番環境ではまだサインインが開始されておらず、Cloud ヘッダーには **Coming soon（まもなく公開）** バッジが表示されます。サインインが閉じられている間、サインインページには近日公開予定である旨が表示されます。本文では公開されている使用フローを説明していますが、本番コンソールが現在開かれていることを意味するものではありません。
+**Speedle Cloud はまもなく公開されます。** このガイドは、本番環境のサインインと認証付き認可 API が利用可能になった際の手順を説明しています。例は実際の Cloud 環境では実行していません。
 
-### 本番環境
+### GitHub または Google によるサインイン（まもなく開始）
 
-アカウントセッション、管理リクエスト、およびアプリケーショントークンは `https://cloud.speedle.io` を使用します。アカウント、リソース、トークンはそのオリジンに属します。
+ブラウザーで [Cloud コンソール](https://cloud.speedle.io/ja/)を開き、利用可能なプロバイダーでサインインします。未使用の確認済みメールアドレスで初めて利用する場合は、**アカウント作成**を確認します。メールアドレスが使用済みの場合は、コンソールに表示された連携済みプロバイダーでサインインしてください。
 
-### 最初の認可ポリシーの作成
+### サービスとポリシーを作成する
 
-エディターに次の SPDL ステートメントを入力します:
+[サービスワークスペース](https://cloud.speedle.io/ja/service)を開き、`books` と入力して**サービス作成**を選択します。既存ポリシーが結果に影響しないよう、新しいサービスで試してください。既存データは上書きしないでください。
+
+**新しいポリシー**を選択し、名前を `read-books` にして、次の SPDL を入力します。
 
 ```text
 grant user alice from corp get /books
 ```
 
-`from corp` は、この認可を `corp` ID ドメイン内に制限します。`corp` を、アプリケーションが信頼できる認証データから導出するドメインに置き換え、以下の Playground の例のように、各リクエストでプリンシパルの `idd` として同じ値を送信してください。`from` のない認可は、すべてのドメインの `alice` という名前のユーザーに一致します。ドメイン間で名前が衝突する可能性のない、単一の ID ソースを持つサービスの場合にのみ、この句を省略してください。ルールと対応するリクエストフィールドについては [ID ドメイン](/ja/docs/idd/) を参照してください。
+このポリシーは、ID ドメイン `corp` の `alice` が `/books` に対して `get` を実行することを許可します。`from` を省略すると、すべてのドメインの同名ユーザーに一致します。信頼できる認証データからドメインを取得し、各リクエストの `idd` に設定してください。[ID ドメイン](https://engine.speedle.io/ja/docs/idd/)を参照してください。
 
-### Playground で認可決定をテスト
+**ポリシーの検証**、**ポリシーを保存**の順に選択します。検証は構文を確認するだけで、下書きを保存しません。保存したポリシーが認可 API に反映されるまで約 60 秒かかります。
 
-Playground を開いてポリシーをテストします。
+### API キーを作成する
 
-リクエストのサブジェクトにプリンシパルを入力します:
+[API キー](https://cloud.speedle.io/ja/tokens)を開き、`books-app` などの名前を入力し、`ads` スコープ（認可チェック）を選択して、**API キーを作成**を押します。本人確認を求められた場合は、確認を完了してからフォームを再送信します。シークレットは一度しか表示されないため、その場でコピーしてください。現在、有効期限は選択できません。不要になったキーは失効させてください。[API キーの管理](https://engine.speedle.io/ja/docs/cloud/tokens/)を参照してください。
 
-```json
-{"type":"user","name":"alice","idd":"corp"}
+キーをサーバーのシークレットストアに保存し、環境変数 `SPEEDLE_API_KEY` で渡します。ブラウザーのコードやソース管理には含めないでください。
+
+### アプリケーションから認可を確認する
+
+保存したポリシーに対して、アプリケーションのサーバーから次の `isAllowed` リクエストを送信します。このポリシーは属性を必要としないため、`attributes` は空です。
+
+```bash
+curl --fail-with-body --silent --show-error --max-time 10 \
+  'https://cloud.speedle.io/authz-check/v1/is-allowed' \
+  -H "Authorization: Bearer $SPEEDLE_API_KEY" \
+  -H 'Content-Type: application/json' \
+  --data '{"subject":{"principals":[{"type":"user","name":"alice","idd":"corp"}]},"serviceName":"books","resource":"/books","action":"get","attributes":[]}'
 ```
 
-アクションに `get`、リソースに `/books` を入力します。
+サンプルのポリシーだけが保存されている場合、期待されるレスポンスは次のとおりです。
 
-## Speedle Cloud アプリケーショントークン
+```json
+{"allowed":true,"reason":0}
+```
 
-アプリケーショントークンを使用すると、バックエンドアプリケーションから Speedle Cloud の認可 API を認証して呼び出すことができます。
+`action` を `delete` に変更して再送信します。このアクションを許可するポリシーがないため、期待されるレスポンスは次のとおりです。
+
+```json
+{"allowed":false,"reason":3}
+```
+
+どちらの判定も HTTP 200 を返します。`allowed` が `true` の場合だけ保護対象の操作を実行してください。アプリケーションは判定を適用し、エラー、不正なレスポンス、タイムアウト時にはアクセスを拒否する必要があります。
+
+詳細は[認可 API](https://engine.speedle.io/ja/docs/cloud/authorization-api/)と [SDK](https://engine.speedle.io/ja/docs/sdks/)（[Node.js/TypeScript](https://engine.speedle.io/ja/docs/sdks/node/)、[Python](https://engine.speedle.io/ja/docs/sdks/python/)、[Java](https://engine.speedle.io/ja/docs/sdks/java/)、[Go](https://engine.speedle.io/ja/docs/sdks/go/) など）を参照してください。
+
+### Playground で保存済みポリシーをテストする
+
+必要に応じてサービスの **Playground** を開き、**Is allowed** を選択します。**Principals (JSON)** に `[{"type":"user","name":"alice","idd":"corp"}]`、**Resource** に `/books`、**Action** に `get`、**Attributes (JSON)** に `[]` を入力し、**Run test** を選択します。
+
+**Is allowed** は判定結果、**Diagnose** はポリシーの寄与、**All granted roles** はサブジェクトのロール、**All granted permissions** は許可されたリソースとアクションを表示します。テストは保存済みポリシーを使用し、未保存の下書きは使用しません。入力やポリシーを変更したら再実行してください。アプリケーションは API キーを使用して [ADS 認可 API](https://engine.speedle.io/ja/docs/cloud/authorization-api/)を呼び出します。
+
+次のステップ：プログラムから管理する場合は、[API キー](https://engine.speedle.io/ja/docs/cloud/tokens/)と [PMS API または spctl（Speedle Cloud）](https://engine.speedle.io/ja/docs/pms/policy-mgmt/#speedle-cloud)を参照してください。
 
 ## Speedle Cloud 認可 API プレビュー
+
+Speedle Cloud は、高速で低レイテンシのアクセス決定のための認可 API を提供します。
+
+### リクエスト契約
+
+アプリケーションは、認可決定サービス (ADS) に対して `POST /authz-check/v1/is-allowed` を呼び出します。
+
+### Node.js 22 の例
+
+以下の Node.js の例は、ベアラートークンを使用して認可リクエストを送信する方法を示しています:
 
 ```javascript
 import { request } from 'node:https';
@@ -114,5 +154,15 @@ export async function checkAccess(token, authenticatedUserId, authenticatedUserI
 ポリシー例 `grant user alice from corp get /books` に対して、この関数を呼び出すと期待どおりの認可決定が返されます。
 
 ## Speedle Cloud の制限とエラー
+
+### レート制限とクォータ
+
+無料パブリックベータ期間中、Speedle Cloud では公正な利用を確保するためにアカウントごとのクォータが適用されます。
+
+### エラーレスポンス
+
+エラーはフラットな JSON で返します。`429 {"error":"rate_limited"}` の場合は `Retry-After`（このバースト制限では 60 秒）に従い、上限付きのバックオフで再試行してください。
+
+### 再試行のガイダンス
 
 一時的なネットワークエラーや `429 Too Many Requests` の場合は、指数バックオフとジッターを伴う再試行を実装してください。
