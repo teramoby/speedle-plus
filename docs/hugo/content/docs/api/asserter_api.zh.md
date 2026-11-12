@@ -10,6 +10,6 @@ lastmod = 2026-11-08T11:21:16+08:00
 
 令牌断言 webhook 参考。errCode 为整数，attributes 为对象。实际端点由 ADS 断言配置指定。
 
-请配置[安全连接与端点访问控制](/docs/security/)。本文只说明接口约定，speedle.io 不提供托管授权后端。
+请配置[安全连接与端点访问控制](/docs/security/)。本文只说明接口约定，speedle.io 不提供托管授权后端。试用已关闭：规范未写服务器主机，否则请求会发到本说明站点。
 
-{{< swagger-spec url="/swagger/asserter.zh.yaml" >}}
+{{< swagger-spec url="/swagger/asserter.zh.yaml" tryitout="false" >}}

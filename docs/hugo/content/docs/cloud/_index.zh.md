@@ -7,7 +7,7 @@ toc = false
 linksection = true
 tocheading = "h2"
 categories = ["docs"]
-lastmod = 2026-11-08T17:11:18+08:00
+lastmod = 2026-11-12T10:00:00+08:00
 +++
 
 Speedle Cloud 是基于开源 Speedle 策略引擎的托管访问控制服务，面向开发者。你可以用它管理 SPDL 授权策略与角色策略、在 Playground 中测试授权判定，再从应用服务端调用授权 API，无需自行部署和运维授权服务。
@@ -21,11 +21,13 @@ Speedle Cloud 是基于开源 Speedle 策略引擎的托管访问控制服务，
 - [快速入门](/zh/docs/cloud/getting-started/)：使用 GitHub 或 Google 登录（即将开放）、账号管理、service、SPDL 策略、会话管理请求，以及四种会话 Playground 操作。
 - [应用令牌](/zh/docs/cloud/tokens/)：最近认证要求、令牌的一次性展示、元数据分页、轮换和撤销。
 - [授权 API 预览](/zh/docs/cloud/authorization-api/)：IsAllowed 请求与响应合约、Node.js 22 示例、策略快照和接入限制。
+- [API 参考](/zh/docs/cloud/api-reference/)：公开 Cloud API 的只读 Swagger UI。试用已关闭，因此不会在浏览器中输入应用令牌。
 - [限额与错误](/zh/docs/cloud/limits-and-errors/)：账号额度、请求限制、错误响应、限流与额度响应头，以及重试建议。
 
 ## 下载
 
 - [简体中文 Markdown](https://engine.speedle.io/docs/cloud/quickstart.zh-CN.md)：汇集全部四章 Cloud 文档，便于离线阅读。
+- [API 参考](/zh/docs/cloud/api-reference/)：已渲染的公开规范。下面仍保留原始文件。
 - [OpenAPI YAML](https://cloud.speedle.io/openapi.yaml)：Cloud API 的权威仓库规范。
 - [OpenAPI JSON](https://cloud.speedle.io/openapi.json)：由同一份 YAML 原文生成。
 - [当前构建版本](https://cloud.speedle.io/build.json)：用于识别正在提供服务的构建，不证明登录供应商或接口当前可用。

@@ -40,6 +40,14 @@ class GeneratorGuards(unittest.TestCase):
         self.assertIn("# Speedle — full documentation", text)
         self.assertIn("Body of docs/spdl.", text)
 
+    def test_swagger_shortcode_with_and_without_tryitout_is_replaced(self):
+        disabled = '{{< swagger-spec url="/openapi/cloud-public.yaml" tryitout="false" >}}'
+        enabled = '{{< swagger-spec url="/swagger/policy-check.yaml" >}}'
+        replaced = GENERATOR["replace_shortcodes"](disabled + "\n" + enabled)
+        self.assertNotIn("swagger-spec", replaced)
+        self.assertIn("https://engine.speedle.io/openapi/cloud-public.yaml", replaced)
+        self.assertIn("https://engine.speedle.io/swagger/policy-check.yaml", replaced)
+
 
 if __name__ == "__main__":
     unittest.main()

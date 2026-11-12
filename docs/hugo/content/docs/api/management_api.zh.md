@@ -10,6 +10,6 @@ lastmod = 2026-11-08T11:21:16+08:00
 
 已配置 PMS 的接口参考。请求与响应使用 JSON，策略 ID 为字符串，响应为扁平对象。
 
-请配置[安全连接与端点访问控制](/docs/security/)。本文只说明接口约定，speedle.io 不提供托管授权后端。
+请配置[安全连接与端点访问控制](/docs/security/)。本文只说明接口约定，speedle.io 不提供托管授权后端。试用已关闭：规范未写服务器主机，否则请求会发到本说明站点。
 
-{{< swagger-spec url="/swagger/policy-manage.zh.yaml" >}}
+{{< swagger-spec url="/swagger/policy-manage.zh.yaml" tryitout="false" >}}

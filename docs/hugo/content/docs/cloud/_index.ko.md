@@ -7,7 +7,7 @@ toc = false
 linksection = true
 tocheading = "h2"
 categories = ["docs"]
-lastmod = 2026-11-08T17:11:18+08:00
+lastmod = 2026-11-12T10:00:00+08:00
 +++
 
 Speedle Cloud는 오픈 소스 Speedle 정책 엔진을 기반으로 구축된 개발자용 호스팅형 접근 제어 서비스입니다. 자체 인가 서비스를 직접 운영할 필요 없이 SPDL 인가 정책 및 역할 정책을 관리하고, 플레이그라운드에서 결정을 테스트하며, 애플리케이션 서버에서 인가 API를 호출할 수 있도록 설계되었습니다.
@@ -21,11 +21,13 @@ Speedle Cloud는 오픈 소스 Speedle 정책 엔진을 기반으로 구축된 �
 - [빠른 시작](/docs/cloud/getting-started/): GitHub 또는 Google 로그인(출시 예정), 계정 관리, 서비스, SPDL 정책, 세션 관리 요청 및 4가지 세션 플레이그라운드 작업.
 - [애플리케이션 토큰](/docs/cloud/tokens/): 최근 재인증 요구 사항, 1회 한정 토큰 공개, 메타데이터 페이지네이션, 교체 및 취소.
 - [인가 API 프리뷰](/docs/cloud/authorization-api/): IsAllowed 요청 및 응답 계약, Node.js 22 클라이언트 예제, 정책 스냅샷 및 통합 제약 사항.
+- [API 레퍼런스](/docs/cloud/api-reference/): 공개 Cloud API의 읽기 전용 Swagger UI. Try it out은 꺼져 있으므로 애플리케이션 토큰을 브라우저에 입력하지 않습니다.
 - [제한 및 오류](/docs/cloud/limits-and-errors/): 계정 쿼터, 요청 제한, 오류 응답 구조, 레이트 및 쿼터 헤더, 재시도 지침.
 
 ## 다운로드
 
 - [한국어 Markdown](https://engine.speedle.io/docs/cloud/quickstart.ko.md): 4개의 Cloud 장을 모은 오프라인 문서.
+- [API 레퍼런스](/docs/cloud/api-reference/): 렌더링된 공개 사양. 아래의 원본 파일도 그대로 둡니다.
 - [OpenAPI YAML](https://cloud.speedle.io/openapi.yaml): 저장소에 체크인된 정식 Cloud API 사양.
 - [OpenAPI JSON](https://cloud.speedle.io/openapi.json): 동일한 YAML 소스 바이트에서 생성.
 - [제공 빌드 버전](https://cloud.speedle.io/build.json): 서비스를 제공하는 빌드를 식별(ID 공급자나 엔드포인트의 가용성을 증명하지는 않음).

@@ -1,0 +1,32 @@
+openapi: 3.0.3
+info:
+  title: Speedle Cloud public API
+  version: 0.0.0-placeholder
+  description: |
+    Placeholder public contract served with the Engine documentation.
+    It is not the canonical Cloud API specification. Replace this file
+    with scripts/sync-cloud-public-openapi.py after Speedle Cloud
+    publishes the public OpenAPI document.
+servers:
+  - url: https://cloud.speedle.io
+    description: Speedle Cloud
+paths:
+  /authz-check/v1/is-allowed:
+    post:
+      operationId: isAllowed
+      summary: Evaluate whether a request is allowed
+      description: |
+        Placeholder for the authenticated authorization check. Request
+        and response bodies come from the published public document,
+        not from this file.
+      responses:
+        "200":
+          description: Authorization decision
+      security:
+        - httpBearer: []
+components:
+  securitySchemes:
+    httpBearer:
+      type: http
+      scheme: bearer
+      description: Application token. The documentation page does not send this token.

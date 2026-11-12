@@ -104,7 +104,9 @@
   if (swagger) {
     const normalizeHeadings = () => {
       enableKeyboardScroll(swagger);
-      swagger.querySelectorAll('.opblock-tag-section > h4, section.models > h4').forEach(heading => {
+      // Swagger UI 5 renders an operation group as h3.opblock-tag. The models
+      // block is still an h4. Both sit under the page title.
+      swagger.querySelectorAll('.opblock-tag-section > h3, section.models > h4').forEach(heading => {
         heading.setAttribute('role', 'heading');
         heading.setAttribute('aria-level', '3');
       });
