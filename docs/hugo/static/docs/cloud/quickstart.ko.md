@@ -159,16 +159,7 @@ export async function checkAccess(token, authenticatedUserId, authenticatedUserI
 
 ### 오류 응답
 
-오류 응답은 표준 HTTP 상태 코드와 JSON 오류 객체를 반환합니다:
-
-```json
-{
-  "error": {
-    "code": "rate_limit_exceeded",
-    "message": "Too many requests. Please retry later."
-  }
-}
-```
+오류는 평면 JSON으로 반환합니다. `429 {"error":"rate_limited"}`의 경우 `Retry-After`(이 버스트 제한에서는 60초)를 따르고, 상한이 있는 백오프로 재시도하십시오.
 
 ### 재시도 지침
 

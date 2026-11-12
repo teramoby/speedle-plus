@@ -159,16 +159,7 @@ export async function checkAccess(token, authenticatedUserId, authenticatedUserI
 
 ### エラーレスポンス
 
-エラーレスポンスは標準の HTTP ステータスコードと JSON エラーオブジェクトを返します:
-
-```json
-{
-  "error": {
-    "code": "rate_limit_exceeded",
-    "message": "Too many requests. Please retry later."
-  }
-}
-```
+エラーはフラットな JSON で返します。`429 {"error":"rate_limited"}` の場合は `Retry-After`（このバースト制限では 60 秒）に従い、上限付きのバックオフで再試行してください。
 
 ### 再試行のガイダンス
 
