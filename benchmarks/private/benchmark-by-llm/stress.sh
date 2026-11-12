@@ -54,6 +54,11 @@ for ((round=1;round<=ROUNDS;round++)); do
     for setup in ${SETUPS:-thin-casbin thin-opa thin-cedar thin-cedar-data cedar-rs cedar-rs-data thin-speedle thin-speedle-may opa-server speedle-ads speedle-ads-may}; do
       logfile="$LOGDIR/$kind-round$round-$setup.log"
       case "$setup" in
+      thin-cedar-data|cedar-rs-data)
+        # gen_cedar.go writes the data-driven variant only for non-wildcard sets.
+        [[ -f "${base}_cedar_data.cedar" ]] || continue ;;
+      esac
+      case "$setup" in
       thin-speedle-may)
         srv "$BIN/authzd-may" -engine speedle -kind "$kind" -n "$n" -addr 127.0.0.1:19000 >"$logfile" 2>&1 &
         target=thin; url=http://127.0.0.1:19000/check; health=http://127.0.0.1:19000/health ;;
