@@ -220,14 +220,18 @@ const cloudCopy = {
     soon: 'Speedle Cloud is coming soon', preview: 'production sign-in and authenticated authorization checks open',
     signin: 'Sign in with GitHub or Google (opens soon)',
     download: 'quickstart.en.md', legal: '', samples: true,
-    downloadNote: 'The machine-readable form of the API reference, for code generators and API clients',
+    swaggerLabel: 'API reference (Swagger)',
+    swaggerLead: 'Browse every endpoint, parameter and response example online.',
+    removedNote: 'The machine-readable form of the API reference, for code generators and API clients',
   },
   'zh/': {
     intro: '基于开源 Speedle 引擎的托管授权服务', beta: '免费公开测试版用于试用、学习和评估',
     soon: 'Speedle Cloud 即将上线', preview: '生产环境开放登录和授权 API 后的使用流程',
     signin: '使用 GitHub 或 Google 登录（即将开放）',
     download: 'quickstart.zh-CN.md', legal: 'zh-CN/', samples: true,
-    downloadNote: 'API 参考的机器可读形式，供代码生成器和 API 客户端使用',
+    swaggerLabel: 'API 参考（Swagger）',
+    swaggerLead: '在线浏览所有接口、参数和返回示例。',
+    removedNote: 'API 参考的机器可读形式，供代码生成器和 API 客户端使用',
   },
   'ja/': {
     intro: 'オープンソースの Speedle エンジンによるホスト型認可サービス',
@@ -235,7 +239,9 @@ const cloudCopy = {
     soon: 'Speedle Cloud はまもなく公開されます', preview: '本番環境のサインインと認証付き認可 API が利用可能になった際',
     signin: 'GitHub または Google',
     download: 'quickstart.ja.md', legal: 'ja/', samples: false,
-    downloadNote: 'API リファレンスの機械可読形式で、コード生成ツールや API クライアント向けです',
+    swaggerLabel: 'API リファレンス（Swagger）',
+    swaggerLead: 'すべてのエンドポイント、パラメーター、レスポンス例をオンラインで確認できます。',
+    removedNote: 'API リファレンスの機械可読形式で、コード生成ツールや API クライアント向けです',
   },
   'ko/': {
     intro: '오픈 소스 Speedle 엔진 기반의 호스팅 인가 서비스',
@@ -243,7 +249,9 @@ const cloudCopy = {
     soon: 'Speedle Cloud는 출시 예정입니다', preview: '프로덕션 로그인과 인증된 인가 API가 제공될 때',
     signin: 'GitHub 또는 Google',
     download: 'quickstart.ko.md', legal: 'ko/', samples: false,
-    downloadNote: 'API 레퍼런스의 기계 판독 형식으로, 코드 생성기와 API 클라이언트에서 사용할 수 있습니다',
+    swaggerLabel: 'API 레퍼런스(Swagger)',
+    swaggerLead: '모든 엔드포인트, 매개변수, 응답 예시를 온라인에서 확인할 수 있습니다.',
+    removedNote: 'API 레퍼런스의 기계 판독 형식으로, 코드 생성기와 API 클라이언트에서 사용할 수 있습니다',
   },
   'es/': {
     intro: 'servicio de autorización alojado basado en el motor Speedle de código abierto',
@@ -251,7 +259,9 @@ const cloudCopy = {
     soon: 'Speedle Cloud estará disponible próximamente', preview: 'inicio de sesión en producción y las comprobaciones de autorización autenticadas',
     signin: 'Iniciar sesión con GitHub o Google (próximamente)',
     download: 'quickstart.es.md', legal: 'es/', samples: true,
-    downloadNote: 'La forma legible por máquina de la referencia de la API, para generadores de código y clientes de API',
+    swaggerLabel: 'Referencia de la API (Swagger)',
+    swaggerLead: 'Consulte en línea todos los endpoints, parámetros y ejemplos de respuesta.',
+    removedNote: 'La forma legible por máquina de la referencia de la API, para generadores de código y clientes de API',
   },
 };
 for (const [locale, copy] of Object.entries(cloudCopy)) {
@@ -283,15 +293,18 @@ for (const [locale, copy] of Object.entries(cloudCopy)) {
     assert.ok(limits.includes('X-Quota-Daily-Remaining') && limits.includes('daily_quota_exceeded') && limits.includes('snapshot_unavailable'), `Cloud limits and errors in ${locale || 'en'}`);
   }
   assert.ok(overview.includes(`href="/docs/cloud/${copy.download}"`), `Localized Markdown download in ${locale || 'en'}`);
-  // The download list starts at the localized Markdown link; it must carry the
-  // public OpenAPI subset, not the full contract with console-only routes, and
-  // must not repeat the API reference that the Documentation list already links.
-  const downloadsStart = overview.indexOf(`href="/docs/cloud/${copy.download}"`);
-  const downloadsList = downloadsStart < 0 ? '' : overview.slice(downloadsStart, overview.indexOf('</ul>', downloadsStart));
+  // The download list opens before the localized Markdown link, because the
+  // Swagger reference comes first, and ends at its own </ul>. It links the
+  // public OpenAPI subset, not the full contract with console-only routes.
+  const downloadsStart = overview.lastIndexOf('<ul>', overview.indexOf(`href="/docs/cloud/${copy.download}"`));
+  const downloadsEnd = downloadsStart < 0 ? -1 : overview.indexOf('</ul>', downloadsStart);
+  const downloadsList = downloadsStart < 0 || downloadsEnd < 0 ? '' : overview.slice(downloadsStart, downloadsEnd);
+  assert.ok(downloadsList.includes(`href="/${locale}docs/cloud/api-reference/">${copy.swaggerLabel}</a>`), `Swagger reference link in Downloads in ${locale || 'en'}`);
+  assert.ok(downloadsList.includes(copy.swaggerLead), `Swagger reference description in Downloads in ${locale || 'en'}`);
   assert.ok(downloadsList.includes('https://cloud.speedle.io/openapi.public.yaml') && downloadsList.includes('https://cloud.speedle.io/openapi.public.json'), `Public Cloud schema downloads in ${locale || 'en'}`);
-  assert.ok(downloadsList.includes('>OpenAPI (YAML)</a>') && downloadsList.includes('>OpenAPI (JSON)</a>'), `OpenAPI download labels in ${locale || 'en'}`);
-  assert.ok(overview.includes(copy.downloadNote), `OpenAPI download note in ${locale || 'en'}`);
-  assert.ok(!downloadsList.includes('api-reference'), `Download list does not repeat the API reference in ${locale || 'en'}`);
+  assert.ok(downloadsList.includes('>YAML</a>') && downloadsList.includes('>JSON</a>'), `OpenAPI download labels in ${locale || 'en'}`);
+  assert.ok(!overview.includes(copy.removedNote), `OpenAPI note paragraph removed in ${locale || 'en'}`);
+  assert.match(downloadsEnd < 0 ? '' : overview.slice(downloadsEnd + '</ul>'.length), /^\s*<p>/, `Downloads list is followed directly by the legal note in ${locale || 'en'}`);
   assert.ok(!downloadsList.includes('https://cloud.speedle.io/openapi.yaml') && !downloadsList.includes('https://cloud.speedle.io/openapi.json'), `Full Cloud schema not linked in ${locale || 'en'}`);
   assert.ok(overview.includes(`href="/${locale}docs/cloud/api-reference/"`), `Cloud API reference link in ${locale || 'en'}`);
   const reference = read('api-reference/');
@@ -315,6 +328,14 @@ for (const [locale, copy] of Object.entries(cloudCopy)) {
   assert.ok(decision.includes('supportedSubmitMethods: []'), `Try it out disabled on the engine decision reference in ${locale || 'en'}`);
   assert.ok(decision.includes('id="swagger-ui" class="swagger-readonly"'), `Authorize hidden on the engine decision reference in ${locale || 'en'}`);
   assert.ok(overview.includes(`href="https://cloud.speedle.io/${copy.legal}terms"`) && overview.includes(`href="https://cloud.speedle.io/${copy.legal}privacy"`), `Localized Cloud legal links in ${locale || 'en'}`);
+  if (locale === 'zh/') {
+    assert.ok(downloadsList.includes('</a>：四个 Cloud 章节合并的离线指南。'), 'Chinese Downloads list uses a full-width colon');
+    assert.ok(!downloadsList.includes('</a>:'), 'Chinese Downloads list has no half-width colon');
+    assert.ok(overview.includes('隐私政策</a>。'), 'Chinese legal line ends with a full-width stop');
+  }
+  if (locale === 'ja/') {
+    assert.ok(overview.includes('プライバシーポリシー</a>。'), 'Japanese legal line ends with a full-width stop');
+  }
   const markdown = fs.readFileSync(path.join(output, 'docs/cloud', copy.download), 'utf8');
   assert.deepEqual(markdown, fs.readFileSync(path.join(root, 'docs/hugo/static/docs/cloud', copy.download), 'utf8'), `Generated ${copy.download}`);
   for (const phrase of ['getting-started', 'tokens', 'authorization-api', 'limits-and-errors']) {
