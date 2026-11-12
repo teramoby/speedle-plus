@@ -69,4 +69,4 @@ curl --fail-with-body --silent --show-error --max-time 10 \
 
 **Is allowed**는 결정 결과를, **Diagnose**는 정책이 결정에 미친 영향을, **All granted roles**는 주체의 역할을, **All granted permissions**는 허용된 리소스와 작업을 보여 줍니다. 테스트에는 저장된 정책만 사용되며 저장하지 않은 초안은 사용되지 않습니다. 입력이나 정책을 변경하면 다시 실행하십시오. 애플리케이션은 API 키를 사용하여 [ADS 인가 API](/ko/docs/cloud/authorization-api/)를 호출합니다.
 
-다음 단계: 프로그램으로 관리하려면 [API 키](/ko/docs/cloud/tokens/)와 [PMS API 또는 spctl의 Speedle Cloud 사용법](/ko/docs/pms/policy-mgmt/#speedle-cloud에서-정책-관리)을 참조하십시오.
+다음 단계: 프로그램으로 관리하려면 `pms:write` 범위(읽기만 하려면 `pms:read`)의 키를 따로 만들고 [PMS API 또는 spctl의 Speedle Cloud 사용법](/ko/docs/pms/policy-mgmt/#speedle-cloud에서-정책-관리)을 사용하십시오. 앞 단계의 `ads` 키로는 정책을 관리할 수 없습니다.

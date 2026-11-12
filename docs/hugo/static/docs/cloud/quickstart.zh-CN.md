@@ -85,7 +85,7 @@ curl --fail-with-body --silent --show-error --max-time 10 \
 
 **是否允许**显示判定结果，**诊断**解释策略如何影响判定，**全部已授予角色**列出主体的角色，**全部已授予权限**列出获准访问的资源和动作。测试只使用已保存的策略，不包含未保存的草稿。修改输入或策略后，请再次运行测试。应用通过 [ADS 授权 API](https://engine.speedle.io/zh/docs/cloud/authorization-api/) 携带 API 密钥检查权限。
 
-下一步：如需通过程序管理策略，请使用 [API 密钥](https://engine.speedle.io/zh/docs/cloud/tokens/)，参阅 [PMS API 或 spctl 的 Speedle Cloud 用法](https://engine.speedle.io/zh/docs/pms/policy-mgmt/#speedle-cloud)。
+下一步：如需通过程序管理策略，请单独创建具有 `pms:write` 权限范围的密钥（只读时使用 `pms:read`），再使用 [PMS API 或 spctl 的 Speedle Cloud 用法](https://engine.speedle.io/zh/docs/pms/policy-mgmt/#speedle-cloud)。上一步创建的 `ads` 密钥不能管理策略。
 
 ## Speedle Cloud API 密钥
 

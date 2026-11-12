@@ -238,7 +238,7 @@
 
 <p><strong>Is allowed</strong> muestra la decisión; <strong>Diagnosticar</strong> explica cómo contribuyeron las políticas; <strong>Todos los roles concedidos</strong> enumera los roles del sujeto; <strong>Todos los permisos concedidos</strong> enumera los recursos y acciones permitidos. Las pruebas usan políticas guardadas, no borradores. Repita la prueba después de cambiar entradas o políticas. Las aplicaciones usan la <a href="/es/docs/cloud/authorization-api/">API ADS</a> con una clave API.</p>
 
-<p>Siguientes pasos: para la gestión mediante código, use una <a href="/es/docs/cloud/tokens/">clave API</a> con la <a href="/es/docs/pms/policy-mgmt/#speedle-cloud">API PMS o spctl (Speedle Cloud)</a>.</p>
+<p>Siguientes pasos: para la gestión mediante código, cree una clave aparte con el ámbito <code>pms:write</code> (o <code>pms:read</code> para lectura) y use la <a href="/es/docs/pms/policy-mgmt/#speedle-cloud">API PMS o spctl (Speedle Cloud)</a>. La clave <code>ads</code> del paso anterior no puede gestionar políticas.</p>
 </div>
 </div>
 </main>

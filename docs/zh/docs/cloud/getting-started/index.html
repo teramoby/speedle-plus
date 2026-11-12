@@ -238,7 +238,7 @@
 
 <p><strong>是否允许</strong>显示判定结果，<strong>诊断</strong>解释策略如何影响判定，<strong>全部已授予角色</strong>列出主体的角色，<strong>全部已授予权限</strong>列出获准访问的资源和动作。测试只使用已保存的策略，不包含未保存的草稿。修改输入或策略后，请再次运行测试。应用通过 <a href="/zh/docs/cloud/authorization-api/">ADS 授权 API</a> 携带 API 密钥检查权限。</p>
 
-<p>下一步：如需通过程序管理策略，请使用 <a href="/zh/docs/cloud/tokens/">API 密钥</a>，参阅 <a href="/zh/docs/pms/policy-mgmt/#speedle-cloud">PMS API 或 spctl 的 Speedle Cloud 用法</a>。</p>
+<p>下一步：如需通过程序管理策略，请单独创建具有 <code>pms:write</code> 权限范围的密钥（只读时使用 <code>pms:read</code>），再使用 <a href="/zh/docs/pms/policy-mgmt/#speedle-cloud">PMS API 或 spctl 的 Speedle Cloud 用法</a>。上一步创建的 <code>ads</code> 密钥不能管理策略。</p>
 </div>
 </div>
 </main>

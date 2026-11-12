@@ -85,7 +85,7 @@ curl --fail-with-body --silent --show-error --max-time 10 \
 
 **Is allowed** は判定結果、**Diagnose** はポリシーの寄与、**All granted roles** はサブジェクトのロール、**All granted permissions** は許可されたリソースとアクションを表示します。テストは保存済みポリシーを使用し、未保存の下書きは使用しません。入力やポリシーを変更したら再実行してください。アプリケーションは API キーを使用して [ADS 認可 API](https://engine.speedle.io/ja/docs/cloud/authorization-api/)を呼び出します。
 
-次のステップ：プログラムから管理する場合は、[API キー](https://engine.speedle.io/ja/docs/cloud/tokens/)と [PMS API または spctl（Speedle Cloud）](https://engine.speedle.io/ja/docs/pms/policy-mgmt/#speedle-cloud)を参照してください。
+次のステップ：プログラムから管理する場合は、`pms:write` スコープ（読み取りのみなら `pms:read`）のキーを別に作成し、[PMS API または spctl（Speedle Cloud）](https://engine.speedle.io/ja/docs/pms/policy-mgmt/#speedle-cloud)を使用してください。前の手順で作成した `ads` キーではポリシーを管理できません。
 
 ## Speedle Cloud API キー
 

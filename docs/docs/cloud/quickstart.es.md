@@ -85,7 +85,7 @@ Opcionalmente, abra **Playground** en el servicio y seleccione **Is allowed**. I
 
 **Is allowed** muestra la decisión; **Diagnosticar** explica cómo contribuyeron las políticas; **Todos los roles concedidos** enumera los roles del sujeto; **Todos los permisos concedidos** enumera los recursos y acciones permitidos. Las pruebas usan políticas guardadas, no borradores. Repita la prueba después de cambiar entradas o políticas. Las aplicaciones usan la [API ADS](https://engine.speedle.io/es/docs/cloud/authorization-api/) con una clave API.
 
-Siguientes pasos: para la gestión mediante código, use una [clave API](https://engine.speedle.io/es/docs/cloud/tokens/) con la [API PMS o spctl (Speedle Cloud)](https://engine.speedle.io/es/docs/pms/policy-mgmt/#speedle-cloud).
+Siguientes pasos: para la gestión mediante código, cree una clave aparte con el ámbito `pms:write` (o `pms:read` para lectura) y use la [API PMS o spctl (Speedle Cloud)](https://engine.speedle.io/es/docs/pms/policy-mgmt/#speedle-cloud). La clave `ads` del paso anterior no puede gestionar políticas.
 
 ## Speedle Cloud Claves API
 
