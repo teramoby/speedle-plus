@@ -187,6 +187,18 @@ func TestLoadCost(t *testing.T) {
 	if os.Getenv("LOADCOST") == "" {
 		t.Skip("set LOADCOST=1")
 	}
+	known := []string{"casbin", "opa", "cedar", "cedar-data", SpeedleLabel()}
+	var only []string
+	for _, name := range strings.Split(os.Getenv("AUTHZ_ENGINES"), ",") {
+		if name = strings.TrimSpace(name); name != "" {
+			only = append(only, name)
+		}
+	}
+	for _, name := range only {
+		if !contains(known, name) {
+			t.Fatalf("AUTHZ_ENGINES lists %q, but this build has %v (the Speedle+ label follows SPEEDLE_LABEL)", name, known)
+		}
+	}
 	fmt.Println("\n| n roles (users) | engine | load time | retained heap |\n|---|---|---|---|")
 	for _, n := range []int{1000, 10000, 100000} {
 		g := genSet(t, "plain", n)
@@ -200,9 +212,8 @@ func TestLoadCost(t *testing.T) {
 			{"cedar-data", func() (Engine, error) { return NewCedar("cedar-data", g.CedarDataPolicies, g.CedarDataEntities) }},
 			{SpeedleLabel(), func() (Engine, error) { return NewSpeedle(g.SpeedleSPDL, false) }},
 		}
-		only := os.Getenv("AUTHZ_ENGINES")
 		for _, l := range loaders {
-			if only != "" && !contains(strings.Split(only, ","), l.name) {
+			if len(only) > 0 && !contains(only, l.name) {
 				continue
 			}
 			before := heap()
