@@ -215,27 +215,28 @@ console.log('PASS Hugo 0.48 output: editor, navigation, sitemap, footer styleshe
 // The Cloud section is documented in every site language.
 const cloudCopy = {
   '': {
-    soon: 'Speedle Cloud is coming soon', badge: 'Coming soon', closed: 'Production sign-in is not open',
+    intro: 'Speedle Cloud is a hosted authorization service built on the open-source Speedle engine',
+    beta: 'The free public beta is for trials, learning and evaluation', closed: 'Production sign-in is not open',
     signin: 'Sign in with GitHub or Google (opens soon)', signout: 'Sign out everywhere',
     download: 'quickstart.en.md', legal: '', samples: true,
   },
   'zh/': {
-    soon: 'Speedle Cloud 即将上线', badge: 'Coming soon', closed: '生产环境尚未开放登录',
+    intro: '基于开源 Speedle 引擎的托管授权服务', beta: '免费公开测试版用于试用、学习和评估', closed: '生产环境尚未开放登录',
     signin: '使用 GitHub 或 Google 登录（即将开放）', signout: '在所有设备上退出',
     download: 'quickstart.zh-CN.md', legal: 'zh-CN/', samples: true,
   },
   'ja/': {
-    soon: 'Speedle Cloud はまもなく公開されます', badge: 'Coming soon（まもなく公開）', closed: '本番環境ではまだサインイン',
+    intro: 'オープンソースの Speedle エンジンによるホスト型認可サービス', beta: '無料パブリックベータは試用、学習、評価用', closed: '本番環境ではまだサインイン',
     signin: 'GitHub または Google', signout: '',
     download: 'quickstart.ja.md', legal: 'ja/', samples: false,
   },
   'ko/': {
-    soon: 'Speedle Cloud는 출시 예정입니다', badge: 'Coming soon(출시 예정)', closed: '프로덕션 환경에서는 아직 로그인',
+    intro: '오픈 소스 Speedle 엔진 기반의 호스팅 인가 서비스', beta: '무료 공개 베타는 시험, 학습, 평가용', closed: '프로덕션 환경에서는 아직 로그인',
     signin: 'GitHub 또는 Google', signout: '',
     download: 'quickstart.ko.md', legal: 'ko/', samples: false,
   },
   'es/': {
-    soon: 'Speedle Cloud estará disponible próximamente', badge: 'Próximamente', closed: 'inicio de sesión para producción aún no está habilitado',
+    intro: 'servicio de autorización alojado basado en el motor Speedle de código abierto', beta: 'La beta pública gratuita es para pruebas, aprendizaje y evaluación', closed: 'inicio de sesión para producción aún no está habilitado',
     signin: 'Iniciar sesión con GitHub o Google (próximamente)', signout: 'Cerrar sesión en todas partes',
     download: 'quickstart.es.md', legal: 'es/', samples: true,
   },
@@ -253,7 +254,7 @@ for (const [locale, copy] of Object.entries(cloudCopy)) {
   for (const route of cloudRoutes.slice(1)) {
     assert.ok(sidebar.includes(`href="/${locale}docs/cloud/${route}"`), `Cloud ${route} link in ${locale || 'en'}`);
   }
-  assert.ok(overview.includes(copy.soon) && overview.includes(copy.badge), `Coming-soon overview in ${locale || 'en'}`);
+  assert.ok(overview.includes(copy.intro) && overview.includes(copy.beta), `Current overview in ${locale || 'en'}`);
   assert.ok(guide.includes(copy.closed) && guide.includes(copy.signin), `Closed sign-in in ${locale || 'en'}`);
   if (copy.signout) assert.ok(guide.includes(copy.signout), `Account session management in ${locale || 'en'}`);
   assert.ok(guide.includes('grant user alice from corp get /books'), `Domain-scoped getting-started policy in ${locale || 'en'}`);
@@ -264,12 +265,12 @@ for (const [locale, copy] of Object.entries(cloudCopy)) {
     assert.ok(guide.includes('grant user alice editor on /books') && guide.includes('grant (user alice) role editor'), `Role-policy examples in ${locale || 'en'}`);
     assert.ok(tokens.includes('spdl_&lt;canonical uppercase ULID id&gt;_&lt;43 base62 digits&gt;'), `Current token format in ${locale || 'en'}`);
     assert.ok(tokens.includes('reauth_required') && tokens.includes('DELETE /api/tokens/') && tokens.includes('nextCursor'), `Token creation, revocation and pagination in ${locale || 'en'}`);
-    assert.ok(api.includes('service_mismatch') && api.includes('subject.token'), `ADS preview contract in ${locale || 'en'}`);
-    assert.ok(api.includes('AbortSignal.timeout') && api.includes('SPEEDLE_ADS_TOKEN'), `Node.js ADS example in ${locale || 'en'}`);
+    assert.ok(api.includes('service_not_found') && api.includes('subject.token'), `ADS contract in ${locale || 'en'}`);
+    assert.ok(api.includes('AbortSignal.timeout') && api.includes('SPEEDLE_API_KEY'), `Node.js ADS example in ${locale || 'en'}`);
     assert.ok(limits.includes('X-Quota-Daily-Remaining') && limits.includes('daily_quota_exceeded') && limits.includes('snapshot_unavailable'), `Cloud limits and errors in ${locale || 'en'}`);
   }
   assert.ok(overview.includes(`href="/docs/cloud/${copy.download}"`), `Localized Markdown download in ${locale || 'en'}`);
-  assert.ok(overview.includes('https://cloud.speedle.io/openapi.yaml') && overview.includes('https://cloud.speedle.io/openapi.json') && overview.includes('https://cloud.speedle.io/build.json'), `Cloud schema and build downloads in ${locale || 'en'}`);
+  assert.ok(overview.includes('https://cloud.speedle.io/openapi.yaml') && overview.includes('https://cloud.speedle.io/openapi.json'), `Cloud schema downloads in ${locale || 'en'}`);
   assert.ok(overview.includes(`href="https://cloud.speedle.io/${copy.legal}terms"`) && overview.includes(`href="https://cloud.speedle.io/${copy.legal}privacy"`), `Localized Cloud legal links in ${locale || 'en'}`);
   const markdown = fs.readFileSync(path.join(output, 'docs/cloud', copy.download), 'utf8');
   assert.deepEqual(markdown, fs.readFileSync(path.join(root, 'docs/hugo/static/docs/cloud', copy.download), 'utf8'), `Generated ${copy.download}`);
