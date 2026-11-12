@@ -1,6 +1,6 @@
 # LLM 辅助授权引擎测试归档：2026-10-29
 
-本目录归档 Codex 接手 Claude Code 交接后，在 charming 上对 Casbin、OPA、Speedle+ 执行的固定版本比较。委托人是 Speedle+ 维护者。目录名 `private` 不提供访问控制：本目录属于公开仓库，公开副本已做个人目录标识与认证元数据脱敏，见 [PRIVACY.md](PRIVACY.md)。
+本目录归档 Codex 接手 Claude Code 交接后，在 charming 上对 Casbin、OPA、Speedle+ 执行的固定版本比较。委托人是 Speedle+ 维护者。目录名 `private` 不提供访问控制：本目录属于公开仓库，公开副本已做个人目录标识与认证元数据脱敏，见 [PRIVACY.md](PRIVACY.md)。2026-11 起 harness 还覆盖 Cedar（cedar-go 与 `cmd/cedar-rs`）和 2026-05 的 Speedle+ 构建，见 [HARNESS_README.md](HARNESS_README.md)；本归档的报告和数字仍是 2026-10-29 的三引擎那轮。
 
 正式测试窗口：2026-10-29 09:19:29–10:17:58，Asia/Shanghai。
 

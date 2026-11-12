@@ -2,7 +2,7 @@
 
 > English translation of [README.md](README.md), added 2026-11-02. This preserves the archived 2026-10-29 versions, observations, and time-specific statements; it adds no measurements.
 
-This directory archives the fixed-version Casbin, OPA, and Speedle+ comparison run on charming after Codex took over a Claude Code handoff. The client was the Speedle+ maintainer. The directory name `private` does not provide access control: this is a public repository. Personal directory identifiers and authentication metadata were redacted from the public copy; see [PRIVACY.en.md](PRIVACY.en.md).
+This directory archives the fixed-version Casbin, OPA, and Speedle+ comparison run on charming after Codex took over a Claude Code handoff. The client was the Speedle+ maintainer. The directory name `private` does not provide access control: this is a public repository. Personal directory identifiers and authentication metadata were redacted from the public copy; see [PRIVACY.en.md](PRIVACY.en.md). Since 2026-11 the harness also covers Cedar (cedar-go and `cmd/cedar-rs`) and the May 2026 Speedle+ build; see [HARNESS_README.en.md](HARNESS_README.en.md). The report and figures archived here remain the three-engine 2026-10-29 run.
 
 Formal measurement window: 2026-10-29 09:19:29–10:17:58, Asia/Shanghai.
 

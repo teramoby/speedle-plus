@@ -10,18 +10,36 @@ Casbin、OPA、Speedle+ 用同一组策略做功能、性能、压力和易用�
 | OPA | `github.com/open-policy-agent/opa` v1.21.4 | 进程内库（`v1/rego`），以及 `opa run --server` |
 | Speedle+ | `github.com/teramoby/speedle-plus` v0.0.0-20261028230603-b27604c077ce | 进程内库（`pkg/eval`），以及 `speedle-ads` |
 
+## Cedar 与 May 2026 Speedle+ 构建（2026-11 新增）
+
+归档之后 harness 又加入了 Cedar 和 2026-05 的 Speedle+ 构建；上面的 2026-10-29 归档数字不含它们，需要重新在基准机上跑一轮。
+
+- `engines.go` 有两个 Cedar 变体：`cedar`（cedar-go，一项权限一条 permit）和 `cedar-data`（整个集合一条 permit，权限放在实体数据 `resource.readers` 里）。
+- `cmd/cedar-rs` 用 Cedar 的 Rust 参考实现（`cedar-policy` 4.14.0）回答完全相同的请求。`TestExportCedarSpecs` 把请求导出成 JSON；`cedar-rs check` 校验，`cedar-rs bench` / `parallel` 计时，`cedar-rs serve` 提供与 `authzd` 相同的精简 HTTP API。
+- 9 个场景各有 `cedar.cedar` + `cedar.entities.json`（组、角色层级和嵌套目录用实体父子关系表达）；生成的大规模集合也有 Cedar 文件，尺寸从 10 开始。
+- `go.may.mod` 固定 2026-05 的 Speedle+ 构建（`SPEEDLE_LABEL=speedle-may`）；`build-package.sh` 打包两套 Go 测试/服务、`cedar-rs` 和两个 `speedle-ads`。
+
+```bash
+CEDAR_SPEC_DIR=/tmp/cedar-specs go test -run '^TestExportCedarSpecs$' -v
+(cd cmd/cedar-rs && cargo build --release --locked)
+cmd/cedar-rs/target/release/cedar-rs check /tmp/cedar-specs/scenarios/*.json
+```
+
+`run-all.sh` 的对应步骤是 `cedar-specs`、`bench-100k-cedar`、`bench-100k-cedar-data`、`may-*` 和 `rs-*`。
+
 ## 目录
 
-- `scenarios/sN_*/`：9 个场景，每个场景三份策略：`casbin.conf` + `casbin.csv`、`opa.rego` + `opa.json`、`speedle.spdl`
-- `engines.go`：三个引擎的统一接口 `Engine.Allowed(Req)`
+- `scenarios/sN_*/`：9 个场景，每个场景四份策略：`casbin.conf` + `casbin.csv`、`opa.rego` + `opa.json`、`cedar.cedar` + `cedar.entities.json`、`speedle.spdl`
+- `engines.go`：四个引擎（Casbin、OPA、Cedar、Speedle+）的统一接口 `Engine.Allowed(Req)`
 - `scenarios_test.go`：场景用例和通过矩阵（`TestScenarios`）、策略体量（`TestPolicySize`）
 - `capabilities_test.go`、`broken_test.go`：列权限、解释决策、运行时改策略、错误信息、坏策略的行为
-- `gen.go`：生成大规模策略（plain：n 个角色，每角色 10 用户；manyusers：10 角色、100 权限、n 用户），三种格式各一份
+- `gen.go`：生成大规模策略（plain：n 个角色，每角色 10 用户；manyusers：10 角色、100 权限、n 用户），四种格式各一份
 - `bench_test.go`：进程内延迟基准、并发基准、加载时间与内存（`TestLoadCost`）
 - `cmd/authzd`：同一个精简 HTTP 服务包住任一引擎
+- `cmd/cedar-rs`：同一批请求的 Cedar Rust 参考实现，输出 Go benchmark 格式
 - `cmd/loadgen`：闭环压测客户端，输出吞吐和 p50/p90/p99/p99.9
 - `cmd/watchcheck`：验证 Speedle+ 文件监听在“写临时文件再改名”时的行为
-- `stress.sh`：HTTP 压测（精简服务 ×3、`opa run --server`、`speedle-ads`）
+- `stress.sh`：HTTP 压测（精简服务覆盖各引擎和变体、`opa run --server`、`speedle-ads`、`cedar-rs serve`）
 - `results/`：原始结果
 
 ## 运行
