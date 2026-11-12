@@ -1,52 +1,72 @@
 +++
 title = "Speedle Cloud クイックスタート"
-description = "GitHub または Google によるサインイン、アカウントのセットアップ、SPDL ポリシーの作成、および Cloud Playground での決定のテスト。"
+description = "Speedle Cloud のサインイン、SPDL ポリシーの保存、API キーによるアプリケーションからの認可チェック、Playground でのテスト。"
 weight = 10
 draft = false
 toc = true
 tocheading = "h2"
 categories = ["docs"]
-lastmod = 2026-11-08T21:11:24+08:00
+lastmod = 2026-11-12T00:00:00+08:00
 +++
 
-**Speedle Cloud はまもなく公開されます。** cloud.speedle.io の本番環境ではまだサインインが開始されておらず、Cloud ヘッダーには **Coming soon（まもなく公開）** バッジが表示されます。サインインが閉じられている間、サインインページには近日公開予定である旨が表示されます。本文では公開されている使用フローを説明していますが、本番コンソールが現在開かれていることを意味するものではありません。
+**Speedle Cloud はまもなく公開されます。** このガイドは、本番環境のサインインと認証付き認可 API が利用可能になった際の手順を説明しています。例は実際の Cloud 環境では実行していません。
 
-### 本番環境
+## GitHub または Google によるサインイン（まもなく開始）
 
-アカウントセッション、管理リクエスト、およびアプリケーショントークンは `https://cloud.speedle.io` を使用します。アカウント、リソース、トークンはそのオリジンに属します。
+ブラウザーで [Cloud コンソール](https://cloud.speedle.io/ja/)を開き、利用可能なプロバイダーでサインインします。未使用の確認済みメールアドレスで初めて利用する場合は、**アカウント作成**を確認します。メールアドレスが使用済みの場合は、コンソールに表示された連携済みプロバイダーでサインインしてください。
 
-### GitHub または Google によるサインイン（まもなく開始）
+## サービスとポリシーを作成する
 
-サインインがまだ開始されていない場合でも、サインインページには **GitHub でサインイン** と **Google でサインイン** の 2 つのオプションが表示されます。本番環境でサインインが開始されたら、現在利用可能なプロバイダーを選択してください。新しい ID の確認済みメールアドレスがまだ使用されていない場合は、**アカウント作成** を明示的に確認する必要があります。
+[サービスワークスペース](https://cloud.speedle.io/ja/service)を開き、`books` と入力して**サービス作成**を選択します。既存ポリシーが結果に影響しないよう、新しいサービスで試してください。既存データは上書きしないでください。
 
-アカウント設定では、接続されている ID を確認し、プロバイダーの接続または切断を行うことができます。少なくとも 1 つの接続済み ID を保持する必要があります。
-
-### ワークスペースとサービス
-
-サービスはポリシーの名前空間です。デフォルトのワークスペースには、テスト用の `default` サービスが用意されています。
-
-### 最初の認可ポリシーの作成
-
-エディターに次の SPDL ステートメントを入力します:
+**新しいポリシー**を選択し、名前を `read-books` にして、次の SPDL を入力します。
 
 ```text
 grant user alice from corp get /books
 ```
 
-`from corp` は、この認可を `corp` ID ドメイン内に制限します。`corp` を、アプリケーションが信頼できる認証データから導出するドメインに置き換え、以下の Playground の例のように、各リクエストでプリンシパルの `idd` として同じ値を送信してください。`from` のない認可は、すべてのドメインの `alice` という名前のユーザーに一致します。ドメイン間で名前が衝突する可能性のない、単一の ID ソースを持つサービスの場合にのみ、この句を省略してください。ルールと対応するリクエストフィールドについては [ID ドメイン](/ja/docs/idd/) を参照してください。
+このポリシーは、ID ドメイン `corp` の `alice` が `/books` に対して `get` を実行することを許可します。`from` を省略すると、すべてのドメインの同名ユーザーに一致します。信頼できる認証データからドメインを取得し、各リクエストの `idd` に設定してください。[ID ドメイン](/ja/docs/idd/)を参照してください。
 
-**ポリシーの検証** を選択し、コンソールに **識別結果: 認可ポリシー** と報告されることを確認してから、**ポリシーを保存** を選択します。検証ではポリシータイプが検出され、構文がチェックされますが、下書きは保存されません。保存は独立した手動操作です。
+**ポリシーの検証**、**ポリシーを保存**の順に選択します。検証は構文を確認するだけで、下書きを保存しません。保存したポリシーが認可 API に反映されるまで約 60 秒かかります。
 
-### Playground で認可決定をテスト
+## API キーを作成する
 
-Playground を開いてポリシーをテストします。
+[API キー](https://cloud.speedle.io/ja/tokens)を開き、`books-app` などの名前を入力し、`ads` スコープ（認可チェック）を選択して、**API キーを作成**を押します。本人確認を求められた場合は、確認を完了してからフォームを再送信します。シークレットは一度しか表示されないため、その場でコピーしてください。現在、有効期限は選択できません。不要になったキーは失効させてください。[API キーの管理](/ja/docs/cloud/tokens/)を参照してください。
 
-リクエストのサブジェクトにプリンシパルを入力します:
+キーをサーバーのシークレットストアに保存し、環境変数 `SPEEDLE_API_KEY` で渡します。ブラウザーのコードやソース管理には含めないでください。
 
-```json
-{"type":"user","name":"alice","idd":"corp"}
+## アプリケーションから認可を確認する
+
+保存したポリシーに対して、アプリケーションのサーバーから次の `isAllowed` リクエストを送信します。このポリシーは属性を必要としないため、`attributes` は空です。
+
+```bash
+curl --fail-with-body --silent --show-error --max-time 10 \
+  'https://cloud.speedle.io/authz-check/v1/is-allowed' \
+  -H "Authorization: Bearer $SPEEDLE_API_KEY" \
+  -H 'Content-Type: application/json' \
+  --data '{"subject":{"principals":[{"type":"user","name":"alice","idd":"corp"}]},"serviceName":"books","resource":"/books","action":"get","attributes":[]}'
 ```
 
-アクションに `get`、リソースに `/books` を入力します。**評価** をクリックすると、結果は `allowed: true`（理由コード 0）となります。
+サンプルのポリシーだけが保存されている場合、期待されるレスポンスは次のとおりです。
 
-プリンシパルの `idd` を `other` に変更するか、リソースを `/secret` に変更すると、リクエストは拒否されます（`allowed: false`）。
+```json
+{"allowed":true,"reason":0}
+```
+
+`action` を `delete` に変更して再送信します。このアクションを許可するポリシーがないため、期待されるレスポンスは次のとおりです。
+
+```json
+{"allowed":false,"reason":3}
+```
+
+どちらの判定も HTTP 200 を返します。`allowed` が `true` の場合だけ保護対象の操作を実行してください。アプリケーションは判定を適用し、エラー、不正なレスポンス、タイムアウト時にはアクセスを拒否する必要があります。
+
+詳細は[認可 API](/ja/docs/cloud/authorization-api/)と [SDK](/ja/docs/sdks/)（[Node.js/TypeScript](/ja/docs/sdks/node/)、[Python](/ja/docs/sdks/python/)、[Java](/ja/docs/sdks/java/)、[Go](/ja/docs/sdks/go/) など）を参照してください。
+
+## Playground で保存済みポリシーをテストする
+
+必要に応じてサービスの **Playground** を開き、**Is allowed** を選択します。**Principals (JSON)** に `[{"type":"user","name":"alice","idd":"corp"}]`、**Resource** に `/books`、**Action** に `get`、**Attributes (JSON)** に `[]` を入力し、**Run test** を選択します。
+
+**Is allowed** は判定結果、**Diagnose** はポリシーの寄与、**All granted roles** はサブジェクトのロール、**All granted permissions** は許可されたリソースとアクションを表示します。テストは保存済みポリシーを使用し、未保存の下書きは使用しません。入力やポリシーを変更したら再実行してください。アプリケーションは API キーを使用して [ADS 認可 API](/ja/docs/cloud/authorization-api/)を呼び出します。
+
+次のステップ：プログラムから管理する場合は、[API キー](/ja/docs/cloud/tokens/)と [PMS API または spctl（Speedle Cloud）](/ja/docs/pms/policy-mgmt/#speedle-cloud)を参照してください。
