@@ -62,6 +62,15 @@ class PublicOpenAPISyncTest(unittest.TestCase):
         self.assertEqual(sync.path_keys(text), PUBLIC_PATHS)
         self.assertNotIn("0.0.0-placeholder", text)
         self.assertNotIn("jsonSchemaDialect:", text)
+        self.assertIn("  - name: Authorization checks\n", text)
+        self.assertIn("  - name: Policy management\n", text)
+        self.assertIn(
+            "description: Run authorization checks and manage policies with Speedle Cloud API keys.\n",
+            text,
+        )
+        self.assertNotIn("API-key contract for cloud.speedle.io", text)
+        published = ROOT / "docs" / "openapi" / "cloud-public.yaml"
+        self.assertEqual(published.read_bytes(), sync.DEST.read_bytes())
         self.assertEqual(sync.main(["--check"]), 0)
 
     def test_json_schema_dialect_is_rejected_until_it_is_removed(self):

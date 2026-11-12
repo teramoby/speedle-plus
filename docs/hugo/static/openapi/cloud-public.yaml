@@ -2,67 +2,41 @@ openapi: 3.1.0
 info:
   title: Speedle Cloud API
   version: 0.4.0
-  description:
-    "API-key contract for cloud.speedle.io: ADS authorization checks and PMS policy
-    management. Console session, account, API-key administration and policy-sync routes are not part
-    of this document."
+  description: Run authorization checks and manage policies with Speedle Cloud API keys.
 servers:
   - url: https://cloud.speedle.io
     description: production
+tags:
+  - name: Authorization checks
+    description:
+      Check whether a subject is allowed to perform an action, and list the roles or
+      permissions granted to a subject.
+  - name: Policy management
+    description: Create, read and delete services, policies and role policies for an account.
 paths:
   /authz-check/v1/is-allowed:
     post:
       operationId: ads-is-allowed
       summary: Check authorization in the service the request names
-      description:
-        "Authenticated ADS contract B (#100); declaration is not evidence of runtime cutover.
-        Accept Authorization: Bearer <AdsBearerToken> or, once the policy-distribution feature is
-        on, the account-scoped <AdsInstanceCredential> (scheme is case-insensitive; the credential
-        remains case-sensitive). Anonymous requests and cookie-session-only requests return 401; no
-        session/CSRF authorization and no CORS. For admissible-size matched POSTs, verify the
-        credential before parsing JSON, then apply burst limiting, the instance fallback counter for
-        adsi_, account-wide daily quota and business validation in that order. The free account cap
-        is 10,000 matched PMS+ADS chargeable handler calls per UTC day, shared across its services,
-        API keys and sessions, resetting at 00:00 UTC. The request and response bodies are the
-        Speedle REST contract (pkg/svcs/adsrest, #213): the same JsonContext fields, typed
-        attributes and bodies, decoded by the same Go decoder, so unknown fields are ignored and
-        errors carry the Speedle message. The verified credential supplies the trusted account;
-        never take ownership from the request. API keys are account-level (#374): send serviceName
-        in every request, as with Speedle; it selects the service inside the key's account and is
-        never defaulted. The body serviceName is matched the way Go's decoder maps the ServiceName
-        field (case-insensitive key, the last string occurrence wins), exactly as for adsi_
-        credentials. A body that names no service, or names a service that does not exist or belongs
-        to another account, is the one byte-identical 404 service_not_found, after the account quota
-        charge. An adsi_ instance credential selects the service the same way, resolved only inside
-        the credential's account and the instance's explicit service set; a service outside the set
-        is the same 404. Once resolved, the same snapshot, engine and body bytes produce the same
-        decision for both credential types, so decisions are byte-identical; an adsi_ call is
-        attributed to the ads_fallback surface and X-Speedle-Decision-Source: cloud-fallback. Each
-        adsi_ call is charged to the instance's 2,000 calls/UTC-day fallback budget before the
-        account quota; exceeding it returns 503 fallback_unavailable without an account charge. Like
-        Speedle without a token asserter, subject.token and tokenType are accepted and ignored:
-        Speedle Cloud does not validate subject tokens, and decisions use subject.principals only.
-        Consume one daily unit for admitted outcomes, including invalid business inputs, policy
-        denials and Speedle-compatible engine errors caused by the request; Cloud-side handler 5xx
-        (for example snapshot_unavailable, internal_error or another Cloud error code) is refunded
-        only after the independent QuotaRelief ledger approves it within a per-account daily cap,
-        and auth/routing/burst/size/quota-reservation rejections are uncharged. While the counter
-        cannot confirm a lease, bearer ADS decisions for the account are throttled to two per second
-        on that isolate: over-rate requests wait in a FIFO queue for at most ten seconds (at most
-        128 waiting callers per isolate across accounts), a longer wait returns quota_unavailable
-        with Retry-After: 30 before the handler, and throttling lasts until a lease is confirmed
-        again, never crossing UTC midnight. Every throttled admission first consumes one unit of the
-        independent QuotaRelief outage allowance (10,000 per account per UTC day by default); outage
-        admissions are extra allowance outside the daily quota, are not written to reserved and
-        never cause a 429 on recovery. They are separately metered, and fail closed when the ledger
-        is unavailable or the allowance is exhausted. Without a confirmed lease from the current UTC
-        day, for example on a cold isolate, quota_unavailable fails closed. Use only a valid scoped
-        KV snapshot and scoped/revision-aware evaluator; never a bundled demo or D1
-        policy-evaluation fallback. Snapshot propagation remains approximately 60 seconds; the
-        session-only Playground can read current D1 data separately. lastUsedAt updates
-        asynchronously at most once per hour and never changes authorization. Speedle
-        RESTService.IsAllowed. Both an allow and a policy denial return 200 IsAllowedResponse;
-        evaluator errors are a 200 denial with errorMessage, exactly as Speedle returns them."
+      description: >-
+        Checks authorization against the policies of one service. Send an API key with the ads scope
+        as `Authorization: Bearer <key>`. The key determines the account, and the required
+        `serviceName` in the body selects one of that account's services. A missing, empty or
+        unknown service returns 404 service_not_found. An account-scoped instance credential
+        (`adsi_...`) may also call this endpoint for the services in its instance's set.
+
+
+        The body is a Speedle JsonContext: subject, serviceName, resource, action and optional typed
+        attributes. Decisions use subject.principals; subject.token and tokenType are accepted but
+        not validated. Requests are limited to 64 KiB and 50 attributes, and the per-key burst limit
+        is 600 requests per 60 seconds. Every admitted call counts against the account's 10,000-call
+        daily quota, shared by all of its services, keys and sessions and resetting at 00:00 UTC.
+        Rejections for authentication, scope, routing, size, burst and quota are not charged.
+        Rate-limited responses include Retry-After.
+
+
+        Returns the decision as `allowed` (true for a grant, false for a denial) and `reason` (a
+        Speedle reason code). Evaluation errors are returned as a denial with `errorMessage`.
       security:
         - apiToken: []
         - adsInstanceCredential: []
@@ -70,7 +44,7 @@ paths:
         $ref: "#/components/requestBodies/RequestBody7"
       responses:
         "200":
-          description: Upstream ADS result, including successful policy denials.
+          description: The result of the authorization check.
           headers:
             Cache-Control:
               $ref: "#/components/headers/Cache-Control4"
@@ -102,59 +76,31 @@ paths:
           $ref: "#/components/responses/Response39"
         "503":
           $ref: "#/components/responses/Response40"
+      tags:
+        - Authorization checks
   /authz-check/v1/all-granted-roles:
     post:
       operationId: ads-all-granted-roles
       summary: List granted roles in the service the request names
-      description:
-        "Authenticated ADS contract B (#100); declaration is not evidence of runtime cutover.
-        Accept Authorization: Bearer <AdsBearerToken> or, once the policy-distribution feature is
-        on, the account-scoped <AdsInstanceCredential> (scheme is case-insensitive; the credential
-        remains case-sensitive). Anonymous requests and cookie-session-only requests return 401; no
-        session/CSRF authorization and no CORS. For admissible-size matched POSTs, verify the
-        credential before parsing JSON, then apply burst limiting, the instance fallback counter for
-        adsi_, account-wide daily quota and business validation in that order. The free account cap
-        is 10,000 matched PMS+ADS chargeable handler calls per UTC day, shared across its services,
-        API keys and sessions, resetting at 00:00 UTC. The request and response bodies are the
-        Speedle REST contract (pkg/svcs/adsrest, #213): the same JsonContext fields, typed
-        attributes and bodies, decoded by the same Go decoder, so unknown fields are ignored and
-        errors carry the Speedle message. The verified credential supplies the trusted account;
-        never take ownership from the request. API keys are account-level (#374): send serviceName
-        in every request, as with Speedle; it selects the service inside the key's account and is
-        never defaulted. The body serviceName is matched the way Go's decoder maps the ServiceName
-        field (case-insensitive key, the last string occurrence wins), exactly as for adsi_
-        credentials. A body that names no service, or names a service that does not exist or belongs
-        to another account, is the one byte-identical 404 service_not_found, after the account quota
-        charge. An adsi_ instance credential selects the service the same way, resolved only inside
-        the credential's account and the instance's explicit service set; a service outside the set
-        is the same 404. Once resolved, the same snapshot, engine and body bytes produce the same
-        decision for both credential types, so decisions are byte-identical; an adsi_ call is
-        attributed to the ads_fallback surface and X-Speedle-Decision-Source: cloud-fallback. Each
-        adsi_ call is charged to the instance's 2,000 calls/UTC-day fallback budget before the
-        account quota; exceeding it returns 503 fallback_unavailable without an account charge. Like
-        Speedle without a token asserter, subject.token and tokenType are accepted and ignored:
-        Speedle Cloud does not validate subject tokens, and decisions use subject.principals only.
-        Consume one daily unit for admitted outcomes, including invalid business inputs, policy
-        denials and Speedle-compatible engine errors caused by the request; Cloud-side handler 5xx
-        (for example snapshot_unavailable, internal_error or another Cloud error code) is refunded
-        only after the independent QuotaRelief ledger approves it within a per-account daily cap,
-        and auth/routing/burst/size/quota-reservation rejections are uncharged. While the counter
-        cannot confirm a lease, bearer ADS decisions for the account are throttled to two per second
-        on that isolate: over-rate requests wait in a FIFO queue for at most ten seconds (at most
-        128 waiting callers per isolate across accounts), a longer wait returns quota_unavailable
-        with Retry-After: 30 before the handler, and throttling lasts until a lease is confirmed
-        again, never crossing UTC midnight. Every throttled admission first consumes one unit of the
-        independent QuotaRelief outage allowance (10,000 per account per UTC day by default); outage
-        admissions are extra allowance outside the daily quota, are not written to reserved and
-        never cause a 429 on recovery. They are separately metered, and fail closed when the ledger
-        is unavailable or the allowance is exhausted. Without a confirmed lease from the current UTC
-        day, for example on a cold isolate, quota_unavailable fails closed. Use only a valid scoped
-        KV snapshot and scoped/revision-aware evaluator; never a bundled demo or D1
-        policy-evaluation fallback. Snapshot propagation remains approximately 60 seconds; the
-        session-only Playground can read current D1 data separately. lastUsedAt updates
-        asynchronously at most once per hour and never changes authorization. Speedle
-        RESTService.GetAllGrantedRoles: a string array, [] when none. Evaluator errors use the
-        Speedle status mapping with {error: message}."
+      description: >-
+        Checks authorization against the policies of one service. Send an API key with the ads scope
+        as `Authorization: Bearer <key>`. The key determines the account, and the required
+        `serviceName` in the body selects one of that account's services. A missing, empty or
+        unknown service returns 404 service_not_found. An account-scoped instance credential
+        (`adsi_...`) may also call this endpoint for the services in its instance's set.
+
+
+        The body is a Speedle JsonContext: subject, serviceName, resource, action and optional typed
+        attributes. Decisions use subject.principals; subject.token and tokenType are accepted but
+        not validated. Requests are limited to 64 KiB and 50 attributes, and the per-key burst limit
+        is 600 requests per 60 seconds. Every admitted call counts against the account's 10,000-call
+        daily quota, shared by all of its services, keys and sessions and resetting at 00:00 UTC.
+        Rejections for authentication, scope, routing, size, burst and quota are not charged.
+        Rate-limited responses include Retry-After.
+
+
+        Returns the role names granted to the request's subject as a string array, empty when none.
+        An evaluation error returns the Speedle error body `{error: message}`.
       security:
         - apiToken: []
         - adsInstanceCredential: []
@@ -162,7 +108,7 @@ paths:
         $ref: "#/components/requestBodies/RequestBody7"
       responses:
         "200":
-          description: Upstream ADS result, including successful policy denials.
+          description: The result of the authorization check.
           headers:
             Cache-Control:
               $ref: "#/components/headers/Cache-Control4"
@@ -194,59 +140,31 @@ paths:
           $ref: "#/components/responses/Response39"
         "503":
           $ref: "#/components/responses/Response40"
+      tags:
+        - Authorization checks
   /authz-check/v1/all-granted-permissions:
     post:
       operationId: ads-all-granted-permissions
       summary: List granted permissions in the service the request names
-      description:
-        "Authenticated ADS contract B (#100); declaration is not evidence of runtime cutover.
-        Accept Authorization: Bearer <AdsBearerToken> or, once the policy-distribution feature is
-        on, the account-scoped <AdsInstanceCredential> (scheme is case-insensitive; the credential
-        remains case-sensitive). Anonymous requests and cookie-session-only requests return 401; no
-        session/CSRF authorization and no CORS. For admissible-size matched POSTs, verify the
-        credential before parsing JSON, then apply burst limiting, the instance fallback counter for
-        adsi_, account-wide daily quota and business validation in that order. The free account cap
-        is 10,000 matched PMS+ADS chargeable handler calls per UTC day, shared across its services,
-        API keys and sessions, resetting at 00:00 UTC. The request and response bodies are the
-        Speedle REST contract (pkg/svcs/adsrest, #213): the same JsonContext fields, typed
-        attributes and bodies, decoded by the same Go decoder, so unknown fields are ignored and
-        errors carry the Speedle message. The verified credential supplies the trusted account;
-        never take ownership from the request. API keys are account-level (#374): send serviceName
-        in every request, as with Speedle; it selects the service inside the key's account and is
-        never defaulted. The body serviceName is matched the way Go's decoder maps the ServiceName
-        field (case-insensitive key, the last string occurrence wins), exactly as for adsi_
-        credentials. A body that names no service, or names a service that does not exist or belongs
-        to another account, is the one byte-identical 404 service_not_found, after the account quota
-        charge. An adsi_ instance credential selects the service the same way, resolved only inside
-        the credential's account and the instance's explicit service set; a service outside the set
-        is the same 404. Once resolved, the same snapshot, engine and body bytes produce the same
-        decision for both credential types, so decisions are byte-identical; an adsi_ call is
-        attributed to the ads_fallback surface and X-Speedle-Decision-Source: cloud-fallback. Each
-        adsi_ call is charged to the instance's 2,000 calls/UTC-day fallback budget before the
-        account quota; exceeding it returns 503 fallback_unavailable without an account charge. Like
-        Speedle without a token asserter, subject.token and tokenType are accepted and ignored:
-        Speedle Cloud does not validate subject tokens, and decisions use subject.principals only.
-        Consume one daily unit for admitted outcomes, including invalid business inputs, policy
-        denials and Speedle-compatible engine errors caused by the request; Cloud-side handler 5xx
-        (for example snapshot_unavailable, internal_error or another Cloud error code) is refunded
-        only after the independent QuotaRelief ledger approves it within a per-account daily cap,
-        and auth/routing/burst/size/quota-reservation rejections are uncharged. While the counter
-        cannot confirm a lease, bearer ADS decisions for the account are throttled to two per second
-        on that isolate: over-rate requests wait in a FIFO queue for at most ten seconds (at most
-        128 waiting callers per isolate across accounts), a longer wait returns quota_unavailable
-        with Retry-After: 30 before the handler, and throttling lasts until a lease is confirmed
-        again, never crossing UTC midnight. Every throttled admission first consumes one unit of the
-        independent QuotaRelief outage allowance (10,000 per account per UTC day by default); outage
-        admissions are extra allowance outside the daily quota, are not written to reserved and
-        never cause a 429 on recovery. They are separately metered, and fail closed when the ledger
-        is unavailable or the allowance is exhausted. Without a confirmed lease from the current UTC
-        day, for example on a cold isolate, quota_unavailable fails closed. Use only a valid scoped
-        KV snapshot and scoped/revision-aware evaluator; never a bundled demo or D1
-        policy-evaluation fallback. Snapshot propagation remains approximately 60 seconds; the
-        session-only Playground can read current D1 data separately. lastUsedAt updates
-        asynchronously at most once per hour and never changes authorization. Speedle
-        RESTService.GetAllGrantedPermissions: PermissionResponse {resource, actions} items, [] when
-        none. Evaluator errors use the Speedle status mapping with {error: message}."
+      description: >-
+        Checks authorization against the policies of one service. Send an API key with the ads scope
+        as `Authorization: Bearer <key>`. The key determines the account, and the required
+        `serviceName` in the body selects one of that account's services. A missing, empty or
+        unknown service returns 404 service_not_found. An account-scoped instance credential
+        (`adsi_...`) may also call this endpoint for the services in its instance's set.
+
+
+        The body is a Speedle JsonContext: subject, serviceName, resource, action and optional typed
+        attributes. Decisions use subject.principals; subject.token and tokenType are accepted but
+        not validated. Requests are limited to 64 KiB and 50 attributes, and the per-key burst limit
+        is 600 requests per 60 seconds. Every admitted call counts against the account's 10,000-call
+        daily quota, shared by all of its services, keys and sessions and resetting at 00:00 UTC.
+        Rejections for authentication, scope, routing, size, burst and quota are not charged.
+        Rate-limited responses include Retry-After.
+
+
+        Returns the permissions granted to the request's subject as `{resource, actions}` items,
+        empty when none. An evaluation error returns the Speedle error body `{error: message}`.
       security:
         - apiToken: []
         - adsInstanceCredential: []
@@ -254,7 +172,7 @@ paths:
         $ref: "#/components/requestBodies/RequestBody7"
       responses:
         "200":
-          description: Upstream ADS result, including successful policy denials.
+          description: The result of the authorization check.
           headers:
             Cache-Control:
               $ref: "#/components/headers/Cache-Control4"
@@ -286,25 +204,32 @@ paths:
           $ref: "#/components/responses/Response39"
         "503":
           $ref: "#/components/responses/Response40"
+      tags:
+        - Authorization checks
   /policy-mgmt/v1/service:
     get:
       operationId: pmsListServices
       summary: List the account's services
-      description:
-        "API-key-authenticated Speedle PMS compatibility API (#250). Requires `Authorization:
-        Bearer <API key>`; API keys are account-level (#374), so the path serviceName selects a
-        service of the key's account; session cookies and CSRF headers are never accepted. Order:
-        bearer verification (401), fixed-scope authorization (403 insufficient_scope), per-API-key
-        burst limit (429 rate_limited), account daily quota (429 daily_quota_exceeded or 503
-        quota_unavailable), then business validation. Every admitted non-5xx request consumes one
-        PMS/ADS account quota unit, including reads and business rejections; a Cloud-side handler
-        5xx is refunded only when the independent relief ledger approves it within the per-account
-        daily cap, and auth, scope, routing, size, burst and reservation rejections are uncharged.
-        Mutations and their audit rows commit atomically and republish the service snapshot. Never
-        give manage mode (pms:write) to an agent governed by these policies: it can change the
-        policies that decide its own access. Upstream GET /service. API keys are account-level: a
-        valid key sees every service of its account, oldest first, and [] when the account has none.
-        Each service includes its policies and role policies in upstream PMS shape."
+      description: >-
+        Manages the policies of a service with a policy-management API key. Send the key as
+        `Authorization: Bearer <key>`. The key determines the account; operations that address a
+        service use its `serviceName` path parameter. The key's scope must allow the operation:
+        pms:read for list and get, pms:write for create and delete.
+
+
+        Request bodies are limited to 64 KiB, and each key to 600 requests per 60 seconds. Every
+        admitted call counts against the account's 10,000-call daily quota, shared by all of the
+        account's services, keys and sessions and resetting at 00:00 UTC. Rejections for
+        authentication, scope, size, burst and quota are not charged. Error responses include
+        Retry-After where applicable.
+
+
+        Mutations and their audit records are written atomically. Policy changes reach authorization
+        checks within about 60 seconds.
+
+
+        Returns every service of the key's account, oldest first, each with its policies and role
+        policies; an empty array when the account has none.
       security:
         - pmsToken: []
       parameters: []
@@ -315,7 +240,7 @@ paths:
             Cache-Control:
               $ref: "#/components/headers/Cache-Control5"
             X-Quota-Daily-Remaining:
-              $ref: "#/components/headers/X-Quota-Daily-Remaining5"
+              $ref: "#/components/headers/X-Quota-Daily-Remaining3"
             X-RateLimit-Limit:
               $ref: "#/components/headers/X-RateLimit-Limit2"
           content:
@@ -340,35 +265,38 @@ paths:
           $ref: "#/components/responses/Response48"
         "503":
           $ref: "#/components/responses/Response49"
+      tags:
+        - Policy management
     post:
       operationId: pmsCreateService
       summary: Create a service in the API key's account
-      description:
-        "API-key-authenticated Speedle PMS compatibility API (#250). Requires `Authorization:
-        Bearer <API key>`; API keys are account-level (#374), so the path serviceName selects a
-        service of the key's account; session cookies and CSRF headers are never accepted. Order:
-        bearer verification (401), fixed-scope authorization (403 insufficient_scope), per-API-key
-        burst limit (429 rate_limited), account daily quota (429 daily_quota_exceeded or 503
-        quota_unavailable), then business validation. Every admitted non-5xx request consumes one
-        PMS/ADS account quota unit, including reads and business rejections; a Cloud-side handler
-        5xx is refunded only when the independent relief ledger approves it within the per-account
-        daily cap, and auth, scope, routing, size, burst and reservation rejections are uncharged.
-        Mutations and their audit rows commit atomically and republish the service snapshot. Never
-        give manage mode (pms:write) to an agent governed by these policies: it can change the
-        policies that decide its own access. Upstream POST /service. Creates a service in the API
-        key's account. The insert itself requires the key to still be active, so a key revoked after
-        a cached verification cannot create a service: that request returns 401 unauthorized. An
-        account may own up to 100 services with unique names: a duplicate name returns 409
-        service_exists and the technical cap returns 409 quota_exceeded with limit 100. Success
-        stores the service, writes service.create audit and publishes its empty snapshot."
+      description: >-
+        Manages the policies of a service with a policy-management API key. Send the key as
+        `Authorization: Bearer <key>`. The key determines the account; operations that address a
+        service use its `serviceName` path parameter. The key's scope must allow the operation:
+        pms:read for list and get, pms:write for create and delete.
+
+
+        Request bodies are limited to 64 KiB, and each key to 600 requests per 60 seconds. Every
+        admitted call counts against the account's 10,000-call daily quota, shared by all of the
+        account's services, keys and sessions and resetting at 00:00 UTC. Rejections for
+        authentication, scope, size, burst and quota are not charged. Error responses include
+        Retry-After where applicable.
+
+
+        Mutations and their audit records are written atomically. Policy changes reach authorization
+        checks within about 60 seconds.
+
+
+        Creates a service in the key's account. The name must be unique in the account, which can
+        own up to 100 services; a duplicate returns 409 service_exists and the cap returns 409
+        quota_exceeded with limit 100. The key must still be active when the request is processed.
       security:
         - pmsToken: []
       parameters: []
       requestBody:
         required: true
-        description:
-          application/json only, at most 64 KiB. The body is upstream PMS JSON, not SPDL; it is
-          rendered to one SPDL statement and re-parsed before writing. Reject unknown fields.
+        description: JSON body, at most 64 KiB. Unknown fields are rejected.
         content:
           application/json:
             schema:
@@ -394,25 +322,32 @@ paths:
           $ref: "#/components/responses/Response48"
         "503":
           $ref: "#/components/responses/Response49"
+      tags:
+        - Policy management
   /policy-mgmt/v1/service/{serviceName}:
     get:
       operationId: pmsGetService
       summary: Get a service of the account
-      description:
-        "API-key-authenticated Speedle PMS compatibility API (#250). Requires `Authorization:
-        Bearer <API key>`; API keys are account-level (#374), so the path serviceName selects a
-        service of the key's account; session cookies and CSRF headers are never accepted. Order:
-        bearer verification (401), fixed-scope authorization (403 insufficient_scope), per-API-key
-        burst limit (429 rate_limited), account daily quota (429 daily_quota_exceeded or 503
-        quota_unavailable), then business validation. Every admitted non-5xx request consumes one
-        PMS/ADS account quota unit, including reads and business rejections; a Cloud-side handler
-        5xx is refunded only when the independent relief ledger approves it within the per-account
-        daily cap, and auth, scope, routing, size, burst and reservation rejections are uncharged.
-        Mutations and their audit rows commit atomically and republish the service snapshot. Never
-        give manage mode (pms:write) to an agent governed by these policies: it can change the
-        policies that decide its own access. Upstream GET /service/{serviceName}. serviceName
-        selects a service of the API key's account by its exact name; an unknown name or another
-        account's service is 404 not_found."
+      description: >-
+        Manages the policies of a service with a policy-management API key. Send the key as
+        `Authorization: Bearer <key>`. The key determines the account; operations that address a
+        service use its `serviceName` path parameter. The key's scope must allow the operation:
+        pms:read for list and get, pms:write for create and delete.
+
+
+        Request bodies are limited to 64 KiB, and each key to 600 requests per 60 seconds. Every
+        admitted call counts against the account's 10,000-call daily quota, shared by all of the
+        account's services, keys and sessions and resetting at 00:00 UTC. Rejections for
+        authentication, scope, size, burst and quota are not charged. Error responses include
+        Retry-After where applicable.
+
+
+        Mutations and their audit records are written atomically. Policy changes reach authorization
+        checks within about 60 seconds.
+
+
+        Returns one service by its exact name. An unknown name or another account's service returns
+        404 not_found.
       security:
         - pmsToken: []
       parameters:
@@ -438,28 +373,31 @@ paths:
           $ref: "#/components/responses/Response48"
         "503":
           $ref: "#/components/responses/Response49"
+      tags:
+        - Policy management
     delete:
       operationId: pmsDeleteService
       summary: Delete a service of the account
-      description:
-        "API-key-authenticated Speedle PMS compatibility API (#250). Requires `Authorization:
-        Bearer <API key>`; API keys are account-level (#374), so the path serviceName selects a
-        service of the key's account; session cookies and CSRF headers are never accepted. Order:
-        bearer verification (401), fixed-scope authorization (403 insufficient_scope), per-API-key
-        burst limit (429 rate_limited), account daily quota (429 daily_quota_exceeded or 503
-        quota_unavailable), then business validation. Every admitted non-5xx request consumes one
-        PMS/ADS account quota unit, including reads and business rejections; a Cloud-side handler
-        5xx is refunded only when the independent relief ledger approves it within the per-account
-        daily cap, and auth, scope, routing, size, burst and reservation rejections are uncharged.
-        Mutations and their audit rows commit atomically and republish the service snapshot. Never
-        give manage mode (pms:write) to an agent governed by these policies: it can change the
-        policies that decide its own access. Upstream DELETE /service/{serviceName}. serviceName
-        selects a service of the API key's account by its exact name; an unknown name or another
-        account's service is 404 not_found. Deletes the service and its policies, writes
-        service.delete audit and removes the KV snapshot. API keys are account-level and are not
-        deleted with a service. Unlike the signed-in console route this key-authenticated command
-        has no separate recent-authentication step; the management key is the authorization. Never
-        give manage mode to an agent governed by these policies."
+      description: >-
+        Manages the policies of a service with a policy-management API key. Send the key as
+        `Authorization: Bearer <key>`. The key determines the account; operations that address a
+        service use its `serviceName` path parameter. The key's scope must allow the operation:
+        pms:read for list and get, pms:write for create and delete.
+
+
+        Request bodies are limited to 64 KiB, and each key to 600 requests per 60 seconds. Every
+        admitted call counts against the account's 10,000-call daily quota, shared by all of the
+        account's services, keys and sessions and resetting at 00:00 UTC. Rejections for
+        authentication, scope, size, burst and quota are not charged. Error responses include
+        Retry-After where applicable.
+
+
+        Mutations and their audit records are written atomically. Policy changes reach authorization
+        checks within about 60 seconds.
+
+
+        Deletes the service and its policies. An unknown name or another account's service returns
+        404 not_found. API keys are account-level and are not deleted with a service.
       security:
         - pmsToken: []
       parameters:
@@ -485,25 +423,32 @@ paths:
           $ref: "#/components/responses/Response48"
         "503":
           $ref: "#/components/responses/Response49"
+      tags:
+        - Policy management
   /policy-mgmt/v1/service/{serviceName}/policy:
     get:
       operationId: pmsPoliciesList
       summary: List policies
-      description:
-        "API-key-authenticated Speedle PMS compatibility API (#250). Requires `Authorization:
-        Bearer <API key>`; API keys are account-level (#374), so the path serviceName selects a
-        service of the key's account; session cookies and CSRF headers are never accepted. Order:
-        bearer verification (401), fixed-scope authorization (403 insufficient_scope), per-API-key
-        burst limit (429 rate_limited), account daily quota (429 daily_quota_exceeded or 503
-        quota_unavailable), then business validation. Every admitted non-5xx request consumes one
-        PMS/ADS account quota unit, including reads and business rejections; a Cloud-side handler
-        5xx is refunded only when the independent relief ledger approves it within the per-account
-        daily cap, and auth, scope, routing, size, burst and reservation rejections are uncharged.
-        Mutations and their audit rows commit atomically and republish the service snapshot. Never
-        give manage mode (pms:write) to an agent governed by these policies: it can change the
-        policies that decide its own access. Upstream GET /service/{serviceName}/policy. Returns the
-        selected service's stored authz policies in upstream PMS shape, including the Cloud policy
-        ID used by GET and DELETE."
+      description: >-
+        Manages the policies of a service with a policy-management API key. Send the key as
+        `Authorization: Bearer <key>`. The key determines the account; operations that address a
+        service use its `serviceName` path parameter. The key's scope must allow the operation:
+        pms:read for list and get, pms:write for create and delete.
+
+
+        Request bodies are limited to 64 KiB, and each key to 600 requests per 60 seconds. Every
+        admitted call counts against the account's 10,000-call daily quota, shared by all of the
+        account's services, keys and sessions and resetting at 00:00 UTC. Rejections for
+        authentication, scope, size, burst and quota are not charged. Error responses include
+        Retry-After where applicable.
+
+
+        Mutations and their audit records are written atomically. Policy changes reach authorization
+        checks within about 60 seconds.
+
+
+        Returns the service's policies, including each policy's ID used by the get and delete
+        endpoints.
       security:
         - pmsToken: []
       parameters:
@@ -515,7 +460,7 @@ paths:
             Cache-Control:
               $ref: "#/components/headers/Cache-Control5"
             X-Quota-Daily-Remaining:
-              $ref: "#/components/headers/X-Quota-Daily-Remaining5"
+              $ref: "#/components/headers/X-Quota-Daily-Remaining3"
             X-RateLimit-Limit:
               $ref: "#/components/headers/X-RateLimit-Limit2"
           content:
@@ -540,37 +485,41 @@ paths:
           $ref: "#/components/responses/Response48"
         "503":
           $ref: "#/components/responses/Response49"
+      tags:
+        - Policy management
     post:
       operationId: pmsPoliciesCreate
       summary: Create a policy
-      description:
-        "API-key-authenticated Speedle PMS compatibility API (#250). Requires `Authorization:
-        Bearer <API key>`; API keys are account-level (#374), so the path serviceName selects a
-        service of the key's account; session cookies and CSRF headers are never accepted. Order:
-        bearer verification (401), fixed-scope authorization (403 insufficient_scope), per-API-key
-        burst limit (429 rate_limited), account daily quota (429 daily_quota_exceeded or 503
-        quota_unavailable), then business validation. Every admitted non-5xx request consumes one
-        PMS/ADS account quota unit, including reads and business rejections; a Cloud-side handler
-        5xx is refunded only when the independent relief ledger approves it within the per-account
-        daily cap, and auth, scope, routing, size, burst and reservation rejections are uncharged.
-        Mutations and their audit rows commit atomically and republish the service snapshot. Never
-        give manage mode (pms:write) to an agent governed by these policies: it can change the
-        policies that decide its own access. Upstream POST /service/{serviceName}/policy. The JSON
-        body is rendered to one SPDL statement and parsed by the same WASM authz parser as the
-        console; unrepresentable bodies and parser errors return 400 without writing. Success
-        atomically stores the policy, increments the service revision and writes policy.create
-        audit, then republishes the service snapshot (KV is eventually consistent, typically within
-        60 seconds). Duplicate names return 409 policy_exists; the 200-policy combined cap returns
-        409 quota_exceeded with limit 200."
+      description: >-
+        Manages the policies of a service with a policy-management API key. Send the key as
+        `Authorization: Bearer <key>`. The key determines the account; operations that address a
+        service use its `serviceName` path parameter. The key's scope must allow the operation:
+        pms:read for list and get, pms:write for create and delete.
+
+
+        Request bodies are limited to 64 KiB, and each key to 600 requests per 60 seconds. Every
+        admitted call counts against the account's 10,000-call daily quota, shared by all of the
+        account's services, keys and sessions and resetting at 00:00 UTC. Rejections for
+        authentication, scope, size, burst and quota are not charged. Error responses include
+        Retry-After where applicable.
+
+
+        Mutations and their audit records are written atomically. Policy changes reach authorization
+        checks within about 60 seconds.
+
+
+        Creates a policy from the request body. The body is converted to one SPDL statement; a body
+        that cannot be represented or does not parse returns 400 without writing. The name is a
+        display attribute and need not be unique; the server-generated ID identifies the policy. The
+        account allows 200 policies combined across authorization and role policies; exceeding it
+        returns 409 quota_exceeded with limit 200.
       security:
         - pmsToken: []
       parameters:
         - $ref: "#/components/parameters/serviceName"
       requestBody:
         required: true
-        description:
-          application/json only, at most 64 KiB. The body is upstream PMS JSON, not SPDL; it is
-          rendered to one SPDL statement and re-parsed before writing. Reject unknown fields.
+        description: JSON body, at most 64 KiB. Unknown fields are rejected.
         content:
           application/json:
             schema:
@@ -596,25 +545,32 @@ paths:
           $ref: "#/components/responses/Response48"
         "503":
           $ref: "#/components/responses/Response49"
+      tags:
+        - Policy management
   /policy-mgmt/v1/service/{serviceName}/policy/{policyId}:
     get:
       operationId: pmsPoliciesGet
       summary: Get one policy
-      description:
-        "API-key-authenticated Speedle PMS compatibility API (#250). Requires `Authorization:
-        Bearer <API key>`; API keys are account-level (#374), so the path serviceName selects a
-        service of the key's account; session cookies and CSRF headers are never accepted. Order:
-        bearer verification (401), fixed-scope authorization (403 insufficient_scope), per-API-key
-        burst limit (429 rate_limited), account daily quota (429 daily_quota_exceeded or 503
-        quota_unavailable), then business validation. Every admitted non-5xx request consumes one
-        PMS/ADS account quota unit, including reads and business rejections; a Cloud-side handler
-        5xx is refunded only when the independent relief ledger approves it within the per-account
-        daily cap, and auth, scope, routing, size, burst and reservation rejections are uncharged.
-        Mutations and their audit rows commit atomically and republish the service snapshot. Never
-        give manage mode (pms:write) to an agent governed by these policies: it can change the
-        policies that decide its own access. Upstream GET /service/{serviceName}/policy/{policyID}.
-        The ID is the Cloud canonical ULID (or a legacy UUIDv7), not a name. Unknown, malformed,
-        wrong-kind or other-service IDs return the same 404."
+      description: >-
+        Manages the policies of a service with a policy-management API key. Send the key as
+        `Authorization: Bearer <key>`. The key determines the account; operations that address a
+        service use its `serviceName` path parameter. The key's scope must allow the operation:
+        pms:read for list and get, pms:write for create and delete.
+
+
+        Request bodies are limited to 64 KiB, and each key to 600 requests per 60 seconds. Every
+        admitted call counts against the account's 10,000-call daily quota, shared by all of the
+        account's services, keys and sessions and resetting at 00:00 UTC. Rejections for
+        authentication, scope, size, burst and quota are not charged. Error responses include
+        Retry-After where applicable.
+
+
+        Mutations and their audit records are written atomically. Policy changes reach authorization
+        checks within about 60 seconds.
+
+
+        Returns one policy by its Cloud policy ID. An unknown, malformed, wrong-kind or
+        other-service ID returns 404 not_found.
       security:
         - pmsToken: []
       parameters:
@@ -641,26 +597,31 @@ paths:
           $ref: "#/components/responses/Response48"
         "503":
           $ref: "#/components/responses/Response49"
+      tags:
+        - Policy management
     delete:
       operationId: pmsPoliciesDelete
       summary: Delete one policy
-      description:
-        "API-key-authenticated Speedle PMS compatibility API (#250). Requires `Authorization:
-        Bearer <API key>`; API keys are account-level (#374), so the path serviceName selects a
-        service of the key's account; session cookies and CSRF headers are never accepted. Order:
-        bearer verification (401), fixed-scope authorization (403 insufficient_scope), per-API-key
-        burst limit (429 rate_limited), account daily quota (429 daily_quota_exceeded or 503
-        quota_unavailable), then business validation. Every admitted non-5xx request consumes one
-        PMS/ADS account quota unit, including reads and business rejections; a Cloud-side handler
-        5xx is refunded only when the independent relief ledger approves it within the per-account
-        daily cap, and auth, scope, routing, size, burst and reservation rejections are uncharged.
-        Mutations and their audit rows commit atomically and republish the service snapshot. Never
-        give manage mode (pms:write) to an agent governed by these policies: it can change the
-        policies that decide its own access. Upstream DELETE
-        /service/{serviceName}/policy/{policyID}. Deletes only an owned authz policy with this
-        canonical ID; success is 204, and unknown/malformed/wrong-kind/other-service IDs return 404.
-        The delete and policy.delete audit commit atomically, the revision increments and the
-        snapshot is republished."
+      description: >-
+        Manages the policies of a service with a policy-management API key. Send the key as
+        `Authorization: Bearer <key>`. The key determines the account; operations that address a
+        service use its `serviceName` path parameter. The key's scope must allow the operation:
+        pms:read for list and get, pms:write for create and delete.
+
+
+        Request bodies are limited to 64 KiB, and each key to 600 requests per 60 seconds. Every
+        admitted call counts against the account's 10,000-call daily quota, shared by all of the
+        account's services, keys and sessions and resetting at 00:00 UTC. Rejections for
+        authentication, scope, size, burst and quota are not charged. Error responses include
+        Retry-After where applicable.
+
+
+        Mutations and their audit records are written atomically. Policy changes reach authorization
+        checks within about 60 seconds.
+
+
+        Deletes one policy by its Cloud policy ID; success returns 204. An unknown, malformed,
+        wrong-kind or other-service ID returns 404 not_found.
       security:
         - pmsToken: []
       parameters:
@@ -687,25 +648,32 @@ paths:
           $ref: "#/components/responses/Response48"
         "503":
           $ref: "#/components/responses/Response49"
+      tags:
+        - Policy management
   /policy-mgmt/v1/service/{serviceName}/role-policy:
     get:
       operationId: pmsRolePoliciesList
       summary: List role policies
-      description:
-        "API-key-authenticated Speedle PMS compatibility API (#250). Requires `Authorization:
-        Bearer <API key>`; API keys are account-level (#374), so the path serviceName selects a
-        service of the key's account; session cookies and CSRF headers are never accepted. Order:
-        bearer verification (401), fixed-scope authorization (403 insufficient_scope), per-API-key
-        burst limit (429 rate_limited), account daily quota (429 daily_quota_exceeded or 503
-        quota_unavailable), then business validation. Every admitted non-5xx request consumes one
-        PMS/ADS account quota unit, including reads and business rejections; a Cloud-side handler
-        5xx is refunded only when the independent relief ledger approves it within the per-account
-        daily cap, and auth, scope, routing, size, burst and reservation rejections are uncharged.
-        Mutations and their audit rows commit atomically and republish the service snapshot. Never
-        give manage mode (pms:write) to an agent governed by these policies: it can change the
-        policies that decide its own access. Upstream GET /service/{serviceName}/role-policy.
-        Returns the selected service's stored role policies in upstream PMS shape, including the
-        Cloud policy ID used by GET and DELETE."
+      description: >-
+        Manages the policies of a service with a policy-management API key. Send the key as
+        `Authorization: Bearer <key>`. The key determines the account; operations that address a
+        service use its `serviceName` path parameter. The key's scope must allow the operation:
+        pms:read for list and get, pms:write for create and delete.
+
+
+        Request bodies are limited to 64 KiB, and each key to 600 requests per 60 seconds. Every
+        admitted call counts against the account's 10,000-call daily quota, shared by all of the
+        account's services, keys and sessions and resetting at 00:00 UTC. Rejections for
+        authentication, scope, size, burst and quota are not charged. Error responses include
+        Retry-After where applicable.
+
+
+        Mutations and their audit records are written atomically. Policy changes reach authorization
+        checks within about 60 seconds.
+
+
+        Returns the service's role policies, including each role policy's ID used by the get and
+        delete endpoints.
       security:
         - pmsToken: []
       parameters:
@@ -717,7 +685,7 @@ paths:
             Cache-Control:
               $ref: "#/components/headers/Cache-Control5"
             X-Quota-Daily-Remaining:
-              $ref: "#/components/headers/X-Quota-Daily-Remaining5"
+              $ref: "#/components/headers/X-Quota-Daily-Remaining3"
             X-RateLimit-Limit:
               $ref: "#/components/headers/X-RateLimit-Limit2"
           content:
@@ -742,37 +710,41 @@ paths:
           $ref: "#/components/responses/Response48"
         "503":
           $ref: "#/components/responses/Response49"
+      tags:
+        - Policy management
     post:
       operationId: pmsRolePoliciesCreate
       summary: Create a role policy
-      description:
-        "API-key-authenticated Speedle PMS compatibility API (#250). Requires `Authorization:
-        Bearer <API key>`; API keys are account-level (#374), so the path serviceName selects a
-        service of the key's account; session cookies and CSRF headers are never accepted. Order:
-        bearer verification (401), fixed-scope authorization (403 insufficient_scope), per-API-key
-        burst limit (429 rate_limited), account daily quota (429 daily_quota_exceeded or 503
-        quota_unavailable), then business validation. Every admitted non-5xx request consumes one
-        PMS/ADS account quota unit, including reads and business rejections; a Cloud-side handler
-        5xx is refunded only when the independent relief ledger approves it within the per-account
-        daily cap, and auth, scope, routing, size, burst and reservation rejections are uncharged.
-        Mutations and their audit rows commit atomically and republish the service snapshot. Never
-        give manage mode (pms:write) to an agent governed by these policies: it can change the
-        policies that decide its own access. Upstream POST /service/{serviceName}/role-policy. The
-        JSON body is rendered to one SPDL statement and parsed by the same WASM role parser as the
-        console; unrepresentable bodies and parser errors return 400 without writing. Success
-        atomically stores the policy, increments the service revision and writes policy.create
-        audit, then republishes the service snapshot (KV is eventually consistent, typically within
-        60 seconds). Duplicate names return 409 policy_exists; the 200-policy combined cap returns
-        409 quota_exceeded with limit 200."
+      description: >-
+        Manages the policies of a service with a policy-management API key. Send the key as
+        `Authorization: Bearer <key>`. The key determines the account; operations that address a
+        service use its `serviceName` path parameter. The key's scope must allow the operation:
+        pms:read for list and get, pms:write for create and delete.
+
+
+        Request bodies are limited to 64 KiB, and each key to 600 requests per 60 seconds. Every
+        admitted call counts against the account's 10,000-call daily quota, shared by all of the
+        account's services, keys and sessions and resetting at 00:00 UTC. Rejections for
+        authentication, scope, size, burst and quota are not charged. Error responses include
+        Retry-After where applicable.
+
+
+        Mutations and their audit records are written atomically. Policy changes reach authorization
+        checks within about 60 seconds.
+
+
+        Creates a role policy from the request body. The body is converted to one SPDL statement; a
+        body that cannot be represented or does not parse returns 400 without writing. The name is a
+        display attribute and need not be unique; the server-generated ID identifies the role
+        policy. The account allows 200 policies combined across authorization and role policies;
+        exceeding it returns 409 quota_exceeded with limit 200.
       security:
         - pmsToken: []
       parameters:
         - $ref: "#/components/parameters/serviceName"
       requestBody:
         required: true
-        description:
-          application/json only, at most 64 KiB. The body is upstream PMS JSON, not SPDL; it is
-          rendered to one SPDL statement and re-parsed before writing. Reject unknown fields.
+        description: JSON body, at most 64 KiB. Unknown fields are rejected.
         content:
           application/json:
             schema:
@@ -798,26 +770,32 @@ paths:
           $ref: "#/components/responses/Response48"
         "503":
           $ref: "#/components/responses/Response49"
+      tags:
+        - Policy management
   /policy-mgmt/v1/service/{serviceName}/role-policy/{policyId}:
     get:
       operationId: pmsRolePoliciesGet
       summary: Get one role policy
-      description:
-        "API-key-authenticated Speedle PMS compatibility API (#250). Requires `Authorization:
-        Bearer <API key>`; API keys are account-level (#374), so the path serviceName selects a
-        service of the key's account; session cookies and CSRF headers are never accepted. Order:
-        bearer verification (401), fixed-scope authorization (403 insufficient_scope), per-API-key
-        burst limit (429 rate_limited), account daily quota (429 daily_quota_exceeded or 503
-        quota_unavailable), then business validation. Every admitted non-5xx request consumes one
-        PMS/ADS account quota unit, including reads and business rejections; a Cloud-side handler
-        5xx is refunded only when the independent relief ledger approves it within the per-account
-        daily cap, and auth, scope, routing, size, burst and reservation rejections are uncharged.
-        Mutations and their audit rows commit atomically and republish the service snapshot. Never
-        give manage mode (pms:write) to an agent governed by these policies: it can change the
-        policies that decide its own access. Upstream GET
-        /service/{serviceName}/role-policy/{policyID}. The ID is the Cloud canonical ULID (or a
-        legacy UUIDv7), not a name. Unknown, malformed, wrong-kind or other-service IDs return the
-        same 404."
+      description: >-
+        Manages the policies of a service with a policy-management API key. Send the key as
+        `Authorization: Bearer <key>`. The key determines the account; operations that address a
+        service use its `serviceName` path parameter. The key's scope must allow the operation:
+        pms:read for list and get, pms:write for create and delete.
+
+
+        Request bodies are limited to 64 KiB, and each key to 600 requests per 60 seconds. Every
+        admitted call counts against the account's 10,000-call daily quota, shared by all of the
+        account's services, keys and sessions and resetting at 00:00 UTC. Rejections for
+        authentication, scope, size, burst and quota are not charged. Error responses include
+        Retry-After where applicable.
+
+
+        Mutations and their audit records are written atomically. Policy changes reach authorization
+        checks within about 60 seconds.
+
+
+        Returns one role policy by its Cloud policy ID. An unknown, malformed, wrong-kind or
+        other-service ID returns 404 not_found.
       security:
         - pmsToken: []
       parameters:
@@ -844,26 +822,31 @@ paths:
           $ref: "#/components/responses/Response48"
         "503":
           $ref: "#/components/responses/Response49"
+      tags:
+        - Policy management
     delete:
       operationId: pmsRolePoliciesDelete
       summary: Delete one role policy
-      description:
-        "API-key-authenticated Speedle PMS compatibility API (#250). Requires `Authorization:
-        Bearer <API key>`; API keys are account-level (#374), so the path serviceName selects a
-        service of the key's account; session cookies and CSRF headers are never accepted. Order:
-        bearer verification (401), fixed-scope authorization (403 insufficient_scope), per-API-key
-        burst limit (429 rate_limited), account daily quota (429 daily_quota_exceeded or 503
-        quota_unavailable), then business validation. Every admitted non-5xx request consumes one
-        PMS/ADS account quota unit, including reads and business rejections; a Cloud-side handler
-        5xx is refunded only when the independent relief ledger approves it within the per-account
-        daily cap, and auth, scope, routing, size, burst and reservation rejections are uncharged.
-        Mutations and their audit rows commit atomically and republish the service snapshot. Never
-        give manage mode (pms:write) to an agent governed by these policies: it can change the
-        policies that decide its own access. Upstream DELETE
-        /service/{serviceName}/role-policy/{policyID}. Deletes only an owned role policy with this
-        canonical ID; success is 204, and unknown/malformed/wrong-kind/other-service IDs return 404.
-        The delete and policy.delete audit commit atomically, the revision increments and the
-        snapshot is republished."
+      description: >-
+        Manages the policies of a service with a policy-management API key. Send the key as
+        `Authorization: Bearer <key>`. The key determines the account; operations that address a
+        service use its `serviceName` path parameter. The key's scope must allow the operation:
+        pms:read for list and get, pms:write for create and delete.
+
+
+        Request bodies are limited to 64 KiB, and each key to 600 requests per 60 seconds. Every
+        admitted call counts against the account's 10,000-call daily quota, shared by all of the
+        account's services, keys and sessions and resetting at 00:00 UTC. Rejections for
+        authentication, scope, size, burst and quota are not charged. Error responses include
+        Retry-After where applicable.
+
+
+        Mutations and their audit records are written atomically. Policy changes reach authorization
+        checks within about 60 seconds.
+
+
+        Deletes one role policy by its Cloud policy ID; success returns 204. An unknown, malformed,
+        wrong-kind or other-service ID returns 404 not_found.
       security:
         - pmsToken: []
       parameters:
@@ -890,6 +873,8 @@ paths:
           $ref: "#/components/responses/Response48"
         "503":
           $ref: "#/components/responses/Response49"
+      tags:
+        - Policy management
 components:
   schemas:
     AdsRequest:
@@ -922,17 +907,15 @@ components:
         serviceName:
           type: string
           description:
-            "Send in every request, as with Speedle: the name of the service to evaluate, inside
-            the API key's account; never defaulted. A missing, empty or non-string name, or one that
-            names no service of the account, returns 404 service_not_found."
+            "Required in every request: the name of the service to evaluate, within the API key's
+            account. It is never defaulted; a missing, empty or unknown service returns 404
+            service_not_found."
         resource:
           type: string
         action:
           type: string
         attributes:
-          description:
-            Speedle typed attributes. Cloud bounds them to 50 items and 16,384 canonical UTF-8 JSON
-            bytes.
+          description: Typed attributes. At most 50 items and 16,384 UTF-8 bytes of JSON.
           anyOf:
             - maxItems: 50
               type: array
@@ -950,26 +933,29 @@ components:
                           - bool
                           - datetime
                         description:
-                          "string: JSON string. numeric: JSON number. bool: true or false. datetime: JSON string
-                          in RFC 3339, Ruby date or Unix date layout, converted to Unix seconds. An
-                          omitted or empty type passes the JSON value through unconverted."
+                          "string: a JSON string. numeric: a JSON number. bool: true or false. datetime: a
+                          date-time string in RFC 3339 or another supported Speedle layout,
+                          converted to Unix seconds. Omit the type to pass the JSON value through
+                          unconverted."
                       - type: string
                         const: ""
                   value:
                     description:
-                      A single value of the type, or an array of such values. null, null items and items of
-                      different types return 400.
+                      A single value of the declared type, or an array of such values. null, null items and
+                      mixed types return 400.
                     $ref: "#/components/schemas/AdsRequest/$defs/__schema0"
                 required:
                   - name
                   - value
                 additionalProperties: {}
-                description: "One typed attribute: Speedle JsonAttribute."
+                description: "One typed attribute: `{name, type, value}`."
             - type: "null"
       required:
         - serviceName
       additionalProperties: {}
-      description: Speedle REST JsonContext.
+      description:
+        "A Speedle authorization request: the subject, the service, and the resource and action
+        to check."
       $defs:
         __schema0:
           anyOf:
@@ -1243,8 +1229,8 @@ components:
               - actions
             additionalProperties: false
             description:
-              One PMS permission. The Cloud requires exactly one of resource (exact) or
-              resourceExpression (regular expression) so the response round-trips through SPDL.
+              A permission. Set exactly one of resource (an exact match) or resourceExpression (a
+              regular expression).
         principals:
           minItems: 1
           type: array
@@ -1255,7 +1241,7 @@ components:
               type: string
               pattern: ^(?:idd=[^\r\n\u2028\u2029]+:(?:user|group|role|entity):[^\r\n\u2028\u2029]+|(?:user|group|role|entity):[^\r\n\u2028\u2029]+)$
               description:
-                'An encoded PMS principal: "<type>:<name>" or "idd=<idd>:<type>:<name>", type one of
+                'An encoded principal: "<type>:<name>" or "idd=<idd>:<type>:<name>", where type is
                 user, group, role or entity.'
         condition:
           type: string
@@ -1329,8 +1315,8 @@ components:
               - actions
             additionalProperties: false
             description:
-              One PMS permission. The Cloud requires exactly one of resource (exact) or
-              resourceExpression (regular expression) so the response round-trips through SPDL.
+              A permission. Set exactly one of resource (an exact match) or resourceExpression (a
+              regular expression).
         principals:
           minItems: 1
           type: array
@@ -1341,7 +1327,7 @@ components:
               type: string
               pattern: ^(?:idd=[^\r\n\u2028\u2029]+:(?:user|group|role|entity):[^\r\n\u2028\u2029]+|(?:user|group|role|entity):[^\r\n\u2028\u2029]+)$
               description:
-                'An encoded PMS principal: "<type>:<name>" or "idd=<idd>:<type>:<name>", type one of
+                'An encoded principal: "<type>:<name>" or "idd=<idd>:<type>:<name>", where type is
                 user, group, role or entity.'
         condition:
           type: string
@@ -1410,8 +1396,8 @@ components:
                 - actions
               additionalProperties: false
               description:
-                One PMS permission. The Cloud requires exactly one of resource (exact) or
-                resourceExpression (regular expression) so the response round-trips through SPDL.
+                A permission. Set exactly one of resource (an exact match) or resourceExpression (a
+                regular expression).
           principals:
             minItems: 1
             type: array
@@ -1422,7 +1408,7 @@ components:
                 type: string
                 pattern: ^(?:idd=[^\r\n\u2028\u2029]+:(?:user|group|role|entity):[^\r\n\u2028\u2029]+|(?:user|group|role|entity):[^\r\n\u2028\u2029]+)$
                 description:
-                  'An encoded PMS principal: "<type>:<name>" or "idd=<idd>:<type>:<name>", type one of
+                  'An encoded principal: "<type>:<name>" or "idd=<idd>:<type>:<name>", where type is
                   user, group, role or entity.'
           condition:
             type: string
@@ -1470,7 +1456,7 @@ components:
             type: string
             pattern: ^(?:idd=[^\r\n\u2028\u2029]+:(?:user|group|role|entity):[^\r\n\u2028\u2029]+|(?:user|group|role|entity):[^\r\n\u2028\u2029]+)$
             description:
-              'An encoded PMS principal: "<type>:<name>" or "idd=<idd>:<type>:<name>", type one of
+              'An encoded principal: "<type>:<name>" or "idd=<idd>:<type>:<name>", where type is
               user, group, role or entity.'
         resources:
           type: array
@@ -1542,7 +1528,7 @@ components:
             type: string
             pattern: ^(?:idd=[^\r\n\u2028\u2029]+:(?:user|group|role|entity):[^\r\n\u2028\u2029]+|(?:user|group|role|entity):[^\r\n\u2028\u2029]+)$
             description:
-              'An encoded PMS principal: "<type>:<name>" or "idd=<idd>:<type>:<name>", type one of
+              'An encoded principal: "<type>:<name>" or "idd=<idd>:<type>:<name>", where type is
               user, group, role or entity.'
         resources:
           type: array
@@ -1611,7 +1597,7 @@ components:
               type: string
               pattern: ^(?:idd=[^\r\n\u2028\u2029]+:(?:user|group|role|entity):[^\r\n\u2028\u2029]+|(?:user|group|role|entity):[^\r\n\u2028\u2029]+)$
               description:
-                'An encoded PMS principal: "<type>:<name>" or "idd=<idd>:<type>:<name>", type one of
+                'An encoded principal: "<type>:<name>" or "idd=<idd>:<type>:<name>", where type is
                 user, group, role or entity.'
           resources:
             type: array
@@ -1652,9 +1638,7 @@ components:
           pattern: ^[a-zA-Z0-9][a-zA-Z0-9._-]{0,63}$
         type:
           default: application
-          description:
-            Only application is supported; upstream k8s-cluster services have no Cloud snapshot
-            semantics.
+          description: The service type; only application is supported.
           type: string
           const: application
       required:
@@ -1718,9 +1702,8 @@ components:
                     - actions
                   additionalProperties: false
                   description:
-                    One PMS permission. The Cloud requires exactly one of resource (exact) or
-                    resourceExpression (regular expression) so the response round-trips through
-                    SPDL.
+                    A permission. Set exactly one of resource (an exact match) or resourceExpression (a
+                    regular expression).
               principals:
                 minItems: 1
                 type: array
@@ -1731,7 +1714,7 @@ components:
                     type: string
                     pattern: ^(?:idd=[^\r\n\u2028\u2029]+:(?:user|group|role|entity):[^\r\n\u2028\u2029]+|(?:user|group|role|entity):[^\r\n\u2028\u2029]+)$
                     description:
-                      'An encoded PMS principal: "<type>:<name>" or "idd=<idd>:<type>:<name>", type one of
+                      'An encoded principal: "<type>:<name>" or "idd=<idd>:<type>:<name>", where type is
                       user, group, role or entity.'
               condition:
                 type: string
@@ -1779,7 +1762,7 @@ components:
                   type: string
                   pattern: ^(?:idd=[^\r\n\u2028\u2029]+:(?:user|group|role|entity):[^\r\n\u2028\u2029]+|(?:user|group|role|entity):[^\r\n\u2028\u2029]+)$
                   description:
-                    'An encoded PMS principal: "<type>:<name>" or "idd=<idd>:<type>:<name>", type one of
+                    'An encoded principal: "<type>:<name>" or "idd=<idd>:<type>:<name>", where type is
                     user, group, role or entity.'
               resources:
                 type: array
@@ -1806,9 +1789,7 @@ components:
         - policies
         - rolePolicies
       additionalProperties: false
-      description:
-        One Cloud service in the upstream GET /service shape. A policy-management key sees
-        every service of its account.
+      description: A service with its policies and role policies.
       examples:
         - name: books
           type: application
@@ -1892,9 +1873,8 @@ components:
                       - actions
                     additionalProperties: false
                     description:
-                      One PMS permission. The Cloud requires exactly one of resource (exact) or
-                      resourceExpression (regular expression) so the response round-trips through
-                      SPDL.
+                      A permission. Set exactly one of resource (an exact match) or resourceExpression (a
+                      regular expression).
                 principals:
                   minItems: 1
                   type: array
@@ -1905,7 +1885,7 @@ components:
                       type: string
                       pattern: ^(?:idd=[^\r\n\u2028\u2029]+:(?:user|group|role|entity):[^\r\n\u2028\u2029]+|(?:user|group|role|entity):[^\r\n\u2028\u2029]+)$
                       description:
-                        'An encoded PMS principal: "<type>:<name>" or "idd=<idd>:<type>:<name>", type one of
+                        'An encoded principal: "<type>:<name>" or "idd=<idd>:<type>:<name>", where type is
                         user, group, role or entity.'
                 condition:
                   type: string
@@ -1953,7 +1933,7 @@ components:
                     type: string
                     pattern: ^(?:idd=[^\r\n\u2028\u2029]+:(?:user|group|role|entity):[^\r\n\u2028\u2029]+|(?:user|group|role|entity):[^\r\n\u2028\u2029]+)$
                     description:
-                      'An encoded PMS principal: "<type>:<name>" or "idd=<idd>:<type>:<name>", type one of
+                      'An encoded principal: "<type>:<name>" or "idd=<idd>:<type>:<name>", where type is
                       user, group, role or entity.'
                 resources:
                   type: array
@@ -1980,9 +1960,7 @@ components:
           - policies
           - rolePolicies
         additionalProperties: false
-        description:
-          One Cloud service in the upstream GET /service shape. A policy-management key sees
-          every service of its account.
+        description: A service with its policies and role policies.
       examples:
         - []
         - - name: books
@@ -2063,9 +2041,7 @@ components:
           properties:
             error:
               type: string
-              enum:
-                - service_exists
-                - policy_exists
+              const: service_exists
           required:
             - error
           additionalProperties: false
@@ -2086,7 +2062,6 @@ components:
           additionalProperties: false
       examples:
         - error: service_exists
-        - error: policy_exists
         - error: quota_exceeded
           limit: 200
         - error: quota_exceeded
@@ -2144,44 +2119,36 @@ components:
       scheme: bearer
       bearerFormat: spdl_<canonical uppercase ULID>_<43 base62 digits>
       description:
-        An account-level policy-management API key created in the console with recent
-        authentication; it reaches every service of its account. Fixed scope pms:read (list/get) or
-        pms:write (also create/delete policies and services); ads keys are rejected with 403
-        insufficient_scope, and management keys are rejected by /authz-check/v1. No scope manages
-        the account itself (sessions, API keys, identities). Management scopes cannot be created
-        while the stage has sign-in disabled (today prod). HMAC-only storage, one-time disclosure on
-        creation, revocable, with a required server-computed expiry. Never give manage mode to an agent governed
-        by these policies.
+        "Account-level policy-management API key created in the console. Its fixed scope is
+        pms:read (list and get) or pms:write (also create and delete policies and services), and it
+        reaches every service of its account. Keys with the ads scope are rejected with 403
+        insufficient_scope. Send it as `Authorization: Bearer <key>`. The key is shown once when
+        created, expires at the time selected at creation, and can be revoked. Do not give a
+        pms:write key to an agent whose access is governed by these policies: it could change the
+        policies that decide its own access."
     apiToken:
       type: http
       scheme: bearer
       bearerFormat: spdl_<canonical uppercase ULID>_<43 base62 digits>
       description:
-        "Account-level API key with the ads scope: authorizes ADS for every service of its
-        account, selected per request by the body serviceName; never authorizes PMS or account
-        management. pms:read/pms:write keys return 403 insufficient_scope on this API. Credential
-        shape is AdsBearerToken; require a single Bearer scheme plus the exact case-sensitive
-        credential. One-time disclosure on creation, HMAC-only persisted verification, and a required server-computed expiry. Positive verification caches have fixed verifiedAt/validUntil authority of at
-        most 60000 ms from the START of the authoritative D1 lookup, and never later than expiresAt. Cache hits, KV refills and late
-        writes racing revocation never extend that deadline; expired records require fresh D1
-        verification and cannot authorize on storage failure. KV failure may fall back to D1 for API
-        key verification only, never for policy evaluation. Revocation invalidates existing local/KV
-        entries; account deletion and account suspension use the same bounded authority. Deleting a
-        service does not revoke API keys. This contract does not ship a verifier or enable runtime
-        cutover; #81 requires accepted #98/#99, #79 stage credentials and probe/rollback
-        compatibility."
+        "Account-level API key with the ads scope. It authorizes authorization checks for every
+        service of its account; the serviceName in each request selects the service. It never
+        authorizes policy management or account administration, and pms:read/pms:write keys return
+        403 insufficient_scope. Send it as a single `Authorization: Bearer <key>` header. The key is
+        shown once when created, expires at the time selected at creation, and can be revoked; a
+        revoked key stops working within 60 seconds, while an expired key stops authorizing at its
+        expiry time. Deleting a service does not revoke API keys."
     adsInstanceCredential:
       type: http
       scheme: bearer
       bearerFormat: adsi_<canonical uppercase ULID instanceId>_<43 base62 digits>
       description:
-        "Account-scoped, read-only ADS instance credential (75 characters). It authorizes the
-        /policy-source/v1/* sync API, the instance channel and /authz-check/v1/* fallback for
-        services in the instance's service set, and nothing else: no policy management, no token
-        issuance, no service outside the set. Cloud stores only HMAC-SHA256(ADS_PEPPER, secret) and
-        discloses the plaintext once. Revocation is per instance; a revoked credential stops within
-        the fixed 60-second verification window. The secret never appears in a URL, log, event or
-        command."
+        "Account-scoped, read-only instance credential (75 characters). It authorizes the
+        policy-source sync API, the instance channel and authorization checks for services in the
+        instance's service set, and nothing else: no policy management, no token issuance, no
+        service outside the set. The credential is shown once when it is created and can be revoked
+        per instance; a revoked credential stops working within 60 seconds. It never appears in a
+        URL, log or event."
   headers:
     Cache-Control4:
       schema:
@@ -2194,32 +2161,24 @@ components:
         const: "600"
       example: "600"
       description:
-        Present after bearer verification. Per-API-key 600 requests per 60 seconds, approximate
-        per location. The binding exposes no remaining count; X-RateLimit-Remaining is omitted.
-        Early size/verification failures may omit this header.
+        "Per-key limit: 600 requests per 60 seconds. Present once the credential is verified;
+        early size or authentication failures may omit it."
     X-Quota-Daily-Remaining3:
       schema:
         type: string
         pattern: ^(0|[1-9][0-9]*)$
       example: "9999"
       description:
-        Present after handler admission, including Cloud-side 5xx responses whose refund the
-        independent relief ledger approved within the per-account daily cap; omitted on
-        authentication, scope, routing, size, burst and quota-reservation rejections. Estimate based
-        on the latest lease's unreserved snapshot, local remaining and approved refund credits.
-        Outage admissions are extra allowance outside the daily quota and are not deducted. Other
-        isolates and abandoned reservations make it approximate; it resets at UTC midnight.
-        Informational only.
+        Approximate number of calls left in the account's daily quota. Resets at 00:00 UTC.
+        Informational only; omitted when the request is rejected before it is processed.
     X-Speedle-Decision-Source:
       schema:
         type: string
         const: cloud-fallback
       example: cloud-fallback
       description:
-        "Present only on a response to a request authenticated with an adsi_ instance
-        credential (the Cloud fallback path); never sent to a request authenticated with an spdl_
-        API key. Informational: callers may observe it, and it must never drive a security
-        decision."
+        Present only on responses to requests authenticated with an adsi_ instance credential.
+        Informational; never use it to make a security decision.
     WWW-Authenticate:
       schema:
         type: string
@@ -2237,11 +2196,11 @@ components:
         type: string
         pattern: ^[1-9][0-9]*$
         description:
-          "Required on every 429: positive integer delay-seconds. For daily_quota_exceeded,
-          ceil((next UTC midnight - now)/1000)."
+          A positive whole number of seconds to wait before retrying. For an exhausted daily
+          quota, this is the time until the next 00:00 UTC.
       description:
-        "Required positive integer delay-seconds. rate_limited: 60; daily_quota_exceeded:
-        ceil((next 00:00 UTC - now)/1000)."
+        "Positive number of seconds to wait before retrying. rate_limited: 60;
+        daily_quota_exceeded: the time until the next 00:00 UTC."
       example: "60"
     X-Quota-Daily-Remaining4:
       schema:
@@ -2249,26 +2208,21 @@ components:
         pattern: ^(0|[1-9][0-9]*)$
       example: "9999"
       description:
-        Present only for snapshot_unavailable, which is answered after handler admission.
-        Omitted for quota_unavailable and fallback_unavailable. Present after handler admission,
-        including Cloud-side 5xx responses whose refund the independent relief ledger approved
-        within the per-account daily cap; omitted on authentication, scope, routing, size, burst and
-        quota-reservation rejections. Estimate based on the latest lease's unreserved snapshot,
-        local remaining and approved refund credits. Outage admissions are extra allowance outside
-        the daily quota and are not deducted. Other isolates and abandoned reservations make it
-        approximate; it resets at UTC midnight. Informational only.
+        Present only for snapshot_unavailable. Omitted for quota_unavailable and
+        fallback_unavailable. Approximate number of calls left in the account's daily quota. Resets
+        at 00:00 UTC. Informational only; omitted when the request is rejected before it is
+        processed.
     Retry-After7:
       schema:
         $schema: https://json-schema.org/draft/2020-12/schema
         type: string
         pattern: ^[1-9][0-9]*$
         description:
-          "Required on every 429: positive integer delay-seconds. For daily_quota_exceeded,
-          ceil((next UTC midnight - now)/1000)."
+          A positive whole number of seconds to wait before retrying. For an exhausted daily
+          quota, this is the time until the next 00:00 UTC.
       description:
-        "Required for quota_unavailable: 30. Not required for snapshot_unavailable.
-        fallback_unavailable: seconds to the next UTC midnight for an exhausted instance budget, 30
-        for an unreachable counter."
+        "quota_unavailable: 30. fallback_unavailable: 30, or the time until the next 00:00 UTC
+        when the instance's daily allowance is exhausted. Not sent with snapshot_unavailable."
       example: "30"
     Cache-Control5:
       schema:
@@ -2276,47 +2230,34 @@ components:
         const: no-store
       example: no-store
       description: Management responses must not be cached.
-    X-Quota-Daily-Remaining5:
-      schema:
-        type: string
-        pattern: ^(0|[1-9][0-9]*)$
-      example: "9999"
-      description:
-        Present after handler admission, including Cloud-side 5xx responses whose refund the
-        independent relief ledger approved within the per-account daily cap. Account-wide estimate
-        under the same lease semantics as the console API; omitted on auth, scope, routing, size,
-        burst and reservation rejections.
     X-RateLimit-Limit2:
       schema:
         type: string
         const: "600"
       example: "600"
       description:
-        Present after bearer verification. Per-API-key 600 requests per 60 seconds, shared with
-        the ADS limiter; the binding exposes no remaining count, so X-RateLimit-Remaining is
-        omitted.
+        "Per-key limit: 600 requests per 60 seconds. Present once the credential is verified;
+        early failures may omit it."
     Retry-After8:
       schema:
         type: string
         pattern: ^[1-9][0-9]*$
       description:
-        "Required positive delay-seconds. Burst: 60. daily_quota_exceeded: ceil((next 00:00 UTC
-        - now)/1000)."
+        "Positive number of seconds to wait before retrying. rate_limited: 60;
+        daily_quota_exceeded: the time until the next 00:00 UTC."
       example: "60"
     Retry-After9:
       schema:
         type: string
         pattern: ^[1-9][0-9]*$
-      description: "Required for quota_unavailable: 30."
+      description: "quota_unavailable: 30."
       example: "30"
   responses:
     Response32:
       description:
-        'Speedle httputils.HandleError body {error: "SPDL-0004 <message>"}, byte for byte as
-        Speedle writes it: invalid JSON or a field of the wrong JSON type (Go decoder message),
-        attribute type conversion, null values, unsupported datetime layouts. Cloud-only, in the
-        same shape: null principal or attribute items (Speedle crashes the connection), more than 50
-        attributes or more than 16,384 canonical UTF-8 JSON attribute bytes.'
+        "invalid_request: the body is not valid JSON, a field has the wrong JSON type, an
+        attribute cannot be converted to its declared type, or the request exceeds the attribute
+        limits (50 items, 16,384 UTF-8 bytes). The message uses Speedle's SPDL-0004 format."
       headers:
         Cache-Control:
           $ref: "#/components/headers/Cache-Control4"
@@ -2332,11 +2273,9 @@ components:
             $ref: "#/components/schemas/AdsInvalidRequestError"
     Response33:
       description:
-        "api_key_expired: matching API key at or after expiresAt, even on cache hits. No daily
-        charge. unauthorized: missing/malformed/unknown bearer credential or wrong secret. A cookie
-        session alone never authorizes ADS. Revoked API keys and deleted/inactive owners cease
-        authorization within the fixed verification authority window, at most 60 seconds. No daily
-        charge."
+        "api_key_expired: the API key has expired and no longer authorizes requests.
+        unauthorized: the bearer credential is missing, malformed, unknown or revoked. A console
+        session alone cannot call this endpoint."
       headers:
         Cache-Control:
           $ref: "#/components/headers/Cache-Control4"
@@ -2348,12 +2287,9 @@ components:
             $ref: "#/components/schemas/AdsUnauthorizedError"
     Response34:
       description:
-        "insufficient_scope (Cloud-only): a valid API key whose fixed scope is pms:read or
-        pms:write cannot call the ADS API. This check happens after credential verification but
-        before the burst limiter, daily quota or request decoding, and is not charged.
-        all-granted-roles and all-granted-permissions can also return a Speedle 403 {error: message}
-        for an ExceedLimit evaluator error. A request that names no service of the credential's
-        account gets 404 service_not_found, never a 403."
+        "insufficient_scope: the API key is valid but does not have the ads scope. The
+        all-granted endpoints may also return 403 `{error: message}` when policy evaluation reports
+        an error."
       headers:
         Cache-Control:
           $ref: "#/components/headers/Cache-Control4"
@@ -2369,13 +2305,8 @@ components:
             $ref: "#/components/schemas/AdsForbiddenError"
     Response35:
       description:
-        "service_not_found: the body does not select a service of the credential's account. The
-        serviceName is read the way Go's decoder maps it (case-insensitive key, last string
-        occurrence wins); the body is missing it, it is empty or not a string, the body is not one
-        JSON object, or it names a service that does not exist or belongs to another account. For an
-        adsi_ instance credential, a service outside the instance's set is the same answer. Every
-        case returns this byte-identical body. One account daily-quota unit is charged (and, for
-        adsi_, the instance fallback counter)."
+        "service_not_found: the body does not name a service of the credential's account, or
+        the service does not exist. Every such case returns the same body."
       headers:
         Cache-Control:
           $ref: "#/components/headers/Cache-Control4"
@@ -2390,11 +2321,7 @@ components:
           schema:
             $ref: "#/components/schemas/AdsServiceNotFoundError"
     Response36:
-      description:
-        "method_not_allowed: these paths accept only POST. The Worker answers unsupported
-        methods with this JSON envelope and Allow: POST before authentication, quota or body
-        decoding. The edge WAF may block a non-POST request earlier with its own response (#82), so
-        clients must also accept a non-JSON block response at the edge."
+      description: "method_not_allowed: this endpoint accepts only POST. The response includes `Allow: POST`."
       headers:
         Cache-Control:
           $ref: "#/components/headers/Cache-Control4"
@@ -2405,9 +2332,7 @@ components:
           schema:
             $ref: "#/components/schemas/AdsMethodNotAllowedError"
     Response37:
-      description:
-        "request_too_large: the global 64 KiB request-body guard can reject before verification
-        or JSON parsing; no daily charge."
+      description: "request_too_large: the request body exceeds 64 KiB."
       headers:
         Cache-Control:
           $ref: "#/components/headers/Cache-Control4"
@@ -2421,9 +2346,8 @@ components:
             $ref: "#/components/schemas/AdsRequestTooLargeError"
     Response38:
       description:
-        rate_limited for the approximate per-API-key 600/minute/location burst cap, or
-        daily_quota_exceeded for the strict account-wide PMS+ADS daily quota. Both require
-        Retry-After and do not enter the handler.
+        "rate_limited: the per-key burst limit of 600 requests per 60 seconds was exceeded.
+        daily_quota_exceeded: the account's daily quota is exhausted. Both include Retry-After."
       headers:
         Cache-Control:
           $ref: "#/components/headers/Cache-Control4"
@@ -2439,12 +2363,9 @@ components:
             $ref: "#/components/schemas/AdsRateLimitError"
     Response39:
       description:
-        "internal_error: fail closed without credential, parser, engine or storage details. A
-        Cloud-side failure after handler entry is refunded only when the independent relief ledger
-        approves it within the per-account daily cap; otherwise it stays charged. all-granted-roles
-        and all-granted-permissions can also return a Speedle 500 {error: message} for an evaluator
-        error the request caused, as Speedle does; that Speedle-compatible engine error is always
-        charged like any 4xx or denial."
+        "internal_error: the request failed on the server. No credential, parser, engine or
+        storage details are returned. The all-granted endpoints may also return `{error: message}`
+        when the request cannot be evaluated."
       headers:
         Cache-Control:
           $ref: "#/components/headers/Cache-Control4"
@@ -2460,16 +2381,12 @@ components:
             $ref: "#/components/schemas/AdsInternalError"
     Response40:
       description:
-        "quota_unavailable: no confirmed lease for the current UTC day, the throttled ADS queue
-        would wait more than ten seconds, the per-account outage allowance is exhausted, or the
-        relief ledger is unavailable; fail closed before handler entry with Retry-After: 30.
-        snapshot_unavailable: no usable trusted scoped snapshot (missing, malformed, out of bounds
-        or mismatched); fail closed without a daily charge, with no bundled demo or D1
-        policy-evaluation fallback. fallback_unavailable: an adsi_ credential exhausted its 2,000
-        calls/UTC-day budget (Retry-After: time to the next UTC midnight) or its counter is
-        unreachable (Retry-After: 30). quota_unavailable and fallback_unavailable are rejected
-        before handler admission and omit X-Quota-Daily-Remaining; only snapshot_unavailable carries
-        it."
+        "quota_unavailable: the daily quota cannot be verified right now; retry after the
+        Retry-After delay. snapshot_unavailable: the service's current policies are not available
+        right now. The call is not charged when the failure is refunded under the account's daily
+        refund allowance; otherwise it counts against the daily quota. fallback_unavailable: the
+        instance credential's daily allowance is exhausted or cannot be verified right now; retry
+        after the Retry-After delay."
       headers:
         Cache-Control:
           $ref: "#/components/headers/Cache-Control4"
@@ -2487,22 +2404,22 @@ components:
             $ref: "#/components/schemas/AdsUnavailableError"
     Response41:
       description:
-        "invalid_request, or the engine's parse/custom-function message as {error: string}; no
-        source, credentials or internal details are echoed."
+        "invalid_request: the body is invalid JSON, does not match the schema, or the policy
+        cannot be represented as SPDL or parsed."
       headers:
         Cache-Control:
           $ref: "#/components/headers/Cache-Control5"
         X-Quota-Daily-Remaining:
-          $ref: "#/components/headers/X-Quota-Daily-Remaining5"
+          $ref: "#/components/headers/X-Quota-Daily-Remaining3"
       content:
         application/json:
           schema:
             $ref: "#/components/schemas/PmsInvalidRequestError"
     Response42:
       description:
-        "api_key_expired: matching API key at or after expiresAt, including cached
-        verification. unauthorized: missing, malformed, revoked or inactive-account API key. A
-        session cookie never authorizes this API."
+        "api_key_expired: the API key has expired and no longer authorizes requests.
+        unauthorized: the API key is missing, malformed, revoked or belongs to an inactive account.
+        A console session cannot call this API."
       headers:
         Cache-Control:
           $ref: "#/components/headers/Cache-Control5"
@@ -2512,8 +2429,8 @@ components:
             $ref: "#/components/schemas/PmsUnauthorizedError"
     Response43:
       description:
-        "insufficient_scope: the API key is valid but its fixed scope cannot perform this
-        operation (ads keys cannot manage; pms:read keys cannot mutate)."
+        "insufficient_scope: the key is valid but its scope does not allow this operation. A
+        key with the ads scope cannot manage policies, and a pms:read key cannot create or delete."
       headers:
         Cache-Control:
           $ref: "#/components/headers/Cache-Control5"
@@ -2523,34 +2440,33 @@ components:
             $ref: "#/components/schemas/PmsForbiddenError"
     Response44:
       description:
-        "not_found: the service name does not exactly match a service of this API key's
-        account, or the policy ID is unknown, malformed, of another kind or another service. Never
-        discloses other accounts."
+        "not_found: the service name does not exactly match a service of the key's account, or
+        the policy ID is unknown, malformed, of another kind or in another service."
       headers:
         Cache-Control:
           $ref: "#/components/headers/Cache-Control5"
         X-Quota-Daily-Remaining:
-          $ref: "#/components/headers/X-Quota-Daily-Remaining5"
+          $ref: "#/components/headers/X-Quota-Daily-Remaining3"
       content:
         application/json:
           schema:
             $ref: "#/components/schemas/PmsNotFoundError"
     Response45:
       description:
-        "service_exists (duplicate service name in this account), policy_exists, or
-        quota_exceeded with limit: 200 for the combined authz + role policy cap across the account
-        or limit: 100 for the service cap."
+        "service_exists: the account already has a service with this name. quota_exceeded: the
+        account reached its limit of 200 policies (authorization and role combined) or 100
+        services."
       headers:
         Cache-Control:
           $ref: "#/components/headers/Cache-Control5"
         X-Quota-Daily-Remaining:
-          $ref: "#/components/headers/X-Quota-Daily-Remaining5"
+          $ref: "#/components/headers/X-Quota-Daily-Remaining3"
       content:
         application/json:
           schema:
             $ref: "#/components/schemas/PmsConflictError"
     Response46:
-      description: "request_too_large: the request exceeds 64 KiB before parsing; no daily charge."
+      description: "request_too_large: the request body exceeds 64 KiB."
       headers:
         Cache-Control:
           $ref: "#/components/headers/Cache-Control5"
@@ -2560,8 +2476,8 @@ components:
             $ref: "#/components/schemas/PmsRequestTooLargeError"
     Response47:
       description:
-        rate_limited (per-API-key burst, uncharged) or daily_quota_exceeded (no handler entry);
-        Retry-After is mandatory.
+        "rate_limited: the per-key burst limit was exceeded. daily_quota_exceeded: the
+        account's daily quota is exhausted. Both include Retry-After."
       headers:
         Cache-Control:
           $ref: "#/components/headers/Cache-Control5"
@@ -2573,21 +2489,21 @@ components:
             $ref: "#/components/schemas/PmsRateLimitError"
     Response48:
       description:
-        "internal_error: no credentials or storage details. A Cloud-side handler failure does
-        not consume daily quota and retains the remaining-quota estimate header."
+        "internal_error: the request failed on the server. No credential or storage details are
+        returned."
       headers:
         Cache-Control:
           $ref: "#/components/headers/Cache-Control5"
         X-Quota-Daily-Remaining:
-          $ref: "#/components/headers/X-Quota-Daily-Remaining5"
+          $ref: "#/components/headers/X-Quota-Daily-Remaining3"
       content:
         application/json:
           schema:
             $ref: "#/components/schemas/PmsInternalError"
     Response49:
       description:
-        "quota_unavailable: no confirmed valid reserved lease; fail closed before entering the
-        handler. Retry-After: 30 is required."
+        "quota_unavailable: the daily quota cannot be verified right now; retry after the
+        Retry-After delay."
       headers:
         Cache-Control:
           $ref: "#/components/headers/Cache-Control5"
@@ -2603,7 +2519,7 @@ components:
         Cache-Control:
           $ref: "#/components/headers/Cache-Control5"
         X-Quota-Daily-Remaining:
-          $ref: "#/components/headers/X-Quota-Daily-Remaining5"
+          $ref: "#/components/headers/X-Quota-Daily-Remaining3"
         X-RateLimit-Limit:
           $ref: "#/components/headers/X-RateLimit-Limit2"
       content:
@@ -2616,7 +2532,7 @@ components:
         Cache-Control:
           $ref: "#/components/headers/Cache-Control5"
         X-Quota-Daily-Remaining:
-          $ref: "#/components/headers/X-Quota-Daily-Remaining5"
+          $ref: "#/components/headers/X-Quota-Daily-Remaining3"
         X-RateLimit-Limit:
           $ref: "#/components/headers/X-RateLimit-Limit2"
     Response52:
@@ -2625,7 +2541,7 @@ components:
         Cache-Control:
           $ref: "#/components/headers/Cache-Control5"
         X-Quota-Daily-Remaining:
-          $ref: "#/components/headers/X-Quota-Daily-Remaining5"
+          $ref: "#/components/headers/X-Quota-Daily-Remaining3"
         X-RateLimit-Limit:
           $ref: "#/components/headers/X-RateLimit-Limit2"
       content:
@@ -2638,7 +2554,7 @@ components:
         Cache-Control:
           $ref: "#/components/headers/Cache-Control5"
         X-Quota-Daily-Remaining:
-          $ref: "#/components/headers/X-Quota-Daily-Remaining5"
+          $ref: "#/components/headers/X-Quota-Daily-Remaining3"
         X-RateLimit-Limit:
           $ref: "#/components/headers/X-RateLimit-Limit2"
       content:
@@ -2670,18 +2586,17 @@ components:
             minLength: 36
             maxLength: 36
             pattern: ^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$
-      description: Cloud policy ID (canonical uppercase ULID, or legacy lowercase UUIDv7). Never a policy name.
+      description: "Policy ID: a canonical uppercase ULID, or a legacy lowercase UUIDv7. Never a policy name."
       example: 01HF7YAT000000000000000001
   requestBodies:
     RequestBody7:
       required: true
       description:
-        "application/json Speedle JsonContext, at most 64 KiB before parsing. Attributes are an
-        array of {name, type, value} with Speedle types string, numeric, bool and datetime (or an
-        omitted type for an unconverted value), each a single value or an array of values of that
-        type; Cloud bounds them to 50 items and 16,384 canonical UTF-8 JSON bytes. The Go decoder,
-        not this schema, decides validity: unknown fields are ignored and field names match
-        case-insensitively, as in Speedle."
+        "JSON body, at most 64 KiB. A Speedle JsonContext: subject, serviceName, resource,
+        action and optional typed attributes as `{name, type, value}` objects. Supported types are
+        string, numeric, bool and datetime (or no type to pass the value through); each value is a
+        single value or an array of values of that type. At most 50 attributes and 16,384 UTF-8
+        bytes. Unknown fields are ignored and field names are case-insensitive, as in Speedle."
       content:
         application/json:
           schema:
