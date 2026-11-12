@@ -120,7 +120,7 @@ Content-Type: application/json
 {"name":"books-app","scope":"ads","expiresIn":"90d"}
 ```
 
-La solicitud acepta `name`, `expiresIn` obligatorio y `scope` opcional (por defecto `ads`). `expiresIn` es uno de `7d`, `30d`, `90d`, `180d` o `365d` (1 semana, 1 mes, 3 meses, 6 meses o 1 año). Cada día dura 24 horas. En la consola, **Caduca en** usa 3 meses de forma predeterminada y **Vista previa de caducidad (UTC)** muestra la hora antes de enviar. No hay claves que no caduquen. No envíe un servicio, `expiresAt` ni pruebas de autenticación. Si falta `expiresIn`, no se reconoce o el cliente envía `expiresAt`, la respuesta es `400 invalid_request`. Se requieren la cookie de sesión y las cabeceras CSRF; una clave API no sustituye a la sesión.
+La solicitud acepta `name`, `expiresIn` obligatorio y `scope` opcional (por defecto `ads`). `expiresIn` es uno de `7d`, `30d`, `90d`, `180d` o `365d` (1 semana, 1 mes, 3 meses, 6 meses o 1 año). Cada día dura 24 horas. En la consola, **Caduca en** usa 3 meses de forma predeterminada y **Vista previa de caducidad (UTC)** muestra la hora antes de enviar. No hay claves que no caduquen. No envíe un servicio, `expiresAt` ni pruebas de autenticación. Si falta `expiresIn`, no se reconoce o el cliente envía `expiresAt`, la respuesta es `400 invalid_request`. Un cuerpo que solo envía `name` y `scope` también devuelve ese 400. El servidor no rellena `expiresIn`. Se requieren la cookie de sesión y las cabeceras CSRF; una clave API no sustituye a la sesión.
 
 ### Proteger el secreto
 
@@ -130,7 +130,7 @@ La creación devuelve HTTP 201. El campo `token` contiene el secreto de la clave
 spdl_<canonical uppercase ULID id>_<43 base62 digits>
 ```
 
-Todas las claves caducan. La respuesta incluye `expiresAt`, la caducidad calculada por el servidor en milisegundos Unix. A partir de ese instante, las llamadas de autorización y de gestión de políticas devuelven `401 {"error":"api_key_expired"}`. Cree una clave nueva; reenviar la clave caducada no funciona. Puede revocarla antes.
+Todas las claves caducan. La respuesta incluye `expiresAt`, la caducidad calculada por el servidor en milisegundos Unix. A partir de ese instante, las llamadas de autorización y de gestión de políticas devuelven `401 {"error":"api_key_expired"}`. Cree una clave nueva; reenviar la clave caducada no funciona. Puede revocarla antes. Las claves que ya existían cuando la caducidad pasó a ser obligatoria también tienen una. Es 365 días de 24 horas después de la creación, salvo que ese momento ya hubiera pasado; en ese caso son 30 días de 24 horas después de que el requisito entrara en vigor. Cada clave de la lista incluye `expiresAt`.
 
 Es una descripción del formato, no una clave utilizable. Guárdela inmediatamente en un almacén de secretos del servidor. No la incluya en el almacenamiento del navegador, frontend, URL, control de versiones, capturas ni registros. El listado solo devuelve metadatos; un secreto perdido no se recupera.
 

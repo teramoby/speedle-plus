@@ -120,7 +120,7 @@ Content-Type: application/json
 {"name":"books-app","scope":"ads","expiresIn":"90d"}
 ```
 
-请求接受 `name`、必填的 `expiresIn` 和可选的 `scope`（默认 `ads`）。`expiresIn` 只能是 `7d`、`30d`、`90d`、`180d` 或 `365d`，对应 1 周、1 个月、3 个月、6 个月或 1 年。一天按 24 小时计算。控制台的 **有效期** 默认是 3 个月，提交前显示 **预计到期时间（UTC）**。没有永不过期的密钥。不要发送服务选择、`expiresAt` 或认证证明。缺少或无法识别的 `expiresIn`，以及客户端自行提供的 `expiresAt`，都会返回 `400 invalid_request`。请求需要会话 cookie 和 CSRF 请求头；API 密钥不能代替会话。
+请求接受 `name`、必填的 `expiresIn` 和可选的 `scope`（默认 `ads`）。`expiresIn` 只能是 `7d`、`30d`、`90d`、`180d` 或 `365d`，对应 1 周、1 个月、3 个月、6 个月或 1 年。一天按 24 小时计算。控制台的 **有效期** 默认是 3 个月，提交前显示 **预计到期时间（UTC）**。没有永不过期的密钥。不要发送服务选择、`expiresAt` 或认证证明。缺少或无法识别的 `expiresIn`，以及客户端自行提供的 `expiresAt`，都会返回 `400 invalid_request`。只包含 `name` 和 `scope` 的请求也会返回该错误。服务端不会代填 `expiresIn`。请求需要会话 cookie 和 CSRF 请求头；API 密钥不能代替会话。
 
 ### 保护密钥值
 
@@ -130,7 +130,7 @@ Content-Type: application/json
 spdl_<canonical uppercase ULID id>_<43 base62 digits>
 ```
 
-每个密钥都会到期。响应包含服务端计算的 `expiresAt`（Unix 毫秒）。到达该时刻或之后，授权检查和策略管理调用返回 `401 {"error":"api_key_expired"}`。请创建新密钥；再次发送已到期的密钥不会成功。不再使用时可以提前撤销。
+每个密钥都会到期。响应包含服务端计算的 `expiresAt`（Unix 毫秒）。到达该时刻或之后，授权检查和策略管理调用返回 `401 {"error":"api_key_expired"}`。请创建新密钥；再次发送已到期的密钥不会成功。不再使用时可以提前撤销。在必须设置有效期之前创建的密钥现在也有到期时间。如果创建后 365 个 24 小时仍在未来，到期时间就是那时；否则是该要求生效后再过 30 个 24 小时。列表中的每个密钥都包含 `expiresAt`。
 
 这只是格式说明，不能作为实际密钥使用。请立即保存到服务端的密钥存储中。不要放入浏览器存储、前端代码、URL、源码、截图或日志。列表只返回元数据，丢失的密钥值无法找回。
 

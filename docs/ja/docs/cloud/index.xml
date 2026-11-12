@@ -41,7 +41,7 @@ API キーを作成する API キー を開き、前後の空白を除いて 1�
 各キーには作成後に変更できないスコープが 1 つあります。
    スコープ アクセス     ads（既定） /authz-check/v1/* による認可チェックのみ。   pms:read /policy-mgmt/v1 によるアカウント内のサービス、認可ポリシー、ロールポリシーの読み取り。   pms:write /policy-mgmt/v1 によるアカウント内のサービス、認可ポリシー、ロールポリシーの読み取り、作成、削除。    管理スコープは ADS を呼び出せず、ads はポリシーを管理できません。不適切なスコープは 403 insufficient_scope です。サインインが閉じている場合の管理スコープの発行は 403 management_scope_disabled です。
 コンソールはセッション認証付きのリクエストを送信します。
-POST /api/tokens Origin: https://cloud.speedle.io X-SC-CSRF: 1 Content-Type: application/json {&amp;#34;name&amp;#34;:&amp;#34;books-app&amp;#34;,&amp;#34;scope&amp;#34;:&amp;#34;ads&amp;#34;,&amp;#34;expiresIn&amp;#34;:&amp;#34;90d&amp;#34;} 入力は name、必須の expiresIn、任意の scope（既定は ads）です。expiresIn は 7d、30d、90d、180d、365d のいずれかです（1 週間、1 か月、3 か月、6 か月、1 年）。1 日は 24 時間です。コンソールの 有効期間 は既定で 3 か月で、送信前に 有効期限のプレビュー (UTC) を表示します。無期限のキーはありません。サービス指定、expiresAt、認証証明は送信しません。expiresIn がない、認識できない、またはクライアントが expiresAt を送った場合は 400 invalid_request です。セッション Cookie と CSRF ヘッダーが必要で、API キーではセッションを代替できません。</description>
+POST /api/tokens Origin: https://cloud.speedle.io X-SC-CSRF: 1 Content-Type: application/json {&amp;#34;name&amp;#34;:&amp;#34;books-app&amp;#34;,&amp;#34;scope&amp;#34;:&amp;#34;ads&amp;#34;,&amp;#34;expiresIn&amp;#34;:&amp;#34;90d&amp;#34;} 入力は name、必須の expiresIn、任意の scope（既定は ads）です。expiresIn は 7d、30d、90d、180d、365d のいずれかです（1 週間、1 か月、3 か月、6 か月、1 年）。1 日は 24 時間です。コンソールの 有効期間 は既定で 3 か月で、送信前に 有効期限のプレビュー (UTC) を表示します。無期限のキーはありません。サービス指定、expiresAt、認証証明は送信しません。expiresIn がない、認識できない、またはクライアントが expiresAt を送った場合は 400 invalid_request です。name と scope だけを送ったリクエストも同じエラーです。サーバーは expiresIn を補いません。セッション Cookie と CSRF ヘッダーが必要で、API キーではセッションを代替できません。</description>
     </item>
     
     <item>

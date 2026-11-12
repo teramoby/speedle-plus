@@ -3522,7 +3522,7 @@ Content-Type: application/json
 {"name":"books-app","scope":"ads","expiresIn":"90d"}
 ```
 
-The request accepts `name`, required `expiresIn` and optional `scope` (default `ads`). `expiresIn` is one of `7d`, `30d`, `90d`, `180d` or `365d` (1 week, 1 month, 3 months, 6 months or 1 year). Each day is 24 hours. In the console, **Expires after** defaults to 3 months and **Preview expiry (UTC)** shows the resulting time before you submit. There is no non-expiring key. Do not send a service selector, `expiresAt` or authentication proofs. A missing or unknown `expiresIn`, or a client-supplied `expiresAt`, returns `400 invalid_request`. Cookie authentication and CSRF headers are required; an API key cannot replace the session.
+The request accepts `name`, required `expiresIn` and optional `scope` (default `ads`). `expiresIn` is one of `7d`, `30d`, `90d`, `180d` or `365d` (1 week, 1 month, 3 months, 6 months or 1 year). Each day is 24 hours. In the console, **Expires after** defaults to 3 months and **Preview expiry (UTC)** shows the resulting time before you submit. There is no non-expiring key. Do not send a service selector, `expiresAt` or authentication proofs. A missing or unknown `expiresIn`, or a client-supplied `expiresAt`, returns `400 invalid_request`. A body that contains only `name` and `scope` returns that 400. The server does not supply `expiresIn`. Cookie authentication and CSRF headers are required; an API key cannot replace the session.
 
 ### Protect the secret
 
@@ -3532,7 +3532,7 @@ Creation returns HTTP 201. The response's `token` field contains the API key sec
 spdl_<canonical uppercase ULID id>_<43 base62 digits>
 ```
 
-Every key expires at `expiresAt`, which the server computes and returns in Unix milliseconds. At or after that instant, authorization and policy-management calls return `401 {"error":"api_key_expired"}`. Create a replacement key. Retrying the expired key does not succeed. You can revoke a key before it expires.
+Every key expires at `expiresAt`, which the server computes and returns in Unix milliseconds. At or after that instant, authorization and policy-management calls return `401 {"error":"api_key_expired"}`. Create a replacement key. Retrying the expired key does not succeed. You can revoke a key before it expires. Keys that already existed when an expiry became required have one too. It is 365 days of 24 hours after the key was created, unless that time had already passed, in which case it is 30 days of 24 hours after the requirement took effect. Every listed key includes `expiresAt`.
 
 This describes the format, not a usable key. Save the value immediately in a server-side secret store. Never put it in browser storage, frontend code, URLs, source control, screenshots or logs. Listing keys returns metadata only; a lost secret cannot be recovered.
 

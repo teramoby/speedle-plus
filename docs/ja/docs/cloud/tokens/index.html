@@ -240,13 +240,13 @@ X-SC-CSRF: 1
 Content-Type: application/json
 
 {&#34;name&#34;:&#34;books-app&#34;,&#34;scope&#34;:&#34;ads&#34;,&#34;expiresIn&#34;:&#34;90d&#34;}</code></pre></div>
-<p>入力は <code>name</code>、必須の <code>expiresIn</code>、任意の <code>scope</code>（既定は <code>ads</code>）です。<code>expiresIn</code> は <code>7d</code>、<code>30d</code>、<code>90d</code>、<code>180d</code>、<code>365d</code> のいずれかです（1 週間、1 か月、3 か月、6 か月、1 年）。1 日は 24 時間です。コンソールの <strong>有効期間</strong> は既定で 3 か月で、送信前に <strong>有効期限のプレビュー (UTC)</strong> を表示します。無期限のキーはありません。サービス指定、<code>expiresAt</code>、認証証明は送信しません。<code>expiresIn</code> がない、認識できない、またはクライアントが <code>expiresAt</code> を送った場合は <code>400 invalid_request</code> です。セッション Cookie と CSRF ヘッダーが必要で、API キーではセッションを代替できません。</p>
+<p>入力は <code>name</code>、必須の <code>expiresIn</code>、任意の <code>scope</code>（既定は <code>ads</code>）です。<code>expiresIn</code> は <code>7d</code>、<code>30d</code>、<code>90d</code>、<code>180d</code>、<code>365d</code> のいずれかです（1 週間、1 か月、3 か月、6 か月、1 年）。1 日は 24 時間です。コンソールの <strong>有効期間</strong> は既定で 3 か月で、送信前に <strong>有効期限のプレビュー (UTC)</strong> を表示します。無期限のキーはありません。サービス指定、<code>expiresAt</code>、認証証明は送信しません。<code>expiresIn</code> がない、認識できない、またはクライアントが <code>expiresAt</code> を送った場合は <code>400 invalid_request</code> です。<code>name</code> と <code>scope</code> だけを送ったリクエストも同じエラーです。サーバーは <code>expiresIn</code> を補いません。セッション Cookie と CSRF ヘッダーが必要で、API キーではセッションを代替できません。</p>
 
 <h2 id="シークレットを保護する">シークレットを保護する</h2>
 
 <p>作成成功時は HTTP 201 を返します。レスポンスの <code>token</code> フィールドが API キーの値で、表示は一度だけです。</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">spdl_&lt;canonical uppercase ULID id&gt;_&lt;43 base62 digits&gt;</code></pre></div>
-<p>すべてのキーには有効期限があります。レスポンスの <code>expiresAt</code> は、サーバーが計算した Unix ミリ秒の期限です。その時点以降、認可チェックとポリシー管理の呼び出しは <code>401 {&quot;error&quot;:&quot;api_key_expired&quot;}</code> を返します。新しいキーを作成してください。期限切れのキーを再送しても成功しません。期限前に失効させることもできます。</p>
+<p>すべてのキーには有効期限があります。レスポンスの <code>expiresAt</code> は、サーバーが計算した Unix ミリ秒の期限です。その時点以降、認可チェックとポリシー管理の呼び出しは <code>401 {&quot;error&quot;:&quot;api_key_expired&quot;}</code> を返します。新しいキーを作成してください。期限切れのキーを再送しても成功しません。期限前に失効させることもできます。有効期限が必須になる前に作られたキーにも期限があります。作成から 365 日（1 日 24 時間）後がまだ未来ならその時刻、すでに過ぎていれば必須化から 30 日（1 日 24 時間）後です。一覧のすべてのキーに <code>expiresAt</code> があります。</p>
 
 <p>これは形式の説明であり、使用可能なキーではありません。すぐにサーバー側のシークレットストアへ保存してください。ブラウザストレージ、フロントエンド、URL、ソース管理、スクリーンショット、ログに含めないでください。一覧はメタデータのみを返し、紛失した値は復元できません。</p>
 
