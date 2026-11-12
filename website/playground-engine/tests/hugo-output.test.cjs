@@ -299,7 +299,8 @@ for (const name of ['css/swagger-ui.css', 'css/swagger-custom.css', 'js/swagger-
   assert.deepEqual(fs.readFileSync(path.join(output, name)), fs.readFileSync(path.join(root, 'docs', name)), `Published Swagger asset ${name}`);
 }
 assert.ok(fs.readFileSync(path.join(output, 'js/swagger-js/swagger-ui-bundle.js'), 'utf8').includes('5.34.1'), 'Vendored Swagger UI is 5.34.1');
-assert.ok(fs.readFileSync(path.join(output, 'css/swagger-custom.css'), 'utf8').includes('#swagger-ui.swagger-readonly .auth-wrapper'), 'Read-only Swagger UI hides Authorize');
+const swaggerCustom = fs.readFileSync(path.join(output, 'css/swagger-custom.css'), 'utf8');
+assert.ok(swaggerCustom.includes('#swagger-ui.swagger-readonly .auth-wrapper') && swaggerCustom.includes('#swagger-ui.swagger-readonly .authorization__btn'), 'Read-only Swagger UI hides Authorize and the operation lock');
 assert.ok(llms.includes('https://ai.speedle.io/llms.txt') && llms.includes('https://cloud.speedle.io/llms.txt'), 'llms.txt links the other sites\' llms.txt');
 assert.ok(llmsFull.includes('grant role manager employee') && llmsFull.includes('ROLE_POLICY ='),
   'llms-full.txt contains the SPDL grammar and role-inheritance example');

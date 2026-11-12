@@ -78,5 +78,8 @@
   #main #swagger-ui .opblock-summary-description { flex-basis: 100%; padding: 4px 10px; }
   #main #swagger-ui .opblock-body { overflow-x: auto; }
 }
-/* A read-only reference disables Try it out and also hides Authorize, so a token is not entered here. */
-#swagger-ui.swagger-readonly .auth-wrapper { display: none; }
+/* A read-only reference disables Try it out and hides both Authorize entry points:
+   the top .auth-wrapper and the per-operation .authorization__btn lock.
+   Swagger UI re-renders the lock when an operation expands, so the rule has to stay in CSS. */
+#swagger-ui.swagger-readonly .auth-wrapper,
+#swagger-ui.swagger-readonly .authorization__btn { display: none; }
