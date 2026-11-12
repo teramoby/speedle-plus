@@ -17,11 +17,10 @@ Speedle Cloud는 오픈 소스 Speedle 엔진 기반의 호스팅 인가 서비�
 ## 다운로드
 
 - [한국어 Markdown](https://engine.speedle.io/docs/cloud/quickstart.ko.md): Cloud 네 장을 합친 오프라인 안내.
-- [API 레퍼런스](https://engine.speedle.io/ko/docs/cloud/api-reference/): 이 사이트에서 읽습니다. 아래의 원본 파일도 그대로 둡니다.
-- [OpenAPI YAML](https://cloud.speedle.io/openapi.yaml)
-- [OpenAPI JSON](https://cloud.speedle.io/openapi.json)
+- [OpenAPI (YAML)](https://cloud.speedle.io/openapi.public.yaml)
+- [OpenAPI (JSON)](https://cloud.speedle.io/openapi.public.json)
 
-API 명세는 요청과 응답 계약을 설명합니다. 다운로드해도 로그인이 열리지는 않습니다.
+API 레퍼런스의 기계 판독 형식으로, 코드 생성기와 API 클라이언트에서 사용할 수 있습니다. 다운로드해도 로그인이 열리지는 않습니다.
 
 Cloud 문서를 확인하세요: [이용 약관](https://cloud.speedle.io/ko/terms) / [개인정보 처리방침](https://cloud.speedle.io/ko/privacy).
 

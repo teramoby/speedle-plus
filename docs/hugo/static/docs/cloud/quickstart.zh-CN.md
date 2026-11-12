@@ -17,11 +17,10 @@ Speedle Cloud 是基于开源 Speedle 引擎的托管授权服务。你可以管
 ## 下载
 
 - [中文 Markdown](https://engine.speedle.io/docs/cloud/quickstart.zh-CN.md): 四个 Cloud 章节合并的离线指南。
-- [API 参考](https://engine.speedle.io/zh/docs/cloud/api-reference/)：在本站阅读。下面仍保留原始文件。
-- [OpenAPI YAML](https://cloud.speedle.io/openapi.yaml)
-- [OpenAPI JSON](https://cloud.speedle.io/openapi.json)
+- [OpenAPI (YAML)](https://cloud.speedle.io/openapi.public.yaml)
+- [OpenAPI (JSON)](https://cloud.speedle.io/openapi.public.json)
 
-API 规范描述请求与响应合约；下载规范不会开放账号登录。
+API 参考的机器可读形式，供代码生成器和 API 客户端使用；下载规范不会开放账号登录。
 
 请阅读 Cloud 的 [服务条款](https://cloud.speedle.io/zh-CN/terms) / [隐私政策](https://cloud.speedle.io/zh-CN/privacy).
 

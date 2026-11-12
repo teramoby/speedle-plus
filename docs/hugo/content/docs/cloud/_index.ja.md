@@ -27,10 +27,9 @@ Speedle Cloud はオープンソースの Speedle エンジンによるホスト
 ## ダウンロード
 
 - [日本語 Markdown](https://engine.speedle.io/docs/cloud/quickstart.ja.md): Cloud の 4 章をまとめたオフラインガイド。
-- [API リファレンス](/ja/docs/cloud/api-reference/): このサイトで読めます。下の生ファイルも引き続き利用できます。
-- [OpenAPI YAML](https://cloud.speedle.io/openapi.yaml)
-- [OpenAPI JSON](https://cloud.speedle.io/openapi.json)
+- [OpenAPI (YAML)](https://cloud.speedle.io/openapi.public.yaml)
+- [OpenAPI (JSON)](https://cloud.speedle.io/openapi.public.json)
 
-API 仕様はリクエストとレスポンスの契約です。ダウンロードしてもサインインは開始されません。
+API リファレンスの機械可読形式で、コード生成ツールや API クライアント向けです。ダウンロードしてもサインインは開始されません。
 
 Cloud の次の文書をご確認ください： [利用規約](https://cloud.speedle.io/ja/terms) / [プライバシーポリシー](https://cloud.speedle.io/ja/privacy).
