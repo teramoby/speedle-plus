@@ -47,7 +47,7 @@ Los errores son JSON plano, por ejemplo `{"error":"rate_limited"}`. Si no obtien
 | --- | --- |
 | `400 invalid_request` o error de Speedle | Corregir la solicitud; no repetirla sin cambios. |
 | `401 unauthorized` | Comprobar la clave API o sesión. Una cookie de sesión sola no autoriza ADS. |
-| `401 api_key_expired` | La clave API ha alcanzado o superado su caducidad. Cree un reemplazo; reintentar esta clave no tendrá éxito. |
+| `401 api_key_expired` | La clave API ha alcanzado o superado su caducidad. Cree un reemplazo; reintentar esta clave no tendrá éxito. Las claves creadas antes de que la caducidad fuera obligatoria también tienen una. La página de claves API indica cuándo; lea `expiresAt` y cree un reemplazo antes. |
 | `403 reauth_required` | Autenticarse de nuevo con un proveedor vinculado antes de crear la clave. |
 | `403 insufficient_scope` | Usar una clave con el ámbito requerido. |
 | `403 management_scope_disabled` | No se emiten ámbitos de gestión con el inicio de sesión cerrado. |

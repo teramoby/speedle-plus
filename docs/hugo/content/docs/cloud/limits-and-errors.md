@@ -47,7 +47,7 @@ Errors are flat JSON, for example `{"error":"rate_limited"}`. An error is not an
 | --- | --- |
 | `400 invalid_request` or a Speedle error message | Correct the request; do not retry it unchanged. |
 | `401 unauthorized` | Check the API key or signed-in session. A session cookie alone cannot authorize ADS. |
-| `401 api_key_expired` | The API key is at or past its expiry. Create a replacement; retrying this key will not succeed. |
+| `401 api_key_expired` | The API key is at or past its expiry. Create a replacement; retrying this key will not succeed. Keys created before an expiry was required have one too. The API keys page states when; read `expiresAt` and replace the key before then. |
 | `403 reauth_required` | Authenticate with a linked provider again before creating a key. |
 | `403 insufficient_scope` | Use a key with the required scope. |
 | `403 management_scope_disabled` | Management-scope issuance is unavailable while sign-in is closed. |

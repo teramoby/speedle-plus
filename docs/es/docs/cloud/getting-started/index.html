@@ -213,7 +213,7 @@
 
 <h2 id="crear-una-clave-api">Crear una clave API</h2>
 
-<p>Abra <a href="https://cloud.speedle.io/es/tokens">Claves API</a>, introduzca un nombre como <code>books-app</code>, seleccione el alcance <code>ads</code> (comprobaciones de autorización), elija una caducidad (la consola usa 3 meses de forma predeterminada y muestra la hora UTC) y pulse <strong>Crear clave API</strong>. Si se solicita verificar su identidad, complete la verificación y vuelva a enviar el formulario. Copie el secreto: solo se muestra una vez. Todas las claves caducan; revóquela antes si ya no la necesita. Consulte <a href="/es/docs/cloud/tokens/">Gestión de claves API</a>.</p>
+<p>Abra <a href="https://cloud.speedle.io/es/tokens">Claves API</a>, introduzca un nombre como <code>books-app</code>, seleccione el alcance <code>ads</code> (comprobaciones de autorización), elija una caducidad (la consola usa 3 meses de forma predeterminada y muestra la hora UTC) y pulse <strong>Crear clave API</strong>. Si se solicita verificar su identidad, complete la verificación y vuelva a enviar el formulario. Copie el secreto: solo se muestra una vez. Todas las claves caducan, incluidas las creadas antes de que la caducidad fuera obligatoria. <a href="/es/docs/cloud/tokens/">Gestión de claves API</a> indica cuándo. Lea la caducidad de la lista y cree un reemplazo antes. Revóquela antes si ya no la necesita.</p>
 
 <p>Guarde la clave en el almacén de secretos del servidor y proporciónela mediante la variable de entorno <code>SPEEDLE_API_KEY</code>. No la incluya en código del navegador ni en el repositorio.</p>
 

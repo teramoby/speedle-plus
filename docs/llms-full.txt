@@ -3449,7 +3449,7 @@ Choose **Validate policy**, then **Save policy**. Validation checks syntax but d
 
 ### Create an API key
 
-Open [API keys](https://cloud.speedle.io/tokens), enter a name such as `books-app`, select the `ads` scope (authorization checks), choose an expiry (the console defaults to 3 months and shows the UTC time), and choose **Create API key**. Complete provider verification if prompted, then submit the form again. Copy the secret when it appears: it is shown only once. Every key expires; revoke it earlier when it is no longer needed. See [API key management](https://engine.speedle.io/docs/cloud/tokens/).
+Open [API keys](https://cloud.speedle.io/tokens), enter a name such as `books-app`, select the `ads` scope (authorization checks), choose an expiry (the console defaults to 3 months and shows the UTC time), and choose **Create API key**. Complete provider verification if prompted, then submit the form again. Copy the secret when it appears: it is shown only once. Every key expires, including keys created before an expiry was required. [API key management](https://engine.speedle.io/docs/cloud/tokens/) states when. Read the listed expiry and replace the key before then. Revoke a key earlier when it is no longer needed.
 
 Store the key in your server's secret store and provide it through the `SPEEDLE_API_KEY` environment variable. Keep it out of browser code and source control.
 
@@ -3709,7 +3709,7 @@ Errors are flat JSON, for example `{"error":"rate_limited"}`. An error is not an
 | --- | --- |
 | `400 invalid_request` or a Speedle error message | Correct the request; do not retry it unchanged. |
 | `401 unauthorized` | Check the API key or signed-in session. A session cookie alone cannot authorize ADS. |
-| `401 api_key_expired` | The API key is at or past its expiry. Create a replacement; retrying this key will not succeed. |
+| `401 api_key_expired` | The API key is at or past its expiry. Create a replacement; retrying this key will not succeed. Keys created before an expiry was required have one too. The API keys page states when; read `expiresAt` and replace the key before then. |
 | `403 reauth_required` | Authenticate with a linked provider again before creating a key. |
 | `403 insufficient_scope` | Use a key with the required scope. |
 | `403 management_scope_disabled` | Management-scope issuance is unavailable while sign-in is closed. |

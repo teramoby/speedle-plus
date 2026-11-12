@@ -49,7 +49,7 @@ Seleccione **Validar política** y después **Guardar política**. La validació
 
 ### Crear una clave API
 
-Abra [Claves API](https://cloud.speedle.io/es/tokens), introduzca un nombre como `books-app`, seleccione el alcance `ads` (comprobaciones de autorización), elija una caducidad (la consola usa 3 meses de forma predeterminada y muestra la hora UTC) y pulse **Crear clave API**. Si se solicita verificar su identidad, complete la verificación y vuelva a enviar el formulario. Copie el secreto: solo se muestra una vez. Todas las claves caducan; revóquela antes si ya no la necesita. Consulte [Gestión de claves API](https://engine.speedle.io/es/docs/cloud/tokens/).
+Abra [Claves API](https://cloud.speedle.io/es/tokens), introduzca un nombre como `books-app`, seleccione el alcance `ads` (comprobaciones de autorización), elija una caducidad (la consola usa 3 meses de forma predeterminada y muestra la hora UTC) y pulse **Crear clave API**. Si se solicita verificar su identidad, complete la verificación y vuelva a enviar el formulario. Copie el secreto: solo se muestra una vez. Todas las claves caducan, incluidas las creadas antes de que la caducidad fuera obligatoria. [Gestión de claves API](https://engine.speedle.io/es/docs/cloud/tokens/) indica cuándo. Lea la caducidad de la lista y cree un reemplazo antes. Revóquela antes si ya no la necesita.
 
 Guarde la clave en el almacén de secretos del servidor y proporciónela mediante la variable de entorno `SPEEDLE_API_KEY`. No la incluya en código del navegador ni en el repositorio.
 
@@ -295,7 +295,7 @@ Los errores son JSON plano, por ejemplo `{"error":"rate_limited"}`. Si no obtien
 | --- | --- |
 | `400 invalid_request` o error de Speedle | Corregir la solicitud; no repetirla sin cambios. |
 | `401 unauthorized` | Comprobar la clave API o sesión. Una cookie de sesión sola no autoriza ADS. |
-| `401 api_key_expired` | La clave API ha alcanzado o superado su caducidad. Cree un reemplazo; reintentar esta clave no tendrá éxito. |
+| `401 api_key_expired` | La clave API ha alcanzado o superado su caducidad. Cree un reemplazo; reintentar esta clave no tendrá éxito. Las claves creadas antes de que la caducidad fuera obligatoria también tienen una. La página de claves API indica cuándo; lea `expiresAt` y cree un reemplazo antes. |
 | `403 reauth_required` | Autenticarse de nuevo con un proveedor vinculado antes de crear la clave. |
 | `403 insufficient_scope` | Usar una clave con el ámbito requerido. |
 | `403 management_scope_disabled` | No se emiten ámbitos de gestión con el inicio de sesión cerrado. |

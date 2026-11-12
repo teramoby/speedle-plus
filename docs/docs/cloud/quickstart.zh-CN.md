@@ -49,7 +49,7 @@ grant user alice from corp get /books
 
 ### 创建 API 密钥
 
-打开 [API 密钥](https://cloud.speedle.io/zh-CN/tokens)页面，输入名称（如 `books-app`），选择 `ads` 权限范围（授权检查），选择有效期（控制台默认 3 个月，并显示 UTC 时间），然后选择 **创建 API 密钥**。如需验证身份，请完成验证后再次提交表单。复制仅展示一次的密钥值。每个密钥都会到期；不再使用时请提前撤销。详见 [API 密钥管理](https://engine.speedle.io/zh/docs/cloud/tokens/)。
+打开 [API 密钥](https://cloud.speedle.io/zh-CN/tokens)页面，输入名称（如 `books-app`），选择 `ads` 权限范围（授权检查），选择有效期（控制台默认 3 个月，并显示 UTC 时间），然后选择 **创建 API 密钥**。如需验证身份，请完成验证后再次提交表单。复制仅展示一次的密钥值。每个密钥都会到期，包括在必须设置有效期之前创建的密钥。到期时间见 [API 密钥管理](https://engine.speedle.io/zh/docs/cloud/tokens/)。请查看列表中的到期时间，并在到期前创建新密钥。不再使用时请提前撤销。
 
 将密钥保存在服务端的密钥存储中，通过环境变量 `SPEEDLE_API_KEY` 提供给应用，不要写入浏览器代码或源码仓库。
 
@@ -295,7 +295,7 @@ Cloud 自身故障可能退还额度，每账号每 UTC 日最多退还 1,000 �
 | --- | --- |
 | `400 invalid_request` 或 Speedle 错误消息 | 修正请求，不要原样重试。 |
 | `401 unauthorized` | 检查 API 密钥或登录会话。仅有会话 cookie 不能调用 ADS。 |
-| `401 api_key_expired` | API 密钥已到或已过到期时间。请创建新密钥；重试该密钥不会成功。 |
+| `401 api_key_expired` | API 密钥已到或已过到期时间。请创建新密钥；重试该密钥不会成功。在必须设置有效期之前创建的密钥同样有到期时间。到期规则见 API 密钥页；请查看 `expiresAt`，并在到期前创建新密钥。 |
 | `403 reauth_required` | 创建密钥前，通过已关联的身份提供方重新认证。 |
 | `403 insufficient_scope` | 使用具有所需权限范围的密钥。 |
 | `403 management_scope_disabled` | 登录关闭时不能签发管理权限的密钥。 |
