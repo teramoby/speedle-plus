@@ -59,12 +59,12 @@ Formal measurements ran only on charming. shrek was used for building, smoke val
 ./run-all.sh
 # shrek: after retrieving this run's results
 python3 summarize.py results/<run>/charming
-python3 build_report.py
+python3 build_report.py  # archived 2026-10-29 three-engine report only
 ```
 
 `run-all.sh` defaults include the `may-*` and `rs-*` steps, which need the second Go test binary/server set and `cedar-rs` from `build-package.sh`; a package made by `build-linux.sh` only suits rerunning the three-engine round, and `STEPS=` selects steps.
 
-A complete run waits for CI to be idle and retries CI-contaminated steps at most twice. `build_report.py` requires COMPLETE, 107 in-process groups with 5 repetitions each, and 30 HTTP configurations with 3 rounds each; it will not replace the previous report with incomplete results. Parameters and detailed steps are in [TEST_PLAN.en.md](TEST_PLAN.en.md).
+A complete run waits for CI to be idle and retries CI-contaminated steps at most twice. `build_report.py` is tied to the archived 2026-10-29 three-engine run: it reads that run's fixed directory, engine table and expected counts (COMPLETE, 107 in-process groups with 5 repetitions each, 30 HTTP configurations with 3 rounds each) and will not replace the previous report otherwise. A four-engine run is aggregated with `summarize.py` until the report builder is extended. Parameters and detailed steps are in [TEST_PLAN.en.md](TEST_PLAN.en.md).
 
 Optional plots: install `plot-requirements.txt` in an isolated Python environment, run `python plot_results.py results/retest-20261029/charming`, then rebuild the report. Add `--mixed-only` to view completed in-process results before the full matrix finishes.
 

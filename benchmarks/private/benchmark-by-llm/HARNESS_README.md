@@ -57,12 +57,12 @@ cmd/cedar-rs/target/release/cedar-rs check /tmp/cedar-specs/scenarios/*.json
 ./run-all.sh
 # shrek：取回本轮结果后
 python3 summarize.py results/<run>/charming
-python3 build_report.py
+python3 build_report.py  # 仅重建 2026-10-29 三引擎归档报告
 ```
 
 `run-all.sh` 的默认步骤包含 `may-*` 和 `rs-*`，它们需要 `build-package.sh` 产出的第二套 Go 测试/服务和 `cedar-rs`；用 `build-linux.sh` 打的归档包只适合重跑三引擎那轮，可用 `STEPS=` 选择步骤。
 
-完整运行会等待 CI 空闲，受 CI 污染的步骤最多重跑两次。`build_report.py` 要求 COMPLETE、107 组进程内基准各 5 次、30 组 HTTP 配置各 3 轮，未完成时不会替换旧报告。参数与逐步说明见 [TEST_PLAN.md](TEST_PLAN.md)。
+完整运行会等待 CI 空闲，受 CI 污染的步骤最多重跑两次。`build_report.py` 只适用于 2026-10-29 那轮三引擎归档：运行目录、引擎表与期望组数都是固定的（COMPLETE、107 组进程内基准各 5 次、30 组 HTTP 配置各 3 轮），否则不会替换旧报告；四引擎新一轮在扩展报告生成器之前用 `summarize.py` 汇总。参数与逐步说明见 [TEST_PLAN.md](TEST_PLAN.md)。
 
 可选绘图：在隔离 Python 环境中安装 `plot-requirements.txt`，然后运行 `python plot_results.py results/retest-20261029/charming`，最后重建报告。仅查看已完成进程内结果可加 `--mixed-only`。
 
