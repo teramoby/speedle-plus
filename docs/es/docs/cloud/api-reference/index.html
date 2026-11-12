@@ -11,7 +11,7 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
     <meta name="viewport" content="width=device-width, initial-scale=1"><title>Referencia de la API · Speedle Engine</title>
-<meta name="description" content="Swagger UI de solo lectura para la API pública de Speedle Cloud. Try it out está desactivado.">
+<meta name="description" content="Referencia de la API de Speedle Cloud: comprobaciones de autorización y gestión de políticas con una API key. Las solicitudes salen de su servidor; esta página es de solo lectura.">
 <meta name="generator" content="Hugo 0.48" />
 <link href="https://engine.speedle.io/index.xml" rel="alternate" type="application/rss+xml">
 <link rel="canonical" href="https://engine.speedle.io/es/docs/cloud/api-reference/">
@@ -24,10 +24,10 @@
 <link rel="alternate" hreflang="x-default" href="https://engine.speedle.io/docs/cloud/api-reference/">
 <meta property="og:type" content="article">
 <meta property="article:published_time" content="2026-11-12T10:00:00&#43;08:00">
-<meta property="article:modified_time" content="2026-11-12T10:00:00&#43;08:00">
+<meta property="article:modified_time" content="2026-11-12T20:00:00&#43;08:00">
 <meta property="og:site_name" content="Speedle Engine">
 <meta property="og:title" content="Referencia de la API · Speedle Engine">
-<meta property="og:description" content="Swagger UI de solo lectura para la API pública de Speedle Cloud. Try it out está desactivado.">
+<meta property="og:description" content="Referencia de la API de Speedle Cloud: comprobaciones de autorización y gestión de políticas con una API key. Las solicitudes salen de su servidor; esta página es de solo lectura.">
 <meta property="og:url" content="https://engine.speedle.io/es/docs/cloud/api-reference/">
 <meta property="og:image" content="https://engine.speedle.io/img/social/engine-en.png">
 <meta property="og:image:width" content="1200">
@@ -36,11 +36,11 @@
 <meta property="og:image:alt" content="Speedle Engine — Fast. Simple. Access control">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Referencia de la API · Speedle Engine">
-<meta name="twitter:description" content="Swagger UI de solo lectura para la API pública de Speedle Cloud. Try it out está desactivado.">
+<meta name="twitter:description" content="Referencia de la API de Speedle Cloud: comprobaciones de autorización y gestión de políticas con una API key. Las solicitudes salen de su servidor; esta página es de solo lectura.">
 <meta name="twitter:image" content="https://engine.speedle.io/img/social/engine-en.png">
 <meta name="twitter:image:alt" content="Speedle Engine — Fast. Simple. Access control">
 
-<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/es/docs/cloud/api-reference/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-12T10:00:00+08:00","datePublished":"2026-11-12T10:00:00+08:00","description":"Swagger UI de solo lectura para la API pública de Speedle Cloud. Try it out está desactivado.","headline":"Referencia de la API","image":"https://engine.speedle.io/img/social/engine-en.png","inLanguage":"es","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/es/docs/cloud/api-reference/","@type":"WebPage"},"name":"Referencia de la API","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/es/docs/cloud/api-reference/"}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/es/docs/cloud/api-reference/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-12T20:00:00+08:00","datePublished":"2026-11-12T10:00:00+08:00","description":"Referencia de la API de Speedle Cloud: comprobaciones de autorización y gestión de políticas con una API key. Las solicitudes salen de su servidor; esta página es de solo lectura.","headline":"Referencia de la API","image":"https://engine.speedle.io/img/social/engine-en.png","inLanguage":"es","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/es/docs/cloud/api-reference/","@type":"WebPage"},"name":"Referencia de la API","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/es/docs/cloud/api-reference/"}</script>
 <script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/es/docs/cloud/api-reference/#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://engine.speedle.io/es/","name":"Inicio","position":1},{"@type":"ListItem","item":"https://engine.speedle.io/es/docs/","name":"Documentación","position":2},{"@type":"ListItem","item":"https://engine.speedle.io/es/docs/cloud/","name":"Speedle Cloud","position":3},{"@type":"ListItem","item":"https://engine.speedle.io/es/docs/cloud/api-reference/","name":"Referencia de la API","position":4}]}</script><link href="/css/docs.css" rel="stylesheet" type="text/css">
 
     <link href="/css/swagger-ui.css" rel="stylesheet" type="text/css">
@@ -189,15 +189,11 @@
 <div id="main">
 
   <h1>Referencia de la API</h1>
-  <p class="docs-lead">La API pública de Cloud, representada con Swagger UI. Try it out está desactivado.</p>
+  <p class="docs-lead">Referencia de la API de Speedle Cloud: comprobaciones de autorización y gestión de políticas con una API key. Las solicitudes salen de su servidor; esta página es de solo lectura.</p>
 
 
 
-  <div id="kube-component" class="content"><p>Esta página muestra la API pública de Speedle Cloud. El texto de la especificación está en inglés en todos los idiomas de este sitio. Try it out está desactivado, de modo que no se introduce un token de aplicación en el navegador.</p>
-
-<p>El archivo representado es <a href="/openapi/cloud-public.yaml">el subconjunto público incluido en el sitio</a>. Es un marcador de posición de la ruta de comprobación de autorización hasta que Speedle Cloud publique el documento OpenAPI público. No es la especificación completa registrada que enlaza el <a href="/es/docs/cloud/">índice de la documentación de Cloud</a>.</p>
-
-<p>La <a href="/es/docs/cloud/authorization-api/">vista previa de la API de autorización</a> explica la llamada IsAllowed. <a href="/es/docs/cloud/limits-and-errors/">Límites y errores</a> enumera las cuotas y las respuestas de error.</p>
+  <div id="kube-component" class="content"><p>La <a href="/es/docs/cloud/authorization-api/">vista previa de la API de autorización</a> explica la llamada IsAllowed. <a href="/es/docs/cloud/limits-and-errors/">Límites y errores</a> enumera las cuotas y las respuestas de error.</p>
 
 <div id="swagger-ui" class="swagger-readonly"></div>
 <script src="/js/swagger-js/swagger-ui-bundle.js" defer></script>

@@ -6,7 +6,7 @@
     <description>Recent content in Speedle Cloud on Speedle</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>ja-jp</language>
-    <lastBuildDate>Thu, 12 Nov 2026 10:00:00 +0800</lastBuildDate>
+    <lastBuildDate>Thu, 12 Nov 2026 20:00:00 +0800</lastBuildDate>
     
 	<atom:link href="https://engine.speedle.io/ja/docs/cloud/index.xml" rel="self" type="application/rss+xml" />
     
@@ -56,9 +56,7 @@ import { request } from &amp;#39;node:https&amp;#39;; export async function chec
       <pubDate>Thu, 12 Nov 2026 10:00:00 +0800</pubDate>
       
       <guid>https://engine.speedle.io/ja/docs/cloud/api-reference/</guid>
-      <description>このページは公開されている Speedle Cloud API を表示します。仕様の本文は、このサイトのどの言語でも英語です。Try it out はオフなので、アプリケーション トークンをブラウザーに入力しません。
-表示されるファイルは同梱している公開サブセットです。Speedle Cloud が公開 OpenAPI 文書を公開するまでのプレースホルダーで、認可チェックのパスだけを含みます。Cloud ドキュメントの索引 からリンクしている、リポジトリにチェックインされた完全な仕様ではありません。
-認可 API プレビュー は IsAllowed 呼び出しを説明します。制限とエラー はクォータとエラー応答を列挙します。
+      <description>認可 API プレビュー は IsAllowed 呼び出しを説明します。制限とエラー はクォータとエラー応答を列挙します。
    document.addEventListener(&#39;DOMContentLoaded&#39;, function() { var ui = SwaggerUIBundle({ url: &#34;/openapi/cloud-public.yaml&#34;, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.presets.apis ], plugins: [ SwaggerUIBundle.plugins.DownloadUrl ], validatorUrl: null, layout: &#34;BaseLayout&#34;, supportedSubmitMethods: [] }); window.ui = ui; });  </description>
     </item>
     

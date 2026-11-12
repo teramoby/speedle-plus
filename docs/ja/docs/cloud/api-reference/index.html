@@ -11,7 +11,7 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
     <meta name="viewport" content="width=device-width, initial-scale=1"><title>API リファレンス · Speedle Engine</title>
-<meta name="description" content="公開されている Speedle Cloud API の読み取り専用 Swagger UI です。Try it out は無効です。">
+<meta name="description" content="Speedle Cloud API のリファレンス：API key による認可チェックとポリシー管理。リクエストはサーバーから送り、このページは読み取り専用です。">
 <meta name="generator" content="Hugo 0.48" />
 <link href="https://engine.speedle.io/index.xml" rel="alternate" type="application/rss+xml">
 <link rel="canonical" href="https://engine.speedle.io/ja/docs/cloud/api-reference/">
@@ -24,10 +24,10 @@
 <link rel="alternate" hreflang="x-default" href="https://engine.speedle.io/docs/cloud/api-reference/">
 <meta property="og:type" content="article">
 <meta property="article:published_time" content="2026-11-12T10:00:00&#43;08:00">
-<meta property="article:modified_time" content="2026-11-12T10:00:00&#43;08:00">
+<meta property="article:modified_time" content="2026-11-12T20:00:00&#43;08:00">
 <meta property="og:site_name" content="Speedle Engine">
 <meta property="og:title" content="API リファレンス · Speedle Engine">
-<meta property="og:description" content="公開されている Speedle Cloud API の読み取り専用 Swagger UI です。Try it out は無効です。">
+<meta property="og:description" content="Speedle Cloud API のリファレンス：API key による認可チェックとポリシー管理。リクエストはサーバーから送り、このページは読み取り専用です。">
 <meta property="og:url" content="https://engine.speedle.io/ja/docs/cloud/api-reference/">
 <meta property="og:image" content="https://engine.speedle.io/img/social/engine-en.png">
 <meta property="og:image:width" content="1200">
@@ -36,11 +36,11 @@
 <meta property="og:image:alt" content="Speedle Engine — Fast. Simple. Access control">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="API リファレンス · Speedle Engine">
-<meta name="twitter:description" content="公開されている Speedle Cloud API の読み取り専用 Swagger UI です。Try it out は無効です。">
+<meta name="twitter:description" content="Speedle Cloud API のリファレンス：API key による認可チェックとポリシー管理。リクエストはサーバーから送り、このページは読み取り専用です。">
 <meta name="twitter:image" content="https://engine.speedle.io/img/social/engine-en.png">
 <meta name="twitter:image:alt" content="Speedle Engine — Fast. Simple. Access control">
 
-<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/ja/docs/cloud/api-reference/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-12T10:00:00+08:00","datePublished":"2026-11-12T10:00:00+08:00","description":"公開されている Speedle Cloud API の読み取り専用 Swagger UI です。Try it out は無効です。","headline":"API リファレンス","image":"https://engine.speedle.io/img/social/engine-en.png","inLanguage":"ja","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/ja/docs/cloud/api-reference/","@type":"WebPage"},"name":"API リファレンス","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/ja/docs/cloud/api-reference/"}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/ja/docs/cloud/api-reference/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-12T20:00:00+08:00","datePublished":"2026-11-12T10:00:00+08:00","description":"Speedle Cloud API のリファレンス：API key による認可チェックとポリシー管理。リクエストはサーバーから送り、このページは読み取り専用です。","headline":"API リファレンス","image":"https://engine.speedle.io/img/social/engine-en.png","inLanguage":"ja","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/ja/docs/cloud/api-reference/","@type":"WebPage"},"name":"API リファレンス","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/ja/docs/cloud/api-reference/"}</script>
 <script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/ja/docs/cloud/api-reference/#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://engine.speedle.io/ja/","name":"ホーム","position":1},{"@type":"ListItem","item":"https://engine.speedle.io/ja/docs/","name":"ドキュメント","position":2},{"@type":"ListItem","item":"https://engine.speedle.io/ja/docs/cloud/","name":"Speedle Cloud","position":3},{"@type":"ListItem","item":"https://engine.speedle.io/ja/docs/cloud/api-reference/","name":"API リファレンス","position":4}]}</script><link href="/css/docs.css" rel="stylesheet" type="text/css">
 
     <link href="/css/swagger-ui.css" rel="stylesheet" type="text/css">
@@ -189,15 +189,11 @@
 <div id="main">
 
   <h1>API リファレンス</h1>
-  <p class="docs-lead">公開 Cloud API を Swagger UI で表示します。Try it out は無効です。</p>
+  <p class="docs-lead">Speedle Cloud API のリファレンス：API key による認可チェックとポリシー管理。リクエストはサーバーから送り、このページは読み取り専用です。</p>
 
 
 
-  <div id="kube-component" class="content"><p>このページは公開されている Speedle Cloud API を表示します。仕様の本文は、このサイトのどの言語でも英語です。Try it out はオフなので、アプリケーション トークンをブラウザーに入力しません。</p>
-
-<p>表示されるファイルは<a href="/openapi/cloud-public.yaml">同梱している公開サブセット</a>です。Speedle Cloud が公開 OpenAPI 文書を公開するまでのプレースホルダーで、認可チェックのパスだけを含みます。<a href="/ja/docs/cloud/">Cloud ドキュメントの索引</a> からリンクしている、リポジトリにチェックインされた完全な仕様ではありません。</p>
-
-<p><a href="/ja/docs/cloud/authorization-api/">認可 API プレビュー</a> は IsAllowed 呼び出しを説明します。<a href="/ja/docs/cloud/limits-and-errors/">制限とエラー</a> はクォータとエラー応答を列挙します。</p>
+  <div id="kube-component" class="content"><p><a href="/ja/docs/cloud/authorization-api/">認可 API プレビュー</a> は IsAllowed 呼び出しを説明します。<a href="/ja/docs/cloud/limits-and-errors/">制限とエラー</a> はクォータとエラー応答を列挙します。</p>
 
 <div id="swagger-ui" class="swagger-readonly"></div>
 <script src="/js/swagger-js/swagger-ui-bundle.js" defer></script>

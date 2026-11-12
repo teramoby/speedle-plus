@@ -275,8 +275,8 @@ MongoDB must run as a replica set or sharded cluster. ADS watches the database w
       <pubDate>Thu, 12 Nov 2026 10:00:00 +0800</pubDate>
       
       <guid>https://engine.speedle.io/docs/cloud/api-reference/</guid>
-      <description>This page renders the public Speedle Cloud API. The specification text is English on every language of this site. Try it out is turned off, so an application token is not entered in the browser.
-The rendered file is the vendored public subset. This copy is a placeholder for the authorization-check path until Speedle Cloud publishes the public OpenAPI document. It is not the full checked-in specification linked from the Cloud documentation index.</description>
+      <description>Authorization API preview explains the IsAllowed call. Limits and errors lists quotas and error responses.
+   document.addEventListener(&#39;DOMContentLoaded&#39;, function() { var ui = SwaggerUIBundle({ url: &#34;/openapi/cloud-public.yaml&#34;, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.presets.apis ], plugins: [ SwaggerUIBundle.plugins.DownloadUrl ], validatorUrl: null, layout: &#34;BaseLayout&#34;, supportedSubmitMethods: [] }); window.ui = ui; });  </description>
     </item>
     
     <item>

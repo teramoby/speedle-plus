@@ -50,7 +50,7 @@ Java, Python, Go, .NET and Rust SDKs are version 0.2.0 and published. `@speedle/
 - [Getting started with Speedle Cloud](https://engine.speedle.io/docs/cloud/getting-started/): The console workflow: sign-in and account settings, a service, SPDL policies, session management requests, Playground tests and policy export.
 - [Speedle Cloud application tokens](https://engine.speedle.io/docs/cloud/tokens/): Issue, protect, list, rotate and revoke service-scoped Bearer tokens, with one-time secret disclosure and recent authentication.
 - [Speedle Cloud authorization API preview](https://engine.speedle.io/docs/cloud/authorization-api/): The published ADS IsAllowed request and response preview, with caller identity, a Node.js 22 example, policy snapshots and transport constraints.
-- [API reference](https://engine.speedle.io/docs/cloud/api-reference/): Read-only Swagger UI for the public Cloud API. Try it out is disabled, so an application token is not entered in the browser.
+- [API reference](https://engine.speedle.io/docs/cloud/api-reference/): Reference for the Speedle Cloud API: authorization checks and policy management with an API key. Requests run from your server; this page is read-only.
 - [Speedle Cloud limits and errors](https://engine.speedle.io/docs/cloud/limits-and-errors/): Account quotas, request limits, flat JSON errors, rate and quota headers, daily accounting and retry guidance.
 - [cloud.speedle.io](https://cloud.speedle.io/): Speedle Cloud, a hosted authorization service. Free public beta; sign-in opens soon.
 

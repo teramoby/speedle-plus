@@ -11,7 +11,7 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
     <meta name="viewport" content="width=device-width, initial-scale=1"><title>API 参考 · Speedle Engine</title>
-<meta name="description" content="公开的 Speedle Cloud API 的只读 Swagger UI。试用已关闭。">
+<meta name="description" content="Speedle Cloud API 参考：使用 API key 进行授权检查和策略管理。请求从你的服务器发出；本页只读。">
 <meta name="generator" content="Hugo 0.48" />
 <link href="https://engine.speedle.io/index.xml" rel="alternate" type="application/rss+xml">
 <link rel="canonical" href="https://engine.speedle.io/zh/docs/cloud/api-reference/">
@@ -24,10 +24,10 @@
 <link rel="alternate" hreflang="x-default" href="https://engine.speedle.io/docs/cloud/api-reference/">
 <meta property="og:type" content="article">
 <meta property="article:published_time" content="2026-11-12T10:00:00&#43;08:00">
-<meta property="article:modified_time" content="2026-11-12T10:00:00&#43;08:00">
+<meta property="article:modified_time" content="2026-11-12T20:00:00&#43;08:00">
 <meta property="og:site_name" content="Speedle Engine">
 <meta property="og:title" content="API 参考 · Speedle Engine">
-<meta property="og:description" content="公开的 Speedle Cloud API 的只读 Swagger UI。试用已关闭。">
+<meta property="og:description" content="Speedle Cloud API 参考：使用 API key 进行授权检查和策略管理。请求从你的服务器发出；本页只读。">
 <meta property="og:url" content="https://engine.speedle.io/zh/docs/cloud/api-reference/">
 <meta property="og:image" content="https://engine.speedle.io/img/social/engine-zh.png">
 <meta property="og:image:width" content="1200">
@@ -36,11 +36,11 @@
 <meta property="og:image:alt" content="Speedle Engine — 快速、简单的权限控制">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="API 参考 · Speedle Engine">
-<meta name="twitter:description" content="公开的 Speedle Cloud API 的只读 Swagger UI。试用已关闭。">
+<meta name="twitter:description" content="Speedle Cloud API 参考：使用 API key 进行授权检查和策略管理。请求从你的服务器发出；本页只读。">
 <meta name="twitter:image" content="https://engine.speedle.io/img/social/engine-zh.png">
 <meta name="twitter:image:alt" content="Speedle Engine — 快速、简单的权限控制">
 
-<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/zh/docs/cloud/api-reference/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-12T10:00:00+08:00","datePublished":"2026-11-12T10:00:00+08:00","description":"公开的 Speedle Cloud API 的只读 Swagger UI。试用已关闭。","headline":"API 参考","image":"https://engine.speedle.io/img/social/engine-zh.png","inLanguage":"zh-CN","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/zh/docs/cloud/api-reference/","@type":"WebPage"},"name":"API 参考","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/zh/docs/cloud/api-reference/"}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/zh/docs/cloud/api-reference/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-12T20:00:00+08:00","datePublished":"2026-11-12T10:00:00+08:00","description":"Speedle Cloud API 参考：使用 API key 进行授权检查和策略管理。请求从你的服务器发出；本页只读。","headline":"API 参考","image":"https://engine.speedle.io/img/social/engine-zh.png","inLanguage":"zh-CN","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/zh/docs/cloud/api-reference/","@type":"WebPage"},"name":"API 参考","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/zh/docs/cloud/api-reference/"}</script>
 <script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/zh/docs/cloud/api-reference/#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://engine.speedle.io/zh/","name":"首页","position":1},{"@type":"ListItem","item":"https://engine.speedle.io/zh/docs/","name":"文档","position":2},{"@type":"ListItem","item":"https://engine.speedle.io/zh/docs/cloud/","name":"Speedle Cloud","position":3},{"@type":"ListItem","item":"https://engine.speedle.io/zh/docs/cloud/api-reference/","name":"API 参考","position":4}]}</script><link href="/css/docs.css" rel="stylesheet" type="text/css">
 
     <link href="/css/swagger-ui.css" rel="stylesheet" type="text/css">
@@ -189,15 +189,11 @@
 <div id="main">
 
   <h1>API 参考</h1>
-  <p class="docs-lead">用 Swagger UI 展示公开的 Cloud API。试用已关闭。</p>
+  <p class="docs-lead">Speedle Cloud API 参考：使用 API key 进行授权检查和策略管理。请求从你的服务器发出；本页只读。</p>
 
 
 
-  <div id="kube-component" class="content"><p>本页展示公开的 Speedle Cloud API。各语言页面上的规范正文均为英文。试用已关闭，因此不会在浏览器中输入应用令牌。</p>
-
-<p>此处渲染的是<a href="/openapi/cloud-public.yaml">随站点发布的公开子集</a>。在 Speedle Cloud 发布公开 OpenAPI 文档之前，这份副本只包含授权检查路径，用作占位，并不是 <a href="/zh/docs/cloud/">Cloud 文档索引</a> 所链接的完整入库规范。</p>
-
-<p><a href="/zh/docs/cloud/authorization-api/">授权 API 预览</a> 说明 IsAllowed 调用。<a href="/zh/docs/cloud/limits-and-errors/">限额与错误</a> 列出额度与错误响应。</p>
+  <div id="kube-component" class="content"><p><a href="/zh/docs/cloud/authorization-api/">授权 API 预览</a> 说明 IsAllowed 调用。<a href="/zh/docs/cloud/limits-and-errors/">限额与错误</a> 列出额度与错误响应。</p>
 
 <div id="swagger-ui" class="swagger-readonly"></div>
 <script src="/js/swagger-js/swagger-ui-bundle.js" defer></script>

@@ -6,7 +6,7 @@
     <description>Recent content in Docs on Speedle</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>zh-cn</language>
-    <lastBuildDate>Thu, 12 Nov 2026 10:00:00 +0800</lastBuildDate>
+    <lastBuildDate>Thu, 12 Nov 2026 20:00:00 +0800</lastBuildDate>
     
 	<atom:link href="https://engine.speedle.io/zh/categories/docs/index.xml" rel="self" type="application/rss+xml" />
     
@@ -168,9 +168,7 @@ printf &amp;#39;{}\n&amp;#39; &amp;gt; docs-policies.json 终端一启动 PMS，
       <pubDate>Thu, 12 Nov 2026 10:00:00 +0800</pubDate>
       
       <guid>https://engine.speedle.io/zh/docs/cloud/api-reference/</guid>
-      <description>本页展示公开的 Speedle Cloud API。各语言页面上的规范正文均为英文。试用已关闭，因此不会在浏览器中输入应用令牌。
-此处渲染的是随站点发布的公开子集。在 Speedle Cloud 发布公开 OpenAPI 文档之前，这份副本只包含授权检查路径，用作占位，并不是 Cloud 文档索引 所链接的完整入库规范。
-授权 API 预览 说明 IsAllowed 调用。限额与错误 列出额度与错误响应。
+      <description>授权 API 预览 说明 IsAllowed 调用。限额与错误 列出额度与错误响应。
    document.addEventListener(&#39;DOMContentLoaded&#39;, function() { var ui = SwaggerUIBundle({ url: &#34;/openapi/cloud-public.yaml&#34;, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.presets.apis ], plugins: [ SwaggerUIBundle.plugins.DownloadUrl ], validatorUrl: null, layout: &#34;BaseLayout&#34;, supportedSubmitMethods: [] }); window.ui = ui; });  </description>
     </item>
     
@@ -278,13 +276,13 @@ import { Auth, Reason, SpeedleClient, SpeedleError } from &amp;#34;@speedle/sdk&
     <item>
       <title>Speedle Cloud</title>
       <link>https://engine.speedle.io/zh/docs/cloud/</link>
-      <pubDate>Thu, 12 Nov 2026 10:00:00 +0800</pubDate>
+      <pubDate>Thu, 12 Nov 2026 20:00:00 +0800</pubDate>
       
       <guid>https://engine.speedle.io/zh/docs/cloud/</guid>
       <description>Speedle Cloud 是基于开源 Speedle 策略引擎的托管访问控制服务，面向开发者。你可以用它管理 SPDL 授权策略与角色策略、在 Playground 中测试授权判定，再从应用服务端调用授权 API，无需自行部署和运维授权服务。
 Speedle Cloud 即将上线。 Cloud 页眉显示 Coming soon（即将上线） 徽章，cloud.speedle.io 的生产环境尚未开放登录。本文介绍的控制台流程和带认证的授权决策服务（ADS）均为已发布服务合约的预览。带认证的 ADS 尚未提供时，签发令牌并不会启用服务端授权调用。所选环境的部署情况和登录供应商可用性仍需分别确认。
 免费公开测试版用于试用、学习和评估，不提供 SLA，不建议用于生产环境，功能和限额可能调整。
-文档导航  快速入门：使用 GitHub 或 Google 登录（即将开放）、账号管理、service、SPDL 策略、会话管理请求，以及四种会话 Playground 操作。 应用令牌：最近认证要求、令牌的一次性展示、元数据分页、轮换和撤销。 授权 API 预览：IsAllowed 请求与响应合约、Node.js 22 示例、策略快照和接入限制。 API 参考：公开 Cloud API 的只读 Swagger UI。试用已关闭，因此不会在浏览器中输入应用令牌。 限额与错误：账号额度、请求限制、错误响应、限流与额度响应头，以及重试建议。  下载  简体中文 Markdown：汇集全部四章 Cloud 文档，便于离线阅读。 API 参考：已渲染的公开规范。下面仍保留原始文件。 OpenAPI YAML：Cloud API 的权威仓库规范。 OpenAPI JSON：由同一份 YAML 原文生成。 当前构建版本：用于识别正在提供服务的构建，不证明登录供应商或接口当前可用。  规范包含四种会话 Playground 操作和带认证的 ADS 合约。发布规范或下载指南并不会启用尚未提供的接口，也不会开放登录。Cloud 的 YAML 与生成的 JSON 随对应的封存构建一起记录版本、晋升或恢复；中英文 Markdown 下载则随这些 Engine 文档页面一起维护。</description>
+文档导航  快速入门：使用 GitHub 或 Google 登录（即将开放）、账号管理、service、SPDL 策略、会话管理请求，以及四种会话 Playground 操作。 应用令牌：最近认证要求、令牌的一次性展示、元数据分页、轮换和撤销。 授权 API 预览：IsAllowed 请求与响应合约、Node.js 22 示例、策略快照和接入限制。 API 参考：使用 API key 进行授权检查和策略管理。请求从你的服务器发出；本页只读。 限额与错误：账号额度、请求限制、错误响应、限流与额度响应头，以及重试建议。  下载  简体中文 Markdown：汇集全部四章 Cloud 文档，便于离线阅读。 API 参考：在本站阅读。下面仍保留原始文件。 OpenAPI YAML：Cloud API 的权威仓库规范。 OpenAPI JSON：由同一份 YAML 原文生成。 当前构建版本：用于识别正在提供服务的构建，不证明登录供应商或接口当前可用。  规范包含四种会话 Playground 操作和带认证的 ADS 合约。发布规范或下载指南并不会启用尚未提供的接口，也不会开放登录。Cloud 的 YAML 与生成的 JSON 随对应的封存构建一起记录版本、晋升或恢复；中英文 Markdown 下载则随这些 Engine 文档页面一起维护。</description>
     </item>
     
     <item>

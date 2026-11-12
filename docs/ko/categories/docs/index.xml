@@ -6,7 +6,7 @@
     <description>Recent content in Docs on Speedle</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>ko-kr</language>
-    <lastBuildDate>Thu, 12 Nov 2026 10:00:00 +0800</lastBuildDate>
+    <lastBuildDate>Thu, 12 Nov 2026 20:00:00 +0800</lastBuildDate>
     
 	<atom:link href="https://engine.speedle.io/ko/categories/docs/index.xml" rel="self" type="application/rss+xml" />
     
@@ -195,10 +195,8 @@ GitHub 또는 Google을 통한 로그인(출시 예정) 로그인이 아직 시�
       <pubDate>Thu, 12 Nov 2026 10:00:00 +0800</pubDate>
       
       <guid>https://engine.speedle.io/ko/docs/cloud/api-reference/</guid>
-      <description>이 페이지는 공개 Speedle Cloud API를 렌더링합니다. 사양 본문은 이 사이트의 모든 언어에서 영어입니다. Try it out이 꺼져 있으므로 애플리케이션 토큰을 브라우저에 입력하지 않습니다.
-여기에 렌더링되는 파일은 함께 제공되는 공개 부분집합입니다. Speedle Cloud가 공개 OpenAPI 문서를 게시하기 전까지의 자리표시자이며 인가 확인 경로만 담습니다. Cloud 문서 색인에서 링크하는, 저장소에 체크인된 전체 사양이 아닙니다.
-인가 API 프리뷰에서 IsAllowed 호출을 설명합니다. 제한 및 오류에 쿼터와 오류 응답이 있습니다.
-   document.addEventListener(&#39;DOMContentLoaded&#39;, function() { var ui = SwaggerUIBundle({ url: &#34;</description>
+      <description>인가 API 프리뷰에서 IsAllowed 호출을 설명합니다. 제한 및 오류에 쿼터와 오류 응답이 있습니다.
+   document.addEventListener(&#39;DOMContentLoaded&#39;, function() { var ui = SwaggerUIBundle({ url: &#34;/openapi/cloud-public.yaml&#34;, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.presets.apis ], plugins: [ SwaggerUIBundle.plugins.DownloadUrl ], validatorUrl: null, layout: &#34;BaseLayout&#34;, supportedSubmitMethods: [] }); window.ui = ui; });  </description>
     </item>
     
     <item>
@@ -295,7 +293,7 @@ import { Auth, Reason, SpeedleClient, SpeedleError } from &amp;#34;@speedle/sdk&
     <item>
       <title>Speedle Cloud</title>
       <link>https://engine.speedle.io/ko/docs/cloud/</link>
-      <pubDate>Thu, 12 Nov 2026 10:00:00 +0800</pubDate>
+      <pubDate>Thu, 12 Nov 2026 20:00:00 +0800</pubDate>
       
       <guid>https://engine.speedle.io/ko/docs/cloud/</guid>
       <description>Speedle Cloud는 오픈 소스 Speedle 정책 엔진을 기반으로 구축된 개발자용 호스팅형 접근 제어 서비스입니다. 자체 인가 서비스를 직접 운영할 필요 없이 SPDL 인가 정책 및 역할 정책을 관리하고, 플레이그라운드에서 결정을 테스트하며, 애플리케이션 서버에서 인가 API를 호출할 수 있도록 설계되었습니다.

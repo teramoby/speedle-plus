@@ -11,7 +11,7 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
     <meta name="viewport" content="width=device-width, initial-scale=1"><title>API reference · Speedle Engine</title>
-<meta name="description" content="Read-only Swagger UI for the public Speedle Cloud API. Try it out is disabled.">
+<meta name="description" content="Reference for the Speedle Cloud API: authorization checks and policy management with an API key. Requests run from your server; this page is read-only.">
 <meta name="generator" content="Hugo 0.48" />
 <link href="https://engine.speedle.io/index.xml" rel="alternate" type="application/rss+xml">
 <link rel="canonical" href="https://engine.speedle.io/docs/cloud/api-reference/">
@@ -24,10 +24,10 @@
 <link rel="alternate" hreflang="x-default" href="https://engine.speedle.io/docs/cloud/api-reference/">
 <meta property="og:type" content="article">
 <meta property="article:published_time" content="2026-11-12T10:00:00&#43;08:00">
-<meta property="article:modified_time" content="2026-11-12T10:00:00&#43;08:00">
+<meta property="article:modified_time" content="2026-11-12T20:00:00&#43;08:00">
 <meta property="og:site_name" content="Speedle Engine">
 <meta property="og:title" content="API reference · Speedle Engine">
-<meta property="og:description" content="Read-only Swagger UI for the public Speedle Cloud API. Try it out is disabled.">
+<meta property="og:description" content="Reference for the Speedle Cloud API: authorization checks and policy management with an API key. Requests run from your server; this page is read-only.">
 <meta property="og:url" content="https://engine.speedle.io/docs/cloud/api-reference/">
 <meta property="og:image" content="https://engine.speedle.io/img/social/engine-en.png">
 <meta property="og:image:width" content="1200">
@@ -36,11 +36,11 @@
 <meta property="og:image:alt" content="Speedle Engine — Fast. Simple. Access control">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="API reference · Speedle Engine">
-<meta name="twitter:description" content="Read-only Swagger UI for the public Speedle Cloud API. Try it out is disabled.">
+<meta name="twitter:description" content="Reference for the Speedle Cloud API: authorization checks and policy management with an API key. Requests run from your server; this page is read-only.">
 <meta name="twitter:image" content="https://engine.speedle.io/img/social/engine-en.png">
 <meta name="twitter:image:alt" content="Speedle Engine — Fast. Simple. Access control">
 
-<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/docs/cloud/api-reference/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-12T10:00:00+08:00","datePublished":"2026-11-12T10:00:00+08:00","description":"Read-only Swagger UI for the public Speedle Cloud API. Try it out is disabled.","headline":"API reference","image":"https://engine.speedle.io/img/social/engine-en.png","inLanguage":"en","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/docs/cloud/api-reference/","@type":"WebPage"},"name":"API reference","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/docs/cloud/api-reference/"}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/docs/cloud/api-reference/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-12T20:00:00+08:00","datePublished":"2026-11-12T10:00:00+08:00","description":"Reference for the Speedle Cloud API: authorization checks and policy management with an API key. Requests run from your server; this page is read-only.","headline":"API reference","image":"https://engine.speedle.io/img/social/engine-en.png","inLanguage":"en","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/docs/cloud/api-reference/","@type":"WebPage"},"name":"API reference","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/docs/cloud/api-reference/"}</script>
 <script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/docs/cloud/api-reference/#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://engine.speedle.io/","name":"Home","position":1},{"@type":"ListItem","item":"https://engine.speedle.io/docs/","name":"Documentation","position":2},{"@type":"ListItem","item":"https://engine.speedle.io/docs/cloud/","name":"Speedle Cloud","position":3},{"@type":"ListItem","item":"https://engine.speedle.io/docs/cloud/api-reference/","name":"API reference","position":4}]}</script><link href="/css/docs.css" rel="stylesheet" type="text/css">
 
     <link href="/css/swagger-ui.css" rel="stylesheet" type="text/css">
@@ -189,15 +189,11 @@
 <div id="main">
 
   <h1>API reference</h1>
-  <p class="docs-lead">The public Cloud API, rendered with Swagger UI. Try it out is disabled.</p>
+  <p class="docs-lead">Reference for the Speedle Cloud API: authorization checks and policy management with an API key. Requests run from your server; this page is read-only.</p>
 
 
 
-  <div id="kube-component" class="content"><p>This page renders the public Speedle Cloud API. The specification text is English on every language of this site. Try it out is turned off, so an application token is not entered in the browser.</p>
-
-<p>The rendered file is <a href="/openapi/cloud-public.yaml">the vendored public subset</a>. This copy is a placeholder for the authorization-check path until Speedle Cloud publishes the public OpenAPI document. It is not the full checked-in specification linked from the <a href="/docs/cloud/">Cloud documentation index</a>.</p>
-
-<p><a href="/docs/cloud/authorization-api/">Authorization API preview</a> explains the IsAllowed call. <a href="/docs/cloud/limits-and-errors/">Limits and errors</a> lists quotas and error responses.</p>
+  <div id="kube-component" class="content"><p><a href="/docs/cloud/authorization-api/">Authorization API preview</a> explains the IsAllowed call. <a href="/docs/cloud/limits-and-errors/">Limits and errors</a> lists quotas and error responses.</p>
 
 <div id="swagger-ui" class="swagger-readonly"></div>
 <script src="/js/swagger-js/swagger-ui-bundle.js" defer></script>

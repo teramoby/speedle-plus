@@ -6,7 +6,7 @@
     <description>Recent content in Speedle Cloud on Speedle</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>es-es</language>
-    <lastBuildDate>Thu, 12 Nov 2026 10:00:00 +0800</lastBuildDate>
+    <lastBuildDate>Thu, 12 Nov 2026 20:00:00 +0800</lastBuildDate>
     
 	<atom:link href="https://engine.speedle.io/es/docs/cloud/index.xml" rel="self" type="application/rss+xml" />
     
@@ -46,8 +46,8 @@ Invocar IsAllowed desde su servidor Envíe el token emitido en un encabezado Aut
       <pubDate>Thu, 12 Nov 2026 10:00:00 +0800</pubDate>
       
       <guid>https://engine.speedle.io/es/docs/cloud/api-reference/</guid>
-      <description>Esta página muestra la API pública de Speedle Cloud. El texto de la especificación está en inglés en todos los idiomas de este sitio. Try it out está desactivado, de modo que no se introduce un token de aplicación en el navegador.
-El archivo representado es el subconjunto público incluido en el sitio. Es un marcador de posición de la ruta de comprobación de autorización hasta que Speedle Cloud publique el documento OpenAPI público.</description>
+      <description>La vista previa de la API de autorización explica la llamada IsAllowed. Límites y errores enumera las cuotas y las respuestas de error.
+   document.addEventListener(&#39;DOMContentLoaded&#39;, function() { var ui = SwaggerUIBundle({ url: &#34;/openapi/cloud-public.yaml&#34;, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.presets.apis ], plugins: [ SwaggerUIBundle.plugins.DownloadUrl ], validatorUrl: null, layout: &#34;BaseLayout&#34;, supportedSubmitMethods: [] }); window.ui = ui; });  </description>
     </item>
     
     <item>

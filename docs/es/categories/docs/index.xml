@@ -6,7 +6,7 @@
     <description>Recent content in Docs on Speedle</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>es-es</language>
-    <lastBuildDate>Thu, 12 Nov 2026 10:00:00 +0800</lastBuildDate>
+    <lastBuildDate>Thu, 12 Nov 2026 20:00:00 +0800</lastBuildDate>
     
 	<atom:link href="https://engine.speedle.io/es/categories/docs/index.xml" rel="self" type="application/rss+xml" />
     
@@ -128,8 +128,8 @@ Añadir la dependencia Maven, un pom.xml completo:
       <pubDate>Thu, 12 Nov 2026 10:00:00 +0800</pubDate>
       
       <guid>https://engine.speedle.io/es/docs/cloud/api-reference/</guid>
-      <description>Esta página muestra la API pública de Speedle Cloud. El texto de la especificación está en inglés en todos los idiomas de este sitio. Try it out está desactivado, de modo que no se introduce un token de aplicación en el navegador.
-El archivo representado es el subconjunto público incluido en el sitio. Es un marcador de posición de la ruta de comprobación de autorización hasta que Speedle Cloud publique el documento OpenAPI público.</description>
+      <description>La vista previa de la API de autorización explica la llamada IsAllowed. Límites y errores enumera las cuotas y las respuestas de error.
+   document.addEventListener(&#39;DOMContentLoaded&#39;, function() { var ui = SwaggerUIBundle({ url: &#34;/openapi/cloud-public.yaml&#34;, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.presets.apis ], plugins: [ SwaggerUIBundle.plugins.DownloadUrl ], validatorUrl: null, layout: &#34;BaseLayout&#34;, supportedSubmitMethods: [] }); window.ui = ui; });  </description>
     </item>
     
     <item>
@@ -380,7 +380,7 @@ TLS cifra la conexión y autentica al servidor. Para requerir clientes autentica
     <item>
       <title>Speedle Cloud</title>
       <link>https://engine.speedle.io/es/docs/cloud/</link>
-      <pubDate>Thu, 12 Nov 2026 10:00:00 +0800</pubDate>
+      <pubDate>Thu, 12 Nov 2026 20:00:00 +0800</pubDate>
       
       <guid>https://engine.speedle.io/es/docs/cloud/</guid>
       <description>Speedle Cloud es un servicio de control de acceso hospedado para desarrolladores, creado sobre el motor de políticas de código abierto Speedle. Está diseñado para permitirle gestionar políticas de autorización y roles en SPDL, probar decisiones en un Playground e invocar una API de autorización desde el servidor de su aplicación sin necesidad de operar su propio servicio de autorización.
