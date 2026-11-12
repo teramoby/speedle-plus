@@ -201,7 +201,7 @@
 
 <h2 id="create-an-api-key">Create an API key</h2>
 
-<p>Open <a href="https://cloud.speedle.io/tokens">API keys</a>, enter a name of 1–128 characters after trimming whitespace, select a scope and choose <strong>Create</strong>. Creating a key requires authentication with a linked provider within the last 10 minutes. If you receive <code>403 reauth_required</code>, authenticate again, then submit <strong>Create</strong> again; returning from the provider does not create a key automatically.</p>
+<p>Open <a href="https://cloud.speedle.io/tokens">API keys</a>, enter a name of 1–128 characters after trimming whitespace, select a scope and an expiry (<code>7d</code>, <code>30d</code>, <code>90d</code>, <code>180d</code> or <code>365d</code>; the console defaults to 3 months), and choose <strong>Create</strong>. Creating a key requires authentication with a linked provider within the last 10 minutes. If you receive <code>403 reauth_required</code>, authenticate again, then submit <strong>Create</strong> again; returning from the provider does not create a key automatically.</p>
 
 <p>Each key has one scope, fixed at creation:</p>
 

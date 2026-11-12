@@ -201,7 +201,7 @@
 
 <h2 id="api-キーを作成する">API キーを作成する</h2>
 
-<p><a href="https://cloud.speedle.io/ja/tokens">API キー</a> を開き、前後の空白を除いて 1–128 文字の名前とスコープを指定し、<strong>作成</strong>を選択します。作成には過去 10 分以内の連携プロバイダーによる認証が必要です。<code>403 reauth_required</code> の場合は再認証後、再び<strong>作成</strong>を選択してください。プロバイダーから戻るだけでは作成されません。</p>
+<p><a href="https://cloud.speedle.io/ja/tokens">API キー</a> を開き、前後の空白を除いて 1–128 文字の名前、スコープ、有効期限（<code>7d</code>、<code>30d</code>、<code>90d</code>、<code>180d</code>、<code>365d</code>。コンソールの既定は 3 か月）を指定し、<strong>作成</strong>を選択します。作成には過去 10 分以内の連携プロバイダーによる認証が必要です。<code>403 reauth_required</code> の場合は再認証後、再び<strong>作成</strong>を選択してください。プロバイダーから戻るだけでは作成されません。</p>
 
 <p>各キーには作成後に変更できないスコープが 1 つあります。</p>
 

@@ -16,7 +16,7 @@ Las claves API pertenecen a la cuenta y acceden a sus servicios según su ámbit
 
 ## Crear una clave API
 
-Abra [Claves API](https://cloud.speedle.io/es/tokens), escriba un nombre de 1–128 caracteres después de quitar espacios al principio y al final, elija un ámbito y seleccione **Crear**. Se requiere autenticación con un proveedor vinculado en los últimos 10 minutos. Si recibe `403 reauth_required`, autentíquese de nuevo y vuelva a seleccionar **Crear**; regresar del proveedor no crea la clave automáticamente.
+Abra [Claves API](https://cloud.speedle.io/es/tokens), escriba un nombre de 1–128 caracteres después de quitar espacios al principio y al final, elija un ámbito y una caducidad (`7d`, `30d`, `90d`, `180d` o `365d`; la consola usa 3 meses de forma predeterminada) y seleccione **Crear**. Se requiere autenticación con un proveedor vinculado en los últimos 10 minutos. Si recibe `403 reauth_required`, autentíquese de nuevo y vuelva a seleccionar **Crear**; regresar del proveedor no crea la clave automáticamente.
 
 Cada clave tiene un ámbito fijo desde su creación:
 

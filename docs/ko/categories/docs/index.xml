@@ -164,7 +164,7 @@ uv add speedle==0.2.0 로컬 Speedle 호출 SDK 개요의 설명에 따라 Speed
       <guid>https://engine.speedle.io/ko/docs/cloud/tokens/</guid>
       <description>API 키는 계정에 속하며 범위에 따라 해당 계정의 서비스에 접근합니다. 최종 사용자가 아닌 애플리케이션을 인증합니다. API 키, 세션, 연결된 신원 관리에는 로그인한 콘솔 세션이 필요합니다.
 Speedle Cloud는 출시 예정입니다. 이 가이드는 프로덕션 로그인과 인증된 인가 API가 제공될 때의 사용 절차를 설명합니다. 예제는 실제 Cloud 환경에서 실행하지 않았습니다.
-API 키 생성 API 키에서 앞뒤 공백을 제외한 1–128자 이름과 범위를 지정하고 생성을 선택합니다. 생성하려면 최근 10분 이내에 연결된 제공자로 인증해야 합니다. 403 reauth_required이면 다시 인증한 뒤 생성을 다시 선택하세요.</description>
+API 키 생성 API 키에서 앞뒤 공백을 제외한 1–128자 이름, 범위, 만료 기간(7d, 30d, 90d, 180d, 365d. 콘솔 기본값은 3개월)을 지정하고 생성을 선택합니다.</description>
     </item>
     
     <item>

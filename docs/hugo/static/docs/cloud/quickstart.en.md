@@ -97,7 +97,7 @@ API keys belong to your account and can access its services according to their s
 
 ### Create an API key
 
-Open [API keys](https://cloud.speedle.io/tokens), enter a name of 1–128 characters after trimming whitespace, select a scope and choose **Create**. Creating a key requires authentication with a linked provider within the last 10 minutes. If you receive `403 reauth_required`, authenticate again, then submit **Create** again; returning from the provider does not create a key automatically.
+Open [API keys](https://cloud.speedle.io/tokens), enter a name of 1–128 characters after trimming whitespace, select a scope and an expiry (`7d`, `30d`, `90d`, `180d` or `365d`; the console defaults to 3 months), and choose **Create**. Creating a key requires authentication with a linked provider within the last 10 minutes. If you receive `403 reauth_required`, authenticate again, then submit **Create** again; returning from the provider does not create a key automatically.
 
 Each key has one scope, fixed at creation:
 

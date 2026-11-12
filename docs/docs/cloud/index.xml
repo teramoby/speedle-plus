@@ -29,7 +29,7 @@ Sign in with GitHub or Google (opens soon) Open the Cloud console in your browse
       <guid>https://engine.speedle.io/docs/cloud/tokens/</guid>
       <description>API keys belong to your account and can access its services according to their scope. They authenticate your application, not its end users. Managing API keys, sessions and linked identities always requires a signed-in console session.
 Speedle Cloud is coming soon. This guide describes the workflow available when production sign-in and authenticated authorization checks open; the examples have not been run against a live Cloud environment.
-Create an API key Open API keys, enter a name of 1–128 characters after trimming whitespace, select a scope and choose Create.</description>
+Create an API key Open API keys, enter a name of 1–128 characters after trimming whitespace, select a scope and an expiry (7d, 30d, 90d, 180d or 365d; the console defaults to 3 months), and choose Create.</description>
     </item>
     
     <item>

@@ -1081,17 +1081,28 @@ components:
             "SPDL-0004 unable to decode request: json: cannot unmarshal object into Go struct field
             JsonContext.attributes of type []*adsrest.JsonAttribute"
     AdsUnauthorizedError:
-      type: object
-      properties:
-        error:
-          type: string
-          enum:
-            - unauthorized
-      required:
-        - error
-      additionalProperties: false
+      anyOf:
+        - type: object
+          properties:
+            error:
+              type: string
+              enum:
+                - unauthorized
+          required:
+            - error
+          additionalProperties: false
+        - type: object
+          properties:
+            error:
+              type: string
+              enum:
+                - api_key_expired
+          required:
+            - error
+          additionalProperties: false
       examples:
         - error: unauthorized
+        - error: api_key_expired
     AdsMethodNotAllowedError:
       type: object
       properties:
@@ -2015,12 +2026,15 @@ components:
       properties:
         error:
           type: string
-          const: unauthorized
+          enum:
+            - unauthorized
+            - api_key_expired
       required:
         - error
       additionalProperties: false
       examples:
         - error: unauthorized
+        - error: api_key_expired
     PmsForbiddenError:
       type: object
       properties:
@@ -2318,7 +2332,8 @@ components:
             $ref: "#/components/schemas/AdsInvalidRequestError"
     Response33:
       description:
-        "unauthorized: missing/malformed/unknown bearer credential or wrong secret. A cookie
+        "api_key_expired: matching API key at or after expiresAt, even on cache hits. No daily
+        charge. unauthorized: missing/malformed/unknown bearer credential or wrong secret. A cookie
         session alone never authorizes ADS. Revoked API keys and deleted/inactive owners cease
         authorization within the fixed verification authority window, at most 60 seconds. No daily
         charge."
@@ -2485,7 +2500,8 @@ components:
             $ref: "#/components/schemas/PmsInvalidRequestError"
     Response42:
       description:
-        "unauthorized: missing, malformed, expired, revoked or inactive-account API key. A
+        "api_key_expired: matching API key at or after expiresAt, including cached
+        verification. unauthorized: missing, malformed, revoked or inactive-account API key. A
         session cookie never authorizes this API."
       headers:
         Cache-Control:
