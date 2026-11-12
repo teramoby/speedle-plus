@@ -54,9 +54,13 @@ for ((round=1;round<=ROUNDS;round++)); do
     for setup in ${SETUPS:-thin-casbin thin-opa thin-cedar thin-cedar-data cedar-rs cedar-rs-data thin-speedle thin-speedle-may opa-server speedle-ads speedle-ads-may}; do
       logfile="$LOGDIR/$kind-round$round-$setup.log"
       case "$setup" in
-      thin-cedar-data|cedar-rs-data)
+      thin-cedar|thin-cedar-data|cedar-rs|cedar-rs-data)
+        v=cedar; [[ "$setup" == *-data ]] && v=cedar_data
         # gen_cedar.go writes the data-driven variant only for non-wildcard sets.
-        [[ -f "${base}_cedar_data.cedar" ]] || continue ;;
+        [[ "$v" == cedar_data && "$kind" == wildcard ]] && continue
+        for f in "${base}_$v.cedar" "${base}_${v}_entities.json"; do
+          [[ -f "$f" ]] || { echo "missing Cedar input $f; rerun the dataset generator" >&2; exit 1; }
+        done ;;
       esac
       case "$setup" in
       thin-speedle-may)

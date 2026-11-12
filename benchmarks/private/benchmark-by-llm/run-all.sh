@@ -8,6 +8,14 @@ BIN=${BIN:-./bin}; T="$BIN/authzbench.test"
 TMAY="$BIN/authzbench-may.test"; RS="$BIN/cedar-rs"
 OUT=${OUT:-results/$(hostname -s)}; mkdir -p "$OUT"
 SPECS=${SPECS:-$OUT/../cedar-specs}
+# The cedar-specs step deletes and regenerates SPECS, so only accept a path
+# that is visibly the exporter's own directory.
+case "$SPECS" in
+''|/|.|..) echo "Refusing to use '$SPECS' as the Cedar spec directory" >&2; exit 2 ;;
+esac
+if [[ "$SPECS" != cedar-specs && "$SPECS" != */cedar-specs ]]; then
+  echo "SPECS must end in cedar-specs (got '$SPECS'); the cedar-specs step deletes it" >&2; exit 2
+fi
 STEPS=${STEPS:-"machine cedar-specs functional capabilities watchcheck loadcost bench-small bench-manyusers bench-100k-speedle bench-100k-opa bench-100k-casbin-tuned bench-100k-casbin bench-100k-cedar bench-100k-cedar-data parallel may-functional may-loadcost may-bench rs-functional rs-loadcost rs-bench rs-parallel stress"}
 log() { printf '[%s] %s\n' "$(date -Iseconds)" "$*" | tee -a "$OUT/run-all.log"; }
 # CI jobs on this host, except the one running this script (when the run

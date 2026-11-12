@@ -3,10 +3,11 @@
 # Speedle+): the test binaries, servers and load generator, Cedar's Rust
 # harness, and two Speedle+ builds (go.mod: current master; go.may.mod:
 # master throughout May 2026, 8fb1481d, unchanged from 2026-01-16 until
-# 2026-06-24). Runs where Go and Cargo are installed
-# (the CI package job); the benchmark host needs neither.
+# 2026-06-24). Runs where Go and Cargo are installed (the CI package job or a
+# macOS build host); the benchmark host needs neither.
 set -euo pipefail
 cd "$(dirname "$0")"
+checksum() { if command -v sha256sum >/dev/null 2>&1; then sha256sum "$@"; else shasum -a 256 "$@"; fi; }
 PACKAGE=${1:-dist/authz-bench-linux}
 case "$PACKAGE" in ''|/|.) echo 'Choose a package directory under dist/' >&2; exit 2;; esac
 mkdir -p "$PACKAGE/bin"
@@ -28,8 +29,8 @@ cp -R scenarios stress.sh run-all.sh summarize.py "$PACKAGE/"
     go version -m "$PACKAGE/bin/$program"
   done
   grep -A1 -E '^name = "(cedar-policy|axum|tokio)"$' cmd/cedar-rs/Cargo.lock
-  (cd "$PACKAGE/bin" && sha256sum ./*)
+  (cd "$PACKAGE/bin" && checksum ./*)
 } > "$PACKAGE/build-info.txt"
-tar -czf "$PACKAGE/source.tar.gz" ./*.go go.mod go.sum go.may.mod go.may.sum cmd/authzd cmd/loadgen cmd/watchcheck \
+COPYFILE_DISABLE=1 tar -czf "$PACKAGE/source.tar.gz" ./*.go go.mod go.sum go.may.mod go.may.sum cmd/authzd cmd/loadgen cmd/watchcheck \
   cmd/cedar-rs/Cargo.toml cmd/cedar-rs/Cargo.lock cmd/cedar-rs/src scenarios stress.sh run-all.sh summarize.py build-package.sh
 printf '%s\n' "$PACKAGE"
