@@ -28,7 +28,8 @@ Production origin Use https://cloud.speedle.io for account sessions, management 
       
       <guid>https://engine.speedle.io/docs/cloud/tokens/</guid>
       <description>API keys belong to your account and can access its services according to their scope. They authenticate your application, not its end users. Managing API keys, sessions and linked identities always requires a signed-in console session.
-Create an API key Open API keys, enter a name of 1–128 characters after trimming whitespace, select a scope and choose Create. Creating a key requires authentication with a linked provider within the last 10 minutes.</description>
+Speedle Cloud is coming soon. Production sign-in is not open on cloud.speedle.io yet, and the Cloud header shows Coming soon. When sign-in is closed, the sign-in page says that it opens soon.
+Create an API key Open API keys, enter a name of 1–128 characters after trimming whitespace, select a scope and choose Create.</description>
     </item>
     
     <item>
@@ -37,9 +38,9 @@ Create an API key Open API keys, enter a name of 1–128 characters after trimmi
       <pubDate>Sun, 08 Nov 2026 00:00:00 +0800</pubDate>
       
       <guid>https://engine.speedle.io/docs/cloud/authorization-api/</guid>
-      <description>Use an account API key for server-side authorization calls. Account sign-in must be available before you can create keys. A key with a management scope cannot call ADS; use ads or the response is 403 insufficient_scope.
-Call IsAllowed from your server Send an account API key with the ads scope in one Authorization: Bearer header and make a POST request:
-POST /authz-check/v1/is-allowed Authorization: Bearer &amp;lt;API key&amp;gt; Content-Type: application/json {&amp;#34;subject&amp;#34;:{&amp;#34;principals&amp;#34;:[{&amp;#34;type&amp;#34;:&amp;#34;user&amp;#34;,&amp;#34;name&amp;#34;:&amp;#34;alice&amp;#34;,&amp;#34;idd&amp;#34;:&amp;#34;corp&amp;#34;}]},&amp;#34;serviceName&amp;#34;:&amp;#34;books&amp;#34;,&amp;#34;resource&amp;#34;:&amp;#34;/books&amp;#34;,&amp;#34;action&amp;#34;:&amp;#34;get&amp;#34;,&amp;#34;attributes&amp;#34;:[{&amp;#34;name&amp;#34;:&amp;#34;level&amp;#34;,&amp;#34;type&amp;#34;:&amp;#34;numeric&amp;#34;,&amp;#34;value&amp;#34;:3},{&amp;#34;name&amp;#34;:&amp;#34;when&amp;#34;,&amp;#34;type&amp;#34;:&amp;#34;datetime&amp;#34;,&amp;#34;value&amp;#34;:&amp;#34;2026-11-05T03:00:00Z&amp;#34;}]} The body is the Speedle REST request, with the same fields and types as a self-hosted Speedle ADS.</description>
+      <description>Speedle Cloud is coming soon. Production sign-in is not open on cloud.speedle.io yet, and the Cloud header shows Coming soon. When sign-in is closed, the sign-in page says that it opens soon.
+Use an account API key for server-side authorization calls. Account sign-in must be available before you can create keys. A key with a management scope cannot call ADS; use ads or the response is 403 insufficient_scope.
+Call IsAllowed from your server Send an account API key with the ads scope in one Authorization: Bearer header and make a POST request:</description>
     </item>
     
     <item>
@@ -48,8 +49,9 @@ POST /authz-check/v1/is-allowed Authorization: Bearer &amp;lt;API key&amp;gt; Co
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/docs/cloud/limits-and-errors/</guid>
-      <description>Limits apply to the whole account unless a row says otherwise. API keys are account credentials; changing keys does not increase the daily quota.
-Limits    What is limited Limit When reached / how to recover     Services per account 100 409 quota_exceeded; delete an unused service. No timed reset.   Authorization and role policies combined, across all services 200 per account 409 quota_exceeded; delete policies.</description>
+      <description>Speedle Cloud is coming soon. Production sign-in is not open on cloud.speedle.io yet, and the Cloud header shows Coming soon. When sign-in is closed, the sign-in page says that it opens soon.
+Limits apply to the whole account unless a row says otherwise. API keys are account credentials; changing keys does not increase the daily quota.
+Limits    What is limited Limit When reached / how to recover     Services per account 100 409 quota_exceeded; delete an unused service.</description>
     </item>
     
   </channel>

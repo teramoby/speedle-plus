@@ -196,6 +196,8 @@
 
 <p>API キーはアカウントに属し、スコープに応じてそのアカウントのサービスにアクセスします。アプリケーションを認証するもので、エンドユーザーの認証ではありません。API キー、セッション、連携 ID の管理にはログイン済みのコンソールセッションが必要です。</p>
 
+<p><strong>Speedle Cloud はまもなく公開されます。</strong> cloud.speedle.io の本番環境ではまだサインインが開始されておらず、Cloud ヘッダーには <strong>Coming soon（まもなく公開）</strong> バッジが表示されます。サインインが閉じられている間、サインインページには近日公開予定である旨が表示されます。</p>
+
 <h2 id="api-キーを作成する">API キーを作成する</h2>
 
 <p><a href="https://cloud.speedle.io/ja/tokens">API キー</a> を開き、前後の空白を除いて 1–128 文字の名前とスコープを指定し、<strong>作成</strong>を選択します。作成には過去 10 分以内の連携プロバイダーによる認証が必要です。<code>403 reauth_required</code> の場合は再認証後、再び<strong>作成</strong>を選択してください。プロバイダーから戻るだけでは作成されません。</p>
@@ -243,7 +245,7 @@ Content-Type: application/json
 
 <p>作成成功時は HTTP 201 を返します。レスポンスの <code>token</code> フィールドが API キーの値で、表示は一度だけです。</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">spdl_&lt;canonical uppercase ULID id&gt;_&lt;43 base62 digits&gt;</code></pre></div>
-<!-- TODO: Update API key expiry after https://github.com/teramoby/cloud.speedle.io/issues/427 merges. -->
+<p>API キーは失効させるまで有効で、自動的な有効期限はありません。</p>
 
 <p>これは形式の説明であり、使用可能なキーではありません。すぐにサーバー側のシークレットストアへ保存してください。ブラウザストレージ、フロントエンド、URL、ソース管理、スクリーンショット、ログに含めないでください。一覧はメタデータのみを返し、紛失した値は復元できません。</p>
 

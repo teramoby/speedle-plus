@@ -2,6 +2,8 @@
 
 Speedle Cloud はオープンソースの Speedle エンジンによるホスト型認可サービスです。サービス、SPDL 認可・ロールポリシーを管理し、Playground で判定をテストして、サーバーから API を呼び出せます。
 
+**Speedle Cloud はまもなく公開されます。** cloud.speedle.io の本番環境ではまだサインインが開始されておらず、Cloud ヘッダーには **Coming soon（まもなく公開）** バッジが表示されます。サインインが閉じられている間、サインインページには近日公開予定である旨が表示されます。
+
 コンソールの利用と API キー作成にはサインインが利用可能である必要があります。無料パブリックベータは試用、学習、評価用で SLA はなく、本番利用は推奨しません。機能と制限は変更される場合があります。
 
 ## ドキュメント
@@ -37,7 +39,7 @@ Cloud の次の文書をご確認ください： [利用規約](https://cloud.sp
 
 #### ワークスペースとサービス
 
-サービスはポリシーの名前空間です。デフォルトのワークスペースには、テスト用の `default` サービスが用意されています。
+サービスはポリシーの名前空間です。新しいアカウントでは、[サービスワークスペース](https://cloud.speedle.io/service) を開き、サービス名に `books` を入力して **サービスを作成** を選択します。
 
 #### 最初の認可ポリシーの作成
 
@@ -68,6 +70,8 @@ Playground を開いてポリシーをテストします。
 ## Speedle Cloud API キー
 
 API キーはアカウントに属し、スコープに応じてそのアカウントのサービスにアクセスします。アプリケーションを認証するもので、エンドユーザーの認証ではありません。API キー、セッション、連携 ID の管理にはログイン済みのコンソールセッションが必要です。
+
+**Speedle Cloud はまもなく公開されます。** cloud.speedle.io の本番環境ではまだサインインが開始されておらず、Cloud ヘッダーには **Coming soon（まもなく公開）** バッジが表示されます。サインインが閉じられている間、サインインページには近日公開予定である旨が表示されます。
 
 ### API キーを作成する
 
@@ -104,7 +108,7 @@ Content-Type: application/json
 spdl_<canonical uppercase ULID id>_<43 base62 digits>
 ```
 
-<!-- TODO: Update API key expiry after https://github.com/teramoby/cloud.speedle.io/issues/427 merges. -->
+API キーは失効させるまで有効で、自動的な有効期限はありません。
 
 これは形式の説明であり、使用可能なキーではありません。すぐにサーバー側のシークレットストアへ保存してください。ブラウザストレージ、フロントエンド、URL、ソース管理、スクリーンショット、ログに含めないでください。一覧はメタデータのみを返し、紛失した値は復元できません。
 
@@ -134,6 +138,8 @@ Content-Type: application/json
 応答が失われた場合は一覧を更新してから操作してください。同じ名前でも紛失した値は復元できません。[制限とエラー](https://engine.speedle.io/ja/docs/cloud/limits-and-errors/)と[認可 API](https://engine.speedle.io/ja/docs/cloud/authorization-api/)も参照してください。
 
 ## Speedle Cloud 認可 API
+
+**Speedle Cloud はまもなく公開されます。** cloud.speedle.io の本番環境ではまだサインインが開始されておらず、Cloud ヘッダーには **Coming soon（まもなく公開）** バッジが表示されます。サインインが閉じられている間、サインインページには近日公開予定である旨が表示されます。
 
 アカウント API キーを使い、サーバーから認可を確認します。キー作成にはサインインが利用可能である必要があります。管理スコープでは ADS を呼び出せません。`ads` 以外は `403 insufficient_scope` です。
 
@@ -213,6 +219,8 @@ POST を使用します。他のメソッドでは `405 method_not_allowed` ま�
 [SDK](https://engine.speedle.io/ja/docs/sdks/)、[制限とエラー](https://engine.speedle.io/ja/docs/cloud/limits-and-errors/)、[ダウンロード](https://engine.speedle.io/ja/docs/cloud/)も参照してください。
 
 ## Speedle Cloud 制限とエラー
+
+**Speedle Cloud はまもなく公開されます。** cloud.speedle.io の本番環境ではまだサインインが開始されておらず、Cloud ヘッダーには **Coming soon（まもなく公開）** バッジが表示されます。サインインが閉じられている間、サインインページには近日公開予定である旨が表示されます。
 
 特記がない限り、制限はアカウント全体で共有します。API キーを変更しても日次クォータは増えません。
 

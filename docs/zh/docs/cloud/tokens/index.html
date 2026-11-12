@@ -196,6 +196,8 @@
 
 <p>API 密钥属于账号，按权限范围访问该账号下的服务。它认证的是应用，不是最终用户。管理 API 密钥、会话和关联身份始终需要已登录的控制台会话。</p>
 
+<p><strong>Speedle Cloud 即将上线。</strong> cloud.speedle.io 的生产环境尚未开放登录，Cloud 页眉显示 <strong>Coming soon（即将上线）</strong> 徽章。登录关闭时，登录页会提示即将开放。</p>
+
 <h2 id="创建-api-密钥">创建 API 密钥</h2>
 
 <p>打开 <a href="https://cloud.speedle.io/zh-CN/tokens">API 密钥</a>，输入去除首尾空白后为 1–128 个字符的名称，选择权限范围，点击 <strong>创建</strong>。创建需要在最近 10 分钟内通过已关联的身份提供方认证。收到 <code>403 reauth_required</code> 时，重新认证后再次点击 <strong>创建</strong>；从身份提供方返回不会自动创建密钥。</p>
@@ -243,7 +245,7 @@ Content-Type: application/json
 
 <p>创建成功返回 HTTP 201。响应的 <code>token</code> 字段包含 API 密钥值，只显示一次：</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">spdl_&lt;canonical uppercase ULID id&gt;_&lt;43 base62 digits&gt;</code></pre></div>
-<!-- TODO: Update API key expiry after https://github.com/teramoby/cloud.speedle.io/issues/427 merges. -->
+<p>API 密钥在撤销前一直有效，不会自动过期。</p>
 
 <p>这只是格式说明，不能作为实际密钥使用。请立即保存到服务端的密钥存储中。不要放入浏览器存储、前端代码、URL、源码、截图或日志。列表只返回元数据，丢失的密钥值无法找回。</p>
 

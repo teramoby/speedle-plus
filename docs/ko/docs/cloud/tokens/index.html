@@ -196,6 +196,8 @@
 
 <p>API 키는 계정에 속하며 범위에 따라 해당 계정의 서비스에 접근합니다. 최종 사용자가 아닌 애플리케이션을 인증합니다. API 키, 세션, 연결된 신원 관리에는 로그인한 콘솔 세션이 필요합니다.</p>
 
+<p><strong>Speedle Cloud는 출시 예정입니다.</strong> cloud.speedle.io의 프로덕션 환경에서는 아직 로그인이 시작되지 않았으며 Cloud 헤더에는 <strong>Coming soon(출시 예정)</strong> 배지가 표시됩니다. 로그인이 닫혀 있는 동안 로그인 페이지에는 곧 출시될 예정이라는 안내가 표시됩니다.</p>
+
 <h2 id="api-키-생성">API 키 생성</h2>
 
 <p><a href="https://cloud.speedle.io/ko/tokens">API 키</a>에서 앞뒤 공백을 제외한 1–128자 이름과 범위를 지정하고 <strong>생성</strong>을 선택합니다. 생성하려면 최근 10분 이내에 연결된 제공자로 인증해야 합니다. <code>403 reauth_required</code>이면 다시 인증한 뒤 <strong>생성</strong>을 다시 선택하세요. 제공자에서 돌아오는 것만으로 생성되지 않습니다.</p>
@@ -243,7 +245,7 @@ Content-Type: application/json
 
 <p>생성에 성공하면 HTTP 201을 반환합니다. 응답의 <code>token</code> 필드는 API 키 비밀 값이며 한 번만 표시됩니다.</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">spdl_&lt;canonical uppercase ULID id&gt;_&lt;43 base62 digits&gt;</code></pre></div>
-<!-- TODO: Update API key expiry after https://github.com/teramoby/cloud.speedle.io/issues/427 merges. -->
+<p>API 키는 폐기할 때까지 유효하며 자동 만료는 없습니다.</p>
 
 <p>사용 가능한 키가 아닌 형식 설명입니다. 즉시 서버의 비밀 저장소에 보관하세요. 브라우저 저장소, 프런트엔드 코드, URL, 소스 관리, 스크린샷, 로그에 넣지 마세요. 목록에는 메타데이터만 나오며 잃어버린 값은 복구할 수 없습니다.</p>
 

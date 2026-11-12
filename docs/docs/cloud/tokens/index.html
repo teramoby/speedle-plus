@@ -196,6 +196,8 @@
 
 <p>API keys belong to your account and can access its services according to their scope. They authenticate your application, not its end users. Managing API keys, sessions and linked identities always requires a signed-in console session.</p>
 
+<p><strong>Speedle Cloud is coming soon.</strong> Production sign-in is not open on cloud.speedle.io yet, and the Cloud header shows <strong>Coming soon</strong>. When sign-in is closed, the sign-in page says that it opens soon.</p>
+
 <h2 id="create-an-api-key">Create an API key</h2>
 
 <p>Open <a href="https://cloud.speedle.io/tokens">API keys</a>, enter a name of 1–128 characters after trimming whitespace, select a scope and choose <strong>Create</strong>. Creating a key requires authentication with a linked provider within the last 10 minutes. If you receive <code>403 reauth_required</code>, authenticate again, then submit <strong>Create</strong> again; returning from the provider does not create a key automatically.</p>
@@ -243,7 +245,7 @@ Content-Type: application/json
 
 <p>Creation returns HTTP 201. The response&rsquo;s <code>token</code> field contains the API key secret and is shown only once:</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">spdl_&lt;canonical uppercase ULID id&gt;_&lt;43 base62 digits&gt;</code></pre></div>
-<!-- TODO: Update API key expiry after https://github.com/teramoby/cloud.speedle.io/issues/427 merges. -->
+<p>An API key stays valid until you revoke it; it has no automatic expiry.</p>
 
 <p>This describes the format, not a usable key. Save the value immediately in a server-side secret store. Never put it in browser storage, frontend code, URLs, source control, screenshots or logs. Listing keys returns metadata only; a lost secret cannot be recovered.</p>
 
