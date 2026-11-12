@@ -297,7 +297,7 @@ import { Auth, Reason, SpeedleClient, SpeedleError } from &amp;#34;@speedle/sdk&
       <description>Speedle Cloud 是基于开源 Speedle 引擎的托管授权服务。你可以管理服务、SPDL 授权策略和角色策略，在 Playground 中测试判定，并从服务端调用 API。
 Speedle Cloud 即将上线。 本文介绍生产环境开放登录和授权 API 后的使用流程，示例尚未在线上 Cloud 环境执行。
 使用控制台和创建 API 密钥需要账号登录功能可用。免费公开测试版用于试用、学习和评估，不提供 SLA，不建议用于生产环境。功能和限额可能调整。
-文档导航  快速入门：登录控制台，创建服务和策略，创建 API 密钥，从应用发起授权检查。 API 密钥: 账号级凭据、固定权限范围、必须选择有效期、创建与撤销、一次性展示和分页。 授权 API: IsAllowed 请求、调用方身份、Node.js 22 和传输限制。 API 参考：使用 API key 进行授权检查和策略管理。请求从你的服务器发出；本页只读。 限额与错误: 账号上限、大小限制、突发限流、每日额度、错误代码和重置时间。  下载  API 参考（Swagger）：在线浏览所有接口、参数和返回示例。 中文 Markdown: 四个 Cloud 章节合并的离线指南。 OpenAPI 规范：YAML · JSON，供代码生成器和 API 客户端使用。  请阅读 Cloud 的 服务条款 / 隐私政策.</description>
+文档导航  快速入门：登录控制台，创建服务和策略，创建 API 密钥，从应用发起授权检查。 API 密钥: 账号级凭据、固定权限范围、必须选择有效期、创建与撤销、一次性展示和分页。 授权 API: IsAllowed 请求、调用方身份、Node.js 22 和传输限制。 API 参考：使用 API key 进行授权检查和策略管理。请求从你的服务器发出；本页只读。 限额与错误: 账号上限、大小限制、突发限流、每日额度、错误代码和重置时间。  下载  API 参考（Swagger）：在线浏览所有接口、参数和返回示例。 中文 Markdown：四个 Cloud 章节合并的离线指南。 OpenAPI 规范：YAML · JSON，供代码生成器和 API 客户端使用。  请阅读 Cloud 的 服务条款 / 隐私政策。</description>
     </item>
     
     <item>

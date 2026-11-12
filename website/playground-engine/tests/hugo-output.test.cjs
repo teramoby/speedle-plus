@@ -328,6 +328,14 @@ for (const [locale, copy] of Object.entries(cloudCopy)) {
   assert.ok(decision.includes('supportedSubmitMethods: []'), `Try it out disabled on the engine decision reference in ${locale || 'en'}`);
   assert.ok(decision.includes('id="swagger-ui" class="swagger-readonly"'), `Authorize hidden on the engine decision reference in ${locale || 'en'}`);
   assert.ok(overview.includes(`href="https://cloud.speedle.io/${copy.legal}terms"`) && overview.includes(`href="https://cloud.speedle.io/${copy.legal}privacy"`), `Localized Cloud legal links in ${locale || 'en'}`);
+  if (locale === 'zh/') {
+    assert.ok(downloadsList.includes('</a>：四个 Cloud 章节合并的离线指南。'), 'Chinese Downloads list uses a full-width colon');
+    assert.ok(!downloadsList.includes('</a>:'), 'Chinese Downloads list has no half-width colon');
+    assert.ok(overview.includes('隐私政策</a>。'), 'Chinese legal line ends with a full-width stop');
+  }
+  if (locale === 'ja/') {
+    assert.ok(overview.includes('プライバシーポリシー</a>。'), 'Japanese legal line ends with a full-width stop');
+  }
   const markdown = fs.readFileSync(path.join(output, 'docs/cloud', copy.download), 'utf8');
   assert.deepEqual(markdown, fs.readFileSync(path.join(root, 'docs/hugo/static/docs/cloud', copy.download), 'utf8'), `Generated ${copy.download}`);
   for (const phrase of ['getting-started', 'tokens', 'authorization-api', 'limits-and-errors']) {
