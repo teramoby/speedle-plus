@@ -51,14 +51,18 @@ The corresponding `run-all.sh` steps are `cedar-specs`, `bench-100k-cedar`, `ben
 Formal measurements ran only on charming. shrek was used for building, smoke validation, and aggregation.
 
 ```bash
-# shrek: build the static Linux package with pinned Go 1.27.2; no remote tests start
+# shrek: rebuild the six-program package of the 2026-10-29 archive; no remote tests start
 ./build-linux.sh
+# build host: a fresh four-engine run (Cedar and the May 2026 build); needs Go and Cargo
+./build-package.sh
 # charming: extract the package, wait for an idle machine, then run the full matrix
 ./run-all.sh
 # shrek: after retrieving this run's results
-python3 summarize.py results/retest-20261029/charming
+python3 summarize.py results/<run>/charming
 python3 build_report.py
 ```
+
+`run-all.sh` defaults include the `may-*` and `rs-*` steps, which need the second Go test binary/server set and `cedar-rs` from `build-package.sh`; a package made by `build-linux.sh` only suits rerunning the three-engine round, and `STEPS=` selects steps.
 
 A complete run waits for CI to be idle and retries CI-contaminated steps at most twice. `build_report.py` requires COMPLETE, 107 in-process groups with 5 repetitions each, and 30 HTTP configurations with 3 rounds each; it will not replace the previous report with incomplete results. Parameters and detailed steps are in [TEST_PLAN.en.md](TEST_PLAN.en.md).
 
