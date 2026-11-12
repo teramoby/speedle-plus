@@ -194,13 +194,19 @@ async function checkReadOnlySwagger(page, origin) {
     await page.goto(origin + route, {waitUntil: 'domcontentloaded'});
     await page.waitForSelector('#swagger-ui .opblock', {timeout: 20000});
     await page.locator('#swagger-ui .opblock-summary').first().click();
-    const visible = await page.locator('#swagger-ui .auth-wrapper, #swagger-ui .authorization__btn, #swagger-ui .btn.authorize').evaluateAll(nodes => nodes.filter(node => {
-      const style = getComputedStyle(node);
-      return style.display !== 'none' && style.visibility !== 'hidden';
-    }).map(node => node.className));
-    assert.deepEqual(visible, [], `${route} shows an authorize control`);
-    const openDialogs = await page.locator('.dialog-ux').evaluateAll(nodes => nodes.filter(node => getComputedStyle(node).display !== 'none').length);
-    assert.equal(openDialogs, 0, `${route} opened an authorize dialog`);
+    // Playwright isVisible() follows ancestor display:none. A child's own
+    // computed display stays "inline-block" when .auth-wrapper is hidden.
+    const controls = page.locator('#swagger-ui .auth-wrapper, #swagger-ui .authorization__btn, #swagger-ui .btn.authorize');
+    const count = await controls.count();
+    if (route === '/docs/cloud/api-reference/') assert.ok(count > 0, `${route} did not render an authorize control to hide`);
+    for (let index = 0; index < count; index++) {
+      assert.equal(await controls.nth(index).isVisible(), false, `${route} shows an authorize control`);
+    }
+    const dialogs = page.locator('.dialog-ux');
+    const dialogCount = await dialogs.count();
+    for (let index = 0; index < dialogCount; index++) {
+      assert.equal(await dialogs.nth(index).isVisible(), false, `${route} opened an authorize dialog`);
+    }
   }
   console.log('PASS read-only Swagger UI hides Authorize and the operation lock');
 }
