@@ -15,15 +15,15 @@
 //! checks the decision and the diagnostics, as the Go adapters do.
 
 use std::alloc::{GlobalAlloc, Layout, System};
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use std::str::FromStr;
 use std::sync::atomic::{AtomicBool, AtomicI64, AtomicU64, Ordering::Relaxed};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 use cedar_policy::{
-    Authorizer, Context, Decision, Entities, Entity, EntityId, EntityTypeName, EntityUid,
-    PolicySet, Request, RestrictedExpression,
+    Authorizer, Context, Decision, Entities, EntityId, EntityTypeName, EntityUid, PolicySet,
+    Request, RestrictedExpression,
 };
 use serde::Deserialize;
 
@@ -141,7 +141,7 @@ fn fail(msg: &str) -> ! {
 
 /// The request, plus the entities to use: the shared ones, or for a request
 /// that carries principal parents (groups), a copy with that principal.
-fn prepare(c: &Req, base: &Entities, base_json: &str) -> (Request, Option<Entities>) {
+fn prepare(c: &Req, base_json: &str) -> (Request, Option<Entities>) {
     let context = Context::from_json_value(c.context.clone(), None).expect("context");
     let req = Request::new(
         uid(&c.principal),
@@ -155,23 +155,32 @@ fn prepare(c: &Req, base: &Entities, base_json: &str) -> (Request, Option<Entiti
         return (req, None);
     }
     let principal = uid(&c.principal);
-    let mut parents: HashSet<EntityUid> = c.principal_parents.iter().map(uid).collect();
-    if let Some(existing) = base.get(&principal) {
-        let v = existing.to_json_value().expect("entity json");
-        if let Some(ps) = v.get("parents").and_then(|p| p.as_array()) {
-            for p in ps {
-                parents.insert(EntityUid::from_json(p.clone()).expect("parent"));
-            }
+    // The request adds parents to the principal. Rewrite only its "parents"
+    // array in the entity JSON, so its attributes and tags stay as loaded.
+    let mut all: Vec<serde_json::Value> = serde_json::from_str(base_json).expect("entities");
+    let existing = all.iter().position(|e| {
+        e.get("uid")
+            .and_then(|u| EntityUid::from_json(u.clone()).ok())
+            .as_ref()
+            == Some(&principal)
+    });
+    let mut parents = existing
+        .and_then(|i| all[i].get("parents").and_then(|p| p.as_array()).cloned())
+        .unwrap_or_default();
+    for p in &c.principal_parents {
+        let value = serde_json::json!({"type": p.ty, "id": p.id});
+        if !parents.contains(&value) {
+            parents.push(value);
         }
     }
-    let mut all: Vec<serde_json::Value> = serde_json::from_str(base_json).expect("entities");
-    all.retain(|e| {
-        e.get("uid")
-            .map(|u| EntityUid::from_json(u.clone()).ok() != Some(principal.clone()))
-            .unwrap_or(true)
-    });
-    let entity = Entity::new(principal, HashMap::new(), parents).expect("entity");
-    all.push(entity.to_json_value().expect("entity json"));
+    match existing {
+        Some(i) => all[i]["parents"] = serde_json::Value::Array(parents),
+        None => all.push(serde_json::json!({
+            "uid": {"type": c.principal.ty, "id": c.principal.id},
+            "attrs": {},
+            "parents": parents,
+        })),
+    }
     (
         req,
         Some(Entities::from_json_value(serde_json::Value::Array(all), None).expect("entities")),
@@ -225,11 +234,7 @@ struct Loaded {
 fn load_case(path: &str) -> Loaded {
     let case = read_case(path);
     let (ps, es, json) = load(&case.policies, &case.entities);
-    let reqs = case
-        .requests
-        .iter()
-        .map(|r| prepare(r, &es, &json))
-        .collect();
+    let reqs = case.requests.iter().map(|r| prepare(r, &json)).collect();
     Loaded { case, ps, es, reqs }
 }
 
@@ -320,10 +325,22 @@ fn parallel(paths: &[String], cpus: &[usize], benchtime: Duration, count: usize)
                 };
                 let (n, elapsed) = measure(benchtime, run);
                 let done = (n / cpu as u64).max(1) * cpu as u64;
+                // Allocations from a separate, shorter pass, as in bench().
+                // Thread-spawn allocations are part of the measured run, as
+                // the timed ns/op includes them too.
+                let sample = n.clamp(1, 4096);
+                ALLOCS.store(0, Relaxed);
+                BYTES.store(0, Relaxed);
+                COUNT.store(true, Relaxed);
+                run(sample);
+                COUNT.store(false, Relaxed);
+                let sampled = (sample / cpu as u64).max(1) * cpu as u64;
                 println!(
-                    "{}\t{done}\t{:.1} ns/op\t0 B/op\t0 allocs/op",
+                    "{}\t{done}\t{:.1} ns/op\t{} B/op\t{} allocs/op",
                     go_name(&l.case.name, &l.case.label, cpu),
-                    elapsed.as_nanos() as f64 / done as f64
+                    elapsed.as_nanos() as f64 / done as f64,
+                    BYTES.load(Relaxed) / sampled,
+                    ALLOCS.load(Relaxed) / sampled
                 );
             }
         }
@@ -532,5 +549,60 @@ fn main() {
         _ => {
             fail("usage: cedar-rs bench|parallel|check|loadcost|serve ... (see the source header)")
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn req_with_group() -> Req {
+        Req {
+            principal: Ref {
+                ty: "User".into(),
+                id: "alice".into(),
+            },
+            action: Ref {
+                ty: "Action".into(),
+                id: "read".into(),
+            },
+            resource: Ref {
+                ty: "Resource".into(),
+                id: "/data1".into(),
+            },
+            context: serde_json::json!({"path": "/data1"}),
+            principal_parents: vec![Ref {
+                ty: "Group".into(),
+                id: "eng".into(),
+            }],
+        }
+    }
+
+    // A request-supplied group must be added to the principal without
+    // dropping its attributes, matching CedarEngine.Prepare in engines.go.
+    #[test]
+    fn request_parents_keep_principal_attributes() {
+        let entities_json = r#"[
+            {"uid":{"type":"User","id":"alice"},"attrs":{"dept":{"type":"String","value":"eng"},"level":{"type":"Long","value":3}},"parents":[{"type":"Role","id":"viewer"}]},
+            {"uid":{"type":"Role","id":"viewer"},"attrs":{},"parents":[]},
+            {"uid":{"type":"Group","id":"eng"},"attrs":{},"parents":[]}
+        ]"#;
+        let (_, entities) = prepare(&req_with_group(), entities_json);
+        let entities = entities.expect("request entities");
+        let alice = entities
+            .get(&EntityUid::from_type_name_and_id(
+                EntityTypeName::from_str("User").unwrap(),
+                EntityId::new("alice"),
+            ))
+            .expect("alice");
+        let json = alice.to_json_value().expect("entity json");
+        assert_eq!(
+            json["attrs"].as_object().map(|m| m.len()),
+            Some(2),
+            "principal attributes must be preserved: {json}"
+        );
+        let parents = json["parents"].as_array().expect("parents");
+        assert!(parents.iter().any(|p| p["id"] == "viewer"));
+        assert!(parents.iter().any(|p| p["id"] == "eng"));
     }
 }
