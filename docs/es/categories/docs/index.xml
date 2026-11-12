@@ -139,7 +139,8 @@ Añadir la dependencia Maven, un pom.xml completo:
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/es/docs/cloud/getting-started/</guid>
-      <description>Speedle Cloud estará disponible próximamente. El inicio de sesión para producción aún no está habilitado en cloud.speedle.io y el encabezado de Cloud muestra Próximamente. Cuando el inicio de sesión esté cerrado, la página de inicio de sesión indicará que abrirá pronto. Esta guía describe el flujo de trabajo publicado y no una consola de producción abierta actualmente; las capturas de pantalla se agregarán tras la apertura del inicio de sesión en producción.</description>
+      <description>Speedle Cloud estará disponible próximamente. Esta guía describe el flujo para cuando se habiliten el inicio de sesión en producción y las comprobaciones de autorización autenticadas; los ejemplos no se han ejecutado en un entorno Cloud real.
+Iniciar sesión con GitHub o Google (próximamente) Abra la consola Cloud en el navegador e inicie sesión con un proveedor disponible. Para una identidad nueva con un correo verificado sin usar, confirme Crear cuenta.</description>
     </item>
     
     <item>
@@ -170,7 +171,7 @@ python3 -m venv .venv . .venv/bin/activate pip install speedle==0.2.0 O con uv, 
       
       <guid>https://engine.speedle.io/es/docs/cloud/tokens/</guid>
       <description>Las claves API pertenecen a la cuenta y acceden a sus servicios según su ámbito. Autentican la aplicación, no al usuario final. Administrar claves API, sesiones e identidades vinculadas requiere una sesión de consola iniciada.
-Speedle Cloud estará disponible próximamente. El inicio de sesión para producción aún no está habilitado en cloud.speedle.io y el encabezado de Cloud muestra Próximamente. Cuando el inicio de sesión esté cerrado, la página de inicio de sesión indicará que abrirá pronto.</description>
+Speedle Cloud estará disponible próximamente. Esta guía describe el flujo para cuando se habiliten el inicio de sesión en producción y las comprobaciones de autorización autenticadas; los ejemplos no se han ejecutado en un entorno Cloud real.</description>
     </item>
     
     <item>
@@ -179,7 +180,7 @@ Speedle Cloud estará disponible próximamente. El inicio de sesión para produc
       <pubDate>Sun, 08 Nov 2026 00:00:00 +0800</pubDate>
       
       <guid>https://engine.speedle.io/es/docs/cloud/authorization-api/</guid>
-      <description>Speedle Cloud estará disponible próximamente. El inicio de sesión para producción aún no está habilitado en cloud.speedle.io y el encabezado de Cloud muestra Próximamente. Cuando el inicio de sesión esté cerrado, la página de inicio de sesión indicará que abrirá pronto.
+      <description>Speedle Cloud estará disponible próximamente. Esta guía describe el flujo para cuando se habiliten el inicio de sesión en producción y las comprobaciones de autorización autenticadas; los ejemplos no se han ejecutado en un entorno Cloud real.
 Use una clave API de cuenta para llamadas de autorización desde el servidor. Para crear claves debe estar disponible el inicio de sesión. Los ámbitos de gestión no pueden llamar a ADS; use ads o recibirá 403 insufficient_scope.</description>
     </item>
     
@@ -263,7 +264,7 @@ cargo new speedle-example cd speedle-example cargo add speedle@0.2.0 --features 
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/es/docs/cloud/limits-and-errors/</guid>
-      <description>Speedle Cloud estará disponible próximamente. El inicio de sesión para producción aún no está habilitado en cloud.speedle.io y el encabezado de Cloud muestra Próximamente. Cuando el inicio de sesión esté cerrado, la página de inicio de sesión indicará que abrirá pronto.
+      <description>Speedle Cloud estará disponible próximamente. Esta guía describe el flujo para cuando se habiliten el inicio de sesión en producción y las comprobaciones de autorización autenticadas; los ejemplos no se han ejecutado en un entorno Cloud real.
 Salvo que se indique lo contrario, los límites se comparten en toda la cuenta. Cambiar de clave API no aumenta la cuota diaria.
 Límites    Qué se limita Límite Qué hacer al alcanzarlo     Servicios de la cuenta 100 409 quota_exceeded; eliminar un servicio sin uso.</description>
     </item>
@@ -366,7 +367,7 @@ TLS cifra la conexión y autentica al servidor. Para requerir clientes autentica
       
       <guid>https://engine.speedle.io/es/docs/cloud/</guid>
       <description>Speedle Cloud es un servicio de autorización alojado basado en el motor Speedle de código abierto. Gestione servicios y políticas SPDL de autorización y roles, pruebe decisiones en Playground y llame a la API desde su servidor.
-Speedle Cloud estará disponible próximamente. El inicio de sesión para producción aún no está habilitado en cloud.speedle.io y el encabezado de Cloud muestra Próximamente. Cuando el inicio de sesión esté cerrado, la página de inicio de sesión indicará que abrirá pronto.</description>
+Speedle Cloud estará disponible próximamente. Esta guía describe el flujo para cuando se habiliten el inicio de sesión en producción y las comprobaciones de autorización autenticadas; los ejemplos no se han ejecutado en un entorno Cloud real.</description>
     </item>
     
     <item>

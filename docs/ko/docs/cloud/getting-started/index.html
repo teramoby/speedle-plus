@@ -11,7 +11,7 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
     <meta name="viewport" content="width=device-width, initial-scale=1"><title>Speedle Cloud 빠른 시작 · Speedle Engine</title>
-<meta name="description" content="GitHub 또는 Google을 통한 로그인, 계정 설정, SPDL 정책 생성 및 Cloud 플레이그라운드에서 결정 테스트">
+<meta name="description" content="Speedle Cloud 로그인, SPDL 정책 저장, API 키를 사용한 애플리케이션 인가 확인 및 플레이그라운드 테스트">
 <meta name="generator" content="Hugo 0.48" />
 <link href="https://engine.speedle.io/index.xml" rel="alternate" type="application/rss+xml">
 <link rel="canonical" href="https://engine.speedle.io/ko/docs/cloud/getting-started/">
@@ -26,7 +26,7 @@
 <meta property="article:modified_time" content="2026-11-12T00:00:00&#43;08:00">
 <meta property="og:site_name" content="Speedle Engine">
 <meta property="og:title" content="Speedle Cloud 빠른 시작 · Speedle Engine">
-<meta property="og:description" content="GitHub 또는 Google을 통한 로그인, 계정 설정, SPDL 정책 생성 및 Cloud 플레이그라운드에서 결정 테스트">
+<meta property="og:description" content="Speedle Cloud 로그인, SPDL 정책 저장, API 키를 사용한 애플리케이션 인가 확인 및 플레이그라운드 테스트">
 <meta property="og:url" content="https://engine.speedle.io/ko/docs/cloud/getting-started/">
 <meta property="og:image" content="https://engine.speedle.io/img/social/engine-en.png">
 <meta property="og:image:width" content="1200">
@@ -35,11 +35,11 @@
 <meta property="og:image:alt" content="Speedle Engine — Fast. Simple. Access control">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Speedle Cloud 빠른 시작 · Speedle Engine">
-<meta name="twitter:description" content="GitHub 또는 Google을 통한 로그인, 계정 설정, SPDL 정책 생성 및 Cloud 플레이그라운드에서 결정 테스트">
+<meta name="twitter:description" content="Speedle Cloud 로그인, SPDL 정책 저장, API 키를 사용한 애플리케이션 인가 확인 및 플레이그라운드 테스트">
 <meta name="twitter:image" content="https://engine.speedle.io/img/social/engine-en.png">
 <meta name="twitter:image:alt" content="Speedle Engine — Fast. Simple. Access control">
 
-<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/ko/docs/cloud/getting-started/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-12T00:00:00+08:00","description":"GitHub 또는 Google을 통한 로그인, 계정 설정, SPDL 정책 생성 및 Cloud 플레이그라운드에서 결정 테스트","headline":"Speedle Cloud 빠른 시작","image":"https://engine.speedle.io/img/social/engine-en.png","inLanguage":"ko","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/ko/docs/cloud/getting-started/","@type":"WebPage"},"name":"Speedle Cloud 빠른 시작","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/ko/docs/cloud/getting-started/"}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/ko/docs/cloud/getting-started/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-12T00:00:00+08:00","description":"Speedle Cloud 로그인, SPDL 정책 저장, API 키를 사용한 애플리케이션 인가 확인 및 플레이그라운드 테스트","headline":"Speedle Cloud 빠른 시작","image":"https://engine.speedle.io/img/social/engine-en.png","inLanguage":"ko","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/ko/docs/cloud/getting-started/","@type":"WebPage"},"name":"Speedle Cloud 빠른 시작","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/ko/docs/cloud/getting-started/"}</script>
 <script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/ko/docs/cloud/getting-started/#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://engine.speedle.io/ko/","name":"홈","position":1},{"@type":"ListItem","item":"https://engine.speedle.io/ko/docs/","name":"문서","position":2},{"@type":"ListItem","item":"https://engine.speedle.io/ko/docs/cloud/","name":"Speedle Cloud","position":3},{"@type":"ListItem","item":"https://engine.speedle.io/ko/docs/cloud/getting-started/","name":"Speedle Cloud 빠른 시작","position":4}]}</script><link href="/css/docs.css" rel="stylesheet" type="text/css">
 
 
@@ -194,39 +194,51 @@
 
   <div id="kube-component" class="content">
 
-<p><strong>Speedle Cloud는 출시 예정입니다.</strong> cloud.speedle.io의 프로덕션 환경에서는 아직 로그인이 시작되지 않았으며 Cloud 헤더에는 <strong>Coming soon(출시 예정)</strong> 배지가 표시됩니다. 로그인이 닫혀 있는 동안 로그인 페이지에는 곧 출시될 예정이라는 안내가 표시됩니다. 본문에서는 공개된 사용 흐름을 설명하지만 현재 프로덕션 콘솔이 열려 있음을 의미하지는 않습니다.</p>
+<p><strong>Speedle Cloud는 출시 예정입니다.</strong> 이 가이드는 프로덕션 로그인과 인증된 인가 API가 제공될 때의 사용 절차를 설명합니다. 예제는 실제 Cloud 환경에서 실행하지 않았습니다.</p>
 
-<h3 id="프로덕션-환경">프로덕션 환경</h3>
+<h2 id="github-또는-google을-통한-로그인-출시-예정">GitHub 또는 Google을 통한 로그인(출시 예정)</h2>
 
-<p>계정 세션, 관리 요청 및 애플리케이션 토큰은 <code>https://cloud.speedle.io</code>를 사용합니다. 계정, 리소스, 토큰은 해당 오리진에 속합니다.</p>
+<p>브라우저에서 <a href="https://cloud.speedle.io/ko/">Cloud 콘솔</a>을 열고 사용 가능한 공급자로 로그인합니다. 아직 사용되지 않은 인증된 이메일로 처음 로그인하는 경우 <strong>계정 생성</strong>을 확인합니다. 이메일이 이미 사용 중이라면 콘솔에 표시된 연결된 공급자로 로그인하십시오.</p>
 
-<h3 id="github-또는-google을-통한-로그인-출시-예정">GitHub 또는 Google을 통한 로그인(출시 예정)</h3>
+<h2 id="서비스와-정책-생성">서비스와 정책 생성</h2>
 
-<p>로그인이 아직 시작되지 않았더라도 로그인 페이지에는 <strong>GitHub로 로그인</strong>과 <strong>Google로 로그인</strong>이라는 두 가지 옵션이 표시됩니다. 프로덕션 환경에서 로그인이 시작되면 현재 사용 가능한 공급자를 선택하십시오. 새 ID의 인증된 이메일 주소가 아직 사용되지 않은 경우 <strong>계정 생성</strong>을 명시적으로 확인해야 합니다.</p>
+<p><a href="https://cloud.speedle.io/ko/service">서비스 워크스페이스</a>를 열고 <code>books</code>를 입력한 뒤 <strong>서비스 생성</strong>을 선택합니다. 기존 정책이 결과에 영향을 주지 않도록 새 서비스로 예제를 실행하십시오. 기존 데이터를 덮어쓰지 마십시오.</p>
 
-<p>계정 설정에서는 연결된 ID를 확인하고 공급자 연결 또는 연결 해제를 수행할 수 있습니다. 최소 하나의 연결된 ID를 유지해야 합니다.</p>
-
-<h3 id="워크스페이스-및-서비스">워크스페이스 및 서비스</h3>
-
-<p>서비스는 정책의 네임스페이스입니다. 새 계정에서는 <a href="https://cloud.speedle.io/service">서비스 워크스페이스</a>를 열고 서비스 이름에 <code>books</code>를 입력한 뒤 <strong>서비스 생성</strong>을 선택합니다.</p>
-
-<h3 id="첫-번째-인가-정책-생성">첫 번째 인가 정책 생성</h3>
-
-<p>에디터에 다음 SPDL 문을 입력합니다:</p>
+<p><strong>새 정책</strong>을 선택하고 이름을 <code>read-books</code>로 지정한 뒤 다음 SPDL을 입력합니다.</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">grant user alice from corp get /books</code></pre></div>
-<p><code>from corp</code>는 이 인가를 <code>corp</code> ID 도메인 내로 제한합니다. <code>corp</code>를 애플리케이션이 신뢰할 수 있는 인증 데이터에서 파생하는 도메인으로 대체하고, 아래 플레이그라운드 예제처럼 각 요청에서 주체의 <code>idd</code>로 동일한 값을 전송하십시오. <code>&quot;from&quot;</code>이 없는 인가는 모든 도메인의 <code>alice</code>라는 이름을 가진 사용자와 일치합니다. 도메인 간에 이름 충돌 가능성이 없는 단일 ID 소스를 가진 서비스의 경우에만 이 절을 생략하십시오. 규칙 및 해당 요청 필드에 대해서는 <a href="/ko/docs/idd/">ID 도메인</a>을 참조하십시오.</p>
+<p>이 정책은 ID 도메인 <code>corp</code>의 <code>alice</code>가 <code>/books</code>에 대해 <code>get</code>을 실행하도록 허용합니다. <code>from</code>이 없으면 모든 도메인의 같은 이름을 가진 사용자와 일치합니다. 신뢰할 수 있는 인증 데이터에서 도메인을 가져와 각 요청의 <code>idd</code>로 전송하십시오. <a href="/ko/docs/idd/">ID 도메인</a>을 참조하십시오.</p>
 
-<p><strong>정책 검증</strong>을 선택하고 콘솔에 <strong>식별 결과: 인가 정책</strong>으로 보고되는지 확인한 다음 <strong>정책 저장</strong>을 선택합니다. 검증에서는 정책 타입을 감지하고 구문을 확인하지만 초안은 저장되지 않습니다. 저장은 독립적인 수동 작업입니다.</p>
+<p><strong>정책 검증</strong>을 선택한 다음 <strong>정책 저장</strong>을 선택합니다. 검증은 구문만 확인하며 초안을 저장하지 않습니다. 저장한 정책이 인가 API에 반영되기까지 약 60초가 걸립니다.</p>
 
-<h3 id="플레이그라운드에서-인가-결정-테스트">플레이그라운드에서 인가 결정 테스트</h3>
+<h2 id="api-키-생성">API 키 생성</h2>
 
-<p>플레이그라운드를 열어 정책을 테스트합니다.</p>
+<p><a href="https://cloud.speedle.io/ko/tokens">API 키</a> 페이지를 열고 <code>books-app</code>과 같은 이름을 입력한 뒤 <code>ads</code> 범위(인가 확인)를 선택하고 <strong>API 키 생성</strong>을 누릅니다. 본인 인증을 요청받으면 인증을 완료한 뒤 양식을 다시 제출합니다. 비밀 값은 한 번만 표시되므로 표시될 때 복사하십시오. 현재 만료 기간은 선택할 수 없습니다. 더 이상 필요하지 않은 키는 폐기하십시오. <a href="/ko/docs/cloud/tokens/">API 키 관리</a>를 참조하십시오.</p>
 
-<p>요청의 주체에 프린시펄을 입력합니다:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">{<span style="color:#ff79c6">&#34;type&#34;</span>:<span style="color:#f1fa8c">&#34;user&#34;</span>,<span style="color:#ff79c6">&#34;name&#34;</span>:<span style="color:#f1fa8c">&#34;alice&#34;</span>,<span style="color:#ff79c6">&#34;idd&#34;</span>:<span style="color:#f1fa8c">&#34;corp&#34;</span>}</code></pre></div>
-<p>작업에 <code>get</code>, 리소스에 <code>/books</code>를 입력합니다. <strong>평가</strong>를 클릭하면 결과는 <code>allowed: true</code>(이유 코드 0)가 됩니다.</p>
+<p>키를 서버의 비밀 저장소에 보관하고 <code>SPEEDLE_API_KEY</code> 환경 변수로 전달합니다. 브라우저 코드나 소스 저장소에 넣지 마십시오.</p>
 
-<p>프린시펄의 <code>idd</code>를 <code>other</code>로 변경하거나 리소스를 <code>/secret</code>으로 변경하면 요청은 거부됩니다(<code>allowed: false</code>).</p>
+<h2 id="애플리케이션에서-인가-확인하기">애플리케이션에서 인가 확인하기</h2>
+
+<p>애플리케이션 서버에서 다음 <code>isAllowed</code> 요청을 보내 저장한 정책을 확인합니다. 이 정책에는 속성이 필요하지 않으므로 <code>attributes</code>는 빈 배열입니다.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl --fail-with-body --silent --show-error --max-time <span style="color:#bd93f9">10</span> <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  <span style="color:#f1fa8c">&#39;https://cloud.speedle.io/authz-check/v1/is-allowed&#39;</span> <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  -H <span style="color:#f1fa8c">&#34;Authorization: Bearer </span><span style="color:#8be9fd;font-style:italic">$SPEEDLE_API_KEY</span><span style="color:#f1fa8c">&#34;</span> <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  -H <span style="color:#f1fa8c">&#39;Content-Type: application/json&#39;</span> <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  --data <span style="color:#f1fa8c">&#39;{&#34;subject&#34;:{&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;,&#34;name&#34;:&#34;alice&#34;,&#34;idd&#34;:&#34;corp&#34;}]},&#34;serviceName&#34;:&#34;books&#34;,&#34;resource&#34;:&#34;/books&#34;,&#34;action&#34;:&#34;get&#34;,&#34;attributes&#34;:[]}&#39;</span></code></pre></div>
+<p>예제 정책만 저장되어 있다면 예상 응답은 다음과 같습니다.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">{<span style="color:#ff79c6">&#34;allowed&#34;</span>:<span style="color:#ff79c6">true</span>,<span style="color:#ff79c6">&#34;reason&#34;</span>:<span style="color:#bd93f9">0</span>}</code></pre></div>
+<p><code>action</code>을 <code>delete</code>로 바꾸어 다시 전송합니다. 이 작업을 허용하는 정책이 없으므로 예상 응답은 다음과 같습니다.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">{<span style="color:#ff79c6">&#34;allowed&#34;</span>:<span style="color:#ff79c6">false</span>,<span style="color:#ff79c6">&#34;reason&#34;</span>:<span style="color:#bd93f9">3</span>}</code></pre></div>
+<p>두 결정 모두 HTTP 200을 반환합니다. <code>allowed</code>가 <code>true</code>일 때만 보호된 작업을 실행하십시오. 애플리케이션은 결과를 적용하고 오류, 잘못된 응답 또는 시간 초과가 발생하면 접근을 거부해야 합니다.</p>
+
+<p>자세한 내용은 <a href="/ko/docs/cloud/authorization-api/">인가 API</a>와 <a href="/ko/docs/sdks/">SDK</a>를 참조하십시오. <a href="/ko/docs/sdks/node/">Node.js/TypeScript</a>, <a href="/ko/docs/sdks/python/">Python</a>, <a href="/ko/docs/sdks/java/">Java</a>, <a href="/ko/docs/sdks/go/">Go</a> 등을 지원합니다.</p>
+
+<h2 id="플레이그라운드에서-저장된-정책-테스트하기">플레이그라운드에서 저장된 정책 테스트하기</h2>
+
+<p>선택 사항으로 서비스의 <strong>Playground</strong>를 열고 <strong>Is allowed</strong>를 선택합니다. <strong>Principals (JSON)</strong>에 <code>[{&quot;type&quot;:&quot;user&quot;,&quot;name&quot;:&quot;alice&quot;,&quot;idd&quot;:&quot;corp&quot;}]</code>, <strong>Resource</strong>에 <code>/books</code>, <strong>Action</strong>에 <code>get</code>, <strong>Attributes (JSON)</strong>에 <code>[]</code>를 입력한 뒤 <strong>Run test</strong>를 선택합니다.</p>
+
+<p><strong>Is allowed</strong>는 결정 결과를, <strong>Diagnose</strong>는 정책이 결정에 미친 영향을, <strong>All granted roles</strong>는 주체의 역할을, <strong>All granted permissions</strong>는 허용된 리소스와 작업을 보여 줍니다. 테스트에는 저장된 정책만 사용되며 저장하지 않은 초안은 사용되지 않습니다. 입력이나 정책을 변경하면 다시 실행하십시오. 애플리케이션은 API 키를 사용하여 <a href="/ko/docs/cloud/authorization-api/">ADS 인가 API</a>를 호출합니다.</p>
+
+<p>다음 단계: 프로그램으로 관리하려면 <a href="/ko/docs/cloud/tokens/">API 키</a>와 <a href="/ko/docs/pms/policy-mgmt/#speedle-cloud에서-정책-관리">PMS API 또는 spctl의 Speedle Cloud 사용법</a>을 참조하십시오.</p>
 </div>
 </div>
 </main>

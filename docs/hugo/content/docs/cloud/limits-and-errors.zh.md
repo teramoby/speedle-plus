@@ -10,7 +10,7 @@ categories = ["docs"]
 lastmod = 2026-11-12T00:00:00+08:00
 +++
 
-**Speedle Cloud 即将上线。** cloud.speedle.io 的生产环境尚未开放登录，Cloud 页眉显示 **Coming soon（即将上线）** 徽章。登录关闭时，登录页会提示即将开放。
+**Speedle Cloud 即将上线。** 本文介绍生产环境开放登录和授权 API 后的使用流程，示例尚未在线上 Cloud 环境执行。
 
 除表中另有说明外，限额由整个账号共用。API 密钥属于账号；更换密钥不会增加每日额度。
 

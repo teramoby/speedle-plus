@@ -2,13 +2,13 @@
 
 Speedle Cloud는 오픈 소스 Speedle 엔진 기반의 호스팅 인가 서비스입니다. 서비스, SPDL 인가 정책과 역할 정책을 관리하고 Playground에서 판정을 테스트한 뒤 서버에서 API를 호출합니다.
 
-**Speedle Cloud는 출시 예정입니다.** cloud.speedle.io의 프로덕션 환경에서는 아직 로그인이 시작되지 않았으며 Cloud 헤더에는 **Coming soon(출시 예정)** 배지가 표시됩니다. 로그인이 닫혀 있는 동안 로그인 페이지에는 곧 출시될 예정이라는 안내가 표시됩니다.
+**Speedle Cloud는 출시 예정입니다.** 이 가이드는 프로덕션 로그인과 인증된 인가 API가 제공될 때의 사용 절차를 설명합니다. 예제는 실제 Cloud 환경에서 실행하지 않았습니다.
 
 콘솔 사용과 API 키 생성에는 로그인이 가능해야 합니다. 무료 공개 베타는 시험, 학습, 평가용이며 SLA가 없고 프로덕션 사용은 권장하지 않습니다. 기능과 한도는 변경될 수 있습니다.
 
 ## 문서
 
-- [시작하기](https://engine.speedle.io/ko/docs/cloud/getting-started/): 로그인, 계정, 서비스, 정책과 세션 Playground.
+- [빠른 시작](https://engine.speedle.io/ko/docs/cloud/getting-started/): 로그인한 뒤 콘솔에서 서비스와 정책, API 키를 생성하고 애플리케이션에서 인가를 확인합니다.
 - [API 키](https://engine.speedle.io/ko/docs/cloud/tokens/): 계정 자격 증명, 고정 범위, 생성과 폐기, 한 번의 비밀 표시와 페이지 조회.
 - [인가 API](https://engine.speedle.io/ko/docs/cloud/authorization-api/): IsAllowed 요청, 호출자 신원, Node.js 22와 전송 제약.
 - [제한과 오류](https://engine.speedle.io/ko/docs/cloud/limits-and-errors/): 계정 한도, 크기, 버스트, 일일 할당량, 오류 코드와 초기화 시각.
@@ -25,53 +25,73 @@ Cloud 문서를 확인하세요: [이용 약관](https://cloud.speedle.io/ko/ter
 
 ## Speedle Cloud 빠른 시작
 
-**Speedle Cloud는 출시 예정입니다.** cloud.speedle.io의 프로덕션 환경에서는 아직 로그인이 시작되지 않았으며 Cloud 헤더에는 **Coming soon(출시 예정)** 배지가 표시됩니다. 로그인이 닫혀 있는 동안 로그인 페이지에는 곧 출시될 예정이라는 안내가 표시됩니다. 본문에서는 공개된 사용 흐름을 설명하지만 현재 프로덕션 콘솔이 열려 있음을 의미하지는 않습니다.
+**Speedle Cloud는 출시 예정입니다.** 이 가이드는 프로덕션 로그인과 인증된 인가 API가 제공될 때의 사용 절차를 설명합니다. 예제는 실제 Cloud 환경에서 실행하지 않았습니다.
 
-#### 프로덕션 환경
+### GitHub 또는 Google을 통한 로그인(출시 예정)
 
-계정 세션, 관리 요청 및 API 키은 `https://cloud.speedle.io`를 사용합니다. 계정, 리소스, API 키은 해당 오리진에 속합니다.
+브라우저에서 [Cloud 콘솔](https://cloud.speedle.io/ko/)을 열고 사용 가능한 공급자로 로그인합니다. 아직 사용되지 않은 인증된 이메일로 처음 로그인하는 경우 **계정 생성**을 확인합니다. 이메일이 이미 사용 중이라면 콘솔에 표시된 연결된 공급자로 로그인하십시오.
 
-#### GitHub 또는 Google을 통한 로그인(출시 예정)
+### 서비스와 정책 생성
 
-로그인이 아직 시작되지 않았더라도 로그인 페이지에는 **GitHub로 로그인**과 **Google로 로그인**이라는 두 가지 옵션이 표시됩니다. 프로덕션 환경에서 로그인이 시작되면 현재 사용 가능한 공급자를 선택하십시오. 새 ID의 인증된 이메일 주소가 아직 사용되지 않은 경우 **계정 생성**을 명시적으로 확인해야 합니다.
+[서비스 워크스페이스](https://cloud.speedle.io/ko/service)를 열고 `books`를 입력한 뒤 **서비스 생성**을 선택합니다. 기존 정책이 결과에 영향을 주지 않도록 새 서비스로 예제를 실행하십시오. 기존 데이터를 덮어쓰지 마십시오.
 
-계정 설정에서는 연결된 ID를 확인하고 공급자 연결 또는 연결 해제를 수행할 수 있습니다. 최소 하나의 연결된 ID를 유지해야 합니다.
-
-#### 워크스페이스 및 서비스
-
-서비스는 정책의 네임스페이스입니다. 새 계정에서는 [서비스 워크스페이스](https://cloud.speedle.io/service)를 열고 서비스 이름에 `books`를 입력한 뒤 **서비스 생성**을 선택합니다.
-
-#### 첫 번째 인가 정책 생성
-
-에디터에 다음 SPDL 문을 입력합니다:
+**새 정책**을 선택하고 이름을 `read-books`로 지정한 뒤 다음 SPDL을 입력합니다.
 
 ```text
 grant user alice from corp get /books
 ```
 
-`from corp`는 이 인가를 `corp` ID 도메인 내로 제한합니다. `corp`를 애플리케이션이 신뢰할 수 있는 인증 데이터에서 파생하는 도메인으로 대체하고, 아래 플레이그라운드 예제처럼 각 요청에서 주체의 `idd`로 동일한 값을 전송하십시오. `"from"`이 없는 인가는 모든 도메인의 `alice`라는 이름을 가진 사용자와 일치합니다. 도메인 간에 이름 충돌 가능성이 없는 단일 ID 소스를 가진 서비스의 경우에만 이 절을 생략하십시오. 규칙 및 해당 요청 필드에 대해서는 [ID 도메인](https://engine.speedle.io/docs/idd/)을 참조하십시오.
+이 정책은 ID 도메인 `corp`의 `alice`가 `/books`에 대해 `get`을 실행하도록 허용합니다. `from`이 없으면 모든 도메인의 같은 이름을 가진 사용자와 일치합니다. 신뢰할 수 있는 인증 데이터에서 도메인을 가져와 각 요청의 `idd`로 전송하십시오. [ID 도메인](https://engine.speedle.io/ko/docs/idd/)을 참조하십시오.
 
-**정책 검증**을 선택하고 콘솔에 **식별 결과: 인가 정책**으로 보고되는지 확인한 다음 **정책 저장**을 선택합니다. 검증에서는 정책 타입을 감지하고 구문을 확인하지만 초안은 저장되지 않습니다. 저장은 독립적인 수동 작업입니다.
+**정책 검증**을 선택한 다음 **정책 저장**을 선택합니다. 검증은 구문만 확인하며 초안을 저장하지 않습니다. 저장한 정책이 인가 API에 반영되기까지 약 60초가 걸립니다.
 
-#### 플레이그라운드에서 인가 결정 테스트
+### API 키 생성
 
-플레이그라운드를 열어 정책을 테스트합니다.
+[API 키](https://cloud.speedle.io/ko/tokens) 페이지를 열고 `books-app`과 같은 이름을 입력한 뒤 `ads` 범위(인가 확인)를 선택하고 **API 키 생성**을 누릅니다. 본인 인증을 요청받으면 인증을 완료한 뒤 양식을 다시 제출합니다. 비밀 값은 한 번만 표시되므로 표시될 때 복사하십시오. 현재 만료 기간은 선택할 수 없습니다. 더 이상 필요하지 않은 키는 폐기하십시오. [API 키 관리](https://engine.speedle.io/ko/docs/cloud/tokens/)를 참조하십시오.
 
-요청의 주체에 프린시펄을 입력합니다:
+키를 서버의 비밀 저장소에 보관하고 `SPEEDLE_API_KEY` 환경 변수로 전달합니다. 브라우저 코드나 소스 저장소에 넣지 마십시오.
 
-```json
-{"type":"user","name":"alice","idd":"corp"}
+### 애플리케이션에서 인가 확인하기
+
+애플리케이션 서버에서 다음 `isAllowed` 요청을 보내 저장한 정책을 확인합니다. 이 정책에는 속성이 필요하지 않으므로 `attributes`는 빈 배열입니다.
+
+```bash
+curl --fail-with-body --silent --show-error --max-time 10 \
+  'https://cloud.speedle.io/authz-check/v1/is-allowed' \
+  -H "Authorization: Bearer $SPEEDLE_API_KEY" \
+  -H 'Content-Type: application/json' \
+  --data '{"subject":{"principals":[{"type":"user","name":"alice","idd":"corp"}]},"serviceName":"books","resource":"/books","action":"get","attributes":[]}'
 ```
 
-작업에 `get`, 리소스에 `/books`를 입력합니다. **평가**를 클릭하면 결과는 `allowed: true`(이유 코드 0)가 됩니다.
+예제 정책만 저장되어 있다면 예상 응답은 다음과 같습니다.
 
-프린시펄의 `idd`를 `other`로 변경하거나 리소스를 `/secret`으로 변경하면 요청은 거부됩니다(`allowed: false`).
+```json
+{"allowed":true,"reason":0}
+```
+
+`action`을 `delete`로 바꾸어 다시 전송합니다. 이 작업을 허용하는 정책이 없으므로 예상 응답은 다음과 같습니다.
+
+```json
+{"allowed":false,"reason":3}
+```
+
+두 결정 모두 HTTP 200을 반환합니다. `allowed`가 `true`일 때만 보호된 작업을 실행하십시오. 애플리케이션은 결과를 적용하고 오류, 잘못된 응답 또는 시간 초과가 발생하면 접근을 거부해야 합니다.
+
+자세한 내용은 [인가 API](https://engine.speedle.io/ko/docs/cloud/authorization-api/)와 [SDK](https://engine.speedle.io/ko/docs/sdks/)를 참조하십시오. [Node.js/TypeScript](https://engine.speedle.io/ko/docs/sdks/node/), [Python](https://engine.speedle.io/ko/docs/sdks/python/), [Java](https://engine.speedle.io/ko/docs/sdks/java/), [Go](https://engine.speedle.io/ko/docs/sdks/go/) 등을 지원합니다.
+
+### 플레이그라운드에서 저장된 정책 테스트하기
+
+선택 사항으로 서비스의 **Playground**를 열고 **Is allowed**를 선택합니다. **Principals (JSON)**에 `[{"type":"user","name":"alice","idd":"corp"}]`, **Resource**에 `/books`, **Action**에 `get`, **Attributes (JSON)**에 `[]`를 입력한 뒤 **Run test**를 선택합니다.
+
+**Is allowed**는 결정 결과를, **Diagnose**는 정책이 결정에 미친 영향을, **All granted roles**는 주체의 역할을, **All granted permissions**는 허용된 리소스와 작업을 보여 줍니다. 테스트에는 저장된 정책만 사용되며 저장하지 않은 초안은 사용되지 않습니다. 입력이나 정책을 변경하면 다시 실행하십시오. 애플리케이션은 API 키를 사용하여 [ADS 인가 API](https://engine.speedle.io/ko/docs/cloud/authorization-api/)를 호출합니다.
+
+다음 단계: 프로그램으로 관리하려면 [API 키](https://engine.speedle.io/ko/docs/cloud/tokens/)와 [PMS API 또는 spctl의 Speedle Cloud 사용법](https://engine.speedle.io/ko/docs/pms/policy-mgmt/#speedle-cloud에서-정책-관리)을 참조하십시오.
 
 ## Speedle Cloud API 키
 
 API 키는 계정에 속하며 범위에 따라 해당 계정의 서비스에 접근합니다. 최종 사용자가 아닌 애플리케이션을 인증합니다. API 키, 세션, 연결된 신원 관리에는 로그인한 콘솔 세션이 필요합니다.
 
-**Speedle Cloud는 출시 예정입니다.** cloud.speedle.io의 프로덕션 환경에서는 아직 로그인이 시작되지 않았으며 Cloud 헤더에는 **Coming soon(출시 예정)** 배지가 표시됩니다. 로그인이 닫혀 있는 동안 로그인 페이지에는 곧 출시될 예정이라는 안내가 표시됩니다.
+**Speedle Cloud는 출시 예정입니다.** 이 가이드는 프로덕션 로그인과 인증된 인가 API가 제공될 때의 사용 절차를 설명합니다. 예제는 실제 Cloud 환경에서 실행하지 않았습니다.
 
 ### API 키 생성
 
@@ -139,7 +159,7 @@ Content-Type: application/json
 
 ## Speedle Cloud 인가 API
 
-**Speedle Cloud는 출시 예정입니다.** cloud.speedle.io의 프로덕션 환경에서는 아직 로그인이 시작되지 않았으며 Cloud 헤더에는 **Coming soon(출시 예정)** 배지가 표시됩니다. 로그인이 닫혀 있는 동안 로그인 페이지에는 곧 출시될 예정이라는 안내가 표시됩니다.
+**Speedle Cloud는 출시 예정입니다.** 이 가이드는 프로덕션 로그인과 인증된 인가 API가 제공될 때의 사용 절차를 설명합니다. 예제는 실제 Cloud 환경에서 실행하지 않았습니다.
 
 계정 API 키로 서버에서 인가를 확인합니다. 키를 생성하려면 로그인이 가능해야 합니다. 관리 범위는 ADS를 호출할 수 없습니다. `ads`가 아니면 `403 insufficient_scope`입니다.
 
@@ -220,7 +240,7 @@ POST를 사용하세요. 다른 메서드는 `405 method_not_allowed` 또는 그
 
 ## Speedle Cloud 제한과 오류
 
-**Speedle Cloud는 출시 예정입니다.** cloud.speedle.io의 프로덕션 환경에서는 아직 로그인이 시작되지 않았으며 Cloud 헤더에는 **Coming soon(출시 예정)** 배지가 표시됩니다. 로그인이 닫혀 있는 동안 로그인 페이지에는 곧 출시될 예정이라는 안내가 표시됩니다.
+**Speedle Cloud는 출시 예정입니다.** 이 가이드는 프로덕션 로그인과 인증된 인가 API가 제공될 때의 사용 절차를 설명합니다. 예제는 실제 Cloud 환경에서 실행하지 않았습니다.
 
 별도 표시가 없으면 한도는 계정 전체에서 공유합니다. API 키를 바꿔도 일일 할당량은 늘지 않습니다.
 

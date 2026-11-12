@@ -2,13 +2,13 @@
 
 Speedle Cloud 是基于开源 Speedle 引擎的托管授权服务。你可以管理服务、SPDL 授权策略和角色策略，在 Playground 中测试判定，并从服务端调用 API。
 
-**Speedle Cloud 即将上线。** cloud.speedle.io 的生产环境尚未开放登录，Cloud 页眉显示 **Coming soon（即将上线）** 徽章。登录关闭时，登录页会提示即将开放。
+**Speedle Cloud 即将上线。** 本文介绍生产环境开放登录和授权 API 后的使用流程，示例尚未在线上 Cloud 环境执行。
 
 使用控制台和创建 API 密钥需要账号登录功能可用。免费公开测试版用于试用、学习和评估，不提供 SLA，不建议用于生产环境。功能和限额可能调整。
 
 ## 文档导航
 
-- [快速入门](https://engine.speedle.io/zh/docs/cloud/getting-started/): 登录、账号、服务、策略和会话 Playground。
+- [快速入门](https://engine.speedle.io/zh/docs/cloud/getting-started/)：登录控制台，创建服务和策略，创建 API 密钥，从应用发起授权检查。
 - [API 密钥](https://engine.speedle.io/zh/docs/cloud/tokens/): 账号级凭据、固定权限范围、创建与撤销、一次性展示和分页。
 - [授权 API](https://engine.speedle.io/zh/docs/cloud/authorization-api/): IsAllowed 请求、调用方身份、Node.js 22 和传输限制。
 - [限额与错误](https://engine.speedle.io/zh/docs/cloud/limits-and-errors/): 账号上限、大小限制、突发限流、每日额度、错误代码和重置时间。
@@ -25,103 +25,73 @@ API 规范描述请求与响应合约；下载规范不会开放账号登录。
 
 ## Speedle Cloud 快速入门
 
-**Speedle Cloud 即将上线。** cloud.speedle.io 的生产环境尚未开放登录，Cloud 页眉显示 **Coming soon（即将上线）** 徽章。登录关闭时，登录页会提示即将开放。本文介绍已发布的使用流程，不代表生产控制台目前已经开放；生产环境开放登录后会补充实际截图。
-
-### 生产环境
-
-账号会话、管理请求和API 密钥使用 `https://cloud.speedle.io`。账号、资源和API 密钥归属于该 origin。本文示例仅用于说明，本次未向线上环境执行。请确认所选环境已经部署，并确认准备使用的登录供应商在该环境可用。
+**Speedle Cloud 即将上线。** 本文介绍生产环境开放登录和授权 API 后的使用流程，示例尚未在线上 Cloud 环境执行。
 
 ### 使用 GitHub 或 Google 登录（即将开放）
 
-即使登录尚未开放，登录页仍会显示 **使用 GitHub 登录** 和 **使用 Google 登录** 两个选项。生产环境开放登录后，请选择当前可用的供应商。新身份的已验证邮箱未被占用时，需要主动确认 **创建账号**。邮箱已被占用时，先用控制台提示的已关联供应商登录，再到 **账号设置** 连接第二个身份；系统不会自动合并账号。
-
-账号设置可以查看已连接身份，并连接或断开当前可用的供应商；至少保留一个已连接身份。**退出登录** 位于页眉语言切换旁，账号菜单提供 **在所有设备上退出**。退出成功后返回登录页，并清空工作区和一次性API 密钥展示。审计日志展示账号活动。
-
-删除账号需要完成最近的供应商认证，并输入 `DELETE`。随后会永久删除账号所属 service、策略、API 密钥和身份，并结束所有会话。删除前请先从服务工作区导出需要保留的策略。
+在浏览器中打开 [Cloud 控制台](https://cloud.speedle.io/zh-CN/)，选择可用的登录方式。新身份的已验证邮箱尚未被使用时，确认 **创建账号**。如果邮箱已被使用，请使用控制台提示的已关联登录方式登录。
 
 ### 创建 service 和策略
 
-新账号打开[服务工作区](https://cloud.speedle.io/zh-CN/service)，在服务名称中输入 `books`，然后选择 **创建服务**。每个账号最多可创建 100 个服务。如果账号已有 service 或策略，请先核对并使用合适的现有配置，不要为了运行示例而覆盖或删除已有数据。
+打开[服务工作区](https://cloud.speedle.io/zh-CN/service)，输入 `books`，选择 **创建服务**。请用新服务运行示例，避免已有策略影响结果，不要覆盖已有数据。
 
-选择 **新建策略**，在策略名称中输入 `read-books`，并在 SPDL 编辑器中输入以下授权策略：
+选择 **新建策略**，命名为 `read-books`，输入以下 SPDL：
 
 ```text
 grant user alice from corp get /books
 ```
 
-`from corp` 将这条授权限制在 `corp` 身份域内。请将 `corp` 替换为应用根据可信认证结果得出的身份域，并在每个请求中把相同的值作为主体的 `idd` 发送，如下面的 Playground 示例所示。不带 `from` 的授权会匹配任意身份域中名为 `alice` 的用户；只有 service 只有一个身份来源、名称不可能跨域重复时，才可以省略该子句。规则和请求中对应的字段见[身份域](https://engine.speedle.io/zh/docs/idd/)。
+这条策略允许 `corp` 身份域中的 `alice` 对 `/books` 执行 `get`。不带 `from` 的授权会匹配所有身份域中同名的用户。应用应根据可信的认证结果确定身份域，并在每个请求的 `idd` 字段中发送相同的值。详见[身份域](https://engine.speedle.io/zh/docs/idd/)。
 
-选择 **验证策略**，确认控制台显示 **识别为：授权策略**，再选择 **保存策略**。验证会识别策略类型并检查语法，但不会保存草稿；保存需要单独手动操作。你也可以在工作区导入已有策略，无需逐条手动输入。
+选择 **验证策略**，然后 **保存策略**。验证只检查语法，不会保存草稿。保存后，策略约需 60 秒才会在授权 API 中生效。
 
-Speedle Cloud 支持授权策略和角色策略，不支持外部自定义函数。策略列表按两种类型分组并显示数量。角色分配使用以下形式：
+### 创建 API 密钥
 
-- 全局角色：`grant user alice editor`
-- 限定资源的角色：`grant user alice editor on /books`
+打开 [API 密钥](https://cloud.speedle.io/zh-CN/tokens)页面，输入名称（如 `books-app`），选择 `ads` 权限范围（授权检查），然后选择 **创建 API 密钥**。如需验证身份，请完成验证后再次提交表单。复制仅展示一次的密钥值。目前不支持选择密钥有效期，不再使用时请撤销。详见 [API 密钥管理](https://engine.speedle.io/zh/docs/cloud/tokens/)。
 
-`grant user alice role editor` 同时符合两类语法，会被拒绝。角色分配请省略可选的 `role` 前缀；授权策略请写成 `grant (user alice) role editor`。编辑会保留已存储的策略类型；如需改变类型，请删除原策略后新建。
+将密钥保存在服务端的密钥存储中，通过环境变量 `SPEEDLE_API_KEY` 提供给应用，不要写入浏览器代码或源码仓库。
 
-遇到冲突或响应结果不明确时，请保留草稿，先刷新已保存数据，再决定是否执行另一项修改。切换语言会保留草稿。Monaco 内置菜单沿用编辑器首次加载时的语言，重新加载页面后才跟随新选择。
+### 从应用发起授权检查
 
-删除 service 时，需要输入服务名称、完成最近的供应商认证，并在验证后再次确认。
+在应用服务端发送以下 `isAllowed` 请求，检查上一步保存的策略。这条策略不需要属性，因此 `attributes` 为空数组：
 
-### 发送管理会话请求
-
-策略管理服务（PMS）使用账号会话。请让受支持的同源客户端管理安全的会话 cookie，不要导出浏览器 cookie，也不要通过测试供应商初始化账号。修改请求必须携带与当前环境完全一致的 `Origin`、`X-SC-CSRF: 1` 和 JSON 内容类型。ADS Bearer API 密钥不能用于 PMS 认证。客户端不得提交账号或 service 归属选择参数，也不得提交认证时间戳。
-
-上述 service 和策略示例等价于以下请求：
-
-| 操作 | 会话请求 | 成功状态 |
-| --- | --- | --- |
-| 创建账号的 service | `POST /api/service`，正文为 `{"name":"books"}` | 201 |
-| 添加授权策略 | `POST /api/service/policies`，正文如下 | 201 |
-
-```json
-{"name":"read-books","spdl":"grant user alice from corp get /books"}
+```bash
+curl --fail-with-body --silent --show-error --max-time 10 \
+  'https://cloud.speedle.io/authz-check/v1/is-allowed' \
+  -H "Authorization: Bearer $SPEEDLE_API_KEY" \
+  -H 'Content-Type: application/json' \
+  --data '{"subject":{"principals":[{"type":"user","name":"alice","idd":"corp"}]},"serviceName":"books","resource":"/books","action":"get","attributes":[]}'
 ```
 
-使用控制台时，只把 `spdl` 的值粘贴到编辑器中；这段 JSON 正文用于管理 API。
+如果只保存了示例策略，预期响应为：
 
-### 验证和导出策略
+```json
+{"allowed":true,"reason":0}
+```
 
-使用 `POST /api/service/validate` 和 `{spdl}` 正文校验 SPDL 并识别类型。旧的 `{kind: "authz", spdl}` 形式仍指定授权策略解析器。**下载 SPDL** 和 **下载 JSON** 分别调用 `GET /api/service/export?format=spdl` 和 `GET /api/service/export?format=json`。
+将 `action` 改为 `delete` 后再次发送。没有策略授予该动作的权限，预期响应为：
 
-会话 Playground 使用当前账号在 D1 中的最新数据。后续带认证的 ADS 版本使用发布后的策略快照，传播约需 60 秒。因此，Playground 测试成功并不表示所有 ADS 节点都已拿到新快照。
+```json
+{"allowed":false,"reason":3}
+```
+
+允许和拒绝都返回 HTTP 200。只有 `allowed` 为 `true` 时，应用才能执行受保护的操作；应用必须落实判定结果，遇到错误、无效响应或超时一律拒绝访问。
+
+接入细节见[授权 API](https://engine.speedle.io/zh/docs/cloud/authorization-api/) 和 [SDK](https://engine.speedle.io/zh/docs/sdks/)，包括 [Node.js/TypeScript](https://engine.speedle.io/zh/docs/sdks/node/)、[Python](https://engine.speedle.io/zh/docs/sdks/python/)、[Java](https://engine.speedle.io/zh/docs/sdks/java/) 和 [Go](https://engine.speedle.io/zh/docs/sdks/go/)。
 
 ### 在 Playground 中测试已保存策略
 
-在服务工作区找到 **Playground**，选择 **是否允许**。在 **主体（JSON）** 中输入 `[{"type":"user","name":"alice","idd":"corp"}]`，在 **资源** 中输入 `/books`，在 **动作** 中输入 `get`，在 **属性（JSON）** 中输入 `[]`，然后选择 **运行测试**。
+也可以打开服务的 **Playground**，选择 **是否允许**。在 **主体（JSON）** 中输入 `[{"type":"user","name":"alice","idd":"corp"}]`，在 **资源** 中输入 `/books`，在 **动作** 中输入 `get`，在 **属性（JSON）** 中输入 `[]`，然后选择 **运行测试**。
 
-其他操作包括 **诊断**、**全部已授予角色** 和 **全部已授予权限**。Playground 只使用已保存的策略，不包含编辑器中的未保存草稿。修改输入、操作或语言不会自动发起请求。输入或已保存策略变化后，请再次运行；页面会把上次结果标记为已过期，并在后续请求失败时保留此前结果。
+**是否允许**显示判定结果，**诊断**解释策略如何影响判定，**全部已授予角色**列出主体的角色，**全部已授予权限**列出获准访问的资源和动作。测试只使用已保存的策略，不包含未保存的草稿。修改输入或策略后，请再次运行测试。应用通过 [ADS 授权 API](https://engine.speedle.io/zh/docs/cloud/authorization-api/) 携带 API 密钥检查权限。
 
-### 使用会话 Playground API
-
-`POST /api/service/test` 实现全部四种操作，与其他管理请求使用相同的 Origin/CSRF 规则和账号每日额度。它读取当前账号 D1 策略的一致快照，不发布或保存策略，也不接受账号或 service ID。页面展示的是提交请求时工作区已知的 revision，不能证明服务端实际求值的快照版本。
-
-```http
-POST /api/service/test
-Origin: https://cloud.speedle.io
-X-SC-CSRF: 1
-Content-Type: application/json
-
-{"op":"isAllowed","request":{"subject":{"principals":[{"type":"user","name":"alice","idd":"corp"}]},"serviceName":"books","resource":"/books","action":"get","attributes":[{"name":"level","type":"numeric","value":3}]}}
-```
-
-| `request.op` | 成功正文 | 已发布的控制台与会话 API 合约 |
-| --- | --- | --- |
-| `isAllowed` | Speedle IsAllowedResponse：`allowed`、`reason` 和可选的 `errorMessage` | 已包含 |
-| `diagnose` | Speedle EvaluationDebugResponse：reason 名称、`requestContext`、`attributes`、`policies` | 已包含 |
-| `allGrantedRoles` | `string[]`；无结果时为 `[]` | 已包含 |
-| `allGrantedPermissions` | `{resource, actions}[]`；无结果时为 `[]` | 已包含 |
-
-成功正文保持上游原始形状，不增加 `op` 或 `result` 包裹。两种 all-granted 结果均可能为 `null` 或空数组；这两种形状都不代表授权允许。ADS 不提供公开 Diagnose 接口。
-
-接下来请阅读[API 密钥](https://engine.speedle.io/zh/docs/cloud/tokens/)、[授权 API](https://engine.speedle.io/zh/docs/cloud/authorization-api/)和[限额与错误](https://engine.speedle.io/zh/docs/cloud/limits-and-errors/)。
+下一步：如需通过程序管理策略，请使用 [API 密钥](https://engine.speedle.io/zh/docs/cloud/tokens/)，参阅 [PMS API 或 spctl 的 Speedle Cloud 用法](https://engine.speedle.io/zh/docs/pms/policy-mgmt/#speedle-cloud)。
 
 ## Speedle Cloud API 密钥
 
 API 密钥属于账号，按权限范围访问该账号下的服务。它认证的是应用，不是最终用户。管理 API 密钥、会话和关联身份始终需要已登录的控制台会话。
 
-**Speedle Cloud 即将上线。** cloud.speedle.io 的生产环境尚未开放登录，Cloud 页眉显示 **Coming soon（即将上线）** 徽章。登录关闭时，登录页会提示即将开放。
+**Speedle Cloud 即将上线。** 本文介绍生产环境开放登录和授权 API 后的使用流程，示例尚未在线上 Cloud 环境执行。
 
 ### 创建 API 密钥
 
@@ -189,7 +159,7 @@ Content-Type: application/json
 
 ## Speedle Cloud 授权 API
 
-**Speedle Cloud 即将上线。** cloud.speedle.io 的生产环境尚未开放登录，Cloud 页眉显示 **Coming soon（即将上线）** 徽章。登录关闭时，登录页会提示即将开放。
+**Speedle Cloud 即将上线。** 本文介绍生产环境开放登录和授权 API 后的使用流程，示例尚未在线上 Cloud 环境执行。
 
 从应用服务端使用账号 API 密钥调用授权接口。创建密钥需要账号登录功能可用。管理权限的密钥不能调用 ADS；请使用 `ads`，否则返回 `403 insufficient_scope`。
 
@@ -286,7 +256,7 @@ ADS 请使用 POST。非 POST 请求可能被公开边缘规则拦截并返回 C
 
 ## Speedle Cloud 限额与错误
 
-**Speedle Cloud 即将上线。** cloud.speedle.io 的生产环境尚未开放登录，Cloud 页眉显示 **Coming soon（即将上线）** 徽章。登录关闭时，登录页会提示即将开放。
+**Speedle Cloud 即将上线。** 本文介绍生产环境开放登录和授权 API 后的使用流程，示例尚未在线上 Cloud 环境执行。
 
 除表中另有说明外，限额由整个账号共用。API 密钥属于账号；更换密钥不会增加每日额度。
 

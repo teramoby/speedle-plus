@@ -4,114 +4,73 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 
-	"github.com/teramoby/speedle-plus/api/ads"
 	"github.com/teramoby/speedle-plus/pkg/eval"
-	"github.com/teramoby/speedle-plus/pkg/pdl"
 	"github.com/teramoby/speedle-plus/pkg/svcs/adsrest"
 )
 
+// TestCloudSPDLExamples evaluates the actual quick-start policy and curl body
+// in every locale and compares both documented responses with Engine decisions.
 func TestCloudSPDLExamples(t *testing.T) {
-	for _, locale := range []string{"", ".zh"} {
-		data, err := os.ReadFile(filepath.Join(root(), "docs/hugo/content/docs/cloud/getting-started"+locale+".md"))
-		if err != nil {
-			t.Fatal(err)
-		}
-		text := string(data)
-		const authorization = "grant user alice from corp get /books"
-		if !strings.Contains(text, "```text\n"+authorization+"\n```") {
-			t.Fatalf("%s: missing authorization example", locale)
-		}
-		// The first policy a reader copies has an explicit identity domain, and
-		// the page explains what omitting the from clause means.
-		domainGuidance := "A grant without `from` matches"
-		if locale == ".zh" {
-			domainGuidance = "不带 `from` 的授权会匹配"
-		}
-		if !strings.Contains(text, domainGuidance) {
-			t.Errorf("%s: missing identity-domain guidance beside the example policy", locale)
-		}
-		const principal = `{"type":"user","name":"alice","idd":"corp"}`
-		if !strings.Contains(text, principal) {
-			t.Errorf("%s: Playground example does not send the policy's identity domain", locale)
-		}
-		downloadLanguage := "en"
-		if locale == ".zh" {
-			downloadLanguage = "zh-CN"
-		}
-		download, err := os.ReadFile(filepath.Join(root(), "docs/hugo/static/docs/cloud/quickstart."+downloadLanguage+".md"))
-		if err != nil {
-			t.Fatal(err)
-		}
-		for _, required := range []string{"```text\n" + authorization + "\n```", domainGuidance, principal} {
-			if !strings.Contains(string(download), required) {
-				t.Errorf("%s: offline getting-started guide omits %q", locale, required)
+	for _, locale := range []string{"", ".zh", ".es", ".ja", ".ko"} {
+		t.Run("locale"+locale, func(t *testing.T) {
+			data, err := os.ReadFile(filepath.Join(root(), "docs/hugo/content/docs/cloud/getting-started"+locale+".md"))
+			if err != nil {
+				t.Fatal(err)
 			}
-		}
-
-		location := filepath.Join(t.TempDir(), "policies.spdl")
-		configuration := "[service.books]\n[policy]\n" + authorization + "\n"
-		if err := os.WriteFile(location, []byte(configuration), 0600); err != nil {
-			t.Fatal(err)
-		}
-		evaluator, err := eval.NewFromFile(location, false)
-		if err != nil {
-			t.Fatalf("%s: %v", locale, err)
-		}
-		for _, check := range []struct {
-			user     string
-			idd      string
-			resource string
-			action   string
-			want     bool
-		}{
-			{user: "alice", idd: "corp", resource: "/books", action: "get", want: true},
-			{user: "alice", idd: "other", resource: "/books", action: "get", want: false},
-			{user: "bob", idd: "corp", resource: "/books", action: "get", want: false},
-			{user: "alice", idd: "corp", resource: "/books", action: "write", want: false},
-			{user: "alice", idd: "corp", resource: "/other", action: "get", want: false},
-		} {
-			got, _, err := evaluator.IsAllowed(ads.RequestContext{
-				Subject:     &ads.Subject{Principals: []*ads.Principal{{Type: "user", Name: check.user, IDD: check.idd}}},
-				ServiceName: "books",
-				Resource:    check.resource,
-				Action:      check.action,
-				Attributes:  map[string]interface{}{"level": 3},
-			})
-			if err != nil || got != check.want {
-				t.Fatalf("%s: %s from %s %s %s: got=%v err=%v want=%v", locale, check.user, check.idd, check.action, check.resource, got, err, check.want)
+			text := string(data)
+			policy := regexp.MustCompile("(?s)```text\n(.*?)\n```").FindStringSubmatch(text)
+			body := regexp.MustCompile(`--data '([^']+)'`).FindStringSubmatch(text)
+			responses := regexp.MustCompile("(?s)```json\n(.*?)\n```").FindAllStringSubmatch(text, -1)
+			if len(policy) != 2 || len(body) != 2 || len(responses) != 2 {
+				t.Fatal("expected one policy, a curl body and allow/deny responses")
 			}
-		}
-
-		for _, statement := range []string{"grant user alice editor", "grant user alice editor on /books"} {
-			if !strings.Contains(text, "`"+statement+"`") {
-				t.Errorf("%s: missing role example %q", locale, statement)
+			var published adsrest.JsonContext
+			if err := json.Unmarshal([]byte(body[1]), &published); err != nil {
+				t.Fatal(err)
 			}
-			if _, _, err := pdl.ParseRolePolicy(statement, "rp"); err != nil {
-				t.Errorf("%s: %q: %v", locale, statement, err)
+			request, err := adsrest.ConvertJSONRequestToContext(&published)
+			if err != nil {
+				t.Fatal(err)
 			}
-		}
-		const explicitAuthorization = "grant (user alice) role editor"
-		if !strings.Contains(text, "`"+explicitAuthorization+"`") {
-			t.Errorf("%s: missing explicit authorization example", locale)
-		}
-		if _, _, err := pdl.ParsePolicy(explicitAuthorization, "p"); err != nil {
-			t.Errorf("%s: %q: %v", locale, explicitAuthorization, err)
-		}
-
-		// Cloud rejects this statement because both Engine parsers accept it.
-		const ambiguous = "grant user alice role editor"
-		if !strings.Contains(text, "`"+ambiguous+"`") {
-			t.Errorf("%s: missing ambiguity example", locale)
-		}
-		if _, _, err := pdl.ParsePolicy(ambiguous, "p"); err != nil {
-			t.Errorf("%s: ambiguity no longer exercised by the authorization parser: %v", locale, err)
-		}
-		if _, _, err := pdl.ParseRolePolicy(ambiguous, "rp"); err != nil {
-			t.Errorf("%s: ambiguity no longer exercised by the role parser: %v", locale, err)
-		}
+			if request.Subject == nil || len(request.Subject.Principals) != 1 || request.Subject.Principals[0].IDD == "" {
+				t.Fatal("the application request must include the policy's identity domain")
+			}
+			location := filepath.Join(t.TempDir(), "policies.spdl")
+			configuration := "[service." + request.ServiceName + "]\n[policy]\n" + policy[1] + "\n"
+			if err := os.WriteFile(location, []byte(configuration), 0600); err != nil {
+				t.Fatal(err)
+			}
+			evaluator, err := eval.NewFromFile(location, false)
+			if err != nil {
+				t.Fatal(err)
+			}
+			for i, response := range responses {
+				if i == 1 {
+					request.Action = "delete"
+				}
+				var want adsrest.IsAllowedResponse
+				if err := json.Unmarshal([]byte(response[1]), &want); err != nil {
+					t.Fatal(err)
+				}
+				if want.Allowed != (i == 0) {
+					t.Fatal("expected an allowed response followed by a denied response")
+				}
+				allowed, reason, err := evaluator.IsAllowed(*request)
+				if err != nil || allowed != want.Allowed || int32(reason) != want.Reason || want.ErrorMessage != "" {
+					t.Fatalf("action=%s: allowed=%v reason=%v err=%v; documented=%+v", request.Action, allowed, reason, err, want)
+				}
+			}
+			// A matching name in another domain must not inherit this grant.
+			request.Action = published.Action
+			request.Subject.Principals[0].IDD = "other"
+			if allowed, _, err := evaluator.IsAllowed(*request); err != nil || allowed {
+				t.Fatalf("other domain: allowed=%v err=%v", allowed, err)
+			}
+		})
 	}
 }
 

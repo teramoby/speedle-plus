@@ -216,28 +216,36 @@ console.log('PASS Hugo 0.48 output: editor, navigation, sitemap, footer styleshe
 const cloudCopy = {
   '': {
     intro: 'Speedle Cloud is a hosted authorization service built on the open-source Speedle engine',
-    beta: 'The free public beta is for trials, learning and evaluation', closed: 'Production sign-in is not open',
-    signin: 'Sign in with GitHub or Google (opens soon)', signout: 'Sign out everywhere',
+    beta: 'The free public beta is for trials, learning and evaluation',
+    soon: 'Speedle Cloud is coming soon', preview: 'production sign-in and authenticated authorization checks open',
+    signin: 'Sign in with GitHub or Google (opens soon)',
     download: 'quickstart.en.md', legal: '', samples: true,
   },
   'zh/': {
-    intro: '基于开源 Speedle 引擎的托管授权服务', beta: '免费公开测试版用于试用、学习和评估', closed: '生产环境尚未开放登录',
-    signin: '使用 GitHub 或 Google 登录（即将开放）', signout: '在所有设备上退出',
+    intro: '基于开源 Speedle 引擎的托管授权服务', beta: '免费公开测试版用于试用、学习和评估',
+    soon: 'Speedle Cloud 即将上线', preview: '生产环境开放登录和授权 API 后的使用流程',
+    signin: '使用 GitHub 或 Google 登录（即将开放）',
     download: 'quickstart.zh-CN.md', legal: 'zh-CN/', samples: true,
   },
   'ja/': {
-    intro: 'オープンソースの Speedle エンジンによるホスト型認可サービス', beta: '無料パブリックベータは試用、学習、評価用', closed: '本番環境ではまだサインイン',
-    signin: 'GitHub または Google', signout: '',
+    intro: 'オープンソースの Speedle エンジンによるホスト型認可サービス',
+    beta: '無料パブリックベータは試用、学習、評価用',
+    soon: 'Speedle Cloud はまもなく公開されます', preview: '本番環境のサインインと認証付き認可 API が利用可能になった際',
+    signin: 'GitHub または Google',
     download: 'quickstart.ja.md', legal: 'ja/', samples: false,
   },
   'ko/': {
-    intro: '오픈 소스 Speedle 엔진 기반의 호스팅 인가 서비스', beta: '무료 공개 베타는 시험, 학습, 평가용', closed: '프로덕션 환경에서는 아직 로그인',
-    signin: 'GitHub 또는 Google', signout: '',
+    intro: '오픈 소스 Speedle 엔진 기반의 호스팅 인가 서비스',
+    beta: '무료 공개 베타는 시험, 학습, 평가용',
+    soon: 'Speedle Cloud는 출시 예정입니다', preview: '프로덕션 로그인과 인증된 인가 API가 제공될 때',
+    signin: 'GitHub 또는 Google',
     download: 'quickstart.ko.md', legal: 'ko/', samples: false,
   },
   'es/': {
-    intro: 'servicio de autorización alojado basado en el motor Speedle de código abierto', beta: 'La beta pública gratuita es para pruebas, aprendizaje y evaluación', closed: 'inicio de sesión para producción aún no está habilitado',
-    signin: 'Iniciar sesión con GitHub o Google (próximamente)', signout: 'Cerrar sesión en todas partes',
+    intro: 'servicio de autorización alojado basado en el motor Speedle de código abierto',
+    beta: 'La beta pública gratuita es para pruebas, aprendizaje y evaluación',
+    soon: 'Speedle Cloud estará disponible próximamente', preview: 'inicio de sesión en producción y las comprobaciones de autorización autenticadas',
+    signin: 'Iniciar sesión con GitHub o Google (próximamente)',
     download: 'quickstart.es.md', legal: 'es/', samples: true,
   },
 };
@@ -255,14 +263,14 @@ for (const [locale, copy] of Object.entries(cloudCopy)) {
     assert.ok(sidebar.includes(`href="/${locale}docs/cloud/${route}"`), `Cloud ${route} link in ${locale || 'en'}`);
   }
   assert.ok(overview.includes(copy.intro) && overview.includes(copy.beta), `Current overview in ${locale || 'en'}`);
-  assert.ok(guide.includes(copy.closed) && guide.includes(copy.signin), `Closed sign-in in ${locale || 'en'}`);
-  if (copy.signout) assert.ok(guide.includes(copy.signout), `Account session management in ${locale || 'en'}`);
+  assert.ok(overview.includes(copy.soon) && overview.includes(copy.preview), `Coming-soon overview in ${locale || 'en'}`);
+  assert.ok(guide.includes(copy.preview) && guide.includes(copy.signin), `Preview sign-in notice in ${locale || 'en'}`);
   assert.ok(guide.includes('grant user alice from corp get /books'), `Domain-scoped getting-started policy in ${locale || 'en'}`);
+  const quickStart = ['SPEEDLE_API_KEY', 'books-app', 'read-books', 'cloud.speedle.io/authz-check/v1/is-allowed', 'HTTP 200'];
+  assert.ok(quickStart.every(marker => guide.includes(marker)), `API-key quick start in ${locale || 'en'}`);
   assert.ok(!tokens.includes('UUIDv7'), `Obsolete token format removed in ${locale || 'en'}`);
   assert.ok(api.includes('POST /authz-check/v1/is-allowed'), `ADS preview route in ${locale || 'en'}`);
   if (copy.samples) {
-    assert.ok(guide.includes('allGrantedPermissions') && guide.includes('POST /api/service/test'), `All session Playground operations in ${locale || 'en'}`);
-    assert.ok(guide.includes('grant user alice editor on /books') && guide.includes('grant (user alice) role editor'), `Role-policy examples in ${locale || 'en'}`);
     assert.ok(tokens.includes('spdl_&lt;canonical uppercase ULID id&gt;_&lt;43 base62 digits&gt;'), `Current token format in ${locale || 'en'}`);
     assert.ok(tokens.includes('reauth_required') && tokens.includes('DELETE /api/tokens/') && tokens.includes('nextCursor'), `Token creation, revocation and pagination in ${locale || 'en'}`);
     assert.ok(api.includes('service_not_found') && api.includes('subject.token'), `ADS contract in ${locale || 'en'}`);

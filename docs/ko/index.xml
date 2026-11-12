@@ -112,9 +112,9 @@ plugins { application } repositories { mavenCentral() } dependencies { implement
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/ko/docs/cloud/getting-started/</guid>
-      <description>Speedle Cloud는 출시 예정입니다. cloud.speedle.io의 프로덕션 환경에서는 아직 로그인이 시작되지 않았으며 Cloud 헤더에는 Coming soon(출시 예정) 배지가 표시됩니다. 로그인이 닫혀 있는 동안 로그인 페이지에는 곧 출시될 예정이라는 안내가 표시됩니다. 본문에서는 공개된 사용 흐름을 설명하지만 현재 프로덕션 콘솔이 열려 있음을 의미하지는 않습니다.
-프로덕션 환경 계정 세션, 관리 요청 및 애플리케이션 토큰은 https://cloud.speedle.io를 사용합니다. 계정, 리소스, 토큰은 해당 오리진에 속합니다.
-GitHub 또는 Google을 통한 로그인(출시 예정) 로그인이 아직 시작되지 않았더라도 로그인 페이지에는 GitHub로 로그인과 Google로 로그인이라는 두 가지 옵션이 표시됩니다.</description>
+      <description>Speedle Cloud는 출시 예정입니다. 이 가이드는 프로덕션 로그인과 인증된 인가 API가 제공될 때의 사용 절차를 설명합니다. 예제는 실제 Cloud 환경에서 실행하지 않았습니다.
+GitHub 또는 Google을 통한 로그인(출시 예정) 브라우저에서 Cloud 콘솔을 열고 사용 가능한 공급자로 로그인합니다. 아직 사용되지 않은 인증된 이메일로 처음 로그인하는 경우 계정 생성을 확인합니다. 이메일이 이미 사용 중이라면 콘솔에 표시된 연결된 공급자로 로그인하십시오.
+서비스와 정책 생성 서비스 워크스페이스를 열고 books를 입력한 뒤 서비스 생성을 선택합니다. 기존 정책이 결과에 영향을 주지 않도록 새 서비스로 예제를 실행하십시오.</description>
     </item>
     
     <item>
@@ -181,8 +181,8 @@ speedle-users 및 speedle-developers 메일링 리스트에도 참여하실 수 
       
       <guid>https://engine.speedle.io/ko/docs/cloud/tokens/</guid>
       <description>API 키는 계정에 속하며 범위에 따라 해당 계정의 서비스에 접근합니다. 최종 사용자가 아닌 애플리케이션을 인증합니다. API 키, 세션, 연결된 신원 관리에는 로그인한 콘솔 세션이 필요합니다.
-Speedle Cloud는 출시 예정입니다. cloud.speedle.io의 프로덕션 환경에서는 아직 로그인이 시작되지 않았으며 Cloud 헤더에는 Coming soon(출시 예정) 배지가 표시됩니다. 로그인이 닫혀 있는 동안 로그인 페이지에는 곧 출시될 예정이라는 안내가 표시됩니다.
-API 키 생성 API 키에서 앞뒤 공백을 제외한 1–128자 이름과 범위를 지정하고 생성을 선택합니다. 생성하려면 최근 10분 이내에 연결된 제공자로 인증해야 합니다.</description>
+Speedle Cloud는 출시 예정입니다. 이 가이드는 프로덕션 로그인과 인증된 인가 API가 제공될 때의 사용 절차를 설명합니다. 예제는 실제 Cloud 환경에서 실행하지 않았습니다.
+API 키 생성 API 키에서 앞뒤 공백을 제외한 1–128자 이름과 범위를 지정하고 생성을 선택합니다. 생성하려면 최근 10분 이내에 연결된 제공자로 인증해야 합니다. 403 reauth_required이면 다시 인증한 뒤 생성을 다시 선택하세요.</description>
     </item>
     
     <item>
@@ -262,7 +262,7 @@ MongoDB는 복제본 세트 또는 샤딩된 클러스터로 실행해야 합니
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/ko/docs/cloud/authorization-api/</guid>
-      <description>Speedle Cloud는 출시 예정입니다. cloud.speedle.io의 프로덕션 환경에서는 아직 로그인이 시작되지 않았으며 Cloud 헤더에는 Coming soon(출시 예정) 배지가 표시됩니다. 로그인이 닫혀 있는 동안 로그인 페이지에는 곧 출시될 예정이라는 안내가 표시됩니다.
+      <description>Speedle Cloud는 출시 예정입니다. 이 가이드는 프로덕션 로그인과 인증된 인가 API가 제공될 때의 사용 절차를 설명합니다. 예제는 실제 Cloud 환경에서 실행하지 않았습니다.
 계정 API 키로 서버에서 인가를 확인합니다. 키를 생성하려면 로그인이 가능해야 합니다. 관리 범위는 ADS를 호출할 수 없습니다. ads가 아니면 403 insufficient_scope입니다.
 서버에서 IsAllowed 호출 ads 범위 API 키를 하나의 Authorization: Bearer 헤더에 넣고 POST로 보냅니다.
 POST /authz-check/v1/is-allowed Authorization: Bearer &amp;lt;API key&amp;gt; Content-Type: application/json {&amp;#34;subject&amp;#34;:{&amp;#34;principals&amp;#34;:[{&amp;#34;type&amp;#34;:&amp;#34;user&amp;#34;,&amp;#34;name&amp;#34;:&amp;#34;alice&amp;#34;,&amp;#34;idd&amp;#34;:&amp;#34;corp&amp;#34;}]},&amp;#34;serviceName&amp;#34;:&amp;#34;books&amp;#34;,&amp;#34;resource&amp;#34;:&amp;#34;/books&amp;#34;,&amp;#34;action&amp;#34;:&amp;#34;get&amp;#34;,&amp;#34;attributes&amp;#34;:[{&amp;#34;name&amp;#34;:&amp;#34;level&amp;#34;,&amp;#34;type&amp;#34;:&amp;#34;numeric&amp;#34;,&amp;#34;value&amp;#34;:3},{&amp;#34;name&amp;#34;:&amp;#34;when&amp;#34;,&amp;#34;type&amp;#34;:&amp;#34;datetime&amp;#34;,&amp;#34;value&amp;#34;:&amp;#34;2026-11-05T03:00:00Z&amp;#34;}]} 본문은 자체 호스팅 Speedle ADS와 같은 REST 형식입니다.</description>
@@ -307,7 +307,7 @@ using Speedle.Sdk; try { await using var speedle = new SpeedleClient(new Speedle
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/ko/docs/cloud/limits-and-errors/</guid>
-      <description>Speedle Cloud는 출시 예정입니다. cloud.speedle.io의 프로덕션 환경에서는 아직 로그인이 시작되지 않았으며 Cloud 헤더에는 Coming soon(출시 예정) 배지가 표시됩니다. 로그인이 닫혀 있는 동안 로그인 페이지에는 곧 출시될 예정이라는 안내가 표시됩니다.
+      <description>Speedle Cloud는 출시 예정입니다. 이 가이드는 프로덕션 로그인과 인증된 인가 API가 제공될 때의 사용 절차를 설명합니다. 예제는 실제 Cloud 환경에서 실행하지 않았습니다.
 별도 표시가 없으면 한도는 계정 전체에서 공유합니다. API 키를 바꿔도 일일 할당량은 늘지 않습니다.
 제한    대상 한도 도달 시 처리     계정 서비스 100개 409 quota_exceeded. 미사용 서비스 삭제. 시간에 따른 초기화 없음.   모든 서비스의 인가 정책과 역할 정책 합계 계정당 200개 409 quota_exceeded.</description>
     </item>
