@@ -53,7 +53,7 @@ Cloud 自身故障可能退还额度，每账号每 UTC 日最多退还 1,000 �
 | `403 management_scope_disabled` | 登录关闭时不能签发管理权限的密钥。 |
 | `403 csrf_failed` | 使用控制台会话及所需的来源和 CSRF 请求头。 |
 | `404 service_not_found`（ADS）/ `404 not_found`（管理） | 选择当前账号中存在的服务。密钥 ID 未知、属于其他账号或已撤销时也返回 `404 not_found`。 |
-| `409 quota_exceeded` | 释放相应的服务、策略或 API 密钥名额；等待不会重置这些上限。 |
+| `409 quota_exceeded` | 删除不用的服务或策略以释放名额；等待不会重置这两类上限。撤销不用的 API 密钥，或等它到期，可释放密钥名额。 |
 | `413 request_too_large` | 缩小正文。 |
 | `429 rate_limited` / `429 daily_quota_exceeded` | 遵守 `Retry-After` 并使用有界退避；每日额度在 UTC 午夜重置。 |
 | `503 quota_unavailable` / `503 snapshot_unavailable` / `500 internal_error` | 默认拒绝，按有界退避重试；带有 `Retry-After` 时遵守它。 |

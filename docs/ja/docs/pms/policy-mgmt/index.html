@@ -301,7 +301,7 @@ grant role manager update res1</code></pre></div>
 
 <p>API キーは、証明書の検証が有効になっている HTTPS 経由でのみ <code>Authorization: Bearer</code> 認証情報として送信されます。API キーを使用した平文 HTTP は、<code>127.0.0.1</code>、<code>::1</code>、<code>localhost</code> などのループバックホストに対してのみ許可されます。<code>spctl</code> はリモートの HTTP エンドポイントおよび HTTPS から HTTP へのダウングレードリダイレクトに対しては認証情報を送信する前に拒否します。HTTPS エンドポイントの場合、<code>--skipverify=true</code> が指定されているとAPI キーの送信も拒否されます。代わりに <code>--cacert</code> を使用してプライベートまたは自己署名の認証局を信頼してください。API キーは通常のコマンド出力やエラーメッセージには含まれません。</p>
 
-<p>Cloud のエラーはゼロ以外の終了ステータスを生成します。<code>401</code> の後はAPI キーを確認し、<code>403 insufficient_scope</code> の後はそのスコープを確認してください。<code>404</code> は存在しないリソースを示し、<code>409 service_exists</code> および <code>409 policy_exists</code> は重複を示します。<code>429</code> の場合は、返された <code>Retry-After</code> の値を尊重し、有界なバックオフを使用してください。<code>429 daily_quota_exceeded</code> では <code>Retry-After</code> に従い 00:00 UTC まで待ちます。サービス、ポリシー、有効キーの上限は <code>409 quota_exceeded</code> で、時間ではリセットされません。未使用項目を削除または失効させてください。<a href="/ja/docs/cloud/limits-and-errors/">制限とエラー</a>を参照してください。</p>
+<p>Cloud のエラーはゼロ以外の終了ステータスを生成します。<code>401</code> の後はAPI キーを確認し、<code>403 insufficient_scope</code> の後はそのスコープを確認してください。<code>404</code> は存在しないリソースを示し、<code>409 service_exists</code> および <code>409 policy_exists</code> は重複を示します。<code>429</code> の場合は、返された <code>Retry-After</code> の値を尊重し、有界なバックオフを使用してください。<code>429 daily_quota_exceeded</code> では <code>Retry-After</code> に従い 00:00 UTC まで待ちます。サービスとポリシーの上限は <code>409 quota_exceeded</code> で、時間ではリセットされません。未使用の項目を削除してください。API キーの枠は、キーを失効するか期限切れを待って空きます。<a href="/ja/docs/cloud/limits-and-errors/">制限とエラー</a>を参照してください。</p>
 
 <h2 id="その他のインターフェース">その他のインターフェース</h2>
 

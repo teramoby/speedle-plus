@@ -285,7 +285,7 @@ Cloud 自体の障害は、アカウントごとに UTC 日あたり最大 1,000
 | `403 management_scope_disabled` | サインイン停止中は管理スコープを発行できない。 |
 | `403 csrf_failed` | セッション、Origin、CSRF ヘッダーを確認。 |
 | `404 service_not_found`（ADS）/ `404 not_found`（管理） | 自分のアカウントのサービスを指定。不明、別アカウント、失効済みキー ID も `404 not_found`。 |
-| `409 quota_exceeded` | サービス、ポリシー、API キーの枠を空ける。時間ではリセットしない。 |
+| `409 quota_exceeded` | 未使用のサービスまたはポリシーを削除して枠を空ける。時間ではこの二つの上限は戻らない。API キーの枠は、キーを失効するか期限切れを待って空ける。 |
 | `413 request_too_large` | 本文を縮小。 |
 | `429 rate_limited` / `429 daily_quota_exceeded` | `Retry-After` と上限付きバックオフに従う。日次枠は UTC 午前 0 時にリセット。 |
 | `503 quota_unavailable` / `503 snapshot_unavailable` / `500 internal_error` | 拒否し、上限付きバックオフで再試行。`Retry-After` があれば従う。 |

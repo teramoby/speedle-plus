@@ -285,7 +285,7 @@ Cloud 자체 장애는 계정당 UTC 일일 최대 1,000회까지 할당량을 �
 | `403 management_scope_disabled` | 로그인이 닫힌 동안 관리 범위 발급 불가. |
 | `403 csrf_failed` | 세션, Origin, CSRF 헤더 확인. |
 | `404 service_not_found` (ADS) / `404 not_found` (관리) | 자신의 계정에 있는 서비스 선택. 알 수 없거나 다른 계정 또는 폐기된 키 ID도 `404 not_found`. |
-| `409 quota_exceeded` | 서비스, 정책, API 키의 자리를 확보. 시간으로 초기화되지 않음. |
+| `409 quota_exceeded` | 쓰지 않는 서비스나 정책을 삭제해 자리를 확보합니다. 시간으로 이 두 한도는 초기화되지 않습니다. API 키 자리는 키를 폐기하거나 만료를 기다려 확보합니다. |
 | `413 request_too_large` | 본문 축소. |
 | `429 rate_limited` / `429 daily_quota_exceeded` | `Retry-After`와 제한된 백오프 준수. 일일 한도는 UTC 자정 초기화. |
 | `503 quota_unavailable` / `503 snapshot_unavailable` / `500 internal_error` | 거부하고 제한된 백오프로 재시도. `Retry-After`가 있으면 준수. |

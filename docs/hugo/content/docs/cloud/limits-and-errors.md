@@ -53,7 +53,7 @@ Errors are flat JSON, for example `{"error":"rate_limited"}`. An error is not an
 | `403 management_scope_disabled` | Management-scope issuance is unavailable while sign-in is closed. |
 | `403 csrf_failed` | Use the console session with the required origin and CSRF header. |
 | `404 service_not_found` (ADS) / `404 not_found` (management) | Select an existing service in your account. Unknown, other-account or already-revoked key IDs also return `404 not_found`. |
-| `409 quota_exceeded` | Free the relevant service, policy or API-key slot; time does not reset these caps. |
+| `409 quota_exceeded` | Free a service or policy slot by deleting an unused item; time does not reset those caps. Free an API-key slot by revoking the key or letting it expire. |
 | `413 request_too_large` | Reduce the body size. |
 | `429 rate_limited` / `429 daily_quota_exceeded` | Respect `Retry-After` and use bounded backoff; the daily limit resets at UTC midnight. |
 | `503 quota_unavailable` / `503 snapshot_unavailable` / `500 internal_error` | Fail closed and retry with bounded backoff, respecting `Retry-After` when present. |

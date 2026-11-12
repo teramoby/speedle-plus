@@ -301,7 +301,7 @@ grant role manager update res1</code></pre></div>
 
 <p>API 密钥仅在启用证书验证的 HTTPS 连接中以 <code>Authorization: Bearer</code> 凭据发送。只有 <code>127.0.0.1</code>、<code>::1</code> 或 <code>localhost</code> 等回环主机可以在携带API 密钥时使用纯 HTTP；对于远程 HTTP 端点以及从 HTTPS 降级到 HTTP 的重定向，<code>spctl</code> 会在发送凭据前拒绝请求。对于 HTTPS 端点，<code>spctl</code> 也拒绝在 <code>--skipverify=true</code> 时发送API 密钥；对于私有或自签名证书颁发机构，请使用 <code>--cacert</code> 配置信任。正常命令输出和错误信息不会包含API 密钥。</p>
 
-<p>Cloud 返回错误时，命令以非零状态退出。遇到 <code>401</code> 请检查 API 密钥，遇到 <code>403 insufficient_scope</code> 请检查 scope。<code>404</code> 表示资源不存在，<code>409 service_exists</code> 和 <code>409 policy_exists</code> 表示资源重复。遇到 <code>429</code> 时，请遵循响应中的 <code>Retry-After</code>，并采用有界退避。遇到 <code>429 daily_quota_exceeded</code>，按 <code>Retry-After</code> 等待至 00:00 UTC。服务、策略和有效密钥上限返回 <code>409 quota_exceeded</code>，不会随时间重置；请删除或撤销不用的项目。参见<a href="/zh/docs/cloud/limits-and-errors/">限额与错误</a>。</p>
+<p>Cloud 返回错误时，命令以非零状态退出。遇到 <code>401</code> 请检查 API 密钥，遇到 <code>403 insufficient_scope</code> 请检查 scope。<code>404</code> 表示资源不存在，<code>409 service_exists</code> 和 <code>409 policy_exists</code> 表示资源重复。遇到 <code>429</code> 时，请遵循响应中的 <code>Retry-After</code>，并采用有界退避。遇到 <code>429 daily_quota_exceeded</code>，按 <code>Retry-After</code> 等待至 00:00 UTC。服务和策略上限返回 <code>409 quota_exceeded</code>，不会随时间重置；请删除不用的项目。撤销 API 密钥，或等它到期，可释放密钥名额。参见<a href="/zh/docs/cloud/limits-and-errors/">限额与错误</a>。</p>
 
 <h2 id="其他管理接口">其他管理接口</h2>
 
