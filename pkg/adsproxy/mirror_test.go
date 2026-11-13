@@ -239,6 +239,37 @@ func TestMirrorWithheldCopyStaysUnavailableAcrossPartialCatchUp(t *testing.T) {
 	mirror.MarkAvailable(testUnknownID)
 }
 
+// TestMirrorWithholdsCopyCreatedAfterTheWithhold covers a service the mirror
+// does not hold yet: the runtime withholds it before the fetch that creates
+// its first copy, so a candidate snapshot applied during the fetch is neither
+// advertised nor served until the runtime confirms it.
+func TestMirrorWithholdsCopyCreatedAfterTheWithhold(t *testing.T) {
+	mirror := newTestMirror(t, nil)
+	service := newFixtureService(testServiceID1, "books")
+	mirror.MarkUnavailable(service.ID)
+	if err := mirror.ApplySnapshot(service.snapshotResponse(t)); err != nil {
+		t.Fatalf("apply snapshot: %v", err)
+	}
+	if _, availability := mirror.Lookup(service.ID); availability != ServiceNeedsSnapshot {
+		t.Fatalf("availability after the first snapshot = %v, want ServiceNeedsSnapshot", availability)
+	}
+	if services := mirror.Services(); len(services) != 0 {
+		t.Fatalf("advertised services = %+v", services)
+	}
+	if _, found := mirror.Snapshot(service.ID); found {
+		t.Fatal("a withheld first copy answered a snapshot request")
+	}
+	if info, current := mirror.CurrentInfo(service.ID); !current || info.Revision != service.Revision {
+		t.Fatalf("the verified candidate must stay readable internally: %+v, %v", info, current)
+	}
+
+	mirror.MarkAvailable(service.ID)
+	info, availability := mirror.Lookup(service.ID)
+	if availability != ServiceAvailable || info.Revision != service.Revision {
+		t.Fatalf("confirmed copy = %+v, availability %v", info, availability)
+	}
+}
+
 func TestMirrorRejectsPageGap(t *testing.T) {
 	mirror := newTestMirror(t, nil)
 	service := newFixtureService(testServiceID1, "books")

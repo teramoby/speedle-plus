@@ -114,6 +114,11 @@ type Mirror struct {
 	version   int64
 	observers map[uint64]func(HeadEvent)
 	nextID    uint64
+	// withheld holds service IDs that must not be served even before their
+	// first copy exists. The runtime withholds a service before it fetches a
+	// revision it cannot confirm, so a snapshot or change page applied while
+	// the fetch runs stays invisible until MarkAvailable.
+	withheld map[string]struct{}
 }
 
 // serviceCopy is one verified service: the snapshot it is anchored to,
@@ -201,6 +206,7 @@ func NewMirror(options MirrorOptions) (*Mirror, error) {
 		services:      make(map[string]*serviceCopy),
 		version:       1,
 		observers:     make(map[uint64]func(HeadEvent)),
+		withheld:      make(map[string]struct{}),
 	}, nil
 }
 
@@ -347,6 +353,11 @@ func (m *Mirror) applySnapshot(response *adsync.SnapshotResponse) (HeadEvent, bo
 	existing.overflow = false
 	existing.removed = false
 	existing.tombstoneRevision = 0
+	// A withhold recorded before the copy existed or was revived keeps the
+	// candidate invisible until the runtime confirms the advertised head.
+	if _, held := m.withheld[response.ServiceID]; held {
+		existing.unavailable = true
+	}
 
 	// A snapshot can make a service visible again (revival after removal or
 	// overflow) or remove it from the advertised set. Downstreams compare the
@@ -523,6 +534,7 @@ func (m *Mirror) applyChanges(page *adsync.ChangesResponse) (HeadEvent, bool, er
 func (m *Mirror) RemoveService(serviceID string) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
+	delete(m.withheld, serviceID)
 	service := m.services[serviceID]
 	if service == nil || service.removed {
 		return
@@ -541,17 +553,25 @@ func (m *Mirror) RemoveService(serviceID string) {
 }
 
 // MarkUnavailable stops advertising and serving one service while keeping its
-// verified copy. The runtime calls it when the source advertises a head for the
-// service that the mirror cannot fetch: serving the older copy would let
-// downstream instances keep evaluating policy the source has already replaced.
-// Snapshots and change pages applied while the flag is set stay withheld; the
-// runtime restores availability with MarkAvailable after it has verified that
-// the copy reached the advertised identity and revision.
+// verified copy. The runtime calls it before fetching a revision the mirror
+// does not already serve, and when the source advertises a head the mirror
+// cannot fetch: serving the older copy would let downstream instances keep
+// evaluating policy the source has already replaced. Snapshots and change
+// pages applied while the flag is set stay withheld, including the first copy
+// of a service that did not exist yet; the runtime restores availability with
+// MarkAvailable after it has verified that the copy reached the advertised
+// identity and revision.
 func (m *Mirror) MarkUnavailable(serviceID string) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	service := m.services[serviceID]
-	if service == nil || service.removed || service.unavailable {
+	if service == nil || service.removed {
+		// Record the withhold anyway: the snapshot that creates or revives the
+		// copy may still be applied while the runtime is fetching it.
+		m.withheld[serviceID] = struct{}{}
+		return
+	}
+	if service.unavailable {
 		return
 	}
 	wasAvailable := m.availableLocked(service)
@@ -568,6 +588,7 @@ func (m *Mirror) MarkUnavailable(serviceID string) {
 func (m *Mirror) MarkAvailable(serviceID string) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
+	delete(m.withheld, serviceID)
 	service := m.services[serviceID]
 	if service == nil || service.removed || !service.unavailable {
 		return
