@@ -3,6 +3,7 @@
 package adsproxy
 
 import (
+	"errors"
 	"net/http"
 	"sync/atomic"
 	"testing"
@@ -11,6 +12,52 @@ import (
 	"github.com/gorilla/websocket"
 	"github.com/teramoby/speedle-plus/pkg/adsync"
 )
+
+// TestAckIsRefusedOnceDistributionStops proves a confirming ack is abandoned
+// before any frame is written when distribution has already stopped. The nil
+// connection documents that the guard returns before touching the socket.
+func TestAckIsRefusedOnceDistributionStops(t *testing.T) {
+	mirror, _, _ := newPopulatedMirror(t)
+	var paused atomic.Bool
+	server := newTestServer(t, mirror, &testServerOptions{paused: paused.Load})
+	paused.Store(true)
+	if err := server.server.writeChannelAck(nil); !errors.Is(err, errDistributionStopped) {
+		t.Fatalf("ack after the stop = %v, want errDistributionStopped", err)
+	}
+}
+
+// TestAvailabilityFlipWaitsForAConfirmingWrite proves an availability flip
+// cannot land between a confirming write's check and its write: the flip waits
+// for the write's availability read lock.
+func TestAvailabilityFlipWaitsForAConfirmingWrite(t *testing.T) {
+	mirror, _, _ := newPopulatedMirror(t)
+	var paused atomic.Bool
+	server := newTestServer(t, mirror, &testServerOptions{paused: paused.Load})
+	server.server.availabilityMu.RLock()
+	paused.Store(true)
+	flipped := make(chan struct{})
+	go func() {
+		server.server.refreshAvailability()
+		close(flipped)
+	}()
+	select {
+	case <-flipped:
+		t.Fatal("the availability flip did not wait for the in-flight write")
+	case <-time.After(50 * time.Millisecond):
+	}
+	server.server.availabilityMu.RUnlock()
+	select {
+	case <-flipped:
+	case <-time.After(5 * time.Second):
+		t.Fatal("the availability flip did not complete")
+	}
+	server.server.mu.Lock()
+	unavailable := server.server.unavailable
+	server.server.mu.Unlock()
+	if !unavailable {
+		t.Fatal("the availability state did not flip")
+	}
+}
 
 // TestAvailabilityFlipStopsDistribution covers a state change that no
 // downstream request drives: once the relay is paused or no longer live, an

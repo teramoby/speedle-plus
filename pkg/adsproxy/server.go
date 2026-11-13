@@ -105,6 +105,10 @@ type Server struct {
 	// answers immediately instead of waiting out its hold.
 	unavailable   bool
 	unavailableCh chan struct{}
+	// availabilityMu serializes confirming writes with an availability flip.
+	// A writer holds the read lock across its check and response; the watcher
+	// holds the write lock while it flips the state and closes connections.
+	availabilityMu sync.RWMutex
 
 	closeOnce sync.Once
 	closed    bool
@@ -194,10 +198,19 @@ func (s *Server) watchAvailability() {
 	}
 }
 
+// errDistributionStopped reports that a confirming response was abandoned
+// because distribution stopped before it could be written.
+var errDistributionStopped = errors.New("adsproxy: distribution stopped")
+
 // refreshAvailability closes every downstream channel and wakes held polls
 // when distribution flips to unavailable, so a paused or no-longer-live relay
-// stops confirming stale policy instead of waiting for the next heartbeat.
+// stops confirming stale policy instead of waiting for the next heartbeat. It
+// takes the availability write lock, so a flip waits for an in-flight ack or
+// poll response to finish and cannot land between that response's check and
+// its write.
 func (s *Server) refreshAvailability() {
+	s.availabilityMu.Lock()
+	defer s.availabilityMu.Unlock()
 	unavailable := s.distributionUnavailable()
 	s.mu.Lock()
 	if s.closed || unavailable == s.unavailable {
@@ -220,6 +233,19 @@ func (s *Server) refreshAvailability() {
 		closeWithReason(conn, websocket.ClosePolicyViolation, "distribution_paused")
 		_ = conn.Close()
 	}
+}
+
+// writeChannelAck writes one confirming ack unless distribution has stopped.
+// The availability read lock makes the check and the write atomic against a
+// flip: a pause or liveness change cannot complete between them, so an ack
+// that reaches a downstream was current when it was written.
+func (s *Server) writeChannelAck(conn *websocket.Conn) error {
+	s.availabilityMu.RLock()
+	defer s.availabilityMu.RUnlock()
+	if s.distributionUnavailable() {
+		return errDistributionStopped
+	}
+	return writeChannelJSON(conn, s.ack())
 }
 
 // unavailableSignal returns a channel that is closed while distribution is

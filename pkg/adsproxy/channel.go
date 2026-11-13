@@ -5,6 +5,7 @@ package adsproxy
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -298,12 +299,10 @@ func (s *Server) handleChannel(w http.ResponseWriter, r *http.Request) {
 func (s *Server) channelWriter(conn *websocket.Conn, subscriber *Subscriber, acks <-chan struct{}, stop <-chan struct{}) {
 	// Distribution can stop while the connection waits for its hello frame;
 	// the initial ack must not go out as if it were still active.
-	if s.distributionUnavailable() {
-		closeWithReason(conn, websocket.ClosePolicyViolation, "distribution_paused")
-		_ = conn.Close()
-		return
-	}
-	if err := writeChannelJSON(conn, s.ack()); err != nil {
+	if err := s.writeChannelAck(conn); err != nil {
+		if errors.Is(err, errDistributionStopped) {
+			closeWithReason(conn, websocket.ClosePolicyViolation, "distribution_paused")
+		}
 		_ = conn.Close()
 		return
 	}
@@ -315,15 +314,13 @@ func (s *Server) channelWriter(conn *websocket.Conn, subscriber *Subscriber, ack
 			return
 		case <-acks:
 			// The availability watcher closes the connection when the state
-			// flips; this check covers a flip between the watcher tick and
-			// this write, so an ack never confirms distribution while the
-			// relay is paused or no longer live.
-			if s.distributionUnavailable() {
-				closeWithReason(conn, websocket.ClosePolicyViolation, "distribution_paused")
-				_ = conn.Close()
-				return
-			}
-			if err := writeChannelJSON(conn, s.ack()); err != nil {
+			// flips; the write itself is serialized with the flip, so an ack
+			// never confirms distribution while the relay is paused or no
+			// longer live.
+			if err := s.writeChannelAck(conn); err != nil {
+				if errors.Is(err, errDistributionStopped) {
+					closeWithReason(conn, websocket.ClosePolicyViolation, "distribution_paused")
+				}
 				_ = conn.Close()
 				return
 			}
@@ -439,16 +436,24 @@ func (s *Server) handlePoll(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	// Distribution may have been paused while the request was held, and a poll
-	// that was already held must not answer successfully after Close.
-	if s.isClosed() {
+	// that was already held must not answer successfully after Close. The
+	// availability read lock makes the stop check and the ack atomic against a
+	// flip, so a poll that answers was current when it did.
+	s.availabilityMu.RLock()
+	closed := s.isClosed()
+	stopped := s.distributionUnavailable()
+	if !closed && !stopped {
+		writeJSON(w, http.StatusOK, s.ack())
+	}
+	s.availabilityMu.RUnlock()
+	if closed {
 		writeError(w, http.StatusServiceUnavailable, "source_unavailable", "")
 		return
 	}
-	if s.distributionUnavailable() {
+	if stopped {
 		writeError(w, http.StatusServiceUnavailable, "distribution_paused", "")
 		return
 	}
-	writeJSON(w, http.StatusOK, s.ack())
 }
 
 // parsePollWait parses the documented 0..30 second wait. The bound is checked
