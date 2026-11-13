@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -133,5 +134,24 @@ func TestEngineWithoutPolicySourceIsUnaffected(t *testing.T) {
 	policies, err := manager.ReadPolicyStore()
 	if err != nil || len(policies.Services) != 1 || policies.Services[0].Name != "legacy" {
 		t.Fatalf("legacy example behavior: %v, %v", policies, err)
+	}
+}
+
+func TestEscapedAPIKeyIsRedactedFromErrors(t *testing.T) {
+	for _, secret := range []string{`private"quoted`, `private\backslash`, "private\nnewline", "private\ttab", "private\x01control"} {
+		quoted := strconv.Quote(secret)
+		escaped := quoted[1 : len(quoted)-1]
+		for _, property := range []string{TransportKey, RequestTimeoutKey} {
+			props := map[string]interface{}{UpstreamURLKey: "https://source.example", APIKeyKey: secret, property: secret}
+			_, err := optionsFromConfig(props)
+			if err == nil || strings.Contains(err.Error(), secret) || strings.Contains(err.Error(), escaped) {
+				t.Fatalf("%s exposed an API key: %v", property, err)
+			}
+		}
+		// Underlying client/file errors may quote a value repeated by accident.
+		err := redactConfigError(fmt.Errorf("invalid property %q", secret), cfg.Secret(secret))
+		if strings.Contains(err.Error(), secret) || strings.Contains(err.Error(), escaped) {
+			t.Fatalf("quoted error exposed API key: %v", err)
+		}
 	}
 }
