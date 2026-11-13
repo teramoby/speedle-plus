@@ -3,7 +3,6 @@
 package adsproxy
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -244,126 +243,6 @@ func TestChannelWebSocketAuthentication(t *testing.T) {
 			t.Errorf("status = %v", response)
 		}
 	}
-}
-
-func TestDownstreamChannelEndToEnd(t *testing.T) {
-	t.Skip("the relay hello still identifies a downstream by a ULID and a proxy chain; " +
-		"an adsync channel now sends a UUIDv7 instance ID and an empty chain. The relay is reworked with cascade support.")
-	mirror, books, orders := newPopulatedMirror(t)
-	token := testToken(testDownstreamID, 1)
-	server := newTestServer(t, mirror, &testServerOptions{
-		coalesceWindow: 300 * time.Millisecond,
-	}, testCredential{
-		downstreamID: testDownstreamID,
-		token:        token,
-	})
-
-	client := server.newClient(token)
-	machine, err := adsync.NewMachine(adsync.MachineOptions{})
-	if err != nil {
-		t.Fatalf("new machine: %v", err)
-	}
-	updates := make(chan adsync.Notify, 16)
-	channel, err := adsync.NewChannel(client, adsync.ChannelOptions{
-		AgentVersion: "test",
-		Machine:      machine,
-		Transport:    adsync.TransportWebSocket,
-		OnNotify: func(notification adsync.Notify) {
-			select {
-			case updates <- notification:
-			default:
-			}
-		},
-	})
-	if err != nil {
-		t.Fatalf("new channel: %v", err)
-	}
-	ctx, cancel := context.WithCancel(context.Background())
-	done := make(chan error, 1)
-	go func() { done <- channel.Run(ctx) }()
-	defer func() {
-		cancel()
-		// The downstream client's WebSocket read only notices cancellation at
-		// its read deadline; closing the proxy's sessions makes the test quick.
-		server.server.Close()
-		select {
-		case <-done:
-		case <-time.After(5 * time.Second):
-			t.Error("channel did not stop")
-		}
-	}()
-
-	waitFor(t, 5*time.Second, "the first ack", func() bool {
-		status, found := machine.Status("books")
-		return found && status.Service.Head == 1
-	})
-
-	// Two revisions inside one coalescing window produce one notification
-	// carrying the latest head.
-	books.publish(t, upsertAuthz(testServiceID1+"A1", "read", "grant read"))
-	if err := mirror.ApplyChanges(pageFor(t, books, 1, 100)); err != nil {
-		t.Fatalf("apply first change: %v", err)
-	}
-	books.publish(t, upsertAuthz(testServiceID1+"A2", "read-more", "grant read"))
-	if err := mirror.ApplyChanges(pageFor(t, books, 2, 100)); err != nil {
-		t.Fatalf("apply second change: %v", err)
-	}
-
-	select {
-	case notification := <-updates:
-		if notification.ServiceID != testServiceID1 || notification.Head != 3 {
-			t.Errorf("notification = %+v, want books at 3", notification)
-		}
-	case <-time.After(5 * time.Second):
-		t.Fatal("no notification arrived")
-	}
-	select {
-	case extra := <-updates:
-		t.Errorf("unexpected extra notification %+v", extra)
-	case <-time.After(500 * time.Millisecond):
-	}
-	_ = orders
-}
-
-func TestLongPollChannelEndToEnd(t *testing.T) {
-	t.Skip("the relay hello still identifies a downstream by a ULID and a proxy chain; " +
-		"an adsync channel now sends a UUIDv7 instance ID and an empty chain. The relay is reworked with cascade support.")
-	mirror, _, _ := newPopulatedMirror(t)
-	token := testToken(testDownstreamID, 1)
-	server := newTestServer(t, mirror, nil, testCredential{
-		downstreamID: testDownstreamID,
-		token:        token,
-	})
-	client := server.newClient(token)
-	machine, err := adsync.NewMachine(adsync.MachineOptions{})
-	if err != nil {
-		t.Fatalf("new machine: %v", err)
-	}
-	channel, err := adsync.NewChannel(client, adsync.ChannelOptions{
-		AgentVersion: "test",
-		Machine:      machine,
-		Transport:    adsync.TransportLongPoll,
-		PollWait:     time.Second,
-	})
-	if err != nil {
-		t.Fatalf("new channel: %v", err)
-	}
-	ctx, cancel := context.WithCancel(context.Background())
-	done := make(chan error, 1)
-	go func() { done <- channel.Run(ctx) }()
-	defer func() {
-		cancel()
-		select {
-		case <-done:
-		case <-time.After(5 * time.Second):
-			t.Error("channel did not stop")
-		}
-	}()
-
-	waitFor(t, 5*time.Second, "a confirming long-poll ack", func() bool {
-		status, found := machine.Status("orders")
-		return found && status.Service.Head == 1
-	})
 }
 
 func TestHubCoalescesNotifications(t *testing.T) {

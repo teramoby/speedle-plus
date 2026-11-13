@@ -629,14 +629,11 @@ func TestChannelWebSocketMultiService(t *testing.T) {
 	if hello.InstanceID != testInstanceID {
 		t.Errorf("hello instanceId = %q", hello.InstanceID)
 	}
-	if hello.AgentVersion != "test-1.0" || hello.Transport != string(TransportWebSocket) {
+	if hello.AgentVersion != "test-1.0" {
 		t.Errorf("hello = %+v", hello)
 	}
 	if len(hello.Services) != 3 {
 		t.Fatalf("hello carries %d services, want 3", len(hello.Services))
-	}
-	if got := hello.Chain; got == nil || len(got) != 0 {
-		t.Errorf("hello chain = %v", got)
 	}
 	if hello.Host == nil || hello.Host.Transport != string(TransportWebSocket) {
 		t.Errorf("hello host = %+v", hello.Host)
@@ -1185,16 +1182,12 @@ func TestChannelCommands(t *testing.T) {
 		Action:    commandActionResume,
 		ExpiresAt: time.Now().Add(-time.Minute).UnixMilli(),
 	}
-	setSource := channelCommand{
-		ID:     "01HF7YAT000000000000000303",
-		Action: commandActionSetSource,
-		Params: &channelCommandParams{
-			URL:               "https://proxy.example:443",
-			CredentialProfile: "upstream",
-		},
+	pause := channelCommand{
+		ID:        "01HF7YAT000000000000000303",
+		Action:    commandActionPause,
 		ExpiresAt: time.Now().Add(time.Minute).UnixMilli(),
 	}
-	source.setCommands(resync, expired, setSource)
+	source.setCommands(resync, expired, pause)
 	server := startChannelFixture(t, source)
 	client := newChannelClient(t, server)
 
@@ -1220,8 +1213,8 @@ func TestChannelCommands(t *testing.T) {
 				seen[command.ID] = command
 			default:
 				_, foundResync := seen[resync.ID]
-				_, foundSetSource := seen[setSource.ID]
-				return foundResync && foundSetSource
+				_, foundPause := seen[pause.ID]
+				return foundResync && foundPause
 			}
 		}
 	})
@@ -1231,9 +1224,8 @@ func TestChannelCommands(t *testing.T) {
 	if command := seen[resync.ID]; command.ServiceID != testServiceID1 || command.Action != commandActionResync {
 		t.Fatalf("resync command = %+v", command)
 	}
-	if command := seen[setSource.ID]; command.SourceURL != "https://proxy.example:443" ||
-		command.CredentialProfile != "upstream" {
-		t.Fatalf("set_source command = %+v", command)
+	if command := seen[pause.ID]; command.ServiceID != "" || command.Action != commandActionPause {
+		t.Fatalf("pause command = %+v", command)
 	}
 	waitFor(t, 3*time.Second, "the command results", func() bool {
 		results := source.results()
@@ -1241,7 +1233,7 @@ func TestChannelCommands(t *testing.T) {
 			return false
 		}
 		for _, result := range results {
-			if result.ID != resync.ID && result.ID != setSource.ID {
+			if result.ID != resync.ID && result.ID != pause.ID {
 				return false
 			}
 			if result.Status != commandStatusAcked || result.Type != channelTypeCommandResult {

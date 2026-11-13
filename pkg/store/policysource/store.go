@@ -39,6 +39,11 @@ type Store struct {
 	// syncMu serializes synchronization passes.
 	syncMu sync.Mutex
 
+	// integrity holds the retry backoff of services whose copy failed
+	// integrity.
+	integrityMu sync.Mutex
+	integrity   map[string]integrityRetry
+
 	// mu guards copies and the published assembly. pendingRemoved records the
 	// names of removed services until the evaluator has installed the assembly
 	// that no longer contains them.
@@ -162,6 +167,7 @@ func Open(ctx context.Context, options Options) (_ *Store, err error) {
 		fallback:       !options.DisableFallback,
 		copies:         make(map[string]*serviceCopy),
 		pendingRemoved: make(map[string]string),
+		integrity:      make(map[string]integrityRetry),
 	}
 	for _, service := range syncer.CachedServices() {
 		if err := machine.Track(service.ID, service.Name); err != nil {
@@ -246,6 +252,7 @@ func (s *Store) Sync(ctx context.Context) error {
 	// stop evaluating a removed service as soon as the machine reports it
 	// removed, not after a possibly slow fetch of another service finishes.
 	removed := s.dropUnselected(selectedIDs)
+	s.keepIntegrityRetries(selectedIDs)
 	for _, serviceID := range removed {
 		if err := s.syncer.Forget(serviceID); err != nil {
 			errs = append(errs, fmt.Errorf("service %q: %w", serviceID, err))
@@ -276,6 +283,12 @@ func (s *Store) Sync(ctx context.Context) error {
 
 	failed := make(map[string]struct{})
 	for _, service := range selected {
+		// A copy that failed integrity at this head is retried with
+		// backoff, so a persistent mismatch does not pull a snapshot on
+		// every ack.
+		if s.integrityWaiting(service) {
+			continue
+		}
 		if err := s.syncService(ctx, service); err != nil {
 			errs = append(errs, err)
 			failed[service.ID] = struct{}{}
@@ -335,9 +348,11 @@ func (s *Store) syncService(ctx context.Context, service adsync.Service) error {
 		if stderrors.Is(err, adsync.ErrIntegrity) {
 			log.Errorf("policy-source service %q fails closed: its copy does not match the acknowledged head: %v", service.Name, err)
 			s.machine.FailService(service.ID)
+			s.recordIntegrityFailure(service)
 		}
 		return fmt.Errorf("service %q: %w", service.Name, err)
 	}
+	s.clearIntegrityRetry(service.ID)
 	return s.installFetched(service, state, attempt)
 }
 

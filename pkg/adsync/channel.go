@@ -19,9 +19,6 @@ import (
 )
 
 const (
-	// maxChainDepth is the number of proxies allowed between Cloud and a leaf.
-	maxChainDepth = 3
-
 	defaultPollWait = 25 * time.Second
 	maxPollWait     = 30 * time.Second
 	// minPollGap is the shortest interval between the starts of two long polls
@@ -91,17 +88,13 @@ type Notify struct {
 // transport only delivers commands; applying them is the caller's job.
 type Command struct {
 	ID string
-	// Action is resync, pause, resume, set_source or stop.
+	// Action is resync, pause, resume or stop.
 	Action string
 	// ServiceID scopes the command to one service; empty means the instance.
 	ServiceID string
 	// ExpiresAt is when the source stops caring about the command. The
 	// transport does not deliver a command past its expiry.
 	ExpiresAt time.Time
-	// SourceURL and CredentialProfile are set for set_source only. The command
-	// never carries a credential; CredentialProfile names a local file.
-	SourceURL         string
-	CredentialProfile string
 }
 
 // CommandResult is the outcome of one command. Status is acked or rejected; an
@@ -768,11 +761,8 @@ func (c *Channel) helloMessage(transport Transport) channelHello {
 		Type:         channelTypeHello,
 		InstanceID:   c.instanceID,
 		Services:     services,
-		Chain:        []string{},
 		AgentVersion: c.agentVersion,
 		Host:         &host,
-		StartedAt:    c.startedAt.UnixMilli(),
-		Transport:    string(transport),
 	}
 }
 

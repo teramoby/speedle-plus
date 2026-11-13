@@ -5,7 +5,6 @@ package adsync
 import (
 	"encoding/json"
 	"fmt"
-	"net/url"
 	"regexp"
 	"time"
 )
@@ -22,19 +21,15 @@ const (
 	channelTypeNotify        = "notify"
 	channelTypeCommandResult = "command_result"
 
-	commandActionResync    = "resync"
-	commandActionPause     = "pause"
-	commandActionResume    = "resume"
-	commandActionSetSource = "set_source"
-	commandActionStop      = "stop"
+	commandActionResync = "resync"
+	commandActionPause  = "pause"
+	commandActionResume = "resume"
+	commandActionStop   = "stop"
 
 	commandStatusAcked    = "acked"
 	commandStatusRejected = "rejected"
 
 	maxChannelFrameBytes = 64 << 10
-	// maxChainEntries is the contract bound: one entry per proxy plus this
-	// instance.
-	maxChainEntries = maxChainDepth + 1
 )
 
 // channelDurationPattern is the contract's duration syntax. time.ParseDuration
@@ -54,12 +49,10 @@ type channelHello struct {
 	Type         string                `json:"type"`
 	InstanceID   string                `json:"instanceId"`
 	Services     []channelHelloService `json:"services"`
-	Chain        []string              `json:"chain"`
 	AgentVersion string                `json:"agentVersion"`
-	// Host is display-only; it is never used for identity.
-	Host      *HostInfo `json:"host,omitempty"`
-	StartedAt int64     `json:"startedAt,omitempty"`
-	Transport string    `json:"transport,omitempty"`
+	// Host is display-only; it is never used for identity. It carries the
+	// start time and the transport.
+	Host *HostInfo `json:"host"`
 }
 
 // channelHeartbeatService is one entry of the heartbeat service list.
@@ -127,20 +120,13 @@ type channelNotify struct {
 	Head      uint64 `json:"head"`
 }
 
-// channelCommandParams carries the set_source parameters. The command never
-// carries a credential: credentialProfile names a local file.
-type channelCommandParams struct {
-	URL               string `json:"url"`
-	CredentialProfile string `json:"credentialProfile"`
-}
-
 // channelCommand is one management command from the ack.
 type channelCommand struct {
-	ID        string                `json:"id"`
-	Action    string                `json:"action"`
-	ServiceID string                `json:"serviceId,omitempty"`
-	Params    *channelCommandParams `json:"params,omitempty"`
-	ExpiresAt int64                 `json:"expiresAt"`
+	ID        string          `json:"id"`
+	Action    string          `json:"action"`
+	ServiceID string          `json:"serviceId,omitempty"`
+	Params    json.RawMessage `json:"params,omitempty"`
+	ExpiresAt int64           `json:"expiresAt"`
 }
 
 // channelCommandResult reports a delivered command back to the source.
@@ -231,25 +217,11 @@ func (c *channelCommand) validate() error {
 	}
 	switch c.Action {
 	case commandActionResync, commandActionPause, commandActionResume, commandActionStop:
-		if c.Params != nil {
+		if len(c.Params) != 0 {
 			return fmt.Errorf("%w: command %q must not carry params", ErrProtocol, c.ID)
 		}
 		if c.ServiceID != "" && !validEntityID(c.ServiceID) {
 			return fmt.Errorf("%w: command %q has an invalid service id", ErrProtocol, c.ID)
-		}
-	case commandActionSetSource:
-		if c.ServiceID != "" {
-			return fmt.Errorf("%w: set_source command %q must not name a service", ErrProtocol, c.ID)
-		}
-		if c.Params == nil {
-			return fmt.Errorf("%w: set_source command %q has no params", ErrProtocol, c.ID)
-		}
-		target, err := url.Parse(c.Params.URL)
-		if err != nil || target.Scheme != "https" || target.Host == "" || target.User != nil {
-			return fmt.Errorf("%w: set_source command %q has an invalid url", ErrProtocol, c.ID)
-		}
-		if c.Params.CredentialProfile == "" || len(c.Params.CredentialProfile) > 128 {
-			return fmt.Errorf("%w: set_source command %q has an invalid credential profile", ErrProtocol, c.ID)
 		}
 	default:
 		return fmt.Errorf("%w: unknown command action %q", ErrProtocol, c.Action)
@@ -263,10 +235,6 @@ func (c channelCommand) command() Command {
 		Action:    c.Action,
 		ServiceID: c.ServiceID,
 		ExpiresAt: time.UnixMilli(c.ExpiresAt).UTC(),
-	}
-	if c.Params != nil {
-		command.SourceURL = c.Params.URL
-		command.CredentialProfile = c.Params.CredentialProfile
 	}
 	return command
 }

@@ -307,7 +307,7 @@ func TestChannelMessagesCarryIdentityAndHost(t *testing.T) {
 	for index := range 20 {
 		ips = append(ips, fmt.Sprintf("10.0.0.%d", index))
 	}
-	host := HostInfo{Hostname: "edge-1", OS: "linux", Arch: "amd64", IPs: ips, GoVersion: "go1", PID: 7, Container: true}
+	host := HostInfo{Hostname: "edge-1", OS: "linux", Arch: "amd64", IPs: ips, GoVersion: "go1", PID: 7, Container: true, StartedAt: "2026-11-13T07:00:00Z"}
 	channel, err := NewChannel(client, ChannelOptions{
 		Machine: machine, AgentVersion: "test/1",
 		HostInfo: func(time.Time) HostInfo { return host },
@@ -334,9 +334,6 @@ func TestChannelMessagesCarryIdentityAndHost(t *testing.T) {
 		if _, found := message["credentialId"]; found {
 			t.Fatal("credential id sent")
 		}
-		if chain, ok := message["chain"].([]any); !ok || len(chain) != 0 {
-			t.Fatalf("chain = %v", message["chain"])
-		}
 		sent, ok := message["host"].(map[string]any)
 		if !ok || sent["hostname"] != "edge-1" || sent["os"] != "linux" || sent["container"] != true {
 			t.Fatalf("host = %v", message["host"])
@@ -344,6 +341,18 @@ func TestChannelMessagesCarryIdentityAndHost(t *testing.T) {
 		if ips, _ := sent["ips"].([]any); len(ips) != maxHostIPs {
 			t.Fatalf("ips not bounded: %d", len(ips))
 		}
+	}
+	// The hello keeps the start time and transport inside the host block and
+	// names no chain.
+	for _, key := range []string{"chain", "startedAt", "transport"} {
+		if _, found := hello[key]; found {
+			t.Fatalf("hello carries a top-level %s: %v", key, hello)
+		}
+	}
+	if started, _ := hello["host"].(map[string]any)["startedAt"].(string); started == "" {
+		t.Fatalf("hello host startedAt = %v", hello["host"])
+	} else if _, err := time.Parse(time.RFC3339, started); err != nil {
+		t.Fatalf("hello host startedAt %q: %v", started, err)
 	}
 	if hello["host"].(map[string]any)["transport"] != string(TransportWebSocket) ||
 		poll["host"].(map[string]any)["transport"] != string(TransportLongPoll) {
@@ -401,8 +410,9 @@ func TestHostInfoBounds(t *testing.T) {
 		Transport: strings.Repeat("t", maxHostVersionBytes+1),
 		IPs:       []string{"::1", "999.0.0.1", "192.0.2.1"},
 		PID:       -1,
+		StartedAt: "yesterday",
 	}.bounded()
-	if host.Hostname != "" || host.OS != "" || host.OSVersion != "" || host.Transport != "" || host.PID != 0 {
+	if host.Hostname != "" || host.OS != "" || host.OSVersion != "" || host.Transport != "" || host.PID != 0 || host.StartedAt != "" {
 		t.Fatalf("oversized fields kept: %+v", host)
 	}
 	if host.Arch != "amd64" || len(host.GoVersion) != maxHostVersionBytes {
@@ -417,7 +427,7 @@ func TestCollectHostInfo(t *testing.T) {
 	started := time.UnixMilli(1762500000000)
 	host := CollectHostInfo(started)
 	if host.OS != runtime.GOOS || host.Arch != runtime.GOARCH || host.GoVersion != runtime.Version() ||
-		host.PID != os.Getpid() || host.StartedAt != started.UnixMilli() || host.IPs == nil || len(host.IPs) > maxHostIPs {
+		host.PID != os.Getpid() || host.StartedAt != started.UTC().Format(time.RFC3339) || host.IPs == nil || len(host.IPs) > maxHostIPs {
 		t.Fatalf("host = %+v", host)
 	}
 	for _, ip := range host.IPs {

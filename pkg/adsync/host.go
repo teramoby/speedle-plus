@@ -33,13 +33,13 @@ type HostInfo struct {
 	IPs       []string `json:"ips"`
 	GoVersion string   `json:"goVersion"`
 	PID       int      `json:"pid"`
-	StartedAt int64    `json:"startedAt"`
+	StartedAt string   `json:"startedAt"`
 	Container bool     `json:"container"`
 	Transport string   `json:"transport"`
 }
 
 // CollectHostInfo gathers the host object. It never fails; startedAt is the
-// process start as the channel saw it.
+// process start as the channel saw it, sent as an RFC 3339 time.
 func CollectHostInfo(startedAt time.Time) HostInfo {
 	hostname, _ := os.Hostname()
 	return HostInfo{
@@ -50,7 +50,7 @@ func CollectHostInfo(startedAt time.Time) HostInfo {
 		IPs:       hostIPs(),
 		GoVersion: runtime.Version(),
 		PID:       os.Getpid(),
-		StartedAt: startedAt.UnixMilli(),
+		StartedAt: startedAt.UTC().Format(time.RFC3339),
 		Container: inContainer(),
 	}
 }
@@ -65,6 +65,9 @@ func (h HostInfo) bounded() HostInfo {
 	h.OSVersion = boundedText(h.OSVersion, maxHostVersionBytes)
 	h.GoVersion = boundedText(h.GoVersion, maxHostVersionBytes)
 	h.Transport = boundedText(h.Transport, maxHostVersionBytes)
+	if _, err := time.Parse(time.RFC3339, h.StartedAt); err != nil {
+		h.StartedAt = ""
+	}
 	ips := make([]string, 0, len(h.IPs))
 	for _, value := range h.IPs {
 		if len(ips) == maxHostIPs {

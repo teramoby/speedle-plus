@@ -345,6 +345,7 @@ func (s *Store) resync(serviceID string) {
 	}
 	changed := false
 	for _, id := range targets {
+		s.clearIntegrityRetry(id)
 		s.machine.Resync(id)
 		if err := s.syncer.Forget(id); err != nil {
 			log.Warnf("policy-source resync could not discard service %q: %v", id, err)

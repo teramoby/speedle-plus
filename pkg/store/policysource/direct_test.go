@@ -162,8 +162,8 @@ func TestDirectModeRegistersSyncsAndServes(t *testing.T) {
 	if _, found := hello["credentialId"]; found {
 		t.Fatalf("hello carries a credential id: %s", hellos[0])
 	}
-	if chain, ok := hello["chain"].([]interface{}); !ok || len(chain) != 0 {
-		t.Fatalf("hello chain = %v", hello["chain"])
+	if _, found := hello["chain"]; found {
+		t.Fatalf("hello carries a chain: %s", hellos[0])
 	}
 	sentHost, _ := hello["host"].(map[string]interface{})
 	if host, _ := os.Hostname(); sentHost == nil || (host != "" && len(host) <= 255 && sentHost["hostname"] != host) ||
@@ -411,19 +411,14 @@ func TestRuntimeCommandsRemovalAndRevocation(t *testing.T) {
 			return found && status == "acked"
 		})
 	}
-	acked(cloud.sendCommand("pause", "", nil))
+	acked(cloud.sendCommand("pause", ""))
 	e2eWaitFor(t, "the instance to pause", func() bool { return ads.Instance().Paused })
-	acked(cloud.sendCommand("resume", "", nil))
+	acked(cloud.sendCommand("resume", ""))
 	e2eWaitFor(t, "the instance to resume", func() bool { return !ads.Instance().Paused })
-	acked(cloud.sendCommand("resync", e2eServiceBooks, nil))
+	acked(cloud.sendCommand("resync", e2eServiceBooks))
 	e2eWaitAllInSync(t, agent, "books")
-	acked(cloud.sendCommand("resync", "", nil))
+	acked(cloud.sendCommand("resync", ""))
 	e2eWaitAllInSync(t, agent, "books", "orders")
-	rejected := cloud.sendCommand("set_source", "", &e2eCommandArgs{URL: "https://other.example", CredentialProfile: "p"})
-	e2eWaitFor(t, "set_source to be rejected", func() bool {
-		status, found := cloud.commandResult(rejected)
-		return found && status == "rejected"
-	})
 
 	// A service removed from the assigned set is dropped locally.
 	cloud.removeService(e2eServiceOrders)

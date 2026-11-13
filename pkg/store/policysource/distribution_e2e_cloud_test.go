@@ -57,8 +57,6 @@ const (
 	e2eKindAuthz    = "authz"
 	e2eKindRole     = "role"
 	e2eKindService  = "service"
-
-	e2eAgentVersion = "e2e-suite"
 )
 
 // e2eService is one service held by the fixture. Its fields are guarded by
@@ -203,38 +201,12 @@ func (s *e2eService) publish(t *testing.T, changes ...adsync.Change) adsync.Comm
 	return commit
 }
 
-// replaceEpoch replaces the dataset identity, as a new policy source would.
-// The caller must hold the fixture lock.
-func (s *e2eService) replaceEpoch(epoch string, policies, rolePolicies []adsync.Policy) {
-	if policies == nil {
-		policies = []adsync.Policy{}
-	}
-	if rolePolicies == nil {
-		rolePolicies = []adsync.Policy{}
-	}
-	state := adsync.Snapshot{Name: s.Name, Policies: policies, RolePolicies: rolePolicies}
-	hash := adsync.StateHash(state)
-	s.Epoch = epoch
-	s.Revision = 1
-	s.State = state
-	s.StateHash = hash
-	s.CommitHash = hash
-	s.Commits = nil
-	s.HistoryUnavailable = false
-}
-
 // e2eWireCommand is one management command waiting to be confirmed.
 type e2eWireCommand struct {
-	ID        string          `json:"id"`
-	Action    string          `json:"action"`
-	ServiceID string          `json:"serviceId,omitempty"`
-	Params    *e2eCommandArgs `json:"params,omitempty"`
-	ExpiresAt int64           `json:"expiresAt"`
-}
-
-type e2eCommandArgs struct {
-	URL               string `json:"url"`
-	CredentialProfile string `json:"credentialProfile"`
+	ID        string `json:"id"`
+	Action    string `json:"action"`
+	ServiceID string `json:"serviceId,omitempty"`
+	ExpiresAt int64  `json:"expiresAt"`
 }
 
 type e2eRequest struct {
@@ -440,22 +412,6 @@ func e2eCloseEvaluator(evaluator adsapi.PolicyEvaluator) {
 
 // --- Fixture controls used by the scenarios ---
 
-func (f *e2eCloud) disconnect() {
-	f.mu.Lock()
-	f.disconnected = true
-	conns := f.connListLocked()
-	f.mu.Unlock()
-	for _, conn := range conns {
-		conn.close()
-	}
-}
-
-func (f *e2eCloud) reconnect() {
-	f.mu.Lock()
-	f.disconnected = false
-	f.mu.Unlock()
-}
-
 func (f *e2eCloud) revoke() {
 	f.mu.Lock()
 	f.revoked = true
@@ -464,12 +420,6 @@ func (f *e2eCloud) revoke() {
 	for _, conn := range conns {
 		conn.close()
 	}
-}
-
-func (f *e2eCloud) unrevoke() {
-	f.mu.Lock()
-	f.revoked = false
-	f.mu.Unlock()
 }
 
 func (f *e2eCloud) hold(serviceID string) {
@@ -489,30 +439,6 @@ func (f *e2eCloud) release(serviceID string) {
 	}
 }
 
-func (f *e2eCloud) setHistoryUnavailable(serviceID string, unavailable bool) {
-	f.mu.Lock()
-	defer f.mu.Unlock()
-	if service := f.services[serviceID]; service != nil {
-		service.HistoryUnavailable = unavailable
-	}
-}
-
-func (f *e2eCloud) setDataUnavailable(serviceID string, unavailable bool) {
-	f.mu.Lock()
-	defer f.mu.Unlock()
-	if service := f.services[serviceID]; service != nil {
-		service.DataUnavailable = unavailable
-	}
-}
-
-// setServicesUnavailable fails the discovery endpoint only, so an ack can still
-// arrive while the following synchronization pass cannot discover the set.
-func (f *e2eCloud) setServicesUnavailable(unavailable bool) {
-	f.mu.Lock()
-	defer f.mu.Unlock()
-	f.servicesUnavailable = unavailable
-}
-
 // publish appends one revision and returns the new head.
 func (f *e2eCloud) publish(serviceID string, changes ...adsync.Change) uint64 {
 	f.mu.Lock()
@@ -524,40 +450,6 @@ func (f *e2eCloud) publish(serviceID string, changes ...adsync.Change) uint64 {
 	service.publish(f.t, changes...)
 	f.generation++
 	return service.Revision
-}
-
-// renameService renames a service and publishes a service change, so the
-// ack, discovery and snapshot all carry the new name at a new revision.
-func (f *e2eCloud) renameService(serviceID, name string) uint64 {
-	f.mu.Lock()
-	defer f.mu.Unlock()
-	service := f.services[serviceID]
-	if service == nil {
-		f.t.Fatalf("fixture has no service %q", serviceID)
-	}
-	service.Name = name
-	service.publish(f.t,
-		adsync.Change{Op: e2eChangeUpsert, Kind: e2eKindService, ID: serviceID, Name: &name})
-	f.generation++
-	return service.Revision
-}
-
-func (f *e2eCloud) replaceEpoch(serviceID, epoch string, policies, rolePolicies []adsync.Policy) {
-	f.mu.Lock()
-	defer f.mu.Unlock()
-	service := f.services[serviceID]
-	if service == nil {
-		f.t.Fatalf("fixture has no service %q", serviceID)
-	}
-	service.replaceEpoch(epoch, policies, rolePolicies)
-	f.generation++
-}
-
-func (f *e2eCloud) addService(service *e2eService) {
-	f.mu.Lock()
-	f.addServiceLocked(service)
-	f.servicesVersion++
-	f.mu.Unlock()
 }
 
 func (f *e2eCloud) removeService(serviceID string) {
@@ -576,37 +468,6 @@ func (f *e2eCloud) removeService(serviceID string) {
 	f.order = kept
 	f.servicesVersion++
 	f.generation++
-}
-
-// hideService drops one service from discovery and from acks while its signed
-// data endpoints keep serving, like a lagging replica that still holds the
-// policy the authoritative set already dropped.
-func (f *e2eCloud) hideService(serviceID string) {
-	f.mu.Lock()
-	defer f.mu.Unlock()
-	if service := f.services[serviceID]; service != nil {
-		service.Hidden = true
-	}
-	f.servicesVersion++
-	f.generation++
-}
-
-// service returns the fixture's service object so a test can re-add it after
-// removing it from the set. The object is owned by the fixture; callers only
-// pass it back to addService.
-func (f *e2eCloud) service(serviceID string) *e2eService {
-	f.mu.Lock()
-	defer f.mu.Unlock()
-	return f.services[serviceID]
-}
-
-func (f *e2eCloud) serviceEpoch(serviceID string) string {
-	f.mu.Lock()
-	defer f.mu.Unlock()
-	if service := f.services[serviceID]; service != nil {
-		return service.Epoch
-	}
-	return ""
 }
 
 // --- Channel messages and acks ---
@@ -705,7 +566,7 @@ func (f *e2eCloud) notify(serviceID string, head uint64) {
 
 // sendCommand queues a command and pushes an ack so a connected instance sees
 // it immediately. The id is a valid ULID built from a per-fixture counter.
-func (f *e2eCloud) sendCommand(action, serviceID string, params *e2eCommandArgs) string {
+func (f *e2eCloud) sendCommand(action, serviceID string) string {
 	f.mu.Lock()
 	f.commandSeq++
 	id := fmt.Sprintf("01HF7YAT000000000000000%03d", f.commandSeq)
@@ -713,7 +574,6 @@ func (f *e2eCloud) sendCommand(action, serviceID string, params *e2eCommandArgs)
 		ID:        id,
 		Action:    action,
 		ServiceID: serviceID,
-		Params:    params,
 		ExpiresAt: time.Now().Add(5 * time.Minute).UnixMilli(),
 	})
 	f.mu.Unlock()
@@ -753,54 +613,6 @@ func (f *e2eCloud) countRequests(suffix string) int {
 	count := 0
 	for _, request := range f.requests {
 		if strings.HasSuffix(request.Path, suffix) {
-			count++
-		}
-	}
-	return count
-}
-
-// isAllowed asks the fixture's Cloud authorization endpoint directly, exactly
-// as a forwarded fallback request would arrive.
-func (f *e2eCloud) isAllowed(t *testing.T, body []byte) adsrest.IsAllowedResponse {
-	t.Helper()
-	status, _, payload := f.post(t, adsync.AuthzCheckAPIPrefix+"is-allowed", body)
-	if status != http.StatusOK {
-		t.Fatalf("Cloud authorization endpoint: status %d body %s", status, payload)
-	}
-	var response adsrest.IsAllowedResponse
-	if err := json.Unmarshal(payload, &response); err != nil {
-		t.Fatalf("decode Cloud authorization response: %v", err)
-	}
-	return response
-}
-
-func (f *e2eCloud) post(t *testing.T, path string, body []byte) (int, http.Header, []byte) {
-	t.Helper()
-	request, err := http.NewRequest(http.MethodPost, f.server.URL+path, strings.NewReader(string(body)))
-	if err != nil {
-		t.Fatalf("build Cloud request: %v", err)
-	}
-	request.Header.Set("Authorization", "Bearer "+f.credential)
-	request.Header.Set("Content-Type", "application/json")
-	response, err := f.client.Do(request)
-	if err != nil {
-		t.Fatalf("POST %s: %v", path, err)
-	}
-	defer response.Body.Close()
-	payload, err := io.ReadAll(io.LimitReader(response.Body, 1<<20))
-	if err != nil {
-		t.Fatalf("read Cloud response: %v", err)
-	}
-	return response.StatusCode, response.Header.Clone(), payload
-}
-
-func (f *e2eCloud) countRequestsWithCredential(credential string) int {
-	f.mu.Lock()
-	defer f.mu.Unlock()
-	expected := "Bearer " + credential
-	count := 0
-	for _, request := range f.requests {
-		if request.Authorization == expected {
 			count++
 		}
 	}
