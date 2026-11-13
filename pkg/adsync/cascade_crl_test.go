@@ -480,13 +480,13 @@ func TestCascadeCRLFetchRequiresExplicitTrust(t *testing.T) {
 	defer publisher.Close()
 	roots := x509.NewCertPool()
 	roots.AddCert(pki.ca)
-	if _, err := fetchRelayCRL(context.Background(), publisher.URL, roots, 0); err != nil {
+	if _, err := fetchRelayCRL(context.Background(), publisher.URL, roots, 0, 0); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := fetchRelayCRL(context.Background(), publisher.URL, x509.NewCertPool(), 0); err == nil {
+	if _, err := fetchRelayCRL(context.Background(), publisher.URL, x509.NewCertPool(), 0, 0); err == nil {
 		t.Fatal("empty explicit trust fell back to system roots")
 	}
-	if _, err := fetchRelayCRL(context.Background(), publisher.URL, nil, 0); err == nil {
+	if _, err := fetchRelayCRL(context.Background(), publisher.URL, nil, 0, 0); err == nil {
 		t.Fatal("missing explicit trust accepted")
 	}
 }
@@ -521,6 +521,56 @@ func TestCascadeCRLFetchHonorsRequestTimeout(t *testing.T) {
 			}
 			config.RequestTimeout = 2 * time.Second
 			mustCascadeClient(t, config)
+		})
+	}
+}
+
+// A publisher that keeps dribbling bytes must not hold a fetch forever: the
+// stall deadline rejects a drip slower than the configured request timeout,
+// and the fixed total deadline rejects one that outlasts the transfer window.
+func TestCascadeCRLFetchBoundsSlowDrip(t *testing.T) {
+	pki := newCascadePKI(t)
+	now := time.Now()
+	data := pki.crl(t, 0, 1, now.Add(-time.Minute), now.Add(time.Hour), false)
+	for _, test := range []struct {
+		name     string
+		stall    time.Duration
+		interval time.Duration
+		total    time.Duration
+		want     error
+	}{
+		{"stall", 200 * time.Millisecond, 400 * time.Millisecond, 0, errCRLStall},
+		{"total", time.Second, 20 * time.Millisecond, 1500 * time.Millisecond, errCRLDownloadTime},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			publisher := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.WriteHeader(http.StatusOK)
+				w.(http.Flusher).Flush()
+				for offset := 0; ; offset = (offset + 1) % len(data) {
+					if _, err := w.Write(data[offset : offset+1]); err != nil {
+						return
+					}
+					w.(http.Flusher).Flush()
+					select {
+					case <-r.Context().Done():
+						return
+					case <-time.After(test.interval):
+					}
+				}
+			}))
+			cert, _, _ := pki.issue(t, 2, x509.ExtKeyUsageServerAuth, "127.0.0.1", now.Add(time.Hour))
+			publisher.TLS = &tls.Config{Certificates: []tls.Certificate{cert}, MinVersion: tls.VersionTLS12}
+			publisher.StartTLS()
+			defer publisher.Close()
+			roots := x509.NewCertPool()
+			roots.AddCert(pki.ca)
+			started := time.Now()
+			if _, err := fetchRelayCRL(context.Background(), publisher.URL, roots, test.stall, test.total); !errors.Is(err, test.want) {
+				t.Fatalf("slow drip: %v", err)
+			}
+			if elapsed := time.Since(started); elapsed > 5*time.Second {
+				t.Fatalf("slow drip was not bounded: %s", elapsed)
+			}
 		})
 	}
 }

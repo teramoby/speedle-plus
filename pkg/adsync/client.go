@@ -149,7 +149,8 @@ type Config struct {
 	Dialer *websocket.Dialer
 
 	// RequestTimeout limits time without response bytes, including the wait
-	// for headers. Active downloads have no total-duration limit.
+	// for headers. Active policy downloads have no total-duration limit; CRL
+	// downloads also have a fixed total cap.
 	// SnapshotTimeout is deprecated and ignored; retained for source compatibility.
 	RequestTimeout  time.Duration
 	SnapshotTimeout time.Duration

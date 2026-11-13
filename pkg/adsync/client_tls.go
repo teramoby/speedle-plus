@@ -8,6 +8,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/pem"
+	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -139,7 +140,7 @@ func (m *clientTLS) load(ctx context.Context) (*clientTLSGeneration, error) {
 			return nil, fmt.Errorf("adsync: CRLURLs must contain HTTPS URLs without credentials, query or fragment")
 		}
 
-		data, err := fetchRelayCRL(ctx, address, generation.roots, m.configFiles.RequestTimeout)
+		data, err := fetchRelayCRL(ctx, address, generation.roots, m.configFiles.RequestTimeout, crlDownloadTimeout)
 		if err != nil {
 			return nil, err
 		}
@@ -502,18 +503,37 @@ func (c *Client) Close() error {
 	return nil
 }
 
-// fetchRelayCRL has a stall deadline, no response-size or total-transfer cap.
-func fetchRelayCRL(parent context.Context, address string, roots *x509.CertPool, timeout time.Duration) ([]byte, error) {
+// crlDownloadTimeout bounds one complete CRL transfer. The stall deadline is
+// the normal failure mode; this hard cap stops a publisher that keeps sending
+// bytes from holding Open or a reload forever. It is neither a response-size
+// limit nor a configurable setting.
+const crlDownloadTimeout = 10 * time.Minute
+
+var (
+	// errCRLStall and errCRLDownloadTime separate a publisher that stopped
+	// making progress from one that consumed the whole transfer window.
+	errCRLStall        = errors.New("adsync: relay CRL download stalled")
+	errCRLDownloadTime = errors.New("adsync: relay CRL download exceeded the total deadline")
+)
+
+// fetchRelayCRL has a stall deadline and a fixed total-transfer cap; there is
+// no response-size limit.
+func fetchRelayCRL(parent context.Context, address string, roots *x509.CertPool, timeout, total time.Duration) ([]byte, error) {
 	if roots == nil {
 		return nil, fmt.Errorf("adsync: CRL fetch requires explicit CAFile roots")
 	}
 	if timeout == 0 {
 		timeout = defaultRequestTimeout
 	}
-	ctx, cancel := context.WithCancel(parent)
-	defer cancel()
-	watch := newStallWatch(timeout, cancel)
+	if total == 0 {
+		total = crlDownloadTimeout
+	}
+	ctx, cancel := context.WithCancelCause(parent)
+	defer cancel(nil)
+	watch := newStallWatch(timeout, func() { cancel(errCRLStall) })
 	defer watch.stop()
+	deadline := time.AfterFunc(total, func() { cancel(errCRLDownloadTime) })
+	defer deadline.Stop()
 	request, err := http.NewRequestWithContext(ctx, http.MethodGet, address, nil)
 	if err != nil {
 		return nil, fmt.Errorf("adsync: invalid CRLURLs request")
@@ -529,8 +549,8 @@ func fetchRelayCRL(parent context.Context, address string, roots *x509.CertPool,
 	client := &http.Client{CheckRedirect: rejectRedirect, Transport: transport}
 	response, err := client.Do(request)
 	if err != nil {
-		if ctx.Err() != nil {
-			return nil, fmt.Errorf("adsync: fetch CRLURLs: %w", ctx.Err())
+		if cause := context.Cause(ctx); cause != nil {
+			return nil, fmt.Errorf("adsync: fetch CRLURLs: %w", cause)
 		}
 		return nil, fmt.Errorf("adsync: fetch CRLURLs failed")
 	}
@@ -541,8 +561,8 @@ func fetchRelayCRL(parent context.Context, address string, roots *x509.CertPool,
 	watch.progress() // Response headers count as progress before the first body byte.
 	data, err := io.ReadAll(&progressReader{Reader: response.Body, watch: watch})
 	if err != nil {
-		if ctx.Err() != nil {
-			return nil, fmt.Errorf("adsync: read CRLURLs: %w", ctx.Err())
+		if cause := context.Cause(ctx); cause != nil {
+			return nil, fmt.Errorf("adsync: fetch CRLURLs: %w", cause)
 		}
 		return nil, fmt.Errorf("adsync: read CRLURLs failed")
 	}

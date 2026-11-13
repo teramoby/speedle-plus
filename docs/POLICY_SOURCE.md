@@ -61,8 +61,10 @@ public or enterprise CA for a CRL host also expands relay trust to that CA.
 Use a CRL host under the relay's intended PKI, or download CRLs separately
 and use `CRLFiles` when that expanded trust is unacceptable. No separate CRL
 transport trust bundle is configured. CRL fetches honor `RequestTimeout` for
-TLS handshakes, response headers and gaps between response bytes, with no
-total-transfer deadline. Configured CRLs must have
+TLS handshakes, response headers and gaps between response bytes. One transfer
+also has a fixed ten-minute hard limit, so a publisher that keeps sending
+bytes cannot hold startup or a reload forever. There is no response-size limit
+and no setting for one. Configured CRLs must have
 trusted signatures and current validity windows. Unsupported critical CRL
 extensions are rejected; delta and scoped CRLs are not supported. Revoked certificates
 and chains without fresh issuer coverage fail verification. `CRLMaxAge`
