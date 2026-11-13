@@ -55,6 +55,10 @@ type Store struct {
 	publishedCopies  map[string]*serviceCopy
 	publishedRemoved map[string]string
 	pendingRemoved   map[string]string
+	// removals counts the authoritative removals per service. A fetch that
+	// started before a removal must not publish its result afterwards; the
+	// count is distinct from pendingRemoved, which also guards renamed names.
+	removals map[string]uint64
 	// installed is the fingerprint of the assembly the evaluator most
 	// recently acknowledged; hasInstalled is false until the first one.
 	installed    string
@@ -175,6 +179,7 @@ func Open(ctx context.Context, options Options) (_ *Store, err error) {
 		fallback:       !options.DisableFallback,
 		copies:         make(map[string]*serviceCopy),
 		pendingRemoved: make(map[string]string),
+		removals:       make(map[string]uint64),
 		integrity:      make(map[string]integrityRetry),
 	}
 	// A stop can be driven by the owned channel (an upstream 401 or 403
@@ -368,6 +373,9 @@ func (s *Store) syncService(ctx context.Context, service adsync.Service) error {
 	if status, known := s.machineService(service.ID); known {
 		minRevision = status.Head
 	}
+	// A removal while the fetch is in flight invalidates its result: the
+	// generation is compared under s.mu before the mirror publish.
+	generation := s.removalGeneration(service.ID)
 	// Withhold the mirror before the fetch unless it already serves the
 	// effective head, which may be a notified revision newer than the last
 	// ack. A snapshot or change page the synchronizer observes while the fetch
@@ -389,12 +397,12 @@ func (s *Store) syncService(ctx context.Context, service adsync.Service) error {
 		return fmt.Errorf("service %q: %w", service.Name, err)
 	}
 	s.clearIntegrityRetry(service.ID)
-	return s.installFetched(service, state, attempt)
+	return s.installFetched(service, state, attempt, generation)
 }
 
 // installFetched parses a fetched copy and stores it for the next publish,
 // unless the attempt became stale while the fetch was in flight.
-func (s *Store) installFetched(service adsync.Service, state *adsync.ServiceState, attempt adsync.SyncAttempt) error {
+func (s *Store) installFetched(service adsync.Service, state *adsync.ServiceState, attempt adsync.SyncAttempt, generation uint64) error {
 	if s.afterFetch != nil {
 		s.afterFetch(service.ID)
 	}
@@ -423,12 +431,14 @@ func (s *Store) installFetched(service adsync.Service, state *adsync.ServiceStat
 		return nil
 	}
 	// A channel ack can remove the service from the authoritative set while
-	// the fetch is in flight. The removal records the current name in
-	// pendingRemoved; publishing then would revive a service the source no
-	// longer assigns to this relay. The check and the mirror publish happen
-	// under s.mu, which every removal path also takes, so a removal either
-	// precedes the check or follows the publish and removes the copy again.
-	if pendingName, pending := s.pendingRemoved[service.ID]; pending && pendingName == compiled.service.Name {
+	// the fetch is in flight. A removal increments the service's removal
+	// generation; publishing then would revive a service the source no longer
+	// assigns to this relay. The check and the mirror publish happen under
+	// s.mu, which every removal path also takes, so a removal either precedes
+	// the check or follows the publish and removes the copy again. The
+	// pending-removal names are deliberately not used here: they also guard
+	// renamed names, and a legitimate rename back must recover.
+	if s.removals[service.ID] != generation {
 		s.mu.Unlock()
 		// Keep the removal guard: a downstream asking for the service must see
 		// it as removed, not as one that needs a fresh snapshot.
@@ -569,6 +579,16 @@ func (s *Store) withholdDownstreamUnlessCurrent(service adsync.Service, minRevis
 	s.downstream.mirror.MarkUnavailable(service.ID)
 }
 
+// removalGeneration returns the number of authoritative removals recorded for
+// one service. A fetch captures it before the fetch and compares it before
+// publishing, so a removal that landed meanwhile cannot be undone by the
+// fetched copy.
+func (s *Store) removalGeneration(serviceID string) uint64 {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.removals[serviceID]
+}
+
 // removeDownstream stops serving one removed service and keeps the deletion
 // guard for a delayed snapshot.
 func (s *Store) removeDownstream(serviceID string) {
@@ -593,6 +613,7 @@ func (s *Store) removeCopy(serviceID string) {
 	if copied := s.copies[serviceID]; copied != nil {
 		s.pendingRemoved[serviceID] = copied.service.Name
 	}
+	s.removals[serviceID]++
 	delete(s.copies, serviceID)
 	s.mu.Unlock()
 	s.removeDownstream(serviceID)
@@ -628,6 +649,7 @@ func (s *Store) dropUnselected(selected map[string]struct{}) []string {
 			continue
 		}
 		s.pendingRemoved[serviceID] = s.copies[serviceID].service.Name
+		s.removals[serviceID]++
 		delete(s.copies, serviceID)
 		removed = append(removed, serviceID)
 	}

@@ -273,6 +273,9 @@ func (l *Listener) load(fetchRemote bool) (*tlsGeneration, error) {
 	// rotated bundle must apply to this reload's fetches, not only after a
 	// restart.
 	crlHTTP := newCRLClient(caPEM)
+	// This load's fetches are the only users of the client; release its idle
+	// connections so repeated reloads do not accumulate connection pools.
+	defer crlHTTP.CloseIdleConnections()
 	caKeys := make(map[issuerKey]struct{}, len(caCerts))
 	for _, ca := range caCerts {
 		caKeys[issuerKeyOf(ca)] = struct{}{}

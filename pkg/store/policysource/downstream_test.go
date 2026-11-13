@@ -533,6 +533,7 @@ func TestInstallFetchedDoesNotReviveARemovedService(t *testing.T) {
 		HeadStateHash: verified.StateHash,
 	}
 	attempt := store.machine.BeginSync(testServiceID1)
+	generation := store.removalGeneration(testServiceID1)
 	store.applyServiceSetChange(adsync.ServiceSetChange{
 		Removed: []adsync.Service{{ID: testServiceID1, Name: "books"}},
 	})
@@ -544,11 +545,42 @@ func TestInstallFetchedDoesNotReviveARemovedService(t *testing.T) {
 		StateHash:  nextHash,
 		CommitHash: nextHash,
 		Snapshot:   next,
-	}, attempt); err != nil {
+	}, attempt, generation); err != nil {
 		t.Fatalf("install fetched copy: %v", err)
 	}
 	if _, availability := store.downstream.mirror.Lookup(testServiceID1); availability == adsproxy.ServiceAvailable {
 		t.Fatal("a removed service was revived by an in-flight publish")
+	}
+}
+
+// TestServeDownstreamRecoversWhenARenameFailsAndTheSourceReverts covers a
+// rename whose fetch fails and an upstream that later renames back: the
+// reverted name must be installable again instead of being blocked by the
+// guard that protects the previous name during a rename.
+func TestServeDownstreamRecoversWhenARenameFailsAndTheSourceReverts(t *testing.T) {
+	fixture := newTestFixture(t, booksService())
+	store := fixture.open(func(options *Options) { options.ServeDownstream = true })
+	defer store.Close()
+	original, found := store.syncer.State(testServiceID1)
+	if !found {
+		t.Fatal("the store has no verified state")
+	}
+	fixture.source.renameService("books", "novels", nil)
+	fixture.source.mutate(func(source *testSource) { source.corruptSnapshotHash = true })
+	if err := store.Sync(context.Background()); err == nil {
+		t.Fatal("a corrupted snapshot did not fail the pass")
+	}
+	fixture.source.mutate(func(source *testSource) { source.corruptSnapshotHash = false })
+	fixture.source.renameService("novels", "books", func(snapshot *adsync.Snapshot) {
+		snapshot.Policies = append(snapshot.Policies,
+			policy("p-carol", "carol", "grant user carol read books"))
+	})
+	if err := store.Sync(context.Background()); err != nil {
+		t.Fatalf("sync after the rename was reverted: %v", err)
+	}
+	info, availability := store.downstream.mirror.Lookup(testServiceID1)
+	if availability != adsproxy.ServiceAvailable || info.Revision <= original.Revision {
+		t.Fatalf("recovered copy = %+v, availability %v", info, availability)
 	}
 }
 
