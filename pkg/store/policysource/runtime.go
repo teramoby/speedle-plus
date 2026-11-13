@@ -224,6 +224,17 @@ func (s *Store) startDirectRuntime() error {
 			s.applyServiceSetChange(change)
 			s.triggerSync()
 		},
+		OnAck: func() {
+			// Reconcile on every ack: any service the ack does not confirm
+			// as in sync (behind, different hash or epoch, or not yet
+			// loaded) starts a pass. An in-sync instance pulls nothing.
+			for _, service := range s.machine.Services() {
+				if service.State == adsync.SyncStateSyncing {
+					s.triggerSync()
+					return
+				}
+			}
+		},
 		OnCommand: s.handleRuntimeCommand,
 	})
 	if err != nil {

@@ -456,3 +456,13 @@ func TestFallbackFailuresAreAudited(t *testing.T) {
 		t.Fatalf("audit reason = %v", entry["reason"])
 	}
 }
+
+func TestDirectModeMarksForwardedDecisionsAsUpstream(t *testing.T) {
+	router, source := newGatedRouter(t)
+	source.SetDirectMode(true)
+	source.SetFallbackResponse(http.StatusOK, nil, []byte(`{"allowed":true,"reason":0}`))
+	rec := postRaw(t, router, "is-allowed", `{"serviceName":"orders","resource":"order:1","action":"read"}`)
+	if rec.Code != http.StatusOK || rec.Header().Get(svcs.DecisionSourceHeader) != svcs.DecisionSourceUpstream {
+		t.Fatalf("status %d marker %q", rec.Code, rec.Header().Get(svcs.DecisionSourceHeader))
+	}
+}

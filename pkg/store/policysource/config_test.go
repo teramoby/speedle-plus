@@ -3,6 +3,7 @@
 package policysource
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"strings"
@@ -170,4 +171,117 @@ func writeTestFile(t *testing.T, name string) string {
 		t.Fatal(err)
 	}
 	return path
+}
+
+func TestDirectModeConfiguration(t *testing.T) {
+	fixture := newTestFixture(t, booksService())
+	legacy := fixture.storeProperties()
+	keysFile := legacy[PublicKeysKey].(string)
+
+	// An unchanged v1.7.x property set selects the credential mode.
+	options, err := optionsFromConfig(legacy)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if options.APIKey != "" || options.Credential != testCredential || options.PublicKeys == nil ||
+		options.PolicySourceURL != fixture.server.URL || options.FallbackCredential != testCredential {
+		t.Fatalf("v1.7.x options = %+v", options)
+	}
+
+	direct := map[string]interface{}{UpstreamURLKey: fixture.server.URL, APIKeyKey: testAPIKey}
+	options, err = optionsFromConfig(direct)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if options.APIKey != testAPIKey || options.Credential != "" || options.PublicKeys != nil || options.PolicySourceURL != fixture.server.URL {
+		t.Fatalf("direct options = %+v", options)
+	}
+	direct[PublicKeysKey] = keysFile
+	direct[PolicySourceURLKey] = fixture.server.URL
+	if options, err = optionsFromConfig(direct); err != nil || options.PublicKeys == nil {
+		t.Fatalf("direct options with keys = %+v, %v", options, err)
+	}
+
+	cases := map[string]map[string]interface{}{
+		"conflicting URLs":         {PolicySourceURLKey: fixture.server.URL, UpstreamURLKey: "https://other.example", APIKeyKey: testAPIKey},
+		"no URL":                   {APIKeyKey: testAPIKey},
+		"key is not a string":      {UpstreamURLKey: fixture.server.URL, APIKeyKey: 42},
+		"upstream is not a string": {UpstreamURLKey: 42, APIKeyKey: testAPIKey},
+		"malformed key":            {UpstreamURLKey: fixture.server.URL, APIKeyKey: "bad " + testAPIKey},
+		"key and credential":       {UpstreamURLKey: fixture.server.URL, APIKeyKey: testAPIKey, CredentialFileKey: legacy[CredentialFileKey]},
+		"broken keys file":         {UpstreamURLKey: fixture.server.URL, APIKeyKey: testAPIKey, PublicKeysKey: filepath.Join(t.TempDir(), "absent")},
+	}
+	for name, properties := range cases {
+		t.Run(name, func(t *testing.T) {
+			_, err := optionsFromConfig(properties)
+			wantErrorCode(t, name, err, speedleerrors.ConfigError)
+			if strings.Contains(err.Error(), "directModeSecretValue") {
+				t.Fatal("the error echoes the key")
+			}
+		})
+	}
+}
+
+func TestDirectModeOpenValidation(t *testing.T) {
+	fixture := newTestFixture(t, booksService())
+	base := Options{PolicySourceURL: fixture.server.URL, APIKey: testAPIKey, HTTPClient: fixture.server.Client()}
+
+	withDownstream := base
+	withDownstream.ServeDownstream = true
+	_, err := Open(context.Background(), withDownstream)
+	wantErrorCode(t, "downstream", err, speedleerrors.ConfigError)
+
+	badID := base
+	badID.InstanceID = "01HF7YAT000000000000000A01"
+	_, err = Open(context.Background(), badID)
+	wantErrorCode(t, "ULID instance id", err, speedleerrors.ConfigError)
+
+	cacheDir := filepath.Join(t.TempDir(), "cache")
+	if err := os.MkdirAll(cacheDir, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(cacheDir, adsync.InstanceIDFile), []byte("garbage"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	corrupt := base
+	corrupt.CacheDir = cacheDir
+	_, err = Open(context.Background(), corrupt)
+	wantErrorCode(t, "corrupt instance id", err, speedleerrors.ConfigError)
+
+	fixed := base
+	fixed.InstanceID = "01a1d38d-8c69-7ac1-b3d6-cb9ade5c63f4"
+	opened, err := Open(context.Background(), fixed)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer opened.Close()
+	if opened.client.InstanceID() != fixed.InstanceID || !opened.ForwardWhileStale() {
+		t.Fatal("configured instance id or forwarding not used")
+	}
+	if fixture.source.requestCount() != 0 {
+		t.Fatal("a direct-mode store pulled data before its first ack")
+	}
+	// Without a runtime there is no ack, so Sync is a no-op.
+	if err := opened.Sync(context.Background()); err != nil || fixture.source.requestCount() != 0 {
+		t.Fatalf("sync without an ack: %v, %d requests", err, fixture.source.requestCount())
+	}
+	disabled := fixed
+	disabled.DisableFallback = true
+	opened2, err := Open(context.Background(), disabled)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer opened2.Close()
+	if opened2.ForwardWhileStale() {
+		t.Fatal("forwarding while stale with forwarding disabled")
+	}
+}
+
+func TestDirectModeServicesOnlyNarrowTheAssignedSet(t *testing.T) {
+	store := &Store{options: Options{APIKey: testAPIKey}, selection: []string{"books", "missing"}}
+	assigned := []adsync.Service{{ID: "01HF7YAT000000000000000201", Name: "books"}, {ID: "01HF7YAT000000000000000202", Name: "orders"}}
+	selected, err := store.selectServices(assigned)
+	if err != nil || len(selected) != 1 || selected[0].Name != "books" {
+		t.Fatalf("selected = %+v, %v", selected, err)
+	}
 }

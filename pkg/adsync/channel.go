@@ -165,6 +165,10 @@ type ChannelOptions struct {
 	// service set. It should return quickly; the channel calls it on its read
 	// loop.
 	OnServiceSetChange func(ServiceSetChange)
+	// OnAck is called after every confirming ack has been applied, after
+	// OnServiceSetChange and OnNotify. A direct-mode store uses it to
+	// reconcile every service against every ack. It should return quickly.
+	OnAck func()
 	// OnCommand is called for every delivered command. A source may repeat a
 	// command in several acks, so the callback must ignore an id it has already
 	// executed. A nil result means no result is sent. In long-poll mode the
@@ -246,6 +250,7 @@ type Channel struct {
 	fallback           func() FallbackState
 	onNotify           func(Notify)
 	onServiceSetChange func(ServiceSetChange)
+	onAck              func()
 	onCommand          func(Command) *CommandResult
 
 	startedAt time.Time
@@ -374,6 +379,7 @@ func NewChannel(client *Client, options ChannelOptions) (*Channel, error) {
 		fallback:           options.Fallback,
 		onNotify:           options.OnNotify,
 		onServiceSetChange: options.OnServiceSetChange,
+		onAck:              options.OnAck,
 		onCommand:          options.OnCommand,
 		startedAt:          time.Now(),
 		current:            current,
@@ -616,6 +622,9 @@ func (c *Channel) applyAck(ack *channelAck, results chan<- channelCommandResult,
 		for _, service := range advanced {
 			c.onNotify(Notify{ServiceID: service.ID, Head: service.Revision})
 		}
+	}
+	if c.onAck != nil {
+		c.onAck()
 	}
 	c.deliverCommands(ack.Commands, results)
 	return nil

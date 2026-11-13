@@ -320,6 +320,8 @@ type e2eCommandArgs struct {
 type e2eRequest struct {
 	Path          string
 	Authorization string
+	// Instance is the X-SC-ADS-Instance header of the request.
+	Instance string
 }
 
 // e2eChannelConn serializes writes to one downstream channel.
@@ -367,6 +369,14 @@ type e2eCloud struct {
 	// servicesUnavailable makes the discovery endpoint fail while the channel
 	// and data endpoints keep working.
 	servicesUnavailable bool
+	// unsigned omits every signature, like a source that does not sign.
+	unsigned bool
+	// hellos records every channel hello frame as received.
+	hellos [][]byte
+	// ackHead and ackHash override the head an ack advertises for one
+	// service, modelling a source that disagrees with the data it serves.
+	ackHead map[string]uint64
+	ackHash map[string]adsync.Hash
 
 	upgrader websocket.Upgrader
 	closeOne sync.Once
@@ -759,13 +769,20 @@ func (f *e2eCloud) ackLocked() []byte {
 		if service == nil || service.Hidden {
 			continue
 		}
+		head, hash := service.Revision, service.StateHash
+		if override, found := f.ackHead[id]; found {
+			head = override
+		}
+		if override, found := f.ackHash[id]; found {
+			hash = override
+		}
 		message.Services = append(message.Services, ackService{
 			ID:            service.ID,
 			Name:          service.Name,
-			Head:          service.Revision,
-			OriginHead:    service.Revision,
+			Head:          head,
+			OriginHead:    head,
 			Epoch:         service.Epoch,
-			HeadStateHash: service.StateHash,
+			HeadStateHash: hash,
 		})
 	}
 	encoded, err := json.Marshal(message)
@@ -913,6 +930,7 @@ func (f *e2eCloud) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	f.requests = append(f.requests, e2eRequest{
 		Path:          r.URL.Path,
 		Authorization: r.Header.Get("Authorization"),
+		Instance:      r.Header.Get("X-SC-ADS-Instance"),
 	})
 	revoked := f.revoked
 	disconnected := f.disconnected
@@ -1005,6 +1023,9 @@ func (f *e2eCloud) serveSnapshot(w http.ResponseWriter, r *http.Request, service
 	signature := f.signer.sign(adsync.SnapshotSignedBytes(
 		service.ID, service.Epoch, service.Revision, service.StateHash, service.CommitHash,
 	))
+	if f.unsigned {
+		signature = adsync.Signature{}
+	}
 	response := adsync.SnapshotResponse{
 		ServiceID:  service.ID,
 		SourceID:   service.ID,
@@ -1065,6 +1086,9 @@ func (f *e2eCloud) serveChanges(w http.ResponseWriter, r *http.Request, serviceI
 	for _, commit := range service.Commits {
 		if commit.Revision <= since {
 			continue
+		}
+		if f.unsigned {
+			commit.Signature = adsync.Signature{}
 		}
 		commits = append(commits, commit)
 		if len(commits) == limit {
@@ -1416,9 +1440,13 @@ func (f *e2eCloud) serveChannel(w http.ResponseWriter, r *http.Request) {
 	var hello struct {
 		Type string `json:"type"`
 	}
-	if err := conn.ReadJSON(&hello); err != nil || hello.Type != "hello" {
+	_, helloFrame, err := conn.ReadMessage()
+	if err != nil || json.Unmarshal(helloFrame, &hello) != nil || hello.Type != "hello" {
 		return
 	}
+	f.mu.Lock()
+	f.hellos = append(f.hellos, helloFrame)
+	f.mu.Unlock()
 	_ = conn.SetReadDeadline(time.Time{})
 
 	f.mu.Lock()

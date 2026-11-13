@@ -158,6 +158,7 @@ type fixtureRequest struct {
 	Path          string
 	Query         string
 	Authorization string
+	Instance      string
 }
 
 type fixtureSource struct {
@@ -229,6 +230,7 @@ func (f *fixtureSource) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		Path:          r.URL.Path,
 		Query:         r.URL.RawQuery,
 		Authorization: r.Header.Get("Authorization"),
+		Instance:      r.Header.Get(InstanceHeader),
 	})
 	fail := f.failRemaining > 0
 	if fail {

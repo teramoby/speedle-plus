@@ -425,3 +425,16 @@ func TestGRPCFallbackFailuresAreAudited(t *testing.T) {
 		t.Fatalf("audit reason = %v", entry["reason"])
 	}
 }
+
+func TestGRPCDirectModeMarksForwardedDecisionsAsUpstream(t *testing.T) {
+	service, source := newGatedService(t)
+	source.SetDirectMode(true)
+	source.SetFallbackResponse(http.StatusOK, nil, []byte(`{"allowed":true,"reason":0}`))
+	ctx, stream := withRecordingStream(context.Background())
+	if _, err := service.IsAllowed(ctx, gateRequest("orders", "alice")); err != nil {
+		t.Fatal(err)
+	}
+	if marker := stream.header.Get("x-speedle-decision-source"); len(marker) != 1 || marker[0] != svcs.DecisionSourceUpstream {
+		t.Fatalf("metadata = %v", stream.header)
+	}
+}

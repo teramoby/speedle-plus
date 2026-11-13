@@ -33,6 +33,10 @@ type Source struct {
 	fallbackErr       error
 	forwarded         []Forwarded
 
+	// direct models a direct-mode (API key) store: it forwards while stale
+	// and marks forwarded responses as upstream decisions.
+	direct bool
+
 	// pendingRemovals holds service names whose old copies are still installed
 	// in the evaluator after a removal or rename.
 	pendingRemovals map[string]struct{}
@@ -94,6 +98,20 @@ func (s *Source) SetServiceState(name string, state adsync.SyncState) {
 	service := s.serviceLocked(name)
 	service.State = state
 	s.mu.Unlock()
+}
+
+// SetDirectMode makes the source behave like a direct-mode store.
+func (s *Source) SetDirectMode(direct bool) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.direct = direct
+}
+
+// ForwardWhileStale implements the direct-mode routing hook.
+func (s *Source) ForwardWhileStale() bool {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.direct
 }
 
 // SetFallbackAvailable controls whether a syncing service may be forwarded.
@@ -166,11 +184,15 @@ func (s *Source) ForwardFallback(_ context.Context, operation adsync.FallbackOpe
 	if header == nil {
 		header = http.Header{"Content-Type": []string{"application/json"}}
 	}
-	return &adsync.FallbackResponse{
+	response := &adsync.FallbackResponse{
 		StatusCode: status,
 		Header:     header.Clone(),
 		Body:       append([]byte(nil), s.fallbackBody...),
-	}, nil
+	}
+	if s.direct {
+		response.DecisionSource = adsync.DecisionSourceUpstream
+	}
+	return response, nil
 }
 
 // FallbackAvailable implements adsync.RequestGate.

@@ -562,7 +562,12 @@ func (m *Machine) apply(state *ServiceState, attempt *SyncAttempt) error {
 	record.localStateHash = state.StateHash
 	record.pendingResync = false
 	record.verifiedSinceStop = true
-	record.failed = false
+	if record.failed && state.Epoch == record.epoch && state.Revision == record.headRevision &&
+		state.StateHash == record.headStateHash {
+		// Only a copy that matches the head the service failed against clears
+		// the failure; re-reporting the previous copy does not.
+		record.failed = false
+	}
 	m.recomputeRecordLocked(record)
 	if m.stopped {
 		m.tryRecoverLocked(now)
@@ -605,7 +610,7 @@ func (m *Machine) SyncFailed(serviceID string, err error) {
 // could not make its copy match the acknowledged head, for example because a
 // reloaded snapshot still has a different state hash. The service reports
 // SyncReasonIntegrity until an ack carries a different head or a verified copy
-// is applied; the rest of the instance keeps serving. Without ReconcileOnAck
+// matching the head is applied; the rest of the instance keeps serving. Without ReconcileOnAck
 // it does nothing: a credential instance stops as a whole instead.
 func (m *Machine) FailService(serviceID string) {
 	m.mu.Lock()
