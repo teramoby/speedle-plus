@@ -430,7 +430,9 @@ func (s *Store) installFetched(service adsync.Service, state *adsync.ServiceStat
 	// precedes the check or follows the publish and removes the copy again.
 	if pendingName, pending := s.pendingRemoved[service.ID]; pending && pendingName == compiled.service.Name {
 		s.mu.Unlock()
-		s.withholdDownstream(service.ID)
+		// Keep the removal guard: a downstream asking for the service must see
+		// it as removed, not as one that needs a fresh snapshot.
+		s.removeDownstream(service.ID)
 		return nil
 	}
 	s.copies[service.ID] = compiled
@@ -459,8 +461,9 @@ func (s *Store) observeDownstreamSnapshot(response *adsync.SnapshotResponse) {
 	if s.downstream == nil || response == nil {
 		return
 	}
-	s.downstream.mirror.MarkUnavailable(response.ServiceID)
-	if err := s.downstream.mirror.ApplySnapshot(response); err != nil {
+	// One call: a removal that races the observation must not interleave
+	// between the withhold and the apply.
+	if err := s.downstream.mirror.ApplySnapshotWithheld(response); err != nil {
 		log.Warnf("policy-source could not mirror service %q for downstream instances: %v", response.ServiceID, err)
 		s.downstream.mirror.MarkUnavailable(response.ServiceID)
 	}

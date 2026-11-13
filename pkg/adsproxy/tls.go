@@ -106,7 +106,6 @@ type Listener struct {
 	config   ListenerConfig
 	handler  http.Handler
 	now      func() time.Time
-	crlHTTP  *http.Client
 	reloadMu sync.Mutex
 
 	mu          sync.Mutex
@@ -236,11 +235,6 @@ func NewListener(config ListenerConfig, handler http.Handler) (*Listener, error)
 		connections: make(map[*listenerConn]struct{}),
 		sources:     sources,
 	}
-	caPEM, _, err := loadClientCA(config.ClientCAPath)
-	if err != nil {
-		return nil, err
-	}
-	listener.crlHTTP = newCRLClient(caPEM)
 	if err := listener.reload(true); err != nil {
 		return nil, err
 	}
@@ -275,6 +269,10 @@ func (l *Listener) load(fetchRemote bool) (*tlsGeneration, error) {
 	if err != nil {
 		return nil, err
 	}
+	// The CRL endpoints are trusted through the current client CA bundle, so a
+	// rotated bundle must apply to this reload's fetches, not only after a
+	// restart.
+	crlHTTP := newCRLClient(caPEM)
 	caKeys := make(map[issuerKey]struct{}, len(caCerts))
 	for _, ca := range caCerts {
 		caKeys[issuerKeyOf(ca)] = struct{}{}
@@ -289,7 +287,7 @@ func (l *Listener) load(fetchRemote bool) (*tlsGeneration, error) {
 		if !fetch {
 			continue
 		}
-		fetched, err := l.sourceData(source, fetch)
+		fetched, err := l.sourceData(source, fetch, crlHTTP)
 		if err != nil {
 			return nil, err
 		}
@@ -368,7 +366,7 @@ type crlSourceData struct {
 // sourceData returns one source's current bytes. Files are re-read on every
 // call; URLs use a conditional fetch. A source that cannot be read keeps its
 // last good bytes, so a transient failure does not disturb a fresh cached CRL.
-func (l *Listener) sourceData(source *crlSource, fetchRemote bool) (crlSourceData, error) {
+func (l *Listener) sourceData(source *crlSource, fetchRemote bool, client *http.Client) (crlSourceData, error) {
 	cached := crlSourceData{data: source.data, etag: source.etag, lastModified: source.lastModified}
 	if !source.isURL {
 		data, err := os.ReadFile(source.address)
@@ -387,7 +385,7 @@ func (l *Listener) sourceData(source *crlSource, fetchRemote bool) (crlSourceDat
 		}
 		return cached, nil
 	}
-	data, etag, lastModified, err := l.fetchCRL(source)
+	data, etag, lastModified, err := l.fetchCRL(source, client)
 	if err != nil {
 		if source.data != nil {
 			log.Warnf("adsproxy: CRL URL %s is unavailable; keeping the last good copy", source.address)
@@ -398,7 +396,7 @@ func (l *Listener) sourceData(source *crlSource, fetchRemote bool) (crlSourceDat
 	return crlSourceData{data: data, etag: etag, lastModified: lastModified}, nil
 }
 
-func (l *Listener) fetchCRL(source *crlSource) ([]byte, string, string, error) {
+func (l *Listener) fetchCRL(source *crlSource, client *http.Client) ([]byte, string, string, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	request, err := http.NewRequestWithContext(ctx, http.MethodGet, source.address, nil)
@@ -413,7 +411,7 @@ func (l *Listener) fetchCRL(source *crlSource) ([]byte, string, string, error) {
 	}
 	watch := newStallWatch(crlStallTimeout, cancel)
 	defer watch.stop()
-	response, err := l.crlHTTP.Do(request)
+	response, err := client.Do(request)
 	if err != nil {
 		return nil, "", "", fmt.Errorf("%w: fetch CRL URL %s: %v", ErrCRL, source.address, err)
 	}

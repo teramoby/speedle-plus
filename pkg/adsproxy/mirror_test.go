@@ -270,6 +270,46 @@ func TestMirrorWithholdsCopyCreatedAfterTheWithhold(t *testing.T) {
 	}
 }
 
+// TestMirrorAppliesAnObservedSnapshotAsAWithheldUnit covers the atomic
+// withhold-and-apply used while a fetch is in flight: the first copy is not
+// advertised until the runtime confirms it in the same step.
+func TestMirrorAppliesAnObservedSnapshotAsAWithheldUnit(t *testing.T) {
+	mirror := newTestMirror(t, nil)
+	service := newFixtureService(testServiceID1, "books")
+	if err := mirror.ApplySnapshotWithheld(service.snapshotResponse(t)); err != nil {
+		t.Fatalf("apply withheld snapshot: %v", err)
+	}
+	if _, availability := mirror.Lookup(service.ID); availability != ServiceNeedsSnapshot {
+		t.Fatalf("availability = %v, want ServiceNeedsSnapshot", availability)
+	}
+	if services := mirror.Services(); len(services) != 0 {
+		t.Fatalf("advertised services = %+v", services)
+	}
+	mirror.MarkAvailable(service.ID)
+	if _, availability := mirror.Lookup(service.ID); availability != ServiceAvailable {
+		t.Fatalf("availability after confirmation = %v, want ServiceAvailable", availability)
+	}
+}
+
+// TestObservedFirstSnapshotStaysWithheldAcrossARemoval covers a removal that
+// lands after the observer starts a first snapshot: the apply itself
+// withholds, so clearing the pending withhold cannot advertise the copy.
+func TestObservedFirstSnapshotStaysWithheldAcrossARemoval(t *testing.T) {
+	mirror := newTestMirror(t, nil)
+	service := newFixtureService(testServiceID1, "books")
+	mirror.MarkUnavailable(service.ID)
+	mirror.RemoveService(service.ID)
+	if err := mirror.ApplySnapshotWithheld(service.snapshotResponse(t)); err != nil {
+		t.Fatalf("apply withheld snapshot: %v", err)
+	}
+	if _, availability := mirror.Lookup(service.ID); availability == ServiceAvailable {
+		t.Fatal("a first snapshot observed across a removal is served")
+	}
+	if services := mirror.Services(); len(services) != 0 {
+		t.Fatalf("advertised services = %+v", services)
+	}
+}
+
 // TestMirrorClearsAWithholdWhenTheServiceDisappears covers a withhold recorded
 // for a service that never produced a copy: when the service leaves the
 // authoritative set before its first snapshot, the removal drops the pending

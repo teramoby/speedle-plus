@@ -239,6 +239,18 @@ func (m *Mirror) AddObserver(observer func(HeadEvent)) func() {
 // The snapshot must then match both its id and epoch; sourceId is always bound
 // to the requested service id, never to a different service's dataset.
 func (m *Mirror) ApplySnapshot(response *adsync.SnapshotResponse, expected ...adsync.Service) error {
+	return m.applySnapshotResponse(response, false, expected...)
+}
+
+// ApplySnapshotWithheld records a snapshot and withholds the service from
+// serving in the same step. A runtime that observes a snapshot it has not
+// verified yet uses it so a removal cannot interleave between a separate
+// withhold and the apply and leave the first copy advertised.
+func (m *Mirror) ApplySnapshotWithheld(response *adsync.SnapshotResponse) error {
+	return m.applySnapshotResponse(response, true)
+}
+
+func (m *Mirror) applySnapshotResponse(response *adsync.SnapshotResponse, withhold bool, expected ...adsync.Service) error {
 	if response == nil {
 		return fmt.Errorf("%w: nil snapshot", ErrConfig)
 	}
@@ -259,7 +271,7 @@ func (m *Mirror) ApplySnapshot(response *adsync.SnapshotResponse, expected ...ad
 	if err := m.verifySnapshot(&copied); err != nil {
 		return err
 	}
-	event, notify, err := m.applySnapshot(&copied)
+	event, notify, err := m.applySnapshot(&copied, withhold)
 	if err != nil {
 		return err
 	}
@@ -269,7 +281,7 @@ func (m *Mirror) ApplySnapshot(response *adsync.SnapshotResponse, expected ...ad
 	return nil
 }
 
-func (m *Mirror) applySnapshot(response *adsync.SnapshotResponse) (HeadEvent, bool, error) {
+func (m *Mirror) applySnapshot(response *adsync.SnapshotResponse, withhold bool) (HeadEvent, bool, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -353,9 +365,10 @@ func (m *Mirror) applySnapshot(response *adsync.SnapshotResponse) (HeadEvent, bo
 	existing.overflow = false
 	existing.removed = false
 	existing.tombstoneRevision = 0
-	// A withhold recorded before the copy existed or was revived keeps the
-	// candidate invisible until the runtime confirms the advertised head.
-	if _, held := m.withheld[response.ServiceID]; held {
+	// A withhold recorded before the copy existed or was revived, or requested
+	// by this apply, keeps the candidate invisible until the runtime confirms
+	// the advertised head.
+	if _, held := m.withheld[response.ServiceID]; held || withhold {
 		existing.unavailable = true
 	}
 
