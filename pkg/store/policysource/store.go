@@ -183,7 +183,7 @@ func Open(ctx context.Context, options Options) (_ *Store, err error) {
 		}
 	}
 	if options.ServeDownstream {
-		downstream, err := newDownstreamServing(client, options)
+		downstream, err := newDownstreamServing(client, machine, options)
 		if err != nil {
 			return nil, err
 		}
@@ -273,6 +273,11 @@ func (s *Store) Sync(ctx context.Context) error {
 	removed := s.dropUnselected(selectedIDs)
 	s.keepIntegrityRetries(selectedIDs)
 	for _, serviceID := range removed {
+		// A service dropped from the authoritative set must leave the
+		// downstream mirror before the next downstream request, not only from
+		// the local copies: otherwise a child keeps pulling policy the source
+		// no longer assigns to this relay.
+		s.removeDownstream(serviceID)
 		if err := s.syncer.Forget(serviceID); err != nil {
 			errs = append(errs, fmt.Errorf("service %q: %w", serviceID, err))
 		}
@@ -359,6 +364,12 @@ func (s *Store) syncService(ctx context.Context, service adsync.Service) error {
 	if status, known := s.machineService(service.ID); known {
 		minRevision = status.Head
 	}
+	// Withhold the mirror before the fetch unless it already serves exactly
+	// the advertised head. A snapshot or change page the synchronizer observes
+	// while the fetch runs is then invisible to downstream instances until
+	// publishDownstream confirms the advertised head after the whole
+	// attempt succeeded.
+	s.withholdDownstreamUnlessCurrent(service)
 	state, err := s.syncer.SyncAtLeast(ctx, service, minRevision)
 	if err != nil {
 		s.withholdDownstream(service.ID)
@@ -475,6 +486,23 @@ func (s *Store) withholdDownstream(serviceID string) {
 	if s.downstream != nil {
 		s.downstream.mirror.MarkUnavailable(serviceID)
 	}
+}
+
+// withholdDownstreamUnlessCurrent withholds a service from downstream serving
+// before a synchronization attempt, unless the mirror already serves exactly
+// the advertised head. Applying a candidate revision while it is withheld does
+// not publish it; publishDownstream makes the service servable again only
+// after the attempt reached and verified the advertised head.
+func (s *Store) withholdDownstreamUnlessCurrent(service adsync.Service) {
+	if s.downstream == nil {
+		return
+	}
+	if info, found := s.downstream.mirror.CurrentInfo(service.ID); found &&
+		info.Epoch == service.Epoch && info.Revision == service.Revision &&
+		info.StateHash == service.HeadStateHash {
+		return
+	}
+	s.downstream.mirror.MarkUnavailable(service.ID)
 }
 
 // removeDownstream stops serving one removed service and keeps the deletion

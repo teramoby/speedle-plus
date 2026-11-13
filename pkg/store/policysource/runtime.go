@@ -271,8 +271,10 @@ func (s *Store) fallbackState() adsync.FallbackState {
 
 // newDownstreamServing builds the mirror and protocol server of a relay. The
 // protocol server is served only by the dedicated downstream TLS listener,
-// never by the application listener.
-func newDownstreamServing(client *adsync.Client, options Options) (*downstreamServing, error) {
+// never by the application listener. Downstream distribution is tied to the
+// state machine: it stops while the instance is paused, and while it is not
+// live it can no longer vouch for the copies it holds.
+func newDownstreamServing(client *adsync.Client, machine *adsync.Machine, options Options) (*downstreamServing, error) {
 	mirror, err := adsproxy.NewMirror(adsproxy.MirrorOptions{})
 	if err != nil {
 		return nil, errors.Wrap(err, errors.ConfigError, "invalid downstream mirror configuration")
@@ -288,6 +290,10 @@ func newDownstreamServing(client *adsync.Client, options Options) (*downstreamSe
 		HeartbeatInterval: options.HeartbeatInterval,
 		StaleAfter:        options.StaleAfter,
 		StopAfter:         options.StopAfter,
+		Paused: func() bool {
+			instance := machine.Instance()
+			return instance.Paused || instance.Liveness != adsync.LivenessLive
+		},
 	})
 	if err != nil {
 		return nil, errors.Wrap(err, errors.ConfigError, "invalid downstream server configuration")

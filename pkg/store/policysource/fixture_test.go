@@ -29,6 +29,15 @@ const (
 	testServiceID3 = "01HF7YAT000000000000000103"
 )
 
+// testServiceVersion is one published revision, kept so a test can make the
+// source serve a snapshot that lags discovery.
+type testServiceVersion struct {
+	Snapshot   adsync.Snapshot
+	Revision   uint64
+	StateHash  adsync.Hash
+	CommitHash adsync.Hash
+}
+
 // testService is one service held by the fixture source.
 type testService struct {
 	ID         string
@@ -38,6 +47,8 @@ type testService struct {
 	Snapshot   adsync.Snapshot
 	StateHash  adsync.Hash
 	CommitHash adsync.Hash
+	// Previous is the revision replaced by the last publish.
+	Previous *testServiceVersion
 }
 
 func newTestService(id, name string) *testService {
@@ -56,6 +67,16 @@ func newTestService(id, name string) *testService {
 
 // publish replaces the service state and advances the revision.
 func (s *testService) publish(mutate func(*adsync.Snapshot)) {
+	s.Previous = &testServiceVersion{
+		Snapshot: adsync.Snapshot{
+			Name:         s.Snapshot.Name,
+			Policies:     append([]adsync.Policy(nil), s.Snapshot.Policies...),
+			RolePolicies: append([]adsync.Policy(nil), s.Snapshot.RolePolicies...),
+		},
+		Revision:   s.Revision,
+		StateHash:  s.StateHash,
+		CommitHash: s.CommitHash,
+	}
 	snapshot := adsync.Snapshot{
 		Name:         s.Snapshot.Name,
 		Policies:     append([]adsync.Policy(nil), s.Snapshot.Policies...),
@@ -87,6 +108,10 @@ type testSource struct {
 
 	corruptSnapshotHash bool
 	snapshotHolds       map[string]chan struct{}
+	// lagSnapshots makes the source serve the previous revision's snapshot
+	// while discovery advertises the current one, so a catch-up starts below
+	// the discovered head.
+	lagSnapshots bool
 
 	// Fallback endpoint behaviour.
 	fallbackCalls  int
@@ -187,14 +212,23 @@ func (f *testSource) serveSnapshot(w http.ResponseWriter, r *http.Request, servi
 		writeJSONError(w, http.StatusNotFound, "service_not_found", "")
 		return
 	}
+	version := testServiceVersion{
+		Snapshot:   service.Snapshot,
+		Revision:   service.Revision,
+		StateHash:  service.StateHash,
+		CommitHash: service.CommitHash,
+	}
+	if f.lagSnapshots && service.Previous != nil {
+		version = *service.Previous
+	}
 	etag := `"` + service.ID + "-" + service.Epoch + "-" +
-		strconv.FormatUint(service.Revision, 10) + "-" + service.StateHash.String() + `"`
+		strconv.FormatUint(version.Revision, 10) + "-" + version.StateHash.String() + `"`
 	if r.Header.Get("If-None-Match") == etag {
 		f.mu.Unlock()
 		w.WriteHeader(http.StatusNotModified)
 		return
 	}
-	stateHash := service.StateHash
+	stateHash := version.StateHash
 	if f.corruptSnapshotHash {
 		stateHash[0] ^= 0xff
 	}
@@ -202,13 +236,13 @@ func (f *testSource) serveSnapshot(w http.ResponseWriter, r *http.Request, servi
 		ServiceID:  service.ID,
 		SourceID:   service.ID,
 		Epoch:      service.Epoch,
-		Revision:   service.Revision,
+		Revision:   version.Revision,
 		StateHash:  stateHash,
-		CommitHash: service.CommitHash,
+		CommitHash: version.CommitHash,
 		Snapshot: adsync.Snapshot{
-			Name:         service.Snapshot.Name,
-			Policies:     append([]adsync.Policy(nil), service.Snapshot.Policies...),
-			RolePolicies: append([]adsync.Policy(nil), service.Snapshot.RolePolicies...),
+			Name:         version.Snapshot.Name,
+			Policies:     append([]adsync.Policy(nil), version.Snapshot.Policies...),
+			RolePolicies: append([]adsync.Policy(nil), version.Snapshot.RolePolicies...),
 		},
 	}
 	hold := f.snapshotHolds[serviceID]
@@ -274,6 +308,18 @@ func (f *testSource) removeService(name string) {
 		}
 	}
 	f.services = kept
+}
+
+// serveLaggingSnapshot makes the source answer snapshot requests with the
+// revision before its current discovery head.
+func (f *testSource) serveLaggingSnapshot(lagging bool) {
+	f.mutate(func(source *testSource) { source.lagSnapshots = lagging })
+}
+
+// rejectCredential makes every authenticated request fail as unauthorized, as
+// a revoked API key would.
+func (f *testSource) rejectCredential() {
+	f.mutate(func(source *testSource) { source.credential = "revoked-credential" })
 }
 
 func (f *testSource) holdSnapshots(serviceID string) {
