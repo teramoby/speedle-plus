@@ -196,3 +196,31 @@ func TestCascadeCAReplacementAndExpiry(t *testing.T) {
 		t.Fatal("closed client returned credential")
 	}
 }
+
+func TestCascadeCRLReloadWithMultipleSourcesAndIssuerRotation(t *testing.T) {
+	pki := newCascadePKI(t)
+	config := cascadeConfig(t, pki, "https://relay.example")
+	now := time.Now().Truncate(time.Second)
+	directory := t.TempDir()
+	first := writeTestFile(t, directory, "one.crl", pki.crl(t, 0, 1, now.Add(-2*time.Minute), now.Add(time.Hour), false), 0600)
+	second := writeTestFile(t, directory, "two.crl", pki.crl(t, 0, 2, now.Add(-time.Minute), now.Add(time.Hour), false), 0600)
+	config.CRLFiles = []string{first, second}
+	client := mustCascadeClient(t, config)
+	if err := client.ReloadTLS(); err != nil {
+		t.Fatalf("unchanged CRLs rejected: %v", err)
+	}
+	writeTestFile(t, directory, "two.crl", pki.crl(t, 0, 3, now, now.Add(time.Hour), false), 0600)
+	if err := client.ReloadTLS(); err != nil {
+		t.Fatalf("newer CRL rejected: %v", err)
+	}
+	// A new issuing key may reuse the same subject name and restart numbering.
+	replacement := newCascadePKI(t)
+	if err := os.WriteFile(config.CAFile, replacement.pem, 0600); err != nil {
+		t.Fatal(err)
+	}
+	writeTestFile(t, directory, "one.crl", replacement.crl(t, 0, 1, now, now.Add(time.Hour), false), 0600)
+	writeTestFile(t, directory, "two.crl", replacement.crl(t, 0, 1, now, now.Add(time.Hour), false), 0600)
+	if err := client.ReloadTLS(); err != nil {
+		t.Fatalf("CA key rotation rejected: %v", err)
+	}
+}

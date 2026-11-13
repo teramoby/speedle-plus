@@ -38,7 +38,12 @@ type clientTLSGeneration struct {
 	roots       *x509.CertPool
 	caPEM       []byte
 	crls        []*x509.RevocationList
+	crlIssuers  map[*x509.RevocationList]crlIssuer
 }
+
+// The signing key distinguishes a CA rollover from an older CRL under the
+// same subject. Do not rely on optional, untrusted CRL identity metadata.
+type crlIssuer struct{ subject, publicKey string }
 
 type clientTLSConn struct {
 	net.Conn
@@ -147,6 +152,7 @@ func (g *clientTLSGeneration) addCRL(data []byte, now time.Time, maxAge time.Dur
 		return err
 	}
 	trusted := false
+	var identity crlIssuer
 	remaining := g.caPEM
 	for len(remaining) > 0 {
 		block, rest := pem.Decode(remaining)
@@ -157,12 +163,17 @@ func (g *clientTLSGeneration) addCRL(data []byte, now time.Time, maxAge time.Dur
 		issuer, err := x509.ParseCertificate(block.Bytes)
 		if err == nil && bytes.Equal(crl.RawIssuer, issuer.RawSubject) && crl.CheckSignatureFrom(issuer) == nil {
 			trusted = true
+			identity = crlIssuer{subject: string(issuer.RawSubject), publicKey: string(issuer.RawSubjectPublicKeyInfo)}
 			break
 		}
 	}
 	if !trusted {
 		return fmt.Errorf("adsync: relay CRL issuer/signature is not trusted by CAFile")
 	}
+	if g.crlIssuers == nil {
+		g.crlIssuers = make(map[*x509.RevocationList]crlIssuer)
+	}
+	g.crlIssuers[crl] = identity
 	g.crls = append(g.crls, crl)
 	return nil
 }
@@ -201,14 +212,26 @@ func (m *clientTLS) reload(ctx context.Context) error {
 
 	if m.material != nil {
 		old := m.material
+		// At least one CRL for each retained signing issuer must cover its old
+		// watermark. Other fresh sources may still contain older CRLs for union
+		// revocation coverage; comparing every pair would reject even a no-op.
 		for _, oldCRL := range old.crls {
+			sameIssuer, current := false, false
 			for _, newCRL := range next.crls {
-				if bytes.Equal(oldCRL.RawIssuer, newCRL.RawIssuer) &&
-					(newCRL.ThisUpdate.Before(oldCRL.ThisUpdate) || (oldCRL.Number != nil && newCRL.Number != nil && newCRL.Number.Cmp(oldCRL.Number) < 0)) {
-					return fmt.Errorf("adsync: refusing an older relay CRL")
+				if old.crlIssuers[oldCRL] != next.crlIssuers[newCRL] {
+					continue
+				}
+				sameIssuer = true
+				if !newCRL.ThisUpdate.Before(oldCRL.ThisUpdate) &&
+					(oldCRL.Number == nil || (newCRL.Number != nil && newCRL.Number.Cmp(oldCRL.Number) >= 0)) {
+					current = true
 				}
 			}
+			if sameIssuer && !current {
+				return fmt.Errorf("adsync: refusing an older relay CRL")
+			}
 		}
+
 		if sameTLSMaterial(old, next) {
 			return nil
 		}
