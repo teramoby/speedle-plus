@@ -193,6 +193,63 @@ class HandoffTests(unittest.TestCase):
         self.assertNotIn("NEW_INHERITED_SECRET", process.stderr)
         self.assertNotIn("synthetic-new-credential", process.stdout + process.stderr)
 
+    def test_seal_step_loads_the_trusted_guard_not_the_worktree_copy(self):
+        from test_reviewbot_diff import workflow_script
+
+        for workflow, result_name in (
+            ("reviewbot.yml", "reviewbot-result.json"),
+            ("reviewbot-command.yml", "reviewbot-command-result.json"),
+        ):
+            with self.subTest(workflow=workflow):
+                directory = tempfile.TemporaryDirectory()
+                self.addCleanup(directory.cleanup)
+                root = Path(directory.name)
+                repo, runtime = root / "repo", root / "runtime"
+                repo.mkdir()
+                runtime.mkdir()
+
+                def git(*args):
+                    return subprocess.run(
+                        ["git", *args], cwd=repo, check=True, capture_output=True, text=True).stdout.strip()
+
+                git("init", "-qb", "main")
+                git("config", "user.name", "ReviewBot fixture")
+                git("config", "user.email", "fixture@example.invalid")
+                git("config", "commit.gpgsign", "false")
+                guard = repo / ".github/codex/reviewbot_handoff.py"
+                guard.parent.mkdir(parents=True)
+                guard.write_text(HELPER.read_text())
+                git("add", ".")
+                git("commit", "-qm", "Trusted guard")
+                trusted = git("rev-parse", "HEAD")
+                guard.write_text('raise SystemExit("UNTRUSTED_HANDOFF_EXECUTED")\n')
+                git("add", ".")
+                git("commit", "-qm", "Untrusted head")
+                (runtime / result_name).write_text(json.dumps({
+                    "message": "Trusted review text.", "model": "fixture-model"}))
+                env = {
+                    **os.environ,
+                    "RUNNER_TEMP": str(runtime),
+                    "TRUSTED_SHA": trusted,
+                    "REVIEWBOT_SECRETS": json.dumps({"ARK_API_KEY": "synthetic-ark-credential"}),
+                    "GH_TOKEN": "synthetic-job-token",
+                    "REVIEWBOT_RETRIED": "false",
+                    "GITHUB_RUN_ID": "123",
+                    "GITHUB_RUN_ATTEMPT": "1",
+                    "PULL_NUMBER": "7",
+                    "HEAD_SHA": "a" * 40,
+                    "COMMAND": "review",
+                }
+                process = subprocess.run(
+                    ["bash", "-c", workflow_script(workflow, "Validate and seal review handoff")],
+                    cwd=repo, env=env, text=True, capture_output=True)
+                self.assertEqual(process.returncode, 0, process.stderr)
+                self.assertNotIn("UNTRUSTED_HANDOFF_EXECUTED", process.stdout + process.stderr)
+                self.assertNotIn("synthetic-ark-credential", process.stdout + process.stderr)
+                report = json.loads((runtime / "reviewbot-handoff" / "report.json").read_text())
+                self.assertEqual(report["message"], "Trusted review text.")
+                self.assertEqual(report["head_sha"], "a" * 40)
+
     def test_wrong_arguments_fail_without_reading_a_secret(self):
         process = subprocess.run(
             [sys.executable, str(HELPER)], text=True, capture_output=True)

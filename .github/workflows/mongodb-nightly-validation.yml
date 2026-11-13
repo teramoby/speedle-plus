@@ -175,7 +175,8 @@ jobs:
               echo "Ark HTTPS reachable (HTTP ${code})."
               python3 scripts/tests/test_reviewbot_diff.py -v
               python3 scripts/tests/test_reviewbot_response.py -v
-              node --test scripts/tests/test_reviewbot_commands.cjs scripts/tests/test_reviewbot_automerge.cjs scripts/tests/test_runner_routing.cjs scripts/tests/test_go_ci_worker.cjs scripts/tests/test_release_workflow.cjs
+              python3 scripts/tests/test_reviewbot_handoff.py -v
+              node --test scripts/tests/test_reviewbot_handoff.cjs scripts/tests/test_reviewbot_commands.cjs scripts/tests/test_reviewbot_automerge.cjs scripts/tests/test_runner_routing.cjs scripts/tests/test_go_ci_worker.cjs scripts/tests/test_release_workflow.cjs
               ;;
             *) echo "Unknown CI trial ${CI_TRIAL}." >&2; exit 1 ;;
           esac

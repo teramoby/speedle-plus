@@ -139,8 +139,8 @@ in source, fixtures or comments. Without the active provider's key, automatic an
 notice, sends no code and publishes no Review. Remove the secret or disable the
 two workflows to stop model calls.
 
-Only the response parser from the immutable trusted workflow revision executes in
-the analysis job. Inline comments are routed through a no-checkout workflow with
+Only the response parser and the review handoff guard from the immutable trusted
+workflow revision execute in the analysis job. Inline comments are routed through a no-checkout workflow with
 no secret bindings; a default-branch `workflow_run` handler verifies the run,
 comment, PR association, actor and time before applying the usual permission
 checks. It retrieves comment data through GitHub's API and does not execute code
@@ -151,6 +151,16 @@ PR `.gitattributes` files cannot hide text changes from the static
 diff. Checkout does not retain credentials, response diagnostics omit raw model
 or error text, temporary review files are removed, and writable GitHub tokens
 are confined to the jobs that publish output or perform the existing merge task.
+
+The analysis job does not pass review text through a job output. After a
+successful model call, the trusted guard checks the result, binds it to this
+workflow run, pull request and head, and uploads one JSON artifact kept for one
+day. The publish job downloads that artifact and fails when the file is missing,
+oversized, malformed or bound to a different review, so a dropped review cannot
+look successful. A disabled configuration, and an existing review of the same
+commit, do not upload an artifact and do not fail publication. The runner
+removes the artifact directory and the other temporary review files after the
+upload and after publication.
 
 ## Existing Dependabot integration
 
@@ -178,7 +188,8 @@ against using another service's embedded-etcd ports on the shared machine.
 ## Maintenance and verification
 
 Files are `.github/workflows/reviewbot.yml`,
-`.github/workflows/reviewbot-command.yml`, `.github/workflows/reviewbot-inline.yml`, `.github/codex/reviewbot_response.py`
+`.github/workflows/reviewbot-command.yml`, `.github/workflows/reviewbot-inline.yml`,
+`.github/codex/reviewbot_response.py`, `.github/codex/reviewbot_handoff.py`
 and the two prompts under `.github/codex/prompts/`. Actions are pinned to complete
 commit SHAs. Review these files as privileged CI configuration.
 
@@ -187,8 +198,10 @@ Run from the repository root with Python 3, Git, Bash, jq and Node 22 or newer:
 ```sh
 python3 scripts/tests/test_reviewbot_diff.py -v
 python3 scripts/tests/test_reviewbot_response.py -v
+python3 scripts/tests/test_reviewbot_handoff.py -v
 node --test scripts/tests/test_reviewbot_commands.cjs
 node --test scripts/tests/test_reviewbot_automerge.cjs
+node --test scripts/tests/test_reviewbot_handoff.cjs
 node --test scripts/tests/test_runner_routing.cjs
 actionlint .github/workflows/reviewbot*.yml
 zizmor .github/workflows/reviewbot*.yml
@@ -196,10 +209,11 @@ git diff --check
 ```
 
 The Python suites run the actual workflow shell against synthetic Git history and
-stubbed HTTP responses, including a malicious PR-head parser that must never
-execute. JavaScript suites execute the actual workflow handlers with GitHub API
-mocks, testing permissions, replies, history, deduplication and merge gates. No
-credentials, real model requests, GitHub comments or merges are used by fixtures.
+stubbed HTTP responses, including a malicious PR-head parser and a malicious
+PR-head handoff guard that must never execute. JavaScript suites execute the
+actual workflow handlers with GitHub API mocks, testing permissions, replies,
+history, deduplication, the review artifact and merge gates. No credentials,
+real model requests, GitHub comments or merges are used by fixtures.
 
 The `ReviewBot` workflow also has `workflow_dispatch` to run the regression suites on a
 reviewed branch without receiving model API keys or publishing a Review:

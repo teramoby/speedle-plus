@@ -271,8 +271,6 @@ jobs:
       pull-requests: read
     outputs:
       enabled: ${{ steps.configuration.outputs.enabled }}
-      final_message: ${{ steps.review.outputs.final_message }}
-      model_id_b64: ${{ steps.review.outputs.model_id_b64 }}
     steps:
       - name: Check ReviewBot configuration
         id: configuration
@@ -571,43 +569,84 @@ jobs:
             build_review_input 3
           done
 
-          review_message=$(jq -r '.message' "${review_result}")
+          # The review text is sealed into an artifact. This flag is not review text.
           if (( attempt == 2 )); then
-            review_message="${review_message}"$'\n\n_Validation gap: ReviewBot retried after an output-token limit with unified=3 diff context (initial unified=80)._'
+            echo "retried=true" >> "${GITHUB_OUTPUT}"
+          else
+            echo "retried=false" >> "${GITHUB_OUTPUT}"
           fi
-          model_id_b64=$(jq -r '.model | @base64' "${review_result}")
-          delimiter="REVIEWBOT_$(od -An -N16 -tx1 /dev/urandom | tr -d ' \n')"
-          {
-            printf 'final_message<<%s\n' "${delimiter}"
-            printf '%s\n' "${review_message}"
-            printf '%s\n' "${delimiter}"
-            printf 'model_id_b64=%s\n' "${model_id_b64}"
-          } >> "${GITHUB_OUTPUT}"
+
+      # The model step above sees only the active provider key. This guard sees
+      # every secret so a literal match never enters the artifact.
+      - name: Validate and seal review handoff
+        if: steps.configuration.outputs.enabled == 'true'
+        shell: bash
+        env:
+          REVIEWBOT_SECRETS: ${{ toJSON(secrets) }} # zizmor: ignore[overprovisioned-secrets] #366 scans every available secret before the artifact upload
+          GH_TOKEN: ${{ github.token }}
+          REVIEWBOT_RETRIED: ${{ steps.review.outputs.retried }}
+          PULL_NUMBER: ${{ needs.prepare.outputs.pull_number }}
+          HEAD_SHA: ${{ needs.prepare.outputs.head_sha }}
+          TRUSTED_SHA: ${{ github.workflow_sha }}
+          COMMAND: ${{ needs.prepare.outputs.command }}
+        run: |
+          set -euo pipefail
+          # Execute only the guard from the immutable trusted workflow revision.
+          handoff_guard="${RUNNER_TEMP}/reviewbot-handoff.py"
+          git show "${TRUSTED_SHA}:.github/codex/reviewbot_handoff.py" > "${handoff_guard}"
+          python3 "${handoff_guard}" \
+            "${RUNNER_TEMP}/reviewbot-command-result.json" \
+            "${RUNNER_TEMP}/reviewbot-handoff/report.json"
+
+      - name: Upload validated review handoff
+        if: steps.configuration.outputs.enabled == 'true'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: reviewbot-report-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/reviewbot-handoff/report.json
+          if-no-files-found: error
+          retention-days: 1
 
       - name: Remove command input
         if: always()
-        run: rm -f "${RUNNER_TEMP}"/reviewbot-command-*
+        run: |
+          rm -rf -- "${RUNNER_TEMP}/reviewbot-handoff"
+          rm -f -- "${RUNNER_TEMP}/reviewbot-handoff.py"
+          rm -f -- "${RUNNER_TEMP}"/reviewbot-command-*
 
   publish:
     name: Publish ReviewBot command response
     needs: [prepare, analyze]
-    if: >-
-      always() &&
-      needs.prepare.outputs.should_run == 'true' &&
-      (needs.analyze.result != 'success' ||
-       needs.analyze.outputs.enabled != 'true' ||
-       needs.analyze.outputs.final_message != '')
+    if: always() && needs.prepare.outputs.should_run == 'true'
     runs-on: ["self-hosted","speedle-runner"]
     timeout-minutes: 5
     permissions:
       issues: write
       pull-requests: write
     steps:
-      - name: Publish idempotent response
+      - name: Require a completed analysis
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         env:
-          REVIEWBOT_MESSAGE: ${{ needs.analyze.outputs.final_message }}
-          MODEL_ID_B64: ${{ needs.analyze.outputs.model_id_b64 }}
+          ANALYZE_RESULT: ${{ needs.analyze.result }}
+          REVIEWBOT_ENABLED: ${{ needs.analyze.outputs.enabled }}
+        with:
+          script: |
+            if (process.env.ANALYZE_RESULT !== "success" ||
+                !["true", "false"].includes(process.env.REVIEWBOT_ENABLED)) {
+              core.setFailed("ReviewBot analysis did not produce a publishable outcome. See the analyze job; no model text will be published.");
+            }
+
+      - name: Download validated review handoff from this run only
+        if: needs.analyze.result == 'success' && needs.analyze.outputs.enabled == 'true'
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: reviewbot-report-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/reviewbot-handoff
+
+      - name: Publish idempotent response
+        if: always()
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        env:
           ANALYZE_RESULT: ${{ needs.analyze.result }}
           REVIEWBOT_ENABLED: ${{ needs.analyze.outputs.enabled }}
           REVIEWBOT_PROVIDER: ${{ vars.REVIEWBOT_PROVIDER || 'ark' }}
@@ -622,8 +661,36 @@ jobs:
         with:
           github-token: ${{ github.token }}
           script: |
-            const modelMessage = process.env.REVIEWBOT_MESSAGE.trim();
-            const modelId = Buffer.from(process.env.MODEL_ID_B64, "base64").toString("utf8");
+            let modelMessage = "";
+            let modelId = "";
+            if (process.env.ANALYZE_RESULT === "success" && process.env.REVIEWBOT_ENABLED === "true") {
+              const fs = require("node:fs");
+              const file = `${process.env.RUNNER_TEMP}/reviewbot-handoff/report.json`;
+              let report;
+              try {
+                const stat = fs.lstatSync(file);
+                if (!stat.isFile() || stat.isSymbolicLink() || stat.size > 262144) throw new Error();
+                const bytes = fs.readFileSync(file);
+                const text = bytes.toString("utf8");
+                if (!Buffer.from(text, "utf8").equals(bytes)) throw new Error();
+                report = JSON.parse(text);
+                const keys = ["version", "message", "model", "run_id", "run_attempt", "pull_number", "head_sha", "command"];
+                if (!report || Array.isArray(report) || Object.keys(report).length !== keys.length ||
+                    !keys.every((key) => Object.hasOwn(report, key)) || report.version !== 1 ||
+                    typeof report.message !== "string" || !report.message.trim() ||
+                    Buffer.byteLength(report.message, "utf8") > 241000 ||
+                    typeof report.model !== "string" || !/^[A-Za-z0-9][A-Za-z0-9._:/-]{0,199}$/.test(report.model) ||
+                    report.run_id !== process.env.GITHUB_RUN_ID ||
+                    report.run_attempt !== process.env.GITHUB_RUN_ATTEMPT ||
+                    report.pull_number !== process.env.PULL_NUMBER ||
+                    report.head_sha !== process.env.HEAD_SHA ||
+                    report.command !== process.env.COMMAND) throw new Error();
+              } catch {
+                throw new Error("ReviewBot handoff is missing, oversized, malformed or bound to a different review; no report published.");
+              }
+              modelMessage = report.message.trim();
+              modelId = report.model;
+            }
             const analyzeResult = process.env.ANALYZE_RESULT;
             const reviewBotEnabled = process.env.REVIEWBOT_ENABLED;
             const command = process.env.COMMAND;
@@ -739,3 +806,7 @@ jobs:
             if (successful) {
               await addReaction("+1");
             }
+
+      - name: Remove downloaded review handoff
+        if: always()
+        run: rm -rf -- "${RUNNER_TEMP}/reviewbot-handoff"

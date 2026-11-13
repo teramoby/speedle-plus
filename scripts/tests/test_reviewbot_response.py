@@ -5,7 +5,6 @@ import base64
 import json
 import os
 from pathlib import Path
-import re
 import runpy
 import subprocess
 import sys
@@ -137,9 +136,8 @@ class ReviewBotResponseTests(unittest.TestCase):
                     result, requests, output = self.run_workflow(workflow, step, [response], mode=mode)
                     self.assertEqual(result.returncode, 0, result.stderr)
                     self.assertEqual(len(requests), 1)
-                    match = re.search(r"final_message<<([^\n]+)\n([\s\S]*?)\n\1\n", output)
-                    self.assertIsNotNone(match)
-                    self.assertEqual(match[2], expected)
+                    self.assertEqual(self.report["message"], expected)
+                    self.assertEqual(self.report["command"], mode)
 
     def run_workflow(self, workflow, step, responses, *, http_code="200", mode="review",
                      long_input=False, provider=None, deepseek_model="fixture-deepseek-model",
@@ -267,6 +265,18 @@ with open(pathlib.Path(os.environ["RUNNER_TEMP"]) / "sleeps.txt", "a") as log:
         urls = [path.read_text() for path in sorted(runtime.glob("url-*.txt"))]
         auths = [path.read_text() for path in sorted(runtime.glob("auth-*.txt"))]
         published = output.read_text() if output.exists() else ""
+        self.assertNotIn("final_message", published)
+        self.assertNotIn("model_id_b64", published)
+        self.report = None
+        if result.returncode == 0:
+            flags = [line for line in published.splitlines() if line.startswith("retried=")]
+            self.assertEqual(len(flags), 1, published)
+            self.assertIn(flags[0], ("retried=true", "retried=false"))
+            result_name = ("reviewbot-command-result.json" if "command" in workflow
+                           else "reviewbot-result.json")
+            self.report = self.seal_report(
+                runtime / result_name, retried=flags[0].split("=", 1)[1], head=head, command=mode)
+            self.assertNotIn(self.report["message"], published)
         logs = result.stdout + result.stderr
         timeouts = [int(path.read_text()) for path in sorted(runtime.glob("timeout-*.txt"))]
         for timeout in timeouts:
@@ -292,14 +302,44 @@ with open(pathlib.Path(os.environ["RUNNER_TEMP"]) / "sleeps.txt", "a") as log:
         self.assertNotIn("PRIVATE_REASONING", published)
         return result, requests, published
 
+    def seal_report(self, result_path, *, retried, head, command):
+        destination = result_path.with_name("sealed-report.json")
+        environment = {
+            **os.environ,
+            "REVIEWBOT_SECRETS": json.dumps({
+                "github_token": "synthetic-context-token",
+                "ARK_API_KEY": "synthetic-ark-credential",
+                "DEEPSEEK_API_KEY": "synthetic-deepseek-credential",
+            }),
+            "GH_TOKEN": "synthetic-job-token",
+            "REVIEWBOT_RETRIED": retried,
+            "GITHUB_RUN_ID": "123",
+            "GITHUB_RUN_ATTEMPT": "1",
+            "PULL_NUMBER": "7",
+            "HEAD_SHA": head,
+            "COMMAND": command,
+        }
+        process = subprocess.run(
+            [sys.executable, str(ROOT / ".github/codex/reviewbot_handoff.py"),
+             str(result_path), str(destination)],
+            env=environment, text=True, capture_output=True)
+        self.assertEqual(process.returncode, 0, process.stderr)
+        self.assertEqual(process.stdout + process.stderr, "")
+        payload = destination.read_text()
+        for secret in ("synthetic-context-token", "synthetic-ark-credential",
+                       "synthetic-deepseek-credential", "synthetic-job-token",
+                       "fixture-not-a-secret", "fixture-deepseek-not-a-secret"):
+            self.assertNotIn(secret, payload)
+        return json.loads(payload)
+
     def test_normal(self):
         for workflow, step, _ in WORKFLOWS:
             with self.subTest(workflow=workflow):
                 result, requests, output = self.run_workflow(workflow, step, [NORMAL])
                 self.assertEqual(result.returncode, 0, result.stderr)
                 self.assertEqual(len(requests), 1)
-                self.assertIn("Fixture review: no actionable findings.", output)
-                self.assertIn("model_id_b64=" + base64.b64encode(b"fixture-model").decode(), output)
+                self.assertIn("Fixture review: no actionable findings.", self.report["message"])
+                self.assertEqual(self.report["model"], "fixture-model")
 
     def test_empty_and_malformed_fail_with_safe_reason_without_retry(self):
         for fixture, reason in (("empty.json", "empty_output"),
@@ -335,7 +375,7 @@ with open(pathlib.Path(os.environ["RUNNER_TEMP"]) / "sleeps.txt", "a") as log:
                             self.assertIn("UNTRUSTED_REQUEST", request["input"])
                             if mode == "recheck":
                                 self.assertIn("UNTRUSTED_HISTORY", request["input"])
-                    self.assertIn("unified=3", output)
+                    self.assertIn("unified=3", self.report["message"])
 
     def test_repeated_length_failure_is_bounded_and_does_not_publish_partial_text(self):
         partial = {**LENGTH, "output": NORMAL["output"]}
@@ -397,7 +437,7 @@ with open(pathlib.Path(os.environ["RUNNER_TEMP"]) / "sleeps.txt", "a") as log:
             with self.subTest(workflow=workflow):
                 result, _, output = self.run_workflow(workflow, step, [fallback])
                 self.assertEqual(result.returncode, 0, result.stderr)
-                self.assertIn("model_id_b64=" + base64.b64encode(b"fixture-request-model").decode(), output)
+                self.assertEqual(self.report["model"], "fixture-request-model")
                 result, requests, output = self.run_workflow(workflow, step, [failed])
                 self.assertNotEqual(result.returncode, 0)
                 self.assertEqual(len(requests), 1)
@@ -422,8 +462,8 @@ with open(pathlib.Path(os.environ["RUNNER_TEMP"]) / "sleeps.txt", "a") as log:
                 self.assertIn("TRUSTED_REPOSITORY_POLICY", req["messages"][0]["content"])
                 self.assertNotIn("+unchanged FEATURE_CHANGE", req["messages"][0]["content"])
                 self.assertIn("+unchanged FEATURE_CHANGE", req["messages"][1]["content"])
-                self.assertIn("Fixture review: no actionable findings.", output)
-                self.assertIn("model_id_b64=" + base64.b64encode(b"deepseek-flash").decode(), output)
+                self.assertIn("Fixture review: no actionable findings.", self.report["message"])
+                self.assertEqual(self.report["model"], "deepseek-flash")
 
             modes = ("review", "recheck", "explain") if "command" in workflow else ("review",)
             for mode in modes:
@@ -451,10 +491,8 @@ with open(pathlib.Path(os.environ["RUNNER_TEMP"]) / "sleeps.txt", "a") as log:
                         deepseek_model="deepseek-v4-pro")
                     self.assertEqual(result.returncode, 0, result.stderr)
                     self.assertEqual(requests[0]["model"], "deepseek-v4-pro")
-                    match = re.search(r"final_message<<([^\n]+)\n([\s\S]*?)\n\1\n", output)
-                    self.assertIsNotNone(match)
-                    self.assertEqual(match[2], expected)
-                    self.assertIn("model_id_b64=" + base64.b64encode(b"deepseek-v4-pro").decode(), output)
+                    self.assertEqual(self.report["message"], expected)
+                    self.assertEqual(self.report["model"], "deepseek-v4-pro")
                     if workflow == "reviewbot.yml":
                         self.assertIn("safe_to_merge=true", output)
 
@@ -483,7 +521,7 @@ with open(pathlib.Path(os.environ["RUNNER_TEMP"]) / "sleeps.txt", "a") as log:
                             self.assertIn("UNTRUSTED_REQUEST", req["messages"][1]["content"])
                             if mode == "recheck":
                                 self.assertIn("UNTRUSTED_HISTORY", req["messages"][1]["content"])
-                    self.assertIn("unified=3", output)
+                    self.assertIn("unified=3", self.report["message"])
                     if workflow == "reviewbot.yml":
                         self.assertIn("safe_to_merge=false", output)
 
@@ -598,11 +636,11 @@ with open(pathlib.Path(os.environ["RUNNER_TEMP"]) / "sleeps.txt", "a") as log:
                     workflow, step, [sse(*ark_stream(NORMAL))])
                 self.assertEqual(result.returncode, 0, result.stderr)
                 self.assertEqual(len(requests), 1)
+                streamed = self.report["message"]
                 _, _, plain = self.run_workflow(workflow, step, [NORMAL])
-                message = re.compile(r"final_message<<([^\n]+)\n([\s\S]*?)\n\1\n")
-                self.assertEqual(message.search(output)[2], message.search(plain)[2])
-                self.assertIn("Fixture review: no actionable findings.", output)
-                self.assertIn("model_id_b64=" + base64.b64encode(b"fixture-model").decode(), output)
+                self.assertEqual(streamed, self.report["message"])
+                self.assertIn("Fixture review: no actionable findings.", self.report["message"])
+                self.assertEqual(self.report["model"], "fixture-model")
 
             failed = {**NORMAL, "status": "failed", "error": {"message": "PRIVATE_ERROR"}}
             filtered = {**LENGTH, "incomplete_details": {"reason": "content_filter"}}
@@ -630,7 +668,7 @@ with open(pathlib.Path(os.environ["RUNNER_TEMP"]) / "sleeps.txt", "a") as log:
                 events = ark_stream(NORMAL) + [{"type": "response.failed", "response": failed}]
                 result, _, output = self.run_workflow(workflow, step, [sse(*events)])
                 self.assertEqual(result.returncode, 0, result.stderr)
-                self.assertIn("Fixture review: no actionable findings.", output)
+                self.assertIn("Fixture review: no actionable findings.", self.report["message"])
 
             with self.subTest(workflow=workflow, length=True):
                 streamed_length = sse(*ark_stream(LENGTH, terminal="response.incomplete"))
@@ -639,7 +677,7 @@ with open(pathlib.Path(os.environ["RUNNER_TEMP"]) / "sleeps.txt", "a") as log:
                 self.assertEqual(result.returncode, 0, result.stderr)
                 self.assertEqual(len(requests), 2)
                 self.assertIn('"reason_code":"output_token_limit"', result.stderr)
-                self.assertIn("unified=3", output)
+                self.assertIn("unified=3", self.report["message"])
 
     def test_deepseek_event_stream_joins_content_and_requires_finish_reason(self):
         usage = DEEPSEEK_NORMAL["usage"]
@@ -651,10 +689,8 @@ with open(pathlib.Path(os.environ["RUNNER_TEMP"]) / "sleeps.txt", "a") as log:
                     provider="deepseek")
                 self.assertEqual(result.returncode, 0, result.stderr)
                 self.assertEqual(len(requests), 1)
-                match = re.search(r"final_message<<([^\n]+)\n([\s\S]*?)\n\1\n", output)
-                self.assertIsNotNone(match)
-                self.assertEqual(match[2], content)
-                self.assertIn("model_id_b64=" + base64.b64encode(b"deepseek-flash").decode(), output)
+                self.assertEqual(self.report["message"], content)
+                self.assertEqual(self.report["model"], "deepseek-flash")
 
             for body, reason in (
                     (sse(*deepseek_stream(content, finish_reason=None), done=True), "incomplete_stream"),
@@ -685,11 +721,12 @@ with open(pathlib.Path(os.environ["RUNNER_TEMP"]) / "sleeps.txt", "a") as log:
                 self.assertIn('"finish_reason":"length"', result.stderr)
                 self.assertIn('"reasoning_tokens":65536', result.stderr)
                 self.assertNotIn("PARTIAL", output)
+                self.assertNotIn("PARTIAL", self.report["message"])
 
     def published_message(self, output):
-        match = re.search(r"final_message<<([^\n]+)\n([\s\S]*?)\n\1\n", output)
-        self.assertIsNotNone(match, output)
-        return match[2]
+        self.assertIsNotNone(self.report, output)
+        self.assertNotIn("final_message", output)
+        return self.report["message"]
 
     def reassembled(self, body, provider):
         response = load_response(body, provider)
@@ -792,7 +829,7 @@ with open(pathlib.Path(os.environ["RUNNER_TEMP"]) / "sleeps.txt", "a") as log:
                         self.assertEqual(len(requests), failures + 1)
                         self.assertEqual(self.sleeps, sleeps)
                         self.assertTrue(all(request == requests[0] for request in requests))
-                        self.assertIn("Fixture review: no actionable findings.", output)
+                        self.assertIn("Fixture review: no actionable findings.", self.report["message"])
                         self.assertNotIn("retry_exhausted", result.stderr)
                         if workflow == "reviewbot.yml":
                             self.assertIn("safe_to_merge=", output)
@@ -814,7 +851,7 @@ with open(pathlib.Path(os.environ["RUNNER_TEMP"]) / "sleeps.txt", "a") as log:
                 self.assertEqual(result.returncode, 0, result.stderr)
                 self.assertEqual(len(requests), 4)
                 self.assertEqual(self.sleeps, ["5", "5"])
-                self.assertIn("unified=3", output)
+                self.assertIn("unified=3", self.report["message"])
 
             with self.subTest(workflow=workflow, http_error_after_transport=True):
                 result, requests, output = self.run_workflow(

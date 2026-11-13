@@ -1,6 +1,7 @@
 /* Exercise the actual github-script handlers with in-memory GitHub API stubs. */
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
+const os = require('node:os');
 const path = require('node:path');
 const test = require('node:test');
 const vm = require('node:vm');
@@ -97,7 +98,8 @@ function harness(options = {}) {
     MODEL_ID_B64: encode('kimi-k3'), ANALYZE_RESULT: 'success', REVIEWBOT_ENABLED: 'true',
     COMMAND: 'review', PULL_NUMBER: '7', HEAD_SHA: head, ACTOR: human.login,
     COMMENT_ID: '123', REPLY_TO_COMMENT_ID: '100', SOURCE_KIND: 'issue_comment',
-    SOURCE_URL: comment.html_url, ...(options.env || {}),
+    SOURCE_URL: comment.html_url, GITHUB_RUN_ID: '999', GITHUB_RUN_ATTEMPT: '1',
+    ...(options.env || {}),
   };
   const core = {
     setOutput: (key, value) => {outputs[key] = value;},
@@ -105,7 +107,36 @@ function harness(options = {}) {
   };
   return {
     calls, outputs,
-    run: name => vm.runInNewContext(scripts[name], {github, context, core, Buffer, URL, process: {env}}),
+    run: async (name) => {
+      const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'reviewbot-command-'));
+      env.RUNNER_TEMP = directory;
+      try {
+        if (name === 'publish' && !options.omitArtifact) {
+          const report = {
+            version: 1,
+            message: env.REVIEWBOT_MESSAGE,
+            model: Buffer.from(env.MODEL_ID_B64, 'base64').toString('utf8'),
+            run_id: env.GITHUB_RUN_ID,
+            run_attempt: env.GITHUB_RUN_ATTEMPT,
+            pull_number: env.PULL_NUMBER,
+            head_sha: env.HEAD_SHA,
+            command: env.COMMAND,
+          };
+          const dir = path.join(directory, 'reviewbot-handoff');
+          fs.mkdirSync(dir);
+          fs.writeFileSync(path.join(dir, 'report.json'), JSON.stringify(report));
+        }
+        const nodeRequire = (id) => {
+          if (id === 'node:fs' || id === 'fs') return fs;
+          throw new Error(`unexpected module ${id}`);
+        };
+        return await vm.runInNewContext(scripts[name], {
+          github, context, core, Buffer, URL, require: nodeRequire, process: {env},
+        });
+      } finally {
+        fs.rmSync(directory, {recursive: true, force: true});
+      }
+    },
   };
 }
 function published(h) {return [...h.calls.reviews, ...h.calls.comments, ...h.calls.requests.filter(x => x.body)];}
@@ -123,6 +154,8 @@ test('secret-bearing command workflow accepts default-branch events and inline r
   assert.doesNotMatch(router, /\buses:|\bsecrets\.|\bcheckout@|\b(?:upload|download)-artifact|^\s+env:/m);
   assert.match(workflow, /ref: \$\{\{ github.workflow_sha \}\}/);
   assert.match(workflow, /git show "\$\{TRUSTED_SHA\}:\.github\/codex\/reviewbot_response\.py"/);
+  assert.match(workflow, /git show "\$\{TRUSTED_SHA\}:\.github\/codex\/reviewbot_handoff\.py"/);
+  assert.doesNotMatch(workflow, /final_message/);
 });
 test('direct review-comment events cannot enter the secret-bearing command handler', async () => {
   const h = harness({eventName: 'pull_request_review_comment'}); await h.run('prepare');
@@ -341,6 +374,12 @@ test('quoted marker in an unrelated genuine bot response does not suppress publi
 test('reaction failure preserves a successfully published review', async () => {
   const h = harness({reactionFailure: true}); await h.run('publish');
   assert.equal(h.calls.reviews.length, 1); assert.equal(h.calls.warnings.length, 1);
+});
+test('missing handoff fails before any command publication', async () => {
+  const h = harness({omitArtifact: true});
+  await assert.rejects(() => h.run('publish'), /no report published/);
+  assert.equal(published(h).length, 0);
+  assert.deepEqual(reactions(h), []);
 });
 test('long output stays within GitHub limit while retaining idempotence and commit metadata', async () => {
   const h = harness({env: {REVIEWBOT_MESSAGE: 'X'.repeat(70000)}}); await h.run('publish');

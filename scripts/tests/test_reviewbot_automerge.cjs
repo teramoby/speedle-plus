@@ -196,15 +196,48 @@ test('merge API merged=false is reported as failure',async()=>{
   const result=await executeMerge({mergeResult:{merged:false,message:'base branch modified'}});assert.equal(result.merged,false);assert.match(result.failures.join('\n'),/base branch modified/);
 });
 
-async function executeReview(script,reviews,env = {}) {
+function writeReport(env, directory) {
+  const report = {
+    version: 1,
+    message: env.REVIEWBOT_MESSAGE,
+    model: Buffer.from(env.MODEL_ID_B64, 'base64').toString('utf8'),
+    run_id: env.GITHUB_RUN_ID,
+    run_attempt: env.GITHUB_RUN_ATTEMPT,
+    pull_number: env.PULL_NUMBER,
+    head_sha: env.HEAD_SHA,
+    command: env.COMMAND,
+  };
+  const dir = path.join(directory, 'reviewbot-handoff');
+  fs.mkdirSync(dir, {recursive: true});
+  fs.writeFileSync(path.join(dir, 'report.json'), JSON.stringify(report));
+}
+async function executeReview(script,reviews,env = {}, options = {}) {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'reviewbot-publish-'));
   const outputs={},created=[],notices=[];
   const listReviews=Symbol('listReviews');
   const github={rest:{pulls:{listReviews,createReview:async(args)=>{created.push(args);return {data:{id:9}};}}},paginate:async(method,args)=>{assert.equal(method,listReviews);assert.equal(args.pull_number,number);return clone(reviews);}};
   const context={repo:{owner,repo},issue:{number}};
   const core={setOutput:(name,value)=>outputs[name]=value,notice:message=>notices.push(message)};
-  const processMock={env:{REVIEWED_COMMIT:HEAD,REVIEWED_BASE:BASE,SAFE_TO_MERGE:'false',REVIEWBOT_MESSAGE:'No actionable findings.',MODEL_ID_B64:Buffer.from('kimi-k3').toString('base64'),...env}};
-  await new AsyncFunction('github','context','core','process','Buffer',script)(github,context,core,processMock,Buffer);
-  return {outputs,created,notices};
+  const processMock={env:{
+    REVIEWED_COMMIT:HEAD,REVIEWED_BASE:BASE,SAFE_TO_MERGE:'false',
+    REVIEWBOT_MESSAGE:'No actionable findings.',MODEL_ID_B64:Buffer.from('kimi-k3').toString('base64'),
+    GITHUB_RUN_ID:'101',GITHUB_RUN_ATTEMPT:'1',PULL_NUMBER:String(number),HEAD_SHA:HEAD,COMMAND:'review',
+    RUNNER_TEMP:directory,...env,
+  }};
+  if (script === publishScript && !options.omitArtifact) writeReport(processMock.env, directory);
+  const nodeRequire = (id) => {
+    if (id === 'node:fs' || id === 'fs') return fs;
+    throw new Error(`unexpected module ${id}`);
+  };
+  let thrown;
+  try {
+    await new AsyncFunction('github','context','core','process','Buffer','require',script)(github,context,core,processMock,Buffer,nodeRequire);
+  } catch (error) {
+    thrown = error;
+  } finally {
+    fs.rmSync(directory, {recursive: true, force: true});
+  }
+  return {outputs,created,notices,thrown};
 }
 const marker=`<!-- speedle-plus-reviewbot:${HEAD} -->`;
 const eligibilityMarker=(base=BASE,status='eligible')=>`<!-- speedle-plus-reviewbot-merge:${HEAD}:${base}:${status} -->`;
@@ -254,18 +287,28 @@ test('model-supplied eligible marker remains beneath trusted ineligible second l
 });
 
 test('long review publication preserves exact marker, commit and model within the limit',async()=>{
-  const result=await executeReview(publishScript,[],{REVIEWBOT_MESSAGE:'x'.repeat(70000),MODEL_ID_B64:Buffer.from('model-'+ 'm'.repeat(2000)).toString('base64')});
+  const model = 'm'.repeat(200);
+  const result=await executeReview(publishScript,[],{REVIEWBOT_MESSAGE:'x'.repeat(70000),MODEL_ID_B64:Buffer.from(model).toString('base64')});
+  assert.equal(result.thrown, undefined);
   assert.equal(result.created.length,1);
   const body=result.created[0].body;
   assert.ok(body.length<=65000);
   assert.ok(body.startsWith(marker+'\n'));
   assert.ok(body.includes(`_Reviewed commit: \`${HEAD}\`_`));
   assert.ok(body.includes('_ReviewBot output was truncated'));
-  assert.ok(body.endsWith('m'.repeat(2000)+'`_'));
+  assert.ok(body.endsWith(model + '`_'));
+});
+test('missing or invalid handoff publishes nothing', async () => {
+  const missing = await executeReview(publishScript, [], {}, {omitArtifact: true});
+  assert.equal(missing.created.length, 0);
+  assert.match(missing.thrown.message, /no report published/);
+  const oversized = await executeReview(publishScript, [], {MODEL_ID_B64: Buffer.from('m'.repeat(201)).toString('base64')});
+  assert.equal(oversized.created.length, 0);
+  assert.match(oversized.thrown.message, /no report published/);
 });
 
 const eligibilityStart = workflow.indexOf('          # Preserve the existing dependency-only merge contract conservatively.\n');
-const eligibilityEnd = workflow.indexOf('          model_id_b64=',eligibilityStart);
+const eligibilityEnd = workflow.indexOf('          # The review text is sealed into an artifact. This flag is not review text.\n', eligibilityStart);
 assert.ok(eligibilityStart>=0 && eligibilityEnd>eligibilityStart,'actual safe-to-merge block must exist');
 const eligibilityScript=workflow.slice(eligibilityStart,eligibilityEnd).split('\n').map(line=>line.slice(10)).join('\n');
 const safeMarker='<!-- reviewbot-verdict:no-actionable-findings -->';

@@ -70,6 +70,11 @@ jobs:
       - name: Verify response diagnostics and bounded retry with stubbed HTTP
         run: python3 scripts/tests/test_reviewbot_response.py -v
 
+      - name: Verify review handoff sealing and publication
+        run: |
+          python3 scripts/tests/test_reviewbot_handoff.py -v
+          node --test scripts/tests/test_reviewbot_handoff.cjs
+
       - name: Verify command authorization, replies and idempotence
         run: node --test scripts/tests/test_reviewbot_commands.cjs
 
@@ -92,8 +97,8 @@ jobs:
       contents: read
       pull-requests: read
     outputs:
-      final_message: ${{ steps.review.outputs.final_message }}
-      model_id_b64: ${{ steps.review.outputs.model_id_b64 }}
+      enabled: ${{ steps.configuration.outputs.enabled }}
+      should_review: ${{ steps.existing_review.outputs.should_review }}
       safe_to_merge: ${{ steps.review.outputs.safe_to_merge || steps.existing_review.outputs.safe_to_merge || 'false' }}
     steps:
       - name: Check ReviewBot configuration
@@ -383,9 +388,6 @@ jobs:
           done
 
           review_message=$(jq -r '.message' "${review_result}")
-          if (( attempt == 2 )); then
-            review_message="${review_message}"$'\n\n_Validation gap: ReviewBot retried after an output-token limit with unified=3 diff context (initial unified=80)._'
-          fi
           # Preserve the existing dependency-only merge contract conservatively.
           # A partial or retried review cannot authorize an automatic merge.
           if [[ "${input_truncated}" == false && "${attempt}" == 1 ]] &&
@@ -395,42 +397,124 @@ jobs:
           else
             echo "safe_to_merge=false" >> "${GITHUB_OUTPUT}"
           fi
-          model_id_b64=$(jq -r '.model | @base64' "${review_result}")
-          delimiter="REVIEWBOT_$(od -An -N16 -tx1 /dev/urandom | tr -d ' \n')"
-          {
-            printf 'final_message<<%s\n' "${delimiter}"
-            printf '%s\n' "${review_message}"
-            printf '%s\n' "${delimiter}"
-            printf 'model_id_b64=%s\n' "${model_id_b64}"
-          } >> "${GITHUB_OUTPUT}"
+          # The review text is sealed into an artifact. This flag is not review text.
+          if (( attempt == 2 )); then
+            echo "retried=true" >> "${GITHUB_OUTPUT}"
+          else
+            echo "retried=false" >> "${GITHUB_OUTPUT}"
+          fi
+
+      # The model step above sees only the active provider key. This guard sees
+      # every secret so a literal match never enters the artifact.
+      - name: Validate and seal review handoff
+        if: steps.configuration.outputs.enabled == 'true' && steps.existing_review.outputs.should_review == 'true'
+        shell: bash
+        env:
+          REVIEWBOT_SECRETS: ${{ toJSON(secrets) }} # zizmor: ignore[overprovisioned-secrets] #366 scans every available secret before the artifact upload
+          GH_TOKEN: ${{ github.token }}
+          REVIEWBOT_RETRIED: ${{ steps.review.outputs.retried }}
+          PULL_NUMBER: ${{ github.event.pull_request.number }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          TRUSTED_SHA: ${{ github.workflow_sha }}
+          COMMAND: review
+        run: |
+          set -euo pipefail
+          # Execute only the guard from the immutable trusted workflow revision.
+          handoff_guard="${RUNNER_TEMP}/reviewbot-handoff.py"
+          git show "${TRUSTED_SHA}:.github/codex/reviewbot_handoff.py" > "${handoff_guard}"
+          python3 "${handoff_guard}" \
+            "${RUNNER_TEMP}/reviewbot-result.json" \
+            "${RUNNER_TEMP}/reviewbot-handoff/report.json"
+
+      - name: Upload validated review handoff
+        if: steps.configuration.outputs.enabled == 'true' && steps.existing_review.outputs.should_review == 'true'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: reviewbot-report-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/reviewbot-handoff/report.json
+          if-no-files-found: error
+          retention-days: 1
 
       - name: Remove review input
         if: always()
-        run: rm -f "${RUNNER_TEMP}"/reviewbot-*
+        run: |
+          rm -rf -- "${RUNNER_TEMP}/reviewbot-handoff"
+          rm -f -- "${RUNNER_TEMP}/reviewbot-handoff.py"
+          rm -f -- "${RUNNER_TEMP}"/reviewbot-*
 
   publish:
     name: Publish pull request review
     needs: review
-    if: needs.review.outputs.final_message != ''
+    if: always() && !cancelled() && needs.review.result != 'skipped'
     runs-on: >-
       ${{ github.repository == 'teramoby/speedle-plus' && github.event.pull_request.head.repo.full_name == github.repository && (github.event.pull_request.user.type == 'User' || github.event.pull_request.user.type == 'Bot') && fromJSON('["self-hosted","speedle-runner"]') || 'ubuntu-24.04' }}
     timeout-minutes: 5
     permissions:
       pull-requests: write
     steps:
-      - name: Create ReviewBot review for commit
+      - name: Require a completed analysis
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         env:
-          REVIEWBOT_MESSAGE: ${{ needs.review.outputs.final_message }}
-          MODEL_ID_B64: ${{ needs.review.outputs.model_id_b64 }}
+          ANALYZE_RESULT: ${{ needs.review.result }}
+          REVIEWBOT_ENABLED: ${{ needs.review.outputs.enabled }}
+          SHOULD_REVIEW: ${{ needs.review.outputs.should_review }}
+        with:
+          script: |
+            if (process.env.ANALYZE_RESULT !== "success" ||
+                !["true", "false"].includes(process.env.REVIEWBOT_ENABLED) ||
+                (process.env.REVIEWBOT_ENABLED === "true" &&
+                  !["true", "false"].includes(process.env.SHOULD_REVIEW))) {
+              core.setFailed("ReviewBot analysis did not produce a publishable outcome. See the analyze job; no model text will be published.");
+            }
+
+      - name: Download validated review handoff from this run only
+        if: needs.review.result == 'success' && needs.review.outputs.enabled == 'true' && needs.review.outputs.should_review == 'true'
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: reviewbot-report-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/reviewbot-handoff
+
+      - name: Create ReviewBot review for commit
+        if: needs.review.result == 'success' && needs.review.outputs.enabled == 'true' && needs.review.outputs.should_review == 'true'
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        env:
           REVIEWED_COMMIT: ${{ github.event.pull_request.head.sha }}
           REVIEWED_BASE: ${{ github.event.pull_request.base.sha }}
           SAFE_TO_MERGE: ${{ needs.review.outputs.safe_to_merge }}
+          PULL_NUMBER: ${{ github.event.pull_request.number }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          COMMAND: review
         with:
           github-token: ${{ github.token }}
           script: |
-            const message = process.env.REVIEWBOT_MESSAGE.trim();
-            const modelId = Buffer.from(process.env.MODEL_ID_B64, "base64").toString("utf8");
+            const fs = require("node:fs");
+            const file = `${process.env.RUNNER_TEMP}/reviewbot-handoff/report.json`;
+            let report;
+            try {
+              const stat = fs.lstatSync(file);
+              if (!stat.isFile() || stat.isSymbolicLink() || stat.size > 262144) throw new Error();
+              const bytes = fs.readFileSync(file);
+              const text = bytes.toString("utf8");
+              if (!Buffer.from(text, "utf8").equals(bytes)) throw new Error();
+              report = JSON.parse(text);
+              const keys = ["version", "message", "model", "run_id", "run_attempt", "pull_number", "head_sha", "command"];
+              if (!report || Array.isArray(report) || Object.keys(report).length !== keys.length ||
+                  !keys.every((key) => Object.hasOwn(report, key)) || report.version !== 1 ||
+                  typeof report.message !== "string" || !report.message.trim() ||
+                  Buffer.byteLength(report.message, "utf8") > 241000 ||
+                  typeof report.model !== "string" || !/^[A-Za-z0-9][A-Za-z0-9._:/-]{0,199}$/.test(report.model) ||
+                  report.run_id !== process.env.GITHUB_RUN_ID ||
+                  report.run_attempt !== process.env.GITHUB_RUN_ATTEMPT ||
+                  report.pull_number !== process.env.PULL_NUMBER ||
+                  String(context.issue.number) !== process.env.PULL_NUMBER ||
+                  report.head_sha !== process.env.HEAD_SHA ||
+                  report.head_sha !== process.env.REVIEWED_COMMIT ||
+                  report.command !== process.env.COMMAND) throw new Error();
+            } catch {
+              throw new Error("ReviewBot handoff is missing, oversized, malformed or bound to a different review; no report published.");
+            }
+            const message = report.message.trim();
+            const modelId = report.model;
             const commit = process.env.REVIEWED_COMMIT;
             const marker = `<!-- speedle-plus-reviewbot:${commit} -->`;
             const modelFooter = modelId
@@ -477,6 +561,10 @@ jobs:
               body,
               event: "COMMENT",
             });
+
+      - name: Remove downloaded review handoff
+        if: always()
+        run: rm -rf -- "${RUNNER_TEMP}/reviewbot-handoff"
 
   automerge-dependabot:
     name: Auto-merge safe dependency update
