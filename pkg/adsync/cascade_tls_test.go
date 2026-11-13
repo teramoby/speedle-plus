@@ -360,6 +360,20 @@ func TestCascadeDialTimeoutBoundsDNSWithoutCallerDeadline(t *testing.T) {
 	}
 }
 
+func TestMissingAuthenticationFailsBeforeTLSLoading(t *testing.T) {
+	for _, cert := range []string{"", "client.pem"} {
+		_, err := NewClient(Config{BaseURL: "https://source.example", CAFile: "ca.pem", ClientCertFile: cert, InstanceIDDir: t.TempDir()})
+		if err == nil {
+			t.Fatal("empty APIKey without complete mTLS credentials accepted")
+		}
+		for _, setting := range []string{"APIKey", "ClientCertFile", "ClientKeyFile", "CAFile"} {
+			if !strings.Contains(err.Error(), setting) {
+				t.Fatalf("missing authentication error lacks %s: %v", setting, err)
+			}
+		}
+	}
+}
+
 func TestCascadeRejectsExplicitlyEmptyCRLSources(t *testing.T) {
 	pki := newCascadePKI(t)
 	for _, urls := range []bool{false, true} {

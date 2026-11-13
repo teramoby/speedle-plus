@@ -17,6 +17,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -102,6 +103,42 @@ func TestCascadeCRLValidationAndReload(t *testing.T) {
 		t.Fatal(err)
 	}
 
+}
+
+func TestCascadeRejectsUnsupportedCriticalCRLExtensions(t *testing.T) {
+	pki := newCascadePKI(t)
+	certificate, _, _ := pki.issue(t, 2, x509.ExtKeyUsageServerAuth, "127.0.0.1", time.Now().Add(time.Hour))
+	server := cascadeServer(t, pki, certificate, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { io.WriteString(w, `{"servicesVersion":1,"services":[]}`) }))
+	for _, extension := range []pkix.Extension{
+		// issuingDistributionPoint: SEQUENCE { onlyContainsCACerts [2] TRUE }.
+		{Id: asn1.ObjectIdentifier{2, 5, 29, 28}, Critical: true, Value: []byte{0x30, 3, 0x82, 1, 0xff}},
+		{Id: asn1.ObjectIdentifier{1, 2, 3, 4}, Critical: true, Value: []byte{5, 0}},
+	} {
+		t.Run(extension.Id.String(), func(t *testing.T) {
+			config := cascadeConfig(t, pki, server.URL)
+			now := time.Now()
+			path := writeTestFile(t, t.TempDir(), "relay.crl", pki.crl(t, 0, 1, now.Add(-time.Minute), now.Add(time.Hour), false), 0600)
+			config.CRLFiles = []string{path}
+			client := mustCascadeClient(t, config)
+			if _, err := client.Services(context.Background()); err != nil {
+				t.Fatal(err)
+			}
+			data, err := x509.CreateRevocationList(rand.Reader, &x509.RevocationList{Number: big.NewInt(2), ThisUpdate: now.Add(-time.Minute), NextUpdate: now.Add(time.Hour), ExtraExtensions: []pkix.Extension{extension}}, pki.ca, pki.key)
+			if err != nil {
+				t.Fatal(err)
+			}
+			writeTestFile(t, filepath.Dir(path), "relay.crl", data, 0600)
+			if _, err := NewClient(config); err == nil || !strings.Contains(err.Error(), "critical relay CRL extension "+extension.Id.String()) {
+				t.Fatalf("unsupported CRL accepted at startup: %v", err)
+			}
+			if err := client.ReloadTLS(); err == nil {
+				t.Fatal("unsupported CRL replaced full coverage")
+			}
+			if _, err := client.Services(context.Background()); err != nil {
+				t.Fatalf("invalid replacement discarded previous full CRL: %v", err)
+			}
+		})
+	}
 }
 
 func TestCascadeCRLURL(t *testing.T) {

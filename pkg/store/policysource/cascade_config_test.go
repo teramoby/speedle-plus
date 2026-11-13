@@ -3,11 +3,58 @@
 package policysource
 
 import (
+	"context"
 	"reflect"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/teramoby/speedle-plus/pkg/cfg"
+	"github.com/teramoby/speedle-plus/pkg/errors"
 )
+
+func TestMissingAuthenticationFailsBeforeStartup(t *testing.T) {
+	for _, key := range []interface{}{nil, "", cfg.Secret("")} {
+		for _, cert := range []string{"", "client.pem"} {
+			properties := map[string]interface{}{
+				UpstreamURLKey: "https://source.example", CacheDirKey: t.TempDir(),
+				CAFileKey: "ca.pem", ClientCertFileKey: cert,
+			}
+			if key != nil {
+				properties[APIKeyKey] = key
+			}
+			_, err := optionsFromConfig(properties)
+			assertMissingAuthentication(t, err)
+			manager, err := (Builder{}).NewStore(properties)
+			if manager != nil {
+				manager.(*Store).Close()
+				t.Fatal("published a store without complete credentials")
+			}
+			assertMissingAuthentication(t, err)
+			_, err = Open(context.Background(), Options{UpstreamURL: "https://source.example", CacheDir: properties[CacheDirKey].(string), CAFile: "ca.pem", ClientCertFile: cert})
+			assertMissingAuthentication(t, err)
+		}
+	}
+	for _, setting := range []string{ClientCertFileKey, ClientKeyFileKey, CAFileKey, CacheDirKey} {
+		properties := cascadeProperties()
+		delete(properties, setting)
+		if _, err := optionsFromConfig(properties); err == nil || !strings.Contains(err.Error(), setting) {
+			t.Fatalf("builder accepted missing %s: %v", setting, err)
+		}
+	}
+}
+
+func assertMissingAuthentication(t *testing.T, err error) {
+	t.Helper()
+	if errors.Code(err) != errors.ConfigError {
+		t.Fatalf("missing authentication error = %v, want ConfigError", err)
+	}
+	for _, setting := range []string{APIKeyKey, ClientCertFileKey, ClientKeyFileKey, CAFileKey} {
+		if !strings.Contains(err.Error(), setting) {
+			t.Fatalf("missing authentication error lacks %s: %v", setting, err)
+		}
+	}
+}
 
 func cascadeProperties() map[string]interface{} {
 	return map[string]interface{}{

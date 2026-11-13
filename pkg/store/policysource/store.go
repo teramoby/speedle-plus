@@ -117,16 +117,8 @@ func Open(ctx context.Context, options Options) (_ *Store, err error) {
 	if err := validateUpstream(&options); err != nil {
 		return nil, err
 	}
-	if options.APIKey == "" {
-		if options.ClientCertFile == "" || options.ClientKeyFile == "" || options.CAFile == "" {
-			return nil, errors.New(errors.ConfigError, "cascade requires ClientCertFile, ClientKeyFile and CAFile")
-		}
-		if options.CacheDir == "" {
-			return nil, errors.New(errors.ConfigError, "CacheDir is required in cascade mode")
-		}
-		if options.InstanceID != "" {
-			return nil, errors.New(errors.ConfigError, "cascade generates InstanceID in CacheDir")
-		}
+	if err := validateCredentials(options); err != nil {
+		return nil, err
 	}
 	if options.ServeDownstream {
 		// Serving downstream instances needs the relay identity of the

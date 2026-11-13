@@ -152,6 +152,9 @@ func (g *clientTLSGeneration) addCRL(data []byte, now time.Time, maxAge time.Dur
 		if extension.Id.String() == "2.5.29.27" {
 			return fmt.Errorf("adsync: delta CRLs are not supported")
 		}
+		if extension.Critical {
+			return fmt.Errorf("adsync: unsupported critical relay CRL extension %s", extension.Id)
+		}
 	}
 	if err := freshCRL(crl, now, maxAge); err != nil {
 		return err

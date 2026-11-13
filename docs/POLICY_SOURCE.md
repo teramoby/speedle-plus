@@ -6,6 +6,8 @@ implementations keep their existing behavior.
 
 Direct mode uses `APIKey` and one HTTPS `UpstreamURL`. Cascade mode omits
 `APIKey` and requires `ClientCertFile`, `ClientKeyFile`, `CAFile` and `CacheDir`.
+An empty or missing `APIKey` without complete mTLS credentials fails startup
+with an error naming both authentication choices.
 A cascade client sends its generated instance ID and authenticates with its
 certificate; it sends no Authorization bearer header. `TLSReloadInterval` and
 the `CRL*` properties are cascade-only; direct mode rejects these settings.
@@ -55,7 +57,8 @@ optional revocation checking. For CRL verification,
 `CAFile` must contain each CRL issuer's CA certificate and the trust roots
 for HTTPS CRL hosts. CRL HTTPS fetches use this explicit bundle, matching
 the relay connection trust policy. Configured CRLs must have
-trusted signatures and current validity windows. Revoked relay certificates
+trusted signatures and current validity windows. Unsupported critical CRL
+extensions are rejected; delta and scoped CRLs are not supported. Revoked certificates
 and chains without fresh issuer coverage fail verification. `CRLMaxAge`
 defaults to 24 hours for CRLs without `NextUpdate`. The TLS poll and SIGHUP also
 refresh CRLs; `CRLRefreshInterval`, when shorter, requests more frequent polls.

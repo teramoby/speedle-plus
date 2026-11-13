@@ -82,7 +82,8 @@ type Options struct {
 	// UpstreamURLs retains the preference order for cascade upstream selection.
 	UpstreamURLs []string
 	// APIKey authenticates every request to the upstream, including
-	// forwarded authorization requests in direct mode. Empty selects cascade mTLS.
+	// forwarded authorization requests in direct mode. Without it, a complete
+	// client certificate/key and explicit CAFile select cascade mTLS.
 	APIKey cfg.Secret
 	// CacheDir is required in cascade mode. It enables the on-disk cache and keeps
 	// the instance ID across restarts.
@@ -229,6 +230,9 @@ func optionsFromConfig(config map[string]interface{}) (options Options, err erro
 		}
 		*property.target = value
 	}
+	if err := validateCredentials(options); err != nil {
+		return options, err
+	}
 
 	for _, property := range []struct {
 		key    string
@@ -373,6 +377,23 @@ func init() {
 	pflag.String(MaxConnectionsFlag, "", "Removed: downstream connection limits are not supported.")
 
 	store.Register(StoreType, Builder{})
+}
+
+// validateCredentials selects cascade only with complete mTLS settings.
+func validateCredentials(options Options) error {
+	if options.APIKey != "" {
+		return nil
+	}
+	if options.ClientCertFile == "" || options.ClientKeyFile == "" || options.CAFile == "" {
+		return errors.New(errors.ConfigError, "configure APIKey for direct mode or complete ClientCertFile, ClientKeyFile and CAFile for cascade mode")
+	}
+	if options.CacheDir == "" {
+		return errors.New(errors.ConfigError, "CacheDir is required in cascade mode")
+	}
+	if options.InstanceID != "" {
+		return errors.New(errors.ConfigError, "cascade generates InstanceID in CacheDir")
+	}
+	return nil
 }
 
 // validateUpstream validates the upstream without echoing URL credentials.

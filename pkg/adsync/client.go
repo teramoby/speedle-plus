@@ -114,8 +114,8 @@ type Config struct {
 	BaseURL string
 	// APIKey selects direct mode and authenticates every request: synchronization, the channel and
 	// forwarded authorization requests. It is sent only in the Authorization
-	// header to BaseURL and never appears in an error. Empty selects cascade
-	// mode, which requires ClientCertFile, ClientKeyFile, CAFile and InstanceIDDir.
+	// header to BaseURL and never appears in an error. Without it, complete
+	// ClientCertFile, ClientKeyFile, CAFile and InstanceIDDir select cascade mode.
 	APIKey string
 	// InstanceID fixes the instance ID, a UUIDv7. When it is empty the ID is
 	// created the first time a request needs it: persisted in InstanceIDDir
@@ -216,7 +216,7 @@ func NewClientContext(ctx context.Context, config Config) (*Client, error) {
 			return nil, fmt.Errorf("adsync: configured CRLFiles/CRLURLs require at least one CRL source")
 		}
 		if config.ClientCertFile == "" || config.ClientKeyFile == "" || config.CAFile == "" {
-			return nil, fmt.Errorf("adsync: cascade requires ClientCertFile, ClientKeyFile and CAFile")
+			return nil, fmt.Errorf("adsync: configure APIKey for direct mode or complete ClientCertFile, ClientKeyFile and CAFile for cascade mode")
 		}
 		if config.InstanceIDDir == "" {
 			return nil, fmt.Errorf("adsync: CacheDir is required in cascade mode")

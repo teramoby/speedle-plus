@@ -15,7 +15,7 @@ import (
 )
 
 func TestBuilderRejectsInvalidConfiguration(t *testing.T) {
-	valid := map[string]interface{}{UpstreamURLKey: "https://source.example"}
+	valid := map[string]interface{}{UpstreamURLKey: "https://source.example", APIKeyKey: testAPIKey}
 	cases := map[string]interface{}{
 		UpstreamURLKey: 42, APIKeyKey: []string{"secret"}, RequestTimeoutKey: "soon",
 		HeartbeatIntervalKey: "30", StopAfterKey: "-1s", FallbackWhileSyncingKey: "perhaps",
@@ -39,9 +39,9 @@ func TestBuilderRejectsInvalidConfiguration(t *testing.T) {
 	if _, err := optionsFromConfig(nil); err == nil {
 		t.Fatal("missing upstream accepted")
 	}
-	// The builder validates configuration before the registration path is wired in #372.
-	if _, err := store.NewStore(StoreType, valid); speedleerrors.Code(err) != speedleerrors.ConfigError {
-		t.Fatalf("unregistered client: %v", err)
+	// The registered builder rejects missing authentication before contacting upstream.
+	if _, err := store.NewStore(StoreType, map[string]interface{}{UpstreamURLKey: "https://source.example"}); speedleerrors.Code(err) != speedleerrors.ConfigError {
+		t.Fatalf("missing authentication: %v", err)
 	}
 }
 
@@ -65,7 +65,7 @@ func TestBuilderRegistrationAndParams(t *testing.T) {
 
 func TestFallbackWhileSyncingProperty(t *testing.T) {
 	for _, value := range []interface{}{nil, true, "true", false, "false"} {
-		properties := map[string]interface{}{UpstreamURLKey: "https://source.example", FallbackWhileSyncingKey: value}
+		properties := map[string]interface{}{UpstreamURLKey: "https://source.example", APIKeyKey: testAPIKey, FallbackWhileSyncingKey: value}
 		options, err := optionsFromConfig(properties)
 		if err != nil {
 			t.Fatal(err)

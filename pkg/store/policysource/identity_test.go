@@ -74,7 +74,7 @@ func TestAPIKeyNeverAppearsInErrorsOrDumps(t *testing.T) {
 	}
 	props := fixture.storeProperties()
 	options, err := optionsFromConfig(props)
-	if err != nil || options.APIKey != "" {
+	if err == nil || options.APIKey != "" || !strings.Contains(err.Error(), APIKeyKey) || strings.Contains(err.Error(), "environment-key") {
 		t.Fatalf("APIKey read from environment: %v", err)
 	}
 	props[APIKeyKey] = cfg.Secret(secret)
