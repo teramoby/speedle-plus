@@ -155,8 +155,10 @@ are confined to the jobs that publish output or perform the existing merge task.
 The analysis job does not pass review text through a job output. After a
 successful model call, the trusted guard checks the result, binds it to this
 workflow run, pull request and head, and uploads one JSON artifact kept for one
-day. The publish job downloads that artifact and fails when the file is missing,
-oversized, malformed or bound to a different review, so a dropped review cannot
+day. The guard scans secret values of eight characters or more, in the review
+fields and in the serialized report. The publish job downloads that artifact
+and fails when the file is missing, oversized, malformed or bound to a
+different review, so a dropped review cannot
 look successful. A disabled configuration, and an existing review of the same
 commit, do not upload an artifact and do not fail publication. The runner
 removes the artifact directory and the other temporary review files after the

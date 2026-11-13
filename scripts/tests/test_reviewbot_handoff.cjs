@@ -202,6 +202,32 @@ for (const [name, script] of publishers) {
   });
 }
 
+function automaticCreateRuns({result = 'success', enabled = 'true', shouldReview = 'true', outcome = 'success'} = {}) {
+  const start = reviewWorkflow.indexOf('      - name: Create ReviewBot review for commit\n');
+  const line = reviewWorkflow.slice(start).split('\n').find((item) => item.trimStart().startsWith('if:'));
+  const expression = line.replace(/^\s*if:\s*/, '');
+  const values = {
+    'needs.review.result': result,
+    'needs.review.outputs.enabled': enabled,
+    'needs.review.outputs.should_review': shouldReview,
+    'steps.handoff.outcome': outcome,
+  };
+  const rewritten = expression.replace(
+    /needs\.review\.outputs\.enabled|needs\.review\.outputs\.should_review|needs\.review\.result|steps\.handoff\.outcome/g,
+    (name) => JSON.stringify(values[name]));
+  return new Function(`return (${rewritten});`)();
+}
+
+test('automatic publication runs only after the handoff download succeeds', () => {
+  assert.equal(automaticCreateRuns(), true);
+  for (const outcome of ['failure', 'skipped', 'cancelled']) {
+    assert.equal(automaticCreateRuns({outcome}), false, outcome);
+  }
+  assert.equal(automaticCreateRuns({result: 'failure'}), false);
+  assert.equal(automaticCreateRuns({enabled: 'false'}), false);
+  assert.equal(automaticCreateRuns({shouldReview: 'false'}), false);
+});
+
 test('command publisher does not read a planted handoff when download failed', async () => {
   const script = scriptFor(commandWorkflow, 'Publish idempotent response');
   const result = await runPublisher(script, {body: report(), env: {DOWNLOAD_OUTCOME: 'failure'}});

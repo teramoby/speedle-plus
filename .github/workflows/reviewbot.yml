@@ -405,7 +405,7 @@ jobs:
           fi
 
       # The model step above sees only the active provider key. This guard sees
-      # every secret so a literal match never enters the artifact.
+      # every secret. Values of 8 characters or more must not enter the artifact.
       - name: Validate and seal review handoff
         if: steps.configuration.outputs.enabled == 'true' && steps.existing_review.outputs.should_review == 'true'
         shell: bash
