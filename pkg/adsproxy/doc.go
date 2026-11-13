@@ -77,10 +77,12 @@
 //
 // # Limits
 //
-// The engine imposes no fan-out, chain-depth, service-count or CRL-size limit
-// and has no settings for them; those are Cloud product concerns. The only
-// bound the proxy enforces is the replay-protection tombstone store, which
-// fails closed rather than forgetting a deletion guard.
+// The engine imposes no fan-out, chain-depth or CRL-size limit and has no
+// settings for them; those are Cloud product concerns. The one bound the
+// proxy enforces is the replay-protection store shared by active service
+// copies and removed-service tombstones: a tombstone is a deletion guard and
+// is never evicted, so a new service is refused once the store is full rather
+// than forgetting a guard. The same bound keeps one channel ack encodable.
 //
 // The package never logs policy content or credentials.
 package adsproxy

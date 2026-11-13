@@ -532,6 +532,24 @@ func TestMirrorKeepsTombstonesAtTheBound(t *testing.T) {
 	}
 }
 
+// TestMirrorRefusesServicesBeyondTheReplayStore covers active services alone
+// filling the shared replay-protection store: the bound counts active copies
+// as well as tombstones, so one channel ack stays encodable.
+func TestMirrorRefusesServicesBeyondTheReplayStore(t *testing.T) {
+	mirror := newTestMirror(t, nil)
+	for index := 0; index < maxTombstones; index++ {
+		service := newFixtureService(
+			fmt.Sprintf("01HF7YAT%018d", 7000+index), fmt.Sprintf("service-%d", index))
+		if err := mirror.ApplySnapshot(snapshotAt(t, service)); err != nil {
+			t.Fatalf("service %d: %v", index, err)
+		}
+	}
+	extra := newFixtureService(fmt.Sprintf("01HF7YAT%018d", 9000), "extra")
+	if err := mirror.ApplySnapshot(snapshotAt(t, extra)); !errors.Is(err, ErrTooManyServices) {
+		t.Errorf("new service with a full replay store: %v, want ErrTooManyServices", err)
+	}
+}
+
 func TestMirrorRejectsReplaysFromRetiredIdentities(t *testing.T) {
 	mirror := newTestMirror(t, nil)
 	var first *adsync.SnapshotResponse

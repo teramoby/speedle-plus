@@ -52,6 +52,15 @@ var (
 	// implemented, so such a CRL must not count as fresh coverage for every
 	// certificate the issuer signed.
 	issuingDistributionPointOID = asn1.ObjectIdentifier{2, 5, 29, 28}
+	// certificateIssuerEntryOID is the per-entry extension of an indirect CRL.
+	// It lets one CRL list revocations for certificates issued by another CA;
+	// matching such an entry by serial alone would attribute it to this CRL's
+	// issuer.
+	certificateIssuerEntryOID = asn1.ObjectIdentifier{2, 5, 29, 29}
+	// reasonCodeEntryOID and invalidityDateEntryOID are the standard per-entry
+	// annotations. Neither changes which certificate a serial belongs to.
+	reasonCodeEntryOID     = asn1.ObjectIdentifier{2, 5, 29, 21}
+	invalidityDateEntryOID = asn1.ObjectIdentifier{2, 5, 29, 24}
 )
 
 // errRedirect is returned for any redirect during a CRL fetch: the configured
@@ -955,6 +964,25 @@ func checkCRLExtensions(extensions []pkix.Extension, source string) error {
 	return nil
 }
 
+// checkRevokedEntryExtensions rejects a revoked entry whose extensions would
+// change which certificate its serial belongs to. The standard reasonCode and
+// invalidityDate annotations are accepted; any other entry extension, notably
+// certificateIssuer from an indirect CRL, is rejected rather than attributed
+// to the wrong issuer.
+func checkRevokedEntryExtensions(extensions []pkix.Extension, source string) error {
+	for _, extension := range extensions {
+		switch {
+		case extension.Id.Equal(reasonCodeEntryOID), extension.Id.Equal(invalidityDateEntryOID):
+		case extension.Id.Equal(certificateIssuerEntryOID):
+			return fmt.Errorf("%w: %s has an indirect revoked entry", ErrCRL, source)
+		default:
+			return fmt.Errorf("%w: %s has an unsupported revoked-entry extension %s",
+				ErrCRL, source, extension.Id)
+		}
+	}
+	return nil
+}
+
 func buildCRLEntry(crl *x509.RevocationList, source string, now time.Time, caCerts []*x509.Certificate) (*crlEntry, error) {
 	if err := checkCRLExtensions(crl.Extensions, source); err != nil {
 		return nil, err
@@ -978,6 +1006,9 @@ func buildCRLEntry(crl *x509.RevocationList, source string, now time.Time, caCer
 	}
 	revoked := make(map[string]struct{}, len(crl.RevokedCertificateEntries))
 	for _, entry := range crl.RevokedCertificateEntries {
+		if err := checkRevokedEntryExtensions(entry.Extensions, source); err != nil {
+			return nil, err
+		}
 		if entry.SerialNumber != nil {
 			revoked[entry.SerialNumber.String()] = struct{}{}
 		}

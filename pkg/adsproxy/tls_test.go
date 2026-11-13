@@ -212,6 +212,28 @@ func TestNewListenerRejectsUnusableCRLs(t *testing.T) {
 			return writeFile(t, directory, "scoped.crl",
 				pem.EncodeToMemory(&pem.Block{Type: "X509 CRL", Bytes: der}))
 		},
+		"CRL with an indirect revoked entry": func() string {
+			// certificateIssuer lets an indirect CRL list another issuer's
+			// certificates; matching such an entry by serial alone would
+			// attribute it to this CRL's issuer.
+			der, err := x509.CreateRevocationList(rand.Reader, &x509.RevocationList{
+				Number: big.NewInt(15), ThisUpdate: now.Add(-time.Hour), NextUpdate: now.Add(time.Hour),
+				RevokedCertificateEntries: []x509.RevocationListEntry{{
+					SerialNumber:   big.NewInt(3001),
+					RevocationTime: now.Add(-time.Hour),
+					ExtraExtensions: []pkix.Extension{{
+						Id:       asn1.ObjectIdentifier{2, 5, 29, 29},
+						Critical: true,
+						Value:    []byte{0x30, 0x00},
+					}},
+				}},
+			}, pki.root, pki.rootKey)
+			if err != nil {
+				t.Fatalf("create indirect CRL: %v", err)
+			}
+			return writeFile(t, directory, "indirect.crl",
+				pem.EncodeToMemory(&pem.Block{Type: "X509 CRL", Bytes: der}))
+		},
 		"CRL with an unsupported critical extension": func() string {
 			der, err := x509.CreateRevocationList(rand.Reader, &x509.RevocationList{
 				Number: big.NewInt(14), ThisUpdate: now.Add(-time.Hour), NextUpdate: now.Add(time.Hour),
@@ -961,6 +983,26 @@ func TestParseCRLLowLevel(t *testing.T) {
 	entries, err = parseCRLs(annotatedDER, "annotated", now, caCerts)
 	if err != nil || len(entries) != 1 {
 		t.Fatalf("CRL with a non-critical extension: %v %d", err, len(entries))
+	}
+	// A standard per-entry reason code does not change serial ownership, so
+	// the CRL stays usable and the serial revokes.
+	reasonedDER, err := x509.CreateRevocationList(rand.Reader, &x509.RevocationList{
+		Number: big.NewInt(22), ThisUpdate: now.Add(-time.Hour), NextUpdate: now.Add(time.Hour),
+		RevokedCertificateEntries: []x509.RevocationListEntry{{
+			SerialNumber:   big.NewInt(3002),
+			RevocationTime: now.Add(-time.Hour),
+			ReasonCode:     1,
+		}},
+	}, pki.root, pki.rootKey)
+	if err != nil {
+		t.Fatalf("create reasoned CRL: %v", err)
+	}
+	entries, err = parseCRLs(reasonedDER, "reasoned", now, caCerts)
+	if err != nil || len(entries) != 1 {
+		t.Fatalf("CRL with a per-entry reason code: %v %d", err, len(entries))
+	}
+	if !entries[0].revokes(&x509.Certificate{SerialNumber: big.NewInt(3002)}) {
+		t.Error("a reasoned entry does not revoke its serial")
 	}
 	if got := subjectName(pki.root); !strings.Contains(got, "adsproxy test CA") {
 		t.Errorf("subjectName = %q", got)

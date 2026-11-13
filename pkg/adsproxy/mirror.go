@@ -599,12 +599,13 @@ func (m *Mirror) MarkAvailable(serviceID string) {
 	}
 }
 
-// reserveServiceLocked makes room for one new service. There is no limit on
-// the active services a relay serves: service counts are a Cloud product
-// concern, not an engine one. Removed services are tombstones, not active
-// copies. A tombstone is a deletion guard and is never evicted; if the
-// tombstones alone fill the replay-protection store, the new service is
-// refused rather than forgetting that guard.
+// reserveServiceLocked makes room for one new service. Active copies and
+// removed-service tombstones share the replay-protection store, bounded by
+// maxTombstones. A tombstone is a deletion guard and is never evicted, so once
+// the store is full the new service is refused rather than forgetting a guard.
+// The shared bound also keeps one channel ack encodable (see
+// maxChannelFrameBytes); service counts themselves are a Cloud product
+// concern, not an engine one.
 func (m *Mirror) reserveServiceLocked() error {
 	if len(m.services) >= maxTombstones {
 		return fmt.Errorf("%w: %d services and tombstones", ErrTooManyServices, len(m.services))
