@@ -507,6 +507,51 @@ func TestServeDownstreamDropsServicesRemovedByAChannelAck(t *testing.T) {
 	}
 }
 
+// TestInstallFetchedDoesNotReviveARemovedService covers a channel ack that
+// removes a service while its fetch is in flight: the fetched copy must not
+// revive a service the source no longer assigns to this relay.
+func TestInstallFetchedDoesNotReviveARemovedService(t *testing.T) {
+	fixture := newTestFixture(t, booksService())
+	store := fixture.open(func(options *Options) { options.ServeDownstream = true })
+	defer store.Close()
+	verified, found := store.syncer.State(testServiceID1)
+	if !found {
+		t.Fatal("the store has no verified state")
+	}
+	next := adsync.Snapshot{
+		Name:         verified.Snapshot.Name,
+		Policies:     append([]adsync.Policy(nil), verified.Snapshot.Policies...),
+		RolePolicies: append([]adsync.Policy(nil), verified.Snapshot.RolePolicies...),
+	}
+	next.Policies = append(next.Policies, policy("p-audit", "audit", "grant user auditor read books"))
+	nextHash := adsync.StateHash(next)
+	service := adsync.Service{
+		ID:            testServiceID1,
+		Name:          "books",
+		Revision:      verified.Revision,
+		Epoch:         verified.Epoch,
+		HeadStateHash: verified.StateHash,
+	}
+	attempt := store.machine.BeginSync(testServiceID1)
+	store.applyServiceSetChange(adsync.ServiceSetChange{
+		Removed: []adsync.Service{{ID: testServiceID1, Name: "books"}},
+	})
+	if err := store.installFetched(service, &adsync.ServiceState{
+		ServiceID:  testServiceID1,
+		SourceID:   verified.SourceID,
+		Epoch:      verified.Epoch,
+		Revision:   verified.Revision + 1,
+		StateHash:  nextHash,
+		CommitHash: nextHash,
+		Snapshot:   next,
+	}, attempt); err != nil {
+		t.Fatalf("install fetched copy: %v", err)
+	}
+	if _, availability := store.downstream.mirror.Lookup(testServiceID1); availability == adsproxy.ServiceAvailable {
+		t.Fatal("a removed service was revived by an in-flight publish")
+	}
+}
+
 // waitForCondition polls a condition until it holds or the timeout expires.
 func waitForCondition(t *testing.T, timeout time.Duration, description string, condition func() bool) {
 	t.Helper()

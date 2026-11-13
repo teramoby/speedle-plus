@@ -418,16 +418,29 @@ func (s *Store) installFetched(service adsync.Service, state *adsync.ServiceStat
 		s.withholdDownstream(service.ID)
 		return nil
 	}
+	// A channel ack can remove the service from the authoritative set while
+	// the fetch is in flight. The removal records the current name in
+	// pendingRemoved; publishing then would revive a service the source no
+	// longer assigns to this relay. The check and the mirror publish happen
+	// under s.mu, which every removal path also takes, so a removal either
+	// precedes the check or follows the publish and removes the copy again.
+	if pendingName, pending := s.pendingRemoved[service.ID]; pending && pendingName == compiled.service.Name {
+		s.mu.Unlock()
+		s.withholdDownstream(service.ID)
+		return nil
+	}
 	s.copies[service.ID] = compiled
 	// A pending removal or rename entry stays until the evaluator acknowledges
 	// the assembly that replaces the old copy. Deleting it here would let the
 	// previous name route locally again while the old assembly is still
 	// installed.
-	s.mu.Unlock()
+	//
 	// A parsed copy is not yet visible to the evaluator. ApplyAttempt is
 	// deferred until the exact published generation has completed its
-	// FULL_RELOAD.
+	// FULL_RELOAD. The mirror publish runs under s.mu so it cannot interleave
+	// with a removal.
 	s.publishDownstream(state)
+	s.mu.Unlock()
 	return nil
 }
 

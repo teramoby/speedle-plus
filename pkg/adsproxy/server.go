@@ -291,6 +291,11 @@ func (s *Server) DownstreamCount() int {
 // It is safe to call more than once.
 func (s *Server) Close() {
 	s.closeOnce.Do(func() {
+		// Taking the availability write lock closes the window between a held
+		// poll's closed check and its final ack: a confirming write holds the
+		// read lock, so the close either waits for it or is seen by its check.
+		s.availabilityMu.Lock()
+		defer s.availabilityMu.Unlock()
 		s.mu.Lock()
 		s.closed = true
 		connections := make([]*websocket.Conn, 0, len(s.channels))

@@ -180,3 +180,29 @@ func TestDistributionChangeSerializesWithAConfirmingWrite(t *testing.T) {
 		t.Fatal("distribution did not flip with the state change")
 	}
 }
+
+// TestCloseWaitsForAnInFlightWrite proves Close and a held poll's final ack
+// cannot interleave: Close takes the availability write lock, so it either
+// waits for a confirming write or is observed by that write's check.
+func TestCloseWaitsForAnInFlightWrite(t *testing.T) {
+	mirror, _, _ := newPopulatedMirror(t)
+	server := newTestServer(t, mirror, nil)
+	server.server.availabilityMu.RLock()
+	closed := make(chan struct{})
+	go func() {
+		server.server.Close()
+		close(closed)
+	}()
+	select {
+	case <-closed:
+		server.server.availabilityMu.RUnlock()
+		t.Fatal("Close did not wait for the in-flight write")
+	case <-time.After(50 * time.Millisecond):
+	}
+	server.server.availabilityMu.RUnlock()
+	select {
+	case <-closed:
+	case <-time.After(5 * time.Second):
+		t.Fatal("Close did not complete")
+	}
+}
