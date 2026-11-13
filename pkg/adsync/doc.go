@@ -11,6 +11,12 @@
 // that repository and prove both implementations agree byte for byte on the
 // canonical encodings and signatures.
 //
+// Discovery, snapshots, changes and caches have no fixed service, policy or
+// payload-size ceiling. Changes retain pagination and are fetched until head.
+// RequestTimeout bounds stalls (time without response bytes), not the total
+// download duration. JSON responses are decoded from their streams. Channel
+// frames retain the 64 KiB limit, and error bodies remain bounded.
+//
 // Machine owns the liveness and per-service sync state described in step E2. It
 // is driven by confirmed acks and sync results and does not talk to the network
 // itself. Channel carries the instance-level notification channel described in

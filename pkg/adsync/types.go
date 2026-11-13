@@ -6,32 +6,9 @@ import (
 	"encoding/base64"
 	"fmt"
 	"regexp"
-	"unicode/utf8"
 )
 
-const (
-	// Protocol bounds from the shared contract. The client enforces them so a
-	// malformed or hostile response cannot allocate unbounded memory.
-	maxServicesPerSource  = 10
-	maxPoliciesPerList    = 1000
-	maxChangesPerCommit   = 200
-	maxCommitsPerPage     = 100
-	maxPolicyIDCharacters = 128
-	maxPolicyNameChars    = 128
-	maxSPDLBytes          = 4 * 1024
-	maxSafeInteger        = 1<<53 - 1
-
-	// A JSON string can expand each source character to a six-byte \u00XX
-	// escape. The fixed allowances cover field names, punctuation, signatures,
-	// hashes and the containing envelopes. These bounds admit every compact
-	// protocol message accepted by the validators while keeping reads finite.
-	maxJSONEncodingExpansion = 6
-	maxEncodedPolicyBytes    = maxJSONEncodingExpansion*(maxPolicyIDCharacters+maxPolicyNameChars+maxSPDLBytes) + 128
-	maxEncodedCommitBytes    = maxChangesPerCommit*maxEncodedPolicyBytes + 1024
-	maxSnapshotResponseBytes = 2*maxPoliciesPerList*maxEncodedPolicyBytes + 4096
-	maxChangesResponseBytes  = maxCommitsPerPage*maxEncodedCommitBytes + 4096
-	maxCacheBytes            = maxSnapshotResponseBytes + 4096
-)
+const maxSafeInteger = 1<<53 - 1
 
 var (
 	serviceNamePattern = regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9._-]{0,63}$`)
@@ -159,9 +136,6 @@ func (r *ServicesResponse) validate() error {
 	if r.ServicesVersion <= 0 || r.ServicesVersion > maxSafeInteger {
 		return fmt.Errorf("%w: invalid servicesVersion %d", ErrProtocol, r.ServicesVersion)
 	}
-	if len(r.Services) > maxServicesPerSource {
-		return fmt.Errorf("%w: %d services exceed the protocol bound", ErrProtocol, len(r.Services))
-	}
 	seen := make(map[string]struct{}, len(r.Services))
 	for index := range r.Services {
 		if err := r.Services[index].validate(); err != nil {
@@ -203,20 +177,13 @@ func (s Snapshot) validate() error {
 }
 
 func validatePolicies(label string, policies []Policy) error {
-	if len(policies) > maxPoliciesPerList {
-		return fmt.Errorf("%w: %d %ss exceed the protocol bound", ErrProtocol, len(policies), label)
-	}
 	seen := make(map[string]struct{}, len(policies))
 	for _, policy := range policies {
-		characters := utf8.RuneCountInString(policy.ID)
-		if characters < 1 || characters > maxPolicyIDCharacters {
-			return fmt.Errorf("%w: %s id has %d characters", ErrProtocol, label, characters)
+		if policy.ID == "" {
+			return fmt.Errorf("%w: %s id is empty", ErrProtocol, label)
 		}
-		if utf8.RuneCountInString(policy.Name) > maxPolicyNameChars {
-			return fmt.Errorf("%w: %s %q name exceeds the character limit", ErrProtocol, label, policy.ID)
-		}
-		if policy.SPDL == "" || len(policy.SPDL) > maxSPDLBytes {
-			return fmt.Errorf("%w: %s %q SPDL is empty or too large", ErrProtocol, label, policy.ID)
+		if policy.SPDL == "" {
+			return fmt.Errorf("%w: %s %q SPDL is empty", ErrProtocol, label, policy.ID)
 		}
 		if _, duplicate := seen[policy.ID]; duplicate {
 			return fmt.Errorf("%w: duplicate %s id %q", ErrProtocol, label, policy.ID)
@@ -266,9 +233,6 @@ func (c *Change) validate() error {
 	if c.Name == nil {
 		return fmt.Errorf("%w: upsert requires a name", ErrProtocol)
 	}
-	if utf8.RuneCountInString(*c.Name) > maxPolicyNameChars {
-		return fmt.Errorf("%w: change name exceeds the character limit", ErrProtocol)
-	}
 	if c.Kind == changeKindServiceName {
 		if !validServiceName(*c.Name) {
 			return fmt.Errorf("%w: invalid service name %q", ErrProtocol, *c.Name)
@@ -278,16 +242,15 @@ func (c *Change) validate() error {
 		}
 		return nil
 	}
-	if c.SPDL == nil || *c.SPDL == "" || len(*c.SPDL) > maxSPDLBytes {
+	if c.SPDL == nil || *c.SPDL == "" {
 		return fmt.Errorf("%w: authz and role upserts require SPDL", ErrProtocol)
 	}
 	return nil
 }
 
 func (c *Change) validateIDAndKind() error {
-	characters := utf8.RuneCountInString(c.ID)
-	if characters < 1 || characters > maxPolicyIDCharacters {
-		return fmt.Errorf("%w: change id has %d characters", ErrProtocol, characters)
+	if c.ID == "" {
+		return fmt.Errorf("%w: change id is empty", ErrProtocol)
 	}
 	switch c.Kind {
 	case changeKindAuthzName, changeKindRoleName, changeKindServiceName:
@@ -325,7 +288,7 @@ func (r *ChangesResponse) validatePage(serviceID, sourceID, epoch string, since 
 	if r.HeadStateHash.IsZero() {
 		return fmt.Errorf("%w: changes page has no headStateHash", ErrProtocol)
 	}
-	if len(r.Commits) > maxCommitsPerPage || (limit > 0 && len(r.Commits) > limit) {
+	if limit > 0 && len(r.Commits) > limit {
 		return fmt.Errorf("%w: changes page has too many commits", ErrProtocol)
 	}
 
@@ -359,9 +322,6 @@ func (r *ChangesResponse) validatePage(serviceID, sourceID, epoch string, since 
 		}
 		if commit.At < 0 || commit.At > maxSafeInteger {
 			return fmt.Errorf("%w: commit %d has an invalid time", ErrProtocol, commit.Revision)
-		}
-		if len(commit.Changes) > maxChangesPerCommit {
-			return fmt.Errorf("%w: commit %d has too many changes", ErrProtocol, commit.Revision)
 		}
 		for changeIndex := range commit.Changes {
 			if err := commit.Changes[changeIndex].validate(); err != nil {

@@ -11,10 +11,6 @@ import (
 )
 
 const (
-	// maxSyncPages bounds the catch-up work of one Sync call. A source moving
-	// faster than 100 commits per page for this many pages is not a useful
-	// synchronization partner; the caller retries later.
-	maxSyncPages    = 1000
 	syncLockStripes = 64
 )
 
@@ -270,10 +266,7 @@ func (s *Syncer) catchUp(ctx context.Context, local *ServiceState, service Servi
 	anchor := working.CommitHash
 	revision := working.Revision
 
-	for pages := 0; ; pages++ {
-		if pages >= maxSyncPages {
-			return nil, fmt.Errorf("%w: too many change pages while syncing %q", ErrProtocol, service.ID)
-		}
+	for {
 		page, err := s.client.Changes(ctx, service.ID, working.SourceID, working.Epoch, revision, anchor, changePageLimit)
 		if err != nil {
 			return nil, err

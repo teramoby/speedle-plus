@@ -986,15 +986,6 @@ func TestAckValidation(t *testing.T) {
 		t.Fatalf("duplicate name error = %v, want ErrProtocol", err)
 	}
 
-	tooMany := make([]Service, maxServicesPerSource+1)
-	for index := range tooMany {
-		id := fmt.Sprintf("%026d", index+1)
-		tooMany[index] = testAckService(id, fmt.Sprintf("service-%d", index), 1)
-	}
-	if err := machine.Ack(ackWith(tooMany...)); !errors.Is(err, ErrProtocol) {
-		t.Fatalf("too many services error = %v, want ErrProtocol", err)
-	}
-
 	if services := machine.Services(); len(services) != 0 {
 		t.Fatalf("an invalid ack changed the state: %+v", services)
 	}
@@ -1041,13 +1032,13 @@ func TestMachineOptionsValidation(t *testing.T) {
 	}
 }
 
-func TestTrackedServicesAreBounded(t *testing.T) {
+func TestTracksServicesWithoutCountLimit(t *testing.T) {
 	machine, _ := newTestMachine(t)
 	const batches = 15
 	for batch := 0; batch < batches; batch++ {
-		services := make([]Service, maxServicesPerSource)
+		services := make([]Service, 101)
 		for index := range services {
-			number := batch*maxServicesPerSource + index + 1
+			number := batch*101 + index + 1
 			id := fmt.Sprintf("%026d", number)
 			name := fmt.Sprintf("service-%d", number)
 			services[index] = testAckService(id, name, 1)
@@ -1055,39 +1046,37 @@ func TestTrackedServicesAreBounded(t *testing.T) {
 		mustAck(t, machine, ackWith(services...))
 	}
 
-	if tracked := len(machine.Services()); tracked > maxTrackedServices {
-		t.Fatalf("tracked services = %d, want at most %d", tracked, maxTrackedServices)
+	if tracked := len(machine.Services()); tracked != batches*101 {
+		t.Fatalf("tracked services = %d, want %d", tracked, batches*101)
 	}
-	// The live set survives eviction.
-	for index := 0; index < maxServicesPerSource; index++ {
-		number := (batches-1)*maxServicesPerSource + index + 1
+	// The live set and removed-service records are retained.
+	for index := 0; index < 101; index++ {
+		number := (batches-1)*101 + index + 1
 		requireServiceState(t, machine, fmt.Sprintf("service-%d", number), SyncStateSyncing, SyncReasonBootstrap)
 	}
 }
 
-func TestAppliedBeforeTheFirstAckIsBounded(t *testing.T) {
+func TestAppliedBeforeTheFirstAckHasNoCountLimit(t *testing.T) {
 	machine, _ := newTestMachine(t)
-	for index := 0; index < maxServicesPerSource; index++ {
+	for index := 0; index < 101; index++ {
 		number := index + 1
 		state := testServiceState(fmt.Sprintf("%026d", number), fmt.Sprintf("service-%d", number), 1)
 		mustApply(t, machine, state)
 	}
 
 	extra := testServiceState(
-		fmt.Sprintf("%026d", maxServicesPerSource+1),
-		fmt.Sprintf("service-%d", maxServicesPerSource+1),
+		fmt.Sprintf("%026d", 101+1),
+		fmt.Sprintf("service-%d", 101+1),
 		1,
 	)
-	if err := machine.ApplyAttempt(machine.BeginSync(extra.ServiceID), extra); !errors.Is(err, ErrProtocol) {
-		t.Fatalf("Applied beyond the pre-ack bound = %v, want ErrProtocol", err)
-	}
-	if tracked := len(machine.Services()); tracked != maxServicesPerSource {
-		t.Fatalf("tracked services = %d, want %d", tracked, maxServicesPerSource)
+	mustApply(t, machine, extra)
+	if tracked := len(machine.Services()); tracked != 102 {
+		t.Fatalf("tracked services = %d, want 102", tracked)
 	}
 
 	// The first ack establishes the authoritative set and removes the rest.
 	mustAck(t, machine, ackWith(testAckService(fmt.Sprintf("%026d", 1), "service-1", 1)))
-	if tracked := len(machine.Services()); tracked != maxServicesPerSource {
-		t.Fatalf("tracked services after ack = %d, want the bounded %d", tracked, maxServicesPerSource)
+	if tracked := len(machine.Services()); tracked != 102 {
+		t.Fatalf("tracked services after ack = %d, want %d", tracked, 102)
 	}
 }

@@ -27,11 +27,6 @@ const (
 	// transport, rate-limit or 5xx failure. It bounds the outage observation;
 	// it never latches fallback off permanently.
 	DefaultFallbackRetryBackoff = time.Second
-
-	// maxFallbackResponseBytes bounds a forwarded response. Authorization
-	// responses are much smaller; the limit only guards against a hostile or
-	// broken source.
-	maxFallbackResponseBytes = 5 << 20
 )
 
 // FallbackOperation is one authorization operation that can be forwarded to
@@ -207,15 +202,16 @@ func (c *Client) forwardOnce(ctx context.Context, operation FallbackOperation, b
 	}
 	defer response.Body.Close()
 
-	responseBody, readErr := io.ReadAll(io.LimitReader(response.Body, maxFallbackResponseBytes+1))
+	reader := io.Reader(response.Body)
+	if response.StatusCode < 200 || response.StatusCode > 299 {
+		reader = io.LimitReader(reader, maxErrorResponseBytes)
+	}
+	responseBody, readErr := io.ReadAll(reader)
 	if readErr != nil {
 		if ctx.Err() != nil {
 			return nil, ctx.Err()
 		}
 		return nil, &fallbackTransportError{err: readErr}
-	}
-	if len(responseBody) > maxFallbackResponseBytes {
-		return nil, fmt.Errorf("%w: fallback response exceeds %d bytes", ErrProtocol, maxFallbackResponseBytes)
 	}
 	if response.StatusCode < 200 || response.StatusCode > 299 {
 		return nil, newFallbackStatusError(response.StatusCode, responseBody)

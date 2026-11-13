@@ -89,16 +89,14 @@ func (c *Cache) Load(serviceID string) (*ServiceState, error) {
 	if runtime.GOOS != "windows" && info.Mode().Perm()&0o077 != 0 {
 		return nil, fmt.Errorf("%w: cache file must be 0600", ErrUnsafeCache)
 	}
-	if info.Size() > maxCacheBytes {
-		return nil, fmt.Errorf("%w: cache file is too large", ErrCacheCorrupt)
-	}
-	data, err := os.ReadFile(path)
+	file, err := os.Open(path)
 	if err != nil {
 		return nil, fmt.Errorf("adsync: read cache file: %w", err)
 	}
 
+	defer file.Close()
 	var envelope cacheEnvelope
-	if err := decodeStrict(data, &envelope); err != nil {
+	if err := decodeStrictReader(file, &envelope); err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrCacheCorrupt, err)
 	}
 	if envelope.Format != cacheFormat {

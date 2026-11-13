@@ -6,12 +6,14 @@ import (
 	"context"
 	"crypto/tls"
 	"crypto/x509"
+	"errors"
 	"fmt"
 	"io"
 	"math/rand"
 	"net/http"
 	"net/url"
 	"os"
+	"reflect"
 	"strconv"
 	"strings"
 	"sync"
@@ -25,18 +27,16 @@ import (
 const APIPrefix = "/policy-source/v1"
 
 const (
-	defaultRequestTimeout  = 10 * time.Second
-	defaultSnapshotTimeout = 30 * time.Second
-	defaultMaxAttempts     = 4
-	defaultInitialBackoff  = time.Second
-	defaultMaxBackoff      = 60 * time.Second
-	defaultJitter          = 0.3
-	defaultUserAgent       = "speedle-adsync"
+	defaultRequestTimeout = 10 * time.Second
+	defaultMaxAttempts    = 4
+	defaultInitialBackoff = time.Second
+	defaultMaxBackoff     = 60 * time.Second
+	defaultJitter         = 0.3
+	defaultUserAgent      = "speedle-adsync"
 
-	maxServicesResponseBytes = 1 << 20
-	maxErrorResponseBytes    = 64 << 10
+	maxErrorResponseBytes = 64 << 10
 
-	changePageLimit = maxCommitsPerPage
+	changePageLimit = 100
 )
 
 // RetryPolicy controls retries for idempotent GET requests. The default is
@@ -147,8 +147,9 @@ type Config struct {
 	// Channel can only use long polling.
 	Dialer *websocket.Dialer
 
-	// RequestTimeout bounds one data request. SnapshotTimeout bounds one
-	// snapshot request because snapshots may be several megabytes.
+	// RequestTimeout limits time without response bytes, including the wait
+	// for headers. Active downloads have no total-duration limit.
+	// SnapshotTimeout is deprecated and ignored; retained for source compatibility.
 	RequestTimeout  time.Duration
 	SnapshotTimeout time.Duration
 	// Retry controls retries of idempotent GET requests.
@@ -166,7 +167,6 @@ type Client struct {
 	http            *http.Client
 	dialer          *websocket.Dialer
 	requestTimeout  time.Duration
-	snapshotTimeout time.Duration
 	fallbackTimeout time.Duration
 	retry           RetryPolicy
 	userAgent       string
@@ -212,11 +212,7 @@ func NewClient(config Config) (*Client, error) {
 	if requestTimeout == 0 {
 		requestTimeout = defaultRequestTimeout
 	}
-	snapshotTimeout := config.SnapshotTimeout
-	if snapshotTimeout == 0 {
-		snapshotTimeout = defaultSnapshotTimeout
-	}
-	if requestTimeout < 0 || snapshotTimeout < 0 {
+	if requestTimeout < 0 || config.SnapshotTimeout < 0 {
 		return nil, fmt.Errorf("adsync: timeouts must not be negative")
 	}
 	retry, err := config.Retry.normalized()
@@ -288,7 +284,6 @@ func NewClient(config Config) (*Client, error) {
 		http:               httpClient,
 		dialer:             dialer,
 		requestTimeout:     requestTimeout,
-		snapshotTimeout:    snapshotTimeout,
 		fallbackTimeout:    DefaultFallbackTimeout,
 		fallbackBackoff:    DefaultFallbackRetryBackoff,
 		retry:              retry,
@@ -406,13 +401,9 @@ func (c *Client) endpoint(parts ...string) string {
 
 // Services lists the services this credential and instance may sync.
 func (c *Client) Services(ctx context.Context) (*ServicesResponse, error) {
-	body, _, err := c.get(ctx, c.endpoint("services"), nil, c.requestTimeout, nil,
-		maxServicesResponseBytes, false)
-	if err != nil {
-		return nil, err
-	}
 	var response ServicesResponse
-	if err := decodeStrict(body, &response); err != nil {
+	_, err := c.get(ctx, c.endpoint("services"), nil, nil, false, &response)
+	if err != nil {
 		return nil, err
 	}
 	if err := response.validate(); err != nil {
@@ -432,17 +423,14 @@ func (c *Client) Snapshot(ctx context.Context, serviceID, ifNoneMatch string) (*
 	if ifNoneMatch != "" {
 		header.Set("If-None-Match", ifNoneMatch)
 	}
-	body, notModified, err := c.get(ctx, c.endpoint("services", serviceID, "snapshot"),
-		nil, c.snapshotTimeout, header, maxSnapshotResponseBytes, true)
+	var response SnapshotResponse
+	notModified, err := c.get(ctx, c.endpoint("services", serviceID, "snapshot"),
+		nil, header, true, &response)
 	if err != nil {
 		return nil, false, err
 	}
 	if notModified {
 		return nil, true, nil
-	}
-	var response SnapshotResponse
-	if err := decodeStrict(body, &response); err != nil {
-		return nil, false, err
 	}
 	if err := response.validate(); err != nil {
 		return nil, false, err
@@ -475,19 +463,16 @@ func (c *Client) Changes(ctx context.Context, serviceID, sourceID, epoch string,
 	if limit == 0 {
 		limit = changePageLimit
 	}
-	if limit < 1 || limit > maxCommitsPerPage {
+	if limit < 1 {
 		return nil, fmt.Errorf("%w: invalid changes page limit %d", ErrProtocol, limit)
 	}
 	query := url.Values{}
 	query.Set("since", strconv.FormatUint(since, 10))
 	query.Set("limit", strconv.Itoa(limit))
-	body, _, err := c.get(ctx, c.endpoint("services", serviceID, "changes"), query,
-		c.requestTimeout, nil, maxChangesResponseBytes, false)
-	if err != nil {
-		return nil, err
-	}
 	var response ChangesResponse
-	if err := decodeStrict(body, &response); err != nil {
+	_, err := c.get(ctx, c.endpoint("services", serviceID, "changes"), query,
+		nil, false, &response)
+	if err != nil {
 		return nil, err
 	}
 	if err := response.validatePage(serviceID, sourceID, epoch, since, anchor, limit); err != nil {
@@ -503,28 +488,31 @@ func (c *Client) Changes(ctx context.Context, serviceID, sourceID, epoch string,
 
 // get performs one idempotent GET, with retries for transport failures,
 // HTTP 408/429 and transient 5xx responses.
-func (c *Client) get(ctx context.Context, endpoint string, query url.Values, timeout time.Duration, header http.Header, maxBytes int64, allowNotModified bool) ([]byte, bool, error) {
+func (c *Client) get(ctx context.Context, endpoint string, query url.Values, header http.Header, allowNotModified bool, dst any) (bool, error) {
 	var lastErr error
 	for attempt := 1; attempt <= c.retry.MaxAttempts; attempt++ {
-		body, notModified, retryable, err := c.getOnce(ctx, endpoint, query, timeout, header, maxBytes, allowNotModified)
+		reflect.ValueOf(dst).Elem().SetZero()
+		notModified, retryable, err := c.getOnce(ctx, endpoint, query, header, allowNotModified, dst)
 		if err == nil {
-			return body, notModified, nil
+			return notModified, nil
 		}
 		lastErr = err
 		if !retryable || attempt == c.retry.MaxAttempts {
-			return nil, false, err
+			return false, err
 		}
 		delay := c.retry.delay(attempt, retryAfterOf(err))
 		if err := c.retry.Sleep(ctx, delay); err != nil {
-			return nil, false, err
+			return false, err
 		}
 	}
-	return nil, false, lastErr
+	return false, lastErr
 }
 
-func (c *Client) getOnce(ctx context.Context, endpoint string, query url.Values, timeout time.Duration, header http.Header, maxBytes int64, allowNotModified bool) ([]byte, bool, bool, error) {
-	requestCtx, cancel := context.WithTimeout(ctx, timeout)
-	defer cancel()
+func (c *Client) getOnce(ctx context.Context, endpoint string, query url.Values, header http.Header, allowNotModified bool, dst any) (bool, bool, error) {
+	requestCtx, cancel := context.WithCancelCause(ctx)
+	defer cancel(nil)
+	progress := newStallWatch(c.requestTimeout, func() { cancel(context.DeadlineExceeded) })
+	defer progress.stop()
 
 	target := endpoint
 	if len(query) > 0 {
@@ -532,7 +520,7 @@ func (c *Client) getOnce(ctx context.Context, endpoint string, query url.Values,
 	}
 	request, err := http.NewRequestWithContext(requestCtx, http.MethodGet, target, nil)
 	if err != nil {
-		return nil, false, false, fmt.Errorf("adsync: build request: %w", err)
+		return false, false, fmt.Errorf("adsync: build request: %w", err)
 	}
 	request.Header.Set("Authorization", "Bearer "+c.credential)
 	request.Header.Set("Accept", "application/json")
@@ -544,47 +532,60 @@ func (c *Client) getOnce(ctx context.Context, endpoint string, query url.Values,
 	}
 	path := request.URL.Path
 
-	response, err := c.http.Do(request)
+	// A caller-supplied http.Client.Timeout is a total-duration deadline.
+	// Clone it here so the stall timeout controls downloads without mutating
+	// the client used by channels or fallback requests.
+	httpClient := *c.http
+	httpClient.Timeout = 0
+	response, err := httpClient.Do(request)
 	if err != nil {
 		if ctx.Err() != nil {
-			return nil, false, false, fmt.Errorf("adsync: GET %s: %w", path, ctx.Err())
+			return false, false, fmt.Errorf("adsync: GET %s: %w", path, ctx.Err())
 		}
 		if requestCtx.Err() != nil {
-			return nil, false, true, fmt.Errorf("adsync: GET %s: %w", path, requestCtx.Err())
+			return false, true, fmt.Errorf("adsync: GET %s: %w", path, context.Cause(requestCtx))
 		}
-		return nil, false, true, fmt.Errorf("adsync: GET %s: %w", path, err)
+		return false, true, fmt.Errorf("adsync: GET %s: %w", path, err)
 	}
 	defer response.Body.Close()
-
-	limit := maxBytes
-	if limit <= 0 {
-		limit = maxErrorResponseBytes
-	}
-	body, readErr := io.ReadAll(io.LimitReader(response.Body, limit+1))
-	if readErr != nil {
-		if ctx.Err() != nil {
-			return nil, false, false, fmt.Errorf("adsync: GET %s: %w", path, ctx.Err())
-		}
-		return nil, false, true, fmt.Errorf("adsync: GET %s: read response: %w", path, readErr)
-	}
-	if int64(len(body)) > limit {
-		return nil, false, false, fmt.Errorf("%w: response from %s exceeds %d bytes", ErrProtocol, path, limit)
-	}
+	progress.progress()
 
 	switch response.StatusCode {
 	case http.StatusOK:
-		return body, false, false, nil
+		// Decode directly from the response, without a second full-body copy.
+		reader := &progressReader{Reader: response.Body, watch: progress}
+		err := decodeStrictReader(reader, dst)
+		if err != nil {
+			if ctx.Err() != nil {
+				return false, false, ctx.Err()
+			}
+			if requestCtx.Err() != nil {
+				return false, true, context.Cause(requestCtx)
+			}
+			return false, (reader.readErr != nil && reader.readErr != io.EOF) || errors.Is(err, io.ErrUnexpectedEOF), err
+		}
+		return false, false, nil
 	case http.StatusNotModified:
 		if allowNotModified {
-			return nil, true, false, nil
+			return true, false, nil
 		}
-		return nil, false, false, fmt.Errorf("%w: unexpected 304 from %s", ErrProtocol, path)
+		return false, false, fmt.Errorf("%w: unexpected 304 from %s", ErrProtocol, path)
 	default:
+		body, err := io.ReadAll(io.LimitReader(&progressReader{Reader: response.Body, watch: progress}, maxErrorResponseBytes))
+		if err != nil {
+			if ctx.Err() != nil {
+				return false, false, ctx.Err()
+			}
+			if requestCtx.Err() != nil {
+				return false, true, context.Cause(requestCtx)
+			}
+			return false, true, fmt.Errorf("adsync: read error response: %w", err)
+		}
 		statusErr := newStatusError(http.MethodGet, path, response.StatusCode, body)
 		if detailed, ok := statusErr.(*statusError); ok {
 			detailed.retryAfter = retryAfterDuration(response.Header)
 		}
-		return nil, false, retryableStatus(response.StatusCode), statusErr
+		return false, retryableStatus(response.StatusCode), statusErr
 	}
 }
 

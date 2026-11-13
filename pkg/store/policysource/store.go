@@ -95,7 +95,8 @@ var (
 // machine, and performs one bootstrap synchronization. A transient bootstrap
 // failure does not fail startup: the store stays empty and fail closed, and a
 // later Sync can fill it. A configuration error does fail startup.
-func Open(ctx context.Context, options Options) (*Store, error) {
+func Open(ctx context.Context, options Options) (_ *Store, err error) {
+	defer func() { err = redactConfigError(err, options.APIKey) }()
 	if ctx == nil {
 		ctx = context.Background()
 	}
@@ -106,8 +107,8 @@ func Open(ctx context.Context, options Options) (*Store, error) {
 	if options.PublicKeys == nil {
 		return nil, errors.New(errors.ConfigError, "policy source public keys are required")
 	}
-	if options.PolicySourceURL == "" {
-		return nil, errors.New(errors.ConfigError, "policy source URL is required")
+	if err := normalizeIdentity(&options); err != nil {
+		return nil, err
 	}
 
 	client, err := adsync.NewClient(adsync.Config{
@@ -160,7 +161,7 @@ func Open(ctx context.Context, options Options) (*Store, error) {
 		}
 		// The source may be unreachable at startup. The instance is then not
 		// confirmed live and every decision fails closed until a sync succeeds.
-		log.Warnf("policy-source store started without a complete bootstrap: %v", err)
+		log.Warnf("policy-source store started without a complete bootstrap: %v", redactConfigError(err, options.APIKey))
 	}
 	return store, nil
 }

@@ -184,10 +184,10 @@ func TestDecodeServerMessageRejects(t *testing.T) {
 			},
 		},
 		{
-			name: "too many services",
+			name: "duplicate services",
 			payload: func() []byte {
 				ack := validChannelAck()
-				for index := 0; index < maxServicesPerSource; index++ {
+				for index := 0; index < 10; index++ {
 					ack.Services = append(ack.Services, ack.Services[0])
 				}
 				payload, _ := json.Marshal(ack)

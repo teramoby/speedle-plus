@@ -726,8 +726,7 @@ func (c *Channel) writeTimeout() time.Duration {
 	return c.client.requestTimeout
 }
 
-// localServices returns the services to announce, excluding removed ones and
-// bounding the list by the protocol limit.
+// localServices returns the services to announce, excluding removed ones.
 func (c *Channel) localServices() []ServiceStatus {
 	all := c.machine.Services()
 	services := make([]ServiceStatus, 0, len(all))
@@ -736,9 +735,6 @@ func (c *Channel) localServices() []ServiceStatus {
 			continue
 		}
 		services = append(services, service)
-	}
-	if len(services) > maxServicesPerSource {
-		services = services[:maxServicesPerSource]
 	}
 	return services
 }
@@ -786,7 +782,7 @@ func (c *Channel) heartbeatMessage(transport Transport) channelHeartbeat {
 		fallback.Active = state.Active
 		fallback.RoutedCalls = state.RoutedCalls
 		for _, serviceID := range state.Services {
-			if validEntityID(serviceID) && len(fallback.Services) < maxServicesPerSource {
+			if validEntityID(serviceID) {
 				fallback.Services = append(fallback.Services, serviceID)
 			}
 		}

@@ -10,6 +10,17 @@
 // each policy body with pkg/pdl. Policy identifiers and names come from the
 // signed snapshot; the local SPDL text is kept only as the parse input.
 //
+// # Configuration
+//
+// UpstreamURL is the policy-source root. PolicySourceURL remains an alias;
+// configuring both with different non-empty values is an error. Existing
+// CredentialFile, PolicySourcePublicKeys, Services and fallback properties
+// retain their meaning. APIKey is accepted only in the configuration file,
+// retained as a redacted secret in Options, and reserved for registration by
+// a later change; it is not used for authentication yet. InstanceName defaults
+// to the hostname and must be 1-64 ASCII characters, starting with a letter
+// or digit and followed by letters, digits, dots, underscores or hyphens.
+//
 // # Change notification
 //
 // The assembled store is published atomically: readers either see the whole

@@ -5,8 +5,10 @@ package cfg
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/teramoby/speedle-plus/pkg/errors"
@@ -83,5 +85,31 @@ func TestReadStoreConfig(t *testing.T) {
 	conf, err := ReadStoreConfig(location)
 	if err != nil || conf.StoreType != "etcd" || conf.StoreProps["etcdEndpoint"] != "e:1" {
 		t.Fatalf("ReadStoreConfig = %+v, %v", conf, err)
+	}
+}
+
+func TestPolicySourceAPIKeyRedaction(t *testing.T) {
+	const secret = "private-config-key-371"
+	for _, properties := range []string{`{"APIKey":"` + secret + `","UpstreamURL":"https://source.example"}`, `{"APIKey":["` + secret + `"]}`} {
+		var configuration Config
+		if err := json.Unmarshal([]byte(`{"storeConfig":{"storeType":"policy-source","storeProps":`+properties+`}}`), &configuration); err != nil {
+			t.Fatal(err)
+		}
+		for _, format := range []string{"%v", "%+v", "%#v"} {
+			if strings.Contains(fmt.Sprintf(format, configuration), secret) || strings.Contains(fmt.Sprintf(format, configuration.StoreConfig), secret) {
+				t.Fatal("configuration formatting leaked APIKey")
+			}
+		}
+		data, err := json.Marshal(configuration)
+		if err != nil || strings.Contains(string(data), secret) {
+			t.Fatalf("unsafe config dump: %s, %v", data, err)
+		}
+	}
+	var store StoreConfig
+	if err := json.Unmarshal([]byte(`{"storeType":"file","storeProps":{"APIKey":"`+secret+`"}}`), &store); err != nil {
+		t.Fatal(err)
+	}
+	if store.StoreProps["APIKey"] != secret {
+		t.Fatal("unrelated store changed")
 	}
 }

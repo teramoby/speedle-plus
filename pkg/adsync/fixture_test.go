@@ -340,10 +340,10 @@ func (f *fixtureSource) serveChanges(w http.ResponseWriter, r *http.Request) {
 		writeFixtureError(w, http.StatusBadRequest, "invalid_request", "")
 		return
 	}
-	limit := maxCommitsPerPage
+	limit := changePageLimit
 	if rawLimit := r.URL.Query().Get("limit"); rawLimit != "" {
 		parsed, err := strconv.Atoi(rawLimit)
-		if err != nil || parsed < 1 || parsed > maxCommitsPerPage {
+		if err != nil || parsed < 1 {
 			writeFixtureError(w, http.StatusBadRequest, "invalid_request", "")
 			return
 		}

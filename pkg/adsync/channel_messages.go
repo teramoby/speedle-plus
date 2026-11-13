@@ -176,9 +176,6 @@ func (a *channelAck) validate() error {
 	if a.ServicesVersion <= 0 || a.ServicesVersion > maxSafeInteger {
 		return fmt.Errorf("%w: invalid servicesVersion %d", ErrProtocol, a.ServicesVersion)
 	}
-	if len(a.Services) > maxServicesPerSource {
-		return fmt.Errorf("%w: %d services exceed the protocol bound", ErrProtocol, len(a.Services))
-	}
 	seen := make(map[string]struct{}, len(a.Services))
 	for index := range a.Services {
 		if err := a.Services[index].validate(); err != nil {

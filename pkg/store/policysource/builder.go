@@ -5,6 +5,8 @@ package policysource
 import (
 	"context"
 	"net/http"
+	"os"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -12,6 +14,7 @@ import (
 	"github.com/spf13/pflag"
 	"github.com/teramoby/speedle-plus/api/pms"
 	"github.com/teramoby/speedle-plus/pkg/adsync"
+	"github.com/teramoby/speedle-plus/pkg/cfg"
 	"github.com/teramoby/speedle-plus/pkg/errors"
 	"github.com/teramoby/speedle-plus/pkg/store"
 )
@@ -23,6 +26,9 @@ const (
 	// Store property keys. They match the configuration documented for the
 	// policy-source store.
 	PolicySourceURLKey       = "PolicySourceURL"
+	UpstreamURLKey           = "UpstreamURL"
+	APIKeyKey                = "APIKey"
+	InstanceNameKey          = "InstanceName"
 	CredentialFileKey        = "CredentialFile"
 	ServicesKey              = "Services"
 	PublicKeysKey            = "PolicySourcePublicKeys"
@@ -77,6 +83,12 @@ type Options struct {
 	// PolicySourceURL is the policy source root, for example
 	// https://cloud.speedle.io. It must use https.
 	PolicySourceURL string
+	// UpstreamURL aliases PolicySourceURL. Conflicting values are rejected.
+	UpstreamURL string
+	// APIKey is configuration-only and reserved for registration in #372.
+	APIKey cfg.Secret
+	// InstanceName defaults to the hostname and must match the instance name syntax.
+	InstanceName string
 	// Credential is the account-scoped adsi_ instance credential.
 	Credential string
 	// PublicKeys is the out-of-band trust anchor for snapshots and commits.
@@ -92,7 +104,7 @@ type Options struct {
 	// ClientCertFile and ClientKeyFile enable mutual TLS when both are set.
 	ClientCertFile string
 	ClientKeyFile  string
-	// RequestTimeout bounds one data request; zero uses the adsync default.
+	// RequestTimeout bounds time without response bytes; zero uses the adsync default.
 	RequestTimeout time.Duration
 	// HeartbeatInterval, StaleAfter and StopAfter configure the adsync state
 	// machine; zero values use the protocol defaults.
@@ -189,17 +201,42 @@ func (Builder) NewStore(config map[string]interface{}) (pms.PolicyStoreManager, 
 
 // optionsFromConfig converts store properties into Options. It performs every
 // check that does not need the policy source.
-func optionsFromConfig(config map[string]interface{}) (Options, error) {
-	var options Options
+func optionsFromConfig(config map[string]interface{}) (options Options, err error) {
+	var secret cfg.Secret
+	switch value := config[APIKeyKey].(type) {
+	case string:
+		secret = cfg.Secret(value)
+	case cfg.Secret:
+		secret = value
+	}
+	defer func() { err = redactConfigError(err, secret) }()
 
-	url, set, err := stringProperty(config, PolicySourceURLKey)
-	if err != nil {
+	for _, property := range []struct {
+		key    string
+		target *string
+	}{
+		{PolicySourceURLKey, &options.PolicySourceURL},
+		{UpstreamURLKey, &options.UpstreamURL},
+		{InstanceNameKey, &options.InstanceName},
+	} {
+		value, _, err := stringProperty(config, property.key)
+		if err != nil {
+			return options, err
+		}
+		*property.target = value
+	}
+	if value, ok := config[APIKeyKey].(cfg.Secret); ok {
+		options.APIKey = value
+	} else {
+		value, _, err := stringProperty(config, APIKeyKey)
+		if err != nil {
+			return options, err
+		}
+		options.APIKey = cfg.Secret(value)
+	}
+	if err := normalizeIdentity(&options); err != nil {
 		return options, err
 	}
-	if !set || url == "" {
-		return options, errors.New(errors.ConfigError, "configure item PolicySourceURL is not found")
-	}
-	options.PolicySourceURL = url
 
 	credential, err := credentialFromConfig(config)
 	if err != nil {
@@ -516,4 +553,40 @@ func init() {
 	pflag.String(MaxConnectionsFlag, "", "Store config: maximum active channels and held polls per downstream credential.")
 
 	store.Register(StoreType, Builder{})
+}
+
+var instanceNamePattern = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$`)
+
+// normalizeIdentity also validates Options passed directly to Open.
+func normalizeIdentity(options *Options) error {
+	if options.UpstreamURL != "" && options.PolicySourceURL != "" && options.UpstreamURL != options.PolicySourceURL {
+		return errors.New(errors.ConfigError, "UpstreamURL and PolicySourceURL must match when both are configured")
+	}
+	if options.UpstreamURL == "" {
+		options.UpstreamURL = options.PolicySourceURL
+	}
+	if options.UpstreamURL == "" {
+		return errors.New(errors.ConfigError, "configure item UpstreamURL (or PolicySourceURL) is required")
+	}
+	options.PolicySourceURL = options.UpstreamURL
+	if options.InstanceName == "" {
+		name, err := os.Hostname()
+		if err != nil {
+			return errors.New(errors.ConfigError, "cannot determine InstanceName from hostname")
+		}
+		options.InstanceName = name
+	}
+	if !instanceNamePattern.MatchString(options.InstanceName) {
+		return errors.New(errors.ConfigError, "InstanceName must be 1-64 characters matching [A-Za-z0-9][A-Za-z0-9._-]*")
+	}
+	return nil
+}
+
+// redactConfigError also covers credentials accidentally repeated in another
+// invalid property (for example a duration or file path).
+func redactConfigError(err error, key cfg.Secret) error {
+	if err == nil || key == "" || !strings.Contains(err.Error(), string(key)) {
+		return err
+	}
+	return errors.New(errors.Code(err), strings.ReplaceAll(err.Error(), string(key), "[REDACTED]"))
 }

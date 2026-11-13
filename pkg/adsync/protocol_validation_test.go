@@ -73,8 +73,8 @@ func TestServicesResponseValidation(t *testing.T) {
 	}{
 		{"zero version", func(response *ServicesResponse) { response.ServicesVersion = 0 }},
 		{"version out of range", func(response *ServicesResponse) { response.ServicesVersion = maxSafeInteger + 1 }},
-		{"too many services", func(response *ServicesResponse) {
-			response.Services = make([]Service, maxServicesPerSource+1)
+		{"invalid services", func(response *ServicesResponse) {
+			response.Services = make([]Service, 101)
 		}},
 		{"invalid service", func(response *ServicesResponse) { response.Services[0].ID = "bad" }},
 		{"duplicate service", func(response *ServicesResponse) {
@@ -117,7 +117,7 @@ func TestChangesPageEnvelopeValidation(t *testing.T) {
 		{"wrong next cursor", func(response *ChangesResponse) { response.NextSince = 3 }},
 		{"missing head hash", func(response *ChangesResponse) { response.HeadStateHash = Hash{} }},
 		{"too many commits", func(response *ChangesResponse) {
-			response.Commits = make([]Commit, maxCommitsPerPage+1)
+			response.Commits = make([]Commit, 101)
 		}},
 		{"wrong empty end", func(response *ChangesResponse) {
 			response.To = 0
@@ -179,7 +179,6 @@ func TestChangeValidation(t *testing.T) {
 		{"empty id", func(change *Change) { change.ID = "" }},
 		{"unknown kind", func(change *Change) { change.Kind = "unknown" }},
 		{"missing name", func(change *Change) { change.Name = nil }},
-		{"long name", func(change *Change) { change.Name = stringPointer(strings.Repeat("n", maxPolicyNameChars+1)) }},
 		{"invalid service name", func(change *Change) {
 			change.Kind = "service"
 			change.Name = stringPointer("")

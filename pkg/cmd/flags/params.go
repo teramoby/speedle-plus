@@ -35,6 +35,8 @@ import (
 
 // Parameters is the parameters for Speedle
 type Parameters struct {
+	// Retain properties that deliberately have no flag or environment binding.
+	configOnlyStore *cfg.StoreConfig
 	////////// Common flags //////////
 	Version bool
 	Help    bool
@@ -359,6 +361,16 @@ func (k *Parameters) ParseFlags(defaultEndpoint string, printVersionInfoFun func
 		conf = nil
 	}
 
+	k.configOnlyStore = nil
+	if conf != nil && conf.StoreConfig != nil && conf.StoreConfig.StoreType == "policy-source" {
+		k.configOnlyStore = &cfg.StoreConfig{StoreType: "policy-source", StoreProps: make(map[string]interface{})}
+		for _, key := range []string{"UpstreamURL", "APIKey", "InstanceName"} {
+			if value, exists := conf.StoreConfig.StoreProps[key]; exists {
+				k.configOnlyStore.StoreProps[key] = value
+			}
+		}
+	}
+
 	pflag.VisitAll(func(f *pflag.Flag) {
 		key := FlagToEnv(f.Name)
 		if !f.Changed {
@@ -621,6 +633,11 @@ func (k *Parameters) Param2Config(storeParamsMap map[string]string) (*cfg.Config
 		}
 	}
 
+	if storeConf.StoreType == "policy-source" && k.configOnlyStore != nil {
+		for key, value := range k.configOnlyStore.StoreProps {
+			storeConf.StoreProps[key] = value
+		}
+	}
 	conf.StoreConfig = &storeConf
 
 	watchEnabled, _ := strconv.ParseBool(k.StoreWatchEnabled.Value)

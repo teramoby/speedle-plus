@@ -19,12 +19,6 @@ const (
 	maxHeartbeatInterval = 5 * time.Minute
 	minStopAfter         = 60 * time.Second
 	maxStopAfter         = 15 * time.Minute
-
-	// maxTrackedServices bounds the records the machine keeps, including
-	// tombstones for removed services. The live set is bounded by the
-	// protocol's maxServicesPerSource; the extra room only absorbs service
-	// churn over the lifetime of a process.
-	maxTrackedServices = 100
 )
 
 // Clock supplies the current time. The state machine never reads the wall
@@ -301,7 +295,6 @@ type serviceRecord struct {
 	pendingResync     bool
 	verifiedSinceStop bool
 
-	removedSeq uint64
 	// generation changes whenever a result fetched earlier must no longer be
 	// reported: on creation, removal and resync of the record.
 	generation uint64
@@ -533,12 +526,6 @@ func (m *Machine) apply(state *ServiceState, attempt *SyncAttempt) error {
 		if m.setKnown {
 			return nil
 		}
-		// Until the first authoritative ack the set is unknown, but the
-		// protocol still bounds how many services one source can serve, so a
-		// caller cannot grow the record map without bound.
-		if len(m.records) >= maxServicesPerSource {
-			return fmt.Errorf("%w: more than %d services reported before the first ack", ErrProtocol, maxServicesPerSource)
-		}
 		record = m.newRecordLocked(state.ServiceID, state.Snapshot.Name)
 	}
 	if m.setKnown && !record.setMember {
@@ -695,9 +682,6 @@ func (m *Machine) Thresholds() Thresholds {
 var _ StatusProvider = (*Machine)(nil)
 
 func validateAck(ack Ack) error {
-	if len(ack.Services) > maxServicesPerSource {
-		return fmt.Errorf("%w: %d services exceed the protocol bound", ErrProtocol, len(ack.Services))
-	}
 	seenIDs := make(map[string]struct{}, len(ack.Services))
 	seenNames := make(map[string]struct{}, len(ack.Services))
 	for index := range ack.Services {
@@ -787,7 +771,6 @@ func (m *Machine) applySetLocked(services []Service, confirmed bool) {
 	for _, record := range m.records {
 		m.recomputeRecordLocked(record)
 	}
-	m.evictLocked()
 }
 
 func (m *Machine) newRecordLocked(id, name string) *serviceRecord {
@@ -840,7 +823,6 @@ func (m *Machine) recomputeRecordLocked(record *serviceRecord) {
 func (m *Machine) removeRecordLocked(record *serviceRecord) {
 	if record.state != SyncStateRemoved {
 		m.nextSeq++
-		record.removedSeq = m.nextSeq
 		m.invalidateAttemptsLocked(record)
 	}
 	record.state = SyncStateRemoved
@@ -910,27 +892,6 @@ func (r *serviceRecord) status() ServiceStatus {
 		Reason:   r.reason,
 		Revision: r.localRevision,
 		Head:     r.headRevision,
-	}
-}
-
-func (m *Machine) evictLocked() {
-	if len(m.records) <= maxTrackedServices {
-		return
-	}
-	removed := make([]*serviceRecord, 0, len(m.records))
-	for _, record := range m.records {
-		if record.state == SyncStateRemoved {
-			removed = append(removed, record)
-		}
-	}
-	sort.Slice(removed, func(left, right int) bool {
-		return removed[left].removedSeq < removed[right].removedSeq
-	})
-	for _, record := range removed {
-		if len(m.records) <= maxTrackedServices {
-			return
-		}
-		delete(m.records, record.id)
 	}
 }
 

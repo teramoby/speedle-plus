@@ -443,3 +443,12 @@ func TestFallbackAvailabilityFollowsOutcomes(t *testing.T) {
 		t.Fatal("a quota refusal is not a transport failure")
 	}
 }
+
+func TestForwardFallbackAcceptsResponseBeyondOldSizeLimit(t *testing.T) {
+	body := strings.Repeat("x", 6<<20)
+	client, _ := newFallbackClient(t, func(w http.ResponseWriter, r *http.Request) { _, _ = io.WriteString(w, body) })
+	response, err := client.ForwardFallback(context.Background(), FallbackAllGrantedPermissions, []byte(`{}`))
+	if err != nil || response == nil || string(response.Body) != body {
+		t.Fatalf("large fallback response failed: %v", err)
+	}
+}

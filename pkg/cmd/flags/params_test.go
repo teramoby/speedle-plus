@@ -12,6 +12,7 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/pem"
+	"fmt"
 	"io"
 	"math/big"
 	"net"
@@ -23,6 +24,7 @@ import (
 	"time"
 
 	"github.com/spf13/pflag"
+	"github.com/teramoby/speedle-plus/pkg/cfg"
 	"github.com/teramoby/speedle-plus/pkg/errors"
 	mysqlstore "github.com/teramoby/speedle-plus/pkg/store/mysql"
 )
@@ -517,5 +519,35 @@ func TestConfigStringListsJoinIntoStringStoreFlags(t *testing.T) {
 	}
 	if got := configuration.StoreConfig.StoreProps["Services"]; got != "books,orders" {
 		t.Fatalf("store property = %v", got)
+	}
+}
+
+func TestPolicySourceConfigOnlyPropertiesSurviveFlags(t *testing.T) {
+	oldArgs, oldFlags := os.Args, pflag.CommandLine
+	defer func() { os.Args, pflag.CommandLine = oldArgs, oldFlags }()
+	pflag.CommandLine = pflag.NewFlagSet("config-only", pflag.ContinueOnError)
+	pflag.CommandLine.SetOutput(io.Discard)
+	const secret = "file-only-private-key-371"
+	path := writeFile(t, "config.json", `{"storeConfig":{"storeType":"policy-source","storeProps":{"UpstreamURL":"https://source.example","APIKey":"`+secret+`","InstanceName":"engine-1"}}}`)
+	t.Setenv("SPEEDLE_POLICY_SOURCE_API_KEY", "env-must-be-ignored")
+	t.Setenv("SPEEDLE_API_KEY", "env-must-be-ignored")
+	os.Args = []string{"speedle", "--config-file", path}
+	params := &Parameters{}
+	if code := run(t, func() { params.ParseFlags("0.0.0.0:1", func() {}, map[string]string{}) }); code != -1 {
+		t.Fatalf("exit %d", code)
+	}
+	configuration, err := params.Param2Config(map[string]string{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	props := configuration.StoreConfig.StoreProps
+	if props["UpstreamURL"] != "https://source.example" || props["InstanceName"] != "engine-1" || props["APIKey"] != cfg.Secret(secret) {
+		t.Fatal("config-only properties dropped or overwritten")
+	}
+	if strings.Contains(fmt.Sprintf("%+v", params), secret) {
+		t.Fatal("parameter dump exposed key")
+	}
+	if pflag.Lookup("policy-source-api-key") != nil {
+		t.Fatal("secret flag registered")
 	}
 }
