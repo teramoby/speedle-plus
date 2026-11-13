@@ -57,8 +57,10 @@ type channelHello struct {
 	Services     []channelHelloService `json:"services"`
 	Chain        []string              `json:"chain"`
 	AgentVersion string                `json:"agentVersion"`
-	StartedAt    int64                 `json:"startedAt,omitempty"`
-	Transport    string                `json:"transport,omitempty"`
+	// HostName is display-only and sent by a direct-mode instance.
+	HostName  string `json:"hostName,omitempty"`
+	StartedAt int64  `json:"startedAt,omitempty"`
+	Transport string `json:"transport,omitempty"`
 }
 
 // channelHeartbeatService is one entry of the heartbeat service list.
@@ -81,7 +83,11 @@ type channelFallback struct {
 // channelHeartbeat covers every service in one message. In long-poll mode it is
 // the body of each poll request.
 type channelHeartbeat struct {
-	Type               string                    `json:"type"`
+	Type string `json:"type"`
+	// InstanceID and HostName are sent by a direct-mode instance only; a
+	// credential instance is identified by its credential.
+	InstanceID         string                    `json:"instanceId,omitempty"`
+	HostName           string                    `json:"hostName,omitempty"`
 	Seq                uint64                    `json:"seq"`
 	Services           []channelHeartbeatService `json:"services"`
 	Liveness           string                    `json:"liveness"`

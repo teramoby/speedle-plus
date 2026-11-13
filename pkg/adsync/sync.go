@@ -134,6 +134,19 @@ func (s *Syncer) SyncByName(ctx context.Context, name string) (*ServiceState, er
 // validation reloads the snapshot, as the protocol requires. A source_gone
 // service deletes its local copy and is not retried.
 func (s *Syncer) Sync(ctx context.Context, service Service) (*ServiceState, error) {
+	return s.SyncAtLeast(ctx, service, 0)
+}
+
+// SyncAtLeast is Sync for a direct-mode instance that also knows a newer head
+// from a notification: when the local copy already matches service but is
+// below minRevision, it fetches the changes up to the source head, verified
+// against the head state hash of the last page. With minRevision at or below
+// service.Revision it is exactly Sync.
+//
+// In direct mode a local copy ahead of service in the same epoch is returned
+// unchanged and never replaced by an older snapshot; the state machine
+// decides on the next ack whether that is an integrity failure.
+func (s *Syncer) SyncAtLeast(ctx context.Context, service Service, minRevision uint64) (*ServiceState, error) {
 	if err := service.validate(); err != nil {
 		return nil, err
 	}
@@ -148,10 +161,40 @@ func (s *Syncer) Sync(ctx context.Context, service Service) (*ServiceState, erro
 	if local == nil {
 		return s.loadSnapshot(ctx, service, local)
 	}
+	direct := s.client.DirectMode()
+	if direct && local.Epoch == service.Epoch && local.Revision > service.Revision {
+		if fromCache {
+			if err := s.store(local); err != nil {
+				return nil, err
+			}
+		}
+		return local, nil
+	}
 	if local.Epoch != service.Epoch || local.Revision > service.Revision {
 		return s.loadSnapshot(ctx, service, local)
 	}
 	if local.Revision == service.Revision {
+		if local.StateHash == service.HeadStateHash && direct && minRevision > local.Revision {
+			// A notification announced a newer head than the ack. Catch up to
+			// whatever the source holds now; every page is verified against the
+			// source head, and the copy at service.Revision is the anchor.
+			updated, err := s.catchUp(ctx, local, Service{
+				ID: service.ID, Name: service.Name, Revision: local.Revision,
+				Epoch: local.Epoch, HeadStateHash: local.StateHash,
+			})
+			switch {
+			case err == nil:
+				return updated, nil
+			case errors.Is(err, ErrSourceGone), errors.Is(err, ErrServiceNotFound):
+				if forgetErr := s.forget(service.ID); forgetErr != nil {
+					return nil, errors.Join(err, forgetErr)
+				}
+				return nil, err
+			default:
+				// Keep the verified copy at the ack head; the next ack retries.
+				return nil, err
+			}
+		}
 		if local.StateHash == service.HeadStateHash {
 			if fromCache {
 				if err := s.store(local); err != nil {
@@ -217,8 +260,14 @@ func (s *Syncer) loadSnapshot(ctx context.Context, service Service, local *Servi
 		return nil, err
 	}
 	if response.SourceID != service.ID || response.Epoch != service.Epoch {
+		kind := ErrProtocol
+		if s.client.DirectMode() {
+			// Direct mode reconciles against the ack: a reloaded snapshot that
+			// still does not match its identity fails the service closed.
+			kind = ErrIntegrity
+		}
 		return nil, fmt.Errorf("%w: snapshot identity %q/%q does not match requested service %q epoch %q",
-			ErrProtocol, response.SourceID, response.Epoch, service.ID, service.Epoch)
+			kind, response.SourceID, response.Epoch, service.ID, service.Epoch)
 	}
 	if response.Revision == service.Revision && response.StateHash != service.HeadStateHash {
 		return nil, fmt.Errorf("%w: snapshot hash does not match the discovered head at revision %d",
@@ -433,4 +482,21 @@ func (s *Syncer) forget(serviceID string) error {
 	delete(s.states, serviceID)
 	s.mu.Unlock()
 	return nil
+}
+
+// CachedServices lists the services held in the disk cache with the name from
+// their cached snapshot. The copies are not loaded into the Syncer: a cached
+// copy stays a tentative resume position until a sync confirms it.
+func (s *Syncer) CachedServices() []Service {
+	if s.cache == nil {
+		return nil
+	}
+	var services []Service
+	for _, state := range s.cache.List() {
+		services = append(services, Service{
+			ID: state.ServiceID, Name: state.Snapshot.Name, Revision: state.Revision,
+			Epoch: state.Epoch, HeadStateHash: state.StateHash,
+		})
+	}
+	return services
 }

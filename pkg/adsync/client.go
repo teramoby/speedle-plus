@@ -115,6 +115,14 @@ type Config struct {
 	// Credential is the account-scoped adsi_ instance credential. It is sent
 	// only in the Authorization header to BaseURL.
 	Credential string
+	// APIKey selects direct mode instead of Credential. It is sent only in the
+	// Authorization header, together with InstanceID in the X-SC-ADS-Instance
+	// header. In direct mode PublicKeys is optional and, unless
+	// FallbackBaseURL is set, forwarding uses BaseURL with the same key.
+	APIKey string
+	// InstanceID is the direct-mode instance ID, a UUIDv7. It is required with
+	// APIKey and must be empty otherwise.
+	InstanceID string
 	// FallbackBaseURL and FallbackCredential configure the distinct Speedle
 	// Cloud authorization fallback. Both must be set together. The upstream
 	// policy-source URL and credential are never reused implicitly, because the
@@ -126,7 +134,8 @@ type Config struct {
 	// reuses HTTPClient's transport configuration, never its destination.
 	FallbackHTTPClient *http.Client
 	// PublicKeys is the out-of-band trust anchor for snapshot and commit
-	// signatures. It is required.
+	// signatures. It is required with Credential. With APIKey it is optional:
+	// when it is nil no signatures are expected or verified.
 	PublicKeys *PublicKeySet
 
 	// HTTPClient overrides the entire transport. Transport fields below must
@@ -163,6 +172,8 @@ type Config struct {
 type Client struct {
 	base            *url.URL
 	credential      string
+	apiKey          string
+	instanceID      string
 	keys            *PublicKeySet
 	http            *http.Client
 	dialer          *websocket.Dialer
@@ -174,6 +185,11 @@ type Client struct {
 	fallbackBase       *url.URL
 	fallbackCredential string
 	fallbackHTTP       *http.Client
+	// upstreamFallback is true when forwarding uses the policy source and the
+	// API key (direct mode without a separate Cloud fallback). It adds the
+	// direct-mode limits: an in-flight bound and Retry-After suppression.
+	upstreamFallback bool
+	fallbackSlots    chan struct{}
 
 	// fallbackMu guards the bounded retry hint used by the request gate.
 	fallbackMu      sync.Mutex
@@ -184,11 +200,26 @@ type Client struct {
 
 // NewClient validates the configuration and builds the HTTP transport.
 func NewClient(config Config) (*Client, error) {
-	if config.PublicKeys == nil {
-		return nil, fmt.Errorf("adsync: PublicKeys is required")
-	}
-	if err := ValidateCredential(config.Credential); err != nil {
-		return nil, err
+	if config.APIKey != "" {
+		if config.Credential != "" {
+			return nil, fmt.Errorf("adsync: Credential and APIKey cannot be combined")
+		}
+		if err := ValidateAPIKey(config.APIKey); err != nil {
+			return nil, err
+		}
+		if !ValidInstanceID(config.InstanceID) {
+			return nil, fmt.Errorf("%w: InstanceID must be a UUIDv7 with APIKey", ErrProtocol)
+		}
+	} else {
+		if config.InstanceID != "" {
+			return nil, fmt.Errorf("adsync: InstanceID requires APIKey")
+		}
+		if config.PublicKeys == nil {
+			return nil, fmt.Errorf("adsync: PublicKeys is required")
+		}
+		if err := ValidateCredential(config.Credential); err != nil {
+			return nil, err
+		}
 	}
 	base, err := url.Parse(config.BaseURL)
 	if err != nil {
@@ -261,6 +292,15 @@ func NewClient(config Config) (*Client, error) {
 	} else if config.FallbackCredential != "" {
 		return nil, fmt.Errorf("adsync: FallbackBaseURL is required with FallbackCredential")
 	}
+	upstreamFallback := false
+	fallbackCredential := config.FallbackCredential
+	if fallbackBase == nil && config.APIKey != "" {
+		// Direct mode forwards to the policy source with the same key.
+		upstream := *base
+		fallbackBase = &upstream
+		fallbackCredential = config.APIKey
+		upstreamFallback = true
+	}
 	fallbackHTTP := config.FallbackHTTPClient
 	if fallbackHTTP == nil {
 		fallbackHTTP = httpClient
@@ -289,10 +329,34 @@ func NewClient(config Config) (*Client, error) {
 		retry:              retry,
 		userAgent:          userAgent,
 		fallbackBase:       fallbackBase,
-		fallbackCredential: config.FallbackCredential,
+		fallbackCredential: fallbackCredential,
 		fallbackHTTP:       fallbackHTTP,
+		upstreamFallback:   upstreamFallback,
+		fallbackSlots:      fallbackSlots(upstreamFallback),
+		apiKey:             config.APIKey,
+		instanceID:         config.InstanceID,
 		now:                time.Now,
 	}, nil
+}
+
+// DirectMode reports whether the client authenticates with an API key.
+func (c *Client) DirectMode() bool { return c.apiKey != "" }
+
+// InstanceID returns the direct-mode instance ID, or an empty string.
+func (c *Client) InstanceID() string { return c.instanceID }
+
+// SignaturesVerified reports whether snapshot and commit signatures are
+// verified, which is the case exactly when public keys are configured.
+func (c *Client) SignaturesVerified() bool { return c.keys != nil }
+
+// authorize sets the authentication headers of one policy-source request.
+func (c *Client) authorize(header http.Header) {
+	if c.apiKey != "" {
+		header.Set("Authorization", "Bearer "+c.apiKey)
+		header.Set(InstanceHeader, c.instanceID)
+		return
+	}
+	header.Set("Authorization", "Bearer "+c.credential)
 }
 
 func newHTTPClient(config Config) (*http.Client, error) {
@@ -432,7 +496,7 @@ func (c *Client) Snapshot(ctx context.Context, serviceID, ifNoneMatch string) (*
 	if notModified {
 		return nil, true, nil
 	}
-	if err := response.validate(); err != nil {
+	if err := response.validate(c.keys != nil); err != nil {
 		return nil, false, err
 	}
 	if response.ServiceID != serviceID {
@@ -441,8 +505,14 @@ func (c *Client) Snapshot(ctx context.Context, serviceID, ifNoneMatch string) (*
 	if computed := StateHash(response.Snapshot); computed != response.StateHash {
 		return nil, false, fmt.Errorf("%w: snapshot stateHash does not match its content", ErrIntegrity)
 	}
-	if err := c.keys.verifySnapshot(&response); err != nil {
-		return nil, false, err
+	if c.keys != nil {
+		if err := c.keys.verifySnapshot(&response); err != nil {
+			return nil, false, err
+		}
+	} else {
+		// Without configured keys nothing is verified, so a signature the
+		// source still sends cannot anchor a later cache reload either.
+		response.Signature = Signature{}
 	}
 	return &response, false, nil
 }
@@ -479,6 +549,9 @@ func (c *Client) Changes(ctx context.Context, serviceID, sourceID, epoch string,
 		return nil, err
 	}
 	for index := range response.Commits {
+		if c.keys == nil {
+			break
+		}
 		if err := c.keys.verifyCommit(sourceID, epoch, &response.Commits[index]); err != nil {
 			return nil, err
 		}
@@ -522,7 +595,7 @@ func (c *Client) getOnce(ctx context.Context, endpoint string, query url.Values,
 	if err != nil {
 		return false, false, fmt.Errorf("adsync: build request: %w", err)
 	}
-	request.Header.Set("Authorization", "Bearer "+c.credential)
+	c.authorize(request.Header)
 	request.Header.Set("Accept", "application/json")
 	request.Header.Set("User-Agent", c.userAgent)
 	for name, values := range header {

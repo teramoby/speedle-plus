@@ -95,6 +95,19 @@ func (g *Gate) Route(serviceName string) Route {
 	if status.Service.State == adsync.SyncStateRemoved {
 		return Route{Kind: RouteLocal}
 	}
+	// A direct-mode service that failed reconciliation is denied, never
+	// forwarded and never evaluated from its copy.
+	if status.Service.Reason == adsync.SyncReasonIntegrity {
+		return Route{Kind: RouteUnavailable, Reason: adsync.ReasonIntegrityFailure}
+	}
+	// A stale direct-mode instance no longer trusts even a complete copy and
+	// forwards every request until an ack arrives again.
+	if instance.Liveness == adsync.LivenessStale && g.forwardsWhileStale() {
+		if g.source.FallbackAvailable() {
+			return Route{Kind: RouteFallback}
+		}
+		return Route{Kind: RouteUnavailable, Reason: adsync.ReasonFallbackUnavailable}
+	}
 	switch status.Service.State {
 	case adsync.SyncStateSyncing:
 		if g.source.FallbackAvailable() {
@@ -104,6 +117,13 @@ func (g *Gate) Route(serviceName string) Route {
 	default:
 		return Route{Kind: RouteLocal}
 	}
+}
+
+// forwardsWhileStale reports whether the source forwards requests while the
+// instance is stale. Only a direct-mode policy-source store does.
+func (g *Gate) forwardsWhileStale() bool {
+	stale, ok := g.source.(interface{ ForwardWhileStale() bool })
+	return ok && stale.ForwardWhileStale()
 }
 
 // Forward sends one authorization request to Cloud. The caller already
@@ -254,7 +274,7 @@ func (g *Gate) Ready() Readiness {
 			continue
 		}
 		usable := service.State == adsync.SyncStateInSync ||
-			(service.State == adsync.SyncStateSyncing && fallback)
+			(service.State == adsync.SyncStateSyncing && fallback && service.Reason != adsync.SyncReasonIntegrity)
 		if !usable {
 			ready = false
 		}

@@ -155,7 +155,7 @@ func TestSnapshotResponseValidation(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			response := validTestSnapshotResponse()
 			testCase.mutate(&response)
-			if err := response.validate(); !errors.Is(err, ErrProtocol) {
+			if err := response.validate(true); !errors.Is(err, ErrProtocol) {
 				t.Fatalf("validate error = %v, want ErrProtocol", err)
 			}
 		})

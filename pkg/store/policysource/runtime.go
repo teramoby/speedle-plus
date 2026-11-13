@@ -6,6 +6,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"os"
 	"strings"
 	"sync"
 	"time"
@@ -58,6 +59,9 @@ func (s *Store) startRuntime() error {
 	}
 	s.runtimeMu.Unlock()
 
+	if s.directMode() {
+		return s.startDirectRuntime()
+	}
 	instanceID := s.options.InstanceID
 	credentialParts := strings.Split(s.options.Credential, "_")
 	credentialInstanceID := ""
@@ -150,7 +154,13 @@ func (s *Store) startRuntime() error {
 		return errors.Wrap(err, errors.ConfigError, "invalid policy source channel configuration")
 	}
 	runtime.channel = channel
+	return s.runRuntime(runtime)
+}
 
+// runRuntime installs runtime and starts its channel and reconciliation
+// loops. A runtime installed concurrently wins and this one is discarded.
+func (s *Store) runRuntime(runtime *distributionRuntime) error {
+	channel := runtime.channel
 	ctx, cancel := context.WithCancel(context.Background())
 	runtime.cancel = cancel
 	runtime.done = make(chan struct{})
@@ -185,6 +195,54 @@ func (s *Store) startRuntime() error {
 	}()
 	s.triggerSync()
 	return nil
+}
+
+// startDirectRuntime starts the channel and reconciliation loops of a
+// direct-mode instance. It identifies itself by the client's instance ID and
+// has no proxy chain and no downstream server.
+func (s *Store) startDirectRuntime() error {
+	agentVersion := s.options.AgentVersion
+	if agentVersion == "" {
+		agentVersion = defaultAgentVersion
+	}
+	hostName, _ := os.Hostname()
+	runtime := &distributionRuntime{
+		trigger:      make(chan struct{}, 1),
+		mirrorIDs:    make(map[string]struct{}),
+		seenCommands: make(map[string]struct{}),
+	}
+	channel, err := adsync.NewChannel(s.client, adsync.ChannelOptions{
+		AgentVersion: agentVersion,
+		HostName:     hostName,
+		Machine:      s.machine,
+		Transport:    s.options.Transport,
+		Fallback:     s.fallbackState,
+		OnNotify: func(adsync.Notify) {
+			s.triggerSync()
+		},
+		OnServiceSetChange: func(change adsync.ServiceSetChange) {
+			s.applyServiceSetChange(change)
+			s.triggerSync()
+		},
+		OnCommand: s.handleRuntimeCommand,
+	})
+	if err != nil {
+		return errors.Wrap(err, errors.ConfigError, "invalid policy source channel configuration")
+	}
+	runtime.channel = channel
+	return s.runRuntime(runtime)
+}
+
+// ackedServices returns the service set and heads of the most recent
+// confirming ack. The boolean is false before the first ack.
+func (s *Store) ackedServices() ([]adsync.Service, bool) {
+	s.runtimeMu.Lock()
+	runtime := s.runtime
+	s.runtimeMu.Unlock()
+	if runtime == nil || runtime.channel == nil {
+		return nil, false
+	}
+	return runtime.channel.AckedServices()
 }
 
 // machineService returns the state machine's current record for one service

@@ -11,6 +11,7 @@ import (
 	"net/url"
 	"sort"
 	"strconv"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -114,8 +115,13 @@ type CommandResult struct {
 
 // ChannelOptions configures a Channel.
 type ChannelOptions struct {
-	// InstanceID is this instance's ULID. It is required.
+	// InstanceID is this instance's ULID. It is required for a credential
+	// client. A direct-mode (API key) client uses its own UUIDv7 instead, and
+	// InstanceID must then be empty or equal to it.
 	InstanceID string
+	// HostName is reported in a direct-mode hello and heartbeat for display
+	// only. It is optional and ignored for a credential client.
+	HostName string
 	// AgentVersion is reported in hello and heartbeats. It is required.
 	AgentVersion string
 	// Chain lists the instance ids from Cloud to this instance, inclusive.
@@ -221,6 +227,8 @@ type Channel struct {
 	machine *Machine
 
 	instanceID   string
+	hostName     string
+	direct       bool
 	credentialID string
 	agentVersion string
 	chain        []string
@@ -248,6 +256,7 @@ type Channel struct {
 	mu       sync.Mutex
 	current  Transport
 	services []Service
+	acked    bool
 }
 
 // NewChannel validates the options and returns a Channel for the policy source
@@ -261,7 +270,24 @@ func NewChannel(client *Client, options ChannelOptions) (*Channel, error) {
 	if options.Machine == nil {
 		return nil, fmt.Errorf("adsync: ChannelOptions.Machine is required")
 	}
-	if !validULID(options.InstanceID) {
+	direct := client.DirectMode()
+	instanceID := options.InstanceID
+	hostName := ""
+	if direct {
+		// A direct-mode instance is registered by its generated ID; it has no
+		// credential id and no proxy chain.
+		if instanceID != "" && instanceID != client.InstanceID() {
+			return nil, fmt.Errorf("adsync: InstanceID does not match the client instance id")
+		}
+		if options.CredentialID != "" || len(options.Chain) > 0 || options.UpstreamInstanceID != "" {
+			return nil, fmt.Errorf("adsync: CredentialID, Chain and UpstreamInstanceID are not used with an API key")
+		}
+		instanceID = client.InstanceID()
+		hostName = options.HostName
+		if len(hostName) > 255 || strings.IndexFunc(hostName, func(r rune) bool { return r < 0x20 || r == 0x7f }) >= 0 {
+			hostName = ""
+		}
+	} else if !validULID(options.InstanceID) {
 		return nil, fmt.Errorf("%w: invalid instance id %q", ErrProtocol, options.InstanceID)
 	}
 	if options.CredentialID != "" && !validULID(options.CredentialID) {
@@ -330,7 +356,9 @@ func NewChannel(client *Client, options ChannelOptions) (*Channel, error) {
 	channel := &Channel{
 		client:             client,
 		machine:            options.Machine,
-		instanceID:         options.InstanceID,
+		instanceID:         instanceID,
+		hostName:           hostName,
+		direct:             direct,
 		credentialID:       options.CredentialID,
 		agentVersion:       options.AgentVersion,
 		chain:              chain,
@@ -367,6 +395,14 @@ func (c *Channel) Services() []Service {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	return append([]Service(nil), c.services...)
+}
+
+// AckedServices returns the authoritative service set and heads from the most
+// recent ack, and false before the first ack.
+func (c *Channel) AckedServices() ([]Service, bool) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return append([]Service(nil), c.services...), c.acked
 }
 
 // Run carries the channel until the context is canceled or the source reports a
@@ -647,6 +683,7 @@ func (c *Channel) storeServiceSet(extraKnown, services []Service) (*ServiceSetCh
 		}
 	}
 	c.services = append([]Service(nil), services...)
+	c.acked = true
 	c.mu.Unlock()
 
 	sort.Slice(added, func(left, right int) bool { return added[left].ID < added[right].ID })
@@ -755,8 +792,9 @@ func (c *Channel) helloMessage(transport Transport) channelHello {
 		InstanceID:   c.instanceID,
 		CredentialID: c.credentialID,
 		Services:     services,
-		Chain:        append([]string(nil), c.chain...),
+		Chain:        c.chainList(),
 		AgentVersion: c.agentVersion,
+		HostName:     c.hostName,
 		StartedAt:    c.startedAt.UnixMilli(),
 		Transport:    string(transport),
 	}
@@ -796,11 +834,15 @@ func (c *Channel) heartbeatMessage(transport Transport) channelHeartbeat {
 		Seq:          c.sequence.Add(1),
 		Services:     services,
 		Liveness:     string(c.machine.Instance().Liveness),
-		Chain:        append([]string(nil), c.chain...),
+		Chain:        c.chainList(),
 		Fallback:     fallback,
 		AgentVersion: c.agentVersion,
 		StartedAt:    c.startedAt.UnixMilli(),
 		Transport:    string(transport),
+	}
+	if c.direct {
+		message.InstanceID = c.instanceID
+		message.HostName = c.hostName
 	}
 	if c.upstreamInstanceID != "" {
 		upstream := c.upstreamInstanceID
@@ -811,6 +853,15 @@ func (c *Channel) heartbeatMessage(transport Transport) channelHeartbeat {
 		message.DownstreamCount = &count
 	}
 	return message
+}
+
+// chainList is the chain sent in hello and heartbeat. A direct-mode instance
+// has no proxy chain and sends an empty list.
+func (c *Channel) chainList() []string {
+	if c.direct {
+		return []string{}
+	}
+	return append([]string(nil), c.chain...)
 }
 
 func (c *Channel) channelURL() string {
@@ -844,7 +895,7 @@ func (c *Channel) pollURL() string {
 
 func (c *Channel) requestHeaders() http.Header {
 	header := http.Header{}
-	header.Set("Authorization", "Bearer "+c.client.credential)
+	c.client.authorize(header)
 	header.Set("Accept", "application/json")
 	header.Set("User-Agent", c.client.userAgent)
 	return header
@@ -880,6 +931,13 @@ func (c *Channel) terminalStatusError(method, path string, status int, body []by
 		return &terminalError{err: statusErr}
 	case http.StatusRequestTimeout, http.StatusTooEarly, http.StatusTooManyRequests:
 		return nil
+	case http.StatusConflict:
+		if c.direct {
+			// The account has no free instance slot (quota_exceeded). A slot
+			// can be freed in the console, so keep retrying with backoff while
+			// the instance serves nothing.
+			return nil
+		}
 	}
 	if status >= 500 {
 		return nil

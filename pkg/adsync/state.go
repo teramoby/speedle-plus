@@ -77,6 +77,12 @@ const (
 	SyncReasonCatchUp SyncReason = "catch_up"
 	// SyncReasonResync means an explicit resync command invalidated the copy.
 	SyncReasonResync SyncReason = "resync"
+	// SyncReasonIntegrity means a direct-mode instance failed the service
+	// closed: its copy is ahead of the acknowledged head, or a reloaded
+	// snapshot still did not match it. Requests for the service are denied,
+	// not forwarded, until a later ack or a verified copy clears it. Only a
+	// machine with ReconcileOnAck reports it.
+	SyncReasonIntegrity SyncReason = "integrity_failure"
 )
 
 // Reason is a machine-readable cause reported with unavailable authorization
@@ -222,6 +228,12 @@ type MachineOptions struct {
 	// protocol range is 60s to 15m and it must be greater than the stale
 	// threshold.
 	StopAfter time.Duration
+	// ReconcileOnAck enables the direct-mode reconciliation: on every
+	// confirming ack a service whose verified copy is ahead of the ack head in
+	// the same epoch fails closed (SyncReasonIntegrity) instead of waiting,
+	// and FailService can fail one service closed without stopping the
+	// instance. The zero value keeps the behaviour of a credential instance.
+	ReconcileOnAck bool
 }
 
 // Machine tracks the instance liveness and the per-service sync state. It is
@@ -256,7 +268,8 @@ type Machine struct {
 	cloudStale     time.Duration
 	cloudStop      time.Duration
 
-	paused bool
+	paused    bool
+	reconcile bool
 
 	stopped      bool
 	stopReason   Reason
@@ -294,6 +307,13 @@ type serviceRecord struct {
 
 	pendingResync     bool
 	verifiedSinceStop bool
+
+	// aheadOfAck is set by a direct-mode ack whose head is behind the
+	// verified copy. failed is set by FailService and holds until an ack
+	// carries a different head than failedHead, or a verified copy arrives.
+	aheadOfAck bool
+	failed     bool
+	failedHead Head
 
 	// generation changes whenever a result fetched earlier must no longer be
 	// reported: on creation, removal and resync of the record.
@@ -349,6 +369,7 @@ func NewMachine(options MachineOptions) (*Machine, error) {
 		localHeartbeat: heartbeat,
 		localStale:     stale,
 		localStop:      stop,
+		reconcile:      options.ReconcileOnAck,
 		records:        make(map[string]*serviceRecord),
 	}, nil
 }
@@ -541,6 +562,7 @@ func (m *Machine) apply(state *ServiceState, attempt *SyncAttempt) error {
 	record.localStateHash = state.StateHash
 	record.pendingResync = false
 	record.verifiedSinceStop = true
+	record.failed = false
 	m.recomputeRecordLocked(record)
 	if m.stopped {
 		m.tryRecoverLocked(now)
@@ -577,6 +599,48 @@ func (m *Machine) SyncFailed(serviceID string, err error) {
 		return
 	}
 	m.removeRecordLocked(record)
+}
+
+// FailService fails one service closed after a direct-mode reconciliation
+// could not make its copy match the acknowledged head, for example because a
+// reloaded snapshot still has a different state hash. The service reports
+// SyncReasonIntegrity until an ack carries a different head or a verified copy
+// is applied; the rest of the instance keeps serving. Without ReconcileOnAck
+// it does nothing: a credential instance stops as a whole instead.
+func (m *Machine) FailService(serviceID string) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.advanceLocked(m.clock.Now())
+	record := m.records[serviceID]
+	if !m.reconcile || record == nil || record.state == SyncStateRemoved {
+		return
+	}
+	record.failed = true
+	record.failedHead = Head{ID: record.id, Epoch: record.epoch, Revision: record.headRevision, StateHash: record.headStateHash}
+	m.recomputeRecordLocked(record)
+}
+
+// Track records a service known from a local cache before the first ack. It
+// has no verified copy in the machine, so it reports syncing (bootstrap) and
+// requests for it are forwarded until an ack confirms it and a verified copy
+// is installed; an ack that omits it removes it. Once the authoritative set is
+// known Track does nothing.
+func (m *Machine) Track(serviceID, name string) error {
+	if !validEntityID(serviceID) {
+		return fmt.Errorf("%w: invalid service id %q", ErrProtocol, serviceID)
+	}
+	if !validServiceName(name) {
+		return fmt.Errorf("%w: invalid service name %q", ErrProtocol, name)
+	}
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.advanceLocked(m.clock.Now())
+	if m.setKnown || m.records[serviceID] != nil {
+		return nil
+	}
+	record := m.newRecordLocked(serviceID, name)
+	m.recomputeRecordLocked(record)
+	return nil
 }
 
 // Resync marks one service for a forced re-synchronization after a resync
@@ -766,6 +830,17 @@ func (m *Machine) applySetLocked(services []Service, confirmed bool) {
 		}
 		record.setMember = true
 		record.name = service.Name
+		if m.reconcile && confirmed {
+			// Reconcile against this ack's own head, which may be lower than a
+			// head already announced: a known head is never lowered.
+			record.aheadOfAck = record.hasLocal && record.localEpoch == service.Epoch &&
+				record.localRevision > service.Revision
+			if record.failed && (record.failedHead.Epoch != service.Epoch ||
+				record.failedHead.Revision != service.Revision ||
+				record.failedHead.StateHash != service.HeadStateHash) {
+				record.failed = false
+			}
+		}
 		m.updateRecordHeadLocked(record, service.Epoch, service.Revision, service.HeadStateHash, confirmed)
 	}
 	for _, record := range m.records {
@@ -797,6 +872,9 @@ func (m *Machine) recomputeRecordLocked(record *serviceRecord) {
 		return
 	}
 	switch {
+	case record.aheadOfAck || record.failed:
+		record.state = SyncStateSyncing
+		record.reason = SyncReasonIntegrity
 	case record.pendingResync:
 		record.state = SyncStateSyncing
 		record.reason = SyncReasonResync
@@ -839,6 +917,9 @@ func (m *Machine) removeRecordLocked(record *serviceRecord) {
 	record.localStateHash = Hash{}
 	record.pendingResync = false
 	record.verifiedSinceStop = false
+	record.aheadOfAck = false
+	record.failed = false
+	record.failedHead = Head{}
 }
 
 // updateHead advances the known head. Within one epoch a lower revision never

@@ -24,13 +24,12 @@ type Cache struct {
 	keys *PublicKeySet
 }
 
-// NewCache creates cacheDir with mode 0700 when needed.
+// NewCache creates cacheDir with mode 0700 when needed. keys may be nil only
+// for a source whose signatures are not verified (direct mode without public
+// keys); a cached signature is then ignored.
 func NewCache(dir string, keys *PublicKeySet) (*Cache, error) {
 	if dir == "" {
 		return nil, fmt.Errorf("adsync: cache directory is empty")
-	}
-	if keys == nil {
-		return nil, fmt.Errorf("adsync: cache requires public keys")
 	}
 	if err := os.MkdirAll(dir, 0o700); err != nil {
 		return nil, fmt.Errorf("adsync: create cache directory: %w", err)
@@ -133,7 +132,7 @@ func (c *Cache) Load(serviceID string) (*ServiceState, error) {
 		return nil, fmt.Errorf("%w: state hash does not match the cached content", ErrCacheCorrupt)
 	}
 
-	if payload.Signature.KeyID != "" || payload.Signature.Alg != "" || payload.Signature.Value != "" {
+	if c.keys != nil && (payload.Signature.KeyID != "" || payload.Signature.Alg != "" || payload.Signature.Value != "") {
 		snapshot := &SnapshotResponse{
 			ServiceID:  payload.ServiceID,
 			SourceID:   payload.SourceID,
@@ -261,4 +260,31 @@ func writeFileAtomic(path string, data []byte) error {
 		_ = handle.Close()
 	}
 	return nil
+}
+
+// List returns the verified states of every readable cache file, sorted by
+// service ID. Unreadable or corrupt files are skipped: they are cache misses,
+// and the next successful sync replaces them.
+func (c *Cache) List() []*ServiceState {
+	entries, err := os.ReadDir(c.dir)
+	if err != nil {
+		return nil
+	}
+	var states []*ServiceState
+	for _, entry := range entries {
+		name := entry.Name()
+		if !strings.HasPrefix(name, "service-") || !strings.HasSuffix(name, ".json") {
+			continue
+		}
+		serviceID := strings.TrimSuffix(strings.TrimPrefix(name, "service-"), ".json")
+		if !validEntityID(serviceID) {
+			continue
+		}
+		state, err := c.Load(serviceID)
+		if err != nil || state == nil {
+			continue
+		}
+		states = append(states, state)
+	}
+	return states
 }

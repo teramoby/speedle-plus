@@ -27,6 +27,18 @@ const (
 	// transport, rate-limit or 5xx failure. It bounds the outage observation;
 	// it never latches fallback off permanently.
 	DefaultFallbackRetryBackoff = time.Second
+
+	// MaxUpstreamInFlight bounds the forwarded requests a direct-mode
+	// instance has in flight. A request beyond it is denied, not queued.
+	MaxUpstreamInFlight = 20
+	// MaxUpstreamRetryAfter caps how long a Retry-After from the upstream
+	// suppresses forwarding in direct mode.
+	MaxUpstreamRetryAfter = 60 * time.Second
+
+	// DecisionSourceUpstream marks a response the upstream produced for a
+	// direct-mode instance. The legacy Cloud fallback keeps its own marker.
+	DecisionSourceUpstream = "upstream"
+
 )
 
 // FallbackOperation is one authorization operation that can be forwarded to
@@ -55,6 +67,10 @@ type FallbackResponse struct {
 	StatusCode int
 	Header     http.Header
 	Body       []byte
+	// DecisionSource is the decision-source marker for the caller, set when
+	// the request went to the direct-mode upstream. Empty means the legacy
+	// Cloud fallback marker.
+	DecisionSource string
 }
 
 // FallbackForwarder forwards an authorization request to the configured
@@ -95,10 +111,11 @@ func (e *fallbackTransportError) Is(target error) bool {
 
 // fallbackStatusError is a non-2xx response from Cloud.
 type fallbackStatusError struct {
-	status int
-	code   string
-	reason string
-	cause  error
+	status     int
+	code       string
+	reason     string
+	retryAfter time.Duration
+	cause      error
 }
 
 func (e *fallbackStatusError) Error() string {
@@ -156,10 +173,21 @@ func (c *Client) ForwardFallback(ctx context.Context, operation FallbackOperatio
 	if len(body) == 0 {
 		return nil, fmt.Errorf("%w: empty fallback request body", ErrProtocol)
 	}
+	if c.fallbackSlots != nil {
+		select {
+		case c.fallbackSlots <- struct{}{}:
+			defer func() { <-c.fallbackSlots }()
+		default:
+			return nil, fmt.Errorf("%w: %d forwarded requests are already in flight", ErrUnavailable, MaxUpstreamInFlight)
+		}
+	}
 	for attempt := 0; ; attempt++ {
 		response, err := c.forwardOnce(ctx, operation, body)
 		if err == nil {
 			c.recordFallbackOutcome(nil)
+			if c.upstreamFallback {
+				response.DecisionSource = DecisionSourceUpstream
+			}
 			return response, nil
 		}
 		c.recordFallbackOutcome(err)
@@ -185,6 +213,9 @@ func (c *Client) forwardOnce(ctx context.Context, operation FallbackOperation, b
 		return nil, fmt.Errorf("adsync: build fallback request: %w", err)
 	}
 	request.Header.Set("Authorization", "Bearer "+c.fallbackCredential)
+	if c.upstreamFallback {
+		request.Header.Set(InstanceHeader, c.instanceID)
+	}
 	request.Header.Set("Content-Type", "application/json")
 	request.Header.Set("Accept", "application/json")
 	request.Header.Set("Accept-Encoding", "identity")
@@ -214,7 +245,9 @@ func (c *Client) forwardOnce(ctx context.Context, operation FallbackOperation, b
 		return nil, &fallbackTransportError{err: readErr}
 	}
 	if response.StatusCode < 200 || response.StatusCode > 299 {
-		return nil, newFallbackStatusError(response.StatusCode, responseBody)
+		statusErr := newFallbackStatusError(response.StatusCode, responseBody)
+		statusErr.(*fallbackStatusError).retryAfter = retryAfterDuration(response.Header)
+		return nil, statusErr
 	}
 	return &FallbackResponse{
 		StatusCode: response.StatusCode,
@@ -230,13 +263,35 @@ func (c *Client) forwardOnce(ctx context.Context, operation FallbackOperation, b
 func (c *Client) recordFallbackOutcome(err error) {
 	retryLater := err != nil && (errors.Is(err, ErrUnavailable) || errors.Is(err, ErrRateLimited) ||
 		errors.Is(err, ErrUnauthorized) || errors.Is(err, ErrForbidden))
+	delay := c.fallbackBackoff
+	if c.upstreamFallback {
+		// Direct mode honours the upstream's Retry-After on any failure, up to
+		// a minute; requests are denied meanwhile.
+		var statusErr *fallbackStatusError
+		if errors.As(err, &statusErr) && statusErr.retryAfter > 0 {
+			retryLater = true
+			delay = statusErr.retryAfter
+			if delay > MaxUpstreamRetryAfter {
+				delay = MaxUpstreamRetryAfter
+			}
+		}
+	}
 	c.fallbackMu.Lock()
 	if retryLater {
-		c.fallbackRetryAt = c.now().Add(c.fallbackBackoff)
+		c.fallbackRetryAt = c.now().Add(delay)
 	} else {
 		c.fallbackRetryAt = time.Time{}
 	}
 	c.fallbackMu.Unlock()
+}
+
+// fallbackSlots returns the in-flight bound of direct-mode forwarding, or nil
+// for the legacy Cloud fallback, which keeps its unbounded behaviour.
+func fallbackSlots(upstream bool) chan struct{} {
+	if !upstream {
+		return nil
+	}
+	return make(chan struct{}, MaxUpstreamInFlight)
 }
 
 // FallbackAvailable reports whether fallback is configured and not inside its

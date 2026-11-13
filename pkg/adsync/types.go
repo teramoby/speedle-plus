@@ -193,7 +193,9 @@ func validatePolicies(label string, policies []Policy) error {
 	return nil
 }
 
-func (r *SnapshotResponse) validate() error {
+// validate checks the envelope. requireSignature is true when public keys are
+// configured; without them a snapshot carries no signature to check.
+func (r *SnapshotResponse) validate(requireSignature bool) error {
 	if !validEntityID(r.ServiceID) {
 		return fmt.Errorf("%w: invalid serviceId %q", ErrProtocol, r.ServiceID)
 	}
@@ -209,8 +211,10 @@ func (r *SnapshotResponse) validate() error {
 	if r.StateHash.IsZero() || r.CommitHash.IsZero() {
 		return fmt.Errorf("%w: snapshot hashes are missing", ErrProtocol)
 	}
-	if err := r.Signature.validate(); err != nil {
-		return err
+	if requireSignature {
+		if err := r.Signature.validate(); err != nil {
+			return err
+		}
 	}
 	return r.Snapshot.validate()
 }
