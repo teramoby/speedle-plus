@@ -68,6 +68,60 @@ func TestChannelWebSocketHelloAndHeartbeat(t *testing.T) {
 	}
 }
 
+// TestChannelRefusesChainLoops proves a relay refuses a downstream that
+// reports the relay's own instance id (an upstream URL aimed at the relay's
+// own downstream endpoint) or one of the relay's upstream ancestors (a
+// two-node cycle), over both transports. A legitimate child is still served.
+func TestChannelRefusesChainLoops(t *testing.T) {
+	mirror, _, _ := newPopulatedMirror(t)
+	server := newTestServer(t, mirror, &testServerOptions{
+		chain: []string{testUpstreamID, testProxyID},
+	})
+	cases := []struct {
+		name       string
+		instanceID string
+	}{
+		{name: "own instance", instanceID: testProxyID},
+		{name: "upstream ancestor", instanceID: testUpstreamID},
+	}
+	for _, testCase := range cases {
+		t.Run("websocket "+testCase.name, func(t *testing.T) {
+			conn, _, err := server.dial(server.pki.clientCertFile, server.pki.clientKeyFile)
+			if err != nil {
+				t.Fatalf("dial: %v", err)
+			}
+			defer conn.Close()
+			writeJSONFrame(t, conn, helloFrame(testCase.instanceID))
+			code, reason := readClose(t, conn)
+			if code != websocket.ClosePolicyViolation || reason != "chain_loop" {
+				t.Fatalf("close = %d %q", code, reason)
+			}
+		})
+		t.Run("poll "+testCase.name, func(t *testing.T) {
+			response, body := server.post(server.defaultClient(),
+				adsync.APIPrefix+"/channel/poll?wait=0", pollBody(t, testCase.instanceID))
+			if response.StatusCode != http.StatusForbidden || string(body) != `{"error":"chain_loop"}` {
+				t.Fatalf("poll = status %d body %s", response.StatusCode, body)
+			}
+			if count := server.server.DownstreamCount(); count != 0 {
+				t.Fatalf("refused polls counted %d sessions", count)
+			}
+		})
+	}
+
+	t.Run("legitimate child", func(t *testing.T) {
+		conn, _, err := server.dial(server.pki.clientCertFile, server.pki.clientKeyFile)
+		if err != nil {
+			t.Fatalf("dial: %v", err)
+		}
+		defer conn.Close()
+		writeJSONFrame(t, conn, helloFrame(testClientInstanceID))
+		if kind, _ := readChannelFrame(t, conn); kind != "ack" {
+			t.Fatalf("first frame = %q", kind)
+		}
+	})
+}
+
 func TestChannelWebSocketFrameValidation(t *testing.T) {
 	mirror, _, _ := newPopulatedMirror(t)
 	server := newTestServer(t, mirror, nil)

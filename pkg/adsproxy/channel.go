@@ -196,6 +196,10 @@ func (s *Server) handleChannel(w http.ResponseWriter, r *http.Request) {
 		closeWithReason(conn, websocket.CloseProtocolError, "invalid hello")
 		return
 	}
+	if s.chainLoop(hello.InstanceID) {
+		closeWithReason(conn, websocket.ClosePolicyViolation, "chain_loop")
+		return
+	}
 	identity.uuid = hello.InstanceID
 	previous, admitted := s.beginChannelSession(identity, conn)
 	if !admitted {
@@ -400,6 +404,12 @@ func (s *Server) handlePoll(w http.ResponseWriter, r *http.Request) {
 	if err := decodeStrict(body, &heartbeat); err != nil || heartbeat.Type != "heartbeat" ||
 		!adsync.ValidInstanceID(heartbeat.InstanceID) {
 		writeError(w, http.StatusBadRequest, "invalid_request", "")
+		return
+	}
+	// A long-poll client never sends a hello frame, so the loop guard applies
+	// to every poll body.
+	if s.chainLoop(heartbeat.InstanceID) {
+		writeError(w, http.StatusForbidden, "chain_loop", "")
 		return
 	}
 	identity := sessionIdentity{fingerprint: certificate.fingerprint, uuid: heartbeat.InstanceID}

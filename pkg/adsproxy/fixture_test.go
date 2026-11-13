@@ -428,6 +428,7 @@ type testServerOptions struct {
 	coalesceWindow time.Duration
 	hub            *Hub
 	paused         func() bool
+	chain          []string
 }
 
 func newTestServer(t *testing.T, mirror *Mirror, options *testServerOptions) *testServer {
@@ -438,6 +439,7 @@ func newTestServer(t *testing.T, mirror *Mirror, options *testServerOptions) *te
 	pki := newTestPKI(t)
 	server, err := NewServer(Config{
 		InstanceID:     testProxyID,
+		Chain:          options.chain,
 		Mirror:         mirror,
 		CoalesceWindow: options.coalesceWindow,
 		Hub:            options.hub,

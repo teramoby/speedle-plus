@@ -146,6 +146,32 @@ func TestNormalizeThresholdsErrors(t *testing.T) {
 	}
 }
 
+func TestNewServerRejectsInvalidChain(t *testing.T) {
+	mirror := newTestMirror(t, nil)
+	for _, testCase := range []struct {
+		name  string
+		chain []string
+	}{
+		{name: "does not end with the instance", chain: []string{testProxyID, testUpstreamID}},
+		{name: "invalid entry", chain: []string{"not-a-uuid", testProxyID}},
+		{name: "repeated entry", chain: []string{testProxyID, testProxyID}},
+	} {
+		_, err := NewServer(Config{InstanceID: testProxyID, Chain: testCase.chain, Mirror: mirror})
+		if !errors.Is(err, ErrConfig) {
+			t.Errorf("%s: %v, want ErrConfig", testCase.name, err)
+		}
+	}
+	server, err := NewServer(Config{
+		InstanceID: testProxyID,
+		Chain:      []string{testUpstreamID, testProxyID},
+		Mirror:     mirror,
+	})
+	if err != nil {
+		t.Fatalf("valid chain: %v", err)
+	}
+	server.Close()
+}
+
 func TestFormatChannelDuration(t *testing.T) {
 	if got := formatChannelDuration(30 * time.Second); got != "30s" {
 		t.Errorf("30s = %q", got)

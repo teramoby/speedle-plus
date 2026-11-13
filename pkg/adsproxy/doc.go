@@ -59,6 +59,11 @@
 // or evicts the legitimate session. DownstreamCount is the number of distinct
 // direct downstream sessions with an active channel or held poll.
 //
+// A downstream that reports this proxy's own instance id, or one of the
+// upstream ancestors in Config.Chain, is refused with chain_loop: accepting it
+// would close a chain loop, for example a relay whose upstream URL points at
+// its own downstream endpoint.
+//
 // # Mirror
 //
 // A Mirror holds the verified snapshot each service was synchronized from and

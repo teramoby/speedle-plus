@@ -38,6 +38,13 @@ type Config struct {
 	// InstanceID is this proxy's stable UUIDv7. The relay reports it in its own
 	// heartbeats; downstream instances never need to match it.
 	InstanceID string
+	// Chain is this proxy's own chain from Cloud to itself, inclusive, as the
+	// proxy reports it upstream: the last entry must be InstanceID. Nil means
+	// just this instance, as for a relay whose upstream is Cloud. A downstream
+	// that reports an instance id from this chain would close a loop — it is
+	// this proxy (an upstream URL aimed at the relay's own downstream
+	// endpoint) or one of its ancestors — and is refused.
+	Chain []string
 	// Mirror holds the verified copies served downstream. It is required.
 	Mirror *Mirror
 	// CoalesceWindow is how long notifications are collected per service.
@@ -76,9 +83,12 @@ type sessionIdentity struct {
 // listener, whose TLS configuration requires and verifies a client certificate.
 type Server struct {
 	instanceID string
-	mirror     *Mirror
-	hub        *Hub
-	ownsHub    bool
+	// loopGuard holds this proxy and its upstream ancestors. A downstream
+	// that reports one of these ids would close a chain loop.
+	loopGuard map[string]struct{}
+	mirror    *Mirror
+	hub       *Hub
+	ownsHub   bool
 
 	heartbeat time.Duration
 	stale     time.Duration
@@ -122,6 +132,23 @@ func NewServer(config Config) (*Server, error) {
 	if !adsync.ValidInstanceID(config.InstanceID) {
 		return nil, fmt.Errorf("%w: InstanceID must be a UUIDv7", ErrConfig)
 	}
+	chain := config.Chain
+	if len(chain) == 0 {
+		chain = []string{config.InstanceID}
+	}
+	if chain[len(chain)-1] != config.InstanceID {
+		return nil, fmt.Errorf("%w: Chain must end with InstanceID", ErrConfig)
+	}
+	loopGuard := make(map[string]struct{}, len(chain))
+	for _, instanceID := range chain {
+		if !adsync.ValidInstanceID(instanceID) {
+			return nil, fmt.Errorf("%w: Chain entries must be UUIDv7 values, got %q", ErrConfig, instanceID)
+		}
+		if _, duplicate := loopGuard[instanceID]; duplicate {
+			return nil, fmt.Errorf("%w: Chain repeats instance %q", ErrConfig, instanceID)
+		}
+		loopGuard[instanceID] = struct{}{}
+	}
 	if config.Mirror == nil {
 		return nil, fmt.Errorf("%w: Mirror is required", ErrConfig)
 	}
@@ -146,6 +173,7 @@ func NewServer(config Config) (*Server, error) {
 	}
 	server := &Server{
 		instanceID:         config.InstanceID,
+		loopGuard:          loopGuard,
 		mirror:             config.Mirror,
 		hub:                hub,
 		ownsHub:            ownsHub,
@@ -299,6 +327,15 @@ func (s *Server) unavailableSignal() <-chan struct{} {
 
 // InstanceID returns this proxy's instance id.
 func (s *Server) InstanceID() string { return s.instanceID }
+
+// chainLoop reports whether a downstream's reported instance id is this proxy
+// or one of its upstream ancestors. Accepting such a channel would close a
+// chain loop: a relay that syncs from its own circle removes services from its
+// authoritative set and stops serving its real children.
+func (s *Server) chainLoop(instanceID string) bool {
+	_, loop := s.loopGuard[instanceID]
+	return loop
+}
 
 // DownstreamCount returns the number of distinct direct downstream sessions
 // with an active channel or held poll. The process reports it in its own
