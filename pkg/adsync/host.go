@@ -12,8 +12,14 @@ import (
 	"time"
 )
 
-// maxHostIPs bounds the addresses reported in the host object.
-const maxHostIPs = 16
+// Bounds of the host object fields. A value beyond its bound, or one with
+// control characters, is sent empty rather than truncated.
+const (
+	maxHostIPs           = 16
+	maxHostnameBytes     = 255
+	maxHostVersionBytes  = 64
+	maxHostPlatformBytes = 32
+)
 
 // HostInfo describes the machine an instance runs on. It is sent in the hello
 // and in every long-poll heartbeat for display only; the source never uses it
@@ -47,6 +53,39 @@ func CollectHostInfo(startedAt time.Time) HostInfo {
 		StartedAt: startedAt.UnixMilli(),
 		Container: inContainer(),
 	}
+}
+
+// bounded returns the host object with every field inside its bound: an
+// oversized or non-printable text field becomes empty and only valid IP
+// literals are kept, at most maxHostIPs of them.
+func (h HostInfo) bounded() HostInfo {
+	h.Hostname = boundedText(h.Hostname, maxHostnameBytes)
+	h.OS = boundedText(h.OS, maxHostPlatformBytes)
+	h.Arch = boundedText(h.Arch, maxHostPlatformBytes)
+	h.OSVersion = boundedText(h.OSVersion, maxHostVersionBytes)
+	h.GoVersion = boundedText(h.GoVersion, maxHostVersionBytes)
+	h.Transport = boundedText(h.Transport, maxHostVersionBytes)
+	ips := make([]string, 0, len(h.IPs))
+	for _, value := range h.IPs {
+		if len(ips) == maxHostIPs {
+			break
+		}
+		if ip := net.ParseIP(value); ip != nil {
+			ips = append(ips, ip.String())
+		}
+	}
+	h.IPs = ips
+	if h.PID < 0 {
+		h.PID = 0
+	}
+	return h
+}
+
+func boundedText(value string, limit int) string {
+	if len(value) > limit || strings.IndexFunc(value, func(r rune) bool { return r < 0x20 || r == 0x7f }) >= 0 {
+		return ""
+	}
+	return value
 }
 
 // osVersion reads PRETTY_NAME from /etc/os-release, falling back to the

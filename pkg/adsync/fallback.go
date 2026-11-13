@@ -32,7 +32,9 @@ const (
 	// flight. A request beyond it is denied, not queued.
 	MaxUpstreamInFlight = 20
 	// MaxUpstreamRetryAfter caps how long a Retry-After from the upstream
-	// suppresses forwarding.
+	// suppresses forwarding. A daily_quota_exceeded answer is the exception:
+	// its Retry-After is honoured in full, up to the next UTC midnight, when
+	// the daily quota resets.
 	MaxUpstreamRetryAfter = 60 * time.Second
 
 	// DecisionSourceUpstream marks a response the upstream produced.
@@ -255,14 +257,20 @@ func (c *Client) recordFallbackOutcome(err error) {
 	retryLater := err != nil && (errors.Is(err, ErrUnavailable) || errors.Is(err, ErrRateLimited) ||
 		errors.Is(err, ErrUnauthorized) || errors.Is(err, ErrForbidden))
 	delay := c.fallbackBackoff
-	// The upstream's Retry-After is honoured on any failure, up to a minute;
-	// requests are denied meanwhile.
+	// The upstream's Retry-After is honoured on any failure, up to a minute,
+	// or up to the next UTC midnight for an exhausted daily quota; requests
+	// are denied meanwhile.
 	var statusErr *fallbackStatusError
 	if errors.As(err, &statusErr) && statusErr.retryAfter > 0 {
 		retryLater = true
 		delay = statusErr.retryAfter
-		if delay > MaxUpstreamRetryAfter {
-			delay = MaxUpstreamRetryAfter
+		limit := MaxUpstreamRetryAfter
+		if statusErr.code == "daily_quota_exceeded" {
+			now := c.now().UTC()
+			limit = time.Date(now.Year(), now.Month(), now.Day()+1, 0, 0, 0, 0, time.UTC).Sub(now)
+		}
+		if delay > limit {
+			delay = limit
 		}
 	}
 	c.fallbackMu.Lock()

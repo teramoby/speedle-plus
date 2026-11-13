@@ -779,13 +779,7 @@ func (c *Channel) helloMessage(transport Transport) channelHello {
 // refreshHost collects the host object again and returns a copy. Collection
 // never fails; a field that cannot be read stays empty.
 func (c *Channel) refreshHost() HostInfo {
-	host := c.hostInfo(c.startedAt)
-	if host.IPs == nil {
-		host.IPs = []string{}
-	}
-	if len(host.IPs) > maxHostIPs {
-		host.IPs = host.IPs[:maxHostIPs]
-	}
+	host := c.hostInfo(c.startedAt).bounded()
 	c.host.Store(&host)
 	return host
 }

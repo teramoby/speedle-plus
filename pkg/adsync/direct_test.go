@@ -6,6 +6,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -302,7 +303,11 @@ func TestChannelMessagesCarryIdentityAndHost(t *testing.T) {
 	f := newFixture(t)
 	machine, _ := newTestMachine(t)
 	client := f.newClient(nil)
-	host := HostInfo{Hostname: "edge-1", OS: "linux", Arch: "amd64", IPs: make([]string, 20), GoVersion: "go1", PID: 7, Container: true}
+	ips := []string{"not-an-ip", "2001:db8::1"}
+	for index := range 20 {
+		ips = append(ips, fmt.Sprintf("10.0.0.%d", index))
+	}
+	host := HostInfo{Hostname: "edge-1", OS: "linux", Arch: "amd64", IPs: ips, GoVersion: "go1", PID: 7, Container: true}
 	channel, err := NewChannel(client, ChannelOptions{
 		Machine: machine, AgentVersion: "test/1",
 		HostInfo: func(time.Time) HostInfo { return host },
@@ -383,6 +388,28 @@ func TestChannelRunFailsWithoutAnIdentity(t *testing.T) {
 	}
 	if f.requestTotal() != 0 {
 		t.Fatal("a request was sent without an identity")
+	}
+}
+
+func TestHostInfoBounds(t *testing.T) {
+	host := HostInfo{
+		Hostname:  strings.Repeat("h", maxHostnameBytes+1),
+		OS:        strings.Repeat("o", maxHostPlatformBytes+1),
+		Arch:      "amd64",
+		OSVersion: "bad\nversion",
+		GoVersion: strings.Repeat("g", maxHostVersionBytes),
+		Transport: strings.Repeat("t", maxHostVersionBytes+1),
+		IPs:       []string{"::1", "999.0.0.1", "192.0.2.1"},
+		PID:       -1,
+	}.bounded()
+	if host.Hostname != "" || host.OS != "" || host.OSVersion != "" || host.Transport != "" || host.PID != 0 {
+		t.Fatalf("oversized fields kept: %+v", host)
+	}
+	if host.Arch != "amd64" || len(host.GoVersion) != maxHostVersionBytes {
+		t.Fatalf("valid fields dropped: %+v", host)
+	}
+	if len(host.IPs) != 2 || host.IPs[0] != "::1" || host.IPs[1] != "192.0.2.1" {
+		t.Fatalf("ips = %v", host.IPs)
 	}
 }
 
@@ -634,7 +661,43 @@ func TestUpstreamHonoursRetryAfterUpToAMinute(t *testing.T) {
 	}
 }
 
-// TestDirectModeKeyNeverAppearsInErrors drives the failure paths that build
+// TestUpstreamHonoursDailyQuotaRetryAfterUntilMidnight honours the full
+// Retry-After of an exhausted daily quota, bounded by the next UTC midnight.
+func TestUpstreamHonoursDailyQuotaRetryAfterUntilMidnight(t *testing.T) {
+	retryAfter := "7200"
+	client := newForwardingClient(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Retry-After", retryAfter)
+		w.WriteHeader(http.StatusTooManyRequests)
+		_, _ = io.WriteString(w, `{"error":"daily_quota_exceeded"}`)
+	})
+	now := time.Date(2026, 11, 13, 12, 0, 0, 0, time.UTC)
+	client.now = func() time.Time { return now }
+	if _, err := client.ForwardFallback(context.Background(), FallbackIsAllowed, []byte(`{}`)); !errors.Is(err, ErrFallbackQuotaExhausted) {
+		t.Fatalf("error = %v", err)
+	}
+	now = now.Add(119 * time.Minute)
+	if client.FallbackAvailable() {
+		t.Fatal("forwarding resumed before the daily quota Retry-After")
+	}
+	now = now.Add(2 * time.Minute)
+	if !client.FallbackAvailable() {
+		t.Fatal("forwarding did not resume after the daily quota Retry-After")
+	}
+	// A Retry-After past midnight is bounded by the quota reset.
+	now = time.Date(2026, 11, 13, 23, 0, 0, 0, time.UTC)
+	retryAfter = "86400"
+	_, _ = client.ForwardFallback(context.Background(), FallbackIsAllowed, []byte(`{}`))
+	now = now.Add(59 * time.Minute)
+	if client.FallbackAvailable() {
+		t.Fatal("forwarding resumed before midnight")
+	}
+	now = now.Add(2 * time.Minute)
+	if !client.FallbackAvailable() {
+		t.Fatal("daily quota Retry-After was not bounded by the next UTC midnight")
+	}
+}
+
+// TestUpstreamKeyNeverAppearsInErrors drives the failure paths that build
 // error messages and checks none of them carries the key.
 func TestUpstreamKeyNeverAppearsInErrors(t *testing.T) {
 	status := http.StatusUnauthorized
