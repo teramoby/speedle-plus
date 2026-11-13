@@ -51,6 +51,28 @@ func newCascadePKI(t *testing.T) *cascadePKI {
 	}
 	return &cascadePKI{ca: ca, key: private, pem: pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: der})}
 }
+
+// newIntermediatePKI returns a CA signed by parent, so a relay chain can carry
+// an issuer that CAFile does not list directly.
+func newIntermediatePKI(t *testing.T, parent *cascadePKI) *cascadePKI {
+	t.Helper()
+	public, private, err := ed25519.GenerateKey(rand.Reader)
+	if err != nil {
+		t.Fatal(err)
+	}
+	now := time.Now()
+	template := &x509.Certificate{SerialNumber: big.NewInt(2), Subject: pkix.Name{CommonName: "cascade intermediate"}, NotBefore: now.Add(-time.Hour), NotAfter: now.Add(time.Hour), KeyUsage: x509.KeyUsageCertSign | x509.KeyUsageCRLSign, IsCA: true, BasicConstraintsValid: true}
+	der, err := x509.CreateCertificate(rand.Reader, template, parent.ca, public, parent.key)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ca, err := x509.ParseCertificate(der)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return &cascadePKI{ca: ca, key: private, pem: pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: der})}
+}
+
 func (p *cascadePKI) issue(t *testing.T, serial int64, usage x509.ExtKeyUsage, host string, expiry time.Time) (tls.Certificate, []byte, []byte) {
 	t.Helper()
 	public, private, err := ed25519.GenerateKey(rand.Reader)

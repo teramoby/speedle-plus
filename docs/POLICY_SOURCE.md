@@ -82,9 +82,10 @@ Restarting with an older, still-valid CRL
 is rejected. Removing a CRL source, including removing every source, is
 rejected while a retained floor's issuer is still in `CAFile`: the reload
 keeps the last valid generation, and startup fails closed until a CRL at or
-above the floor is loaded. A floor whose issuer is no longer in `CAFile` is
-retained for a possible CA rollback but does not constrain the new trust
-domain. Corrupt retained watermarks fail startup; a failed write keeps
+above the floor is loaded. A floor whose issuer is no longer listed in
+`CAFile` is retained for a possible CA rollback, and a relay chain that still
+uses that issuer, including an intermediate supplied by the relay, still
+requires fresh CRL coverage. Corrupt retained watermarks fail startup; a failed write keeps
 the previous generation. Preserve this directory to retain rollback protection,
 and use a separate directory for each running instance. Two CRLs with equal
 number/time but different contents retain separate floors; dropping either

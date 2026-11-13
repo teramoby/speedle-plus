@@ -379,7 +379,7 @@ func (m *clientTLS) verifyConnection(state tls.ConnectionState) error {
 			if certificate.NotAfter.Before(chainExpiry) {
 				chainExpiry = certificate.NotAfter
 			}
-			if len(generation.crls) == 0 || i == len(chain)-1 {
+			if i == len(chain)-1 {
 				continue
 			}
 			covered := false
@@ -397,7 +397,13 @@ func (m *clientTLS) verifyConnection(state tls.ConnectionState) error {
 					}
 				}
 			}
-			valid = valid && covered
+			// Without configured CRLs, revocation is optional except where a
+			// retained floor still applies. The floor's issuer need not be
+			// listed in CAFile: a relay can present an intermediate that
+			// chains to a CAFile root, so the verified chain decides.
+			if !covered && (len(generation.crls) > 0 || m.retainsFloor(chain[i+1])) {
+				valid = false
+			}
 		}
 		if !valid {
 			continue

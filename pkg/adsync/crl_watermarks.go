@@ -100,6 +100,20 @@ func trustedCRLIssuers(caPEM []byte) map[crlIssuer]struct{} {
 	return issuers
 }
 
+// retainsFloor reports whether a verified chain issuer still has a retained
+// CRL watermark. Path building can accept an issuer that is not itself listed
+// in CAFile when it chains to a listed CA, so CAFile membership alone cannot
+// decide whether the issuer is still trusted.
+func (m *clientTLS) retainsFloor(issuer *x509.Certificate) bool {
+	identity := crlIssuer{subject: string(issuer.RawSubject), publicKey: string(issuer.RawSubjectPublicKeyInfo)}
+	for _, floor := range m.crlFloors {
+		if floor.issuer() == identity {
+			return true
+		}
+	}
+	return false
+}
+
 func (m *clientTLS) persistCRLFloors(next *clientTLSGeneration, publish func() error) error {
 	candidates := make([]crlWatermark, 0, len(next.crls))
 	for _, crl := range next.crls {

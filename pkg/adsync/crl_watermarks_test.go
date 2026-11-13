@@ -171,6 +171,56 @@ func TestCascadeCRLDroppedIssuerFailsClosed(t *testing.T) {
 	mustCascadeClient(t, config)
 }
 
+// A retained floor keeps applying when its issuer is no longer listed in
+// CAFile but still chains to a trusted CA: the relay can supply that
+// intermediate, so the verified chain decides.
+func TestCascadeCRLFloorAppliesToUnlistedIntermediate(t *testing.T) {
+	root := newCascadePKI(t)
+	intermediate := newIntermediatePKI(t, root)
+	now := time.Now().Truncate(time.Second)
+	leaf, _, _ := intermediate.issue(t, 2, x509.ExtKeyUsageServerAuth, "127.0.0.1", now.Add(time.Hour))
+	leaf.Certificate = append(leaf.Certificate, intermediate.ca.Raw)
+	relay := cascadeServer(t, root, leaf, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte(`{"servicesVersion":1,"services":[]}`))
+	}))
+	config := cascadeConfig(t, root, relay.URL)
+	directory := filepath.Dir(config.CAFile)
+	config.CAFile = writeTestFile(t, directory, "intermediate.pem", intermediate.pem, 0600)
+	crlPath := writeTestFile(t, t.TempDir(), "intermediate.crl", intermediate.crl(t, 0, 1, now.Add(-time.Minute), now.Add(time.Hour), false), 0600)
+	config.CRLFiles = []string{crlPath}
+	client := mustCascadeClient(t, config)
+	if _, err := client.Services(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	// The intermediate now chains to a CAFile root but is not listed.
+	client.tlsMaterial.configFiles.CAFile = writeTestFile(t, directory, "root.pem", root.pem, 0600)
+	client.tlsMaterial.configFiles.CRLFiles = nil
+	if err := client.ReloadTLS(); err != nil {
+		t.Fatalf("trust-domain change without the listed issuer: %v", err)
+	}
+	if _, err := client.Services(context.Background()); err == nil {
+		t.Fatal("retained floor lapsed for an unlisted intermediate")
+	}
+	// Restoring the issuer and a fresh CRL at or above the floor recovers.
+	client.tlsMaterial.configFiles.CAFile = config.CAFile
+	writeTestFile(t, filepath.Dir(crlPath), "intermediate.crl", intermediate.crl(t, 0, 2, now, now.Add(time.Hour), false), 0600)
+	client.tlsMaterial.configFiles.CRLFiles = []string{crlPath}
+	if err := client.ReloadTLS(); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := client.Services(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	// Revocation through the same issuer is enforced again.
+	writeTestFile(t, filepath.Dir(crlPath), "intermediate.crl", intermediate.crl(t, 2, 3, now, now.Add(time.Hour), false), 0600)
+	if err := client.ReloadTLS(); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := client.Services(context.Background()); err == nil {
+		t.Fatal("revoked leaf accepted through the intermediate")
+	}
+}
+
 // A source that stops answering must keep both the last valid generation and
 // its revocation decision; restoring the source publishes a newer CRL.
 func TestCascadeCRLSourceFailureRetainsGeneration(t *testing.T) {
