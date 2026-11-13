@@ -186,9 +186,10 @@ func TestChannelTransportEndToEnd(t *testing.T) {
 				t.Fatalf("new machine: %v", err)
 			}
 			options := adsync.ChannelOptions{
-				Machine:      machine,
-				AgentVersion: "test",
-				Transport:    transport,
+				Machine:           machine,
+				AgentVersion:      "test",
+				Transport:         transport,
+				HeartbeatInterval: 200 * time.Millisecond,
 			}
 			if transport == adsync.TransportLongPoll {
 				options.PollWait = time.Second
@@ -202,6 +203,10 @@ func TestChannelTransportEndToEnd(t *testing.T) {
 			go func() { done <- channel.Run(ctx) }()
 			waitFor(t, 10*time.Second, "the channel to receive a confirming ack", func() bool {
 				return !machine.Instance().LastConfirmedAckAt.IsZero()
+			})
+			first := machine.Instance().LastConfirmedAckAt
+			waitFor(t, 10*time.Second, "a subsequent heartbeat ack", func() bool {
+				return machine.Instance().LastConfirmedAckAt.After(first)
 			})
 			if services := machine.Services(); len(services) != 2 {
 				t.Errorf("acknowledged services = %+v", services)
