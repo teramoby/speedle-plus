@@ -154,7 +154,8 @@ test('secret-bearing command workflow accepts default-branch events and inline r
   assert.doesNotMatch(router, /\buses:|\bsecrets\.|\bcheckout@|\b(?:upload|download)-artifact|^\s+env:/m);
   assert.match(workflow, /ref: \$\{\{ github.workflow_sha \}\}/);
   assert.match(workflow, /git show "\$\{TRUSTED_SHA\}:\.github\/codex\/reviewbot_response\.py"/);
-  assert.match(workflow, /git show "\$\{TRUSTED_SHA\}:\.github\/codex\/reviewbot_handoff\.py"/);
+  assert.match(workflow, /cd "\$\{RUNNER_TEMP\}"/);
+  assert.match(workflow, /git -C "\$\{GITHUB_WORKSPACE\}" show "\$\{TRUSTED_SHA\}:\.github\/codex\/reviewbot_handoff\.py"/);
   assert.doesNotMatch(workflow, /final_message/);
 });
 test('direct review-comment events cannot enter the secret-bearing command handler', async () => {

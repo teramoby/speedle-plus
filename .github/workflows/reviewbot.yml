@@ -419,9 +419,11 @@ jobs:
           COMMAND: review
         run: |
           set -euo pipefail
-          # Execute only the guard from the immutable trusted workflow revision.
+          # Leave the pull-request checkout. Execute only the guard from the
+          # immutable trusted workflow revision.
+          cd "${RUNNER_TEMP}"
           handoff_guard="${RUNNER_TEMP}/reviewbot-handoff.py"
-          git show "${TRUSTED_SHA}:.github/codex/reviewbot_handoff.py" > "${handoff_guard}"
+          git -C "${GITHUB_WORKSPACE}" show "${TRUSTED_SHA}:.github/codex/reviewbot_handoff.py" > "${handoff_guard}"
           python3 "${handoff_guard}" \
             "${RUNNER_TEMP}/reviewbot-result.json" \
             "${RUNNER_TEMP}/reviewbot-handoff/report.json"

@@ -11,6 +11,9 @@ import sys
 
 
 MAX_BYTES = 262144
+# Shorter values collide with JSON keys and ordinary review words, which would
+# fail every publication. Longer values are still scanned.
+MIN_SECRET_LENGTH = 8
 RETRY_NOTICE = (
     "\n\n_Validation gap: ReviewBot retried after an output-token limit "
     "with unified=3 diff context (initial unified=80)._"
@@ -73,13 +76,15 @@ def seal(result_path, artifact_path):
         # a credential. No value, name, substring, digest or encoding is logged.
         payload = json.dumps(report, ensure_ascii=False)
         for name, secret in secrets.items():
-            # GitHub injects lowercase github_token into toJSON(secrets).
-            # Every other name keeps the repository-secret syntax.
-            if (not isinstance(name, str)
-                    or (name != "github_token" and not re.fullmatch(r"[A-Z][A-Z0-9_]*", name))
-                    or not isinstance(secret, str)):
+            # GitHub secret names start with a letter or underscore. The
+            # secrets context also includes lowercase github_token.
+            if not isinstance(name, str) or not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", name):
+                print("ReviewBot reason_code=secret_name_invalid", file=sys.stderr)
+                return 1
+            if not isinstance(secret, str):
                 raise ValueError()
-            if secret and any(secret in text for text in (payload, *report.values()) if isinstance(text, str)):
+            if (len(secret) >= MIN_SECRET_LENGTH
+                    and any(secret in text for text in (payload, *report.values()) if isinstance(text, str))):
                 print("ReviewBot reason_code=secret_match", file=sys.stderr)
                 return 1
         if len(payload.encode("utf-8")) > MAX_BYTES:

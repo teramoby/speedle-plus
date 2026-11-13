@@ -13,6 +13,7 @@ import unittest
 HELPER = Path(__file__).resolve().parents[2] / ".github/codex/reviewbot_handoff.py"
 REASON_INVALID = "ReviewBot reason_code=invalid_handoff\n"
 REASON_MATCH = "ReviewBot reason_code=secret_match\n"
+REASON_NAME = "ReviewBot reason_code=secret_name_invalid\n"
 
 
 class HandoffTests(unittest.TestCase):
@@ -73,8 +74,7 @@ class HandoffTests(unittest.TestCase):
 
     def test_unrecognized_secret_names_and_non_string_values_fail_closed(self):
         for name in (
-            "ark_api_key", "Github_token", "github_Token", "github_token_extra",
-            "github.token", "github-token", "github_token\n", "_SECRET", "1SECRET", "SÉCRET",
+            "github.token", "github-token", "github_token\n", "1SECRET", "SÉCRET", "has space",
         ):
             with self.subTest(name=name):
                 process, payload, exists = self.seal(env={"REVIEWBOT_SECRETS": json.dumps({
@@ -82,7 +82,11 @@ class HandoffTests(unittest.TestCase):
                     "ARK_API_KEY": "synthetic-ark-credential",
                     name: "synthetic-invalid-name-credential",
                 })})
-                self.assert_invalid(process, payload, exists)
+                self.assertNotEqual(process.returncode, 0)
+                self.assertEqual(payload, "")
+                self.assertFalse(exists)
+                self.assertEqual(process.stdout, "")
+                self.assertEqual(process.stderr, REASON_NAME)
                 self.assertNotIn(name, process.stdout + process.stderr)
                 self.assertNotIn("synthetic-invalid-name-credential", process.stdout + process.stderr)
         for name in ("github_token", "NEW_INHERITED_SECRET"):
@@ -92,6 +96,40 @@ class HandoffTests(unittest.TestCase):
                         "ARK_API_KEY": "synthetic-ark-credential", name: value,
                     })})
                     self.assert_invalid(process, payload, exists)
+
+    def test_github_secret_names_and_short_values_do_not_block_publication(self):
+        for name in ("_DEPLOY_KEY", "_SECRET", "npm_token", "ark_api_key", "Github_token"):
+            with self.subTest(name=name):
+                process, payload, exists = self.seal(env={"REVIEWBOT_SECRETS": json.dumps({
+                    "ARK_API_KEY": "synthetic-ark-credential",
+                    name: "synthetic-allowed-name-credential",
+                })})
+                self.assertEqual(process.returncode, 0, process.stderr)
+                self.assertTrue(exists)
+                self.assertNotIn("synthetic-allowed-name-credential", payload)
+                self.assertEqual(process.stdout + process.stderr, "")
+        for short in ("x", "id", "model"):
+            with self.subTest(short=short):
+                process, payload, exists = self.seal(
+                    {"message": "review mentions id and model", "model": "fixture-model"},
+                    env={"REVIEWBOT_SECRETS": json.dumps({
+                        "ARK_API_KEY": "synthetic-ark-credential",
+                        "SHORT_VALUE": short,
+                    })})
+                self.assertEqual(process.returncode, 0, process.stderr)
+                self.assertTrue(exists)
+                self.assertNotIn("synthetic-ark-credential", payload)
+        process, payload, exists = self.seal(
+            {"message": "leak abcdefgh here", "model": "fixture-model"},
+            env={"REVIEWBOT_SECRETS": json.dumps({
+                "ARK_API_KEY": "synthetic-ark-credential",
+                "MEDIUM_VALUE": "abcdefgh",
+            })})
+        self.assertEqual(process.stderr, REASON_MATCH)
+        self.assertEqual(payload, "")
+        self.assertFalse(exists)
+        self.assertNotIn("abcdefgh", process.stdout + process.stderr)
+        self.assertNotIn("MEDIUM_VALUE", process.stderr)
 
     def test_commands_and_retry_preserve_binding_and_markdown(self):
         for mode in ("review", "recheck", "explain"):
@@ -239,6 +277,7 @@ class HandoffTests(unittest.TestCase):
                     "PULL_NUMBER": "7",
                     "HEAD_SHA": "a" * 40,
                     "COMMAND": "review",
+                    "GITHUB_WORKSPACE": str(repo),
                 }
                 process = subprocess.run(
                     ["bash", "-c", workflow_script(workflow, "Validate and seal review handoff")],

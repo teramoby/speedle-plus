@@ -160,7 +160,10 @@ oversized, malformed or bound to a different review, so a dropped review cannot
 look successful. A disabled configuration, and an existing review of the same
 commit, do not upload an artifact and do not fail publication. The runner
 removes the artifact directory and the other temporary review files after the
-upload and after publication.
+upload and after publication. The seal step runs from the runner temp directory
+and reads the guard with `git -C` from the workspace. The artifact name includes
+the run id and run attempt. Re-running only the publish job does not see the
+earlier attempt's artifact; re-run the workflow.
 
 ## Existing Dependabot integration
 

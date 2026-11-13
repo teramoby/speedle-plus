@@ -37,7 +37,8 @@ test('review text is an artifact, and workflow permissions stay as they were', (
     assert.equal((workflow.match(new RegExp(artifactName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g')) || []).length, 2);
     assert.match(workflow, /retention-days: 1/);
     assert.match(workflow, /if-no-files-found: error/);
-    assert.match(workflow, /git show "\$\{TRUSTED_SHA\}:\.github\/codex\/reviewbot_handoff\.py"/);
+    assert.match(workflow, /cd "\$\{RUNNER_TEMP\}"/);
+    assert.match(workflow, /git -C "\$\{GITHUB_WORKSPACE\}" show "\$\{TRUSTED_SHA\}:\.github\/codex\/reviewbot_handoff\.py"/);
     assert.match(workflow, /rm -rf -- "\$\{RUNNER_TEMP\}\/reviewbot-handoff"/);
     assert.match(workflow, /rm -f -- "\$\{RUNNER_TEMP\}\/reviewbot-handoff\.py"/);
     assert.doesNotMatch(workflow, /actions: write/);
