@@ -77,7 +77,12 @@ blocks reject the replacement as a whole. Per-issuer CRL number/time
 watermarks, bound to the signed DER hash, persist in `CacheDir` as an atomic,
 checksummed `0600` file as part of TLS generation publication.
 Restarting with an older, still-valid CRL
-is rejected. Corrupt retained watermarks fail startup; a failed write keeps
+is rejected. Removing a CRL source, including removing every source, is
+rejected while a retained floor's issuer is still in `CAFile`: the reload
+keeps the last valid generation, and startup fails closed until a CRL at or
+above the floor is loaded. A floor whose issuer is no longer in `CAFile` is
+retained for a possible CA rollback but does not constrain the new trust
+domain. Corrupt retained watermarks fail startup; a failed write keeps
 the previous generation. Preserve this directory to retain rollback protection,
 and use a separate directory for each running instance. Two CRLs with equal
 number/time but different contents retain separate floors; dropping either

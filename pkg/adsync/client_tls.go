@@ -74,13 +74,14 @@ func newClientTLS(ctx context.Context, config Config, host string) (*clientTLS, 
 	}
 	config.RequestTimeout = dialTimeout
 	manager := &clientTLS{configFiles: config, host: host, connections: make(map[*clientTLSConn]struct{}), dialer: net.Dialer{Timeout: dialTimeout, KeepAlive: 30 * time.Second}}
-	if len(config.CRLFiles)+len(config.CRLURLs) > 0 {
-		if _, err := NewCache(config.InstanceIDDir); err != nil {
-			return nil, err
-		}
-		if err := manager.loadCRLFloors(); err != nil {
-			return nil, err
-		}
+	// Retained floors load even without configured CRL sources: a previous
+	// generation may have left them, and removing every source must not
+	// silently disable revocation for an issuer CAFile still trusts.
+	if _, err := NewCache(config.InstanceIDDir); err != nil {
+		return nil, err
+	}
+	if err := manager.loadCRLFloors(); err != nil {
+		return nil, err
 	}
 	if err := manager.reload(ctx); err != nil {
 		return nil, err

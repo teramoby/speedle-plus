@@ -4,7 +4,9 @@ package adsync
 
 import (
 	"bytes"
+	"crypto/x509"
 	"encoding/json"
+	"encoding/pem"
 	"errors"
 	"fmt"
 	"math/big"
@@ -79,16 +81,43 @@ func (m *clientTLS) loadCRLFloors() error {
 	return nil
 }
 
-func (m *clientTLS) persistCRLFloors(next *clientTLSGeneration, publish func() error) error {
-	if len(next.crls) == 0 {
-		return publish()
+// trustedCRLIssuers returns every certificate identity in the generation's
+// explicit CAFile, matching the identity addCRLDER records for a CRL issuer.
+func trustedCRLIssuers(caPEM []byte) map[crlIssuer]struct{} {
+	issuers := make(map[crlIssuer]struct{})
+	for data := caPEM; len(data) > 0; {
+		block, rest := pem.Decode(data)
+		data = rest
+		if block == nil {
+			break
+		}
+		certificate, err := x509.ParseCertificate(block.Bytes)
+		if err != nil {
+			continue
+		}
+		issuers[crlIssuer{subject: string(certificate.RawSubject), publicKey: string(certificate.RawSubjectPublicKeyInfo)}] = struct{}{}
 	}
+	return issuers
+}
+
+func (m *clientTLS) persistCRLFloors(next *clientTLSGeneration, publish func() error) error {
 	candidates := make([]crlWatermark, 0, len(next.crls))
 	for _, crl := range next.crls {
 		issuer := next.crlIssuers[crl]
 		candidates = append(candidates, crlWatermark{Subject: []byte(issuer.subject), PublicKey: []byte(issuer.publicKey), ThisUpdate: crl.ThisUpdate, Number: crl.Number, RawHash: hashOf(crl.Raw)})
 	}
+	// A generation must keep covering every retained floor whose issuer is
+	// still in CAFile. Otherwise removing a CRL source would silently accept
+	// certificates that issuer can sign, and a generation with no CRLs at all
+	// would skip revocation entirely. A floor outside the trust domain is
+	// retained for a possible CA rollback but no longer constrains the
+	// generation: it cannot sign a certificate that verifies against this
+	// CAFile.
+	trusted := trustedCRLIssuers(next.caPEM)
 	for _, old := range m.crlFloors {
+		if _, ok := trusted[old.issuer()]; !ok {
+			continue
+		}
 		sameIssuer, covered := false, false
 		for _, candidate := range candidates {
 			if candidate.issuer() == old.issuer() {
@@ -96,9 +125,15 @@ func (m *clientTLS) persistCRLFloors(next *clientTLSGeneration, publish func() e
 				covered = covered || candidate.covers(old)
 			}
 		}
-		if sameIssuer && !covered {
+		if !sameIssuer {
+			return fmt.Errorf("adsync: no configured relay CRL covers the retained floor for trusted issuer %x", old.Subject)
+		}
+		if !covered {
 			return fmt.Errorf("adsync: refusing an older relay CRL or conflicting retained contents")
 		}
+	}
+	if len(m.crlFloors) == 0 && len(candidates) == 0 {
+		return publish()
 	}
 	floors := append([]crlWatermark(nil), m.crlFloors...)
 	for _, candidate := range candidates {

@@ -5,15 +5,18 @@ package adsync
 import (
 	"bytes"
 	"context"
+	"crypto/tls"
 	"crypto/x509"
 	"encoding/json"
 	"errors"
 	"math/big"
 	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"runtime"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 )
@@ -89,6 +92,135 @@ func TestCascadeCRLUnpublishedGenerationDoesNotAdvanceFloor(t *testing.T) {
 			client.Close()
 			mustCascadeClient(t, config)
 		})
+	}
+}
+
+// Removing every CRL source must not drop a retained floor while its issuer
+// is still in CAFile: the previous generation stays active and restart fails
+// closed until a covering CRL is configured again.
+func TestCascadeCRLSourceRemovalFailsClosed(t *testing.T) {
+	pki := newCascadePKI(t)
+	now := time.Now().Truncate(time.Second)
+	config := cascadeConfig(t, pki, "https://relay.example")
+	path := writeTestFile(t, t.TempDir(), "relay.crl", pki.crl(t, 0, 1, now.Add(-time.Minute), now.Add(time.Hour), false), 0600)
+	config.CRLFiles = []string{path}
+	client := mustCascadeClient(t, config)
+	old := client.tlsMaterial.material
+	client.tlsMaterial.configFiles.CRLFiles = nil
+	client.tlsMaterial.configFiles.CRLURLs = nil
+	if err := client.ReloadTLS(); err == nil || !strings.Contains(err.Error(), "retained floor") {
+		t.Fatalf("reload without CRL sources: %v", err)
+	}
+	client.tlsMaterial.mu.Lock()
+	retained := client.tlsMaterial.material == old
+	client.tlsMaterial.mu.Unlock()
+	if !retained {
+		t.Fatal("removed CRL source displaced the valid generation")
+	}
+	client.tlsMaterial.configFiles.CRLFiles = []string{path}
+	if err := client.ReloadTLS(); err != nil {
+		t.Fatalf("restored CRL source rejected: %v", err)
+	}
+	client.Close()
+	config.CRLFiles = nil
+	if restarted, err := NewClient(config); err == nil || !strings.Contains(err.Error(), "retained floor") {
+		if restarted != nil {
+			restarted.Close()
+		}
+		t.Fatalf("restart without CRL sources: %v", err)
+	}
+	config.CRLFiles = []string{path}
+	mustCascadeClient(t, config)
+}
+
+// Dropping one issuer's source while another source remains is rejected too:
+// its retained floor is still inside the CAFile trust domain.
+func TestCascadeCRLDroppedIssuerFailsClosed(t *testing.T) {
+	pki, other := newCascadePKI(t), newCascadePKI(t)
+	now := time.Now().Truncate(time.Second)
+	config := cascadeConfig(t, pki, "https://relay.example")
+	config.CAFile = writeTestFile(t, filepath.Dir(config.CAFile), "ca-both.pem", append(append([]byte(nil), pki.pem...), other.pem...), 0600)
+	first := writeTestFile(t, t.TempDir(), "first.crl", pki.crl(t, 0, 1, now.Add(-time.Minute), now.Add(time.Hour), false), 0600)
+	second := writeTestFile(t, filepath.Dir(first), "second.crl", other.crl(t, 0, 1, now.Add(-time.Minute), now.Add(time.Hour), false), 0600)
+	config.CRLFiles = []string{first, second}
+	client := mustCascadeClient(t, config)
+	old := client.tlsMaterial.material
+	client.tlsMaterial.configFiles.CRLFiles = []string{first}
+	if err := client.ReloadTLS(); err == nil || !strings.Contains(err.Error(), "retained floor") {
+		t.Fatalf("dropped issuer was accepted: %v", err)
+	}
+	client.tlsMaterial.mu.Lock()
+	retained := client.tlsMaterial.material == old
+	client.tlsMaterial.mu.Unlock()
+	if !retained {
+		t.Fatal("dropped issuer displaced the valid generation")
+	}
+	client.tlsMaterial.configFiles.CRLFiles = []string{first, second}
+	if err := client.ReloadTLS(); err != nil {
+		t.Fatalf("restored issuer source rejected: %v", err)
+	}
+	client.Close()
+	config.CRLFiles = []string{first}
+	if restarted, err := NewClient(config); err == nil || !strings.Contains(err.Error(), "retained floor") {
+		if restarted != nil {
+			restarted.Close()
+		}
+		t.Fatalf("restart without the issuer source: %v", err)
+	}
+	config.CRLFiles = []string{first, second}
+	mustCascadeClient(t, config)
+}
+
+// A source that stops answering must keep both the last valid generation and
+// its revocation decision; restoring the source publishes a newer CRL.
+func TestCascadeCRLSourceFailureRetainsGeneration(t *testing.T) {
+	pki := newCascadePKI(t)
+	now := time.Now().Truncate(time.Second)
+	relayCert, _, _ := pki.issue(t, 2, x509.ExtKeyUsageServerAuth, "127.0.0.1", now.Add(time.Hour))
+	relay := cascadeServer(t, pki, relayCert, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte(`{"servicesVersion":1,"services":[]}`))
+	}))
+	var unavailable atomic.Bool
+	var crl atomic.Value
+	crl.Store(pki.crl(t, 2, 1, now.Add(-time.Minute), now.Add(time.Hour), false))
+	publisher := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if unavailable.Load() {
+			http.Error(w, "unavailable", http.StatusServiceUnavailable)
+			return
+		}
+		w.Write(crl.Load().([]byte))
+	}))
+	cert, _, _ := pki.issue(t, 5, x509.ExtKeyUsageServerAuth, "127.0.0.1", now.Add(time.Hour))
+	publisher.TLS = &tls.Config{Certificates: []tls.Certificate{cert}, MinVersion: tls.VersionTLS12}
+	publisher.StartTLS()
+	defer publisher.Close()
+	config := cascadeConfig(t, pki, relay.URL)
+	config.CRLURLs = []string{publisher.URL}
+	client := mustCascadeClient(t, config)
+	if _, err := client.Services(context.Background()); err == nil {
+		t.Fatal("revoked relay accepted")
+	}
+	old := client.tlsMaterial.material
+	unavailable.Store(true)
+	if err := client.ReloadTLS(); err == nil {
+		t.Fatal("unavailable CRL source replaced the generation")
+	}
+	client.tlsMaterial.mu.Lock()
+	retained := client.tlsMaterial.material == old
+	client.tlsMaterial.mu.Unlock()
+	if !retained {
+		t.Fatal("unavailable CRL source displaced the valid generation")
+	}
+	if _, err := client.Services(context.Background()); err == nil {
+		t.Fatal("revocation dropped when the CRL source failed")
+	}
+	unavailable.Store(false)
+	crl.Store(pki.crl(t, 0, 2, now, now.Add(time.Hour), false))
+	if err := client.ReloadTLS(); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := client.Services(context.Background()); err != nil {
+		t.Fatal(err)
 	}
 }
 
