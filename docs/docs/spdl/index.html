@@ -209,7 +209,7 @@
 
 <h3 id="keywords">Keywords</h3>
 
-<p><code>grant</code>, <code>deny</code>, <code>user</code>, <code>group</code>, <code>entity</code>, <code>role</code>, <code>from</code>, <code>on</code>, <code>if</code> and <code>in</code> have special meanings in their syntax positions. Statement keywords are case-insensitive. In conditions, use <code>in</code> or <code>IN</code>; function names are case-sensitive. Principal, action and resource names are also case-sensitive. The current parser accepts keyword-like names in some name positions, so a blanket prohibition is not a validation rule. Prefer unambiguous names for review and client interoperability.</p>
+<p><code>grant</code>, <code>deny</code>, <code>user</code>, <code>group</code>, <code>entity</code>, <code>role</code>, <code>from</code>, <code>on</code>, <code>if</code> and <code>in</code> are reserved keywords. None of them can be used as a principal name, identity domain, role, action, resource, or attribute or function name in a condition, in any letter case and whether quoted or not; the parser rejects such a statement and names the keyword and its position. In conditions, <code>in</code> and <code>IN</code> are the membership operator; function names are case-sensitive. Principal, action and resource names are also case-sensitive.</p>
 
 <h3 id="naming-convention">Naming Convention</h3>
 

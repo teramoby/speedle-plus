@@ -219,7 +219,7 @@ function runSuite(mode, {listExit = 0, failMatching = '', mysqlOnly = false, doc
     const stub = tool => `#!${process.execPath}
 const fs=require('node:fs');const a=process.argv.slice(2);
 if(${JSON.stringify(tool)}==='bash'&&!String(a[0]).startsWith('scripts/ci/validate-')){const r=require('node:child_process').spawnSync(process.env.FIXTURE_REAL_BASH,a,{stdio:'inherit'});process.exit(r.status===null?1:r.status)}
-if(${JSON.stringify(tool)}==='go'&&a[0]==='env'){console.log(a[1]==='CC'?'true':a[1]==='GOVERSION'?'go1.26.10':process.env.FIXTURE_GOPATH);process.exit(0)}
+if(${JSON.stringify(tool)}==='go'&&a[0]==='env'){console.log(a[1]==='CC'?'true':a[1]==='GOVERSION'?'go1.26.11':process.env.FIXTURE_GOPATH);process.exit(0)}
 if(${JSON.stringify(tool)}==='docker')process.exit(process.env.FIXTURE_DOCKER==='reachable'?0:1)
 if(${JSON.stringify(tool)}==='id'){console.log(a[0]==='-un'?'runner':process.env.FIXTURE_DOCKER==='group'?'runner docker':'runner');process.exit(0)}
 if(${JSON.stringify(tool)}==='go'&&a[0]==='list'){console.log('example.invalid/pkg/a\\nexample.invalid/pkg/store/mongodb\\nexample.invalid/samples/x\\nexample.invalid/pkg/svcs/adsgrpc/pb');process.exit(Number(process.env.FIXTURE_LIST_EXIT))}
@@ -262,8 +262,8 @@ test('gate runs every package once, only store-dependent packages again with etc
   assert.deepEqual(gate.args.slice(0, 6),
     ['scripts/ci/coverage.py', 'coverage.out', '--merge', 'coverage-cli.out', '--min-file', 'scripts/ci/coverage-min.txt']);
   assert.deepEqual(records.filter(r => r.tool === 'python3').slice(1).map(r => r.args), [
-    ['website/tests/check_quick_start.py', '--toolchain', 'go1.26.10'],
-    ['website/tests/check_embedded.py', '--toolchain', 'go1.26.10', '--candidate'],
+    ['website/tests/check_quick_start.py', '--toolchain', 'go1.26.11'],
+    ['website/tests/check_embedded.py', '--toolchain', 'go1.26.11', '--candidate'],
     ['website/tests/check_docs.py'],
   ]);
   for (const record of records) {
@@ -290,7 +290,7 @@ test('package discovery failure cannot turn a partial package list into a green 
   }
 });
 test('nightly runs every suite even after a failure, records checks and fails at the end', () => {
-  const {result, records, checks} = runSuite('nightly', {failMatching: 'go1.26.10'});
+  const {result, records, checks} = runSuite('nightly', {failMatching: 'go1.26.11'});
   assert.equal(result.status, 1);
   assert.equal(goTests(records).length, 0, 'every backend runs through the shared regression engine');
   const file = records.find(r => r.tool === 'python3' && r.args[0] === 'scripts/ci/run-store-tests.py');
@@ -299,8 +299,8 @@ test('nightly runs every suite even after a failure, records checks and fails at
     assert.ok(records.some(r => r.tool === 'bash' && r.args[0] === launcher), launcher);
   }
   for (const backend of ['file', 'etcd', 'mysql', 'mongodb']) assert.match(checks, new RegExp(`^${backend}-full=0:${backend}-full\\.log$`, 'm'));
-  for (const toolchain of ['go1.26.10', 'go1.27.3']) assert.match(checks, new RegExp(`quick-start-${toolchain}=\\d+:`));
-  assert.match(checks, /quick-start-go1\.26\.10=7:/); assert.match(checks, /quick-start-go1\.27\.3=0:/);
+  for (const toolchain of ['go1.26.11', 'go1.27.4']) assert.match(checks, new RegExp(`quick-start-${toolchain}=\\d+:`));
+  assert.match(checks, /quick-start-go1\.26\.11=7:/); assert.match(checks, /quick-start-go1\.27\.4=0:/);
   assert.match(checks, /mysql-full=0:mysql-full\.log/);
   assert.match(checks, /^etcd-docs=0:etcd-docs\.log$/m);
   assert.match(checks, /^mongodb-docs=0:mongodb-docs\.log$/m);
@@ -349,7 +349,7 @@ test('Docker guide checks use the account docker group the runner process lacks'
 });
 test('weekly tests the other supported Go releases, compares benchmarks with the baseline and runs staticcheck', () => {
   const {result, records, checks} = runSuite('weekly'); assert.equal(result.status, 0, result.stderr);
-  assert.equal(goTests(records)[0].env.GOTOOLCHAIN, 'go1.27.3');
+  assert.equal(goTests(records)[0].env.GOTOOLCHAIN, 'go1.27.4');
   assert.ok(goTests(records).some(r => r.args.includes('feature_stress') && r.args.includes('^TestFeatureLargePolicyRoleSets$')));
   const bench = records.find(r => r.tool === 'python3' && r.args[0] === 'scripts/ci/benchmark.py');
   assert.ok(bench, 'the benchmark comparison runs');

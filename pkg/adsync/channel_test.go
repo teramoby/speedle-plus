@@ -1629,7 +1629,10 @@ func TestChannelAppliesShortenedHeartbeatAfterAck(t *testing.T) {
 	source := newChannelSource(t, books)
 	// The source pushes acks, so a cadence change can be announced without
 	// waiting for a heartbeat.
-	source.configure(func(f *channelSource) { f.ackInterval = 500 * time.Millisecond })
+	// Keep acks inside the shortened read timeout (2 * 200ms). Changing
+	// the test-only override between acks otherwise shortens the reader's
+	// deadline before an ack can tell the writer to reset its timers.
+	source.configure(func(f *channelSource) { f.ackInterval = 50 * time.Millisecond })
 	server := startChannelFixture(t, source)
 	client := newChannelClient(t, server)
 
@@ -1642,7 +1645,11 @@ func TestChannelAppliesShortenedHeartbeatAfterAck(t *testing.T) {
 	// must reset the heartbeat timer instead of waiting for it to expire.
 	channel.heartbeatOverride = 10 * time.Second
 	runChannel(t, channel)
-	requireInSync(t, machine, "books")
+	// ApplyAttempt already put books in sync; wait for the actual channel
+	// ack so the writer starts with the original cadence.
+	waitFor(t, 3*time.Second, "the initial channel ack", func() bool {
+		return len(channel.Services()) == 1
+	})
 
 	channel.mu.Lock()
 	channel.heartbeatOverride = 200 * time.Millisecond
