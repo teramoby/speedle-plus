@@ -11,6 +11,7 @@ import (
 	"encoding/asn1"
 	"encoding/pem"
 	"errors"
+	"fmt"
 	"io"
 	"math/big"
 	"net/http"
@@ -112,6 +113,7 @@ func TestCascadeRejectsUnsupportedCriticalCRLExtensions(t *testing.T) {
 	for _, extension := range []pkix.Extension{
 		// issuingDistributionPoint: SEQUENCE { onlyContainsCACerts [2] TRUE }.
 		{Id: asn1.ObjectIdentifier{2, 5, 29, 28}, Critical: true, Value: []byte{0x30, 3, 0x82, 1, 0xff}},
+		{Id: asn1.ObjectIdentifier{2, 5, 29, 28}, Value: []byte{0x30, 3, 0x82, 1, 0xff}},
 		{Id: asn1.ObjectIdentifier{1, 2, 3, 4}, Critical: true, Value: []byte{5, 0}},
 	} {
 		t.Run(extension.Id.String(), func(t *testing.T) {
@@ -128,7 +130,7 @@ func TestCascadeRejectsUnsupportedCriticalCRLExtensions(t *testing.T) {
 				t.Fatal(err)
 			}
 			writeTestFile(t, filepath.Dir(path), "relay.crl", data, 0600)
-			if _, err := NewClient(config); err == nil || !strings.Contains(err.Error(), "critical relay CRL extension "+extension.Id.String()) {
+			if _, err := NewClient(config); err == nil || !strings.Contains(err.Error(), extension.Id.String()) {
 				t.Fatalf("unsupported CRL accepted at startup: %v", err)
 			}
 			if err := client.ReloadTLS(); err == nil {
@@ -467,13 +469,47 @@ func TestCascadeCRLFetchRequiresExplicitTrust(t *testing.T) {
 	defer publisher.Close()
 	roots := x509.NewCertPool()
 	roots.AddCert(pki.ca)
-	if _, err := fetchRelayCRL(context.Background(), publisher.URL, roots); err != nil {
+	if _, err := fetchRelayCRL(context.Background(), publisher.URL, roots, 0); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := fetchRelayCRL(context.Background(), publisher.URL, x509.NewCertPool()); err == nil {
+	if _, err := fetchRelayCRL(context.Background(), publisher.URL, x509.NewCertPool(), 0); err == nil {
 		t.Fatal("empty explicit trust fell back to system roots")
 	}
-	if _, err := fetchRelayCRL(context.Background(), publisher.URL, nil); err == nil {
+	if _, err := fetchRelayCRL(context.Background(), publisher.URL, nil, 0); err == nil {
 		t.Fatal("missing explicit trust accepted")
+	}
+}
+
+func TestCascadeCRLFetchHonorsRequestTimeout(t *testing.T) {
+	pki := newCascadePKI(t)
+	now := time.Now()
+	data := pki.crl(t, 0, 1, now.Add(-time.Minute), now.Add(time.Hour), false)
+	for _, body := range []bool{false, true} {
+		t.Run(fmt.Sprintf("body=%v", body), func(t *testing.T) {
+			publisher := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if body {
+					w.WriteHeader(http.StatusOK)
+					w.(http.Flusher).Flush()
+				}
+				select {
+				case <-time.After(150 * time.Millisecond):
+					w.Write(data)
+				case <-r.Context().Done():
+				}
+			}))
+			cert, _, _ := pki.issue(t, 2, x509.ExtKeyUsageServerAuth, "127.0.0.1", now.Add(time.Hour))
+			publisher.TLS = &tls.Config{Certificates: []tls.Certificate{cert}, MinVersion: tls.VersionTLS12}
+			publisher.StartTLS()
+			defer publisher.Close()
+			config := cascadeConfig(t, pki, "https://relay.example")
+			config.CRLURLs = []string{publisher.URL}
+			config.RequestTimeout = 20 * time.Millisecond
+			if client, err := NewClient(config); err == nil {
+				client.Close()
+				t.Fatal("CRL fetch ignored the short configured stall timeout")
+			}
+			config.RequestTimeout = 2 * time.Second
+			mustCascadeClient(t, config)
+		})
 	}
 }

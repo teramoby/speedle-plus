@@ -55,8 +55,14 @@ addresses for relay certificate revocation checks. When either property is
 present, at least one source is required; omit both properties to disable
 optional revocation checking. For CRL verification,
 `CAFile` must contain each CRL issuer's CA certificate and the trust roots
-for HTTPS CRL hosts. CRL HTTPS fetches use this explicit bundle, matching
-the relay connection trust policy. Configured CRLs must have
+for HTTPS CRL hosts. This is one shared trust domain: every CA added to
+`CAFile` is trusted for both relay certificates and HTTPS CRL hosts. Adding a
+public or enterprise CA for a CRL host also expands relay trust to that CA.
+Use a CRL host under the relay's intended PKI, or download CRLs separately
+and use `CRLFiles` when that expanded trust is unacceptable. No separate CRL
+transport trust bundle is configured. CRL fetches honor `RequestTimeout` for
+TLS handshakes, response headers and gaps between response bytes, with no
+total-transfer deadline. Configured CRLs must have
 trusted signatures and current validity windows. Unsupported critical CRL
 extensions are rejected; delta and scoped CRLs are not supported. Revoked certificates
 and chains without fresh issuer coverage fail verification. `CRLMaxAge`

@@ -70,6 +70,7 @@ func newClientTLS(ctx context.Context, config Config, host string) (*clientTLS, 
 	if dialTimeout == 0 {
 		dialTimeout = defaultRequestTimeout
 	}
+	config.RequestTimeout = dialTimeout
 	manager := &clientTLS{configFiles: config, host: host, connections: make(map[*clientTLSConn]struct{}), dialer: net.Dialer{Timeout: dialTimeout, KeepAlive: 30 * time.Second}}
 	if err := manager.reload(ctx); err != nil {
 		return nil, err
@@ -127,7 +128,7 @@ func (m *clientTLS) load(ctx context.Context) (*clientTLSGeneration, error) {
 			return nil, fmt.Errorf("adsync: CRLURLs must contain HTTPS URLs without credentials, query or fragment")
 		}
 
-		data, err := fetchRelayCRL(ctx, address, generation.roots)
+		data, err := fetchRelayCRL(ctx, address, generation.roots, m.configFiles.RequestTimeout)
 		if err != nil {
 			return nil, err
 		}
@@ -151,6 +152,9 @@ func (g *clientTLSGeneration) addCRL(data []byte, now time.Time, maxAge time.Dur
 	for _, extension := range crl.Extensions {
 		if extension.Id.String() == "2.5.29.27" {
 			return fmt.Errorf("adsync: delta CRLs are not supported")
+		}
+		if extension.Id.String() == "2.5.29.28" {
+			return fmt.Errorf("adsync: scoped relay CRL extension %s is not supported", extension.Id)
 		}
 		if extension.Critical {
 			return fmt.Errorf("adsync: unsupported critical relay CRL extension %s", extension.Id)
@@ -467,13 +471,16 @@ func (c *Client) Close() error {
 }
 
 // fetchRelayCRL has a stall deadline, no response-size or total-transfer cap.
-func fetchRelayCRL(parent context.Context, address string, roots *x509.CertPool) ([]byte, error) {
+func fetchRelayCRL(parent context.Context, address string, roots *x509.CertPool, timeout time.Duration) ([]byte, error) {
 	if roots == nil {
 		return nil, fmt.Errorf("adsync: CRL fetch requires explicit CAFile roots")
 	}
+	if timeout == 0 {
+		timeout = defaultRequestTimeout
+	}
 	ctx, cancel := context.WithCancel(parent)
 	defer cancel()
-	watch := newStallWatch(defaultRequestTimeout, cancel)
+	watch := newStallWatch(timeout, cancel)
 	defer watch.stop()
 	request, err := http.NewRequestWithContext(ctx, http.MethodGet, address, nil)
 	if err != nil {
@@ -483,8 +490,8 @@ func fetchRelayCRL(parent context.Context, address string, roots *x509.CertPool)
 		Proxy:                 http.ProxyFromEnvironment,
 		TLSClientConfig:       &tls.Config{MinVersion: tls.VersionTLS12, RootCAs: roots},
 		ForceAttemptHTTP2:     true,
-		TLSHandshakeTimeout:   defaultRequestTimeout,
-		ResponseHeaderTimeout: defaultRequestTimeout,
+		TLSHandshakeTimeout:   timeout,
+		ResponseHeaderTimeout: timeout,
 	}
 	defer transport.CloseIdleConnections()
 	client := &http.Client{CheckRedirect: rejectRedirect, Transport: transport}
