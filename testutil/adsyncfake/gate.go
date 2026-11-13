@@ -33,9 +33,9 @@ type Source struct {
 	fallbackErr       error
 	forwarded         []Forwarded
 
-	// forwardWhileStale models a store that forwards every request while the
-	// instance is stale.
-	forwardWhileStale bool
+	// staleUntrusted models a store whose stale instance never evaluates
+	// locally.
+	staleUntrusted bool
 
 	// pendingRemovals holds service names whose old copies are still installed
 	// in the evaluator after a removal or rename.
@@ -100,19 +100,19 @@ func (s *Source) SetServiceState(name string, state adsync.SyncState) {
 	s.mu.Unlock()
 }
 
-// SetForwardWhileStale makes the source forward every request while the
-// instance is stale, like the policy-source store does by default.
-func (s *Source) SetForwardWhileStale(forward bool) {
+// SetStaleIsUntrusted makes a stale instance of the source forward or deny
+// every request, like the policy-source store.
+func (s *Source) SetStaleIsUntrusted(untrusted bool) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	s.forwardWhileStale = forward
+	s.staleUntrusted = untrusted
 }
 
-// ForwardWhileStale implements the stale routing hook.
-func (s *Source) ForwardWhileStale() bool {
+// StaleIsUntrusted implements the stale routing hook.
+func (s *Source) StaleIsUntrusted() bool {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	return s.forwardWhileStale
+	return s.staleUntrusted
 }
 
 // SetFallbackAvailable controls whether a syncing service may be forwarded.

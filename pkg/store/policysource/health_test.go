@@ -249,7 +249,7 @@ func TestIntegrityFailureRetriesWithBackoff(t *testing.T) {
 	}
 	head := store.integrity[testServiceID1].head
 	for range 10 {
-		store.recordIntegrityFailure(head)
+		store.recordIntegrityFailure(head, store.integrity[testServiceID1].attempt)
 	}
 	if retry := store.integrity[testServiceID1]; retry.delay != time.Hour {
 		t.Fatalf("delay is not capped: %s", retry.delay)

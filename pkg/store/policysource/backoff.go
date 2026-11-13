@@ -18,10 +18,14 @@ const (
 
 // integrityRetry is the backoff of one integrity-failed service. head is the
 // head the failure was observed at; a different head resets the backoff.
+// attempt is the sync attempt that failed: once a resync, removal or re-add
+// invalidates it, the backoff no longer applies, even if it was written after
+// the resync cleared the previous one.
 type integrityRetry struct {
-	head  adsync.Service
-	delay time.Duration
-	next  time.Time
+	head    adsync.Service
+	attempt adsync.SyncAttempt
+	delay   time.Duration
+	next    time.Time
 }
 
 func (s *Store) now() time.Time {
@@ -44,7 +48,7 @@ func (s *Store) integrityWaiting(service adsync.Service) bool {
 	if !found {
 		return false
 	}
-	if !sameHead(retry.head, service) {
+	if !sameHead(retry.head, service) || !s.machine.AttemptCurrent(retry.attempt) {
 		delete(s.integrity, service.ID)
 		return false
 	}
@@ -52,14 +56,14 @@ func (s *Store) integrityWaiting(service adsync.Service) bool {
 }
 
 // recordIntegrityFailure starts or extends the backoff of service.
-func (s *Store) recordIntegrityFailure(service adsync.Service) {
+func (s *Store) recordIntegrityFailure(service adsync.Service, attempt adsync.SyncAttempt) {
 	s.integrityMu.Lock()
 	defer s.integrityMu.Unlock()
 	delay := integrityRetryInitial
-	if retry, found := s.integrity[service.ID]; found && sameHead(retry.head, service) {
+	if retry, found := s.integrity[service.ID]; found && sameHead(retry.head, service) && retry.attempt == attempt {
 		delay = min(retry.delay*2, integrityRetryMax)
 	}
-	s.integrity[service.ID] = integrityRetry{head: service, delay: delay, next: s.now().Add(delay)}
+	s.integrity[service.ID] = integrityRetry{head: service, attempt: attempt, delay: delay, next: s.now().Add(delay)}
 }
 
 // clearIntegrityRetry drops the backoff of serviceID: its copy verified, or

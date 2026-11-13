@@ -164,3 +164,50 @@ func TestResyncMakesAnInFlightIntegrityFailureObsolete(t *testing.T) {
 		t.Fatalf("a current attempt did not fail the service: %+v", status.Service)
 	}
 }
+
+// TestResyncBetweenFailAndBackoffDropsTheBackoff covers the other order: the
+// attempt fails the service, then a resync clears the backoff and invalidates
+// the attempt, and only then does the old pass write its backoff. That stale
+// backoff must not delay the next pass.
+func TestResyncBetweenFailAndBackoffDropsTheBackoff(t *testing.T) {
+	fixture := newTestFixture(t, booksService())
+	store := fixture.open(nil)
+	fixture.source.publishService("books", func(snapshot *adsync.Snapshot) {
+		snapshot.Policies = []adsync.Policy{policy("p-carol", "carol", "grant user carol read books")}
+	})
+	fixture.source.mutate(func(source *testSource) { source.corruptSnapshotHash = true })
+	if err := store.Sync(nil); !errors.Is(err, adsync.ErrIntegrity) {
+		t.Fatalf("Sync = %v, want an integrity failure", err)
+	}
+	store.mu.RLock()
+	var service adsync.Service
+	for _, discovered := range store.discovered {
+		if discovered.ID == testServiceID1 {
+			service = discovered
+		}
+	}
+	store.mu.RUnlock()
+	store.clearIntegrityRetry(testServiceID1)
+
+	// The interleaving, step by step: the attempt fails the service, a
+	// resync arrives, then the old pass records its backoff.
+	attempt := store.machine.BeginSync(testServiceID1)
+	if !store.machine.FailAttempt(attempt) {
+		t.Fatal("a current attempt did not fail the service")
+	}
+	store.resync(testServiceID1)
+	store.recordIntegrityFailure(service, attempt)
+
+	snapshotPath := "/services/" + testServiceID1 + "/snapshot"
+	before := fixture.source.requestsForSuffix(snapshotPath)
+	_ = store.Sync(nil)
+	if fixture.source.requestsForSuffix(snapshotPath) == before {
+		t.Fatal("a backoff written by an attempt the resync invalidated delayed the next pass")
+	}
+	store.integrityMu.Lock()
+	retry := store.integrity[testServiceID1]
+	store.integrityMu.Unlock()
+	if retry.attempt == attempt || retry.delay != time.Minute {
+		t.Fatalf("backoff after the fresh pass = %+v", retry)
+	}
+}

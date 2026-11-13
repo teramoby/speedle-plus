@@ -349,7 +349,7 @@ func (s *Store) syncService(ctx context.Context, service adsync.Service) error {
 		// its integrity failure obsolete: the next pass fetches again.
 		if stderrors.Is(err, adsync.ErrIntegrity) && s.machine.FailAttempt(attempt) {
 			log.Errorf("policy-source service %q fails closed: its copy does not match the acknowledged head: %v", service.Name, err)
-			s.recordIntegrityFailure(service)
+			s.recordIntegrityFailure(service, attempt)
 		}
 		return fmt.Errorf("service %q: %w", service.Name, err)
 	}
