@@ -74,17 +74,11 @@ const (
 type Options struct {
 	// UpstreamURL is the policy source root. It must use https.
 	UpstreamURL string
-	// APIKey is configuration-only and reserved for registration in #372.
+	// APIKey authenticates every request to the upstream, including
+	// forwarded authorization requests. It is required.
 	APIKey cfg.Secret
-	// Credential is the account-scoped adsi_ instance credential.
-	Credential string
-	// PublicKeys is the out-of-band trust anchor for snapshots and commits.
-	PublicKeys *adsync.PublicKeySet
-	// Services selects the services to synchronize. Nil or ["*"] means every
-	// service the credential can see; otherwise each entry is a service name
-	// or service ULID, and every entry must exist.
-	Services []string
-	// CacheDir enables the optional per-service on-disk copy cache.
+	// CacheDir enables the optional per-service on-disk copy cache and keeps
+	// the instance ID across restarts.
 	CacheDir string
 	// CAFile adds a PEM CA bundle for enterprise TLS inspection.
 	CAFile string
@@ -106,28 +100,20 @@ type Options struct {
 	Clock adsync.Clock
 	// Retry controls retries of idempotent data requests.
 	Retry adsync.RetryPolicy
-	// DisableFallback turns off routing authorization requests for a syncing
-	// service to Cloud. The zero value keeps the fallback enabled, which is
-	// the default.
+	// DisableFallback turns off forwarding authorization requests for a
+	// syncing or stale service to the upstream. The zero value keeps
+	// forwarding enabled, which is the default.
 	DisableFallback bool
-	// FallbackURL and FallbackCredential are the distinct Speedle Cloud
-	// fallback destination and instance credential. Both are required for a
-	// usable fallback; neither is ever inferred from a proxy policy source.
-	FallbackURL        string
-	FallbackCredential string
-	// FallbackHTTPClient optionally supplies Cloud's transport independently
-	// of the policy-source transport, primarily for private test roots.
-	FallbackHTTPClient *http.Client
 
 	// StartRuntime installs the owned channel and reconciliation loops when the
 	// evaluator subscribes to Watch. The registered store builder sets it;
 	// low-level in-process tests may leave it false and drive Sync themselves.
 	StartRuntime bool
-	// InstanceID defaults to the id embedded in Credential. AgentVersion
-	// defaults to speedle-ads. Chain defaults to just InstanceID.
+	// InstanceID fixes the UUIDv7 instance ID, for tests and in-process
+	// users; empty lets the client create one on first use and keep it in
+	// CacheDir. AgentVersion defaults to speedle-ads.
 	InstanceID   string
 	AgentVersion string
-	Chain        []string
 	Transport    adsync.Transport
 	// ReconcilePeriod is the fallback retry cadence. Channel notifications and
 	// acks trigger immediate passes; zero uses a one-minute safety cadence.
@@ -445,13 +431,17 @@ func validateUpstream(options *Options) error {
 	return nil
 }
 
+// removedCredentialEnv is the environment variable that used to carry the
+// instance credential.
+const removedCredentialEnv = "SPEEDLE_ADS_CREDENTIAL"
+
 // rejectRemovedConfig prevents silent acceptance of obsolete distribution settings.
 // Instance identity and service selection are owned by the upstream registration.
 func rejectRemovedConfig(config map[string]interface{}) error {
 	for _, property := range []struct{ key, replacement string }{
 		{PolicySourceURLKey, "use UpstreamURL"},
 		{CredentialFileKey, "use APIKey in the configuration file"},
-		{PublicKeysKey, "trust keys are supplied by registration"},
+		{PublicKeysKey, "signatures are no longer verified"},
 		{ServicesKey, "select services in the Cloud console"},
 		{CloudFallbackURLKey, "use UpstreamURL"},
 		{CloudCredentialFileKey, "use APIKey in the configuration file"},
@@ -461,7 +451,7 @@ func rejectRemovedConfig(config map[string]interface{}) error {
 			return errors.Errorf(errors.ConfigError, "%s has been removed; %s", property.key, property.replacement)
 		}
 	}
-	if _, exists := os.LookupEnv(adsync.CredentialEnv); exists {
+	if _, exists := os.LookupEnv(removedCredentialEnv); exists {
 		return errors.New(errors.ConfigError, "SPEEDLE_ADS_CREDENTIAL has been removed; use APIKey in the configuration file")
 	}
 	return nil

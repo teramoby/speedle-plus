@@ -156,7 +156,10 @@ func TestDiscoveryDataPullsDoNotConfirmLiveness(t *testing.T) {
 	}
 }
 
-func TestFinalIntegrityFailureStopsInstance(t *testing.T) {
+// TestFinalIntegrityFailureFailsOnlyTheService checks that a copy that still
+// does not match the head after a snapshot reload fails that service closed
+// while the instance keeps serving.
+func TestFinalIntegrityFailureFailsOnlyTheService(t *testing.T) {
 	fixture := newTestFixture(t, booksService())
 	store := fixture.open(nil)
 	fixture.source.publishService("books", func(snapshot *adsync.Snapshot) {
@@ -166,12 +169,15 @@ func TestFinalIntegrityFailureStopsInstance(t *testing.T) {
 	if err := store.Sync(nil); !errors.Is(err, adsync.ErrIntegrity) {
 		t.Fatalf("Sync error = %v, want final ErrIntegrity", err)
 	}
-	instance := store.Instance()
-	if instance.Liveness != adsync.LivenessStopped || instance.Reason != adsync.ReasonIntegrityFailure {
+	if instance := store.Instance(); instance.Liveness == adsync.LivenessStopped {
 		t.Fatalf("instance after final integrity failure = %+v", instance)
 	}
-	if err := store.CheckHealth(context.Background()); err == nil || !strings.Contains(err.Error(), string(adsync.ReasonIntegrityFailure)) {
-		t.Fatalf("health after integrity failure = %v", err)
+	status, _ := store.Status("books")
+	if status.Service.State != adsync.SyncStateSyncing || status.Service.Reason != adsync.SyncReasonIntegrity {
+		t.Fatalf("service after final integrity failure = %+v", status.Service)
+	}
+	if err := store.CheckHealth(context.Background()); err != nil {
+		t.Fatalf("health after a per-service integrity failure = %v", err)
 	}
 }
 
@@ -190,7 +196,7 @@ func TestRevokedCredentialStopsTheInstance(t *testing.T) {
 
 	// Revocation is terminal: restoring the credential in the source does not
 	// revive a running process.
-	fixture.source.mutate(func(source *testSource) { source.credential = testCredential })
+	fixture.source.mutate(func(source *testSource) { source.credential = testAPIKey })
 	if err := store.Sync(nil); err != nil {
 		t.Fatal(err)
 	}

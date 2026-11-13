@@ -132,7 +132,7 @@ func TestGRPCSyncingServiceForwards(t *testing.T) {
 		t.Fatalf("response = %+v", response)
 	}
 	marker := stream.header.Get("x-speedle-decision-source")
-	if len(marker) != 1 || marker[0] != svcs.DecisionSourceCloudFallback {
+	if len(marker) != 1 || marker[0] != svcs.DecisionSourceUpstream {
 		t.Fatalf("metadata = %v", stream.header)
 	}
 
@@ -393,7 +393,7 @@ func TestGRPCFallbackDecisionsAreAudited(t *testing.T) {
 			}
 			requestFields, _ := entry["requestValue"].(map[string]interface{})
 			if requestFields["serviceName"] != "orders" || requestFields["operation"] != string(testCase.operation) ||
-				requestFields["decisionSource"] != svcs.DecisionSourceCloudFallback {
+				requestFields["decisionSource"] != svcs.DecisionSourceUpstream {
 				t.Fatalf("audit context = %v", entry)
 			}
 			responseFields, _ := entry["responseValue"].(map[string]interface{})
@@ -418,7 +418,7 @@ func TestGRPCFallbackFailuresAreAudited(t *testing.T) {
 		t.Fatalf("audit entry = %v", entry)
 	}
 	requestFields, _ := entry["requestValue"].(map[string]interface{})
-	if requestFields["serviceName"] != "orders" || requestFields["decisionSource"] != svcs.DecisionSourceCloudFallback {
+	if requestFields["serviceName"] != "orders" || requestFields["decisionSource"] != svcs.DecisionSourceUpstream {
 		t.Fatalf("audit context = %v", entry)
 	}
 	if reason, _ := entry["reason"].(string); reason == "" {
@@ -428,7 +428,7 @@ func TestGRPCFallbackFailuresAreAudited(t *testing.T) {
 
 func TestGRPCDirectModeMarksForwardedDecisionsAsUpstream(t *testing.T) {
 	service, source := newGatedService(t)
-	source.SetDirectMode(true)
+	source.SetForwardWhileStale(true)
 	source.SetFallbackResponse(http.StatusOK, nil, []byte(`{"allowed":true,"reason":0}`))
 	ctx, stream := withRecordingStream(context.Background())
 	if _, err := service.IsAllowed(ctx, gateRequest("orders", "alice")); err != nil {

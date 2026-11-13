@@ -333,7 +333,7 @@ func TestDirectModeRouting(t *testing.T) {
 		t.Fatalf("stale credential route = %+v", route)
 	}
 	// A stale direct-mode instance forwards, or denies without forwarding.
-	source.SetDirectMode(true)
+	source.SetForwardWhileStale(true)
 	if route := gate.Route("books"); route.Kind != RouteFallback {
 		t.Fatalf("stale direct route = %+v", route)
 	}

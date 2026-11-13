@@ -120,20 +120,12 @@ func copyFallbackResponse(w http.ResponseWriter, response *adsync.FallbackRespon
 			header.Add(name, value)
 		}
 	}
-	header.Set(svcs.DecisionSourceHeader, decisionSource(response))
+	header.Set(svcs.DecisionSourceHeader, svcs.DecisionSourceUpstream)
 	if header.Get("Cache-Control") == "" {
 		header.Set("Cache-Control", "no-store")
 	}
 	w.WriteHeader(response.StatusCode)
 	_, _ = w.Write(response.Body)
-}
-
-// decisionSource returns the decision-source marker of a forwarded response.
-func decisionSource(response *adsync.FallbackResponse) string {
-	if response.DecisionSource == adsync.DecisionSourceUpstream {
-		return svcs.DecisionSourceUpstream
-	}
-	return svcs.DecisionSourceCloudFallback
 }
 
 func hopByHopHeader(name string) bool {

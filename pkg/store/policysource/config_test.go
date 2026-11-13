@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/teramoby/speedle-plus/pkg/adsync"
 	speedleerrors "github.com/teramoby/speedle-plus/pkg/errors"
 	"github.com/teramoby/speedle-plus/pkg/store"
 )
@@ -86,16 +87,16 @@ func TestOpenValidatesOptions(t *testing.T) {
 		return options
 	}
 	cases := map[string]Options{
-		"no public keys": with(func(options *Options) { options.PublicKeys = nil }),
-		"no url":         with(func(options *Options) { options.UpstreamURL = "" }),
-		"malformed credential": with(func(options *Options) {
-			options.Credential = "not-a-credential"
+		"no API key": with(func(options *Options) { options.APIKey = "" }),
+		"no url":     with(func(options *Options) { options.UpstreamURL = "" }),
+		"malformed API key": with(func(options *Options) {
+			options.APIKey = "not a key"
 		}),
-		"star mixed with a name": with(func(options *Options) {
-			options.Services = []string{"*", "books"}
+		"ULID instance id": with(func(options *Options) {
+			options.InstanceID = testServiceID1
 		}),
-		"empty service name": with(func(options *Options) {
-			options.Services = []string{""}
+		"serve downstream": with(func(options *Options) {
+			options.ServeDownstream = true
 		}),
 		"heartbeat out of range": with(func(options *Options) {
 			options.HeartbeatInterval = 5 * time.Second
@@ -173,115 +174,67 @@ func writeTestFile(t *testing.T, name string) string {
 	return path
 }
 
-func TestDirectModeConfiguration(t *testing.T) {
+// TestOpenUsesThePersistedInstanceID opens stores the way production does:
+// the instance ID is created on the first request, kept in CacheDir and
+// reused by the next start, and a corrupt ID file fails that request instead
+// of sending one without an identity.
+func TestOpenUsesThePersistedInstanceID(t *testing.T) {
 	fixture := newTestFixture(t, booksService())
-	legacy := fixture.storeProperties()
-	keysFile := legacy[PublicKeysKey].(string)
-
-	// An unchanged v1.7.x property set selects the credential mode.
-	options, err := optionsFromConfig(legacy)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if options.APIKey != "" || options.Credential != testCredential || options.PublicKeys == nil ||
-		options.PolicySourceURL != fixture.server.URL || options.FallbackCredential != testCredential {
-		t.Fatalf("v1.7.x options = %+v", options)
-	}
-
-	direct := map[string]interface{}{UpstreamURLKey: fixture.server.URL, APIKeyKey: testAPIKey}
-	options, err = optionsFromConfig(direct)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if options.APIKey != testAPIKey || options.Credential != "" || options.PublicKeys != nil || options.PolicySourceURL != fixture.server.URL {
-		t.Fatalf("direct options = %+v", options)
-	}
-	direct[PublicKeysKey] = keysFile
-	direct[PolicySourceURLKey] = fixture.server.URL
-	if options, err = optionsFromConfig(direct); err != nil || options.PublicKeys == nil {
-		t.Fatalf("direct options with keys = %+v, %v", options, err)
-	}
-
-	cases := map[string]map[string]interface{}{
-		"conflicting URLs":         {PolicySourceURLKey: fixture.server.URL, UpstreamURLKey: "https://other.example", APIKeyKey: testAPIKey},
-		"no URL":                   {APIKeyKey: testAPIKey},
-		"key is not a string":      {UpstreamURLKey: fixture.server.URL, APIKeyKey: 42},
-		"upstream is not a string": {UpstreamURLKey: 42, APIKeyKey: testAPIKey},
-		"malformed key":            {UpstreamURLKey: fixture.server.URL, APIKeyKey: "bad " + testAPIKey},
-		"key and credential":       {UpstreamURLKey: fixture.server.URL, APIKeyKey: testAPIKey, CredentialFileKey: legacy[CredentialFileKey]},
-		"broken keys file":         {UpstreamURLKey: fixture.server.URL, APIKeyKey: testAPIKey, PublicKeysKey: filepath.Join(t.TempDir(), "absent")},
-	}
-	for name, properties := range cases {
-		t.Run(name, func(t *testing.T) {
-			_, err := optionsFromConfig(properties)
-			wantErrorCode(t, name, err, speedleerrors.ConfigError)
-			if strings.Contains(err.Error(), "directModeSecretValue") {
-				t.Fatal("the error echoes the key")
-			}
-		})
-	}
-}
-
-func TestDirectModeOpenValidation(t *testing.T) {
-	fixture := newTestFixture(t, booksService())
-	base := Options{PolicySourceURL: fixture.server.URL, APIKey: testAPIKey, HTTPClient: fixture.server.Client()}
-
-	withDownstream := base
-	withDownstream.ServeDownstream = true
-	_, err := Open(context.Background(), withDownstream)
-	wantErrorCode(t, "downstream", err, speedleerrors.ConfigError)
-
-	badID := base
-	badID.InstanceID = "01HF7YAT000000000000000A01"
-	_, err = Open(context.Background(), badID)
-	wantErrorCode(t, "ULID instance id", err, speedleerrors.ConfigError)
-
 	cacheDir := filepath.Join(t.TempDir(), "cache")
-	if err := os.MkdirAll(cacheDir, 0o700); err != nil {
-		t.Fatal(err)
+	persisted := func(options *Options) { options.InstanceID = ""; options.CacheDir = cacheDir }
+	first := fixture.open(persisted)
+	defer first.Close()
+	id, err := first.client.InstanceID()
+	if err != nil || !adsync.ValidInstanceID(id) {
+		t.Fatalf("instance id = %q, %v", id, err)
 	}
-	if err := os.WriteFile(filepath.Join(cacheDir, adsync.InstanceIDFile), []byte("garbage"), 0o600); err != nil {
-		t.Fatal(err)
+	second := fixture.open(persisted)
+	defer second.Close()
+	if again, _ := second.client.InstanceID(); again != id {
+		t.Fatalf("restart id = %q, want %q", again, id)
 	}
-	corrupt := base
-	corrupt.CacheDir = cacheDir
-	_, err = Open(context.Background(), corrupt)
-	wantErrorCode(t, "corrupt instance id", err, speedleerrors.ConfigError)
+	if !first.ForwardWhileStale() {
+		t.Fatal("forwarding while stale is off by default")
+	}
 
-	fixed := base
-	fixed.InstanceID = "01a1d38d-8c69-7ac1-b3d6-cb9ade5c63f4"
-	opened, err := Open(context.Background(), fixed)
+	corruptDir := filepath.Join(t.TempDir(), "corrupt")
+	if err := os.MkdirAll(corruptDir, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(corruptDir, adsync.InstanceIDFile), []byte("garbage"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	options := fixture.options
+	options.InstanceID = ""
+	options.CacheDir = corruptDir
+	options.DisableFallback = true
+	before := fixture.source.requestCount()
+	corrupt, err := Open(context.Background(), options)
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer opened.Close()
-	if opened.client.InstanceID() != fixed.InstanceID || !opened.ForwardWhileStale() {
-		t.Fatal("configured instance id or forwarding not used")
+	defer corrupt.Close()
+	if fixture.source.requestCount() != before {
+		t.Fatal("a request was sent without a valid instance id")
 	}
-	if fixture.source.requestCount() != 0 {
-		t.Fatal("a direct-mode store pulled data before its first ack")
-	}
-	// Without a runtime there is no ack, so Sync is a no-op.
-	if err := opened.Sync(context.Background()); err != nil || fixture.source.requestCount() != 0 {
-		t.Fatalf("sync without an ack: %v, %d requests", err, fixture.source.requestCount())
-	}
-	disabled := fixed
-	disabled.DisableFallback = true
-	opened2, err := Open(context.Background(), disabled)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer opened2.Close()
-	if opened2.ForwardWhileStale() {
+	if corrupt.ForwardWhileStale() {
 		t.Fatal("forwarding while stale with forwarding disabled")
 	}
 }
 
-func TestDirectModeServicesOnlyNarrowTheAssignedSet(t *testing.T) {
-	store := &Store{options: Options{APIKey: testAPIKey}, selection: []string{"books", "missing"}}
-	assigned := []adsync.Service{{ID: "01HF7YAT000000000000000201", Name: "books"}, {ID: "01HF7YAT000000000000000202", Name: "orders"}}
-	selected, err := store.selectServices(assigned)
-	if err != nil || len(selected) != 1 || selected[0].Name != "books" {
-		t.Fatalf("selected = %+v, %v", selected, err)
+// TestRuntimeStoreWaitsForTheFirstAck opens a store for the owned runtime: it
+// fetches nothing before the first channel ack, and Sync is a no-op until
+// then.
+func TestRuntimeStoreWaitsForTheFirstAck(t *testing.T) {
+	fixture := newTestFixture(t, booksService())
+	options := fixture.options
+	options.StartRuntime = true
+	opened, err := Open(context.Background(), options)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer opened.Close()
+	if err := opened.Sync(context.Background()); err != nil || fixture.source.requestCount() != 0 {
+		t.Fatalf("sync without an ack: %v, %d requests", err, fixture.source.requestCount())
 	}
 }

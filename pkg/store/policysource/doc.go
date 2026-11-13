@@ -8,15 +8,16 @@
 // /policy-source/v1 data protocol through package adsync, assembles the
 // verified copies of several services into one pms.PolicyStore, and parses
 // each policy body with pkg/pdl. Policy identifiers and names come from the
-// signed snapshot; the local SPDL text is kept only as the parse input.
+// snapshot; the local SPDL text is kept only as the parse input.
 //
 // # Configuration
 //
 // UpstreamURL is the policy-source root. APIKey is accepted only in the
-// configuration file and retained as a redacted secret in Options. Registration,
-// trust-key discovery, API-key authentication and persisted instance identity
-// are implemented separately in #372; this change only defines configuration.
-// In-process callers may supply authenticated Options directly to Open.
+// configuration file and retained as a redacted secret in Options. Every
+// request carries the key and the instance ID, a UUIDv7 the ADS generates on
+// its first request and keeps in CacheDir; without CacheDir every start is a
+// new instance. The upstream registers the instance on its first channel
+// request and assigns its services. ServeDownstream is not supported yet.
 //
 // PolicySourceURL, CredentialFile, SPEEDLE_ADS_CREDENTIAL,
 // PolicySourcePublicKeys, Services, CloudFallbackURL, CloudCredentialFile and
@@ -50,11 +51,10 @@
 //
 // The store implements adsync.RequestGate for the REST and gRPC entry points:
 // it reports the instance and per-service state, and ForwardFallback sends one
-// authorization request to the fallback supplied in authenticated Options
-// with its instance credential. The policy-source
-// URL and credential are never reused implicitly. FallbackWhileSyncing
-// (default true) turns that path off. An authentication failure from Cloud
-// stops the instance as revoked.
+// authorization request to UpstreamURL with the same key while a service is
+// syncing or the instance is stale. FallbackWhileSyncing (default true) turns
+// that path off. An authentication failure from the upstream stops the
+// instance as revoked.
 //
-// The package never logs policy content or credentials.
+// The package never logs policy content or the API key.
 package policysource

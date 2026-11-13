@@ -109,11 +109,7 @@ func (impl *GRPCService) forward(ctx context.Context, operation adsync.FallbackO
 	}
 	// SetHeader is best effort: a direct in-process call has no server
 	// transport stream to carry the metadata.
-	source := svcs.DecisionSourceCloudFallback
-	if response.DecisionSource == adsync.DecisionSourceUpstream {
-		source = svcs.DecisionSourceUpstream
-	}
-	_ = grpc.SetHeader(ctx, metadata.Pairs(strings.ToLower(svcs.DecisionSourceHeader), source))
+	_ = grpc.SetHeader(ctx, metadata.Pairs(strings.ToLower(svcs.DecisionSourceHeader), svcs.DecisionSourceUpstream))
 	return response, nil
 }
 

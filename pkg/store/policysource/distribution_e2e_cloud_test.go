@@ -3,16 +3,13 @@
 package policysource
 
 // This file holds the in-process Speedle Cloud fixture used by the end-to-end
-// distribution suite. It implements the /policy-source/v1 data and channel
-// contract and the /authz-check/v1 fallback endpoint, signs with the fixed
-// test-only Ed25519 key from pkg/adsync/testdata/golden-vectors.json, and can
-// inject the failures the suite has to survive: a disconnected source, a
-// revoked credential, a slow service and a trimmed change log.
+// tests. It implements the /policy-source/v1 data and channel contract and
+// the /authz-check/v1 forwarding endpoint, accepts one API key, and can inject
+// the failures the tests have to survive: a disconnected source, a revoked
+// key, a slow service and a trimmed change log.
 
 import (
-	"crypto/ed25519"
 	"crypto/x509"
-	"encoding/base64"
 	"encoding/json"
 	"encoding/pem"
 	"fmt"
@@ -22,7 +19,6 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
-	"runtime"
 	"sort"
 	"strconv"
 	"strings"
@@ -42,10 +38,6 @@ import (
 )
 
 const (
-	e2eInstanceA = "01HF7YAT000000000000000A01"
-	e2eInstanceB = "01HF7YAT000000000000000B01"
-	e2eInstanceC = "01HF7YAT000000000000000C01"
-
 	e2eServiceBooks  = "01HF7YAT000000000000000201"
 	e2eServiceOrders = "01HF7YAT000000000000000202"
 
@@ -68,77 +60,6 @@ const (
 
 	e2eAgentVersion = "e2e-suite"
 )
-
-// e2eCredential builds a well-formed instance credential for an instance id.
-func e2eCredential(instanceID string, number int) string {
-	return "adsi_" + instanceID + "_" + fmt.Sprintf("%043d", number)
-}
-
-// e2eSource is where an agent connects for policy data and the channel.
-type e2eSource struct {
-	URL        string
-	Credential string
-	CAFile     string
-	Keys       *adsync.PublicKeySet
-}
-
-// e2eSigner signs fixture snapshots and commits with the golden test key.
-type e2eSigner struct {
-	keyID   string
-	private ed25519.PrivateKey
-}
-
-func (s *e2eSigner) sign(message []byte) adsync.Signature {
-	return adsync.Signature{
-		KeyID: s.keyID,
-		Alg:   "Ed25519",
-		Value: base64.StdEncoding.EncodeToString(ed25519.Sign(s.private, message)),
-	}
-}
-
-// e2eLoadSigner reads the fixed test-only key from the golden vectors. The
-// vectors must never be edited; the same file is shared with Speedle Cloud.
-func e2eLoadSigner(t *testing.T) (*e2eSigner, *adsync.PublicKeySet) {
-	t.Helper()
-	_, file, _, ok := runtime.Caller(0)
-	if !ok {
-		t.Fatal("unable to locate the test source file")
-	}
-	path := filepath.Join(filepath.Dir(file), "..", "..", "adsync", "testdata", "golden-vectors.json")
-	data, err := os.ReadFile(path)
-	if err != nil {
-		t.Fatalf("read golden vectors: %v", err)
-	}
-	var vectors struct {
-		TestKey struct {
-			KeyID                string `json:"keyId"`
-			PrivateKeySeedBase64 string `json:"privateKeySeedBase64"`
-			PublicKeyBase64      string `json:"publicKeyBase64"`
-		} `json:"testKey"`
-	}
-	if err := json.Unmarshal(data, &vectors); err != nil {
-		t.Fatalf("parse golden vectors: %v", err)
-	}
-	seed, err := base64.StdEncoding.DecodeString(vectors.TestKey.PrivateKeySeedBase64)
-	if err != nil || len(seed) != ed25519.SeedSize {
-		t.Fatalf("golden private seed is invalid: %v", err)
-	}
-	private := ed25519.NewKeyFromSeed(seed)
-	public, err := base64.StdEncoding.DecodeString(vectors.TestKey.PublicKeyBase64)
-	if err != nil {
-		t.Fatalf("decode golden public key: %v", err)
-	}
-	if !private.Public().(ed25519.PublicKey).Equal(ed25519.PublicKey(public)) {
-		t.Fatal("golden private seed does not match its public key")
-	}
-	keys, err := adsync.NewPublicKeySet(map[string]ed25519.PublicKey{
-		vectors.TestKey.KeyID: ed25519.PublicKey(public),
-	})
-	if err != nil {
-		t.Fatalf("build golden public key set: %v", err)
-	}
-	return &e2eSigner{keyID: vectors.TestKey.KeyID, private: private}, keys
-}
 
 // e2eService is one service held by the fixture. Its fields are guarded by
 // the owning fixture's mutex.
@@ -256,8 +177,8 @@ func e2eApplyChanges(state *adsync.Snapshot, changes []adsync.Change) error {
 	return nil
 }
 
-// publish appends one signed revision. The caller must hold the fixture lock.
-func (s *e2eService) publish(t *testing.T, signer *e2eSigner, changes ...adsync.Change) adsync.Commit {
+// publish appends one revision. The caller must hold the fixture lock.
+func (s *e2eService) publish(t *testing.T, changes ...adsync.Change) adsync.Commit {
 	t.Helper()
 	hash, err := adsync.CommitHash(s.CommitHash, changes)
 	if err != nil {
@@ -270,7 +191,6 @@ func (s *e2eService) publish(t *testing.T, signer *e2eSigner, changes ...adsync.
 		At:       1762500000000 + int64(s.Revision)*1000,
 		Changes:  changes,
 	}
-	commit.Signature = signer.sign(adsync.CommitSignedBytes(s.ID, s.Epoch, commit.Revision, hash))
 	next := e2eCloneSnapshot(s.State)
 	if err := e2eApplyChanges(&next, changes); err != nil {
 		t.Fatalf("fixture apply changes: %v", err)
@@ -344,33 +264,28 @@ func (c *e2eChannelConn) close() {
 // e2eCloud is the in-process Speedle Cloud stand-in.
 type e2eCloud struct {
 	t          *testing.T
-	signer     *e2eSigner
-	keys       *adsync.PublicKeySet
 	server     *httptest.Server
 	caFile     string
 	credential string
 	client     *http.Client
 
-	mu                  sync.Mutex
-	fallbackCredentials map[string]struct{}
-	services            map[string]*e2eService
-	order               []string
-	servicesVersion     int64
-	disconnected        bool
-	revoked             bool
-	commands            []e2eWireCommand
-	commandResults      map[string]string
-	commandSeq          int
-	conns               map[*e2eChannelConn]struct{}
-	requests            []e2eRequest
-	fallbackCalls       int
-	generation          int64
-	evaluator           *e2eEvaluatorEntry
+	mu              sync.Mutex
+	services        map[string]*e2eService
+	order           []string
+	servicesVersion int64
+	disconnected    bool
+	revoked         bool
+	commands        []e2eWireCommand
+	commandResults  map[string]string
+	commandSeq      int
+	conns           map[*e2eChannelConn]struct{}
+	requests        []e2eRequest
+	fallbackCalls   int
+	generation      int64
+	evaluator       *e2eEvaluatorEntry
 	// servicesUnavailable makes the discovery endpoint fail while the channel
 	// and data endpoints keep working.
 	servicesUnavailable bool
-	// unsigned omits every signature, like a source that does not sign.
-	unsigned bool
 	// hellos records every channel hello frame as received.
 	hellos [][]byte
 	// ackHead and ackHash override the head an ack advertises for one
@@ -423,18 +338,12 @@ func e2eOrdersPolicies() []adsync.Policy {
 // newE2ECloud starts a fixture with the books and orders services.
 func newE2ECloud(t *testing.T) *e2eCloud {
 	t.Helper()
-	signer, keys := e2eLoadSigner(t)
 	cloud := &e2eCloud{
-		t:              t,
-		signer:         signer,
-		keys:           keys,
-		credential:     e2eCredential(e2eInstanceA, 1),
-		services:       make(map[string]*e2eService),
-		commandResults: make(map[string]string),
-		conns:          make(map[*e2eChannelConn]struct{}),
-		fallbackCredentials: map[string]struct{}{
-			e2eCredential(e2eInstanceA, 1): {},
-		},
+		t:               t,
+		credential:      testAPIKey,
+		services:        make(map[string]*e2eService),
+		commandResults:  make(map[string]string),
+		conns:           make(map[*e2eChannelConn]struct{}),
 		servicesVersion: 1,
 		upgrader: websocket.Upgrader{
 			ReadBufferSize:  4096,
@@ -470,31 +379,6 @@ func e2eWriteCAFile(t *testing.T, certificate *x509.Certificate) string {
 		t.Fatalf("write CA file: %v", err)
 	}
 	return path
-}
-
-func (f *e2eCloud) source() e2eSource {
-	return e2eSource{
-		URL:        f.server.URL,
-		Credential: f.credential,
-		CAFile:     f.caFile,
-		Keys:       f.keys,
-	}
-}
-
-// fallbackSource returns a Cloud-only credential that is valid for fallback
-// authorization, never for policy synchronization. A downstream proxy token is
-// deliberately not accepted here.
-func (f *e2eCloud) fallbackSource(instanceID string, number int) e2eSource {
-	credential := e2eCredential(instanceID, number)
-	f.mu.Lock()
-	f.fallbackCredentials[credential] = struct{}{}
-	f.mu.Unlock()
-	return e2eSource{
-		URL:        f.server.URL,
-		Credential: credential,
-		CAFile:     f.caFile,
-		Keys:       f.keys,
-	}
 }
 
 func (f *e2eCloud) addServiceLocked(service *e2eService) {
@@ -637,12 +521,12 @@ func (f *e2eCloud) publish(serviceID string, changes ...adsync.Change) uint64 {
 	if service == nil {
 		f.t.Fatalf("fixture has no service %q", serviceID)
 	}
-	service.publish(f.t, f.signer, changes...)
+	service.publish(f.t, changes...)
 	f.generation++
 	return service.Revision
 }
 
-// renameService renames a service and publishes a signed service change, so the
+// renameService renames a service and publishes a service change, so the
 // ack, discovery and snapshot all carry the new name at a new revision.
 func (f *e2eCloud) renameService(serviceID, name string) uint64 {
 	f.mu.Lock()
@@ -652,7 +536,7 @@ func (f *e2eCloud) renameService(serviceID, name string) uint64 {
 		f.t.Fatalf("fixture has no service %q", serviceID)
 	}
 	service.Name = name
-	service.publish(f.t, f.signer,
+	service.publish(f.t,
 		adsync.Change{Op: e2eChangeUpsert, Kind: e2eKindService, ID: serviceID, Name: &name})
 	f.generation++
 	return service.Revision
@@ -947,15 +831,7 @@ func (f *e2eCloud) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	authorization := r.Header.Get("Authorization")
 	isFallback := r.Method == http.MethodPost && strings.HasPrefix(r.URL.Path, adsync.AuthzCheckAPIPrefix)
-	if isFallback {
-		f.mu.Lock()
-		_, allowed := f.fallbackCredentials[strings.TrimPrefix(authorization, "Bearer ")]
-		f.mu.Unlock()
-		if !allowed {
-			e2eWriteCloudError(w, http.StatusUnauthorized, "unauthorized", "")
-			return
-		}
-	} else if authorization != "Bearer "+credential {
+	if authorization != "Bearer "+credential {
 		e2eWriteCloudError(w, http.StatusUnauthorized, "unauthorized", "")
 		return
 	}
@@ -1020,12 +896,6 @@ func (f *e2eCloud) serveSnapshot(w http.ResponseWriter, r *http.Request, service
 		e2eWriteCloudError(w, http.StatusServiceUnavailable, "source_unavailable", "")
 		return
 	}
-	signature := f.signer.sign(adsync.SnapshotSignedBytes(
-		service.ID, service.Epoch, service.Revision, service.StateHash, service.CommitHash,
-	))
-	if f.unsigned {
-		signature = adsync.Signature{}
-	}
 	response := adsync.SnapshotResponse{
 		ServiceID:  service.ID,
 		SourceID:   service.ID,
@@ -1033,7 +903,6 @@ func (f *e2eCloud) serveSnapshot(w http.ResponseWriter, r *http.Request, service
 		Revision:   service.Revision,
 		StateHash:  service.StateHash,
 		CommitHash: service.CommitHash,
-		Signature:  signature,
 		Snapshot:   e2eCloneSnapshot(service.State),
 	}
 	hold := service.Hold
@@ -1086,9 +955,6 @@ func (f *e2eCloud) serveChanges(w http.ResponseWriter, r *http.Request, serviceI
 	for _, commit := range service.Commits {
 		if commit.Revision <= since {
 			continue
-		}
-		if f.unsigned {
-			commit.Signature = adsync.Signature{}
 		}
 		commits = append(commits, commit)
 		if len(commits) == limit {

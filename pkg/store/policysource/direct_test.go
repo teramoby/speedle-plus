@@ -11,10 +11,10 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"sync"
 	"testing"
-	"time"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/teramoby/speedle-plus/pkg/adsync"
@@ -26,20 +26,20 @@ import (
 	"github.com/teramoby/speedle-plus/pkg/svcs/adsrest"
 )
 
-const testAPIKey = "spdl_01HF7YAT000000000000000K01_directModeSecretValue0123456789"
-
-// directCloud turns the e2e Cloud fixture into a direct-mode source: it accepts
-// only the API key, for synchronization and forwarding alike, and signs
-// nothing.
+// directCloud returns the e2e Cloud fixture, which accepts only the API key,
+// for synchronization and forwarding alike.
 func directCloud(t *testing.T) *e2eCloud {
 	t.Helper()
-	cloud := newE2ECloud(t)
-	cloud.mu.Lock()
-	cloud.credential = testAPIKey
-	cloud.fallbackCredentials = map[string]struct{}{testAPIKey: {}}
-	cloud.unsigned = true
-	cloud.mu.Unlock()
-	return cloud
+	return newE2ECloud(t)
+}
+
+func mustInstanceID(t *testing.T, store *Store) string {
+	t.Helper()
+	id, err := store.client.InstanceID()
+	if err != nil {
+		t.Fatal(err)
+	}
+	return id
 }
 
 // startDirectADS builds the registered store from a direct-mode configuration
@@ -165,8 +165,10 @@ func TestDirectModeRegistersSyncsAndServes(t *testing.T) {
 	if chain, ok := hello["chain"].([]interface{}); !ok || len(chain) != 0 {
 		t.Fatalf("hello chain = %v", hello["chain"])
 	}
-	if host, _ := os.Hostname(); host != "" && hello["hostName"] != host {
-		t.Fatalf("hello hostName = %v, want %q", hello["hostName"], host)
+	sentHost, _ := hello["host"].(map[string]interface{})
+	if host, _ := os.Hostname(); sentHost == nil || (host != "" && len(host) <= 255 && sentHost["hostname"] != host) ||
+		sentHost["os"] != runtime.GOOS || sentHost["transport"] != string(adsync.TransportWebSocket) {
+		t.Fatalf("hello host = %v", hello["host"])
 	}
 
 	status, header, body := directIsAllowed(t, server, aliceReadsBooks)
@@ -206,7 +208,7 @@ func TestDirectModeRegistersSyncsAndServes(t *testing.T) {
 	restarted, _ := startDirectADS(t, cloud, cacheDir)
 	defer restarted.Close()
 	e2eWaitAllInSync(t, &e2eAgent{store: restarted}, "books")
-	if readInstanceID(t, cacheDir) != instanceID || restarted.client.InstanceID() != instanceID {
+	if readInstanceID(t, cacheDir) != instanceID || mustInstanceID(t, restarted) != instanceID {
 		t.Fatal("restart changed the instance id")
 	}
 }
@@ -300,7 +302,7 @@ func TestDirectModeForwardsWhileSyncingWithoutLeakingTheKey(t *testing.T) {
 	if cloud.fallbackCount() != 1 {
 		t.Fatalf("fallback calls = %d", cloud.fallbackCount())
 	}
-	instanceID := ads.client.InstanceID()
+	instanceID := mustInstanceID(t, ads)
 	for _, request := range directRequests(cloud) {
 		if strings.HasPrefix(request.Path, adsync.AuthzCheckAPIPrefix) &&
 			(request.Authorization != "Bearer "+testAPIKey || request.Instance != instanceID) {
@@ -318,14 +320,14 @@ func TestDirectModeForwardsWhileSyncingWithoutLeakingTheKey(t *testing.T) {
 	}
 	cloud.release(e2eServiceBooks)
 
-	if strings.Contains(logs.String(), testAPIKey) || strings.Contains(logs.String(), "directModeSecretValue") {
+	if strings.Contains(logs.String(), testAPIKey) || strings.Contains(logs.String(), "storeSecretValue") {
 		t.Fatal("the API key appeared in a log line")
 	}
 	if !strings.Contains(logs.String(), "every restart registers a new instance") {
 		t.Fatal("no warning about the unpersisted instance id")
 	}
 	if _, err := ads.ForwardFallback(context.Background(), adsync.FallbackIsAllowed, aliceReadsBooks.body(t)); err == nil ||
-		strings.Contains(err.Error(), "directModeSecretValue") {
+		strings.Contains(err.Error(), "storeSecretValue") {
 		t.Fatalf("forward error after revocation = %v", err)
 	}
 }
@@ -341,17 +343,18 @@ func TestDirectModeCachedCopyIsNotAuthoritativeBeforeTheFirstAck(t *testing.T) {
 	_ = first.Close()
 
 	options := Options{
-		PolicySourceURL: cloud.server.URL,
-		APIKey:          testAPIKey,
-		CAFile:          cloud.caFile,
-		CacheDir:        cacheDir,
+		UpstreamURL:  cloud.server.URL,
+		APIKey:       testAPIKey,
+		CAFile:       cloud.caFile,
+		CacheDir:     cacheDir,
+		StartRuntime: true,
 	}
 	reopened, err := Open(context.Background(), options)
 	if err != nil {
 		t.Fatalf("reopen: %v", err)
 	}
 	defer reopened.Close()
-	if reopened.client.InstanceID() != readInstanceID(t, cacheDir) {
+	if mustInstanceID(t, reopened) != readInstanceID(t, cacheDir) {
 		t.Fatal("reopened store did not reuse the instance id")
 	}
 	status, known := reopened.Status("books")
@@ -366,54 +369,6 @@ func TestDirectModeCachedCopyIsNotAuthoritativeBeforeTheFirstAck(t *testing.T) {
 	}
 	if count := cloud.countRequests("/snapshot"); count != 2 {
 		t.Fatalf("snapshot pulls = %d; nothing may be pulled before the first ack", count)
-	}
-}
-
-// TestV17ConfigurationIsUnchanged runs an unchanged Engine v1.7.x store
-// configuration (credential file, public keys, separate Cloud fallback)
-// through the client and checks the wire behaviour of a credential instance:
-// no instance header, the credential in every request, the credential
-// instance's hello, and signatures still required.
-func TestV17ConfigurationIsUnchanged(t *testing.T) {
-	cloud := newE2ECloud(t)
-	ads, _ := startProductionADS(t, cloud, nil)
-	agent := &e2eAgent{store: ads}
-	e2eWaitAllInSync(t, agent, "books", "orders")
-	if ads.directMode() || ads.ForwardWhileStale() || !ads.client.SignaturesVerified() {
-		t.Fatal("a v1.7.x configuration selected direct mode")
-	}
-	for _, request := range directRequests(cloud) {
-		if request.Instance != "" {
-			t.Fatalf("credential instance sent an instance header on %s", request.Path)
-		}
-	}
-	if cloud.countRequests(adsync.APIPrefix+"/services") == 0 {
-		t.Fatal("credential instance did not use discovery")
-	}
-	var hello map[string]interface{}
-	hellos := directHellos(cloud)
-	if len(hellos) == 0 || json.Unmarshal(hellos[0], &hello) != nil {
-		t.Fatal("no hello")
-	}
-	if hello["instanceId"] != e2eInstanceA {
-		t.Fatalf("hello instanceId = %v", hello["instanceId"])
-	}
-	if _, found := hello["hostName"]; found {
-		t.Fatalf("credential hello carries direct-mode fields: %s", hellos[0])
-	}
-	if chain, _ := hello["chain"].([]interface{}); len(chain) != 1 || chain[0] != e2eInstanceA {
-		t.Fatalf("hello chain = %v", hello["chain"])
-	}
-
-	// Unsigned data is still rejected.
-	cloud.mu.Lock()
-	cloud.unsigned = true
-	cloud.mu.Unlock()
-	cloud.publish(e2eServiceBooks, e2eUpsertAuthz("p-books-dave-read", "grant user dave read /books/1"))
-	cloud.pushAck()
-	time.Sleep(time.Second)
-	if status, _ := ads.Status("books"); status.Service.Revision == 2 {
-		t.Fatal("a credential instance installed unsigned data")
 	}
 }
 
@@ -432,4 +387,59 @@ func (b *lockedBuffer) String() string {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 	return b.buffer.String()
+}
+
+// TestRuntimeCommandsRemovalAndRevocation drives the owned runtime through the
+// channel commands, a removal from the assigned set and a revoked key.
+func TestRuntimeCommandsRemovalAndRevocation(t *testing.T) {
+	cloud := directCloud(t)
+	ads, server := startDirectADS(t, cloud, filepath.Join(t.TempDir(), "cache"))
+	defer ads.Close()
+	agent := &e2eAgent{store: ads}
+	e2eWaitAllInSync(t, agent, "books", "orders")
+	if ads.DownstreamHandler() != nil || ads.ReloadDownstreamCredentials() != nil {
+		t.Fatal("a store without a downstream server exposes one")
+	}
+	if state := ads.fallbackState(); state.Active || len(state.Services) != 0 {
+		t.Fatalf("fallback state while in sync = %+v", state)
+	}
+
+	acked := func(id string) {
+		t.Helper()
+		e2eWaitFor(t, "command "+id+" to be acked", func() bool {
+			status, found := cloud.commandResult(id)
+			return found && status == "acked"
+		})
+	}
+	acked(cloud.sendCommand("pause", "", nil))
+	e2eWaitFor(t, "the instance to pause", func() bool { return ads.Instance().Paused })
+	acked(cloud.sendCommand("resume", "", nil))
+	e2eWaitFor(t, "the instance to resume", func() bool { return !ads.Instance().Paused })
+	acked(cloud.sendCommand("resync", e2eServiceBooks, nil))
+	e2eWaitAllInSync(t, agent, "books")
+	acked(cloud.sendCommand("resync", "", nil))
+	e2eWaitAllInSync(t, agent, "books", "orders")
+	rejected := cloud.sendCommand("set_source", "", &e2eCommandArgs{URL: "https://other.example", CredentialProfile: "p"})
+	e2eWaitFor(t, "set_source to be rejected", func() bool {
+		status, found := cloud.commandResult(rejected)
+		return found && status == "rejected"
+	})
+
+	// A service removed from the assigned set is dropped locally.
+	cloud.removeService(e2eServiceOrders)
+	cloud.pushAck()
+	e2eWaitFor(t, "orders to be removed", func() bool {
+		status, known := ads.Status("orders")
+		return !known || status.Service.State == adsync.SyncStateRemoved
+	})
+
+	// A revoked key stops the instance for good.
+	cloud.revoke()
+	e2eWaitLiveness(t, agent, adsync.LivenessStopped)
+	if instance := ads.Instance(); instance.Reason != adsync.ReasonRevoked {
+		t.Fatalf("instance after revocation = %+v", instance)
+	}
+	if status, _, _ := directIsAllowed(t, server, aliceReadsBooks); status == http.StatusOK {
+		t.Fatal("a stopped instance answered locally")
+	}
 }

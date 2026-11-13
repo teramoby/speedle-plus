@@ -33,9 +33,9 @@ type Source struct {
 	fallbackErr       error
 	forwarded         []Forwarded
 
-	// direct models a direct-mode (API key) store: it forwards while stale
-	// and marks forwarded responses as upstream decisions.
-	direct bool
+	// forwardWhileStale models a store that forwards every request while the
+	// instance is stale.
+	forwardWhileStale bool
 
 	// pendingRemovals holds service names whose old copies are still installed
 	// in the evaluator after a removal or rename.
@@ -100,18 +100,19 @@ func (s *Source) SetServiceState(name string, state adsync.SyncState) {
 	s.mu.Unlock()
 }
 
-// SetDirectMode makes the source behave like a direct-mode store.
-func (s *Source) SetDirectMode(direct bool) {
+// SetForwardWhileStale makes the source forward every request while the
+// instance is stale, like the policy-source store does by default.
+func (s *Source) SetForwardWhileStale(forward bool) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	s.direct = direct
+	s.forwardWhileStale = forward
 }
 
-// ForwardWhileStale implements the direct-mode routing hook.
+// ForwardWhileStale implements the stale routing hook.
 func (s *Source) ForwardWhileStale() bool {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	return s.direct
+	return s.forwardWhileStale
 }
 
 // SetFallbackAvailable controls whether a syncing service may be forwarded.
@@ -185,12 +186,10 @@ func (s *Source) ForwardFallback(_ context.Context, operation adsync.FallbackOpe
 		header = http.Header{"Content-Type": []string{"application/json"}}
 	}
 	response := &adsync.FallbackResponse{
-		StatusCode: status,
-		Header:     header.Clone(),
-		Body:       append([]byte(nil), s.fallbackBody...),
-	}
-	if s.direct {
-		response.DecisionSource = adsync.DecisionSourceUpstream
+		StatusCode:     status,
+		Header:         header.Clone(),
+		Body:           append([]byte(nil), s.fallbackBody...),
+		DecisionSource: adsync.DecisionSourceUpstream,
 	}
 	return response, nil
 }

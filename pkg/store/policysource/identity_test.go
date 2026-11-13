@@ -23,7 +23,7 @@ func TestUpstreamConfiguration(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if options.UpstreamURL != "https://source.example" || options.APIKey != "configuration-only-key" || options.InstanceID != "" || options.Credential != "" || options.PublicKeys != nil || len(options.Services) != 0 {
+		if options.UpstreamURL != "https://source.example" || options.APIKey != "configuration-only-key" || options.InstanceID != "" {
 			t.Fatalf("unexpected options: %+v", options)
 		}
 	}

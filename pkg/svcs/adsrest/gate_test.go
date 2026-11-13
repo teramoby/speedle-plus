@@ -108,7 +108,7 @@ func TestSyncingServiceForwardsTheRequestUnchanged(t *testing.T) {
 	if got := rec.Body.String(); got != string(cloudBody) {
 		t.Fatalf("body %q, want the Cloud bytes %q", got, cloudBody)
 	}
-	if rec.Header().Get(svcs.DecisionSourceHeader) != svcs.DecisionSourceCloudFallback {
+	if rec.Header().Get(svcs.DecisionSourceHeader) != svcs.DecisionSourceUpstream {
 		t.Fatalf("marker = %q", rec.Header().Get(svcs.DecisionSourceHeader))
 	}
 	if rec.Header().Get("X-Cloud-Trace") != "trace-1" {
@@ -422,7 +422,7 @@ func TestFallbackDecisionsAreAudited(t *testing.T) {
 				t.Fatalf("audit entry = %v", entry)
 			}
 			if entry["serviceName"] != "orders" || entry["operation"] != string(testCase.operation) ||
-				entry["decisionSource"] != svcs.DecisionSourceCloudFallback {
+				entry["decisionSource"] != svcs.DecisionSourceUpstream {
 				t.Fatalf("audit context = %v", entry)
 			}
 			if _, found := entry[testCase.resultKey]; !found {
@@ -449,7 +449,7 @@ func TestFallbackFailuresAreAudited(t *testing.T) {
 	if entry["msg"] != "[AUDIT]IsAllowed" || entry["level"] != "error" || entry["response"] != "failed" {
 		t.Fatalf("audit entry = %v", entry)
 	}
-	if entry["serviceName"] != "orders" || entry["decisionSource"] != svcs.DecisionSourceCloudFallback {
+	if entry["serviceName"] != "orders" || entry["decisionSource"] != svcs.DecisionSourceUpstream {
 		t.Fatalf("audit context = %v", entry)
 	}
 	if reason, _ := entry["reason"].(string); !strings.Contains(reason, adsync.ErrUnavailable.Error()) {
@@ -459,7 +459,7 @@ func TestFallbackFailuresAreAudited(t *testing.T) {
 
 func TestDirectModeMarksForwardedDecisionsAsUpstream(t *testing.T) {
 	router, source := newGatedRouter(t)
-	source.SetDirectMode(true)
+	source.SetForwardWhileStale(true)
 	source.SetFallbackResponse(http.StatusOK, nil, []byte(`{"allowed":true,"reason":0}`))
 	rec := postRaw(t, router, "is-allowed", `{"serviceName":"orders","resource":"order:1","action":"read"}`)
 	if rec.Code != http.StatusOK || rec.Header().Get(svcs.DecisionSourceHeader) != svcs.DecisionSourceUpstream {

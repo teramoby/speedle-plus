@@ -14,11 +14,7 @@ const (
 	// is informational only; callers must not make a security decision from
 	// it.
 	DecisionSourceHeader = "X-Speedle-Decision-Source"
-	// DecisionSourceCloudFallback marks a response that Speedle Cloud produced
-	// while the local service was syncing.
-	DecisionSourceCloudFallback = "cloud-fallback"
-	// DecisionSourceUpstream marks a response the upstream produced for a
-	// direct-mode (API key) instance while the local service was syncing or
-	// the instance was stale.
+	// DecisionSourceUpstream marks a response the upstream produced while the
+	// local service was syncing or the instance was stale.
 	DecisionSourceUpstream = "upstream"
 )

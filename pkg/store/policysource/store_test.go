@@ -815,33 +815,6 @@ func TestRemovedServiceIsDropped(t *testing.T) {
 	}
 }
 
-func TestSelectedServicesOnly(t *testing.T) {
-	fixture := newTestFixture(t, booksService(), ordersService())
-	store := fixture.open(func(options *Options) {
-		options.Services = []string{"books"}
-	})
-
-	policyStore := mustRead(t, store)
-	if len(policyStore.Services) != 1 || policyStore.Services[0].Name != "books" {
-		t.Fatalf("services %+v", policyStore.Services)
-	}
-	if _, known := store.Status("orders"); known {
-		t.Fatal("an unselected service is tracked")
-	}
-	if count := fixture.source.requestsForSuffix("/services/" + testServiceID2 + "/snapshot"); count != 0 {
-		t.Fatalf("an unselected service was synchronized %d times", count)
-	}
-
-	// A selection by service ULID works too and survives a rename.
-	renamed := fixture.open(func(options *Options) {
-		options.Services = []string{testServiceID2}
-	})
-	policyStore = mustRead(t, renamed)
-	if len(policyStore.Services) != 1 || policyStore.Services[0].Name != "orders" {
-		t.Fatalf("services selected by id %+v", policyStore.Services)
-	}
-}
-
 func TestWatchStopAndRestart(t *testing.T) {
 	fixture := newTestFixture(t, booksService())
 	store := fixture.open(nil)
