@@ -193,6 +193,9 @@ type Client struct {
 // NewClient validates the configuration and builds the HTTP transport.
 func NewClient(config Config) (*Client, error) {
 	if config.APIKey != "" {
+		if config.TLSReloadInterval != 0 || config.CRLFiles != nil || config.CRLURLs != nil || config.CRLRefreshInterval != 0 || config.CRLMaxAge != 0 {
+			return nil, fmt.Errorf("adsync: TLSReloadInterval, CRLFiles, CRLURLs, CRLRefreshInterval and CRLMaxAge require cascade mode (no APIKey)")
+		}
 		if err := ValidateAPIKey(config.APIKey); err != nil {
 			return nil, err
 		}

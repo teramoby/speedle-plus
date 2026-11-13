@@ -107,3 +107,14 @@ func TestCascadeTLSProperties(t *testing.T) {
 		}
 	}
 }
+
+func TestDirectModeRejectsCascadeTLSPropertyPresence(t *testing.T) {
+	for _, key := range []string{TLSReloadIntervalKey, CRLFilesKey, CRLURLsKey, CRLRefreshIntervalKey, CRLMaxAgeKey} {
+		for _, value := range []interface{}{nil, "", "0s", []string{}} {
+			properties := map[string]interface{}{UpstreamURLKey: "https://source.example", APIKeyKey: testAPIKey, key: value}
+			if _, err := optionsFromConfig(properties); err == nil || !strings.Contains(err.Error(), key) {
+				t.Fatalf("ignored %s: %v", key, err)
+			}
+		}
+	}
+}

@@ -224,3 +224,64 @@ func TestCascadeCRLReloadWithMultipleSourcesAndIssuerRotation(t *testing.T) {
 		t.Fatalf("CA key rotation rejected: %v", err)
 	}
 }
+
+func TestCascadeCRLFetchIgnoresGlobalTransportAndCancelsProgress(t *testing.T) {
+	pki := newCascadePKI(t)
+	now := time.Now()
+	data := pki.crl(t, 0, 1, now.Add(-time.Minute), now.Add(time.Hour), false)
+	var stream atomic.Bool
+	started := make(chan struct{}, 1)
+	publisher := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !stream.Load() {
+			w.Write(data)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+		w.(http.Flusher).Flush()
+		select {
+		case started <- struct{}{}:
+		default:
+		}
+		ticker := time.NewTicker(5 * time.Millisecond)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-r.Context().Done():
+				return
+			case <-ticker.C:
+				w.Write([]byte("progress"))
+				w.(http.Flusher).Flush()
+			}
+		}
+	}))
+	cert, _, _ := pki.issue(t, 2, x509.ExtKeyUsageServerAuth, "127.0.0.1", now.Add(time.Hour))
+	publisher.TLS = &tls.Config{Certificates: []tls.Certificate{cert}, MinVersion: tls.VersionTLS12}
+	publisher.StartTLS()
+	defer publisher.Close()
+	oldTransport := http.DefaultTransport
+	http.DefaultTransport = roundTripFunc(func(*http.Request) (*http.Response, error) { panic("global default transport must not be used") })
+	defer func() { http.DefaultTransport = oldTransport }()
+	config := cascadeConfig(t, pki, "https://relay.example")
+	config.CRLURLs = []string{publisher.URL}
+	config.TLSReloadInterval = 5 * time.Millisecond
+	client := mustCascadeClient(t, config)
+	if client.tlsMaterial.config().ClientSessionCache != nil {
+		t.Fatal("cascade client enables TLS session resumption")
+	}
+	stream.Store(true)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	done := make(chan struct{})
+	go func() { defer close(done); client.WatchTLS(ctx, nil) }()
+	select {
+	case <-started:
+	case <-time.After(time.Second):
+		t.Fatal("CRL refresh did not start")
+	}
+	cancel()
+	select {
+	case <-done:
+	case <-time.After(time.Second):
+		t.Fatal("progressing CRL download prevented watcher shutdown")
+	}
+}

@@ -7,7 +7,8 @@ implementations keep their existing behavior.
 Direct mode uses `APIKey` and one HTTPS `UpstreamURL`. Cascade mode omits
 `APIKey` and requires `ClientCertFile`, `ClientKeyFile`, `CAFile` and `CacheDir`.
 A cascade client sends its generated instance ID and authenticates with its
-certificate; it sends no Authorization bearer header.
+certificate; it sends no Authorization bearer header. `TLSReloadInterval` and
+the `CRL*` properties are cascade-only; direct mode rejects these settings.
 
 ```json
 {
@@ -45,7 +46,8 @@ retains the last valid generation. Certificate expiry closes connections even
 when they remain active.
 
 Optional `CRLFiles` and `CRLURLs` contain local full X.509 CRLs and HTTPS CRL
-addresses for relay certificate revocation checks. Configured CRLs must have
+addresses for relay certificate revocation checks. For CRL verification,
+`CAFile` must contain each CRL issuer's CA certificate. Configured CRLs must have
 trusted signatures and current validity windows. Revoked relay certificates
 and chains without fresh issuer coverage fail verification. `CRLMaxAge`
 defaults to 24 hours for CRLs without `NextUpdate`. The TLS poll and SIGHUP also

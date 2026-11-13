@@ -206,6 +206,14 @@ func optionsFromConfig(config map[string]interface{}) (options Options, err erro
 		options.APIKey = cfg.Secret(value)
 	}
 
+	if options.APIKey != "" {
+		for _, key := range []string{TLSReloadIntervalKey, CRLFilesKey, CRLURLsKey, CRLRefreshIntervalKey, CRLMaxAgeKey} {
+			if _, present := config[key]; present {
+				return options, errors.Errorf(errors.ConfigError, "%s requires cascade mode without APIKey", key)
+			}
+		}
+	}
+
 	for _, property := range []struct {
 		key    string
 		target *string

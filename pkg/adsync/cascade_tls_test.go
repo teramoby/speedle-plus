@@ -311,3 +311,19 @@ func TestCascadePollAndSignalReload(t *testing.T) {
 		})
 	}
 }
+
+func TestDirectModeRejectsCascadeTLSSettings(t *testing.T) {
+	for _, change := range []func(*Config){
+		func(c *Config) { c.TLSReloadInterval = time.Second },
+		func(c *Config) { c.CRLFiles = []string{} },
+		func(c *Config) { c.CRLURLs = []string{"http://invalid.example/crl"} },
+		func(c *Config) { c.CRLRefreshInterval = time.Hour },
+		func(c *Config) { c.CRLMaxAge = 24 * time.Hour },
+	} {
+		config := Config{BaseURL: "https://source.example", APIKey: testAPIKey}
+		change(&config)
+		if _, err := NewClient(config); err == nil || !strings.Contains(err.Error(), "cascade") {
+			t.Fatalf("ignored direct mode security setting: %v", err)
+		}
+	}
+}

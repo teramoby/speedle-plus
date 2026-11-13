@@ -451,8 +451,13 @@ func fetchRelayCRL(parent context.Context, address string, caPEM []byte) ([]byte
 		roots = x509.NewCertPool()
 	}
 	roots.AppendCertsFromPEM(caPEM)
-	transport := http.DefaultTransport.(*http.Transport).Clone()
-	transport.TLSClientConfig = &tls.Config{MinVersion: tls.VersionTLS12, RootCAs: roots}
+	transport := &http.Transport{
+		Proxy:                 http.ProxyFromEnvironment,
+		TLSClientConfig:       &tls.Config{MinVersion: tls.VersionTLS12, RootCAs: roots},
+		ForceAttemptHTTP2:     true,
+		TLSHandshakeTimeout:   defaultRequestTimeout,
+		ResponseHeaderTimeout: defaultRequestTimeout,
+	}
 	defer transport.CloseIdleConnections()
 	client := &http.Client{CheckRedirect: rejectRedirect, Transport: transport}
 	response, err := client.Do(request)
