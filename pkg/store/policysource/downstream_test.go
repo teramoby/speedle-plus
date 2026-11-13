@@ -461,6 +461,52 @@ func TestObservedCandidatesStayWithheldUntilPublished(t *testing.T) {
 	}
 }
 
+// TestPublishDownstreamRefusesADifferentCommitHistory covers a source that
+// serves the same revision and state hash with another commit history. The
+// mirror rejects the second history, so the withhold must stay instead of
+// clearing it for the copy the mirror still holds.
+func TestPublishDownstreamRefusesADifferentCommitHistory(t *testing.T) {
+	fixture := newTestFixture(t, booksService())
+	store := fixture.open(func(options *Options) { options.ServeDownstream = true })
+	defer store.Close()
+	verified, found := store.syncer.State(testServiceID1)
+	if !found {
+		t.Fatal("the store has no verified state")
+	}
+	other := *verified
+	other.CommitHash[0] ^= 0xff
+	store.withholdDownstream(testServiceID1)
+	store.publishDownstream(&other)
+	if _, availability := store.downstream.mirror.Lookup(testServiceID1); availability == adsproxy.ServiceAvailable {
+		t.Fatal("a copy with a different commit history was published")
+	}
+	store.publishDownstream(verified)
+	if _, availability := store.downstream.mirror.Lookup(testServiceID1); availability != adsproxy.ServiceAvailable {
+		t.Fatal("the verified state did not publish")
+	}
+}
+
+// TestServeDownstreamDropsServicesRemovedByAChannelAck covers the runtime
+// removal path: an ack that drops a service must remove it from the mirror
+// immediately, before the next discovery pass.
+func TestServeDownstreamDropsServicesRemovedByAChannelAck(t *testing.T) {
+	fixture := newTestFixture(t, booksService(), ordersService())
+	store := fixture.open(func(options *Options) { options.ServeDownstream = true })
+	defer store.Close()
+	if _, availability := store.downstream.mirror.Lookup(testServiceID2); availability != adsproxy.ServiceAvailable {
+		t.Fatalf("orders availability before the ack = %v", availability)
+	}
+	store.applyServiceSetChange(adsync.ServiceSetChange{
+		Removed: []adsync.Service{{ID: testServiceID2, Name: "orders"}},
+	})
+	if _, availability := store.downstream.mirror.Lookup(testServiceID2); availability != adsproxy.ServiceRemoved {
+		t.Fatalf("orders availability after the ack = %v, want ServiceRemoved", availability)
+	}
+	if services := store.downstream.mirror.Services(); len(services) != 1 || services[0].ID != testServiceID1 {
+		t.Fatalf("advertised services after the ack = %+v", services)
+	}
+}
+
 // waitForCondition polls a condition until it holds or the timeout expires.
 func waitForCondition(t *testing.T, timeout time.Duration, description string, condition func() bool) {
 	t.Helper()

@@ -500,11 +500,14 @@ func (s *Store) publishDownstream(state *adsync.ServiceState) {
 }
 
 // downstreamMirrorMatches reports whether the mirror holds exactly the identity
-// and revision of one verified state.
+// and revision of one verified state. The commit hash is part of the identity:
+// the mirror rejects a second commit history at the same state hash, so a copy
+// anchored to a different history must not be made servable for this state.
 func (s *Store) downstreamMirrorMatches(state *adsync.ServiceState) bool {
 	info, found := s.downstream.mirror.CurrentInfo(state.ServiceID)
-	return found && info.Epoch == state.Epoch && info.Revision == state.Revision &&
-		info.StateHash == state.StateHash
+	return found && info.SourceID == state.SourceID && info.Epoch == state.Epoch &&
+		info.Revision == state.Revision && info.StateHash == state.StateHash &&
+		info.CommitHash == state.CommitHash
 }
 
 // withholdDownstream stops serving one service to downstream instances while
