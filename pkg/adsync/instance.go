@@ -13,6 +13,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"syscall"
 	"time"
 )
 
@@ -44,48 +45,147 @@ func ValidInstanceID(value string) bool {
 }
 
 // LoadOrCreateInstanceID returns the instance ID stored in dir, creating and
-// atomically persisting a new one (mode 0600) when none exists yet. The
+// exclusively persisting a new one (mode 0600) when none exists yet. The
 // boolean reports whether the ID was created by this call. A file that exists
 // but does not hold a valid ID is an error: replacing it silently would
 // register a second instance.
 func LoadOrCreateInstanceID(dir string) (string, bool, error) {
+	return loadOrCreateInstanceID(dir, os.Link)
+}
+
+func loadOrCreateInstanceID(dir string, link func(string, string) error) (string, bool, error) {
 	if dir == "" {
 		return "", false, fmt.Errorf("adsync: instance id directory is empty")
 	}
 	if err := os.MkdirAll(dir, 0o700); err != nil {
 		return "", false, fmt.Errorf("adsync: create instance id directory: %w", err)
 	}
+	cleanupInstanceIDTemps(dir)
 	path := filepath.Join(dir, InstanceIDFile)
+	for range 3 {
+		id, err := loadInstanceID(path)
+		if err == nil {
+			return id, false, nil
+		}
+		if !errors.Is(err, fs.ErrNotExist) {
+			return "", false, err
+		}
+		id, err = NewInstanceID()
+		if err != nil {
+			return "", false, err
+		}
+		if err := writeInstanceID(path, id, link); errors.Is(err, fs.ErrExist) {
+			// Reuse the winner unless its failed exclusive-create publication
+			// was removed. In that case retry creation without replacing a file.
+			id, err = loadInstanceID(path)
+			if errors.Is(err, fs.ErrNotExist) {
+				continue
+			}
+			return id, false, err
+		} else if err != nil {
+			return "", false, fmt.Errorf("adsync: write instance id: %w", err)
+		}
+		return id, true, nil
+	}
+	return "", false, fmt.Errorf("adsync: instance id publication repeatedly disappeared: %w", fs.ErrNotExist)
+}
+
+func loadInstanceID(path string) (string, error) {
 	info, err := os.Lstat(path)
 	switch {
 	case err == nil:
 		if !info.Mode().IsRegular() {
-			return "", false, fmt.Errorf("%w: instance id file is not a regular file", ErrUnsafeCache)
+			return "", fmt.Errorf("%w: instance id file is not a regular file", ErrUnsafeCache)
 		}
 		if runtime.GOOS != "windows" && info.Mode().Perm()&0o077 != 0 {
-			return "", false, fmt.Errorf("%w: instance id file must be 0600", ErrUnsafeCache)
+			return "", fmt.Errorf("%w: instance id file must be 0600", ErrUnsafeCache)
 		}
 		if info.Size() > 128 {
-			return "", false, fmt.Errorf("%w: instance id file is too large", ErrCacheCorrupt)
+			return "", fmt.Errorf("%w: instance id file is too large", ErrCacheCorrupt)
 		}
-		data, err := os.ReadFile(path)
-		if err != nil {
-			return "", false, fmt.Errorf("adsync: read instance id: %w", err)
+		var data []byte
+		deadline := time.Now().Add(time.Second)
+		for {
+			data, err = os.ReadFile(path)
+			if err != nil {
+				return "", fmt.Errorf("adsync: read instance id: %w", err)
+			}
+			id := strings.TrimSpace(string(data))
+			if ValidInstanceID(id) {
+				return id, nil
+			}
+			// An exclusive creator can briefly expose empty or partial data.
+			// Wait for completion, but never replace corrupt crash residue.
+			if !time.Now().Before(deadline) {
+				return "", fmt.Errorf("%w: instance id file does not hold a UUIDv7", ErrCacheCorrupt)
+			}
+			time.Sleep(time.Millisecond)
 		}
-		id := strings.TrimSpace(string(data))
-		if !ValidInstanceID(id) {
-			return "", false, fmt.Errorf("%w: instance id file does not hold a UUIDv7", ErrCacheCorrupt)
-		}
-		return id, false, nil
-	case !errors.Is(err, fs.ErrNotExist):
-		return "", false, fmt.Errorf("adsync: stat instance id: %w", err)
+	default:
+		return "", fmt.Errorf("adsync: stat instance id: %w", err)
 	}
-	id, err := NewInstanceID()
+}
+
+// cleanupInstanceIDTemps removes only old regular publication files. Recent
+// files may belong to another caller that is still publishing its identity.
+func cleanupInstanceIDTemps(dir string) {
+	entries, _ := os.ReadDir(dir)
+	cutoff := time.Now().Add(-time.Hour)
+	for _, entry := range entries {
+		if !strings.HasPrefix(entry.Name(), ".adsync-instance-") {
+			continue
+		}
+		info, err := entry.Info()
+		if err == nil && info.Mode().IsRegular() && info.ModTime().Before(cutoff) {
+			_ = os.Remove(filepath.Join(dir, entry.Name()))
+		}
+	}
+}
+
+// writeInstanceID normally publishes a fully written, private file with Link.
+// Filesystems without hard links use exclusive creation instead; neither path
+// replaces an existing identity.
+func writeInstanceID(path, id string, link func(string, string) error) error {
+	directory := filepath.Dir(path)
+	temporary, err := os.CreateTemp(directory, ".adsync-instance-*")
 	if err != nil {
-		return "", false, err
+		return err
 	}
-	if err := writeFileAtomic(path, []byte(id+"\n")); err != nil {
-		return "", false, fmt.Errorf("adsync: write instance id: %w", err)
+	defer os.Remove(temporary.Name())
+	if _, err := temporary.WriteString(id + "\n"); err != nil {
+		temporary.Close()
+		return err
 	}
-	return id, true, nil
+	if err := temporary.Sync(); err != nil {
+		temporary.Close()
+		return err
+	}
+	if err := temporary.Close(); err != nil {
+		return err
+	}
+	if err := link(temporary.Name(), path); err != nil {
+		if !errors.Is(err, fs.ErrPermission) &&
+			!errors.Is(err, syscall.ENOTSUP) && !errors.Is(err, syscall.ENOSYS) {
+			return err
+		}
+		file, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o600)
+		if err != nil {
+			return err
+		}
+		if _, err = file.WriteString(id + "\n"); err == nil {
+			err = file.Sync()
+		}
+		if closeErr := file.Close(); err == nil {
+			err = closeErr
+		}
+		if err != nil {
+			_ = os.Remove(path)
+			return err
+		}
+	}
+	if handle, err := os.Open(directory); err == nil {
+		_ = handle.Sync()
+		_ = handle.Close()
+	}
+	return nil
 }

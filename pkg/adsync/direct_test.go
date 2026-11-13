@@ -16,8 +16,11 @@ import (
 	"strings"
 	"sync"
 	"sync/atomic"
+	"syscall"
 	"testing"
 	"time"
+
+	"github.com/teramoby/speedle-plus/pkg/cfg"
 )
 
 func TestInstanceIDIsAPersistedUUIDv7(t *testing.T) {
@@ -83,11 +86,78 @@ func TestInstanceIDIsAPersistedUUIDv7(t *testing.T) {
 	}
 }
 
+func TestConcurrentInstanceIDCreation(t *testing.T) {
+	t.Run("hard link", func(t *testing.T) {
+		testConcurrentInstanceIDCreation(t, os.Link)
+	})
+	t.Run("exclusive create", func(t *testing.T) {
+		testConcurrentInstanceIDCreation(t, func(string, string) error { return syscall.ENOTSUP })
+	})
+}
+
+func testConcurrentInstanceIDCreation(t *testing.T, link func(string, string) error) {
+	t.Helper()
+	for range 20 {
+		dir := filepath.Join(t.TempDir(), "cache")
+		type result struct {
+			id      string
+			created bool
+			err     error
+		}
+		start := make(chan struct{})
+		results := make(chan result, 2)
+		for range 2 {
+			go func() {
+				<-start
+				id, created, err := loadOrCreateInstanceID(dir, link)
+				results <- result{id, created, err}
+			}()
+		}
+		close(start)
+		first, second := <-results, <-results
+		if first.err != nil || second.err != nil {
+			t.Fatalf("concurrent calls failed: %v, %v", first.err, second.err)
+		}
+		if !ValidInstanceID(first.id) || first.id != second.id || first.created == second.created {
+			t.Fatalf("concurrent results = %+v, %+v", first, second)
+		}
+		persisted, created, err := loadOrCreateInstanceID(dir, link)
+		if err != nil || created || persisted != first.id {
+			t.Fatalf("persisted id = %q, %v, %v; want %q", persisted, created, err, first.id)
+		}
+		entries, err := os.ReadDir(dir)
+		if err != nil || len(entries) != 1 || entries[0].Name() != InstanceIDFile {
+			t.Fatalf("temporary files left behind: %v, %v", entries, err)
+		}
+	}
+}
+
+func TestInstanceIDPublicationNeverReplacesExistingFile(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, InstanceIDFile)
+	for _, existing := range []string{testInstanceID + "\n", "corrupt"} {
+		if err := os.WriteFile(path, []byte(existing), 0o600); err != nil {
+			t.Fatal(err)
+		}
+		id, err := NewInstanceID()
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := writeInstanceID(path, id, os.Link); !errors.Is(err, os.ErrExist) {
+			t.Fatalf("exclusive publication error = %v", err)
+		}
+		data, err := os.ReadFile(path)
+		if err != nil || string(data) != existing {
+			t.Fatalf("existing identity replaced: %q, %v", data, err)
+		}
+	}
+}
+
 func TestValidateAPIKey(t *testing.T) {
 	if err := ValidateAPIKey(testAPIKey); err != nil {
 		t.Fatalf("valid key rejected: %v", err)
 	}
-	for _, bad := range []string{"", "has space", "tab\tkey", strings.Repeat("k", maxAPIKeyBytes+1), "ключ"} {
+	for _, bad := range []string{"", "has space", "tab\tkey", strings.Repeat("k", maxAPIKeyBytes+1), "ключ", cfg.RedactedSecret} {
 		err := ValidateAPIKey(bad)
 		if err == nil {
 			t.Fatalf("key %q accepted", bad)
