@@ -83,7 +83,7 @@ func cascadeConfig(t *testing.T, pki *cascadePKI, address string) Config {
 	t.Helper()
 	dir := t.TempDir()
 	_, cert, key := pki.issue(t, 3, x509.ExtKeyUsageClientAuth, "", time.Now().Add(time.Hour))
-	return Config{BaseURL: address, InstanceIDDir: t.TempDir(), CAFile: writeTestFile(t, dir, "ca.pem", pki.pem, 0600), ClientCertFile: writeTestFile(t, dir, "client.pem", cert, 0600), ClientKeyFile: writeTestFile(t, dir, "client.key", key, 0600), Retry: RetryPolicy{MaxAttempts: 1}, RequestTimeout: time.Second}
+	return Config{BaseURL: address, InstanceIDDir: filepath.Join(t.TempDir(), "cache"), CAFile: writeTestFile(t, dir, "ca.pem", pki.pem, 0600), ClientCertFile: writeTestFile(t, dir, "client.pem", cert, 0600), ClientKeyFile: writeTestFile(t, dir, "client.key", key, 0600), Retry: RetryPolicy{MaxAttempts: 1}, RequestTimeout: time.Second}
 }
 func cascadeServer(t *testing.T, pki *cascadePKI, cert tls.Certificate, handler http.Handler) *httptest.Server {
 	t.Helper()

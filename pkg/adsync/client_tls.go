@@ -24,14 +24,16 @@ import (
 // including channels and held polls. A reload closes the old generation before
 // another connection can be registered. The tls.Config itself is never mutated.
 type clientTLS struct {
-	mu          sync.Mutex
-	reloadMu    sync.Mutex
-	configFiles Config
-	host        string
-	material    *clientTLSGeneration
-	connections map[*clientTLSConn]struct{}
-	closed      bool
-	dialer      net.Dialer
+	mu           sync.Mutex
+	reloadMu     sync.Mutex
+	configFiles  Config
+	host         string
+	material     *clientTLSGeneration
+	connections  map[*clientTLSConn]struct{}
+	closed       bool
+	dialer       net.Dialer
+	crlFloors    []crlWatermark
+	floorPayload []byte
 }
 
 type clientTLSGeneration struct {
@@ -72,6 +74,14 @@ func newClientTLS(ctx context.Context, config Config, host string) (*clientTLS, 
 	}
 	config.RequestTimeout = dialTimeout
 	manager := &clientTLS{configFiles: config, host: host, connections: make(map[*clientTLSConn]struct{}), dialer: net.Dialer{Timeout: dialTimeout, KeepAlive: 30 * time.Second}}
+	if len(config.CRLFiles)+len(config.CRLURLs) > 0 {
+		if _, err := NewCache(config.InstanceIDDir); err != nil {
+			return nil, err
+		}
+		if err := manager.loadCRLFloors(); err != nil {
+			return nil, err
+		}
+	}
 	if err := manager.reload(ctx); err != nil {
 		return nil, err
 	}
@@ -141,9 +151,23 @@ func (m *clientTLS) load(ctx context.Context) (*clientTLSGeneration, error) {
 }
 
 func (g *clientTLSGeneration) addCRL(data []byte, now time.Time, maxAge time.Duration) error {
-	if block, _ := pem.Decode(data); block != nil {
-		data = block.Bytes
+	if block, _ := pem.Decode(data); block == nil {
+		return g.addCRLDER(data, now, maxAge)
 	}
+	for len(bytes.TrimSpace(data)) > 0 {
+		block, rest := pem.Decode(data)
+		if block == nil {
+			return fmt.Errorf("adsync: invalid trailing relay CRL PEM data")
+		}
+		if err := g.addCRLDER(block.Bytes, now, maxAge); err != nil {
+			return err
+		}
+		data = rest
+	}
+	return nil
+}
+
+func (g *clientTLSGeneration) addCRLDER(data []byte, now time.Time, maxAge time.Duration) error {
 	crl, err := x509.ParseRevocationList(data)
 	if err != nil {
 		return fmt.Errorf("adsync: parse relay CRL: %w", err)
@@ -207,6 +231,19 @@ func freshCRL(crl *x509.RevocationList, now time.Time, maxAge time.Duration) err
 	return nil
 }
 
+func (g *clientTLSGeneration) validateAt(now time.Time, maxAge time.Duration) error {
+	leaf := g.certificate.Leaf
+	if now.Before(leaf.NotBefore) || !now.Before(leaf.NotAfter) {
+		return fmt.Errorf("adsync: ClientCertFile is outside its validity window at TLS publication")
+	}
+	for _, crl := range g.crls {
+		if err := freshCRL(crl, now, maxAge); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (m *clientTLS) reload(ctx context.Context) error {
 	// Serialize readers of the files too, so a slower poll cannot overwrite a
 	// newer SIGHUP generation. Invalid replacements keep the last good one.
@@ -233,39 +270,21 @@ func (m *clientTLS) reload(ctx context.Context) error {
 	if err := ctx.Err(); err != nil {
 		return err
 	}
-	now := time.Now()
-	leaf := next.certificate.Leaf
-	if now.Before(leaf.NotBefore) || !now.Before(leaf.NotAfter) {
-		return fmt.Errorf("adsync: ClientCertFile is outside its validity window at TLS publication")
+	if err := next.validateAt(time.Now(), m.configFiles.CRLMaxAge); err != nil {
+		return err
 	}
-	for _, crl := range next.crls {
-		if err := freshCRL(crl, now, m.configFiles.CRLMaxAge); err != nil {
-			return err
-		}
+	if err := m.persistCRLFloors(next); err != nil {
+		return err
+	}
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	if err := next.validateAt(time.Now(), m.configFiles.CRLMaxAge); err != nil {
+		return err
 	}
 
 	if m.material != nil {
 		old := m.material
-		// At least one CRL for each retained signing issuer must cover its old
-		// watermark. Other fresh sources may still contain older CRLs for union
-		// revocation coverage; comparing every pair would reject even a no-op.
-		for _, oldCRL := range old.crls {
-			sameIssuer, current := false, false
-			for _, newCRL := range next.crls {
-				if old.crlIssuers[oldCRL] != next.crlIssuers[newCRL] {
-					continue
-				}
-				sameIssuer = true
-				if !newCRL.ThisUpdate.Before(oldCRL.ThisUpdate) &&
-					(oldCRL.Number == nil || (newCRL.Number != nil && newCRL.Number.Cmp(oldCRL.Number) >= 0)) {
-					current = true
-				}
-			}
-			if sameIssuer && !current {
-				return fmt.Errorf("adsync: refusing an older relay CRL")
-			}
-		}
-
 		if sameTLSMaterial(old, next) {
 			return nil
 		}

@@ -263,6 +263,17 @@ func TestCascadeCRLReloadWithMultipleSourcesAndIssuerRotation(t *testing.T) {
 	if err := client.ReloadTLS(); err != nil {
 		t.Fatalf("CA key rotation rejected: %v", err)
 	}
+	if err := os.WriteFile(config.CAFile, pki.pem, 0600); err != nil {
+		t.Fatal(err)
+	}
+	writeTestFile(t, directory, "one.crl", pki.crl(t, 0, 1, now, now.Add(time.Hour), false), 0600)
+	writeTestFile(t, directory, "two.crl", pki.crl(t, 0, 2, now, now.Add(time.Hour), false), 0600)
+	if err := client.ReloadTLS(); err == nil {
+		t.Fatal("issuer removal erased its retained CRL floor")
+	}
+	if _, err := NewClient(config); err == nil {
+		t.Fatal("restart erased the removed issuer's CRL floor")
+	}
 }
 
 func TestCascadeCRLFetchIgnoresGlobalTransportAndCancelsProgress(t *testing.T) {

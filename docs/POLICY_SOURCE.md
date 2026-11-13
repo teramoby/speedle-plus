@@ -72,6 +72,14 @@ A failed refresh retains the previous generation only while it remains valid.
 CRL and CA changes reconnect connections; CRL expiry closes them. No size,
 upstream-count or chain-depth setting is introduced.
 
+PEM files may contain multiple CRLs; every block is checked. Invalid later
+blocks reject the replacement as a whole. Per-issuer CRL number/time
+watermarks persist in `CacheDir` as an atomic, checksummed `0600` file before
+a new TLS generation is published. Restarting with an older, still-valid CRL
+is rejected. Corrupt retained watermarks fail startup; a failed write keeps
+the previous generation. Preserve this directory to retain rollback protection,
+and use a separate directory for each running instance.
+
 `DownstreamCredentialsFile`, `Services`, `MaxDownstream`, `MaxChainDepth` and
 `MaxConnectionsPerDownstream` are removed store properties. They fail startup,
 including when explicitly set to an empty value. Downstream credentials and
