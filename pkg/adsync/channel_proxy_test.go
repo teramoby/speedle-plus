@@ -6,6 +6,7 @@ import (
 	"bufio"
 	"context"
 	"crypto/tls"
+	"errors"
 	"io"
 	"log"
 	"net"
@@ -236,6 +237,20 @@ func newChannelMTLSServer(t *testing.T, source *channelSource, pki *testPKI) *ht
 }
 
 func TestChannelClientCertificate(t *testing.T) {
+	for _, version := range []struct {
+		name string
+		id   uint16
+	}{
+		{"TLS12", tls.VersionTLS12},
+		{"TLS13", tls.VersionTLS13},
+	} {
+		t.Run(version.name, func(t *testing.T) {
+			testChannelClientCertificate(t, version.id)
+		})
+	}
+}
+
+func testChannelClientCertificate(t *testing.T, version uint16) {
 	books := newFixtureService(testServiceID1, "books")
 	source := newChannelSource(t, books)
 	pki := newTestPKI(t)
@@ -266,12 +281,27 @@ func TestChannelClientCertificate(t *testing.T) {
 	if err := machine.ApplyAttempt(machine.BeginSync(books.ID), source.serviceState(books.ID)); err != nil {
 		t.Fatalf("Applied: %v", err)
 	}
-	channel := newTestChannel(t, client, machine, ChannelOptions{Transport: TransportWebSocket})
-	runChannel(t, channel)
-	requireInSync(t, machine, "books")
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	channel := newTestChannel(t, client, machine, ChannelOptions{
+		Transport: TransportWebSocket,
+		OnAck:     cancel,
+	})
+	channel.dialer.TLSClientConfig.MinVersion = version
+	channel.dialer.TLSClientConfig.MaxVersion = version
+	// Authentication is independent of the helper's 300ms first-ack timeout,
+	// which can expire under race-detector scheduling pressure.
+	channel.ackTimeout = defaultAckTimeout
+	// Wait for a real ack and join this connection before testing rejection.
+	// ApplyAttempt alone marks books in sync, even before the TLS dial starts.
+	outcome := channel.runWebSocket(ctx)
+	if !errors.Is(outcome.err, context.Canceled) || len(channel.Services()) != 1 {
+		t.Fatalf("authenticated channel did not receive an ack: %+v", outcome)
+	}
 
-	// Without the client certificate the TLS handshake must fail, so no hello
-	// reaches the source.
+	// TLS 1.3 can finish the client-side handshake before the server's missing
+	// certificate alert arrives. DialContext also writes the upgrade request
+	// and reads its response, which must fail before any hello reaches source.
 	withoutCertificate, err := NewClient(Config{
 		BaseURL:        server.URL,
 		APIKey:         testAPIKey,
@@ -290,11 +320,21 @@ func TestChannelClientCertificate(t *testing.T) {
 	_, connectionsBefore, _, _, _, _ := source.stats()
 	plainMachine := newChannelMachine(t)
 	plainChannel := newTestChannel(t, withoutCertificate, plainMachine, ChannelOptions{Transport: TransportWebSocket})
-	ctx, cancel := context.WithTimeout(context.Background(), 300*time.Millisecond)
-	defer cancel()
-	_ = plainChannel.Run(ctx)
+	plainChannel.dialer.TLSClientConfig.MinVersion = version
+	plainChannel.dialer.TLSClientConfig.MaxVersion = version
+	plainCtx, plainCancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer plainCancel()
+	outcome = plainChannel.runWebSocket(plainCtx)
+	var networkError net.Error
+	if !outcome.upgradeFailed || outcome.err == nil || plainCtx.Err() != nil ||
+		(errors.As(outcome.err, &networkError) && networkError.Timeout()) {
+		t.Fatalf("certificate-less channel was not rejected during upgrade: %+v (context: %v)", outcome, plainCtx.Err())
+	}
 	_, connectionsAfter, _, _, _, _ := source.stats()
 	if connectionsAfter != connectionsBefore {
-		t.Fatal("a client without a certificate completed the TLS handshake")
+		t.Fatal("a client without a certificate reached the WebSocket handler")
+	}
+	if len(plainChannel.Services()) != 0 {
+		t.Fatal("a client without a certificate received a channel ack")
 	}
 }
