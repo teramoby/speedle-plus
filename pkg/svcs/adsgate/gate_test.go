@@ -327,13 +327,14 @@ func TestDirectModeRouting(t *testing.T) {
 		t.Fatal("an instance with a failed service is ready")
 	}
 
-	// A stale credential instance still evaluates complete copies locally.
+	// A stale instance of another source still evaluates complete copies
+	// locally.
 	source.SetInstance(adsync.InstanceStatus{Liveness: adsync.LivenessStale})
 	if route := gate.Route("books"); route.Kind != RouteLocal {
 		t.Fatalf("stale credential route = %+v", route)
 	}
-	// A stale direct-mode instance forwards, or denies without forwarding.
-	source.SetForwardWhileStale(true)
+	// A stale policy-source instance forwards, or denies without forwarding.
+	source.SetStaleIsUntrusted(true)
 	if route := gate.Route("books"); route.Kind != RouteFallback {
 		t.Fatalf("stale direct route = %+v", route)
 	}

@@ -47,6 +47,9 @@ var (
 	// ErrUnsafeCache means a cache file is not a regular 0600 file or the
 	// cache directory is writable by another user.
 	ErrUnsafeCache = errors.New("adsync: cache permissions are unsafe")
+	// ErrFrameTooLarge means the source refused a channel frame the ADS sent
+	// as too large. The ADS sets no frame size limit of its own.
+	ErrFrameTooLarge = errors.New("adsync: channel frame rejected as too large")
 	// ErrNotModified is returned by Snapshot when If-None-Match matched.
 	ErrNotModified = errors.New("adsync: not modified")
 )

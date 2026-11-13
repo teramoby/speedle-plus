@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	log "github.com/sirupsen/logrus"
 	"math/rand"
 	"net/http"
 	"net/url"
@@ -240,7 +241,10 @@ type Channel struct {
 	host atomic.Pointer[HostInfo]
 
 	sequence atomic.Uint64
-	running  atomic.Bool
+	// sentFrameBytes is the size of the last frame sent, named when the
+	// source rejects a frame as too large.
+	sentFrameBytes atomic.Int64
+	running        atomic.Bool
 
 	mu       sync.Mutex
 	current  Transport
@@ -890,6 +894,17 @@ func isTerminalError(err error) bool {
 
 // terminalStatusError stops the machine and returns a terminal error for a
 // status that retrying cannot fix. It returns nil for a retryable status.
+// frameRejected reports a frame the source refused as too large. The ADS
+// bounds no frame itself (a stalled transfer is cut by the read and write
+// timeouts), so this is the only place an oversized hello, heartbeat or ack
+// surfaces; it is logged as an error because the channel cannot connect
+// until the frame shrinks.
+func (c *Channel) frameRejected() error {
+	size := c.sentFrameBytes.Load()
+	log.Errorf("policy-source channel: the upstream rejected a %d-byte channel frame as too large", size)
+	return fmt.Errorf("%w: %d bytes", ErrFrameTooLarge, size)
+}
+
 func (c *Channel) terminalStatusError(method, path string, status int, body []byte) error {
 	statusErr := newStatusError(method, path, status, body)
 	switch status {

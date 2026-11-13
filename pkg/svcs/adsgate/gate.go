@@ -102,7 +102,7 @@ func (g *Gate) Route(serviceName string) Route {
 	}
 	// A stale instance no longer trusts even a complete copy and
 	// forwards every request until an ack arrives again.
-	if instance.Liveness == adsync.LivenessStale && g.forwardsWhileStale() {
+	if instance.Liveness == adsync.LivenessStale && g.staleIsUntrusted() {
 		if g.source.FallbackAvailable() {
 			return Route{Kind: RouteFallback}
 		}
@@ -119,12 +119,12 @@ func (g *Gate) Route(serviceName string) Route {
 	}
 }
 
-// forwardsWhileStale reports whether the source forwards requests while the
-// instance is stale. The policy-source store does unless forwarding is
-// disabled.
-func (g *Gate) forwardsWhileStale() bool {
-	stale, ok := g.source.(interface{ ForwardWhileStale() bool })
-	return ok && stale.ForwardWhileStale()
+// staleIsUntrusted reports whether a stale instance must not evaluate locally.
+// The policy-source store says so; whether the request is then forwarded or
+// denied is decided separately by FallbackAvailable.
+func (g *Gate) staleIsUntrusted() bool {
+	stale, ok := g.source.(interface{ StaleIsUntrusted() bool })
+	return ok && stale.StaleIsUntrusted()
 }
 
 // Forward sends one authorization request to the upstream. The caller already

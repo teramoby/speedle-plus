@@ -11,8 +11,8 @@ import (
 
 // Channel wire types from the shared policy-source contract. Client frames are
 // hello, heartbeat and command_result; server frames are ack and notify. A
-// frame is capped at 64 KiB, carries no policy content and never carries the
-// credential: the channel is authenticated by the Authorization header of the
+// frame has no size limit on the ADS side, carries no policy content and never
+// carries the credential: the channel is authenticated by the Authorization header of the
 // upgrade or poll request.
 const (
 	channelTypeHello         = "hello"
@@ -28,8 +28,6 @@ const (
 
 	commandStatusAcked    = "acked"
 	commandStatusRejected = "rejected"
-
-	maxChannelFrameBytes = 64 << 10
 )
 
 // channelDurationPattern is the contract's duration syntax. time.ParseDuration

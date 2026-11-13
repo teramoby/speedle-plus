@@ -193,8 +193,8 @@ func TestOpenUsesThePersistedInstanceID(t *testing.T) {
 	if again, _ := second.client.InstanceID(); again != id {
 		t.Fatalf("restart id = %q, want %q", again, id)
 	}
-	if !first.ForwardWhileStale() {
-		t.Fatal("forwarding while stale is off by default")
+	if !first.FallbackAvailable() || !first.StaleIsUntrusted() {
+		t.Fatal("forwarding is off by default")
 	}
 
 	corruptDir := filepath.Join(t.TempDir(), "corrupt")
@@ -217,8 +217,8 @@ func TestOpenUsesThePersistedInstanceID(t *testing.T) {
 	if fixture.source.requestCount() != before {
 		t.Fatal("a request was sent without a valid instance id")
 	}
-	if corrupt.ForwardWhileStale() {
-		t.Fatal("forwarding while stale with forwarding disabled")
+	if corrupt.FallbackAvailable() {
+		t.Fatal("forwarding with forwarding disabled")
 	}
 }
 

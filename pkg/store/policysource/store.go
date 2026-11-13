@@ -191,10 +191,10 @@ func Open(ctx context.Context, options Options) (_ *Store, err error) {
 	return store, nil
 }
 
-// ForwardWhileStale reports that a stale instance forwards every request to
-// the upstream instead of evaluating locally. With forwarding disabled, a
-// stale instance keeps evaluating complete local copies.
-func (s *Store) ForwardWhileStale() bool { return s.fallback }
+// StaleIsUntrusted reports that a stale instance never evaluates locally,
+// whatever forwarding allows: it forwards every request to the upstream, or
+// denies it when forwarding is disabled or unavailable.
+func (s *Store) StaleIsUntrusted() bool { return true }
 
 // Type returns the store type name.
 func (s *Store) Type() string { return StoreType }
@@ -345,9 +345,10 @@ func (s *Store) syncService(ctx context.Context, service adsync.Service) error {
 		if !stderrors.Is(err, adsync.ErrUnauthorized) && !stderrors.Is(err, adsync.ErrForbidden) {
 			s.machine.SyncFailed(service.ID, err)
 		}
-		if stderrors.Is(err, adsync.ErrIntegrity) {
+		// A resync, removal or re-add while the fetch was in flight makes
+		// its integrity failure obsolete: the next pass fetches again.
+		if stderrors.Is(err, adsync.ErrIntegrity) && s.machine.FailAttempt(attempt) {
 			log.Errorf("policy-source service %q fails closed: its copy does not match the acknowledged head: %v", service.Name, err)
-			s.machine.FailService(service.ID)
 			s.recordIntegrityFailure(service)
 		}
 		return fmt.Errorf("service %q: %w", service.Name, err)

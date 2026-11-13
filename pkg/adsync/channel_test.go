@@ -280,7 +280,7 @@ func (f *channelSource) servePoll(w http.ResponseWriter, r *http.Request) {
 	override := append([]byte(nil), f.pollBody...)
 	f.mu.Unlock()
 
-	body, err := io.ReadAll(io.LimitReader(r.Body, maxChannelFrameBytes+1))
+	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		writeFixtureError(w, http.StatusBadRequest, "invalid_request", "")
 		return
@@ -1501,7 +1501,7 @@ func TestChannelPollTerminalStatusWithLargeBody(t *testing.T) {
 			source := newChannelSource(t, books)
 			source.configure(func(f *channelSource) {
 				f.pollStatus = status
-				f.pollBody = []byte(`{"error":"denied","pad":"` + strings.Repeat("x", maxChannelFrameBytes) + `"}`)
+				f.pollBody = []byte(`{"error":"denied","pad":"` + strings.Repeat("x", 128<<10) + `"}`)
 			})
 			server := startChannelFixture(t, source)
 			client := newChannelClient(t, server)
@@ -1568,12 +1568,6 @@ func TestChannelPollRejectsBadResponses(t *testing.T) {
 		t.Fatalf("non-ack response = %v, want ErrProtocol", err)
 	}
 
-	source.configure(func(f *channelSource) {
-		f.pollBody = []byte(`{"type":"ack","pad":"` + strings.Repeat("x", maxChannelFrameBytes) + `"}`)
-	})
-	if err := channel.pollOnce(context.Background()); !errors.Is(err, ErrProtocol) {
-		t.Fatalf("oversized response = %v, want ErrProtocol", err)
-	}
 }
 
 func TestChannelSleepBeforeRetryHonoursRetryAfter(t *testing.T) {

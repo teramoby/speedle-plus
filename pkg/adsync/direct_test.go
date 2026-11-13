@@ -749,3 +749,62 @@ func TestUpstreamKeyNeverAppearsInErrors(t *testing.T) {
 		}
 	}
 }
+
+// TestUpstreamRetryDeadlineSurvivesOutOfOrderResponses runs two forwarded
+// requests concurrently. The one started first completes last; neither its
+// success nor its shorter Retry-After may shorten or clear the deadline the
+// other response set.
+func TestUpstreamRetryDeadlineSurvivesOutOfOrderResponses(t *testing.T) {
+	for name, lateResponse := range map[string]func(http.ResponseWriter){
+		"success": func(w http.ResponseWriter) {
+			_, _ = io.WriteString(w, `{"allowed":true,"reason":0}`)
+		},
+		"shorter Retry-After": func(w http.ResponseWriter) {
+			w.Header().Set("Retry-After", "5")
+			w.WriteHeader(http.StatusTooManyRequests)
+			_, _ = io.WriteString(w, `{"error":"rate_limited"}`)
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			arrived := make(chan struct{})
+			release := make(chan struct{})
+			client := newForwardingClient(t, func(w http.ResponseWriter, r *http.Request) {
+				body, _ := io.ReadAll(r.Body)
+				if string(body) == `{"slow":true}` {
+					close(arrived)
+					<-release
+					lateResponse(w)
+					return
+				}
+				w.Header().Set("Retry-After", "30")
+				w.WriteHeader(http.StatusTooManyRequests)
+				_, _ = io.WriteString(w, `{"error":"rate_limited"}`)
+			})
+			start := time.Date(2026, 11, 13, 12, 0, 0, 0, time.UTC)
+			var clock atomic.Int64
+			clock.Store(start.UnixNano())
+			client.now = func() time.Time { return time.Unix(0, clock.Load()).UTC() }
+
+			done := make(chan struct{})
+			go func() {
+				defer close(done)
+				_, _ = client.ForwardFallback(context.Background(), FallbackIsAllowed, []byte(`{"slow":true}`))
+			}()
+			<-arrived
+			if _, err := client.ForwardFallback(context.Background(), FallbackIsAllowed, []byte(`{}`)); !errors.Is(err, ErrRateLimited) {
+				t.Fatalf("fast request error = %v", err)
+			}
+			close(release)
+			<-done
+
+			clock.Store(start.Add(10 * time.Second).UnixNano())
+			if client.FallbackAvailable() {
+				t.Fatal("a late response shortened or cleared the retry deadline")
+			}
+			clock.Store(start.Add(31 * time.Second).UnixNano())
+			if !client.FallbackAvailable() {
+				t.Fatal("forwarding did not resume after the latest deadline")
+			}
+		})
+	}
+}

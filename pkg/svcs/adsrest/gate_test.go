@@ -459,7 +459,7 @@ func TestFallbackFailuresAreAudited(t *testing.T) {
 
 func TestDirectModeMarksForwardedDecisionsAsUpstream(t *testing.T) {
 	router, source := newGatedRouter(t)
-	source.SetForwardWhileStale(true)
+	source.SetStaleIsUntrusted(true)
 	source.SetFallbackResponse(http.StatusOK, nil, []byte(`{"allowed":true,"reason":0}`))
 	rec := postRaw(t, router, "is-allowed", `{"serviceName":"orders","resource":"order:1","action":"read"}`)
 	if rec.Code != http.StatusOK || rec.Header().Get(svcs.DecisionSourceHeader) != svcs.DecisionSourceUpstream {

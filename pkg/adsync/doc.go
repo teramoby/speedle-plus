@@ -20,7 +20,9 @@
 // payload-size ceiling. Changes retain pagination and are fetched until head.
 // RequestTimeout bounds stalls (time without response bytes), not the total
 // download duration. JSON responses are decoded from their streams. Channel
-// frames retain the 64 KiB limit, and error bodies remain bounded.
+// frames have no size limit either; read and write timeouts bound a stalled
+// frame, and a frame the source refuses as too large is logged with its size.
+// Error bodies remain bounded.
 // Removed-service tombstones retain only the latest 1,024 entries; live
 // services are never evicted to meet that history bound.
 //

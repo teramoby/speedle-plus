@@ -178,13 +178,14 @@ func (c *Client) ForwardFallback(ctx context.Context, operation FallbackOperatio
 		return nil, fmt.Errorf("%w: %d forwarded requests are already in flight", ErrUnavailable, MaxUpstreamInFlight)
 	}
 	for attempt := 0; ; attempt++ {
+		started := c.fallbackRetrySequence()
 		response, err := c.forwardOnce(ctx, operation, body)
 		if err == nil {
-			c.recordFallbackOutcome(nil)
+			c.recordFallbackOutcome(nil, started)
 			response.DecisionSource = DecisionSourceUpstream
 			return response, nil
 		}
-		c.recordFallbackOutcome(err)
+		c.recordFallbackOutcome(err, started)
 		if attempt == 0 && ctx.Err() == nil && isConnectionEstablishmentFailure(err) {
 			continue
 		}
@@ -253,7 +254,13 @@ func (c *Client) forwardOnce(ctx context.Context, operation FallbackOperation, b
 // rate-limit, authentication or 5xx failure. Other HTTP answers clear the
 // delay. A later request is always allowed once the delay expires, so one
 // transient error cannot disable fallback forever.
-func (c *Client) recordFallbackOutcome(err error) {
+//
+// Requests complete out of order. A failure keeps the later of its own
+// deadline and the current one. An answer clears the deadline only when no
+// other response set one while this request was in flight (started is the
+// sequence observed when it was sent), so a response that was already on its
+// way never shortens or clears a newer deadline.
+func (c *Client) recordFallbackOutcome(err error, started uint64) {
 	retryLater := err != nil && (errors.Is(err, ErrUnavailable) || errors.Is(err, ErrRateLimited) ||
 		errors.Is(err, ErrUnauthorized) || errors.Is(err, ErrForbidden))
 	delay := c.fallbackBackoff
@@ -274,12 +281,23 @@ func (c *Client) recordFallbackOutcome(err error) {
 		}
 	}
 	c.fallbackMu.Lock()
+	defer c.fallbackMu.Unlock()
 	if retryLater {
-		c.fallbackRetryAt = c.now().Add(delay)
-	} else {
+		if deadline := c.now().Add(delay); deadline.After(c.fallbackRetryAt) {
+			c.fallbackRetryAt = deadline
+			c.fallbackRetrySeq++
+		}
+		return
+	}
+	if c.fallbackRetrySeq == started {
 		c.fallbackRetryAt = time.Time{}
 	}
-	c.fallbackMu.Unlock()
+}
+
+func (c *Client) fallbackRetrySequence() uint64 {
+	c.fallbackMu.Lock()
+	defer c.fallbackMu.Unlock()
+	return c.fallbackRetrySeq
 }
 
 // FallbackAvailable reports whether forwarding is outside its short retry

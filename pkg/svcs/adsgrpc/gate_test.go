@@ -428,7 +428,7 @@ func TestGRPCFallbackFailuresAreAudited(t *testing.T) {
 
 func TestGRPCDirectModeMarksForwardedDecisionsAsUpstream(t *testing.T) {
 	service, source := newGatedService(t)
-	source.SetForwardWhileStale(true)
+	source.SetStaleIsUntrusted(true)
 	source.SetFallbackResponse(http.StatusOK, nil, []byte(`{"allowed":true,"reason":0}`))
 	ctx, stream := withRecordingStream(context.Background())
 	if _, err := service.IsAllowed(ctx, gateRequest("orders", "alice")); err != nil {

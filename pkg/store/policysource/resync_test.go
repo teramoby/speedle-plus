@@ -4,6 +4,7 @@ package policysource
 
 import (
 	"context"
+	"errors"
 	"sync"
 	"testing"
 	"time"
@@ -105,5 +106,61 @@ func TestUnchangedReaddedServiceReturnsToInSync(t *testing.T) {
 	}
 	if status, _ := store.Status("books"); status.Service.State != adsync.SyncStateInSync {
 		t.Fatalf("books = %s (%s) after re-verifying the installed content", status.Service.State, status.Service.Reason)
+	}
+}
+
+// TestResyncMakesAnInFlightIntegrityFailureObsolete interleaves a resync with
+// a fetch whose copy then fails integrity: the obsolete attempt neither fails
+// the service nor starts an integrity backoff, and the next pass fetches
+// again.
+func TestResyncMakesAnInFlightIntegrityFailureObsolete(t *testing.T) {
+	fixture := newTestFixture(t, booksService())
+	store := fixture.open(nil)
+	fixture.source.publishService("books", func(snapshot *adsync.Snapshot) {
+		snapshot.Policies = []adsync.Policy{policy("p-carol", "carol", "grant user carol read books")}
+	})
+	fixture.source.mutate(func(source *testSource) { source.corruptSnapshotHash = true })
+	snapshotPath := "/services/" + testServiceID1 + "/snapshot"
+	before := fixture.source.requestsForSuffix(snapshotPath)
+	fixture.source.holdSnapshots(testServiceID1)
+
+	syncDone := make(chan error, 1)
+	go func() { syncDone <- store.Sync(nil) }()
+	e2eWaitFor(t, "the snapshot fetch to be in flight", func() bool {
+		return fixture.source.requestsForSuffix(snapshotPath) > before
+	})
+	// The resync invalidates the attempt at once; discarding the cached copy
+	// waits for the fetch in flight.
+	resynced := make(chan struct{})
+	go func() { defer close(resynced); store.resync(testServiceID1) }()
+	e2eWaitFor(t, "the resync to invalidate the attempt", func() bool {
+		status, _ := store.Status("books")
+		return status.Service.Reason == adsync.SyncReasonResync
+	})
+	fixture.source.releaseSnapshots(testServiceID1)
+	if err := <-syncDone; !errors.Is(err, adsync.ErrIntegrity) {
+		t.Fatalf("Sync = %v, want the in-flight integrity failure", err)
+	}
+	<-resynced
+
+	status, _ := store.Status("books")
+	if status.Service.Reason == adsync.SyncReasonIntegrity {
+		t.Fatalf("an obsolete attempt failed the service: %+v", status.Service)
+	}
+	store.integrityMu.Lock()
+	_, waiting := store.integrity[testServiceID1]
+	store.integrityMu.Unlock()
+	if waiting {
+		t.Fatal("an obsolete attempt started an integrity backoff")
+	}
+
+	// The next pass fetches again; this attempt is current and fails closed.
+	fetches := fixture.source.requestsForSuffix(snapshotPath)
+	_ = store.Sync(nil)
+	if fixture.source.requestsForSuffix(snapshotPath) == fetches {
+		t.Fatal("the next pass did not fetch again")
+	}
+	if status, _ := store.Status("books"); status.Service.Reason != adsync.SyncReasonIntegrity {
+		t.Fatalf("a current attempt did not fail the service: %+v", status.Service)
 	}
 }

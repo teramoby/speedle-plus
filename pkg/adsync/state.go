@@ -621,14 +621,32 @@ func (m *Machine) SyncFailed(serviceID string, err error) {
 func (m *Machine) FailService(serviceID string) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
+	m.failServiceLocked(serviceID)
+}
+
+// FailAttempt fails the service of attempt closed, like FailService, only if
+// nothing invalidated the attempt: a resync, removal or re-add while the
+// fetch was in flight makes its failure obsolete. It reports whether the
+// service was failed.
+func (m *Machine) FailAttempt(attempt SyncAttempt) bool {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if !m.attemptCurrentLocked(attempt) {
+		return false
+	}
+	return m.failServiceLocked(attempt.serviceID)
+}
+
+func (m *Machine) failServiceLocked(serviceID string) bool {
 	m.advanceLocked(m.clock.Now())
 	record := m.records[serviceID]
 	if !m.reconcile || record == nil || record.state == SyncStateRemoved {
-		return
+		return false
 	}
 	record.failed = true
 	record.failedHead = Head{ID: record.id, Epoch: record.epoch, Revision: record.headRevision, StateHash: record.headStateHash}
 	m.recomputeRecordLocked(record)
+	return true
 }
 
 // Track records a service known from a local cache before the first ack. It

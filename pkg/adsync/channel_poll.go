@@ -58,9 +58,7 @@ func (c *Channel) pollOnce(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("adsync: encode heartbeat: %w", err)
 	}
-	if len(payload) > maxChannelFrameBytes {
-		return fmt.Errorf("%w: channel frame exceeds %d bytes", ErrProtocol, maxChannelFrameBytes)
-	}
+	c.sentFrameBytes.Store(int64(len(payload)))
 
 	timeout := c.pollWait + c.client.requestTimeout
 	requestCtx, cancel := context.WithTimeout(ctx, timeout)
@@ -86,16 +84,17 @@ func (c *Channel) pollOnce(ctx context.Context) error {
 	}
 	defer response.Body.Close()
 
-	body, err := io.ReadAll(io.LimitReader(response.Body, maxChannelFrameBytes+1))
+	// No size limit: the request timeout bounds a stalled response.
+	body, err := io.ReadAll(response.Body)
 	if err != nil {
 		if ctxErr := ctx.Err(); ctxErr != nil {
 			return ctxErr
 		}
 		return fmt.Errorf("adsync: poll channel: read response: %w", err)
 	}
-	// Classify the status before enforcing the frame bound: a permanent
-	// rejection with a large error body must stop the channel, not look like a
-	// retryable protocol error.
+	if response.StatusCode == http.StatusRequestEntityTooLarge {
+		return c.frameRejected()
+	}
 	if response.StatusCode != http.StatusOK {
 		bodyCopy := body
 		if terminal := c.terminalStatusError(http.MethodPost, APIPrefix+"/channel/poll", response.StatusCode, bodyCopy); terminal != nil {
@@ -107,10 +106,6 @@ func (c *Channel) pollOnce(ctx context.Context) error {
 		}
 		return statusErr
 	}
-	if len(body) > maxChannelFrameBytes {
-		return fmt.Errorf("%w: poll response exceeds %d bytes", ErrProtocol, maxChannelFrameBytes)
-	}
-
 	message, err := decodeServerMessage(body)
 	if err != nil {
 		return err
