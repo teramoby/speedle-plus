@@ -3,10 +3,8 @@
 package adsync
 
 import (
-	"bufio"
 	"net"
 	"os"
-	"os/exec"
 	"runtime"
 	"strings"
 	"time"
@@ -92,26 +90,20 @@ func boundedText(value string, limit int) string {
 }
 
 // osVersion reads PRETTY_NAME from /etc/os-release, falling back to the
-// kernel release.
+// kernel release without executing a program from PATH.
 func osVersion() string {
-	if file, err := os.Open("/etc/os-release"); err == nil {
-		defer file.Close()
-		scanner := bufio.NewScanner(file)
-		for scanner.Scan() {
-			line := scanner.Text()
+	return osVersionFrom(os.ReadFile)
+}
+
+func osVersionFrom(readFile func(string) ([]byte, error)) string {
+	if data, err := readFile("/etc/os-release"); err == nil {
+		for line := range strings.SplitSeq(string(data), "\n") {
 			if value, found := strings.CutPrefix(line, "PRETTY_NAME="); found {
 				return strings.Trim(value, `"'`)
 			}
 		}
 	}
-	if runtime.GOOS == "windows" {
-		return ""
-	}
-	output, err := exec.Command("uname", "-r").Output()
-	if err != nil {
-		return ""
-	}
-	return strings.TrimSpace(string(output))
+	return kernelVersion(readFile)
 }
 
 // hostIPs lists up to maxHostIPs non-loopback interface addresses.

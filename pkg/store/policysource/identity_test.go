@@ -103,6 +103,34 @@ func TestAPIKeyNeverAppearsInErrorsOrDumps(t *testing.T) {
 	}
 }
 
+func TestRedactedConfigDumpRejectedAtStartup(t *testing.T) {
+	configuration := cfg.StoreConfig{
+		StoreType: "policy-source",
+		StoreProps: map[string]interface{}{
+			UpstreamURLKey: "https://source.example",
+			APIKeyKey:      cfg.Secret("private-key-for-config-roundtrip"),
+		},
+	}
+	data, err := json.Marshal(configuration)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(data), `"APIKey":"[REDACTED]"`) {
+		t.Fatal("dump does not contain the expected redaction placeholder")
+	}
+	var reloaded cfg.StoreConfig
+	if err := json.Unmarshal(data, &reloaded); err != nil {
+		t.Fatal(err)
+	}
+	_, err = (Builder{}).NewStore(reloaded.StoreProps)
+	if err == nil || !strings.Contains(err.Error(), "invalid APIKey") || !strings.Contains(err.Error(), "redacted placeholder") {
+		t.Fatalf("startup did not reject the dumped key clearly: %v", err)
+	}
+	if strings.Contains(err.Error(), "[REDACTED]") || strings.Contains(err.Error(), "private-key-for-config-roundtrip") {
+		t.Fatal("startup error echoes the API key value")
+	}
+}
+
 func TestEngineWithoutPolicySourceIsUnaffected(t *testing.T) {
 	t.Setenv("SPEEDLE_ADS_CREDENTIAL", "obsolete-environment-must-not-affect-file-store")
 	// Load the repository's pre-policy-source configuration verbatim. Only

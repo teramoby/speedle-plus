@@ -9,9 +9,12 @@ import "fmt"
 const maxAPIKeyBytes = 1024
 
 // ValidateAPIKey reports whether value can be sent as a bearer API key: 1 to
-// 1024 printable ASCII characters without spaces. It never echoes the value
-// in the returned error.
+// 1024 printable ASCII characters without spaces, excluding the redaction
+// placeholder. It never echoes the value in the returned error.
 func ValidateAPIKey(value string) error {
+	if value == "[REDACTED]" {
+		return fmt.Errorf("%w: invalid APIKey: replace the redacted placeholder with an API key", ErrProtocol)
+	}
 	if value == "" || len(value) > maxAPIKeyBytes {
 		return fmt.Errorf("%w: malformed API key", ErrProtocol)
 	}
