@@ -3,6 +3,8 @@
 package adsproxy
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -14,16 +16,11 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
+	log "github.com/sirupsen/logrus"
 	"github.com/teramoby/speedle-plus/pkg/adsync"
 )
 
 const (
-	// DefaultMaxChainDepth is the number of proxies allowed between Cloud and
-	// a leaf.
-	DefaultMaxChainDepth = 3
-	// MaxChainDepthLimit is the protocol's upper bound for that number.
-	MaxChainDepthLimit = 3
-
 	// Channel protocol defaults. They match the distribution contract.
 	defaultHeartbeatInterval = 30 * time.Second
 	defaultStaleAfter        = 60 * time.Second
@@ -37,32 +34,11 @@ const (
 
 // Config configures a Server.
 type Config struct {
-	// InstanceID is this proxy's stable ULID. It identifies the proxy in chain
-	// checks and is the id the process appends to its own upstream chain.
+	// InstanceID is this proxy's stable UUIDv7. The relay reports it in its own
+	// heartbeats; downstream instances never need to match it.
 	InstanceID string
-	// Chain is this proxy's own chain from Cloud to itself, inclusive. The last
-	// entry must be InstanceID. Nil means just this instance, as for a proxy
-	// that connects to Cloud directly. The chain is used to reject a
-	// downstream that is actually one of this proxy's ancestors.
-	Chain []string
 	// Mirror holds the verified copies served downstream. It is required.
 	Mirror *Mirror
-	// Credentials is the downstream credential set. When nil, CredentialFile
-	// is loaded instead.
-	Credentials *CredentialSet
-	// CredentialFile is the 0600 downstream credential file. It is used when
-	// Credentials is nil and by ReloadCredentials.
-	CredentialFile string
-	// MaxDownstream bounds the number of distinct downstream instances. Zero
-	// uses DefaultMaxDownstream; the range is 1 to MaxDownstreamLimit. It is
-	// ignored when Hub is set.
-	MaxDownstream int
-	// MaxConnectionsPerDownstream bounds active WebSockets and held long polls
-	// for each credential. Zero uses DefaultMaxConnectionsPerDownstream.
-	MaxConnectionsPerDownstream int
-	// MaxChainDepth bounds the number of proxy hops between Cloud and a leaf.
-	// Zero uses DefaultMaxChainDepth; the range is 1 to MaxChainDepthLimit.
-	MaxChainDepth int
 	// CoalesceWindow is how long notifications are collected per service.
 	// Zero uses DefaultCoalesceWindow. It is ignored when Hub is set.
 	CoalesceWindow time.Duration
@@ -83,29 +59,47 @@ type Config struct {
 	Paused func() bool
 }
 
+// sessionIdentity is the authenticated identity of one downstream session: the
+// verified client certificate fingerprint and the UUIDv7 the downstream
+// reports in its hello or heartbeat. Neither value grants extra access: the
+// certificate authenticates, and the UUID only names the session for
+// diagnostics and de-duplication.
+type sessionIdentity struct {
+	fingerprint string
+	uuid        string
+}
+
 // Server serves the /policy-source/v1 protocol to downstream ADS instances. It
-// is an http.Handler, so the process mounts it next to its authorization
-// routes.
+// is an http.Handler meant to be mounted only on the dedicated downstream
+// listener, whose TLS configuration requires and verifies a client certificate.
 type Server struct {
-	instanceID  string
-	chain       []string
-	mirror      *Mirror
-	credentials *CredentialSet
-	hub         *Hub
-	ownsHub     bool
+	instanceID string
+	mirror     *Mirror
+	hub        *Hub
+	ownsHub    bool
 
 	heartbeat time.Duration
 	stale     time.Duration
 	stop      time.Duration
-	maxDepth  int
 
 	now         func() time.Time
 	paused      func() bool
 	upgrader    websocket.Upgrader
 	removeWatch func()
 
-	mu        sync.Mutex
-	sessions  map[*websocket.Conn]struct{}
+	mu sync.Mutex
+	// channels holds the one live WebSocket channel of each session identity.
+	// A reconnect replaces its predecessor.
+	channels map[sessionIdentity]*websocket.Conn
+	// sessions counts active channels and held polls per identity. Its length
+	// is the number of distinct direct downstream sessions, which is the count
+	// the relay reports in its own heartbeat.
+	sessions map[sessionIdentity]int
+	// fingerprintsByUUID maps a reported UUID to the certificate fingerprints
+	// currently using it, so a collision under another certificate is logged
+	// without affecting either session.
+	fingerprintsByUUID map[string]map[string]struct{}
+
 	closeOnce sync.Once
 	closed    bool
 	done      chan struct{}
@@ -114,50 +108,12 @@ type Server struct {
 // NewServer validates the configuration and wires the mirror's head events into
 // the fan-out hub.
 func NewServer(config Config) (*Server, error) {
-	if config.InstanceID == "" || !validEntityID(config.InstanceID) {
-		return nil, fmt.Errorf("%w: InstanceID must be a ULID", ErrConfig)
+	if !adsync.ValidInstanceID(config.InstanceID) {
+		return nil, fmt.Errorf("%w: InstanceID must be a UUIDv7", ErrConfig)
 	}
 	if config.Mirror == nil {
 		return nil, fmt.Errorf("%w: Mirror is required", ErrConfig)
 	}
-
-	credentials := config.Credentials
-	if credentials == nil {
-		if config.CredentialFile == "" {
-			return nil, fmt.Errorf("%w: Credentials or CredentialFile is required", ErrConfig)
-		}
-		loaded, err := LoadCredentialFile(config.CredentialFile)
-		if err != nil {
-			return nil, err
-		}
-		credentials = loaded
-	}
-
-	maxDepth := config.MaxChainDepth
-	if maxDepth == 0 {
-		maxDepth = DefaultMaxChainDepth
-	}
-	if maxDepth < 1 || maxDepth > MaxChainDepthLimit {
-		return nil, fmt.Errorf("%w: MaxChainDepth must be between 1 and %d", ErrConfig, MaxChainDepthLimit)
-	}
-
-	chain := append([]string(nil), config.Chain...)
-	if len(chain) == 0 {
-		chain = []string{config.InstanceID}
-	}
-	for _, instanceID := range chain {
-		if !validEntityID(instanceID) {
-			return nil, fmt.Errorf("%w: invalid chain entry %q", ErrConfig, instanceID)
-		}
-	}
-	if chain[len(chain)-1] != config.InstanceID {
-		return nil, fmt.Errorf("%w: Chain must end with InstanceID", ErrConfig)
-	}
-	if len(chain)-1 > maxDepth {
-		return nil, fmt.Errorf("%w: Chain places this proxy %d hops from Cloud, the limit is %d",
-			ErrConfig, len(chain)-1, maxDepth)
-	}
-
 	heartbeat, stale, stop, err := normalizeThresholds(
 		config.HeartbeatInterval, config.StaleAfter, config.StopAfter)
 	if err != nil {
@@ -167,7 +123,7 @@ func NewServer(config Config) (*Server, error) {
 	hub := config.Hub
 	ownsHub := hub == nil
 	if hub == nil {
-		hub, err = NewHub(config.MaxDownstream, config.CoalesceWindow, config.MaxConnectionsPerDownstream)
+		hub, err = NewHub(config.CoalesceWindow)
 		if err != nil {
 			return nil, err
 		}
@@ -178,27 +134,27 @@ func NewServer(config Config) (*Server, error) {
 		now = time.Now
 	}
 	server := &Server{
-		instanceID:  config.InstanceID,
-		chain:       chain,
-		mirror:      config.Mirror,
-		credentials: credentials,
-		hub:         hub,
-		ownsHub:     ownsHub,
-		heartbeat:   heartbeat,
-		stale:       stale,
-		stop:        stop,
-		maxDepth:    maxDepth,
-		now:         now,
-		paused:      config.Paused,
-		sessions:    make(map[*websocket.Conn]struct{}),
-		done:        make(chan struct{}),
+		instanceID:         config.InstanceID,
+		mirror:             config.Mirror,
+		hub:                hub,
+		ownsHub:            ownsHub,
+		heartbeat:          heartbeat,
+		stale:              stale,
+		stop:               stop,
+		now:                now,
+		paused:             config.Paused,
+		channels:           make(map[sessionIdentity]*websocket.Conn),
+		sessions:           make(map[sessionIdentity]int),
+		fingerprintsByUUID: make(map[string]map[string]struct{}),
+		done:               make(chan struct{}),
 	}
 	server.upgrader = websocket.Upgrader{
 		ReadBufferSize:  4096,
 		WriteBufferSize: 4096,
 		CheckOrigin: func(*http.Request) bool {
-			// Downstream instances authenticate with a bearer token that a
-			// browser cannot set cross-origin, so an origin check adds nothing.
+			// The downstream listener authenticates every connection with a
+			// verified client certificate, which a browser cannot present
+			// cross-origin. An origin check adds nothing.
 			return true
 		},
 	}
@@ -211,56 +167,27 @@ func NewServer(config Config) (*Server, error) {
 // InstanceID returns this proxy's instance id.
 func (s *Server) InstanceID() string { return s.instanceID }
 
-// Chain returns this proxy's own chain from Cloud to itself.
-func (s *Server) Chain() []string { return append([]string(nil), s.chain...) }
-
-// Credentials returns the credential set currently in force.
-func (s *Server) Credentials() *CredentialSet { return s.credentials }
-
-// DownstreamCount returns the number of distinct downstream instances currently
-// registered. The process reports it in its own heartbeat.
-func (s *Server) DownstreamCount() int { return s.hub.Downstreams() }
-
-// ReloadCredentials re-reads the credential file and swaps the new set in
-// atomically. A failed reload keeps the previous credentials and channels in
-// force. Every established channel is then closed so removed credentials and
-// changed service subsets take effect immediately; clients reconnect and
-// resynchronize with their current grants.
-func (s *Server) ReloadCredentials() error {
-	if err := s.credentials.Reload(); err != nil {
-		return err
-	}
-	s.closeDownstreamChannels(websocket.CloseTryAgainLater, "credentials_reloaded")
-	return nil
-}
-
-func (s *Server) closeDownstreamChannels(code int, reason string) {
+// DownstreamCount returns the number of distinct direct downstream sessions
+// with an active channel or held poll. The process reports it in its own
+// heartbeat.
+func (s *Server) DownstreamCount() int {
 	s.mu.Lock()
-	connections := make([]*websocket.Conn, 0, len(s.sessions))
-	for conn := range s.sessions {
-		connections = append(connections, conn)
-	}
-	s.mu.Unlock()
-	for _, conn := range connections {
-		closeWithReason(conn, code, reason)
-		_ = conn.Close()
-	}
+	defer s.mu.Unlock()
+	return len(s.sessions)
 }
 
-// Close closes every active downstream channel, releases the mirror observer
-// and closes the hub. The server must not be used afterwards. It is safe to call
-// more than once.
+// Close closes every active downstream channel, ends held polls, releases the
+// mirror observer and closes the hub. The server must not be used afterwards.
+// It is safe to call more than once.
 func (s *Server) Close() {
 	s.closeOnce.Do(func() {
 		s.mu.Lock()
 		s.closed = true
-		connections := make([]*websocket.Conn, 0, len(s.sessions))
-		for conn := range s.sessions {
+		connections := make([]*websocket.Conn, 0, len(s.channels))
+		for _, conn := range s.channels {
 			connections = append(connections, conn)
 		}
-		if s.done != nil {
-			close(s.done)
-		}
+		close(s.done)
 		s.mu.Unlock()
 		for _, conn := range connections {
 			_ = conn.Close()
@@ -284,27 +211,97 @@ func (s *Server) isClosed() bool {
 	return s.closed
 }
 
-// track registers an upgraded channel connection so Close and credential
-// reloads can terminate it. The grant must still be current, closing the race
-// between bearer authentication and a concurrent reload.
-func (s *Server) track(conn *websocket.Conn, credential *Credential) bool {
+// beginChannelSession registers a live channel for one session identity. When
+// the identity already has a channel, the previous connection is returned so
+// the caller can close it after the new one is admitted; a reconnect never
+// counts twice and never leaves two live channels behind.
+func (s *Server) beginChannelSession(identity sessionIdentity, conn *websocket.Conn) (*websocket.Conn, bool) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	if s.closed || !s.credentials.Current(credential) {
+	if s.closed {
+		return nil, false
+	}
+	previous := s.channels[identity]
+	s.channels[identity] = conn
+	s.retainLocked(identity)
+	return previous, true
+}
+
+func (s *Server) endChannelSession(identity sessionIdentity, conn *websocket.Conn) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.channels[identity] == conn {
+		delete(s.channels, identity)
+	}
+	s.releaseLocked(identity)
+}
+
+// beginPollSession registers one held poll. A poll has no connection to
+// de-duplicate; the identity is counted once while any poll is held.
+func (s *Server) beginPollSession(identity sessionIdentity) bool {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.closed {
 		return false
 	}
-	s.sessions[conn] = struct{}{}
+	s.retainLocked(identity)
 	return true
 }
 
-func (s *Server) untrack(conn *websocket.Conn) {
+func (s *Server) endPollSession(identity sessionIdentity) {
 	s.mu.Lock()
-	delete(s.sessions, conn)
-	s.mu.Unlock()
+	defer s.mu.Unlock()
+	s.releaseLocked(identity)
+}
+
+func (s *Server) retainLocked(identity sessionIdentity) {
+	if s.sessions[identity] == 0 {
+		fingerprints := s.fingerprintsByUUID[identity.uuid]
+		if fingerprints == nil {
+			fingerprints = make(map[string]struct{})
+			s.fingerprintsByUUID[identity.uuid] = fingerprints
+		}
+		for fingerprint := range fingerprints {
+			if fingerprint != identity.fingerprint {
+				log.Warnf("adsproxy: downstream UUID %s is active under certificates %s and %s; both sessions are kept",
+					identity.uuid, fingerprint, identity.fingerprint)
+				break
+			}
+		}
+		fingerprints[identity.fingerprint] = struct{}{}
+	}
+	s.sessions[identity]++
+}
+
+func (s *Server) releaseLocked(identity sessionIdentity) {
+	if s.sessions[identity] <= 1 {
+		delete(s.sessions, identity)
+		fingerprints := s.fingerprintsByUUID[identity.uuid]
+		delete(fingerprints, identity.fingerprint)
+		if len(fingerprints) == 0 {
+			delete(s.fingerprintsByUUID, identity.uuid)
+		}
+		return
+	}
+	s.sessions[identity]--
+}
+
+// clientIdentity returns the verified client certificate of one connection.
+// The listener's TLS configuration rejects a missing, untrusted, expired or
+// revoked certificate during the handshake; this check keeps the handler fail
+// closed if it is ever mounted somewhere else.
+func clientIdentity(r *http.Request) (sessionIdentity, bool) {
+	if r.TLS == nil || len(r.TLS.VerifiedChains) == 0 || len(r.TLS.PeerCertificates) == 0 {
+		return sessionIdentity{}, false
+	}
+	leaf := r.TLS.VerifiedChains[0][0]
+	digest := sha256.Sum256(leaf.Raw)
+	return sessionIdentity{fingerprint: hex.EncodeToString(digest[:])}, true
 }
 
 // ServeHTTP implements the /policy-source/v1 data endpoints and the instance
-// channel.
+// channel. All paths are authenticated by the listener's verified client
+// certificate; this handler performs no token authentication.
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Cache-Control", "no-store")
 	path := r.URL.Path
@@ -312,9 +309,12 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, "not_found", "")
 		return
 	}
-	credential, authenticated := s.authenticate(r)
-	if !authenticated {
-		writeError(w, http.StatusUnauthorized, "unauthorized", "")
+	if _, ok := clientIdentity(r); !ok {
+		writeError(w, http.StatusForbidden, "unauthorized", "")
+		return
+	}
+	if s.isClosed() {
+		writeError(w, http.StatusServiceUnavailable, "source_unavailable", "")
 		return
 	}
 	if s.distributionPaused() {
@@ -328,37 +328,27 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			writeError(w, http.StatusMethodNotAllowed, "method_not_allowed", "")
 			return
 		}
-		if !s.credentials.BeginRequest(credential) {
-			writeError(w, http.StatusUnauthorized, "unauthorized", "")
-			return
-		}
-		defer s.credentials.EndRequest()
-		s.handleServices(w, r, credential)
+		s.handleServices(w, r)
 	case rest == "/channel":
 		if r.Method != http.MethodGet {
 			writeError(w, http.StatusMethodNotAllowed, "method_not_allowed", "")
 			return
 		}
-		s.handleChannel(w, r, credential)
+		s.handleChannel(w, r)
 	case rest == "/channel/poll":
 		if r.Method != http.MethodPost {
 			writeError(w, http.StatusMethodNotAllowed, "method_not_allowed", "")
 			return
 		}
-		s.handlePoll(w, r, credential)
+		s.handlePoll(w, r)
 	case strings.HasPrefix(rest, "/services/"):
-		if !s.credentials.BeginRequest(credential) {
-			writeError(w, http.StatusUnauthorized, "unauthorized", "")
-			return
-		}
-		defer s.credentials.EndRequest()
-		s.handleService(w, r, credential, strings.TrimPrefix(rest, "/services/"))
+		s.handleService(w, r, strings.TrimPrefix(rest, "/services/"))
 	default:
 		writeError(w, http.StatusNotFound, "not_found", "")
 	}
 }
 
-func (s *Server) handleService(w http.ResponseWriter, r *http.Request, credential *Credential, remainder string) {
+func (s *Server) handleService(w http.ResponseWriter, r *http.Request, remainder string) {
 	segments := strings.Split(remainder, "/")
 	if len(segments) != 2 || segments[0] == "" {
 		writeError(w, http.StatusNotFound, "not_found", "")
@@ -375,39 +365,29 @@ func (s *Server) handleService(w http.ResponseWriter, r *http.Request, credentia
 			writeError(w, http.StatusBadRequest, "invalid_request", "")
 			return
 		}
-		s.handleState(w, credential, serviceID)
+		s.handleState(w, serviceID)
 	case "snapshot":
 		if _, ok := strictQuery(r.URL.RawQuery); !ok {
 			writeError(w, http.StatusBadRequest, "invalid_request", "")
 			return
 		}
-		s.handleSnapshot(w, r, credential, serviceID)
+		s.handleSnapshot(w, r, serviceID)
 	case "changes":
-		s.handleChanges(w, r, credential, serviceID)
+		s.handleChanges(w, r, serviceID)
 	default:
 		writeError(w, http.StatusNotFound, "not_found", "")
 	}
 }
 
-func (s *Server) handleServices(w http.ResponseWriter, r *http.Request, credential *Credential) {
+func (s *Server) handleServices(w http.ResponseWriter, r *http.Request) {
 	if _, ok := strictQuery(r.URL.RawQuery); !ok {
 		writeError(w, http.StatusBadRequest, "invalid_request", "")
 		return
 	}
 	services, version := s.mirror.ServicesVersion()
-	visible := make([]adsync.Service, 0, len(services))
-	for _, service := range services {
-		if !credential.Allows(service.ID) {
-			continue
-		}
-		visible = append(visible, service)
-		if len(visible) == MaxServices {
-			break
-		}
-	}
 	writeJSON(w, http.StatusOK, adsync.ServicesResponse{
 		ServicesVersion: version,
-		Services:        visible,
+		Services:        services,
 	})
 }
 
@@ -420,8 +400,8 @@ type stateResponse struct {
 	ServerTime    int64       `json:"serverTime"`
 }
 
-func (s *Server) handleState(w http.ResponseWriter, credential *Credential, serviceID string) {
-	info, ok := s.resolveService(w, credential, serviceID)
+func (s *Server) handleState(w http.ResponseWriter, serviceID string) {
+	info, ok := s.resolveService(w, serviceID)
 	if !ok {
 		return
 	}
@@ -435,8 +415,8 @@ func (s *Server) handleState(w http.ResponseWriter, credential *Credential, serv
 	})
 }
 
-func (s *Server) handleSnapshot(w http.ResponseWriter, r *http.Request, credential *Credential, serviceID string) {
-	if _, ok := s.resolveService(w, credential, serviceID); !ok {
+func (s *Server) handleSnapshot(w http.ResponseWriter, r *http.Request, serviceID string) {
+	if _, ok := s.resolveService(w, serviceID); !ok {
 		return
 	}
 	response, found := s.mirror.Snapshot(serviceID)
@@ -453,8 +433,8 @@ func (s *Server) handleSnapshot(w http.ResponseWriter, r *http.Request, credenti
 	writeJSON(w, http.StatusOK, response)
 }
 
-func (s *Server) handleChanges(w http.ResponseWriter, r *http.Request, credential *Credential, serviceID string) {
-	if _, ok := s.resolveService(w, credential, serviceID); !ok {
+func (s *Server) handleChanges(w http.ResponseWriter, r *http.Request, serviceID string) {
+	if _, ok := s.resolveService(w, serviceID); !ok {
 		return
 	}
 	query, ok := strictQuery(r.URL.RawQuery, "since", "limit")
@@ -492,14 +472,10 @@ func (s *Server) handleChanges(w http.ResponseWriter, r *http.Request, credentia
 	writeEncodedJSON(w, http.StatusOK, encoded)
 }
 
-// resolveService applies the credential's service subset and reports why a
-// service cannot be served. A service outside the subset is answered exactly
-// like an unknown service, with no detail that would reveal its existence.
-func (s *Server) resolveService(w http.ResponseWriter, credential *Credential, serviceID string) (ServiceInfo, bool) {
-	if !credential.Allows(serviceID) {
-		writeError(w, http.StatusNotFound, "service_not_found", "")
-		return ServiceInfo{}, false
-	}
+// resolveService reports why a service cannot be served. Every valid client
+// certificate may read every service the relay holds; there are no per-
+// certificate subsets.
+func (s *Server) resolveService(w http.ResponseWriter, serviceID string) (ServiceInfo, bool) {
 	info, availability := s.mirror.Lookup(serviceID)
 	switch availability {
 	case ServiceAvailable:
@@ -535,26 +511,6 @@ func (s *Server) writeMirrorError(w http.ResponseWriter, err error) {
 // distribution.
 func (s *Server) distributionPaused() bool {
 	return s.paused != nil && s.paused()
-}
-
-func (s *Server) authenticate(r *http.Request) (*Credential, bool) {
-	token, ok := bearerToken(r.Header.Get("Authorization"))
-	if !ok {
-		return nil, false
-	}
-	return s.credentials.Authenticate(token)
-}
-
-func bearerToken(value string) (string, bool) {
-	const prefix = "bearer "
-	if len(value) <= len(prefix) || !strings.EqualFold(value[:len(prefix)], prefix) {
-		return "", false
-	}
-	token := strings.TrimSpace(value[len(prefix):])
-	if token == "" {
-		return "", false
-	}
-	return token, true
 }
 
 func snapshotETag(response adsync.SnapshotResponse) string {

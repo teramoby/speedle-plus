@@ -27,15 +27,11 @@ func TestHashPassThroughToDownstreamClient(t *testing.T) {
 		t.Fatalf("apply changes: %v", err)
 	}
 
-	token := testToken(testDownstreamID, 1)
-	server := newTestServer(t, mirror, nil, testCredential{
-		downstreamID: testDownstreamID,
-		token:        token,
-	})
+	server := newTestServer(t, mirror, nil)
 
 	// A downstream ADS that only trusts the Cloud public key must verify both
 	// the snapshot and every commit, and end at the proxy's revision.
-	client := server.newClient(token)
+	client := server.newClient(testClientInstanceID)
 	syncer, err := adsync.NewSyncer(client, "")
 	if err != nil {
 		t.Fatalf("new syncer: %v", err)
@@ -51,8 +47,8 @@ func TestHashPassThroughToDownstreamClient(t *testing.T) {
 	}
 
 	// The exact signed bytes are observable over HTTP as well.
-	response, body := server.get(
-		adsync.APIPrefix+"/services/"+testServiceID1+"/snapshot", token, nil)
+	response, body := server.get(server.defaultClient(),
+		adsync.APIPrefix+"/services/"+testServiceID1+"/snapshot", nil)
 	if response.StatusCode != 200 {
 		t.Fatalf("snapshot: status %d body %s", response.StatusCode, body)
 	}
@@ -81,12 +77,8 @@ func TestDownstreamChangesPagesVerify(t *testing.T) {
 		t.Fatalf("apply changes: %v", err)
 	}
 
-	token := testToken(testDownstreamID, 1)
-	server := newTestServer(t, mirror, nil, testCredential{
-		downstreamID: testDownstreamID,
-		token:        token,
-	})
-	client := server.newClient(token)
+	server := newTestServer(t, mirror, nil)
+	client := server.newClient(testClientInstanceID)
 	ctx := context.Background()
 
 	first, err := client.Changes(ctx, testServiceID1, service.ID, service.Epoch, 1, initial.CommitHash, 1)
@@ -133,12 +125,8 @@ func TestDownstreamRecoversFromEpochChange(t *testing.T) {
 		t.Fatalf("apply changes: %v", err)
 	}
 
-	token := testToken(testDownstreamID, 1)
-	server := newTestServer(t, mirror, nil, testCredential{
-		downstreamID: testDownstreamID,
-		token:        token,
-	})
-	client := server.newClient(token)
+	server := newTestServer(t, mirror, nil)
+	client := server.newClient(testClientInstanceID)
 	syncer, err := adsync.NewSyncer(client, "")
 	if err != nil {
 		t.Fatalf("new syncer: %v", err)
@@ -173,7 +161,7 @@ func TestDownstreamRecoversFromEpochChange(t *testing.T) {
 	}
 
 	// The proxy advertises the new identity and version.
-	response, body := server.get(adsync.APIPrefix+"/services", token, nil)
+	response, body := server.get(server.defaultClient(), adsync.APIPrefix+"/services", nil)
 	if response.StatusCode != 200 {
 		t.Fatalf("services: status %d", response.StatusCode)
 	}

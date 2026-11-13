@@ -398,18 +398,17 @@ func TestMirrorAppliesRename(t *testing.T) {
 	}
 }
 
-func TestMirrorBoundsServices(t *testing.T) {
+func TestMirrorHasNoServiceCap(t *testing.T) {
 	mirror := newTestMirror(t, nil)
-	for index := 0; index < MaxServices; index++ {
+	for index := 0; index < 25; index++ {
 		id := fmt.Sprintf("01HF7YAT00000000000000%02X00", index)
 		service := newFixtureService(id, "books")
 		if err := mirror.ApplySnapshot(service.snapshotResponse(t)); err != nil {
 			t.Fatalf("apply snapshot %d: %v", index, err)
 		}
 	}
-	extra := newFixtureService("01HF7YAT000000000000000199", "extra")
-	if err := mirror.ApplySnapshot(extra.snapshotResponse(t)); !errors.Is(err, ErrTooManyServices) {
-		t.Errorf("extra service: %v, want ErrTooManyServices", err)
+	if services := mirror.Services(); len(services) != 25 {
+		t.Errorf("advertised services = %d, want 25", len(services))
 	}
 }
 

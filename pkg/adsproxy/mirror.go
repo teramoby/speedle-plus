@@ -22,8 +22,6 @@ const (
 	// memory. One page is at most 1 MiB and a commit at most 200 changes, so
 	// the byte bound usually wins for large policies.
 	DefaultMaxLogBytes = 16 << 20
-	// MaxServices is the protocol bound on the services one instance serves.
-	MaxServices = 10
 	// maxRetiredIdentities bounds the source identities one service copy
 	// keeps replay protection for. Once a copy has moved away from this many
 	// identities, it refuses further identity replacement and stops being
@@ -580,21 +578,14 @@ func (m *Mirror) MarkAvailable(serviceID string) {
 	}
 }
 
-// reserveServiceLocked makes room for one new service. Removed services are
-// tombstones, not active copies, so they do not count against MaxServices. A
-// tombstone is a deletion guard and is never evicted; if the combined store is
-// full, the new service is refused instead.
+// reserveServiceLocked makes room for one new service. There is no limit on
+// the active services a relay serves: service counts are a Cloud product
+// concern, not an engine one. Removed services are tombstones, not active
+// copies. A tombstone is a deletion guard and is never evicted; if the
+// tombstones alone fill the replay-protection store, the new service is
+// refused rather than forgetting that guard.
 func (m *Mirror) reserveServiceLocked() error {
-	active := 0
-	for _, service := range m.services {
-		if !service.removed {
-			active++
-		}
-	}
-	if active >= MaxServices {
-		return fmt.Errorf("%w: %d services", ErrTooManyServices, active)
-	}
-	if len(m.services) >= MaxServices+maxTombstones {
+	if len(m.services) >= maxTombstones {
 		return fmt.Errorf("%w: %d services and tombstones", ErrTooManyServices, len(m.services))
 	}
 	return nil

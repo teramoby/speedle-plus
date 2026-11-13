@@ -3,94 +3,23 @@
 package adsproxy
 
 import (
-	"bytes"
-	"context"
 	"errors"
 	"fmt"
-	"io"
 	"net/http"
 	"net/http/httptest"
-	"os"
-	"path/filepath"
 	"strings"
-	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
 
-	"github.com/gorilla/websocket"
 	"github.com/teramoby/speedle-plus/pkg/adsync"
 )
 
-func doRequest(t *testing.T, server *testServer, method, path, token string, body []byte) (*http.Response, []byte) {
-	t.Helper()
-	request, err := http.NewRequest(method, server.httpServer.URL+path, bytes.NewReader(body))
-	if err != nil {
-		t.Fatalf("build %s %s: %v", method, path, err)
-	}
-	if token != "" {
-		request.Header.Set("Authorization", "Bearer "+token)
-	}
-	response, err := server.client().Do(request)
-	if err != nil {
-		t.Fatalf("%s %s: %v", method, path, err)
-	}
-	defer response.Body.Close()
-	payload, err := io.ReadAll(response.Body)
-	if err != nil {
-		t.Fatalf("read %s %s: %v", method, path, err)
-	}
-	return response, payload
-}
-
-func TestServerRouteAndMethodErrors(t *testing.T) {
-	mirror, _, _ := newPopulatedMirror(t)
-	token := testToken(testDownstreamID, 1)
-	server := newTestServer(t, mirror, nil, testCredential{
-		downstreamID: testDownstreamID,
-		token:        token,
-	})
-	statePath := adsync.APIPrefix + "/services/" + testServiceID1
-	for _, testCase := range []struct {
-		name   string
-		method string
-		path   string
-		status int
-	}{
-		{name: "outside prefix", method: http.MethodGet, path: "/elsewhere", status: http.StatusNotFound},
-		{name: "post services", method: http.MethodPost, path: adsync.APIPrefix + "/services", status: http.StatusMethodNotAllowed},
-		{name: "post channel", method: http.MethodPost, path: adsync.APIPrefix + "/channel", status: http.StatusMethodNotAllowed},
-		{name: "post action", method: http.MethodPost, path: statePath + "/state", status: http.StatusMethodNotAllowed},
-		{name: "missing action", method: http.MethodGet, path: statePath, status: http.StatusNotFound},
-		{name: "extra segment", method: http.MethodGet, path: statePath + "/state/extra", status: http.StatusNotFound},
-		{name: "empty service", method: http.MethodGet, path: adsync.APIPrefix + "/services//state", status: http.StatusNotFound},
-		{name: "unknown action", method: http.MethodGet, path: statePath + "/wat", status: http.StatusNotFound},
-	} {
-		response, body := doRequest(t, server, testCase.method, testCase.path, token, nil)
-		if response.StatusCode != testCase.status {
-			t.Errorf("%s: status %d body %s", testCase.name, response.StatusCode, body)
-		}
-	}
-}
-
 func TestServerAccessors(t *testing.T) {
 	mirror, _, _ := newPopulatedMirror(t)
-	server := newTestServer(t, mirror, &testServerOptions{
-		chain: []string{testUpstreamID, testProxyID},
-	}, testCredential{downstreamID: testDownstreamID, token: testToken(testDownstreamID, 1)})
+	server := newTestServer(t, mirror, nil)
 	if got := server.server.InstanceID(); got != testProxyID {
 		t.Errorf("InstanceID = %q", got)
-	}
-	chain := server.server.Chain()
-	if len(chain) != 2 || chain[0] != testUpstreamID || chain[1] != testProxyID {
-		t.Errorf("Chain = %v", chain)
-	}
-	chain[0] = "mutated"
-	if server.server.Chain()[0] != testUpstreamID {
-		t.Error("Chain exposes the server's slice")
-	}
-	if server.server.Credentials() == nil {
-		t.Error("Credentials is nil")
 	}
 	if got := server.server.DownstreamCount(); got != 0 {
 		t.Errorf("DownstreamCount = %d", got)
@@ -181,13 +110,10 @@ func TestResolveServiceSourceUnavailable(t *testing.T) {
 			t.Fatalf("apply changes: %v", err)
 		}
 	}
-	token := testToken(testDownstreamID, 1)
-	server := newTestServer(t, mirror, nil, testCredential{
-		downstreamID: testDownstreamID,
-		token:        token,
-	})
+	server := newTestServer(t, mirror, nil)
 	for _, action := range []string{"state", "snapshot", "changes?since=1"} {
-		response, body := server.get(adsync.APIPrefix+"/services/"+testServiceID1+"/"+action, token, nil)
+		response, body := server.get(server.defaultClient(),
+			adsync.APIPrefix+"/services/"+testServiceID1+"/"+action, nil)
 		if response.StatusCode != http.StatusServiceUnavailable || string(body) != `{"error":"source_unavailable"}` {
 			t.Errorf("%s: status %d body %s", action, response.StatusCode, body)
 		}
@@ -196,10 +122,6 @@ func TestResolveServiceSourceUnavailable(t *testing.T) {
 
 func TestNormalizeThresholdsErrors(t *testing.T) {
 	mirror := newTestMirror(t, nil)
-	credentials, err := NewCredentialSet([]Credential{{DownstreamID: "edge", Token: "token", Services: []string{"*"}}})
-	if err != nil {
-		t.Fatalf("credentials: %v", err)
-	}
 	for _, testCase := range []struct {
 		name      string
 		heartbeat time.Duration
@@ -214,7 +136,6 @@ func TestNormalizeThresholdsErrors(t *testing.T) {
 		_, err := NewServer(Config{
 			InstanceID:        testProxyID,
 			Mirror:            mirror,
-			Credentials:       credentials,
 			HeartbeatInterval: testCase.heartbeat,
 			StaleAfter:        testCase.stale,
 			StopAfter:         testCase.stop,
@@ -222,18 +143,6 @@ func TestNormalizeThresholdsErrors(t *testing.T) {
 		if !errors.Is(err, ErrConfig) {
 			t.Errorf("%s: %v, want ErrConfig", testCase.name, err)
 		}
-	}
-}
-
-func TestNewServerCredentialFileError(t *testing.T) {
-	mirror := newTestMirror(t, nil)
-	_, err := NewServer(Config{
-		InstanceID:     testProxyID,
-		Mirror:         mirror,
-		CredentialFile: filepath.Join(t.TempDir(), "missing"),
-	})
-	if !errors.Is(err, ErrCredentialFile) {
-		t.Errorf("missing credential file: %v, want ErrCredentialFile", err)
 	}
 }
 
@@ -246,779 +155,34 @@ func TestFormatChannelDuration(t *testing.T) {
 	}
 }
 
-func TestCredentialAccessors(t *testing.T) {
-	var absent *Credential
-	if absent.Allows(testServiceID1) {
-		t.Error("nil credential allows a service")
-	}
-	if absent.ServicesList() != nil {
-		t.Error("nil credential has a service list")
-	}
-	all := &Credential{all: true}
-	if !all.Allows(testServiceID1) {
-		t.Error("wildcard credential does not allow a service")
-	}
-	if list := all.ServicesList(); len(list) != 1 || list[0] != "*" {
-		t.Errorf("wildcard list = %v", list)
-	}
-	subset := &Credential{allowed: map[string]struct{}{testServiceID2: {}, testServiceID1: {}}}
-	list := subset.ServicesList()
-	if len(list) != 2 || list[0] != testServiceID1 || list[1] != testServiceID2 {
-		t.Errorf("subset list = %v", list)
-	}
-
-	set, err := NewCredentialSet([]Credential{{DownstreamID: "edge", Token: "token", Services: []string{"*"}}})
-	if err != nil {
-		t.Fatalf("credential set: %v", err)
-	}
-	if set.Path() != "" {
-		t.Errorf("in-memory path = %q", set.Path())
-	}
-	if set.Len() != 1 {
-		t.Errorf("Len = %d", set.Len())
-	}
-	var nilSet *CredentialSet
-	if nilSet.Path() != "" || nilSet.Len() != 0 {
-		t.Error("nil set has a path or credentials")
-	}
-	if nilSet.Current(nil) || set.Current(nil) {
-		t.Error("nil credential is current")
-	}
-	if _, ok := nilSet.Authenticate("token"); ok {
-		t.Error("nil set authenticated a token")
-	}
-	if _, ok := set.Authenticate(""); ok {
-		t.Error("empty token authenticated")
-	}
-	if _, ok := set.Authenticate(strings.Repeat("x", 513)); ok {
-		t.Error("oversized token authenticated")
-	}
-}
-
-func TestCredentialFileEdgeCases(t *testing.T) {
-	if _, err := LoadCredentialFile(""); !errors.Is(err, ErrCredentialFile) {
-		t.Errorf("empty path: %v", err)
-	}
-	if _, err := LoadCredentialFile(t.TempDir()); !errors.Is(err, ErrCredentialFile) {
-		t.Errorf("directory: %v", err)
-	}
-
-	permissive := filepath.Join(t.TempDir(), "credentials")
-	if err := os.WriteFile(permissive, []byte("edge:"+hashToken("token")+":*\n"), 0o644); err != nil {
-		t.Fatalf("write permissive file: %v", err)
-	}
-	if err := os.Chmod(permissive, 0o644); err != nil {
-		t.Fatalf("chmod permissive file: %v", err)
-	}
-	if _, err := LoadCredentialFile(permissive); !errors.Is(err, ErrCredentialFile) {
-		t.Errorf("permissive mode: %v", err)
-	}
-
-	large := filepath.Join(t.TempDir(), "large")
-	if err := os.WriteFile(large, bytes.Repeat([]byte("#"), maxCredentialFileBytes+1), 0o600); err != nil {
-		t.Fatalf("write large file: %v", err)
-	}
-	if _, err := LoadCredentialFile(large); !errors.Is(err, ErrCredentialFile) {
-		t.Errorf("large file: %v", err)
-	}
-
-	var many strings.Builder
-	for index := 0; index <= maxCredentialLines; index++ {
-		fmt.Fprintf(&many, "edge%d:%s:*\n", index, hashToken(fmt.Sprintf("token-%d", index)))
-	}
-	manyPath := filepath.Join(t.TempDir(), "many")
-	if err := os.WriteFile(manyPath, []byte(many.String()), 0o600); err != nil {
-		t.Fatalf("write many lines: %v", err)
-	}
-	if _, err := LoadCredentialFile(manyPath); !errors.Is(err, ErrCredentialFile) {
-		t.Errorf("too many lines: %v", err)
-	}
-
-	invalidHash := filepath.Join(t.TempDir(), "bad-hash")
-	if err := os.WriteFile(invalidHash, []byte("edge:"+strings.Repeat("z", 64)+":*\n"), 0o600); err != nil {
-		t.Fatalf("write bad hash: %v", err)
-	}
-	if _, err := LoadCredentialFile(invalidHash); !errors.Is(err, ErrCredentialFile) {
-		t.Errorf("non-hexadecimal hash: %v", err)
-	}
-}
-
-func TestNewCredentialSetValidation(t *testing.T) {
-	for _, testCase := range []struct {
-		name        string
-		credentials []Credential
-	}{
-		{name: "no downstream id", credentials: []Credential{{Token: "token"}}},
-		{name: "invalid downstream id", credentials: []Credential{{DownstreamID: "bad id", Token: "token"}}},
-		{name: "no token", credentials: []Credential{{DownstreamID: "edge"}}},
-		{name: "whitespace token", credentials: []Credential{{DownstreamID: "edge", Token: "two words"}}},
-		{name: "invalid service", credentials: []Credential{{DownstreamID: "edge", Token: "token", Services: []string{"bad"}}}},
-		{name: "duplicate service", credentials: []Credential{{DownstreamID: "edge", Token: "token", Services: []string{testServiceID1, testServiceID1}}}},
-		{name: "duplicate id", credentials: []Credential{
-			{DownstreamID: "edge", Token: "token-one"},
-			{DownstreamID: "edge", Token: "token-two"},
-		}},
-	} {
-		if _, err := NewCredentialSet(testCase.credentials); !errors.Is(err, ErrCredentialFile) {
-			t.Errorf("%s: %v, want ErrCredentialFile", testCase.name, err)
-		}
-	}
-}
-
-func TestWatchReloadEdgeCases(t *testing.T) {
-	mirror, _, _ := newPopulatedMirror(t)
-	token := testToken(testDownstreamID, 1)
-	server := newTestServer(t, mirror, nil, testCredential{
-		downstreamID: testDownstreamID,
-		token:        token,
-	})
-	// A nil signal channel returns immediately.
-	server.server.WatchReload(context.Background(), nil)
-	// A closed channel ends the loop.
-	closed := make(chan os.Signal)
-	close(closed)
-	server.server.WatchReload(context.Background(), closed)
-
-	// A failed reload is logged and the loop keeps serving the previous set.
-	signals := make(chan os.Signal, 1)
-	ctx, cancel := context.WithCancel(context.Background())
-	done := make(chan struct{})
-	go func() {
-		defer close(done)
-		server.server.WatchReload(ctx, signals)
-	}()
-	server.writeCredentialFile("broken")
-	signals <- os.Interrupt
-	time.Sleep(50 * time.Millisecond)
-	response, _ := server.get(adsync.APIPrefix+"/services", token, nil)
-	if response.StatusCode != http.StatusOK {
-		t.Errorf("previous credential after failed reload: status %d", response.StatusCode)
-	}
-	cancel()
-	<-done
-}
-
 func TestHubEdgeCases(t *testing.T) {
-	if _, err := NewHub(1, -time.Second); !errors.Is(err, ErrConfig) {
+	if _, err := NewHub(-time.Second); !errors.Is(err, ErrConfig) {
 		t.Errorf("negative window: %v, want ErrConfig", err)
 	}
-	if _, err := NewHub(-1, 0); !errors.Is(err, ErrConfig) {
-		t.Errorf("negative downstreams: %v, want ErrConfig", err)
-	}
-	hub, err := NewHub(0, time.Millisecond)
+	hub, err := NewHub(time.Millisecond)
 	if err != nil {
 		t.Fatalf("new hub: %v", err)
 	}
-	if err := hub.Allow(""); !errors.Is(err, ErrConfig) {
-		t.Errorf("empty downstream: %v, want ErrConfig", err)
-	}
-	subscriber, err := hub.Subscribe("edge-1", nil)
+	subscriber, err := hub.Subscribe()
 	if err != nil {
 		t.Fatalf("subscribe: %v", err)
-	}
-	if got := subscriber.Downstream(); got != "edge-1" {
-		t.Errorf("Downstream = %q", got)
 	}
 	if hub.Subscribers() != 1 {
 		t.Errorf("Subscribers = %d", hub.Subscribers())
 	}
 	var absent *Subscriber
-	if absent.C() != nil || absent.Downstream() != "" {
-		t.Error("nil subscriber returns a channel or id")
+	if absent.C() != nil {
+		t.Error("nil subscriber returns a channel")
 	}
 	hub.Unsubscribe(nil)
 	hub.Publish("", 1)
-	hub.Publish("edge-1", 0)
+	hub.Publish(testServiceID1, 0)
 	hub.Close()
-	if err := hub.Allow("edge-1"); !errors.Is(err, ErrConfig) {
+	if _, err := hub.Subscribe(); !errors.Is(err, ErrConfig) {
 		t.Errorf("closed hub: %v, want ErrConfig", err)
 	}
-	hub.Publish("edge-1", 2)
-}
-
-func TestChannelWebSocketFrameErrors(t *testing.T) {
-	mirror, _, _ := newPopulatedMirror(t)
-	token := testToken(testDownstreamID, 1)
-	validHello := func() helloMessage {
-		return helloMessage{
-			Type:         "hello",
-			InstanceID:   testDownstreamID,
-			Services:     []helloService{},
-			Chain:        []string{testProxyID, testDownstreamID},
-			AgentVersion: "test",
-		}
-	}
-	for _, testCase := range []struct {
-		name   string
-		open   func(t *testing.T, conn *websocket.Conn)
-		code   int
-		reason string
-	}{
-		{
-			name: "binary first frame",
-			open: func(t *testing.T, conn *websocket.Conn) {
-				if err := conn.WriteMessage(websocket.BinaryMessage, []byte{0}); err != nil {
-					t.Errorf("write binary frame: %v", err)
-				}
-			},
-			code:   websocket.CloseProtocolError,
-			reason: "expected hello",
-		},
-		{
-			name: "invalid hello json",
-			open: func(t *testing.T, conn *websocket.Conn) {
-				if err := conn.WriteMessage(websocket.TextMessage, []byte("{")); err != nil {
-					t.Errorf("write invalid json: %v", err)
-				}
-			},
-			code:   websocket.CloseProtocolError,
-			reason: "invalid hello",
-		},
-		{
-			name: "wrong hello type",
-			open: func(t *testing.T, conn *websocket.Conn) {
-				hello := validHello()
-				hello.Type = "heartbeat"
-				writeJSONFrame(t, conn, hello)
-			},
-			code:   websocket.CloseProtocolError,
-			reason: "protocol_error",
-		},
-		{
-			name: "invalid instance id",
-			open: func(t *testing.T, conn *websocket.Conn) {
-				hello := validHello()
-				hello.InstanceID = "bad"
-				writeJSONFrame(t, conn, hello)
-			},
-			code:   websocket.CloseProtocolError,
-			reason: "protocol_error",
-		},
-		{
-			name: "own instance id",
-			open: func(t *testing.T, conn *websocket.Conn) {
-				hello := validHello()
-				hello.InstanceID = testProxyID
-				writeJSONFrame(t, conn, hello)
-			},
-			code:   websocket.ClosePolicyViolation,
-			reason: "chain_loop",
-		},
-		{
-			name: "invalid service id",
-			open: func(t *testing.T, conn *websocket.Conn) {
-				hello := validHello()
-				hello.Services = []helloService{{ID: "bad"}}
-				writeJSONFrame(t, conn, hello)
-			},
-			code:   websocket.CloseProtocolError,
-			reason: "protocol_error",
-		},
-		{
-			name: "duplicate service id",
-			open: func(t *testing.T, conn *websocket.Conn) {
-				hello := validHello()
-				hello.Services = []helloService{{ID: testServiceID1}, {ID: testServiceID1}}
-				writeJSONFrame(t, conn, hello)
-			},
-			code:   websocket.CloseProtocolError,
-			reason: "protocol_error",
-		},
-		{
-			name: "service outside subset",
-			open: func(t *testing.T, conn *websocket.Conn) {
-				hello := validHello()
-				hello.Services = []helloService{{ID: testServiceID2}}
-				writeJSONFrame(t, conn, hello)
-			},
-			code:   websocket.ClosePolicyViolation,
-			reason: "forbidden",
-		},
-		{
-			name: "binary after hello",
-			open: func(t *testing.T, conn *websocket.Conn) {
-				writeJSONFrame(t, conn, validHello())
-				if kind, _ := readChannelFrame(t, conn); kind != "ack" {
-					t.Fatalf("frame = %q", kind)
-				}
-				if err := conn.WriteMessage(websocket.BinaryMessage, []byte{0}); err != nil {
-					t.Errorf("write binary frame: %v", err)
-				}
-			},
-			code:   websocket.CloseProtocolError,
-			reason: "expected a text frame",
-		},
-		{
-			name: "invalid frame json",
-			open: func(t *testing.T, conn *websocket.Conn) {
-				writeJSONFrame(t, conn, validHello())
-				if kind, _ := readChannelFrame(t, conn); kind != "ack" {
-					t.Fatalf("frame = %q", kind)
-				}
-				if err := conn.WriteMessage(websocket.TextMessage, []byte("{")); err != nil {
-					t.Errorf("write invalid json: %v", err)
-				}
-			},
-			code:   websocket.CloseProtocolError,
-			reason: "invalid frame",
-		},
-		{
-			name: "invalid heartbeat",
-			open: func(t *testing.T, conn *websocket.Conn) {
-				writeJSONFrame(t, conn, validHello())
-				if kind, _ := readChannelFrame(t, conn); kind != "ack" {
-					t.Fatalf("frame = %q", kind)
-				}
-				writeJSONFrame(t, conn, map[string]any{"type": "heartbeat", "unknown": true})
-			},
-			code:   websocket.CloseProtocolError,
-			reason: "invalid heartbeat",
-		},
-		{
-			name: "heartbeat chain loop",
-			open: func(t *testing.T, conn *websocket.Conn) {
-				writeJSONFrame(t, conn, validHello())
-				if kind, _ := readChannelFrame(t, conn); kind != "ack" {
-					t.Fatalf("frame = %q", kind)
-				}
-				writeJSONFrame(t, conn, heartbeatMessage{
-					Type:     "heartbeat",
-					Services: []heartbeatService{},
-					Liveness: "live",
-					Chain:    []string{testProxyID, testProxyID},
-					Fallback: fallbackMessage{Services: []string{}},
-				})
-			},
-			code:   websocket.ClosePolicyViolation,
-			reason: "chain_loop",
-		},
-		{
-			name: "chain does not end at sender",
-			open: func(t *testing.T, conn *websocket.Conn) {
-				hello := validHello()
-				hello.Chain = []string{testProxyID, testDownstreamB}
-				writeJSONFrame(t, conn, hello)
-			},
-			code:   websocket.ClosePolicyViolation,
-			reason: "chain_loop",
-		},
-		{
-			name: "proxy is not the immediate upstream",
-			open: func(t *testing.T, conn *websocket.Conn) {
-				hello := validHello()
-				hello.Chain = []string{testProxyID, testDownstreamB, testDownstreamID}
-				writeJSONFrame(t, conn, hello)
-			},
-			code:   websocket.ClosePolicyViolation,
-			reason: "chain_loop",
-		},
-		{
-			name: "duplicate hello",
-			open: func(t *testing.T, conn *websocket.Conn) {
-				writeJSONFrame(t, conn, validHello())
-				if kind, _ := readChannelFrame(t, conn); kind != "ack" {
-					t.Fatalf("frame = %q", kind)
-				}
-				writeJSONFrame(t, conn, validHello())
-			},
-			code:   websocket.CloseProtocolError,
-			reason: "duplicate hello",
-		},
-		{
-			name: "unknown frame",
-			open: func(t *testing.T, conn *websocket.Conn) {
-				writeJSONFrame(t, conn, validHello())
-				if kind, _ := readChannelFrame(t, conn); kind != "ack" {
-					t.Fatalf("frame = %q", kind)
-				}
-				writeJSONFrame(t, conn, map[string]any{"type": "unknown"})
-			},
-			code:   websocket.CloseProtocolError,
-			reason: "unknown frame",
-		},
-	} {
-		t.Run(testCase.name, func(t *testing.T) {
-			credential := testCredential{downstreamID: testDownstreamID, token: token}
-			if testCase.name == "service outside subset" {
-				credential.services = []string{testServiceID1}
-			}
-			server := newTestServer(t, mirror, nil, credential)
-			conn, _, err := server.dial(token)
-			if err != nil {
-				t.Fatalf("dial: %v", err)
-			}
-			defer conn.Close()
-			testCase.open(t, conn)
-			code, reason := readClose(t, conn)
-			if code != testCase.code || reason != testCase.reason {
-				t.Fatalf("close = %d %q, want %d %q", code, reason, testCase.code, testCase.reason)
-			}
-		})
-	}
-}
-
-func TestPollBodyTooLarge(t *testing.T) {
-	mirror, _, _ := newPopulatedMirror(t)
-	token := testToken(testDownstreamID, 1)
-	server := newTestServer(t, mirror, nil, testCredential{
-		downstreamID: testDownstreamID,
-		token:        token,
-	})
-	body := bytes.Repeat([]byte("x"), maxChannelFrameBytes+1)
-	response, payload := server.post(adsync.APIPrefix+"/channel/poll?wait=0", token, body)
-	if response.StatusCode != http.StatusRequestEntityTooLarge {
-		t.Errorf("status %d body %s", response.StatusCode, payload)
-	}
-}
-
-func TestPollRevokedWhileHeld(t *testing.T) {
-	mirror, _, _ := newPopulatedMirror(t)
-	token := testToken(testDownstreamID, 1)
-	server := newTestServer(t, mirror, nil, testCredential{
-		downstreamID: testDownstreamID,
-		token:        token,
-	})
-	type result struct {
-		status int
-		body   []byte
-	}
-	done := make(chan result, 1)
-	go func() {
-		response, body := server.post(adsync.APIPrefix+"/channel/poll?wait=1", token,
-			heartbeatFrame([]string{testProxyID, testDownstreamID}))
-		done <- result{status: response.StatusCode, body: body}
-	}()
-	time.Sleep(50 * time.Millisecond)
-	// The credential is gone after the reload. A poll that already
-	// authenticated fails the revalidation; one that starts afterwards fails
-	// authentication, so either ordering answers 401.
-	server.writeCredentialFile(testDownstreamB + ":" + hashToken(testToken(testDownstreamB, 2)) + ":*")
-	if err := server.server.ReloadCredentials(); err != nil {
-		t.Fatalf("reload: %v", err)
-	}
-	got := <-done
-	if got.status != http.StatusUnauthorized {
-		t.Errorf("status %d body %s", got.status, got.body)
-	}
-}
-
-func TestMirrorOptionValidation(t *testing.T) {
-	for name, mutate := range map[string]func(*MirrorOptions){
-		"commits": func(options *MirrorOptions) { options.MaxLogCommits = -1 },
-		"bytes":   func(options *MirrorOptions) { options.MaxLogBytes = -1 },
-	} {
-		options := MirrorOptions{}
-		mutate(&options)
-		if _, err := NewMirror(options); !errors.Is(err, ErrConfig) {
-			t.Errorf("%s: %v, want ErrConfig", name, err)
-		}
-	}
-}
-
-func TestMirrorChangesEdgeCases(t *testing.T) {
-	mirror := newTestMirror(t, nil)
-	service := newFixtureService(testServiceID1, "books")
-	if err := mirror.ApplySnapshot(snapshotAt(t, service)); err != nil {
-		t.Fatalf("apply snapshot: %v", err)
-	}
-	service.publish(t, upsertAuthz(testServiceID1+"A1", "policy", "grant read"))
-	if err := mirror.ApplyChanges(pageFor(t, service, 1, 100)); err != nil {
-		t.Fatalf("apply changes: %v", err)
-	}
-	low, err := mirror.Changes(testServiceID1, 1, 0)
-	if err != nil || len(low.Commits) != 1 {
-		t.Errorf("limit below one: %v %+v", err, low.Commits)
-	}
-	high, err := mirror.Changes(testServiceID1, 1, 1000)
-	if err != nil || len(high.Commits) != 1 {
-		t.Errorf("limit above the maximum: %v %+v", err, high.Commits)
-	}
-	if _, err := mirror.Changes(testServiceID1, 1, 100); err != nil {
-		t.Fatalf("changes: %v", err)
-	}
-
-	overflowed := newTestMirror(t, func(options *MirrorOptions) {
-		options.MaxLogCommits = 1
-	})
-	other := newFixtureService(testServiceID2, "orders")
-	if err := overflowed.ApplySnapshot(snapshotAt(t, other)); err != nil {
-		t.Fatalf("apply snapshot: %v", err)
-	}
-	for index := 0; index < 2; index++ {
-		other.publish(t, upsertAuthz(testServiceID2+string(rune('A'+index)), "policy", "grant read"))
-		if err := overflowed.ApplyChanges(pageFor(t, other, other.Revision-1, 100)); err != nil {
-			t.Fatalf("apply changes: %v", err)
-		}
-	}
-	if _, err := overflowed.Changes(testServiceID2, 1, 100); !errors.Is(err, ErrSnapshotRequired) {
-		t.Errorf("overflowed changes: %v, want ErrSnapshotRequired", err)
-	}
-}
-
-func TestMirrorNilInputs(t *testing.T) {
-	mirror := newTestMirror(t, nil)
-	if err := mirror.ApplySnapshot(nil); !errors.Is(err, ErrConfig) {
-		t.Errorf("nil snapshot: %v, want ErrConfig", err)
-	}
-	if err := mirror.ApplyChanges(nil); !errors.Is(err, ErrConfig) {
-		t.Errorf("nil page: %v, want ErrConfig", err)
-	}
-	if err := mirror.ApplyChanges(&adsync.ChangesResponse{ServiceID: testUnknownID}); !errors.Is(err, ErrUnknownService) {
-		t.Errorf("unknown service: %v, want ErrUnknownService", err)
-	}
-}
-
-func TestMirrorSnapshotValidation(t *testing.T) {
-	mirror := newTestMirror(t, nil)
-	service := newFixtureService(testServiceID1, "books")
-	for _, testCase := range []struct {
-		name   string
-		mutate func(*adsync.SnapshotResponse)
-	}{
-		{name: "invalid service id", mutate: func(response *adsync.SnapshotResponse) { response.ServiceID = "bad" }},
-		{name: "invalid source id", mutate: func(response *adsync.SnapshotResponse) { response.SourceID = "bad" }},
-		{name: "invalid epoch", mutate: func(response *adsync.SnapshotResponse) { response.Epoch = "bad" }},
-		{name: "invalid revision", mutate: func(response *adsync.SnapshotResponse) { response.Revision = 1<<53 + 1 }},
-		{name: "invalid name", mutate: func(response *adsync.SnapshotResponse) { response.Snapshot.Name = "-bad" }},
-		{name: "missing hashes", mutate: func(response *adsync.SnapshotResponse) { response.StateHash = adsync.Hash{} }},
-	} {
-		response := service.snapshotResponse(t)
-		testCase.mutate(response)
-		if err := mirror.ApplySnapshot(response); !errors.Is(err, adsync.ErrProtocol) {
-			t.Errorf("%s: %v, want ErrProtocol", testCase.name, err)
-		}
-	}
-}
-
-func TestMirrorChangePageValidation(t *testing.T) {
-	newMirrorWithCommit := func(t *testing.T) (*Mirror, *fixtureService) {
-		t.Helper()
-		mirror := newTestMirror(t, nil)
-		service := newFixtureService(testServiceID1, "books")
-		if err := mirror.ApplySnapshot(snapshotAt(t, service)); err != nil {
-			t.Fatalf("apply snapshot: %v", err)
-		}
-		service.publish(t, upsertAuthz(testServiceID1+"A1", "policy", "grant read"))
-		return mirror, service
-	}
-	valid := func(t *testing.T, service *fixtureService) *adsync.ChangesResponse {
-		t.Helper()
-		return pageFor(t, service, 1, 100)
-	}
-
-	t.Run("already applied", func(t *testing.T) {
-		mirror, service := newMirrorWithCommit(t)
-		page := valid(t, service)
-		if err := mirror.ApplyChanges(page); err != nil {
-			t.Fatalf("first delivery: %v", err)
-		}
-		if err := mirror.ApplyChanges(page); err != nil {
-			t.Errorf("duplicate delivery: %v", err)
-		}
-	})
-
-	t.Run("identity changed", func(t *testing.T) {
-		mirror, service := newMirrorWithCommit(t)
-		page := valid(t, service)
-		page.Epoch = testServiceID2
-		if err := mirror.ApplyChanges(page); !errors.Is(err, ErrIdentityChanged) {
-			t.Errorf("epoch change: %v, want ErrIdentityChanged", err)
-		}
-	})
-
-	t.Run("revision out of range", func(t *testing.T) {
-		mirror, service := newMirrorWithCommit(t)
-		page := valid(t, service)
-		page.From = 1<<53 + 1
-		if err := mirror.ApplyChanges(page); !errors.Is(err, adsync.ErrProtocol) {
-			t.Errorf("from out of range: %v, want ErrProtocol", err)
-		}
-	})
-
-	t.Run("ends after head", func(t *testing.T) {
-		mirror, service := newMirrorWithCommit(t)
-		page := valid(t, service)
-		page.To = page.Head + 1
-		if err := mirror.ApplyChanges(page); !errors.Is(err, adsync.ErrProtocol) {
-			t.Errorf("to after head: %v, want ErrProtocol", err)
-		}
-	})
-
-	t.Run("no commits", func(t *testing.T) {
-		mirror, service := newMirrorWithCommit(t)
-		page := valid(t, service)
-		page.Commits = nil
-		if err := mirror.ApplyChanges(page); !errors.Is(err, adsync.ErrProtocol) {
-			t.Errorf("empty page: %v, want ErrProtocol", err)
-		}
-	})
-
-	t.Run("not contiguous", func(t *testing.T) {
-		mirror, service := newMirrorWithCommit(t)
-		service.publish(t, upsertAuthz(testServiceID1+"A2", "policy", "grant read"))
-		page := pageFor(t, service, 1, 100)
-		if len(page.Commits) != 2 {
-			t.Fatalf("fixture commits = %d", len(page.Commits))
-		}
-		page.Commits[1].Revision = page.Commits[0].Revision
-		if err := mirror.ApplyChanges(page); !errors.Is(err, adsync.ErrProtocol) {
-			t.Errorf("non-contiguous page: %v, want ErrProtocol", err)
-		}
-	})
-
-	t.Run("broken chain", func(t *testing.T) {
-		mirror, service := newMirrorWithCommit(t)
-		page := valid(t, service)
-		page.Commits[0].PrevHash = adsync.Hash{}
-		if err := mirror.ApplyChanges(page); !errors.Is(err, adsync.ErrIntegrity) {
-			t.Errorf("broken chain: %v, want ErrIntegrity", err)
-		}
-	})
-
-	t.Run("hash mismatch", func(t *testing.T) {
-		mirror, service := newMirrorWithCommit(t)
-		page := valid(t, service)
-		name := "tampered"
-		page.Commits[0].Changes = []adsync.Change{upsertAuthz(testServiceID1+"A9", name, "grant read")}
-		if err := mirror.ApplyChanges(page); !errors.Is(err, adsync.ErrIntegrity) {
-			t.Errorf("hash mismatch: %v, want ErrIntegrity", err)
-		}
-	})
-
-	t.Run("service change targets another service", func(t *testing.T) {
-		mirror, service := newMirrorWithCommit(t)
-		service.publish(t, renameService(testServiceID2, "other"))
-		page := pageFor(t, service, 1, 100)
-		if err := mirror.ApplyChanges(page); !errors.Is(err, adsync.ErrProtocol) {
-			t.Errorf("foreign service change: %v, want ErrProtocol", err)
-		}
-	})
-
-	t.Run("last commit before page end", func(t *testing.T) {
-		mirror, service := newMirrorWithCommit(t)
-		service.publish(t, upsertAuthz(testServiceID1+"A2", "policy", "grant read"))
-		page := pageFor(t, service, 1, 1)
-		page.To = page.Head
-		if err := mirror.ApplyChanges(page); !errors.Is(err, adsync.ErrProtocol) {
-			t.Errorf("short page: %v, want ErrProtocol", err)
-		}
-	})
-
-	t.Run("head state hash mismatch", func(t *testing.T) {
-		mirror, service := newMirrorWithCommit(t)
-		page := valid(t, service)
-		page.HeadStateHash = adsync.StateHash(adsync.Snapshot{Name: "other"})
-		if err := mirror.ApplyChanges(page); !errors.Is(err, adsync.ErrIntegrity) {
-			t.Errorf("head hash: %v, want ErrIntegrity", err)
-		}
-	})
-}
-
-func TestMirrorRemovedAndOverflowedPages(t *testing.T) {
-	mirror := newTestMirror(t, nil)
-	service := newFixtureService(testServiceID1, "books")
-	if err := mirror.ApplySnapshot(snapshotAt(t, service)); err != nil {
-		t.Fatalf("apply snapshot: %v", err)
-	}
-	service.publish(t, upsertAuthz(testServiceID1+"A1", "policy", "grant read"))
-	page := pageFor(t, service, 1, 100)
-	mirror.RemoveService(testServiceID1)
-	if err := mirror.ApplyChanges(page); !errors.Is(err, ErrServiceRemoved) {
-		t.Errorf("removed service: %v, want ErrServiceRemoved", err)
-	}
-
-	overflowed := newTestMirror(t, func(options *MirrorOptions) {
-		options.MaxLogCommits = 1
-	})
-	other := newFixtureService(testServiceID2, "orders")
-	if err := overflowed.ApplySnapshot(snapshotAt(t, other)); err != nil {
-		t.Fatalf("apply snapshot: %v", err)
-	}
-	for index := 0; index < 2; index++ {
-		other.publish(t, upsertAuthz(testServiceID2+string(rune('A'+index)), "policy", "grant read"))
-		if err := overflowed.ApplyChanges(pageFor(t, other, other.Revision-1, 100)); err != nil {
-			t.Fatalf("apply changes: %v", err)
-		}
-	}
-	next := other.changesPage(other.Revision, 100)
-	if err := overflowed.ApplyChanges(&next); !errors.Is(err, ErrSnapshotRequired) {
-		t.Errorf("overflowed service: %v, want ErrSnapshotRequired", err)
-	}
-}
-
-func TestCredentialSetReloadWithoutFile(t *testing.T) {
-	if err := (&CredentialSet{}).Reload(); !errors.Is(err, ErrCredentialFile) {
-		t.Errorf("reload without a file: %v, want ErrCredentialFile", err)
-	}
-}
-
-func TestRemoveServiceIgnoresUnknownAndRemoved(t *testing.T) {
-	mirror := newTestMirror(t, nil)
-	service := newFixtureService(testServiceID1, "books")
-	if err := mirror.ApplySnapshot(snapshotAt(t, service)); err != nil {
-		t.Fatalf("apply snapshot: %v", err)
-	}
-	version := mirror.Version()
-	mirror.RemoveService(testUnknownID)
-	if mirror.Version() != version {
-		t.Error("removing an unknown service advanced the version")
-	}
-	mirror.RemoveService(testServiceID1)
-	removedVersion := mirror.Version()
-	mirror.RemoveService(testServiceID1)
-	if mirror.Version() != removedVersion {
-		t.Error("removing a removed service advanced the version")
-	}
-}
-
-func TestMirrorSnapshotConflictAndRename(t *testing.T) {
-	mirror := newTestMirror(t, nil)
-	first := newFixtureService(testServiceID1, "books")
-	first.publish(t, upsertAuthz(testServiceID1+"A1", "one", "grant read"))
-	if err := mirror.ApplySnapshot(snapshotAt(t, first)); err != nil {
-		t.Fatalf("apply first snapshot: %v", err)
-	}
-	second := newFixtureService(testServiceID1, "books")
-	second.publish(t, upsertAuthz(testServiceID1+"B1", "two", "grant read"))
-	if err := mirror.ApplySnapshot(snapshotAt(t, second)); !errors.Is(err, adsync.ErrIntegrity) {
-		t.Errorf("same revision, different state hash: %v, want ErrIntegrity", err)
-	}
-
-	renamed := newTestMirror(t, nil)
-	base := newFixtureService(testServiceID1, "books")
-	if err := renamed.ApplySnapshot(snapshotAt(t, base)); err != nil {
-		t.Fatalf("apply base snapshot: %v", err)
-	}
-	version := renamed.Version()
-	updated := newFixtureService(testServiceID1, "books")
-	updated.publish(t, renameService(testServiceID1, "books-v2"))
-	if err := renamed.ApplySnapshot(snapshotAt(t, updated)); err != nil {
-		t.Fatalf("apply renamed snapshot: %v", err)
-	}
-	services := renamed.Services()
-	if len(services) != 1 || services[0].Name != "books-v2" {
-		t.Fatalf("services after rename = %+v", services)
-	}
-	if renamed.Version() <= version {
-		t.Error("a rename through a snapshot did not advance the version")
-	}
-}
-
-func TestServerInvalidChainEntry(t *testing.T) {
-	mirror := newTestMirror(t, nil)
-	credentials, err := NewCredentialSet([]Credential{{DownstreamID: "edge", Token: "token", Services: []string{"*"}}})
-	if err != nil {
-		t.Fatalf("credentials: %v", err)
-	}
-	_, err = NewServer(Config{
-		InstanceID:  testProxyID,
-		Mirror:      mirror,
-		Credentials: credentials,
-		Chain:       []string{"bad", testProxyID},
-	})
-	if !errors.Is(err, ErrConfig) {
-		t.Errorf("invalid chain entry: %v, want ErrConfig", err)
-	}
+	hub.Publish(testServiceID1, 2)
+	hub.Unsubscribe(subscriber)
 }
 
 func TestWriteChannelJSONBounds(t *testing.T) {
@@ -1030,243 +194,30 @@ func TestWriteChannelJSONBounds(t *testing.T) {
 	}
 }
 
-func TestChainValidationAcceptsUnrelatedChains(t *testing.T) {
-	mirror, _, _ := newPopulatedMirror(t)
-	token := testToken(testDownstreamID, 1)
-	server := newTestServer(t, mirror, nil, testCredential{
-		downstreamID: testDownstreamID,
-		token:        token,
-	})
-	for _, chain := range [][]string{
-		{testDownstreamID},
-		{testDownstreamID, testProxyID},
-	} {
-		response, body := server.post(adsync.APIPrefix+"/channel/poll?wait=0", token, heartbeatFrame(chain))
-		if response.StatusCode != http.StatusOK {
-			t.Errorf("chain %v: status %d body %s", chain, response.StatusCode, body)
-		}
-	}
-}
-
-func TestPollRejectsTrailingJSON(t *testing.T) {
-	mirror, _, _ := newPopulatedMirror(t)
-	token := testToken(testDownstreamID, 1)
-	server := newTestServer(t, mirror, nil, testCredential{
-		downstreamID: testDownstreamID,
-		token:        token,
-	})
-	body := append(heartbeatFrame([]string{testProxyID, testDownstreamID}), []byte("{}")...)
-	response, payload := server.post(adsync.APIPrefix+"/channel/poll?wait=0", token, body)
-	if response.StatusCode != http.StatusBadRequest {
-		t.Errorf("status %d body %s", response.StatusCode, payload)
-	}
-}
-
 func TestPollOnClosedHub(t *testing.T) {
 	mirror, _, _ := newPopulatedMirror(t)
-	token := testToken(testDownstreamID, 1)
-	hub, err := NewHub(0, 0)
+	hub, err := NewHub(0)
 	if err != nil {
 		t.Fatalf("new hub: %v", err)
 	}
-	server := newTestServer(t, mirror, &testServerOptions{hub: hub}, testCredential{
-		downstreamID: testDownstreamID,
-		token:        token,
-	})
+	server := newTestServer(t, mirror, &testServerOptions{hub: hub})
 	hub.Close()
-	response, payload := server.post(adsync.APIPrefix+"/channel/poll?wait=0", token,
-		heartbeatFrame([]string{testProxyID, testDownstreamID}))
+	response, payload := server.post(server.defaultClient(), adsync.APIPrefix+"/channel/poll?wait=0",
+		pollBody(t, testClientInstanceID))
 	if response.StatusCode != http.StatusServiceUnavailable || string(payload) != `{"error":"source_unavailable"}` {
 		t.Errorf("status %d body %s", response.StatusCode, payload)
 	}
 }
 
-func TestChannelRequiresUpgrade(t *testing.T) {
-	mirror, _, _ := newPopulatedMirror(t)
-	token := testToken(testDownstreamID, 1)
-	server := newTestServer(t, mirror, nil, testCredential{
-		downstreamID: testDownstreamID,
-		token:        token,
-	})
-	response, body := server.get(adsync.APIPrefix+"/channel", token, nil)
-	if response.StatusCode != http.StatusBadRequest {
-		t.Errorf("plain GET: status %d body %s", response.StatusCode, body)
-	}
-	conn, _, err := server.dial(token)
-	if err != nil {
-		t.Fatalf("dial: %v", err)
-	}
-	_ = conn.Close()
-}
-
-func TestMirrorOversizedCommitOverflows(t *testing.T) {
-	mirror := newTestMirror(t, nil)
-	service := newFixtureService(testServiceID1, "books")
-	if err := mirror.ApplySnapshot(snapshotAt(t, service)); err != nil {
-		t.Fatalf("apply snapshot: %v", err)
-	}
-	service.publish(t, upsertAuthz(testServiceID1+"A1", "policy", strings.Repeat("x", 1200<<10)))
-	if err := mirror.ApplyChanges(pageFor(t, service, 1, 100)); err != nil {
-		t.Fatalf("apply oversized commit: %v", err)
-	}
-	if services := mirror.Services(); len(services) != 0 {
-		t.Errorf("service with an unsendable commit is advertised: %+v", services)
-	}
-	if needs := mirror.NeedsSnapshot(); len(needs) != 1 || needs[0] != testServiceID1 {
-		t.Errorf("NeedsSnapshot = %v", needs)
-	}
-}
-
-func TestMirrorRejectsCommitThatCannotApply(t *testing.T) {
-	mirror := newTestMirror(t, nil)
-	service := newFixtureService(testServiceID1, "books")
-	if err := mirror.ApplySnapshot(snapshotAt(t, service)); err != nil {
-		t.Fatalf("apply snapshot: %v", err)
-	}
-	changes := []adsync.Change{{Op: "upsert", Kind: "service", ID: testServiceID1}}
-	hash, err := adsync.CommitHash(service.CommitHash, changes)
-	if err != nil {
-		t.Fatalf("commit hash: %v", err)
-	}
-	commit := adsync.Commit{
-		Revision: service.Revision + 1,
-		PrevHash: service.CommitHash,
-		Hash:     hash,
-		At:       1762500000000,
-		Changes:  changes,
-	}
-	page := &adsync.ChangesResponse{
-		ServiceID: service.ID,
-		SourceID:  service.ID,
-		Epoch:     service.Epoch,
-		From:      service.Revision + 1,
-		To:        service.Revision + 1,
-		Head:      service.Revision + 1,
-		Commits:   []adsync.Commit{commit},
-	}
-	if err := mirror.ApplyChanges(page); !errors.Is(err, adsync.ErrProtocol) {
-		t.Errorf("commit without a service name: %v, want ErrProtocol", err)
-	}
-}
-
-func TestMirrorDelayedSnapshotCannotReviveASignedDelete(t *testing.T) {
-	mirror := newTestMirror(t, nil)
-	service := newFixtureService(testServiceID1, "books")
-	if err := mirror.ApplySnapshot(snapshotAt(t, service)); err != nil {
-		t.Fatalf("apply snapshot: %v", err)
-	}
-	before := snapshotAt(t, service)
-	service.publish(t, deleteChange("service", testServiceID1))
-	if err := mirror.ApplyChanges(pageFor(t, service, 1, 100)); !errors.Is(err, adsync.ErrSourceGone) {
-		t.Fatalf("signed delete: %v, want ErrSourceGone", err)
-	}
-
-	// The pre-deletion snapshot was fetched before the delete reached the
-	// source. It must not bring the deleted policies back.
-	if err := mirror.ApplySnapshot(before); err != nil {
-		t.Fatalf("delayed snapshot: %v", err)
-	}
-	if _, availability := mirror.Lookup(testServiceID1); availability != ServiceRemoved {
-		t.Errorf("availability after delayed snapshot = %v, want ServiceRemoved", availability)
-	}
-	if services := mirror.Services(); len(services) != 0 {
-		t.Errorf("delayed snapshot revived the service: %+v", services)
-	}
-
-	// Newer source state does revive it: a later revision is past the delete.
-	service.publish(t, upsertAuthz(testServiceID1+"A1", "read", "grant read"))
-	if err := mirror.ApplySnapshot(snapshotAt(t, service)); err != nil {
-		t.Fatalf("newer snapshot: %v", err)
-	}
-	if services := mirror.Services(); len(services) != 1 || services[0].Revision != service.Revision {
-		t.Errorf("newer snapshot did not revive the service: %+v", services)
-	}
-}
-
-func TestMirrorDelayedSnapshotCannotReviveAnAdministrativeRemoval(t *testing.T) {
-	mirror := newTestMirror(t, nil)
-	service := newFixtureService(testServiceID1, "books")
-	if err := mirror.ApplySnapshot(snapshotAt(t, service)); err != nil {
-		t.Fatalf("apply snapshot: %v", err)
-	}
-	before := snapshotAt(t, service)
-	mirror.RemoveService(testServiceID1)
-	if err := mirror.ApplySnapshot(before); err != nil {
-		t.Fatalf("delayed snapshot: %v", err)
-	}
-	if _, availability := mirror.Lookup(testServiceID1); availability != ServiceRemoved {
-		t.Errorf("availability after delayed snapshot = %v, want ServiceRemoved", availability)
-	}
-
-	service.publish(t, upsertAuthz(testServiceID1+"A1", "read", "grant read"))
-	if err := mirror.ApplySnapshot(snapshotAt(t, service)); err != nil {
-		t.Fatalf("newer snapshot: %v", err)
-	}
-	if services := mirror.Services(); len(services) != 1 {
-		t.Errorf("newer snapshot did not revive the service: %+v", services)
-	}
-}
-
-func TestMirrorServiceChurnDoesNotExhaustCapacity(t *testing.T) {
-	mirror := newTestMirror(t, nil)
-	ids := make([]string, 0, MaxServices)
-	for index := 0; index < MaxServices; index++ {
-		id := fmt.Sprintf("01HF7YAT%018d", 100+index)
-		ids = append(ids, id)
-		service := newFixtureService(id, fmt.Sprintf("service-%d", index))
-		if err := mirror.ApplySnapshot(snapshotAt(t, service)); err != nil {
-			t.Fatalf("service %d: %v", index, err)
-		}
-	}
-	for _, id := range ids {
-		mirror.RemoveService(id)
-	}
-	if services := mirror.Services(); len(services) != 0 {
-		t.Fatalf("removed services are advertised: %+v", services)
-	}
-
-	// Tombstones must not hold the service slots: a fresh set of ids replaces
-	// the removed ones.
-	for index := 0; index < MaxServices; index++ {
-		id := fmt.Sprintf("01HF7YAT%018d", 200+index)
-		service := newFixtureService(id, fmt.Sprintf("fresh-%d", index))
-		if err := mirror.ApplySnapshot(snapshotAt(t, service)); err != nil {
-			t.Fatalf("fresh service %d: %v", index, err)
-		}
-	}
-	if services := mirror.Services(); len(services) != MaxServices {
-		t.Errorf("advertised services = %d, want %d", len(services), MaxServices)
-	}
-
-	// A removed service no longer counts, but a full active set still bounds
-	// the mirror.
-	extra := newFixtureService("01HF7YAT000000000000000999", "extra")
-	if err := mirror.ApplySnapshot(snapshotAt(t, extra)); !errors.Is(err, ErrTooManyServices) {
-		t.Errorf("eleventh active service: %v, want ErrTooManyServices", err)
-	}
-}
-
 func TestChannelFirstFrameIsAckEvenWithPendingNotification(t *testing.T) {
 	mirror, books, _ := newPopulatedMirror(t)
-	token := testToken(testDownstreamID, 1)
-	server := newTestServer(t, mirror, &testServerOptions{
-		coalesceWindow: time.Millisecond,
-	}, testCredential{
-		downstreamID: testDownstreamID,
-		token:        token,
-	})
-	conn, _, err := server.dial(token)
+	server := newTestServer(t, mirror, &testServerOptions{coalesceWindow: time.Millisecond})
+	conn, _, err := server.dial(server.pki.clientCertFile, server.pki.clientKeyFile)
 	if err != nil {
 		t.Fatalf("dial: %v", err)
 	}
 	defer conn.Close()
-	writeJSONFrame(t, conn, helloMessage{
-		Type:         "hello",
-		InstanceID:   testDownstreamID,
-		Services:     []helloService{},
-		Chain:        []string{testProxyID, testDownstreamID},
-		AgentVersion: "test",
-	})
+	writeJSONFrame(t, conn, helloFrame(testClientInstanceID))
 	// A head advance lands while the channel starts. Its coalesced
 	// notification must not overtake the initial ack.
 	books.publish(t, upsertAuthz(testServiceID1+"A1", "read", "grant read"))
@@ -1285,313 +236,42 @@ func TestChannelFirstFrameIsAckEvenWithPendingNotification(t *testing.T) {
 
 func TestServersShareAHubWithoutStealingItsLifetime(t *testing.T) {
 	mirror, _, _ := newPopulatedMirror(t)
-	token := testToken(testDownstreamID, 1)
-	hub, err := NewHub(0, time.Millisecond)
+	hub, err := NewHub(time.Millisecond)
 	if err != nil {
 		t.Fatalf("new hub: %v", err)
 	}
-	credential := testCredential{downstreamID: testDownstreamID, token: token}
-	first := newTestServer(t, mirror, &testServerOptions{hub: hub}, credential)
-	second := newTestServer(t, mirror, &testServerOptions{hub: hub}, credential)
+	first := newTestServer(t, mirror, &testServerOptions{hub: hub})
+	second := newTestServer(t, mirror, &testServerOptions{hub: hub})
 
 	first.server.Close()
-	response, body := second.post(adsync.APIPrefix+"/channel/poll?wait=0", token,
-		heartbeatFrame([]string{testProxyID, testDownstreamID}))
+	response, body := second.post(second.defaultClient(), adsync.APIPrefix+"/channel/poll?wait=0",
+		pollBody(t, testClientInstanceID))
 	if response.StatusCode != http.StatusOK {
 		t.Errorf("second server after the first closed: status %d body %s", response.StatusCode, body)
 	}
-	subscriber, err := hub.Subscribe("edge-other", nil)
+	subscriber, err := hub.Subscribe()
 	if err != nil {
 		t.Fatalf("hub after the first server closed: %v", err)
 	}
 	hub.Unsubscribe(subscriber)
 }
 
-func TestMirrorIgnoresSnapshotsFromRetiredIdentities(t *testing.T) {
-	mirror := newTestMirror(t, nil)
-	retired := newFixtureServiceWithEpoch(testServiceID1, "01HF7YAT000000000000000201", "books")
-	retired.publish(t, upsertAuthz(testServiceID1+"A1", "read", "grant read"))
-	retiredSnapshot := snapshotAt(t, retired)
-	if err := mirror.ApplySnapshot(retiredSnapshot); err != nil {
-		t.Fatalf("apply first identity: %v", err)
-	}
-
-	current := newFixtureServiceWithEpoch(testServiceID1, "01HF7YAT000000000000000202", "books")
-	current.publish(t, upsertAuthz(testServiceID1+"B1", "read", "grant read"))
-	if err := mirror.ApplySnapshot(snapshotAt(t, current)); err != nil {
-		t.Fatalf("apply second identity: %v", err)
-	}
-
-	// A delayed snapshot from the identity the source moved away from carries
-	// replaced policy. Revisions of different identities cannot be compared, so
-	// the identity itself must keep it out.
-	if err := mirror.ApplySnapshot(retiredSnapshot); err != nil {
-		t.Fatalf("delayed retired snapshot: %v", err)
-	}
-	info, availability := mirror.Lookup(testServiceID1)
-	if availability != ServiceAvailable || info.Epoch != current.Epoch || info.Revision != current.Revision {
-		t.Errorf("copy rolled back to a retired identity: %+v availability %v", info, availability)
-	}
-
-	// The same holds for a removed copy: the retired identity cannot revive it,
-	// while newer state of the current identity can.
-	mirror.RemoveService(testServiceID1)
-	if err := mirror.ApplySnapshot(retiredSnapshot); err != nil {
-		t.Fatalf("retired snapshot after removal: %v", err)
-	}
-	if _, availability := mirror.Lookup(testServiceID1); availability != ServiceRemoved {
-		t.Errorf("retired identity revived a removed service: availability %v", availability)
-	}
-	current.publish(t, upsertAuthz(testServiceID1+"B2", "read", "grant read"))
-	if err := mirror.ApplySnapshot(snapshotAt(t, current)); err != nil {
-		t.Fatalf("revive current identity: %v", err)
-	}
-	if services := mirror.Services(); len(services) != 1 || services[0].Epoch != current.Epoch {
-		t.Errorf("current identity did not revive the service: %+v", services)
-	}
-}
-
-func TestHubPerCredentialConnectionLimit(t *testing.T) {
-	hub, err := NewHub(50, time.Millisecond, 2)
-	if err != nil {
-		t.Fatalf("new hub: %v", err)
-	}
-	defer hub.Close()
-	first, err := hub.Subscribe("edge-1", nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-	second, err := hub.Subscribe("edge-1", nil)
-	if err != nil {
-		t.Fatalf("second connection: %v", err)
-	}
-	if _, err := hub.Subscribe("edge-1", nil); !errors.Is(err, ErrFanoutLimit) {
-		t.Fatalf("third connection for one credential: %v, want ErrFanoutLimit", err)
-	}
-	if err := hub.Allow("edge-1"); !errors.Is(err, ErrFanoutLimit) {
-		t.Fatalf("Allow above the per-credential bound: %v", err)
-	}
-	if _, err := hub.Subscribe("edge-2", nil); err != nil {
-		t.Fatalf("another credential was not independently admitted: %v", err)
-	}
-	hub.Unsubscribe(first)
-	replacement, err := hub.Subscribe("edge-1", nil)
-	if err != nil {
-		t.Fatalf("a released connection slot was not reusable: %v", err)
-	}
-	hub.Unsubscribe(second)
-	hub.Unsubscribe(replacement)
-}
-
-func TestServerPerCredentialConnectionLimit(t *testing.T) {
-	mirror, _, _ := newPopulatedMirror(t)
-	token := testToken(testDownstreamID, 1)
-	server := newTestServer(t, mirror, nil, testCredential{
-		downstreamID: testDownstreamID,
-		token:        token,
-	})
-	open := func() *websocket.Conn {
-		conn, _, err := server.dial(token)
-		if err != nil {
-			t.Fatalf("dial: %v", err)
-		}
-		writeJSONFrame(t, conn, helloMessage{
-			Type:         "hello",
-			InstanceID:   testDownstreamID,
-			Services:     []helloService{},
-			Chain:        []string{testProxyID, testDownstreamID},
-			AgentVersion: "test",
-		})
-		if kind, _ := readChannelFrame(t, conn); kind != "ack" {
-			conn.Close()
-			t.Fatalf("frame = %q", kind)
-		}
-		return conn
-	}
-	first := open()
-	defer first.Close()
-	second := open()
-	defer second.Close()
-
-	conn, response, err := server.dial(token)
-	if err == nil {
-		conn.Close()
-		t.Fatal("a third connection for one credential was accepted")
-	}
-	if response == nil || response.StatusCode != http.StatusServiceUnavailable {
-		t.Fatalf("third connection response = %v, want 503", response)
-	}
-	if retry := response.Header.Get("Retry-After"); retry != "30" {
-		t.Errorf("Retry-After = %q", retry)
-	}
-	response.Body.Close()
-}
-
-func TestChannelReservesASlotBeforeHello(t *testing.T) {
-	mirror, _, _ := newPopulatedMirror(t)
-	token := testToken(testDownstreamID, 1)
-	server := newTestServer(t, mirror, &testServerOptions{
-		maxConnections: 1,
-	}, testCredential{
-		downstreamID: testDownstreamID,
-		token:        token,
-	})
-	first, _, err := server.dial(token)
-	if err != nil {
-		t.Fatalf("first connection: %v", err)
-	}
-	defer first.Close()
-
-	// The first connection holds its slot before sending hello. A second one
-	// must be refused at the HTTP upgrade instead of waiting for its hello.
-	_, response, err := server.dial(token)
-	if err == nil {
-		t.Fatal("a second pre-hello connection was accepted")
-	}
-	if response == nil || response.StatusCode != http.StatusServiceUnavailable {
-		t.Fatalf("second connection response = %v, want 503", response)
-	}
-	response.Body.Close()
-
-	// The first connection can still complete its hello and receive the ack.
-	writeJSONFrame(t, first, helloMessage{
-		Type:         "hello",
-		InstanceID:   testDownstreamID,
-		Services:     []helloService{},
-		Chain:        []string{testProxyID, testDownstreamID},
-		AgentVersion: "test",
-	})
-	if kind, _ := readChannelFrame(t, first); kind != "ack" {
-		t.Fatalf("frame = %q", kind)
-	}
-
-	// Closing it releases the slot for a new connection.
-	_ = first.Close()
-	waitFor(t, 5*time.Second, "the reserved slot to be released", func() bool {
-		conn, _, err := server.dial(token)
-		if err != nil {
-			return false
-		}
-		_ = conn.Close()
-		return true
-	})
-}
-
-func TestMirrorKeepsTombstonesAtTheBound(t *testing.T) {
-	mirror := newTestMirror(t, nil)
-	var (
-		firstID       string
-		firstSnapshot *adsync.SnapshotResponse
-	)
-	for index := 0; index < maxTombstones; index++ {
-		id := fmt.Sprintf("01HF7YAT%018d", 2000+index)
-		service := newFixtureService(id, "books")
-		snapshot := snapshotAt(t, service)
-		if index == 0 {
-			firstID, firstSnapshot = id, snapshot
-		}
-		if err := mirror.ApplySnapshot(snapshot); err != nil {
-			t.Fatalf("service %d: %v", index, err)
-		}
-		mirror.RemoveService(id)
-	}
-	for index := 0; index < MaxServices; index++ {
-		id := fmt.Sprintf("01HF7YAT%018d", 4000+index)
-		service := newFixtureService(id, "books")
-		if err := mirror.ApplySnapshot(snapshotAt(t, service)); err != nil {
-			t.Fatalf("active service %d: %v", index, err)
-		}
-	}
-	// Freeing an active slot alone is not enough: the tombstone store is full,
-	// and losing a tombstone would let its delayed snapshot resurrect deleted
-	// policy. The new service is refused instead.
-	mirror.RemoveService(fmt.Sprintf("01HF7YAT%018d", 4000))
-	extra := newFixtureService(fmt.Sprintf("01HF7YAT%018d", 5000), "extra")
-	if err := mirror.ApplySnapshot(snapshotAt(t, extra)); !errors.Is(err, ErrTooManyServices) {
-		t.Errorf("new service with a full tombstone store: %v, want ErrTooManyServices", err)
-	}
-
-	// The oldest tombstone still guards its pre-removal snapshot.
-	if err := mirror.ApplySnapshot(firstSnapshot); err != nil {
-		t.Fatalf("delayed snapshot: %v", err)
-	}
-	if _, availability := mirror.Lookup(firstID); availability != ServiceRemoved {
-		t.Errorf("availability of the oldest tombstone = %v, want ServiceRemoved", availability)
-	}
-}
-
-func TestMirrorRejectsReplaysFromRetiredIdentities(t *testing.T) {
-	mirror := newTestMirror(t, nil)
-	var first *adsync.SnapshotResponse
-	for index := 0; index < 12; index++ {
-		epoch := fmt.Sprintf("01HF7YAT%018d", 6000+index)
-		service := newFixtureServiceWithEpoch(testServiceID1, epoch, "books")
-		service.publish(t, upsertAuthz(testServiceID1+"A1", "read", "grant read"))
-		snapshot := snapshotAt(t, service)
-		if index == 0 {
-			first = snapshot
-		}
-		if err := mirror.ApplySnapshot(snapshot); err != nil {
-			t.Fatalf("identity %d: %v", index, err)
-		}
-	}
-	// Replay protection outlives the transition: more identity changes than any
-	// retention bound must not make the oldest snapshot acceptable again.
-	if err := mirror.ApplySnapshot(first); err != nil {
-		t.Fatalf("replayed snapshot: %v", err)
-	}
-	info, availability := mirror.Lookup(testServiceID1)
-	if availability != ServiceAvailable {
-		t.Fatalf("availability = %v", availability)
-	}
-	if info.Epoch != fmt.Sprintf("01HF7YAT%018d", 6011) {
-		t.Errorf("copy rolled back to %q", info.Epoch)
-	}
-}
-
-func TestMirrorRejectsConflictingCommitHashAtOneRevision(t *testing.T) {
-	mirror := newTestMirror(t, nil)
-	service := newFixtureService(testServiceID1, "books")
-	original := snapshotAt(t, service)
-	if err := mirror.ApplySnapshot(original); err != nil {
-		t.Fatalf("apply snapshot: %v", err)
-	}
-
-	conflicting := snapshotAt(t, service)
-	conflicting.CommitHash = adsync.StateHash(adsync.Snapshot{Name: "other history"})
-	if err := mirror.ApplySnapshot(conflicting); !errors.Is(err, adsync.ErrIntegrity) {
-		t.Errorf("conflicting commit hash: %v, want ErrIntegrity", err)
-	}
-	anchor, found := mirror.Snapshot(testServiceID1)
-	if !found || anchor.CommitHash != original.CommitHash {
-		t.Errorf("anchor was replaced: %+v", anchor)
-	}
-
-	// The snapshot entity tag covers the commit hash, so a downstream holding
-	// the old anchor never sees a 304 for a different history.
-	if snapshotETag(*original) == snapshotETag(*conflicting) {
-		t.Error("snapshot ETag ignores the commit hash")
-	}
-}
-
 func TestCloseEndsHeldPolls(t *testing.T) {
 	mirror, _, _ := newPopulatedMirror(t)
-	token := testToken(testDownstreamID, 1)
-	server := newTestServer(t, mirror, nil, testCredential{
-		downstreamID: testDownstreamID,
-		token:        token,
-	})
+	server := newTestServer(t, mirror, nil)
 	type result struct {
 		status int
 		body   []byte
 	}
 	done := make(chan result, 1)
 	go func() {
-		response, body := server.post(adsync.APIPrefix+"/channel/poll?wait=30", token,
-			heartbeatFrame([]string{testProxyID, testDownstreamID}))
+		response, body := server.post(server.defaultClient(), adsync.APIPrefix+"/channel/poll?wait=30",
+			pollBody(t, testClientInstanceID))
 		done <- result{status: response.StatusCode, body: body}
 	}()
-	time.Sleep(50 * time.Millisecond)
+	waitFor(t, 2*time.Second, "the poll to be held", func() bool {
+		return server.server.DownstreamCount() == 1
+	})
 	server.server.Close()
 	select {
 	case got := <-done:
@@ -1605,25 +285,21 @@ func TestCloseEndsHeldPolls(t *testing.T) {
 
 func TestHeldPollAnswersDistributionPaused(t *testing.T) {
 	mirror, books, _ := newPopulatedMirror(t)
-	token := testToken(testDownstreamID, 1)
 	var paused atomic.Bool
-	server := newTestServer(t, mirror, &testServerOptions{
-		paused: paused.Load,
-	}, testCredential{
-		downstreamID: testDownstreamID,
-		token:        token,
-	})
+	server := newTestServer(t, mirror, &testServerOptions{paused: paused.Load})
 	type result struct {
 		status int
 		body   []byte
 	}
 	done := make(chan result, 1)
 	go func() {
-		response, body := server.post(adsync.APIPrefix+"/channel/poll?wait=30", token,
-			heartbeatFrame([]string{testProxyID, testDownstreamID}))
+		response, body := server.post(server.defaultClient(), adsync.APIPrefix+"/channel/poll?wait=30",
+			pollBody(t, testClientInstanceID))
 		done <- result{status: response.StatusCode, body: body}
 	}()
-	time.Sleep(50 * time.Millisecond)
+	waitFor(t, 2*time.Second, "the poll to be held", func() bool {
+		return server.server.DownstreamCount() == 1
+	})
 	paused.Store(true)
 	// A head advance releases the held wait, so the paused state is rechecked.
 	books.publish(t, upsertAuthz(testServiceID1+"A1", "read", "grant read"))
@@ -1637,333 +313,5 @@ func TestHeldPollAnswersDistributionPaused(t *testing.T) {
 		}
 	case <-time.After(5 * time.Second):
 		t.Fatal("held poll did not answer")
-	}
-}
-
-func TestChannelInitialAckRespectsPause(t *testing.T) {
-	mirror, _, _ := newPopulatedMirror(t)
-	token := testToken(testDownstreamID, 1)
-	var paused atomic.Bool
-	server := newTestServer(t, mirror, &testServerOptions{
-		paused: paused.Load,
-	}, testCredential{
-		downstreamID: testDownstreamID,
-		token:        token,
-	})
-	conn, _, err := server.dial(token)
-	if err != nil {
-		t.Fatalf("dial: %v", err)
-	}
-	defer conn.Close()
-	// The pause starts while the connection waits for its hello frame. The
-	// initial ack must not go out as if distribution were active.
-	paused.Store(true)
-	writeJSONFrame(t, conn, helloMessage{
-		Type:         "hello",
-		InstanceID:   testDownstreamID,
-		Services:     []helloService{},
-		Chain:        []string{testProxyID, testDownstreamID},
-		AgentVersion: "test",
-	})
-	code, reason := readClose(t, conn)
-	if code != websocket.ClosePolicyViolation || reason != "distribution_paused" {
-		t.Fatalf("close = %d %q", code, reason)
-	}
-}
-
-func TestCredentialSetPinsRequestsAcrossReload(t *testing.T) {
-	mirror, _, _ := newPopulatedMirror(t)
-	token := testToken(testDownstreamID, 1)
-	server := newTestServer(t, mirror, nil, testCredential{
-		downstreamID: testDownstreamID,
-		token:        token,
-	})
-	set := server.server.Credentials()
-	credential, ok := set.Authenticate(token)
-	if !ok {
-		t.Fatal("token did not authenticate")
-	}
-	if !set.BeginRequest(credential) {
-		t.Fatal("current credential was not pinned")
-	}
-	server.writeCredentialFile(testDownstreamID + ":" + hashToken(token) + ":" + testServiceID1)
-	reloaded := make(chan error, 1)
-	go func() { reloaded <- server.server.ReloadCredentials() }()
-	select {
-	case err := <-reloaded:
-		t.Fatalf("reload completed while a response was pinned: %v", err)
-	case <-time.After(50 * time.Millisecond):
-	}
-	set.EndRequest()
-	select {
-	case err := <-reloaded:
-		if err != nil {
-			t.Fatalf("reload after the pin was released: %v", err)
-		}
-	case <-time.After(5 * time.Second):
-		t.Fatal("reload did not complete after the pin was released")
-	}
-	// The replaced grant cannot start a new response.
-	if set.BeginRequest(credential) {
-		set.EndRequest()
-		t.Error("a replaced grant was pinned")
-	}
-}
-
-func TestCredentialFileReadIsBounded(t *testing.T) {
-	path := filepath.Join(t.TempDir(), "sparse")
-	file, err := os.Create(path)
-	if err != nil {
-		t.Fatalf("create: %v", err)
-	}
-	if err := file.Truncate(64 << 20); err != nil {
-		file.Close()
-		t.Fatalf("truncate: %v", err)
-	}
-	if err := file.Close(); err != nil {
-		t.Fatalf("close: %v", err)
-	}
-	if err := os.Chmod(path, 0o600); err != nil {
-		t.Fatalf("chmod: %v", err)
-	}
-	if _, err := LoadCredentialFile(path); !errors.Is(err, ErrCredentialFile) {
-		t.Errorf("oversized file: %v, want ErrCredentialFile", err)
-	}
-}
-
-type blockingResponseWriter struct {
-	header  http.Header
-	started chan struct{}
-	release chan struct{}
-	once    sync.Once
-	status  int
-	body    bytes.Buffer
-}
-
-func (w *blockingResponseWriter) Header() http.Header { return w.header }
-
-func (w *blockingResponseWriter) WriteHeader(status int) {
-	w.once.Do(func() {
-		w.status = status
-		close(w.started)
-		<-w.release
-	})
-}
-
-func (w *blockingResponseWriter) Write(payload []byte) (int, error) {
-	return w.body.Write(payload)
-}
-
-func TestHeldPollPinsItsGrantAcrossTheAck(t *testing.T) {
-	mirror, _, _ := newPopulatedMirror(t)
-	token := testToken(testDownstreamID, 1)
-	server := newTestServer(t, mirror, nil, testCredential{
-		downstreamID: testDownstreamID,
-		token:        token,
-	})
-	request := httptest.NewRequest(http.MethodPost,
-		adsync.APIPrefix+"/channel/poll?wait=0",
-		bytes.NewReader(heartbeatFrame([]string{testProxyID, testDownstreamID})))
-	request.Header.Set("Authorization", "Bearer "+token)
-	writer := &blockingResponseWriter{
-		header:  http.Header{},
-		started: make(chan struct{}),
-		release: make(chan struct{}),
-	}
-	finished := make(chan struct{})
-	go func() {
-		defer close(finished)
-		server.server.ServeHTTP(writer, request)
-	}()
-	select {
-	case <-writer.started:
-	case <-time.After(5 * time.Second):
-		t.Fatal("the poll response never started")
-	}
-
-	// The ack is being written while its grant is pinned, so a reload cannot
-	// complete between the revalidation and the response.
-	server.writeCredentialFile(testDownstreamID + ":" + hashToken(token) + ":" + testServiceID1)
-	reloaded := make(chan error, 1)
-	go func() { reloaded <- server.server.ReloadCredentials() }()
-	select {
-	case err := <-reloaded:
-		t.Fatalf("reload completed while the ack was pinned: %v", err)
-	case <-time.After(50 * time.Millisecond):
-	}
-
-	close(writer.release)
-	select {
-	case <-finished:
-	case <-time.After(5 * time.Second):
-		t.Fatal("the poll did not finish")
-	}
-	select {
-	case err := <-reloaded:
-		if err != nil {
-			t.Fatalf("reload after the ack: %v", err)
-		}
-	case <-time.After(5 * time.Second):
-		t.Fatal("the reload did not complete")
-	}
-	if writer.status != http.StatusOK {
-		t.Errorf("status = %d", writer.status)
-	}
-
-	// The narrowed grant is in force for the next request.
-	response, body := server.post(adsync.APIPrefix+"/channel/poll?wait=0", token,
-		heartbeatFrame([]string{testProxyID, testDownstreamID}))
-	if response.StatusCode != http.StatusOK {
-		t.Fatalf("poll after reload: status %d body %s", response.StatusCode, body)
-	}
-	ack := decodeBody[ackMessage](t, body)
-	if len(ack.Services) != 1 || ack.Services[0].ID != testServiceID1 {
-		t.Errorf("narrowed ack services = %+v", ack.Services)
-	}
-}
-
-func TestChannelAckRefusesAReplacedGrant(t *testing.T) {
-	mirror, _, _ := newPopulatedMirror(t)
-	token := testToken(testDownstreamID, 1)
-	server := newTestServer(t, mirror, nil, testCredential{
-		downstreamID: testDownstreamID,
-		token:        token,
-	})
-
-	upgrader := websocket.Upgrader{CheckOrigin: func(*http.Request) bool { return true }}
-	serverConns := make(chan *websocket.Conn, 1)
-	wsServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		conn, err := upgrader.Upgrade(w, r, nil)
-		if err != nil {
-			return
-		}
-		serverConns <- conn
-	}))
-	defer wsServer.Close()
-	client, _, err := websocket.DefaultDialer.Dial("ws"+strings.TrimPrefix(wsServer.URL, "http"), nil)
-	if err != nil {
-		t.Fatalf("dial: %v", err)
-	}
-	defer client.Close()
-	serverConn := <-serverConns
-	defer serverConn.Close()
-
-	credential, ok := server.server.Credentials().Authenticate(token)
-	if !ok {
-		t.Fatal("token did not authenticate")
-	}
-	if err := server.server.writeChannelAck(serverConn, credential); err != nil {
-		t.Fatalf("ack with a current grant: %v", err)
-	}
-	if kind, _ := readChannelFrame(t, client); kind != "ack" {
-		t.Fatalf("frame = %q", kind)
-	}
-
-	// Narrow the grant. The old pointer can no longer write an ack, and no
-	// frame reaches the wire.
-	server.writeCredentialFile(testDownstreamID + ":" + hashToken(token) + ":" + testServiceID1)
-	if err := server.server.ReloadCredentials(); err != nil {
-		t.Fatalf("reload: %v", err)
-	}
-	if err := server.server.writeChannelAck(serverConn, credential); err == nil {
-		t.Fatal("a replaced grant wrote an ack")
-	}
-	_ = client.SetReadDeadline(time.Now().Add(100 * time.Millisecond))
-	if _, _, err := client.ReadMessage(); err == nil {
-		t.Error("an ack reached the wire with a replaced grant")
-	}
-}
-
-func TestMirrorBoundsIdentityChurn(t *testing.T) {
-	mirror := newTestMirror(t, nil)
-	current := newFixtureServiceWithEpoch(testServiceID1, fmt.Sprintf("01HF7YAT%018d", 7000), "books")
-	current.publish(t, upsertAuthz(testServiceID1+"A1", "read", "grant read"))
-	if err := mirror.ApplySnapshot(snapshotAt(t, current)); err != nil {
-		t.Fatalf("first identity: %v", err)
-	}
-	for index := 1; index <= maxRetiredIdentities; index++ {
-		next := newFixtureServiceWithEpoch(testServiceID1, fmt.Sprintf("01HF7YAT%018d", 7000+index), "books")
-		next.publish(t, upsertAuthz(testServiceID1+"A1", "read", "grant read"))
-		if err := mirror.ApplySnapshot(snapshotAt(t, next)); err != nil {
-			t.Fatalf("identity %d: %v", index, err)
-		}
-		current = next
-	}
-
-	// One more identity replacement is refused, and the copy stops being
-	// advertised rather than keeping replay state without bound.
-	excess := newFixtureServiceWithEpoch(testServiceID1, fmt.Sprintf("01HF7YAT%018d", 7000+maxRetiredIdentities+1), "books")
-	excess.publish(t, upsertAuthz(testServiceID1+"A1", "read", "grant read"))
-	if err := mirror.ApplySnapshot(snapshotAt(t, excess)); !errors.Is(err, ErrIdentityChurn) {
-		t.Fatalf("identity churn: %v, want ErrIdentityChurn", err)
-	}
-	if services := mirror.Services(); len(services) != 0 {
-		t.Errorf("service under identity churn is advertised: %+v", services)
-	}
-	if _, availability := mirror.Lookup(testServiceID1); availability != ServiceNeedsSnapshot {
-		t.Errorf("availability = %v, want ServiceNeedsSnapshot", availability)
-	}
-
-	// The current identity can still be refreshed.
-	current.publish(t, upsertAuthz(testServiceID1+"A2", "read", "grant read"))
-	if err := mirror.ApplySnapshot(snapshotAt(t, current)); err != nil {
-		t.Fatalf("refresh current identity: %v", err)
-	}
-	services := mirror.Services()
-	if len(services) != 1 || services[0].Epoch != current.Epoch {
-		t.Errorf("current identity did not revive the service: %+v", services)
-	}
-}
-
-func TestChannelNotificationRefusesAReplacedGrant(t *testing.T) {
-	mirror, _, _ := newPopulatedMirror(t)
-	token := testToken(testDownstreamID, 1)
-	server := newTestServer(t, mirror, nil, testCredential{
-		downstreamID: testDownstreamID,
-		token:        token,
-	})
-
-	upgrader := websocket.Upgrader{CheckOrigin: func(*http.Request) bool { return true }}
-	serverConns := make(chan *websocket.Conn, 1)
-	wsServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		conn, err := upgrader.Upgrade(w, r, nil)
-		if err != nil {
-			return
-		}
-		serverConns <- conn
-	}))
-	defer wsServer.Close()
-	client, _, err := websocket.DefaultDialer.Dial("ws"+strings.TrimPrefix(wsServer.URL, "http"), nil)
-	if err != nil {
-		t.Fatalf("dial: %v", err)
-	}
-	defer client.Close()
-	serverConn := <-serverConns
-	defer serverConn.Close()
-
-	credential, ok := server.server.Credentials().Authenticate(token)
-	if !ok {
-		t.Fatal("token did not authenticate")
-	}
-	notification := Notify{ServiceID: testServiceID2, Head: 3}
-	if err := server.server.writeChannelNotification(serverConn, credential, notification); err != nil {
-		t.Fatalf("notification with a current grant: %v", err)
-	}
-	if kind, _ := readChannelFrame(t, client); kind != "notify" {
-		t.Fatalf("frame = %q", kind)
-	}
-
-	// Narrow the grant to the other service; the old pointer can no longer
-	// forward a notification for the now-forbidden service.
-	server.writeCredentialFile(testDownstreamID + ":" + hashToken(token) + ":" + testServiceID1)
-	if err := server.server.ReloadCredentials(); err != nil {
-		t.Fatalf("reload: %v", err)
-	}
-	if err := server.server.writeChannelNotification(serverConn, credential, notification); err == nil {
-		t.Fatal("a replaced grant wrote a notification")
-	}
-	_ = client.SetReadDeadline(time.Now().Add(100 * time.Millisecond))
-	if _, _, err := client.ReadMessage(); err == nil {
-		t.Error("a notification reached the wire with a replaced grant")
 	}
 }
