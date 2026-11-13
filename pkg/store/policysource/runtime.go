@@ -5,10 +5,7 @@ package policysource
 import (
 	"context"
 	"net/http"
-	"os"
-	"os/signal"
 	"sync"
-	"syscall"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -285,13 +282,24 @@ func (s *Store) startTLSWatch() {
 	ctx, cancel := context.WithCancel(context.Background())
 	s.tlsCancel = cancel
 	s.tlsDone = make(chan struct{})
-	signals := make(chan os.Signal, 1)
-	signal.Notify(signals, syscall.SIGHUP)
+	s.tlsReload = make(chan struct{}, 1)
 	go func() {
 		defer close(s.tlsDone)
-		defer signal.Stop(signals)
-		s.client.WatchTLS(ctx, signals)
+		s.client.WatchTLS(ctx, s.tlsReload)
 	}()
+}
+
+// UpstreamTLSReloadEnabled reports whether the process owner should route its
+// reload signal to this store. The library never changes signal disposition.
+func (s *Store) UpstreamTLSReloadEnabled() bool { return s.tlsReload != nil }
+
+// RequestTLSReload schedules a reload on the owned watcher, whose cancellation
+// also interrupts an in-flight CRL fetch. Repeated requests are coalesced.
+func (s *Store) RequestTLSReload() {
+	select {
+	case s.tlsReload <- struct{}{}:
+	default:
+	}
 }
 
 // Close stops and joins the channel and reconciliation loops before closing

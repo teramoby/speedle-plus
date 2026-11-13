@@ -10,6 +10,7 @@ import (
 	"crypto/x509/pkix"
 	"encoding/asn1"
 	"encoding/pem"
+	"errors"
 	"io"
 	"math/big"
 	"net/http"
@@ -283,5 +284,59 @@ func TestCascadeCRLFetchIgnoresGlobalTransportAndCancelsProgress(t *testing.T) {
 	case <-done:
 	case <-time.After(time.Second):
 		t.Fatal("progressing CRL download prevented watcher shutdown")
+	}
+}
+
+func TestCascadeStartupHonorsCancellationWhileCRLProgresses(t *testing.T) {
+	pki := newCascadePKI(t)
+	started := make(chan struct{}, 1)
+	publisher := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.(http.Flusher).Flush()
+		select {
+		case started <- struct{}{}:
+		default:
+		}
+		ticker := time.NewTicker(5 * time.Millisecond)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-r.Context().Done():
+				return
+			case <-ticker.C:
+				w.Write([]byte("progress"))
+				w.(http.Flusher).Flush()
+			}
+		}
+	}))
+	cert, _, _ := pki.issue(t, 2, x509.ExtKeyUsageServerAuth, "127.0.0.1", time.Now().Add(time.Hour))
+	publisher.TLS = &tls.Config{Certificates: []tls.Certificate{cert}, MinVersion: tls.VersionTLS12}
+	publisher.StartTLS()
+	defer publisher.Close()
+	config := cascadeConfig(t, pki, "https://relay.example")
+	config.CRLURLs = []string{publisher.URL}
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	done := make(chan error, 1)
+	go func() {
+		client, err := NewClientContext(ctx, config)
+		if client != nil {
+			client.Close()
+		}
+		done <- err
+	}()
+	select {
+	case <-started:
+	case <-time.After(time.Second):
+		t.Fatal("startup CRL request did not start")
+	}
+	cancel()
+	select {
+	case err := <-done:
+		if !errors.Is(err, context.Canceled) {
+			t.Fatalf("startup cancellation: %v", err)
+		}
+	case <-time.After(time.Second):
+		t.Fatal("startup ignored cancellation")
 	}
 }

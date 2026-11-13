@@ -71,6 +71,7 @@ type Store struct {
 	closeOnce sync.Once
 	tlsCancel context.CancelFunc
 	tlsDone   chan struct{}
+	tlsReload chan struct{}
 
 	// afterFetch, when set by a test, runs after a service fetch succeeds and
 	// before its result is stored. It is nil in production.
@@ -139,7 +140,7 @@ func Open(ctx context.Context, options Options) (_ *Store, err error) {
 		log.Warn("policy-source store has no CacheDir: the instance ID is not persisted, so every restart registers a new instance")
 	}
 
-	client, err := adsync.NewClient(adsync.Config{
+	client, err := adsync.NewClientContext(ctx, adsync.Config{
 		BaseURL:            options.UpstreamURL,
 		APIKey:             string(options.APIKey),
 		InstanceID:         options.InstanceID,

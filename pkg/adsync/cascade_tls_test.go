@@ -16,7 +16,6 @@ import (
 	"net"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"path/filepath"
 	"strings"
 	"sync/atomic"
@@ -280,7 +279,7 @@ func TestCascadePollAndSignalReload(t *testing.T) {
 				config.TLSReloadInterval = time.Hour
 			}
 			client := mustCascadeClient(t, config)
-			signals := make(chan os.Signal, 1)
+			signals := make(chan struct{}, 1)
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
 			done := make(chan struct{})
@@ -289,7 +288,7 @@ func TestCascadePollAndSignalReload(t *testing.T) {
 			writeTestFile(t, filepath.Dir(config.ClientCertFile), "client.pem", cert, 0600)
 			writeTestFile(t, filepath.Dir(config.ClientKeyFile), "client.key", key, 0600)
 			if useSignal {
-				signals <- os.Interrupt
+				signals <- struct{}{}
 			}
 			deadline := time.Now().Add(time.Second)
 			for {
@@ -324,6 +323,53 @@ func TestDirectModeRejectsCascadeTLSSettings(t *testing.T) {
 		change(&config)
 		if _, err := NewClient(config); err == nil || !strings.Contains(err.Error(), "cascade") {
 			t.Fatalf("ignored direct mode security setting: %v", err)
+		}
+	}
+}
+
+func TestCascadeDialTimeoutBoundsDNSWithoutCallerDeadline(t *testing.T) {
+	pki := newCascadePKI(t)
+	config := cascadeConfig(t, pki, "https://relay.example")
+	config.RequestTimeout = 20 * time.Millisecond
+	client := mustCascadeClient(t, config)
+	sawDeadline := make(chan bool, 8)
+	client.tlsMaterial.dialer.Resolver = &net.Resolver{PreferGo: true, Dial: func(ctx context.Context, network, address string) (net.Conn, error) {
+		_, bounded := ctx.Deadline()
+		select {
+		case sawDeadline <- bounded:
+		default:
+		}
+		<-ctx.Done()
+		return nil, ctx.Err()
+	}}
+	started := time.Now()
+	if _, err := client.tlsMaterial.dialContext(context.Background(), "tcp", "cascade-dial-timeout.invalid:7443"); err == nil {
+		t.Fatal("stalled DNS unexpectedly succeeded")
+	}
+	if time.Since(started) > time.Second {
+		t.Fatal("dial exceeded its deadline")
+	}
+	select {
+	case bounded := <-sawDeadline:
+		if !bounded {
+			t.Fatal("DNS lookup has no dial deadline")
+		}
+	default:
+		t.Fatal("test resolver was not used")
+	}
+}
+
+func TestCascadeRejectsExplicitlyEmptyCRLSources(t *testing.T) {
+	pki := newCascadePKI(t)
+	for _, urls := range []bool{false, true} {
+		config := cascadeConfig(t, pki, "https://relay.example")
+		if urls {
+			config.CRLURLs = []string{}
+		} else {
+			config.CRLFiles = []string{}
+		}
+		if _, err := NewClient(config); err == nil || !strings.Contains(err.Error(), "CRL") {
+			t.Fatalf("empty CRL settings accepted: %v", err)
 		}
 	}
 }

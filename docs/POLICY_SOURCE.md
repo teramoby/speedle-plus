@@ -38,7 +38,10 @@ configured instance ID is used. Keep this directory across restarts and
 certificate rotations. Cascade startup rejects corrupt retained state.
 
 The store polls TLS files every 30 seconds; `TLSReloadInterval` accepts a Go
-duration to override that period. SIGHUP requests a reload immediately. A valid
+duration to override that period. The `speedle-ads` command routes SIGHUP to
+the store's owned watcher. Embedded hosts can call `RequestTLSReload` from
+their own signal handler; the store does not register process signals.
+`adsync.NewClientContext` supports cancellation during initial CRL downloads. A valid
 replacement is installed as one generation, then upstream connections,
 including WebSockets, held polls and idle HTTP connections, are closed to
 reconnect with that generation. A malformed replacement logs a warning and
@@ -46,7 +49,9 @@ retains the last valid generation. Certificate expiry closes connections even
 when they remain active.
 
 Optional `CRLFiles` and `CRLURLs` contain local full X.509 CRLs and HTTPS CRL
-addresses for relay certificate revocation checks. For CRL verification,
+addresses for relay certificate revocation checks. When either property is
+present, at least one source is required; omit both properties to disable
+optional revocation checking. For CRL verification,
 `CAFile` must contain each CRL issuer's CA certificate. Configured CRLs must have
 trusted signatures and current validity windows. Revoked relay certificates
 and chains without fresh issuer coverage fail verification. `CRLMaxAge`

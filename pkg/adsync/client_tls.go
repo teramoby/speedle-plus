@@ -31,6 +31,7 @@ type clientTLS struct {
 	material    *clientTLSGeneration
 	connections map[*clientTLSConn]struct{}
 	closed      bool
+	dialer      net.Dialer
 }
 
 type clientTLSGeneration struct {
@@ -62,11 +63,15 @@ func (c *clientTLSConn) Close() error {
 	return c.Conn.Close()
 }
 
-func newClientTLS(config Config, host string) (*clientTLS, error) {
+func newClientTLS(ctx context.Context, config Config, host string) (*clientTLS, error) {
 	config.CRLFiles = append([]string(nil), config.CRLFiles...)
 	config.CRLURLs = append([]string(nil), config.CRLURLs...)
-	manager := &clientTLS{configFiles: config, host: host, connections: make(map[*clientTLSConn]struct{})}
-	if err := manager.reload(context.Background()); err != nil {
+	dialTimeout := config.RequestTimeout
+	if dialTimeout == 0 {
+		dialTimeout = defaultRequestTimeout
+	}
+	manager := &clientTLS{configFiles: config, host: host, connections: make(map[*clientTLSConn]struct{}), dialer: net.Dialer{Timeout: dialTimeout, KeepAlive: 30 * time.Second}}
+	if err := manager.reload(ctx); err != nil {
 		return nil, err
 	}
 	return manager, nil
@@ -200,6 +205,12 @@ func (m *clientTLS) reload(ctx context.Context) error {
 	// newer SIGHUP generation. Invalid replacements keep the last good one.
 	m.reloadMu.Lock()
 	defer m.reloadMu.Unlock()
+	m.mu.Lock()
+	closed := m.closed
+	m.mu.Unlock()
+	if closed {
+		return net.ErrClosed
+	}
 	next, err := m.load(ctx)
 	if err != nil {
 		return err
@@ -360,7 +371,7 @@ func (m *clientTLS) dialContext(ctx context.Context, network, address string) (n
 	if closed {
 		return nil, net.ErrClosed
 	}
-	raw, err := (&net.Dialer{}).DialContext(ctx, network, address)
+	raw, err := m.dialer.DialContext(ctx, network, address)
 	if err != nil {
 		return nil, err
 	}
@@ -385,9 +396,9 @@ func (c *Client) ReloadTLS() error {
 	return c.tlsMaterial.reload(context.Background())
 }
 
-// WatchTLS polls every 30 seconds by default and listens for reload signals.
+// WatchTLS polls every 30 seconds by default and listens for reload requests.
 // The owner cancels ctx and joins this method before closing the client.
-func (c *Client) WatchTLS(ctx context.Context, signals <-chan os.Signal) {
+func (c *Client) WatchTLS(ctx context.Context, signals <-chan struct{}) {
 	if c.tlsMaterial == nil {
 		return
 	}
@@ -462,6 +473,9 @@ func fetchRelayCRL(parent context.Context, address string, caPEM []byte) ([]byte
 	client := &http.Client{CheckRedirect: rejectRedirect, Transport: transport}
 	response, err := client.Do(request)
 	if err != nil {
+		if ctx.Err() != nil {
+			return nil, fmt.Errorf("adsync: fetch CRLURLs: %w", ctx.Err())
+		}
 		return nil, fmt.Errorf("adsync: fetch CRLURLs failed")
 	}
 	defer response.Body.Close()
@@ -470,6 +484,9 @@ func fetchRelayCRL(parent context.Context, address string, caPEM []byte) ([]byte
 	}
 	data, err := io.ReadAll(&progressReader{Reader: response.Body, watch: watch})
 	if err != nil {
+		if ctx.Err() != nil {
+			return nil, fmt.Errorf("adsync: read CRLURLs: %w", ctx.Err())
+		}
 		return nil, fmt.Errorf("adsync: read CRLURLs failed")
 	}
 	return data, nil

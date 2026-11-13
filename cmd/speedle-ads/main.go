@@ -60,44 +60,65 @@ func main() {
 	}
 }
 
-// startDownstreamCredentialReload installs SIGHUP reload only for an ADS that
-// actually serves downstream policy. Every other store keeps its original
-// signal and startup behaviour.
+// startDownstreamCredentialReload is the process owner's SIGHUP registration.
+// Cascade stores receive a nonblocking request on their owned TLS watcher;
+// engines without reloadable distribution material keep their signal behavior.
 func startDownstreamCredentialReload(evaluator eval.InternalEvaluator) func() {
 	provider, ok := evaluator.(interface{ DistributionStore() any })
 	if !ok {
 		return func() {}
 	}
-	downstream := provider.DistributionStore()
-	server, hasDownstream := downstream.(interface{ DownstreamHandler() http.Handler })
-	reloader, canReload := downstream.(interface{ ReloadDownstreamCredentials() error })
-	if !hasDownstream || !canReload || server.DownstreamHandler() == nil {
+	reload := credentialReloadAction(provider.DistributionStore())
+	if reload == nil {
 		return func() {}
 	}
-
 	reloadSignals := make(chan os.Signal, 1)
 	signal.Notify(reloadSignals, syscall.SIGHUP)
 	reloadStop := make(chan struct{})
 	reloadStopped := make(chan struct{})
 	go func() {
 		defer close(reloadStopped)
-		for {
-			select {
-			case <-reloadStop:
-				return
-			case <-reloadSignals:
-				if err := reloader.ReloadDownstreamCredentials(); err != nil {
-					log.Warnf("Could not reload downstream credentials: %v", err)
-				} else {
-					log.Info("Downstream credentials reloaded")
-				}
-			}
-		}
+		runCredentialReload(reloadSignals, reloadStop, reload)
 	}()
 	return func() {
 		signal.Stop(reloadSignals)
 		close(reloadStop)
 		<-reloadStopped
+	}
+}
+
+func credentialReloadAction(distribution any) func() {
+	if upstream, ok := distribution.(interface {
+		UpstreamTLSReloadEnabled() bool
+		RequestTLSReload()
+	}); ok && upstream.UpstreamTLSReloadEnabled() {
+		return upstream.RequestTLSReload
+	}
+	server, hasDownstream := distribution.(interface{ DownstreamHandler() http.Handler })
+	reloader, canReload := distribution.(interface{ ReloadDownstreamCredentials() error })
+	if !hasDownstream || !canReload || server.DownstreamHandler() == nil {
+		return nil
+	}
+	return func() {
+		if err := reloader.ReloadDownstreamCredentials(); err != nil {
+			log.Warnf("Could not reload downstream credentials: %v", err)
+		} else {
+			log.Info("Downstream credentials reloaded")
+		}
+	}
+}
+
+func runCredentialReload(signals <-chan os.Signal, stop <-chan struct{}, reload func()) {
+	for {
+		select {
+		case <-stop:
+			return
+		case _, ok := <-signals:
+			if !ok {
+				return
+			}
+			reload()
+		}
 	}
 }
 

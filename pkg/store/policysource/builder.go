@@ -288,6 +288,12 @@ func optionsFromConfig(config map[string]interface{}) (options Options, err erro
 			*property.target = entries
 		}
 	}
+	_, crlFilesSet := config[CRLFilesKey]
+	_, crlURLsSet := config[CRLURLsKey]
+	if (crlFilesSet || crlURLsSet) && len(options.CRLFiles)+len(options.CRLURLs) == 0 {
+		return options, errors.New(errors.ConfigError, "configured CRLFiles/CRLURLs require at least one CRL source")
+	}
+
 	if err := validateUpstream(&options); err != nil {
 		return options, err
 	}

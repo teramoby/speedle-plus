@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"syscall"
 	"testing"
 	"time"
 
@@ -184,4 +185,42 @@ func TestIsAllowedReturnsAssertedUser(t *testing.T) {
 func TestPrintVersionInfo(t *testing.T) {
 	productVersion, goVersion, gitCommit = "1.0", "go1.26", "abc"
 	printVersionInfo()
+}
+
+type cascadeReloadFixture struct {
+	enabled  bool
+	requests chan struct{}
+}
+
+func (s *cascadeReloadFixture) UpstreamTLSReloadEnabled() bool { return s.enabled }
+func (s *cascadeReloadFixture) RequestTLSReload()              { s.requests <- struct{}{} }
+
+func TestCascadeCommandRoutesReloadSignal(t *testing.T) {
+	if credentialReloadAction(nil) != nil {
+		t.Fatal("non-distribution store registered reload")
+	}
+	if credentialReloadAction(&cascadeReloadFixture{}) != nil {
+		t.Fatal("direct mode registered reload")
+	}
+	store := &cascadeReloadFixture{enabled: true, requests: make(chan struct{}, 1)}
+	reload := credentialReloadAction(store)
+	if reload == nil {
+		t.Fatal("cascade reload not registered")
+	}
+	signals := make(chan os.Signal, 1)
+	stop := make(chan struct{})
+	done := make(chan struct{})
+	go func() { defer close(done); runCredentialReload(signals, stop, reload) }()
+	signals <- syscall.SIGHUP
+	select {
+	case <-store.requests:
+	case <-time.After(time.Second):
+		t.Fatal("SIGHUP did not reach the owned watcher")
+	}
+	close(stop)
+	select {
+	case <-done:
+	case <-time.After(time.Second):
+		t.Fatal("command reload loop did not stop")
+	}
 }

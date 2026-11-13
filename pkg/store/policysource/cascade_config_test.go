@@ -118,3 +118,13 @@ func TestDirectModeRejectsCascadeTLSPropertyPresence(t *testing.T) {
 		}
 	}
 }
+
+func TestCascadeRejectsEmptyConfiguredCRLSources(t *testing.T) {
+	for _, key := range []string{CRLFilesKey, CRLURLsKey} {
+		properties := cascadeProperties()
+		properties[key] = []string{}
+		if _, err := optionsFromConfig(properties); err == nil || !strings.Contains(err.Error(), "CRL") {
+			t.Fatalf("empty configured sources accepted: %v", err)
+		}
+	}
+}

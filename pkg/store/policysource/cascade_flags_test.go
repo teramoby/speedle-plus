@@ -3,12 +3,18 @@
 package policysource
 
 import (
+	"crypto"
+	"crypto/rand"
+	"crypto/tls"
+	"crypto/x509"
 	"encoding/json"
 	"io"
+	"math/big"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/spf13/pflag"
 	"github.com/teramoby/speedle-plus/pkg/cmd/flags"
@@ -16,6 +22,18 @@ import (
 
 func TestCascadeProductionFlagConfiguration(t *testing.T) {
 	options := cascadeStoreOptions(t)
+	pair, err := tls.LoadX509KeyPair(options.ClientCertFile, options.ClientKeyFile)
+	if err != nil {
+		t.Fatal(err)
+	}
+	crl, err := x509.CreateRevocationList(rand.Reader, &x509.RevocationList{Number: big.NewInt(1), ThisUpdate: time.Now().Add(-time.Minute), NextUpdate: time.Now().Add(time.Hour)}, pair.Leaf, pair.PrivateKey.(crypto.Signer))
+	if err != nil {
+		t.Fatal(err)
+	}
+	crlFile := filepath.Join(t.TempDir(), "relay.crl")
+	if err := os.WriteFile(crlFile, crl, 0600); err != nil {
+		t.Fatal(err)
+	}
 	originalFlags := pflag.CommandLine
 	for _, test := range []struct {
 		name, key   string
@@ -43,7 +61,7 @@ func TestCascadeProductionFlagConfiguration(t *testing.T) {
 			properties := map[string]interface{}{
 				UpstreamURLKey:    []string{options.UpstreamURL, "https://backup.example"},
 				ClientCertFileKey: options.ClientCertFile, ClientKeyFileKey: options.ClientKeyFile, CAFileKey: options.CAFile, CacheDirKey: options.CacheDir,
-				TLSReloadIntervalKey: "1m", CRLFilesKey: []string{}, CRLURLsKey: []string{}, CRLRefreshIntervalKey: "1h", CRLMaxAgeKey: "24h",
+				TLSReloadIntervalKey: "1m", CRLFilesKey: []string{crlFile}, CRLURLsKey: []string{}, CRLRefreshIntervalKey: "1h", CRLMaxAgeKey: "24h",
 			}
 			if test.direct {
 				properties[APIKeyKey] = testAPIKey

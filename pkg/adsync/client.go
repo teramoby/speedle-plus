@@ -192,6 +192,18 @@ type Client struct {
 
 // NewClient validates the configuration and builds the HTTP transport.
 func NewClient(config Config) (*Client, error) {
+	return NewClientContext(context.Background(), config)
+}
+
+// NewClientContext also applies the caller's cancellation to initial CRL fetches.
+// Downloads use stall deadlines; this context is the owner's startup lifetime.
+func NewClientContext(ctx context.Context, config Config) (*Client, error) {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
 	if config.APIKey != "" {
 		if config.TLSReloadInterval != 0 || config.CRLFiles != nil || config.CRLURLs != nil || config.CRLRefreshInterval != 0 || config.CRLMaxAge != 0 {
 			return nil, fmt.Errorf("adsync: TLSReloadInterval, CRLFiles, CRLURLs, CRLRefreshInterval and CRLMaxAge require cascade mode (no APIKey)")
@@ -200,6 +212,9 @@ func NewClient(config Config) (*Client, error) {
 			return nil, err
 		}
 	} else {
+		if (config.CRLFiles != nil || config.CRLURLs != nil) && len(config.CRLFiles)+len(config.CRLURLs) == 0 {
+			return nil, fmt.Errorf("adsync: configured CRLFiles/CRLURLs require at least one CRL source")
+		}
 		if config.ClientCertFile == "" || config.ClientKeyFile == "" || config.CAFile == "" {
 			return nil, fmt.Errorf("adsync: cascade requires ClientCertFile, ClientKeyFile and CAFile")
 		}
@@ -250,7 +265,7 @@ func NewClient(config Config) (*Client, error) {
 	}
 
 	if config.APIKey == "" {
-		config.tlsMaterial, err = newClientTLS(config, base.Hostname())
+		config.tlsMaterial, err = newClientTLS(ctx, config, base.Hostname())
 		if err != nil {
 			return nil, err
 		}
