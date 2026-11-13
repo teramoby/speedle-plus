@@ -513,3 +513,25 @@ func TestCascadeCRLFetchHonorsRequestTimeout(t *testing.T) {
 		})
 	}
 }
+
+func TestCascadeCRLFetchResetsStallAfterHeaders(t *testing.T) {
+	pki := newCascadePKI(t)
+	now := time.Now()
+	data := pki.crl(t, 0, 1, now.Add(-time.Minute), now.Add(time.Hour), false)
+	publisher := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Each response gap fits the timeout; the complete transfer does not.
+		time.Sleep(600 * time.Millisecond)
+		w.WriteHeader(http.StatusOK)
+		w.(http.Flusher).Flush()
+		time.Sleep(600 * time.Millisecond)
+		w.Write(data)
+	}))
+	cert, _, _ := pki.issue(t, 2, x509.ExtKeyUsageServerAuth, "127.0.0.1", now.Add(time.Hour))
+	publisher.TLS = &tls.Config{Certificates: []tls.Certificate{cert}, MinVersion: tls.VersionTLS12}
+	publisher.StartTLS()
+	defer publisher.Close()
+	config := cascadeConfig(t, pki, "https://relay.example")
+	config.CRLURLs = []string{publisher.URL}
+	config.RequestTimeout = time.Second
+	mustCascadeClient(t, config)
+}

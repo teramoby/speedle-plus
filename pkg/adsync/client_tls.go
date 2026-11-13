@@ -506,6 +506,7 @@ func fetchRelayCRL(parent context.Context, address string, roots *x509.CertPool,
 	if response.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("adsync: fetch CRLURLs failed")
 	}
+	watch.progress() // Response headers count as progress before the first body byte.
 	data, err := io.ReadAll(&progressReader{Reader: response.Body, watch: watch})
 	if err != nil {
 		if ctx.Err() != nil {
