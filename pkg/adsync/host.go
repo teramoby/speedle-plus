@@ -98,6 +98,7 @@ func osVersion() string {
 func osVersionFrom(readFile func(string) ([]byte, error)) string {
 	if data, err := readFile("/etc/os-release"); err == nil {
 		for line := range strings.SplitSeq(string(data), "\n") {
+			line = strings.TrimSuffix(line, "\r")
 			if value, found := strings.CutPrefix(line, "PRETTY_NAME="); found {
 				return strings.Trim(value, `"'`)
 			}

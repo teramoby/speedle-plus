@@ -35,7 +35,7 @@ func TestOSVersionDoesNotExecuteFromPATH(t *testing.T) {
 }
 
 func TestOSVersionPrettyName(t *testing.T) {
-	for _, data := range []string{"NAME=Example\nPRETTY_NAME=\"Example Linux 1.0\"\n", "PRETTY_NAME='Example Linux 1.0'"} {
+	for _, data := range []string{"NAME=Example\nPRETTY_NAME=\"Example Linux 1.0\"\n", "PRETTY_NAME='Example Linux 1.0'", "NAME=Example\r\nPRETTY_NAME=\"Example Linux 1.0\"\r\n"} {
 		got := osVersionFrom(func(path string) ([]byte, error) {
 			if path != "/etc/os-release" {
 				t.Fatalf("unexpected fallback to %q", path)

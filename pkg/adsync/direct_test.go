@@ -16,6 +16,7 @@ import (
 	"strings"
 	"sync"
 	"sync/atomic"
+	"syscall"
 	"testing"
 	"time"
 )
@@ -84,6 +85,16 @@ func TestInstanceIDIsAPersistedUUIDv7(t *testing.T) {
 }
 
 func TestConcurrentInstanceIDCreation(t *testing.T) {
+	t.Run("hard link", func(t *testing.T) {
+		testConcurrentInstanceIDCreation(t, os.Link)
+	})
+	t.Run("exclusive create", func(t *testing.T) {
+		testConcurrentInstanceIDCreation(t, func(string, string) error { return syscall.ENOTSUP })
+	})
+}
+
+func testConcurrentInstanceIDCreation(t *testing.T, link func(string, string) error) {
+	t.Helper()
 	for range 20 {
 		dir := filepath.Join(t.TempDir(), "cache")
 		type result struct {
@@ -96,7 +107,7 @@ func TestConcurrentInstanceIDCreation(t *testing.T) {
 		for range 2 {
 			go func() {
 				<-start
-				id, created, err := LoadOrCreateInstanceID(dir)
+				id, created, err := loadOrCreateInstanceID(dir, link)
 				results <- result{id, created, err}
 			}()
 		}
@@ -108,7 +119,7 @@ func TestConcurrentInstanceIDCreation(t *testing.T) {
 		if !ValidInstanceID(first.id) || first.id != second.id || first.created == second.created {
 			t.Fatalf("concurrent results = %+v, %+v", first, second)
 		}
-		persisted, created, err := LoadOrCreateInstanceID(dir)
+		persisted, created, err := loadOrCreateInstanceID(dir, link)
 		if err != nil || created || persisted != first.id {
 			t.Fatalf("persisted id = %q, %v, %v; want %q", persisted, created, err, first.id)
 		}
@@ -130,7 +141,7 @@ func TestInstanceIDPublicationNeverReplacesExistingFile(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if err := writeInstanceID(path, id); !errors.Is(err, os.ErrExist) {
+		if err := writeInstanceID(path, id, os.Link); !errors.Is(err, os.ErrExist) {
 			t.Fatalf("exclusive publication error = %v", err)
 		}
 		data, err := os.ReadFile(path)
