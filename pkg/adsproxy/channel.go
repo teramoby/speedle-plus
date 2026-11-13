@@ -18,7 +18,12 @@ import (
 
 const (
 	// maxChannelFrameBytes is the application-level bound on one channel frame.
-	maxChannelFrameBytes = 64 << 10
+	// An ack carries every advertised service, and the mirror holds at most
+	// maxTombstones services; one worst-case entry (36-byte id, 64-byte name,
+	// two 20-digit revisions, 36-byte epoch and a 64-character state hash) is
+	// under 320 bytes, so a full ack stays well under this bound. It matches
+	// the one-megabyte response-page bound of the protocol.
+	maxChannelFrameBytes = 1 << 20
 	// maxPollWait is the longest hold a long-poll request may ask for.
 	maxPollWait = 30 * time.Second
 	// defaultPollWait matches the contract's wait=25 default.
