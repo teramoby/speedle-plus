@@ -89,8 +89,8 @@ func TestInstanceNameValidation(t *testing.T) {
 func TestAPIKeyNeverAppearsInErrorsOrDumps(t *testing.T) {
 	fixture := newTestFixture(t, booksService())
 	const secret = "unique-private-api-key-371"
-	t.Setenv("SPEEDLE_API_KEY", "environment-key")
-	t.Setenv("SPEEDLE_POLICY_SOURCE_API_KEY", "environment-key")
+	t.Setenv("SPDL_API_KEY", "environment-key")
+	t.Setenv("SPDL_POLICY_SOURCE_API_KEY", "environment-key")
 	for _, key := range []string{UpstreamURLKey, APIKeyKey, InstanceNameKey, RequestTimeoutKey, CredentialFileKey, PublicKeysKey, TransportKey} {
 		props := fixture.storeProperties()
 		props[APIKeyKey] = secret

@@ -361,16 +361,6 @@ func (k *Parameters) ParseFlags(defaultEndpoint string, printVersionInfoFun func
 		conf = nil
 	}
 
-	k.configOnlyStore = nil
-	if conf != nil && conf.StoreConfig != nil && conf.StoreConfig.StoreType == "policy-source" {
-		k.configOnlyStore = &cfg.StoreConfig{StoreType: "policy-source", StoreProps: make(map[string]interface{})}
-		for _, key := range []string{"UpstreamURL", "APIKey", "InstanceName"} {
-			if value, exists := conf.StoreConfig.StoreProps[key]; exists {
-				k.configOnlyStore.StoreProps[key] = value
-			}
-		}
-	}
-
 	pflag.VisitAll(func(f *pflag.Flag) {
 		key := FlagToEnv(f.Name)
 		if !f.Changed {
@@ -550,6 +540,22 @@ func (k *Parameters) ParseFlags(defaultEndpoint string, printVersionInfoFun func
 
 		}
 	})
+
+	// Use the resolved store type after flag/environment precedence.
+	k.configOnlyStore = nil
+	if conf != nil && conf.StoreConfig != nil && k.StoreType.Value == "policy-source" {
+		k.configOnlyStore = &cfg.StoreConfig{StoreType: "policy-source", StoreProps: make(map[string]interface{})}
+		for _, key := range []string{"UpstreamURL", "APIKey", "InstanceName"} {
+			if value, exists := conf.StoreConfig.StoreProps[key]; exists {
+				if key == "APIKey" {
+					if text, ok := value.(string); ok {
+						value = cfg.Secret(text)
+					}
+				}
+				k.configOnlyStore.StoreProps[key] = value
+			}
+		}
+	}
 
 	log.Debugf("parameters: %v", k)
 }

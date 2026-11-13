@@ -90,19 +90,21 @@ func TestReadStoreConfig(t *testing.T) {
 
 func TestPolicySourceAPIKeyRedaction(t *testing.T) {
 	const secret = "private-config-key-371"
-	for _, properties := range []string{`{"APIKey":"` + secret + `","UpstreamURL":"https://source.example"}`, `{"APIKey":["` + secret + `"]}`} {
-		var configuration Config
-		if err := json.Unmarshal([]byte(`{"storeConfig":{"storeType":"policy-source","storeProps":`+properties+`}}`), &configuration); err != nil {
-			t.Fatal(err)
-		}
-		for _, format := range []string{"%v", "%+v", "%#v"} {
-			if strings.Contains(fmt.Sprintf(format, configuration), secret) || strings.Contains(fmt.Sprintf(format, configuration.StoreConfig), secret) {
-				t.Fatal("configuration formatting leaked APIKey")
+	for _, storeType := range []string{"policy-source", ""} {
+		for _, properties := range []string{`{"APIKey":"` + secret + `","UpstreamURL":"https://source.example"}`, `{"APIKey":["` + secret + `"]}`} {
+			var configuration Config
+			if err := json.Unmarshal([]byte(`{"storeConfig":{"storeType":"`+storeType+`","storeProps":`+properties+`}}`), &configuration); err != nil {
+				t.Fatal(err)
 			}
-		}
-		data, err := json.Marshal(configuration)
-		if err != nil || strings.Contains(string(data), secret) {
-			t.Fatalf("unsafe config dump: %s, %v", data, err)
+			for _, format := range []string{"%v", "%+v", "%#v"} {
+				if strings.Contains(fmt.Sprintf(format, configuration), secret) || strings.Contains(fmt.Sprintf(format, configuration.StoreConfig), secret) {
+					t.Fatal("configuration formatting leaked APIKey")
+				}
+			}
+			data, err := json.Marshal(configuration)
+			if err != nil || strings.Contains(string(data), secret) {
+				t.Fatalf("unsafe config dump: %s, %v", data, err)
+			}
 		}
 	}
 	var store StoreConfig
