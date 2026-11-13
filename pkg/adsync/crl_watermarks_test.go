@@ -172,6 +172,40 @@ func TestCRLWatermarkRetention(t *testing.T) {
 	}
 }
 
+func TestCascadeCRLPEMRejectsSkippedBlocks(t *testing.T) {
+	pki := newCascadePKI(t)
+	now := time.Now().Truncate(time.Second)
+	first := pki.crl(t, 0, 1, now.Add(-time.Minute), now.Add(time.Hour), false)
+	last := pki.crl(t, 0, 2, now, now.Add(time.Hour), false)
+	bad := []byte("-----BEGIN X509 CRL-----\nnot base64!\n-----END X509 CRL-----\n")
+	config := cascadeConfig(t, pki, "https://relay.example")
+	path := writeTestFile(t, t.TempDir(), "bundle.pem", first, 0600)
+	config.CRLFiles = []string{path}
+	client := mustCascadeClient(t, config)
+	old := client.tlsMaterial.material
+	for _, data := range [][]byte{
+		append(append(append([]byte(nil), first...), bad...), last...),
+		append(append([]byte(nil), bad...), last...),
+		append([]byte("garbage prefix\n"), last...),
+	} {
+		writeTestFile(t, filepath.Dir(path), "bundle.pem", data, 0600)
+		startup := config
+		startup.InstanceIDDir = filepath.Join(t.TempDir(), "fresh-cache")
+		if accepted, err := NewClient(startup); err == nil || !strings.Contains(err.Error(), "PEM") {
+			if accepted != nil {
+				accepted.Close()
+			}
+			t.Fatalf("skipped malformed CRL data at startup: %v", err)
+		}
+		if err := client.ReloadTLS(); err == nil || !strings.Contains(err.Error(), "PEM") {
+			t.Fatalf("skipped malformed CRL data on reload: %v", err)
+		}
+		if client.tlsMaterial.material != old {
+			t.Fatal("malformed bundle displaced the valid generation")
+		}
+	}
+}
+
 func TestCascadeCRLRetainsIncomparableWatermarks(t *testing.T) {
 	pki := newCascadePKI(t)
 	now := time.Now().Truncate(time.Second)

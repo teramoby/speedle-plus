@@ -155,9 +155,14 @@ func (g *clientTLSGeneration) addCRL(data []byte, now time.Time, maxAge time.Dur
 		return g.addCRLDER(data, now, maxAge)
 	}
 	for len(bytes.TrimSpace(data)) > 0 {
+		data = bytes.TrimSpace(data)
 		block, rest := pem.Decode(data)
 		if block == nil {
 			return fmt.Errorf("adsync: invalid trailing relay CRL PEM data")
+		}
+		consumed := data[:len(data)-len(rest)]
+		if !bytes.HasPrefix(data, []byte("-----BEGIN "+block.Type+"-----")) || bytes.Contains(consumed, []byte("\n-----BEGIN ")) {
+			return fmt.Errorf("adsync: invalid or skipped relay CRL PEM block")
 		}
 		if err := g.addCRLDER(block.Bytes, now, maxAge); err != nil {
 			return err
