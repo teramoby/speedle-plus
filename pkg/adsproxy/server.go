@@ -52,8 +52,9 @@ type Config struct {
 	StopAfter         time.Duration
 	// Now supplies the clock for serverTime. Nil uses time.Now.
 	Now func() time.Time
-	// Paused reports whether downstream distribution is paused, for example
-	// after a pause command from Cloud. Pausing closes distribution to
+	// Paused reports whether downstream distribution must stop: a pause
+	// command from Cloud, or an instance that is no longer live and therefore
+	// cannot vouch for the copies it would serve. It closes distribution to
 	// downstream instances only; synchronization and local evaluation are
 	// unaffected. Nil means never paused.
 	Paused func() bool
@@ -99,6 +100,11 @@ type Server struct {
 	// currently using it, so a collision under another certificate is logged
 	// without affecting either session.
 	fingerprintsByUUID map[string]map[string]struct{}
+	// unavailable mirrors the paused callback. It is true while distribution
+	// must stop, and unavailableCh is closed in that state so a held poll
+	// answers immediately instead of waiting out its hold.
+	unavailable   bool
+	unavailableCh chan struct{}
 
 	closeOnce sync.Once
 	closed    bool
@@ -146,6 +152,7 @@ func NewServer(config Config) (*Server, error) {
 		channels:           make(map[sessionIdentity]*websocket.Conn),
 		sessions:           make(map[sessionIdentity]int),
 		fingerprintsByUUID: make(map[string]map[string]struct{}),
+		unavailableCh:      make(chan struct{}),
 		done:               make(chan struct{}),
 	}
 	server.upgrader = websocket.Upgrader{
@@ -161,7 +168,66 @@ func NewServer(config Config) (*Server, error) {
 	server.removeWatch = config.Mirror.AddObserver(func(event HeadEvent) {
 		hub.Publish(event.ServiceID, event.Revision)
 	})
+	server.refreshAvailability()
+	go server.watchAvailability()
 	return server, nil
+}
+
+// distributionWatchInterval bounds how long a state change that no request
+// drives, such as a heartbeat deadline passing while a channel is idle, can
+// leave downstream channels open.
+const distributionWatchInterval = 500 * time.Millisecond
+
+// watchAvailability re-evaluates the paused callback until the server closes.
+// The callback also depends on time (an instance stops when its last
+// confirming ack ages out), so there is no event to subscribe to.
+func (s *Server) watchAvailability() {
+	ticker := time.NewTicker(distributionWatchInterval)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-s.done:
+			return
+		case <-ticker.C:
+			s.refreshAvailability()
+		}
+	}
+}
+
+// refreshAvailability closes every downstream channel and wakes held polls
+// when distribution flips to unavailable, so a paused or no-longer-live relay
+// stops confirming stale policy instead of waiting for the next heartbeat.
+func (s *Server) refreshAvailability() {
+	unavailable := s.distributionUnavailable()
+	s.mu.Lock()
+	if s.closed || unavailable == s.unavailable {
+		s.mu.Unlock()
+		return
+	}
+	s.unavailable = unavailable
+	var connections []*websocket.Conn
+	if unavailable {
+		close(s.unavailableCh)
+		connections = make([]*websocket.Conn, 0, len(s.channels))
+		for _, conn := range s.channels {
+			connections = append(connections, conn)
+		}
+	} else {
+		s.unavailableCh = make(chan struct{})
+	}
+	s.mu.Unlock()
+	for _, conn := range connections {
+		closeWithReason(conn, websocket.ClosePolicyViolation, "distribution_paused")
+		_ = conn.Close()
+	}
+}
+
+// unavailableSignal returns a channel that is closed while distribution is
+// unavailable. A caller that captured it before a flip sees the flip.
+func (s *Server) unavailableSignal() <-chan struct{} {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.unavailableCh
 }
 
 // InstanceID returns this proxy's instance id.
@@ -318,7 +384,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusServiceUnavailable, "source_unavailable", "")
 		return
 	}
-	if s.distributionPaused() {
+	if s.distributionUnavailable() {
 		writeError(w, http.StatusServiceUnavailable, "distribution_paused", "")
 		return
 	}
@@ -508,9 +574,10 @@ func (s *Server) writeMirrorError(w http.ResponseWriter, err error) {
 	}
 }
 
-// distributionPaused reports whether a pause command closed downstream
-// distribution.
-func (s *Server) distributionPaused() bool {
+// distributionUnavailable reports whether downstream distribution must stop:
+// the paused callback fired, for example after a Cloud pause command or
+// because the instance is no longer live.
+func (s *Server) distributionUnavailable() bool {
 	return s.paused != nil && s.paused()
 }
 

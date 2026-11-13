@@ -1,0 +1,90 @@
+// Licensed under the Universal Permissive License (UPL) Version 1.0.
+
+package adsproxy
+
+import (
+	"net/http"
+	"sync/atomic"
+	"testing"
+	"time"
+
+	"github.com/gorilla/websocket"
+	"github.com/teramoby/speedle-plus/pkg/adsync"
+)
+
+// TestAvailabilityFlipStopsDistribution covers a state change that no
+// downstream request drives: once the relay is paused or no longer live, an
+// established channel is closed and a held poll answers immediately, so the
+// relay never confirms policy it can no longer vouch for.
+func TestAvailabilityFlipStopsDistribution(t *testing.T) {
+	mirror, _, _ := newPopulatedMirror(t)
+	var unavailable atomic.Bool
+	server := newTestServer(t, mirror, &testServerOptions{paused: unavailable.Load})
+
+	conn, _, err := server.dial(server.pki.clientCertFile, server.pki.clientKeyFile)
+	if err != nil {
+		t.Fatalf("dial: %v", err)
+	}
+	defer conn.Close()
+	writeJSONFrame(t, conn, helloFrame(testClientInstanceID))
+	if kind, _ := readChannelFrame(t, conn); kind != "ack" {
+		t.Fatalf("first frame = %q", kind)
+	}
+
+	type result struct {
+		status int
+		body   []byte
+	}
+	polled := make(chan result, 1)
+	go func() {
+		response, body := server.post(server.defaultClient(),
+			adsync.APIPrefix+"/channel/poll?wait=30", pollBody(t, testClientInstanceID))
+		polled <- result{status: response.StatusCode, body: body}
+	}()
+	// The channel and the poll share one session identity, so the counter
+	// reaches two only while both are active.
+	heldSessions := func() int {
+		server.server.mu.Lock()
+		defer server.server.mu.Unlock()
+		total := 0
+		for _, count := range server.server.sessions {
+			total += count
+		}
+		return total
+	}
+	waitFor(t, 2*time.Second, "the poll to be held", func() bool { return heldSessions() == 2 })
+
+	unavailable.Store(true)
+
+	// The watcher closes the channel without waiting for a downstream frame.
+	code, reason := readClose(t, conn)
+	if code != websocket.ClosePolicyViolation || reason != "distribution_paused" {
+		t.Errorf("closed channel = %d %q", code, reason)
+	}
+
+	// The held poll answers long before its 30-second wait expires.
+	select {
+	case got := <-polled:
+		if got.status != http.StatusServiceUnavailable || string(got.body) != `{"error":"distribution_paused"}` {
+			t.Errorf("held poll = status %d body %s", got.status, got.body)
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("a held poll was not answered after distribution stopped")
+	}
+
+	// Recovery reopens distribution without a restart.
+	unavailable.Store(false)
+	response, body := server.get(server.defaultClient(), adsync.APIPrefix+"/services", nil)
+	if response.StatusCode != http.StatusOK {
+		t.Fatalf("services after recovery: status %d body %s", response.StatusCode, body)
+	}
+	reconnected, _, err := server.dial(server.pki.clientCertFile, server.pki.clientKeyFile)
+	if err != nil {
+		t.Fatalf("dial after recovery: %v", err)
+	}
+	defer reconnected.Close()
+	writeJSONFrame(t, reconnected, helloFrame(testClientInstanceID))
+	if kind, _ := readChannelFrame(t, reconnected); kind != "ack" {
+		t.Fatalf("first frame after recovery = %q", kind)
+	}
+}

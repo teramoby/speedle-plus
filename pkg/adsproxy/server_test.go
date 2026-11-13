@@ -289,8 +289,8 @@ func TestDistributionPaused(t *testing.T) {
 		t.Errorf("new channel while paused: status %v", response)
 	}
 
-	// An existing channel ends at its next heartbeat.
-	writeJSONFrame(t, conn, heartbeatFrame(testClientInstanceID))
+	// An existing channel is closed when distribution stops, without waiting
+	// for the downstream's next heartbeat.
 	code, reason := readClose(t, conn)
 	if code != websocket.ClosePolicyViolation || reason != "distribution_paused" {
 		t.Errorf("paused channel close = %d %q", code, reason)

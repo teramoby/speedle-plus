@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"net/http"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -464,14 +465,14 @@ func TestChannelRequiresUpgrade(t *testing.T) {
 
 func TestChannelInitialAckRespectsPause(t *testing.T) {
 	mirror, _, _ := newPopulatedMirror(t)
-	var paused bool
-	server := newTestServer(t, mirror, &testServerOptions{paused: func() bool { return paused }})
+	var paused atomic.Bool
+	server := newTestServer(t, mirror, &testServerOptions{paused: paused.Load})
 	conn, _, err := server.dial(server.pki.clientCertFile, server.pki.clientKeyFile)
 	if err != nil {
 		t.Fatalf("dial: %v", err)
 	}
 	defer conn.Close()
-	paused = true
+	paused.Store(true)
 	writeJSONFrame(t, conn, helloFrame(testClientInstanceID))
 	code, reason := readClose(t, conn)
 	if code != websocket.ClosePolicyViolation || reason != "distribution_paused" {

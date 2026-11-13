@@ -262,9 +262,10 @@ func (s *Server) handleChannel(w http.ResponseWriter, r *http.Request) {
 				closeWithReason(conn, websocket.CloseProtocolError, "instance_changed")
 				return
 			}
-			if s.distributionPaused() {
-				// An existing channel ends at the next message after a pause;
-				// the downstream reconnects once distribution resumes.
+			if s.distributionUnavailable() {
+				// The availability watcher also closes an established channel;
+				// this covers a heartbeat that arrives between its ticks. The
+				// downstream reconnects once distribution resumes.
 				closeWithReason(conn, websocket.ClosePolicyViolation, "distribution_paused")
 				return
 			}
@@ -290,9 +291,9 @@ func (s *Server) handleChannel(w http.ResponseWriter, r *http.Request) {
 // that ack, so a notification that raced ahead of it would make the client
 // reject an unknown head.
 func (s *Server) channelWriter(conn *websocket.Conn, subscriber *Subscriber, acks <-chan struct{}, stop <-chan struct{}) {
-	// Pause can start while the connection waits for its hello frame; the
-	// initial ack must not go out as if distribution were still active.
-	if s.distributionPaused() {
+	// Distribution can stop while the connection waits for its hello frame;
+	// the initial ack must not go out as if it were still active.
+	if s.distributionUnavailable() {
 		closeWithReason(conn, websocket.ClosePolicyViolation, "distribution_paused")
 		_ = conn.Close()
 		return
@@ -308,11 +309,25 @@ func (s *Server) channelWriter(conn *websocket.Conn, subscriber *Subscriber, ack
 		case <-stop:
 			return
 		case <-acks:
+			// The availability watcher closes the connection when the state
+			// flips; this check covers a flip between the watcher tick and
+			// this write, so an ack never confirms distribution while the
+			// relay is paused or no longer live.
+			if s.distributionUnavailable() {
+				closeWithReason(conn, websocket.ClosePolicyViolation, "distribution_paused")
+				_ = conn.Close()
+				return
+			}
 			if err := writeChannelJSON(conn, s.ack()); err != nil {
 				_ = conn.Close()
 				return
 			}
 		case notification := <-subscriber.C():
+			if s.distributionUnavailable() {
+				closeWithReason(conn, websocket.ClosePolicyViolation, "distribution_paused")
+				_ = conn.Close()
+				return
+			}
 			if err := writeChannelJSON(conn, notifyMessage{
 				Type:      "notify",
 				ServiceID: notification.ServiceID,
@@ -400,11 +415,16 @@ func (s *Server) handlePoll(w http.ResponseWriter, r *http.Request) {
 	defer s.hub.Unsubscribe(subscriber)
 
 	if wait > 0 {
+		// Captured before the hold: a flip to unavailable closes it, so a
+		// paused or no-longer-live relay does not keep the poll held until
+		// its timeout.
+		unavailable := s.unavailableSignal()
 		timer := time.NewTimer(wait)
 		defer timer.Stop()
 		select {
 		case <-subscriber.C():
 		case <-timer.C:
+		case <-unavailable:
 		case <-s.done:
 			// The server is closing; do not keep the request held.
 			writeError(w, http.StatusServiceUnavailable, "source_unavailable", "")
@@ -419,7 +439,7 @@ func (s *Server) handlePoll(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusServiceUnavailable, "source_unavailable", "")
 		return
 	}
-	if s.distributionPaused() {
+	if s.distributionUnavailable() {
 		writeError(w, http.StatusServiceUnavailable, "distribution_paused", "")
 		return
 	}
