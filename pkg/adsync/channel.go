@@ -809,10 +809,8 @@ func (c *Channel) heartbeatMessage(transport Transport) channelHeartbeat {
 		Services:     services,
 		InstanceID:   c.instanceID,
 		Liveness:     string(c.machine.Instance().Liveness),
-		Chain:        []string{},
 		Fallback:     fallback,
 		AgentVersion: c.agentVersion,
-		StartedAt:    c.startedAt.UnixMilli(),
 		Transport:    string(transport),
 	}
 	if transport == TransportLongPoll {

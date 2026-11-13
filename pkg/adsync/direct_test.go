@@ -343,16 +343,27 @@ func TestChannelMessagesCarryIdentityAndHost(t *testing.T) {
 		}
 	}
 	// The hello keeps the start time and transport inside the host block and
-	// names no chain.
+	// names no chain; the heartbeat has no chain or top-level start time but
+	// keeps its transport.
 	for _, key := range []string{"chain", "startedAt", "transport"} {
 		if _, found := hello[key]; found {
 			t.Fatalf("hello carries a top-level %s: %v", key, hello)
 		}
 	}
-	if started, _ := hello["host"].(map[string]any)["startedAt"].(string); started == "" {
-		t.Fatalf("hello host startedAt = %v", hello["host"])
-	} else if _, err := time.Parse(time.RFC3339, started); err != nil {
-		t.Fatalf("hello host startedAt %q: %v", started, err)
+	for _, key := range []string{"chain", "startedAt"} {
+		if _, found := poll[key]; found {
+			t.Fatalf("heartbeat carries a top-level %s: %v", key, poll)
+		}
+	}
+	if poll["transport"] != string(TransportLongPoll) {
+		t.Fatalf("heartbeat transport = %v", poll["transport"])
+	}
+	for name, message := range map[string]map[string]any{"hello": hello, "heartbeat": poll} {
+		if started, _ := message["host"].(map[string]any)["startedAt"].(string); started == "" {
+			t.Fatalf("%s host startedAt = %v", name, message["host"])
+		} else if _, err := time.Parse(time.RFC3339, started); err != nil {
+			t.Fatalf("%s host startedAt %q: %v", name, started, err)
+		}
 	}
 	if hello["host"].(map[string]any)["transport"] != string(TransportWebSocket) ||
 		poll["host"].(map[string]any)["transport"] != string(TransportLongPoll) {
