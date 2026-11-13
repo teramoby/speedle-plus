@@ -218,10 +218,22 @@ func TestChannelRequiresTrustedCA(t *testing.T) {
 	}
 }
 
-func newChannelMTLSServer(t *testing.T, source *channelSource, pki *testPKI) *httptest.Server {
+func newChannelMTLSServer(t *testing.T, source *channelSource, pki *testPKI, version uint16) *httptest.Server {
 	t.Helper()
 	server := httptest.NewUnstartedServer(source)
 	server.Config.ErrorLog = log.New(io.Discard, "", 0)
+	server.Config.ConnState = func(conn net.Conn, state http.ConnState) {
+		if state == http.StateActive {
+			tlsConn, ok := conn.(*tls.Conn)
+			if !ok {
+				t.Errorf("authenticated connection has type %T; want *tls.Conn", conn)
+				return
+			}
+			if got := tlsConn.ConnectionState().Version; got != version {
+				t.Errorf("negotiated TLS version = %#x; want %#x", got, version)
+			}
+		}
+	}
 	server.TLS = &tls.Config{
 		Certificates: []tls.Certificate{pki.serverCertificate},
 		ClientAuth:   tls.RequireAndVerifyClientCert,
@@ -254,7 +266,7 @@ func testChannelClientCertificate(t *testing.T, version uint16) {
 	books := newFixtureService(testServiceID1, "books")
 	source := newChannelSource(t, books)
 	pki := newTestPKI(t)
-	server := newChannelMTLSServer(t, source, pki)
+	server := newChannelMTLSServer(t, source, pki, version)
 	directory := t.TempDir()
 	caFile := writeTestFile(t, directory, "ca.pem", pki.caPEM, 0o644)
 	certFile := writeTestFile(t, directory, "client.pem", pki.clientCertPEM, 0o600)
