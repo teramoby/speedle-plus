@@ -24,12 +24,24 @@
 // established connection, so keep-alive connections, WebSockets and held polls
 // cannot outlive material that was revoked or has expired.
 //
+// # Availability
+//
+// Server stops distributing while its caller reports the instance paused, or
+// no longer live and therefore unable to vouch for the copies it holds. Data
+// requests then answer 503, the policy-source routes refuse new channels and
+// held polls, established channels close, and a held poll is released instead
+// of waiting out its hold. Distribution resumes without a restart once the
+// instance is live and unpaused again.
+//
 // # CRL revocation
 //
 // CRLs come from PEM or DER files and/or HTTPS URLs (conditional fetches, no
 // redirects, a ten-second stall timeout). Each CRL's issuer, signature and
-// validity window are checked, delta CRLs are rejected, and a newer CRL is
-// never replaced by an older one. Each issuing CA in the client CA bundle needs
+// validity window are checked. Delta CRLs, CRLs scoped by an issuing
+// distribution point and CRLs with any other unsupported critical extension
+// are rejected: their serials do not describe the issuer's full certificate
+// set. A newer CRL is never replaced by an older one. Each issuing CA in the
+// client CA bundle needs
 // fresh coverage; the serials of every fresh CRL for that issuer are unioned.
 // Startup fails when a required CRL is unusable. A refresh failure keeps the
 // last good CRL; a CRL that expires without replacement rejects new
