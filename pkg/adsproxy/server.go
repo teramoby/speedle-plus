@@ -291,7 +291,8 @@ func (s *Server) releaseLocked(identity sessionIdentity) {
 // revoked certificate during the handshake; this check keeps the handler fail
 // closed if it is ever mounted somewhere else.
 func clientIdentity(r *http.Request) (sessionIdentity, bool) {
-	if r.TLS == nil || len(r.TLS.VerifiedChains) == 0 || len(r.TLS.PeerCertificates) == 0 {
+	if r.TLS == nil || len(r.TLS.VerifiedChains) == 0 || len(r.TLS.VerifiedChains[0]) == 0 ||
+		len(r.TLS.PeerCertificates) == 0 {
 		return sessionIdentity{}, false
 	}
 	leaf := r.TLS.VerifiedChains[0][0]
