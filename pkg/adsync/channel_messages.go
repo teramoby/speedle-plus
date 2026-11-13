@@ -53,14 +53,13 @@ type channelHelloService struct {
 type channelHello struct {
 	Type         string                `json:"type"`
 	InstanceID   string                `json:"instanceId"`
-	CredentialID string                `json:"credentialId,omitempty"`
 	Services     []channelHelloService `json:"services"`
 	Chain        []string              `json:"chain"`
 	AgentVersion string                `json:"agentVersion"`
-	// HostName is display-only and sent by a direct-mode instance.
-	HostName  string `json:"hostName,omitempty"`
-	StartedAt int64  `json:"startedAt,omitempty"`
-	Transport string `json:"transport,omitempty"`
+	// Host is display-only; it is never used for identity.
+	Host      *HostInfo `json:"host,omitempty"`
+	StartedAt int64     `json:"startedAt,omitempty"`
+	Transport string    `json:"transport,omitempty"`
 }
 
 // channelHeartbeatService is one entry of the heartbeat service list.
@@ -83,21 +82,19 @@ type channelFallback struct {
 // channelHeartbeat covers every service in one message. In long-poll mode it is
 // the body of each poll request.
 type channelHeartbeat struct {
-	Type string `json:"type"`
-	// InstanceID and HostName are sent by a direct-mode instance only; a
-	// credential instance is identified by its credential.
-	InstanceID         string                    `json:"instanceId,omitempty"`
-	HostName           string                    `json:"hostName,omitempty"`
-	Seq                uint64                    `json:"seq"`
-	Services           []channelHeartbeatService `json:"services"`
-	Liveness           string                    `json:"liveness"`
-	Chain              []string                  `json:"chain"`
-	Fallback           channelFallback           `json:"fallback"`
-	AgentVersion       string                    `json:"agentVersion"`
-	StartedAt          int64                     `json:"startedAt"`
-	Transport          string                    `json:"transport"`
-	UpstreamInstanceID *string                   `json:"upstreamInstanceId,omitempty"`
-	DownstreamCount    *uint64                   `json:"downstreamCount,omitempty"`
+	Type       string `json:"type"`
+	InstanceID string `json:"instanceId"`
+	// Host is sent with each long poll, which has no hello.
+	Host            *HostInfo                 `json:"host,omitempty"`
+	Seq             uint64                    `json:"seq"`
+	Services        []channelHeartbeatService `json:"services"`
+	Liveness        string                    `json:"liveness"`
+	Chain           []string                  `json:"chain"`
+	Fallback        channelFallback           `json:"fallback"`
+	AgentVersion    string                    `json:"agentVersion"`
+	StartedAt       int64                     `json:"startedAt"`
+	Transport       string                    `json:"transport"`
+	DownstreamCount *uint64                   `json:"downstreamCount,omitempty"`
 }
 
 // channelAckService is one service entry of an ack. Head is the source head;

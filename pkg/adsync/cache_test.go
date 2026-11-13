@@ -17,14 +17,13 @@ import (
 func TestCacheRoundTrip(t *testing.T) {
 	service := newFixtureService(testServiceID1, "books")
 	fixture := newFixture(t, service)
-	service.publish(t, fixture.signer,
-		Change{Op: "upsert", Kind: "authz", ID: "01HF7YAT000000000000000201",
-			Name: stringPointer("read-books"), SPDL: stringPointer("grant read")})
+	service.publish(t, Change{Op: "upsert", Kind: "authz", ID: "01HF7YAT000000000000000201",
+		Name: stringPointer("read-books"), SPDL: stringPointer("grant read")})
 	directory := t.TempDir()
 	syncer := fixture.newSyncer(directory, nil)
 	state := syncFixtureService(t, syncer, "books")
 
-	cache, err := NewCache(directory, fixture.keys)
+	cache, err := NewCache(directory)
 	if err != nil {
 		t.Fatalf("NewCache: %v", err)
 	}
@@ -69,7 +68,7 @@ func TestCacheRejectsCorruption(t *testing.T) {
 	directory := t.TempDir()
 	syncer := fixture.newSyncer(directory, nil)
 	syncFixtureService(t, syncer, "books")
-	cache, err := NewCache(directory, fixture.keys)
+	cache, err := NewCache(directory)
 	if err != nil {
 		t.Fatalf("NewCache: %v", err)
 	}
@@ -120,12 +119,11 @@ func TestCacheForgedIncrementalStateIsNotUsed(t *testing.T) {
 	directory := t.TempDir()
 	syncer := fixture.newSyncer(directory, nil)
 	syncFixtureService(t, syncer, "books")
-	service.publish(t, fixture.signer,
-		Change{Op: "upsert", Kind: "authz", ID: "01HF7YAT000000000000000201",
-			Name: stringPointer("read-books"), SPDL: stringPointer("grant read")})
+	service.publish(t, Change{Op: "upsert", Kind: "authz", ID: "01HF7YAT000000000000000201",
+		Name: stringPointer("read-books"), SPDL: stringPointer("grant read")})
 	syncFixtureService(t, syncer, "books")
 
-	cache, err := NewCache(directory, fixture.keys)
+	cache, err := NewCache(directory)
 	if err != nil {
 		t.Fatalf("NewCache: %v", err)
 	}
@@ -141,9 +139,6 @@ func TestCacheForgedIncrementalStateIsNotUsed(t *testing.T) {
 	var payload cachePayload
 	if err := json.Unmarshal(envelope.Payload, &payload); err != nil {
 		t.Fatalf("decode payload: %v", err)
-	}
-	if payload.Signature != (Signature{}) {
-		t.Fatal("incremental cache unexpectedly has a snapshot signature")
 	}
 	if len(payload.Snapshot.Policies) != 1 {
 		t.Fatalf("cached policies = %d, want 1", len(payload.Snapshot.Policies))
@@ -183,7 +178,7 @@ func TestCacheRejectsUnsafePermissions(t *testing.T) {
 	directory := t.TempDir()
 	syncer := fixture.newSyncer(directory, nil)
 	syncFixtureService(t, syncer, "books")
-	cache, err := NewCache(directory, fixture.keys)
+	cache, err := NewCache(directory)
 	if err != nil {
 		t.Fatalf("NewCache: %v", err)
 	}
@@ -211,34 +206,29 @@ func TestCacheRejectsUnsafeDirectory(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("Unix directory permissions are not available on Windows")
 	}
-	fixture := newFixture(t, newFixtureService(testServiceID1, "books"))
 	directory := t.TempDir()
 	if err := os.Chmod(directory, 0o777); err != nil {
 		t.Fatalf("chmod cache directory: %v", err)
 	}
-	if _, err := NewCache(directory, fixture.keys); !errors.Is(err, ErrUnsafeCache) {
+	if _, err := NewCache(directory); !errors.Is(err, ErrUnsafeCache) {
 		t.Fatalf("NewCache error = %v, want ErrUnsafeCache", err)
 	}
 }
 
 func TestCacheInputValidation(t *testing.T) {
-	fixture := newFixture(t, newFixtureService(testServiceID1, "books"))
-	if _, err := NewCache("", fixture.keys); err == nil {
+	if _, err := NewCache(""); err == nil {
 		t.Error("NewCache accepted an empty directory")
-	}
-	if _, err := NewCache(t.TempDir(), nil); err == nil {
-		t.Error("NewCache accepted nil keys")
 	}
 	file := filepath.Join(t.TempDir(), "not-a-directory")
 	if err := os.WriteFile(file, []byte("data"), 0o600); err != nil {
 		t.Fatalf("write file: %v", err)
 	}
-	if _, err := NewCache(file, fixture.keys); err == nil {
+	if _, err := NewCache(file); err == nil {
 		t.Error("NewCache accepted a regular file")
 	}
 
 	directory := filepath.Join(t.TempDir(), "nested", "cache")
-	cache, err := NewCache(directory, fixture.keys)
+	cache, err := NewCache(directory)
 	if err != nil {
 		t.Fatalf("NewCache nested directory: %v", err)
 	}
@@ -274,9 +264,8 @@ func TestSyncCacheWriteFailureKeepsPreviousState(t *testing.T) {
 	directory := t.TempDir()
 	syncer := fixture.newSyncer(directory, nil)
 	syncFixtureService(t, syncer, "books")
-	service.publish(t, fixture.signer,
-		Change{Op: "upsert", Kind: "authz", ID: "01HF7YAT000000000000000201",
-			Name: stringPointer("read-books"), SPDL: stringPointer("grant read")})
+	service.publish(t, Change{Op: "upsert", Kind: "authz", ID: "01HF7YAT000000000000000201",
+		Name: stringPointer("read-books"), SPDL: stringPointer("grant read")})
 
 	syncer.cache.dir = filepath.Join(directory, "missing", "cache")
 	defer func() { syncer.cache.dir = directory }()
@@ -361,15 +350,13 @@ func TestCacheStateRemainsTentativeAfterRefreshFailure(t *testing.T) {
 	directory := t.TempDir()
 	syncer := fixture.newSyncer(directory, nil)
 	syncFixtureService(t, syncer, "books")
-	service.publish(t, fixture.signer,
-		Change{Op: "upsert", Kind: "authz", ID: "01HF7YAT000000000000000201",
-			Name: stringPointer("read-books"), SPDL: stringPointer("grant read")})
+	service.publish(t, Change{Op: "upsert", Kind: "authz", ID: "01HF7YAT000000000000000201",
+		Name: stringPointer("read-books"), SPDL: stringPointer("grant read")})
 	syncFixtureService(t, syncer, "books")
 
 	restarted := fixture.newSyncer(directory, nil)
-	service.publish(t, fixture.signer,
-		Change{Op: "upsert", Kind: "authz", ID: "01HF7YAT000000000000000202",
-			Name: stringPointer("write-books"), SPDL: stringPointer("grant write")})
+	service.publish(t, Change{Op: "upsert", Kind: "authz", ID: "01HF7YAT000000000000000202",
+		Name: stringPointer("write-books"), SPDL: stringPointer("grant write")})
 	fixture.source.configure(func(source *fixtureSource) {
 		source.failRemaining = 1
 		source.failStatus = 503
@@ -418,9 +405,8 @@ func TestCacheRestartResumesFromCachedRevision(t *testing.T) {
 
 	// The cached revision is a real resume position: the next commit is
 	// fetched as a change, not as a new snapshot.
-	service.publish(t, fixture.signer,
-		Change{Op: "upsert", Kind: "authz", ID: "01HF7YAT000000000000000201",
-			Name: stringPointer("read-books"), SPDL: stringPointer("grant read")})
+	service.publish(t, Change{Op: "upsert", Kind: "authz", ID: "01HF7YAT000000000000000201",
+		Name: stringPointer("read-books"), SPDL: stringPointer("grant read")})
 	updated := syncFixtureService(t, second, "books")
 	if updated.Revision != 2 || updated.StateHash != service.StateHash {
 		t.Fatalf("resumed state = revision %d hash %s", updated.Revision, updated.StateHash)
@@ -449,7 +435,7 @@ func TestCacheRemove(t *testing.T) {
 	directory := t.TempDir()
 	syncer := fixture.newSyncer(directory, nil)
 	syncFixtureService(t, syncer, "books")
-	cache, err := NewCache(directory, fixture.keys)
+	cache, err := NewCache(directory)
 	if err != nil {
 		t.Fatalf("NewCache: %v", err)
 	}
@@ -470,7 +456,7 @@ func TestForgetRemovesCachedFile(t *testing.T) {
 	directory := t.TempDir()
 	syncer := fixture.newSyncer(directory, nil)
 	syncFixtureService(t, syncer, "books")
-	cache, err := NewCache(directory, fixture.keys)
+	cache, err := NewCache(directory)
 	if err != nil {
 		t.Fatalf("NewCache: %v", err)
 	}

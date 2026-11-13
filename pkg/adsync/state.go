@@ -77,7 +77,7 @@ const (
 	SyncReasonCatchUp SyncReason = "catch_up"
 	// SyncReasonResync means an explicit resync command invalidated the copy.
 	SyncReasonResync SyncReason = "resync"
-	// SyncReasonIntegrity means a direct-mode instance failed the service
+	// SyncReasonIntegrity means the instance failed the service
 	// closed: its copy is ahead of the acknowledged head, or a reloaded
 	// snapshot still did not match it. Requests for the service are denied,
 	// not forwarded, until a later ack or a verified copy clears it. Only a
@@ -228,11 +228,12 @@ type MachineOptions struct {
 	// protocol range is 60s to 15m and it must be greater than the stale
 	// threshold.
 	StopAfter time.Duration
-	// ReconcileOnAck enables the direct-mode reconciliation: on every
+	// ReconcileOnAck enables the per-ack reconciliation: on every
 	// confirming ack a service whose verified copy is ahead of the ack head in
 	// the same epoch fails closed (SyncReasonIntegrity) instead of waiting,
 	// and FailService can fail one service closed without stopping the
-	// instance. The zero value keeps the behaviour of a credential instance.
+	// instance. The policy-source store always sets it; the zero value is the
+	// behaviour of a relay mirror, which stops as a whole instead.
 	ReconcileOnAck bool
 }
 
@@ -308,7 +309,7 @@ type serviceRecord struct {
 	pendingResync     bool
 	verifiedSinceStop bool
 
-	// aheadOfAck is set by a direct-mode ack whose head is behind the
+	// aheadOfAck is set by an ack whose head is behind the
 	// verified copy. failed is set by FailService and holds until an ack
 	// carries a different head than failedHead, or a verified copy arrives.
 	aheadOfAck bool
@@ -606,12 +607,12 @@ func (m *Machine) SyncFailed(serviceID string, err error) {
 	m.removeRecordLocked(record)
 }
 
-// FailService fails one service closed after a direct-mode reconciliation
+// FailService fails one service closed after a reconciliation
 // could not make its copy match the acknowledged head, for example because a
 // reloaded snapshot still has a different state hash. The service reports
 // SyncReasonIntegrity until an ack carries a different head or a verified copy
 // matching the head is applied; the rest of the instance keeps serving. Without ReconcileOnAck
-// it does nothing: a credential instance stops as a whole instead.
+// it does nothing.
 func (m *Machine) FailService(serviceID string) {
 	m.mu.Lock()
 	defer m.mu.Unlock()

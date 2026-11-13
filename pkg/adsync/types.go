@@ -3,7 +3,6 @@
 package adsync
 
 import (
-	"encoding/base64"
 	"fmt"
 	"regexp"
 )
@@ -23,19 +22,11 @@ type Policy struct {
 	SPDL string `json:"spdl"`
 }
 
-// Snapshot is the EngineSnapshotSchema payload carried by a signed snapshot.
+// Snapshot is the EngineSnapshotSchema payload carried by a snapshot.
 type Snapshot struct {
 	Name         string   `json:"name"`
 	Policies     []Policy `json:"policies"`
 	RolePolicies []Policy `json:"rolePolicies"`
-}
-
-// Signature is the Cloud-produced Ed25519 signature. Proxies forward it
-// unchanged.
-type Signature struct {
-	KeyID string `json:"keyId"`
-	Alg   string `json:"alg"`
-	Value string `json:"value"`
 }
 
 // Service is one service as reported by the source, either by a discovery
@@ -57,14 +48,13 @@ type ServicesResponse struct {
 
 // SnapshotResponse is GET /policy-source/v1/services/{serviceId}/snapshot.
 type SnapshotResponse struct {
-	ServiceID  string    `json:"serviceId"`
-	SourceID   string    `json:"sourceId"`
-	Epoch      string    `json:"epoch"`
-	Revision   uint64    `json:"revision"`
-	StateHash  Hash      `json:"stateHash"`
-	CommitHash Hash      `json:"commitHash"`
-	Signature  Signature `json:"signature"`
-	Snapshot   Snapshot  `json:"snapshot"`
+	ServiceID  string   `json:"serviceId"`
+	SourceID   string   `json:"sourceId"`
+	Epoch      string   `json:"epoch"`
+	Revision   uint64   `json:"revision"`
+	StateHash  Hash     `json:"stateHash"`
+	CommitHash Hash     `json:"commitHash"`
+	Snapshot   Snapshot `json:"snapshot"`
 }
 
 // Change is one upsert or delete in a commit. Name and SPDL are pointers so
@@ -78,14 +68,13 @@ type Change struct {
 	SPDL *string `json:"spdl,omitempty"`
 }
 
-// Commit is one signed revision.
+// Commit is one revision.
 type Commit struct {
-	Revision  uint64    `json:"revision"`
-	PrevHash  Hash      `json:"prevHash"`
-	Hash      Hash      `json:"hash"`
-	At        int64     `json:"at"`
-	Signature Signature `json:"signature"`
-	Changes   []Change  `json:"changes"`
+	Revision uint64   `json:"revision"`
+	PrevHash Hash     `json:"prevHash"`
+	Hash     Hash     `json:"hash"`
+	At       int64    `json:"at"`
+	Changes  []Change `json:"changes"`
 }
 
 // ChangesResponse is GET /policy-source/v1/services/{serviceId}/changes.
@@ -149,23 +138,6 @@ func (r *ServicesResponse) validate() error {
 	return nil
 }
 
-func (s Signature) validate() error {
-	if s.KeyID == "" || len(s.KeyID) > 64 {
-		return fmt.Errorf("%w: invalid signature keyId", ErrProtocol)
-	}
-	if s.Alg != "Ed25519" {
-		return fmt.Errorf("%w: unsupported signature algorithm %q", ErrProtocol, s.Alg)
-	}
-	raw, err := base64.StdEncoding.Strict().DecodeString(s.Value)
-	if err != nil || len(raw) != 64 {
-		return fmt.Errorf("%w: invalid signature value", ErrProtocol)
-	}
-	if base64.StdEncoding.EncodeToString(raw) != s.Value {
-		return fmt.Errorf("%w: non-canonical signature value", ErrProtocol)
-	}
-	return nil
-}
-
 func (s Snapshot) validate() error {
 	if !validServiceName(s.Name) {
 		return fmt.Errorf("%w: invalid snapshot service name %q", ErrProtocol, s.Name)
@@ -193,9 +165,7 @@ func validatePolicies(label string, policies []Policy) error {
 	return nil
 }
 
-// validate checks the envelope. requireSignature is true when public keys are
-// configured; without them a snapshot carries no signature to check.
-func (r *SnapshotResponse) validate(requireSignature bool) error {
+func (r *SnapshotResponse) validate() error {
 	if !validEntityID(r.ServiceID) {
 		return fmt.Errorf("%w: invalid serviceId %q", ErrProtocol, r.ServiceID)
 	}
@@ -210,11 +180,6 @@ func (r *SnapshotResponse) validate(requireSignature bool) error {
 	}
 	if r.StateHash.IsZero() || r.CommitHash.IsZero() {
 		return fmt.Errorf("%w: snapshot hashes are missing", ErrProtocol)
-	}
-	if requireSignature {
-		if err := r.Signature.validate(); err != nil {
-			return err
-		}
 	}
 	return r.Snapshot.validate()
 }
@@ -265,8 +230,7 @@ func (c *Change) validateIDAndKind() error {
 }
 
 // validatePage checks the envelope, contiguity and hash chain of one changes
-// page against the caller's current anchor. Signatures are verified by the
-// caller because they need the configured public keys.
+// page against the caller's current anchor.
 func (r *ChangesResponse) validatePage(serviceID, sourceID, epoch string, since uint64, anchor Hash, limit int) error {
 	if r.ServiceID != serviceID {
 		return fmt.Errorf("%w: changes page is for service %q, want %q", ErrProtocol, r.ServiceID, serviceID)
@@ -358,15 +322,6 @@ func (c Change) spdlOrEmpty() string {
 		return ""
 	}
 	return *c.SPDL
-}
-
-// snapshotIdentity describes the exact state a snapshot signed.
-func (r *SnapshotResponse) signedSnapshotBytes() []byte {
-	return SnapshotSignedBytes(r.SourceID, r.Epoch, r.Revision, r.StateHash, r.CommitHash)
-}
-
-func (c *Commit) signedBytes(sourceID, epoch string) []byte {
-	return CommitSignedBytes(sourceID, epoch, c.Revision, c.Hash)
 }
 
 func isServiceChange(change Change) bool {

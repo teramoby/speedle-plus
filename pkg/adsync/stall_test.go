@@ -25,7 +25,7 @@ func TestSignedDownloadsUseStallTimeout(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	service.publish(t, fixture.signer, Change{Op: "delete", Kind: "authz", ID: "missing"})
+	service.publish(t, Change{Op: "delete", Kind: "authz", ID: "missing"})
 	changes, err := original.Changes(context.Background(), service.ID, snapshot.SourceID, snapshot.Epoch, snapshot.Revision, snapshot.CommitHash, 100)
 	if err != nil {
 		t.Fatal(err)
@@ -60,7 +60,7 @@ func TestSignedDownloadsUseStallTimeout(t *testing.T) {
 				defer server.Close()
 				httpClient := server.Client()
 				httpClient.Timeout = 10 * time.Millisecond
-				client, err := NewClient(Config{BaseURL: server.URL, Credential: testCredential, PublicKeys: fixture.keys, HTTPClient: httpClient, RequestTimeout: 150 * time.Millisecond, SnapshotTimeout: time.Nanosecond, Retry: RetryPolicy{MaxAttempts: 1}})
+				client, err := NewClient(Config{BaseURL: server.URL, APIKey: testAPIKey, InstanceID: testInstanceID, HTTPClient: httpClient, RequestTimeout: 150 * time.Millisecond, SnapshotTimeout: time.Nanosecond, Retry: RetryPolicy{MaxAttempts: 1}})
 				if err != nil {
 					t.Fatal(err)
 				}

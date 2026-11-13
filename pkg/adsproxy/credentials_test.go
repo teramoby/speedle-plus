@@ -124,11 +124,10 @@ func TestNewCredentialSet(t *testing.T) {
 }
 
 func TestServerReloadCredentials(t *testing.T) {
-	signer := newTestSigner(t)
-	mirror, _, _ := newPopulatedMirror(t, signer)
+	mirror, _, _ := newPopulatedMirror(t)
 	token1 := testToken(testDownstreamID, 1)
 	token2 := testToken(testDownstreamB, 2)
-	server := newTestServer(t, mirror, signer.publicKeys(t), nil, testCredential{
+	server := newTestServer(t, mirror, nil, testCredential{
 		downstreamID: testDownstreamID,
 		token:        token1,
 	})
@@ -164,11 +163,10 @@ func TestServerReloadCredentials(t *testing.T) {
 }
 
 func TestServerWatchReload(t *testing.T) {
-	signer := newTestSigner(t)
-	mirror, _, _ := newPopulatedMirror(t, signer)
+	mirror, _, _ := newPopulatedMirror(t)
 	token1 := testToken(testDownstreamID, 1)
 	token2 := testToken(testDownstreamB, 2)
-	server := newTestServer(t, mirror, signer.publicKeys(t), nil, testCredential{
+	server := newTestServer(t, mirror, nil, testCredential{
 		downstreamID: testDownstreamID,
 		token:        token1,
 	})

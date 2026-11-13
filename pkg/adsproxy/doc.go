@@ -6,27 +6,27 @@
 //
 // An ADS that holds verified copies of one or more services can act as a policy
 // source for other ADS instances. It speaks the same /policy-source/v1 protocol
-// as Speedle Cloud: service discovery, signed snapshots, signed change pages,
-// and the instance notification channel over WebSocket or HTTPS long polling.
+// as Speedle Cloud: service discovery, snapshots, change pages, and the
+// instance notification channel over WebSocket or HTTPS long polling.
 // Downstream instances keep pointing at the same endpoints and verify the same
-// Cloud signatures; a proxy forwards sourceId, epoch, hashes and signatures
-// unchanged and never re-signs or rewrites them.
+// canonical hashes; a proxy forwards sourceId, epoch and hashes unchanged and
+// never rewrites them.
 //
 // # Synced copies and the change log
 //
-// A Mirror holds the signed snapshot each service was synchronized from and a
-// bounded log of the signed commits applied after it. The synchronization loop
-// feeds it the signed snapshots and change pages the ADS pulled; the mirror
-// verifies them again. Snapshot anchoring is what makes signature pass-through
-// possible: the snapshot response served to a downstream is the exact signed
+// A Mirror holds the snapshot each service was synchronized from and a
+// bounded log of the commits applied after it. The synchronization loop
+// feeds it the snapshots and change pages the ADS pulled; the mirror
+// verifies them again. Snapshot anchoring is what makes hash pass-through
+// possible: the snapshot response served to a downstream is the exact
 // snapshot the proxy received, and the downstream catches up through the
 // proxy's log.
 //
 // The log is bounded per service (by commit count and by approximate bytes).
 // When a service reaches the bound it stops being advertised, because the proxy
-// cannot produce a fresh signed snapshot on its own; the process should refresh
+// cannot produce a fresh snapshot on its own; the process should refresh
 // the snapshot (Mirror reports such services through NeedsSnapshot). A fresh
-// signed snapshot resets the log and makes the service serviceable again.
+// snapshot resets the log and makes the service serviceable again.
 // Notifications are only accelerators: an ack always carries every service's
 // head, so a lost notification delays a sync but cannot lose a change.
 //

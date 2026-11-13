@@ -25,10 +25,6 @@ type ServiceState struct {
 	StateHash  Hash
 	CommitHash Hash
 	Snapshot   Snapshot
-
-	// signature is set only while the state is still exactly a signed
-	// snapshot, so a cache reload can re-verify it.
-	signature Signature
 }
 
 func (s *ServiceState) clone() *ServiceState {
@@ -67,7 +63,7 @@ func NewSyncer(client *Client, cacheDir string) (*Syncer, error) {
 	var cache *Cache
 	if cacheDir != "" {
 		var err error
-		cache, err = NewCache(cacheDir, client.keys)
+		cache, err = NewCache(cacheDir)
 		if err != nil {
 			return nil, err
 		}
@@ -137,13 +133,13 @@ func (s *Syncer) Sync(ctx context.Context, service Service) (*ServiceState, erro
 	return s.SyncAtLeast(ctx, service, 0)
 }
 
-// SyncAtLeast is Sync for a direct-mode instance that also knows a newer head
+// SyncAtLeast is Sync for an instance that also knows a newer head
 // from a notification: when the local copy already matches service but is
 // below minRevision, it fetches the changes up to the source head, verified
 // against the head state hash of the last page. With minRevision at or below
 // service.Revision it is exactly Sync.
 //
-// In direct mode a local copy ahead of service in the same epoch is returned
+// A local copy ahead of service in the same epoch is returned
 // unchanged and never replaced by an older snapshot; the state machine
 // decides on the next ack whether that is an integrity failure.
 func (s *Syncer) SyncAtLeast(ctx context.Context, service Service, minRevision uint64) (*ServiceState, error) {
@@ -161,8 +157,7 @@ func (s *Syncer) SyncAtLeast(ctx context.Context, service Service, minRevision u
 	if local == nil {
 		return s.loadSnapshot(ctx, service, local)
 	}
-	direct := s.client.DirectMode()
-	if direct && local.Epoch == service.Epoch && local.Revision > service.Revision {
+	if local.Epoch == service.Epoch && local.Revision > service.Revision {
 		if fromCache {
 			if err := s.store(local); err != nil {
 				return nil, err
@@ -170,11 +165,11 @@ func (s *Syncer) SyncAtLeast(ctx context.Context, service Service, minRevision u
 		}
 		return local, nil
 	}
-	if local.Epoch != service.Epoch || local.Revision > service.Revision {
+	if local.Epoch != service.Epoch {
 		return s.loadSnapshot(ctx, service, local)
 	}
 	if local.Revision == service.Revision {
-		if local.StateHash == service.HeadStateHash && direct && minRevision > local.Revision {
+		if local.StateHash == service.HeadStateHash && minRevision > local.Revision {
 			// A notification announced a newer head than the ack. Catch up to
 			// whatever the source holds now; every page is verified against the
 			// source head, and the copy at service.Revision is the anchor.
@@ -243,9 +238,8 @@ func (s *Syncer) localState(serviceID string) (*ServiceState, bool, error) {
 	if state == nil {
 		return nil, false, nil
 	}
-	// A disk cache entry is only a tentative resume position. In particular,
-	// incremental entries have no snapshot signature. Keep it out of s.states
-	// until discovery or a verified change chain confirms the resulting head.
+	// A disk cache entry is only a tentative resume position. Keep it out of
+	// s.states until an ack or a verified change chain confirms the head.
 	return state.clone(), true, nil
 }
 
@@ -260,14 +254,10 @@ func (s *Syncer) loadSnapshot(ctx context.Context, service Service, local *Servi
 		return nil, err
 	}
 	if response.SourceID != service.ID || response.Epoch != service.Epoch {
-		kind := ErrProtocol
-		if s.client.DirectMode() {
-			// Direct mode reconciles against the ack: a reloaded snapshot that
-			// still does not match its identity fails the service closed.
-			kind = ErrIntegrity
-		}
+		// Reconciliation is against the ack: a reloaded snapshot that still
+		// does not match its identity fails the service closed.
 		return nil, fmt.Errorf("%w: snapshot identity %q/%q does not match requested service %q epoch %q",
-			kind, response.SourceID, response.Epoch, service.ID, service.Epoch)
+			ErrIntegrity, response.SourceID, response.Epoch, service.ID, service.Epoch)
 	}
 	if response.Revision == service.Revision && response.StateHash != service.HeadStateHash {
 		return nil, fmt.Errorf("%w: snapshot hash does not match the discovered head at revision %d",
@@ -287,10 +277,9 @@ func (s *Syncer) loadSnapshot(ctx context.Context, service Service, local *Servi
 		StateHash:  response.StateHash,
 		CommitHash: response.CommitHash,
 		Snapshot:   cloneSnapshot(response.Snapshot),
-		signature:  response.Signature,
 	}
 	if state.Revision < service.Revision {
-		// A lagging replica may legitimately anchor its signed snapshot behind
+		// A lagging replica may legitimately anchor its snapshot behind
 		// discovery. Catch up before publishing anything, and do not return a
 		// successful sync until the advertised revision has been reached.
 		caughtUp, err := s.catchUp(ctx, state, service)
@@ -342,9 +331,6 @@ func (s *Syncer) catchUp(ctx context.Context, local *ServiceState, service Servi
 		}
 		working.CommitHash = anchor
 		working.Revision = revision
-		// The applied state is no longer exactly the signed snapshot, so its
-		// signature can no longer anchor a cache reload.
-		working.signature = Signature{}
 
 		if page.To == page.Head {
 			if hash := StateHash(working.Snapshot); hash != page.HeadStateHash {
@@ -387,7 +373,7 @@ func checkServiceChangeTargets(serviceID string, changes []Change) error {
 }
 
 // ApplyChanges applies a commit's changes in order to snapshot. Upserts replace
-// by id, deletes of unknown ids are no-ops and a signed service delete reports
+// by id, deletes of unknown ids are no-ops and a service delete reports
 // ErrSourceGone. Policy lists are sorted by id afterwards, which is the order
 // the canonical state hash uses. A proxy serving a synced copy uses this to
 // apply the same commits the syncer applies, so both derive the same state.
@@ -396,7 +382,7 @@ func ApplyChanges(snapshot *Snapshot, changes []Change) error {
 }
 
 // applyChanges applies a commit's changes in order to a working snapshot.
-// Upserts replace by id, deletes of unknown ids are no-ops and a signed
+// Upserts replace by id, deletes of unknown ids are no-ops and a
 // service delete means the source is gone.
 func applyChanges(snapshot *Snapshot, changes []Change) error {
 	for _, change := range changes {

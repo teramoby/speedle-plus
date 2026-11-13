@@ -54,10 +54,6 @@ func validEntityID(id string) bool {
 
 // MirrorOptions configures a Mirror.
 type MirrorOptions struct {
-	// PublicKeys is the out-of-band trust anchor for the source's snapshot and
-	// commit signatures. It is required: a proxy only serves data whose Cloud
-	// signature it has verified with keys the operator distributed separately.
-	PublicKeys *adsync.PublicKeySet
 	// MaxLogCommits bounds the per-service change log; zero uses
 	// DefaultMaxLogCommits.
 	MaxLogCommits int
@@ -80,7 +76,7 @@ type HeadEvent struct {
 type ServiceAvailability int
 
 const (
-	// ServiceAvailable means the service has a signed snapshot and a usable
+	// ServiceAvailable means the service has a snapshot and a usable
 	// change log.
 	ServiceAvailable ServiceAvailability = iota
 	// ServiceUnknown means the proxy never held the service.
@@ -88,7 +84,7 @@ const (
 	// ServiceRemoved means the service was held and has been removed.
 	ServiceRemoved
 	// ServiceNeedsSnapshot means the change log reached its bound, so the
-	// proxy needs a fresh signed snapshot before it can serve the service
+	// proxy needs a fresh snapshot before it can serve the service
 	// again.
 	ServiceNeedsSnapshot
 )
@@ -105,14 +101,13 @@ type ServiceInfo struct {
 }
 
 // Mirror holds the verified copies of the services this ADS serves downstream.
-// It is fed by the synchronization loop with the signed snapshots and change
+// It is fed by the synchronization loop with the snapshots and change
 // pages the ADS received, verifies them again, applies commits and keeps a
 // bounded log.
 //
 // All methods are safe for concurrent use. Every value returned is a copy;
 // callers may retain and read it without locking.
 type Mirror struct {
-	keys          *adsync.PublicKeySet
 	maxLogCommits int
 	maxLogBytes   int64
 
@@ -123,7 +118,7 @@ type Mirror struct {
 	nextID    uint64
 }
 
-// serviceCopy is one verified service: the signed snapshot it is anchored to,
+// serviceCopy is one verified service: the snapshot it is anchored to,
 // the state after every log commit, and the log itself.
 type serviceCopy struct {
 	id       string
@@ -148,7 +143,7 @@ type serviceCopy struct {
 	// only after it has verified the advertised identity and revision, so a
 	// multi-page catch-up stays withheld until it has completed.
 	unavailable bool
-	// tombstoneRevision is the revision that removed the service: a signed
+	// tombstoneRevision is the revision that removed the service: a
 	// delete commit or the revision current at an administrative removal. A
 	// snapshot at or below it belongs to the state that was removed and cannot
 	// revive the service; only newer source state can.
@@ -188,9 +183,6 @@ func (s *serviceCopy) retireIdentity(sourceID, epoch string) {
 
 // NewMirror creates an empty mirror.
 func NewMirror(options MirrorOptions) (*Mirror, error) {
-	if options.PublicKeys == nil {
-		return nil, fmt.Errorf("%w: policy source public keys are required", ErrConfig)
-	}
 	maxLogCommits := options.MaxLogCommits
 	if maxLogCommits == 0 {
 		maxLogCommits = DefaultMaxLogCommits
@@ -206,7 +198,6 @@ func NewMirror(options MirrorOptions) (*Mirror, error) {
 		return nil, fmt.Errorf("%w: MaxLogBytes must be positive", ErrConfig)
 	}
 	return &Mirror{
-		keys:          options.PublicKeys,
 		maxLogCommits: maxLogCommits,
 		maxLogBytes:   maxLogBytes,
 		services:      make(map[string]*serviceCopy),
@@ -231,9 +222,9 @@ func (m *Mirror) AddObserver(observer func(HeadEvent)) func() {
 	}
 }
 
-// ApplySnapshot records a signed snapshot, for example the one the ADS
-// synchronized from its own source. The bytes are not trusted: the state hash,
-// the commit hash and the signature are verified again here.
+// ApplySnapshot records a snapshot, for example the one the ADS synchronized
+// from its own source. The bytes are not trusted: the state hash and the
+// commit hash are verified again here.
 //
 // A snapshot older than the copy already held for the same sourceId and epoch
 // is ignored, so a late delivery cannot roll the proxy back. A snapshot for a
@@ -242,7 +233,7 @@ func (m *Mirror) AddObserver(observer func(HeadEvent)) func() {
 //
 // Callers synchronizing a discovered service pass that service as expected.
 // The snapshot must then match both its id and epoch; sourceId is always bound
-// to the requested service id, never to a different service's signed dataset.
+// to the requested service id, never to a different service's dataset.
 func (m *Mirror) ApplySnapshot(response *adsync.SnapshotResponse, expected ...adsync.Service) error {
 	if response == nil {
 		return fmt.Errorf("%w: nil snapshot", ErrConfig)
@@ -381,10 +372,10 @@ func (m *Mirror) applySnapshot(response *adsync.SnapshotResponse) (HeadEvent, bo
 	}, notify, nil
 }
 
-// ApplyChanges records a page of signed commits and applies them to the copy.
+// ApplyChanges records a page of commits and applies them to the copy.
 // The page must continue exactly at the copy's current revision; a gap, an
 // identity change or any failed verification is reported and nothing is
-// applied. A signed service delete marks the service removed and reports
+// applied. A service delete marks the service removed and reports
 // adsync.ErrSourceGone.
 //
 // A page that is already covered by the copy is ignored, so a duplicate
@@ -441,7 +432,7 @@ func (m *Mirror) applyChanges(page *adsync.ChangesResponse) (HeadEvent, bool, er
 	}
 
 	// The copy is advertised at this point; watch whether applying the page
-	// takes it out of the advertised set (a signed service delete or a log that
+	// takes it out of the advertised set (a service delete or a log that
 	// outgrew its bound) so the service-set version reflects it.
 	availableBefore := m.availableLocked(service)
 	previousName := service.name
@@ -508,7 +499,7 @@ func (m *Mirror) applyChanges(page *adsync.ChangesResponse) (HeadEvent, bool, er
 		}
 	}
 	if len(service.log) > m.maxLogCommits || service.logBytes > m.maxLogBytes {
-		// The proxy cannot synthesize a signed snapshot, so a log it can no
+		// The proxy cannot synthesize a snapshot, so a log it can no
 		// longer resume from makes the service unserviceable until the process
 		// refreshes the snapshot.
 		service.overflow = true
@@ -611,7 +602,7 @@ func (m *Mirror) reserveServiceLocked() error {
 
 // Services returns every service this proxy currently advertises, sorted by
 // service id. A service whose log reached its bound is not advertised: the
-// proxy cannot bring a downstream from a signed snapshot to the service's head
+// proxy cannot bring a downstream from a snapshot to the service's head
 // any more, so failing closed is the only correct answer.
 func (m *Mirror) Services() []adsync.Service {
 	services, _ := m.ServicesVersion()
@@ -692,8 +683,8 @@ func (m *Mirror) CurrentInfo(serviceID string) (ServiceInfo, bool) {
 	}, true
 }
 
-// Snapshot returns the signed snapshot the service is anchored to. The
-// response is the exact identity Cloud signed; the proxy never re-signs it.
+// Snapshot returns the snapshot the service is anchored to. The
+// response is the exact identity the source served; the proxy never rewrites it.
 func (m *Mirror) Snapshot(serviceID string) (adsync.SnapshotResponse, bool) {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
@@ -827,8 +818,7 @@ func (m *Mirror) verifySnapshot(response *adsync.SnapshotResponse) error {
 	if computed := adsync.StateHash(response.Snapshot); computed != response.StateHash {
 		return fmt.Errorf("%w: snapshot stateHash does not match its content", adsync.ErrIntegrity)
 	}
-	return m.keys.Verify(response.Signature, adsync.SnapshotSignedBytes(
-		response.SourceID, response.Epoch, response.Revision, response.StateHash, response.CommitHash))
+	return nil
 }
 
 func (m *Mirror) verifyCommit(sourceID, epoch string, previous adsync.Hash, commit *adsync.Commit) error {
@@ -845,8 +835,7 @@ func (m *Mirror) verifyCommit(sourceID, epoch string, previous adsync.Hash, comm
 	if computed != commit.Hash {
 		return fmt.Errorf("%w: commit %d hash does not match its changes", adsync.ErrIntegrity, commit.Revision)
 	}
-	return m.keys.Verify(commit.Signature,
-		adsync.CommitSignedBytes(sourceID, epoch, commit.Revision, commit.Hash))
+	return nil
 }
 
 func checkServiceChangeTargets(serviceID string, changes []adsync.Change) error {

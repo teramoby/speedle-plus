@@ -4,8 +4,6 @@ package adsync
 
 import (
 	"context"
-	"crypto/ed25519"
-	"encoding/base64"
 	"encoding/json"
 	"encoding/pem"
 	"fmt"
@@ -22,25 +20,11 @@ import (
 )
 
 const (
-	testInstanceID = "01HF7YAT000000000000000001"
+	testInstanceID = "0193a5c2-7d1e-7b3a-9f10-4c2d8e6a1b20"
 	testServiceID1 = "01HF7YAT000000000000000101"
 	testServiceID2 = "01HF7YAT000000000000000102"
-	// 43 base62 characters.
-	testCredential = "adsi_" + testInstanceID + "_0123456789abcdefghijklmnopqrstuvwxyzABCDEFG"
+	testAPIKey     = "spdl_01HF7YAT000000000000000K01_fixtureSecretValue0123456789abcdef"
 )
-
-type fixtureSigner struct {
-	keyID   string
-	private ed25519.PrivateKey
-}
-
-func (s *fixtureSigner) sign(message []byte) Signature {
-	return Signature{
-		KeyID: s.keyID,
-		Alg:   "Ed25519",
-		Value: base64.StdEncoding.EncodeToString(ed25519.Sign(s.private, message)),
-	}
-}
 
 type fixtureService struct {
 	ID         string
@@ -70,7 +54,7 @@ func newFixtureService(id, name string) *fixtureService {
 // publish appends one signed revision. The fixture applies changes with its
 // own independent implementation so the client's application path is tested
 // against a second one.
-func (s *fixtureService) publish(t *testing.T, signer *fixtureSigner, changes ...Change) Commit {
+func (s *fixtureService) publish(t *testing.T, changes ...Change) Commit {
 	t.Helper()
 	prev := s.CommitHash
 	hash, err := CommitHash(prev, changes)
@@ -84,7 +68,6 @@ func (s *fixtureService) publish(t *testing.T, signer *fixtureSigner, changes ..
 		At:       1762500000000 + int64(s.Revision)*1000,
 		Changes:  changes,
 	}
-	commit.Signature = signer.sign(CommitSignedBytes(s.ID, s.Epoch, commit.Revision, hash))
 	state := cloneSnapshot(s.State)
 	if err := fixtureApplyChanges(&state, changes); err != nil {
 		t.Fatalf("fixture apply changes: %v", err)
@@ -162,9 +145,8 @@ type fixtureRequest struct {
 }
 
 type fixtureSource struct {
-	mu     sync.Mutex
-	mux    *http.ServeMux
-	signer *fixtureSigner
+	mu  sync.Mutex
+	mux *http.ServeMux
 
 	credential      string
 	services        map[string]*fixtureService
@@ -178,21 +160,18 @@ type fixtureSource struct {
 	delay          time.Duration
 	pageSize       int
 
-	changesReason            string
-	dropCommitRevision       uint64
-	snapshotOverride         *SnapshotResponse
-	snapshotStarted          chan struct{}
-	snapshotRelease          chan struct{}
-	corruptSnapshotHash      bool
-	corruptSnapshotSignature bool
-	corruptCommitSignature   bool
-	corruptHeadStateHash     bool
-	corruptDiscoveryHash     bool
+	changesReason        string
+	dropCommitRevision   uint64
+	snapshotOverride     *SnapshotResponse
+	snapshotStarted      chan struct{}
+	snapshotRelease      chan struct{}
+	corruptSnapshotHash  bool
+	corruptHeadStateHash bool
+	corruptDiscoveryHash bool
 }
 
-func newFixtureSource(credential string, signer *fixtureSigner, services ...*fixtureService) *fixtureSource {
+func newFixtureSource(credential string, services ...*fixtureService) *fixtureSource {
 	source := &fixtureSource{
-		signer:          signer,
 		credential:      credential,
 		services:        make(map[string]*fixtureService, len(services)),
 		servicesVersion: 1,
@@ -310,12 +289,6 @@ func (f *fixtureSource) serveSnapshot(w http.ResponseWriter, r *http.Request) {
 	if f.corruptSnapshotHash {
 		stateHash = flipHash(stateHash)
 	}
-	signature := f.signer.sign(SnapshotSignedBytes(
-		service.ID, service.Epoch, service.Revision, stateHash, service.CommitHash,
-	))
-	if f.corruptSnapshotSignature {
-		signature = corruptSignature(signature)
-	}
 	writeFixtureJSON(w, http.StatusOK, SnapshotResponse{
 		ServiceID:  service.ID,
 		SourceID:   service.ID,
@@ -323,7 +296,6 @@ func (f *fixtureSource) serveSnapshot(w http.ResponseWriter, r *http.Request) {
 		Revision:   service.Revision,
 		StateHash:  stateHash,
 		CommitHash: service.CommitHash,
-		Signature:  signature,
 		Snapshot:   cloneSnapshot(service.State),
 	})
 }
@@ -368,11 +340,7 @@ func (f *fixtureSource) serveChanges(w http.ResponseWriter, r *http.Request) {
 		if commit.Revision <= since || commit.Revision == f.dropCommitRevision {
 			continue
 		}
-		copied := commit
-		if f.corruptCommitSignature {
-			copied.Signature = corruptSignature(copied.Signature)
-		}
-		commits = append(commits, copied)
+		commits = append(commits, commit)
 		if len(commits) == limit {
 			break
 		}
@@ -403,16 +371,6 @@ func flipHash(hash Hash) Hash {
 	return hash
 }
 
-func corruptSignature(signature Signature) Signature {
-	raw, err := base64.StdEncoding.DecodeString(signature.Value)
-	if err != nil || len(raw) == 0 {
-		return signature
-	}
-	raw[0] ^= 0xff
-	signature.Value = base64.StdEncoding.EncodeToString(raw)
-	return signature
-}
-
 func writeFixtureJSON(w http.ResponseWriter, status int, value any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
@@ -435,19 +393,12 @@ type fixture struct {
 	source     *fixtureSource
 	server     *httptest.Server
 	caFile     string
-	keys       *PublicKeySet
-	signer     *fixtureSigner
 	credential string
 }
 
 func newFixture(t *testing.T, services ...*fixtureService) *fixture {
 	t.Helper()
-	vectors := loadGolden(t)
-	signer := &fixtureSigner{
-		keyID:   vectors.TestKey.KeyID,
-		private: goldenPrivateKey(t, vectors),
-	}
-	source := newFixtureSource(testCredential, signer, services...)
+	source := newFixtureSource(testAPIKey, services...)
 	server := httptest.NewUnstartedServer(source)
 	server.StartTLS()
 	t.Cleanup(server.Close)
@@ -466,17 +417,15 @@ func newFixture(t *testing.T, services ...*fixtureService) *fixture {
 		source:     source,
 		server:     server,
 		caFile:     caFile,
-		keys:       goldenPublicKeys(t, vectors),
-		signer:     signer,
-		credential: testCredential,
+		credential: testAPIKey,
 	}
 }
 
 func (f *fixture) config(mutate func(*Config)) Config {
 	config := Config{
 		BaseURL:         f.server.URL,
-		Credential:      f.credential,
-		PublicKeys:      f.keys,
+		APIKey:          f.credential,
+		InstanceID:      testInstanceID,
 		CAFile:          f.caFile,
 		RequestTimeout:  2 * time.Second,
 		SnapshotTimeout: 2 * time.Second,
@@ -549,6 +498,21 @@ func (f *fixture) requestCount(pathSuffix string) int {
 		}
 	}
 	return count
+}
+
+func (f *fixture) requestTotal() int {
+	f.source.mu.Lock()
+	defer f.source.mu.Unlock()
+	return len(f.source.requests)
+}
+
+func (f *fixture) lastRequest() fixtureRequest {
+	f.source.mu.Lock()
+	defer f.source.mu.Unlock()
+	if len(f.source.requests) == 0 {
+		return fixtureRequest{}
+	}
+	return f.source.requests[len(f.source.requests)-1]
 }
 
 func (f *fixture) requestCounts() map[string]int {

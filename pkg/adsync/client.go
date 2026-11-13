@@ -108,35 +108,20 @@ func sleepContext(ctx context.Context, delay time.Duration) error {
 
 // Config configures a Client.
 type Config struct {
-	// BaseURL is the policy source root, for example https://cloud.speedle.io.
-	// HTTPS is required; a non-443 port is allowed for testing and internal
-	// proxies.
+	// BaseURL is the upstream root (UpstreamURL), for example
+	// https://cloud.speedle.io. HTTPS is required; a non-443 port is allowed
+	// for testing and internal proxies.
 	BaseURL string
-	// Credential is the account-scoped adsi_ instance credential. It is sent
-	// only in the Authorization header to BaseURL.
-	Credential string
-	// APIKey selects direct mode instead of Credential. It is sent only in the
-	// Authorization header, together with InstanceID in the X-SC-ADS-Instance
-	// header. In direct mode PublicKeys is optional and, unless
-	// FallbackBaseURL is set, forwarding uses BaseURL with the same key.
+	// APIKey authenticates every request: synchronization, the channel and
+	// forwarded authorization requests. It is sent only in the Authorization
+	// header to BaseURL and never appears in an error.
 	APIKey string
-	// InstanceID is the direct-mode instance ID, a UUIDv7. It is required with
-	// APIKey and must be empty otherwise.
-	InstanceID string
-	// FallbackBaseURL and FallbackCredential configure the distinct Speedle
-	// Cloud authorization fallback. Both must be set together. The upstream
-	// policy-source URL and credential are never reused implicitly, because the
-	// source may be a proxy with a locally issued downstream credential.
-	FallbackBaseURL    string
-	FallbackCredential string
-	// FallbackHTTPClient optionally uses a separate transport for Cloud, for
-	// example when a test source and Cloud use different private roots. Nil
-	// reuses HTTPClient's transport configuration, never its destination.
-	FallbackHTTPClient *http.Client
-	// PublicKeys is the out-of-band trust anchor for snapshot and commit
-	// signatures. It is required with Credential. With APIKey it is optional:
-	// when it is nil no signatures are expected or verified.
-	PublicKeys *PublicKeySet
+	// InstanceID fixes the instance ID, a UUIDv7. When it is empty the ID is
+	// created the first time a request needs it: persisted in InstanceIDDir
+	// when that is set (and reused on later starts), otherwise fresh for this
+	// process.
+	InstanceID    string
+	InstanceIDDir string
 
 	// HTTPClient overrides the entire transport. Transport fields below must
 	// then be empty.
@@ -171,10 +156,7 @@ type Config struct {
 // per-service state; Syncer adds resume and caching.
 type Client struct {
 	base            *url.URL
-	credential      string
 	apiKey          string
-	instanceID      string
-	keys            *PublicKeySet
 	http            *http.Client
 	dialer          *websocket.Dialer
 	requestTimeout  time.Duration
@@ -182,14 +164,13 @@ type Client struct {
 	retry           RetryPolicy
 	userAgent       string
 
-	fallbackBase       *url.URL
-	fallbackCredential string
-	fallbackHTTP       *http.Client
-	// upstreamFallback is true when forwarding uses the policy source and the
-	// API key (direct mode without a separate Cloud fallback). It adds the
-	// direct-mode limits: an in-flight bound and Retry-After suppression.
-	upstreamFallback bool
-	fallbackSlots    chan struct{}
+	// identityMu guards the lazily created instance ID.
+	identityMu  sync.Mutex
+	instanceID  string
+	instanceDir string
+
+	// fallbackSlots bounds the forwarded requests in flight.
+	fallbackSlots chan struct{}
 
 	// fallbackMu guards the bounded retry hint used by the request gate.
 	fallbackMu      sync.Mutex
@@ -200,26 +181,11 @@ type Client struct {
 
 // NewClient validates the configuration and builds the HTTP transport.
 func NewClient(config Config) (*Client, error) {
-	if config.APIKey != "" {
-		if config.Credential != "" {
-			return nil, fmt.Errorf("adsync: Credential and APIKey cannot be combined")
-		}
-		if err := ValidateAPIKey(config.APIKey); err != nil {
-			return nil, err
-		}
-		if !ValidInstanceID(config.InstanceID) {
-			return nil, fmt.Errorf("%w: InstanceID must be a UUIDv7 with APIKey", ErrProtocol)
-		}
-	} else {
-		if config.InstanceID != "" {
-			return nil, fmt.Errorf("adsync: InstanceID requires APIKey")
-		}
-		if config.PublicKeys == nil {
-			return nil, fmt.Errorf("adsync: PublicKeys is required")
-		}
-		if err := ValidateCredential(config.Credential); err != nil {
-			return nil, err
-		}
+	if err := ValidateAPIKey(config.APIKey); err != nil {
+		return nil, err
+	}
+	if config.InstanceID != "" && !ValidInstanceID(config.InstanceID) {
+		return nil, fmt.Errorf("%w: InstanceID must be a UUIDv7", ErrProtocol)
 	}
 	base, err := url.Parse(config.BaseURL)
 	if err != nil {
@@ -275,88 +241,62 @@ func NewClient(config Config) (*Client, error) {
 		httpClient = &cloned
 	}
 
-	var fallbackBase *url.URL
-	if config.FallbackBaseURL != "" {
-		fallbackBase, err = url.Parse(config.FallbackBaseURL)
-		if err != nil {
-			return nil, fmt.Errorf("adsync: parse FallbackBaseURL: %w", err)
-		}
-		if fallbackBase.Scheme != "https" || fallbackBase.Host == "" || fallbackBase.User != nil ||
-			fallbackBase.RawQuery != "" || fallbackBase.Fragment != "" {
-			return nil, fmt.Errorf("adsync: FallbackBaseURL must be an https URL without credentials, query or fragment")
-		}
-		fallbackBase.Path = strings.TrimSuffix(fallbackBase.Path, "/")
-		if err := ValidateCredential(config.FallbackCredential); err != nil {
-			return nil, fmt.Errorf("adsync: invalid fallback credential: %w", err)
-		}
-	} else if config.FallbackCredential != "" {
-		return nil, fmt.Errorf("adsync: FallbackBaseURL is required with FallbackCredential")
-	}
-	upstreamFallback := false
-	fallbackCredential := config.FallbackCredential
-	if fallbackBase == nil && config.APIKey != "" {
-		// Direct mode forwards to the policy source with the same key.
-		upstream := *base
-		fallbackBase = &upstream
-		fallbackCredential = config.APIKey
-		upstreamFallback = true
-	}
-	fallbackHTTP := config.FallbackHTTPClient
-	if fallbackHTTP == nil {
-		fallbackHTTP = httpClient
-	} else {
-		// Do not mutate a caller-owned client or retain its redirect policy: a
-		// followed redirect could move the instance credential off the
-		// configured Cloud destination.
-		cloned := *fallbackHTTP
-		cloned.CheckRedirect = rejectRedirect
-		fallbackHTTP = &cloned
-	}
-
 	userAgent := config.UserAgent
 	if userAgent == "" {
 		userAgent = defaultUserAgent
 	}
 	return &Client{
-		base:               base,
-		credential:         config.Credential,
-		keys:               config.PublicKeys,
-		http:               httpClient,
-		dialer:             dialer,
-		requestTimeout:     requestTimeout,
-		fallbackTimeout:    DefaultFallbackTimeout,
-		fallbackBackoff:    DefaultFallbackRetryBackoff,
-		retry:              retry,
-		userAgent:          userAgent,
-		fallbackBase:       fallbackBase,
-		fallbackCredential: fallbackCredential,
-		fallbackHTTP:       fallbackHTTP,
-		upstreamFallback:   upstreamFallback,
-		fallbackSlots:      fallbackSlots(upstreamFallback),
-		apiKey:             config.APIKey,
-		instanceID:         config.InstanceID,
-		now:                time.Now,
+		base:            base,
+		apiKey:          config.APIKey,
+		http:            httpClient,
+		dialer:          dialer,
+		requestTimeout:  requestTimeout,
+		fallbackTimeout: DefaultFallbackTimeout,
+		fallbackBackoff: DefaultFallbackRetryBackoff,
+		retry:           retry,
+		userAgent:       userAgent,
+		instanceID:      config.InstanceID,
+		instanceDir:     config.InstanceIDDir,
+		fallbackSlots:   make(chan struct{}, MaxUpstreamInFlight),
+		now:             time.Now,
 	}, nil
 }
 
-// DirectMode reports whether the client authenticates with an API key.
-func (c *Client) DirectMode() bool { return c.apiKey != "" }
-
-// InstanceID returns the direct-mode instance ID, or an empty string.
-func (c *Client) InstanceID() string { return c.instanceID }
-
-// SignaturesVerified reports whether snapshot and commit signatures are
-// verified, which is the case exactly when public keys are configured.
-func (c *Client) SignaturesVerified() bool { return c.keys != nil }
-
-// authorize sets the authentication headers of one policy-source request.
-func (c *Client) authorize(header http.Header) {
-	if c.apiKey != "" {
-		header.Set("Authorization", "Bearer "+c.apiKey)
-		header.Set(InstanceHeader, c.instanceID)
-		return
+// InstanceID returns the instance ID, creating (and, with InstanceIDDir,
+// persisting) it on first use. The ID is persisted before it is returned, so
+// no request ever carries an ID that a restart would not reuse.
+func (c *Client) InstanceID() (string, error) {
+	c.identityMu.Lock()
+	defer c.identityMu.Unlock()
+	if c.instanceID != "" {
+		return c.instanceID, nil
 	}
-	header.Set("Authorization", "Bearer "+c.credential)
+	var (
+		id  string
+		err error
+	)
+	if c.instanceDir != "" {
+		id, _, err = LoadOrCreateInstanceID(c.instanceDir)
+	} else {
+		id, err = NewInstanceID()
+	}
+	if err != nil {
+		return "", err
+	}
+	c.instanceID = id
+	return id, nil
+}
+
+// authorize sets the authentication headers of one policy-source request:
+// the API key and the instance ID.
+func (c *Client) authorize(header http.Header) error {
+	id, err := c.InstanceID()
+	if err != nil {
+		return err
+	}
+	header.Set("Authorization", "Bearer "+c.apiKey)
+	header.Set(InstanceHeader, id)
+	return nil
 }
 
 func newHTTPClient(config Config) (*http.Client, error) {
@@ -463,7 +403,7 @@ func (c *Client) endpoint(parts ...string) string {
 	return target.String()
 }
 
-// Services lists the services this credential and instance may sync.
+// Services lists the services this instance may sync.
 func (c *Client) Services(ctx context.Context) (*ServicesResponse, error) {
 	var response ServicesResponse
 	_, err := c.get(ctx, c.endpoint("services"), nil, nil, false, &response)
@@ -476,7 +416,7 @@ func (c *Client) Services(ctx context.Context) (*ServicesResponse, error) {
 	return &response, nil
 }
 
-// Snapshot fetches and verifies the signed snapshot at the source head. When
+// Snapshot fetches and verifies the snapshot at the source head. When
 // ifNoneMatch matches the current identity tuple exactly, it returns
 // ErrNotModified instead.
 func (c *Client) Snapshot(ctx context.Context, serviceID, ifNoneMatch string) (*SnapshotResponse, bool, error) {
@@ -496,7 +436,7 @@ func (c *Client) Snapshot(ctx context.Context, serviceID, ifNoneMatch string) (*
 	if notModified {
 		return nil, true, nil
 	}
-	if err := response.validate(c.keys != nil); err != nil {
+	if err := response.validate(); err != nil {
 		return nil, false, err
 	}
 	if response.ServiceID != serviceID {
@@ -505,19 +445,10 @@ func (c *Client) Snapshot(ctx context.Context, serviceID, ifNoneMatch string) (*
 	if computed := StateHash(response.Snapshot); computed != response.StateHash {
 		return nil, false, fmt.Errorf("%w: snapshot stateHash does not match its content", ErrIntegrity)
 	}
-	if c.keys != nil {
-		if err := c.keys.verifySnapshot(&response); err != nil {
-			return nil, false, err
-		}
-	} else {
-		// Without configured keys nothing is verified, so a signature the
-		// source still sends cannot anchor a later cache reload either.
-		response.Signature = Signature{}
-	}
 	return &response, false, nil
 }
 
-// Changes fetches and verifies one page of signed commits after since. The
+// Changes fetches and verifies one page of commits after since. The
 // first commit must chain from anchor, which is the caller's current commit
 // hash.
 func (c *Client) Changes(ctx context.Context, serviceID, sourceID, epoch string, since uint64, anchor Hash, limit int) (*ChangesResponse, error) {
@@ -547,14 +478,6 @@ func (c *Client) Changes(ctx context.Context, serviceID, sourceID, epoch string,
 	}
 	if err := response.validatePage(serviceID, sourceID, epoch, since, anchor, limit); err != nil {
 		return nil, err
-	}
-	for index := range response.Commits {
-		if c.keys == nil {
-			break
-		}
-		if err := c.keys.verifyCommit(sourceID, epoch, &response.Commits[index]); err != nil {
-			return nil, err
-		}
 	}
 	return &response, nil
 }
@@ -595,7 +518,9 @@ func (c *Client) getOnce(ctx context.Context, endpoint string, query url.Values,
 	if err != nil {
 		return false, false, fmt.Errorf("adsync: build request: %w", err)
 	}
-	c.authorize(request.Header)
+	if err := c.authorize(request.Header); err != nil {
+		return false, false, err
+	}
 	request.Header.Set("Accept", "application/json")
 	request.Header.Set("User-Agent", c.userAgent)
 	for name, values := range header {

@@ -36,8 +36,12 @@ type wsOutcome struct {
 func (c *Channel) runWebSocket(ctx context.Context) wsOutcome {
 	c.setCurrent(TransportWebSocket)
 
+	header, err := c.requestHeaders()
+	if err != nil {
+		return wsOutcome{err: &terminalError{err: err}}
+	}
 	dialCtx, cancel := context.WithTimeout(ctx, c.client.requestTimeout)
-	conn, response, err := c.dialer.DialContext(dialCtx, c.channelURL(), c.requestHeaders())
+	conn, response, err := c.dialer.DialContext(dialCtx, c.channelURL(), header)
 	cancel()
 	if err != nil {
 		if response != nil {

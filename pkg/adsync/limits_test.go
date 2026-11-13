@@ -50,7 +50,7 @@ func TestSyncAcceptsLargeProtocolSnapshotAndCache(t *testing.T) {
 	if len(state.Snapshot.Policies) != 5000 || len(state.Snapshot.RolePolicies) != 5000 {
 		t.Fatalf("large snapshot policy counts = %d/%d", len(state.Snapshot.Policies), len(state.Snapshot.RolePolicies))
 	}
-	cache, err := NewCache(directory, fixture.keys)
+	cache, err := NewCache(directory)
 	if err != nil {
 		t.Fatalf("NewCache: %v", err)
 	}
@@ -94,7 +94,7 @@ func TestChangesAcceptsLargeProtocolPage(t *testing.T) {
 				SPDL: &spdl,
 			}
 		}
-		service.publish(t, fixture.signer, changes...)
+		service.publish(t, changes...)
 	}
 
 	page, err := client.Changes(context.Background(), service.ID, snapshot.SourceID, snapshot.Epoch,
@@ -178,7 +178,7 @@ func TestSyncFetchesBeyond1000PagesUntilHead(t *testing.T) {
 	syncer := fixture.newSyncer("", nil)
 	syncFixtureService(t, syncer, "books")
 	for i := 0; i < 1001; i++ {
-		service.publish(t, fixture.signer, Change{Op: "delete", Kind: "authz", ID: "missing"})
+		service.publish(t, Change{Op: "delete", Kind: "authz", ID: "missing"})
 	}
 	state := syncFixtureService(t, syncer, "books")
 	if state.Revision != service.Revision {

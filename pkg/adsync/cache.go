@@ -20,14 +20,11 @@ const cacheFormat = "speedle-adsync-cache-v1"
 // SHA-256 checksum of their payload. The cache is optional and never
 // authoritative: Sync still confirms the revision against the source.
 type Cache struct {
-	dir  string
-	keys *PublicKeySet
+	dir string
 }
 
-// NewCache creates cacheDir with mode 0700 when needed. keys may be nil only
-// for a source whose signatures are not verified (direct mode without public
-// keys); a cached signature is then ignored.
-func NewCache(dir string, keys *PublicKeySet) (*Cache, error) {
+// NewCache creates cacheDir with mode 0700 when needed.
+func NewCache(dir string) (*Cache, error) {
 	if dir == "" {
 		return nil, fmt.Errorf("adsync: cache directory is empty")
 	}
@@ -47,7 +44,7 @@ func NewCache(dir string, keys *PublicKeySet) (*Cache, error) {
 	if !cacheDirectoryOwnedByUser(info) {
 		return nil, fmt.Errorf("%w: cache directory is not owned by the current user", ErrUnsafeCache)
 	}
-	return &Cache{dir: dir, keys: keys}, nil
+	return &Cache{dir: dir}, nil
 }
 
 type cacheEnvelope struct {
@@ -57,14 +54,13 @@ type cacheEnvelope struct {
 }
 
 type cachePayload struct {
-	ServiceID  string    `json:"serviceId"`
-	SourceID   string    `json:"sourceId"`
-	Epoch      string    `json:"epoch"`
-	Revision   uint64    `json:"revision"`
-	StateHash  Hash      `json:"stateHash"`
-	CommitHash Hash      `json:"commitHash"`
-	Snapshot   Snapshot  `json:"snapshot"`
-	Signature  Signature `json:"signature"`
+	ServiceID  string   `json:"serviceId"`
+	SourceID   string   `json:"sourceId"`
+	Epoch      string   `json:"epoch"`
+	Revision   uint64   `json:"revision"`
+	StateHash  Hash     `json:"stateHash"`
+	CommitHash Hash     `json:"commitHash"`
+	Snapshot   Snapshot `json:"snapshot"`
 }
 
 // Load returns the cached state for one service, or nil when no file exists.
@@ -132,22 +128,6 @@ func (c *Cache) Load(serviceID string) (*ServiceState, error) {
 		return nil, fmt.Errorf("%w: state hash does not match the cached content", ErrCacheCorrupt)
 	}
 
-	if c.keys != nil && (payload.Signature.KeyID != "" || payload.Signature.Alg != "" || payload.Signature.Value != "") {
-		snapshot := &SnapshotResponse{
-			ServiceID:  payload.ServiceID,
-			SourceID:   payload.SourceID,
-			Epoch:      payload.Epoch,
-			Revision:   payload.Revision,
-			StateHash:  payload.StateHash,
-			CommitHash: payload.CommitHash,
-			Signature:  payload.Signature,
-			Snapshot:   payload.Snapshot,
-		}
-		if err := c.keys.verifySnapshot(snapshot); err != nil {
-			return nil, fmt.Errorf("%w: %v", ErrCacheCorrupt, err)
-		}
-	}
-
 	return &ServiceState{
 		ServiceID:  payload.ServiceID,
 		SourceID:   payload.SourceID,
@@ -156,7 +136,6 @@ func (c *Cache) Load(serviceID string) (*ServiceState, error) {
 		StateHash:  payload.StateHash,
 		CommitHash: payload.CommitHash,
 		Snapshot:   cloneSnapshot(payload.Snapshot),
-		signature:  payload.Signature,
 	}, nil
 }
 
@@ -182,7 +161,6 @@ func (c *Cache) Save(state *ServiceState) error {
 		StateHash:  state.StateHash,
 		CommitHash: state.CommitHash,
 		Snapshot:   state.Snapshot,
-		Signature:  state.signature,
 	}
 	payloadBytes, err := json.Marshal(payload)
 	if err != nil {

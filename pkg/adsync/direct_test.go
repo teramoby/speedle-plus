@@ -6,12 +6,12 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -19,32 +19,12 @@ import (
 	"time"
 )
 
-const (
-	testAPIKey           = "spdl_01HF7YAT000000000000000K01_directSecretValue0123456789"
-	testDirectInstanceID = "01a1d38d-8c69-7ac1-b3d6-cb9ade5c63f4"
-)
-
-// directFixture is the shared fixture switched to an API key.
-func directFixture(t *testing.T, services ...*fixtureService) *fixture {
-	t.Helper()
-	f := newFixture(t, services...)
-	f.source.configure(func(source *fixtureSource) { source.credential = testAPIKey })
-	return f
-}
-
-func directConfig(config *Config) {
-	config.Credential = ""
-	config.APIKey = testAPIKey
-	config.InstanceID = testDirectInstanceID
-	config.PublicKeys = nil
-}
-
 func TestInstanceIDIsAPersistedUUIDv7(t *testing.T) {
 	id, err := NewInstanceID()
 	if err != nil || !ValidInstanceID(id) || validULID(id) {
 		t.Fatalf("NewInstanceID = %q, %v", id, err)
 	}
-	if ValidInstanceID(strings.ToUpper(id)) || ValidInstanceID(testInstanceID) {
+	if ValidInstanceID(strings.ToUpper(id)) || ValidInstanceID(testServiceID1) {
 		t.Fatal("ValidInstanceID accepted a non-canonical id")
 	}
 
@@ -117,14 +97,12 @@ func TestValidateAPIKey(t *testing.T) {
 	}
 }
 
-func TestNewClientDirectModeValidation(t *testing.T) {
-	f := directFixture(t)
+func TestNewClientValidatesKeyAndInstanceID(t *testing.T) {
+	f := newFixture(t)
 	cases := map[string]func(*Config){
-		"credential and key": func(config *Config) { directConfig(config); config.Credential = testCredential },
-		"malformed key":      func(config *Config) { directConfig(config); config.APIKey = "bad key " + testAPIKey },
-		"no instance id":     func(config *Config) { directConfig(config); config.InstanceID = "" },
-		"ULID instance id":   func(config *Config) { directConfig(config); config.InstanceID = testInstanceID },
-		"id without key":     func(config *Config) { config.InstanceID = testDirectInstanceID },
+		"no key":           func(config *Config) { config.APIKey = "" },
+		"malformed key":    func(config *Config) { config.APIKey = "bad key " + testAPIKey },
+		"ULID instance id": func(config *Config) { config.InstanceID = testServiceID1 },
 	}
 	for name, mutate := range cases {
 		t.Run(name, func(t *testing.T) {
@@ -132,50 +110,102 @@ func TestNewClientDirectModeValidation(t *testing.T) {
 			if err == nil {
 				t.Fatal("configuration accepted")
 			}
-			if strings.Contains(err.Error(), "directSecretValue") {
+			if strings.Contains(err.Error(), "fixtureSecretValue") {
 				t.Fatal("error echoes the key")
 			}
 		})
 	}
-	client := f.newClient(directConfig)
-	if !client.DirectMode() || client.InstanceID() != testDirectInstanceID || client.SignaturesVerified() {
-		t.Fatal("direct-mode client reports the wrong mode")
-	}
-	legacy := f.newClient(nil)
-	if legacy.DirectMode() || legacy.InstanceID() != "" || !legacy.SignaturesVerified() || legacy.fallbackSlots != nil {
-		t.Fatal("credential client reports the wrong mode")
+	client := f.newClient(nil)
+	if id, err := client.InstanceID(); err != nil || id != testInstanceID {
+		t.Fatalf("InstanceID = %q, %v", id, err)
 	}
 }
 
-// TestDirectModeSendsKeyAndInstanceHeader syncs through the shared fixture
-// with an API key and no public keys: every request carries the key and the
-// instance header, and the signatures the fixture still sends are ignored.
-func TestDirectModeSendsKeyAndInstanceHeader(t *testing.T) {
-	service := newFixtureService(testServiceID1, "books")
-	f := directFixture(t, service)
-	f.source.configure(func(*fixtureSource) {
-		service.publish(t, f.signer, Change{Op: "upsert", Kind: "authz", ID: "p1", Name: stringPointer("p1"), SPDL: stringPointer("grant user a read r")})
-	})
-	syncer := f.newSyncer(t.TempDir(), directConfig)
-	state := syncFixtureService(t, syncer, "books")
-	if state.Revision != 2 || state.signature != (Signature{}) {
-		t.Fatalf("state = revision %d signature %+v", state.Revision, state.signature)
+// TestInstanceIDIsCreatedOnFirstUseAndPersisted checks that a client creates
+// no identity until it first needs one, persists it in the cache directory
+// before it is sent, and reuses it on the next start.
+func TestInstanceIDIsCreatedOnFirstUseAndPersisted(t *testing.T) {
+	f := newFixture(t, newFixtureService(testServiceID1, "books"))
+	dir := filepath.Join(t.TempDir(), "cache")
+	persisted := func(config *Config) { config.InstanceID = ""; config.InstanceIDDir = dir }
+	client := f.newClient(persisted)
+	if _, err := os.Stat(filepath.Join(dir, InstanceIDFile)); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("instance id created before first use: %v", err)
 	}
-	if _, err := syncer.client.Changes(context.Background(), testServiceID1, testServiceID1, testServiceID1, 1, service.commits[0].PrevHash, 0); err != nil {
-		t.Fatalf("changes without verification: %v", err)
+	if _, err := client.Services(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	data, err := os.ReadFile(filepath.Join(dir, InstanceIDFile))
+	if err != nil {
+		t.Fatalf("instance id not persisted: %v", err)
+	}
+	id := strings.TrimSpace(string(data))
+	if !ValidInstanceID(id) {
+		t.Fatalf("persisted id %q", id)
+	}
+	if sent := f.lastRequest().Instance; sent != id {
+		t.Fatalf("sent instance %q, persisted %q", sent, id)
+	}
+	restarted := f.newClient(persisted)
+	if again, err := restarted.InstanceID(); err != nil || again != id {
+		t.Fatalf("restart id = %q, %v; want %q", again, err, id)
+	}
+
+	// Without a cache directory every client generates a fresh identity.
+	ephemeral := func(config *Config) { config.InstanceID = "" }
+	first, err := f.newClient(ephemeral).InstanceID()
+	if err != nil || !ValidInstanceID(first) {
+		t.Fatalf("ephemeral id = %q, %v", first, err)
+	}
+	if second, _ := f.newClient(ephemeral).InstanceID(); second == first {
+		t.Fatal("two starts without a cache directory share an id")
+	}
+
+	// An unusable directory fails the request; nothing is sent without an
+	// identity.
+	broken := f.newClient(func(config *Config) { config.InstanceID = ""; config.InstanceIDDir = unusableDir(t) })
+	before := f.requestTotal()
+	if _, err := broken.Services(context.Background()); err == nil {
+		t.Fatal("request sent without a persisted identity")
+	}
+	if f.requestTotal() != before {
+		t.Fatal("a request was sent without an identity")
+	}
+}
+
+func unusableDir(t *testing.T) string {
+	t.Helper()
+	blocker := filepath.Join(t.TempDir(), "file")
+	if err := os.WriteFile(blocker, nil, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	return filepath.Join(blocker, "sub")
+}
+
+// TestKeyAndInstanceHeaderOnEveryRequest syncs through the fixture: every
+// request carries the key and the instance header.
+func TestKeyAndInstanceHeaderOnEveryRequest(t *testing.T) {
+	service := newFixtureService(testServiceID1, "books")
+	f := newFixture(t, service)
+	f.source.configure(func(*fixtureSource) {
+		service.publish(t, Change{Op: "upsert", Kind: "authz", ID: "p1", Name: stringPointer("p1"), SPDL: stringPointer("grant user a read r")})
+	})
+	syncer := f.newSyncer(t.TempDir(), nil)
+	if state := syncFixtureService(t, syncer, "books"); state.Revision != 2 {
+		t.Fatalf("state = revision %d", state.Revision)
 	}
 	f.source.mu.Lock()
 	defer f.source.mu.Unlock()
 	for _, request := range f.source.requests {
-		if request.Authorization != "Bearer "+testAPIKey || request.Instance != testDirectInstanceID {
+		if request.Authorization != "Bearer "+testAPIKey || request.Instance != testInstanceID {
 			t.Fatalf("request %s without the API key or instance header %q", request.Path, request.Instance)
 		}
 	}
 }
 
-// TestDirectModeAcceptsResponsesWithoutSignatureFields decodes snapshot and
+// TestResponsesWithoutSignatureFields decodes snapshot and
 // changes bodies that carry no signature fields at all.
-func TestDirectModeAcceptsResponsesWithoutSignatureFields(t *testing.T) {
+func TestResponsesWithoutSignatureFields(t *testing.T) {
 	snapshot := Snapshot{Name: "books", Policies: []Policy{}, RolePolicies: []Policy{}}
 	hash := StateHash(snapshot)
 	change := Change{Op: "upsert", Kind: "authz", ID: "p1", Name: stringPointer("p1"), SPDL: stringPointer("grant user a read r")}
@@ -210,7 +240,7 @@ func TestDirectModeAcceptsResponsesWithoutSignatureFields(t *testing.T) {
 		}
 	}))
 	defer server.Close()
-	client, err := NewClient(Config{BaseURL: server.URL, APIKey: testAPIKey, InstanceID: testDirectInstanceID, HTTPClient: server.Client()})
+	client, err := NewClient(Config{BaseURL: server.URL, APIKey: testAPIKey, InstanceID: testInstanceID, HTTPClient: server.Client()})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -268,25 +298,19 @@ func TestDirectModeAcceptsResponsesWithoutSignatureFields(t *testing.T) {
 	}
 }
 
-func TestDirectModeChannelMessages(t *testing.T) {
-	f := directFixture(t)
+func TestChannelMessagesCarryIdentityAndHost(t *testing.T) {
+	f := newFixture(t)
 	machine, _ := newTestMachine(t)
-	client := f.newClient(directConfig)
-	for name, options := range map[string]ChannelOptions{
-		"other instance id": {InstanceID: testInstanceID},
-		"credential id":     {CredentialID: testInstanceID},
-		"chain":             {Chain: []string{testInstanceID}},
-		"upstream":          {UpstreamInstanceID: testInstanceID},
-	} {
-		options.Machine, options.AgentVersion = machine, "test"
-		if _, err := NewChannel(client, options); err == nil {
-			t.Fatalf("%s accepted", name)
-		}
-	}
-	channel, err := NewChannel(client, ChannelOptions{Machine: machine, AgentVersion: "test/1", HostName: "edge-1"})
+	client := f.newClient(nil)
+	host := HostInfo{Hostname: "edge-1", OS: "linux", Arch: "amd64", IPs: make([]string, 20), GoVersion: "go1", PID: 7, Container: true}
+	channel, err := NewChannel(client, ChannelOptions{
+		Machine: machine, AgentVersion: "test/1",
+		HostInfo: func(time.Time) HostInfo { return host },
+	})
 	if err != nil {
 		t.Fatal(err)
 	}
+	channel.instanceID, _ = client.InstanceID()
 	decode := func(value any) map[string]any {
 		encoded, err := json.Marshal(value)
 		if err != nil {
@@ -296,8 +320,10 @@ func TestDirectModeChannelMessages(t *testing.T) {
 		_ = json.Unmarshal(encoded, &decoded)
 		return decoded
 	}
-	for _, message := range []map[string]any{decode(channel.helloMessage(TransportWebSocket)), decode(channel.heartbeatMessage(TransportLongPoll))} {
-		if message["instanceId"] != testDirectInstanceID || message["agentVersion"] != "test/1" || message["hostName"] != "edge-1" {
+	hello := decode(channel.helloMessage(TransportWebSocket))
+	poll := decode(channel.heartbeatMessage(TransportLongPoll))
+	for _, message := range []map[string]any{hello, poll} {
+		if message["instanceId"] != testInstanceID || message["agentVersion"] != "test/1" {
 			t.Fatalf("message = %v", message)
 		}
 		if _, found := message["credentialId"]; found {
@@ -306,39 +332,71 @@ func TestDirectModeChannelMessages(t *testing.T) {
 		if chain, ok := message["chain"].([]any); !ok || len(chain) != 0 {
 			t.Fatalf("chain = %v", message["chain"])
 		}
+		sent, ok := message["host"].(map[string]any)
+		if !ok || sent["hostname"] != "edge-1" || sent["os"] != "linux" || sent["container"] != true {
+			t.Fatalf("host = %v", message["host"])
+		}
+		if ips, _ := sent["ips"].([]any); len(ips) != maxHostIPs {
+			t.Fatalf("ips not bounded: %d", len(ips))
+		}
 	}
-	header := channel.requestHeaders()
-	if header.Get("Authorization") != "Bearer "+testAPIKey || header.Get(InstanceHeader) != testDirectInstanceID {
-		t.Fatalf("channel headers = %v", header)
+	if hello["host"].(map[string]any)["transport"] != string(TransportWebSocket) ||
+		poll["host"].(map[string]any)["transport"] != string(TransportLongPoll) {
+		t.Fatalf("host transport = %v / %v", hello["host"], poll["host"])
+	}
+	// A WebSocket heartbeat follows a hello and carries no host object.
+	if _, found := decode(channel.heartbeatMessage(TransportWebSocket))["host"]; found {
+		t.Fatal("WebSocket heartbeat carries the host object")
+	}
+	header, err := channel.requestHeaders()
+	if err != nil || header.Get("Authorization") != "Bearer "+testAPIKey || header.Get(InstanceHeader) != testInstanceID {
+		t.Fatalf("channel headers = %v, %v", header, err)
 	}
 	if err := channel.terminalStatusError(http.MethodPost, "/poll", http.StatusConflict, []byte(`{"error":"quota_exceeded","limit":10}`)); err != nil {
-		t.Fatalf("quota_exceeded is terminal in direct mode: %v", err)
+		t.Fatalf("quota_exceeded is terminal: %v", err)
 	}
-	if odd, err := NewChannel(client, ChannelOptions{Machine: machine, AgentVersion: "x", HostName: "bad\nhost", InstanceID: testDirectInstanceID}); err != nil || odd.hostName != "" {
-		t.Fatalf("control characters in the host name were kept: %v", err)
-	}
-
-	// A credential channel keeps its messages and its terminal 409.
-	legacyMachine, _ := newTestMachine(t)
-	legacy, err := NewChannel(newFixture(t).newClient(nil), ChannelOptions{
-		InstanceID: testInstanceID, Machine: legacyMachine, AgentVersion: "test/1", HostName: "edge-1",
-	})
+	// A long poll before any collection sends an empty host object.
+	fresh, err := NewChannel(client, ChannelOptions{Machine: machine, AgentVersion: "x"})
 	if err != nil {
 		t.Fatal(err)
 	}
-	heartbeat := decode(legacy.heartbeatMessage(TransportLongPoll))
-	hello := decode(legacy.helloMessage(TransportWebSocket))
-	if _, found := heartbeat["instanceId"]; found {
-		t.Fatal("credential heartbeat carries an instance id")
+	if sent, ok := decode(fresh.heartbeatMessage(TransportLongPoll))["host"].(map[string]any); !ok || sent["transport"] != string(TransportLongPoll) {
+		t.Fatalf("host before collection = %v", sent)
 	}
-	if _, found := heartbeat["hostName"]; found || hello["hostName"] != nil || hello["instanceId"] != testInstanceID {
-		t.Fatalf("credential messages changed: %v %v", hello, heartbeat)
+}
+
+// TestChannelRunFailsWithoutAnIdentity stops the machine when the instance ID
+// cannot be persisted, before anything is sent.
+func TestChannelRunFailsWithoutAnIdentity(t *testing.T) {
+	f := newFixture(t)
+	client := f.newClient(func(config *Config) { config.InstanceID = ""; config.InstanceIDDir = unusableDir(t) })
+	machine, _ := newTestMachine(t)
+	channel, err := NewChannel(client, ChannelOptions{Machine: machine, AgentVersion: "x", Transport: TransportLongPoll})
+	if err != nil {
+		t.Fatal(err)
 	}
-	if legacy.requestHeaders().Get(InstanceHeader) != "" {
-		t.Fatal("credential channel sends an instance header")
+	if err := channel.Run(context.Background()); !isTerminalError(err) {
+		t.Fatalf("Run = %v, want terminal", err)
 	}
-	if err := legacy.terminalStatusError(http.MethodPost, "/poll", http.StatusConflict, nil); !isTerminalError(err) {
-		t.Fatalf("credential 409 = %v, want terminal", err)
+	if machine.Instance().Liveness != LivenessStopped {
+		t.Fatalf("instance = %+v", machine.Instance())
+	}
+	if f.requestTotal() != 0 {
+		t.Fatal("a request was sent without an identity")
+	}
+}
+
+func TestCollectHostInfo(t *testing.T) {
+	started := time.UnixMilli(1762500000000)
+	host := CollectHostInfo(started)
+	if host.OS != runtime.GOOS || host.Arch != runtime.GOARCH || host.GoVersion != runtime.Version() ||
+		host.PID != os.Getpid() || host.StartedAt != started.UnixMilli() || host.IPs == nil || len(host.IPs) > maxHostIPs {
+		t.Fatalf("host = %+v", host)
+	}
+	for _, ip := range host.IPs {
+		if ip == "127.0.0.1" || ip == "::1" {
+			t.Fatalf("loopback address reported: %v", host.IPs)
+		}
 	}
 }
 
@@ -347,7 +405,7 @@ func TestChannelReportsEveryAck(t *testing.T) {
 	machine, _ := newTestMachine(t)
 	var acks atomic.Int32
 	channel, err := NewChannel(f.newClient(nil), ChannelOptions{
-		InstanceID: testInstanceID, Machine: machine, AgentVersion: "test",
+		Machine: machine, AgentVersion: "test",
 		OnAck: func() { acks.Add(1) },
 	})
 	if err != nil {
@@ -476,15 +534,6 @@ func TestTrackRecordsCachedServicesAsSyncing(t *testing.T) {
 	if state := serviceState(t, machine, "books"); state.State != SyncStateSyncing || state.Reason != SyncReasonBootstrap {
 		t.Fatalf("tracked = %+v", state)
 	}
-	for index := 0; len(machine.Services()) < maxServicesPerSource; index++ {
-		id := fmt.Sprintf("01HF7YAT0000000000000004%02d", index)
-		if err := machine.Track(id, "svc"+string(rune('a'+index))); err != nil {
-			t.Fatal(err)
-		}
-	}
-	if err := machine.Track(testServiceID3, "orders"); err == nil {
-		t.Fatal("more services than the protocol bound were tracked")
-	}
 	_ = machine.Ack(ackWith(testAckService(testServiceID3, "orders", 1)))
 	if err := machine.Track("01HF7YAT000000000000000999", "late"); err != nil {
 		t.Fatal(err)
@@ -494,12 +543,12 @@ func TestTrackRecordsCachedServicesAsSyncing(t *testing.T) {
 	}
 }
 
-func newDirectFallbackClient(t *testing.T, handler http.HandlerFunc) *Client {
+func newForwardingClient(t *testing.T, handler http.HandlerFunc) *Client {
 	t.Helper()
 	server := httptest.NewTLSServer(handler)
 	t.Cleanup(server.Close)
 	client, err := NewClient(Config{
-		BaseURL: server.URL, APIKey: testAPIKey, InstanceID: testDirectInstanceID, HTTPClient: server.Client(),
+		BaseURL: server.URL, APIKey: testAPIKey, InstanceID: testInstanceID, HTTPClient: server.Client(),
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -507,29 +556,29 @@ func newDirectFallbackClient(t *testing.T, handler http.HandlerFunc) *Client {
 	return client
 }
 
-func TestDirectModeForwardsToTheUpstream(t *testing.T) {
+func TestUpstreamForwardsToTheUpstream(t *testing.T) {
 	var gotAuth, gotInstance, gotPath string
-	client := newDirectFallbackClient(t, func(w http.ResponseWriter, r *http.Request) {
+	client := newForwardingClient(t, func(w http.ResponseWriter, r *http.Request) {
 		gotAuth, gotInstance, gotPath = r.Header.Get("Authorization"), r.Header.Get(InstanceHeader), r.URL.Path
 		_, _ = w.Write([]byte(`{"allowed":true}`))
 	})
 	if !client.FallbackAvailable() {
-		t.Fatal("direct mode has no forwarding")
+		t.Fatal("no forwarding")
 	}
 	response, err := client.ForwardFallback(context.Background(), FallbackIsAllowed, []byte(`{}`))
 	if err != nil {
 		t.Fatal(err)
 	}
 	if response.DecisionSource != DecisionSourceUpstream || gotAuth != "Bearer "+testAPIKey ||
-		gotInstance != testDirectInstanceID || gotPath != AuthzCheckAPIPrefix+"is-allowed" {
+		gotInstance != testInstanceID || gotPath != AuthzCheckAPIPrefix+"is-allowed" {
 		t.Fatalf("forwarded key %v instance %q path %q, source %q", gotAuth == "Bearer "+testAPIKey, gotInstance, gotPath, response.DecisionSource)
 	}
 }
 
-func TestDirectModeForwardingLimitsInFlightRequests(t *testing.T) {
+func TestUpstreamForwardingLimitsInFlightRequests(t *testing.T) {
 	release := make(chan struct{})
 	arrived := make(chan struct{}, 2*MaxUpstreamInFlight)
-	client := newDirectFallbackClient(t, func(w http.ResponseWriter, r *http.Request) {
+	client := newForwardingClient(t, func(w http.ResponseWriter, r *http.Request) {
 		arrived <- struct{}{}
 		<-release
 		_, _ = w.Write([]byte(`{"allowed":false}`))
@@ -557,9 +606,9 @@ func TestDirectModeForwardingLimitsInFlightRequests(t *testing.T) {
 	}
 }
 
-func TestDirectModeHonoursRetryAfterUpToAMinute(t *testing.T) {
+func TestUpstreamHonoursRetryAfterUpToAMinute(t *testing.T) {
 	retryAfter := "30"
-	client := newDirectFallbackClient(t, func(w http.ResponseWriter, r *http.Request) {
+	client := newForwardingClient(t, func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Retry-After", retryAfter)
 		w.WriteHeader(http.StatusTooManyRequests)
 		_, _ = io.WriteString(w, `{"error":"rate_limited"}`)
@@ -587,9 +636,9 @@ func TestDirectModeHonoursRetryAfterUpToAMinute(t *testing.T) {
 
 // TestDirectModeKeyNeverAppearsInErrors drives the failure paths that build
 // error messages and checks none of them carries the key.
-func TestDirectModeKeyNeverAppearsInErrors(t *testing.T) {
+func TestUpstreamKeyNeverAppearsInErrors(t *testing.T) {
 	status := http.StatusUnauthorized
-	client := newDirectFallbackClient(t, func(w http.ResponseWriter, r *http.Request) {
+	client := newForwardingClient(t, func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(status)
 		_, _ = io.WriteString(w, `{"error":"unauthorized"}`)
 	})
@@ -601,7 +650,7 @@ func TestDirectModeKeyNeverAppearsInErrors(t *testing.T) {
 	status = http.StatusInternalServerError
 	_, _, err = client.Snapshot(context.Background(), testServiceID1, "")
 	errs = append(errs, err)
-	unreachable, _ := NewClient(Config{BaseURL: "https://127.0.0.1:1", APIKey: testAPIKey, InstanceID: testDirectInstanceID,
+	unreachable, _ := NewClient(Config{BaseURL: "https://127.0.0.1:1", APIKey: testAPIKey, InstanceID: testInstanceID,
 		Retry: RetryPolicy{MaxAttempts: 1}})
 	_, err = unreachable.ForwardFallback(context.Background(), FallbackIsAllowed, []byte(`{}`))
 	errs = append(errs, err)
@@ -611,7 +660,7 @@ func TestDirectModeKeyNeverAppearsInErrors(t *testing.T) {
 		if err == nil {
 			t.Fatal("expected an error")
 		}
-		if strings.Contains(err.Error(), "directSecretValue") {
+		if strings.Contains(err.Error(), "fixtureSecretValue") {
 			t.Fatalf("error carries the key: %v", err)
 		}
 	}

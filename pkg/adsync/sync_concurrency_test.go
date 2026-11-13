@@ -46,7 +46,7 @@ func discoveredService(service *fixtureService) Service {
 	}
 }
 
-func signedFixtureSnapshot(service *fixtureService, signer *fixtureSigner) *SnapshotResponse {
+func fixtureSnapshot(service *fixtureService) *SnapshotResponse {
 	response := &SnapshotResponse{
 		ServiceID:  service.ID,
 		SourceID:   service.ID,
@@ -56,9 +56,6 @@ func signedFixtureSnapshot(service *fixtureService, signer *fixtureSigner) *Snap
 		CommitHash: service.CommitHash,
 		Snapshot:   cloneSnapshot(service.State),
 	}
-	response.Signature = signer.sign(SnapshotSignedBytes(
-		response.SourceID, response.Epoch, response.Revision, response.StateHash, response.CommitHash,
-	))
 	return response
 }
 
@@ -85,12 +82,11 @@ func TestSyncRejectsSnapshotRollback(t *testing.T) {
 	service := newFixtureService(testServiceID1, "books")
 	fixture := newFixture(t, service)
 	syncer := fixture.newSyncer("", nil)
-	oldSnapshot := signedFixtureSnapshot(service, fixture.signer)
+	oldSnapshot := fixtureSnapshot(service)
 	syncFixtureService(t, syncer, "books")
 
-	service.publish(t, fixture.signer,
-		Change{Op: "upsert", Kind: "authz", ID: "01HF7YAT000000000000000201",
-			Name: stringPointer("read-books"), SPDL: stringPointer("grant read")})
+	service.publish(t, Change{Op: "upsert", Kind: "authz", ID: "01HF7YAT000000000000000201",
+		Name: stringPointer("read-books"), SPDL: stringPointer("grant read")})
 	updated := syncFixtureService(t, syncer, "books")
 	if updated.Revision != 2 {
 		t.Fatalf("updated revision = %d, want 2", updated.Revision)
@@ -99,9 +95,11 @@ func TestSyncRejectsSnapshotRollback(t *testing.T) {
 	fixture.source.configure(func(source *fixtureSource) {
 		source.snapshotOverride = oldSnapshot
 	})
+	// The ack reports the local revision with another hash, so the copy is
+	// reloaded; the source answers with an older snapshot, which must never
+	// replace the newer copy.
 	discovered := discoveredService(service)
-	discovered.Revision = oldSnapshot.Revision
-	discovered.HeadStateHash = oldSnapshot.StateHash
+	discovered.HeadStateHash = flipHash(updated.StateHash)
 	state, err := syncer.Sync(context.Background(), discovered)
 	if !errors.Is(err, ErrProtocol) {
 		t.Fatalf("Sync rollback error = %v, want ErrProtocol", err)
@@ -165,14 +163,16 @@ func TestForgetWaitsForInFlightSync(t *testing.T) {
 	syncer := fixture.newSyncer(directory, nil)
 	syncFixtureService(t, syncer, "books")
 
+	service.publish(t, Change{Op: "upsert", Kind: "authz", ID: "01HF7YAT000000000000000201",
+		Name: stringPointer("read-books"), SPDL: stringPointer("grant read")})
 	started := make(chan struct{})
 	release := make(chan struct{})
 	fixture.source.configure(func(source *fixtureSource) {
 		source.snapshotStarted = started
 		source.snapshotRelease = release
+		source.changesReason = "history_unavailable"
 	})
 	discovered := discoveredService(service)
-	discovered.Revision = 0
 	syncResult := startSync(syncer, discovered)
 	select {
 	case <-started:
@@ -213,7 +213,7 @@ func TestForgetWaitsForInFlightSync(t *testing.T) {
 	if _, found := syncer.State(service.ID); found {
 		t.Error("in-flight Sync resurrected the forgotten in-memory state")
 	}
-	cache, err := NewCache(directory, fixture.keys)
+	cache, err := NewCache(directory)
 	if err != nil {
 		t.Fatalf("NewCache: %v", err)
 	}

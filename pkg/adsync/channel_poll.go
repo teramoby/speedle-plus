@@ -70,7 +70,11 @@ func (c *Channel) pollOnce(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("adsync: build poll request: %w", err)
 	}
-	request.Header = c.requestHeaders()
+	header, err := c.requestHeaders()
+	if err != nil {
+		return &terminalError{err: err}
+	}
+	request.Header = header
 	request.Header.Set("Content-Type", "application/json")
 
 	response, err := c.client.http.Do(request)

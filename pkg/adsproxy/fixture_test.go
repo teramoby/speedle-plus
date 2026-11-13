@@ -4,12 +4,9 @@ package adsproxy
 
 import (
 	"context"
-	"crypto/ed25519"
-	"crypto/rand"
 	"crypto/sha256"
 	"crypto/tls"
 	"crypto/x509"
-	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
 	"encoding/pem"
@@ -36,41 +33,12 @@ const (
 	testServiceID1   = "01HF7YAT000000000000000101"
 	testServiceID2   = "01HF7YAT000000000000000102"
 	testUnknownID    = "01HF7YAT0000000000000001FF"
-	testKeyID        = "test-key-1"
+	// testClientInstanceID is the instance ID a downstream adsync client
+	// sends; the proxy identifies downstreams by their tokens.
+	testClientInstanceID = "0193a5c2-7d1e-7b3a-9f10-4c2d8e6a1b21"
 )
 
-type testSigner struct {
-	private ed25519.PrivateKey
-	public  ed25519.PublicKey
-}
-
-func newTestSigner(t *testing.T) *testSigner {
-	t.Helper()
-	public, private, err := ed25519.GenerateKey(rand.Reader)
-	if err != nil {
-		t.Fatalf("generate signing key: %v", err)
-	}
-	return &testSigner{private: private, public: public}
-}
-
-func (s *testSigner) publicKeys(t *testing.T) *adsync.PublicKeySet {
-	t.Helper()
-	keys, err := adsync.NewPublicKeySet(map[string]ed25519.PublicKey{testKeyID: s.public})
-	if err != nil {
-		t.Fatalf("build public key set: %v", err)
-	}
-	return keys
-}
-
-func (s *testSigner) sign(message []byte) adsync.Signature {
-	return adsync.Signature{
-		KeyID: testKeyID,
-		Alg:   "Ed25519",
-		Value: base64.StdEncoding.EncodeToString(ed25519.Sign(s.private, message)),
-	}
-}
-
-// fixtureService is a source of correctly signed snapshots and change pages.
+// fixtureService is a source of consistent snapshots and change pages.
 // It is the Cloud stand-in for these tests.
 type fixtureService struct {
 	ID         string
@@ -101,7 +69,7 @@ func newFixtureServiceWithEpoch(id, epoch, name string) *fixtureService {
 	}
 }
 
-func (s *fixtureService) publish(t *testing.T, signer *testSigner, changes ...adsync.Change) adsync.Commit {
+func (s *fixtureService) publish(t *testing.T, changes ...adsync.Change) adsync.Commit {
 	t.Helper()
 	hash, err := adsync.CommitHash(s.CommitHash, changes)
 	if err != nil {
@@ -114,7 +82,6 @@ func (s *fixtureService) publish(t *testing.T, signer *testSigner, changes ...ad
 		At:       1762500000000 + int64(s.Revision)*1000,
 		Changes:  changes,
 	}
-	commit.Signature = signer.sign(adsync.CommitSignedBytes(s.ID, s.Epoch, commit.Revision, hash))
 	state := cloneSnapshot(s.State)
 	if err := adsync.ApplyChanges(&state, changes); err != nil && !errors.Is(err, adsync.ErrSourceGone) {
 		t.Fatalf("fixture apply changes: %v", err)
@@ -129,7 +96,7 @@ func (s *fixtureService) publish(t *testing.T, signer *testSigner, changes ...ad
 	return commit
 }
 
-func (s *fixtureService) snapshotResponse(t *testing.T, signer *testSigner) *adsync.SnapshotResponse {
+func (s *fixtureService) snapshotResponse(t *testing.T) *adsync.SnapshotResponse {
 	t.Helper()
 	return &adsync.SnapshotResponse{
 		ServiceID:  s.ID,
@@ -138,9 +105,7 @@ func (s *fixtureService) snapshotResponse(t *testing.T, signer *testSigner) *ads
 		Revision:   s.Revision,
 		StateHash:  s.StateHash,
 		CommitHash: s.CommitHash,
-		Signature: signer.sign(adsync.SnapshotSignedBytes(
-			s.ID, s.Epoch, s.Revision, s.StateHash, s.CommitHash)),
-		Snapshot: cloneSnapshot(s.State),
+		Snapshot:   cloneSnapshot(s.State),
 	}
 }
 
@@ -223,7 +188,6 @@ type testServer struct {
 	caFile         string
 	credentialFile string
 	roots          *x509.CertPool
-	keys           *adsync.PublicKeySet
 	credentials    map[string]string // downstream id -> token
 }
 
@@ -246,7 +210,7 @@ type testServerOptions struct {
 	paused         func() bool
 }
 
-func newTestServer(t *testing.T, mirror *Mirror, keys *adsync.PublicKeySet, options *testServerOptions, credentials ...testCredential) *testServer {
+func newTestServer(t *testing.T, mirror *Mirror, options *testServerOptions, credentials ...testCredential) *testServer {
 	t.Helper()
 	if options == nil {
 		options = &testServerOptions{}
@@ -311,7 +275,6 @@ func newTestServer(t *testing.T, mirror *Mirror, keys *adsync.PublicKeySet, opti
 		caFile:         caFile,
 		credentialFile: credentialFile,
 		roots:          roots,
-		keys:           keys,
 		credentials:    tokens,
 	}
 }
@@ -396,8 +359,8 @@ func (s *testServer) newClient(token string) *adsync.Client {
 	s.t.Helper()
 	client, err := adsync.NewClient(adsync.Config{
 		BaseURL:         s.httpServer.URL,
-		Credential:      token,
-		PublicKeys:      s.keys,
+		APIKey:          token,
+		InstanceID:      testClientInstanceID,
 		CAFile:          s.caFile,
 		RequestTimeout:  2 * time.Second,
 		SnapshotTimeout: 2 * time.Second,

@@ -79,7 +79,7 @@ func newChannelSource(t *testing.T, services ...*fixtureService) *channelSource 
 	t.Helper()
 	source := &channelSource{
 		t:               t,
-		credential:      testCredential,
+		credential:      testAPIKey,
 		services:        make(map[string]*fixtureService, len(services)),
 		servicesVersion: 1,
 		pollHold:        20 * time.Millisecond,
@@ -468,11 +468,10 @@ func startChannelFixture(t *testing.T, source *channelSource) *httptest.Server {
 
 func newChannelClient(t *testing.T, server *httptest.Server) *Client {
 	t.Helper()
-	vectors := loadGolden(t)
 	client, err := NewClient(Config{
 		BaseURL:        server.URL,
-		Credential:     testCredential,
-		PublicKeys:     goldenPublicKeys(t, vectors),
+		APIKey:         testAPIKey,
+		InstanceID:     testInstanceID,
 		CAFile:         writeServerCA(t, server),
 		RequestTimeout: 2 * time.Second,
 		Retry: RetryPolicy{
@@ -511,14 +510,8 @@ func newChannelMachine(t *testing.T) *Machine {
 func newTestChannel(t *testing.T, client *Client, machine *Machine, options ChannelOptions) *Channel {
 	t.Helper()
 	options.Machine = machine
-	if options.InstanceID == "" {
-		options.InstanceID = testInstanceID
-	}
 	if options.AgentVersion == "" {
 		options.AgentVersion = "test-1.0"
-	}
-	if options.Chain == nil {
-		options.Chain = []string{testInstanceID}
 	}
 	channel, err := NewChannel(client, options)
 	if err != nil {
@@ -642,8 +635,11 @@ func TestChannelWebSocketMultiService(t *testing.T) {
 	if len(hello.Services) != 3 {
 		t.Fatalf("hello carries %d services, want 3", len(hello.Services))
 	}
-	if got := hello.Chain; len(got) != 1 || got[0] != testInstanceID {
+	if got := hello.Chain; got == nil || len(got) != 0 {
 		t.Errorf("hello chain = %v", got)
+	}
+	if hello.Host == nil || hello.Host.Transport != string(TransportWebSocket) {
+		t.Errorf("hello host = %+v", hello.Host)
 	}
 	waitFor(t, 2*time.Second, "a heartbeat carrying every service", func() bool {
 		_, _, _, _, _, heartbeats := source.stats()
@@ -1261,8 +1257,8 @@ func TestChannelUnauthorizedStopsInstance(t *testing.T) {
 	source := newChannelSource(t, books)
 	server := startChannelFixture(t, source)
 	client := newChannelClient(t, server)
-	// A well-formed credential the fixture does not accept.
-	client.credential = "adsi_" + testInstanceID + "_" + strings.Repeat("b", 43)
+	// A well-formed key the fixture does not accept.
+	client.apiKey = testAPIKey + "b"
 
 	machine := newChannelMachine(t)
 	channel := newTestChannel(t, client, machine, ChannelOptions{Transport: TransportLongPoll})
@@ -1319,7 +1315,6 @@ func TestNewChannelValidation(t *testing.T) {
 	machine := newChannelMachine(t)
 	options := func() ChannelOptions {
 		return ChannelOptions{
-			InstanceID:   testInstanceID,
 			AgentVersion: "test-1.0",
 			Machine:      machine,
 		}
@@ -1334,24 +1329,10 @@ func TestNewChannelValidation(t *testing.T) {
 		t.Error("NewChannel without a machine succeeded")
 	}
 
-	longChain := make([]string, maxChainEntries+1)
-	for index := range longChain {
-		longChain[index] = testInstanceID
-	}
 	cases := []struct {
 		name    string
 		options ChannelOptions
 	}{
-		{"invalid instance id", func() ChannelOptions {
-			value := options()
-			value.InstanceID = "not-a-ulid"
-			return value
-		}()},
-		{"invalid credential id", func() ChannelOptions {
-			value := options()
-			value.CredentialID = "not-a-ulid"
-			return value
-		}()},
 		{"empty agent version", func() ChannelOptions {
 			value := options()
 			value.AgentVersion = ""
@@ -1360,21 +1341,6 @@ func TestNewChannelValidation(t *testing.T) {
 		{"long agent version", func() ChannelOptions {
 			value := options()
 			value.AgentVersion = strings.Repeat("a", 65)
-			return value
-		}()},
-		{"chain too long", func() ChannelOptions {
-			value := options()
-			value.Chain = longChain
-			return value
-		}()},
-		{"invalid chain entry", func() ChannelOptions {
-			value := options()
-			value.Chain = []string{"not-a-ulid"}
-			return value
-		}()},
-		{"invalid upstream instance id", func() ChannelOptions {
-			value := options()
-			value.UpstreamInstanceID = "not-a-ulid"
 			return value
 		}()},
 		{"unknown transport", func() ChannelOptions {
@@ -1473,12 +1439,9 @@ func TestChannelHeartbeatReportsTopology(t *testing.T) {
 
 	downstreams := uint64(4)
 	channel, err := NewChannel(client, ChannelOptions{
-		InstanceID:         testInstanceID,
-		AgentVersion:       "test-1.0",
-		Machine:            machine,
-		Chain:              []string{testInstanceID},
-		UpstreamInstanceID: testInstanceID,
-		DownstreamCount:    &downstreams,
+		AgentVersion:    "test-1.0",
+		Machine:         machine,
+		DownstreamCount: &downstreams,
 		Fallback: func() FallbackState {
 			return FallbackState{
 				Active:      true,
@@ -1505,9 +1468,6 @@ func TestChannelHeartbeatReportsTopology(t *testing.T) {
 	if len(message.Fallback.Services) != 2 || message.Fallback.Services[0] != testServiceID1 ||
 		message.Fallback.Services[1] != testServiceID2 {
 		t.Fatalf("fallback services = %v", message.Fallback.Services)
-	}
-	if message.UpstreamInstanceID == nil || *message.UpstreamInstanceID != testInstanceID {
-		t.Fatalf("upstream instance id = %v", message.UpstreamInstanceID)
 	}
 	if message.DownstreamCount == nil || *message.DownstreamCount != downstreams {
 		t.Fatalf("downstream count = %v", message.DownstreamCount)
@@ -1833,8 +1793,8 @@ func newCustomTransportChannel(t *testing.T, server *httptest.Server) *Client {
 	t.Helper()
 	client, err := NewClient(Config{
 		BaseURL:        server.URL,
-		Credential:     testCredential,
-		PublicKeys:     goldenPublicKeys(t, loadGolden(t)),
+		APIKey:         testAPIKey,
+		InstanceID:     testInstanceID,
 		HTTPClient:     server.Client(),
 		RequestTimeout: 2 * time.Second,
 	})
@@ -1872,7 +1832,7 @@ func TestChannelAutoStopsOnRevokedUpgrade(t *testing.T) {
 	source := newChannelSource(t, books)
 	server := startChannelFixture(t, source)
 	client := newChannelClient(t, server)
-	client.credential = "adsi_" + testInstanceID + "_" + strings.Repeat("b", 43)
+	client.apiKey = testAPIKey + "b"
 
 	machine := newChannelMachine(t)
 	channel := newTestChannel(t, client, machine, ChannelOptions{Transport: TransportAuto})

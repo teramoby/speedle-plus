@@ -3,19 +3,10 @@
 package adsync
 
 import (
-	"encoding/base64"
 	"errors"
 	"strings"
 	"testing"
 )
-
-func validTestSignature() Signature {
-	return Signature{
-		KeyID: "test-key",
-		Alg:   "Ed25519",
-		Value: base64.StdEncoding.EncodeToString(make([]byte, 64)),
-	}
-}
 
 func validTestSnapshotResponse() SnapshotResponse {
 	snapshot := Snapshot{Name: "books", Policies: []Policy{}, RolePolicies: []Policy{}}
@@ -27,7 +18,6 @@ func validTestSnapshotResponse() SnapshotResponse {
 		Revision:   1,
 		StateHash:  hash,
 		CommitHash: hash,
-		Signature:  validTestSignature(),
 		Snapshot:   snapshot,
 	}
 }
@@ -148,14 +138,13 @@ func TestSnapshotResponseValidation(t *testing.T) {
 		{"revision out of range", func(response *SnapshotResponse) { response.Revision = maxSafeInteger + 1 }},
 		{"missing state hash", func(response *SnapshotResponse) { response.StateHash = Hash{} }},
 		{"missing commit hash", func(response *SnapshotResponse) { response.CommitHash = Hash{} }},
-		{"invalid signature", func(response *SnapshotResponse) { response.Signature.Alg = "none" }},
 		{"invalid snapshot", func(response *SnapshotResponse) { response.Snapshot.Name = "" }},
 	}
 	for _, testCase := range cases {
 		t.Run(testCase.name, func(t *testing.T) {
 			response := validTestSnapshotResponse()
 			testCase.mutate(&response)
-			if err := response.validate(true); !errors.Is(err, ErrProtocol) {
+			if err := response.validate(); !errors.Is(err, ErrProtocol) {
 				t.Fatalf("validate error = %v, want ErrProtocol", err)
 			}
 		})

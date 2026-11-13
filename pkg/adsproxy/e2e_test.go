@@ -10,18 +10,16 @@ import (
 	"github.com/teramoby/speedle-plus/pkg/adsync"
 )
 
-// TestSignaturePassThroughToDownstreamClient proves the core proxy promise: the
-// snapshot and commit signatures downstream instances verify are the Cloud
-// signatures, byte for byte. The proxy only holds public keys, so it could not
-// produce them itself.
-func TestSignaturePassThroughToDownstreamClient(t *testing.T) {
-	signer := newTestSigner(t)
-	mirror := newTestMirror(t, signer.publicKeys(t), nil)
+// TestHashPassThroughToDownstreamClient proves the core proxy promise: the
+// snapshot and commit hashes downstream instances verify are the source's,
+// byte for byte.
+func TestHashPassThroughToDownstreamClient(t *testing.T) {
+	mirror := newTestMirror(t, nil)
 	service := newFixtureService(testServiceID1, "books")
 
-	initial := service.snapshotResponse(t, signer)
-	service.publish(t, signer, upsertAuthz(testServiceID1+"A1", "read-books", `grant read on "/books/*"`))
-	service.publish(t, signer, upsertRole(testServiceID1+"R1", "reader", `grant role "reader" to read`))
+	initial := service.snapshotResponse(t)
+	service.publish(t, upsertAuthz(testServiceID1+"A1", "read-books", `grant read on "/books/*"`))
+	service.publish(t, upsertRole(testServiceID1+"R1", "reader", `grant role "reader" to read`))
 	if err := mirror.ApplySnapshot(initial); err != nil {
 		t.Fatalf("apply snapshot: %v", err)
 	}
@@ -30,7 +28,7 @@ func TestSignaturePassThroughToDownstreamClient(t *testing.T) {
 	}
 
 	token := testToken(testDownstreamID, 1)
-	server := newTestServer(t, mirror, signer.publicKeys(t), nil, testCredential{
+	server := newTestServer(t, mirror, nil, testCredential{
 		downstreamID: testDownstreamID,
 		token:        token,
 	})
@@ -59,39 +57,22 @@ func TestSignaturePassThroughToDownstreamClient(t *testing.T) {
 		t.Fatalf("snapshot: status %d body %s", response.StatusCode, body)
 	}
 	snapshot := decodeBody[adsync.SnapshotResponse](t, body)
-	if snapshot.Signature != initial.Signature {
-		t.Error("snapshot signature changed in transit")
+	if snapshot.StateHash != initial.StateHash || snapshot.CommitHash != initial.CommitHash {
+		t.Error("snapshot hashes changed in transit")
 	}
 	if snapshot.SourceID != initial.SourceID || snapshot.Epoch != initial.Epoch ||
 		snapshot.Revision != initial.Revision || snapshot.StateHash != initial.StateHash ||
 		snapshot.CommitHash != initial.CommitHash {
 		t.Error("snapshot identity changed in transit")
 	}
-
-	// A downstream that trusts a different key must reject the data, proving
-	// the proxy is not re-signing with a key of its own.
-	otherSigner := newTestSigner(t)
-	wrongKeyServer := newTestServer(t, mirror, otherSigner.publicKeys(t), nil, testCredential{
-		downstreamID: testDownstreamID,
-		token:        token,
-	})
-	wrongClient := wrongKeyServer.newClient(token)
-	wrongSyncer, err := adsync.NewSyncer(wrongClient, "")
-	if err != nil {
-		t.Fatalf("new wrong-key syncer: %v", err)
-	}
-	if _, err := wrongSyncer.Sync(context.Background(), service.service()); !errors.Is(err, adsync.ErrIntegrity) {
-		t.Errorf("wrong-key downstream: %v, want ErrIntegrity", err)
-	}
 }
 
 func TestDownstreamChangesPagesVerify(t *testing.T) {
-	signer := newTestSigner(t)
-	mirror := newTestMirror(t, signer.publicKeys(t), nil)
+	mirror := newTestMirror(t, nil)
 	service := newFixtureService(testServiceID1, "books")
-	initial := service.snapshotResponse(t, signer)
+	initial := service.snapshotResponse(t)
 	for _, policy := range []string{"A1", "A2", "A3"} {
-		service.publish(t, signer, upsertAuthz(testServiceID1+policy, "policy-"+policy, "grant read"))
+		service.publish(t, upsertAuthz(testServiceID1+policy, "policy-"+policy, "grant read"))
 	}
 	if err := mirror.ApplySnapshot(initial); err != nil {
 		t.Fatalf("apply snapshot: %v", err)
@@ -101,7 +82,7 @@ func TestDownstreamChangesPagesVerify(t *testing.T) {
 	}
 
 	token := testToken(testDownstreamID, 1)
-	server := newTestServer(t, mirror, signer.publicKeys(t), nil, testCredential{
+	server := newTestServer(t, mirror, nil, testCredential{
 		downstreamID: testDownstreamID,
 		token:        token,
 	})
@@ -115,8 +96,8 @@ func TestDownstreamChangesPagesVerify(t *testing.T) {
 	if first.From != 2 || first.To != 2 || first.Head != 4 || first.NextSince != 3 {
 		t.Errorf("first page = %+v", first)
 	}
-	if len(first.Commits) != 1 || first.Commits[0].Signature != service.commits[0].Signature {
-		t.Error("first page commit signature changed in transit")
+	if len(first.Commits) != 1 || first.Commits[0].Hash != service.commits[0].Hash {
+		t.Error("first page commit hash changed in transit")
 	}
 	second, err := client.Changes(ctx, testServiceID1, service.ID, service.Epoch, first.To, first.Commits[0].Hash, 100)
 	if err != nil {
@@ -141,11 +122,10 @@ func TestDownstreamChangesPagesVerify(t *testing.T) {
 }
 
 func TestDownstreamRecoversFromEpochChange(t *testing.T) {
-	signer := newTestSigner(t)
-	mirror := newTestMirror(t, signer.publicKeys(t), nil)
+	mirror := newTestMirror(t, nil)
 	service := newFixtureService(testServiceID1, "books")
-	initial := service.snapshotResponse(t, signer)
-	service.publish(t, signer, upsertAuthz(testServiceID1+"A1", "read-books", "grant read"))
+	initial := service.snapshotResponse(t)
+	service.publish(t, upsertAuthz(testServiceID1+"A1", "read-books", "grant read"))
 	if err := mirror.ApplySnapshot(initial); err != nil {
 		t.Fatalf("apply snapshot: %v", err)
 	}
@@ -154,7 +134,7 @@ func TestDownstreamRecoversFromEpochChange(t *testing.T) {
 	}
 
 	token := testToken(testDownstreamID, 1)
-	server := newTestServer(t, mirror, signer.publicKeys(t), nil, testCredential{
+	server := newTestServer(t, mirror, nil, testCredential{
 		downstreamID: testDownstreamID,
 		token:        token,
 	})
@@ -172,8 +152,8 @@ func TestDownstreamRecoversFromEpochChange(t *testing.T) {
 	// still holds the old epoch must reload the snapshot and land on the new
 	// identity.
 	replacement := newFixtureServiceWithEpoch(testServiceID1, testUnknownID, "books")
-	replacement.publish(t, signer, upsertRole(testServiceID1+"R9", "auditor", "grant role"))
-	if err := mirror.ApplySnapshot(replacement.snapshotResponse(t, signer)); err != nil {
+	replacement.publish(t, upsertRole(testServiceID1+"R9", "auditor", "grant role"))
+	if err := mirror.ApplySnapshot(replacement.snapshotResponse(t)); err != nil {
 		t.Fatalf("apply replacement snapshot: %v", err)
 	}
 

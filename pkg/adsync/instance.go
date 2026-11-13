@@ -16,12 +16,11 @@ import (
 	"time"
 )
 
-// InstanceIDFile is the file in the cache directory that keeps a direct-mode
-// instance ID across restarts.
+// InstanceIDFile is the file in the cache directory that keeps the instance
+// ID across restarts.
 const InstanceIDFile = "instance-id"
 
-// InstanceHeader carries the instance ID on every request of a direct-mode
-// instance.
+// InstanceHeader carries the instance ID on every request.
 const InstanceHeader = "X-SC-ADS-Instance"
 
 // NewInstanceID returns a random UUIDv7 in its lowercase canonical form.
