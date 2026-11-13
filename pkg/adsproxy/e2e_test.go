@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/teramoby/speedle-plus/pkg/adsync"
 )
@@ -168,5 +169,49 @@ func TestDownstreamRecoversFromEpochChange(t *testing.T) {
 	services := decodeBody[adsync.ServicesResponse](t, body)
 	if len(services.Services) != 1 || services.Services[0].Epoch != replacement.Epoch {
 		t.Errorf("services after epoch change = %+v", services.Services)
+	}
+}
+
+// TestChannelTransportEndToEnd proves the relay accepts the frames its own
+// adsync client sends: a real channel completes hello, ack, heartbeat and ack
+// over WebSocket and long polling, so the wire schema is shared, not just
+// hand-written fixtures.
+func TestChannelTransportEndToEnd(t *testing.T) {
+	mirror, _, _ := newPopulatedMirror(t)
+	server := newTestServer(t, mirror, nil)
+	for _, transport := range []adsync.Transport{adsync.TransportWebSocket, adsync.TransportLongPoll} {
+		t.Run(string(transport), func(t *testing.T) {
+			machine, err := adsync.NewMachine(adsync.MachineOptions{})
+			if err != nil {
+				t.Fatalf("new machine: %v", err)
+			}
+			options := adsync.ChannelOptions{
+				Machine:      machine,
+				AgentVersion: "test",
+				Transport:    transport,
+			}
+			if transport == adsync.TransportLongPoll {
+				options.PollWait = time.Second
+			}
+			channel, err := adsync.NewChannel(server.newClient(testClientInstanceID), options)
+			if err != nil {
+				t.Fatalf("new channel: %v", err)
+			}
+			ctx, cancel := context.WithCancel(context.Background())
+			done := make(chan error, 1)
+			go func() { done <- channel.Run(ctx) }()
+			waitFor(t, 10*time.Second, "the channel to receive a confirming ack", func() bool {
+				return !machine.Instance().LastConfirmedAckAt.IsZero()
+			})
+			if services := machine.Services(); len(services) != 2 {
+				t.Errorf("acknowledged services = %+v", services)
+			}
+			cancel()
+			select {
+			case <-done:
+			case <-time.After(5 * time.Second):
+				t.Fatal("the channel did not stop")
+			}
+		})
 	}
 }
