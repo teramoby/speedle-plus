@@ -107,12 +107,12 @@ func Open(ctx context.Context, options Options) (_ *Store, err error) {
 	if options.PublicKeys == nil {
 		return nil, errors.New(errors.ConfigError, "policy source public keys are required")
 	}
-	if err := normalizeIdentity(&options); err != nil {
+	if err := validateUpstream(&options); err != nil {
 		return nil, err
 	}
 
 	client, err := adsync.NewClient(adsync.Config{
-		BaseURL:            options.PolicySourceURL,
+		BaseURL:            options.UpstreamURL,
 		Credential:         options.Credential,
 		FallbackBaseURL:    options.FallbackURL,
 		FallbackCredential: options.FallbackCredential,

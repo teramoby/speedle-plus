@@ -22,7 +22,6 @@ import (
 
 	"github.com/teramoby/speedle-plus/pkg/adsync"
 	speedleerrors "github.com/teramoby/speedle-plus/pkg/errors"
-	"github.com/teramoby/speedle-plus/pkg/store"
 )
 
 const (
@@ -440,7 +439,7 @@ func newTestFixture(t *testing.T, services ...*testService) *testFixture {
 		server: server,
 		caFile: caFile,
 		options: Options{
-			PolicySourceURL:    server.URL,
+			UpstreamURL:        server.URL,
 			Credential:         testCredential,
 			FallbackURL:        server.URL,
 			FallbackCredential: testCredential,
@@ -490,35 +489,14 @@ func confirmStoreGeneration(t *testing.T, store *Store) {
 	acknowledge()
 }
 
-// storeProperties returns store properties that use the real transport, for
-// the registered-store builder path.
+// storeProperties exercises the new configuration surface, without registration.
 func (f *testFixture) storeProperties() map[string]interface{} {
-	f.t.Helper()
-	credentialFile := filepath.Join(f.t.TempDir(), "credential")
-	if err := os.WriteFile(credentialFile, []byte(testCredential+"\n"), 0o600); err != nil {
-		f.t.Fatal(err)
-	}
-	return map[string]interface{}{
-		PolicySourceURLKey:     f.server.URL,
-		CredentialFileKey:      credentialFile,
-		CloudFallbackURLKey:    f.server.URL,
-		CloudCredentialFileKey: credentialFile,
-		PublicKeysKey:          f.signer.writeKeysFile(f.t),
-		CAFileKey:              f.caFile,
-	}
+	return map[string]interface{}{UpstreamURLKey: f.server.URL, CAFileKey: f.caFile}
 }
 
 func (f *testFixture) newStore() *Store {
 	f.t.Helper()
-	manager, err := store.NewStore(StoreType, f.storeProperties())
-	if err != nil {
-		f.t.Fatalf("create registered store: %v", err)
-	}
-	store, ok := manager.(*Store)
-	if !ok {
-		f.t.Fatalf("registered store has type %T", manager)
-	}
-	return store
+	return f.open(func(options *Options) { options.StartRuntime = true })
 }
 
 func wantErrorCode(t *testing.T, what string, err error, code speedleerrors.ErrorCode) {

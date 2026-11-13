@@ -9,103 +9,42 @@ import (
 	"testing"
 	"time"
 
-	"github.com/teramoby/speedle-plus/pkg/adsync"
 	speedleerrors "github.com/teramoby/speedle-plus/pkg/errors"
 	"github.com/teramoby/speedle-plus/pkg/store"
 )
 
 func TestBuilderRejectsInvalidConfiguration(t *testing.T) {
-	fixture := newTestFixture(t, booksService())
-	valid := fixture.storeProperties()
-
-	missing := func(key string) map[string]interface{} {
-		properties := cloneProperties(valid)
-		delete(properties, key)
-		return properties
+	valid := map[string]interface{}{UpstreamURLKey: "https://source.example"}
+	cases := map[string]interface{}{
+		UpstreamURLKey: 42, APIKeyKey: []string{"secret"}, RequestTimeoutKey: "soon",
+		HeartbeatIntervalKey: "30", StopAfterKey: "-1s", FallbackWhileSyncingKey: "perhaps",
+		TransportKey: "sse", ServeDownstreamKey: true, MaxDownstreamKey: "many", MaxConnectionsKey: 1.5,
+		CacheDirKey: 42, CAFileKey: false,
 	}
-	with := func(key string, value interface{}) map[string]interface{} {
-		properties := cloneProperties(valid)
-		properties[key] = value
-		return properties
-	}
-
-	badKeys := filepath.Join(t.TempDir(), "bad-keys.json")
-	if err := os.WriteFile(badKeys, []byte(`{"keys":`), 0o644); err != nil {
-		t.Fatal(err)
-	}
-	readableCredential := filepath.Join(t.TempDir(), "credential")
-	if err := os.WriteFile(readableCredential, []byte(testCredential), 0o644); err != nil {
-		t.Fatal(err)
-	}
-	notAFile := filepath.Join(t.TempDir(), "directory")
-	if err := os.Mkdir(notAFile, 0o700); err != nil {
-		t.Fatal(err)
-	}
-
-	cases := map[string]map[string]interface{}{
-		"missing url":                     missing(PolicySourceURLKey),
-		"empty url":                       with(PolicySourceURLKey, ""),
-		"url is not a string":             with(PolicySourceURLKey, 42),
-		"url is not https":                with(PolicySourceURLKey, "http://policy.example"),
-		"missing credential":              missing(CredentialFileKey),
-		"credential file missing":         with(CredentialFileKey, filepath.Join(t.TempDir(), "absent")),
-		"credential file is public":       with(CredentialFileKey, readableCredential),
-		"credential file is a dir":        with(CredentialFileKey, notAFile),
-		"missing public keys":             missing(PublicKeysKey),
-		"public keys file is broken":      with(PublicKeysKey, badKeys),
-		"services mixed with star":        with(ServicesKey, "*,books"),
-		"services has empty entry":        with(ServicesKey, "books,,orders"),
-		"services is not a list":          with(ServicesKey, map[string]interface{}{"a": 1}),
-		"services has a non-string":       with(ServicesKey, []interface{}{"books", 7}),
-		"bad request timeout":             with(RequestTimeoutKey, "soon"),
-		"negative request timeout":        with(RequestTimeoutKey, "-1s"),
-		"bad heartbeat":                   with(HeartbeatIntervalKey, "30"),
-		"heartbeat out of range":          with(HeartbeatIntervalKey, "1s"),
-		"stop before stale":               with(StopAfterKey, "10s"),
-		"client cert without key":         with(ClientCertFileKey, "/tmp/cert.pem"),
-		"fallback is not a boolean":       with(FallbackWhileSyncingKey, "perhaps"),
-		"fallback URL without credential": missing(CloudCredentialFileKey),
-		"fallback credential without URL": missing(CloudFallbackURLKey),
-		"unknown transport":               with(TransportKey, "sse"),
-		"downstream without credentials":  with(ServeDownstreamKey, true),
-		"invalid downstream limit":        with(MaxDownstreamKey, "many"),
-		"invalid connection limit":        with(MaxConnectionsKey, 1.5),
-	}
-	for name, properties := range cases {
-		t.Run(name, func(t *testing.T) {
-			t.Setenv(adsync.CredentialEnv, "")
-			if _, err := store.NewStore(StoreType, properties); speedleerrors.Code(err) != speedleerrors.ConfigError {
-				t.Fatalf("error %v, code %s, want %s", err, speedleerrors.Code(err), speedleerrors.ConfigError)
+	for key, value := range cases {
+		t.Run(key, func(t *testing.T) {
+			props := cloneProperties(valid)
+			props[key] = value
+			if _, err := optionsFromConfig(props); speedleerrors.Code(err) != speedleerrors.ConfigError {
+				t.Fatalf("error: %v", err)
 			}
 		})
 	}
-}
-
-func TestBuilderRejectsAnUnknownSelectedService(t *testing.T) {
-	fixture := newTestFixture(t, booksService())
-	properties := fixture.storeProperties()
-	properties[ServicesKey] = "books,missing"
-	_, err := store.NewStore(StoreType, properties)
-	wantErrorCode(t, "unknown selected service", err, speedleerrors.ConfigError)
-	if !strings.Contains(err.Error(), "missing") {
-		t.Fatalf("error does not name the unknown service: %v", err)
+	for _, url := range []string{"", "http://source.example", "https://user:password@source.example", "https://source.example?key=secret", "https://source.example#fragment", "://"} {
+		if _, err := optionsFromConfig(map[string]interface{}{UpstreamURLKey: url}); err == nil {
+			t.Fatalf("invalid URL accepted: %q", url)
+		}
+	}
+	if _, err := optionsFromConfig(nil); err == nil {
+		t.Fatal("missing upstream accepted")
+	}
+	// The builder validates configuration before the registration path is wired in #372.
+	if _, err := store.NewStore(StoreType, valid); speedleerrors.Code(err) != speedleerrors.ConfigError {
+		t.Fatalf("unregistered client: %v", err)
 	}
 }
 
-func TestBuilderCreatesTheRegisteredStore(t *testing.T) {
-	fixture := newTestFixture(t, booksService())
-	manager, err := store.NewStore(StoreType, fixture.storeProperties())
-	if err != nil {
-		t.Fatal(err)
-	}
-	policyStore, err := manager.ReadPolicyStore()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(policyStore.Services) != 1 || policyStore.Services[0].Name != "books" {
-		t.Fatalf("services %+v", policyStore.Services)
-	}
-
+func TestBuilderRegistrationAndParams(t *testing.T) {
 	found := false
 	for _, name := range store.StoreBuilders() {
 		if name == StoreType {
@@ -113,7 +52,7 @@ func TestBuilderCreatesTheRegisteredStore(t *testing.T) {
 		}
 	}
 	if !found {
-		t.Fatalf("store type %q is not registered: %v", StoreType, store.StoreBuilders())
+		t.Fatal("policy-source store not registered")
 	}
 	params := store.GetAllStoreParams()
 	for flag, key := range (Builder{}).GetStoreParams() {
@@ -124,48 +63,15 @@ func TestBuilderCreatesTheRegisteredStore(t *testing.T) {
 }
 
 func TestFallbackWhileSyncingProperty(t *testing.T) {
-	fixture := newTestFixture(t, booksService())
-
-	enabled, err := store.NewStore(StoreType, fixture.storeProperties())
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !enabled.(*Store).FallbackAvailable() {
-		t.Fatal("the fallback is enabled by default")
-	}
-
-	properties := fixture.storeProperties()
-	properties[FallbackWhileSyncingKey] = "false"
-	disabled, err := store.NewStore(StoreType, properties)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if disabled.(*Store).FallbackAvailable() {
-		t.Fatal("FallbackWhileSyncing=false did not disable the fallback")
-	}
-
-	properties[FallbackWhileSyncingKey] = true
-	fromBool, err := store.NewStore(StoreType, properties)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !fromBool.(*Store).FallbackAvailable() {
-		t.Fatal("a boolean property value was not accepted")
-	}
-}
-
-func TestCredentialFromEnvironment(t *testing.T) {
-	fixture := newTestFixture(t, booksService())
-	t.Setenv(adsync.CredentialEnv, testCredential)
-	properties := fixture.storeProperties()
-	delete(properties, CredentialFileKey)
-	manager, err := store.NewStore(StoreType, properties)
-	if err != nil {
-		t.Fatal(err)
-	}
-	policyStore, err := manager.ReadPolicyStore()
-	if err != nil || len(policyStore.Services) != 1 {
-		t.Fatalf("services %+v, error %v", policyStore.Services, err)
+	for _, value := range []interface{}{nil, true, "true", false, "false"} {
+		properties := map[string]interface{}{UpstreamURLKey: "https://source.example", FallbackWhileSyncingKey: value}
+		options, err := optionsFromConfig(properties)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if options.DisableFallback != (value == false || value == "false") {
+			t.Fatalf("fallback option for %v", value)
+		}
 	}
 }
 
@@ -180,7 +86,7 @@ func TestOpenValidatesOptions(t *testing.T) {
 	}
 	cases := map[string]Options{
 		"no public keys": with(func(options *Options) { options.PublicKeys = nil }),
-		"no url":         with(func(options *Options) { options.PolicySourceURL = "" }),
+		"no url":         with(func(options *Options) { options.UpstreamURL = "" }),
 		"malformed credential": with(func(options *Options) {
 			options.Credential = "not-a-credential"
 		}),

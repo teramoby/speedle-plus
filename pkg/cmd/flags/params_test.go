@@ -536,7 +536,7 @@ func TestPolicySourceConfigOnlyPropertiesSurviveFlags(t *testing.T) {
 			pflag.CommandLine = pflag.NewFlagSet("config-only", pflag.ContinueOnError)
 			pflag.CommandLine.SetOutput(io.Discard)
 			const secret = "file-only-private-key-371"
-			path := writeFile(t, "config.json", `{"storeConfig":{"storeType":"`+selection.fileType+`","storeProps":{"UpstreamURL":"https://source.example","APIKey":"`+secret+`","InstanceName":"engine-1"}}}`)
+			path := writeFile(t, "config.json", `{"storeConfig":{"storeType":"`+selection.fileType+`","storeProps":{"UpstreamURL":"https://source.example","APIKey":"`+secret+`","PolicySourceURL":"https://removed.example","CredentialFile":"removed","PolicySourcePublicKeys":"removed","Services":["old"],"CloudFallbackURL":"removed","CloudCredentialFile":"removed","InstanceName":"removed"}}}`)
 			t.Setenv(FlagToEnv("store-type"), selection.envType)
 			t.Setenv(FlagToEnv("policy-source-api-key"), "env-must-be-ignored")
 			t.Setenv(FlagToEnv("api-key"), "env-must-be-ignored")
@@ -559,8 +559,13 @@ func TestPolicySourceConfigOnlyPropertiesSurviveFlags(t *testing.T) {
 				}
 				return
 			}
-			if props["UpstreamURL"] != "https://source.example" || props["InstanceName"] != "engine-1" || props["APIKey"] != cfg.Secret(secret) {
+			if props["UpstreamURL"] != "https://source.example" || props["InstanceName"] != "removed" || props["APIKey"] != cfg.Secret(secret) {
 				t.Fatal("config-only properties dropped or overwritten")
+			}
+			for _, key := range []string{"PolicySourceURL", "CredentialFile", "PolicySourcePublicKeys", "Services", "CloudFallbackURL", "CloudCredentialFile", "InstanceName"} {
+				if _, exists := props[key]; !exists {
+					t.Fatalf("removed property %s dropped before validation", key)
+				}
 			}
 			if strings.Contains(fmt.Sprintf("%+v", params), secret) {
 				t.Fatal("parameter dump exposed key")

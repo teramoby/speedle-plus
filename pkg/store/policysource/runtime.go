@@ -470,7 +470,7 @@ func (s *Store) handleRuntimeCommand(command adsync.Command) *adsync.CommandResu
 		s.resync(command.ServiceID)
 		return &adsync.CommandResult{Status: "acked"}
 	case "set_source":
-		if command.CredentialProfile == "" || command.SourceURL != s.options.PolicySourceURL {
+		if command.CredentialProfile == "" || command.SourceURL != s.options.UpstreamURL {
 			return &adsync.CommandResult{Status: "rejected", Result: "unknown credential profile"}
 		}
 		s.triggerSync()

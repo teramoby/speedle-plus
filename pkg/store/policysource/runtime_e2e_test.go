@@ -24,13 +24,12 @@ import (
 	"github.com/teramoby/speedle-plus/pkg/adsync"
 	"github.com/teramoby/speedle-plus/pkg/cfg"
 	"github.com/teramoby/speedle-plus/pkg/eval"
-	speedlestore "github.com/teramoby/speedle-plus/pkg/store"
 	"github.com/teramoby/speedle-plus/pkg/svcs"
 	"github.com/teramoby/speedle-plus/pkg/svcs/adsrest"
 )
 
-// TestE2EProductionRuntimeSyncsAndServesDownstream uses the registered store
-// builder, evaluator and REST router. No test-owned channel, reconciliation or
+// TestE2EProductionRuntimeSyncsAndServesDownstream uses the store runtime,
+// evaluator and REST router. No test-owned channel, reconciliation or
 // mirror loop is involved: the production store runtime must do all three.
 func TestE2EProductionRuntimeSyncsAndServesDownstream(t *testing.T) {
 	cloud := newE2ECloud(t)
@@ -997,16 +996,12 @@ func TestE2EProductionRuntimeRejectsAConflictingAdvertisedHash(t *testing.T) {
 	}
 }
 
-// startProductionADS builds an ADS the way the shipped binary does: the
-// registered store builder, the evaluator with watching enabled and the REST
-// router. extra adds store properties to the common policy-source
-// configuration.
+// startProductionADS supplies authenticated in-process options to the owned
+// runtime, evaluator and REST router. Registration from configuration is #372.
 func startProductionADS(t *testing.T, cloud *e2eCloud, extra map[string]interface{}) (*Store, *httptest.Server) {
 	t.Helper()
 	source := cloud.source()
 	fallback := cloud.fallbackSource(e2eInstanceA, 201)
-	credentialFile := writeRuntimeCredential(t, "source-credential", source.Credential)
-	fallbackCredentialFile := writeRuntimeCredential(t, "fallback-credential", fallback.Credential)
 
 	keyDocument, err := json.Marshal(adsync.PublicKeyFile{Keys: []adsync.PublicKeyEntry{{
 		KeyID:     cloud.signer.keyID,
@@ -1021,25 +1016,32 @@ func startProductionADS(t *testing.T, cloud *e2eCloud, extra map[string]interfac
 	}
 
 	properties := map[string]interface{}{
-		PolicySourceURLKey:     source.URL,
-		CredentialFileKey:      credentialFile,
-		PublicKeysKey:          keyFile,
-		CAFileKey:              source.CAFile,
-		CloudFallbackURLKey:    fallback.URL,
-		CloudCredentialFileKey: fallbackCredentialFile,
-		TransportKey:           string(adsync.TransportWebSocket),
-		HeartbeatIntervalKey:   "15s",
-		StaleAfterKey:          "30s",
-		StopAfterKey:           "60s",
+		UpstreamURLKey:       source.URL,
+		CAFileKey:            source.CAFile,
+		TransportKey:         string(adsync.TransportWebSocket),
+		HeartbeatIntervalKey: "15s",
+		StaleAfterKey:        "30s",
+		StopAfterKey:         "60s",
 	}
 	for key, value := range extra {
 		properties[key] = value
 	}
-	manager, err := speedlestore.NewStore(StoreType, properties)
+	options, err := optionsFromConfig(properties)
 	if err != nil {
-		t.Fatalf("build registered policy-source store: %v", err)
+		t.Fatal(err)
 	}
-	ads := manager.(*Store)
+	options.Credential = source.Credential
+	options.FallbackURL = fallback.URL
+	options.FallbackCredential = fallback.Credential
+	options.PublicKeys, err = adsync.LoadPublicKeysFile(keyFile)
+	if err != nil {
+		t.Fatal(err)
+	}
+	options.StartRuntime = true
+	ads, err := Open(context.Background(), options)
+	if err != nil {
+		t.Fatalf("open policy-source runtime: %v", err)
+	}
 	engine, err := eval.NewWithStore(&cfg.Config{EnableWatch: true}, ads)
 	if err != nil {
 		t.Fatalf("build evaluator: %v", err)

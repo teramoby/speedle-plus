@@ -5,8 +5,8 @@ package policysource
 import (
 	"context"
 	"net/http"
+	"net/url"
 	"os"
-	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -23,12 +23,10 @@ const (
 	// StoreType is the store name used in storeConfig.storeType.
 	StoreType = "policy-source"
 
-	// Store property keys. They match the configuration documented for the
-	// policy-source store.
+	// Store property keys. Obsolete keys are retained only for migration errors.
 	PolicySourceURLKey       = "PolicySourceURL"
 	UpstreamURLKey           = "UpstreamURL"
 	APIKeyKey                = "APIKey"
-	InstanceNameKey          = "InstanceName"
 	CredentialFileKey        = "CredentialFile"
 	ServicesKey              = "Services"
 	PublicKeysKey            = "PolicySourcePublicKeys"
@@ -53,10 +51,6 @@ const (
 
 	// Command line flag names. Each flag feeds the property key above through
 	// the shared GetStoreParams mechanism.
-	PolicySourceURLFlag       = "policy-source-url"
-	CredentialFileFlag        = "policy-source-credential-file"
-	ServicesFlag              = "policy-source-services"
-	PublicKeysFlag            = "policy-source-public-keys"
 	CacheDirFlag              = "policy-source-cache-dir"
 	RequestTimeoutFlag        = "policy-source-request-timeout"
 	CAFileFlag                = "policy-source-ca"
@@ -66,8 +60,6 @@ const (
 	StaleAfterFlag            = "policy-source-stale-after"
 	StopAfterFlag             = "policy-source-stop-after"
 	FallbackWhileSyncingFlag  = "policy-source-fallback-while-syncing"
-	CloudFallbackURLFlag      = "policy-source-cloud-fallback-url"
-	CloudCredentialFileFlag   = "policy-source-cloud-credential-file"
 	TransportFlag             = "policy-source-transport"
 	ServeDownstreamFlag       = "policy-source-serve-downstream"
 	DownstreamCredentialsFlag = "policy-source-downstream-credentials-file"
@@ -80,15 +72,10 @@ const (
 // Options configures a Store. The builder derives it from store properties;
 // tests and in-process users may build it directly.
 type Options struct {
-	// PolicySourceURL is the policy source root, for example
-	// https://cloud.speedle.io. It must use https.
-	PolicySourceURL string
-	// UpstreamURL aliases PolicySourceURL. Conflicting values are rejected.
+	// UpstreamURL is the policy source root. It must use https.
 	UpstreamURL string
 	// APIKey is configuration-only and reserved for registration in #372.
 	APIKey cfg.Secret
-	// InstanceName defaults to the hostname and must match the instance name syntax.
-	InstanceName string
 	// Credential is the account-scoped adsi_ instance credential.
 	Credential string
 	// PublicKeys is the out-of-band trust anchor for snapshots and commits.
@@ -160,10 +147,6 @@ type Builder struct{}
 // GetStoreParams maps flag names to store property keys.
 func (Builder) GetStoreParams() map[string]string {
 	return map[string]string{
-		PolicySourceURLFlag:       PolicySourceURLKey,
-		CredentialFileFlag:        CredentialFileKey,
-		ServicesFlag:              ServicesKey,
-		PublicKeysFlag:            PublicKeysKey,
 		CacheDirFlag:              CacheDirKey,
 		RequestTimeoutFlag:        RequestTimeoutKey,
 		CAFileFlag:                CAFileKey,
@@ -173,8 +156,6 @@ func (Builder) GetStoreParams() map[string]string {
 		StaleAfterFlag:            StaleAfterKey,
 		StopAfterFlag:             StopAfterKey,
 		FallbackWhileSyncingFlag:  FallbackWhileSyncingKey,
-		CloudFallbackURLFlag:      CloudFallbackURLKey,
-		CloudCredentialFileFlag:   CloudCredentialFileKey,
 		TransportFlag:             TransportKey,
 		ServeDownstreamFlag:       ServeDownstreamKey,
 		DownstreamCredentialsFlag: DownstreamCredentialsKey,
@@ -210,14 +191,15 @@ func optionsFromConfig(config map[string]interface{}) (options Options, err erro
 		secret = value
 	}
 	defer func() { err = redactConfigError(err, secret) }()
+	if err := rejectRemovedConfig(config); err != nil {
+		return options, err
+	}
 
 	for _, property := range []struct {
 		key    string
 		target *string
 	}{
-		{PolicySourceURLKey, &options.PolicySourceURL},
 		{UpstreamURLKey, &options.UpstreamURL},
-		{InstanceNameKey, &options.InstanceName},
 	} {
 		value, _, err := stringProperty(config, property.key)
 		if err != nil {
@@ -234,34 +216,9 @@ func optionsFromConfig(config map[string]interface{}) (options Options, err erro
 		}
 		options.APIKey = cfg.Secret(value)
 	}
-	if err := normalizeIdentity(&options); err != nil {
+	if err := validateUpstream(&options); err != nil {
 		return options, err
 	}
-
-	credential, err := credentialFromConfig(config)
-	if err != nil {
-		return options, err
-	}
-	options.Credential = credential
-
-	keysPath, set, err := stringProperty(config, PublicKeysKey)
-	if err != nil {
-		return options, err
-	}
-	if !set || keysPath == "" {
-		return options, errors.New(errors.ConfigError, "configure item PolicySourcePublicKeys is not found")
-	}
-	keys, err := adsync.LoadPublicKeysFile(keysPath)
-	if err != nil {
-		return options, errors.Wrap(err, errors.ConfigError, "invalid policy source public keys")
-	}
-	options.PublicKeys = keys
-
-	services, err := servicesFromConfig(config)
-	if err != nil {
-		return options, err
-	}
-	options.Services = services
 
 	for _, property := range []struct {
 		key    string
@@ -271,7 +228,6 @@ func optionsFromConfig(config map[string]interface{}) (options Options, err erro
 		{CAFileKey, &options.CAFile},
 		{ClientCertFileKey, &options.ClientCertFile},
 		{ClientKeyFileKey, &options.ClientKeyFile},
-		{CloudFallbackURLKey, &options.FallbackURL},
 		{DownstreamCredentialsKey, &options.DownstreamCredentialsFile},
 	} {
 		value, _, err := stringProperty(config, property.key)
@@ -314,21 +270,6 @@ func optionsFromConfig(config map[string]interface{}) (options Options, err erro
 		return options, errors.Errorf(errors.ConfigError, "unknown policy source Transport %q", transport)
 	}
 
-	cloudCredentialPath, _, err := stringProperty(config, CloudCredentialFileKey)
-	if err != nil {
-		return options, err
-	}
-	if (options.FallbackURL == "") != (cloudCredentialPath == "") {
-		return options, errors.New(errors.ConfigError, "CloudFallbackURL and CloudCredentialFile must be configured together")
-	}
-	if cloudCredentialPath != "" {
-		cloudCredential, err := adsync.ReadCredentialFile(cloudCredentialPath)
-		if err != nil {
-			return options, errors.Wrap(err, errors.ConfigError, "invalid Cloud fallback credential file")
-		}
-		options.FallbackCredential = cloudCredential
-	}
-
 	serveDownstream, _, err := boolProperty(config, ServeDownstreamKey)
 	if err != nil {
 		return options, err
@@ -353,63 +294,6 @@ func optionsFromConfig(config map[string]interface{}) (options Options, err erro
 	}
 
 	return options, nil
-}
-
-// credentialFromConfig reads the instance credential from CredentialFile, or
-// from SPEEDLE_ADS_CREDENTIAL when no file is configured. The value is never
-// echoed in an error.
-func credentialFromConfig(config map[string]interface{}) (string, error) {
-	path, set, err := stringProperty(config, CredentialFileKey)
-	if err != nil {
-		return "", err
-	}
-	if set && path != "" {
-		credential, err := adsync.ReadCredentialFile(path)
-		if err != nil {
-			return "", errors.Wrap(err, errors.ConfigError, "invalid policy source credential file")
-		}
-		return credential, nil
-	}
-	credential, err := adsync.CredentialFromEnvironment()
-	if err != nil {
-		return "", errors.Wrap(err, errors.ConfigError, "invalid policy source credential")
-	}
-	if credential == "" {
-		return "", errors.Errorf(errors.ConfigError,
-			"configure item CredentialFile is not found and %s is not set", adsync.CredentialEnv)
-	}
-	return credential, nil
-}
-
-// servicesFromConfig accepts ["*"], a comma-separated list, or a JSON string
-// array (already joined by the flags layer, but accepted directly too).
-func servicesFromConfig(config map[string]interface{}) ([]string, error) {
-	value, exists := config[ServicesKey]
-	if !exists || value == nil {
-		return []string{DefaultServicesSelection}, nil
-	}
-	var entries []string
-	switch typed := value.(type) {
-	case string:
-		if strings.TrimSpace(typed) == "" {
-			return nil, errors.New(errors.ConfigError, "configure item Services must list at least one service or *")
-		}
-		entries = strings.Split(typed, ",")
-	case []string:
-		entries = typed
-	case []interface{}:
-		entries = make([]string, 0, len(typed))
-		for _, item := range typed {
-			text, ok := item.(string)
-			if !ok {
-				return nil, errors.Errorf(errors.ConfigError, "configure item Services must contain only strings, got %T", item)
-			}
-			entries = append(entries, text)
-		}
-	default:
-		return nil, errors.Errorf(errors.ConfigError, "configure item Services must be a string list, got %T", value)
-	}
-	return normalizeServices(entries)
 }
 
 // normalizeServices cleans a service selection. Nil and ["*"] mean every
@@ -530,12 +414,8 @@ func durationProperty(config map[string]interface{}, key string) (time.Duration,
 var _ store.StoreBuilder = Builder{}
 
 func init() {
-	pflag.String(PolicySourceURLFlag, "", "Store config: policy source base URL (https).")
-	pflag.String(CredentialFileFlag, "", "Store config: file holding the ADS instance credential (0600).")
-	pflag.String(ServicesFlag, DefaultServicesSelection, "Store config: comma-separated services to sync, or * for all visible services.")
-	pflag.String(PublicKeysFlag, "", "Store config: policy source public keys file.")
 	pflag.String(CacheDirFlag, "", "Store config: directory for the optional per-service copy cache.")
-	pflag.String(RequestTimeoutFlag, "", "Store config: timeout of one policy source data request, for example 10s.")
+	pflag.String(RequestTimeoutFlag, "", "Store config: maximum time without policy source response bytes, for example 10s.")
 	pflag.String(CAFileFlag, "", "Store config: PEM CA bundle for the policy source.")
 	pflag.String(ClientCertFileFlag, "", "Store config: client certificate for policy source mutual TLS.")
 	pflag.String(ClientKeyFileFlag, "", "Store config: client key for policy source mutual TLS.")
@@ -543,8 +423,6 @@ func init() {
 	pflag.String(StaleAfterFlag, "", "Store config: warning threshold before an instance is stale, for example 60s.")
 	pflag.String(StopAfterFlag, "", "Store config: threshold after which an instance stops serving, for example 120s.")
 	pflag.String(FallbackWhileSyncingFlag, "true", "Store config: route authorization requests for a syncing service to Speedle Cloud.")
-	pflag.String(CloudFallbackURLFlag, "", "Store config: distinct Speedle Cloud base URL used only for authorization fallback.")
-	pflag.String(CloudCredentialFileFlag, "", "Store config: file holding the Cloud instance credential used only for fallback (0600).")
 	pflag.String(TransportFlag, "auto", "Store config: notification transport: auto, websocket or longpoll.")
 	pflag.String(ServeDownstreamFlag, "false", "Store config: serve the policy-source protocol to downstream ADS instances.")
 	pflag.String(DownstreamCredentialsFlag, "", "Store config: downstream credential file (0600), reloaded on SIGHUP.")
@@ -555,29 +433,36 @@ func init() {
 	store.Register(StoreType, Builder{})
 }
 
-var instanceNamePattern = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$`)
+// validateUpstream validates the upstream without echoing URL credentials.
+func validateUpstream(options *Options) error {
+	if options.UpstreamURL == "" {
+		return errors.New(errors.ConfigError, "configure item UpstreamURL is required")
+	}
+	parsed, err := url.Parse(options.UpstreamURL)
+	if err != nil || parsed.Scheme != "https" || parsed.Hostname() == "" || parsed.User != nil || parsed.RawQuery != "" || parsed.Fragment != "" {
+		return errors.New(errors.ConfigError, "UpstreamURL must be an https URL without credentials, query or fragment")
+	}
+	return nil
+}
 
-// normalizeIdentity also validates Options passed directly to Open.
-func normalizeIdentity(options *Options) error {
-	if options.UpstreamURL != "" && options.PolicySourceURL != "" && options.UpstreamURL != options.PolicySourceURL {
-		return errors.New(errors.ConfigError, "UpstreamURL and PolicySourceURL must match when both are configured")
-	}
-	if options.UpstreamURL == "" {
-		options.UpstreamURL = options.PolicySourceURL
-	}
-	if options.UpstreamURL == "" {
-		return errors.New(errors.ConfigError, "configure item UpstreamURL (or PolicySourceURL) is required")
-	}
-	options.PolicySourceURL = options.UpstreamURL
-	if options.InstanceName == "" {
-		name, err := os.Hostname()
-		if err != nil {
-			return errors.New(errors.ConfigError, "cannot determine InstanceName from hostname")
+// rejectRemovedConfig prevents silent acceptance of obsolete distribution settings.
+// Instance identity and service selection are owned by the upstream registration.
+func rejectRemovedConfig(config map[string]interface{}) error {
+	for _, property := range []struct{ key, replacement string }{
+		{PolicySourceURLKey, "use UpstreamURL"},
+		{CredentialFileKey, "use APIKey in the configuration file"},
+		{PublicKeysKey, "trust keys are supplied by registration"},
+		{ServicesKey, "select services in the Cloud console"},
+		{CloudFallbackURLKey, "use UpstreamURL"},
+		{CloudCredentialFileKey, "use APIKey in the configuration file"},
+		{"InstanceName", "the ADS manages its persisted instance ID"},
+	} {
+		if _, exists := config[property.key]; exists {
+			return errors.Errorf(errors.ConfigError, "%s has been removed; %s", property.key, property.replacement)
 		}
-		options.InstanceName = name
 	}
-	if !instanceNamePattern.MatchString(options.InstanceName) {
-		return errors.New(errors.ConfigError, "InstanceName must be 1-64 characters matching [A-Za-z0-9][A-Za-z0-9._-]*")
+	if _, exists := os.LookupEnv(adsync.CredentialEnv); exists {
+		return errors.New(errors.ConfigError, "SPEEDLE_ADS_CREDENTIAL has been removed; use APIKey in the configuration file")
 	}
 	return nil
 }

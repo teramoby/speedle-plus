@@ -115,7 +115,7 @@ func newE2EAgent(t *testing.T, options e2eAgentOptions) *e2eAgent {
 		fallbackCredential = options.Fallback.Credential
 	}
 	store, err := Open(context.Background(), Options{
-		PolicySourceURL:   options.Source.URL,
+		UpstreamURL:       options.Source.URL,
 		Credential:        options.Source.Credential,
 		PublicKeys:        options.Source.Keys,
 		CAFile:            options.Source.CAFile,

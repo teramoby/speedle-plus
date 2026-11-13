@@ -12,14 +12,16 @@
 //
 // # Configuration
 //
-// UpstreamURL is the policy-source root. PolicySourceURL remains an alias;
-// configuring both with different non-empty values is an error. Existing
-// CredentialFile, PolicySourcePublicKeys, Services and fallback properties
-// retain their meaning. APIKey is accepted only in the configuration file,
-// retained as a redacted secret in Options, and reserved for registration by
-// a later change; it is not used for authentication yet. InstanceName defaults
-// to the hostname and must be 1-64 ASCII characters, starting with a letter
-// or digit and followed by letters, digits, dots, underscores or hyphens.
+// UpstreamURL is the policy-source root. APIKey is accepted only in the
+// configuration file and retained as a redacted secret in Options. Registration,
+// trust-key discovery, API-key authentication and persisted instance identity
+// are implemented separately in #372; this change only defines configuration.
+// In-process callers may supply authenticated Options directly to Open.
+//
+// PolicySourceURL, CredentialFile, SPEEDLE_ADS_CREDENTIAL,
+// PolicySourcePublicKeys, Services, CloudFallbackURL, CloudCredentialFile and
+// InstanceName are rejected. Configure UpstreamURL and APIKey instead; select
+// services in the Cloud console. Engines using other store types are unaffected.
 //
 // # Change notification
 //
@@ -48,8 +50,8 @@
 //
 // The store implements adsync.RequestGate for the REST and gRPC entry points:
 // it reports the instance and per-service state, and ForwardFallback sends one
-// authorization request to the configured Cloud fallback (CloudFallbackURL and
-// CloudCredentialFile) with the Cloud instance credential. The policy-source
+// authorization request to the fallback supplied in authenticated Options
+// with its instance credential. The policy-source
 // URL and credential are never reused implicitly. FallbackWhileSyncing
 // (default true) turns that path off. An authentication failure from Cloud
 // stops the instance as revoked.

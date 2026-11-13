@@ -3,7 +3,6 @@
 package policysource
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -17,72 +16,36 @@ import (
 	_ "github.com/teramoby/speedle-plus/pkg/store/file"
 )
 
-func TestStoreIdentityAliases(t *testing.T) {
-	fixture := newTestFixture(t, booksService())
-	for _, name := range []string{"legacy", "upstream", "both"} {
-		t.Run(name, func(t *testing.T) {
-			props := fixture.storeProperties()
-			if name != "legacy" {
-				props[UpstreamURLKey] = props[PolicySourceURLKey]
-			}
-			if name == "upstream" {
-				delete(props, PolicySourceURLKey)
-			}
-			props[APIKeyKey] = "configuration-only-key"
-			props[InstanceNameKey] = "engine-01.local"
-			manager, err := (Builder{}).NewStore(props)
-			if err != nil {
-				t.Fatal(err)
-			}
-			s := manager.(*Store)
-			defer s.Close()
-			if s.options.UpstreamURL != fixture.server.URL || s.options.PolicySourceURL != fixture.server.URL || s.options.APIKey != "configuration-only-key" || s.options.InstanceName != "engine-01.local" {
-				t.Fatalf("options: %+v", s.options)
-			}
-			got, err := s.ReadPolicyStore()
-			if err != nil || len(got.Services) != 1 || got.Services[0].Name != "books" {
-				t.Fatalf("legacy behavior: %v, %v", got, err)
-			}
-		})
-	}
-	props := fixture.storeProperties()
-	props[UpstreamURLKey] = "https://different.example"
-	if _, err := (Builder{}).NewStore(props); err == nil {
-		t.Fatal("conflicting aliases accepted")
-	}
-	options := fixture.options
-	options.UpstreamURL = "https://different.example"
-	if _, err := Open(context.Background(), options); err == nil {
-		t.Fatal("conflicting in-process aliases accepted")
+func TestUpstreamConfiguration(t *testing.T) {
+	for _, key := range []any{"configuration-only-key", cfg.Secret("configuration-only-key")} {
+		props := map[string]interface{}{UpstreamURLKey: "https://source.example", APIKeyKey: key}
+		options, err := optionsFromConfig(props)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if options.UpstreamURL != "https://source.example" || options.APIKey != "configuration-only-key" || options.InstanceID != "" || options.Credential != "" || options.PublicKeys != nil || len(options.Services) != 0 {
+			t.Fatalf("unexpected options: %+v", options)
+		}
 	}
 }
 
-func TestInstanceNameValidation(t *testing.T) {
-	fixture := newTestFixture(t, booksService())
-	for _, name := range []string{"a", strings.Repeat("a", 64), "Engine_1.example-2"} {
-		props := fixture.storeProperties()
-		props[InstanceNameKey] = name
-		if _, err := optionsFromConfig(props); err != nil {
-			t.Fatalf("name %q: %v", name, err)
+func TestRemovedConfigurationRejected(t *testing.T) {
+	for key, guidance := range map[string]string{
+		"PolicySourceURL": "UpstreamURL", "CredentialFile": "APIKey", "PolicySourcePublicKeys": "removed",
+		"Services": "Cloud console", "CloudFallbackURL": "UpstreamURL", "CloudCredentialFile": "APIKey", "InstanceName": "instance ID",
+	} {
+		for _, value := range []any{nil, "", "old-value", 42} {
+			props := map[string]interface{}{UpstreamURLKey: "https://source.example", key: value}
+			_, err := optionsFromConfig(props)
+			if err == nil || !strings.Contains(err.Error(), key) || !strings.Contains(err.Error(), guidance) {
+				t.Fatalf("%s: %v", key, err)
+			}
 		}
 	}
-	for _, name := range []any{strings.Repeat("a", 65), "-engine", "with space", "引擎", 1} {
-		props := fixture.storeProperties()
-		props[InstanceNameKey] = name
-		if _, err := optionsFromConfig(props); err == nil {
-			t.Fatalf("invalid name %v accepted", name)
-		}
-	}
-	options, err := optionsFromConfig(fixture.storeProperties())
-	if err != nil {
-		t.Fatal(err)
-	}
-	hostname, err := os.Hostname()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if options.InstanceName != hostname {
-		t.Fatalf("default name = %q, want hostname", options.InstanceName)
+	t.Setenv("SPEEDLE_ADS_CREDENTIAL", "removed-secret")
+	_, err := optionsFromConfig(map[string]interface{}{UpstreamURLKey: "https://source.example"})
+	if err == nil || !strings.Contains(err.Error(), "APIKey") || strings.Contains(err.Error(), "removed-secret") {
+		t.Fatalf("legacy environment: %v", err)
 	}
 }
 
@@ -91,14 +54,14 @@ func TestAPIKeyNeverAppearsInErrorsOrDumps(t *testing.T) {
 	const secret = "unique-private-api-key-371"
 	t.Setenv("SPDL_API_KEY", "environment-key")
 	t.Setenv("SPDL_POLICY_SOURCE_API_KEY", "environment-key")
-	for _, key := range []string{UpstreamURLKey, APIKeyKey, InstanceNameKey, RequestTimeoutKey, CredentialFileKey, PublicKeysKey, TransportKey} {
+	for _, key := range []string{UpstreamURLKey, APIKeyKey, "InstanceName", RequestTimeoutKey, CredentialFileKey, PublicKeysKey, TransportKey} {
 		props := fixture.storeProperties()
 		props[APIKeyKey] = secret
 		if key == UpstreamURLKey {
-			props[key] = "https://" + secret
+			props[key] = "http://" + secret
 		} else if key == APIKeyKey {
 			props[key] = []string{secret}
-		} else if key == InstanceNameKey {
+		} else if key == "InstanceName" {
 			props[key] = "-" + secret
 		} else {
 			props[key] = secret
@@ -139,7 +102,8 @@ func TestAPIKeyNeverAppearsInErrorsOrDumps(t *testing.T) {
 	}
 }
 
-func TestLegacyFileExampleIsUnaffected(t *testing.T) {
+func TestEngineWithoutPolicySourceIsUnaffected(t *testing.T) {
+	t.Setenv("SPEEDLE_ADS_CREDENTIAL", "obsolete-environment-must-not-affect-file-store")
 	// Load the repository's pre-policy-source configuration verbatim. Only
 	// the working directory supplies its relative ./ps.json policy file.
 	data, err := os.ReadFile("../../cfg/config_file.json")

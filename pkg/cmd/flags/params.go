@@ -545,7 +545,20 @@ func (k *Parameters) ParseFlags(defaultEndpoint string, printVersionInfoFun func
 	k.configOnlyStore = nil
 	if conf != nil && conf.StoreConfig != nil && k.StoreType.Value == "policy-source" {
 		k.configOnlyStore = &cfg.StoreConfig{StoreType: "policy-source", StoreProps: make(map[string]interface{})}
-		for _, key := range []string{"UpstreamURL", "APIKey", "InstanceName"} {
+		for _, key := range []string{"UpstreamURL", "APIKey", "PolicySourceURL", "CredentialFile", "PolicySourcePublicKeys", "Services", "CloudFallbackURL", "CloudCredentialFile", "InstanceName"} {
+			// Properties with a flag binding have already passed through the
+			// normal precedence/conversion path. Removed properties have no
+			// binding and must reach the builder so it can reject them.
+			bound := false
+			for _, property := range storeParamsMap {
+				if property == key {
+					bound = true
+					break
+				}
+			}
+			if bound {
+				continue
+			}
 			if value, exists := conf.StoreConfig.StoreProps[key]; exists {
 				if key == "APIKey" {
 					if text, ok := value.(string); ok {
