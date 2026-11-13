@@ -424,7 +424,7 @@ jobs:
           cd "${RUNNER_TEMP}"
           handoff_guard="${RUNNER_TEMP}/reviewbot-handoff.py"
           git -C "${GITHUB_WORKSPACE}" show "${TRUSTED_SHA}:.github/codex/reviewbot_handoff.py" > "${handoff_guard}"
-          python3 "${handoff_guard}" \
+          python3 -I "${handoff_guard}" \
             "${RUNNER_TEMP}/reviewbot-result.json" \
             "${RUNNER_TEMP}/reviewbot-handoff/report.json"
 
@@ -470,6 +470,7 @@ jobs:
             }
 
       - name: Download validated review handoff from this run only
+        id: handoff
         if: needs.review.result == 'success' && needs.review.outputs.enabled == 'true' && needs.review.outputs.should_review == 'true'
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
@@ -477,7 +478,7 @@ jobs:
           path: ${{ runner.temp }}/reviewbot-handoff
 
       - name: Create ReviewBot review for commit
-        if: needs.review.result == 'success' && needs.review.outputs.enabled == 'true' && needs.review.outputs.should_review == 'true'
+        if: needs.review.result == 'success' && needs.review.outputs.enabled == 'true' && needs.review.outputs.should_review == 'true' && steps.handoff.outcome == 'success'
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         env:
           REVIEWED_COMMIT: ${{ github.event.pull_request.head.sha }}

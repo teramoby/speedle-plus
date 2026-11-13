@@ -39,6 +39,8 @@ test('review text is an artifact, and workflow permissions stay as they were', (
     assert.match(workflow, /if-no-files-found: error/);
     assert.match(workflow, /cd "\$\{RUNNER_TEMP\}"/);
     assert.match(workflow, /git -C "\$\{GITHUB_WORKSPACE\}" show "\$\{TRUSTED_SHA\}:\.github\/codex\/reviewbot_handoff\.py"/);
+    assert.match(workflow, /python3 -I "\$\{handoff_guard\}"/);
+    assert.match(workflow, /id: handoff\n/);
     assert.match(workflow, /rm -rf -- "\$\{RUNNER_TEMP\}\/reviewbot-handoff"/);
     assert.match(workflow, /rm -f -- "\$\{RUNNER_TEMP\}\/reviewbot-handoff\.py"/);
     assert.doesNotMatch(workflow, /actions: write/);
@@ -52,11 +54,14 @@ test('review text is an artifact, and workflow permissions stay as they were', (
   assert.match(reviewWorkflow, / {4}permissions:\n {6}pull-requests: write\n/);
   assert.match(reviewWorkflow, / {4}permissions:\n {6}actions: read\n {6}contents: write\n {6}pull-requests: write\n/);
   assert.match(reviewWorkflow, /if: always\(\) && !cancelled\(\) && needs\.review\.result != 'skipped'/);
+  assert.match(reviewWorkflow, /steps\.handoff\.outcome == 'success'/);
   assert.match(commandWorkflow, /^permissions:\n  contents: read\n/m);
   assert.match(commandWorkflow, / {4}permissions:\n {6}contents: read\n {6}issues: write\n {6}pull-requests: write\n/);
   assert.match(commandWorkflow, / {4}permissions:\n {6}contents: read\n {6}issues: read\n {6}pull-requests: read\n/);
   assert.match(commandWorkflow, / {4}permissions:\n {6}issues: write\n {6}pull-requests: write\n/);
   assert.match(commandWorkflow, /if: always\(\) && needs\.prepare\.outputs\.should_run == 'true'/);
+  assert.match(commandWorkflow, /DOWNLOAD_OUTCOME: \$\{\{ steps\.handoff\.outcome \}\}/);
+  assert.match(commandWorkflow, /DOWNLOAD_OUTCOME !== "success"/);
   assert.match(inlineWorkflow, /^permissions: \{\}$/m);
   assert.doesNotMatch(inlineWorkflow, /upload-artifact|download-artifact|toJSON\(secrets\)/);
 });
@@ -136,6 +141,7 @@ async function runPublisher(script, {body, raw, link, env = {}} = {}) {
       REPLY_TO_COMMENT_ID: '100',
       SOURCE_KIND: 'issue_comment',
       SOURCE_URL: 'https://github.com/teramoby/speedle-plus/pull/70#issuecomment-123',
+      DOWNLOAD_OUTCOME: 'success',
       ...env,
     }};
     let thrown;
@@ -195,6 +201,14 @@ for (const [name, script] of publishers) {
     assert.doesNotMatch(JSON.stringify(result.created[0]), /synthetic-|PRIVATE/);
   });
 }
+
+test('command publisher does not read a planted handoff when download failed', async () => {
+  const script = scriptFor(commandWorkflow, 'Publish idempotent response');
+  const result = await runPublisher(script, {body: report(), env: {DOWNLOAD_OUTCOME: 'failure'}});
+  assert.equal(result.created.length, 0);
+  assert.equal(result.comments.length, 0);
+  assert.match(result.thrown?.message || '', /no report published/);
+});
 
 test('analysis that does not produce a publishable outcome fails instead of skipping', async () => {
   const automatic = scriptFor(reviewWorkflow, 'Require a completed analysis');

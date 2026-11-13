@@ -596,7 +596,7 @@ jobs:
           cd "${RUNNER_TEMP}"
           handoff_guard="${RUNNER_TEMP}/reviewbot-handoff.py"
           git -C "${GITHUB_WORKSPACE}" show "${TRUSTED_SHA}:.github/codex/reviewbot_handoff.py" > "${handoff_guard}"
-          python3 "${handoff_guard}" \
+          python3 -I "${handoff_guard}" \
             "${RUNNER_TEMP}/reviewbot-command-result.json" \
             "${RUNNER_TEMP}/reviewbot-handoff/report.json"
 
@@ -639,6 +639,7 @@ jobs:
             }
 
       - name: Download validated review handoff from this run only
+        id: handoff
         if: needs.analyze.result == 'success' && needs.analyze.outputs.enabled == 'true'
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
@@ -660,12 +661,16 @@ jobs:
           REPLY_TO_COMMENT_ID: ${{ needs.prepare.outputs.reply_to_comment_id }}
           SOURCE_KIND: ${{ needs.prepare.outputs.source_kind }}
           SOURCE_URL: ${{ needs.prepare.outputs.source_url }}
+          DOWNLOAD_OUTCOME: ${{ steps.handoff.outcome }}
         with:
           github-token: ${{ github.token }}
           script: |
             let modelMessage = "";
             let modelId = "";
             if (process.env.ANALYZE_RESULT === "success" && process.env.REVIEWBOT_ENABLED === "true") {
+              if (process.env.DOWNLOAD_OUTCOME !== "success") {
+                throw new Error("ReviewBot handoff is missing, oversized, malformed or bound to a different review; no report published.");
+              }
               const fs = require("node:fs");
               const file = `${process.env.RUNNER_TEMP}/reviewbot-handoff/report.json`;
               let report;

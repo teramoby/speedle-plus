@@ -99,6 +99,7 @@ function harness(options = {}) {
     COMMAND: 'review', PULL_NUMBER: '7', HEAD_SHA: head, ACTOR: human.login,
     COMMENT_ID: '123', REPLY_TO_COMMENT_ID: '100', SOURCE_KIND: 'issue_comment',
     SOURCE_URL: comment.html_url, GITHUB_RUN_ID: '999', GITHUB_RUN_ATTEMPT: '1',
+    DOWNLOAD_OUTCOME: 'success',
     ...(options.env || {}),
   };
   const core = {
