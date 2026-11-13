@@ -51,22 +51,18 @@ const (
 
 	// Command line flag names. Each flag feeds the property key above through
 	// the shared GetStoreParams mechanism.
-	CacheDirFlag              = "policy-source-cache-dir"
-	RequestTimeoutFlag        = "policy-source-request-timeout"
-	CAFileFlag                = "policy-source-ca"
-	ClientCertFileFlag        = "policy-source-client-cert"
-	ClientKeyFileFlag         = "policy-source-client-key"
-	HeartbeatIntervalFlag     = "policy-source-heartbeat-interval"
-	StaleAfterFlag            = "policy-source-stale-after"
-	StopAfterFlag             = "policy-source-stop-after"
-	FallbackWhileSyncingFlag  = "policy-source-fallback-while-syncing"
-	TransportFlag             = "policy-source-transport"
-	ServeDownstreamFlag       = "policy-source-serve-downstream"
-	DownstreamCredentialsFlag = "policy-source-downstream-credentials-file"
-	MaxDownstreamFlag         = "policy-source-max-downstream"
-	MaxChainDepthFlag         = "policy-source-max-chain-depth"
-	MaxConnectionsFlag        = "policy-source-max-connections-per-downstream"
-	defaultBootstrapWindow    = time.Minute
+	CacheDirFlag             = "policy-source-cache-dir"
+	RequestTimeoutFlag       = "policy-source-request-timeout"
+	CAFileFlag               = "policy-source-ca"
+	ClientCertFileFlag       = "policy-source-client-cert"
+	ClientKeyFileFlag        = "policy-source-client-key"
+	HeartbeatIntervalFlag    = "policy-source-heartbeat-interval"
+	StaleAfterFlag           = "policy-source-stale-after"
+	StopAfterFlag            = "policy-source-stop-after"
+	FallbackWhileSyncingFlag = "policy-source-fallback-while-syncing"
+	TransportFlag            = "policy-source-transport"
+	ServeDownstreamFlag      = "policy-source-serve-downstream"
+	defaultBootstrapWindow   = time.Minute
 )
 
 // Options configures a Store. The builder derives it from store properties;
@@ -119,12 +115,10 @@ type Options struct {
 	// acks trigger immediate passes; zero uses a one-minute safety cadence.
 	ReconcilePeriod time.Duration
 
-	// ServeDownstream enables the proxy protocol from verified mirror copies.
-	ServeDownstream             bool
-	DownstreamCredentialsFile   string
-	MaxDownstream               int
-	MaxConnectionsPerDownstream int
-	MaxChainDepth               int
+	// ServeDownstream enables the downstream mTLS listener from verified
+	// mirror copies. The listener's endpoint, certificate, key, client CA and
+	// CRL sources are server configuration, not store properties.
+	ServeDownstream bool
 }
 
 // Builder creates policy-source stores.
@@ -133,21 +127,17 @@ type Builder struct{}
 // GetStoreParams maps flag names to store property keys.
 func (Builder) GetStoreParams() map[string]string {
 	return map[string]string{
-		CacheDirFlag:              CacheDirKey,
-		RequestTimeoutFlag:        RequestTimeoutKey,
-		CAFileFlag:                CAFileKey,
-		ClientCertFileFlag:        ClientCertFileKey,
-		ClientKeyFileFlag:         ClientKeyFileKey,
-		HeartbeatIntervalFlag:     HeartbeatIntervalKey,
-		StaleAfterFlag:            StaleAfterKey,
-		StopAfterFlag:             StopAfterKey,
-		FallbackWhileSyncingFlag:  FallbackWhileSyncingKey,
-		TransportFlag:             TransportKey,
-		ServeDownstreamFlag:       ServeDownstreamKey,
-		DownstreamCredentialsFlag: DownstreamCredentialsKey,
-		MaxDownstreamFlag:         MaxDownstreamKey,
-		MaxChainDepthFlag:         MaxChainDepthKey,
-		MaxConnectionsFlag:        MaxConnectionsKey,
+		CacheDirFlag:             CacheDirKey,
+		RequestTimeoutFlag:       RequestTimeoutKey,
+		CAFileFlag:               CAFileKey,
+		ClientCertFileFlag:       ClientCertFileKey,
+		ClientKeyFileFlag:        ClientKeyFileKey,
+		HeartbeatIntervalFlag:    HeartbeatIntervalKey,
+		StaleAfterFlag:           StaleAfterKey,
+		StopAfterFlag:            StopAfterKey,
+		FallbackWhileSyncingFlag: FallbackWhileSyncingKey,
+		TransportFlag:            TransportKey,
+		ServeDownstreamFlag:      ServeDownstreamKey,
 	}
 }
 
@@ -214,7 +204,6 @@ func optionsFromConfig(config map[string]interface{}) (options Options, err erro
 		{CAFileKey, &options.CAFile},
 		{ClientCertFileKey, &options.ClientCertFile},
 		{ClientKeyFileKey, &options.ClientKeyFile},
-		{DownstreamCredentialsKey, &options.DownstreamCredentialsFile},
 	} {
 		value, _, err := stringProperty(config, property.key)
 		if err != nil {
@@ -261,23 +250,6 @@ func optionsFromConfig(config map[string]interface{}) (options Options, err erro
 		return options, err
 	}
 	options.ServeDownstream = serveDownstream
-	if options.ServeDownstream && options.DownstreamCredentialsFile == "" {
-		return options, errors.New(errors.ConfigError, "DownstreamCredentialsFile is required when ServeDownstream is true")
-	}
-	for _, property := range []struct {
-		key    string
-		target *int
-	}{
-		{MaxDownstreamKey, &options.MaxDownstream},
-		{MaxChainDepthKey, &options.MaxChainDepth},
-		{MaxConnectionsKey, &options.MaxConnectionsPerDownstream},
-	} {
-		value, err := intProperty(config, property.key)
-		if err != nil {
-			return options, err
-		}
-		*property.target = value
-	}
 
 	return options, nil
 }
@@ -352,36 +324,6 @@ func boolProperty(config map[string]interface{}, key string) (bool, bool, error)
 	}
 }
 
-func intProperty(config map[string]interface{}, key string) (int, error) {
-	value, exists := config[key]
-	if !exists || value == nil {
-		return 0, nil
-	}
-	switch typed := value.(type) {
-	case int:
-		return typed, nil
-	case int64:
-		return int(typed), nil
-	case float64:
-		converted := int(typed)
-		if float64(converted) != typed {
-			return 0, errors.Errorf(errors.ConfigError, "configure item %s must be an integer", key)
-		}
-		return converted, nil
-	case string:
-		if strings.TrimSpace(typed) == "" {
-			return 0, nil
-		}
-		parsed, err := strconv.Atoi(strings.TrimSpace(typed))
-		if err != nil {
-			return 0, errors.Errorf(errors.ConfigError, "configure item %s must be an integer", key)
-		}
-		return parsed, nil
-	default:
-		return 0, errors.Errorf(errors.ConfigError, "configure item %s must be an integer, got %T", key, value)
-	}
-}
-
 func durationProperty(config map[string]interface{}, key string) (time.Duration, error) {
 	text, set, err := stringProperty(config, key)
 	if err != nil || !set || strings.TrimSpace(text) == "" {
@@ -410,11 +352,7 @@ func init() {
 	pflag.String(StopAfterFlag, "", "Store config: threshold after which an instance stops serving, for example 120s.")
 	pflag.String(FallbackWhileSyncingFlag, "true", "Store config: route authorization requests for a syncing service to Speedle Cloud.")
 	pflag.String(TransportFlag, "auto", "Store config: notification transport: auto, websocket or longpoll.")
-	pflag.String(ServeDownstreamFlag, "false", "Store config: serve the policy-source protocol to downstream ADS instances.")
-	pflag.String(DownstreamCredentialsFlag, "", "Store config: downstream credential file (0600), reloaded on SIGHUP.")
-	pflag.String(MaxDownstreamFlag, "", "Store config: maximum distinct downstream instances.")
-	pflag.String(MaxChainDepthFlag, "", "Store config: maximum proxy chain depth.")
-	pflag.String(MaxConnectionsFlag, "", "Store config: maximum active channels and held polls per downstream credential.")
+	pflag.String(ServeDownstreamFlag, "false", "Store config: serve the policy-source protocol to downstream ADS instances on the downstream mTLS listener.")
 
 	store.Register(StoreType, Builder{})
 }
@@ -446,6 +384,10 @@ func rejectRemovedConfig(config map[string]interface{}) error {
 		{CloudFallbackURLKey, "use UpstreamURL"},
 		{CloudCredentialFileKey, "use APIKey in the configuration file"},
 		{"InstanceName", "the ADS manages its persisted instance ID"},
+		{DownstreamCredentialsKey, "downstream clients authenticate with mTLS; configure serverConfig downstreamClientCAPath and the downstream client certificate instead"},
+		{MaxDownstreamKey, "there is no downstream fan-out limit"},
+		{MaxChainDepthKey, "there is no chain depth limit"},
+		{MaxConnectionsKey, "there is no downstream connection limit"},
 	} {
 		if _, exists := config[property.key]; exists {
 			return errors.Errorf(errors.ConfigError, "%s has been removed; %s", property.key, property.replacement)

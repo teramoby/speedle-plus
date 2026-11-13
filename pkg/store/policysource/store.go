@@ -12,6 +12,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	"github.com/teramoby/speedle-plus/api/pms"
+	"github.com/teramoby/speedle-plus/pkg/adsproxy"
 	"github.com/teramoby/speedle-plus/pkg/adsync"
 	"github.com/teramoby/speedle-plus/pkg/errors"
 	"github.com/teramoby/speedle-plus/pkg/pdl"
@@ -77,6 +78,18 @@ type Store struct {
 	// hookMu guards the test-only hooks below. Production leaves them nil.
 	hookMu         sync.Mutex
 	beforeDiscover func()
+
+	// downstream serves the verified copies to direct children when
+	// ServeDownstream is enabled. It is nil otherwise.
+	downstream *downstreamServing
+}
+
+// downstreamServing is the relay side of a policy-source store: the mirror
+// that holds verified copies for downstream instances and the protocol server
+// that serves them.
+type downstreamServing struct {
+	mirror *adsproxy.Mirror
+	server *adsproxy.Server
 }
 
 // serviceCopy is one verified service, parsed and ready to publish.
@@ -116,11 +129,6 @@ func Open(ctx context.Context, options Options) (_ *Store, err error) {
 	}
 	if options.APIKey == "" {
 		return nil, errors.New(errors.ConfigError, "configure item APIKey is required")
-	}
-	if options.ServeDownstream {
-		// Serving downstream instances needs the relay identity of the
-		// cascade design; until then a relay cannot be configured.
-		return nil, errors.New(errors.ConfigError, "ServeDownstream is not supported yet")
 	}
 	if options.InstanceID != "" && !adsync.ValidInstanceID(options.InstanceID) {
 		return nil, errors.New(errors.ConfigError, "policy source InstanceID must be a UUIDv7")
@@ -173,6 +181,17 @@ func Open(ctx context.Context, options Options) (_ *Store, err error) {
 		if err := machine.Track(service.ID, service.Name); err != nil {
 			log.Warnf("policy-source store ignores cached service %q: %v", service.ID, err)
 		}
+	}
+	if options.ServeDownstream {
+		downstream, err := newDownstreamServing(client, options)
+		if err != nil {
+			return nil, err
+		}
+		store.downstream = downstream
+		syncer.SetObserver(adsync.SyncObserver{
+			OnSnapshot: store.observeDownstreamSnapshot,
+			OnChanges:  store.observeDownstreamChanges,
+		})
 	}
 	if options.StartRuntime {
 		return store, nil
@@ -342,6 +361,7 @@ func (s *Store) syncService(ctx context.Context, service adsync.Service) error {
 	}
 	state, err := s.syncer.SyncAtLeast(ctx, service, minRevision)
 	if err != nil {
+		s.withholdDownstream(service.ID)
 		if !stderrors.Is(err, adsync.ErrUnauthorized) && !stderrors.Is(err, adsync.ErrForbidden) {
 			s.machine.SyncFailed(service.ID, err)
 		}
@@ -391,26 +411,99 @@ func (s *Store) installFetched(service adsync.Service, state *adsync.ServiceStat
 	// A parsed copy is not yet visible to the evaluator. ApplyAttempt is
 	// deferred until the exact published generation has completed its
 	// FULL_RELOAD.
+	s.publishDownstream(state)
 	return nil
+}
+
+// observeDownstreamSnapshot feeds an accepted snapshot to the downstream
+// mirror, so the mirror is anchored to the exact bytes the source served.
+func (s *Store) observeDownstreamSnapshot(response *adsync.SnapshotResponse) {
+	if s.downstream == nil || response == nil {
+		return
+	}
+	if err := s.downstream.mirror.ApplySnapshot(response); err != nil {
+		log.Warnf("policy-source could not mirror service %q for downstream instances: %v", response.ServiceID, err)
+		s.downstream.mirror.MarkUnavailable(response.ServiceID)
+	}
+}
+
+// observeDownstreamChanges feeds an accepted change page to the downstream
+// mirror, so downstream instances can resume incrementally.
+func (s *Store) observeDownstreamChanges(page *adsync.ChangesResponse) {
+	if s.downstream == nil || page == nil {
+		return
+	}
+	if err := s.downstream.mirror.ApplyChanges(page); err != nil {
+		log.Warnf("policy-source could not mirror changes for service %q: %v", page.ServiceID, err)
+		s.downstream.mirror.MarkUnavailable(page.ServiceID)
+	}
+}
+
+// publishDownstream mirrors one verified copy for downstream instances. When
+// the observer already fed the mirror to this exact revision, the existing
+// change log is kept instead of replacing it with a snapshot. A copy the mirror
+// refuses is withheld from downstream serving rather than served stale.
+func (s *Store) publishDownstream(state *adsync.ServiceState) {
+	if s.downstream == nil || state == nil {
+		return
+	}
+	if info, found := s.downstream.mirror.CurrentInfo(state.ServiceID); found &&
+		info.Epoch == state.Epoch && info.Revision == state.Revision && info.StateHash == state.StateHash {
+		s.downstream.mirror.MarkAvailable(state.ServiceID)
+		return
+	}
+	response := &adsync.SnapshotResponse{
+		ServiceID:  state.ServiceID,
+		SourceID:   state.SourceID,
+		Epoch:      state.Epoch,
+		Revision:   state.Revision,
+		StateHash:  state.StateHash,
+		CommitHash: state.CommitHash,
+		Snapshot:   state.Snapshot,
+	}
+	if err := s.downstream.mirror.ApplySnapshot(response); err != nil {
+		log.Warnf("policy-source could not mirror service %q for downstream instances: %v", state.ServiceID, err)
+		s.downstream.mirror.MarkUnavailable(state.ServiceID)
+		return
+	}
+	s.downstream.mirror.MarkAvailable(state.ServiceID)
+}
+
+// withholdDownstream stops serving one service to downstream instances while
+// the local copy is not confirmed at the advertised head.
+func (s *Store) withholdDownstream(serviceID string) {
+	if s.downstream != nil {
+		s.downstream.mirror.MarkUnavailable(serviceID)
+	}
+}
+
+// removeDownstream stops serving one removed service and keeps the deletion
+// guard for a delayed snapshot.
+func (s *Store) removeDownstream(serviceID string) {
+	if s.downstream != nil {
+		s.downstream.mirror.RemoveService(serviceID)
+	}
 }
 
 // dropCopy deletes one local copy while the service remains tracked, for
 // example during a forced resync.
 func (s *Store) dropCopy(serviceID string) {
 	s.mu.Lock()
-	defer s.mu.Unlock()
 	delete(s.copies, serviceID)
+	s.mu.Unlock()
+	s.withholdDownstream(serviceID)
 }
 
 // removeCopy deletes a removed service and keeps its request path unavailable
 // until the evaluator acknowledges the assembly without that service.
 func (s *Store) removeCopy(serviceID string) {
 	s.mu.Lock()
-	defer s.mu.Unlock()
 	if copied := s.copies[serviceID]; copied != nil {
 		s.pendingRemoved[serviceID] = copied.service.Name
 	}
 	delete(s.copies, serviceID)
+	s.mu.Unlock()
+	s.removeDownstream(serviceID)
 }
 
 // guardRenames records the previous name of every selected service whose

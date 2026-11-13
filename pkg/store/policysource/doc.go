@@ -17,12 +17,19 @@
 // request carries the key and the instance ID, a UUIDv7 the ADS generates on
 // its first request and keeps in CacheDir; without CacheDir every start is a
 // new instance. The upstream registers the instance on its first channel
-// request and assigns its services. ServeDownstream is not supported yet.
+// request and assigns its services. ServeDownstream enables the downstream
+// mTLS listener: the store mirrors each verified copy and exposes the
+// policy-source protocol handler (DownstreamHandler) for the process to serve
+// on its dedicated listener. The listener's endpoint, certificate, key, client
+// CA and CRL sources are server configuration; the store has no fan-out,
+// chain-depth or connection limits.
 //
 // PolicySourceURL, CredentialFile, SPEEDLE_ADS_CREDENTIAL,
-// PolicySourcePublicKeys, Services, CloudFallbackURL, CloudCredentialFile and
-// InstanceName are rejected. Configure UpstreamURL and APIKey instead; select
-// services in the Cloud console. Engines using other store types are unaffected.
+// PolicySourcePublicKeys, Services, CloudFallbackURL, CloudCredentialFile,
+// InstanceName, DownstreamCredentialsFile, MaxDownstream, MaxChainDepth and
+// MaxConnectionsPerDownstream are rejected. Configure UpstreamURL and APIKey
+// instead; select services in the Cloud console. Engines using other store
+// types are unaffected.
 //
 // # Change notification
 //

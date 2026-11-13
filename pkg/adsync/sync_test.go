@@ -425,3 +425,59 @@ func TestServiceStateCloneIsIndependent(t *testing.T) {
 		t.Error("clone changed role policies")
 	}
 }
+
+func TestSyncObserverSeesVerifiedResponses(t *testing.T) {
+	service := newFixtureService(testServiceID1, "books")
+	fixture := newFixture(t, service)
+	fixture.source.configure(func(source *fixtureSource) { source.pageSize = 2 })
+	syncer := fixture.newSyncer("", nil)
+
+	var (
+		snapshots int
+		pages     []uint64
+	)
+	syncer.SetObserver(SyncObserver{
+		OnSnapshot: func(response *SnapshotResponse) {
+			if response.ServiceID != service.ID {
+				t.Errorf("observed snapshot for %q", response.ServiceID)
+			}
+			snapshots++
+		},
+		OnChanges: func(page *ChangesResponse) {
+			pages = append(pages, page.To)
+		},
+	})
+
+	if state := syncFixtureService(t, syncer, "books"); state.Revision != 1 {
+		t.Fatalf("initial revision = %d", state.Revision)
+	}
+	if snapshots != 1 || len(pages) != 0 {
+		t.Fatalf("observations after the first sync = %d snapshots, %v pages", snapshots, pages)
+	}
+
+	for index := 0; index < 3; index++ {
+		service.publish(t, Change{Op: "upsert", Kind: "authz",
+			ID:   "01HF7YAT00000000000000020" + string(rune('1'+index)),
+			Name: stringPointer("policy-" + string(rune('1'+index))), SPDL: stringPointer("grant read")})
+	}
+	if state := syncFixtureService(t, syncer, "books"); state.Revision != 4 {
+		t.Fatalf("revision after changes = %d", state.Revision)
+	}
+	if snapshots != 1 {
+		t.Errorf("snapshots after change sync = %d, want 1", snapshots)
+	}
+	if len(pages) != 2 || pages[len(pages)-1] != 4 {
+		t.Errorf("observed pages = %v", pages)
+	}
+
+	// Disabling the observer stops reporting.
+	syncer.SetObserver(SyncObserver{})
+	service.publish(t, Change{Op: "upsert", Kind: "authz", ID: "01HF7YAT000000000000000299",
+		Name: stringPointer("policy-4"), SPDL: stringPointer("grant read")})
+	if state := syncFixtureService(t, syncer, "books"); state.Revision != 5 {
+		t.Fatalf("revision after disabling = %d", state.Revision)
+	}
+	if len(pages) != 2 {
+		t.Errorf("observer ran after being disabled: %v", pages)
+	}
+}

@@ -9,6 +9,7 @@ import (
 	"time"
 
 	log "github.com/sirupsen/logrus"
+	"github.com/teramoby/speedle-plus/pkg/adsproxy"
 	"github.com/teramoby/speedle-plus/pkg/adsync"
 	"github.com/teramoby/speedle-plus/pkg/errors"
 )
@@ -53,10 +54,11 @@ func (s *Store) startRuntime() error {
 		seenCommands: make(map[string]struct{}),
 	}
 	channel, err := adsync.NewChannel(s.client, adsync.ChannelOptions{
-		AgentVersion: agentVersion,
-		Machine:      s.machine,
-		Transport:    s.options.Transport,
-		Fallback:     s.fallbackState,
+		AgentVersion:    agentVersion,
+		Machine:         s.machine,
+		Transport:       s.options.Transport,
+		Fallback:        s.fallbackState,
+		DownstreamCount: s.downstreamSessionCount,
 		OnNotify: func(adsync.Notify) {
 			s.triggerSync()
 		},
@@ -267,19 +269,64 @@ func (s *Store) fallbackState() adsync.FallbackState {
 	return state
 }
 
-// DownstreamHandler returns the mounted proxy protocol handler. It is always
-// nil: serving downstream instances is not supported yet.
-func (s *Store) DownstreamHandler() http.Handler { return nil }
+// newDownstreamServing builds the mirror and protocol server of a relay. The
+// protocol server is served only by the dedicated downstream TLS listener,
+// never by the application listener.
+func newDownstreamServing(client *adsync.Client, options Options) (*downstreamServing, error) {
+	mirror, err := adsproxy.NewMirror(adsproxy.MirrorOptions{})
+	if err != nil {
+		return nil, errors.Wrap(err, errors.ConfigError, "invalid downstream mirror configuration")
+	}
+	instanceID, err := client.InstanceID()
+	if err != nil {
+		return nil, errors.Wrap(err, errors.ConfigError,
+			"a persisted instance ID is required to serve downstream instances")
+	}
+	server, err := adsproxy.NewServer(adsproxy.Config{
+		InstanceID:        instanceID,
+		Mirror:            mirror,
+		HeartbeatInterval: options.HeartbeatInterval,
+		StaleAfter:        options.StaleAfter,
+		StopAfter:         options.StopAfter,
+	})
+	if err != nil {
+		return nil, errors.Wrap(err, errors.ConfigError, "invalid downstream server configuration")
+	}
+	return &downstreamServing{mirror: mirror, server: server}, nil
+}
 
-// ReloadDownstreamCredentials applies a SIGHUP credential reload. Without a
-// downstream server there is nothing to reload.
-func (s *Store) ReloadDownstreamCredentials() error { return nil }
+// DownstreamHandler returns the policy-source protocol handler a relay serves
+// on its dedicated downstream TLS listener. It is nil for a store that does
+// not serve downstream instances.
+func (s *Store) DownstreamHandler() http.Handler {
+	if s.downstream == nil {
+		return nil
+	}
+	return s.downstream.server
+}
+
+// DownstreamCount returns the number of distinct direct downstream sessions
+// currently connected. The relay reports it in its own heartbeat.
+func (s *Store) DownstreamCount() int {
+	if s.downstream == nil {
+		return 0
+	}
+	return s.downstream.server.DownstreamCount()
+}
+
+// downstreamSessionCount is the heartbeat callback of the owned channel.
+func (s *Store) downstreamSessionCount() uint64 {
+	return uint64(s.DownstreamCount())
+}
 
 // Close stops and joins the channel and reconciliation loops before closing
 // downstream sessions and the evaluator watch. It is safe to call repeatedly.
 func (s *Store) Close() error {
 	s.closeOnce.Do(func() {
 		s.StopWatch()
+		if s.downstream != nil {
+			s.downstream.server.Close()
+		}
 		s.runtimeMu.Lock()
 		runtime := s.runtime
 		s.runtimeMu.Unlock()

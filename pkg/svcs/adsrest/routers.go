@@ -6,7 +6,6 @@ package adsrest
 import (
 	"net/http"
 
-	"github.com/teramoby/speedle-plus/pkg/adsync"
 	"github.com/teramoby/speedle-plus/pkg/eval"
 	"github.com/teramoby/speedle-plus/pkg/svcs"
 
@@ -100,26 +99,7 @@ func NewRouter(evaluator eval.InternalEvaluator) (*mux.Router, error) {
 			Name(route.Name).
 			Handler(handler)
 	}
-	if downstream := downstreamHandler(evaluator); downstream != nil {
-		router.Path(adsync.APIPrefix).Handler(downstream)
-		router.PathPrefix(adsync.APIPrefix + "/").Handler(downstream)
-	}
-
+	// The downstream policy-source protocol is served only by the dedicated
+	// downstream mTLS listener, never by the application listener.
 	return router, nil
-}
-
-// downstreamHandler returns the policy-source protocol handler of a store that
-// serves downstream instances. Other stores return nil and keep the original
-// route table unchanged. The assertion is made here, not in pkg/eval, so the
-// offline evaluator does not link the HTTP serving code.
-func downstreamHandler(evaluator eval.InternalEvaluator) http.Handler {
-	provider, ok := evaluator.(interface{ DistributionStore() any })
-	if !ok {
-		return nil
-	}
-	server, ok := provider.DistributionStore().(interface{ DownstreamHandler() http.Handler })
-	if !ok {
-		return nil
-	}
-	return server.DownstreamHandler()
 }

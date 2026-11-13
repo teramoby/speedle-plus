@@ -397,7 +397,7 @@ func TestRuntimeCommandsRemovalAndRevocation(t *testing.T) {
 	defer ads.Close()
 	agent := &e2eAgent{store: ads}
 	e2eWaitAllInSync(t, agent, "books", "orders")
-	if ads.DownstreamHandler() != nil || ads.ReloadDownstreamCredentials() != nil {
+	if ads.DownstreamHandler() != nil || ads.DownstreamCount() != 0 {
 		t.Fatal("a store without a downstream server exposes one")
 	}
 	if state := ads.fallbackState(); state.Active || len(state.Services) != 0 {
