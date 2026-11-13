@@ -20,7 +20,8 @@ type AuthzHandlers struct {
 
 // DownstreamHandler composes the complete route table of the downstream
 // listener: the policy-source protocol and the three POST authorization
-// operations. No policy management, health or diagnostic route is reachable
+// operations. data must be a *Server, whose availability guard also protects
+// authorization responses. No policy management, health or diagnostic route is reachable
 // through it.
 //
 // Every route is guarded by the same verified-client-certificate check. The
@@ -28,8 +29,9 @@ type AuthzHandlers struct {
 // the single composition point for the route table, so it stays fail closed if
 // it is ever mounted on another listener or behind a TLS-terminating proxy.
 func DownstreamHandler(data http.Handler, authz AuthzHandlers) (http.Handler, error) {
-	if data == nil {
-		return nil, fmt.Errorf("%w: a policy-source handler is required", ErrConfig)
+	server, ok := data.(*Server)
+	if !ok || server == nil {
+		return nil, fmt.Errorf("%w: a policy-source Server is required", ErrConfig)
 	}
 	if authz.IsAllowed == nil || authz.AllGrantedRoles == nil || authz.AllGrantedPermissions == nil {
 		return nil, fmt.Errorf("%w: all three authorization handlers are required", ErrConfig)
@@ -37,9 +39,14 @@ func DownstreamHandler(data http.Handler, authz AuthzHandlers) (http.Handler, er
 	mux := http.NewServeMux()
 	mux.Handle(adsync.APIPrefix, data)
 	mux.Handle(adsync.APIPrefix+"/", data)
-	mux.Handle("POST "+svcs.PolicyAtzPath+"is-allowed", authz.IsAllowed)
-	mux.Handle("POST "+svcs.PolicyAtzPath+"all-granted-roles", authz.AllGrantedRoles)
-	mux.Handle("POST "+svcs.PolicyAtzPath+"all-granted-permissions", authz.AllGrantedPermissions)
+	guard := func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			server.serveData(w, r, next)
+		})
+	}
+	mux.Handle("POST "+svcs.PolicyAtzPath+"is-allowed", guard(authz.IsAllowed))
+	mux.Handle("POST "+svcs.PolicyAtzPath+"all-granted-roles", guard(authz.AllGrantedRoles))
+	mux.Handle("POST "+svcs.PolicyAtzPath+"all-granted-permissions", guard(authz.AllGrantedPermissions))
 	return requireVerifiedClientCertificate(mux), nil
 }
 

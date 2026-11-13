@@ -55,8 +55,19 @@ func TestNewDownstreamListenerRequiresCompleteConfiguration(t *testing.T) {
 		t.Fatalf("evaluator: %v", err)
 	}
 	defer closeEvaluator(evaluator)
+	mirror, err := adsproxy.NewMirror(adsproxy.MirrorOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	server, err := adsproxy.NewServer(adsproxy.Config{
+		InstanceID: "0193b124-9552-7a33-8a1a-000000000001", Mirror: mirror,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer server.Close()
 	wrapped := downstreamEvaluator{InternalEvaluator: evaluator, store: downstreamStore{
-		handler: http.NotFoundHandler(),
+		handler: server,
 	}}
 
 	if _, err := newDownstreamListener(&flags.Parameters{}, wrapped); !errors.Is(err, adsproxy.ErrConfig) {

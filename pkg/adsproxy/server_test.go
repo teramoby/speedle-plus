@@ -350,6 +350,9 @@ func TestDownstreamHandlerValidation(t *testing.T) {
 	if _, err := DownstreamHandler(server, AuthzHandlers{IsAllowed: http.HandlerFunc(authz.isAllowed)}); err == nil {
 		t.Error("partial authorization handlers were accepted")
 	}
+	if _, err := DownstreamHandler(http.NotFoundHandler(), AuthzHandlers{}); err == nil {
+		t.Error("a data handler without an availability guard was accepted")
+	}
 }
 
 func TestIfNoneMatch(t *testing.T) {

@@ -18,16 +18,18 @@ import (
 // every mounted operation rejects a request whose connection did not present a
 // verified client certificate, and no handler runs.
 func TestDownstreamHandlerRequiresVerifiedClientCertificate(t *testing.T) {
-	dataCalls, authzCalls := 0, 0
+	authzCalls := 0
+	server, err := NewServer(Config{InstanceID: testProxyID, Mirror: newTestMirror(t, nil)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer server.Close()
 	record := func(w http.ResponseWriter, _ *http.Request) {
 		authzCalls++
 		w.WriteHeader(http.StatusOK)
 	}
 	handler, err := DownstreamHandler(
-		http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-			dataCalls++
-			w.WriteHeader(http.StatusOK)
-		}),
+		server,
 		AuthzHandlers{
 			IsAllowed:             http.HandlerFunc(record),
 			AllGrantedRoles:       http.HandlerFunc(record),
@@ -63,8 +65,8 @@ func TestDownstreamHandlerRequiresVerifiedClientCertificate(t *testing.T) {
 			}
 		}
 	}
-	if dataCalls != 0 || authzCalls != 0 {
-		t.Fatalf("unauthenticated requests reached handlers: data %d authz %d", dataCalls, authzCalls)
+	if authzCalls != 0 {
+		t.Fatalf("unauthenticated requests reached authorization handlers: %d", authzCalls)
 	}
 
 	// The same routes reach their handlers once the connection carries a
@@ -82,7 +84,7 @@ func TestDownstreamHandlerRequiresVerifiedClientCertificate(t *testing.T) {
 			t.Errorf("%s %s with a verified certificate: status %d", route.method, route.path, recorder.Code)
 		}
 	}
-	if dataCalls != 1 || authzCalls != 3 {
-		t.Errorf("verified requests reached handlers: data %d authz %d, want 1 and 3", dataCalls, authzCalls)
+	if authzCalls != 3 {
+		t.Errorf("verified requests reached authorization handlers %d times, want 3", authzCalls)
 	}
 }

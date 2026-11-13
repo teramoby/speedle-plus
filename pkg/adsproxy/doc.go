@@ -28,7 +28,8 @@
 //
 // Server stops distributing while its caller reports the instance paused, or
 // no longer live and therefore unable to vouch for the copies it holds. Data
-// requests then answer 503, the policy-source routes refuse new channels and
+// requests (including the three authorization operations) then answer 503
+// with distribution_paused, the policy-source routes refuse new channels and
 // held polls, established channels close, and a held poll is released instead
 // of waiting out its hold. Distribution resumes without a restart once the
 // instance is live and unpaused again.

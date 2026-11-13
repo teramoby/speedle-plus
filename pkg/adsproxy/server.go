@@ -3,6 +3,7 @@
 package adsproxy
 
 import (
+	"bytes"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
@@ -438,6 +439,82 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	rest := strings.TrimPrefix(path, adsync.APIPrefix)
+	// Channels and held polls guard their confirming writes separately: do
+	// not hold this lock while waiting for a frame or a long-poll notification.
+	if rest != "/channel" && rest != "/channel/poll" {
+		s.serveData(w, r, http.HandlerFunc(s.serveDataRoute))
+		return
+	}
+	s.serveDataRoute(w, r)
+}
+
+// serveData prepares the response before locking: an authorization handler may
+// itself revoke the relay while forwarding upstream. Only the final check and
+// response write must be serialized with pause, stop and Close.
+func (s *Server) serveData(w http.ResponseWriter, r *http.Request, next http.Handler) {
+	w.Header().Set("Cache-Control", "no-store")
+	controller := http.NewResponseController(w)
+	deadline := time.Now().Add(channelWriteTimeout)
+	_ = controller.SetReadDeadline(deadline)
+	_ = controller.SetWriteDeadline(deadline)
+	defer controller.SetReadDeadline(time.Time{})
+	defer controller.SetWriteDeadline(time.Time{})
+	response := &dataResponse{header: make(http.Header)}
+	if s.dataAvailable(response) {
+		next.ServeHTTP(response, r)
+	}
+	s.availabilityMu.RLock()
+	defer s.availabilityMu.RUnlock()
+	// net/http may buffer a small response until ServeHTTP returns. Flush it
+	// before releasing the lock or clearing the write deadline.
+	defer controller.Flush()
+	if !s.dataAvailable(w) {
+		return
+	}
+	for key, values := range response.header {
+		w.Header()[key] = values
+	}
+	status := response.status
+	if status == 0 {
+		status = http.StatusOK
+	}
+	w.WriteHeader(status)
+	_, _ = w.Write(response.body.Bytes())
+}
+
+func (s *Server) dataAvailable(w http.ResponseWriter) bool {
+	if s.isClosed() {
+		writeError(w, http.StatusServiceUnavailable, "source_unavailable", "")
+		return false
+	}
+	if s.distributionUnavailable() {
+		writeError(w, http.StatusServiceUnavailable, "distribution_paused", "")
+		return false
+	}
+	return true
+}
+
+// dataResponse keeps policy/authorization output private until the final
+// availability check. These routes return one finite JSON response, not streams.
+type dataResponse struct {
+	header http.Header
+	status int
+	body   bytes.Buffer
+}
+
+func (w *dataResponse) Header() http.Header { return w.header }
+func (w *dataResponse) WriteHeader(status int) {
+	if w.status == 0 {
+		w.status = status
+	}
+}
+func (w *dataResponse) Write(body []byte) (int, error) {
+	w.WriteHeader(http.StatusOK)
+	return w.body.Write(body)
+}
+
+func (s *Server) serveDataRoute(w http.ResponseWriter, r *http.Request) {
+	rest := strings.TrimPrefix(r.URL.Path, adsync.APIPrefix)
 	switch {
 	case rest == "/services":
 		if r.Method != http.MethodGet {

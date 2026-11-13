@@ -3,8 +3,13 @@
 package adsproxy
 
 import (
+	"crypto/tls"
+	"crypto/x509"
 	"errors"
 	"net/http"
+	"net/http/httptest"
+	"strings"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -12,6 +17,167 @@ import (
 	"github.com/gorilla/websocket"
 	"github.com/teramoby/speedle-plus/pkg/adsync"
 )
+
+type heldDataWriter struct {
+	*httptest.ResponseRecorder
+	entered                     chan struct{}
+	release                     chan struct{}
+	readDeadline, writeDeadline time.Time
+}
+
+func (w *heldDataWriter) WriteHeader(code int) {
+	close(w.entered)
+	<-w.release
+	w.ResponseRecorder.WriteHeader(code)
+}
+
+func (w *heldDataWriter) SetReadDeadline(deadline time.Time) error {
+	if !deadline.IsZero() {
+		w.readDeadline = deadline
+	}
+	return nil
+}
+
+func (w *heldDataWriter) SetWriteDeadline(deadline time.Time) error {
+	if !deadline.IsZero() {
+		w.writeDeadline = deadline
+	}
+	return nil
+}
+
+// Every data route, including conditional snapshots and forwarded authz,
+// must finish its response before a pause/stop or Close can complete.
+func TestDataResponsesSerializeWithDistributionStop(t *testing.T) {
+	for _, transition := range []string{"pause/stop", "close"} {
+		for _, route := range []string{
+			"/services", "/services/" + testServiceID1 + "/state",
+			"/services/" + testServiceID1 + "/snapshot",
+			"/services/" + testServiceID1 + "/snapshot?conditional",
+			"/services/" + testServiceID1 + "/changes?since=1",
+			"/authz-check/v1/is-allowed", "/authz-check/v1/all-granted-roles",
+			"/authz-check/v1/all-granted-permissions",
+		} {
+			t.Run(transition+route, func(t *testing.T) {
+				mirror, books, _ := newPopulatedMirror(t)
+				var paused atomic.Bool
+				server, err := NewServer(Config{InstanceID: testProxyID, Mirror: mirror, Paused: paused.Load})
+				if err != nil {
+					t.Fatal(err)
+				}
+				defer server.Close()
+				authz := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(http.StatusOK) })
+				handler, err := DownstreamHandler(server, AuthzHandlers{authz, authz, authz})
+				if err != nil {
+					t.Fatal(err)
+				}
+				path, method, want := adsync.APIPrefix+route, http.MethodGet, http.StatusOK
+				if strings.HasPrefix(route, "/authz-check/") {
+					path, method = route, http.MethodPost
+				}
+				request := httptest.NewRequest(method, path, nil)
+				if strings.HasSuffix(route, "?conditional") {
+					request.URL.RawQuery = ""
+					request.Header.Set("If-None-Match", snapshotETag(*books.snapshotResponse(t)))
+					want = http.StatusNotModified
+				}
+				cert := &x509.Certificate{Raw: []byte("client")}
+				request.TLS = &tls.ConnectionState{PeerCertificates: []*x509.Certificate{cert}, VerifiedChains: [][]*x509.Certificate{{cert}}}
+				writer := &heldDataWriter{ResponseRecorder: httptest.NewRecorder(), entered: make(chan struct{}), release: make(chan struct{})}
+				var once sync.Once
+				release := func() { once.Do(func() { close(writer.release) }) }
+				defer release()
+				answered := make(chan struct{})
+				go func() { handler.ServeHTTP(writer, request); close(answered) }()
+				select {
+				case <-writer.entered:
+				case <-time.After(5 * time.Second):
+					t.Fatal("response did not reach the writer")
+				}
+				started, changed := make(chan struct{}), make(chan struct{})
+				go func() {
+					close(started)
+					if transition == "close" {
+						server.Close()
+					} else {
+						server.DistributionChange(func() { paused.Store(true) })
+					}
+					close(changed)
+				}()
+				<-started
+				select {
+				case <-changed:
+					t.Fatal("transition completed during a data response")
+				case <-time.After(20 * time.Millisecond):
+				}
+				release()
+				select {
+				case <-answered:
+				case <-time.After(5 * time.Second):
+					t.Fatal("response did not finish")
+				}
+				select {
+				case <-changed:
+				case <-time.After(5 * time.Second):
+					t.Fatal("transition did not finish")
+				}
+				if writer.Code != want {
+					t.Fatalf("response = %d, want %d", writer.Code, want)
+				}
+				if writer.readDeadline.IsZero() || writer.writeDeadline.IsZero() {
+					t.Fatal("response had no network deadline")
+				}
+				recorder := httptest.NewRecorder()
+				handler.ServeHTTP(recorder, request)
+				code := "distribution_paused"
+				if transition == "close" {
+					code = "source_unavailable"
+				}
+				if recorder.Code != http.StatusServiceUnavailable || recorder.Body.String() != `{"error":"`+code+`"}` {
+					t.Fatalf("request after transition = %d %s", recorder.Code, recorder.Body.String())
+				}
+			})
+		}
+	}
+}
+
+// Forwarding can revoke the relay itself. It must neither deadlock on the
+// availability lock nor publish the response prepared before that revocation.
+func TestAuthorizationRevocationDiscardsPreparedResponse(t *testing.T) {
+	mirror, _, _ := newPopulatedMirror(t)
+	var paused atomic.Bool
+	server, err := NewServer(Config{InstanceID: testProxyID, Mirror: mirror, Paused: paused.Load})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer server.Close()
+	authz := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("ETag", "stale")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"allowed":true}`))
+		server.DistributionChange(func() { paused.Store(true) })
+	})
+	handler, err := DownstreamHandler(server, AuthzHandlers{authz, authz, authz})
+	if err != nil {
+		t.Fatal(err)
+	}
+	cert := &x509.Certificate{Raw: []byte("client")}
+	for _, operation := range []string{"is-allowed", "all-granted-roles", "all-granted-permissions"} {
+		server.DistributionChange(func() { paused.Store(false) })
+		request := httptest.NewRequest(http.MethodPost, "/authz-check/v1/"+operation, nil)
+		request.TLS = &tls.ConnectionState{PeerCertificates: []*x509.Certificate{cert}, VerifiedChains: [][]*x509.Certificate{{cert}}}
+		recorder := httptest.NewRecorder()
+		answered := make(chan struct{})
+		go func() { handler.ServeHTTP(recorder, request); close(answered) }()
+		select {
+		case <-answered:
+		case <-time.After(5 * time.Second):
+			t.Fatal("authorization revocation deadlocked")
+		}
+		if recorder.Code != http.StatusServiceUnavailable || recorder.Body.String() != `{"error":"distribution_paused"}` || recorder.Header().Get("ETag") != "" {
+			t.Fatalf("response after revocation = %d %s headers %v", recorder.Code, recorder.Body.String(), recorder.Header())
+		}
+	}
+}
 
 // TestAckIsRefusedOnceDistributionStops proves a confirming ack is abandoned
 // before any frame is written when distribution has already stopped. The nil
