@@ -6,7 +6,6 @@ import (
 	"context"
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 	"time"
 
@@ -119,39 +118,6 @@ func TestOpenValidatesOptions(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			if _, err := Open(nil, options); speedleerrors.Code(err) != speedleerrors.ConfigError {
 				t.Fatalf("error %v, code %s, want %s", err, speedleerrors.Code(err), speedleerrors.ConfigError)
-			}
-		})
-	}
-}
-
-func TestNormalizeServices(t *testing.T) {
-	cases := []struct {
-		name    string
-		input   []string
-		want    []string
-		wantErr bool
-	}{
-		{"nil", nil, []string{"*"}, false},
-		{"star", []string{"*"}, []string{"*"}, false},
-		{"names", []string{" books ", "orders"}, []string{"books", "orders"}, false},
-		{"duplicates", []string{"books", "books"}, []string{"books"}, false},
-		{"empty entry", []string{"books", ""}, nil, true},
-		{"star mixed", []string{"*", "books"}, nil, true},
-	}
-	for _, testCase := range cases {
-		t.Run(testCase.name, func(t *testing.T) {
-			got, err := normalizeServices(testCase.input)
-			if testCase.wantErr {
-				if speedleerrors.Code(err) != speedleerrors.ConfigError {
-					t.Fatalf("error %v", err)
-				}
-				return
-			}
-			if err != nil {
-				t.Fatal(err)
-			}
-			if strings.Join(got, ",") != strings.Join(testCase.want, ",") {
-				t.Fatalf("got %v, want %v", got, testCase.want)
 			}
 		})
 	}

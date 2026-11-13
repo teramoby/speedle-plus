@@ -69,6 +69,8 @@ type Store struct {
 	runtimeMu sync.Mutex
 	runtime   *distributionRuntime
 	closeOnce sync.Once
+	tlsCancel context.CancelFunc
+	tlsDone   chan struct{}
 
 	// afterFetch, when set by a test, runs after a service fetch succeeds and
 	// before its result is stored. It is nil in production.
@@ -95,7 +97,7 @@ var (
 )
 
 // Open validates the options and builds the protocol client and the state
-// machine. The instance authenticates with its API key and identifies itself
+// machine. The instance authenticates with its API key or mTLS and identifies itself
 // with the instance ID the client creates on its first request and persists in
 // CacheDir.
 //
@@ -115,7 +117,15 @@ func Open(ctx context.Context, options Options) (_ *Store, err error) {
 		return nil, err
 	}
 	if options.APIKey == "" {
-		return nil, errors.New(errors.ConfigError, "configure item APIKey is required")
+		if options.ClientCertFile == "" || options.ClientKeyFile == "" || options.CAFile == "" {
+			return nil, errors.New(errors.ConfigError, "cascade requires ClientCertFile, ClientKeyFile and CAFile")
+		}
+		if options.CacheDir == "" {
+			return nil, errors.New(errors.ConfigError, "CacheDir is required in cascade mode")
+		}
+		if options.InstanceID != "" {
+			return nil, errors.New(errors.ConfigError, "cascade generates InstanceID in CacheDir")
+		}
 	}
 	if options.ServeDownstream {
 		// Serving downstream instances needs the relay identity of the
@@ -130,19 +140,35 @@ func Open(ctx context.Context, options Options) (_ *Store, err error) {
 	}
 
 	client, err := adsync.NewClient(adsync.Config{
-		BaseURL:        options.UpstreamURL,
-		APIKey:         string(options.APIKey),
-		InstanceID:     options.InstanceID,
-		InstanceIDDir:  options.CacheDir,
-		HTTPClient:     options.HTTPClient,
-		CAFile:         options.CAFile,
-		ClientCertFile: options.ClientCertFile,
-		ClientKeyFile:  options.ClientKeyFile,
-		RequestTimeout: options.RequestTimeout,
-		Retry:          options.Retry,
+		BaseURL:            options.UpstreamURL,
+		APIKey:             string(options.APIKey),
+		InstanceID:         options.InstanceID,
+		InstanceIDDir:      options.CacheDir,
+		HTTPClient:         options.HTTPClient,
+		CAFile:             options.CAFile,
+		ClientCertFile:     options.ClientCertFile,
+		ClientKeyFile:      options.ClientKeyFile,
+		TLSReloadInterval:  options.TLSReloadInterval,
+		CRLFiles:           options.CRLFiles,
+		CRLURLs:            options.CRLURLs,
+		CRLRefreshInterval: options.CRLRefreshInterval,
+		CRLMaxAge:          options.CRLMaxAge,
+		RequestTimeout:     options.RequestTimeout,
+		Retry:              options.Retry,
 	})
 	if err != nil {
 		return nil, errors.Wrap(err, errors.ConfigError, "invalid policy source client configuration")
+	}
+	defer func() {
+		if err != nil {
+			client.Close()
+		}
+	}()
+	if options.APIKey == "" {
+		// Validate retained identity at startup, before any channel can send it.
+		if _, err := client.InstanceID(); err != nil {
+			return nil, errors.Wrap(err, errors.ConfigError, "invalid cascade CacheDir identity")
+		}
 	}
 	syncer, err := adsync.NewSyncer(client, options.CacheDir)
 	if err != nil {
@@ -175,6 +201,7 @@ func Open(ctx context.Context, options Options) (_ *Store, err error) {
 		}
 	}
 	if options.StartRuntime {
+		store.startTLSWatch()
 		return store, nil
 	}
 
@@ -188,6 +215,7 @@ func Open(ctx context.Context, options Options) (_ *Store, err error) {
 		// confirmed live and every decision fails closed until a sync succeeds.
 		log.Warnf("policy-source store started without a complete bootstrap: %v", redactConfigError(err, options.APIKey))
 	}
+	store.startTLSWatch()
 	return store, nil
 }
 

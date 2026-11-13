@@ -4,6 +4,7 @@ package policysource
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"net/url"
 	"os"
@@ -35,6 +36,11 @@ const (
 	CAFileKey                = "CAFile"
 	ClientCertFileKey        = "ClientCertFile"
 	ClientKeyFileKey         = "ClientKeyFile"
+	TLSReloadIntervalKey     = "TLSReloadInterval"
+	CRLFilesKey              = "CRLFiles"
+	CRLURLsKey               = "CRLURLs"
+	CRLRefreshIntervalKey    = "CRLRefreshInterval"
+	CRLMaxAgeKey             = "CRLMaxAge"
 	HeartbeatIntervalKey     = "HeartbeatInterval"
 	StaleAfterKey            = "StaleAfter"
 	StopAfterKey             = "StopAfter"
@@ -47,7 +53,6 @@ const (
 	MaxDownstreamKey         = "MaxDownstream"
 	MaxChainDepthKey         = "MaxChainDepth"
 	MaxConnectionsKey        = "MaxConnectionsPerDownstream"
-	DefaultServicesSelection = "*"
 
 	// Command line flag names. Each flag feeds the property key above through
 	// the shared GetStoreParams mechanism.
@@ -74,17 +79,23 @@ const (
 type Options struct {
 	// UpstreamURL is the policy source root. It must use https.
 	UpstreamURL string
+	// UpstreamURLs retains the preference order for cascade upstream selection.
+	UpstreamURLs []string
 	// APIKey authenticates every request to the upstream, including
-	// forwarded authorization requests. It is required.
+	// forwarded authorization requests in direct mode. Empty selects cascade mTLS.
 	APIKey cfg.Secret
-	// CacheDir enables the optional per-service on-disk copy cache and keeps
+	// CacheDir is required in cascade mode. It enables the on-disk cache and keeps
 	// the instance ID across restarts.
 	CacheDir string
-	// CAFile adds a PEM CA bundle for enterprise TLS inspection.
+	// CAFile supplies the relay trust roots in cascade mode, or adds enterprise
+	// TLS inspection roots in direct mode.
 	CAFile string
 	// ClientCertFile and ClientKeyFile enable mutual TLS when both are set.
-	ClientCertFile string
-	ClientKeyFile  string
+	ClientCertFile                string
+	ClientKeyFile                 string
+	TLSReloadInterval             time.Duration
+	CRLFiles, CRLURLs             []string
+	CRLRefreshInterval, CRLMaxAge time.Duration
 	// RequestTimeout bounds time without response bytes; zero uses the adsync default.
 	RequestTimeout time.Duration
 	// HeartbeatInterval, StaleAfter and StopAfter configure the adsync state
@@ -120,11 +131,7 @@ type Options struct {
 	ReconcilePeriod time.Duration
 
 	// ServeDownstream enables the proxy protocol from verified mirror copies.
-	ServeDownstream             bool
-	DownstreamCredentialsFile   string
-	MaxDownstream               int
-	MaxConnectionsPerDownstream int
-	MaxChainDepth               int
+	ServeDownstream bool
 }
 
 // Builder creates policy-source stores.
@@ -181,18 +188,14 @@ func optionsFromConfig(config map[string]interface{}) (options Options, err erro
 		return options, err
 	}
 
-	for _, property := range []struct {
-		key    string
-		target *string
-	}{
-		{UpstreamURLKey, &options.UpstreamURL},
-	} {
-		value, _, err := stringProperty(config, property.key)
-		if err != nil {
-			return options, err
-		}
-		*property.target = value
+	options.UpstreamURLs, err = upstreamProperty(config[UpstreamURLKey])
+	if err != nil {
+		return options, err
 	}
+	if len(options.UpstreamURLs) > 0 {
+		options.UpstreamURL = options.UpstreamURLs[0]
+	}
+
 	if value, ok := config[APIKeyKey].(cfg.Secret); ok {
 		options.APIKey = value
 	} else {
@@ -201,9 +204,6 @@ func optionsFromConfig(config map[string]interface{}) (options Options, err erro
 			return options, err
 		}
 		options.APIKey = cfg.Secret(value)
-	}
-	if err := validateUpstream(&options); err != nil {
-		return options, err
 	}
 
 	for _, property := range []struct {
@@ -214,7 +214,6 @@ func optionsFromConfig(config map[string]interface{}) (options Options, err erro
 		{CAFileKey, &options.CAFile},
 		{ClientCertFileKey, &options.ClientCertFile},
 		{ClientKeyFileKey, &options.ClientKeyFile},
-		{DownstreamCredentialsKey, &options.DownstreamCredentialsFile},
 	} {
 		value, _, err := stringProperty(config, property.key)
 		if err != nil {
@@ -231,6 +230,9 @@ func optionsFromConfig(config map[string]interface{}) (options Options, err erro
 		{HeartbeatIntervalKey, &options.HeartbeatInterval},
 		{StaleAfterKey, &options.StaleAfter},
 		{StopAfterKey, &options.StopAfter},
+		{TLSReloadIntervalKey, &options.TLSReloadInterval},
+		{CRLRefreshIntervalKey, &options.CRLRefreshInterval},
+		{CRLMaxAgeKey, &options.CRLMaxAge},
 	} {
 		value, err := durationProperty(config, property.key)
 		if err != nil {
@@ -261,58 +263,28 @@ func optionsFromConfig(config map[string]interface{}) (options Options, err erro
 		return options, err
 	}
 	options.ServeDownstream = serveDownstream
-	if options.ServeDownstream && options.DownstreamCredentialsFile == "" {
-		return options, errors.New(errors.ConfigError, "DownstreamCredentialsFile is required when ServeDownstream is true")
+	if serveDownstream {
+		return options, errors.New(errors.ConfigError, "ServeDownstream is not supported yet")
 	}
 	for _, property := range []struct {
 		key    string
-		target *int
+		target *[]string
 	}{
-		{MaxDownstreamKey, &options.MaxDownstream},
-		{MaxChainDepthKey, &options.MaxChainDepth},
-		{MaxConnectionsKey, &options.MaxConnectionsPerDownstream},
+		{CRLFilesKey, &options.CRLFiles}, {CRLURLsKey, &options.CRLURLs},
 	} {
-		value, err := intProperty(config, property.key)
-		if err != nil {
-			return options, err
+		if value, exists := config[property.key]; exists {
+			entries, err := stringList(value)
+			if err != nil {
+				return options, errors.Errorf(errors.ConfigError, "%s must be a list of nonempty strings", property.key)
+			}
+			*property.target = entries
 		}
-		*property.target = value
+	}
+	if err := validateUpstream(&options); err != nil {
+		return options, err
 	}
 
 	return options, nil
-}
-
-// normalizeServices cleans a service selection. Nil and ["*"] mean every
-// visible service.
-func normalizeServices(entries []string) ([]string, error) {
-	if len(entries) == 0 {
-		return []string{DefaultServicesSelection}, nil
-	}
-	cleaned := make([]string, 0, len(entries))
-	seen := make(map[string]struct{}, len(entries))
-	star := false
-	for _, entry := range entries {
-		entry = strings.TrimSpace(entry)
-		if entry == "" {
-			return nil, errors.New(errors.ConfigError, "configure item Services contains an empty service name")
-		}
-		if entry == DefaultServicesSelection {
-			star = true
-			continue
-		}
-		if _, duplicate := seen[entry]; duplicate {
-			continue
-		}
-		seen[entry] = struct{}{}
-		cleaned = append(cleaned, entry)
-	}
-	if star && len(cleaned) > 0 {
-		return nil, errors.New(errors.ConfigError, "configure item Services cannot combine * with explicit services")
-	}
-	if star || len(cleaned) == 0 {
-		return []string{DefaultServicesSelection}, nil
-	}
-	return cleaned, nil
 }
 
 func stringProperty(config map[string]interface{}, key string) (string, bool, error) {
@@ -352,36 +324,6 @@ func boolProperty(config map[string]interface{}, key string) (bool, bool, error)
 	}
 }
 
-func intProperty(config map[string]interface{}, key string) (int, error) {
-	value, exists := config[key]
-	if !exists || value == nil {
-		return 0, nil
-	}
-	switch typed := value.(type) {
-	case int:
-		return typed, nil
-	case int64:
-		return int(typed), nil
-	case float64:
-		converted := int(typed)
-		if float64(converted) != typed {
-			return 0, errors.Errorf(errors.ConfigError, "configure item %s must be an integer", key)
-		}
-		return converted, nil
-	case string:
-		if strings.TrimSpace(typed) == "" {
-			return 0, nil
-		}
-		parsed, err := strconv.Atoi(strings.TrimSpace(typed))
-		if err != nil {
-			return 0, errors.Errorf(errors.ConfigError, "configure item %s must be an integer", key)
-		}
-		return parsed, nil
-	default:
-		return 0, errors.Errorf(errors.ConfigError, "configure item %s must be an integer, got %T", key, value)
-	}
-}
-
 func durationProperty(config map[string]interface{}, key string) (time.Duration, error) {
 	text, set, err := stringProperty(config, key)
 	if err != nil || !set || strings.TrimSpace(text) == "" {
@@ -411,24 +353,80 @@ func init() {
 	pflag.String(FallbackWhileSyncingFlag, "true", "Store config: route authorization requests for a syncing service to Speedle Cloud.")
 	pflag.String(TransportFlag, "auto", "Store config: notification transport: auto, websocket or longpoll.")
 	pflag.String(ServeDownstreamFlag, "false", "Store config: serve the policy-source protocol to downstream ADS instances.")
-	pflag.String(DownstreamCredentialsFlag, "", "Store config: downstream credential file (0600), reloaded on SIGHUP.")
-	pflag.String(MaxDownstreamFlag, "", "Store config: maximum distinct downstream instances.")
-	pflag.String(MaxChainDepthFlag, "", "Store config: maximum proxy chain depth.")
-	pflag.String(MaxConnectionsFlag, "", "Store config: maximum active channels and held polls per downstream credential.")
+	pflag.String(DownstreamCredentialsFlag, "", "Removed: configure ClientCertFile, ClientKeyFile, CAFile and relay downstreamClientCAPath.")
+	pflag.String(MaxDownstreamFlag, "", "Removed: downstream connection limits are not supported.")
+	pflag.String(MaxChainDepthFlag, "", "Removed: chain depth limits are not supported.")
+	pflag.String(MaxConnectionsFlag, "", "Removed: downstream connection limits are not supported.")
 
 	store.Register(StoreType, Builder{})
 }
 
 // validateUpstream validates the upstream without echoing URL credentials.
 func validateUpstream(options *Options) error {
-	if options.UpstreamURL == "" {
+	if options.UpstreamURL == "" && len(options.UpstreamURLs) == 0 {
 		return errors.New(errors.ConfigError, "configure item UpstreamURL is required")
 	}
-	parsed, err := url.Parse(options.UpstreamURL)
-	if err != nil || parsed.Scheme != "https" || parsed.Hostname() == "" || parsed.User != nil || parsed.RawQuery != "" || parsed.Fragment != "" {
-		return errors.New(errors.ConfigError, "UpstreamURL must be an https URL without credentials, query or fragment")
+	if len(options.UpstreamURLs) == 0 {
+		options.UpstreamURLs = []string{options.UpstreamURL}
+	}
+	if options.UpstreamURL != "" && options.UpstreamURL != options.UpstreamURLs[0] {
+		return errors.New(errors.ConfigError, "UpstreamURL and UpstreamURLs disagree")
+	}
+	options.UpstreamURLs = append([]string(nil), options.UpstreamURLs...)
+	seen := make(map[string]bool)
+	for i, entry := range options.UpstreamURLs {
+		parsed, err := url.Parse(entry)
+		if err != nil || parsed.Scheme != "https" || parsed.Hostname() == "" || parsed.User != nil || parsed.RawQuery != "" || parsed.ForceQuery || parsed.Fragment != "" || strings.Contains(entry, "#") {
+			return errors.New(errors.ConfigError, "UpstreamURL must be an https URL without credentials, query or fragment")
+		}
+		parsed.Host = strings.ToLower(parsed.Host)
+		normalized := strings.TrimSuffix(parsed.String(), "/")
+		if seen[normalized] {
+			return errors.New(errors.ConfigError, "UpstreamURL contains duplicate URLs")
+		}
+		seen[normalized] = true
+		options.UpstreamURLs[i] = normalized
+	}
+	options.UpstreamURL = options.UpstreamURLs[0]
+	if options.APIKey != "" && len(options.UpstreamURLs) != 1 {
+		return errors.New(errors.ConfigError, "APIKey direct mode requires a single UpstreamURL")
 	}
 	return nil
+}
+
+func stringList(value interface{}) ([]string, error) {
+	var entries []string
+	switch value := value.(type) {
+	case []string:
+		entries = append([]string(nil), value...)
+	case []interface{}:
+		for _, entry := range value {
+			text, ok := entry.(string)
+			if !ok {
+				return nil, fmt.Errorf("not a string")
+			}
+			entries = append(entries, text)
+		}
+	default:
+		return nil, fmt.Errorf("not a list")
+	}
+	for _, entry := range entries {
+		if strings.TrimSpace(entry) == "" {
+			return nil, fmt.Errorf("empty entry")
+		}
+	}
+	return entries, nil
+}
+
+func upstreamProperty(value interface{}) ([]string, error) {
+	if text, ok := value.(string); ok {
+		return []string{text}, nil
+	}
+	entries, err := stringList(value)
+	if err != nil || len(entries) == 0 {
+		return nil, errors.New(errors.ConfigError, "UpstreamURL must be one HTTPS URL or a nonempty ordered list")
+	}
+	return entries, nil
 }
 
 // removedCredentialEnv is the environment variable that used to carry the
@@ -442,7 +440,12 @@ func rejectRemovedConfig(config map[string]interface{}) error {
 		{PolicySourceURLKey, "use UpstreamURL"},
 		{CredentialFileKey, "use APIKey in the configuration file"},
 		{PublicKeysKey, "signatures are no longer verified"},
-		{ServicesKey, "select services in the Cloud console"},
+		{ServicesKey, "use ClientCertFile, ClientKeyFile, CAFile and relay downstreamClientCAPath; downstreams receive all relay services"},
+		{DownstreamCredentialsKey, "use ClientCertFile, ClientKeyFile, CAFile and relay downstreamClientCAPath"},
+		{MaxDownstreamKey, "connection limits are not supported"},
+		{MaxChainDepthKey, "depth limits are not supported"},
+		{MaxConnectionsKey, "connection limits are not supported"},
+		{"InstanceID", "the ADS generates its persisted UUIDv7 in CacheDir"},
 		{CloudFallbackURLKey, "use UpstreamURL"},
 		{CloudCredentialFileKey, "use APIKey in the configuration file"},
 		{"InstanceName", "the ADS manages its persisted instance ID"},

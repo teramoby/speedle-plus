@@ -266,3 +266,23 @@ func (c *Cache) List() []*ServiceState {
 	}
 	return states
 }
+
+// validateRetained fails closed for cascade: an unreadable or corrupt copy
+// also carries the retained revision floor and cannot be treated as a miss.
+func (c *Cache) validateRetained() error {
+	entries, err := os.ReadDir(c.dir)
+	if err != nil {
+		return fmt.Errorf("adsync: read cascade CacheDir: %w", err)
+	}
+	for _, entry := range entries {
+		name := entry.Name()
+		if !strings.HasPrefix(name, "service-") || !strings.HasSuffix(name, ".json") {
+			continue
+		}
+		serviceID := strings.TrimSuffix(strings.TrimPrefix(name, "service-"), ".json")
+		if _, err := c.Load(serviceID); err != nil {
+			return fmt.Errorf("adsync: invalid retained cascade cache: %w", err)
+		}
+	}
+	return nil
+}

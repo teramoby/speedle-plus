@@ -5,7 +5,10 @@ package policysource
 import (
 	"context"
 	"net/http"
+	"os"
+	"os/signal"
 	"sync"
+	"syscall"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -271,14 +274,35 @@ func (s *Store) fallbackState() adsync.FallbackState {
 // nil: serving downstream instances is not supported yet.
 func (s *Store) DownstreamHandler() http.Handler { return nil }
 
-// ReloadDownstreamCredentials applies a SIGHUP credential reload. Without a
-// downstream server there is nothing to reload.
-func (s *Store) ReloadDownstreamCredentials() error { return nil }
+// ReloadDownstreamCredentials also reloads the upstream mTLS client. It remains
+// a no-op for a direct store without reloadable TLS material.
+func (s *Store) ReloadDownstreamCredentials() error { return s.client.ReloadTLS() }
+
+func (s *Store) startTLSWatch() {
+	if s.options.APIKey != "" {
+		return
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	s.tlsCancel = cancel
+	s.tlsDone = make(chan struct{})
+	signals := make(chan os.Signal, 1)
+	signal.Notify(signals, syscall.SIGHUP)
+	go func() {
+		defer close(s.tlsDone)
+		defer signal.Stop(signals)
+		s.client.WatchTLS(ctx, signals)
+	}()
+}
 
 // Close stops and joins the channel and reconciliation loops before closing
 // downstream sessions and the evaluator watch. It is safe to call repeatedly.
 func (s *Store) Close() error {
 	s.closeOnce.Do(func() {
+		if s.tlsCancel != nil {
+			s.tlsCancel()
+			<-s.tlsDone
+		}
+		defer s.client.Close()
 		s.StopWatch()
 		s.runtimeMu.Lock()
 		runtime := s.runtime

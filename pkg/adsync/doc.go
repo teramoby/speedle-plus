@@ -6,9 +6,10 @@
 // optional per-service on-disk cache, the instance liveness and sync state
 // machine, and the notification channel.
 //
-// An instance authenticates with one API key. It identifies itself with a
+// An instance authenticates with an API key in direct mode or with mTLS in
+// cascade mode (which sends no bearer token). It identifies itself with a
 // UUIDv7 instance ID that it generates on first use and keeps in the cache
-// directory; every request carries the key and the ID. Integrity rests on TLS
+// directory; every request carries the ID. Integrity rests on TLS
 // and on the canonical state and commit hashes, which every ack confirms.
 //
 // It speaks the /policy-source/v1 endpoints defined by the shared contract in
